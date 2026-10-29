@@ -94,7 +94,7 @@ async function messe(api, jetzt, alt = {}, pause = 2000) {
         const p = proben.get(n);
         if (p.length)
             schritte[n] = {
-                s: Math.round((x.voll ? p90 : median)(p)),
+                s: Math.round(x.echt ? Math.min(...p) : (x.voll ? p90 : median)(p)),
                 n: p.length,
                 gruppe: ort.get(n),
                 ...(x.echt ? { p90: Math.round(p90(p)), max: Math.round(Math.max(...p)) } : {}),

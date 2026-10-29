@@ -43,9 +43,10 @@ const PINS = [
     { file: "vendor/CSMShadowNode.js", hash: null },
 ];
 
-// Die Anker: Vendor-Substring → abhängiges Stamm-Organ; ein Anker ohne `file` liegt im EINEN Engine-Bündel (ANKER_VORGABE — bis
-// zur Decke w3w-studios trug jeder der 202 Anker es ausgeschrieben).
-const ANKER_VORGABE = "vendor/three.webgpu.min.js";
+// Die Anker: Vendor-Substring → abhängiges Stamm-Organ.
+// DIE DATEI DER ANKER: ohne `file` der WebGPU-Vendor (in ihm leben fast alle Organe), jede andere steht beim Anker — ihre
+// Namen aus den Pins (EINE Liste der Vendor-Dateien)
+const [ANKER_DATEI, CORE, TSL, TRAA, CSM] = PINS.map((p) => p.file);
 const ANKER = [
     // Observer-Diät + Batch-Textur-Wächter (setupObserver-Naht + Monitor-Kurzschluss)
     { sub: "setupObserver(e){return new", organ: "_materialObserverDiaet (Diät-Naht)" },
@@ -63,7 +64,7 @@ const ANKER = [
     // DER SCHATTEN-STOFF JE OBJEKT: renderObject setzt je Objekt alphaTest des Originals auf den EINEN geteilten
     // Schatten-Stoff, der Setter zählt bei jedem Wechsel über 0 die Version; jede Version prüft je Bürger den Schlüssel
     // und die Pipeline — _configureRenderer trägt je Objekt die Version des Original-Materials in den Stoff.
-    { file: "vendor/three.core.min.js", sub: "set alphaTest(t){this._alphaTest>0!=t>0&&this.version++,this._alphaTest=t}", organ: "Schatten-Stoff je Objekt (der Setter, den der Stoff überschreibt)" },
+    { file: CORE, sub: "set alphaTest(t){this._alphaTest>0!=t>0&&this.version++,this._alphaTest=t}", organ: "Schatten-Stoff je Objekt (der Setter, den der Stoff überschreibt)" },
     { sub: "e.alphaTest=i.alphaTest,e.alphaMap=i.alphaMap,e.transparent=", organ: "Schatten-Stoff je Objekt (renderObject setzt die Werte je Objekt)" },
     { sub: "(l.version!==t.version||l.needsUpdate)&&(l.initialCacheKey!==l.getCacheKey()", organ: "Schatten-Stoff je Objekt (Version → Schlüssel-Prüfung je Bürger)" },
     { sub: "t.material===s&&t.materialVersion===s.version", organ: "Schatten-Stoff je Objekt (Version → Pipeline-Prüfung je Bürger)" },
@@ -102,8 +103,8 @@ const ANKER = [
     // baut ihre Render-Knoten in setup (einmal je Instanz).
     { sub: 'setNodeType(e){let t=null;t=null!==this.count?Zl(null,e,this.count):Array.isArray(this.getValueFromReference())?td(null,e):"texture"===e?Kl(null):"cubeTexture"===e?$c(null):Sa(null,e),null!==this.group&&t.setGroup(this.group),null!==this.name&&t.setName(this.name),this.node=t}', organ: "EIN KNOTEN JE QUELLE (ReferenceNode.setNodeType legt den Uniform-Knoten an)" },
     { sub: "e.uniforms.sort((e,t)=>e.nodeUniform.node.id-t.nodeUniform.node.id);for(const t of e.uniforms)r+=t.nodeUniform.node.id}else r+=e.nodeUniform.id;const i=this.renderer._currentRenderContext||this.renderer;let n=qN.get(i);", organ: "EIN KNOTEN JE QUELLE (_getBindGroup teilt die Gruppe nach Knoten-Ids je Render-Kontext)" },
-    { file: "vendor/CSMShadowNode.js", sub: "setup( builder ) {\n\n\t\tif ( this.camera === null ) this._init( builder );\n\n\t\treturn this.fade === true ? this._setupFade() : this._setupStandard();", organ: "EIN KNOTEN JE QUELLE (CSMShadowNode.setup baut die Render-Knoten je Aufruf — einmal je Instanz)" },
-    { file: "vendor/CSMShadowNode.js", sub: "this.setupShadowPosition( builder );", organ: "EIN KNOTEN JE QUELLE (die Schatten-Lage baut der Fn-Rumpf je Programm, nie setup)" },
+    { file: CSM, sub: "setup( builder ) {\n\n\t\tif ( this.camera === null ) this._init( builder );\n\n\t\treturn this.fade === true ? this._setupFade() : this._setupStandard();", organ: "EIN KNOTEN JE QUELLE (CSMShadowNode.setup baut die Render-Knoten je Aufruf — einmal je Instanz)" },
+    { file: CSM, sub: "this.setupShadowPosition( builder );", organ: "EIN KNOTEN JE QUELLE (die Schatten-Lage baut der Fn-Rumpf je Programm, nie setup)" },
     // EIN SCHREIBEN JE PUFFER: das Backend lädt eine Uniform-Gruppe Bereich für Bereich (je Bereich ein writeBuffer).
     { sub: "updateBinding(e){const t=this.backend,r=t.device,s=e.buffer,i=t.get(e).buffer,n=e.updateRanges;if(0===n.length)r.queue.writeBuffer(i,0,s,0);else{", organ: "EIN SCHREIBEN JE PUFFER (backend.updateBinding: ein writeBuffer je Bereich)" },
     { sub: "t.isBuffer&&t.updateRanges.length>0&&t.clearUpdateRanges()", organ: "EIN SCHREIBEN JE PUFFER (r184 leert die Bereiche nach dem Upload)" },
@@ -240,12 +241,12 @@ const ANKER = [
     // Folge; das Quad nimmt die Klasse des Quads der Post-Kette; die Reprojektion steht VOR dem Post-Render (der Versatz lebt
     // nur zwischen den Pipeline-Haken); die Aufnahme rendert eine Halton-Runde (31 Versätze) und schaltet den Node-Frame
     { sub: "t.generation!==l.generation&&(t.generation=l.generation,s=!0)", organ: "_zeitAufloesung (die Lage ist die Generation: eine getauschte Textur bindet nur bei anderer Generation neu)" },
-    { file: "vendor/TRAANode.js", sub: "viewOffset.offsetX + jitterOffset[ 0 ] - 0.5, viewOffset.offsetY + jitterOffset[ 1 ] - 0.5,", organ: "_zeitAufloesung (der Versatz in Pixeln der gereichten Größe, gelesen aus camera.view)" },
-    { file: "vendor/TRAANode.js", sub: "this._invSize.value.set( 1 / width, 1 / height );", organ: "_zeitAufloesung (setSize stellt die Ausgabe-Größe des Resolve)" },
+    { file: TRAA, sub: "viewOffset.offsetX + jitterOffset[ 0 ] - 0.5, viewOffset.offsetY + jitterOffset[ 1 ] - 0.5,", organ: "_zeitAufloesung (der Versatz in Pixeln der gereichten Größe, gelesen aus camera.view)" },
+    { file: TRAA, sub: "this._invSize.value.set( 1 / width, 1 / height );", organ: "_zeitAufloesung (setSize stellt die Ausgabe-Größe des Resolve)" },
     { sub: 'this._quadMesh=new gx(r),this._quadMesh.name="Render Pipeline"', organ: "_zeitAufloesung (das Quad der Post-Kette — seine Klasse zeichnet den Resolve)" },
     { sub: "null!==this._context.onBeforeRenderPipeline&&this._context.onBeforeRenderPipeline()", organ: "_traaReprojektion (RenderPipeline ruft den Vorher-Haken)" },
-    { file: "vendor/TRAANode.js", sub: "this._jitterIndex = this._jitterIndex % ( _haltonOffsets.length - 1 );", organ: "Ausgabe-Aufnahme (32 Frames = eine Halton-Runde)" },
-    { file: "vendor/TRAANode.js", sub: "this.updateBeforeType = NodeUpdateType.FRAME;", organ: "Ausgabe-Aufnahme/gpu-bank (je Frame nodeFrame.update)" },
+    { file: TRAA, sub: "this._jitterIndex = this._jitterIndex % ( _haltonOffsets.length - 1 );", organ: "Ausgabe-Aufnahme (32 Frames = eine Halton-Runde)" },
+    { file: TRAA, sub: "this.updateBeforeType = NodeUpdateType.FRAME;", organ: "Ausgabe-Aufnahme/gpu-bank (je Frame nodeFrame.update)" },
     // DAS AUSGABE-ZIEL IN 32 BIT (`_ausgabeFormat`): r184 fordert jedes Feature an, das der Adapter trägt (darum
     // fragt der Stamm `device.features`); RGBFormat × UnsignedInt101111Type ist rg11b10ufloat; PassNode.setup schreibt den
     // Typ je Bau auf den des Renderers zurück (der Stamm stellt ihn danach).
@@ -256,12 +257,12 @@ const ANKER = [
     // die Licht-Stellung des Addons (updateBefore stumm, sein Zweit-Schreiber _updateShadowBounds stumm), ruft dessen
     // _init vom Prototyp, liest seine Kaskaden-Uniform und den Fade-Saum des Shaders, hüllt den Ziel-Bau jedes
     // Kaskaden-Knotens; die Szenen-Haken laufen je Render vor der Projektion und danach — auch im Kompilat (nur vorher).
-    { file: "vendor/CSMShadowNode.js", sub: "_init( { camera, renderer } ) {", organ: "_kaskadenGeburt (ruft CSMShadowNode.prototype._init)" },
-    { file: "vendor/CSMShadowNode.js", sub: "this._shadowNodes.push( shadow( lwLight, lShadow ) );", organ: "_kaskadenZiele (je Kaskaden-Knoten die Hülle um setupRenderTarget)" },
-    { file: "vendor/CSMShadowNode.js", sub: "this._updateShadowBounds();", organ: "der stumme Zweit-Schreiber (updateFrustums ruft _updateShadowBounds — je Instanz stumm)" },
-    { file: "vendor/CSMShadowNode.js", sub: "updateBefore( /*builder*/ ) {", organ: "_kaskadenPassen ersetzt die Licht-Stellung (updateBefore je Instanz stumm)" },
-    { file: "vendor/CSMShadowNode.js", sub: "margin.assign( float( 0.25 ).mul( closestEdge.pow( 2.0 ) ) );", organ: "_kaskadenSaum + gate:schatten-werfer K1 (der Fade-Saum des Shaders)" },
-    { file: "vendor/CSMShadowNode.js", sub: "const cascades = reference( '_cascades', 'vec2', this )", organ: "gate:schatten-werfer K1 (die Kaskaden-Uniform, die der Shader liest)" },
+    { file: CSM, sub: "_init( { camera, renderer } ) {", organ: "_kaskadenGeburt (ruft CSMShadowNode.prototype._init)" },
+    { file: CSM, sub: "this._shadowNodes.push( shadow( lwLight, lShadow ) );", organ: "_kaskadenZiele (je Kaskaden-Knoten die Hülle um setupRenderTarget)" },
+    { file: CSM, sub: "this._updateShadowBounds();", organ: "der stumme Zweit-Schreiber (updateFrustums ruft _updateShadowBounds — je Instanz stumm)" },
+    { file: CSM, sub: "updateBefore( /*builder*/ ) {", organ: "_kaskadenPassen ersetzt die Licht-Stellung (updateBefore je Instanz stumm)" },
+    { file: CSM, sub: "margin.assign( float( 0.25 ).mul( closestEdge.pow( 2.0 ) ) );", organ: "_kaskadenSaum + gate:schatten-werfer K1 (der Fade-Saum des Shaders)" },
+    { file: CSM, sub: "const cascades = reference( '_cascades', 'vec2', this )", organ: "gate:schatten-werfer K1 (die Kaskaden-Uniform, die der Shader liest)" },
     { sub: 'r.name="ShadowDepthTexture",r.compareFunction=', organ: "_kaskadenZiele (ShadowNode.setupRenderTarget baut Tiefe …)" },
     { sub: 'return s.texture.name="ShadowMap",s.texture.type=e.mapType,s.depthTexture=r,{shadowMap:s,depthTexture:r}}', organ: "_kaskadenZiele (… und Farbe, die Hülle setzt r8 + 16 bit)" },
     // DIE KARTE OHNE FARBE (Ziel-Zensus: kaskade0/1:farbe OHNE LESER): die Ziel-Daten tragen eine leere Farb-
@@ -278,8 +279,8 @@ const ANKER = [
     { sub: "g.clippingContext.updateGlobal(l,t),l.onBeforeRender(this,e,t,p);const v=t.isArrayCamera", organ: "_passSicht (der Vorher-Haken je Render, vor der Projektion — auch im Schatten-Render)" },
     { sub: "l.onAfterRender(this,e,t,p),this.inspector.finishRender", organ: "_passSicht (der Nachher-Haken je Render)" },
     // DAS REGISTER (Melder und Tor)
-    { file: "vendor/three.core.min.js", sub: "onUploadCallback(){}set needsUpdate(t){!0===t&&this.version++}", organ: "AnazhRealm._regungMelder (BufferAttribute · InterleavedBuffer)" },
-    { file: "vendor/three.core.min.js", sub: "this.matrixWorldNeedsUpdate=!0}updateMatrixWorld(t){this.matrixAutoUpdate&&this.updateMatrix(),", organ: "AnazhRealm._regungMelder (updateMatrix)" },
+    { file: CORE, sub: "onUploadCallback(){}set needsUpdate(t){!0===t&&this.version++}", organ: "AnazhRealm._regungMelder (BufferAttribute · InterleavedBuffer)" },
+    { file: CORE, sub: "this.matrixWorldNeedsUpdate=!0}updateMatrixWorld(t){this.matrixAutoUpdate&&this.updateMatrix(),", organ: "AnazhRealm._regungMelder (updateMatrix)" },
     { sub: "setGeometry(e){this.geometry=e,this.attributes=null,this.attributesId=null}getAttributes(){if(null!==this.attributes)return this.attributes;", organ: "AnazhRealm._diaetRuhig (Bau-Wechsel, gelesene Attribute)" },
     // Der Satz: ein Chunk ist ein Bereich im Pool-Puffer — sein Upload ist ein Teil-Schreiben ab dem
     // Bereichs-Anfang (updateRanges → queue.writeBuffer(offset)); ohne diese Bahn lüde jeder Chunk den ganzen Satz.
@@ -376,8 +377,8 @@ const ANKER = [
     // … und die Liste, aus der `_rahmenZielAbschied` den Hörer liest: der EventDispatcher von three.core hält die Hörer je Art in
     // `this._listeners[art]`, und das Leinwand-Ziel des Renderers (`GS`) ist einer. Die Drift-Probe
     // in gate:post-kette (g) fährt den Zweig ohne Hörer.
-    { file: "vendor/three.core.min.js", sub: "addEventListener(t,e){void 0===this._listeners&&(this._listeners={});const i=this._listeners;void 0===i[t]&&(i[t]=[]),-1===i[t].indexOf(e)&&i[t].push(e)}", organ: "_rahmenZielAbschied (die Hörer je Art in `_listeners`)" },
-    { file: "vendor/three.core.min.js", sub: "removeEventListener(t,e){const i=this._listeners;if(void 0===i)return;const s=i[t];if(void 0!==s){const t=s.indexOf(e);-1!==t&&s.splice(t,1)}}", organ: "_rahmenZielAbschied (der Hörer nimmt sich aus `_listeners`)" },
+    { file: CORE, sub: "addEventListener(t,e){void 0===this._listeners&&(this._listeners={});const i=this._listeners;void 0===i[t]&&(i[t]=[]),-1===i[t].indexOf(e)&&i[t].push(e)}", organ: "_rahmenZielAbschied (die Hörer je Art in `_listeners`)" },
+    { file: CORE, sub: "removeEventListener(t,e){const i=this._listeners;if(void 0===i)return;const s=i[t];if(void 0!==s){const t=s.indexOf(e);-1!==t&&s.splice(t,1)}}", organ: "_rahmenZielAbschied (der Hörer nimmt sich aus `_listeners`)" },
     { sub: "class GS extends u{", organ: "_rahmenZielAbschied (das Leinwand-Ziel ist ein EventDispatcher)" },
     { sub: "EventDispatcher as u", organ: "_rahmenZielAbschied (u ist der EventDispatcher von three.core)" },
     { sub: "this._canvasTarget=new GS(", organ: "_rahmenZielAbschied (der Renderer hält sein Leinwand-Ziel)" },
@@ -424,12 +425,12 @@ const ANKER = [
     // DIE WURF-EBENE: `castShadow` ist ein Accessor auf das Bit SHADOW_TWIN_LAYER — der Konstruktor legt die Ebenen VOR der
     // ersten Zuweisung an, `copy` trägt beide; die Schatten-Kamera behält eine Maske mit einem Bit jenseits der 0 (sonst nähme
     // r184 die Maske der Haupt-Kamera und die Kaskade sähe keinen Werfer); die Schatten-Funktion liest `castShadow`.
-    { file: "vendor/three.core.min.js", sub: "this.layers=new lr,this.visible=!0,this.castShadow=!1", organ: "_wurfEbene (die Ebenen stehen vor der ersten Zuweisung des Wurfs)" },
-    { file: "vendor/three.core.min.js", sub: "this.layers.mask=t.layers.mask,this.visible=t.visible,this.castShadow=t.castShadow", organ: "_wurfEbene (copy trägt Ebenen und Wurf)" },
+    { file: CORE, sub: "this.layers=new lr,this.visible=!0,this.castShadow=!1", organ: "_wurfEbene (die Ebenen stehen vor der ersten Zuweisung des Wurfs)" },
+    { file: CORE, sub: "this.layers.mask=t.layers.mask,this.visible=t.visible,this.castShadow=t.castShadow", organ: "_wurfEbene (copy trägt Ebenen und Wurf)" },
     { sub: "4294967294&s.camera.layers.mask||(s.camera.layers.mask=a.layers.mask)", organ: "_wurfEbene (die Schatten-Kamera behält ihre Wurf-Maske)" },
     { sub: "(!0===i.castShadow||i.receiveShadow&&r===pt)", organ: "_wurfEbene (die Schatten-Funktion liest den Wurf)" },
     { sub: "getNode(e){if(e.isQuadMesh)return ES;let t=wS.get(e);", organ: "_wurfEbene (EIN Lichter-Knoten je Szene, auch im Schatten-Pass: jedes Licht liegt auf der Wurf-Ebene)" },
-].map((a) => ({ file: ANKER_VORGABE, ...a }));
+];
 
 // DIE DIÄT-PRÜFUNG (wer voll frischt): die Diät-Funktionen aus dem Stamm laden (vom ersten
 // `AnazhRealm._diaet… = function` bis zum Ende von `_diaetRefresh`) und gegen Schein-Programme fahren — r184-
@@ -850,9 +851,9 @@ function main() {
     let geprueft = 0;
     for (const a of ANKER) {
         geprueft++;
-        const src = les(a.file).toString("latin1");
+        const src = les(a.file || ANKER_DATEI).toString("latin1");
         const sub = selftest && a.organ && a.organ.startsWith("_materialObserverDiaet (hasNode") ? a.sub + "_MANIPULIERT" : a.sub;
-        if (!src.includes(sub)) errs.push(`ANKER GEFALLEN: "${a.sub}" fehlt in ${a.file} → Organ: ${a.organ}`);
+        if (!src.includes(sub)) errs.push(`ANKER GEFALLEN: "${a.sub}" fehlt in ${a.file || ANKER_DATEI} → Organ: ${a.organ}`);
     }
     // (3) DIE DIÄT-PRÜFUNG am Schein-Programm (r184-Semantik: Beobachter + geteilte Gruppe je Programm, renderId-
     // Wand, equals()): AnazhRealm._diaetRefresh aus dem Stamm geladen, deterministisch, GPU-frei. Bundle-Wahrheit und

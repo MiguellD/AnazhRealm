@@ -10,7 +10,9 @@
 //                 WELTEN) steht danach auf Stufe „nativ" mit Label und jedem Wort ihres Manifests — fehlt es, ist K1 rot
 //                 beim Namen, ebenso ein Manifest ohne Soll-Zeile
 //   K2 endlich    der Handshake endet: die Heimat schickt höchstens drei enter (about:blank · load · erste ready),
-//                 und während der Reise einer SCHLEUSE (`schleuse`) kein enter mehr
+//                 und während der Reise einer SCHLEUSE (`schleuse`) kein enter mehr; danach ist die Welt STILL: ihr
+//                 erstes Bild (die Probe hält ihre Bilder bis hierher, die Zeitfolge eines trägen Läufers) schickt der
+//                 Heimat kein Ereignis — sie spricht nur als Antwort
 //   K3 Quelle     eine FREMDE Seite (Geschwister-Frame der Heimat) schickt der Welt dieselbe Nachricht — die Welt
 //                 nimmt sie nicht an (event.source !== parent), nichts wirkt
 //   K4 wirkt      die Heimat schickt die chain-Form des Worts über ihren echten Weiterleiter (`_portalRouteDsl`): die
@@ -101,10 +103,9 @@ async function stromZeichnet(page, fr) {
     });
     const rueckfall = /konnte nicht starten|Render-Fehler/.test(hud);
     const el = await page.$("#portal-overlay iframe.portal-frame");
-    const a = el ? await el.screenshot({ encoding: "base64" }) : "";
+    const a = await el.screenshot({ encoding: "base64" });
     await sleep(400);
-    const b = el ? await el.screenshot({ encoding: "base64" }) : "";
-    const bewegt = !!a && a !== b;
+    const bewegt = a !== (await el.screenshot({ encoding: "base64" }));
     return { ok: !rueckfall && bewegt, notiz: `Strom zeichnet: ${rueckfall ? "Rückfall — " + hud : "Engine steht"}, Bild ${bewegt ? "bewegt" : "steht"}` };
 }
 
@@ -233,8 +234,11 @@ const TAETER = {
             'var dsl = m && Array.isArray(m.dsl) ? m.dsl.filter(function (w) { return w !== "flut"; }) : null;',
         ],
     ],
-    // das Mitgebrachte als Markup statt als Text → K7 rot
-    "worlds/skeleton/skeleton.js": [['chip.textContent = String((m && m.name) || "?");', 'chip.innerHTML = String((m && m.name) || "?");']],
+    // das Mitgebrachte als Markup statt als Text → K7 rot; das Erwachen aus dem ersten Bild wie schwarm vor dem Schnitt → K2 rot
+    "worlds/skeleton/skeleton.js": [
+        ['chip.textContent = String((m && m.name) || "?");', 'chip.innerHTML = String((m && m.name) || "?");'],
+        ["B = AnazhHuelle.bruecke({", 'requestAnimationFrame(() => B.ereignis("erwachte"));\n    B = AnazhHuelle.bruecke({'],
+    ],
     // klang TRÄGE wie die fachwerk auf dem Läufer: nach ihrer ready stellt der Boot 3 s Bau in die Schlange (sechs Aufgaben
     // zu 0,5 s), VOR die enter der Heimat — das Echo ist eine Eigenschaft der Welt, kein Urteil der Uhr
     "worlds/klang/klang.js": [
@@ -339,16 +343,13 @@ async function betreten(page, welt) {
             const meta = r.state.blueprints[ob.blueprint].portalMeta;
             // Zähler: was die Welt der Heimat schickt (Quelle = das Portal-iframe) und wie oft die Heimat enter sendet
             // (eine delegierende Zähl-Hülle, nach der Messung entfernt).
-            const k = (window.__k = { typen: {}, enters: 0, geladen: 0 });
+            const k = (window.__k = { readys: 0, enters: 0, geladen: 0 });
             if (window.__kSpy) window.removeEventListener("message", window.__kSpy, true);
             window.__kSpy = (ev) => {
-                const po = r._portalOverlay;
-                if (!po || !po.iframe || ev.source !== po.iframe.contentWindow) return;
-                const d = ev.data || {};
-                if (d.__schleuse) return;
-                const t = d.type || (d.__anazhNet ? "net" : "?");
-                k.typen[t] = (k.typen[t] || 0) + 1;
-                if (t === "ready" && Array.isArray(d.dsl) && d.dsl.length) k.readyDsl = true;
+                const d = ev.data;
+                if (ev.source !== r._portalOverlay?.iframe?.contentWindow || d?.type !== "ready") return;
+                k.readys++;
+                if (Array.isArray(d.dsl) && d.dsl.length) k.readyDsl = true;
             };
             window.addEventListener("message", window.__kSpy, true);
             const orig = r._portalSendEnter;
@@ -392,8 +393,7 @@ async function betreten(page, welt) {
 // K1 das Bau-Ereignis der Welt: ihre ready (mit ihr baut die Hülle ihre Knöpfe) und ihr load, gezählt vom Spion aus `betreten` —
 // ohne Uhr, einen Hänger nennt die Stall-Akte beim Namen
 async function bereitBis(page, id) {
-    await waitFor(page, () => window.__k.typen.ready && window.__k.geladen, `ready und load der Welt ${id}`);
-    return zaehler(page);
+    await waitFor(page, () => window.__k.readys && window.__k.geladen, `ready und load der Welt ${id}`);
 }
 
 // K8 werk: der Spieler holt sein Werk mit dem Verb des Studios — durch das Tor der Garage; steht die Hülle, drückt der Rück-Hörer
@@ -409,8 +409,6 @@ async function werkHolen(page) {
     const werk = await page.evaluate(() => Object.keys(anazhRealm.state.workshop.studioOv)[1]);
     if (s.offen || !werk) throw new Error(`K8 werk: die Garage reicht kein Werk in die Welt (${s.knopf ? "Knopf gedrückt" : "kein Knopf „In der Welt ansehen“"}, Overlay ${s.offen ? "offen" : "zu"})`);
 }
-
-const zaehler = (page) => page.evaluate(() => window.__konformanz.zaehler());
 
 async function zaehlerAus(page) {
     await page.evaluate(() => {
@@ -445,9 +443,8 @@ function seitenHelfer() {
             const po = r._portalOverlay;
             const k = window.__k;
             return {
-                readys: k.typen.ready || 0,
+                readys: k.readys,
                 enters: k.enters,
-                geladen: k.geladen,
                 readyDsl: !!k.readyDsl,
                 stufe: po ? po.manifestStage : null,
                 label: po ? po.label : null,
@@ -459,9 +456,9 @@ function seitenHelfer() {
 
 // Der Rück-Hörer der Welt (in ihrem Reich, einmal je Welt nach ihrem load; ein Capture-Hörer, er hört jede Nachricht VOR
 // ihrer Brücke): er reicht jede Marke der Heimat zurück, gleich von wem (die fremde Seite ist nicht ihr Eltern-Fenster), und
-// nur die Marke — die Brücke sieht sie nie. Mit ihr meldet er den Zustand der Welt-UI jetzt und vor der ersten Nachricht
-// seit der letzten Marke (vor der Tat, ehe die Brücke sie las); trägt die Marke `esc`, drückt er vorher Esc, trägt sie `werk`,
-// den Knopf „In der Welt ansehen" (was die Welt darauf der Heimat schickt, steht dort vor der Marke).
+// nur die Marke — die Brücke sieht sie nie. Mit ihr meldet er den Zustand der Welt-UI jetzt (den Vorher-Zustand liest die
+// Probe vor der Tat, `zustand`); trägt die Marke `esc`, drückt er vorher Esc, trägt sie `werk`, den Knopf „In der Welt
+// ansehen" (was die Welt darauf der Heimat schickt, steht dort vor der Marke).
 async function rueckHoerer(page, ui) {
     const el = await page.$("#portal-overlay iframe.portal-frame");
     const fr = el && (await el.contentFrame());
@@ -472,21 +469,17 @@ async function rueckHoerer(page, ui) {
             const e = ui && document.querySelector(ui.sel);
             return e ? (ui.feld === "value" ? e.value : (e.textContent || "").trim()) : null;
         });
-        let frisch = true;
-        let vor = null;
         window.__schleuseHin = (ev) => {
             const d = ev.data;
-            if (!d || typeof d.__schleuse !== "string") {
-                if (frisch) (vor = lies()), (frisch = false);
-                return;
-            }
+            if (!d || typeof d.__schleuse !== "string") return;
             ev.stopImmediatePropagation();
             if (d.esc) window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
             const knopf = d.werk && document.querySelector(".h-werk");
             if (knopf) knopf.click();
-            const jetzt = lies();
-            window.parent.postMessage({ __schleuse: d.__schleuse, vor: frisch ? jetzt : vor, ui: jetzt, knopf: !!knopf }, "*");
-            frisch = true;
+            const antwort = () => window.parent.postMessage({ __schleuse: d.__schleuse, ui: lies(), knopf: !!knopf }, "*");
+            // trägt die Marke `bild`, gibt der Rück-Hörer die Bilder der Welt frei und kehrt hinter ihrem ersten zurück
+            if (d.bild) window.__bildLos(), requestAnimationFrame(antwort);
+            else antwort();
         };
         window.addEventListener("message", window.__schleuseHin, true);
     }, ui);
@@ -499,7 +492,7 @@ async function rueckHoerer(page, ui) {
 // der Heimat, während die Marke reiste), zaehler, offen (das Overlay danach), knopf (der Rück-Hörer fand ihn).
 async function schleuse(page, weg, welt, tat) {
     const t0 = Date.now();
-    if (!hinFrame) hinFrame = await rueckHoerer(page, welt?.ui || null);
+    if (!hinFrame) hinFrame = await rueckHoerer(page, welt?.ui);
     const marke = `schleuse-${++schleuseNr}`;
     const s = await page.evaluate(
         async (m, weg, tat) => {
@@ -528,22 +521,22 @@ async function schleuse(page, weg, welt, tat) {
             if (tat?.route) await r._portalRouteDsl(["chain", tat.route[0]], tat.route[1], () => {});
             if (tat?.peer) w.postMessage(tat.peer, "*");
             if (tat?.fremd) fremd.contentWindow.postMessage({ __fremd: true, nachricht: tat.fremd }, "*");
-            const marke = { __schleuse: m, esc: weg === "esc", werk: weg === "werk" };
+            const marke = { __schleuse: m, esc: weg === "esc", werk: weg === "werk", bild: weg === "bild" };
             if (weg === "fremd") fremd.contentWindow.postMessage({ __fremd: true, nachricht: marke }, "*");
             else w.postMessage(marke, "*");
             await zurueck;
             return {
-                vor: { journal: journalVor, ui: antwort ? antwort.vor : null },
-                nach: { journal: K.journal(), ui: antwort ? antwort.ui : null },
+                vor: { journal: journalVor },
+                nach: { journal: K.journal(), ui: antwort.ui },
                 enterImFenster: k ? k.enters - enter0 : 0,
                 zaehler: k ? K.zaehler() : null,
                 offen: !!r._portalOverlay,
-                knopf: !!antwort?.knopf,
+                knopf: antwort.knopf,
             };
         },
         marke,
         weg,
-        tat || null
+        tat
     );
     schleusenZeit.n++;
     schleusenZeit.ms += Date.now() - t0;
@@ -558,7 +551,7 @@ async function zustand(page, welt) {
     let ui = null;
     if (welt.ui) {
         // der Rahmen der Welt ist der des Rück-Hörers (`hinFrame`, gehängt in der ersten Schleuse je Welt), er liest wie er
-        ui = hinFrame ? await hinFrame.evaluate(() => window.__lies()).catch(() => null) : null;
+        ui = await hinFrame.evaluate(() => window.__lies()).catch(() => null);
     }
     return { journal, ui };
 }
@@ -593,20 +586,25 @@ async function pruefeWelt(page, welt, lies) {
     const k1Rot = (n) => ((aus.k.K1 = false), aus.notiz.push(n));
     const vor = await page.evaluate(abdruck, true);
     const b = await betreten(page, welt);
-    if (!b?.ok) return k1Rot(b?.fehler || "betreten fehlgeschlagen"), aus;
+    if (!b.ok) return k1Rot(b.fehler), aus;
     // K1: die ready und das load der Welt (nach dem load ist das enter des load-Hörers geschickt), dann klingt der Handshake
     // durch die Schleuse aus, bis die Heimat während der Reise einer Marke kein enter mehr schickt: jedes enter davor ist dann
     // beantwortet, und keine Antwort brachte ein neues (ein Ping-Pong schickt in jeder Reise eins und ist nach dem vierten
     // enter rot, K2).
-    let z = await bereitBis(page, welt.id);
+    await bereitBis(page, welt.id);
     aus.k.K1 = true;
     let s = await schleuse(page, "heimat", welt);
     while (s.enterImFenster && s.zaehler.enters <= 3) s = await schleuse(page, "heimat", welt);
-    z = s.zaehler;
+    const z = s.zaehler;
     const ruhig = !s.enterImFenster;
-    // Der Rahmen der Welt ist der des Rück-Hörers (für K7, K8, die Zusatz-Proben, K6 und K5 derselbe). K8 drüben: der
-    // Handshake klang aus — jedes enter der Heimat ist gelesen, die Hülle hält den Reisenden
-    if (b.weg) Object.assign(aus, { weg: b.weg, vor, drueben: hinFrame ? await hinFrame.evaluate(abdruck, false) : {} });
+    // K2 still: die Welt spricht nur als Antwort — ihr erstes Bild, erst jetzt freigegeben (die Marke kehrt hinter ihm
+    // zurück), schickt der Heimat kein Ereignis
+    const bild = await schleuse(page, "bild", welt);
+    const still = bild.nach.journal === bild.vor.journal;
+    // Der Rahmen der Welt ist der des Rück-Hörers (für K7, K8, die Zusatz-Proben, K6 und K5 derselbe; nach der ersten Schleuse
+    // steht er immer, sonst warf sie). K8 drüben: der Handshake klang aus — jedes enter der Heimat ist gelesen, die Hülle hält
+    // den Reisenden
+    if (b.weg) Object.assign(aus, { weg: b.weg, vor, drueben: await hinFrame.evaluate(abdruck, false) });
     // Meldet die Welt ihr Wörterbuch in der ready, übernimmt die Heimat es (Stufe „nativ", `_portalReceiveManifest`).
     if (z.readyDsl && z.stufe !== "nativ") k1Rot(`die ready trägt ein Wörterbuch, die Heimat steht auf „${z.stufe}"`);
     // Das Manifest gegen das SOLL in WELTEN, gelesen wie die Welt es liest (dieselben Bytes des Servers): eine Soll-Welt
@@ -637,13 +635,15 @@ async function pruefeWelt(page, welt, lies) {
             k1Rot(`das Manifest der Welt kommt nicht an: Stufe „${z.stufe}", Label „${z.label}"${fehlt.length ? ", es fehlen " + fehlt.slice(0, 3).join("/") : ""}`);
     }
     if (welt.mitgebracht) {
-        const k7 = hinFrame ? await mitgebrachtPruefen(page, hinFrame, welt.mitgebracht) : { ok: false, notiz: ["Welt-Frame nicht gefunden"] };
+        const k7 = await mitgebrachtPruefen(page, hinFrame, welt.mitgebracht);
         aus.k.K7 = k7.ok;
         aus.notiz.push(...k7.notiz);
     }
-    aus.k.K2 = ruhig && z.enters <= 3;
+    const endlich = ruhig && z.enters <= 3;
+    aus.k.K2 = endlich && still;
+    if (!still) aus.notiz.push("die Welt spricht aus ihrem ersten Bild, nicht als Antwort");
     aus.handshake = { readys: z.readys, enters: z.enters };
-    if (!aus.k.K2)
+    if (!endlich)
         aus.notiz.push(
             `Handshake ohne Ende: ${z.enters} enter, ${z.readys} ready${ruhig ? "" : ` (während der letzten Schleuse ${s.enterImFenster} enter)`}`
         );
@@ -687,20 +687,19 @@ async function pruefeWelt(page, welt, lies) {
     const nach = await bisWirkung(page, welt, s4.nach, k4Pruef);
     let k4 = k4Pruef(nach);
     if (!k4) aus.notiz.push("die Heimat-Form chain wirkt nicht sichtbar");
-    if (welt.zusatz && hinFrame) {
+    if (welt.zusatz) {
         const z2 = await welt.zusatz(page, hinFrame);
         aus.notiz.push(z2.notiz);
         k4 = k4 && z2.ok;
     }
     if (aus.k.K4 !== false) aus.k.K4 = k4;
     // K6 die GPU: nach einem Bild meldet jedes Gerät der Welt seine Arbeit und mit ihr jede Prüfung, die einen Befehl verwarf
-    const gpu = hinFrame ? await GPU_ABGABE(hinFrame) : [];
+    const gpu = await GPU_ABGABE(hinFrame);
     // K5: Esc in der Welt → die Heimat schließt das Overlay. Der Rück-Hörer drückt Esc und reicht die Marke dahinter
     // zurück: kommt sie an, hat die Heimat gelesen, was die Welt auf Esc schickte.
-    const offen = hinFrame ? (await schleuse(page, "esc", null)).offen : true;
-    aus.k.K5 = !!hinFrame && !offen;
+    aus.k.K5 = !(await schleuse(page, "esc", null)).offen;
     if (!aus.k.K5) {
-        aus.notiz.push(hinFrame ? "Esc bringt nicht heim" : "Welt-Frame nicht gefunden");
+        aus.notiz.push("Esc bringt nicht heim");
         await page.evaluate(() => r._portalOverlay && r.exitPortal());
     }
     // K8 nach der Heimkehr: jeder Teil trägt vor dem Tor, drüben und daheim dieselben Bytes
@@ -726,10 +725,18 @@ async function lauf(welten, taeter) {
         const page = await browser.newPage();
         await page.setViewport({ width: 1280, height: 720 });
         await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL); // in jedem Frame: die Prüfung jedes GPU-Geräts beim Namen (K6)
+        // DIE ZEITFOLGE DES TRÄGEN LÄUFERS (K2 still): jede Welt hält ihre Bild-Rückrufe, bis die Probe nach dem Handshake ihr
+        // erstes Bild freigibt — auf jedem Rechner kommt es dann, wie unter Last in der CI, nach dem letzten enter (schwarm
+        // schickte ihr Erwachen aus ihm: K3 rot ohne fremde Wirkung, w3v-brand-bild c31fb1cf)
         await page.evaluateOnNewDocument(() => {
-            if (window.top !== window) return;
-            window.__anazhHeadlessNullRenderer = true;
-            window.__anazhGateNoFoundry = true;
+            if (window.top === window) return (window.__anazhHeadlessNullRenderer = window.__anazhGateNoFoundry = true);
+            const raf = requestAnimationFrame.bind(window);
+            let halt = [];
+            window.requestAnimationFrame = (f) => (halt ? halt.push(f) : raf(f));
+            window.__bildLos = () => {
+                halt.forEach(raf);
+                halt = null;
+            };
         });
         await s.zeige(page, 60000);
         await page.waitForFunction(
@@ -786,7 +793,7 @@ function drucke(e) {
     const hs = e.handshake ? ` ready ${e.handshake.readys} · enter ${e.handshake.enters}` : "";
     const ew = e.stumm === null ? "" : e.stumm ? " · Einzelwort STUMM" : " · Einzelwort wirkt";
     // Die Zeit je Welt und ihrer Schleusen (der CI-Schritt trägt sonst nur seine Summe).
-    const zt = e.zeit ? ` · ${e.zeit.s.toFixed(1)} s (Schleusen ${e.zeit.schleusen.n}× ${(e.zeit.schleusen.ms / 1000).toFixed(1)} s)` : "";
+    const zt = ` · ${e.zeit.s.toFixed(1)} s (Schleusen ${e.zeit.schleusen.n}× ${(e.zeit.schleusen.ms / 1000).toFixed(1)} s)`;
     console.log(`  ${e.id.padEnd(14)} ${k}${hs}${ew}${e.echo ? " · Echo" : ""}${zt}${e.notiz.length ? " — " + e.notiz.join("; ") : ""}`);
 }
 
@@ -812,6 +819,7 @@ async function selbsttest() {
         ["Ratsche rot: die Hülle mit Element-Adapter — skeleton ist NEU stumm", v.neu.includes("skeleton"), "neu stumm: " + v.neu.join(",")],
         ["Kontrolle: die chain-Form wirkt trotz Element-Adapter (der Täter trifft nur das Einzelwort)", by.skeleton && by.skeleton.k.K4 === true, ""],
         ["K7 rot: skeleton rendert den Material-Namen als Markup", by.skeleton && by.skeleton.k.K7 === false, by.skeleton ? by.skeleton.notiz.filter((n) => /Markup/.test(n)).join("") : ""],
+        ["K2 rot: skeleton spricht aus ihrem ersten Bild", by.skeleton && by.skeleton.k.K2 === false && by.skeleton.notiz.some((n) => /ersten Bild/.test(n)), ""],
         ["404-Täter getroffen: die Welt fragte ihr Manifest und bekam keins", TAETER_WEG.every((r) => weg.has(r)), [...weg].join(" · ")],
         ...["skeleton", "terrain"].map((id) => [
             `K1 rot: ${id} verliert ihr manifest.json (404), die Soll-Welt beim Namen`,

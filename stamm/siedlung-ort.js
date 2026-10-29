@@ -1530,13 +1530,35 @@ class AnazhRealm_siedlung_ort {
             ort.typ,
             { x: ort.x, y: ort.y, z: ort.z },
             {
-                seed: ((plan.seed >>> 0 || 1) + 97 + k * 7919) >>> 0,
+                seed: this._ausstattungSame(plan, "laterne", k),
                 rotationY: Number.isFinite(l.th) ? -l.th : 0,
                 silent: true,
                 autonomous: !!(so && so.autonomous),
                 ausGesetz: true,
             }
         );
+    }
+    // DER SAME EINES STÜCKS DER AUSSTATTUNG (Laterne · Brunnen · Stand · Hof-Baum): je Siedlung, Art und Nummer `k` im Plan
+    // (`ORT_AUSSTATTUNG`) — der Leser ist das Erlebnis (`_dorfErlebnis`, `_dorfLaterneSetzen`) und sein Abbau
+    // (`_ortAusstattungFaellt`)
+    _ausstattungSame(plan, art, k) {
+        return ((plan.seed >>> 0 || 1) + AnazhRealm.ORT_AUSSTATTUNG[art].ab + k * 7919) >>> 0;
+    }
+    // DIE AUSSTATTUNG FÄLLT (siedlung.K4 Staffel 2): jede Laterne, jeder Brunnen, Stand und Hof-Baum des Plans `plan` (ihre
+    // Samen, in seiner Welt am Ort) — der Plan seines neuen Jahrs stellt sie neu (`_dorfErlebnis`): ihre Nummern wechseln mit ihm.
+    // Die Wandlaterne hängt an ihrem Haus und steht nur mit ihm (`_spawnSettlementSlot`): sie fällt nur an einem Haus aus `weg`
+    // ({x, z, r}: die gefallenen Häuser, r ihre Reichweite).
+    _ortAusstattungFaellt(plan, weg) {
+        const [A, S, o, w] = [AnazhRealm.ORT_AUSSTATTUNG, new Set(), plan.ort, plan.welt];
+        for (const art in A)
+            for (let k = 0; k < (A[art].kappe || (plan.laternen || []).length); k++)
+                S.add(this._ausstattungSame(plan, art, k));
+        for (const e of this.state.architectures.slice()) {
+            const p = e && e._ausGesetz && S.has(e.seed >>> 0) && e.position;
+            if (!p || p.x < o.x + w.x0 || p.x > o.x + w.x1 || p.z < o.z + w.z0 || p.z > o.z + w.z1) continue;
+            if (e.type !== "wandlaterne_dorf" || weg.some((h) => Math.hypot(h.x - p.x, h.z - p.z) <= h.r))
+                this.removeArchitecture(e, { still: true });
+        }
     }
     // ═══ DORF-ERLEBNIS: der EINE Hebe-Chokepoint für die Nicht-Haus-Schichten des Exports ═══
     // Wege/Feldwege/Platz → Wege-Pool (`_stlWegeBuild`, dieselbe Höhen-Quelle wie die Häuser); Brunnen
@@ -1568,7 +1590,7 @@ class AnazhRealm_siedlung_ort {
                 if (!l || l.wand) continue;
                 const belegt =
                     Number.isFinite(l.x) &&
-                    this._dorfBelegt(origin.x + l.x, origin.z + l.z, ((plan.seed >>> 0 || 1) + 97 + k * 7919) >>> 0);
+                    this._dorfBelegt(origin.x + l.x, origin.z + l.z, this._ausstattungSame(plan, "laterne", k));
                 const ort = belegt ? null : this._dorfLaterneOrt(l, origin);
                 if (belegt) k++;
                 else if (ort) this._dorfLaterneSetzen(plan, l, ort, k++, so);
@@ -1577,13 +1599,14 @@ class AnazhRealm_siedlung_ort {
             if (j % AnazhRealm.AUTO_SETTLEMENT.laternenJeTakt) yield;
         }
         if (!Array.isArray(plan.brunnen) || !this.state.blueprints || !this.state.blueprints.brunnen_dorf) return;
+        const AU = AnazhRealm.ORT_AUSSTATTUNG;
         let n = 0;
         for (const b of plan.brunnen) {
-            if (n >= 5) break; // Kappe (Kernel-Brunnen + je 8 Häuser einer)
+            if (n >= AU.brunnen.kappe) break; // Kappe (Kernel-Brunnen + je 8 Häuser einer)
             if (!b || !Number.isFinite(b.x) || !Number.isFinite(b.z)) continue;
             const wx = origin.x + b.x;
             const wz = origin.z + b.z;
-            const same = ((plan.seed >>> 0 || 1) + n * 7919) >>> 0; // deterministisch je Siedlung+Platz
+            const same = this._ausstattungSame(plan, "brunnen", n); // deterministisch je Siedlung+Platz
             if (this._dorfBelegt(wx, wz, same) && ++n) continue;
             if (!this._landAt(wx, wz, 0.2)) continue; // die Wasser-Wand (EINE Quelle)
             const wy = this.getTerrainHeightAt(wx, wz);
@@ -1602,11 +1625,11 @@ class AnazhRealm_siedlung_ort {
         if (Array.isArray(plan.staende) && this.state.blueprints && this.state.blueprints.marktstand_dorf) {
             let m = 0;
             for (const st of plan.staende) {
-                if (m >= 3) break;
+                if (m >= AU.stand.kappe) break;
                 if (!st || !Number.isFinite(st.x) || !Number.isFinite(st.z)) continue;
                 const wx = origin.x + st.x;
                 const wz = origin.z + st.z;
-                const same = ((plan.seed >>> 0 || 1) + 53 + m * 7919) >>> 0;
+                const same = this._ausstattungSame(plan, "stand", m);
                 if (this._dorfBelegt(wx, wz, same) && ++m) continue;
                 if (!this._landAt(wx, wz, 0.2)) continue;
                 const wy = this.getTerrainHeightAt(wx, wz);
@@ -1634,11 +1657,11 @@ class AnazhRealm_siedlung_ort {
         const baumArten = ["baum_eiche", "baum_birke"];
         let t = 0;
         for (const b of Array.isArray(plan.trees) ? plan.trees : []) {
-            if (t >= 12) break;
+            if (t >= AU.baum.kappe) break;
             if (!b || !Number.isFinite(b.x) || !Number.isFinite(b.z)) continue;
             const wx = origin.x + b.x;
             const wz = origin.z + b.z;
-            const seedT = ((plan.seed >>> 0 || 1) + 31 + t * 7919) >>> 0;
+            const seedT = this._ausstattungSame(plan, "baum", t);
             if (this._dorfBelegt(wx, wz, seedT) && ++t) continue;
             if (!this._landAt(wx, wz, 0.2)) continue;
             const wy = this.getTerrainHeightAt(wx, wz);
@@ -1850,15 +1873,23 @@ class AnazhRealm_siedlung_ort {
         akt.then(ende, ende);
         return akt;
     }
-    // Was das Dorf noch baut: die Akte im Flug und die Häuser des Zugs im Takt (und sein Gang, `_dorfErlebnis`) samt dem Export
-    // ihrer Zelle (`_tickAutoSettlement`)
+    // Was das Dorf noch baut: die Akte im Flug, das Wachstum eines Orts (`_ortWaechst` im Flug, seine Züge in
+    // `_ortWachsHaeuser`) und die Häuser des Zugs im Takt (und sein Gang, `_dorfErlebnis`) samt dem Export ihrer Zelle
+    // (`_tickAutoSettlement`)
     // — der Zug nur, solange sein Takt lebt (`_dorfTaktLebt`, dasselbe Urteil wie der Term „dorf" des ersten Weltbilds): ein Ort
     // ohne Dorf-Zug hält ihn an, und ein Zug, den kein Takt baut, hielt die Welt ewig offen (CI 39780312347: „Dorf offen 18").
     _dorfOffen() {
-        const q = this._dorfTaktLebt() && this._autoSettlementQueue;
+        const lebt = this._dorfTaktLebt();
+        const [q, H] = [lebt && this._autoSettlementQueue, lebt && this._ortWachsHaeuser];
         const zug =
             q && q.plan && Array.isArray(q.plan.slots) ? Math.max(0, q.plan.slots.length - q.idx) + !!q.gang : 0;
-        return (this._dorfImFlug | 0) + zug + (this._autoSettlementPendingKey ? 1 : 0);
+        return (
+            (this._dorfImFlug | 0) +
+            zug +
+            (this._autoSettlementPendingKey ? 1 : 0) +
+            (this._ortWachsFlug ? 1 : 0) +
+            (H ? H.size : 0)
+        );
     }
     async _dorfAkt(opts) {
         const o = opts && typeof opts === "object" ? opts : {};
@@ -1888,6 +1919,9 @@ class AnazhRealm_siedlung_ort {
                 return null;
             }
         }
+        // DAS JAHR DES AKTS (siedlung.K4, „dorf 7 300 jahr 1560", `spawn_village` mit Jahr): es wählt die Epoche seiner
+        // Zeitachse (fachwerk `epocheImJahr`) — der Ort steht am Ende ihrer Spanne, die Zahl ist die Größe seiner Gegenwart
+        if (Number.isFinite(o.jahr)) o.epoche = AnazhRealm.Gesetz("fachwerk:epocheImJahr")(o.jahr);
         // eine verlangte Epoche ohne Zahl nimmt die Größe ihrer Klasse (fachwerk DORF, EPOCHEN.groesse), nie die des Dorfs
         if (o.nHAusGesetz && nH === undefined && !o.epoche) {
             const SG = AnazhRealm._siedlungGesetz();
@@ -1942,6 +1976,7 @@ class AnazhRealm_siedlung_ort {
                         epoche: o.epoche,
                         budget: o.budget,
                         autonomous: o.autonomous || undefined,
+                        wachs: this._ortWachsAnfang(plan),
                     })
                 );
             this._spawnSettlementErlebnis(plan, anchor, { key: dKey, autonomous: !!o.autonomous });
@@ -2433,6 +2468,7 @@ class AnazhRealm_siedlung_ort {
                 wx: b.anker.x,
                 wz: b.anker.z,
                 ort,
+                wachs: this._ortWachsAnfang(v2),
             };
             this._autoSettlementQueue = this._dorfZug(
                 v2,
@@ -2811,6 +2847,9 @@ class AnazhRealm_siedlung_ort {
                     `Siedlung „${q.plan.name || "?"}" gewachsen (Zelle ${q.cellKey}, ${q.plan.slots.length} Slots).`,
                     "INFO"
                 );
+                // nach dem Wachstum (`_ortWaechst`) stellen sich die Bewohner aus dem neuen Plan auf: ihre Liste ist seine Funktion
+                const S = q.waechst && this._bewohnerSiedlungen && this._bewohnerSiedlungen.get(q.cellKey);
+                if (S) this._bewohnerFort(S);
             }
             return;
         }
@@ -2827,11 +2866,7 @@ class AnazhRealm_siedlung_ort {
         if (wk) {
             const [k, c] = wk;
             this._stlWegePending = true; // Instanz-Feld (die _editSaveTimer-Klasse)
-            const akt = k.startsWith("d:"); // der Akt eines Satzes oder des Nexus (`_dorfAkt`) trägt seine eigene Anfrage
             const anker = { x: c.x, z: c.z };
-            // derselbe Grund der Trasse (siedlung.K3): der Export liest das Raster dort, wo seine Gassen lagen (ein Ort ohne wx/wz
-            // stammt von vor der Trasse und lag eben)
-            const trasse = Number.isFinite(c.wx) && Number.isFinite(c.wz) ? { x: c.wx, z: c.wz } : undefined;
             const wieder = (plan2) =>
                 plan2 &&
                 this._ortWahl(plan2, { x: c.x, z: c.z }, false, null, true).then((v2) => {
@@ -2852,17 +2887,13 @@ class AnazhRealm_siedlung_ort {
                         }
                     );
                 });
-            this._foundryRequestSettlement(
-                akt
-                    ? { seed: c.seed, nH: c.nH, epoche: c.epoche, budget: c.budget, ort: trasse }
-                    : { seed: c.seed, nH: c.nH, epoche: this._siedlungEpoche(c.seed), ort: trasse },
-                k === "start"
-            )
+            this._foundryRequestSettlement(this._ortDp(k, c), k === "start")
                 .then(wieder)
                 .catch(this._ortWahlWartet(k))
                 .then(() => (this._stlWegePending = false));
             return; // EIN Dorf-Akt pro Tick
         }
+        if (this._ortWachstumTakt(playerPos)) return; // EIN Dorf-Akt pro Tick
         // Start-Dorf zuerst (einmalig je Welt) — bestellt schon sein Wecker am Buch (`_startDorfAmBuch`), der Takt fängt den Rest
         if (this._startDorfBestellen(playerPos)) return; // EIN Dorf-Akt pro Tick
         if (!this._autoSettlementRejected) this._autoSettlementRejected = new Set(); // Instanz-Feld (die _editSaveTimer-Klasse)
@@ -2911,6 +2942,145 @@ class AnazhRealm_siedlung_ort {
                 this._autoSettlementZelle(pcx + dx, pcz + dz, true, playerPos, cells, V, fliegt)
             )
                 return;
+        }
+    }
+    // DAS GEDÄCHTNIS DES WACHSTUMS (siedlung.K4 Staffel 2): ein Ort mit Chronik beginnt im Jahr seines Plans, ohne Kraft, zur Uhr
+    // der Welt; ohne Chronik (keine Zeitachse) wächst er nicht
+    _ortWachsAnfang(plan) {
+        return plan && plan.chronik
+            ? { jahr: plan.jahr + plan.spanne, kraft: 0, uhr: this.state.spielZeit }
+            : undefined;
+    }
+    // DER ORT WÄCHST IN SPIELZEIT (siedlung.K4 Staffel 2): je `SIEDLUNG_WACHS.taktS` s der Welt-Uhr rechnet jeder Ort mit Chronik,
+    // der in dieser Sitzung steht (seine Wege, `_stlWegeKeys`) und dessen Rand der Spieler auf `nearM` naht, das Gesetz seines
+    // Wachstums bis zur Uhr (fachwerk `wachstum`: die Kraft seiner Bewohner, ihre Furcht aus seinen Akten nach dem EINEN
+    // Furcht-Gesetz) — sein Gedächtnis (`wachs`) geht mit; trägt das Jahr ein Los, das sein Plan nicht trägt, wird er am neuen Jahr
+    // Welt (`_ortWaechst`). Ein ferner Ort holt nach, wenn der Spieler naht (das Gesetz ist taktfrei). EIN Ort zur Zeit; der Zug
+    // seiner neuen Häuser tritt in den nächsten freien Takt. Jeder nahe Ort rechnet jeden Takt — seine Uhr (`wachs.uhr`) sagt,
+    // ob er ihn schon rechnete; bis w3w verschluckte ein Nachbar, der wuchs, den Takt jedes Orts nach ihm. Rückgabe true = der
+    // Takt tat seinen Dorf-Akt.
+    _ortWachstumTakt(p) {
+        if (this._ortWachsFlug || this._autoSettlementQueue) return false; // ein Zug zur Zeit: keiner fällt halb gebaut
+        const H = this._ortWachsHaeuser;
+        if (H && H.size) {
+            const [k, q] = H.entries().next().value;
+            H.delete(k);
+            this._autoSettlementQueue = q;
+            return true;
+        }
+        const [st, tS] = [this.state, AnazhRealm.SIEDLUNG_WACHS.taktS];
+        const takt = Math.floor(st.spielZeit / tS);
+        if (takt === this._ortWachsTakt) return false;
+        const [cells, FC, FG] = [
+            (st.worldMeta || {}).settlementCells || {},
+            globalThis.__fachwerkCore,
+            AnazhRealm._furchtGesetz(),
+        ];
+        for (const k in cells) {
+            const c = cells[k];
+            const alt =
+                c &&
+                c.wachs &&
+                Math.floor(c.wachs.uhr / tS) < takt &&
+                this._stlWegeKeys &&
+                this._stlWegeKeys.has(k) &&
+                this._ortPlaene.get(c.ort);
+            const nah = AnazhRealm.AUTO_SETTLEMENT.nearM + this._siedlungMehrM(c && c.nH);
+            if (!alt || !alt.chronik || (c.x - p.x) ** 2 + (c.z - p.z) ** 2 > nah * nah) continue;
+            const furcht = (a) => FG.furchtErinnert(a, FG.F);
+            const Z = FC.wachstum(alt.chronik, c.wachs, c.akten || [], st.spielZeit, furcht, FG.F.fluchtJeFurcht);
+            c.wachs = { jahr: Z.jahr, kraft: Z.kraft, uhr: Z.uhr };
+            if (Z.jahr === alt.jahr + alt.spanne) continue;
+            this._ortWachsFlug = this._ortWaechst(k, c, alt)
+                .catch((e) => this._stoffBruch(`das Wachstum von „${alt.name || k}"`, e))
+                .finally(() => (this._ortWachsFlug = null));
+            return true;
+        }
+        this._ortWachsTakt = takt; // Instanz-Feld (die _editSaveTimer-Klasse): jeder nahe Ort rechnete diesen Takt
+        return false;
+    }
+    // DER ORT WIRD AM NEUEN JAHR WELT (siedlung.K4 Staffel 2): der Export am Jahr seines Gedächtnisses (`_ortDp`) wird an genau
+    // seinem Ort gewählt (`_ortNeuPlanen`: derselbe Weg, auf dem seine Gasse einem gesetzten Haus weicht — Erdbau, das Objekt des
+    // Plans, Wege, das Netz der Bewohner). Vor dem Tausch fällt jedes Haus, dessen Slot der neue Plan nicht trägt (Same, Kultur,
+    // Ort: das Los wird neu bebaut), und die Ausstattung des alten (ihre Nummern wechseln); danach steht die Mauer neu, wenn sie
+    // wechselt (der Ring des Schnitts wächst, nach MAUER_BIS fällt er), und der Zug hebt die neuen Häuser und die Ausstattung
+    // (`_dorfZugOffen`, `_dorfErlebnis`: was steht, bleibt); ist er durch, stellen sich die Bewohner neu auf (`_tickAutoSettlement`).
+    async _ortWaechst(k, c, alt) {
+        const plan = await this._foundryRequestSettlement(this._ortDp(k, c));
+        if (!plan) return false;
+        const mauer = JSON.stringify(alt.mauer || null);
+        const id = (s) => `${s.seed >>> 0}:${s.kultur}@${Math.round(s.x * 20)},${Math.round(s.z * 20)}`;
+        const vorTausch = (a, neu) => {
+            const [traegt, weg] = [new Set(neu.slots.map(id)), []];
+            for (const s of a.slots) {
+                const e = !traegt.has(id(s)) && this._dorfHaus(a.ort.x + s.x, a.ort.z + s.z, s.seed >>> 0);
+                const fp = e && this._grundrissVon(s);
+                if (e) weg.push({ x: e.position.x, z: e.position.z, r: (fp ? Math.hypot(fp.ex, fp.ez) : 4) + 1.5 });
+                if (e) this.removeArchitecture(e, { still: true });
+            }
+            this._ortAusstattungFaellt(a, weg);
+        };
+        if (!(await this._ortNeuPlanen(c.ort, plan, vorTausch))) return false;
+        if (JSON.stringify(alt.mauer || null) !== mauer) this._stlMauerNeu(alt);
+        const so = { key: k, autonomous: !!c.autonomous };
+        const gang = this._dorfErlebnis(alt, { x: alt.ort.x, z: alt.ort.z }, so);
+        const q = this._dorfZug(this._dorfZugOffen(alt, alt.ort), alt.ort, k, gang);
+        (this._ortWachsHaeuser || (this._ortWachsHaeuser = new Map())).set(
+            k,
+            Object.assign(q, { so, wieder: true, waechst: true })
+        );
+        if (typeof this._scheduleEditSave === "function") this._scheduleEditSave();
+        this.log(
+            `Siedlung „${alt.name || "?"}" (${k}) wächst ins Jahr ${c.wachs.jahr}: ${alt.slots.length} Slots.`,
+            "INFO"
+        );
+        return true;
+    }
+    // DIE MAUER WÄCHST MIT (siedlung.K4 Staffel 2, `_ortWaechst`): wechselt die Mauer des Plans `plan` mit seinem Jahr (der Ring
+    // des Schnitts wächst mit der Stadt, nach MAUER_BIS fällt er), fallen ihre Streifen (Maß 0, der Pool behält die Plätze) und
+    // ihre Linie in der Wege-Karte, und die Mauer seines Plans steht neu
+    _stlMauerNeu(plan) {
+        const [wk, P] = [this._wegeKarteEnsure(), this.state.stlMauer];
+        const null4 = this._stlMauerNull || (this._stlMauerNull = new THREE.Matrix4().makeScale(0, 0, 0));
+        for (let i = wk.siedlungen.length - 1; i >= 0; i--) {
+            const b = wk.siedlungen[i];
+            if (b.mauerVon !== plan) continue;
+            wk.siedlungen.splice(i, 1);
+            if (wk.raeumen.includes(b)) wk.raeumen.splice(wk.raeumen.indexOf(b), 1);
+            for (let k = b.streifen[0]; P && k < b.streifen[1]; k++) P.mesh.setMatrixAt(k, null4);
+            if (P) P.mesh.instanceMatrix.needsUpdate = true;
+            this._grundrissFaellt(b.x0, b.z0, b.x1, b.z1);
+        }
+        return this._stlMauerBuild(plan, plan.ort);
+    }
+    // DER AKT EINES ORTS AUS SEINEM GEDÄCHTNIS (speicher.K3): sein Same, seine Zahl, seine Epoche (der Akt eines Satzes oder des
+    // Nexus trägt seine eigene, die Zelle ihre Legende), sein Budget, das Jahr seines Wachstums (`wachs`, siedlung.K4 Staffel 2) und
+    // der Grund seiner Trasse (siedlung.K3: der Export liest das Raster, wo seine Gassen lagen; ein Ort ohne wx/wz stammt von vor
+    // der Trasse und lag eben), dazu der Kern seines Rings (`kern`). Leser: die Wiederkehr (`_tickAutoSettlement`) und das
+    // Wachstum (`_ortWaechst`).
+    _ortDp(k, c) {
+        const akt = k.startsWith("d:");
+        return {
+            seed: c.seed,
+            nH: c.nH,
+            epoche: akt ? c.epoche : this._siedlungEpoche(c.seed),
+            budget: akt ? c.budget : undefined,
+            jahr: c.wachs ? c.wachs.jahr : undefined,
+            kern: c.kern,
+            ort: Number.isFinite(c.wx) && Number.isFinite(c.wz) ? { x: c.wx, z: c.wz } : undefined,
+        };
+    }
+    // DAS HAUS WIRD KERN EINES RINGS (siedlung.K4 Staffel 2): legt ein gesetztes Haus seinen Grund (die Platte p, `haus:`) im Reich
+    // eines wachsenden Orts (`reich`: seine Slots + 16 m wie die Ort-Wahl), trägt dessen Gedächtnis die Akte `kern` — die Platte
+    // im Rahmen des Orts und das Jahr seines Plans, der steht: die Lose danach wachsen um das Haus (fachwerk `ringUm`), die
+    // Wiederkehr und jedes Wachstum lesen sie (`_ortDp`). Ein Ort trägt EINEN Kern. Leser: `_ortFremdPruefen`.
+    _ortKernAkt(p, reich) {
+        const cells = (this.state.worldMeta || {}).settlementCells || {};
+        for (const k in cells) {
+            const c = cells[k];
+            const v = c && c.wachs && !c.kern && this._ortPlaene && this._ortPlaene.get(c.ort);
+            if (v && v.chronik && Math.hypot(p.cx - c.x, p.cz - c.z) <= reich(v))
+                c.kern = { x: p.cx - c.x, z: p.cz - c.z, phi: p.phi, ex: p.ex, ez: p.ez, ab: v.jahr + v.spanne };
         }
     }
     // DIE ZELLE, DIE WIEDERKEHRT: der erste Ort des Gedächtnisses (in der Folge seiner Gründung), der nahe dem Spieler steht und
@@ -2980,11 +3150,15 @@ class AnazhRealm_siedlung_ort {
         );
         return Object.assign({}, plan, { slots, laternen });
     }
-    // Steht der Bau eines Orts (sein Same `same`) an (x, z)? Der Zug, der wiederkehrt, hebt nur, was nicht steht.
-    _dorfSteht(x, z, same) {
-        return this.state.architectures.some(
+    // Der Bau eines Orts (sein Same `same`) an (x, z), oder undefined. Der Zug, der wiederkehrt, hebt nur, was nicht steht; das
+    // Wachstum nimmt, was sein neuer Plan nicht trägt (`_ortWaechst`).
+    _dorfHaus(x, z, same) {
+        return this.state.architectures.find(
             (e) => e && e.seed === same && Math.abs(e.position.x - x) < 0.05 && Math.abs(e.position.z - z) < 0.05
         );
+    }
+    _dorfSteht(x, z, same) {
+        return !!this._dorfHaus(x, z, same);
     }
     // Ist der Platz eines Stücks des Orts belegt — es steht schon, oder eine Tat nahm es? Er zählt dann als gesetzt: der Same
     // der folgenden Stücke bleibt der seiner ersten Gründung.
@@ -3045,6 +3219,17 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_ort]);
 // DAS LAND EINES WERKS (m über dem Wasser des Gesetzes, `_fundamentLand` → `_landAt`): so hoch liegt jeder Punkt eines
 // Fundaments samt Saum und Vorplatz über dem Spiegel — die Wand jedes Werks und die Ort-Wahl (`ortTraegt` im Ort-Faden) urteilen gleich.
 AnazhRealm.WERK_LAND_M = 0.2;
+// DIE AUSSTATTUNG EINES ORTS (`_ausstattungSame`): je Art der Versatz ihres Samens und ihre Kappe (Brunnen: der Kernel-Brunnen und je
+// 8 Häuser einer; Stände: Markt-Plätze; Hof-Bäume: das Architektur-LOD/Instanzen-Budget; die Laterne zählt die Liste des Plans)
+AnazhRealm.ORT_AUSSTATTUNG = Object.freeze({
+    laterne: Object.freeze({ ab: 97 }),
+    brunnen: Object.freeze({ ab: 0, kappe: 5 }),
+    stand: Object.freeze({ ab: 53, kappe: 3 }),
+    baum: Object.freeze({ ab: 31, kappe: 12 }),
+});
+// DAS WACHSTUM DER ORTE IN DER WELT (siedlung.K4 Staffel 2, `_ortWachstumTakt`): je so viele s der Welt-Uhr rechnet ein naher
+// Ort sein Gesetz (fachwerk `wachstum`, taktfrei: ein seltenerer Takt holt nach) und zeigt, was gewachsen ist
+AnazhRealm.SIEDLUNG_WACHS = Object.freeze({ taktS: 300 });
 AnazhRealm.AUTO_SETTLEMENT = Object.freeze({
     nearM: 260,
     // der Vorlauf-Ring vor `nearM` (siedlung.K5, `_dorfBereiten`): 160 m tragen Export und Ort-Wahl auch im Wagen

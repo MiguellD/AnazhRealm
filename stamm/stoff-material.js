@@ -2385,6 +2385,7 @@ class AnazhRealm_stoff_material {
         // und pro Frame in `_loopRender` gespiegelt → ein Studio-Live-Ingest (`_foundryIngestRenderConfig`)
         // greift sofort in der Shader-Maske (kein eingefrorener Zweit-Satz).
         const _D = AnazhRealm.LOD_DISTANCES;
+        this._stufenSchirm(); // die Schwellen aus dem Gesetz des Schirms, bevor die Masken sie säen
         const u = {
             uLodRef: _T.uniform(_ref),
             uLodMaskOn: _T.uniform(st.lodMaskOn === false ? 0 : 1),
@@ -2403,8 +2404,8 @@ class AnazhRealm_stoff_material {
             // dem höchsten Werfer): dort lagen nahe Bäume 145 m „weit", jenseits jeder Stufe, und die Maske
             // verwarf ihre Schatten-Fragmente alle.
             uLodAuge: _T.uniform(new THREE.Vector3()),
-            // DER PERF-STRECK der Wahrnehmungs-Distanz (_lodPerfMul, je Frame gespiegelt): jede Maske misst
-            // die Auge-Distanz × uLodPerf — dieselbe Distanz, nach der die CPU die Stufen legt.
+            // DER STRECK der Wahrnehmungs-Distanz (die Ankunft aus der Ferne `_ankunftsFerne`, je Frame gespiegelt; kein Regler,
+            // lod.K5): jede Maske misst die Auge-Distanz × uLodPerf — dieselbe Distanz, nach der die CPU die Stufen legt.
             uLodPerf: _T.uniform(1),
             // DAS ZIEL DER DURCHSICHT (xyz) und ihr Radius (w), dazu das Auge, für das es gilt (`uKamAuge`: die
             // Stellung der Spieler-Kamera, nie die Kamera einer Sonde): `_kamZielSetzen` aus `_loopCamera`,
@@ -2619,7 +2620,7 @@ class AnazhRealm_stoff_material {
                 // Instanz-Attribut (verdeckt-demotierte Bäume blenden VOLL; Default 0 = altes Verhalten).
                 const _dist = opts.distNode;
                 if (!_dist) throw this._blendeBruch("die Karte reicht keine Distanz (opts.distNode)");
-                let _vCD = _dist.mul(_lu.uLodPerf); // derselbe Perf-Streck wie die CPU (_lodPerfMul)
+                let _vCD = _dist.mul(_lu.uLodPerf); // derselbe Streck wie die CPU (`_lodPerceptionDistance`)
                 if (opts.visHeightNode) {
                     // × min(uLodRef/Sichthöhe, 1) AUF die gestreckte Distanz — bis 04.10. ersetzte dieser Zweig sie
                     // durch die rohe: unter Last (Perf ×1,3) blendete die L1 nach der gestreckten Distanz aus, das
@@ -2642,7 +2643,7 @@ class AnazhRealm_stoff_material {
             const _aLod = T.attribute("aLodLevel", "float");
             const _aH0 = T.attribute("aH0", "float");
             const _aH0L = T.attribute("aH0L", "float");
-            // × uLodPerf: dieselbe Wahrnehmungs-Distanz, nach der die CPU die Stufen legt (_lodPerfMul) — vom Auge zum
+            // × uLodPerf: dieselbe Wahrnehmungs-Distanz, nach der die CPU die Stufen legt (`_lodPerceptionDistance`) — vom Auge zum
             // URSPRUNG der Instanz (`_instanzMitteNode`), wie das Studio und die CPU, nie zum Fragment.
             const _mitte = this._instanzMitteNode(T);
             const _cd = T.length(T.vec2(_auge.x.sub(_mitte.x), _auge.z.sub(_mitte.y))).mul(_lu.uLodPerf);
@@ -2795,6 +2796,10 @@ class AnazhRealm_stoff_material {
                     ["uLodRef", _lu.uLodRef],
                     ["uLodAuge", _lu.uLodAuge],
                     [
+                        "uLodD0 · uLodD1 · uLodFade · uLodFade0",
+                        _lu.uLodD0 && _lu.uLodD1 && _lu.uLodFade && _lu.uLodFade0,
+                    ],
+                    [
                         "die Farbe mit Alpha",
                         mat.colorNode && mat.colorNode.rgb !== undefined && mat.colorNode.a !== undefined,
                     ],
@@ -2836,21 +2841,18 @@ class AnazhRealm_stoff_material {
                             .mul(_Tl.fract(_fc.x.mul(0.06711056).add(_fc.y.mul(0.00583715))))
                             .add(_lu.uDitherT)
                     );
-                    const _cfg = AnazhRealm.LOD_DISTANCES;
-                    const _D0 = _cfg.thresh01,
-                        _D1 = _cfg.thresh12,
-                        _FADE = _cfg.fade,
-                        _FADE0 = _cfg.fade0;
                     // Übergangs-Rampen: _f0 = L0→L1-Band (Blatt-Distanz), _f1 = L1→L2/Impostor-Band
                     // (Skelett-Distanz). Laub = ÜBERLAPPENDE Rampen (phytogenesis FIX v37): die Karte
-                    // weicht erst in der oberen Bandhälfte (2f−1) → Deckung bleibt ≥ Maximum, kein Loch.
+                    // weicht erst in der oberen Bandhälfte (2f−1) → Deckung bleibt ≥ Maximum, kein Loch. Die Schwellen und
+                    // Bänder sind die LIVE-Uniforms der EINEN Quelle (das Gesetz des Schirms legt sie, lod.K5) — bis w3v-lod
+                    // standen sie als Zahlen im Programm, eingefroren beim Bau des Stoffs.
                     const _f0 = _vLodDL
-                        .sub(_Tl.float(_D0 - _FADE0))
-                        .div(_Tl.float(_FADE0))
+                        .sub(_lu.uLodD0.sub(_lu.uLodFade0))
+                        .div(_lu.uLodFade0.max(_Tl.float(1e-3)))
                         .clamp(0.0, 1.0);
                     const _f1 = _vLodD
-                        .sub(_Tl.float(_D1 - _FADE))
-                        .div(_Tl.float(_FADE))
+                        .sub(_lu.uLodD1.sub(_lu.uLodFade))
+                        .div(_lu.uLodFade.max(_Tl.float(1e-3)))
                         .clamp(0.0, 1.0);
                     const _fadeOut = _f0.mul(2.0).sub(1.0).clamp(0.0, 1.0).max(_f1);
                     // Dither-Discard als reine Arithmetik: keepRaw = step(fadeOut, dh) (1 = behalten); uLodMaskOn faltet

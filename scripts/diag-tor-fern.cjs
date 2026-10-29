@@ -277,7 +277,8 @@ function deckung(umbauListe, aufblaehen, nurIds) {
 
 // ── F: DIE FERNE STUFE — was der Wirt jenseits der Ring-Mitte zeigt, trägt das Soll der Klasse, und nur L0-Stoff ──
 // Die Stufe bei d liest der EINE Wähler des Wirts (`_stufeNachGrenzen` aus dem Stamm, ohne Zustand wie am Spawn) über den
-// Grenzen der Budget-Zeilen (`ab`, `hyst`; die gezeigten Stufen, nie die NUR-WURF-Stufe — `_archStufenGrenzen`).
+// Grenzen des Gesetzes des Schirms (`_wechselGesetz` am Schirm des Solls, das Buch nach dem Umschlag; `hyst` der Budget-Zeile;
+// die gezeigten Stufen, nie die NUR-WURF-Stufe — `_archStufenGrenzen`, lod.K5).
 // DAS SOLL DER KLASSE: ≤ 120 000 Dreiecke an Genesis Third. Gemessen an Genesis Third (werkbank
 // zaehlen, Rohdatei artifacts/profiband/tore-fern/k64/zaehlen-genesis-third-nachher.json im Arbeits-Klon) stehen dort fest: das
 // Nahe in der Stufe 0 (drachentor 23 192 + Flügel 8 984, geisttor 2 726 + Flügel 4 360 + Wurf 2 132 = 41 394), verkalkt im
@@ -298,13 +299,19 @@ const STUFE_NACH_GRENZEN = Function(
         methodeAus(STAMM, "_stufeNachGrenzen").rumpf +
         "};"
 )();
+const WIRT = (() => {
+    const { AnazhRealm: A, ctx } = stammLib.ladeKlasse(root);
+    const rc = require("./lib/asset-worker-harness.cjs").kanalImVm()({ type: "get-book" }).renderConfig;
+    ctx.__phytoCore.kerneVereinen(rc);
+    A._studioRenderConfig = rc;
+    return A;
+})();
 function stufeBei(K, d) {
     const art = K.PORTAL_RENDER_CONFIG.lod.budget.gate,
         S = K.PORTAL_RENDER_CONFIG.lod.kindStages.gate;
-    const grenzen = S.filter((st) => art[st] && Number.isFinite(art[st].ab) && art[st].nurWurf !== true).map((st) => ({
-        stufe: st,
-        ab: art[st].ab,
-    }));
+    const grenzen = S.slice(1)
+        .filter((st) => art[st] && art[st].nurWurf !== true)
+        .map((st) => ({ stufe: st, ab: WIRT._wechselGesetz("gate", st, 1, 0) }));
     return STUFE_NACH_GRENZEN(d, undefined, { erste: S[0], grenzen, h: art.hyst }, 1);
 }
 const stoffKey = (m) =>
