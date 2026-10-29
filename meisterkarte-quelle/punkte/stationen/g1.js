@@ -1442,7 +1442,7 @@ module.exports = [
     // Sukzession nach; das Bild (`_brandBild`: die Flammen der Front aus derselben Zelle, die das Licht liest, Länge nach Byram, und
     // die Fahne als Linien-Plume mit Körper) und Knistern (`_glutAmOhr`) lesen `brandFeld` wie das Licht. Gemessen: HALT windauf des Flusses
     // nächst der Mess-Wiese (je Zelle, die die Front erreichte und nicht fing, ihr Grund; die Mutante ohne die Feuchte des Orts
-    // brennt ins nasse Ufer), FELS neben der nächsten Stein-Zelle, REGEN (30 s Brand, dann das Wort Regen; die Mutante ohne freies
+    // brennt ins nasse Ufer), FELS die Stein-Zellen, die dieselbe Front erreichte und nicht fing, REGEN (30 s Brand, dann das Wort Regen; die Mutante ohne freies
     // Wasser), LESER im Brand (Licht, Flammen, Fahne, Ohr; DECKUNG der Fahne 8 m über den Flammen, die Mutante Fäden ohne Körper),
     // KANTE der Narbe (am Saum der Asche der Anteil der Gefälle in den Achsen und der Abstand zum 16-m-Raster, die Mutante malt das
     // Quadrat der Zelle), ASCHE an der Zelle des Herds (Asche, Halme; nach der Stufe Gras), ZEIT 2 km fern bei ≥ 2 000 brennenden
@@ -1454,9 +1454,10 @@ module.exports = [
     // GRÜN — Regen 20 s (Mutante 300), Halt 2× am nassen Gras (Mutante: 7 nasse brennen, 4× Halt am Wasser), Fels hält, Asche Y 0,052
     // → nach der Stufe Gras 0,148, je Bild p95 0,3 ms bei 2 000 Zellen (451 der Welt), Verzug 1 s. In der Nacht (Radeon) brannte EINE
     // Zelle als Fleck ohne Flamme, die Fahne ein Faden, die Asche eine Platte mit geraden Kanten im Raster. Am Zweig w3v-brand-bild
-    // (Null-Renderer, Cloud): GRÜN — Halt 22 Zellen, 2× am nassen Gras (Mutante 7 nasse), Regen 20 s (Mutante 300), Flammen 36 bis
-    // 2,75 m, Deckung 0,999 (Mutante 0,156), Kante Achse 0,29 · Linie 1,33 m (Mutante 0,963 · 0), Asche voll 0,81 → Gras 0, je Bild
-    // p95 0,2 ms, Schirm 0,7 ms bei 2 000 Zellen. GPU: an der Station.
+    // (Null-Renderer, Cloud): GRÜN — Halt 95 Zellen, 3× am nassen Gras, 11× am Stein (Mutante 7 nasse), Regen 7 s (Mutante 300), Flammen 21 bis
+    // 2,23 m, Deckung 0,989 (Mutante 0,163), Kante Achse 0,31 · Linie 1,25 m (Mutante 0,963 · 0), Asche voll 0,81 → Gras 0, je Bild
+    // p95 0,2 ms, Schirm 0,7 ms bei 2 000 Zellen. Der Schritt des Brands fällt mit einem Hauch (bis dahin hing ein Lauf, der die Uhr
+    // auf `_brandUhr + schrittS` stellte, an ~0,1 % der Uhren: derselbe Herd trug 0 bis 95 Aschen). GPU: an der Station.
     {
         kriterium: "stoffe.K2",
         staffel: 2,
@@ -1470,7 +1471,7 @@ module.exports = [
             const B = jsonZeile(lauf.stdout, /^BRAND \{/);
             if (!B || !B.halt || !B.regen || !B.zeit || !B.asche || !B.asche.asche)
                 return { gruen: false, zahl: "keine BRAND-Zeile (Exit " + lauf.exit + ")" };
-            const [h, m, f, rg, rm, l, a, z, k, km] = [B.halt, B.haltM, B.fels, B.regen, B.regenM, B.leser, B.asche, B.zeit, B.kante || {}, B.kanteM || {}];
+            const [h, m, rg, rm, l, a, z, k, km] = [B.halt, B.haltM, B.regen, B.regenM, B.leser, B.asche, B.zeit, B.kante || {}, B.kanteM || {}];
             const gruen =
                 /✅ BRAND GRÜN/.test(lauf.stdout) &&
                 h.nass >= 1 &&
@@ -1478,8 +1479,7 @@ module.exports = [
                 h.wasserGebrannt === 0 &&
                 h.nassGebrannt === 0 &&
                 m.nassGebrannt >= 1 &&
-                !!f &&
-                f.gehalten === true &&
+                h.fels >= 1 &&
                 rg.s <= 60 &&
                 rm.s > 60 &&
                 l.licht >= 1 &&
@@ -1500,7 +1500,7 @@ module.exports = [
                 gruen,
                 zahl:
                     "Halt: " + h.brannte + " Zellen brannten, die Front hielt " + h.nass + "× am nassen Gras (ohne die Feuchte des Orts brannten " +
-                    m.nassGebrannt + " nasse, sie hielt " + m.wasser + "× am Wasser) · Fels " + (f ? f.grund : "—") +
+                    m.nassGebrannt + " nasse, sie hielt " + m.wasser + "× am Wasser) · Fels " + h.fels + "× gehalten" +
                     " · Regen löscht nach " + rg.s + " s (Mutante " + rm.s + " s) · Asche " + a.asche.a + " (voll " + a.asche.voll +
                     ") → nach der Stufe Gras " + a.gras.a + " · Kante Achse " + k.achse + ", Linie " + k.linie + " m (Mutante " + km.achse +
                     ", " + km.linie + ") · Licht " + l.licht + ", Flammen " + l.flammen + " bis " + l.lang + " m, Fahne " + l.rauch +
@@ -1759,7 +1759,7 @@ module.exports = [
     // Sukzession kehrt ihr Jungwuchs zurück, nach der letzten Heilung der gewachsene. Die Asche zählt auf ihrer vollen Fläche (die
     // Narbe ist eine weiche Grenze, kein Quadrat). Am Zweig w3v-brand-bild (Null-Renderer, Cloud): GRÜN — auf voller Asche (0,81 der
     // Zelle) kein Halm und kein Kraut, Gras 464/477, Busch 20/23 Kräuter, Sämling 0 → 0,06 → 0,18 → 0,7 → 1 (Skala = Alter),
-    // Gestalt [5 Ordnungen, 1 461 Glieder] gegen [9, 2 933] (Mutante gleich), Wald 76 Bäume: der Brand nimmt 76, Jungwuchs 76, heil 76.
+    // Gestalt [5 Ordnungen, 1 461 Glieder] gegen [9, 2 933] (Mutante gleich), Wald 79 Bäume: der Brand nimmt 79, Jungwuchs 79, heil 79.
     {
         kriterium: "stoffe.K5",
         staffel: 2,
