@@ -145,7 +145,7 @@ const AUSNAHMEN = {
 const SHELL_NPM = { e: false, pipefail: false, fremd: null };
 function shellArt(shell) {
     if (shell == null || shell === "") return { e: true, pipefail: false, fremd: null };
-    const s = String(shell).trim();
+    const s = String(shell).trim().replace(/^env( [A-Z_][A-Z0-9_]*=\S*)+ /, ""); // `env X=… bash …` (der Konsum-Zeuge in voll)
     if (s === "bash") return { e: true, pipefail: true, fremd: null };
     if (s === "sh") return { e: true, pipefail: false, fremd: null };
     if (/^(\S*\/)?(ba)?sh\b/.test(s))

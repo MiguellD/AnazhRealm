@@ -168,16 +168,37 @@ function sammle(ordner) {
 // seiner Verzeichnisse, die ein Prozess zum Lesen öffnet, trägt die Spur: ein Node-Prozess als lies/teil (Verzeichnis: liste),
 // ein fremder Befehl nur über sein `ruft` oder als Wort des Befehls (ein BLINDER FLECK: der Schritt fährt immer) — sonst ROT
 // beim Dateinamen. Was ein fremder Befehl aus .git liest (die Geschichte), steht als blinder Fleck.
-function gegenprobe(befehl, ordner) {
+async function gegenprobe(befehl, ordner) {
     const [spur, st] = [path.join(ordner, "spur"), path.join(ordner, "strace.txt")];
     const env = { ...process.env, KONSUM_ZEUGE: spur, NODE_OPTIONS: `--require=${ZEUGE}`, KONSUM_WURZEL: "" };
     const cp = require("child_process");
-    const strace = ["-f", "--seccomp-bpf", "-y", "-e", "trace=openat,execve,clone,clone3,fork,vfork", "-o", st];
-    const lauf = cp.spawnSync("strace", [...strace, "--", "bash", "-eo", "pipefail", "-c", befehl], {
+    const strace = ["-f", "-I1", "--seccomp-bpf", "-y", "-e", "trace=openat,execve,clone,clone3,fork,vfork", "-o", st];
+    // der Befehl endet mit seiner bash (die Ende-Marke der äußeren), nie mit seinen Waisen: strace löst sich, die Waisen fallen
+    const ende = path.join(ordner, "ende");
+    const huelle = 'bash -eo pipefail -c "$1"; echo $? > "$2"';
+    const kind = cp.spawn("strace", [...strace, "--", "bash", "-c", huelle, "gegenprobe", befehl, ende], {
         cwd: ROOT,
         env,
         stdio: "inherit",
     });
+    await new Promise((ok) => {
+        const uhr = setInterval(
+            () => (fs.existsSync(ende) || kind.exitCode !== null) && (clearInterval(uhr), ok()),
+            500
+        );
+    });
+    kind.kill("SIGTERM");
+    await new Promise((ok) => (kind.exitCode !== null ? ok() : kind.on("exit", ok)));
+    const lauf = {
+        status: fs.existsSync(ende) ? Number(fs.readFileSync(ende, "utf8")) : null,
+        pids: fs.readFileSync(st, "utf8").match(/^\d+/gm),
+    };
+    for (const pid of new Set(lauf.pids))
+        try {
+            process.kill(Number(pid), "SIGKILL");
+        } catch {
+            // schon fort
+        }
     const baum = new Set(
         cp.execFileSync("git", ["ls-files", "-z"], { cwd: ROOT }).toString().split("\0").filter(Boolean)
     );
@@ -243,15 +264,24 @@ module.exports = { imBaum, sammle, gegenprobe, ZEUGE, ARTEN };
 // als Befehl (auch unter dem eigenen NODE_OPTIONS: dann läuft die Datei nur als --require) nie als Zeuge
 const alsBefehl = path.resolve(process.argv[1] || ".") === ZEUGE;
 if (alsBefehl && process.argv.includes("--gegenprobe")) {
-    const ordner = fs.mkdtempSync(path.join(require("os").tmpdir(), "gegenprobe-"));
-    const g = gegenprobe(process.argv[process.argv.indexOf("--gegenprobe") + 1], ordner);
-    console.log(JSON.stringify({ ...g, ordner }, null, 1));
-    console.log(
-        g.fehlt.length
-            ? `❌ ROT — ${g.fehlt.length} gelesene Dateien des Baums fehlen in der Spur: ${g.fehlt.slice(0, 20).join(" · ")}`
-            : `✅ GRÜN — ${g.gelesen} gelesene Dateien des Baums, jede in der Spur oder an einem genannten blinden Fleck (${Object.keys(g.blind).join(" · ") || "keiner"})`
-    );
-    process.exitCode = g.fehlt.length ? 1 : 0;
+    const arg = (n) => process.argv[process.argv.indexOf(n) + 1];
+    const ordner = process.argv.includes("--ordner")
+        ? arg("--ordner")
+        : fs.mkdtempSync(path.join(require("os").tmpdir(), "gegenprobe-"));
+    gegenprobe(arg("--gegenprobe"), ordner).then((g) => {
+        console.log(JSON.stringify({ ...g, ordner }, null, 1));
+        const rot = [
+            g.exit !== 0 && `der Befehl endete mit ${g.exit} — eine rote Spur beweist nichts`,
+            g.fehlt.length &&
+                `${g.fehlt.length} gelesene Dateien des Baums fehlen in der Spur: ${g.fehlt.slice(0, 20).join(" · ")}`,
+        ].filter(Boolean);
+        console.log(
+            rot.length
+                ? `❌ ROT — ${rot.join(" · ")}`
+                : `✅ GRÜN — ${g.gelesen} gelesene Dateien des Baums, jede in der Spur oder an einem genannten blinden Fleck (${Object.keys(g.blind).join(" · ") || "keiner"})`
+        );
+        process.exitCode = rot.length ? 1 : 0;
+    });
 } else if (alsBefehl && process.argv.includes("--sammle")) {
     const arg = (n) => process.argv[process.argv.indexOf(n) + 1];
     const k = sammle(arg("--sammle"));

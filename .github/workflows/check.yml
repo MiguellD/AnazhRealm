@@ -322,19 +322,19 @@ jobs:
         # die Klasse der Gruppe reist an jeden Schritt: die Weiche (scripts/lib/welt-boot.cjs) urteilt mit ihr
         env:
             CI_KLASSE: ${{ matrix.klasse }}
+            KONSUM_ZEUGE: ${{ github.workspace }}/../konsum
+        # DER KONSUM-ZEUGE (Spike „Die CI wählt nach Konsum"): jeder run-Schritt trägt ihn per NODE_OPTIONS in jeden Node-Prozess
+        # (scripts/lib/konsum-zeuge.cjs) — was er vom Baum liest, steht am Ende je Wurzel in konsum.json, dem Artefakt der Gruppe.
+        # Über die Shell, weil $GITHUB_ENV NODE_OPTIONS nicht setzen darf und eine Job-env checkout vor dem Baum träfe; pipefail für alle.
+        defaults:
+            run:
+                shell: env NODE_OPTIONS=--require=${{github.workspace}}/scripts/lib/konsum-zeuge.cjs bash --noprofile --norc -eo pipefail {0}
         # 20 je Gruppe, und (T) FRIST hält ihn über 1,2 × dem p90-Plan jeder Gruppe: die echten Renderer laufen auf SwiftShader je
         # Läufer bis 2,8× langsamer (Kamera-Leib-Linse am selben Kopf 319 s und 841 s); neben 287 s anderer Schritte brach G18 am
         # Deckel (7 Läufe zu 20,3 min, 25.10.), allein trägt die Linse höchstens 15,2 min.
         timeout-minutes: 20
         steps:
             - uses: actions/checkout@v4
-
-            # DER KONSUM-ZEUGE (Spike „Die CI wählt nach Konsum"): ab hier trägt jeder Node-Prozess der Gruppe den Zeugen
-            # (scripts/lib/konsum-zeuge.cjs) — was er vom Baum liest, steht am Ende je Wurzel in konsum.json, dem Artefakt der Gruppe
-            - name: Konsum-Zeuge an
-              run: |
-                  echo "NODE_OPTIONS=--require=$GITHUB_WORKSPACE/scripts/lib/konsum-zeuge.cjs" >> "$GITHUB_ENV"
-                  echo "KONSUM_ZEUGE=$RUNNER_TEMP/konsum" >> "$GITHUB_ENV"
 
             - uses: actions/setup-node@v4
               with:
@@ -381,7 +381,6 @@ jobs:
             # Invarianten), pipefail trägt den Ausgang des Playtests durch die Pipe. gate:ci-deckung (P) hält die Form.
             - name: Voller Playtest (~5340 Invarianten — das Verdikt „Alle Invarianten OK")
               if: matrix.gruppe == 1
-              shell: bash
               run: |
                   npm run playtest | tee playtest-voll.log
                   grep -qx "✅ Alle Invarianten OK" playtest-voll.log
