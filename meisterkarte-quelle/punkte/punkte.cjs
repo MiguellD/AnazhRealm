@@ -29,7 +29,11 @@
 //   node punkte.cjs gruppen --geraet radeon|gtx|headless [--nur id,id]   je Zeile die Ids EINES Laufs (Zwillinge zusammen, Reihe von
 //        nur; jede Probe-Station in der ERSTEN Zeile: die Sitzung ist ein Lauf) — der Messplatz der OMEN fährt je Zeile ein
 //        `run --nur`, nie einen Zwilling zweimal, nie eine zweite Welt
-//   node punkte.cjs grundstellung   (in einer Probe der Sitzung) die Welt an WERKBANK_PORT frisch: Spielstand weg, die Seite neu
+//   node punkte.cjs grundstellung   (in einer Probe der Sitzung) der Grund der Sitzung (PUNKTE_SITZUNG_GRUND) kehrt in die Welt an
+//        WERKBANK_PORT zurück, ohne Neuladen (`_grundstellung` des Spiels); ROT nennt die Größen, die vom Grund abweichen
+//   node punkte.cjs grundprobe --baum <Spiel-Baum> [--mutante <zeile>] [--port P]   (Null-Renderer) die Grundstellung der Sitzung
+//        an einer Welt des Baums: Grund → graben, bauen, Ritt, Uhr, Brand, Regen, Ort-Takt → zurück, keine Größe weicht ab; die
+//        Mutante (ein Wort der GRUND_TAFEL schweigt) ist ROT beim Namen
 //   node punkte.cjs selbsttest   jeder Fall beim Namen
 //
 // FORMAT (stationen/g1.js .. g6.js, module.exports = [ … ]), je Eintrag:
@@ -105,6 +109,17 @@ function hilfeText() {
 // probe hat keinen befehl. Der Abdruck einer befehl-Station bleibt Byte für Byte (pr nur an einer Probe)
 // DAS BUDGET DER PROBE (29.10., der Schöpfer: „Eine komplette Fahrt durch jedes System max 30 min"): Ziel ≤ 15 s, Deckel 45 s, nur
 // mit `ausnahme` (der Grund beim Namen) bis 90 s — darüber ROT, auch mit ausnahme; DIE FAHRT je Karte ≤ FAHRT_MAX_S samt Boot
+// DIE DECKEL (30.10., Karte w4-grundstellung) — je Probe ihr `sek`, aus dem Gegenlauf Radeon b3f9ae95 (gegenlauf/fahrt-b3f9ae95-radeon.json,
+// die Reihe der Sitzung): der gemessene Lauf; lief die Probe nach einer Grundstellung mit Neuladen (nach einer mutierenden oder einer
+// gerissenen — die Kaskade: jeder gerissene Deckel lud die Seite neu, und die nächste riss wieder) und war ROT oder OFFEN, ohne den
+// Ring-Neubau (45 s je Probe), OFFEN dort mindestens 15 s (gerissen: die Messung ist zensiert); eine GRÜNE Messung bleibt ganz;
+// mindestens 10 s. Selbst getaktet (eigene Uhr, feste Fenster) und darum nach eigenem Bedarf: das Profi-Band (gang 64 s, glätte und
+// dauer 45 s). Über dem Budget (FAHRT_MAX_S − SITZUNG_BOOT_S) die EINE Kappe 33 s: Σ 1 656 s in 69 Läufen; 31 Proben stehen dort
+// unter ihrem Bedarf (ferne.K1 91, siedlung.K4#2 92, speicher.K2 73, vegetation.K5#2 68, tiere.K2#2 64, licht.K2#2 59, tiere.K3#2 59,
+// speicher.K1 57, tiere.K1#2 55, leib.K2 52, siedlung.K1#2 49, fahrzeug.K3#1 47, leib.K1#2, siedlung.K2 47, licht.K5#1, lod.K5#1,
+// material.K2#1, material.K3, mensch.K1, mensch.K1#2, studios.K4, tiere.K5#1, vegetation.K4, fahrzeug.K3#2 46, material.K1, wetter.K2#1,
+// schatten.K1#1 45, streaming.K3#1, affekt.K1#2 43, oekologie.K4#2, leib.K4 40 s) — die GPU-Fahrt nennt, wer warm am Deckel fällt
+// (UNGEMESSEN beim Namen), ihre Zahl ersetzt die Schätzung.
 const PROBE_DECKEL_S = 45;
 const PROBE_AUSNAHME_S = 90;
 const PROBE_SEK = PROBE_DECKEL_S;
@@ -436,7 +451,7 @@ function fahreGruppe(sts, ctx) {
         if (ctx.port) env.WERKBANK_PORT = String(ctx.port + 20000);
         // in der Sitzung: das Log der Welt (die Karte) und die Grundstellung als Befehl (`node "$PUNKTE_MASCHINE" grundstellung`:
         // eine Probe, die selbst mehrere frische Welten braucht — je nH, je Lauf —, holt sie so, nie mit eigenem Boot)
-        if (sitz) Object.assign(env, { PUNKTE_SITZUNG_LOG: sitz.log, PUNKTE_MASCHINE: __filename.split(path.sep).join("/"),
+        if (sitz) Object.assign(env, { PUNKTE_SITZUNG_LOG: sitz.log, PUNKTE_MASCHINE: __filename.split(path.sep).join("/"), PUNKTE_SITZUNG_GRUND: sitz.grund || "",
             ...(sitz.strom ? { PUNKTE_SITZUNG_STROM: sitz.strom, PUNKTE_PROBE: sitz.probe } : {}) });
         // headless läuft ohne Karte: starteBrowser griffe lokal sonst die GPU (scripts/lib/software-gpu.cjs) — ohne Schloss
     if (!st.gpu) env.LINSE_GPU = "software";
@@ -597,27 +612,43 @@ async function baumSperre(repo, geraet) {
 // ───────────────────────────────── Sitzung ─────────────────────────────────
 // DIE SITZUNG (29.10.; der Schöpfer: „eine Messung eines Teilsystems über 10 min heißt, man besichtigt fast alle Funktionen — die Welt
 // ist in Sekunden geladen“): je Gerät und SHA EINE Welt — save-server {PORT} und `werkbank start --echt` {PORT}+20000 im Spiel-Baum
-// des Geräts, gehalten vom Halter (`punkte.cjs halter`) unter dem GANZEN Schloss (gpu-lauf.sh, zeit, die CI-Ruhe einmal) — und darin
-// jede Station mit `probe` in der Reihe sitzungsReihe. Nach einer mutierenden Probe oder einem Abbruch die GRUNDSTELLUNG (sonst nie —
-// Eichlauf Radeon b3f9ae95 29.10.: je Grundstellung 1,1–4,2 s, die nächste Probe baut ihren Ring neu): Spielstand weg (localStorage, die
-// Welten der IndexedDB „anazhRealm“, die Stand-Dateien des save-servers), die Seite neu im warmen Browser (`/reload`; Asset-, Chunk-
-// und Shader-Cache bleiben), das Fenster 1920×1080 wie beim Start — die Probe nach einer mutierenden beginnt in einer frisch geborenen
-// Welt, eine gescheiterte hinterlässt nichts; zwischen Proben, die die Welt lassen, nur das Fenster und das Lebenszeichen (`/fenster`). Die Sitzung startet nie neu: trägt die Welt nicht mehr (Grundstellung scheitert), sind die übrigen Proben
-// ungemessen beim Grund, nie ROT. Bis dahin fuhr jede Station ihren eigenen Boot (Takt 19: 282 min Schloss, 103 min Abbau-Schwanz).
-// DER BOOT der Welt zählt in die Fahrt (fahrtUrteil): Radeon b3f9ae95 29.10. stand die Welt nach 10,5 und 40 s — der Deckel 120 s;
-// das Schloss hält der Halter die Fahrt lang samt Abbau (SITZUNG_MAX_S), nie länger
+// des Geräts, gehalten vom Halter (`punkte.cjs halter`), daneben das GANZE Schloss (gpu-lauf.sh um den Schloss-Halter, zeit, die
+// CI-Ruhe einmal; `schlossNehmen`) — und darin jede Station mit `probe` in der Reihe sitzungsReihe. DAS SCHLOSS ZWISCHEN DEN PROBEN
+// (Karte w4-grundstellung): wartet ein CI-Job darauf (`ci_wartet`, gpu-schloss.sh), gibt die Sitzung es an der Proben-Grenze frei und
+// nimmt es danach neu — die Welt bleibt warm, das Warten zählt nie in die Fahrt. Bis dahin hielt die Sitzung es bis 55 min am Stück.
+// DIE GRUNDSTELLUNG OHNE NEULADEN (29.10., Karte w4-grundstellung; der Schöpfer: „Die Welt ist in wenigen Sekunden geladen — das
+// Prüftheater hat ein Ende“): nach der Reihe `anfang` nimmt die Sitzung den GRUND der Welt (das Spiel: `_grundstellung`, das
+// Speicher-Gesetz samt GRUND_TAFEL), nach jeder mutierenden Probe oder einem Abbruch spielt sie ihn in die laufende Seite zurück
+// (sonst nie); Ring, Fern-Ring, Streu, Kronen, Leib und Shader bleiben warm. Bis dahin leerte sie den Spielstand (localStorage, die
+// Welten der IndexedDB, die Stand-Dateien des save-servers) und lud die Seite neu — die nächste Probe baute ihren Ring neu (Radeon
+// b3f9ae95 29.10.: ~45 s je Probe, die Fahrt ~4 h). DIE TAFEL DER GRUNDSTELLUNG, je Größe ihr Wort zurück:
+//   der Stand (Speicher-Gesetz, `_standRueckspielen`): Spieler-Ort und Leben, Uhr, Saison, Wetter und Wetter-Wort, das worldMeta
+//     (Taten, Erdbau, Orte, Siedlungen), die Edits (je Reichweite neu, der Faden bekommt die Liste), die Werke (je Id), die Säcke
+//     (Baupläne, Stoffe, Werkzeuge je Glied), Inventar, Hotbar, Seele, Regler, Wesen samt Leichen, Pfeile, Tagebuch, Gesetze, DSL;
+//   die GRUND_TAFEL des Spiels: Ritt (aussteigen), Sicht, Blick, Nässe und Wetter-Übergang, die Zellen des Brands;
+//   GRUND_SEITE (hier): die Globalen der Werkbank an der Seite (`umstellen`: Ort-Takt, Stellgrößen, Bahn, Dorf-Zug) — was beim Grund
+//     fehlte, fällt —, das Fenster 1920×1080 (`/fenster`);
+//   nie zurück: die Welt-Uhr (`spielZeit`, monoton, feld.K2#2), die Würfe des Gesetzes (sie folgen dem Ort, speicher.K3), die Caches.
+// Weicht nach dem Rückspielen eine Größe vom Grund ab, trägt die Welt nicht mehr: die übrigen Proben sind ungemessen beim Namen der
+// Größe, nie ROT. Verließ eine Probe die Welt (ein Tor), kehrt die Seite durch die Tür des Spiels zurück (`_weltBetreten`, dann
+// `/reload`: ein Welt-Wechsel ist ein Reload, Ring 8) und spielt den Grund danach. Bis dahin fuhr jede Station ihren eigenen Boot
+// (Takt 19: 282 min Schloss, 103 min Abbau-Schwanz). DER BOOT der Welt zählt in die Fahrt (fahrtUrteil): Radeon b3f9ae95 29.10.
+// stand die Welt nach 10,5 und 40 s — der Deckel 120 s; das Schloss hält der Halter die Fahrt lang samt Abbau (SITZUNG_MAX_S)
 const SITZUNG_BOOT_S = 120;
 const SITZUNG_MAX_S = FAHRT_MAX_S + 600;
 const GRUNDSTELLUNG_S = 180;
 const STAND_DATEIEN = ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"];
-const GRUNDSTELLUNG =
-    'localStorage.clear(); sessionStorage.clear(); const db = await new Promise((x) => { const q = indexedDB.open("anazhRealm", 1); ' +
-    'q.onupgradeneeded = () => { if (!q.result.objectStoreNames.contains("worlds")) q.result.createObjectStore("worlds"); }; ' +
-    "q.onsuccess = () => x(q.result); q.onerror = q.onblocked = () => x(null); }); let welten = -1; " +
-    'if (db) { await new Promise((x) => { const t = db.transaction("worlds", "readwrite"); t.objectStore("worlds").clear(); ' +
-    "t.oncomplete = t.onerror = t.onabort = () => x(); }); welten = await new Promise((x) => { " +
-    'const c = db.transaction("worlds").objectStore("worlds").count(); c.onsuccess = () => x(c.result); c.onerror = () => x(-1); }); db.close(); } ' +
-    "return { ls: localStorage.length, welten };";
+const GRUND_SEITE = ["__ortTakt", "__ortStell", "__ortSchritt", "__ortBahn", "__anazhAutoSettlement"];
+const GRUND_NIMM =
+    'if (typeof r._grundstellung !== "function") return { fehlt: true }; const t0 = performance.now(); const g = r._grundstellung(); ' +
+    "return { grund: g.grund, n: Object.keys(g.abdruck).length, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta.worldId, " +
+    "seite: " + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window) };";
+const grundSpielen = (g) =>
+    "for (const k of " + JSON.stringify(GRUND_SEITE) + ") if (!" + JSON.stringify(g.seite) + ".includes(k)) delete window[k]; " +
+    "const t0 = performance.now(); const z = r._grundstellung(" + JSON.stringify(g.grund) + "); return { ok: z.ok, grund: z.grund || null, " +
+    "anders: (z.anders || []).concat(" + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window && !" + JSON.stringify(g.seite) + ".includes(k)).map((k) => \"seite.\" + k)), " +
+    "neu: z.neu || null, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta && r.state.worldMeta.worldId };";
+const GRUND_TUER = (g) => "const s = JSON.parse(" + JSON.stringify(g.grund) + ").stand; return r._weltBetreten(s, null, { neuLaden: false });";
 
 // ein Ruf an die Werkbank MIT Frist (werkbankRuf des Spiels wartet ewig): Rückgabe die Antwort, wirft bei Frist und Fehler
 function rufFrist(port, weg, nutzlast, ms) {
@@ -690,76 +721,197 @@ async function halter(o) {
     }
 }
 
-// startet den Halter (unter dem GANZEN Schloss, wenn gpuLauf); Rückgabe { ok, kind, warten (min), bootS, grund?, ungemessen? }
-function sitzungStarten(o) {
+// DER SCHLOSS-HALTER der Sitzung (Karte w4-grundstellung): gpu-lauf.sh (zeit, die CI-Ruhe einmal, Deckel SITZUNG_MAX_S) um einen
+// Wartenden, der endet, wenn die Datei `los` liegt oder der Läufer stirbt — er hält das Schloss, nie die Welt: sie lebt daneben und
+// bleibt warm, wenn die Sitzung das Schloss einem wartenden CI-Job gibt. Rückgabe { ok, kind, los, warten (min), grund?, ungemessen? }
+function schlossNehmen(o, nr) {
+    return new Promise((fertig) => {
+        if (!o.bash) return fertig({ ok: false, grund: "keine Git-bash gefunden (PUNKTE_BASH) für gpu-lauf.sh" });
+        const t0 = Date.now(), los = o.stop + ".los-" + nr;
+        fs.rmSync(los, { force: true });
+        const warte = 'const fs = require("fs"); const [los, p] = process.argv.slice(1); setInterval(() => { let da = true; ' +
+            'try { process.kill(Number(p), 0); } catch (e) { da = e.code === "EPERM"; } if (fs.existsSync(los) || !da) process.exit(0); }, 500);';
+        const env = { ...process.env, GPU_LAUF_ART: "zeit", GPU_LAUF_PLAETZE: "1", GPU_LAUF_MAX_S: String(SITZUNG_MAX_S) };
+        delete env.NODE_OPTIONS;
+        const kind = spawn(o.bash, [o.gpuLauf, "punkte-" + o.geraet + "-sitzung", process.execPath, "-e", warte, los, String(process.pid)],
+            { cwd: o.baum, env, windowsHide: true, detached: process.platform !== "win32" });
+        let out = "", gemeldet = false, uhr = null;
+        const h = { kind, los, ende: new Promise((r) => kind.on("exit", (c) => r(c))), aus: () => out };
+        const melde = (r) => {
+            if (gemeldet) return;
+            gemeldet = true;
+            clearTimeout(uhr);
+            fertig(Object.assign(h, { warten: +((Date.now() - t0) / 60000).toFixed(2) }, r));
+        };
+        const still = o.stillS || SCHLOSS_STILL_S;
+        const lies = (d) => {
+            out += String(d);
+            if (/^gpu-lauf: Schloss /m.test(out)) return melde({ ok: true });
+            clearTimeout(uhr);
+            uhr = setTimeout(() => (baumTot(kind.pid), melde({ ok: false, ungemessen: true, grund: "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg " + still + " s beim Warten" })), still * 1000);
+        };
+        kind.stdout.on("data", lies);
+        kind.stderr.on("data", lies);
+        lies("");
+        kind.on("error", (e) => melde({ ok: false, grund: "gpu-lauf.sh: " + e.message }));
+        kind.on("exit", (code) => setTimeout(() => {
+            const blockiert = (/^SCHLOSS BLOCKIERT .*$/m.exec(out) || [""])[0].trim();
+            if (code === 75) return melde({ ok: false, ungemessen: true, grund: "GPU-Schloss blockiert (gpu-lauf.sh Exit 75" + (blockiert ? ": " + blockiert : "") + ") — ungemessen" });
+            melde({ ok: false, grund: "gpu-lauf.sh endete vor dem Schloss (Exit " + code + "): " + out.trim().split(/\r?\n/).slice(-2).join(" | ").slice(0, 300) });
+        }, 300));
+    });
+}
+// gibt das Schloss frei: der Wartende endet, gpu-lauf.sh löst (trap); sonst fällt sein Baum
+async function schlossLoesen(h) {
+    if (!h || !h.kind || h.kind.exitCode != null) return;
+    fs.writeFileSync(h.los, "los\n");
+    if ((await Promise.race([h.ende, warteMs(30000).then(() => "frist")])) === "frist") baumTot(h.kind.pid);
+    fs.rmSync(h.los, { force: true });
+}
+// wartet ein CI-Job auf das Schloss? (gpu-schloss.sh neben gpu-lauf.sh: `ci_wartet`, die letzte Zeile von hook.log)
+const ciWartet = (o) => spawnSync(o.bash, ["-c", '. "$1" && ci_wartet', "ci", path.join(path.dirname(o.gpuLauf), "gpu-schloss.sh")],
+    { env: { ...process.env, ...(o.hookLog ? { GPU_HOOK_LOG: o.hookLog } : {}) }, windowsHide: true, timeout: 20000 }).status === 0;
+
+// startet den Halter (daneben das GANZE Schloss, wenn gpuLauf: `schlossNehmen`); Rückgabe { ok, kind, schloss, warten (min), bootS, grund?, ungemessen? }
+async function sitzungStarten(o) {
+    const schloss = o.gpuLauf ? await schlossNehmen(o, 0) : null;
+    if (schloss && !schloss.ok) return schloss;
     return new Promise((fertig) => {
         const t0 = Date.now();
-        let argv = [__filename, "halter", "--baum", o.baum, "--port", String(o.port), "--log", o.log, "--zeuge", o.zeuge, "--stop", o.stop,
+        const argv = [__filename, "halter", "--baum", o.baum, "--port", String(o.port), "--log", o.log, "--zeuge", o.zeuge, "--stop", o.stop,
             "--eltern", String(process.pid), "--band", [].concat(o.band || o.port).join(","), ...(o.welt ? ["--welt", o.welt] : [])];
-        let exe = process.execPath;
         const env = { ...process.env };
         delete env.NODE_OPTIONS; // der Zeuge sitzt in der Werkbank, nie im Halter (er nennt keine Karte)
-        if (o.gpuLauf) {
-            if (!o.bash) return fertig({ ok: false, grund: "keine Git-bash gefunden (PUNKTE_BASH) für gpu-lauf.sh" });
-            argv = [o.gpuLauf, "punkte-" + o.geraet + "-sitzung", exe, ...argv];
-            exe = o.bash;
-            Object.assign(env, { GPU_LAUF_ART: "zeit", GPU_LAUF_PLAETZE: "1", GPU_LAUF_MAX_S: String(SITZUNG_MAX_S) });
-        }
-        let out = "", tSchloss = o.gpuLauf ? null : t0, gemeldet = false, uhr = null;
-        const kind = spawn(exe, argv, { cwd: o.baum, env, windowsHide: true, detached: process.platform !== "win32" });
-        const s = { kind, ende: new Promise((r) => kind.on("exit", (c) => r(c))), aus: () => out, datei: o.log + ".halter" };
+        let out = "", gemeldet = false, uhr = null;
+        const kind = spawn(process.execPath, argv, { cwd: o.baum, env, windowsHide: true, detached: process.platform !== "win32" });
+        const s = { kind, schloss, ende: new Promise((r) => kind.on("exit", (c) => r(c))), aus: () => out, datei: o.log + ".halter" };
         const melde = (r) => {
             if (gemeldet) return;
             gemeldet = true;
             clearTimeout(uhr);
             fs.writeFileSync(o.log + ".halter", out);
-            fertig(Object.assign(s, { warten: +(((tSchloss || Date.now()) - t0) / 60000).toFixed(2), bootS: tSchloss ? +((Date.now() - tSchloss) / 1000).toFixed(1) : null }, r));
+            fertig(Object.assign(s, { warten: schloss ? schloss.warten : 0, bootS: +((Date.now() - t0) / 1000).toFixed(1) }, r));
         };
-        const stelle = (sek, grund, ungemessen) => { clearTimeout(uhr); uhr = setTimeout(() => { baumTot(kind.pid); melde({ ok: false, grund, ungemessen }); }, sek * 1000); };
         const lies = (d) => {
             out += String(d);
-            if (!tSchloss && /^gpu-lauf: Schloss /m.test(out)) tSchloss = Date.now();
             if (/^SITZUNG bereit/m.test(out)) return melde({ ok: true });
-            if (tSchloss) stelle(SITZUNG_BOOT_S + 120, "die Welt der Sitzung steht nach " + (SITZUNG_BOOT_S + 120) + " s nicht");
-            else stelle(o.stillS || SCHLOSS_STILL_S, "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg " + (o.stillS || SCHLOSS_STILL_S) + " s beim Warten", true);
+            clearTimeout(uhr);
+            uhr = setTimeout(() => (baumTot(kind.pid), melde({ ok: false, grund: "die Welt der Sitzung steht nach " + (SITZUNG_BOOT_S + 120) + " s nicht" })), (SITZUNG_BOOT_S + 120) * 1000);
         };
         kind.stdout.on("data", lies);
         kind.stderr.on("data", lies);
         lies("");
         kind.on("error", (e) => melde({ ok: false, grund: "Halter: " + e.message }));
         kind.on("exit", (code) => setTimeout(() => {
-            const blockiert = (/^SCHLOSS BLOCKIERT .*$/m.exec(out) || [""])[0].trim();
-            if (o.gpuLauf && code === 75) return melde({ ok: false, ungemessen: true, grund: "GPU-Schloss blockiert (gpu-lauf.sh Exit 75" + (blockiert ? ": " + blockiert : "") + ") — ungemessen" });
             const f = (/^SITZUNG FEHLER (.*)$/m.exec(out) || [])[1];
             melde({ ok: false, grund: "die Welt der Sitzung startet nicht" + (f ? ": " + f : " (Halter Exit " + code + "): " + out.trim().split(/\r?\n/).slice(-2).join(" | ").slice(0, 300)) });
         }, 300));
     });
 }
-// legt die Stop-Datei, wartet auf das Ende des Halters (er löst das Schloss), sonst fällt sein Baum
+// legt die Stop-Datei, wartet auf das Ende des Halters, sonst fällt sein Baum; dann löst das Schloss
 async function sitzungStoppen(s, stop) {
     fs.writeFileSync(stop, "stop\n");
     const ende = await Promise.race([s.ende, warteMs(90000).then(() => "frist")]);
     if (ende === "frist") baumTot(s.kind.pid);
     fs.writeFileSync(s.datei, s.aus());
+    await schlossLoesen(s.schloss);
     return ende;
 }
-// DIE GRUNDSTELLUNG vor einer Probe: Rückgabe { ok, s, grund? }
-async function grundstellung(w, baum) {
+// DER GRUND der Welt (`_grundstellung` des Spiels) in die Datei `datei` (die Grundstellung der Sitzung und jeder Probe liest sie):
+// Rückgabe { ok, n (Größen), s, grund? }
+async function grundNehmen(w, datei) {
     const t0 = Date.now();
     try {
-        const a = await rufFrist(w, "/eval", { code: GRUNDSTELLUNG }, 60000);
+        const a = await rufFrist(w, "/eval", { code: GRUND_NIMM }, 60000);
         const e = a && a.ergebnis;
-        if (!e || e.ls !== 0 || !(e.welten === 0 || e.welten === -1))
-            throw new Error("der Spielstand fällt nicht: " + JSON.stringify(a).slice(0, 300));
-        for (const d of STAND_DATEIEN) fs.rmSync(path.join(baum, d), { force: true });
-        const n = await rufFrist(w, "/reload", {}, GRUNDSTELLUNG_S * 1000);
-        if (!n || n.neu !== true) throw new Error("/reload: " + JSON.stringify(n).slice(0, 300));
+        if (e && e.fehlt) throw new Error("der Kopf trägt `_grundstellung` nicht (Karte w4-grundstellung)");
+        if (!e || typeof e.grund !== "string") throw new Error("kein Grund: " + JSON.stringify(a).slice(0, 300));
+        fs.writeFileSync(datei, JSON.stringify(e));
+        return { ok: true, n: e.n, s: +((Date.now() - t0) / 1000).toFixed(1) };
+    } catch (e) {
+        return { ok: false, s: +((Date.now() - t0) / 1000).toFixed(1), grund: "der Grund der Welt: " + String((e && e.message) || e).split("\n")[0] };
+    }
+}
+// DIE GRUNDSTELLUNG vor einer Probe: der Grund (`datei`) kehrt in die laufende Seite zurück, ohne Neuladen; hat eine Probe die Welt
+// verlassen, durch die Tür und `/reload` (Ring 8). Rückgabe { ok, s, ms, neu, tuer?, grund? } — ROT nennt die abweichenden Größen
+async function grundstellung(w, datei) {
+    const t0 = Date.now();
+    try {
+        if (!datei || !fs.existsSync(datei)) throw new Error("kein Grund der Sitzung (" + datei + ")");
+        const g = JSON.parse(fs.readFileSync(datei, "utf8"));
+        const spiel = async () => {
+            const a = await rufFrist(w, "/eval", { code: grundSpielen(g) }, 120000);
+            if (!a || !a.ergebnis) throw new Error("/eval: " + JSON.stringify(a).slice(0, 300));
+            return a.ergebnis;
+        };
+        let z = await spiel(), tuer = false;
+        if (!z.ok && z.welt !== g.welt) {
+            const t = await rufFrist(w, "/eval", { code: GRUND_TUER(g) }, 60000);
+            if (!t || !t.ergebnis || !t.ergebnis.ok) throw new Error("die Tür zurück in die Welt " + g.welt + ": " + JSON.stringify(t).slice(0, 300));
+            const n = await rufFrist(w, "/reload", {}, GRUNDSTELLUNG_S * 1000);
+            if (!n || n.neu !== true) throw new Error("/reload: " + JSON.stringify(n).slice(0, 300));
+            (z = await spiel()), (tuer = true);
+        }
+        if (!z.ok) throw new Error(z.grund || "das Rückspielen scheitert");
+        if (z.anders.length) throw new Error("abweichend vom Grund: " + z.anders.join(" "));
         // das Fenster wie beim Start der Welt (1920×1080): eine Probe davor stellte es vielleicht anders
         const f = await rufFrist(w, "/fenster", {}, 30000);
         if (!f || !Array.isArray(f.fenster)) throw new Error("/fenster: " + JSON.stringify(f).slice(0, 300));
-        return { ok: true, s: +((Date.now() - t0) / 1000).toFixed(1) };
+        return { ok: true, s: +((Date.now() - t0) / 1000).toFixed(1), ms: z.ms, neu: z.neu, ...(tuer ? { tuer } : {}) };
     } catch (e) {
         return { ok: false, s: +((Date.now() - t0) / 1000).toFixed(1), grund: String((e && e.message) || e).split("\n")[0] };
+    }
+}
+// DIE GRUNDPROBE (`punkte.cjs grundprobe --baum <Spiel-Baum> [--mutante <zeile>] [--port P]`, Null-Renderer, Karte w4-grundstellung):
+// eine Welt des Spiel-Baums (welt-boot `nullSeite`), der Grund über DIESELBE Zeile wie die Sitzung (GRUND_NIMM), dann gräbt der
+// Spieler, baut einen Block, sieht von außen und wendet den Blick, steigt in einen Wagen, die Uhr springt, ein Feuer fängt, Regen zieht auf und ein Ort-Takt der Werkbank
+// hängt an der Seite — und die Grundstellung der Sitzung (`grundSpielen`) spielt den Grund zurück: GRÜN, wenn jede Tat geschah und
+// danach keine Größe vom Grund abweicht. `--mutante <zeile>`: das Wort dieser Zeile der GRUND_TAFEL schweigt (`uhr`: der EINE
+// Uhr-Schreiber des Spiels, eine Größe des Stands) — gefangen nur, wenn genau `augenblick.<zeile>` (`timeOfDay`) abweicht: die Mutante
+// ROT beim Namen. Exit 0 GRÜN bzw. gefangen, 1 sonst.
+async function grundProbe(o) {
+    const baum = path.resolve(o.baum || "."), port = Number(o.port || 4741);
+    const { statikServer, nullSeite } = require(path.join(baum, "scripts", "lib", "welt-boot.cjs"));
+    const server = statikServer();
+    await server.lausche(port);
+    const { browser, page } = await nullSeite({ frist: 600000 });
+    const ev = (code) => page.evaluate((c) => new Function("r", "T", "return (async () => { " + c + " })();")(window.anazhRealm, window.THREE), code);
+    try {
+        await server.zeige(page);
+        await page.evaluate(() => window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId));
+        // die Welt läuft an (100 Takte à 100 ms Spielzeit), wie vor der ersten mutierenden Probe der Sitzung
+        await ev("let t = performance.now(); for (let i = 1; i <= 100; i++) if ((r._gameLoopTick((t += 100)), i % 5 === 0)) await new Promise((f) => setTimeout(f, 0));");
+        const g = await ev(GRUND_NIMM);
+        if (!g || typeof g.grund !== "string") throw new Error("kein Grund: " + JSON.stringify(g).slice(0, 300));
+        const tat = await ev(`const st = r.state, q = st.playerMesh.position.clone(), cs = r.constructor.LIFE_FIELD.cell;
+            const y = (dx) => r._terrainMacroSurfaceY(q.x + dx, q.z);
+            const edit = r.carveVoxel(q.x + 6, y(6) - 1, q.z, 2);
+            const bau = !!r.spawnArchitecture("stein_block", { x: q.x + 20, y: y(20), z: q.z }, { werk: true });
+            r.setCameraMode("third");
+            [st.yaw, st.pitch] = [st.yaw + 1.3, 0.2];
+            const ritt = r.mountArchitecture(r.spawnArchitecture("fahrzeug_gt", { x: q.x - 20, y: y(-20) + 0.5, z: q.z }, { silent: true })).ok;
+            r.setTimeOfDay(0.9, "regler");
+            for (let i = 0; i < 625 && !r._brandEntfachen(q.x + ((i % 25) - 12) * cs, q.z + (((i / 25) | 0) - 12) * cs); i++);
+            let t = performance.now();
+            for (let i = 1; i <= 30; i++) if ((r._gameLoopTick((t += 100)), i % 5 === 0)) await new Promise((f) => setTimeout(f, 0));
+            r._setWeather("rainy", "regler");
+            window.__ortTakt = [];
+            const z = r.constructor.GRUND_TAFEL.find((z) => z[0] === ${JSON.stringify(o.mutante || null)});
+            if (z) z[2] = () => {};
+            if (${JSON.stringify(o.mutante || null)} === "uhr") r._uhrSetzen = () => false;
+            return { edit, bau, ritt, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, mutante: !!z || r._uhrSetzen.length === 0 };`);
+        const z = await ev(grundSpielen(g));
+        const soll = !o.mutante ? [] : o.mutante === "uhr" ? ["timeOfDay"] : ["augenblick." + o.mutante];
+        const taten = tat.edit && tat.bau && tat.ritt && tat.feuer > 0 && tat.wetter === "rainy" && (!o.mutante || tat.mutante);
+        const gruen = taten && z.ok && JSON.stringify(z.anders) === JSON.stringify(soll);
+        const wie = o.mutante ? "MUTANTE " + o.mutante + (gruen ? " ROT beim Namen" : " NICHT beim Namen gefangen") : gruen ? "GRÜN" : "ROT";
+        console.log("GRUNDPROBE " + wie +
+            " · Grund " + g.n + " Größen (" + g.ms + " ms) · Taten " + JSON.stringify(tat) + " · zurück in " + z.ms + " ms, neu " + JSON.stringify(z.neu) +
+            " · abweichend: " + (z.anders.join(" ") || "keine") + (z.ok ? "" : " · " + z.grund) + " · Soll " + (soll.join(" ") || "keine"));
+        return gruen;
+    } finally {
+        await browser.close();
+        server.close();
     }
 }
 // ───────────────────────────────── Der Strom ─────────────────────────────────
@@ -947,8 +1099,9 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     const dir = path.join(ctx.rohDir, "sitzung");
     fs.mkdirSync(dir, { recursive: true });
     const log = path.join(dir, "werkbank.log"), zeuge = path.join(dir, "zeuge.txt"), stop = path.join(dir, "stop"), strom = path.join(dir, "strom.ndjson");
-    for (const f of [stop, zeuge, strom]) fs.rmSync(f, { force: true });
-    const kopf = { start: new Date(t0).toISOString(), port: ctx.port, warten: null, bootS: null, grundstellungS: [], proben: 0 };
+    const grund = path.join(dir, "grund.json");
+    for (const f of [stop, zeuge, strom, grund]) fs.rmSync(f, { force: true });
+    const kopf = { start: new Date(t0).toISOString(), port: ctx.port, warten: null, bootS: null, grundstellungS: [], proben: 0, freigaben: [] };
     const s = await sitzungStarten({ ...ctx, log, zeuge, stop });
     Object.assign(kopf, { warten: s.warten, bootS: s.bootS });
     const ohne = (grund, ungemessen) => ({ gruen: false, zahl: grund, exit: null, minuten: 0, grund, ...(ungemessen ? { ungemessen: true } : {}) });
@@ -957,6 +1110,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         kopf.grund = s.grund;
         for (const g of gruppen) await melde(g, g.map(() => ohne(s.grund, s.ungemessen)), null, new Date().toISOString());
         if (s.kind && s.kind.exitCode == null) baumTot(s.kind.pid);
+        await schlossLoesen(s.schloss);
         kopf.minuten = +((Date.now() - t0) / 60000).toFixed(2);
         return kopf;
     }
@@ -964,7 +1118,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     // DIE UHR DER FAHRT ab dem Schloss (der Boot zählt mit, das Warten nie): reißt sie FAHRT_MAX_S (ctx.fahrtMaxS nur im Selbsttest),
     // endet die Sitzung — die laufende Probe fällt am Rest, jede folgende ist UNGEMESSEN beim Namen
     const fahrtMaxS = ctx.fahrtMaxS || FAHRT_MAX_S;
-    const fahrt0 = Date.now() - (s.bootS || 0) * 1000;
+    let fahrt0 = Date.now() - (s.bootS || 0) * 1000;
     const restS = () => fahrtMaxS - (Date.now() - fahrt0) / 1000;
     kopf.offen = [];
     // DER ZAPF-TAKT: nie zwei Zapfen der Sitzung zugleich; während der Grundstellung ruht er
@@ -984,8 +1138,31 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         zapf(aktuell).finally(() => (frei = true));
     }, ctx.stromTaktMs || STROM_TAKT_MS);
     await zapf(aktuell);
-    let zuruecksetzen = false, gerissen = null;
+    let zuruecksetzen = false, gerissen = null, grundDa = null;
     for (const g of gruppen) {
+        // DAS SCHLOSS AN DER PROBEN-GRENZE: fiel es (gpu-lauf.sh endete), trägt die Sitzung nicht mehr; wartet ein CI-Job darauf, geht es
+        // an ihn und kommt danach wieder — die Welt bleibt warm, das Warten zählt nie in die Fahrt
+        if (!tot && s.schloss && s.schloss.kind.exitCode != null) tot = "das Schloss der Sitzung fiel (gpu-lauf.sh Exit " + s.schloss.kind.exitCode + ")";
+        if (tot && !kopf.grund) kopf.grund = "die Sitzung trägt nicht mehr vor " + schluessel(g[0]) + ": " + tot;
+        if (!tot && !gerissen && s.schloss && ciWartet(ctx)) {
+            const tf = Date.now();
+            ruht = true;
+            await schlossLoesen(s.schloss);
+            console.log("  SITZUNG das Schloss geht an den wartenden CI-Job (vor " + schluessel(g[0]) + ")");
+            s.schloss = await schlossNehmen({ ...ctx, stop }, kopf.freigaben.length + 1);
+            ruht = false;
+            const pause = Date.now() - tf;
+            fahrt0 += pause;
+            kopf.freigaben.push({ vor: schluessel(g[0]), s: +(pause / 1000).toFixed(1) });
+            if (!s.schloss.ok) (tot = s.schloss.grund), (kopf.grund = "die Sitzung trägt nicht mehr vor " + schluessel(g[0]) + ": " + tot);
+            else console.log("  SITZUNG das Schloss wieder da nach " + (pause / 1000).toFixed(1) + " s");
+        }
+        // DER GRUND der Welt nach der Reihe `anfang` (nie davor: anfang misst die frische Welt)
+        if (!tot && grundDa === null && stellungVon(g) !== "anfang") {
+            const gn = await grundNehmen(W, grund);
+            grundDa = gn.ok ? true : gn.grund;
+            console.log("  SITZUNG " + (gn.ok ? "der Grund der Welt: " + gn.n + " Größen in " + gn.s + " s" : gn.grund));
+        }
         if (!gerissen && restS() <= 0) gerissen = "vor " + schluessel(g[0]);
         if (gerissen) {
             kopf.offen.push(...g.map(schluessel));
@@ -995,7 +1172,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         if (!tot && zuruecksetzen) {
             ruht = true;
             await zapf(aktuell);
-            const gs = await grundstellung(W, ctx.baum);
+            const gs = grundDa === true ? await grundstellung(W, grund) : { ok: false, grund: grundDa || "kein Grund vor " + schluessel(g[0]) };
             ruht = false;
             if (gs.ok) kopf.grundstellungS.push(gs.s);
             else {
@@ -1021,7 +1198,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         const zeit = new Date().toISOString();
         await zapf(aktuell);
         aktuell = schluessel(g[0]);
-        const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, probe: aktuell, restS: restS(), fahrtMaxS } });
+        const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), fahrtMaxS } });
         if (es.some((e) => /^Deckel der Fahrt /.test(e.grund || ""))) (gerissen = "in " + aktuell), kopf.offen.push(...g.map(schluessel));
         await zapf(aktuell);
         aktuell = "(sitzung)";
@@ -2399,7 +2576,8 @@ async function selbsttest() {
             '  player: { mountedArch: null }, perfTargetMs: 1000, perfSense: { loadScale: 1 }, weather: "sunny", creatures: [], timeOfDay: 0.5 }, _gpuLeine: { gerendert: 0 } } }; }; neu();',
             'setInterval(() => { const cb = seite.R._animation._animationLoop; if (cb) cb(performance.now()); }, 16);',
             'http.createServer((q, r) => { let d = ""; q.on("data", (c) => (d += c)); q.on("end", () => { const b = d ? JSON.parse(d) : {}; const s = (o) => r.end(JSON.stringify(o));',
-            '  if (q.url === "/eval") { if (/localStorage\\.clear/.test(b.code)) { n("grund"); return s({ ergebnis: { ls: 0, welten: 0 } }); }',
+            '  if (q.url === "/eval") { if (/_grundstellung\\(\\)/.test(b.code)) { n("nimm"); return s({ ergebnis: { grund: "{}", n: 3, ms: 1, welt: "w1", seite: [] } }); }',
+            '    if (/_grundstellung\\("/.test(b.code)) { n("grund"); return s({ ergebnis: { ok: true, anders: art === "anders" ? ["augenblick.brand"] : [], neu: {}, ms: 1, welt: "w1" } }); }',
             '    if (/__punkteStrom/.test(b.code)) return s({ ergebnis: new Function("r", "window", "performance", b.code)(seite.welt, seite.win, performance) });',
             '    if (b.code === "loop an") { seite.R.setAnimationLoop(() => seite.welt._gpuLeine.gerendert++); return s({ ergebnis: 1 }); }',
             '    if (b.code === "loop aus") { seite.R.setAnimationLoop(null); return s({ ergebnis: 0 }); }',
@@ -2419,18 +2597,21 @@ async function selbsttest() {
             '.end(JSON.stringify({ code: process.argv[2] }));', "{AUS}"];
         const warm = (j, l) => ({ gruen: !!j && j.welt === "warm" && j.log && /^\[linse-gpu\] amd\/stub-sitzung$/m.test(l.stdout), zahl: "welt " + (j && j.welt) });
         const S = (k, s, probe, urteil) => ({ ...gp, kriterium: k, staffel: s, probe, urteil });
+        const hookLog = path.join(tmp, "sitzung-hook.log");
+        fs.writeFileSync(hookLog, "2026-10-29 10:00:00 ende ci-probe 1/1 echt\n");
         const lauf = async (gruppen, art, gpuLauf, fahrtMaxS) => {
             fs.rmSync(zaehler, { force: true });
             const rohDir = path.join(tmp, "roh-" + art);
             const es = {}, reihe = [];
             const kopf = await fahreSitzung(gruppen, { koord: KOORD, geraet: "radeon", bash: findeBash(), gpuLauf, baum: tmp, port: P, band: [P, P + 20000, P + 19999],
-                rohDir, welt: art === "kein-start" ? undefined : welt(art), stillS: 20, stromTaktMs: 200, ...(fahrtMaxS ? { fahrtMaxS } : {}) },
+                rohDir, welt: art === "kein-start" ? undefined : welt(art), stillS: 20, stromTaktMs: 200, hookLog, ...(fahrtMaxS ? { fahrtMaxS } : {}) },
             (g, xs, aus, zeit) => g.forEach((st, i) => { reihe.push(schluessel(st)); es[schluessel(st)] = stationsEintrag(xs[i], { zeit, abdruck: abdruck(st, h), port: P, bahn: "sitzung", zwilling: i ? schluessel(g[0]) : null, modus: "session" }); }));
             return { es, kopf, reihe, rohDir, z: fs.existsSync(zaehler) ? fs.readFileSync(zaehler, "utf8").trim().split("\n") : [] };
         };
         const gl = findeBash() ? path.join(tmp, "sitzung-schloss.sh") : null;
         const glLog = path.join(tmp, "sitzung-schloss.log");
         if (gl) fs.writeFileSync(gl, '#!/bin/bash\nN="$1"; shift\necho "$N $GPU_LAUF_ART $GPU_LAUF_MAX_S" >> "' + glLog.split(path.sep).join("/") + '"\necho "gpu-lauf: Schloss $N (zeit) nach 0 s" >&2\n"$@"\n');
+        if (gl) fs.copyFileSync(path.join(DIR, "werkzeug", "gpu-schloss.sh"), path.join(tmp, "gpu-schloss.sh"));
         const g1 = [[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)], [S("b.K1", 1, { befehl: ["node", "-e", "setTimeout(() => {}, 60000)"], sek: 2 }, lies)],
             [S("c.K1", 1, { befehl: ["node", "-e", "process.exit(1)"], sek: 30 }, (j, l) => ({ gruen: l.exit === 0, zahl: "exit " + l.exit }))],
             [S("d.K1", 1, { befehl: [...ruf, "return 2"], sek: 30 }, warm), S("d.K1", 2, { befehl: [...ruf, "return 2"], sek: 30 }, warm)]];
@@ -2442,8 +2623,8 @@ async function selbsttest() {
             r1.z.filter((l) => l === "start").length === 1 && x["a.K1#1"].gruen && /^Deckel 2 s gerissen — beendet, UNGEMESSEN$/.test(x["b.K1#1"].grund) && x["b.K1#1"].ungemessen === true &&
             x["c.K1#1"].gruen === false && x["c.K1#1"].exit === 1 &&
             x["d.K1#1"].gruen && x["d.K1#2"].gruen && x["d.K1#2"].zwilling === "d.K1#1" && x["a.K1#1"].gpu === "amd/stub-sitzung" && r1.kopf.proben === 4, JSON.stringify([r1.z, x]));
-        pruef("SITZUNG die Grundstellung (Spielstand weg, die Seite neu) nur nach einem Abbruch (b.K1 am Deckel) oder einer mutierenden Probe — nie vor jeder; nie ein zweiter Start; am Ende stop",
-            r1.z.join(",") === "start,grund,reload,stop" && r1.kopf.grundstellungS.length === 1 && typeof r1.kopf.bootS === "number", JSON.stringify([r1.z, r1.kopf]));
+        pruef("SITZUNG der Grund nach der Reihe anfang, die Grundstellung (der Grund zurück in die laufende Seite, nie ein Neuladen) nur nach einem Abbruch (b.K1 am Deckel) oder einer mutierenden Probe — nie vor jeder; nie ein zweiter Start; am Ende stop",
+            r1.z.join(",") === "start,nimm,grund,stop" && r1.kopf.grundstellungS.length === 1 && typeof r1.kopf.bootS === "number", JSON.stringify([r1.z, r1.kopf]));
         pruef("SITZUNG das Schloss EINMAL für die ganze Sitzung (zeit, die Proben nehmen es nie)",
             !gl || (schloss.length === 1 && /^punkte-radeon-sitzung zeit \d+$/.test(schloss[0])), JSON.stringify(schloss));
         pruef("SITZUNG das Format von heute: je Station gruen, zahl, exit, minuten, zeit, abdruck, port, bahn und modus \"session\"; die Zeile liest zug.cjs",
@@ -2464,14 +2645,32 @@ async function selbsttest() {
         const sr = stromLesen(path.join(r5.rohDir, "sitzung", "strom.ndjson"));
         const je = (p) => sr.bilder.filter((b) => b.probe === p).length;
         pruef("SITZUNG die Reihe: anfang · was die Welt lässt · ende · was sie ändert; die Grundstellung nur nach der mutierenden (m vor o)",
-            r5.reihe.join(" ") === "a.K1#1 n.K1#1 e.K1#1 m.K1#1 o.K1#1" && r5.z.join(",") === "start,grund,reload,stop" && Object.values(r5.es).every((e) => e.gruen), JSON.stringify([r5.reihe, r5.z, r5.es]));
-        pruef("SITZUNG DER STROM: der Haken über /eval in der Seite, jede Probe kennt ihn (PUNKTE_SITZUNG_STROM, PUNKTE_PROBE), die Bilder ihres Loops unter ihrem Namen, nach dem Neuladen eine neue Seite, der Kopf trägt die Dauerlast",
-            je("a.K1#1") >= 5 && je("m.K1#1") >= 5 && je("n.K1#1") === 0 && sr.seiten.length === 2 && sr.bilder.every((b) => b.vram === 2 && b.befehle === 7 && b.voll === 1) &&
+            r5.reihe.join(" ") === "a.K1#1 n.K1#1 e.K1#1 m.K1#1 o.K1#1" && r5.z.join(",") === "start,nimm,grund,stop" && Object.values(r5.es).every((e) => e.gruen), JSON.stringify([r5.reihe, r5.z, r5.es]));
+        pruef("SITZUNG DER STROM: der Haken über /eval in der Seite, jede Probe kennt ihn (PUNKTE_SITZUNG_STROM, PUNKTE_PROBE), die Bilder ihres Loops unter ihrem Namen, EINE Seite über die Grundstellung (kein Neuladen), der Kopf trägt die Dauerlast",
+            je("a.K1#1") >= 5 && je("m.K1#1") >= 5 && je("n.K1#1") === 0 && sr.seiten.length === 1 && sr.bilder.every((b) => b.vram === 2 && b.befehle === 7 && b.voll === 1) &&
             r5.kopf.strom && r5.kopf.strom.bilder >= 8 && r5.kopf.strom.luecken === 0 && r5.kopf.strom.zapfen >= 10 && r5.kopf.strom.fehler === 0,
             JSON.stringify({ a: je("a.K1#1"), m: je("m.K1#1"), seiten: sr.seiten.length, kopf: r5.kopf.strom }));
         const r2 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "tod"], sek: 30 }, (j) => ({ gruen: !!j && j.welt === "tod", zahl: "tod" }))], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "stirbt", null);
         pruef("SITZUNG eine Welt, die stirbt: die Sitzung startet nie neu, die übrigen Proben sind UNGEMESSEN beim Grund (nie ROT)",
             r2.z.filter((l) => l === "start").length === 1 && r2.es["b.K1#1"].ungemessen === true && /trägt nicht mehr/.test(r2.es["b.K1#1"].grund) && /trägt nicht mehr/.test(r2.kopf.grund), JSON.stringify([r2.z, r2.es, r2.kopf]));
+        // DIE GRUNDSTELLUNG, DIE NICHT TRÄGT: weicht nach dem Rückspielen eine Größe vom Grund ab, sind die übrigen Proben UNGEMESSEN beim
+        // Namen der Größe (nie ROT, nie ein Neuladen)
+        const r7 = await lauf([[S("m.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)]], "anders", null);
+        pruef("SITZUNG eine Grundstellung, nach der eine Größe vom Grund abweicht: die übrigen Proben UNGEMESSEN beim Namen der Größe",
+            r7.es["m.K1#1"].gruen && r7.es["b.K1#1"].ungemessen === true && /abweichend vom Grund: augenblick\.brand/.test(r7.es["b.K1#1"].grund) && r7.z.join(",") === "start,nimm,grund,stop",
+            JSON.stringify([r7.z, r7.es]));
+        // DAS SCHLOSS ZWISCHEN DEN PROBEN: wartet ein CI-Job (die letzte Zeile von hook.log), geht das Schloss an der Proben-Grenze an ihn und kommt
+        // danach wieder — die Welt startet nie neu, das Warten zählt nie in die Fahrt
+        if (gl) {
+            fs.writeFileSync(glLog, "");
+            fs.appendFileSync(hookLog, "2026-10-29 10:00:05 start ci-probe 1/1 echt: wartet auf Schloss von 'punkte-radeon-sitzung'\n");
+            const r8 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "gut", gl);
+            fs.writeFileSync(hookLog, "2026-10-29 10:00:00 ende ci-probe 1/1 echt\n");
+            const sl = fs.readFileSync(glLog, "utf8").trim().split("\n");
+            pruef("SITZUNG DAS SCHLOSS ZWISCHEN DEN PROBEN: ein wartender CI-Job bekommt es an jeder Proben-Grenze, die Sitzung nimmt es neu, die Welt bleibt (ein Start)",
+                sl.length === 3 && r8.kopf.freigaben.length === 2 && r8.z.filter((l) => l === "start").length === 1 && r8.es["a.K1#1"].gruen && r8.es["b.K1#1"].gruen,
+                JSON.stringify([sl, r8.kopf.freigaben, r8.z]));
+        }
         // DIE WACHE DER FAHRT: reißt die Uhr der Fahrt (hier 8 s), fällt die laufende Probe am Rest (UNGEMESSEN beim Namen), jede folgende
         // ist offen, die Sitzung endet und nennt sie; die Fahrt davor misst wie immer
         const r6 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)], [S("b.K1", 1, { befehl: ["node", "-e", "setTimeout(() => {}, 60000)"], sek: 30 }, lies)],
@@ -2584,11 +2783,12 @@ if (require.main === module) {
         if (verb === "run") await run(o);
         else if (verb === "halter") await halter(o);
         else if (verb === "grundstellung") {
-            // in einer Probe: die Grundstellung der Welt der Sitzung (WERKBANK_PORT, der Spiel-Baum ist cwd)
-            const g = await grundstellung(Number(o.port || process.env.WERKBANK_PORT), path.resolve(o.baum || "."));
-            console.log(g.ok ? "GRUNDSTELLUNG " + g.s + " s" : "GRUNDSTELLUNG ROT: " + g.grund);
+            // in einer Probe: die Grundstellung der Welt der Sitzung (WERKBANK_PORT, der Grund PUNKTE_SITZUNG_GRUND)
+            const g = await grundstellung(Number(o.port || process.env.WERKBANK_PORT), o.grund || process.env.PUNKTE_SITZUNG_GRUND);
+            console.log(g.ok ? "GRUNDSTELLUNG " + g.s + " s (im Spiel " + g.ms + " ms, neu " + JSON.stringify(g.neu) + ")" : "GRUNDSTELLUNG ROT: " + g.grund);
             process.exitCode = g.ok ? 0 : 1;
         }
+        else if (verb === "grundprobe") process.exitCode = (await grundProbe(o)) ? 0 : 1;
         else if (verb === "scheiben") scheibenCli(o);
         else if (verb === "vereine") vereineCli(o);
         else if (verb === "buchen") buchenCli(o);

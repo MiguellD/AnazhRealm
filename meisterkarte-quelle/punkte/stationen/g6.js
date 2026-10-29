@@ -421,11 +421,7 @@ async function schrittLauf(h) {
     return { schritt: S, koerper: F, rot: u.rot };
 }
 // EINE Probe für beide Staffeln (Zwillinge: derselbe Befehl fährt einmal), die Welt danach verändert: Stürze aus 12 m, ein GT
-const K4_PROBE = { sek: 60, befehl: sitzungBefehl(schrittLauf, [schrittSeite]) };
-const K4_AUSNAHME =
-    "der Schritt braucht drei Stoffe an Orten des Gesetzes (ferne Kandidaten mit Karten-Warten, je Stoff 3,5 s Gehen), der Körper 32 " +
-    "Abgriffe am OfflineAudioContext — erwartet ~35 s, Deckel 60 s (bis 29.10.: 2,1 + 5,3 min mit zwei eigenen Boots)";
-
+const K4_PROBE = { sek: 10, befehl: sitzungBefehl(schrittLauf, [schrittSeite]) };
 // ─────────────────── klang.K5#2: der Klang-Takt in Bewegung, Aussetzer am Ausgang ───────────────────
 // taktSeite der Klang-Linse (diag-klang-zensus am SHA: Klang-ms je Bild über symphonyTick · _schrittKlangTick · _tierRuf, die
 // Aussetzer über `AudioContext.playbackStats`) in der Welt der Sitzung, ihr Loop im Fenster (echt). Der Gang verdichtet: je Phase
@@ -695,12 +691,7 @@ async function todLauf(h) {
     return j;
 }
 // EINE Probe für beide Staffeln (Zwillinge), vier Neuladen im warmen Browser
-const TOD_PROBE = { sek: 90, befehl: sitzungBefehl(todLauf, [todFaden, todRec, todZyklus]) };
-const TOD_AUSNAHME =
-    "der Tab-Tod ist ein Neuladen je Tod (vier Arten: idb, platz, erwachen-hart, erwachen-idb), idb und platz am nächsten Autosave " +
-    "des Spiels (≤ 5 s + Leerlauf, die Kadenz ist die Messung) — erwartet ~60 s, Deckel 90 s (bis 29.10.: 20 Tode mit je eigenem " +
-    "Boot, 13,2 min)";
-
+const TOD_PROBE = { sek: 33, befehl: sitzungBefehl(todLauf, [todFaden, todRec, todZyklus]) };
 // ─────────────────── speicher.K2#1 · #2: Speichern kostet kein Bild ───────────────────
 // taktSeite der Mess-Bahn speicher-zwei (Karte 27.10.) in der Welt der Sitzung: eine Hülle um jeden Speicher-Schritt des
 // Haupt-Fadens — der Ruf (`saveState`), das Zusammensetzen (`_standNachholen`), der Besen (`_standFegen`), der Versand (`schicke`)
@@ -780,12 +771,7 @@ async function speicherTaktLauf(h) {
     return { ...j, grundstellung: !frisch };
 }
 // EINE Probe für beide Staffeln (Zwillinge); die Welt danach: 10 000 Gruben
-const SPEICHER_TAKT_PROBE = { sek: 90, befehl: sitzungBefehl(speicherTaktLauf, [speicherTaktSeite]) };
-const SPEICHER_TAKT_AUSNAHME =
-    "2 × 20 Stände am gestellten Autosave (0,5 s) und 10 000 Gruben am Ereignis (der Zustand nach 2 h), dazu höchstens eine " +
-    "Grundstellung für die frische Welt — erwartet ~45 s, Deckel 90 s (bis 29.10.: 2 × 20 Stände am 5-s-Autosave mit je eigenem " +
-    "Boot, 6,0 + 6,6 min)";
-
+const SPEICHER_TAKT_PROBE = { sek: 33, befehl: sitzungBefehl(speicherTaktLauf, [speicherTaktSeite]) };
 // ─────────────────── speicher.K4#2: die Wiederkehr zeigt dieselbe Welt ───────────────────
 // bildSeite der Mess-Bahn speicher-zwei in der Welt der Sitzung: am Bach der Mess-Wiese (welt-boot `uferStellen` am SHA, der Loop
 // läuft, bis das Wasser zeichnet) setzt der Spieler einen Stein-Block 6 m vor sich und gräbt eine Grube (r 2 m) 9 m vor sich ans
@@ -1570,9 +1556,9 @@ const PB_PROBEN_DAUER = [
     ["Mutante Software-Adapter", () => {}, false, "[linse-gpu] google/swiftshader"],
 ].map(([name, m, gruen, adapter]) => ({ name, stdout: k5Roh(m, adapter), gruen }));
 // die drei Proben (die Zwillinge teilen je EINE: gleiche Probe, ein Lauf); Ziel der Gruppe ≤ 90 s: glaette ~16 + gang ~60 + dauer ~14
-const PB_PROBE_GLAETTE = { sek: 40, stellung: "anfang", befehl: pbBefehl("glaette") };
-const PB_PROBE_GANG = { sek: 90, mutiert: true, ausnahme: PB_AUSNAHME_GANG, befehl: pbBefehl("gang") };
-const PB_PROBE_DAUER = { sek: 40, stellung: "ende", befehl: pbBefehl("dauer") };
+const PB_PROBE_GLAETTE = { sek: 45, stellung: "anfang", befehl: pbBefehl("glaette") };
+const PB_PROBE_GANG = { sek: 64, mutiert: true, ausnahme: PB_AUSNAHME_GANG, befehl: pbBefehl("gang") };
+const PB_PROBE_DAUER = { sek: 45, stellung: "ende", befehl: pbBefehl("dauer") };
 
 module.exports = [
     // ─────────────────────────────── Ankunft K2 · K3 (ankunft-aussen) ───────────────────────────────
@@ -1586,7 +1572,7 @@ module.exports = [
         // Bedarf im Bild in dem Moment (`_weltbildFehlt`, im Blick). Soll: ≤ 2 % und nichts offen an einem Gerät, die Ruhe erreicht
         // (ohne sie verglich die Lücke gegen eine halbe Welt — ROT beim Namen der Frist). Bis 29.10. ein eigener Browser mit 60 s
         // Uhr-Ruhe (8 min Soll). swiftshader (Cloud, ankunft-aussen 202b23be): 7,80 % Lücke, 54 Bäume und Bauten offen im Bild.
-        probe: { ...ANKUNFT_PROBE, mutiert: true, ausnahme: ANKUNFT_AUSNAHME },
+        probe: { ...ANKUNFT_PROBE, mutiert: true,  sek: 10 },
         gpu: true,
         zeit: true,
         minuten: 1,
@@ -1613,7 +1599,7 @@ module.exports = [
         // warmen Browser (der Stand gesichert, die Seite neu), je t(Kontrolle) von außen. Soll: Median ≤ 5 s an einem Gerät. Bis 29.10.
         // ein Kalt-Boot und vier Wiederkehren, je ein frischer Browser-Prozess (12 min Soll) — die Wiederkehr ist jetzt die Seite neu
         // im warmen Prozess (sein Shader- und HTTP-Cache bleiben; ein frischer Prozess ist die Kälte des Session-Starts).
-        probe: { ...ANKUNFT_PROBE, mutiert: true, ausnahme: ANKUNFT_AUSNAHME },
+        probe: { ...ANKUNFT_PROBE, mutiert: true,  sek: 10 },
         gpu: true,
         zeit: true,
         minuten: 1,
@@ -1645,8 +1631,8 @@ module.exports = [
         // IN DER SITZUNG (29.10., proben-welt.cjs `sprungKadenz`): die drei Sprünge der Hänger-Linse in der warmen Welt, jeder 1 km
         // weiter auf +x in eine Welt, die dort noch nicht steht (statt je Sprung einer frischen Sitzung; Radeon b3f9ae95: 4,92 min
         // Arbeit, die Welt stand nach 8,9–9,0 s); Einschwingen 1 s statt 10 s (die Welt steht schon). Teleport ist kein Edit: unberührt.
-        // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 42,6 s GRÜN am Deckel 45): 70 s mit ausnahme
-        probe: { befehl: PW.torBefehl(PW.sprungKadenz), sek: 70, mutiert: false, ausnahme: "drei Sprünge je 1 km in eine Welt, die dort noch nicht steht, je bis die Welt steht (Radeon 8–10 s je Sprung)" },
+        // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 42,6 s GRÜN am Deckel 45): der Deckel steht in der Tafel der Fahrt (punkte.cjs DIE DECKEL)
+        probe: { befehl: PW.torBefehl(PW.sprungKadenz), sek: 33, mutiert: false, },
         gpu: true,
         zeit: true,
         minuten: 20,
@@ -1733,9 +1719,9 @@ module.exports = [
         // Arbeit). Baut, schüttet und hängt Haken in die Seite: mutiert.
         probe: {
             befehl: PW.torBefehl(PW.fadenZaehler),
-            sek: 75,
+            sek: 10,
             mutiert: true,
-            ausnahme: "die Haken der Linse sitzen vor dem ersten Skript: EIN kalter Neu-Lade der Welt (Ankunft kalt) ist Teil des Kriteriums",
+            
         },
         gpu: true,
         zeit: false,
@@ -2138,7 +2124,7 @@ module.exports = [
         // M33 in der Sitzung (`windSeite`, oben): 21 s an der Mess-Wiese, Ego, Böen frei, Tiere gehalten, der Klang in einem eigenen
         // Kontext; Bild = das präsentierte Fenster (|ΔLuma| im Boden-Ausschnitt), Ohr = Analyser am Gain der Wind-Stimme, je 0,2 s ein
         // Fenster (≥ 100 wie vorher, Lag ±3 s). Bis 29.10. m15-wind 60 s in 0,5-s-Fenstern mit eigenem Boot (ea07267e Radeon 3,68 min)
-        probe: { sek: 45, befehl: sitzungBefehl(windLauf, [windSeite]), mutiert: false },
+        probe: { sek: 22, befehl: sitzungBefehl(windLauf, [windSeite]), mutiert: false },
         gpu: true,
         // zeit: der Screencast liefert seine Bilder nur ungestört (27.10., Takt 8 erstmals in Bahnen: neben zwei Bild-Läufen CV Bild
         // 2,16 statt 0,26–0,29 und r 0,00 statt 0,80–0,85 an 607d0c73 · b2c6c627 · 83df2052) — das Urteil hängt an der Wanduhr
@@ -2288,7 +2274,7 @@ module.exports = [
         // der Wiese, fährt die Probe ferne Kandidaten an), Analyser an jedem Schritt-Gain, je Etikett des Schritts der Schwerpunkt-Median.
         // Bis 29.10. m15-schritt mit eigenem Boot, 10 s je Stoff (an main 83df2052 Radeon gras 5648 Hz n 21 · laub 5265 Hz n 23 · quarz
         // 3208 Hz n 21, kleinster Abstand 383 Hz; ea07267e Radeon 2,09 min)
-        probe: { ...K4_PROBE, mutiert: true, ausnahme: K4_AUSNAHME },
+        probe: { ...K4_PROBE, mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 1,
@@ -2337,7 +2323,7 @@ module.exports = [
         // Geschwindigkeit am Ohr v = c·(1 − 1/f) über die des Gesetzes, beide Vorzeichen, Steigung durch den Ursprung 1 ± 10 %,
         // r ≥ 0,9, jeder Punkt ± 10 % — dazu kein Befund „F …" der Linse. Das Klang-Gesetz des Körpers ist CPU (OfflineAudioContext),
         // die Schritte tragen die Karte der Sitzung. Bis 29.10. m15-schritt und der ganze Zensus mit zwei eigenen Boots (ea07267e 5,25 min).
-        probe: { ...K4_PROBE, mutiert: true, ausnahme: K4_AUSNAHME },
+        probe: { ...K4_PROBE, mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 1,
@@ -2468,9 +2454,7 @@ module.exports = [
         // EINEN Fahrt ≤ 30 min): 0 Aussetzer über die ganze Wiedergabe der drei Phasen (≥ 15 s) statt 10 min an der Uhr — die 10 min
         // der Staffel nennt die Zahl, der Schöpfer entscheidet ihren Text. Bis 29.10. `--takt --echt --minuten 10` mit eigenem Boot
         // (ea07267e Radeon 14,74 min).
-        probe: { sek: 75, befehl: sitzungBefehl(taktLauf, [taktFahrt]), mutiert: true, ausnahme:
-            "drei Phasen je 600 Bilder in Bewegung (gehen, Fahrt im GT, Nacht) bei 60 Hz ≥ 30 s Wiedergabe, dazu Aufsitzen und Einlauf — " +
-            "erwartet ~40 s, Deckel 75 s (bis 29.10.: 10 min Spielgang, 14,7 min mit eigenem Boot)" },
+        probe: { sek: 10, befehl: sitzungBefehl(taktLauf, [taktFahrt]), mutiert: true, },
         gpu: true,
         zeit: true,
         minuten: 1,
@@ -2520,7 +2504,7 @@ module.exports = [
         // M37 in der Sitzung (`todZyklus`, oben): vier Tode am Pfad des Spielers — am Schreib-Haken idb und platz des Speicher-Fadens,
         // hart im Dorf-Erwachen und an dessen IDB-Schreiben; Alter des geladenen Stands, halbe Welt (Blöcke und Edits), korrupt.
         // Bis 29.10. echt-k1 20 (20 harte Tode des Browsers, je ein Boot; ea07267e Radeon 13,24 min)
-        probe: { ...TOD_PROBE, mutiert: true, ausnahme: TOD_AUSNAHME },
+        probe: { ...TOD_PROBE, mutiert: true },
         gpu: true,
         zeit: true,
         minuten: 1.5,
@@ -2549,7 +2533,7 @@ module.exports = [
         geraet: ["radeon", "gtx"],
         // derselbe Lauf an beiden Geräten; dazu verlangt: Tode mitten im IDB-put und am localStorage-Platz, und der Tod im
         // laufenden Gang des Dorf-Erwachens (hart und am IDB-Schreiben des saveState, der den Gang schließt — be20b015)
-        probe: { ...TOD_PROBE, mutiert: true, ausnahme: TOD_AUSNAHME },
+        probe: { ...TOD_PROBE, mutiert: true },
         gpu: true,
         zeit: true,
         minuten: 1.5,
@@ -2585,7 +2569,7 @@ module.exports = [
         // Ruf allein war bis 29.10. eine untere Schranke), p95 über die Speicher-Bilder von 20 Ständen ≤ 0,3 ms. Trägt die Welt der
         // Sitzung schon Edits, holt die Probe vorher die Grundstellung (frisch). Bis 29.10. echt-k1 4 k2 (4 Tode, je Ruf die ms;
         // ea07267e Radeon 5,97 min).
-        probe: { ...SPEICHER_TAKT_PROBE, mutiert: true, ausnahme: SPEICHER_TAKT_AUSNAHME },
+        probe: { ...SPEICHER_TAKT_PROBE, mutiert: true },
         gpu: true,
         zeit: true,
         minuten: 1,
@@ -2614,7 +2598,7 @@ module.exports = [
         // SPEICHER-BILD. 20 Stände frisch, dann 10 000 Gruben am Ereignis (der Zustand „nach 2 h mit 10 000 Edits", nie die Wanduhr),
         // wieder 20 Stände. Ein Bild über 16,7 ms (am vsync-Zeitstempel, Toleranz 0,5 ms) trägt das Speichern, wenn es ohne dessen ms
         // darunter bliebe. Bis 29.10. speicher-zwei `takt --echt` mit eigenem Boot (ea07267e Radeon 6,56 min).
-        probe: { ...SPEICHER_TAKT_PROBE, mutiert: true, ausnahme: SPEICHER_TAKT_AUSNAHME },
+        probe: { ...SPEICHER_TAKT_PROBE, mutiert: true },
         gpu: true,
         zeit: true,
         minuten: 1,
@@ -2748,9 +2732,7 @@ module.exports = [
         // Bau und Grube stehen vor und nach dem Laden im Stand UND im Blick der Kamera (Third, Neigung −0,5), das Wasser zeichnet.
         // Daneben das RAUSCHEN der Bahn (derselbe Blick ohne Neuladen) und die drei Bilder neben der Ausgabe ({AUS}-vor/-vor2/-nach.png).
         // Das Neuladen ist /reload im warmen Browser der Sitzung. Bis 29.10. speicher-zwei `bild` mit eigenem Boot (ea07267e 3,25 min).
-        probe: { sek: 60, befehl: sitzungBefehl(speicherBildLauf, [uferSeite, speicherBildSeite]), mutiert: true, ausnahme:
-            "die Wiederkehr ist ein Neuladen im warmen Browser (GTX Zweit-Boot ~12 s) und zweimal das Ufer im Blick (das Wasser zeichnet) " +
-            "— erwartet ~30 s, Deckel 60 s (bis 29.10.: 3,3 min mit eigenem Boot)" },
+        probe: { sek: 15, befehl: sitzungBefehl(speicherBildLauf, [uferSeite, speicherBildSeite]), mutiert: true, },
         gpu: true,
         zeit: false,
         minuten: 1,

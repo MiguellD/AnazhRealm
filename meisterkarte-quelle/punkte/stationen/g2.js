@@ -40,9 +40,9 @@ async function vegetationK4Seite(H) {
     console.log("W9 " + (w.haeuser || []).length + " Häuser · Bild " + w.bild + " · Wasser " + (w.wasser || []).length + " · Werkstatt " + (o && o.werkstatt) + (o && o.fehler ? " · " + o.fehler : ""));
     return 0;
 }
-const VEGETATION_K4 = seiteProbe(90, vegetationK4Seite, {
+const VEGETATION_K4 = seiteProbe(33, vegetationK4Seite, {
     mutiert: true,
-    ausnahme: "das Start-Dorf erwacht im Takt (≥ 10 Häuser), je Box zwei Blicke, je Haus Third, Wasser je Ego und Third, das Haus der Werkstatt",
+    
 });
 
 // R6 der Tier-Gesetze (Zweig tier-gesetz-k5): Kern, Kreatur-Stamm, Leben-Feld, Leib und die Kreatur-Linse
@@ -1234,7 +1234,7 @@ function sollKlasseStation(o) {
         kriterium: o.kriterium,
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 45, ...(o.mutiert ? { mutiert: true } : {}), befehl: [
+        probe: { sek: 15, ...(o.mutiert ? { mutiert: true } : {}), befehl: [
             "bash",
             "-c",
             [
@@ -1282,9 +1282,7 @@ function sollKlasseStation(o) {
 // --proben bewohner` (das Start-Dorf wächst, bis jeder Bewohner seinen Leib trägt; der Tag über 24 Spielstunden) und `platz-8.js` (Third
 // am Dorfplatz, Uhr 8) mit dem Bild aus dem Ausgabe-Pfad. Die Probe des Spiels trägt ihre Spielstunden fest (headless 446 s, DAUER_S
 // der Linse) — über dem Deckel der Sitzung, bis sie im Spiel-Baum kürzt
-const BEWOHNER_AUSNAHME =
-    "die Probe bewohner des Spiels: das Start-Dorf wächst am echten Takt und der Tag läuft 24 Spielstunden (headless 446 s) — ein Lauf für zwei Stationen";
-const BEWOHNER_SITZUNG = { sek: 90, befehl: [
+const BEWOHNER_SITZUNG = { sek: 33, befehl: [
     "bash",
     "-c",
     [
@@ -1710,7 +1708,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // DAS BUDGET DER SITZUNG (29.10.): die Probe herde läuft ihre Spiel-Sekunden am Kreatur-Takt (headless 37 s, DAUER_S der
         // Linse), dazu drei Schüsse — die Herde bleibt in der Welt (mutiert)
-        probe: { sek: 90, befehl: [
+        probe: { sek: 33, befehl: [
             "node",
             "-e",
             "(" + knapp(herdeHang) + ")()",
@@ -1718,7 +1716,7 @@ const stationen = [
             "{PORT}",
             knapp(herdeSzene),
             knapp(herdePulk),
-        ], ausnahme: "die Probe herde (a)–(d) am echten Kreatur-Takt (600 Spiel-s neben dem fremden Verband, headless 37 s) und drei Schüsse der fliehenden Herde", mutiert: true },
+        ],  mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 8,
@@ -1845,7 +1843,7 @@ const stationen = [
         kriterium: "tiere.K3",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 90, befehl: [
+        probe: { sek: 33, befehl: [
             "bash",
             "-c",
             [
@@ -1862,7 +1860,7 @@ const stationen = [
                 "wait",
                 "cat \"$B-tiergang.out\" \"$B-querhang.out\"",
             ].join("\n"),
-        ], ausnahme: "gate:tier-gang (4 Gattungen × 4 Tempi in Welt, Satz und Labor) und der Querhang laufen je in einer eigenen Null-Welt, zugleich mit dem Schuss der Gang-Bühne", mutiert: true },
+        ],  mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 14,
@@ -1927,7 +1925,7 @@ const stationen = [
         // platz-8.js und b64png.cjs leben im Koord-Baum (R6 sieht sie nicht; ihr Text steht hier per Pfad im Abdruck).
         // IN DER SITZUNG (29.10.): EIN Lauf der Probe bewohner für mensch.K1#1 und mensch.K2#2 (BEWOHNER_SITZUNG, Zwillinge) —
         // bis dahin fuhr jede ihn ganz
-        probe: { ...BEWOHNER_SITZUNG, ausnahme: BEWOHNER_AUSNAHME, mutiert: true },
+        probe: { ...BEWOHNER_SITZUNG,  mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 8,
@@ -1992,7 +1990,7 @@ const stationen = [
         // beim Namen (der Gang steht, der Nah-Ring leer). GPU: an der Station. Ports: save-server {PORT}, Werkbank {PORT}+20000.
         // IN DER SITZUNG (29.10.): das Band in 10 s echtem Loop (≈ 600 Bilder, das Urteil verlangt ≥ 30) statt 20 s; die Stadt wächst
         // am Messort (mutiert)
-        probe: { sek: 90, befehl: [
+        probe: { sek: 33, befehl: [
             "bash",
             "-c",
             [
@@ -2005,7 +2003,7 @@ const stationen = [
                 "node scripts/werkbank.cjs haenger 10 --regler voll --tiere frei --json \"$B-haenger.json\" > \"$B-haenger.out\" 2>&1; echo \"HAENGER EXIT=$?\"",
                 "node -e 'try{const j=require(process.argv[1]);console.log(\"TAKT \"+JSON.stringify({frames:j.frames,frameMs:j.frameMs,taktMs:j.taktMs}))}catch(e){console.log(\"TAKT {}\")}' \"$B-haenger.json\"",
             ].join("\n"),
-        ], ausnahme: "der Messort stadt-voll gründet die Metropole am echten Takt (Gründung und Wachstum), dann 600 Bewohner-Takte und 10 s Loop", mutiert: true },
+        ],  mutiert: true },
         gpu: true,
         zeit: true,
         minuten: 20,
@@ -2373,7 +2371,7 @@ const stationen = [
         kriterium: "tiere.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 90, befehl: [
+        probe: { sek: 33, befehl: [
             "bash",
             "-c",
             [
@@ -2391,7 +2389,7 @@ const stationen = [
                 "wait",
                 "cat \"$B-jagdkreis.out\"",
             ].join("\n"),
-        ], ausnahme: "das Mahl der Probe jagdkreis läuft seine Jagden am Kreatur-Takt in eigener Null-Welt (headless 140 s am Farm-Lauf 98ef98bb), zugleich mit dem Wolfsrevier", mutiert: true },
+        ],  mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 12,
@@ -2453,9 +2451,9 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         probe: {
             befehl: PW.torBefehl(PW.tierKreis),
-            sek: 90,
+            sek: 33,
             mutiert: false,
-            ausnahme: "je Sicht 600 Spiel-s (das Kriterium: je 10 Spielminuten) im Zeitraffer, 10 Takte zu 0,1 s je Bild",
+            
         },
         gpu: true,
         zeit: false,
@@ -2565,8 +2563,8 @@ const stationen = [
         kriterium: "affekt.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 43,2 s GRÜN am Deckel 45 — die GTX risse ihn): 70 s mit ausnahme
-        probe: { sek: 70, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "wert", knapp(wertGang)], mutiert: true, ausnahme: "zwei Gänge mit echtem Affekt-Takt (12 Uhr Ego, 22 Uhr Third), je fällen, töten, pflegen und 30 Spielminuten Ertrag" },
+        // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 43,2 s GRÜN am Deckel 45 — die GTX risse ihn): der Deckel steht in der Tafel der Fahrt (punkte.cjs DIE DECKEL)
+        probe: { sek: 33, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "wert", knapp(wertGang)], mutiert: true, },
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -2922,7 +2920,7 @@ const stationen = [
         kriterium: "oekologie.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 90, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "rudel", knapp(rudelGefuehl)], ausnahme: "das Rudel umstellt den Spieler am echten Takt (~15 Spiel-s), 20 s Furcht und 5 s Triumph, dazu der Gegenlauf derselben Dauer — je Takt ein Bild", mutiert: true },
+        probe: { sek: 33, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "rudel", knapp(rudelGefuehl)],  mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -2955,7 +2953,7 @@ const stationen = [
     // Das Schlupfloch Teleport fällt an sprungN, der Plan bit-gleich je Same. Ports: save-server {PORT}, Werkbank {PORT}+20000.
     // IN DER SITZUNG (29.10.): der Zwilling von mensch.K1#1 (BEWOHNER_SITZUNG) — EIN Lauf der Probe bewohner, das Urteil liest die
     // Zeile bewohner (die Platz-Zeile daneben liest es nicht)
-    probe: { ...BEWOHNER_SITZUNG, ausnahme: BEWOHNER_AUSNAHME, mutiert: true },
+    probe: { ...BEWOHNER_SITZUNG,  mutiert: true },
     gpu: true,
     zeit: false,
     minuten: 10,
@@ -3198,7 +3196,7 @@ const stationen = [
         geraet: "gtx",
         // IN DER SITZUNG (29.10.): 60 × 20 Schwarm-Takte und EIN gezählter Frame (Gegenlauf b3f9ae95: 0,04 min); die Bühne legt die
         // Schwarm-Karte neu und stellt das Fenster auf 1280×720 (mutiert) — beide Staffeln EIN Lauf (Zwillinge)
-        probe: { sek: 15, befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)], mutiert: true }, // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 0,6 s GRÜN)
+        probe: { sek: 10, befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)], mutiert: true }, // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 0,6 s GRÜN)
         gpu: true,
         zeit: true,
         minuten: 4,
@@ -3222,7 +3220,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // IN DER SITZUNG (29.10.): 60 × 20 Schwarm-Takte und EIN gezählter Frame (Gegenlauf b3f9ae95: 0,04 min); die Bühne legt die
         // Schwarm-Karte neu und stellt das Fenster auf 1280×720 (mutiert) — beide Staffeln EIN Lauf (Zwillinge)
-        probe: { sek: 15, befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)], mutiert: true }, // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 0,6 s GRÜN)
+        probe: { sek: 10, befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)], mutiert: true }, // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 0,6 s GRÜN)
         gpu: true,
         zeit: true,
         minuten: 4,
@@ -3257,7 +3255,7 @@ const stationen = [
     // ihm. Ports: save-server {PORT}, Werkbank {PORT}+20000.
     // IN DER SITZUNG (29.10.): die Probe begegnung des Spiels (das Start-Dorf wächst, vier Gänge zu 1,4 m/s, je Takt ein Bild) —
     // das Dorf und das geschlagene Wesen bleiben (mutiert)
-    probe: { sek: 90, befehl: [
+    probe: { sek: 10, befehl: [
         "bash",
         "-c",
         [
@@ -3265,7 +3263,7 @@ const stationen = [
             "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
             "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben begegnung",
         ].join("\n"),
-    ], ausnahme: "die Probe begegnung des Spiels: das Start-Dorf wächst am echten Takt, dann vier Gänge zu 1,4 m/s mit dem echten Frame je Takt", mutiert: true },
+    ],  mutiert: true },
     gpu: true,
     zeit: false,
     minuten: 8,
@@ -3323,7 +3321,7 @@ const stationen = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         // IN DER SITZUNG (29.10.): EIN Teleport an die Wiese (der zweite fiel), EIN Schuss `bild --zeit` — Ziel 15 s
-        probe: { sek: 45, befehl: ["node", "-e", "(" + knapp(boeLauf) + ")()", "{AUS}", "{PORT}"] },
+        probe: { sek: 15, befehl: ["node", "-e", "(" + knapp(boeLauf) + ")()", "{AUS}", "{PORT}"] },
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -3507,24 +3505,22 @@ const stationen = [
     }),
     // ───────── vegetation.K1 — die Wiese bis zum Saum (Zweig w3w-wald): Staffel 1 EINE Pose (Mess-Wiese, Third, Mittag),
     // Staffel 2 Mess-Wiese UND Genesis × Ego UND Third × Uhr 0,5 und 0,3 (vegetationLauf, wieseUrteil) ─────────
-    wieseStation(1, [["wiese", "third", 0.5]], 45, "1 = eine Pose (Ort × Sicht × Uhr) grün in allen festen Ringen, im Budget"),
+    wieseStation(1, [["wiese", "third", 0.5]], 10, "1 = eine Pose (Ort × Sicht × Uhr) grün in allen festen Ringen, im Budget"),
     wieseStation(
         2,
         ["wiese", "genesis"].flatMap((o) => ["ego", "third"].flatMap((s) => [0.5, 0.3].map((u) => [o, s, u]))),
-        90,
-        "2 = Mess-Wiese UND Genesis, Ego UND Third, Uhr 0,5 und 0,3, beide Geräte",
-        "acht Schüsse 1920×1080 (Mess-Wiese und Genesis × Ego und Third × Uhr 0,5 und 0,3), je Schuss die Kamera des Spiels, die festen Ringe und der Zähler"
+        10,
+        "2 = Mess-Wiese UND Genesis, Ego UND Third, Uhr 0,5 und 0,3, beide Geräte"
     ),
     // ───────── vegetation.K5 — das Jahr als Gestalt (Zweig w3w-wald): Staffel 1 die Laub-Maske an EINER Pose im Sommer und Winter,
     // Staffel 2 dazu der Frühling und die Wiese an der Kamera des Spiels (Ego, Mittag) in allen drei (vegetationLauf, jahrUrteil) ─────────
-    jahrStation(1, ["sommer", "winter"].map((z) => ["wiese", "ego", 0.5, z, "krone"]), ["sommer", "winter"], 45, "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose"),
+    jahrStation(1, ["sommer", "winter"].map((z) => ["wiese", "ego", 0.5, z, "krone"]), ["sommer", "winter"], 26, "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose"),
     jahrStation(
         2,
         ["krone", "wiese"].flatMap((was) => ["sommer", "winter", "fruehling"].map((z) => ["wiese", "ego", 0.5, z, was])),
         ["sommer", "winter", "fruehling"],
-        90,
-        "2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte",
-        "sechs Schüsse 1920×1080: Krone und Wiese je in Sommer, Winter und Frühling an derselben Pose, die Jahreszeit über das Wort"
+        33,
+        "2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte"
     ),
 ];
 

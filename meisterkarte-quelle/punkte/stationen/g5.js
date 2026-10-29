@@ -215,20 +215,20 @@ async function toreK3Seite(H) {
     return ring.length >= 10 ? 0 : 1;
 }
 // die Proben (Zwillinge tragen DIESELBE Probe: punkte.cjs gruppiere fährt sie einmal)
-// DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 52,2 s GRÜN am Deckel 60): 80 s
-const LEIB_K2 = seiteProbe(80, leibK2Seite, {
+// DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 52,2 s GRÜN am Deckel 60): der Deckel steht in der Tafel der Fahrt (punkte.cjs DIE DECKEL)
+const LEIB_K2 = seiteProbe(33, leibK2Seite, {
     mutiert: true,
-    ausnahme: "K8 und K9 zählen Takte: der Fuß auf sechs Bahnen je ≥ 200 Kontakte und sechs Sprünge (~3000 Takte im Fenster 640×360)",
+    
 });
-const LEIB_K4 = seiteProbe(90, leibK4Seite, {
+const LEIB_K4 = seiteProbe(33, leibK4Seite, {
     mutiert: true,
-    ausnahme: "neun Gänge der Vorgabe GANG zu je ~1000 Bildern (rückwärts heran, zwei 360°-Orbits zu 6 s Spielzeit, der Ruck je Bild)",
+    
 });
-const HALTEN_K5 = seiteProbe(30, haltenK5Seite, { mutiert: true });
-const HALTEN_K1 = seiteProbe(40, haltenK1Seite, { mutiert: true });
-const TORE_K3 = seiteProbe(90, toreK3Seite, {
+const HALTEN_K5 = seiteProbe(19, haltenK5Seite, { mutiert: true });
+const HALTEN_K1 = seiteProbe(10, haltenK1Seite, { mutiert: true });
+const TORE_K3 = seiteProbe(10, toreK3Seite, {
     mutiert: true,
-    ausnahme: "elf Tore (die Garage und zehn des Genesis-Rings): je Welt ein Studio im Rahmen und der Gang 4 m durch die Apertur",
+    
 });
 
 // Pfade (R6): die Dateien, die die Messung liest
@@ -347,7 +347,7 @@ const STADT_HUEGEL = [
 // 8 Saaten) läuft NEBEN der Stadt der Sitzung (seine Zeilen danach, Z), der Weg zum Hügel, bis die Mauer steht (STADT_HUEGEL), das
 // Bild mittags und in der Dämmerung; {AUS} = { mittag, daemmerung }. Bis dahin fuhr jede Staffel Teil Z und die Stadt für sich,
 // der Stand fragte alle 5 s. Die Stadt wächst am Hügel (mutiert).
-const SIEDLUNG_SITZUNG = sitzung(90,
+const SIEDLUNG_SITZUNG = sitzung(33,
     "A=$(cygpath -m '{AUS}')",
     '( node scripts/diag-settlement.cjs --nur-z --zipf; echo "@@PUNKTE@@ EXIT $?" ) > "$L/zipf.out" 2>&1 &',
     ...STADT_HUEGEL,
@@ -359,9 +359,6 @@ const SIEDLUNG_SITZUNG = sitzung(90,
     "wait",
     'echo "@@PUNKTE@@ Z"; cat "$L/zipf.out"'
 );
-const SIEDLUNG_AUSNAHME =
-    "die nächste Stadt wächst am Hügel am echten Takt, bis ihre Mauer steht (Gründung, Häuser, Mauer-Export), zugleich Teil Z über 8 Saaten in Node — ein Lauf für zwei Stationen";
-
 // DER RING VOM HÜGEL (siedlung.K4 Staffel 2, w3w-jahrhunderte): ein Ort von 1320 (der Akt `spawnSettlement` mit Jahr, Same 7) auf
 // dem ebensten Land 500–800 m vor dem Genesis-Ort; der Hügel ist der höchste Land-Punkt 140–240 m vor ihm. Am Ort: ein gesetztes
 // Haus 6 m vor seinem Rand zum Hügel hin (Werk, `haus_alemannisch`), die Welt-Uhr 1500 s vor — jedes `umstellen` tickt die Welt,
@@ -456,7 +453,7 @@ function latenzSchlechtester(j, ids, n, soll = 50) {
 // DIE LATENZ DER VERBEN UND DER HIT-STOP IN EINEM LAUF (leib.K1#2 und halten.K2#1, Zwillinge, 29.10.): die Haken des Spiels, die
 // Linse über gehen, springen, einsteigen, hieb in Ego und Third, das Lesen der Haken — bis dahin fuhr jede Station ihre drei Boots
 // (halten.K2#1 hieb allein, 30 Proben je Reihe); einsteigen und hieb lassen Wagen und Treffer in der Welt (mutiert)
-const LATENZ_HALT_SITZUNG = sitzung(90,
+const LATENZ_HALT_SITZUNG = sitzung(33,
     ...latenzLaeufe(
         "boot",
         "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
@@ -465,12 +462,10 @@ const LATENZ_HALT_SITZUNG = sitzung(90,
         "teil SPIEL{N} $W eval '" + HIT_LESEN + "'"
     )
 );
-const LATENZ_HALT_AUSNAHME =
-    "die Latenz-Linse je Probe: Ruhe abwarten, Taste, erstes bewegtes Bild — 4 Verben × 2 Sichten × " + LATENZ_PROBEN + " Proben in EINEM Lauf für zwei Stationen";
 // DIE FAHRT IN EINEM LAUF (fahrzeug.K3#2, fahrzeug.K4#1, fahrzeug.K4#2, Zwillinge, 29.10.): gate:fahr-leben (T4, T5; eigene Null-Welt auf
 // {PORT}+20001) läuft NEBEN der Welt der Sitzung; darin der Ritt (tempo3.js, WELT), die Grundstellung, der Blick am Steilhang
 // (blick.js, BLICK); die Zeilen der Linse danach (FAHR). Bis dahin fuhr jede der drei Stationen die Linse und ihren Boot für sich.
-const FAHR_SITZUNG = sitzung(90,
+const FAHR_SITZUNG = sitzung(33,
     '( env FAHR_LEBEN_PORT=$LP node scripts/diag-fahr-leben.cjs; echo "@@PUNKTE@@ EXIT $?" ) > "$L/fahr.out" 2>&1 &',
     "boot",
     'teil WELT $W eval "$(cat "$K/bericht/2110-gtx-messschuld/tempo3.js")"',
@@ -479,9 +474,6 @@ const FAHR_SITZUNG = sitzung(90,
     "wait",
     'echo "@@PUNKTE@@ FAHR"; cat "$L/fahr.out"'
 );
-const FAHR_AUSNAHME =
-    "gate:fahr-leben des Spiels läuft ganz (T0–T5, keine Wahl der Zeilen) in eigener Null-Welt, zugleich Ritt und Blick in der Welt — ein Lauf für drei Stationen";
-
 // ───────────────────────── DIE PROBEN DER STADT IN DER SITZUNG (29.10., stationen/sitzung-seite.js) ─────────────────────────
 // Das Gesetz des Schöpfers: eine Fahrt durch jedes System ≤ 30 min samt Dauerlast — keine dieser Stationen bootet mehr eine Welt.
 const { probeBefehl } = require("./sitzung-seite.js");
@@ -936,7 +928,7 @@ const stationen = [
             'teil WELT $W eval "$(cat "$K/bericht/2110-gtx-messschuld/tempo3.js")"',
             "wait",
             'echo "@@PUNKTE@@ GARAGE"; cat "$L/garage.out"'
-        ), ausnahme: "das Garagen-Labor (eigene Seite, Mess-Patch bei vmax) zugleich mit dem Ritt des GT bis Vollgas in der Welt", mutiert: true },
+        ),  mutiert: true, sek: 33 },
         env: K,
         gpu: true,
         zeit: false,
@@ -968,7 +960,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // die Zusätze der 2: Drift, Rückkehr (tempo3.js in der Welt), Ruck (gate:fahr-leben T4) und EIN FOV-Schreiber (T5)
         // IN DER SITZUNG (29.10.): EIN Lauf mit fahrzeug.K4#1/#2 (FAHR_SITZUNG, Zwillinge)
-        probe: { ...FAHR_SITZUNG, ausnahme: FAHR_AUSNAHME, mutiert: true },
+        probe: { ...FAHR_SITZUNG,  mutiert: true },
         env: K,
         gpu: true,
         zeit: false,
@@ -1006,7 +998,7 @@ const stationen = [
         // gate:fahr-leben T4 (Absteigen in Fahrt, Azimut nach 10 Bildern) + der Blick im Bild am Steilhang bergab, Third → Ego →
         // Third (bericht/2010-buendel-abab/blick.js über werkbank eval, M8): der GT in den Bildern 1–3 nach dem Wechsel
         // IN DER SITZUNG (29.10.): EIN Lauf mit fahrzeug.K3#2 (FAHR_SITZUNG, Zwillinge)
-        probe: { ...FAHR_SITZUNG, ausnahme: FAHR_AUSNAHME, mutiert: true },
+        probe: { ...FAHR_SITZUNG,  mutiert: true },
         env: K,
         gpu: true,
         zeit: false,
@@ -1045,7 +1037,7 @@ const stationen = [
         kriterium: "siedlung.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { ...SIEDLUNG_SITZUNG, ausnahme: SIEDLUNG_AUSNAHME, mutiert: true },
+        probe: { ...SIEDLUNG_SITZUNG,  mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 15,
@@ -1102,7 +1094,7 @@ const stationen = [
         kriterium: "siedlung.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { ...SIEDLUNG_SITZUNG, ausnahme: SIEDLUNG_AUSNAHME, mutiert: true },
+        probe: { ...SIEDLUNG_SITZUNG,  mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 15,
@@ -1210,7 +1202,7 @@ const stationen = [
         kriterium: "siedlung.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { ...START_DORF_PROBE, ausnahme: "jedes Haus des Start-Dorfs (18 im Plan) je Gang über den Sim-Schritt und Innen-Bild gegen den Außen-Schatten — je Haus ~1,5 s" },
+        probe: { ...START_DORF_PROBE,  sek: 33 },
         gpu: true,
         zeit: false,
         minuten: 1,
@@ -1265,7 +1257,7 @@ const stationen = [
         kriterium: "siedlung.K5",
         staffel,
         geraet: ["radeon", "gtx"],
-        probe: { ...DORF_PROBE, mutiert: true },
+        probe: { ...DORF_PROBE, mutiert: true, sek: 27 },
         gpu: true,
         zeit: true,
         minuten: 1,
@@ -1464,7 +1456,7 @@ const stationen = [
         kriterium: "siedlung.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { ausnahme: "der Ort wächst über 1500 s Welt-Uhr (der Ort 1320, das Haus am Rand, die Uhr, der Ring) und das Bild vom Hügel — dazu Teil W in node", ...sitzung(90,
+        probe: {  ...sitzung(90,
             "A=$(cygpath -m '{AUS}')",
             "teil W node scripts/diag-settlement.cjs --nur-w",
             "boot",
@@ -1486,7 +1478,7 @@ const stationen = [
             "rm -f \"$L/ring.abnahme.json\"",
             "teil BILD $W bild $K --uhr 0.5 --datei \"$L/ring.png\" --w 1600 --h 900",
             "cp \"$L/ring.abnahme.json\" \"$A\" 2> /dev/null; true"
-        ) },
+        ), sek: 33 },
         gpu: true,
         zeit: false,
         minuten: 12,
@@ -1536,7 +1528,7 @@ const stationen = [
         // werkbank latenz an der Mess-Wiese: CDP-Taste bis zum ersten Ausgabe-Bild mit Leib/Kamera ≥ 1 cm bewegt, je 50 Proben —
         // in LAEUFE eigenen Boots, geurteilt über den schlechtesten (bildraten-fest)
         // IN DER SITZUNG (29.10.): EIN Lauf, LATENZ_PROBEN je Reihe (4 Reihen) — Ziel 30 s
-        probe: sitzung(45,
+        probe: sitzung(15,
             ...latenzLaeufe(
                 "boot",
                 "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
@@ -1560,7 +1552,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // dieselbe Linse über jedes Verb der Staffel (schwingen = hieb), EIN Ruf je Boot, LAEUFE Boots, der schlechteste urteilt
         // IN DER SITZUNG (29.10.): der Zwilling von halten.K2#1 (LATENZ_HALT_SITZUNG)
-        probe: { ...LATENZ_HALT_SITZUNG, ausnahme: LATENZ_HALT_AUSNAHME, mutiert: true },
+        probe: { ...LATENZ_HALT_SITZUNG,  mutiert: true },
         env: K,
         gpu: true,
         zeit: true,
@@ -1875,7 +1867,7 @@ const stationen = [
         // steht; Hit-Stop = präsentierte Bilder mit stehender Schwung-Uhr und Hand (halt) — in LAEUFE eigenen Boots, der
         // schlechteste urteilt (bildraten-fest, wie leib.K1)
         // IN DER SITZUNG (29.10.): der Zwilling von leib.K1#2 (LATENZ_HALT_SITZUNG) — die Reihen hieb in Ego und Third daraus
-        probe: { ...LATENZ_HALT_SITZUNG, ausnahme: LATENZ_HALT_AUSNAHME, mutiert: true },
+        probe: { ...LATENZ_HALT_SITZUNG,  mutiert: true },
         env: K,
         gpu: true,
         zeit: true,
@@ -2293,7 +2285,7 @@ const stationen = [
     // eigene Boots samt ganzem Klang-Zensus (Radeon b3f9ae95: 5,06 min Arbeit). Die Strecke legt eine Straße und räumt Natur: mutiert.
     {
         kriterium: "fahrzeug.K5", staffel: 1, geraet: ["radeon", "gtx"],
-        probe: { befehl: PW.torBefehl(PW.fahrRueck), sek: 45, mutiert: true },
+        probe: { befehl: PW.torBefehl(PW.fahrRueck), sek: 15, mutiert: true },
         gpu: true, zeit: false, minuten: 30,
         urteil: (j, lauf) => {
             const teil = (n) => lauf.stdout.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
@@ -2555,7 +2547,7 @@ const stationen = [
             "timeout 60 $W fenster 1920 1080 > /dev/null 2>&1",
             "timeout 600 $W umstellen --ort wiese > /dev/null 2>&1",
             "teil BEDIENUNG $W bedienung --runden 5"
-        ), ausnahme: "5 Runden echter Eingabe im laufenden Loop (je 8 Hotbar-Klicks und Tab, Tab, I, Esc, je Klick ein Bild), davor die HUD-Maske aus dem Bild" },
+        ),  sek: 13 },
         env: K,
         gpu: true,
         zeit: true,
@@ -2679,9 +2671,9 @@ const stationen = [
         kriterium: "fahrzeug.K2", staffel: 1, geraet: ["radeon", "gtx"],
         probe: {
             befehl: PW.torBefehl(PW.fahrWegenetz),
-            sek: 90,
+            sek: 10,
             mutiert: true,
-            ausnahme: "die feste Route ist das Kriterium: 2,6 km mit dem Fahrer am Steuer, ~12 000 Sim-Schritte in den Bildern der Probe, sechs Orte erwachen",
+            
         },
         gpu: true, zeit: false, minuten: 10,
         urteil: (j, lauf) => {

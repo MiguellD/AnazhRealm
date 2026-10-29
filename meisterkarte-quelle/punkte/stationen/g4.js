@@ -235,7 +235,6 @@ const K4_BEFEHL = [
     `set -u; K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); export WERKBANK_PORT=$(({PORT}+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" {PORT}`,
 ];
 // DIE FAHRT (29.10., ≤ 30 min je Gerät): 90 s statt 900 s — sieben Studios in EINER Probe; die Welt trägt danach ihre Werke (mutiert)
-const K4_AUSNAHME = "sieben Mesh-Studios je Bühne und Welt aus dem Ausgabe-Pfad (Werk über den EINEN Übergabe-Kanal), Bild-Differenz und Albedo-Tafel beider Seiten";
 const K4_STUDIOS = ["garage", "portale", "schmiede", "fachwerk", "terrain", "koerperstudio", "tetrapoda"];
 const k4Zahl = (j) => {
     const s = (j && j.studios) || {};
@@ -336,8 +335,6 @@ async function probeStudios(H) {
     return { griffe: L.GRIFFE, adapter };
 }
 const STUDIO_PROBE = probeBefehl(probeStudios, 75);
-const STUDIO_AUSNAHME = "acht Studio-Seiten je mit Laden, 1,5 s Ruhe der Linse, Kosten-Leiste mit Bank, 5 Griffen bis zum Bild und dem Neuladen — je Studio ~6 s";
-
 // DER BILD-WEG (bauen.K1#2): die Linse diag-werkstatt-weg mit `--echt` (`wegHelfer` mit dem Haken am Render des Takts, `wegLauf` über
 // echte Eingaben) in der Welt der Sitzung — die Seite neu (die Foundry der Seite leer: der erste Bau jedes Werks ist kalt), die Bühne
 // (Mittag · Sonne · Sommer), dann 8 Läufe: jedes Werk zweimal (kalt, warm), jeder Weg mit kalt und warm, Lage und Sicht im Wechsel.
@@ -486,7 +483,7 @@ const alle = [
         // Neubau ≤ 1 s); dann das Neuladen (jeder Regler der Sitzung steht wieder, der EINE Speicher-Weg localStorage) und A/B
         // (der Gang H3: A zeigt den Stand der Öffnung, B den Zug). Die Zeit urteilt nur auf der Karte (Kopfzeile „geurteilt“).
         // IN DER SITZUNG (29.10., `probeStudios`, Zwilling von studios.K3#2): 5 Griffe je Studio — jeder trägt sein Bild (`j.griffe`).
-        probe: { ...STUDIO_PROBE, mutiert: true, ausnahme: STUDIO_AUSNAHME },
+        probe: { ...STUDIO_PROBE, mutiert: true,  sek: 25 },
         gpu: true,
         zeit: true,
         minuten: 1,
@@ -598,7 +595,7 @@ const alle = [
         kriterium: "studios.K3",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { ...STUDIO_PROBE, mutiert: true, ausnahme: STUDIO_AUSNAHME },
+        probe: { ...STUDIO_PROBE, mutiert: true,  sek: 25 },
         gpu: true,
         zeit: true,
         minuten: 1,
@@ -759,7 +756,7 @@ const alle = [
         kriterium: "pipeline.K4",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { ...ANKUNFT_PROBE, mutiert: true, ausnahme: ANKUNFT_AUSNAHME },
+        probe: { ...ANKUNFT_PROBE, mutiert: true,  sek: 10 },
         gpu: true,
         zeit: false,
         minuten: 1,
@@ -803,7 +800,7 @@ const alle = [
         kriterium: "pipeline.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { ...ANKUNFT_PROBE, mutiert: true, ausnahme: ANKUNFT_AUSNAHME },
+        probe: { ...ANKUNFT_PROBE, mutiert: true,  sek: 10 },
         gpu: true,
         zeit: false,
         minuten: 1,
@@ -1210,7 +1207,7 @@ const alle = [
         kriterium: "bauen.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { ...BILD_PROBE, mutiert: true, ausnahme: "8 Bauten über echte Eingaben bis zum Bild in L0, dazu die Seite neu (kalt) und je Bau die Ruhe der Welt danach" },
+        probe: { ...BILD_PROBE, mutiert: true,  sek: 10 },
         gpu: true,
         zeit: true,
         minuten: 1,
@@ -1613,7 +1610,7 @@ const alle = [
         kriterium: "bauen.K5",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { ...VERB_PROBE, mutiert: true, ausnahme: "6 Werke gesetzt und über die echte Taste in Echtzeit benutzt (Gehen bis hinter die Schwelle, Fahren 5 m, über das Deck, aufs Podest)" },
+        probe: { ...VERB_PROBE, mutiert: true,  sek: 10 },
         gpu: true,
         zeit: false,
         minuten: 1,
@@ -1704,7 +1701,7 @@ const alle = [
         kriterium: "studios.K4",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 90, mutiert: true, ausnahme: K4_AUSNAHME, befehl: K4_BEFEHL },
+        probe: { sek: 33, mutiert: true,  befehl: K4_BEFEHL },
         gpu: true,
         zeit: false,
         minuten: 15,
@@ -1720,7 +1717,7 @@ const alle = [
         kriterium: "studios.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 90, mutiert: true, ausnahme: K4_AUSNAHME, befehl: K4_BEFEHL },
+        probe: { sek: 33, mutiert: true,  befehl: K4_BEFEHL },
         gpu: true,
         zeit: false,
         minuten: 15,
