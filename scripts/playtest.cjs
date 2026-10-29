@@ -34,6 +34,24 @@ async function safeEvaluate(page, fn, ...args) {
     });
 }
 
+// die Probe kam an (kein null, kein Wurf) — sonst ist die Zeile `name` rot mit dem Wurf (ohne Antwort: `leer`) und
+// die Prüfungen entfallen; die EINE Fassung für jedes Band (scripts/playtest/*.cjs)
+function erreichbar(check, name, res, leer = "page.evaluate fehlgeschlagen") {
+    if (res && !res.error) return true;
+    check(name, false, (res && res.error) || leer);
+    return false;
+}
+
+// die Probe lief ohne Wurf (und kam an) — ein Wurf macht die Zeile rot: `name: evaluate-Fehler — <Wurf>`, mit `zeile`
+// die Zeile `name` selbst mit dem Wurf als Detail; ohne Antwort schweigt sie, die Prüfungen entfallen
+function ohneWurf(check, name, res, zeile) {
+    if (res && res.error) {
+        if (zeile) check(name, false, res.error);
+        else check(`${name}: evaluate-Fehler — ${res.error}`, false);
+    }
+    return !!(res && !res.error);
+}
+
 // Initial-State-Probe: liefert `finalState` für die Basis-Checks + Ring 1 (Grok).
 async function gatherInitialFinalState(page) {
     return await safeEvaluate(page, () => {
@@ -96,7 +114,7 @@ async function gatherInitialFinalState(page) {
 
 // DIE BÄNDER nach Domäne (scripts/playtest/<domaene>[-<teil>].cjs, gestellt von `stamm-umzug --richter`); die Seite
 // (safeEvaluate) reicht der Läufer, die Reihenfolge des Laufs steht unten.
-module.exports = { safeEvaluate };
+module.exports = { safeEvaluate, erreichbar, ohneWurf };
 const BAND = Object.assign({}, ...fs.readdirSync(path.join(__dirname, "playtest")).filter((f) => f.endsWith(".cjs")).map((f) => require(`./playtest/${f}`)));
 
 if (require.main === module) hauptLauf(async () => {

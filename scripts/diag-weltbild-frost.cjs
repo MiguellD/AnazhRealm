@@ -37,17 +37,14 @@
 //   … [--s5=frames | --s5=halde]                  Selbsttest S5: nur Welt-Frames statt Zügen (GRÜN) · jedes Einzelstück bleibt (ROT)
 //   Port: WELTBILD_FROST_PORT (Standard 4426). Exit 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, selbsttest, hauptLauf, sleep, pruefer } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, selbsttest, hauptLauf, sleep, pruefer, argOpt } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
 const PORT = Number(process.env.WELTBILD_FROST_PORT || 4426);
 const ECHT = process.argv.includes("--echt");
 const S5_PROBE = (process.argv.find((a) => a.startsWith("--s5=")) || "").slice(5); // Selbsttest der S5-Basis: frames | halde
-const BILDER = (() => {
-    const i = process.argv.indexOf("--bilder");
-    return i >= 0 ? path.resolve(process.argv[i + 1]) : null;
-})();
+const BILDER = argOpt("--bilder", null);
 // Anteil bewegter 16×16-Blöcke der Bildmitte, ab dem das Bild der Kamera folgt: eine Drehung bewegt 40–100 %, ein stehendes
 // Bild unter der zeitlichen Kantenglättung zittert bis 1,4 % — die Schwelle liegt dazwischen mit Abstand.
 const FOLGT_MIN = 0.05;
@@ -313,7 +310,7 @@ hauptLauf(async () => {
         `=== DIE FROST-WAND (${ECHT ? "echte GPU" : "swiftshader, kienspan"}) — Boot ${zeit()} ${JSON.stringify(boot)} ===`
     );
     if (!boot.bereit || !boot.webgpu || (ECHT && !boot.warm)) {
-        check("die Welt steht mit ihrem ersten Weltbild auf einem WebGPU-Backend", false, JSON.stringify(boot));
+        check("die Welt steht mit ihrem ersten Weltbild auf einem WebGPU-Backend", false, boot);
         await browser.close();
         server.close();
         process.exit(1);
@@ -739,7 +736,7 @@ hauptLauf(async () => {
     for (const [s, je] of Object.entries(seelen.leiber))
         for (const [wer, u] of [["S1 Ich-Bühne", je.ich], ["S4 Mitspieler", je.peer]])
             check(`${wer} ${s}: der Leib der Welt`, leibGut(u), `${JSON.stringify(u)} (Soll fremd 0, tri ≥ ${ICH_TRI_MIN})`);
-    check("S1 Selbsttest: leere Bühne und Block-Zwilling sind ROT", !leibGut(seelen.selbst.leer) && !leibGut(seelen.selbst.zwilling), JSON.stringify(seelen.selbst));
+    check("S1 Selbsttest: leere Bühne und Block-Zwilling sind ROT", !leibGut(seelen.selbst.leer) && !leibGut(seelen.selbst.zwilling), seelen.selbst);
     // nie vakuös: die Bühnen tauschten wirklich ihre Gestalt (dass sie Geometrie trugen, zeigt der Leib je Seele)
     check("S1 die Probe wechselt wirklich (Ich ×8 + Hof ×8 je Durchgang)", seelen.tausch >= 24, `${seelen.tausch} Wechsel`);
     // je Device und gemessenem Durchgang
@@ -1047,7 +1044,7 @@ hauptLauf(async () => {
     check(
         "T1 die Index-Wache nennt den Index über der Vertex-Zahl beim Namen",
         !!t1 && t1.some((s) => /frost-taeter-bereich/.test(s)),
-        JSON.stringify(t1)
+        t1
     );
     // T3 — die Puffer-Wache beißt: 3 × Uint16 (6 Bytes) auf einen eigenen Puffer der Welt-GPU
     const t3 = await page.evaluate(() => {
@@ -1110,7 +1107,7 @@ hauptLauf(async () => {
         check(
             "T2 die GPU-Wache des Spiels zählt die Validierung",
             !!l.gpuWache && l.gpuWache.n > t2.vor,
-            JSON.stringify(l.gpuWache)
+            l.gpuWache
         );
         check(
             "T2 der eigene Hörer hört die Validierung (Device oder r184-Fehler-Bereich)",

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 "use strict";
-const { wandEnde } = require("./lib/welt-boot.cjs");
+const { wandEnde, argOpt } = require("./lib/welt-boot.cjs");
 // gate:betriebsgesetz — die Maschine zum BETRIEBSGESETZ (CLAUDE.md).
 // Der Agenten-Betriebsmodus (früh „fertig" melden · Scope still verkleinern · OFFEN
 // umbenennen · nächste Welle erfinden) fällt nicht durch Vorsatz, sondern durch WÄNDE:
@@ -303,9 +303,7 @@ const dateiDeckeBefund = (dateien) =>
 
 function main() {
     const errs = [];
-    const argRev = (n) => (process.argv.indexOf(n) > 0 ? process.argv[process.argv.indexOf(n) + 1] : null);
-    const kopfRev = argRev("--kopf");
-    const grundRev = argRev("--grund");
+    const [kopfRev, grundRev] = ["--kopf", "--grund"].map((n) => argOpt(n, null));
     const gemessen = [];
     try {
         const zweig = process.env.GITHUB_REF_NAME || git(["rev-parse", "--abbrev-ref", "HEAD"]).trim();

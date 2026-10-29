@@ -541,13 +541,13 @@ hauptLauf(async () => {
         check(
             `F: DIE KARTEN-DIÄT (W6) — 16 Karten in 16 Regionen zeichnen in EINER Gruppe (${K.gruppe || "—"}), Bilanz dicht`,
             K.instanzen === 16 && K.gruppen === 1 && K.gruppe === "impostor#fimp:atlas" && K.leck === 0,
-            JSON.stringify(K)
+            K
         );
         const KS = out.f.kartenWahl || {};
         check(
             "K: DIE KARTEN IN DER WAHL (W7) — die Atlas-Gruppe ist eine Gruppe der Instanz-Wahl und zeichnet die Karten, die das Gesetz trifft (über den 16: alle, Himmel: keine), jede gezeichnete Instanz eine Karte der Fixtur",
             KS.wahl === true && KS.alle === 16 && KS.himmel === 0 && KS.treu === true,
-            JSON.stringify(KS)
+            KS
         );
         check(
             "K: … eine schmale Linse über der Westhälfte sieht genau deren 8 Karten",

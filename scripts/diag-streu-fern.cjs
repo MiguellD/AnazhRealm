@@ -521,7 +521,7 @@ hauptLauf(async () => {
             F.flower === "gesetz" &&
             F.rock === "gesetz" &&
             F.grass === "boden",
-        JSON.stringify(F)
+        F
     );
     const fb = out.flipBoden || {},
         fz = out.flipZurueck || {};

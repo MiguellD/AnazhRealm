@@ -35,6 +35,7 @@ const {
     warteAufWelt,
     nullRenderer,
     halteBis,
+    argOpt,
     ROOT: root,
 } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
@@ -52,11 +53,7 @@ const SELBST = argv.includes("--selftest");
 const TAKT = argv.includes("--takt");
 const ECHT = TAKT && argv.includes("--echt"); // der Zensus misst im Null-Renderer
 const GESEHEN = argv.includes("--gesehen");
-const opt = (k) => {
-    const i = argv.indexOf(k);
-    return i >= 0 ? argv[i + 1] : null;
-};
-const JSON_AUS = opt("--json");
+const JSON_AUS = argOpt("--json", null);
 
 const server = statikServer({
     root,
@@ -1030,7 +1027,7 @@ function drucke(zeilen, kostenErg) {
 // `--echt`: Fenster, echte GPU und Audio-Gerät. `--minuten`: der Spielgang, gehen · Fahrt · nachts zu 4 : 3 : 3.
 // `--selftest`: Phase „selbst", der Takt fragt je Bild 300 Rufer → ROT, eine stotternde Stimme → Aussetzer gezählt.
 const TAKT_SOLL_MS = 0.2;
-const MINUTEN = Number(opt("--minuten")) || 0;
+const MINUTEN = Number(argOpt("--minuten")) || 0;
 const TAKT_TEILE = [
     "_lofiPlayChord",
     "_lofiPlayMelody",
