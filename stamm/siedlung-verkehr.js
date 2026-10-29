@@ -324,6 +324,9 @@ class AnazhRealm_siedlung_verkehr {
             }
             VK.wagen.push(W);
         }
+        // der Boden der Spur backt ab jetzt (`_verkehrBodenBacken`), nicht erst mit dem ersten Schritt: bis die Fahrer am Steuer
+        // sitzen, trägt er (bis hier zahlte die erste Fahrt der Stadt ihn im Sim-Takt, 1,23 gegen 0,91 ms)
+        if (VK.wagen.length) this._verkehrBoden(S, VK.wagen[0].entry);
         return VK;
     }
 
@@ -418,6 +421,19 @@ class AnazhRealm_siedlung_verkehr {
         for (const S of alle.values()) {
             const VK = S.verkehr;
             if (!VK || !VK.wagen.length || !S.liste) continue;
+            if (VK.boden && VK.boden.offen && VK.boden.offen.length) this._verkehrBodenPumpe(VK.boden);
+            // DIE NAH-WAHL DER FAHRER (das Maß der Bewohner, `BEWOHNER.nahLeiber`): nur die Nächsten am Steuer im Kreis `leibM`
+            // tragen ihren Leib — je Bild zieht ein sichtbarer Leib alle Knochen nach (`_leibMatrix`); bis hier trugen ihn alle im
+            // Kreis, am Markt der Metropole ~1,9 ms je Bild außerhalb des Sim-Takts
+            const nah = this._verkehrNah || (this._verkehrNah = []);
+            nah.length = 0;
+            for (const W of VK.wagen)
+                if (W.b.amSteuer && W.entry) {
+                    const d2 = (W.entry.position.x - p.x) ** 2 + (W.entry.position.z - p.z) ** 2;
+                    if (d2 < V.leibM * V.leibM) nah.push(((W.d2 = d2), W));
+                }
+            nah.sort((a, c) => a.d2 - c.d2);
+            if (nah.length > AnazhRealm.BEWOHNER.nahLeiber) nah.length = AnazhRealm.BEWOHNER.nahLeiber;
             for (const W of VK.wagen) {
                 // DER SCHICHTWECHSEL: steht der Wagen und will sein Fahrer nicht ans Werk, fährt, wer jetzt dorthin soll
                 if (W.zustand === "steht" && !W.b.amSteuer && W.b.ziel !== W.b.orte.werk) {
@@ -441,7 +457,7 @@ class AnazhRealm_siedlung_verkehr {
                 if (!b.amSteuer) continue;
                 const e = W.entry;
                 const d2 = (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2;
-                const sicht = d2 < V.leibM * V.leibM;
+                const sicht = nah.includes(W);
                 if (sicht !== g.visible) g.visible = sicht;
                 if (!sicht) {
                     W.sitzt = false;
@@ -839,11 +855,12 @@ class AnazhRealm_siedlung_verkehr {
                 const h = W.dtAcc;
                 W.dtAcc = 0;
                 const F = W.F;
-                // DER FAHRER SIEHT (Folge, Orte) nah jeden `folgeTakt`-ten Schritt und LENKT jeden `denkTakt`-ten — die Physik und
-                // das Bild tragen jeden (Lehre 25: 50 ms Blick bei 30 km/h sind 0,42 m, die Haltelinie fragt `frageM` voraus; der
-                // Wagen fährt glatt, Sehen und Lenken kosten ein Drittel und die Hälfte); fern jeden seiner Schritte der Leiter
+                // DER FAHRER SIEHT (Folge, Orte) je `folgeTakt` Sim-Schritte seiner Zeit (nah und fern: wer fern seltener schreitet,
+                // sieht in seinem Schritt, sobald die Zeit voll ist — bis hier sah der Wagen zwischen 40 und 100 m öfter als der nahe)
+                // und LENKT nah jeden `denkTakt`-ten Schritt — die Physik und das Bild tragen jeden (Lehre 25: 50 ms Blick bei 30 km/h
+                // sind 0,42 m, die Haltelinie fragt `frageM` voraus; der Wagen fährt glatt); fern lenkt er in jedem seiner Schritte
                 W.folgeH = (W.folgeH || 0) + h;
-                if (k > 1 || (W.folgeN = ((W.folgeN || 0) + 1) % V.folgeTakt) === 0) {
+                if (W.folgeH >= V.folgeTakt * AnazhRealm.FIXED_DT - 1e-9) {
                     F.deckel = this._verkehrFolge(S, W, p, W.folgeH);
                     W.folgeH = 0;
                 }
@@ -920,6 +937,12 @@ class AnazhRealm_siedlung_verkehr {
         const v = Math.max(0, fz.vlong);
         let deckel = V.tempoMs;
         [W.grund, W.wer] = [null, null];
+        // DIE ANKUNFT (die Uhr sprang, `_tickBewohner` stellt jeden Leib, wo sein Tag ihn sieht — `ankunftJeTakt` je Takt): bis
+        // jeder steht, hält der Wagen — bis hier stand einer 2 m vor einem Wagen mit 6,5 m/s, den er nie kommen sah
+        if (S.ankunftOffen) {
+            W.grund = "ankunft";
+            return 0;
+        }
         // das Fenster der Linie voraus: von F.i bis folgeM
         let j1 = F.i;
         while (j1 + 1 < F.pts.length && F.bogen[j1 + 1] < F.s + V.folgeM) j1++;
@@ -968,7 +991,10 @@ class AnazhRealm_siedlung_verkehr {
         let kMax = 0;
         for (let i = F.i; i <= j1; i++) {
             const q = F.pts[i];
-            [hx0, hx1, hz0, hz1] = [Math.min(hx0, q.x), Math.max(hx1, q.x), Math.min(hz0, q.z), Math.max(hz1, q.z)];
+            if (q.x < hx0) hx0 = q.x;
+            if (q.x > hx1) hx1 = q.x;
+            if (q.z < hz0) hz0 = q.z;
+            if (q.z > hz1) hz1 = q.z;
             if (F.k[i] > kMax) kMax = F.k[i];
         }
         const kurveR = globalThis.__fachwerkCore.VERKEHR_GESETZ.kurveR;
@@ -1056,32 +1082,39 @@ class AnazhRealm_siedlung_verkehr {
                 this._bewohnerPlatz(S, leib, F.pts.slice(i0, i2 + 1), null, fuer, fuer.kF);
             }
         };
-        // die Leiber zählen nur bis zu seinem Bremsweg samt Abstand voraus (Lehre 25): je Zelle des Rasters längs der Linie
-        // dort, nie das Rechteck des ganzen Fensters
+        // die Leiber zählen nur bis zu seinem Bremsweg samt Abstand voraus (Lehre 25): die Zellen des Rasters längs der Linie
+        // dort (je Stück von höchstens der Bahn-Breite die Zellen um seinen Punkt, jede einmal: `vkStempel`), nie das Rechteck
+        // des ganzen Fensters — bis hier fragte er das Rechteck: in der Gasse am Markt der Löwenanteil seines Sim-Takts
         const BW = AnazhRealm.BEWOHNER;
         const RS = S.raster;
         const bis = F.s + W.hl + (v * v) / (2 * V.bremsMs2) + V.abstandM + V.leuteRandM;
         let jL = F.i;
-        while (jL < j1 && F.bogen[jL] <= bis + BW.rasterM) jL++;
+        while (jL < j1 && F.bogen[jL] <= bis) jL++;
         if (RS && j1 > F.i) {
-            // die Zellen des Rasters über der Hülle der Linie bis dorthin samt Bahn
-            let [lx0, lx1, lz0, lz1] = [Infinity, -Infinity, Infinity, -Infinity];
-            for (let i = F.i; i <= jL; i++) {
-                const q = F.pts[i];
-                if (q.x < lx0) lx0 = q.x;
-                if (q.x > lx1) lx1 = q.x;
-                if (q.z < lz0) lz0 = q.z;
-                if (q.z > lz1) lz1 = q.z;
-            }
             const r2 = W.hw + R + V.seitM + rund;
             const M = BW.rasterM;
-            for (let ix = Math.floor((lx0 - r2) / M); ix <= Math.floor((lx1 + r2) / M); ix++)
-                for (let iz = Math.floor((lz0 - r2) / M); iz <= Math.floor((lz1 + r2) / M); iz++)
-                    for (const o of RS.get(ix * 2097152 + iz) || []) {
-                        if (o.wagen || !o.leib || o.drinnen) continue;
-                        const lp = o.leib.position;
-                        if (lp.x < lx0 - r2 || lp.x > lx1 + r2 || lp.z < lz0 - r2 || lp.z > lz1 + r2) continue;
-                        pruefe(lp.x, lp.z, o, o.vx, o.vz);
+            const st = (this._verkehrStempel = (this._verkehrStempel || 0) + 1);
+            // die Punkte der Linie je höchstens r2 + 1 m (die Punkte liegen je Meter): wer der Linie näher ist als r2, ist einem
+            // von ihnen näher als r2 + (r2 + 1) / 2 — der billige Filter vor dem Fußpunkt (`auf`)
+            const P = this._verkehrProben || (this._verkehrProben = []);
+            P.length = 0;
+            for (let i = F.i, sZ = -Infinity; i <= jL; i++)
+                if (i === jL || F.bogen[i] - sZ >= r2) [sZ, P[P.length]] = [F.bogen[i], F.pts[i]];
+            const g2 = (r2 + (r2 + 1) / 2) ** 2;
+            for (const q of P)
+                for (let ix = Math.floor((q.x - r2) / M); ix <= Math.floor((q.x + r2) / M); ix++)
+                    for (let iz = Math.floor((q.z - r2) / M); iz <= Math.floor((q.z + r2) / M); iz++) {
+                        const l = RS.get(ix * 2097152 + iz);
+                        if (!l || l.vkStempel === st) continue;
+                        l.vkStempel = st;
+                        for (const o of l) {
+                            if (o.wagen || !o.leib || o.drinnen) continue;
+                            const lp = o.leib.position;
+                            let nah = false;
+                            for (let k = 0; !nah && k < P.length; k++)
+                                nah = (lp.x - P[k].x) ** 2 + (lp.z - P[k].z) ** 2 < g2;
+                            if (nah) pruefe(lp.x, lp.z, o, o.vx, o.vz);
+                        }
                     }
         }
         const sa = this._spielerLageAlt;
@@ -1177,6 +1210,7 @@ class AnazhRealm_siedlung_verkehr {
         let B = VK.boden;
         if (!B || B.gen !== gen) {
             B = VK.boden = { gen, karte: new Map(), roh: this._fahrBodenRoh(e) };
+            VK.zahl.bodenNeu = (VK.zahl.bodenNeu || 0) + 1;
             this._verkehrBodenBacken(S, B);
         }
         if (e._verkehrBodenFn && e._verkehrBodenKarte === B) return e._verkehrBodenFn;
@@ -1200,11 +1234,11 @@ class AnazhRealm_siedlung_verkehr {
         });
     }
 
-    // DER BODEN DER SPUR VORAB (Lehre 14: gecacht und im Leerlauf vorgebacken): jede Ecke des Rasters (`bodenM`) unter den
+    // DER BODEN DER SPUR VORAB (Lehre 14: gecacht und vorgebacken, frame-adaptiv): jede Ecke des Rasters (`bodenM`) unter den
     // Stücken des Spur-Rasters (die Spuren, die Wege durch die Kreuzungen, Bahn und Ring jeder Wende) bis `bodenRandM` neben
-    // ihnen, im Leerlauf des Haupt-Fadens (`_imLeerlauf`), solange er Zeit hat; ein neuer Stand des Bodens (ein Edit) backt neu.
-    // Bis hier zahlte der Schritt jede neue Ecke unter einem Rad (`_koerperBodenUnter`): ein Drittel des Sim-Takts der
-    // Metropole in den ersten 40 s.
+    // ihnen — die Liste hier, gebacken je Bild höchstens `backMs` im Takt des Verkehrs (`_tickVerkehr`); ein neuer Stand des
+    // Bodens (ein Edit) backt neu. Bis hier zahlte der Sim-Schritt jede neue Ecke unter einem Rad (`_koerperBodenUnter`): ein
+    // Drittel seines Takts in den ersten 40 s der Metropole (der Leerlauf des Fadens kam im Takt der Sonde nie).
     _verkehrBodenBacken(S, B) {
         const V = AnazhRealm.VERKEHR;
         const m = V.bodenM;
@@ -1221,19 +1255,17 @@ class AnazhRealm_siedlung_verkehr {
                         for (const d of [0, 1, 2097152, 2097153]) ecken.add(ci * 2097152 + cj + d); // die vier Ecken der Zelle
                     }
             }
-        const offen = [...ecken];
-        const takt = (frist) => {
-            if (S.verkehr.boden !== B) return; // ein neuer Stand backt selbst
-            // kein Leerlauf bis zur Frist (der Faden ist voll): `bodenBackN` Ecken doch — nie verhungert
-            let n = !frist || frist.didTimeout ? V.bodenBackN : 0;
-            while (offen.length && (n-- > 0 || (frist && frist.timeRemaining() > 1))) {
-                const k = offen.pop();
-                const i = Math.round(k / 2097152);
-                if (!B.karte.has(k)) B.karte.set(k, B.roh(i * m, (k - i * 2097152) * m));
-            }
-            if (offen.length) this._imLeerlauf(takt, 2000);
-        };
-        this._imLeerlauf(takt, 2000);
+        B.offen = [...ecken];
+    }
+    _verkehrBodenPumpe(B) {
+        const m = AnazhRealm.VERKEHR.bodenM;
+        const t0 = performance.now();
+        for (let n = 0; B.offen.length; n++) {
+            if (!(n & 15) && performance.now() - t0 > AnazhRealm.VERKEHR.backMs) return;
+            const k = B.offen.pop();
+            const i = Math.round(k / 2097152);
+            if (!B.karte.has(k)) B.karte.set(k, B.roh(i * m, (k - i * 2097152) * m));
+        }
     }
 
     // DER WAGEN IM GEDRÄNGE (`_tickBewohner`, vor dem Takt der Köpfe; die Zelle legt `_bewohnerRasterLage`): je fahrendem Wagen drei Leiber längs seiner Achse
@@ -1328,7 +1360,7 @@ AnazhRealm._verkehrEcken = Object.freeze([
 // Wand: die Kante einer Erdbau-Platte) · ruheMs = darunter (ohne Gas) ruht ein Wagen: keine Hülle, keine Boxen, kein neues
 // Bild · spurRandM = so viel Raum hält ein Stand über
 // den halben Wagen und die Kapsel hinaus von jeder Spur (der Seitenraum `seitM` und das Ausscheren in der engsten Kurve,
-// (parkL/2)²/(2·kurveR) = 0,66 m: kein Stand liegt in der Bahn, vor der ein Wagen hält) · bodenM = das Raster des gemerkten Bodens der Spur (`_verkehrBoden`), bodenRandM = so weit neben jedem Stück der Spur backt er ihn vorab (`_verkehrBodenBacken`), bodenBackN = so viele Ecken je Ruf, wenn der Leerlauf ausbleibt · kurveM = so weit mittelt die Linie seines Fahrers (`_fahrerLinie`; seine Spuren, Bögen und Kreise sind Gesetz — über die ±8 m des Wegenetzes schrumpfte der Kreis der Wende von 6,5 auf 5 m, der Knick am Ende der Strecke schnitt 2 m in die Gegenspur)
+// (parkL/2)²/(2·kurveR) = 0,66 m: kein Stand liegt in der Bahn, vor der ein Wagen hält) · bodenM = das Raster des gemerkten Bodens der Spur (`_verkehrBoden`), bodenRandM = so weit neben jedem Stück der Spur backt er ihn vorab (`_verkehrBodenBacken`), backMs = so lange backt er ihn je Bild (`_verkehrBodenPumpe`) · kurveM = so weit mittelt die Linie seines Fahrers (`_fahrerLinie`; seine Spuren, Bögen und Kreise sind Gesetz — über die ±8 m des Wegenetzes schrumpfte der Kreis der Wende von 6,5 auf 5 m, der Knick am Ende der Strecke schnitt 2 m in die Gegenspur)
 // · radFeinM = so nah federt jedes Rad einzeln auf seinem Boden ·
 // standM = der Stand des Fahrers neben der Tür seines Wagens · einsteigM = so nah an ihm steigt er ein · tempoMs = das
 // Tempo der Stadt (30 km/h) · folgeM = so weit sieht der Fahrer voraus (Wagen, Leiber) · abstandM = so weit hält er hinter
@@ -1362,7 +1394,7 @@ AnazhRealm.VERKEHR = Object.freeze({
     bodenM: 0.5,
     bodenRandM: 1.5,
     kurveM: 4,
-    bodenBackN: 64,
+    backMs: 0.5,
     radFeinM: 20,
     standM: 0.7,
     einsteigM: 1.5,

@@ -754,7 +754,7 @@ async function probeLeben(expected) {
                         )
                             m.ohne++;
                     const allein = W.zonen.some((z) => !z.weg && z.Z.halter.includes(W) && z.ein <= W.F.s + W.hl);
-                    if (!allein && W.F.quer > m.quer) [m.quer, m.querOrt] = [W.F.quer, [W.nr, k, ...ort2(L[n])]];
+                    if (!allein && W.F.quer > m.quer) [m.quer, m.querOrt] = [W.F.quer, [W.nr, k, ...ort2(L[n]), W.grund, +W.entry._fahr.speed.toFixed(2), +W.F.s.toFixed(1), W.F.i, +W.F.pts[W.F.i].x.toFixed(1), +W.F.pts[W.F.i].z.toFixed(1), +(W.entry._rideYaw || 0).toFixed(2), W.zonen.filter((z) => !z.weg).map((z) => z.Z.art + (z.Z.halter.includes(W) ? "!" : "") + (z.ein - W.F.s - W.hl).toFixed(1)).join(","), +W.entry.position.y.toFixed(2), W.F.pts.slice(Math.max(0, W.F.i - 3), W.F.i + 6).map((q) => [+q.x.toFixed(1), +q.z.toFixed(1)])]];
                     for (const b of S.liste)
                         if (b.leib && !b.drinnen && !b.amSteuer && drin(L[n], b.leib.position.x, b.leib.position.z)) {
                             m.leib++;
@@ -830,6 +830,7 @@ async function probeLeben(expected) {
                         W.grund,
                         ...ort2(lage(W)),
                         z0 ? z0.Z.art + ":" + (z0.Z.halter.map((q) => q.nr).join("/") || "-") + " " + z0.wort + " ein " + (z0.ein - W.F.s - W.hl).toFixed(1) + " Z " + Math.round(z0.Z.x) + "/" + Math.round(z0.Z.z) + " r " + z0.Z.r.toFixed(1) : "",
+                        "eigenQuer " + W.F.quer.toFixed(2) + " yaw " + (W.entry._rideYaw || 0).toFixed(2) + " pfad " + JSON.stringify(W.F.pts.slice(Math.max(0, W.F.i - 2), W.F.i + 4).map((q) => [+q.x.toFixed(1), +q.z.toFixed(1)])),
                         v ? "vorne " + v.gap.toFixed(1) + "@" + v.O.nr + " " + v.O.zustand + " quer " + (v.quer || 0).toFixed(2) + " rund " + (v.rund || 0).toFixed(2) + " ich " + Math.round(W.entry.position.x) + "/" + Math.round(W.entry.position.z) + " er " + Math.round(v.O.entry.position.x) + "/" + Math.round(v.O.entry.position.z) + " k " + (W.F.k[W.F.i] || 0).toFixed(3) : "",
                         ...(W.grund === "leib" && W.wer ? [DBG(W.wer, W)] : []),
                     ];
@@ -859,6 +860,7 @@ async function probeLeben(expected) {
                 querMax: +m.quer.toFixed(2),
                 querOrt: m.querOrt,
                 msJeSchritt: +(m.ms / Math.max(1, m.takte)).toFixed(3),
+                bodenNeu: VK.zahl.bodenNeu, bodenOffen: VK.boden && VK.boden.offen ? VK.boden.offen.length : -1, bodenKarte: VK.boden ? VK.boden.karte.size : -1,
                 sek: o.sek,
             };
         }

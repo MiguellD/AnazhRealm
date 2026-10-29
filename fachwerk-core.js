@@ -4088,9 +4088,14 @@
           const Rf=V.wendeM+V.halbM+V.wendeRandM; if(zu(cx,cz,Rf)) continue;
           // die Bahn hinein und heraus treffen den Ring mindestens zwei Spuren auseinander (die Sehne 2·spurM): bis hier liefen
           // beide zum Ring-Punkt Richtung Ende, bei fernem Kreis fast derselbe — zwei Wagen gegeneinander standen dort Bug an Bug
-          let ain=Math.atan2(pin.z-cz,pin.x-cx), aout=Math.atan2(pout.z-cz,pout.x-cx); const dreh=W(ain-aout)>=0?1:-1;
-          const dMin=2*Math.asin(Math.min(1,V.spurM/V.wendeM)), dA0=W(ain-aout)*dreh;
-          if(dA0<dMin){ const mA=aout+dreh*dA0/2; [ain,aout]=[mA+dreh*dMin/2, mA-dreh*dMin/2]; }
+          const dreh=W(Math.atan2(pin.z-cz,pin.x-cx)-Math.atan2(pout.z-cz,pout.x-cx))>=0?1:-1;
+          // DIE BAHN BERÜHRT DEN KREIS: hinein und heraus tangential in der Richtung des Umlaufs (`tang`: der Berührpunkt von P aus,
+          // s = 1 hinein, −1 heraus) — bis hier lief sie radial auf den Ring-Punkt nächst dem Ende der Spur, ein Knick von 90°
+          // hinein und heraus: der Wagen schoss über ihn hinaus, bis 4 m neben die Spur
+          const tang=(P,s)=>{ const d=Math.hypot(P.x-cx,P.z-cz); if(d<=V.wendeM+0.1) return null; const a=Math.atan2(P.z-cz,P.x-cx), b=Math.acos(V.wendeM/d);
+            for(const t of [a+b,a-b]) if(((cx+Math.cos(t)*V.wendeM-P.x)*-Math.sin(t)*dreh+(cz+Math.sin(t)*V.wendeM-P.z)*Math.cos(t)*dreh)*s>0) return t;
+            return null; };
+          const ain=tang(pin,1), aout=tang(pout,-1); if(ain===null||aout===null) continue;
           const e1={x:cx+Math.cos(ain)*V.wendeM, z:cz+Math.sin(ain)*V.wendeM}, e2={x:cx+Math.cos(aout)*V.wendeM, z:cz+Math.sin(aout)*V.wendeM};
           if(!gang(pin,e1,V.halbM)||!gang(e2,pout,V.halbM)) continue;
           let span=(aout-ain)*dreh; span-=Math.floor(span/(2*Math.PI))*2*Math.PI; if(span<Math.PI) span+=2*Math.PI;

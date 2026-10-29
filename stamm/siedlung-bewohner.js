@@ -992,6 +992,7 @@ class AnazhRealm_siedlung_bewohner {
                 const rN = b.nah ? BW.nahM + BW.nahHystM : BW.nahM;
                 if (kreis && bd2 < rN * rN) nah.push(b);
             }
+            S.ankunftOffen = ankuenfte >= BW.ankunftJeTakt; // es warten noch Ankünfte (der Verkehr hält, `_verkehrFolge`)
             // DIE NAH-WAHL: höchstens `nahLeiber` der Nächsten leben (Gang, Atem, Stufen, Blick des Leibs) — jeder andere im
             // Nah-Kreis steht im Satz seiner Gestalt; der Wechsel schaltet nur `visible` und schreibt die Sätze neu
             nah.sort((a, b) => a.d2 - b.d2);
