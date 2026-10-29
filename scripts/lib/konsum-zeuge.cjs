@@ -72,6 +72,7 @@ function installiere(ordner) {
         const r = imBaum(p);
         if (r === "package.json" && teile && art !== "liste")
             return teile.forEach((t) => nimm("teil", `package.json#${t}`));
+        if (art === "lies" && /\.js$/.test(r || "")) nimm("teil", "package.json#type"); // ein .js lädt Node nach "type"
         nimm(art, r);
     };
     const liest = (flags) =>
@@ -132,6 +133,69 @@ function installiere(ordner) {
         };
         Object.defineProperties(cp[name], Object.getOwnPropertyDescriptors(o));
     }
+    // Chrome liest den Baum am Server vorbei nur über file:// (die Adapter-Probe): jede Seite jedes Browsers meldet ihre file:-Anfragen
+    const M = require("module");
+    const laden = M._load;
+    M._load = function (anfrage, ...rest) {
+        const m = laden.call(this, anfrage, ...rest);
+        if (/^puppeteer(-core)?$/.test(anfrage) && m && typeof m.launch === "function" && !m.launch.zeuge) {
+            const launch = m.launch;
+            m.launch = Object.assign(
+                async function (...a) {
+                    const b = await launch.apply(this, a);
+                    const hafte = (s) =>
+                        s && s.on("request", (q) => /^file:/.test(q.url()) && notiere("lies", q.url()));
+                    b.on("targetcreated", (t) => t.type() === "page" && t.page().then(hafte, () => {}));
+                    (await b.pages()).forEach(hafte);
+                    return b;
+                },
+                { zeuge: true }
+            );
+        }
+        return m;
+    };
+}
+
+// WAS DER ZEUGE SIEHT: Node (node · npm · npx) ganz, Chrome über den Server und file://; Werkzeuge ohne Baum-Lesung, solange kein
+// Argument eine Datei des Baums nennt; jeder andere Befehl ist ein BLINDER FLECK (git liest die Geschichte, bash ein Skript …) —
+// sein Schritt fährt immer. Die Gegenprobe und die Auswahl (scripts/ci-kopf.cjs) lesen dieselbe Regel.
+const SEHEND = new Set(["node", "npm", "npx", "chrome", "chrome-headless-shell"]);
+const HARMLOS = new Set([
+    "tee",
+    "grep",
+    "echo",
+    "true",
+    "test",
+    "kill",
+    "ps",
+    "pgrep",
+    "pkill",
+    "sleep",
+    "nvidia-smi",
+    "ldconfig",
+]);
+const befehleIn = (text) =>
+    String(text || "")
+        .split(/&&|\|\||[;|\n]/)
+        .map((x) => x.trim().replace(/\s+/g, " "))
+        .filter(Boolean);
+function blindVon(b, baum) {
+    const [p, ...args] = b.split(" ");
+    const name = path.basename(p || "");
+    if (/^(ba)?sh$/.test(name)) {
+        const m = /^\S+ -c (.*)$/.exec(b);
+        return m
+            ? befehleIn(m[1])
+                  .map((x) => blindVon(x, baum))
+                  .find(Boolean) || null
+            : name;
+    }
+    if (
+        SEHEND.has(name) ||
+        (HARMLOS.has(name) && !args.some((w) => baum.has(w.replace(/^["']|["']$/g, "").replace(/^\.\//, ""))))
+    )
+        return null;
+    return name;
 }
 
 // die Spuren eines Ordners → je Wurzel die Mengen (frage ohne was gelesen wurde), Prozesse gezählt
@@ -229,23 +293,16 @@ async function gegenprobe(befehl, ordner) {
         if (r === ".git" || baum.has(r) || baum.has(r + "/"))
             (geoeffnet.get(wer) || geoeffnet.set(wer, new Map()).get(wer)).set(r + (baum.has(r + "/") ? "/" : ""), pid);
     }
+    // blind ist der Schritt, wenn ein Befehl (run-Text oder `ruft`) es ist: er fährt immer, jede Lesung ist gedeckt; sonst nur die Spur
+    const blind = [...new Set([...befehleIn(befehl), ...s.ruft].map((b) => blindVon(b, baum)).filter(Boolean))];
     const node = path.basename(process.execPath);
-    const fehlt = [];
-    const blind = {};
+    const [fehlt, fremd] = [[], {}];
     for (const [wer, dateien] of geoeffnet) {
-        const genannt = [...s.ruft].some(
-            (x) => path.basename(x.split(" ")[0]) === wer || x.startsWith(`sh -c ${wer} `)
-        );
-        if (wer !== node)
-            blind[wer] = {
-                genannt: genannt || new RegExp(`(^|[\\s;&|(])${wer}\\b`).test(befehl),
-                dateien: [...dateien.keys()],
-            };
+        if (wer !== node) fremd[wer] = [...dateien.keys()];
         for (const d of dateien.keys())
             if (
-                wer === node
-                    ? !(d.endsWith("/") ? s.liste.has(d.slice(0, -1)) || s.lies.has(d.slice(0, -1)) : s.lies.has(d))
-                    : !blind[wer].genannt
+                !blind.length &&
+                !(d.endsWith("/") ? s.liste.has(d.slice(0, -1)) || s.lies.has(d.slice(0, -1)) : s.lies.has(d))
             )
                 fehlt.push(`${wer} ${d}`);
     }
@@ -256,10 +313,11 @@ async function gegenprobe(befehl, ordner) {
         gelesen: [...geoeffnet.values()].reduce((n, m) => n + m.size, 0),
         fehlt,
         blind,
+        fremd,
     };
 }
 
-module.exports = { imBaum, sammle, gegenprobe, ZEUGE, ARTEN };
+module.exports = { imBaum, sammle, gegenprobe, blindVon, befehleIn, ZEUGE, ARTEN };
 
 // als Befehl (auch unter dem eigenen NODE_OPTIONS: dann läuft die Datei nur als --require) nie als Zeuge
 const alsBefehl = path.resolve(process.argv[1] || ".") === ZEUGE;
@@ -278,7 +336,7 @@ if (alsBefehl && process.argv.includes("--gegenprobe")) {
         console.log(
             rot.length
                 ? `❌ ROT — ${rot.join(" · ")}`
-                : `✅ GRÜN — ${g.gelesen} gelesene Dateien des Baums, jede in der Spur oder an einem genannten blinden Fleck (${Object.keys(g.blind).join(" · ") || "keiner"})`
+                : `✅ GRÜN — ${g.gelesen} gelesene Dateien des Baums, jede in der Spur${g.blind.length ? ` (blind: ${g.blind.join(" · ")} — der Schritt fährt immer)` : ""}`
         );
         process.exitCode = rot.length ? 1 : 0;
     });
