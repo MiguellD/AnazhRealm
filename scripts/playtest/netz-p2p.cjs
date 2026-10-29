@@ -3,7 +3,7 @@
 // 6 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
     void errors;
@@ -224,13 +224,7 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
 
         return out;
     });
-    if (!ring11Results || ring11Results.error) {
-        check(
-            "Ring 11 V1: Snapshot erreichbar",
-            false,
-            (ring11Results && ring11Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 11 V1: Snapshot erreichbar", ring11Results)) {
         check("Ring 11 V1: state.p2p mit allen Pflichtfeldern", ring11Results.hasP2PState);
         check("Ring 11 V1: initP2PSync ohne worldId wird abgewiesen", ring11Results.rejectsNoRoom);
         check("Ring 11 V1: p2pGenerateId liefert 'p-<ts>-<rnd>'-Format", ring11Results.peerIdShape);
@@ -402,13 +396,7 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
 
         return out;
     });
-    if (!w7Results || w7Results.error) {
-        check(
-            "W7 Phase 1: Snapshot erreichbar",
-            false,
-            (w7Results && w7Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W7 Phase 1: Snapshot erreichbar", w7Results)) {
         check("W7 P1: state.p2p trägt rtcPeers/iceServers/meshActive", w7Results.w7StateFields);
         check("W7 P1: _p2pMeshReady false ohne Peers", w7Results.meshNotReadyEmpty);
         check("W7 P1: _p2pMeshReady false bei nicht-verbundenem Peer", w7Results.meshNotReadyUnconnected);
@@ -602,13 +590,7 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
 
         return out;
     });
-    if (!w7p2Results || w7p2Results.error) {
-        check(
-            "W7 Phase 2: Snapshot erreichbar",
-            false,
-            (w7p2Results && w7p2Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W7 Phase 2: Snapshot erreichbar", w7p2Results)) {
         check("W7 P2: state.p2p trägt worldXfers/pendingPullFrom + P2P_WORLD_CHUNK_SIZE", w7p2Results.w7p2StateFields);
         check("W7 P2: _p2pChunkXferId liefert eindeutige IDs", w7p2Results.xferIdShape);
         check("W7 P2: soul-Broadcast trägt worldRole", w7p2Results.soulCarriesWorldRole);
@@ -1069,13 +1051,7 @@ async function checkBandW16Distribution({ page, check, errors, finalState }) {
 
         return out;
     });
-    if (!w16Results || w16Results.error) {
-        check(
-            "W16 Phase 1: Mesh-Welt-Verteilung erreichbar",
-            false,
-            (w16Results && w16Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W16 Phase 1: Mesh-Welt-Verteilung erreichbar", w16Results)) {
         check(
             "W16: state.p2p trägt bundleXfers/pendingBundlePull + P2P_BUNDLE_PULL_COOLDOWN_MS",
             w16Results.stateFields
@@ -1213,13 +1189,7 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
 
         return out;
     });
-    if (!buildSyncResults || buildSyncResults.error) {
-        check(
-            "Multi-User-Bau-Sync: Snapshot erreichbar",
-            false,
-            (buildSyncResults && buildSyncResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Multi-User-Bau-Sync: Snapshot erreichbar", buildSyncResults)) {
         check("Bau-Sync: _newArchId liefert eindeutige string-ids", buildSyncResults.newArchIdUnique);
         check("Bau-Sync: spawnArchitecture nimmt eine geteilte string-id", buildSyncResults.spawnAcceptsStringId);
         check(
@@ -1382,13 +1352,7 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
 
         return out;
     });
-    if (!w7p3Results || w7p3Results.error) {
-        check(
-            "W7 Phase 3: Snapshot erreichbar",
-            false,
-            (w7p3Results && w7p3Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W7 Phase 3: Snapshot erreichbar", w7p3Results)) {
         check("W7 P3: state.p2p trägt voiceShared + Voice-Maps + Konstanten", w7p3Results.stateFields);
         check("W7 P3: setVoiceShared ohne aktives LLM bleibt false (Capability-Gate)", w7p3Results.setVoiceSharedGated);
         check("W7 P3: soul-Broadcast trägt voiceShared", w7p3Results.soulCarriesVoiceShared);
@@ -1523,13 +1487,7 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
 
         return out;
     });
-    if (!w7p4Results || w7p4Results.error) {
-        check(
-            "W7 Phase 4: Snapshot erreichbar",
-            false,
-            (w7p4Results && w7p4Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W7 Phase 4: Snapshot erreichbar", w7p4Results)) {
         check("W7 P4: state.p2p trägt lobby + remoteCreatures", w7p4Results.lobbyState);
         check("W7 P4: publishToLobby ohne Verbindung → not_connected", w7p4Results.publishNeedsConnection);
         check("W7 P4: publishToLobby sendet lobby-publish + setzt published", w7p4Results.publishSends);
@@ -1676,13 +1634,7 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
 
         return out;
     });
-    if (!w11v4Results || w11v4Results.error) {
-        check(
-            "W11 V4: Snapshot erreichbar",
-            false,
-            (w11v4Results && w11v4Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "W11 V4: Snapshot erreichbar", w11v4Results)) {
         check("W11 V4: _p2pBroadcastCompanionSay sendet companion-say", w11v4Results.broadcastSends);
         check("W11 V4: der Broadcast trägt die gewählte Stimme", w11v4Results.broadcastCarriesVoice);
         check("W11 V4: leerer Begleiter-Text → kein Broadcast", w11v4Results.emptyTextNoBroadcast);
@@ -1728,13 +1680,7 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
         Object.assign(r.state.p2p, { enabled: false, connected: false, peerId: null });
         return out;
     });
-    if (!ring11V2Results || ring11V2Results.error) {
-        check(
-            "Ring 11 V2: Snapshot erreichbar",
-            false,
-            (ring11V2Results && ring11V2Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 11 V2: Snapshot erreichbar", ring11V2Results)) {
         check(
             "Ring 11 V2: LLM-DSL wird NICHT gebroadcastet (nur explizite human-Geste)",
             ring11V2Results.llmDoesNotBroadcast
@@ -1870,13 +1816,7 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
 
         return out;
     });
-    if (!ring11V21Results || ring11V21Results.error) {
-        check(
-            "Ring 11 V2.1: Snapshot erreichbar",
-            false,
-            (ring11V21Results && ring11V21Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 11 V2.1: Snapshot erreichbar", ring11V21Results)) {
         check("Ring 11 V2.1: roomOverride persistiert via localStorage", ring11V21Results.roomOverridePersists);
         check(
             "Ring 11 V2.1: NON_BROADCASTABLE_OPS Set enthält player_*+set_visible",
@@ -2006,13 +1946,7 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
 
         return out;
     });
-    if (!ring115Results || ring115Results.error) {
-        check(
-            "Ring 11.5: Snapshot erreichbar",
-            false,
-            (ring115Results && ring115Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 11.5: Snapshot erreichbar", ring115Results)) {
         check(
             "Ring 11.5: createNewWorld({role:'host'}) speichert role im worldMeta",
             ring115Results.hostRoleInSavedMeta

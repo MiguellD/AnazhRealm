@@ -3,7 +3,7 @@
 // 17 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar, ohneWurf } = require("../playtest.cjs");
 
 // Rollen-Resonanz: computeBlueprintRole = ARGMAX der Resonanz des Produkt-Vektors (Tags ⊕
 // bodyShape/portalShape) gegen FORM_ROLE_SIGNATURES; „architecture“ ist positive Signatur (dicht +
@@ -1017,13 +1017,7 @@ async function checkBandWave4({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!wave4p1Results || wave4p1Results.error) {
-        check(
-            "Welle 4 P1: Snapshot erreichbar",
-            false,
-            (wave4p1Results && wave4p1Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 4 P1: Snapshot erreichbar", wave4p1Results)) {
         check("Welle 4 P1: MATERIAL_TAG_KEYS ist frozen", wave4p1Results.tagKeysFrozen);
         check("Welle 4 P1: 10 Tag-Achsen", wave4p1Results.tagKeyCount === 10);
         check("Welle 4 P1: 6 Built-in-Materialien existieren", wave4p1Results.expectedBuiltIns);
@@ -1168,13 +1162,7 @@ async function checkBandWave4({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!wave4p2Results || wave4p2Results.error) {
-        check(
-            "Welle 4 P2: Snapshot erreichbar",
-            false,
-            (wave4p2Results && wave4p2Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 4 P2: Snapshot erreichbar", wave4p2Results)) {
         check("Welle 4 P2: FORM_TAG_ACTIVATION frozen", wave4p2Results.matrixFrozen);
         check("Welle 4 P2: Matrix deckt 9 Formen (inkl. helix)", wave4p2Results.matrixHasNineForms);
         check("Welle 4 P2: Matrix vollständig (keine undefined-Zelle)", wave4p2Results.matrixComplete);
@@ -1381,13 +1369,7 @@ async function checkBandWave4({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!wave4p3Results || wave4p3Results.error) {
-        check(
-            "Welle 4 P3: Snapshot erreichbar",
-            false,
-            (wave4p3Results && wave4p3Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 4 P3: Snapshot erreichbar", wave4p3Results)) {
         check(
             "hände ist der einzige Starter, die Domain-Ops sind die Werkstatt-Bibliothek",
             wave4p3Results.fiveStarterTools
@@ -1577,13 +1559,7 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!wave5bResults || wave5bResults.error) {
-        check(
-            "Welle 5 B: Snapshot erreichbar",
-            false,
-            (wave5bResults && wave5bResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 5 B: Snapshot erreichbar", wave5bResults)) {
         check("Welle 5 B: SPATIAL_POINTED_SHAPES frozen", wave5bResults.pointedShapesFrozen);
         check("Welle 5 B: SPATIAL_TRANSFERABLE_TAGS frozen", wave5bResults.transferableTagsFrozen);
         check("Welle 5 B: cone ist pointed-Shape", wave5bResults.pointedHasCone);
@@ -1716,13 +1692,7 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!wave5bp2Results || wave5bp2Results.error) {
-        check(
-            "Welle 5 B P2: Snapshot erreichbar",
-            false,
-            (wave5bp2Results && wave5bp2Results.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 5 B P2: Snapshot erreichbar", wave5bp2Results)) {
         check("Welle 5 B P2: SPATIAL_HOLLOW_SHAPES frozen", wave5bp2Results.hollowShapesFrozen);
         check("Welle 5 B P2: sphere ist hollow-Shape", wave5bp2Results.hollowHasSphere);
         check("Welle 5 B P2: torus ist hollow-Shape", wave5bp2Results.hollowHasTorus);
@@ -1901,13 +1871,7 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!wave5aResults || wave5aResults.error) {
-        check(
-            "Welle 5 A: Snapshot erreichbar",
-            false,
-            (wave5aResults && wave5aResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 5 A: Snapshot erreichbar", wave5aResults)) {
         check("Welle 5 A: CONNECTION_TYPES frozen", wave5aResults.connectionTypesFrozen);
         check("Welle 5 A: Acht Verbindungstypen definiert", wave5aResults.eightTypes);
         check("Welle 5 A: Jeder Typ hat strongTags", wave5aResults.eachTypeHasStrongTags);
@@ -2094,13 +2058,7 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!wave5cResults || wave5cResults.error) {
-        check(
-            "Welle 5 C: Snapshot erreichbar",
-            false,
-            (wave5cResults && wave5cResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Welle 5 C: Snapshot erreichbar", wave5cResults)) {
         check("Welle 5 C: TOOL_OP_CLASSES frozen", wave5cResults.opClassesFrozen);
         check("Welle 5 C: TOOL_OP_CLASSES hat 4 Klassen", wave5cResults.opClassesCount);
         check("Welle 5 C: computeBlueprintPrecisionCap = min(parts)", wave5cResults.precisionCapIsMin);
@@ -2231,13 +2189,7 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!bugfixResults || bugfixResults.error) {
-        check(
-            "Bugfix Snapshot erreichbar",
-            false,
-            (bugfixResults && bugfixResults.error) || "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Bugfix Snapshot erreichbar", bugfixResults)) {
         check(
             "Bugfix: removePartFromBlueprint filtert betroffene Connections",
             bugfixResults.connectionsFilteredOnPartDelete
@@ -2399,7 +2351,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave9aResults && !wave9aResults.error) {
+    if (ohneWurf(check, "Welle 9a", wave9aResults)) {
         check(
             "Welle 9a: TOOL_DOMAINS frozen mit 6 Einträgen (construction/forging/alchemy/textile/soulwork/mechanism)",
             wave9aResults.toolDomainsFrozen && wave9aResults.toolDomainsContent
@@ -2454,8 +2406,6 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             "Welle 9a: Manueller Override sperrt emergenten Pfad — applyOpToPart ändert role nicht mehr",
             wave9aResults.manualOverrideStaysAfterApply
         );
-    } else if (wave9aResults && wave9aResults.error) {
-        check(`Welle 9a: evaluate-Fehler — ${wave9aResults.error}`, false);
     }
 
     // ### Domain-Werkzeuge + UI-Anzeige der Rolle ###
@@ -2558,7 +2508,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave9bResults && !wave9bResults.error) {
+    if (ohneWurf(check, "Welle 9b", wave9bResults)) {
         check("Welle 9b: alle 5 Domain-Werkzeuge in state.tools", wave9bResults.allDomainToolsExist);
         check(
             "Welle 9b: korrektes Domain-Mapping pro Tool (schmiede→forging, mörser→alchemy, …)",
@@ -2597,8 +2547,6 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             "Welle 9b UI: Tool-Chip enthält .workshop-tool-domain-dot bei Domain-Werkzeugen",
             wave9bResults.toolChipHasDomainDot
         );
-    } else if (wave9bResults && wave9bResults.error) {
-        check(`Welle 9b: evaluate-Fehler — ${wave9bResults.error}`, false);
     }
 
     // ### Welt-Werkstatt-Architekturen + Distance-Gate ###
@@ -2669,7 +2617,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave9cResults && !wave9cResults.error) {
+    if (ohneWurf(check, "Welle 9c", wave9cResults)) {
         check(
             "Welle 9c: alle 5 Workshop-Bauplane als Built-ins (esse/brennkolben/webstuhl/seelenstein_altar/drehbank)",
             wave9cResults.allStationsExist
@@ -2702,8 +2650,6 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             "Welle 9c: architecture-Bauplan (stein_block) überspringt Werkstatt-Check (keine Domain → kein Gate)",
             wave9cResults.archNoCheck
         );
-    } else if (wave9cResults && wave9cResults.error) {
-        check(`Welle 9c: evaluate-Fehler — ${wave9cResults.error}`, false);
     }
 
     // ### Maschinen-Bonus + Seelen-Bauplane ###
@@ -2779,7 +2725,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave9dResults && !wave9dResults.error) {
+    if (ohneWurf(check, "Welle 9d", wave9dResults)) {
         check(
             "Welle 9d: registerBlueprintAsTool mit role=machine vergibt Bonus auf precisionCap (min + 0.05, gedeckelt 1.0)",
             wave9dResults.regOk && wave9dResults.toolHasBonus
@@ -2809,8 +2755,6 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             "Welle 9d UI (S7 V17.66): die EINE FERTIGEN-Zeile rendert bei role=soul im Werkstatt-DOM (statt des alten Soul-Knopfs)",
             wave9dResults.soulFertigenRendered && wave9dResults.oldSoulButtonGone
         );
-    } else if (wave9dResults && wave9dResults.error) {
-        check(`Welle 9d: evaluate-Fehler — ${wave9dResults.error}`, false);
     }
 
     // ### Präzision als Stat-Multiplikator ###
@@ -2915,7 +2859,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave10aResults && !wave10aResults.error) {
+    if (ohneWurf(check, "Welle 10a", wave10aResults)) {
         check(
             "Welle 10a: leeres/null Array → Default 1.0 (geboren, kein Effekt)",
             wave10aResults.emptyIs1 && wave10aResults.nullIs1
@@ -2934,8 +2878,6 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             "Welle 10a: Tool-Präzision moduliert seinen Stat-Beitrag in computePlayerStats",
             wave10aResults.toolPrecModulates
         );
-    } else if (wave10aResults && wave10aResults.error) {
-        check(`Welle 10a: evaluate-Fehler — ${wave10aResults.error}`, false);
     }
 }
 

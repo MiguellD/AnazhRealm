@@ -36,7 +36,7 @@
 // Port: WASSER_LEBEN_PORT (Standard 4623).
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, pngDatei } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, pngDatei, argOpt } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { quellTeileVereinen, QUELL_KACHELN, WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 
@@ -843,10 +843,7 @@ async function lauf() {
         // Das Bild wartet auch auf den Renderer (`rendererReady`, renderer.init() durch)
         await wasserDa(page, BILD);
         if (BILD) {
-            const ordner = (() => {
-                const i = process.argv.indexOf("--bilder");
-                return i >= 0 ? process.argv[i + 1] : null;
-            })();
+            const ordner = argOpt("--bilder", null);
             befund.bild = await page.evaluate((png) => window.__wasserBild({ png }), !!ordner);
             befund.regen = await page.evaluate(() => window.__wasserRegen({}));
             befund.licht = await page.evaluate(() => window.__wasserLicht({}));
@@ -877,8 +874,8 @@ async function lauf() {
             // dieser Seite an seinem Platz; jede Seite misst genau `QUELL_KACHELN`, das Ganze urteilt über dieselben Quellen
             // wie EIN Lauf, jeder Teil genau einmal.
             // `--nur a,b`: nur diese Proben (Werkbank-Fragen; das Gate fährt alle)
-            const nurI = process.argv.indexOf("--nur");
-            const NUR = nurI >= 0 ? new Set(process.argv[nurI + 1].split(",")) : null;
+            const nur = argOpt("--nur", null);
+            const NUR = nur && new Set(nur.split(","));
             const soll = (n) => !NUR || NUR.has(n);
             const teilen = soll("quelle") && QUELL_TEILE > 1;
             const helfer = teilen

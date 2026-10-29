@@ -46,9 +46,41 @@ class AnazhRealm_siedlung_bewohner {
             const dK = Object.assign({}, kc.START_PARAMS, dB);
             const f = this._menschGussFarben(dB);
             const keys = [0, 1, 2, 3].map((lod) => this._ofenMenschKey(dK, f.skin, f.hair, lod));
-            aus.push({ ov, dK, f, keys, bestellt: keys.map(() => false), satz: null });
+            aus.push({ gen, ov, dK, f, keys, bestellt: keys.map(() => false), satz: null });
         }
         return aus;
+    }
+
+    // DAS GENOM JEDES BEWOHNERS (mensch.K4, die EINE Quelle seines Leibs): sein Same („Plan:Haus:Person") rollt sein Genom
+    // (`_rollHumanoidGenome`); er trägt die Gestalt seiner Siedlung, die seinem Genom am nächsten ist (Geschlecht, Bau, Muskel,
+    // Kopf, Haut, Haar — die Typen backt der Ofen, Lehre 23: die Befehle hängen an den Typen, nie an der Kopfzahl), und seine
+    // eigenen Maße als Rest: die Höhe seines Genoms (`groesse` = seine Höhe ÷ die des Typs — bis mensch.K4 eine zweite Größe der
+    // Liste über der des Typs, ±4 % auf ±9,3 %) und Breite und Tiefe aus seinem Bau gegen den des Typs (`breite`, `tiefe`,
+    // je ±`restMax`).
+    _bewohnerGenome(S) {
+        const BW = AnazhRealm.BEWOHNER;
+        const kc = window.__koerperCore;
+        const haut = Object.keys(kc.SKIN_TONES);
+        const ab = (a, t) =>
+            3 * Math.abs(a.sex - t.sex) +
+            Math.abs(a.build - t.build) +
+            Math.abs(a.muscle - t.muscle) +
+            Math.abs(a.headRatio - t.headRatio) / 0.24 +
+            Math.abs(haut.indexOf(a.skinTone) - haut.indexOf(t.skinTone)) / haut.length +
+            (a.hairColor === t.hairColor ? 0 : 0.3);
+        const rest = (x) => 1 + Math.max(-BW.restMax, Math.min(BW.restMax, x));
+        for (const b of S.liste) {
+            const gen = (b.genom = this._rollHumanoidGenome(b.seed));
+            let best = 0;
+            S.gestalten.forEach((G, gi) => {
+                if (ab(gen, G.gen) < ab(gen, S.gestalten[best].gen)) best = gi;
+            });
+            const t = S.gestalten[best].gen;
+            b.gestalt = best;
+            b.groesse = gen.kh / t.kh;
+            b.breite = rest(BW.restBau[0] * (gen.build - t.build) + BW.restBau[1] * (gen.muscle - t.muscle));
+            b.tiefe = rest(BW.restBau[2] * (gen.build - t.build) + BW.restBau[3] * (gen.muscle - t.muscle));
+        }
     }
 
     // DIE LISTE DER BEWOHNER (einmal je Siedlung, wenn ihre Häuser stehen): je stehendem Haus (der Bau mit dem Samen des
@@ -332,8 +364,7 @@ class AnazhRealm_siedlung_bewohner {
                     beruf,
                     same,
                     orte: { tuer, vor, heim, platz, werk, besuch: null },
-                    gestalt: g.int("gestalt", 0, BW.gestalten - 1),
-                    groesse: 0.96 + g.axis("groesse") * 0.08,
+                    seed: `${plan.seed >>> 0}:${si}:${k}`, // sein Genom, seine Gestalt und seine Maße (`_bewohnerGenome`)
                     atem: g.axis("atem") * 10,
                     leib: null,
                     uhr: 0,
@@ -423,6 +454,9 @@ class AnazhRealm_siedlung_bewohner {
         g.userData.heim = b.heim;
         g.userData.gattung = `mensch:${S.key}:${b.gestalt}`;
         g.scale.setScalar(b.groesse);
+        // Breite und Tiefe seines Genoms tragen die Hüllen (im Raum des Leibs, nach der Haut — wie die Matrix seines Satzes);
+        // das Rig, die Glieder des Felds und der Stand bleiben in seiner Höhe
+        g.traverse((n) => n.isSkinnedMesh && n.scale.set(b.breite, 1, b.tiefe));
         this._bewohnerStellen(b, g, b.x, b.z);
         g.rotation.y = b.blick;
         gl.haltungFest = true;
@@ -449,14 +483,14 @@ class AnazhRealm_siedlung_bewohner {
         g.userData._kzN = this._bewohnerFeldGrenze(); // die Feld-Grenze seiner Art (`_kzLeib` liest sie)
         this.state.scene.add(g);
         b.leib = g;
-        if (G.satz === null) G.satz = this._bewohnerSatz(S, G, b);
+        if (G.satz === null) G.satz = this._bewohnerSatz(S, b);
     }
 
-    // DIE FELD-GRENZE DER BEWOHNER (Gebot 7: die Kosten der Menge an den Schirm, nie an die Kopfzahl): der Satz der
-    // Mengen-Stufe trägt einen Bewohner, solange sein Leib (`feldKoerperM` hoch) am Schirm mindestens `feldPx` Bildpunkte
-    // deckt (`_schirm().pxJeM`: Zeichenpuffer und Sichtfeld) — jenseits tragen die Glieder-Kapseln im Feld die Gestalt
-    // (`_kzLeib`; die Decke ist die Nah-Grenze jedes Leibs, KREATUR_NAH_MESH). Ein kleinerer Schirm schaltet früher.
-    // EIN Objekt je Welt, je Takt neu gemessen; jeder Leib liest es (`_kzN`).
+    // DIE FELD-GRENZE DER BEWOHNER (Gebot 7: die Kosten der Menge an Schirm und Nähe, nie an die Kopfzahl): der Satz trägt einen
+    // Bewohner, solange sein Leib (`feldKoerperM` hoch) am Schirm mindestens `feldPx` Bildpunkte deckt (`_schirm().pxJeM`:
+    // Zeichenpuffer und Sichtfeld) — jenseits tragen die Glieder-Kapseln im Feld die Gestalt (`_kzLeib`; die Decke ist die
+    // Nah-Grenze jedes Leibs, KREATUR_NAH_MESH). Ein kleinerer Schirm schaltet früher. EIN Objekt je Welt, je Takt neu gemessen;
+    // jeder Leib liest es (`_kzN`).
     _bewohnerFeldGrenze() {
         const N = this._bewohnerFeldN || (this._bewohnerFeldN = { ein: 0, aus: 0 });
         const K = AnazhRealm.KREATUR_NAH_MESH;
@@ -476,69 +510,39 @@ class AnazhRealm_siedlung_bewohner {
         b.grundH = undefined; // der Grund des Schritts liest neu
     }
 
-    // DER SATZ EINER GESTALT (der EINE Gang-Satz, `_gangSatz` — Lehre 23: die Kosten der Menge hängen nie an der Kopfzahl): die
-    // Mengen-Stufe des Mensch-Ofens (koerper-core Zeile 2) als drei Senken: die Haut in ihrem Stoff, jeder andere Teil (Kleid,
-    // Schuh, Haar beidseitig, Auge) im Stoff des größten Kleids (jenseits der Armlänge ist ein Auge < 3 px), und der Wurf aus der
-    // NUR-WURF-Stufe 3 (Studio-Vertrag B2: sie wird nie gezeigt und wirft für die Art — die Teile `wurf.seh` der
-    // Grobstufen-Zeile, nur auf der Wurf-Ebene, jeder im Nah-Kreis, auch die Nah-Wahl). DER GANG IM SATZ: der Satz geht das
-    // EINE Gang-Gesetz des nahen Leibs in EINEM Band — `gangPhasen` Phasen des Doppelschritts und der Stand
-    // (`_bewohnerGangPose`), je Instanz Phase und Gewicht seines Gangs (`_bewohnerSatzSchreiben`). Ein Bewohner im Satz ist
-    // eine Matrix; der Satz geht mit seiner Siedlung.
-    _bewohnerSatz(S, G, b) {
-        const T = THREE;
-        const KC = window.__koerperCore;
-        const stufen = [2, 3].map((lod) => this._ofenMenschTemplate(G.dK, G.f.skin, G.f.hair, lod));
-        const z1 = this._ofenZeile(KC, "koerper", 1).zeile;
-        if (stufen.some((t) => !t || !t.root) || !z1 || !z1.wurf) {
-            this._bruchMelden(`BEWOHNER: die Mengen-Stufen der Gestalt fehlen („${S.plan.name || "?"}")`);
-            return false;
-        }
+    // DER SATZ EINER GESTALT (der EINE Gang-Satz, `_gangSatz` — Lehre 23: die Kosten der Menge hängen nie an der Kopfzahl): der
+    // Leib der Menge im Auge (`leib`, die Mengen-Stufe 2 — mensch.K4: EINE Hülle, die Farben in ihren Ecken) und sein Wurf aus der
+    // NUR-WURF-Stufe 3 (`wurf`, Studio-Vertrag B2: nie gezeigt, nur auf der Wurf-Ebene, jeder im Nah-Kreis, auch die Nah-Wahl;
+    // Lehre 26: der Schatten ist derselbe Leib), EINE Senke je Stufe. Befehle je Gestalt: einer im Auge, der Wurf je Kaskade (bis
+    // mensch.K4 Haut, Rest im Stoff des größten Kleids und Wurf). DER GANG IM SATZ: das EINE Gang-Gesetz des nahen Leibs in
+    // EINEM Band — `gangPhasen` Phasen des Doppelschritts und der Stand (`_bewohnerGangPose`, am Leib `b` seiner Gestalt), je
+    // Instanz Phase und Gewicht seines Gangs (`_bewohnerSatzSchreiben`). Ein Bewohner im Satz ist eine Matrix; der Satz geht
+    // mit seiner Siedlung.
+    _bewohnerSatz(S, b) {
+        const G = S.gestalten[b.gestalt];
+        const senken = [];
         const quellen = [];
-        const teilVon = { haut: [], rest: [], wurf: [] };
-        let haut = null;
-        let stoff = null;
-        let groesst = 0;
-        stufen.forEach((t, si) =>
-            t.root.traverse((m) => {
-                if (!m.isSkinnedMesh) return;
-                const seh = (m.material.userData && m.material.userData.__seh) || m.userData.__seh;
-                const tris = m.geometry.index.count / 3;
-                if (si === 0 && seh === "haut") haut = m.material;
-                else if (si === 0 && seh === "stoff" && tris > groesst) {
-                    groesst = tris;
-                    stoff = m.material;
-                }
-                const q = { m, beid: m.material.side === T.DoubleSide };
-                quellen.push(q);
-                if (si === 0) teilVon[seh === "haut" ? "haut" : "rest"].push(q);
-                else if (z1.wurf.seh.indexOf(seh) >= 0) teilVon.wurf.push(q);
-            })
-        );
-        if (!haut || !stoff || !teilVon.wurf.length) {
-            this._bruchMelden(
-                `BEWOHNER: die Mengen-Stufen tragen Haut, Kleid und Wurf nicht („${S.plan.name || "?"}")`
-            );
-            return false;
+        for (const [lod, teil] of [
+            [2, "leib"],
+            [3, "wurf"],
+        ]) {
+            const t = this._ofenMenschTemplate(G.dK, G.f.skin, G.f.hair, lod);
+            const q = [];
+            if (t && t.root)
+                t.root.traverse((m) => m.isSkinnedMesh && q.push({ m, beid: m.material.side === THREE.DoubleSide }));
+            if (q.length !== 1) {
+                this._bruchMelden(`BEWOHNER: die Mengen-Stufe ${lod} trägt ihren Leib nicht („${S.plan.name || "?"}")`);
+                return false;
+            }
+            quellen.push(q[0]);
+            senken.push({ teil, quellen: q, stoff: q[0].m.material, wurf: teil === "wurf" });
         }
-        const stoffVon = { haut, rest: stoff, wurf: stoff };
-        const satz = this._gangSatz(
-            {
-                name: "bewohner-satz",
-                inventar: "bewohner",
-                n: AnazhRealm.BEWOHNER.gangPhasen,
-                quellen,
-                cap: S.liste.filter((x) => x.gestalt === b.gestalt).length,
-                senken: ["haut", "rest", "wurf"].map((k) => ({
-                    teil: k,
-                    quellen: teilVon[k],
-                    stoff: stoffVon[k],
-                    wurf: k === "wurf",
-                })),
-            },
+        const cap = S.liste.filter((x) => x.gestalt === b.gestalt).length;
+        return this._gangSatz(
+            { name: "bewohner-satz", inventar: "bewohner", n: AnazhRealm.BEWOHNER.gangPhasen, quellen, cap, senken },
             // der Stand zuerst (der Satz steht, bis sein Gang gebacken ist — `_bewohnerGangBacken` im Takt)
             (Z) => this._bewohnerGangPose(b.leib, Object.assign(Z, { gebacken: 0, tempo: b.tempo }), Z.n)
         );
-        return satz;
     }
 
     // DIE POSE k DES GANG-PUFFERS (k < n: die Phase 2πk/n des Doppelschritts im EINEN Gang-Gesetz — `_gaitTick` mit dem Tempo
@@ -655,13 +659,18 @@ class AnazhRealm_siedlung_bewohner {
     }
 
     // DIE MATRIZEN DER SÄTZE (nur, wenn sich eine Wahl oder Lage ändert — Lehre 25): je Gestalt dicht ([0, n) lebt) — im Auge
-    // (Haut und Kleid) jeder Bewohner im Nah-Kreis, den die Nah-Wahl nicht trägt, im Wurf jeder im Nah-Kreis. Je Instanz Phase (`walkPhase` / 2π) und Gewicht (`_gaitW`) seines Gangs — bis der Gang
+    // (der Leib) jeder Bewohner im Nah-Kreis, den die Nah-Wahl nicht trägt, im Wurf jeder im Nah-Kreis. Je Instanz Phase (`walkPhase` / 2π) und Gewicht (`_gaitW`) seines Gangs — bis der Gang
     // gebacken ist, der Stand. Die Laufzeit-Marke `_satz` sagt jedem Leser, dass der Leib im Satz gezeichnet wird. Jeder
-    // merkt seine Plätze (`satzOrt`: Wurf, Haut, Kleid); wechselt keine Wahl, rückt der Takt nur die Bewegten (`bewegt`) an
+    // merkt seine Plätze (`satzOrt`: Wurf, Leib); wechselt keine Wahl, rückt der Takt nur die Bewegten (`bewegt`) an
     // ihren Plätzen — der Takt kostet die Gehenden, nie die Menge (mensch.K3: der Morgengang trägt das ganze Dorf).
     _bewohnerSatzSchreiben(S, bewegt = null) {
         const m4 = this._bewohnerM4 || (this._bewohnerM4 = new THREE.Matrix4());
-        const ARTEN = ["wurf", "haut", "rest"];
+        const v3 = this._bewohnerV3 || (this._bewohnerV3 = new THREE.Vector3());
+        // je Art die Senke des Satzes seiner Gestalt: der Wurf, der Leib
+        const ARTEN = ["wurf", "leib"];
+        // seine Matrix: Ort, Blick, seine Höhe und — wie die Hüllen seines Leibs (`_bewohnerGeburt`) — Breite und Tiefe
+        const lage = (g, b) =>
+            m4.compose(g.position, g.quaternion, v3.set(g.scale.x * b.breite, g.scale.y, g.scale.z * b.tiefe));
         const setze = (Z, k, i, b) =>
             AnazhRealm._gangSatzInstanz(
                 Z[k],
@@ -676,33 +685,35 @@ class AnazhRealm_siedlung_bewohner {
             for (const b of bewegt) {
                 const Z = b.satzOrt && b.leib ? S.gestalten[b.gestalt].satz : null;
                 if (!Z) continue;
-                const g = b.leib;
-                m4.compose(g.position, g.quaternion, g.scale);
-                b.satzOrt.forEach((i, k) => {
+                lage(b.leib, b);
+                b.satzOrt.forEach((i, j) => {
                     if (i < 0) return;
-                    setze(Z, ARTEN[k], i, b);
-                    dran.add(Z[ARTEN[k]]);
+                    setze(Z, ARTEN[j], i, b);
+                    dran.add(Z[ARTEN[j]]);
                 });
             }
             for (const m of dran) AnazhRealm._gangSatzNeu(m);
             return;
         }
-        S.gestalten.forEach((G, gi) => {
-            const Z = G.satz;
-            if (!Z) return;
-            const zahl = { haut: 0, rest: 0, wurf: 0 };
-            for (const b of S.liste) {
-                if (b.gestalt !== gi || !b.leib) continue;
-                const g = b.leib;
-                g.userData._satz = !!b.kreis && !b.nah;
-                b.satzOrt = null;
-                if (!b.kreis) continue;
-                m4.compose(g.position, g.quaternion, g.scale);
-                b.satzOrt = ARTEN.map((k) => (k !== "wurf" && b.nah ? -1 : zahl[k]++));
-                b.satzOrt.forEach((i, k) => i >= 0 && setze(Z, ARTEN[k], i, b));
-            }
-            for (const k of ARTEN) AnazhRealm._gangSatzZahl(Z[k], zahl[k]);
-        });
+        const zahl = new Map();
+        for (const b of S.liste) {
+            const g = b.leib;
+            if (!g) continue;
+            const Z = S.gestalten[b.gestalt].satz;
+            g.userData._satz = !!b.kreis && !b.nah && !!Z;
+            b.satzOrt = null;
+            if (!b.kreis || !Z) continue;
+            lage(g, b);
+            b.satzOrt = ARTEN.map((k) => {
+                if (k === "leib" && b.nah) return -1;
+                const i = zahl.get(Z[k]) || 0;
+                zahl.set(Z[k], i + 1);
+                setze(Z, k, i, b);
+                return i;
+            });
+        }
+        for (const G of S.gestalten)
+            for (const k of ARTEN) if (G.satz) AnazhRealm._gangSatzZahl(G.satz[k], zahl.get(G.satz[k]) || 0);
     }
 
     // DER BEWOHNER-TAKT (Lehre 13: im Frame-Takt der Wesen, nie am Render-Signal): je gemeldeter Siedlung nahe dem Spieler
@@ -765,6 +776,7 @@ class AnazhRealm_siedlung_bewohner {
                 S.listeWerk = null;
                 S.gestalten = this._bewohnerGestalten(S);
                 S.liste = w.value;
+                this._bewohnerGenome(S);
                 S.planStunde = null;
                 S.uhrStunde = stunde;
                 this._bewohnerWacheSetzen(S);
@@ -2231,7 +2243,11 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // (Raster cellM · Seltenheit rarity · Größe nHMin/nHSpan) lebt EINMAL in
 // fachwerk-core (SIEDLUNG) — der Zwilling hier fiel (Welle L, Karte Dorf/Stadt DEFEKT 4: stiller Fallback mit Kopien).
 // DIE BEWOHNER (Meisterkarte mensch.K1, `_tickBewohner`): gestalten = die Gestalten je Siedlung (Vorlagen im Ofen, je
-// Gestalt beide Stufen ~2,45 MB Geometrie: vier halten das Profi-Band 118 MB, gemessen 21.10. Radeon) · platzAnteil = so viele
+// Gestalt beide Stufen ~2,45 MB Geometrie: vier halten das Profi-Band 118 MB, gemessen 21.10. Radeon; mit dem Leib der Menge
+// je Gestalt zwei Senken — Leib und Wurf, vorher Haut, Rest und Wurf: 12 statt 16 Befehle am Start-Dorf) · restBau /
+// restMax = die eigenen Maße jedes Bewohners gegen seinen Typ (`_bewohnerGenome`): [Breite je Bau, je Muskel, Tiefe je Bau,
+// je Muskel] der Genom-Achsen (0…1), Breite und Tiefe je höchstens ±restMax (die Breite trägt auch der Kopf: mit ±6 % lag die
+// Kopf-Breite 0,098 über MENSCH_SOLL 0,096) · platzAnteil = so viele
 // stehen am Tag auf dem Dorfplatz · raumM = der persönliche Raum zwischen zwei Ständen · saumM = der Saum um jeden Grundriss ·
 // geburtenJeTakt = Leiber je Takt (Klon aus dem Memo ~1 ms) · haeuserJeTakt = so viele Häuser legt die Liste je Takt · fernFaktor = jenseits nearM × fernFaktor gehen die Leiber ·
 // nahM (+ nahHystM zurück) / nahLeiber = so nah und so viele leben als Leib (Atem, Stufen), jeder andere im Nah-Kreis steht
@@ -2263,6 +2279,8 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // er den Schlag des Spielers und erinnert ihn (`_bewohnerZeuge`).
 AnazhRealm.BEWOHNER = Object.freeze({
     gestalten: 4,
+    restMax: 0.03,
+    restBau: Object.freeze([0.06, 0.03, 0.07, -0.02]),
     platzAnteil: 0.45,
     raumM: 1.5,
     saumM: 0.45,
