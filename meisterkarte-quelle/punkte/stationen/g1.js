@@ -1434,6 +1434,86 @@ module.exports = [
         quelle: "1 = die Front läuft im Rothermel-Band (mit dem Wind 0,5–2 m/s, gegen ≤ 0,2 m/s) an einer Pose",
     },
 
+    // ── stoffe.K2#2 ── gate:stand-takt --brand (Null-Renderer, Mess-Wiese, Spielzeit-Schritte des Takts `_tickBrand`; headless, die ms
+    // je Bild an der CPU des Läufers — das Bild von Asche, Rauch und Glut an Radeon und GTX misst diese Station nicht): die Feuchte des Betts ist EINE Funktion des Orts (stamm/feld-leben.js `_brandFeuchte`: die Luft-Trockene,
+    // der Boden der Zelle aus der Hydrosphäre `_feuchteAt` bis zur Faser-Sättigung, der Regen als freies Wasser bis 250 %), die
+    // Asche liegt im Boden-Stoff (Kanal G der Kronen-Karte, `_ascheMalen`, die Palette `asche` Y 0,052) und grünt mit der Sukzession
+    // nach, Rauch (`_updateDorfRauch`) und Knistern (`_glutAmOhr`) lesen `brandFeld` wie das Licht. Gemessen: HALT windauf des Flusses
+    // nächst der Mess-Wiese (je Zelle, die die Front erreichte und nicht fing, ihr Grund; die Mutante ohne die Feuchte des Orts
+    // brennt ins nasse Ufer), FELS neben der nächsten Stein-Zelle, REGEN (30 s Brand, dann das Wort Regen; die Mutante ohne freies
+    // Wasser), LESER im Brand, ASCHE an der Zelle des Herds (Albedo, Halme; nach der Stufe Gras), ZEIT 2 km fern bei ≥ 2 000
+    // brennenden Zellen (je Bild p95 von Takt und Lesern, der Verzug des Schritts). Vorher (main b3f9ae95 + w3s-feuer): das Laub fiel im
+    // Landregen erst nach 196 s, das nasse Ufer brannte wie die Kuppe, die Asche trug keine Albedo, Rauch und Knistern lasen den Brand
+    // nicht, 2 000 Zellen kosteten je Schritt 7,4 ms und die Leser 2,5 ms je Bild. Am Zweig w3u-nachfolge (Null-Renderer, Radeon-Laptop):
+    // GRÜN — Regen 20 s (Mutante 300), Halt 2× am nassen Gras (Mutante: 7 nasse brennen, 4× Halt am Wasser), Fels hält, Asche Y 0,052
+    // → nach der Stufe Gras 0,148, je Bild p95 0,3 ms bei 2 000 Zellen (451 der Welt), Verzug 1 s. GPU: an der Station.
+    {
+        kriterium: "stoffe.K2",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-stand-takt.cjs", "--brand"],
+        env: { STAND_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: true,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const B = jsonZeile(lauf.stdout, /^BRAND \{/);
+            if (!B || !B.halt || !B.regen || !B.zeit || !B.asche || !B.asche.asche)
+                return { gruen: false, zahl: "keine BRAND-Zeile (Exit " + lauf.exit + ")" };
+            const [h, m, f, rg, rm, l, a, z] = [B.halt, B.haltM, B.fels, B.regen, B.regenM, B.leser, B.asche, B.zeit];
+            const gruen =
+                /✅ BRAND GRÜN/.test(lauf.stdout) &&
+                h.nass >= 1 &&
+                h.wasser + m.wasser >= 1 &&
+                h.wasserGebrannt === 0 &&
+                h.nassGebrannt === 0 &&
+                m.nassGebrannt >= 1 &&
+                !!f &&
+                f.gehalten === true &&
+                rg.s <= 60 &&
+                rm.s > 60 &&
+                l.licht >= 1 &&
+                l.rauch >= 1 &&
+                l.glutF >= 64 &&
+                a.asche.Y <= 0.08 &&
+                a.gras.a === 0 &&
+                z.brennend >= 2000 &&
+                z.bildMs <= 0.5 &&
+                z.verzugS <= 2;
+            return {
+                gruen,
+                zahl:
+                    "Halt: " + h.brannte + " Zellen brannten, die Front hielt " + h.nass + "× am nassen Gras (ohne die Feuchte des Orts brannten " +
+                    m.nassGebrannt + " nasse, sie hielt " + m.wasser + "× am Wasser) · Fels " + (f ? f.grund : "—") +
+                    " · Regen löscht nach " + rg.s + " s (Mutante " + rm.s + " s) · Asche Y " + a.asche.Y + " → nach der Stufe Gras " +
+                    a.gras.Y + " · Licht " + l.licht + ", Rauch " + l.rauch + ", Glut am Ohr " + l.glutF + " m² · " + z.brennend +
+                    " brennende Zellen (" + z.echt + " der Welt): je Bild p95 " + z.bildMs + " ms (Leser " + z.leserMs + "), der Schritt bis " + z.verzugS + " s hinter der Uhr",
+            };
+        },
+        pfad: [
+            "stamm/feld-*.js",
+            "stamm/bau-vorlagen.js",
+            "stamm/gelaende-*.js",
+            "stamm/wasser-*.js",
+            "stamm/vegetation-*.js",
+            "stamm/siedlung-satz.js",
+            "stamm/siedlung-ort.js",
+            "stamm/klang.js",
+            "stamm/bild-himmel.js",
+            "stamm/dirigent-*.js",
+            "stamm/daten.js",
+            "foundry-core.js",
+            "phyto-core.js",
+            "gelaende-core.js",
+            "scripts/diag-stand-takt.cjs",
+            "scripts/lib/stand-linse.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+        ],
+        quelle:
+            "2 = Halt an Fluss, Fels und nassem Gras, Regen löscht ≤ 60 s, Asche ≤ 0,08 grünt nach, Licht/Rauch/Knistern aus demselben Zustand, 2 000 brennende Zellen ≤ 0,5 ms CPU an der GTX-CPU, beide Geräte",
+    },
+
     // ── stoffe.K3 ── das Eis, die feste Phase der EINEN Wasser-Wahrheit (gate:wasser-leben E im Block koerper, Null-Renderer:
     // Mechanik am Spieler-Weg, R3): im Winter (Saison 0,875, das Temperatur-Feld des Gelände-Kerns am Spiegel unter 0 °C)
     // geht der Spieler mit W über den See der Mess-Wiese und steht auf dem Eis, Wolf, Fuchs und Bär stehen auf ihm; das Feld
@@ -1645,6 +1725,73 @@ module.exports = [
         ],
         quelle: "1 = der Nachwuchs korreliert nach 1 Spieljahr mit Feuchte × Licht (r ≥ 0,5)",
     },
+    // ── stoffe.K5#2 ── gate:stand-takt --brand, die Zeile SUKZESSION (Null-Renderer, Mess-Wiese, Spielzeit-Sprung als Spieler-Wort):
+    // die Asche des Brands geht ihre Sukzession als FUNKTION ihres Rests (stamm/vegetation-wiese.js `_sukzession`: die Asche liegt bis
+    // 0,08 und ist bei 0,3 nachgegrünt — Kanal G der Boden-Decke, den Boden-Stoff und Nah-Wiese lesen —, die Kräuter der Nah-Streu
+    // wachsen von 0,3 bis 0,6, `_streuNachBrand`); der Nährstoff ist EINE Funktion der Taten der Zelle (`_naehrstoffAt`: Ernte −0,02,
+    // Fällen −0,3, Asche +0,4, Leichnam +0,2, abklingend mit der Narbe), der Wuchs liest ihn nach Monod (`_wuchsAt`). Gemessen an der
+    // Zelle des Herds: Halme und Kräuter vor dem Brand, auf der Asche, nach der Stufe Gras und nach der Stufe Busch; an ihrer
+    // Nachbarin die Ernte jeder Pflanze (Nährstoff und Wuchs, die Mutante bei festem Nährstoff), die Asche frisch, der Leichnam eines
+    // Risses von Spieler-Hand. Der Jungwuchs fehlt: kein Sämling aus dem Stubben, nach dem Busch wirft der Wald den gewachsenen Baum
+    // (keine Jugend-Gestalt `treeParams(alter)`) — die Station steht ROT, bis er steht.
+    {
+        kriterium: "stoffe.K5",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-stand-takt.cjs", "--brand"],
+        env: { STAND_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 8,
+        urteil: (j, lauf) => {
+            const S = jsonZeile(lauf.stdout, /^SUKZESSION \{/);
+            const [a, n] = S ? [S.asche, S.naehr] : [];
+            if (!a || !a.asche || !a.gras || !a.busch || !n || !n.ernte)
+                return { gruen: false, zahl: "keine SUKZESSION-Zeile (Exit " + lauf.exit + ")" };
+            const gruen =
+                /✅ SUKZESSION GRÜN/.test(lauf.stdout) &&
+                a.vor.halme >= 20 &&
+                a.vor.kraut >= 3 &&
+                a.asche.halme <= 0.05 * a.vor.halme &&
+                a.asche.kraut === 0 &&
+                a.gras.halme >= 0.8 * a.vor.halme &&
+                a.gras.kraut <= 0.3 * a.vor.kraut &&
+                a.busch.kraut >= 0.8 * a.vor.kraut &&
+                n.ernte.N < n.ernte.N0 - 0.04 &&
+                n.ernte.W < n.ernte.W0 &&
+                n.asche >= 1.2 &&
+                n.leichnam >= 1.1 &&
+                n.mutante.W === n.mutante.W0 &&
+                !!S.saemling;
+            return {
+                gruen,
+                zahl:
+                    "Halme " + a.vor.halme + " → Asche " + a.asche.halme + " → Gras " + a.gras.halme + " · Kräuter " + a.vor.kraut +
+                    " → Asche " + a.asche.kraut + " → Gras " + a.gras.kraut + " → Busch " + a.busch.kraut + " · Ernte (" + n.ernte.n +
+                    "): Nährstoff " + n.ernte.N0 + " → " + n.ernte.N + ", Wuchs " + n.ernte.W0 + " → " + n.ernte.W + " · Asche " + n.asche +
+                    ", Leichnam " + n.leichnam + " · Sämling " + (S.saemling ? "steht" : "fehlt (treeParams(alter) nicht gebaut)"),
+            };
+        },
+        pfad: [
+            "stamm/vegetation-*.js",
+            "stamm/feld-*.js",
+            "stamm/gelaende-*.js",
+            "stamm/siedlung-satz.js",
+            "stamm/kreatur-leben.js",
+            "stamm/bild-himmel.js",
+            "stamm/dirigent-*.js",
+            "stamm/wasser-hydro.js",
+            "stamm/daten.js",
+            "foundry-core.js",
+            "phyto-core.js",
+            "gelaende-core.js",
+            "scripts/diag-stand-takt.cjs",
+            "scripts/lib/stand-linse.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/welt-orte.cjs",
+        ],
+        quelle: "2 = Stubben → Sämling, Brand → Gras → Busch → Wald, Ernte entnimmt Nährstoff, Asche und Leichnam geben ihn zurück",
+    },
     // ── physik.K3 ── gate:fahr-leben (Null-Renderer, im Spiel-Takt `_gameLoopTick`), Zwilling des Befehls von physik.K2#1 (EIN Lauf):
     // DER FREIE KÖRPER — der EINE Löser `_freiSchritt` (stamm/koerper-bewegung.js: Starrkörper mit Quaternion, Sequential Impulses,
     // Schlaf) auf dem Boden des Gesetzes und den Blocker-Boxen, mit der Stoff-Tafel; der Wagen stößt über seine EINE Hülle und das
@@ -1715,10 +1862,8 @@ module.exports = [
 
 // ── NICHT FASSBAR (befehl: null): kein Werkzeug im Spiel-Baum misst das Soll dieser Staffel als EIN Befehl am SHA ──
 module.exports.fehlt = [
-    { kriterium: "stoffe.K5", staffel: 2, befehl: null, grund: "nicht gebaut: der Nachwuchs ist EIN Gesetz (Feuchte × Licht, w3s-sukzession), aber die Reihe fehlt — kein Sämling aus dem Stubben (der Wald setzt nach der Narbe den gewachsenen Baum, keine Jugend-Gestalt `treeParams(alter)`), keine Sukzession Brand → Gras → Busch → Wald (der Brand gehört der Karte w3s-feuer), kein Nährstoff-Feld (Ernte entnimmt nichts, Asche und Leichnam geben nichts zurück)" },
     { kriterium: "gelaende.K3", staffel: 2, befehl: null, grund: "Werkzeug und Gesetz fehlen für die Fließ-Anisotropie: keine Linse misst die Normalen-Anisotropie längs/quer zum Lauf im Ausgabe-Bild, und die Strömung der Welt ist `WASSER_GESETZ.wellen.adv × centerness` (`_waterFlowAt`, stamm/wasser-hydro.js) — kein Gefälle, kein Einzugsgebiet, aus dem sie wüchse (25.10. gelesen an d43cb61c). Die 12 Posen allein (Ego/Third × Mittag/Nacht/Regen über `bild --uhr --wetter` wie Staffel 1) wären eine halbe Station" },
     { kriterium: "wetter.K2", staffel: 2, befehl: null, grund: "Werkzeug und Welt fehlen: werkbank licht --naesse misst nur Ego an Wiese und Dorf — keine Trocken-Kurve, kein Third; die Welt trägt keine Pfütze (stamm/ kennt kein Pfützen-Gesetz, 25.10. an d43cb61c), die Mulden-Korrelation r ≥ 0,5 hätte nichts zu messen" },
-    { kriterium: "stoffe.K2", staffel: 2, befehl: null, grund: "nicht gebaut (w3s-feuer baute Staffel 1): Fels und Wasser halten die Front (kein Bett, `_brandStoff`), aber keine Probe misst es; nasses Gras hält nur über die EINE globale Nässe (kein Feld je Ort); der Regen löscht das Laub erst nach 196 s (Erlöschungs-Feuchte 0,25 auf der Nässe-Kurve benetzenS 150, gate:stand-takt an w3s-feuer); die Asche ist eine Narbe im lebendig (keine Albedo im Boden-Stoff); Rauch und Knistern lesen den Brand nicht; 2 000 brennende Zellen ≤ 0,5 ms an der GTX-CPU ungemessen" },
     { kriterium: "stoffe.K1", staffel: 2, befehl: null, grund: "nicht gebaut: 7/7 verlangt je Stoff auch Albedo → Luma (das Ausgabe-Bild der echten GPU; headless zählt sie nie), T_zünd für Stein, Eisen, Erde und Wasser (sie brennen nicht), T_schmelz für jeden Stoff außer Wasser (kein Leser einer Phase: Esse, Lava) und μ des Wassers (eine Flüssigkeit trägt keinen Gleitenden); am Zweig stoffe-k1-tafel 4–5 von 7 je Stoff" },
     { kriterium: "physik.K3", staffel: 2, befehl: null, grund: "nicht gebaut (w3t-koerper baute Staffel 1, den EINEN Löser `_freiSchritt`): der Lastpfad bleibt ein Urteil (`stamm/bau-buch.js` `_loadPath`, das Werk stürzt als Pendel um eine Kante, `_werkSturzSchritt`) — kein Teil eines Werks wird ein freier Körper, also kein Einsturz; Trümmer leben nicht über den Reload (der Stand trägt Lage und Gier, nie die Drehung des Körpers); 100 freie Körper wach kosten 9 ms je Sim-Schritt (Node, flacher Boden; Soll 1 ms an der GTX-CPU)" },
 ];
