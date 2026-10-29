@@ -2251,7 +2251,10 @@ class AnazhRealm_feld_leben {
         if (!bf || !bf.size) return;
         const B = AnazhRealm.BRAND;
         const frist = performance.now() + B.budgetMs;
-        while (this._brandArbeit(frist) && bf.size && this.state.spielZeit - this._brandUhr >= B.schrittS)
+        // der Schritt fällt, sobald die Uhr ihn erreicht — im Gleitkomma mit einem Hauch (`(a + 1) − a` ist für ~0,1 % der Uhren
+        // 0,99999…: bis w3v-brand-bild hing jeder, der die Uhr auf `_brandUhr + schrittS` stellte, an dieser Uhr, und derselbe
+        // Herd trug 0 bis 95 Aschen)
+        while (this._brandArbeit(frist) && bf.size && this.state.spielZeit - this._brandUhr >= B.schrittS - 1e-9)
             this._brandSchritt((this._brandUhr += B.schrittS));
         if (!bf.size && !this._brandRest) this._brandBett = null; // erloschen: das Gemessene fällt
     }

@@ -566,12 +566,17 @@ async function seite() {
     st.perfRegulator = false;
     const y = (x, z) => r._voxelSurfaceY(x, z);
     const stehen = (p) => (pm.set(p.x, y(p.x, p.z) + 1.8, p.z), window.__weltStehtNach(takt));
+    // das Wort des Spielers über den EINEN Schreiber ohne Übergang (die Bühne)
+    const wort = (w) => ((st.weatherEffectTime = 0), r._setWeather(w, "human"), (st.weatherEffectTime = -1e9), (st.weatherTransition = null));
+    // die Punkte der Flüsse (ohne See) binnen R um M, der nächste zuerst
+    const fluss = (M, R = Infinity, d = (q) => Math.hypot(q.x - M.x, q.z - M.z)) =>
+        (st.hydrosphere?.rivers || []).flatMap((rv) => rv.points.filter((q) => !q.inLake && d(q) < R)).sort((p, q) => d(p) - d(q));
     const pflanzen = (f, ns = st.nahStreu) => {
         for (const [senke, a] of ns ? ns.senken : [])
             for (const [key, b] of a.ernte && a.preset !== "stumpf" ? a.bloecke : [])
                 for (const it of (ns.kacheln.get(key) || { items: [] }).items) if (b.ids.includes(it.id)) f({ senke, key, id: it.id }, it);
     };
-    return { pm, takt, y, stehen, pflanzen };
+    return { pm, takt, y, stehen, pflanzen, wort, fluss };
 }
 
 async function tatSeite(MESS, vorher) {
@@ -735,8 +740,9 @@ function nachwuchsUrteil({ echt: e, mutante: m } = {}) {
 // `_tickBrand`): an der Mess-Wiese im Wort bewölkt (Wind 0,3; die Bühne hält die Nässe trocken, bis das Wort Regen sie freigibt).
 //   HALT — der Herd liegt windauf des Flusses nächst der Mess-Wiese (der erste trockene Ort mit Bett 48–160 m gegen den Wind): je
 //   Zelle, die die Front erreichte und die nicht fing, ihr Grund (Wasser `_nassAt`, nasses Bett `_brandFeuchte` über `mx`, Fels,
-//   Asche, mager); die Mutante (`_feuchteAt` 0 an der Naht) brennt in das nasse Ufer. FELS: der Herd neben der nächsten Zelle aus
-//   Stein, die Front erreicht sie und hält.
+//   Asche, mager); die Mutante (`_feuchteAt` 0 an der Naht) brennt in das nasse Ufer. FELS: die Zellen aus Stein, die dieselbe
+//   Front erreichte und die nicht fingen (bis w3v-brand-bild ein eigener Herd neben der nächsten Stein-Zelle). Der Brand läuft
+//   mittags (die Uhr ist Spieler-Wort).
 //   REGEN — der Herd an der Mess-Wiese brennt 30 s, dann fällt das Wort Regen (die Nässe läuft im Takt): Sekunden bis zum Erlöschen;
 //   die Mutante (der Regen trägt kein freies Wasser auf die Faser) brennt weiter. LESER im Brand am Herd: Leuchtquellen, Rauch-
 //   Quellen (`_updateDorfRauch`) und die Glut am Ohr (`_glutAmOhr`) aus `brandFeld`.
@@ -752,13 +758,13 @@ function nachwuchsUrteil({ echt: e, mutante: m } = {}) {
 const rot = (T) => T.filter((t) => !t[1]).map(([n, , x]) => n + ": " + JSON.stringify(x));
 function brandUrteil(b) {
     if (!b || !b.halt || !b.regen || !b.asche || !b.asche.asche || !b.zeit || !b.kante) return ["LEER: " + JSON.stringify(b && Object.keys(b))];
-    const [h, m, f, rg, rm, l, lm, a, z, k, km] = [b.halt, b.haltM, b.fels, b.regen, b.regenM, b.leser, b.leserM, b.asche, b.zeit, b.kante, b.kanteM];
+    const [h, m, rg, rm, l, lm, a, z, k, km] = [b.halt, b.haltM, b.regen, b.regenM, b.leser, b.leserM, b.asche, b.zeit, b.kante, b.kanteM];
     return rot([
         ["HALT", h.brannte >= 2 && h.nass >= 1, h],
         ["HALT-BRUCH", h.wasserGebrannt === 0 && h.nassGebrannt === 0, h],
         ["MUTANTE-HALT", m && m.nassGebrannt >= 1 && m.nass === 0, m],
         ["FLUSS", m && m.wasser + h.wasser >= 1 && m.wasserGebrannt === 0, m],
-        ["FELS", f && f.erreicht && f.gehalten, f],
+        ["FELS", h.fels >= 1, h],
         ["REGEN", rg.brannte >= 1 && rg.s <= 60, rg],
         ["MUTANTE-REGEN", rm && rm.s > 60, rm],
         ["LESER", l && l.licht >= 1 && l.rauch >= 1 && l.flammen >= 1 && l.lang >= 0.3 && l.lang <= 8 && l.glutD <= 16 && l.glutF >= 64, l],
@@ -805,7 +811,7 @@ function sukzessionUrteil(s) {
 }
 
 async function brandSeite(MESS) {
-    const { pm, takt, y, stehen, pflanzen } = await window.__seite();
+    const { pm, takt, y, stehen, pflanzen, wort, fluss } = await window.__seite();
     const [C, P, L] = [r.constructor, Object.getPrototypeOf(r), (st.worldMeta.taten ||= [])];
     const [B, cs, n0] = [C.BRAND, C.LIFE_FIELD.cell, L.length];
     const r3 = (v) => Math.round(v * 1e3) / 1e3;
@@ -830,12 +836,6 @@ async function brandSeite(MESS) {
     const [uhr, jahr] = [st.weatherEffectTime, st.autoSeason];
     st.weatherEffectTime = -1e9;
     st.autoSeason = false;
-    const wort = (w) => {
-        st.weatherEffectTime = 0;
-        r._setWeather(w, "human");
-        st.weatherEffectTime = -1e9;
-        st.weatherTransition = null;
-    };
     const trocken = () => ((r._naesseTakt = () => (st.naesse = 0)), (st.naesse = 0));
     const brennen = (max) => {
         let i = 0;
@@ -844,7 +844,6 @@ async function brandSeite(MESS) {
     };
     const asche = () => L.slice(n0).filter((a) => a.tat === "brand");
     const nass = (f) => r._brandFeuchte(f.boden) >= f.zeile.brenn.mx;
-    const nassBett = (cx, cz, f = r._brandStoff(cx, cz)) => f && nass(f);
     // der Grund liest das Bett, wie die Front es antraf (`_brandStoff` des Brands), sonst, warum die Zelle keines trägt
     const grund = (cx, cz) => {
         const [x, z] = xz(cx, cz);
@@ -871,6 +870,7 @@ async function brandSeite(MESS) {
             brannte: A.length,
             wasser: g.filter((v) => v === "wasser").length,
             nass: g.filter((v) => v === "nass").length,
+            fels: g.filter((v) => v === "fels:stein").length,
             wasserGebrannt: A.filter((c) => r._nassAt(...xz(...c))).length,
             nassGebrannt: A.filter(nassGebrannt).length,
         };
@@ -920,11 +920,8 @@ async function brandSeite(MESS) {
         // ihn zurück): Wasser, dann nasses Bett, dann ununterbrochen trockenes Bett bis zum Herd (Boden-Feuchte ≤ 0,05, ≥ 2 Zellen
         // hinter dem letzten nassen)
         const d = (q) => Math.hypot(q.x - MESS.x, q.z - MESS.z);
-        const punkte = [];
-        for (const rv of st.hydrosphere?.rivers || []) for (const q of rv.points) if (!q.inLake && d(q) < 320) punkte.push(q);
-        punkte.sort((p, q) => d(p) - d(q));
         let herd = null;
-        for (const p of punkte) {
+        for (const p of fluss(MESS, 320)) {
             const w = r._windAt(p.x, p.z, st.spielZeit);
             const [seen, strahl] = [new Set(), []];
             for (let D = 0; D <= 400; D += 8) {
@@ -956,31 +953,6 @@ async function brandSeite(MESS) {
         delete r._feuchteAt;
         aus.haltM = zaehle();
         leer();
-        // FELS: die nächste Zelle aus Stein mit einem trockenen Bett daneben
-        let fels = null;
-        for (let R = 1; R <= 30 && !fels; R++)
-            for (let i = -R; i <= R && !fels; i++)
-                for (const [cx, cz] of [[hx + i, hz - R], [hx + i, hz + R], [hx - R, hz + i], [hx + R, hz + i]]) {
-                    const [x, z] = xz(cx, cz);
-                    if (r._kontaktStoffAt(x, z, y(x, z)) !== "stein" || r._nassAt(x, z)) continue;
-                    // der Herd windauf der Stein-Zelle (die Spitze der Front läuft auf sie zu), sonst die Nachbarin, die am meisten windauf liegt
-                    const w = r._windAt(x, z, st.spielZeit);
-                    const n = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]
-                        .sort(([a, b], [c, e]) => a * w.x + b * w.z - (c * w.x + e * w.z))
-                        .map(([a, b]) => [cx + a, cz + b])
-                        .find(([a, b]) => r._brandStoff(a, b) && !nassBett(a, b));
-                    if (n) {
-                        fels = { stein: [cx, cz], herd: n };
-                        break;
-                    }
-                }
-        if (fels) {
-            r._brandEntfachen(...xz(...fels.herd));
-            brennen(900);
-            const k = fels.stein.join(",");
-            Object.assign(fels, { erreicht: halt.has(k), grund: halt.get(k) || null, gehalten: !asche().some((a) => zelle(a.x, a.z).join(",") === k) });
-        }
-        aus.fels = fels;
         leer();
         delete r._brandZuenden;
         // REGEN und LESER am Herd der Mess-Wiese: Licht, Ohr und das Bild (15 s zu 0,1 s, `_brandBild`: die Fahne steht) — die Flammen der Front,
@@ -1193,9 +1165,8 @@ if (process.argv.includes("--selftest")) {
             ...falsch(
                 brandUrteil,
                 {
-                    halt: { brannte: 9, wasser: 0, nass: 3, wasserGebrannt: 0, nassGebrannt: 0 },
+                    halt: { brannte: 9, wasser: 0, nass: 3, fels: 4, wasserGebrannt: 0, nassGebrannt: 0 },
                     haltM: { nassGebrannt: 2, nass: 0, wasser: 1, wasserGebrannt: 0 },
-                    fels: { erreicht: true, gehalten: true },
                     regen: { brannte: 2, s: 20 },
                     regenM: { s: 300 },
                     leser: { licht: 1, rauch: 1, flammen: 40, lang: 2.4, deckung: 0.97, glutD: 0, glutF: 256 },
@@ -1206,7 +1177,7 @@ if (process.argv.includes("--selftest")) {
                     asche: { vor: { halme: 40 }, asche: { a: 1 }, gras: { a: 0 }, mutante: { halme: 40 } },
                     zeit: { brennend: 2000, bildMs: 0.3, verzugS: 1.1, schirmMs: 0.6 },
                 },
-                [["HALT", "halt.nass", 0], ["HALT-BRUCH", "halt.nassGebrannt", 1], ["MUTANTE-HALT", "haltM.nassGebrannt", 0], ["FLUSS", "halt.wasser", 0, "haltM.wasser", 0], ["FELS", "fels.gehalten", false], ["REGEN", "regen.s", 196], ["MUTANTE-REGEN", "regenM.s", 20], ["LESER", "leser.rauch", 0], ["LESER", "leser.flammen", 0], ["MUTANTE-LESER", "leserM.licht", 1], ["DECKUNG", "leser.deckung", 0.5], ["MUTANTE-DECKUNG", "leserD.deckung", 0.95], ["KANTE", "kante.achse", 0.9], ["KANTE", "kante.linie", 0.4], ["MUTANTE-KANTE", "kanteM.achse", 0.2], ["ASCHE", "asche.asche.a", 0.9], ["GRÜNT", "asche.gras.a", 0.5], ["MUTANTE-ASCHE", "asche.mutante.halme", 20], ["ZEIT", "zeit.bildMs", 2], ["ZEIT", "zeit.verzugS", 9], ["SCHIRM", "zeit.schirmMs", 4]]
+                [["HALT", "halt.nass", 0], ["HALT-BRUCH", "halt.nassGebrannt", 1], ["MUTANTE-HALT", "haltM.nassGebrannt", 0], ["FLUSS", "halt.wasser", 0, "haltM.wasser", 0], ["FELS", "halt.fels", 0], ["REGEN", "regen.s", 196], ["MUTANTE-REGEN", "regenM.s", 20], ["LESER", "leser.rauch", 0], ["LESER", "leser.flammen", 0], ["MUTANTE-LESER", "leserM.licht", 1], ["DECKUNG", "leser.deckung", 0.5], ["MUTANTE-DECKUNG", "leserD.deckung", 0.95], ["KANTE", "kante.achse", 0.9], ["KANTE", "kante.linie", 0.4], ["MUTANTE-KANTE", "kanteM.achse", 0.2], ["ASCHE", "asche.asche.a", 0.9], ["GRÜNT", "asche.gras.a", 0.5], ["MUTANTE-ASCHE", "asche.mutante.halme", 20], ["ZEIT", "zeit.bildMs", 2], ["ZEIT", "zeit.verzugS", 9], ["SCHIRM", "zeit.schirmMs", 4]]
             ),
             ...falsch(
                 sukzessionUrteil,
@@ -1631,7 +1602,6 @@ const BRANDLAUF = process.argv.includes("--brand");
                         if (studio % 5 === 0) await sleep(10);
                     }
                     await bisRuhe(900);
-                    const ankunft0 = F ? F.ankunft | 0 : 0;
                     const pm = st.playerMesh.position;
                     let ziel = null;
                     const formWartet = (k) =>
@@ -1647,28 +1617,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                         wechsel: 0,
                         takte: {},
                         rufe: { _lodTreeVisHeight: 0, _forestStehtFrei: 0, _forestCellDarts: 0 },
-                        ziel: ziel && {
-                            cx: ziel.cx,
-                            cz: ziel.cz,
-                            d: Math.round(ziel.d),
-                        },
                         wuchs,
-                        studio, // Takte bis die Bestellungen des Studios ruhten
-                        ankunft: 0, // Ankünfte des Studios während der Phase
-                        regung: [], // wer die Menge regt (nicht die Stufe): die ersten Rufer beim Namen
-                    };
-                    const regtAlt = P._weltRegt;
-                    P._weltRegt = function (boden, stufe) {
-                        if (stufe !== true && U.regung.length < 3) {
-                            const z = String(new Error().stack || "")
-                                .split("\n")
-                                .slice(2, 6)
-                                .map((l) => (l.match(/at (?:AnazhRealm\.)?([\w$.]+)/) || [])[1])
-                                .filter(Boolean)
-                                .join(" < ");
-                            if (!U.regung.includes(z)) U.regung.push(z);
-                        }
-                        return regtAlt.call(this, boden, stufe);
                     };
                     const ab = Object.keys(U.rufe).map((m) => huelle(P, m, (ruf) => (U.rufe[m]++, ruf())));
                     try {
@@ -1683,8 +1632,6 @@ const BRANDLAUF = process.argv.includes("--brand");
                             }
                     } finally {
                         ab.forEach((f) => f());
-                        P._weltRegt = regtAlt;
-                        U.ankunft = (F ? F.ankunft | 0 : 0) - ankunft0;
                     }
                     aus.stufe = U;
                 }
@@ -2110,13 +2057,8 @@ const BRANDLAUF = process.argv.includes("--brand");
                         (await window.__seite()).pflanzen((q) => vorher.ernte || (r._harvestScatterPick(q) && (vorher.ernte = q)));
                         r._depositLife(pm.x, pm.z);
                         vorher.leben = st.lifeField.size;
-                        // das Wort des Spielers über den EINEN Schreiber ohne Übergang (die Bühne), dann Sonne und trocken
-                        const wort = (w) => {
-                            st.weatherEffectTime = 0;
-                            r._setWeather(w, "human");
-                            st.weatherEffectTime = -1e9;
-                            st.weatherTransition = null;
-                        };
+                        // das Wort des Spielers (die Seite), dann Sonne und trocken
+                        const { wort } = await window.__seite();
                         // die Ruhe ist sonnig und trocken: der erste Zug der Welt-Uhr zog das Wetter der Front (feld.K2#2); das Wort
                         // senkt See und Fluss (wetter.K3: der Regen des Felds ist ein Term des Pegels) — die Neubauten der Chunks am
                         // Wasser kommen, bis die Welt steht (an der Mess-Wiese 12 Chunks, nach 60 Takten warteten noch 3)
@@ -2223,10 +2165,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                     }
                     // (WS) DER AUTOMAT AM FIXPUNKT: am Fluss nächst der Mess-Wiese zweimal eine Werk-Setzung, die kein Wasser
                     // verdrängt (`_invalidateWaterCapsAround`) — je Wecken seine Takte, die Chunks danach wach, die Bewegung
-                    let p = null;
-                    const d = (q) => Math.hypot(q.x - MESS.x, q.z - MESS.z);
-                    for (const rv of st.hydrosphere?.rivers || [])
-                        for (const q of rv.points) if (!q.inLake && (!p || d(q) < d(p))) p = q;
+                    const p = (await window.__seite()).fluss(MESS)[0];
                     const A = (W.wasser = { ort: p && [Math.round(p.x), Math.round(p.z)], takte: [], gehalten: [], bewegt: [] });
                     const aktiv = () => (st.waterCAActive ? st.waterCAActive.size : 0);
                     if (p) {

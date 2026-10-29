@@ -2055,16 +2055,12 @@ class AnazhRealm_siedlung_satz {
         // DIE ASCHE DES BRANDS (stoffe.K2#2, `_ascheMalen`): wo die Front ein Bett verzehrte, liegt die Asche der Palette über
         // Wiese und Streu, bis sie nachgrünt (`_sukzession`) — nur auf Begehbarem (die Wand des Hangs trug kein Bett). Dieselben
         // Bytes liest die Nah-Wiese (`_ascheAt`): auf der Asche steht kein Halm. Sie ist kein Belag in EINER Farbe: verkohlte
-        // Halme und graue Asche liegen in Flecken (das EINE Rauschen in zwei Oktaven, 0,9 und 3,1 je m, im Mittel die Albedo der
-        // Palette) und matt (die Rauheit 1, `aus.asche`) — eine glatte, einfarbig dunkle Fläche las sich als nasse Platte.
+        // Halme und graue Asche liegen in Flecken (dasselbe Rauschen wie die Zungen der Laubstreu, ±½ um die Albedo der Palette —
+        // keine eigene Probe: der Boden-Stoff trägt seine Atlas-Ladungen, gate RAUSCH-GESETZ) und matt (die Rauheit 1,
+        // `aus.asche`) — eine glatte, einfarbig dunkle Fläche las sich als nasse Platte.
         const s = P.asche;
         const _a = _T.mix(dFern.g, dNah.g, innen).mul(_begehbar).mul(imFenster);
-        const _R = this._rauschAtlas();
-        const _fleck = _R
-            .raum(_T.vec3(xz.x.mul(0.9), xz.y.mul(0.9), _T.float(5.7)))
-            .mul(0.5)
-            .add(_R.raum(_T.vec3(xz.x.mul(3.1), xz.y.mul(3.1), _T.float(9.1))).mul(0.3))
-            .add(1);
+        const _fleck = _laubRausch.mul(5 / 3).add(1);
         if (aus) aus.asche = _a;
         const mitAsche = _T.mix(mitStreu, _T.vec3(s[0], s[1], s[2]).mul(_fleck), _a);
         const e = P.dirt;
