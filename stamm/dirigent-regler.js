@@ -262,14 +262,12 @@ class AnazhRealm_dirigent_regler {
         this._nexusPerfActuate(sense);
     }
 
-    // DER RAND AM SCHIRM (lod.K5, Pixelgröße × Haushalt): der Haushalt legt den Rand am Schirm des Solls — `laub` die Reichweite
-    // der Vegetation (PERF_FOLIAGE_RADIUS_MAX), `bau` die Mesh-Zone der Bauten (ARCH_QUALITY_RADIUS_MAX), je bei LOD_SCHIRM.zeilen
-    // —, ein kleinerer Schirm (`_schirm`) zieht ihn um seine Pixelgröße heran, ein größerer trägt nie mehr als den Haushalt. Kein
-    // Regler, keine Bildrate; vor dem ersten Zeichenpuffer der Schirm des Solls.
+    // DER RAND AM SCHIRM (lod.K5, Pixelgröße × Haushalt): `laub` die Reichweite der Vegetation (PERF_FOLIAGE_RADIUS_MAX), `bau`
+    // die Mesh-Zone der Bauten (ARCH_QUALITY_RADIUS_MAX) — der Haushalt, ganz: sein Pixel-Term bindet an keinem Schirm (ein Körper
+    // von 1 m trägt am Rand des Laubs bei 1080 Zeilen 2,9 px, bei 600 noch 1,6 px), ein gestauchter Rand nähme Sichtbares. Kein
+    // Regler, keine Bildrate, kein Schirm legt die Existenz um (Lehre 13).
     _randSchirm(art) {
-        const h = this._schirm().hoehe;
-        const k = h > 0 ? Math.min(1, h / AnazhRealm.LOD_SCHIRM.zeilen) : 1;
-        return (art === "laub" ? AnazhRealm.PERF_FOLIAGE_RADIUS_MAX : AnazhRealm.ARCH_QUALITY_RADIUS_MAX) * k;
+        return art === "laub" ? AnazhRealm.PERF_FOLIAGE_RADIUS_MAX : AnazhRealm.ARCH_QUALITY_RADIUS_MAX;
     }
 
     // AKTUIEREN — die EINE Stelle für ALLE Qualitäts-Stellgrößen: loadScale × Kosten-Anteil je
@@ -1924,9 +1922,8 @@ class AnazhRealm_dirigent_regler {
 _stammZonen(AnazhRealm, [AnazhRealm_dirigent_regler]);
 
 // ===== ATLAS · Dirigent/regler — Außen-Konstanten =====
-// DER HAUSHALT DER RÄNDER am Schirm des Solls (LOD_SCHIRM.zeilen, `_randSchirm`): die Mesh-Zone der Bauten (ARCH_QUALITY_RADIUS_MAX)
-// und die Reichweite der Vegetation (PERF_FOLIAGE_RADIUS_MAX); ein kleinerer Schirm zieht sie heran (headless 800 × 600: 83 m und
-// 133 m, über der weitesten Test-Spawn-Distanz ~65 m). Das Build-Budget je Frame pendelt mit dem Regler zwischen MIN und MAX.
+// DER HAUSHALT DER RÄNDER (`_randSchirm`): die Mesh-Zone der Bauten (ARCH_QUALITY_RADIUS_MAX) und die Reichweite der Vegetation
+// (PERF_FOLIAGE_RADIUS_MAX), an jedem Schirm ganz. Das Build-Budget je Frame pendelt mit dem Regler zwischen MIN und MAX.
 AnazhRealm.ARCH_QUALITY_RADIUS_MAX = 150;
 AnazhRealm.ARCH_QUALITY_BUDGET_MAX = 6;
 AnazhRealm.ARCH_QUALITY_BUDGET_MIN = 1;
@@ -1935,7 +1932,7 @@ AnazhRealm.INP_FENSTER = 2000; // so viele Interaktionen hält das Bedienungs-Oh
 // Spawn-Freeze) und wächst mit dem gebauten Ring zum Rand am Schirm (`_randSchirm`), nie mit der Last. RMIN > max. Test-Spawn
 // (~65 m).
 AnazhRealm.PERF_FOLIAGE_RADIUS_MIN = 70; // Spawn: nur die nächste Vegetation
-AnazhRealm.PERF_FOLIAGE_RADIUS_MAX = 240; // die volle Vegetations-Reichweite am Schirm des Solls
+AnazhRealm.PERF_FOLIAGE_RADIUS_MAX = 240; // die volle Vegetations-Reichweite, der Rand des Laubs
 AnazhRealm.PERF_FOLIAGE_GROW_STEP = 2.5; // m pro Aktuator-Tick — sanftes Nach-außen-Wachsen
 AnazhRealm.PERF_FOLIAGE_DENSITY_GROW_STEP = 0.012; // pro Aktuator-Tick — sanftes Nach-Verdichten
 // Die Wand der Laub-Dichte gegen den Grenzzyklus: Wachsen erst nach so vielen SIM-Sekunden ohne Über-Budget-Frame (kein Jagen

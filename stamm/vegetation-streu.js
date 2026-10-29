@@ -1593,7 +1593,7 @@ class AnazhRealm_vegetation_streu {
     }
 
     // DAS GESETZ DES WECHSELS (lod.K5, `AnazhRealm._wechselGesetz`): eine Stufe gilt ab dem Abstand, an dem ihr Kanten-Versatz
-    // zur L0 — der Fehler ihres Baus (LOD_SCHIRM.fehler, je Familie einmal gemessen, scripts/diag-lod-schirm.cjs) mal die
+    // zur L0 — der Fehler ihres Baus (LOD_SCHIRM.fehler, je Familie einmal gemessen am Bau) mal die
     // Brennweite des Schirms — das Soll von LOD_SCHIRM.px Bildpunkten trägt, höchstens am Haushalt des Buchs. Jeder Leser fragt
     // es: die Schwellen der Bäume und der Streu (`_stufenSchirm`), die Grenzen von Haus, Tor, Wagen und Ausstattung
     // (`_archStufenGrenzen`). Kein Regler, keine Bildrate. `groesse` ist der Bezug der Zeile (Baum: die Sichthöhe; sonst die
@@ -2443,10 +2443,11 @@ AnazhRealm.LOD_DISTANCES = (() => {
 })();
 
 // DER SCHIRM DES WECHSELS (lod.K5, `_wechselAbstand`): `fehler` je Art (rec.kind) und gezeigter Stufe der Kanten-Versatz zur L0,
-// gemessen am Bau (scripts/diag-lod-schirm.cjs --fehler: L0 und Stufe über die Brücke gebaut, ihre Silhouetten je Peilung in
-// den Bildpunkten des Wechsel-Abstands gerastert, Chamfer der Kanten, die schlechteste Vorlage der Art; die Karte des Baums als
-// Mischung ihrer zwei nächsten gebackenen L1-Ansichten, die Tor-Flügel der L0 in der Fern-Pose): der Baum relativ zu seiner
-// Sichthöhe, jede gebaute Art in Metern bei Welt-Skala 1. `px` = die Bildpunkte, die ein Wechsel tragen darf (das Soll, Nanite:
+// gemessen am Bau (29.10., die Messung der Station lod.K5 headless: L0 und Stufe über die Brücke gebaut, ihre Silhouetten je
+// Peilung in den Bildpunkten des Abstands gerastert, Chamfer der Kanten, an jeder Vorlage, die schlechteste der Art zählt; die
+// Karte des Baums als Mischung ihrer zwei nächsten gebackenen L1-Ansichten, die Tor-Flügel der L0 in der Fern-Pose) — der Fehler
+// ist der Abstand, an dem er 1 px trägt, mal der Pixelgröße des Schirms: der Baum relativ zu seiner Sichthöhe, jede gebaute Art
+// in Metern bei Welt-Skala 1. `px` = die Bildpunkte, die ein Wechsel tragen darf (das Soll, Nanite:
 // < 1 Pixel). `zeilen` = der Schirm des Solls (1920 × 1080). `hyst` = die Hysterese der gebauten Arten ohne eigene im Buch
 // (`_stufeNachGrenzen`: hinein ab (1 + h)·d, zurück unter (1 − h)·d).
 AnazhRealm.LOD_SCHIRM = Object.freeze({
@@ -2454,19 +2455,21 @@ AnazhRealm.LOD_SCHIRM = Object.freeze({
     zeilen: 1080,
     hyst: 0.1,
     fehler: Object.freeze({
-        tree: Object.freeze({ 1: 0.0375, 2: 0.0574 }),
-        haus: Object.freeze({ 1: 0.0134, 2: 0.117 }),
-        gate: Object.freeze({ 1: 0.0128, 2: 0.34 }),
-        vehicle: Object.freeze({ 1: 0.0038 }),
-        ausstattung: Object.freeze({ 1: 0.0134 }),
+        tree: Object.freeze({ 1: 0.0376, 2: 0.0578 }), // die Weide (ihre Krone doppelt so breit wie hoch), L1 und Karte
+        haus: Object.freeze({ 1: 0.0238, 2: 0.1152 }), // modern · alemannisch
+        gate: Object.freeze({ 1: 0.0156, 2: 0.34 }), // kathedrale · geisttor (bis r = 32 Größen nie ≤ 1 px: untere Schranke)
+        vehicle: Object.freeze({ 1: 0.0044 }), // limousine (obere Schranke: an der Auflösung des Rasters)
+        ausstattung: Object.freeze({ 1: 0.0117 }), // brunnen
     }),
 });
 // DAS GESETZ DES WECHSELS als reine Funktion (der Wirt ruft es über `_wechselAbstand` mit der Höhe des EINEN Schirms) —
 // Pixelgröße × Haushalt: der Abstand, an dem der Fehler der Stufe LOD_SCHIRM.px Bildpunkte trägt (Fehler × Größe × Brennweite / px,
 // die Brennweite aus der Höhe des Zeichenpuffers `zeilen` im Ruhe-Sichtfeld KAM_FOV_GRAD — Tempo und Fernglas legen keine Stufe
-// um), höchstens der Haushalt des Buchs (`_wechselHaushalt`), den ein kleinerer Schirm um seine Pixelgröße heranzieht. Wo die
-// Stufe das Soll trägt, wechselt sie dort (näher, billiger); wo nicht, hält der Haushalt, und der Fehler am Wechsel steht über dem
-// Soll (die Linse nennt ihn). `zeilen` 0 = noch kein Zeichenpuffer: der Schirm des Solls. null = die Art trägt die Stufe nicht.
+// um), höchstens der Haushalt des Buchs (`_wechselHaushalt`) — ganz, nie nach dem Schirm gestaucht: seine Bänder (fade, fade0)
+// stehen in Metern des Buchs, eine gestauchte Schwelle schöbe das L0/L1- über das L1/Karte-Band. Wo die Stufe das Soll trägt,
+// wechselt sie dort (näher, billiger; ein kleinerer Schirm zieht den Pixel-Term heran); wo nicht, hält der Haushalt, und der
+// Fehler am Wechsel steht über dem Soll (die Station nennt ihn). `zeilen` 0 = noch kein Zeichenpuffer: der Schirm des Solls.
+// null = die Art trägt die Stufe nicht.
 AnazhRealm._wechselGesetz = function (kind, stufe, groesse, zeilen) {
     const S = AnazhRealm.LOD_SCHIRM;
     const e = S.fehler[kind] ? S.fehler[kind][stufe] : undefined;
@@ -2474,7 +2477,7 @@ AnazhRealm._wechselGesetz = function (kind, stufe, groesse, zeilen) {
     if (!(e > 0) || !(h > 0)) return null;
     const z = zeilen > 0 ? zeilen : S.zeilen;
     const f = z / (2 * Math.tan((AnazhRealm.KAM_FOV_GRAD * Math.PI) / 360));
-    return Math.min((e * f) / S.px, h * Math.min(1, z / S.zeilen)) * groesse;
+    return Math.min((e * f) / S.px, h) * groesse;
 };
 // DER HAUSHALT DES WECHSELS aus dem Buch (live `_studioRenderConfig`, vor dem Umschlag foundry-core): die Grenze `ab` der
 // Budget-Zeile, wo die Art sie nennt (das Tor, B2c), sonst die Distanzen d0 (Stufe 1) und d1 (Stufe 2) des Labors — der Baum
