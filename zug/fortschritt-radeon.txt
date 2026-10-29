@@ -1687,3 +1687,13 @@
 2026-10-29 23:54:36 takt22-radeon ferne.K5#1 GRÜN 0.9 · 23/65
 2026-10-29 23:56:24 takt22-radeon licht.K5#1 ROT 1.8 · 24/65
 2026-10-30 00:01:27 takt22-radeon material.K2#1 ROT 5.0 · 25/65
+2026-10-30 00:03:59 takt22-radeon material.K3#1 GRÜN 2.5 · 26/65
+2026-10-30 00:04:45 takt22-radeon schatten.K1#1 GRÜN 0.8 · 27/65
+2026-10-30 00:11:49 takt22-radeon lod.K5#1 ROT 7.0 · 28/65
+2026-10-30 00:13:31 takt22-radeon lod.K2#1 ROT 1.7 · 29/65
+2026-10-30 00:13:41 takt22-radeon material.K4#1 ROT 0.1 · 30/65
+2026-10-30 00:13:54 takt22-radeon material.K5#1 ROT 0.2 · 31/65
+2026-10-30 00:20:03 takt22-radeon studios.K4#1 ROT 6.1 · 32/65
+2026-10-30 00:22:04 takt22-radeon fahrzeug.K3#1 ROT 2.0 · 33/65
+2026-10-30 00:24:16 takt22-radeon fahrzeug.K4#1 GRÜN 2.2 · 34/65
+2026-10-30 00:27:15 takt22-radeon siedlung.K2#1 GRÜN 3.0 · 35/65

@@ -1,0 +1,32 @@
+{
+ "laeufe": [
+  {
+   "mutante": null,
+   "minuten": 30,
+   "zeilen": 56,
+   "falschN": 0,
+   "falsch": [],
+   "abstand": 30,
+   "offen": -6.9,
+   "ohneTat": [],
+   "begleiter": 0,
+   "klassen": {
+    "nexus": 58,
+    "rule:nexus": 469,
+    "llm": 3,
+    "rule:llm": 11,
+    "wunsch": 16,
+    "human": 2,
+    "fern": 156
+   },
+   "beispiele": [
+    "[3 s] Der Nexus färbt den Himmel — überall, aus eigenem Antrieb. (Programm evo_1)",
+    "[468.1 s] Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 56 m südwestlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 12 des Nexus; dazu 4 weitere Taten seit der letzten Zeile)",
+    "[828.1 s] Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 56 m südlich von dir, weil lebendig am Ort hoch ist (>0.79). (Gesetz Nr. 12 des Nexus; dazu 28 weitere Taten seit der letzten Zeile)",
+    "[1188.9 s] Der Nexus färbt alle Kreaturen — überall, aus eigenem Antrieb. (Programm evo_56; dazu 5 weitere Taten seit der letzten Zeile)",
+    "[1566.3 s] Der Nexus färbt alle Kreaturen — überall, aus eigenem Antrieb. (Programm evo_75; dazu 2 weitere Taten seit der letzten Zeile)"
+   ],
+   "rot": []
+  }
+ ]
+}

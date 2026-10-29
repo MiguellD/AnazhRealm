@@ -1,0 +1,16 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-nervensystem.cjs
+  ✅ phytogenesis: kein lokales SCALE-Literal
+
+=== TEIL C, E: der lebende Draht (Browser, foundry-ON) ===
+  ✅ C: die Welt-Skala liest die Daten (4.16·0.82) — 3.4112
+  ✅ C: LIVE GEWINNT — scale.eiche ×2 → 8.32·0.82 — 6.8224
+E-ZAHL {"regler":7,"bauplaene":3,"wort":"stele_meilenstein","ort":"weg","kosten":[{"klasse":"pass","stufe":"0","leiste":"160","deckel":"200"},{"klasse":"pass","stufe":"1","leiste":"32","deckel":"60"},{"klasse":"pass","stufe":"2","leiste":"14","deckel":"24"}],"steht":true,"lod":[{"d":4,"ist":0,"tris":160,"bau":"6f1c8c0a/1"},{"d":25,"ist":1,"tris":32,"bau":"af97477e/1"},{"d":50,"ist":2,"tris":14,"bau":"dbd19cd4/1"}],"werk":{"stand":"[\"a-2p7cq8l7n9uq\",{\"x\":40,\"y\":90.88962153575744,\"z\":3.1202518543484876},0,2328308543,null]","id":"a-2p7cq8l7n9uq","seed":2328308543},"stelle":{"x":40,"z":3.1202518543484876,"r":0.01},"p2p":{"bau":"6f1c8c0a/1","stand":"[\"a-2p7cq8l7n9uq\",{\"x\":40,\"y\":90.88962153575744,\"z\":3.1202518543484876},0,2328308543,null]"},"geladen":true,"ki":{"bau":"a996fd2b/1","lehrt":true,"seed":4711,"ov":{"hoehe":3.6}},"foundry":{"lod":["6f1c8c0a/1","af97477e/1","dbd19cd4/1"],"ki":"a996fd2b/1","roh":"7285bdf3/1"},"nennt":0,"atlas":"worlds/neuntes-buch/stele-core.js","wege":[{"weg":"Werkstatt","bau":"6f1c8c0a/1","ok":true},{"weg":"KI-Satz","bau":"a996fd2b/1","ok":true},{"weg":"Foundry","bau":"6f1c8c0a/1 · af97477e/1 · dbd19cd4/1","ok":true},{"weg":"P2P","bau":"6f1c8c0a/1","ok":true}],"taeter":[]}
+  ✅ E: das neue Gesetzbuch steht über die Werkstatt in der Welt, ohne eine Zeile im Wirt
+    ✅ Werkstatt: 6f1c8c0a/1
+    ✅ KI-Satz: a996fd2b/1
+    ✅ Foundry: 6f1c8c0a/1 · af97477e/1 · dbd19cd4/1
+    ✅ P2P: 6f1c8c0a/1
+    ✅ Atlas: worlds/neuntes-buch/stele-core.js
+  ✅ E2: das neunte Buch auf allen Wegen, der Atlas nennt seine Quelle — 5/5
+
+✅ GRÜN — DAS NERVENSYSTEM LEBT: die Welt liest die Daten des Buchs LIVE, und ein neues Gesetzbuch steht in ihr, ohne dass der Wirt es kennt.
