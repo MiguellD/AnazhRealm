@@ -87,10 +87,8 @@ async function folge(plan) {
 }
 const befehlDer = (plan) => ["node", "-e", "(" + folge.toString() + ")(" + JSON.stringify(plan) + ")", "{AUS}", "{KOORD}"];
 // MSYS2_ARG_CONV_EXCL: gpu-lauf.sh ruft node über die Git-bash; ohne diese Variable würde msys die Pfade in den Argumenten umschreiben.
-// Die Folge trifft die Werkbank der Sitzung über WERKBANK_PORT (punkte.cjs setzt {PORT}+20000); die Albedo-Tafel (material.K1, eigene
-// Welt) behält ihren Port {PORT}
+// Die Folge und die Albedo-Tafel (material.K1) treffen die Werkbank der Sitzung über WERKBANK_PORT (punkte.cjs setzt {PORT}+20000)
 const envDer = { MSYS2_ARG_CONV_EXCL: "*" };
-const envAlbedo = { WERKBANK_PORT: "{PORT}", MSYS2_ARG_CONV_EXCL: "*" };
 
 // Der Pfad des Wechsels (lod.K5, lod.K2): das Gesetz, seine Leser, der Regler, die Stufen der Kerne
 const LOD_PFAD = [
@@ -154,14 +152,15 @@ return [+best.h.toFixed(2), +best.x.toFixed(2), +best.y.toFixed(2), +best.z.toFi
 
 const ARM = ["0.5", "1", "2"];
 
-// DIE ALBEDO-TAFEL BEIDER SEITEN ECHT (material.K1): die Welt-Seite wie diag-albedo-tafel neuMessen, aber auf der echten GPU
-// (`werkbank start --echt` gegen den eigenen save-server auf {PORT}+20000 mit frischem Stand, am Ort der gespeicherten Messung,
-// 10 s Ruhe, `albedo --tafel`), danach die Labor-Seite
-// `diag-albedo-tafel.cjs --labor --echt` je Studio (Port {PORT}+2). Gerechnet wird je Zeile der Tafel am SHA: Welt/Labor und
-// beide Seiten im realen Band ihrer Klasse (`plan.baender`, fest in der Station mit Quelle — der Baum trägt kein Band, und eine
-// Zeile ohne Band hier ist ROT); dazu die Eichung beider Seiten gegen die Karte der Tafel. Nach {AUS}:
+// DIE ALBEDO-TAFEL BEIDER SEITEN ECHT (material.K1) als Probe der Sitzung: die Welt-Seite wie diag-albedo-tafel neuMessen in der
+// EINEN warmen Welt der Sitzung auf der echten GPU (WERKBANK_PORT, am Ort der gespeicherten Messung, die Welt steht —
+// `__weltStehtNach` statt 10 s Wanduhr —, `albedo --tafel`), NEBENHER die Labor-Seite `diag-albedo-tafel.cjs --labor --echt` je
+// Studio (die Studio-Seiten in ihrem Browser, Port WERKBANK_PORT+2; ihr Log neben der Ausgabe). Gerechnet wird je Zeile der Tafel
+// am SHA: Welt/Labor und beide Seiten im realen Band ihrer Klasse (`plan.baender`, fest in der Station mit Quelle — der Baum
+// trägt kein Band, und eine Zeile ohne Band hier ist ROT); dazu die Eichung beider Seiten gegen die Karte der Tafel. Nach {AUS}:
 // `{ adapter, welt: { echt, geraet, eichung }, labor: { echt, geraet, eichung }, zeilen: [{ id, L, W, v, band, quelle, inBand }],
-// eichung: { soll, rand, welt, labor }, fehler }`. Exit 1 nur, wenn eine Seite nichts misst; das Urteil fällt die Station.
+// eichung: { soll, rand, welt, labor }, fehler, sek }`. Exit 1 nur, wenn eine Seite nichts misst; das Urteil fällt die Station.
+// Bis 29.10. startete die Probe ihre eigene Welt (save-server + Werkbank, 10 s Ruhe) und danach das Labor (ea07267e Radeon 5,37 min).
 // eslint-disable-next-line max-lines-per-function
 async function albedoTafelEcht(plan) {
     const fs = require("fs");
@@ -172,38 +171,31 @@ async function albedoTafelEcht(plan) {
     fs.mkdirSync(DIR, { recursive: true });
     const P = String(process.env.WERKBANK_PORT);
     const WB = path.join("scripts", "werkbank.cjs");
+    const t0 = Date.now();
     const aus = { plan: plan.name, adapter: null, welt: null, labor: null, zeilen: [], eichung: null, fehler: null };
     const wb = (args, ms) =>
         cp.spawnSync(process.execPath, [WB, ...args, "--port", P], { encoding: "utf8", timeout: ms || 900000, maxBuffer: 1 << 28 });
-    const warte = (ms) => new Promise((r) => setTimeout(r, ms));
     const rest = (r) => String((r.stdout || "") + (r.stderr || "")).slice(-300);
-    const log = path.join(DIR, "werkbank.log");
-    const SP = String(Number(P) + 20000);
-    let t = null, Wm = null, Lm = null, w = null, sv = null;
+    // das Labor nebenher: sein Browser trägt nur die Studio-Seiten, seine Ausgabe geht in eine Datei (kein Rohr, das voll läuft)
+    const ld = path.join(DIR, "labor.json");
+    const llog = path.join(DIR, "labor.log");
+    const lk = cp.spawn(process.execPath, [path.join("scripts", "diag-albedo-tafel.cjs"), "--labor", "--echt", "--datei", ld], {
+        env: { ...process.env, ALBEDO_PORT: String(Number(P) + 2) },
+        stdio: ["ignore", fs.openSync(llog, "w"), fs.openSync(llog, "a")],
+    });
+    const labor = new Promise((ok) => {
+        lk.on("exit", (c) => ok(c));
+        lk.on("error", (e) => ok("Start: " + e.message));
+    });
+    let t = null, Wm = null, Lm = null;
     try {
         t = JSON.parse(fs.readFileSync(path.join("spec", "farbe", "albedo-tafel.json"), "utf8"));
-        for (const d of ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"]) fs.rmSync(d, { force: true });
-        const slog = fs.openSync(path.join(DIR, "save.log"), "w");
-        sv = cp.spawn(process.execPath, ["save-server.js"], { env: { ...process.env, PORT: SP }, stdio: ["ignore", slog, slog] });
-        const lebt = () =>
-            new Promise((r) => require("http").get("http://localhost:" + SP + "/", (x) => (x.resume(), r(true))).on("error", () => r(false)));
-        for (let s = 0; !(await lebt()); s++) {
-            if (sv.exitCode != null || s > 60) throw new Error("der save-server auf " + SP + " steht nicht (Exit " + sv.exitCode + ")");
-            await warte(1000);
-        }
-        w = cp.spawn(process.execPath, [WB, "start", "--echt", "--port", P, "--seite", "http://localhost:" + SP], {
-            stdio: ["ignore", fs.openSync(log, "w"), fs.openSync(log, "a")],
-        });
-        for (let s = 0; !/WERKBANK bereit/.test(fs.readFileSync(log, "utf8")); s += 2) {
-            if (w.exitCode != null) throw new Error("die Werkbank startet nicht (Exit " + w.exitCode + "): " + fs.readFileSync(log, "utf8").slice(-300));
-            if (s > 900) throw new Error("die Werkbank steht nach 900 s nicht");
-            await warte(2000);
-        }
-        aus.adapter = (/\[linse-gpu\][^\r\n]*/.exec(fs.readFileSync(log, "utf8")) || [null])[0];
+        aus.adapter = (/\[linse-gpu\][^\r\n]*/.exec(fs.readFileSync(String(process.env.PUNKTE_SITZUNG_LOG), "utf8")) || [null])[0];
         const gw = (t.gemessen && t.gemessen.welt) || {};
         const um = wb(gw.ort ? ["umstellen", "--ort", gw.ort] : ["umstellen", ...(gw.spieler || [0, 0]).map(String)]);
         if (um.status !== 0) throw new Error("umstellen: Exit " + um.status + " " + rest(um));
-        wb(["eval", "await new Promise((x) => setTimeout(x, 10000)); return 1"]);
+        const ruhe = wb(["eval", "return await window.__weltStehtNach()"], 300000);
+        if (ruhe.status !== 0) throw new Error("die Welt steht nicht: Exit " + ruhe.status + " " + rest(ruhe));
         const wd = path.join(DIR, "welt.json");
         const al = wb(["albedo", "--tafel", "--datei", wd, "--ordner", path.join(DIR, "albw")]);
         if (!fs.existsSync(wd)) throw new Error("albedo --tafel ohne Messung: Exit " + al.status + " " + rest(al));
@@ -212,25 +204,10 @@ async function albedoTafelEcht(plan) {
         aus.adapter = aus.adapter || (Wm.geraet ? "[echt] " + (typeof Wm.geraet === "string" ? Wm.geraet : JSON.stringify(Wm.geraet)) : null);
     } catch (e) {
         aus.fehler = "Welt: " + String((e && e.message) || e);
-    } finally {
-        if (w) {
-            wb(["stop"], 60000);
-            await warte(2000);
-            if (w.exitCode == null) w.kill();
-        }
-        if (sv && sv.exitCode == null) sv.kill();
     }
-    if (!aus.fehler) {
-        const ld = path.join(DIR, "labor.json");
-        const r = cp.spawnSync(process.execPath, [path.join("scripts", "diag-albedo-tafel.cjs"), "--labor", "--echt", "--datei", ld], {
-            encoding: "utf8",
-            timeout: 1500000,
-            maxBuffer: 1 << 28,
-            env: { ...process.env, ALBEDO_PORT: String(Number(P) + 2) },
-        });
-        if (fs.existsSync(ld)) Lm = JSON.parse(fs.readFileSync(ld, "utf8"));
-        else aus.fehler = "Labor ohne Messung: Exit " + r.status + " " + rest(r);
-    }
+    const lc = await labor;
+    if (fs.existsSync(ld)) Lm = JSON.parse(fs.readFileSync(ld, "utf8"));
+    else if (!aus.fehler) aus.fehler = "Labor ohne Messung: Exit " + lc + " " + fs.readFileSync(llog, "utf8").slice(-300);
     if (Wm && Lm) {
         const W = Wm.welt || {}, L = Lm.labor || {};
         aus.welt = { echt: Wm.echt === true, geraet: Wm.geraet || null, eichung: Wm.eichung };
@@ -261,6 +238,7 @@ async function albedoTafelEcht(plan) {
             });
         }
     }
+    aus.sek = +((Date.now() - t0) / 1000).toFixed(1);
     fs.writeFileSync(AUS, JSON.stringify(aus, null, 1));
     console.log(aus.adapter || "[linse-gpu] ungenannt");
     console.log(aus.fehler ? "ALBEDO-TAFEL ROT: " + aus.fehler : "ALBEDO-TAFEL " + aus.zeilen.length + " Zeilen beider Seiten");
@@ -290,6 +268,12 @@ const ALBEDO_TAFEL_ECHT = [
     "(" + albedoTafelEcht.toString() + ")(" + JSON.stringify({ name: "material.K1", baender: BAENDER }) + ")",
     "{AUS}",
 ];
+// EINE Probe für beide Staffeln (Zwillinge): die Welt-Seite in der Sitzung, das Labor nebenher in seinem Browser
+const ALBEDO_PROBE = { sek: 90, befehl: ALBEDO_TAFEL_ECHT };
+const ALBEDO_AUSNAHME =
+    "das Labor sind sieben Studio-Seiten (Terrain, Garage, Portale, Schmiede, Fachwerk, Körperstudio, Tetrapoda) in ihrem eigenen " +
+    "Browser — die Werkbank der Sitzung hält nur die Welt; es läuft neben der Welt-Seite, erwartet ~60 s, Deckel 90 s (bis 29.10.: " +
+    "eigene Welt + Labor nacheinander, 5,4 min)";
 const ALBEDO_PFAD = [
     ...BILD,
     "*-core.js",
@@ -1063,11 +1047,13 @@ const stationen = [
         // material-lack (Zug 5) hob Haut Labor/Welt 0,857 → 0,997 und Tiefschwarz ins Band, gemessen nur am Zweig-Kopf. Die Station
         // misst beide Seiten echt am SHA: jede Zeile Welt/Labor 0,9–1,1 und beidseits im realen Band ihrer Klasse (BAENDER), die
         // Seiten auf der Karte (nie ein Ersatz-Renderer).
-        befehl: ALBEDO_TAFEL_ECHT,
-        env: envAlbedo,
+        probe: ALBEDO_PROBE,
+        env: envDer,
+        mutiert: false,
+        ausnahme: ALBEDO_AUSNAHME,
         gpu: true,
         zeit: false,
-        minuten: 10,
+        minuten: 1.5,
         urteil: (j) => {
             if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
             if (j.fehler) return { gruen: false, zahl: j.fehler };
@@ -1093,11 +1079,13 @@ const stationen = [
         staffel: 2,
         geraet: ["radeon", "gtx"],
         // dieselbe Messung; dazu liest die 18-%-Karte auf beiden Seiten 0,180 (± eichRand der Tafel), je Gerät
-        befehl: ALBEDO_TAFEL_ECHT,
-        env: envAlbedo,
+        probe: ALBEDO_PROBE,
+        env: envDer,
+        mutiert: false,
+        ausnahme: ALBEDO_AUSNAHME,
         gpu: true,
         zeit: false,
-        minuten: 10,
+        minuten: 1.5,
         urteil: (j) => {
             if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
             if (j.fehler) return { gruen: false, zahl: j.fehler };
