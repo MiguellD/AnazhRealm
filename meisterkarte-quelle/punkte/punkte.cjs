@@ -42,7 +42,8 @@
 //   radeon und gtx: die Staffel nennt beide Geräte, die 1 zählt erst, wenn JEDES grün ist — Pflicht, wo die quelle sie nennt) ·
 //   proben (optional): [{ name, stdout, gruen }] Roh-Ausgaben des Befehls mit dem Urteil, das die Station über sie spricht
 //   (die Schlupflöcher der Soll-Tafel als Mutanten; der Selbsttest urteilt jede).
-//   probe (statt befehl, nur gpu true): { befehl: argv wie oben, sek: Deckel in s (Vorgabe PROBE_SEK, höchstens PROBE_MAX_S) } —
+//   probe (statt befehl, nur gpu true): { befehl: argv wie oben, sek: Deckel in s (Vorgabe PROBE_SEK, höchstens PROBE_MAX_S),
+//   mutiert: true, wenn sie die Welt verändert, ausnahme: der Grund eines Deckels über PROBE_DECKEL_S bis PROBE_AUSNAHME_S } —
 //   die Station misst als Probe in der EINEN warmen Welt der Sitzung (fahreSitzung), nie mit eigenem Boot; dazu {PORT} = der Port
 //   der Sitzung (save-server {PORT}, Werkbank {PORT}+20000 = WERKBANK_PORT), PUNKTE_SITZUNG_LOG = das Log ihrer Werkbank. Eine Station
 //   trägt GENAU EINES von befehl und probe; befehl bleibt nur, wo das Kriterium Kälte oder Dauer misst oder das Spiel-Skript
@@ -94,6 +95,9 @@ function hilfeText() {
 // probe hat keinen befehl. Der Abdruck einer befehl-Station bleibt Byte für Byte (pr nur an einer Probe)
 const PROBE_SEK = 90;
 const PROBE_MAX_S = 1200;
+// das Budget je Probe (29.10.): Ziel 15 s, Deckel 45 s, mit `ausnahme` (Grund beim Namen) bis 90 s
+const PROBE_DECKEL_S = 45;
+const PROBE_AUSNAHME_S = 90;
 const befehlVon = (st) => (st.probe ? st.probe.befehl : st.befehl);
 const probeSek = (st) => (st.probe && st.probe.sek) || PROBE_SEK;
 function abdruck(st, hilfe = hilfeText()) {
@@ -151,7 +155,13 @@ function pruefeStationen(liste, karte) {
             else {
                 if (p.sek !== undefined && !(Number.isInteger(p.sek) && p.sek >= 1 && p.sek <= PROBE_MAX_S))
                     f.push("probe.sek nicht 1.." + PROBE_MAX_S);
-                if (Object.keys(p).some((k) => !["befehl", "sek"].includes(k))) f.push("probe trägt nur befehl und sek");
+                if (Object.keys(p).some((k) => !["befehl", "sek", "mutiert", "ausnahme"].includes(k))) f.push("probe trägt nur befehl, sek, mutiert und ausnahme");
+                // 29.10. (der Schöpfer: „max 30 min je Fahrt durch jedes System“): `mutiert` true, wenn die Probe die Welt verändert
+                // (baut, gräbt, lädt neu) — nur nach ihr stellt die Sitzung den Grund; `ausnahme` (der Grund beim Namen) trägt einen
+                // Deckel über PROBE_DECKEL_S bis PROBE_AUSNAHME_S, nie darüber
+                if (p.mutiert !== undefined && typeof p.mutiert !== "boolean") f.push("probe.mutiert nicht boolesch");
+                if (p.ausnahme !== undefined && !(typeof p.ausnahme === "string" && p.ausnahme.length >= 8 && p.sek > PROBE_DECKEL_S && p.sek <= PROBE_AUSNAHME_S))
+                    f.push("probe.ausnahme nur mit Grund und Deckel " + (PROBE_DECKEL_S + 1) + ".." + PROBE_AUSNAHME_S + " s");
                 if (Array.isArray(p.befehl) && p.befehl.every((a) => typeof a === "string")) {
                     const feind = sitzungsFeinde(p.befehl);
                     if (feind.length) f.push("probe greift die Welt der Sitzung an: " + feind.join(", "));
@@ -2058,6 +2068,12 @@ async function selbsttest() {
         pruef("SITZUNG-FORMAT genau eines von befehl und probe · probe nur an einer GPU-Station · Deckel ≤ " + PROBE_MAX_S + " s · die Feinde der Welt beim Namen",
             /genau eines von befehl und probe/.test(f[0]) && /probe nur an einer GPU-Station/.test(f[1]) && /probe.sek nicht/.test(f[2]) &&
             /greift die Welt der Sitzung an: netstat \(räumt Ports\), werkbank start\|stop/.test(f[3]) && f[4] === "", f.join(" || "));
+        const pa = (p) => fe({ probe: { befehl: ["node", "-e", "0"], ...p } });
+        const fa = [pa({ sek: 30, mutiert: true }), pa({ sek: 90, ausnahme: "zwei Staffeln in EINER Probe" }), pa({ sek: 30, mutiert: "ja" }),
+            pa({ sek: 30, ausnahme: "zwei Staffeln in EINER Probe" }), pa({ sek: 120, ausnahme: "zwei Staffeln in EINER Probe" }), pa({ sek: 60, ausnahme: "kurz" }), pa({ sek: 30, weiter: 1 })];
+        pruef("SITZUNG-AUSNAHME mutiert boolesch · ausnahme mit Grund nur über " + PROBE_DECKEL_S + " bis " + PROBE_AUSNAHME_S + " s · kein fremdes Feld",
+            fa[0] === "" && fa[1] === "" && /probe.mutiert nicht boolesch/.test(fa[2]) && [3, 4, 5].every((i) => /probe.ausnahme nur mit Grund/.test(fa[i])) &&
+            /probe trägt nur befehl, sek, mutiert und ausnahme/.test(fa[6]), fa.join(" || "));
         const h = "hilfe";
         const alt = (st) => crypto.createHash("sha1").update(JSON.stringify({ k: st.kriterium, s: st.staffel, g: geraeteVon(st), b: st.befehl, e: st.env || {},
             gpu: !!st.gpu, u: String(st.urteil), p: st.pfad, q: st.quelle, h })).digest("hex").slice(0, 12);

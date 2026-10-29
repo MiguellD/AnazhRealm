@@ -5,6 +5,7 @@
 // bleibt dadurch lauffähig (pruefeStationen verlangt je Eintrag ein argv).
 "use strict";
 const { jsonZeile } = require("../hilfe.cjs");
+const PW = require("./proben-welt.cjs"); // die Proben der Welt in der Sitzung (tiere.K5#1)
 
 // die Zeile „  ✅|❌ <probe> {…}" der Kreatur-Linse (diag-kreatur-takt.cjs, padEnd 9)
 const probeZeile = (stdout, probe) => jsonZeile(stdout, new RegExp("^\\s*(✅|❌) " + probe + "\\s"));
@@ -2145,9 +2146,9 @@ const stationen = [
     },
 
     // ───────── tiere.K5 Staffel 1 — Begegnung im Bild (Zweig tier-sicht, `werkbank lauf --wandern kreis`) ─────────
-    // EINE Werkbank-Sitzung `--echt` gegen einen eigenen save-server an der Mess-Wiese, 1280×720 (das Maß der Sichtung), der
+    // DIE WELT DER SITZUNG (punkte.cjs fahreSitzung) an der Mess-Wiese, 1280×720 (das Maß der Sichtung), der
     // Bestand des Spiels (`--tiere frei`, das Bestands-Gesetz; keine Tiere der Bühne). Je Sicht (Ego, Third) `umstellen --ort
-    // wiese` und `lauf 600 --ein 20 --wandern kreis`: der Spieler GEHT 600 Spiel-s (Taste W, das Tempo des Spiels) eine Runde, der
+    // wiese` und der Kreis der Werkbank (`lauf`, `wandern: kreis`): der Spieler GEHT 600 Spiel-s (Taste W, das Tempo des Spiels) eine Runde, der
     // Blick dreht mit; eine Sichtung = ein Tier deckt ≥ 200 px der Klassen-Maske tier im Ausgabe-Bild (zwei Schüsse mit und ohne
     // Tiere unter der EINEN Uhr, je Pixel das nächste Tier, dessen Körper-Kugel ihn deckt), jedes Tier zählt einmal. GRÜN: in
     // BEIDEN Sichten ≥ 3 Sichtungen über ≥ 600 Spiel-s und kein Tier erschien im Blick (`imBlick` 0, das Schlupfloch). Die
@@ -2158,32 +2159,19 @@ const stationen = [
     // Wolf 19/31 m), Third 5, aber 3 bzw. 2 Tiere erschienen im Blick (die Verkörperung prüft nur den Anker der Gruppe auf „außer
     // Blick", `_bestandLeiber` → `_kreaturWurf`) — ROT am Schlupfloch; Mutante „Bestand 0" 0 Sichtungen — ROT. Das Urteil fällt an
     // Radeon oder GTX bei 1280×720.
-    // Ports: save-server {PORT}, Werkbank {PORT}+20000.
+    // IN DER SITZUNG (29.10., proben-welt.cjs `tierKreis`): der Kreis im ZEITRAFFER der Schleife (10 Takte zu 0,1 s Spiel-Zeit je
+    // Bild) — 600 Spiel-s je Sicht sind das Kriterium, die Wanduhr nicht; bis 29.10. zwei mal zehn Minuten im eigenen Boot (Radeon
+    // b3f9ae95: 32,07 min Arbeit).
     {
         kriterium: "tiere.K5",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        befehl: [
-            "bash",
-            "-c",
-            [
-                "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
-                "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
-                "raeum() { for p in $(netstat -ano | grep -E \":($S|$W|$((W - 1))) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }",
-                "stand() { mkdir -p \"$B-stand\"; mv anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json \"$B-stand/\" 2> /dev/null; }",
-                "ende() { node scripts/werkbank.cjs stop > /dev/null 2>&1; sleep 2; raeum; stand; }",
-                "trap ende EXIT; trap 'exit 143' INT TERM",
-                "raeum; stand",
-                "(PORT=$S node save-server.js > \"$B-save.log\" 2>&1 &)",
-                "for t in $(seq 1 30); do curl -s -o /dev/null -w '%{http_code}' http://localhost:$S/ 2> /dev/null | grep -q 200 && break; sleep 1; done",
-                "(node scripts/werkbank.cjs start --echt --port $W --seite http://localhost:$S --ort wiese > \"$B-werkbank.log\" 2>&1 &)",
-                "for t in $(seq 1 120); do grep -qE 'WERKBANK bereit|WERKBANK-FEHLER' \"$B-werkbank.log\" 2> /dev/null && break; sleep 5; done",
-                "grep -E 'WERKBANK bereit' \"$B-werkbank.log\" || { echo 'WERKBANK startet nicht'; tail -5 \"$B-werkbank.log\"; exit 1; }",
-                "grep -E '^\\[linse-gpu\\] ' \"$B-werkbank.log\"",
-                "node scripts/werkbank.cjs fenster 1280 720 > /dev/null 2>&1",
-                "for SICHT in ego third; do node scripts/werkbank.cjs umstellen --ort wiese --sicht $SICHT > \"$B-umstellen-$SICHT.txt\" 2>&1; node scripts/werkbank.cjs lauf 600 --ein 20 --tiere frei --wandern kreis > \"$B-kreis-$SICHT.txt\" 2>&1; echo \"KREIS-$SICHT EXIT=$? $(grep -E '^KREIS ' \"$B-kreis-$SICHT.txt\" | cut -c7-)\"; done",
-            ].join("\n"),
-        ],
+        probe: {
+            befehl: PW.torBefehl(PW.tierKreis),
+            sek: 90,
+            mutiert: false,
+            ausnahme: "je Sicht 600 Spiel-s (das Kriterium: je 10 Spielminuten) im Zeitraffer, 10 Takte zu 0,1 s je Bild",
+        },
         gpu: true,
         zeit: false,
         minuten: 30,
