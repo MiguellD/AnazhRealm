@@ -156,10 +156,12 @@ class AnazhRealm_speicher_laden {
         for (const [k, a] of werk) if (!da.has(k) && this._bauAusStand(a, S, null)) n++;
         // DIE WESEN kehren aus dem Stand wieder (ihr Alter wächst mit jedem Bild: gleich sind sie nur unberührt)
         const wesen = J(jetzt.creatures) !== J(S.creatures);
-        if (wesen) {
-            const headless = this.state.renderer && this.state.renderer._isHeadlessNull;
+        const headless = this.state.renderer && this.state.renderer._isHeadlessNull;
+        // ein Grund ohne Wesen (vor dem Wurf des Boots) lässt keine: `spawnCreatures` ohne Stand würfelte neue
+        if (wesen && this.state._pendingCreatureSnapshots)
             this._syncBauen(headless ? "naht" : null, () => this.spawnCreatures());
-        } else this.state._pendingCreatureSnapshots = null;
+        else if (wesen) this.clearCreatures();
+        this.state._pendingCreatureSnapshots = null;
         return { ok: true, neu: { edits: edits.length, bauten: n, wesen: wesen ? this.state.creatures.length : 0 } };
     }
 
