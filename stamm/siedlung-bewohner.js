@@ -345,10 +345,22 @@ class AnazhRealm_siedlung_bewohner {
     // (`_hausHuelleSetzen`: die Boxen seiner Wände im Blocker-Netz) — ihre Regeln fragen die Wände (`frei`, die Linie zum Netz).
     // Bis siedlung-k3-hang entstand die erste Liste vor den Hüllen (das Start-Dorf am Hang: 18 von 18 Häusern ohne Hülle), jede
     // nach einer Abwesenheit mit ihnen: die erste stellte Stände hinter Hauswände, die zweite andere (die Wiederkehr 21 m).
+    // Es wartet jedes Haus, dessen Hülle kommt: gezeichnet oder in der Mesh-Zone (`architectureCullingRadius`) — ein kaltes
+    // Haus jenseits trägt seine Hülle erst, wenn der Spieler naht, dann prüft die Wache (`_bewohnerWechsel`) die Stände um
+    // es. Bis w3u-stadt-leben wartete die Liste auf jedes Haus: die Metropole an stadt-voll (295 Häuser bis 409 m vom Markt,
+    // 165 kalt) blieb ohne einen Bewohner.
     _bewohnerHuellenDa(S) {
         const samen = S.hausSamen || (S.hausSamen = new Set(S.plan.slots.map((sl) => sl.seed >>> 0)));
+        const [p, R] = [this.state.playerMesh.position, this.state.architectureCullingRadius];
         for (const e of this.state.architectures || [])
-            if (e && e.tuer && samen.has(e.seed >>> 0) && !e._hausHuelle) return false;
+            if (
+                e &&
+                e.tuer &&
+                samen.has(e.seed >>> 0) &&
+                !e._hausHuelle &&
+                (this._archIsRendered(e) || (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2 <= R * R)
+            )
+                return false;
         return true;
     }
 

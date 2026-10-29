@@ -2422,7 +2422,13 @@ async function kreaturProben(r, T, opts) {
             const S = S0();
             if (!S || !stand(S, o)) return { fehler: `keine Stadt mit freiem Stand („dorf ${seed} ${nH}" bei ${x}/${z})` };
             const da = () => S.liste && S.liste.every((b) => b.leib && !b.ankunft) && r._weltOffen().leiber === 0;
-            await bisDa(`bewohner: ${id}`, () => !da(), 4 * nH);
+            await bisDa(`bewohner: ${id}`, () => !da(), 4 * nH).catch((f) => {
+                const L = S.liste || [];
+                const sa = new Set(S.plan.slots.map((sl) => sl.seed >>> 0));
+                const oh = s.architectures.filter((e) => e && e.tuer && sa.has(e.seed >>> 0) && !e._hausHuelle).map((e) => [Math.round(ab(e.position, pm)), e.type, !!e.instanced, !!e.instFoundry, e._lodLevel, e.mesh ? 1 : 0].join("/")); // prettier-ignore
+                const dd = S.plan.slots.map((sl) => Math.round(Math.hypot(S.ox + sl.x - pm.x, S.oz + sl.z - pm.z))).sort((a, b) => a - b); // prettier-ignore
+                throw new Error(`${f.message} — ${S.liste ? "" : "keine Liste, "}${L.filter((b) => !b.leib).length} ohne Leib, ${L.filter((b) => b.ankunft).length} ohne Ankunft von ${L.length}, ohne Hülle ${oh.length} von ${sa.size}: ${oh.slice(0, 6).join(" ")} · Häuser ${dd[0]}/${dd[dd.length >> 1]}/${dd[dd.length - 1]} m · Platz ${Math.round(S.plan.platz.cx)}/${Math.round(S.plan.platz.cz)} · Ursprung ${Math.round(S.ox - pm.x)}/${Math.round(S.oz - pm.z)} · Kult ${r.state.architectureCullingRadius} · arch ${s.architectures.length}`); // prettier-ignore
+            });
             await stehtUm(`bewohner: ${id}`);
             return { S, da };
         };
