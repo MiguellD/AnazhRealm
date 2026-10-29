@@ -1340,7 +1340,8 @@ class AnazhRealm_koerper_fahrt {
         const D = AnazhRealm.FAHRER;
         const P = [];
         for (const q of pts || [])
-            if (!P.length || Math.hypot(q.x - P[P.length - 1].x, q.z - P[P.length - 1].z) > 0.5) P.push({ x: q.x, z: q.z });
+            if (!P.length || Math.hypot(q.x - P[P.length - 1].x, q.z - P[P.length - 1].z) > 0.5)
+                P.push({ x: q.x, z: q.z });
         if (P.length < 2) return (this._fahrer = null);
         const s = [0];
         const th = [];
@@ -1357,7 +1358,21 @@ class AnazhRealm_koerper_fahrt {
             return th[Math.min(i, th.length - 1)];
         };
         const k = s.map((u) => Math.abs(richtung(u + D.kurveM) - richtung(u - D.kurveM)) / (2 * D.kurveM));
-        return (this._fahrer = { pts: P, bogen: s, k, i: 0, s: 0, quer: 0, ende: false, lang: s[s.length - 1], takte: 0, tempo: Array(11).fill(0), fest: [], anker: 0, steht: 0 });
+        return (this._fahrer = {
+            pts: P,
+            bogen: s,
+            k,
+            i: 0,
+            s: 0,
+            quer: 0,
+            ende: false,
+            lang: s[s.length - 1],
+            takte: 0,
+            tempo: Array(11).fill(0),
+            fest: [],
+            anker: 0,
+            steht: 0,
+        });
     }
     _fahrerSchritt(T) {
         const F = this._fahrer;
@@ -1385,7 +1400,10 @@ class AnazhRealm_koerper_fahrt {
         const u = Math.max(0, Math.min(1, (F.s + ld - S[j]) / Math.max(1e-6, S[j + 1] - S[j])));
         const dx = P[j].x + (P[j + 1].x - P[j].x) * u - p.x;
         const dz = P[j].z + (P[j + 1].z - P[j].z) * u - p.z;
-        const alpha = Math.atan2(-dx * Math.sin(z.yaw) - dz * Math.cos(z.yaw), dx * Math.cos(z.yaw) - dz * Math.sin(z.yaw));
+        const alpha = Math.atan2(
+            -dx * Math.sin(z.yaw) - dz * Math.cos(z.yaw),
+            dx * Math.cos(z.yaw) - dz * Math.sin(z.yaw)
+        );
         const delta = Math.atan((2 * G.L * Math.sin(alpha)) / Math.max(1, Math.hypot(dx, dz)));
         T.lenken = Math.max(-1, Math.min(1, (delta * (1 + Math.abs(z.speed || 0) * G.sfK)) / G.maxSteer));
         const mu = this._fahrHaft(z) * G.g;
@@ -1398,8 +1416,11 @@ class AnazhRealm_koerper_fahrt {
             return Math.max(D.kriechMs, Math.min(Math.sqrt((D.quer * mu) / kk), lenk));
         };
         F.ende = F.s >= F.lang - D.haltM;
-        // auch der Bogen, den die Lenkung JETZT fährt (zurück auf die Route)
-        let soll = F.ende ? 0 : Math.min(G.vmax, vKurve((2 * Math.abs(Math.sin(alpha))) / Math.max(1, Math.hypot(dx, dz))));
+        // auch der Bogen zurück auf die Route, gemessen auf mindestens `bogenM` (auf dem kurzen Blick des Kriechens hielte er
+        // sich selbst im Schritt: langsam → nah → steil → langsam)
+        let soll = F.ende
+            ? 0
+            : Math.min(G.vmax, vKurve((2 * Math.abs(Math.sin(alpha))) / Math.max(D.bogenM, Math.hypot(dx, dz))));
         for (let i = F.i + 1; i < P.length && S[i] - F.s < D.sichtM; i++) {
             const vk = i === P.length - 1 ? 0 : vKurve(F.k[i]);
             soll = Math.min(soll, Math.sqrt(vk * vk + 2 * D.brems * mu * Math.max(0, S[i] - F.s)));
@@ -2382,11 +2403,27 @@ _stammZonen(AnazhRealm, [AnazhRealm_koerper_fahrt]);
 // ===== ATLAS · Koerper/fahrt — Außen-Konstanten =====
 // DER FAHRER (fahrzeug.K2, `_fahrerSchritt`): ld0 + ldV·v (bis ldMax) m voraus zielt die Lenkung · quer / lenk / brems = die
 // Anteile des Reibkreises (μ·g) und des Einschlags in der Kurve und des Reibkreises beim Bremsen davor · kriechMs = so langsam
-// fährt er höchstens um eine Kehre · kurveM = über ±so viele Meter misst er die Drehung der Route ·
-// sichtM = so weit voraus liest er Kurven · bandMs = über so viel Tempo-Fehler (m/s) geht Gas bzw. Bremse von 0 auf voll ·
+// fährt er höchstens um eine Kehre · bogenM = auf mindestens so viele Meter misst er den Bogen zurück auf die Route ·
+// kurveM = über ±so viele Meter misst er die Drehung der Route · sichtM = so weit voraus liest er Kurven · bandMs = über so viel Tempo-Fehler (m/s) geht Gas bzw. Bremse von 0 auf voll ·
 // bremsV = darunter bremst er nicht (die Bremse des Kerns triebe rückwärts) · haltM = so nah am Ende hält er · festM / festS =
 // so wenig Fortschritt auf der Route in so vielen Sekunden ist ein Steckenbleiber.
-AnazhRealm.FAHRER = Object.freeze({ ld0: 3, ldV: 0.35, ldMax: 12, quer: 0.75, lenk: 0.9, kriechMs: 2.5, brems: 0.6, kurveM: 12, sichtM: 120, bandMs: 1.5, bremsV: 0.5, haltM: 2, festM: 1, festS: 2 });
+AnazhRealm.FAHRER = Object.freeze({
+    ld0: 3,
+    ldV: 0.35,
+    ldMax: 12,
+    quer: 0.85,
+    lenk: 1,
+    kriechMs: 2.5,
+    bogenM: 6,
+    brems: 0.8,
+    kurveM: 8,
+    sichtM: 120,
+    bandMs: 1.5,
+    bremsV: 0.5,
+    haltM: 2,
+    festM: 1,
+    festS: 2,
+});
 // Der EINE Fahr-Gesetz-Leser, fail-closed: hostEmergent (Emergenz-Koeffizienten, Klemm-Grenzen,
 // Gier-Folge) + Nick-/Wank-Konstanten (FAHR.pitchGain/rollGain, A_PITCH_MAX/A_LAT_MAX) in EINER
 // Gültigkeits-Wand — ganz oder gar nicht, nie ein Misch-Gesetz. Memo nur im Erfolgs-Fall.

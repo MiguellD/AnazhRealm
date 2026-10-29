@@ -616,7 +616,6 @@ const server = statikServer();
 const {
     probeLeben,
     probeKoerper,
-    probeWegenetz,
     tempoVerdict,
     tempoSpion,
     kernTempo,
@@ -669,10 +668,10 @@ function ketteBericht(k, err) {
     return v;
 }
 
-// ════ WN — DIE FAHRT AUF DEM WEGENETZ (fahrzeug.K2 Staffel 1, `probeWegenetz`): die feste Route von der Mess-Wiese über die
+// ════ WN — DIE FAHRT AUF DEM WEGENETZ (fahrzeug.K2 Staffel 1, `wegenetz` in probeLeben): die feste Route von der Mess-Wiese über die
 // Orte der Zellen (je zwei Nachbarn im Wegenetz) — ≥ 2 km, auf Weg und Feldweg durch Wald und Dorf, 0 Steckenbleiber, ≥ 80 % der
 // Sim-Schritte über 0,8 · vmax. ════
-const WEGENETZ = { orte: ["-1,-5", "-2,-6", "-3,-5", "-4,-6", "-5,-5", "-6,-6"], bilderMax: 30000 };
+const WEGENETZ = { orte: ["-1,-5", "0,-5", "1,-6", "2,-7", "3,-6", "4,-7"] };
 const wegenetzVerdict = (m) =>
     [
         [m.lang >= 2000, `Route ${m.lang} m`],
@@ -2048,9 +2047,10 @@ hauptLauf(async () => {
             koerperBericht(o);
             console.log(`KOERPER ${JSON.stringify(o)}`);
         }],
-        [schalter("--wegenetz"), probeWegenetz, { ...WEGENETZ, mutante: schalter("--mutante"), bilder: schalter("--gleich") && [1000 / 60] }, (o) => {
-            check("WN (fahrzeug.K2) die Fahrt auf dem Wegenetz" + (schalter("--mutante") ? " — MUTANTE: die Weg-Erkennung aus" : ""), !wegenetzVerdict(o).length, wegenetzVerdict(o).join(" · "));
-            console.log(`WEGENETZ ${JSON.stringify(o)}`);
+        [schalter("--wegenetz"), probeLeben, { wegenetz: { ...WEGENETZ, mutante: schalter("--mutante"), gleich: schalter("--gleich") } }, (o) => {
+            const v = o.wegenetz ? wegenetzVerdict(o.wegenetz) : [o.err];
+            check("WN (fahrzeug.K2) die Fahrt auf dem Wegenetz" + (schalter("--mutante") ? " — MUTANTE: die Weg-Erkennung aus" : ""), !v.length, v.join(" · "));
+            console.log(`WEGENETZ ${JSON.stringify(o.wegenetz)}`);
         }],
         [schalter("--kette"), probeLeben, { nurKette: true, kette: KETTE }, (o) => {
             const v = ketteBericht(o.kette, o.err);

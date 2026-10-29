@@ -262,7 +262,11 @@ self.onmessage = function (e) {
             if (!self.__fachwerkCore)
                 importScripts((self.__anazhBase || "") + "fachwerk-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
             const raster = G.hoehenRaster(state, msg.x, msg.z, msg.rahmen);
-            self.postMessage({ type: "ort-weg-result", requestId: msg.requestId, pts: self.__fachwerkCore.wegZwischen(raster, msg.a, msg.b, msg.sperren) });
+            self.postMessage({
+                type: "ort-weg-result",
+                requestId: msg.requestId,
+                pts: self.__fachwerkCore.wegZwischen(raster, msg.a, msg.b, msg.sperren),
+            });
         } else if (msg.type === "stau") {
             // DER STAU IM FADEN (`stauRechnen`): der Voxel-Faden antwortet dem Main (`stau-result`, er trägt die Rückfrage-Nummer),
             // die Felder als Kopie per Transfer (Lehre 24; er behält seine), wenn eines kam, fiel oder neu ist, und die Fenster,

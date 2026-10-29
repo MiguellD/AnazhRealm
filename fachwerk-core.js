@@ -3508,11 +3508,11 @@
       const n=r.n, d=r.d, h=r.h, lim=ORT_GESETZ.trasse, W=WEG_ZWISCHEN;
       const zu=new Uint8Array(n*n); if(sperren&&sperren.length) for(let k=0;k<n*n;k++) zu[k]=gesperrt(sperren,r.x0+(k%n)*d,r.z0+((k/n)|0)*d)?1:0;
       const knoten=(p)=>Math.max(0,Math.min(n-1,Math.round((p.x-r.x0)/d)))+n*Math.max(0,Math.min(n-1,Math.round((p.z-r.z0)/d)));
-      const quelle=new Map(), ziel=new Map();
       const drin=(p)=>p.x>=r.x0&&p.z>=r.z0&&p.x<=r.x0+(n-1)*d&&p.z<=r.z0+(n-1)*d;
+      const quelle=new Map(), ziel=new Map();
       for(const p of A) if(drin(p)) quelle.set(knoten(p),p); for(const p of B) if(drin(p)) ziel.set(knoten(p),p);
       if(!quelle.size||!ziel.size) return null;
-      for(const k of quelle.keys()) zu[k]=0; for(const k of ziel.keys()) zu[k]=0;   /*die Punkte der Wege beider Orte tragen den Weg*/
+      for(const k of quelle.keys()) zu[k]=0; for(const k of ziel.keys()) zu[k]=0;
       let gx=0, gz=0, gr=0; for(const k of ziel.keys()){ gx+=k%n/ziel.size; gz+=((k/n)|0)/ziel.size; }
       for(const k of ziel.keys()) gr=Math.max(gr,Math.hypot(k%n-gx,((k/n)|0)-gz));
       const NB=[]; for(let i=-2;i<=2;i++) for(let j=-2;j<=2;j++){ const g=Math.abs(i)===2&&Math.abs(j)===2||Math.abs(i)===2&&j===0||i===0&&Math.abs(j)===2; if((i||j)&&!g) NB.push([i,j,d*Math.hypot(i,j)]); }
