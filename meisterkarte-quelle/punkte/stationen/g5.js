@@ -4,6 +4,7 @@
 // `module.exports.fehlt` (befehl null, grund) — außerhalb der Liste, damit `run` der anderen Gruppen nicht an ihr bricht.
 "use strict";
 const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
+const PW = require("./proben-welt.cjs"); // die Proben der Welt in der Sitzung (fahrzeug.K5#1, fahrzeug.K2#1)
 
 // DIE PROBE IN DER SITZUNG (punkte.cjs fahreSitzung, 29.10.): die Welt steht schon — save-server {PORT}, `werkbank start --echt`
 // auf {PORT}+20000 (WERKBANK_PORT), eine Linse neben ihr auf {PORT}+20001. `boot` holt eine FRISCHE Welt: die erste ist es schon
@@ -1515,13 +1516,13 @@ const stationen = [
     // 0 Stöße: der Aufbau folgte jeder Unebenheit starr, die Antwort der Mutante 1,0–2,7 mm; RM3 kein Summen); am Zweig headless
     // Antwort Glatt/Hang 7,2/7,7 mm, Summen 0,54–0,60, Drift-Wank 8,6 gegen 0,5 mm, Rumble Drift 1,0 gegen Glatt 0,004;
     // swiftshader dasselbe Urteil (Antwort 8,0/9,9 mm). Erwartet an Radeon und GTX: RM1–RM3 ✅ und die Zeile (F) ohne „motor stumm“.
+    // IN DER SITZUNG (29.10., proben-welt.cjs `fahrRueck`): RM über die Seiten-Probe des Gates (`probeLeben`, `nurRueck`) und der
+    // Motor über `koerperSeite` der Klang-Linse (Landung und Doppler per Anker aus: klang.K4) in der warmen Welt — bis 29.10. zwei
+    // eigene Boots samt ganzem Klang-Zensus (Radeon b3f9ae95: 5,06 min Arbeit). Die Strecke legt eine Straße und räumt Natur: mutiert.
     {
         kriterium: "fahrzeug.K5", staffel: 1, geraet: ["radeon", "gtx"],
-        befehl: ["bash", "-c", [
-            'echo "@@PUNKTE@@ RM"; timeout 900 node scripts/diag-fahr-leben.cjs --rueckmeldung; echo "@@PUNKTE@@ EXIT $?"',
-            'echo "@@PUNKTE@@ KLANG"; KLANG_ZENSUS_PORT=$(({PORT} + 1)) timeout 1500 node scripts/diag-klang-zensus.cjs; echo "@@PUNKTE@@ EXIT $?"',
-        ].join("\n")],
-        env: { FAHR_LEBEN_PORT: "{PORT}" }, gpu: true, zeit: false, minuten: 30,
+        probe: { befehl: PW.torBefehl(PW.fahrRueck), sek: 45, mutiert: true },
+        gpu: true, zeit: false, minuten: 30,
         urteil: (j, lauf) => {
             const teil = (n) => lauf.stdout.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
             const rm = jsonZeile(teil("RM"), /^RUECKMELDUNG /);
@@ -1541,7 +1542,7 @@ const stationen = [
                     " Hz je 1000 Upm (klang-zensus F" + (stumm ? ", STUMM" : "") + ") · RM1–3 " + gruen3.map((g) => (g ? "✅" : "❌")).join(""),
             };
         },
-        pfad: [...FAHRT, "stamm/klang.js", "klang-core.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/lib/welt-boot.cjs", "scripts/diag-klang-zensus.cjs"],
+        pfad: [...FAHRT, "stamm/klang.js", "klang-core.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/lib/welt-boot.cjs", "scripts/diag-klang-zensus.cjs", "scripts/lib/wasser-linse.cjs"],
         quelle: "1 = ≥ 3 Kanäle mit gemessenem Paar aus dem Ausgabe-Pfad bzw. am Klang-Abgriff",
     },
     // ───────── fahrzeug.K1 — das Fahr-Gesetz: der Reifen mit Spitze (Staffel 1 Weg (a), fahrzeug-k1-reifen 2d01a8a7) ─────────
@@ -1957,9 +1958,18 @@ const stationen = [
     // (Natur-Strom, Boden) kommt je Bild: 12 444 gegen 12 225 Takte, darum urteilen Radeon und GTX. Erwartet dort: Route ✅,
     // an ✅, Steckenbleiber 0 ✅, Tempo ❌ (~74 % gegen 80 %: drei Bäche quer — zwei Feldwege und eine Gasse von 4,−7 — und
     // die Ecken der Dörfer, je ~210 Takte unter 0,8 · vmax).
+    // IN DER SITZUNG (29.10., proben-welt.cjs `fahrWegenetz`): die Seiten-Probe des Gates (`probeLeben`, `wegenetz`) in der warmen
+    // Welt, der Dorf-Zug an wie das Gate vor dem Boot; die Route sind ~12 000 Sim-Schritte in den Bildern der Probe (die Welt kommt
+    // je Bild) — die Ausnahme trägt sie. Kennt der Stand die Fahrt nicht, ROT beim Namen in Sekunden. Die Orte erwachen: mutiert.
     {
         kriterium: "fahrzeug.K2", staffel: 1, geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/diag-fahr-leben.cjs", "--wegenetz"], env: { FAHR_LEBEN_PORT: "{PORT}" }, gpu: true, zeit: false, minuten: 10,
+        probe: {
+            befehl: PW.torBefehl(PW.fahrWegenetz),
+            sek: 90,
+            mutiert: true,
+            ausnahme: "die feste Route ist das Kriterium: 2,6 km mit dem Fahrer am Steuer, ~12 000 Sim-Schritte in den Bildern der Probe, sechs Orte erwachen",
+        },
+        gpu: true, zeit: false, minuten: 10,
         urteil: (j, lauf) => {
             const m = jsonZeile(lauf.stdout, /^WEGENETZ {/);
             if (!m) return { gruen: false, zahl: "keine WEGENETZ-Zeile (Exit " + lauf.exit + ")" };
@@ -1980,7 +1990,7 @@ const stationen = [
                     " / Dorf " + p(b.dorf) + (aus.length ? " · außer Soll: " + aus.join(", ") : "") + " · Exit " + lauf.exit,
             };
         },
-        pfad: ["vehicle-core.js", "fachwerk-core.js", "voxel-worker.js", "stamm/koerper-*.js", "stamm/siedlung-*.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs"],
+        pfad: ["vehicle-core.js", "fachwerk-core.js", "voxel-worker.js", "stamm/koerper-*.js", "stamm/siedlung-*.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/werkbank.cjs"],
         quelle: "1 = auf der festen 2-km-Route entlang Weg und Feldweg (Wiese → Wald → Dorf) 0 Steckenbleiber und ≥ 80 % der Takte über 0,8 × vmax, an einem Gerät",
     },
 ];

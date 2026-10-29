@@ -17,6 +17,7 @@
 // und der Läufer sieht sie nicht: `module.exports` bleibt die Liste der fahrbaren Stationen.
 "use strict";
 const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
+const PW = require("./proben-welt.cjs"); // die Proben der Welt in der Sitzung (streaming.K3#1, streaming.K4#2)
 
 // Vorspann jeder bash-Station: Pfade in Vorwärts-Schreibweise und ein frisches Werk-Verzeichnis neben der Ausgabe.
 const VOR =
@@ -854,27 +855,10 @@ module.exports = [
         // stehender Welt, Profil und ≥ 30 Bildern, am Adapter einer echten GPU. Cloud headless swiftshader am Kopf cd8a4d2c des Zweigs
         // streaming-sprung (Wiese, 5 Läufe): die Welt steht nach 18,4–22,3 s, CPU-Takt p95 34,5–61 ms, 0 Bauten außerhalb der
         // Sync-Stellen, Frame p95 4,6–7,5 s (Software-GPU, 3–7 Bilder im Fenster) — ROT am Adapter.
-        befehl: [
-            "bash",
-            "-c",
-            VOR +
-                "SP={PORT}; WP=$((SP+20000)); export WERKBANK_PORT=$WP; " +
-                'raeum() { for p in $(netstat -ano | grep -E ":($SP|$WP) .*LISTEN" | awk \'{print $5}\' | sort -u); do taskkill //F //T //PID $p > /dev/null 2>&1; done; }; ' +
-                "W() { node scripts/werkbank.cjs \"$@\"; }; " +
-                "SUM() { node -e 'try{const j=require(process.argv[1]),s=j.sprung;console.log(JSON.stringify({m:s.m,stehtS:s.stehtS&&+((s.stehtS-s.t0)/1000).toFixed(1),bau:s.bau[1].sonst-s.bau[0].sonst,frames:j.frames,frameMs:j.frameMs,taktMs:j.taktMs,profil:j.profil,ursachen:j.jeUrsache.slice(0,3).map((e)=>e.ursache+\" x\"+e.n)}))}catch(e){console.log(\"{}\")}' \"$1\"; }; " +
-                "for N in 1 2 3; do raeum; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; " +
-                '(PORT=$SP node save-server.js > "$D/b$N-save.log" 2>&1 < /dev/null &); ' +
-                "for t in $(seq 1 30); do curl -s -o /dev/null http://localhost:$SP/ && break; sleep 1; done; " +
-                '(node scripts/werkbank.cjs start --echt --port $WP --seite http://localhost:$SP --ort wiese > "$D/b$N-werkbank.log" 2>&1 < /dev/null &); ' +
-                'for t in $(seq 1 120); do grep -qE "bereit|FEHLER" "$D/b$N-werkbank.log" 2>/dev/null && break; sleep 5; done; ' +
-                'grep -m1 "\\[linse-gpu\\]" "$D/b$N-werkbank.log"; ' +
-                'W eval "window.__anazhAutoSettlement = false; return 1" > /dev/null 2>&1; W fenster 1920 1080 > /dev/null 2>&1; ' +
-                'W umstellen --ort wiese --sicht ego > "$D/b$N-umstellen.txt" 2>&1; ' +
-                'W haenger --regler frei --tiere frei --wandern sprung --schwelle 50 --json "$D/b$N-sprung.json" > "$D/b$N-sprung.out" 2>&1; E=$?; ' +
-                'echo "SPRUNG $N EXIT=$E $(SUM "$D/b$N-sprung.json")"; ' +
-                "W stop > /dev/null 2>&1; sleep 3; raeum; done; " +
-                "rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json",
-        ],
+        // IN DER SITZUNG (29.10., proben-welt.cjs `sprungKadenz`): die drei Sprünge der Hänger-Linse in der warmen Welt, jeder 1 km
+        // weiter auf +x in eine Welt, die dort noch nicht steht (statt je Sprung einer frischen Sitzung; Radeon b3f9ae95: 4,92 min
+        // Arbeit, die Welt stand nach 8,9–9,0 s); Einschwingen 1 s statt 10 s (die Welt steht schon). Teleport ist kein Edit: unberührt.
+        probe: { befehl: PW.torBefehl(PW.sprungKadenz), sek: 45, mutiert: false },
         gpu: true,
         zeit: true,
         minuten: 20,
@@ -955,8 +939,16 @@ module.exports = [
         // Gang nicht (die Gang-Zeile fehlt): ROT. Die Stau-Zeile (Takt) gehört gelaende.K2 und urteilt hier nicht.
         // Soll: 0 sonst an Radeon und GTX; Cloud-Fenster swiftshader (Xvfb) am Kopf 82bb2353 in 3 von 3 Läufen 0 sonst ·
         // 25 naht (der Damm-Ring der Wasser-Linse), vor dem Nexus-Schnitt 8 Güsse „kreatur" in 1 von 2.
-        befehl: ["node", "scripts/diag-worker-dichte.cjs", "--faden", "--echt"],
-        env: { WORKER_DICHTE_PORT: "{PORT}" },
+        // IN DER SITZUNG (29.10., proben-welt.cjs `fadenZaehler`): die Haken der Linse vor dem ersten Skript, darum EIN kalter Neu-Lade
+        // der Welt der Sitzung (Abbild und Platten geräumt, `/reload`); der Gang springt 240 m und geht 3 s, die Fahrt 10 s bei 16 m/s
+        // mit sechs Bau-Klicks, dann der Damm — bis 29.10. ein eigener Boot mit 2 min Gang und 1 min Fahrt (Radeon b3f9ae95: 9,88 min
+        // Arbeit). Baut, schüttet und hängt Haken in die Seite: mutiert.
+        probe: {
+            befehl: PW.torBefehl(PW.fadenZaehler),
+            sek: 75,
+            mutiert: true,
+            ausnahme: "die Haken der Linse sitzen vor dem ersten Skript: EIN kalter Neu-Lade der Welt (Ankunft kalt) ist Teil des Kriteriums",
+        },
         gpu: true,
         zeit: false,
         minuten: 8,
@@ -986,6 +978,7 @@ module.exports = [
             "stamm/koerper-leib.js",
             "stamm/kreatur-verhalten.js",
             "stamm/siedlung-satz.js",
+            "scripts/werkbank.cjs",
             "scripts/lib/wasser-linse.cjs",
             "scripts/lib/software-gpu.cjs",
         ],
