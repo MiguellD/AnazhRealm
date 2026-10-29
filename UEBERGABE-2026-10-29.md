@@ -47,3 +47,12 @@ w3w-glanz, w3w-wald, w3w-verkehr, spike-ci-konsum, w3v-licht; Paar-Probe; studio
 spec/stamm/modul-karte.json → je eine Heim-Karte nötig). Mess-Kopf für die nächste Buchung: 715754fc oder z78.
 **18:37 z78 leer:** gegen main 715754fc kollidieren ALLE Reste (gpu-wahl-bau, w3w-studios, w3v-brand-bild grün; w3w-glanz, w3w-wald,
 spike-ci-konsum rot + Konflikt; w3v-licht rot, frei) → erster Schritt nach dem Reset: je Zweig `git merge origin/main` (Heim), dann EIN Zug.
+
+## Nachtrag 18:50 — 30-Minuten-Umbau (Workflow dreissig-minuten) zurück
+mess-session@1536680d: die Wache beendet jede Fahrt nach 30 min (nennt offene Proben), Aufnehmer der Dauerlast im Strom (Bild-p95 67/84 ms,
+VRAM max 148 MB), Linse (a)(b)(c) in liste. Gegenlauf Radeon an b3f9ae95: 2 Fahrten à 1800 s, 69 Läufe, Gleichheit 25/36 (11 Abweichungen
+benannt: affekt.K1#2 altes Urteil falsch; 5 brauchen main statt b3f9ae95; halten.K1#2 CSP verbietet eval; klang.K4 3,5 s Gehen zu kurz;
+leib.K4#1 Deckel; klang.K2#1 Welt ohne Ruhe). **ROT: Σ Deckel 4 780 s > 1 680 s → liste 2 Fehler → auf 1536680d wird NICHT gemessen/gebucht.**
+**NIE 1536680d nach koordination/punkte-maschine mergen, bevor die Summe passt.** Wurzel der Dauer: jede Grundstellung lädt die Seite neu, die
+nächste Probe baut ihren Weltring neu (reißt 45 s). Der Schnitt: Grundstellung OHNE Neuladen (Zustand an Ort und Stelle zurück, Ringe warm),
+dann Proben ≤ 15 s → eine Fahrt ≤ 30 min. Danach Session-Takt am Kopf und buchen.
