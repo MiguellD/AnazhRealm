@@ -592,7 +592,6 @@ const stationen = [
         // Himmel zur Sonne ≥ 1,2; die tiefe Sonne (Uhr 0,27 und 0,73, klar) ≥ 2,5; bedeckt (Regen, jede Uhr) ≤ 1,5. Gültig ist eine
         // Spalte wie Staffel 1 nur mit A = B an der Sonnen-Kugel und A = C an der Schatten-Kugel (±2 %), ≥ 100 px, und wenn ihr
         // `stand` die Uhr und das Wetter der Spalte trägt.
-        ausnahme: "jede der 6 Spalten Uhr × Wetter ist eine eigene Kugel-Bilanz (9 Schüsse 1920×1080), dazu der Himmel zur Sonne (6 Schüsse) — am EINEN Ort, die Uhr gestellt",
         probe: { sek: 90, befehl: befehlMitHimmel({
             name: "licht.K2#2",
             texte: SPALTE_TEXTE,
@@ -606,7 +605,7 @@ const stationen = [
                 ]),
                 { name: "himmel", probe: "@DIR@/himmel.js", blob: HIMMEL_BLOB },
             ],
-        }) },
+        }), ausnahme: "jede der 6 Spalten Uhr × Wetter ist eine eigene Kugel-Bilanz (9 Schüsse 1920×1080), dazu der Himmel zur Sonne (6 Schüsse) — am EINEN Ort, die Uhr gestellt" },
         env: envDer,
         gpu: true,
         zeit: false,
@@ -674,8 +673,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // gate:luft-tiefe:echt mit Messung (ferne-luft e9f79deb, Beleg an d3a626ee): luftTiefe vom Hügel Genesis + 120 m,
         // 4 Azimute, Uhr 0,5 und 0,27, Urteil luftTiefeUrteil gegen spec/farbe/luft-referenz.json (Bucholtz 1995)
-        ausnahme: FERNE_AUSNAHME,
-        probe: FERNE_SITZUNG,
+        probe: { ...FERNE_SITZUNG, ausnahme: FERNE_AUSNAHME },
         env: envDer,
         gpu: true,
         zeit: false,
@@ -709,8 +707,7 @@ const stationen = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         // derselbe Lauf wie ferne.K1#1 (gate:luft-tiefe:echt): der Restkontrast am Rand der letzten Fern-Schale, 4 Azimute, klar, Uhr 0,5
-        ausnahme: FERNE_AUSNAHME,
-        probe: FERNE_SITZUNG,
+        probe: { ...FERNE_SITZUNG, ausnahme: FERNE_AUSNAHME },
         env: envDer,
         gpu: true,
         zeit: false,
@@ -745,8 +742,7 @@ const stationen = [
         // 0,27 je Kanal (Δβ blau−rot), den Farbton bei 8 km (≤ 10° von der In-Streuung), die Sonnenseite (Y der In-Streuung zur Sonne /
         // gegen sie ≥ 1,2), das ferne Weiß bei Sonne 5° (weiße Lambert-Tafel 5 km, R/B ≥ 1,3) und den Ton des Himmels (Hillaire). Ein
         // OFFEN der Referenz hält nur den Exit des Gates, die Staffel K1-2 bleibt ROT, solange ein K1-2-Befund steht.
-        ausnahme: FERNE_AUSNAHME,
-        probe: FERNE_SITZUNG,
+        probe: { ...FERNE_SITZUNG, ausnahme: FERNE_AUSNAHME },
         env: envDer,
         gpu: true,
         zeit: false,
@@ -788,8 +784,7 @@ const stationen = [
         // `band.linie`), 4 Azimute je Ort, Uhr 0,5 —, danach am Messort Genesis die Band-Linse: die Klasse boden (Boden-Satz · Wasser-Satz ·
         // Fern-Ring · Fern-Wasser) über Haupt + k0 + k1 im Haushalt (12 Befehle / 120k Dreiecke, spec/profiband/haushalt.json).
         // IN DER SITZUNG (29.10.): derselbe Lauf wie ferne.K1#1, K2#1, K1#2 (FERNE_SITZUNG, Zwillinge)
-        ausnahme: FERNE_AUSNAHME,
-        probe: FERNE_SITZUNG,
+        probe: { ...FERNE_SITZUNG, ausnahme: FERNE_AUSNAHME },
         env: envDer,
         gpu: true,
         zeit: false,
@@ -859,8 +854,7 @@ const stationen = [
         // Sekunde ≤ 0,1 EV/s, und beide Wörter standen am Ende ihrer Phase (sonst misst die Reihe keinen Übergang)
         // IN DER SITZUNG (29.10.): die Welt-Uhr läuft im echten Takt ohne Wanduhr (10 Takte je Spiel-Sekunde, je Sekunde ein Bild
         // 160×90) — der Zug selbst trägt ~125 Spiel-s (klar 5 s, je Wort ≥ 60 s); das Wort setzt die Phase am Ende zurück auf klar
-        ausnahme: "der Wetter-Zug des Spiels: klar 5 s, Regen und wieder klar je ≥ 60 Spiel-s über die Transition (45 s), 10 echte Takte und ein Bild je Spiel-Sekunde",
-        probe: { sek: 90, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--wetter", "rainy", "--zug", "--datei", "{AUS}"] },
+        probe: { sek: 90, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--wetter", "rainy", "--zug", "--datei", "{AUS}"], ausnahme: "der Wetter-Zug des Spiels: klar 5 s, Regen und wieder klar je ≥ 60 Spiel-s über die Transition (45 s), 10 echte Takte und ein Bild je Spiel-Sekunde" },
         env: { MSYS2_ARG_CONV_EXCL: "*" },
         gpu: true,
         zeit: false,
@@ -896,7 +890,6 @@ const stationen = [
         // An origin/main gibt es `--arm` noch nicht; die Station ist dort ROT („arm fehlt“).
         // IN DER SITZUNG (29.10.): nach jedem Ortswechsel EIN_TAKT (30 echte Takte, dann „die Welt steht“ wie `umstellen`) statt
         // `lauf <n> --ein <m>` — 156 s Einschwingen an der Wanduhr fielen (8+20, 10+30, 10+30, 3 × 4+12)
-        ausnahme: "zwei Orte (Wiese, der höchste Fels in Genesis) × drei Armlängen je ein Schuss 1920×1080 — drei Teleports und 17 Werkbank-Rufe",
         probe: { sek: 90, befehl: befehlDer({
             name: "material.K2#1",
             texte: { FELS_ZIEL, EIN: EIN_TAKT },
@@ -917,7 +910,7 @@ const stationen = [
                     { name: "fels-" + d, args: ["bild", "0", "0", "0", "0", "0", "0", "--arm", d, "--wahl", "0", "--klasse", "^formationenSatz$", "--datei", "@DIR@/fels-" + d + ".png"] },
                 ]),
             ],
-        }) },
+        }), ausnahme: "zwei Orte (Wiese, der höchste Fels in Genesis) × drei Armlängen je ein Schuss 1920×1080 — drei Teleports und 17 Werkbank-Rufe" },
         env: envDer,
         gpu: true,
         zeit: false,
@@ -973,8 +966,7 @@ const stationen = [
         // Fels-Hälfte ist erfüllt (M43).
         // IN DER SITZUNG (29.10.): EIN Lauf für beide Staffeln (MATERIAL_K3_SITZUNG, Zwillinge) — `albedo --tafel` misst ohnehin jede
         // Zeile der Tafel zu jeder ihrer Uhren; die 10 s Ruhe an der Wanduhr fielen (`umstellen` endet, wenn die Welt steht)
-        ausnahme: MATERIAL_K3_AUSNAHME,
-        probe: MATERIAL_K3_SITZUNG,
+        probe: { ...MATERIAL_K3_SITZUNG, ausnahme: MATERIAL_K3_AUSNAHME },
         env: envDer,
         gpu: true,
         zeit: false,
@@ -1029,8 +1021,7 @@ const stationen = [
         // gate:haus-fern S8 über 64 Häuser. Cloud (swiftshader, 27.10.): Birke L1 0,994 Karte 0,986, Fichte L1 1,017 Karte 0,998 —
         // das Haus L0/L1 zeichnet dort kein Pixel (der Satz der Stufe), die Radeon maß #1 L1/L0 0,992, L2/L0 0,986.
         // IN DER SITZUNG (29.10.): derselbe Lauf wie material.K3#1 (MATERIAL_K3_SITZUNG, Zwillinge)
-        ausnahme: MATERIAL_K3_AUSNAHME,
-        probe: MATERIAL_K3_SITZUNG,
+        probe: { ...MATERIAL_K3_SITZUNG, ausnahme: MATERIAL_K3_AUSNAHME },
         env: envDer,
         gpu: true,
         zeit: false,
@@ -1086,10 +1077,8 @@ const stationen = [
         // material-lack (Zug 5) hob Haut Labor/Welt 0,857 → 0,997 und Tiefschwarz ins Band, gemessen nur am Zweig-Kopf. Die Station
         // misst beide Seiten echt am SHA: jede Zeile Welt/Labor 0,9–1,1 und beidseits im realen Band ihrer Klasse (BAENDER), die
         // Seiten auf der Karte (nie ein Ersatz-Renderer).
-        probe: ALBEDO_PROBE,
+        probe: { ...ALBEDO_PROBE, mutiert: false, ausnahme: ALBEDO_AUSNAHME },
         env: envDer,
-        mutiert: false,
-        ausnahme: ALBEDO_AUSNAHME,
         gpu: true,
         zeit: false,
         minuten: 1.5,
@@ -1118,10 +1107,8 @@ const stationen = [
         staffel: 2,
         geraet: ["radeon", "gtx"],
         // dieselbe Messung; dazu liest die 18-%-Karte auf beiden Seiten 0,180 (± eichRand der Tafel), je Gerät
-        probe: ALBEDO_PROBE,
+        probe: { ...ALBEDO_PROBE, mutiert: false, ausnahme: ALBEDO_AUSNAHME },
         env: envDer,
-        mutiert: false,
-        ausnahme: ALBEDO_AUSNAHME,
         gpu: true,
         zeit: false,
         minuten: 1.5,
@@ -1153,14 +1140,13 @@ const stationen = [
         // Fuß je Pose bei Uhr 0,5; am Kopf vor dem Zweig kennt licht kein --kontakt (ROT beim Namen)
         // IN DER SITZUNG (29.10.): EINE Uhr (0,5), zwei Posen je drei Schüsse — Ziel 25 s; der Messort buehne importiert die Welt der
         // Prüfbühne und lädt die Seite in ihr: danach steht die Sitzung in einer fremden Welt (mutiert)
-        mutiert: true,
         probe: { sek: 45, befehl: befehlDer({
             name: "schatten.K1#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
                 { name: "kontakt", args: ["licht", "--kontakt"], ms: 900000 },
             ],
-        }) },
+        }), mutiert: true },
         env: envDer,
         gpu: true,
         zeit: false,
@@ -1198,7 +1184,6 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // IN DER SITZUNG (29.10.): EIN Ort (Wiese), 7 Fälle Familie × Stufe je drei Schüsse (leer, L0, Stufe) zu je drei Aufnahmen;
         // die Exemplare fallen am Ende, die Schalter kehren zurück
-        ausnahme: "7 Fälle Familie × Stufe (Baum L1/L2, Haus L1/L2, Tor L1/L2, Wagen L1) je drei Schüsse 1920×1080, je Stufe bäckt die Karte, bis sie dient",
         probe: { sek: 90, befehl: befehlDer({
             name: "lod.K5#1",
             schritte: [
@@ -1206,7 +1191,7 @@ const stationen = [
                 { name: "umstellen", args: ["umstellen", "--ort", "wiese"], muss: true },
                 { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "c87ffc92ffac2801f75fc7eb5fdb7d956706f099", muss: true, ms: 1800000 },
             ],
-        }) },
+        }), ausnahme: "7 Fälle Familie × Stufe (Baum L1/L2, Haus L1/L2, Tor L1/L2, Wagen L1) je drei Schüsse 1920×1080, je Stufe bäckt die Karte, bis sie dient" },
         env: envDer,
         gpu: true,
         zeit: false,

@@ -927,9 +927,7 @@ const stationen = [
         // auf freier Bahn an der Mess-Wiese, Third, Vollgas (bericht/2110-gtx-messschuld/tempo3.js über werkbank eval, M27)
         // IN DER SITZUNG (29.10.): die Garage (eigenes Labor auf {PORT}+20001) läuft NEBEN dem Ritt in der Welt der Sitzung, ihre Zeilen
         // danach; der Patch fällt vor und nach ihr. Der GT bleibt in der Welt (mutiert)
-        ausnahme: "das Garagen-Labor (eigene Seite, Mess-Patch bei vmax) zugleich mit dem Ritt des GT bis Vollgas in der Welt",
-        mutiert: true,
-        probe: sitzung(90,
+        probe: { ...sitzung(90,
             "git checkout -q -- scripts/diag-garage-labor.cjs; rm -f scripts/diag-garage-mk.cjs",
             '( git apply "$K/bericht/2110-mk-kopf/garage-mk.diff" && GARAGE_LABOR_PORT=$LP LINSE_GPU=hardware timeout 85 node scripts/diag-garage-mk.cjs; ' +
                 'echo "@@PUNKTE@@ EXIT $?"; git checkout -q -- scripts/diag-garage-labor.cjs; rm -f scripts/diag-garage-mk.cjs ) > "$L/garage.out" 2>&1 &',
@@ -937,7 +935,7 @@ const stationen = [
             'teil WELT $W eval "$(cat "$K/bericht/2110-gtx-messschuld/tempo3.js")"',
             "wait",
             'echo "@@PUNKTE@@ GARAGE"; cat "$L/garage.out"'
-        ),
+        ), ausnahme: "das Garagen-Labor (eigene Seite, Mess-Patch bei vmax) zugleich mit dem Ritt des GT bis Vollgas in der Welt", mutiert: true },
         env: K,
         gpu: true,
         zeit: false,
@@ -969,9 +967,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // die Zusätze der 2: Drift, Rückkehr (tempo3.js in der Welt), Ruck (gate:fahr-leben T4) und EIN FOV-Schreiber (T5)
         // IN DER SITZUNG (29.10.): EIN Lauf mit fahrzeug.K4#1/#2 (FAHR_SITZUNG, Zwillinge)
-        ausnahme: FAHR_AUSNAHME,
-        mutiert: true,
-        probe: FAHR_SITZUNG,
+        probe: { ...FAHR_SITZUNG, ausnahme: FAHR_AUSNAHME, mutiert: true },
         env: K,
         gpu: true,
         zeit: false,
@@ -1009,9 +1005,7 @@ const stationen = [
         // gate:fahr-leben T4 (Absteigen in Fahrt, Azimut nach 10 Bildern) + der Blick im Bild am Steilhang bergab, Third → Ego →
         // Third (bericht/2010-buendel-abab/blick.js über werkbank eval, M8): der GT in den Bildern 1–3 nach dem Wechsel
         // IN DER SITZUNG (29.10.): EIN Lauf mit fahrzeug.K3#2 (FAHR_SITZUNG, Zwillinge)
-        ausnahme: FAHR_AUSNAHME,
-        mutiert: true,
-        probe: FAHR_SITZUNG,
+        probe: { ...FAHR_SITZUNG, ausnahme: FAHR_AUSNAHME, mutiert: true },
         env: K,
         gpu: true,
         zeit: false,
@@ -1050,9 +1044,7 @@ const stationen = [
         kriterium: "siedlung.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        ausnahme: SIEDLUNG_AUSNAHME,
-        mutiert: true,
-        probe: SIEDLUNG_SITZUNG,
+        probe: { ...SIEDLUNG_SITZUNG, ausnahme: SIEDLUNG_AUSNAHME, mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 15,
@@ -1109,9 +1101,7 @@ const stationen = [
         kriterium: "siedlung.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        ausnahme: SIEDLUNG_AUSNAHME,
-        mutiert: true,
-        probe: SIEDLUNG_SITZUNG,
+        probe: { ...SIEDLUNG_SITZUNG, ausnahme: SIEDLUNG_AUSNAHME, mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 15,
@@ -1219,8 +1209,7 @@ const stationen = [
         kriterium: "siedlung.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: START_DORF_PROBE,
-        ausnahme: "jedes Haus des Start-Dorfs (18 im Plan) je Gang über den Sim-Schritt und Innen-Bild gegen den Außen-Schatten — je Haus ~1,5 s",
+        probe: { ...START_DORF_PROBE, ausnahme: "jedes Haus des Start-Dorfs (18 im Plan) je Gang über den Sim-Schritt und Innen-Bild gegen den Außen-Schatten — je Haus ~1,5 s" },
         gpu: true,
         zeit: false,
         minuten: 1,
@@ -1275,8 +1264,7 @@ const stationen = [
         kriterium: "siedlung.K5",
         staffel,
         geraet: ["radeon", "gtx"],
-        probe: DORF_PROBE,
-        mutiert: true,
+        probe: { ...DORF_PROBE, mutiert: true },
         gpu: true,
         zeit: true,
         minuten: 1,
@@ -1571,9 +1559,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // dieselbe Linse über jedes Verb der Staffel (schwingen = hieb), EIN Ruf je Boot, LAEUFE Boots, der schlechteste urteilt
         // IN DER SITZUNG (29.10.): der Zwilling von halten.K2#1 (LATENZ_HALT_SITZUNG)
-        ausnahme: LATENZ_HALT_AUSNAHME,
-        mutiert: true,
-        probe: LATENZ_HALT_SITZUNG,
+        probe: { ...LATENZ_HALT_SITZUNG, ausnahme: LATENZ_HALT_AUSNAHME, mutiert: true },
         env: K,
         gpu: true,
         zeit: true,
@@ -1888,9 +1874,7 @@ const stationen = [
         // steht; Hit-Stop = präsentierte Bilder mit stehender Schwung-Uhr und Hand (halt) — in LAEUFE eigenen Boots, der
         // schlechteste urteilt (bildraten-fest, wie leib.K1)
         // IN DER SITZUNG (29.10.): der Zwilling von leib.K1#2 (LATENZ_HALT_SITZUNG) — die Reihen hieb in Ego und Third daraus
-        ausnahme: LATENZ_HALT_AUSNAHME,
-        mutiert: true,
-        probe: LATENZ_HALT_SITZUNG,
+        probe: { ...LATENZ_HALT_SITZUNG, ausnahme: LATENZ_HALT_AUSNAHME, mutiert: true },
         env: K,
         gpu: true,
         zeit: true,
@@ -2628,13 +2612,12 @@ const stationen = [
         // (CPU-Raster, kein Urteil).
         // IN DER SITZUNG (29.10.): EIN Teleport an die Wiese, die HUD-Maske, 5 Runden echte Eingabe (das Urteil verlangt ≥ 30 HUD- und
         // ≥ 15 Menü-Interaktionen: 4 Runden reichen dem Menü nicht)
-        ausnahme: "5 Runden echter Eingabe im laufenden Loop (je 8 Hotbar-Klicks und Tab, Tab, I, Esc, je Klick ein Bild), davor die HUD-Maske aus dem Bild",
-        probe: sitzung(90,
+        probe: { ...sitzung(90,
             "boot",
             "timeout 60 $W fenster 1920 1080 > /dev/null 2>&1",
             "timeout 600 $W umstellen --ort wiese > /dev/null 2>&1",
             "teil BEDIENUNG $W bedienung --runden 5"
-        ),
+        ), ausnahme: "5 Runden echter Eingabe im laufenden Loop (je 8 Hotbar-Klicks und Tab, Tab, I, Esc, je Klick ein Bild), davor die HUD-Maske aus dem Bild" },
         env: K,
         gpu: true,
         zeit: true,

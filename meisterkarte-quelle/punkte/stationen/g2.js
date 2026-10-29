@@ -1234,8 +1234,7 @@ function sollKlasseStation(o) {
         kriterium: o.kriterium,
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        ...(o.mutiert ? { mutiert: true } : {}),
-        probe: { sek: 45, befehl: [
+        probe: { sek: 45, ...(o.mutiert ? { mutiert: true } : {}), befehl: [
             "bash",
             "-c",
             [
@@ -1711,8 +1710,6 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // DAS BUDGET DER SITZUNG (29.10.): die Probe herde läuft ihre Spiel-Sekunden am Kreatur-Takt (headless 37 s, DAUER_S der
         // Linse), dazu drei Schüsse — die Herde bleibt in der Welt (mutiert)
-        ausnahme: "die Probe herde (a)–(d) am echten Kreatur-Takt (600 Spiel-s neben dem fremden Verband, headless 37 s) und drei Schüsse der fliehenden Herde",
-        mutiert: true,
         probe: { sek: 90, befehl: [
             "node",
             "-e",
@@ -1721,7 +1718,7 @@ const stationen = [
             "{PORT}",
             knapp(herdeSzene),
             knapp(herdePulk),
-        ] },
+        ], ausnahme: "die Probe herde (a)–(d) am echten Kreatur-Takt (600 Spiel-s neben dem fremden Verband, headless 37 s) und drei Schüsse der fliehenden Herde", mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 8,
@@ -1848,8 +1845,6 @@ const stationen = [
         kriterium: "tiere.K3",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        ausnahme: "gate:tier-gang (4 Gattungen × 4 Tempi in Welt, Satz und Labor) und der Querhang laufen je in einer eigenen Null-Welt, zugleich mit dem Schuss der Gang-Bühne",
-        mutiert: true,
         probe: { sek: 90, befehl: [
             "bash",
             "-c",
@@ -1867,7 +1862,7 @@ const stationen = [
                 "wait",
                 "cat \"$B-tiergang.out\" \"$B-querhang.out\"",
             ].join("\n"),
-        ] },
+        ], ausnahme: "gate:tier-gang (4 Gattungen × 4 Tempi in Welt, Satz und Labor) und der Querhang laufen je in einer eigenen Null-Welt, zugleich mit dem Schuss der Gang-Bühne", mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 14,
@@ -1932,9 +1927,7 @@ const stationen = [
         // platz-8.js und b64png.cjs leben im Koord-Baum (R6 sieht sie nicht; ihr Text steht hier per Pfad im Abdruck).
         // IN DER SITZUNG (29.10.): EIN Lauf der Probe bewohner für mensch.K1#1 und mensch.K2#2 (BEWOHNER_SITZUNG, Zwillinge) —
         // bis dahin fuhr jede ihn ganz
-        ausnahme: BEWOHNER_AUSNAHME,
-        mutiert: true,
-        probe: BEWOHNER_SITZUNG,
+        probe: { ...BEWOHNER_SITZUNG, ausnahme: BEWOHNER_AUSNAHME, mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 8,
@@ -1999,8 +1992,6 @@ const stationen = [
         // beim Namen (der Gang steht, der Nah-Ring leer). GPU: an der Station. Ports: save-server {PORT}, Werkbank {PORT}+20000.
         // IN DER SITZUNG (29.10.): das Band in 10 s echtem Loop (≈ 600 Bilder, das Urteil verlangt ≥ 30) statt 20 s; die Stadt wächst
         // am Messort (mutiert)
-        ausnahme: "der Messort stadt-voll gründet die Metropole am echten Takt (Gründung und Wachstum), dann 600 Bewohner-Takte und 10 s Loop",
-        mutiert: true,
         probe: { sek: 90, befehl: [
             "bash",
             "-c",
@@ -2014,7 +2005,7 @@ const stationen = [
                 "node scripts/werkbank.cjs haenger 10 --regler voll --tiere frei --json \"$B-haenger.json\" > \"$B-haenger.out\" 2>&1; echo \"HAENGER EXIT=$?\"",
                 "node -e 'try{const j=require(process.argv[1]);console.log(\"TAKT \"+JSON.stringify({frames:j.frames,frameMs:j.frameMs,taktMs:j.taktMs}))}catch(e){console.log(\"TAKT {}\")}' \"$B-haenger.json\"",
             ].join("\n"),
-        ] },
+        ], ausnahme: "der Messort stadt-voll gründet die Metropole am echten Takt (Gründung und Wachstum), dann 600 Bewohner-Takte und 10 s Loop", mutiert: true },
         gpu: true,
         zeit: true,
         minuten: 20,
@@ -2382,8 +2373,6 @@ const stationen = [
         kriterium: "tiere.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        ausnahme: "das Mahl der Probe jagdkreis läuft seine Jagden am Kreatur-Takt in eigener Null-Welt (headless 140 s am Farm-Lauf 98ef98bb), zugleich mit dem Wolfsrevier",
-        mutiert: true,
         probe: { sek: 90, befehl: [
             "bash",
             "-c",
@@ -2402,7 +2391,7 @@ const stationen = [
                 "wait",
                 "cat \"$B-jagdkreis.out\"",
             ].join("\n"),
-        ] },
+        ], ausnahme: "das Mahl der Probe jagdkreis läuft seine Jagden am Kreatur-Takt in eigener Null-Welt (headless 140 s am Farm-Lauf 98ef98bb), zugleich mit dem Wolfsrevier", mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 12,
@@ -2576,8 +2565,7 @@ const stationen = [
         kriterium: "affekt.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        mutiert: true,
-        probe: { sek: 45, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "wert", knapp(wertGang)] },
+        probe: { sek: 45, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "wert", knapp(wertGang)], mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -2933,9 +2921,7 @@ const stationen = [
         kriterium: "oekologie.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        ausnahme: "das Rudel umstellt den Spieler am echten Takt (~15 Spiel-s), 20 s Furcht und 5 s Triumph, dazu der Gegenlauf derselben Dauer — je Takt ein Bild",
-        mutiert: true,
-        probe: { sek: 90, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "rudel", knapp(rudelGefuehl)] },
+        probe: { sek: 90, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "rudel", knapp(rudelGefuehl)], ausnahme: "das Rudel umstellt den Spieler am echten Takt (~15 Spiel-s), 20 s Furcht und 5 s Triumph, dazu der Gegenlauf derselben Dauer — je Takt ein Bild", mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -2968,9 +2954,7 @@ const stationen = [
     // Das Schlupfloch Teleport fällt an sprungN, der Plan bit-gleich je Same. Ports: save-server {PORT}, Werkbank {PORT}+20000.
     // IN DER SITZUNG (29.10.): der Zwilling von mensch.K1#1 (BEWOHNER_SITZUNG) — EIN Lauf der Probe bewohner, das Urteil liest die
     // Zeile bewohner (die Platz-Zeile daneben liest es nicht)
-    ausnahme: BEWOHNER_AUSNAHME,
-    mutiert: true,
-    probe: BEWOHNER_SITZUNG,
+    probe: { ...BEWOHNER_SITZUNG, ausnahme: BEWOHNER_AUSNAHME, mutiert: true },
     gpu: true,
     zeit: false,
     minuten: 10,
@@ -3213,8 +3197,7 @@ const stationen = [
         geraet: "gtx",
         // IN DER SITZUNG (29.10.): 60 × 20 Schwarm-Takte und EIN gezählter Frame (Gegenlauf b3f9ae95: 0,04 min); die Bühne legt die
         // Schwarm-Karte neu und stellt das Fenster auf 1280×720 (mutiert) — beide Staffeln EIN Lauf (Zwillinge)
-        mutiert: true,
-        probe: { sek: 45, befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)] },
+        probe: { sek: 45, befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)], mutiert: true },
         gpu: true,
         zeit: true,
         minuten: 4,
@@ -3238,8 +3221,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // IN DER SITZUNG (29.10.): 60 × 20 Schwarm-Takte und EIN gezählter Frame (Gegenlauf b3f9ae95: 0,04 min); die Bühne legt die
         // Schwarm-Karte neu und stellt das Fenster auf 1280×720 (mutiert) — beide Staffeln EIN Lauf (Zwillinge)
-        mutiert: true,
-        probe: { sek: 45, befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)] },
+        probe: { sek: 45, befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)], mutiert: true },
         gpu: true,
         zeit: true,
         minuten: 4,
@@ -3274,8 +3256,6 @@ const stationen = [
     // ihm. Ports: save-server {PORT}, Werkbank {PORT}+20000.
     // IN DER SITZUNG (29.10.): die Probe begegnung des Spiels (das Start-Dorf wächst, vier Gänge zu 1,4 m/s, je Takt ein Bild) —
     // das Dorf und das geschlagene Wesen bleiben (mutiert)
-    ausnahme: "die Probe begegnung des Spiels: das Start-Dorf wächst am echten Takt, dann vier Gänge zu 1,4 m/s mit dem echten Frame je Takt",
-    mutiert: true,
     probe: { sek: 90, befehl: [
         "bash",
         "-c",
@@ -3284,7 +3264,7 @@ const stationen = [
             "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
             "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben begegnung",
         ].join("\n"),
-    ] },
+    ], ausnahme: "die Probe begegnung des Spiels: das Start-Dorf wächst am echten Takt, dann vier Gänge zu 1,4 m/s mit dem echten Frame je Takt", mutiert: true },
     gpu: true,
     zeit: false,
     minuten: 8,
