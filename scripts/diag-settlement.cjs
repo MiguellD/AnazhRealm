@@ -3,7 +3,17 @@
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
 // Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände.
 // --selftest: jede Wand feuert an injizierten Brüchen.
-const { statikServer, waitFor, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    waitFor,
+    ROOT: root,
+    hauptLauf,
+    nullSeite,
+    pruefer,
+    wandEnde,
+    selbsttestEnde,
+    studioKern,
+} = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -66,31 +76,47 @@ function rangZensus(FC, o = {}) {
 // gemittelt (Soll ≥ 0,8, die kleinste über Saaten und Paare). Die Epoche bestimmt Rolle, Bauart und Kleidung: jedes Baujahr
 // bis zum Schnitt (jahr + spanne), kein Turm vor 1905, keine Halle vor 1850, die Kultur aus der Historie ihres Baujahrs
 // (REGION_HIST; die Kirche trägt die Marke ihrer Epoche: vier Epochen, vier Kirchen), die Kleidung die Tracht der Epoche;
-// moderne ergibt stadt und trägt den Turm. `ohneErbe` (die Mutante): jede Epoche ein eigener Plan mit ihrer Zahl.
+// moderne ergibt stadt und trägt den Turm. `ohneErbe` (die Mutante): jede Epoche ein eigener Plan mit ihrer Zahl. `nH` (J3):
+// die Zelle der Welt trägt ihre Zahl (das Rang-Gesetz, „dorf 7 300") — bis w3w schaltete sie die Chronik ab, jede Zelle rechnete
+// die Mutante. DIE MAUER (J4): der Schnitt steht ummauert genau dann, wenn er städtisch vor MAUER_BIS steht, kein Haus in ihr.
 const JAHRESRINGE = ["mittelalter", "hanse", "gruenderzeit", "moderne"];
+// die Überdeckung je Slot: der Anteil der 3 × 3 Punkte jedes Grundrisses des älteren Plans, die ein Grundriss des jüngeren trägt
+const ueberdeckung = (FC, alt, jung) =>
+    ((d) => +(d.filter(Boolean).length / d.length).toFixed(3))(
+        alt.slots.flatMap(({ obb: b }) =>
+            [-1, 0, 1, -1, 0, 1, -1, 0, 1]
+                .map((u, i) => lokal(0, 0, -b.phi, u * b.ex, ((i / 3) | 0) * b.ez - b.ez))
+                .map(([x, z]) => jung.slots.some((t) => FC.distPunktOBB(b.cx + x, b.cz + z, t.obb) < 1e-6))
+        )
+    );
 function jahresringe(FC, o = {}) {
     const J = { paare: [], fehl: [] };
     for (const seed of o.saaten || [1, 2, 3, 5, 7, 11, 13, 17]) {
         const P = JAHRESRINGE.map((epoche) =>
-            (o.ex || FC.exportSettlement)({ seed, epoche, nH: o.ohneErbe && FC.DORF({ seed, epoche }).houses.length })
-        );
-        J.paare.push(
-            P.slice(1).map((jung, k) => {
-                const d = P[k].slots.flatMap(({ obb: b }) =>
-                    [-1, 0, 1, -1, 0, 1, -1, 0, 1]
-                        .map((u, i) => lokal(0, 0, -b.phi, u * b.ex, ((i / 3) | 0) * b.ez - b.ez))
-                        .map(([x, z]) => jung.slots.some((t) => FC.distPunktOBB(b.cx + x, b.cz + z, t.obb) < 1e-6))
-                );
-                return +(d.filter(Boolean).length / d.length).toFixed(3);
+            (o.ex || FC.exportSettlement)({
+                seed,
+                epoche,
+                nH: o.ohneErbe ? FC.DORF({ seed, epoche, nH: o.nH }).houses.length : o.nH,
             })
         );
+        J.paare.push(P.slice(1).map((jung, k) => ueberdeckung(FC, P[k], jung)));
         const kirchen = new Set(P.map((x) => x.slots.find((s) => s.rolle === "kirche")?.kultur)).size;
+        const heute = o.nH ? FC.DORF({ seed, epoche: "moderne", nH: o.nH }).groesse : "stadt";
         P.forEach((x, k) => {
             const fehl = (w) => J.fehl.push(`${seed}/${JAHRESRINGE[k]}: ${w}`);
             if (JSON.stringify(x.kleidung) !== JSON.stringify(FC.EPOCHEN[JAHRESRINGE[k]].tracht))
                 fehl(`Kleidung ${JSON.stringify(x.kleidung)}`);
-            if (k === 3 && (x.groesse !== "stadt" || kirchen < 4 || !x.slots.some((s) => s.rolle === "turm")))
+            if (k === 3 && (x.groesse !== heute || kirchen < 4 || !x.slots.some((s) => s.rolle === "turm")))
                 fehl(`${x.groesse}, ${kirchen} Kirchen`);
+            const quer = x.mauer?.segs.some((g) =>
+                x.slots.some((s) =>
+                    [0, 0.25, 0.5, 0.75, 1].some(
+                        (f) => FC.distPunktOBB(g.x0 + (g.x1 - g.x0) * f, g.z0 + (g.z1 - g.z0) * f, s.obb) < 1
+                    )
+                )
+            );
+            if (!!x.mauer !== (x.staedtisch && x.jahr < FC.MAUER_BIS) || quer)
+                fehl(`Mauer ${x.mauer ? (quer ? "durch ein Haus" : "zu viel") : "fehlt"} (${x.groesse} ${x.jahr})`);
             for (const s of x.slots)
                 if (
                     s.baujahr > x.jahr + x.spanne ||
@@ -104,6 +130,36 @@ function jahresringe(FC, o = {}) {
         });
     }
     return Object.assign(J, { min: Math.min(...J.paare.flat()) });
+}
+
+// ===== TEIL W (siedlung.K4 Staffel 2): DAS WACHSTUM — je Ort (Saat, Zahl) der Ort des Mittelalters über `WACHS_S` s Welt-Uhr in
+// Takten von 60 s (fachwerk `wachstum`, die Furcht tetrapoda `furchtErinnert`): er wächst bis zur Gegenwart seiner Gestalt, jeder
+// Plan des Gangs (je 10 min) liegt zu ≥ 0,8 im nächsten (die Jahresringe), der Gang in Takten ist der Gang am Stück. Aus
+// Bewohnern: ohne Wohlstand (wohl → 0), nach dreimal gesehener Gewalt (Furcht am Deckel) und ohne Leute wächst nichts.
+const WACHS_S = 3 * 3600;
+function wachstumsGang(FC, TC, o = {}) {
+    const [F, wf, W] = [TC.FURCHT_GESETZ, o.wachstum || FC.wachstum, { je: [], ringe: [], stueck: 0, halten: [] }];
+    const lauf = (C, Z, ak = [], t = WACHS_S) => wf(C, Z, ak, t, (a) => TC.furchtErinnert(a, F), F.deckel);
+    for (const [seed, nH] of o.orte || [[1], [2], [3], [5, 24], [7, 24], [11, 96]]) {
+        const ort = (jahr) => FC.exportSettlement({ seed, nH, epoche: "mittelalter", jahr });
+        const [x0, Z0] = ((x) => [x, { jahr: x.jahr + x.spanne, kraft: 0, uhr: 0 }])(ort());
+        const C = x0.chronik;
+        let [Z, P] = [Z0, x0];
+        for (let t = 60; t <= WACHS_S; t += 60) {
+            Z = lauf(C, Z, [], t);
+            if (t % 600 === 0 && Z.jahr !== Z0.jahr)
+                [P, W.ringe[W.ringe.length]] = ((x) => [x, ueberdeckung(FC, P, x)])(ort(Z.jahr));
+        }
+        W.stueck += JSON.stringify(lauf(C, Z0)) !== JSON.stringify(Z);
+        W.je.push(
+            `${seed}/${nH || "-"}: ${x0.slots.length} → ${P.slots.length} Häuser, Lose ${Z.lose}/${C.jahre.length}, ${Z.jahr}`
+        );
+        const gewalt = [1, 2, 3].map((t) => ({ t, type: "gewalt" }));
+        const mut = [[{ wohl: C.wohl.map(() => 0) }], [{}, gewalt], [{ leute: C.leute.map(() => 0) }]];
+        W.halten.push(mut.map(([c, ak]) => +(lauf({ ...C, ...c }, Z0, ak).jahr === Z0.jahr)));
+        W.ganz = (W.ganz ?? true) && Z.lose === C.jahre.length;
+    }
+    return Object.assign(W, { min: Math.min(...W.ringe), halt: W.halten.flat().every(Boolean) });
 }
 
 // DAS GASSEN-GEFÄLLE (siedlung.K3, rein): p95 in % von |Δ grund| / Länge über jeden Schritt ≥ 0,5 m jeder Gasse des Plans v2
@@ -1037,26 +1093,71 @@ hauptLauf(async () => {
             zs[0].gruen && !zs.slice(1).some((z) => z.gruen),
             zs.map((z) => `ZIPF ζ ${z.zeta} [${z.ki}] ${z.export}`).join(" · ")
         );
+        // V-W (siedlung.K4 Staffel 2): ein Zeitplan, der je 2 min Welt-Uhr ein Los setzt (ohne Bewohner), wächst auch ohne
+        // Wohlstand, in Furcht und ohne Leute — W2 nennt ihn
+        const zeitplan = (C, Z, ak, t) =>
+            ((m) => ({ jahr: Math.max(Z.jahr, C.jahre[m - 1]), kraft: 0, uhr: t, lose: m }))(
+                Math.min(C.jahre.length, 1 + Math.floor(t / 120))
+            );
+        const TC = studioKern("tetrapoda-core.js", "__tetrapodaCore");
+        const [Wg, Wz] = [{}, { wachstum: zeitplan }].map((o) => wachstumsGang(FC, TC, { ...o, orte: [[1]] }));
+        check("Selbst-Test W: das Gesetz hält ohne Bewohner, ein Zeitplan nicht (W2)", Wg.halt && !Wz.halt, Wz.halten);
         selbsttestEnde(errs);
         process.exit(0);
     }
 
     // Teil J urteilt über das Gesetz und seine Mutanten: ohne Erbe bricht die Überdeckung, der Turm von 1455 (bis K4 die
     // Ring-Stadt) und ein Export ohne Tracht fallen beim Namen
-    if (!process.argv.includes("--nur-z")) {
+    const nur = (t) => process.argv.includes("--nur-" + t);
+    if (!nur("z") && !nur("w")) {
         console.log("=== TEIL J: DIE JAHRESRINGE (siedlung.K4) ===");
         const mut = (dp) =>
-            ((x) => ({ ...x, kleidung: null, slots: [{ ...x.slots[1], rolle: "turm", baujahr: 1455 }] }))(
+            ((x) => ({ ...x, kleidung: null, mauer: null, slots: [{ ...x.slots[1], rolle: "turm", baujahr: 1455 }] }))(
                 FC.exportSettlement(dp)
             );
-        const [J, J0, Jm] = [{}, { ohneErbe: 1 }, { ex: mut, saaten: [5] }].map((o) => jahresringe(FC, o));
-        console.log("JAHRESRINGE " + JSON.stringify({ min: J.min, paare: J.paare, ohneErbe: J0.min, fehl: J.fehl }));
-        check(`J1 JAHRESRINGE ${J.min} (Soll ≥ 0,8; ohne Erbe ${J0.min})`, J.min >= 0.8 && J0.min < 0.8);
-        check(
-            `J2 EPOCHE: ${J.fehl.length} Brüche, die Mutante ${Jm.fehl.length}`,
-            !J.fehl.length && /turm \S+ 1455/.test(Jm.fehl) && /Kleidung null/.test(Jm.fehl)
+        const zahl = { nH: 96, saaten: [1, 2, 3, 5] };
+        const [J, J0, Jm, Jz, Jz0] = [
+            {},
+            { ohneErbe: 1 },
+            { ex: mut, saaten: [5] },
+            zahl,
+            { ...zahl, ohneErbe: 1 },
+        ].map((o) => jahresringe(FC, o));
+        const fehl = [...J.fehl, ...Jz.fehl];
+        console.log(
+            "JAHRESRINGE " +
+                JSON.stringify({
+                    min: J.min,
+                    paare: J.paare,
+                    ohneErbe: J0.min,
+                    fehl,
+                    zahl: { nH: 96, min: Jz.min, ohneErbe: Jz0.min },
+                })
         );
-        if (process.argv.includes("--nur-j")) wandEnde(errs, "DIE JAHRESRINGE STEHEN (Teil J).");
+        check(
+            `J1 JAHRESRINGE ${J.min}, mit der Zahl der Welt (nH 96) ${Jz.min} (Soll ≥ 0,8; ohne Erbe ${J0.min} · ${Jz0.min})`,
+            Math.min(J.min, Jz.min) >= 0.8 && Math.max(J0.min, Jz0.min) < 0.8
+        );
+        check(
+            `J2 EPOCHE: ${fehl.length} Brüche, die Mutante ${Jm.fehl.length}`,
+            !fehl.length &&
+                /turm \S+ 1455/.test(Jm.fehl) &&
+                /Kleidung null/.test(Jm.fehl) &&
+                /Mauer fehlt/.test(Jm.fehl),
+            fehl.slice(0, 6).join(" · ")
+        );
+        if (nur("j")) wandEnde(errs, "DIE JAHRESRINGE STEHEN (Teil J).");
+    }
+    if (!nur("z")) {
+        console.log("=== TEIL W: DAS WACHSTUM (siedlung.K4 Staffel 2) ===");
+        const W = wachstumsGang(FC, studioKern("tetrapoda-core.js", "__tetrapodaCore"));
+        console.log("WACHSTUM " + JSON.stringify(W));
+        check(
+            `W1 WACHSTUM in ${WACHS_S / 3600} h Welt-Uhr bis zur Gegenwart: ${W.je.join(" · ")}; Jahresringe des Gangs ${W.min} (Soll ≥ 0,8), Takte ≠ am Stück ${W.stueck}`,
+            W.ganz && W.min >= 0.8 && !W.stueck
+        );
+        check(`W2 AUS BEWOHNERN: wohl → 0 · Gewalt × 3 · ohne Leute halten den Ort (${W.halten.join(" ")})`, W.halt);
+        if (nur("w")) wandEnde(errs, "DER ORT WÄCHST AUS SEINEN BEWOHNERN (Teil W).");
     }
 
     console.log("=== TEIL Z: DAS RANG-GESETZ (siedlung.K2) ===");
