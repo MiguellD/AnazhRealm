@@ -2073,7 +2073,16 @@
         // Paar-Raum raumM auseinander (schwarmSeparation, über ein Hash-Gitter der Zelle raumM: Kosten an den Gliedern, nie n²);
         // fern trägt das Zentrum die Formation in seinem Kurs-Rahmen; jenseits von sichtM rechnet nur das Zentrum; das Revier einer Zelle folgt der
         // Deckung je frischeS Sekunden der Welt-Uhr (gepflanzter Wald vertreibt den Schwarm). Bei Tag (sonneMin) und unter
-        // regenMax fliegt er, sonst ruht er (kein Glied im Bild). Der Leib ist der des Singvogels (leib).
+        // regenMax fliegt er, sonst ruht er (kein Glied im Bild). Der Leib ist der des Singvogels (leib). DAS LEITTIER
+        // (luftwasser.K2 Staffel 2, 29.10., additiv): das Zentrum trägt Ereignisse (schwarmLeittier) — der Spieler näher als
+        // fluchtM (die Flucht-Distanz des Schwarms; Stare im Trupp fliegen auf 15–40 m auf, Fernández-Juricic et al. 2002)
+        // scheucht es auf, es flieht im Tempo fluchtMs (Sturnus vulgaris bis 20 m/s), wendet mit wendeRad, steigt mit steigMs
+        // und hält bodenM über dem Grund; die Flucht endet fluchtWegJeRadius Flucht-Radien jenseits des Radius (FURCHT_GESETZ,
+        // dieselbe Zahl wie die Herde) — dort ist Ruhe, und es landet auf der nächsten Krone der Welt binnen kroneSuchM (die
+        // Kronen-Karte des Wirts, ihr Scheitel aus der Sichthöhe des Baums), im Anflug anflugMs, binnen bremsM langsamer, im
+        // Gleitpfad gleit (m Höhe je m Weg) und binnen landM senkrecht; es sitzt sitzS (je Schwarm sein Wurf) und kehrt dann im
+        // Tempo fluchtMs zum Zentrum der Uhr zurück (fangM). Die Glieder sitzen auf der Kuppel der Krone bis sitzAnteil ×
+        // Radius (schwarmSitz). Über dtMax ohne Takt (fern, Pause) gilt wieder die Uhr.
         schwarm: Object.freeze({
             zelleM: 480,
             anteil: 0.5,
@@ -2092,6 +2101,22 @@
             gleitHz: 0.45,
             raumM: 1.0,
             verband: Object.freeze({ rauschRad: 1.2, eigen: 0.5, hz: [0.13, 0.31], dtMax: 0.25 }),
+            leittier: Object.freeze({
+                fluchtM: 30,
+                fluchtMs: 19,
+                wendeRad: 2,
+                steigMs: 4,
+                bodenM: 3,
+                kroneSuchM: 250,
+                anflugMs: 9,
+                bremsM: 15,
+                gleit: 0.5,
+                landM: 1,
+                sitzS: [40, 90],
+                sitzAnteil: 0.7,
+                fangM: 8,
+                dtMax: 1,
+            }),
             nahM: 60,
             sichtM: 320,
             sonneMin: 0.05,
@@ -2236,8 +2261,9 @@
     // DER WUNSCH DES GLIEDS i im Verband (VOGEL_GESETZ.schwarm.verband) zur Zeit t: der Kurs gier des Zentrums im Tempo tempoMs,
     // gedreht um rauschRad × (eigen × seine Vorliebe + (1 − eigen) × sein Rauschen) — die Vorliebe ein fester Wurf des Index in
     // [−1, 1], das Rauschen zwei Sinus der Frequenzen hz mit der Phase des Index. Ohne den Verband zerstreut die Vorliebe den
-    // Schwarm; Ausrichtung und Zusammenhalt hält allein verbandZug. Schreibt out {x, z} (Welt-XZ, m/s).
-    function schwarmWunsch(i, t, gier, V, out) {
+    // Schwarm; Ausrichtung und Zusammenhalt hält allein verbandZug. tempo (optional, additiv) = das Tempo des Leittiers in
+    // diesem Takt (die Flucht, der Anflug), ohne es tempoMs. Schreibt out {x, z} (Welt-XZ, m/s).
+    function schwarmWunsch(i, t, gier, V, out, tempo) {
         var S = V.schwarm,
             W = S.verband,
             TAU = 6.283185307179586;
@@ -2245,8 +2271,113 @@
             b = 2 * ((0.5 + i * 0.5698402909980532) % 1) - 1;
         var r = 0.6 * Math.sin(TAU * W.hz[0] * t + psi) + 0.4 * Math.sin(TAU * W.hz[1] * t + 3 * psi);
         var th = gier + W.rauschRad * (W.eigen * b + (1 - W.eigen) * r);
-        out.x = S.tempoMs * Math.sin(th);
-        out.z = S.tempoMs * Math.cos(th);
+        var v = tempo >= 0 ? tempo : S.tempoMs;
+        out.x = v * Math.sin(th);
+        out.z = v * Math.cos(th);
+        return out;
+    }
+    // DAS LEITTIER DES SCHWARMS (VOGEL_GESETZ.schwarm.leittier): ein Schritt dt (s) seines Zustands L {modus, x, y, z (Welt),
+    // gier (rad, Blick +z), tempo (m/s), bis, krone} zur Uhr t. s = der Spieler {x, y, z}, ziel = das Zentrum der Uhr {x, y, z,
+    // gier} (schwarmZentrum, in Welt), boden = die 2D-Höhe unter dem Leittier, w = die Würfe des Schwarms. Die Modi: zieht (es
+    // IST das Zentrum der Uhr — jeder Peer sieht denselben Schwarm), flieht, sucht (der Wirt nennt die Krone L.krone {x, y (ihr
+    // Scheitel), z, r} und setzt landet, ohne Krone kehrt), landet, sitzt, kehrt. Die Ereignisse: der Spieler näher als fluchtM
+    // scheucht es aus jedem Modus auf; die Flucht endet bei L.ruheM = fluchtM × (1 + fluchtWegJeRadius) (die Ruhe); der Anflug
+    // endet auf dem Scheitel (sitzt bis t + sitzS, Wurf w[0]); der Sitz endet nach sitzS (kehrt), die Rückkehr am Zentrum
+    // (fangM). Liefert L.
+    function schwarmLeittier(L, t, dt, s, ziel, boden, w, V) {
+        var S = V.schwarm,
+            E = S.leittier,
+            TAU = 6.283185307179586;
+        if (L.modus === "zieht") {
+            L.x = ziel.x;
+            L.y = ziel.y;
+            L.z = ziel.z;
+            L.gier = ziel.gier;
+            L.tempo = S.tempoMs;
+        }
+        L.ruheM = E.fluchtM * (1 + FURCHT_GESETZ.fluchtWegJeRadius);
+        var d = Math.sqrt((L.x - s.x) * (L.x - s.x) + (L.y - s.y) * (L.y - s.y) + (L.z - s.z) * (L.z - s.z));
+        if (d < E.fluchtM && L.modus !== "flieht") {
+            L.modus = "flieht";
+            L.krone = null;
+        }
+        if (L.modus === "flieht" && !(d < L.ruheM)) L.modus = "sucht";
+        if (L.modus === "sitzt" && t >= L.bis) L.modus = "kehrt";
+        if (L.modus === "zieht" || L.modus === "sucht" || L.modus === "sitzt") {
+            if (L.modus === "sitzt") L.tempo = 0;
+            return L;
+        }
+        var K = L.krone,
+            kurs,
+            tempo,
+            hoch;
+        if (L.modus === "flieht") {
+            kurs = Math.atan2(L.x - s.x, L.z - s.z);
+            tempo = E.fluchtMs;
+            hoch = boden + S.hoeheM[1];
+        } else if (L.modus === "landet") {
+            var kx = K.x - L.x,
+                kz = K.z - L.z,
+                k = Math.sqrt(kx * kx + kz * kz);
+            if (k <= E.landM) {
+                // senkrecht auf den Scheitel
+                L.x = K.x;
+                L.z = K.z;
+                L.tempo = 0;
+                var dy = K.y - L.y,
+                    m = E.steigMs * dt;
+                L.y = Math.abs(dy) <= m ? K.y : L.y + (dy > 0 ? m : -m);
+                if (L.y === K.y) {
+                    L.modus = "sitzt";
+                    L.bis = t + E.sitzS[0] + (E.sitzS[1] - E.sitzS[0]) * w[0];
+                }
+                return L;
+            }
+            kurs = Math.atan2(kx, kz);
+            tempo = E.anflugMs * Math.min(1, k / E.bremsM);
+            hoch = K.y + E.gleit * k;
+        } else {
+            var zx = ziel.x - L.x,
+                zy = ziel.y - L.y,
+                zz = ziel.z - L.z;
+            if (Math.sqrt(zx * zx + zy * zy + zz * zz) <= E.fangM) {
+                L.modus = "zieht";
+                L.krone = null;
+                L.x = ziel.x;
+                L.y = ziel.y;
+                L.z = ziel.z;
+                L.gier = ziel.gier;
+                L.tempo = S.tempoMs;
+                return L;
+            }
+            kurs = Math.atan2(zx, zz);
+            tempo = E.fluchtMs;
+            hoch = ziel.y;
+        }
+        var dg = kurs - L.gier;
+        dg -= TAU * Math.round(dg / TAU);
+        var wende = E.wendeRad * dt;
+        L.gier += dg > wende ? wende : dg < -wende ? -wende : dg;
+        L.tempo = tempo;
+        L.x += Math.sin(L.gier) * tempo * dt;
+        L.z += Math.cos(L.gier) * tempo * dt;
+        var steig = E.steigMs * dt,
+            h = hoch - L.y;
+        L.y += h > steig ? steig : h < -steig ? -steig : h;
+        if (L.y < boden + E.bodenM) L.y = boden + E.bodenM;
+        return L;
+    }
+    // DER SITZ DES GLIEDS i von n auf der Krone vom Radius r (m, die Kronen-Karte): eine Sonnenblumen-Scheibe (Goldwinkel) bis
+    // sitzAnteil × r um die Mitte, auf der Kuppel der Krone (die Kugel ihres Radius unter dem Scheitel), jedes mit seinem Blick.
+    // Schreibt out {x, y, z (vom Scheitel, m), gier}.
+    function schwarmSitz(i, n, r, V, out) {
+        var E = V.schwarm.leittier;
+        var d = E.sitzAnteil * r * Math.sqrt((i + 0.5) / n),
+            a = i * 2.399963229728653;
+        out.x = d * Math.cos(a);
+        out.z = d * Math.sin(a);
+        out.y = Math.sqrt(Math.max(0, r * r - d * d)) - r;
+        out.gier = 6.283185307179586 * ((i * 0.6180339887498949) % 1);
         return out;
     }
     // DIE SEPARATION DES NAHEN SCHWARMS: p = die Lagen der n Glieder (x, y, z je Glied, Welt), raum = der Paar-Raum (m),
@@ -3788,6 +3919,8 @@
         schwarmZentrum: schwarmZentrum,
         schwarmGlied: schwarmGlied,
         schwarmWunsch: schwarmWunsch,
+        schwarmLeittier: schwarmLeittier,
+        schwarmSitz: schwarmSitz,
         schwarmSeparation: schwarmSeparation,
         TIER_MATERIAL_KLASSEN: TIER_MATERIAL_KLASSEN,
         FELL_LOOK: FELL_LOOK,

@@ -49,7 +49,7 @@
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]          Port: WERK_WASSER_PORT (Standard 4643)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -2348,10 +2348,7 @@ async function weltOrte(A) {
     return out;
 }
 
-function argListe(name) {
-    const i = process.argv.indexOf(name);
-    return i >= 0 && process.argv[i + 1] ? process.argv[i + 1].split(",") : null;
-}
+const argListe = (name, w = argOpt(name)) => (w ? w.split(",") : null);
 
 async function lauf() {
     const PORT = Number(process.env.WERK_WASSER_PORT || 4643);

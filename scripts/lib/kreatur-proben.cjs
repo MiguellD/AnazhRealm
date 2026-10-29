@@ -79,6 +79,14 @@ async function kreaturProben(r, T, opts) {
                 }
             }
             for (const c of s.creatures.slice()) r.removeCreature(c);
+            // DIE WELT KEHRT MIT DEM SPIELER HEIM: ließ die Probe die Welt fern takten (der Baum des Schwarms 526 m fort,
+            // `__gebautNach`), streamt sie dort (Chunks, Streu, Wald) — die nächste Probe stünde mit ihren Tieren am Ort des
+            // Spielers in einer Welt um den fremden Ort (jagdkreis nach dem Leittier: 1 von 42 Jagden ohne Ende, allein 0).
+            // Steht der Strom in einem anderen Chunk als der Spieler, steht die Welt um ihn neu auf, ehe ihre Tiere zurückkehren.
+            pm.copy(P0);
+            const [{ span }, pc] = [r._voxelChunkConfig(), s.lastPlayerVoxelChunk];
+            if (pc && (pc.cx !== Math.floor(P0.x / span) || pc.cz !== Math.floor(P0.z / span)))
+                await window.__weltStehtNach();
             s.creatures = altK;
             s.creatureEmotions = altE;
             s.maxCreatures = altMax;
@@ -1026,24 +1034,37 @@ async function kreaturProben(r, T, opts) {
         };
     });
 
-    // ── schwarm (luftwasser.K2): der Vogel-Schwarm fliegt aus dem Verband der Herde (`_schwarmVerband`, tetrapoda verbandZug).
-    // Mittag und Sonne als Wort des Reglers; die Schwarm-Karte frisch, die Zelle unter dem Auge trägt den festen Schwarm von
-    // 100 Gliedern, jede andere keinen; je Takt des Spiels (`_vogelTakt`, 60 Hz, 60 s) steht das Auge 40 m quer zum Kurs des
-    // Zentrums (nah) mit dem Blick auf es. Gemessen an den Lagen, die der Takt zeichnet, ab 10 s: die Ausrichtung Φ = |Σv̂|/N
-    // (v aus dem Weg je Takt, wie die Herde), die Kohäsion = der Anteil der Glieder im größten Verbund, Glied zu Glied binnen
-    // fensterRaum × Paar-Raum (raumM) — die Zahl der Herde (binnen fensterRaum Paar-Räumen vom Mittel) trägt fünf Leiber,
-    // hundert Glieder füllen einen Ball weiter als das Fenster; je Takt die Züge des Verbands je Glied durch DIE Funktion
-    // der Herde (`verbandZug`). Die Täter: der Verband aus (der Zug gibt den Wunsch zurück) und der Zwilling (eine Kopie des
-    // Zugs, nicht die Funktion der Herde) ──
+    // ── schwarm (luftwasser.K2): der Vogel-Schwarm fliegt aus dem Verband der Herde (`_schwarmVerband`, tetrapoda verbandZug),
+    // sein Leittier trägt Ereignisse (`_schwarmLeittier`, tetrapoda schwarmLeittier). Mittag und Sonne als Wort des Reglers; die
+    // Schwarm-Karte frisch, die Zelle unter dem Auge trägt den festen Schwarm von 100 Gliedern (der tiefste, der weiteste Kreis),
+    // jede andere keinen; je Takt des Spiels (`_vogelTakt`, 60 Hz) blickt das Auge auf das Leittier. I (Staffel 1, 60 s): das Auge
+    // steht 40 m quer zum Kurs des Zentrums (nah, jenseits der Flucht-Distanz). Gemessen an den Lagen, die der Takt zeichnet, ab
+    // 10 s: die Ausrichtung Φ = |Σv̂|/N (v aus dem Weg je Takt, wie die Herde), die Kohäsion = der Anteil der Glieder im größten
+    // Verbund, Glied zu Glied binnen fensterRaum × Paar-Raum (raumM) — die Zahl der Herde (binnen fensterRaum Paar-Räumen vom
+    // Mittel) trägt fünf Leiber, hundert Glieder füllen einen Ball weiter als das Fenster; je Takt die Züge des Verbands je Glied
+    // durch DIE Funktion der Herde (`verbandZug`). II (Staffel 2): ein Baum an der Mitte des Kreises (im Bild gebaut, das EINE
+    // Warten auf den Bau) — jede Krone der Welt daneben zählt; der Spieler geht dem Leittier mit 5 m/s entgegen, bis es
+    // auffliegt, dann steht er. Gemessen: der Abstand des Pulks (Mittel der Glieder) zum Spieler beim Auffliegen und in der Ruhe,
+    // der Anteil der Glieder, die sich dabei ≥ 20 m entfernen, sein größter Verbund im Flug; dann die Landung — die Höhe des
+    // Leittiers gegen den Scheitel aus der Quelle, die den Baum baut (der Eintrag: sein Fuß + `_lodTreeVisHeight`, die
+    // Streu-Zelle: ihr Fuß + `_scatterSichtHoehe`), jedes Glied auf der Krone (binnen Radius, unter dem Scheitel). Die Täter:
+    // der Verband aus (der Zug gibt den Wunsch zurück), der Zwilling (eine Kopie des Zugs, nicht die Funktion der Herde), das
+    // Leittier als Funktion der Uhr ohne Ereignis, die Landung auf einer zweiten Höhe (der Boden + die Kronen-Höhe des Singflugs) ──
     await buehne("schwarm", async (restore) => {
         const [K, VG, tag0, wetter0] = [A._steuerGesetz(), A._vogelGesetz(), s.timeOfDay, s.weather];
-        const [zug, S] = [K.verbandZug, VG.V.schwarm];
+        const [zug, S, H] = [K.verbandZug, VG.V.schwarm, (x, z) => r._terrainMacroSurfaceY(x, z)];
         let zuege = 0;
         K.verbandZug = function (x, z, vx, vz, tempo, raum, gl, H, out) {
             zuege += taeter !== "schwarm-zwilling";
             return taeter === "schwarm-verband" ? Object.assign(out, { x: vx, z: vz }) : zug.apply(this, arguments);
         };
-        restore.push(() => ((K.verbandZug = zug), r._uhrSetzen(tag0, "regler"), r._setWeather(wetter0, "regler")));
+        restore.push(() => ((K.verbandZug = zug), (r._schwarmKarte = null), r._uhrSetzen(tag0, "regler"), r._setWeather(wetter0, "regler"))); // prettier-ignore
+        if (taeter === "leittier-uhr")
+            decke("_schwarmLeittier", () => function (c, zt) {
+                const [x, z] = [c.x + zt.dx, c.z + zt.dz];
+                return (c.leit = { modus: "zieht", x, y: H(x, z) + zt.h, z, gier: zt.gier });
+            });
+        if (taeter === "leittier-hoehe") decke("_kronenOben", () => (c) => H(c[0], c[1]) + VG.V.flug.kroneM);
         r._uhrSetzen(0.5, "regler");
         r._setWeather("sunny", "regler");
         const fenster = A._verhaltenGesetz().herde.fensterRaum * S.raumM;
@@ -1052,51 +1073,91 @@ async function kreaturProben(r, T, opts) {
         r._vogelSchwarmTakt(sonne, regen);
         const sk = r._schwarmKarte;
         const c = sk.zellen.get(Math.floor(pm.x / S.zelleM) * 1048576 + Math.floor(pm.z / S.zelleM));
-        c.wurf[4] = (100 - S.glieder[0]) / (S.glieder[1] - S.glieder[0]);
-        const [zt, t] = [{}, { takte: 0, phi: 0, k: [], zuege: 0 }];
-        for (let k = 0, alt; k < 3600; k++, s.spielZeit += 1 / 60) {
+        [c.wurf[1], c.wurf[3], c.wurf[4]] = [1, 0, (100 - S.glieder[0]) / (S.glieder[1] - S.glieder[0])];
+        const [zt, t, leit] = [{}, { takte: 0, phi: 0, k: [], zuege: 0 }, () => c.leit || {}];
+        const glieder = () => sk.voegel.map((v) => [v.x, v.y, v.z]);
+        // der größte Verbund: wer Glied zu Glied binnen `fenster` vom ersten Glied eines Verbunds erreichbar ist
+        const verbund = (L, gross = 0) => {
+            for (const frei = new Set(L.keys()); frei.size; ) {
+                const kette = [frei.values().next().value];
+                for (const a of kette)
+                    for (const b of (frei.delete(a), frei))
+                        if (Math.hypot(...L[b].map((v, e) => v - L[a][e])) <= fenster) (frei.delete(b), kette.push(b));
+                gross = Math.max(gross, kette.length);
+            }
+            return gross / zt.n;
+        };
+        // DER TAKT: die Uhr, das Revier, der Spieler (`spieler(x, z)` am Zentrum der Uhr), das Auge auf das Leittier; liefert
+        // die Züge des Verbands je Glied
+        const takt = (spieler) => {
+            s.spielZeit += 1 / 60;
             for (const q of sk.zellen.values()) [q.revier, q.frisch] = [q === c, s.spielZeit];
             VG.schwarmZentrum(c.wurf, s.spielZeit, sonne, regen, VG.V, zt);
             const [x, z] = [c.x + zt.dx, c.z + zt.dz];
-            pm.set(x + Math.cos(zt.gier) * 40, 0, z - Math.sin(zt.gier) * 40);
-            pm.y = r.getTerrainHeightAt(pm.x, pm.z);
-            kamera(x - pm.x, z - pm.z, r._terrainMacroSurfaceY(x, z) + zt.h - pm.y - 1.6);
+            const L = leit().x === undefined ? { x, y: H(x, z) + zt.h, z } : leit();
+            spieler(x, z);
+            pm.y = H(pm.x, pm.z);
+            kamera(L.x - pm.x, L.z - pm.z, L.y - pm.y - 1.6);
             const z0 = zuege;
             r._vogelTakt();
-            const L = sk.voegel.map((v) => [v.x, v.y, v.z]);
+            return (zuege - z0) / zt.n;
+        };
+        for (let k = 0, alt; k < 3600; k++) {
+            const n = takt((x, z) => pm.set(x + Math.cos(zt.gier) * 40, 0, z - Math.sin(zt.gier) * 40));
+            const L = glieder();
             if (k >= 600 && L.length === zt.n && alt.length === zt.n) {
                 const d = L.map((p, i) => [p[0] - alt[i][0], p[2] - alt[i][2]].map((v, e, a) => v / Math.hypot(...a)));
                 t.phi += Math.hypot(...[0, 1].map((e) => d.reduce((m, v) => m + v[e], 0))) / zt.n;
-                t.zuege += (zuege - z0) / zt.n;
-                t.takte++;
-                // der größte Verbund: wer Glied zu Glied binnen `fenster` vom ersten Glied eines Verbunds erreichbar ist
-                for (let frei = new Set(L.keys()), gross = 0; k % 6 === 0 && frei.size;) {
-                    const kette = [frei.values().next().value];
-                    for (const a of kette) {
-                        frei.delete(a);
-                        for (const b of frei)
-                            if (Math.hypot(...L[b].map((v, e) => v - L[a][e])) <= fenster)
-                                (frei.delete(b), kette.push(b));
-                    }
-                    gross = Math.max(gross, kette.length);
-                    if (!frei.size) t.k.push(gross / zt.n);
-                }
+                [t.zuege, t.takte] = [t.zuege + n, t.takte + 1];
+                if (k % 6 === 0) t.k.push(verbund(L));
             }
             alt = L;
         }
         const zahl = (v, n = t.takte) => +(v / n).toFixed(3);
-        return {
-            glieder: zt.n,
-            takte: t.takte,
-            fensterM: fenster,
-            phi: zahl(t.phi),
-            kohaesion: zahl(
-                t.k.reduce((m, v) => m + v),
-                t.k.length
-            ),
-            kohaesionMin: Math.min(...t.k),
-            zuegeJeGlied: zahl(t.zuege),
-        };
+        const aus = { glieder: zt.n, takte: t.takte, fensterM: fenster, phi: zahl(t.phi), kohaesion: zahl(t.k.reduce((m, v) => m + v), t.k.length), kohaesionMin: Math.min(...t.k), zuegeJeGlied: zahl(t.zuege), fluchtM: S.leittier.fluchtM }; // prettier-ignore
+        // II: der Baum an der Mitte des Kreises, im Bild gebaut (der Spieler bei ihm); dann geht der Spieler von dort, wo das
+        // Zentrum in 8 s fliegt, dem Leittier mit 5 m/s entgegen, bis es auffliegt, und steht
+        pm.set(c.x, H(c.x, c.z) + 0.5, c.z);
+        const baum = r.spawnArchitecture("baum_eiche", { x: c.x, y: pm.y, z: c.z }, { silent: true });
+        restore.push(() => r.removeArchitecture(baum, { still: true }));
+        await window.__gebautNach(baum, { fertig: () => r._archIsRendered(baum) && r._lodTreeVisHeight(baum) > 0 });
+        VG.schwarmZentrum(c.wurf, s.spielZeit + 8, sonne, regen, VG.V, zt);
+        pm.set(c.x + zt.dx, 0, c.z + zt.dz);
+        const [F, Ld, kf] = [(aus.flucht = {}), (aus.landung = {}), []];
+        const ab = (p) => Math.hypot(p[0] - pm.x, p[1] - pm.y, p[2] - pm.z);
+        const mitte = (G) => [0, 1, 2].map((e) => G.reduce((m, p) => m + p[e], 0) / G.length);
+        for (let k = 0, M0; k < 6000 && Ld.nachS === undefined; k++) {
+            const [L, d] = [leit(), Math.hypot(leit().x - pm.x, leit().z - pm.z)];
+            takt(() => M0 || !(d > 1) || pm.set(pm.x + ((L.x - pm.x) / d) * (5 / 60), 0, pm.z + ((L.z - pm.z) / d) * (5 / 60))); // prettier-ignore
+            const [m, G] = [leit().modus, glieder()];
+            if (m === "flieht") [M0, F.ausloesS] = M0 ? [M0, F.ausloesS] : [G, k / 60];
+            if (m === "flieht" && k % 6 === 0) kf.push(verbund(G));
+            if (m !== "flieht" && M0 && F.ruheM === undefined)
+                Object.assign(F, {
+                    abstandM: +ab(mitte(M0)).toFixed(1),
+                    ruheM: +ab(mitte(G)).toFixed(1),
+                    wegAnteil: +(M0.filter((p, i) => G[i] && ab(G[i]) - ab(p) >= 20).length / zt.n).toFixed(3),
+                    kohaesion: +Math.min(...kf).toFixed(3),
+                });
+            if (m === "sitzt") Ld.nachS = k / 60;
+        }
+        Ld.modus = leit().modus;
+        if (Ld.nachS === undefined) return aus;
+        takt(() => {});
+        // der Scheitel aus der Quelle, die den Baum baut: der Eintrag „a:<id>" (sein Fuß + Sichthöhe) oder die Streu-Zelle
+        // „s:<Schicht>:<x>,<z>" (ihr Fuß + `_scatterSichtHoehe`)
+        const [Kr, G] = [leit().krone, glieder()];
+        const [art, schicht, zelle] = Kr.schluessel.split(":");
+        const q = art === "a" ? s.architectures.find((e) => "a:" + e.id === Kr.schluessel) : [...s.scatterRegions.values()].flatMap((g) => g.cells).find((q) => q.layer === schicht && q.cellX + "," + q.cellZ === zelle); // prettier-ignore
+        const oben = q.position ? q.position.y + r._lodTreeVisHeight(q) : q.fuss.y + r._scatterSichtHoehe(A.SCATTER.layers.find((l) => l.name === schicht), q.species, q.cellX, q.cellZ, q.variantIndex, q); // prettier-ignore
+        Object.assign(Ld, {
+            krone: Kr.schluessel,
+            scheitelM: +oben.toFixed(3),
+            dyM: +Math.abs(leit().y - oben).toFixed(3),
+            radiusM: Kr.r,
+            aufKrone: +(G.filter((p) => Math.hypot(p[0] - Kr.x, p[2] - Kr.z) <= Kr.r && p[1] <= oben + 0.05 && p[1] >= oben - Kr.r).length / zt.n).toFixed(3), // prettier-ignore
+        });
+        return aus;
     });
 
     // ── reload: ein verwundetes Tier kehrt verwundet und mit seiner Gier zurück ──
@@ -3357,6 +3418,7 @@ function urteil(name, z) {
         soll(!I.length, `Verbands-ID bricht nach ${I[0]} s: Verband ${I[1]} liest ${I[2]} Leiber`);
     }
     if (name === "schwarm") {
+        const [F, Ld] = [z.flucht || {}, z.landung || {}];
         soll(z.glieder >= 60 && z.takte >= 3000, `Probe vakuös: ${z.glieder} Glieder, ${z.takte} Takte`);
         soll(z.zuegeJeGlied >= 0.99, `Schwarm ohne Verband: ${z.zuegeJeGlied} Züge je Glied und Takt (Soll 1)`);
         soll(z.phi >= 0.8, `Schwarm fliegt ungerichtet: Φ ${z.phi} (Soll ≥ 0,8)`);
@@ -3364,6 +3426,14 @@ function urteil(name, z) {
             z.kohaesion >= 0.9,
             `Schwarm zerfällt: ${z.kohaesion} im größten Verbund, Glied zu Glied ≤ ${z.fensterM} m (Soll ≥ 0,9; min ${z.kohaesionMin})`
         );
+        // Staffel 2: die Flucht als EIN Pulk, die Landung auf dem Scheitel der Krone
+        soll(F.ausloesS != null, `Leittier ohne Ereignis: der Pulk flieht nie vor dem Spieler (30 s im Gang auf ihn zu)`);
+        soll(!(F.ruheM - F.abstandM < 40), `der Pulk flieht nicht: Abstand ${F.abstandM} → ${F.ruheM} m (Soll + 40 m)`);
+        soll(!(F.wegAnteil < 0.95), `kein Pulk: ${F.wegAnteil} der Glieder fliehen ≥ 20 m mit (Soll ≥ 0,95)`);
+        soll(!(F.kohaesion < 0.9 || F.kohaesion > 1), `der Pulk zerfällt auf der Flucht: ${F.kohaesion} im größten Verbund (Soll ≥ 0,9)`); // prettier-ignore
+        soll(F.ausloesS == null || Ld.nachS != null, `der Pulk landet nie in der Ruhe (Modus ${Ld.modus} nach 60 s)`);
+        soll(!(Ld.dyM > 0.25), `landet neben dem Scheitel: ${Ld.dyM} m über dem Scheitel aus der Sichthöhe ${Ld.scheitelM} m (${Ld.krone}, Soll ± 0,25 m)`); // prettier-ignore
+        soll(!(Ld.aufKrone < 0.99), `${Ld.aufKrone} der Glieder sitzen auf der Krone (Radius ${Ld.radiusM} m, Soll ≥ 0,99)`);
     }
     if (name === "reload") {
         soll(Math.abs(z.hpNach - z.hpVor) < 0.01, `hp vor dem Reload ${z.hpVor}, danach ${z.hpNach} (geheilt)`);
@@ -3616,6 +3686,8 @@ const TAETER = {
     schwarm: [
         ["schwarm-verband", /Schwarm zerfällt/],
         ["schwarm-zwilling", /Schwarm ohne Verband: 0 Züge/],
+        ["leittier-uhr", /Leittier ohne Ereignis: der Pulk flieht nie/],
+        ["leittier-hoehe", /landet neben dem Scheitel/],
     ],
     peer: [["peer", /Sicht-Kopie/]],
     zufall: [["zufall", /Math\.random im Kreatur-Leben: _pickCreatureName/]],
