@@ -224,7 +224,8 @@ function fahrtUrteil(stationen) {
         const f = fahrtSumme(stationen, g);
         if (f.summe <= FAHRT_MAX_S) return [];
         return [g + ": die Fahrt " + f.summe + " s über " + FAHRT_MAX_S + " s (Σ Deckel " + f.deckel + " s in " + f.je.length + " Läufen + Boot " + f.boot +
-            " s) — die größten: " + f.je.slice(0, 3).map(([n, s]) => n + " " + s + " s").join(", ")];
+            " s) — die größten: " + f.je.slice(0, 3).map(([n, s]) => n + " " + s + " s").join(", ") +
+            ((n) => (n > 3 ? " (" + n + " Läufe am Deckel " + f.je[0][1] + " s)" : ""))(f.je.filter((x) => x[1] === f.je[0][1]).length)];
     });
 }
 
@@ -597,10 +598,11 @@ async function baumSperre(repo, geraet) {
 // DIE SITZUNG (29.10.; der Schöpfer: „eine Messung eines Teilsystems über 10 min heißt, man besichtigt fast alle Funktionen — die Welt
 // ist in Sekunden geladen“): je Gerät und SHA EINE Welt — save-server {PORT} und `werkbank start --echt` {PORT}+20000 im Spiel-Baum
 // des Geräts, gehalten vom Halter (`punkte.cjs halter`) unter dem GANZEN Schloss (gpu-lauf.sh, zeit, die CI-Ruhe einmal) — und darin
-// jede Station mit `probe` der Reihe nach. Vor jeder Probe außer der ersten die GRUNDSTELLUNG: Spielstand weg (localStorage, die
+// jede Station mit `probe` in der Reihe sitzungsReihe. Nach einer mutierenden Probe oder einem Abbruch die GRUNDSTELLUNG (sonst nie —
+// Eichlauf Radeon b3f9ae95 29.10.: je Grundstellung 1,1–4,2 s, die nächste Probe baut ihren Ring neu): Spielstand weg (localStorage, die
 // Welten der IndexedDB „anazhRealm“, die Stand-Dateien des save-servers), die Seite neu im warmen Browser (`/reload`; Asset-, Chunk-
-// und Shader-Cache bleiben), das Fenster 1920×1080 wie beim Start — jede Probe beginnt in einer frisch geborenen Welt wie früher jeder Boot, und eine gescheiterte Probe
-// hinterlässt nichts. Die Sitzung startet nie neu: trägt die Welt nicht mehr (Grundstellung scheitert), sind die übrigen Proben
+// und Shader-Cache bleiben), das Fenster 1920×1080 wie beim Start — die Probe nach einer mutierenden beginnt in einer frisch geborenen
+// Welt, eine gescheiterte hinterlässt nichts; zwischen Proben, die die Welt lassen, nur das Fenster und das Lebenszeichen (`/fenster`). Die Sitzung startet nie neu: trägt die Welt nicht mehr (Grundstellung scheitert), sind die übrigen Proben
 // ungemessen beim Grund, nie ROT. Bis dahin fuhr jede Station ihren eigenen Boot (Takt 19: 282 min Schloss, 103 min Abbau-Schwanz).
 // DER BOOT der Welt zählt in die Fahrt (fahrtUrteil): Radeon b3f9ae95 29.10. stand die Welt nach 10,5 und 40 s — der Deckel 120 s;
 // das Schloss hält der Halter die Fahrt lang samt Abbau (SITZUNG_MAX_S), nie länger
@@ -1896,7 +1898,7 @@ async function selbsttest() {
         const uf = [fahrtUrteil(grenze), fahrtUrteil([...grenze.slice(0, -1), fp(38, 16)]), fahrtUrteil([...grenze.slice(0, 36), ...zw, fp(38, 15)]),
             fahrtUrteil([...grenze.slice(0, 35), fp(36, 90), fp(37, 60), fp(38, 15)]), fahrtUrteil([...grenze.slice(0, -1), fp(38, 16, ["radeon"])])];
         pruef("FAHRT-ROT (c) Σ Deckel + Boot " + SITZUNG_BOOT_S + " s: 1 800 s grün, 1 801 s ROT je Karte mit den drei größten beim Namen, Zwillinge EIN Lauf, eine Karte allein",
-            uf[0].length === 0 && uf[1].length === 2 && /^radeon: die Fahrt 1801 s über 1800 s \(Σ Deckel 1681 s in 38 Läufen \+ Boot 120 s\) — die größten: f\.K1#1 45 s, f\.K2#1 45 s, f\.K3#1 45 s$/.test(uf[1][0]) &&
+            uf[0].length === 0 && uf[1].length === 2 && /^radeon: die Fahrt 1801 s über 1800 s \(Σ Deckel 1681 s in 38 Läufen \+ Boot 120 s\) — die größten: f\.K1#1 45 s, f\.K2#1 45 s, f\.K3#1 45 s \(37 Läufe am Deckel 45 s\)$/.test(uf[1][0]) &&
             /^gtx: die Fahrt 1801 s/.test(uf[1][1]) && uf[2].length === 0 && uf[3].length === 2 && /die größten: f\.K36#1 90 s, f\.K37#1 60 s, f\.K1#1 45 s/.test(uf[3][0]) &&
             uf[4].length === 1 && /^radeon: /.test(uf[4][0]), JSON.stringify(uf));
         const echtGross = ladeStationen().map((s) => (s.probe ? { ...s, probe: { ...s.probe, sek: 90, ausnahme: "der Selbsttest bläht jeden Deckel" } } : s));

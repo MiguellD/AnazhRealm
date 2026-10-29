@@ -1645,7 +1645,8 @@ module.exports = [
         // IN DER SITZUNG (29.10., proben-welt.cjs `sprungKadenz`): die drei Sprünge der Hänger-Linse in der warmen Welt, jeder 1 km
         // weiter auf +x in eine Welt, die dort noch nicht steht (statt je Sprung einer frischen Sitzung; Radeon b3f9ae95: 4,92 min
         // Arbeit, die Welt stand nach 8,9–9,0 s); Einschwingen 1 s statt 10 s (die Welt steht schon). Teleport ist kein Edit: unberührt.
-        probe: { befehl: PW.torBefehl(PW.sprungKadenz), sek: 45, mutiert: false },
+        // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 42,6 s GRÜN am Deckel 45): 70 s mit ausnahme
+        probe: { befehl: PW.torBefehl(PW.sprungKadenz), sek: 70, mutiert: false, ausnahme: "drei Sprünge je 1 km in eine Welt, die dort noch nicht steht, je bis die Welt steht (Radeon 8–10 s je Sprung)" },
         gpu: true,
         zeit: true,
         minuten: 20,

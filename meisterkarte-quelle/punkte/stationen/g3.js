@@ -541,7 +541,8 @@ const stationen = [
         // `bericht/2110-messschuld2/kugel.js` über `werkbank eval` am Messort wiese, drei Schüsse aus dem Ausgabe-Pfad bei
         // 1920×1080: A ist die Welt, B die Kugeln ohne Schatten-Empfang, C die Sonne aus.
         // IN DER SITZUNG (29.10.): EIN Teleport an die Wiese, die Kugel-Bilanz (9 Schüsse) — Ziel 15 s
-        probe: { sek: 45, befehl: befehlDer({
+        // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 11,4 s GRÜN): 25 s
+        probe: { sek: 25, befehl: befehlDer({
             name: "licht.K2#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
@@ -1139,8 +1140,9 @@ const stationen = [
         // 0,5 × 0,5 × 3 m auf der Prüfbühne, A Welt / B ohne Pfosten / C ohne Sonne aus dem Ausgabe-Pfad, Halbschatten 10–90 % am
         // Fuß je Pose bei Uhr 0,5; am Kopf vor dem Zweig kennt licht kein --kontakt (ROT beim Namen)
         // IN DER SITZUNG (29.10.): EINE Uhr (0,5), zwei Posen je drei Schüsse — Ziel 25 s; der Messort buehne importiert die Welt der
-        // Prüfbühne und lädt die Seite in ihr: danach steht die Sitzung in einer fremden Welt (mutiert)
-        probe: { sek: 45, befehl: befehlDer({
+        // Prüfbühne und lädt die Seite in ihr: danach steht die Sitzung in einer fremden Welt (mutiert). DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 45,0 s GRÜN am Deckel
+        // 45 — die GTX risse ihn): 70 s mit ausnahme
+        probe: { sek: 70, ausnahme: "die Welt der Prüfbühne importiert und die Seite in ihr geladen, dann zwei Posen je drei Schüsse 1920×1080", befehl: befehlDer({
             name: "schatten.K1#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
@@ -1298,7 +1300,8 @@ const stationen = [
         // ohne sie) und ihrer Ebene (Haupt-Achsen der Welt-Punkte, ≤ 3 cm), das Maß der Wasser-Station (`klassenMasse` spiegelTreue,
         // die Achse an der Ebene: abnahme-urteil `spiegelPartner` mit `normale`). Gültig: Ego, Mittag klar, Einfall 45–85°, ≥ 2 000 Pixel
         // in der Ebene und ≥ 8 Blöcke.
-        probe: { sek: 45, befehl: befehlDer({
+        // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 4,8 s): 15 s
+        probe: { sek: 15, befehl: befehlDer({
             name: "material.K4#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
@@ -1357,7 +1360,8 @@ const stationen = [
         // Spitze ρ (Kappe θh ≤ 1° je Energie, 1/sr). DIE REFERENZ: MERL (Matusik et al. 2003) über die NBRDF-Netze von Sztrajman et al.
         // 2021 (github asztr/Neural-BRDF data/merl_nbrdf.zip), bei θd 25° dieselben Maße je Exemplar; das Band der Klasse von ihrem
         // kleinsten bis zum größten Exemplar, die Toleranz der Bühne Breite ± max(0,3°, 5 %), Spitze ×/÷ 1,3.
-        probe: { sek: 90, ausnahme: "je Klasse der Stoff-Tafel eine Kugel im Welt-Stoff ihrer Zeile, die Belichtungs-Reihe C/A × 1, 1/32, 1/1024 je Kugel", befehl: befehlDer({
+        // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 11,4 s): 25 s
+        probe: { sek: 25, befehl: befehlDer({
             name: "material.K5#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },

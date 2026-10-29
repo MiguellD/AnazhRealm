@@ -2565,7 +2565,8 @@ const stationen = [
         kriterium: "affekt.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 45, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "wert", knapp(wertGang)], mutiert: true },
+        // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 43,2 s GRÜN am Deckel 45 — die GTX risse ihn): 70 s mit ausnahme
+        probe: { sek: 70, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "wert", knapp(wertGang)], mutiert: true, ausnahme: "zwei Gänge mit echtem Affekt-Takt (12 Uhr Ego, 22 Uhr Third), je fällen, töten, pflegen und 30 Spielminuten Ertrag" },
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -3197,7 +3198,7 @@ const stationen = [
         geraet: "gtx",
         // IN DER SITZUNG (29.10.): 60 × 20 Schwarm-Takte und EIN gezählter Frame (Gegenlauf b3f9ae95: 0,04 min); die Bühne legt die
         // Schwarm-Karte neu und stellt das Fenster auf 1280×720 (mutiert) — beide Staffeln EIN Lauf (Zwillinge)
-        probe: { sek: 45, befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)], mutiert: true },
+        probe: { sek: 15, befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)], mutiert: true }, // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 0,6 s GRÜN)
         gpu: true,
         zeit: true,
         minuten: 4,
@@ -3221,7 +3222,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // IN DER SITZUNG (29.10.): 60 × 20 Schwarm-Takte und EIN gezählter Frame (Gegenlauf b3f9ae95: 0,04 min); die Bühne legt die
         // Schwarm-Karte neu und stellt das Fenster auf 1280×720 (mutiert) — beide Staffeln EIN Lauf (Zwillinge)
-        probe: { sek: 45, befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)], mutiert: true },
+        probe: { sek: 15, befehl: ["node", "-e", "(" + knapp(schwarmLauf) + ")()", "{AUS}", "{PORT}", knapp(schwarmSzene)], mutiert: true }, // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 0,6 s GRÜN)
         gpu: true,
         zeit: true,
         minuten: 4,

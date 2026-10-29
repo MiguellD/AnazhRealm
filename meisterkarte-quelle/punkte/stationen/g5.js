@@ -215,7 +215,8 @@ async function toreK3Seite(H) {
     return ring.length >= 10 ? 0 : 1;
 }
 // die Proben (Zwillinge tragen DIESELBE Probe: punkte.cjs gruppiere fährt sie einmal)
-const LEIB_K2 = seiteProbe(60, leibK2Seite, {
+// DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 52,2 s GRÜN am Deckel 60): 80 s
+const LEIB_K2 = seiteProbe(80, leibK2Seite, {
     mutiert: true,
     ausnahme: "K8 und K9 zählen Takte: der Fuß auf sechs Bahnen je ≥ 200 Kontakte und sechs Sprünge (~3000 Takte im Fenster 640×360)",
 });
