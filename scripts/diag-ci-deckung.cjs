@@ -446,8 +446,7 @@ function gateSchritte(doc) {
     for (const [job, j] of Object.entries((doc && doc.jobs) || {}))
         for (const s of j.steps || []) {
             if (IST_VORBEREITUNG(s) || !s.run) continue;
-            const m = typeof s.if === "string" ? GRUPPE_RE.exec(s.if) : null;
-            out.push({ job, name: name(s), run: lauf(s), gruppe: m ? Number(m[1]) : null, wenn: s.if });
+            out.push({ job, name: name(s), run: lauf(s), gruppe: gruppeVon(s), wenn: s.if });
         }
     return out;
 }
@@ -538,15 +537,15 @@ function gruppenUrteil(job, J, M) {
     const je = new Map([...gruppen].map((g) => [g, 0]));
     for (const s of steps.slice(blockEnde)) {
         if (IST_VORBEREITUNG(s)) continue;
-        const m = typeof s.if === "string" ? GRUPPE_RE.exec(s.if) : null;
+        const g = gruppeVon(s);
         if (!s.if)
             v.push(`(G) N-FACH: „${name(s)}" trägt keine Gruppe — er liefe in jeder der ${gruppen.size} Gruppen von „${job}"`);
-        else if (!m) v.push(`(G) UNKLAR: „${name(s)}" trägt die Bedingung „${s.if}" statt genau einer Gruppe`);
-        else if (!gruppen.has(Number(m[1])))
+        else if (g === null) v.push(`(G) UNKLAR: „${name(s)}" trägt die Bedingung „${s.if}" statt genau einer Gruppe`);
+        else if (!gruppen.has(g))
             v.push(
-                `(G) VERLOREN: „${name(s)}" trägt Gruppe ${m[1]}, die Matrix von „${job}" kennt ${[...gruppen].join(", ")} — er liefe nie`
+                `(G) VERLOREN: „${name(s)}" trägt Gruppe ${g}, die Matrix von „${job}" kennt ${[...gruppen].join(", ")} — er liefe nie`
             );
-        else je.set(Number(m[1]), je.get(Number(m[1])) + 1);
+        else je.set(g, je.get(g) + 1);
     }
     for (const [g, n] of je)
         if (n === 0) v.push(`(G) LEER: „${job}" Gruppe ${g} trägt keinen Schritt (ein Läufer ohne Arbeit)`);
@@ -661,9 +660,8 @@ function klassenUrteil(doc, skripte, lies) {
         v.push(`(K) KLASSE: „${VOLL_JOB}" reicht die Klasse nicht als CI_KLASSE: ${CI_KLASSE_ENV} an seine Schritte — die Weiche urteilt blind`);
     for (const s of J.steps || []) {
         if (!s.run || IST_VORBEREITUNG(s)) continue;
-        const m = typeof s.if === "string" ? GRUPPE_RE.exec(s.if) : null;
-        if (!m) continue; // (G) urteilt
-        const g = Number(m[1]);
+        const g = gruppeVon(s);
+        if (g === null) continue; // (G) urteilt
         const k = klasseDesLaufs(s.run, skripte, lies);
         if (klasse.get(g) === "cpu" && k.klasse === "gpu")
             v.push(`(K) CPU-GRUPPE: „${name(s)}" (Gruppe ${g}) startet ein Echt-Rezept — ${k.wo}`);
@@ -699,11 +697,11 @@ function selbsttestKlasse() {
                 env: { CI_KLASSE: CI_KLASSE_ENV },
                 strategy: { "fail-fast": false, matrix: VOLL_MATRIX },
                 steps: [
-                    { name: "A", if: "matrix.gruppe == 1", run: "npm run gate:a" },
-                    { name: "B", if: "matrix.gruppe == 1", run: "npm run gate:b" },
-                    { name: "G", if: "matrix.gruppe == 2", run: "npm run gate:g" },
+                    gs("A", 1),
+                    gs("B", 1),
+                    gs("G", 2),
                     { name: "B-Bild", if: "matrix.gruppe == 2", run: "npm run gate:b-bild" },
-                    { name: "S", if: "matrix.gruppe == 2", run: "npm run gate:s" },
+                    gs("S", 2),
                 ],
             },
         },
@@ -766,7 +764,7 @@ function waage(doc, zeiten, alterVon = seitKopf, sperrt = LINIE) {
         imLauf.push([job, J, gs.length]);
         const steps = (J.steps || []).filter((s) => s.run && !IST_VORBEREITUNG(s));
         for (const g of gs) {
-            const mein = steps.filter((s) => g === null || !s.if || Number((GRUPPE_RE.exec(String(s.if)) || [])[1]) === g);
+            const mein = steps.filter((s) => g === null || !s.if || gruppeVon(s) === g);
             let summe = vorb;
             let groesster = null;
             for (const s of mein) {
@@ -953,7 +951,7 @@ function selbsttestZeuge() {
     const f = [];
     const form = () => {
         const z = zeugeIn();
-        return { jobs: { voll: { ...z, steps: [{ name: "A", if: "matrix.gruppe == 1", run: "npm run gate:a" }, ...z.steps] } } };
+        return { jobs: { voll: { ...z, steps: [gs("A", 1), ...z.steps] } } };
     };
     const S = (d) => d.jobs.voll.steps;
     taeterFaelle(
@@ -1089,6 +1087,8 @@ function selbsttestKopf(urteile = kopfUrteil) {
     return f;
 }
 
+// ein Gruppen-Schritt eines Fixtures: Name, Gruppe, die Wand (ohne Angabe der Name klein)
+const gs = (name, g, w = name.toLowerCase()) => ({ name, if: `matrix.gruppe == ${g}`, run: `npm run gate:${w}` });
 // die Vorbereitung eines Fixture-Jobs (Checkout, Node, System-Libs, Dependencies), dahinter seine Schritte
 const prep = (...schritte) => [
     { uses: "actions/checkout@v4" },
@@ -1114,9 +1114,9 @@ function selbsttest() {
                 "timeout-minutes": 30,
                 ...zeugeIn(),
                 steps: prep(
-                    { name: "A", if: "matrix.gruppe == 1", run: "npm run gate:a" },
-                    { name: "B", if: "matrix.gruppe == 2", run: "npm run gate:b" },
-                    { name: "C", if: "matrix.gruppe == 1", run: "npm run gate:c" },
+                    gs("A", 1),
+                    gs("B", 2),
+                    gs("C", 1),
                 ).concat(zeugeIn().steps),
             },
         },
@@ -1170,12 +1170,12 @@ function selbsttest() {
         ["eine Gruppe ohne Schritt", (d) => (V(d).steps[5].if = "matrix.gruppe == 1"), /\(G\) LEER: „voll" Gruppe 2/],
         [
             "derselbe Schritt in zwei Gruppen",
-            (d) => V(d).steps.push({ name: "A2", if: "matrix.gruppe == 2", run: "npm run gate:a" }),
+            (d) => V(d).steps.push(gs("A2", 2, "a")),
             /\(D\) DOPPELT: „npm run gate:a" läuft 2×/,
         ],
         [
             "ein Gate im Puls und in einer Voll-Gruppe",
-            (d) => d.jobs.puls.steps.push({ name: "C", if: "matrix.gruppe == 1", run: "npm run gate:c" }),
+            (d) => d.jobs.puls.steps.push(gs("C", 1)),
             /\(D\) DOPPELT: „npm run gate:c" läuft 2×/,
         ],
         ["fail-fast an", (d) => delete V(d).strategy["fail-fast"], /\(V\) FAIL-FAST: „voll"/],
@@ -1372,7 +1372,7 @@ function selbsttestGegenrichtung() {
                 },
                 playtest: {
                     strategy: { "fail-fast": false, matrix: { gruppe: [1] } },
-                    steps: [{ name: "C", if: "matrix.gruppe == 1", run: "npm run gate:c" }],
+                    steps: [gs("C", 1)],
                 },
             },
         },
@@ -1535,7 +1535,7 @@ function selbsttestPlaytest() {
                     if: VOLL_WENN,
                     strategy: { "fail-fast": false, matrix: VOLL_MATRIX },
                     "timeout-minutes": 30,
-                    steps: prep({ name: "A", if: "matrix.gruppe == 1", run: "npm run gate:a" }, traeger()),
+                    steps: prep(gs("A", 1), traeger()),
                 },
             },
         },

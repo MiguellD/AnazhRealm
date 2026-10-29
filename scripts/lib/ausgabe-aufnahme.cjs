@@ -915,6 +915,15 @@ function wetterUrteil(w) {
     return Object.assign({}, w, { urteil: taeter.length ? "ROT" : "GRUEN", taeter, verweigert });
 }
 
+// die Fälle eines Urteils-Selbsttests: je Fall [Name, Lauf, Soll-Urteil, Täter-Wort] — ein anderes Urteil oder ein fehlender Täter in `v`
+function faelleUrteil(faelle, urteil, v) {
+    for (const [name, w, soll, taeter] of faelle) {
+        const u = urteil(w);
+        if (u.urteil !== soll) v.push(`${name}: ${u.urteil} statt ${soll}`);
+        if (taeter && !u.taeter.some((t) => t.includes(taeter)))
+            v.push(`${name}: der Täter „${taeter}" steht nicht im Urteil`);
+    }
+}
 // DER SELBSTTEST DES URTEILS (rein): jeder Täter fällt rot und steht beim Namen, Verweigerung und Bühne bleiben grün.
 function wetterSelbsttest() {
     const v = [];
@@ -968,17 +977,17 @@ function wetterSelbsttest() {
             null,
         ],
     ];
-    for (const [name, w, soll, taeter] of faelle) {
-        const u = wetterUrteil(w);
-        if (u.urteil !== soll) v.push(`${name}: ${u.urteil} statt ${soll}`);
-        if (taeter && !u.taeter.some((t) => t.includes(taeter)))
-            v.push(`${name}: der Täter „${taeter}" steht nicht im Urteil`);
-    }
+    faelleUrteil(faelle, wetterUrteil, v);
     const vw = wetterUrteil(faelle[8][1]).verweigert;
     if (vw["emotion:sorrow → rainy"] !== 1) v.push("verweigert: die verweigerte Quelle steht nicht beim Namen");
     return v;
 }
 
+const hm = (t) => {
+    const x = (((Number(t) % 1) + 1) % 1) * 24;
+    const h = Math.floor(x);
+    return `${String(h).padStart(2, "0")}:${String(Math.floor((x - h) * 60)).padStart(2, "0")}`;
+};
 // DAS URTEIL DER HIMMELS-WACHE (rein, Node: Uhr und Wetter gehören dem Spieler). `g` = ein getakteter
 // Lauf des Spiels mit laufendem Nexus NACH dem Wort des Spielers: { phase: "gesetz" | "frei", uhr: { buch, gang, start, ende },
 // takt: { schritte, schrittSek, tagMin }, wetter: { buch, wort, ende, freiAb }, zugSek, taeter: [{ name, wo, quelle, stapel }] }.
@@ -994,11 +1003,6 @@ function himmelUrteil(g) {
     const taeter = [];
     const verweigert = {};
     const gewuenscht = {};
-    const hm = (t) => {
-        const x = (((Number(t) % 1) + 1) % 1) * 24;
-        const h = Math.floor(x);
-        return `${String(h).padStart(2, "0")}:${String(Math.floor((x - h) * 60)).padStart(2, "0")}`;
-    };
     const wer = (e) => (e.quelle && e.quelle !== "?" ? `${e.quelle} (${e.stapel})` : e.stapel);
     const U = g.uhr || { buch: [], gang: { n: 0, weg: 0, max: 0 } };
     const W = g.wetter || { buch: [] };
@@ -1356,18 +1360,14 @@ function weltaktSelbsttest() {
         ["kein spion", null, "ROT", "kein Welt-Akt-Spion"],
         ["verweigert", buch([halt, halt]), "GRUEN", null],
     ];
-    for (const [name, b, soll, taeter] of faelle) {
-        const u = weltaktUrteil(b);
-        if (u.urteil !== soll) v.push(`${name}: ${u.urteil} statt ${soll}`);
-        if (taeter && !u.taeter.some((t) => t.includes(taeter)))
-            v.push(`${name}: der Täter „${taeter}" steht nicht im Urteil`);
-    }
+    faelleUrteil(faelle, weltaktUrteil, v);
     if (weltaktUrteil(faelle[5][1]).verweigert["nexus → creatures_size_mul"] !== 2)
         v.push("verweigert: die verweigerte Quelle steht nicht beim Namen");
     return v;
 }
 
 module.exports = {
+    hm,
     wetterUrteil,
     wetterSelbsttest,
     himmelUrteil,

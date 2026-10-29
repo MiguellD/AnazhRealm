@@ -1076,6 +1076,8 @@ function scan(files) {
 
 // Die Stamm-Dateien, wie index.html sie lädt (scripts/lib/stamm.cjs — die EINE Liste; vor dem Schnitt die eine Datei).
 const STAMM = stammLib.dateien(path.join(__dirname, ".."));
+// die Schale je Gesetzbuch: ein Zwilling ohne eigene `verboten` ist dort und im Stamm verboten
+const SCHALE = { "koerper-core.js": "worlds/koerperstudio/koerperstudio.js", "fachwerk-core.js": "worlds/fachwerk/fachwerk.js", "tetrapoda-core.js": "worlds/tetrapoda/tetrapoda.js", "phyto-core.js": "foundry-core.js" };
 // das Gesetzbuch der Himmels-Sicht: die Stamm-Datei, die den Wandel-Pass `_atmoLutBau` trägt (am Glied, nie am Datei-Namen)
 const HIMMEL_BUCH = stammLib.dateiVon(path.join(__dirname, ".."), "_atmoLutBau");
 const WORT_BUCH = stammLib.dateiVon(path.join(__dirname, ".."), "_schreibWorte");
@@ -1092,79 +1094,66 @@ const ZWILLINGE = [
     {
         fingerprint: "leafSize: lerp(0.22, 0.6, leaf)",
         gesetzbuch: "phyto-core.js",
-        verboten: ["foundry-core.js", ...STAMM],
         fiel: "K24 — der P-Zwilling (deriveParamsPlant delegiert seinen Baum-Zweig an treeParams)",
     },
     {
         fingerprint: "ridges: 14, depth: 0.52",
         gesetzbuch: "phyto-core.js",
-        verboten: ["foundry-core.js", ...STAMM],
         fiel: "U2b (V18.467) — das Rinden-Gesetz (barkProfile/buildTubeGesetz) wohnt im Pflanzen-Gesetzbuch, foundry-core delegiert",
     },
     {
         fingerprint: "Math.pow(size / 2.4, 0.67)",
         gesetzbuch: "tetrapoda-core.js",
-        verboten: ["worlds/tetrapoda/tetrapoda.js", ...STAMM],
         fiel: "U4 — die Tier-Allometrie wohnt im Gesetzbuch (deriveTierParams)",
     },
     {
         fingerprint: "Math.sin(phases[j] - phases[i] - (folge[j] - folge[i]))",
         gesetzbuch: "tetrapoda-core.js",
-        verboten: ["worlds/tetrapoda/tetrapoda.js", ...STAMM],
         fiel: "U4 — der CPG-Phasen-Schritt wohnt im Gesetzbuch (cpgStep)",
     },
     {
         fingerprint: "0.818 * H",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "U3 — die 6-KH-Loomis-Proportionen wohnen im Gesetzbuch (labProportionen)",
     },
     {
         fingerprint: "(0.62 + p.tone * 0.53) * (1 - p.age * 0.35)",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "U3 — die morph()-Dial-Mathe wohnt im Gesetzbuch (labMorph)",
     },
     {
         fingerprint: "reg('glute'+(sd===1?'1':'-1')",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "KONVERGENZ — der Da-Vinci-Teile-Baum (bauMensch) wohnt NUR im Gesetzbuch; Shell + Stamm bauen per Fabrik-Haken (kein Nachbau, nie wieder)",
     },
     {
         fingerprint: "iris: Object.freeze({ c: 0x2a4a6a",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "KONVERGENZ II — die Material-Klassen-Farben wohnen im Gesetzbuch (MATERIAL_KLASSEN); Shell + Stamm LESEN",
     },
     {
         fingerprint: "mahagoni:{hex:0x6a4230", // K57: der Ton nach KOPF_SOLL hautAlbedo (vorher 0x5f3826)
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "KONVERGENZ II — die Haut-/Haar-Paletten wohnen im Gesetzbuch (SKIN_TONES/HAIR_COLORS); der Genom-Roller pickt aus der Lab-Wahrheit",
     },
     {
         fingerprint: "wristFrac: 1.36",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "U3 — das Landmarken-Urteil wohnt im Gesetzbuch (labLandmarks)",
     },
     {
         fingerprint: "Math.abs(lz)>Math.min(Di,Dj)*0.45",
         gesetzbuch: "fachwerk-core.js",
-        verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
         fiel: "U6c — das REIHEN-SNAP-Gesetz wohnt im Gesetzbuch (reihenSnap)",
     },
     {
         fingerprint: "A.p.brandwand[lx>0?'x1':'x0']=1",
         gesetzbuch: "fachwerk-core.js",
-        verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
         fiel: "U6c — das BRANDWAND-Gesetz wohnt im Gesetzbuch (brandwand)",
     },
     {
         fingerprint: "jahr<1150?'romanik'",
         gesetzbuch: "fachwerk-core.js",
-        verboten: ["worlds/fachwerk/fachwerk.js", ...STAMM],
         fiel: "U6c — das META-Gesetz (Jahr×Klima×Personen×Wohlstand → Form) wohnt im Gesetzbuch (metaParams)",
     },
     {
@@ -1176,25 +1165,21 @@ const ZWILLINGE = [
     {
         fingerprint: "burgundy:{hex:0x5a2530",
         gesetzbuch: "koerper-core.js",
-        verboten: ["worlds/koerperstudio/koerperstudio.js", ...STAMM],
         fiel: "V18.461 — die Stoff-Palette wohnt im Gesetzbuch (CLOTH_COLORS); die Kleid-Zonen (kleidZonen) und die Haar-Streu (haarStreu) sind Kern-Gesetz, beide Leser LESEN",
     },
     {
         fingerprint: "(1 - tipFrac) * Math.pow(t, 1.3)",
         gesetzbuch: "schmiede-core.js",
-        verboten: [...STAMM],
         fiel: "U6d — die distale Klingen-Verjüngung (bladeProfile) wohnt im Gesetzbuch (klingenProfil)",
     },
     {
         fingerprint: "Math.pow(w / 0.4, 2)",
         gesetzbuch: "schmiede-core.js",
-        verboten: [...STAMM],
         fiel: "U6d — die Hohlkehle des Wirts-Schnitts (bladeProfile) wohnt im Gesetzbuch (klingenProfil)",
     },
     {
         fingerprint: "bladeLen: 1.45",
         gesetzbuch: "schmiede-core.js",
-        verboten: [...STAMM],
         fiel: "U6d — die Oakeshott-Proportions-Tabelle wohnt im Gesetzbuch (OAKESHOTT_TYPES, Stamm = Getter-Delegat)",
     },
     // K09a — DAS GELÄNDE HAT SEIN GESETZBUCH: die Makro-Höhe (Wildnis-Term, Erbgut-Terme samt Normalform,
@@ -1362,7 +1347,7 @@ function scanZwillinge(ersatz = {}) {
             errs.push(`Zwillings-Wand: das Gesetzbuch ${z.gesetzbuch} fehlt — ${name} hat kein Zuhause`);
         else if (!finde(z, lies(z.gesetzbuch)))
             errs.push(`Zwillings-Wand: Fingerabdruck ${name} fehlt im Gesetzbuch ${z.gesetzbuch}`);
-        for (const f of z.verboten) {
+        for (const f of z.verboten || [SCHALE[z.gesetzbuch], ...STAMM].filter(Boolean)) {
             if (!finde(z, lies(f))) continue;
             const src = ohneKommentar(f);
             const ab = z.einmal && f === z.gesetzbuch ? (finde(z, src) || { at: src.length }).at + 1 : 0;

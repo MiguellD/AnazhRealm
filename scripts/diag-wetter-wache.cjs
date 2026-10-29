@@ -24,6 +24,7 @@ const { statikServer, starteBrowser, nullRenderer, hauptLauf, selbsttestEnde, wa
 const {
     AUSGABE_INSTALL,
     wetterUrteil,
+    hm,
     wetterSelbsttest,
     himmelUrteil,
     himmelSelbsttest,
@@ -423,11 +424,6 @@ function himmelProbe(o) {
     return aus;
 }
 
-const hm = (t) => {
-    const x = (((Number(t) % 1) + 1) % 1) * 24;
-    const h = Math.floor(x);
-    return `${String(h).padStart(2, "0")}:${String(Math.floor((x - h) * 60)).padStart(2, "0")}`;
-};
 
 // Die Täter eines Urteils je Tat gezählt: Uhrzeiten und Wetter-Worte fallen aus dem Schlüssel, das erste Beispiel bleibt.
 function taeterGezaehlt(liste) {
