@@ -45,3 +45,5 @@ Folge-Schnitt offen: der Session-Läufer hält das GPU-Schloss bis 55 min — Ru
 heil-schwarm-k3, heil-l8-lockstep, w3w-jahrhunderte. Noch nicht gemessen/gebucht. kette36 = z78 (gpu-wahl-bau, w3w-studios, w3v-brand-bild,
 w3w-glanz, w3w-wald, w3w-verkehr, spike-ci-konsum, w3v-licht; Paar-Probe; studios kollidiert in scripts/diag-ofen-contract.cjs und brand-bild in
 spec/stamm/modul-karte.json → je eine Heim-Karte nötig). Mess-Kopf für die nächste Buchung: 715754fc oder z78.
+**18:37 z78 leer:** gegen main 715754fc kollidieren ALLE Reste (gpu-wahl-bau, w3w-studios, w3v-brand-bild grün; w3w-glanz, w3w-wald,
+spike-ci-konsum rot + Konflikt; w3v-licht rot, frei) → erster Schritt nach dem Reset: je Zweig `git merge origin/main` (Heim), dann EIN Zug.
