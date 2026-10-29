@@ -3,8 +3,8 @@
 // eine Datei — kein zweiter Boot-/Encode-/Vergleichs-Pfad, der driften kann.
 //
 // Der Vertrag lebt in `spec/pack/v0/CONTRACT.md`:
-//   v0  = der IST-IDB-Kanon (Key `preset|gestalt|lod[|ov:<hash>]` · Val `{meshes}` = Worker-Reply ·
-//         Stempel = SHA-256(Manifest-Text + alle Manifest-Skripte)).
+//   v0  = der IST-IDB-Kanon (Key `<stempel>~preset|gestalt|lod[|ov:<hash>]` · Val `{meshes}` = Worker-Reply ·
+//         Stempel = je gelesenem Kern SHA-256 seiner Quellen).
 //   v1  = die Pack-Hülle (cv/key/meta/components + meshes mit b64-Puffern) — die Mint-Artefakte.
 //
 // Der ROUNDTRIP-BEWEIS (die Kern-Garantie dieser Naht): der Live-Reply wird im Browser
@@ -34,28 +34,16 @@ function sha256Hex(buf) {
 const stripComments = require("./stamm.cjs").ohneKommentare;
 
 // ---------------------------------------------------------------------------
-// Der Generator-Quellen-Stempel — EXAKT die Hash-Formel der Transport-Schale (`_foundrySchale`), in Node
-// nachgerechnet: SHA-256 über `manifestText + "\n" + script_1 + "\n" + … + bruecke` (UTF-8; srcs.join("\n")). Die
-// Platte hängt `|f<FOUNDRY_PLATTE_FORMAT>` an (das Transport-
-// Format) — der Pack-Index trägt den reinen Generator-Hash. `lies(datei)` (DARF) ersetzt das Lesen einer Quelle — die
-// Stempel-Probe (gate:fluss S7f) färbt so eine Datei, ohne den Baum zu berühren.
-function computeStamp(root, lies) {
-    const r = root || ROOT;
-    const lese = (rel) => (lies ? lies(rel) : null) ?? fs.readFileSync(path.join(r, rel), "utf8");
-    const manifestText = lese("cores.manifest.json");
-    const manifest = JSON.parse(manifestText);
-    const scripts = [];
-    if (Array.isArray(manifest)) {
-        for (const core of manifest) {
-            if (!core || !Array.isArray(core.scripts)) continue;
-            for (const s of core.scripts) if (typeof s === "string" && s) scripts.push(s);
-        }
-        for (const core of manifest)
-            if (core && typeof core.bruecke === "string" && core.bruecke) scripts.push(core.bruecke);
-    }
-    const srcs = [manifestText];
-    for (const s of scripts) srcs.push(lese(s));
-    return sha256Hex(Buffer.from(srcs.join("\n"), "utf8"));
+// Der Generator-Quellen-Stempel — EXAKT die Formel der Transport-Schale (`_foundrySchale`, ihr `__stamp`), in Node
+// nachgerechnet: je Kern SHA-256 über seine Quellen (scripts · lib · bruecke, UTF-8, mit "\n" verbunden), die ersten 16 Hex,
+// als `<kern>:<sha>` in Manifest-Folge mit "," verbunden. Die Platte stellt `f<FOUNDRY_PLATTE_FORMAT>|` voran — der
+// Pack-Index trägt den reinen Generator-Stempel (den Stempel des echten Boots misst gate:pack-contract `bootLauf`).
+function computeStamp(root) {
+    const lese = (rel) => fs.readFileSync(path.join(root || ROOT, rel), "utf8");
+    const quellen = (k) => ["scripts", "lib", "bruecke"].flatMap((f) => [].concat(k[f] || [])).map(lese);
+    return JSON.parse(lese("cores.manifest.json"))
+        .map((k) => (k.id || k.ns) + ":" + sha256Hex(Buffer.from(quellen(k).join("\n"), "utf8")).slice(0, 16))
+        .join(",");
 }
 
 function readManifest(root) {

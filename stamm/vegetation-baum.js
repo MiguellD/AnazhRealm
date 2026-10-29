@@ -108,6 +108,7 @@ class AnazhRealm_vegetation_baum {
         if (this._foliageAtlasTex) return this._foliageAtlasTex;
         if (typeof document === "undefined" || typeof THREE === "undefined") return null;
         const bc = this._impostorAtlasFormat() === "bc";
+        const t0 = performance.now();
         let fracht = this._blattAtlasBild || null;
         if (!fracht) {
             const core = globalThis.__phytoCore;
@@ -115,6 +116,7 @@ class AnazhRealm_vegetation_baum {
                 throw new Error("KERN-PFLICHT: phyto-core bakeLeafAtlasBild/blattAtlasFracht fehlt");
             fracht = core.blattAtlasFracht(core.bakeLeafAtlasBild(document), bc);
         }
+        const haupt = !this._blattAtlasBild; // ohne Fracht malte der Haupt-Faden selbst (die Liefer-Marke)
         if (!fracht || !fracht.rgba) throw new Error("KERN-PFLICHT: der Blatt-Atlas lieferte kein Bild");
         let tex;
         if (bc && fracht.bc && fracht.bc.mips.length) {
@@ -152,6 +154,7 @@ class AnazhRealm_vegetation_baum {
         tex.needsUpdate = true;
         this._foliageAtlasTex = tex;
         this._blattAtlasBild = null; // die Fracht des anderen Formats hat keinen Leser mehr
+        this._foundryLiefer(this._foundry, haupt ? "haupt" : null, "blatt-atlas", null, performance.now() - t0);
         return tex;
     }
 
