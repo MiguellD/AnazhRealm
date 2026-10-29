@@ -194,18 +194,9 @@ hauptLauf(async () => {
         window.__wetterSeq0 = window.__wetterBuch(0).seq;
         // DAS BAU-BUCH: die beiden Schreiber der Bau-Menge (`spawnArchitecture`
         // legt an, `removeArchitecture` nimmt weg; `state.architectures` schreibt sonst nur das Laden) buchen ab der Bühne
-        // je Wirkung Art, Typ und die Spiel-Rahmen des Stapels — eine Drift der Bauten trägt ihren Täter beim Namen.
+        // je Wirkung Art, Typ und die Spiel-Rahmen des Stapels (der EINE Stapel-Leser der Spione, `__spielStapel` aus
+        // scripts/lib/ausgabe-aufnahme.cjs — bis w3w las ihn hier ein Zwilling) — eine Drift der Bauten trägt ihren Täter beim Namen.
         window.__bauBuch = [];
-        const werBau = () => {
-            const zeilen = String(new Error().stack || "").split("\n");
-            const namen = [];
-            for (const l of zeilen) {
-                if (!/anazhRealm\.js|\/stamm\/[a-z0-9-]+\.js/.test(l)) continue;
-                const m = /at (?:async )?(?:new )?([^\s(]+) \(/.exec(l);
-                namen.push(m ? m[1].replace(/^(AnazhRealm|Object)\./, "") : "(anonym)");
-            }
-            return namen.slice(0, 6).join(" ← ") || "Sonde (kein Spiel-Rahmen)";
-        };
         for (const [weg, art] of [["spawnArchitecture", "an"], ["removeArchitecture", "weg"]]) {
             const roh = r[weg];
             r[weg] = function (...a) {
@@ -214,7 +205,7 @@ hauptLauf(async () => {
                 const n1 = (s.architectures || []).length;
                 if (n1 !== n0 && window.__bauBuch.length < 20) {
                     const e = art === "an" ? v : a[0];
-                    window.__bauBuch.push(`${art} ${e?.type || "?"} durch ${werBau()}`);
+                    window.__bauBuch.push(`${art} ${e?.type || "?"} durch ${window.__spielStapel()}`);
                 }
                 return v;
             };

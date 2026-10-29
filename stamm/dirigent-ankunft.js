@@ -833,7 +833,8 @@ class AnazhRealm_dirigent_ankunft {
     // als die billigste ganze. Danach gleitet der Faktor über ANKUNFT_GLEIT_BILDER gezeichnete Bilder auf 1
     // (`_ankunftGleit`, gezählt im Zeichen-Takt neben `uLodPerf`): jede Baum-Gestalt verfeinert durch ihr bestehendes Band
     // (Lehre 26), der Bau nach seinen Grenzen mit Hysterese (K43/K64: das Ring-Tor in 11 m hält seine L2). Zwei Leser, EINE
-    // Zahl: `_lodPerfMul` (die Wahrnehmungs-Distanz der Karten-Arten, CPU-Wahl UND Shader-Maske) und die Grenzen der Bauten
+    // Zahl: die Wahrnehmungs-Distanz der Karten-Arten (`_lodPerceptionDistance`, CPU-Wahl UND Shader-Maske `uLodPerf`) und die
+    // Grenzen der Bauten
     // (`_tickArchitectureLOD`, `_foundryLodForEntry`). Ohne Studio-Welt trägt keine Karte: 1.
     _ankunftsFerne() {
         const st = this.state;

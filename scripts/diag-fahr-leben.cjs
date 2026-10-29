@@ -550,7 +550,7 @@ function stationVerdict(s) {
         out.push(`lockstep start: die Läufe beginnen an verschiedenen Ständen des ruhenden Wagens (${s.lockstep.startAbw} > 1e-7)`);
     else if (!(s.lockstep.abw <= STATION.lockstepM) || !(s.lockstep.baerAbw <= STATION.lockstepM))
         out.push(
-            `lockstep: nach 200 Sim-Schritten steht der Wagen bei gemischten Frames ${s.lockstep.abw.toFixed(3)} m anders als bei 60 fps (Bär ${s.lockstep.baerAbw.toFixed(3)} m)${s.lockstep.erst ? ` — zuerst in Schritt ${s.lockstep.erst.schritt}: ${s.lockstep.erst.groesse} um ${s.lockstep.erst.d}${s.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${s.lockstep.erst.tiere.join(" / ")})` : ""}` : ""}`
+            `lockstep: nach 200 Sim-Schritten steht der Wagen bei gemischten Frames ${s.lockstep.abw.toFixed(3)} m anders als bei 60 fps (Bär ${s.lockstep.baerAbw.toFixed(3)} m)${s.lockstep.erst ? ` — zuerst in Schritt ${s.lockstep.erst.schritt}: ${s.lockstep.erst.groesse} um ${s.lockstep.erst.d}` : ""}`
         );
     // L2 DIE SPALTKANTE: der Wagen fährt über die Kante und fällt.
     const sp = s.spalt;
@@ -2265,7 +2265,7 @@ hauptLauf(async () => {
         frei("lockstep"),
         (S.lockSchwimmer ? `Schwimmer ${S.lockSchwimmer.abw} m / Höhe ${S.lockSchwimmer.abwY} m · ` : "") +
             (S.lockstep
-                ? `Start ${S.lockstep.startAbw} nach ${S.lockstep.ruheBilder} Bildern${S.lockstep.ruhe ? "" : ` (unruhig: ${(S.lockstep.unruhe || []).join(" / ")})`} · Abweichung Wagen ${S.lockstep.abw} m · Bär ${S.lockstep.baerAbw} m${S.lockstep.erst ? ` · zuerst Schritt ${S.lockstep.erst.schritt}: ${S.lockstep.erst.groesse} ${S.lockstep.erst.d}${S.lockstep.erst.tiere ? ` (Tiere nahe dem Wagen ${S.lockstep.erst.tiere.join(" / ")})` : ""}` : ""}`
+                ? `Start ${S.lockstep.startAbw} nach ${S.lockstep.ruheBilder} Bildern${S.lockstep.ruhe ? "" : ` (unruhig: ${(S.lockstep.unruhe || []).join(" / ")})`} · Abweichung Wagen ${S.lockstep.abw} m · Bär ${S.lockstep.baerAbw} m${S.lockstep.erst ? ` · zuerst Schritt ${S.lockstep.erst.schritt}: ${S.lockstep.erst.groesse} ${S.lockstep.erst.d}` : ""}`
                 : "keine Probe")
     );
     const reiterZeile = (q) =>
