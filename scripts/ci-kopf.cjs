@@ -14,14 +14,14 @@ const IMMER = ["workflow_dispatch", "pull_request"];
 const BEWEIS = ["push", "schedule", "workflow_dispatch"];
 const [VOLL_JOB, ECHT_JOB] = [/^voll\b/, /^echt\b/];
 const [TAKT_S, WARTE_S] = [30, 30 * 60];
+const GRUPPE_RE = /^\s*matrix\.gruppe\s*==\s*(\d+)\s*$/;
 
 // → { voll, echt, grund } · { warte: lauf } · { rot: grund }
 function kopfUrteil({ ereignis, eigenerLauf, laeufe, jobsJe, gewartet = [] }) {
     const u = { voll: "ja", echt: "ja", grund: "kein anderer Lauf trägt die volle Batterie auf diesem Kopf grün" };
     if (IMMER.includes(ereignis)) return { ...u, grund: `Ereignis ${ereignis}: die Batterie läuft immer` };
-    const gruen = (jobs, re) =>
-        jobs.filter((j) => re.test(j.name)).length &&
-        jobs.filter((j) => re.test(j.name)).every((j) => j.conclusion === "success");
+    const gruen = (jobs, re, js = jobs.filter((j) => re.test(j.name))) =>
+        js.length && js.every((j) => j.conclusion === "success");
     for (const r of laeufe || []) {
         if (String(r.id) === String(eigenerLauf) || !BEWEIS.includes(r.event)) continue;
         if (r.status !== "completed") {
@@ -168,7 +168,7 @@ function vollSchritte(text) {
     const klasse = new Map(planAus((doc.env || {}).VOLL_GRUPPEN).map((e) => [e.gruppe, e.klasse]));
     const schritte = [];
     for (const s of V.steps) {
-        const m = /^\s*matrix\.gruppe\s*==\s*(\d+)\s*$/.exec(s.if || "");
+        const m = GRUPPE_RE.exec(s.if || "");
         if (!m || !s.run) continue;
         const [name, run, gruppe] = [String(s.name || "").replace(/\s+/g, " "), s.run.trim(), Number(m[1])];
         schritte.push({ name, run, gruppe, form: JSON.stringify([name, run, s.env, s.shell, klasse.get(gruppe)]) });
@@ -194,8 +194,10 @@ function teileVon(alt, neu) {
     );
 }
 // DER GRUND eines Zweig-Kopfs: der jüngste fertige Lauf eines Ahns (push · schedule · workflow_dispatch), an dem jede voll-Gruppe ein
-// Urteil trug und ihre Spur hinterließ (Artefakt konsum-voll-N), höchstens 12 Ahnen weit; dann die Auswahl gegen ihn — ohne Grund
-// oder mit gewechseltem Rahmen fährt alles
+// Urteil trug und ihre Spur hinterließ (Artefakt konsum-voll-N), höchstens 12 Ahnen weit; dann die Auswahl gegen ihn — ohne Grund,
+// mit gewechseltem Rahmen oder ohne Antwort von git fährt alles. Jede Kopf-Form (Merge-Kopf, erster Kopf, ohne Spur) fällt ein
+// Urteil, nie einen Absturz: gate:ci-deckung (Z) `selbsttestWaehle`
+const urteilt = (x) => x.conclusion === "success" || x.conclusion === "failure";
 async function waehle({ api, wf, kopf, git, lade }) {
     const laeufe = await alleLaeufe(api, `/actions/workflows/${wf}/runs`, {
         nimm: (r) => BEWEIS.includes(r.event) && r.status === "completed",
@@ -207,17 +209,18 @@ async function waehle({ api, wf, kopf, git, lade }) {
         if (n >= 12 || G) break;
         if (git(["merge-base", "--is-ancestor", r.head_sha, kopf]) === null) continue;
         n++;
-        const jobs = (await api(`/actions/runs/${r.id}/jobs?filter=latest&per_page=100`)).jobs.filter((j) =>
-            VOLL_JOB.test(j.name)
+        // die ganze Batterie: jede Gruppe k der Tafel n (`voll k/n`) genau einmal, jede mit Urteil — ein gewählter Lauf ist kein
+        // Grund, ein übersprungener voll auch nicht: er heißt in der API wie seine Vorlage `voll ${{ matrix.gruppe }}/18 …` (der
+        // Kopf-Richter sagte voll=nein oder fiel, der Push trug kein `[ci voll]`) und zählt nicht — bis 29.10. las ihn ein
+        // ungeprüftes exec(…)[1] und jeder Kopf hinter so einem Lauf stürzte (Lauf 40830093793, ein Merge-Kopf)
+        const jobs = (await api(`/actions/runs/${r.id}/jobs?filter=latest&per_page=100`)).jobs.filter(
+            (j) => (j.nr = /^voll (\d+)\/(\d+)\b/.exec(j.name))
         );
-        // die ganze Batterie: so viele voll-Jobs wie die Tafel Gruppen (`voll k/n`), jeder mit Urteil — ein gewählter Lauf ist kein Grund
-        const gesamt = jobs.length && Number(/^voll \d+\/(\d+)/.exec(jobs[0].name)[1]);
-        if (!jobs.length || jobs.length !== gesamt || jobs.some((j) => j.conclusion !== "success" && j.conclusion !== "failure"))
+        const k = jobs.length;
+        if (!k || new Set(jobs.map((j) => j.nr[1])).size !== k || jobs.some((j) => +j.nr[2] !== k || !urteilt(j)))
             continue;
         const arts = (await api(`/actions/runs/${r.id}/artifacts?per_page=100`)).artifacts;
-        const zu = jobs.map((j) =>
-            arts.find((a) => a.name === `konsum-voll-${/^voll (\d+)/.exec(j.name)[1]}` && !a.expired)
-        );
+        const zu = jobs.map((j) => arts.find((a) => a.name === `konsum-voll-${j.nr[1]}` && !a.expired));
         if (zu.some((a) => !a)) continue;
         const spuren = {};
         for (const a of zu)
@@ -229,27 +232,32 @@ async function waehle({ api, wf, kopf, git, lade }) {
                     ])
                 );
         // jeder Job listet alle Schritte, fremde als skipped: es zählt nur der Schritt mit Urteil
-        const geurteilt = jobs.flatMap((j) =>
-            j.steps.filter((s) => s.conclusion === "success" || s.conclusion === "failure")
-        );
+        const geurteilt = jobs.flatMap((j) => j.steps.filter(urteilt));
         const gruen = new Map(geurteilt.map((s) => [s.name.replace(/\s+/g, " "), s.conclusion === "success"]));
         G = { lauf: r, spuren, gruen };
     }
     if (!G) return { gruppen: null, grund: `kein Ahn trägt die ganze Batterie mit Spur (${n} geprüft)` };
     const g = G.lauf.head_sha;
-    const [vG, vK] = [g, kopf].map((rev) => vollSchritte(git(["show", `${rev}:.github/workflows/check.yml`])));
+    // jede Lesung am Baum fällt ein Urteil: trägt git eine nicht (ein Blob ohne Netz, ein Objekt, das fehlt), fahren alle Gruppen
+    const lies = [g, kopf].flatMap((rev) => [
+        ["show", `${rev}:.github/workflows/check.yml`],
+        ["show", `${rev}:package.json`],
+        ["ls-tree", "-r", "--name-only", rev],
+    ]);
+    lies.push(["-c", "core.quotePath=false", "diff", "--name-status", "--no-renames", g, kopf]);
+    const t = lies.map(git);
+    if (t.includes(null))
+        return { gruppen: null, grund: `git ${lies[t.indexOf(null)].join(" ")} trägt nichts (Lauf ${G.lauf.id})` };
+    const [yG, pG, tG, yK, pK, tK, diff] = t;
+    const [vG, vK] = [yG, yK].map(vollSchritte);
     if (vG.rahmen !== vK.rahmen)
         return { gruppen: null, grund: `der Rahmen von voll wechselte seit Lauf ${G.lauf.id}` };
-    const wechsel = git(["-c", "core.quotePath=false", "diff", "--name-status", "--no-renames", g, kopf])
+    const wechsel = diff
         .split("\n")
         .filter(Boolean)
         .map((z) => ({ art: z[0], datei: z.split("\t")[1] }));
-    const teile = wechsel.some((w) => w.datei === "package.json")
-        ? teileVon(...[g, kopf].map((rev) => git(["show", `${rev}:package.json`])))
-        : [];
-    const [bG, bK] = [g, kopf].map(
-        (rev) => new Set(git(["ls-tree", "-r", "--name-only", rev]).split("\n").filter(Boolean))
-    );
+    const teile = wechsel.some((w) => w.datei === "package.json") ? teileVon(pG, pK) : [];
+    const [bG, bK] = [tG, tK].map((x) => new Set(x.split("\n").filter(Boolean)));
     const verz = [bG, bK].map(
         (b) =>
             new Set([
@@ -270,7 +278,7 @@ async function waehle({ api, wf, kopf, git, lade }) {
     };
 }
 
-module.exports = { kopfUrteil, alleLaeufe, apiMit, auswahl, planAus };
+module.exports = { kopfUrteil, alleLaeufe, apiMit, auswahl, planAus, waehle, GRUPPE_RE };
 
 if (require.main === module) {
     const env = process.env;

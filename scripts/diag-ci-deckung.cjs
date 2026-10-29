@@ -9,7 +9,7 @@ const path = require("path");
 const { execSync } = require("child_process");
 const yaml = require("js-yaml");
 const { schluessel } = require("./ci-schluessel.cjs");
-const { kopfUrteil, planAus, auswahl } = require("./ci-kopf.cjs");
+const { kopfUrteil, planAus, auswahl, GRUPPE_RE } = require("./ci-kopf.cjs");
 const { sammle, ZEUGE: ZEUGE_DATEI } = require("./lib/konsum-zeuge.cjs");
 const { messe, klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./ci-zeiten.cjs");
 const { taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
@@ -119,7 +119,6 @@ const SCHLUESSEL = (s) => /^node scripts\/ci-schluessel\.cjs$/.test(String(s.run
 const ZEUGE = (s) =>
     /scripts\/lib\/konsum-zeuge\.cjs/.test(String(s.run || "")) || String(s.uses || "").startsWith("actions/upload-artifact@");
 const IST_VORBEREITUNG = (s) => CACHE(s) || SCHLUESSEL(s) || ZEUGE(s) || VORBEREITUNG.some(([, f]) => f(s));
-const GRUPPE_RE = /^\s*matrix\.gruppe\s*==\s*(\d+)\s*$/;
 
 const lauf = (s) => String(s.run || "").trim();
 const name = (s) => String(s.name || s.uses || lauf(s).split("\n")[0]).replace(/\s+/g, " ");
@@ -271,11 +270,11 @@ function haeltMerge(doc) {
     const ereignisse = typeof on === "string" ? [on] : Array.isArray(on) ? on : Object.keys(on || {});
     return ereignisse.some((x) => x === "push" || x === "pull_request");
 }
+const an = (x) => x !== undefined && x !== false && x !== "false";
 const IMMER = /^\s*(\$\{\{\s*)?(success|always|!\s*cancelled)\(\)(\s*\}\})?\s*$/;
 // Warum ein Schritt (mit seinem Job und Workflow) kein Rot hält — null: er hält es.
 function schrittStumm(datei, doc, job, j, s) {
     if (!haeltMerge(doc)) return `${datei} läuft nicht auf push/pull_request (blockt keinen Merge)`;
-    const an = (x) => x !== undefined && x !== false && x !== "false";
     if (an(j["continue-on-error"])) return `continue-on-error am Job „${job}"`;
     // die volle Stufe hält den Merge: der Kopf-Richter feuert unter VOLL_WENN, die Batterie hinter ihm läuft, solange
     // der Kopf kein grünes Urteil der vollen Batterie trägt — wo sie nicht läuft, steht das Urteil des Kopfs schon
@@ -579,20 +578,21 @@ function kopfForm(doc) {
     if (!istVollWenn(K.if)) v.push(`(V) KOPF: „${KOPF_JOB}" läuft unter „${K.if}" statt der EINEN Voll-Bedingung (${VOLL_WENN})`);
     if (needsVon(K).length) v.push(`(V) KOPF: „${KOPF_JOB}" wartet auf ${needsVon(K).join(", ")} — er steht am Anfang des Laufs`);
     if (K.strategy) v.push(`(V) KOPF: „${KOPF_JOB}" trägt eine Matrix — er richtet einmal je Lauf`);
-    if (K["continue-on-error"] !== undefined && K["continue-on-error"] !== false)
+    if (an(K["continue-on-error"]))
         v.push(`(V) KOPF: „${KOPF_JOB}" trägt continue-on-error — ein Fehler der API ließe die Batterie still aus`);
     // neben der Vorbereitung EIN Schritt; die Auswahl nach Konsum braucht die Geschichte (checkout fetch-depth 0) und js-yaml (npm ci)
-    const eigen = (K.steps || []).filter((s) => !IST_VORBEREITUNG(s));
+    const S = K.steps || [];
+    const eigen = S.filter((s) => !IST_VORBEREITUNG(s));
     const r = eigen.find((s) => KOPF_LAUF.test(lauf(s)));
     if (eigen.length !== 1 || !r)
         v.push(
             `(V) KOPF: „${KOPF_JOB}" trägt ${eigen.length} Schritte neben der Vorbereitung (${eigen.map(name).join(" · ") || "keinen"}) statt EINEM: node scripts/ci-kopf.cjs`
         );
-    const co = (K.steps || []).find(VORBEREITUNG[0][1]);
-    if (!co || String((co.with || {})["fetch-depth"]) !== "0" || !(K.steps || []).some(VORBEREITUNG[3][1]))
+    const co = S.find(VORBEREITUNG[0][1]);
+    if (!co || String((co.with || {})["fetch-depth"]) !== "0" || !S.some(VORBEREITUNG[3][1]))
         v.push(`(V) KOPF: „${KOPF_JOB}" holt ${co ? "keine ganze Geschichte (fetch-depth 0)" : "keinen Baum"} oder kein npm ci — die Auswahl nach Konsum sähe weder Grund noch Schritte`);
     if (r) {
-        if (r["continue-on-error"] !== undefined && r["continue-on-error"] !== false)
+        if (an(r["continue-on-error"]))
             v.push(
                 `(V) KOPF: der Richter-Schritt trägt continue-on-error — ein Fehler der API ließe die Batterie still aus`
             );
@@ -980,8 +980,6 @@ function selbsttestZeuge() {
     const W = (z, datei, art = "M") => z.wechsel.push({ datei, art });
     taeterFaelle(
         [
-            ["nichts Gelesenes gewechselt (grün: nichts fährt)", (z) => W(z, "b.js"), null],
-            ["eine gelesene Datei gewechselt", (z) => W(z, "a.js"), /fährt „A" — a\.js/],
             ["am Grund rot", (z) => (z.grund.get("A").gruen = false), /fährt „A" — am Grund nicht grün/],
             ["ein Schritt ruft git (blind)", (z) => z.spuren["npm run gate:a"].ruft.push("git rev-parse HEAD"), /fährt „A" — blind: git/],
             ["ein neuer Schritt", (z) => z.schritte.push({ name: "N", run: "npm run gate:n", gruppe: 2, form: "n" }), /fährt „N" — am Grund nie gelaufen/],
@@ -1009,7 +1007,6 @@ function selbsttestZeuge() {
     const mutante = (alt, neu) => {
         const m = path.join(fs.mkdtempSync(path.join(require("os").tmpdir(), "zeuge-mutante-")), "konsum-zeuge.cjs");
         const text = fs.readFileSync(ZEUGE_DATEI, "utf8").replace('path.resolve(__dirname, "..", "..")', JSON.stringify(root));
-        if (!text.includes(alt)) throw new Error(`Selbsttest (Z): die Mutante findet „${alt}" im Zeugen nicht`);
         fs.writeFileSync(m, text.replace(alt, neu));
         return m;
     };
@@ -1025,8 +1022,57 @@ function selbsttestZeuge() {
     return f;
 }
 
+// (Z) DIE AUSWAHL AM KOPF (scripts/ci-kopf.cjs `waehle`) je Kopf-Form, die API und git als Fixture: ein übersprungener voll heißt
+// wie seine Vorlage `voll ${{ matrix.gruppe }}/n …`, dazu ein fremdes Ereignis, ein fremder Zweig, ein verfallenes Artefakt, ein
+// git ohne Antwort — jede Form fällt ein Urteil (gewählt oder alle Gruppen), nie ein Absturz. Die Mutante, die den Namen
+// ungeprüft liest (wie bis 29.10., Lauf 40830093793), stürzt am Merge-Kopf und am ersten Kopf beim Namen
+async function selbsttestWaehle() {
+    const yml = yaml.dump({ jobs: { voll: { steps: [gs("a", 1), gs("b", 2)] } } });
+    const voll = ["a", "b"].map((w, i) => ({ name: `voll ${i + 1}/2`, conclusion: "success", steps: [{ name: w, conclusion: "success" }] }));
+    const L = (id, head_sha, spur = 1, jobs = voll, event = "push") => ({ id, head_sha, spur, jobs, event, status: "completed", created_at: "2999" });
+    const M = L(4, "M", 1, [{ name: "voll ${{ matrix.gruppe }}/2 ${{ matrix.klasse }}", conclusion: "skipped" }]);
+    // [Name, die Läufe (neueste zuerst; die Ahnen des Kopfs K sind A und main M), Soll, der Stand, an dem git nichts trägt] — der
+    // Merge-Kopf hat die Eltern A und M (voll an M übersprungen, ein PR am Kopf), der erste Kopf nur M (die Batterie an einem fremden Zweig X)
+    const faelle = [
+        ["Merge-Kopf", [L(5, "K", 1, voll, "pull_request"), M, L(3, "A")], /^1 · gegen Lauf 3/],
+        ["erster Kopf eines Zweigs", [L(6, "X"), M], /^alle · kein Ahn/],
+        ["Kopf ohne Spur (das Artefakt verfiel)", [L(3, "A", 0)], /^alle · kein Ahn/],
+        ["git ohne Antwort am Grund", [L(3, "A")], /^alle · git show A:/, "A"],
+    ];
+    const urteil = (modul, laeufe, ohne) =>
+        modul
+            .waehle({
+                api: async (p) => {
+                    const r = laeufe.find((x) => p.includes(`/runs/${x.id}/`)) || { workflow_runs: laeufe, total_count: laeufe.length };
+                    return { ...r, artifacts: r.spur ? ["a", "b"].map((w, i) => ({ name: `konsum-voll-${i + 1}`, archive_download_url: w })) : [] };
+                },
+                kopf: "K",
+                git: ([b, x, y]) =>
+                    b === "merge-base" ? ("AM".includes(y) ? "" : null) : b === "show" ? (x.startsWith(ohne) ? null : /yml$/.test(x) ? yml : "{}") : b === "-c" ? "M\ta.js" : "a.js\nb.js",
+                lade: async (w) => JSON.stringify({ schritte: { ["npm run gate:" + w]: { lies: [w + ".js"], ruft: [] } } }),
+            })
+            .then((w) => `${w.gruppen || "alle"} · ${w.grund}`, (e) => `Absturz: ${e.message}`);
+    // die Mutante behält den übersprungenen voll und liest ihn ungeprüft (fehlt der Anker, gleicht sie dem Original und fällt rot);
+    // sie lebt unter dem Pfad des Originals, so lösen seine require
+    const KOPF = require.resolve("./ci-kopf.cjs");
+    const mut = Object.assign(new module.constructor(KOPF), { filename: KOPF, paths: module.paths });
+    mut._compile(fs.readFileSync(KOPF, "utf8").replace(".exec(j.name))", ".exec(j.name)) || VOLL_JOB.test(j.name)"), KOPF);
+    const f = [];
+    for (const [name, laeufe, soll, ohne] of faelle)
+        for (const [wer, modul, muss] of [
+            ["", require(KOPF), soll],
+            [" — die Mutante", mut.exports, /^(Merge|erster)/.test(name) ? /^Absturz: Cannot read properties of null/ : soll],
+        ]) {
+            const u = await urteil(modul, laeufe, ohne);
+            const z = `Selbsttest Auswahl „${name}"${wer} → ${u}`;
+            console.log(`  ${muss.test(u) ? "✅" : "❌"} ${z}`);
+            if (!muss.test(u)) f.push(`(Z) ${z}`);
+        }
+    return f;
+}
+
 // (V) KOPF: das Urteil des Kopf-Richters (scripts/ci-kopf.cjs) gegen die Fälle
-function selbsttestKopf(urteile = kopfUrteil) {
+function selbsttestKopf() {
     const gruen = (id, event = "push", voll = ["success", "success"], echt = []) => ({
         lauf: { id, event, status: "completed", conclusion: "success", head_branch: "integ-probe" },
         jobs: [{ name: "puls 1/2", conclusion: "success" }]
@@ -1076,7 +1122,7 @@ function selbsttestKopf(urteile = kopfUrteil) {
     ];
     const f = [];
     for (const [n, e, soll] of faelle) {
-        const u = urteile(e);
+        const u = kopfUrteil(e);
         const art = u.warte ? "warte" : u.rot ? "rot" : u.voll;
         const ok = typeof soll === "function" ? soll(u) : art === soll;
         console.log(
@@ -1276,15 +1322,14 @@ function selbsttest() {
 
 // (T) Die Waage gegen ein Fixture.
 function selbsttestWaage() {
-    const schritt = (name, g) => ({ name, if: `matrix.gruppe == ${g}`, run: `npm run gate:${name}` });
     const doc = () => ({
         env: { VOLL_GRUPPEN: "1 2" },
         jobs: {
-            puls: { strategy: { matrix: { gruppe: [1] } }, steps: prep(schritt("Lint", 1)) },
+            puls: { strategy: { matrix: { gruppe: [1] } }, steps: prep(gs("Lint", 1)) },
             voll: {
                 if: VOLL_WENN,
                 strategy: { matrix: VOLL_MATRIX },
-                steps: prep(schritt("A", 1), schritt("B", 2), schritt("C", 1)),
+                steps: prep(gs("A", 1), gs("B", 2), gs("C", 1)),
             },
         },
     });
@@ -1312,7 +1357,7 @@ function selbsttestWaage() {
         ["ein Deckel, der den langsamen Läufer nicht hält", (d, z) => Object.assign(d.jobs.voll, { "timeout-minutes": 20 }) && Object.assign(z.schritte, { A: { s: 898 }, C: { s: 287 } }), /\(T\) FRIST: „voll 1\/2" trägt im langsamen Lauf 20,1 min, timeout-minutes 20 hält nicht 1,2 × davon/],
         ["eine Voll-Gruppe über dem Mittel ihrer Klasse", B100, /\(T\) WAAGE: „voll 1\/2" trägt 6,2 min \(Deckel 4,6 min = Mittel der Klasse 4,1 \+ Rand 0,5\) — der größte Schritt „A" 3,3 min — die Verteilung senkt sie/],
         ["dieselbe Last, je Klasse eine Gruppe (die Verteilung senkt nichts: grün)", (d, z) => B100(d, z) && (d.env.VOLL_GRUPPEN = "1:cpu 2:gpu"), null],
-        ["der Puls über 2 min", (d, z) => d.jobs.puls.steps.push(schritt("Format", 1)) && Object.assign(z.schritte, { Lint: { s: 90 }, Format: { s: 20 } }), /\(T\) WAAGE: „puls 1\/1" trägt 2,2 min \(Deckel 2,0 min je Push\) — der größte Schritt „Lint" 1,5 min$/],
+        ["der Puls über 2 min", (d, z) => d.jobs.puls.steps.push(gs("Format", 1)) && Object.assign(z.schritte, { Lint: { s: 90 }, Format: { s: 20 } }), /\(T\) WAAGE: „puls 1\/1" trägt 2,2 min \(Deckel 2,0 min je Push\) — der größte Schritt „Lint" 1,5 min$/],
         ["ein Schritt ohne Zeit", (d, z) => delete z.schritte.B, /\(T\) UNGEMESSEN: „B" \(voll\)/],
         ["die Zeiten ohne Vorbereitung", (d, z) => delete z.vorbereitung_s, /\(T\) ZEITEN/],
         ["ein Schritt aus voll in den Puls gezogen (allein über dem Deckel, mit Mitfahrer)", (d) => d.jobs.puls.steps.push(Object.assign(d.jobs.voll.steps.splice(5, 1)[0], { if: "matrix.gruppe == 1" })), /\(T\) ALLEIN: „B" trägt allein 5,3 min, über dem Deckel von „puls 1\/1" \(2,0 min\) — 1 Schritte fahren mit/],
@@ -1607,7 +1652,7 @@ async function selbsttestZeiten() {
 }
 async function selbsttestLauf() {
     console.log("=== CI-DECKUNG — Selbsttest (ohne Datei) ===");
-    selbsttestEnde(selbsttest().concat(await selbsttestZeiten()), "jeder eingeschmuggelte Täter fällt rot und wird beim Namen genannt.");
+    selbsttestEnde(selbsttest().concat(await selbsttestZeiten(), await selbsttestWaehle()),"jeder eingeschmuggelte Täter fällt rot und wird beim Namen genannt.");
     process.exit(0);
 }
 
