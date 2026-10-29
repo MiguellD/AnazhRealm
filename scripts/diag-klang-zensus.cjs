@@ -260,7 +260,7 @@ function werkzeug() {
         }
         if (wald) orte.wald = wald;
         // Dorf: der nächste Glut-Bau um die Wiese (≤ 160 m), 4 m davor. Bis w3v-brand-bild warf das Feld ihn (`FELD_WURF`); trägt
-        // die Welt keinen, setzt die Probe die Feuerstelle als Werk 60 m neben den Messort, auf das erste trockene Land im Kreis.
+        // die Welt keinen, setzt die Probe die Feuerstelle als Werk 60 m östlich des Messorts (trockenes Land der Wiese).
         const sucheGlut = () => {
             let g;
             for (const e of st.architectures || []) {
@@ -271,12 +271,7 @@ function werkzeug() {
             return g;
         };
         let glut = sucheGlut();
-        for (let k = 0; !(glut?.d < 160) && k < 16; k++) {
-            const [x, z] = [wx + 60 * Math.cos((k * Math.PI) / 8), wz + 60 * Math.sin((k * Math.PI) / 8)];
-            if (!r._landAt(x, z, 0.4) || r._nassAt(x, z)) continue;
-            r.spawnArchitecture("glutbrunnen", { x, y: r._voxelSurfaceY(x, z) + 0.5, z }, { precise: true, werk: true });
-            glut = sucheGlut();
-        }
+        if (!(glut?.d < 160)) r.spawnArchitecture("glutbrunnen", { x: wx + 60, y: r._voxelSurfaceY(wx + 60, wz) + 0.5, z: wz }, { precise: true, werk: true }), (glut = sucheGlut()); // prettier-ignore
         if (glut) {
             const ex = glut.e.position.x;
             const ez = glut.e.position.z;
