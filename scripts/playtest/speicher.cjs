@@ -761,12 +761,7 @@ async function checkBandRing9to10(ctx) {
                 name: "tempel-besonderer",
                 label: "Tempel",
                 parts: [
-                    {
-                        shape: "box",
-                        material: "stein",
-                        position: { x: 0, y: 0, z: 0 },
-                        size: { x: 1, y: 1, z: 1 },
-                    },
+                    __teil("box", "stein", 0, 0, 0, 1, 1, 1),
                 ],
                 connections: [],
             },
@@ -863,12 +858,7 @@ async function checkBandRing9to10(ctx) {
                 name: "kollidierer",
                 label: "A-Version",
                 parts: [
-                    {
-                        shape: "box",
-                        material: "stein",
-                        position: { x: 0, y: 0, z: 0 },
-                        size: { x: 1, y: 1, z: 1 },
-                    },
+                    __teil("box", "stein", 0, 0, 0, 1, 1, 1),
                 ],
                 connections: [],
             },
@@ -880,12 +870,7 @@ async function checkBandRing9to10(ctx) {
                 name: "kollidierer",
                 label: "B-Version",
                 parts: [
-                    {
-                        shape: "sphere",
-                        material: "quarz",
-                        position: { x: 0, y: 0, z: 0 },
-                        size: { x: 1, y: 1, z: 1 },
-                    },
+                    __teil("sphere", "quarz", 0, 0, 0, 1, 1, 1),
                 ],
                 connections: [],
                 role: "tool",
@@ -998,12 +983,7 @@ async function checkBandRing9to10(ctx) {
                 name: "fremder-altar",
                 label: "Fremder Altar",
                 parts: [
-                    {
-                        shape: "box",
-                        material: "stein",
-                        position: { x: 0, y: 0, z: 0 },
-                        size: { x: 1, y: 1, z: 1 },
-                    },
+                    __teil("box", "stein", 0, 0, 0, 1, 1, 1),
                 ],
                 connections: [],
             },
@@ -1011,12 +991,7 @@ async function checkBandRing9to10(ctx) {
                 name: "fremder-hammer-bp",
                 label: "Fremder Hammer (Bauplan)",
                 parts: [
-                    {
-                        shape: "cylinder",
-                        material: "eisen",
-                        position: { x: 0, y: 0, z: 0 },
-                        size: { x: 1, y: 1, z: 1 },
-                    },
+                    __teil("cylinder", "eisen", 0, 0, 0, 1, 1, 1),
                 ],
                 connections: [],
                 role: "tool",
@@ -2044,14 +2019,7 @@ async function checkBandTailleOmega2(ctx) {
             label: "Ω2",
             builtIn: false,
             parts: [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 1, y: 1, z: 1 },
-                    rotation: { x: 0, y: 0, z: 0 },
-                    opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
-                },
+                __teil("box", "stein", 0, 0, 0, 1, 1, 1, { rotation: { x: 0, y: 0, z: 0 }, opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }] }),
             ],
             connections: [],
             xZukunft: { tief: [1, 2, { drei: true }] },

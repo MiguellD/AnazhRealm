@@ -1209,8 +1209,31 @@ class AnazhRealm_vegetation_wiese {
         return true;
     }
 
+    // DAS WUCHS-GESETZ (stoffe.K5): wie schnell am Ort nachwächst, ist EINE Funktion von Feuchte × Licht ∈ [0, 1] — das Wasser
+    // des Bodens (`_feuchteAt`, aus der Hydrosphäre; wo kein Fluss und kein See ihn tränkt, trägt der Regen `WUCHS.wasserBasis`)
+    // mal das Licht am Boden unter den STEHENDEN Kronen (`_bodenLichtFeld`, dasselbe Licht, nach dem Nah-Wiese und Nah-Streu
+    // wachsen). Die Tageszeit ist für jeden Ort dieselbe Sonnenbahn (die Tag-Achse kennt keine Saison) und trägt darum keinen
+    // Unterschied der Orte; was Orte trennt, ist das Kronendach. Bis stoffe.K5 heilte jede Narbe nach dem gefrorenen Rauschen
+    // `lebendig` (`worldFieldAt`) — ein Zeitgeber mit Ort-Gewicht ohne Wasser und Licht (Mess-Wiese: an den Bäumen F 0, L 0,43).
+    _wuchsAt(x, z) {
+        const W = AnazhRealm.WUCHS;
+        const wasser = W.wasserBasis + (1 - W.wasserBasis) * this._feuchteAt(x, z);
+        return wasser * this._bodenLichtFeld(x, z, x, z)(x, z);
+    }
+
+    // Die Dauer einer Tat in Spielstunden: die Stunden ihrer Klasse (`TAT_NARBE`) durch den Wuchs ihres Orts. Den Wuchs misst
+    // die Tat EINMAL, im Augenblick ihres Schreibens (die Lichtung des gefällten Baums, `w`), und trägt ihn im worldMeta — über
+    // Save und Reload heilt sie gleich, auch wenn die Kronen ringsum noch nicht wieder stehen. Eine Tat aus einem Stand vor
+    // stoffe.K5 misst ihn beim ersten Lesen.
+    _tatDauer(a) {
+        const N = AnazhRealm.TAT_NARBE;
+        if (!Number.isFinite(a.w)) a.w = Math.round(this._wuchsAt(a.x, a.z) * 1e3) / 1e3;
+        return N[a.tat].stunden / Math.max(N.lebMin, a.w);
+    }
+
     // DER NACHWUCHS (feld.K4): geheilte Taten fallen aus dem Gedächtnis der Welt (`worldMeta.taten`), ihre Kachel baut neu
-    // (`_nahStreuTat`: die Pflanze steht wieder, der Stumpf vergeht). `stunde` ist die Welt-Stunde (der Takt reicht
+    // (`_nahStreuTat`: die Pflanze steht wieder, der Stumpf vergeht) — jede nach ihrer Dauer im Wuchs ihres Orts (`_tatDauer`).
+    // `stunde` ist die Welt-Stunde (der Takt reicht
     // `_weltStunde`). DIE RUHE IST DER FIXPUNKT (feld.K3): er schläft bis zur ersten fälligen Heilung (`_nachwuchsFaellig`, die
     // Tat setzt sie); eine geladene Welt (eine neue Liste) weckt ihn einmal. Eine Tat ohne Klasse heilt sofort.
     _tickScatterRegrow(stunde) {
@@ -2015,6 +2038,11 @@ AnazhRealm.PLACE_MODES = Object.freeze({ none: 1, hand: 1, scatter: 1, forest: 1
 AnazhRealm.FORAGE = Object.freeze({
     reach: 6, // m — Pflueck-Reichweite (das Nachwachsen ist die Heilung der Tat, `TAT_NARBE`)
 });
+
+// DAS WUCHS-GESETZ (`_wuchsAt`, stoffe.K5): das Wasser des Bodens ohne Fluss und See (der Regen allein) im Maß des nassen
+// Ufers. Gesetzt gegen feld.K4: an der Mess-Wiese (Feuchte 0) heilt die Narbe eines gefällten Baums in der Lichtung binnen
+// der 36 Stunden ihrer Linse zur Hälfte (Wuchs ≥ 0,65; bis stoffe.K5 trug das Rauschen `lebendig` dort 0,72–0,92).
+AnazhRealm.WUCHS = Object.freeze({ wasserBasis: 0.75 });
 
 // Material-Strata: ab dieser Tiefe (m) unter der Oberfläche dominiert stein, auch wenn eine andere
 // Achse gewänne. Wirkt NUR bei Aufrufern mit y-Argument (Aufrufe ohne y unverändert).

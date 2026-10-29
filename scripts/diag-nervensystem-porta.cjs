@@ -17,7 +17,7 @@
 //     liefert Meshes end-to-end (mat.color reist, BuildGroup baut) · die
 //     Distanz-Wahl lod=2 klemmt auf die groesste deklarierte Stufe ≤ 2.
 //   node scripts/diag-nervensystem-porta.cjs [--selftest]
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
@@ -54,20 +54,8 @@ hauptLauf(async () => {
     console.log("=== ε-BEWEIS PORTA — TEIL S: die statischen Absenzen (Node) ===");
     for (const [name, ok, detail] of staticLaws()) check(name, ok, detail);
 
-    console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
-    await server.lausche(PORT);
-    const { browser, page } = await nullSeite({ frist: 180000 });
-    await server.zeige(page, 30000);
-
     const W = { bp: "tor_drachentor", donor: "tor_basis", preset: "drachentor", praefix: "tor_", wahl: 2, name: "ein Tor", art: "gate", anzahl: 7, teile: 4, label: "Drachentor", place: { mode: "site", siteTag: "tor", dispatch: null } };
-    const out = await page.evaluate(kernStufen.epsilonSeite, W);
-    // Die Erwartung der Stufen: die Kerne in der Seite (dieselben Dateien wie der Worker), nie eine Abschrift.
-    const kern = await page.evaluate(kernStufen.seitenStufen, kernStufen.kernRaeume());
-
-    await browser.close();
-    server.close();
-
-    kernStufen.epsilonUrteil(check, out, W, kern);
+    const [out, , kern] = await kernStufen.epsilonDraht(server, PORT, W, check);
     check("B: die Regler-Daten fliessen (drachentor.s.orders == 2)", out.b.s.orders === 2, String(out.b.s.orders));
     const ksGate = JSON.stringify(out.b.ks.gate);
     check("B: kindStages.gate == die Deklaration von porta-core (N7.5-Merge am Ingest; 3 = NUR-WURF)", ksGate === kern.gate, `${ksGate} (Kern ${kern.gate})`);

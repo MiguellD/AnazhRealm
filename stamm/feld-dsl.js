@@ -618,9 +618,9 @@ class AnazhRealm_feld_dsl {
         // wertlosen/schädlichen. value default 0 (neutral); Tie-Break = älter zuerst.
         let worst = Infinity;
         for (let i = 0; i < rules.length; i++) {
-            // Mensch-Gesetze + vom Schöpfer ANGEPINNTE (adoptierte) Regeln sind
-            // geschützt — nur ephemere Nexus-Experimente werden verdrängt.
-            if (rules[i].source === "human" || rules[i].pinned) continue;
+            // Spieler-Gesetze (deine und die des Mitspielers, `_gesetzGeber`) + vom Schöpfer ANGEPINNTE (adoptierte)
+            // Regeln sind geschützt — nur ephemere Nexus-Experimente werden verdrängt.
+            if (this._gesetzGeber(rules[i]) || rules[i].pinned) continue;
             const v = rules[i].value || 0;
             if (v < worst || (v === worst && victim >= 0 && rules[i].born < rules[victim].born)) {
                 worst = v;
@@ -628,7 +628,7 @@ class AnazhRealm_feld_dsl {
             }
         }
         if (victim < 0) {
-            // Notbremse (alle Mensch/pinned): den ältesten überhaupt.
+            // Notbremse (alle Spieler-Gesetze/pinned): den ältesten überhaupt.
             let oldest = Infinity;
             for (let i = 0; i < rules.length; i++) {
                 if (rules[i].born < oldest) {
@@ -712,9 +712,9 @@ class AnazhRealm_feld_dsl {
                 ctx.log.push({ event: "rule_effect_exception", message: err.message });
             }
             r.costMsSum = (r.costMsSum || 0) + (performance.now() - t0);
-            // Das ERSTE Feuern einer Mensch-Regel wird eine Welt-Erinnerung ("weil dein Gesetz wirkte");
-            // fires===1 ist eindeutig, da Mensch-Regeln permanent sind (kein TTL-Renew setzt zurück).
-            if (r.fires === 1 && r.source === "human") this._journalRuleAwoke(r);
+            // Das ERSTE Feuern eines Spieler-Gesetzes wird eine Welt-Erinnerung („weil dein Gesetz wirkte", beim Mitspieler sein
+            // Name); fires===1 ist eindeutig, da Spieler-Gesetze permanent sind (kein TTL-Renew setzt zurück).
+            if (r.fires === 1 && this._gesetzGeber(r)) this._journalRuleAwoke(r);
         }
         if (expired) {
             const kept = [];
@@ -728,7 +728,7 @@ class AnazhRealm_feld_dsl {
     // gestempelt (für Journal/Fitness in Phase C).
     _worldRuleCtx(rule) {
         return this.dslCtx({
-            seed: this._worldRuleSeed(rule, rule.fires || 0),
+            seed: this._worldRuleSeed(rule, Math.floor(this.state.spielZeit / rule.everySec)),
             source: `rule:${rule.source || "unknown"}`,
             budget: this._worldRuleBudget(),
             programId: `rule_${rule.id}`,
@@ -740,18 +740,33 @@ class AnazhRealm_feld_dsl {
         return { spawnsLeft: 8, depthLeft: 6, stepsLeft: 200, delayedSteps: 8 };
     }
 
-    // Deterministische Regel-RNG (FNV-1a über worldId + ruleId + fireIndex): Peers mit demselben
-    // Regel-Satz sehen denselben N-ten Lauf; fireIndex variiert je Feuern → random_chance/
-    // random_position bleiben lebendig, ohne den Cross-Peer-Determinismus zu brechen.
-    _worldRuleSeed(rule, fireIndex) {
+    // Deterministische Regel-RNG: der EINE Hash (`_fastHash`) über worldId, die Identität des Gesetzes (`_regelHash`) und die
+    // Scheibe der Welt-Uhr (`spielZeit` / everySec — die Uhr, der jeder Peer folgt, `_weltUhrNimm`): Peers mit demselben Gesetz
+    // würfeln in derselben Scheibe denselben Wurf, jede Scheibe neu. Bis ultiversum.K4 trug die Saat die Platz-Nummer `id`, die
+    // jeder Peer selbst zählt (ein Nexus-Experiment mehr bei B, und „manchmal" würfelte dort anders), und die Zahl der Feuer:
+    // fiel der erste Wurf von „manchmal" daneben, fiel jeder daneben — das Gesetz schlief für immer.
+    _worldRuleSeed(rule, scheibe) {
         const wid = (this.state.worldMeta && this.state.worldMeta.worldId) || this.state.worldId || "realm";
-        const s = `${wid}:rule:${rule.id}:${fireIndex || 0}`;
-        let h = 2166136261 >>> 0;
-        for (let i = 0; i < s.length; i++) {
-            h ^= s.charCodeAt(i);
-            h = Math.imul(h, 16777619) >>> 0;
-        }
-        return h >>> 0 || 1;
+        return parseInt(this._fastHash(`${wid}:rule:${this._regelHash(rule)}:${scheibe || 0}`), 16) >>> 0 || 1;
+    }
+
+    // DIE IDENTITÄT EINES GESETZES (ultiversum.K4): der EINE Hash über Bedingung und Wirkung — auf jedem Peer, nach jedem Reload
+    // und aus jeder Quelle derselbe (nie die Platz-Nummer `id`). Leser: die Saat der Regel und die Mehrspieler-Wand, die ein
+    // geschriebenes Gesetz von einer Vorlage scheidet (`GESETZ_VORLAGEN` und die Gesetze, die eine Welt schon trägt).
+    _regelHash(rule) {
+        return rule.hash || (rule.hash = this._fastHash(JSON.stringify([rule.cond, rule.effect])));
+    }
+
+    // WER GAB DAS GESETZ? „du" (dein Satz, `human`), der Mitspieler, dessen Satz über den dsl-Kanal kam (`remote:<peerId>` —
+    // nur ein Spieler-Programm reist, `dslRun`), sonst null (Nexus, Grok, das Gemüt). Ein Spieler-Gesetz ist permanent und vor
+    // der Verdrängung geschützt, sein erstes Feuern wird Erinnerung — bei dir wie beim Mitspieler. Bis ultiversum.K4 galt das
+    // Gesetz des Mitspielers bei B als Experiment: der Nexus verdrängte es am vollen Register, B's Liste nannte „remote:p-…".
+    _gesetzGeber(rule) {
+        const q = rule && rule.source;
+        if (q === "human") return "du";
+        if (typeof q !== "string" || !q.startsWith("remote:")) return null;
+        const e = this.state.p2p && this.state.p2p.peers && this.state.p2p.peers.get(q.slice(7));
+        return (e && e.avatarName) || "ein Mitspieler";
     }
 
     // Fitness je Regel über das Lebens-Fenster, nur aus der Regel SELBST zuordenbaren Achsen:
@@ -827,8 +842,8 @@ class AnazhRealm_feld_dsl {
         return { x: p.x, z: p.z };
     }
 
-    // Das erste Erwachen einer Mensch-Regel als Welt-Erinnerung; idempotent über die Signatur (seen
-    // reist im Snapshot). NUR Mensch-Regeln — Nexus/LLM-Experimente fluteten sonst das Tagebuch und
+    // Das erste Erwachen eines Spieler-Gesetzes (`_gesetzGeber`) als Welt-Erinnerung; idempotent über die Signatur (seen
+    // reist im Snapshot). NUR Spieler-Gesetze — Nexus/LLM-Experimente fluteten sonst das Tagebuch und
     // verdrängten die Genesis-Anker. Einziger Aufrufer: _tickWorldRules beim ersten Feuern.
     _journalRuleAwoke(rule) {
         let desc;
@@ -837,10 +852,13 @@ class AnazhRealm_feld_dsl {
         } catch {
             desc = "ein Gesetz";
         }
+        const wer = this._gesetzGeber(rule);
         this.journalAppendOnce(
             `ruleAwoke:${rule._sig || rule.id}`,
             "rule",
-            AnazhRealm._datum`Dein Gesetz erwachte — ${desc}.`
+            wer === "du"
+                ? AnazhRealm._datum`Dein Gesetz erwachte — ${desc}.`
+                : AnazhRealm._datum`Das Gesetz von ${wer} erwachte — ${desc}.`
         );
     }
 
@@ -2313,6 +2331,10 @@ class AnazhRealm_feld_dsl {
 _stammZonen(AnazhRealm, [AnazhRealm_feld_dsl]);
 
 // ===== ATLAS · Feld/dsl — Außen-Konstanten =====
+// DIE VORLAGEN DER GESETZE (ultiversum.K4): die Sätze, die das Spiel dem Spieler als Beispiel zeigt (Gesetze-Liste, „zeige
+// regeln"). Ein Gesetz aus einer Vorlage ist kein geschriebenes — die Mehrspieler-Wand (gate:mp-sync (h)) scheidet es über
+// den Hash (`_regelHash`) des Programms, das der EINE Satz-Parser (`_regelAusSatz`) aus ihm baut.
+AnazhRealm.GESETZ_VORLAGEN = Object.freeze(["wann immer es regnet, dann setze wetter sunny"]);
 AnazhRealm.WORLD_RULES = Object.freeze({
     cap: 64,
     budgetPerFrame: 4,

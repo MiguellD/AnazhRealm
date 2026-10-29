@@ -3134,16 +3134,20 @@
   antik:       [[-800,['griechisch','roemisch']],[0,['roemisch','griechisch']]],
 };
     // prettier-ignore
+    // DIE TRACHT je Epoche (siedlung.K4): der Schnitt (top · bottom · shoes, die Wahlen des Mensch-Gesetzes koerper-core
+    // `kleidZonen`) und die Farben (`CLOTH_COLORS`), in die der Genom-Roller der Bewohner fällt — der Export trägt sie als
+    // `kleidung` (die Epoche seines Jahrs, `epocheBei`), der Leser ist der Wirt (`_bewohnerGestalten`).
+    // prettier-ignore
     const EPOCHEN={   // Legacy-Wahl → fixiert Region+Zeit (Pool-Override); 'gewuerfelt' überlässt ALLES dem Samen
-  antike:      {region:'antik',        jahr:80,   spanne:70,  groesse:'markt'},
-  mittelalter: {region:'mitteleuropa', jahr:1320, spanne:90,  groesse:'dorf'},
-  hanse:       {region:'mitteleuropa', jahr:1560, spanne:140, groesse:'markt', pool:['hanseatisch','hollaendisch','niedersaechsisch'], mark:{k:'hanseatisch',set:{turm:1,storeys:4}}},
-  barock:      {region:'mitteleuropa', jahr:1700, spanne:80,  groesse:'dorf',  pool:['barock','renaissance','franzoesisch'], mark:{k:'barock',set:{kuppel:1,W:14,D:11}}},
-  gruenderzeit:{region:'mitteleuropa', jahr:1860, spanne:60,  groesse:'markt', pool:['viktorianisch','georgian','hanseatisch'], mark:{k:'viktorianisch',set:{turm:1,storeys:3}}},
-  alpin:       {region:'alpin',        jahr:1620, spanne:220, groesse:'dorf'},
-  mediterran:  {region:'mediterran',   jahr:1520, spanne:260, groesse:'dorf'},
-  fernost:     {region:'fernost',      jahr:1250, spanne:300, groesse:'dorf'},
-  moderne:     {region:'mitteleuropa', jahr:1935, spanne:70,  groesse:'stadt', pool:['modern','volle_moderne'], mark:{k:'hochhaus',set:{}}},
+  antike:      {region:'antik',        jahr:80,   spanne:70,  groesse:'markt', tracht:{top:'poncho',bottom:'shorts',shoes:'none',farben:['white','sand','burgundy','red']}},
+  mittelalter: {region:'mitteleuropa', jahr:1320, spanne:90,  groesse:'dorf',  tracht:{top:'poncho',bottom:'pants',shoes:'boot',farben:['sand','olive','grey','mustard','burgundy']}},
+  hanse:       {region:'mitteleuropa', jahr:1560, spanne:140, groesse:'markt', pool:['hanseatisch','hollaendisch','niedersaechsisch'], mark:{k:'hanseatisch',set:{turm:1,storeys:4}}, tracht:{top:'pullover',bottom:'pants',shoes:'boot',farben:['black','navy','burgundy','sand','white']}},
+  barock:      {region:'mitteleuropa', jahr:1700, spanne:80,  groesse:'markt', pool:['barock','renaissance','franzoesisch'], mark:{k:'barock',set:{kuppel:1,W:14,D:11}}, tracht:{top:'pullover',bottom:'pants',shoes:'boot',farben:['burgundy','navy','red','mustard','white']}},
+  gruenderzeit:{region:'mitteleuropa', jahr:1860, spanne:60,  groesse:'markt', pool:['viktorianisch','georgian','hanseatisch'], mark:{k:'viktorianisch',set:{turm:1,storeys:3}}, tracht:{top:'pullover',bottom:'pants',shoes:'boot',farben:['black','charcoal','grey','navy','white']}},
+  alpin:       {region:'alpin',        jahr:1620, spanne:220, groesse:'dorf',  tracht:{top:'pullover',bottom:'shorts',shoes:'boot',farben:['green','olive','grey','white','red']}},
+  mediterran:  {region:'mediterran',   jahr:1520, spanne:260, groesse:'dorf',  tracht:{top:'poncho',bottom:'pants',shoes:'boot',farben:['white','sand','teal','red']}},
+  fernost:     {region:'fernost',      jahr:1250, spanne:300, groesse:'dorf',  tracht:{top:'poncho',bottom:'pants',shoes:'none',farben:['navy','teal','red','white','black']}},
+  moderne:     {region:'mitteleuropa', jahr:1935, spanne:70,  groesse:'stadt', pool:['modern','volle_moderne'], mark:{k:'hochhaus',set:{}}, tracht:{top:'tshirt',bottom:'pants',shoes:'sneaker',farben:['navy','blue','grey','white','charcoal','teal','red','black']}},
 };
     // prettier-ignore
     const NAMEN={
@@ -3314,32 +3318,109 @@
         var nH = groesse(o);
         return { seed: o.h || 1, nH: nH, stufe: stufeVon(o), x: o.x, z: o.z, reichM: siedlungsReich(S, nH) };
     }
+    // ── DIE CHRONIK (siedlung.K4): das Jahr ist EIN Parameter des Plans. Der Ort wächst längs der ZEITACHSE seiner Region (ihre
+    // Epochen der Tafel nach dem Jahr) aus EINER Saat: je Epoche E ein Anker am Ende ihrer Spanne (T = jahr + d + spanne, d die
+    // Saat-Verschiebung des Plans), die Häuserzahl log-linear von der Klasse der ersten Epoche bis zur Gegenwart (nEnde am Ende
+    // des Plans), in das Band der Klasse von E geklemmt (mit nEnde skaliert) und wachsend; davor die Gründung (gr0, 1 Haus).
+    // Das Haus i ist gegründet im Jahr, in dem der Ort i+1 Häuser zählt (`chronikJahr`, Kern = alt): der Plan eines früheren
+    // Jahrs ist der Anfang des jüngeren — seine Lose stehen dort, wo sie im jüngeren stehen (Jahresringe, gate:settlement J).
+    // Bis K4 rechnete jede Epoche ihren eigenen Plan (dieselbe Saat, 1320 → 1560 → 1860 → 1935: 22–67 % der älteren
+    // Grundrisse im jüngeren) und die Ring-Stadt würfelte das Baujahr je Haus (t^0,82, ein Turm von 1455 aus Glas).
+    // die Größen-Klasse einer Häuserzahl (die Wände der Klassen: weiler < 8 ≤ dorf < 17 ≤ markt < 27 ≤ stadt < 49 ≤ grossstadt < 141)
+    var GROESSE_BAND = [["weiler", 8], ["dorf", 17], ["markt", 27], ["stadt", 49], ["grossstadt", 141], ["metropole", Infinity]];
+    function groesseVon(n) {
+        for (var k = 0; ; k++) if (n < GROESSE_BAND[k][1]) return GROESSE_BAND[k][0];
+    }
+    function groesseBand(klasse) {
+        for (var k = 0; k < GROESSE_BAND.length; k++)
+            if (GROESSE_BAND[k][0] === klasse) return [k ? GROESSE_BAND[k - 1][1] : 4, Math.min(GROESSE_WAND, GROESSE_BAND[k][1] - 1)];
+        throw new Error("fachwerk: keine Größen-Klasse " + klasse);
+    }
+    // die Zeitachse einer Region: ihre Epochen der Tafel nach dem Jahr
+    function zeitachse(region) {
+        return Object.keys(EPOCHEN)
+            .filter(function (k) {
+                return EPOCHEN[k].region === region;
+            })
+            .sort(function (a, b) {
+                return EPOCHEN[a].jahr - EPOCHEN[b].jahr;
+            });
+    }
+    // die Epoche eines Jahrs t (Saat-Verschiebung d): die jüngste der Achse, deren Spanne bis t endet, sonst die erste; eine
+    // Region ohne Epoche liest die Achse aller
+    function epocheBei(region, t, d) {
+        var achse = zeitachse(region);
+        if (!achse.length)
+            achse = Object.keys(EPOCHEN).sort(function (a, b) {
+                return EPOCHEN[a].jahr - EPOCHEN[b].jahr;
+            });
+        var e = achse[0];
+        for (var k = 0; k < achse.length; k++) if (EPOCHEN[achse[k]].jahr + d + EPOCHEN[achse[k]].spanne <= t) e = achse[k];
+        return e;
+    }
+    // die Anker [[jahr, häuser], …] eines Orts der Region mit nEnde Häusern am Jahr tEnde, dessen Gegenwart die Klasse
+    // `klasse` trägt; `vor` = die Epochen der Achse vor seiner (ihre Anker), gr0 = die Gründung
+    function chronikAnker(vor, d, gr0, tEnde, nEnde, klasse) {
+        var s = nEnde / GROESSE_N[klasse];
+        var A = [[gr0, 1]];
+        var T = function (k) {
+            return EPOCHEN[k].jahr + d + EPOCHEN[k].spanne;
+        };
+        var t1 = vor.length ? T(vor[0]) : tEnde;
+        var n1 = Math.max(1, vor.length ? GROESSE_N[EPOCHEN[vor[0]].groesse] * s : nEnde);
+        for (var k = 0; k < vor.length; k++) {
+            var t = T(vor[k]);
+            if (t <= A[A.length - 1][0] || t >= tEnde) continue;
+            var band = groesseBand(EPOCHEN[vor[k]].groesse);
+            var n = Math.round(n1 * Math.pow(nEnde / n1, (t - t1) / Math.max(1, tEnde - t1)));
+            n = Math.max(Math.round(band[0] * s), Math.min(Math.round(band[1] * s), n));
+            A.push([t, Math.min(nEnde, Math.max(n, A[A.length - 1][1] + 1))]);
+        }
+        A.push([Math.max(tEnde, gr0), nEnde]);
+        return A;
+    }
+    // das Jahr, in dem der Ort der Anker A sein Haus i gründet (das erste ganze Jahr mit i+1 Häusern)
+    function chronikJahr(A, i) {
+        var m = i + 1;
+        for (var k = 1; k < A.length; k++) {
+            var a0 = A[k - 1][1],
+                a1 = A[k][1];
+            if (m > a1 || !(a1 > a0)) continue;
+            if (m <= a0) return A[k - 1][0];
+            return Math.ceil(A[k - 1][0] + ((A[k][0] - A[k - 1][0]) * Math.log(m / a0)) / Math.log(a1 / a0) - 1e-9);
+        }
+        return A[A.length - 1][0];
+    }
     // prettier-ignore
     function DORF(DP){
   let s=((Math.round((DP.seed||1)*613+29)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
-  const leg=(DP.epoche&&DP.epoche!=='gewuerfelt')?EPOCHEN[DP.epoche]:null;
+  const leg0=(DP.epoche&&DP.epoche!=='gewuerfelt')?EPOCHEN[DP.epoche]:null, achse=leg0?zeitachse(leg0.region):[];
+  const chronik=!!leg0&&!DP.nH&&achse.length>1;                                                 /*DIE CHRONIK (siedlung.K4): ohne Zahl lebt die Epoche in der Gegenwart ihrer Region — der Plan ist der ihrer juengsten Epoche, das Jahr der Epoche schneidet ihn (unten)*/
+  const leg=chronik?EPOCHEN[achse[achse.length-1]]:leg0;
   const nZiel=Math.max(4,Math.min(GROESSE_WAND,DP.nH||(leg&&GROESSE_N[leg.groesse])||18));         // ZIEL-GESETZ: der Regler IST die Stadt; ohne Regler die Klasse der Epoche (EPOCHEN.groesse, siedlung.K2), sonst 18 (bis K2 der Export-Zwilling 18 neben 24 hier)
-  let region,jahr,spanne;
-  if(leg){ region=leg.region; jahr=leg.jahr+(((rnd()-0.5)*50)|0); spanne=leg.spanne; }
+  let region,jahr,spanne,d=0;
+  if(leg){ region=leg.region; d=((rnd()-0.5)*50)|0; jahr=leg.jahr+d; spanne=leg.spanne; }
   else{ const r=rnd(); region= r<.30?'mitteleuropa': r<.46?'alpin': r<.64?'mediterran': r<.76?'nordisch': r<.88?'fernost':'antik';
     if(region==='antik'){ jahr=-150+((rnd()*400)|0); spanne=40+((rnd()*90)|0); }
     else{ jahr=880+((rnd()*680)|0); const sp=rnd(); spanne= sp<.35?(20+((rnd()*60)|0)):(sp<.75?(180+((rnd()*300)|0)):(500+((rnd()*420)|0)));
       if(region==='fernost'&&jahr>1500) jahr=1050+((rnd()*450)|0); } }
   const n=nZiel;
-  const groesse= n<8?'weiler': n<17?'dorf': n<27?'markt': n<49?'stadt': n<141?'grossstadt':'metropole';
-  const staedtisch=(groesse==='markt'||groesse==='stadt'||groesse==='grossstadt'||groesse==='metropole');
+  const groesse=groesseVon(n), staedtischVon=g=>(g==='markt'||g==='stadt'||g==='grossstadt'||g==='metropole');
+  const staedtisch=staedtischVon(groesse);
   const kr=rnd(); const kernel= staedtisch?'markt':(kr<.45?'brunnen':(kr<.78?'anger':'kreuzung'));
   const poolAt=(y,hist)=>{ if(!hist&&leg&&leg.pool)return leg.pool; const H=REGION_HIST[region]; let P=H[0][1]; for(const q of H){ if(y>=q[0])P=q[1]; } return P; };   /*hist=true: die HISTORIE gewinnt ueber die Legende — Jahresringe brauchen die Architektur ihrer Zeit*/
   const geb=[];
-  const ringe=staedtisch&&jahr>1700;                                                          /*JAHRESRING-GESETZ: die Stadt ist geronnene ZEIT — der Radius wird zur Zeitachse. Kern=Gruendung (Altstadt), Rand=Gegenwart; Kultur+Baujahr je PARZELLE aus ihrem Ring; die Regions-HISTORIE (poolAt) liefert die Architektur jener Zeit*/
+  const ringe=(staedtisch&&jahr>1700)||chronik;                                                        /*JAHRESRING-GESETZ: die Stadt ist geronnene ZEIT — der Radius wird zur Zeitachse. Kern=Gruendung (Altstadt), Rand=Gegenwart; Kultur+Baujahr je PARZELLE aus ihrem Ring; die Regions-HISTORIE (poolAt) liefert die Architektur jener Zeit*/
   const gr0=ringe? Math.min(jahr-150, 1150+((rnd()*260)|0)) : jahr; globalThis.__ring={gr0:gr0, ringe:ringe};   /*Zeitachse global — DORF wuerfelt, dorfLayout liest (getrennte Funktionen)*/
+  const anker=ringe? chronikAnker(achse.filter(k=>leg&&EPOCHEN[k].jahr<leg.jahr), d, gr0, jahr+spanne, n, leg?leg.groesse:groesse) : null;   /*die Ring-Stadt waechst laengs der Zeitachse (chronikJahr) — Kern=Gruendung, Rand=Gegenwart*/
+  const gr=[], fr=[];                                                                         /*je Los: das Gruendungsjahr und die frueheren Bauten [{ab, v}] (der Schnitt der Chronik liest sie)*/
   for(let i=0;i<n;i++){
     const t9r=i/Math.max(1,n-1);
-    let by; if(ringe){ by=Math.round(gr0 + (jahr+spanne-gr0)*Math.pow(t9r,0.82)*(0.88+0.24*rnd()));
-      const mix=rnd(); if(mix<0.12) by=Math.round(by+(jahr+spanne-by)*(0.45+0.5*rnd()));      /*ERSATZBAU: die Luecke im Ring, spaeter gefuellt*/
-      else if(mix>0.93) by=Math.round(gr0+(by-gr0)*rnd()*0.45);                                /*UEBERLEBENDER: das alte Haus zwischen den Juengeren*/
+    let by; if(ringe){ by=chronikJahr(anker,i);
+      if(rnd()<0.12) by=Math.round(by+(jahr+spanne-by)*(0.45+0.5*rnd()));                       /*ERSATZBAU: das Los wird spaeter neu bebaut — der fruehere Bau bleibt in fr*/
       by=Math.max(gr0, Math.min(jahr+spanne, by)); }
     else by=jahr+Math.round(spanne*t9r*(0.55+0.45*rnd()));
+    gr.push(ringe?chronikJahr(anker,i):by); fr.push([]);
     const pool=poolAt(by, ringe), kn=pool[(rnd()*pool.length)|0], hs=1+((rnd()*1e6)|0);
     const p=kulturParams(kn,hs); p.seed=hs; p.kultur=kn; p.terrain=0; p.baujahr=by; p.rolle='wohnhaus';
     if(ringe) p.W=Math.max(4.5, Math.min(15, Math.round(p.W*(0.80+0.38*t9r)*2)/2));         /*PARZELLEN-GEDAECHTNIS: schmale Buergerhaeuser im Kern, breite Lose am Saum*/
@@ -3354,35 +3435,52 @@
     p.arm=(n>=16&&w<0.72)?1:0;
     p.balcony=(w>0.95&&p.storeys>=2&&rnd()<0.5)?1:0;
     if(i>0){ const g2=rnd(); p.grundriss=(g2<(staedtisch?0.85:0.68))?'I':((g2<0.9)?'L':p.grundriss); }
+    if(by!==gr[i]){ const P0=poolAt(gr[i], ringe), k0=P0[hs%P0.length]; fr[i].push({ab:gr[i], v:Object.assign({}, p, kulturParams(k0,hs), {kultur:k0, baujahr:gr[i]})}); }
     geb.push(p); }
   const modern=(jahr>=1905&&staedtisch), gewerbe=(jahr>=1850&&staedtisch&&n>=20), gwA=rnd()*Math.PI*2;
-  if(modern){ for(let i=0;i<n;i++){ if(i>0&&i<n*0.22&&rnd()<0.72){ const p=geb[i];      // DOWNTOWN-GESETZ: der Kern wächst in den Himmel
+  if(modern){ for(let i=0;i<n;i++){ if(i>0&&i<n*0.22&&rnd()<0.72){ const p=geb[i];      // DOWNTOWN-GESETZ: der Kern wächst in den Himmel — als NEUBAU des alten Loses im Jahrhundert der Moderne (der alte Bau bleibt in fr)
+    const ty=Math.min(jahr+spanne, Math.max(1905+p.seed%Math.max(1,jahr+spanne-1904), p.baujahr+1)), PT=poolAt(ty, ringe);
+    fr[i].push({ab:p.baujahr, v:Object.assign({}, p)}); p.baujahr=ty; p.kultur=PT[p.seed%PT.length];
     p.stil=(rnd()<0.62)?'glas':'klinker'; p.storeys=8+((rnd()*16)|0); p.W=12+((rnd()*6)|0); p.D=10+((rnd()*5)|0);
     p.dachTyp='flach'; p.grundriss='I'; p.balcony=0; p.keller=0; p.annexN=0; p.arm=0; p.turmbau=1; p.rolle='turm'; } } }
-  if(gewerbe){ for(let i=(n*0.78)|0;i<n;i++){ if(rnd()<0.6){ const p=geb[i];             // GEWERBE-GESETZ: Hallen-Viertel am Rand
+  if(gewerbe){ for(let i=(n*0.78)|0;i<n;i++){ if(rnd()<0.6&&gr[i]>=1850){ const p=geb[i];   // GEWERBE-GESETZ: Hallen-Viertel am Rand (ein Los, das vor 1850 gegruendet ist, traegt keine Halle)
     p.rolle='halle'; p.stil='klinker'; p.W=12+((rnd()*4)|0); p.D=9+((rnd()*4)|0); p.storeys=1;
     p.pitchDeg=14; p.grundriss='I'; p.balcony=0; p.annexN=0; p.arm=1; p.sektor=gwA; p.turmbau=0; } } }
-  if(n>=8){ const p=geb[0];
-    const mk=(leg&&leg.mark)?leg.mark:(region==='mediterran'?{k:'barock',set:{kuppel:1,W:14,D:11}}:region==='fernost'?{k:'chinesisch',set:{W:15,D:11}}:region==='antik'?{k:'roemisch',set:{arkade:1,W:15,D:11}}:region==='nordisch'?{k:'norwegisch',set:{turm:1,D:10}}:region==='alpin'?{k:'gotisch',set:{turm:1,D:9,W:7}}:(jahr>1880?{k:'hochhaus',set:{}}:jahr>1620?{k:'barock',set:{kuppel:1,W:13,D:11}}:{k:'gotisch',set:{turm:1,D:11}}));
-    Object.assign(p,kulturParams(mk.k,p.seed),{kultur:mk.k},mk.set||{}); p.rolle='kirche'; p.mark=1; p.keller=0; p.baujahr=jahr; }
-  if(n>=8){ const p=geb[1]; p.rolle='gasthaus'; p.W=Math.min(15,p.W+2.5); p.D=Math.min(11,p.D+1);
+  const markBei=(L,y)=>(L&&L.mark)?L.mark:(region==='mediterran'?{k:'barock',set:{kuppel:1,W:14,D:11}}:region==='fernost'?{k:'chinesisch',set:{W:15,D:11}}:region==='antik'?{k:'roemisch',set:{arkade:1,W:15,D:11}}:region==='nordisch'?{k:'norwegisch',set:{turm:1,D:10}}:region==='alpin'?{k:'gotisch',set:{turm:1,D:9,W:7}}:(y>1880?{k:'hochhaus',set:{}}:y>1620?{k:'barock',set:{kuppel:1,W:13,D:11}}:{k:'gotisch',set:{turm:1,D:11}}));
+  const kirche=(p,mk,ab)=>Object.assign(p,kulturParams(mk.k,p.seed),{kultur:mk.k},mk.set||{},{rolle:'kirche',mark:1,keller:0,baujahr:ab});
+  if(n>=8){ const p=geb[0];                                                                   /*DIE KIRCHE DER EPOCHE: je Epoche der Achse vor der Gegenwart ein Bau ihrer Marke (ab der Mitte ihrer Spanne, die erste ab der Gruendung)*/
+    if(ringe) fr[0]=achse.filter(k=>leg&&EPOCHEN[k].jahr<leg.jahr).map((k,j)=>{ const E=EPOCHEN[k], ab=j?E.jahr+d+((E.spanne/2)|0):gr[0]; return {ab, v:kirche(Object.assign({},p),markBei(E,E.jahr+d),ab)}; }).filter(f=>f.ab<jahr);
+    kirche(p,markBei(leg,jahr),jahr); }
+  const losBauten=i=>[geb[i]].concat(fr[i].map(f=>f.v));                                      /*Gasthaus und Schmiede sind Rollen des LOSES: jeder seiner Bauten traegt sie*/
+  if(n>=8) for(const p of losBauten(1)){ p.rolle='gasthaus'; p.W=Math.min(15,p.W+2.5); p.D=Math.min(11,p.D+1);
     if(p.storeys<2)p.storeys=2; if(region==='mitteleuropa'||region==='mediterran')p.arkade=1; }
-  if(n>=10){ const p=geb[Math.max(2,(n*0.62)|0)]; p.rolle='schmiede'; p.W=5.5; p.D=5; p.storeys=1; p.balcony=0; p.annexN=0; p.grundriss='I'; p.turm=0; p.kuppel=0; }
+  if(n>=10) for(const p of losBauten(Math.max(2,(n*0.62)|0))){ p.rolle='schmiede'; p.W=5.5; p.D=5; p.storeys=1; p.balcony=0; p.annexN=0; p.grundriss='I'; p.turm=0; p.kuppel=0; }
   if(staedtisch&&jahr<1700&&n>=16&&rnd()<0.5){                                            // BURG-GESETZ: die Stadt hat einen Herrn
     const bk=(region==='nordisch')?'norwegisch':'gotisch', bs=1+((rnd()*1e6)|0);
     const bp=kulturParams(bk,bs); Object.assign(bp,{seed:bs,kultur:bk,terrain:0,baujahr:jahr-((rnd()*80)|0),rolle:'burg',wohl:1.2,
       W:13+((rnd()*2)|0), D:11, storeys:3, turm:1, zinnen:1, keller:0, annexN:0, balcony:0, grundriss:'I', arm:0});
     geb.push(bp); }
-  const alle=[], schQ={weiler:.75,dorf:.55,markt:.28,stadt:.06,grossstadt:.04,metropole:.03}[groesse];
-  geb.forEach(p=>{ const pi=alle.length; alle.push(p);
+  const alle=[], za=[], schQ={weiler:.75,dorf:.55,markt:.28,stadt:.06,grossstadt:.04,metropole:.03}[groesse];
+  geb.forEach((p,gi)=>{ const pi=alle.length; alle.push(p); za.push({gr:gi<n?gr[gi]:p.baujahr, fr:(fr[gi]||[]).map(f=>(f.v.W=Math.min(f.v.W,p.W), f.v.D=Math.min(f.v.D,p.D), f))});   /*der fruehere Bau steht im Los des juengeren*/
     if(p.rolle==='wohnhaus'&&Math.min(p.W,p.D)>=6.5&&rnd()<schQ){
       const cap2=Math.min(7,Math.min(p.W,p.D)-2), sn=1+((rnd()*1e6)|0);
       alle.push({W:Math.max(4,Math.round((cap2-rnd()*1.5)*2)/2), D:Math.max(4,Math.round((cap2-0.5-rnd()*1.5)*2)/2), storeys:1,
         pitchDeg:Math.max(28,p.pitchDeg-6), brace:'k', stil:(region==='mediterran'||region==='antik')?'stein':'huette',
         hip:0, roofCurve:0, grundriss:'I', dachTyp:'sattel', bogenTyp:'none', seed:sn, kultur:p.kultur, col:p.col,
-        keller:0, terrain:0, annexN:0, balcony:0, rolle:'scheune', parent:pi, baujahr:p.baujahr, wohl:p.wohl,
-        treppgiebel:0,kuppel:0,portikus:0,arkade:0,turm:0,zinnen:0,veranda:0,vorkragung:0,pilotis:0,terrasse:0}); } });
-  return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses:alle,
+        keller:0, terrain:0, annexN:0, balcony:0, rolle:'scheune', parent:pi, baujahr:za[pi].gr, wohl:p.wohl,
+        treppgiebel:0,kuppel:0,portikus:0,arkade:0,turm:0,zinnen:0,veranda:0,vorkragung:0,pilotis:0,terrasse:0}); za.push({gr:za[pi].gr, fr:[]}); } });
+  // DER SCHNITT DER CHRONIK: das Jahr der Epoche (T = jahr + d + spanne) nimmt die Lose, die bis T gegruendet sind — der Anfang
+  // der Liste (Kern = alt) —, je Los den Bau, der bei T steht; `lose` traegt das Los der Gegenwart, wo ein frueherer Bau steht
+  // (das Layout packt die Lose: ein frueherer Plan liegt in der Gestalt des juengeren). Ohne Chronik ist der Plan sein Schnitt.
+  const T=chronik?leg0.jahr+d+leg0.spanne:jahr+spanne, houses=[], lose=[];
+  for(let a=0;a<alle.length&&za[a].gr<=T;a++){ let v=alle[a];
+    if(v.baujahr>T) for(const f of za[a].fr) if(f.ab<=T) v=f.v;
+    houses.push(v); lose.push(v===alle[a]?null:alle[a]); }
+  const nS=houses.filter(h=>h.rolle!=='scheune').length, gS=chronik?groesseVon(nS):groesse;
+  const tracht=EPOCHEN[epocheBei(region,T,d)].tracht;
+  return {seed:DP.seed||1, name:ORTSNAME(region, DP.seed||1), region, groesse, kernel, jahr, spanne, staedtisch, houses, lose, nGestalt:alle.length,
+          schnitt:{jahr:chronik?leg0.jahr+d:jahr, spanne:chronik?leg0.spanne:spanne, groesse:gS, staedtisch:staedtischVon(gS)},
+          kleidung:{top:tracht.top, bottom:tracht.bottom, shoes:tracht.shoes, farben:tracht.farben.slice()},
           norm:Object.assign({},DORF_NORM,{budget:Math.max(80000,Math.min(400000,DP.budget||DORF_NORM.budget)), gap:(groesse==='stadt'||groesse==='grossstadt'||groesse==='metropole')?0.06:(staedtisch?0.6:DORF_NORM.gap)})};
 }
     // prettier-ignore
@@ -3511,7 +3609,7 @@
   const tips=[];
   for(let a2=0;a2<nT;a2++){ const th= grid? a2*Math.PI*2/nT : (a2*2*Math.PI/nT+(rnd()-0.5)*0.5);
     tips.push({node:0, th, gen:0, steps: staedt?(plan.groesse==='metropole'?16: plan.groesse==='grossstadt'?7:4)+((rnd()*2)|0) : 6+((rnd()*3)|0)}); }
-  const maxE= staedt? (plan.groesse==='metropole'?Math.min(150,40+((plan.houses.length*0.36)|0)): plan.groesse==='grossstadt'?54:24) : 8, gates=[];
+  const maxE= staedt? (plan.groesse==='metropole'?Math.min(150,40+(((plan.nGestalt||plan.houses.length)*0.36)|0)): plan.groesse==='grossstadt'?54:24) : 8, gates=[];
   while(tips.length&&edges.length<maxE){
     const t=tips.shift(); if(t.steps<=0) continue;
     const nd=nodes[t.node];
@@ -3558,13 +3656,13 @@
     // ════════════ dorfLayout v5 — GRAPH-WACHSTUM + MAUER ════════════
     // prettier-ignore
     function dorfLayout(plan, ext, seed, H){
-  const N=plan.norm, gap=N.gap, sW=N.strasseW, lw=N.laneW, gw=N.gehweg, n=ext.length;
+  const N=plan.norm, gap=N.gap, sW=N.strasseW, lw=N.laneW, gw=N.gehweg, n=ext.length, nG=plan.nGestalt||n;   /*nG: die Lose der GESTALT (der Chronik) — Mauer, Platz und Staende stehen fuer jeden Schnitt gleich*/
   let s=((Math.round((seed||1)*389+71)*2654435761)>>>0); const rnd=()=>{ s=(s*1664525+1013904223)>>>0; return s/4294967296; };
   const staedt=plan.staedtisch;
   const jitAmp= staedt?0.05 : (plan.jahr<1500?0.9 : plan.jahr<1780?0.45 : 0.2);
   const DS=3;
   const walled= staedt&&plan.jahr<1750;                                                     // STADTMAUER-GESETZ: die Mauer erzwingt die Dichte
-  const Rw= walled? Math.min(195, 26+Math.sqrt(n)*8.4) : 0;
+  const Rw= walled? Math.min(195, 26+Math.sqrt(nG)*8.4) : 0;
   const G=strassengraph(rnd, plan, sW, lw, Rw, H||null);
   const roads=G.edges;
   const at=(rd,u)=>{ const k=Math.max(0,Math.min(rd.pts.length-2,(u/DS)|0)), f=(u-k*DS)/DS, A=rd.pts[k], B=rd.pts[Math.min(rd.pts.length-1,k+1)];
@@ -3635,9 +3733,9 @@
           roads.push({a:-1,b:-1,pts:qp,w:lw,gen:2}); edepth.push(8); } } } }
   const pl=new Array(n), obbs=[], brunnen=[], fences=[], felder=[], staende=[];
   let platz=null;
-  if(!staedt||plan.kernel==='markt'){ const PW=Math.max(7,5+Math.min(n,40)*0.30), PD=Math.max(6,PW*0.55);
+  if(!staedt||plan.kernel==='markt'){ const PW=Math.max(7,5+Math.min(nG,40)*0.30), PD=Math.max(6,PW*0.55);
     platz={cx:0,cz:sW/2+PD/2, phi:0, ex:PW, ez:PD/2, typ:(plan.kernel==='anger'||(staedt&&plan.jahr>1840))?'gras':'weg'};   // PARK-GESETZ der Moderne brunnen.push({x:0,z:sW/2+PD/2});
-    if(platz.typ==='weg'){ staende.push({x:-PW*0.45,z:sW/2+PD*0.45}); staende.push({x:PW*0.45,z:sW/2+PD*0.55}); if(n>18)staende.push({x:0,z:sW/2+PD*0.82}); } }
+    if(platz.typ==='weg'){ staende.push({x:-PW*0.45,z:sW/2+PD*0.45}); staende.push({x:PW*0.45,z:sW/2+PD*0.55}); if(nG>18)staende.push({x:0,z:sW/2+PD*0.82}); } }
   else brunnen.push({x:sW/2+2.4,z:sW/2+2.4});
   const platzObb= platz? {cx:platz.cx,cz:platz.cz,phi:0,ex:platz.ex,ez:platz.ez} : null;
   const curs=[];
@@ -3797,7 +3895,8 @@
   const laterneFrei=(x,z)=>obbs.every(q2=>fernOBB(x,z,q2.o,LATERNE_WAND)||distPunktOBB(x,z,q2.o)>=LATERNE_WAND)&&!laterneImWeg(x,z);   /*DER EINE STAND DER LATERNE: vor der Wand (LATERNE_WAND) UND mit dem Fuss neben jedem Weg — Stadt, Platz, Knoten und Gasse fragen hier*/
   const laterneQuer=(rd,q,fl)=>{ const lo=rd.w/2+LATERNE_FUSS; for(let o=rd.w/2+gw+0.35; ; o=Math.max(lo,o-0.25)){ const x=q.x+fl*q.nx*o, z=q.z+fl*q.nz*o; if(laterneFrei(x,z)) return {x,z}; if(o<=lo) return null; } };   /*DER STAND QUER ZUR GASSE (K66): vom alten Stand 0,35 m hinter dem Gehweg in 0,25-m-Schritten bis an den Bordstein (der Fuss am Wegrand), nie in die Fahrbahn — bis K66-n4 rueckte er bis rd.w/4 an die Achse, 123/292 Laternen standen im Weg (der Spieler lief gegen den Mast); wo die Wand keinen Stand traegt, sucht der Weg weiter*/
   let R9L=30; for(const rd9 of roads) for(const q9 of rd9.pts){ const d9=Math.hypot(q9.x,q9.z); if(d9>R9L)R9L=d9; }   /*ZEITREISE-Referenz: der ECHTE Stadtradius (Strassen-Max), nicht Mauer-Rw — GEMESSEN 0 Gas*/
-  if(staedt&&plan.jahr>1850){ for(const rd of roads){ if(rd.gen>=2)continue;
+  const zeit=plan.schnitt||plan;                                                               /*das Licht gehoert dem Jahr des Schnitts: 1320 brennt keine Gaslaterne*/
+  if(zeit.staedtisch&&zeit.jahr>1850){ for(const rd of roads){ if(rd.gen>=2)continue;
     for(let u=6, fl=1; u<(rd.len||0)-4; u+=DORF_NORM.laneiv-4+((u*7)%5), fl=-fl){ const q=at(rd,u);   /*laneiv KONSUMIERT: 13..17 byte-gleich (laneiv-4 == 13)*/
       const lq=laterneQuer(rd,q,fl), lx2=lq?lq.x:0, lz2=lq?lq.z:0;
       let ok=!!lq;
@@ -6399,6 +6498,16 @@
         }
         return Object.assign({}, B, { p: hp, q: { phi: 0, x: 0, y: 0, z: 0, obb: { cx: 0, cz: 0 } }, meshes: [] });
     }
+    var PASSUNG_LUFT = 0.02,
+        PASSUNG_SCHRITTE = 4;
+    // die obb des Baus mit der Hülle e im Rahmen q seines Loses (der Ursprung des Hauses bei q.x/q.z, gedreht um q.phi)
+    function obbImLos(q, e) {
+        var lx = (e.x0 + e.x1) / 2,
+            lz = (e.z0 + e.z1) / 2,
+            c = Math.cos(q.phi),
+            s = Math.sin(q.phi);
+        return { cx: q.x + lx * c + lz * s, cz: q.z - lx * s + lz * c, phi: q.phi, ex: (e.x1 - e.x0) / 2, ez: (e.z1 - e.z0) / 2 };
+    }
     function exportSettlement(dp) {
         dp = dp && typeof dp === "object" ? dp : {};
         var plan = DORF({
@@ -6410,10 +6519,29 @@
         var ext = [];
         var Bs = [];
         var i;
+        // DIE JAHRESRINGE (siedlung.K4): das Layout packt die LOSE der Gestalt (`plan.lose`, wo im Schnitt ein früherer Bau steht),
+        // der Slot trägt den Bau seines Jahrs — im Rahmen des Loses um denselben Ursprung
+        // DIE PASSUNG: der frühere Bau steht in seinem Los — ragt seine Hülle über die des Loses (die Traufe und der Turm der
+        // alten Kirche über dem flachen Los der Gegenwart), wird er um das Doppelte des Überstands schmaler oder kürzer, bis sie
+        // liegt (höchstens PASSUNG_SCHRITTE; danach ROT beim Namen) — sonst warf die Bau-Wand der Welt seinen Nachbarn.
         for (i = 0; i < plan.houses.length; i++) {
-            var Bm = massBauExport(plan.houses[i]); // brandwand schreibt in die EINE hp-Quelle — ov (unten) liest sie
+            var hp0 = plan.houses[i],
+                Bm = massBauExport(hp0), // brandwand schreibt in die EINE hp-Quelle — ov (unten) liest sie
+                el = plan.lose[i] ? massBauExport(plan.lose[i]).ext : Bm.ext;
+            for (var k = 0; ; k++) {
+                var ax = Math.max(el.x0 - Bm.ext.x0, Bm.ext.x1 - el.x1),
+                    az = Math.max(el.z0 - Bm.ext.z0, Bm.ext.z1 - el.z1);
+                if (ax <= PASSUNG_LUFT && az <= PASSUNG_LUFT) break;
+                if (k === PASSUNG_SCHRITTE)
+                    throw new Error("fachwerk: der Bau von " + hp0.baujahr + " (" + hp0.kultur + ") passt nicht in sein Los (" + ax.toFixed(2) + "/" + az.toFixed(2) + " m)");
+                hp0 = plan.houses[i] = Object.assign({}, hp0, {
+                    W: ax > PASSUNG_LUFT ? hp0.W - 2 * ax - PASSUNG_LUFT : hp0.W,
+                    D: az > PASSUNG_LUFT ? hp0.D - 2 * az - PASSUNG_LUFT : hp0.D,
+                });
+                Bm = massBauExport(hp0);
+            }
             Bs.push(Bm);
-            ext.push(Bm.ext);
+            ext.push(el);
         }
         // DIE TRASSE LIEST DAS GELÄNDE (siedlung.K3): `dp.hoehe` ist das Höhen-Raster um den Ort (`trasseRahmen`, plan-lokal); ohne
         // es liegt der Plan auf ebenem Grund (der Akt ohne Ort, das Labor ohne Welt)
@@ -6437,7 +6565,9 @@
         for (i = 0; i < plan.houses.length; i++) {
             var q = lay.pl[i];
             if (!q || !q.obb || Math.abs(q.obb.cx) > 5000 || Math.abs(q.obb.cz) > 5000) continue;
-            var hp = plan.houses[i];
+            var hp = plan.houses[i],
+                ev = Bs[i].ext,
+                o = plan.lose[i] ? obbImLos(q, ev) : q.obb;
             slotVon[i] = slots.length;
             slots.push(
                 hausSlot(
@@ -6445,8 +6575,8 @@
                     hp,
                     q,
                     plan.norm.gap <= 0.6 && hp.brandwand
-                        ? obbAnDerBrandwand(q.obb, hp.brandwand, ext[i], Bs[i].wandX)
-                        : { cx: q.obb.cx, cz: q.obb.cz, phi: q.obb.phi, ex: q.obb.ex, ez: q.obb.ez }
+                        ? obbAnDerBrandwand(o, hp.brandwand, ev, Bs[i].wandX)
+                        : { cx: o.cx, cz: o.cz, phi: o.phi, ex: o.ex, ez: o.ez }
                 )
             );
         }
@@ -6454,11 +6584,12 @@
             seed: plan.seed,
             name: plan.name,
             region: plan.region,
-            groesse: plan.groesse,
+            groesse: plan.schnitt.groesse,
             kernel: plan.kernel,
-            jahr: plan.jahr,
-            spanne: plan.spanne,
-            staedtisch: !!plan.staedtisch,
+            jahr: plan.schnitt.jahr,
+            spanne: plan.schnitt.spanne,
+            staedtisch: !!plan.schnitt.staedtisch,
+            kleidung: plan.kleidung, // die Tracht der Epoche (siedlung.K4; Leser: der Wirt, `_bewohnerGestalten`)
             spawn: lay.spawn,
             welt: lay.welt,
             slots: slots,
@@ -7371,6 +7502,8 @@
         GROESSE_N: GROESSE_N,
         STADTMAUER: STADTMAUER,
         EPOCHEN: EPOCHEN,
+        zeitachse: zeitachse, // die Epochen einer Region nach dem Jahr (siedlung.K4; Leser: DORF, gate:settlement J)
+        epocheBei: epocheBei, // die Epoche eines Jahrs (Tracht, Kirche; Leser: DORF, gate:settlement J)
         REGION_HIST: REGION_HIST,
         // Vertrags-/Paritäts-Fläche (der Gate komponiert die Lab-Pfade selbst)
         LAB_SEED: LAB_SEED,

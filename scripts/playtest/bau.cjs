@@ -516,24 +516,9 @@ async function checkBandWave10b(ctx) {
             if (r.state.blueprints["test_10b_car"]) r.deleteBlueprint("test_10b_car");
             r.cloneBlueprint("stein_block", "test_10b_car");
             r.state.blueprints.test_10b_car.parts = [
-                {
-                    shape: "cylinder",
-                    material: "eisen",
-                    position: { x: -1, y: 0.3, z: 0 },
-                    size: { x: 0.6, y: 0.4, z: 0.6 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "eisen",
-                    position: { x: 1, y: 0.3, z: 0 },
-                    size: { x: 0.6, y: 0.4, z: 0.6 },
-                },
-                {
-                    shape: "box",
-                    material: "quarz",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 1.2, y: 0.8, z: 0.6 },
-                },
+                __teil("cylinder", "eisen", -1, 0.3, 0, 0.6, 0.4, 0.6),
+                __teil("cylinder", "eisen", 1, 0.3, 0, 0.6, 0.4, 0.6),
+                __teil("box", "quarz", 0, 1, 0, 1.2, 0.8, 0.6),
             ];
             out.carIsMoveable = r.computeBlueprintAffordances(r.state.blueprints.test_10b_car).moveable === true;
 
@@ -544,25 +529,10 @@ async function checkBandWave10b(ctx) {
             r.cloneBlueprint("stein_block", "test_10b_sled");
             r.state.blueprints.test_10b_sled.parts = [
                 // Stein-Boxen als Stütze (NICHT cylinder, NICHT torus)
-                {
-                    shape: "box",
-                    material: "eisen",
-                    position: { x: -1, y: 0.2, z: 0 },
-                    size: { x: 0.5, y: 0.4, z: 0.5 },
-                },
-                {
-                    shape: "box",
-                    material: "eisen",
-                    position: { x: 1, y: 0.2, z: 0 },
-                    size: { x: 0.5, y: 0.4, z: 0.5 },
-                },
+                __teil("box", "eisen", -1, 0.2, 0, 0.5, 0.4, 0.5),
+                __teil("box", "eisen", 1, 0.2, 0, 0.5, 0.4, 0.5),
                 // Quarz-Antrieb oben
-                {
-                    shape: "octahedron",
-                    material: "quarz",
-                    position: { x: 0, y: 1.2, z: 0 },
-                    size: { x: 0.6, y: 0.6, z: 0.6 },
-                },
+                __teil("octahedron", "quarz", 0, 1.2, 0, 0.6, 0.6, 0.6),
             ];
             out.boxSledIsMoveable = r.computeBlueprintAffordances(r.state.blueprints.test_10b_sled).moveable === true;
 
@@ -570,18 +540,8 @@ async function checkBandWave10b(ctx) {
             if (r.state.blueprints["test_10b_carless"]) r.deleteBlueprint("test_10b_carless");
             r.cloneBlueprint("stein_block", "test_10b_carless");
             r.state.blueprints.test_10b_carless.parts = [
-                {
-                    shape: "cylinder",
-                    material: "stein",
-                    position: { x: -1, y: 0.3, z: 0 },
-                    size: { x: 0.6, y: 0.4, z: 0.6 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "stein",
-                    position: { x: 1, y: 0.3, z: 0 },
-                    size: { x: 0.6, y: 0.4, z: 0.6 },
-                },
+                __teil("cylinder", "stein", -1, 0.3, 0, 0.6, 0.4, 0.6),
+                __teil("cylinder", "stein", 1, 0.3, 0, 0.6, 0.4, 0.6),
             ];
             out.carlessNotMoveable = !r.computeBlueprintAffordances(r.state.blueprints.test_10b_carless).moveable;
 
@@ -589,18 +549,8 @@ async function checkBandWave10b(ctx) {
             if (r.state.blueprints["test_10b_scope"]) r.deleteBlueprint("test_10b_scope");
             r.cloneBlueprint("stein_block", "test_10b_scope");
             r.state.blueprints.test_10b_scope.parts = [
-                {
-                    shape: "sphere",
-                    material: "quarz",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 0.5, y: 0.5, z: 0.5 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 0, y: 1, z: -0.6 },
-                    size: { x: 0.4, y: 1.2, z: 0.4 },
-                },
+                __teil("sphere", "quarz", 0, 1, 0, 0.5, 0.5, 0.5),
+                __teil("cylinder", "holz", 0, 1, -0.6, 0.4, 1.2, 0.4),
             ];
             out.scopeIsMagnifying =
                 r.computeBlueprintAffordances(r.state.blueprints.test_10b_scope).magnifying === true;
@@ -616,30 +566,10 @@ async function checkBandWave10b(ctx) {
             if (r.state.blueprints["test_10ext_radiator"]) r.deleteBlueprint("test_10ext_radiator");
             r.cloneBlueprint("stein_block", "test_10ext_radiator");
             r.state.blueprints.test_10ext_radiator.parts = [
-                {
-                    shape: "octahedron",
-                    material: "quarz",
-                    position: { x: 1.2, y: 0.5, z: 0 },
-                    size: { x: 0.6, y: 0.6, z: 0.6 },
-                },
-                {
-                    shape: "octahedron",
-                    material: "quarz",
-                    position: { x: -1.2, y: 0.5, z: 0 },
-                    size: { x: 0.6, y: 0.6, z: 0.6 },
-                },
-                {
-                    shape: "octahedron",
-                    material: "quarz",
-                    position: { x: 0, y: 0.5, z: 1.2 },
-                    size: { x: 0.6, y: 0.6, z: 0.6 },
-                },
-                {
-                    shape: "octahedron",
-                    material: "quarz",
-                    position: { x: 0, y: 0.5, z: -1.2 },
-                    size: { x: 0.6, y: 0.6, z: 0.6 },
-                },
+                __teil("octahedron", "quarz", 1.2, 0.5, 0, 0.6, 0.6, 0.6),
+                __teil("octahedron", "quarz", -1.2, 0.5, 0, 0.6, 0.6, 0.6),
+                __teil("octahedron", "quarz", 0, 0.5, 1.2, 0.6, 0.6, 0.6),
+                __teil("octahedron", "quarz", 0, 0.5, -1.2, 0.6, 0.6, 0.6),
             ];
             out.radiatorIsRadiating =
                 r.computeBlueprintAffordances(r.state.blueprints.test_10ext_radiator).radiating === true;
@@ -648,24 +578,9 @@ async function checkBandWave10b(ctx) {
             if (r.state.blueprints["test_10ext_mast"]) r.deleteBlueprint("test_10ext_mast");
             r.cloneBlueprint("stein_block", "test_10ext_mast");
             r.state.blueprints.test_10ext_mast.parts = [
-                {
-                    shape: "octahedron",
-                    material: "quarz",
-                    position: { x: 0, y: 0.3, z: 0 },
-                    size: { x: 0.6, y: 0.6, z: 0.6 },
-                },
-                {
-                    shape: "octahedron",
-                    material: "quarz",
-                    position: { x: 0, y: 0.9, z: 0 },
-                    size: { x: 0.6, y: 0.6, z: 0.6 },
-                },
-                {
-                    shape: "octahedron",
-                    material: "quarz",
-                    position: { x: 0, y: 1.5, z: 0 },
-                    size: { x: 0.6, y: 0.6, z: 0.6 },
-                },
+                __teil("octahedron", "quarz", 0, 0.3, 0, 0.6, 0.6, 0.6),
+                __teil("octahedron", "quarz", 0, 0.9, 0, 0.6, 0.6, 0.6),
+                __teil("octahedron", "quarz", 0, 1.5, 0, 0.6, 0.6, 0.6),
             ];
             out.mastNotRadiating = r.computeBlueprintAffordances(r.state.blueprints.test_10ext_mast).radiating !== true;
             // Welt-Reaktion: nahe einem Strahler steigen awe + peace.
@@ -710,24 +625,9 @@ async function checkBandWave10b(ctx) {
             if (r.state.blueprints["test_10ext_bcline"]) r.deleteBlueprint("test_10ext_bcline");
             r.cloneBlueprint("stein_block", "test_10ext_bcline");
             r.state.blueprints.test_10ext_bcline.parts = [
-                {
-                    shape: "cylinder",
-                    material: "eisen",
-                    position: { x: -1.5, y: 0, z: 0 },
-                    size: { x: 0.4, y: 0.4, z: 0.4 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "eisen",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 0.4, y: 0.4, z: 0.4 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "eisen",
-                    position: { x: 1.5, y: 0, z: 0 },
-                    size: { x: 0.4, y: 0.4, z: 0.4 },
-                },
+                __teil("cylinder", "eisen", -1.5, 0, 0, 0.4, 0.4, 0.4),
+                __teil("cylinder", "eisen", 0, 0, 0, 0.4, 0.4, 0.4),
+                __teil("cylinder", "eisen", 1.5, 0, 0, 0.4, 0.4, 0.4),
             ];
             out.horizLineNotBroadcasting =
                 r.computeBlueprintAffordances(r.state.blueprints.test_10ext_bcline).broadcasting !== true;
@@ -771,30 +671,10 @@ async function checkBandWave10b(ctx) {
             if (r.state.blueprints["test_10ext_radstrong"]) r.deleteBlueprint("test_10ext_radstrong");
             r.cloneBlueprint("stein_block", "test_10ext_radstrong");
             r.state.blueprints.test_10ext_radstrong.parts = [
-                {
-                    shape: "sphere",
-                    material: "quarz",
-                    position: { x: 1.2, y: 0.5, z: 0 },
-                    size: { x: 0.6, y: 0.6, z: 0.6 },
-                },
-                {
-                    shape: "sphere",
-                    material: "quarz",
-                    position: { x: -1.2, y: 0.5, z: 0 },
-                    size: { x: 0.6, y: 0.6, z: 0.6 },
-                },
-                {
-                    shape: "sphere",
-                    material: "quarz",
-                    position: { x: 0, y: 0.5, z: 1.2 },
-                    size: { x: 0.6, y: 0.6, z: 0.6 },
-                },
-                {
-                    shape: "sphere",
-                    material: "quarz",
-                    position: { x: 0, y: 0.5, z: -1.2 },
-                    size: { x: 0.6, y: 0.6, z: 0.6 },
-                },
+                __teil("sphere", "quarz", 1.2, 0.5, 0, 0.6, 0.6, 0.6),
+                __teil("sphere", "quarz", -1.2, 0.5, 0, 0.6, 0.6, 0.6),
+                __teil("sphere", "quarz", 0, 0.5, 1.2, 0.6, 0.6, 0.6),
+                __teil("sphere", "quarz", 0, 0.5, -1.2, 0.6, 0.6, 0.6),
             ];
             const radWeakStr = r.computeAffordanceStrength(r.state.blueprints.test_10ext_radiator).radiating;
             const radStrongStr = r.computeAffordanceStrength(r.state.blueprints.test_10ext_radstrong).radiating;
@@ -803,24 +683,9 @@ async function checkBandWave10b(ctx) {
             if (r.state.blueprints["test_10ext_mastweak"]) r.deleteBlueprint("test_10ext_mastweak");
             r.cloneBlueprint("stein_block", "test_10ext_mastweak");
             r.state.blueprints.test_10ext_mastweak.parts = [
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 0, y: 0, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "holz",
-                    position: { x: 0, y: 2, z: 0 },
-                    size: { x: 0.5, y: 1, z: 0.5 },
-                },
+                __teil("cylinder", "holz", 0, 0, 0, 0.5, 1, 0.5),
+                __teil("cylinder", "holz", 0, 1, 0, 0.5, 1, 0.5),
+                __teil("cylinder", "holz", 0, 2, 0, 0.5, 1, 0.5),
             ];
             const mastWeakStr = r.computeAffordanceStrength(r.state.blueprints.test_10ext_mastweak).broadcasting;
             const mastStrongStr = r.computeAffordanceStrength(r.state.blueprints.test_10ext_mast).broadcasting;
@@ -873,30 +738,10 @@ async function checkBandWave10b(ctx) {
             if (r.state.blueprints["test_10ext_platform"]) r.deleteBlueprint("test_10ext_platform");
             r.cloneBlueprint("stein_block", "test_10ext_platform");
             r.state.blueprints.test_10ext_platform.parts = [
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 1.5, y: 0.2, z: 0 },
-                    size: { x: 1, y: 0.4, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: -1.5, y: 0.2, z: 0 },
-                    size: { x: 1, y: 0.4, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0.2, z: 1.5 },
-                    size: { x: 1, y: 0.4, z: 1 },
-                },
-                {
-                    shape: "box",
-                    material: "stein",
-                    position: { x: 0, y: 0.2, z: -1.5 },
-                    size: { x: 1, y: 0.4, z: 1 },
-                },
+                __teil("box", "stein", 1.5, 0.2, 0, 1, 0.4, 1),
+                __teil("box", "stein", -1.5, 0.2, 0, 1, 0.4, 1),
+                __teil("box", "stein", 0, 0.2, 1.5, 1, 0.4, 1),
+                __teil("box", "stein", 0, 0.2, -1.5, 1, 0.4, 1),
             ];
             out.platformIsBalancing =
                 r.computeBlueprintAffordances(r.state.blueprints.test_10ext_platform).balancing === true;
@@ -912,30 +757,10 @@ async function checkBandWave10b(ctx) {
             if (r.state.blueprints["test_10ext_platweak"]) r.deleteBlueprint("test_10ext_platweak");
             r.cloneBlueprint("stein_block", "test_10ext_platweak");
             r.state.blueprints.test_10ext_platweak.parts = [
-                {
-                    shape: "cylinder",
-                    material: "stein",
-                    position: { x: 1.5, y: 0.2, z: 0 },
-                    size: { x: 1, y: 0.4, z: 1 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "stein",
-                    position: { x: -1.5, y: 0.2, z: 0 },
-                    size: { x: 1, y: 0.4, z: 1 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "stein",
-                    position: { x: 0, y: 0.2, z: 1.5 },
-                    size: { x: 1, y: 0.4, z: 1 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "stein",
-                    position: { x: 0, y: 0.2, z: -1.5 },
-                    size: { x: 1, y: 0.4, z: 1 },
-                },
+                __teil("cylinder", "stein", 1.5, 0.2, 0, 1, 0.4, 1),
+                __teil("cylinder", "stein", -1.5, 0.2, 0, 1, 0.4, 1),
+                __teil("cylinder", "stein", 0, 0.2, 1.5, 1, 0.4, 1),
+                __teil("cylinder", "stein", 0, 0.2, -1.5, 1, 0.4, 1),
             ];
             const balStrong = r.computeAffordanceStrength(r.state.blueprints.test_10ext_platform).balancing;
             const balWeak = r.computeAffordanceStrength(r.state.blueprints.test_10ext_platweak).balancing;
@@ -953,24 +778,9 @@ async function checkBandWave10b(ctx) {
             if (r.state.blueprints["test_10ext_lifter"]) r.deleteBlueprint("test_10ext_lifter");
             r.cloneBlueprint("stein_block", "test_10ext_lifter");
             r.state.blueprints.test_10ext_lifter.parts = [
-                {
-                    shape: "cone",
-                    material: "quarz",
-                    position: { x: 1, y: 0.5, z: 0 },
-                    size: { x: 0.6, y: 0.8, z: 0.6 },
-                },
-                {
-                    shape: "cone",
-                    material: "quarz",
-                    position: { x: -1, y: 0.5, z: 0 },
-                    size: { x: 0.6, y: 0.8, z: 0.6 },
-                },
-                {
-                    shape: "cone",
-                    material: "quarz",
-                    position: { x: 0, y: 0.5, z: 1 },
-                    size: { x: 0.6, y: 0.8, z: 0.6 },
-                },
+                __teil("cone", "quarz", 1, 0.5, 0, 0.6, 0.8, 0.6),
+                __teil("cone", "quarz", -1, 0.5, 0, 0.6, 0.8, 0.6),
+                __teil("cone", "quarz", 0, 0.5, 1, 0.6, 0.8, 0.6),
             ];
             out.lifterIsLifting = r.computeBlueprintAffordances(r.state.blueprints.test_10ext_lifter).lifting === true;
             // Eine schwere Stein-Plattform → NICHT lifting (magie zu tief).
@@ -990,24 +800,9 @@ async function checkBandWave10b(ctx) {
             if (r.state.blueprints["test_10ext_lifterstrong"]) r.deleteBlueprint("test_10ext_lifterstrong");
             r.cloneBlueprint("stein_block", "test_10ext_lifterstrong");
             r.state.blueprints.test_10ext_lifterstrong.parts = [
-                {
-                    shape: "helix",
-                    material: "quarz",
-                    position: { x: 1, y: 0.5, z: 0 },
-                    size: { x: 0.6, y: 1, z: 2 },
-                },
-                {
-                    shape: "helix",
-                    material: "quarz",
-                    position: { x: -1, y: 0.5, z: 0 },
-                    size: { x: 0.6, y: 1, z: 2 },
-                },
-                {
-                    shape: "helix",
-                    material: "quarz",
-                    position: { x: 0, y: 0.5, z: 1 },
-                    size: { x: 0.6, y: 1, z: 2 },
-                },
+                __teil("helix", "quarz", 1, 0.5, 0, 0.6, 1, 2),
+                __teil("helix", "quarz", -1, 0.5, 0, 0.6, 1, 2),
+                __teil("helix", "quarz", 0, 0.5, 1, 0.6, 1, 2),
             ];
             const liftWeak = r.computeAffordanceStrength(r.state.blueprints.test_10ext_lifter).lifting;
             const liftStrong = r.computeAffordanceStrength(r.state.blueprints.test_10ext_lifterstrong).lifting;
@@ -1273,24 +1068,9 @@ async function checkBandWave10b(ctx) {
             if (r.state.blueprints["test_10b3_far"]) r.deleteBlueprint("test_10b3_far");
             r.cloneBlueprint("stein_block", "test_10b3_far");
             r.state.blueprints.test_10b3_far.parts = [
-                {
-                    shape: "cylinder",
-                    material: "eisen",
-                    position: { x: -1, y: 0.3, z: 0 },
-                    size: { x: 0.6, y: 0.4, z: 0.6 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "eisen",
-                    position: { x: 1, y: 0.3, z: 0 },
-                    size: { x: 0.6, y: 0.4, z: 0.6 },
-                },
-                {
-                    shape: "box",
-                    material: "quarz",
-                    position: { x: 0, y: 1, z: 0 },
-                    size: { x: 1.2, y: 0.8, z: 0.6 },
-                },
+                __teil("cylinder", "eisen", -1, 0.3, 0, 0.6, 0.4, 0.6),
+                __teil("cylinder", "eisen", 1, 0.3, 0, 0.6, 0.4, 0.6),
+                __teil("box", "quarz", 0, 1, 0, 1.2, 0.8, 0.6),
             ];
             // Aufsitzen, Fahren und Absteigen über die echte Taste am gesetzten Wagen trägt diag-werkstatt-weg (L-VERBEN)
             const ppos = r.state.playerMesh.position;
@@ -1496,8 +1276,8 @@ async function checkBandPsi0Winkel(ctx) {
         const out = {};
         // ein Werk aus zwei Parts (Eisen-Block + Holz-Stiel): jeder Leser ruft das Organ unbedingt
         const bpK = { name: "_psi1", connections: [], parts: [
-            { shape: "box", material: "eisen", position: { x: 0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } },
-            { shape: "cylinder", material: "holz", position: { x: 0, y: 1.6, z: 0 }, size: { x: 0.2, y: 1.2, z: 0.2 } },
+            __teil("box", "eisen", 0, 0.5, 0, 1, 1, 1),
+            __teil("cylinder", "holz", 0, 1.6, 0, 0.2, 1.2, 0.2),
         ] };
         const liest = (m, args) => window.__consumes(r, m, r, "_resonateArgmax", args);
         // das Temperament fiel aus dem Organ (Vertrags-Akt: temperamentDerGattung aus Ernährung × Masse — die
@@ -1539,66 +1319,21 @@ async function checkBandLambda1LivingCenter(ctx) {
         // Humanoid Body — anatomisch (Kopf/Rumpf oben, Beine unten, fleisch).
         const humanoid = {
             parts: [
-                {
-                    shape: "box",
-                    material: "fleisch",
-                    position: { x: 0, y: 1.2, z: 0 },
-                    size: { x: 0.9, y: 1.6, z: 0.5 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "fleisch",
-                    position: { x: -0.95, y: 1.1, z: 0 },
-                    size: { x: 0.3, y: 1.3, z: 0.3 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "fleisch",
-                    position: { x: 0.95, y: 1.1, z: 0 },
-                    size: { x: 0.3, y: 1.3, z: 0.3 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "fleisch",
-                    position: { x: -0.4, y: 0, z: 0 },
-                    size: { x: 0.35, y: 1.2, z: 0.35 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "fleisch",
-                    position: { x: 0.4, y: 0, z: 0 },
-                    size: { x: 0.35, y: 1.2, z: 0.35 },
-                },
+                __teil("box", "fleisch", 0, 1.2, 0, 0.9, 1.6, 0.5),
+                __teil("cylinder", "fleisch", -0.95, 1.1, 0, 0.3, 1.3, 0.3),
+                __teil("cylinder", "fleisch", 0.95, 1.1, 0, 0.3, 1.3, 0.3),
+                __teil("cylinder", "fleisch", -0.4, 0, 0, 0.35, 1.2, 0.35),
+                __teil("cylinder", "fleisch", 0.4, 0, 0, 0.35, 1.2, 0.35),
             ],
         };
         // Stein-Tempel — symmetrisch + vertikal, aber NICHT lebendig → !_isBodyShaped.
         const steinTempel = {
             parts: [
-                { shape: "box", material: "stein", position: { x: 0, y: 3, z: 0 }, size: { x: 4, y: 2, z: 4 } },
-                {
-                    shape: "cylinder",
-                    material: "stein",
-                    position: { x: -1.5, y: 1, z: -1.5 },
-                    size: { x: 0.6, y: 2, z: 0.6 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "stein",
-                    position: { x: 1.5, y: 1, z: -1.5 },
-                    size: { x: 0.6, y: 2, z: 0.6 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "stein",
-                    position: { x: -1.5, y: 1, z: 1.5 },
-                    size: { x: 0.6, y: 2, z: 0.6 },
-                },
-                {
-                    shape: "cylinder",
-                    material: "stein",
-                    position: { x: 1.5, y: 1, z: 1.5 },
-                    size: { x: 0.6, y: 2, z: 0.6 },
-                },
+                __teil("box", "stein", 0, 3, 0, 4, 2, 4),
+                __teil("cylinder", "stein", -1.5, 1, -1.5, 0.6, 2, 0.6),
+                __teil("cylinder", "stein", 1.5, 1, -1.5, 0.6, 2, 0.6),
+                __teil("cylinder", "stein", -1.5, 1, 1.5, 0.6, 2, 0.6),
+                __teil("cylinder", "stein", 1.5, 1, 1.5, 0.6, 2, 0.6),
             ],
         };
         out.humanoidBody = r._isBodyShaped(humanoid);

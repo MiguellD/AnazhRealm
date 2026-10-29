@@ -3396,6 +3396,7 @@ class AnazhRealm_siedlung_satz {
             // EINMAL beim Spawn eingefroren (Substanz-Schnappschuss).
             entry.affordanceStrength = this.computeAffordanceStrength(bp, entry.affordances, tags);
             this._werkGesetzSetzen(entry, bp); // das Werk gehorcht der EINEN Statik in der Welt: es steht, stürzt, rollt, fängt Regen
+            this._freiKoerperSetzen(entry, bp); // ein freier Bauplan (Kiste, Fass) ist ein Starrkörper des Lösers (physik.K3)
             // Gewachsene Bäume tragen Species + VariantIndex am Eintrag → `_tickArchitectureLOD` wechselt die
             // Stufe per Distanz ohne Identitätsverlust. Der Wald reicht `_lodSpecies` + `_lodVariantIndex`
             // EXPLIZIT herein, ohne Varianten-Geometrie eager zu bauen; `_rebuildArchitectureMesh` wählt die
