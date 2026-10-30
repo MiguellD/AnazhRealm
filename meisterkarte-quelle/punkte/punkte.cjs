@@ -930,6 +930,8 @@ async function grundProbe(o) {
         // die Welt läuft an (100 Takte à 100 ms Spielzeit), wie vor der ersten mutierenden Probe der Sitzung
         await ev("let t = performance.now(); for (let i = 1; i <= 100; i++) if ((r._gameLoopTick((t += 100)), i % 5 === 0)) await new Promise((f) => setTimeout(f, 0));");
         // der Grund trägt einen eigenen Bauplan mit einem Teil OHNE opChain — geboren wie die Werke des Fachwerks (bank_sitzbank …)
+        // … und ein trauriges Tier (das Gefühls-Etikett, die Projektion, die das Speicher-Gesetz trägt — wie nach oekologie.K4#2)
+        await ev("if (r.state.creatureEmotions.length) r.state.creatureEmotions[0] = \"sad\";");
         await ev("r.createBlueprint(\"grundprobe_alt\", \"Grundprobe alt\"); r.state.blueprints.grundprobe_alt.parts.push({ shape: \"box\", material: \"holz\", position: { x: 0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } });");
         const g = await ev(GRUND_NIMM);
         if (!g || typeof g.grund !== "string") throw new Error("kein Grund: " + JSON.stringify(g).slice(0, 300));
@@ -949,6 +951,11 @@ async function grundProbe(o) {
             delete st.blueprints.grundprobe_alt;
             const plan = r.createBlueprint("grundprobe_neu", "Grundprobe neu");
             const erd = r._erdbauSetzen("grundprobe", [{ art: "platte", cx: q.x + 30, cz: q.z, phi: 0, ex: 3, ez: 3, y: y(30) }], false);
+            // der Bestand weicht ab: ein Tier fällt, das Etikett eines anderen kippt
+            const tiere0 = st.creatures.length;
+            if (tiere0) r.removeCreature(st.creatures[tiere0 - 1]);
+            if (st.creatureEmotions.length > 1) st.creatureEmotions[1] = "sad";
+            const tiere = tiere0 > 1 && st.creatures.length === tiere0 - 1;
             window.__ortTakt = [];
             const z = r.constructor.GRUND_TAFEL.find((z) => z[0] === ${JSON.stringify(o.mutante || null)});
             if (z) z[2] = () => {};
@@ -957,11 +964,13 @@ async function grundProbe(o) {
             const mut = ${JSON.stringify(o.mutante || null)};
             if (mut === "bauplaene") r._deserializeBlueprint = () => null;
             if (mut === "werk") (r._bauAusStand = () => false), (r.removeArchitecture = () => {});
+            if (mut === "wesen") r._restoreCreatureFromSnapshot = () => false;
+            if (mut === "gefuehl") { const S0 = r.spawnCreatures.bind(r); r.spawnCreatures = (...a) => { const x = S0(...a); r.state.creatureEmotions = r.state.creatureEmotions.map(() => "happy"); return x; }; }
             if (mut === "erdbau") { const L = r.loadState.bind(r), E = st.worldMeta.erdbau; r.loadState = (s) => { const x = L(s); r.state.worldMeta.erdbau = E; return x; }; }
-            return { edit, bau, ritt, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, tag: st.dayLengthMinutes, plan, erd, mutante: !!z || r._uhrSetzen.length === 0 || ["bauplaene", "werk", "erdbau"].includes(mut) };`);
+            return { edit, bau, ritt, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, tag: st.dayLengthMinutes, plan, erd, tiere, mutante: !!z || r._uhrSetzen.length === 0 || ["bauplaene", "werk", "erdbau", "wesen", "gefuehl"].includes(mut) };`);
         const z = await ev(grundSpielen(g));
-        const soll = !o.mutante ? [] : { uhr: ["timeOfDay"], bauplaene: ["blueprints"], werk: ["architectures"], erdbau: ["worldMeta.erdbau"] }[o.mutante] || ["augenblick." + o.mutante];
-        const taten = tat.edit && tat.bau && tat.ritt && tat.feuer > 0 && tat.wetter === "rainy" && tat.tag === 1e9 && tat.plan && tat.erd && (!o.mutante || tat.mutante);
+        const soll = !o.mutante ? [] : { uhr: ["timeOfDay"], bauplaene: ["blueprints"], werk: ["architectures"], erdbau: ["worldMeta.erdbau"], wesen: ["creatures", "creatureEmotions"], gefuehl: ["creatureEmotions"] }[o.mutante] || ["augenblick." + o.mutante];
+        const taten = tat.edit && tat.bau && tat.ritt && tat.feuer > 0 && tat.wetter === "rainy" && tat.tag === 1e9 && tat.plan && tat.erd && tat.tiere && (!o.mutante || tat.mutante);
         // DIE TÜR (`--tuer`): die Seite lädt neu wie in der Sitzung nach einer gefallenen Probe — der Grund durch `_weltBetreten` (abgelegt,
         // aktiv), dann die Seite neu, dann das Rückspielen
         if (o.tuer || o.welt) {
