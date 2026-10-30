@@ -9,6 +9,8 @@
 //        die Einträge mit modus "session" und bahn "sitzung", der Kopf der Sitzung als m.sitzung (darin m.sitzung.strom: die Dauerlast
 //        jedes Bilds der Sitzung, stromSeite); die Reihe anfang · was die Welt lässt · ende · was sie ändert, die Grundstellung nur nach
 //        einer mutierenden Probe oder einem Abbruch; danach die befehl-Stationen
+//        --eich (radeon|gtx, DIE EICH-FAHRT, eichEintrag): die Sitzung mit dem Deckel 90 s je Probe über die Proben ohne frische Messung und
+//        ohne Eich-Zahl am SHA; je Probe ihre Sekunden (`eich`), ein Urteil zählt nur im Gesetz — die OMEN fährt sie als Station zug/eich-gtx.sh
 //        Zwillinge (gleicher Befehl und Umgebung) fahren EINMAL; DER BAHN-PLAN (fahrePlan): jede Zeit-Station allein, die übrigen
 //        auf bis zu N Bahnen (Vorgabe 3, höchstens 5) zugleich, jede Bahn mit eigenem Spiel-Baum und eigenem Port-Band (portBand) —
 //        auf radeon|gtx über das Platz-Schloss (werkzeug/gpu-lauf.sh: ein Bild-Lauf nimmt einen Platz, ein Zeit-Lauf alle)
@@ -34,7 +36,9 @@
 //   node punkte.cjs grundprobe --baum <Spiel-Baum> [--mutante <zeile>] [--port P]   (Null-Renderer) die Grundstellung der Sitzung
 //        an einer Welt des Baums: Grund → graben, bauen, Ritt, Uhr, Brand, Regen, Ort-Takt → zurück, keine Größe weicht ab; die
 //        Mutante (ein Wort der GRUND_TAFEL schweigt) ist ROT beim Namen
-//   node punkte.cjs selbsttest   jeder Fall beim Namen
+//   node punkte.cjs eichtafel --sha <sha> --geraet radeon|gtx   je Lauf der Sitzung: sein Deckel, die Zahl der Eich-Fahrt am SHA und der
+//        Deckel aus ihr (eichTafel), dazu Σ heute ↔ aus den Zahlen gegen die Fahrt
+//   node punkte.cjs selbsttest [--ohne 3c]   jeder Fall beim Namen (ohne (3c) DIE BAHNEN: sie zeugt Bash-Waisen)
 //
 // FORMAT (stationen/g1.js .. g6.js, module.exports = [ … ]), je Eintrag:
 //   kriterium "gelaende.K2" (Bereich-Schlüssel.K<n> wie in src/gN.js) · staffel 1|2 · geraet "radeon"|"gtx"|"headless"
@@ -436,19 +440,24 @@ function fahreStation(st, ctx) {
 function fahreGruppe(sts, ctx) {
     const st = sts[0];
     const sitz = ctx.sitzung || null;
-    let tSchloss = null;
+    let tSchloss = null, tEnde = null;
     return new Promise((ganz0) => {
         const t0 = Date.now();
-        const ganz = (es) => ganz0(tSchloss ? es.map((e) => ({ ...e, warten: +((tSchloss - t0) / 60000).toFixed(2) })) : es);
+        // DIE SEKUNDEN DER PROBE (w4-sitzung-eichen): in der Sitzung trägt jedes Ergebnis `s`, vom Start bis zum Ende ihres Prozesses (nie
+        // das Leerlaufen der Rohre danach) — die gemessene Zahl, die die Schätzung des Deckels ersetzt; `minuten` bleibt, wie es war
+        const mitS = (e) => (sitz ? { ...e, s: +(((tEnde || Date.now()) - t0) / 1000).toFixed(1) } : e);
+        const ganz = (es) => ganz0((tSchloss ? es.map((e) => ({ ...e, warten: +((tSchloss - t0) / 60000).toFixed(2) })) : es).map(mitS));
         const min = () => +((Date.now() - t0) / 60000).toFixed(2);
         const fertig = (e) => ganz(sts.map(() => e));
         const rot = (grund, exit = null, zahl = "") => fertig({ gruen: false, zahl: zahl || grund, exit, minuten: min(), grund });
         // ein Lauf, der das Schloss nie bekam, ist KEINE Messung: ungemessen beim Grund (eintragen legt ihn nie nach m.je)
         const offen = (grund, exit = null) => fertig({ gruen: false, ungemessen: true, zahl: grund, exit, minuten: min(), grund });
         if (!!sitz !== !!st.probe) return rot(st.probe ? "eine Probe misst nur in der Sitzung (fahreSitzung)" : "ein befehl fährt nie in der Sitzung");
-        // in der Sitzung der Deckel der Probe, gekappt am Rest der Fahrt (sitz.restS, fahreSitzung)
-        const fahrtKappt = !!sitz && sitz.restS != null && sitz.restS < probeSek(st);
-        const deckelS = sitz ? (fahrtKappt ? Math.max(1, Math.floor(sitz.restS)) : probeSek(st)) : Math.max(ctx.deckelMinS != null ? ctx.deckelMinS : 120, Math.ceil(st.minuten * 60 * 2));
+        // in der Sitzung der Deckel der Probe — in der Eich-Fahrt die Ausnahme-Grenze PROBE_AUSNAHME_S (sitz.eich, eichEintrag) —, gekappt
+        // am Rest der Fahrt (sitz.restS, fahreSitzung)
+        const sitzDeckelS = sitz && sitz.eich ? PROBE_AUSNAHME_S : probeSek(st);
+        const fahrtKappt = !!sitz && sitz.restS != null && sitz.restS < sitzDeckelS;
+        const deckelS = sitz ? (fahrtKappt ? Math.max(1, Math.floor(sitz.restS)) : sitzDeckelS) : Math.max(ctx.deckelMinS != null ? ctx.deckelMinS : 120, Math.ceil(st.minuten * 60 * 2));
         let argv = befehlVon(st).map((a) => ersetze(a, ctx));
         const env = { ...process.env };
         // die Werkbank der Bahn: wer sie ohne --port ruft, trifft die seines Bands (nie die 4490 einer Nachbar-Bahn)
@@ -519,13 +528,14 @@ function fahreGruppe(sts, ctx) {
         // k × 5 min (fahrzeug.K3#1 5,02 gegen 1,07 auf der Radeon); nach "exit" bleiben den Rohren 2 s zum Leerlaufen
         let gemeldet = false;
         const ende = (code, sig) => {
+            tEnde = tEnde || Date.now();
             if (gemeldet) return;
             gemeldet = true;
             kind.stdout.destroy();
             kind.stderr.destroy();
             abschluss(code, sig);
         };
-        kind.on("exit", (code, sig) => setTimeout(() => ende(code, sig), 2000));
+        kind.on("exit", (code, sig) => ((tEnde = tEnde || Date.now()), setTimeout(() => ende(code, sig), 2000)));
         kind.on("close", ende);
         const abschluss = (code, sig) => {
             clearTimeout(uhr);
@@ -600,6 +610,7 @@ function baumAmSha(repo, geraet, sha) {
 // die Sperre des Spiel-Baums: ein Ordner mit der pid des Halters; eine tote pid gilt als verwaist, gelöst wird beim Prozess-Ende
 async function baumSperre(repo, geraet) {
     const sperre = path.join(repo, ".claude", "worktrees", "punkte-" + geraet + ".sperre");
+    fs.mkdirSync(path.dirname(sperre), { recursive: true }); // ein frischer Klon trägt den Ordner noch nicht (sonst ENOENT vor dem ersten Baum)
     const lebt = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === "EPERM"; } };
     for (let gemeldet = false; ; ) {
         try {
@@ -1278,10 +1289,67 @@ const sitzungsReihe = (gruppen) => [
 ];
 // eine Probe, die abbrach (Deckel, Absturz, Start), ließ die Welt vielleicht mitten im Werk — danach die Grundstellung
 const brachAb = (es) => es.some((e) => /^(Deckel |Absturz|Start:)/.test(e.grund || ""));
+// DIE WELT STEHT, wo der Spieler steht (DER WARME START, fahreSitzung): das EINE Einschwingen von welt-boot (`__weltStehtNach`, jede Seite
+// der Werkbank trägt es, WARTEN_SEITE) — kein Messort, kein Umstellen: der Spieler bleibt, wo Boot, Grundstellung oder Tür ihn ließen
+const WELT_STEHT = "await __weltDa(); const takte = await __weltStehtNach(); return { takte, chunks: r.state.voxelChunks ? r.state.voxelChunks.size : 0, ring: r._builtRingRadius() };";
+
+// DIE EICH-FAHRT (w4-sitzung-eichen; takt25c GTX an 6b3da705: 36 von 38 Proben rissen ihren geschätzten Deckel — 10, 15, die Kappe 33 s —
+// und standen UNGEMESSEN, die Zahl, die die Schätzung ersetzen soll, war zensiert): `run --eich` fährt die Sitzung mit dem Deckel
+// PROBE_AUSNAHME_S je Probe (fahreGruppe) und trägt je Probe `eich` — ihre Sekunden s, ihren Deckel sek, ihr Gesetz gesetzS. Das Gesetz
+// steht offen: ein Urteil zählt nur, wenn die Probe darin blieb (≤ PROBE_DECKEL_S, mit ausnahme ≤ PROBE_AUSNAHME_S); darüber ist sie
+// UNGEMESSEN beim Namen, mit Urteil und Zahl, nie GRÜN oder ROT; am Eich-Deckel „≥ 90 s“ (gerissen). Was keine Zahl der Probe ist
+// (die Welt endete, die Fahrt riss, kein Schloss), bleibt, wie es fiel. Die Fahrt bleibt ≤ FAHRT_MAX_S: den Rest misst die nächste
+// Eich-Fahrt (eichOffen: ohne frische Messung und ohne Zahl am SHA)
+const gesetzVon = (st) => (st.probe && st.probe.ausnahme !== undefined ? PROBE_AUSNAHME_S : PROBE_DECKEL_S);
+function eichEintrag(st, e) {
+    const am = !!e.ungemessen && /^Deckel \d+ s gerissen/.test(e.grund || "");
+    if (e.ungemessen && !am) return e;
+    const eich = { s: e.s, sek: probeSek(st), gesetzS: gesetzVon(st), ...(am ? { gerissen: true } : {}) };
+    if (am) return { ...e, eich, grund: "EICH: ≥ " + PROBE_AUSNAHME_S + " s — " + e.grund, zahl: "EICH: ≥ " + PROBE_AUSNAHME_S + " s — " + e.zahl };
+    if (e.s <= eich.gesetzS) return { ...e, eich };
+    const grund = "EICH: " + e.s + " s über dem Gesetz " + eich.gesetzS + " s" + (eich.gesetzS === PROBE_DECKEL_S ? " (ohne ausnahme)" : "") +
+        " — das Urteil zählt nie (" + (e.gruen ? "GRÜN" : "ROT") + ": " + String(e.zahl).slice(0, 200) + ")";
+    return { ...e, gruen: false, ungemessen: true, zahl: grund, grund, eich: { ...eich, urteil: e.gruen ? "GRÜN" : "ROT" } };
+}
+// die Stationen ohne Eich-Zahl am SHA: m = die Mess-Datei des Geräts (oder null), ab(st) = der Abdruck heute — eine Zahl zählt nur zum
+// Abdruck, an dem sie fiel (eine geänderte Probe eicht neu)
+const eichOffen = (meine, m, sha, ab) =>
+    meine.filter((st) => !(m && m.sha === sha && [m.je, m.ungemessen].some((x) => x && x[schluessel(st)] && x[schluessel(st)].eich && x[schluessel(st)].abdruck === ab(st))));
+// DIE TAFEL DER EICH-FAHRT (`eichtafel`, der Leser ihrer Zahlen — „ihre Zahl ersetzt die Schätzung“): je Lauf der Sitzung (Zwillinge
+// einmal, die Reihe der Fahrt) sein Deckel heute, seine Zahl in der Mess-Datei m (nur zum heutigen Abdruck) und der Deckel aus ihr. DIE
+// REGEL wie beim Boot (SITZUNG_BOOT_S, das Anderthalbfache des größten gemessenen): ⌈1,5 × s⌉, mindestens 10 s; liegt das über dem
+// Gesetz der Probe oder riss sie den Eich-Deckel, trägt sie kein Deckel — sie muss schneller werden. Σ heute ↔ aus den Zahlen (ohne
+// Zahl oder über dem Gesetz zählt der Deckel heute) gegen das Budget der Fahrt
+const EICH_FAKTOR = 1.5, DECKEL_MIN_S = 10;
+function eichTafel(stationen, m, geraet, hilfe = hilfeText()) {
+    const reihe = sitzungsReihe(gruppiere(stationen.filter((st) => st.probe && geraeteVon(st).includes(geraet))));
+    const zahl = (st) => [m && m.je, m && m.ungemessen].map((x) => x && x[schluessel(st)]).find((e) => e && e.eich && e.abdruck === abdruck(st, hilfe));
+    const zeilen = reihe.map((g) => {
+        const e = zahl(g[0]), z = e ? e.eich : null, sek = probeSek(g[0]), gesetzS = gesetzVon(g[0]);
+        const aus = z && !z.gerissen ? Math.max(DECKEL_MIN_S, Math.ceil(EICH_FAKTOR * z.s)) : null;
+        const neu = aus != null && aus <= gesetzS ? aus : null;
+        const urteil = !z ? "ohne Zahl" : z.gerissen ? "≥ " + PROBE_AUSNAHME_S + " s — schneller machen" : neu == null ? "über dem Gesetz " + gesetzS + " s — schneller machen"
+            : neu === sek ? "trägt" : neu > sek ? "Deckel zu knapp" : "Deckel zu weit";
+        return { ids: g.map(schluessel), sek, s: z ? z.s : null, gerissen: !!(z && z.gerissen), neu, gesetzS, urteil };
+    });
+    return { zeilen, heute: zeilen.reduce((a, z) => a + z.sek, 0), ausZahlen: zeilen.reduce((a, z) => a + (z.neu != null ? z.neu : z.sek), 0),
+        budget: FAHRT_MAX_S - SITZUNG_BOOT_S, geeicht: zeilen.filter((z) => z.s != null).length };
+}
+function eichtafelCli(o) {
+    if (!["radeon", "gtx"].includes(o.geraet)) throw new Error("--geraet radeon|gtx (die Eich-Fahrt misst nur die Sitzung einer Karte)");
+    if (!o.sha) throw new Error("--sha fehlt");
+    const repo = spielRepo(), sha = voll(repo, o.sha), d = messDatei(sha, o.geraet);
+    const m = fs.existsSync(d) ? JSON.parse(fs.readFileSync(d, "utf8")) : null;
+    const t = eichTafel(ladeGeprueft().stationen, m && m.sha === sha ? m : null, o.geraet);
+    for (const z of t.zeilen)
+        console.log("  " + z.ids.join("+") + " · Deckel " + z.sek + " s · " + (z.s == null ? "—" : (z.gerissen ? "≥ " + PROBE_AUSNAHME_S : z.s) + " s") + (z.neu != null ? " → " + z.neu + " s" : "") + " · " + z.urteil);
+    console.log("EICHTAFEL " + o.geraet + " am " + sha.slice(0, 8) + ": " + t.geeicht + " von " + t.zeilen.length + " Läufen geeicht · Σ Deckel heute " + t.heute + " s → aus den Zahlen " +
+        t.ausZahlen + " s (Budget " + t.budget + " s = Fahrt " + FAHRT_MAX_S + " − Boot " + SITZUNG_BOOT_S + ")");
+}
 
 // FÄHRT DIE SITZUNG: gruppen (je Gruppe die Stationen EINER Probe, Zwillinge zusammen) der Reihe nach in EINER Welt;
-// ctx = { baum, koord, geraet, bash, gpuLauf, port, band, rohDir, welt?, stillS?, stromTaktMs? }; melde(gruppe, ergebnisse, aus, zeit) je Gruppe.
-// Rückgabe der Kopf der Sitzung für die Mess-Datei: { start, port, warten, bootS, grundstellungS, proben, minuten, strom, grund? }
+// ctx = { baum, koord, geraet, bash, gpuLauf, port, band, rohDir, welt?, stillS?, stromTaktMs?, eich? }; melde(gruppe, ergebnisse, aus, zeit) je Gruppe.
+// Rückgabe der Kopf der Sitzung für die Mess-Datei: { start, port, warten, bootS, grundstellungS, proben, minuten, strom, orte, eich?, grund? }
 // DIE REIHE (`sitzungsReihe`) und DAS ZURÜCKSETZEN (29.10.): die Grundstellung nur nach einer Probe mit `mutiert: true` oder nach einem
 // Abbruch (bis dahin vor JEDER Probe: die Dauer lebte nie länger als eine Probe); DER STROM (`stromSeite`): der Zapf-Takt über die
 // ganze Sitzung, ein Zapfen an jeder Proben-Grenze, die Probe kennt ihn als PUNKTE_SITZUNG_STROM (ihr Name PUNKTE_PROBE)
@@ -1315,13 +1383,22 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     kopf.offen = [];
     kopf.orte = [];
     kopf.wegeTueren = []; // je Grundstellung, die ein Weg seit dem Grund durch die Tür schickte: vor wem, welcher Weg, s
-    let aktOrt = null, ortNach = null;
-    // DER ZAPF-TAKT: nie zwei Zapfen der Sitzung zugleich; während der Grundstellung ruht er
+    // aktOrt: wo die Welt zuletzt eingeschwungen stand — ein Messort, „(hier)“ (DER WARME START, ohne Ort) oder null (nirgends: nach
+    // dem Boot, jeder Grundstellung und in jeder neuen Seite); stellSeite: die Seite, in der das geschah
+    let aktOrt = null, ortNach = null, stellSeite = null;
+    // DIE EICH-FAHRT (ctx.eich, `run --eich`, eichEintrag): das Gesetz beim Namen im Kopf und im Log
+    if (ctx.eich) {
+        kopf.eich = { deckelS: PROBE_AUSNAHME_S, gesetzS: PROBE_DECKEL_S, ausnahmeS: PROBE_AUSNAHME_S, fahrtMaxS };
+        console.log("  SITZUNG EICH-FAHRT: jede Probe bis " + PROBE_AUSNAHME_S + " s — das Gesetz: je Probe ≤ " + PROBE_DECKEL_S + " s, mit ausnahme ≤ " +
+            PROBE_AUSNAHME_S + " s, die Fahrt ≤ " + fahrtMaxS + " s; ein Urteil zählt nur im Gesetz, je Probe ihre Sekunden (eich)");
+    }
+    // DER ZAPF-TAKT: nie zwei Zapfen der Sitzung zugleich; während der Grundstellung ruht er. `seite`: die Seite des letzten Zapfens
+    // (stromSeite zieht je Seite einen Haken ein) — eine neue Seite hat keinen gebauten Ring (DER WARME START)
     const W = ctx.port + 20000, zz = { zapfen: 0, luecken: 0, letzteLuecke: null };
-    let aktuell = "(sitzung)", laeuft = null, ruht = false;
+    let aktuell = "(sitzung)", laeuft = null, ruht = false, seite = null;
     const zapf = (probe) => {
         laeuft = (laeuft || Promise.resolve()).then(() => stromZapfen(W, strom, probe)).then((z) => {
-            if (z.ok) zz.zapfen++;
+            if (z.ok) (zz.zapfen++, (seite = z.seite));
             else (zz.luecken++, (zz.letzteLuecke = z.grund));
         });
         return laeuft;
@@ -1424,24 +1501,41 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         // DER ORT (30.10.): wechselt die Probe den Messort, stellt die Sitzung EINMAL um — das Warten auf den Ring dort liegt vor dem
         // Deckel der Probe (er misst ihre Arbeit, nie den Ring) und steht je Ort im Kopf (`orte`: s, Takte, Chunks — Pflicht B, die
         // Ankunft); die Proben des Orts danach finden ihn gebaut. Scheitert das Umstellen, stellt die Probe selbst um (beim Namen im Log)
+        // DER WARME START (w4-sitzung-eichen; takt25c GTX an 6b3da705: 36 von 38 Proben UNGEMESSEN am Deckel — nach jedem Riss ging
+        // die Grundstellung durch die Tür, die Werkbank hält die neue Seite still (`loopAus`), und jede Probe danach zahlte den Ring:
+        // am Ort 15–25 s statt ~3 s warm, eine Probe ohne Ort in ihrem eigenen Deckel — die Kaskade): auch eine Probe OHNE Ort misst in
+        // der stehenden Welt. Nach dem Boot, jeder Grundstellung und in jeder neuen Seite (Tür, Neuladen, der Zweit-Boot einer Probe:
+        // der Zapfen nennt eine andere Seite) schwingt die Sitzung sie EINMAL ein, wo der Spieler steht (`__weltStehtNach`, das EINE
+        // Einschwingen von welt-boot) — vor dem Deckel, im Kopf wie ein Ort (`orte`, ort null); anfang misst die frische Welt, nie warm
+        await zapf(aktuell);
+        if (seite !== stellSeite && aktOrt !== null) (aktOrt = null), (ortNach = ortNach || "einer neuen Seite");
         const ort = probeOrt(g[0]);
-        if (ort && ort !== aktOrt) {
+        if (ort ? ort !== aktOrt : aktOrt === null && stellungVon(g) !== "anfang") {
             const tu = Date.now();
-            const u = await rufFrist(W, "/umstellen", { ort, sicht: "ego" }, 300000).catch((e) => ({ fehler: String((e && e.message) || e) }));
+            const u = await (ort ? rufFrist(W, "/umstellen", { ort, sicht: "ego" }, 300000)
+                : rufFrist(W, "/eval", { code: WELT_STEHT }, 300000).then((a) => (a && a.ergebnis && typeof a.ergebnis === "object" ? a.ergebnis : { fehler: (a && a.fehler) || JSON.stringify(a) })))
+                .catch((e) => ({ fehler: String((e && e.message) || e) }));
             const us = +((Date.now() - tu) / 1000).toFixed(1);
+            const wo = ort ? "Ort " + ort : "die Welt";
+            await zapf(aktuell); // die Bilder des Einschwingens unter „(sitzung)“, nie unter der Probe; der Zapfen nennt die Seite danach
             if (u && !u.fehler) {
-                aktOrt = ort;
-                kopf.orte.push({ ort, vor: schluessel(g[0]), s: us, takte: u.takte, chunks: u.chunks, nach: ortNach });
-                console.log("  SITZUNG Ort " + ort + " vor " + schluessel(g[0]) + ": " + us + " s (" + u.takte + " Takte, " + u.chunks + " Chunks" + (ortNach ? ", nach " + ortNach : "") + ")");
-            } else console.log("  SITZUNG Ort " + ort + " vor " + schluessel(g[0]) + " steht nicht nach " + us + " s: " + JSON.stringify(u).slice(0, 200));
+                aktOrt = ort || "(hier)";
+                stellSeite = seite;
+                kopf.orte.push({ ort: ort || null, vor: schluessel(g[0]), s: us, takte: u.takte, chunks: u.chunks, nach: ortNach });
+                console.log("  SITZUNG " + wo + " vor " + schluessel(g[0]) + ": " + us + " s (" + u.takte + " Takte, " + u.chunks + " Chunks" + (ortNach ? ", nach " + ortNach : "") + ")");
+            } else {
+                // ohne Ort EIN Versuch je Grundstellung oder Seite: eine Welt, die nicht steht, kostete sonst jede folgende Probe die Frist
+                if (!ort) (aktOrt = "(hier)"), (stellSeite = seite);
+                kopf.orte.push({ ort: ort || null, vor: schluessel(g[0]), s: us, fehler: String(u && u.fehler).slice(0, 200), nach: ortNach });
+                console.log("  SITZUNG " + wo + " vor " + schluessel(g[0]) + " steht nicht nach " + us + " s: " + JSON.stringify(u).slice(0, 200));
+            }
             ortNach = null;
         }
         const name = schluessel(g[0]).replace("#", "_");
         const aus = { aus: path.join(ctx.rohDir, name + ".json"), roh: path.join(ctx.rohDir, name + ".out") };
         const zeit = new Date().toISOString();
-        await zapf(aktuell);
         aktuell = schluessel(g[0]);
-        const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), fahrtMaxS } });
+        const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), fahrtMaxS, eich: !!ctx.eich } });
         if (es.some((e) => /^Deckel der Fahrt /.test(e.grund || ""))) (gerissen = "in " + aktuell), kopf.offen.push(...g.map(schluessel));
         await zapf(aktuell);
         aktuell = "(sitzung)";
@@ -1462,7 +1556,8 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             : { ...e, ungemessen: true, grund: "die Welt der Sitzung endete während der Probe (" + weg + ") — ungemessen", zahl: "die Welt der Sitzung endete während der Probe (" + weg + ") — ungemessen; die Probe sah: " + String(e.zahl).slice(0, 240) });
         abbruch = brachAb(es);
         zuruecksetzen = mutiertVon(g) || abbruch;
-        await melde(g, es.map(unter), aus, zeit);
+        // die Eich-Fahrt urteilt erst nach Abbruch und Grundstellung (sie lesen den Grund der Probe, wie er fiel): je Probe ihre Zahl
+        await melde(g, es.map(unter).map((e, i) => (ctx.eich ? eichEintrag(g[i], e) : e)), aus, zeit);
     }
     clearInterval(takt);
     if (ci.laeuft && ci.laeuft.kind && ci.laeuft.kind.exitCode == null) baumTot(ci.laeuft.kind.pid); // kein Blick überlebt die Sitzung
@@ -1505,11 +1600,21 @@ function auswahl(opt) {
     const dateien = dateienAm(repo, sha);
     const tot = (st) => toteGlobs(st.pfad, dateien);
     // --offen: nur die Stationen, die die Buchung am SHA nicht frisch fände — ein Zug misst, was er berührt, nie die ganze Liste
-    if (opt.offen) {
+    // --eich (DIE EICH-FAHRT, eichEintrag): die Proben der Karte ohne frische Messung UND ohne Eich-Zahl am SHA (eichOffen) — jede
+    // Eich-Fahrt misst, was die vorige nicht erreichte, bis nichts zu eichen bleibt
+    if (opt.eich) {
+        if (!["radeon", "gtx"].includes(opt.geraet)) throw new Error("--eich fährt nur die Sitzung einer Karte (radeon|gtx)");
+        meine = meine.filter((st) => st.probe);
+    }
+    if (opt.offen || opt.eich) {
         const frisch = frischUrteil(ladeMessungen(), (s) =>
             stempelDateien(git(["diff", "--name-only", s, sha], repo), git(["diff", "-U0", "--no-color", s, sha], repo)), hilfeText(),
             { tot, roh: rohAus(), linsen: linsenAm(repo, sha) });
         meine = meine.filter((st) => frisch(st, opt.geraet).ungemessen);
+    }
+    if (opt.eich) {
+        const d = messDatei(sha, opt.geraet), hilfe = hilfeText();
+        meine = eichOffen(meine, fs.existsSync(d) ? JSON.parse(fs.readFileSync(d, "utf8")) : null, sha, (st) => abdruck(st, hilfe));
     }
     return { repo, sha, meine, tot };
 }
@@ -1740,14 +1845,15 @@ async function run(opt) {
     const { repo, sha, tot } = a;
     let meine = a.meine;
     if (!meine.length) {
-        console.log("Punkte-Maschine: am " + sha.slice(0, 8) + " ist jede Station auf " + opt.geraet + " frisch gemessen");
+        console.log("Punkte-Maschine: am " + sha.slice(0, 8) + " ist jede Station auf " + opt.geraet + " frisch gemessen" + (opt.eich ? " oder geeicht — nichts zu eichen" : ""));
         return null;
     }
     // headless misst nie am Platz: ohne --farm ruft run die Farm und holt ihre Messung (farmRufen)
     if (opt.geraet === "headless" && !opt.farm && !opt.trocken) return farmRufen(opt, a);
     if (opt.trocken) {
         console.log("Punkte-Maschine (trocken): " + meine.length + " Station(en) auf " + opt.geraet + " am " + sha.slice(0, 8) + ", " +
-            planText(gruppiere(meine), bahnenSoll) + ": " + meine.map((st) => schluessel(st) + (st.zeit ? "(Zeit)" : "")).join(" "));
+            planText(gruppiere(meine), bahnenSoll) + (opt.eich ? " · EICH-FAHRT: je Probe bis " + PROBE_AUSNAHME_S + " s, die Fahrt ≤ " + FAHRT_MAX_S + " s" : "") + ": " +
+            meine.map((st) => schluessel(st) + (st.zeit ? "(Zeit)" : "")).join(" "));
         return null;
     }
     // EIN Lauf je Spiel-Baum: ein zweiter Lauf auf demselben Gerät checkte sonst seinen SHA in den Baum des ersten
@@ -1793,6 +1899,9 @@ async function run(opt) {
             const e = stationsEintrag(es[i], { zeit, abdruck: abdruck(st, hilfe), port: wie.port, bahn: wie.bahn, host: opt.farm ? host : null, zwilling: i > 0 ? ids[0] : null, modus: wie.modus });
             eintragen(m, id, e);
             console.log(stationsZeile(id, e));
+            // die Zahl der Eich-Fahrt (eichEintrag) — die Sekunden VOR der Id: der Fortschritt liest das Urteil aus „<Urteil> <id>“
+            if (e.eich) console.log("  EICH " + (e.eich.gerissen ? "≥ " + PROBE_AUSNAHME_S : e.eich.s) + " s · " + id + " · Deckel " + e.eich.sek + " s · Gesetz " + e.eich.gesetzS + " s · " +
+                (e.eich.gerissen ? "am Eich-Deckel" : e.ungemessen ? "über dem Gesetz, das Urteil (" + e.eich.urteil + ") zählt nie" : "im Gesetz, das Urteil zählt") + (e.zwilling ? " (Zwilling von " + e.zwilling + ")" : ""));
         });
         m.zeit = zeit;
         m.host = host;
@@ -1800,7 +1909,7 @@ async function run(opt) {
     };
     if (proben.length) {
         const sb = portBand(opt.portBasis || 7700, opt.geraet, MAX_BAHNEN);
-        m.sitzung = await fahreSitzung(proben, { ...ctx0, baum, port: sb.port, band: sb.alle, rohDir },
+        m.sitzung = await fahreSitzung(proben, { ...ctx0, baum, port: sb.port, band: sb.alle, rohDir, eich: !!opt.eich },
             (g, es, aus, zeit) => melde(g, es, aus, { zeit, port: sb.port, bahn: "sitzung", modus: "session" }));
         fs.writeFileSync(datei, JSON.stringify(m, null, 1) + "\n");
     }
@@ -2291,7 +2400,12 @@ function standPruefen(stand, kopfKarte, bekannt) {
 }
 
 // ───────────────────────────────── Selbsttest ─────────────────────────────────
-async function selbsttest() {
+// `selbsttest --ohne 3c` (w4-sitzung-eichen): ohne den Teil (3c) DIE BAHNEN — er zeugt Bash-Waisen neben einer Sitzung; was fehlt, steht
+// in der letzten Zeile beim Namen (bis dahin „Selbsttest ohne (3c)“ von Hand, Exit 1 allein durch den ausgelassenen Teil)
+const SELBST_TEILE = ["3c"];
+async function selbsttest(o = {}) {
+    const ohne = new Set(String(o.ohne || "").split(",").filter(Boolean));
+    for (const t of ohne) if (!SELBST_TEILE.includes(t)) throw new Error("--ohne " + t + ": nur " + SELBST_TEILE.join(", "));
     const fall = [];
     const pruef = (name, ok, was) => { fall.push({ name, ok }); console.log((ok ? "  GRÜN " : "  ROT  ") + name + (was ? " — " + was : "")); };
     const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "punkte-selbst-"));
@@ -2488,7 +2602,8 @@ async function selbsttest() {
     // Wächter zählen Ereignisse (27.10., Karte ci-wackler-zensus: unter Last rissen die 120-s-Fenster von bis und die 60-s-Schleifen
     // des Stubs, ruhig 64/64): bis wartet, solange der Lauf lebt, der das Ereignis bringt, der Stub auf Tür oder Partner (dessen
     // Lauf endet, ohne zu stehen, schreibt der Test „X“); ein Lauf, der nie kommt, endet am Schloss mit Exit 75 beim Namen
-    if (findeBash()) {
+    if (ohne.has("3c")) console.log("  OHNE (3c) DIE BAHNEN (--ohne 3c)");
+    else if (findeBash()) {
         const wz = GPU_LAUF;
         const fw = (p) => p.split(path.sep).join("/");
         const schlossEnv = (n) => ({ GPU_SCHLOSS: fw(path.join(tmp, "bahn-" + n)), GPU_HOOK_LOG: fw(path.join(tmp, "bahn-" + n + ".hook.log")),
@@ -2909,6 +3024,8 @@ async function selbsttest() {
             '    if (/_grundstellung\\("/.test(b.code)) { n("grund"); return s({ ergebnis: { ok: true, anders: (art === "anders" ? ["augenblick.brand"] : []).concat(weg()), neu: {}, ms: 1, welt: "w1" } }); }',
             '    if (/__punkteStrom/.test(b.code)) return s({ ergebnis: new Function("r", "window", "performance", b.code)(seite.welt, seite.win, performance) });',
             '    if (/_weltBetreten\\(/.test(b.code)) { n("tuer"); return s({ ergebnis: { ok: true, worldId: "w1" } }); }',
+            // DER WARME START: das Einschwingen der Sitzung vor einer Probe ohne Ort (WELT_STEHT)
+            '    if (/__weltStehtNach\\(/.test(b.code)) { n("warm"); return s({ ergebnis: { takte: 31, chunks: 81, ring: 4 } }); }',
             '    if (b.code === "loop an") { seite.R.setAnimationLoop(() => seite.welt._gpuLeine.gerendert++); return s({ ergebnis: 1 }); }',
             '    if (b.code === "loop aus") { seite.R.setAnimationLoop(null); return s({ ergebnis: 0 }); }',
             '    if (b.code === "tod") { n("tod"); return r.end(JSON.stringify({ ergebnis: "tod" }), () => process.exit(3)); }',
@@ -2931,12 +3048,12 @@ async function selbsttest() {
         const S = (k, s, probe, urteil) => ({ ...gp, kriterium: k, staffel: s, probe, urteil });
         const hookLog = path.join(tmp, "sitzung-hook.log");
         fs.writeFileSync(hookLog, "2026-10-29 10:00:00 ende ci-probe 1/1 echt\n");
-        const lauf = async (gruppen, art, gpuLauf, fahrtMaxS) => {
+        const lauf = async (gruppen, art, gpuLauf, fahrtMaxS, eich) => {
             fs.rmSync(zaehler, { force: true });
             const rohDir = path.join(tmp, "roh-" + art);
             const es = {}, reihe = [];
             const kopf = await fahreSitzung(gruppen, { koord: KOORD, geraet: "radeon", bash: findeBash(), gpuLauf, baum: tmp, port: P, band: [P, P + 20000, P + 19999],
-                rohDir, welt: art === "kein-start" ? undefined : welt(art), stillS: 20, stromTaktMs: 200, hookLog, ...(fahrtMaxS ? { fahrtMaxS } : {}) },
+                rohDir, welt: art === "kein-start" ? undefined : welt(art), stillS: 20, stromTaktMs: 200, hookLog, ...(fahrtMaxS ? { fahrtMaxS } : {}), ...(eich ? { eich } : {}) },
             (g, xs, aus, zeit) => g.forEach((st, i) => { reihe.push(schluessel(st)); es[schluessel(st)] = stationsEintrag(xs[i], { zeit, abdruck: abdruck(st, h), port: P, bahn: "sitzung", zwilling: i ? schluessel(g[0]) : null, modus: "session" }); }));
             return { es, kopf, reihe, rohDir, z: fs.existsSync(zaehler) ? fs.readFileSync(zaehler, "utf8").trim().split("\n") : [] };
         };
@@ -2956,7 +3073,16 @@ async function selbsttest() {
             x["c.K1#1"].gruen === false && x["c.K1#1"].exit === 1 &&
             x["d.K1#1"].gruen && x["d.K1#2"].gruen && x["d.K1#2"].zwilling === "d.K1#1" && x["a.K1#1"].gpu === "amd/stub-sitzung" && r1.kopf.proben === 4, JSON.stringify([r1.z, x]));
         pruef("SITZUNG der Grund nach der Reihe anfang, die Grundstellung nur nach einem Abbruch oder einer mutierenden Probe — nie vor jeder; nach dem Abbruch (b.K1 am Deckel) durch die Tür (die Seite neu: die Arbeit der gefallenen Probe endet in der Seite); nie ein zweiter Start; am Ende stop",
-            r1.z.join(",") === "start,nimm,tuer,reload,grund,stop" && r1.kopf.grundstellungS.length === 1 && typeof r1.kopf.bootS === "number", JSON.stringify([r1.z, r1.kopf]));
+            r1.z.join(",") === "start,nimm,warm,tuer,reload,grund,warm,stop" && r1.kopf.grundstellungS.length === 1 && typeof r1.kopf.bootS === "number", JSON.stringify([r1.z, r1.kopf]));
+        // DER WARME START (takt25c GTX 6b3da705: nach jedem Riss die Tür, die neue Seite still, die nächste Probe zahlte den Ring im
+        // eigenen Deckel — 36 von 38 UNGEMESSEN): eine Probe ohne Ort misst in der stehenden Welt — nach dem Boot und nach der Tür
+        // EINMAL eingeschwungen, nie vor jeder; je Probe ihre Sekunden (s), b.K1 am Deckel 2 s
+        pruef("SITZUNG DER WARME START: eine Probe ohne Ort misst in der stehenden Welt — nach dem Boot (vor a) und nach der Tür (vor c) EINMAL eingeschwungen (WELT_STEHT), nie vor jeder (b, d), vor dem Deckel und im Kopf wie ein Ort (ort null)",
+            r1.kopf.orte.length === 2 && r1.kopf.orte.every((o) => o.ort === null && o.takte === 31 && o.chunks === 81 && typeof o.s === "number") &&
+            r1.kopf.orte[0].vor === "a.K1#1" && r1.kopf.orte[0].nach === null && r1.kopf.orte[1].vor === "c.K1#1" && r1.kopf.orte[1].nach === "der Tür", JSON.stringify(r1.kopf.orte));
+        pruef("SITZUNG DIE SEKUNDEN DER PROBE: jedes Ergebnis einer gefahrenen Probe trägt s (Start bis Ende ihres Prozesses) — b.K1 am Deckel 2 s nach 2 s, a.K1 in Sekunden",
+            ["a.K1#1", "b.K1#1", "c.K1#1", "d.K1#1", "d.K1#2"].every((id) => typeof x[id].s === "number") && x["b.K1#1"].s >= 2 && x["b.K1#1"].s < 4 && x["a.K1#1"].s < 5,
+            JSON.stringify(Object.entries(x).map(([id, e]) => id + " " + e.s)));
         pruef("SITZUNG das Schloss EINMAL für die ganze Sitzung (zeit, die Proben nehmen es nie)",
             !gl || (schloss.length === 1 && /^punkte-radeon-sitzung zeit \d+$/.test(schloss[0])), JSON.stringify(schloss));
         pruef("SITZUNG das Format von heute: je Station gruen, zahl, exit, minuten, zeit, abdruck, port, bahn und modus \"session\"; die Zeile liest zug.cjs",
@@ -2977,7 +3103,7 @@ async function selbsttest() {
         const sr = stromLesen(path.join(r5.rohDir, "sitzung", "strom.ndjson"));
         const je = (p) => sr.bilder.filter((b) => b.probe === p).length;
         pruef("SITZUNG die Reihe: anfang · was die Welt lässt · ende · was sie ändert; die Grundstellung nur nach der mutierenden (m vor o)",
-            r5.reihe.join(" ") === "a.K1#1 n.K1#1 e.K1#1 m.K1#1 o.K1#1" && r5.z.join(",") === "start,nimm,grund,stop" && Object.values(r5.es).every((e) => e.gruen), JSON.stringify([r5.reihe, r5.z, r5.es]));
+            r5.reihe.join(" ") === "a.K1#1 n.K1#1 e.K1#1 m.K1#1 o.K1#1" && r5.z.join(",") === "start,nimm,warm,grund,warm,stop" && Object.values(r5.es).every((e) => e.gruen), JSON.stringify([r5.reihe, r5.z, r5.es]));
         pruef("SITZUNG DER STROM: der Haken über /eval in der Seite, jede Probe kennt ihn (PUNKTE_SITZUNG_STROM, PUNKTE_PROBE), die Bilder ihres Loops unter ihrem Namen, EINE Seite über die Grundstellung (kein Neuladen), der Kopf trägt die Dauerlast",
             je("a.K1#1") >= 5 && je("m.K1#1") >= 5 && je("n.K1#1") === 0 && sr.seiten.length === 1 && sr.bilder.every((b) => b.vram === 2 && b.befehle === 7 && b.voll === 1) &&
             r5.kopf.strom && r5.kopf.strom.bilder >= 8 && r5.kopf.strom.luecken === 0 && r5.kopf.strom.zapfen >= 10 && r5.kopf.strom.fehler === 0,
@@ -2990,7 +3116,7 @@ async function selbsttest() {
         const r12 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "mord"], sek: 30 }, (j, l) => ({ gruen: !!j && j.welt === "warm", zahl: "exit " + l.exit }))],
             [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "mord", null);
         pruef("SITZUNG eine Welt, die UNTER der Probe endet (die Vorfahrt der OMEN): die Probe ist UNGEMESSEN beim Grund, nie ROT; die übrigen ebenso",
-            r12.z.join(",") === "start,nimm,mord" && r12.es["a.K1#1"].ungemessen === true && /endete während der Probe/.test(r12.es["a.K1#1"].grund) &&
+            r12.z.join(",") === "start,nimm,warm,mord" && r12.es["a.K1#1"].ungemessen === true && /endete während der Probe/.test(r12.es["a.K1#1"].grund) &&
             /die Probe sah: exit [1-9]/.test(r12.es["a.K1#1"].zahl) && r12.es["b.K1#1"].ungemessen === true && /trägt nicht mehr/.test(r12.es["b.K1#1"].grund),
             JSON.stringify([r12.z, r12.es, r12.kopf]));
         // DER WEG EINER PROBE (w4-sitzung-reif; tempo4 legt seinen Weg über die Wiese, `_standRueckspielen` lässt die Wege-Karte und die
@@ -2999,16 +3125,16 @@ async function selbsttest() {
         // auch durch die Tür, sind die übrigen UNGEMESSEN beim Namen des Wegs
         const r13 = await lauf([[S("m.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)]], "weg", null);
         pruef("SITZUNG DER WEG EINER PROBE: die Grundstellung nennt ihn und geht durch die Tür, danach misst die nächste Probe im Grund (die Tür im Kopf beim Namen des Wegs)",
-            r13.z.join(",") === "start,nimm,grund,tuer,reload,grund,stop" && r13.es["m.K1#1"].gruen && r13.es["b.K1#1"].gruen &&
+            r13.z.join(",") === "start,nimm,warm,grund,tuer,reload,grund,warm,stop" && r13.es["m.K1#1"].gruen && r13.es["b.K1#1"].gruen &&
             r13.kopf.wegeTueren.length === 1 && /^wege \+1 .*probe:tempo4/.test(r13.kopf.wegeTueren[0].wege), JSON.stringify([r13.z, r13.es, r13.kopf.wegeTueren]));
         const r14 = await lauf([[S("m.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)]], "weg-bleibt", null);
         pruef("SITZUNG MUTANTE ein Weg, der auch die Tür überlebt: die übrigen Proben UNGEMESSEN beim Namen des Wegs (nie ROT, nie still weiter)",
-            r14.z.join(",") === "start,nimm,grund,tuer,reload,grund,stop" && r14.es["m.K1#1"].gruen && r14.es["b.K1#1"].ungemessen === true &&
+            r14.z.join(",") === "start,nimm,warm,grund,tuer,reload,grund,stop" && r14.es["m.K1#1"].gruen && r14.es["b.K1#1"].ungemessen === true &&
             /abweichend vom Grund: wege \+1 .*probe:tempo4/.test(r14.es["b.K1#1"].grund), JSON.stringify([r14.z, r14.es]));
         // DER ABBRUCH VON ANFANG: fällt die letzte Probe von anfang am Deckel, lädt die Seite neu, ehe der Grund genommen wird
         const r10 = await lauf([[S("a.K1", 1, { befehl: ["node", "-e", "setTimeout(() => {}, 60000)"], sek: 2, stellung: "anfang" }, lies)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "gut", null);
         pruef("SITZUNG DER ABBRUCH VON ANFANG: die Seite neu, ehe der Grund genommen wird (nie ein Grund aus einer Seite, in der eine gefallene Probe arbeitet)",
-            r10.z.join(",") === "start,reload,nimm,grund,stop" && r10.es["a.K1#1"].ungemessen === true && r10.es["b.K1#1"].gruen, JSON.stringify([r10.z, r10.es]));
+            r10.z.join(",") === "start,reload,nimm,grund,warm,stop" && r10.es["a.K1#1"].ungemessen === true && r10.es["b.K1#1"].gruen, JSON.stringify([r10.z, r10.es]));
         // DER ORT: die Proben eines Messorts stehen beieinander (die Reihe ihres ersten Auftritts, ohne Ort zuletzt), die Sitzung stellt je
         // Ort EINMAL um (vor dem Deckel der Probe, je Ort im Kopf), nach einer Grundstellung neu (der Grund stellt den Spieler zurück)
         const mitOrt = (o) => [...ruf, "return 1", "umstellen --ort " + o];
@@ -3020,6 +3146,63 @@ async function selbsttest() {
             r11.z.join(",") === "start,nimm,umstellen:wiese,umstellen:genesis,umstellen:wiese,grund,umstellen:wiese,stop" &&
             r11.kopf.orte.length === 4 && r11.kopf.orte[3].nach === "der Grundstellung" && Object.values(r11.es).every((e) => e.gruen),
             JSON.stringify([r11.reihe, r11.z, r11.kopf.orte]));
+        // DIE NEUE SEITE (DER WARME START): eine Probe, die die Seite neu lädt (ein Zweit-Boot, eine Welt durch die Tür), lässt eine Seite
+        // ohne Ring — die nächste Probe desselben Orts stellt neu um (vorher fand sie den Ort „gebaut“ und baute ihn im eigenen Deckel)
+        const neuLaden = ["node", "-e", 'require("http").request({ host: "127.0.0.1", port: Number(process.env.WERKBANK_PORT), path: "/reload", method: "POST" }, ' +
+            '(r) => (r.resume(), r.on("end", () => require("fs").writeFileSync(process.argv[1], "{}")))).end("{}")', "{AUS}", "umstellen --ort wiese"];
+        const r15 = await lauf([[S("a.K1", 1, { befehl: neuLaden, sek: 30 }, da)], [S("d.K1", 1, { befehl: mitOrt("wiese"), sek: 30 }, warm)],
+            [S("c.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "gut", null);
+        pruef("SITZUNG DIE NEUE SEITE: lädt eine Probe die Seite neu, stellt die nächste ihres Orts neu um (der Ring der alten Seite ist fort) — im Kopf nach „einer neuen Seite“; ohne Ort danach kein zweites Einschwingen",
+            r15.z.join(",") === "start,nimm,umstellen:wiese,reload,umstellen:wiese,stop" && r15.kopf.orte.length === 2 && r15.kopf.orte[1].nach === "einer neuen Seite" &&
+            Object.values(r15.es).every((e) => e.gruen), JSON.stringify([r15.z, r15.kopf.orte, r15.es]));
+        // DIE EICH-FAHRT (eichEintrag): ein Urteil zählt nur im Gesetz — 30 s an einem Deckel von 10 s zählt (≤ 45 s), 50 s ohne ausnahme
+        // ist UNGEMESSEN beim Namen samt Urteil, 50 s mit ausnahme zählt (≤ 90 s), am Eich-Deckel „≥ 90 s“; die Welt, die endete, und
+        // die Fahrt, die riss, tragen keine Zahl der Probe
+        const pe = (p) => ({ ...gp, probe: { befehl: ["node", "-e", "0"], sek: 10, ...p } });
+        const riss = "Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /bild 14.5 s)";
+        const ee = [eichEintrag(pe({}), { gruen: true, zahl: "z", exit: 0, minuten: 0.5, s: 30 }), eichEintrag(pe({}), { gruen: true, zahl: "z", exit: 0, minuten: 0.8, s: 50 }),
+            eichEintrag(pe({ sek: 60, ausnahme: "der Grund beim Namen" }), { gruen: false, zahl: "rot", grund: "ROT: rot", exit: 0, minuten: 0.8, s: 50 }),
+            eichEintrag(pe({}), { gruen: false, ungemessen: true, zahl: riss, grund: riss, exit: 1, minuten: 1.5, s: 90.3 }),
+            eichEintrag(pe({}), { gruen: false, ungemessen: true, zahl: "w", grund: "die Welt der Sitzung endete während der Probe (x) — ungemessen", s: 3 }),
+            eichEintrag(pe({}), { gruen: false, ungemessen: true, zahl: "f", grund: "Deckel der Fahrt 1800 s gerissen nach 12 s der Probe — beendet, UNGEMESSEN", s: 12 })];
+        pruef("EICH ein Urteil zählt nur im Gesetz: 30 s am Deckel 10 s zählt · 50 s ohne ausnahme UNGEMESSEN beim Namen samt Urteil · 50 s mit ausnahme zählt · am Eich-Deckel ≥ 90 s · Welt und Fahrt ohne Zahl",
+            ee[0].gruen === true && !ee[0].ungemessen && ee[0].eich.s === 30 && ee[0].eich.sek === 10 && ee[0].eich.gesetzS === PROBE_DECKEL_S &&
+            ee[1].ungemessen === true && ee[1].gruen === false && /^EICH: 50 s über dem Gesetz 45 s \(ohne ausnahme\) — das Urteil zählt nie \(GRÜN: z\)$/.test(ee[1].grund) && ee[1].eich.urteil === "GRÜN" &&
+            ee[2].gruen === false && !ee[2].ungemessen && ee[2].eich.gesetzS === PROBE_AUSNAHME_S && ee[2].eich.sek === 60 &&
+            ee[3].ungemessen === true && ee[3].eich.gerissen === true && /^EICH: ≥ 90 s — Deckel 90 s gerissen .*SCHRITT \/bild 14\.5 s\)$/.test(ee[3].grund) &&
+            !ee[4].eich && !ee[5].eich && ee[4].grund === "die Welt der Sitzung endete während der Probe (x) — ungemessen", JSON.stringify(ee));
+        // DIE EICH-FAHRT in der Stub-Welt: eine Probe, die 3 s braucht, reißt ihren Deckel von 2 s (b.K1 in r1) — in der Eich-Fahrt misst sie
+        // bis zur Ausnahme-Grenze, ihr Urteil zählt (3 s ≤ 45 s), ihre Zahl steht beim Namen, der Kopf nennt das Gesetz
+        const drei = ["node", "-e", 'setTimeout(() => require("fs").writeFileSync(process.argv[1], JSON.stringify({ n: 0 })), 3000)', "{AUS}"];
+        const r16 = await lauf([[S("a.K1", 1, { befehl: drei, sek: 2 }, lies)]], "gut", null, null, true);
+        const ea = r16.es["a.K1#1"] || {};
+        pruef("EICH-FAHRT die Probe über ihrem Deckel (2 s) misst bis " + PROBE_AUSNAHME_S + " s: GRÜN im Gesetz, eich s ≈ 3 · sek 2 · Gesetz 45; der Kopf nennt Deckel, Gesetz und Fahrt",
+            ea.gruen === true && !!ea.eich && ea.eich.sek === 2 && ea.eich.s >= 3 && ea.eich.s < 10 && ea.eich.gesetzS === PROBE_DECKEL_S &&
+            !!r16.kopf.eich && r16.kopf.eich.deckelS === PROBE_AUSNAHME_S && r16.kopf.eich.gesetzS === PROBE_DECKEL_S && r16.kopf.eich.fahrtMaxS === FAHRT_MAX_S,
+            JSON.stringify([ea, r16.kopf.eich]));
+        // DIE AUSWAHL DER EICH-FAHRT (eichOffen): eine Probe mit Zahl am SHA und heutigem Abdruck fällt heraus; ohne Zahl, mit fremdem Abdruck
+        // (die Probe änderte sich) oder an einem anderen SHA bleibt sie — die nächste Eich-Fahrt misst den Rest
+        const [sa, sb, sc] = ["a", "b", "c"].map((n) => S(n + ".K1", 1, { befehl: ["node", n], sek: 10 }, lies));
+        const mo = { sha: "s1", je: { "a.K1#1": { eich: { s: 3 }, abdruck: abdruck(sa, h) } },
+            ungemessen: { "b.K1#1": { eich: { s: 50 }, abdruck: "alt" }, "c.K1#1": { grund: "Deckel 10 s gerissen" } } };
+        const eo = [eichOffen([sa, sb, sc], mo, "s1", (st) => abdruck(st, h)), eichOffen([sa], mo, "s2", (st) => abdruck(st, h)), eichOffen([sa], null, "s1", (st) => abdruck(st, h))]
+            .map((l) => l.map(schluessel).join(","));
+        pruef("EICH die Auswahl: mit Zahl am SHA und heutigem Abdruck heraus · ohne Zahl, mit fremdem Abdruck, an einem anderen SHA oder ohne Mess-Datei bleibt sie",
+            eo.join(" | ") === "b.K1#1,c.K1#1 | a.K1#1 | a.K1#1", eo.join(" | "));
+        // DIE TAFEL (eichTafel, der Leser der Zahlen): ⌈1,5 × s⌉ ≥ 10 s je Lauf, Zwillinge EINE Zeile; über dem Gesetz und am Eich-Deckel kein
+        // Deckel (schneller machen), ohne Zahl der Deckel heute; Σ heute ↔ aus den Zahlen
+        const tp = (n, sek, extra = {}) => S(n + ".K1", 1, { befehl: ["node", "t" + n], sek, ...extra }, lies);
+        const tz = { a: [10, { s: 30 }], b: [33, { s: 50 }], c: [15, { s: 90.4, gerissen: true }], d: [20, null], e: [30, { s: 20 }], f: [40, { s: 6 }], g: [60, { s: 50 }] };
+        const ts = Object.entries(tz).map(([n, [sek]]) => tp(n, sek, n === "g" ? { ausnahme: "der Grund beim Namen" } : {}));
+        const tw = { ...tp("a", 10), staffel: 2 }; // der Zwilling von a.K1#1: derselbe Befehl, EIN Lauf
+        const tm = { sha: "s1", je: {}, ungemessen: {} };
+        for (const st of ts) { const z = tz[st.kriterium[0]][1]; if (z) tm[z.gerissen || z.s > 45 ? "ungemessen" : "je"][schluessel(st)] = { abdruck: abdruck(st, h), eich: z }; }
+        const tt = eichTafel([...ts, tw], tm, "radeon", h);
+        const tzl = tt.zeilen.map((z) => z.ids.join("+") + " " + z.sek + (z.neu != null ? "→" + z.neu : "") + " " + z.urteil).join(" | ");
+        pruef("EICH-TAFEL der Deckel aus der Zahl ⌈1,5 × s⌉ ≥ 10 s: zu knapp · über dem Gesetz · ≥ 90 s · ohne Zahl · trägt · zu weit · mit ausnahme bis 90 s; Zwillinge EINE Zeile; Σ heute ↔ aus den Zahlen",
+            tzl === "a.K1#1+a.K1#2 10→45 Deckel zu knapp | b.K1#1 33 über dem Gesetz 45 s — schneller machen | c.K1#1 15 ≥ 90 s — schneller machen | d.K1#1 20 ohne Zahl | " +
+                "e.K1#1 30→30 trägt | f.K1#1 40→10 Deckel zu weit | g.K1#1 60→75 Deckel zu knapp" && tt.heute === 208 && tt.ausZahlen === 45 + 33 + 15 + 20 + 30 + 10 + 75 && tt.geeicht === 6 &&
+                tt.budget === FAHRT_MAX_S - SITZUNG_BOOT_S, tzl + " · Σ " + tt.heute + " → " + tt.ausZahlen);
         // der Ort eines Vegetations-Laufs (w4-sitzung-reif): der erste Stand seines Plans — die Sitzung stellt ihn vor dem Deckel
         const plan = (...p) => ({ probe: { befehl: ["node", "-e", "(async function vegetationLauf() {})()", "{AUS}", "{PORT}", JSON.stringify(p)] } });
         const vo = [plan(["wiese", "third", 0.5, null, "wiese"]), plan(["genesis", "ego", 0.5, null, "wiese"], ["wiese", "ego", 0.3, null, "wiese"]), plan()].map(probeOrt);
@@ -3029,7 +3212,7 @@ async function selbsttest() {
         // Namen der Größe (nie ROT, nie ein Neuladen)
         const r7 = await lauf([[S("m.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)]], "anders", null);
         pruef("SITZUNG eine Grundstellung, nach der eine Größe vom Grund abweicht: die übrigen Proben UNGEMESSEN beim Namen der Größe",
-            r7.es["m.K1#1"].gruen && r7.es["b.K1#1"].ungemessen === true && /abweichend vom Grund: augenblick\.brand/.test(r7.es["b.K1#1"].grund) && r7.z.join(",") === "start,nimm,grund,stop",
+            r7.es["m.K1#1"].gruen && r7.es["b.K1#1"].ungemessen === true && /abweichend vom Grund: augenblick\.brand/.test(r7.es["b.K1#1"].grund) && r7.z.join(",") === "start,nimm,warm,grund,stop",
             JSON.stringify([r7.z, r7.es]));
         // DAS SCHLOSS ZWISCHEN DEN PROBEN: wartet ein CI-Job (die letzte Zeile von hook.log), geht das Schloss an der Proben-Grenze an ihn und kommt
         // danach wieder — die Welt startet nie neu, das Warten zählt nie in die Fahrt
@@ -3147,7 +3330,8 @@ async function selbsttest() {
     }
     fs.rmSync(tmp, { recursive: true, force: true });
     const rot = fall.filter((f) => !f.ok);
-    console.log((rot.length ? "SELBSTTEST ROT — " + rot.map((f) => f.name).join(", ") : "SELBSTTEST GRÜN") + " (" + (fall.length - rot.length) + "/" + fall.length + ")");
+    console.log((rot.length ? "SELBSTTEST ROT — " + rot.map((f) => f.name).join(", ") : "SELBSTTEST GRÜN") + " (" + (fall.length - rot.length) + "/" + fall.length +
+        (ohne.size ? ", ohne " + [...ohne].map((t) => "(" + t + ")").join(" ") : "") + ")");
     return rot.length ? 1 : 0;
 }
 
@@ -3178,6 +3362,7 @@ if (require.main === module) {
         else if (verb === "vereine") vereineCli(o);
         else if (verb === "buchen") buchenCli(o);
         else if (verb === "gtx-nutzen") gtxNutzenCli(o);
+        else if (verb === "eichtafel") eichtafelCli(o);
         else if (verb === "plan") planCli(o);
         else if (verb === "gruppen") for (const g of zwillingsGruppen(ladeGeprueft().stationen, o.geraet, o.nur)) console.log(g.join(","));
         else if (verb === "liste") {
@@ -3195,9 +3380,9 @@ if (require.main === module) {
             for (const f of fehler) console.log("  ROT " + f);
             console.log(stationen.length + " Stationen · " + new Set(stationen.map((s) => s.kriterium)).size + " Kriterien · fehlt " + fehlt.length + " · Fehler " + fehler.length);
             process.exitCode = fehler.length ? 1 : 0;
-        } else if (verb === "selbsttest") process.exitCode = await selbsttest();
+        } else if (verb === "selbsttest") process.exitCode = await selbsttest(o);
         else {
-            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--trocken] [--bahnen 3] [--port-basis 7700] [--farm <name>] · gruppen --geraet <g> [--nur id,id] · scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur …] · vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben <json>] [--beginn <s>] · buchen --kopf <sha> · liste [--kopf <sha>] · selbsttest");
+            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--eich] [--trocken] [--bahnen 3] [--port-basis 7700] [--farm <name>] · gruppen --geraet <g> [--nur id,id] · scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur …] · vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben <json>] [--beginn <s>] · buchen --kopf <sha> · liste [--kopf <sha>] · eichtafel --sha <sha> --geraet radeon|gtx · selbsttest [--ohne 3c]");
             process.exitCode = 2;
         }
     })().catch((e) => {
