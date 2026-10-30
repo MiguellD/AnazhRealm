@@ -1344,7 +1344,10 @@ class AnazhRealm_dirigent_ankunft {
     // das Fragment (die CSM jedes Mesh-Empfängers); die Pässe reichen den Punkt ihres Treffers (der Baustein `_weltLicht`): die
     // Karte über ihm minus seine Licht-Tiefe gegen den Bias, weich über einen Bias; außerhalb der Karte und diesseits der
     // Kaskaden-Reichweite 1 (über `blende` der Reichweite eingeblendet). Die Abtastung steht im Zweig (`level(0)`, ohne
-    // Ableitung) — der nahe Boden zahlt sie nicht.
+    // Ableitung) — der nahe Boden zahlt sie nicht. DER PUNKT STEHT VOR DEM ZWEIG (`toVar`): TSL schreibt einen Knoten dorthin,
+    // wo er zuerst gebaut wird — baute erst der Zweig den Punkt des Aufrufers, rechnete dessen ganzer Graph nur dort, und jeder
+    // Leser danach las ihn diesseits der Reichweite ungerechnet (w4: der Wasser-Punkt samt Wellen — das nahe Wasser lag flach,
+    // sein Blick zielte auf den Ursprung seines Mesh, der Sturm bewegte es nicht).
     _horizontSicht(p, tiefe) {
         const T = THREE.TSL;
         const K = this._horizontKarte();
@@ -1352,9 +1355,10 @@ class AnazhRealm_dirigent_ankunft {
         const U = K.U;
         return T.Fn(() => {
             const sicht = T.float(1).toVar();
+            const ort = p ? T.vec3(p).toVar() : T.positionWorld;
             const fern = T.smoothstep(U.ab.mul(1 - H.blende), U.ab, tiefe || T.positionView.z.negate()).mul(U.aktiv);
             T.If(fern.greaterThan(0), () => {
-                const q = U.karte.mul(T.vec4(p || T.positionWorld, 1));
+                const q = U.karte.mul(T.vec4(ort, 1));
                 const innen = T.step(0, q.x).mul(T.step(q.x, 1)).mul(T.step(0, q.y)).mul(T.step(q.y, 1));
                 const naeher = T.texture(K.rt.texture, q.xy).level(0).r.sub(q.z);
                 const licht = T.float(1).sub(T.smoothstep(U.bias, U.bias.mul(2), naeher));
