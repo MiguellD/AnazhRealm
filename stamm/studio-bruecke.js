@@ -3057,14 +3057,15 @@ class AnazhRealm_studio_bruecke {
             mat.clearcoatRoughness = ccSoll.ccr;
         }
         // DIE DURCHSICHT (W5): ein durchsichtiger Stoff (Scheibe, Fenster, Glimm-Scheibe) zeichnet transparent mit der
-        // Deckkraft seines Gesetzbuchs und schreibt keine Tiefe (was hinter ihm liegt, bleibt sichtbar); einen Schatten
-        // wirft er nicht (`_foundryBuildMesh`: das Licht geht durch ihn). Eine dünne Scheibe zeichnet beide
-        // Seiten in EINEM Zug: r184 zieht einen doppelseitig-transparenten Stoff sonst zweimal (Rück-, dann Vorderseite)
-        // — gemessen +1 Befehl je Wagen über den Budget-Deckel vehicle draws 12.
+        // Deckkraft seines Gesetzbuchs; einen Schatten wirft er nicht (`_foundryBuildMesh`: das Licht geht durch ihn). Er
+        // SCHREIBT SEINE TIEFE (material.K4): der Spiegel-Pass liest die Scheibe aus der Tiefe des Bilds (Lage und Normale,
+        // `_spiegelPass`) — ohne sie stand dort der Raum dahinter, und das Fenster spiegelte, was hinter ihm liegt. Was hinter
+        // ihm liegt, zeichnet vor ihm (Opakes zuerst, Durchsichtiges von hinten) und bleibt sichtbar. Eine dünne Scheibe
+        // zeichnet beide Seiten in EINEM Zug: r184 zieht einen doppelseitig-transparenten Stoff sonst zweimal (Rück-, dann
+        // Vorderseite) — gemessen +1 Befehl je Wagen über den Budget-Deckel vehicle draws 12.
         if (R.op < 1) {
             mat.transparent = true;
             mat.opacity = R.op;
-            mat.depthWrite = false;
             mat.forceSinglePass = true;
         }
         if (env !== 1) mat.envMapIntensity = env;
@@ -3308,6 +3309,21 @@ class AnazhRealm_studio_bruecke {
                 mat.emissiveNode = TSL.attribute("aGlut", "vec3");
             mat.userData = mat.userData || {};
             mat.userData.satzSchluessel = key;
+        }
+        // DIE WIESE IST EIN DACH (licht.K1): ihr Licht trägt die Normale des Dachs — oben, zu einem Zehntel die gesehene Klinge —
+        // und die Rauheit des Dachs (1: die Klingen streuen um es, kein Spiegel einer Fläche). Mit der Klinge allein lichtete der
+        // doppelseitige Halm wie eine Wand: der Sonne zugewandt hob die Nah-Wiese die Stunde 0,33 über den Mittag (Mess-Wiese Ego,
+        // swiftshader: +0,37 EV, ohne die Nah-Wiese −1,19 EV), die Sonne 10° stand morgens 1,6 und abends 0,5 EV über ihm; das Dach
+        // mit der Rauheit der Klinge (0,7) spiegelte die Abendsonne (+0,32 EV). Hinter dem Satz-Regler: er gilt jeder Wiese.
+        if (kind === "grass") {
+            mat.normalNode = TSL.normalize(
+                TSL.mix(
+                    TSL.normalViewGeometry.mul(TSL.faceDirection),
+                    TSL.cameraViewMatrix.transformDirection(TSL.vec3(0, 1, 0)),
+                    0.9
+                )
+            );
+            mat.roughnessNode = TSL.float(1);
         }
         // DAS MIKRO-RELIEF DER FACETTE (material.K2, `_mikroGestalt`): der facettierte Studio-Stein (Fels, Kristall: kind
         // „unknown" mit flatShading) kippt seine Facetten in den Oktaven am Schirm, gewogen mit seiner Rauheit (glatt ≤ 0,3 nichts,

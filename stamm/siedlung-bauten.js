@@ -588,6 +588,7 @@ class AnazhRealm_siedlung_bauten {
         const matOpts = { color: tintedColor };
         // W-E (§8.3) — die Antenne IST die Substanz (Spiegel zu _buildFromBlueprint).
         if (partMatDef && partMatDef.tags) matOpts.tags = partMatDef.tags;
+        if (partMatDef) matOpts.stoff = part.material; // die Optik der Zeile (material.K5, `_stoffOptik`)
         // laub/fleisch-Materialien (waerme>0.5 im Substanz-Profil) bekommen den useInstanceTint-Marker:
         // _archInstanceAdd setzt setColorAt je Slot aus entry.tintH/S/V (Stein bleibt monochrom).
         if (partMatDef && partMatDef.tags) {
@@ -766,6 +767,7 @@ class AnazhRealm_siedlung_bauten {
             const matOpts = { vertexColors: true };
             if (refMatDef && refMatDef.tags) {
                 matOpts.tags = refMatDef.tags;
+                matOpts.stoff = refPart.material; // die Optik der Zeile (material.K5)
                 const waerme = +refMatDef.tags.lebendig || 0;
                 if (waerme > 0.5) matOpts.useInstanceTint = true;
             }

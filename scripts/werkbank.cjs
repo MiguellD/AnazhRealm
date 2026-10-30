@@ -24,7 +24,7 @@
 //                                                           (Koschmieder je Kanal, Farbton, Sonnenseite, fernes Weiß; Rand und Kante an
 //                                                           Hügel und Gipfel; im Wetter die Sicht, mit --zug klar → Wort → klar je Sekunde)
 //   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] [--karte --uhr u,u] | --selbsttest  DAS LAUB IM GEGENLICHT
-//   node scripts/werkbank.cjs licht --kontakt [--uhr 0.5,0.3] [--bilder d] | --selbsttest  DER KONTAKT-SCHATTEN (schatten.K1)
+//   node scripts/werkbank.cjs licht --kontakt [--zuwachs] [--uhr 0.5,0.3] [--bilder d] | --selbsttest  DER KONTAKT-SCHATTEN (schatten.K1)
 //   node scripts/werkbank.cjs licht --naesse [wiese,dorf] [--bilder d] [--datei f] | --selbsttest  DIE NÄSSE (wetter.K2)
 //   node scripts/werkbank.cjs fernwald [--blicke nord,ost] DIE FERNWALD-LINSE (scripts/lib/fernwald-linse.cjs)
 //   node scripts/werkbank.cjs zaehlen [px py pz lx ly lz] [--alle]  DER DRAW-ZÄHLER je Pass (scripts/lib/draw-zaehler.cjs)
@@ -1003,14 +1003,14 @@ async function starte() {
                 // in Bau-Ereignissen, nie an der Wanduhr. Der Ort schwingt unter REGLER VOLL ein (die Bedingung der Messung, E): der Ring
                 // steht an seinem Ziel, gehalten wie `stell.ring`, nie nach der Last der Nachbarn auf der geteilten GPU (A9, Mess-Wiese:
                 // Ring 2 statt 4, boden-nah 2,391 statt 1,814 — die nahen Kronen fehlten)
-                const ziel = stell && stell.ring ? stell.ring : Math.min(12, r.state.chunkRingRadius || 4);
-                const decke = r.state.perfTargetMs;
-                r.state.perfTargetMs = 1000;
+                const ziel = stell && stell.ring ? stell.ring : Math.min(12, st.chunkRingRadius || 4);
+                const decke = st.perfTargetMs;
+                st.perfTargetMs = 1000;
                 // DER TAKT DES ORTS geht im Schritt der Seite (`__seitenTakt`: ein Bild, dann der Takt) — bis 30.10. schlief er 50 ms je Takt:
                 // an der Radeon (Mess-Sitzung, Ort wiese) waren 27–30 s von 40–48 s Ring-Zeit dieser Schlaf (537–607 Takte × 50 ms), nicht
                 // das Streaming; die Ankunft des Spielers geht im Bild-Takt
                 const takt = async () => {
-                    if (r.state._activeRingRadius < ziel) r.state._activeRingRadius = ziel;
+                    if (st._activeRingRadius < ziel) st._activeRingRadius = ziel;
                     try {
                         __buehne();
                         __ortSchritt();
@@ -1042,7 +1042,7 @@ async function starte() {
                             throw new Error(`Messort ${o.ort}: kein Dach bei ${o.dach} m (Träger ${r.state._kapselTraegerY})`);
                     }
                 } finally {
-                    r.state.perfTargetMs = decke;
+                    st.perfTargetMs = decke;
                 }
                 // ein Dorf, das vor dem Ort losging (ein Ort ohne Dorf-Zug, der Zug lief im Boot): sein Plan schwebt — Wege und
                 // Platz stehen, der Wald weicht, das Dorf wächst nie. Beim Namen (die Folge startet mit `start --ort`).
@@ -1373,7 +1373,7 @@ async function starte() {
                                 const zx = Math.min(Z.w - 1, Math.max(0, Math.floor(uu * Z.w))),
                                     zy = Math.min(Z.h - 1, Math.max(0, Math.floor(vv * Z.h)));
                                 const zi = (zy * Z.w + zx) * 4;
-                                ziel.push(0.2126 * Z.daten[zi] + 0.7152 * Z.daten[zi + 1] + 0.0722 * Z.daten[zi + 2]);
+                                ziel.push(luma709(Z.daten, zi));
                                 bild.push(luma709(u8, p * 4));
                             }
                         const P = bild.length;
@@ -3284,19 +3284,25 @@ hauptLauf(async () => {
         console.log(JSON.stringify(u.kurven, null, 1));
         urteilEnde("TAG-ACHSE", u);
     } else if (cmd === "licht" && hat("kontakt")) {
-        // DER KONTAKT-SCHATTEN (schatten.K1): `kontaktSicht` auf der Prüfbühne je Uhr, das Urteil `kontaktUrteil`
-        const fehl = LL.kontaktSelbsttest();
-        console.log(`KONTAKT Selbsttest ${fehl.length ? "ROT: " + fehl.join(" | ") : "3/3"}`);
+        // DER KONTAKT-SCHATTEN (schatten.K1): `kontaktSicht` an der Platte saat-s7-platte der Prüfbühne je Uhr, das Urteil `kontaktUrteil`
+        // (Staffel 1 am Fuß; `--zuwachs` dazu Staffel 2, der Zuwachs je m). DIE GESETZ-PROBE DES RADIUS (schatten.K1#2) am Stamm: im
+        // `_schattenFilter` legt sich der Halbschatten der Sonne auf den Boden-Radius (Halbschatten/2 + `filterTexel`), nie max(…) —
+        // unter dem max trug der Boden jede Kante bis 4,9 m gleich breit; die Mutante (der Radius ohne Boden) macht die Probe ROT
+        const summe = (q) => !stammLib.fehlt("_schattenFilter", /\.div\(box\)\.add\(r\)/, q);
+        const fehl = LL.kontaktSelbsttest().concat(summe() && !summe((t) => stammLib.ersetze(t, "_schattenFilter", ".add(r)", "")) ? [] : ["RADIUS nicht Boden + Sonne"]);
+        console.log(`KONTAKT Selbsttest ${fehl.length ? "ROT: " + fehl.join(" | ") : "5/5"}`);
         if (fehl.length || SELBST) process.exit(fehl.length ? 1 : 0);
         const welt = {};
+        const P = require("../spec/pruefbuehne/welt.json").architectures.find((a) => a.id === "saat-s7-platte");
         for (const uhr of opt("--uhr", "0.5").split(",").map(Number)) {
             await umstellen({ ort: "buehne", sicht: "ego" });
-            const o = { uhr, png: !!opt("--bilder") };
+            await umstellen({ x: P.position.x, z: P.position.z - 8 });
+            const o = { uhr, png: !!opt("--bilder"), platte: P.id };
             const m = (welt[uhr] = (await evalRuf(`return await (${LL.kontaktSicht})(${JSON.stringify(o)});`)).ergebnis);
             for (const [pose, p] of Object.entries((m && m.posen) || {}))
                 if (p.png) pngDatei(path.resolve(opt("--bilder"), `kontakt-${uhr}-${pose}.png`), p.png), delete p.png;
         }
-        const rot = Object.entries(welt).flatMap(([uhr, m]) => LL.kontaktUrteil(m).befunde.map((b) => `Uhr ${uhr} ${b}`));
+        const rot = Object.entries(welt).flatMap(([uhr, m]) => LL.kontaktUrteil(m, hat("zuwachs")).befunde.map((b) => `Uhr ${uhr} ${b}`));
         console.log(JSON.stringify(welt, null, 1));
         endeMit(`KONTAKT ${rot.length ? "ROT: " + rot.join(" | ") : "GRUEN"}`, !rot.length);
     } else if (cmd === "licht" && hat("naesse")) {

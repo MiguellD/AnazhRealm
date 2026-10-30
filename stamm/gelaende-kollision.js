@@ -222,12 +222,17 @@ class AnazhRealm_gelaende_kollision {
         // Die Hülle einer PFLANZE (Natur, die nicht Fels ist — der Fels hat seinen Zweig oben): der Körper stößt an sie, der
         // Strahl der 3rd-Kamera geht durch sie (`_fieldRaycast` `durchPflanzen`), die Pflanze wird durchsichtig.
         const pflanze = this._istNatur(entry);
+        // DIE BRÜCKE (fahrzeug.K2): ein Werk mit `durchlass` (die Wirts-Zeile des Gesetzbuchs: das Jochfeld) staut kein Wasser — unter
+        // ihm fließt es, seine Pfähle stehen im Bach —, und ein Teil mit `tritt` ist Trittfläche: Rad und Fuß stehen auf seiner
+        // Oberkante (`_werkBoden`, `_bewohnerTritt`), kein Gehender stößt an sie (`_bewohnerWand`)
+        const durchlass = !!(bp && bp.durchlass);
         for (const part of teile) {
             if (!this._isPartSolid(part)) continue;
             const aabb = this._blockerComputePartAABB(entry, part, kWelt);
             if (!aabb) continue;
             if (pflanze) aabb.pflanze = true;
-            if (pflanze || gefaehrt) aabb.stempelfrei = true; // keine Wasser-Zelle (`_stempelSpanne`)
+            if (part.tritt === true) aabb.tritt = this._trittDa = true;
+            if (pflanze || gefaehrt || durchlass) aabb.stempelfrei = true; // keine Wasser-Zelle (`_stempelSpanne`)
             // Welle L (Q5): ein STAMM (Zylinder-Teil) trägt seine Dicke — was dünner ist als die Stufe eines Rades (der
             // Hasel-Trieb, der Ast), überrollt die Hülle des Wagens (`_fahrHuelleKontakt`); die Kapsel liest das Feld nie.
             if (part.shape === "cylinder" && part.size)
@@ -698,7 +703,7 @@ class AnazhRealm_gelaende_kollision {
 
     // Austritt aus dem Bestand (nach dem splice): die Zellen geben ihn frei.
     _blockerAustritt(entry) {
-        this._blockerWacheMelden(entry._blockerHuelle);
+        if (!entry._verkehrFaehrt) this._blockerWacheMelden(entry._blockerHuelle);
         this._blockerNetzLoesen(entry);
         if (this._blockerNetzStand) this._blockerNetzStand.beweger.delete(entry);
         entry._blockerGen = 0;
@@ -715,7 +720,10 @@ class AnazhRealm_gelaende_kollision {
     // Die Zellen eines Eintrags aus der Hülle seiner Boxen (die alten vorher gelöst; außerhalb des Bestands keine).
     _blockerNetzSetzen(entry) {
         const N = this._blockerNetz();
-        this._blockerWacheMelden(entry._blockerHuelle);
+        // der fahrende Wagen des Verkehrs ist ein Leib im Gedränge, nie eine Wand der Wege (`_verkehrImRaster`): seine Hülle
+        // wandert je Schritt, die Wache sähe in jedem einen Wechsel
+        const wache = !entry._verkehrFaehrt;
+        if (wache) this._blockerWacheMelden(entry._blockerHuelle);
         this._blockerNetzLoesen(entry);
         if (entry._blockerGen !== N.gen) return;
         entry._blockerZellenGen = N.gen;
@@ -762,7 +770,7 @@ class AnazhRealm_gelaende_kollision {
                 ? [x0, x1, z0, z1]
                 : null;
         entry._blockerZellen = this._blockerZellenEin(N.zellen, entry, x0, x1, z0, z1);
-        this._blockerWacheMelden(entry._blockerHuelle);
+        if (wache) this._blockerWacheMelden(entry._blockerHuelle);
     }
 
     // DER LEIB DES FLÜGELS (leib.K4): ein Tür- oder Tor-Flügel zeichnet als eigene Instanz (das Blatt mit Scharnier `tuer`, auch

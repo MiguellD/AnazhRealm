@@ -69,14 +69,8 @@ async function checkBandM7LichtFeinschliff({ page, check }) {
         }
         return out;
     });
-    check(
-        "M7 Licht: die Mikro-Struktur ist eine LEBENDIGE Uniform (keine eingebackene Konstante)",
-        res.uniforms
-    );
-    check(
-        "M7 Licht: der Setter treibt die Uniform (setMicroStrength — KONSUM)",
-        res.settersDrive
-    );
+    check("M7 Licht: die Mikro-Struktur ist eine LEBENDIGE Uniform (keine eingebackene Konstante)", res.uniforms);
+    check("M7 Licht: der Setter treibt die Uniform (setMicroStrength — KONSUM)", res.settersDrive);
     check(
         "M7 Licht: der Einstellungs-Regler lebt und treibt den Setter (kein toter Knopf)",
         res.slidersLive && res.sliderDrives
@@ -126,7 +120,8 @@ async function checkBandWEFrequenzband({ page, check }) {
         // eine Licht-Achse, das Gras trägt keine Antwort (Gewicht 0 = kein Knoten; der Boden: V17.J), das Licht ist die EINE Kette
         const SR = r.constructor.SUBSTANCE_RESPONSE;
         const achsen = [pEisen, pHolz, pGlut, pStein, pQuarz, SR.defaults.werk, SR.defaults.feld].flatMap(Object.keys);
-        out.ohneBand = !achsen.some((k) => /^(rim|fuell|mond|waerme|glanz|glas|detail)$/.test(k)) && !("gras" in SR.defaults);
+        out.ohneBand =
+            !achsen.some((k) => /^(rim|fuell|mond|waerme|glanz|glas|detail)$/.test(k)) && !("gras" in SR.defaults);
         const gm = r._grassInstanceMat();
         out.grasOhneAntwort = !!gm && gm.outputNode == null;
         return out;
@@ -145,111 +140,66 @@ async function checkBandWEFrequenzband({ page, check }) {
     );
 }
 
-// PBR-Pfad: roughness + metalness werden aus Material-Tags HERGELEITET (Physik, keine Gefühls-
-// Patches). Proben: Builder existiert, Dispatch wirkt, Roughness/Metalness folgen den Tags.
+// PBR-Pfad (material.K5): Rauheit und Metall LIEST der Stoff aus seiner Stoff-Zeile (`_stoffOptik`) — beim Namen, nur mit Tags
+// beim nächsten Verwandten; der Flach-Stoff liest sie im Graphen als Stoff-Rauheit (`materialRoughness`), und eine Änderung der
+// Zeile setzt jeden gebauten Stoff neu (`_stoffOptikWirkt`).
 async function checkBandV18223PbrKohaerenz({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
-        out.modeFlagDefault = r.state.atmosphere && r.state.atmosphere.materialMode === "pbr"; // V18.234 — PBR ist Default
-
-        // Build a PBR material directly
-        // Default-Material (kein opts.tags) → roughness 0.7, metalness 0
-        const mDefault = r._buildPbrNodeMaterial({ color: 0x808080 });
-        out.defaultMatBuilt = !!mDefault;
-        if (mDefault) {
-            out.defaultIsMeshStandard =
-                mDefault.isMeshStandardMaterial === true || /MeshStandardNode/.test(mDefault.type || "");
-            out.defaultUserDataPbr = mDefault.userData && mDefault.userData.isPbrMaterial === true;
-            out.defaultRoughness = mDefault.userData && mDefault.userData.pbrRoughness;
-            out.defaultMetalness = mDefault.userData && mDefault.userData.pbrMetalness;
-            out.defaultIsDielectric = Math.abs(mDefault.userData.pbrMetalness) < 1e-9;
-            out.defaultRoughnessMid = mDefault.userData.pbrRoughness > 0.5 && mDefault.userData.pbrRoughness < 0.9;
-            if (typeof mDefault.dispose === "function") mDefault.dispose();
-        }
-
-        // EISEN-Material (dichte 0.9, magieleitung 0.85) → metallisch + glatt
-        const mEisen = r._buildPbrNodeMaterial({ color: 0x707080, tags: { dichte: 0.9, magieleitung: 0.85 } });
-        if (mEisen) {
-            out.eisenMetalnessHigh = mEisen.userData.pbrMetalness >= 0.7;
-            out.eisenRoughnessLow = mEisen.userData.pbrRoughness <= 0.4;
-            if (typeof mEisen.dispose === "function") mEisen.dispose();
-        }
-
-        // LAUB-Material (lebendig 0.95) → rauh, kein Metall
-        const mLaub = r._buildPbrNodeMaterial({ color: 0x4a8a3a, tags: { lebendig: 0.95 } });
-        if (mLaub) {
-            out.laubRoughnessHigh = mLaub.userData.pbrRoughness >= 0.85;
-            out.laubMetalnessZero = Math.abs(mLaub.userData.pbrMetalness) < 1e-9;
-            if (typeof mLaub.dispose === "function") mLaub.dispose();
-        }
-
-        // STEIN-Material (dichte 0.85, kein Metall) → rauh, kein Metall
-        const mStein = r._buildPbrNodeMaterial({ color: 0x6e6e6e, tags: { dichte: 0.85 } });
-        if (mStein) {
-            out.steinDielectric = Math.abs(mStein.userData.pbrMetalness) < 1e-9;
-            out.steinRoughnessHigh = mStein.userData.pbrRoughness >= 0.8;
-            if (typeof mStein.dispose === "function") mStein.dispose();
-        }
-
-        // GLUT-Material (brennbar 0.95) → emissiv-glühend. Das PBR-Emissiv
-        // folgt der glimmen-Achse (waermeleitung·brennbar, wie Toon) → realistische Glut.
+        const Z = r.state.materials;
+        const m0 = r._buildToonNodeMaterial({ color: 0x808080 });
+        // V18.234: PBR ist Default, ohne Zeile ein Mittel-Stoff
+        out.mittel =
+            r.state.atmosphere.materialMode === "pbr" &&
+            /MeshStandardNode/.test(m0.type) &&
+            m0.userData.isPbrMaterial === true &&
+            m0.roughness === 0.7 &&
+            m0.metalness === 0;
+        m0.dispose();
+        // je Zeile: der Stoff trägt Rauheit und Metall seiner Zeile, beim Namen und (nur Tags) beim Verwandten; der Flach-Stoff
+        // liest die Stoff-Rauheit im Graphen, nie eine eingebackene Zahl
+        out.zeilen = ["eisen", "bronze", "stahl", "quarz", "stein", "laub"].map((n) => {
+            const m = r._buildPbrNodeMaterial({ color: 0x707080, stoff: n, tags: Z[n].tags });
+            const t = r._buildPbrNodeMaterial({ color: 0x707080, tags: Z[n].tags });
+            let liest = false;
+            m.roughnessNode.traverse(
+                (k) => (liest = liest || (k.constructor.type === "MaterialNode" && k.scope === "roughness"))
+            );
+            const ok = liest && m.roughness === Z[n].rauheit && m.metalness === Z[n].metall;
+            [m, t].forEach((x) => x.dispose());
+            return [n, ok && t.roughness === r._stoffVerwandt(Z[n].tags).rauheit];
+        });
+        out.metall = [Z.eisen.metall, Z.bronze.metall, Z.stein.metall].join() === "1,1,0";
+        // DIE MUTATION: die Zeile ändern → der gebaute Stoff trägt die neue Zahl, zurück die alte, ein entsorgter hört nicht mehr
+        const m = r._buildPbrNodeMaterial({ color: 0x707080, stoff: "eisen" });
+        const r0 = Z.eisen.rauheit;
+        Z.eisen.rauheit = 0.31;
+        out.mutiert = m.roughness === 0.31 && m.userData.pbrRoughness === 0.31;
+        Z.eisen.rauheit = r0;
+        m.dispose();
+        Z.eisen.rauheit = 0.4;
+        out.mutiert = out.mutiert && m.roughness === r0;
+        Z.eisen.rauheit = r0;
         const mGlut = r._buildPbrNodeMaterial({ color: 0xff5020, tags: { brennbar: 0.95, waermeleitung: 0.9 } });
-        if (mGlut) {
-            out.glutEmissive = mGlut.emissiveIntensity > 0;
-            out.glutRoughnessLow = mGlut.userData.pbrRoughness <= 0.5;
-            if (typeof mGlut.dispose === "function") mGlut.dispose();
-        }
-
-        // Dispatch-Behavior: Mode auf "pbr" setzen + Toon-Builder rufen → PBR-Material
-        const savedMode = r.state.atmosphere && r.state.atmosphere.materialMode;
-        try {
-            r.state.atmosphere.materialMode = "pbr";
-            const m = r._buildToonNodeMaterial({ color: 0x808080 });
-            out.dispatchYieldsPbr = m && m.userData && m.userData.isPbrMaterial === true;
-            if (m && typeof m.dispose === "function") m.dispose();
-        } finally {
-            if (r.state.atmosphere) r.state.atmosphere.materialMode = savedMode;
-        }
-
-        // Default-Mode ist jetzt "pbr" → der Dispatch liefert ein PBR-Material.
-        const mDef = r._buildToonNodeMaterial({ color: 0x808080 });
-        out.defaultIsPbr = !!(mDef && mDef.userData && mDef.userData.isPbrMaterial === true);
-        if (mDef && typeof mDef.dispose === "function") mDef.dispose();
-
+        out.glutEmissive = mGlut.emissiveIntensity > 0;
+        mGlut.dispose();
         return out;
     });
-
     check(
-        "V18.223/234 (Q2) atmosphere.materialMode Default `pbr` (physik-Licht, keine halben Sachen)",
-        res.modeFlagDefault === true
-    );
-
-    check("(P1) Default-PBR-Material wird gebaut", res.defaultMatBuilt === true);
-    check("(P2) Default-PBR-Material ist MeshStandardNodeMaterial", res.defaultIsMeshStandard === true);
-    check("(P3) userData.isPbrMaterial=true (Diagnose-Marker)", res.defaultUserDataPbr === true);
-    check(
-        `(P4) Default ist dielektrisch (metalness=0, gemessen ${res.defaultMetalness})`,
-        res.defaultIsDielectric === true
+        "V18.234 PBR ist Default: ein MeshStandardNode, ohne Zeile ein Mittel-Stoff (Rauheit 0,7, kein Metall)",
+        res.mittel
     );
     check(
-        `(P5) Default roughness im Mittel (0.5..0.9, gemessen ${res.defaultRoughness})`,
-        res.defaultRoughnessMid === true
+        "(K5) jeder Stoff liest Rauheit und Metall seiner Zeile (beim Namen, nur Tags beim Verwandten), der Graph die Stoff-Rauheit: " +
+            JSON.stringify(res.zeilen),
+        res.zeilen.every(([, ok]) => ok)
     );
-
-    check("(S1) EISEN (dichte+magie) → metalness ≥ 0.7 (PHYSIK)", res.eisenMetalnessHigh === true);
-    check("(S2) EISEN → roughness ≤ 0.4 (glatt, glänzend)", res.eisenRoughnessLow === true);
-    check("(S3) LAUB (lebendig) → roughness ≥ 0.85 (rauh)", res.laubRoughnessHigh === true);
-    check("(S4) LAUB → metalness=0 (kein Metall)", res.laubMetalnessZero === true);
-    check("(S5) STEIN (dichte ohne Metall) → dielektrisch", res.steinDielectric === true);
-    check("(S6) STEIN → roughness ≥ 0.8 (matt)", res.steinRoughnessHigh === true);
+    check("(K5) Eisen und Bronze sind Metall, Stein nicht (die Zeile, gemessen an MERL)", res.metall);
+    check(
+        "(K5) die Mutation der Zeile setzt den gebauten Stoff, zurück die alte Zahl, ein entsorgter hört nicht mehr",
+        res.mutiert
+    );
     check("(S7) GLUT (brennbar) → emissiveIntensity > 0", res.glutEmissive === true);
-    check("(S8) GLUT → roughness ≤ 0.5 (glatt-warm)", res.glutRoughnessLow === true);
-
-    check("(D1) Dispatch: mode=pbr → _buildToonNodeMaterial liefert PBR", res.dispatchYieldsPbr === true);
-    check(
-        "V18.223/234 (D2) Default-Mode: _buildToonNodeMaterial-Dispatch liefert PBR (Default pbr)",
-        res.defaultIsPbr === true
-    );
 }
 
 // Wahrer Anblick I — der LAWFUL Boden: per-Fragment Multi-Klassen-Geologie als geteilter Auslesewert
@@ -378,6 +328,11 @@ async function checkBandWahrerAnblickGras({ page, check }) {
 }
 
 module.exports = {
-    checkBandV18136Audit, checkBandM7LichtFeinschliff, checkBandLambda3Wind,
-    checkBandWEFrequenzband, checkBandV18223PbrKohaerenz, checkBandWahrerAnblickSaeule1, checkBandWahrerAnblickGras,
+    checkBandV18136Audit,
+    checkBandM7LichtFeinschliff,
+    checkBandLambda3Wind,
+    checkBandWEFrequenzband,
+    checkBandV18223PbrKohaerenz,
+    checkBandWahrerAnblickSaeule1,
+    checkBandWahrerAnblickGras,
 };

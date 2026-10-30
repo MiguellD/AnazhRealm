@@ -8,7 +8,6 @@
 //   PLAYTEST_STRICT=0 → nur reporten (exit 0)
 
 const { statikServer, starteBrowser } = require("./lib/welt-boot.cjs");
-const PORT = Number(process.env.FAST_PORT || 4319);
 const STRICT = process.env.PLAYTEST_STRICT !== "0";
 const server = statikServer();
 
@@ -26,7 +25,7 @@ function check(name, ok) {
 }
 
 (async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "null", frist: 120000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {

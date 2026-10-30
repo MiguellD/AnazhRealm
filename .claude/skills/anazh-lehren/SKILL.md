@@ -40,8 +40,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 - ORT: der Genesis-Platz (`GENESIS_PLATZ`), jedes Bauwerk und jeder Dorfweg sind Grundriss gegen Natur, das Dorf EIN Plan des
   Fachwerk-Studios auf dem Gelände-Kern (`_ortPlaene`), jeder Wurf des Felds weicht ihm (`FELD_WURF`, `_weichtDemBau`). Heute hält die
   Instanz-Wand (`_naturWand`) Bauten frei, die Schicht (Halm, Nah-Wiese) noch nicht.
-- GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, fern
-  Glieder-Kapseln · jede Senke zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade,
+- GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, ihre Mips
+  deckungstreu mit dem Saum der Art (phyto-core `karteSaum`: die Zelle aus der Blattgröße in `treeParams`, Laub-Lappen, Nadel-Grate;
+  die GPU-Ablage `KARTE_RECHNER_WGSL` rechnet dasselbe Gesetz, `_karteSaumVon`), fern Glieder-Kapseln · jede Senke zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade,
   Matrizen im Storage-Puffer) · Baum = Studio-Karte bis 384 m, EINE Ableitung aus `treeParams` (gen ≥ 5), der gefühlte Baum ihr Skelett
   (`skelettDerGestalt`), EIN Wind-Term über die Naht `_weltNaht`, Blende je Instanz, laut (`_blendeBruch`) · Haus und Tor fern NUR-WURF,
   das Fenster Glas in jeder Stufe, der Tor-Hinterflügel eine Instanz (`_foundryFluegelInstanz`).
@@ -92,7 +93,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 12. **Stamm-Chirurgie:** Werkzeug liest den Stamm NUR über `scripts/lib/stamm.cjs` (`text()` = der virtuelle Stamm, `ort()`, `dateiVon()`;
     die alte Datei `anazhRealm.js` ist tot, ein Leser auf ihren Namen ist ROT); ein neues Glied trägt seinen Eintrag in der Modul-Karte, über der
     Decke teilt die Karte das Modul (`Modul/teil`), dann `node scripts/stamm-umzug.cjs --nach-karte`; ein Zweig von vor dem Umzug zieht per
-    `stamm-rehome` um; `cut-method` (AST-sicher) · sofort `diag-atlas --check` + `npm run stamm:lint` · seriell committen, nie Batch;
+    `stamm-rehome` um; jeder Merge vereint Karte, Stamm-Tags und `?v=` je Name im Treiber `merge=register` (die Versions-Stufe
+    `scripts/bump-version.cjs`, je Klon einmal `npm run setup:merge`); `cut-method` (AST-sicher) · sofort `diag-atlas --check` +
+    `npm run stamm:lint` · seriell committen, nie Batch;
     Arbeiter zweigen vom Kopf von integ-probe ab, nie von einem ungemergten R3-Zweig (gestapelte Zweige erben jede Röte).
 13. **Der Loop:** Streaming prio 0, Bewegung nie am Render-Signal; EIN PID, Totband 59–77 fps; NaN-Wand vor jedem EWMA; Existenz vor
     Framerate (der Ring wächst im Strom bis zu seinem Ziel, nie an Bildrate oder Regler, `_ringWaechst`; der PID regelt nur
@@ -117,7 +120,7 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
     ~45 s), nur bei eingefrorener Welt; Richter je Commit bleiben die Beweis-Sonden.
 21. **Die Licht-Kette ist EINE Eichung:** Paletten-Hex = sRGB, Albedo linear (FARB-GESETZ: foundry-core, fachwerk · porta · vehicle ·
     schmiede); die Welt fügt nur den echten Himmel als EINE Umgebung hinzu, Fill · Rim · Back leben im Labor; Belichtung aus dem Licht
-    (Karte Mittelgrau +1 EV, Nacht-Deckel 1,0); Albedo `werkbank albedo` / `diag-albedo-tafel --labor` (Karte 0,180), Verhältnisse
+    (die Karte mittags auf Mittelgrau, die Stufen der Tag-Achse gegen die REF spec/farbe/tag-ref.json); Albedo `werkbank albedo` / `diag-albedo-tafel --labor` (Karte 0,180), Verhältnisse
     `werkbank licht` — nie das Auge. Heute trägt die Eichung den Mesh-Lichtweg; Feld/Panorama, Wasser und die Karten-Sonne rechnen eigen (W7).
 22. **Der sichtbare Boden ist das Mesh:** Surface-Nets auf 1,8 m trägt die Feinform nicht (±0,2 m); was AUF dem Boden steht, liest
     `_bodenSichtAt` (gebautes Mesh, je Ecke die oberste Fläche aus Eigner und Nachbarn), Körper stehen auf dem Gesetz; r184 rechnet den

@@ -14,11 +14,10 @@
 //   node scripts/diag-s4-impostor-workshop.cjs
 
 const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
-const PORT = Number(process.env.S4_PORT || 4596);
 const server = statikServer();
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     const errs = [];
     const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 30000);

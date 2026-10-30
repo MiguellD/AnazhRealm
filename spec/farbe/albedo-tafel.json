@@ -15,7 +15,7 @@
     },
     "belichtung": {
         "kurve": "ACESFilmicToneMapping",
-        "quelle": "die Tonkurve der r128-Labore (worlds/*: ACESFilmicToneMapping, Belichtung 1,0): die 18-%-Karte nach der Belichtung auf Mittelgrau + 1 EV, k·L 0,3158; die Welt fährt seit F1 Khronos PBR Neutral (AnazhRealm.BELICHTUNG, k·L 0,44)"
+        "quelle": "die Tonkurve der r128-Labore (worlds/*: ACESFilmicToneMapping, Belichtung 1,0): die 18-%-Karte nach der Belichtung auf Mittelgrau + 1 EV, k·L 0,3158; die Welt fährt seit F1 Khronos PBR Neutral, ihre Karte seit licht.K1 auf Mittelgrau (AnazhRealm.BELICHTUNG, k·L 0,22)"
     },
     "gemessen": {
         "labor": {
@@ -46,6 +46,7 @@
                 "stamm/wasser-zellen.js": "c:0000000000000000",
                 "stamm/stoff-material.js": "c:0000000000000000",
                 "stamm/stoff-instanz.js": "c:0000000000000000",
+                "stamm/stoff-karte.js": "c:0000000000000000",
                 "stamm/studio-bruecke.js": "c:0000000000000000",
                 "stamm/studio-gestalt.js": "c:0000000000000000",
                 "stamm/bau-vorlagen.js": "c:0000000000000000",
@@ -122,6 +123,7 @@
                 "stamm/wasser-zellen.js": "c:0000000000000000",
                 "stamm/stoff-material.js": "c:0000000000000000",
                 "stamm/stoff-instanz.js": "c:0000000000000000",
+                "stamm/stoff-karte.js": "c:0000000000000000",
                 "stamm/studio-bruecke.js": "c:0000000000000000",
                 "stamm/studio-gestalt.js": "c:0000000000000000",
                 "stamm/bau-vorlagen.js": "c:0000000000000000",
@@ -270,6 +272,7 @@
                 "stamm/gelaende-boden.js",
                 "stamm/stoff-material.js",
                 "stamm/stoff-instanz.js",
+                "stamm/stoff-karte.js",
                 "stamm/studio-bruecke.js",
                 "stamm/studio-gestalt.js",
                 "stamm/siedlung-bauten.js",
@@ -340,6 +343,7 @@
                 "foundry-core.js",
                 "stamm/stoff-material.js",
                 "stamm/stoff-instanz.js",
+                "stamm/stoff-karte.js",
                 "stamm/studio-bruecke.js",
                 "stamm/vegetation-baum.js",
                 "stamm/vegetation-streu.js"
@@ -391,6 +395,7 @@
                 "foundry-core.js",
                 "stamm/stoff-material.js",
                 "stamm/stoff-instanz.js",
+                "stamm/stoff-karte.js",
                 "stamm/studio-bruecke.js",
                 "stamm/vegetation-baum.js",
                 "stamm/vegetation-streu.js"
@@ -440,6 +445,7 @@
                 "stamm/wasser-zellen.js",
                 "stamm/stoff-material.js",
                 "stamm/stoff-instanz.js",
+                "stamm/stoff-karte.js",
                 "stamm/studio-bruecke.js",
                 "stamm/studio-gestalt.js",
                 "stamm/bau-vorlagen.js",
