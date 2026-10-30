@@ -118,17 +118,19 @@ hauptLauf(async () => {
             const backend = r._gpuComputeFaehig() ? "WebGPU" : "WebGL2-Rückfall (der Feld-Pass zeichnet nicht)";
             // S am Ruf; der Selbsttest fährt einen Takt ohne Bäcker und eine Schlange in Ankunfts-Folge
             const sProbe = (sched, tick) => {
-                const wo = [], q = r._impostorBakeQueue, stubs = ["_foundryEnabled", "_ensureAssetFoundry", "_impostorAtlasTexturen", "_karteWeltBacken", "_gpuLeineStraff"];
+                const wo = [], q = r._impostorBakeQueue;
                 let bake = 0;
                 r._tickImpostorBake = () => (bake++, 0);
                 try { sched.call(r, r.state.playerMesh.position); } finally { delete r._tickImpostorBake; }
-                // S2: die Welt-Karte bäckt im Rang ihres nächsten Wartenden (`_bedarfD2`), nie in Ankunfts-Folge; die Leine ist
-                // nicht Gegenstand von S (der Takt der Linse zeichnet nicht, die Queue löst die Bilder vor dem Stopp erst mit der
-                // nächsten Abgabe: imFlug 2 = gerendert 2)
+                // S2: die Welt-Karte bäckt im Rang ihres nächsten Wartenden (`_bedarfD2`), nie in Ankunfts-Folge (der erste Takt an
+                // freier Leine: der Takt der Linse zeichnet nicht, die Queue löst die Bilder vor dem Stopp erst mit der nächsten
+                // Abgabe) — und die Leine fragt die Karte, nie den Ring (lod.K3): gespannt nach dem ersten Takt backt nur die
+                // begonnene Karte (`at.offen`) weiter, keine neue. Die Reihe heil: nah, fern | fern | —
                 const at = { zellen: new Map([["fern", { key: "fern", _bedarfD2: 400 }], ["nah", { key: "nah", _bedarfD2: 4 }]]) };
-                Object.assign(r, { _impostorBakeQueue: ["fern", "nah"], _foundryEnabled: () => true, _ensureAssetFoundry: () => ({ ready: true }), _impostorAtlasTexturen: () => true, _karteWeltBacken: (a, z) => (wo.push(z.key), null), _gpuLeineStraff: () => false });
-                try { tick.call(r, at); } finally { for (const k of stubs) delete r[k]; r._impostorBakeQueue = q; }
-                return { S1: bake > 0, S2: wo[0] === "nah" && wo[1] === "fern", bereit: !!r.state.rendererReady, leine: r._gpuLeineStraff(), imFlug: (r._gpuLeine || {}).imFlug, wo: wo.join(",") }; // prettier-ignore
+                const stub = { _foundryEnabled: () => true, _ensureAssetFoundry: () => ({ ready: true }), _impostorAtlasTexturen: () => true, _karteWeltBacken: (a, z) => (wo.push(z.key), null), _gpuLeineStraff: () => wo.length > 1 };
+                Object.assign(r, stub, { _impostorBakeQueue: ["fern", "nah"] });
+                try { tick.call(r, at); at.offen = { z: at.zellen.get("fern") }; tick.call(r, at); delete at.offen; tick.call(r, at); } finally { for (const k in stub) delete r[k]; r._impostorBakeQueue = q; }
+                return { S1: bake > 0, S2: wo.join() === "nah,fern,fern", bereit: !!r.state.rendererReady, leine: r._gpuLeineStraff(), imFlug: (r._gpuLeine || {}).imFlug, wo: wo.join(",") }; // prettier-ignore
             };
             const S = sProbe(r._runFrameScheduler, r._tickKarteWelt);
             const sBruch = k.selbst && sProbe(() => 0, function (at) { for (const n of r._impostorBakeQueue) r._karteWeltBacken(at, at.zellen.get(n)); });
@@ -317,7 +319,7 @@ hauptLauf(async () => {
         process.exit(ok ? 0 : 1);
     }
     const S = res.S.S1 && res.S.S2;
-    console.log(`${S ? "✅" : "❌"} S  am Ruf: der feste Takt ruft den Karten-Bäcker ${res.S.S1} · die Karte reist im Rang des Wartenden ${res.S.S2} (Reihe ${res.S.wo || "leer"}${res.S.bereit ? "" : " — der Renderer stand nicht (rendererReady)"})`);
+    console.log(`${S ? "✅" : "❌"} S  am Ruf: der feste Takt ruft den Karten-Bäcker ${res.S.S1} · die Karte reist im Rang des Wartenden, an gespannter Leine nur die begonnene ${res.S.S2} (Reihe ${res.S.wo}, Soll nah,fern,fern${res.S.bereit ? "" : " — der Renderer stand nicht (rendererReady)"})`);
     const E = res.frei !== null;
     const R = res.ruheMax === 0 && res.brueckenEnde.length === 0;
     const T = res.rampeNull !== null;

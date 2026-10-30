@@ -361,7 +361,9 @@ async function checkBandNahStreu({ page, check }) {
                 return sway.call(this, T, o);
             };
             try {
-                r._foundryTreeMaterial(u.foundryKind, u.foundryMp, true, null, u.krone === true);
+                r._foundryTreeMaterial(u.foundryKind, u.foundryMp, true, null, u.krone === true, {
+                    jahr: u.jahr === true,
+                });
             } catch {
                 /* der Ruf vor dem Wurf zählt */
             } finally {

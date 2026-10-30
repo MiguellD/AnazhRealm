@@ -691,7 +691,11 @@ class AnazhRealm_vegetation_wiese {
             preset: art.id,
             ernte: art.ernte,
             geo: lf.geom,
-            mat: wiegt ? this._foundryTreeMaterial(u.foundryKind, u.foundryMp, true, null, u.krone === true) : lf.mat,
+            mat: wiegt
+                ? this._foundryTreeMaterial(u.foundryKind, u.foundryMp, true, null, u.krone === true, {
+                      jahr: u.jahr === true,
+                  })
+                : lf.mat,
             lokal: lf.localMatrix,
             wiegt: !!wiegt,
             leafKey: lf.leafKey,
@@ -732,7 +736,10 @@ class AnazhRealm_vegetation_wiese {
                 name: "streuSatz",
                 mat,
                 wurf: !a.wiegt,
-                attr: a.wiegt ? AnazhRealm.STREU_SATZ_ATTR : AnazhRealm.STREU_FEST_ATTR,
+                // das Laub der Art fällt im Winter (`_jahrLage`): ihr Satz trägt Mitte und Typ jeder Ecke
+                attr: (a.wiegt ? AnazhRealm.STREU_SATZ_ATTR : AnazhRealm.STREU_FEST_ATTR).concat(
+                    u.jahr === true ? AnazhRealm.JAHR_SATZ_ATTR : []
+                ),
                 kapazitaet: "streu",
                 userData: { streuSatz: "streuSatz" },
             });
@@ -2205,6 +2212,9 @@ AnazhRealm.STREU_SATZ_ATTR = Object.freeze([
     Object.freeze(["color", 3]),
     Object.freeze(["aWiege", 1]),
 ]);
+// Dazu das JAHR (vegetation.K5) jedes Stoffs mit Laub oder Blüte (`userData.jahr`): die Mitte jedes Blatts in Welt-Lage
+// (`_satzBlock` rechnet sie wie die Lage) und sein Typ — der Stoff zieht das Laub im Winter auf seine Mitte (`_jahrLage`).
+AnazhRealm.JAHR_SATZ_ATTR = Object.freeze([Object.freeze(["aCenter", 3]), Object.freeze(["aType", 1])]);
 // Bekannte place.mode-Werte (Wörterbuch v1): `_placePolicyFor` liest fail-closed — ein unbekannter
 // mode platziert nicht ("none"), crasht nicht (must-ignore). site hat noch keinen Worldgen-Kanal
 // (`_placeDispatch` → null); settlement = spawnSettlement + Worldgen-Konsument `_tickAutoSettlement`.
