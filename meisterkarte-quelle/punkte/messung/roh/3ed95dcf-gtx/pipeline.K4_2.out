@@ -282,14 +282,7 @@ H.fahre(async function probeAnkunft(H) {
         } else console.log("  ❌ KERN-WECHSEL fachwerk: die Foundry ruht nach dem Wechsel nicht binnen der Frist");
     }
     return j;
-}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\3ed95dcf-gtx\pipeline.K4_1.json 84
-@@ 11.2 s · kalt: t(Kontrolle) 10.20 s
-@@ 16.4 s · kalt: Lücke 19.78 % nach 2.3 s bis zur Ruhe der Foundry
-  ❌ t(Kontrolle) warm 10.85 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 16)
-  ✅ LIEFERUNG zweit: 131 von 133 von der Platte (98.5 %) · Werk 0 · Haupt-Faden 2 · leer 0 · verschluckt 0
-  ✅ LIEFERUNG je Art: blatt-atlas 1/1 0 ms · dorf-export 1/1 0 ms · karte 18/18 7 ms
-  ❌ t(Kontrolle) warm 9.59 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 15)
-  ❌ KERN-WECHSEL fachwerk: die Foundry ruht nach dem Wechsel nicht binnen der Frist
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\3ed95dcf-gtx\pipeline.K4_2.json 84
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

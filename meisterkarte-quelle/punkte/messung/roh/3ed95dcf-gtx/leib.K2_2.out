@@ -98,9 +98,6 @@ if (o && o.sprung) console.log("K9 " + JSON.stringify(o.sprung));
 return 0;
 }
 [linse-gpu] nvidia/pascal
-@@PUNKTE@@ FEHLER Error: /eval: {"ms":43297,"fehler":"DIE WELT STEHT NICHT nach 3606 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt nahStreu wartet, archCull wartet (DIE WELT HÄNGT: die Welt nach 3606 Takten — offen {\"foundry\":1,\"chunks\":1,\"wald\":0,\"karten\":0,\"felder\":0,\"leiber\":0,\"dorf\":0,\"leib\":0,\"ankunft\":0,\"stau\":0,\"horizont\":0,\"bau\":0} ohne Bau-Ereignis)","stapel":["weltStehtNach (pptr:evaluate;lade%20 |     at H.ruf ([eval]:12:50) |     at process.processTicksAndRejections (node:internal/process/task_queues:104:5) |     at async H.seite ([eval]:15:28)
-@@PUNKTE@@ FRIST die Probe riss ihren Deckel (33 s): jeder Takt danach warf
-@@PUNKTE@@ PROBE 43.4 s · Exit 2
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

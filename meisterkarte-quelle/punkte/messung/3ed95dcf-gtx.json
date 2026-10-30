@@ -1,7 +1,7 @@
 {
  "sha": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
  "geraet": "gtx",
- "zeit": "2026-10-30T17:19:25.793Z",
+ "zeit": "2026-10-30T17:41:50.151Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -695,12 +695,7 @@
    "grund": "ROT: keine Gang-Zeile — ROT: Täter: Gang: Error: die Frist der Probe",
    "gpu": "nvidia/pascal",
    "s": 27.3,
-   "eich": {
-    "s": 27.3,
-    "sek": 33,
-    "gesetzS": 45
-   },
-   "zeit": "2026-10-30T17:18:35.258Z",
+   "zeit": "2026-10-30T17:41:50.151Z",
    "abdruck": "b8278e36ad3c",
    "port": 7804,
    "bahn": "sitzung",
@@ -1964,205 +1959,114 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "pipeline.K4#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 10 s gerissen — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 0.17,
+   "grund": "Deckel 10 s gerissen — beendet, UNGEMESSEN",
+   "s": 10.2,
+   "zeit": "2026-10-30T17:39:46.597Z",
+   "abdruck": "c447f2aa3bef",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 27 s gerissen — beendet, UNGEMESSEN (zuletzt: @@ 16.9 s · frische Welt (Grundstellung) nach 2.4 s)",
+   "exit": 1,
+   "minuten": 0.45,
+   "grund": "Deckel 27 s gerissen — beendet, UNGEMESSEN (zuletzt: @@ 16.9 s · frische Welt (Grundstellung) nach 2.4 s)",
+   "s": 27.2,
+   "zeit": "2026-10-30T17:40:14.839Z",
+   "abdruck": "ff48d7a4dafe",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K5#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 27 s gerissen — beendet, UNGEMESSEN (zuletzt: @@ 16.9 s · frische Welt (Grundstellung) nach 2.4 s)",
+   "exit": 1,
+   "minuten": 0.45,
+   "grund": "Deckel 27 s gerissen — beendet, UNGEMESSEN (zuletzt: @@ 16.9 s · frische Welt (Grundstellung) nach 2.4 s)",
+   "s": 27.2,
+   "zeit": "2026-10-30T17:40:14.839Z",
+   "abdruck": "538a484ebd17",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "siedlung.K5#1",
+   "modus": "session"
+  },
+  "leib.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.55,
+   "grund": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 33.2,
+   "zeit": "2026-10-30T17:40:58.530Z",
+   "abdruck": "f2f1b8631847",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.55,
+   "grund": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 33.2,
+   "zeit": "2026-10-30T17:40:58.530Z",
+   "abdruck": "81f803b64356",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "leib.K2#1",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-10-30T16:54:07.619Z",
+  "start": "2026-10-30T17:39:18.637Z",
   "port": 7804,
-  "warten": 0.02,
-  "bootS": 5.8,
+  "warten": 0.01,
+  "bootS": 6.3,
   "grundstellungS": [
-   2.1,
-   2.3,
-   2,
-   2.2,
-   2.2,
-   2.3,
-   2.7,
-   2,
-   2.1,
-   2.2,
-   2,
-   2.2,
-   2.2,
    2.8,
-   2.3,
-   6.3,
-   2.4,
-   2.7,
-   2.4,
-   2.2,
-   2.3,
-   2.6
+   2,
+   2.3
   ],
-  "proben": 23,
+  "proben": 4,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "gelaende.K2#1",
+    "vor": "pipeline.K4#2",
     "s": 20.6,
-    "takte": 581,
+    "takte": 583,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": null,
-    "vor": "wetter.K2#1",
-    "s": 12.8,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "physik.K2#2",
-    "s": 13,
-    "takte": 588,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K1#2",
-    "s": 12.9,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K3#2",
-    "s": 12.9,
-    "takte": 584,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "mensch.K1#1",
-    "s": 12.8,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "vegetation.K4#1",
-    "s": 13.3,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K2#2",
-    "s": 12.5,
-    "takte": 581,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "luftwasser.K5#1",
-    "s": 12.3,
-    "takte": 582,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "mensch.K5#1",
-    "s": 12.7,
-    "takte": 581,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "schatten.K1#1",
-    "s": 12.9,
-    "takte": 582,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "studios.K2#2",
-    "s": 13.4,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "pipeline.K4#1",
-    "s": 13.1,
-    "takte": 582,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "bauen.K1#2",
-    "s": 14.3,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "bauen.K5#2",
-    "s": 14.3,
-    "takte": 588,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "studios.K4#1",
-    "s": 14.9,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "fahrzeug.K3#1",
-    "s": 16.1,
-    "takte": 636,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "fahrzeug.K3#2",
-    "s": 16.4,
-    "takte": 584,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "siedlung.K2#1",
-    "s": 15.6,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
     "vor": "siedlung.K5#1",
-    "s": 15.7,
-    "takte": 583,
+    "s": 14.9,
+    "takte": 582,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": null,
     "vor": "leib.K2#1",
-    "s": 14.5,
-    "takte": 583,
+    "s": 14.2,
+    "takte": 582,
     "chunks": 81,
     "nach": "der Tür"
    },
@@ -2173,121 +2077,25 @@
     "takte": 582,
     "chunks": 81,
     "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "halten.K5#1",
-    "s": 14.1,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
-  "wegeTueren": [
-   {
-    "vor": "wetter.K2#1",
-    "wege": "wege +113 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-137.1,-1156.6,-135,-1154.6/1] …",
-    "s": 2.1
-   },
-   {
-    "vor": "physik.K2#2",
-    "wege": "wege +91 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 2.3
-   },
-   {
-    "vor": "tiere.K1#2",
-    "wege": "wege +13 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 2
-   },
-   {
-    "vor": "tiere.K3#2",
-    "wege": "wege +18 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 2.2
-   },
-   {
-    "vor": "mensch.K1#1",
-    "wege": "wege +12 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 2.2
-   },
-   {
-    "vor": "vegetation.K4#1",
-    "wege": "wege +59 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 2.3
-   },
-   {
-    "vor": "tiere.K2#2",
-    "wege": "wege +62 [-100.4,-76.6,-100.1,-76.3/1] [-101.7,-59.6,-100.8,-58.7/1] [-104.5,-48.3,-103.6,-47.4/1] …",
-    "s": 2.7
-   },
-   {
-    "vor": "mensch.K5#1",
-    "wege": "wege +12 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 2.1
-   },
-   {
-    "vor": "schatten.K1#1",
-    "wege": "wege +59 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 2.2
-   },
-   {
-    "vor": "pipeline.K4#1",
-    "wege": "wege +12 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 2.2
-   },
-   {
-    "vor": "bauen.K5#2",
-    "wege": "wege +16 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 2.8
-   },
-   {
-    "vor": "studios.K4#1",
-    "wege": "wege +16 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 2.3
-   },
-   {
-    "vor": "fahrzeug.K3#2",
-    "wege": "wege +78 [-100.4,-1273.5,25.7,-1025.6/1] [-11.8,-1294.9,-9.7,-1292.8/1] [-111.2,-55,-109.1,-52.9/1] …",
-    "s": 2.4
-   },
-   {
-    "vor": "leib.K2#1",
-    "wege": "wege +26 [-578.1,-1154.8,-577.2,-1153.9/1] [-585.1,-1148.9,-584.2,-1148/1] [-606.4,-1152.9,-605.5,-1152/1] …",
-    "s": 2.2
-   },
-   {
-    "vor": "leib.K4#1",
-    "wege": "wege +51 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-171.7,-1014.1,-169.6,-1012/1] …",
-    "s": 2.3
-   },
-   {
-    "vor": "halten.K5#1",
-    "wege": "wege +57 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-145.8,-1096.2,-143.7,-1094.1/1] …",
-    "s": 2.6
-   }
-  ],
-  "eich": {
-   "deckelS": 90,
-   "gesetzS": 45,
-   "ausnahmeS": 90,
-   "fahrtMaxS": 1800
-  },
-  "grund": "die Welt trägt nicht mehr vor halten.K1#2: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}",
-  "ciBlicke": 24,
+  "wegeTueren": [],
+  "ciBlicke": 5,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 13924,
-   "frameP95": 58.2,
-   "taktP95": 48.1,
-   "vramMax": 184.1,
-   "seiten": 32,
+   "bilder": 406,
+   "frameP95": 516.7,
+   "taktP95": 225,
+   "vramMax": 194,
+   "seiten": 6,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "zapfen": 1439,
-   "luecken": 13,
-   "letzteLuecke": "kein Renderer"
+   "zapfen": 150,
+   "luecken": 4,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
   },
-  "fahrtS": 1517.7,
-  "minuten": 25.37
+  "fahrtS": 178.1,
+  "minuten": 3.03
  }
 }

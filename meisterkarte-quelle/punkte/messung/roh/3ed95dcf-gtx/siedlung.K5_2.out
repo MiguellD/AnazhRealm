@@ -328,8 +328,8 @@ H.fahre(async function probeDorf(H) {
   "erstes": null,
   "hash": null,
   "bereit": {
-   "ms": 7683,
-   "bilder": 198,
+   "ms": 6392,
+   "bilder": 181,
    "vorrat": true,
    "ruhig": true
   },
@@ -347,78 +347,12 @@ H.fahre(async function probeDorf(H) {
    -1373.1
   ],
   "erwacht": null,
-  "bilder": 410,
+  "bilder": 399,
   "reserviert": null
  }
 }
 @@PUNKTE@@ EXIT 0
-@@ 18.4 s · frische Welt (Grundstellung) nach 2.6 s
-@@PUNKTE@@ NH300
-{
- "ergebnis": {
-  "gesetzt": {
-   "ms": 5,
-   "bilder": 0
-  },
-  "imRadius": {
-   "ms": 5.1,
-   "bilder": 0,
-   "radius": 150
-  },
-  "erstes": {
-   "ms": 5.2,
-   "bilder": 0,
-   "stufe": "mesh",
-   "typ": "haus_chinesisch",
-   "same": 651494,
-   "ort": [
-    -716.02,
-    -1159.9
-   ],
-   "abstand": 14.9,
-   "auge": [
-    -703.9,
-    44.5,
-    -1151.3
-   ]
-  },
-  "hash": "882a889c",
-  "bereit": {
-   "ms": 10008,
-   "bilder": 271,
-   "vorrat": false,
-   "ruhig": false
-  },
-  "taktFehler": null,
-  "nah": 260,
-  "start": 268,
-  "zelle": [
-   -4,
-   -6
-  ],
-  "nH": 300,
-  "same": 29749318,
-  "anker": [
-   -839.5,
-   -1373.1
-  ],
-  "erwacht": {
-   "bild": 358,
-   "d": 260
-  },
-  "bilder": 358,
-  "reserviert": {
-   "seed": 29749318,
-   "nH": 300,
-   "x": -839.5294117647059,
-   "z": -1373.113725490196,
-   "wx": -839.5294117647059,
-   "wz": -1373.113725490196,
-   "ort": "ort:29749318:-840,-1373"
-  }
- }
-}
-@@PUNKTE@@ EXIT 0
+@@ 16.9 s · frische Welt (Grundstellung) nach 2.4 s
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
