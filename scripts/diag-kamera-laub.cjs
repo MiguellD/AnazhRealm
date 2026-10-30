@@ -283,12 +283,20 @@ function leibInstall(cfg) {
             await sleep(ms || 30);
         }
     };
+    // reißt der Deckel, nennt der Wurf die Lücken des Weltbilds samt ihrem Täter (`_lueckeTaeter`) — „die Welt hat nichts mehr
+    // offen" allein sagte nie, worauf das Bild wartete
     L.steht = async (ms) => {
         let n = 0;
-        for (const weiter = window.__deckel("das Weltbild", ms / 45); weiter(); ) {
-            await L.tick(5, 40);
-            n++;
-            if (n >= 4 && !r._weltbildFehlt(true).length) break;
+        try {
+            for (const weiter = window.__deckel("das Weltbild", ms / 45); weiter(); ) {
+                await L.tick(5, 40);
+                n++;
+                if (n >= 4 && !r._weltbildFehlt(true).length) break;
+            }
+        } catch (f) {
+            const l = r._weltbildLuecken(true);
+            f.message += ` — es fehlt: ${l.map((x) => [x.satz, r._lueckeTaeter(x)].filter(Boolean).join(": ")).join(" · ") || "nichts"}`;
+            throw f;
         }
         return r._weltbildFehlt(true);
     };
