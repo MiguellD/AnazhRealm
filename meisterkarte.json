@@ -1,13 +1,13 @@
 {
   "stand": "2026-10-30",
-  "kopf": "24a0f3ef",
-  "version": "V18.546.132",
+  "kopf": "3ed95dcf",
+  "version": "V18.546.135",
   "skala": "2.0",
   "summe": 154,
   "max": 330,
   "maschine": {
-    "kopf": "24a0f3ef",
-    "zeit": "2026-10-30T12:25:26.492Z",
+    "kopf": "3ed95dcf",
+    "zeit": "2026-10-30T16:03:47.336Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -606,7 +606,7 @@
           "punkte": 1,
           "staffel": "1 = die Front läuft im Rothermel-Band (mit dem Wind 0,5–2 m/s, gegen ≤ 0,2 m/s) an einer Pose · 2 = Halt an Fluss, Fels und nassem Gras, Regen löscht ≤ 60 s, Asche ≤ 0,08 grünt nach, Licht/Rauch/Knistern aus demselben Zustand, 2 000 brennende Zellen ≤ 0,5 ms CPU an der GTX-CPU, beide Geräte",
           "messung": "Spielgang-Station Feuer (werkbank, Mess-Wiese, klar, Wind 0,3; Spielzeit-Takte), Ego und Third.",
-          "beleg": "Maschine: gehalten: mit dem Wind 0.903 m/s (18 Köpfe) · gegen 0.028 m/s · Mutante ohne Wind bis 0.041 m/s · bis 41.6 Einheiten je Zelle an 715754fc headless — offen: stoffe.K2#2 headless: ROT: Halt: 3 Zellen brannten, die Front hielt 2× am nassen Gras (ohne die Feuchte des Orts brannten 7 nasse, sie hielt 4× am Wasser) · Fels 5× gehalten · Regen löscht nach 20 s (Mutante 300 s) · Asche 1 (voll undefined) → nach der Stufe Gras 0 · Kante Achse undefined, Linie undefined m (Mutante undefined, undefined) · Licht 3, Flammen undefined bis undefined m, Fahne 3 Ballen, Deckung undefined, Glut am Ohr 256 m² · 2000 brennende Zellen (450 der Welt): je Bild p95 0.6 ms (Leser 0.5), Schirm undefined ms, der Schritt bis 1 s hinter der Uhr an 24a0f3ef",
+          "beleg": "Maschine: gehalten: mit dem Wind 0.903 m/s (18 Köpfe) · gegen 0.028 m/s · Mutante ohne Wind bis 0.041 m/s · bis 41.6 Einheiten je Zelle an 715754fc headless — offen: stoffe.K2#2 headless: Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/band-urteil.cjs +3)",
           "schlupfloch": "Ein Partikel-Feuer, das sich nach Zeitplan ausbreitet, sähe richtig aus: das Tempo aus Wind und Feuchte, der Stopp an nassem Gras und die Asche im Boden-Stoff verlangen Leser derselben Stoff-Zeile und derselben Nässe.",
           "aenderung": "Staffel neu (B02).",
           "maschine": true
@@ -635,7 +635,7 @@
           "punkte": 1,
           "staffel": "1 = der Nachwuchs korreliert nach 1 Spieljahr mit Feuchte × Licht (r ≥ 0,5) · 2 = Stubben → Sämling, Brand → Gras → Busch → Wald, Ernte entnimmt Nährstoff, Asche und Leichnam geben ihn zurück",
           "messung": "werkbank eval + bild nach einem Spielzeit-Sprung von 1 Jahr; Gegenprobe mit zwei Zellen verschiedener Feuchte.",
-          "beleg": "Maschine: gehalten: Ufer -348/-662: nach 8766 h 138 von 138 Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) 0.837, im Offenen (16 Kacheln) 0.939, nass 1.257 × trocken · Mutante Feuchte gleich: offen r -0.528, nass 0.971 × trocken an 715754fc headless — offen: stoffe.K5#2 headless: ROT: Halme 477 → Asche 6 → Gras 476 · Kräuter 23 → Asche 0 → Gras 0 → Busch 23 · Ernte (15): Nährstoff 1 → 0.7, Wuchs 0.748 → 0.698 · Asche 1.4, Leichnam 1.2 · Sämling fehlt an 24a0f3ef",
+          "beleg": "Maschine: gehalten: Ufer -348/-662: nach 8766 h 138 von 138 Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) 0.837, im Offenen (16 Kacheln) 0.939, nass 1.257 × trocken · Mutante Feuchte gleich: offen r -0.528, nass 0.971 × trocken an 715754fc headless — offen: stoffe.K5#2 headless: Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/band-urteil.cjs +3)",
           "schlupfloch": "Ein Zeitgeber, der nach N Minuten einen Baum setzt, bestünde das Nachwachsen: Korrelation mit Feuchte und Licht und die Sukzessions-Reihe sind Pflicht.",
           "aenderung": "Wachstum zählte dreimal (Stoffe K5, Vegetation K5, Leben-Feld K1); EIN Heim hier, die Saison als Gestalt bleibt Vegetation K5 (B21, V-Wachstum). Die Synthese gab 1 für die statische Platzierung → 0.",
           "maschine": true
@@ -753,7 +753,7 @@
           "punkte": 1,
           "staffel": "1 = Edits und Bauten aus Schreib-Akten byte-gleich über Peers und Reload, gemessen · 2 = alle Teil-Simulationen (Wetter am Ort, Pegel, Overlays, Brand) ohne Zustands-Nachricht; ein Reload mitten im Sturm setzt denselben Zustand fort",
           "messung": "gate:mp-sync + gate:reload-treue, erweitert: zwei Clients 20 min Spielzeit mit Auto-Wetter, Wasser und Feuer; Zustands-Nachrichten außer Schreib-Akten sind verboten (Netz-Log). Gleichheit ist eine Eigenschaft der Funktion — zwei Seiten einer Maschine genügen hier; Latenz und Bild des Peers zählen Tore K4.",
-          "beleg": "Maschine: gehalten: 6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 206 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gl | (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich · zug gleich an 715754fc headless — offen: feld.K2#2 headless: ROT: Zug der Welt-Uhr gleich in 2 von 2 (e)-Zeilen (Exit 0) · OFFEN (f) Peers: Teil-Simulationen gleich — Wetter gleich · Leben 9/9 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen rei | OFFEN (f) Reload mitten im Sturm: Teil-Simulationen gleich — Wetter VERSCHIEDEN · Leben 0/9 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uh an 24a0f3ef",
+          "beleg": "Maschine: gehalten: 6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 206 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gl | (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich · zug gleich an 715754fc headless — offen: feld.K2#2 headless: Linse seit der Messung geändert (R6: scripts/diag-mp-sync.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
           "schlupfloch": "Den Zustand je Takt zu senden machte die Peers gleich, ohne dass die Welt eine Funktion ist: darum keine Zustands-Nachricht außer Schreib-Akten.",
           "aenderung": "EIN Heim der Gleichheit für alle Teil-Simulationen, auch das Wetter (B12).",
           "maschine": true
@@ -859,7 +859,7 @@
           "punkte": 0,
           "staffel": "1 = eine Pose (Ort × Sicht × Uhr) grün in allen festen Ringen, im Budget · 2 = Mess-Wiese UND Genesis, Ego UND Third, Uhr 0,5 und 0,3, beide Geräte",
           "messung": "werkbank bild --klasse '^(nahWiese:.*|streuSatz|bodenSatz)$' --abstand --ist boden-nah mit FESTEN Ringen 2–5 / 5–10 / 10–20 / 20–40 m (nicht NAH_WIESE.radius): laiWirk ≥ 1,7 je Ring, Saum-Sprung |ΔLAI| ≤ 15 % zwischen Nachbar-Ringen, farbtonStreuung ≥ 10,7° in 2–5 m; Kamera des Spiels, Ausgabe-Größe; Budget über werkbank zaehlen: nahWiese ≤ 4 Befehle / 80k Dreiecke.",
-          "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Station seit der Messung geändert · vegetation.K1#1 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Station seit der Messung geändert · vegetation.K1#1 gtx: ROT: wiese-third-0.5--wiese: LAI 2–5 2.41 · 5–10 1.51 · 10–14 1.14 · 14–30 0.06 · 30–80 0.00 · 80–200 0.00 (Saum springt > 15 %), Farbton 2–5 m 15.78°, nahWiese 4 Befehle / 67349 Dreiecke an 3ed95dcf",
           "schlupfloch": "Die alte Tafel zählte nur im Ring NAH_WIESE.radius der gemessenen Welt: ein kleinerer Radius machte die Linse grüner, den Saum bei 14–18 m wertete sie nie. Feste Ringe, Genesis als Pflicht-Pose, „+geaendert“ zählt nicht, die Dreiecks-Grenze und das ABAB gegen Budget-Schieben.",
           "aenderung": "Synthese gab 1 auf einem veralteten Stand, den das neue Lineal selbst ROT nennt → 0 (B25); das ROT am Ring 5–10 m ist das Vorher von H1.",
           "maschine": true
@@ -869,7 +869,7 @@
           "punkte": 1,
           "staffel": "1 = nah (0–15 m) an einem Gerät: zeitliche Luma-Varianz über dem Rausch-Boden mit Böen-Laufzeit · 2 = jeder Ring bis 300 m, Gras ↔ Krone r ≥ 0,6 längs uWindDir, Ruhe → Sturm hebt die Varianz ≥ 3×, Ego und Third, beide Geräte",
           "messung": "NEU: werkbank bild --zeit Δt nimmt zwei Ausgabe-Frames unter laufender _bildZeit bei fester Kamera; Rausch-Boden aus einer TAAU-Referenz bei Wind 0; Kreuzkorrelation Gras ↔ Krone mit der Laufzeit Abstand/Böen-Tempo ±20 %. Die Kopplung an den Klang zählt Klang K2, die Formung des Winds Wetter K5.",
-          "beleg": "Maschine: gehalten: Kamm 456.5 über Rausch-Boden 0.001 (×456.5), Tal 64.2 — Kamm/Tal 7.11 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.6 % in 0–15 m, Δt 0.25 s an 715754fc radeon · gehalten: Kamm 536.0 über Rausch-Boden 0.001 (×536.0), Tal 91.0 — Kamm/Tal 5.89 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.6 % in 0–15 m, Δt 0.25 s an b3f9ae95 gtx",
+          "beleg": "Maschine: gehalten: Kamm 456.5 über Rausch-Boden 0.001 (×456.5), Tal 64.2 — Kamm/Tal 7.11 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.6 % in 0–15 m, Δt 0.25 s an 715754fc radeon · Kamm 227.5 über Rausch-Boden 0.000 (×227.5), Tal 42.9 — Kamm/Tal 5.30 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.3 % in 0–15 m, Δt 0.25 s an 3ed95dcf gtx",
           "schlupfloch": "TAAU-Flimmern und ein eigener Sinus je Schicht erzeugen Varianz ohne gemeinsames Feld: Rausch-Boden aus der Wind-0-Referenz und die Kreuzkorrelation bei physikalischer Laufzeit — nur EINE wandernde Böe besteht.",
           "aenderung": "Der Klang-Teil wanderte nach Klang K2 (B16, V25); die Karte 1.0 gab 1 für die Existenz des Codes → 0.",
           "maschine": true
@@ -1088,7 +1088,7 @@
           "punkte": 1,
           "staffel": "1 = Geburt und Tod folgen der Nahrung an einem Ort (Mutante Nahrung halbiert → Bestand fällt) · 2 = überall; fern als Zahl, nah als Körper; die Kappe am Schirm ändert nur, wer gezeichnet wird, nie den Bestand; im Profi-Band",
           "messung": "werkbank eval über Spielzeit-Sprünge, Gegenlauf mit halbierter Nahrung; Kosten im Zerleger (updateCreatures) in derselben Sitzung.",
-          "beleg": "Maschine: gehalten: 8 Saaten · Grundbestand min 5.46 · halbe Nahrung -0.313 [-0.576, -0.098] · 4016 Hungertode, 4016 die Ältesten · Takte an der Kappe 0 an 715754fc headless — offen: oekologie.K2#2 headless: ROT: 8 Saaten · Kappe halbiert: 0 von 17280 Takten andere Tiere in 4 nahen Regionen, Leiber 20/10 bei Bestand 34.5 · halbe Nahrung senkt 8 von 8 Regionen (4 fern, Effekt -0.345 … -0.416) · Takt p95 11.1 ms an 24a0f3ef",
+          "beleg": "Maschine: gehalten: 8 Saaten · Grundbestand min 5.46 · halbe Nahrung -0.313 [-0.576, -0.098] · 4016 Hungertode, 4016 die Ältesten · Takte an der Kappe 0 an 715754fc headless — offen: oekologie.K2#2 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/kreatur-proben.cjs, scripts/lib/stamm.cjs +1)",
           "schlupfloch": "Den Deckel zu heben (20 → 150) bläht nur die Zahl und belastet E: die Mutante verlangt das Gesetz (V32).",
           "aenderung": "Neu als EIN Bestands-Gesetz statt zweier Bauten (Tiere H4 hob den Deckel, Leben-Feld H3 ersetzte ihn; V32).",
           "maschine": true
@@ -1226,7 +1226,7 @@
           "punkte": 0,
           "staffel": "1 = mensch-kopf GRÜN im Third an der Kamera des Spiels an einem Gerät, frisch am Kopf · 2 = 50 Bewohner aus 50 Seeds ohne zwei gleiche, Körperhöhe ±8 %, Gesichtsmaße in MENSCH_SOLL, ≤ 150k Dreiecke und ≤ 1 ms CPU, beide Geräte",
           "messung": "Soll-Tafel mensch-kopf (Third, Kamera aus `_loopCamera`), Gestalt-Distanz je Seed-Paar; Kosten über werkbank zaehlen und takt. Kleidung und Haar zählt der Bereich Haar, Fell, Kleidung.",
-          "beleg": "Maschine: 0 — offen: mensch.K4#1 radeon: Station seit der Messung geändert · mensch.K4#1 gtx: Station seit der Messung geändert · mensch.K4#2 headless: ROT: 50 Bewohner aus 50 Samen, 4 Typen · Gestalt-Distanz min 0.284 px (7:2:1/7:2:0; 16 Paare unter 1 px) · Höhe 1.703–1.951 m um 1.823 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 2.392 ms für 1094 → 0.109 ms je 50 · ROT gleich an 24a0f3ef",
+          "beleg": "Maschine: 0 — offen: mensch.K4#1 radeon: Station seit der Messung geändert · mensch.K4#1 gtx: ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.333 [0.9, 1] · lippeL -3.47 [-14, -4] · lippeA 0.01 [4, 14] · hoehleL 0.62 [-12, 0] · hoehleA -0.9 [-2, 6] · haarDeckung 1 [0.9, 1] an 3ed95dcf · mensch.K4#2 headless: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/diag-mensch-anatomie.cjs +5)",
           "schlupfloch": "Ein einziger schöner Spieler-Kopf erfüllte die alte Messung: Vielfalt und Kosten an 50 Bewohnern machen sie zur Menge.",
           "aenderung": "Die 1 stand auf einer Tafel-Zeile ohne Ist → 0 (B03, B29).",
           "maschine": true
@@ -1333,7 +1333,7 @@
           "punkte": 0,
           "staffel": "1 = Selektion gemessen: der Anteil der Regeln mit value > 0 steigt vom ersten zum letzten Drittel UND schlägt den Gegenlauf mit gemischtem δ · 2 = ≥ 70 % der Feuer an Zellen unter dem Median von lebendig, ≥ 1 Wirkung je 5 Spielminuten im Blick (Leser aus Feld K5), _tickWorldRules ≤ 0,2 ms, 0 verbotene Ops, beide Geräte",
           "messung": "werkbank lauf mit Nexus an und Zeitraffer ×10 (30 Spielminuten ≈ 3 min), Mutations-Gegenlauf mit gemischtem δ; Kosten über werkbank takt.",
-          "beleg": "Maschine: 0 — offen: affekt.K3#1 headless: ROT: value > 0 echt 0.459 → 0.604 · gemischt 0.158 → 0.714 · stumm 0.000 → 0.000 · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 43 m südwestlich von dir, weil Zufall ≤ 0.63. (Gesetz Nr. 29 an 24a0f3ef",
+          "beleg": "Maschine: 0 — offen: affekt.K3#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +22)",
           "schlupfloch": "Ein Zähler erneuerter Regeln stiege auch bei zufälliger Wertung: der Gegenlauf mit gemischtem δ. Ein Nexus, der ständig Wetter wechselt, ist sichtbar, nicht wertvoll: Lokalität und Budget.",
           "aenderung": "Dreimal gezählt (Physik-Feld K4, Leben-Feld K5, KI K4) mit drei Soll für EINE Gleichung → EIN Heim hier (B01, V14).",
           "maschine": true
@@ -1470,7 +1470,7 @@
           "punkte": 0,
           "staffel": "1 = Klasse haar (Strähnen-Kohärenz gegen REF, Albedo-Band) an einem Gerät · 2 = 50 Seeds ohne zwei gleiche Frisuren, beide Geräte",
           "messung": "werkbank bild --klasse haar auf Armlänge und im Third; Gestalt-Distanz je Seed-Paar.",
-          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Station seit der Messung geändert · haar.K2#1 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Station seit der Messung geändert · haar.K2#1 gtx: ROT: arm ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war · third ROT Bild: --ist haar: die Linse liest die Messung nicht — Klasse haar: die Klasse zeigt keine inneren Pixel — die Tafel bleibt, wie sie war an 3ed95dcf",
           "schlupfloch": "Ein Haar-Helm je Rolle bestünde die Klasse: 50 Seeds ohne zwei gleiche verlangen das Genom.",
           "maschine": true
         },
@@ -2006,7 +2006,7 @@
           "punkte": 0,
           "staffel": "1 = spiegelTreue ≥ 0,5 an Fenster-Glas ODER Lack aus Ego an einem Gerät · 2 = jede glänzende Klasse aus Ego und Third, kein Spiegel-Flimmern unter Bewegung, ≤ 1 ms an der GTX, beide Geräte",
           "messung": "werkbank bild an Haus-Fenster, GT-Lack und Klinge; derselbe Baustein, den `_wasserBlick` liest; fehlt die Spur, meldet der Rückfall auf die Himmels-Umgebung laut.",
-          "beleg": "Maschine: 0 — offen: material.K4#1 radeon: Station seit der Messung geändert · material.K4#1 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: material.K4#1 radeon: Station seit der Messung geändert · material.K4#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/haenger-linse.cjs, scripts/lib/shader-kosten.cjs, scripts/werkbank.cjs)",
           "schlupfloch": "Eine gebackene Umgebung je Ort bestünde ein Standbild: Bewegung und eine zweite Pose verlangen die Spur; ein zweiter Spiegel-Weg neben dem Wasser wäre ein Zwilling.",
           "aenderung": "Neu (V08, B73). Das Nässe-Bild der Synthese-K5 zählt Wetter K2 (V23); die Ton-Kette Studio = Welt (Synthese-K2) zählt Studios K4 (B39, V16).",
           "maschine": true
@@ -2269,7 +2269,7 @@
           "punkte": 0,
           "staffel": "1 = Karten-Deckung ≥ 0,75 und IoU ≥ 0,65 bei −20/0/40/80° für Bäume an einem Gerät · 2 = je Familie (Baum, Haus, Tor, Wagen), Atlas im VRAM-Band (≤ 118 MB gesamt), beide Geräte",
           "messung": "Tor C6 (diag-foundry-impostor) und werkbank bild an Hügel und hohem Third.",
-          "beleg": "Maschine: 0 — offen: lod.K3#1 gtx: ungemessen (R10)",
+          "beleg": "Maschine: 0 — offen: lod.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/haenger-linse.cjs, scripts/lib/shader-kosten.cjs, scripts/werkbank.cjs)",
           "schlupfloch": "Mehr Ansichten ohne VRAM-Grenze erfüllen C6 und brechen E: das Band ist Teil des Solls; nur Bäume zu messen ließe Häuser und Wagen aus.",
           "maschine": true
         },
@@ -2380,7 +2380,7 @@
           "punkte": 0,
           "staffel": "1 = ≥ 80 % der Zeilen von PARAMS_BY_KIND wirken am Bild bzw. Ohr · 2 = 100 % — der Nenner ist die Zeilen-Zahl bei der Messung (eine Ratsche, die nur wächst, mit den Baum-Zeilen)",
           "messung": "gate:regler-wirkt (`scripts/diag-regler-wirkt.cjs`) baut je Zeile L0 bei min und max über den echten Bauer; Wirkung = ≥ 1 % der Gestalt-Pixel mit ΔLuma > 18 im Ausgabe-Bild (ausgabe-aufnahme, Radeon 890M), beim Klang der Spektral-Abstand des Klang-Gesetzes, beim Grip die Seitenkraft im fahrSchritt.",
-          "beleg": "Maschine: 0 — offen: studios.K1#1 headless: ROT: 0 von 3 Teilen mit Zeilen-Zahl (Exits 0/0/0) an 24a0f3ef · studios.K1#2 headless: ROT: 0 von 3 Teilen mit Zeilen-Zahl (Exits 0/0/0) an 24a0f3ef",
+          "beleg": "Maschine: 0 — offen: studios.K1#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/stamm.cjs, scripts/lib/welt-boot.cjs) · studios.K1#2 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/stamm.cjs, scripts/lib/welt-boot.cjs)",
           "schlupfloch": "Ein Regler verschiebt Bytes, aber nicht das Bild (0,1 mm), und zählte am Hash: die Bild- bzw. Ohr-Schwelle. Ein toter Regler wird gestrichen statt geheilt: die Zeilen-Zahl ist eine Ratsche, ein Streichen ist ROT, außer der Schöpfer nimmt das Gesetz zurück. swiftshader-Bilder zählen nicht (Lehre 17).",
           "aenderung": "Der Nenner war „fest 112“ und schloss die Baum-Zeilen aus (B42).",
           "maschine": true
@@ -2644,7 +2644,7 @@
           "punkte": 0,
           "staffel": "1 = im Selbstlauf mit Modell registrierte LLM-Regeln (source llm) werden von derselben Fitness gewertet und verdrängt wie Nexus-Regeln, gegen den Gegenlauf mit gemischtem δ · 2 = ihr Anteil an überlebenden Regeln mit δ > 0 gemessen, 0 verbotene Ops, Takt ≤ 0,2 ms, beide Geräte",
           "messung": "10 min Selbstlauf an Genesis mit Modell (wie Affekt K3, derselbe Lauf), Zählung der LLM-Regeln je Drittel.",
-          "beleg": "Maschine: 0 — offen: ki.K4#1 headless: ROT: LLM-Regeln neu je Drittel 2/2/2, erneuert 9 · verfallen 6 · verdrängt 0 (Nexus 151 · 60 · 3); Gegenlauf: erneuert LLM δ+ 0.91 · δ− 0.00, verdrängt 0, Täter keine llm-Regel verdrängt an 24a0f3ef",
+          "beleg": "Maschine: 0 — offen: ki.K4#1 headless: Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4)",
           "schlupfloch": "LLM-Regeln, die die reaktive Schicht nur kosmetisch tönen, zählen erst mit positivem δ; Regeln zu zählen statt ihrer Wirkung zählt 0.",
           "aenderung": "Heim des Nexus ist Affekt K3 (B01, B51); hier bleibt der Anteil des Modells.",
           "maschine": true
@@ -2931,7 +2931,7 @@
           "punkte": 1,
           "staffel": "1 = ein Fluss (Bauplan oder Welt) an einem Gerät: A teilt, B (anderes Gerät, frisches Profil, IDB leer) öffnet; das Werk steht an B's Pose mit gleichem Bau-Hash und studioOv, Signatur gültig, ≤ 10 s · 2 = beide Flüsse (Welt per Einladungs-Code, Kontrolle ≤ 5 s) an beiden Geräten, Bauplan ≤ 4 KB",
           "messung": "Spielgang-Station teilen.",
-          "beleg": "Maschine: Zeit 126 ms (A 428) · A=9c183437/12 B=9c183437/12 ohne=515787a7/12 · Profil A, B, Kontext-Probe: profile-CkpRSw · profile-N6KxcR · profile-CkpRSw an 24a0f3ef headless — offen: tore.K5#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: gehalten: Zeit 126 ms (A 428) · A=9c183437/12 B=9c183437/12 ohne=515787a7/12 · Profil A, B, Kontext-Probe: profile-CkpRSw · profile-N6KxcR · profile-CkpRSw an 24a0f3ef headless — offen: tore.K5#2: kein Werkzeug (fehlt)",
           "schlupfloch": "JSON exportieren und im selben Profil wieder importieren, oder ok zählen: frisches Profil auf dem anderen Gerät, Bau-Hash und Bild an B's Pose.",
           "aenderung": "EIN Heim des Bauplans zwischen Geräten (vorher auch Bauen K5, Speicher K5; V17).",
           "maschine": true
@@ -4001,7 +4001,7 @@
           "punkte": 0,
           "staffel": "1 = Frame p95 ≤ 33 ms (der Boden von PFLICHT E) in jeder Bewegungszelle an beiden Geräten · 2 = ≤ 16,7 ms in jeder Zelle",
           "messung": "`werkbank lauf` in Bewegung, ABAB 4 Boots je Gerät, Regler voll, Tiere frei, 1920×1080. Zellen: Gehen 4 m/s (Wiese Ego, Genesis Third), Sprint, GT-Fahrt mit Third↔Ego, Sturm mit 50 Tieren (Feld K3), Messort stadt (nH ≥ 120, dorfZug an) gehend durch die Hauptgasse.",
-          "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: ungemessen (R10) · profiband.K1#1 gtx: Station seit der Messung geändert · profiband.K1#2 radeon: ungemessen (R10) · profiband.K1#2 gtx: ungemessen (R10)",
+          "beleg": "Maschine: 0 — offen: profiband.K1#1 radeon: ungemessen (R10) · profiband.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/haenger-linse.cjs, scripts/lib/shader-kosten.cjs, scripts/werkbank.cjs) · profiband.K1#2 radeon: ungemessen (R10) · profiband.K1#2 gtx: ungemessen (R10)",
           "schlupfloch": "Regler herunter, Sicht kürzen, Tiere anhalten, leeres Gelände: Regler voll und Tiere frei fest, die Bahn fest, und dieselbe Sitzung hält die A-Klassen am Ausgabe-Bild.",
           "aenderung": "EIN Heim des Bands (V26): LOD K5, Spielgang K3, der Band-Teil von Fahrzeug K2, Siedlung K5(b) und Feld K3 (Sturm) zählen hier als Zellen. Karte 1.0 maß im Stand (B63).",
           "maschine": true
@@ -4011,7 +4011,7 @@
           "punkte": 0,
           "staffel": "1 = stehend ≤ 5,8 ms an einem Gerät · 2 = stehend ≤ 5,8 UND bewegt ≤ 8 ms an beiden",
           "messung": "Trace der Haupt-Faden-Belegung zwischen zwei Bildern (LongTask/CDP), nie `_gameLoopTick`; dieselben Läufe wie K1. Die Zerlegung nach Herkunft (Stamm-Zone je Methode) ist ein Spiegel ohne Punkte, der den Täter nennt.",
-          "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: ungemessen (R10) · profiband.K2#1 gtx: Station seit der Messung geändert · profiband.K2#2 radeon: ungemessen (R10) · profiband.K2#2 gtx: ungemessen (R10)",
+          "beleg": "Maschine: 0 — offen: profiband.K2#1 radeon: ungemessen (R10) · profiband.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/haenger-linse.cjs, scripts/lib/shader-kosten.cjs, scripts/werkbank.cjs) · profiband.K2#2 radeon: ungemessen (R10) · profiband.K2#2 gtx: ungemessen (R10)",
           "schlupfloch": "Arbeit in requestIdleCallback, setTimeout oder Worker-Rückrufe zwischen den Takten schieben: gezählt wird die ganze Belegung des Intervalls.",
           "aenderung": "Die 1 der Synthese stand auf der Takt-Funktion (B66) → 0; die Radeon-Belegung (M12) gemessen 21.10.: p95 10,4 ms je Bild, ROT — das Vorher.",
           "maschine": true
@@ -4021,7 +4021,7 @@
           "punkte": 0,
           "staffel": "1 = im Stand an beiden Geräten frisch am Kopf (Ratsche + gpu-bank) · 2 = alle Zellen samt Bewegung",
           "messung": "`werkbank band` und die Ratsche je Ort × Gerät × Sicht (12 Dateien `spec/profiband/ratsche-*.json`) plus dieselbe Zählung in Bewegung mit gpu-bank: Befehle ≤ 208, Dreiecke ≤ 680k, VRAM ≤ 118 MB, GPU p95 ≤ 12 ms.",
-          "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: ungemessen (R10) · profiband.K3#1 gtx: Station seit der Messung geändert · profiband.K3#2 radeon: ungemessen (R10) · profiband.K3#2 gtx: ungemessen (R10)",
+          "beleg": "Maschine: 0 — offen: profiband.K3#1 radeon: ungemessen (R10) · profiband.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/haenger-linse.cjs, scripts/lib/shader-kosten.cjs, scripts/werkbank.cjs) · profiband.K3#2 radeon: ungemessen (R10) · profiband.K3#2 gtx: ungemessen (R10)",
           "schlupfloch": "Kaskaden oder Karten abschalten, `SZENE_SKALA` unter 0,75 senken: die EINE Skala ist fest, A urteilt in derselben Sitzung.",
           "aenderung": "Der Punkt stand auf veralteten Zahlen (R6) → 0; die Neumessung (M13, 21.10.) stellte ihn nicht wieder her: ROT an beiden Geräten — das Vorher.",
           "maschine": true
@@ -4031,7 +4031,7 @@
           "punkte": 1,
           "staffel": "1 = eine Bewegungsart an einem Gerät in ≥ 3 von 4 Sitzungen ohne Frame > 100 ms · 2 = 0 Frames > 100 ms und ≤ 1 % > 33 ms über Gehen und Fahrt (mit Sicht-Wechsel, Einsteigen) an beiden Geräten",
           "messung": "`werkbank haenger 60 --regler frei --wandern bahn` plus Fahrt-Bahn, 4 Sitzungen je Gerät; jeder Frame > 100 ms beim Namen (`scripts/lib/haenger-linse.cjs`). Der Regler ist der des Spielers (R8): ohne Angabe fährt `haenger` voll; `--wandern kreis` kennt der Kopf nicht.",
-          "beleg": "Maschine: gehalten: 4 von 4 Sitzungen ohne Frame > 100 ms (max 67.2 · 50.2 · 50.2 · 50 ms; Hänger 0/0/0/0) an b3f9ae95 radeon — offen: profiband.K4#2 radeon: Station seit der Messung geändert · profiband.K4#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: gehalten: 4 von 4 Sitzungen ohne Frame > 100 ms (max 67.2 · 50.2 · 50.2 · 50 ms; Hänger 0/0/0/0) an b3f9ae95 radeon — offen: profiband.K4#2 radeon: Station seit der Messung geändert · profiband.K4#2 gtx: ROT: Gehen 41 Bilder · max 858.5 ms · 41.46 % > 33 ms · Fahrt 23 Bilder · max 800.1 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 11 Bild(er) > 100 ms (max 858.5), 41.46 % > 33 ms | Fahrt: blind (23 Bilder in 2.5 s), 12 Bild(er) > 100 ms (max 800.1), 100.00 % > 33 ms an 3ed95dcf",
           "schlupfloch": "Hänger in ungemessene Übergänge legen (Sicht-Wechsel, Einsteigen, Tor): die Bahn enthält jeden Übergang, jeder Frame zählt; den Regler auf voll stellen, um den Spieler-Takt zu meiden: R8 fährt den Regler des Spielers.",
           "aenderung": "Gemessen 0 → 1 (M29, e5003509, GTX, Regler des Spielers): kein Schnitt, die Messung am Kopf; nach R6 (fahrt-takt 36ef06e6) 22.10. 1 → 0; an b0b2d8ed gemessen (M34) 22.10. 0 → 1.; nach R6 (stadt-takt, fahrt-takt-Folge-Morphs, 16dd81d0) 23.10. 1 → 0.",
           "maschine": true
@@ -4041,7 +4041,7 @@
           "punkte": 0,
           "staffel": "1 = an einem Gerät · 2 = an beiden",
           "messung": "Spielgang 20 min am Stück (ankommen, gehen, fahren, bauen, Tor, Nacht, Weg ≥ 5 km): p95 der letzten 5 min ≤ p95 der ersten 5 min × 1,05; VRAM-Drift ≤ 2 MB zurück am Start; `buf:ruhend` und `buf:verwaist` = 0 (`werkbank puffer`); Takt und Drossel beim Namen.",
-          "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: ungemessen (R10) · profiband.K5#1 gtx: Station seit der Messung geändert · profiband.K5#2 radeon: ungemessen (R10) · profiband.K5#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: ungemessen (R10) · profiband.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/haenger-linse.cjs, scripts/lib/shader-kosten.cjs, scripts/werkbank.cjs) · profiband.K5#2 radeon: ungemessen (R10) · profiband.K5#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Die Sitzung im Stand verbringen: feste Stationen mit Pflicht-Weg.",
           "maschine": true
         }
@@ -4256,7 +4256,7 @@
           "punkte": 2,
           "staffel": "1 = nach 30 min und 5 km Wanderung ohne Edit Δ ≤ 10 kB gegen die frische Welt · 2 = dazu ≤ 100 kB je 1000 Edits, roh und auf der Platte",
           "messung": "Station speichern: Größe roh (JSON) und auf der Platte.",
-          "beleg": "Maschine: ✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 2.9 kB, Platte 5.9 kB, am stärksten worldMeta.settlementCells 1.9 kB · gesamt roh 67.8 kB, Platte 135.6 kB · Leben worldJournal 46.9 kB, dslHistory 11.8 kB, dslAbilities 3.3 kB, knowledgeBase 2.8 kB, creatures 0.0 kB, dslPatternMemory 0. | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 972.2 kB, Platte 1944.3 kB, am stärksten wegSpur 972.2 kB · gesamt roh 972.2 kB, Platte 1944.3 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worldJo an 24a0f3ef headless · ✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 2.9 kB, Platte 5.9 kB, am stärksten worldMeta.settlementCells 1.9 kB · gesamt roh 67.8 kB, Platte 135.6 kB · Leben worldJournal 46.9 kB, dslHistory 11.8 kB, dslAbilities 3.3 kB, knowledgeBase 2.8 kB, creatures 0.0 kB, dslPatternMemory 0. | ✅ (D) 1000 Edits, Soll ≤ 100 kB: ohne Leben Δ roh 42.9 kB, Platte 85.8 kB, am stärksten voxelEdits 42.8 kB · gesamt roh 45.9 kB, Platte 91.8 kB · Leben creatures 2.3 kB, dslHistory 0.6 kB, dslAbilities 0.1 kB, knowledgeBase 0.1 kB, dslPatternMemory 0.0 kB, worldJournal -0.1 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 972.2 kB, Platte 1944.3 kB, am stärksten wegSpur 972.2 kB · gesamt roh 972.2 kB, Platte 1944.3 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worldJo an 24a0f3ef headless",
+          "beleg": "Maschine: gehalten: ✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 2.9 kB, Platte 5.9 kB, am stärksten worldMeta.settlementCells 1.9 kB · gesamt roh 67.8 kB, Platte 135.6 kB · Leben worldJournal 46.9 kB, dslHistory 11.8 kB, dslAbilities 3.3 kB, knowledgeBase 2.8 kB, creatures 0.0 kB, dslPatternMemory 0. | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 972.2 kB, Platte 1944.3 kB, am stärksten wegSpur 972.2 kB · gesamt roh 972.2 kB, Platte 1944.3 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worldJo an 24a0f3ef headless · gehalten: ✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 2.9 kB, Platte 5.9 kB, am stärksten worldMeta.settlementCells 1.9 kB · gesamt roh 67.8 kB, Platte 135.6 kB · Leben worldJournal 46.9 kB, dslHistory 11.8 kB, dslAbilities 3.3 kB, knowledgeBase 2.8 kB, creatures 0.0 kB, dslPatternMemory 0. | ✅ (D) 1000 Edits, Soll ≤ 100 kB: ohne Leben Δ roh 42.9 kB, Platte 85.8 kB, am stärksten voxelEdits 42.8 kB · gesamt roh 45.9 kB, Platte 91.8 kB · Leben creatures 2.3 kB, dslHistory 0.6 kB, dslAbilities 0.1 kB, knowledgeBase 0.1 kB, dslPatternMemory 0.0 kB, worldJournal -0.1 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 972.2 kB, Platte 1944.3 kB, am stärksten wegSpur 972.2 kB · gesamt roh 972.2 kB, Platte 1944.3 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worldJo an 24a0f3ef headless",
           "schlupfloch": "Komprimieren statt weniger speichern: die Grenze gilt auch roh.",
           "maschine": true
         },
@@ -4787,7 +4787,7 @@
     },
     {
       "stand": "2026-10-30",
-      "kopf": "24a0f3ef",
+      "kopf": "3ed95dcf",
       "summe": 154,
       "max": 330,
       "skala": "2.0",
@@ -4795,7 +4795,7 @@
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 30.10.2026, Kopf main 24a0f3ef (V18.546.132)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 30.10.2026, Kopf main 3ed95dcf (V18.546.135)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
