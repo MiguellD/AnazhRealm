@@ -44,3 +44,4 @@
 2026-10-29T23:00 woche=100 (Konto 3; Notbremse 19:03 bei 98 %, Übernahme 23:00 bei 100 %)
 2026-10-29T23:05 woche=0 konto=neu (Konto 4, Woche bis 04.11. 08:00)
 2026-10-30T01:55 woche=6 karte=148 (Konto 4; gebucht 01:22 am 715754fc mit der Ratsche)
+2026-10-30T02:45 woche=11 karte=148 (Konto 4; z78 gelandet 73bdf938 — Verkehr Pflicht C + Licht; Mess-Plan mit Ratsche)

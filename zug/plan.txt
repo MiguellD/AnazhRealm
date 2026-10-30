@@ -1,11 +1,10 @@
 # zug/plan.txt — was ansteht (Koordinator schreibt, messplatz-blick zeigt): je Zeile Zustand · Was · Wer/Wo · Ziel
-gebucht 148  am 715754fc (30.10. 01:22) mit der Ratsche: gehalten 73, Rückfall 5  —  Koordinator  —  Rückfälle heilen (w4-heil-rueckfall)
-läuft   z78  w3w-verkehr (Pflicht C) + w3v-licht auf integ-probe, echt an der OMEN  —  fahre.sh  —  landen, Nachwache prio 2
-läuft   takt22-gtx  63 Stationen am 715754fc  —  OMEN nach z77-abab  —  neue Ratsche-Buchung
-läuft   grundstellung  Mess-Sitzung ohne Neuladen stirbt vor der 1. Probe (/fenster ECONNRESET)  —  champion lokal, Radeon  —  Fahrt ≤ 1 800 s
-läuft   w4-register-merge  Merge-Treiber für modul-karte, vendor-anker, ?v=  —  Cloud  —  Paar-Konflikte 6/15 → 0
-läuft   w4-heil-rueckfall  speicher.K3 (settlementCells), tore.K5#1, fahrzeug.K3#1, klang.K4#1  —  Cloud  —  5 Rückfälle → 0
-läuft   w4-heil-glanz-wackler  glanz S0 Nacht + Wackler „Kreaturen-Defekt“  —  Cloud  —  glanz grün, Wackler 0/20
-danach  z79  spike-ci-konsum, gpu-wahl-bau, w3v-brand-bild, w3w-studios, w3w-glanz, oeko/schatten/tore-…-neu  —  zug-sammler2  —  EIN Zug
-danach  koord-Merge  w3w-verkehr-koord (sitzt auf mess-session), w3v-licht-koord (nach licht), Waisen-koord  —  Koordinator  —  Stationen messbar
-danach  Karten mit Bild  Himmel-Stufen, Ähren, Stämme, Luft-Blau, Fell — vorher-Bilder im Brief  —  Cloud  —  Pflicht A
+gebucht 148  am 715754fc (30.10. 01:22) mit der Ratsche  —  Koordinator  —  takt22-gtx 59/63 → neue Buchung, Meisterkarte
+gelandet z78  73bdf938 w3w-verkehr (Pflicht C) + w3v-licht (02:35)  —  fahre.sh  —  Nachwache z78-abab prio 2, licht-koord in koordination
+läuft   z79  tore-k5-tuer-neu, oeko-k2-bestand-neu, schatten-k1-zuwachs-neu, w3w-wald, w3w-studios, gpu-wahl-bau, spike-ci-konsum, w3v-brand-bild  —  zug-sammler2 (Neuläufe gegen Wackler)  —  EIN Zug
+läuft   grundstellung  Mess-Sitzung ohne Neuladen  —  champion lokal, Radeon  —  Fahrt ≤ 1 800 s, Gleichheit ≥ 30/36
+läuft   w4-register-merge  Merge-Treiber für modul-karte, vendor-anker, ?v=  —  Cloud  —  Paar-Konflikte → 0
+läuft   w4-heil-rueckfall · w4-heil-glanz-wackler  speicher.K3, tore.K5#1, fahrzeug.K3#1, klang.K4#1 · glanz S0 + Kreatur-Linse  —  Cloud  —  Rückfall 0, Wackler 0/20
+läuft   w4b  ferne-blau, wiese-nah, laub-saum, licht-baustein, hebungsringe (vorher-Bilder im Brief)  —  Cloud  —  Pflicht A mit Bild
+danach  Takt 23  am Kopf nach z79: Plan mit Ratsche (gewinn GTX ~33 prio 1, Radeon ~13 Probe; halten prio 3)  —  OMEN + Farm  —  buchen
+danach  koord-Merge  Waisen-koord nach z79, w3w-verkehr-koord mit mess-session  —  Koordinator  —  Stationen messbar
