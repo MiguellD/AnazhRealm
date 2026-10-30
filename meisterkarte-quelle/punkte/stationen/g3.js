@@ -496,6 +496,86 @@ const befehlMitHimmel = (plan) => [
     HIMMEL,
 ];
 
+// Die Laub-Silhouette (lod.K1): die Klassen der Soll-Tafel (laub-kante `mass.werkzeug`), das Auge des Spiels zum Waldhang der Tafel
+// (Gier aus der Richtung zum Ziel der Tafel, Neigung 0, das Rig 30 Schritte), Rückgabe die Pose des Auges als Kamera und Blickpunkt.
+const LAUB_KLASSE = "^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$";
+const LAUB_AUGE =
+    "const st = r.state, pm = st.playerMesh.position; st.yaw = r._blickGierZu(-269 - pm.x, -1036 - pm.z); st.pitch = 0; " +
+    "for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); " +
+    "const c = st.camera, d = new T.Vector3(); c.getWorldDirection(d); " +
+    "return [c.position.x, c.position.y, c.position.z, c.position.x + 100 * d.x, c.position.y + 100 * d.y, c.position.z + 100 * d.z].map((v) => +v.toFixed(3));";
+const LAUB_KANTE_MAX = 0.22;
+const LAUB_PIXEL_MIN = 5000;
+// das Rohe der Proben (stdout `LOD-K1 {…}` im Format von {AUS}); die Messung selbst liest {AUS}
+const laubKanteRoh = (s) => {
+    const m = /^LOD-K1 (\{.*\})$/m.exec(String(s || ""));
+    try {
+        return m ? JSON.parse(m[1]) : null;
+    } catch (_e) {
+        return null;
+    }
+};
+function laubKanteUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Messung in {AUS}" };
+    const hw = !!e.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(e.adapter);
+    if (e.fehler) return { gruen: false, zahl: "Folge: " + e.fehler };
+    let gruen = hw;
+    const teile = [];
+    for (const [schuss, titel] of [["tafel", "Tafel-Pose"], ["spielgang", "Spielgang"]]) {
+        const s = e.schritte && e.schritte[schuss];
+        const o = s && s.json;
+        const k = o && o.klasse;
+        const b = o && o.abnahme && o.abnahme.bild;
+        if (!k || !k.klassen || !b || b.w !== 1920 || b.h !== 1080) {
+            gruen = false;
+            teile.push(titel + ": " + String((o && o.fehler) || (s && s.rest) || "kein Bild der Klassen in 1920 × 1080").slice(-160));
+            continue;
+        }
+        const je = Object.entries(k.klassen).filter(([, m]) => m.pixel >= LAUB_PIXEL_MIN && m.kante != null);
+        const karte = je.filter(([n]) => /^fimp:/.test(n));
+        const schlecht = je.reduce((a, x) => (!a || x[1].kante > a[1].kante ? x : a), null);
+        const dither = je.filter(([, m]) => m.zweiton !== 0).map(([n]) => n);
+        if (!(karte.length && schlecht && schlecht[1].kante <= LAUB_KANTE_MAX && !dither.length)) gruen = false;
+        teile.push(
+            titel + " " + (schlecht ? "schlechteste " + schlecht[0] + " " + schlecht[1].kante.toFixed(4) : "ohne Klasse ≥ " + LAUB_PIXEL_MIN + " px") +
+                " · Karte " + (karte.length ? karte.map(([n, m]) => n + " " + m.kante.toFixed(4) + " (" + m.pixel + " px)").join(", ") : "NICHT im Bild") +
+                (dither.length ? " · zweiton ≠ 0: " + dither.join(", ") : "")
+        );
+    }
+    return { gruen, zahl: teile.join(" | ") + " (Soll kante ≤ 0,22 je Teil-Klasse, zweiton 0) · " + (e.adapter || "Adapter ungenannt") };
+}
+// die Schlupflöcher als Mutanten (der Selbsttest urteilt jede): der Saum an beiden Bildern ist GRÜN, ebenso eine kleine Klasse unter
+// 5 000 px mit zerrissenem Rand; die Karte von unten wie am 26.10. (0,2632), ein Dither statt Gestalt, ein Spielgang ohne Karte, ein
+// Schuss in 1280 × 720, ein fehlender Schuss und swiftshader sind ROT
+function laubKanteProben() {
+    const kl = (o = {}) =>
+        Object.assign(
+            {
+                "f:fichte:L1": { pixel: 265858, kante: 0.1897, zweiton: 0 },
+                "f:tanne:L0": { pixel: 71125, kante: 0.1775, zweiton: 0 },
+                "f:tanne:L1": { pixel: 290363, kante: 0.1598, zweiton: 0 },
+                "fimp:atlas:L2": { pixel: 532920, kante: 0.2051, zweiton: 0 },
+            },
+            o
+        );
+    const schuss = (klassen, w = 1920) => ({ exit: 0, json: { klasse: { klassen }, abnahme: { bild: { w, h: (w * 9) / 16 } } } });
+    const zeile = (o = {}) => {
+        const e = { plan: "lod.K1#1", adapter: "[linse-gpu] amd/rdna-3", schritte: { tafel: schuss(kl()), spielgang: schuss(kl()) } };
+        return "LOD-K1 " + JSON.stringify(Object.assign(e, o, { schritte: Object.assign(e.schritte, o.schritte || {}) }));
+    };
+    const ohne = (n) => Object.fromEntries(Object.entries(kl()).filter(([k]) => k !== n));
+    return [
+        { name: "der Saum an Tafel und Spielgang", stdout: zeile(), gruen: true },
+        { name: "eine kleine Klasse zerrissen", stdout: zeile({ schritte: { spielgang: schuss(kl({ "f:birke:L0": { pixel: 900, kante: 0.41, zweiton: 0 } })) } }), gruen: true },
+        { name: "die Karte von unten 0,2632", stdout: zeile({ schritte: { tafel: schuss(kl({ "fimp:atlas:L2": { pixel: 532920, kante: 0.2632, zweiton: 0 } })) } }), gruen: false },
+        { name: "Dither statt Gestalt", stdout: zeile({ schritte: { tafel: schuss(kl({ "fimp:atlas:L2": { pixel: 532920, kante: 0.17, zweiton: 0.4 } })) } }), gruen: false },
+        { name: "Spielgang ohne Karte", stdout: zeile({ schritte: { spielgang: schuss(ohne("fimp:atlas:L2")) } }), gruen: false },
+        { name: "Schuss in 1280 × 720", stdout: zeile({ schritte: { spielgang: schuss(kl(), 1280) } }), gruen: false },
+        { name: "der Spielgang fehlt", stdout: zeile({ schritte: { spielgang: { exit: 1, json: null, rest: "Exit 1" } } }), gruen: false },
+        { name: "swiftshader", stdout: zeile({ adapter: "[linse-gpu] google/swiftshader" }), gruen: false },
+    ];
+}
+
 const stationen = [
     {
         kriterium: "licht.K2",
@@ -1274,6 +1354,39 @@ const stationen = [
         },
         pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "spec/pruefbuehne/**"],
         quelle: "1 = Halbschatten am Fuß ≤ 3 cm an einem Gerät",
+    },
+
+    // ───────── lod.K1 — der Umriss hält in jeder Stufe (w4-laub-saum) ─────────
+    // DER SAUM AUS DEM GESETZ im Spiel-Baum (phyto-core `karteSaum` · `karteSaumMuster` in der Wahl der Stufen `impostorMips`, die
+    // GPU-Ablage `KARTE_RECHNER_WGSL` saumK): über dem Kronen-Fuß wählt jede Stufe der Karte ihre Texel nach der Deckung des
+    // Fußabdrucks und dem Muster der Art (Laub-Lappen, Nadel-Grate, die Zelle aus der Blattgröße in treeParams), genau so viele, wie
+    // Stufe 0 deckt. K1#1 an der GPU: die Tafel-Pose der Soll-Tafel (laub-kante, `mass.werkzeug`) und ein Spielgang-Bild — das
+    // Ego-Rig (`_loopCamera`) nach 8 s Gang auf der Bahn der Mess-Wiese, zum Waldhang der Tafel gedreht, ohne Blick-Wahl —, je
+    // Bild die Klassen der Laub-Silhouette. Die schlechteste Teil-Klasse mit ≥ 5 000 px urteilt (darunter ist kante Rauschen
+    // weniger Rand-Pixel), die Karte (fimp) steht in beiden Bildern, zweiton 0 (ein Dither senkt die Kohärenz ohne Gestalt).
+    {
+        kriterium: "lod.K1",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        probe: { sek: 600, befehl: befehlDer({
+            name: "lod.K1#1",
+            schritte: [
+                { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
+                { name: "tafel", args: ["bild", "-284", "+1.7", "-1042", "-269", "34", "-1036", "--ziel", "tanne", "--klasse", LAUB_KLASSE, "--datei", "@DIR@/tafel.png"] },
+                { name: "wiese", args: ["umstellen", "--ort", "wiese", "--sicht", "ego"], muss: true },
+                { name: "gang", args: ["lauf", "8", "--ein", "20", "--wandern", "bahn"] },
+                { name: "auge", args: ["eval", LAUB_AUGE], muss: true },
+                { name: "spielgang", args: ["bild", "@auge.0@", "@auge.1@", "@auge.2@", "@auge.3@", "@auge.4@", "@auge.5@", "--wahl", "0", "--klasse", LAUB_KLASSE, "--datei", "@DIR@/spielgang.png"] },
+            ],
+        }) },
+        env: envDer,
+        gpu: true,
+        zeit: false,
+        minuten: 10,
+        urteil: (j, lauf) => laubKanteUrteil(j || laubKanteRoh(lauf.stdout)),
+        proben: laubKanteProben(),
+        pfad: [...BILD, ...LOD_PFAD, "scripts/lib/abnahme-urteil.cjs"],
+        quelle: "1 = kante ≤ 0,22 je Teil-Klasse (die schlechteste urteilt) an der Tafel-Pose UND einem Spielgang-Bild an einem Gerät, frisch am Kopf",
     },
 
     // ───────── lod.K5 · lod.K2 — die Stufe folgt dem Schirm, nicht dem Regler (w3v-lod) ─────────
