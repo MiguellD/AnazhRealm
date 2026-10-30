@@ -977,13 +977,6 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         const out = {};
         const p = st.player;
 
-        const makeRng = (seed) => {
-            let s = seed >>> 0 || 1;
-            return () => {
-                s = (s * 1664525 + 1013904223) >>> 0;
-                return s / 4294967296;
-            };
-        };
 
         // (a) awe > 0.7 → skybox-Farbe wird gesetzt
         for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
@@ -1038,7 +1031,7 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         // (d) Generator-Modulation: hoher joy → mehr "sunny" als "rainy"
         for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
         p.emotions.joy = 1.0;
-        const rngJoy = makeRng(123);
+        const rngJoy = r._samenStrom(123); // das EINE LCG der Welt
         let sunny = 0;
         let rainy = 0;
         for (let i = 0; i < 1000; i++) {
@@ -1055,7 +1048,7 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         // (e) Hoher sorrow → mehr "rainy" als "sunny"
         for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
         p.emotions.sorrow = 1.0;
-        const rngSorrow = makeRng(456);
+        const rngSorrow = r._samenStrom(456);
         let sunny2 = 0;
         let rainy2 = 0;
         for (let i = 0; i < 1000; i++) {

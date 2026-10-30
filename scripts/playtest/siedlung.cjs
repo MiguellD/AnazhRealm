@@ -255,15 +255,8 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         const farEntries = st.architectures.filter((a) => a.position.x >= 500);
         out.farStructuresAreCold = farEntries.length === 50 && farEntries.every((a) => a.mesh === null);
 
-        // (g) Atomic-Pool: spawn_village/temple/waterfall sind enthalten
-        const seedRng = (s) => {
-            let x = s >>> 0 || 1;
-            return () => {
-                x = (x * 1664525 + 1013904223) >>> 0;
-                return x / 4294967296;
-            };
-        };
-        const rng = seedRng(2026);
+        // (g) Atomic-Pool: spawn_village/temple/waterfall sind enthalten (der Strom: das EINE LCG der Welt)
+        const rng = r._samenStrom(2026);
         const seenOps = new Set();
         for (let i = 0; i < 5000; i++) {
             const atom = r.dslComposeAtomic(rng);
