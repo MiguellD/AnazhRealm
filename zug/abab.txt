@@ -48,3 +48,4 @@ b3f9ae95d3bf1188285b135c757b074a12ee3f22 nicht-langsamer takt19-abab
 24a0f3eff6051ae954369fd774cce415d1f32dc5 LANGSAMER z83-bisekt2b
 4df8c302d20ce3a314c0394d9404054db87abc3e nicht-langsamer z83-bisekt3
 81ce43926eccd996aa9d4fc76769108def84f4ce LANGSAMER z83-bisekt4
+24a0f3eff6051ae954369fd774cce415d1f32dc5 LANGSAMER z83-bisekt5

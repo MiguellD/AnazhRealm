@@ -101,3 +101,4 @@ z83-bisekt4 LANGSAMER abab 81ce4392 gegen 4df8c302: w-ego 4+4 LANGSAMER
 eich5-gtx Exit0 station eich-gtx.sh an 379e5f56
 eich6-gtx Exit0 station eich-gtx.sh an 379e5f56
 eich7-gtx Exit0 station eich-gtx.sh an 379e5f56
+z83-bisekt5 LANGSAMER abab 24a0f3ef gegen 81ce4392: w-ego 2+2 LANGSAMER
