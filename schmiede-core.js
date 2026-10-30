@@ -3644,6 +3644,8 @@
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
         PARAMS_BY_KIND: { weapon: PARAMS },
+        // B8 — der Stammbaum (studios.K5): wie das Buch sich und seine Arten nennt (der Wirt leitet den EINEN Baum ab)
+        STAMMBAUM: { studio: "Schmiede", arten: { weapon: "Klingen" } },
         LEHREN: LEHREN_B5,
         buildInstance: buildInstance,
         // Mess- & Lehren-Fläche (Shell + Wirt lesen dieselben Gesetze).

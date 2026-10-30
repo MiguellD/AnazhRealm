@@ -192,7 +192,6 @@ async function checkBandV18278LoopErrorBoundary({ page, check }) {
 // NIE. `_nexusAdaptiveQuality(fps)` ist nur der fps-Eingang in DENSELBEN Regler.
 async function checkBandWellePerfENexusGovernor({ page, check }) {
     const res = await page.evaluate(() => {
-        if (!r || !r.state) return { error: "no realm" };
         const A = r.constructor; // window.AnazhRealm headless undefined (V18.259-Gotcha)
         const out = {};
         out.noGravityPflaster = window.__fehlt(r.selfAwarenessAnalyze, /gravity\s*\*=/);
@@ -1035,6 +1034,7 @@ async function checkBandRauschGesetz({ page, check }) {
                 if (!window.__fehlt(GK[n], /wert3|mx_noise/)) out.absenz.push(n + " (Gitter-Rauschen aus Ziehungen)");
             // KONSUM: der Knoten-Graph des Stoffs, den der Boden zeichnet (vor dem Bau — was der Compiler liest)
             out.graph = window.__stoffGraph(r.state.voxelChunkMaterial);
+            out.halm = window.__stoffGraph(r._foundryTreeMaterial("grass", null));
             // DIE ATLAS-BYTES: die MaterialX-Gradienten aus lookup3 (eigene Portierung), gepackt je Komponente × 4 Ecken
             const P = A.RAUSCH_GESETZ.P;
             const d = A._rauschAtlasDaten();
@@ -1100,6 +1100,12 @@ async function checkBandRauschGesetz({ page, check }) {
     check(
         `RAUSCH-GESETZ (D) die Gradienten-Ebenen tragen die mx-Verteilung 6/4/6 von 16 (${(res.ebenen || []).join(" / ")})`,
         res.verteilung === true
+    );
+    // (E) das Mikro-Detail gilt dem Pixel des Schirms (material.K2, w4-wiese-nah): Boden und Halm lesen `schirmJeSzene`
+    const schirm = (x) => ((x && x.uniformen) || {}).schirmJeSzene || 0;
+    check(
+        `MIKRO AM SCHIRM (E): Boden- und Halm-Stoff lesen den Schirm-Pixel je Szenen-Pixel (${schirm(g)} / ${schirm(res.halm)} Knoten)`,
+        schirm(g) > 0 && schirm(res.halm) > 0
     );
 }
 
@@ -1264,15 +1270,8 @@ async function checkBandExistenzBoden({ page, check }) {
         r._dispatchFrameJobs([{ name: "sonde", prio: 2, run: () => (sondeLief = true) }], leer);
         res.bodenIstBoden = sondeLief === false;
         // (d) DER DAUER-STROM: gezählt wird das Innere der Deko (der Scatter-Takt), nicht der Job
-        const eigen = (k) => Object.prototype.hasOwnProperty.call(r, k);
-        const alt = { strom: eigen("_tickVoxelChunkStreaming"), deko: eigen("_tickScatterStreaming") };
-        const altStrom = r._tickVoxelChunkStreaming;
-        const altDeko = r._tickScatterStreaming;
         let innen = 0;
-        r._tickVoxelChunkStreaming = () => 1;
-        r._tickScatterStreaming = () => {
-            innen++;
-        };
+        const zurueck = leihe(r, { _tickVoxelChunkStreaming: () => 1, _tickScatterStreaming: () => innen++ });
         const voll = { remainingMs: () => 16 };
         try {
             r._schedFrameNo = 0;
@@ -1284,10 +1283,7 @@ async function checkBandExistenzBoden({ page, check }) {
             r._dispatchFrameJobs(r._buildDeferrableJobs(pos), voll);
             res.terrainZuerst = innen === 0;
         } finally {
-            if (alt.strom) r._tickVoxelChunkStreaming = altStrom;
-            else delete r._tickVoxelChunkStreaming;
-            if (alt.deko) r._tickScatterStreaming = altDeko;
-            else delete r._tickScatterStreaming;
+            zurueck();
             r._schedFrameNo = frameNo;
         }
         return res;

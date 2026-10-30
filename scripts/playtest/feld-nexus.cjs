@@ -440,15 +440,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
-        const __savedC = st.creatures;
-        const __savedE = st.creatureEmotions;
-        st.creatures = [];
-        st.creatureEmotions = [];
-        const __restore = () => {
-            for (const __tc of st.creatures.slice()) r.removeCreature(__tc);
-            st.creatures = __savedC;
-            st.creatureEmotions = __savedE;
-        };
+        const __restore = __kreaturenLeer();
         const c = r.spawnCreatureAt(player.x + 500, player.y, player.z + 500, "happy", "wesen");
         c.userData.name = "TestNira";
         out.findExact = r._findCreatureByName("TestNira") === c;
@@ -623,15 +615,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
-        const __savedC = st.creatures;
-        const __savedE = st.creatureEmotions;
-        st.creatures = [];
-        st.creatureEmotions = [];
-        const __restore = () => {
-            for (const __tc of st.creatures.slice()) r.removeCreature(__tc);
-            st.creatures = __savedC;
-            st.creatureEmotions = __savedE;
-        };
+        const __restore = __kreaturenLeer();
         const cSprite = r.spawnCreatureAt(player.x + 600, player.y, player.z + 600, "happy", "fuchs");
         cSprite.userData.name = "TestSpriteV11";
         const cWesen = r.spawnCreatureAt(player.x + 610, player.y, player.z + 610, "happy", "wesen");
@@ -747,15 +731,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
-        const __savedC = st.creatures;
-        const __savedE = st.creatureEmotions;
-        st.creatures = [];
-        st.creatureEmotions = [];
-        const __restore = () => {
-            for (const __tc of st.creatures.slice()) r.removeCreature(__tc);
-            st.creatures = __savedC;
-            st.creatureEmotions = __savedE;
-        };
+        const __restore = __kreaturenLeer();
         const cSprite = r.spawnCreatureAt(player.x + 700, player.y, player.z + 700, "happy", "fuchs");
         cSprite.userData.name = "ProacSprite";
         cSprite.userData.lastProactiveSpeech = -Infinity;
@@ -968,15 +944,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
-        const __savedC = st.creatures;
-        const __savedE = st.creatureEmotions;
-        st.creatures = [];
-        st.creatureEmotions = [];
-        const __restore = () => {
-            for (const __tc of st.creatures.slice()) r.removeCreature(__tc);
-            st.creatures = __savedC;
-            st.creatureEmotions = __savedE;
-        };
+        const __restore = __kreaturenLeer();
         const c = r.spawnCreatureAt(player.x + 800, player.y, player.z + 800, "happy", "wesen");
         c.userData.name = "TestProgramKreatur";
         const prompt = r._buildCreaturePersonaPrompt(c);

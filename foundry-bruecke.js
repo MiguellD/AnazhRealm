@@ -619,6 +619,13 @@ const foundryKanal = (() => {
     }
     function __bookPayload() {
         const book = {};
+        // B8 — die Herkunft je Rezept (der Stammbaum, unten): die Kern-id der Manifest-Zeile, die es ins Buch trug; der
+        // Haupt-Kern ist die Zeile ohne Namensraum. Ein Zwilling ist ein Rezept, das ein späterer Kern unter einer schon
+        // vergebenen id trägt — das Buch nimmt ihn nicht (first-wins), der Stammbaum nennt ihn.
+        const kernZeilen = typeof self !== "undefined" && Array.isArray(self.__anazhCores) ? self.__anazhCores : [];
+        const basis = kernZeilen.find((c) => c && !c.ns);
+        const herkunft = {};
+        const zwillinge = [];
         try {
             for (const id in PRESETS) {
                 if (!Object.prototype.hasOwnProperty.call(PRESETS, id)) continue;
@@ -628,6 +635,7 @@ const foundryKanal = (() => {
                 // `ph` der Art (K24: Rinde, Laub, Nadel und Krone eines Baums sind phyto-core artPhaenotyp(s, Art)).
                 book[id] = { kind: p.kind, panel: p.panel, s: Object.assign({}, p.s), fx: Object.assign({}, p.fx) };
                 if (p.ph) book[id].ph = Object.assign({}, p.ph);
+                if (basis) herkunft[id] = basis.id;
             }
         } catch (_e) {}
         // W7b/N2 (Studio-Vertrag v1.1 N7.2 + Nervensystem-Plan) — die ZWEIT-KERN-REZEPTE reisen im
@@ -640,9 +648,14 @@ const foundryKanal = (() => {
                 const P = zk.kern.PRESETS;
                 if (!P) continue;
                 for (const id in P) {
-                    if (!Object.prototype.hasOwnProperty.call(P, id) || book[id]) continue;
+                    if (!Object.prototype.hasOwnProperty.call(P, id)) continue;
                     const p = P[id];
                     if (!p || typeof p !== "object") continue;
+                    if (book[id]) {
+                        zwillinge.push({ id, kern: zk.id, traeger: herkunft[id] || null });
+                        continue;
+                    }
+                    herkunft[id] = zk.id;
                     book[id] = {
                         kind: p.kind,
                         panel: p.panel || zk.id,
@@ -732,7 +745,30 @@ const foundryKanal = (() => {
                 kindPolicy[kind] = z;
             }
         }
-        return { book, paramsByKind, kindPolicy };
+        // B8 (studios.K5) — DER STAMMBAUM REIST IM UMSCHLAG, neben dem eingefrorenen Buch (nie in ihm): je Kern mit Rezepten
+        // seine Tafel (`STAMMBAUM`: der Name des Studios, je Art der Name ihres Bereichs), seine Vertrags-Datei und die Rezepte,
+        // die er ins Buch trug, in der Reihe des Buchs; dazu jeder Zwilling beim Namen. Der Wirt leitet daraus den EINEN Baum
+        // Studio → Bereich → Teil ab (`_stammbaum`). Eine nicht klonbare Tafel reist leer (der Wirt nennt das Studio namenlos).
+        const stammbaum = { kerne: [], zwillinge };
+        for (const c of kernZeilen) {
+            if (!c) continue;
+            const id = typeof c.id === "string" && c.id ? c.id : c.ns;
+            const rezepte = Object.keys(herkunft).filter((r) => herkunft[r] === id);
+            if (!rezepte.length) continue;
+            let tafel = null;
+            try {
+                const T = c.ns ? self[c.ns] && self[c.ns].STAMMBAUM : typeof STAMMBAUM === "object" ? STAMMBAUM : null;
+                tafel = T ? JSON.parse(JSON.stringify(T)) : null;
+            } catch (_e7) {}
+            stammbaum.kerne.push({
+                kern: id,
+                datei: typeof c.vertrag === "string" ? c.vertrag : null,
+                studio: tafel && typeof tafel.studio === "string" ? tafel.studio : null,
+                arten: tafel && tafel.arten && typeof tafel.arten === "object" ? tafel.arten : {},
+                rezepte,
+            });
+        }
+        return { book, paramsByKind, kindPolicy, stammbaum };
     }
     // SYNERGIE-WELLE — DER EINE UMSCHLAG: das komplette Studio-Buch (Rezepte +
     // Regler-Tabellen + Welt-Palette + Wahrnehmungs-Config) in EINEM Reply — der
@@ -748,6 +784,7 @@ const foundryKanal = (() => {
                     book: bp.book,
                     paramsByKind: bp.paramsByKind,
                     kindPolicy: bp.kindPolicy,
+                    stammbaum: bp.stammbaum,
                     worldParams: __worldParamsPayload(),
                     renderConfig: __renderConfigPayload(),
                     // SPIEGEL-ZENSUS 17.07. — das Siedlungs-Existenz-Gesetz

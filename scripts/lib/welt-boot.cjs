@@ -22,6 +22,15 @@ const { ohneKommentare, ast, wandere, zeileVon } = require("./stamm.cjs");
 // DER EINE SCHLAF (`await sleep(ms)`): in Node der Export, in jeder Seite derselbe Text als `window.sleep` (`WARTEN_SEITE`) —
 // eine Probe schläft in beiden Welten mit demselben Ruf, ein eigenes `new Promise((r) => setTimeout(r, ms))` ist ein Zwilling
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// DIE EINE LEIHE (`const zurueck = leihe(o, { name: wert, … })`, in jeder Seite als `window.leihe`, `WARTEN_SEITE`): tauscht
+// Glieder eines Objekts (der Welt `r`, ihrer Klasse) und gibt beim Rückruf jedes zurück — ein eigenes, wie es war, ein geerbtes
+// fällt (die Welt ruft wieder ihren Prototyp). Je Probe ein eigenes `hasOwnProperty`-Merken samt `delete` oder Zuweisen im
+// finally war ein Zwilling.
+function leihe(o, tausch) {
+    const alt = Object.keys(tausch).map((k) => [k, Object.getOwnPropertyDescriptor(o, k)]);
+    Object.assign(o, tausch);
+    return () => alt.forEach(([k, d]) => (d ? Object.defineProperty(o, k, d) : delete o[k]));
+}
 // DIE EINE WELT JEDER SEITE (`r`, `st`): jede Seite trägt `r` (window.anazhRealm) und `st` (ihr Zustand, den nur der Konstruktor
 // setzt) als Getter (`WARTEN_SEITE`, vor jedem Skript) — eine Seiten-Funktion liest Welt und Zustand bei diesen Namen, ein eigenes
 // `const r = window.anazhRealm` / `const st = r.state` ist ein Zwilling (872 Bindungen fielen in w3u-nachfolge); wer einen
@@ -177,7 +186,7 @@ function png(u8, W, H) {
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => r.state.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
+const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");

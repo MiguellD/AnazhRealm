@@ -571,11 +571,11 @@ class AnazhRealm_gelaende_kollision {
         }
         entry._blockerReach = r;
         this._blockerNetzSetzen(entry);
-        // eine geschlossene Box (beide Achsen ≥ eine Zelle) kann stauen: die Werke des Staus (`_stauWorkClusters`) lesen die
-        // Hülle neu — nach dem Reload bekommt der Damm sie erst nach seinem Eintrag (die Liste und ihre Länge stehen da schon)
+        // eine Box, die stauen kann (`AnazhRealm._stauBox`: geschlossen und dicht), lässt die Werke des Staus
+        // (`_stauWorkClusters`) die Hülle neu lesen — nach dem Reload bekommt der Damm sie erst nach seinem Eintrag (die Liste
+        // und ihre Länge stehen da schon); der fahrende Wagen staut nie, sein neuer Stempel wirft nichts
         const zelle = this._voxelChunkConfig(0).step;
-        if (entry.blockerAABBs.some((b) => Math.min(b.maxX - b.minX, b.maxZ - b.minZ) >= zelle))
-            this._stauClusterCache = null;
+        if (entry.blockerAABBs.some((b) => AnazhRealm._stauBox(b, zelle))) this._stauClusterCache = null;
     }
 
     // DIE FUGE (K24-N1): die Oberkante einer Box, auf der eine Box DESSELBEN Werks sitzt — sie beginnt höchstens
@@ -711,10 +711,18 @@ class AnazhRealm_gelaende_kollision {
 
     // Ein Eintrag, dessen Position nach dem Eintritt wandert (das gerittene Werk folgt seinem Reiter in x/z, `_rittSchritt`):
     // sein Platz steht nicht mehr, wo er gestempelt wurde — die Frage nach Plätzen prüft ihn direkt, bis er den Bestand verlässt.
-    _blockerBewegt(entry) {
+    // Wer seinen Platz SELBST nachzieht (`drift` m: so weit wandert er höchstens bis zu seinem nächsten Stempel — der Wagen
+    // ohne Reiter, `_wagenSchritt`), steht in den Platz-Zellen samt diesem Rand (`_blockerNetzSetzen`) und ist kein Beweger.
+    // Bis hier blieb jeder Wagen des Verkehrs, der einmal fuhr, Beweger bis zu seinem Abschied: jede Frage nach Plätzen bekam
+    // jeden Wagen der Stadt dazu, die Decken-Probe des Spielers marschierte je Bild das Feld (Messort stadt, Null-Renderer,
+    // `_ceilingHeadroom` im Stand 0,42 ms je Takt, vor dem Verkehr 0,001), und der Cull schlief keinen von ihnen.
+    _blockerBewegt(entry, drift) {
         const N = this._blockerNetz();
-        if (entry._blockerGen === N.gen) N.beweger.add(entry);
-        this._cullWecken(entry); // der Cull fragt ihn je Gang (er schläft nie mehr, `tickArchitectureCulling`)
+        if (Number.isFinite(drift)) {
+            entry._blockerDrift = drift;
+            N.beweger.delete(entry);
+        } else if (entry._blockerGen === N.gen) N.beweger.add(entry);
+        this._cullWecken(entry); // der Cull fragt ihn je Gang (`tickArchitectureCulling`)
     }
 
     // Die Zellen eines Eintrags aus der Hülle seiner Boxen (die alten vorher gelöst; außerhalb des Bestands keine).
@@ -730,7 +738,8 @@ class AnazhRealm_gelaende_kollision {
         if (entry.heatBuildup > 0) N.warm.add(entry); // ein warmer Eintrag tritt (wieder) ein: der Brennglas-Takt kühlt ihn
         const pos = entry.position;
         if (pos) {
-            const rr = entry._blockerReach || 0;
+            // der Platz samt dem Weg, den der Eintrag bis zu seinem nächsten Stempel höchstens wandert (`_blockerBewegt`)
+            const rr = (entry._blockerReach || 0) + (entry._blockerDrift || 0);
             entry._blockerPlatz = this._blockerZellenEin(
                 N.plaetze,
                 entry,

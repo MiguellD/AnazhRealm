@@ -1,81 +1,41 @@
 class AnazhRealm_stoff_material {
     // ===== ATLAS · Stoff/material — Uniform-Heimat · PBR-Knoten · Substanz-Antwort · Gras-Stoff und Wind · Stoff-Regler =====
-    // Geteiltes Gras-Material für InstancedMesh (tausende Halme, EIN Draw-Call). Der Wind liest die
-    // WELT-Position aus der instanceMatrix → Nachbarhalme wiegen phasenversetzt (Wind-Wellen);
-    // Geometrie auf der Wurzel zentriert → die Wurzel bleibt fix, die Spitze wiegt.
-    _grassInstanceMat() {
-        if (typeof THREE === "undefined") return null;
-        if (this.state._grassMat) return this.state._grassMat;
-        const TSL = THREE.TSL;
-        // Natives MeshStandardNodeMaterial (rau, nicht-metallisch): die WebGPU-Lighting-Pipeline rechnet Licht +
-        // Schatten selbst und liest den EINEN Himmel (scene.environment) diffus — r184-Lambert las ihn nie, der
-        // Halm im Schatten trug nur sein Gegenlicht-Leuchten. Wind-Displacement als TSL-positionNode.
-        const { uniform, vec3, float, max, positionLocal, positionWorld } = TSL;
-        const wu = this._windUniformsEnsure();
-        // Die Höhen-Referenz des Farb-Gradients ist ein UNIFORM (GRASS_BLADE_H; die
-        // Studio-Halm-Geometrie, die eine eigene Höhe mitbrachte, fiel mit dem Halm-Mesh).
-        if (!wu.uBladeH) wu.uBladeH = uniform(AnazhRealm.GRASS_BLADE_H);
-        // UNIFORM-HEIMAT: der geteilte Wind-Satz reist als EIN renderGroup-Buffer.
-        this._uniformHeimatTeilen(wu);
-        const mat = new THREE.MeshStandardNodeMaterial({
-            color: 0x5fa743,
-            side: THREE.DoubleSide,
-            roughness: 1,
-            metalness: 0,
-        });
-
-        // Wind-positionNode aus der EINEN Quelle `_windSwayOffset`; das Gras liest volle Amplitude
-        // (ampX 1.5, kein windScale). Die Höhengewichtung steckt in der Geometrie
-        // (geo.translate(0, 0.425, 0) zentriert auf die Wurzel). KEIN onBeforeCompile.
-        const sway = this._windSwayOffset(TSL, { ampX: 1.5 });
-        mat.positionNode = positionLocal.add(sway);
-
-        // Gras-Albedo-Variation (render-only): (a) Spitzen-Gradient (Wurzel dunkler/kühler → Spitze
-        // heller) + (b) per-Clump-Noise über die Welt-Position (~1,6 m Wellenlänge). `colorNode` ist auf
-        // lit NodeMaterial die DIFFUSE Albedo — Licht, Wind, Tag-Nacht bleiben aktiv. Kein
-        // attribute()-Lookup (sonst Schwärze-Klasse), kein Geometrie-Eingriff. try/catch → flach-grün.
-        {
-            {
-                const hfN = TSL.clamp(positionLocal.y.div(wu.uBladeH), float(0.0), float(1.0));
-                // Die Wurzel liest das geteilte MEADOW_GREEN (= der Wiesen-Boden-Tint) → der Halm wächst ohne
-                // Farb-Bruch aus dem Boden; die Spitze bleibt sattes Grün, nicht gelb.
-                const _mg = AnazhRealm.MEADOW_GREEN;
-                const baseCol = vec3(_mg[0], _mg[1], _mg[2]);
-                // Spitze = der Sommer-Grasakzent des Studios (GRAS_SPITZE, dieselbe Spitze wie die Boden-Wiese).
-                const _sp = AnazhRealm.GRAS_SPITZE;
-                const tipCol = vec3(_sp[0], _sp[1], _sp[2]);
-                let albedo = TSL.mix(baseCol, tipCol, hfN);
-                const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));
-                albedo = albedo.mul(float(1.0).add(bn.mul(float(0.18))));
-                albedo = albedo.add(vec3(0.1, 0.05, -0.05).mul(max(bn, float(0.0))));
-                // Boden-Bezug: die Streu setzt `instanceColor` je Halm aus lebendig+feuchte (Multiplikator ~1).
-                // Three.js multipliziert colorNode selbst mit `instanceColor` (setupDiffuseColor) — nie zusätzlich
-                // `attribute("instanceColor")` lesen (Doppel-Multiply; die geteilte Geometrie trägt es nicht).
-                // Gegenlicht-Translucency: wrap = pow(max(dot(viewDir, -sunDir), 0), k) → Halme leuchten nur im
-                // Gegenlicht golden-grün, höhen-gewichtet, rein additiv.
-                {
-                    const viewDir = TSL.normalize(positionWorld.sub(TSL.cameraPosition));
-                    const sunBack = TSL.normalize(wu.uSunDir).mul(float(-1.0));
-                    const wrap = TSL.pow(max(TSL.dot(viewDir, sunBack), float(0.0)), float(3.0));
-                    const glow = vec3(0.45, 0.5, 0.2).mul(wrap).mul(hfN).mul(float(0.9));
-                    albedo = albedo.add(glow);
-                }
-                // Rispen-Spitzen (aSeed=1) tragen den strohigen Samenkopf-Ton (seedTan 0xc8b27a, sRGB→linear).
-                // aSeed lebt auf der GETEILTEN Tuff-Geometrie (Halm 0, Granne 1) → das Attribut ist immer da.
-                {
-                    const aSeed = TSL.attribute("aSeed", "float");
-                    albedo = TSL.mix(albedo, vec3(0.46, 0.38, 0.18), aSeed);
-                }
-                // Die Wiese folgt der Saison: Albedo × die EINE Saison-Tönung `uSeasonMul` (aus seasonPhase in
-                // `_tickSeason`); Licht/Wind/Translucency bleiben aktiv.
-                albedo = albedo.mul(this._ensureSeasonUniforms().uSeasonMul);
-                mat.colorNode = TSL.vec4(albedo, float(1.0));
-            }
-        }
-
-        mat.userData.poren = AnazhRealm.NAESSE.poren.grass; // der Halm trägt Wachs (die Nässe, `_naesseImStoff`)
-        this._leuchtStoff(mat, null); // das Leuchtquellen-Gesetz (K11): der Halm am Feuer trägt sein Licht
-        this.state._grassMat = mat;
+    // DER HALM-STOFF (w4-wiese-nah, phyto-core HALM_GESETZ): jedes Studio-Gras (die Nah-Wiese, ein gesetztes Gras) liest sein
+    // Gesetz je Pixel aus seinen Stoff-Koordinaten — uv.x quer in Adern (die Mittel-Rippe bei 0), uv.y die Narbe über der Ecke
+    // (foundry-core `emitGrass`):
+    //   die NORMALE des Querschnitts: die Geometrie-Normale (Lehre 26: `normalWorldGeometry` × Seite, nie `normalWorld`), um den
+    //   Kiel und die Rippen gegen die Breiten-Richtung t = Y × n gekippt (`halmQuer`; u wächst längs t, die Vorlage legt es so
+    //   an) — der Pixel (`fwidth` von u) rundet den Kiel und filtert die Rippen: auf Armlänge Detail je Pixel, fern das Mittel,
+    //   kein Flimmern; ein liegender Halm (n nahe Y) trägt keine Breiten-Richtung und bleibt eben;
+    //   die ALBEDO × die Adern und die hellere Mittel-Rippe (`halmAder`, mittelfrei, gefiltert);
+    //   die NARBE: das Himmels-Licht × exp(−kHimmel · Λ) als Verdeckung — das direkte Licht dämpft das Laub-Licht des Halms
+    //   (`_laubLichtStoff` mit der Narbe: Lambert, Glanz und Durchlass der Quelle × exp(−K(θ) · Λ));
+    //   das DACH (licht.K1, w3v-licht; `HALM_GESETZ.dach`): trägt der Pixel des Schirms mehrere Halme, lichtet die Wiese als Dach —
+    //   die Normale zu 0,9 oben, die Rauheit 1 (der doppelseitige Halm lichtete sonst wie eine Wand: die Stunde 0,33 über dem
+    //   Mittag, +0,37 EV); auf Armlänge trägt der Halm seinen Querschnitt und die Cuticula der Stoff-Zeile (Satz: `aRegler`).
+    // Bis dahin war der Halm ein flaches Band in seiner Vertex-Farbe (die Normale über die Breite gleich), kein Durchscheinen,
+    // kein Schatten am Fuß, 18 % des Himmels; der Zwilling `_grassInstanceMat` (eigener Verlauf, eigenes Gegenlicht-Leuchten)
+    // zeichnete nichts mehr und fiel. Das Dach stand bis dahin als zweite Normale hinter dem Halm (`_foundryTreeMaterial`).
+    _halmStoff(T, mat) {
+        const PC = globalThis.__phytoCore;
+        const H = PC.HALM_GESETZ;
+        const A = AnazhRealm._windTsl(T);
+        const uv = T.uv();
+        const fw = T.fwidth(uv.x).mul(this._ensureAtmoUniforms().schirmJeSzene);
+        const nGeo = T.normalize(T.normalWorldGeometry);
+        const quer = T.cross(T.vec3(0.0, 1.0, 0.0), nGeo);
+        const ql = quer.length();
+        const t = quer.div(ql.max(1e-4)).mul(T.smoothstep(0.02, 0.12, ql));
+        const n = T.normalize(nGeo.sub(t.mul(PC.halmQuer(A, uv.x, fw)))).mul(T.faceDirection);
+        // der Pixel des Schirms in Metern quer über den Halm: fw Adern × aderM
+        const dach = T.smoothstep(H.dach.px[0], H.dach.px[1], fw.mul(H.aderM));
+        mat.normalNode = T.cameraViewMatrix.transformDirection(
+            T.normalize(T.mix(n, T.vec3(0.0, 1.0, 0.0), dach.mul(H.dach.oben)))
+        );
+        mat.roughnessNode = T.mix(mat.roughnessNode || T.float(mat.roughness), T.float(1.0), dach);
+        mat.colorNode = T.vec4(mat.colorNode.rgb.mul(PC.halmAder(A, uv.x, fw)), mat.colorNode.a);
+        mat.aoNode = PC.halmNarbe(A, uv.y, T.float(1.0)).himmel;
+        mat.userData.halm = true;
         return mat;
     }
 
@@ -595,6 +555,11 @@ class AnazhRealm_stoff_material {
             ),
             lichtErsatz: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
             lichtKern: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
+            // DER SCHIRM-PIXEL JE SZENEN-PIXEL (w4-wiese-nah, `_szeneSkalaWirk`): unter dem zeitlichen Hochskalierer rendert die
+            // Szene in 0,75 × Ausgabe, ihr `fwidth` und ihr `screenSize` messen den Pixel der SZENE — das Mikro-Detail der Stoffe
+            // (`_mikroRelief`, `_halmStoff`, das Schutt-Korn) gilt dem Pixel des SCHIRMS: die Geschichte löst welt-feste Oktaven
+            // über den Zitter auf (der Mip-Versatz log2(Szene/Ausgabe) jedes Hochskalierers). EIN Schreiber: `_loopRender`.
+            schirmJeSzene: TSL.uniform(1).setName("schirmJeSzene"),
             // DIE NÄSSE DER WELT (wetter.K2, EIN Schreiber `_naesseTakt`) und der Dach-Pool ihrer Himmels-Sicht (`_dachTakt`)
             naesse: TSL.uniform(0),
             dachLage: Array.from({ length: AnazhRealm.NAESSE.dachPlaetze }, () =>
@@ -1208,7 +1173,7 @@ class AnazhRealm_stoff_material {
                                     // ihre Art nur als Atlas-Schicht). Bis K19 pendelte die Karte 0,22 m in jedem Wetter. Die Phase liest
                                     // den Welt-Anker der Instanz, der Ausschlag (Welt-Meter in Windrichtung) geht über die EINE Naht
                                     // (`_weltNaht.vorlage`) in die Vorlage zurück — sonst drehte und skalierte ihn die Matrix mit dem Baum.
-                                    if (!this.state.windUniforms) this._grassInstanceMat();
+                                    this._windUniformsEnsure();
                                     const _wu = this._ensureWindCoupling(_Ta);
                                     const _WB = AnazhRealm.WIND_BOE;
                                     const _Hk = _rahmen.y.mul(_sV).max(0.5);
@@ -1962,8 +1927,11 @@ class AnazhRealm_stoff_material {
         const P = AnazhRealm.RAUSCH_GESETZ.P;
         // die Zelle des Rauschens ist eine HALBE Periode (Perlin ist 0 auf jedem Gitterpunkt, seine Energie liegt bei ½ Zyklus je
         // Zelle): bis mk2-mikro trug die Zelle die ganze Periode, die feinste Oktave lag eine Oktave unter dem Nyquist (offline,
-        // dasselbe Rauschen des Kerns, TAAU-Box 4×4: nyquist 0,04 statt 0,14 — die Boden-Station GTX 0,13 < 0,15)
-        const L = T.log2(T.fwidth(wp).length().mul(B.mikroPx).max(B.mikroMinM).mul(0.5)).negate();
+        // dasselbe Rauschen des Kerns, TAAU-Box 4×4: nyquist 0,04 statt 0,14 — die Boden-Station GTX 0,13 < 0,15). Die Oktaven
+        // folgen dem Pixel des SCHIRMS (`schirmJeSzene`): bis w4-wiese-nah dem der Szene, unter dem Hochskalierer 0,42 Oktaven
+        // zu grob (offline, der Messweg mit Zitter, Resolve und Nach-Schärfe: nyquist 0,132 → 0,169, β 1,30 → 0,82; Radeon 0,147)
+        const px = T.fwidth(wp).length().mul(this._ensureAtmoUniforms().schirmJeSzene);
+        const L = T.log2(px.mul(B.mikroPx).max(B.mikroMinM).mul(0.5)).negate();
         const fr = T.fract(L);
         const L0 = L.sub(fr);
         // die Höhe je Oktave fällt mit `mikroHoehe` zur gröberen (0,75: Amplitude ∝ f^0,42, das Spektrum β ≈ 1,2 — die Energie
@@ -2268,7 +2236,10 @@ class AnazhRealm_stoff_material {
             const _camD = wp.sub(_T.cameraPosition).length();
             const _nahB = _T.float(1).sub(_T.smoothstep(FF.fern[0], FF.fern[1], _camD));
             const _nahF = _T.float(1).sub(_T.smoothstep(FF.fugeFern[0], FF.fugeFern[1], _camD));
-            const _pxM = _camD.mul(2).div(_T.cameraProjectionMatrix.element(1).y.mul(_T.screenSize.y));
+            const _pxM = _camD
+                .mul(2)
+                .div(_T.cameraProjectionMatrix.element(1).y.mul(_T.screenSize.y))
+                .mul(this._ensureAtmoUniforms().schirmJeSzene);
             const _kornSicht = _T.smoothstep(1.5, 4, _T.float(FS.gesetz.geroell.korn).div(_pxM));
             const _gate = _rockW.add(_screeW).mul(_gRock);
             // DIE FELS-FUNKTION (K17-3): das Gesetz rechnet in EINER WGSL-Funktion (`felsFein`), ihre Wiederholungen als Schleifen
@@ -2396,6 +2367,10 @@ class AnazhRealm_stoff_material {
                 // Wo die Nah-Wiese steht (Radius NAH_WIESE.radius), tragen IHRE Halme das Gras; der Boden darunter ist
                 // ihr ruhigerer Wurzelgrund (das Relief zu 40 % über dem Halm-Mittel im Schatten, × 0,7) — das volle
                 // Relief erst zu ihrem Rand hin (die acht Schichten lasen sich auf Armlänge als Höhenlinien, Linse 05.10.).
+                // w4-wiese-nah legte hier den Grund UNTER die Narbe (flach der Fuß-Ton, Sonne und Himmel × `halmNarbe`) im ganzen
+                // Band der Nah-Wiese um das Auge, auch wo sie keinen Büschel zeichnet: am Feuer der Prüfbühne stand kein Halm,
+                // und der Boden ohne Feuer fiel nachts auf Luma 6,1 (Soll ≥ 22), das Feuer auf ihm auf 25,4° (Soll 28–45°,
+                // gate:pruefbuehne-licht S0, Radeon) — heil-w4-wiese-nah: der Grund folgt dem Band, nie dem Bestand, darum fiel er.
                 const _nwR = AnazhRealm.NAH_WIESE.radius;
                 const _relief = _T
                     .smoothstep(_T.float(_nwR * 0.5), _T.float(_nwR), _camD)
@@ -3179,9 +3154,8 @@ AnazhRealm.AERIAL = Object.freeze({
     aoStrength: 0.38,
     aoCap: 0.18,
 });
-// GRASS_BLADE_H = die lokale Referenz-Halm-Höhe (Material-Gradient-Normalizer des Wind-
-// Materials, uBladeH-Fallback). V18.492: GRASS_MAX_BLADES/GRASS_POOL_CAP sind mit dem
-// Halm-Mesh-Pool gefallen (die Wiese ist Boden-Funktion, 21.07.).
+// GRASS_BLADE_H = die lokale Referenz-Halm-Höhe (die Brennstoff-Tiefe der Wiese im Brand-Gesetz, `bau-vorlagen`).
+// V18.492: GRASS_MAX_BLADES/GRASS_POOL_CAP sind mit dem Halm-Mesh-Pool gefallen (die Wiese ist Boden-Funktion, 21.07.).
 AnazhRealm.GRASS_BLADE_H = 0.42;
 // DIE DURCHSICHT DER KAMERA (`_durchsichtGewicht`): zwischen Auge und Ziel (`_kamZielSetzen`) wird eine Pflanze um den
 // Sicht-Strahl bis zum Radius durchsichtig und über den Saum ausgedithert, quer zum Strahl wie vor der Ebene des Ziels (m)

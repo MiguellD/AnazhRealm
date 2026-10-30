@@ -71,7 +71,7 @@ async function probeLeben(expected) {
     // nicht als in der Luft.
     const inDerLuft = () => {
         const pl = st.player;
-        const me = pl && pl.mountedArch !== null && pl.mountedArch !== undefined ? r._mountedEntry : null;
+        const me = pl && pl.mountedArch != null ? r._mountedEntry : null;
         if (!me || !me.position) return !!st.isInAir;
         const fz = me._fahr;
         if (st.isInAir && !(fz && fz.luft)) return true;

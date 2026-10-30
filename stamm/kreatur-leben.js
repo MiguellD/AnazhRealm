@@ -67,12 +67,14 @@ class AnazhRealm_kreatur_leben {
     clearCreatures() {
         for (const l of this.state.leichname.slice()) this.removeCreature(l); // auch die Gefallenen gehen mit der Welt
         this.state.faunaBestand = undefined; // und ihr Bestand (oekologie.K2#2): die Wiederkehr nimmt die Leiber an
-        if (!this.state.creatures || this.state.creatures.length === 0) return;
         // Über eine KOPIE: removeCreature spliced die Liste selbst — ein forEach über das Original übersprang jedes
         // zweite Tier, das als eingefrorener Geist in der Szene blieb (Leben-Prüfung R-D14: 6 Tiere → 3 Geister,
         // je ~46 Befehle; jeder Welt-Wechsel und jede Neu-Genese).
-        for (const creature of this.state.creatures.slice()) this.removeCreature(creature);
+        for (const creature of (this.state.creatures || []).slice()) this.removeCreature(creature);
         this.state.creatures = [];
+        // DAS ETIKETT-FELD fällt IMMER mit den Tieren (es läuft parallel zu `creatures`): bis 30.10. kehrte die Funktion bei null
+        // Tieren vor dieser Zeile zurück — ein Etikett-Feld, das das Laden eben gesetzt hatte, blieb stehen, und jede Wiederkehr hängte
+        // ihr Etikett an (headless nach dem Rudel von oekologie.K4#2: 1 Tier, 2 Etiketten; die Mess-Sitzung fand creatureEmotions abweichend)
         this.state.creatureEmotions = [];
     }
 

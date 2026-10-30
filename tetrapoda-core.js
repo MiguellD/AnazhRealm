@@ -3931,6 +3931,8 @@
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
         PARAMS_BY_KIND: { kreatur: PARAMS },
+        // B8 — der Stammbaum (studios.K5): wie das Buch sich und seine Arten nennt (der Wirt leitet den EINEN Baum ab)
+        STAMMBAUM: { studio: "Tetrapoda", arten: { kreatur: "Tiere" } },
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         GATTUNGEN: GATTUNGEN,
         MOTION: MOTION,

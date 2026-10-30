@@ -1463,9 +1463,7 @@ async function checkBandV1745EmotionCore({ page, check }) {
         const savedWohl = st.wohlBaseline;
         const savedEmoField = st.emotionField;
         const savedHp = p.hp;
-        const setEmo = (o) => {
-            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
-        };
+        const setEmo = (o) => __emo(p, o);
 
         // (1) Die Geometrie: alle 6 Achsen, prinzipielle Vorzeichen (Russell-Circumplex).
         out.geoComplete =
@@ -1678,9 +1676,7 @@ async function checkBandV1747FastSlow({ page, check }) {
         const savedWohl = st.wohlBaseline;
         const savedEmoField = st.emotionField;
         const savedHp = p.hp;
-        const setEmo = (o) => {
-            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
-        };
+        const setEmo = (o) => __emo(p, o);
         const setMood = (o) => {
             if (!p.mood) p.mood = {};
             for (const k of AX) p.mood[k] = o[k] || 0;
@@ -1798,9 +1794,7 @@ async function checkBandV1748Social({ page, check }) {
         const savedCreatures = st.creatures;
         const savedCreatureEmotions = st.creatureEmotions;
         const pm = st.playerMesh.position;
-        const setEmo = (o) => {
-            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
-        };
+        const setEmo = (o) => __emo(p, o);
         const setMood = (o) => {
             if (!p.mood) p.mood = {};
             for (const k of AX) p.mood[k] = o[k] || 0;
