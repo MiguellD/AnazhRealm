@@ -1,0 +1,463 @@
+$ C:\Program Files\nodejs\node.exe -e const H = (function sitzungWerkzeug() {
+    const fs = require("fs");
+    const path = require("path");
+    const os = require("os");
+    const http = require("http");
+    const S = Number(process.argv[1]);
+    const W = S + 20000;
+    const H = { S, W, AUS: process.argv[2], FRIST_S: Number(process.argv[3]) || 40, t0: Date.now(), fs, path, teil: undefined };
+    const abbau = [];
+    H.url = "http://localhost:" + S + "/index.html";
+    H.sek = () => +((Date.now() - H.t0) / 1000).toFixed(1);
+    H.rest = () => H.FRIST_S - (Date.now() - H.t0) / 1000;
+    H.schlaf = (ms) => new Promise((r) => setTimeout(r, ms));
+    H.zeile = (t) => console.log("@@ " + H.sek() + " s · " + t);
+    H.beimAbbau = (f) => abbau.push(f);
+    // höchstens ms warten: der Wert oder `ersatz` — ein Wurf des Wartenden (auch nach der Frist, etwa die Seite, die neu lädt) steht
+    // beim Namen in der Ausgabe, nie als unbehandelte Ablehnung, die die Probe risse
+    H.binnen = (p, ms, ersatz = null) =>
+        Promise.race([
+            Promise.resolve(p).catch((e) => (console.log("@@ " + H.sek() + " s · gewartet, geworfen: " + String((e && e.message) || e).split("\n")[0]), ersatz)),
+            H.schlaf(Math.max(0, ms)).then(() => ersatz),
+        ]);
+    // DIE WERKBANK der Sitzung (POST mit Frist)
+    H.wb = (weg, nutz, ms = 120000) =>
+        new Promise((ja, nein) => {
+            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (r) => {
+                let d = "";
+                r.on("data", (c) => (d += c));
+                r.on("end", () => {
+                    try {
+                        ja(JSON.parse(d));
+                    } catch (_e) {
+                        nein(new Error(weg + ": " + d.slice(0, 200)));
+                    }
+                });
+            });
+            q.setTimeout(Math.max(1000, ms), () => q.destroy(new Error(weg + " ohne Antwort binnen " + Math.round(ms / 1000) + " s")));
+            q.on("error", nein);
+            q.end(JSON.stringify(nutz || {}));
+        });
+    // ein Funktionsrumpf in der Seite der Welt (r = Welt, T = THREE), wie `werkbank eval`
+    H.evalWelt = async (code, ms) => {
+        const a = await H.wb("/eval", { code }, ms);
+        if (!a || a.fehler) throw new Error("werkbank eval: " + (a && a.fehler) + " " + JSON.stringify((a && a.stapel) || []));
+        return a.ergebnis;
+    };
+    // eine frische Welt in der Sitzung (die Grundstellung der Maschine: Spielstand weg, die Seite neu)
+    H.grundstellung = () => {
+        const p = require("child_process").spawnSync(process.execPath, [process.env.PUNKTE_MASCHINE, "grundstellung"], {
+            encoding: "utf8",
+            env: process.env,
+            timeout: 240000,
+        });
+        if (p.status !== 0) throw new Error("grundstellung: " + String((p.stdout || "") + (p.stderr || "")).trim().split(/\r?\n/).slice(-2).join(" | "));
+    };
+    // DER BROWSER DER SITZUNG
+    H.verbinde = async () => {
+        const pp = require("puppeteer");
+        const tmp = os.tmpdir();
+        const kand = fs
+            .readdirSync(tmp)
+            .filter((n) => n.startsWith("werkbank-profil-" + W + "-"))
+            .map((n) => path.join(tmp, n, "DevToolsActivePort"))
+            .filter((f) => fs.existsSync(f))
+            .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+        const fehl = [];
+        for (const f of kand) {
+            const [port, weg] = fs.readFileSync(f, "utf8").split(/\r?\n/);
+            let b = null;
+            try {
+                b = await pp.connect({ browserWSEndpoint: "ws://127.0.0.1:" + port + weg, defaultViewport: null, protocolTimeout: 600000 });
+                const seiten = await b.pages();
+                const page = seiten.find((p) => p.url().startsWith("http://localhost:" + S + "/"));
+                if (!page) throw new Error("keine Seite der Welt (" + seiten.map((p) => p.url()).join(" ") + ")");
+                const vorher = new Set(seiten);
+                // die souveräne Geste (window.confirm des Teilens, ein Dialog beim Verlassen) nimmt die Probe an — die Werkbank hört keinen
+                const ja = (d) => d.accept().catch(() => {});
+                page.on("dialog", ja);
+                H.beimAbbau(async () => {
+                    page.off("dialog", ja);
+                    await page.keyboard.up("KeyW").catch(() => {});
+                    for (const p of await b.pages().catch(() => [])) if (!vorher.has(p)) await p.close().catch(() => {});
+                    await page.bringToFront().catch(() => {});
+                    await b.disconnect();
+                });
+                Object.assign(H, { browser: b, page });
+                return { browser: b, page };
+            } catch (e) {
+                fehl.push(path.basename(path.dirname(f)) + ": " + e.message);
+                if (b) await b.disconnect().catch(() => {});
+            }
+        }
+        throw new Error("kein Browser der Sitzung an :" + W + " (" + (fehl.join(" · ") || "kein DevToolsActivePort unter " + tmp + "/werkbank-profil-" + W + "-*") + ")");
+    };
+    // DIE LINSE ALS BIBLIOTHEK
+    H.linse = (datei, namen, { argv = [], ersetze = [], stumm = {} } = {}) => {
+        const Module = require("module");
+        const f = path.resolve(datei);
+        let text = fs.readFileSync(f, "utf8").replace(/\r\n/g, "\n"); // die Anker in LF, wie auch immer der Baum auscheckt
+        for (const [alt, neu] of ersetze) {
+            const n = text.split(alt).length - 1;
+            if (n !== 1) throw new Error(datei + ": der Anker „" + alt.slice(0, 70) + "“ steht " + n + "× im Text (Soll 1) — die Linse änderte sich");
+            text = text.replace(alt, () => neu);
+        }
+        const wbt = require(path.resolve("scripts/lib/welt-boot.cjs"));
+        const ersatz = Object.assign({ hauptLauf: () => {} }, stumm);
+        const alt = Object.fromEntries(Object.keys(ersatz).map((k) => [k, wbt[k]]));
+        const av = process.argv;
+        Object.assign(wbt, ersatz);
+        process.argv = [av[0], f, ...argv];
+        try {
+            const m = new Module(f, module);
+            m.filename = f;
+            m.paths = Module._nodeModulePaths(path.dirname(f));
+            m._compile(text + "\n;module.exports = { " + namen.join(", ") + " };\n", f);
+            return m.exports;
+        } finally {
+            Object.assign(wbt, alt);
+            process.argv = av;
+        }
+    };
+    // DER EREIGNIS-STROM jeder Eingabe des Spielers (pointerdown · keydown · wheel, vor jedem Hörer der Seite) — wie die Linse
+    // diag-werkstatt-weg ihn je Seite anlegt; in einer schon geladenen Seite einmal
+    H.ereignisStrom = (page) =>
+        page.evaluate(() => {
+            if (window.__eingabeStrom) return;
+            const strom = (window.__eingabeStrom = []);
+            for (const typ of ["pointerdown", "keydown", "wheel"])
+                window.addEventListener(typ, (e) => strom.push({ was: typ === "keydown" ? e.code : typ === "wheel" ? "Rad" : "Klick", echt: e.isTrusted, t: performance.now() }), {
+                    capture: true,
+                    passive: true,
+                });
+        });
+    // DIE SEITE NEU im warmen Browser: warm der Zweit-Boot (nur die Seite neu: Platte, HTTP- und Shader-Cache bleiben), kalt vorher
+    // die Herkunft leer — IndexedDB (Welten, Platte, Chunk-Netze), localStorage, Cache- und Shader-Speicher — samt HTTP-Cache des
+    // Browsers und der Stand-Dateien des save-servers (Pflicht-OFFEN B: „IDB geleert, wie nach jedem Versions-Update"). Rückgabe
+    // die Uhr ab der Navigation (die Kontrolle von außen zählt ab ihr).
+    H.lade = async (page, { kalt = false } = {}) => {
+        if (kalt) {
+            const herkunft = "http://localhost:" + S;
+            await page.goto("about:blank", { waitUntil: "load", timeout: 60000 });
+            const c = await page.target().createCDPSession();
+            try {
+                await c.send("Storage.clearDataForOrigin", { origin: herkunft, storageTypes: "all" });
+                await c.send("Network.clearBrowserCache");
+            } finally {
+                await c.detach().catch(() => {});
+            }
+            for (const d of ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"]) fs.rmSync(d, { force: true });
+        }
+        const t0 = Date.now();
+        await page.goto(H.url, { waitUntil: "domcontentloaded", timeout: 120000 });
+        return t0;
+    };
+    // DER LAUF der Probe: ihr Ergebnis ist das JSON der Ausgabe; die Frist (H.FRIST_S) baut ab und schreibt den Stand `H.teil`
+    H.fahre = (fn) => {
+        let fertig = false;
+        const ende = async (code, j) => {
+            if (fertig) return;
+            fertig = true;
+            clearTimeout(uhr);
+            if (j !== undefined)
+                try {
+                    fs.writeFileSync(H.AUS, JSON.stringify(j));
+                } catch (e) {
+                    console.log("@@ Ausgabe: " + e.message);
+                }
+            for (const f of abbau.reverse()) await H.binnen(Promise.resolve().then(f).catch((e) => console.log("@@ Abbau: " + e.message)), 15000);
+            process.exit(code);
+        };
+        const uhr = setTimeout(() => {
+            console.log("@@ FRIST " + H.FRIST_S + " s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier");
+            ende(3, H.teil);
+        }, H.FRIST_S * 1000);
+        Promise.resolve()
+            .then(() => fn(H))
+            .then(
+                (j) => ende(0, j),
+                (e) => {
+                    console.log("@@ PROBE-FEHLER " + String((e && e.stack) || e).split("\n").slice(0, 5).join(" | "));
+                    ende(2, H.teil);
+                }
+            );
+    };
+    return H;
+})();
+H.seite = {
+INNEN: async function startDorfInnen(o) {
+    const THREE = window.THREE || T;
+    const s = r.state, A = r.constructor, FC = window.__fachwerkCore, cam = s.camera, pm = s.playerMesh;
+    const ende = performance.now() + o.fristMs;
+    const aus = { haeuser: [], startDorf: null };
+    if (!FC || typeof FC.HAUS !== "function" || typeof FC.grundVon !== "function") return Object.assign(aus, { fehler: "__fachwerkCore fehlt" });
+    if (typeof window.__ausgabeAufnahme !== "function") return Object.assign(aus, { fehler: "der Ausgabe-Pfad fehlt in der Seite" });
+    const DT = A.FIXED_DT || 1 / 60;
+    const FUSS = A.PLAYER_FOOT_OFFSET;
+    let t = 5000;
+    const rund = (v, k = 100) => Math.round(v * k) / k;
+    const hh = (x, z) => r.getTerrainHeightAt(x, z);
+    const pumpe = async (n) => {
+        for (let k = 0; k < n; k++) {
+            try {
+                r._gameLoopTick(performance.now());
+            } catch (_e) {}
+            if (k % 8 === 0) await sleep(10);
+        }
+    };
+    const warteBis = async (bis, n, max, ms) => {
+        let ja = false;
+        try {
+            for (let k = 0, weiter = window.__deckel("start-dorf-innen", max); !(ja = bis()) && weiter() && k++ < 4 * max && performance.now() < ende; )
+                await pumpe(n).then(() => ms && sleep(ms));
+        } catch (_e) {}
+        return ja;
+    };
+    const welt = (e, lx, lz) => {
+        const c = Math.cos(e.rotationY || 0), sn = Math.sin(e.rotationY || 0);
+        return { x: e.position.x + lx * c + lz * sn, z: e.position.z - lx * sn + lz * c };
+    };
+    const stell = (x, y, z) => {
+        pm.position.set(x, y, z);
+        s._fieldVy = 0;
+        if (s.playerVel && s.playerVel.setValue) s.playerVel.setValue(0, 0, 0);
+        if (s._fixedSimPos) s._fixedSimPos.copy(pm.position);
+        for (let k = 0; k < 20; k++) r._stepFixedSim((t += DT), DT);
+    };
+    const gesetz = (e) => {
+        const pre = FC.PRESETS && FC.PRESETS[e.type.slice(5)];
+        if (!pre) return null;
+        const P = FC.hausParams(pre, e.studioOv || null);
+        if (!(e.studioOv && e.studioOv.seed != null)) P.seed = e.seed;
+        const Hh = FC.HAUS(THREE, FC.mat, P);
+        Hh.build({ gelaende: false });
+        return Hh;
+    };
+    // DAS START-DORF
+    const g = r._genesisMitte();
+    stell(g.x, hh(g.x, g.z) + 2, g.z);
+    const takt = window.__anazhAutoSettlement;
+    window.__anazhAutoSettlement = true;
+    const zelle = () => ((s.worldMeta && s.worldMeta.settlementCells) || {}).start;
+    await warteBis(() => !!zelle() && !r._autoSettlementQueue && !r._stlWegePending, 1, 1200);
+    window.__anazhAutoSettlement = takt;
+    const c = zelle();
+    const plan = c && r._ortPlaene && r._ortPlaene.get(c.ort);
+    const slots = ((plan && plan.slots) || []).filter((sl) => /^haus_/.test(r._slotBauplan(sl, r._foundry) || ""));
+    aus.startDorf = { slots: slots.length, fehlt: [] };
+    const SD = [];
+    for (const sl of slots) {
+        const [x, z] = [c.x + sl.x, c.z + sl.z];
+        const e = s.architectures.find((a) => a.tuer && Math.hypot(a.position.x - x, a.position.z - z) < 0.05);
+        if (e) SD.push(e);
+        else aus.startDorf.fehlt.push(`${sl.kultur}@${Math.round(x)}/${Math.round(z)}`);
+    }
+    // (1) DER SPIELGANG je Haus (W10 wörtlich: Tür, Keller, jeder Lauf bis zum Dachboden, der Spur-Rand)
+    s.keys = s.keys || {};
+    for (const e of SD) {
+        const h = { typ: e.type, start: true, gierGrad: Math.round((((e.rotationY || 0) * 180) / Math.PI) % 360) };
+        aus.haeuser.push(h);
+        if (performance.now() > ende) {
+            h.fehler = "Frist der Probe";
+            continue;
+        }
+        try {
+            stell(e.position.x, e.position.y + 3, e.position.z);
+            const l0 = () => e._servedLod === 0 && !!e._hausHuelle && e._hausHuelle.stufe === 0;
+            await window.__gebautNach(e, { fertig: l0, bau: () => {}, takt: () => pumpe(10), max: 40 }).catch(() => null);
+            const Hh = gesetz(e);
+            if (!Hh) {
+                h.fehler = "kein Gesetzbuch";
+                continue;
+            }
+            const tu = e.tuer;
+            const base = e.position.y - 0.5;
+            const dm = Hh.dims || {};
+            const fls = (dm.flights || []).filter((f) => f.x1 - f.x0 > 0.3);
+            const kf = fls.find((f) => f.atLevel === "keller");
+            const auf = fls.filter((f) => f !== kf).sort((a, b) => a.base - b.base || (a.atLevel === "attic") - (b.atLevel === "attic"));
+            const gg = (h.gang = { hub: 0, fehlt: [], keller: !!kf, dach: auf.some((f) => f.atLevel === "attic") });
+            const eg = dm.levelsY[0];
+            const xm = (f) => (f.x0 + f.x1) / 2;
+            const oben = (f) => f.zFoot + f.dir * (f.N * f.go + 0.4);
+            const seite = (rechts) => (rechts ? dm.stairX1 + 0.6 : dm.stairX0 - 0.6);
+            const ziel = (name, lx, lz, soll) => {
+                const w = welt(e, lx, lz);
+                let kl = 0;
+                for (let k = 0, ruhe = 0; ruhe < 10; k++) {
+                    s.keys.w = !ruhe && k < 500 && Math.hypot(w.x - pm.position.x, w.z - pm.position.z) > 0.2;
+                    if (!s.keys.w) ruhe++;
+                    // wie ein Mensch: führt der Weg in eine Wand (≤ 45° neben ihrer Normalen), geht er an ihr entlang, nie hinein
+                    let [dx, dz] = [w.x - pm.position.x, w.z - pm.position.z];
+                    const dn = dx * s._wandKontaktNx + dz * s._wandKontaktNz;
+                    if (s._simZeit - s._wandKontaktAt < A._parkourGesetz().kontaktFrischeSec && dn < -Math.SQRT1_2 * Math.hypot(dx, dz))
+                        [dx, dz] = [dx - dn * s._wandKontaktNx, dz - dn * s._wandKontaktNz];
+                    s.yaw = Math.atan2(dx, dz);
+                    const y0 = pm.position.y;
+                    r._stepFixedSim((t += DT), DT);
+                    kl += s._parkourKletter > 0;
+                    if (pm.position.y - y0 > gg.hub)
+                        [gg.hub, gg.wo] = [pm.position.y - y0, `${name}: Fuß ${(y0 - FUSS - base).toFixed(2)} → ${(pm.position.y - FUSS - base).toFixed(2)} m`];
+                }
+                const rest = Math.hypot(w.x - pm.position.x, w.z - pm.position.z);
+                const fuss = pm.position.y - FUSS - base;
+                if (rest > 0.4 || Math.abs(fuss - soll) > 0.35 || kl)
+                    gg.fehlt.push(`${name} ${rest.toFixed(2)} m neben, Fuß ${fuss.toFixed(2)}/${soll.toFixed(2)}, ${kl} Schritte geklettert`);
+                [gg.x, gg.z] = [lx, lz];
+            };
+            const vor = welt(e, tu.x + tu.w / 2 - 0.3, tu.z - 0.25);
+            stell(vor.x, base + 0.75 + FUSS, vor.z);
+            ziel("tür", tu.x + tu.w / 2 - 0.3, tu.z + 1.8, NaN);
+            if (kf || auf.length) {
+                const hin = (name, lx, lz, soll) => {
+                    const sr = seite((gg.z > dm.stairZ0 ? gg.x : lx) > (dm.stairX0 + dm.stairX1) / 2);
+                    if (gg.z < dm.stairZ0 !== lz < dm.stairZ0) {
+                        ziel(name + "-um", sr, gg.z, NaN);
+                        ziel(name + "-um", sr, lz, NaN);
+                    }
+                    ziel(name, lx, lz, soll);
+                };
+                if (kf) {
+                    const kt = kf.zFoot + kf.dir * (kf.N * kf.go + 0.4);
+                    hin("keller-kopf", xm(kf), kt, eg);
+                    ziel("keller", xm(kf), kf.zFoot - kf.dir * 0.6, kf.base + 0.12);
+                    ziel("keller-auf", xm(kf), kt, eg);
+                }
+                for (const f of auf) {
+                    hin(`fuß ${f.atLevel}`, xm(f), f.zFoot - f.dir * 0.6, f.base);
+                    ziel(`lauf ${f.atLevel}`, xm(f), oben(f), f.base + f.N * f.rise);
+                }
+                for (const f of kf ? [kf, ...auf] : auf)
+                    for (const v of [-0.12, 0.12]) {
+                        const a = welt(e, xm(f) + v, f.zFoot - f.dir * 0.5);
+                        stell(a.x, base + f.base + 0.1 + FUSS, a.z);
+                        ziel(`rand ${f.atLevel} ${v}`, xm(f) + v, oben(f), f.base + f.N * f.rise);
+                    }
+            }
+        } catch (err) {
+            h.fehler = "Gang warf: " + String((err && err.message) || err);
+        } finally {
+            s.keys.w = false;
+        }
+    }
+    // (2) DAS INNEN-BILD je Haus: die Welt steht, die Bühne (Mittag · Sonne · Sommer), der Loop ruht
+    if (performance.now() < ende) await window.__weltStehtNach(() => pumpe(1));
+    window.__buehne();
+    s.renderer.setAnimationLoop(null);
+    const [WB, HB] = [o.WB, o.HB];
+    const tick = r._tickNahWiese;
+    const schuss = async () => {
+        r._tickNahWiese = tick;
+        window.__bundlesNeu();
+        r._schattenAlleNeu();
+        return (await window.__ausgabeAufnahme(WB, HB, 1, { satz: "messung" })).u8;
+    };
+    const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 3294.6 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+    const luma = (u8, px = WB >> 1, py = HB >> 1, rad = WB) => {
+        const l = [];
+        for (let y = Math.max(0, py - rad); y < Math.min(HB, py + rad + 1); y++)
+            for (let x = Math.max(0, px - rad), k; x < Math.min(WB, px + rad + 1); x++)
+                l.push(0.2126 * lin[u8[(k = 4 * (y * WB + x))]] + 0.7152 * lin[u8[k + 1]] + 0.0722 * lin[u8[k + 2]]);
+        return l.sort((a, b) => a - b)[l.length >> 1];
+    };
+    for (const [n, e] of SD.entries()) {
+        const h = aus.haeuser[n];
+        if (performance.now() > ende) {
+            h.bildFehlt = "Frist der Probe";
+            continue;
+        }
+        try {
+            const Hg = gesetz(e);
+            if (!Hg) continue;
+            const gd = FC.grundVon({ H: Hg });
+            const sc = (e.scale > 0 ? e.scale : 1) * (e._hausHuelleSkala > 0 ? e._hausHuelleSkala : 1);
+            const base = e.position.y - 0.5;
+            const boxen = gd.boxen.map(([x0, x1, z0, z1, traegt], j) => ({ art: gd.arten[j], x0, x1, z0, z1, traegt }));
+            const solids = Hg.solids || [];
+            const diele = (lx, lz) => {
+                let d = -Infinity;
+                for (const so of solids)
+                    if (so.min[0] <= lx && lx <= so.max[0] && so.min[2] <= lz && lz <= so.max[2] && so.max[1] < 1.2) d = Math.max(d, so.max[1]);
+                return d;
+            };
+            const frei = (lx, ly, lz, m) => !solids.some((so) => [lx, ly, lz].every((q, k) => so.min[k] - m < q && q < so.max[k] + m));
+            const ecken = boxen.flatMap((m) => [welt(e, m.x0 * sc, m.z0 * sc), welt(e, m.x1 * sc, m.z1 * sc), welt(e, m.x0 * sc, m.z1 * sc), welt(e, m.x1 * sc, m.z0 * sc)]);
+            const [mx0, mx1] = [Math.min(...ecken.map((p) => p.x)), Math.max(...ecken.map((p) => p.x))];
+            const [mz0, mz1] = [Math.min(...ecken.map((p) => p.z)), Math.max(...ecken.map((p) => p.z))];
+            const steht = () =>
+                e._hausHuelle && e._servedLod === 0 && r._bodenSichtChunks(mx0 - 1, mz0 - 1, mx1 + 1, mz1 + 1) && s.nahWiese && s.nahWiese.offen === 0 && s.nahWiese.kacheln.size > 0;
+            stell(e.position.x, e.position.y + 1, e.position.z);
+            let ruhig = 0;
+            await warteBis(() => (ruhig = steht() ? ruhig + 1 : 0) >= 3, 5, 120);
+            h.steht = !!steht();
+            for (const m of boxen) {
+                let blicke = 0;
+                const i = 0.45;
+                const E4 = [[m.x0 + i, m.z0 + i], [m.x1 - i, m.z1 - i], [m.x1 - i, m.z0 + i], [m.x0 + i, m.z1 - i]];
+                const M0 = [(m.x0 + m.x1) / 2, (m.z0 + m.z1) / 2];
+                const paare = [[E4[0], E4[1]], [E4[1], E4[0]], [E4[2], E4[3]], [E4[3], E4[2]], ...E4.map((q) => [M0, q])];
+                const dm = Number.isFinite(diele(...M0)) ? diele(...M0) : 0.5;
+                for (const [[ax, az], [zx, zz]] of paare) {
+                    if (blicke >= 2) break;
+                    const da = Number.isFinite(diele(ax, az)) ? diele(ax, az) : dm;
+                    const dz = Number.isFinite(diele(zx, zz)) ? diele(zx, zz) : dm;
+                    const ay = da + 1.3;
+                    if (!frei(ax, ay, az, 0.25)) continue;
+                    const strahl = Array.from({ length: 19 }, (_, j) => (j + 1) * 0.05).map((q) => [ax + (zx - ax) * q, ay + (dz - ay) * q, az + (zz - az) * q]);
+                    if (!strahl.every((q) => Math.hypot(q[0] - zx, q[1] - dz, q[2] - zz) < 0.3 || frei(...q, 0.02))) continue;
+                    blicke++;
+                    const [p, q] = [welt(e, ax * sc, az * sc), welt(e, zx * sc, zz * sc)];
+                    cam.position.set(p.x, base + ay * sc, p.z);
+                    cam.lookAt(q.x, base + dz * sc, q.z);
+                    cam.updateMatrixWorld(true);
+                    h.innen = Math.min(h.innen ?? 1, luma(await schuss()));
+                }
+            }
+            // der Boden im Schatten zur selben Stunde
+            const S = s.directionalLight.position.clone().sub(s.directionalLight.target.position).normalize();
+            const d = new THREE.Vector3(-S.x, 0, -S.z).normalize();
+            const rc = new THREE.Raycaster();
+            rc.layers.set(A.SHADOW_TWIN_LAYER);
+            let f = null;
+            for (let tt = 1; tt < 40 && !f; tt += 0.25) {
+                const q = new THREE.Vector3(e.position.x + d.x * tt, 0, e.position.z + d.z * tt);
+                if (/haus|bau/.test(r._imGrundriss(q.x, q.z, 1))) continue;
+                q.y = r._bodenSichtAt(q.x, q.z) ?? hh(q.x, q.z);
+                rc.set(q.clone().setY(q.y + 0.05), S);
+                if (rc.intersectObject(s.scene, true).length) f = q;
+            }
+            if (f) {
+                const p = f.clone().addScaledVector(d, 3);
+                cam.position.set(p.x, hh(p.x, p.z) + 1.6, p.z);
+                cam.lookAt(f);
+                cam.updateMatrixWorld(true);
+                const G = await schuss();
+                const v = f.clone().project(cam);
+                h.aussen = luma(G, Math.round(((v.x + 1) / 2) * WB), Math.round(((1 - v.y) / 2) * HB), 6);
+            }
+            h.quote = rund(h.innen / h.aussen, 1000);
+        } catch (err) {
+            h.bildFehlt = "Bild warf: " + String((err && err.message) || err);
+        }
+    }
+    r._tickNahWiese = tick;
+    return aus;
+}
+};
+H.fahre(async function probeStartDorf(H) {
+    if (!(await H.evalWelt("return typeof window.__ausgabeAufnahme === 'function';", 30000))) {
+        const { AUSGABE_INSTALL } = require(H.path.resolve("scripts/lib/ausgabe-aufnahme.cjs"));
+        await H.evalWelt(AUSGABE_INSTALL + "\nreturn true;", 30000);
+    }
+    const o = { WB: 480, HB: 270, fristMs: Math.max(5, H.rest() - 6) * 1000 };
+    const j = (H.teil = await H.evalWelt("return await (" + H.seite.INNEN + ")(" + JSON.stringify(o) + ");", Math.max(5, H.rest() - 1) * 1000));
+    for (const h of (j && j.haeuser) || [])
+        console.log(
+            `  ${h.typ} · Gang Hub ${h.gang ? h.gang.hub.toFixed(2) + " m" + (h.gang.fehlt.length ? " · fehlt " + h.gang.fehlt.join(" · ") : "") : "—"} · ` +
+                `innen ${h.innen} ÷ außen ${h.aussen} = ${h.quote}${h.fehler ? " · " + h.fehler : ""}${h.bildFehlt ? " · " + h.bildFehlt : ""}`
+        );
+    return j;
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\6b3da705-gtx\siedlung.K1_2.json 54
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

@@ -1,0 +1,16 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u
+WP=$((7804 + 20000)); LP=$((7804 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; FRISCH=1
+boot() { if [ -z "$FRISCH" ]; then node "$PUNKTE_MASCHINE" grundstellung > "$L/grund.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; cat "$L/grund.txt"; exit 3; }; fi; FRISCH=; if [ $# -gt 0 ]; then timeout 300 $W umstellen "$@" > "$L/boot.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/boot.txt"; exit 3; }; fi; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+git checkout -q -- scripts/diag-garage-labor.cjs; rm -f scripts/diag-garage-mk.cjs
+( git apply "$K/bericht/2110-mk-kopf/garage-mk.diff" && GARAGE_LABOR_PORT=$LP LINSE_GPU=hardware timeout 85 node scripts/diag-garage-mk.cjs; echo "@@PUNKTE@@ EXIT $?"; git checkout -q -- scripts/diag-garage-labor.cjs; rm -f scripts/diag-garage-mk.cjs ) > "$L/garage.out" 2>&1 &
+boot
+teil WELT $W eval "$(cat "$K/bericht/3010-heil-fahrzeug/tempo4.js")"
+wait
+echo "@@PUNKTE@@ GARAGE"; cat "$L/garage.out"
+@@PUNKTE@@ WELT
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
