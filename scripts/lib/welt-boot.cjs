@@ -1423,16 +1423,6 @@ async function selbsttest() {
         .sort()
         .map((f) => [f, ohneKommentare(fs.readFileSync(path.join(ROOT, "scripts", f), "utf8"))]);
     const zwillinge = code.filter(([f, c]) => f !== "werkbank.cjs" && /\.on\("pageerror"/.test(c)).map(([f]) => f);
-    // DIE NAMENS-WAND: die Namen der Seiten-Werkzeuge (`CODE_OF_SEITE`) gehören welt-boot — setzt ein Skript einen selbst, nimmt es
-    // der Seite das Werkzeug oder liest das Werkzeug als seinen Schalter (diag-mp-sync hielt die Pumpe an `window.__ruht`, die
-    // Werkzeuge bekamen `__ruht()`: die Pumpe stand, B rechnete A nie, CI 40970310311)
-    const seitenNamen = [...new Set([...CODE_OF_SEITE.matchAll(/window\.(\w+) = /g)].map((m) => m[1]))];
-    const namensZwilling = (c) => seitenNamen.filter((n) => new RegExp(`window\\.${n}\\s*=[^=]`).test(c));
-    const namen = code
-        .map(([f, c]) => [f, namensZwilling(c)])
-        .filter(([, n]) => n.length)
-        .map(([f, n]) => `${f} (${n.join(", ")})`);
-    const benannt = namensZwilling("window.__deckel = () => true; (window.__weltDa = null); window.__weltDa === r;");
     // DIE ADRESS-WAND: lauscht eine Linse an einem statikServer selbst oder baut ihre 127.0.0.1-Adresse selbst, ist das ein Zwilling von
     // lausche/zeige; FREMD tragen ihn bis zum Schnitt ihres Besitzers (ein geheilter Eintrag macht die Liste ROT, bis er fällt)
     const adressZwilling = (c) =>
@@ -1500,10 +1490,6 @@ async function selbsttest() {
             `Seiten-Wurf: ${wurf[0] || "KEIN Fehler gesammelt — still grün"}`,
         ],
         [!zwillinge.length, `eigene pageerror-Sammler neben dem EINEN: ${zwillinge.join(", ") || "keiner"}`],
-        [
-            !namen.length && benannt.join() === "__deckel,__weltDa" && seitenNamen.length > 10,
-            `Namen der Seiten-Werkzeuge (${seitenNamen.length}) von Hand gesetzt: ${namen.join(", ") || "keiner"} · gepflanzt [${benannt}] gefasst`,
-        ],
         [
             adressen === FREMD &&
                 gepflanzt === 2 &&

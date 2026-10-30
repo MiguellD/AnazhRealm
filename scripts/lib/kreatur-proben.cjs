@@ -2338,6 +2338,7 @@ async function kreaturProben(r, T, opts) {
 
     // ═══ DAS START-DORF der Bewohner-Proben (bewohner · begegnung): der Takt des Spiels, das Warten unter Deckel, die Uhr auf
     // ihrer Stunde, die stehende Welt — und das Dorf am Genesis-Ort, das der Wirt baut (`__anazhAutoSettlement`) ═══
+    const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z); // der Abstand in der Ebene
     // der Takt des Spiels — bis die Siedlung steht (`offen` nicht mehr)
     const tick = () => {
         try {
@@ -2351,15 +2352,14 @@ async function kreaturProben(r, T, opts) {
     };
     // DIE UHR AUF DER STUNDE h, nie an der Uhr des Boots: ihr Sprung stellt jeden dorthin, wo sein Tag ihn um h sieht
     // (`_bewohnerAnkunft`, je Takt `ankunftJeTakt`) — im Takt der Bewohner OHNE ZEIT (`_tickBewohner(0)`): die Uhr steht auf h,
-    // keiner geht, ehe der Letzte ankam, und die Prüfpunkte des Tags treffen in jedem Lauf dieselben Wenden; was danach offen
-    // ist (mit Bild die Felder der Leiber, `da`), wartet der Takt des Spiels ab, dann steht die Uhr wieder auf h. Bis heil-wackler
-    // trug der Takt an der Wanduhr die Ankunft: die Uhr lief weiter, die Ersten gingen, und die Uhr sprang zurück — 10 von 10
-    // Starts in anderer Lage, #809070 und #724672 berührten sich um 12,50 Uhr (CI 40967599389, 40970312506)
+    // keiner geht, ehe der Letzte ankam (`da`), und die Prüfpunkte des Tags treffen in jedem Lauf dieselben Wenden; mit Bild
+    // backt danach der Takt des Spiels die Felder der Leiber, dann steht die Uhr wieder auf h. Bis heil-wackler trug der Takt an
+    // der Wanduhr die Ankunft: die Uhr lief weiter, die Ersten gingen, und die Uhr sprang zurück — 10 von 10 Starts in anderer
+    // Lage, #809070 und #724672 berührten sich um 12,50 Uhr (CI 40967599389, 40970312506)
     const uhrAuf = async (h, wo, da, max) => {
         r._uhrSetzen(h / 24, "regler");
-        const kommt = () => [...(r._bewohnerSiedlungen || new Map()).values()].some((S) => S.liste && S.liste.some((b) => b.ankunft)); // prettier-ignore
-        for (const weiter = window.__deckel(wo, max, false); weiter() && (r._tickBewohner(0), kommt()); );
-        await bisDa(wo, () => !da(), max);
+        for (const weiter = window.__deckel(wo, max, false); weiter() && (r._tickBewohner(0), !da()); );
+        await bisDa(wo, () => r._weltOffen().leiber > 0, max);
         r._uhrSetzen(h / 24, "regler");
     };
     // DER TAG BEGINNT IN DER STEHENDEN WELT (welt-boot `__weltStehtNach`, der Takt des Spiels): er rechnet synchron, ohne
@@ -2398,7 +2398,6 @@ async function kreaturProben(r, T, opts) {
         // zurück, im Tag an seiner Messung, nach ihm je ein Fenster mit eigenem Messer (`sicht`: das Urteil je Täter)
         const [hat, sicht] = [(t) => [].concat(taeter).includes(t), {}];
         const FC = globalThis.__fachwerkCore;
-        const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
         const q3 = (v) => Math.round(v * 1000) / 1000;
         const [DT, tagS] = [0.1, (s.dayLengthMinutes || A.DAY_LENGTH_DEFAULT_MINUTES) * 60];
         const takte = Math.round((0.1 / 24) * tagS * 10);
@@ -2599,7 +2598,7 @@ async function kreaturProben(r, T, opts) {
             if (!S || !amPlatz(S.ox, S.oz, S.plan.platz))
                 return { fehler: `keine Stadt mit freiem Rand am Platz („dorf ${seed} ${nH}" bei ${x}/${z})` };
             if (voll) pm.set(S.ox, r.getTerrainHeightAt(S.ox, S.oz) + A.PLAYER_FOOT_OFFSET, S.oz);
-            const da = () => S.liste && S.liste.every((b) => b.leib && !b.ankunft) && r._weltOffen().leiber === 0;
+            const da = () => S.liste && S.liste.every((b) => b.leib && !b.ankunft);
             await bisDa(`bewohner: ${ort}`, () => !da(), 4 * nH);
             await stehtUm(`bewohner: ${ort}`);
             const T = voll
@@ -2926,7 +2925,7 @@ async function kreaturProben(r, T, opts) {
     // (`damageCreature`, Quelle Spieler), dann der vierte Gang.
     // Täter (Selbsttest, EIN Lauf): der starre Kopf · wer steht, macht keinen Platz · der Zeuge vergisst.
     await buehne("begegnung", async (restore) => {
-        const [dt, ab, tag0] = [1 / 60, (a, b) => Math.hypot(a.x - b.x, a.z - b.z), s.timeOfDay];
+        const [dt, tag0] = [1 / 60, s.timeOfDay];
         const S = await startDorf(restore);
         if (!S) return { fehler: "das Start-Dorf entstand nicht (kein Dorf-Zug am Genesis-Ort)" };
         const stell = (x, z) => pm.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z);
@@ -2934,7 +2933,7 @@ async function kreaturProben(r, T, opts) {
         restore.push(() => r._uhrSetzen(tag0, "regler"));
         r._setWeather("sunny", "regler");
         const da = () => !!S.liste && S.liste.every((b) => b.leib && !b.ankunft);
-        await bisDa("begegnung: die Leiber", () => !da() || r._weltOffen().leiber > 0);
+        await bisDa("begegnung: die Leiber", () => !da());
         await uhrAuf(10, "begegnung: 10 Uhr", da);
         await stehtUm("begegnung: das Start-Dorf");
         const schritt = () => [takt(dt), r._tickBewohner(dt)];
