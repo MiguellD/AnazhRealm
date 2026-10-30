@@ -647,8 +647,30 @@ const grundSpielen = (g) =>
     "for (const k of " + JSON.stringify(GRUND_SEITE) + ") if (!" + JSON.stringify(g.seite) + ".includes(k)) delete window[k]; " +
     "const t0 = performance.now(); const z = r._grundstellung(" + JSON.stringify(g.grund) + "); return { ok: z.ok, grund: z.grund || null, " +
     "anders: (z.anders || []).concat(" + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window && !" + JSON.stringify(g.seite) + ".includes(k)).map((k) => \"seite.\" + k)), " +
-    "neu: z.neu || null, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta && r.state.worldMeta.worldId };";
-const GRUND_TUER = (g) => "const s = JSON.parse(" + JSON.stringify(g.grund) + ").stand; return r._weltBetreten(s, null, { neuLaden: false });";
+    "neu: z.neu || null, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta && r.state.worldMeta.worldId, wie: (" + grundWie + ")(r, " +
+    JSON.stringify(g.grund) + ", z.anders || []) };";
+// WIE eine Größe vom Grund abweicht (Heilung 30.10.: „abweichend vom Grund: blueprints“ nannte nie den Täter): je Liste des Stands
+// (Baupläne, Werke, Stoffe, Werkzeuge) die Glieder, die fehlen, neu sind oder anders stehen — je anderes Glied seine Felder; je
+// worldMeta-Feld seine Länge vorher → nachher. Läuft in der Seite (r = die Welt), nur bei einer Abweichung
+function grundWie(r, grund, anders) {
+    if (!anders.length || !r || typeof r.buildStateSnapshot !== "function") return null;
+    const soll = JSON.parse(grund).stand, ist = r.buildStateSnapshot(), J = (x) => JSON.stringify(x), wie = {};
+    for (const k of anders) {
+        const [a, b] = k.startsWith("worldMeta.") ? [(soll.worldMeta || {})[k.slice(10)], (ist.worldMeta || {})[k.slice(10)]] : [soll[k], ist[k]];
+        if (!Array.isArray(a) && !Array.isArray(b)) {
+            wie[k] = String(J(a)).slice(0, 80) + " → " + String(J(b)).slice(0, 80);
+            continue;
+        }
+        const name = (e) => String(e && (e.name != null ? e.name : e.id != null ? e.id : J(e).slice(0, 40)));
+        const A = new Map((a || []).map((e) => [name(e), e])), B = new Map((b || []).map((e) => [name(e), e]));
+        const felder = (x, y) => Object.keys({ ...x, ...y }).filter((f) => J(x[f]) !== J(y[f])).slice(0, 6).join("/");
+        wie[k] = { vorher: A.size, nachher: B.size, fehlt: [...A.keys()].filter((n) => !B.has(n)).slice(0, 4),
+            neu: [...B.keys()].filter((n) => !A.has(n)).slice(0, 4),
+            anders: [...A.keys()].filter((n) => B.has(n) && J(A.get(n)) !== J(B.get(n))).slice(0, 4).map((n) => n + ":" + felder(A.get(n) || {}, B.get(n) || {})) };
+    }
+    return wie;
+}
+const GRUND_TUER =(g) => "const s = JSON.parse(" + JSON.stringify(g.grund) + ").stand; return r._weltBetreten(s, null, { neuLaden: false });";
 
 // ein Ruf an die Werkbank MIT Frist (werkbankRuf des Spiels wartet ewig): Rückgabe die Antwort, wirft bei Frist und Fehler.
 // JE RUF EINE VERBINDUNG (`agent: false`, Heilung 30.10.): der Agent von Node ≥ 19 hält den Socket offen (keepAlive), die Werkbank
@@ -855,8 +877,11 @@ async function grundNehmen(w, datei) {
     }
 }
 // DIE GRUNDSTELLUNG vor einer Probe: der Grund (`datei`) kehrt in die laufende Seite zurück, ohne Neuladen; hat eine Probe die Welt
-// verlassen, durch die Tür und `/reload` (Ring 8). Rückgabe { ok, s, ms, neu, tuer?, grund? } — ROT nennt die abweichenden Größen
-async function grundstellung(w, datei) {
+// verlassen, durch die Tür und `/reload` (Ring 8). Rückgabe { ok, s, ms, neu, tuer?, grund? } — ROT nennt die abweichenden Größen.
+// `o.abbruch` (Heilung 30.10.): die Probe davor fiel (Deckel, Absturz, Start) — ihre Seiten-Funktion lief weiter (Radeon 3ed96b3f:
+// licht.K5#1 am Deckel, der Wetter-Zug drehte Tag-Länge, Wetter und Bühne weiter) und verdarb den Stand. Dann geht die Grundstellung
+// IMMER durch die Tür: das Neuladen beendet jede Arbeit der gefallenen Probe in der Seite, ehe der Grund greift
+async function grundstellung(w, datei, o = {}) {
     const t0 = Date.now();
     try {
         if (!datei || !fs.existsSync(datei)) throw new Error("kein Grund der Sitzung (" + datei + ")");
@@ -866,7 +891,7 @@ async function grundstellung(w, datei) {
             if (!a || !a.ergebnis) throw new Error("/eval: " + JSON.stringify(a).slice(0, 300));
             return a.ergebnis;
         };
-        let z = await spiel(), tuer = false;
+        let z = o.abbruch ? { ok: false, welt: null } : await spiel(), tuer = false;
         if (!z.ok && z.welt !== g.welt) {
             const t = await rufFrist(w, "/eval", { code: GRUND_TUER(g) }, 60000);
             if (!t || !t.ergebnis || !t.ergebnis.ok) throw new Error("die Tür zurück in die Welt " + g.welt + ": " + JSON.stringify(t).slice(0, 300));
@@ -875,7 +900,7 @@ async function grundstellung(w, datei) {
             (z = await spiel()), (tuer = true);
         }
         if (!z.ok) throw new Error(z.grund || "das Rückspielen scheitert");
-        if (z.anders.length) throw new Error("abweichend vom Grund: " + z.anders.join(" "));
+        if (z.anders.length) throw new Error("abweichend vom Grund: " + z.anders.join(" ") + (z.wie ? " · wie " + JSON.stringify(z.wie).slice(0, 600) : ""));
         // das Fenster wie beim Start der Welt (1920×1080): eine Probe davor stellte es vielleicht anders
         const f = await rufFrist(w, "/fenster", {}, 30000);
         if (!f || !Array.isArray(f.fenster)) throw new Error("/fenster: " + JSON.stringify(f).slice(0, 300));
@@ -904,6 +929,8 @@ async function grundProbe(o) {
         await page.evaluate(() => window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId));
         // die Welt läuft an (100 Takte à 100 ms Spielzeit), wie vor der ersten mutierenden Probe der Sitzung
         await ev("let t = performance.now(); for (let i = 1; i <= 100; i++) if ((r._gameLoopTick((t += 100)), i % 5 === 0)) await new Promise((f) => setTimeout(f, 0));");
+        // der Grund trägt einen eigenen Bauplan mit einem Teil OHNE opChain — geboren wie die Werke des Fachwerks (bank_sitzbank …)
+        await ev("r.createBlueprint(\"grundprobe_alt\", \"Grundprobe alt\"); r.state.blueprints.grundprobe_alt.parts.push({ shape: \"box\", material: \"holz\", position: { x: 0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } });");
         const g = await ev(GRUND_NIMM);
         if (!g || typeof g.grund !== "string") throw new Error("kein Grund: " + JSON.stringify(g).slice(0, 300));
         const tat = await ev(`const st = r.state, q = st.playerMesh.position.clone(), cs = r.constructor.LIFE_FIELD.cell;
@@ -919,14 +946,41 @@ async function grundProbe(o) {
             for (let i = 1; i <= 30; i++) if ((r._gameLoopTick((t += 100)), i % 5 === 0)) await new Promise((f) => setTimeout(f, 0));
             r._setWeather("rainy", "regler");
             st.dayLengthMinutes = 1e9; // der Wetter-Zug von licht.K5#1 (licht-linsen wetterZug), am Deckel ohne sein finally
+            delete st.blueprints.grundprobe_alt;
+            const plan = r.createBlueprint("grundprobe_neu", "Grundprobe neu");
+            const erd = r._erdbauSetzen("grundprobe", [{ art: "platte", cx: q.x + 30, cz: q.z, phi: 0, ex: 3, ez: 3, y: y(30) }], false);
             window.__ortTakt = [];
             const z = r.constructor.GRUND_TAFEL.find((z) => z[0] === ${JSON.stringify(o.mutante || null)});
             if (z) z[2] = () => {};
             if (${JSON.stringify(o.mutante || null)} === "uhr") r._uhrSetzen = () => false;
-            return { edit, bau, ritt, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, tag: st.dayLengthMinutes, mutante: !!z || r._uhrSetzen.length === 0 };`);
+            // die Mutanten des Stands: die Kette bringt eine Größe nicht zurück — Baupläne (das Laden), Werke (Abriss und Bau), Erdbau
+            const mut = ${JSON.stringify(o.mutante || null)};
+            if (mut === "bauplaene") r._deserializeBlueprint = () => null;
+            if (mut === "werk") (r._bauAusStand = () => false), (r.removeArchitecture = () => {});
+            if (mut === "erdbau") { const L = r.loadState.bind(r), E = st.worldMeta.erdbau; r.loadState = (s) => { const x = L(s); r.state.worldMeta.erdbau = E; return x; }; }
+            return { edit, bau, ritt, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, tag: st.dayLengthMinutes, plan, erd, mutante: !!z || r._uhrSetzen.length === 0 || ["bauplaene", "werk", "erdbau"].includes(mut) };`);
         const z = await ev(grundSpielen(g));
-        const soll = !o.mutante ? [] : o.mutante === "uhr" ? ["timeOfDay"] : ["augenblick." + o.mutante];
-        const taten = tat.edit && tat.bau && tat.ritt && tat.feuer > 0 && tat.wetter === "rainy" && tat.tag === 1e9 && (!o.mutante || tat.mutante);
+        const soll = !o.mutante ? [] : { uhr: ["timeOfDay"], bauplaene: ["blueprints"], werk: ["architectures"], erdbau: ["worldMeta.erdbau"] }[o.mutante] || ["augenblick." + o.mutante];
+        const taten = tat.edit && tat.bau && tat.ritt && tat.feuer > 0 && tat.wetter === "rainy" && tat.tag === 1e9 && tat.plan && tat.erd && (!o.mutante || tat.mutante);
+        // DIE TÜR (`--tuer`): die Seite lädt neu wie in der Sitzung nach einer gefallenen Probe — der Grund durch `_weltBetreten` (abgelegt,
+        // aktiv), dann die Seite neu, dann das Rückspielen
+        if (o.tuer || o.welt) {
+            // `--welt <spec-Pfad>`: zuvor betritt die Seite eine andere Welt wie der Messort buehne (`importWorldBeside` mit reload)
+            if (o.welt) {
+                const j = JSON.parse(fs.readFileSync(path.join(baum, "spec", o.welt), "utf8"));
+                const nav = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 0 });
+                const x = await page.evaluate((j) => { const x = window.anazhRealm.importWorldBeside(j, { reload: true }); return x && x.ok ? { id: x.worldId } : { fehler: JSON.stringify(x).slice(0, 200) }; }, j);
+                if (x.fehler) throw new Error("die Welt " + o.welt + ": " + x.fehler);
+                await nav;
+                await page.evaluate(() => window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId));
+                await ev("let t = performance.now(); for (let i = 1; i <= 20; i++) if ((r._gameLoopTick((t += 100)), i % 5 === 0)) await new Promise((f) => setTimeout(f, 0));");
+            }
+            const tuer = await ev(GRUND_TUER(g));
+            if (!tuer || !tuer.ok) throw new Error("die Tür: " + JSON.stringify(tuer).slice(0, 300));
+            await page.reload({ waitUntil: "domcontentloaded" });
+            await page.evaluate(() => window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId));
+            await ev("let t = performance.now(); for (let i = 1; i <= 20; i++) if ((r._gameLoopTick((t += 100)), i % 5 === 0)) await new Promise((f) => setTimeout(f, 0));");
+        }
         const gruen = taten && z.ok && JSON.stringify(z.anders) === JSON.stringify(soll);
         const wie = o.mutante ? "MUTANTE " + o.mutante + (gruen ? " ROT beim Namen" : " NICHT beim Namen gefangen") : gruen ? "GRÜN" : "ROT";
         console.log("GRUNDPROBE " + wie +
@@ -1181,7 +1235,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         ciLos();
         return ja;
     };
-    let zuruecksetzen = false, gerissen = null, grundDa = null;
+    let zuruecksetzen = false, abbruch = false, gerissen = null, grundDa = null;
     for (const g of gruppen) {
         // DAS SCHLOSS AN DER PROBEN-GRENZE: fiel es (gpu-lauf.sh endete), trägt die Sitzung nicht mehr; wartet ein CI-Job darauf, geht es
         // an ihn und kommt danach wieder — die Welt bleibt warm, das Warten zählt nie in die Fahrt
@@ -1216,7 +1270,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         if (!tot && zuruecksetzen) {
             ruht = true;
             await zapf(aktuell);
-            const gs = grundDa === true ? await grundstellung(W, grund) : { ok: false, grund: grundDa || "kein Grund vor " + schluessel(g[0]) };
+            const gs = grundDa === true ? await grundstellung(W, grund, { abbruch }) : { ok: false, grund: grundDa || "kein Grund vor " + schluessel(g[0]) };
             ruht = false;
             if (gs.ok) {
                 kopf.grundstellungS.push(gs.s);
@@ -1249,7 +1303,8 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         await zapf(aktuell);
         aktuell = "(sitzung)";
         kopf.proben++;
-        zuruecksetzen = mutiertVon(g) || brachAb(es);
+        abbruch = brachAb(es);
+        zuruecksetzen = mutiertVon(g) || abbruch;
         await melde(g, es, aus, zeit);
     }
     clearInterval(takt);
@@ -2627,6 +2682,7 @@ async function selbsttest() {
             '  if (q.url === "/eval") { if (/_grundstellung\\(\\)/.test(b.code)) { n("nimm"); return s({ ergebnis: { grund: "{}", n: 3, ms: 1, welt: "w1", seite: [] } }); }',
             '    if (/_grundstellung\\("/.test(b.code)) { n("grund"); return s({ ergebnis: { ok: true, anders: art === "anders" ? ["augenblick.brand"] : [], neu: {}, ms: 1, welt: "w1" } }); }',
             '    if (/__punkteStrom/.test(b.code)) return s({ ergebnis: new Function("r", "window", "performance", b.code)(seite.welt, seite.win, performance) });',
+            '    if (/_weltBetreten\\(/.test(b.code)) { n("tuer"); return s({ ergebnis: { ok: true, worldId: "w1" } }); }',
             '    if (b.code === "loop an") { seite.R.setAnimationLoop(() => seite.welt._gpuLeine.gerendert++); return s({ ergebnis: 1 }); }',
             '    if (b.code === "loop aus") { seite.R.setAnimationLoop(null); return s({ ergebnis: 0 }); }',
             '    if (b.code === "tod") { n("tod"); return r.end(JSON.stringify({ ergebnis: "tod" }), () => process.exit(3)); } return s({ ergebnis: "warm" }); }',
@@ -2671,8 +2727,8 @@ async function selbsttest() {
             r1.z.filter((l) => l === "start").length === 1 && x["a.K1#1"].gruen && /^Deckel 2 s gerissen — beendet, UNGEMESSEN$/.test(x["b.K1#1"].grund) && x["b.K1#1"].ungemessen === true &&
             x["c.K1#1"].gruen === false && x["c.K1#1"].exit === 1 &&
             x["d.K1#1"].gruen && x["d.K1#2"].gruen && x["d.K1#2"].zwilling === "d.K1#1" && x["a.K1#1"].gpu === "amd/stub-sitzung" && r1.kopf.proben === 4, JSON.stringify([r1.z, x]));
-        pruef("SITZUNG der Grund nach der Reihe anfang, die Grundstellung (der Grund zurück in die laufende Seite, nie ein Neuladen) nur nach einem Abbruch (b.K1 am Deckel) oder einer mutierenden Probe — nie vor jeder; nie ein zweiter Start; am Ende stop",
-            r1.z.join(",") === "start,nimm,grund,stop" && r1.kopf.grundstellungS.length === 1 && typeof r1.kopf.bootS === "number", JSON.stringify([r1.z, r1.kopf]));
+        pruef("SITZUNG der Grund nach der Reihe anfang, die Grundstellung nur nach einem Abbruch oder einer mutierenden Probe — nie vor jeder; nach dem Abbruch (b.K1 am Deckel) durch die Tür (die Seite neu: die Arbeit der gefallenen Probe endet in der Seite); nie ein zweiter Start; am Ende stop",
+            r1.z.join(",") === "start,nimm,tuer,reload,grund,stop" && r1.kopf.grundstellungS.length === 1 && typeof r1.kopf.bootS === "number", JSON.stringify([r1.z, r1.kopf]));
         pruef("SITZUNG das Schloss EINMAL für die ganze Sitzung (zeit, die Proben nehmen es nie)",
             !gl || (schloss.length === 1 && /^punkte-radeon-sitzung zeit \d+$/.test(schloss[0])), JSON.stringify(schloss));
         pruef("SITZUNG das Format von heute: je Station gruen, zahl, exit, minuten, zeit, abdruck, port, bahn und modus \"session\"; die Zeile liest zug.cjs",
