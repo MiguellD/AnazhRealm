@@ -3583,8 +3583,8 @@ function main() {
             const schmuggel = [
                 [
                     "in",
-                    "const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));",
-                    'const _hatMx = "mx_noise_float" in TSL; const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));',
+                    "mat.aoNode = PC.halmNarbe(A, uv.y, T.float(1.0)).himmel;",
+                    'const _hatF = "float" in T; mat.aoNode = PC.halmNarbe(A, uv.y, T.float(1.0)).himmel;',
                     /^Ausstattungs-Wenn$/,
                 ],
                 [
@@ -3607,8 +3607,8 @@ function main() {
                 ],
                 [
                     "Stoff-Bauer gefragt",
-                    "albedo = albedo.mul(this._ensureSeasonUniforms().uSeasonMul);",
-                    "const _su = this._ensureSeasonUniforms(); if (_su) albedo = albedo.mul(_su.uSeasonMul);",
+                    "_suK.uSeasonMul,",
+                    "_suK ? _suK.uSeasonMul : _Ta.vec3(1.0, 1.0, 1.0),",
                     /^Null-Knoten$/,
                 ],
                 [
