@@ -1,0 +1,10 @@
+$ C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --luft --datei C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\73bdf938-gtx\ferne.K1_2.json
+
+✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT
+
+--- stderr ---
+werkbank.cjs ABSTURZ: Error: read ECONNRESET
+    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
