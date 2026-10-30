@@ -174,3 +174,13 @@ Re-Mint: 124 von 124). Die Fels-Rezepte trugen EINE Kollisions-Hülle je Art (`f
 Gestalt 1..V die Hülle ihrer LOD-0-Gestalt im Vorlagen-Raum `[x0, x1, y1, z0, z1]` (+5 %), der Welt-Blocker liest die
 Zeile seiner Gestalt in der Welt-Skala (`gate:kollision-bild`: Felsturm 16,46 → 0,05 m über dem Bild). Genau 12 Felder
 (je Fels-Rezept `huelle` fort, `huellen` neu), der Rest byte-gleich; die Gestalt liest die Hülle nie.
+
+**Re-Mint 30.10.2026 (w4-wiese-nah, begründet — DER HALM IST EIN GESETZ):** die vier Gras-Goldens (`gras-s1/s2-L1/L2`),
+`render-config.json` (die Budget-Zeile `grass[1|2].aehre { aehrchen, staengel }` statt `rispe`) und das Manifest; die übrigen
+124 Mesh-Goldens, `recipes.json` und `world-params.json` byte-gleich (`gate:asset-contract` vor dem Re-Mint 128 von 128).
+foundry-core `emitGrass` liest phyto-core `HALM_GESETZ`: der Halm ist lineal und SPITZ (Breite 1 − f⁴, die Spitze EINE Ecke —
+das Null-Dreieck je Halm fiel: L1 702/858 → 601/737, L2 98/110 → 61/66 Dreiecke, die Fläche gleich, L2 wMul 6,5 → 7,4), uv.x
+zählt quer in Adern (Mittel-Rippe 0), uv.y trägt die Narbe über der Ecke (Blatt-Fläche des Büschels darüber je Raster-Zelle,
+L1 am Fuß 1,86/2,51); die Ähre wächst als Spindel des Stängels mit wechselständigen Ährchen (L1 6, L2 2, je ein Dreieck, die
+Breite des Gesetzes); der Stoff trägt die Cuticula (roughness 0,7 → 0,55) und den Himmel ganz (envMapIntensity 0,18 → 1:
+die Narbe verdeckt ihn in der Tiefe). Dieselben Würfe je Halm (Strom-Erhalt): dieselben Individuen.

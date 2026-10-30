@@ -3475,21 +3475,12 @@ class AnazhRealm_studio_bruecke {
             mat.userData = mat.userData || {};
             mat.userData.satzSchluessel = key;
         }
-        // DIE WIESE IST EIN DACH (licht.K1): ihr Licht trägt die Normale des Dachs — oben, zu einem Zehntel die gesehene Klinge —
-        // und die Rauheit des Dachs (1: die Klingen streuen um es, kein Spiegel einer Fläche). Mit der Klinge allein lichtete der
-        // doppelseitige Halm wie eine Wand: der Sonne zugewandt hob die Nah-Wiese die Stunde 0,33 über den Mittag (Mess-Wiese Ego,
-        // swiftshader: +0,37 EV, ohne die Nah-Wiese −1,19 EV), die Sonne 10° stand morgens 1,6 und abends 0,5 EV über ihm; das Dach
-        // mit der Rauheit der Klinge (0,7) spiegelte die Abendsonne (+0,32 EV). Hinter dem Satz-Regler: er gilt jeder Wiese.
-        if (kind === "grass") {
-            mat.normalNode = TSL.normalize(
-                TSL.mix(
-                    TSL.normalViewGeometry.mul(TSL.faceDirection),
-                    TSL.cameraViewMatrix.transformDirection(TSL.vec3(0, 1, 0)),
-                    0.9
-                )
-            );
-            mat.roughnessNode = TSL.float(1);
-        }
+        // DER HALM (w4-wiese-nah, phyto-core HALM_GESETZ): Querschnitt, Adern und Narbe je Pixel des Schirms, fern die Wiese als
+        // DACH (licht.K1: die Normale des Dachs, Rauheit 1) — EIN Gesetz (`_halmStoff`), hinter dem Satz-Regler (er gilt jeder
+        // Wiese, die Cuticula liest dessen Rauheit); das direkte Licht im Laub-Licht mit der Narbe (unten). Mit der Klinge allein
+        // lichtete der doppelseitige Halm wie eine Wand: die Nah-Wiese hob die Stunde 0,33 über den Mittag (Mess-Wiese Ego,
+        // swiftshader: +0,37 EV), das Dach mit der Rauheit der Klinge (0,7) spiegelte die Abendsonne (+0,32 EV).
+        if (kind === "grass") this._halmStoff(TSL, mat);
         // DAS MIKRO-RELIEF DER FACETTE (material.K2, `_mikroGestalt`): der facettierte Studio-Stein (Fels, Kristall: kind
         // „unknown" mit flatShading) kippt seine Facetten in den Oktaven am Schirm, gewogen mit seiner Rauheit (glatt ≤ 0,3 nichts,
         // matt ≥ 0,6 ganz) — im Satz die Rauheit je Ecke, sonst die des Stoffs
@@ -3545,7 +3536,7 @@ class AnazhRealm_studio_bruecke {
         // der Spieler biegt die Halme (uBend). Gemessen W7 (WGSL der Senke): r184 rechnet den Versatz VOR der
         // Instanzierung — Phase und Biegung lesen den Vorlagen-Raum, der Versatz dreht und skaliert mit der Instanz.
         if (kind === "grass") {
-            if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") this._grassInstanceMat();
+            this._windUniformsEnsure();
             const _sk = this._foundryWorldScaleMatrix("gras").elements[0];
             const _sway = this._windSwayOffset(TSL, { ampX: 1.5, hoehe: TSL.positionGeometry.y.mul(_sk) });
             mat.positionNode = TSL.positionLocal.add(_sway);
@@ -3557,7 +3548,7 @@ class AnazhRealm_studio_bruecke {
             // Welt, der Versatz liegt in Welt-Richtung). Jeder Teil einer Pflanze trägt denselben Versatz — Rute und
             // Laub, Stiel und Blüte bleiben verbunden; der Charakter (ampX 1,2) ist der des gefallenen
             // Klein-Vegetations-Zwillings.
-            if (!this.state.windUniforms) this._grassInstanceMat();
+            this._windUniformsEnsure();
             const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.attribute("aWiege", "float") });
             mat.positionNode = TSL.positionLocal.add(_sway);
         }
@@ -3622,6 +3613,7 @@ class AnazhRealm_studio_bruecke {
         if (xfade && !wiegen && (isBark || kind === "foliage" || kind === "foliageTex" || kind === "schatten"))
             this._baumWindStoff(mat, kind, baum);
         if (kind === "foliage" || kind === "foliageTex") this._laubLichtStoff(mat, kind === "foliageTex");
+        else if (kind === "grass") this._laubLichtStoff(mat, false, TSL.uv().y);
         return mat;
     }
     // DAS WURF-RECHT EINES GELIEFERTEN TEILS (der EINE Leser: `_foundryBuildMesh`; gate:regler-wirkt liest ihn aus der
