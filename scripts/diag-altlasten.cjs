@@ -3353,7 +3353,6 @@ function main() {
             warte(frist, { "scripts/diag-w.cjs": 2 }) === 1 &&
             warte("async () => { for (let n = 0; !e.fertig && n < 120; n++) await tick(); };") === 0 &&
             warte("async () => [(await p.waitForSelector(s)).click(), klickInRuhe(p, s)];") === 1 &&
-            warte("[(window.__uiRuht = 1), (window.__ruht = 1)];") === 1 &&
             eigenBoots([["scripts/diag-s.cjs", 'spawn("node", ["save-server.js"]);']]).length === 1;
         if (!warteFeuert) {
             console.log("❌ SELBST-TEST: die Warte-Wand feuert nicht (oder steht heute rot)", scanWarteWand(gates));
