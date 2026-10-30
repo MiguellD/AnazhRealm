@@ -129,6 +129,14 @@
             "seed": 4006,
             "scale": 1,
             "rotationY": 0
+        },
+        {
+            "id": "saat-s7-platte",
+            "type": "pruef_platte",
+            "position": { "x": -150, "y": 10.219, "z": 100 },
+            "seed": 4007,
+            "scale": 1,
+            "rotationY": 0
         }
     ],
     "blueprints": [
@@ -217,6 +225,19 @@
                     "shape": "box",
                     "position": { "x": 2.5, "y": 1, "z": 0 },
                     "size": { "x": 3, "y": 2, "z": 3 },
+                    "material": "stein"
+                }
+            ],
+            "connections": []
+        },
+        {
+            "name": "pruef_platte",
+            "label": "pruef_platte",
+            "parts": [
+                {
+                    "shape": "box",
+                    "position": { "x": 0, "y": 0.3, "z": 0 },
+                    "size": { "x": 24, "y": 1.4, "z": 24 },
                     "material": "stein"
                 }
             ],

@@ -38,18 +38,17 @@
 //   Lese-Reihenfolge (ein Deko-Leser fragt das Budget vor dem Buch) macht H rot und nennt `_foundryBudgetZeile <
 //   _tickNahStreu`.
 //
-//   node scripts/diag-streu-fern.cjs        (Port: STREU_FERN_PORT)
+//   node scripts/diag-streu-fern.cjs
 "use strict";
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 
-const PORT = Number(process.env.STREU_FERN_PORT || 4586);
 const server = statikServer();
 
 const { errs, check } = pruefer();
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 600000 });
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     await server.zeige(page, 60000);

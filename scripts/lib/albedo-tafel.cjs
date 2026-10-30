@@ -688,7 +688,7 @@ function laborKarte(o) {
                     n++;
                 }
             const m = s.map((v) => v / n);
-            out.kL = +(0.2126 * m[0] + 0.7152 * m[1] + 0.0722 * m[2]).toFixed(4);
+            out.kL = +luma709(m).toFixed(4);
             out.kLrgb = m.map((v) => +v.toFixed(4)).join("/");
             // Der Ausgabe-Weg des Labors: seine Tonkurve und sein Composer (dessen Pässe kurz auf die Karten-Kamera sehen).
             R.toneMapping = alt.tm;
@@ -824,15 +824,14 @@ function laborLaubGegenlicht(o) {
             n = 0;
         for (let i = 0; i < W * H; i++)
             if (ge[i * 4 + 3] > 0 && au[i * 4 + 3] > 0) {
-                sg += 0.2126 * ge[i * 4] + 0.7152 * ge[i * 4 + 1] + 0.0722 * ge[i * 4 + 2];
-                sa += 0.2126 * au[i * 4] + 0.7152 * au[i * 4 + 1] + 0.0722 * au[i * 4 + 2];
+                sg += luma709(ge, i * 4);
+                sa += luma709(au, i * 4);
                 n++;
             }
         // das Bild je Lage (sRGB, Rest magenta; WebGL liest von unten)
         const png = (px) => {
             const img = { data: new Uint8ClampedArray(W * H * 4) };
-            const enc = (v) =>
-                Math.round(255 * Math.min(1, v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055));
+            const enc = (v) => Math.round(255 * Math.min(1, linSrgb(v)));
             for (let y = 0; y < H; y++)
                 for (let x = 0; x < W; x++) {
                     const i = ((H - 1 - y) * W + x) * 4,
@@ -872,6 +871,7 @@ function laborLaubGegenlicht(o) {
 }
 
 const LABOR_INSTALL =
+    require("./abnahme-urteil.cjs").ABNAHME_INSTALL +
     `window.__laborLaub = ${laborLaubGegenlicht.toString()};` +
     `window.__albedoAuswerten = ${albedoAuswerten.toString()};` +
     `window.__stoffPasst = ${stoffPasst.toString()};` +

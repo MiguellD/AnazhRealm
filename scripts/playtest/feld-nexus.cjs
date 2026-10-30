@@ -12,7 +12,6 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
     // Parser liefert das richtige AST; processChatCommand routet durch dslRun (state.dsl.lastUserProgram
     // + Welt-Effekt); chatSuggest erkennt einen verschriebenen Befehl per Levenshtein.
     const phase3Results = await safeEvaluate(page, async () => {
-        if (!r) return null;
         const out = {};
 
         // 1. Parser-Smoketest
@@ -36,16 +35,16 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
 
         // 2. End-to-end: processChatCommand routet auf DSL.
         // Chat-Input/Output sicherstellen (Headless-DOM hat sie).
-        const weatherBefore = r.state.weather;
+        const weatherBefore = st.weather;
         r.processChatCommand("Setze Wetter rainy");
         out.chatRoutedToDsl =
-            Array.isArray(r.state.dsl.lastUserProgram) &&
-            r.state.dsl.lastUserProgram[0] === "weather" &&
-            r.state.dsl.lastUserProgram[1] === "rainy";
-        out.weatherActuallyChanged = r.state.weather === "rainy";
+            Array.isArray(st.dsl.lastUserProgram) &&
+            st.dsl.lastUserProgram[0] === "weather" &&
+            st.dsl.lastUserProgram[1] === "rainy";
+        out.weatherActuallyChanged = st.weather === "rainy";
         // Wetter wieder neutralisieren, damit andere Tests nicht verwirrt werden.
         r.processChatCommand("Setze Wetter sunny");
-        out.weatherCleanup = r.state.weather === "sunny" && weatherBefore !== undefined;
+        out.weatherCleanup = st.weather === "sunny" && weatherBefore !== undefined;
 
         // 3. Levenshtein-Vorschlag bei Tippfehler
         const suggestion = r.chatSuggest("setze wettr rainy");
@@ -53,10 +52,10 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
 
         // 4. Phase 3b: set_visible-Primitiv + Chat-Routing — `toggleTerrain` schaltet den Boden-Satz (Welle B:
         // der ganze Ring ist EIN Objekt, die Chunk-Meshes sind CPU-Körper).
-        const voxelChunksBefore = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
+        const voxelChunksBefore = st.voxelChunks ? st.voxelChunks.size : 0;
         const someVoxelVisible = () => {
-            const s = r.state.chunkSaetze ? r.state.chunkSaetze.get("boden") : null;
-            return !!(s && s.mesh && s.mesh.visible && s.mesh.parent === r.state.scene);
+            const s = st.chunkSaetze ? st.chunkSaetze.get("boden") : null;
+            return !!(s && s.mesh && s.mesh.visible && s.mesh.parent === st.scene);
         };
         r.processChatCommand("Boden deaktivieren");
         out.terrainHiddenViaDsl = voxelChunksBefore > 0 && !someVoxelVisible();
@@ -64,21 +63,21 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
         out.terrainShownViaDsl = someVoxelVisible();
 
         // 5. Phase 3b: record_narrative-Primitiv via "Erzähle ..."
-        const kbBefore = r.state.knowledgeBase.filter((k) => k.type === "narrative").length;
+        const kbBefore = st.knowledgeBase.filter((k) => k.type === "narrative").length;
         r.processChatCommand("Erzähle Drachen leben hier");
-        const narratives = r.state.knowledgeBase.filter((k) => k.type === "narrative");
+        const narratives = st.knowledgeBase.filter((k) => k.type === "narrative");
         out.narrativeRecorded =
             narratives.length === kbBefore + 1 && narratives[narratives.length - 1].content === "Drachen leben hier";
 
         // 6. Phase 3b: set_visible mit unbekanntem Target wird abgelehnt
-        const beforeLog = r.state.dsl.lastUserOutcome ? r.state.dsl.lastUserOutcome.errors : 0;
+        const beforeLog = st.dsl.lastUserOutcome ? st.dsl.lastUserOutcome.errors : 0;
         const badResult = r.dslRun(["set_visible", "mond", true]);
         out.invalidTargetRejected = badResult.log.some((e) => e.event === "invalid_set_visible_target");
         void beforeLog;
 
         // 7. Phase 5: "Lerne Fähigkeit" speichert DSL-Programm
         r.processChatCommand("Lerne Fähigkeit blaukreaturen Ändere Farbe von Kreaturen zu blue");
-        const learned = r.state.dsl.abilities.find((a) => a.name === "blaukreaturen");
+        const learned = st.dsl.abilities.find((a) => a.name === "blaukreaturen");
         out.learnedAbilityIsDsl =
             !!learned &&
             Array.isArray(learned.program) &&
@@ -88,7 +87,7 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
 
         // 8. Phase 5: "Führe Fähigkeit aus" ruft dslRun und mutiert state.
         // Kreatur ist Group; Color lebt auf Sub-Meshes.
-        const someCreature = r.state.creatures[0];
+        const someCreature = st.creatures[0];
         const readCreatureColor = (c) => {
             if (!c) return 0;
             if (c.material && c.material.color) return c.material.color.getHex();
@@ -123,16 +122,16 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
 
         // „Der Nexus komponiert" (Gesten) auf Werkstatt-Stand: ✦-Abzeichen, „vor Xs",
         // direkt vergessbar (✕), gekappt + „leeren". Mehrere Nexus-Gesten anlegen + den Renderer prüfen.
-        r.state.dsl.abilities.length = 0;
+        st.dsl.abilities.length = 0;
         for (let i = 0; i < 9; i++)
-            r.state.dsl.abilities.push({
+            st.dsl.abilities.push({
                 name: `evo_test_${i}`,
                 program: ["weather", "rainy"],
                 source: "nexus",
                 createdAt: performance.now() / 1000 - i * 2,
                 fitness: 0.5,
             });
-        r.state.hofGestenExpanded = false;
+        st.hofGestenExpanded = false;
         r._statusRefs.abilitiesSignature = "";
         r.renderAbilitiesList();
         const aHost = document.getElementById("status-abilities");
@@ -145,12 +144,12 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
         // ✕ vergisst eine Geste wirklich (evo_test_8 ist die NEUESTE → sicher in den gezeigten Top-6).
         const forgetBtn = aHost.querySelector('button[data-forget-ability="evo_test_8"]');
         if (forgetBtn) forgetBtn.click();
-        out.gestenForgetWorks = !r.state.dsl.abilities.some((a) => a.name === "evo_test_8");
+        out.gestenForgetWorks = !st.dsl.abilities.some((a) => a.name === "evo_test_8");
         // „leeren" wirft alle Nexus-Gesten
         const clearBtn = aHost.querySelector("button[data-clear-abilities]");
         if (clearBtn) clearBtn.click();
-        out.gestenClearWorks = r.state.dsl.abilities.filter((a) => a.source === "nexus").length === 0;
-        r.state.dsl.abilities.length = 0;
+        out.gestenClearWorks = st.dsl.abilities.filter((a) => a.source === "nexus").length === 0;
+        st.dsl.abilities.length = 0;
         r._statusRefs.abilitiesSignature = "";
         r.renderAbilitiesList();
 
@@ -219,7 +218,6 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
     // (a) Selektion bevorzugt statistisch high-fitness, (b) Mutation behält strukturelle Invarianten,
     // (c) dslCompose mit historyProbability=1 nutzt tatsächlich die History.
     const phase7Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         // Seeded RNG für deterministische Tests.
@@ -315,7 +313,6 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
 
     // ### Schicht 1 — IQ-Schicht (Pfad-Buckets, Multi-Dim-Fitness, Pattern-Memory) ###
     const iqResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // Keyword-Extraktion
         const kws = r.pathExtractKeywords("Ich liebe den Wald und Wasserfälle hier");
@@ -323,14 +320,14 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
         out.keywordsFilterStopwords = !kws.includes("der") && !kws.includes("ich");
 
         // rememberChatKeywords füllt den Window
-        r.state.dsl.recentKeywords.length = 0;
+        st.dsl.recentKeywords.length = 0;
         r.rememberChatKeywords("teste mit drachen und feuer", 1000);
-        out.keywordsRemembered = r.state.dsl.recentKeywords.length >= 2;
+        out.keywordsRemembered = st.dsl.recentKeywords.length >= 2;
 
         // pruneRecentKeywords entfernt alte
-        r.state.dsl.recentKeywords.push({ keyword: "alt", at: 0 });
+        st.dsl.recentKeywords.push({ keyword: "alt", at: 0 });
         r.pruneRecentKeywords(120);
-        out.oldKeywordsPruned = !r.state.dsl.recentKeywords.some((e) => e.keyword === "alt");
+        out.oldKeywordsPruned = !st.dsl.recentKeywords.some((e) => e.keyword === "alt");
 
         // Multi-Dim-Fitness: Outcome mit positiver Emotion gibt höhere Fitness
         const f1 = r.computeMultiDimFitness({
@@ -351,14 +348,14 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
         out.fitnessBounded = f1 >= 0 && f1 <= 1 && f2 >= 0 && f2 <= 1;
 
         // Pattern-Memory: rememberOutcomeAsPattern (high-fitness) speichert
-        r.state.dsl.patternMemory = {};
-        r.state.dsl.recentKeywords = [{ keyword: "drache", at: 100 }];
+        st.dsl.patternMemory = {};
+        st.dsl.recentKeywords = [{ keyword: "drache", at: 100 }];
         r.rememberOutcomeAsPattern({ startedAt: 100 }, ["spawn_creature", ["at_player"], 1, "happy"], 0.8, 110);
         out.patternMemoryWritten =
-            Array.isArray(r.state.dsl.patternMemory["drache"]) && r.state.dsl.patternMemory["drache"].length === 1;
+            Array.isArray(st.dsl.patternMemory["drache"]) && st.dsl.patternMemory["drache"].length === 1;
         // Low-fitness Programme werden NICHT geschrieben
         r.rememberOutcomeAsPattern({ startedAt: 100 }, ["weather", "rainy"], 0.3, 110);
-        out.lowFitnessIgnored = r.state.dsl.patternMemory["drache"].length === 1;
+        out.lowFitnessIgnored = st.dsl.patternMemory["drache"].length === 1;
 
         // dslSelectByPattern findet das Programm
         let foundByPattern = 0;
@@ -369,10 +366,10 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
         out.patternSelectionWorks = foundByPattern === 10;
 
         // Pfad-Buckets: samplePathBuckets inkrementiert
-        const before = { ...r.state.player.pathBuckets.height };
-        r.state.player.pathLastSample = -Infinity;
+        const before = { ...st.player.pathBuckets.height };
+        st.player.pathLastSample = -Infinity;
         r.samplePathBuckets(performance.now() / 1000);
-        const after = r.state.player.pathBuckets.height;
+        const after = st.player.pathBuckets.height;
         out.bucketsIncrementing =
             (after.low || 0) + (after.mid || 0) + (after.high || 0) >
             (before.low || 0) + (before.mid || 0) + (before.high || 0);
@@ -434,12 +431,12 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
     // Der Spieler spricht mit EINER Kreatur; der Persona-Prompt versammelt ihre volle Identität
     // (Body+Specs+Equipped+Boosts+Memory+bornAt+Welt). Kein echter LLM-Call: geprüft: Builder + Routing.
     const wave6hP2eV1Results = await safeEvaluate(page, () => {
-        if (!r || !r.state || !r.state.playerMesh) return null;
+        if (!r || !st || !st.playerMesh) return null;
         const out = {};
 
 
         // 2. _findCreatureByName findet die Kreatur (case-insensitive)
-        const player = r.state.playerMesh.position;
+        const player = st.playerMesh.position;
         // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
@@ -484,7 +481,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         out.promptHasEquipped = /hammer/.test(prompt);
         out.promptHasBoost = /Test-Tonic/.test(prompt);
         out.promptHasMemory = /sammelte holz/.test(prompt) || /baute/.test(prompt);
-        out.promptHasWeather = new RegExp(r.state.weather || "sunny").test(prompt);
+        out.promptHasWeather = new RegExp(st.weather || "sunny").test(prompt);
         out.promptInstructsJson = /JSON-Objekt/.test(prompt) && /say/.test(prompt) && /program/.test(prompt);
         // V3: Prompt erlaubt jetzt program + nennt
         // Whitelist (Co-Schöpfer-Geist). V1-Test umgekehrt:
@@ -493,8 +490,8 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         out.promptHasAge = /Sekunden|Minuten|Stunden|Tage/.test(prompt);
 
         // 5. llmCallCreature ohne LLM-aktiv → error-Object
-        const wasEnabled = r.state.llm && r.state.llm.enabled;
-        if (r.state.llm) r.state.llm.enabled = false;
+        const wasEnabled = st.llm && st.llm.enabled;
+        if (st.llm) st.llm.enabled = false;
 
         // 6. maybeAnswerCreature ohne aktive LLM gibt Hinweis-Output
         let chatLines = [];
@@ -505,12 +502,12 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
             .then(async () => {
                 await r.maybeAnswerCreature("TestNira, hallo", append);
                 out.llmOffPolite = chatLines.some((l) => /hört dich/.test(l));
-                out.llmOffNoCall = !r.state.llm.inFlight;
+                out.llmOffNoCall = !st.llm.inFlight;
                 // Unbekannter Name → höfliche Ablehnung
                 chatLines.length = 0;
                 await r.maybeAnswerCreature("UnbekannterXYZ, hallo", append);
                 out.unknownPolite = chatLines.some((l) => /Niemand|hört zu/.test(l));
-                if (r.state.llm) r.state.llm.enabled = wasEnabled || false;
+                if (st.llm) st.llm.enabled = wasEnabled || false;
                 return out;
             })
             .catch((e) => ({ error: String(e) }))
@@ -590,7 +587,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
     // @Name ist die primäre Kreatur-Adresse (ohne Trenner fiele "Bran wie gehts" an die Welt-KI);
     // Soul-Farben tragen Identität (Sprite=cyan / Wesen=brass / Geist=grün).
     const wave6hP2eV11Results = await safeEvaluate(page, () => {
-        if (!r || !r.state || !r.state.playerMesh) return null;
+        if (!r || !st || !st.playerMesh) return null;
         const out = {};
 
         // 1. @Name text → erkannt als explizite Adresse
@@ -614,7 +611,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         out.atWithoutNameRejected = p6 === null;
 
         // 7. Liste rendert Soul-Klassen auf creature-name
-        const player = r.state.playerMesh.position;
+        const player = st.playerMesh.position;
         // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
@@ -633,8 +630,8 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
 
         // 8. Chat-Output: llmCallCreature gestubbt (kein API-Call) — prüft, dass die Antwort als Soul-Span
         //    mit den DOM-Soul-Klassen gerendert wird.
-        const wasLlmEnabled = r.state.llm && r.state.llm.enabled;
-        if (r.state.llm) r.state.llm.enabled = true;
+        const wasLlmEnabled = st.llm && st.llm.enabled;
+        if (st.llm) st.llm.enabled = true;
         const origCall = r.llmCallCreature;
         r.llmCallCreature = async () => ({ say: "Ich höre dich, Schöpfer." });
         const chatOutput = document.getElementById("chat-output");
@@ -653,7 +650,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
                 out.chatLineHasName = lastLine && /TestSpriteV11/.test(lastLine.textContent);
                 // Cleanup
                 r.llmCallCreature = origCall;
-                if (r.state.llm) r.state.llm.enabled = wasLlmEnabled || false;
+                if (st.llm) st.llm.enabled = wasLlmEnabled || false;
                 return out;
             })
             .catch((e) => ({ error: String(e) }))
@@ -714,9 +711,9 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
     // Phrasen-Pool. Hooks: _onCreatureLevelUp · applyCreatureBoost · no_material_found (gather-tick) ·
     // no_inventory_for_build (build-tick).
     const wave6hP2eV2Results = await safeEvaluate(page, () => {
-        if (!r || !r.state || !r.state.playerMesh) return null;
+        if (!r || !st || !st.playerMesh) return null;
         const out = {};
-        const Class = r.constructor;
+        const Class = AnazhRealm;
 
         // 2. Phrase-Pool
         const pool = Class.CREATURE_PROACTIVE_PHRASES;
@@ -728,9 +725,9 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         out.hasDefaultFallback = !!pool.level_up_gather.default;
 
         // 3. Test-Setup: drei Soul-Kreaturen, frische Throttle, Toggle ON
-        r.state.creatureProactiveSpeechEnabled = true;
-        r.state.lastCreatureProactiveSpeech = -Infinity;
-        const player = r.state.playerMesh.position;
+        st.creatureProactiveSpeechEnabled = true;
+        st.lastCreatureProactiveSpeech = -Infinity;
+        const player = st.playerMesh.position;
         // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
@@ -767,23 +764,23 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         out.globalThrottle = ok3 === false;
 
         // 7. Bei deaktiviertem Toggle → kein Output
-        r.state.creatureProactiveSpeechEnabled = false;
+        st.creatureProactiveSpeechEnabled = false;
         cGeist.userData.lastProactiveSpeech = -Infinity;
-        r.state.lastCreatureProactiveSpeech = -Infinity;
+        st.lastCreatureProactiveSpeech = -Infinity;
         const ok4 = r._creatureSpeakProactive(cGeist, "boost_received", { label: "Tonic" });
         out.toggleOffSilent = ok4 === false;
 
         // 8. Unbekannter Event-Typ lehnt ab
-        r.state.creatureProactiveSpeechEnabled = true;
+        st.creatureProactiveSpeechEnabled = true;
         cGeist.userData.lastProactiveSpeech = -Infinity;
-        r.state.lastCreatureProactiveSpeech = -Infinity;
+        st.lastCreatureProactiveSpeech = -Infinity;
         const ok5 = r._creatureSpeakProactive(cGeist, "unknown_event", {});
         out.unknownEventRejected = ok5 === false;
 
         // 9. ALTLASTEN-NULL: eine Gattung OHNE eigene Stimme (Bär) spricht den
         //    DEFAULT-Pool — der Fallback ist die eine Quelle für alle Tiere.
         cGeist.userData.lastProactiveSpeech = -Infinity;
-        r.state.lastCreatureProactiveSpeech = -Infinity;
+        st.lastCreatureProactiveSpeech = -Infinity;
         r._creatureSpeakProactive(cGeist, "level_up_gather", { material: "laub", level: 1 });
         const geistLine = chatOutput ? chatOutput.lastElementChild : null;
         const geistText = geistLine ? geistLine.textContent : "";
@@ -798,7 +795,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         const cLU = r.spawnCreatureAt(player.x + 730, player.y, player.z + 730, "happy", "wesen");
         cLU.userData.name = "LevelUpTest";
         cLU.userData.lastProactiveSpeech = -Infinity;
-        r.state.lastCreatureProactiveSpeech = -Infinity;
+        st.lastCreatureProactiveSpeech = -Infinity;
         const beforeLU = chatOutput ? chatOutput.children.length : 0;
         // 3 gathered-Memorys → Level 1 trigger
         for (let i = 0; i < 3; i++) {
@@ -811,7 +808,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         const cBoost = r.spawnCreatureAt(player.x + 740, player.y, player.z + 740, "happy", "fuchs");
         cBoost.userData.name = "BoostTest";
         cBoost.userData.lastProactiveSpeech = -Infinity;
-        r.state.lastCreatureProactiveSpeech = -Infinity;
+        st.lastCreatureProactiveSpeech = -Infinity;
         const beforeB = chatOutput ? chatOutput.children.length : 0;
         r.applyCreatureBoost(cBoost, {
             source: "test:proactive",
@@ -825,7 +822,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         // 12. Hook applyCreatureBoost: SELBE Quelle nochmal → NICHT erneut sprechen
         //     (würde sonst bei jeder Boost-Verlängerung loslabern)
         cBoost.userData.lastProactiveSpeech = -Infinity; // throttle reset
-        r.state.lastCreatureProactiveSpeech = -Infinity;
+        st.lastCreatureProactiveSpeech = -Infinity;
         const beforeB2 = chatOutput ? chatOutput.children.length : 0;
         r.applyCreatureBoost(cBoost, {
             source: "test:proactive", // SELBE source
@@ -906,9 +903,9 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
     // (schöpfer = auto-execute, pfad/frieden = Inline-Buttons); LLM-Augmentation bei seltenen Events mit
     // eigenem 10-Min-Throttle. Geprüft: Whitelist, Modus-Diskrimination, Memory-Einträge, Sandbox-Defense.
     const wave6hP2eV3Results = await safeEvaluate(page, () => {
-        if (!r || !r.state || !r.state.playerMesh) return null;
+        if (!r || !st || !st.playerMesh) return null;
         const out = {};
-        const Class = r.constructor;
+        const Class = AnazhRealm;
 
         // 1. Konstanten + Methoden existieren
         out.weatherAllowed = Class.CREATURE_PROPOSED_OPS.has("weather");
@@ -943,7 +940,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         out.rejectsNestedForbidden = nestedBad.ok === false && nestedBad.forbiddenOp === "player_speed";
 
         // 4. Persona-Prompt erlaubt program (V3-Update)
-        const player = r.state.playerMesh.position;
+        const player = st.playerMesh.position;
         // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
@@ -964,17 +961,17 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         // (`_himmelSchreiber`): gegen das stehende Wort des Spielers hält das Wetter (der Hinweis sagt es); ohne Wort
         // wünscht es nur (gate:wetter-wache (G)/(B)).
         r.setGameMode("schöpfer");
-        const [__wort0, __zugUhr0] = [r.state.wetterWort, r.state.weatherEffectTime];
-        r.state.weatherEffectTime = 0;
+        const [__wort0, __zugUhr0] = [st.wetterWort, st.weatherEffectTime];
+        st.weatherEffectTime = 0;
         r.dslRun(["weather", "sunny"], { source: "human" });
         const beforeAuto = chatOutput ? chatOutput.children.length : 0;
         r._handleCreatureProposedProgram(c, "TestProgramKreatur", ["weather", "rainy"]);
-        out.autoHaeltWort = r.state.weather === "sunny" && r.state.wetterWort === "sunny";
+        out.autoHaeltWort = st.weather === "sunny" && st.wetterWort === "sunny";
         const afterAuto = chatOutput ? chatOutput.children.length : 0;
         out.autoChatLineAdded = afterAuto > beforeAuto;
         out.autoHinweisWort =
             !!chatOutput && /hält dein Wort/.test((chatOutput.lastElementChild || {}).textContent || "");
-        [r.state.wetterWort, r.state.weatherEffectTime] = [__wort0, __zugUhr0];
+        [st.wetterWort, st.weatherEffectTime] = [__wort0, __zugUhr0];
         // Memory-Eintrag: auto_executed_action
         const memTypes = (c.userData.memory || []).map((m) => m.type);
         out.memoryHasAutoExecuted = memTypes.includes("auto_executed_action");
@@ -983,9 +980,9 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         // Wetter-Wechsel)
         r.setGameMode("pfad");
         const beforePending = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-pending").length : 0;
-        const targetWeather2 = r.state.weather === "rainy" ? "sunny" : "rainy";
+        const targetWeather2 = st.weather === "rainy" ? "sunny" : "rainy";
         r._handleCreatureProposedProgram(c, "TestProgramKreatur", ["weather", targetWeather2]);
-        out.pfadDoesNotAutoExecute = r.state.weather !== targetWeather2;
+        out.pfadDoesNotAutoExecute = st.weather !== targetWeather2;
         const afterPending = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-pending").length : 0;
         out.pfadRendersButtons = afterPending > beforePending;
         // Memory: proposed_action vorhanden, aber NICHT yet accepted
@@ -1009,14 +1006,14 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         r.setGameMode("pfad");
         const c2 = r.spawnCreatureAt(player.x + 810, player.y, player.z + 810, "happy", "fuchs");
         c2.userData.name = "ClickTestKreatur";
-        const targetW3 = r.state.weather === "rainy" ? "sunny" : "rainy";
+        const targetW3 = st.weather === "rainy" ? "sunny" : "rainy";
         r._renderCreatureProposalButtons(c2, "ClickTestKreatur", ["weather", targetW3]);
         const acceptBtns = chatOutput ? chatOutput.querySelectorAll(".chat-proposal-btn.accept") : [];
         const acceptBtn = acceptBtns[acceptBtns.length - 1] || null;
         out.acceptButtonExists = !!acceptBtn;
         if (acceptBtn) {
             acceptBtn.click();
-            out.acceptClickExecutes = r.state.weather === targetW3;
+            out.acceptClickExecutes = st.weather === targetW3;
             const memTypes4 = (c2.userData.memory || []).map((m) => m.type);
             out.memoryHasAccepted = memTypes4.includes("accepted_action");
         }
@@ -1128,7 +1125,6 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
     void finalState;
     // ### Werkstatt-UX-Polish (Mode-Bar oben + Stats unten + Tool-Palette + Editor-Toggle + Del-Btn) ###
     const v805Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         try {
             // Werkstatt-Tab öffnen
@@ -1161,7 +1157,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
             const toolPalette = document.getElementById("workshop-tool-palette");
             out.toolPaletteInDom = !!toolPalette;
             // Wenn Spieler Werkzeuge hat, sind Cards drin
-            const playerTools = (r.state.player && r.state.player.tools) || [];
+            const playerTools = (st.player && st.player.tools) || [];
             out.toolCardsCount = toolPalette ? toolPalette.querySelectorAll(".workshop-tool-card").length : 0;
             // die Palette enthält die Hand + (in schöpfer/nah) die Werkstatt-Prozess-Karten; mind. eine Karte.
             void playerTools;
@@ -1187,19 +1183,19 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
             r._workshopSetSelection(0);
             out.delBtnEnabledOnSelect = delBtn && delBtn.disabled === false;
             // Del-Btn-Click entfernt Part
-            const partsBefore = r.state.blueprints.test_v805.parts.length;
+            const partsBefore = st.blueprints.test_v805.parts.length;
             if (delBtn) delBtn.click();
-            const partsAfter = r.state.blueprints.test_v805.parts.length;
+            const partsAfter = st.blueprints.test_v805.parts.length;
             out.delBtnRemovesPart = partsAfter === partsBefore - 1;
 
             // Cleanup
-            if (r.state.blueprints["test_v805"]) r.deleteBlueprint("test_v805");
+            if (st.blueprints["test_v805"]) r.deleteBlueprint("test_v805");
             r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
             r.closeAllDrawers();
-            r.state.yaw = 0;
-            if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+            st.yaw = 0;
+            if (st.playerMesh) st.playerMesh.rotation.y = 0;
         } catch (err) {
             out.error = err && err.message;
         }
@@ -1244,7 +1240,6 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
 
     // ### Werkstatt-UX: Klone/Neu in Mode-Bar, Default-Size, Kontrast ###
     const v806Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         try {
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
@@ -1285,8 +1280,8 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
             // Cleanup
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
             r.closeAllDrawers();
-            r.state.yaw = 0;
-            if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+            st.yaw = 0;
+            if (st.playerMesh) st.playerMesh.rotation.y = 0;
         } catch (err) {
             out.error = err && err.message;
         }
@@ -1316,7 +1311,6 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
 
     // ### Werkstatt-Detail-Polish (Klone/Neu klickbar, Stern-Stats, Default-Größe fix) ###
     const v807Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         try {
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
@@ -1368,13 +1362,13 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
             out.idempotentAfterApply = !werkstattEl807 || !werkstattEl807.style.width;
 
             // Cleanup
-            if (r.state.blueprints["test_v807"]) r.deleteBlueprint("test_v807");
+            if (st.blueprints["test_v807"]) r.deleteBlueprint("test_v807");
             r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
             r.closeAllDrawers();
-            r.state.yaw = 0;
-            if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+            st.yaw = 0;
+            if (st.playerMesh) st.playerMesh.rotation.y = 0;
         } catch (err) {
             out.error = err && err.message;
         }
@@ -1406,7 +1400,6 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
 
     // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
     const llmResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // den Ollama-Weg (Endpunkt, Body, Antwort, Parser) und die Tür jedes Anbieters durch die CSP fährt der KI-Korpus am Verhalten (diag-v1-pfad --korpus)
         const defs = r.llmProviderDefs();
@@ -1439,7 +1432,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
         out.parserDetectsError = broken.say === "nicht json" && broken.fallbackUsed === "plain-text";
 
         // Disabled-LLM blockt Call ohne Netzwerk-Versuch
-        r.state.llm.enabled = false;
+        st.llm.enabled = false;
         return new Promise((resolve) => {
             r.llmCall("test").then((rep) => {
                 out.callBlockedWhenDisabled = rep.error === "LLM nicht aktiv";
@@ -1468,7 +1461,6 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
     // Lokales Ollama braucht keinen Key, gehostete Setups einen Bearer-Token: buildHeaders schickt
     // Authorization NUR bei gesetztem Key.
     const ollamaKeyResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         const defs = r.llmProviderDefs();
         const ol = defs.ollama;
@@ -1490,7 +1482,6 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
     // (1) /api/chat nur anhängen, wenn die URL noch keinen Pfad hat; (2) extractText liest Ollama-native
     // UND OpenAI-kompatibles Format; (3) options.num_predict ist Ollama-spezifisch (OpenAI lehnt ab).
     const v795Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         const defs = r.llmProviderDefs();
         const ol = defs.ollama;
@@ -1590,7 +1581,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
     // Den lokalen Weg (Modell im Fenster, Proxy an, localhost geht vorbei) fährt der KI-Korpus am Verhalten (diag-v1-pfad
     // --korpus); hier die Cloud-URL durch den Proxy und der 404-Hinweis.
     const v797AutoResults = await safeEvaluate(page, async () => {
-        if (!r || !r.state || !r.state.llm) return null;
+        if (!r || !st || !st.llm) return null;
         const out = {};
 
         // (wir stubben fetch um die URL abzufangen und reverten danach)
@@ -1607,10 +1598,10 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
             };
         };
         try {
-            r.state.llm.provider = "ollama";
-            r.state.llm.enabled = true;
-            Object.assign(r.state.llm.providerConfig.ollama, { endpoint: "https://ollama.com/api/chat", useProxy: true, model: "llama3.2" });
-            r.state.llm.inFlight = false;
+            st.llm.provider = "ollama";
+            st.llm.enabled = true;
+            Object.assign(st.llm.providerConfig.ollama, { endpoint: "https://ollama.com/api/chat", useProxy: true, model: "llama3.2" });
+            st.llm.inFlight = false;
             await r.llmCall("test");
             // Erwartung: fetch-URL ist die proxy-URL bei Cloud + useProxy
             out.proxyUsedForCloud = capturedUrl !== null && /\/proxy\/llm/.test(capturedUrl);
@@ -1622,7 +1613,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
 
     // 404-Hint-Test
     const v797ErrorResults = await safeEvaluate(page, async () => {
-        if (!r || !r.state || !r.state.llm) return null;
+        if (!r || !st || !st.llm) return null;
         const out = {};
         const origFetch = window.fetch;
         window.fetch = async () => ({
@@ -1632,13 +1623,13 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
             json: async () => ({ error: "stub" }),
         });
         try {
-            r.state.llm.provider = "ollama";
-            r.state.llm.enabled = true;
-            const cfg = r.state.llm.providerConfig.ollama;
+            st.llm.provider = "ollama";
+            st.llm.enabled = true;
+            const cfg = st.llm.providerConfig.ollama;
             cfg.endpoint = "http://localhost:11434";
             cfg.useProxy = false;
             cfg.model = "foo-not-real";
-            r.state.llm.inFlight = false;
+            st.llm.inFlight = false;
             const reply = await r.llmCall("test");
             out.errorMentionsModel = /Modell.*nicht gefunden/.test(reply.error || "");
             out.errorMentionsOllamaList = /ollama list/.test(reply.error || "");
@@ -1669,7 +1660,6 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
     // (1) <think>/<thinking>-Blöcke werden gestrippt; (2) ohne JSON-Vertrag greift der Plain-Text-
     // Fallback; (3) num_predict 800 statt 400 — think-Block + Antwort brauchen Raum.
     const v798Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         // 1. <think>-Block wird gestrippt, JSON dahinter wird geparst

@@ -20,7 +20,6 @@
 //
 // Exit 1: keine Chunks gestreamt, eine Cross-LOD-Spalte ohne Stitch-Band (A1) oder das Naht-Gate (`--gate`) rot.
 const { statikServer, nullSeite } = require("./lib/welt-boot.cjs");
-const PORT = Number(process.env.CHUNK_SEAM_PORT) || 4364;
 const server = statikServer();
 // Punkt→Dreieck-Distanz² (das EHRLICHE Naht-Maß auf der mehrwertigen Fläche) — EINMAL: die Seite trägt es als
 // `window.ptTri2` (Messung A/B und der Geomorph lesen dasselbe Maß)
@@ -91,7 +90,7 @@ function ptTri2(px, py, pz, T) {
     return ex * ex + ey * ey + ez * ez;
 }
 (async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite();
     // der Stoff-Zeuge: ein Bruch des Geomorph-Stoffs meldet ERROR „STOFF: der Geomorph des Bodens" (`_stoffBruch`)
     const stoffBrueche = [];

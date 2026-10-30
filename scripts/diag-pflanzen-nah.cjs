@@ -95,7 +95,8 @@ function teile(meshes) {
             idx: m.index ? u32(m.index) : null,
         }));
 }
-const Y = (c, i) => 0.2126 * c[i * 3] + 0.7152 * c[i * 3 + 1] + 0.0722 * c[i * 3 + 2];
+const { luma709 } = require("./lib/abnahme-urteil.cjs");
+const Y = (c, i) => luma709(c, i * 3);
 function hoehe(T) {
     let hi = 0;
     for (const t of T) for (let i = 1; i < t.pos.length; i += 3) hi = Math.max(hi, t.pos[i]);

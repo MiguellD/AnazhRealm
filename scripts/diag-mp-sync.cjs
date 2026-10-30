@@ -126,7 +126,7 @@ function netzLog() {
 // mit (Puppeteer startet Chrome ohne Hintergrund-Drosselung der Zeitgeber, ChromeLauncher `--disable-background-timer-throttling`)
 function seitenPumpe() {
     setInterval(() => {
-        if (!r || !r._gameLoopTick || window.__ruht) return; // `__ruht`: der Loop steht (g)
+        if (!r || !r._gameLoopTick || window.__pumpeSteht) return; // die Pumpe steht (g) — kein Name der Seiten-Werkzeuge
         try {
             r._gameLoopTick(performance.now());
         } catch {
@@ -630,10 +630,10 @@ hauptLauf(async () => {
                 idA,
                 alt
             );
-            await pageA.evaluate(() => (window.__ruht = true));
+            await pageA.evaluate(() => (window.__pumpeSteht = true));
             await sleep(STILLE_S * 1000);
             const anker = await pageA.evaluate(() => {
-                window.__ruht = false;
+                window.__pumpeSteht = false;
                 return (Math.floor(anazhRealm.state.p2p._lockstepSeq / 60) + 1) * 60;
             });
             await waitFor(

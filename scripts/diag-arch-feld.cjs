@@ -22,7 +22,6 @@
 const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
-const PORT = Number(process.env.ARCH_FELD_PORT || 4467);
 const W = 640,
     H = 360;
 const server = statikServer();
@@ -67,7 +66,7 @@ function kartenGesetz(buch, zelleF) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: W, height: H });
