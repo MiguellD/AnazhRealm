@@ -1257,6 +1257,15 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         }
         // DER GRUND der Welt nach der Reihe `anfang` (nie davor: anfang misst die frische Welt)
         if (!tot && grundDa === null && stellungVon(g) !== "anfang") {
+            // fiel die letzte Probe von anfang (Deckel, Absturz), lief ihre Seiten-Funktion weiter: erst die Seite neu (ihre Arbeit endet),
+            // dann der Grund — nie ein Grund aus einer Seite, in der eine gefallene Probe noch arbeitet
+            if (abbruch) {
+                const n = await rufFrist(W, "/reload", {}, GRUNDSTELLUNG_S * 1000).catch((e) => ({ fehler: String((e && e.message) || e) }));
+                abbruch = false;
+                if (!n || n.neu !== true) tot = "die Seite nach dem Abbruch von anfang lädt nicht neu (/reload: " + JSON.stringify(n).slice(0, 200) + ")";
+            }
+        }
+        if (!tot && grundDa === null && stellungVon(g) !== "anfang") {
             const gn = await grundNehmen(W, grund);
             grundDa = gn.ok ? true : gn.grund;
             console.log("  SITZUNG " + (gn.ok ? "der Grund der Welt: " + gn.n + " Größen in " + gn.s + " s" : gn.grund));
@@ -2757,6 +2766,10 @@ async function selbsttest() {
         const r2 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "tod"], sek: 30 }, (j) => ({ gruen: !!j && j.welt === "tod", zahl: "tod" }))], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "stirbt", null);
         pruef("SITZUNG eine Welt, die stirbt: die Sitzung startet nie neu, die übrigen Proben sind UNGEMESSEN beim Grund (nie ROT)",
             r2.z.filter((l) => l === "start").length === 1 && r2.es["b.K1#1"].ungemessen === true && /trägt nicht mehr/.test(r2.es["b.K1#1"].grund) && /trägt nicht mehr/.test(r2.kopf.grund), JSON.stringify([r2.z, r2.es, r2.kopf]));
+        // DER ABBRUCH VON ANFANG: fällt die letzte Probe von anfang am Deckel, lädt die Seite neu, ehe der Grund genommen wird
+        const r10 = await lauf([[S("a.K1", 1, { befehl: ["node", "-e", "setTimeout(() => {}, 60000)"], sek: 2, stellung: "anfang" }, lies)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "gut", null);
+        pruef("SITZUNG DER ABBRUCH VON ANFANG: die Seite neu, ehe der Grund genommen wird (nie ein Grund aus einer Seite, in der eine gefallene Probe arbeitet)",
+            r10.z.join(",") === "start,reload,nimm,grund,stop" && r10.es["a.K1#1"].ungemessen === true && r10.es["b.K1#1"].gruen, JSON.stringify([r10.z, r10.es]));
         // DIE GRUNDSTELLUNG, DIE NICHT TRÄGT: weicht nach dem Rückspielen eine Größe vom Grund ab, sind die übrigen Proben UNGEMESSEN beim
         // Namen der Größe (nie ROT, nie ein Neuladen)
         const r7 = await lauf([[S("m.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)]], "anders", null);
