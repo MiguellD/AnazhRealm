@@ -1,6 +1,6 @@
 // Stationen der Gruppe III (src/g3.js): Licht, Ferne, Material. Format und Regeln: punkte/punkte.cjs (Kopf).
 // Erfasst sind die Kriterien mit Punkten (licht.K2, ferne.K1, ferne.K2), die Messschuld M43 (material.K3) und die Kriterien, die
-// ein Zweig im Stau kippen soll (material-lack K1, material-mikro K2, material-albedo K3). Jede Station misst im Ausgabe-Bild
+// ein Zweig im Stau kippen soll (material-lack K1, material-mikro K2, material-albedo K3, w3v-licht licht.K1 und K3). Jede Station misst im Ausgabe-Bild
 // auf der Karte (gpu: true, über gpu-lauf.sh); headless ist hier keine, weil keines dieser Sollwerte reine Mechanik ist.
 //
 // DIE FOLGE (`folge`, unten) fährt die Schritte der Station der Reihe nach in der Welt der Sitzung (punkte.cjs fahreSitzung:
@@ -629,6 +629,95 @@ const stationen = [
         },
         pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-boden.js", "stamm/gelaende-chunks.js", "stamm/bau-teile.js"],
         quelle: "2 = alle Spalten Uhr 0,5/0,27/0,73 × klar/Regen, beide Geräte",
+    },
+    {
+        kriterium: "licht.K1",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // werkbank licht --tag (licht-linsen.cjs `tagKurve` · `tagFeinUhren` · `tagKurveUrteil`, w3v-licht): Spawn (genesis) und
+        // Mess-Wiese in Ego, Uhr 0 … 0,99 in 0,01, um den Horizont (Sonne −18 … 15°) in 0,002 nachgetastet, mittags die 18-%-Karte
+        // im Ausgabe-Bild. Die Linse urteilt das ganze Soll (ANKER · SPRUNG · BUCKEL · GOLD · NACHT · REF gegen spec/farbe/tag-ref.json
+        // ± 0,3 Stufen · ASYNC · SCHREIBER); die Station rechnet die Zahlen der Staffel noch einmal aus der Messung selbst und verlangt
+        // die ganze Bahn (100 Grob-Zeilen, ≥ 60 Fein-Zeilen je Ort).
+        befehl: ["node", "scripts/werkbank.cjs", "licht", "--tag", "--eigen", "--port", "{PORT}", "--datei", "{AUS}"],
+        env: { MSYS2_ARG_CONV_EXCL: "*" },
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(lauf.stdout) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const u = /^TAG-ACHSE (GRUEN|ROT)[^\r\n]*/m.exec(lauf.stdout);
+            if (!j || !u) return { gruen: false, zahl: "keine Messung oder keine TAG-ACHSE-Zeile (Exit " + lauf.exit + "): " + String(lauf.stderr || "").trim().slice(-200) };
+            let gruen = hw && u[1] === "GRUEN" && lauf.exit === 0;
+            const teile = [];
+            for (const ort of ["genesis", "wiese"]) {
+                const m = j[ort] || {};
+                const grob = m.zeilen || [];
+                const alle = grob.concat(m.fein || []).sort((a, b) => a.uhr - b.uhr);
+                const [mittag, nacht] = [0.5, 0].map((x) => alle.find((z) => z.uhr === x));
+                if (!mittag || !nacht || grob.length < 100 || alle.length - grob.length < 60) {
+                    gruen = false;
+                    teile.push(ort + ": Bahn " + grob.length + "/100 grob, " + (alle.length - grob.length) + " fein");
+                    continue;
+                }
+                const e = (z) => Math.log2(z.Y / mittag.Y);
+                const sprung = Math.max(...alle.slice(1).map((z, i) => Math.abs(e(z) - e(alle[i]))));
+                const buckel = Math.max(...alle.map(e));
+                // die Sonne 10° je Seite zwischen ihren Zeilen gelesen: EV gegen Mittag und R/B gegen Mittag
+                const gold = [alle.filter((z) => z.uhr < 0.5), alle.filter((z) => z.uhr > 0.5)].map((s) => {
+                    const i = s.findIndex((z, k) => k && (s[k - 1].sonne - 10) * (z.sonne - 10) <= 0);
+                    if (i < 1) return null;
+                    const [a, b] = [s[i - 1], s[i]];
+                    const t = (10 - a.sonne) / (b.sonne - a.sonne || 1);
+                    return [e(a) + (e(b) - e(a)) * t, (a.warm + (b.warm - a.warm) * t) / mittag.warm];
+                });
+                const ok =
+                    m.karte >= 110 && m.karte <= 130 && sprung <= 0.1 && buckel <= 0.15 &&
+                    gold.every((g) => g && g[0] >= -1 && g[0] <= -0.5 && g[1] >= 1.3) &&
+                    e(nacht) >= -5 && e(nacht) <= -3 && nacht.hell >= 22;
+                if (!ok) gruen = false;
+                teile.push(
+                    ort + ": Karte Luma " + m.karte + ", Sprung " + sprung.toFixed(3) + " EV, Buckel " + buckel.toFixed(2) + " EV, Sonne 10° " +
+                        gold.map((g) => (g ? g[0].toFixed(2) + " EV R/B ×" + g[1].toFixed(2) : "fehlt")).join(" | ") + ", Nacht " +
+                        e(nacht).toFixed(2) + " EV Luma " + nacht.hell
+                );
+            }
+            return { gruen, zahl: teile.join(" · ") + " · Linse " + u[0].slice(0, 200) + " · " + (ad || "Adapter ungenannt") };
+        },
+        pfad: [...BILD, "spec/farbe/tag-ref.json", "stamm/studio-bruecke.js", "stamm/vegetation-*.js", "gelaende-core.js", "stamm/gelaende-*.js"],
+        quelle: "1 = an einem Gerät in einer Sicht über die ganze Bahn im Soll",
+    },
+    {
+        kriterium: "licht.K3",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        // die F6-Linse (werkbank licht --laub … --karte --uhr, licht-linsen.cjs `laubGegenlicht` + `laubLichtUrteil`): die Karte
+        // gegen ihre Gestalt (fichte, tanne, am Exemplar nächst der Mess-Wiese) und der Fern-Ring gegen den Boden-Satz an derselben
+        // Stelle (Messort dorf), dasselbe Auge, je Uhr 0,5/0,27/0,05. Das Soll der Staffel: jede Zeile Fernstufe/Gestalt 0,9–1,1
+        // (die Linse urteilt die Stunde gegen ihren Mittag; hier zählt jede Zeile selbst, der Mittag eingeschlossen).
+        befehl: ["node", "scripts/werkbank.cjs", "licht", "--laub", "fichte,tanne,ring", "--karte", "--uhr", "0.5,0.27,0.05", "--eigen", "--port", "{PORT}", "--datei", "{AUS}"],
+        env: { MSYS2_ARG_CONV_EXCL: "*" },
+        gpu: true,
+        zeit: false,
+        minuten: 20,
+        urteil: (j, lauf) => {
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(lauf.stdout) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const w = (j && j.welt) || {};
+            let gruen = hw;
+            const teile = [];
+            for (const art of ["fichte", "tanne", "ring"])
+                for (const uhr of ["0.5", "0.27", "0.05"]) {
+                    const z = w[art + "@" + uhr];
+                    const v = z && z.karte ? z.karte.verhaeltnis : null;
+                    if (!(v >= 0.9 && v <= 1.1)) gruen = false;
+                    teile.push(art + "@" + uhr + " " + (v != null ? v : (z && z.fehler) || "ungemessen"));
+                }
+            return { gruen, zahl: teile.join(" · ") + " · Soll 0,9–1,1 · " + (ad || "Adapter ungenannt") };
+        },
+        pfad: [...BILD, "phyto-core.js", "gelaende-core.js", "stamm/gelaende-*.js", "stamm/vegetation-*.js", "stamm/studio-bruecke.js"],
+        quelle: "1 = Karte und Fern-Ring je Uhr 0,5/0,27/0,05 im Band 0,9–1,1 an einem Gerät",
     },
     {
         kriterium: "ferne.K1",
