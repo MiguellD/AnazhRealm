@@ -82,9 +82,12 @@ class AnazhRealm_vegetation_wiese {
     // trägt den Tint des Kerns (terrain:wiesenTint, `f`: der Faktor je Kanal, die Instanz-Farbe der Senke) — W1.
     // Fuß, Hang und Grün auf dem GERENDERTEN Boden (der EINE Leser `_bodenSichtAt`, am Chunk-Rand die Karte des
     // Nachbarn). Die Würfe hängen nur an der Zelle (Γ5) — dieselbe Wiese bei jedem Besuch. Gibt die Büschel-Liste
-    // zurück oder null, solange ein Chunk, den die Kachel liest (`_bodenSichtChunks`), noch keine Boden-Karte hat.
+    // zurück oder null, solange ein Chunk, den die Kachel liest (`_bodenSichtChunks`), noch keine Boden-Karte hat oder die
+    // Weite der gezeichneten Vorlagen (`nahWiese.reich`, `_nahWieseWeite`) noch nicht steht.
     _nahWieseKachelBueschel(tx, tz) {
         const NW = AnazhRealm.NAH_WIESE;
+        const reich = this.state.nahWiese ? this.state.nahWiese.reich : 0;
+        if (!(reich > 0)) return null;
         const uCfg = AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.understory;
         const step = uCfg && Number.isFinite(uCfg.grassStep) ? uCfg.grassStep : 0.72;
         const GS = AnazhRealm.GRASS_SLOPE;
@@ -143,8 +146,9 @@ class AnazhRealm_vegetation_wiese {
                 const p = GC(L, m, rk, Infinity).grass * (1 - pfad * 0.92) * gruen * (1 - this._ascheAt(x, z));
                 if (wurf >= p) continue;
                 const sb = sk * (m > 0.8 ? 1.45 : 1);
-                // der Kreis des Büschels vor dem Grund der Häuser (S4, `erdbauGrund`: jede Box des Körper-Satzes)
-                if (Gb.erdbauGrund(E, x, z, NW.reich * sb)) continue;
+                // der Kreis des Büschels vor dem Grund der Häuser (S4, `erdbauGrund`: jede Box des Körper-Satzes), sein
+                // Radius die Weite der gezeichneten Vorlagen
+                if (Gb.erdbauGrund(E, x, z, reich * sb)) continue;
                 const f = WT(x, z, L, m, [1, 1, 1], 0);
                 out.push({ x, y, z, s: sb, rot, vorlage, ordnung, f, gi, gj });
             }
@@ -244,19 +248,31 @@ class AnazhRealm_vegetation_wiese {
         // brach jeder Deko-Takt bis zum Buch an `phyto:lod.budget (gras)` und riss Nah-Streu und Hydro-Kacheln mit.
         // Der Rang der Vorlage ist der Ort ihres Lesers, das Auge (`wo`, B5): ohne Ort stand sie auf ∞ und wartete vor dem
         // ersten Bild auf eine leere Bahn (GTX kalt 8,5 s), während die Streu-Lücke im Blick auf sie wartete.
+        let weite = 0; // die weiteste Halm-Spitze der Vorlagen beider Stufen — NaN, solange eine fehlt
         for (const stufe of [1, 2]) {
             for (let v = 0; v < 2; v++) {
                 const fl = this._foundryFlattenFor({ seed: v + 1, wo: cam }, "gras", stufe);
-                if (!(fl && Array.isArray(fl.leaves) && fl.leaves.length)) {
-                    nw.offen++; // das Studio-Asset kommt noch (Buch kalt oder die Foundry-Anfrage läuft)
-                    continue;
-                }
-                if (this._foundryBudgetZeile("gras", stufe).schatten !== false)
-                    throw new Error(
-                        `Nah-Wiese: gras[${stufe}] wirft — der Sicht-Satz cullt am Auge, nie für die Kaskade`
-                    );
-                this._nahWieseSenken(v, stufe, fl);
+                if (fl && Array.isArray(fl.leaves) && fl.leaves.length) {
+                    if (this._foundryBudgetZeile("gras", stufe).schatten !== false)
+                        throw new Error(
+                            `Nah-Wiese: gras[${stufe}] wirft — der Sicht-Satz cullt am Auge, nie für die Kaskade`
+                        );
+                    this._nahWieseSenken(v, stufe, fl);
+                } else nw.offen++; // das Studio-Asset kommt noch (Buch kalt oder die Foundry-Anfrage läuft)
+                const vl = nw.vorlagen.get(`${v}:L${stufe}`);
+                weite = vl ? Math.max(weite, vl.weite) : NaN;
             }
+        }
+        // DIE WEITE DER BÜSCHEL (S4, der EINE Schreiber von `nahWiese.reich`): die weiteste Halm-Spitze um den Fuß, waagrecht, je
+        // Büschel-Skala 1, über jede Vorlage beider Stufen (jede Stufe zeichnet jeden Büschel; gemessen an der GEZEICHNETEN
+        // Geometrie, `_nahWieseSenken`), dazu der Hub des Blatts im Sturm (phyto-core WIND_GESETZ.blatt.hub) — der Kreis jedes
+        // Büschels vor dem Grund der Häuser (`_nahWieseKachelBueschel` → `erdbauGrund`); vor ihr baut keine Kachel, eine Kachel
+        // aus einer anderen Weite wächst neu. Bis heil-w4-wiese-nah trug NAH_WIESE.reich sie als Zahl (0,72 m, gemessen 19.10.):
+        // die Ähre des Halm-Gesetzes reicht 0,74 m, und 22 Büschel steckten ihre Halme in 11 von 25 Häuser (gate:haus-welt W9).
+        const reich = weite > 0 ? weite + globalThis.__phytoCore.WIND_GESETZ.blatt.hub : 0;
+        if (reich !== nw.reich) {
+            nw.reich = reich;
+            for (const [key, k] of nw.kacheln) if (k.reich !== reich && this._nahWieseKachelFaellt(key)) gefallen++;
         }
         let gebaut = 0;
         for (const w of wunsch) {
@@ -278,7 +294,7 @@ class AnazhRealm_vegetation_wiese {
             const wasser = this._wasserKennungen(x0, z0, x0 + NW.kachel + 0.68, z0 + NW.kachel + 0.68);
             nw.kacheln.set(
                 w.key,
-                Object.assign({ chunkKarten, wasser }, this._nahWieseKachelDaten(w.tx, w.tz, bueschel))
+                Object.assign({ chunkKarten, wasser, reich }, this._nahWieseKachelDaten(w.tx, w.tz, bueschel))
             );
             nw.neu = true;
             gebaut++;
@@ -331,7 +347,9 @@ class AnazhRealm_vegetation_wiese {
     // ein oberster Knoten der Szene — die Täter-Klasse faltet den Namen auf `nahWiese:L<stufe>`, die Band-Linse nennt jede
     // Stufe beim Namen). Sie hält die Studio-Geometrie ihres Teils (`_liveRefs` der Cache-Gruppe), solange sie lebt; ein neues Studio-Asset
     // (Saison) ersetzt die Senken der Vorlage. Die Sicht-Kugel der Vorlage: Höhe der Mitte und Radius in Büschel-Skala 1
-    // (die waagrechte Lage der Mitte geht in den Radius — der Büschel dreht um die Hochachse).
+    // (die waagrechte Lage der Mitte geht in den Radius — der Büschel dreht um die Hochachse). Ihre WEITE: die weiteste Ecke
+    // um den Fuß, waagrecht, je Büschel-Skala 1 — jede Ecke jedes Teils in seiner lokalen Matrix (die Weite der Büschel,
+    // `nahWiese.reich`, liest sie).
     _nahWieseSenken(v, stufe, fl) {
         const nw = this.state.nahWiese;
         const kopf = `${v}:L${stufe}`;
@@ -339,9 +357,11 @@ class AnazhRealm_vegetation_wiese {
         if (alt && alt.flat === fl) return;
         if (alt) for (const a of alt.senken) this._nahWieseSenkeFaellt(a);
         const kugel = this._tmpWieseKugel || (this._tmpWieseKugel = new THREE.Sphere());
+        const ecke = this._tmpWieseEcke || (this._tmpWieseEcke = new THREE.Vector3());
         const senken = [];
         let cy = null,
-            r = 0;
+            r = 0,
+            weite = 0;
         for (let p = 0; p < fl.leaves.length; p++) {
             const lf = fl.leaves[p];
             if (!lf || !lf.geom || !lf.mat)
@@ -370,8 +390,12 @@ class AnazhRealm_vegetation_wiese {
             kugel.copy(lf.geom.boundingSphere).applyMatrix4(lf.localMatrix);
             if (cy === null) cy = kugel.center.y;
             r = Math.max(r, kugel.radius + Math.hypot(kugel.center.x, kugel.center.z) + Math.abs(kugel.center.y - cy));
+            for (let i = 0, P = lf.geom.attributes.position; i < P.count; i++) {
+                ecke.fromBufferAttribute(P, i).applyMatrix4(lf.localMatrix);
+                weite = Math.max(weite, Math.hypot(ecke.x, ecke.z));
+            }
         }
-        nw.vorlagen.set(kopf, { flat: fl, senken, cy: cy || 0, r });
+        nw.vorlagen.set(kopf, { flat: fl, senken, cy: cy || 0, r, weite });
         nw.neu = true;
         if (stufe === 1) this._nahWieseNarbe();
     }
