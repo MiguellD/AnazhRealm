@@ -385,9 +385,11 @@ class AnazhRealm_dirigent_takt {
                                       ? `Dorf offen ${o.dorf}`
                                       : o.leib
                                         ? "Leib offen"
-                                        : o.ankunft
-                                          ? `Ankunft gleitet ${o.ankunft}`
-                                          : null;
+                                        : o.huellen
+                                          ? `Hüllen offen ${o.huellen}`
+                                          : o.ankunft
+                                            ? `Ankunft gleitet ${o.ankunft}`
+                                            : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -429,6 +431,7 @@ class AnazhRealm_dirigent_takt {
                 ankunft: 0,
                 stau: 0,
                 horizont: 0,
+                huellen: 0,
             }); // je Takt, ohne Müll
         o.foundry = f
             ? (f.pending ? f.pending.size : 0) +
@@ -473,6 +476,9 @@ class AnazhRealm_dirigent_takt {
         // Vorlagen im Memo liegen (`_deferredAvatarSoul` → `applyPlayerSoul`) — bis dahin ist der Spieler der leere Anker, und
         // die Welt steht nicht (mensch.K1 Radeon: die Probe hielt den Anker, die Stadt lag 735 m vom Spieler)
         o.leib = st._deferredAvatarSoul ? 1 : 0;
+        // DIE HÜLLEN DER ANKUNFT (w4-ankunft-2, `_tickHuellenNach`): die Bäume, deren Hülle vor dem ersten Bild wartete, bis jeder
+        // sie fühlt — bis dahin stößt kein Leib an ihnen
+        o.huellen = this._huellenNach ? this._huellenNach.size : 0;
         // DIE ANKUNFT GLEITET (`_ankunftsFerne`, B2): bis ihr letztes Bild gezeichnet ist, misst jede Stufen-Wahl weiter, als das
         // Auge steht — die Bilder, die ihr fehlen (tiere.K1: im Schuss der Werkbank stand sie bei 62 von 90, der Mammut 13,9 m
         // vor dem Auge trug die Karte)
@@ -1460,6 +1466,7 @@ class AnazhRealm_dirigent_takt {
         this._dispatchFrameJobs(this._buildDeferrableJobs(playerPos), B);
         // die fixen, NICHT budget-gegateten Ticks (UNGATED Welt-Substanz + billige Ticks)
         this._tickPendingVegSpawns(4);
+        this._tickHuellenNach(); // nach dem ersten Bild: die Hüllen der Bäume, die vor ihm warteten (nah zuerst)
         const auge = this._lodAuge(); // das EINE Auge der Stufen (Maske und Wahl messen vom selben Ort)
         this._tickArchitectureLOD(5, auge);
         // DER KARTEN-TAKT (S2: die Karte backt im Welt-Renderer, `_tickKarteWelt`; lazy beim ersten L2-Bedarf

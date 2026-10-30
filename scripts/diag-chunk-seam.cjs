@@ -97,7 +97,7 @@ function ptTri2(px, py, pz, T) {
 //   spalt(px, py, pz, tris)                der Abstand des Punkts zur Fläche dieser Dreiecke (Punkt→Dreieck)
 function chunkKarte(mehr) {
     const karte = new Map();
-    for (const [key, e] of r.state.voxelChunks) {
+    for (const [key, e] of st.voxelChunks) {
         const g = e && !e.empty && e.mesh && e.mesh.geometry;
         const pos = g && g.attributes.position;
         if (!pos || pos.count === 0) continue;
@@ -155,27 +155,27 @@ function spalt(px, py, pz, tris) {
     await page.evaluate(async () => {
         let stubbed = false;
         for (const weiter = window.__deckel("der Ring 4", 15000); weiter(); ) {
-            if (r && !stubbed && r.state && r.state.renderer) {
-                r.state.renderer.render = function () {};
-                if (typeof r.state.renderer.renderAsync === "function")
-                    r.state.renderer.renderAsync = () => Promise.resolve();
-                r.state.postProcessingFailed = true;
+            if (r && !stubbed && st && st.renderer) {
+                st.renderer.render = function () {};
+                if (typeof st.renderer.renderAsync === "function")
+                    st.renderer.renderAsync = () => Promise.resolve();
+                st.postProcessingFailed = true;
                 // den Ring auf 4 ZWINGEN + SYNC bauen (Worker null), damit die volle
                 // 81-Chunk-Welt schnell steht UND LOD1 (ring 3-4) erscheint → die Cross-LOD-Naht
                 // wird messbar (sonst hält der Kapazitäts-Ramp die Welt bei Ring 2 = alle LOD0).
-                r.state.voxelWorker = null;
-                r.state.chunkRingRadius = 4;
-                r.state._activeRingRadius = 4;
+                st.voxelWorker = null;
+                st.chunkRingRadius = 4;
+                st._activeRingRadius = 4;
                 stubbed = true;
             }
             if (r && typeof r._gameLoopTick === "function") {
-                if (r.state) r.state._activeRingRadius = 4; // gegen den Ramp halten
+                if (st) st._activeRingRadius = 4; // gegen den Ramp halten
                 try {
                     r._gameLoopTick(performance.now());
                 } catch {}
                 // bis Ring 4 (81 Chunks) streamen, damit LOD1 (Band 1, ring 3-8) erscheint
                 // → die CROSS-LOD-Naht (B/D) wird messbar (bei 26 Chunks = nur Ring 2 = alle LOD0).
-                if (r.state && r.state.playerMesh && r.state.voxelChunks && r.state.voxelChunks.size >= 80) break;
+                if (st && st.playerMesh && st.voxelChunks && st.voxelChunks.size >= 80) break;
             }
             await sleep(4);
         }
@@ -307,7 +307,7 @@ function spalt(px, py, pz, tris) {
     // Nachher (gemorpht): die Naht-Vertices sind
     // koinzident mit den groben → die T-junction ist zu.
     const morph = await page.evaluate(async () => {
-        const s = r.state;
+        const s = st;
         const span = r._voxelChunkConfig(0).span;
         // STALE-TEST: den Geomorph für ALLE Chunks FRISCH gegen die JETZT gestreamten Nachbar-
         // Meshes rechnen (falls ein Nachbar nach dem Finalize-Morph re-meshte = stale Target).
@@ -397,7 +397,7 @@ function spalt(px, py, pz, tris) {
 
     // ===== MESSUNG E — A1: Morph-Cap + STITCH-BAND (sichtbare Spalten gedeckt?) =====
     const stitch = await page.evaluate(() => {
-        const s = r.state;
+        const s = st;
         const span = r._voxelChunkConfig(0).span;
         let bandMeshes = 0,
             bandQuads = 0;
@@ -465,7 +465,7 @@ function spalt(px, py, pz, tris) {
 
     // ===== MESSUNG C — die ZEITLICHE Naht (async-Fenster beim Carve) =====
     const temporal = await page.evaluate(async () => {
-        const s = r.state;
+        const s = st;
         const span = r._voxelChunkConfig(0).span;
 
         // Spieler-Chunk + ein gleich-LODiger Grenz-Nachbar (pcx+1,pcz) — beide LOD0 (r0/r1),

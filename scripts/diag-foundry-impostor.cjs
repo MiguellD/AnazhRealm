@@ -52,12 +52,12 @@ async function installiereBacke(page) {
         // das Schicht-Format, das DIE WELT auf dem Probe-Renderer wählt (`_impostorAtlasFormat`: BC nur mit WebGPU-Ablage) —
         // bis S2b fragte die Probe `hasFeature`, und WebGL2 (s3tc) erzwang eine BC-Stufe, die die Welt dort nie fährt
         window.__fimpFormat = (ren) => {
-            const vor = r.state.renderer;
-            r.state.renderer = ren;
+            const vor = st.renderer;
+            st.renderer = ren;
             try {
                 return r._impostorAtlasFormat();
             } finally {
-                r.state.renderer = vor;
+                st.renderer = vor;
             }
         };
         // die Karte einer Zelle als EINE Instanz in der Lage M (Skala s) über die echten Chokepoints (Belegen, Stempel)
@@ -68,8 +68,8 @@ async function installiereBacke(page) {
             return m.setMatrixAt(sl, M), r._lodSlotStamp({ mesh: m }, sl, s, false, lf), m;
         };
         window.__fimpBacke = async (ren, at, key, variant, geo) => {
-            const vor = r.state.renderer;
-            r.state.renderer = ren;
+            const vor = st.renderer;
+            st.renderer = ren;
             try {
                 let z = key;
                 if (typeof key === "string") {
@@ -93,7 +93,7 @@ async function installiereBacke(page) {
                     await sleep(50);
                 }
             } finally {
-                r.state.renderer = vor;
+                st.renderer = vor;
             }
         };
     });
@@ -150,15 +150,15 @@ async function driveImpostor(page) {
                     fmt: at.fmt,
                 };
                 // drei Instanzen über BEIDE Slot-Chokepoints: Streu (zwei Arten, Region 3,4) + ein gesetzter Eintrag
-                const vor = new Set(r.state.archInstanceGroups ? r.state.archInstanceGroups.keys() : []);
+                const vor = new Set(st.archInstanceGroups ? st.archInstanceGroups.keys() : []);
                 const sE = r._scatterInstanceAdd("fscatter:eiche:1:2", 10, 0, 10, 0.3, 1.1, null, "3,4", flat1);
                 const sF = r._scatterInstanceAdd("fscatter:fichte:1:2", 20, 0, 10, 0.7, 0.9, null, "3,4", flat2);
                 // BÜHNE: Eintrag einer Einheits-Probe, kein gesetzter Ort
                 const entry = { type: "baum_eiche", position: { x: 30, y: 0, z: 10 }, rotation: 0, scale: 1.2, seed: 7 };
                 r._archInstanceAdd(entry, flat1);
-                const neu = [...r.state.archInstanceGroups.keys()].filter((k) => !vor.has(k));
-                const karten = [...r.state.archInstanceGroups.keys()].filter((k) => /(^|#)fimp:/.test(k));
-                const g = r.state.archInstanceGroups.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE);
+                const neu = [...st.archInstanceGroups.keys()].filter((k) => !vor.has(k));
+                const karten = [...st.archInstanceGroups.keys()].filter((k) => /(^|#)fimp:/.test(k));
+                const g = st.archInstanceGroups.get(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE);
                 const ak = g && g.mesh.geometry.attributes.aKarte; // (Schicht, Halbbreite, Höhe, ±Sichthöhe) je Slot
                 const slot = (i) => (ak ? Array.from(ak.array.slice(i * 4, i * 4 + 4)) : [NaN, NaN, NaN, NaN]);
                 // die WebGPU-Grenze: höchstens 8 Vertex-Puffer je Pipeline —
@@ -261,13 +261,13 @@ async function kleberProbe(page, fmtWunsch) {
             r._kartenAtlas = undefined;
             const at = r._impostorAtlas();
             at.fmt = out.fmt;
-            const prevCf = r.state.foundryCrossfade;
-            r.state.foundryCrossfade = false; // die Nah-Ausblendung des Crossfades maskiert die Probe sonst
-            if (r.state._foliageMatCache)
-                for (const [k, m] of r.state._foliageMatCache)
-                    if (m.userData?.impostorBillboard) r.state._foliageMatCache.delete(k);
+            const prevCf = st.foundryCrossfade;
+            st.foundryCrossfade = false; // die Nah-Ausblendung des Crossfades maskiert die Probe sonst
+            if (st._foliageMatCache)
+                for (const [k, m] of st._foliageMatCache)
+                    if (m.userData?.impostorBillboard) st._foliageMatCache.delete(k);
             const mat = r._impostorAtlasMaterial();
-            r.state.foundryCrossfade = prevCf;
+            st.foundryCrossfade = prevCf;
             out.billboard = !!mat?.userData?.impostorBillboard;
             if (!out.billboard) {
                 out.err = "Impostor-TSL-Wiring: der Stoff trägt keinen Karten-Marker (impostorBillboard)";
@@ -402,7 +402,7 @@ async function kleberProbe(page, fmtWunsch) {
                 return (await ren.readRenderTargetPixelsAsync(rtO, 0, 0, 128, 128)).filter((v, i) => i % 4 === 3).map((a) => +(a > 0));
             };
             const iou = (k, g) => ((n) => (k.forEach((b, i) => ((n[0] += b), (n[1] += g[i]), (n[2] += b & g[i]))), { deckung: +(n[0] / Math.max(1, n[1])).toFixed(3), iou: +(n[2] / Math.max(1, n[0] + n[1] - n[2])).toFixed(3) }))([0, 0, 0]);
-            if (r.state.windUniforms) r.state.windUniforms.uWindStrength.value = 0; // der Wind ruht (wie C2)
+            if (st.windUniforms) st.windUniforms.uWindStrength.value = 0; // der Wind ruht (wie C2)
             const mG = Object.assign(new T.Mesh(gO, new T.MeshBasicMaterial({ side: T.DoubleSide })), { matrixAutoUpdate: false });
             mG.matrix.copy(lage);
             const [mO, mS] = [zO, zS].map((zz) => window.__fimpKarte(zz, mat, lage, 1.5));
@@ -428,12 +428,12 @@ async function kleberProbe(page, fmtWunsch) {
             const gpu = (t) => ren.backend.get(t).texture || ren.backend.get(t).textureGPU;
             try {
                 const alt = [at.map, at.nmap, at.lmap].map(gpu);
-                const vorR = r.state.renderer;
-                r.state.renderer = ren;
+                const vorR = st.renderer;
+                st.renderer = ren;
                 try {
                     r._impostorAtlasTexturen(at, at.cap + 1);
                 } finally {
-                    r.state.renderer = vorR;
+                    st.renderer = vorR;
                 }
                 // rgba8: das Ziel wächst neu, die Schichten backen nach (bc: die GPU kopiert sie)
                 if (at.fmt === "rgba8") for (const zz of [z, zV]) await window.__fimpBacke(ren, at, zz);
@@ -496,13 +496,13 @@ async function vergroessertProbe(page, fmtWunsch) {
             r._kartenAtlas = undefined;
             const at = r._impostorAtlas();
             at.fmt = fmtWunsch;
-            const prevCf = r.state.foundryCrossfade;
-            r.state.foundryCrossfade = false;
-            if (r.state._foliageMatCache)
-                for (const [k, m] of r.state._foliageMatCache)
-                    if (m.userData?.impostorBillboard) r.state._foliageMatCache.delete(k);
+            const prevCf = st.foundryCrossfade;
+            st.foundryCrossfade = false;
+            if (st._foliageMatCache)
+                for (const [k, m] of st._foliageMatCache)
+                    if (m.userData?.impostorBillboard) st._foliageMatCache.delete(k);
             const mat = r._impostorAtlasMaterial();
-            r.state.foundryCrossfade = prevCf;
+            st.foundryCrossfade = prevCf;
             if (!mat?.userData?.impostorBillboard) return { err: "kein Billboard-Stoff" };
             // die Kante: deckend, wo u + v > 1 (Ansichts-Koordinaten) — im Welt-Quad (8 × 8 m) die Diagonale x + y = 4; `stufe`
             // malt sie in Stufen von stufe × 2·stufe Texeln (der Selbsttest)
@@ -531,7 +531,7 @@ async function vergroessertProbe(page, fmtWunsch) {
                 const rt = new T.RenderTarget(W, H);
                 ren.setRenderTarget(rt);
                 // der Wind ruht: die Probe misst die Karte, nie den Ausschlag des Augenblicks (die Treppe streute 0,248-0,372)
-                if (r.state.windUniforms) r.state.windUniforms.uWindStrength.value = 0;
+                if (st.windUniforms) st.windUniforms.uWindStrength.value = 0;
                 await ren.renderAsync(szene, cam);
                 const buf = await ren.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
                 let gleich = 0,
@@ -677,7 +677,7 @@ async function windProbe(page) {
                 return mesh;
             };
             wu.uWindDir.value.set(1, 0);
-            wu.uWindStrength.value = r.constructor.WEATHER_WIND_AMP;
+            wu.uWindStrength.value = AnazhRealm.WEATHER_WIND_AMP;
             wu.uWindTime.value = 3.0;
             for (const f of faelle) {
                 const ruhe = await schwerpunkt(baue(f.phi, f.s, false, f.stoff));

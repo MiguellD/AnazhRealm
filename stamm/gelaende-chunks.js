@@ -2974,11 +2974,21 @@ class AnazhRealm_gelaende_chunks {
         // der Ladeschirm auch steht. Bis dahin teilten beide Zähler und Uhr (jeder Neu-Ruf eines Stücks im Flug zählt), und nach
         // dem Umstellen verhungerte der Ring hinter dem Spieler (integ-CI 39514723735: wiese Ring 0 von 2 nach 2224 Takten). Bis
         // B-Blick baute er rundum in Ring-Reihe (GTX kalt: 40 von 122 Ring-Rufen außer Blick, p3/n2010/blick/f5.txt).
+        // DIE HÄLFTE AUSSER BILD GEHÖRT DEM LEERLAUF (w4-ankunft-2): unter dem Ladeschirm baut der Takt ein Stück außer Bild nur,
+        // wenn der Haupt-Faden seit dem letzten Takt Leerlauf hatte (`_ringLeerlauf`, gesetzt von einem Leerlauf-Ruf ohne Frist,
+        // `_imLeerlauf`: er kommt nur, wenn der Faden ruht). Trägt der Faden das Bild ganz (GTX kalt bis zum Bild 97 % belegt),
+        // wartet der Ring hinter dem Spieler auf den Nachlauf des Bilds (`_nachlaufTakt`, rundum); wartet das Bild auf die Fäden
+        // oder die GPU, baut er in ihrem Leerlauf — der Ring steht rundum, wie lange der Ladeschirm auch steht. Ein wartendes
+        // Stück hält den Strom wach. Bis hierher nahm die Hälfte außer Bild jedem Lade-Takt seine Kappe (GTX kalt, B-Blick:
+        // 40 Ring-Rufe, 10 Einbauten und 10 Saaten außer Blick, 0,94 s Haupt-Faden vor dem Bild).
         let [haelfte, n, t0, satt] = [null, 0, 0, false];
         const weiter = (frist) =>
             this._kappeOffen(++n, MAX_PER_FRAME, frist) &&
             this._kappeOffen(performance.now() - t0, FRAME_BUDGET_MS, frist);
         const [lade, halb, zellen] = [this._ladeTakt(), span * Math.SQRT1_2, []];
+        const leerlauf = lade && this._ringLeerlauf === true;
+        this._ringLeerlauf = false;
+        let draussen = 0;
         for (let r = 0; r <= ringRadius; r++)
             for (let dz = -r; dz <= r; dz++)
                 for (let dx = -r; dx <= r; dx++) {
@@ -3003,10 +3013,18 @@ class AnazhRealm_gelaende_chunks {
             if (existing) {
                 const currentLod = existingLod !== null ? existingLod : 0;
                 if (currentLod !== desiredLod && !existing.empty) {
+                    if (lade && !bild && !leerlauf) {
+                        draussen++;
+                        continue;
+                    }
                     this._rebuildVoxelChunk(cx, cz, desiredLod);
                     built++;
                     satt = !weiter(bild);
                 }
+                continue;
+            }
+            if (lade && !bild && !leerlauf) {
+                draussen++;
                 continue;
             }
             this._ensureVoxelChunkAt(cx, cz, desiredLod);
@@ -3015,9 +3033,18 @@ class AnazhRealm_gelaende_chunks {
             // Frame und Hälfte auch über Budget — sonst friert das Streaming ein.
             satt = !weiter(bild);
         }
+        // die Hälfte außer Bild wartet: der Leerlauf-Ruf (EINER zugleich) gibt dem nächsten Lade-Takt ihre Kappe
+        if (draussen && !this._ringLeerlaufBestellt) {
+            this._ringLeerlaufBestellt = true;
+            this._imLeerlauf(() => {
+                this._ringLeerlaufBestellt = false;
+                this._ringLeerlauf = true;
+            });
+        }
         this._pruneDistantVoxelChunks(playerPos);
-        // Ein Bau-Ruf (fertig, wartend oder verworfen) hält den Ring wach; die Chunk-Menge regt die Welt selbst.
-        this._standMeldet("strom", 1, false, built > 0);
+        // Ein Bau-Ruf (fertig, wartend oder verworfen) hält den Ring wach — auch ein Stück, das auf den Leerlauf wartet; die
+        // Chunk-Menge regt die Welt selbst.
+        this._standMeldet("strom", 1, false, built > 0 || draussen > 0);
         // DETERMINISMUS-BOGEN P3 — kein BVH-Pump/Watchdog mehr: die Spieler-Kollision
         // liest das Dichtefeld (`_stepCharacter`), das überall definiert ist (auch unter
         // ungebauten Chunks) → der Spieler kann nicht durchfallen, kein Sync-BVH-Anker nötig.

@@ -54,12 +54,12 @@ hauptLauf(async () => {
     const out = await page.evaluate(async () => {
         const res = {};
         await window.__weltDa(() => !(!r ||
-                !r.state ||
-                !r.state.scene ||
-                !r.state.playerMesh ||
-                !r.state.worldMeta));
-        if (!r || !r.state || !r.state.scene) return { fatal: "anazhRealm/scene kam nie" };
-        const F = r.constructor.FERN_RING;
+                !st ||
+                !st.scene ||
+                !st.playerMesh ||
+                !st.worldMeta));
+        if (!r || !st || !st.scene) return { fatal: "anazhRealm/scene kam nie" };
+        const F = AnazhRealm.FERN_RING;
         // je Schale ihre volle Geometrie (der Träger: das ganze Index-Muster); vor der Teilung (K16 Runde 3) je Schale ein Mesh
         const geosVon = (f) => f.geos || f.meshes.map((m) => m.geometry);
         // DAS EINE QUANTIL der Linse: p der sortierten Werte (am Rand geklemmt), leer NaN
@@ -77,14 +77,14 @@ hauptLauf(async () => {
             if (!(hs > 0)) return f.dist <= w ? 1 : 0;
             return Math.max(0, Math.min(f.dist + hs, w) - Math.max(f.dist - hs, -w)) / (2 * hs);
         };
-        const p0 = { x: r.state.playerMesh.position.x, z: r.state.playerMesh.position.z };
+        const p0 = { x: st.playerMesh.position.x, z: st.playerMesh.position.z };
 
         // ===== (4) HEADLESS-DEFAULT: ohne Hook entsteht KEIN Ring =====
         // (Hook sichern + wiederherstellen — die __anazhAutoSettlement-Disziplin.)
         const prevHook = window.__anazhFernRing;
         delete window.__anazhFernRing;
-        for (let t = 0; t < 5; t++) r._tickFernRing(r.state.playerMesh.position);
-        res.headlessQuiet = r.state.fernRing === null || r.state.fernRing === undefined;
+        for (let t = 0; t < 5; t++) r._tickFernRing(st.playerMesh.position);
+        res.headlessQuiet = st.fernRing === null || st.fernRing === undefined;
 
         // ===== Hook AN: der Ring entsteht in Scheiben aus dem Fern-Faden (B2) =====
         window.__anazhFernRing = true;
@@ -99,11 +99,11 @@ hauptLauf(async () => {
         ) => {
             let takte = 0;
             let maxD = 0;
-            let vor = r.state.fernRing ? r.state.fernRing.cursor : 0;
+            let vor = st.fernRing ? st.fernRing.cursor : 0;
             for (const weiter = window.__deckel("der Fern-Ring", ms / 16); weiter(); await sleep(16)) {
                 takt();
                 takte++;
-                const f = r.state.fernRing;
+                const f = st.fernRing;
                 if (f) [maxD, vor] = [Math.max(maxD, f.cursor - vor), f.cursor];
                 if (f && fertig(f)) break;
             }
@@ -112,13 +112,13 @@ hauptLauf(async () => {
         let ticks = 0;
         let maxDelta = 0;
         {
-            r._tickFernRing(r.state.playerMesh.position);
-            if (!r.state.fernRing) return { fatal: "Hook an, aber kein fernRing entstand" };
-            const b = await pumpe(r.state.playerMesh.position);
+            r._tickFernRing(st.playerMesh.position);
+            if (!st.fernRing) return { fatal: "Hook an, aber kein fernRing entstand" };
+            const b = await pumpe(st.playerMesh.position);
             ticks = b.takte + 1;
             maxDelta = b.maxD;
         }
-        const fr = r.state.fernRing;
+        const fr = st.fernRing;
         const frBau = fr;
         res.buildTicks = ticks;
         res.buildMaxDelta = maxDelta;
@@ -157,7 +157,7 @@ hauptLauf(async () => {
             fr.meshes.filter((m) => m.material === stoffe.naht).length === 1 &&
             fr.meshes.every((m) => m.material === stoffe.frei || m.material === stoffe.naht);
         res.sceneMeshes = 0;
-        r.state.scene.traverse((n) => {
+        st.scene.traverse((n) => {
             if (n.isMesh && n.userData && n.userData.inventar === "fern-ring") res.sceneMeshes++;
         });
         res.visible = fr.meshes.every((m) => m.visible === true);
@@ -167,7 +167,7 @@ hauptLauf(async () => {
         // verdeckt); gebaute Chunks decken ihn per Depth. deckZoneRad trägt die
         // Chunk-Ziel-Zone, in der die Reihen das VOLLE Gesetz gesenkt tragen.
         const cfg = r._voxelChunkConfig();
-        const targetRing = Math.max(1, Math.min(12, r.state.chunkRingRadius || 4));
+        const targetRing = Math.max(1, Math.min(12, st.chunkRingRadius || 4));
         res.innerRandOk =
             Math.abs(fr.schalen[0].inner - cfg.span * 0.5) < 1e-9 &&
             Math.abs(fr.deckZoneRad - (targetRing + 0.5) * cfg.span) < 1e-9;
@@ -190,7 +190,7 @@ hauptLauf(async () => {
             const ang = (ai / F.winkel) * Math.PI * 2;
             const sx = Math.round((fr.anchorX + Math.cos(ang) * rad) / sh.snap) * sh.snap;
             const sz = Math.round((fr.anchorZ + Math.sin(ang) * rad) / sh.snap) * sh.snap;
-            const wl = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
+            const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
             // DIE NAHT (K16, gespiegelt): die Lage zum Gebauten aus den acht Nachbarn der Schale (_chunkDecktRing ist die Quelle).
             const orte = (rr, aa) => {
                 const rd = sh.inner * Math.pow(sh.aussen / sh.inner, rr / (reihenSoll[s] - 1));
@@ -273,7 +273,7 @@ hauptLauf(async () => {
             // DER SPIEGEL DER PROBE AUS DER WELT: trägt der Ring um den Start kein Meer (das Flussnetz-Gelände liegt dort
             // über dem Spiegel — die Probe war leer), hebt die Probe den Spiegel auf das 10-%-Quantil seiner Höhen (die Regel ist
             // eine Funktion des Spiegels) und legt danach jeden so genässten Punkt mit dem alten Spiegel zurück.
-            const wl0 = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
+            const wl0 = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
             let wlW = wl0;
             {
                 const bis = Math.min(fr.totalVerts, fr.cursor);
@@ -287,12 +287,12 @@ hauptLauf(async () => {
                 if (nass0 < 50 && hs.length) wlW = quantil(hs, 0.1);
             }
             res.wasserSpiegel = { welt: +wl0.toFixed(2), probe: +wlW.toFixed(2) };
-            r.state.waterLevel = wlW;
-            const FW = r.constructor.FAR_WATER;
-            const fwAlt = r.state.farWater;
+            st.waterLevel = wlW;
+            const FW = AnazhRealm.FAR_WATER;
+            const fwAlt = st.farWater;
             const zaehlen = () => {
                 // je Punkt SEIN Spiegel (Meer, See, Fluss: `_fernNass` über die EINE Setz-Formel `_fernRingY`)
-                const hub = FW.drop + r.constructor._wasserHubM();
+                const hub = FW.drop + AnazhRealm._wasserHubM();
                 const aus = {};
                 let tal = Infinity;
                 let nass = 0,
@@ -324,7 +324,7 @@ hauptLauf(async () => {
                     }
             };
             try {
-                if (!fwAlt || !fwAlt.mesh) r.state.farWater = { mesh: { stellvertreter: true } };
+                if (!fwAlt || !fwAlt.mesh) st.farWater = { mesh: { stellvertreter: true } };
                 // der Spiegel der Probe nässt jenseits der Kacheln (dort ist er das Meer): die EINE Naht setzt die Punkte neu
                 if (wlW !== wl0) probeSpiegel(true);
                 fr.wasserTiefe = undefined;
@@ -337,8 +337,8 @@ hauptLauf(async () => {
                 res.wasserAlt = zaehlen();
             } finally {
                 if (r._fernRingWasserTiefe !== tiefe0) delete r._fernRingWasserTiefe;
-                r.state.farWater = fwAlt;
-                r.state.waterLevel = wl0;
+                st.farWater = fwAlt;
+                st.waterLevel = wl0;
                 // die Punkte, die nur der Spiegel der Probe nässte, liegen wieder auf ihrem Gesetz
                 if (wlW !== wl0) probeSpiegel(false);
                 fr.wasserTiefe = undefined;
@@ -346,7 +346,7 @@ hauptLauf(async () => {
             }
             // der Hub liest das Gesetz: die Wind-Zeile hebt die Dünung, der Treiber (A12) das Kräuseln — beide doppelt heben
             // ihn im Verhältnis, jede allein hebt ihn (keine Zeile ist ein toter Zwilling)
-            const K = r.constructor, G0 = K.Gesetz, W0 = K.WASSER_WELLE, WG = G0("terrain:WASSER_GESETZ", null);
+            const K = AnazhRealm, G0 = K.Gesetz, W0 = K.WASSER_WELLE, WG = G0("terrain:WASSER_GESETZ", null);
             const hubMit = (w, t) => {
                 K.Gesetz = (pfad, fb) => (pfad === "terrain:WASSER_GESETZ" ? { ...WG, wind: WG.wind.map((x) => x * w) } : G0(pfad, fb));
                 K.WASSER_WELLE = { ...W0, treiber: W0.treiber.map((x) => x * t) };
@@ -366,8 +366,8 @@ hauptLauf(async () => {
         let ticks2 = 0;
         let maxDelta2 = 0;
         {
-            r.state.playerMesh.position.x = p2.x;
-            r.state.playerMesh.position.z = p2.z;
+            st.playerMesh.position.x = p2.x;
+            st.playerMesh.position.z = p2.z;
             const refreshedBefore = fr.refreshed;
             const pos2 = { x: p2.x, z: p2.z };
             // DER HAUPT-FADEN RECHNET KEIN FERN-GESETZ (B2): während der Re-Anker eingehängt wird, zählt die Linse jeden Ruf
@@ -419,22 +419,22 @@ hauptLauf(async () => {
         // ===== (6) SICHT-BESITZ: Kamera-Weitung + Höhen-Öffnung + Rücknahme =====
         // Die Weitung geschah beim Pump (Ring wurde ready): far = Schale-3 + 500.
         const camFarWide = F.schalen[F.schalen.length - 1].aussen + 500;
-        res.camFar = r.state.camera.far;
+        res.camFar = st.camera.far;
         res.camFarWide = camFarWide;
         res.camFarAlt = r._fernRingCamFarAlt;
         res.camWidened =
-            r.state.camera.far === camFarWide &&
+            st.camera.far === camFarWide &&
             Number.isFinite(r._fernRingCamFarAlt) &&
             r._fernRingCamFarAlt < camFarWide;
         // Die RÜCKNAHME: der Dispose stellt das alte far wieder her (Ring-Besitz).
         const altVorDispose = r._fernRingCamFarAlt;
         r._fernRingDispose();
-        res.disposeRestored = r.state.camera.far === altVorDispose && r.state.fernRing === null;
+        res.disposeRestored = st.camera.far === altVorDispose && st.fernRing === null;
 
         // ===== (7) DER NEUBAU AUS DEM FADEN: nach dem Dispose entsteht der Ring wieder ganz (B2) =====
-        r._tickFernRing(r.state.playerMesh.position);
-        const fr7 = r.state.fernRing;
-        await pumpe(r.state.playerMesh.position);
+        r._tickFernRing(st.playerMesh.position);
+        const fr7 = st.fernRing;
+        await pumpe(st.playerMesh.position);
         res.fzCpuFertig = !!(fr7 && fr7.cursor >= fr7.totalVerts && fr7.ready === true);
 
         // ===== (8) DER FELD-PASS: die Ferne ganz ohne Schalen-Geometrie =====
@@ -443,14 +443,14 @@ hauptLauf(async () => {
         // Parität (Texel-Höhe == f64-Gesetz im Seh-Band), dann die ECHTE
         // Render-Probe: ein WebGPURenderer zeichnet den Fullscreen-Raymarch —
         // der Horizont MUSS Pixel treffen (Kompilat + Lauf + Treffer bewiesen).
-        const P8 = r.constructor.FELD_PASS;
-        let fp8 = r.state.feldPass;
+        const P8 = AnazhRealm.FELD_PASS;
+        let fp8 = st.feldPass;
         // SCHATTIERUNGS-PERSISTENZ: sichtbar erst mit gebackenem
         // PANORAMA (der Fragment-March ist tot, der Blick liest das Panorama) —
         // die Probe wartet auf Feld-Anstrich UND Panorama-Bake.
         for (const weiter = window.__deckel("Feld-Anstrich und Panorama", 900); (!fp8 || fp8.laeufe < 1 || !(fp8.panoLaeufe >= 1)) && weiter(); ) {
-            r._tickFernRing(r.state.playerMesh.position);
-            fp8 = r.state.feldPass;
+            r._tickFernRing(st.playerMesh.position);
+            fp8 = st.feldPass;
             await sleep(100);
         }
         res.fpDa = !!fp8;
@@ -461,9 +461,9 @@ hauptLauf(async () => {
         let fpWorst = -1;
         if (fp8 && fp8.laeufe >= 1) {
             fpWorst = 0;
-            const F8 = r.constructor.FERN_RING;
+            const F8 = AnazhRealm.FERN_RING;
             const rMin8 = F8.schalen[F8.schalen.length - 1].aussen;
-            const wl8 = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
+            const wl8 = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
             for (let k = 0; k < 40; k++) {
                 const ix = (k * 37) % P8.az;
                 const iy = (k * 11) % P8.rad;
@@ -509,14 +509,14 @@ hauptLauf(async () => {
             // Feldes (`l0c` an der Basis zur Probe noch 0, der Takt lief synchron), nie an der Luft.
             const ohne8 = await bild();
             const A8 = r._atmoLutBau();
-            const welt8 = r.state.renderer;
-            r.state.renderer = ren8;
+            const welt8 = st.renderer;
+            st.renderer = ren8;
             try {
                 r._atmoZeichne(A8.qT, A8.rtT);
                 r._atmoZeichne(A8.qMS, A8.rtMS);
                 r._atmoZeichne(A8.qSV, A8.rtSV);
             } finally {
-                r.state.renderer = welt8;
+                st.renderer = welt8;
             }
             ren8.setRenderTarget(rt8);
             const mit8 = await bild();
@@ -533,14 +533,14 @@ hauptLauf(async () => {
         // verworfen) und der Schwund-Takt löst ihn über WELT_SCHWUND_MS auf 0; ohne erscheint er sofort (0). Der Nebel
         // verdeckte solche Geburten bis V18.530 (ein fern gespawntes Tier ploppte sichtbar).
         try {
-            const fp8b = r.state.feldPass;
+            const fp8b = st.feldPass;
             if (fp8b && fp8b.mesh) fp8b.mesh.visible = true;
             const wm8 = r._weltMarchEnsure();
             const kasten = () => [{ box: true, c: { x: 0, y: 0, z: 0 }, h: { x: 1, y: 1, z: 1 } }];
             const hE = r._weltKapselSpawn("probe:einblenden", null, kasten, true);
             const hS = r._weltKapselSpawn("probe:sofort", null, kasten, false);
             const L8 = wm8.listeDaten;
-            const MS = r.constructor.WELT_SCHWUND_MS;
+            const MS = AnazhRealm.WELT_SCHWUND_MS;
             res.einStart = hE ? L8[hE.feld * 32 + 23] : -1;
             res.sofortStart = hS ? L8[hS.feld * 32 + 23] : -1;
             await sleep(MS / 2);
@@ -565,7 +565,7 @@ hauptLauf(async () => {
             const T9 = THREE;
             const gebaut9 = () => {
                 let n = 0;
-                for (const e of r.state.voxelChunks ? r.state.voxelChunks.values() : [])
+                for (const e of st.voxelChunks ? st.voxelChunks.values() : [])
                     if (e && !e.empty && e.mesh) n++;
                 return n;
             };
@@ -575,12 +575,12 @@ hauptLauf(async () => {
             // Stufen-Nähte 0 ↔ 1 ↔ 2 stehen im Satz (mit dem 5 × 5-Satz sah die Linse nur Stufe 0).
             const t09 = performance.now();
             const ziel9 = 3;
-            r.state.chunkRingRadius = ziel9;
-            r.state._activeRingRadius = ziel9;
+            st.chunkRingRadius = ziel9;
+            st._activeRingRadius = ziel9;
             let n9 = -1;
             let still9 = 0;
             for (let t = 0, weiter = window.__deckel("die Naht-Stufen im Ring 3", 20000); weiter(); t++) {
-                r.state._activeRingRadius = ziel9;
+                st._activeRingRadius = ziel9;
                 try {
                     r._gameLoopTick();
                 } catch {
@@ -593,7 +593,7 @@ hauptLauf(async () => {
                     still9 = t;
                 } else if (n >= (2 * ziel9 + 1) ** 2 || (n >= 9 && t - still9 > 60 && !r._weltOffen().chunks)) break;
             }
-            res.nahtStufen = [...r.state.voxelChunks.values()].reduce((a, e) => {
+            res.nahtStufen = [...st.voxelChunks.values()].reduce((a, e) => {
                 if (e && !e.empty && e.mesh) a[e.lod || 0] = (a[e.lod || 0] || 0) + 1;
                 return a;
             }, {});
@@ -611,14 +611,14 @@ hauptLauf(async () => {
                 return wbf.apply(this, a);
             };
             r._fernRingDispose();
-            const pos9 = r.state.playerMesh.position;
+            const pos9 = st.playerMesh.position;
             r._tickFernRing(pos9);
             await pumpe(pos9);
             // DIE DECK-WACHE SCHWINGT EIN: der Rand der Naht misst die Fläche des Feldes in der Wache, gedeckelt je
             // Takt (`_fernRingFeldY`, FERN_RING.feldJeTakt) — wie im Spiel nach jedem Anker: die Linse pumpt, bis jeder
             // Rand-Punkt sie trägt (höchstens 3 000 Takte), und nennt die Takte und die Kosten einer Spalten-Probe.
             {
-                const f9 = r.state.fernRing;
+                const f9 = st.fernRing;
                 const randOffen = () => {
                     if (!f9 || !f9.feldY || f9.zoneVerts === undefined) return -1;
                     let n = 0;
@@ -647,15 +647,15 @@ hauptLauf(async () => {
             }
             delete r._terrainGeologyAlbedo;
             delete r._wegeBodenFarbe;
-            const fr9 = r.state.fernRing;
+            const fr9 = st.fernRing;
             res.nahtStoffGeo = spion.geo;
             res.nahtStoffWege = spion.wege;
-            const cm = r.state.voxelChunkMaterial;
+            const cm = st.voxelChunkMaterial;
             const slots = (m) => ["colorNode", "normalNode", "roughnessNode", "outputNode"].filter((k) => m && m[k]);
             res.nahtSlotsChunk = slots(cm).join(",");
             const stoffNaht9 = fr9 && (fr9.stoffe ? fr9.stoffe.naht : fr9.material);
             res.nahtSlotsRing = slots(stoffNaht9).join(",");
-            r.state.scene.updateMatrixWorld(true);
+            st.scene.updateMatrixWorld(true);
             const ray = new T9.Raycaster();
             const ab = new T9.Vector3(0, -1, 0);
             const o9 = new T9.Vector3();
@@ -667,7 +667,7 @@ hauptLauf(async () => {
                 return h.length ? h[0].point.y : null;
             };
             const span9 = r._voxelChunkConfig().span;
-            const wl9 = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
+            const wl9 = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
             // die volle Schale 0 (der Träger, das ganze Index-Muster) — der Strahl trifft jedes ihrer Dreiecke, ob frei oder Naht
             const ringMesh = new T9.Mesh(geosVon(fr9)[0], new T9.MeshBasicMaterial({ side: T9.DoubleSide }));
             // DIE RING-HÖHE ÜBER EIN FACH-RASTER (8 m): der Strahl prüft nur die Dreiecke der Schale 0, deren Kasten den Punkt
@@ -743,9 +743,9 @@ hauptLauf(async () => {
             const lueckeOrte9 = [];
             let weicheMax9 = 0; // die größte Weiche des Saums an den Proben (m, senkrecht)
             const proben13 = []; // die Punkte der Loch-Probe für die Treue der Teilung (Band 13)
-            const weiche9 = Number(r.constructor.FERN_RING.nahtWeiche) || 0; // der Saum weicht dem Chunk in die Tiefe
+            const weiche9 = Number(AnazhRealm.FERN_RING.nahtWeiche) || 0; // der Saum weicht dem Chunk in die Tiefe
             const morphF =
-                r.state.atmoUniforms && r.state.atmoUniforms.geomorph ? r.state.atmoUniforms.geomorph.value : 0;
+                st.atmoUniforms && st.atmoUniforms.geomorph ? st.atmoUniforms.geomorph.value : 0;
             const morphMemo = new Map();
             const gemorpht = (m) => {
                 const A = m.geometry.attributes;
@@ -776,7 +776,7 @@ hauptLauf(async () => {
                 [0, 1],
                 [0, -1],
             ];
-            for (const [key, e] of r.state.voxelChunks) {
+            for (const [key, e] of st.voxelChunks) {
                 if (!e || e.empty || !e.mesh) continue;
                 const [cx, cz] = key.split(",").map(Number);
                 if (!r._chunkDecktRing((cx + 0.5) * span9, (cz + 0.5) * span9)) continue;
@@ -851,7 +851,7 @@ hauptLauf(async () => {
                 const decks = [];
                 for (let di = -1; di <= 1; di++)
                     for (let dj = -1; dj <= 1; dj++) {
-                        const en = r.state.voxelChunks.get(`${cx + di},${cz + dj}`);
+                        const en = st.voxelChunks.get(`${cx + di},${cz + dj}`);
                         if (!r._chunkGezeichnet(en)) continue;
                         decks.push(gemorpht(en.mesh));
                         if (en.lodStitchMesh) decks.push(en.lodStitchMesh);
@@ -1122,8 +1122,8 @@ hauptLauf(async () => {
             // dem Dach zur Deckung, Saison 1): der STREIFEN-INDEX = RMS der Sprünge zum Nachbarpunkt / RMS der Sprünge über
             // vier Punkte. Ein bandbegrenztes Bild steigt mit dem Abstand (glatt ≈ 0,25), ein gefaltetes Mosaik springt schon
             // am Nachbarn so weit wie über vier (≈ 1).
-            const dachRand = r.constructor.SCATTER.outerM;
-            const W9 = r.constructor.FERN_RING.winkel;
+            const dachRand = AnazhRealm.SCATTER.outerM;
+            const W9 = AnazhRealm.FERN_RING.winkel;
             const idxVon = (X) => {
                 let a1 = 0;
                 let a4 = 0;
@@ -1181,11 +1181,11 @@ hauptLauf(async () => {
             // 32-m-Land-Kachel gegen das Mittel der Dach-Deckung (4-m-Raster). SELBSTTEST: das alte Dach (die Geburt als Deckung,
             // phyto-core forestBestand.geburt) fällt rot.
             const H = 96;
-            const pp = r.state.playerMesh.position;
+            const pp = st.playerMesh.position;
             const x0 = Math.round(pp.x) - H;
             const z0 = Math.round(pp.z) - H;
             const N = 2 * H;
-            const F = r.constructor.FOREST;
+            const F = AnazhRealm.FOREST;
             const seedInt = r._forestSeedInt();
             const fd = r._effectiveFoliageDensity();
             const memo = new Map();
@@ -1217,7 +1217,7 @@ hauptLauf(async () => {
                     }
             const core = globalThis.__phytoCore;
             const fbm = (px, pz) => r._forestFbm(px, pz);
-            const wl = r.state.waterLevel;
+            const wl = st.waterLevel;
             let g = 0;
             let ng = 0;
             let a = 0;
@@ -1281,9 +1281,9 @@ hauptLauf(async () => {
         // Boden × (1 − c) + Spiegel × c (≤ 0,05 m; die Naht-Punkte tragen das Feld bzw. das volle Gesetz und zählen nicht).
         // Selbsttest: die alte Regel (kein Anteil, keine Senkung) verfehlt jeden deutlichen Fluss-Punkt.
         try {
-            const frW = r.state.fernRing;
-            await pumpe(r.state.playerMesh.position);
-            const wl = Number.isFinite(r.state.waterLevel) ? r.state.waterLevel : 0;
+            const frW = st.fernRing;
+            await pumpe(st.playerMesh.position);
+            const wl = Number.isFinite(st.waterLevel) ? st.waterLevel : 0;
             // die Erwartung je Punkt aus dem Fern-Faden: der Fluss-Anteil der Masche (Slot 7 mit Fuß) und das Land der Masche
             // (die Teile ohne Fluss-Anteil), an der Höhe, die der Ring dem Punkt gab
             const nW = frW.totalVerts;
@@ -1324,7 +1324,7 @@ hauptLauf(async () => {
             const fl = {};
             const land = new Float32Array(8);
             const randV = frW.teilung && frW.teilung.randV;
-            const saum = r.constructor.FERN_RING.saumDrop;
+            const saum = AnazhRealm.FERN_RING.saumDrop;
             for (let g = 0; g < frW.totalVerts; g++) {
                 const p = r._fernRingPunkt(frW, g);
                 r._atlasWaterLevelAt(p.x, p.z, -Infinity, aus);
@@ -1368,7 +1368,7 @@ hauptLauf(async () => {
             w.karteMitteFehl = 0;
             w.karteDanebenFehl = 0;
             w.karteFehlt = false;
-            const wk = r.state.wegeKarte;
+            const wk = st.wegeKarte;
             const fs1 = wk && wk.stufen[1];
             if (!fs1 || !fs1.fluss || !fs1.zentriert) w.karteFehlt = true;
             else {
@@ -1381,7 +1381,7 @@ hauptLauf(async () => {
                     const j = Math.floor((z - z0w) / t);
                     return i < 2 || j < 2 || i >= N - 2 || j >= N - 2 ? NaN : fs1.fluss.daten[j * N + i] / 255;
                 };
-                const K = r.state.hydrosphere && r.state.hydrosphere.kanal;
+                const K = st.hydrosphere && st.hydrosphere.kanal;
                 for (let o = 0; K && o < K.seg.length; o += window.__gelaendeCore.KANAL_FELDER) {
                     const [ax, az, bx, bz, hwA, hwB] = K.seg.subarray(o, o + 6);
                     const hw = (hwA + hwB) / 2;
@@ -1413,10 +1413,10 @@ hauptLauf(async () => {
         // er nichts mehr im Flug — [im Flug, Generation vorher, nachher, editFlug]. Bis heil-horizont setzte der Schnee-Takt die
         // Bestellung neben `_fernRingNeuBestellen` zurück: am Stamm 9e92be45 [1, 0, 1, 1], der Horizont stand nie mehr.
         try {
-            const f = r.state.fernRing;
-            const pos = r.state.playerMesh.position;
-            const phase = r.state.seasonPhase;
-            r._addVoxelEdit(f.anchorX + 300, r.state.terrainBaseHeight, f.anchorZ, 6, "fill");
+            const f = st.fernRing;
+            const pos = st.playerMesh.position;
+            const phase = st.seasonPhase;
+            r._addVoxelEdit(f.anchorX + 300, st.terrainBaseHeight, f.anchorZ, 6, "fill");
             r._tickFernRing(pos); // der Horizont-Takt bestellt die Ecken um den Edit
             res.horizont = [f.editFlug, f.gen | 0];
             r.setSeason(phase < 0.5 ? "winter" : "summer");
@@ -1427,7 +1427,7 @@ hauptLauf(async () => {
             res.horizont = [String(e15)];
         }
         r._fernRingDispose();
-        res.fpDisposed = r.state.feldPass === null || r.state.feldPass === undefined;
+        res.fpDisposed = st.feldPass === null || st.feldPass === undefined;
 
         // Hook wiederherstellen (sichern + wiederherstellen, nie löschen):
         if (prevHook === undefined) delete window.__anazhFernRing;
