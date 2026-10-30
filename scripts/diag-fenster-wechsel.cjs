@@ -24,7 +24,6 @@ const { statikServer, starteBrowser, uferStellen, laufUhr, pruefer } = require("
 const stammLib = require("./lib/stamm.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
-const PORT = Number(process.env.FENSTER_PORT || 4574);
 const GROESSEN_ZIELE = /Destroyed texture \[Texture "(szene:tiefenabbild|spiegel:strahl)"\]/;
 const LESER_NEUBAU = /_tiefenKnotenTausch|_tiefenLeserNeuBinden|_ensureHydroSurfaceMaterial|_feldPassDispose|hydroSurfaceMaterial\s*=/;
 const server = statikServer();
@@ -108,7 +107,7 @@ async function fensterSchritt(o) {
         stammLib.fehlt(RESIZE_KOPF, LESER_NEUBAU)
     );
     console.log("=== E — der echte Frame mit laufendem Loop (WebGPU auf swiftshader, kienspan, Kappe 1,25, am Bach) ===");
-    await server.lausche(PORT);
+    await server.lausche(0);
     // Erwartet: ES erntet ein Größen-Ziel — die Linse richtet die Meldung selbst (je Phase gezählt), jede andere bleibt ROT.
     const browser = await starteBrowser({ art: "linse", frist: 900000, erwartet: GROESSEN_ZIELE });
     try {

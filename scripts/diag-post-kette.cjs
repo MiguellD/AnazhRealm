@@ -33,7 +33,7 @@
 //       nicht schwarz — der Kontrast fadet zur Nacht aus wie die Entgrauung (25c).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Shader-Kosten-Linse an gebauten WGSL-Stücken und das
 // Urteil über einen grünen Lauf und je einen injizierten Täter — jeder fällt rot und wird genannt.
-//   node scripts/diag-post-kette.cjs [--selftest]   (npm run gate:post-kette; Port POST_KETTE_PORT, Standard 4583)
+//   node scripts/diag-post-kette.cjs [--selftest]   (npm run gate:post-kette)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
@@ -346,7 +346,6 @@ if (process.argv.includes("--selftest")) {
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");
 
-const PORT = Number(process.env.POST_KETTE_PORT) || 4583;
 const server = statikServer();
 
 // (f) DER SAUM AUF UNGERADER LEINWAND (Seiten-Kontext, nach `buehne`; die Seite steht auf einer ungeraden Größe): das Wasser
@@ -422,10 +421,7 @@ function saumProbe(ort) {
                 r._szeneTiefeWert = wert;
                 r._tiefenKnotenTausch();
             }
-            const L = (u, x, y) => {
-                const i = (y * W + x) * 4;
-                return 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
-            };
+            const L = (u, x, y) => luma709(u, (y * W + x) * 4);
             // je Zeile der rechten Hälfte die linke Kante des Pfahls (das erste schwarze Pixel nach Wasser), das Wasser-Pixel
             // links davon: beide Aufnahmen
             let kanten = 0,
@@ -750,7 +746,7 @@ function buehne(nFrames, nachtLicht) {
                 setzeKamera();
                 const { u8 } = await window.__ausgabeAufnahme(32, 24, 1, { satz: "messung" });
                 let s = 0;
-                for (let i = 0; i < u8.length; i += 4) s += 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
+                for (let i = 0; i < u8.length; i += 4) s += luma709(u8, i);
                 return { luma: +(s / (u8.length / 4)).toFixed(1), k: rend.toneMappingExposure, nacht: nachtU ? nachtU.value : null };
             };
             try {
@@ -787,7 +783,7 @@ function buehne(nFrames, nachtLicht) {
     console.log(
         "=== POST-KETTE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan): Weiche · Tiefe · Shader · Godrays ==="
     );
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 });

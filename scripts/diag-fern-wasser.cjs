@@ -11,7 +11,6 @@
 // gefallene Weiche = Verifikation von Existenz statt Konsum).
 // (Das ältere `diag-far-water.cjs` ist die H3-Region-Gate-Diagnose — ein ANDERES Werkzeug.)
 const { statikServer, starteBrowser, warteAufWelt } = require("./lib/welt-boot.cjs");
-const PORT = Number(process.env.FERN_WASSER_PORT || 4404);
 const server = statikServer();
 async function runOnce(browser, noFoundry) {
     const page = await browser.newPage();
@@ -200,7 +199,7 @@ async function runOnce(browser, noFoundry) {
 }
 
 (async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "null", frist: 240000 });
     const okAlt = await runOnce(browser, true);
     const okProd = await runOnce(browser, false);

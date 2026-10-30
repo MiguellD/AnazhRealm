@@ -20,7 +20,7 @@
 //       Mittel des Ausgabe-Bilds, zurückgestellt steht es bit-gleich wieder — drei Bilder EINES Frames, W9).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): das Urteil an gebauten Läufen — sauber grün, je Klasse ein
 // Täter beim Namen.
-//   node scripts/diag-ziel-zensus.cjs [--selftest]   (npm run gate:ziel-zensus; Port ZIEL_ZENSUS_PORT, Standard 4597)
+//   node scripts/diag-ziel-zensus.cjs [--selftest]   (npm run gate:ziel-zensus)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
@@ -163,7 +163,6 @@ const { FALTE_INSTALL, ZAEHLER_INSTALL } = require("./lib/draw-zaehler.cjs");
 const { ZERLEGE_INSTALL } = require("./lib/zerlege-linse.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
-const PORT = Number(process.env.ZIEL_ZENSUS_PORT) || 4597;
 const server = statikServer();
 
 // DIE SCHATTEN-BÜHNE (Seite): ein Richtungslicht mit einem r184-Schatten-Knoten, der durch die Hülle der Kaskaden geht
@@ -231,10 +230,7 @@ function karteOhneFarbe() {
             const px = await rend.readRenderTargetPixelsAsync(ziel, 0, 0, 64, 64);
             const u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
             const zeile = u8.length / 64;
-            const lum = (x, y) => {
-                const i = y * zeile + x * 4;
-                return 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
-            };
+            const lum = (x, y) => luma709(u8, y * zeile + x * 4);
             // Draufsicht (rechts = +x, Spalte = (x + 10) / 20 · 64, Zeile 32 = z 0): der Schatten bei x = −7,25 (Spalte 9),
             // freies Licht bei x = +6 (Spalte 51)
             const schatten = lum(9, 32),
@@ -284,7 +280,7 @@ function rundungProbe() {
                 const u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
                 const zeile = u8.length > W * 4 * H ? Math.ceil((W * 4) / 256) * 256 : W * 4; // WebGPU richtet Zeilen auf 256 Byte aus
                 let s = 0;
-                for (let i = 0, o = 0; i < W * H; i++, o = Math.floor(i / W) * zeile + (i % W) * 4) s += 0.2126 * u8[o] + 0.7152 * u8[o + 1] + 0.0722 * u8[o + 2];
+                for (let i = 0, o = 0; i < W * H; i++, o = Math.floor(i / W) * zeile + (i % W) * 4) s += luma709(u8, o);
                 m.push(s / (W * H));
             }
         } finally {
@@ -299,7 +295,7 @@ function rundungProbe() {
 
 (async () => {
     console.log("=== ZIEL-ZENSUS — die Wand am echten Frame (WebGPU auf swiftshader) ===");
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 });

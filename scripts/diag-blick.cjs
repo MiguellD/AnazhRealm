@@ -11,7 +11,6 @@ const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");
 const path = require("path");
 
-const PORT = Number(process.env.BLICK_PORT || 4461);
 const argOut = (() => {
     const i = process.argv.indexOf("--out");
     return i > 0 ? process.argv[i + 1] : root;
@@ -21,7 +20,7 @@ const W = 640,
 const server = statikServer();
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: W, height: H });
