@@ -989,3 +989,4 @@
 2026-10-30 13:51:27 takt25p-gtx profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K3#1,profiband.K5#1 OFFEN/OFFEN/OFFEN/OFFEN/OFFEN 10.3 · 5/5
 2026-10-30 13:51:47 z83-abab START 2 Zellen
 2026-10-30 14:00:14 z83-abab STORNO in stadt
+2026-10-30 14:00:24 schloss-blick-1 START 1 Stationen
