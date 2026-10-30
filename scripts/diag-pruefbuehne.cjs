@@ -38,7 +38,7 @@
 // Port: PRUEFBUEHNE_PORT (Default 4394). Exit 1 bei einem Wurf auf der Bühne, einem gehaltenen Akt, einer blinden
 // Kontrolle, einem Page-Error oder einem roten Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, argOpt: opt, pngDatei, booteWelt } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, argOpt: opt, pngDatei, booteWelt, weltTor } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -1026,21 +1026,8 @@ async function lichtLauf() {
     try {
         await phase("Laden", async (rest) => {
             await page.goto(url, { waitUntil: "domcontentloaded", timeout: rest });
-            const id = await page.evaluate(
-                async (json) => {
-                    await window.__weltDa((w) => w.importWorldBeside);
-                    if (!r || !r.importWorldBeside) return null;
-                    const res = r.importWorldBeside(json);
-                    if (!res.ok) return null;
-                    r.activeWorldSet(res.worldId);
-                    return res.worldId;
-                },
-                json,
-                rest
-            );
-            if (!id) throw new Error("die Bühne ließ sich nicht importieren");
+            await weltTor(page, json, Math.max(1, bis - Date.now()));
             zeit("die Bühne importiert");
-            await page.reload({ waitUntil: "domcontentloaded", timeout: Math.max(1, bis - Date.now()) });
         });
         await phase("Boot", async () => {
             const b = await booteWelt(page);
@@ -1647,27 +1634,9 @@ hauptLauf(async () => {
         ["buehne", false],
     ];
     if (SELBSTTEST) laeufe.push(["buehne", true]);
-    let importiert = false;
     for (const [welt, schein] of laeufe) {
-        if (welt === "buehne" && !importiert) {
-            const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
-            // Geboren wie im Spiel: importWorldBeside (Welt-Tor) + aktiv + Reload.
-            const id = await page.evaluate((json) => {
-                const res = r.importWorldBeside(json);
-                if (!res.ok) return null;
-                r.activeWorldSet(res.worldId);
-                return res.worldId;
-            }, json);
-            if (!id) throw new Error("die Bühne ließ sich nicht importieren");
-            importiert = id;
-        }
-        if (welt === "buehne") {
-            // jeder Bühnen-Lauf auf frischer Bühne (der Schein-Lauf erbt nichts vom sauberen)
-            await page.evaluate((id) => {
-                r.activeWorldSet(id);
-            }, importiert);
-            await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
-        }
+        // jeder Bühnen-Lauf auf frischer Bühne, geboren wie im Spiel durch die Tür (der Schein-Lauf erbt nichts vom sauberen)
+        if (welt === "buehne") await weltTor(page, JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8")), 60000);
         const b = await booteWelt(page);
         if (!b.ok) {
             console.log(`  ⛔ Welt ${welt}: Boot nicht bereit nach 120 s`);

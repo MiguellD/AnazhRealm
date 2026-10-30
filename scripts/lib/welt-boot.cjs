@@ -1157,6 +1157,27 @@ function booteWelt(page, name = "der Boot der Welt") {
     }, name);
 }
 
+// DIE TÜR DER WELT (Ring 8: ein Welt-Wechsel ist ein Reload) — die EINE Stelle, an der eine Linse die Welt ihrer Seite wechselt:
+// durch die Tür des Spiels, `welt` als Snapshot (`importWorldBeside(welt, {reload: true})`: daneben gelegt) oder als liegende
+// worldId (`switchToWorld`), beide über `_weltWechselNeuLaden` (die Sperre, der Zeiger, der Speicher-Faden still, der Reload),
+// bis die neue Seite lädt → ihre worldId. Bis heil-glanz setzten fünf Linsen den Zeiger selbst und luden selbst neu: ein
+// Leerlauf-saveState der alten Seite dazwischen setzte ihn auf die lebende Welt zurück (`saveState` → `activeWorldSet`), und
+// die Prüfbühne erwachte als Wildnis (CI 40970322757) — die Tür-Wand im Selbsttest nennt jeden eigenen Zeiger.
+async function weltTor(page, welt, frist = 120000) {
+    const neu = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: frist });
+    const res = await page.evaluate(async (w) => {
+        const r = await window.__weltDa();
+        if (typeof w !== "string") return r.importWorldBeside(w, { reload: true });
+        return r.switchToWorld(w, { reload: true }) ? { ok: true, worldId: w } : { ok: false, reason: `keine Welt ${w}` };
+    }, welt);
+    if (!res || !res.ok) {
+        neu.catch(() => {});
+        throw new Error(`die Tür der Welt öffnete nicht: ${(res && res.reason) || "kein Ergebnis"}`);
+    }
+    await neu;
+    return res.worldId;
+}
+
 // ZWEI SEITEN IM MESH (smoke-webrtc · smoke-copresence): save- und signaling-server auf den eigenen Ports (`eigenePorte` der
 // Variablen portEnv, signalEnv), im Browser des Aufrufers (sein Rezept) die Seiten A und B (1024×640); beide laden das Spiel, bis init
 // durchlief (`_gameLoopTick`: init wartet auf den IndexedDB-Vorlauf, BEVOR es die Welt wählt und die Auto-Verbindung prüft —
@@ -1324,6 +1345,7 @@ module.exports = {
     waitFor,
     zweiImMesh,
     booteWelt,
+    weltTor,
     werkbankTor,
     werkbankRuf,
     teilAus,
@@ -1468,6 +1490,17 @@ async function selbsttest() {
         "await new Promise((r) => setTimeout(r, 50));",
         "const s = (ms) => new Promise((ok) => { setTimeout(ok, Math.max(ms, 1) * Math.random()); });",
     ].filter(schlafZwilling).length;
+    // DIE TÜR-WAND: setzt ein Skript den Aktiv-Zeiger selbst (`activeWorldSet`), ist das ein Zwilling der EINEN Tür (`weltTor`); die
+    // Proben der Datenschicht prüfen den Zeiger selbst und laden nie neu
+    const tuerZwilling = (c) => /\.activeWorldSet\(/.test(c);
+    const tueren = code
+        .filter(([, c]) => tuerZwilling(c))
+        .map(([f]) => f)
+        .join(", ");
+    const DATENSCHICHT = "playtest/netz-p2p.cjs, playtest/speicher.cjs";
+    const gesetzt = ["r.importWorldBeside(j); r.activeWorldSet(id);", "window.anazhRealm.activeWorldSet(res.worldId);"].filter(
+        tuerZwilling
+    ).length;
     const sturzRuf = `require(${JSON.stringify(__filename)}).hauptLauf(async () => { throw new Error("__sturz"); }, () => console.error("__zuletzt"))`;
     const sturz = require("child_process").spawnSync(process.execPath, ["-e", sturzRuf], { encoding: "utf8" });
     await browser.close();
@@ -1513,6 +1546,10 @@ async function selbsttest() {
                 ) &&
                 seitenSchlaf === String(sleep),
             `eigene Schlafe neben sleep: ${schlaefer} (FREMD ${SCHLAF_FREMD}) · gepflanzt ${geschlafen}/2 gefasst · die Seite schläft mit ${seitenSchlaf}`,
+        ],
+        [
+            tueren === DATENSCHICHT && gesetzt === 2 && !tuerZwilling("await weltTor(page, json);"),
+            `eigene Welt-Wechsel neben weltTor (der Zeiger von Hand): ${tueren} (DATENSCHICHT ${DATENSCHICHT}) · gepflanzt ${gesetzt}/2 gefasst`,
         ],
         [ruhig.length === 0, `ruhig (0,8 s Block): keine Akte — ${ruhig.length ? ruhig[0].urteil : "keine"}`],
         [
