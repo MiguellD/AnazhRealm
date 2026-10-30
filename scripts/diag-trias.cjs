@@ -148,9 +148,8 @@ hauptLauf(async () => {
 
     // ===== Teil B: das Sticky-Experiment als Invariante (Browser) =====
     console.log("\n=== TEIL B: die LOD-Geschichte lebt (Browser, foundry-ON, Null-Renderer) ===");
-    const PORT = Number(process.env.TRIAS_PORT || 4443);
     const server = statikServer();
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 480000, zusatz: ["--disable-setuid-sandbox"] });
     await server.zeige(page, 30000);
 

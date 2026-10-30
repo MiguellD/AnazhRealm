@@ -7,7 +7,7 @@
 //   `BundleGroup` folgen `visible` erst nach `needsUpdate`;
 // - ein 8-Bit-Ziel quantisiert die lineare Albedo in 0,0039 — die Albedo-Schüsse lesen rgba16float.
 // Die Luma (Rec. 709) liest jede Linse aus abnahme-urteil (`luma709`; in der Seite global über ABNAHME_INSTALL).
-const { luma709, cielab } = require("./abnahme-urteil.cjs");
+const { luma709, cielab, linSrgb } = require("./abnahme-urteil.cjs");
 
 // DIE AUSWERTUNG beider Albedo-Linsen (Welt r184 und Labor r128 lesen DIESE Funktion): `hell`/`dunkel` sind lineare
 // RGBA-Werte (Float32, je Pixel 4), `deckung` die Alpha-Schwelle eines gezählten Pixels. Albedo = hell − dunkel (die
@@ -20,8 +20,7 @@ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
         const em = (dunkel[i * 4] + dunkel[i * 4 + 1] + dunkel[i * 4 + 2]) / 3;
         pix.push([a[0], a[1], a[2], em]);
     }
-    const srgb = (x) => (x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055);
-    const Y = (p) => 0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2];
+    const Y = (p) => luma709(p);
     const mittel = (arr) => {
         if (!arr.length) return null;
         const m = [0, 0, 0, 0];
@@ -59,7 +58,7 @@ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
             continue;
         }
         for (let c = 0; c < 3; c++)
-            img.data[o + c] = Math.round(255 * srgb(Math.min(1, Math.max(0, hell[o + c] - dunkel[o + c]))));
+            img.data[o + c] = Math.round(255 * linSrgb(Math.min(1, Math.max(0, hell[o + c] - dunkel[o + c]))));
         img.data[o + 3] = 255;
     }
     return {
@@ -808,16 +807,17 @@ function lichtBilanz() {
     })();
 }
 
-// DIE TAG-ACHSE IM BILD (S7, `werkbank licht --tag`): am Messort in Ego je Uhr (über den Pfad des Spielers) der Schuss aus dem
-// Ausgabe-Pfad: Sonnenhöhe, Belichtung des ersten Frames (`sofort`) und des stehenden Himmels (`frisch`), Luma, Leuchtdichte und
-// R/B der unteren Bildhälfte, das Licht des Orts ohne die Kamera (`licht`, die Karte); ein Spion zählt die Schreiber der Belichtung.
-const TAG_UHREN = [0, 0.15, 0.5, 0.65].flatMap((a) =>
-    a % 0.5 ? Array.from({ length: 11 }, (_, i) => +(a + 0.02 * i).toFixed(2)) : [a]
-);
-// `--kurz` (gate:tag-achse:echt): Mittag, Mitternacht und die Grobschritte um den Horizont
-const TAG_UHREN_KURZ = [0, 0.23, 0.25, 0.27, 0.5, 0.73, 0.75, 0.77];
+// DIE TAG-ACHSE IM BILD (licht.K1, `werkbank licht --tag`): am Messort in Ego je Uhr (über den Pfad des Spielers) der Schuss aus dem
+// Ausgabe-Pfad: Sonnenhöhe, Belichtung des ersten Frames (`sofort`) und des stehenden Himmels (`frisch`), aus der unteren
+// Bildhälfte Luma, Leuchtdichte Y (linear, ausgegeben), die Stufen der Szene X (je Pixel durch die Tonkurve zurück) und R/B;
+// mittags dazu die 18-%-Karte waagrecht 2,5 m vor dem Auge (ihre Luma, der Anker). Ein Spion zählt die Schreiber der
+// Belichtung. Die Uhr läuft die GANZE Bahn in 0,01, um den Horizont in 0,002 nach (`tagFeinUhren`).
+const TAG_UHREN = Array.from({ length: 100 }, (_, i) => i / 100);
+// `--kurz` (gate:tag-achse:echt): Mitternacht, Mittag, der Buckel 0,33, die Sonne 10° beider Seiten und der Horizont
+const TAG_UHREN_KURZ = [0, 0.25, 0.27, 0.28, 0.33, 0.5, 0.72, 0.73, 0.75];
 function tagKurve(o) {
     return (async () => {
+        const T = window.THREE;
         const rend = st.renderer;
         rend.setAnimationLoop(null);
         window.__buehne();
@@ -834,153 +834,164 @@ function tagKurve(o) {
             },
         });
         const lin = Array.from({ length: 256 }, (_, i) => srgbLin(i));
-        const W = o.w || 480,
-            H = o.h || 270;
+        // die Tonkurve zurück (Khronos PBR Neutral, BELICHTUNG.kurve): Fuß 6,25·x², darüber x − 0,04, die Schulter
+        const vor = (d) => (d < 0.04 ? Math.sqrt(d / 6.25) : d <= 0.76 ? d + 0.04 : 0.52 + 0.0576 / Math.max(1 - d, 1e-3));
+        const W = 480,
+            H = 270;
         const zeilen = [];
+        let karte = null;
         try {
             for (const u of o.uhren) {
                 if (st.world) st.world.timeOfDay = u;
                 if (r.setTimeOfDay(u, "human") !== true) throw new Error(`die Uhr nimmt den Spieler nicht (${u})`);
                 const sofort = k;
-                // die Leuchtquellen der Stunde blenden ein (`_leuchtTakt`, wie `werkbank bild --uhr`)
-                for (let i = 0; i < 20 && r._leuchtTakt; i++) {
+                // die Leuchtquellen der Stunde blenden ein (`_leuchtTakt`), bis jeder Platz des Pools steht
+                for (let i = 0, p; i < 20 && r._leuchtTakt; i++, await sleep(50)) {
                     r._leuchtTakt();
-                    await sleep(50);
+                    if ((p = r._leuchtPool) && p.blende.every((b, j) => b === +!!p.halter[j])) break;
                 }
                 await window.__weltStehtWarten();
-                const frisch = k;
                 const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
-                const s = [0, 0, 0, 0];
+                const s = [0, 0, 0, 0, 0];
                 let n = 0;
-                for (let i = Math.floor(H / 2) * W * 4; i < W * H * 4; i += 4, n++) {
+                for (let i = (H / 2) * W * 4; i < W * H * 4; i += 4, n++) {
                     s[0] += luma709(u8, i);
                     for (let c = 0; c < 3; c++) s[c + 1] += lin[u8[i + c]];
+                    s[4] += vor(luma709([lin[u8[i]], lin[u8[i + 1]], lin[u8[i + 2]]]));
                 }
-                const sd = r._sonnenRichtung();
-                const h = r._himmelsIrradianz();
-                const lum = (c, k) => k * luma709(c);
-                const licht = [st.directionalLight, st.hemiLight, st.ambientLight].reduce((E, l) => E + (l ? lum(l.color.toArray(), l.intensity) : 0), h ? lum(h.oben, Math.PI) : NaN);
                 const z = {
                     uhr: u,
-                    sonne: +((Math.asin(sd.y) * 180) / Math.PI).toFixed(2),
-                    licht: +licht.toPrecision(4),
+                    sonne: +((Math.asin(r._sonnenRichtung().y) * 180) / Math.PI).toFixed(2),
                     sofort: +sofort.toFixed(4),
-                    frisch: +frisch.toFixed(4),
+                    frisch: +k.toFixed(4),
                     hell: +(s[0] / n).toFixed(1),
-                    Y: +lum(s.slice(1), 1 / n).toPrecision(4),
+                    Y: +(luma709(s.slice(1)) / n).toPrecision(4),
+                    X: +(s[4] / n).toPrecision(4),
                     warm: +(s[1] / Math.max(s[3], 1e-9)).toFixed(3),
                 };
                 if (o.png) z.png = window.__png(u8, W, H);
                 zeilen.push(z);
+                if (u === 0.5) {
+                    // DER ANKER: die 18-%-Karte waagrecht, 2,5 m vor dem Auge, 0,6 m unter ihm, ohne Schatten — das Licht der Welt
+                    // durch die Belichtung und die Tonkurve, gezählt 3 Pixel in ihrer Mitte
+                    const cam = st.camera;
+                    const km = new T.Mesh(new T.PlaneGeometry(1, 1), new T.MeshStandardNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18), roughness: 1 }));
+                    km.position.copy(cam.position).addScaledVector(cam.getWorldDirection(new T.Vector3()).setY(0).normalize(), 2.5).y -= 0.6;
+                    km.rotation.x = -Math.PI / 2;
+                    st.scene.add(km);
+                    const q = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+                    st.scene.remove(km);
+                    const m = km.position.project(cam);
+                    const i0 = (Math.round(((1 - m.y) / 2) * H) * W + Math.round(((m.x + 1) / 2) * W)) * 4;
+                    karte = +((luma709(q, i0 - 4) + luma709(q, i0) + luma709(q, i0 + 4)) / 3).toFixed(1);
+                    km.geometry.dispose();
+                    km.material.dispose();
+                }
             }
         } finally {
             delete rend.toneMappingExposure;
             rend.toneMappingExposure = k;
         }
-        return { zeilen, schreiber, max: r.constructor.BELICHTUNG.max };
+        return { zeilen, schreiber, karte, bahn: o.uhren.length === 100 };
     })();
 }
 
-// DAS URTEIL DER TAG-ACHSE (rein): die Kamera folgt dem Licht des Orts, nie dem Bild (es trägt den Blick: die Sonne betritt
-// das Vordergras, +2 EV bei fester Belichtung). ROT:
-//   SPRUNG    ein Feinschritt (0,72° Sonne) der Belichtung über dem steilsten des Lichts. DAS GESETZ: das Auge folgt dem Licht
-//             mit p ≤ 1 (`BELICHTUNG.anpassung`), es überholt es nie; der steilste Schritt des Lichts liegt im Aufgang aus der
-//             Horizont-Luft (der Durchlass der Sonne wächst dort um 27 EV, ATMO_RECHNUNG), die Linse tastet dort immer nach;
-//   PUMPE     ein Grobschritt, in dem die Belichtung mit dem Licht (über `tol`) geht oder öffnet und das Bild über den Mittag
-//             hebt (am Scheitel tragen Gleitung und Licht einen Feinschritt gleich weit — die Richtung urteilt der Grobschritt);
-//   EINBRUCH  die Dämmerung unter der Nacht, oder Bild UND Karte (Belichtung × Licht) eines Feinschritts unter beiden Enden;
-//   HELLER die Dämmerung über dem Mittag · NACHT unlesbar oder über der Eichung · GOLD die Sonne nächst 6° nicht im Mittel
-//   `goldEV` oder eine Seite nicht dunkler und wärmer · ASYNC der erste Frame neben dem stehenden Himmel · SCHREIBER nicht EINER.
-const TAG_SOLL = { tol: 0.05, nachtasten: 0.5, nachtLuma: 22, tief: [-18, 15], gold: [3, 10], goldEV: [-1, -0.5], async: 0.05 };
-// die Nachtastung im Feinschritt 0,002: der Grobschritt einer Seite mit dem Bild über `nachtasten` EV und der Aufgang
+// DAS URTEIL DER TAG-ACHSE (rein) gegen das Soll der Karte licht.K1 — die Kamera folgt dem Licht des Orts, nie dem Bild. ROT:
+//   ANKER die 18-%-Karte mittags außerhalb Luma 110–130 · SPRUNG ein Schritt der Messung (0,01, um den Horizont 0,002) über
+//   0,1 EV · BUCKEL eine Stunde über Mittag + 0,15 EV · GOLD die Sonne 10° (je Seite zwischen ihren Zeilen gelesen) außerhalb
+//   −1 … −0,5 EV · WARM dort R/B unter 1,3 × Mittag · NACHT Mitternacht außerhalb −5 … −3 EV oder unter Luma 22 · REF die Stufen der Szene
+//   (X) über 0,3 neben der REF-Kurve (spec/farbe/tag-ref.json, je Knoten, dazwischen linear) · ASYNC der erste Frame neben dem
+//   stehenden Himmel · SCHREIBER nicht EINER · BLIND ohne Mittag und Mitternacht. Das EV ist das des Ausgabe-Bilds (Y). Trägt die
+//   Messung nicht die ganze Bahn (`bahn`: die 100 Uhren; `--kurz` ist die Wand gate:tag-achse:echt), urteilt sie die Mechanik der
+//   Kamera (`TAG_WAND`: Anker, Stetigkeit, EIN Schreiber); was die Szene antwortet, urteilt die Station über die ganze Bahn.
+const TAG_SOLL = { karte: [110, 130], sprung: 0.1, buckel: 0.15, gold: [-1, -0.5], warm: 1.3, nacht: [-5, -3], nachtLuma: 22, ref: 0.3, async: 0.05 };
+const TAG_WAND = /^(ANKER|SPRUNG|ASYNC|SCHREIBER|BLIND) /;
+// die Nachtastung im Feinschritt 0,002: jede Lücke einer Seite, deren Sonne im Fenster um den Horizont steht (−18 … 15°)
 function tagFeinUhren(zeilen) {
     return zeilen.flatMap((a, i) => {
         const b = zeilen[i + 1];
-        const auf = b && Math.min(Math.abs(a.sonne), Math.abs(b.sonne)) < 0.5 && Math.max(a.sonne, b.sonne) > 0;
-        const tasten = b && b.uhr - a.uhr < 0.021 && a.uhr % 0.5 && b.uhr % 0.5 && (auf || Math.abs(Math.log2(b.Y / a.Y)) > TAG_SOLL.nachtasten);
-        return tasten ? [1, 2, 3, 4, 5, 6, 7, 8, 9].map((j) => +(a.uhr + 0.002 * j).toFixed(3)) : [];
+        const drin = b && b.uhr - a.uhr < 0.021 && a.uhr % 0.5 && [a, b].some((x) => x.sonne >= -18 && x.sonne <= 15);
+        return drin ? Array.from({ length: Math.round((b.uhr - a.uhr) / 0.002) - 1 }, (_, j) => +(a.uhr + 0.002 * (j + 1)).toFixed(3)) : [];
     });
 }
 function tagKurveUrteil(welt) {
     const S = TAG_SOLL;
+    const R = require("../../spec/farbe/tag-ref.json").zeilen;
+    const stufen = (h) => {
+        const i = R.findIndex((x) => x[0] <= h);
+        return i < 1 ? R[Math.max(i, 0)][2] : R[i][2] + ((R[i - 1][2] - R[i][2]) * (h - R[i][0])) / (R[i - 1][0] - R[i][0]);
+    };
     const befunde = [],
         kurven = {};
     const ev = (a, b) => Math.log2(Math.max(a, 1e-9) / Math.max(b, 1e-9));
     const r2 = (v) => v.toFixed(2);
     for (const [ort, m] of Object.entries(welt)) {
-        const rot = (name, text) => befunde.push(`${name} ${ort}: ${text}`);
-        const z = new Map(((m && m.zeilen) || []).map((x) => [x.uhr, x]));
-        const [mittag, nacht] = [z.get(0.5), z.get(0)];
+        const alle = ((m && m.zeilen) || []).concat((m && m.fein) || []).sort((a, b) => a.uhr - b.uhr);
+        const rot = (name, text) => ((m && m.bahn) || TAG_WAND.test(name + " ")) && befunde.push(`${name} ${ort}: ${text}`);
+        const [mittag, nacht] = [0.5, 0].map((u) => alle.find((x) => x.uhr === u));
         if (!mittag || !nacht) {
             rot("BLIND", `ohne Mittag und Mitternacht (${(m && m.fehler) || "leer"})`);
             continue;
         }
         const e = (x) => ev(x.Y, mittag.Y);
-        const karte = (x) => ev(x.frisch * x.licht, mittag.frisch * mittag.licht);
-        const tief = (x) => x.sonne > S.tief[0] && x.sonne <= S.tief[1];
-        const grob = m.zeilen.filter((x) => x.uhr % 0.5);
-        const alle = grob.concat((m.fein || []).filter((x) => x.uhr % 0.5)).sort((a, b) => a.uhr - b.uhr);
-        const paare = (l, d) => l.slice(1).map((b, i) => [l[i], b]).filter(([a, b]) => Math.abs(b.uhr - a.uhr - d) < 1e-6);
-        const fein = paare(alle, 0.002);
-        const L = Math.max(...fein.map(([a, b]) => Math.abs(ev(b.licht, a.licht))));
-        kurven[ort] = `Licht steilster Feinschritt ${r2(L)} EV · ` + alle.map((x) => `${x.uhr}:${r2(e(x))}EV/k${x.frisch}/E${x.licht}`).join(" ");
-        if (!(L > 0)) rot("SPRUNG", "ohne Feinschritt blind");
-        for (const [a, b] of fein) if (Math.abs(ev(b.frisch, a.frisch)) > L) rot("SPRUNG", `Uhr ${a.uhr} → ${b.uhr} Belichtung ${r2(ev(b.frisch, a.frisch))} EV, Licht höchstens ${r2(L)}`);
-        const dunkel = Math.min(e(nacht), ...grob.filter((x) => x.sonne <= S.tief[0]).map(e));
-        for (const x of alle) if (tief(x) && e(x) < dunkel - S.tol) rot("EINBRUCH", `Uhr ${x.uhr} ${r2(e(x) - dunkel)} EV unter der Nacht`);
-        for (const [a, b] of paare(grob, 0.02)) {
-            const [dk, dl] = [ev(b.frisch, a.frisch), ev(b.licht, a.licht)];
-            if ((dk * dl > 0 && Math.abs(dl) > S.tol) || (dk > 0 && e(b) > S.tol && e(b) > e(a)))
-                rot("PUMPE", `Uhr ${a.uhr} → ${b.uhr} (Sonne ${b.sonne}°) Belichtung ${r2(dk)} EV, Licht ${r2(dl)} EV, Bild ${r2(e(b))} EV`);
-            for (const x of alle.filter((y) => y.uhr > a.uhr && y.uhr < b.uhr && [e, karte].every((f) => f(y) < Math.min(f(a), f(b)) - S.tol)))
-                rot("EINBRUCH", `Uhr ${x.uhr} ${r2(e(x))} EV im Loch zwischen ${a.uhr} und ${b.uhr}`);
+        const ref = (x) => ev(x.X, mittag.X) - stufen(x.sonne) + stufen(mittag.sonne);
+        kurven[ort] = `Karte ${m.karte} · ` + alle.map((x) => `${x.uhr}:${r2(e(x))}/${r2(ref(x))}`).join(" ");
+        if (!(m.karte >= S.karte[0] && m.karte <= S.karte[1])) rot("ANKER", `die 18-%-Karte mittags Luma ${m.karte}`);
+        alle.forEach((x, i) => {
+            const a = alle[i - 1];
+            if (a && x.uhr - a.uhr < 0.0105 && Math.abs(e(x) - e(a)) > S.sprung) rot("SPRUNG", `Uhr ${a.uhr} → ${x.uhr} ${r2(e(x) - e(a))} EV`);
+            if (e(x) > S.buckel) rot("BUCKEL", `Uhr ${x.uhr} (Sonne ${x.sonne}°) ${r2(e(x))} EV über dem Mittag`);
+            if (Math.abs(ref(x)) > S.ref) rot("REF", `Uhr ${x.uhr} (Sonne ${x.sonne}°) ${r2(ref(x))} Stufen neben der REF`);
+            if (Math.abs(ev(x.sofort, x.frisch)) > S.async) rot("ASYNC", `Uhr ${x.uhr} ${r2(ev(x.sofort, x.frisch))} EV`);
+        });
+        for (const s of [alle.filter((x) => x.uhr < 0.5), alle.filter((x) => x.uhr > 0.5)]) {
+            const i = s.findIndex((x, j) => j && (s[j - 1].sonne - 10) * (x.sonne - 10) <= 0);
+            const t = i > 0 && (10 - s[i - 1].sonne) / (s[i].sonne - s[i - 1].sonne || 1);
+            const [g, w] = i > 0 ? [e, (x) => x.warm].map((f) => f(s[i - 1]) + (f(s[i]) - f(s[i - 1])) * t) : [NaN, NaN];
+            if (!(g >= S.gold[0] && g <= S.gold[1])) rot("GOLD", `Sonne 10° ${r2(g)} EV`);
+            if (!(w >= S.warm * mittag.warm)) rot("WARM", `Sonne 10° R/B ${r2(w)} gegen ${mittag.warm} mittags`);
         }
-        for (const x of grob) if (tief(x) && e(x) > S.tol) rot("HELLER", `Uhr ${x.uhr} ${r2(e(x))} EV über dem Mittag`);
-        if (!(nacht.hell >= S.nachtLuma && nacht.frisch <= m.max + 1e-6)) rot("NACHT", `Luma ${nacht.hell}, Belichtung ${nacht.frisch}`);
-        const g = grob
-            .filter((x) => x.uhr < 0.5 && z.has(+(1 - x.uhr).toFixed(2)))
-            .map((x) => [x, z.get(+(1 - x.uhr).toFixed(2))])
-            .filter(([x, y]) => x.sonne + y.sonne >= 2 * S.gold[0] && x.sonne + y.sonne <= 2 * S.gold[1])
-            .sort(([a, b], [c, d]) => Math.abs(a.sonne + b.sonne - 12) - Math.abs(c.sonne + d.sonne - 12))[0];
-        const gold = g && (e(g[0]) + e(g[1])) / 2;
-        if (!(gold >= S.goldEV[0] && gold <= S.goldEV[1] && g.every((y) => y.warm > mittag.warm && e(y) < 0)))
-            rot("GOLD", g ? `Uhr ${g[0].uhr}/${g[1].uhr} ${r2(gold)} EV (${g.map((y) => r2(e(y)))}), R/B ${g.map((y) => y.warm)} gegen ${mittag.warm}` : "blind");
-        const asy = m.zeilen.concat(m.fein || []).filter((x) => Math.abs(ev(x.sofort, x.frisch)) > S.async);
-        if (asy.length) rot("ASYNC", asy.map((x) => `${x.uhr}: ${r2(ev(x.sofort, x.frisch))} EV`).join(", "));
+        if (!(e(nacht) >= S.nacht[0] && e(nacht) <= S.nacht[1] && nacht.hell >= S.nachtLuma)) rot("NACHT", `${r2(e(nacht))} EV, Luma ${nacht.hell}`);
         const n = Object.keys(m.schreiber || {});
         if (n.length !== 1) rot("SCHREIBER", n.join(", ") || "keiner");
     }
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde, kurven };
 }
 
-// DER SELBSTTEST DES TAG-URTEILS an GEMESSENEN Kurven (spec/farbe/tag-kurve.json): der Kopf grün, die Pumpe der Basis f5b66780
-// (Belichtung 2,78 → 4,57 mit der Sonne, das Bild 1,34 EV über dem Mittag) und jeder in den Kopf gespielte Täter beim Namen.
+// DER SELBSTTEST DES TAG-URTEILS an GEMESSENEN Kurven (spec/farbe/tag-kurve.json): am Kopf (Mess-Wiese) steht die Wand und die
+// Staffel nennt genau ihre offenen Posten (REF um die Sonne 10°, WARM), jeder in den Kopf gespielte Täter beim Namen (der Buckel
+// des Vorhers: S7, Radeon, Uhr 0,33 +0,94 EV über dem Mittag). DIE KURVE AUS DEM GESETZ (headless): die Stufen der Welt-Kamera (`_belichtungStufen`
+// aus dem Stamm, `ladeKlasse`) unter dem gemessenen Licht der REF gegen ihre Stufen je Knoten — die volle Adaption (Steigung 1,
+// Stufen 0) ist ROT beim Namen.
 function tagKurveSelbsttest() {
     const T = require("../../spec/farbe/tag-kurve.json");
-    const grob = (x) => TAG_UHREN.includes(x.uhr);
-    const kurve = (zeilen, fall) => {
-        const alle = zeilen.map((r) => Object.fromEntries(T.spalten.map((s, i) => [s, r[i]])));
+    const kurve = (q, fall) => {
+        const alle = q.zeilen.map((r) => Object.fromEntries(T.spalten.map((s, i) => [s, r[i]])));
         const z = (u) => alle.find((x) => x.uhr === u);
-        if (fall === "HELLER") z(0.73).Y = 0.3;
-        if (fall === "SPRUNG") z(0.26).frisch *= 1.5;
-        if (fall === "PUMPE") z(0.27).frisch *= 3;
-        if (fall === "EINBRUCH") (z(0.26).Y /= 4), (z(0.26).frisch /= 4);
-        if (fall === "BLICK") z(0.33).Y = 0.5; // die hohe Sonne im Gegenlicht: kein Urteil der Dämmerung
+        if (fall === "BUCKEL") z(0.33).Y = z(0.5).Y * 1.2;
+        if (fall === "SPRUNG") z(0.276).Y *= 1.2;
+        if (fall === "GOLD") z(0.276).Y = z(0.278).Y = z(0.5).Y;
+        if (fall === "REF") z(0.33).X *= 1.5;
         if (fall === "NACHT") z(0).hell = 10;
-        if (fall === "GOLD") z(0.27).Y = 0.12;
-        if (fall === "GOLD2") (z(0.27).Y = 0.118), (z(0.73).Y = 0.05); // das Mittel im Fenster, eine Seite über dem Mittag
-        if (fall === "ASYNC") z(0.73).sofort = 3;
-        const m = { zeilen: alle.filter(grob), fein: alle.filter((x) => !grob(x)), schreiber: { _dayNightApplyBelichtung: 1 }, max: 1.4 };
+        if (fall === "ASYNC") z(0.722).sofort *= 2;
+        const m = { zeilen: alle, schreiber: { _dayNightApplyBelichtung: 1 }, karte: fall === "ANKER" ? 170 : q.karte, bahn: fall !== "WAND" };
         if (fall === "SCHREIBER") m.schreiber._tickPortalMembranes = 1;
         if (fall === "BLIND") m.zeilen = [];
-        return tagKurveUrteil({ wiese: m });
+        return tagKurveUrteil({ wiese: m }).befunde.join();
     };
-    const faelle = ["HELLER", "SPRUNG", "PUMPE", "EINBRUCH", "NACHT", "GOLD", "GOLD2", "ASYNC", "SCHREIBER", "BLIND"];
+    const gesetz = (mutante) => {
+        const A = require("./stamm.cjs").ladeKlasse(__dirname + "/../..").AnazhRealm;
+        const R = require("../../spec/farbe/tag-ref.json").zeilen;
+        A.BELICHTUNG = Object.assign({}, A.BELICHTUNG, mutante);
+        return R.filter((x) => !(Math.abs(A._belichtungStufen(x[0], x[1] / R[0][1]) - x[2]) <= 0.005)).map((x) => `GESETZ Sonne ${x[0]}°`).join();
+    };
     return [
-        [kurve(T.kopf).urteil, "GRUEN"],
-        [kurve(T.kopf, "BLICK").urteil, "GRUEN"],
-        [kurve(T.basis).befunde.join(), /PUMPE wiese: Uhr 0\.25 → 0\.27 \(Sonne 7\.2°\) Belichtung 0\.72 EV.*PUMPE wiese: Uhr 0\.73 → 0\.75/],
-        ...faelle.map((f) => [kurve(T.kopf, f).befunde.join(" | "), new RegExp(`(^| \\| )${f.replace(/2$/, "")} wiese`)]),
+        [kurve(T.kopf, "WAND"), ""],
+        [kurve(T.kopf).replace(/ wiese:[^,]*/g, ""), "REF,REF,REF,REF,WARM,WARM"],
+        [kurve(T.kopf, "REF"), /REF wiese: Uhr 0\.33 /],
+        ...["ANKER", "SPRUNG", "BUCKEL", "GOLD", "NACHT", "ASYNC", "SCHREIBER", "BLIND"].map((f) => [kurve(T.kopf, f), new RegExp(`(^|,)${f} wiese`)]),
+        [gesetz(), ""],
+        [gesetz({ steigung: 1, stufen: [[10, 0], [-20, 0]] }), /GESETZ Sonne 10°/],
     ];
 }
 
@@ -2435,8 +2446,9 @@ function luftTiefeSelbsttest(R) {
 }
 
 // DIE EICHUNG DER TONKURVE (Lehre 21, F1): die Kurven von three (r184 TSL, r128 GLSL gleich) auf einem GRAUEN Eingang
-// (Belichtung × Leuchtdichte; die Farb-Matrizen von ACES halten Grau). `kartenEichung(kurve)` ist das k·L, das die 18-%-Karte
-// auf Mittelgrau + 1 EV legt: kurve(k·L / 2) = 0,18. Eine Kurve ohne Zeile hat keine Eichung (null) — die Linse nennt sie.
+// (Belichtung × Leuchtdichte; die Farb-Matrizen von ACES halten Grau). `kartenEichung(kurve, ev)` ist das k·L, das die 18-%-Karte
+// auf Mittelgrau + ev EV legt: kurve(k·L / 2^ev) = 0,18 — die Labore auf + 1 EV (die Albedo-Tafel), die Welt auf den Anker
+// des Mittags (ev 0, licht.K1). Eine Kurve ohne Zeile hat keine Eichung (null) — die Linse nennt sie.
 const TONKURVE_GRAU = {
     ACESFilmicToneMapping: (v) => {
         const x = v / 0.6;
@@ -2447,7 +2459,7 @@ const TONKURVE_GRAU = {
         return c < 0.76 ? c : 1 - (0.24 * 0.24) / (c + 0.24 - 0.76);
     },
 };
-function kartenEichung(kurve) {
+function kartenEichung(kurve, ev = 1) {
     const f = TONKURVE_GRAU[kurve];
     if (!f) return null;
     let lo = 0;
@@ -2457,7 +2469,7 @@ function kartenEichung(kurve) {
         if (f(m) < 0.18) lo = m;
         else hi = m;
     }
-    return 2 * lo;
+    return lo * 2 ** ev;
 }
 
 // DIE NÄSSE IM BILD (wetter.K2): eine Pose unter der Bühne klar · Regen frisch · Regen 10 min (`naesse: 600`); je Rasterpunkt
@@ -2618,10 +2630,15 @@ function naesseUrteil(welt) {
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde };
 }
 
-// DER KONTAKT-SCHATTEN (Seiten-Code): ein Pfosten 0,5 × 0,5 × 3 m (das EINE Stoff-Programm) 8 m voraus; je Pose
-// (ego 2 m quer, Auge 1,6 m · third 4,5 m, 2,6 m) drei Schüsse aus dem Ausgabe-Pfad ohne Bloom: A die Welt, B ohne Pfosten, C ohne
-// Sonne. Die Sonnen-Sicht f = (A − C)/(B − C), linear, quer zum Streifen `fuss` (und `fern`) Meter hinter dem Pfosten: je Kante die
-// Breite 10–90 % von f, der Median in cm.
+// DER KONTAKT-SCHATTEN (Seiten-Code): ein Pfosten 0,5 × 0,5 × 3 m (das EINE Stoff-Programm) auf der Platte `o.platte` der
+// Prüfbühne (spec/pruefbuehne/welt.json saat-s7-platte, 1,4 m dick, Oberkante über jedem Halm: der Boden-Stoff ohne Relief, nie
+// die Linse); je Pose (ego 2 m quer, Auge 1,6 m · third 4,5 m, 2,6 m) und Ziel drei Schüsse aus dem Ausgabe-Pfad ohne Bloom: A die
+// Welt, B ohne Pfosten, C ohne Sonne. Die Sonnen-Sicht f = (A − C)/(B − C), linear, quer zum Schatten s Meter hinter dem Pfosten,
+// je Punkt das Mittel längs der Kante (±2 cm: das Rauschen der gedrehten Vogel-Punkte fällt, die Breite ist die des Bilds nach der
+// zeitlichen Auflösung); je Linie zwei Kanten beidseits des Kerns, je Kante die Breite 10–90 % von f oder ihr Grund (`fleck` ·
+// `kern` · `rand`). `fuss` (s 0,05–0,3) trägt den Median, `zuwachs` (16 Linien bis 0,4 m vor die Spitze, die Kamera je 2 m) die
+// Gerade cm über L = Weg Werfer → Empfänger längs des Lichts (kleinste Quadrate), die Scheibe k / 0,688 (der 10–90-%-Halbschatten
+// der Sonnen-Scheibe ist 0,688 ihrer Breite: das Kreis-Segment).
 function kontaktSicht(o) {
     return (async () => {
         const [r, T] = [window.anazhRealm, window.THREE];
@@ -2632,24 +2649,14 @@ function kontaktSicht(o) {
         if (o.uhr !== 0.5) (r.setTimeOfDay(o.uhr, "human"), (r._himmelSprung = true), r._applyDayNightToScene());
         const PU = st.postProcessingUniforms;
         const [bloom0, I0, fov0, kam0] = [PU.bloomStrength.value, dl.intensity, cam.fov, cam.matrix.clone()];
-        const boden = (x, z) => r._bodenSichtAt(x, z) ?? r._voxelSurfaceY(x, z);
+        // die Krone der Platte: ihre Blocker-Box (das Netz, auf dem der Spieler steht), nie die Spec
+        const platte = st.architectures.find((a) => a.id === o.platte);
+        if (!platte?.blockerAABBs) return { fehler: `keine Platte „${o.platte}" auf der Bühne` };
+        const F = new T.Vector3(platte.position.x, platte.blockerAABBs[0].topY, platte.position.z);
         const S = dl.position.clone().sub(dl.target.position).normalize();
         const d = new T.Vector3(-S.x, 0, -S.z).normalize();
         const b = new T.Vector3(-d.z, 0, d.x);
         const laenge = 3 / Math.tan(Math.asin(Math.max(0.05, S.y)));
-        const rc = new T.Raycaster();
-        rc.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
-        // frei: kein Werfer kreuzt den Streifen zur Sonne
-        const fwd = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion).setY(0).normalize();
-        const F = st.playerMesh.position.clone().addScaledVector(fwd, 8);
-        for (let t = 0; t <= Math.min(laenge, 3.5); t += 0.5)
-            for (const u of [-0.9, 0, 0.9]) {
-                const q = F.clone().addScaledVector(d, 0.25 + t).addScaledVector(b, u);
-                q.y = boden(q.x, q.z) + 0.05;
-                rc.set(q, S);
-                if (rc.intersectObject(sc, true).some((h) => h.object !== st.playerMesh)) return { fehler: "der Ort des Pfostens liegt im Schatten" };
-            }
-        F.y = boden(F.x, F.z);
         const pf = new T.Mesh(new T.BoxGeometry(0.5, 3.3, 0.5), r._buildToonNodeMaterial({ color: new T.Color(0.4, 0.4, 0.4) }));
         pf.position.set(F.x, F.y + 1.35, F.z);
         pf.rotation.y = Math.atan2(d.x, d.z);
@@ -2658,8 +2665,7 @@ function kontaktSicht(o) {
         sc.add(pf);
         st.playerMesh.visible = false;
         PU.bloomStrength.value = 0;
-        const db = rend.getDrawingBufferSize(new T.Vector2());
-        const [W, H] = [db.x, db.y];
+        const { x: W, y: H } = rend.getDrawingBufferSize(new T.Vector2());
         const lin = Array.from({ length: 256 }, (_, i) => srgbLin(i));
         // PBR Neutral zurück (Versatz am kleinsten, Schulter am größten Kanal)
         const zurueck = (c) => {
@@ -2678,64 +2684,73 @@ function kontaktSicht(o) {
             }
             return L;
         };
+        const v = new T.Vector3();
+        const probe = (L) => {
+            const [x, y] = [((v.x + 1) / 2) * W - 0.5, ((1 - v.y) / 2) * H - 0.5];
+            const [x0, y0, fx, fy] = [Math.floor(x), Math.floor(y), x % 1, y % 1];
+            const g = (i, j) => L[(y0 + j) * W + x0 + i];
+            return (g(0, 0) * (1 - fx) + g(1, 0) * fx) * (1 - fy) + (g(0, 1) * (1 - fx) + g(1, 1) * fx) * fy;
+        };
         const aus = { uhr: o.uhr, sonneGrad: +((Math.asin(S.y) * 180) / Math.PI).toFixed(1), schattenM: +laenge.toFixed(2), posen: {} };
-        const ebenen = Object.assign({ fuss: [0.05, 0.1, 0.15, 0.2, 0.25, 0.3] }, laenge > 3.6 && { fern: [2.9, 3, 3.1] });
+        const ziele = {};
+        for (let i = 0; i < 22; i++) {
+            const s = i < 6 ? 0.05 * (i + 1) : 0.3 + ((laenge - 0.7) * (i - 5)) / 16;
+            if (i < 6 || s > 0.3) (ziele[s < 1 ? 0.25 : Math.floor(s / 2) * 2 + 1.25] ||= []).push(s);
+        }
+        // je Linie zwei Kanten beidseits des Kerns (h[0] Kern … Rand): gültig mit Kern ≤ 10 %, Rand ≥ 90 %, ohne Fleck; dunkle Flecken
+        // (< 1/5 des Sonnen-Anteils) tragen kein f, Lücken bis 3 cm überbrückt die Gerade
+        const kanten = (abc) => {
+            const sonne = abc.map(([, bb, c]) => bb - c).sort((x, y) => x - y)[abc.length >> 1];
+            const f = abc.map(([a, bb, c]) => (bb - c > 0.2 * sonne ? (a - c) / (bb - c) : NaN));
+            for (let i = 1, j; i < f.length; i = j + 1) {
+                for (j = i; j < f.length && f[j] !== f[j]; j++);
+                for (let k = i; k < j && j < f.length && j - i <= 10; k++) f[k] = f[i - 1] + ((f[j] - f[i - 1]) * (k - i + 1)) / (j - i + 1);
+            }
+            const m3 = f.map((x, i) => [f[i - 1] ?? x, x, f[i + 1] ?? x].sort((y, z) => y - z)[1]);
+            const k = m3.reduce((m, x, i) => (x === x && !(m3[m] <= x) ? i : m), -1);
+            return [m3.slice(0, k + 1).reverse(), m3.slice(k)].map((h) =>
+                k < 0 || h.some((x) => x !== x) ? "fleck" : !(h[0] <= 0.1) ? "kern" : !(h[h.length - 1] >= 0.9) ? "rand" : (h.filter((x) => x > 0.1 && x < 0.9).length * 3) / 10
+            );
+        };
         try {
             for (const [pose, ab, hoch] of [
                 ["ego", 2, 1.6],
                 ["third", 4.5, 2.6],
             ]) {
-                const ziel = F.clone().addScaledVector(d, 0.5);
-                ziel.y = boden(ziel.x, ziel.z);
-                cam.fov = 60;
-                cam.updateProjectionMatrix();
-                cam.position.copy(ziel).addScaledVector(b, ab).setY(ziel.y + hoch);
-                cam.lookAt(ziel);
-                cam.updateMatrixWorld(true);
-                const A = await schuss();
-                const png = o.png && o.u8.slice();
-                pf.visible = false;
-                const B = await schuss();
-                pf.visible = true;
-                dl.intensity = 0;
-                const C = await schuss();
-                dl.intensity = I0;
-                const v = new T.Vector3();
-                const probe = (L) => {
-                    const [x, y] = [((v.x + 1) / 2) * W - 0.5, ((1 - v.y) / 2) * H - 0.5];
-                    const [x0, y0, fx, fy] = [Math.floor(x), Math.floor(y), x % 1, y % 1];
-                    const g = (i, j) => L[(y0 + j) * W + x0 + i];
-                    return (g(0, 0) * (1 - fx) + g(1, 0) * fx) * (1 - fy) + (g(0, 1) * (1 - fx) + g(1, 1) * fx) * fy;
-                };
-                const p = (aus.posen[pose] = {});
-                for (const [ebene, liste] of Object.entries(ebenen)) {
-                    const breiten = [];
-                    let von = 0;
+                const linien = [];
+                for (const [z, liste] of Object.entries(ziele)) {
+                    const ziel = F.clone().addScaledVector(d, 0.25 + +z);
+                    cam.fov = 60;
+                    cam.updateProjectionMatrix();
+                    cam.position.copy(ziel).addScaledVector(b, ab).setY(F.y + hoch);
+                    cam.lookAt(ziel);
+                    cam.updateMatrixWorld(true);
+                    const A = await schuss();
+                    if (o.png && z === "0.25") aus.posen[pose] = { png: window.__png(o.u8.slice(), W, H) };
+                    pf.visible = false;
+                    const B = await schuss();
+                    pf.visible = true;
+                    dl.intensity = 0;
+                    const C = await schuss();
+                    dl.intensity = I0;
                     for (const s of liste) {
                         const abc = [];
-                        for (let u = -0.7; u <= 0.7; u += 0.003) {
-                            v.copy(F).addScaledVector(d, 0.25 + s).addScaledVector(b, u);
-                            v.y = boden(v.x, v.z);
-                            v.project(cam);
-                            abc.push([probe(A), probe(B), probe(C)]);
-                        }
-                        // dunkle Flecken (< 1/5 des Sonnen-Anteils) ohne f: Lücken bis 3 cm überbrückt die Gerade
-                        const sonne = abc.map(([, bb, c]) => bb - c).sort((x, y) => x - y)[abc.length >> 1];
-                        const f = abc.map(([a, bb, c]) => (bb - c > 0.2 * sonne ? (a - c) / (bb - c) : NaN));
-                        for (let i = 1, j; i < f.length; i = j + 1) {
-                            for (j = i; j < f.length && f[j] !== f[j]; j++);
-                            for (let k = i; k < j && j < f.length && j - i <= 10; k++) f[k] = f[i - 1] + ((f[j] - f[i - 1]) * (k - i + 1)) / (j - i + 1);
-                        }
-                        // je Linie zwei Kanten: die Punkte im Übergang 10–90 % halb; gültig mit Mitte ≤ 10 %, Enden ≥ 90 %
-                        const m3 = f.map((x, i) => [f[i - 1] ?? x, x, f[i + 1] ?? x].sort((y, z) => y - z)[1]);
-                        von += 2;
-                        if (m3.every((x) => x === x) && Math.min(...m3) <= 0.1 && m3[0] >= 0.9 && m3[m3.length - 1] >= 0.9)
-                            breiten.push(m3.filter((x) => x > 0.1 && x < 0.9).length * 0.15);
+                        for (let u = -0.7; u <= 0.7; u += 0.003)
+                            abc.push([A, B, C].map((L) => [-2, -1, 0, 1, 2].reduce((m, e) => (v.copy(F).addScaledVector(d, 0.25 + s + e / 100).addScaledVector(b, u).project(cam), m + probe(L) / 5), 0)));
+                        linien.push([s, +((0.25 + s) / Math.hypot(S.x, S.z)).toFixed(2), ...kanten(abc)]);
                     }
-                    breiten.sort((x, y) => x - y);
-                    p[ebene] = { halbschattenCm: breiten.length ? +breiten[breiten.length >> 1].toFixed(1) : null, kanten: 2 * breiten.length, von };
                 }
-                if (png) p.png = window.__png(png, W, H);
+                // der Fuß: der Median der gültigen Kanten; der Zuwachs: die Gerade w = a + k · L über alle
+                const P = linien.flatMap(([s, L, ...k]) => k.filter((w) => w >= 0).map((w) => [L, w, s]));
+                const fu = P.filter((q) => q[2] <= 0.3).map((q) => q[1]).sort((x, y) => x - y);
+                const mi = (i) => P.reduce((s, q) => s + q[i], 0) / P.length;
+                const k = P.reduce((s, [L, w]) => s + (L - mi(0)) * (w - mi(1)), 0) / P.reduce((s, [L]) => s + (L - mi(0)) ** 2, 0);
+                const Ls = P.map((q) => q[0]);
+                Object.assign((aus.posen[pose] ||= {}), {
+                    linien,
+                    fuss: { halbschattenCm: fu[fu.length >> 1], kanten: fu.length, von: 12 },
+                    zuwachs: { scheibeCmJeM: +(k / 0.688).toFixed(3), kanten: P.length, von: 2 * linien.length, wegM: Math.max(...Ls) - Math.min(...Ls) },
+                });
             }
         } finally {
             [dl.intensity, PU.bloomStrength.value, cam.fov, st.playerMesh.visible] = [I0, bloom0, fov0, true];
@@ -2746,30 +2761,36 @@ function kontaktSicht(o) {
             cam.updateProjectionMatrix();
             cam.updateMatrixWorld(true);
         }
-        aus.version = r.constructor.VERSION;
         return aus;
     })();
 }
 
-// DAS URTEIL: am Fuß der Median-Halbschatten ≤ 3 cm in Ego UND Third aus ≥ 6 gültigen Kanten je Pose;
-// `fern` (3 m hinter dem Pfosten) steht als Zahl daneben.
-function kontaktUrteil(m) {
+// DAS URTEIL: am Fuß der Median-Halbschatten ≤ 3 cm in Ego UND Third aus ≥ 6 gültigen Kanten je Pose (Staffel 1); mit
+// `zuwachs` (Staffel 2) dazu je Pose der Zuwachs der Scheibe 0,9 ± 0,25 cm je m (tan 0,53°) aus ≥ 75 % gültigen Kanten über
+// ≥ 1 m Weg — ein fester Filter-Kern (alle Kanten gleich breit) trägt 0, die Gründe der übrigen stehen je Linie in `linien`.
+function kontaktUrteil(m, zuwachs) {
     const befunde = m && !m.fehler ? [] : [(m && m.fehler) || "keine Messung"];
-    for (const pose of m && !m.fehler ? ["ego", "third"] : []) {
-        const fu = (m.posen[pose] || {}).fuss || { kanten: 0, von: 0 };
-        if (!(fu.kanten >= 6)) befunde.push(`${pose}: ${fu.kanten} von ${fu.von} Kanten gültig`);
-        if (!(fu.halbschattenCm != null && fu.halbschattenCm <= 3)) befunde.push(`${pose}: Halbschatten am Fuß ${fu.halbschattenCm} cm`);
+    for (const pose of befunde.length ? [] : ["ego", "third"]) {
+        const { fuss: f = { kanten: 0, von: 0 }, zuwachs: z = {} } = m.posen[pose] || {};
+        for (const [rot, b] of [
+            [!(f.kanten >= 6), `${f.kanten} von ${f.von} Kanten gültig`],
+            [!(f.halbschattenCm != null && f.halbschattenCm <= 3), `Halbschatten am Fuß ${f.halbschattenCm} cm`],
+            [zuwachs && !(z.kanten >= 0.75 * z.von && z.wegM >= 1), `Zuwachs aus ${z.kanten} von ${z.von} Kanten über ${z.wegM} m`],
+            [zuwachs && !(Math.abs(z.scheibeCmJeM - 0.9) <= 0.25), `Zuwachs ${z.scheibeCmJeM} cm je m (Soll 0,9 ± 0,25)`],
+        ])
+            if (rot) befunde.push(`${pose}: ${b}`);
     }
     return { urteil: befunde.length ? "ROT" : "GRUEN", befunde };
 }
 
 function kontaktSelbsttest() {
-    const p = (cm, kanten = 12) => ({ fuss: { halbschattenCm: cm, kanten, von: 12 } });
-    const U = (posen) => kontaktUrteil({ posen }).befunde.join();
+    const p = (cm, kanten = 12, zu = 0.93, zk = 32) => ({ fuss: { halbschattenCm: cm, kanten, von: 12 }, zuwachs: { scheibeCmJeM: zu, kanten: zk, von: 32, wegM: 8.5 } });
+    const U = (posen, z) => kontaktUrteil({ posen }, z).befunde.join();
     return [
-        [kontaktUrteil({ posen: { ego: p(2.1), third: p(2.8) } }).urteil, /^GRUEN$/],
+        [U({ ego: p(2.1), third: p(2.8) }, true), /^$/],
         [U({ ego: p(17.5), third: p(2.8) }), /^ego: Halbschatten am Fuß 17\.5 cm$/],
         [U({ ego: p(null, 0) }), /^ego: 0 von 12 Kanten gültig,ego: Halbschatten am Fuß null cm,third: 0 von 0/],
+        [U({ ego: p(2.1, 12, 0.05, 5), third: p(2.8) }, true), /^ego: Zuwachs aus 5 von 32 Kanten über 8\.5 m,ego: Zuwachs 0\.05 cm je m/],
     ]
         .filter(([ist, soll]) => !soll.test(ist))
         .map(([ist, soll]) => `${soll} ≠ ${ist}`);

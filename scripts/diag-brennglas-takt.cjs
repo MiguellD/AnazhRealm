@@ -31,13 +31,12 @@
 //   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Quell-Wand ist am Stamm grün und fällt bei einer eingeschleusten
 // Schleife, einem Schreiber ohne Stempel und einem fremden Hitze-Schreiber rot.
-//   node scripts/diag-brennglas-takt.cjs [--selftest]   (npm run gate:brennglas-takt; Port BRENNGLAS_TAKT_PORT)
+//   node scripts/diag-brennglas-takt.cjs [--selftest]   (npm run gate:brennglas-takt)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
-const PORT = Number(process.env.BRENNGLAS_TAKT_PORT || 4605);
 
 // DIE QUELL-WAND (AST, wie die Box-Wand in diag-blocker-netz): je Methode die Namen, die am BESTAND hängen (`this.state.architectures`,
 // ein Name für `this.state`, eine Destrukturierung, `|| []`, eine Kopie, `_blockerNetz().liste`), und die Namen, die an einem ZIEL
@@ -1366,7 +1365,7 @@ function urteil(S, stamm) {
 
 hauptLauf(async () => {
     const stamm = quellWand(stammLib.text(root));
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 300000 });
     await server.zeige(page, 60000);
     await page.evaluate(async () => {

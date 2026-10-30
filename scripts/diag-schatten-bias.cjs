@@ -23,7 +23,7 @@
 // aus dem Gesetz des Stamms (`_schattenBias`). Nach jedem castShadow-Wechsel zeichnet das Bundle neu (`_archMeshBundleTouch`).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Quell-Wand ist am Stamm grün und fällt bei einem fremden
 // Schreiber rot; das Urteil fällt bei leerem Schatten, vakuöser Probe, Akne und blinder Akne-Probe rot.
-//   node scripts/diag-schatten-bias.cjs [--selftest] [--echt] [--tag name]   (npm run gate:schatten-bias; Port SCHATTEN_BIAS_PORT)
+//   node scripts/diag-schatten-bias.cjs [--selftest] [--echt] [--tag name]   (npm run gate:schatten-bias)
 //   Umgebung (Werkplatz): SB_NUR=wolf,fuchs (Werfer) · SB_ZEITEN=0.32 · SB_OHNE_AKNE=1 · SB_VERSUCH='{"n":1,"d":1.5}'
 //   (der Bias der ganzen Probe: n/d in Texeln der Kaskade) · SB_AKNE_ZEITEN=0.28,0.32 · SB_DEBUG=1
 // ─────────────────────────────────────────────────────────────────────────
@@ -33,7 +33,6 @@ const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
-const PORT = Number(process.env.SCHATTEN_BIAS_PORT || 4607);
 const ECHT = process.argv.includes("--echt");
 const TAG = argOpt("--tag", "echt");
 const OUT = path.join(root, "artifacts", "schatten-bias", TAG);
@@ -346,7 +345,7 @@ async function probe(cfg) {
         biasAnwenden();
     };
     const grund = cfg.versuch ? Object.assign({ art: "versuch" }, cfg.versuch) : { art: "spiel" };
-    const lum = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
+    const lum = luma709;
     const kamSetzen = (k) => {
         const cam = st.camera;
         cam.position.set(k.px, k.py, k.pz);
@@ -1268,7 +1267,7 @@ async function probe(cfg) {
 hauptLauf(async () => {
     const Q = quellWand(stammLib.text(root));
     fs.mkdirSync(OUT, { recursive: true });
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({
         art: "echt",
         headless: false,

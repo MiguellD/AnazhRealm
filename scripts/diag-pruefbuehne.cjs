@@ -26,8 +26,8 @@
 //       der Farbton des Lichts des Feuers auf dem Boden 1–3 m (28–45° netto, die Farbtemperatur des Gesetzes) bei der
 //       Sättigung, die das Auge der Nacht sieht (≤ 0,75 brutto, K66); `--bild` legt die Bilder aus 2 m, aus 6 m und der
 //       Figur ab. Selbsttest: der Pool leer, das Feuer bis K11b (Glut-Palette, nacht 12), das Auge des Tages. DIE NACHT
-//       (D3-2, `S0_NACHT`): derselbe Boden ohne das Feuer um Mitternacht ist lesbar (Luma, abgesoffen). Selbsttest: der
-//       Himmel ohne Sternen-Licht. Dazu DER HIMMEL FOLGT DEM SPRUNG (K10, `himmelProbe`): nach Mittag und Mitternacht über
+//       (D3-2, `S0_NACHT`): derselbe Boden ohne das Feuer um Mitternacht ist lesbar (Luma, abgesoffen). Selbsttest: die
+//       Kamera der Nacht 2 Stufen tiefer (seit licht.K1 trägt sie die Nacht, nicht das Sternen-Licht). Dazu DER HIMMEL FOLGT DEM SPRUNG (K10, `himmelProbe`): nach Mittag und Mitternacht über
 //       den Pfad des Spielers trägt die Umgebung den Himmel des Orts (`_himmelsBestrahlung`). Selbsttest: der Maler taub.
 //       Die Dämmerung und die Belichtung über den Tag urteilt die Tag-Achse auf der Karte (gate:tag-achse:echt).
 //
@@ -38,7 +38,7 @@
 // Port: PRUEFBUEHNE_PORT (Default 4394). Exit 1 bei einem Wurf auf der Bühne, einem gehaltenen Akt, einer blinden
 // Kontrolle, einem Page-Error oder einem roten Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, argOpt: opt, pngDatei, booteWelt } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, argOpt: opt, pngDatei, booteWelt, weltTor } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -835,8 +835,7 @@ const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 1
 // DAS LICHT ADDIERT LINEAR (F1, die Foto-Kette): mit minus ohne Feuer je Kanal im LINEAREN Licht der Ausgabe (sRGB entschlüsselt),
 // der Rest wieder in sRGB — unter der Tonkurve Khronos PBR Neutral (linear bis zur Schulter, der Schwarzpunkt fällt in der
 // Differenz) ist das das Licht des Feuers auf dem Boden (die Differenz der sRGB-Werte zöge die Nacht nichtlinear ab).
-const s0Lin = (c) => (c / 255 <= 0.04045 ? c / 255 / 12.92 : Math.pow((c / 255 + 0.055) / 1.055, 2.4));
-const s0Srgb = (l) => (l <= 0.0031308 ? 12.92 * l : 1.055 * Math.pow(l, 1 / 2.4) - 0.055);
+const { srgbLin: s0Lin, linSrgb: s0Srgb } = require("./lib/abnahme-urteil.cjs");
 function s0TonNetto(e, ohne) {
     if (!e || !e.ton || !ohne || !ohne.ton) return null;
     const [R, G, B] = e.ton.rgb.map((c, i) => s0Srgb(Math.max(0, s0Lin(c) - s0Lin(ohne.ton.rgb[i]))));
@@ -926,8 +925,14 @@ async function himmelProbe(page, taub) {
 // DIE NACHT (D3-2, F6): der Boden 1–3 m um die Feuerstelle im Schuss OHNE ihr Licht (der Pool leer) ist um Mitternacht lesbar
 // (Luma ≥ 22, abgesoffen < 4 wie `bildMasse` ≤ 5 %): die Nacht ist ein Himmel mit Mond und Sternen-Licht in derselben Eichung
 // (Lehre 21, Ambient der EINEN Kette) — ohne das Sternen-Licht (`_atmoSternenLicht`, `ATMO_GESETZ.nacht.himmel`) streut nur der
-// Mond (Radeon: Luma 18,4 gegen 30,3). Der Schein „sterne" (Selbsttest) nimmt es, die Probe MUSS ihn nennen; den Kontrast der
-// Nacht wacht gate:post-kette (h), die Dämmerung die Tag-Achse.
+// Mond (Radeon: Luma 18,4 gegen 30,3). SEIT licht.K1 (w3v-licht) trägt die KAMERA die Nacht: unter `BELICHTUNG.gleitung[1]` (8°)
+// legt `_belichtungAusLicht` die 18-%-Karte auf zielKarte · 2^n (n die Stufen der Tag-Achse, −2,17 EV bei −20°) und teilt durch
+// dasselbe E, das den Boden beleuchtet — Belichtung × E ist konstant, ein Licht des Himmels mehr oder weniger ändert den Boden
+// nicht (die REF spec/farbe/tag-ref.json hält −2,17 EV bei 0,0963 lx wie bei 0,397 lx; CI swiftshader 29.10.: Boden 27,3 mit,
+// 27,0 ohne Sternen-Licht, die Umgebung 0,290 → 0,029). Der Schein „sterne" kann den Boden darum nie mehr schwärzen; der Schein
+// „kamera" (Selbsttest) legt die Stufen der Kamera 2 tiefer (linear × 1/4: Luma 27 → ~9 sRGB), die Probe MUSS
+// `_dayNightApplyBelichtung` nennen. Das Sternen-Licht selbst wacht die Umgebung (der Himmel folgt dem Sprung, unten), den
+// Kontrast der Nacht gate:post-kette (h), die Dämmerung die Tag-Achse.
 const S0_NACHT = { nacht: { luma: 22, schwarz: 0.05 } };
 function s0NachtUrteil(k, e, soll) {
     const b = [];
@@ -1026,21 +1031,8 @@ async function lichtLauf() {
     try {
         await phase("Laden", async (rest) => {
             await page.goto(url, { waitUntil: "domcontentloaded", timeout: rest });
-            const id = await page.evaluate(
-                async (json) => {
-                    await window.__weltDa((w) => w.importWorldBeside);
-                    if (!r || !r.importWorldBeside) return null;
-                    const res = r.importWorldBeside(json);
-                    if (!res.ok) return null;
-                    r.activeWorldSet(res.worldId);
-                    return res.worldId;
-                },
-                json,
-                rest
-            );
-            if (!id) throw new Error("die Bühne ließ sich nicht importieren");
+            await weltTor(page, json, Math.max(1, bis - Date.now()));
             zeit("die Bühne importiert");
-            await page.reload({ waitUntil: "domcontentloaded", timeout: Math.max(1, bis - Date.now()) });
         });
         await phase("Boot", async () => {
             const b = await booteWelt(page);
@@ -1165,9 +1157,9 @@ async function lichtLauf() {
                 })
             );
         // die Schüsse: das Feuer um Mitternacht (sauber), die Nacht ohne das Feuer (`S0_NACHT`, unten) — und im
-        // Selbsttest das Feuer bis K11b, die Nacht ohne ihr Sternen-Licht und das Auge des Tages. Die Nacht ohne Feuer ist
+        // Selbsttest das Feuer bis K11b, die Nacht unter der Kamera 2 Stufen tiefer und das Auge des Tages. Die Nacht ohne Feuer ist
         // zugleich der Schein „der Pool leer" (der Kreis fällt ohne das Feuer): EIN Schuss, zwei Urteile
-        const schuesse = ergebnis.sauber ? [] : [false, "nacht", ...(SELBSTTEST ? ["farbe", "sterne", "tag"] : [])];
+        const schuesse = ergebnis.sauber ? [] : [false, "nacht", ...(SELBSTTEST ? ["farbe", "kamera", "tag"] : [])];
         for (const schein of schuesse) {
             ergebnis[schein || "sauber"] = await phase(schein ? "Schuss " + schein : "Schuss", () =>
                 page.evaluate(async (schein, nahM, palette) => {
@@ -1189,18 +1181,17 @@ async function lichtLauf() {
                     const w = 640;
                     const h = 360;
                     const alt = r._leuchtTakt;
-                    const ohneFeuer = schein === "nacht" || schein === "sterne";
+                    const ohneFeuer = schein === "nacht" || schein === "kamera";
                     if (ohneFeuer)
                         r._leuchtTakt = function () {
                             alt.call(this);
                             for (const u of this.state.atmoUniforms.lichtLage) u.value.w = 0;
                         };
-                    // der Schein der Sterne: der Nachthimmel trägt kein eigenes Licht (das Sternen-Licht der EINEN Atmosphäre null,
-                    // wie bis D3-2) — der Schlüssel der Himmels-Sicht hängt an der Sonne: der Sprung über Mittag malt sie neu
-                    if (schein === "sterne") {
-                        r._atmoSternenLicht = () => [0, 0, 0];
-                        await uhr(0.5);
-                    }
+                    // der Schein der Kamera: die Stufen der 18-%-Karte 2 tiefer (`_belichtungStufen`, das EINE Glied der Kamera) —
+                    // die Uhr unten wendet die Belichtung an (`_dayNightApplyBelichtung`)
+                    const AR = r.constructor;
+                    const stufenAlt = AR._belichtungStufen;
+                    if (schein === "kamera") AR._belichtungStufen = (h, q) => stufenAlt.call(AR, h, q) - 2;
                     // der Farb-Schein: der Platz des Feuers leuchtet wie bis K11b — in der Glut-Palette (sRGB → linear) und mit
                     // der Nacht-Stärke von damals (nacht 12 statt des Datums) — die Farbe des Stoffs statt der Farbtemperatur
                     // der Tag-Schein: das Auge des Tages — die Post-Kette ohne das Auge der Nacht (`nightFactor` 0, volle
@@ -1267,11 +1258,10 @@ async function lichtLauf() {
                         }
                         // das Licht des Himmels im Schuss (der Täter der Nacht beim Namen): die Bestrahlung der Umgebung von oben
                         // und das Sternen-Licht der EINEN Atmosphäre (Zenit-Leuchtdichte, Welt-Einheiten) bei der Sonne des Schusses
-                        const L3 = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
                         const env = r._himmelsIrradianz();
                         const sonneY = r._dayNightSunDirection(r._sonnenWinkel(s.timeOfDay)).y;
-                        himmelL = env ? +(Math.PI * L3(env.oben)).toFixed(4) : null;
-                        sternL = +L3(r._atmoSternenLicht(sonneY)).toFixed(4);
+                        himmelL = env ? +(Math.PI * luma709(env.oben)).toFixed(4) : null;
+                        sternL = +luma709(r._atmoSternenLicht(sonneY)).toFixed(4);
                     } finally {
                         r._leuchtTakt = alt;
                         if (schein === "tag") {
@@ -1281,13 +1271,13 @@ async function lichtLauf() {
                         FC.lichtFlackern = flAlt;
                         objs.get = roh;
                         if (nahLos) nahZahl = nahLos();
-                        if (schein === "sterne") {
-                            delete r._atmoSternenLicht;
-                            await uhr(0.5); // der nächste Sprung in die Nacht malt ihren Himmel wieder mit dem Sternen-Licht
+                        if (schein === "kamera") {
+                            AR._belichtungStufen = stufenAlt;
+                            r._applyDayNightToScene();
                         }
                     }
                     const u8 = auf.u8;
-                    const lum = (i) => (0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2]) / 255;
+                    const lum = (i) => luma709(u8, i) / 255;
                     const v = new T.Vector3();
                     // je Ring rr (m) um die Feuerstelle 24 Winkel: der Boden-Punkt im Bild, je der 3×3 Pixel um ihn fn(i)
                     const ringe = (radien, fn) => {
@@ -1445,7 +1435,7 @@ async function lichtLauf() {
             sauber: "      ",
             nacht: "NACHT (ohne das Feuer)",
             farbe: "SCHEIN (das Feuer bis K11b)",
-            sterne: "SCHEIN (die Nacht ohne Sternen-Licht)",
+            kamera: "SCHEIN (die Kamera der Nacht 2 Stufen tiefer)",
             tag: "SCHEIN (das Auge des Tages)",
         }[k];
         console.log(
@@ -1562,15 +1552,15 @@ async function lichtLauf() {
         console.log(
             `  SELBSTTEST S0 HIMMEL (der Maler taub): ${taubGetroffen ? `getroffen — ${hb.find((b) => /Mitternacht/.test(b)).split(" — ")[0]}` : "BLIND " + JSON.stringify(hb)}`
         );
-        const st = ergebnis.sterne;
-        const sternTreffer =
-            st && !st.fehler ? s0NachtUrteil("nacht", st, S0_NACHT.nacht).find((b) => /`_atmoSternenLicht`/.test(b)) : null;
+        const st = ergebnis.kamera;
+        const kameraTreffer =
+            st && !st.fehler ? s0NachtUrteil("nacht", st, S0_NACHT.nacht).find((b) => /`_dayNightApplyBelichtung`/.test(b)) : null;
         console.log(
-            `  SELBSTTEST S0 NACHT (der Himmel ohne Sternen-Licht): ${sternTreffer ? "getroffen — " + sternTreffer.split(" — ")[0] + " — " + sternTreffer.split(" — ")[1].slice(0, 60) : "BLIND " + JSON.stringify(st && (st.grund || st.fehler))}`
+            `  SELBSTTEST S0 NACHT (die Kamera der Nacht 2 Stufen tiefer): ${kameraTreffer ? "getroffen — " + kameraTreffer.split(" — ")[0] + " — " + kameraTreffer.split(" — ")[1].slice(0, 60) : "BLIND " + JSON.stringify(st && (st.grund || st.fehler))}`
         );
         pass =
             pass && getroffen && farbGetroffen && tagGetroffen && grossGetroffen && nahGetroffen && liesGetroffen && wacheGetroffen;
-        pass = pass && taubGetroffen && !!sternTreffer;
+        pass = pass && taubGetroffen && !!kameraTreffer;
     }
     console.log(
         `\n${pass ? "✅" : "⛔"} S0 BILD ${pass ? "GRÜN: die Feuerstelle trägt den Feuerkreis aus 2 m in der Ausgabe" : "ROT"} (${Math.round((Date.now() - t0) / 1000)} s, ${ECHT ? "echte GPU" : adapter.fehlt || adapter.vendor + "/" + adapter.architecture} · Holz ${HOLZ})\n`
@@ -1647,27 +1637,9 @@ hauptLauf(async () => {
         ["buehne", false],
     ];
     if (SELBSTTEST) laeufe.push(["buehne", true]);
-    let importiert = false;
     for (const [welt, schein] of laeufe) {
-        if (welt === "buehne" && !importiert) {
-            const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
-            // Geboren wie im Spiel: importWorldBeside (Welt-Tor) + aktiv + Reload.
-            const id = await page.evaluate((json) => {
-                const res = r.importWorldBeside(json);
-                if (!res.ok) return null;
-                r.activeWorldSet(res.worldId);
-                return res.worldId;
-            }, json);
-            if (!id) throw new Error("die Bühne ließ sich nicht importieren");
-            importiert = id;
-        }
-        if (welt === "buehne") {
-            // jeder Bühnen-Lauf auf frischer Bühne (der Schein-Lauf erbt nichts vom sauberen)
-            await page.evaluate((id) => {
-                r.activeWorldSet(id);
-            }, importiert);
-            await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
-        }
+        // jeder Bühnen-Lauf auf frischer Bühne, geboren wie im Spiel durch die Tür (der Schein-Lauf erbt nichts vom sauberen)
+        if (welt === "buehne") await weltTor(page, JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8")), 60000);
         const b = await booteWelt(page);
         if (!b.ok) {
             console.log(`  ⛔ Welt ${welt}: Boot nicht bereit nach 120 s`);

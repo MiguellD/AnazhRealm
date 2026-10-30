@@ -30,8 +30,14 @@ async function kreaturProben(r, T, opts) {
     // Die Bühne je Probe: eigene Tier-Liste (die Welt-Tiere ruhen), der Spieler zurück, Modus und Gefühl zurück; `aufraeumen`
     // ist das Aufräumen der laufenden Bühne (die Proben laufen nacheinander), `decke` legt dorthin
     let aufraeumen = null;
+    // DAS START-DORF BLEIBT: die Bühne kehrt Tiere, Spieler und Uhr zurück, nie ein gewachsenes Dorf — wer auf derselben Seite
+    // nach einer Dorf-Probe (`startDorf`) läuft, misst in ihrem Dorf (folgen hinter begegnung: der Parcours vom Platz des
+    // Spielers durch die Häuser, main wie Zweig). Die Dorf-Proben laufen darum zuletzt (`DORF_PROBEN`), und eine Probe ohne
+    // eigenes Dorf dahinter ist ROT beim Namen (`__dorfVon`: die Probe, die es auf dieser Seite wachsen ließ)
+    const dorf = { probe: null, hier: false };
     const buehne = async (name, fn) => {
         if (nur && !nur.includes(name)) return;
+        Object.assign(dorf, { probe: name, hier: false });
         const altK = s.creatures;
         const altE = s.creatureEmotions;
         const altMax = s.maxCreatures;
@@ -47,7 +53,7 @@ async function kreaturProben(r, T, opts) {
         const altUhr = s.creatureAnimationTime;
         const altAi = r._creatureAiFrame;
         const altStroeme = r._faunaStroeme;
-        const altFelder = [s.lifeField, s.emotionField];
+        const altFelder = [s.lifeField, s.emotionField, s.faunaBestand];
         const altSpieler = Object.assign({}, s.player);
         // das Tempo des Spielers und die Spiel-Zeit samt dem Takt des Lebenszyklus kehren nach jeder Probe zurück
         const altTempo = [s.speed, s.sprintSpeed, s.jumpPower, s.spielZeit, s.faunaLifecycle];
@@ -59,8 +65,7 @@ async function kreaturProben(r, T, opts) {
         if (s.playerVel) s.playerVel.setValue(0, 0, 0);
         r._spielerLageAlt = null;
         s._herdContagionAcc = 0;
-        s.lifeField = undefined;
-        s.emotionField = undefined;
+        [s.lifeField, s.emotionField, s.faunaBestand] = [];
         s.creatureAnimationTime = 100;
         r._creatureAiFrame = 0;
         r._faunaStroeme = null;
@@ -68,6 +73,8 @@ async function kreaturProben(r, T, opts) {
         kamera(0, -1);
         try {
             aus[name] = await fn(restore);
+            if (window.__dorfVon && !dorf.hier)
+                aus[name] = { fehler: `${name} lief im Start-Dorf, das ${window.__dorfVon} wachsen ließ — die Dorf-Proben laufen zuletzt` }; // prettier-ignore
         } catch (e) {
             aus[name] = { fehler: String((e && e.stack) || e).slice(0, 600) };
         } finally {
@@ -103,8 +110,7 @@ async function kreaturProben(r, T, opts) {
             if (altVel && s.playerVel) s.playerVel.setValue(altVel[0], altVel[1], altVel[2]);
             r._spielerLageAlt = altLage;
             s._herdContagionAcc = altHerde;
-            s.lifeField = altFelder[0];
-            s.emotionField = altFelder[1];
+            [s.lifeField, s.emotionField, s.faunaBestand] = altFelder;
         }
     };
     // Ein Ort auf Land (nicht im Wasser), relativ zum Spieler.
@@ -767,6 +773,13 @@ async function kreaturProben(r, T, opts) {
         if (taeter === "riss") decke("_kreaturRiss", () => (c) => r._creatureCombatDeath(c, "jagd"));
         if (taeter === "jagd-schritt") schrittJagd();
         if (taeter === "riss-verloren") decke("_kreaturRiss", (alt) => (c, j) => r._kreaturNah(c) || alt.call(r, c, j));
+        // der Jäger, dessen Tier im Gesetz verhungert, fällt sofort — mitten in seinem Riss (28.10.: 9 von 10 Opfern ohne Maul)
+        if (taeter === "jaeger-faellt")
+            decke("_bestandTode", (alt) => (tode) => {
+                alt.call(r, tode);
+                for (const c of s.creatures.slice())
+                    if (c.userData._faelltNach) r._creatureNaturalDeath(c, c.userData._faelltNach, false);
+            });
         const nah = (c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < A.KREATUR_NAH_MESH.ein;
         const R = { nah: 0, mitJaeger: 0, risse: 0, gefallen: 0 };
         // ein Riss: der Lebenszyklus nennt ein Opfer, das noch kein Riss nannte (die offenen Risse fragt er mit ihrem Opfer)
@@ -2368,6 +2381,8 @@ async function kreaturProben(r, T, opts) {
     // die Siedlung des Start-Dorfs (`_bewohnerMelden`: sein Plan v2 und sein Ursprung) oder null
     const startDorf = async (restore) => {
         const [W, wm] = [window, s.worldMeta];
+        dorf.hier = true;
+        W.__dorfVon = W.__dorfVon || dorf.probe;
         const altHook = W.__anazhAutoSettlement;
         restore.push(() => {
             if (altHook === undefined) delete W.__anazhAutoSettlement;
@@ -2491,7 +2506,10 @@ async function kreaturProben(r, T, opts) {
                     // wechseln kein Ziel
                     if (b.ziel !== sp.ziel && ab(sp.ziel, b.ziel) >= 2) sp.n.add(((b.tagAb + 24) % 24).toFixed(4));
                     sp.ziel = b.ziel;
-                    const da = b.drinnen ? !b.hinaus : !b.ziel || (!b.drinnenSoll && ab(b.leib.position, b.ziel) < 1.5);
+                    // (am Steuer gehört der Leib dem Wagen: ob er steckt, urteilt der Verkehr — gate:fahr-leben VK `fest`)
+                    const da =
+                        b.amSteuer ||
+                        (b.drinnen ? !b.hinaus : !b.ziel || (!b.drinnenSoll && ab(b.leib.position, b.ziel) < 1.5));
                     if (da || Math.hypot(x - sp.ax, z - sp.az) >= 1) Object.assign(sp, { ax: x, az: z, seit: minute });
                     else if (minute - sp.seit >= 5 && !sp.steckt) stecken.push(wann(b));
                     // die Berührung: ein anderer Leib draußen näher als zwei Kapseln
@@ -3209,10 +3227,11 @@ const PROBEN = [
     "ferngang",
     "gestalt",
     "todlage",
-    "bewohner",
-    "begegnung",
     "tiersatz",
 ];
+// DIE DORF-PROBEN (`startDorf`): ihr Start-Dorf bleibt in der Welt der Seite — sie laufen nach allen anderen, auch nach den
+// Lebens-Proben (die Reihe des Laufs ist die Reihe von PROBEN, je Teil gefiltert)
+const DORF_PROBEN = ["bewohner", "begegnung"];
 function urteil(name, z) {
     if (!z) return { ok: false, grund: "keine Zahl" };
     if (z.fehler) return { ok: false, grund: z.fehler };
@@ -3695,6 +3714,7 @@ const TAETER = {
         ["jagd-schritt", /die Jagd hetzt nie: 0 von/],
         ["riss", /Riss ohne Jäger im Nah-Kreis: [1-9]/],
         ["riss-verloren", /im Übergang verloren: [1-9]/],
+        ["jaeger-faellt", /Riss ohne Jäger im Nah-Kreis: [1-9]/],
     ],
     herde: [
         ["herde", /am Blick/],
@@ -3788,7 +3808,7 @@ const TAETER = {
 
 module.exports = {
     KREATUR_PROBEN_SRC: kreaturProben.toString().replace("/* LEBEN_BUEHNEN */", () => LEBEN.BUEHNEN),
-    PROBEN: [...PROBEN, ...LEBEN.PROBEN],
+    PROBEN: [...PROBEN, ...LEBEN.PROBEN, ...DORF_PROBEN],
     TAETER: Object.assign(TAETER, LEBEN.TAETER),
     // die Probe mit EINEM Lauf im Selbsttest: alle ihre Täter in ihm, das Urteil je Täter an seiner Sicht (`sicht`)
     EIN_LAUF: ["bewohner", "begegnung"],

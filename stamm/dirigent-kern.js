@@ -953,18 +953,17 @@ class AnazhRealm {
         return m;
     }
 
-    // Läuft der Pass? Wasser im Feld UND der Wasser-Satz zeichnet im Hauptbild (Gebot 7: die Kosten folgen dem Schirm).
-    _spiegelWasserImBild() {
+    // Läuft der Pass? Das Feld steht (Fenster und Höchste) und der Szenen-Pass trägt sein Glanz-Ziel (material.K4): dann
+    // spiegelt jede glänzende Fläche durch ihn, Glas, Lack, Metall und Nässe wie das Wasser — bis material.K4 lief er nur, wo
+    // Wasser im Bild stand. Gebot 7: die Kosten folgen dem Schirm, ein Pixel ohne Glanz und ohne Wasser verlässt den Pass
+    // nach seiner Tiefe, seinem Glanz und vier Zellen. Der Wasser-Satz reist in die Signatur (`S.wasserSatz`, sein Stand).
+    _spiegelImBild() {
         const st = this.state;
         const S = st.spiegelFeld;
-        if (!S || !(S.wasser > 0) || !(S.hMax > -1e4) || !st.chunkSaetze) return false;
-        for (const s of st.chunkSaetze.values()) {
-            if (!s.spec || s.spec.name !== "wasserSatz") continue;
-            const a = s.abschnitte.get("haupt");
-            S.wasserSatz = s;
-            return !!(a && a.n > 0 && s.mesh && s.mesh.visible);
-        }
-        return false;
+        if (!S || !S.mitte || !(S.hMax > -1e4)) return false;
+        for (const s of st.chunkSaetze ? st.chunkSaetze.values() : [])
+            if (s.spec && s.spec.name === "wasserSatz") S.wasserSatz = s;
+        return !!(st.scenePass && st.scenePass._textures && st.scenePass._textures.glanz);
     }
 
     // NACH DEM BILD (`_loopRender`, nur auf der Post-Kette — der Szenen-Pass trägt die Tiefe des gezeichneten Wassers): der
@@ -976,7 +975,7 @@ class AnazhRealm {
         const st = this.state;
         const L = st.spiegelLeser;
         if (!L) return;
-        const an = !!st.scenePass && !st.spiegelBruch && this._spiegelWasserImBild();
+        const an = !!st.scenePass && !st.spiegelBruch && this._spiegelImBild();
         if (!an) {
             L.an.value = 0;
             return;
@@ -989,7 +988,10 @@ class AnazhRealm {
             // laut beim Namen (der EINE Melder), danach liest das Wasser den Himmel allein — nie still byte-alt
             st.spiegelBruch = true;
             L.an.value = 0;
-            this._stoffBruch("der Spiegel-Pass des Wassers (D10) — das Wasser spiegelt nur den Himmel", err);
+            this._stoffBruch(
+                "der Spiegel-Pass (D10, material.K4) — Wasser, Glas, Lack und Metall spiegeln nur den Himmel",
+                err
+            );
         }
     }
 
@@ -1824,7 +1826,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.129";
+AnazhRealm.VERSION = "18.546.132";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

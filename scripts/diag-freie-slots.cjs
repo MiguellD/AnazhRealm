@@ -28,13 +28,12 @@
 // lebenden Gruppe, Null-3×3), eine sichtbare leere Hülle, eine vertauschte Matrix (ein Umzug ohne Matrix) und eine
 // eingeschmuggelte `count`-Zeile in der Quelle, eine Senke ohne Abschied und ein Abschied im Graphen → jeder rot und beim
 // Namen genannt.
-//   node scripts/diag-freie-slots.cjs [--selftest]          (npm run gate:freie-slots; Port: FREIE_SLOTS_PORT)
+//   node scripts/diag-freie-slots.cjs [--selftest]          (npm run gate:freie-slots)
 "use strict";
 const { statikServer, hauptLauf, nullSeite, wandEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 
-const PORT = Number(process.env.FREIE_SLOTS_PORT || 4527);
 
 // ── Q: die Quelle über den EINEN Absenz-Helfer (`stammLib.fehlt`, kommentarfrei): keine `<x>.count =`-Zuweisung, deren
 //      Empfänger keine bekannte Nicht-Instanz-Zahl ist (Inventar-Slots, drawRange); `mesh.count =` NUR im Chokepoint
@@ -52,7 +51,7 @@ function quellBefunde(q) {
 
 async function welt() {
     const server = statikServer();
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 600000 });
     await page.evaluateOnNewDocument(installWieseSicht);
     await server.zeige(page, 60000);

@@ -3406,14 +3406,13 @@
     }
 
     // ===================== DIE KARTE (W6): der Codec des EINEN Karten-Atlas — rein, THREE-frei =====================
-    // Die Fernstufe einer Art ist EINE Schicht im Array-Atlas des Hosts, im Studio-Layout (bakeImpostorAtlas,
-    // __replyBakeImpostor): die V Ansichten VERTIKAL gestapelt, Zeilen bottom-up (GL-readPixels) — ohne Umdrehen
-    // ladbar. Transport-Schale (Mips + Kodierung im Worker, NICHT-LEERE-WAND vor der Platte) und Host (alphaTest,
-    // Schicht-Maße, NICHT-LEERE-WAND) lesen DIESES Gesetz; der Studio-Bäcker liefert Albedo und Normale in voller
-    // Auflösung (sein Labor-Wald bleibt byte-gleich):
+    // Die Fernstufe einer Art ist EINE Schicht im Array-Atlas des Hosts: die V Ansichten VERTIKAL gestapelt, wie der
+    // Welt-Renderer sie backt (S2, `_karteWeltBacken`: Zeile 0 oben). Die GPU-Ablage des Hosts (`KARTE_RECHNER_WGSL`: Mips,
+    // BC1/BC5) rechnet DIESES Gesetz, `impostorMips` ist es auf der CPU (die Linse liest es; die Kodierung der Transport-
+    // Schale fiel mit S2 — `karteKodiere` las niemand mehr):
     //   schwelle      Alpha-Schwelle: Binarisierung der Karte, Mip-Deckung und der alphaTest der Welt
     //   normalTeiler  die Welt-Normale liegt auf 1/normalTeiler der Albedo-Auflösung (weiche Licht-Modulation fern):
-    //                 der Codec mittelt die volle Studio-Normale als Vektor (normalMips) und beginnt dort
+    //                 die Ablage mittelt die volle Normale der Bühne als Vektor (KARTE_RECHNER_WGSL normalK) und beginnt dort
     //   minSeite      die Mip-Kette endet, bevor eine Ansicht unter 4 px fällt (BC-Block, keine Ansichten-Mischung)
     //   minOpak       die NICHT-LEERE-WAND: eine Karte mit weniger opaken Stufe-0-Texeln ist ein Bäcker-Fehler (Clear-
     //                 Pixel) — sie reist nie auf die Platte und wird nie Schicht
@@ -3426,6 +3425,8 @@
     //   lichtTeiler   die Sonnen-Sicht der Krone (A7, das Alpha der Studio-Normale) liegt auf 1/lichtTeiler der Albedo-
     //                 Auflösung als rg8 (Zenit, 45°-Kranz; F6), Stufe 0 (die GPU zieht die Mips) — ein weiches
     //                 Licht-Feld der Krone
+    //   saum          die Stärke des Saums der Art im Wahl-Schlüssel der Stufen (`karteSaum`): so weit verschiebt das Muster
+    //                 der Blattgröße die Deckung eines Rand-Texels
     var KARTEN_GESETZ = {
         schwelle: 0.34,
         normalTeiler: 2,
@@ -3434,6 +3435,7 @@
         glaette: 4,
         glaetteBis: 2,
         lichtTeiler: 4,
+        saum: 0.3,
     };
     // linear (0..1) → sRGB-Byte, und die Tabelle der 256 linearen Eingangs-Bytes
     function linZuSrgb8(x) {
@@ -3456,9 +3458,52 @@
         return Math.max(1, n);
     }
 
-    // Die Glätte-Gänge der deckungstreuen Mip-Stufe k — EINE Formel für die Kodierung im Kern und die GPU-Ablage des Hosts
+    // Die Glätte-Gänge der deckungstreuen Mip-Stufe k — EINE Formel für die Mips im Kern und die GPU-Ablage des Hosts
     function karteGlaetteGaenge(k) {
         return k <= KARTEN_GESETZ.glaetteBis ? KARTEN_GESETZ.glaette : 1;
+    }
+
+    // DER SAUM DER KARTE (w4-laub-saum, lod.K1): die Stufe wählte ihre deckenden Texel nach der GEGLÄTTETEN Deckung — der
+    // Umriss lief als Höhenlinie einer verwischten Krone, eine Hülle statt eines Saums (laub-kante: fimp:atlas:L2 0,2635 > 0,22,
+    // die Gestalten 0,16–0,19; gerastert liegt die Kohärenz des Karten-Umrisses 17–24 % über der ihrer eigenen L1). Über dem
+    // Kronen-Fuß wählt die Stufe nach der Deckung ihres Fußabdrucks selbst, und den Gleichstand am Rand bricht der Saum der Art:
+    // ein Zell-Muster in Stufe-0-Texeln der Ansicht, so groß wie ihr Blatt (`treeParams` leafSize der Nah-Stufe im Rahmen der
+    // Karte), nie feiner als zwei Texel der Stufe — Laub trägt runde Lappen (1 − F1), Nadel Grate zwischen den Büscheln
+    // (F2 − F1). Unter dem Kronen-Fuß wählt der Stamm wie bisher geglättet: er bleibt ganz oder fällt, nie als Perlenschnur. Je
+    // Ansicht decken weiter genau so viele Texel wie auf Stufe 0. Rückgabe { e (Stufe-0-Texel), nadel } oder null (keine Krone).
+    // Leser: der Wirt (`_karteWeltBacken` → die GPU-Ablage) und `impostorMips` (opt.saum).
+    function karteSaum(P, halfH, ch) {
+        return P && P.leafSize > 0 && halfH > 0
+            ? { e: (P.leafSize / (2 * halfH)) * ch, nadel: P.conifer === true }
+            : null;
+    }
+    // Der Hash des Saums (u32 — die GPU-Ablage rechnet ihn bitgleich)
+    function saumHash(ix, iy, s) {
+        let h = Math.imul(ix, 0x27d4eb2d) ^ Math.imul(iy, 0x165667b1) ^ Math.imul(s, 0x9e3779b9);
+        h = Math.imul(h ^ (h >>> 15), 0x85ebca6b);
+        h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+        return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+    }
+    // Das Muster des Saums an (X, Y) — Stufe-0-Texel der Ansicht, Zelle e — in 0..1: Laub 1 − F1, Nadel (F2 − F1) · 1,5
+    function karteSaumMuster(X, Y, e, nadel) {
+        const x = X / e,
+            y = Y / e,
+            x0 = Math.floor(x),
+            y0 = Math.floor(y);
+        let f1 = 9,
+            f2 = 9;
+        for (let j = -1; j <= 1; j++)
+            for (let i = -1; i <= 1; i++) {
+                const d = Math.hypot(
+                    x0 + i + saumHash(x0 + i, y0 + j, 1) - x,
+                    y0 + j + saumHash(x0 + i, y0 + j, 8) - y
+                );
+                if (d < f1) {
+                    f2 = f1;
+                    f1 = d;
+                } else if (d < f2) f2 = d;
+            }
+        return nadel ? Math.min(1, (f2 - f1) * 1.5) : Math.max(0, 1 - f1);
     }
 
     // Die Maße EINER Schicht je Format — Host (Array-Textur, Offsets) und Schale (Kodierung) rechnen damit:
@@ -3517,6 +3562,8 @@
     //            die Deckung an der Schwelle wie immer.
     //   glatt    die Alpha jeder tieferen Stufe ist die skalierte Deckung (Castaño): genau die gewählten Texel tragen
     //            die Schwelle, der Rest fällt stetig — die Kante liegt zwischen den Texeln (K20; braucht blut).
+    //   saum     { e, nadel, fuss } — der Saum der Art (`karteSaum`; die Karte, übereinander, nie glatt): über der Stufe-0-
+    //            Zeile `fuss` der Ansicht (dem Kronen-Fuß) ist der Schlüssel die Deckung des Fußabdrucks + saum × (Muster − ½).
     // Rückgabe: { stufen: [{ w, h, data }], deckung: [Anteil je Stufe], opak: opake Texel der Stufe 0 }.
     // DAS σ DER GLATTEN STUFE (K20): die Skala der Alpha (Deckung des Texels × σ, gerundet, bei 255 gekappt), unter der
     // die Zelle nw × nh, bilinear in S × S Unterproben je Texel gelesen (in der Zelle geklemmt), an der Schwelle `thr`
@@ -3580,7 +3627,8 @@
         const quer = !!(opt && opt.quer),
             blut = opt && opt.blut ? opt.blut.map((x) => linZuSrgb8(x)) : null,
             roh0 = !!(opt && opt.alphaRoh),
-            glatt = !!(opt && opt.glatt);
+            glatt = !!(opt && opt.glatt),
+            saum = opt && opt.saum && !glatt && !quer ? opt.saum : null;
         if (glatt && !blut) throw new Error("impostorMips: glatt braucht blut (die Farbe jedes deckenden Texels)");
         const hA = quer ? h : (h / V) | 0,
             wA = quer ? (w / V) | 0 : w;
@@ -3681,9 +3729,21 @@
                 }
                 for (let i = 0; i < nA; i++) {
                     const s = ta[tex(v, i)];
+                    // DER SAUM (`karteSaum`): über dem Kronen-Fuß die Deckung des Fußabdrucks und das Muster der Art
+                    const X = ((i % nwA) + 0.5) * (1 << k),
+                        Y = (((i / nwA) | 0) + 0.5) * (1 << k);
+                    const basis =
+                        saum && s > 0 && Y <= saum.fuss
+                            ? Math.max(
+                                  1e-9,
+                                  s / fuss +
+                                      KARTEN_GESETZ.saum *
+                                          (karteSaumMuster(X, Y, Math.max(saum.e, 2 << k), saum.nadel) - 0.5)
+                              )
+                            : dicht[i];
                     // wählbar: glatt jeder Texel mit Deckung in der Nachbarschaft (er trägt die Blut-Farbe), sonst nur mit
                     // eigener (die Karte trägt die Farbe ihrer Kinder); der Gleichstand über die eigene Deckung
-                    schluessel[i] = glatt || s > 0 ? dicht[i] + (1e-6 * s) / fuss : 0;
+                    schluessel[i] = glatt || s > 0 ? basis + (1e-6 * s) / fuss : 0;
                     if (schluessel[i] > 0) positiv++;
                 }
                 const M = Math.min(positiv, Math.round(cov0[v] * nA));
@@ -3714,6 +3774,11 @@
                 // rastert, deckte 0,914 ihres Bilds — gate:asset-contract D).
                 let sigma = grenze > 0 ? thr / 255 / grenze : 0;
                 if (glatt && sigma > 0) sigma = glattSigma(schluessel, nwA, nhA, sigma, thr, cov0[v]);
+                // DIE GRENZE IST GENAU (w4-laub-saum): M Texel decken — vom Grenzwert selbst nur so viele, wie über ihm fehlen, in
+                // der Reihe ihrer Lage in der Ansicht (die GPU-Ablage wählt dieselben); bis dahin deckte jeder Gleichstand mit (das
+                // alte Gesetz an der Buche, Stufe 1: +0,16 %)
+                let gleich = M;
+                for (let i = 0; i < nA; i++) if (schluessel[i] > grenze) gleich--;
                 for (let i = 0; i < nA; i++) {
                     const o = tex(v, i);
                     if (glatt) {
@@ -3721,7 +3786,7 @@
                         if (data[o * 4 + 3] >= thr) opakK++;
                         continue;
                     }
-                    if (schluessel[i] >= grenze && ta[o] > 0) {
+                    if (ta[o] > 0 && (schluessel[i] > grenze || (schluessel[i] === grenze && gleich-- > 0))) {
                         data[o * 4] = linZuSrgb8(tr[o] / ta[o]);
                         data[o * 4 + 1] = linZuSrgb8(tg[o] / ta[o]);
                         data[o * 4 + 2] = linZuSrgb8(tb[o] / ta[o]);
@@ -3742,67 +3807,6 @@
             lwA = nwA;
         }
         return { stufen: stufen, deckung: deckung, opak: opak };
-    }
-
-    // Die Mips der Normale (rg8: n·0,5 + 0,5, z = √(1 − x² − y²)): je Stufe das Mittel der vier Kinder als
-    // Vektor, normiert (ein bloßes RG-Mittel kippte die Fernkrone zur Kamera). Eingang rgba (Studio) oder rg.
-    function normalMips(src, w, h, kanaele, nStufen) {
-        const n0 = w * h;
-        let nx = new Float32Array(n0),
-            ny = new Float32Array(n0),
-            nz = new Float32Array(n0);
-        for (let i = 0; i < n0; i++) {
-            const x = (src[i * kanaele] / 255) * 2 - 1,
-                y = (src[i * kanaele + 1] / 255) * 2 - 1;
-            nx[i] = x;
-            ny[i] = y;
-            nz[i] = Math.sqrt(Math.max(0, 1 - x * x - y * y));
-        }
-        const rg = (ax, ay, n) => {
-            const d = new Uint8Array(n * 2);
-            for (let i = 0; i < n; i++) {
-                d[i * 2] = Math.max(0, Math.min(255, Math.round((ax[i] * 0.5 + 0.5) * 255)));
-                d[i * 2 + 1] = Math.max(0, Math.min(255, Math.round((ay[i] * 0.5 + 0.5) * 255)));
-            }
-            return d;
-        };
-        const stufen = [{ w: w, h: h, data: rg(nx, ny, n0) }];
-        let lw = w,
-            lh = h;
-        for (let k = 1; k < nStufen; k++) {
-            const qw = lw >> 1,
-                qh = lh >> 1;
-            if (qw < 1 || qh < 1) break;
-            const n = qw * qh;
-            const tx = new Float32Array(n),
-                ty = new Float32Array(n),
-                tz = new Float32Array(n);
-            for (let y = 0; y < qh; y++)
-                for (let x = 0; x < qw; x++) {
-                    const o = y * qw + x;
-                    let ax = 0,
-                        ay = 0,
-                        az = 0;
-                    for (let dy = 0; dy < 2; dy++)
-                        for (let dx = 0; dx < 2; dx++) {
-                            const s = (y * 2 + dy) * lw + x * 2 + dx;
-                            ax += nx[s];
-                            ay += ny[s];
-                            az += nz[s];
-                        }
-                    const l = Math.sqrt(ax * ax + ay * ay + az * az) || 1;
-                    tx[o] = ax / l;
-                    ty[o] = ay / l;
-                    tz[o] = az / l;
-                }
-            stufen.push({ w: qw, h: qh, data: rg(tx, ty, n) });
-            nx = tx;
-            ny = ty;
-            nz = tz;
-            lw = qw;
-            lh = qh;
-        }
-        return stufen;
     }
 
     // BC1 (DXT1) einer vormultiplizierten, binären Karte: je 4×4-Block die Hauptachse der opaken Farben (PCA),
@@ -4013,7 +4017,7 @@
         return out;
     }
 
-    // BC4 eines Kanals (8-Werte-Modus r0 > r1: Minimum und Maximum des Blocks als Endpunkte) — zweimal = BC5.
+    // BC4 eines Kanals (8-Werte-Modus r0 > r1: Minimum und Maximum des Blocks als Endpunkte) — der Alpha-Block der BC3-Fracht.
     function bc4Block(werte, out, o) {
         let mn = 255,
             mx = 0;
@@ -4087,27 +4091,6 @@
         out[o + 6] = (hi >> 8) & 0xff;
         out[o + 7] = (hi >> 16) & 0xff;
     }
-    function bc5Kodiere(rg, w, h) {
-        const bw = Math.ceil(w / 4),
-            bh = Math.ceil(h / 4);
-        const out = new Uint8Array(bw * bh * 16);
-        const r = new Uint8Array(16),
-            g = new Uint8Array(16);
-        for (let by = 0; by < bh; by++)
-            for (let bx = 0; bx < bw; bx++) {
-                for (let j = 0; j < 16; j++) {
-                    const x = Math.min(w - 1, bx * 4 + (j & 3)),
-                        y = Math.min(h - 1, by * 4 + (j >> 2));
-                    r[j] = rg[(y * w + x) * 2];
-                    g[j] = rg[(y * w + x) * 2 + 1];
-                }
-                const o = (by * bw + bx) * 16;
-                bc4Block(r, out, o);
-                bc4Block(g, out, o + 8);
-            }
-        return out;
-    }
-
     // BC3 (K20, 12.10.): die Farbe als BC1-Block im 4-Farben-Modus (jeder Texel deckend kodiert — BC3 liest den
     // Farb-Block immer so), die Alpha als BC4-Block davor (16 B je 4×4). Für die Fracht mit STETIGER Alpha (die glatte
     // Mip-Kette des Blatt-Atlas): BC1 trägt ein Bit und schnitt die Kante zurück auf das Texel-Raster.
@@ -4229,48 +4212,6 @@
                     }
                 }
         return out;
-    }
-
-    // DER KARTEN-KODIERER (läuft in der Transport-Schale, im Worker): das Studio-Payload { cw, ch, V, frame,
-    // albedo (rgba cw×ch·V), normal (rgba cw×ch·V) } → die Atlas-Schicht im Format fmt, die Normale ab 1/normalTeiler
-    // (die Vektor-Mittel der vollen Studio-Normale). Rückgabe { cw, ch, V, nt, fmt, frame, albedo, normal, opak,
-    // deckung } mit den Stufen hintereinander (karteMasse); null bei Maß-Bruch (nie eine halbe Schicht).
-    function karteKodiere(p, fmt) {
-        if (!p || !p.albedo || !p.normal || !p.frame) return null;
-        const V = p.V | 0,
-            cw = p.cw | 0,
-            ch = p.ch | 0,
-            nt = KARTEN_GESETZ.normalTeiler;
-        if (!(V > 0 && cw > 0 && ch > 0)) return null;
-        const M = karteMasse(cw, ch, V, nt, fmt);
-        if (p.albedo.length !== M.w * M.h * 4 || p.normal.length !== M.w * M.h * 4) return null;
-        const alb = impostorMips(p.albedo, M.w, M.h, V, KARTEN_GESETZ.schwelle, M.a.length);
-        // die volle Normale, um log2(nt) Stufen gemittelt: Stufe k der Welt = Stufe k + log2(nt) der Studio-Kette
-        const ab = Math.round(Math.log2(nt));
-        const nrm = normalMips(p.normal, M.w, M.h, 4, M.n.length + ab).slice(ab);
-        if (nrm.length !== M.n.length || nrm[0].w !== M.nw || nrm[0].h !== M.nh) return null;
-        const albedo = new Uint8Array(M.aBytes),
-            normal = new Uint8Array(M.nBytes);
-        for (let k = 0; k < M.a.length; k++) {
-            const s = alb.stufen[k];
-            albedo.set(M.fmt === "bc" ? bc1Kodiere(s.data, s.w, s.h) : s.data, M.a[k].off);
-        }
-        for (let k = 0; k < M.n.length; k++) {
-            const s = nrm[k];
-            normal.set(M.fmt === "bc" ? bc5Kodiere(s.data, s.w, s.h) : s.data, M.n[k].off);
-        }
-        return {
-            cw: cw,
-            ch: ch,
-            V: V,
-            nt: nt,
-            fmt: M.fmt,
-            frame: { halfH: +p.frame.halfH, halfW: +p.frame.halfW },
-            albedo: albedo,
-            normal: normal,
-            opak: alb.opak,
-            deckung: alb.deckung,
-        };
     }
 
     // DAS BODEN-GESETZ (Waldboden 04.10.): das Gewicht einer Boden-Art an einem Ort aus den Bändern ihrer Zeile
@@ -5325,12 +5266,11 @@
         karteMasse: karteMasse,
         karteGlaetteGaenge: karteGlaetteGaenge,
         impostorMips: impostorMips,
-        normalMips: normalMips,
         bc1Kodiere: bc1Kodiere,
-        bc5Kodiere: bc5Kodiere,
         bc3Kodiere: bc3Kodiere, // die Fracht mit stetiger Alpha (der Blatt-Atlas, K20)
         bcDekodiere: bcDekodiere,
-        karteKodiere: karteKodiere,
+        karteSaum: karteSaum, // w4-laub-saum — der Saum der Art: Blattgröße in Stufe-0-Texeln, Laub oder Nadel
+        karteSaumMuster: karteSaumMuster, // das Zell-Muster des Saums (die GPU-Ablage rechnet es bitgleich)
         bodenBand: bodenBand, // Waldboden 04.10. — das Trapez-Band des Boden-Gesetzes
         bodenGewicht: bodenGewicht, // Waldboden 04.10. — das Gewicht einer Boden-Art (Labor-Wald + Nah-Streu der Welt)
         BUDGET_GESETZ: BUDGET_GESETZ, // W8 — das Budget-Gesetz: Glut-Schwelle, Teil-Deckel, Verschmelz-Deckel, Form

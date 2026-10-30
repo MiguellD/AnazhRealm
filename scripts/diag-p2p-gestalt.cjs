@@ -22,13 +22,12 @@
 "use strict";
 const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 
-const PORT = Number(process.env.P2P_GESTALT_PORT || 4457);
 const server = statikServer();
 
 const { errs, check } = pruefer();
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 300000 });
     await server.zeige(page, 30000);
 
