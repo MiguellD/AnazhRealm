@@ -1626,6 +1626,13 @@ function auswahl(opt) {
         const d = messDatei(sha, opt.geraet), hilfe = hilfeText();
         meine = eichOffen(meine, fs.existsSync(d) ? JSON.parse(fs.readFileSync(d, "utf8")) : null, sha, (st) => abdruck(st, hilfe));
     }
+    // DIE DAUER BRAUCHT IHREN ANFANG (w4-linsen-b; 3ed95dcf GTX: profiband.K4 fuhr in eich1, profiband.K5 allein in eich2 — „kein Stand des
+    // Anfangs“, die Zahl „Dauer undefined min in undefined Seite(n)“): eine Probe mit `stellung: "ende"` urteilt über den Strom seit den
+    // Marken der Proben mit `stellung: "anfang"` IN DERSELBEN Sitzung (die Datei des Stroms lebt eine Sitzung) — fährt eine Auswahl (--nur,
+    // --offen, --eich) ein Ende, fährt sie jeden Anfang ihres Geräts mit
+    if (meine.some((st) => st.probe && st.probe.stellung === "ende"))
+        for (const st of stationen)
+            if (st.probe && st.probe.stellung === "anfang" && geraeteVon(st).includes(opt.geraet) && !meine.includes(st)) meine.push(st);
     return { repo, sha, meine, tot };
 }
 

@@ -992,7 +992,11 @@ module.exports = [
             // jede Zeile der Linse gegen Wagen oder gestoßenen Bären (ROT wie OFFEN) und jede Stumpfheit der Tempo-Probe
             const verstoss = z.filter((x) => /^\s*(OFFEN )?\(V\) [A-ZÄÖÜ ≠]+: (wagen|gestossen)\b|LINSE STUMPF: \(V\)|LEER: \(V\)/.test(x));
             const [w, g] = [je.wagen, je.gestossen];
-            if (!kopf || !w || !g) return { gruen: false, zahl: "(V) Wagen oder gestoßener Bär fehlt in der Ausgabe (Exit " + lauf.exit + ")" };
+            // DER GRUND BEIM NAMEN (w4-linsen-b): die Probe druckt, warum sie nichts fuhr (`❌ LAUF-FEHLER`, `LEER: (V)`, `PROBE-FEHLER`) — an
+            // 3ed95dcf GTX hieß die Zahl nur „fehlt in der Ausgabe", wo die Probe „DER BAU STEHT NICHT: haus_alemannisch#552 nach 306 Takten" sagte
+            const warum = z.map((x) => x.trim()).find((x) => /^(❌ LAUF-FEHLER|PROBE-FEHLER|LEER: \(V\))/.test(x));
+            if (!kopf || !w || !g)
+                return { gruen: false, zahl: "(V) Wagen oder gestoßener Bär fehlt in der Ausgabe (Exit " + lauf.exit + ")" + (warum ? " — " + warum.slice(0, 300) : "") };
             const tempo = w.f >= 1.2 && w.v / w.vmax >= 1.19;
             const gruen =
                 tempo && w.n >= 20 && g.n >= 4 && w.durch + g.durch === 0 && Math.max(w.tief, g.tief) <= 0.01 &&
