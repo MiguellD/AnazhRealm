@@ -1929,15 +1929,28 @@ class AnazhRealm_studio_bruecke {
     }
     // Eine NUR-WURF-Stufe (B2 Stufe 3, S3 haus: `nurWurf`) wird nie gezeigt — sie wirft für die Art (B2c `schatten`) und
     // trägt die Fernform. Die Klammer überspringt sie: kein Distanz-Wunsch serviert sie als Anzeige.
+    // GEMERKT JE BUCH (Lehre 25, w4-ankunft): die Klammer ist eine reine Funktion von Rezept-Tafel und Wahrnehmung — beide
+    // wechseln nur als neues Objekt (Ingest), also gilt das Gedächtnis je (Rezepte, Render-Config). Unter dem Ladeschirm
+    // fragte jede Höhe jedes wartenden Baums je Takt die Tafel neu (headless kalt 35–65 s: 2,0 von 4,2 s `_foundryBaumHoehe`).
     _foundryDeclaredStage(preset, wish) {
+        const f = this._foundry;
+        const rez = f ? f.recipes : null;
+        const cfg = AnazhRealm._studioRenderConfig;
+        let K = this._stufenKlammer;
+        if (!K || K.rez !== rez || K.cfg !== cfg) K = this._stufenKlammer = { rez, cfg, je: new Map() };
+        let je = K.je.get(preset);
+        if (!je) K.je.set(preset, (je = new Map()));
+        const hat = je.get(wish);
+        if (hat !== undefined) return hat;
         const st = this._foundryKindStages(preset);
-        if (!st) return wish;
-        let sv = null;
-        for (let i = 0; i < st.length; i++) {
+        let sv = st ? null : wish;
+        for (let i = 0; st && i < st.length; i++) {
             if (this._foundryNurWurf(preset, st[i])) continue;
             if (sv === null || st[i] <= wish) sv = st[i];
         }
-        return sv === null ? AnazhRealm._kernPflichtBruch("phyto:lod.kindStages (" + preset + ": nur nurWurf)") : sv;
+        if (sv === null) return AnazhRealm._kernPflichtBruch("phyto:lod.kindStages (" + preset + ": nur nurWurf)");
+        je.set(wish, sv);
+        return sv;
     }
     // Die NUR-WURF-Stufe einer Art mit Fernform "huelle" — sie trägt die Liste (`__fern`). Fehlt sie, bricht die Art.
     _foundryFernStufe(preset) {
