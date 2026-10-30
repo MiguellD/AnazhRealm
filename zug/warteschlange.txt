@@ -225,3 +225,4 @@ takt25h-gtx 3 punkte sha=6b3da705074d6eacd348a192aecbaeb8d2592495 geraet=gtx nur
 schloss-blick-1 1 station sha=6b3da705074d6eacd348a192aecbaeb8d2592495 lauf=gpu-schloss-blick.sh
 z83-abab 0 storno
 schloss-blick-2 1 station sha=6b3da705074d6eacd348a192aecbaeb8d2592495 lauf=gpu-schloss-blick.sh
+omen-gpu-lauf-1 1 station sha=6b3da705074d6eacd348a192aecbaeb8d2592495 lauf=omen-gpu-lauf.sh
