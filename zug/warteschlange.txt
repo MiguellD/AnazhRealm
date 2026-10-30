@@ -208,3 +208,4 @@ takt23-gtx 2 punkte sha=73bdf9388f22f5c1789e0da5b0c63b6121b045c8 geraet=gtx nur=
 z78-bisekt 2 abab A=715754fc0cff89917d8ee933ba23e208bfdd54fb B=748ea96f36af0a1d74d7308ca185f5995087bbcd zellen=stadt
 z80-abab 3 abab A=73bdf9388f22f5c1789e0da5b0c63b6121b045c8 B=24a0f3eff6051ae954369fd774cce415d1f32dc5 zellen=stadt,w-ego
 takt24-gtx 1 punkte sha=24a0f3eff6051ae954369fd774cce415d1f32dc5 geraet=gtx nur=tiere.K5#1,mensch.K4#1,licht.K2#2,licht.K1#1,licht.K3#1,licht.K5#1,material.K2#1,material.K3#2,schatten.K1#2,lod.K1#1,lod.K5#1,lod.K2#1,material.K4#1,material.K5#1,studios.K4#1,fahrzeug.K3#1,siedlung.K4#2,leib.K1#2,spielgang.K3#1,profiband.K1#1,profiband.K2#1,profiband.K3#1,profiband.K5#1
+takt24b-gtx 1 punkte sha=24a0f3eff6051ae954369fd774cce415d1f32dc5 geraet=gtx nur=mensch.K5#1,vegetation.K1#1,vegetation.K5#1,ferne.K1#2
