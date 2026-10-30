@@ -479,7 +479,10 @@ function fahreGruppe(sts, ctx) {
                     (zeugeText ? "\n--- gpu-zeuge ---\n" + zeugeText : ""));
             }
             if (tot && !amSchloss) return offen("GPU-Schloss nie bekommen: gpu-lauf.sh schwieg " + stillS + " s beim Warten — beendet, ungemessen", code);
-            if (tot) return rot("Deckel " + (schloss ? deckelS + 120 : deckelS) + " s überschritten — beendet", code);
+            // der Deckel nennt, wobei er traf: die letzte Zeile der Ausgabe (vegetation.K5#1 hieß an 715754fc und 73bdf938 nur „Deckel 60 s
+            // überschritten“ — ihr erster Schuss stand nach 51 s, der zweite trug den Deckel)
+            const zuletzt = String(out).split(/\r?\n/).map((l) => l.trim()).filter(Boolean).pop();
+            if (tot) return rot("Deckel " + (schloss ? deckelS + 120 : deckelS) + " s überschritten — beendet" + (zuletzt ? " (zuletzt: " + zuletzt.slice(0, 160) + ")" : ""), code);
             if (sig) return rot("Absturz: Signal " + sig, code);
             const blockiert = (/^SCHLOSS BLOCKIERT .*$/m.exec(out) || [""])[0].trim();
             if (schloss && code === 75) return offen("GPU-Schloss blockiert (gpu-lauf.sh Exit 75" + (blockiert ? ": " + blockiert : "") + ") — ungemessen", code);
@@ -586,6 +589,15 @@ function rufFrist(port, weg, nutzlast, ms) {
 const lebtPid = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === "EPERM"; } };
 const warteMs = (ms) => new Promise((r) => setTimeout(r, ms));
 const httpDa = (port) => new Promise((r) => require("http").get("http://127.0.0.1:" + port + "/", (x) => (x.resume(), r(true))).on("error", () => r(false)));
+// ist der Port zu? EIN Verbindungs-Versuch: abgewiesen heißt, niemand lauscht; ein lauschender Port nimmt sofort an, auch wenn sein
+// Prozess gerade rechnet — eine Frist ohne Antwort heißt darum nie „zu“
+const portZu = (port, ms = 3000) => new Promise((r) => {
+    const s = require("net").connect({ host: "127.0.0.1", port });
+    const ende = (zu) => { s.destroy(); r(zu); };
+    s.setTimeout(ms, () => ende(false));
+    s.once("connect", () => ende(false));
+    s.once("error", () => ende(true));
+});
 
 // DER HALTER (`punkte.cjs halter --baum B --port P --log L --zeuge Z --stop F --eltern pid [--band p,p] [--welt stub.json]`): startet
 // die Welt, meldet „SITZUNG bereit“ und hält sie, bis die Stop-Datei liegt, der Läufer stirbt oder die Werkbank endet; dann stop,
@@ -740,13 +752,13 @@ async function fahreSitzung(gruppen, ctx, melde) {
             const gs = await grundstellung(ctx.port + 20000, ctx.baum);
             if (gs.ok) kopf.grundstellungS.push(gs.s);
             else {
-                tot = gs.grund;
-                kopf.grund = "die Welt trägt nicht mehr vor " + schluessel(g[0]) + ": " + tot;
+                tot = "Grundstellung: " + gs.grund;
+                kopf.grund = "die Welt trägt nicht mehr vor " + schluessel(g[0]) + ": " + gs.grund;
                 console.log("  SITZUNG " + kopf.grund);
             }
         }
         if (tot) {
-            await melde(g, g.map(() => ohne("die Welt der Sitzung trägt nicht mehr (Grundstellung: " + tot + ") — ungemessen", true)), null, new Date().toISOString());
+            await melde(g, g.map(() => ohne("die Welt der Sitzung trägt nicht mehr (" + tot + ") — ungemessen", true)), null, new Date().toISOString());
             continue;
         }
         const name = schluessel(g[0]).replace("#", "_");
@@ -754,7 +766,21 @@ async function fahreSitzung(gruppen, ctx, melde) {
         const zeit = new Date().toISOString();
         const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge } });
         kopf.proben++;
-        await melde(g, es, aus, zeit);
+        // DIE WELT ENDETE UNTER DER PROBE (w4-stationen-heil; Takt 23 GTX an 73bdf938: die Vorfahrt der OMEN nahm die Welt nach
+        // 7,0 min — „VORFAHRT … verloren 7.0“ —, ferne.K1#2 lief gerade und stand als ROT „keine LUFT-Zeile … read ECONNRESET“ in der
+        // Messung): die Werkbank endet nie an einem Fehler des Spiels (eine tote Seite antwortet mit `fehler`), nur an `/stop` oder
+        // einem fremden Ende. Ist ihr Steuer-Port nach der Probe zu oder der Halter fort, ist jedes Nicht-GRÜN dieser Probe keine
+        // Messung — ungemessen beim Grund, wie die Proben danach; ein GRÜN hielt seine Messung schon in der Hand.
+        const weg = s.kind.exitCode != null ? "der Halter endete (Exit " + s.kind.exitCode + ")"
+            : (await portZu(ctx.port + 20000)) ? "die Werkbank :" + (ctx.port + 20000) + " nimmt keine Verbindung mehr an" : null;
+        if (weg) {
+            tot = "sie endete während " + schluessel(g[0]) + ": " + weg;
+            kopf.grund = "die Welt trägt nicht mehr nach " + schluessel(g[0]) + ": " + weg;
+            console.log("  SITZUNG " + kopf.grund);
+        }
+        const unter = (e) => (e.gruen || !weg ? e
+            : { ...e, ungemessen: true, grund: "die Welt der Sitzung endete während der Probe (" + weg + ") — ungemessen", zahl: "die Welt der Sitzung endete während der Probe (" + weg + ") — ungemessen; die Probe sah: " + String(e.zahl).slice(0, 240) });
+        await melde(g, es.map(unter), aus, zeit);
     }
     await sitzungStoppen(s, stop);
     kopf.minuten = +((Date.now() - t0) / 60000).toFixed(2);
@@ -1644,8 +1670,8 @@ async function selbsttest() {
     pruef("LÄUFER rot", e.gruen === false && /ROT: n 3/.test(e.grund), JSON.stringify(e));
     e = await fahreStation({ ...st0, befehl: ["node", "-e", "process.exit(3)"], urteil: lies }, ctx("absturz"));
     pruef("LÄUFER Absturz ohne Ausgabe", e.gruen === false && e.exit === 3 && /Urteil warf/.test(e.grund), JSON.stringify(e));
-    e = await fahreStation({ ...st0, minuten: 0.01, befehl: ["node", "-e", "setTimeout(()=>{}, 60000)"], urteil: () => ({ gruen: true, zahl: "still" }) }, ctx("deckel"));
-    pruef("LÄUFER Deckel", e.gruen === false && /Deckel/.test(e.grund), JSON.stringify(e));
+    e = await fahreStation({ ...st0, minuten: 0.01, befehl: ["node", "-e", "console.log('SCHRITT /umstellen 41.3 s'); setTimeout(()=>{}, 60000)"], urteil: () => ({ gruen: true, zahl: "still" }) }, ctx("deckel"));
+    pruef("LÄUFER Deckel, beim Namen der letzten Zeile", e.gruen === false && /Deckel .* \(zuletzt: SCHRITT \/umstellen 41\.3 s\)$/.test(e.grund), JSON.stringify(e));
     // ein Enkel erbt das Rohr und schläft 20 s (wie ein Herzschlag `( while sleep 300 … ) &` ohne Umleitung): die Station endet
     // mit ihrem Prozess (am alten Läufer: close nach 20,5 s, exit nach 0,46 s)
     e = await fahreStation({ ...st0, befehl: ["bash", "-c", "( sleep 20 ) & echo '{\"n\": 0}' > \"$1\"", "enkel", "{AUS}"], urteil: lies }, ctx("enkel"));
@@ -2125,7 +2151,8 @@ async function selbsttest() {
             'n("start"); if (art === "kaputt") { console.log("WERKBANK-FEHLER stub"); process.exit(4); }',
             'http.createServer((q, r) => { let d = ""; q.on("data", (c) => (d += c)); q.on("end", () => { const b = d ? JSON.parse(d) : {}; const s = (o) => r.end(JSON.stringify(o));',
             '  if (q.url === "/eval") { if (/localStorage\\.clear/.test(b.code)) { n("grund"); return s({ ergebnis: { ls: 0, welten: 0 } }); }',
-            '    if (b.code === "tod") { n("tod"); return r.end(JSON.stringify({ ergebnis: "tod" }), () => process.exit(3)); } return s({ ergebnis: "warm" }); }',
+            '    if (b.code === "tod") { n("tod"); return r.end(JSON.stringify({ ergebnis: "tod" }), () => process.exit(3)); }',
+            '    if (b.code === "mord") { n("mord"); process.exit(3); } return s({ ergebnis: "warm" }); }',
             '  if (q.url === "/reload") { n("reload"); return s({ neu: true, ms: 1 }); } if (q.url === "/fenster") return s({ fenster: [1920, 1080] });',
             '  if (q.url === "/stop") { n("stop"); s({ stop: true }); return setTimeout(() => process.exit(0), 50); } s({ fehler: "unbekannt" }); }); })',
             '  .listen(Number(W), "127.0.0.1", () => { console.log("[linse-gpu] amd/stub-sitzung"); console.log("WERKBANK bereit: Steuer 127.0.0.1:" + W); });',
@@ -2173,6 +2200,14 @@ async function selbsttest() {
         const r2 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "tod"], sek: 30 }, (j) => ({ gruen: !!j && j.welt === "tod", zahl: "tod" }))], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "stirbt", null);
         pruef("SITZUNG eine Welt, die stirbt: die Sitzung startet nie neu, die übrigen Proben sind UNGEMESSEN beim Grund (nie ROT)",
             r2.z.filter((l) => l === "start").length === 1 && r2.es["b.K1#1"].ungemessen === true && /trägt nicht mehr/.test(r2.es["b.K1#1"].grund) && /trägt nicht mehr/.test(r2.kopf.grund), JSON.stringify([r2.z, r2.es, r2.kopf]));
+        // DIE WELT ENDET UNTER DER PROBE (Takt 23 GTX an 73bdf938: die Vorfahrt der OMEN nahm sie nach 7,0 min, ferne.K1#2 stand als ROT
+        // „read ECONNRESET“ in der Messung): der Ruf der Probe reißt ohne Antwort, die Probe endet nicht GRÜN — das ist keine Messung
+        const r5 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "mord"], sek: 30 }, (j, l) => ({ gruen: !!j && j.welt === "warm", zahl: "exit " + l.exit }))],
+            [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "mord", null);
+        pruef("SITZUNG eine Welt, die UNTER der Probe endet (die Vorfahrt der OMEN): die Probe ist UNGEMESSEN beim Grund, nie ROT; die übrigen ebenso",
+            r5.z.join(",") === "start,mord" && r5.es["a.K1#1"].ungemessen === true && /endete während der Probe/.test(r5.es["a.K1#1"].grund) &&
+            /die Probe sah: exit [1-9]/.test(r5.es["a.K1#1"].zahl) && r5.es["b.K1#1"].ungemessen === true && /trägt nicht mehr/.test(r5.es["b.K1#1"].grund),
+            JSON.stringify([r5.z, r5.es, r5.kopf]));
         const r3 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "kaputt", null);
         pruef("SITZUNG eine Welt, die nie steht, ist ROT beim Grund (die Station misst, ob das Spiel bootet)",
             r3.es["a.K1#1"].gruen === false && !r3.es["a.K1#1"].ungemessen && /startet nicht: die Werkbank startet nicht/.test(r3.es["a.K1#1"].grund), JSON.stringify(r3));

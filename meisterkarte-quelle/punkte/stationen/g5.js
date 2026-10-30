@@ -2103,7 +2103,10 @@ const stationen = [
     // 0,8 · vmax 73,7 % (gemischte Bilder 8,3–33,3 ms) bzw. 75,3 % (`--gleich`, 60 fps) — der Sim-Schritt ist fest, die Welt
     // (Natur-Strom, Boden) kommt je Bild: 12 444 gegen 12 225 Takte, darum urteilen Radeon und GTX. Erwartet dort: Route ✅,
     // an ✅, Steckenbleiber 0 ✅, Tempo ❌ (~74 % gegen 80 %: drei Bäche quer — zwei Feldwege und eine Gasse von 4,−7 — und
-    // die Ecken der Dörfer, je ~210 Takte unter 0,8 · vmax).
+    // die Ecken der Dörfer, je ~210 Takte unter 0,8 · vmax). DIE KARTE (w4-proben-heil): bis dahin fuhr `--wegenetz` den
+    // Null-Renderer (diag-fahr-leben: nur `--rueckmeldung` zeichnete), kein `[linse-gpu]` stand im Lauf, und die Wand GPU wies jede
+    // Fahrt ab (98ef98bb bis 73bdf938 GTX; dort Route 2579 m, gefahren 2577 m, Steckenbleiber 0, Tempo 78,1 % — das Spiel-ROT stand
+    // hinter der Wand); seitdem zeichnet die Fahrt auf der Karte, und das Urteil spricht über sie.
     {
         kriterium: "fahrzeug.K2", staffel: 1, geraet: ["radeon", "gtx"],
         befehl: ["node", "scripts/diag-fahr-leben.cjs", "--wegenetz"], env: { FAHR_LEBEN_PORT: "{PORT}" }, gpu: true, zeit: false, minuten: 10,
