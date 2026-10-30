@@ -1723,26 +1723,8 @@ class AnazhRealm_bild_himmel {
             });
             return vec4(E.mul(PI / (NT * NP)), 1);
         });
-        // DER PASS: ein Dreieck über den ganzen Schirm in der Form von r184 `QuadMesh` (Lage [-1,3 · -1,-1 · 3,-1], uv [0,-1 ·
-        // 0,1 · 2,1], Ortho-Kamera ±1) — dieselbe uv-Lage, in der jeder Leser die Tafel abtastet, in beiden Backends.
-        const dreieck = new THREE.BufferGeometry();
-        dreieck.setAttribute("position", new THREE.Float32BufferAttribute([-1, 3, 0, -1, -1, 0, 3, -1, 0], 3));
-        dreieck.setAttribute("uv", new THREE.Float32BufferAttribute([0, -1, 0, 1, 2, 1], 2));
-        const kamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-        const quad = (fn, name) => {
-            const m = new THREE.MeshBasicNodeMaterial();
-            m.name = name;
-            m.fragmentNode = fn();
-            m.depthTest = false;
-            m.depthWrite = false;
-            m.toneMapped = false;
-            m.fog = false;
-            const q = new THREE.Mesh(dreieck, m);
-            q.name = name;
-            q.frustumCulled = false;
-            q.userData.kamera = kamera;
-            return q;
-        };
+        // DER PASS: das Schirm-Dreieck (`_schirmDreieck`) — dieselbe uv-Lage, in der jeder Leser die Tafel abtastet.
+        const quad = AnazhRealm._schirmDreieck;
         st.atmoLut = {
             U,
             rtT,
@@ -3179,6 +3161,31 @@ AnazhRealm._saisonGesetz = function () {
     return AnazhRealm._kernPflichtBruch("terrain:SAISON_GESETZ");
 };
 AnazhRealm.LUFT = Object.freeze(Object.assign({}, AnazhRealm._atmoKern().luft, { unterwasserM: 30 }));
+// DAS SCHIRM-DREIECK: EIN Dreieck über den ganzen Schirm in der Form von r184 `QuadMesh` (Lage [-1,3 · -1,-1 · 3,-1], uv
+// [0,-1 · 0,1 · 2,1], Ortho-Kamera ±1 in `userData.kamera`), sein Fragment aus `fn()` — die Pässe der Atmosphäre und das
+// Ausgabe-Dreieck jeder Bühne (`_buehneRender`) teilen Geometrie und Kamera.
+AnazhRealm._schirmDreieck = function (fn, name) {
+    const D =
+        AnazhRealm._schirmDreieckForm ||
+        (AnazhRealm._schirmDreieckForm = {
+            g: new THREE.BufferGeometry()
+                .setAttribute("position", new THREE.Float32BufferAttribute([-1, 3, 0, -1, -1, 0, 3, -1, 0], 3))
+                .setAttribute("uv", new THREE.Float32BufferAttribute([0, -1, 0, 1, 2, 1], 2)),
+            kamera: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1),
+        });
+    const m = new THREE.MeshBasicNodeMaterial();
+    m.name = name;
+    m.fragmentNode = fn();
+    m.depthTest = false;
+    m.depthWrite = false;
+    m.toneMapped = false;
+    m.fog = false;
+    const q = new THREE.Mesh(D.g, m);
+    q.name = name;
+    q.frustumCulled = false;
+    q.userData.kamera = D.kamera;
+    return q;
+};
 // DER HIMMEL (V18.530): die Sichtbarkeit seiner Punkte ist Physik. `grenzgroesse` = Dämmerungs-Anker [Sonnenhöhe
 // in Grad, Grenzgröße des bloßen Auges]: im hellen Tag (≥ 10°) ist nichts zu sehen, nahe dem Horizont gerade die
 // Venus, bei Sonnenuntergang der Abendstern (−3), am Ende der bürgerlichen Dämmerung (−6°) die hellsten Sterne

@@ -2520,17 +2520,11 @@ class AnazhRealm_bild_sicht {
         if (!quelle || !st.atmoLut) return;
         if (!WL.pass) {
             const TSL = THREE.TSL;
-            const m = new THREE.MeshBasicNodeMaterial();
-            m.name = "welt-licht-himmel";
-            m.fragmentNode = TSL.vec4(TSL.pmremTexture(quelle, this._umgebungRichtung(TSL.uv()), TSL.float(1)).rgb, 1);
-            m.depthTest = false;
-            m.depthWrite = false;
-            m.toneMapped = false;
-            m.fog = false;
-            const q = st.atmoLut.qEq;
-            WL.pass = new THREE.Mesh(q.geometry, m);
-            WL.pass.frustumCulled = false;
-            WL.pass.userData = { kamera: q.userData.kamera, quelle };
+            WL.pass = AnazhRealm._schirmDreieck(
+                () => TSL.vec4(TSL.pmremTexture(quelle, this._umgebungRichtung(TSL.uv()), TSL.float(1)).rgb, 1),
+                "welt-licht-himmel"
+            );
+            WL.pass.userData.quelle = quelle;
         } else if (WL.pass.userData.quelle !== quelle)
             this._bruchMelden(
                 "LICHT: die Umgebung wechselte ihr Ziel — die Himmels-Sonde liest das erste (`_skyEnvRT` hält es)"
