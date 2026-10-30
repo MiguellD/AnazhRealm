@@ -1,0 +1,6 @@
+$ C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --luft --wetter stormy --datei C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\mess-session-pruef\meisterkarte-quelle\punkte\messung\roh\3ed96b3f-radeon\ferne.K5_1.json
+
+✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

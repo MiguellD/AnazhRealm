@@ -6,6 +6,7 @@
 // `module.exports.fehlt` mit befehl: null und dem Grund — das Kriterium bleibt dort Hand-Buchung, bis das Werkzeug steht.
 "use strict";
 const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
+const PW = require("./proben-welt.cjs"); // die Proben der Welt in der Sitzung (gelaende.K2, gelaende.K5#2, physik.K2#2)
 
 // gelaende.K5: K8 der Linse diag-koerper-stand in BEIDEN Sichten. Die Linse setzt die Sicht nicht selbst; die Mess-Kopie
 // (wie koordination bericht/2210-radeon-beweise k8-sicht.diff) setzt sie vor der Wiese und schreibt die gesetzte Sicht
@@ -108,6 +109,14 @@ const KETTE_PFAD = [
     "scripts/diag-fahr-leben.cjs",
     "scripts/lib/fahr-proben.cjs",
 ];
+
+// DIE PROBEN IN DER SITZUNG (29.10., stationen/proben-welt.cjs): gelaende.K2 #1 und #2 teilen EINE Probe (gräbt und schüttet: mutiert)
+const K2_PROBE = {
+    befehl: PW.torBefehl(PW.wasserGraben, "{KOORD}"),
+    sek: 10,
+    mutiert: true,
+    
+};
 
 module.exports = [
     // ── gelaende.K1 ──
@@ -227,24 +236,23 @@ module.exports = [
     },
 
     // ── gelaende.K2 ── M31: das Graben-Bild über die echte Eingabe (CDP-Klick, Verb graben) im Spiel-Loop, Third, am Fluss
-    // nächst Genesis, 5 Saaten × Graben 1 m und 3 m jenseits der Krone; je präsentiertem Bild die gezeichneten Wasser-Flächen
-    // über ±4,5 m. HARNESS-STATION: das Mess-Bahn-Skript m2-graben.cjs (koordination bericht/2210-messschuld-6cfce/skripte,
-    // eingefroren) zeigt per sed auf den Spiel-Baum am SHA, der save-server läuft auf {PORT} (wie g6 klang.K2).
+    // nächst Genesis, je Graben 1 m und 3 m jenseits der Krone; je präsentiertem Bild die gezeichneten Wasser-Flächen über ±4,5 m.
+    // IN DER SITZUNG (29.10.): EINE Probe für Staffel 1 und 2 (`K2_PROBE`, Zwillinge — die Sitzung fährt sie einmal), die Bahn von
+    // m2-graben.cjs in der warmen Welt (stationen/proben-welt.cjs `wasserGraben`): Third an zwei Saaten statt fünf, 3 s Spur je Graben
+    // statt 4,3 s. Bis 29.10. jede Staffel ihr eigener Boot über die Harness (Radeon b3f9ae95: 2,28 und 3,83 min Arbeit).
     {
         kriterium: "gelaende.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        befehl: [
-            "bash",
-            "-c",
-            `set -u; B=$(cygpath -m '{BAUM}'); K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; (PORT={PORT} node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:{PORT}/ && break; sleep 1; done; export SPIEL_URL=http://localhost:{PORT}; node "$D/m2-graben.cjs"; E=$?; cp "$D/roh/m2-graben.json" "$A" 2>/dev/null; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; exit $E`,
-        ],
+        probe: K2_PROBE,
         gpu: true,
         zeit: true,
         minuten: 6,
         urteil: (j, lauf) => {
-            const g = (j && Array.isArray(j.graeben) ? j.graeben : []).filter((x) => x.verb === "graben");
-            if (!g.length) return { gruen: false, zahl: "kein Graben über das Verb graben (Exit " + lauf.exit + ")" };
+            const t = (j && j.third) || {};
+            const alle = Array.isArray(t.graeben) ? t.graeben : [];
+            const g = alle.filter((x) => x.verb === "graben");
+            if (!g.length) return { gruen: false, zahl: "kein Graben über das Verb graben (Exit " + lauf.exit + (t.fehler ? ", " + t.fehler : "") + ")" };
             // gefüllt zählt, wo neues Wasser entsteht; ein 3-m-Graben, der den 1-m-Graben überlappt, ist nicht getrennt urteilbar
             const neu = g.filter((x) => x.nassEnde > x.nassVor);
             const doppelt = Math.max(...g.map((x) => x.doppeltMax));
@@ -254,14 +262,15 @@ module.exports = [
             const je = (a) => neu.filter((x) => x.abstand === a && x.gefuelltMs != null && x.gefuelltMs <= 2000).length;
             const bilder = g.reduce((s, x) => s + (x.bilder || 0), 0);
             const ms = neu.map((x) => x.gefuelltMs).filter((v) => v != null);
+            // je Probe höchstens EIN Klick an einen Busch (das Verb abbau statt graben; bis 29.10. 8 von 10)
             const gruen =
-                lauf.exit === 0 && g.length >= 8 && doppelt === 0 && ueber === 0 && leer === 0 && langsam.length === 0 && je(1) >= 1 && je(3) >= 1;
+                lauf.exit === 0 && !t.fehler && g.length >= alle.length - 1 && doppelt === 0 && ueber === 0 && leer === 0 && langsam.length === 0 && je(1) >= 1 && je(3) >= 1;
             return {
                 gruen,
                 zahl:
-                    g.length + " von " + j.graeben.length + " Gräben über das Verb, in " + bilder + " Bildern doppelt " + doppelt + " und über dem Spiegel " +
+                    g.length + " von " + alle.length + " Gräben über das Verb, in " + bilder + " Bildern doppelt " + doppelt + " und über dem Spiegel " +
                     ueber + ", gefüllt nach " + (ms.length ? Math.min(...ms) + "–" + Math.max(...ms) + " ms" : "?") + " (1 m " + je(1) + ", 3 m " + je(3) +
-                    (langsam.length ? ", " + langsam.length + " nicht ≤ 2 s" : "") + ")",
+                    (langsam.length ? ", " + langsam.length + " nicht ≤ 2 s" : "") + ")" + (t.fehler ? " · " + t.fehler : ""),
             };
         },
         pfad: [
@@ -277,6 +286,8 @@ module.exports = [
             "stamm/daten.js",
             "index.html",
             "save-server.js",
+            "scripts/werkbank.cjs",
+            "scripts/lib/welt-boot.cjs",
             "scripts/lib/wasser-linse.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs",
             "scripts/lib/software-gpu.cjs",
@@ -284,40 +295,36 @@ module.exports = [
         quelle: "1 = (a) im Ausgabe-Bild an einem Gerät",
     },
 
-    // ── gelaende.K2 Staffel 2 ── (a) der Graben im Ausgabe-Bild wie Staffel 1 (dasselbe eingefrorene Mess-Bahn-Skript m2-graben.cjs,
-    // Third und mit `--sicht first` im Ich-Auge: die Kamera des Spiels am Kopf, der Blick nach unten auf den Boden vor dem Leib, der
-    // Stand 2,2 m vom Graben-Punkt mit freier Abnahme des Blicks — die sed-Kopie stellte die Third-Pose ins Ich-Auge, ein Hasel
-    // 1–2 m vor dem Auge ließ die Aufnahme vor dem ersten Graben werfen: Ego 0/0 am 27.10.), (b) und (d) über die Wasser-Wand des Spiel-Baums (gate:wasser-leben, Zweig
-    // gk2-damm): G6/G7 der Damm aus dem Verb (`voxel_fill`) 60 m stromab des Graben-Orts — stromauf das gezeichnete Wasser auf der
-    // Überlaufhöhe (Minimax über den Boden des Feldes) ±0,1 m über dem Fluss von vorher, stromab der Fluss auf seinem Spiegel —, G8
-    // der Fern-Ring unter den Säulen im Takt des Edits (byte-Diff) und der Fern-Faden an den Säulen-Mitten auf der Krone (--bild
-    // --echt: die Hardware-GPU des Geräts). (b) und (d) urteilen das Gesetz (Spiegel, Ring, Faden) — kamera-frei, je Gerät gemessen.
+    // ── gelaende.K2 Staffel 2 ── (a) der Graben wie Staffel 1, Third und im Ich-Auge (die Kamera des Spiels am Kopf, der Blick auf den
+    // Boden vor dem Leib, der Stand 2,2 m vom Graben-Punkt mit freier Abnahme des Blicks; Ego an einer dritten Saat), (b) und (d) über
+    // die Wasser-Linse des Spiel-Baums (`__wasserDamm`, wie gate:wasser-leben, Zweig gk2-damm): G6/G7 der Damm aus dem Verb
+    // (`voxel_fill`) 60 m stromab des Fluss-Orts der Mess-Wiese — stromauf das gezeichnete Wasser auf der Überlaufhöhe (Minimax über
+    // den Boden des Feldes) ±0,1 m über dem Fluss von vorher, stromab der Fluss auf seinem Spiegel —, G8 der Fern-Ring unter den Säulen
+    // im Takt des Edits (byte-Diff) und der Fern-Faden an den Säulen-Mitten auf der Krone. (b) und (d) urteilen das Gesetz (Spiegel,
+    // Ring, Faden) — kamera-frei, je Gerät gemessen. Dieselbe Probe wie Staffel 1 (`K2_PROBE`).
     {
         kriterium: "gelaende.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: [
-            "bash",
-            "-c",
-            `set -u; B=$(cygpath -m '{BAUM}'); K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; (PORT={PORT} node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:{PORT}/ && break; sleep 1; done; export SPIEL_URL=http://localhost:{PORT}; node "$D/m2-graben.cjs"; E1=$?; node "$D/m2-graben.cjs" --sicht first; E2=$?; export WASSER_LEBEN_PORT=$(( {PORT} + 1 )); node scripts/diag-wasser-leben.cjs --nur graben,damm > "$D/damm.log" 2>&1; E3=$?; node scripts/diag-wasser-leben.cjs --bild --echt > "$D/ferne.log" 2>&1; E4=$?; cat "$D/ferne.log" | grep -F '[linse-gpu]'; node -e 'const fs = require("fs"); const d = process.argv[1]; const lies = (f) => { try { return JSON.parse(fs.readFileSync(f, "utf8")); } catch (_e) { return null; } }; const block = (f) => { const t = fs.existsSync(f) ? fs.readFileSync(f, "utf8") : ""; const a = t.indexOf("\\n{\\n"); const e = t.indexOf("\\n}\\n", a); try { return JSON.parse(t.slice(a + 1, e + 2)); } catch (_e) { return {}; } }; fs.writeFileSync(process.argv[2], JSON.stringify({ third: lies(d + "/roh/m2-graben.json"), ego: lies(d + "/roh/m2-graben-ego.json"), damm: block(d + "/damm.log").damm || null, ferne: block(d + "/ferne.log").ferne || null, exit: [Number(process.argv[3]), Number(process.argv[4]), Number(process.argv[5]), Number(process.argv[6])] }, null, 1));' "$D" "$A" $E1 $E2 $E3 $E4; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; exit $(( E1 | E2 ))`,
-        ],
+        probe: K2_PROBE,
         gpu: true,
         zeit: true,
         minuten: 16,
         urteil: (j, lauf) => {
             if (!j) return { gruen: false, zahl: "keine Ausgabe (Exit " + lauf.exit + ")" };
-            // (a) je Sicht dasselbe Urteil wie Staffel 1
+            // (a) je Sicht dasselbe Urteil wie Staffel 1 (je Sicht höchstens EIN Klick an einen Busch)
             const graben = (m, sicht) => {
-                const g = (m && Array.isArray(m.graeben) ? m.graeben : []).filter((x) => x.verb === "graben" && (!sicht || x.sicht === sicht));
+                const alle = m && Array.isArray(m.graeben) ? m.graeben : [];
+                const g = alle.filter((x) => x.verb === "graben" && (!sicht || x.sicht === sicht));
                 const neu = g.filter((x) => x.nassEnde > x.nassVor);
                 const je = (a) => neu.filter((x) => x.abstand === a && x.gefuelltMs != null && x.gefuelltMs <= 2000).length;
                 const ok =
-                    g.length >= 8 && Math.max(...g.map((x) => x.doppeltMax)) === 0 && Math.max(...g.map((x) => x.ueberMax)) === 0 &&
+                    !(m && m.fehler) && g.length >= 2 && g.length >= alle.length - 1 && Math.max(...g.map((x) => x.doppeltMax)) === 0 && Math.max(...g.map((x) => x.ueberMax)) === 0 &&
                     g.every((x) => x.bilder > 0) && neu.every((x) => x.gefuelltMs != null && x.gefuelltMs <= 2000) && je(1) >= 1 && je(3) >= 1 &&
                     (!sicht || [1, 3].every((a) => g.some((x) => x.abstand === a && (x.bild || []).includes("2s"))));
-                // Ego: je Abstand ein Bild 2 s nach dem Klick von einem freien Stand (die Abnahme des Blicks, m2-graben --sicht first)
+                // Ego: je Abstand ein Bild 2 s nach dem Klick von einem freien Stand (die Abnahme des Blicks)
                 const bild = sicht ? ", Bild " + g.filter((x) => (x.bild || []).includes("2s")).map((x) => "s" + x.saat + "/" + x.abstand + " m").join(" ") : "";
-                return { ok, zahl: g.length + "/" + (m && m.graeben ? m.graeben.length : 0) + " Gräben (1 m " + je(1) + ", 3 m " + je(3) + bild + ")" };
+                return { ok, zahl: g.length + "/" + alle.length + " Gräben (1 m " + je(1) + ", 3 m " + je(3) + bild + ")" + (m && m.fehler ? " " + m.fehler : "") };
             };
             const [t, e] = [graben(j.third), graben(j.ego, "first")];
             // (b) G6 · G7 — (d) G8, wie die Wand sie urteilt
@@ -336,7 +343,8 @@ module.exports = [
                 zahl:
                     "(a) Third " + t.zahl + " · Ego " + e.zahl + " · (b) stromauf " + auf.map((u) => u.wasser + "/" + u.ueberlauf).join(", ") +
                     " m Wasser/Überlauf über Fluss " + auf.map((u) => u.fluss).join(", ") + ", stromab " + ab.map((u) => u.wasser + "/" + u.fluss).join(", ") +
-                    " · (d) Ring " + f.anders + "/" + f.punkte + " Hub " + f.hubM + " m, Faden " + f.faden + "/" + f.punkte + " an " + (j.ferne ? j.ferne.saeulen : "?") + " Säulen",
+                    " · (d) Ring " + f.anders + "/" + f.punkte + " Hub " + f.hubM + " m, Faden " + f.faden + "/" + f.punkte + " an " + (j.ferne ? j.ferne.saeulen : "?") + " Säulen" +
+                    (d.fehler ? " · Damm " + d.fehler : "") + (j.ferne && j.ferne.fehler ? " · Ferne " + j.ferne.fehler : ""),
             };
         },
         pfad: [
@@ -353,7 +361,7 @@ module.exports = [
             "stamm/daten.js",
             "index.html",
             "save-server.js",
-            "scripts/diag-wasser-leben.cjs",
+            "scripts/werkbank.cjs",
             "scripts/lib/wasser-linse.cjs",
             "scripts/lib/welt-boot.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs",
@@ -365,11 +373,12 @@ module.exports = [
     // ── gelaende.K3 ── M1: spiegelTreue an der Ego-Pose des Spiels am See (Ufer 1866,6/−6193,9, Gier −1,309, Neigung 0),
     // die Kamera aus dem Spiel (state.camera nach `_loopCamera`), geschossen mit `bild --wahl 0` in 1920×1080 aus dem
     // Ausgabe-Pfad (werkbank start --echt gegen den eigenen save-server auf {PORT}, die Werkbank auf {PORT} + 20000)
+    // DAS BUDGET DER SITZUNG (29.10., ≤ 30 min je Gerät): EIN Teleport an den See, EIN Schuss — Ziel 20 s, Deckel 45 s
     {
         kriterium: "gelaende.K3",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 240, befehl: [
+        probe: { sek: 15, befehl: [
             "bash",
             "-c",
             `set -u; A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D"; SP={PORT}; WP=$((SP+20000)); export WERKBANK_PORT=$WP; W() { node scripts/werkbank.cjs "$@"; }; W fenster 1920 1080 > "$D/fenster.txt" 2>&1; W umstellen 1866.6 -6193.9 > "$D/umstellen.txt" 2>&1; W eval 'const s = r.state; if (s.cameraMode !== "first") r.setCameraMode("first"); s.yaw = -1.309; s.pitch = 0; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = s.camera, d = new T.Vector3(); c.getWorldDirection(d); return [c.position.x, c.position.y, c.position.z, c.position.x + d.x * 100, c.position.y + d.y * 100, c.position.z + d.z * 100].map((v) => +v.toFixed(3));' > "$D/kamera.txt" 2>&1; KAM=$(node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); const o = JSON.parse(t.slice(t.indexOf("{"))); console.log(o.ergebnis.join(" "))' "$D/kamera.txt"); echo "KAMERA $KAM"; W bild $KAM --w 1920 --h 1080 --wahl 0 --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --datei "$D/wasser.png" > "$D/bild.txt" 2>&1; E=$?; echo "BILD $(tr -d '\\n' < "$D/bild.txt" | cut -c1-600)"; cp "$D/wasser.abnahme.json" "$A" 2>/dev/null; exit $E`,
@@ -580,10 +589,11 @@ module.exports = [
         kriterium: "gelaende.K5",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        // dieselbe K8 auf jedem Gerät (die Linse urteilt am Soll, seit leib-k2-sprung ohne Ratsche; hier dasselbe Soll);
-        // `--bild`: die Welt zeichnet auf der Karte (Rezept `linse`, kein Null-Renderer) — „beide Geräte“ verlangt das Gerät
-        befehl: ["node", "-e", "(" + k8Sichten.toString() + ")()", "{AUS}", "--bild"],
-        env: { KOERPER_STAND_PORT: "{PORT}" },
+        // dieselbe K8 auf jedem Gerät (die Linse urteilt am Soll, seit leib-k2-sprung ohne Ratsche; hier dasselbe Soll), die Welt
+        // zeichnet auf der Karte — „beide Geräte“ verlangt das Gerät. IN DER SITZUNG (29.10., proben-welt.cjs `bodenRollen`): `rollen`
+        // der Linse je Sicht in der warmen Welt (der Fuß des Spielers und der Sprung K9 gehören leib.K2 und fallen per Anker), das
+        // Ergebnis in der Form von `k8Sichten`; bis 29.10. je Sicht ein eigener Boot (Radeon b3f9ae95: 9,79 min Arbeit)
+        probe: { befehl: PW.torBefehl(PW.bodenRollen), sek: 15, mutiert: false },
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -598,7 +608,7 @@ module.exports = [
             }
             return { gruen: raus.length === 0, zahl: (raus.length ? "über dem Soll: " + raus.join(", ") : "alle Rollen im Soll") + " — " + k8Zahl(l.p) };
         },
-        pfad: [...K8_PFAD, "scripts/lib/software-gpu.cjs"],
+        pfad: [...K8_PFAD, "scripts/werkbank.cjs", "scripts/lib/software-gpu.cjs"],
         quelle:
             "2 = alle Rollen an Mess-Wiese und 25°-Hang, in Fahrt, beide Geräte, jede Rolle ruft benannt EINE Funktion (Ratsche)",
     },
@@ -699,11 +709,14 @@ module.exports = [
     },
 
     // ── wetter.K2 ── gate:naesse:echt: klar gegen 10 min Regen als Spieler-Wort aus dem Ausgabe-Pfad (echter Renderer)
+    // IN DER SITZUNG (29.10.): nur der Ort, den das Urteil liest — das Dorf (porös draußen, innen unter dem Dach, Regen innen);
+    // die Wiese fuhr bis dahin mit (ein Teleport und fünf Schüsse, die keine Zeile trug). Der Messort dorf fährt den Dorf-Zug: das
+    // Dorf wächst, bis ein Haus mit Hülle und Tür steht — die Welt danach trägt ein Dorf mehr (mutiert)
     {
         kriterium: "wetter.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 240, befehl: ["node", "scripts/werkbank.cjs", "licht", "--naesse", "--datei", "{AUS}"] },
+        probe: { sek: 33, befehl: ["node", "scripts/werkbank.cjs", "licht", "--naesse", "dorf", "--datei", "{AUS}"],  mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 4,
@@ -957,12 +970,14 @@ module.exports = [
     // gezeichneten Ecken (Zeichner-Matrix, Skin) gegen das gezeichnete Mesh der Mauer: Spalt ≤ 5 cm, und Durchdringen 0 gilt im
     // Bild wie im Körper (Eindringen ≤ 1 cm). Die OFFEN-Zeile der Linse (Bild ≠ Kollision) ist hier ROT. Am Kopf pk2-vmax
     // (headless und swiftshader) ROT: 19,63 m/s ohne Durchtritt, im Bild der Wagen bis 7,9 cm, der Bär bis 17,1 cm in der Mauer.
+    // IN DER SITZUNG (29.10., proben-welt.cjs `kollisionTempo`): `tempo` der Linse in der warmen Welt, per Anker gekürzt auf Wagen,
+    // gestoßenen Bären, Schmuggel und Beweisbild (die Leiber sind Staffel 1); die Zeilen sind die der Linse. Bis 29.10. ein eigener
+    // Boot samt Zählung aller Werke (Radeon b3f9ae95: 4,85 min Arbeit). Die Probe räumt Natur von der Bahn: mutiert.
     {
         kriterium: "physik.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/diag-kollision-bild.cjs", "--bild"],
-        env: { KOLLISION_BILD_PORT: "{PORT}" },
+        probe: { befehl: PW.torBefehl(PW.kollisionTempo), sek: 10, mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 15,
@@ -1005,6 +1020,7 @@ module.exports = [
             "tetrapoda-core.js",
             "foundry-core.js",
             "scripts/diag-kollision-bild.cjs",
+            "scripts/werkbank.cjs",
             "scripts/lib/welt-boot.cjs",
             "scripts/lib/welt-orte.cjs",
             "scripts/lib/software-gpu.cjs",

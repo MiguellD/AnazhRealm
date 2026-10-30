@@ -4,6 +4,8 @@
 // `module.exports.fehlt` (befehl null, grund) — außerhalb der Liste, damit `run` der anderen Gruppen nicht an ihr bricht.
 "use strict";
 const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
+const PW = require("./proben-welt.cjs"); // die Proben der Welt in der Sitzung (fahrzeug.K5#1, fahrzeug.K2#1)
+const { seiteProbe } = require("./seite.cjs");
 
 // DIE PROBE IN DER SITZUNG (punkte.cjs fahreSitzung, 29.10.): die Welt steht schon — save-server {PORT}, `werkbank start --echt`
 // auf {PORT}+20000 (WERKBANK_PORT), eine Linse neben ihr auf {PORT}+20001. `boot` holt eine FRISCHE Welt: die erste ist es schon
@@ -21,27 +23,213 @@ const KOPF = [
 ];
 // die Probe einer Station: Deckel sek, die Schritte nach dem KOPF
 const sitzung = (sek, ...zeilen) => ({ sek, befehl: ["bash", "-c", [...KOPF, ...zeilen].join("\n")] });
-// DER EIGENE BOOT — nur wo das Kriterium Kälte misst (siedlung.K5: das erste Haus nach dem Erwachen der Zelle in einem kalten Profil,
-// je nH ein frischer Boot; die warme Welt der Sitzung trüge Asset- und Chunk-Cache der Proben davor): eigener save-server auf
-// {PORT}+20000, Werkbank auf {PORT} (Seite {PORT}−1), eine Linse neben ihr auf {PORT}+20001; der Spielstand des Baums fällt vor und
-// nach jedem Boot; die Ports räumt das Skript selbst (netstat LISTEN | ABHÖREN — die Radeon spricht deutsch). Nur unter gpu-lauf.sh.
-const KOPF_BOOT = [
-    "set -u",
-    "WP={PORT}; SP=$(({PORT} + 20000)); LP=$(({PORT} + 20001)); export WERKBANK_PORT=$WP",
-    'L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; SPID=',
-    "weg() { timeout 60 $W stop > /dev/null 2>&1; [ -n \"$SPID\" ] && kill \"$SPID\" 2> /dev/null; SPID=; " +
-        "for p in $(netstat -ano 2> /dev/null | grep -aE \":($WP|$((WP - 1))|$SP|$LP) .*(LISTEN|ABH)\" | awk '{print $5}' | sort -u); " +
-        'do taskkill //F //T //PID "$p" > /dev/null 2>&1; done; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; }',
-    "trap weg EXIT",
-    'boot() { weg; PORT=$SP node save-server.js > "$L/save.log" 2>&1 & SPID=$!; ' +
-        'for t in $(seq 1 30); do curl -s -o /dev/null "http://localhost:$SP/" && break; sleep 1; done; ' +
-        '$W start --echt --port $WP --seite "http://localhost:$SP" "$@" > "$L/wb.log" 2>&1 & ' +
-        'for t in $(seq 1 120); do grep -qE "WERKBANK bereit|FEHLER|Error" "$L/wb.log" && break; sleep 5; done; ' +
-        'grep -q "WERKBANK bereit" "$L/wb.log" || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/wb.log"; exit 3; }; }',
-    'teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }',
-];
-const bootSitzung = (...zeilen) => ["bash", "-c", [...KOPF_BOOT, ...zeilen].join("\n")];
+// (DER EIGENE BOOT von siedlung.K5 fiel am 29.10.: auch dort misst die Kälte der EINE Start der Sitzung — `dorfErwachen` unten.)
 const K = { K: "{KOORD}" }; // die Mess-Skripte der Berichte liegen im Koordinations-Baum (bericht/…)
+
+// ───────── DIE PROBEN AN DER SEITE (Zweig proben-leib, stationen/seite.cjs): leib.K2 · leib.K4 · halten.K1#2 · halten.K5 · tore.K3 ─────────
+// Bis 29.10. bootete jede dieser Stationen ihre Linse mit eigener Welt (Takt 19 an b3f9ae95: 4–10 Soll-Minuten je Lauf); jetzt
+// ruft die Probe in der Welt der Sitzung die Seiten-Funktionen der Linse selbst (aus ihrer Datei am SHA, `H.quelle`) und nur
+// die Teile, die das Kriterium urteilt. Wo die Messung Takte zählt und kein Pixel des Fensters, misst sie im Fenster 640×360
+// (die Karte zeichnet jeden Takt, das Fenster kostet nur GPU-Zeit; die Grundstellung der nächsten Probe stellt 1920×1080).
+
+// leib.K2 #1 + #2 (Zwillinge, EIN Lauf): K8 und K9 von gate:koerper-stand (`rollen`, die Seiten-Funktion der Linse) an Mess-Wiese
+// und 25°-Hang — der Fuß auf drei Bahnen je Ort und der Sprung je Sicht und Leib. Der Huf (je Größen-Band ein Reh) und das Rad
+// (der GT in Fahrt) urteilt gelaende.K5, nie diese Station: die Probe reicht ihnen keinen Leib (spawnCreatureAt des Bands und
+// spawnArchitecture des GT geben null — `rollen` überspringt beide beim Namen). Der Dorf-Zug ruht wie im Haushalt der Wiese
+// (`__anazhAutoSettlement` false, die Linse setzte ihn vor dem Boot). Das Urteil liest {AUS} { k8 } wie bisher.
+async function leibK2Seite(H) {
+    const D = H.quelle("scripts/diag-koerper-stand.cjs", ["K8_UMFANG", "eignerKarte", "gezeichnet", "rollen"]);
+    await H.ruf("/fenster", { w: 640, h: 360 });
+    await H.frist();
+    const o = await H.seite(
+        "window.__anazhAutoSettlement = false; window.__eignerKarte = " + D.eignerKarte + "; window.__gezeichnet = " + D.gezeichnet + "; " +
+            "await window.__weltStehtNach(() => { try { r._gameLoopTick(performance.now()); } catch (e) {} }); " +
+            "const sc = r.spawnCreatureAt, sa = r.spawnArchitecture; " +
+            "r.spawnCreatureAt = function (...a) { return a[4] === \"wesen\" && a[5] && a[5].bodySize ? null : sc.apply(this, a); }; " +
+            "r.spawnArchitecture = function (t, ...a) { return t === \"fahrzeug_gt\" ? null : sa.call(this, t, ...a); }; " +
+            "try { return await (" + D.rollen + ")(" + D.K8_UMFANG + "); } finally { r.spawnCreatureAt = sc; r.spawnArchitecture = sa; }"
+    );
+    H.schritt("rollen");
+    fs.writeFileSync(H.aus, JSON.stringify({ k8: o }, null, 1));
+    const m = (t) => (t ? t.p95 + " cm (n " + t.n + ", stecken " + t.stecken + ")" : "—");
+    for (const ort of ["wiese", "hang"])
+        if (o && o[ort]) console.log("K8 " + ort + " " + o[ort].x + "/" + o[ort].z + " " + o[ort].neig + "° · fuss " + m(o[ort].fuss) + " · falllinie " + m(o[ort].falllinie) + " · stufe " + m(o[ort].stufe));
+    if (o && o.sprung) console.log("K9 " + JSON.stringify(o.sprung));
+    return 0;
+}
+
+// leib.K4 #1 + #2 (Zwillinge, EIN Lauf): K4 von gate:kamera-leib — `leibInstall`, die Anker der Mess-Wiese aus `leibWiese` (die
+// Quote der Posen 0: die 40 Posen und der Ritt sind K2, nie diese Station) und `leibGang` mit der Vorgabe GANG der Linse und dem
+// Teil gang2 (im Haus, am Steilhang, im Sprint). Die Zeilen und Urteile wie die Linse (`urteilGang`, `pruefer`).
+async function leibK4Seite(H) {
+    const D = H.quelle("scripts/diag-kamera-laub.cjs", ["ORTE", "LEIB_R", "pct", "quantil", "GANG", "GANG_ARTEN", "urteilGang", "leibInstall", "leibWiese", "leibGang"]);
+    const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+    const zusatz = require(path.resolve("scripts/lib/kamera-nah.cjs")).KAMERA_NAH_INSTALL + "\n" + require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL;
+    await H.ruf("/fenster", { w: 640, h: 360 });
+    await H.frist();
+    const x = await H.seite(
+        "window.__anazhAutoSettlement = false;\n" + zusatz + "\nwindow.__buehne(); await (" + D.leibInstall + ")(" + JSON.stringify({ R: D.LEIB_R }) + "); " +
+            "const w = await (" + D.leibWiese + ")(" + JSON.stringify({ x: M.x, z: M.z, quote: { haus: 0, fels: 0, baum: 0 } }) + "); " +
+            "const g = await (" + D.leibGang + ")(" + JSON.stringify(Object.assign({}, D.GANG, { zwei: true })) + "); " +
+            "return { anker: w.anker, fehlt: w.fehlt, err: w.err, g };"
+    );
+    H.schritt("gang");
+    const gang = x.g;
+    console.log("=== K4 DER GANG DER KAMERA (Third zu Fuß im echten Takt, Kugel " + D.GANG.R + " m): Mess-Wiese " + M.x + "/" + M.z + " · Anker " + JSON.stringify(x.anker) + (x.err ? " · " + String(x.err).split("\n")[0] : ""));
+    const n = (a) => JSON.stringify(a.reduce((h, k) => ((h[k] = (h[k] || 0) + 1), h), {}));
+    for (const g of (gang && gang.gaenge) || [])
+        console.log("  " + g.art.padEnd(5) + " " + g.typ + ": " + g.bilder + " Bilder · heran " + g.heran.d0 + " → " + g.heran.d1 + " m" + (g.drinnen == null ? "" : " · im Haus " + g.drinnen) +
+            " · Kugel " + n(g.taeter.flatMap((t) => t.taeter.map((y) => t.phase + ": " + y))) + " · Nah-Pixel " + n(g.nah.flatMap((t) => Object.keys(t.jeKlasse).map((y) => t.phase + ": " + y))) +
+            " · Ruck p95 " + (g.ruck.length ? D.quantil(g.ruck, 0.95).toFixed(4) : "—") + " höchstens " + (g.ruck.length ? Math.max(...g.ruck).toFixed(3) : "—") + " m");
+    console.log("  der Arm ohne Flügel-Leib: " + (gang && gang.schmuggel) + " Proben mit Bau");
+    if (gang && gang.hang) console.log("  Steilhang " + JSON.stringify(gang.hang) + " (Weltbild fehlt " + gang.fehlt + ") · die Kamera im Hang: " + gang.senk + " von 10 Bildern mit Täter");
+    const { errs, check } = H.WB.pruefer();
+    for (const [stufe, name] of [
+        [1, "K4 der Gang in Third: die Kugel der Linse nie in Fels oder Bau, 0 Nah-Pixel von Fels, Gelände, Rinde und Bau, Ruck p95 ≤ 0,02 m, die Linse nennt den Arm ohne Flügel-Leib"],
+        [2, "K4 Staffel 2: der Gang auch im Haus, am Steilhang, beim Sprint"],
+    ]) {
+        const v = D.urteilGang(gang, stufe);
+        check(name, v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
+    }
+    return errs.length ? 1 : 0;
+}
+
+// halten.K5 #1 + #2 (Zwillinge, EIN Lauf): Q13/Q14 von gate:kampf-gefuehl --k5 — K5_VOR (der Takt von Hand: fünf Stürze, zwei
+// Tod-Lagen, der Tod durch den Wolf, die Werte je Werk und Nahrung, saveState), der Reload der Seite (die Werkbank lädt neu, der
+// Spielstand bleibt: die Grundstellung kommt erst vor der nächsten Probe), der Abdruck danach; Urteil und Zeilen aus der Linse
+// (`k5Bericht` mit S17 · S18 · S20). Mutiert: Tod, Inventar, Speichern.
+async function haltenK5Seite(H) {
+    const KP = require(path.resolve("scripts/lib/kampf-proben.cjs"));
+    const D = H.quelle("scripts/diag-kampf-gefuehl.cjs", ["hash", "json", "zeig", "k5Verdict", "q14Verdict", "k5Bericht"]);
+    await H.frist();
+    await H.seite("await window.__weltStehtNach(); return 1;");
+    H.schritt("welt");
+    const K = await H.seite("return (" + KP.K5_VOR + ")(" + KP.K5_ABDRUCK + ");");
+    H.schritt("k5");
+    await new Promise((ok) => setTimeout(ok, 1500)); // der IDB-Put landet (wie die Linse)
+    await H.ruf("/reload");
+    K.nachReload = await H.seite("return window.__seitenTakt().then(" + KP.K5_ABDRUCK + ");");
+    H.schritt("reload");
+    let ok = true;
+    D.k5Bericht(K, (c, msg) => {
+        console.log("  " + (c ? "✅" : "❌") + " " + msg);
+        if (!c) ok = false;
+    });
+    return ok ? 0 : 1;
+}
+
+// halten.K1 #2: Q15 von gate:kampf-gefuehl --k1 — je Lauf (vor · masse · schneide) K1_BILD im ewigen Loop der Seite (die Probe
+// schaltet ihn ein, `__loop`), das Bild des Treffers als PNG {AUS}-<lauf>.png, K1_LABOR im Labor worlds/schmiede (ein Rahmen der
+// Seite, verborgen wie der Hintergrund-Tab der Linse). Das Urteil `k1Verdict` der Linse, S21 wie die Linse.
+async function haltenK1Seite(H) {
+    const KP = require(path.resolve("scripts/lib/kampf-proben.cjs"));
+    const D = H.quelle("scripts/diag-kampf-gefuehl.cjs", ["json", "zeig", "K1_SOLL", "k1Verdict"]);
+    await H.frist();
+    await H.seite(
+        "await window.__weltStehtNach(); const f = document.createElement(\"iframe\"); f.id = \"k1-labor\"; f.style.display = \"none\"; " +
+            "const da = new Promise((ok) => (f.onload = ok)); f.src = \"/worlds/schmiede/index.html\"; document.body.appendChild(f); " +
+            "await Promise.race([da, sleep(60000).then(() => { throw new Error(\"das Labor worlds/schmiede lädt nicht in 60 s\"); })]); window.__loop(1); return 1;"
+    );
+    H.schritt("welt und labor");
+    const page = await H.cdp().catch((e) => (console.log("@@PUNKTE@@ BILD ohne Seite: " + e.message), null));
+    const K = { welt: {}, labor: {} };
+    for (const l of ["vor", "masse", "schneide"]) {
+        K.welt[l] = await H.seite("return (" + KP.K1_BILD + ")(" + JSON.stringify(l) + ");").catch((e) => ({ abbruch: String(e.message).split("\n")[0] }));
+        if (K.welt[l].traf && page) await page.screenshot({ path: H.aus + "-" + l + ".png" });
+        K.labor[l] = await H.seite("return document.getElementById(\"k1-labor\").contentWindow.eval(" + JSON.stringify("(" + KP.K1_LABOR + ")(" + JSON.stringify(l) + ")") + ");");
+        H.schritt(l);
+    }
+    await H.seite("window.__loop(); return 1;");
+    const { errs, check } = H.WB.pruefer();
+    D.zeig("Q15", K);
+    const v = D.k1Verdict(K);
+    check("Q15 halten.K1 Staffel 2: Masse × Schneide × Tempo im Bild und am Labor-Werk " + v, !v.length);
+    const [W, L] = [K.welt, K.labor];
+    check(
+        "SELBST-TEST (S21): die Breitseite im Bild, ein Bild ohne Frame, ein Labor ohne Mutation",
+        !!W.vor.traf &&
+            D.k1Verdict({ ...K, welt: { ...W, vor: { ...W.vor, schneideBild: 0.18 } } }).includes("vor-bahn") &&
+            D.k1Verdict({ ...K, welt: { ...W, vor: { abbruch: "x" } } }).includes("vor-abbruch: x") &&
+            D.k1Verdict({ ...K, labor: { ...L, masse: L.vor } }).includes("masse-labor")
+    );
+    return errs.length ? 1 : 0;
+}
+
+// tore.K3 #1 + #2 (Zwillinge, EIN Lauf): K8 von gate:portal-konformanz — der Spieler trägt, was die Linse ihm gibt (Kiesel,
+// Laterne, Brustpanzer, Inventar, Hotbar, die Gestalt des Leibs, das Pferd), holt sein Werk aus der Garage (`werkHolen`) und geht
+// durch jedes Tor des Genesis-Rings (`betreten`: W durch die Apertur, sonst E), der Handshake klingt durch die Schleuse aus, der
+// Abdruck drüben aus der Hülle, Esc bringt heim (`schleuse` esc), der Abdruck daheim — die Tafel `K8 [[welt, weg, vor, drüben,
+// nach, esc], …]` wie die Linse; K1–K7 und die Ratschen der übrigen Welten urteilt gate:portal-konformanz, nie diese Station.
+// Die Seite der Sitzung als puppeteer-Page (die Linse liest den Rahmen der Welt und hält Tasten). Mutiert: Pferd, Hand, Inventar.
+async function toreK3Seite(H) {
+    const D = H.quelle(
+        "scripts/diag-portal-konformanz.cjs",
+        ["WELTEN", "probefahrt", "stromZeichnet", "MITGEBRACHT", "TEILE", "abdruck", "UEBERSETZT", "betreten", "bereitBis", "werkHolen", "zaehler", "zaehlerAus", "schleuseNr", "schleusenZeit", "hinFrame", "seitenHelfer", "rueckHoerer", "schleuse"],
+        { halteBis: H.WB.halteBis, waitFor: H.WB.waitFor, sleep: H.WB.sleep },
+        "rahmen: () => hinFrame"
+    );
+    await H.ruf("/fenster", { w: 1280, h: 720 });
+    const page = await H.cdp();
+    await page.evaluate(() => window.__weltDa((r) => !!r.state.vibePass?.ready));
+    // DIE AUSSTATTUNG des Reisenden wie die Linse (`lauf` von diag-portal-konformanz: Ring, Pferd, Hand, Rüstung, Inventar, Hotbar, Leib)
+    await page.evaluate((M) => {
+        st.materials[M.material] = { builtIn: false, color: M.farbe, label: M.material, tags: {} };
+        st.tools.konformanz_feile = { builtIn: false, label: M.werkzeug, opName: "konformanz_op", opClass: "subtractive" };
+        r._genesisPortalRing(r._genesisMitte());
+        r.mountArchitecture(r.spawnArchitecture("reittier_holzross", st.playerMesh.position));
+        r.equipHeld("kiesel");
+        r.equipArmor("ruestung_brustpanzer");
+        st.player.equipped.offhand = "laterne_dorf";
+        for (const n of ["stein_block", "stein_block", "trank_lebenssaft"]) r.addToInventory(n);
+        st.hotbar[2] = "stein_block";
+        r._ensureWorkshopState().studioOv[r.constructor.KOERPER_HOST_RECIPE] = { height: 1.12, hairColor: "kupfer" };
+    }, D.MITGEBRACHT);
+    await page.evaluate(D.seitenHelfer);
+    await D.werkHolen(page);
+    H.schritt("werk");
+    const ids = await page.evaluate(
+        (ws) => ws.filter((id) => r.state.architectures.some((e) => /^welt_/.test(e.type) && r.state.blueprints[e.type].portalMeta.world === "worlds/" + id + "/index.html")),
+        D.WELTEN.map((w) => w.id)
+    );
+    const ring = [];
+    for (const w of D.WELTEN.filter((x) => ids.includes(x.id))) {
+        const vor = await page.evaluate(D.abdruck, true);
+        const b = await D.betreten(page, w);
+        if (!b || !b.weg) {
+            console.log("  " + w.id + ": " + ((b && b.fehler) || "kein Tor"));
+            ring.push([w.id, null, vor, {}, {}, false]);
+            continue;
+        }
+        await D.bereitBis(page, w.id);
+        let s = await D.schleuse(page, "heimat", w);
+        while (s.enterImFenster && s.zaehler.enters <= 3) s = await D.schleuse(page, "heimat", w);
+        const fr = D.rahmen();
+        const drueben = fr ? await fr.evaluate(D.abdruck, false) : {};
+        await D.zaehlerAus(page);
+        const esc = fr ? !(await D.schleuse(page, "esc", null)).offen : false;
+        if (!esc) await page.evaluate(() => r._portalOverlay && r.exitPortal());
+        ring.push([w.id, b.weg, vor, drueben, await page.evaluate(D.abdruck, true), esc]);
+        H.schritt(w.id);
+    }
+    console.log("K8 " + JSON.stringify(ring));
+    return ring.length >= 10 ? 0 : 1;
+}
+// die Proben (Zwillinge tragen DIESELBE Probe: punkte.cjs gruppiere fährt sie einmal)
+// DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 52,2 s GRÜN am Deckel 60): der Deckel steht in der Tafel der Fahrt (punkte.cjs DIE DECKEL)
+const LEIB_K2 = seiteProbe(33, leibK2Seite, {
+    mutiert: true,
+    
+});
+const LEIB_K4 = seiteProbe(33, leibK4Seite, {
+    mutiert: true,
+    
+});
+const HALTEN_K5 = seiteProbe(19, haltenK5Seite, { mutiert: true });
+const HALTEN_K1 = seiteProbe(10, haltenK1Seite, { mutiert: true });
+const TORE_K3 = seiteProbe(10, toreK3Seite, {
+    mutiert: true,
+    
+});
 
 // Pfade (R6): die Dateien, die die Messung liest
 const FAHRT = [
@@ -149,13 +337,28 @@ const STADT_HUEGEL = [
     "[ -n \"$HILL\" ] || { echo '@@PUNKTE@@ KEINE STADT MIT ORT BINNEN 2 KM'; exit 4; }",
     "timeout 300 $W umstellen $HILL > /dev/null 2>&1",
     "for i in $(seq 1 60); do timeout 60 $W eval '" + STADT_STAND + "' > \"$L/stand.json\" 2>&1; " +
-        LIES("process.exit(e.mauer > 0 && !e.zug && !e.pending ? 0 : 1)") + " \"$L/stand.json\" 2> /dev/null && break; sleep 5; done",
+        LIES("process.exit(e.mauer > 0 && !e.zug && !e.pending ? 0 : 1)") + " \"$L/stand.json\" 2> /dev/null && break; sleep 1; done",
     "echo '@@PUNKTE@@ STAND'; cat \"$L/stand.json\"; echo",
     "timeout 60 $W eval '" + STADT_KAMERA + "' > \"$L/kamera.json\" 2>&1; echo '@@PUNKTE@@ KAMERA'; cat \"$L/kamera.json\"; echo",
     "K=$(" + LIES("console.log(e.pose ? e.pose.join(\" \") : \"\")") + " \"$L/kamera.json\" 2> /dev/null)",
     "[ -n \"$K\" ] || { echo '@@PUNKTE@@ KEINE KAMERA'; exit 5; }",
 ];
-
+// DIE STADT IN EINEM LAUF (siedlung.K2#1 und #2, Zwillinge, 29.10.): Teil Z mit dem Zipf-Fit (`diag-settlement --nur-z --zipf`, Node,
+// 8 Saaten) läuft NEBEN der Stadt der Sitzung (seine Zeilen danach, Z), der Weg zum Hügel, bis die Mauer steht (STADT_HUEGEL), das
+// Bild mittags und in der Dämmerung; {AUS} = { mittag, daemmerung }. Bis dahin fuhr jede Staffel Teil Z und die Stadt für sich,
+// der Stand fragte alle 5 s. Die Stadt wächst am Hügel (mutiert).
+const SIEDLUNG_SITZUNG = sitzung(33,
+    "A=$(cygpath -m '{AUS}')",
+    '( node scripts/diag-settlement.cjs --nur-z --zipf; echo "@@PUNKTE@@ EXIT $?" ) > "$L/zipf.out" 2>&1 &',
+    ...STADT_HUEGEL,
+    "rm -f \"$L/stadt-mittag.abnahme.json\" \"$L/stadt-daemmerung.abnahme.json\"",
+    "teil MITTAG $W bild $K --uhr 0.5 --datei \"$L/stadt-mittag.png\" --w 1600 --h 900",
+    "teil DAEMMERUNG $W bild $K --uhr 0.25 --datei \"$L/stadt-daemmerung.png\" --w 1600 --h 900",
+    "node -e 'const f = require(\"fs\"), l = (n) => { try { return JSON.parse(f.readFileSync(process.argv[2] + \"/stadt-\" + n + \".abnahme.json\", \"utf8\")); } catch (e) { return null; } }; " +
+        "f.writeFileSync(process.argv[1], JSON.stringify({ mittag: l(\"mittag\"), daemmerung: l(\"daemmerung\") }))' \"$A\" \"$L\"",
+    "wait",
+    'echo "@@PUNKTE@@ Z"; cat "$L/zipf.out"'
+);
 // DER RING VOM HÜGEL (siedlung.K4 Staffel 2, w3w-jahrhunderte): ein Ort von 1320 (der Akt `spawnSettlement` mit Jahr, Same 7) auf
 // dem ebensten Land 500–800 m vor dem Genesis-Ort; der Hügel ist der höchste Land-Punkt 140–240 m vor ihm. Am Ort: ein gesetztes
 // Haus 6 m vor seinem Rand zum Hügel hin (Werk, `haus_alemannisch`), die Welt-Uhr 1500 s vor — jedes `umstellen` tickt die Welt,
@@ -214,7 +417,11 @@ const HIT_LESEN =
 // p95 75,8 ms bei Bildzeit 32,9 ms gegen 43,3 ms bei 16,6 ms an 1d9164e9): die Bildzeit eines Laufs hängt an Gerät und Last
 // (8,7–32,9 ms an der Radeon), das Kriterium an keiner. Jede Latenz-Station fährt LAEUFE eigene Boots (Sitzung je Boot,
 // `{N}` = die Nummer) und urteilt über den SCHLECHTESTEN; jede Bildzeit steht in der Zahl.
-const LAEUFE = 3;
+// IN DER SITZUNG (29.10., ≤ 30 min je Gerät): EIN Lauf in der Welt der Sitzung, kein zweiter Boot (bis dahin 3 Boots × 50 Proben je
+// Reihe, 6–15 min je Station); LATENZ_PROBEN je Sicht × Verb, p95 ≤ 50 ms und fehlt 0 wie vorher — die Bildzeit des Laufs steht in
+// der Zahl, ein Lauf bei hoher Bildzeit bleibt ROT beim Namen
+const LAEUFE = 1;
+const LATENZ_PROBEN = 15;
 const lauf = (n, zeilen) => zeilen.map((z) => z.replace(/\{N\}/g, String(n)));
 const latenzLaeufe = (...zeilen) => {
     const json = Array.from({ length: LAEUFE }, (_, i) => '"{AUS}.lauf' + (i + 1) + '.json"').join(" ");
@@ -243,6 +450,466 @@ function latenzSchlechtester(j, ids, n, soll = 50) {
         da,
     };
 }
+// DIE LATENZ DER VERBEN UND DER HIT-STOP IN EINEM LAUF (leib.K1#2 und halten.K2#1, Zwillinge, 29.10.): die Haken des Spiels, die
+// Linse über gehen, springen, einsteigen, hieb in Ego und Third, das Lesen der Haken — bis dahin fuhr jede Station ihre drei Boots
+// (halten.K2#1 hieb allein, 30 Proben je Reihe); einsteigen und hieb lassen Wagen und Treffer in der Welt (mutiert)
+const LATENZ_HALT_SITZUNG = sitzung(33,
+    ...latenzLaeufe(
+        "boot",
+        "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
+        "teil HAKEN{N} $W eval '" + HIT_HAKEN + "'",
+        "teil LATENZ{N} $W latenz --proben " + LATENZ_PROBEN + ' --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "{AUS}.lauf{N}.json"',
+        "teil SPIEL{N} $W eval '" + HIT_LESEN + "'"
+    )
+);
+// DIE FAHRT IN EINEM LAUF (fahrzeug.K3#2, fahrzeug.K4#1, fahrzeug.K4#2, Zwillinge, 29.10.): gate:fahr-leben (T4, T5; eigene Null-Welt auf
+// {PORT}+20001) läuft NEBEN der Welt der Sitzung; darin der Ritt (tempo4.js auf dem Weg der Probe, WELT — w4-heil-fahrzeug 30.10.),
+// die Grundstellung, der Blick am Steilhang (blick.js, BLICK); die Zeilen der Linse danach (FAHR). Bis dahin fuhr jede der drei
+// Stationen die Linse und ihren Boot für sich.
+const FAHR_SITZUNG = sitzung(33,
+    '( env FAHR_LEBEN_PORT=$LP node scripts/diag-fahr-leben.cjs; echo "@@PUNKTE@@ EXIT $?" ) > "$L/fahr.out" 2>&1 &',
+    "boot",
+    'teil WELT $W eval "$(cat "$K/bericht/3010-heil-fahrzeug/tempo4.js")"',
+    "boot",
+    'teil BLICK $W eval "$(cat "$K/bericht/2010-buendel-abab/blick.js")"',
+    "wait",
+    'echo "@@PUNKTE@@ FAHR"; cat "$L/fahr.out"'
+);
+// ───────────────────────── DIE PROBEN DER STADT IN DER SITZUNG (29.10., stationen/sitzung-seite.js) ─────────────────────────
+// Das Gesetz des Schöpfers: eine Fahrt durch jedes System ≤ 30 min samt Dauerlast — keine dieser Stationen bootet mehr eine Welt.
+const { probeBefehl } = require("./sitzung-seite.js");
+
+// DAS ERWACHEN DER ZELLE (siedlung.K5, Seite: r = Welt, T = THREE — ein Rumpf an `werkbank eval`): die Messung M36 (Zweig
+// koordination bericht/2410-siedlung-k5/m36-stufe.js) ohne ihren Anmarsch. Die Zell-Info der Zelle M.zelle trägt nH = M.nH; der
+// Spieler steht M.vor m vor ihrem Rand (`nearM` + `mehrM`), also im Vorlauf-Ring, und der Loop läuft, bis der Vorrat der Zelle da
+// ist (Export und Ort-Wahl, `_dorfVorraete`) und die Foundry M.ruhig Bilder in Folge ruht (höchstens M.vorlaufMs) — der Stand eines
+// Spielers, der mit 4 m/s durch den Ring kam; dann geht er mit 4 m/s auf den Anker zu, bis sie erwacht (`_autoSettlementSpawnCell`).
+// Gezählt wie M36: Erwachen → erstes Haus der Zelle im Sichtkegel in der Stufe seiner Kette für seinen Abstand (in der Mesh-Zone sein
+// Mesh, dahinter die Hülle seines Gesetzbuchs im Welt-March), dazu der Bau-Hash. Die Probe endet am ersten Haus (bis 29.10. ging der
+// Spieler 450 m an und weiter bis zum ersten Mesh: je nH ein eigener Boot, 6,3 min Radeon b3f9ae95). Eine schon wache Zelle meldet
+// `wach` (die Probe holt eine frische Welt).
+async function dorfErwachen(M) {
+    const st = r.state;
+    const A = r.constructor.AUTO_SETTLEMENT;
+    const rend = st.renderer;
+    delete window.__anazhAutoSettlement; // der Dorf-Zug lebt wie im Spiel (ein Messort davor hielt ihn vielleicht an)
+    const info0 = r._autoSettlementCellInfo(M.zelle[0], M.zelle[1]);
+    if (!info0) return { fehler: "die Zelle trägt kein Dorf", zelle: M.zelle };
+    if ((st.worldMeta.settlementCells || {})[info0.key] || (r._dorfVorraete && r._dorfVorraete.has(info0.key)) || (r._autoSettlementRejected && r._autoSettlementRejected.has(info0.key)))
+        return { wach: true, zelle: M.zelle };
+    const info = Object.assign({}, info0, { nH: M.nH });
+    const orig = r._autoSettlementCellInfo;
+    r._autoSettlementCellInfo = function (x, z) {
+        return x === M.zelle[0] && z === M.zelle[1] ? info : orig.call(this, x, z);
+    };
+    const nah = A.nearM + (info.mehrM || 0);
+    const start = nah + M.vor;
+    const pm = st.playerMesh.position;
+    const rx = pm.x - info.x, rz = pm.z - info.z, rl = Math.hypot(rx, rz) || 1;
+    const sx = info.x + (rx / rl) * start, sz = info.z + (rz / rl) * start;
+    pm.set(sx, r._voxelSurfaceY(sx, sz) + 1.8, sz);
+    let erwacht = null, erstes = null, gesetzt = null, imRadius = null, bild = 0, hash = null, bereit = null, taktFehler = null;
+    const vorher = new Set(st.architectures);
+    const spawn = r._autoSettlementSpawnCell;
+    r._autoSettlementSpawnCell = function (cx, cz, i) {
+        if (cx === M.zelle[0] && cz === M.zelle[1] && !erwacht) erwacht = { t: performance.now(), bild, d: Math.hypot(pm.x - info.x, pm.z - info.z) };
+        return spawn.call(this, cx, cz, i);
+    };
+    const fnv = (s) => {
+        let h = 0x811c9dc5;
+        for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
+        return h.toString(16);
+    };
+    const vorrat = () => {
+        const v = r._dorfVorraete && r._dorfVorraete.get(info.key);
+        return !!(v && v.da);
+    };
+    const ruhig = () => {
+        try {
+            return !r._weltOffen().foundry;
+        } catch (_e) {
+            return false;
+        }
+    };
+    const cam = st.camera, frust = new T.Frustum(), mat = new T.Matrix4();
+    try {
+        await new Promise((ok) => {
+            let t0 = null, tGeh = null, still = 0;
+            const halt = () => (rend.setAnimationLoop(null), ok());
+            rend.setAnimationLoop((t) => {
+                try {
+                    bild++;
+                    t0 ??= t;
+                    if (tGeh == null) {
+                        still = vorrat() && ruhig() ? still + 1 : 0;
+                        if (still >= M.ruhig || t - t0 > M.vorlaufMs) {
+                            tGeh = t;
+                            bereit = { ms: Math.round(t - t0), bilder: bild, vorrat: vorrat(), ruhig: ruhig() };
+                        }
+                    }
+                    // die gehende Pose wie M36: 4 m/s auf den Anker zu, die Lage absolut je Bild gesetzt
+                    const weg = tGeh == null ? 0 : Math.min(start - 30, (4 * (t - tGeh)) / 1000);
+                    pm.set(sx - ((sx - info.x) / start) * weg, pm.y, sz - ((sz - info.z) / start) * weg);
+                    st.yaw = Math.atan2(info.x - pm.x, info.z - pm.z);
+                    st.pitch = 0;
+                    r._gameLoopTick(t);
+                    if (erwacht && !erstes) {
+                        cam.updateMatrixWorld(true);
+                        frust.setFromProjectionMatrix(mat.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+                        const jetzt = () => ({ ms: +(performance.now() - erwacht.t).toFixed(1), bilder: bild - erwacht.bild });
+                        for (const e of st.architectures) {
+                            if (vorher.has(e) || !/^haus_/.test(e.type) || Math.hypot(e.position.x - info.x, e.position.z - info.z) > 260) continue;
+                            gesetzt ??= jetzt();
+                            if (!frust.containsPoint(e.position)) continue;
+                            const d = Math.hypot(e.position.x - pm.x, e.position.z - pm.z);
+                            const nahZone = d <= st.architectureCullingRadius;
+                            if (nahZone) imRadius ??= Object.assign(jetzt(), { radius: st.architectureCullingRadius });
+                            const h = e._ziegelSlot, L = st.weltMarch && st.weltMarch.listeDaten, fp = h && r._archFoundryPreset(e);
+                            const stufe = nahZone
+                                ? r._archIsRendered(e) ? "mesh" : null
+                                : h && L && L[h.feld * 32 + 3] !== 0 && fp && r._foundryFernForm(fp) === "huelle" ? "huelle" : null;
+                            if (!stufe) continue;
+                            erstes = Object.assign(jetzt(), {
+                                stufe,
+                                typ: e.type,
+                                same: e.seed,
+                                ort: [+e.position.x.toFixed(2), +e.position.z.toFixed(2)],
+                                abstand: +d.toFixed(1),
+                                auge: [+pm.x.toFixed(1), +pm.y.toFixed(1), +pm.z.toFixed(1)],
+                            });
+                            hash = fnv([info.seed, info.nH, info.x.toFixed(2), info.z.toFixed(2), e.type, e.seed, erstes.ort].join("|"));
+                            break;
+                        }
+                    }
+                    const ohneErwachen = tGeh != null && !erwacht && t - tGeh > 1000 * (M.vor / 4 + 6);
+                    if (erstes || ohneErwachen || (erwacht && performance.now() - erwacht.t > M.nachMs)) halt();
+                } catch (e) {
+                    taktFehler = String((e && e.message) || e);
+                    halt();
+                }
+            });
+        });
+    } finally {
+        r._autoSettlementCellInfo = orig;
+        r._autoSettlementSpawnCell = spawn;
+        rend.setAnimationLoop(null);
+    }
+    const zelle = (st.worldMeta.settlementCells || {})[info.key] || null;
+    return {
+        gesetzt, imRadius, erstes, hash, bereit, taktFehler, nah, start, zelle: M.zelle, nH: M.nH, same: info.seed,
+        anker: [+info.x.toFixed(1), +info.z.toFixed(1)], erwacht: erwacht && { bild: erwacht.bild, d: +erwacht.d.toFixed(1) }, bilder: bild, reserviert: zelle,
+    };
+}
+// die Probe: nH 12 in der Welt, wie die Sitzung sie hält (eine schon wache Zelle holt eine frische), nH 300 in einer frischen Welt
+// (`punkte.cjs grundstellung`, Spielstand weg, die Seite neu — wie bis 29.10. je nH ein frischer Boot); je nH der Abschnitt
+// „@@PUNKTE@@ NH<n>" mit dem JSON-Block, den das Urteil liest
+async function probeDorf(H) {
+    const j = (H.teil = { je: {} });
+    for (const [i, nh] of [12, 300].entries()) {
+        let e = null;
+        for (let v = 0; v < 2 && H.rest() > 12; v++) {
+            if (i > 0 || v > 0) {
+                const tg = Date.now();
+                H.grundstellung();
+                H.zeile("frische Welt (Grundstellung) nach " + ((Date.now() - tg) / 1000).toFixed(1) + " s");
+            }
+            const M = { zelle: [-4, -6], nH: nh, vor: 8, ruhig: 20, vorlaufMs: 10000, nachMs: 8000 };
+            e = await H.evalWelt("return await (" + H.seite.DORF + ")(" + JSON.stringify(M) + ");", Math.max(5, H.rest() - 2) * 1000);
+            if (!e || !e.wach) break;
+            H.zeile("die Zelle " + M.zelle.join(",") + " ist schon wach — eine frische Welt");
+        }
+        j.je["nH" + nh] = e;
+        console.log("@@PUNKTE@@ NH" + nh);
+        console.log(JSON.stringify({ ergebnis: e }, null, 1));
+        console.log("@@PUNKTE@@ EXIT 0");
+    }
+    return j;
+}
+const DORF_PROBE = probeBefehl(probeDorf, 45, { DORF: dorfErwachen });
+
+// DAS START-DORF VON INNEN (siedlung.K1#2, Seite: r = Welt, T = THREE — ein Rumpf an `werkbank eval`): die Messung von gate:haus-welt
+// W10 für die Häuser des Start-Dorfs (scripts/diag-haus-welt.cjs `proben`, Phasen start + haus und `--bild` grund), ohne das
+// Drehbuch-Dorf 7/18 am Hang, ohne W9 je Box und ohne die Proben daneben (Wasser, Abbau, Waise, Slot) — sie urteilen bauen.K2 und
+// gate:haus-welt. Der Takt der Welt hebt das Start-Dorf am Genesis-Ort (der Dorf-Zug an, bis der Ort steht); je Haus-Slot seines Plans
+// v2 (`_ortPlaene` unter `settlementCells.start.ort`) das Haus an seinem Ort — ein Slot ohne Haus ist ROT. Je Haus (1) DER SPIELGANG
+// über den Sim-Schritt (W-Taste, `_stepFixedSim`): von der Tür bis Keller und Dachboden, um den Schacht, je Lauf der Spur-Rand, je
+// Schritt der Hub; (2) DAS INNEN-BILD aus dem Ausgabe-Pfad (Mittag der Bühne, der Loop ruht): je Box des Körper-Satzes (fachwerk
+// `grundVon`) bis zwei freie Blicke, das Auge 1,3 m über der Diele, der dunkelste Median (Luminanz linear) gegen den Boden im Schatten
+// derselben Stunde (von DIESEM Haus gegen die Sonne der erste Boden 1 m vor jedem Bau, dessen Strahl zur Sonne einen Werfer trifft,
+// das Auge 1,6 m hoch 3 m davor, 13 × 13 px). Bis 29.10. zwei Läufe der Linse in eigenen Browsern (Radeon b3f9ae95 10,72 min).
+async function startDorfInnen(o) {
+    const THREE = window.THREE || T;
+    const s = r.state, A = r.constructor, FC = window.__fachwerkCore, cam = s.camera, pm = s.playerMesh;
+    const ende = performance.now() + o.fristMs;
+    const aus = { haeuser: [], startDorf: null };
+    if (!FC || typeof FC.HAUS !== "function" || typeof FC.grundVon !== "function") return Object.assign(aus, { fehler: "__fachwerkCore fehlt" });
+    if (typeof window.__ausgabeAufnahme !== "function") return Object.assign(aus, { fehler: "der Ausgabe-Pfad fehlt in der Seite" });
+    const DT = A.FIXED_DT || 1 / 60;
+    const FUSS = A.PLAYER_FOOT_OFFSET;
+    let t = 5000;
+    const rund = (v, k = 100) => Math.round(v * k) / k;
+    const hh = (x, z) => r.getTerrainHeightAt(x, z);
+    const pumpe = async (n) => {
+        for (let k = 0; k < n; k++) {
+            try {
+                r._gameLoopTick(performance.now());
+            } catch (_e) {}
+            if (k % 8 === 0) await sleep(10);
+        }
+    };
+    const warteBis = async (bis, n, max, ms) => {
+        let ja = false;
+        try {
+            for (let k = 0, weiter = window.__deckel("start-dorf-innen", max); !(ja = bis()) && weiter() && k++ < 4 * max && performance.now() < ende; )
+                await pumpe(n).then(() => ms && sleep(ms));
+        } catch (_e) {}
+        return ja;
+    };
+    const welt = (e, lx, lz) => {
+        const c = Math.cos(e.rotationY || 0), sn = Math.sin(e.rotationY || 0);
+        return { x: e.position.x + lx * c + lz * sn, z: e.position.z - lx * sn + lz * c };
+    };
+    const stell = (x, y, z) => {
+        pm.position.set(x, y, z);
+        s._fieldVy = 0;
+        if (s.playerVel && s.playerVel.setValue) s.playerVel.setValue(0, 0, 0);
+        if (s._fixedSimPos) s._fixedSimPos.copy(pm.position);
+        for (let k = 0; k < 20; k++) r._stepFixedSim((t += DT), DT);
+    };
+    const gesetz = (e) => {
+        const pre = FC.PRESETS && FC.PRESETS[e.type.slice(5)];
+        if (!pre) return null;
+        const P = FC.hausParams(pre, e.studioOv || null);
+        if (!(e.studioOv && e.studioOv.seed != null)) P.seed = e.seed;
+        const Hh = FC.HAUS(THREE, FC.mat, P);
+        Hh.build({ gelaende: false });
+        return Hh;
+    };
+    // DAS START-DORF
+    const g = r._genesisMitte();
+    stell(g.x, hh(g.x, g.z) + 2, g.z);
+    const takt = window.__anazhAutoSettlement;
+    window.__anazhAutoSettlement = true;
+    const zelle = () => ((s.worldMeta && s.worldMeta.settlementCells) || {}).start;
+    await warteBis(() => !!zelle() && !r._autoSettlementQueue && !r._stlWegePending, 1, 1200);
+    window.__anazhAutoSettlement = takt;
+    const c = zelle();
+    const plan = c && r._ortPlaene && r._ortPlaene.get(c.ort);
+    const slots = ((plan && plan.slots) || []).filter((sl) => /^haus_/.test(r._slotBauplan(sl, r._foundry) || ""));
+    aus.startDorf = { slots: slots.length, fehlt: [] };
+    const SD = [];
+    for (const sl of slots) {
+        const [x, z] = [c.x + sl.x, c.z + sl.z];
+        const e = s.architectures.find((a) => a.tuer && Math.hypot(a.position.x - x, a.position.z - z) < 0.05);
+        if (e) SD.push(e);
+        else aus.startDorf.fehlt.push(`${sl.kultur}@${Math.round(x)}/${Math.round(z)}`);
+    }
+    // (1) DER SPIELGANG je Haus (W10 wörtlich: Tür, Keller, jeder Lauf bis zum Dachboden, der Spur-Rand)
+    s.keys = s.keys || {};
+    for (const e of SD) {
+        const h = { typ: e.type, start: true, gierGrad: Math.round((((e.rotationY || 0) * 180) / Math.PI) % 360) };
+        aus.haeuser.push(h);
+        if (performance.now() > ende) {
+            h.fehler = "Frist der Probe";
+            continue;
+        }
+        try {
+            stell(e.position.x, e.position.y + 3, e.position.z);
+            const l0 = () => e._servedLod === 0 && !!e._hausHuelle && e._hausHuelle.stufe === 0;
+            await window.__gebautNach(e, { fertig: l0, bau: () => {}, takt: () => pumpe(10), max: 40 }).catch(() => null);
+            const Hh = gesetz(e);
+            if (!Hh) {
+                h.fehler = "kein Gesetzbuch";
+                continue;
+            }
+            const tu = e.tuer;
+            const base = e.position.y - 0.5;
+            const dm = Hh.dims || {};
+            const fls = (dm.flights || []).filter((f) => f.x1 - f.x0 > 0.3);
+            const kf = fls.find((f) => f.atLevel === "keller");
+            const auf = fls.filter((f) => f !== kf).sort((a, b) => a.base - b.base || (a.atLevel === "attic") - (b.atLevel === "attic"));
+            const gg = (h.gang = { hub: 0, fehlt: [], keller: !!kf, dach: auf.some((f) => f.atLevel === "attic") });
+            const eg = dm.levelsY[0];
+            const xm = (f) => (f.x0 + f.x1) / 2;
+            const oben = (f) => f.zFoot + f.dir * (f.N * f.go + 0.4);
+            const seite = (rechts) => (rechts ? dm.stairX1 + 0.6 : dm.stairX0 - 0.6);
+            const ziel = (name, lx, lz, soll) => {
+                const w = welt(e, lx, lz);
+                let kl = 0;
+                for (let k = 0, ruhe = 0; ruhe < 10; k++) {
+                    s.keys.w = !ruhe && k < 500 && Math.hypot(w.x - pm.position.x, w.z - pm.position.z) > 0.2;
+                    if (!s.keys.w) ruhe++;
+                    // wie ein Mensch: führt der Weg in eine Wand (≤ 45° neben ihrer Normalen), geht er an ihr entlang, nie hinein
+                    let [dx, dz] = [w.x - pm.position.x, w.z - pm.position.z];
+                    const dn = dx * s._wandKontaktNx + dz * s._wandKontaktNz;
+                    if (s._simZeit - s._wandKontaktAt < A._parkourGesetz().kontaktFrischeSec && dn < -Math.SQRT1_2 * Math.hypot(dx, dz))
+                        [dx, dz] = [dx - dn * s._wandKontaktNx, dz - dn * s._wandKontaktNz];
+                    s.yaw = Math.atan2(dx, dz);
+                    const y0 = pm.position.y;
+                    r._stepFixedSim((t += DT), DT);
+                    kl += s._parkourKletter > 0;
+                    if (pm.position.y - y0 > gg.hub)
+                        [gg.hub, gg.wo] = [pm.position.y - y0, `${name}: Fuß ${(y0 - FUSS - base).toFixed(2)} → ${(pm.position.y - FUSS - base).toFixed(2)} m`];
+                }
+                const rest = Math.hypot(w.x - pm.position.x, w.z - pm.position.z);
+                const fuss = pm.position.y - FUSS - base;
+                if (rest > 0.4 || Math.abs(fuss - soll) > 0.35 || kl)
+                    gg.fehlt.push(`${name} ${rest.toFixed(2)} m neben, Fuß ${fuss.toFixed(2)}/${soll.toFixed(2)}, ${kl} Schritte geklettert`);
+                [gg.x, gg.z] = [lx, lz];
+            };
+            const vor = welt(e, tu.x + tu.w / 2 - 0.3, tu.z - 0.25);
+            stell(vor.x, base + 0.75 + FUSS, vor.z);
+            ziel("tür", tu.x + tu.w / 2 - 0.3, tu.z + 1.8, NaN);
+            if (kf || auf.length) {
+                const hin = (name, lx, lz, soll) => {
+                    const sr = seite((gg.z > dm.stairZ0 ? gg.x : lx) > (dm.stairX0 + dm.stairX1) / 2);
+                    if (gg.z < dm.stairZ0 !== lz < dm.stairZ0) {
+                        ziel(name + "-um", sr, gg.z, NaN);
+                        ziel(name + "-um", sr, lz, NaN);
+                    }
+                    ziel(name, lx, lz, soll);
+                };
+                if (kf) {
+                    const kt = kf.zFoot + kf.dir * (kf.N * kf.go + 0.4);
+                    hin("keller-kopf", xm(kf), kt, eg);
+                    ziel("keller", xm(kf), kf.zFoot - kf.dir * 0.6, kf.base + 0.12);
+                    ziel("keller-auf", xm(kf), kt, eg);
+                }
+                for (const f of auf) {
+                    hin(`fuß ${f.atLevel}`, xm(f), f.zFoot - f.dir * 0.6, f.base);
+                    ziel(`lauf ${f.atLevel}`, xm(f), oben(f), f.base + f.N * f.rise);
+                }
+                for (const f of kf ? [kf, ...auf] : auf)
+                    for (const v of [-0.12, 0.12]) {
+                        const a = welt(e, xm(f) + v, f.zFoot - f.dir * 0.5);
+                        stell(a.x, base + f.base + 0.1 + FUSS, a.z);
+                        ziel(`rand ${f.atLevel} ${v}`, xm(f) + v, oben(f), f.base + f.N * f.rise);
+                    }
+            }
+        } catch (err) {
+            h.fehler = "Gang warf: " + String((err && err.message) || err);
+        } finally {
+            s.keys.w = false;
+        }
+    }
+    // (2) DAS INNEN-BILD je Haus: die Welt steht, die Bühne (Mittag · Sonne · Sommer), der Loop ruht
+    if (performance.now() < ende) await window.__weltStehtNach(() => pumpe(1));
+    window.__buehne();
+    s.renderer.setAnimationLoop(null);
+    const [WB, HB] = [o.WB, o.HB];
+    const tick = r._tickNahWiese;
+    const schuss = async () => {
+        r._tickNahWiese = tick;
+        window.__bundlesNeu();
+        r._schattenAlleNeu();
+        return (await window.__ausgabeAufnahme(WB, HB, 1, { satz: "messung" })).u8;
+    };
+    const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 3294.6 : ((i / 255 + 0.055) / 1.055) ** 2.4));
+    const luma = (u8, px = WB >> 1, py = HB >> 1, rad = WB) => {
+        const l = [];
+        for (let y = Math.max(0, py - rad); y < Math.min(HB, py + rad + 1); y++)
+            for (let x = Math.max(0, px - rad), k; x < Math.min(WB, px + rad + 1); x++)
+                l.push(0.2126 * lin[u8[(k = 4 * (y * WB + x))]] + 0.7152 * lin[u8[k + 1]] + 0.0722 * lin[u8[k + 2]]);
+        return l.sort((a, b) => a - b)[l.length >> 1];
+    };
+    for (const [n, e] of SD.entries()) {
+        const h = aus.haeuser[n];
+        if (performance.now() > ende) {
+            h.bildFehlt = "Frist der Probe";
+            continue;
+        }
+        try {
+            const Hg = gesetz(e);
+            if (!Hg) continue;
+            const gd = FC.grundVon({ H: Hg });
+            const sc = (e.scale > 0 ? e.scale : 1) * (e._hausHuelleSkala > 0 ? e._hausHuelleSkala : 1);
+            const base = e.position.y - 0.5;
+            const boxen = gd.boxen.map(([x0, x1, z0, z1, traegt], j) => ({ art: gd.arten[j], x0, x1, z0, z1, traegt }));
+            const solids = Hg.solids || [];
+            const diele = (lx, lz) => {
+                let d = -Infinity;
+                for (const so of solids)
+                    if (so.min[0] <= lx && lx <= so.max[0] && so.min[2] <= lz && lz <= so.max[2] && so.max[1] < 1.2) d = Math.max(d, so.max[1]);
+                return d;
+            };
+            const frei = (lx, ly, lz, m) => !solids.some((so) => [lx, ly, lz].every((q, k) => so.min[k] - m < q && q < so.max[k] + m));
+            const ecken = boxen.flatMap((m) => [welt(e, m.x0 * sc, m.z0 * sc), welt(e, m.x1 * sc, m.z1 * sc), welt(e, m.x0 * sc, m.z1 * sc), welt(e, m.x1 * sc, m.z0 * sc)]);
+            const [mx0, mx1] = [Math.min(...ecken.map((p) => p.x)), Math.max(...ecken.map((p) => p.x))];
+            const [mz0, mz1] = [Math.min(...ecken.map((p) => p.z)), Math.max(...ecken.map((p) => p.z))];
+            const steht = () =>
+                e._hausHuelle && e._servedLod === 0 && r._bodenSichtChunks(mx0 - 1, mz0 - 1, mx1 + 1, mz1 + 1) && s.nahWiese && s.nahWiese.offen === 0 && s.nahWiese.kacheln.size > 0;
+            stell(e.position.x, e.position.y + 1, e.position.z);
+            let ruhig = 0;
+            await warteBis(() => (ruhig = steht() ? ruhig + 1 : 0) >= 3, 5, 120);
+            h.steht = !!steht();
+            for (const m of boxen) {
+                let blicke = 0;
+                const i = 0.45;
+                const E4 = [[m.x0 + i, m.z0 + i], [m.x1 - i, m.z1 - i], [m.x1 - i, m.z0 + i], [m.x0 + i, m.z1 - i]];
+                const M0 = [(m.x0 + m.x1) / 2, (m.z0 + m.z1) / 2];
+                const paare = [[E4[0], E4[1]], [E4[1], E4[0]], [E4[2], E4[3]], [E4[3], E4[2]], ...E4.map((q) => [M0, q])];
+                const dm = Number.isFinite(diele(...M0)) ? diele(...M0) : 0.5;
+                for (const [[ax, az], [zx, zz]] of paare) {
+                    if (blicke >= 2) break;
+                    const da = Number.isFinite(diele(ax, az)) ? diele(ax, az) : dm;
+                    const dz = Number.isFinite(diele(zx, zz)) ? diele(zx, zz) : dm;
+                    const ay = da + 1.3;
+                    if (!frei(ax, ay, az, 0.25)) continue;
+                    const strahl = Array.from({ length: 19 }, (_, j) => (j + 1) * 0.05).map((q) => [ax + (zx - ax) * q, ay + (dz - ay) * q, az + (zz - az) * q]);
+                    if (!strahl.every((q) => Math.hypot(q[0] - zx, q[1] - dz, q[2] - zz) < 0.3 || frei(...q, 0.02))) continue;
+                    blicke++;
+                    const [p, q] = [welt(e, ax * sc, az * sc), welt(e, zx * sc, zz * sc)];
+                    cam.position.set(p.x, base + ay * sc, p.z);
+                    cam.lookAt(q.x, base + dz * sc, q.z);
+                    cam.updateMatrixWorld(true);
+                    h.innen = Math.min(h.innen ?? 1, luma(await schuss()));
+                }
+            }
+            // der Boden im Schatten zur selben Stunde
+            const S = s.directionalLight.position.clone().sub(s.directionalLight.target.position).normalize();
+            const d = new THREE.Vector3(-S.x, 0, -S.z).normalize();
+            const rc = new THREE.Raycaster();
+            rc.layers.set(A.SHADOW_TWIN_LAYER);
+            let f = null;
+            for (let tt = 1; tt < 40 && !f; tt += 0.25) {
+                const q = new THREE.Vector3(e.position.x + d.x * tt, 0, e.position.z + d.z * tt);
+                if (/haus|bau/.test(r._imGrundriss(q.x, q.z, 1))) continue;
+                q.y = r._bodenSichtAt(q.x, q.z) ?? hh(q.x, q.z);
+                rc.set(q.clone().setY(q.y + 0.05), S);
+                if (rc.intersectObject(s.scene, true).length) f = q;
+            }
+            if (f) {
+                const p = f.clone().addScaledVector(d, 3);
+                cam.position.set(p.x, hh(p.x, p.z) + 1.6, p.z);
+                cam.lookAt(f);
+                cam.updateMatrixWorld(true);
+                const G = await schuss();
+                const v = f.clone().project(cam);
+                h.aussen = luma(G, Math.round(((v.x + 1) / 2) * WB), Math.round(((1 - v.y) / 2) * HB), 6);
+            }
+            h.quote = rund(h.innen / h.aussen, 1000);
+        } catch (err) {
+            h.bildFehlt = "Bild warf: " + String((err && err.message) || err);
+        }
+    }
+    r._tickNahWiese = tick;
+    return aus;
+}
+async function probeStartDorf(H) {
+    if (!(await H.evalWelt("return typeof window.__ausgabeAufnahme === 'function';", 30000))) {
+        const { AUSGABE_INSTALL } = require(H.path.resolve("scripts/lib/ausgabe-aufnahme.cjs"));
+        await H.evalWelt(AUSGABE_INSTALL + "\nreturn true;", 30000);
+    }
+    const o = { WB: 480, HB: 270, fristMs: Math.max(5, H.rest() - 6) * 1000 };
+    const j = (H.teil = await H.evalWelt("return await (" + H.seite.INNEN + ")(" + JSON.stringify(o) + ");", Math.max(5, H.rest() - 1) * 1000));
+    for (const h of (j && j.haeuser) || [])
+        console.log(
+            `  ${h.typ} · Gang Hub ${h.gang ? h.gang.hub.toFixed(2) + " m" + (h.gang.fehlt.length ? " · fehlt " + h.gang.fehlt.join(" · ") : "") : "—"} · ` +
+                `innen ${h.innen} ÷ außen ${h.aussen} = ${h.quote}${h.fehler ? " · " + h.fehler : ""}${h.bildFehlt ? " · " + h.bildFehlt : ""}`
+        );
+    return j;
+}
+const START_DORF_PROBE = probeBefehl(probeStartDorf, 60, { INNEN: startDorfInnen });
 
 const stationen = [
     // ───────── fahrzeug.K3 — die Kamera atmet das Tempo ─────────
@@ -258,13 +925,17 @@ const stationen = [
         // 98ef98bb und 715754fc gleich: Stoß nach 35,5 m an Felsbogen und Kiefer, 13,77 m/s, FOV +8,06°, Arm +15,6 %). tempo4.js legt
         // den Weg der Probe über die Bahn (die Welt räumt die Natur auf ihm), das Gas endet am Plateau der Sim-Zeit, ein Stoß endet
         // es beim Namen (Ende ≠ ok). Null-Renderer 715754fc: Plateau nach 7,9 Sim-s, 15,18 m/s, FOV +9,47°, Arm +18,4 %.
-        probe: sitzung(600,
-            'echo "@@PUNKTE@@ GARAGE"',
-            'git apply "$K/bericht/2110-mk-kopf/garage-mk.diff" && GARAGE_LABOR_PORT=$LP LINSE_GPU=hardware timeout 600 node scripts/diag-garage-mk.cjs',
-            'echo "@@PUNKTE@@ EXIT $?"; git checkout -q -- scripts/diag-garage-labor.cjs; rm -f scripts/diag-garage-mk.cjs',
+        // IN DER SITZUNG (29.10.): die Garage (eigenes Labor auf {PORT}+20001) läuft NEBEN dem Ritt in der Welt der Sitzung, ihre Zeilen
+        // danach; der Patch fällt vor und nach ihr. Der GT und der Weg der Probe bleiben in der Welt (mutiert)
+        probe: { ...sitzung(90,
+            "git checkout -q -- scripts/diag-garage-labor.cjs; rm -f scripts/diag-garage-mk.cjs",
+            '( git apply "$K/bericht/2110-mk-kopf/garage-mk.diff" && GARAGE_LABOR_PORT=$LP LINSE_GPU=hardware timeout 85 node scripts/diag-garage-mk.cjs; ' +
+                'echo "@@PUNKTE@@ EXIT $?"; git checkout -q -- scripts/diag-garage-labor.cjs; rm -f scripts/diag-garage-mk.cjs ) > "$L/garage.out" 2>&1 &',
             "boot",
-            'teil WELT $W eval "$(cat "$K/bericht/3010-heil-fahrzeug/tempo4.js")"'
-        ),
+            'teil WELT $W eval "$(cat "$K/bericht/3010-heil-fahrzeug/tempo4.js")"',
+            "wait",
+            'echo "@@PUNKTE@@ GARAGE"; cat "$L/garage.out"'
+        ),  mutiert: true, sek: 33 },
         env: K,
         gpu: true,
         zeit: false,
@@ -296,11 +967,8 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // die Zusätze der 2: Drift, Rückkehr (tempo4.js in der Welt, auf dem Weg der Probe), Ruck (gate:fahr-leben T4) und EIN
         // FOV-Schreiber (T5)
-        probe: sitzung(480,
-            'teil FAHR env FAHR_LEBEN_PORT=$LP node scripts/diag-fahr-leben.cjs',
-            "boot",
-            'teil WELT $W eval "$(cat "$K/bericht/3010-heil-fahrzeug/tempo4.js")"'
-        ),
+        // IN DER SITZUNG (29.10.): EIN Lauf mit fahrzeug.K4#1/#2 (FAHR_SITZUNG, Zwillinge)
+        probe: { ...FAHR_SITZUNG,  mutiert: true },
         env: K,
         gpu: true,
         zeit: false,
@@ -338,11 +1006,8 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // gate:fahr-leben T4 (Absteigen in Fahrt, Azimut nach 10 Bildern) + der Blick im Bild am Steilhang bergab, Third → Ego →
         // Third (bericht/2010-buendel-abab/blick.js über werkbank eval, M8): der GT in den Bildern 1–3 nach dem Wechsel
-        probe: sitzung(480,
-            'teil FAHR env FAHR_LEBEN_PORT=$LP node scripts/diag-fahr-leben.cjs',
-            "boot",
-            'teil BLICK $W eval "$(cat "$K/bericht/2010-buendel-abab/blick.js")"'
-        ),
+        // IN DER SITZUNG (29.10.): EIN Lauf mit fahrzeug.K3#2 (FAHR_SITZUNG, Zwillinge)
+        probe: { ...FAHR_SITZUNG,  mutiert: true },
         env: K,
         gpu: true,
         zeit: false,
@@ -376,18 +1041,12 @@ const stationen = [
     // ───────── siedlung.K2 — die Stadt in Reichweite (Zweig stadt-tor-k2: Rang-Gesetz im fachwerk-core, Mauer im Export) ─────────
     // Teil Z der Siedlungs-Linse (`diag-settlement --nur-z`, Node, 8 Saaten × zufälliger Spawn, Auto-Zellen binnen 2 km) und das
     // Bild der nächsten Stadt aus dem Ausgabe-Pfad am Boot-Seed (Abnahme-Urteil des Beweisbilds). An main: Z1 0/8 (ROT).
+    // IN DER SITZUNG (29.10.): EIN Lauf mit Staffel 2 (SIEDLUNG_SITZUNG, Zwillinge) — das Bild mittags ist das der Staffel 1 ({AUS}.mittag)
     {
         kriterium: "siedlung.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: sitzung(720,
-            "A=$(cygpath -m '{AUS}')",
-            "teil Z node scripts/diag-settlement.cjs --nur-z",
-            ...STADT_HUEGEL,
-            "rm -f \"$L/stadt-mittag.abnahme.json\"",
-            "teil BILD $W bild $K --datei \"$L/stadt-mittag.png\" --w 1600 --h 900",
-            "cp \"$L/stadt-mittag.abnahme.json\" \"$A\" 2> /dev/null; true"
-        ),
+        probe: { ...SIEDLUNG_SITZUNG,  mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 15,
@@ -403,7 +1062,9 @@ const stationen = [
             const kb = jsonBlock(teil("KAMERA"));
             const k = (kb && kb.ergebnis) || {};
             const steht = s.mauer > 0 && !s.zug && !s.pending;
-            const bild = !!j && j.ok === true;
+            // das Beweisbild mittags ({AUS}.mittag des gemeinsamen Laufs; ein {AUS} ohne mittag ist das Bild selbst)
+            const b1 = j && j.mittag !== undefined ? j.mittag : j;
+            const bild = !!b1 && b1.ok === true;
             const gruen = zOk && steht && !k.fehler && k.segs > 0 && k.hoeher > 0 && bild;
             return {
                 gruen,
@@ -412,7 +1073,7 @@ const stationen = [
                     (w.wahl ? w.wahl.cx + "," + w.wahl.cz + " nH " + w.wahl.nH + " " + w.wahl.d + " m vom Genesis-Ort" : "keine mit Ort") +
                     " · Mauer " + (k.segs != null ? k.segs + " Segmente/" + k.tuerme + " Türme" : k.fehler || "?") + ", Pool " + s.mauer +
                     (s.zug ? ", Zug läuft" : "") + " · Schuss vom " + k.art + " " + k.d + " m vor der Mitte, " + k.hoeher + " m höher · " +
-                    (j && j.zeile ? j.zeile.slice(0, 120) : "ohne Abnahme (Exit " + lauf.exit + ")"),
+                    (b1 && b1.zeile ? b1.zeile.slice(0, 120) : "ohne Abnahme (Exit " + lauf.exit + ")"),
             };
         },
         pfad: [
@@ -442,16 +1103,7 @@ const stationen = [
         kriterium: "siedlung.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: sitzung(720,
-            "A=$(cygpath -m '{AUS}')",
-            "teil ZIPF node scripts/diag-settlement.cjs --nur-z --zipf",
-            ...STADT_HUEGEL,
-            "rm -f \"$L/stadt-mittag.abnahme.json\" \"$L/stadt-daemmerung.abnahme.json\"",
-            "teil MITTAG $W bild $K --uhr 0.5 --datei \"$L/stadt-mittag.png\" --w 1600 --h 900",
-            "teil DAEMMERUNG $W bild $K --uhr 0.25 --datei \"$L/stadt-daemmerung.png\" --w 1600 --h 900",
-            "node -e 'const f = require(\"fs\"), l = (n) => { try { return JSON.parse(f.readFileSync(process.argv[2] + \"/stadt-\" + n + \".abnahme.json\", \"utf8\")); } catch (e) { return null; } }; " +
-                "f.writeFileSync(process.argv[1], JSON.stringify({ mittag: l(\"mittag\"), daemmerung: l(\"daemmerung\") }))' \"$A\" \"$L\""
-        ),
+        probe: { ...SIEDLUNG_SITZUNG,  mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 15,
@@ -553,45 +1205,34 @@ const stationen = [
     // linear), Soll ≥ 0,15 je Haus. Die Cloud (swiftshader) trägt den echten Renderer nicht bis zum Bild (Ankunft 79, Karten 3 offen nach
     // 28 066 Takten) — das Urteil fällt an Radeon und GTX. Erwartet: Quote ≥ 0,4 (M41, Radeon 23.10.: Innen-Median 0,017–0,177;
     // Schatten-Boden 0,014–0,034 im Radeon-Bild bericht/1110-5/bilder/dorf-an.png). Headless am Zweig: 18 von 18 Häusern ganz.
+    // IN DER SITZUNG (29.10., `startDorfInnen`): beide Messungen je Haus des Start-Dorfs in der Welt der Sitzung (der Gang über den
+    // Sim-Schritt, das Innen-Bild aus dem Ausgabe-Pfad), EIN Lauf statt zweier Linsen-Browser.
     {
         kriterium: "siedlung.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: [
-            "bash",
-            "-c",
-            'A=$(cygpath -m "$1" 2> /dev/null || echo "$1"); ' +
-                'HAUS_WELT_JSON="$A.gang" node scripts/diag-haus-welt.cjs --phasen=haus,start; echo "GANG EXIT $?"; ' +
-                'HAUS_WELT_JSON="$A.bild" node scripts/diag-haus-welt.cjs --phasen=grund --bild; echo "BILD EXIT $?"; ' +
-                "node -e 'const f = require(\"fs\"), a = process.argv[1]; f.writeFileSync(a, JSON.stringify({ gang: JSON.parse(f.readFileSync(a + \".gang\")), bild: JSON.parse(f.readFileSync(a + \".bild\")) }))' \"$A\"",
-            "siedlung-k1",
-            "{AUS}",
-        ],
-        env: { HAUS_WELT_PORT: "{PORT}", HAUS_WELT_PARALLEL: "1" },
+        probe: { ...START_DORF_PROBE,  sek: 33 },
         gpu: true,
         zeit: false,
-        minuten: 15,
+        minuten: 1,
         urteil: (j) => {
-            const [g, b] = [j && j.gang, j && j.bild];
-            if (!g || !b || !g.startDorf || !b.startDorf || !b.w9 || !b.w9.bild)
-                return { gruen: false, zahl: "kein JSON beider Läufe (gang: Phasen haus,start · bild: --bild mit W9)" };
-            const sd = g.startDorf;
-            const gaenge = g.haeuser.filter((h) => h.start && !h.fehler && h.gang);
+            if (!j || !j.startDorf || !Array.isArray(j.haeuser))
+                return { gruen: false, zahl: "keine Ausgabe des Start-Dorfs (Gang und Innen-Bild)" + (j && j.fehler ? " — " + j.fehler : "") };
+            const sd = j.startDorf;
+            const gaenge = j.haeuser.filter((h) => !h.fehler && h.gang);
             const ganz = gaenge.filter((h) => !h.gang.fehlt.length && h.gang.hub <= 0.3);
-            const innen = b.w9.haeuser.filter((h) => h.start);
-            const dunkel = innen.filter((h) => !(h.quote >= 0.15));
-            const q = innen.map((h) => h.quote).filter(Number.isFinite).sort((x, y) => x - y);
-            const gruen =
-                sd.slots >= 1 && !sd.fehlt.length && ganz.length === sd.slots &&
-                !b.startDorf.fehlt.length && innen.length === b.startDorf.slots && !dunkel.length;
+            const innen = j.haeuser.filter((h) => Number.isFinite(h.quote));
+            const dunkel = j.haeuser.filter((h) => !(h.quote >= 0.15));
+            const q = innen.map((h) => h.quote).sort((x, y) => x - y);
+            const gruen = sd.slots >= 1 && !sd.fehlt.length && ganz.length === sd.slots && j.haeuser.length === sd.slots && !dunkel.length;
             return {
                 gruen,
                 zahl:
                     ganz.length + " von " + sd.slots + " Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max " +
                     Math.max(0, ...gaenge.map((h) => h.gang.hub)).toFixed(2) + " m" + (sd.fehlt.length ? " (ohne Haus: " + sd.fehlt.join(" ") + ")" : "") +
-                    " · Innen-Bild " + (innen.length - dunkel.length) + " von " + innen.length + " lesbar (Plan " + b.startDorf.slots +
+                    " · Innen-Bild " + (j.haeuser.length - dunkel.length) + " von " + j.haeuser.length + " lesbar (Plan " + sd.slots +
                     "), innen ÷ Außen-Schatten min " + q[0] + " · Median " + q[q.length >> 1] + " (Soll ≥ 0,15)" +
-                    (dunkel.length ? " · dunkel: " + dunkel.map((h) => h.typ + " " + h.innen + "/" + h.aussen).join(" · ") : ""),
+                    (dunkel.length ? " · dunkel: " + dunkel.map((h) => h.typ + " " + h.innen + "/" + h.aussen + (h.bildFehlt ? " (" + h.bildFehlt + ")" : "")).join(" · ") : ""),
             };
         },
         pfad: [
@@ -604,10 +1245,9 @@ const stationen = [
             "stamm/daten.js",
             "fachwerk-core.js",
             "foundry-core.js",
-            "scripts/diag-haus-welt.cjs",
+            "scripts/werkbank.cjs",
             "scripts/lib/welt-boot.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs",
-            "scripts/lib/software-gpu.cjs",
             "stamm/kreatur-*.js",
             "stamm/vegetation-*.js",
         ],
@@ -620,23 +1260,16 @@ const stationen = [
     // Kegel, gezeichnet in der Stufe, die seine Studio-Kette für seinen Abstand wählt — in der Mesh-Zone sein Mesh, dahinter die Hülle
     // seines Gesetzbuchs im Welt-March (fernform "huelle"); der Feld-Satz einer Brücke in der Mesh-Zone zählt nie —, dazu der Bau-Hash
     // (bericht/2410-siedlung-k5/m36-stufe.js = artifacts/siedlung-k5/m36-stufe.js; `erstesMesh` trägt die alte Lesung mit).
+    // IN DER SITZUNG (29.10., `dorfErwachen`): die Welt der Sitzung (die Kälte misst der EINE Start der Sitzung), der Spieler im
+    // Vorlauf-Ring statt 450 m Anmarsch, das Ende am ersten Haus; nH 300 in einer frischen Welt (Grundstellung).
     ...[1, 2].map((staffel) => ({
         kriterium: "siedlung.K5",
         staffel,
         geraet: ["radeon", "gtx"],
-        befehl: bootSitzung(
-            ...[12, 300].flatMap((nh) => [
-                "boot --ort dorf",
-                "timeout 60 $W fenster 1920 1080 > /dev/null 2>&1",
-                "timeout 120 $W umstellen --ort dorf --sicht ego > /dev/null 2>&1",
-                "timeout 300 $W lauf 10 --ein 20 --ruhe 120 --regler frei --tiere frei > /dev/null 2>&1",
-                "teil NH" + nh + ' $W eval "window.__m36 = { zelle: [-4, -6], nH: ' + nh + ', start: 450, maxBilder: 15000 }; $(cat "$K/bericht/2410-siedlung-k5/m36-stufe.js")"',
-            ])
-        ),
-        env: K,
+        probe: { ...DORF_PROBE, mutiert: true, sek: 27 },
         gpu: true,
         zeit: true,
-        minuten: 14,
+        minuten: 1,
         urteil: (j, lauf) => {
             const teil = (n) => lauf.stdout.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
             const je = [12, 300].map((nh) => {
@@ -832,7 +1465,7 @@ const stationen = [
         kriterium: "siedlung.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: sitzung(600,
+        probe: {  ...sitzung(90,
             "A=$(cygpath -m '{AUS}')",
             "teil W node scripts/diag-settlement.cjs --nur-w",
             "boot",
@@ -854,7 +1487,7 @@ const stationen = [
             "rm -f \"$L/ring.abnahme.json\"",
             "teil BILD $W bild $K --uhr 0.5 --datei \"$L/ring.png\" --w 1600 --h 900",
             "cp \"$L/ring.abnahme.json\" \"$A\" 2> /dev/null; true"
-        ),
+        ), sek: 33 },
         gpu: true,
         zeit: false,
         minuten: 12,
@@ -903,11 +1536,12 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // werkbank latenz an der Mess-Wiese: CDP-Taste bis zum ersten Ausgabe-Bild mit Leib/Kamera ≥ 1 cm bewegt, je 50 Proben —
         // in LAEUFE eigenen Boots, geurteilt über den schlechtesten (bildraten-fest)
-        probe: sitzung(600,
+        // IN DER SITZUNG (29.10.): EIN Lauf, LATENZ_PROBEN je Reihe (4 Reihen) — Ziel 30 s
+        probe: sitzung(15,
             ...latenzLaeufe(
                 "boot",
                 "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
-                'teil LATENZ{N} $W latenz --proben 50 --sicht ego,third --verb gehen,wechsel --json "{AUS}.lauf{N}.json"'
+                "teil LATENZ{N} $W latenz --proben " + LATENZ_PROBEN + ' --sicht ego,third --verb gehen,wechsel --json "{AUS}.lauf{N}.json"'
             )
         ),
         env: K,
@@ -915,7 +1549,7 @@ const stationen = [
         zeit: true,
         minuten: 10,
         urteil: (j) => {
-            const { gruen, zahl } = latenzSchlechtester(j, ["ego/gehen", "third/gehen", "ego/wechsel", "third/wechsel"], 50);
+            const { gruen, zahl } = latenzSchlechtester(j, ["ego/gehen", "third/gehen", "ego/wechsel", "third/wechsel"], LATENZ_PROBEN);
             return { gruen, zahl };
         },
         pfad: LATENZ,
@@ -926,20 +1560,15 @@ const stationen = [
         staffel: 2,
         geraet: ["radeon", "gtx"],
         // dieselbe Linse über jedes Verb der Staffel (schwingen = hieb), EIN Ruf je Boot, LAEUFE Boots, der schlechteste urteilt
-        probe: sitzung(1080,
-            ...latenzLaeufe(
-                "boot",
-                "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
-                'teil LATENZ{N} $W latenz --proben 50 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "{AUS}.lauf{N}.json"'
-            )
-        ),
+        // IN DER SITZUNG (29.10.): der Zwilling von halten.K2#1 (LATENZ_HALT_SITZUNG)
+        probe: { ...LATENZ_HALT_SITZUNG,  mutiert: true },
         env: K,
         gpu: true,
         zeit: true,
         minuten: 24,
         urteil: (j) => {
             const ids = ["gehen", "springen", "einsteigen", "hieb"].flatMap((v) => ["ego/" + v, "third/" + v]);
-            const { gruen, zahl } = latenzSchlechtester(j, ids, 50);
+            const { gruen, zahl } = latenzSchlechtester(j, ids, LATENZ_PROBEN);
             return { gruen, zahl };
         },
         pfad: LATENZ,
@@ -957,11 +1586,11 @@ const stationen = [
         // und stufe (zehn Stufen, Steigung 0,17 m, hinauf und hinab) an Mess-Wiese und 25°-Hang, je ≥ 200 Kontakte; die
         // Steckenbleiber über alle sechs Gänge (je halbe Sekunde mit gehaltener Taste < 15 cm voran, oder das Ende nie erreicht).
         // Das Urteil liest nur den Fuß aus dem JSON — die übrigen Rollen der Linse richten gelaende.K5.
-        befehl: ["node", "scripts/diag-koerper-stand.cjs", "--k8", "--bild"],
-        env: { KOERPER_STAND_PORT: "{PORT}", KOERPER_STAND_JSON: "{AUS}", LINSE_GPU: "hardware" },
+        // Seit 29.10. die Probe LEIB_K2 in der Welt der Sitzung (oben, leibK2Seite; vorher der eigene Boot der Linse, 10 Soll-Minuten)
+        probe: LEIB_K2,
         gpu: true,
         zeit: false,
-        minuten: 10,
+        minuten: 1,
         urteil: (j, lauf) => {
             const k = j && j.k8;
             if (!k || !k.hang || !k.wiese) return { gruen: false, zahl: "kein K8 der Linse (Exit " + lauf.exit + ")" };
@@ -998,6 +1627,7 @@ const stationen = [
             "voxel-worker.js",
             "spec/profiband/haushalt.json",
             "scripts/diag-koerper-stand.cjs",
+            "scripts/werkbank.cjs",
             "scripts/lib/welt-boot.cjs",
             "scripts/lib/welt-orte.cjs",
             "scripts/lib/software-gpu.cjs",
@@ -1017,12 +1647,11 @@ const stationen = [
         // Gesetz koerper LEIB.sprung (v = √(2d(F/m − g)), `_sprungAbdruck`). Das Urteil: der Fuß von #1 (dazu) und je Sicht
         // das Bild (die Hüfte in Third, das Auge in Ego heben sich mit der Kapsel, ≥ 80 %), die Masse senkt Höhe UND Weite um
         // ≥ 10 %, die Kraft hebt beide um ≥ 10 %. Headless (Null-Renderer, leib-k2-sprung 27.10.): Ego und Third 0,323/2,85 m,
-        // Masse 0,179/2,16 m, Kraft 0,504/3,45 m, Auge 0,315 m, Hüfte 0,326 m.
-        befehl: ["node", "scripts/diag-koerper-stand.cjs", "--k8", "--bild"],
-        env: { KOERPER_STAND_PORT: "{PORT}", KOERPER_STAND_JSON: "{AUS}", LINSE_GPU: "hardware" },
+        // Masse 0,179/2,16 m, Kraft 0,504/3,45 m, Auge 0,315 m, Hüfte 0,326 m. Seit 29.10. dieselbe Probe LEIB_K2 (Zwilling von #1).
+        probe: LEIB_K2,
         gpu: true,
         zeit: false,
-        minuten: 10,
+        minuten: 1,
         urteil: (j, lauf) => {
             const fuss = stationen.find((s) => s.kriterium === "leib.K2" && s.staffel === 1).urteil(j, lauf);
             const sp = (j && j.k8 && j.k8.sprung) || {};
@@ -1062,6 +1691,7 @@ const stationen = [
             "voxel-worker.js",
             "spec/profiband/haushalt.json",
             "scripts/diag-koerper-stand.cjs",
+            "scripts/werkbank.cjs",
             "scripts/lib/welt-boot.cjs",
             "scripts/lib/welt-orte.cjs",
             "scripts/lib/software-gpu.cjs",
@@ -1077,12 +1707,13 @@ const stationen = [
         // gate:kamera-leib Teil gang mit --bild (echter Renderer): Stamm, Fels, Haus im echten Spiel-Takt, rückwärts heran +
         // 360°-Orbit; Kugel in Fels/Bau, Nah-Pixel von Fels, Gelände und Rinde, Ruck p95
         // der Gang läuft NUR im Teil leib (diag-kamera-laub: `if (TEILE.includes("leib")) { … if (TEILE.includes("gang"))`), wie
-        // gate:kamera-leib (`--teile leib,gang,ninja --bild`); `--teile gang` allein mass nichts (23.10.: „Gang: nicht gemessen“)
-        befehl: ["node", "scripts/diag-kamera-laub.cjs", "--teile", "leib,gang", "--bild"],
-        env: { KAMERA_LAUB_PORT: "{PORT}", LINSE_GPU: "hardware" },
+        // gate:kamera-leib (`--teile leib,gang,ninja --bild`); `--teile gang` allein mass nichts (23.10.: „Gang: nicht gemessen“).
+        // Seit 29.10. die Probe LEIB_K4 in der Welt der Sitzung (leibK4Seite: die Anker aus leibWiese, der Gang mit gang2 — der
+        // Zwilling von #2, EIN Lauf; vorher der eigene Boot, 6 Soll-Minuten)
+        probe: LEIB_K4,
         gpu: true,
         zeit: false,
-        minuten: 6,
+        minuten: 2,
         // DAS URTEIL (24.10., Prüfung der Buchung): das Kriterium misst Pixel „an einem Gerät“ — unter `--bild` zeichnet die Welt
         // auf der Karte (seit gpu-wand: Rezept linse ohne Null-Renderer), kamera-nah rechnet die Nah-Pixel gegen die Szene, die sie
         // zeichnet; zeichnet sie nie (welt-boot: „das Rezept ist null“), ist das ROT (Wand GPU in punkte.cjs und hier).
@@ -1117,7 +1748,10 @@ const stationen = [
             "stamm/dirigent-takt.js",
             "stamm/daten.js",
             "scripts/diag-kamera-laub.cjs",
+            "scripts/werkbank.cjs",
             "scripts/lib/kamera-nah.cjs",
+            "scripts/lib/wasser-linse.cjs",
+            "scripts/lib/welt-orte.cjs",
             "scripts/lib/welt-boot.cjs",
             "scripts/lib/software-gpu.cjs",
         ],
@@ -1135,11 +1769,11 @@ const stationen = [
         // „auch": die Zeile der Staffel 1 (Stamm, Fels, Haus beim Gehen) zählt mit; Wand-Pixel (Bau) zählen in jedem Gang, die
         // Weiche „zeichnet nie" ist ROT (Wand GPU in punkte.cjs und hier). gate:kamera-leib (CI) fährt gang2 nicht, solange er ROT
         // ist (26.10., swiftshader mit --bild am Code-Zweig lk4-steil: Ruck p95 im Haus-Sprint 0,048 m, sonst grün).
-        befehl: ["node", "scripts/diag-kamera-laub.cjs", "--teile", "leib,gang,gang2", "--bild"],
-        env: { KAMERA_LAUB_PORT: "{PORT}", LINSE_GPU: "hardware" },
+        // Seit 29.10. dieselbe Probe LEIB_K4 (Zwilling von #1; vorher der eigene Boot, 8 Soll-Minuten).
+        probe: LEIB_K4,
         gpu: true,
         zeit: false,
-        minuten: 8,
+        minuten: 2,
         urteil: (j, lauf) => {
             const zeilen = lauf.stdout.split(/\r?\n/);
             const z1 = zeilen.find((l) => /^\s*(✅|❌) K4 der Gang in Third/.test(l));
@@ -1176,6 +1810,7 @@ const stationen = [
             "voxel-worker.js",
             "spec/profiband/haushalt.json",
             "scripts/diag-kamera-laub.cjs",
+            "scripts/werkbank.cjs",
             "scripts/lib/kamera-nah.cjs",
             "scripts/lib/welt-orte.cjs",
             "scripts/lib/wasser-linse.cjs",
@@ -1240,22 +1875,15 @@ const stationen = [
         // werkbank latenz --verb hieb (halten-latenz): Klick per CDP bis zur Marke getCurrentTexture, an der die rechte Hand ≥ 1 cm
         // steht; Hit-Stop = präsentierte Bilder mit stehender Schwung-Uhr und Hand (halt) — in LAEUFE eigenen Boots, der
         // schlechteste urteilt (bildraten-fest, wie leib.K1)
-        probe: sitzung(600,
-            ...latenzLaeufe(
-                "boot",
-                "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
-                "teil HAKEN{N} $W eval '" + HIT_HAKEN + "'",
-                'teil LATENZ{N} $W latenz --verb hieb --sicht third,ego --proben 30 --json "{AUS}.lauf{N}.json"',
-                "teil SPIEL{N} $W eval '" + HIT_LESEN + "'"
-            )
-        ),
+        // IN DER SITZUNG (29.10.): der Zwilling von leib.K1#2 (LATENZ_HALT_SITZUNG) — die Reihen hieb in Ego und Third daraus
+        probe: { ...LATENZ_HALT_SITZUNG,  mutiert: true },
         env: K,
         gpu: true,
         zeit: true,
         minuten: 14,
         urteil: (j, lauf) => {
             const ids = ["third/hieb", "ego/hieb"];
-            const r = latenzSchlechtester(j, ids, 30);
+            const r = latenzSchlechtester(j, ids, LATENZ_PROBEN);
             if (!r.da) return r;
             // der Hit-Stop je Lauf (die längere Sicht), der schlechteste Lauf urteilt
             const halt = Math.min(...r.da.map((l) => Math.max(0, ...ids.map((id) => (l.reihen[id] && l.reihen[id].halt) || 0))));
@@ -1550,11 +2178,11 @@ const stationen = [
         kriterium: "halten.K5",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/diag-kampf-gefuehl.cjs", "--k5"],
-        env: { KAMPF_GEFUEHL_PORT: "{PORT}", LINSE_GPU: "hardware" },
+        // seit 29.10. die Probe HALTEN_K5 in der Welt der Sitzung (haltenK5Seite; vorher der eigene Boot `--k5`, 4 Soll-Minuten)
+        probe: HALTEN_K5,
         gpu: true,
         zeit: false,
-        minuten: 4,
+        minuten: 1,
         urteil: (j, lauf) => {
             const l = lauf.stdout.split(/\r?\n/);
             const q = l.find((x) => /^\s*(✅|❌) Q13 halten\.K5 Staffel 1/.test(x));
@@ -1573,7 +2201,7 @@ const stationen = [
             const rot = /❌/.test(q) ? " · ROT: " + q.split("Zustand ").slice(1).join("").trim() : "";
             return { gruen: lauf.exit === 0 && /✅/.test(q) && !stumm.length, zahl: zahl + rot + (stumm.length ? " · Selbst-Test stumm: " + stumm.join(", ") : "") };
         },
-        pfad: [...KAMPF, "koerper-core.js", "stamm/dirigent-takt.js", "stamm/dirigent-kern.js", "stamm/speicher-welten.js", "stamm/speicher-laden.js"],
+        pfad: [...KAMPF, "koerper-core.js", "stamm/dirigent-takt.js", "stamm/dirigent-kern.js", "stamm/speicher-welten.js", "stamm/speicher-laden.js", "scripts/werkbank.cjs"],
         quelle: "1 = Fall-Schaden aus dem Aufprall-Tempo, Tod und Wiederkehr am Ort mit Zustand (Inventar, Bindung) über Speichern, an einem Gerät",
     },
     // halten.K5 Staffel 2 (halten-masse): derselbe Lauf `--k5` (Zwilling der Staffel 1, fährt einmal), Q14 nach dem Tod: die Werte des
@@ -1587,11 +2215,10 @@ const stationen = [
         kriterium: "halten.K5",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/diag-kampf-gefuehl.cjs", "--k5"],
-        env: { KAMPF_GEFUEHL_PORT: "{PORT}", LINSE_GPU: "hardware" },
+        probe: HALTEN_K5, // seit 29.10. dieselbe Probe (Zwilling von #1)
         gpu: true,
         zeit: false,
-        minuten: 4,
+        minuten: 1,
         urteil: (j, lauf) => {
             const l = lauf.stdout.split(/\r?\n/);
             const q = l.find((x) => /^\s*(✅|❌) Q14 halten\.K5 Staffel 2/.test(x));
@@ -1609,7 +2236,7 @@ const stationen = [
             const rot = /❌/.test(q) ? " · ROT: " + q.split("Werk und Nahrung ").slice(1).join("").trim() : "";
             return { gruen: /✅/.test(q) && s20, zahl: zahl + rot + (s20 ? "" : " · Selbst-Test S20 stumm") };
         },
-        pfad: [...KAMPF, "koerper-core.js", "stamm/dirigent-takt.js", "stamm/dirigent-kern.js", "stamm/speicher-welten.js", "stamm/speicher-laden.js", "stamm/bau-*.js"],
+        pfad: [...KAMPF, "koerper-core.js", "stamm/dirigent-takt.js", "stamm/dirigent-kern.js", "stamm/speicher-welten.js", "stamm/speicher-laden.js", "stamm/bau-*.js", "scripts/werkbank.cjs"],
         quelle: "2 = Lebenswerte lesen Werk und Nahrung (Mutation), beide Geräte",
     },
     // ───────── halten.K1 Staffel 2 — der Treffer aus dem Gesetz im Bild, Labor = Welt (halten-masse) ─────────
@@ -1624,11 +2251,11 @@ const stationen = [
         kriterium: "halten.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/diag-kampf-gefuehl.cjs", "--k1"],
-        env: { KAMPF_GEFUEHL_PORT: "{PORT}", LINSE_GPU: "hardware", KAMPF_BILDER: "{AUS}" },
+        // seit 29.10. die Probe HALTEN_K1 in der Welt der Sitzung (haltenK1Seite; vorher der eigene Boot `--k1`, 6 Soll-Minuten)
+        probe: HALTEN_K1,
         gpu: true,
         zeit: false,
-        minuten: 6,
+        minuten: 1,
         urteil: (j, lauf) => {
             const l = lauf.stdout.split(/\r?\n/);
             const q = l.find((x) => /^\s*(✅|❌) Q15 halten\.K1 Staffel 2/.test(x));
@@ -1647,7 +2274,7 @@ const stationen = [
             const rot = /❌/.test(q) ? " · ROT: " + q.split("Labor-Werk ").slice(1).join("").trim() : "";
             return { gruen: lauf.exit === 0 && /✅/.test(q) && s21, zahl: zahl + rot + (s21 ? "" : " · Selbst-Test S21 stumm") };
         },
-        pfad: [...KAMPF, "stamm/dirigent-takt.js", "worlds/schmiede/schmiede.js", "worlds/schmiede/index.html"],
+        pfad: [...KAMPF, "stamm/dirigent-takt.js", "worlds/schmiede/schmiede.js", "worlds/schmiede/index.html", "scripts/werkbank.cjs"],
         quelle: "2 = Schaden und Impuls aus Masse × Schneide × Tempo, eine Mutation in schmiede-core ändert Treffer UND Labor-Werk, im Bild beider Geräte",
     },
     // ───────── fahrzeug.K5 — Rückmeldung: der Körper fühlt die Fahrt (fahr-rueckmeldung) ─────────
@@ -1662,13 +2289,13 @@ const stationen = [
     // 0 Stöße: der Aufbau folgte jeder Unebenheit starr, die Antwort der Mutante 1,0–2,7 mm; RM3 kein Summen); am Zweig headless
     // Antwort Glatt/Hang 7,2/7,7 mm, Summen 0,54–0,60, Drift-Wank 8,6 gegen 0,5 mm, Rumble Drift 1,0 gegen Glatt 0,004;
     // swiftshader dasselbe Urteil (Antwort 8,0/9,9 mm). Erwartet an Radeon und GTX: RM1–RM3 ✅ und die Zeile (F) ohne „motor stumm“.
+    // IN DER SITZUNG (29.10., proben-welt.cjs `fahrRueck`): RM über die Seiten-Probe des Gates (`probeLeben`, `nurRueck`) und der
+    // Motor über `koerperSeite` der Klang-Linse (Landung und Doppler per Anker aus: klang.K4) in der warmen Welt — bis 29.10. zwei
+    // eigene Boots samt ganzem Klang-Zensus (Radeon b3f9ae95: 5,06 min Arbeit). Die Strecke legt eine Straße und räumt Natur: mutiert.
     {
         kriterium: "fahrzeug.K5", staffel: 1, geraet: ["radeon", "gtx"],
-        befehl: ["bash", "-c", [
-            'echo "@@PUNKTE@@ RM"; timeout 900 node scripts/diag-fahr-leben.cjs --rueckmeldung; echo "@@PUNKTE@@ EXIT $?"',
-            'echo "@@PUNKTE@@ KLANG"; KLANG_ZENSUS_PORT=$(({PORT} + 1)) timeout 1500 node scripts/diag-klang-zensus.cjs; echo "@@PUNKTE@@ EXIT $?"',
-        ].join("\n")],
-        env: { FAHR_LEBEN_PORT: "{PORT}" }, gpu: true, zeit: false, minuten: 30,
+        probe: { befehl: PW.torBefehl(PW.fahrRueck), sek: 15, mutiert: true },
+        gpu: true, zeit: false, minuten: 30,
         urteil: (j, lauf) => {
             const teil = (n) => lauf.stdout.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
             const rm = jsonZeile(teil("RM"), /^RUECKMELDUNG /);
@@ -1688,7 +2315,7 @@ const stationen = [
                     " Hz je 1000 Upm (klang-zensus F" + (stumm ? ", STUMM" : "") + ") · RM1–3 " + gruen3.map((g) => (g ? "✅" : "❌")).join(""),
             };
         },
-        pfad: [...FAHRT, "stamm/klang.js", "klang-core.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/lib/welt-boot.cjs", "scripts/diag-klang-zensus.cjs"],
+        pfad: [...FAHRT, "stamm/klang.js", "klang-core.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/lib/welt-boot.cjs", "scripts/diag-klang-zensus.cjs", "scripts/lib/wasser-linse.cjs"],
         quelle: "1 = ≥ 3 Kanäle mit gemessenem Paar aus dem Ausgabe-Pfad bzw. am Klang-Abgriff",
     },
     // ───────── fahrzeug.K1 — das Fahr-Gesetz: der Reifen mit Spitze (Staffel 1 Weg (a), fahrzeug-k1-reifen 2d01a8a7) ─────────
@@ -1775,7 +2402,8 @@ const stationen = [
     // heimbringen. An main 206b395a ROT: 0/30 (drüben hält keine Hülle etwas, daheim vor = nach).
     {
         kriterium: "tore.K3", staffel: 1, geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/diag-portal-konformanz.cjs"], env: { PORTAL_KONFORMANZ_PORT: "{PORT}" }, gpu: true, zeit: false, minuten: 5,
+        // seit 29.10. die Probe TORE_K3 in der Welt der Sitzung (toreK3Seite: nur K8; vorher der eigene Boot aller Welten, 5 Soll-Minuten)
+        probe: TORE_K3, gpu: true, zeit: false, minuten: 2,
         urteil: (j, lauf) => {
             const z = String(lauf.stdout || "").split(/\r?\n/).find((l) => l.startsWith("K8 ["));
             let R = null;
@@ -1804,6 +2432,7 @@ const stationen = [
             "stamm/koerper-bewegung.js",
             "worlds/huelle/huelle.js",
             "scripts/diag-portal-konformanz.cjs",
+            "scripts/werkbank.cjs",
             "scripts/lib/welt-boot.cjs",
         ],
         quelle: "1 = Leib, Inventar und Gehaltenes stehen nach Tor hin und zurück byte-gleich, an einem Gerät",
@@ -1819,7 +2448,7 @@ const stationen = [
     // am Grund eeaff9d6 Reittier 0/10 (drüben fehlte es — das Gepäck trug es nicht).
     {
         kriterium: "tore.K3", staffel: 2, geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/diag-portal-konformanz.cjs"], env: { PORTAL_KONFORMANZ_PORT: "{PORT}" }, gpu: true, zeit: false, minuten: 5,
+        probe: TORE_K3, gpu: true, zeit: false, minuten: 2, // seit 29.10. dieselbe Probe (Zwilling von #1)
         urteil: (j, lauf) => {
             const z = String(lauf.stdout || "").split(/\r?\n/).find((l) => l.startsWith("K8 ["));
             let R = null;
@@ -1850,6 +2479,7 @@ const stationen = [
             "stamm/bau-vorlagen.js",
             "worlds/huelle/huelle.js",
             "scripts/diag-portal-konformanz.cjs",
+            "scripts/werkbank.cjs",
             "scripts/lib/welt-boot.cjs",
         ],
         quelle: "2 = auch Reittier/Fahrzeug und die Rundreise eines Werks Studio → Welt → Studio mit gleichem Bau-Hash, für jede Ziel-Seite",
@@ -1906,69 +2536,6 @@ const stationen = [
         ],
         quelle: "1 = ein Fluss (Bauplan oder Welt) an einem Gerät: A teilt, B (anderes Gerät, frisches Profil, IDB leer) öffnet; das Werk steht an B's Pose mit gleichem Bau-Hash und studioOv, Signatur gültig, ≤ 10 s",
     },
-    // ───────── tore.K5 Staffel 2 — beide Flüsse an beiden Geräten (tore-k5-welt) ─────────
-    // DIESELBE Probe wie #1 (gate:praegung-welt), B zeichnet mit `PRAEGUNG_WELT_B=echt` auf der Karte. Nach dem Bauplan (≤ 4 KB,
-    // Bau-Hash A = B) teilt A seine Welt in EINER Geste (Bibliothek → Teilen: dieselbe Hülle `anazh-werk:`, signiert wie jede
-    // Welt-Adresse), B gibt den Code in den Chat und tritt bei (die Tür `_weltBetreten`, Neuladen); die Kontrolle ist das
-    // Ereignis `_weltbildKommt` in A's Welt (Klick bis Code + Enter bis dahin ≤ 5 s), dann trägt W den Leib ≥ 1 m. Das Urteil
-    // verlangt jede Zeile von #1, die vier WELT-Zeilen und „B echt" (ein Lauf mit Null-Renderer zählt nie). Headless (B null)
-    // an tore-k5-welt: Bauplan 530 Zeichen, Welt-Code 515, Welt 136 KB, Kontrolle 1 610 ms, Leib 1 236 ms, Bau-Hash
-    // 9c183437/12 = 9c183437/12. Vorher (main 19606f2e) kam keine Welt über 128 KB an: Chrome teilt die Nachricht in Rahmen,
-    // der signaling-server las nur den ersten (Join-Timeout 10 s).
-    {
-        kriterium: "tore.K5",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/diag-praegung-welt.cjs"],
-        env: { PRAEGUNG_WELT_PORT: "{PORT}", PRAEGUNG_WELT_B: "echt" },
-        gpu: true,
-        zeit: true,
-        minuten: 6,
-        urteil: (j, lauf) => {
-            const l = String(lauf.stdout || "").split(/\r?\n/);
-            const soll = [
-                ["Bauplan", /^\s*(✅|❌) A: Werkstatt → GT → Teilen liefert EINEN Code ≤ 4 KB/],
-                ["Gerät", /^\s*(✅|❌) B ist ein ANDERES GERÄT: /],
-                ["Selbsttest", /^\s*(✅|❌) SELBST-TEST: B als zweiter Kontext im Chrome von A ist ROT/],
-                ["Signatur", /^\s*(✅|❌) B: Chat-Taste · Code · Enter — das Werk steht, Signatur von A/],
-                ["Pose", /^\s*(✅|❌) B: gezeichnet an der eigenen Pose/],
-                ["Zeit", /^\s*(✅|❌) ZEIT: Klick bis Code \+ Enter bis gezeichnet ≤ 10 s/],
-                ["Stempel", /^\s*(✅|❌) B: Stempel und Same reisen tief gleich/],
-                ["Bau-Hash", /^\s*(✅|❌) BAU-HASH A ↔ B byte-gleich/],
-                ["Welt-Code", /^\s*(✅|❌) WELT: A teilt die Welt — EIN Code, die Hülle des Werks, Signatur von A/],
-                ["Beitritt", /^\s*(✅|❌) WELT: B steht in A's Welt \(Id, Same, Gast, > 128 KB\) und kennt A am Anschluss/],
-                ["Kontrolle", /^\s*(✅|❌) WELT: KONTROLLE ≤ 5 s — Klick bis Code \+ Enter bis zum ersten Weltbild — .*, B echt\)/],
-                ["Leib", /^\s*(✅|❌) WELT: der Leib geht unter W ≥ 1 m/],
-            ];
-            const je = soll.map(([, re]) => l.find((x) => re.test(x)));
-            const fehlt = soll.filter((_, i) => !je[i]).map(([n]) => n);
-            if (fehlt.length) return { gruen: false, zahl: "Zeile fehlt: " + fehlt.join(", ") + " (Exit " + lauf.exit + ")" };
-            const rot = soll.filter((_, i) => !/✅/.test(je[i])).map(([n]) => n);
-            const nach = (i) => je[i].split(" — ").pop().slice(0, 120);
-            return {
-                gruen: !rot.length && lauf.exit === 0,
-                zahl: (rot.length ? "ROT: " + rot.join(", ") + " · " : "") + "Bauplan " + nach(0) + " · Welt-Code " + nach(8) +
-                    " · Welt " + nach(9) + " · Kontrolle " + nach(10) + " · Leib " + nach(11) + " · " + nach(7),
-            };
-        },
-        pfad: [
-            "stamm/netz-identitaet.js",
-            "stamm/netz-p2p.js",
-            "stamm/netz-portal.js",
-            "stamm/feld-dsl.js",
-            "stamm/feld-leben.js",
-            "stamm/studio-bruecke.js",
-            "stamm/werkstatt-*.js",
-            "stamm/speicher-laden.js",
-            "stamm/dirigent-ankunft.js",
-            "index.html",
-            "signaling-server.js",
-            "scripts/diag-praegung-welt.cjs",
-            "scripts/lib/welt-boot.cjs",
-        ],
-        quelle: "2 = beide Flüsse (Welt per Einladungs-Code, Kontrolle ≤ 5 s) an beiden Geräten, Bauplan ≤ 4 KB",
-    },
-
     // ───────── spielgang.K3 — Bedienung: HUD und Menü antworten, ohne das Bild zu verdecken (Zweig hud-zugang) ─────────
     {
         kriterium: "spielgang.K3",
@@ -1982,12 +2549,14 @@ const stationen = [
         // rechnet, zählt nicht doppelt). Am Grund a03b7b06 fehlt das Verb
         // (ROT „keine Bedienung"); swiftshader in der Cloud: Deckung 12,51 % ohne → 3,18 % mit dem Spiel-Zustand (zwei Läufe gleich, HUD 50 · Menü 21 Interaktionen), INP Sekunden
         // (CPU-Raster, kein Urteil).
-        probe: sitzung(180,
+        // IN DER SITZUNG (29.10.): EIN Teleport an die Wiese, die HUD-Maske, 5 Runden echte Eingabe (das Urteil verlangt ≥ 30 HUD- und
+        // ≥ 15 Menü-Interaktionen: 4 Runden reichen dem Menü nicht)
+        probe: { ...sitzung(90,
             "boot",
             "timeout 60 $W fenster 1920 1080 > /dev/null 2>&1",
             "timeout 600 $W umstellen --ort wiese > /dev/null 2>&1",
             "teil BEDIENUNG $W bedienung --runden 5"
-        ),
+        ),  sek: 13 },
         env: K,
         gpu: true,
         zeit: true,
@@ -2104,9 +2673,18 @@ const stationen = [
     // (Natur-Strom, Boden) kommt je Bild: 12 444 gegen 12 225 Takte, darum urteilen Radeon und GTX. Erwartet dort: Route ✅,
     // an ✅, Steckenbleiber 0 ✅, Tempo ❌ (~74 % gegen 80 %: drei Bäche quer — zwei Feldwege und eine Gasse von 4,−7 — und
     // die Ecken der Dörfer, je ~210 Takte unter 0,8 · vmax).
+    // IN DER SITZUNG (29.10., proben-welt.cjs `fahrWegenetz`): die Seiten-Probe des Gates (`probeLeben`, `wegenetz`) in der warmen
+    // Welt, der Dorf-Zug an wie das Gate vor dem Boot; die Route sind ~12 000 Sim-Schritte in den Bildern der Probe (die Welt kommt
+    // je Bild) — die Ausnahme trägt sie. Kennt der Stand die Fahrt nicht, ROT beim Namen in Sekunden. Die Orte erwachen: mutiert.
     {
         kriterium: "fahrzeug.K2", staffel: 1, geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/diag-fahr-leben.cjs", "--wegenetz"], env: { FAHR_LEBEN_PORT: "{PORT}" }, gpu: true, zeit: false, minuten: 10,
+        probe: {
+            befehl: PW.torBefehl(PW.fahrWegenetz),
+            sek: 10,
+            mutiert: true,
+            
+        },
+        gpu: true, zeit: false, minuten: 10,
         urteil: (j, lauf) => {
             const m = jsonZeile(lauf.stdout, /^WEGENETZ {/);
             if (!m) return { gruen: false, zahl: "keine WEGENETZ-Zeile (Exit " + lauf.exit + ")" };
@@ -2127,7 +2705,7 @@ const stationen = [
                     " / Dorf " + p(b.dorf) + (aus.length ? " · außer Soll: " + aus.join(", ") : "") + " · Exit " + lauf.exit,
             };
         },
-        pfad: ["vehicle-core.js", "fachwerk-core.js", "voxel-worker.js", "stamm/koerper-*.js", "stamm/siedlung-*.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs"],
+        pfad: ["vehicle-core.js", "fachwerk-core.js", "voxel-worker.js", "stamm/koerper-*.js", "stamm/siedlung-*.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/werkbank.cjs"],
         quelle: "1 = auf der festen 2-km-Route entlang Weg und Feldweg (Wiese → Wald → Dorf) 0 Steckenbleiber und ≥ 80 % der Takte über 0,8 × vmax, an einem Gerät",
     },
 ];
@@ -2136,5 +2714,9 @@ module.exports = stationen;
 
 // NICHT FASSBAR als Station (befehl null): das Werkzeug fehlt oder die Staffel verlangt, was EIN Lauf auf EINEM Gerät nie misst.
 module.exports.fehlt = [
+    // DIE FAHRT (29.10., das Gesetz des Schöpfers: eine Fahrt durch jedes System ≤ 30 min je Gerät): auf einer Karte misst jede Station
+    // als Probe der EINEN Welt der Sitzung — tore.K5#2 fuhr gate:praegung-welt mit eigenem Boot (A und B je ein Browser, Radeon b3f9ae95
+    // 1,69 min, ROT Kontrolle 7 699 ms; GTX 98ef98bb ROT 3,0 min)
+    { kriterium: "tore.K5", staffel: 2, befehl: null, grund: "nicht als Probe der Sitzung gebaut: das Kriterium verlangt B als eigenen Browser-Prozess mit frischem Profil (das andere Gerät) neben A, und der Teil (T) samt WELT lebt inline im hauptLauf von scripts/diag-praegung-welt.cjs (686 Z., L S N G R B K T F U in EINEM Lauf mit eigener Welt A) — ohne Seiten-Funktion des Teils (T) im Spiel-Baum misst keine Probe A in der Welt der Sitzung; der eigene Boot je Station ist auf radeon|gtx gefallen (die Fahrt ≤ 30 min). Letzte Messung: Radeon b3f9ae95 ROT (Kontrolle 7 699 ms > 5 s), GTX 98ef98bb ROT" },
     { kriterium: "ultiversum.K4", staffel: 2, befehl: null, grund: "nicht gebaut (w3t-spielergesetz baute Staffel 1): ein Spieler-Gesetzbuch dockt über den Weg von studios.K5 an (ein neuntes Gesetzbuch mit PARAMS_BY_KIND und Bauer, `git diff stamm/` = 0), und der Weg ist selbst ungebaut — die Übergabe kennt eine Positivliste (`stamm/netz-portal.js`, koerper und kreatur), der Wirt kennt Arten beim Namen. Ein Gesetz aus dem Satz („wann immer …“) ist eine Welt-Regel (`_registerWorldRule`), kein Gesetzbuch" },
 ];

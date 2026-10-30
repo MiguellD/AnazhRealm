@@ -1,2 +1,4 @@
 # Arbeitsordner der Stationen (Browser-Profil, Zwischenstand) bleiben lokal; die Rohausgabe liegt als <id>.json daneben
 *-werk/
+# der Strom der Sitzung (je Bild eine Zeile, Megabytes) bleibt lokal; seine Summe trägt m.sitzung.strom und jede Station, die ihn liest
+strom.ndjson

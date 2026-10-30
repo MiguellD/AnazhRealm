@@ -1,0 +1,151 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.129",
+  "sha": "3ed96b3f2017923f6792aafd0c74d517d8685525"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 7.33,
+   "deckung": 0.0382,
+   "taeter": {
+    "Laub baum_tanne": 0.0382
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 14.67,
+  "gestalt": [
+   "baum_birke 2054"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -278.624,
+   28.97,
+   -1054.505
+  ],
+  "blick": [
+   0.18673,
+   0.29847,
+   -0.93597
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 94.4,
+  "sigma": 50.4,
+  "schwarz": 0,
+  "weiss": 0.0021
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.67 m · Luma 94.4 σ 50.4 schwarz 0.0 % weiß 0.2 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^f:(eiche|birke|buche):L[01]$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "f:birke:L0=255/80/80",
+   "f:birke:L1=80/255/80",
+   "f:eiche:L0=80/120/255",
+   "f:eiche:L1=255/220/60"
+  ],
+  "klassen": {
+   "f:birke:L1": {
+    "objekte": 6,
+    "spiegelTreue": -0.5559,
+    "spiegelEbene": 32.276,
+    "sp": [
+     52,
+     0,
+     0,
+     6936.29,
+     6936.29,
+     -3856.07
+    ],
+    "zweiton": 0.0009,
+    "weiss": 0.0003,
+    "wt": 9,
+    "wtZiel": null,
+    "bunt": 42.74,
+    "pixel": 33039,
+    "luma": 108.26,
+    "kante": 0.4163,
+    "kr": 2240,
+    "strich": 0.3936,
+    "si": 18644,
+    "bloecke": 394,
+    "glatt": 0.2005,
+    "nyquist": 0.0947,
+    "beta": 2.5503
+   },
+   "f:eiche:L1": {
+    "objekte": 6,
+    "spiegelTreue": null,
+    "spiegelEbene": 34.611,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0.0002,
+    "wt": 35,
+    "wtZiel": null,
+    "bunt": 36.8,
+    "pixel": 163493,
+    "luma": 79.4,
+    "kante": 0.2782,
+    "kr": 6445,
+    "strich": 0.384,
+    "si": 99333,
+    "bloecke": 2082,
+    "glatt": 0.4159,
+    "nyquist": 0.1124,
+    "beta": 2.6758
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\mess-session-pruef\\meisterkarte-quelle\\punkte\\messung\\roh\\3ed96b3f-radeon\\vegetation.K5_1-wiese-ego-0.5-sommer-krone.maske.png"
+ }
+}

@@ -234,6 +234,7 @@ const K4_BEFEHL = [
     "-c",
     `set -u; K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); export WERKBANK_PORT=$(({PORT}+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" {PORT}`,
 ];
+// DIE FAHRT (29.10., ≤ 30 min je Gerät): 90 s statt 900 s — sieben Studios in EINER Probe; die Welt trägt danach ihre Werke (mutiert)
 const K4_STUDIOS = ["garage", "portale", "schmiede", "fachwerk", "terrain", "koerperstudio", "tetrapoda"];
 const k4Zahl = (j) => {
     const s = (j && j.studios) || {};
@@ -291,6 +292,142 @@ const WEG_LAGEN = ["schöpfer", "frieden mit Material", "pfad"];
 const WEG_WERKE = ["Eiche", "Haus", "GT", "Teil"];
 const WEG_SICHTEN = ["Ego", "Third"];
 
+// ───────────────────────── DIE PROBEN IN DER SITZUNG (29.10., stationen/sitzung-seite.js) ─────────────────────────
+// Das Gesetz des Schöpfers: eine Fahrt durch jedes System ≤ 30 min samt Dauerlast — keine Station bootet mehr einen eigenen Browser.
+// Die Linse des Spiels läuft als Bibliothek (`H.linse`) im Browser der Welt der Sitzung; geschrumpft ist nur der Lauf.
+const { probeBefehl, ANKUNFT_PROBE, ANKUNFT_AUSNAHME } = require("./sitzung-seite.js");
+
+// DIE STUDIOS (studios.K2#2 · K3#2, Zwillinge): der Gang der Linse diag-studio-huelle (`gang`: H3 die Folge, H8 die Kosten-Leiste mit
+// der Bank `?bank=12`, H7 die Sitzung mit dem Neuladen) über die acht Studios — je Studio eine Seite im Browser der Sitzung, geliefert
+// vom save-server der Sitzung (welt-boot `statikServer` und `starteBrowser` still ersetzt); die Nebenwelten (H6, ohne Urteil dieser
+// Stationen) fallen aus dem Gang, je Studio 5 Griffe statt 20 (p95 aus 5 ist ihr Größtes). Bis 29.10. ein eigener Browser je Lauf:
+// Radeon e18195be 2,27 min, 4abae42d 3,5 min (K2#2), K3#2 6 min Soll. Die Herkunft teilt den localStorage mit der Welt (die
+// Sitzung leert ihn am Ende): mutiert.
+async function probeStudios(H) {
+    const { page, browser } = await H.verbinde();
+    const adapter = await page.evaluate(async () => {
+        const a = navigator.gpu && (await navigator.gpu.requestAdapter());
+        const i = (a && a.info) || {};
+        return a ? { vendor: i.vendor || "?", architecture: i.architecture || "?" } : { fehlt: "kein Adapter" };
+    });
+    const server = {
+        lausche: async () => server,
+        zeige: (seite, frist, rest = "index.html", warte = "domcontentloaded") =>
+            seite.goto("http://localhost:" + H.S + "/" + rest, { waitUntil: warte, timeout: frist }),
+        close: () => {},
+    };
+    // jede Seite im Fenster der Linse (starteBrowser ohne viewport: puppeteer 800 × 600) — die Zeit je Griff hängt an der Fläche
+    const neueSeite = async () => {
+        const p = await browser.newPage();
+        await p.setViewport({ width: 800, height: 600 });
+        return p;
+    };
+    const derSitzung = { newPage: neueSeite, close: async () => {}, adapter };
+    const L = H.linse("scripts/diag-studio-huelle.cjs", ["gang", "GRIFFE"], {
+        argv: ["--engine"],
+        stumm: { statikServer: () => server, starteBrowser: async () => derSitzung },
+        ersetze: [
+            ['const NEBENWELTEN = ["skeleton", "fluid", "translated"];', "const NEBENWELTEN = [];"],
+            ["const GRIFFE = 20;", "const GRIFFE = 5;"],
+        ],
+    });
+    await L.gang();
+    return { griffe: L.GRIFFE, adapter };
+}
+const STUDIO_PROBE = probeBefehl(probeStudios, 75);
+// DER BILD-WEG (bauen.K1#2): die Linse diag-werkstatt-weg mit `--echt` (`wegHelfer` mit dem Haken am Render des Takts, `wegLauf` über
+// echte Eingaben) in der Welt der Sitzung — die Seite neu (die Foundry der Seite leer: der erste Bau jedes Werks ist kalt), die Bühne
+// (Mittag · Sonne · Sommer), dann 8 Läufe: jedes Werk zweimal (kalt, warm), jeder Weg mit kalt und warm, Lage und Sicht im Wechsel.
+// Bis 29.10. drei frische Browser (je Weg ein leeres Profil) × 24 Läufe = 72 (Soll 10 min, Radeon b3f9ae95 43,7 min).
+const BILD_FAELLE = [
+    ["werkstatt", "schöpfer", "Eiche", "Ego"],
+    ["rezeptbuch", "frieden mit Material", "Haus", "Third"],
+    ["hotbar", "pfad", "GT", "Ego"],
+    ["werkstatt", "frieden mit Material", "Teil", "Third"],
+    ["rezeptbuch", "pfad", "Eiche", "Third"],
+    ["hotbar", "schöpfer", "Haus", "Ego"],
+    ["werkstatt", "pfad", "GT", "Ego"],
+    ["hotbar", "frieden mit Material", "Teil", "Third"],
+];
+async function probeBildWeg(H) {
+    const { path } = H;
+    const L = H.linse("scripts/diag-werkstatt-weg.cjs", ["probe", "wegHelfer", "bauWeg", "wegLauf", "WERKE", "TEILE", "PHASEN"], { argv: ["--echt"] });
+    const { buehne } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { page } = await H.verbinde();
+    await page.setViewport({ width: 1280, height: 720 }); // das Fenster der Linse (--echt); die Grundstellung stellt 1920 × 1080 zurück
+    await H.lade(page);
+    await page.evaluate(() => window.__weltDa((w) => !!(w.state.renderer && w.state.renderer.backend)));
+    await H.ereignisStrom(page);
+    const { frei } = await page.evaluate(L.probe, { nurOrt: true });
+    await buehne(page);
+    await H.binnen(page.evaluate(() => window.__weltStehtNach()), 15000);
+    await page.evaluate(L.wegHelfer, { frei, teile: { eigen_huette: L.TEILE.eigen_huette }, bild: true });
+    let offen = true;
+    H.beimAbbau(() => offen && L.bauWeg(page, "ende"));
+    const j = (H.teil = { gestartet: true, bild: true, echt: true, wege: {}, faelle: [], frei });
+    j.konsum = await L.bauWeg(page, "konsum");
+    for (const [weg, lage, werk, sicht] of H.seite.FAELLE) {
+        if (H.rest() < 6) break;
+        const e = await H.binnen(L.wegLauf(page, { lage, weg, name: L.WERKE[werk], sicht }), (H.rest() - 4) * 1000, { fehler: "Frist der Probe" });
+        (((j.wege[lage] ||= {})[weg] ||= {})[werk] ||= {})[sicht] = e;
+        j.faelle.push([weg, lage, werk, sicht]);
+        const z = e.zeiten || [];
+        console.log(
+            `  [bild] ${weg} · ${lage} · ${werk} · ${sicht} ${e.kalt ? "kalt" : "warm"} ${z[4]} ms, Bau-Hash ${e.bau === e.soll ? "=" : "≠"} L0 · ` +
+                `${L.PHASEN.map((k, i) => k + " " + (z[i] - (z[i - 1] || 0))).join(" · ")} ${e.fehler || ""}`
+        );
+        await H.binnen(page.evaluate(() => window.__weltStehtNach()), Math.min(8000, (H.rest() - 4) * 1000));
+    }
+    offen = false;
+    Object.assign(j, await L.bauWeg(page, "ende"));
+    return j;
+}
+const BILD_PROBE = probeBefehl(probeBildWeg, 60, { FAELLE: JSON.stringify(BILD_FAELLE) });
+
+// DIE VERBEN (bauen.K5#2): die Linse diag-werkstatt-weg mit `--verben` (`wegHelfer`, `wegLauf`: gesetzt, dann das Verb über die echte
+// Taste — Haus W bis hinter die Schwelle, Wagen E · W · E, Tor E, Brücke W über das Deck, Leiter W bis aufs Podest, Bank E) in der Welt
+// der Sitzung, der Loop des Spiels läuft. Je Herkunft × Sicht ein Werk, jedes Werk einmal (6 Läufe). Bis 29.10. ein eigener Browser
+// mit dem ganzen Raster 3 × 2 × 6 = 36 Läufe (Radeon b3f9ae95 7,14 min).
+const VERB_FAELLE = [
+    ["werkstatt", "Ego", "Haus"],
+    ["werkstatt", "Third", "Tor"],
+    ["ki", "Ego", "Wagen"],
+    ["ki", "Third", "Leiter"],
+    ["geteilt", "Ego", "Bank"],
+    ["geteilt", "Third", "Brücke"],
+];
+async function probeVerben(H) {
+    const L = H.linse("scripts/diag-werkstatt-weg.cjs", ["probe", "wegHelfer", "bauWeg", "wegLauf", "TEILE", "VERBEN"], { argv: ["--verben"] });
+    const { page } = await H.verbinde();
+    await page.setViewport({ width: 1280, height: 720 }); // das Fenster der Linse (--verben); die Grundstellung stellt 1920 × 1080 zurück
+    await H.ereignisStrom(page);
+    // der Loop des Spiels läuft wie im Spiel (die Werkbank hält ihn zwischen ihren Befehlen an)
+    await page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop((t) => window.anazhRealm._gameLoopTick(t)));
+    H.beimAbbau(() => page.evaluate(() => window.anazhRealm.state.renderer.setAnimationLoop(null)));
+    const { frei } = await page.evaluate(L.probe, { nurOrt: true });
+    await page.evaluate(L.wegHelfer, { frei, teile: { eigen_huette: L.TEILE.eigen_huette }, bild: false });
+    let offen = true;
+    H.beimAbbau(() => offen && L.bauWeg(page, "ende"));
+    await L.bauWeg(page, "teile", L.TEILE);
+    await L.bauWeg(page, "wort");
+    const j = (H.teil = { verbenJe: {}, faelle: [], frei });
+    for (const [h, sicht, werk] of H.seite.FAELLE) {
+        if (H.rest() < 6) break;
+        const [name, verb, weg] = L.VERBEN[werk];
+        const e = await H.binnen(L.wegLauf(page, { lage: "schöpfer", weg: h === "werkstatt" ? weg || h : h, name, sicht, verb }), (H.rest() - 4) * 1000, {
+            fehler: "Frist der Probe",
+        });
+        ((j.verbenJe[h] ||= {})[sicht] ||= {})[werk] = e;
+        j.faelle.push([h, sicht, werk]);
+        const ok = e.steht === 1 && e.verb === true && !e.fehler;
+        console.log(`  ${ok ? "✅" : "❌"} ${h} · ${sicht} · ${werk} × ${verb}${ok ? "" : " — " + (e.fehler || e.warum || "steht nicht")} · ${H.sek()} s`);
+    }
+    offen = false;
+    await L.bauWeg(page, "ende");
+    return j;
+}
+const VERB_PROBE = probeBefehl(probeVerben, 60, { FAELLE: JSON.stringify(VERB_FAELLE) });
+
 const alle = [
     // ───────────────────────────── Studios ─────────────────────────────
     {
@@ -345,14 +482,15 @@ const alle = [
         // Seite trägt den Plan, den bei/nachRuhe anwandte); die Klasse je Zeile steht im Vertrag (`uniform: true` ≤ 200 ms, sonst
         // Neubau ≤ 1 s); dann das Neuladen (jeder Regler der Sitzung steht wieder, der EINE Speicher-Weg localStorage) und A/B
         // (der Gang H3: A zeigt den Stand der Öffnung, B den Zug). Die Zeit urteilt nur auf der Karte (Kopfzeile „geurteilt“).
-        befehl: ["node", "scripts/diag-studio-huelle.cjs", "--engine"],
-        env: { STUDIO_HUELLE_PORT: "{PORT}" },
+        // IN DER SITZUNG (29.10., `probeStudios`, Zwilling von studios.K3#2): 5 Griffe je Studio — jeder trägt sein Bild (`j.griffe`).
+        probe: { ...STUDIO_PROBE, mutiert: true,  sek: 25 },
         gpu: true,
         zeit: true,
-        minuten: 12,
+        minuten: 1,
         urteil: (j, lauf) => {
             const out = String(lauf.stdout || "");
             const karte = /=== H7 DIE SITZUNG — Saat \d+, die Zeit geurteilt \(Karte\)/.test(out);
+            const N = j && j.griffe > 0 ? j.griffe : Infinity; // ohne Ausgabe der Probe trägt kein Studio seine Griffe
             const je = {};
             for (const l of zeilen(out)) {
                 const t = /^\s{2}⏱ (\S+)\s+Griff → Bild p95 Gesetz-Wert (\S+) ms · Neubau (\S+) ms · (\d+) Griffe mit Bild · Neuladen (\d+)\/(\d+)/.exec(l);
@@ -362,7 +500,7 @@ const alle = [
             }
             const s = Object.keys(SEITEN).map((id) => ({ id, ...(je[id] || {}) }));
             const klasse = (z, k, max) => !(z[k] > max); // „–“ (keine Zeile der Klasse im Studio) ist NaN und zählt nicht
-            const zeit = s.filter((z) => z.mit === 20 && klasse(z, "u", 200) && klasse(z, "n", 1000));
+            const zeit = s.filter((z) => z.mit === N && klasse(z, "u", 200) && klasse(z, "n", 1000));
             const bleibt = s.filter((z) => z.bleibt).length;
             const ab = s.filter((z) => z.ab).length;
             const hoch = (k) => s.reduce((m, z) => (z[k] > m.v ? { v: z[k], id: z.id } : m), { v: 0, id: "–" });
@@ -373,7 +511,7 @@ const alle = [
                 zahl:
                     (karte ? "" : "die Zeit ungeurteilt (kein Hardware-Adapter) · ") +
                     "p95 Griff → Bild unter der Schranke in " + zeit.length + "/8 (Gesetz-Wert höchstens " + u.v + " ms " + u.id +
-                    ", Neubau höchstens " + n.v + " ms " + n.id + ") · Neuladen " + bleibt + "/8 · A/B " + ab + "/8",
+                    ", Neubau höchstens " + n.v + " ms " + n.id + ", je Studio " + (j && j.griffe) + " Griffe) · Neuladen " + bleibt + "/8 · A/B " + ab + "/8",
             };
         },
         pfad: [
@@ -390,6 +528,7 @@ const alle = [
             "scripts/diag-studio-huelle.cjs",
             "scripts/lib/software-gpu.cjs",
             "scripts/lib/welt-boot.cjs",
+            "save-server.js",
         ],
         quelle:
             "2 = p95 Griff → erstes Bild mit neuem Bau-Hash ≤ 200 ms (Zeilen mit `uniform: true` im Vertrag) bzw. ≤ 1 s (Neubau) " +
@@ -451,15 +590,15 @@ const alle = [
     // Abschnitts und auf der Karte die Bank-Runde von gpu-bank (`?bank=12`, die EINE Bank der Hülle); beim Klang je Ort des
     // Umwelt-Gesetzes die Audio-Graph-ms (offline, je Quantum). GPU-ms haben eine Gegenzahl nur gegen eine GPU-gebundene Bank
     // (gpu-bank: über × 1,15) — der Zähl-Abschnitt (1×1, viele Befehle) kann CPU-gebunden sein, dann steht die Stufe ohne.
+    // IN DER SITZUNG (29.10., `probeStudios`, Zwilling von studios.K2#2): derselbe Gang im Browser der Sitzung, die Kosten-Zeile je Studio.
     {
         kriterium: "studios.K3",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: ["node", "scripts/diag-studio-huelle.cjs", "--engine"],
-        env: { STUDIO_HUELLE_PORT: "{PORT}" },
+        probe: { ...STUDIO_PROBE, mutiert: true,  sek: 25 },
         gpu: true,
         zeit: true,
-        minuten: 6,
+        minuten: 1,
         urteil: (j, lauf) => {
             const je = {};
             for (const l of zeilen(lauf.stdout)) {
@@ -512,6 +651,7 @@ const alle = [
             "scripts/diag-studio-huelle.cjs",
             "scripts/lib/software-gpu.cjs",
             "scripts/lib/welt-boot.cjs",
+            "save-server.js",
         ],
         quelle: "2 = Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 7/7, beim Klang die Audio-Graph-ms",
     },
@@ -608,20 +748,18 @@ const alle = [
     // `_foundryAntwort` — von der Platte, im Werk gebaut (die Schale `_foundrySchale` stempelt `bau` an jeden Studio-Lauf), leer —
     // und der Guss des Haupt-Fadens `_ofenBudget`): der Erst-Boot füllt ein frisches Profil bis zur Ruhe der Foundry, der Zweit-Boot
     // zählt jede Lieferung bis zur Ruhe. Bau-Ereignisse in Worker UND Haupt-Faden zählen gegen die Platte, ein Auftrag ohne Antwort
-    // ist verschluckt (ROT); den gepflanzten Bruch fährt gate:boot-stage.
+    // ist verschluckt (ROT); den gepflanzten Bruch fährt gate:boot-stage. IN DER SITZUNG (29.10., stationen/sitzung-seite.js
+    // `probeAnkunft`, Zwilling von ankunft.K2#1/K3#1 und pipeline.K4#2): der Erst-Boot ist das kalte Laden mit leerer Herkunft bis zur
+    // Ruhe der Foundry, der Zweit-Boot die Seite neu im warmen Browser (der Stand gesichert) — bis 29.10. zwei eigene Browser mit
+    // einem Profil (Radeon b3f9ae95 10,61 min, davon 4,4 am Schloss).
     {
         kriterium: "pipeline.K4",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        befehl: [
-            "bash",
-            "-c",
-            `P="$(cygpath -m '{AUS}' 2>/dev/null || echo '{AUS}').profil"; rm -rf "$P"; node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P" > /dev/null; node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P"; E=$?; rm -rf "$P"; exit $E`,
-        ],
-        env: { BOOT_STAGE_PORT: "{PORT}" },
+        probe: { ...ANKUNFT_PROBE, mutiert: true,  sek: 10 },
         gpu: true,
         zeit: false,
-        minuten: 6,
+        minuten: 1,
         urteil: (j, lauf) => {
             const m =
                 /^\s*(?:✅|❌) LIEFERUNG zweit: (\d+) von (\d+) von der Platte \([\d.]+ %\) · Werk (\d+) · Haupt-Faden (\d+) · leer (\d+) · verschluckt (-?\d+)$/m.exec(
@@ -644,6 +782,8 @@ const alle = [
             "cores.manifest.json",
             "scripts/diag-boot-stage.cjs",
             "scripts/lib/welt-boot.cjs",
+            "stamm/speicher-*.js",
+            "save-server.js",
         ],
         quelle: "1 = build-asset kommt beim Zweit-Boot zu ≥ 95 % von der Platte",
     },
@@ -653,19 +793,17 @@ const alle = [
     // serviert fachwerk-core mit einem Kommentar mehr (sein Gesetz-SHA springt): nur die Leser von fachwerk bauen neu, jeder
     // fremde Neubau dessen, was die Platte trug, und jeder Leser, der noch von ihr kommt, ist ROT beim Namen (`wechselUrteil`
     // in diag-boot-stage, die Schale `_foundrySchale` stempelt jede Lieferung mit dem Gesetz-SHA der Kerne, die sie liest).
+    // IN DER SITZUNG (29.10., `probeAnkunft`): der dritte Boot ist die Seite neu, während die Skripte von fachwerk auf der Platte des
+    // Spiel-Baums einen Kommentar mehr tragen (der save-server liefert no-cache mit ETag, der Browser holt sie neu; sie kehren sofort
+    // zurück) — bis 29.10. drei eigene Browser, der dritte an einem eigenen Server, der den Kern wandelte.
     {
         kriterium: "pipeline.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: [
-            "bash",
-            "-c",
-            `P="$(cygpath -m '{AUS}' 2>/dev/null || echo '{AUS}').profil"; rm -rf "$P"; S() { node scripts/diag-boot-stage.cjs --kalt --echt --profil "$P" "$@"; }; S > /dev/null; S; S --kern-wechsel fachwerk; E=$?; rm -rf "$P"; exit $E`,
-        ],
-        env: { BOOT_STAGE_PORT: "{PORT}" },
+        probe: { ...ANKUNFT_PROBE, mutiert: true,  sek: 10 },
         gpu: true,
         zeit: false,
-        minuten: 9,
+        minuten: 1,
         urteil: (j, lauf) => {
             const out = String(lauf.stdout || "");
             const art = /^\s*(?:✅|❌) LIEFERUNG je Art: (.+)$/m.exec(out);
@@ -691,6 +829,7 @@ const alle = [
             "cores.manifest.json",
             "scripts/diag-boot-stage.cjs",
             "scripts/lib/welt-boot.cjs",
+            "save-server.js",
         ],
         quelle: "2 = jede Lieferung (Blatt-Atlas, Dorf-Export, Karten) 100 %, ein geänderter Kern-SHA baut nur seine Art neu (0 fremde Neubauten), beide Geräte",
     },
@@ -1062,31 +1201,26 @@ const alle = [
     // von der ersten Eingabe bis zum von der GPU abgearbeiteten Bild, in dem jede L0-Senke des Werks für die Kamera der Szene zog
     // (der Haken am Render des Takts, gezählt am Backend); der Bau-Hash des Bilds gleicht dem L0-Bau derselben Anfrage im Werk.
     // kalt = der erste Bau des Werks im frischen Profil (4 je Weg), warm = jeder weitere (20 je Weg); p95 je Weg und Klasse.
+    // IN DER SITZUNG (29.10., `probeBildWeg`): die Seite neu im Browser der Sitzung (die Foundry der Seite leer: der erste Bau jedes
+    // Werks ist kalt), 8 Läufe (BILD_FAELLE: jedes Werk kalt und warm, jeder Weg mit beiden Klassen, Lage und Sicht im Wechsel).
     {
         kriterium: "bauen.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: [
-            "bash",
-            "-c",
-            "rm -f artifacts/werkstatt-weg/weg.json; node scripts/diag-werkstatt-weg.cjs --echt; e=$?; " +
-                "cp artifacts/werkstatt-weg/weg.json \"$PUNKTE_AUS\" 2>/dev/null; exit $e",
-        ],
-        env: { WERKSTATT_WEG_PORT: "{PORT}", PUNKTE_AUS: "{AUS}" },
+        probe: { ...BILD_PROBE, mutiert: true,  sek: 10 },
         gpu: true,
         zeit: true,
-        minuten: 10,
+        minuten: 1,
         urteil: (j, lauf) => {
             if (!j || j.gestartet !== true || j.bild !== true || j.echt !== true || !j.wege)
-                return { gruen: false, zahl: "keine Rohdatei des Bild-Wegs auf der Karte (Exit " + lauf.exit + ")" };
+                return { gruen: false, zahl: "keine Ausgabe des Bild-Wegs auf der Karte (Exit " + lauf.exit + ")" };
             const p95 = (a) => (a.length ? [...a].sort((x, y) => x - y)[Math.ceil(0.95 * a.length) - 1] : null);
             const rot = [];
             let n = 0, imBild = 0;
             const jeWeg = WEG_WEGE.map((weg) => {
                 const jeKlasse = { kalt: [], warm: [] };
-                for (const lage of WEG_LAGEN)
-                    for (const werk of WEG_WERKE)
-                        for (const sicht of WEG_SICHTEN) {
+                for (const [w, lage, werk, sicht] of BILD_FAELLE)
+                    if (w === weg) {
                             const e = ((((j.wege[lage] || {})[weg] || {})[werk] || {})[sicht]) || null;
                             n++;
                             const ms = e && Array.isArray(e.zeiten) ? e.zeiten[4] : null; // [eingabe, steht, l0, bild, gpu] ab der ersten Eingabe
@@ -1103,7 +1237,7 @@ const alle = [
                 return weg + " kalt " + k + " · warm " + w + " ms (" + jeKlasse.kalt.length + "+" + jeKlasse.warm.length + ")";
             });
             return {
-                gruen: n === 72 && imBild === n && !rot.length,
+                gruen: n === BILD_FAELLE.length && imBild === n && !rot.length,
                 zahl: imBild + "/" + n + " Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild " + jeWeg.join(" · ") +
                     (rot.length ? " · ROT: " + rot.slice(0, 6).join(" · ") + (rot.length > 6 ? " … (" + rot.length + ")" : "") : ""),
             };
@@ -1130,6 +1264,7 @@ const alle = [
             "scripts/lib/welt-boot.cjs",
             "scripts/lib/software-gpu.cjs",
             "scripts/lib/ausgabe-aufnahme.cjs",
+            "save-server.js",
         ],
         quelle: "2 = ≤ 3 Eingaben und p95 ≤ 1 s bis zum ersten Ausgabe-Bild in L0, kalt und warm, beide Geräte",
     },
@@ -1469,42 +1604,31 @@ const alle = [
     // die Kamera steht hinter dem Spieler, das Haus bleibt bis zur Schwelle in Stufe 1 (K36), die die Tür offen bäckt — dort zählt
     // der Eintritt durch die offene Tür, die der Tür-Takt hält (`_tuerRec`), nicht ihr Drehen. Cloud headless (Null-Renderer)
     // 26/36 → 36/36 (Wurzel `_werkFuss`: spawn_blueprint stellte das Werk in die Fußhöhe des Spielers).
+    // IN DER SITZUNG (29.10., `probeVerben`): je Herkunft × Sicht ein Werk, jedes Werk einmal (VERB_FAELLE, 6 Läufe) in der Welt der
+    // Sitzung mit laufendem Loop; jeder Lauf trägt sein Verb, sonst ROT beim Namen.
     {
         kriterium: "bauen.K5",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: [
-            "bash",
-            "-c",
-            "rm -f artifacts/werkstatt-weg/weg.json; node scripts/diag-werkstatt-weg.cjs --verben; e=$?; " +
-                "cp artifacts/werkstatt-weg/weg.json \"$PUNKTE_AUS\" 2>/dev/null; exit $e",
-        ],
-        env: { WERKSTATT_WEG_PORT: "{PORT}", PUNKTE_AUS: "{AUS}" },
+        probe: { ...VERB_PROBE, mutiert: true,  sek: 10 },
         gpu: true,
         zeit: false,
-        minuten: 15,
+        minuten: 1,
         urteil: (j, lauf) => {
             const je = j && j.verbenJe;
-            if (!je) return { gruen: false, zahl: "keine verbenJe in weg.json (Exit " + lauf.exit + ")" };
-            const [teile, nein] = [[], []];
-            let [ja, n] = [0, 0];
-            for (const h of ["werkstatt", "ki", "geteilt"])
-                for (const s of ["Ego", "Third"]) {
-                    let k = 0;
-                    for (const w of ["Haus", "Wagen", "Tor", "Brücke", "Leiter", "Bank"]) {
-                        const e = ((je[h] || {})[s] || {})[w];
-                        n++;
-                        if (e && e.steht === 1 && e.verb === true && !e.fehler) k++;
-                        else nein.push(`${h} · ${s} · ${w} (${e ? e.fehler || e.warum || "steht nicht" : "nicht gelaufen"})`);
-                    }
-                    ja += k;
-                    teile.push(`${h} ${s} ${k}/6`);
-                }
+            if (!je) return { gruen: false, zahl: "keine verbenJe in der Ausgabe der Probe (Exit " + lauf.exit + ")" };
+            const nein = [];
+            let ja = 0;
+            for (const [h, s, w] of VERB_FAELLE) {
+                const e = ((je[h] || {})[s] || {})[w];
+                if (e && e.steht === 1 && e.verb === true && !e.fehler) ja++;
+                else nein.push(`${h} · ${s} · ${w} (${e ? e.fehler || e.warum || "steht nicht" : "nicht gelaufen"})`);
+            }
             return {
-                gruen: lauf.exit === 0 && ja === n,
+                gruen: lauf.exit === 0 && ja === VERB_FAELLE.length,
                 zahl:
-                    `${ja}/${n} Herkunft × Sicht × Werk tragen ihr Verb über die Taste (${teile.join(" · ")})` +
-                    (nein.length ? " — offen: " + nein.slice(0, 6).join(" · ") : ""),
+                    `${ja}/${VERB_FAELLE.length} Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal)` +
+                    (nein.length ? " — offen: " + nein.join(" · ") : ""),
             };
         },
         pfad: [
@@ -1577,7 +1701,7 @@ const alle = [
         kriterium: "studios.K4",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 900, befehl: K4_BEFEHL },
+        probe: { sek: 33, mutiert: true,  befehl: K4_BEFEHL },
         gpu: true,
         zeit: false,
         minuten: 15,
@@ -1593,7 +1717,7 @@ const alle = [
         kriterium: "studios.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 900, befehl: K4_BEFEHL },
+        probe: { sek: 33, mutiert: true,  befehl: K4_BEFEHL },
         gpu: true,
         zeit: false,
         minuten: 15,

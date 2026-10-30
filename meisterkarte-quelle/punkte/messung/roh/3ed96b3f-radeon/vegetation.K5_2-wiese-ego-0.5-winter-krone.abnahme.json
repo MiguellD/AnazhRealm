@@ -1,0 +1,151 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.129",
+  "sha": "3ed96b3f2017923f6792aafd0c74d517d8685525"
+ },
+ "buehne": {
+  "saison": "winter",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 7.33,
+   "deckung": 0.0382,
+   "taeter": {
+    "Laub baum_tanne": 0.0382
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 14.67,
+  "gestalt": [
+   "baum_birke 2054"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -278.624,
+   28.97,
+   -1054.505
+  ],
+  "blick": [
+   0.18673,
+   0.29847,
+   -0.93597
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 101.6,
+  "sigma": 61.8,
+  "schwarz": 0,
+  "weiss": 0.0021
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.67 m · Luma 101.6 σ 61.8 schwarz 0.0 % weiß 0.2 % · Stand 18.546.129 · Bühne winter sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^f:(eiche|birke|buche):L[01]$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 6
+  },
+  "misch": 0,
+  "toene": [
+   "f:birke:L0=255/80/80",
+   "f:birke:L1=80/255/80",
+   "f:eiche:L0=80/120/255",
+   "f:eiche:L1=255/220/60"
+  ],
+  "klassen": {
+   "f:birke:L1": {
+    "objekte": 6,
+    "spiegelTreue": -0.4726,
+    "spiegelEbene": 32.262,
+    "sp": [
+     55,
+     0,
+     0,
+     6382.27,
+     6382.27,
+     -3016.31
+    ],
+    "zweiton": 0,
+    "weiss": 0.0104,
+    "wt": 348,
+    "wtZiel": null,
+    "bunt": 32.25,
+    "pixel": 33475,
+    "luma": 105.44,
+    "kante": 0.4126,
+    "kr": 2468,
+    "strich": 0.3978,
+    "si": 18995,
+    "bloecke": 395,
+    "glatt": 0.2076,
+    "nyquist": 0.0946,
+    "beta": 2.5446
+   },
+   "f:eiche:L1": {
+    "objekte": 6,
+    "spiegelTreue": null,
+    "spiegelEbene": 34.603,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0.001,
+    "wt": 157,
+    "wtZiel": null,
+    "bunt": 29.28,
+    "pixel": 164000,
+    "luma": 75.73,
+    "kante": 0.283,
+    "kr": 6770,
+    "strich": 0.3698,
+    "si": 97875,
+    "bloecke": 2073,
+    "glatt": 0.4322,
+    "nyquist": 0.1111,
+    "beta": 2.6795
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\mess-session-pruef\\meisterkarte-quelle\\punkte\\messung\\roh\\3ed96b3f-radeon\\vegetation.K5_2-wiese-ego-0.5-winter-krone.maske.png"
+ }
+}

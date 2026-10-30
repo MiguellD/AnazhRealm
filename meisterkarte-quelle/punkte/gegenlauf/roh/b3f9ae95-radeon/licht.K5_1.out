@@ -1,0 +1,7 @@
+$ C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --luft --wetter rainy --zug --datei C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\licht.K5_1.json
+
+✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT
+ZUG ROT · Sprung {"t":91.94180000001064,"wetter":"rainy","zug":0.9947485526709713,"Y":2575.3577780973283,"d":0.12002498460700181} EV/s (Soll ≤ 0.1) · klar → rainy → klar gezogen true, 127 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

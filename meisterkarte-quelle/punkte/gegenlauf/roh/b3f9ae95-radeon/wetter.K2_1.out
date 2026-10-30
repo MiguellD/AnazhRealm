@@ -1,0 +1,55 @@
+$ C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --naesse --datei C:\Users\micha\AppData\Local\Temp\claude\mess-session\meisterkarte-quelle\punkte\gegenlauf\roh\b3f9ae95-radeon\wetter.K2_1.json
+NÄSSE Selbsttest: 5/5
+{
+ "wiese": {
+  "ort": "wiese",
+  "haus": null,
+  "naesse": 0.909,
+  "innen": {
+   "n": 0,
+   "verhaeltnis": null
+  },
+  "aussen": {
+   "n": 25920,
+   "verhaeltnis": 0.771
+  },
+  "dicht": 1,
+  "glanz": 16,
+  "regen": {
+   "innen": 0,
+   "aussen": 92
+  },
+  "regenbild": 0.637
+ },
+ "dorf": {
+  "ort": "dorf",
+  "haus": "haus_griechisch",
+  "naesse": 0.909,
+  "innen": {
+   "n": 13809,
+   "verhaeltnis": 1
+  },
+  "aussen": {
+   "n": 5949,
+   "verhaeltnis": 0.553
+  },
+  "dicht": 1,
+  "glanz": 16,
+  "regen": {
+   "innen": 0,
+   "aussen": 5
+  },
+  "regenbild": 0.697,
+  "dachBauten": {
+   "n": 2,
+   "trocken": 2,
+   "arten": [
+    "marktstand_dorf"
+   ]
+  }
+ }
+}
+NÄSSE GRUEN
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
