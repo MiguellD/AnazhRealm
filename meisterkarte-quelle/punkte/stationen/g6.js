@@ -994,11 +994,15 @@ const PB_SEITE = {
         'r.enterPortal({ type: "welt_portal", affordances: { isPortal: true } }); o.tor = !!r._portalOverlay; ' +
         "for (let i = 0; i < 60; i++) await raf(); r.exitPortal(); o.heim = !r._portalOverlay; " +
         "for (let i = 0; i < 30; i++) await raf(); r.removeArchitecture(e); } finally { rend.setAnimationLoop(null); } return o;",
+    // DIE NACHT ÜBER DEN REGLER DES SPIELERS (w4-linsen-b): `setze uhrzeit` ist ein Welt-Akt der DSL (`set_time_of_day`), und unter dem
+    // Halt der Mess-Bühne (`_messHalt`, jedes `umstellen` und `bild` der Sitzung stellt ihn) verweigert das Spiel jeden Welt-Akt, auch den
+    // des Menschen — die Dauer hieß an 3ed95dcf (GTX, Radeon) „nie Nacht" bei Uhr 0,5005; der Regler der Einstellungen schreibt die Uhr
+    // als Werkzeug des Spielers (`setTimeOfDay(t, "regler")`, `_himmelSchreiber`), nie als Welt-Akt
     nacht:
         "const st = r.state, rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f)), o = {}; " +
         "rend.setAnimationLoop((t) => r._gameLoopTick(t)); try { " +
-        'r.processChatCommand("setze uhrzeit mitternacht"); for (let i = 0; i < 30; i++) await raf(); o.nacht = st.timeOfDay; ' +
-        'r.processChatCommand("setze uhrzeit mittag"); for (let i = 0; i < 30; i++) await raf(); o.mittag = st.timeOfDay; ' +
+        'r.setTimeOfDay(0, "regler"); for (let i = 0; i < 30; i++) await raf(); o.nacht = st.timeOfDay; ' +
+        'r.setTimeOfDay(0.5, "regler"); for (let i = 0; i < 30; i++) await raf(); o.mittag = st.timeOfDay; ' +
         "} finally { rend.setAnimationLoop(null); } return o;",
     stand:
         "const n = {}; for (const c of r.state.creatures) { const u = c.userData; if (u && u._tierBaum) { const k = " +
