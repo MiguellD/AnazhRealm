@@ -148,7 +148,7 @@ function messortePruefen(h) {
     const orte = h && h.messorte;
     if (!Array.isArray(orte) || !orte.length) return ["messorte fehlt (mindestens ein Ort)"];
     const ids = new Set();
-    const xz = (v) => Array.isArray(v) && v.length === 2 && v.every((n) => typeof n === "number" && Number.isFinite(n));
+    const xz = (v) => Array.isArray(v) && v.length === 2 && v.every(Number.isFinite);
     for (const o of orte) {
         if (!o || typeof o.id !== "string" || !/^[a-z][a-z0-9-]*$/.test(o.id) || ids.has(o.id))
             f.push(`Messort ohne/mit doppelter id: ${o && o.id}`);
@@ -283,7 +283,7 @@ const familieOf = (klasse) => {
 };
 const istUnbenannt = (klasse) => /^UNBENANNT:/.test(klasse);
 const ganz = (x) => Number.isInteger(x) && x >= 0;
-const nullOderZahl = (x) => x === null || (typeof x === "number" && Number.isFinite(x) && x >= 0);
+const nullOderZahl = (x) => x === null || (Number.isFinite(x) && x >= 0);
 const LINSEN_ARTEN = ["unbenannt", "haushalt", "ratsche", "leck"];
 // DER SPEICHER OHNE BILD (W6): ein Geometrie-Puffer, den kein Objekt des Szenen-Graphen zeichnet und den nur der Foundry-Cache
 // (`ruhend`) oder nur r184s Attribut-Register (`verwaist`) hält (`__pufferZensus`, draw-zaehler) — VRAM an der Geschichte
@@ -859,7 +859,7 @@ function ratscheWeit(ratsche, u, paesse) {
     const out = [];
     if (!ratsche || !u) return out;
     const weit = (schluessel, r, ist, g, text) => {
-        if (r == null || !(typeof ist === "number" && Number.isFinite(ist))) return;
+        if (r == null || !Number.isFinite(ist)) return;
         if (ueberRatsche(r, ist, ratsche, g))
             out.push({ art: "weit", schluessel, ist: r, groesse: null, text: `${text}: Ratsche ${r} über der Messung ${ist} — zu weit` });
     };
@@ -961,7 +961,7 @@ function ratscheNachziehen(ratsche, u, gemessen, nur) {
     const neu = JSON.parse(JSON.stringify(ratsche));
     const aenderungen = [];
     const setze = (obj, key, ist, name) => {
-        if (!(typeof ist === "number" && Number.isFinite(ist) && ist >= 0)) return;
+        if (!(Number.isFinite(ist) && ist >= 0)) return;
         const alt = obj[key];
         if (alt == null || ist < alt) {
             obj[key] = ist;
