@@ -508,6 +508,7 @@ class AnazhRealm_stoff_instanz {
             licht: new T.OrthographicCamera(-1, 1, 1, -1, 0.1, 500),
             huellen: [],
             box: new T.Box3(),
+            laub: new T.Box3(), // die Hülle des Laubs der Gestalt (der Kronen-Fuß des Saums)
             mitte: new T.Vector3(),
             farbe: new T.Color(),
             bereit: false,
@@ -663,6 +664,7 @@ class AnazhRealm_stoff_instanz {
         B.wurzel.rotation.set(0, 0, 0);
         let rad2 = 0;
         let h = 0;
+        const laub = []; // die Laub-Hüllen: ihr tiefster Punkt ist der Kronen-Fuß des Saums (`_karteSaumVon`)
         for (const c of g.children) {
             if (!c.isMesh || c.isInstancedMesh || !c.geometry || !c.material) continue;
             // der Wurf-Teil (S3 `teil: "schatten"`) lebt nur in den Kaskaden — das Auge sieht ihn nie
@@ -675,9 +677,13 @@ class AnazhRealm_stoff_instanz {
             m.matrix.copy(c.matrix);
             m.frustumCulled = false;
             B.wurzel.add(m);
+            // die Sippe ist die EINE Material-Identität des Gesetzes (phyto-core `budgetStoff`): sie beginnt mit der Art
+            if (/^foliage/.test(c.userData.__sippe || "")) laub.push(m);
             rad2 = core.scanRadialXZ(c.geometry.attributes.position.array, rad2);
         }
         B.wurzel.updateMatrixWorld(true);
+        B.laub.makeEmpty();
+        for (const m of laub) B.laub.expandByObject(m);
         const vor = {
             rt: rend.getRenderTarget(),
             face: rend.getActiveCubeFace(),
@@ -793,13 +799,30 @@ class AnazhRealm_stoff_instanz {
             rest: z._liefer.rest,
             frame: { halfW: fr.halfW, halfH: fr.halfH },
         };
-        if (bc) this._karteAblage(at, z.idx, B, platte);
+        if (bc) this._karteAblage(at, z.idx, B, platte, this._karteSaumVon(at, z, fr, B.laub));
         B.zuletzt = performance.now();
         this._foundryLiefer(this._foundry, "haupt", "karte", z._liefer, B.zuletzt - t0);
         (at.weltMs || (at.weltMs = [])).push(+(B.zuletzt - t0).toFixed(2));
         z._weltNeu = false;
         if (!z.gebacken) this._karteGebacken(z, fr);
         return true;
+    }
+
+    // DER SAUM DER KARTE (w4-laub-saum, phyto-core `karteSaum`): die Blattgröße der Art aus ihrem Gesetz (`treeParams` der
+    // Nah-Stufe, mit dem Samen der Gestalt — dieselbe Ableitung, aus der ihr Körper wächst) im Rahmen der Karte, Laub oder
+    // Nadel, und der Kronen-Fuß (das tiefste Laub der L1) als Stufe-0-Zeile der Ansicht: [e, nadel, Stärke, Fuß] für die
+    // GPU-Ablage (`saumK`). Ohne Krone (keine Pflanzen-Art, kein Laub) Fuß −1: jede Zeile wählt mit dem geglätteten Schlüssel.
+    _karteSaumVon(at, z, fr, laub) {
+        const pc = globalThis.__phytoCore;
+        const tab = globalThis.__terrainCore && globalThis.__terrainCore.PHYTO_PRESETS;
+        const rec = tab && tab[z.preset];
+        const s =
+            rec && rec.s && (rec.kind === "tree" || rec.kind === "shrub") && !laub.isEmpty()
+                ? pc.karteSaum(pc.treeParams(rec.s, z.variant, 0, rec, 0), fr.halfH, at.ch)
+                : null;
+        return s
+            ? Float32Array.of(s.e, s.nadel ? 1 : 0, pc.KARTEN_GESETZ.saum, (1 - laub.min.y / (2 * fr.halfH)) * at.ch)
+            : Float32Array.of(0, 0, 0, -1);
     }
 
     // DER RECHNER DER ABLAGE: die Compute-Programme (WGSL `KARTE_RECHNER_WGSL`) entstehen asynchron
@@ -819,12 +842,13 @@ class AnazhRealm_stoff_instanz {
                 tex(2),
                 tex(3),
                 ...[4, 5, 6, 7, 8, 9, 10].map(puffer),
+                S(11, { buffer: { type: "uniform" } }), // der Saum der Karte (`_karteSaumVon`), je Bake
             ],
         });
         const modul = dev.createShaderModule({ label: "karte-rechner", code: AnazhRealm.KARTE_RECHNER_WGSL });
         const satz = (this._karteRechnerSatz = { bereit: false, layout, pipes: {}, dev });
         const pl = dev.createPipelineLayout({ bindGroupLayouts: [layout] });
-        const namen = ["stufe0", "summeK", "glaette", "grenzeK", "bc1", "normalK", "bc5", "sicht"];
+        const namen = ["stufe0", "summeK", "glaette", "saumK", "grenzeK", "bc1", "normalK", "bc5", "sicht"];
         Promise.all(
             namen.map((n) =>
                 dev
@@ -925,7 +949,16 @@ class AnazhRealm_stoff_instanz {
                         Math.ceil(wk / 16),
                         Math.ceil(hk / 16)
                     );
-                flag = gaenge & 1;
+                // DER SAUM (phyto-core `karteSaum`): der Schlüssel der Wahl — über dem Kronen-Fuß die Deckung des Fußabdrucks
+                // und das Muster der Art, darunter die geglättete Deckung (im Puffer `flag` der Glätte) — in den anderen Puffer;
+                // Grenze und Ablage lesen ihn
+                zug(
+                    "saumK",
+                    Object.assign({}, base, { w: wk, h: hk, hA: hAk, k, ziel: so, fuss, flag: gaenge & 1 }),
+                    Math.ceil(wk / 16),
+                    Math.ceil(hk / 16)
+                );
+                flag = 1 - (gaenge & 1);
                 zug(
                     "grenzeK",
                     Object.assign({}, base, { w: wk, h: hk, hA: hAk, k, ziel: so, fuss, flag, gi: k * V }),
@@ -998,8 +1031,9 @@ class AnazhRealm_stoff_instanz {
             dA: mk("dA", (W / 2) * (H / 2) * 4, U.STORAGE),
             dB: mk("dB", (W / 2) * (H / 2) * 4, U.STORAGE),
             zahl: mk("zahl", (V + 3) * 4, U.STORAGE | U.COPY_DST),
-            grenze: mk("grenze", M.a.length * V * 4, U.STORAGE),
+            grenze: mk("grenze", M.a.length * V * 8, U.STORAGE), // je Stufe und Ansicht (Grenzwert-Bits, Lage)
             aus: mk("aus", ausB, U.STORAGE | U.COPY_SRC),
+            saum: mk("saum", 16, U.UNIFORM | U.COPY_DST), // [e, nadel, Stärke, Kronen-Fuß] je Bake (`_karteSaumVon`)
         };
         const roh = new Uint8Array(slots.length * 256);
         slots.forEach((u, i) => roh.set(new Uint8Array(u.buffer), i * 256));
@@ -1009,8 +1043,9 @@ class AnazhRealm_stoff_instanz {
 
     // DIE ABLAGE: die GPU zieht aus der Bühne die Stufen der Schicht und kodiert sie, die Kopien legen sie in die Schicht
     // `idx` der Atlas-Texturen. Mit `platte` ({preset, rest, frame}, die Platte trägt die Karte nicht) reisen dieselben Bytes
-    // zurück und per Transfer in den Faden der Schale (`karte-ablage`) — der Haupt-Faden schreibt keine Platte.
-    _karteAblage(at, idx, B, platte) {
+    // zurück und per Transfer in den Faden der Schale (`karte-ablage`) — der Haupt-Faden schreibt keine Platte. `saum`
+    // ([e, nadel, Stärke, Kronen-Fuß], `_karteSaumVon`) liest die Wahl der Stufen (`saumK`).
+    _karteAblage(at, idx, B, platte, saum) {
         const rend = this.state.renderer;
         const dev = rend.backend.device;
         const R = this._karteRechner();
@@ -1026,13 +1061,14 @@ class AnazhRealm_stoff_instanz {
                 entries: [
                     { binding: 0, resource: { buffer: P.param, size: 64 } },
                     ...quellen.map((q, i) => ({ binding: 1 + i, resource: q.createView() })),
-                    ...["summe", "nsum", "dA", "dB", "zahl", "grenze", "aus"].map((n, i) => ({
+                    ...["summe", "nsum", "dA", "dB", "zahl", "grenze", "aus", "saum"].map((n, i) => ({
                         binding: 4 + i,
                         resource: { buffer: P[n] },
                     })),
                 ],
             });
         }
+        dev.queue.writeBuffer(plan.P.saum, 0, saum);
         // die Schichten bekommen ihre GPU-Form vor der ersten Ablage (gezeichnet wird eine Karte erst gebacken)
         if (!this._karteGpuTexturen(at)) for (const t of [at.map, at.nmap, at.lmap]) rend.initTexture(t);
         const ziele = this._karteGpuTexturen(at);
@@ -3570,7 +3606,7 @@ struct P {
 @group(0) @binding(6) var<storage, read_write> dA: array<f32>;
 @group(0) @binding(7) var<storage, read_write> dB: array<f32>;
 @group(0) @binding(8) var<storage, read_write> zahl: array<atomic<u32>>;
-@group(0) @binding(9) var<storage, read_write> grenze: array<f32>;
+@group(0) @binding(9) var<storage, read_write> grenze: array<u32>;
 @group(0) @binding(10) var<storage, read_write> aus: array<u32>;
 
 fn deckt(x: u32, y: u32) -> bool {
@@ -3635,15 +3671,62 @@ fn glaette(@builtin(global_invocation_id) g: vec3<u32>) {
     if (p.flag == 1u) { dA[o] = nb / 16.0; } else { dB[o] = nb / 16.0; }
 }
 
-// Der Schlüssel eines Texels der Stufe: die geglättete Deckung (+ die eigene als Gleichstand), 0 ohne eigene Deckung
-fn schluessel(i: u32) -> f32 {
+// DER SAUM DER KARTE (phyto-core karteSaum, karteSaumMuster — dieselben Zahlen): x die Blattgröße der Art in Stufe-0-Texeln,
+// y Nadel (1) oder Laub (0), z die Stärke, w der Kronen-Fuß (Stufe-0-Zeile der Ansicht; −1: keine Krone)
+@group(0) @binding(11) var<uniform> saum: vec4<f32>;
+fn saumHash(ix: i32, iy: i32, s: u32) -> f32 {
+    var h = (bitcast<u32>(ix) * 0x27d4eb2du) ^ (bitcast<u32>(iy) * 0x165667b1u) ^ (s * 0x9e3779b9u);
+    h = (h ^ (h >> 15u)) * 0x85ebca6bu;
+    h = (h ^ (h >> 13u)) * 0xc2b2ae35u;
+    return f32(h ^ (h >> 16u)) / 4294967296.0;
+}
+// Laub 1 − F1 (runde Lappen), Nadel (F2 − F1) · 1,5 (Grate zwischen den Büscheln), Zelle e
+fn saumMuster(X: f32, Y: f32, e: f32, nadel: bool) -> f32 {
+    let q = vec2<f32>(X, Y) / e;
+    let q0 = vec2<i32>(floor(q));
+    var f1 = 9.0;
+    var f2 = 9.0;
+    for (var j = -1; j <= 1; j++) {
+        for (var i = -1; i <= 1; i++) {
+            let c = q0 + vec2<i32>(i, j);
+            let d = length(vec2<f32>(c) + vec2<f32>(saumHash(c.x, c.y, 1u), saumHash(c.x, c.y, 8u)) - q);
+            if (d < f1) { f2 = f1; f1 = d; } else if (d < f2) { f2 = d; }
+        }
+    }
+    return select(max(0.0, 1.0 - f1), min(1.0, (f2 - f1) * 1.5), nadel);
+}
+// DER SCHLÜSSEL DER WAHL: über dem Kronen-Fuß die Deckung des Fußabdrucks + Stärke × (Muster − ½), das Muster nie feiner als
+// zwei Texel der Stufe; darunter (der Stamm) die geglättete Deckung des Puffers flag; dazu die eigene als Gleichstand, 0 ohne
+// eigene Deckung — in den anderen Puffer
+@compute @workgroup_size(16, 16)
+fn saumK(@builtin(global_invocation_id) g: vec3<u32>) {
+    if (g.x >= p.w || g.y >= p.h) { return; }
+    let i = g.y * p.w + g.x;
     let s = summe[p.ziel + i].a;
-    if (s <= 0.0) { return 0.0; }
-    return select(dA[i], dB[i], p.flag == 1u) + 1e-6 * s / p.fuss;
+    var kk = 0.0;
+    if (s > 0.0) {
+        let f = f32(1u << p.k);
+        let X = (f32(g.x) + 0.5) * f;
+        let Y = (f32(g.y % p.hA) + 0.5) * f;
+        if (Y <= saum.w) {
+            kk = max(1e-9, s / p.fuss + saum.z * (saumMuster(X, Y, max(saum.x, 2.0 * f), saum.y > 0.5) - 0.5));
+        } else {
+            kk = dLies(i, p.flag == 1u);
+        }
+        kk += 1e-6 * s / p.fuss;
+    }
+    if (p.flag == 1u) { dA[i] = kk; } else { dB[i] = kk; }
+}
+
+// Der Schlüssel eines Texels der Stufe: saumK schrieb ihn in den Puffer flag (0 ohne eigene Deckung)
+fn schluessel(i: u32) -> f32 {
+    return select(dA[i], dB[i], p.flag == 1u);
 }
 
 // DIE DECKUNGSTREUE WAHL je Ansicht: genau M = min(positiv, round(Deckung₀ · nA)) Texel decken — die Grenze ist der
-// M-größte Schlüssel (Halbierung über die Bits nicht-negativer Zahlen: exakt, 31 Schritte)
+// M-größte Schlüssel (Halbierung über die Bits nicht-negativer Zahlen: exakt, 31 Schritte); vom Grenzwert selbst decken nur
+// die ersten M − (Texel über ihm) nach ihrer Lage in der Ansicht (wie das Gesetz, phyto-core impostorMips): je Ansicht das
+// Paar (Grenzwert-Bits, Lage)
 var<workgroup> wz: atomic<u32>;
 var<workgroup> wc: u32;
 @compute @workgroup_size(256)
@@ -3665,7 +3748,10 @@ fn grenzeK(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index
     }
     let M = workgroupUniformLoad(&wc);
     if (M == 0u) {
-        if (li == 0u) { grenze[p.gi + v] = 3.0e38; }
+        if (li == 0u) {
+            grenze[2u * (p.gi + v)] = bitcast<u32>(3.0e38);
+            grenze[2u * (p.gi + v) + 1u] = 0u;
+        }
         return;
     }
     var lo = 0u;
@@ -3687,7 +3773,41 @@ fn grenzeK(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index
         let zahlT = workgroupUniformLoad(&wc);
         if (zahlT >= M) { lo = mid; } else { hi = mid; }
     }
-    if (li == 0u) { grenze[p.gi + v] = bitcast<f32>(lo); }
+    // DER GLEICHSTAND: über dem Grenzwert t liegen c < M Texel; die Lage j, vor der genau M − c Gleichstände liegen (Halbierung)
+    let t = bitcast<f32>(lo);
+    workgroupBarrier();
+    if (li == 0u) { atomicStore(&wz, 0u); }
+    workgroupBarrier();
+    var cg = 0u;
+    for (var i = li; i < nA; i += 256u) {
+        if (schluessel(basis + i) > t) { cg++; }
+    }
+    atomicAdd(&wz, cg);
+    workgroupBarrier();
+    if (li == 0u) { wc = M - atomicLoad(&wz); }
+    let rest = workgroupUniformLoad(&wc);
+    var jlo = 0u;
+    var jhi = nA;
+    loop {
+        if (jhi - jlo <= 1u) { break; }
+        let mid = jlo + (jhi - jlo) / 2u;
+        workgroupBarrier();
+        if (li == 0u) { atomicStore(&wz, 0u); }
+        workgroupBarrier();
+        var c = 0u;
+        for (var i = li; i < mid; i += 256u) {
+            if (schluessel(basis + i) == t) { c++; }
+        }
+        atomicAdd(&wz, c);
+        workgroupBarrier();
+        if (li == 0u) { wc = atomicLoad(&wz); }
+        let zahlJ = workgroupUniformLoad(&wc);
+        if (zahlJ >= rest) { jhi = mid; } else { jlo = mid; }
+    }
+    if (li == 0u) {
+        grenze[2u * (p.gi + v)] = lo;
+        grenze[2u * (p.gi + v) + 1u] = jhi;
+    }
 }
 
 fn srgb(x: f32) -> f32 {
@@ -3714,7 +3834,9 @@ fn bc1(@builtin(global_invocation_id) g: vec3<u32>) {
     var ok: array<bool, 16>;
     var n = 0u;
     var mitte = vec3<f32>(0.0);
-    let gr = grenze[p.gi + (g.y * 4u) / p.hA];
+    let gv = 2u * (p.gi + (g.y * 4u) / p.hA);
+    let gr = bitcast<f32>(grenze[gv]);
+    let gj = grenze[gv + 1u];
     for (var t = 0u; t < 16u; t++) {
         let x = g.x * 4u + (t & 3u);
         let y = g.y * 4u + (t >> 2u);
@@ -3726,7 +3848,8 @@ fn bc1(@builtin(global_invocation_id) g: vec3<u32>) {
         } else {
             let i = y * p.w + x;
             let s = summe[p.ziel + i];
-            o = s.a > 0.0 && schluessel(i) >= gr;
+            let kk = schluessel(i);
+            o = s.a > 0.0 && (kk > gr || (kk == gr && (y % p.hA) * p.w + x < gj));
             if (o) { c = s.rgb / s.a; }
         }
         ok[t] = o;
