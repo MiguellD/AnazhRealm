@@ -1,3 +1,7 @@
 # Die Zeilenenden des Repos sind LF auf jeder Plattform: der Windows-Laeufer omen-gpu (Job echt) checkte mit core.autocrlf=true
 # CRLF aus, und der Stamm-Leser (scripts/lib/stamm.cjs, die Naht von stamm/01.js) brach am ersten Echt-Schritt.
 * text=auto eol=lf
+# DIE REGISTER-KLASSE vereint je Name, nie je Zeile: der Merge-Treiber der Versions-Stufe scripts/bump-version.cjs (einrichten: npm run setup:merge)
+/spec/stamm/modul-karte.json merge=register
+/index.html merge=register
+/worlds/*/index.html merge=register
