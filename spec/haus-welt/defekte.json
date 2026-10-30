@@ -340,8 +340,8 @@
    ],
    [
     [
-     "            reich: 0.72,",
-     "            reich: 0.17,"
+     "                if (Gb.erdbauGrund(E, x, z, reich * sb)) continue;",
+     "                if (Gb.erdbauGrund(E, x, z, reich)) continue;"
     ]
    ]
   ],

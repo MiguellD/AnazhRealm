@@ -822,7 +822,6 @@ async function wasserStrom(ort, hoehe) {
 // Hiebs (die Säule r 3,5 und eine Zelle über ihre Wand, dort trägt die Ecke ihren Abstand, gelaende-core `editForm`; zwei
 // Zellen des Sheets, eine Zelle seines Netzes: r + 4 Zellen; Fälle, Büschel je Takt); der Takt berichtet, nie geurteilt.
 async function wasserGraben(o = {}) {
-    const span = r._voxelChunkConfig(0).span;
     const K = r.constructor.NAH_WIESE.kachel;
     const HIEB = 3.5; // das Maß des Grabe-Hiebs
     const AUSSEN = HIEB + 4 * r._voxelChunkConfig(0).step;

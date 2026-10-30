@@ -1003,17 +1003,20 @@ async function starte() {
                 // in Bau-Ereignissen, nie an der Wanduhr. Der Ort schwingt unter REGLER VOLL ein (die Bedingung der Messung, E): der Ring
                 // steht an seinem Ziel, gehalten wie `stell.ring`, nie nach der Last der Nachbarn auf der geteilten GPU (A9, Mess-Wiese:
                 // Ring 2 statt 4, boden-nah 2,391 statt 1,814 — die nahen Kronen fehlten)
-                const ziel = stell && stell.ring ? stell.ring : Math.min(12, r.state.chunkRingRadius || 4);
-                const decke = r.state.perfTargetMs;
-                r.state.perfTargetMs = 1000;
+                const ziel = stell && stell.ring ? stell.ring : Math.min(12, st.chunkRingRadius || 4);
+                const decke = st.perfTargetMs;
+                st.perfTargetMs = 1000;
+                // DER TAKT DES ORTS geht im Schritt der Seite (`__seitenTakt`: ein Bild, dann der Takt) — bis 30.10. schlief er 50 ms je Takt:
+                // an der Radeon (Mess-Sitzung, Ort wiese) waren 27–30 s von 40–48 s Ring-Zeit dieser Schlaf (537–607 Takte × 50 ms), nicht
+                // das Streaming; die Ankunft des Spielers geht im Bild-Takt
                 const takt = async () => {
-                    if (r.state._activeRingRadius < ziel) r.state._activeRingRadius = ziel;
+                    if (st._activeRingRadius < ziel) st._activeRingRadius = ziel;
                     try {
                         __buehne();
                         __ortSchritt();
                         r._gameLoopTick(performance.now());
                     } catch {}
-                    await sleep(50);
+                    await new Promise((ok) => requestAnimationFrame(ok));
                 };
                 let takte;
                 try {
@@ -1039,7 +1042,7 @@ async function starte() {
                             throw new Error(`Messort ${o.ort}: kein Dach bei ${o.dach} m (Träger ${r.state._kapselTraegerY})`);
                     }
                 } finally {
-                    r.state.perfTargetMs = decke;
+                    st.perfTargetMs = decke;
                 }
                 // ein Dorf, das vor dem Ort losging (ein Ort ohne Dorf-Zug, der Zug lief im Boot): sein Plan schwebt — Wege und
                 // Platz stehen, der Wald weicht, das Dorf wächst nie. Beim Namen (die Folge startet mit `start --ort`).
@@ -1158,8 +1161,11 @@ async function starte() {
             }
             if (r.state.playerMesh) r.state.playerMesh.visible = !!k.spieler;
             // DAS ZIEL des Bilds ist der Blick-Punkt: die Aufnahme prüft, ob es im Bild und frei ist, und die Blick-Wahl
-            // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42; `--wahl 0` schießt nur die genannte Pose)
-            const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel", punkte: k.punkte };
+            // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42; `--wahl 0` schießt nur die genannte Pose).
+            // Das Ziel einer Pose aus dem Leib (`--gesicht`, `--arm`) ist der Kopf oder die Fläche auf Armlänge, kein Werk hinter
+            // einer Kuppe: sein Fuß (ausgabe-aufnahme `punkte`, ein Ziel 0,6–40 m über dem Boden) liegt unter dem Bild — 0,7 m vor
+            // dem Gesicht 1,4 m tiefer, haar.K2#1 „Ziel Blickziel nicht im Bild (ndc [0,0])“ auf beiden Geräten —, `fuss: false`
+            const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel", punkte: k.punkte, ...(gpos ? { fuss: false } : {}) };
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
             let auf = null;
             let gewaehlt = null;
@@ -1412,8 +1418,11 @@ async function starte() {
                     // Kopf-Haut der Ton seiner Ecke, `aTon` — koerper `menschTon`: Haut, Lippe, Höhle, Haar-Kappe), projiziert auf den
                     // Schirm; `__gesichtMasse` liest das BILD dort, wo die Teilung den Teil des Vertex zeigt (abnahme-urteil). Die Töne
                     // kommen aus dem Leib selbst, nie von Hand — bis mensch.K4 aus der Farbe der Ecke, die die Verdeckung der Haut dunkelt.
+                    // Die Maße gehören der Klasse, die die Kopf-Haut wählt (mensch-kopf `^spieler:kopf/`); wählt sie sie nicht (haar
+                    // `^spieler:kopf/hair$`), ist `--gesicht` nur die Pose — bis dahin warf jeder Haar-Schuss „keine Kopf-Haut am Gelenk
+                    // head“ (haar.K2#1 third, beide Geräte).
                     let gesicht = null;
-                    if (k.gesicht != null) {
+                    if (k.gesicht != null && ["spieler:kopf/haut", "spieler:kopf/skin"].some((n) => re.test(n))) {
                         const T = THREE;
                         const K = window.__koerperCore;
                         if (!K || typeof K.menschTon !== "function" || !K.KOPF_SOLL)
@@ -3317,7 +3326,7 @@ hauptLauf(async () => {
         if (SELBST) process.exit(0);
         const halt = await eigeneWelt();
         const seite = async (f, o) =>
-            ergebnis(await evalRuf(`const kantenLinie = ${LL.kantenLinie}; return await (${f})(${JSON.stringify(o)});`));
+            ergebnis(await evalRuf(`const kantenLinie = ${LL.kantenLinie}, luftBetaRef = ${LL.luftBetaRef}; return await (${f})(${JSON.stringify(o)});`));
         const wort = opt("--wetter");
         const zug = wort && argv.includes("--zug");
         const mittag = { ...ref, uhren: [0.5] };

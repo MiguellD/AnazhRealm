@@ -101,6 +101,9 @@ function drawZensus(opts) {
                 if (s && s.mesh && s.spec && s.spec.userData && s.spec.userData.bauSatz) satzOf.set(s.mesh, s);
         const inhalt = {};
         const instanzKlasse = (key) => r.constructor._instanzKlasse(key);
+        // DIE WAHL DER GPU (`_instanzWahlGpu`): die Zahl eines Zugs zählt der Compute — nach dem Frame liest der Zähler sie
+        // aus dem Auftrags-Puffer der Arena, die gezeichneten Instanzen aus ihrer Liste (`spaet`), nie die Zahl der Senke
+        const spaet = [];
         const roh = rend._renderObjectDirect;
         rend._renderObjectDirect = function (object, material, scene, camera, ...rest) {
             const kl0 = klasse(object);
@@ -127,7 +130,8 @@ function drawZensus(opts) {
                 const senke = arena ? arena.zuege[j] : object.__instanzQuelle || object;
                 const kl = arena ? klasse(senke === object ? object.glieder[0] || object : senke) : kl0;
                 const k = kl + "|" + pass;
-                let tris = arena ? (arena.arr[j * 5] / 3) * arena.arr[j * 5 + 1] : 0;
+                const gpu = object._wahl; // die Arena der Wahl (`_wahlVor`): ihre Zahl zählt der Compute (unten)
+                let tris = arena && !gpu ? (arena.arr[j * 5] / 3) * arena.arr[j * 5 + 1] : 0;
                 if (g && !arena) {
                     const n = g.index ? g.index.count : g.attributes.position ? g.attributes.position.count : 0;
                     const dr = g.drawRange && Number.isFinite(g.drawRange.count) ? Math.min(g.drawRange.count, n) : n;
@@ -140,7 +144,8 @@ function drawZensus(opts) {
                 e.tris += tris;
                 // Die Nähe der Klasse im Hauptbild, ihre EXEMPLARE: die Bau-Einträge hinter ihren Instanzen (ein Tor zeichnet je
                 // Stoff einen Zug, `inst` zählt jede Instanz jedes Zugs, der Eintrag das Tor einmal), ohne Eintrag die Orte (0,5 m).
-                if (pass === "haupt" && senke !== object) {
+                const nahe = (ids) => {
+                    if (pass !== "haupt" || senke === object) return;
                     const w =
                         nah[kl] ||
                         (nah[kl] = { inst: 0, dMin: Infinity, dMax: 0, orte: new Set(), eintraege: new Set() });
@@ -158,7 +163,7 @@ function drawZensus(opts) {
                     if (senke.isInstancedMesh && senke.instanceMatrix) {
                         const a = senke.instanceMatrix.array;
                         const ein = slotEintrag.get(senke.userData && senke.userData.archInstanceKey);
-                        for (let i = 0; i < senke.count; i++) {
+                        for (const i of ids || Array(senke.count).keys()) {
                             const b = i * 16;
                             miss(a[b + 12], a[b + 13], a[b + 14]);
                             const id = ein ? ein.get(i) : undefined;
@@ -168,7 +173,9 @@ function drawZensus(opts) {
                         const c = g.boundingSphere.center;
                         miss(c.x, c.y, c.z);
                     } else miss(0, 0, 0);
-                }
+                };
+                if (gpu) spaet.push([k, nahe, object, ...arena.wahl.slice(j * 5 + 1, j * 5 + 5)]);
+                else nahe(null);
                 // Die Spur je unbenanntem Erzeuger (Material × Geometrie × Pass), höchstens 24.
                 const stoff =
                     ((material && (material.name || material.type)) || "") + "|" + (g ? g.name || g.type : "");
@@ -205,6 +212,12 @@ function drawZensus(opts) {
             frameMs = Math.round(performance.now() - t0);
         } finally {
             rend._renderObjectDirect = roh;
+        }
+        const lies = async (a) => new Uint32Array(await rend.getArrayBufferAsync(a));
+        for (const [k, nahe, a, erst, , arg, li] of spaet) {
+            const ind = await lies(a._ind); // je Zug: Indizes, Zahl, …, Abschnitt der Liste
+            zaehl[k].tris += (ind[arg - 1] / 3) * ind[arg];
+            nahe(Array.from((await lies(a.__instanzQuelle.liste)).subarray(li, li + ind[arg]), (x) => x - erst));
         }
         // Die Studio-Art je Foundry-Klasse (Rezept-`kind`): die Band-Wand ordnet über sie, nie über Art-Namen-Listen.
         const rezepte = r._foundry && r._foundry.recipes ? r._foundry.recipes : {};
@@ -345,7 +358,7 @@ function pufferZensus() {
         const name = "szene:" + r._taeterKlasse(o);
         geo(o.geometry, name);
         const q = o.__instanzQuelle || o; // die Arena (G1) hält ihre Matrizen an ihrer Quelle, nie in der Geometrie
-        if (q.isInstancedMesh) for (const a of [q.instanceMatrix, q.instanceColor]) merke(a, name);
+        if (q.isInstancedMesh) for (const a of [q.instanceMatrix, q.instanceColor, q.liste]) merke(a, name);
         // Was seine Render-Objekte zeichnen (das Register des Stamms, `_renderObjektRegister`): auch die Knoten-Attribute
         // (r184s InstanceNode zeichnet die Instanz-Farbe aus einem eigenen Attribut).
         for (const ro of o.__renderObjekte || []) if (ro.attributes) for (const a of ro.attributes) merke(a, name);

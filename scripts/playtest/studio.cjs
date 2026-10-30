@@ -114,17 +114,10 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
         const archs = r.state.architectures;
         const vorherAll = archs.length;
         try {
-            out.eiche = r._studioBlueprintForWord("eiche");
             out.eichen = r._studioBlueprintForWord("Eichen");
             out.fels = r._studioBlueprintForWord("fels");
             out.unbekannt = r._studioBlueprintForWord("quasselstrippe");
-            const f = r._foundry;
-            const treeIds =
-                f && f.recipes
-                    ? Object.keys(f.recipes).filter((k) => f.recipes[k] && f.recipes[k].kind === "tree")
-                    : [];
-            out.treeIds = treeIds.length;
-            out.alleBaeumeLoesen = treeIds.every((id) => !!r._studioBlueprintForWord(id));
+            // (dass JEDES Teil mit Ziel sein Wort trägt — jede Baum-Art und jede andere —, prüft gate:nervensystem S am Stammbaum)
             // Ein sicher trockener Fleck nahe dem Spieler (der Test soll nie am Zufall des Sees hängen) — 50 m vor der
             // Genesis-Mitte: ihre Lichtung ist ein Grundriss der Natur-Wand, dort wächst keine Eiche, deren Krone über die
             // Scheibe reicht (Integration Welle L, Entscheid D3; die Eiche reicht mit Hain-Streuung bis ~36 m).
@@ -225,13 +218,9 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
     const R = res || {};
     check("Co-Schöpfer: Band lief ohne Fehler", !R.err, R.err);
     check(
-        "Co-Schöpfer: der Wort-Auflöser liest die lebenden Tabellen (eiche/Eichen → baum_eiche, fels → Bauplan, Unsinn → null)",
-        R.eiche === "baum_eiche" && R.eichen === "baum_eiche" && !!R.fels && R.unbekannt === null,
-        `eiche=${R.eiche} eichen=${R.eichen} fels=${R.fels} unbekannt=${R.unbekannt}`
-    );
-    check(
-        `Co-Schöpfer: JEDE Baum-Art des Rezeptbuchs ist ein sagbares Wort (${R.treeIds} Arten)`,
-        R.alleBaeumeLoesen === true && R.treeIds > 0
+        "Co-Schöpfer: der Wort-Auflöser liest die lebenden Tabellen (Eichen → baum_eiche, fels → Bauplan, Unsinn → null)",
+        R.eichen === "baum_eiche" && !!R.fels && R.unbekannt === null,
+        `eichen=${R.eichen} fels=${R.fels} unbekannt=${R.unbekannt}`
     );
     check(
         "Co-Schöpfer: spawn_studio pflanzt 5 Eichen — geerdet (Oberfläche+0.5), trocken, am EINEN Chokepoint",
@@ -346,8 +335,8 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
 // V1 das Kristall-Kleid — eingefaltet aus gate:v1-resolve: `_foundryPresetForEntry` löst die Formations-VARIANTEN
 // (kristall_var${N}/fels_var${N}) auf ein Studio-Rezept auf; die Ausstattung (glutbrunnen · marktstand_dorf ·
 // brunnen_dorf · laterne_dorf) löst über ihre studioGestalt-Zeile auf das Gesetzbuch der Architektur; das Glut-Genom
-// ist gefallen, sein Umzug trägt alte Welten auf glutbrunnen; ein Tor-Wort ohne tor_-Klon fällt nie auf das
-// welt_-Portal derselben Gestalt; V2 der Werkstatt-Rezept-Regler erkennt die Repräsentanten.
+// ist gefallen, sein Umzug trägt alte Welten auf glutbrunnen (die Wörter der Ausstattung und die Tor-Regel trägt der Stammbaum,
+// gate:nervensystem S); V2 der Werkstatt-Rezept-Regler erkennt die Repräsentanten.
 async function checkBandKristallKleid({ page, check }) {
     const out = await safeEvaluate(page, async () => {
         // die Ausstattung löst über das LIVE-Buch auf (studioGestalt): warten, bis das Gesetzbuch der Architektur da ist
@@ -358,19 +347,6 @@ async function checkBandKristallKleid({ page, check }) {
         for (const t of ["kristall_var0", "kristall_var7", "fels_var0", "fels_var5", "fels_var7", "glut_var0", "glutbrunnen", "marktstand_dorf", "brunnen_dorf", "laterne_dorf", "kristall_geode", "felsturm", "stein_block"])
             res[t] = { exists: !!bp[t], preset: r._foundryPresetForEntry({ type: t }) };
         res._umzug = r.constructor.BAUPLAN_UMZUG ? r.constructor.BAUPLAN_UMZUG.glut_var3 : null;
-        const wort = (w) => r._studioBlueprintForWord(w);
-        res._wort = [wort("feuerstelle"), wort("marktstand"), wort("brunnen"), wort("laterne")].join("/");
-        const portal = Object.keys(bp).find((n) => bp[n] && bp[n].role === "portal" && typeof bp[n].studioGestalt === "string");
-        if (portal) {
-            const g = bp[portal].studioGestalt;
-            const klon = bp["tor_" + g];
-            delete bp["tor_" + g];
-            try {
-                res._torWort = { gestalt: g, portal, ziel: wort(g) };
-            } finally {
-                if (klon) bp["tor_" + g] = klon;
-            }
-        }
         res._kind = [r._workshopRecipeKind(bp["fels_var0"]), r._workshopRecipeKind(bp["kristall_var0"])].join("/");
         return res;
     });
@@ -382,8 +358,6 @@ async function checkBandKristallKleid({ page, check }) {
     if ((o.glut_var0 || {}).exists !== false) fails.push("glut_var0 lebt (das Glut-Genom ist gefallen)");
     if (o._umzug !== "glutbrunnen") fails.push(`Umzug glut_var3 → ${o._umzug}`);
     check("V1 Kristall-Kleid: jede Fels/Kristall-Variante trägt ihr Studio-Rezept, die Ausstattung ihr Gesetzbuch, das Glut-Genom zieht auf glutbrunnen", fails.length === 0, fails.join(" · "));
-    const t = o._torWort;
-    check("V1 Wort: feuerstelle/marktstand/brunnen/laterne lösen auf die Ausstattung, ein Tor-Wort ohne tor_-Klon nie auf das welt_-Portal", o._wort === "glutbrunnen/marktstand_dorf/brunnen_dorf/laterne_dorf" && !!t && t.ziel !== t.portal && !/^welt_/.test(String(t.ziel)), `${o._wort} · ${t ? `${t.gestalt} → ${t.ziel}` : "kein Portal mit Gestalt"}`);
     check("V2 Werkstatt: der Rezept-Regler erkennt die Repräsentanten (fels_var0 rock, kristall_var0 crystal)", o._kind === "rock/crystal", o._kind);
 }
 

@@ -76,6 +76,131 @@ class AnazhRealm_speicher_laden {
         return true;
     }
 
+    // DIE GRUNDSTELLUNG OHNE NEULADEN (w4-grundstellung; der Schöpfer 29.10.: „Die Welt ist in wenigen Sekunden geladen — das
+    // Prüftheater hat ein Ende"). Ohne `grund` nimmt sie den Grund der laufenden Welt: ihren Stand (das Speicher-Gesetz,
+    // `buildStateSnapshot`) und je Zeile der GRUND_TAFEL den Augenblick, den der Stand nicht trägt. Mit `grund` (sein JSON) spielt
+    // sie ihn in DIESELBE Welt zurück: das Wort jeder Zeile, dann der Stand (`_standRueckspielen`). Ring, Fern-Ring, Streu, Kronen, Leib und Shader bleiben warm — bis dahin
+    // stellte die Mess-Sitzung jede Grundstellung mit Neuladen her, und die nächste Probe baute ihren Ring neu (Radeon 29.10.:
+    // ~45 s je Probe). → { ok, grund, abdruck, anders, neu }: der Grund als JSON (nur beim Nehmen), der Abdruck der Welt danach
+    // (`_grundAbdruck`), die Größen, die vom Grund abweichen (leer: die Welt steht im Grund), und was neu fiel.
+    _grundstellung(grund = null) {
+        const ziel = grund ? JSON.parse(grund) : null;
+        let neu = null;
+        if (ziel) {
+            for (const [k, , setze] of AnazhRealm.GRUND_TAFEL) setze.call(this, ziel.augenblick[k]);
+            const r = this._standRueckspielen(ziel.stand);
+            if (!r.ok) return r;
+            neu = r.neu;
+        }
+        const jetzt = { stand: this.buildStateSnapshot(), augenblick: {} };
+        for (const [k, lies] of AnazhRealm.GRUND_TAFEL) jetzt.augenblick[k] = lies.call(this);
+        const abdruck = AnazhRealm._grundAbdruck(jetzt);
+        const soll = ziel ? AnazhRealm._grundAbdruck(ziel) : abdruck;
+        const anders = Object.keys({ ...soll, ...abdruck }).filter((k) => soll[k] !== abdruck[k]);
+        return { ok: true, grund: ziel ? null : JSON.stringify(jetzt), abdruck, anders, neu };
+    }
+
+    // DAS RÜCKSPIELEN EINES STANDS IN DIESELBE WELT (w4-grundstellung): der Stand durch die EINE Lade-Kette (`loadState`) an Ort
+    // und Stelle (`_ladeOrt`) — Saat, Gesetz und ihre Caches bleiben, ein gleiches worldMeta quert keine Grenze, der Leib gießt nur
+    // bei einer anderen Seele neu. Was sich änderte, fällt neu, nur das: die Glieder der Säcke (Baupläne, Stoffe, Werkzeuge — ein
+    // fremdes fällt, ein anderes kehrt durch die Kette wieder), jeder Edit, der kam oder fiel, über seine Reichweite
+    // (`_editWirkt`; der Faden bekommt die ganze Liste), jedes Werk, das fehlt, kam oder anders steht (`removeArchitecture`,
+    // `_bauAusStand`), die Wesen aus dem Stand (`spawnCreatures`, wie beim Boot). Die Würfe des Gesetzes (`_ausGesetz`) folgen dem
+    // Ort, nie dem Grund: der Strom wirft sie, wohin der Spieler kommt (speicher.K3). Eine andere Welt kommt so nie herein (die Tür
+    // `_weltBetreten`). → { ok, neu: { edits, bauten, wesen }, grund? }
+    _standRueckspielen(stand) {
+        const wm = this.state.worldMeta;
+        const id = stand && stand.worldMeta && stand.worldMeta.worldId;
+        if (!wm || !id || id !== wm.worldId)
+            return {
+                ok: false,
+                grund: `eine andere Welt (${id || "ohne worldId"}) kehrt nie an Ort und Stelle zurück`,
+            };
+        const J = AnazhRealm._grundJson;
+        const S = JSON.parse(JSON.stringify(stand)); // die Lade-Kette hält, was sie bekommt — der Grund bleibt unberührt
+        const jetzt = this.buildStateSnapshot();
+        const vorher = Array.isArray(wm.voxelEdits) ? wm.voxelEdits : [];
+        for (const k of ["blueprints", "materials", "tools"]) {
+            const live = new Map((jetzt[k] || []).map((e) => [e.name, J(e)]));
+            const soll = new Set((S[k] || []).map((e) => e && e.name));
+            for (const n of live.keys()) if (!soll.has(n)) delete this.state[k][n];
+            S[k] = (S[k] || []).filter((e) => !e || live.get(e.name) !== J(e));
+        }
+        this._ladeOrt = { weltGleich: J({ ...S.worldMeta, voxelEdits: null }) === J({ ...wm, voxelEdits: null }) };
+        try {
+            this.loadState(S);
+        } finally {
+            this._ladeOrt = null;
+        }
+        if (J(jetzt.playerTools) !== J(S.playerTools)) this.state.player.tools = [...S.playerTools];
+        // DIE TAG-LÄNGE des Grunds: der Stand trägt sie, die Lade-Kette setzt sie nie (die Wahl des Spielers, siehe „Tag-Länge“ in
+        // `_loadStateRestoreBasicState`) — an Ort und Stelle kehrt sie zurück. Radeon 30.10. (mess-session): licht.K5#1 fiel am Deckel
+        // mitten im Wetter-Zug (`st.dayLengthMinutes = 1e9`, das Zurück erst im finally), die Grundstellung meldete `dayLengthMinutes`
+        // abweichend, die Welt der Sitzung trug nicht mehr: 81 von 101 Stationen danach ungemessen
+        if (Number.isFinite(S.dayLengthMinutes)) this.state.dayLengthMinutes = S.dayLengthMinutes;
+        const nach = Array.isArray(S.worldMeta.voxelEdits) ? S.worldMeta.voxelEdits : [];
+        if (S.worldMeta.voxelEdits) this.state.worldMeta.voxelEdits = nach;
+        else delete this.state.worldMeta.voxelEdits;
+        const zahl = (L) => L.reduce((m, e) => m.set(J(e), (m.get(J(e)) || 0) + 1), new Map());
+        const [A, B] = [zahl(vorher), zahl(nach)];
+        const edits = [...new Set([...A.keys(), ...B.keys()])].filter((k) => A.get(k) !== B.get(k));
+        for (const k of edits) this._editWirkt(JSON.parse(k), false);
+        if (edits.length)
+            this._voxelZustandPost({ type: "state-update", delta: { voxelEdits: this._snapshotVoxelEdits() } });
+        // DAS WERK: je Id das Glied des Stands
+        const werk = new Map((S.architectures || []).map((a) => [String(a.id), a]));
+        const liveWerk = new Map((jetzt.architectures || []).map((a) => [String(a.id), J(a)]));
+        let n = 0;
+        for (const e of this.state.architectures.slice()) {
+            const k = String(e.id);
+            if (e._ausGesetz || (werk.has(k) && J(werk.get(k)) === liveWerk.get(k))) continue;
+            this.removeArchitecture(e, { still: true });
+            n++;
+        }
+        const da = new Set(this.state.architectures.map((e) => String(e.id)));
+        for (const [k, a] of werk) if (!da.has(k) && this._bauAusStand(a, S, null)) n++;
+        // DIE WESEN kehren aus dem Stand wieder (ihr Alter wächst mit jedem Bild: gleich sind sie nur unberührt)
+        const wesen = J(jetzt.creatures) !== J(S.creatures);
+        const headless = this.state.renderer && this.state.renderer._isHeadlessNull;
+        // ein Grund ohne Wesen (vor dem Wurf des Boots) lässt keine: `spawnCreatures` ohne Stand würfelte neue
+        if (wesen && this.state._pendingCreatureSnapshots)
+            this._syncBauen(headless ? "naht" : null, () => this.spawnCreatures());
+        else if (wesen) this.clearCreatures();
+        this.state._pendingCreatureSnapshots = null;
+        return { ok: true, neu: { edits: edits.length, bauten: n, wesen: wesen ? this.state.creatures.length : 0 } };
+    }
+
+    // JSON mit geordneten Schlüsseln: gleiche Werte, gleiche Bytes (die Lade-Kette legt Objekte in ihrer eigenen Reihe an).
+    static _grundJson(v) {
+        const ordne = (k, w) =>
+            w && w.constructor === Object
+                ? Object.fromEntries(Object.entries(w).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+                : w;
+        return JSON.stringify(v === undefined ? null : v, ordne);
+    }
+
+    // DER ABDRUCK eines Grunds ({ stand, augenblick }): je Größe ihr JSON — der Stand je Feld (das worldMeta je eigenem Feld
+    // `worldMeta.<k>`), der Augenblick je Zeile (`augenblick.<k>`); gleiche Abdrücke, gleiche Welt.
+    // Zwei Größen trägt er in ihrer Form, nie in ihrer Zahl: die Welt-Uhr läuft (`spielZeit`, `_weltUhrNimm` geht nie zurück —
+    // feld.K2#2; zwischen zwei Proben läuft sie ohnehin), und der Verband eines Wesens heißt nach seinem ersten Glied im Stand
+    // (die Wiederkehr vergibt neue netIds, `_restoreCreatureFromSnapshot` — bei jedem Laden).
+    static _grundAbdruck(g) {
+        const J = AnazhRealm._grundJson;
+        const a = {};
+        for (const [k, v] of Object.entries(g.stand))
+            if (k === "worldMeta" && v) for (const [m, w] of Object.entries(v)) a["worldMeta." + m] = J(w);
+            else a[k] = J(v);
+        const vb = new Map();
+        const wesen = (g.stand.creatures || []).map((c) =>
+            c && c.verband != null
+                ? { ...c, verband: vb.get(c.verband) || vb.set(c.verband, "v" + vb.size).get(c.verband) }
+                : c
+        );
+        [a.creatures, a.spielZeit] = [J(wesen), "läuft"];
+        for (const [k, v] of Object.entries(g.augenblick)) a["augenblick." + k] = J(v);
+        return a;
+    }
+
     // Der Zustand der aktiven Welt aus dem Speicher — durch DIE Rettungs-Kette `_weltRettungsKette` (IndexedDB des
     // Boot-Vorlaufs ⇄ Abbild → .bak; der Vorlauf wird hier verbraucht; Welt-Guard: nur für DIESELBE Welt). Ohne Aktiv-Zeiger der
     // Legacy-Single-Key. null, wenn nichts lesbar ist — dann sagt das Log, was die Kette fand.
@@ -161,35 +286,41 @@ class AnazhRealm_speicher_laden {
     // Die Weltgrenze jedes Ladens: das worldMeta der geladenen Welt ersetzt das der Seite (`_weltMetaWechsel`); ein
     // altes `worldMeta.chunkDeltas` wird still ignoriert.
     _loadStateRestoreWorldMeta(state) {
-        // Welt-Wechsel ist eine WELT-IDENTITÄTS-GRENZE: lazy-cached Worldgen-Caches MÜSSEN zurück, sonst trägt
-        // die neue Welt alte Welt-Stempel (P2P-Drift). _growTreeNoise hängt an worldSeed (rebuild lazy),
-        // _growTreeRing trägt alte Bauplan-Keys; grown_*-Baupläne räumt _loadStateRestoreGrownBlueprints.
-        // Same-World-Reload ist sicher (gleicher Seed → Noise bit-identisch).
-        this._growTreeNoise = null;
-        this._growTreeRing = [];
-        // V18.222 — Canopy-Chunks disposen (welt-spezifisch); _tickCanopyStreaming
-        // baut den 3×3-Ring der neuen Welt lazy nach.
-        if (typeof this._canopyDisposeAllChunks === "function") this._canopyDisposeAllChunks();
-        // V18.224 — Scatter-Regionen disposen (welt-spezifisch, an worldSeed +
-        // gebackene Felder gebunden). _tickScatterStreaming re-streut die neue
-        // Welt lazy. Die promoteten Cells (echte Bäume) reisen via Snapshot.
-        if (typeof this._disposeAllScatterRegions === "function") this._disposeAllScatterRegions();
-        // STUFE 2 (das-feld-zeichnet §2) — der Fern-Ring trägt die Höhen der ALTEN
-        // Welt (das EINE Gesetz liest den Welt-Seed): am Welt-Identitäts-Wechsel
-        // entsorgen; der Tick baut die neue Welt lazy + budgetiert nach.
-        if (typeof this._fernRingDispose === "function") this._fernRingDispose();
-        // Merged Geometries sind welt-spezifisch (Keys `grown_<species>_<hash>`): beim Welt-Wechsel disposen,
-        // lazy-rebuild im nächsten `_archFlattenBlueprint`. Materials NICHT hier disposen — sie sind im
-        // archFlattenCache geteilt; das macht der archInstanceGroups-Disposer.
-        if (this.state.archMergedGeomCache) {
-            for (const entry of this.state.archMergedGeomCache.values()) {
-                if (entry && Array.isArray(entry.leaves)) {
-                    for (const leaf of entry.leaves) {
-                        if (leaf && leaf.geom && typeof leaf.geom.dispose === "function") leaf.geom.dispose();
+        // DIESELBE WELT AN ORT UND STELLE (`_standRueckspielen`): Saat und Gesetz bleiben, ihre Caches (Kronen, Streu, Fern-Ring,
+        // Bau-Geometrien, Zähler der Streu) bleiben warm; ein gleiches worldMeta quert keine Grenze, ein anderes die unten
+        const ort = this._ladeOrt;
+        if (ort && ort.weltGleich) return;
+        if (!ort) {
+            // Welt-Wechsel ist eine WELT-IDENTITÄTS-GRENZE: lazy-cached Worldgen-Caches MÜSSEN zurück, sonst trägt
+            // die neue Welt alte Welt-Stempel (P2P-Drift). _growTreeNoise hängt an worldSeed (rebuild lazy),
+            // _growTreeRing trägt alte Bauplan-Keys; grown_*-Baupläne räumt _loadStateRestoreGrownBlueprints.
+            // Same-World-Reload ist sicher (gleicher Seed → Noise bit-identisch).
+            this._growTreeNoise = null;
+            this._growTreeRing = [];
+            // V18.222 — Canopy-Chunks disposen (welt-spezifisch); _tickCanopyStreaming
+            // baut den 3×3-Ring der neuen Welt lazy nach.
+            if (typeof this._canopyDisposeAllChunks === "function") this._canopyDisposeAllChunks();
+            // V18.224 — Scatter-Regionen disposen (welt-spezifisch, an worldSeed +
+            // gebackene Felder gebunden). _tickScatterStreaming re-streut die neue
+            // Welt lazy. Die promoteten Cells (echte Bäume) reisen via Snapshot.
+            if (typeof this._disposeAllScatterRegions === "function") this._disposeAllScatterRegions();
+            // STUFE 2 (das-feld-zeichnet §2) — der Fern-Ring trägt die Höhen der ALTEN
+            // Welt (das EINE Gesetz liest den Welt-Seed): am Welt-Identitäts-Wechsel
+            // entsorgen; der Tick baut die neue Welt lazy + budgetiert nach.
+            if (typeof this._fernRingDispose === "function") this._fernRingDispose();
+            // Merged Geometries sind welt-spezifisch (Keys `grown_<species>_<hash>`): beim Welt-Wechsel disposen,
+            // lazy-rebuild im nächsten `_archFlattenBlueprint`. Materials NICHT hier disposen — sie sind im
+            // archFlattenCache geteilt; das macht der archInstanceGroups-Disposer.
+            if (this.state.archMergedGeomCache) {
+                for (const entry of this.state.archMergedGeomCache.values()) {
+                    if (entry && Array.isArray(entry.leaves)) {
+                        for (const leaf of entry.leaves) {
+                            if (leaf && leaf.geom && typeof leaf.geom.dispose === "function") leaf.geom.dispose();
+                        }
                     }
                 }
+                this.state.archMergedGeomCache.clear();
             }
-            this.state.archMergedGeomCache.clear();
         }
         if (state.worldMeta && typeof state.worldMeta === "object") {
             // DIE WELTGRENZE: die geladene Welt ersetzt das worldMeta ganz (`_weltMetaWechsel`), das EINE Heil jeder Welt
@@ -211,10 +342,12 @@ class AnazhRealm_speicher_laden {
         this.state.scatterPromoted = new Set(Array.isArray(promoviert) ? promoviert : []);
         // Scatter-Counters + Lookup-Buffer beim Welt-Wechsel resetten; sie bauen sich beim Stream neu.
         // Nicht persistiert (Session-Tatsache, kein Welt-Erbgut).
-        this.state.scatterCounters = { tree: 0, under: 0, stone: 0 };
-        this.state.scatterLookup = new Map();
-        // V18.218.1 — den LOD-Cursor zurücksetzen (rolling pointer; welt-bound).
-        this._archLODCursor = 0;
+        if (!ort) {
+            this.state.scatterCounters = { tree: 0, under: 0, stone: 0 };
+            this.state.scatterLookup = new Map();
+            // V18.218.1 — den LOD-Cursor zurücksetzen (rolling pointer; welt-bound).
+            this._archLODCursor = 0;
+        }
         // Migration: das Legacy-"private" wird zur kanonischen 4-Stufen-Form "privat"; unbekannte Werte
         // (Müll/Zukunft) fallen still auf den sicheren Default "privat".
         const wm = this.state.worldMeta;
@@ -265,7 +398,8 @@ class AnazhRealm_speicher_laden {
                 if (p && Object.keys(p).length) ziel[preset] = p;
             }
         }
-        if (typeof state.playerSoul === "string") {
+        // an Ort und Stelle gießt nur eine andere Seele den Leib neu (`_standRueckspielen`)
+        if (typeof state.playerSoul === "string" && !(this._ladeOrt && state.playerSoul === this.state.player.soul)) {
             const known =
                 this.playerSoulDefs[state.playerSoul] ||
                 (this.state.customSouls && this.state.customSouls[state.playerSoul]);
@@ -583,7 +717,8 @@ class AnazhRealm_speicher_laden {
     }
 
     _loadStateRestoreArchitectures(state, umzug) {
-        if (!Array.isArray(state.architectures) || !this.state.scene) return;
+        // an Ort und Stelle (`_standRueckspielen`) bauen die Bauten nur neu, wenn ihr Bestand vom Grund abweicht (GRUND_TAFEL `bauten`)
+        if (!Array.isArray(state.architectures) || !this.state.scene || this._ladeOrt) return;
         for (const old of this.state.architectures) {
             // V12.0-perf.c.2 — instancierte Einträge mit-cullen (Slots frei),
             // nicht nur die mit old.mesh (klassisch).
@@ -602,53 +737,8 @@ class AnazhRealm_speicher_laden {
         // aus ihm. `spawnArchitecture` setzt `entry.blockerAABBs` direkt (V9.65-Pro-Part-Logik bleibt).
         for (let i = 0; i < state.architectures.length; i++) {
             const a = state.architectures[i];
-            if (!a || typeof a.type !== "string" || !a.position) continue;
-            // DER BAUPLAN-UMZUG: ein gefallener Bauplan steht als sein Erbe wieder auf (glut_var* → glutbrunnen).
-            const typ = AnazhRealm.BAUPLAN_UMZUG[a.type] || a.type;
             // DER BODEN-UMZUG: auf einem neuen Boden steht der Bau in seiner Höhe über Grund (`_bodenUmzug`)
-            const ort = umzug && umzug.has(i) ? { x: a.position.x, y: umzug.get(i), z: a.position.z } : a.position;
-            const entry = this.spawnArchitecture(typ, ort, {
-                seed: a.seed,
-                scale: a.scale,
-                id: a.id,
-                // W-H (V18.179) — die Pro-Instanz-Yaw reist durch den Reload mit.
-                rotationY: Number.isFinite(a.rotationY) ? a.rotationY : 0,
-                // V18.181-merge-Λ Sub 3d — Λ.2 (clever-gauss): die expliziten
-                // Tint-Werte reisen mit (Welt-Identität). spawnArchitecture
-                // priorisiert opts.tintH/S/V vor seed-Berechnung.
-                tintH: a.tintH,
-                tintS: a.tintS,
-                tintV: a.tintV,
-                // M6 — der Restore ist PRÄZISE (die Architektur stand, wo sie stand;
-                // numerische Worldgen-ids fielen sonst durch den string-id-Opt-out).
-                precise: true,
-                // Ω5 — die Gratis-Geburt reist durch den Reload mit.
-                freeBorn: a.freeBorn === true,
-                // die Marke des Wurfs des Felds reist durch den Reload mit (`_weichtDemBau`)
-                feldWurf: a.feldWurf === true,
-                // die Herkunft des Werks reist durch den Reload mit (`_weichtDemBau`); ein Stand ohne die Zeile `herkunft` (vor
-                // 22.10.) trug keine Marke — der Satz des Spielers setzte Zahlen-ids, und die Lichtung räumte sein Werk nach Stoff
-                // (der Korpus, speicher.K5: der Stein-Block von V18.546.53 fiel). Dort ist Werk, was weder das Feld warf noch
-                // nach Art Natur ist.
-                werk:
-                    a.werk === true || (state.herkunft !== 1 && a.feldWurf !== true && !this._naturArt({ type: typ })),
-                // PRÄGUNG-WELT — der Guss-Stempel reist durch den Reload mit
-                // (spawnArchitecture ist der EINE Sanitize-Chokepoint).
-                studioOv: a.studioOv,
-                // DORF-IN-TERRAIN — der Fundament-Footprint reist durch den Reload
-                // mit (derselbe EINE Sanitize-Chokepoint klemmt ihn).
-                fundament: a.fundament,
-                // DORF-ERLEBNIS — die Tür-Zeile reist durch den Reload mit.
-                tuer: a.tuer,
-                // KAMIN-RAUCH (.105) — Spitze reist durch den Reload mit.
-                chimney: a.chimney,
-            });
-            // Φ7 (V18.190) — entry-level portalMeta nachhängen (Halle-Slots
-            // tragen je eigene worldAddress; ohne diesen Schritt würden alle
-            // Slot-Tore die Bauplan-default-Adresse zeigen).
-            if (entry && a.portalMeta && typeof a.portalMeta === "object") {
-                entry.portalMeta = a.portalMeta;
-            }
+            if (a && a.position) this._bauAusStand(a, state, umzug && umzug.has(i) ? umzug.get(i) : null);
         }
         // DIE ALTEN ORTE ZIEHEN UM (K10 × Entscheid §5.4): jedes Haus eines Orts steht auf seinem Erdbau
         const geerdet = this._erdbauAltOrte(this.state.architectures, (e) => e.position.y);
@@ -663,6 +753,57 @@ class AnazhRealm_speicher_laden {
             this.log(`Grundriss: ${geraeumt} Natur-Stücke aus Häusern und Lichtung geräumt (älterer Stand).`, "INFO");
         this._worldgenBuildVoxelChunkCache(); // das Gesetz wirft neu, was der Stand nicht trägt (speicher.K3)
         this.log(`Architekturen geladen: ${state.architectures.length}`);
+    }
+
+    // EIN Bau des Stands steht wieder auf (die Lade-Kette `_loadStateRestoreArchitectures`, das Rückspielen `_standRueckspielen`):
+    // `state` der Stand (seine Herkunft), `umzugY` die Höhe auf einem neuen Boden oder null. → der Eintrag oder null
+    _bauAusStand(a, state, umzugY) {
+        if (!a || typeof a.type !== "string" || !a.position) return null;
+        // DER BAUPLAN-UMZUG: ein gefallener Bauplan steht als sein Erbe wieder auf (glut_var* → glutbrunnen).
+        const typ = AnazhRealm.BAUPLAN_UMZUG[a.type] || a.type;
+        const ort = umzugY != null ? { x: a.position.x, y: umzugY, z: a.position.z } : a.position;
+        const entry = this.spawnArchitecture(typ, ort, {
+            seed: a.seed,
+            scale: a.scale,
+            id: a.id,
+            // W-H (V18.179) — die Pro-Instanz-Yaw reist durch den Reload mit.
+            rotationY: Number.isFinite(a.rotationY) ? a.rotationY : 0,
+            // V18.181-merge-Λ Sub 3d — Λ.2 (clever-gauss): die expliziten
+            // Tint-Werte reisen mit (Welt-Identität). spawnArchitecture
+            // priorisiert opts.tintH/S/V vor seed-Berechnung.
+            tintH: a.tintH,
+            tintS: a.tintS,
+            tintV: a.tintV,
+            // M6 — der Restore ist PRÄZISE (die Architektur stand, wo sie stand;
+            // numerische Worldgen-ids fielen sonst durch den string-id-Opt-out).
+            precise: true,
+            // Ω5 — die Gratis-Geburt reist durch den Reload mit.
+            freeBorn: a.freeBorn === true,
+            // die Marke des Wurfs des Felds reist durch den Reload mit (`_weichtDemBau`)
+            feldWurf: a.feldWurf === true,
+            // die Herkunft des Werks reist durch den Reload mit (`_weichtDemBau`); ein Stand ohne die Zeile `herkunft` (vor
+            // 22.10.) trug keine Marke — der Satz des Spielers setzte Zahlen-ids, und die Lichtung räumte sein Werk nach Stoff
+            // (der Korpus, speicher.K5: der Stein-Block von V18.546.53 fiel). Dort ist Werk, was weder das Feld warf noch
+            // nach Art Natur ist.
+            werk: a.werk === true || (state.herkunft !== 1 && a.feldWurf !== true && !this._naturArt({ type: typ })),
+            // PRÄGUNG-WELT — der Guss-Stempel reist durch den Reload mit
+            // (spawnArchitecture ist der EINE Sanitize-Chokepoint).
+            studioOv: a.studioOv,
+            // DORF-IN-TERRAIN — der Fundament-Footprint reist durch den Reload
+            // mit (derselbe EINE Sanitize-Chokepoint klemmt ihn).
+            fundament: a.fundament,
+            // DORF-ERLEBNIS — die Tür-Zeile reist durch den Reload mit.
+            tuer: a.tuer,
+            // KAMIN-RAUCH (.105) — Spitze reist durch den Reload mit.
+            chimney: a.chimney,
+        });
+        // Φ7 (V18.190) — entry-level portalMeta nachhängen (Halle-Slots
+        // tragen je eigene worldAddress; ohne diesen Schritt würden alle
+        // Slot-Tore die Bauplan-default-Adresse zeigen).
+        if (entry && a.portalMeta && typeof a.portalMeta === "object") {
+            entry.portalMeta = a.portalMeta;
+        }
+        return entry;
     }
 
     // Ring 6.5 Hotbar (9 Slots, ungültige Bauplan-Refs → null), Welle 6.C1
@@ -1767,7 +1908,7 @@ class AnazhRealm_speicher_laden {
                 worldId: identity.newWorldId,
                 slug: identity.finalSlug,
                 creator: "local",
-                visibility: "private",
+                visibility: "privat",
                 parentWorlds: [idA, idB],
                 bornAt: identity.bornAt,
                 seed: identity.newSeed,
@@ -2052,6 +2193,62 @@ AnazhRealm.BAUPLAN_UMZUG = Object.freeze({
     glut_var4: "glutbrunnen",
     glut_var5: "glutbrunnen",
 });
+// DIE GRUND-TAFEL (w4-grundstellung): je Größe, die der Stand nicht trägt und eine Probe der Mess-Sitzung ändert, ihr Name, ihr
+// Leser und ihr Wort zurück (`_grundstellung`: jedes Wort vor dem Stand) — der Ritt (der Spieler steigt aus, ehe der Stand ihn
+// stellt), die Sicht und der Blick des Spielers, die Nässe der Welt und der Übergang des Wetters (der Stand trägt das Wort,
+// `_loadStateRestoreBasicState`), die Zellen des Brands (nicht persistiert, die Asche reist als Tat). Der Stand trägt Uhr,
+// Welt-Uhr, Saison, Wetter-Wort, Spieler-Ort, Wesen, Werke und Edits.
+AnazhRealm.GRUND_TAFEL = Object.freeze([
+    [
+        "ritt",
+        function () {
+            const m = this.state.player && this.state.player.mountedArch;
+            return m ? String(m.id) : null;
+        },
+        function (v) {
+            if (v === null && this.state.player.mountedArch) this.dismountArchitecture();
+        },
+    ],
+    [
+        "sicht",
+        function () {
+            return this.state.cameraMode;
+        },
+        function (v) {
+            if (v !== this.state.cameraMode) this.setCameraMode(v);
+        },
+    ],
+    [
+        "blick",
+        function () {
+            return [this.state.yaw, this.state.pitch];
+        },
+        function (v) {
+            [this.state.yaw, this.state.pitch] = v;
+        },
+    ],
+    [
+        "naesse",
+        function () {
+            return [this.state.naesse, this.state.weatherTransition || null];
+        },
+        function (v) {
+            [this.state.naesse, this.state.weatherTransition] = v;
+        },
+    ],
+    [
+        "brand",
+        function () {
+            return [...(this.state.brandFeld || new Map()).keys()].sort();
+        },
+        function (v) {
+            const bf = this.state.brandFeld;
+            if (v.length || !bf) return;
+            bf.clear();
+            [bf.glutBlock, this._brandRest, this._brandBett] = [null, null, null];
+        },
+    ],
+]);
 // Welle 5 C — Maschinen-Rekursivität. Vier Op-Klassen aus Konzept §3.1,
 // als Whitelist für eigene Tool-Baupläne. Spieler kann nur diese vier
 // vergeben — sonst kollidieren neue Op-Klassen mit MATERIAL_OP_COMPATIBILITY.

@@ -106,7 +106,7 @@ function tafelSchreiben(t) {
     fs.writeFileSync(TAFEL_PFAD, JSON.stringify({ ...t, zeilen: t.zeilen.filter((z) => !z.welt.stufeVon) }, null, 4) + "\n");
 }
 
-const zahl = (x) => typeof x === "number" && Number.isFinite(x);
+const zahl = Number.isFinite;
 const abweichung = (v) => (zahl(v) && v > 0 ? Math.abs(Math.log(v)) : null);
 
 // Das Schema der Tafel. `ist`/`ratsche` dürfen null sein (ungemessen), sonst Zahlen; jede Pflicht-Gruppe trägt eine Zeile.
@@ -151,7 +151,7 @@ function tafelPruefen(t) {
                     if (sel[k] && !(Array.isArray(sel[k]) && sel[k].length === 2 && sel[k].every(zahl)))
                         fz(`Stoff-Wähler ${k} ist kein [min, max]`);
         const ist = z.ist;
-        if (ist !== null && ist !== undefined) {
+        if (ist != null) {
             for (const s of z.labor ? ["labor", "welt"] : ["welt"])
                 if (!ist[s] || !zahl(ist[s].Y) || typeof ist[s].rgb !== "string")
                     fz(`ist.${s} {Y, rgb} fehlt`);
@@ -163,7 +163,7 @@ function tafelPruefen(t) {
             )
                 fz(`ist.verhaeltnis ${ist.verhaeltnis} ist nicht Labor/Welt`);
         }
-        if (z.ratsche !== null && z.ratsche !== undefined && !zahl(z.ratsche))
+        if (z.ratsche != null && !zahl(z.ratsche))
             fz(`ratsche ist weder null noch Zahl`);
         // DIE STUFEN-PFLICHT: eine Welt-Klasse der Foundry (`:L<n>`, der Bau-Satz) erklärt die Stufen ihres Exemplars —
         // eine Klasse, die still weitere Stufen zulässt, misst die gefaltete Stufe
@@ -182,14 +182,14 @@ function tafelPruefen(t) {
         if (!(t.zeilen || []).some((z) => z.gruppe === g)) f.push(`die Klasse ${g} trägt keine Zeile`);
     for (const [s, k] of Object.entries(t.karten || {})) {
         if (!STUDIOS[s]) f.push(`karten.${s}: Studio unbekannt`);
-        if (k.ist !== null && k.ist !== undefined && !(zahl(k.ist.kL) && k.ist.kL > 0))
+        if (k.ist != null && !(zahl(k.ist.kL) && k.ist.kL > 0))
             f.push(`karten.${s}: ist.kL fehlt`);
-        if (k.ratsche !== null && k.ratsche !== undefined && !zahl(k.ratsche))
+        if (k.ratsche != null && !zahl(k.ratsche))
             f.push(`karten.${s}: ratsche ist keine Zahl`);
     }
     for (const s of Object.keys(STUDIOS))
         if (!(t.karten || {})[s]) f.push(`karten.${s} fehlt (jedes Studio misst seine Karte)`);
-    if (t.gemessen !== null && t.gemessen !== undefined && (!t.gemessen.labor || !t.gemessen.welt))
+    if (t.gemessen != null && (!t.gemessen.labor || !t.gemessen.welt))
         f.push("gemessen braucht {labor, welt} (Gerät, Datum, Ort der beiden Seiten)");
     return f;
 }

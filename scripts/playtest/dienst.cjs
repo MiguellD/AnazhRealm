@@ -37,14 +37,11 @@ async function checkBandW3UiPuls({ page, check }) {
         ];
         r.state.maxCreatures = cap;
         // (6) der ON-OPEN-Render im Hof-Hook am Ruf (so darf die Insel isOpen-skippen); die Bühne ruht für die Probe.
-        const eigenS = Object.prototype.hasOwnProperty.call(r, "_hofEnsureStage");
-        const altS = r._hofEnsureStage;
-        r._hofEnsureStage = () => null;
+        const zurueck = leihe(r, { _hofEnsureStage: () => null });
         try {
             out.hofOnOpen = window.__consumes(r, "_hofHandleDrawerChange", r, "_renderCreatureListUI", ["kreaturen"]);
         } finally {
-            if (eigenS) r._hofEnsureStage = altS;
-            else delete r._hofEnsureStage;
+            zurueck();
         }
         out.hofSkipsWhenClosed = !!reg.hof.isOpen && typeof reg.hof.isOpen === "function";
         return out;

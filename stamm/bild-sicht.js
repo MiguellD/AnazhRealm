@@ -1043,7 +1043,7 @@ class AnazhRealm_bild_sicht {
                                 const wasserTraf = kroneTraf.not().and(abs(art.sub(1.0)).lessThan(0.5));
                                 aus.assign(
                                     vec4(
-                                        mix(strahl, luft.farbe(P, q), luft.faktor(P, q)),
+                                        luft.mische(strahl, P, q),
                                         float(1)
                                             .sub(smoothstep(0.42, 0.5, max(abs(rq.x), abs(rq.y))))
                                             .mul(select(wasserTraf, float(0.0), float(1.0)))
@@ -2025,7 +2025,7 @@ class AnazhRealm_bild_sicht {
             const punkt = U.camPos.add(dirN.mul(t));
             return TSL.Fn(() => {
                 TSL.Discard(t.lessThan(0.25)); // 0-Sentinel: kein Treffer bzw. Himmel
-                return TSL.vec4(TSL.mix(ruf.rgb, luft.farbe(U.camPos, punkt), luft.faktor(U.camPos, punkt)), 1.0);
+                return TSL.vec4(luft.mische(ruf.rgb, U.camPos, punkt), 1.0);
             })();
         };
         // DER MARCH-DRAW: Stellvertreter-Boxen (Rückseiten — eine Hülle um die Kamera deckt den ganzen Blick), EIN Draw

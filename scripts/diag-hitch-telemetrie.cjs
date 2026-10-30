@@ -457,7 +457,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
             const pipe = wartete.get(obj);
             if (!pipe) return false;
             const p = rend.backend.get(pipe).pipeline;
-            return p !== undefined && p !== null;
+            return p != null;
         };
         frames += await bisEreignis(() => traegtIn(bg, obj) || bereit(), 20);
         if (bereit()) {
