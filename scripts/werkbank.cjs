@@ -1006,6 +1006,9 @@ async function starte() {
                 const ziel = stell && stell.ring ? stell.ring : Math.min(12, r.state.chunkRingRadius || 4);
                 const decke = r.state.perfTargetMs;
                 r.state.perfTargetMs = 1000;
+                // DER TAKT DES ORTS geht im Schritt der Seite (`__seitenTakt`: ein Bild, dann der Takt) — bis 30.10. schlief er 50 ms je Takt:
+                // an der Radeon (Mess-Sitzung, Ort wiese) waren 27–30 s von 40–48 s Ring-Zeit dieser Schlaf (537–607 Takte × 50 ms), nicht
+                // das Streaming; die Ankunft des Spielers geht im Bild-Takt
                 const takt = async () => {
                     if (r.state._activeRingRadius < ziel) r.state._activeRingRadius = ziel;
                     try {
@@ -1013,7 +1016,7 @@ async function starte() {
                         __ortSchritt();
                         r._gameLoopTick(performance.now());
                     } catch {}
-                    await sleep(50);
+                    await new Promise((ok) => requestAnimationFrame(ok));
                 };
                 let takte;
                 try {
