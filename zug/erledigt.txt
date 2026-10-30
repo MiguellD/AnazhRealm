@@ -72,3 +72,4 @@ takt21b-gtx gemessen punkte 98ef98bb gtx: 46 grün / 40 rot
 z77-abab nicht-langsamer abab 715754fc gegen 98ef98bb: stadt 4+4 nicht-langsamer · w-ego 4+4 nicht-langsamer
 takt22-gtx gemessen punkte 715754fc gtx: 21 grün / 7 rot
 z78-abab LANGSAMER abab 73bdf938 gegen 715754fc: stadt 4+4 LANGSAMER · w-ego 2+2 nicht-langsamer
+takt23-gtx gemessen punkte 73bdf938 gtx: 0 grün / 11 rot
