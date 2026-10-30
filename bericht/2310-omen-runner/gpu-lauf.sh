@@ -21,10 +21,15 @@ worker() { tasklist -FI "IMAGENAME eq Runner.Worker.exe" 2>/dev/null | grep -qi 
 nimm() { # $1 spätester Zeitpunkt (s) — wartet auf das Schloss und das Ende der CI-Ruhe (VOR dem Schloss, 25.10.), nimmt es, Herzschlag
   until ! worker && ! ci_wartet && [ "$(ci_ruhe_rest)" -le 0 ] && mkdir "$GPU_SCHLOSS" 2>/dev/null; do
     schloss_verwaist
-    [ $(date +%s) -ge "$1" ] && { echo "gpu-lauf: Schloss nach $(( $(date +%s) - T0 )) s nicht frei ('$(schloss_erster)')" >&2; exit 75; }
+    [ $(date +%s) -ge "$1" ] && { echo "SCHLOSS BLOCKIERT von '$(schloss_erster)' nach $(( $(date +%s) - T0 )) s Warten" >&2; exit 75; }
     sleep 15
   done
   printf '%s\npid=%s\n' "$NAME" "$(cat /proc/$$/winpid 2>/dev/null)" > "$GPU_SCHLOSS/besitzer.txt"
+  # DIE MELDUNG (30.10.) — dasselbe Protokoll wie die kanonische artifacts/profiband/werkzeug/gpu-lauf.sh: punkte.cjs wartet auf genau
+  # „gpu-lauf: Schloss …“ (und liest „SCHLOSS BLOCKIERT …“ beim Exit 75). Ohne die Zeile starb der stille Warter der Mess-Sitzung nach
+  # 600 s („schwieg“), obwohl das Schloss stand — takt25b/p/h am 6b3da705 je 0 gemessen; die alte Fehlzeile „gpu-lauf: Schloss nach …
+  # nicht frei“ hätte der Warter sogar als genommen gelesen.
+  echo "gpu-lauf: Schloss $NAME nach $(( $(date +%s) - T0 )) s" >&2
   ( while sleep 300; do [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt"; done ) & HERZ=$!
 }
 trap 'kill $HERZ 2>/dev/null; schloss_loesen "$NAME"' EXIT
