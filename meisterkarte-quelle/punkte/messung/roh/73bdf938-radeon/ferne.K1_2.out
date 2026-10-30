@@ -1,0 +1,23 @@
+$ C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --luft --datei C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\73bdf938-radeon\ferne.K1_2.json
+
+✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT
+  ROT K1-2 JE KANAL Uhr 0.5 (Sonne 74.21°) Azimut 90° ab 2 km: ungemessen (21 Paare < 30)
+  ROT K1-2 JE KANAL Uhr 0.5 (Sonne 74.21°) Azimut 180° ab 2 km: ungemessen (11 Paare < 30)
+  ROT K1-2 JE KANAL Uhr 0.5 (Sonne 74.21°) Azimut 270° ab 2 km: ungemessen (24 Paare < 30)
+  ROT K1-2 JE KANAL Uhr 0.27 (Sonne 7.2°) Azimut 90° ab 2 km: ungemessen (0 Paare < 30)
+  ROT K1-2 JE KANAL Uhr 0.27 (Sonne 7.2°) Azimut 180° ab 2 km: ungemessen (0 Paare < 30)
+  ROT K1-2 JE KANAL Uhr 0.27 (Sonne 7.2°) Azimut 270° ab 2 km: ungemessen (0 Paare < 30)
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 0° 8 km: 24° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 90° 8 km: 28° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 180° 8 km: 28.85° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.5 (Sonne 74.21°) Azimut 270° 8 km: 25.59° von der In-Streuung > 10°
+  OFFEN K1-2 FARBTON Uhr 0.27 (Sonne 7.2°) Azimut 180° 8 km: 10.67° von der In-Streuung > 10°
+  OFFEN K1-2 HIMMEL Azimut 0°: Ton der In-Streuung nicht blau 0.202,0.2312,0.202 statt 222° ±15
+  OFFEN K1-2 HIMMEL Azimut 90°: Ton der In-Streuung nicht blau 0.1756,0.2083,0.1813 statt 222° ±15
+  OFFEN K1-2 HIMMEL Azimut 180°: Ton der In-Streuung nicht blau 0.1648,0.199,0.1729 statt 222° ±15
+  OFFEN K1-2 HIMMEL Azimut 270°: Ton der In-Streuung nicht blau 0.1756,0.2083,0.1813 statt 222° ±15
+  OFFEN K1-2 SONNENSEITE Uhr 0.5: Y der In-Streuung zur Sonne / gegen sie 1.174 < 1.2
+LUFT ROT · K1-1 GRUEN · K1-2 ROT · K2-1 GRUEN · K2-2 GRUEN (offen: FARBTON, HIMMEL, SONNENSEITE Uhr 0.5)
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

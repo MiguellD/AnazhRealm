@@ -1,0 +1,237 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u; node -e "$1" "$3" "$5" && exec node -e "$2" "$3" "$4" licht const fs = require("fs"); const [aus, t] = process.argv.slice(1); fs.mkdirSync(aus + ".d", { recursive: true }); fs.writeFileSync(aus + ".d/himmel.js", t); (async function folge(plan) {
+    const fs = require("fs");
+    const path = require("path");
+    const cp = require("child_process");
+    const crypto = require("crypto");
+    const [AUS, KOORD] = process.argv.slice(1);
+    const DIR = AUS + ".d";
+    fs.mkdirSync(DIR, { recursive: true });
+    const WB = path.join("scripts", "werkbank.cjs");
+    const P = String(process.env.WERKBANK_PORT);
+    const aus = { plan: plan.name, adapter: null, schritte: {}, dateien: {} };
+    // @DIR@ · @KOORD@ · @T:<name>@ (ein Text aus plan.texte) · @<schritt>.<i>@ (das i-te Feld des Ergebnisses eines früheren Schritts)
+    const ers = (s) =>
+        String(s)
+            .replace(/@T:([A-Z_]+)@/g, (_m, n) => plan.texte[n])
+            .split("@DIR@").join(DIR)
+            .split("@KOORD@").join(KOORD)
+            .replace(/@([a-z0-9-]+)\.(\d+)@/g, (_m, n, i) => {
+                const e = aus.schritte[n] && aus.schritte[n].json && aus.schritte[n].json.ergebnis;
+                if (!Array.isArray(e) || e[+i] == null) throw new Error("Schritt " + n + " trägt kein Feld " + i + ": " + JSON.stringify(e));
+                return String(e[+i]);
+            });
+    const duenn = (o) => (o == null ? null : JSON.parse(JSON.stringify(o, (_k, v) => (typeof v === "string" && v.length > 4096 ? undefined : v))));
+    const json = (t) => {
+        const s = String(t || "");
+        const e = s.lastIndexOf("}");
+        for (const i of [s.startsWith("{") ? 0 : -1, s.indexOf("\n{")])
+            if (i >= 0 && e > i)
+                try {
+                    return JSON.parse(s.slice(i, e + 1));
+                } catch (_e) {
+                    /* der nächste Anfang */
+                }
+        return null;
+    };
+    const wb = (args, ms) =>
+        cp.spawnSync(process.execPath, [WB, ...args, "--port", P], { encoding: "utf8", timeout: ms || 900000, maxBuffer: 1 << 28 });
+    let code = 0;
+    try {
+        aus.adapter = (/\[linse-gpu\][^\r\n]*/.exec(fs.readFileSync(String(process.env.PUNKTE_SITZUNG_LOG), "utf8")) || [null])[0];
+        for (const s of plan.schritte) {
+            let args = (s.args || []).map(ers);
+            if (s.probe) {
+                // eine Seiten-Probe aus einer Datei; ihr git-Blob ist fest, damit eine geänderte Probe nie still mitmisst
+                const roh = fs.readFileSync(ers(s.probe));
+                const blob = crypto.createHash("sha1").update("blob " + roh.length + "\0").update(roh).digest("hex");
+                if (blob !== s.blob) throw new Error("Probe " + s.probe + " ist Blob " + blob + ", die Station kennt " + s.blob);
+                args = ["eval", roh.toString("utf8")];
+            }
+            const r = wb(args, s.ms);
+            const e = { exit: r.status, json: duenn(json(r.stdout)) };
+            if (!e.json) e.rest = String((r.stdout || "") + (r.stderr || "")).slice(-1500);
+            aus.schritte[s.name] = e;
+            if (s.datei) {
+                const f = ers(s.datei);
+                aus.dateien[s.name] = fs.existsSync(f) ? duenn(JSON.parse(fs.readFileSync(f, "utf8"))) : null;
+            }
+            console.log("  " + s.name + " · Exit " + r.status + (e.json ? "" : " · " + String(e.rest).trim().split("\n").slice(-1)[0]));
+            if (s.muss && r.status !== 0) throw new Error(s.name + ": Exit " + r.status + " " + String(e.rest || "").slice(-300));
+        }
+    } catch (e) {
+        aus.fehler = String((e && e.message) || e);
+        code = 1;
+    } finally {
+        fs.writeFileSync(AUS, JSON.stringify(aus, null, 1));
+    }
+    console.log(aus.adapter || "[linse-gpu] ungenannt");
+    console.log(aus.fehler ? "FOLGE ROT: " + aus.fehler : "FOLGE " + plan.name + ": " + plan.schritte.length + " Schritte");
+    process.exit(code);
+})({"name":"licht.K2#2","texte":{"SETZ":"const proto = Object.getPrototypeOf(r);\nwindow.__buehneRoh = window.__buehneRoh || window.__buehne;\nwindow.__buehne = (o) => window.__buehneRoh(Object.assign({}, o, { wetter: W }));\nr.setTimeOfDay = function (_u, q) { const ok = proto.setTimeOfDay.call(this, U, q); this._himmelSprung = true; this._applyDayNightToScene(); return ok; };\nreturn [U, W];","LOS":"delete r.setTimeOfDay; if (window.__buehneRoh) window.__buehne = window.__buehneRoh; return 1;"},"schritte":[{"name":"fenster","args":["fenster","1920","1080"],"muss":true},{"name":"umstellen","args":["umstellen","--ort","wiese"],"muss":true},{"name":"setz-0","args":["eval","const U = 0.5, W = \"sunny\";@T:SETZ@"],"muss":true},{"name":"kugel-0","probe":"@KOORD@/bericht/2110-messschuld2/kugel.js","blob":"3d42b5fefd53dafb551534e030bdc5c7c958e842"},{"name":"los-0","args":["eval","@T:LOS@"],"muss":true},{"name":"setz-1","args":["eval","const U = 0.27, W = \"sunny\";@T:SETZ@"],"muss":true},{"name":"kugel-1","probe":"@KOORD@/bericht/2110-messschuld2/kugel.js","blob":"3d42b5fefd53dafb551534e030bdc5c7c958e842"},{"name":"los-1","args":["eval","@T:LOS@"],"muss":true},{"name":"setz-2","args":["eval","const U = 0.73, W = \"sunny\";@T:SETZ@"],"muss":true},{"name":"kugel-2","probe":"@KOORD@/bericht/2110-messschuld2/kugel.js","blob":"3d42b5fefd53dafb551534e030bdc5c7c958e842"},{"name":"los-2","args":["eval","@T:LOS@"],"muss":true},{"name":"setz-3","args":["eval","const U = 0.5, W = \"rainy\";@T:SETZ@"],"muss":true},{"name":"kugel-3","probe":"@KOORD@/bericht/2110-messschuld2/kugel.js","blob":"3d42b5fefd53dafb551534e030bdc5c7c958e842"},{"name":"los-3","args":["eval","@T:LOS@"],"muss":true},{"name":"setz-4","args":["eval","const U = 0.27, W = \"rainy\";@T:SETZ@"],"muss":true},{"name":"kugel-4","probe":"@KOORD@/bericht/2110-messschuld2/kugel.js","blob":"3d42b5fefd53dafb551534e030bdc5c7c958e842"},{"name":"los-4","args":["eval","@T:LOS@"],"muss":true},{"name":"setz-5","args":["eval","const U = 0.73, W = \"rainy\";@T:SETZ@"],"muss":true},{"name":"kugel-5","probe":"@KOORD@/bericht/2110-messschuld2/kugel.js","blob":"3d42b5fefd53dafb551534e030bdc5c7c958e842"},{"name":"los-5","args":["eval","@T:LOS@"],"muss":true},{"name":"himmel","probe":"@DIR@/himmel.js","blob":"8f5f1a823e55209ac70a12d6c5f0d4fc488b9573"}]}) C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\73bdf938-radeon\licht.K2_2.json C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination return await (async function himmelZurSonne(r, T) {
+    const st = r.state;
+    const rend = st.renderer;
+    const cam = st.camera;
+    const sc = st.scene;
+    const dl = st.directionalLight;
+    const warte = (ms) => new Promise((ok) => setTimeout(ok, ms));
+    rend.setAnimationLoop(null);
+    window.__buehne({});
+    r.setTimeOfDay(0.5, "human");
+    r._himmelSprung = true;
+    r._applyDayNightToScene();
+    for (let i = 0; i < 20 && typeof r._leuchtTakt === "function"; i++) (r._leuchtTakt(), await warte(50));
+    const S = dl.position.clone().sub(dl.target.position).normalize();
+    const a = new T.Vector3(S.x, 0, S.z).normalize();
+    const R = 0.5;
+    const P0 = st.playerMesh.position.clone();
+    const fwd = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion).setY(0).normalize();
+    const quer = new T.Vector3(-fwd.z, 0, fwd.x);
+    const rc = new T.Raycaster();
+    rc.layers.set(AnazhRealm.SHADOW_TWIN_LAYER);
+    rc.far = 60;
+    const frei = (p) =>
+        [1, -1].every((sg) =>
+            [-45, 0, 45].every((dw) =>
+                [20, 45].every((el) => {
+                    const w = Math.atan2(a.z * sg, a.x * sg) + (dw * Math.PI) / 180;
+                    const e = (el * Math.PI) / 180;
+                    rc.set(p, new T.Vector3(Math.cos(w) * Math.cos(e), Math.sin(e), Math.sin(w) * Math.cos(e)));
+                    return !rc.intersectObject(sc, true).some((h) => !(h.object.name || "").startsWith("probe:") && h.object !== st.playerMesh);
+                })
+            )
+        );
+    let mitte = null;
+    for (const d of [10, 14, 18, 22, 27, 33, 40])
+        for (const s of [0, 5, -5, 10, -10]) {
+            if (mitte) break;
+            const m = P0.clone().addScaledVector(fwd, d).addScaledVector(quer, s);
+            m.y = r._voxelSurfaceY(m.x, m.z) + R;
+            if (frei(m)) mitte = m;
+        }
+    if (!mitte) return { ende: "kein freier Himmel", stand: { uhr: st.timeOfDay, wetter: st.weather } };
+    const geo = new T.SphereGeometry(R, 96, 64);
+    const kugel = new T.Mesh(geo, r._buildToonNodeMaterial({ color: new T.Color(0.18, 0.18, 0.18) }));
+    kugel.position.copy(mitte);
+    kugel.castShadow = kugel.receiveShadow = true;
+    kugel.frustumCulled = false;
+    kugel.name = "probe:kugel:himmel";
+    sc.add(kugel);
+    const [fov0, pos0, quat0, I0] = [cam.fov, cam.position.clone(), cam.quaternion.clone(), dl.intensity];
+    const W = 1920;
+    const H = 1080;
+    const srgb = (b) => {
+        const v = b / 255;
+        return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+    };
+    const SC = 0.76;
+    const DD = 1 - SC;
+    const invNeutral = (y) => {
+        const ymin = Math.min(...y);
+        const ymax = Math.max(...y);
+        let k = 1;
+        if (ymax >= SC) {
+            const np = Math.min(ymax, 0.9995);
+            k = ((DD * DD) / (1 - np) - DD + SC) / np;
+        }
+        const um = ymin * k;
+        const xm = Math.sqrt(um / 6.25);
+        const off = um < 0.04 ? xm - 6.25 * xm * xm : 0.04;
+        return y.map((v) => v * k + off);
+    };
+    const seiten = {};
+    st.playerMesh.visible = false;
+    dl.intensity = 0;
+    try {
+        for (const [name, sg] of [
+            ["zur", 1],
+            ["weg", -1],
+        ]) {
+            cam.fov = 50;
+            cam.updateProjectionMatrix();
+            cam.position.copy(mitte).addScaledVector(a, 4 * sg);
+            cam.position.y += 0.5;
+            cam.lookAt(mitte);
+            cam.updateMatrixWorld(true);
+            let x = null;
+            for (let i = 0; i < 3; i++) {
+                r._schattenAlleNeu();
+                x = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" });
+            }
+            const [camM, projI, cp, belicht] = [cam.matrixWorld.clone(), cam.projectionMatrixInverse.clone(), cam.position.clone(), rend.toneMappingExposure];
+            const pc = mitte.clone().project(cam);
+            const rpx = (((R / mitte.distanceTo(cp)) * (H / 2)) / Math.tan((50 * Math.PI) / 360)) * 1.15;
+            const [cx, cy] = [((pc.x + 1) / 2) * W, ((1 - pc.y) / 2) * H];
+            const [sp, ray, v, hit] = [new T.Sphere(mitte, R), new T.Ray(), new T.Vector3(), new T.Vector3()];
+            const Ys = [];
+            let clip = 0;
+            for (let y = Math.max(0, Math.floor(cy - rpx)); y < Math.min(H, Math.ceil(cy + rpx)); y++)
+                for (let px = Math.max(0, Math.floor(cx - rpx)); px < Math.min(W, Math.ceil(cx + rpx)); px++) {
+                    v.set(((px + 0.5) / W) * 2 - 1, 1 - ((y + 0.5) / H) * 2, 0.5).applyMatrix4(projI).applyMatrix4(camM);
+                    ray.set(cp, v.sub(cp).normalize());
+                    if (!ray.intersectSphere(sp, hit)) continue;
+                    const N = hit.clone().sub(mitte).normalize();
+                    if (N.dot(ray.direction) > -0.26 || Math.abs(N.y) > 0.25 || N.dot(a) * sg < 0.85) continue;
+                    const i = (y * W + px) * 4;
+                    const y8 = [x.u8[i], x.u8[i + 1], x.u8[i + 2]];
+                    if (Math.max(...y8) >= 254) clip++;
+                    const lin = invNeutral(y8.map(srgb)).map((c) => c / belicht);
+                    Ys.push(0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]);
+                }
+            Ys.sort((p, q) => p - q);
+            seiten[name] = {
+                Y: Ys.length ? +Ys[Ys.length >> 1].toFixed(5) : null,
+                n: Ys.length,
+                clip,
+                belicht: +belicht.toFixed(4),
+                auge: cp.toArray().map((q) => +q.toFixed(2)),
+            };
+        }
+    } finally {
+        dl.intensity = I0;
+        sc.remove(kugel);
+        kugel.material.dispose();
+        geo.dispose();
+        cam.fov = fov0;
+        cam.updateProjectionMatrix();
+        cam.position.copy(pos0);
+        cam.quaternion.copy(quat0);
+        cam.updateMatrixWorld(true);
+        st.playerMesh.visible = true;
+    }
+    const [z, w] = [seiten.zur, seiten.weg];
+    return {
+        ende: "ok",
+        stand: { uhr: st.timeOfDay, wetter: st.weather },
+        sonneGrad: +((Math.asin(S.y) * 180) / Math.PI).toFixed(1),
+        ort: mitte.toArray().map((q) => +q.toFixed(1)),
+        seiten,
+        himmelZurSonne: z.Y && w.Y ? +(z.Y / w.Y).toFixed(3) : null,
+    };
+})(r, T);
+  fenster · Exit 0
+  umstellen · Exit 0
+  setz-0 · Exit 0
+  kugel-0 · Exit 0
+  los-0 · Exit 0
+  setz-1 · Exit 0
+  kugel-1 · Exit 0
+  los-1 · Exit 0
+  setz-2 · Exit 0
+  kugel-2 · Exit 0
+  los-2 · Exit 0
+  setz-3 · Exit 0
+  kugel-3 · Exit 0
+  los-3 · Exit 0
+  setz-4 · Exit 0
+  kugel-4 · Exit 0
+  los-4 · Exit 0
+  setz-5 · Exit 0
+  kugel-5 · Exit 0
+  los-5 · Exit 0
+  himmel · Exit 0
+[linse-gpu] amd/rdna-3
+FOLGE licht.K2#2: 21 Schritte
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3

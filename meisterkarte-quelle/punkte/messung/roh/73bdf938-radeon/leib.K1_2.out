@@ -1,0 +1,52 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u
+WP=$((7804 + 20000)); LP=$((7804 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; FRISCH=1
+boot() { if [ -z "$FRISCH" ]; then node "$PUNKTE_MASCHINE" grundstellung > "$L/grund.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; cat "$L/grund.txt"; exit 3; }; fi; FRISCH=; if [ $# -gt 0 ]; then timeout 300 $W umstellen "$@" > "$L/boot.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/boot.txt"; exit 3; }; fi; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+rm -f "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\73bdf938-radeon\leib.K1_2.json.lauf1.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\73bdf938-radeon\leib.K1_2.json.lauf2.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\73bdf938-radeon\leib.K1_2.json.lauf3.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ1 $W latenz --proben 50 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\73bdf938-radeon\leib.K1_2.json.lauf1.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ2 $W latenz --proben 50 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\73bdf938-radeon\leib.K1_2.json.lauf2.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ3 $W latenz --proben 50 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\73bdf938-radeon\leib.K1_2.json.lauf3.json"
+node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\73bdf938-radeon\leib.K1_2.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\73bdf938-radeon\leib.K1_2.json.lauf1.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\73bdf938-radeon\leib.K1_2.json.lauf2.json" "C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\73bdf938-radeon\leib.K1_2.json.lauf3.json"
+@@PUNKTE@@ LATENZ1
+ego/gehen {"n":50,"fehlt":0,"p50":34.9,"p95":48.4,"max":64.9,"eingabe":0.8,"hoerer":0.1,"kette":16.1,"kurve":16.4,"takte":4}
+ego/springen {"n":50,"fehlt":0,"p50":20,"p95":27.8,"max":35.1,"eingabe":1.1,"hoerer":0.3,"kette":10.4,"kurve":0,"takte":3}
+ego/einsteigen {"n":50,"fehlt":0,"p50":48,"p95":61.9,"max":78.2,"eingabe":13.4,"hoerer":1,"kette":36.5,"kurve":0,"takte":2}
+ego/hieb {"n":32,"fehlt":18,"p50":573.9,"p95":823,"max":825.8,"eingabe":3.2,"hoerer":0.1,"kette":56.4,"kurve":512.1,"takte":65,"halt":0}
+third/gehen {"n":50,"fehlt":0,"p50":32.3,"p95":45,"max":67.8,"eingabe":2.5,"hoerer":0.1,"kette":11.5,"kurve":15.6,"takte":4}
+third/springen {"n":50,"fehlt":0,"p50":19.1,"p95":36.2,"max":41.7,"eingabe":2.6,"hoerer":0.4,"kette":9,"kurve":0,"takte":2}
+third/einsteigen {"n":50,"fehlt":0,"p50":19.5,"p95":34.7,"max":39.5,"eingabe":1.6,"hoerer":0.5,"kette":16.7,"kurve":0,"takte":1}
+third/hieb {"n":34,"fehlt":16,"p50":579.5,"p95":1338.9,"max":1425.4,"eingabe":16,"hoerer":0.1,"kette":52.2,"kurve":503.7,"takte":55,"halt":0}
+LATENZ ROT (Bild 16.6 ms) ego/einsteigen p95 61.9 ms > 50 (fehlt 0) — Täter kette 36.5 ms, 2 Takte · ego/hieb Verben kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein, Hit-Stop 0 Bilder · ego/hieb p95 823 ms > 50 (fehlt 18) — Täter kurve 512.1 ms, 65 Takte · third/hieb Verben kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein, Hit-Stop 0 Bilder · third/hieb p95 1338.9 ms > 50 (fehlt 16) — Täter kurve 503.7 ms, 55 Takte
+@@PUNKTE@@ EXIT 1
+@@PUNKTE@@ LATENZ2
+ego/gehen {"n":50,"fehlt":0,"p50":36.1,"p95":51.8,"max":69.2,"eingabe":2.2,"hoerer":0.1,"kette":15.8,"kurve":17.2,"takte":4}
+ego/springen {"n":50,"fehlt":0,"p50":23,"p95":45.1,"max":53.2,"eingabe":2.3,"hoerer":0.3,"kette":15.6,"kurve":0,"takte":3}
+ego/einsteigen {"n":50,"fehlt":0,"p50":56.2,"p95":64.8,"max":81.1,"eingabe":17.6,"hoerer":1.2,"kette":39,"kurve":0,"takte":2}
+ego/hieb {"n":35,"fehlt":15,"p50":590.7,"p95":785.2,"max":848.5,"eingabe":14.4,"hoerer":0.1,"kette":52.2,"kurve":525.8,"takte":40,"halt":0}
+third/gehen {"n":50,"fehlt":0,"p50":29.8,"p95":50.6,"max":63.3,"eingabe":15.3,"hoerer":0.1,"kette":9.8,"kurve":0,"takte":2}
+third/springen {"n":50,"fehlt":0,"p50":25.3,"p95":33.6,"max":34.7,"eingabe":16.5,"hoerer":0.4,"kette":8.8,"kurve":0,"takte":2}
+third/einsteigen {"n":50,"fehlt":0,"p50":40.2,"p95":61.9,"max":74.6,"eingabe":13.2,"hoerer":0.6,"kette":27.8,"kurve":0,"takte":2}
+third/hieb {"n":34,"fehlt":16,"p50":585.7,"p95":1108.5,"max":1180.8,"eingabe":20.9,"hoerer":0,"kette":49.8,"kurve":500.6,"takte":35,"halt":0}
+LATENZ ROT (Bild 19.8 ms) ego/gehen p95 51.8 ms > 50 (fehlt 0) — Täter kurve 17.2 ms, 4 Takte · ego/einsteigen p95 64.8 ms > 50 (fehlt 0) — Täter kette 39 ms, 2 Takte · ego/hieb Verben kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein, Hit-Stop 0 Bilder · ego/hieb p95 785.2 ms > 50 (fehlt 15) — Täter kurve 525.8 ms, 40 Takte · third/gehen p95 50.6 ms > 50 (fehlt 0) — Täter eingabe 15.3 ms, 2 Takte · third/einsteigen p95 61.9 ms > 50 (fehlt 0) — Täter kette 27.8 ms, 2 Takte · third/hieb Verben kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein, Hit-Stop 0 Bilder · third/hieb p95 1108.5 ms > 50 (fehlt 16) — Täter kurve 500.6 ms, 35 Takte
+@@PUNKTE@@ EXIT 1
+@@PUNKTE@@ LATENZ3
+ego/gehen {"n":50,"fehlt":0,"p50":33.2,"p95":56.4,"max":65.2,"eingabe":2.2,"hoerer":0.1,"kette":13.4,"kurve":16.4,"takte":4}
+ego/springen {"n":50,"fehlt":0,"p50":21.9,"p95":40.2,"max":44.8,"eingabe":0.7,"hoerer":0.3,"kette":12.8,"kurve":0,"takte":3}
+ego/einsteigen {"n":50,"fehlt":0,"p50":50.3,"p95":59.7,"max":101,"eingabe":14.5,"hoerer":1,"kette":36.6,"kurve":0,"takte":2}
+ego/hieb {"n":34,"fehlt":16,"p50":584.5,"p95":902.1,"max":941.9,"eingabe":2.7,"hoerer":0.1,"kette":57.5,"kurve":534.2,"takte":70,"halt":0}
+third/gehen {"n":50,"fehlt":0,"p50":31.3,"p95":44.9,"max":48.6,"eingabe":2.6,"hoerer":0.1,"kette":11.4,"kurve":14.9,"takte":4}
+third/springen {"n":50,"fehlt":0,"p50":20.1,"p95":36.9,"max":39.7,"eingabe":2.4,"hoerer":0.4,"kette":10.4,"kurve":0,"takte":2}
+third/einsteigen {"n":50,"fehlt":0,"p50":19.2,"p95":28.6,"max":35,"eingabe":0.8,"hoerer":0.5,"kette":16.8,"kurve":0,"takte":1}
+third/hieb {"n":34,"fehlt":16,"p50":569.2,"p95":880.9,"max":928.8,"eingabe":14.3,"hoerer":0.1,"kette":55.9,"kurve":499.6,"takte":60,"halt":0}
+LATENZ ROT (Bild 16.5 ms) ego/gehen p95 56.4 ms > 50 (fehlt 0) — Täter kurve 16.4 ms, 4 Takte · ego/einsteigen p95 59.7 ms > 50 (fehlt 0) — Täter kette 36.6 ms, 2 Takte · ego/hieb Verben kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein, Hit-Stop 0 Bilder · ego/hieb p95 902.1 ms > 50 (fehlt 16) — Täter kurve 534.2 ms, 70 Takte · third/hieb Verben kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein,kein, Hit-Stop 0 Bilder · third/hieb p95 880.9 ms > 50 (fehlt 16) — Täter kurve 499.6 ms, 60 Takte
+@@PUNKTE@@ EXIT 1
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

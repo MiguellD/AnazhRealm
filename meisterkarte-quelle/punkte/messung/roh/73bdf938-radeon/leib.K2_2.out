@@ -1,0 +1,10 @@
+$ C:/Program Files/Git/bin/bash.exe C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\werkzeug\gpu-lauf.sh punkte-radeon-1 C:\Program Files\nodejs\node.exe scripts/diag-koerper-stand.cjs --k8 --bild
+[linse-gpu] amd/rdna-3
+  {k8:{wiese:{x:-280.4,z:-1045.6,neig:0,ring:[4,4],fein:{n:200,p95:1.1,median:0.1},fuss:{n:200,p95:0.7,median:0,stecken:0},huf:{n:200,p95:0.2,median:gigant 0},rad:{n:200,p95:0.2,median:0},falllinie:{n:200,p95:0.3,median:-0.2,stecken:0},stufe:{n:201,p95:0.4,median:-0.3,stecken:0},streu:{n:337,p95:0.5,median:0}},sprung:{first:[{hub:[0.323,0.348,0.315],weite:2.846},{hub:[0.179,0.212,0.172],weite:2.156},{hub:[0.504,0.513,0.496],weite:3.45}],third:[{hub:[0.323,0.32,0.323],weite:2.846},{hub:[0.179,0.186,0.179],weite:2.156},{hub:[0.504,0.521,0.504],weite:3.45}]},hang:{x:-526,z:-853,neig:24.4,ring:[4,4],fein:{n:200,p95:4.3,median:0.3},fuss:{n:201,p95:1.4,median:-0.8,stecken:0},huf:{n:201,p95:0.4,median:gigant 0.1},rad:{n:200,p95:2.4,median:2.1},falllinie:{n:200,p95:1.2,median:-0.9,stecken:0},stufe:{n:200,p95:1.1,median:-0.3,stecken:0},streu:{n:714,p95:1,median:0}},nexus:0}}
+✅ gate:koerper-stand grün
+
+--- stderr ---
+gpu-lauf: Schloss punkte-radeon-1 (bild, Platz 1 von 2) nach 21 s
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3

@@ -1,0 +1,138 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u
+WP=$((7804 + 20000)); LP=$((7804 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; FRISCH=1
+boot() { if [ -z "$FRISCH" ]; then node "$PUNKTE_MASCHINE" grundstellung > "$L/grund.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; cat "$L/grund.txt"; exit 3; }; fi; FRISCH=; if [ $# -gt 0 ]; then timeout 300 $W umstellen "$@" > "$L/boot.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/boot.txt"; exit 3; }; fi; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+A=$(cygpath -m 'C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\73bdf938-radeon\siedlung.K4_2.json')
+teil W node scripts/diag-settlement.cjs --nur-w
+boot
+timeout 60 $W fenster 1600 900 > /dev/null 2>&1
+timeout 120 $W eval 'const g = r._genesisMitte(), land = (x, z) => r._landAt(x, z, 0.2), hoch = (x, z) => r.getTerrainHeightAt(x, z); let S = null; for (const R of [500, 650, 800]) for (let k = 0; k < 24; k++) { const a = (k / 24) * 2 * Math.PI, x = g.x + Math.cos(a) * R, z = g.z + Math.sin(a) * R; const ys = [0, 1, 2, 3, 4, 5, 6, 7].map((j) => [x + Math.cos(j * 0.785) * 80, z + Math.sin(j * 0.785) * 80]); if (!land(x, z) || !ys.every(([u, v]) => land(u, v))) continue; const h = ys.map(([u, v]) => hoch(u, v)), hang = Math.max(...h) - Math.min(...h); if (!S || hang < S.hang) S = { x, z, hang }; } if (!S) return { fehler: "kein ebenes Land 500–800 m vor dem Genesis-Ort" }; const huegel = (c) => { let b = null; for (const R of [140, 190, 240]) for (let k = 0; k < 32; k++) { const a = (k / 32) * 2 * Math.PI, x = c.x + Math.cos(a) * R, z = c.z + Math.sin(a) * R, y = hoch(x, z); if (Number.isFinite(y) && land(x, z) && (!b || y > b.y)) b = { x, y, z }; } return b; }; window.__k4 = { S, huegel, land, hoch, hill: huegel(S) }; r.spawnSettlement({ seed: 7, jahr: 1320, position: { x: S.x, y: 0, z: S.z } }); return { S, hill: window.__k4.hill };' > "$L/k4-ort.json" 2>&1; echo '@@PUNKTE@@ ORT'; cat "$L/k4-ort.json"; echo
+HILL=$(node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); const e = JSON.parse(t.slice(t.indexOf("{"))).ergebnis; console.log(e.hill ? e.hill.x.toFixed(1) + " " + e.hill.z.toFixed(1) : "")' "$L/k4-ort.json" 2> /dev/null)
+[ -n "$HILL" ] || { echo '@@PUNKTE@@ KEIN ORT'; exit 4; }
+timeout 300 $W umstellen $HILL > /dev/null 2>&1
+timeout 60 $W eval 'const K = window.__k4, Z = r.state.worldMeta.settlementCells; const k = Object.keys(Z).find((q) => q.startsWith("d:7@") && Math.hypot(Z[q].x - K.S.x, Z[q].z - K.S.z) < 250); if (!k) return { fehler: "der Ort von 1320 steht nicht" }; const c = Z[k], S = r._bewohnerSiedlungen.get(k), P = S && S.plan; if (!P) return { fehler: "der Ort trägt keinen Plan" }; K.haeuser = () => S.plan.slots.map((s) => r._dorfHaus(S.ox + s.x, S.oz + s.z, s.seed >>> 0)).filter(Boolean); Object.assign(K, { k, c, E0: K.haeuser(), hill: K.huegel(c) }); const R = 6 + Math.max(...P.slots.map((s) => Math.hypot(s.obb.cx, s.obb.cz) + Math.hypot(s.obb.ex, s.obb.ez))); const a0 = Math.atan2(K.hill.z - c.z, K.hill.x - c.x); for (let i = 0; i < 16 && !K.haus; i++) { const a = a0 + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 0.39, x = c.x + Math.cos(a) * R, z = c.z + Math.sin(a) * R; if (K.land(x, z) && r.spawnArchitecture("haus_alemannisch", { x, y: K.hoch(x, z) + 0.5, z }, { seed: 4711, werk: true })) K.haus = [x, z]; } return { k, groesse: P.groesse, jahr: P.jahr + P.spanne, slots: P.slots.length, haeuser: K.E0.length, haus: K.haus || null, hill: K.haus ? K.hill : null };' > "$L/k4-vor.json" 2>&1; echo '@@PUNKTE@@ VOR'; cat "$L/k4-vor.json"; echo
+HILL=$(node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); const e = JSON.parse(t.slice(t.indexOf("{"))).ergebnis; console.log(e.hill ? e.hill.x.toFixed(1) + " " + e.hill.z.toFixed(1) : "")' "$L/k4-vor.json" 2> /dev/null)
+[ -n "$HILL" ] || { echo '@@PUNKTE@@ KEIN HAUS AM RAND'; exit 5; }
+timeout 300 $W umstellen $HILL > /dev/null 2>&1
+timeout 60 $W eval 'const K = window.__k4; K.E1 = K.haeuser(); K.j0 = K.c.wachs && K.c.wachs.jahr; r.state.spielZeit += 1500; return { kern: !!K.c.kern, jahr: K.j0, haeuser: K.E1.length, uhr: r.state.spielZeit };' > "$L/k4-uhr.json" 2>&1; echo '@@PUNKTE@@ UHR'; cat "$L/k4-uhr.json"; echo
+timeout 300 $W umstellen $HILL > /dev/null 2>&1
+timeout 60 $W eval 'const K = window.__k4, c = K.c, E = K.haeuser(), ring = E.filter((e) => !K.E1.includes(e)).map((e) => [e.position.x, e.position.z]); const med = (q) => (ring.length ? Math.round(ring.map(([x, z]) => Math.hypot(x - q[0], z - q[1])).sort((a, b) => a - b)[ring.length >> 1]) : null); return { jahr: [K.j0, c.wachs && c.wachs.jahr], haeuser: [K.E1.length, E.length], slots: r._bewohnerSiedlungen.get(K.k).plan.slots.length, bleiben: +(K.E1.filter((e) => E.includes(e)).length / K.E1.length).toFixed(3), ring: { neu: ring.length, zumHaus: med(K.haus), zumOrt: med([c.x, c.z]) }, offen: r._dorfOffen() };' > "$L/k4-stand.json" 2>&1; echo '@@PUNKTE@@ STAND'; cat "$L/k4-stand.json"; echo
+timeout 60 $W eval 'const K = window.__k4, h = K.hill, mx = (K.c.x + K.haus[0]) / 2, mz = (K.c.z + K.haus[1]) / 2, my = K.hoch(mx, mz); return { pose: [h.x, h.y + 1.7, h.z, mx, my + 4, mz].map((v) => +v.toFixed(2)), d: Math.round(Math.hypot(h.x - mx, h.z - mz)), hoeher: Math.round((h.y - my) * 10) / 10 };' > "$L/k4-kamera.json" 2>&1; echo '@@PUNKTE@@ KAMERA'; cat "$L/k4-kamera.json"; echo
+K=$(node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); const e = JSON.parse(t.slice(t.indexOf("{"))).ergebnis; console.log(e.pose ? e.pose.join(" ") : "")' "$L/k4-kamera.json" 2> /dev/null)
+[ -n "$K" ] || { echo '@@PUNKTE@@ KEINE KAMERA'; exit 6; }
+rm -f "$L/ring.abnahme.json"
+teil BILD $W bild $K --uhr 0.5 --datei "$L/ring.png" --w 1600 --h 900
+cp "$L/ring.abnahme.json" "$A" 2> /dev/null; true
+@@PUNKTE@@ W
+=== TEIL W: DAS WACHSTUM (siedlung.K4 Staffel 2) ===
+WACHSTUM {"je":["1/- 12→37 37/37 1993","2/- 12→36 36/36 2011","3/- 12→37 37/37 1981","5/24 24→73 73/73 2019","7/24 25→72 72/72 2007","11/96 97→293 293/293 1984"],"stueck":0,"halten":[[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1],[1,1,1]],"ganz":true,"min":0.918,"halt":true}
+  ✅ W1 WACHSTUM in 10800 s: 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5/24 24→73 73/73 2019 · 7/24 25→72 72/72 2007 · 11/96 97→293 293/293 1984; Ringe 0.918 (≥ 0,8), Takte ≠ Stück 0
+  ✅ W2 AUS BEWOHNERN (wohl 0, ohne Leute halten; Gewalt bremst): 1,1,1 1,1,1 1,1,1 1,1,1 1,1,1 1,1,1
+
+✅ GRÜN — DER ORT WÄCHST AUS SEINEN BEWOHNERN (Teil W).
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ ORT
+{
+ "ms": 15,
+ "ergebnis": {
+  "S": {
+   "x": 400.0000000000001,
+   "z": 692.8203230275509,
+   "hang": 3.9731080640971044
+  },
+  "hill": {
+   "x": 446.8216772838709,
+   "y": 48.04837041391,
+   "z": 457.4318557307756
+  }
+ }
+}
+
+@@PUNKTE@@ VOR
+{
+ "ms": 69,
+ "ergebnis": {
+  "k": "d:7@400,693",
+  "groesse": "dorf",
+  "jahr": 1412,
+  "slots": 12,
+  "haeuser": 12,
+  "haus": [
+   411.5494421948886,
+   634.7573561691634
+  ],
+  "hill": {
+   "x": 446.8216772838709,
+   "y": 48.04837041391,
+   "z": 457.4318557307756
+  }
+ }
+}
+
+@@PUNKTE@@ UHR
+{
+ "ms": 2,
+ "ergebnis": {
+  "kern": true,
+  "jahr": 1412,
+  "haeuser": 12,
+  "uhr": 1547.5430000000001
+ }
+}
+
+@@PUNKTE@@ STAND
+{
+ "ms": 3,
+ "ergebnis": {
+  "jahr": [
+   1412,
+   1744
+  ],
+  "haeuser": [
+   12,
+   20
+  ],
+  "slots": 21,
+  "bleiben": 0.917,
+  "ring": {
+   "neu": 9,
+   "zumHaus": 22,
+   "zumOrt": 59
+  },
+  "offen": 0
+ }
+}
+
+@@PUNKTE@@ KAMERA
+{
+ "ms": 3,
+ "ergebnis": {
+  "pose": [
+   446.82,
+   49.75,
+   457.43,
+   405.77,
+   40.34,
+   663.79
+  ],
+  "d": 210,
+  "hoeher": 11.7
+ }
+}
+
+@@PUNKTE@@ BILD
+{
+ "ms": 5327,
+ "fehler": "ABNAHME ROT [Vordergrund 29.3 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_birke 28.6 %, Rinde baum_birke 0.7 % · Ziel Blickziel verdeckt von siedlung-mauer in 139.26 m · Ziel Blickziel nicht gezeichnet: wandlaterne_dorf 16 UNGEZEICHNET] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 210.61 m · Luma 66.9 σ 40.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.130 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 42 Posen — die Blick-Wahl fand in 42 Posen keine freie — die Aufnahme speichert nichts",
+ "stapel": [
+  "abnahme (pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CAnazhRealm-profiband%5C.claude%5Cworktrees%5Cpunkte-radeon%5Cscripts%5Cwerkbank.cjs%3A862%3A24):1341:32)",
+  "at abnahme (evaluate at lade (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\werkbank.cjs:862:24), <anonymous>:1340:31)",
+  "at evaluate (evaluate at lade (C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\punkte-radeon\\scripts\\werkbank.cjs:862:24), <anonymous>:1424:76)",
+  "at #evaluate (C:\\Users\\micha\\AnazhRealm-profiband\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:391:56)"
+ ]
+}
+@@PUNKTE@@ EXIT 1
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
