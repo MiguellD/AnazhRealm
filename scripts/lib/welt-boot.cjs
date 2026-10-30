@@ -981,10 +981,12 @@ function wandEnde(errs, satz) {
     urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`, "\n✅ GRÜN — " + satz);
 }
 
-// DIE TÄTER-FÄLLE eines Selbsttests ohne Browser: je Fall `[name, tat, muss]` (die Tat an einem frischen `klon()`) oder
-// `{ name, z, muss }` das Urteil; jedes `muss` (ein Muster oder eine Liste) trifft einen Befund, `null` verlangt keinen — sonst steht
-// der Fall beim Namen in `fehler`. `selbsttestEnde` schließt: ROT mit Exit 1, sonst der Grün-Satz.
-function taeterFaelle(faelle, urteil, { fehler = [], klon } = {}) {
+// DIE TÄTER-FÄLLE eines Selbsttests ohne Browser: je Fall `[name, tat, muss]` (die Tat an einem frischen `klon()`, ohne eigenen
+// klon eine Kopie des grünen Laufs `gruen`) oder `{ name, z, muss }` das Urteil; jedes `muss` (ein Muster oder eine Liste) trifft
+// einen Befund, `null` verlangt keinen — sonst steht der Fall beim Namen in `fehler`. `selbsttestEnde` schließt: ROT mit Exit 1,
+// sonst der Grün-Satz. `tatAn(pfad, wert)`: die Tat, die wert in z am Pfad „a.b.c" setzt (leer: z selbst).
+const tatAn = (pfad, wert) => (z) => Object.assign((pfad ? pfad.split(".") : []).reduce((o, k) => o[k], z), wert);
+function taeterFaelle(faelle, urteil, { fehler = [], gruen, klon = () => JSON.parse(JSON.stringify(gruen)) } = {}) {
     for (const f of faelle) {
         const [name, tat, muss] = Array.isArray(f) ? f : [f.name, null, f.muss];
         const z = tat ? klon() : f.z;
@@ -1312,6 +1314,7 @@ module.exports = {
     uferStellen,
     pruefer,
     taeterFaelle,
+    tatAn,
     selbsttestEnde,
     wandEnde,
     startProc,

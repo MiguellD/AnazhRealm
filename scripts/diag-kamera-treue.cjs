@@ -18,7 +18,7 @@
 //   LAUF — kein Spiel-Bild und kein Kehraus-Puffer während der Bühne (der Loop ruht).
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (--selftest: das Urteil über grün und je einen injizierten Täter)
 "use strict";
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, tatAn, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const { DIAET_INSTALL, diaetUrteil } = require("./lib/diaet-linse.cjs");
 
 const BILD_SOLL = 0.999; // der Replay zeichnet wie der direkte Pfad
@@ -142,62 +142,43 @@ function selbsttest() {
     };
     const fehler = [];
     if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
-    const mit = (pfad, wert) => {
-        const z = JSON.parse(JSON.stringify(gruen));
-        let o = z;
-        for (const k of pfad.split(".")) o = o[k];
-        Object.assign(o, wert);
-        return z;
-    };
     const faelle = [
-        { name: "Zeiger genullt", z: mit("aufnahme", { verfolgt: 1 }), muss: /verfolgt 1 von 13/ },
-        { name: "Bundle unter Override", z: mit("aufnahme", { unterOverride: 2 }), muss: /unter einem overrideMaterial/ },
-        { name: "Bühne ohne Schatten", z: mit("aufnahme", { schattenRenders: 0 }), muss: /kein Schatten-Render/ },
-        { name: "Replay klebt", z: mit("bild", { replay: 0.4 }), muss: /klebt an der Kamera seiner Aufnahme/ },
-        { name: "Schatten gegen fremden Stoff", z: mit("bild", { fremd: 0.9 }), muss: /wirft gegen den geteilten Stoff/ },
-        { name: "Stapel-Probe blind", z: mit("bild", { ohneStapel: 1 }), muss: /die Stapel-Probe ist blind/ },
-        { name: "Override-Probe blind", z: mit("bild", { schattenBundle: 1 }), muss: /die Override-Probe ist blind/ },
-        { name: "Bühne blind", z: mit("bild", { xGegenY: 0.99 }), muss: /die Bühne ist blind/ },
-        { name: "Refresh je Frame ohne Änderung", z: mit("stand.direkt.zahl", { voll: 2 }), muss: /STAND direkt: 2 Voll-Refreshs/ },
-        {
-            name: "Ausschnitt je Pass frischt auf (K71)",
-            z: mit("stand.replay", { zahl: { pruef: 13, voll: 2 }, vollWer: { SATZ: 2 } }),
-            muss: /STAND replay: 2 Voll-Refreshs je Render ohne Änderung \(Soll 0: SATZ ×2\)/,
-        },
-        {
-            name: "Geometrie zweimal geprüft (K71)",
-            z: mit("stand.direkt", { einmal: { erst: 2, danach: 2, wer: { KISTE: 2 } } }),
-            muss: /EINMAL direkt: der Frame nach einer Attribut-Änderung frischt 2× ein zweites Mal auf \(Soll 0: KISTE ×2\)/,
-        },
-        { name: "Einmal-Probe blind", z: mit("stand.replay", { einmal: { erst: 0, danach: 0, wer: {} } }), muss: /EINMAL replay: .* die Probe ist blind/ },
-        { name: "Gang je Programm (Replay)", z: mit("stand.replay.zahl", { wiederholtKnoten: 28, wiederholtGruppe: 3 }), muss: /STAND replay: RUHE: 31 wiederholte Gänge/ },
-        { name: "Upload ohne Änderung", z: mit("stand.direkt.zahl", { uploadGeteilt: 1 }), muss: /1 Uploads geteilter Gruppen/ },
-        { name: "Prüfung ohne Meldung", z: mit("stand.direkt", { zahl: { pruef: 27, ohneMeldung: 27 }, ohneMeldung: ["KISTE: 1"] }), muss: /STAND direkt: RUHE: 27 Prüfungen ohne Meldung je Frame \(KISTE: 1\)/ },
-        { name: "vergessener Refresh", z: mit("stand.aenderung.replay", { diaet: 0.9 }), muss: /ÄNDERUNG replay: .* ein vergessener Refresh/ },
-        { name: "Änderungs-Probe blind", z: mit("stand.aenderung.direkt", { taeter: 1 }), muss: /die Änderungs-Probe ist blind/ },
-        { name: "Gruppe je Programm", z: mit("stand.teilen", { gruppen: 8 }), muss: /tragen 8 geteilte Gruppen statt 1/ },
-        { name: "Teilen blind", z: mit("stand.teilen", { programme: 0 }), muss: /TEILEN: 0 Karten-Programme/ },
-        { name: "Programm je Senke", z: mit("senke", { geteilt: false }), muss: /SENKE: zwei Senken EINES Stoffs/ },
-        { name: "Senken-Kontrolle blind", z: mit("senke", { kontrolle: false }), muss: /SENKE: zwei r184-InstancedMesh/ },
-        { name: "Senke zeichnet anders", z: mit("senke", { bild: 0.97 }), muss: /SENKE: der Zeichner zeichnet 0.97/ },
-        { name: "Senken-Bild blind", z: mit("senke", { blind: 0.999 }), muss: /SENKE: ohne die Senke/ },
-        { name: "Diät nach Anlage (B-K1)", z: mit("schluessel", { veraltet: { bauSatz: 1 } }), muss: /SCHLÜSSEL: bauSatz ×1/ },
-        { name: "Schlüssel-Kontrolle blind", z: mit("schluessel", { kontrolle: false }), muss: /die Kontrolle ist blind/ },
-        { name: "Welt ohne Render-Objekt", z: mit("schluessel", { geprueft: 0 }), muss: /die Welt zeichnete kein Render-Objekt/ },
-        { name: "alphaTest-0,5-Werfer verliert discard", z: mit("wurf.werfer.1", { wurf: false }), muss: /WURF: wurf:schnitt — Hauptpass verwirft true, Wurf verwirft false/ },
-        { name: "Farb-Graph im Wurf", z: mit("wurf.werfer.0", { farbe: true }), muss: /WURF: wurf:voll — ohne Ausschnitt/ },
-        { name: "Stand blind", z: mit("stand.direkt.zahl", { pruef: 0 }), muss: /STAND direkt: DIÄT: keine Diät-Prüfung/ },
-        {
-            name: "Stempel überlebt den verschachtelten Render",
-            z: mit("stand.verschachtelt.replay", { diaet: 0.1099 }),
-            muss: /VERSCHACHTELT replay: .* 0\.1099 .* ein Stempel überlebte den verschachtelten Render/,
-        },
-        { name: "Verschachtelt blind (Täter)", z: mit("stand.verschachtelt.direkt", { taeter: 1 }), muss: /nur aus der Render-Id zeichnet 1 gleich/ },
-        { name: "kein verschachtelter Render", z: mit("stand.verschachtelt.replay", { renders: 0 }), muss: /VERSCHACHTELT replay: kein verschachtelter Render/ },
-        { name: "Spiel-Frame in der Bühne", z: mit("lauf", { spielBilder: 2, kehraus: 51 }), muss: /LAUF: 2 Spiel-Bilder .* nahm 51 Geometrie-Puffer/ },
-        { name: "Kehraus ohne Spiel-Bild", z: mit("lauf", { kehraus: 3 }), muss: /LAUF: 0 Spiel-Bilder .* nahm 3 Geometrie-Puffer/ },
+        ["Zeiger genullt", tatAn("aufnahme", { verfolgt: 1 }), /verfolgt 1 von 13/],
+        ["Bundle unter Override", tatAn("aufnahme", { unterOverride: 2 }), /unter einem overrideMaterial/],
+        ["Bühne ohne Schatten", tatAn("aufnahme", { schattenRenders: 0 }), /kein Schatten-Render/],
+        ["Replay klebt", tatAn("bild", { replay: 0.4 }), /klebt an der Kamera seiner Aufnahme/],
+        ["Schatten gegen fremden Stoff", tatAn("bild", { fremd: 0.9 }), /wirft gegen den geteilten Stoff/],
+        ["Stapel-Probe blind", tatAn("bild", { ohneStapel: 1 }), /die Stapel-Probe ist blind/],
+        ["Override-Probe blind", tatAn("bild", { schattenBundle: 1 }), /die Override-Probe ist blind/],
+        ["Bühne blind", tatAn("bild", { xGegenY: 0.99 }), /die Bühne ist blind/],
+        ["Refresh je Frame ohne Änderung", tatAn("stand.direkt.zahl", { voll: 2 }), /STAND direkt: 2 Voll-Refreshs/],
+        ["Ausschnitt je Pass frischt auf (K71)", tatAn("stand.replay", { zahl: { pruef: 13, voll: 2 }, vollWer: { SATZ: 2 } }), /STAND replay: 2 Voll-Refreshs je Render ohne Änderung \(Soll 0: SATZ ×2\)/],
+        ["Geometrie zweimal geprüft (K71)", tatAn("stand.direkt", { einmal: { erst: 2, danach: 2, wer: { KISTE: 2 } } }), /EINMAL direkt: der Frame nach einer Attribut-Änderung frischt 2× ein zweites Mal auf \(Soll 0: KISTE ×2\)/],
+        ["Einmal-Probe blind", tatAn("stand.replay", { einmal: { erst: 0, danach: 0, wer: {} } }), /EINMAL replay: .* die Probe ist blind/],
+        ["Gang je Programm (Replay)", tatAn("stand.replay.zahl", { wiederholtKnoten: 28, wiederholtGruppe: 3 }), /STAND replay: RUHE: 31 wiederholte Gänge/],
+        ["Upload ohne Änderung", tatAn("stand.direkt.zahl", { uploadGeteilt: 1 }), /1 Uploads geteilter Gruppen/],
+        ["Prüfung ohne Meldung", tatAn("stand.direkt", { zahl: { pruef: 27, ohneMeldung: 27 }, ohneMeldung: ["KISTE: 1"] }), /STAND direkt: RUHE: 27 Prüfungen ohne Meldung je Frame \(KISTE: 1\)/],
+        ["vergessener Refresh", tatAn("stand.aenderung.replay", { diaet: 0.9 }), /ÄNDERUNG replay: .* ein vergessener Refresh/],
+        ["Änderungs-Probe blind", tatAn("stand.aenderung.direkt", { taeter: 1 }), /die Änderungs-Probe ist blind/],
+        ["Gruppe je Programm", tatAn("stand.teilen", { gruppen: 8 }), /tragen 8 geteilte Gruppen statt 1/],
+        ["Teilen blind", tatAn("stand.teilen", { programme: 0 }), /TEILEN: 0 Karten-Programme/],
+        ["Programm je Senke", tatAn("senke", { geteilt: false }), /SENKE: zwei Senken EINES Stoffs/],
+        ["Senken-Kontrolle blind", tatAn("senke", { kontrolle: false }), /SENKE: zwei r184-InstancedMesh/],
+        ["Senke zeichnet anders", tatAn("senke", { bild: 0.97 }), /SENKE: der Zeichner zeichnet 0.97/],
+        ["Senken-Bild blind", tatAn("senke", { blind: 0.999 }), /SENKE: ohne die Senke/],
+        ["Diät nach Anlage (B-K1)", tatAn("schluessel", { veraltet: { bauSatz: 1 } }), /SCHLÜSSEL: bauSatz ×1/],
+        ["Schlüssel-Kontrolle blind", tatAn("schluessel", { kontrolle: false }), /die Kontrolle ist blind/],
+        ["Welt ohne Render-Objekt", tatAn("schluessel", { geprueft: 0 }), /die Welt zeichnete kein Render-Objekt/],
+        ["alphaTest-0,5-Werfer verliert discard", tatAn("wurf.werfer.1", { wurf: false }), /WURF: wurf:schnitt — Hauptpass verwirft true, Wurf verwirft false/],
+        ["Farb-Graph im Wurf", tatAn("wurf.werfer.0", { farbe: true }), /WURF: wurf:voll — ohne Ausschnitt/],
+        ["Stand blind", tatAn("stand.direkt.zahl", { pruef: 0 }), /STAND direkt: DIÄT: keine Diät-Prüfung/],
+        ["Stempel überlebt den verschachtelten Render", tatAn("stand.verschachtelt.replay", { diaet: 0.1099 }), /VERSCHACHTELT replay: .* 0\.1099 .* ein Stempel überlebte den verschachtelten Render/],
+        ["Verschachtelt blind (Täter)", tatAn("stand.verschachtelt.direkt", { taeter: 1 }), /nur aus der Render-Id zeichnet 1 gleich/],
+        ["kein verschachtelter Render", tatAn("stand.verschachtelt.replay", { renders: 0 }), /VERSCHACHTELT replay: kein verschachtelter Render/],
+        ["Spiel-Frame in der Bühne", tatAn("lauf", { spielBilder: 2, kehraus: 51 }), /LAUF: 2 Spiel-Bilder .* nahm 51 Geometrie-Puffer/],
+        ["Kehraus ohne Spiel-Bild", tatAn("lauf", { kehraus: 3 }), /LAUF: 0 Spiel-Bilder .* nahm 3 Geometrie-Puffer/],
     ];
-    taeterFaelle(faelle, urteil, { fehler });
+    taeterFaelle(faelle, urteil, { fehler, gruen });
     selbsttestEnde(fehler);
 }
 

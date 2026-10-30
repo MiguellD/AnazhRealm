@@ -114,37 +114,28 @@ function selbsttest() {
         },
     };
     if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
-    const mit = (f) => {
-        const z = JSON.parse(JSON.stringify(gruen));
-        f(z);
-        return z;
-    };
     const faelle = [
-        { name: "Täter im Zensus", z: mit((z) => (z.zensusRot = ["OHNE LESER: kaskade0:farbe"])), muss: /ZENSUS: OHNE LESER/ },
-        { name: "kein Leser der Tiefe im Blick", z: mit((z) => (z.tiefeGelesen = false)), muss: /keinen Leser im Blick/ },
-        { name: "Farbe auf der GPU", z: mit((z) => (z.karte.farbeGpu = true)), muss: /trägt eine GPU-Textur/ },
-        { name: "Farb-Anhang im Schatten-Pass", z: mit((z) => (z.karte.farbAnhaenge = 1)), muss: /mit 1 Farb-Anhängen/ },
-        { name: "Schatten fällt nicht", z: mit((z) => (z.karte.dunkler = 1)), muss: /der Schatten fällt nicht/ },
-        { name: "Hülle fehlt", z: mit((z) => (z.karte.huelle = false)), muss: /trägt die Hülle nicht/ },
-        { name: "Bühne blind", z: mit((z) => (z.karte = {})), muss: /lief nicht/ },
-        { name: "GPU-Validierung", z: mit((z) => (z.gpuFehler = ["Attachment state mismatch"])), muss: /GPU: Attachment/ },
-        { name: "Schmuggel blind", z: mit((z) => (z.selbst = [{ muss: "TEILBAR", ok: false }])), muss: /blind für TEILBAR/ },
-        { name: "Schmuggel bleibt", z: mit((z) => (z.rest = ["zensus-selbsttest:bloom"])), muss: /noch im Zensus/ },
-        { name: "Sonde lief nicht", z: mit((z) => (z.rundung.rundung = null)), muss: /die Sonde lief nicht/ },
-        { name: "Ausgleich verloren", z: mit((z) => (z.rundung.faktor = [1, 1, 1])), muss: /passt nicht zur Rundung „gegen null“/ },
-        {
-            name: "Ausgleich auf einem Gerät, das zum nächsten rundet",
-            z: mit((z) => (z.rundung.rundung = "zum nächsten")),
-            muss: /passt nicht zur Rundung „zum nächsten“/,
-        },
-        { name: "anderer Vektor", z: mit((z) => (z.rundung.gleich = false)), muss: /liest einen anderen Vektor/ },
-        { name: "Ausgleich nicht verbraucht", z: mit((z) => (z.rundung.verbrauch = 0)), muss: /die Post-Kette liest ihn nicht/ },
-        { name: "Rückweg verschoben", z: mit((z) => (z.rundung.zurueck = -1.77)), muss: /um -1.77 Stufen verschoben/ },
-        { name: "Rückweg über zwei Frames", z: mit((z) => (z.rundung.einFrame = false)), muss: /nicht in EINEM Frame/ },
-        { name: "Rundungs-Probe blind", z: mit((z) => (z.rundung = {})), muss: /RUNDUNG: die Probe lief nicht/ },
-        { name: "Quelle ohne Ausgleich", z: mit((z) => (z.rundungQuelle = ["x"])), muss: /RUNDUNG \(Quelle\): x/ },
+        ["Täter im Zensus", (z) => (z.zensusRot = ["OHNE LESER: kaskade0:farbe"]), /ZENSUS: OHNE LESER/],
+        ["kein Leser der Tiefe im Blick", (z) => (z.tiefeGelesen = false), /keinen Leser im Blick/],
+        ["Farbe auf der GPU", (z) => (z.karte.farbeGpu = true), /trägt eine GPU-Textur/],
+        ["Farb-Anhang im Schatten-Pass", (z) => (z.karte.farbAnhaenge = 1), /mit 1 Farb-Anhängen/],
+        ["Schatten fällt nicht", (z) => (z.karte.dunkler = 1), /der Schatten fällt nicht/],
+        ["Hülle fehlt", (z) => (z.karte.huelle = false), /trägt die Hülle nicht/],
+        ["Bühne blind", (z) => (z.karte = {}), /lief nicht/],
+        ["GPU-Validierung", (z) => (z.gpuFehler = ["Attachment state mismatch"]), /GPU: Attachment/],
+        ["Schmuggel blind", (z) => (z.selbst = [{ muss: "TEILBAR", ok: false }]), /blind für TEILBAR/],
+        ["Schmuggel bleibt", (z) => (z.rest = ["zensus-selbsttest:bloom"]), /noch im Zensus/],
+        ["Sonde lief nicht", (z) => (z.rundung.rundung = null), /die Sonde lief nicht/],
+        ["Ausgleich verloren", (z) => (z.rundung.faktor = [1, 1, 1]), /passt nicht zur Rundung „gegen null“/],
+        ["Ausgleich auf einem Gerät, das zum nächsten rundet", (z) => (z.rundung.rundung = "zum nächsten"), /passt nicht zur Rundung „zum nächsten“/],
+        ["anderer Vektor", (z) => (z.rundung.gleich = false), /liest einen anderen Vektor/],
+        ["Ausgleich nicht verbraucht", (z) => (z.rundung.verbrauch = 0), /die Post-Kette liest ihn nicht/],
+        ["Rückweg verschoben", (z) => (z.rundung.zurueck = -1.77), /um -1.77 Stufen verschoben/],
+        ["Rückweg über zwei Frames", (z) => (z.rundung.einFrame = false), /nicht in EINEM Frame/],
+        ["Rundungs-Probe blind", (z) => (z.rundung = {}), /RUNDUNG: die Probe lief nicht/],
+        ["Quelle ohne Ausgleich", (z) => (z.rundungQuelle = ["x"]), /RUNDUNG \(Quelle\): x/],
     ];
-    taeterFaelle(faelle, urteil, { fehler });
+    taeterFaelle(faelle, urteil, { fehler, gruen });
     // die Quell-Wand am Stamm: grün; eine zweite Abtastung → rot
     const q0 = rundungQuelle();
     if (q0.length) fehler.push("Quell-Wand der Rundung am Stamm rot: " + q0.join(" · "));

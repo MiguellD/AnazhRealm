@@ -108,7 +108,7 @@ function urteilJeStufe(lauf) {
 }
 
 function selbsttest() {
-    const { taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+    const { taeterFaelle, tatAn, selbsttestEnde } = require("./lib/welt-boot.cjs");
     const gut = (x) => Object.assign({ ego: { wurf: 1500, leibPx: 0, leibAufNull: 0 }, iou: 1, geraet: true, zwilling: true, zurueck: true }, x); // prettier-ignore
     // je Gegenprobe die Messung ihrer Klasse (die Täter-Regel fällt beim Namen)
     const taeter = { "LEIB WIRFT NICHT": { ego: { wurf: 0, leibPx: 0, leibAufNull: 0 } }, AUGE: { ego: { wurf: 1500, leibPx: 40, leibAufNull: 8 } }, "GERÄT": { geraet: 4 }, ZWILLING: { zwilling: 5 } }; // prettier-ignore
@@ -116,30 +116,23 @@ function selbsttest() {
     const gruen = { grob: stufe(1), fein: stufe(0) };
     const fehler = [];
     if (urteilJeStufe(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteilJeStufe(gruen).join(" · "));
-    const mit = (pfad, wert) => {
-        const z = JSON.parse(JSON.stringify(gruen));
-        let o = z;
-        for (const k of pfad ? pfad.split(".") : []) o = o[k];
-        Object.assign(o, wert);
-        return z;
-    };
     // prettier-ignore
     const faelle = [
-        { name: "main (der Wurf geht mit der Haut)", z: mit("fein.kopf.ego", { wurf: 0 }), muss: /LEIB WIRFT NICHT: in der Ego-Sicht 0 px/ },
-        { name: "nur der Rumpf wirft", z: mit("fein.kopf", { iou: 0.62 }), muss: /UMRISS: .* IoU 0\.62/ },
-        { name: "Leib vor dem Auge", z: mit("fein.kopf.ego", { leibPx: 12 }), muss: /AUGE: .* 12 Bildpunkte vor dem Auge/ },
-        { name: "Leib-Mesh auf Ebene 0", z: mit("fein.kopf.ego", { leibAufNull: 3 }), muss: /AUGE: .* 3 sichtbare Leib-Meshes auf Ebene 0/ },
-        { name: "Gerät verborgen", z: mit("fein.kopf", { geraet: 4 }), muss: /GERÄT: .* Maske 4 statt 1/ },
-        { name: "Zwilling geweckt", z: mit("fein.kopf", { zwilling: 5 }), muss: /ZWILLING: .* Maske 5/ },
-        { name: "visible geschaltet", z: mit("fein.kopf", { zurueck: "die Regel schaltet visible an 2 Knoten" }), muss: /ZURÜCK: die Regel schaltet visible/ },
-        { name: "Haupt-Kamera sieht die Zwillings-Ebene", z: mit("fein", { vertrag: "die Haupt-Kamera sieht Ebene 2" }), muss: /VERTRAG: die Haupt-Kamera sieht Ebene 2/ },
-        { name: "Bühne ohne Schatten", z: mit("fein.dritt", { wurf: 3 }), muss: /BLIND: die 3rd-Person wirft auf der Bühne 3 px/ },
-        { name: "Gegenprobe blind", z: mit("fein.gegenprobe.0.m.ego", { wurf: 1500 }), muss: /GEGENPROBE: die Regel „main: visible" fällt nicht/ },
-        { name: "Grob-Leib liest die Karte des vorigen Schusses (CI Gruppe 17)", z: mit("grob.kopf.ego", { wurf: 0, leibPx: 1075 }), muss: /grob: LEIB WIRFT NICHT: .*0 px/ },
-        { name: "Bühne schreitet nicht (Gegenprobe Karte steht blind)", z: mit("grob.gegenprobe.5.m.ego", { wurf: 754 }), muss: /GEGENPROBE: die Regel „Karte steht" fällt nicht/ },
-        { name: "Bühne am falschen Leib", z: mit("fein", { stufe: 1 }), muss: /STUFE: die Bühne „fein" misst .* nahStufe 1/ },
+        ["main (der Wurf geht mit der Haut)", tatAn("fein.kopf.ego", { wurf: 0 }), /LEIB WIRFT NICHT: in der Ego-Sicht 0 px/],
+        ["nur der Rumpf wirft", tatAn("fein.kopf", { iou: 0.62 }), /UMRISS: .* IoU 0\.62/],
+        ["Leib vor dem Auge", tatAn("fein.kopf.ego", { leibPx: 12 }), /AUGE: .* 12 Bildpunkte vor dem Auge/],
+        ["Leib-Mesh auf Ebene 0", tatAn("fein.kopf.ego", { leibAufNull: 3 }), /AUGE: .* 3 sichtbare Leib-Meshes auf Ebene 0/],
+        ["Gerät verborgen", tatAn("fein.kopf", { geraet: 4 }), /GERÄT: .* Maske 4 statt 1/],
+        ["Zwilling geweckt", tatAn("fein.kopf", { zwilling: 5 }), /ZWILLING: .* Maske 5/],
+        ["visible geschaltet", tatAn("fein.kopf", { zurueck: "die Regel schaltet visible an 2 Knoten" }), /ZURÜCK: die Regel schaltet visible/],
+        ["Haupt-Kamera sieht die Zwillings-Ebene", tatAn("fein", { vertrag: "die Haupt-Kamera sieht Ebene 2" }), /VERTRAG: die Haupt-Kamera sieht Ebene 2/],
+        ["Bühne ohne Schatten", tatAn("fein.dritt", { wurf: 3 }), /BLIND: die 3rd-Person wirft auf der Bühne 3 px/],
+        ["Gegenprobe blind", tatAn("fein.gegenprobe.0.m.ego", { wurf: 1500 }), /GEGENPROBE: die Regel „main: visible" fällt nicht/],
+        ["Grob-Leib liest die Karte des vorigen Schusses (CI Gruppe 17)", tatAn("grob.kopf.ego", { wurf: 0, leibPx: 1075 }), /grob: LEIB WIRFT NICHT: .*0 px/],
+        ["Bühne schreitet nicht (Gegenprobe Karte steht blind)", tatAn("grob.gegenprobe.5.m.ego", { wurf: 754 }), /GEGENPROBE: die Regel „Karte steht" fällt nicht/],
+        ["Bühne am falschen Leib", tatAn("fein", { stufe: 1 }), /STUFE: die Bühne „fein" misst .* nahStufe 1/],
     ];
-    taeterFaelle(faelle, urteilJeStufe, { fehler });
+    taeterFaelle(faelle, urteilJeStufe, { fehler, gruen });
     selbsttestEnde(fehler);
 }
 

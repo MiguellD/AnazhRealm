@@ -24,7 +24,7 @@
 //   node scripts/diag-takt-atem.cjs [--selftest]   (npm run gate:takt-atem; Port TAKT_ATEM_PORT, 4399)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, tatAn, selbsttestEnde } = require("./lib/welt-boot.cjs");
 
 const SOLL = { dichte: 0.1, stand: 0.1, lage: 0.1 };
 
@@ -82,41 +82,14 @@ function selbsttest() {
     };
     const fehler = [];
     if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
-    const mit = (pfad, wert) => {
-        const z = JSON.parse(JSON.stringify(gruen));
-        let o = z;
-        for (const k of pfad ? pfad.split(".") : []) o = o[k];
-        Object.assign(o, wert);
-        return z;
-    };
     const faelle = [
-        {
-            name: "Dichte ohne Wand (V18.538)",
-            z: mit("kopf", { dichteJeTakt: 0.52, stempelDichteJeTakt: 0.52 }),
-            muss: /DICHTE ATMET: .* 52\.0 %/,
-        },
-        {
-            name: "Stempel je Takt durch die Dichte",
-            z: mit("kopf", { stempelDichteJeTakt: 0.5, archLodJeTakt: 47.5 }),
-            muss: /STAND WACH: .* 50.0 % .* geht 47.5 von/,
-        },
-        {
-            name: "Lage fällt je Takt",
-            z: mit("kopf", { lageJeTakt: 0.5, abschnittJeTakt: 4.5 }),
-            muss: /LAGE FÄLLT: .* 50\.0 %/,
-        },
-        {
-            name: "Welt ohne Baum",
-            z: mit("", { blind: "kein Baum der Stufen-Wahl in der Welt" }),
-            muss: /BLIND: kein Baum/,
-        },
-        {
-            name: "Gegenprobe blind",
-            z: mit("gegenprobe", { dichteJeTakt: 0.02 }),
-            muss: /GEGENPROBE: die stoßende Dichte fällt nicht/,
-        },
+        ["Dichte ohne Wand (V18.538)", tatAn("kopf", { dichteJeTakt: 0.52, stempelDichteJeTakt: 0.52 }), /DICHTE ATMET: .* 52\.0 %/],
+        ["Stempel je Takt durch die Dichte", tatAn("kopf", { stempelDichteJeTakt: 0.5, archLodJeTakt: 47.5 }), /STAND WACH: .* 50.0 % .* geht 47.5 von/],
+        ["Lage fällt je Takt", tatAn("kopf", { lageJeTakt: 0.5, abschnittJeTakt: 4.5 }), /LAGE FÄLLT: .* 50\.0 %/],
+        ["Welt ohne Baum", tatAn("", { blind: "kein Baum der Stufen-Wahl in der Welt" }), /BLIND: kein Baum/],
+        ["Gegenprobe blind", tatAn("gegenprobe", { dichteJeTakt: 0.02 }), /GEGENPROBE: die stoßende Dichte fällt nicht/],
     ];
-    taeterFaelle(faelle, urteil, { fehler });
+    taeterFaelle(faelle, urteil, { fehler, gruen });
     selbsttestEnde(fehler);
 }
 
