@@ -247,7 +247,13 @@ var ATMO_GESETZ = {
     erdeM: 6360e3, randM: 6460e3,  // Radius des Bodens / des Rands der Atmosphaere
     rayleighH: 8000,               // Skalenhoehe der Rayleigh-Dichte (m)
     rayleighTiefe: [0.044, 0.1, 0.23], // optische Tiefe Meereshoehe/Zenit je Kanal (Bucholtz 1995): blau streut ~5x rot
-    mieG: 0.8,                     // Henyey-Greenstein-Asymmetrie des Aerosols
+    wellenNm: [680, 550, 440],     // die Wellenlaenge je Kanal (rot/gruen/blau), an der Rayleigh-Tiefe und Aerosol gelten
+    // DAS AEROSOL GEMESSEN (w4-ferne-blau): Henyey-Greenstein-Asymmetrie g und Angstroem-Exponent alpha des kontinentalen
+    // Dunsts (AERONET, Dubovik et al. 2002, J. Atmos. Sci. 59:590; Tomsk g 0,72 -> 0,60 ueber 340-1020 nm; Europa im Sommer
+    // alpha 1,2-1,4) — bis dahin g 0,8 (die Vorgabe von Bruneton 2017) und ein graues Aerosol (alpha 0): die Ferne trug kein
+    // Blau mit der Weglaenge, die Sonnenseite 1,17
+    mieG: 0.7,                     // Henyey-Greenstein-Asymmetrie des Aerosols bei 550 nm
+    mieAngstroem: 1.3,             // beta_Aerosol(lambda) = beta_550 * (lambda / 550 nm)^-alpha, der Anker bleibt Koschmieder bei 550 nm
     mieAlbedo: 0.9,                // Einfach-Streualbedo des Aerosols (Streuung / Extinktion)
     ozon: { mitteM: 25000, halbM: 15000, absorption: [0.65e-6, 1.881e-6, 0.085e-6] }, // Zelt-Profil, Absorption je m am Gipfel (R/G/B)
     // DIE LUFT (V18.530): beobachtbare Sichtweiten — ein klarer Sommertag traegt Gelaende-Silhouetten 20 km weit, Starkregen
@@ -265,8 +271,9 @@ var ATMO_GESETZ = {
 __terrainCore.ATMO_GESETZ = ATMO_GESETZ;
 // DIE RECHNUNG des Gesetzes (rein, THREE-frei; Einheiten km und 1/km wie Hillaire) — die Welt (`_atmoSonne`, die Tafeln) und
 // das Labor (phytogenesis `atmosphere`) rufen DIESELBEN Funktionen. medium: das Medium bei der Extinktion der Luft
-// betaLuft (1/m; das Aerosol ist ihr Anteil ueber dem Rayleigh) und dem Boden albedo. durchlass: rgb von der Hoehe h (km
-// ueber dem Bezug) laengs cos Zenit mu bis zum Rand, N Schritte; trifft der Strahl den Boden, ist es der Erdschatten (0).
+// betaLuft (1/m bei 550 nm; das Aerosol ist ihr Anteil ueber dem Rayleigh, je Kanal nach Angstroem: mieExt/mieSca sind
+// rgb) und dem Boden albedo. durchlass: rgb von der Hoehe h (km ueber dem Bezug) laengs cos Zenit mu bis zum Rand, N
+// Schritte; trifft der Strahl den Boden, ist es der Erdschatten (0).
 // sonne: e = sin(Hoehe); col = Farbton (unter dem Horizont zum Mond), lum = hellster Kanal — col*lum IST der Durchlass.
 var ATMO_RECHNUNG = {
     betaKlar: function (G) {
@@ -276,14 +283,19 @@ var ATMO_RECHNUNG = {
         var HR = G.rayleighH / 1000;
         var mie = Math.max(0, betaLuft - G.luft.betaRayleigh) * 1000;
         var t = G.rayleighTiefe;
+        var ext = G.wellenNm.map(function (l) {
+            return mie * Math.pow(l / 550, -G.mieAngstroem);
+        });
         return {
             RG: G.erdeM / 1000,
             RT: G.randM / 1000,
             HR: HR,
             betaR: [t[0] / HR, t[1] / HR, t[2] / HR],
             HM: G.luft.skalenHoeheM / 1000,
-            mieExt: mie,
-            mieSca: mie * G.mieAlbedo,
+            mieExt: ext,
+            mieSca: ext.map(function (e) {
+                return e * G.mieAlbedo;
+            }),
             g: G.mieG,
             ozon: G.ozon.absorption.map(function (x) {
                 return x * 1000;
@@ -309,11 +321,11 @@ var ATMO_RECHNUNG = {
             var t = (s + 0.5) * dt;
             var hi = Math.max(0, Math.sqrt(t * t + 2 * r * mu * t + r * r) - M.RG);
             var dR = Math.exp(-hi / M.HR);
-            var dM = Math.exp(-hi / M.HM) * M.mieExt;
+            var dM = Math.exp(-hi / M.HM);
             var dO = Math.max(0, 1 - Math.abs(hi - M.ozonMitte) / M.ozonHalb);
-            t0 += (M.betaR[0] * dR + dM + M.ozon[0] * dO) * dt;
-            t1 += (M.betaR[1] * dR + dM + M.ozon[1] * dO) * dt;
-            t2 += (M.betaR[2] * dR + dM + M.ozon[2] * dO) * dt;
+            t0 += (M.betaR[0] * dR + M.mieExt[0] * dM + M.ozon[0] * dO) * dt;
+            t1 += (M.betaR[1] * dR + M.mieExt[1] * dM + M.ozon[1] * dO) * dt;
+            t2 += (M.betaR[2] * dR + M.mieExt[2] * dM + M.ozon[2] * dO) * dt;
         }
         out[0] = Math.exp(-t0);
         out[1] = Math.exp(-t1);

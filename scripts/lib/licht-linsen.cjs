@@ -2176,7 +2176,7 @@ function luftTiefe(o) {
             const szene = z < 1 && Math.abs(q.set(nx, ny, z).applyMatrix4(D.iv).distanceTo(cam.position) / t - 1) <= 0.15;
             return { d: t, szene, g: Math.exp(-(gy - (st.waterLevel || 0)) / Hs) * (Math.abs(k) < 1e-3 ? 1 - k / 2 : (1 - Math.exp(-k)) / k) };
         };
-        const bRef = R.rayleigh.map((x) => -Math.log(R.kontrast) / R.sichtKlarM - R.rayleigh[1] + x);
+        const bRef = luftBetaRef(R);
         const uhr = (u) => {
             if (st.world) st.world.timeOfDay = u;
             if (r.setTimeOfDay(u, "human") !== true) throw new Error(`__luftTiefe: die Uhr nimmt den Spieler nicht (${u})`);
@@ -2284,6 +2284,13 @@ function luftTiefe(o) {
     })();
 }
 
+// DIE EXTINKTION DER REFERENZ je Kanal (1/m): Rayleigh (Bucholtz) und das Aerosol der klaren Sicht (Koschmieder bei 550 nm)
+// nach Ångström (`aerosol`, AERONET) — die Messung (in der Seite), das Urteil und der Selbsttest lesen sie hier.
+function luftBetaRef(R) {
+    const a = -Math.log(R.kontrast) / R.sichtKlarM - R.rayleigh[1];
+    return R.rayleigh.map((x, c) => x + a * (R.aerosol.wellenNm[c] / 550) ** -R.aerosol.angstroem);
+}
+
 // DAS URTEIL DER LUFT (die Bänder in spec/farbe/luft-referenz.json): K1-1 KOSCHMIEDER, K1-2 JE KANAL (Δβ blau−rot gegen die
 // Referenz, grau = 0) · FARBTON, K2-1 KANTE; was die Referenz `offen` nennt, steht OFFEN und hält die Wand nicht. Jede Sicht
 // (Uhr × Azimut) misst `mindest`, sonst ROT beim Namen: eine leere Messung ist nie grün.
@@ -2291,7 +2298,8 @@ function luftTiefeUrteil(m, R) {
     const B = R.band;
     const M = R.mindest;
     const liste = [];
-    const dRef = R.rayleigh[2] - R.rayleigh[0];
+    const bR = luftBetaRef(R);
+    const dRef = bR[2] - bR[0];
     const gemessen = R.baenderM.map(() => 0);
     for (const u of R.uhren)
         for (const az of [0, 90, 180, 270]) {
@@ -2393,7 +2401,7 @@ function wetterLuftUrteil(m, R) {
 }
 
 function luftTiefeSelbsttest(R) {
-    const ref = R.rayleigh.map((x) => -Math.log(R.kontrast) / R.sichtKlarM - R.rayleigh[1] + x);
+    const ref = luftBetaRef(R);
     const sichten = (dk, C, n = 50, linie = 0, seite = 1.3, himmel = [0.7, 0.79, 1]) =>
         R.uhren.flatMap((uhr) =>
             [0, 90, 180, 270].map((az) => ({
@@ -2782,6 +2790,7 @@ module.exports = {
     naesseSicht,
     naesseUrteil,
     kantenLinie,
+    luftBetaRef,
     luftTiefe,
     luftTiefeUrteil,
     luftTiefeSelbsttest,

@@ -41,9 +41,7 @@ async function checkBandV1731EmotionDrivesWorld({ page, check }) {
     );
 }
 
-async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWelle6G3Lebendigkeit({ page, check }) {
     // ### Welle 6.G3 — Welt-Lebendigkeit ###
     // (a) Tag-Nacht-Zyklus, (b) sanfter Wetter-Übergang —
     // Konstanten, Methoden, Persistenz, DSL-Op, UI-DOM.
@@ -406,9 +404,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }
     }
 }
 
-async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWelle6G4Atmosphere({ page, check }) {
     // ### 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Licht-Material + Fog) ###
     // Tiefe statt homogenem Licht: Hemisphere-Light (Sky-Tint oben, Erd-Tint unten) + licht-reaktives
     // Material + atmosphärischer Fog.
@@ -434,6 +430,11 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
         const intensityNight = r.state.hemiLight.intensity;
         const belichtungNacht = r.state.renderer.toneMappingExposure;
         out.hemiNurNachtboden = intensityNoon < 0.01 && intensityNight > 0.05;
+        // DER BODEN DER ATMOSPHÄRE IST DIE FERNE (w4-ferne-blau): `ATMO_BODEN` je Kanal gegen das Mittel der EINEN Fern-Farbe
+        // (`_fernAuftrag("feld")`, Sommer: Phase 0,375) auf dem 2-km-Gitter seiner Messung, ±20 km um Genesis (441 Punkte)
+        const punkte = Float32Array.from({ length: 882 }, (_, i) => ((i & 1 ? Math.floor(i / 42) : (i >> 1) % 21) - 10) * 2000);
+        const fern = (await r._fernAuftrag("feld", { punkte, ax: 0, az: 0, azN: 4096, hr: 500, saison: r._saisonMul(0.375, {}) }, [punkte.buffer])).daten;
+        out.boden = r.constructor.ATMO_BODEN.map((b, c) => +(fern.reduce((a, v, k) => (k % 4 === c + 1 ? a + v : a), 0) / 441 / b).toFixed(3));
         const B = r.constructor.BELICHTUNG;
         const kAnker = B.zielKarte / ((0.18 / Math.PI) * r._belichtungAnker());
         out.belichtungAusLicht =
@@ -513,6 +514,10 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
             v827Results.fogColorSet
         );
         check("EIN Himmel — Hemi trägt nur den Nachthimmel-Boden (Mittag 0)", v827Results.hemiNurNachtboden);
+        check(
+            `Der Boden der Atmosphäre ist die Ferne (Fern-Farbe / ATMO_BODEN ${v827Results.boden.join(" / ")}, ±5 %)`,
+            v827Results.boden.every((q) => Math.abs(q - 1) <= 0.05)
+        );
         check(
             `Belichtung aus dem Licht — mittags die Karte am Anker, nachts am Deckel (Mittag / Anker / Nacht ${v827Results.belichtungZahlen})`,
             v827Results.belichtungAusLicht
@@ -1053,9 +1058,7 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
     }
 }
 
-async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
     // ### Regler: Sicht-Ring + Cel-Stufen + Fog ###
     const v840Results = await safeEvaluate(
         page,
