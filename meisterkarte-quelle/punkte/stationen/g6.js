@@ -126,6 +126,12 @@ async function windSeite(o) {
     const [bq, gn, kreatur, sicht, wetter, wUhr] = [A.createBiquadFilter, A.createGain, C.__tiereGehalten ? null : C.updateCreatures, st.cameraMode, st.weather, st.weatherEffectTime];
     const paare = [], bilder = [], ohr = [];
     let letzter = null, mess = false, n = 0, takt = null, gezeichnet = 0, gelesen = 0, loop = 0;
+    // DIE BILD-UHR LÄUFT: `umstellen` (der Ort dieser Probe, und jede Probe mit Ort davor) hält sie mit der Bühne auf 12,5 s (ein
+    // Getter auf `_bildZeit`, ausgabe-aufnahme `uhrHalten`) — die Böe stand in Bild und Ohr still (Radeon 379e5f56: `_bildZeit`
+    // 12,5 → 12,5 über 21 s, Böe 1,024 → 1,024, der Pegel des Gesetzes −32,16 dB fest, CV Ohr 0,09, r 0,18). Für die Messung fällt der
+    // Halt, danach hält die Bühne wieder
+    const uhrHalt = Object.getOwnPropertyDescriptor(r, "_bildZeit");
+    const buehne = !!(uhrHalt && uhrHalt.get && uhrHalt.get.__buehne);
     const eigen = Object.prototype.hasOwnProperty.call(r, "_loopRender"), render = r._loopRender;
     r._loopRender = function () {
         gezeichnet++;
@@ -146,12 +152,14 @@ async function windSeite(o) {
         window.__tiereHalten();
         window.__wetterSetzen("sunny");
         if (st.cameraMode !== "first") r.setCameraMode("first");
-        const stell = () => {
-            st.playerMesh.position.set(o.x, r._voxelSurfaceY(o.x, o.z) + 1.8, o.z);
-            [st.yaw, st.pitch] = [o.gier, -0.12];
-        };
+        // DER SPIELER STEHT, WO `umstellen` IHN LIESS (windLauf, vor dem Deckel von der Sitzung eingeschwungen) — nur der Blick wird
+        // gehalten. Bis 30.10. setzte die Probe ihn je Takt 1,8 m über den Boden (der Fuß gehört 0,5 m darüber, die Fall-Geschwindigkeit
+        // blieb), und die Fege-Takte schliefen unter ihm nie (Radeon 379e5f56: „DIE WELT STEHT NICHT nach 2188 Takten … Fege-Takt archLod
+        // 256/1297“, GTX 3ed95dcf dasselbe) — keine Wind-Zeile in keiner Sitzung
+        const stell = () => ([st.yaw, st.pitch] = [o.gier, -0.12]);
         stell();
         await window.__weltStehtNach(async () => (stell(), await window.__seitenTakt()));
+        if (buehne) (delete r._bildZeit, (r._bildZeit = uhrHalt.get()));
         r.initSymphony();
         const s = st.symphony;
         if (s.ctx.state !== "running") await s.ctx.resume();
@@ -220,6 +228,7 @@ async function windSeite(o) {
         rend.setAnimationLoop(null);
         if (eigen) r._loopRender = render;
         else delete r._loopRender;
+        if (buehne) Object.defineProperty(r, "_bildZeit", uhrHalt);
         [A.createBiquadFilter, A.createGain] = [bq, gn];
         if (st.symphony.enabled) r.disposeSymphony();
         if (kreatur) (C.updateCreatures = kreatur), delete C.__tiereGehalten;
@@ -236,7 +245,11 @@ async function windLauf(h) {
     const BAND = require(h.path.resolve("scripts/lib/band-urteil.cjs"));
     const ort = BAND.ladeSpec("wiese").ort;
     const fen = 200;
-    const w = await h.seite(windSeite, [{ x: ort.spieler[0], z: ort.spieler[1], gier: BAND.ortGier(ort), sek: 21, fen }], 90000);
+    // DER ORT der Probe: die Mess-Wiese über `umstellen` der Werkbank (Ring gebaut, die Welt steht, Ego) — die Sitzung liest ihn aus diesem
+    // Befehl (punkte.cjs probeOrt) und stellt vor dem Deckel um; hier steht die Welt dann schon
+    const u = await h.ruf("/umstellen", { ort: "wiese", sicht: "ego" }, 300000);
+    if (!u || u.fehler) throw new Error("umstellen wiese: " + JSON.stringify(u).slice(0, 300));
+    const w = await h.seite(windSeite, [{ gier: BAND.ortGier(ort), sek: 21, fen }], 90000);
     const [B, A] = [w.B || [], w.A || []];
     const pear = (x, y) => {
         const n = Math.min(x.length, y.length);
