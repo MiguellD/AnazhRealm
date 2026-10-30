@@ -1,0 +1,28 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-wetter-wache.cjs
+=== DIE WACHE VON UHR UND WETTER — Halt heißt Halt, frei gehören sie dem Spieler (Null-Renderer) ===
+  Halt · emotion    GRUEN  sunny → sunny, Uhr -1000000000; verweigert {"rule:emotion:sorrow → rainy":1}
+  Halt · nexus      GRUEN  sunny → sunny, Uhr -1000000000; verweigert {"nexus → stormy":2}
+  Halt · gesetz     GRUEN  sunny → sunny, Uhr -1000000000; verweigert {"rule:human → rainy":1}
+  Halt · mensch     GRUEN  sunny → sunny, Uhr -1000000000; verweigert {"human → rainy":1}
+  Halt · mitspieler GRUEN  sunny → sunny, Uhr -1000000000; verweigert {"remote:peer-wache → stormy":1}
+  Halt · autoZug    GRUEN  sunny → sunny, Uhr -1000000000; verweigert {}
+  Scharf · roh      ROT  ROH am _setWeather vorbei: sunny → rainy durch Sonde (kein Spiel-Rahmen)
+  Würfel: Uhr-Ops in 0/4000 Atomen, 0/4000 Gesetzen, 0/4000 Mutationen
+  Tag: 60 min (Standard 60, Szene 15), Mittag → Sonnenuntergang 15.0 min; nach einem alten Stand (8 min): 60 min
+  Wort des Spielers: Uhr 12:00, Wetter sunny (getaktet 6 min je Fenster, 2.8 s Wanduhr)
+  Modus schöpfer: das Wesen „Quin" schlägt alle 60 s von selbst vor (Gesetz: rainy, Band: stormy)
+  Gesetz · GRUEN  Uhr 12:00 → 14:24 (Gang 360.0 s in 1440 Takten; 0 fremde Schreiber), Wetter sunny → sunny (0 Schreiber, 0 Züge)
+           verweigert {"rule:nexus → Uhr 03:27":76,"nexus → Uhr 06:00":1,"rule:nexus → rainy":76,"nexus → stormy":1,"rule:emotion:sorrow → rainy":12,"creature:Quin → rainy":6}
+  Band   · GRUEN  Uhr 14:24 → 16:48 (Gang 360.0 s in 1440 Takten; 0 fremde Schreiber), Wetter frei → stormy (1 Schreiber, 1 Züge)
+           verweigert {"rule:nexus → Uhr 03:27":76}
+           gewünscht {"rule:nexus → rainy":76,"rule:emotion:sorrow → rainy":12,"creature:Quin → stormy":6}
+  Regler: 14:24 (600) bei Welt 14:24
+  Bild-Uhr 12.5: himmel 12.5 · wasser 12.5 · wind 12.5 · böe 1.1016 · regen 12.5; verweigert 3
+  Saat saat-a · 0 · 0         sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy (5 überblendet)
+  Saat saat-a · 0 · 120000    sunny rainy rainy rainy foggy foggy foggy stormy cloudy foggy (5 überblendet)
+  Saat saat-a · 3000 · 0      stormy sunny sunny cloudy rainy rainy foggy foggy foggy stormy (6 überblendet)
+  Saat saat-a · 3000 · 120000 stormy sunny sunny cloudy rainy rainy foggy foggy foggy stormy (6 überblendet)
+  Saat saat-b · 0 · 0         rainy sunny sunny cloudy stormy cloudy sunny sunny sunny rainy (7 überblendet)
+  Front · Regen an A bei trockenem B 40 % · Lag 240 s (Soll 273 s ±20 %) · Worte 5/5 (cloudy rainy foggy stormy sunny) · Mutation des Kerns: Welt stormy, Labor sturm
+
+✅ GRÜN — unter der Bühne dreht kein Schreiber das Wetter; frei gehen Uhr und Wetter nach dem Wort des Spielers, die Welt wünscht nur, jeder Schreiber steht beim Namen.

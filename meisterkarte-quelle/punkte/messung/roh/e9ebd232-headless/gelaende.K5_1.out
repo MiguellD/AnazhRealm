@@ -1,0 +1,37 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node -e (function k8Sichten() {
+    const fs = require("fs");
+    const cp = require("child_process");
+    const aus = process.argv[1];
+    const quelle = fs.readFileSync("scripts/diag-koerper-stand.cjs", "utf8");
+    const anker = "const W = window.__messWiese;";
+    if (quelle.split(anker).length !== 2) {
+        console.log("K8-SICHT: Anker fehlt in scripts/diag-koerper-stand.cjs");
+        process.exit(3);
+    }
+    const erg = {};
+    for (const sicht of ["first", "third"]) {
+        const kopie = "scripts/.k8-" + sicht + ".cjs";
+        fs.writeFileSync(kopie, quelle.replace(anker, 'r.setCameraMode("' + sicht + '"); o.__sicht = s.cameraMode; ' + anker));
+        const jd = aus + "." + sicht + ".json";
+        const p = cp.spawnSync(process.execPath, [kopie, "--k8", ...process.argv.slice(2)], {
+            env: Object.assign({}, process.env, { KOERPER_STAND_JSON: jd }),
+            encoding: "utf8",
+            maxBuffer: 1 << 26,
+        });
+        fs.rmSync(kopie, { force: true });
+        process.stdout.write("== SICHT " + sicht + " EXIT " + p.status + "\n" + (p.stdout || ""));
+        process.stderr.write(p.stderr || "");
+        let k8 = null;
+        try {
+            k8 = JSON.parse(fs.readFileSync(jd, "utf8")).k8;
+        } catch (_e) {}
+        erg[sicht] = { exit: p.status, k8 };
+    }
+    fs.writeFileSync(aus, JSON.stringify(erg));
+})() /home/runner/work/AnazhRealm/AnazhRealm/.claude/worktrees/koordination/meisterkarte-quelle/punkte/messung/roh/e9ebd232-headless/gelaende.K5_1.json
+== SICHT first EXIT 0
+  {k8:{__sicht:first,wiese:{x:-280.4,z:-1045.6,neig:0,ring:[4,4],fein:{n:200,p95:1.1,median:0.1},fuss:{n:200,p95:1.8,median:1.2,stecken:0},huf:{n:200,p95:0.2,median:gigant 0},rad:{n:200,p95:0.2,median:0},falllinie:{n:200,p95:1.2,median:1,stecken:0},stufe:{n:201,p95:1.2,median:0.9,stecken:0},streu:{n:337,p95:0.5,median:0}},sprung:{first:[{hub:[0.323,0.347,0.316],weite:2.846},{hub:[0.179,0.216,0.173],weite:2.156},{hub:[0.503,0.51,0.497],weite:3.45}],third:[{hub:[0.323,0.326,0.323],weite:2.846},{hub:[0.179,0.182,0.179],weite:2.156},{hub:[0.503,0.53,0.503],weite:3.45}]},hang:{x:-526,z:-853,neig:24.4,ring:[4,4],fein:{n:200,p95:4.3,median:0.3},fuss:{n:200,p95:0.5,median:0.3,stecken:0},huf:{n:201,p95:0.4,median:gigant 0.1},rad:{n:200,p95:2.4,median:2.1},falllinie:{n:200,p95:1,median:0.3,stecken:0},stufe:{n:200,p95:1.1,median:0.9,stecken:0},streu:{n:813,p95:0.8,median:0}},nexus:0}}
+✅ gate:koerper-stand grün
+== SICHT third EXIT 0
+  {k8:{__sicht:third,wiese:{x:-280.4,z:-1045.6,neig:0,ring:[4,4],fein:{n:200,p95:1.1,median:0.1},fuss:{n:200,p95:1.8,median:1.2,stecken:0},huf:{n:200,p95:0.2,median:gigant 0},rad:{n:200,p95:0.2,median:0},falllinie:{n:200,p95:1.2,median:1,stecken:0},stufe:{n:200,p95:1.2,median:0.9,stecken:0},streu:{n:337,p95:0.5,median:0}},sprung:{first:[{hub:[0.323,0.35,0.316],weite:2.846},{hub:[0.179,0.212,0.173],weite:2.156},{hub:[0.504,0.517,0.497],weite:3.45}],third:[{hub:[0.323,0.352,0.323],weite:2.846},{hub:[0.179,0.201,0.179],weite:2.156},{hub:[0.504,0.521,0.504],weite:3.45}]},hang:{x:-526,z:-853,neig:24.4,ring:[4,4],fein:{n:200,p95:4.3,median:0.3},fuss:{n:201,p95:0.6,median:0.3,stecken:0},huf:{n:201,p95:0.4,median:gigant 0.1},rad:{n:200,p95:2.4,median:2.1},falllinie:{n:200,p95:1.1,median:0.3,stecken:0},stufe:{n:201,p95:1.1,median:0.9,stecken:0},streu:{n:813,p95:0.8,median:0}},nexus:0}}
+✅ gate:koerper-stand grün

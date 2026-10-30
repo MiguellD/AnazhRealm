@@ -1,0 +1,208 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-nervensystem.cjs
+  ✅ phytogenesis: kein lokales SCALE-Literal
+
+=== TEIL C, E: der lebende Draht (Browser, foundry-ON) ===
+
+=== S: DER STAMMBAUM DER TEILE ===
+  kern:phyto „Phytogenesis & Lithos" [foundry-core.js:5158] 
+  art:phyto:tree „Bäume" [foundry-core.js:5161] 
+  rezept:eiche „Eiche" [foundry-core.js:4520] → baum_eiche · werk
+  rezept:fichte „Fichte" [foundry-core.js:4526] → baum_fichte · werk
+  rezept:birke „Birke" [foundry-core.js:4532] → baum_birke · werk
+  rezept:weide „Weide" [foundry-core.js:4538] → baum_weide · werk
+  rezept:mammut „Mammutbaum" [foundry-core.js:4544] → baum_mammut · werk
+  rezept:tanne „Tanne" [foundry-core.js:4550] → baum_tanne · werk
+  rezept:buche „Buche" [foundry-core.js:4811] → baum_buche · werk
+  rezept:karst „Karst" [foundry-core.js:4829] → baum_karst · werk
+  rezept:totholz „Totholz" [foundry-core.js:4837] → baum_totholz · werk
+  art:phyto:shrub „Sträucher" [foundry-core.js:5162] 
+  rezept:strauch „Strauch" [foundry-core.js:4556] streu
+  art:phyto:flower „Blumen" [foundry-core.js:5163] 
+  rezept:blume „Blume" [foundry-core.js:4561] → blume_blume · werk
+  art:phyto:grass „Gras" [foundry-core.js:5164] 
+  rezept:gras „Gras" [foundry-core.js:4567] → gras_gras · werk
+  art:phyto:rock „Stein" [foundry-core.js:5165] 
+  rezept:findling „Findling" [foundry-core.js:4568] → fels_var1 · werk
+  rezept:basalt „Basalt" [foundry-core.js:4605] → stein_block · werk
+  rezept:sediment „Sediment" [foundry-core.js:4643] → fels_var0 · werk
+  rezept:zacken „Zacken" [foundry-core.js:4680] → fels_var8 · werk
+  rezept:geroell „Geroell" [foundry-core.js:4717] → fels_var10 · werk
+  rezept:kristalle „Kristalle" [foundry-core.js:4740] → kristall_geode · werk
+  art:phyto:fern „Farne" [foundry-core.js:5166] 
+  rezept:farn „Farn" [foundry-core.js:4777] streu
+  art:phyto:reed „Schilf" [foundry-core.js:5167] 
+  rezept:schilf „Schilf" [foundry-core.js:4783] streu
+  art:phyto:brush „Gestrüpp" [foundry-core.js:5168] 
+  rezept:gestruepp „Gestruepp" [foundry-core.js:4789] streu
+  art:phyto:deadwood „Stämme und Stümpfe" [foundry-core.js:5169] 
+  rezept:totstamm „Totstamm" [foundry-core.js:4795] streu
+  rezept:stumpf „Stumpf" [foundry-core.js:4801] streu
+  kern:vehicle „Garage" [vehicle-core.js:3679] 
+  art:vehicle:vehicle „Fahrzeuge" [vehicle-core.js:3679] 
+  rezept:gt „GT" [vehicle-core.js:3419] → fahrzeug_gt · werk
+  rezept:supersport „Supersport" [vehicle-core.js:3450] → fahrzeug_supersport · werk
+  rezept:limousine „Limousine" [vehicle-core.js:3482] → fahrzeug_limousine · werk
+  rezept:kompakt_fwd „Kompakt-FWD" [vehicle-core.js:3514] → fahrzeug_kompakt_fwd · werk
+  rezept:suv „SUV" [vehicle-core.js:3546] → fahrzeug_suv · werk
+  kern:porta „Porta" [porta-core.js:1246] 
+  art:porta:gate „Tore" [porta-core.js:1246] 
+  rezept:drachentor „Drachentor" [porta-core.js:154] → tor_drachentor · werk
+  rezept:kathedrale „Kathedrale" [porta-core.js:156] → tor_kathedrale · werk
+  rezept:maschine „Maschine" [porta-core.js:158] → tor_maschine · werk
+  rezept:geisttor „Geisttor" [porta-core.js:160] → tor_geisttor · werk
+  rezept:verkalkt „Verkalkt" [porta-core.js:162] → tor_verkalkt · werk
+  rezept:ruine „Ruine" [porta-core.js:164] → tor_ruine · werk
+  rezept:maurentor „Maurentor" [porta-core.js:166] → tor_maurentor · werk
+  kern:schmiede „Schmiede" [schmiede-core.js:3648] 
+  art:schmiede:weapon „Klingen" [schmiede-core.js:3648] 
+  rezept:langschwert „Langschwert" [schmiede-core.js:2198] → klinge_langschwert · werk
+  rezept:saebel „Säbel" [schmiede-core.js:2205] → klinge_saebel · werk
+  rezept:degen „Degen" [schmiede-core.js:2212] → klinge_degen · werk
+  rezept:grossschwert „Großschwert" [schmiede-core.js:2219] → klinge_grossschwert · werk
+  rezept:dolch „Dolch" [schmiede-core.js:2226] → klinge_dolch · werk
+  rezept:messer „Messer" [schmiede-core.js:2233] → klinge_messer · werk
+  rezept:langbogen „Langbogen" [schmiede-core.js:2242] → klinge_langbogen · werk
+  rezept:kriegsbogen „Kriegsbogen" [schmiede-core.js:2243] → klinge_kriegsbogen · werk
+  rezept:reiterbogen „Reiterbogen" [schmiede-core.js:2244] → klinge_reiterbogen · werk
+  rezept:recurvebogen „Recurvebogen" [schmiede-core.js:2245] → klinge_recurvebogen · werk
+  rezept:streitkolben „Streitkolben" [schmiede-core.js:2246] → klinge_streitkolben · werk
+  rezept:kriegsaxt „Kriegsaxt" [schmiede-core.js:2262] → klinge_kriegsaxt · werk
+  rezept:kriegshammer „Kriegshammer" [schmiede-core.js:2270] → klinge_kriegshammer · werk
+  rezept:keule „Keule" [schmiede-core.js:2284] → klinge_keule · werk
+  rezept:faellaxt „Fällaxt" [schmiede-core.js:2298] → klinge_faellaxt · werk
+  rezept:spaltmaul „Spaltmaul" [schmiede-core.js:2307] → klinge_spaltmaul · werk
+  rezept:vorschlaghammer „Vorschlaghammer" [schmiede-core.js:2316] → klinge_vorschlaghammer · werk
+  rezept:beil „Beil" [schmiede-core.js:2331] → klinge_beil · werk
+  rezept:spitzhacke „Spitzhacke" [schmiede-core.js:2340] → klinge_spitzhacke · werk
+  rezept:spaten „Spaten" [schmiede-core.js:2349] → klinge_spaten · werk
+  rezept:schaufel „Schaufel" [schmiede-core.js:2358] → klinge_schaufel · werk
+  rezept:sichel „Sichel" [schmiede-core.js:2369] → klinge_sichel · werk
+  kern:fachwerk „Fachwerk" [fachwerk-core.js:6512] 
+  art:fachwerk:haus „Häuser" [fachwerk-core.js:6512] 
+  rezept:alemannisch „Alemannisch · steil, hell" [fachwerk-core.js:1892] → haus_alemannisch · werk
+  rezept:fraenkisch „Fränkisch · Zierfachwerk" [fachwerk-core.js:1893] → haus_fraenkisch · werk
+  rezept:niedersaechsisch „Niedersächsisch · breit" [fachwerk-core.js:1894] → haus_niedersaechsisch · werk
+  rezept:mittelalterlich „Mittelalterlich · ganz alt" [fachwerk-core.js:1895] → haus_mittelalterlich · werk
+  rezept:holzhuette „Holzhütte · Block" [fachwerk-core.js:1896] → haus_holzhuette · werk
+  rezept:franzoesisch „Französisch · Schiefer, hoch" [fachwerk-core.js:1897] → haus_franzoesisch · werk
+  rezept:italienisch „Italienisch · Terrakotta" [fachwerk-core.js:1898] → haus_italienisch · werk
+  rezept:modern „Modern · Putz" [fachwerk-core.js:178] → haus_modern · werk
+  rezept:volle_moderne „Volle Moderne · Glas" [fachwerk-core.js:1900] → haus_volle_moderne · werk
+  rezept:hochhaus „Hochhaus · Glasturm" [fachwerk-core.js:1901] → haus_hochhaus · werk
+  rezept:roemisch „Römisch · Domus" [fachwerk-core.js:1902] → haus_roemisch · werk
+  rezept:tudor „Tudor · Sichtfachwerk" [fachwerk-core.js:1903] → haus_tudor · werk
+  rezept:alpenchalet „Alpenchalet · Holz, breit" [fachwerk-core.js:1904] → haus_alpenchalet · werk
+  rezept:hollaendisch „Holländisch · Klinker" [fachwerk-core.js:1907] → haus_hollaendisch · werk
+  rezept:hanseatisch „Hanseatisch · Backstein" [fachwerk-core.js:1908] → haus_hanseatisch · werk
+  rezept:georgian „Georgianisch · symm." [fachwerk-core.js:1909] → haus_georgian · werk
+  rezept:viktorianisch „Viktorianisch · steil" [fachwerk-core.js:1910] → haus_viktorianisch · werk
+  rezept:griechisch „Griechisch · Kykladen" [fachwerk-core.js:1911] → haus_griechisch · werk
+  rezept:spanisch „Spanisch · Terrakotta" [fachwerk-core.js:1912] → haus_spanisch · werk
+  rezept:andalusisch „Andalusisch · weiß" [fachwerk-core.js:1913] → haus_andalusisch · werk
+  rezept:provenzalisch „Provenzalisch · Stein" [fachwerk-core.js:1914] → haus_provenzalisch · werk
+  rezept:pueblo „Pueblo · Adobe" [fachwerk-core.js:1915] → haus_pueblo · werk
+  rezept:marokkanisch „Marokkanisch · Lehm" [fachwerk-core.js:1916] → haus_marokkanisch · werk
+  rezept:skandinavisch „Skandinavisch · Falunrot" [fachwerk-core.js:1917] → haus_skandinavisch · werk
+  rezept:norwegisch „Norwegisch · dunkel" [fachwerk-core.js:1918] → haus_norwegisch · werk
+  rezept:russisch „Russisch · Isba" [fachwerk-core.js:1919] → haus_russisch · werk
+  rezept:schwarzwald „Schwarzwald · breit" [fachwerk-core.js:1920] → haus_schwarzwald · werk
+  rezept:japanisch „Japanisch · Minka, geschwungen" [fachwerk-core.js:1905] → haus_japanisch · werk
+  rezept:gotisch „Gotisch · steil" [fachwerk-core.js:1921] → haus_gotisch · werk
+  rezept:barock „Barock · Stuck" [fachwerk-core.js:1922] → haus_barock · werk
+  rezept:renaissance „Renaissance · symm." [fachwerk-core.js:1923] → haus_renaissance · werk
+  rezept:chinesisch „Chinesisch · Schwungdach" [fachwerk-core.js:1906] → haus_chinesisch · werk
+  art:fachwerk:ausstattung „Ausstattung" [fachwerk-core.js:6512] 
+  rezept:feuerstelle „Feuerstelle" [fachwerk-core.js:5120] → glutbrunnen · werk
+  rezept:marktstand „Marktstand" [fachwerk-core.js:5121] → marktstand_dorf · werk
+  rezept:brunnen „Ziehbrunnen" [fachwerk-core.js:5122] → brunnen_dorf · werk
+  rezept:laterne „Laterne" [fachwerk-core.js:5058] → laterne_dorf · werk
+  rezept:wandlaterne „Wandlaterne" [fachwerk-core.js:5127] → wandlaterne_dorf · werk
+  art:fachwerk:bank „Bank" [fachwerk-core.js:6163] 
+  rezept:sitzbank „Sitzbank · Latten, Lehne, Wangen" [fachwerk-core.js:6163] → bank_sitzbank · werk
+  art:fachwerk:leiter „Leiter" [fachwerk-core.js:6164] 
+  rezept:podestleiter „Podestleiter · Holme, Stufen, Podest, Bügel" [fachwerk-core.js:6164] → leiter_podestleiter · werk
+  art:fachwerk:bruecke „Brücke" [fachwerk-core.js:6169] 
+  rezept:jochfeld „Jochbrücke · Bohlen, Träger, Geländer, Joch" [fachwerk-core.js:6169] → bruecke_jochfeld · werk
+  kern:klang „Genesis" [klang-core.js:1581] 
+  art:klang:klang „Musik der Welt" [klang-core.js:1581] 
+  rezept:blues „Blues" [klang-core.js:96] → blues · praegung
+  rezept:bebop „Bebop" [klang-core.js:97] → bebop · praegung
+  rezept:cooljazz „CoolJazz" [klang-core.js:98] → cooljazz · praegung
+  rezept:freejazz „FreeJazz" [klang-core.js:99] → freejazz · praegung
+  rezept:boombap „BoomBap" [klang-core.js:100] → boombap · praegung
+  rezept:trap „Trap" [klang-core.js:101] → trap · praegung
+  rezept:techno „Techno" [klang-core.js:102] → techno · praegung
+  rezept:dnb „DnB" [klang-core.js:103] → dnb · praegung
+  rezept:reggae „Reggae" [klang-core.js:104] → reggae · praegung
+  rezept:ambient „Ambient" [klang-core.js:105] → ambient · praegung
+  rezept:barock-klang „Barock" [klang-core.js:106] → barock-klang · praegung
+  rezept:minimal „Minimal" [klang-core.js:107] → minimal · praegung
+  rezept:lofi „LoFi" [klang-core.js:108] → lofi · praegung
+  rezept:modern-klang „Modern" [klang-core.js:109] → modern-klang · praegung
+  rezept:bossa „Bossa" [klang-core.js:110] → bossa · praegung
+  rezept:vibes „Vibes" [klang-core.js:111] → vibes · praegung
+  rezept:funk „Funk" [klang-core.js:112] → funk · praegung
+  rezept:latin „Latin" [klang-core.js:113] → latin · praegung
+  rezept:dub „Dub" [klang-core.js:114] → dub · praegung
+  rezept:synthwave „Synthwave" [klang-core.js:115] → synthwave · praegung
+  rezept:cinematic „Cinematic" [klang-core.js:116] → cinematic · praegung
+  rezept:rock „Rock" [klang-core.js:117] → rock · praegung
+  kern:koerper „Da Vinci" [koerper-core.js:1622] 
+  art:koerper:koerper „Gestalt des Spielers" [koerper-core.js:1622] 
+  rezept:mensch „Mensch (Da Vinci Studio)" [koerper-core.js:462] → mensch · praegung
+  kern:tetrapoda „Tetrapoda" [tetrapoda-core.js:3935] 
+  art:tetrapoda:kreatur „Tiere" [tetrapoda-core.js:3935] 
+  rezept:wolf „Wolf" [tetrapoda-core.js:62] → wolf · wesen
+  rezept:fox „Fuchs" [tetrapoda-core.js:62] → fox · wesen
+  rezept:bear „Baer" [tetrapoda-core.js:62] → bear · wesen
+  rezept:deer „Hirsch" [tetrapoda-core.js:62] → deer · wesen
+  kern:stele „Neuntes Buch" [worlds/neuntes-buch/stele-core.js:389] 
+  art:stele:stele „Stelen" [worlds/neuntes-buch/stele-core.js:389] 
+  rezept:meilenstein „Meilenstein" [worlds/neuntes-buch/stele-core.js:43] → stele_meilenstein · werk
+  rezept:grenzstein „Grenzstein" [worlds/neuntes-buch/stele-core.js:49] → stele_grenzstein · werk
+  rezept:obelisk „Obelisk" [worlds/neuntes-buch/stele-core.js:55] → stele_obelisk · werk
+  ultiversum „Ultiversum"  
+  ultiversum:tore „Tore in die Welten"  
+  bauplan:welt_fachwerk „Fachwerkhaus — parametrisch, begehbar"  → welt_fachwerk · werk
+  bauplan:welt_garage „Anatomie · Fahrzeug"  → welt_garage · werk
+  bauplan:welt_klang „Genesis — Generatives Musiksystem"  → welt_klang · werk
+  bauplan:welt_koerperstudio „Da Vinci Studio — Lebendiger Mensch"  → welt_koerperstudio · werk
+  bauplan:welt_portal „Welt-Portal"  → welt_portal · werk
+  bauplan:welt_portale „Porta — Ordnungen & fraktale Tiefe"  → welt_portale · werk
+  bauplan:welt_schmiede „Anatomie · Klinge"  → welt_schmiede · werk
+  bauplan:welt_strom „Strom-Welt"  → welt_strom · werk
+  bauplan:welt_terrain „Phytogenesis & Lithos"  → welt_terrain · werk
+  bauplan:welt_tetrapoda „Tetrapoda — Evolution Lab"  → welt_tetrapoda · werk
+  wirt „Ohne Gesetzbuch"  
+  wirt:workshop-station „Werkstatt"  
+  bauplan:brennkolben „Brennkolben"  → brennkolben · werk
+  bauplan:drehbank „Drehbank"  → drehbank · werk
+  bauplan:esse „Esse"  → esse · werk
+  bauplan:esse_meister „Meister-Esse (Eisen)"  → esse_meister · werk
+  bauplan:seelenstein_altar „Seelenstein-Altar"  → seelenstein_altar · werk
+  bauplan:webstuhl „Webstuhl"  → webstuhl · werk
+  wirt:architecture „Bauwerk"  
+  bauplan:damm „Damm"  → damm · werk
+  bauplan:fass „Fass"  → fass · werk
+  bauplan:kiste „Kiste"  → kiste · werk
+  bauplan:stamm_gefallen „Gefallener Stamm"  → stamm_gefallen · werk
+  bauplan:start_plattform „Genesis-Plattform"  → start_plattform · werk
+  bauplan:waterfall „Wasserfall"  → waterfall · werk
+  wirt:armor „Rüstung"  
+  bauplan:ruestung_brustpanzer „Brustpanzer"  → ruestung_brustpanzer · werk
+  wirt:consumable „Konsumable"  
+  bauplan:trank_lebenssaft „Lebenssaft"  → trank_lebenssaft · werk
+S-ZAHL {"teile":[151,134],"waisen":"brennkolben damm drehbank esse esse_meister fass kiste ruestung_brustpanzer seelenstein_altar stamm_gefallen start_plattform trank_lebenssaft waterfall webstuhl","zwillinge":"","tot":"","ohneGriff":"farn gestruepp schilf strauch stumpf totstamm","bibliothek":"","wort":"","ohneZeile":""}
+  ✅ S: der Stammbaum
+  ✅ C: die Welt-Skala liest die Daten (4.16·0.82) — 3.4112
+  ✅ C: LIVE GEWINNT — scale.eiche ×2 → 8.32·0.82 — 6.8224
+E-ZAHL {"regler":7,"bauplaene":3,"ort":"weg","stamm":{"teile":[151,134],"waisen":"brennkolben damm drehbank esse esse_meister fass kiste ruestung_brustpanzer seelenstein_altar stamm_gefallen start_plattform trank_lebenssaft waterfall webstuhl","zwillinge":"","tot":"","ohneGriff":"farn gestruepp schilf strauch stumpf totstamm","bibliothek":"","wort":"","baum":[["kern:phyto","Phytogenesis & Lithos",{"datei":"foundry-core.js","anker":"STAMMBAUM"},null,null],["art:phyto:tree","Bäume",{"datei":"foundry-core.js","anker":"STAMMBAUM.arten.tree"},null,null],["rezept:eiche","Eiche",{"datei":"foundry-core.js","anker":"eiche"},"baum_eiche","werk"],["rezept:fichte","Fichte",{"datei":"foundry-core.js","anker":"fichte"},"baum_fichte","werk"],["rezept:birke","Birke",{"datei":"foundry-core.js","anker":"birke"},"baum_birke","werk"],["rezept:weide","Weide",{"datei":"foundry-core.js","anker":"weide"},"baum_weide","werk"],["rezept:mammut","Mammutbaum",{"datei":"foundry-core.js","anker":"mammut"},"baum_mammut","werk"],["rezept:tanne","Tanne",{"datei":"foundry-core.js","anker":"tanne"},"baum_tanne","werk"],["rezept:buche","Buche",{"datei":"foundry-core.js","anker":"buche"},"baum_buche","werk"],["rezept:karst","Karst",{"datei":"foundry-core.js","anker":"karst"},"baum_karst","werk"],["rezept:totholz","Totholz",{"datei":"foundry-core.js","anker":"totholz"},"baum_totholz","werk"],["art:phyto:shrub","Sträucher",{"datei":"foundry-core.js","anker":"STAMMBAUM.arten.shrub"},null,null],["rezept:strauch","Strauch",{"datei":"foundry-core.js","anker":"strauch"},null,"streu"],["art:phyto:flower","Blumen",{"datei":"foundry-core.js","anker":"STAMMBAUM.arten.flower"},null,null],["rezept:blume","Blume",{"datei":"foundry-core.js","anker":"blume"},"blume_blume","werk"],["art:phyto:grass","Gras",{"datei":"foundry-core.js","anker":"STAMMBAUM.arten.grass"},null,null],["rezept:gras","Gras",{"datei":"foundry-core.js","anker":"gras"},"gras_gras","werk"],["art:phyto:rock","Stein",{"datei":"foundry-core.js","anker":"STAMMBAUM.arten.rock"},null,null],["rezept:findling","Findling",{"datei":"foundry-core.js","anker":"findling"},"fels_var1","werk"],["rezept:basalt","Basalt",{"datei":"foundry-core.js","anker":"basalt"},"stein_block","werk"],["rezept:sediment","Sediment",{"datei":"foundry-core.js","anker":"sediment"},"fels_var0","werk"],["rezept:zacken","Zacken",{"datei":"foundry-core.js","anker":"zacken"},"fels_var8","werk"],["rezept:geroell","Geroell",{"datei":"foundry-core.js","anker":"geroell"},"fels_var10","werk"],["rezept:kristalle","Kristalle",{"datei":"foundry-core.js","anker":"kristalle"},"kristall_geode","werk"],["art:phyto:fern","Farne",{"datei":"foundry-core.js","anker":"STAMMBAUM.arten.fern"},null,null],["rezept:farn","Farn",{"datei":"foundry-core.js","anker":"farn"},null,"streu"],["art:phyto:reed","Schilf",{"datei":"foundry-core.js","anker":"STAMMBAUM.arten.reed"},null,null],["rezept:schilf","Schilf",{"datei":"foundry-core.js","anker":"schilf"},null,"streu"],["art:phyto:brush","Gestrüpp",{"datei":"foundry-core.js","anker":"STAMMBAUM.arten.brush"},null,null],["rezept:gestruepp","Gestruepp",{"datei":"foundry-core.js","anker":"gestruepp"},null,"streu"],["art:phyto:deadwood","Stämme und Stümpfe",{"datei":"foundry-core.js","anker":"STAMMBAUM.arten.deadwood"},null,null],["rezept:totstamm","Totstamm",{"datei":"foundry-core.js","anker":"totstamm"},null,"streu"],["rezept:stumpf","Stumpf",{"datei":"foundry-core.js","anker":"stumpf"},null,"streu"],["kern:vehicle","Garage",{"datei":"vehicle-core.js","anker":"STAMMBAUM"},null,null],["art:vehicle:vehicle","Fahrzeuge",{"datei":"vehicle-core.js","anker":"STAMMBAUM.arten.vehicle"},null,null],["rezept:gt","GT",{"datei":"vehicle-core.js","anker":"gt"},"fahrzeug_gt","werk"],["rezept:supersport","Supersport",{"datei":"vehicle-core.js","anker":"supersport"},"fahrzeug_supersport","werk"],["rezept:limousine","Limousine",{"datei":"vehicle-core.js","anker":"limousine"},"fahrzeug_limousine","werk"],["rezept:kompakt_fwd","Kompakt-FWD",{"datei":"vehicle-core.js","anker":"kompakt_fwd"},"fahrzeug_kompakt_fwd","werk"],["rezept:suv","SUV",{"datei":"vehicle-core.js","anker":"suv"},"fahrzeug_suv","werk"],["kern:porta","Porta",{"datei":"porta-core.js","anker":"STAMMBAUM"},null,null],["art:porta:gate","Tore",{"datei":"porta-core.js","anker":"STAMMBAUM.arten.gate"},null,null],["rezept:drachentor","Drachentor",{"datei":"porta-core.js","anker":"drachentor"},"tor_drachentor","werk"],["rezept:kathedrale","Kathedrale",{"datei":"porta-core.js","anker":"kathedrale"},"tor_kathedrale","werk"],["rezept:maschine","Maschine",{"datei":"porta-core.js","anker":"maschine"},"tor_maschine","werk"],["rezept:geisttor","Geisttor",{"datei":"porta-core.js","anker":"geisttor"},"tor_geisttor","werk"],["rezept:verkalkt","Verkalkt",{"datei":"porta-core.js","anker":"verkalkt"},"tor_verkalkt","werk"],["rezept:ruine","Ruine",{"datei":"porta-core.js","anker":"ruine"},"tor_ruine","werk"],["rezept:maurentor","Maurentor",{"datei":"porta-core.js","anker":"maurentor"},"tor_maurentor","werk"],["kern:schmiede","Schmiede",{"datei":"schmiede-core.js","anker":"STAMMBAUM"},null,null],["art:schmiede:weapon","Klingen",{"datei":"schmiede-core.js","anker":"STAMMBAUM.arten.weapon"},null,null],["rezept:langschwert","Langschwert",{"datei":"schmiede-core.js","anker":"langschwert"},"klinge_langschwert","werk"],["rezept:saebel","Säbel",{"datei":"schmiede-core.js","anker":"saebel"},"klinge_saebel","werk"],["rezept:degen","Degen",{"datei":"schmiede-core.js","anker":"degen"},"klinge_degen","werk"],["rezept:grossschwert","Großschwert",{"datei":"schmiede-core.js","anker":"grossschwert"},"klinge_grossschwert","werk"],["rezept:dolch","Dolch",{"datei":"schmiede-core.js","anker":"dolch"},"klinge_dolch","werk"],["rezept:messer","Messer",{"datei":"schmiede-core.js","anker":"messer"},"klinge_messer","werk"],["rezept:langbogen","Langbogen",{"datei":"schmiede-core.js","anker":"langbogen"},"klinge_langbogen","werk"],["rezept:kriegsbogen","Kriegsbogen",{"datei":"schmiede-core.js","anker":"kriegsbogen"},"klinge_kriegsbogen","werk"],["rezept:reiterbogen","Reiterbogen",{"datei":"schmiede-core.js","anker":"reiterbogen"},"klinge_reiterbogen","werk"],["rezept:recurvebogen","Recurvebogen",{"datei":"schmiede-core.js","anker":"recurvebogen"},"klinge_recurvebogen","werk"],["rezept:streitkolben","Streitkolben",{"datei":"schmiede-core.js","anker":"streitkolben"},"klinge_streitkolben","werk"],["rezept:kriegsaxt","Kriegsaxt",{"datei":"schmiede-core.js","anker":"kriegsaxt"},"klinge_kriegsaxt","werk"],["rezept:kriegshammer","Kriegshammer",{"datei":"schmiede-core.js","anker":"kriegshammer"},"klinge_kriegshammer","werk"],["rezept:keule","Keule",{"datei":"schmiede-core.js","anker":"keule"},"klinge_keule","werk"],["rezept:faellaxt","Fällaxt",{"datei":"schmiede-core.js","anker":"faellaxt"},"klinge_faellaxt","werk"],["rezept:spaltmaul","Spaltmaul",{"datei":"schmiede-core.js","anker":"spaltmaul"},"klinge_spaltmaul","werk"],["rezept:vorschlaghammer","Vorschlaghammer",{"datei":"schmiede-core.js","anker":"vorschlaghammer"},"klinge_vorschlaghammer","werk"],["rezept:beil","Beil",{"datei":"schmiede-core.js","anker":"beil"},"klinge_beil","werk"],["rezept:spitzhacke","Spitzhacke",{"datei":"schmiede-core.js","anker":"spitzhacke"},"klinge_spitzhacke","werk"],["rezept:spaten","Spaten",{"datei":"schmiede-core.js","anker":"spaten"},"klinge_spaten","werk"],["rezept:schaufel","Schaufel",{"datei":"schmiede-core.js","anker":"schaufel"},"klinge_schaufel","werk"],["rezept:sichel","Sichel",{"datei":"schmiede-core.js","anker":"sichel"},"klinge_sichel","werk"],["kern:fachwerk","Fachwerk",{"datei":"fachwerk-core.js","anker":"STAMMBAUM"},null,null],["art:fachwerk:haus","Häuser",{"datei":"fachwerk-core.js","anker":"STAMMBAUM.arten.haus"},null,null],["rezept:alemannisch","Alemannisch · steil, hell",{"datei":"fachwerk-core.js","anker":"alemannisch"},"haus_alemannisch","werk"],["rezept:fraenkisch","Fränkisch · Zierfachwerk",{"datei":"fachwerk-core.js","anker":"fraenkisch"},"haus_fraenkisch","werk"],["rezept:niedersaechsisch","Niedersächsisch · breit",{"datei":"fachwerk-core.js","anker":"niedersaechsisch"},"haus_niedersaechsisch","werk"],["rezept:mittelalterlich","Mittelalterlich · ganz alt",{"datei":"fachwerk-core.js","anker":"mittelalterlich"},"haus_mittelalterlich","werk"],["rezept:holzhuette","Holzhütte · Block",{"datei":"fachwerk-core.js","anker":"holzhuette"},"haus_holzhuette","werk"],["rezept:franzoesisch","Französisch · Schiefer, hoch",{"datei":"fachwerk-core.js","anker":"franzoesisch"},"haus_franzoesisch","werk"],["rezept:italienisch","Italienisch · Terrakotta",{"datei":"fachwerk-core.js","anker":"italienisch"},"haus_italienisch","werk"],["rezept:modern","Modern · Putz",{"datei":"fachwerk-core.js","anker":"modern"},"haus_modern","werk"],["rezept:volle_moderne","Volle Moderne · Glas",{"datei":"fachwerk-core.js","anker":"volle_moderne"},"haus_volle_moderne","werk"],["rezept:hochhaus","Hochhaus · Glasturm",{"datei":"fachwerk-core.js","anker":"hochhaus"},"haus_hochhaus","werk"],["rezept:roemisch","Römisch · Domus",{"datei":"fachwerk-core.js","anker":"roemisch"},"haus_roemisch","werk"],["rezept:tudor","Tudor · Sichtfachwerk",{"datei":"fachwerk-core.js","anker":"tudor"},"haus_tudor","werk"],["rezept:alpenchalet","Alpenchalet · Holz, breit",{"datei":"fachwerk-core.js","anker":"alpenchalet"},"haus_alpenchalet","werk"],["rezept:hollaendisch","Holländisch · Klinker",{"datei":"fachwerk-core.js","anker":"hollaendisch"},"haus_hollaendisch","werk"],["rezept:hanseatisch","Hanseatisch · Backstein",{"datei":"fachwerk-core.js","anker":"hanseatisch"},"haus_hanseatisch","werk"],["rezept:georgian","Georgianisch · symm.",{"datei":"fachwerk-core.js","anker":"georgian"},"haus_georgian","werk"],["rezept:viktorianisch","Viktorianisch · steil",{"datei":"fachwerk-core.js","anker":"viktorianisch"},"haus_viktorianisch","werk"],["rezept:griechisch","Griechisch · Kykladen",{"datei":"fachwerk-core.js","anker":"griechisch"},"haus_griechisch","werk"],["rezept:spanisch","Spanisch · Terrakotta",{"datei":"fachwerk-core.js","anker":"spanisch"},"haus_spanisch","werk"],["rezept:andalusisch","Andalusisch · weiß",{"datei":"fachwerk-core.js","anker":"andalusisch"},"haus_andalusisch","werk"],["rezept:provenzalisch","Provenzalisch · Stein",{"datei":"fachwerk-core.js","anker":"provenzalisch"},"haus_provenzalisch","werk"],["rezept:pueblo","Pueblo · Adobe",{"datei":"fachwerk-core.js","anker":"pueblo"},"haus_pueblo","werk"],["rezept:marokkanisch","Marokkanisch · Lehm",{"datei":"fachwerk-core.js","anker":"marokkanisch"},"haus_marokkanisch","werk"],["rezept:skandinavisch","Skandinavisch · Falunrot",{"datei":"fachwerk-core.js","anker":"skandinavisch"},"haus_skandinavisch","werk"],["rezept:norwegisch","Norwegisch · dunkel",{"datei":"fachwerk-core.js","anker":"norwegisch"},"haus_norwegisch","werk"],["rezept:russisch","Russisch · Isba",{"datei":"fachwerk-core.js","anker":"russisch"},"haus_russisch","werk"],["rezept:schwarzwald","Schwarzwald · breit",{"datei":"fachwerk-core.js","anker":"schwarzwald"},"haus_schwarzwald","werk"],["rezept:japanisch","Japanisch · Minka, geschwungen",{"datei":"fachwerk-core.js","anker":"japanisch"},"haus_japanisch","werk"],["rezept:gotisch","Gotisch · steil",{"datei":"fachwerk-core.js","anker":"gotisch"},"haus_gotisch","werk"],["rezept:barock","Barock · Stuck",{"datei":"fachwerk-core.js","anker":"barock"},"haus_barock","werk"],["rezept:renaissance","Renaissance · symm.",{"datei":"fachwerk-core.js","anker":"renaissance"},"haus_renaissance","werk"],["rezept:chinesisch","Chinesisch · Schwungdach",{"datei":"fachwerk-core.js","anker":"chinesisch"},"haus_chinesisch","werk"],["art:fachwerk:ausstattung","Ausstattung",{"datei":"fachwerk-core.js","anker":"STAMMBAUM.arten.ausstattung"},null,null],["rezept:feuerstelle","Feuerstelle",{"datei":"fachwerk-core.js","anker":"feuerstelle"},"glutbrunnen","werk"],["rezept:marktstand","Marktstand",{"datei":"fachwerk-core.js","anker":"marktstand"},"marktstand_dorf","werk"],["rezept:brunnen","Ziehbrunnen",{"datei":"fachwerk-core.js","anker":"brunnen"},"brunnen_dorf","werk"],["rezept:laterne","Laterne",{"datei":"fachwerk-core.js","anker":"laterne"},"laterne_dorf","werk"],["rezept:wandlaterne","Wandlaterne",{"datei":"fachwerk-core.js","anker":"wandlaterne"},"wandlaterne_dorf","werk"],["art:fachwerk:bank","Bank",{"datei":"fachwerk-core.js","anker":"STAMMBAUM.arten.bank"},null,null],["rezept:sitzbank","Sitzbank · Latten, Lehne, Wangen",{"datei":"fachwerk-core.js","anker":"sitzbank"},"bank_sitzbank","werk"],["art:fachwerk:leiter","Leiter",{"datei":"fachwerk-core.js","anker":"STAMMBAUM.arten.leiter"},null,null],["rezept:podestleiter","Podestleiter · Holme, Stufen, Podest, Bügel",{"datei":"fachwerk-core.js","anker":"podestleiter"},"leiter_podestleiter","werk"],["art:fachwerk:bruecke","Brücke",{"datei":"fachwerk-core.js","anker":"STAMMBAUM.arten.bruecke"},null,null],["rezept:jochfeld","Jochbrücke · Bohlen, Träger, Geländer, Joch",{"datei":"fachwerk-core.js","anker":"jochfeld"},"bruecke_jochfeld","werk"],["kern:klang","Genesis",{"datei":"klang-core.js","anker":"STAMMBAUM"},null,null],["art:klang:klang","Musik der Welt",{"datei":"klang-core.js","anker":"STAMMBAUM.arten.klang"},null,null],["rezept:blues","Blues",{"datei":"klang-core.js","anker":"blues"},"blues","praegung"],["rezept:bebop","Bebop",{"datei":"klang-core.js","anker":"bebop"},"bebop","praegung"],["rezept:cooljazz","CoolJazz",{"datei":"klang-core.js","anker":"cooljazz"},"cooljazz","praegung"],["rezept:freejazz","FreeJazz",{"datei":"klang-core.js","anker":"freejazz"},"freejazz","praegung"],["rezept:boombap","BoomBap",{"datei":"klang-core.js","anker":"boombap"},"boombap","praegung"],["rezept:trap","Trap",{"datei":"klang-core.js","anker":"trap"},"trap","praegung"],["rezept:techno","Techno",{"datei":"klang-core.js","anker":"techno"},"techno","praegung"],["rezept:dnb","DnB",{"datei":"klang-core.js","anker":"dnb"},"dnb","praegung"],["rezept:reggae","Reggae",{"datei":"klang-core.js","anker":"reggae"},"reggae","praegung"],["rezept:ambient","Ambient",{"datei":"klang-core.js","anker":"ambient"},"ambient","praegung"],["rezept:barock-klang","Barock",{"datei":"klang-core.js","anker":"barock-klang"},"barock-klang","praegung"],["rezept:minimal","Minimal",{"datei":"klang-core.js","anker":"minimal"},"minimal","praegung"],["rezept:lofi","LoFi",{"datei":"klang-core.js","anker":"lofi"},"lofi","praegung"],["rezept:modern-klang","Modern",{"datei":"klang-core.js","anker":"modern-klang"},"modern-klang","praegung"],["rezept:bossa","Bossa",{"datei":"klang-core.js","anker":"bossa"},"bossa","praegung"],["rezept:vibes","Vibes",{"datei":"klang-core.js","anker":"vibes"},"vibes","praegung"],["rezept:funk","Funk",{"datei":"klang-core.js","anker":"funk"},"funk","praegung"],["rezept:latin","Latin",{"datei":"klang-core.js","anker":"latin"},"latin","praegung"],["rezept:dub","Dub",{"datei":"klang-core.js","anker":"dub"},"dub","praegung"],["rezept:synthwave","Synthwave",{"datei":"klang-core.js","anker":"synthwave"},"synthwave","praegung"],["rezept:cinematic","Cinematic",{"datei":"klang-core.js","anker":"cinematic"},"cinematic","praegung"],["rezept:rock","Rock",{"datei":"klang-core.js","anker":"rock"},"rock","praegung"],["kern:koerper","Da Vinci",{"datei":"koerper-core.js","anker":"STAMMBAUM"},null,null],["art:koerper:koerper","Gestalt des Spielers",{"datei":"koerper-core.js","anker":"STAMMBAUM.arten.koerper"},null,null],["rezept:mensch","Mensch (Da Vinci Studio)",{"datei":"koerper-core.js","anker":"mensch"},"mensch","praegung"],["kern:tetrapoda","Tetrapoda",{"datei":"tetrapoda-core.js","anker":"STAMMBAUM"},null,null],["art:tetrapoda:kreatur","Tiere",{"datei":"tetrapoda-core.js","anker":"STAMMBAUM.arten.kreatur"},null,null],["rezept:wolf","Wolf",{"datei":"tetrapoda-core.js","anker":"wolf"},"wolf","wesen"],["rezept:fox","Fuchs",{"datei":"tetrapoda-core.js","anker":"fox"},"fox","wesen"],["rezept:bear","Baer",{"datei":"tetrapoda-core.js","anker":"bear"},"bear","wesen"],["rezept:deer","Hirsch",{"datei":"tetrapoda-core.js","anker":"deer"},"deer","wesen"],["kern:stele","Neuntes Buch",{"datei":"worlds/neuntes-buch/stele-core.js","anker":"STAMMBAUM"},null,null],["art:stele:stele","Stelen",{"datei":"worlds/neuntes-buch/stele-core.js","anker":"STAMMBAUM.arten.stele"},null,null],["rezept:meilenstein","Meilenstein",{"datei":"worlds/neuntes-buch/stele-core.js","anker":"meilenstein"},"stele_meilenstein","werk"],["rezept:grenzstein","Grenzstein",{"datei":"worlds/neuntes-buch/stele-core.js","anker":"grenzstein"},"stele_grenzstein","werk"],["rezept:obelisk","Obelisk",{"datei":"worlds/neuntes-buch/stele-core.js","anker":"obelisk"},"stele_obelisk","werk"],["ultiversum","Ultiversum",null,null,null],["ultiversum:tore","Tore in die Welten",null,null,null],["bauplan:welt_fachwerk","Fachwerkhaus — parametrisch, begehbar",{"datei":null,"anker":"welt_fachwerk"},"welt_fachwerk","werk"],["bauplan:welt_garage","Anatomie · Fahrzeug",{"datei":null,"anker":"welt_garage"},"welt_garage","werk"],["bauplan:welt_klang","Genesis — Generatives Musiksystem",{"datei":null,"anker":"welt_klang"},"welt_klang","werk"],["bauplan:welt_koerperstudio","Da Vinci Studio — Lebendiger Mensch",{"datei":null,"anker":"welt_koerperstudio"},"welt_koerperstudio","werk"],["bauplan:welt_portal","Welt-Portal",{"datei":null,"anker":"welt_portal"},"welt_portal","werk"],["bauplan:welt_portale","Porta — Ordnungen & fraktale Tiefe",{"datei":null,"anker":"welt_portale"},"welt_portale","werk"],["bauplan:welt_schmiede","Anatomie · Klinge",{"datei":null,"anker":"welt_schmiede"},"welt_schmiede","werk"],["bauplan:welt_strom","Strom-Welt",{"datei":null,"anker":"welt_strom"},"welt_strom","werk"],["bauplan:welt_terrain","Phytogenesis & Lithos",{"datei":null,"anker":"welt_terrain"},"welt_terrain","werk"],["bauplan:welt_tetrapoda","Tetrapoda — Evolution Lab",{"datei":null,"anker":"welt_tetrapoda"},"welt_tetrapoda","werk"],["wirt","Ohne Gesetzbuch",null,null,null],["wirt:workshop-station","Werkstatt",null,null,null],["bauplan:brennkolben","Brennkolben",{"datei":null,"anker":"brennkolben"},"brennkolben","werk"],["bauplan:drehbank","Drehbank",{"datei":null,"anker":"drehbank"},"drehbank","werk"],["bauplan:esse","Esse",{"datei":null,"anker":"esse"},"esse","werk"],["bauplan:esse_meister","Meister-Esse (Eisen)",{"datei":null,"anker":"esse_meister"},"esse_meister","werk"],["bauplan:seelenstein_altar","Seelenstein-Altar",{"datei":null,"anker":"seelenstein_altar"},"seelenstein_altar","werk"],["bauplan:webstuhl","Webstuhl",{"datei":null,"anker":"webstuhl"},"webstuhl","werk"],["wirt:architecture","Bauwerk",null,null,null],["bauplan:damm","Damm",{"datei":null,"anker":"damm"},"damm","werk"],["bauplan:fass","Fass",{"datei":null,"anker":"fass"},"fass","werk"],["bauplan:kiste","Kiste",{"datei":null,"anker":"kiste"},"kiste","werk"],["bauplan:stamm_gefallen","Gefallener Stamm",{"datei":null,"anker":"stamm_gefallen"},"stamm_gefallen","werk"],["bauplan:start_plattform","Genesis-Plattform",{"datei":null,"anker":"start_plattform"},"start_plattform","werk"],["bauplan:waterfall","Wasserfall",{"datei":null,"anker":"waterfall"},"waterfall","werk"],["wirt:armor","Rüstung",null,null,null],["bauplan:ruestung_brustpanzer","Brustpanzer",{"datei":null,"anker":"ruestung_brustpanzer"},"ruestung_brustpanzer","werk"],["wirt:consumable","Konsumable",null,null,null],["bauplan:trank_lebenssaft","Lebenssaft",{"datei":null,"anker":"trank_lebenssaft"},"trank_lebenssaft","werk"]]},"kosten":[{"klasse":"pass","stufe":"0","leiste":"160","deckel":"200"},{"klasse":"pass","stufe":"1","leiste":"32","deckel":"60"},{"klasse":"pass","stufe":"2","leiste":"14","deckel":"24"}],"steht":true,"lod":[{"d":4,"ist":0,"tris":160,"bau":"6f1c8c0a/1"},{"d":25,"ist":1,"tris":32,"bau":"af97477e/1"},{"d":50,"ist":2,"tris":14,"bau":"dbd19cd4/1"}],"werk":{"stand":"[\"a-l040n0rx91uz\",{\"x\":40,\"y\":90.88962153575744,\"z\":3.1202518543484876},0,2328308543,null]","id":"a-l040n0rx91uz","seed":2328308543},"stelle":{"x":40,"z":3.1202518543484876,"r":0.01},"p2p":{"bau":"6f1c8c0a/1","stand":"[\"a-l040n0rx91uz\",{\"x\":40,\"y\":90.88962153575744,\"z\":3.1202518543484876},0,2328308543,null]"},"geladen":true,"ki":{"bau":"a996fd2b/1","lehrt":true,"seed":4711,"ov":{"hoehe":3.6}},"foundry":{"lod":["6f1c8c0a/1","af97477e/1","dbd19cd4/1"],"ki":"a996fd2b/1","roh":"7285bdf3/1"},"nennt":0,"atlas":"worlds/neuntes-buch/stele-core.js","wege":[{"weg":"Werkstatt","bau":"6f1c8c0a/1","ok":true},{"weg":"KI-Satz","bau":"a996fd2b/1","ok":true},{"weg":"Foundry","bau":"6f1c8c0a/1 · af97477e/1 · dbd19cd4/1","ok":true},{"weg":"P2P","bau":"6f1c8c0a/1","ok":true}],"taeter":[]}
+  ✅ E: das neue Gesetzbuch steht über die Werkstatt in der Welt, ohne eine Zeile im Wirt
+    ✅ Werkstatt: 6f1c8c0a/1
+    ✅ KI-Satz: a996fd2b/1
+    ✅ Foundry: 6f1c8c0a/1 · af97477e/1 · dbd19cd4/1
+    ✅ P2P: 6f1c8c0a/1
+    ✅ Atlas: worlds/neuntes-buch/stele-core.js
+  ✅ E2: das neunte Buch auf allen Wegen, der Atlas nennt seine Quelle — 5/5
+
+✅ GRÜN — DAS NERVENSYSTEM LEBT: die Welt liest die Daten des Buchs LIVE, und ein neues Gesetzbuch steht in ihr, ohne dass der Wirt es kennt.
