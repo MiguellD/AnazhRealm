@@ -1,7 +1,7 @@
 {
  "sha": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
  "geraet": "gtx",
- "zeit": "2026-10-30T17:41:50.151Z",
+ "zeit": "2026-10-30T17:56:18.242Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -756,6 +756,293 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "halten.K5#1",
+   "modus": "session"
+  },
+  "halten.K1#2": {
+   "gruen": false,
+   "zahl": "keine Zeile Q15 halten.K1 Staffel 2 (Exit 2)",
+   "exit": 2,
+   "minuten": 0.09,
+   "grund": "ROT: keine Zeile Q15 halten.K1 Staffel 2 (Exit 2)",
+   "gpu": "nvidia/pascal",
+   "s": 5.4,
+   "eich": {
+    "s": 5.4,
+    "sek": 10,
+    "gesetzS": 45
+   },
+   "zeit": "2026-10-30T17:45:27.248Z",
+   "abdruck": "1828e41c4182",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K5#1": {
+   "gruen": true,
+   "zahl": "Federung im Bild: Drift-Wank 10.263 gegen Glatt 0.542 mm, Stoß-Antwort Glatt/Hang 7.239/10.022 mm (Mutante 2.768/0.896) · Rumble Drift 1 gegen Glatt 0.004, Summen 0.594/0.539 (Mutante 0, 0.126) · Motor 66.7 Hz je 1000 Upm (klang-zensus F) · RM1–3 ✅✅✅",
+   "exit": 0,
+   "minuten": 0.39,
+   "gpu": "nvidia/pascal",
+   "s": 23.4,
+   "eich": {
+    "s": 23.4,
+    "sek": 15,
+    "gesetzS": 45
+   },
+   "zeit": "2026-10-30T17:45:47.565Z",
+   "abdruck": "1a113efa7936",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K3#1": {
+   "gruen": false,
+   "zahl": "keine K8-Tafel (Exit 2)",
+   "exit": 2,
+   "minuten": 0,
+   "grund": "ROT: keine K8-Tafel (Exit 2)",
+   "gpu": "nvidia/pascal",
+   "s": 0.2,
+   "eich": {
+    "s": 0.2,
+    "sek": 10,
+    "gesetzS": 45
+   },
+   "zeit": "2026-10-30T17:46:25.723Z",
+   "abdruck": "7c1efdd2d08b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tore.K3#2": {
+   "gruen": false,
+   "zahl": "keine K8-Tafel (Exit 2)",
+   "exit": 2,
+   "minuten": 0,
+   "grund": "ROT: keine K8-Tafel (Exit 2)",
+   "gpu": "nvidia/pascal",
+   "s": 0.2,
+   "eich": {
+    "s": 0.2,
+    "sek": 10,
+    "gesetzS": 45
+   },
+   "zeit": "2026-10-30T17:46:25.723Z",
+   "abdruck": "1846cba6daca",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "tore.K3#1",
+   "modus": "session"
+  },
+  "streaming.K4#2": {
+   "gruen": true,
+   "zahl": "Bauten 0 außerhalb der Sync-Stellen · 1 an ihnen {\"naht\":1} · Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Gang 3.0 s · 6 Bau-Klicks · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.68,
+   "gpu": "nvidia/pascal",
+   "s": 40.7,
+   "eich": {
+    "s": 40.7,
+    "sek": 10,
+    "gesetzS": 45
+   },
+   "zeit": "2026-10-30T17:50:14.085Z",
+   "abdruck": "50a2e978b7c2",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K1#1": {
+   "gruen": false,
+   "zahl": "Bild-p95 ≤ 33: wiese-ego-geht 25.1 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 58.4 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 64 s · [linse-gpu] nvidia/pascal — ROT 5: wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-third-geht Bild-p95 58.4 > 33 | stadt-ego-geht: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 58 s trug den Schritt nicht)",
+   "exit": 0,
+   "minuten": 1.07,
+   "grund": "ROT: Bild-p95 ≤ 33: wiese-ego-geht 25.1 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 58.4 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 64 s · [linse-gpu] nvidia/pascal — ROT 5: wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-third-geht Bild-p95 58.4 > 33 | stadt-ego-geht: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 58 s trug den Schritt nicht)",
+   "gpu": "nvidia/pascal",
+   "s": 64.2,
+   "eich": {
+    "s": 64.2,
+    "sek": 64,
+    "gesetzS": 90
+   },
+   "zeit": "2026-10-30T17:51:10.089Z",
+   "abdruck": "fa037a9df76c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K1#2": {
+   "gruen": false,
+   "zahl": "Bild-p95 ≤ 16.7: wiese-ego-steht 16.9 · wiese-third-steht ? · genesis-ego-steht 83.3 · genesis-third-steht 16.8 · wiese-ego-geht 25.1 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 58.4 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 64 s · [linse-gpu] nvidia/pascal — ROT 10: wiese-ego-steht Bild-p95 16.9 > 16.7 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Bild-p95 83.3 > 16.7 | genesis-third-steht Bild-p95 16.8 > 16.7 | wiese-ego-geht Bild-p95 25.1 > 16.7 | wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht)",
+   "exit": 0,
+   "minuten": 1.07,
+   "grund": "ROT: Bild-p95 ≤ 16.7: wiese-ego-steht 16.9 · wiese-third-steht ? · genesis-ego-steht 83.3 · genesis-third-steht 16.8 · wiese-ego-geht 25.1 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 58.4 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 64 s · [linse-gpu] nvidia/pascal — ROT 10: wiese-ego-steht Bild-p95 16.9 > 16.7 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Bild-p95 83.3 > 16.7 | genesis-third-steht Bild-p95 16.8 > 16.7 | wiese-ego-geht Bild-p95 25.1 > 16.7 | wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht)",
+   "gpu": "nvidia/pascal",
+   "s": 64.2,
+   "eich": {
+    "s": 64.2,
+    "sek": 64,
+    "gesetzS": 90
+   },
+   "zeit": "2026-10-30T17:51:10.089Z",
+   "abdruck": "8ad542eb2575",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K2#1": {
+   "gruen": false,
+   "zahl": "Belegung p95 ≤ 5.8: wiese-ego-steht 8.6 · wiese-third-steht ? · genesis-ego-steht 81.21 · genesis-third-steht 10.14 · Gang 64 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 8.6 > 5.8 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 81.21 > 5.8 | genesis-third-steht Belegung p95 10.14 > 5.8",
+   "exit": 0,
+   "minuten": 1.07,
+   "grund": "ROT: Belegung p95 ≤ 5.8: wiese-ego-steht 8.6 · wiese-third-steht ? · genesis-ego-steht 81.21 · genesis-third-steht 10.14 · Gang 64 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 8.6 > 5.8 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 81.21 > 5.8 | genesis-third-steht Belegung p95 10.14 > 5.8",
+   "gpu": "nvidia/pascal",
+   "s": 64.2,
+   "eich": {
+    "s": 64.2,
+    "sek": 64,
+    "gesetzS": 90
+   },
+   "zeit": "2026-10-30T17:51:10.089Z",
+   "abdruck": "689ec61e34ac",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K2#2": {
+   "gruen": false,
+   "zahl": "Belegung p95 ≤ 5.8: wiese-ego-steht 8.6 · wiese-third-steht ? · genesis-ego-steht 81.21 · genesis-third-steht 10.14 ‖ Belegung p95 ≤ 8: wiese-ego-geht 25.26 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 56.06 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 64 s · [linse-gpu] nvidia/pascal — ROT 10: wiese-ego-steht Belegung p95 8.6 > 5.8 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 81.21 > 5.8 | genesis-third-steht Belegung p95 10.14 > 5.8 | wiese-ego-geht Belegung p95 25.26 > 8 | wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht)",
+   "exit": 0,
+   "minuten": 1.07,
+   "grund": "ROT: Belegung p95 ≤ 5.8: wiese-ego-steht 8.6 · wiese-third-steht ? · genesis-ego-steht 81.21 · genesis-third-steht 10.14 ‖ Belegung p95 ≤ 8: wiese-ego-geht 25.26 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 56.06 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 64 s · [linse-gpu] nvidia/pascal — ROT 10: wiese-ego-steht Belegung p95 8.6 > 5.8 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 81.21 > 5.8 | genesis-third-steht Belegung p95 10.14 > 5.8 | wiese-ego-geht Belegung p95 25.26 > 8 | wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht)",
+   "gpu": "nvidia/pascal",
+   "s": 64.2,
+   "eich": {
+    "s": 64.2,
+    "sek": 64,
+    "gesetzS": 90
+   },
+   "zeit": "2026-10-30T17:51:10.089Z",
+   "abdruck": "a74185382eba",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#1": {
+   "gruen": false,
+   "zahl": "Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 98 · 286k · 112.2 MB · 15.02 ms | wiese-third ? | genesis-ego 132 · 356k · 131 MB · 15.42 ms | genesis-third 168 · 409k · 125.2 MB · 12.99 ms | dorf-ego ? | dorf-third ? · Gang 64 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: Band ROT baum k1: 12 befehle über der Ratsche 5 (Täter: f:tanne:L1, f:eiche:L1, f:tanne:L0) · baum k1: 11260 dreiecke über der Ratsche 2732 (Täter: f:tanne:L1, f:eiche:L, gpu-bank 15.02 ms > 12, nicht eingeschwungen | Band wiese-third: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band genesis-ego: Band ROT boden k1: 14321 dreiecke über der Ratsche 7845 (Täter: fern-ring, bodenSatz, farWater) · baum k1: 8 befehle über der Ratsche 0 (Täter: f:tanne:L1, f:fichte:L1, , gpu-bank 15.42 ms > 12, nicht eingeschwungen | Band genesis-third: Band ROT baum k1: 8 befehle über der Ratsche 3 (Täter: f:tanne:L1, f:fichte:L1, f:fichte:L0) · baum k1: 8826 dreiecke über der Ratsche 1400 (Täter: f:tanne:L1, f:fichte:, gpu-bank 12.99 ms > 12, nicht eingeschwungen | Band dorf-ego: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 58 s trug den Schritt nicht)",
+   "exit": 0,
+   "minuten": 1.07,
+   "grund": "ROT: Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 98 · 286k · 112.2 MB · 15.02 ms | wiese-third ? | genesis-ego 132 · 356k · 131 MB · 15.42 ms | genesis-third 168 · 409k · 125.2 MB · 12.99 ms | dorf-ego ? | dorf-third ? · Gang 64 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: Band ROT baum k1: 12 befehle über der Ratsche 5 (Täter: f:tanne:L1, f:eiche:L1, f:tanne:L0) · baum k1: 11260 dreiecke über der Ratsche 2732 (Täter: f:tanne:L1, f:eiche:L, gpu-bank 15.02 ms > 12, nicht eingeschwungen | Band wiese-third: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band genesis-ego: Band ROT boden k1: 14321 dreiecke über der Ratsche 7845 (Täter: fern-ring, bodenSatz, farWater) · baum k1: 8 befehle über der Ratsche 0 (Täter: f:tanne:L1, f:fichte:L1, , gpu-bank 15.42 ms > 12, nicht eingeschwungen | Band genesis-third: Band ROT baum k1: 8 befehle über der Ratsche 3 (Täter: f:tanne:L1, f:fichte:L1, f:fichte:L0) · baum k1: 8826 dreiecke über der Ratsche 1400 (Täter: f:tanne:L1, f:fichte:, gpu-bank 12.99 ms > 12, nicht eingeschwungen | Band dorf-ego: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 58 s trug den Schritt nicht)",
+   "gpu": "nvidia/pascal",
+   "s": 64.2,
+   "eich": {
+    "s": 64.2,
+    "sek": 64,
+    "gesetzS": 90
+   },
+   "zeit": "2026-10-30T17:51:10.089Z",
+   "abdruck": "463f09fafaf0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#2": {
+   "gruen": false,
+   "zahl": "Befehle p95 ≤ 208: wiese-ego-steht 44 · wiese-third-steht ? · genesis-ego-steht 79 · genesis-third-steht 94 · wiese-ego-geht 85 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 152 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiecke p95 ≤ 680000: wiese-ego-steht 268961 · wiese-third-steht ? · genesis-ego-steht 306436 · genesis-third-steht 351702 · wiese-ego-geht 333871 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 417274 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ VRAM MB ≤ 118: wiese-ego-steht 112.2 · wiese-third-steht ? · genesis-ego-steht 124.2 · genesis-third-steht 125.2 · wiese-ego-geht 111.9 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 127.8 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ GPU p95 ≤ 12: wiese-ego-steht NaN · wiese-third-steht ? · genesis-ego-steht 1.87 · genesis-third-steht NaN · wiese-ego-geht 2.21 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 2.03 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 98 · 286k · 112.2 MB · 15.02 ms | wiese-third ? | genesis-ego 132 · 356k · 131 MB · 15.42 ms | genesis-third 168 · 409k · 125.2 MB · 12.99 ms | dorf-ego ? | dorf-third ? · Gang 64 s · [linse-gpu] nvidia/pascal — ROT 31: wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 58 s trug den Schritt nicht) | stadt-ego-geht: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht)",
+   "exit": 0,
+   "minuten": 1.07,
+   "grund": "ROT: Befehle p95 ≤ 208: wiese-ego-steht 44 · wiese-third-steht ? · genesis-ego-steht 79 · genesis-third-steht 94 · wiese-ego-geht 85 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 152 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiecke p95 ≤ 680000: wiese-ego-steht 268961 · wiese-third-steht ? · genesis-ego-steht 306436 · genesis-third-steht 351702 · wiese-ego-geht 333871 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 417274 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ VRAM MB ≤ 118: wiese-ego-steht 112.2 · wiese-third-steht ? · genesis-ego-steht 124.2 · genesis-third-steht 125.2 · wiese-ego-geht 111.9 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 127.8 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ GPU p95 ≤ 12: wiese-ego-steht NaN · wiese-third-steht ? · genesis-ego-steht 1.87 · genesis-third-steht NaN · wiese-ego-geht 2.21 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 2.03 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 98 · 286k · 112.2 MB · 15.02 ms | wiese-third ? | genesis-ego 132 · 356k · 131 MB · 15.42 ms | genesis-third 168 · 409k · 125.2 MB · 12.99 ms | dorf-ego ? | dorf-third ? · Gang 64 s · [linse-gpu] nvidia/pascal — ROT 31: wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 58 s trug den Schritt nicht) | stadt-ego-geht: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht)",
+   "gpu": "nvidia/pascal",
+   "s": 64.2,
+   "eich": {
+    "s": 64.2,
+    "sek": 64,
+    "gesetzS": 90
+   },
+   "zeit": "2026-10-30T17:51:10.089Z",
+   "abdruck": "f97d4c4fd60b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "klang.K4#1": {
+   "gruen": true,
+   "zahl": "gras 5551 Hz (n 14) · quarz 3285 Hz (n 10) · glut 1825 Hz (n 12) — kleinster Abstand 1460 Hz",
+   "exit": 0,
+   "minuten": 0.63,
+   "gpu": "nvidia/pascal",
+   "s": 37.6,
+   "eich": {
+    "s": 37.6,
+    "sek": 10,
+    "gesetzS": 45
+   },
+   "zeit": "2026-10-30T17:52:29.969Z",
+   "abdruck": "cac836c98bb9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "klang.K4#2": {
+   "gruen": true,
+   "zahl": "✅ Schritte gras 5551 Hz (n 14) · quarz 3285 Hz (n 10) · glut 1825 Hz (n 12), kleinster Abstand 1460 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.51 dB je m/s, r 0.9958 (1 m 4.4 m/s -52.8 dB · 2 m 6.2 m/s -51.6 dB · 4 m 8.8 m/s -50.1 dB · 8 m 12.6 m/s -48.3 dB · 12 m 15.4 m/s -47.2 dB) · ✅ Doppler Steigung 1.0000 r 1.0000 (-9 m 13.3 m/s 1.0404/1.0404 · -4.5 m 9.6 m/s 1.0289/1.0289 · -2 m 5.0 m/s 1.0147/1.0147 · 2 m -5.2 m/s 0.9850/0.9850 · 4.5 m -7.3 m/s 0.9792/0.9792 · 9 m -6.5 m/s 0.9814/0.9814)",
+   "exit": 0,
+   "minuten": 0.63,
+   "gpu": "nvidia/pascal",
+   "s": 37.6,
+   "eich": {
+    "s": 37.6,
+    "sek": 10,
+    "gesetzS": 45
+   },
+   "zeit": "2026-10-30T17:52:29.969Z",
+   "abdruck": "c2e728ea3fe6",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "klang.K4#1",
+   "modus": "session"
+  },
+  "klang.K5#2": {
+   "gruen": false,
+   "zahl": "Klang-Takt p95 gehen 0.2 · fahrt 0.2 · nacht 0.2 ms · Aussetzer 0 in 21 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+   "exit": 0,
+   "minuten": 0.47,
+   "grund": "ROT: Klang-Takt p95 gehen 0.2 · fahrt 0.2 · nacht 0.2 ms · Aussetzer 0 in 21 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0)",
+   "gpu": "nvidia/pascal",
+   "s": 27.9,
+   "eich": {
+    "s": 27.9,
+    "sek": 10,
+    "gesetzS": 45
+   },
+   "zeit": "2026-10-30T17:53:22.402Z",
+   "abdruck": "f778b3a4af51",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "speicher.K4#2": {
+   "gruen": true,
+   "zahl": "bild-diff 0.40 % (Soll ≤ 1; Rauschen ohne Neuladen 0.20 %) · Pflicht vor {\"bau\":true,\"grube\":true,\"wasser\":2} · nach {\"bau\":true,\"grube\":true,\"wasser\":2} · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.68,
+   "gpu": "nvidia/pascal",
+   "s": 40.7,
+   "eich": {
+    "s": 40.7,
+    "sek": 15,
+    "gesetzS": 45
+   },
+   "zeit": "2026-10-30T17:56:18.242Z",
+   "abdruck": "ac33134651c2",
+   "port": 7804,
+   "bahn": "sitzung",
    "modus": "session"
   }
  },
@@ -1678,67 +1965,21 @@
    "zwilling": "siedlung.K2#1",
    "modus": "session"
   },
-  "halten.K1#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.736Z",
-   "abdruck": "1828e41c4182",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "fahrzeug.K5#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.741Z",
-   "abdruck": "1a113efa7936",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "tore.K3#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.748Z",
-   "abdruck": "7c1efdd2d08b",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "tore.K3#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.748Z",
-   "abdruck": "1846cba6daca",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "tore.K3#1",
-   "modus": "session"
-  },
   "fahrzeug.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.751Z",
+   "zahl": "EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 1.51,
+   "grund": "EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 90.4,
+   "eich": {
+    "s": 90.4,
+    "sek": 10,
+    "gesetzS": 45,
+    "gerissen": true
+   },
+   "zeit": "2026-10-30T17:46:40.818Z",
    "abdruck": "cd6615e5a9f1",
    "port": 7804,
    "bahn": "sitzung",
@@ -1746,161 +1987,40 @@
   },
   "fahrzeug.K2#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.756Z",
+   "zahl": "EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 1.5,
+   "grund": "EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 90.3,
+   "eich": {
+    "s": 90.3,
+    "sek": 55,
+    "gesetzS": 90,
+    "gerissen": true
+   },
+   "zeit": "2026-10-30T17:48:27.893Z",
    "abdruck": "1c7084fdd290",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "streaming.K4#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.759Z",
-   "abdruck": "50a2e978b7c2",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "profiband.K1#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.765Z",
-   "abdruck": "fa037a9df76c",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "profiband.K1#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.765Z",
-   "abdruck": "8ad542eb2575",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "profiband.K1#1",
-   "modus": "session"
-  },
-  "profiband.K2#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.765Z",
-   "abdruck": "689ec61e34ac",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "profiband.K1#1",
-   "modus": "session"
-  },
-  "profiband.K2#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.765Z",
-   "abdruck": "a74185382eba",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "profiband.K1#1",
-   "modus": "session"
-  },
-  "profiband.K3#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.765Z",
-   "abdruck": "463f09fafaf0",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "profiband.K1#1",
-   "modus": "session"
-  },
-  "profiband.K3#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.765Z",
-   "abdruck": "f97d4c4fd60b",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "profiband.K1#1",
-   "modus": "session"
-  },
-  "klang.K4#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.774Z",
-   "abdruck": "cac836c98bb9",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "klang.K4#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.774Z",
-   "abdruck": "c2e728ea3fe6",
-   "port": 7804,
-   "bahn": "sitzung",
-   "zwilling": "klang.K4#1",
-   "modus": "session"
-  },
-  "klang.K5#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.780Z",
-   "abdruck": "f778b3a4af51",
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
   },
   "speicher.K1#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "EICH: 57.9 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: Sonde blind: in keinem Zyklus entstand ein Edit)",
+   "exit": 0,
+   "minuten": 0.97,
+   "grund": "EICH: 57.9 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: Sonde blind: in keinem Zyklus entstand ein Edit)",
+   "gpu": "nvidia/pascal",
+   "s": 57.9,
    "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.783Z",
+   "eich": {
+    "s": 57.9,
+    "sek": 33,
+    "gesetzS": 45,
+    "urteil": "ROT"
+   },
+   "zeit": "2026-10-30T17:54:05.804Z",
    "abdruck": "c8362510f326",
    "port": 7804,
    "bahn": "sitzung",
@@ -1908,12 +2028,20 @@
   },
   "speicher.K1#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "EICH: 57.9 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: Sonde blind: in keinem Zyklus entstand ein Edit)",
+   "exit": 0,
+   "minuten": 0.97,
+   "grund": "EICH: 57.9 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: Sonde blind: in keinem Zyklus entstand ein Edit)",
+   "gpu": "nvidia/pascal",
+   "s": 57.9,
    "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.783Z",
+   "eich": {
+    "s": 57.9,
+    "sek": 33,
+    "gesetzS": 45,
+    "urteil": "ROT"
+   },
+   "zeit": "2026-10-30T17:54:05.804Z",
    "abdruck": "55171d38285a",
    "port": 7804,
    "bahn": "sitzung",
@@ -1922,12 +2050,20 @@
   },
   "speicher.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "EICH: 50.4 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (GRÜN: je Speicher-Bild in der frischen Welt p50 0.1 / p95 0.2 / max 0.3 ms (Soll p95 ≤ 0,3; 20 Stände, 245 Speicher-Bilder))",
+   "exit": 0,
+   "minuten": 0.84,
+   "gpu": "nvidia/pascal",
+   "s": 50.4,
    "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.788Z",
+   "grund": "EICH: 50.4 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (GRÜN: je Speicher-Bild in der frischen Welt p50 0.1 / p95 0.2 / max 0.3 ms (Soll p95 ≤ 0,3; 20 Stände, 245 Speicher-Bilder))",
+   "eich": {
+    "s": 50.4,
+    "sek": 33,
+    "gesetzS": 45,
+    "urteil": "GRÜN"
+   },
+   "zeit": "2026-10-30T17:55:11.983Z",
    "abdruck": "10d674852a56",
    "port": 7804,
    "bahn": "sitzung",
@@ -1935,29 +2071,24 @@
   },
   "speicher.K2#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "EICH: 50.4 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: Speicher-Bild frisch p50 0.1 / p95 0.2 / max 0.3 ms (245 Bilder), 0 von 75 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0 / p95 0.1 / max 0.4 ms (540 Bilder), 0 von 23 Bildern > 16,7 ms du)",
+   "exit": 0,
+   "minuten": 0.84,
+   "grund": "EICH: 50.4 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: Speicher-Bild frisch p50 0.1 / p95 0.2 / max 0.3 ms (245 Bilder), 0 von 75 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0 / p95 0.1 / max 0.4 ms (540 Bilder), 0 von 23 Bildern > 16,7 ms du)",
+   "gpu": "nvidia/pascal",
+   "s": 50.4,
    "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.788Z",
+   "eich": {
+    "s": 50.4,
+    "sek": 33,
+    "gesetzS": 45,
+    "urteil": "ROT"
+   },
+   "zeit": "2026-10-30T17:55:11.983Z",
    "abdruck": "c75f9380c676",
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "speicher.K2#1",
-   "modus": "session"
-  },
-  "speicher.K4#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-10-30T17:19:25.793Z",
-   "abdruck": "ac33134651c2",
-   "port": 7804,
-   "bahn": "sitzung",
    "modus": "session"
   },
   "pipeline.K4#2": {
@@ -2034,68 +2165,182 @@
   }
  },
  "sitzung": {
-  "start": "2026-10-30T17:39:18.637Z",
+  "start": "2026-10-30T17:45:00.418Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.3,
+  "bootS": 5.4,
   "grundstellungS": [
-   2.8,
-   2,
-   2.3
+   2.4,
+   2.1,
+   2.3,
+   3,
+   2.3,
+   2.1,
+   2.4,
+   2.1,
+   2.1,
+   0.1,
+   2.5
   ],
-  "proben": 4,
+  "proben": 12,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "pipeline.K4#2",
-    "s": 20.6,
-    "takte": 583,
+    "vor": "halten.K1#2",
+    "s": 20.3,
+    "takte": 580,
     "chunks": 81,
     "nach": null
    },
    {
     "ort": null,
-    "vor": "siedlung.K5#1",
-    "s": 14.9,
+    "vor": "fahrzeug.K5#1",
+    "s": 12.5,
     "takte": 582,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": null,
-    "vor": "leib.K2#1",
-    "s": 14.2,
+    "vor": "tore.K3#1",
+    "s": 12.7,
+    "takte": 583,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "fahrzeug.K2#1",
+    "s": 12.6,
+    "takte": 583,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "fahrzeug.K2#2",
+    "s": 13.3,
     "takte": 582,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": null,
-    "vor": "leib.K4#1",
-    "s": 13.9,
+    "vor": "streaming.K4#2",
+    "s": 13.6,
+    "takte": 584,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "profiband.K1#1",
+    "s": 13.2,
+    "takte": 583,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "klang.K4#1",
+    "s": 13.2,
+    "takte": 583,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "klang.K5#2",
+    "s": 12.7,
+    "takte": 583,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "speicher.K1#1",
+    "s": 13.3,
+    "takte": 582,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "speicher.K2#1",
+    "s": 8.1,
+    "takte": 539,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "speicher.K4#2",
+    "s": 13.3,
     "takte": 582,
     "chunks": 81,
     "nach": "der Tür"
    }
   ],
-  "wegeTueren": [],
-  "ciBlicke": 5,
+  "wegeTueren": [
+   {
+    "vor": "fahrzeug.K5#1",
+    "wege": "wege +13 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
+    "s": 2.4
+   },
+   {
+    "vor": "tore.K3#1",
+    "wege": "wege +52 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-145.8,-1096.2,-143.7,-1094.1/1] …",
+    "s": 2.1
+   },
+   {
+    "vor": "fahrzeug.K2#1",
+    "wege": "wege +12 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
+    "s": 2.3
+   },
+   {
+    "vor": "klang.K4#1",
+    "wege": "wege +60 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-145.8,-1096.2,-143.7,-1094.1/1] …",
+    "s": 2.4
+   },
+   {
+    "vor": "klang.K5#2",
+    "wege": "wege +64 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-137.1,-1156.6,-135,-1154.6/1] …",
+    "s": 2.1
+   },
+   {
+    "vor": "speicher.K1#1",
+    "wege": "wege +58 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-145.8,-1096.2,-143.7,-1094.1/1] …",
+    "s": 2.1
+   },
+   {
+    "vor": "speicher.K4#2",
+    "wege": "wege +13 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
+    "s": 2.5
+   }
+  ],
+  "eich": {
+   "deckelS": 90,
+   "gesetzS": 45,
+   "ausnahmeS": 90,
+   "fahrtMaxS": 1800
+  },
+  "ciBlicke": 13,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 406,
-   "frameP95": 516.7,
-   "taktP95": 225,
-   "vramMax": 194,
-   "seiten": 6,
+   "bilder": 3521,
+   "frameP95": 83.3,
+   "taktP95": 74.3,
+   "vramMax": 131.7,
+   "seiten": 17,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "zapfen": 150,
-   "luecken": 4,
-   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+   "zapfen": 701,
+   "luecken": 9,
+   "letzteLuecke": "anazhRealm is not defined"
   },
-  "fahrtS": 178.1,
-  "minuten": 3.03
+  "fahrtS": 717.7,
+  "minuten": 12.03
  }
 }

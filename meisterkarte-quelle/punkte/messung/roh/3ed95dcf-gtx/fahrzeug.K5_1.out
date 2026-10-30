@@ -1,0 +1,163 @@
+$ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
+    const fs = require("fs");
+    const path = require("path");
+    const http = require("http");
+    const W = Number(process.env.WERKBANK_PORT);
+    const tor = { W, aus: process.argv[1], arg: process.argv.slice(2), browser: null, page: null };
+    // EIN Ruf (POST JSON, mit Frist); eine Antwort { fehler: "…" } der Werkbank wirft beim Namen
+    tor.ruf = (weg, nutzlast, ms = 120000) =>
+        new Promise((ok, nein) => {
+            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
+                let d = "";
+                a.on("data", (c) => (d += c));
+                a.on("end", () => {
+                    let j = null;
+                    try {
+                        j = JSON.parse(d);
+                    } catch (_e) {
+                        return nein(new Error(weg + ": keine JSON-Antwort: " + d.slice(0, 200)));
+                    }
+                    if (j && typeof j.fehler === "string") return nein(new Error(weg + ": " + j.fehler.slice(0, 300)));
+                    ok(j);
+                });
+            });
+            q.on("error", nein);
+            q.setTimeout(ms, () => q.destroy(new Error(weg + ": Frist " + ms + " ms")));
+            q.end(JSON.stringify(nutzlast || {}));
+        });
+    // die Karte der Welt: die Adapter-Zeile im Log ihrer Werkbank (der Zeuge der Wand GPU steht schon in der Sitzung)
+    tor.karte = () => {
+        const f = process.env.PUNKTE_SITZUNG_LOG;
+        const t = f && fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "";
+        const z = (/^\[linse-gpu\] .*$/m.exec(t) || [null])[0];
+        console.log(z || "KEINE KARTE: das Log der Sitzung nennt keinen [linse-gpu]");
+        return z;
+    };
+    tor.seite = async () => {
+        if (tor.page) return tor.page;
+        const s = await tor.ruf("/status", {}, 30000);
+        const profil = s && s.boot && s.boot.profil;
+        if (!profil) throw new Error("/status nennt kein Profil der Werkbank");
+        const [port, weg] = fs.readFileSync(path.join(profil, "DevToolsActivePort"), "utf8").split(/\r?\n/);
+        const puppeteer = require(path.resolve("node_modules/puppeteer"));
+        tor.browser = await puppeteer.connect({
+            browserWSEndpoint: "ws://127.0.0.1:" + port + weg,
+            defaultViewport: null,
+            protocolTimeout: 900000,
+        });
+        for (const p of await tor.browser.pages())
+            if (await p.evaluate(() => !!(window.anazhRealm && window.anazhRealm.state)).catch(() => false)) return (tor.page = p);
+        throw new Error("im Browser der Werkbank steht keine Seite mit der Welt");
+    };
+    const baum = (datei) => {
+        const text = fs.readFileSync(datei, "utf8");
+        const acorn = require(path.resolve("node_modules/acorn"));
+        const o = { ecmaVersion: "latest", sourceType: "script", allowHashBang: true, allowReturnOutsideFunction: true };
+        return { text, ast: acorn.parse(text, o) };
+    };
+    const ankern = (src, wo, anker) => {
+        for (const [a, b] of anker) {
+            const n = src.split(a).length - 1;
+            if (n !== 1) throw new Error("ANKER " + (n ? n + "-mal" : "fehlt") + " in " + wo + ": " + a.slice(0, 90));
+            src = src.replace(a, () => b);
+        }
+        return src;
+    };
+    // die Deklaration `name` auf oberster Ebene (eine Funktion: ihr Text; const: ihr Wert), jeder Anker [alt, neu] genau einmal ersetzt
+    tor.quelle = (datei, name, anker = []) => {
+        const { text, ast } = baum(datei);
+        for (const n of ast.body) {
+            if (n.type === "FunctionDeclaration" && n.id && n.id.name === name) return ankern(text.slice(n.start, n.end), datei + " " + name, anker);
+            if (n.type === "VariableDeclaration")
+                for (const d of n.declarations)
+                    if (d.id.type === "Identifier" && d.id.name === name && d.init) return ankern(text.slice(d.init.start, d.init.end), datei + " " + name, anker);
+        }
+        throw new Error(datei + ": keine Deklaration " + name + " auf oberster Ebene");
+    };
+    // die Deklarationen `namen` (Anweisungen der obersten Ebene) in der Reihe der Quelle — eine rechnet mit der vorigen
+    tor.dekl = (datei, namen) => {
+        const { text, ast } = baum(datei);
+        const da = new Set();
+        const teile = [];
+        for (const n of ast.body) {
+            const wer = n.type === "FunctionDeclaration" && n.id ? [n.id.name] : n.type === "VariableDeclaration" ? n.declarations.map((d) => d.id.name) : [];
+            if (wer.some((w) => namen.includes(w))) (teile.push(text.slice(n.start, n.end)), wer.forEach((w) => da.add(w)));
+        }
+        const fehlt = namen.filter((x) => !da.has(x));
+        if (fehlt.length) throw new Error(datei + ": keine Deklaration " + fehlt.join(", "));
+        return teile.join("\n");
+    };
+    tor.ende = async () => {
+        if (tor.browser) await tor.browser.disconnect().catch(() => {});
+    };
+    return tor;
+})();
+(async function fahrRueck(tor) {
+    const fs = require("fs");
+    const path = require("path");
+    const L = "scripts/diag-fahr-leben.cjs";
+    const P = "scripts/lib/fahr-proben.cjs";
+    const KZ = "scripts/diag-klang-zensus.cjs";
+    console.log("@@PUNKTE@@ RM");
+    if (!/expected\.nurRueck/.test(fs.readFileSync(P, "utf8"))) {
+        console.log("keine Zeile RUECKMELDUNG: probeLeben kennt nurRueck nicht (gate:fahr-leben --rueckmeldung fehlt am Stand)");
+        console.log("@@PUNKTE@@ EXIT 1");
+        process.exitCode = 1;
+        return;
+    }
+    const check = (name, ok, detail) => {
+        const z = typeof detail === "object" && detail ? JSON.stringify(detail) : detail;
+        console.log(`  ${ok ? "✅" : "❌"} ${name}${z ? " — " + z : ""}`);
+    };
+    const d = new Function("check", tor.dekl(L, ["RUECK", "taktHz", "rueckMass", "rueckVerdict", "rueckBericht"]) + "\nreturn { RUECK, taktHz, rueckBericht };")(check);
+    const koerperUrteil = new Function(tor.dekl(KZ, ["koerperUrteil"]) + "\nreturn koerperUrteil;")();
+    const koerper = tor.quelle(KZ, "koerperSeite", [
+        ['if (!mut || mut === "landung") {', 'if (mut === "landung") {'],
+        ['if (!mut || mut === "doppler") {', 'if (mut === "doppler") {'],
+    ]);
+    const werkzeug = tor.quelle(KZ, "werkzeug");
+    const F = require(path.resolve(P));
+    const mo = require(path.resolve("scripts/lib/band-urteil.cjs")).ladeSpec("wiese").ort.spieler;
+    const MESS = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+    const page = await tor.seite();
+    tor.karte();
+    await page.evaluate(require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL);
+    await page.evaluate(`window.__tempoSpion = ${F.tempoSpion}; window.__taktHz = ${d.taktHz}; window.__ruckJeBild = ${F.ruckJeBild};`);
+    let o = null;
+    const t0 = Date.now();
+    try {
+        o = await page.evaluate(F.probeLeben, { messort: mo, nurRueck: true, rueck: d.RUECK });
+    } finally {
+        await page.evaluate(() => delete navigator.getGamepads);
+    }
+    d.rueckBericht(o.rueck || o);
+    console.log("  (RM " + ((Date.now() - t0) / 1000).toFixed(1) + " s in der Welt der Sitzung)");
+    console.log("@@PUNKTE@@ EXIT 0");
+    console.log("@@PUNKTE@@ KLANG");
+    const t1 = Date.now();
+    await page.evaluate("window.__klangW = (" + werkzeug + ")();");
+    await page.evaluate(() => (window.anazhRealm.state.symphony || window.anazhRealm.initSymphony(), 1));
+    const Fm = await page.evaluate("(" + koerper + ")(" + JSON.stringify(MESS) + ", null)");
+    const fu = koerperUrteil(Fm);
+    console.log(`── (F) DER KÖRPER KLINGT: ${fu.zahl}`);
+    for (const x of fu.rot) console.log("  ❌ " + x);
+    console.log("  (Motor " + ((Date.now() - t1) / 1000).toFixed(1) + " s, " + Fm.motor.length + " Stufen; Landung und Doppler misst klang.K4)");
+    console.log("@@PUNKTE@@ EXIT " + (fu.rot.length ? 1 : 0));
+})(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\3ed95dcf-gtx\fahrzeug.K5_1.json
+@@PUNKTE@@ RM
+[linse-gpu] nvidia/pascal
+=== RM — DIE RÜCKMELDUNG (fahrzeug.K5) ===
+  ✅ RM1 die Stimme der Fahrt klingt im Sattel, danach still (die Tonhöhe: gate:klang-zensus F) — gekoppelt · Mutante: —
+  ✅ RM2 die Federung im Bild: Drift-Wank, Boden-Stoß — gekoppelt · Mutante: Boden-Stoß ohne Federweg (48 Stöße, Antwort 0.896 mm)
+  ✅ RM3 das Rumble: Schlupf, Boden-Stoß — gekoppelt · Mutante: Schlupf ohne Rumble (Drift 0, Glatt 0) · Boden-Stoß ohne Summen (0 auf 48 Stößen)
+RUECKMELDUNG {"echt":{"glatt":{"klingt":1,"still":true,"wankMm":0.542,"stoesse":8,"antwortMm":7.239,"stark":0.004,"summen":0.594},"drift":{"klingt":1,"still":true,"wankMm":10.263,"stoesse":19,"antwortMm":16.901,"stark":1,"summen":0.515},"hang":{"klingt":1,"still":true,"wankMm":1.481,"stoesse":35,"antwortMm":10.022,"stark":0.013,"summen":0.539}},"mutiert":{"glatt":{"klingt":1,"still":true,"wankMm":0.541,"stoesse":8,"antwortMm":2.768,"stark":0,"summen":0.126},"drift":{"klingt":1,"still":true,"wankMm":8.611,"stoesse":10,"antwortMm":10.232,"stark":0,"summen":0.048},"hang":{"klingt":1,"still":true,"wankMm":0.06,"stoesse":40,"antwortMm":0.896,"stark":0,"summen":0}}}
+  (RM 10.5 s in der Welt der Sitzung)
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ KLANG
+── (F) DER KÖRPER KLINGT: Motor 66.66996135672292 Hz je 1000 Upm · Landung NaN dB je m/s () · Doppler 
+  (Motor 12.1 s, 20 Stufen; Landung und Doppler misst klang.K4)
+@@PUNKTE@@ EXIT 0
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
