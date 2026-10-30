@@ -1080,6 +1080,8 @@ function stromSeite(r, a) {
         buehne: lies(() => st.creatures.filter((c) => c.userData && c.userData.buehne).length),
         stempel: lies(() => (window.__stempelWache ? window.__stempelWache().ueberlauf : null)),
         uhr: Number.isFinite(st.timeOfDay) ? +st.timeOfDay.toFixed(3) : null, chunks: st.voxelChunks ? st.voxelChunks.size : null,
+        // der Ort des Spielers und der gebaute Ring je Zapfen (30.10.: wo jede Probe stand und wie lange ihr Ring brauchte — auch ohne Bild)
+        ort: lies(() => [+st.playerMesh.position.x.toFixed(1), +st.playerMesh.position.z.toFixed(1)]), ring: lies(() => r._builtRingRadius()),
     };
 }
 const stromCode = (a) => "return (" + stromSeite.toString() + ")(r, " + JSON.stringify(a || {}) + ");";
@@ -1156,11 +1158,29 @@ function stromKopf(datei, zaehler) {
 // in EINER Seite ohne Neuladen; je in der Gruppe die Reihe der Liste
 const stellungVon = (g) => (g[0].probe && g[0].probe.stellung) || null;
 const mutiertVon = (g) => g.some((st) => !!(st.probe && st.probe.mutiert));
+// DER ORT EINER PROBE (30.10., Eichlauf a53152c2: 14 von 19 Proben fielen am ×3-Deckel, sie warteten im eigenen `/umstellen` auf den
+// Ring ihres Messorts — nach jeder Tür kalt): der erste Messort, an den ihr Befehl umstellt (`umstellen --ort X` der Werkbank, `/umstellen
+// { ort: "X" }` des Tors), aus dem Befehl selbst gelesen — nie eine zweite Liste; null: sie nennt keinen (Koordinaten, ein Ort aus einer
+// Variablen). In der Gruppe stehen die Proben eines Orts beieinander (die Reihe ihres ersten Auftritts), die ohne Ort zuletzt
+const ORT_MUSTER = [/umstellen\\?",\\?"--ort\\?",\\?"([a-z0-9_-]+)/, /umstellen\\?", \{ ort: \\?"([a-z0-9_-]+)/, /umstellen --ort ([a-z0-9_-]+)/];
+const probeOrt = (st) => {
+    const text = [].concat((st.probe && st.probe.befehl) || []).map(String).join(" ");
+    for (const re of ORT_MUSTER) {
+        const m = re.exec(text);
+        if (m) return m[1];
+    }
+    return null;
+};
+const nachOrt = (gs) => {
+    const orte = [...new Set(gs.map((g) => probeOrt(g[0])).filter(Boolean))];
+    const rang = (g) => (probeOrt(g[0]) ? orte.indexOf(probeOrt(g[0])) : orte.length);
+    return gs.map((g, i) => [g, i]).sort((a, b) => rang(a[0]) - rang(b[0]) || a[1] - b[1]).map(([g]) => g);
+};
 const sitzungsReihe = (gruppen) => [
     ...gruppen.filter((g) => stellungVon(g) === "anfang"),
-    ...gruppen.filter((g) => !stellungVon(g) && !mutiertVon(g)),
+    ...nachOrt(gruppen.filter((g) => !stellungVon(g) && !mutiertVon(g))),
     ...gruppen.filter((g) => stellungVon(g) === "ende"),
-    ...gruppen.filter((g) => !stellungVon(g) && mutiertVon(g)),
+    ...nachOrt(gruppen.filter((g) => !stellungVon(g) && mutiertVon(g))),
 ];
 // eine Probe, die abbrach (Deckel, Absturz, Start), ließ die Welt vielleicht mitten im Werk — danach die Grundstellung
 const brachAb = (es) => es.some((e) => /^(Deckel |Absturz|Start:)/.test(e.grund || ""));
@@ -1199,6 +1219,8 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     let fahrt0 = Date.now() - (s.bootS || 0) * 1000;
     const restS = () => fahrtMaxS - (Date.now() - fahrt0) / 1000;
     kopf.offen = [];
+    kopf.orte = [];
+    let aktOrt = null, ortNach = null;
     // DER ZAPF-TAKT: nie zwei Zapfen der Sitzung zugleich; während der Grundstellung ruht er
     const W = ctx.port + 20000, zz = { zapfen: 0, luecken: 0, letzteLuecke: null };
     let aktuell = "(sitzung)", laeuft = null, ruht = false;
@@ -1283,6 +1305,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             ruht = false;
             if (gs.ok) {
                 kopf.grundstellungS.push(gs.s);
+                (aktOrt = null), (ortNach = gs.tuer ? "der Tür" : "der Grundstellung"); // der Grund stellt den Spieler an seinen Ort zurück
                 console.log("  SITZUNG Grundstellung vor " + schluessel(g[0]) + ": " + gs.s + " s (im Spiel " + gs.ms + " ms" + (gs.tuer ? ", durch die Tür" : "") + ")");
             } else {
                 tot = gs.grund;
@@ -1301,6 +1324,21 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         if (tot) {
             await melde(g, g.map(() => ohne("die Welt der Sitzung trägt nicht mehr (Grundstellung: " + tot + ") — ungemessen", true)), null, new Date().toISOString());
             continue;
+        }
+        // DER ORT (30.10.): wechselt die Probe den Messort, stellt die Sitzung EINMAL um — das Warten auf den Ring dort liegt vor dem
+        // Deckel der Probe (er misst ihre Arbeit, nie den Ring) und steht je Ort im Kopf (`orte`: s, Takte, Chunks — Pflicht B, die
+        // Ankunft); die Proben des Orts danach finden ihn gebaut. Scheitert das Umstellen, stellt die Probe selbst um (beim Namen im Log)
+        const ort = probeOrt(g[0]);
+        if (ort && ort !== aktOrt) {
+            const tu = Date.now();
+            const u = await rufFrist(W, "/umstellen", { ort, sicht: "ego" }, 300000).catch((e) => ({ fehler: String((e && e.message) || e) }));
+            const us = +((Date.now() - tu) / 1000).toFixed(1);
+            if (u && !u.fehler) {
+                aktOrt = ort;
+                kopf.orte.push({ ort, vor: schluessel(g[0]), s: us, takte: u.takte, chunks: u.chunks, nach: ortNach });
+                console.log("  SITZUNG Ort " + ort + " vor " + schluessel(g[0]) + ": " + us + " s (" + u.takte + " Takte, " + u.chunks + " Chunks" + (ortNach ? ", nach " + ortNach : "") + ")");
+            } else console.log("  SITZUNG Ort " + ort + " vor " + schluessel(g[0]) + " steht nicht nach " + us + " s: " + JSON.stringify(u).slice(0, 200));
+            ortNach = null;
         }
         const name = schluessel(g[0]).replace("#", "_");
         const aus = { aus: path.join(ctx.rohDir, name + ".json"), roh: path.join(ctx.rohDir, name + ".out") };
@@ -2696,6 +2734,7 @@ async function selbsttest() {
             '    if (b.code === "loop aus") { seite.R.setAnimationLoop(null); return s({ ergebnis: 0 }); }',
             '    if (b.code === "tod") { n("tod"); return r.end(JSON.stringify({ ergebnis: "tod" }), () => process.exit(3)); } return s({ ergebnis: "warm" }); }',
             '  if (q.url === "/reload") { n("reload"); neu(); return s({ neu: true, ms: 1 }); } if (q.url === "/fenster") return s({ fenster: [1920, 1080] });',
+            '  if (q.url === "/umstellen") { n("umstellen:" + b.ort); return s({ takte: 3, steht: true, chunks: 9 }); }',
             '  if (q.url === "/stop") { n("stop"); s({ stop: true }); return setTimeout(() => process.exit(0), 50); } s({ fehler: "unbekannt" }); }); })',
             '  .listen(Number(W), "127.0.0.1", () => { console.log("[linse-gpu] amd/stub-sitzung"); console.log("WERKBANK bereit: Steuer 127.0.0.1:" + W); });',
         ].join("\n"));
@@ -2770,6 +2809,17 @@ async function selbsttest() {
         const r10 = await lauf([[S("a.K1", 1, { befehl: ["node", "-e", "setTimeout(() => {}, 60000)"], sek: 2, stellung: "anfang" }, lies)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "gut", null);
         pruef("SITZUNG DER ABBRUCH VON ANFANG: die Seite neu, ehe der Grund genommen wird (nie ein Grund aus einer Seite, in der eine gefallene Probe arbeitet)",
             r10.z.join(",") === "start,reload,nimm,grund,stop" && r10.es["a.K1#1"].ungemessen === true && r10.es["b.K1#1"].gruen, JSON.stringify([r10.z, r10.es]));
+        // DER ORT: die Proben eines Messorts stehen beieinander (die Reihe ihres ersten Auftritts, ohne Ort zuletzt), die Sitzung stellt je
+        // Ort EINMAL um (vor dem Deckel der Probe, je Ort im Kopf), nach einer Grundstellung neu (der Grund stellt den Spieler zurück)
+        const mitOrt = (o) => [...ruf, "return 1", "umstellen --ort " + o];
+        const r11 = await lauf([[S("a.K1", 1, { befehl: mitOrt("wiese"), sek: 30 }, warm)], [S("b.K1", 1, { befehl: mitOrt("genesis"), sek: 30 }, warm)],
+            [S("c.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)], [S("d.K1", 1, { befehl: mitOrt("wiese"), sek: 30 }, warm)],
+            [S("m.K1", 1, { befehl: mitOrt("wiese"), sek: 30, mutiert: true }, warm)], [S("n.K1", 1, { befehl: mitOrt("wiese"), sek: 30, mutiert: true }, warm)]], "gut", null);
+        pruef("SITZUNG DER ORT: die Proben eines Messorts beieinander, EIN Umstellen je Ort vor dem Deckel der Probe, nach der Grundstellung neu, je Ort im Kopf",
+            r11.reihe.join(" ") === "a.K1#1 d.K1#1 b.K1#1 c.K1#1 m.K1#1 n.K1#1" &&
+            r11.z.join(",") === "start,nimm,umstellen:wiese,umstellen:genesis,umstellen:wiese,grund,umstellen:wiese,stop" &&
+            r11.kopf.orte.length === 4 && r11.kopf.orte[3].nach === "der Grundstellung" && Object.values(r11.es).every((e) => e.gruen),
+            JSON.stringify([r11.reihe, r11.z, r11.kopf.orte]));
         // DIE GRUNDSTELLUNG, DIE NICHT TRÄGT: weicht nach dem Rückspielen eine Größe vom Grund ab, sind die übrigen Proben UNGEMESSEN beim
         // Namen der Größe (nie ROT, nie ein Neuladen)
         const r7 = await lauf([[S("m.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)]], "anders", null);
