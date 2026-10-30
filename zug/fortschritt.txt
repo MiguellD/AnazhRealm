@@ -1009,3 +1009,4 @@
 2026-10-30 16:21:44 z83-bisekt1 START 1 Zellen
 2026-10-30 16:35:45 z83-bisekt1 w-ego VERLÄNGERN 13.9 · 1/1 (2+2)
 2026-10-30 16:49:48 z83-bisekt1 w-ego(4+4) LANGSAMER 13.9 · verlängert (4+4)
+2026-10-30 16:50:12 eich1-gtx START 1 Stationen
