@@ -2566,9 +2566,10 @@ async function kreaturProben(r, T, opts) {
         // als die Feld-Grenze `_bewohnerFeldGrenze().ein`: dort trägt ihn der Satz) und davon mit laufendem Gang (die Phase
         // lief in den letzten 10 Takten über 0,2 rad) — gezählt unter der Decke des Täters
         // DIE MENGE (mensch.K4 Staffel 2) im selben Messer, roh — das Urteil fällt in der Station: die 50 Nächsten draußen, je
-        // Bewohner [Same, Typ, Höhe, Breite, Tiefe, nah] (die Matrix seines Satzes), je Typ seine Dials, Farben, die Maße seiner
-        // Vorlage in m (in der Ruhe × die Skala seines Rigs) und die Dreiecke seiner Senken (leib, wurf), der Schirm (Bildpunkte
-        // je m am Rand der Nah-Wahl), der Takt `_tickBewohner` (Mittel, p95 in ms)
+        // Bewohner [Same, Typ, Höhe, Breite, Tiefe, nah, Farben] (die Matrix seines Satzes und seine eigenen Farben — Haut, Haar,
+        // Tracht: die Palette, die Leib, Satz und Feld zeigen), je Typ seine Dials (die Form: Geschlecht, Bau, Schnitt, Alter), die
+        // Maße seiner Vorlage in m (in der Ruhe × die Skala seines Rigs) und die Dreiecke seiner Senken (leib, wurf), der Schirm
+        // (Bildpunkte je m am Rand der Nah-Wahl), der Takt `_tickBewohner` (Mittel, p95 in ms)
         const ringMesser = (liste, ph = new Map(), k = 0, ms = []) => ({
             messen: (dt, t) => (ms.push(t), ++k === 591 && liste.forEach((b) => ph.set(b, b.walkPhase))),
             zahl: (N = r._bewohnerFeldGrenze().ein) => {
@@ -2581,11 +2582,16 @@ async function kreaturProben(r, T, opts) {
                 const f = M[0].leib.userData._tierBaum.wrap.scale.x;
                 ms.sort((a, b) => a - b);
                 return {
-                    je: M.map((b) => [b.seed, b.gestalt, b.groesse, b.breite, b.tiefe, !!b.nah]),
+                    je: M.map((b) => [b.seed, b.gestalt, b.groesse, b.breite, b.tiefe, !!b.nah, b.farben]),
                     typ: S.gestalten.map((G) => ({
                         dials: G.dK,
                         mass: new T.Box3().setFromObject(r._ofenMenschTemplate(G.dK, G.f.skin, G.f.hair, 2).root).getSize(new T.Vector3()).multiplyScalar(f).toArray(), // prettier-ignore
-                        dreiecke: ["leib", "wurf"].map((k) => G.satz[k].geometry.index.count / 3),
+                        // die Dreiecke der Senken; eine Gestalt ohne Satz (kein Kopf trug sie bis jetzt) zählt die ihrer Stufen
+                        dreiecke: [2, 3].map((lod, i) => {
+                            let n = 0;
+                            (G.satz ? G.satz[i ? "wurf" : "leib"] : r._ofenMenschTemplate(G.dK, G.f.skin, G.f.hair, lod).root).traverse((m) => m.isMesh && (n += m.geometry.index.count / 3)); // prettier-ignore
+                            return n;
+                        }),
                     })),
                     pxM: r._schirm().pxJeM / A.BEWOHNER.nahM,
                     kaskaden: A.SCHATTEN_KASKADE.texelM.length,

@@ -655,7 +655,9 @@ class AnazhRealm_bild_kosten {
     //     nach der laufenden Aufnahme neu auf — r184 versiegelt an ihrem Ende (`u.version=s.version`, 6:413962) und schluckte
     //     eine Marke von mittendrin.
     // Eine Pipeline, deren Bau scheitert, meldet sich laut (`_erstAbsageWache`) und fällt aus der Warteschlange; ihr Bürger
-    // zählt weiter als wartender Draw — die Beweis-Aufnahme nennt ihn beim Namen und bricht ab.
+    // zählt weiter als wartender Draw — die Beweis-Aufnahme nennt ihn beim Namen und bricht ab. Auch im Bündel: es nimmt nach
+    // jeder Aufnahme neu auf wie in (2), statt ohne ihn zu versiegeln und still abzuspielen (mensch.K4, 30.10.: 8 abgesagte
+    // Stoffe im Bündel des Leibs — Auge und Kleid fehlten im Bild, die Beweis-Aufnahme stand grün).
     // Der WebGL2-Rückfall kennt keine Bundles, und sein `_completeCompile` ersetzt das Datenobjekt der Pipeline (vendor
     // 6:513930 über Backend.set 6:457928) — ein Setter am alten Objekt feuerte nie, die Schlange wüchse die ganze Sitzung:
     // dort zählt der wartende Draw nur (`wartetN`), er versucht es im nächsten Aufruf selbst.
@@ -675,7 +677,8 @@ class AnazhRealm_bild_kosten {
         E.wartetAuf = pipe;
         const bau = E.bau;
         E.bau = null;
-        if (be.isWebGPUBackend !== true || E.abgesagt.has(pipe)) return;
+        if (be.isWebGPUBackend !== true) return;
+        if (E.abgesagt.has(pipe)) return this._erstWartet(be, null, bg);
         let bundles = E.offen.get(pipe);
         if (bundles === undefined) {
             const h = be.get(pipe);
@@ -687,6 +690,7 @@ class AnazhRealm_bild_kosten {
                 bau.p.catch(() => {
                     E.abgesagt.add(pipe);
                     E.offen.delete(pipe);
+                    for (const b of warten) b.needsUpdate = true;
                 });
             }
             Object.defineProperty(h, "pipeline", {

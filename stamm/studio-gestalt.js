@@ -92,13 +92,17 @@ class AnazhRealm_studio_gestalt {
             if (m[nm] && m[nm].array) geo.setAttribute(nm, new T.BufferAttribute(m[nm].array, m[nm].itemSize || 3));
         // Der Schatten-Teil (S3) trägt je Vertex, ob er deckt (Rinde 1) oder die Atlas-Alpha schneidet (Karte 0).
         if (m.aDeckt && m.aDeckt.array) geo.setAttribute("aDeckt", new T.BufferAttribute(m.aDeckt.array, 1));
+        // DER TON JE ECKE (mensch.K4, koerper `menschTon`): der Mensch trägt ihn — sein Stoff färbt jede Ecke nach der Palette
+        // des Leibs, der ihn zeichnet (`_tonFaktor`)
+        const ton = !!(m.aTon && m.aTon.array);
+        if (ton) geo.setAttribute("aTon", new T.BufferAttribute(m.aTon.array, 1));
         if (m.index) geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(m.index, vcount), 1));
         if (!m.normal || !m.normal.array) geo.computeVertexNormals();
         // Attribut-Wand: unter foundryCrossfade lesen die geteilten foundry-Materialien aH0/aH0L/aLodLevel —
         // jeder Direkt-Konsument dieser Konversion (Kreatur-Ofen …) braucht sie, sonst warnt three je
         // RenderObject. Der Null-Stempel macht „0 = ungemaskt" physisch wahr (Bild gleich); der Gruppen-Bau
-        // überschreibt mit echten Stufen-Werten.
-        if (this.state && this.state.foundryCrossfade === true) {
+        // überschreibt mit echten Stufen-Werten. Der Mensch (`ton`) trägt keinen: sein Stoff blendet nie (`_foundryTreeMaterial`).
+        if (this.state && this.state.foundryCrossfade === true && !ton) {
             const _z = new Float32Array(vcount);
             geo.setAttribute("aLodLevel", new T.BufferAttribute(_z, 1));
             geo.setAttribute("aH0", new T.BufferAttribute(new Float32Array(vcount), 1));
@@ -112,9 +116,15 @@ class AnazhRealm_studio_gestalt {
             for (let v = 0; v < si.length; v++) si[v] = m.skinIndex.array[v];
             geo.setAttribute("skinIndex", new T.Uint16BufferAttribute(si, m.skinIndex.itemSize || 4));
             geo.setAttribute("skinWeight", AnazhRealm._hautGewicht(m.skinWeight.array, m.skinWeight.itemSize || 4));
-            mesh = new T.SkinnedMesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
+            mesh = new T.SkinnedMesh(
+                geo,
+                this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, null, false, ton)
+            );
         } else {
-            mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, baum || null));
+            mesh = new T.Mesh(
+                geo,
+                this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, baum || null, false, ton)
+            );
         }
         mesh.castShadow = AnazhRealm._teilWirft(m);
         mesh.receiveShadow = true;
@@ -227,6 +237,7 @@ class AnazhRealm_studio_gestalt {
                 const _D = AnazhRealm.LOD_DISTANCES;
                 const _capL = _D.leafVisCap;
                 for (const ch of group.children) {
+                    if (ch.geometry.attributes.aTon) continue; // der Mensch blendet nie (`_foundryTreeMaterial`)
                     const _n = ch.geometry.attributes.position.count;
                     const _fk = ch.material && ch.material.userData ? ch.material.userData.foundryKind : null;
                     const _isFol = _fk === "foliage" || _fk === "foliageTex" || _fk === "grass";

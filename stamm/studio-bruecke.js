@@ -2730,6 +2730,7 @@ class AnazhRealm_studio_bruecke {
                 // colorNode) — ein Stück nur aus Positionen fiel im Fit auf das Material-Weiß (gemessen 04.10. an
                 // der Mess-Wiese: alle Glieder von Fuchs, Reh und Bär 255,255,255 — die weiße Wurst am Boden).
                 const ca = o.geometry.attributes.color || null;
+                const ta = o.geometry.attributes.aTon || null; // der Ton je Ecke reist mit (mensch.K4, `_gliedKapselFit`)
                 const proBone = new Map();
                 for (let i = 0; i < pa.count; i++) {
                     const b = si.getX(i);
@@ -2743,6 +2744,7 @@ class AnazhRealm_studio_bruecke {
                     if (!bone || !inv) continue;
                     const arr = new Float32Array(liste.length * 3);
                     const farr = ca ? new Float32Array(liste.length * 3) : null;
+                    const tarr = ta ? new Float32Array(liste.length) : null;
                     for (let n = 0; n < liste.length; n++) {
                         arr[n * 3] = pa.getX(liste[n]);
                         arr[n * 3 + 1] = pa.getY(liste[n]);
@@ -2752,9 +2754,11 @@ class AnazhRealm_studio_bruecke {
                             farr[n * 3 + 1] = ca.getY(liste[n]);
                             farr[n * 3 + 2] = ca.getZ(liste[n]);
                         }
+                        if (tarr) tarr[n] = ta.getX(liste[n]);
                     }
                     const attribute = { position: new THREE.BufferAttribute(arr, 3) };
                     if (farr) attribute.color = new THREE.BufferAttribute(farr, 3);
+                    if (tarr) attribute.aTon = new THREE.BufferAttribute(tarr, 1);
                     const stueck = {
                         geometry: { attributes: attribute },
                         material: o.material,
@@ -2872,6 +2876,9 @@ class AnazhRealm_studio_bruecke {
                 for (const gl of glieder) this._weltFeldFrei(gl.handle);
                 return null; // Erschöpfung: ganz oder gar nicht — kein halber Wolf
             }
+            // DIE FARBE DES BEWOHNERS FERN (mensch.K4): die Kapsel ist die seiner Gestalt, ihre Farbe die seine (`_tonFeldFarbe`)
+            const zeilen = cr.userData.__tonZeilen;
+            if (zeilen) this._weltFeldFarbe(handle, this._tonFeldFarbe(this._gliedKapseln.get(key), zeilen));
             glieder.push({ teil: a, name: nm.name, handle });
         }
         return glieder.length ? glieder : null;
@@ -3084,10 +3091,15 @@ class AnazhRealm_studio_bruecke {
             fg = 0,
             fb = 0,
             fw = 0;
+        // DIE TÖNE DER FARBE (mensch.K4): trägt jedes Teil den Ton je Ecke (der Mensch, koerper `menschTon`), steht je Ton sein
+        // Anteil am Mittel — ein Bewohner färbt sein Glied fern mit seiner Palette (`_tonFeldFarbe`), wie nah seine Ecken
+        const mitTon = meshes.every((o) => !!o.geometry.attributes.aTon);
+        const toene = mitTon ? new Map() : null;
         for (const o of meshes) {
             mL.multiplyMatrices(wurzelInv, o.matrixWorld);
             const pos = o.geometry.attributes.position;
             const col = o.geometry.attributes.color || null;
+            const ton = mitTon ? o.geometry.attributes.aTon : null;
             const mc = !col && o.material && o.material.color ? o.material.color : null;
             const schritt = pos.count > 4000 ? Math.ceil(pos.count / 4000) : 1;
             bbT.makeEmpty();
@@ -3095,20 +3107,25 @@ class AnazhRealm_studio_bruecke {
                 tg = 0,
                 tb = 0,
                 tn = 0;
+            const jeTon = ton ? new Map() : null;
             for (let i = 0; i < pos.count; i += schritt) {
                 v.fromBufferAttribute(pos, i).applyMatrix4(mL);
                 bb.expandByPoint(v);
                 bbT.expandByPoint(v);
-                if (col) {
-                    tr += col.getX(i);
-                    tg += col.getY(i);
-                    tb += col.getZ(i);
-                    tn++;
-                } else if (mc) {
-                    tr += mc.r;
-                    tg += mc.g;
-                    tb += mc.b;
-                    tn++;
+                let cr, cg, cb;
+                if (col) [cr, cg, cb] = [col.getX(i), col.getY(i), col.getZ(i)];
+                else if (mc) [cr, cg, cb] = [mc.r, mc.g, mc.b];
+                else continue;
+                tr += cr;
+                tg += cg;
+                tb += cb;
+                tn++;
+                if (jeTon) {
+                    const t = Math.round(ton.getX(i));
+                    const s = jeTon.get(t) || jeTon.set(t, [0, 0, 0]).get(t);
+                    s[0] += cr;
+                    s[1] += cg;
+                    s[2] += cb;
                 }
             }
             if (!tn || bbT.isEmpty()) continue;
@@ -3118,6 +3135,11 @@ class AnazhRealm_studio_bruecke {
             fg += (tg / tn) * flaeche;
             fb += (tb / tn) * flaeche;
             fw += flaeche;
+            if (jeTon)
+                for (const [t, s] of jeTon) {
+                    const z = toene.get(t) || toene.set(t, [0, 0, 0]).get(t);
+                    for (let k = 0; k < 3; k++) z[k] += (s[k] / tn) * flaeche;
+                }
         }
         if (bb.isEmpty()) return null;
         const c = bb.getCenter(new THREE.Vector3());
@@ -3132,7 +3154,13 @@ class AnazhRealm_studio_bruecke {
         a[ax] -= lang;
         const b = c.clone();
         b[ax] += lang;
-        return { a, b, r, farbe: fw > 0 ? { r: fr / fw, g: fg / fw, b: fb / fw } : null };
+        return {
+            a,
+            b,
+            r,
+            farbe: fw > 0 ? { r: fr / fw, g: fg / fw, b: fb / fw } : null,
+            toene: toene && fw > 0 ? [...toene].map(([t, s]) => [t, s[0] / fw, s[1] / fw, s[2] / fw]) : null,
+        };
     }
 
     // Das per-Ziegel-March-Material ist GEFALLEN (DER EINE WELT-MARCH): der
@@ -3155,7 +3183,9 @@ class AnazhRealm_studio_bruecke {
     // `krone` (true, optional; K68-N1): das Klingen-Laub gehört zu einer Krone (Baum, Strauch: foundry-core `emitTreeRezept`
     // legt die Normale der Krone darüber), auch ohne `baum` — der wiegende Stoff der Nah-Streu erbt sie vom Stoff der Art
     // (`userData.krone`); die Karte (foliageTex) ist immer Krone.
-    _foundryTreeMaterial(kind, mp, wiegen, baum, krone) {
+    // `ton` (true, optional; mensch.K4): die Gestalt trägt den Ton je Ecke (`aTon`) — der Stoff färbt nach der Palette des
+    // zeichnenden Leibs (`_tonFaktor`).
+    _foundryTreeMaterial(kind, mp, wiegen, baum, krone, ton) {
         const satz = !!(mp && mp.satzRegler === true);
         if (!this._foundryMats) this._foundryMats = {};
         const T = THREE;
@@ -3178,8 +3208,11 @@ class AnazhRealm_studio_bruecke {
         // zusammen am foundryCrossfade-Flag). Das Flag steht im Key: ein Live-Toggle trifft nur NEU gebaute
         // Gruppen; Material und Attribut-Stempel (`_foundryBuildGroup`) entstehen im selben Pass → konsistent. Der wiegende
         // Stoff der Nah-Streu blendet nie (ihr Stufen-Wechsel ist die Armlänge, ihre Stempel tragen 0): sein Satz trägt
-        // keine Stempel (`STREU_SATZ_ATTR`).
-        const xfade = !!(this.state && this.state.foundryCrossfade === true) && wiegen !== true;
+        // keine Stempel (`STREU_SATZ_ATTR`). Der Stoff des Menschen (`ton`) blendet nie: sein Guss steht auf dem Null-Stempel
+        // (die Maske wäre die Identität), und ihre drei Stempel sprengten neben dem Ton den Deckel der Vertex-Puffer (WebGPU 8: Lage ·
+        // Knochen · Gewichte · Normale · Farbe · Ton · aH0L · aLodLevel · aH0 = 9) — das Gerät sagte 8 Programme ab, Auge und
+        // Kleid zeichneten nie (mensch.K4, 30.10.); ohne Maske liest er 6 Puffer.
+        const xfade = !!(this.state && this.state.foundryCrossfade === true) && wiegen !== true && ton !== true;
         // DER SCHLÜSSEL IST DIE EINE MATERIAL-IDENTITÄT (phyto-core `budgetStoff`, W8): Art · Regler · SEITE · Gewebe ·
         // Glut · Fell-/Haut-Ton — dieselbe, mit der das Budget-Gesetz am Studio-Ausgang Stoffe zählt und faltet (die
         // Seite fehlte: ein beidseitiger Stoff teilte das Material eines einseitigen gleicher Regler, first-wins).
@@ -3192,7 +3225,8 @@ class AnazhRealm_studio_bruecke {
             (wiegen === true ? "|wiegt" : "") +
             (baum ? "|wind:" + baum.ht.toFixed(2) + "/" + baum.delta.toFixed(4) + "/" + baum.an : "") +
             (satz === true ? "|satz" : "") +
-            (_krone ? "|krone" : "");
+            (_krone ? "|krone" : "") +
+            (ton === true ? "|ton" : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         // HAUT-VOLLENDUNG (19.07.): die Lab-Haut trägt CLEARCOAT (matSkin
@@ -3268,7 +3302,12 @@ class AnazhRealm_studio_bruecke {
         // Vorlagen-Farben leben als VERTEX-COLORS: auf WebGPU/NodeMaterial MUSS colorNode = attribute("color")
         // sie lesen — `vertexColors:true` wirkt hier NICHT (sonst weißes Laub, schwarze Koniferen).
         // `_foundryBuildGroup` garantiert das color-Attribut.
-        const vcol = TSL.attribute("color", "vec3");
+        const vcolRoh = TSL.attribute("color", "vec3");
+        // DIE FARBE FOLGT DEM SAMEN (mensch.K4): trägt die Gestalt den Ton je Ecke, ist ihre Farbe die Vorlage × das Verhältnis
+        // der Palette des zeichnenden Leibs zu der seiner Gestalt (`_tonFaktor`), je Ecke im Vertex-Takt — der Leib eines
+        // Bewohners zeigt seine Farben im Stoff seiner Gestalt; ohne eigene Palette (der Spieler) ist das Verhältnis 1. Die
+        // Strähnen-Achse unten liest die Vorlage (`vcolRoh`).
+        const vcol = ton === true ? TSL.varying(vcolRoh.mul(this._tonFaktor(TSL)), "vTonFarbe") : vcolRoh;
         // DAS LEUCHT-GESETZ (Architektur-Welle 05.10.): ein Stoff, dessen Gesetzbuch `leucht` stempelt (fachwerk
         // `feuer`: Glut, Flamme, Herdfeuer), leuchtet in seiner Vertex-Farbe × leucht — heiße Mitte, kühler Rand,
         // gelbe Flammen-Wurzel, rote Spitze — statt einer Farbe für jede Fläche (das Labor webt dasselbe in r128).
@@ -3403,7 +3442,7 @@ class AnazhRealm_studio_bruecke {
                         const sT = schale
                             ? aS.x
                             : tonL !== null
-                              ? vcol
+                              ? vcolRoh
                                     .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
                                     .div(tonL)
                                     .sub(wA)
@@ -3858,6 +3897,7 @@ AnazhRealm.FOUNDRY_LESEN = [
     "aWurzel",
     "aSchale",
     "aDeckt",
+    "aTon",
     "skinIndex",
     "skinWeight",
 ];
