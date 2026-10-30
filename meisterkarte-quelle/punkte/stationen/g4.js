@@ -229,12 +229,21 @@ const k1Zahl = (k) =>
 // über ihren Knopf „In der Welt ansehen" (die Übergabe der Hülle), die Welt setzt es über den EINEN Übergabe-Kanal; Pose = die
 // Vorschau-Kamera der Welt (Gier 0,6 · Neigung 0,32 · fov 45, Rahmen-Gesetz `_workshopRahmen`), beide aus dem Ausgabe-Pfad;
 // Bild-Differenz über der Vereinigung der Masken (ΔLuma > 18 oder nur eine Seite), dazu die Albedo-Tafel beider Seiten je Studio.
+// DAS SIEGEL DER PROBE (w4-proben-tempo, wie die Seiten-Proben der Folge): ihr git-Blob steht im Befehl — eine geänderte Probe misst nie
+// still unter dem alten Abdruck mit (bis dahin rief der Befehl das Skript ohne Siegel)
+const K4_BLOB = "8e494fd3c7eaf39c84d02085f90a33e94060efee";
 const K4_BEFEHL = [
     "bash",
     "-c",
-    `set -u; K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); export WERKBANK_PORT=$(({PORT}+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" {PORT}`,
+    `set -u; K=$(cygpath -m '{KOORD}'); A=$(cygpath -m '{AUS}'); export WERKBANK_PORT=$(({PORT}+20000)); P="$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs"; ` +
+        `node -e 'const f = require("fs").readFileSync(process.argv[1]), b = require("crypto").createHash("sha1").update("blob " + f.length + "\\0").update(f).digest("hex"); if (b !== process.argv[2]) (console.log("K4 ROT: die Probe ist Blob " + b + ", die Station kennt " + process.argv[2]), process.exit(1));' "$P" ${K4_BLOB} && node "$P" "$A" {PORT}`,
 ];
 // DIE FAHRT (29.10., ≤ 30 min je Gerät): 90 s statt 900 s — sieben Studios in EINER Probe; die Welt trägt danach ihre Werke (mutiert)
+// DAS TEMPO (w4-proben-tempo, 30.10.; GTX 379e5f56 ≥ 90 s am Eich-Deckel): DER TÄTER — das Werk stand in der Welt nie (garage, portale,
+// schmiede, fachwerk je 30 s „steht nicht in der Welt“ an GTX 24a0f3ef und Radeon 715754fc): die Foundry gibt im ruhenden Loop nichts frei
+// (`_tickFoundryIngest`), jetzt gibt jeder Blick auf den Rahmen frei; dazu die Bilder vor der Albedo, das Labor nur für Studios mit
+// gemessener Differenz (`--nur`), der feste Schlaf 10 s fällt. Offen beim Namen: die Albedo-Tafel (Welt + Labor) ist dieselbe Messung
+// wie material.K1#1 (GTX ≥ 90 s) — sie trägt diese Probe über das Gesetz, ihr Werkzeug gehört material.*
 const K4_STUDIOS = ["garage", "portale", "schmiede", "fachwerk", "terrain", "koerperstudio", "tetrapoda"];
 const k4Zahl = (j) => {
     const s = (j && j.studios) || {};
