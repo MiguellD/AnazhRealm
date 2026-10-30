@@ -1,0 +1,17 @@
+$ C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\24a0f3ef-gtx\mensch.K5_1.json' | tr '\\' /); B="${A%.json}"
+S=$(( 7804 )); W=$(( 7804 + 20000 )); export WERKBANK_PORT=$W
+node scripts/diag-kreatur-takt.cjs --werkbank $W --proben begegnung
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27804) =====
+
+  ✅ begegnung {"wer":"gasthaus/gasthaus #419347","furcht":1,"zuS":[0.267,0,0,0],"amEreignis":72,"imBild":[true,true,true,true],"dMin":[2,1.239,1.239,1.897],"beruehrt":[0,0,0,0]}
+
+  (54 s)
+
+✅ GRÜN — begegnung
+
+--- stderr ---
+tr: warning: an unescaped backslash at end of string is not portable
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
