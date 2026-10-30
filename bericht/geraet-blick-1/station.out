@@ -1,0 +1,143 @@
+2026-10-30 13:21:01
+RAM frei MB: 6344 von 16299 ú CPU-Last %: 23
+--- CPU 5 s (Prozent eines Kerns), Top 12
+
+Name                           Id Pct WS_MB
+----                           -- --- -----
+OmenCommandCenterBackground 16632  16   192
+claude                      15520  13   121
+LightStudio-background      16840   6    91
+powershell                  22712   2    84
+claude                      17456   1   723
+OverlayHelper                9380   1    26
+OneDrive                     7912   0   301
+powershell                  21784   0   115
+RuntimeBroker               12220   0    61
+OneDrive.Sync.Service       19384   0    46
+Runner.Listener              4668   0    17
+RuntimeBroker                4672   0    28
+
+
+
+--- RAM Top 12
+
+Name                           Id WS_MB  CPUs Start    
+----                           -- -----  ---- -----    
+claude                      17456   723 26967 25. 20:15
+MsMpEng                     20732   427     0          
+claude                      15964   422  1127 25. 20:15
+explorer                     3832   323  9628 25. 20:15
+OneDrive                     7912   301  1709 25. 20:16
+claude                       2016   223   165 29. 23:04
+Dropbox                      4964   198  2960 28. 19:35
+OmenCommandCenterBackground 16632   192 52022 25. 20:15
+PhoneExperienceHost         16952   168    35 25. 20:15
+MicrosoftSecurityApp        15648   165   419 25. 20:16
+StartMenuExperienceHost     11808   140    24 25. 20:15
+claude                      17416   127    22 25. 20:15
+
+
+
+--- Helfer (eigene Befehlszeilen; WAISE = Elternprozess fehlt)
+"AnazhRealm|p3[/\]|puppeteer|werkbank|save-server|messplatz" wird analysiert - Nicht abgeschlossener []-Satz.
+In Zeile:12 Zeichen:32
++ ... ommandLine; $eigen = $c -match "AnazhRealm|p3[/\]|puppeteer|werkbank| ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (:) [], ArgumentException
+    + FullyQualifiedErrorId : System.ArgumentException
+ 
+ 10432 <-   9480 bash.exe         25. 20:15  
+"AnazhRealm|p3[/\]|puppeteer|werkbank|save-server|messplatz" wird analysiert - Nicht abgeschlossener []-Satz.
+In Zeile:12 Zeichen:32
++ ... ommandLine; $eigen = $c -match "AnazhRealm|p3[/\]|puppeteer|werkbank| ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (:) [], ArgumentException
+    + FullyQualifiedErrorId : System.ArgumentException
+ 
+ 11160 <-  10432 bash.exe         25. 20:15  
+"AnazhRealm|p3[/\]|puppeteer|werkbank|save-server|messplatz" wird analysiert - Nicht abgeschlossener []-Satz.
+In Zeile:12 Zeichen:32
++ ... ommandLine; $eigen = $c -match "AnazhRealm|p3[/\]|puppeteer|werkbank| ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (:) [], ArgumentException
+    + FullyQualifiedErrorId : System.ArgumentException
+ 
+  8604 <-   8620 bash.exe         25. 20:15 WAISE  
+"AnazhRealm|p3[/\]|puppeteer|werkbank|save-server|messplatz" wird analysiert - Nicht abgeschlossener []-Satz.
+In Zeile:12 Zeichen:32
++ ... ommandLine; $eigen = $c -match "AnazhRealm|p3[/\]|puppeteer|werkbank| ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (:) [], ArgumentException
+    + FullyQualifiedErrorId : System.ArgumentException
+ 
+ 15324 <-  13792 bash.exe         29. 06:55 WAISE  
+"AnazhRealm|p3[/\]|puppeteer|werkbank|save-server|messplatz" wird analysiert - Nicht abgeschlossener []-Satz.
+In Zeile:12 Zeichen:32
++ ... ommandLine; $eigen = $c -match "AnazhRealm|p3[/\]|puppeteer|werkbank| ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (:) [], ArgumentException
+    + FullyQualifiedErrorId : System.ArgumentException
+ 
+ 21784 <-  21452 powershell.exe   29. 23:04  
+"AnazhRealm|p3[/\]|puppeteer|werkbank|save-server|messplatz" wird analysiert - Nicht abgeschlossener []-Satz.
+In Zeile:12 Zeichen:32
++ ... ommandLine; $eigen = $c -match "AnazhRealm|p3[/\]|puppeteer|werkbank| ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (:) [], ArgumentException
+    + FullyQualifiedErrorId : System.ArgumentException
+ 
+ 23440 <-  19664 sleep.exe        30. 13:16 WAISE  
+"AnazhRealm|p3[/\]|puppeteer|werkbank|save-server|messplatz" wird analysiert - Nicht abgeschlossener []-Satz.
+In Zeile:12 Zeichen:32
++ ... ommandLine; $eigen = $c -match "AnazhRealm|p3[/\]|puppeteer|werkbank| ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (:) [], ArgumentException
+    + FullyQualifiedErrorId : System.ArgumentException
+ 
+ 16780 <-  15324 bash.exe         30. 13:21  
+"AnazhRealm|p3[/\]|puppeteer|werkbank|save-server|messplatz" wird analysiert - Nicht abgeschlossener []-Satz.
+In Zeile:12 Zeichen:32
++ ... ommandLine; $eigen = $c -match "AnazhRealm|p3[/\]|puppeteer|werkbank| ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (:) [], ArgumentException
+    + FullyQualifiedErrorId : System.ArgumentException
+ 
+ 19572 <-  15084 bash.exe         30. 13:21 WAISE  
+"AnazhRealm|p3[/\]|puppeteer|werkbank|save-server|messplatz" wird analysiert - Nicht abgeschlossener []-Satz.
+In Zeile:12 Zeichen:32
++ ... ommandLine; $eigen = $c -match "AnazhRealm|p3[/\]|puppeteer|werkbank| ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (:) [], ArgumentException
+    + FullyQualifiedErrorId : System.ArgumentException
+ 
+ 11728 <-  19572 bash.exe         30. 13:21  
+"AnazhRealm|p3[/\]|puppeteer|werkbank|save-server|messplatz" wird analysiert - Nicht abgeschlossener []-Satz.
+In Zeile:12 Zeichen:32
++ ... ommandLine; $eigen = $c -match "AnazhRealm|p3[/\]|puppeteer|werkbank| ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : OperationStopped: (:) [], ArgumentException
+    + FullyQualifiedErrorId : System.ArgumentException
+ 
+ 22712 <-  11728 powershell.exe   30. 13:21  
+--- GPU
+name, memory.used [MiB], memory.total [MiB], utilization.gpu [%], temperature.gpu, clocks.current.graphics [MHz], pstate
+NVIDIA GeForce GTX 1060, 338 MiB, 6144 MiB, 10 %, 67, 139 MHz, P8
+pid, process_name, used_gpu_memory [MiB]
+1756, [Insufficient Permissions], [N/A]
+10296, C:\Windows\System32\ShellHost.exe, [N/A]
+10624, C:\Windows\SystemApps\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\CrossDeviceResume.exe, [N/A]
+3832, C:\Windows\explorer.exe, [N/A]
+11808, C:\Windows\SystemApps\Microsoft.Windows.StartMenuExperienceHost_cw5n1h2txyewy\StartMenuExperienceHost.exe, [N/A]
+11800, C:\Windows\SystemApps\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\SearchHost.exe, [N/A]
+14136, C:\Program Files (x86)\Microsoft\EdgeWebView\Application\155.0.4283.62\msedgewebview2.exe, [N/A]
+15592, C:\Windows\SystemApps\MicrosoftWindows.Client.CBS_cw5n1h2txyewy\TextInputHost.exe, [N/A]
+16840, C:\Program Files\WindowsApps\AD2F1837.OMENLightStudio_1.0.69.0_x64__v10z8vjag6ke6\LightStudio-ui\LightStudio-background.exe, [N/A]
+16952, C:\Program Files\WindowsApps\Microsoft.YourPhone_1.26082.121.0_x64__8wekyb3d8bbwe\PhoneExperienceHost.exe, [N/A]
+16632, C:\Program Files\WindowsApps\AD2F1837.OMENCommandCenter_1101.2609.11.0_x64__v10z8vjag6ke6\OmenCommandCenterApp\OmenCommandCenterBackground.exe, [N/A]
+15520, C:\Program Files\WindowsApps\Claude_3.6556.2.0_x64__pzs8sxrjxfjjc\app\claude.exe, [N/A]
+18892, C:\Program Files\WindowsApps\Claude_3.6556.2.0_x64__pzs8sxrjxfjjc\app\claude.exe, [N/A]
+14324, C:\Windows\SystemApps\ShellExperienceHost_cw5n1h2txyewy\ShellExperienceHost.exe, [N/A]
+15648, C:\Program Files\WindowsApps\Microsoft.6365217CE6EB4_102.2608.18002.0_x64__8wekyb3d8bbwe\MicrosoftSecurityApp\MicrosoftSecurityApp.exe, [N/A]
+22364, C:\Windows\System32\ApplicationFrameHost.exe, [N/A]
+3752, C:\Windows\ImmersiveControlPanel\SystemSettings.exe, [N/A]
+19352, C:\Program Files (x86)\Dropbox\Client\Dropbox.exe, [N/A]

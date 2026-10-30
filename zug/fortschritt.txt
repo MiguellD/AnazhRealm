@@ -976,3 +976,7 @@
 2026-10-30 13:20:13 takt24c-gtx VORFAHRT profiband.K1#1,profiband.K2#1,profiband.K3#1 verloren 79.7
 2026-10-30 13:20:30 takt24c-gtx profiband.K1#1,profiband.K2#1,profiband.K3#1 ROT/ROT/ROT 168.2 · 21/21
 2026-10-30 13:20:57 geraet-blick-1 START 1 Stationen
+2026-10-30 13:21:10 geraet-blick-1 geraet-blick.sh Exit0 0.2 · 1/1
+2026-10-30 13:21:22 dienst-urteil-1 START 1 Stationen
+2026-10-30 13:21:26 dienst-urteil-1 dienst-urteil.sh Exit0 0.1 · 1/1
+2026-10-30 13:21:38 geraet-raeumen-1 START 1 Stationen

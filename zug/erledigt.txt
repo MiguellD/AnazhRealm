@@ -77,3 +77,5 @@ z78-bisekt LANGSAMER abab 748ea96f gegen 715754fc: stadt 4+4 LANGSAMER
 takt24-gtx gemessen punkte 24a0f3ef gtx: 0 grün / 2 rot
 takt24b-gtx gemessen punkte 24a0f3ef gtx: 1 grün / 5 rot
 takt24c-gtx gemessen punkte 24a0f3ef gtx: 2 grün / 22 rot
+geraet-blick-1 Exit0 station geraet-blick.sh an 24a0f3ef
+dienst-urteil-1 Exit0 station dienst-urteil.sh an 24a0f3ef
