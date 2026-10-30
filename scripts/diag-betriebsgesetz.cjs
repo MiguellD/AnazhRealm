@@ -15,7 +15,6 @@ const { wandEnde, argOpt } = require("./lib/welt-boot.cjs");
 // Selbsttest feuert (Lehre 1: die Linse beweist sich selbst, nie Wachsamkeit).
 const fs = require("fs");
 const path = require("path");
-const { execFileSync } = require("child_process");
 
 const root = path.join(__dirname, "..");
 
@@ -76,30 +75,51 @@ function archivBefund(dateien) {
 const PRUEF_PFADE = ["scripts", "spec", ":(exclude)spec/profiband/ratsche-*"]; // Ratschen = Messdaten des Werkzeugs
 const SPIEL_PFADE = ["stamm", ":(glob)*.js", "index.html", "worlds", ":(exclude)worlds/**/lib/**"];
 const stamm = require("./lib/stamm.cjs");
-function git(args) {
-    return execFileSync("git", args, { cwd: root, encoding: "utf8", maxBuffer: 1 << 28 });
-}
+// 6c) WERKZEUG-TAFELN: was `stamm-umzug --nach-karte` als Spiegel des Stamms schreibt — die Stamm-Quellen der Tafeln
+//     (Tafel am Grund, Stamm am Grund → Stamm am Kopf) und die Karte (der Stamm am Kopf ihr Fixpunkt; ihre Namen und Themen
+//     trägt er als Glieder und Marker) — misst gegen die FRISCHE AUSGABE DES WERKZEUGS am selben Stand (`werkzeugVon`, das
+//     Werkzeug kennt seine Ausgabe, sein Selbsttest in check:statik): die Ableitung ist kein geschriebener Prüf-Code und zählt
+//     nichts; was davon abweicht, zählt voll und steht beim Namen (Datei: die erste Zeile mit fremden Atomen — ein Abdruck,
+//     den das Werkzeug VERALTET schreibt, ist gleich viele Atome). Bis 30.10. maß die Teilung siedlung-satz → satz · instanz ·
+//     wege (88da99be) Prüf +471 (Tafeln 384, Karte 87) bei Spiel 80: jede Modul-Teilung traf die Wand, die Ordnung zahlte.
+//     Der Richter (`--richter`) zählt wie bisher — er rückt geschriebene Bänder um, eine Teilung bewegt ihn atom-neutral.
+const { werkzeugVon, TAFELN } = require("./stamm-umzug.cjs");
+const git = (args) => stamm.gitIn(root, args);
 const deckeMass = (text) => (text.match(/[\p{L}\p{N}_$]+|[^\s\p{L}\p{N}_$]/gu) || []).length;
 const atome = (p, t) => deckeMass(/\.(?:[cm]?js|html|css)$/.test(p) ? stamm.ohneKommentare(t) : t);
-// Kopfzeilen (--- / +++) stehen vor dem ersten @@, eine Binärdatei trägt keinen Hunk
-function wachstumAusDiff(text, je = new Map(), datei = new Map()) {
-    const seiten = new Map();
-    let [pfad, hunk] = [null, false];
+const zahl = (d) => (d >= 0 ? "+" : "") + d;
+// Kopfzeilen (--- / +++) stehen vor dem ersten @@, eine Binärdatei trägt keinen Hunk, ein Hunk-Stück nie das leere (der
+// Rest hinter dem letzten Umbruch); eine geänderte Werkzeug-Tafel misst gegen `werkzeug(pfad, grund, kopf)`, `hand` nennt
+// ihre Abweichung, `frei` summiert die Ableitung
+function wachstumAusDiff(text, werkzeug) {
+    const [seiten, je, datei, hand] = [new Map(), new Map(), new Map(), []];
+    let [pfad, hunk, frei] = [null, false, 0];
     for (const z of text.split("\n")) {
         if (z.startsWith("diff --git ")) {
             [pfad, hunk] = [z.slice(13, 13 + (z.length - 16) / 2), false];
             seiten.set(pfad, [[], []]);
         } else if (!hunk && /^(new|deleted) file mode/.test(z)) datei.set(pfad, z[0] === "n" ? 1 : -1);
         else if (z.startsWith("@@")) hunk = true;
-        else if (hunk) for (const k of [0, 1]) if (z[0] !== "+-"[k]) seiten.get(pfad)[k].push(z.slice(1));
+        else if (hunk && z) for (const k of [0, 1]) if (z[0] !== "+-"[k]) seiten.get(pfad)[k].push(z.slice(1));
     }
-    for (const [p, [alt, neu]] of seiten) je.set(p, atome(p, neu.join("\n")) - atome(p, alt.join("\n")));
-    return { je, datei };
+    for (const [p, [alt, neu]] of seiten) {
+        const t = [...TAFELN, stamm.KARTE].includes(p) && !datei.has(p);
+        const [a, n] = [alt.join("\n"), neu.join("\n")];
+        const w = t ? werkzeug(p, a, n) : a;
+        const d = atome(p, n) - atome(p, w);
+        if (t && d) {
+            const [nz, wz] = [n, w].map((s) => s.replace(/"c:\w+"/g, "").split("\n"));
+            hand.push(`${p}:${nz.findIndex((z, i) => z !== wz[i]) + 1} ${zahl(d)}`);
+        }
+        if (t) frei += atome(p, w) - atome(p, a);
+        je.set(p, d);
+    }
+    return { je, datei, frei, hand };
 }
 const summe = (m, vor = "") => [...m].reduce((s, [p, d]) => (p.startsWith(vor) ? s + d : s), 0);
-function wachstumZwischen(grund, kopf, pfade) {
+function wachstumZwischen(grund, kopf, pfade, werkzeug) {
     const args = ["-c", "core.quotePath=false", "diff", "-U9999999", "--no-color", "--no-renames", grund];
-    return wachstumAusDiff(git([...args, ...(kopf ? [kopf] : []), "--", ...pfade]));
+    return wachstumAusDiff(git([...args, ...(kopf ? [kopf] : []), "--", ...pfade]), werkzeug);
 }
 const taeterVon = (je) =>
     [...je]
@@ -123,7 +143,7 @@ function wachstumsStaende(zweig, kopfRev) {
     }
     return [[git(["merge-base", "HEAD", "origin/integ-probe"]).trim(), kopfRev, "Merge-Basis mit origin/integ-probe"]];
 }
-function wachstumBefund(dP, dS, name = "Zweig", dSkript = 0, dDatei = 0, taeter = "") {
+function wachstumBefund(dP, dS, name = "Zweig", dSkript = 0, dDatei = 0, taeter = "", hand = "") {
     const erlaubt = Math.floor(Math.max(0, dS) / 2);
     return [
         ...(dSkript > 0 || dDatei > 0
@@ -133,7 +153,7 @@ function wachstumBefund(dP, dS, name = "Zweig", dSkript = 0, dDatei = 0, taeter 
             : []),
         ...(dP > erlaubt
             ? [
-                  `WACHSTUMS-WAND (${name}): scripts/ + spec/ +${dP} Atome bei Spiel ${dS} — erlaubt die Hälfte (${erlaubt})`,
+                  `WACHSTUMS-WAND (${name}): scripts/ + spec/ +${dP} Atome bei Spiel ${dS} — erlaubt die Hälfte (${erlaubt})${hand}`,
               ]
             : []),
     ];
@@ -309,13 +329,19 @@ function main() {
         const zweig = process.env.GITHUB_REF_NAME || git(["rev-parse", "--abbrev-ref", "HEAD"]).trim();
         const staende = grundRev ? [[grundRev, kopfRev, "--grund"]] : wachstumsStaende(zweig, kopfRev);
         for (const [grund, kopf, name] of staende) {
-            const { je, datei } = wachstumZwischen(grund, kopf, PRUEF_PFADE);
+            const { je, datei, frei, hand } = wachstumZwischen(
+                grund,
+                kopf,
+                PRUEF_PFADE,
+                werkzeugVon((k) => stamm.teileVon(root, k ? kopf : grund))
+            );
             const [dP, dS] = [summe(je), summe(wachstumZwischen(grund, kopf, SPIEL_PFADE).je)];
             const [dK, dD] = [summe(je, "scripts/"), summe(datei, "scripts/")];
+            const vonHand = hand.length ? ` · von Hand ${hand.join(", ")}` : "";
             gemessen.push(
-                `${name}: Prüf ${dP >= 0 ? "+" : ""}${dP} / Spiel ${dS >= 0 ? "+" : ""}${dS} Atome · scripts ${dK} Atome ${dD} Dat.`
+                `${name}: Prüf ${zahl(dP)} / Spiel ${zahl(dS)} Atome · scripts ${dK} Atome ${dD} Dat. · Werkzeug-Ausgabe ${zahl(frei)} frei${vonHand}`
             );
-            errs.push(...wachstumBefund(dP, dS, name, dK, dD, taeterVon(je)));
+            errs.push(...wachstumBefund(dP, dS, name, dK, dD, taeterVon(je), vonHand));
         }
         if (!staende.length)
             gemessen.push(`${zweig}: misst nichts zweimal (jeder Merge stand auf integ-probe an der Wand)`);
@@ -452,12 +478,18 @@ function main() {
     ).length; // muss feuern
     if (!l1 || l2 || !l3) errs.push(`Selbsttest der Logbuch-Wand versagt (l1=${l1} l2=${l2} l3=${l3})`);
     // die Wachstums-Wand je Fall: die Zahl der Befunde; die Decke an einem Diff mit voller Umgebung: die Summe der
-    // Code-Atome, „rot" = ROT beim Namen der Datei
-    const fall = (hunk, m = "") => {
-        const w = wachstumAusDiff(`diff --git a/scripts/x.cjs b/scripts/x.cjs\n${m}@@\n${hunk}`);
+    // Code-Atome, „rot" = ROT beim Namen der Datei, dahinter die Abweichung von Hand. Die Fälle fahren mit einem GIERIGEN
+    // Werkzeug, das jeden Kopf für abgeleitet erklärt: eine Datei außerhalb der Werkzeug-Tafeln und eine neue Tafel fragt
+    // die Wand nie (6c, Fall c). Eine geänderte Tafel misst gegen die frische Ausgabe, hier ihr Grund und die Zeile „b" (die
+    // Ableitung selbst prüft stamm-umzug --selftest an einem Umzug): (a) gleich ihr zählt 0 — der Umzug ist grün, wo er ohne
+    // Abzug zählte; (b) eine Hand-Zeile in der Tafel-Region zählt +1 und steht mit Datei:Zeile beim Namen
+    const gierig = (p, a, n) => n;
+    const fall = (hunk, m = "", p = "scripts/x.cjs", werk = gierig) => {
+        const w = wachstumAusDiff(`diff --git a/${p} b/${p}\n${m}@@\n${hunk}`, werk);
         const rot = wachstumBefund(-9, 99, "x", summe(w.je), summe(w.datei), taeterVon(w.je));
-        return summe(w.je) + (String(rot).includes("x.cjs +") ? " rot" : "");
+        return [summe(w.je) + (String(rot).includes("x.cjs +") ? " rot" : ""), ...w.hand].join(" ");
     };
+    const [frisch, tafel] = [(p, a) => a + "\nb", TAFELN[0]];
     const wand = [
         wachstumBefund(600, 1000).length, // +600 Prüf gegen +1000 Spiel: feuert
         wachstumBefund(400, 1000).length, // +400 gegen +1000: schweigt
@@ -470,8 +502,11 @@ function main() {
         fall("-a;\n-b;\n+a; b;"), // (d) Pressen zweier Zeilen zu einer: 0
         fall("+a;\n+b;", "new file mode\n"), // eine neue Datei zählt ganz und als Datei
         fall("-a;\n-b;", "deleted file mode\n"), // eine gestrichene zahlt ganz
+        fall("-a\n+a\n+b", "", tafel, frisch), // (a) die frische Ausgabe des Werkzeugs: 0
+        fall("-a\n+a\n+h\n+b", "", tafel, frisch), // (b) eine Hand-Zeile darin: +1 beim Namen
+        fall("+a", "new file mode\n", tafel), // (c) eine neue Tafel zählt voll
     ].join(" · ");
-    if (wand !== "1 · 0 · 1 · 0 · 1 · 0 · 0 · 1 rot · 0 · 4 rot · -4")
+    if (wand !== `1 · 0 · 1 · 0 · 1 · 0 · 0 · 1 rot · 0 · 4 rot · -4 · 0 · 1 ${tafel}:2 +1 · 1`)
         errs.push(`Selbsttest der Wachstums-Wand versagt (${wand})`);
     // die Zitat-Wand: je Regel genau ein Täter beim Namen; die Chronik-Zeile, der Platzhalter und die Einheit schweigen
     const zTexte = {
