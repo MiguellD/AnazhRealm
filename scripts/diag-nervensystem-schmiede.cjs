@@ -99,7 +99,7 @@ hauptLauf(async () => {
     for (const [name, ok, detail] of staticLaws()) check(name, ok, detail);
 
     const W = { bp: "klinge_langschwert", donor: "geraet_schwert", preset: "langschwert", entry: "klinge_spitzhacke", praefix: "klinge_", wahl: 2, name: "eine Klinge", art: "weapon", anzahl: 22, teile: 4, label: "Langschwert", place: { mode: "hand", dispatch: null } };
-    const [eps, out, kern] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
+    const [eps, out] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
         const res = { b: {}, d: {}, h: {} };
         const A = r.constructor;
         const f = r._ensureAssetFoundry();
@@ -114,7 +114,6 @@ hauptLauf(async () => {
             res.d.substanzSpitz = KS.geraet_spitzhacke && Array.isArray(KS.geraet_spitzhacke.parts) ? KS.geraet_spitzhacke.parts.length : 0;
             res.d.weaponRole = B.klinge_langschwert ? r.computeBlueprintRole(B.klinge_langschwert) : null;
             const tbp = B.klinge_spitzhacke;
-            res.d.toolBlueprint = !!tbp;
             res.d.toolPartsMatch = !!tbp && !!KS.geraet_spitzhacke && JSON.stringify(tbp.parts) === JSON.stringify(KS.geraet_spitzhacke.parts);
             res.d.toolRole = tbp ? r.computeBlueprintRole(tbp) : null;
         } catch (e) {
@@ -312,7 +311,6 @@ hauptLauf(async () => {
         out.d.err || `spitz=${out.d.substanzSpitz}`
     );
     check('D: die reine Waffe traegt role "weapon" (klinge_langschwert)', out.d.weaponRole === "weapon", `role=${out.d.weaponRole}`);
-    check("D: die Werkzeug-Klasse dockt mit (klinge_spitzhacke registriert — donorTool-Zeile gedeckt)", out.d.toolBlueprint === true);
     check(
         'D: das Werkzeug traegt die WERKZEUG-Substanz byte-gleich + role "tool" (klinge_spitzhacke == KIND_SUBSTANCE.geraet_spitzhacke)',
         out.d.toolPartsMatch === true && out.d.toolRole === "tool",

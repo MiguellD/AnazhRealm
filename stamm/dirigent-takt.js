@@ -1672,6 +1672,9 @@ class AnazhRealm_dirigent_takt {
             ppu.nachSchaerfe.value = this.state.traaNode ? AnazhRealm.ZEIT_SCHAERFE * (1 - this._szeneSkalaWirk()) : 0;
         // DIE WEICHE: Post-Kette oder Direktpfad — und mit ihr Leinwand-Tiefe und Rahmen-Ziel (`_leinwandWeg`, der EINE Weg).
         let direkt = !pp || this.state.postProcessingFailed === true;
+        // das Mikro-Detail der Stoffe gilt dem Pixel des Schirms (`schirmJeSzene`, w4-wiese-nah): die Skala des Szenen-Passes,
+        // der Direktpfad zeichnet in der Ausgabe
+        this._ensureAtmoUniforms().schirmJeSzene.value = direkt || !sp ? 1 : sp.getResolutionScale();
         if (!direkt) {
             this._leinwandWeg(false);
             try {

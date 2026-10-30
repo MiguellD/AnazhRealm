@@ -7,8 +7,7 @@
 //   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch trägt lofi/wolf/mensch
 //     mit fx.klang/fx.motion · paramsByKind trägt klang/koerper/kreatur (W-A1-
 //     Regler-Straße) · KEINE Auto-Blueprints dieser kinds (must-ignore am
-//     Chokepoint) · die Studio-Rezepte-Liste der Werkstatt führt sie (sichtbar/
-//     regelbar) · DER EINE AUDIO-KONSUMENT LEBT: _klangStudioPreset liest das
+//     Chokepoint) · (die Werkstatt führt sie als Knoten des Stammbaums: gate:nervensystem S) · DER EINE AUDIO-KONSUMENT LEBT: _klangStudioPreset liest das
 //     Genesis-lofi-Genre, _lofiChordDurationMs fährt das Studio-Tempo (78 bpm →
 //     ~3077 ms) und liest ohne Rezept die Kern-GENRES-Tafel (fail-closed, 78 bpm).
 //   --selftest: injizierte Verletzungen machen die statischen Gesetze rot.
@@ -59,7 +58,7 @@ hauptLauf(async () => {
     await server.zeige(page, 30000);
 
     const out = await page.evaluate(async () => {
-        const res = { b: {}, k: {}, w: {} };
+        const res = { b: {}, k: {} };
         await window.__weltDa();
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.lofi && f.recipes.wolf && f.recipes.mensch);
@@ -78,20 +77,8 @@ hauptLauf(async () => {
                       kreatur: Array.isArray(f.paramsByKind.kreatur) ? f.paramsByKind.kreatur.length : -1,
                   }
                 : null;
-        // must-ignore am Chokepoint: KEINE Auto-Blueprints dieser kinds.
-        // must-ignore-Probe an der HERKUNFTS-MARKE: ein Auto-Blueprint traegt
-        // _foundryAutoSpecies (der Chokepoint stempelt sie) — KEINER darf auf ein
-        // Rezept der drei MESHFREI-kinds zeigen (die pre-existierenden Avatar-
-        // Koerper koerper_human/phoenix/dragon sind KEINE Auto-Blueprints).
-        res.b.autoBpOffenders = [];
-        for (const n in r.state.blueprints || {}) {
-            const bp = r.state.blueprints[n];
-            const src = bp && bp._foundryAutoSpecies;
-            if (!src || !f.recipes || !f.recipes[src]) continue;
-            const k = f.recipes[src].kind;
-            if (k === "klang" || k === "koerper" || k === "kreatur") res.b.autoBpOffenders.push(n);
-        }
-        res.b.noAutoBps = res.b.autoBpOffenders.length === 0;
+        // (must-ignore am Chokepoint — kein Auto-Bauplan neben dem Werk-Ziel einer Art, jeder wäre ein Träger-Zwilling —
+        // prüft gate:nervensystem S am Stammbaum für JEDE Art.)
         // EINE Quelle: die Dial-Karten wohnen in den Gesetzbüchern, der Stamm reicht dieselben Objekte durch (kein Zwilling).
         const A = r.constructor;
         res.b.dialEins =
@@ -420,15 +407,6 @@ hauptLauf(async () => {
             res.e = res.e || {};
             res.e.err = (e && e.message) || String(e);
         }
-        // ===== W: die Werkstatt-Sichtbarkeit (Studio-Rezepte-Liste, W-A1-Straße) =====
-        try {
-            const ids = r._workshopStudioRecipeIds();
-            res.w.lofi = ids.includes("lofi");
-            res.w.wolf = ids.includes("wolf");
-            res.w.mensch = ids.includes("mensch");
-        } catch (e) {
-            res.w.err = (e && e.message) || String(e);
-        }
         // ===== O: DER HOST-OFEN IN DER VORSCHAU (ERFINDER-WELLE — „waehle mensch/wolf
         // und nichts erscheint" ist tot: die EINE Vorschau-Quelle baeckt MESHFREI-Domaenen
         // selbst; klang ist ehrlich 3D-frei + die Welt-Klang-Wahl WIRKT als Zahl) =====
@@ -479,11 +457,6 @@ hauptLauf(async () => {
         "B: die B4-Regler-Tabellen reisen (paramsByKind klang=7 · koerper=8 · kreatur=5)",
         !!out.b.params && out.b.params.klang === 7 && out.b.params.koerper === 8 && out.b.params.kreatur === 5,
         out.b.params
-    );
-    check(
-        "B: KEINE Auto-Blueprints der drei kinds (must-ignore am Chokepoint)",
-        out.b.noAutoBps === true,
-        (out.b.autoBpOffenders || []).join(",")
     );
     check(
         "B: die Dial-Karten sind die Objekte der Gesetzbücher (koerper + tetrapoda, kein Stamm-Zwilling)",
@@ -657,11 +630,6 @@ hauptLauf(async () => {
         out.x ? out.x.holzrossTags : ""
     );
     check(
-        "W: die Studio-Rezepte-Liste der Werkstatt fuehrt lofi/wolf/mensch (sichtbar/regelbar)",
-        out.w.lofi === true && out.w.wolf === true && out.w.mensch === true,
-        out.w.err || ""
-    );
-    check(
         "O: mensch-Rezept -> der Host-Ofen baeckt den AVATAR-Rig in der Vorschau (+ Memo stabil)",
         !!out.o && out.o.mensch === true && out.o.menschMemo === true,
         (out.o && out.o.err) || ""
@@ -677,5 +645,5 @@ hauptLauf(async () => {
     );
     check("O: die NEUEN TIERE (wolf/fuchs/baer) bauen durch den EINEN Kreatur-Guss", !!out.o && out.o.tiere === true);
 
-    wandEnde(errs, "DIE DREI MESHFREI-DOMÄNEN DOCKEN ALS REINE DATEN: Manifest-Zeilen + §8-Kerne, das Buch traegt fx.klang/fx.motion, die Regler-Strasse traegt die Dials, kein Auto-Blueprint entsteht (must-ignore), die Werkstatt zeigt die Rezepte — der EINE Audio-Konsument lebt (Tempo + SKALA durch den einen Ton-Mapper, fail-soft byte-alt) und der Motion-Erstkonsument liest fx.motion (Schwanz-Rolle, KONSUM als Zahl).");
+    wandEnde(errs, "DIE DREI MESHFREI-DOMÄNEN DOCKEN ALS REINE DATEN: Manifest-Zeilen + §8-Kerne, das Buch traegt fx.klang/fx.motion, die Regler-Strasse traegt die Dials — der EINE Audio-Konsument lebt (Tempo + SKALA durch den einen Ton-Mapper, fail-soft byte-alt) und der Motion-Erstkonsument liest fx.motion (Schwanz-Rolle, KONSUM als Zahl).");
 });

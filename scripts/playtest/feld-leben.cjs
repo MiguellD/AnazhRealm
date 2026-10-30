@@ -1205,7 +1205,6 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
     // Bäume laufen durchs Architektur-System (spawn_tree-DSL-Op → spawnArchitecture): EINE Sprache,
     // EIN Renderpfad. Inseln + UFOs bleiben Sonderpfad (Inseln = floating-chunk-Disziplin).
     const wave6gResults = await safeEvaluate(page, async () => {
-        if (!r || !st) return null;
         const out = {};
         // Hylomorphismus-Baupläne: baum_eiche + baum_kiefer +
         // laub-Material müssen als Built-ins existieren.
@@ -1537,7 +1536,6 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
     // magieleitung) — KEINE Tabelle: Bauplan-Compound-Tags resonieren mit dem Welt-Tag-Feld.
     // Baupläne: stein_block (dichte), kristall_geode (magieleitung), glutbrunnen (glut).
     const wave6gP2Results = await safeEvaluate(page, () => {
-        if (!r || !st) return null;
         const out = {};
         // der Voxel-Populator ist die lebende Schicht.
         const bps = st.blueprints || {};
@@ -1763,7 +1761,6 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
     // felsbogen (Trilithon, begehbarer Überhang) + felsturm (Fels-Nadel) als Welt-Bürger — KEIN
     // Voxel-Terrain: die Per-Part-Kollision lässt zwischen den Pfeilern eine echte begehbare Lücke.
     const wave6gP3Results = await safeEvaluate(page, () => {
-        if (!r || !st) return null;
         const out = {};
         const bps = st.blueprints || {};
         const fb = bps.felsbogen;
@@ -1955,7 +1952,6 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
     // Ein Grabe-Hieb löst Terrain in Material auf, dessen Identität aus worldFieldAt emergiert (die
     // sichtbare Farbe ist das Material, das der Spieler bekommt) — keine Biom-Tabelle.
     const wave6gP4Results = await safeEvaluate(page, () => {
-        if (!r || !st) return null;
         const out = {};
 
         // Resonanz — die dominante Welt-Achse bestimmt das Material.

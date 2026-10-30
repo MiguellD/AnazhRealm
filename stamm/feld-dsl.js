@@ -1025,24 +1025,7 @@ class AnazhRealm_feld_dsl {
             // Wasser (_dslSpawnStudioItems). Unbekanntes Wort → Log-Eintrag, kein Raten, kein Ersatz-Baum. `ov` (die
             // Regler {id: Zahl}, KI K2) prägt das Werk über denselben Stempel, am Vertrag der Art geklemmt. Eine Prägung (der
             // Klang der Welt, die Gestalt des Spielers — KIND_POLICY `werk`) steht an keinem Ort: Ort und Zahl zählen dort nicht.
-            spawn_studio: ([what, positionNode, count, seed, ov], ctx) => {
-                const name = this._studioBlueprintForWord(what == null ? "" : String(what));
-                if (!name) {
-                    ctx.log.push({ event: "unknown_studio_word", word: what, program_id: ctx.programId });
-                    return;
-                }
-                if (this._studioWerkVerb(name) === "praegung") {
-                    const n1 = this._dslSpawnStudioItems(name, null, 1, seed, ctx, 0, ov);
-                    ctx.log.push({ event: "spawned_studio", count: n1, pos: null, kind: name });
-                    return;
-                }
-                const n = c(count, 1, 24);
-                const pos = this.dslEvalPos(positionNode, ctx); // kein Ort → `dslEvalPos` bricht die Op benannt ab
-                const abstand = this._studioSpawnAbstand(name);
-                const jitter = n > 1 ? abstand * Math.sqrt(n) : 0;
-                const spawned = this._dslSpawnStudioItems(name, pos, n, seed, ctx, jitter, ov);
-                ctx.log.push({ event: "spawned_studio", count: spawned, pos, kind: name });
-            },
+            spawn_studio: (args, ctx) => this._spawnStudioWerk(args, ctx),
             spawn_island: ([positionNode, height, seed, size], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
@@ -1996,6 +1979,29 @@ class AnazhRealm_feld_dsl {
     _werkFuss(x, z, y) {
         const sy = this._voxelSurfaceY(x, z);
         return Number.isFinite(sy) ? this._bauDachUnter(x, z, sy) + 0.5 : y;
+    }
+
+    // DAS WERK EINES WORTS (der Op `spawn_studio` und der Griff der Bibliothek, `_stammbaumGriff`): das Wort löst über den EINEN
+    // Wort-Katalog auf, eine Prägung steht an keinem Ort, sonst setzt `_dslSpawnStudioItems` n Werke am aufgelösten Ort (kein
+    // Ort → `dslEvalPos` wirft benannt, `invalid_position` steht im Log). Ein Glied, damit der Griff der Werkstatt das Werk
+    // setzt, ohne den Interpreter zu rufen (er zöge jede Op in die Werkstatt, gate:v1-pfad W7).
+    _spawnStudioWerk([what, positionNode, count, seed, ov], ctx) {
+        const name = this._studioBlueprintForWord(what == null ? "" : String(what));
+        if (!name) {
+            ctx.log.push({ event: "unknown_studio_word", word: what, program_id: ctx.programId });
+            return;
+        }
+        if (this._studioWerkVerb(name) === "praegung") {
+            const n1 = this._dslSpawnStudioItems(name, null, 1, seed, ctx, 0, ov);
+            ctx.log.push({ event: "spawned_studio", count: n1, pos: null, kind: name });
+            return;
+        }
+        const n = this.dslClamp(count, 1, 24);
+        const pos = this.dslEvalPos(positionNode, ctx);
+        const abstand = this._studioSpawnAbstand(name);
+        const jitter = n > 1 ? abstand * Math.sqrt(n) : 0;
+        const spawned = this._dslSpawnStudioItems(name, pos, n, seed, ctx, jitter, ov);
+        ctx.log.push({ event: "spawned_studio", count: spawned, pos, kind: name });
     }
 
     // Die Regler des Programms (`ov`) prägen über den EINEN Stempel; jede Klemme steht beim Namen im Log, ein fremder Regler

@@ -82,9 +82,6 @@ function wortVerdict(m) {
     }
     for (const w of WORT_UNBEKANNT)
         if (m.woerter?.[w] && m.woerter[w].ziel) out.push(`„${w}" → ${m.woerter[w].ziel} (geraten)`);
-    if (!(m.arten > 0)) out.push("keine platzierbare Studio-Art im Buch (Vorbedingung)");
-    if (m.artenOhneWort && m.artenOhneWort.length)
-        out.push(`Studio-Arten ohne Wort: ${m.artenOhneWort.slice(0, 6).join(", ")}`);
     for (const [satz, v] of Object.entries(m.vorschlag || {})) {
         if (/„hier" kennt kein Studio/.test(v.zeile || ""))
             out.push(`„${satz}": der Ort gilt als Wort („${v.zeile.slice(0, 60)}")`);
@@ -311,8 +308,8 @@ function wand(w) {
     return [
         ["W1 kein Satz würfelt aus Math.random (chatDslPatterns · dslCtx · _dslSpawnStudioItems)", ...alle([[/\n {4}get chatDslPatterns\(\) \{/, "dslCtx", "_dslSpawnStudioItems"], /Math\.random/])],
         [
-            "W3 der Wort-Katalog liest den Rezept-Katalog (kein STUDIO_WORT, keine Wort-Literale in Auflöser · Katalog · Wortliste)",
-            ...alle([null, /AnazhRealm\.STUDIO_WORT\b/], [["_studioBlueprintForWord", "_studioWortKatalog", "_studioWordsForPrompt"], WORT]),
+            "W3 der Wort-Katalog liest den Stammbaum der Bücher (kein STUDIO_WORT, keine Wort-Literale in Stammbaum · Auflöser · Katalog · Wortliste · Gruppen)",
+            ...alle([null, /AnazhRealm\.STUDIO_WORT\b/], [["_stammbaum", "_studioBlueprintForWord", "_studioWortKatalog", "_studioWordsForPrompt", "_studioWortGruppen"], WORT]),
         ],
         [
             "W5 das Brennglas spricht nie nur ins Log, der Sonnen-Winkel ist EINE Formel (`_sonnenWinkel`)",
@@ -546,10 +543,7 @@ async function probe(argW) {
             const ziel = r._studioBlueprintForWord(w);
             m.woerter[w] = { ziel, art: artVon(ziel) };
         }
-        const PLATZ = ["tree", "rock", "haus", "gate", "vehicle", "ausstattung"];
-        const arten = Object.keys(rec).filter((id) => PLATZ.includes(rec[id].kind));
-        m.arten = arten.length;
-        m.artenOhneWort = arten.filter((id) => !r._studioBlueprintForWord(id));
+        // (dass jedes Teil mit Ziel sein Wort trägt — ohne Hand-Liste der Arten —, prüft gate:nervensystem S am Stammbaum)
         // Der Satz an der Welt: „bau mir ein fachwerkhaus" vor dem Spieler (abseits der Lichtung) — ein Haus steht.
         stelle();
         const vorher = new Set(st.architectures);
@@ -1396,8 +1390,6 @@ hauptLauf(async () => {
         const gesundW = {
             gestartet: true,
             woerter: { ...artVonSoll, scheune: { ziel: null }, quasselstrippe: { ziel: null } },
-            arten: 62,
-            artenOhneWort: [],
             hausGebaut: 1,
             absageZeile: '„scheune" kennt kein Studio. Die Studios bauen — Häuser: Haus, Fachwerkhaus …',
             vorschlag: {
@@ -1419,8 +1411,6 @@ hauptLauf(async () => {
             [mitW({ woerter: { ...gesundW.woerter, fels: { ziel: "haus_x", art: "haus" } } }), '„fels" → haus_x'],
             // die Scheune geraten
             [mitW({ woerter: { ...gesundW.woerter, scheune: { ziel: "haus_alemannisch" } } }), '„scheune" → haus_alemannisch'],
-            // eine Studio-Art ohne Wort
-            [mitW({ artenOhneWort: ["zacken"] }), "Studio-Arten ohne Wort: zacken"],
             // der Satz baut kein Haus
             [mitW({ hausGebaut: 0, hausZeile: "Unbekannter Befehl" }), '„bau mir ein fachwerkhaus" stellt kein Haus'],
             // die Absage rät (Befund)
@@ -1720,7 +1710,7 @@ hauptLauf(async () => {
             wortVerdict(wm),
             "L-Wortschatz jedes Wort des Befunds löst über die Studio-Arten auf, „bau mir ein fachwerkhaus“ stellt ein Haus, ein unbekanntes Wort hört den Katalog",
             () =>
-                `${bekannt}/${Object.keys(WORT_SOLL).length} Wörter bekannt (fachwerkhaus → ${wm.woerter.fachwerkhaus && wm.woerter.fachwerkhaus.ziel}, wagen → ${wm.woerter.wagen && wm.woerter.wagen.ziel}) · ${wm.arten - (wm.artenOhneWort || []).length}/${wm.arten} Studio-Arten mit Wort · Haus gebaut ${wm.hausGebaut} · Absage „${(wm.absageZeile || "").slice(0, 70)}…" · ${Object.entries(
+                `${bekannt}/${Object.keys(WORT_SOLL).length} Wörter bekannt (fachwerkhaus → ${wm.woerter.fachwerkhaus && wm.woerter.fachwerkhaus.ziel}, wagen → ${wm.woerter.wagen && wm.woerter.wagen.ziel}) · Haus gebaut ${wm.hausGebaut} · Absage „${(wm.absageZeile || "").slice(0, 70)}…" · ${Object.entries(
                     wm.vorschlag || {}
                 )
                     .map(([k, v]) => `„${k}" → „${(v.zeile || "").replace(/^> [^|]*\| /, "").slice(0, 60)}…"`)
