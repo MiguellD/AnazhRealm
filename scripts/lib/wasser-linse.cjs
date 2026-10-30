@@ -30,16 +30,6 @@ function wasserTier(r, x, y, z, seele) {
     st.maxCreatures = cap;
     return c;
 }
-// DER ZUFALL der Proben (mulberry32 aus der Saat `hs`): je Ruf eine Zahl in [0, 1)
-function wasserZufall(hs) {
-    return () => {
-        hs = (hs + 0x6d2b79f5) >>> 0;
-        let t = Math.imul(hs ^ (hs >>> 15), hs | 1);
-        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
-}
-
 // ── Q7-Gestalt ──
 function wasserFluss() {
     const h = st.hydrosphere;
@@ -1338,6 +1328,16 @@ async function wasserBild(o = {}) {
         return { ruhig: zone(1), schnelle: zone(2), png: o.png ? window.__png(px, W, H) : null };
     };
     let a, b, sturm;
+    // B7: das Fragment-WGSL, das r184 dem Bogen baut (sein Render-Objekt mit dem Wasser-Stoff) — die Leck-Linse liest es
+    const fragmente = new Set();
+    const holen = renderer._objects.get;
+    const zurueck = leihe(renderer._objects, {
+        get(...x) {
+            const ro = holen.apply(this, x);
+            if (ro.object === wasser && ro.material === mat) fragmente.add(ro.getNodeBuilderState().fragmentShader);
+            return ro;
+        },
+    });
     // Der Wind des Wetters (W-R3): ruhig (Sonne, 0,06) für beide Uhren, dann derselbe Bogen im Sturm (1,0). Vor der
     // Welle L trug das Material keinen Wind — dann ist beides dasselbe Bild.
     const windAlt = U.wind ? U.wind.value : null;
@@ -1349,6 +1349,7 @@ async function wasserBild(o = {}) {
         if (U.wind) U.wind.value = 1.0;
         sturm = await mess(o.t0 || 61.3);
     } finally {
+        zurueck();
         if (U.wind) U.wind.value = windAlt;
         U.time.value = zeitAlt;
         WL.forEach((u, i) => (u.value = u.value.copy ? u.value.copy(wlAlt[i]) : wlAlt[i]));
@@ -1374,6 +1375,7 @@ async function wasserBild(o = {}) {
         kantenVerhaeltnis: R(a.schnelle.kantenDichte > 0 ? b.schnelle.kantenDichte / a.schnelle.kantenDichte : 0),
         // der Sturm am ruhigen Fluss: Kanten-Dichte bei Wind 1,0 gegen 0,06 (dieselbe Uhr)
         sturmVerhaeltnis: R(a.ruhig.kantenDichte > 0 ? sturm.ruhig.kantenDichte / a.ruhig.kantenDichte : 0),
+        fragmente: [...fragmente],
         png60: a.png,
         png3600: b.png,
     };
@@ -2812,7 +2814,7 @@ async function wasserMutation(o = {}) {
     await window.__wasserStrom(ort, 3);
     const sicht = window.__wasserSichtNetz();
     const baum = Object.keys(A.FOREST.crown)[0];
-    const [zufall, R] = [wasserZufall(0x2545f491), wasserRund(1)];
+    const [zufall, R] = [window.__phytoCore.mulberry32(0x2545f491), wasserRund(1)]; // der Vorlagen-RNG (phyto-core)
     const drin = (x, z) => punkte.some((p) => (x - p.x) ** 2 + (z - p.z) ** 2 <= RHO * RHO);
     // im Wasser einer Scheibe steht, was in ihr unter ihrem Spiegel wurzelt (am Hang ragt ihr Rand über ihn)
     const unter = (it) => punkte.some((p) => (it.x - p.x) ** 2 + (it.z - p.z) ** 2 <= RHO * RHO && it.y < p.b + TIEF);
@@ -2921,7 +2923,7 @@ async function wasserMutation(o = {}) {
 // ── GELÄNDE K4 STAFFEL 2: ÜBERALL ── `n` Würfe über die Karte (±6 km, je ≥ 1,5 km auseinander): trockenes Land (`_landAt`) oder
 // der Fluss-Punkt nächst dem Wurf mit Strömung und ≥ 1,2 m Wasser (`fluss`); an jedem die Mutation oder die Strömung.
 async function wasserKarte(o) {
-    const [orte, zufall] = [[], wasserZufall(0x51ed270b)];
+    const [orte, zufall] = [[], window.__phytoCore.mulberry32(0x51ed270b)];
     for (let v = 0; v < 400 && orte.length < o.n; v++) {
         const [x, z] = [zufall() * 12000 - 6000, zufall() * 12000 - 6000];
         if (orte.some(([a, b]) => Math.hypot(a - x, b - z) < 1500)) continue;
@@ -3214,7 +3216,6 @@ module.exports = {
         `var BACH_PROBE_M = ${BACH_PROBE_M};` +
         wasserRund.toString() +
         wasserFlaechen.toString() +
-        wasserZufall.toString() +
         wasserBoot.toString() +
         wasserTier.toString() +
         wasserPflanzen.toString() +

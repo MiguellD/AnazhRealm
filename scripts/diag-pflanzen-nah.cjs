@@ -356,14 +356,7 @@ function teppichDeckung(T, step, skala, neigung = TEPPICH_NEIGUNG) {
         pv = [0, 0, 0];
     for (let gj = Math.ceil(-3 / step); gj * step <= 3; gj++)
         for (let gi = Math.ceil(-3 / step); gi * step <= 3; gi++) {
-            let hs = ((gi * 73856093) ^ (gj * 19349663) ^ 0x6a09e667) >>> 0 || 1;
-            const w = () => {
-                hs = (hs + 0x6d2b79f5) >>> 0;
-                let t = hs;
-                t = Math.imul(t ^ (t >>> 15), t | 1);
-                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-            };
+            const w = PC.mulberry32(((gi * 73856093) ^ (gj * 19349663) ^ 0x6a09e667) >>> 0 || 1);
             const cx = gi * step + (w() - 0.5) * 0.68,
                 cz = gj * step + (w() - 0.5) * 0.68,
                 s = skala * (0.7 + w() * 0.7),
@@ -825,13 +818,7 @@ function kornUrteil(reihen, lambdaKrone, deckungLabor) {
 const HOEHE_SPANNE = { buche: [30, 45], fichte: [30, 50], eiche: [15, 35], birke: [15, 25] };
 const HD_BESTAND = [40, 100];
 function altbestandGroesse() {
-    let a = 0x2545f491;
-    const rng = () => {
-        a = (a + 0x6d2b79f5) | 0;
-        let t = Math.imul(a ^ (a >>> 15), 1 | a);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
+    const rng = PC.mulberry32(0x2545f491);
     const s = [];
     for (let i = 0; i < 4000; i++) s.push(PC.forestTreeSize(rng, i / 4000));
     s.sort((x, y) => x - y);
