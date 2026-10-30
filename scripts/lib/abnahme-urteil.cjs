@@ -422,10 +422,14 @@ function spiegelPearson(sp) {
 // aus Tiefe (`s.tiefe` NDC-z, `tw` × `th`, ≥ 0,99999 Himmel) und Kamera (`vp`, `ivp`, `auge`) der Aufnahme: jedes andere Pixel über
 // y_w (Median der Wasser-Höhe; der Himmel 10⁷ m fern) gespiegelt und projiziert, das nächste Spiegel-Bild gewinnt — die Achse liegt
 // am Fuß jeder Gestalt, nie an der Wasser-Kante der Spalte (bis A13 maß dort selbst ein idealer Spiegel 0,16).
+// DIE EBENE (material.K4): trägt `s.normale` (Einheits-Vektor, zum Auge), spiegelt die Achse an der Ebene n · P = Median über
+// die Maske — die Scheibe eines Fensters wie die Fläche des Sees (ohne sie n = oben, y_w wie bisher).
 function spiegelPartner(m, W, H, s) {
     const { tiefe, tw, th, vp: M, ivp: I, auge: C } = s;
+    const n = s.normale || [0, 1, 0];
     const P = new Float32Array(W * H * 3),
         ys = [];
+    const hoch = (p) => n[0] * P[p * 3] + n[1] * P[p * 3 + 1] + n[2] * P[p * 3 + 2];
     for (let p = 0; p < W * H; p++) {
         const x = p % W,
             y = (p - x) / W;
@@ -433,15 +437,16 @@ function spiegelPartner(m, W, H, s) {
         const w = I[3] * v[0] + I[7] * v[1] + I[11] * v[2] + I[15];
         for (let k = 0; k < 3; k++) P[p * 3 + k] = (I[k] * v[0] + I[k + 4] * v[1] + I[k + 8] * v[2] + I[k + 12]) / w;
         if (v[2] >= 0.99999) for (let k = 0; k < 3; k++) P[p * 3 + k] = C[k] + (P[p * 3 + k] - C[k]) * 1e4;
-        if (m[p] === 1) ys.push(P[p * 3 + 1]);
+        if (m[p] === 1) ys.push(hoch(p));
     }
     const yw = ys.sort((a, b) => a - b)[ys.length >> 1];
     const partner = new Int32Array(W * H).fill(-1),
         nah = new Float32Array(W * H).fill(Infinity);
     for (let p = 0; p < W * H; p++) {
-        const q = [P[p * 3], 2 * yw - P[p * 3 + 1], P[p * 3 + 2]],
+        const h = hoch(p),
+            q = [0, 1, 2].map((k) => P[p * 3 + k] - 2 * (h - yw) * n[k]),
             w = M[3] * q[0] + M[7] * q[1] + M[11] * q[2] + M[15];
-        if (m[p] === 1 || !(P[p * 3 + 1] > yw) || !(w > 0)) continue;
+        if (m[p] === 1 || !(h > yw) || !(w > 0)) continue;
         const x = ((((M[0] * q[0] + M[4] * q[1] + M[8] * q[2] + M[12]) / w + 1) / 2) * W) | 0,
             y = (((1 - (M[1] * q[0] + M[5] * q[1] + M[9] * q[2] + M[13]) / w) / 2) * H) | 0,
             z = y * W + x;
@@ -1896,6 +1901,14 @@ function sollTafelSelbsttest(tafel, q) {
             const r = klassenMasse(b, mw, Ws, Hs, null, null, K).spiegelTreue;
             if (!soll[i](r)) v.push(`Maß spiegelTreue: der Spiegel „${namen[i]}" ${r} (Soll ${soll[i].toString().slice(7)})`);
         });
+        // DIE EBENE (material.K4): dieselbe Welt um z gedreht (x, y, z) → (−y, x, z) — der See wird eine senkrechte Scheibe mit
+        // der Normale (−1, 0, 0), der ideale Spiegel bleibt ≥ 0,95. Die Matrizen spaltenweise wie three: vp' = vp · R⁻¹ (die
+        // Spalten x' = −y, y' = x), ivp' = R · ivp (je Spalte (a, b, c, d) → (−b, a, c, d))
+        const vp = [...K.vp.slice(4, 8).map((x) => -x), ...K.vp.slice(0, 4), ...K.vp.slice(8)],
+            ivp = K.ivp.map((x, i) => [-K.ivp[i + 1], K.ivp[i - 1], x, x][i % 4]);
+        const Kd = { ...K, vp, ivp, auge: [-K.h, 0, 0], normale: [-1, 0, 0] };
+        const rd = klassenMasse(B5[0], mw, Ws, Hs, null, null, Kd).spiegelTreue;
+        if (!(rd >= 0.95)) v.push(`Maß spiegelTreue: die senkrechte Scheibe ${rd} (Soll ≥ 0,95)`);
         const fs = require("fs"),
             foto = require("path").join(__dirname, "..", "..", "spec", "abnahme", "llyn-padarn.png");
         const b = fs.existsSync(foto) ? pngLesen(fs.readFileSync(foto)) : null;

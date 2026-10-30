@@ -32,7 +32,7 @@
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): ein Befund mit jedem Täter — Arbeit in Ruhe, Bytes in Ruhe,
 // kein Treffer, starres Drehen, untreue Wahl, stumpfe Linse, fehlender Leser — MUSS rot fallen und ihn beim
 // Namen nennen.
-//   node scripts/diag-sicht-arbeit.cjs [--selftest]   (npm run gate:sicht-arbeit; Port SICHT_ARBEIT_PORT)
+//   node scripts/diag-sicht-arbeit.cjs [--selftest]   (npm run gate:sicht-arbeit)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
@@ -762,14 +762,13 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const PORT = Number(process.env.SICHT_ARBEIT_PORT) || 4506;
 const { messort } = require("./lib/welt-orte.cjs");
 const MESS = messort("wiese");
 const server = statikServer();
 
 (async () => {
     console.log("=== SICHT-ARBEIT (Welle C) — Null-Renderer, Mess-Wiese, die Sicht-Linse je Frame ===");
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 600000 });
     page.setDefaultTimeout(580000);
     let befund = null;

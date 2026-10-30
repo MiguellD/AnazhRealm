@@ -1548,23 +1548,65 @@ class AnazhRealm_bau_buch {
         if (z.builtIn) return z;
         const von = z.verwandt && mats[z.verwandt];
         if (von && von.builtIn) return von;
-        const keys = AnazhRealm.MATERIAL_TAG_KEYS;
-        const t = z.tags || {};
-        let best = null,
-            bestD = Infinity;
-        for (const k of Object.keys(mats)) {
-            const b = mats[k];
-            if (!b || !b.builtIn) continue;
-            let d = 0;
-            for (const a of keys) d += ((t[a] || 0) - ((b.tags && b.tags[a]) || 0)) ** 2;
-            if (d < bestD) ((bestD = d), (best = b));
-        }
+        const best = this._stoffVerwandt(z.tags);
         if (!best) {
             this._bruchMelden("STOFF-ZEILE ohne Verwandten: " + folge);
             return null;
         }
         z.verwandt = best.name;
         return best;
+    }
+
+    // DER NÄCHSTE VERWANDTE eines Tag-Profils: die eingebaute Zeile mit dem kleinsten Abstand über die Tag-Achsen
+    // (MATERIAL_TAG_KEYS) — ein eigener Stoff (`_stoff`) und ein Stoff, der nur Tags trägt (`_stoffOptik`), lesen ihre Zeile.
+    _stoffVerwandt(tags) {
+        const mats = this.state.materials || {};
+        const t = tags || {};
+        let best = null,
+            bestD = Infinity;
+        for (const k of Object.keys(mats)) {
+            const b = mats[k];
+            if (!b || !b.builtIn) continue;
+            let d = 0;
+            for (const a of AnazhRealm.MATERIAL_TAG_KEYS) d += ((t[a] || 0) - ((b.tags && b.tags[a]) || 0)) ** 2;
+            if (d < bestD) ((bestD = d), (best = b));
+        }
+        return best;
+    }
+
+    // DIE OPTIK EINES STOFFS (material.K5): die Zeile, deren Rauheit und Metall ein Stoff trägt — beim Namen (`_stoff`, ein
+    // eigener Stoff die seines Verwandten) oder, trägt der Bau nur Tags, die des nächsten Verwandten (`_stoffVerwandt`).
+    // Der gebaute Stoff merkt sich bei ihr (`_stoffOptikMerke`): eine Änderung der Zeile (`rauheit`, `metall`) setzt ihn neu
+    // (`_stoffOptikWirkt`) — r184 liest Rauheit und Metall je Bild aus dem Stoff, kein Programm baut neu. Ohne Zeile null.
+    _stoffOptik(name, tags) {
+        if (name == null && tags == null) return null;
+        const z =
+            name != null ? this._stoff(name, "der Stoff „" + name + "“ trägt keine Optik") : this._stoffVerwandt(tags);
+        return z && Number.isFinite(z.rauheit) ? z : null;
+    }
+    _stoffOptikMerke(zeile, mat) {
+        const L = this._stoffOptikLeser || (this._stoffOptikLeser = new Map());
+        if (!L.has(zeile)) L.set(zeile, new Set());
+        const ref = new WeakRef(mat);
+        L.get(zeile).add(ref);
+        mat.addEventListener("dispose", () => L.get(zeile).delete(ref));
+    }
+    _stoffOptikWirkt(zeile) {
+        const z = this.state.materials && this.state.materials[zeile];
+        const L = this._stoffOptikLeser && this._stoffOptikLeser.get(zeile);
+        if (!z || !L) return 0;
+        let n = 0;
+        for (const ref of [...L]) {
+            const mat = ref.deref();
+            if (!mat) {
+                L.delete(ref);
+                continue;
+            }
+            mat.roughness = mat.userData.pbrRoughness = z.rauheit;
+            mat.metalness = mat.userData.pbrMetalness = z.metall;
+            n++;
+        }
+        return n;
     }
 
     // DIE DICHTE EINES STOFFS (kg/m³, physik K1): die Spalte rho seiner Zeile. Vorher wog jedes Teil Volumen × die Tag-Achse

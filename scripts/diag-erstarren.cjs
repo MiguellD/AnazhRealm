@@ -26,15 +26,13 @@
 //   node scripts/diag-erstarren.cjs      (npm run gate:erstarren)
 // ─────────────────────────────────────────────────────────────────────────
 
-// Port über ERSTARREN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4427.
 const { statikServer, warteAufWelt, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
-const PORT = Number(process.env.ERSTARREN_PORT || 4427);
 const server = statikServer();
 
 const { errs, check } = pruefer();
 
 (async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 300000 }); // GPU-frei; Foundry bleibt AN (Produktions-Pfad)
     page.setDefaultTimeout(280000);
     let out = null;
