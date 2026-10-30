@@ -257,7 +257,8 @@ function ordne(T, karte) {
     return r;
 }
 // Die Karte heilt benannt (stamm-umzug --nach-karte, stamm-rehome): ein Name ohne Karte nimmt die Zone seines Vorgängers,
-// ein toter Name fällt; die Namen stehen sortiert — gleiche Eingabe, gleiche Datei (`karteText`).
+// ein toter Name fällt; die Namen stehen sortiert — gleiche Eingabe, gleiche Datei (`karteText`). `text` ist der Stamm nach
+// der Karte (ordne): gleich T, so ist der Stamm ihr Fixpunkt (gate:betriebsgesetz liest die Karte dann als Werkzeug-Ausgabe).
 function heileKarte(T, K) {
     const r = ordne(T, K);
     const mod = Object.assign({}, K.mod);
@@ -265,7 +266,7 @@ function heileKarte(T, K) {
     for (const n of r.tot) delete mod[n];
     const sortiert = {};
     for (const n of Object.keys(mod).sort()) sortiert[n] = mod[n];
-    return { karte: Object.assign({}, K, { mod: sortiert }), neu: r.neu, tot: r.tot };
+    return { karte: Object.assign({}, K, { mod: sortiert }), neu: r.neu, tot: r.tot, text: r.text };
 }
 function karteText(K) {
     const je = new Map(K.ordnung.map(([s]) => [s, []]));
@@ -323,8 +324,12 @@ function blind(t, wo) {
     return t;
 }
 
-function teileVon(root) {
-    return dateien(root).map((p) => ({ pfad: p, text: fs.readFileSync(path.join(root, p), "utf8") }));
+// DER EINE Leser der Stamm-Dateien [{ pfad, text }] in Lade-Ordnung: im Baum, mit `rev` an einer Revision (ohne Arbeitsbaum).
+const gitIn = (root, args) =>
+    require("child_process").execFileSync("git", ["-C", root, ...args], { encoding: "utf8", maxBuffer: 1 << 30 });
+function teileVon(root, rev) {
+    const lies = (p) => (rev ? gitIn(root, ["show", `${rev}:${p}`]) : fs.readFileSync(path.join(root, p), "utf8"));
+    return (rev ? tagsVon(lies("index.html")).map((t) => t.pfad) : dateien(root)).map((p) => ({ pfad: p, text: lies(p) }));
 }
 
 // Der Text der Zonen-Dateien, geprüft: nur ein Baum im Bild von S trägt (S(S⁻¹(teile)) = teile, Datei für Datei).
@@ -349,11 +354,9 @@ function text(pfad) {
 
 // Der Stamm-Text an einer git-Revision, ohne Arbeitsbaum (die Liste aus ihren Tags).
 function textAusRev(root, rev) {
-    const { execFileSync } = require("child_process");
-    const git = (args) => execFileSync("git", ["-C", root, ...args], { encoding: "utf8", maxBuffer: 1 << 30 });
-    const liste = tagsVon(git(["show", `${rev}:index.html`])).map((t) => t.pfad);
-    if (!liste.length) throw new Error(`Stamm-Layout an ${rev}: kein Stamm-Tag (eine Form vor dem Schnitt)`);
-    return blind(ausZonen(liste.map((p) => ({ pfad: p, text: git(["show", `${rev}:${p}`]) }))), rev);
+    const teile = teileVon(root, rev);
+    if (!teile.length) throw new Error(`Stamm-Layout an ${rev}: kein Stamm-Tag (eine Form vor dem Schnitt)`);
+    return blind(ausZonen(teile), rev);
 }
 
 // Eine Stamm-Zeile (1-basiert, im virtuellen Text) → `datei:zeile` im Baum.
@@ -368,7 +371,7 @@ function ort(root, zeile) {
 function dateiVon(root, methode) {
     const name = methode.replace(/[$]/g, "\\$");
     const rx = new RegExp(`^ {4}(?:static\\s+)?(?:async\\s+)?(?:get\\s+|set\\s+)?\\*?${name}\\s*\\(`, "m");
-    for (const p of dateien(root)) if (rx.test(fs.readFileSync(path.join(root, p), "utf8"))) return p;
+    for (const t of teileVon(root)) if (rx.test(t.text)) return t.pfad;
     return null;
 }
 
@@ -593,7 +596,9 @@ function ersetze(t, glied, x, neu) {
 // Die Stamm-Datei, die den Text `stelle` trägt (ein Server-Patcher fragt, wohin seine Zeile gehört): genau eine → ihr
 // Pfad; keine → null; mehrere → wirft (der Patch wäre mehrdeutig).
 function dateiMit(root, stelle) {
-    const mit = dateien(root).filter((p) => fs.readFileSync(path.join(root, p), "utf8").includes(stelle));
+    const mit = teileVon(root)
+        .filter((t) => t.text.includes(stelle))
+        .map((t) => t.pfad);
     if (mit.length > 1) throw new Error(`dateiMit: ${mit.join(", ")} tragen „${String(stelle).slice(0, 60)}"`);
     return mit[0] || null;
 }
@@ -615,7 +620,7 @@ function liefere(root, urlPfad, t) {
 // Der Träger von AnazhRealm.VERSION: genau EINE Stamm-Datei mit genau EINER Zeile — sonst wirft er.
 function versionsDatei(root) {
     const rx = /^AnazhRealm\.VERSION = "[0-9.]+";$/gm;
-    const treffer = dateien(root).map((p) => [p, (fs.readFileSync(path.join(root, p), "utf8").match(rx) || []).length]);
+    const treffer = teileVon(root).map((t) => [t.pfad, (t.text.match(rx) || []).length]);
     const mit = treffer.filter(([, n]) => n > 0);
     if (mit.length !== 1 || mit[0][1] !== 1)
         throw new Error(
@@ -978,6 +983,8 @@ module.exports = {
     tagsVon,
     tagsSetzen,
     dateien,
+    teileVon,
+    gitIn,
     text,
     textAusRev,
     ort,

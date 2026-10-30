@@ -18,9 +18,7 @@ async function checkBandV1749Adventure({ page, check }) {
         const savedVisited = r.state.visitedRegions;
         const savedLife = r.state.lifeField;
         const savedPos = { x: pm.x, y: pm.y, z: pm.z };
-        const setEmo = (o) => {
-            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
-        };
+        const setEmo = (o) => __emo(p, o);
         const fresh = () => {
             r.state.visitedRegions = new Set();
         };
@@ -417,7 +415,7 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
         // _voxelSurfaceY: liefert eine endliche Höhe AUF dem Nulldurchgang (interpoliert wie die
         // Mesh-Kante) — 0,6 m darunter Grund, 0,6 m darüber Luft.
         const sy = r._voxelSurfaceY(12, -8);
-        out.voxelSurfaceFinite = typeof sy === "number" && Number.isFinite(sy);
+        out.voxelSurfaceFinite = Number.isFinite(sy);
         out.voxelSurfaceIsBoundary =
             out.voxelSurfaceFinite &&
             r._terrainDensityAt(12, sy - 0.6, -8) > 0 &&
@@ -450,7 +448,7 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
             Math.abs(ghVoxel - vsRef) < 0.01;
         const fsVoxel = r.findSurfaceAbove(10, 9999, 10);
         out.findSurfaceVoxelAware =
-            typeof fsVoxel === "number" && Number.isFinite(fsVoxel) && Math.abs(fsVoxel - vsRef) < 0.01;
+            Number.isFinite(fsVoxel) && Math.abs(fsVoxel - vsRef) < 0.01;
 
         // Zwangs-Migration: eine alte Welt OHNE voxelTerrain-Flag UND eine explizite Heightfield-Opt-out-
         // Welt werden BEIDE voxel-basiert. Welt-Journal vorher sichern + danach restoren — sonst flutet
@@ -737,7 +735,7 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
         await r.generateNewWorld({ force: true }); // die Heimat kommt aus dem Faden
         // keine Heightfield-Chunks: `chunkMap` abwesend oder leer
         out.voxelChunkMapEmpty = !r.state.chunkMap || r.state.chunkMap.size === 0;
-        out.voxelMaterialKept = r.state.terrainMaterial !== null && r.state.terrainMaterial !== undefined;
+        out.voxelMaterialKept = r.state.terrainMaterial != null;
         // heightData/minHeight/maxHeight nicht allokiert
         out.voxelGroundFieldNull = r.state.groundHeightField === null;
         out.voxelMinHeightZero = r.state.minHeight === 0;
@@ -1756,15 +1754,7 @@ async function checkBandTodZensus({ page, check }) {
             altMax = s.maxCreatures,
             altModus = r.getGameMode();
         const restore = [];
-        const decke = (name, fn) => {
-            const hatte = Object.prototype.hasOwnProperty.call(r, name);
-            const alt = r[name];
-            r[name] = fn(alt);
-            restore.push(() => {
-                if (hatte) r[name] = alt;
-                else delete r[name];
-            });
-        };
+        const decke = (name, fn) => restore.push(leihe(r, { [name]: fn(r[name]) }));
         s.creatures = [];
         s.creatureEmotions = [];
         s.leichname = [];

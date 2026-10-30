@@ -15,7 +15,6 @@ const {
     selbsttestEnde,
     studioKern,
 } = require("./lib/welt-boot.cjs");
-const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 
@@ -23,7 +22,7 @@ const goldenDir = path.join(root, "spec/asset-contract/v6/golden");
 const goldenFile = path.join(goldenDir, "siedlung.json");
 
 const { errs, check } = pruefer();
-const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
+const { sha } = require("./lib/stamm.cjs");
 
 // Kanonischer Fingerabdruck eines Exports: das volle JSON (Slots + benannte Schichten).
 function fingerprint(plan) {

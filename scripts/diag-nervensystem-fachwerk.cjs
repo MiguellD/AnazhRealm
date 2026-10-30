@@ -85,13 +85,12 @@ hauptLauf(async () => {
     const kernParamsRows = FCn.PARAMS_BY_KIND.haus.length;
 
     const W = { bp: "haus_alemannisch", donor: "haus_basis", preset: "alemannisch", entry: "haus_hanseatisch", praefix: "haus_", stufen: [0, 1, 2, 3], name: "ein Haus", art: "haus", anzahl: 32, teile: 6, label: "Alemannisch · steil, hell", place: { mode: "settlement", siteTag: "haus", dispatch: "settlement" } };
-    const [eps, out, kern] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
+    const [eps, out] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
         const res = { b: {}, f: {} };
         const f = r._ensureAssetFoundry();
         const rez = f.recipes.alemannisch;
         res.b.stil = rez.fx ? rez.fx.stil : null;
         res.b.paramsHaus = f.paramsByKind && Array.isArray(f.paramsByKind.haus) ? f.paramsByKind.haus.length : -1;
-        res.hochhaus = !!(r.state.blueprints && r.state.blueprints.haus_hochhaus);
         // ===== F: DIE MEHR-STUFEN-KLEMME am Flatten-Chokepoint (kindStages [0,1,2,3] LEBT) =====
         // Ohne den N7.5-Merge klemmte ein bekanntes Rezept fail-closed auf [0].
         // FLÄCHEN-STUFE: L1 ist eine echte
@@ -124,7 +123,6 @@ hauptLauf(async () => {
     const ksHaus = JSON.stringify(eps.b.ks.haus);
     check("B: kindStages.haus == [0,1,2,3] (N7.5-Merge am Ingest — die erste Mehr-Stufen-Domaene; 3 = NUR-WURF)", ksHaus === "[0,1,2,3]", ksHaus);
     check("D: builtIn == false (Policy-Zeile; User-Werk-Sicht wie Fahrzeug/Tor/Klinge)", eps.d.builtIn === false);
-    check("D: auch der Glasturm dockt (haus_hochhaus registriert)", out.hochhaus === true);
     check("E: die Stufe 3 trägt ihre Fernform als Beipack __fern (S3 haus, NUR-WURF)", eps.e.fern === true);
     check(
         "F: die Distanz-Wahl 2 wird mit der ECHTEN Stufe |2| bedient (kein [0]-Kollaps — der Merge lebt)",

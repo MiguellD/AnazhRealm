@@ -16,7 +16,6 @@
 //      (spec/asset-contract/v7/golden/daten.json — gemintet NUR wenn es fehlt).
 //   --selftest: Schema-Verletzungen (klang, motion) und ein Kern, der beim Laden eine Transzendente ruft, werden erkannt.
 //   node scripts/diag-daten-contract.cjs [--selftest]
-const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const vm = require("vm");
@@ -34,7 +33,7 @@ const CORES = [
 
 const { pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const { errs, check } = pruefer();
-const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
+const { sha } = require("./lib/stamm.cjs");
 
 // Frischer vm-Kontext je Ladung (Determinismus-Beweis über zwei unabhängige Läufe). Der Kontext liest das Math des
 // Gates (dieselben Funktionen) — so erreicht die Plattform-Probe den Kern.
