@@ -735,8 +735,8 @@ class AnazhRealm_bild_himmel {
         if (p < 0.75) return "autumn";
         return "winter";
     }
-    // Die EINE Saison-Tönungs-Uniform, lazy (TSL muss geladen sein): die Nah-Wiese (`_grassInstanceMat`), das
-    // Foundry-Laub/-Gras (`_foundryTreeMaterial`) und die Karte (Impostor-Stoff) lesen `uSeasonMul` als Albedo-
+    // Die EINE Saison-Tönungs-Uniform, lazy (TSL muss geladen sein): das
+    // Foundry-Laub/-Gras (`_foundryTreeMaterial`, die Nah-Wiese) und die Karte (Impostor-Stoff) lesen `uSeasonMul` als Albedo-
     // Multiplikator, `_tickSeason` fährt sie aus `state.seasonPhase` (kein Rebuild). Abgeleitet, nicht im Snapshot
     // (audit-strict-Whitelist).
     _ensureSeasonUniforms() {

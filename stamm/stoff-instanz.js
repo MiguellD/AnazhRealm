@@ -1121,8 +1121,10 @@ class AnazhRealm_stoff_instanz {
     // Vorderseite (diffuseColor/π ausgeschrieben — ein Fn-Aufruf ohne Layout baute seinen Rumpf erst im Compiler). Kein
     // Szenen-Licht, kein zweiter Stoff: das Laub bleibt EIN Programm je Stoff. `nadel`: true — die Blatt-Karte erkennt die
     // Nadel an ihrer Atlas-Zelle (u ≥ LAUB_LICHT.nadelAbU); false — Klinge und Blatt-Geometrie sind Laub; eine Funktion — die
-    // ferne Karte liest die Nadel ihrer Schicht (`_karteNadel`), der Knoten entsteht je Programm-Bau.
-    _laubLichtStoff(mat, nadel) {
+    // ferne Karte liest die Nadel ihrer Schicht (`_karteNadel`), der Knoten entsteht je Programm-Bau. `narbe` (ein Knoten,
+    // optional; der Halm: uv.y, `_halmStoff`): die Tiefe Λ des Stoffs in der Narbe — jedes direkte Licht erreicht ihn × exp(−K(θ)
+    // · Λ) (phyto-core `halmNarbe`, θ der Winkel der Quelle zum Zenit), Lambert, Glanz und Durchlass zugleich.
+    _laubLichtStoff(mat, nadel, narbe) {
         if (!mat || mat.isNodeMaterial !== true) throw new Error("_laubLichtStoff: kein Knoten-Stoff");
         const T = THREE.TSL;
         const K = AnazhRealm._laubLichtModell();
@@ -1134,7 +1136,8 @@ class AnazhRealm_stoff_instanz {
                     ? nadel()
                     : art === "atlas"
                       ? T.select(T.attribute("uv", "vec2").x.greaterThanEqual(ab), T.float(1), T.float(0))
-                      : T.float(0)
+                      : T.float(0),
+                narbe || null
             );
         const schluessel = mat.customProgramCacheKey;
         const at = art === "karte" ? this._impostorAtlas() : null;
@@ -1142,11 +1145,12 @@ class AnazhRealm_stoff_instanz {
             return (
                 schluessel.call(this) +
                 (art === "laub" ? "|laubLicht" : "|laubLicht:" + art) +
-                (at && at.nadelU ? ":" + at.nadelU.array.length : "")
+                (at && at.nadelU ? ":" + at.nadelU.array.length : "") +
+                (narbe ? "|narbe" : "")
             );
         };
         mat.userData = mat.userData || {};
-        mat.userData.laubLicht = art;
+        mat.userData.laubLicht = narbe ? art + "+narbe" : art;
         return mat;
     }
 
@@ -1179,24 +1183,38 @@ class AnazhRealm_stoff_instanz {
     }
 
     // Das Lichtmodell des Laubs (K19): die Klasse ist die des Standard-Stoffs selbst (sein `setupLightingModel` liefert sie
-    // — die Bootstrap-Brücke reicht sie nicht als THREE-Symbol), erweitert um den Durchlass.
+    // — die Bootstrap-Brücke reicht sie nicht als THREE-Symbol), erweitert um den Durchlass und die Narbe (`_laubLichtStoff`).
     static _laubLichtModell() {
         if (AnazhRealm._laubLichtK) return AnazhRealm._laubLichtK;
         const T = THREE.TSL;
         const Basis = THREE.MeshStandardNodeMaterial.prototype.setupLightingModel.call(null).constructor;
         const A = AnazhRealm._windTsl(T);
-        const durchlass = globalThis.__phytoCore.laubDurchlass;
+        const PC = globalThis.__phytoCore;
+        const durchlass = PC.laubDurchlass;
         class LaubLicht extends Basis {
-            constructor(nadel) {
+            constructor(nadel, narbe) {
                 super();
                 this.nadel = nadel;
+                this.narbe = narbe;
             }
             direct(e, builder) {
-                super.direct(e, builder);
                 const L = e.lightDirection;
+                // die Narbe über dem Stoff dämpft die Quelle vor Lambert, Glanz und Durchlass (die Höhe der Quelle in der Sicht)
+                const ein = this.narbe
+                    ? Object.assign({}, e, {
+                          lightColor: e.lightColor.mul(
+                              PC.halmNarbe(
+                                  A,
+                                  this.narbe,
+                                  L.dot(T.cameraViewMatrix.transformDirection(T.vec3(0.0, 1.0, 0.0)))
+                              ).direkt
+                          ),
+                      })
+                    : e;
+                super.direct(ein, builder);
                 const f = durchlass(A, T.normalView.dot(L), T.positionViewDirection.dot(L).negate(), this.nadel);
-                e.reflectedLight.directDiffuse.addAssign(
-                    e.lightColor
+                ein.reflectedLight.directDiffuse.addAssign(
+                    ein.lightColor
                         .mul(f)
                         .mul(T.diffuseColor.rgb)
                         .mul(1 / Math.PI)
@@ -1280,7 +1298,7 @@ class AnazhRealm_stoff_instanz {
     // Jeder Wurf zeichnet aus EINEM Programm (der eines Baus mit an 0).
     _baumWindStoff(mat, kind, baum) {
         if (!mat || mat.isNodeMaterial !== true || mat.positionNode) return;
-        if (!this.state.windUniforms) this._grassInstanceMat();
+        this._windUniformsEnsure();
         const laub = kind === "foliage" || kind === "foliageTex";
         // ohne Wind-Daten (Stumpf, liegender Stamm, Fels) steht der Stoff still (an 0) und teilt doch das Programm der Bäume
         mat.userData.windArt = new THREE.Vector3(baum ? baum.ht : 1, baum ? baum.delta : 0, baum ? baum.an : 0);

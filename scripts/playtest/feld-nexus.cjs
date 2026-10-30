@@ -12,7 +12,6 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
     // Parser liefert das richtige AST; processChatCommand routet durch dslRun (state.dsl.lastUserProgram
     // + Welt-Effekt); chatSuggest erkennt einen verschriebenen Befehl per Levenshtein.
     const phase3Results = await safeEvaluate(page, async () => {
-        if (!r) return null;
         const out = {};
 
         // 1. Parser-Smoketest
@@ -219,7 +218,6 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
     // (a) Selektion bevorzugt statistisch high-fitness, (b) Mutation behält strukturelle Invarianten,
     // (c) dslCompose mit historyProbability=1 nutzt tatsächlich die History.
     const phase7Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         // Seeded RNG für deterministische Tests.
@@ -315,7 +313,6 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
 
     // ### Schicht 1 — IQ-Schicht (Pfad-Buckets, Multi-Dim-Fitness, Pattern-Memory) ###
     const iqResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // Keyword-Extraktion
         const kws = r.pathExtractKeywords("Ich liebe den Wald und Wasserfälle hier");
@@ -1160,7 +1157,6 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
     void finalState;
     // ### Werkstatt-UX-Polish (Mode-Bar oben + Stats unten + Tool-Palette + Editor-Toggle + Del-Btn) ###
     const v805Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         try {
             // Werkstatt-Tab öffnen
@@ -1277,7 +1273,6 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
 
     // ### Werkstatt-UX: Klone/Neu in Mode-Bar, Default-Size, Kontrast ###
     const v806Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         try {
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
@@ -1349,7 +1344,6 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
 
     // ### Werkstatt-Detail-Polish (Klone/Neu klickbar, Stern-Stats, Default-Größe fix) ###
     const v807Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         try {
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
@@ -1440,7 +1434,6 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
 
     // ### Schicht 2 — Multi-Provider LLM-Sandbox (UI + Parser, kein echter Call) ###
     const llmResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // den Ollama-Weg (Endpunkt, Body, Antwort, Parser) und die Tür jedes Anbieters durch die CSP fährt der KI-Korpus am Verhalten (diag-v1-pfad --korpus)
         const defs = r.llmProviderDefs();
@@ -1502,7 +1495,6 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
     // Lokales Ollama braucht keinen Key, gehostete Setups einen Bearer-Token: buildHeaders schickt
     // Authorization NUR bei gesetztem Key.
     const ollamaKeyResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         const defs = r.llmProviderDefs();
         const ol = defs.ollama;
@@ -1524,7 +1516,6 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
     // (1) /api/chat nur anhängen, wenn die URL noch keinen Pfad hat; (2) extractText liest Ollama-native
     // UND OpenAI-kompatibles Format; (3) options.num_predict ist Ollama-spezifisch (OpenAI lehnt ab).
     const v795Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         const defs = r.llmProviderDefs();
         const ol = defs.ollama;
@@ -1703,7 +1694,6 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
     // (1) <think>/<thinking>-Blöcke werden gestrippt; (2) ohne JSON-Vertrag greift der Plain-Text-
     // Fallback; (3) num_predict 800 statt 400 — think-Block + Antwort brauchen Raum.
     const v798Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         // 1. <think>-Block wird gestrippt, JSON dahinter wird geparst

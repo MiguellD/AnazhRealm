@@ -117,6 +117,7 @@ const FORBIDDEN = [
     { token: "GRASS_POOL_CAP", fiel: "V18.492" },
     { token: "GRASS_MAX_BLADES", fiel: "V18.492" },
     { token: "_grassStudioGeometry", fiel: "V18.492 — die Studio-Halm-Geometrie" },
+    { token: "_grassInstanceMat", fiel: "w4-wiese-nah — der Halm-Stoff ist `_halmStoff`, das Gesetz HALM_GESETZ" },
     { token: "_tickGrassStage", fiel: "V18.492 — der Stufen-Tick lief ins Leere" },
     { token: "GRASS_TUFT_BLADES", fiel: "N7.4 — die Wiese ist Boden-Funktion" },
     { token: "voxelChunkGrassDensity", fiel: "N7.4" },
@@ -1668,7 +1669,7 @@ function scanKartenWand(srcRoh) {
 // trugen neben dem Präsenz-Muster ein Absenz-Glied über den Rumpf EINER Methode — das Absenz-Urteil bleibt, hier je Methode.
 const METHODEN_OHNE = [
     ["_tickCreatureDrink", ["PING_FREQ"]], // die Stimme des Tiers, kein Sinus-Ping
-    ["_grassInstanceMat", ["gust"]], // die Böe lebt im EINEN Wind-Versatz
+    ["_halmStoff", ["gust", 'attribute("instanceColor"']], // die Böe lebt im EINEN Wind-Versatz, die Tönung nativ
     ["_applyVegetationResponse", ["uWindTime"]], // EIN Wind-Term
     ["_foundryTreeMaterial", ['attribute("instanceColor"']], // der Stoff liest die Instanz-Tönung nativ
     ["_bodenFarbeAt", ["SNOW_PROM", "_cont0"]], // der Schnee liest die Prominenz des Gelände-Kerns

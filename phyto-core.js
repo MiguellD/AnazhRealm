@@ -4369,10 +4369,18 @@
         return {
             k: k,
             rinde: rinde,
-            r: mp && typeof mp.roughness === "number" ? mp.roughness : rinde ? 0.93 : k === "grass" ? 0.7 : 0.62,
+            // der Halm: die Cuticula des HALM_GESETZ; den Himmel trägt er ganz, die Narbe verdeckt ihn in der Tiefe
+            r:
+                mp && typeof mp.roughness === "number"
+                    ? mp.roughness
+                    : rinde
+                      ? 0.93
+                      : k === "grass"
+                        ? HALM_GESETZ.rauheit
+                        : 0.62,
             mt: mp && typeof mp.metalness === "number" ? mp.metalness : 0,
             fl: mp ? !!mp.flatShading : false,
-            env: mp && typeof mp.envMapIntensity === "number" ? mp.envMapIntensity : k === "grass" ? 0.18 : 1,
+            env: mp && typeof mp.envMapIntensity === "number" ? mp.envMapIntensity : 1,
             doppelt: _budgetDoppelt(k) || !!(mp && mp.side === 2),
             em: em,
             emI: em && typeof mp.emissiveIntensity === "number" ? mp.emissiveIntensity : em ? 1 : 0,
@@ -5101,6 +5109,87 @@
         return A.mul(A.mul(tau, hinten), keule);
     }
 
+    // DAS HALM-GESETZ (w4-wiese-nah): der Grashalm ist EIN Gesetz aus Querschnitt, Länge, Krümmung und Stoff. Die Gestalt baut
+    // foundry-core `emitGrass` (Länge, Krümmung, die lineale Spitze, die Ähre, die Narbe über jeder Ecke), den Stoff lesen Welt-
+    // Stoff, Labor-Shader und Linse über DIESELBEN Terme (Algebra wie `laubDurchlass`). Der Halm trägt seine Stoff-Koordinaten im
+    // uv: x quer in ADERN (die Mittel-Rippe bei 0, die Ränder bei ± Breite / aderM), y die NARBE über der Ecke (Λ: Blatt-Fläche
+    // der Narbe über ihrer Höhe je Boden-Fläche). Das Durchscheinen ist das Laub-Licht (tauLaub: PROSPECT-D, der dünne Halm
+    // lässt durch, was er spiegelt — Jacquemoud & Baret 1990, Monokotyle N 1,2–1,5).
+    //   kiel/rund  DER QUERSCHNITT gekielt: je Hälfte um `kiel` gegen die Blatt-Ebene (Knaulgras und Rispengras gekielt, der
+    //              Glatthafer flach-rinnig — Conert 2000, Pareys Gräserbuch: 15–30°), der Kiel um `rund` Adern gerundet
+    //   aderM      der Abstand der tragenden Rippen über den Leitbündeln (Pooideae, C3: Leitbündel 0,2–0,5 mm, die Rippen der
+    //              Oberseite über jedem zweiten — Metcalfe 1960, Anatomy of the Monocotyledons I; Christin et al. 2013, PNAS
+    //              110:1381); `ader` hellt die Albedo über der Ader (mittelfrei), `rippe` die Steigung der Rippe, `mitte` die
+    //              hellere Mittel-Rippe über `mitteBreite` Adern
+    //   spitze     die Breite 1 − f^spitze längs des Halms (lineal, spitz im letzten Fünftel)
+    //   narbe      DAS LICHT IN DER NARBE (Monsi & Saeki 1953: I/I0 = exp(−K·Λ), Gras-Bestände K 0,3–0,5): die direkte Quelle
+    //              nach dem Ellipsoid-Gesetz der Blatt-Winkel K(θ) = √(x² + tan²θ) / (x + 1,774 (x + 1,182)^−0,733) (Campbell 1986,
+    //              Agric. For. Meteorol. 36:317), die aufrechte Narbe x 0,7 (K 0,39 senkrecht, 0,50 bei 30°); das Himmels-Licht
+    //              mit kHimmel = dem Integral desselben Gesetzes über den bedeckten Himmel (0,70 bei Λ 2)
+    //   rauheit    die Cuticula (GGX, α = rauheit²): die Glanz-Keule des Blatts σ 0,2–0,5 (Bousquet et al. 2005, Remote Sens.
+    //              Environ. 98:201) → 0,45–0,71; die Umgebung trägt der Himmel ganz, die Tiefe der Narbe verdeckt ihn
+    //   aehre      DIE ÄHRE: Ährchen wechselständig an der Spindel (zweizeilig, Lolium · Elymus), `aehrchen` die volle Zahl
+    //              (die gelieferten Stufen lesen ihre Budget-Zeile), `winkel` gegen die Spindel, `laenge` je Abstand (sie decken
+    //              sich), `breite` je Länge (lanzettlich 7–20 × 3–7 mm), `drehung` um die Spindel je zweitem Ährchen
+    var HALM_GESETZ = Object.freeze({
+        kiel: 0.35,
+        rund: 0.6,
+        aderM: 0.0007,
+        ader: 0.08,
+        rippe: 0.25,
+        mitte: 0.15,
+        mitteBreite: 0.6,
+        spitze: 4,
+        narbe: Object.freeze({ x: 0.7, kHimmel: 0.7 }),
+        rauheit: 0.55,
+        aehre: Object.freeze({ aehrchen: 16, winkel: 0.42, laenge: 1.7, breite: 0.38, drehung: 0.35 }),
+    });
+    // Der Pixel als Filter einer Welle mit ν Perioden je Ader: exp(−π² (ν·fw)² / 2) — die Gauss-Glättung des Pixels (fw: der
+    // Pixel in Adern, `fwidth` des Lesers). Eine Welle unter zwei Pixeln trägt nichts mehr: kein Flimmern in der Ferne.
+    function halmFilter(A, fw, nu) {
+        const x = A.mul(fw, A.k(nu));
+        return A.pow(A.k(Math.E), A.mul(A.mul(x, x), A.k((-Math.PI * Math.PI) / 2)));
+    }
+    // DER QUERSCHNITT über einer Algebra: die Steigung des Halms quer zur Mittel-Rippe bei u (Adern) — der Kiel (V, um `rund`
+    // Adern gerundet, nie schärfer als der Pixel) und die Rippen der Adern (gefiltert). Der Leser kippt die Normale um sie gegen
+    // die Breiten-Richtung t (u wächst längs t): n = normalize(n₀ − s · t).
+    function halmQuer(A, u, fw) {
+        const H = HALM_GESETZ;
+        const r = A.max(A.k(H.rund), fw);
+        const kiel = A.mul(A.mul(A.k(Math.tan(H.kiel)), u), A.pow(A.add(A.mul(u, u), A.mul(r, r)), A.k(-0.5)));
+        const rippe = A.mul(A.mul(A.k(-H.rippe), A.sin(A.mul(u, A.k(2 * Math.PI)))), halmFilter(A, fw, 1));
+        return A.add(kiel, rippe);
+    }
+    // DIE ADER im Stoff: der Faktor auf die Albedo bei u (Adern) — über der Ader heller, dazwischen dunkler (mittelfrei,
+    // gefiltert), die Mittel-Rippe heller; ihre Linie wird mit dem Pixel breiter und blasser (flächentreu).
+    function halmAder(A, u, fw) {
+        const H = HALM_GESETZ;
+        const ader = A.mul(
+            A.mul(A.k(H.ader), A.sin(A.add(A.mul(u, A.k(2 * Math.PI)), A.k(Math.PI / 2)))),
+            halmFilter(A, fw, 1)
+        );
+        const s = A.max(A.k(H.mitteBreite), fw);
+        const ss = A.pow(A.mul(s, s), A.k(-1));
+        const mitte = A.mul(
+            A.mul(A.k(H.mitte * H.mitteBreite), A.pow(s, A.k(-1))),
+            A.pow(A.k(Math.E), A.mul(A.mul(A.mul(u, u), ss), A.k(-0.5)))
+        );
+        return A.add(A.k(1), A.add(ader, mitte));
+    }
+    // DIE NARBE über einer Algebra: das Licht in der Tiefe λ der Narbe — `direkt` für eine Quelle unter cos θ zum Zenit, `himmel`
+    // für das Himmels-Licht (Rückgabe die Faktoren auf das Licht; der Leser setzt direkt in seine Licht-Kette, himmel in die
+    // Verdeckung des indirekten Lichts). Dieselbe Narbe liest der Boden unter der Nah-Wiese.
+    function halmNarbe(A, lambda, cosT) {
+        const N = HALM_GESETZ.narbe;
+        const c = A.max(cosT, A.k(0.05));
+        const tan2 = A.add(A.pow(A.mul(c, c), A.k(-1)), A.k(-1));
+        const kb = A.mul(A.k(1 / (N.x + 1.774 * Math.pow(N.x + 1.182, -0.733))), A.sqrt(A.add(A.k(N.x * N.x), tan2)));
+        return {
+            direkt: A.pow(A.k(Math.E), A.mul(A.mul(kb, lambda), A.k(-1))),
+            himmel: A.pow(A.k(Math.E), A.mul(lambda, A.k(-N.kHimmel))),
+        };
+    }
+
     // DIE STREU EINER REGION (B-Streu): ihre Felder (Steilheit · Feuchte · lebendig je Texel, Float32 wie jeder Bake) und die
     // Würfe ihrer Zellen — je Schicht in Zeilen-Reihe (cz-major, cx-minor) jede Zelle, die Abstand, Steilheit und den Dichte-Wurf
     // trägt, als STREU_WURF Zahlen [cellX, cellZ, x, z, yaw, scale, hash, lebendig, feuchte]. EINE Regel für den Haupt-Faden
@@ -5339,5 +5428,9 @@
         WIND_GLSL: WIND_GLSL, // K19 — die GLSL-Algebra des Terms (Labor)
         LAUB_LICHT: LAUB_LICHT, // K19 — Durchlass des Blatts (tau = T/R je Laub/Nadel) und die Vorwärts-Keule
         laubDurchlass: laubDurchlass, // K19 — DER EINE Laub-Licht-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)
+        HALM_GESETZ: HALM_GESETZ, // w4-wiese-nah — der Halm: Querschnitt, Adern, Spitze, Narbe, Cuticula, Ähre
+        halmQuer: halmQuer, // die Steigung des Querschnitts (Kiel + Rippen) über einer Algebra
+        halmAder: halmAder, // der Faktor der Adern und der Mittel-Rippe auf die Albedo über einer Algebra
+        halmNarbe: halmNarbe, // das Licht in der Narbe (direkt · Himmel) über einer Algebra — Halm und Boden darunter
     };
 })(typeof self !== "undefined" ? self : typeof globalThis !== "undefined" ? globalThis : this);

@@ -3278,6 +3278,10 @@ class AnazhRealm_studio_bruecke {
             } catch (_eL) {
                 throw this._stoffBruch("die Look-Addition (Haut · Fell · Haar)", _eL);
             }
+        } else if (kind === "grass") {
+            // DER HALM (w4-wiese-nah, phyto-core HALM_GESETZ): Querschnitt, Adern und Narbe je Pixel (`_halmStoff`), das
+            // direkte Licht im Laub-Licht mit der Narbe (unten)
+            this._halmStoff(TSL, mat, laubFarbe);
         } else if (mp && mp.webe) {
             // Stoff-Webung (Studio-getCloth): feine Mikro-Struktur moduliert die Stoff-Farbe (Strick grob, Denim/
             // Baumwolle fein, Leder/Gummi glatt-marmoriert) — additiv, nur wenn die Gesetz-Zeile Webung trägt. Frequenz und
@@ -3364,7 +3368,7 @@ class AnazhRealm_studio_bruecke {
         // der Spieler biegt die Halme (uBend). Gemessen W7 (WGSL der Senke): r184 rechnet den Versatz VOR der
         // Instanzierung — Phase und Biegung lesen den Vorlagen-Raum, der Versatz dreht und skaliert mit der Instanz.
         if (kind === "grass") {
-            if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") this._grassInstanceMat();
+            this._windUniformsEnsure();
             const _sk = this._foundryWorldScaleMatrix("gras").elements[0];
             const _sway = this._windSwayOffset(TSL, { ampX: 1.5, hoehe: TSL.positionGeometry.y.mul(_sk) });
             mat.positionNode = TSL.positionLocal.add(_sway);
@@ -3376,7 +3380,7 @@ class AnazhRealm_studio_bruecke {
             // Welt, der Versatz liegt in Welt-Richtung). Jeder Teil einer Pflanze trägt denselben Versatz — Rute und
             // Laub, Stiel und Blüte bleiben verbunden; der Charakter (ampX 1,2) ist der des gefallenen
             // Klein-Vegetations-Zwillings.
-            if (!this.state.windUniforms) this._grassInstanceMat();
+            this._windUniformsEnsure();
             const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.attribute("aWiege", "float") });
             mat.positionNode = TSL.positionLocal.add(_sway);
         }
@@ -3441,6 +3445,7 @@ class AnazhRealm_studio_bruecke {
         if (xfade && !wiegen && (isBark || kind === "foliage" || kind === "foliageTex" || kind === "schatten"))
             this._baumWindStoff(mat, kind, baum);
         if (kind === "foliage" || kind === "foliageTex") this._laubLichtStoff(mat, kind === "foliageTex");
+        else if (kind === "grass") this._laubLichtStoff(mat, false, TSL.uv().y);
         return mat;
     }
     // DAS WURF-RECHT EINES GELIEFERTEN TEILS (der EINE Leser: `_foundryBuildMesh`; gate:regler-wirkt liest ihn aus der
