@@ -740,11 +740,15 @@ class AnazhRealm_bild_himmel {
     // Die EINE Saison-Tönungs-Uniform, lazy (TSL muss geladen sein): die Nah-Wiese (`_grassInstanceMat`), das
     // Foundry-Laub/-Gras (`_foundryTreeMaterial`) und die Karte (Impostor-Stoff) lesen `uSeasonMul` als Albedo-
     // Multiplikator, `_tickSeason` fährt sie aus `state.seasonPhase` (kein Rebuild). Abgeleitet, nicht im Snapshot
-    // (audit-strict-Whitelist).
+    // (audit-strict-Whitelist). Dazu DIE PRÄSENZ DES JAHRS `uLaubPraesenz` (x Laub, y Blüte; `_saisonPraesenz`): das Laub
+    // (`_jahrLage`) und die Karte lesen sie — die Krone fällt im Winter, treibt im Frühling aus.
     _ensureSeasonUniforms() {
         if (this.state.seasonUniforms) return this.state.seasonUniforms;
         const TSL = THREE.TSL;
-        this.state.seasonUniforms = { uSeasonMul: TSL.uniform(new THREE.Color(1, 1, 1)) };
+        this.state.seasonUniforms = {
+            uSeasonMul: TSL.uniform(new THREE.Color(1, 1, 1)),
+            uLaubPraesenz: TSL.uniform(new THREE.Vector2(1, 1)),
+        };
         // UNIFORM-HEIMAT (Review-Riss F1, 19.07.): _tickSeason mutiert je Frame,
         // das Gras-Material ist diät-behandelt — ohne renderGroup fröre jeder
         // per-Objekt-Klon auf dem Stand seines letzten Refresh ein (Patchwork).
@@ -758,14 +762,9 @@ class AnazhRealm_bild_himmel {
     // rechnet. Die Welt-Phase zählt die Saison-MITTEN (Sommer 0,375) → t = phase − 0,125; Sommer ist ×1. Rein (ohne
     // TSL), schreibt in `out` (r/g/b); das Gate ruft es GPU-frei.
     _saisonMul(phase, out) {
-        const SG = AnazhRealm._saisonGesetz();
-        const t = (((phase - 0.125) % 1) + 1) % 1;
-        const f = t * 4;
-        const i = Math.floor(f) % 4;
-        const j = (i + 1) % 4;
-        const k = f - Math.floor(f);
-        const a = SG.stuetzen[i].ti;
-        const b = SG.stuetzen[j].ti;
+        const { SG, a: sa, b: sb, k } = AnazhRealm._saisonLage(phase);
+        const a = sa.ti;
+        const b = sb.ti;
         const kanal = (hex, s) => ((hex >> s) & 255) / 255;
         const mul = (s) => {
             const v = (kanal(a, s) + (kanal(b, s) - kanal(a, s)) * k) / Math.max(kanal(SG.bau, s), 1e-3);
@@ -777,11 +776,24 @@ class AnazhRealm_bild_himmel {
         return out;
     }
 
-    // Die langsame Jahres-Uhr: treibt seasonPhase und leitet den Saison-Namen ab. DIE SAISON IST EINE FARBE (V18.527):
-    // jeder Foundry-Körper und jede Karte ist Golden-Sommer gebacken (die Transport-Schale nagelt season "summer"),
-    // das Jahr trägt die EINE Uniform `uSeasonMul` — Laub, Gras und Karte multiplizieren ihre Albedo damit (die Karte
-    // zu SAISON_GESETZ.kartenGewicht). Kein Neubau, kein Schlüssel-Wechsel: die 36 Sommer↔Winter-Golden-Paare
-    // unterscheiden sich nur in der Laubfarbe (foliage.color), das Studio färbt sein Jahr genauso.
+    // DIE PRÄSENZ DES JAHRS (vegetation.K5, SAISON_GESETZ `pr` · `bl`, wie das Studio `seasonColors`): wie viel vom Laub und von
+    // der Blüte steht, linear zwischen denselben Stützen wie die Tönung — Sommer 1, Herbst 0,55, Winter 0,06 (die kahle Krone),
+    // der Austrieb 0,72; die Blüte 0,85 im Frühling, 0,12 im Sommer. Das Studio-Gesetz zieht jedes Blatt (aType `typ.laub`) und
+    // jede Blüte (`typ.bluete`) um diesen Faktor auf seine Mitte (foundry-core `injectWind`), die Welt ebenso (`_jahrLage`). Rein
+    // (ohne TSL), schreibt in `out` (x Laub, y Blüte); das Gate ruft es GPU-frei.
+    _saisonPraesenz(phase, out) {
+        const { a, b, k } = AnazhRealm._saisonLage(phase);
+        out.x = a.pr + (b.pr - a.pr) * k;
+        out.y = a.bl + (b.bl - a.bl) * k;
+        return out;
+    }
+
+    // Die langsame Jahres-Uhr: treibt seasonPhase und leitet den Saison-Namen ab. Jeder Foundry-Körper und jede Karte ist
+    // Golden-Sommer gebacken (die Transport-Schale nagelt season "summer"); das Jahr trägt die Uniformen des EINEN
+    // SAISON_GESETZ — `uSeasonMul` färbt Laub, Gras und Karte (die Karte zu SAISON_GESETZ.kartenGewicht), `uLaubPraesenz`
+    // lässt das Laub fallen und austreiben (`_saisonPraesenz`). Kein Neubau, kein Schlüssel-Wechsel: das Studio trägt sein
+    // Jahr genauso (uSeasonMul · uLeafPresence · uBloom). Bis vegetation.K5 war die Saison NUR eine Farbe: die Krone deckte im
+    // Winter, was sie im Sommer deckte (GTX, main 24a0f3ef: Laub-Maske Winter 1,003 × Sommer).
     _tickSeason(currentTime) {
         const st = this.state;
         if (typeof st.seasonPhase !== "number") st.seasonPhase = 0.375;
@@ -802,6 +814,8 @@ class AnazhRealm_bild_himmel {
         if (g && g.phase === st.seasonPhase && g.su === st.seasonUniforms) return;
         const su = this._ensureSeasonUniforms();
         if (su && su.uSeasonMul && su.uSeasonMul.value) this._saisonMul(st.seasonPhase, su.uSeasonMul.value);
+        if (su && su.uLaubPraesenz && su.uLaubPraesenz.value)
+            this._saisonPraesenz(st.seasonPhase, su.uLaubPraesenz.value);
         st.season = this._seasonName(st.seasonPhase);
         this._saisonGemalt = { phase: st.seasonPhase, su };
         this._schneeTakt(); // die Schneegrenze folgt dem Pegel (stoffe.K3-2)
@@ -3156,21 +3170,35 @@ AnazhRealm.AUGEN_LICHT = Object.freeze({
     neuM: 0.25,
 });
 // DAS SAISON-GESETZ (foundry-core SAISON_GESETZ, V18.527): die Jahres-Stützstellen des Studios — der EINE Leser
-// (`_saisonMul`, Karten-Stoff), fail-closed in EINER Gültigkeits-Wand.
+// (`_saisonMul`, `_saisonPraesenz`, Laub- und Karten-Stoff), fail-closed in EINER Gültigkeits-Wand: je Stütze Tönung,
+// Laub-Präsenz und Blüte, die Typen des Jahrs (vegetation.K5) und die Karten-Schwelle.
 AnazhRealm._saisonGesetz = function () {
     const SG = AnazhRealm.Gesetz("terrain:SAISON_GESETZ", null);
     if (
         SG &&
         Array.isArray(SG.stuetzen) &&
         SG.stuetzen.length === 4 &&
-        SG.stuetzen.every((s) => s && Number.isFinite(s.ti)) &&
+        SG.stuetzen.every((s) => s && Number.isFinite(s.ti) && Number.isFinite(s.pr) && Number.isFinite(s.bl)) &&
         Number.isFinite(SG.bau) &&
         Number.isFinite(SG.mulMin) &&
         Number.isFinite(SG.mulMax) &&
-        Number.isFinite(SG.kartenGewicht)
+        Number.isFinite(SG.kartenGewicht) &&
+        SG.typ &&
+        Number.isFinite(SG.typ.laub) &&
+        Number.isFinite(SG.typ.bluete) &&
+        Number.isFinite(SG.karteSchwelle)
     )
         return SG;
     return AnazhRealm._kernPflichtBruch("terrain:SAISON_GESETZ");
+};
+// Die Lage einer Welt-Phase zwischen den vier Stützen des SAISON_GESETZ (Studio-t: 0 Frühling · .25 Sommer · .5 Herbst · .75
+// Winter, linear im Ring): die Welt-Phase zählt die Saison-MITTEN (Sommer 0,375) → t = phase − 0,125. Die EINE Lage, die
+// Tönung (`_saisonMul`) und Präsenz (`_saisonPraesenz`) lesen.
+AnazhRealm._saisonLage = function (phase) {
+    const SG = AnazhRealm._saisonGesetz();
+    const f = ((((phase - 0.125) % 1) + 1) % 1) * 4;
+    const i = Math.floor(f) % 4;
+    return { SG, a: SG.stuetzen[i], b: SG.stuetzen[(i + 1) % 4], k: f - Math.floor(f) };
 };
 AnazhRealm.LUFT = Object.freeze(Object.assign({}, AnazhRealm._atmoKern().luft, { unterwasserM: 30 }));
 // DER HIMMEL (V18.530): die Sichtbarkeit seiner Punkte ist Physik. `grenzgroesse` = Dämmerungs-Anker [Sonnenhöhe

@@ -976,13 +976,22 @@ class AnazhRealm_bild_kosten {
         });
         const gezeichnet = rend._geometries.attributeCall;
         const weg = [];
+        // ein verschränkter Puffer (die Jahres-Ecken, `_jahrEcken`) fällt nur GANZ: je Puffer [Sichten im Register, die
+        // ungezeichneten] — zeichnet eine Sicht, bleibt er (`_gpuAbschiedVerschraenkt`)
+        const verschraenkt = new Map();
         for (const [a, v] of rend.info.memoryMap) {
             if (!v || (v.type !== "attributes" && v.type !== "indexAttributes")) continue;
-            if (lebt.has(a) || gezeichnet.get(a) >= zaehlerVor) continue;
-            weg.push(a);
+            const tot = !(lebt.has(a) || gezeichnet.get(a) >= zaehlerVor);
+            if (a.isInterleavedBufferAttribute) {
+                const z = verschraenkt.get(a.data) || verschraenkt.set(a.data, [0, []]).get(a.data);
+                z[0]++;
+                if (tot) z[1].push(a);
+            } else if (tot) weg.push(a);
         }
         let n = 0;
         for (const a of weg) if (this._gpuAbschied(a)) n++;
+        for (const [d, [alle, tot]] of verschraenkt)
+            if (tot.length === alle) n += this._gpuAbschiedVerschraenkt(d, tot);
         st._gpuKehrausN = (st._gpuKehrausN || 0) + n;
         return n;
     }

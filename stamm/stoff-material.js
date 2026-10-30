@@ -1106,6 +1106,16 @@ class AnazhRealm_stoff_material {
                                     );
                                     albedoNode = _albK;
                                     mat.alphaTest = globalThis.__phytoCore.KARTEN_GESETZ.schwelle; // die Codec-Schwelle
+                                    // DAS JAHR DER KARTE (vegetation.K5, der Studio-Impostor): sie ist Sommer gebacken (die volle
+                                    // Krone, `_karteBuehne`), ihre Schwelle hebt sich um (1 − Laub-Präsenz) × SAISON_GESETZ
+                                    // .karteSchwelle — im Winter steht nur, was dicht deckt; die Nadel-Art (`_karteNadel`, je
+                                    // Programm-Bau gelesen: die Reihe wächst mit dem Atlas) fällt nie.
+                                    mat.alphaTestNode = _Ta.Fn(() => {
+                                        const nadel = this._karteNadel(_Ta).element(_schicht.toInt());
+                                        const p = _Ta.mix(_suK.uLaubPraesenz.x, _Ta.float(1), nadel).clamp(0, 1);
+                                        const k = AnazhRealm._saisonGesetz().karteSchwelle;
+                                        return _Ta.float(mat.alphaTest).add(_Ta.float(1).sub(p).mul(k));
+                                    })();
                                     // ── Normal-Atlas (rg, z = √(1−x²−y²)) → Billboard-Rahmen → per-Fragment-Licht ──
                                     // Das rgba8-Ziel trägt die Normale vormultipliziert mit der Deckung (z) — kein Saum der
                                     // Leer-Normale an der Silhouette; BC5 trägt das Mittel der deckenden Texel (leer = die Normale der

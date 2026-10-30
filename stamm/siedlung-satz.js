@@ -439,7 +439,9 @@ class AnazhRealm_siedlung_satz {
                 throw new Error(`_satzBlock(${wer}): Attribut ${name} fehlt oder passt nicht`);
             const out = this._satzWerkbank(name, N * is, Float32Array);
             const jeInstanz = q.isInstancedBufferAttribute === true;
-            const src = jeInstanz || (v0 === 0 && v1 === n0) ? q.array : q.array.subarray(v0 * is, v1 * is);
+            // die Sicht eines verschränkten Puffers (die Jahres-Ecken, `_jahrEcken`) liest dicht (`_sichtDicht`)
+            const qa = q.isInterleavedBufferAttribute ? AnazhRealm._sichtDicht(q) : q.array;
+            const src = jeInstanz || (v0 === 0 && v1 === n0) ? qa : qa.subarray(v0 * is, v1 * is);
             // je Rechnung EIN Kern (`_satzKern*`, K69): eine kleine Funktion, eine Schleife, immer dieselben Array-Arten — die
             // Rechnung des Blocks hält ihre optimierte Form. Vorher lag jede Schleife in diesem Rumpf, und der Wechsel eines
             // Hauses auf die Stufe 0 fiel in die unoptimierte Rechnung: im Null-Gang ins Dorf ein Teil mit 56k Ecken 34–92 ms
@@ -447,7 +449,9 @@ class AnazhRealm_siedlung_satz {
             for (let j = 0; j < cnt; j++) {
                 const o0 = j * n * is;
                 const i = ab + j;
-                if (name === "position") AnazhRealm._satzKernLage(out, o0, src, n, M.fromArray(im, i * 16).elements);
+                // die Mitte eines Blatts (`aCenter`, das Jahr) ist eine Lage wie die Ecke
+                if (name === "position" || name === "aCenter")
+                    AnazhRealm._satzKernLage(out, o0, src, n, M.fromArray(im, i * 16).elements);
                 else if (name === "normal")
                     AnazhRealm._satzKernNormale(out, o0, src, n, NM.getNormalMatrix(M.fromArray(im, i * 16)).elements);
                 else if (wiegeAttr) {
@@ -494,6 +498,23 @@ class AnazhRealm_siedlung_satz {
             W.set(name, a);
         }
         return a.subarray(0, len);
+    }
+
+    // DIE DICHTE SICHT eines verschränkten Puffers (die Jahres-Ecken, `_jahrEcken`): je Ecke die Werte der Sicht hintereinander,
+    // wie ein eigenes Attribut sie trüge — einmal gerechnet und am Attribut gehalten, solange sein Puffer derselbe ist (die
+    // Gestalt ändert ihre Ecken nie; ein GPU-Abschied hebt nur die Version).
+    static _sichtDicht(q) {
+        if (q.__dicht && q.__dichtVon === q.data.array) return q.__dicht;
+        const n = q.count,
+            is = q.itemSize,
+            s = q.data.stride,
+            o = q.offset,
+            a = q.data.array;
+        const d = new Float32Array(n * is);
+        for (let i = 0; i < n; i++) for (let c = 0; c < is; c++) d[i * is + c] = a[i * s + o + c];
+        q.__dicht = d;
+        q.__dichtVon = a;
+        return d;
     }
 
     // DIE KERNE DES BLOCKS (K69, `_satzBlock`): `out` ab `o0`, `src` die Werte der Vorlage, `n` Ecken.
