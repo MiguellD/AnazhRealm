@@ -1072,15 +1072,20 @@ class AnazhRealm_stoff_material {
                                     albedoNode = _albK;
                                     mat.alphaTest = globalThis.__phytoCore.KARTEN_GESETZ.schwelle; // die Codec-Schwelle
                                     // DAS JAHR DER KARTE (vegetation.K5, der Studio-Impostor): sie ist Sommer gebacken (die volle
-                                    // Krone, `_karteBuehne`), ihre Schwelle hebt sich um (1 − Laub-Präsenz) × SAISON_GESETZ
+                                    // Krone, `_karteBuehne`), ihre Schwelle hebt sich um Δ = (1 − Laub-Präsenz) × SAISON_GESETZ
                                     // .karteSchwelle — im Winter steht nur, was dicht deckt; die Nadel-Art (`_karteNadel`, je
-                                    // Programm-Bau gelesen: die Reihe wächst mit dem Atlas) fällt nie.
-                                    mat.alphaTestNode = _Ta.Fn(() => {
-                                        const nadel = this._karteNadel(_Ta).element(_schicht.toInt());
-                                        const p = _Ta.mix(_suK.uLaubPraesenz.x, _Ta.float(1), nadel).clamp(0, 1);
-                                        const k = AnazhRealm._saisonGesetz().karteSchwelle;
-                                        return _Ta.float(mat.alphaTest).add(_Ta.float(1).sub(p).mul(k));
-                                    })();
+                                    // Programm-Bau gelesen: die Reihe wächst mit dem Atlas) fällt nie. Δ geht von der Deckung ab,
+                                    // nie in einen Schwellen-Knoten (K68-N1): r184 verwirft a ≤ alphaTest, a − Δ ≤ s heißt a ≤ s + Δ,
+                                    // und die Zahl des Stoffs regiert den Schnitt — der Klon des Phantoms (`_ghostMaterialFor`: Zahl
+                                    // × Deckkraft) trägt das Jahr mit, opak setzt r184 die Alpha nach dem Test auf 1. Bis zur Heilung
+                                    // trug die Karte `alphaTestNode` mit der Zahl als Konstante (gate:werkstatt-weg L-Werkstatt ROT).
+                                    _alpha = _alpha.sub(
+                                        _Ta.Fn(() => {
+                                            const nadel = this._karteNadel(_Ta).element(_schicht.toInt());
+                                            const p = _Ta.mix(_suK.uLaubPraesenz.x, _Ta.float(1), nadel).clamp(0, 1);
+                                            return _Ta.float(1).sub(p).mul(AnazhRealm._saisonGesetz().karteSchwelle);
+                                        })()
+                                    );
                                     // ── Normal-Atlas (rg, z = √(1−x²−y²)) → Billboard-Rahmen → per-Fragment-Licht ──
                                     // Das rgba8-Ziel trägt die Normale vormultipliziert mit der Deckung (z) — kein Saum der
                                     // Leer-Normale an der Silhouette; BC5 trägt das Mittel der deckenden Texel (leer = die Normale der
