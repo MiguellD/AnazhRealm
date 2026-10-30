@@ -424,31 +424,45 @@ function spiegelPearson(sp) {
 // am Fuß jeder Gestalt, nie an der Wasser-Kante der Spalte (bis A13 maß dort selbst ein idealer Spiegel 0,16).
 // DIE EBENE (material.K4): trägt `s.normale` (Einheits-Vektor, zum Auge), spiegelt die Achse an der Ebene n · P = Median über
 // die Maske — die Scheibe eines Fensters wie die Fläche des Sees (ohne sie n = oben, y_w wie bisher).
-function spiegelPartner(m, W, H, s) {
+// DAS BILD EINMAL (w4-proben-tempo, 30.10.): der Welt-Punkt je Pixel und seine Höhe über der Ebene hängen an Tiefe, Kamera und
+// Ebene, nie an der Maske — `pass` (ein Objekt je Schuss, `klassenMasse`) trägt sie über die Klassen desselben Bilds, je Klasse
+// bleiben ihr Median y_w und die Partner (Node, 1920 × 1080: 455 ms je Klasse, die Projektion je Klasse neu). Dieselbe Rechnung in
+// derselben Reihe: Byte für Byte dasselbe Ergebnis.
+function spiegelPartner(m, W, H, s, pass) {
     const { tiefe, tw, th, vp: M, ivp: I, auge: C } = s;
     const n = s.normale || [0, 1, 0];
-    const P = new Float32Array(W * H * 3),
-        ys = [];
-    const hoch = (p) => n[0] * P[p * 3] + n[1] * P[p * 3 + 1] + n[2] * P[p * 3 + 2];
-    for (let p = 0; p < W * H; p++) {
-        const x = p % W,
-            y = (p - x) / W;
-        const v = [((x + 0.5) / W) * 2 - 1, 1 - ((y + 0.5) / H) * 2, tiefe[(((y + 0.5) * th) / H | 0) * tw + (((x + 0.5) * tw) / W | 0)]];
-        const w = I[3] * v[0] + I[7] * v[1] + I[11] * v[2] + I[15];
-        for (let k = 0; k < 3; k++) P[p * 3 + k] = (I[k] * v[0] + I[k + 4] * v[1] + I[k + 8] * v[2] + I[k + 12]) / w;
-        if (v[2] >= 0.99999) for (let k = 0; k < 3; k++) P[p * 3 + k] = C[k] + (P[p * 3 + k] - C[k]) * 1e4;
-        if (m[p] === 1) ys.push(hoch(p));
+    let B = pass && pass.spiegel;
+    if (!B || B.s !== s || B.W !== W || B.H !== H || B.n.join() !== n.join()) {
+        const P = new Float32Array(W * H * 3),
+            hoch = new Float64Array(W * H);
+        for (let p = 0; p < W * H; p++) {
+            const x = p % W,
+                y = (p - x) / W;
+            const v = [((x + 0.5) / W) * 2 - 1, 1 - ((y + 0.5) / H) * 2, tiefe[(((y + 0.5) * th) / H | 0) * tw + (((x + 0.5) * tw) / W | 0)]];
+            const w = I[3] * v[0] + I[7] * v[1] + I[11] * v[2] + I[15];
+            for (let k = 0; k < 3; k++) P[p * 3 + k] = (I[k] * v[0] + I[k + 4] * v[1] + I[k + 8] * v[2] + I[k + 12]) / w;
+            if (v[2] >= 0.99999) for (let k = 0; k < 3; k++) P[p * 3 + k] = C[k] + (P[p * 3 + k] - C[k]) * 1e4;
+            hoch[p] = n[0] * P[p * 3] + n[1] * P[p * 3 + 1] + n[2] * P[p * 3 + 2];
+        }
+        B = { s, W, H, n: n.slice(), P, hoch };
+        if (pass) pass.spiegel = B;
     }
+    const { P, hoch } = B;
+    const ys = [];
+    for (let p = 0; p < W * H; p++) if (m[p] === 1) ys.push(hoch[p]);
     const yw = ys.sort((a, b) => a - b)[ys.length >> 1];
     const partner = new Int32Array(W * H).fill(-1),
         nah = new Float32Array(W * H).fill(Infinity);
     for (let p = 0; p < W * H; p++) {
-        const h = hoch(p),
-            q = [0, 1, 2].map((k) => P[p * 3 + k] - 2 * (h - yw) * n[k]),
-            w = M[3] * q[0] + M[7] * q[1] + M[11] * q[2] + M[15];
-        if (m[p] === 1 || !(h > yw) || !(w > 0)) continue;
-        const x = ((((M[0] * q[0] + M[4] * q[1] + M[8] * q[2] + M[12]) / w + 1) / 2) * W) | 0,
-            y = (((1 - (M[1] * q[0] + M[5] * q[1] + M[9] * q[2] + M[13]) / w) / 2) * H) | 0,
+        const h = hoch[p];
+        if (m[p] === 1 || !(h > yw)) continue;
+        const q0 = P[p * 3] - 2 * (h - yw) * n[0],
+            q1 = P[p * 3 + 1] - 2 * (h - yw) * n[1],
+            q2 = P[p * 3 + 2] - 2 * (h - yw) * n[2],
+            w = M[3] * q0 + M[7] * q1 + M[11] * q2 + M[15];
+        if (!(w > 0)) continue;
+        const x = ((((M[0] * q0 + M[4] * q1 + M[8] * q2 + M[12]) / w + 1) / 2) * W) | 0,
+            y = (((1 - (M[1] * q0 + M[5] * q1 + M[9] * q2 + M[13]) / w) / 2) * H) | 0,
             z = y * W + x;
         if (x >= 0 && y >= 0 && x < W && y < H && m[z] === 1 && w <= nah[z]) (nah[z] = w), (partner[z] = p);
     }
@@ -489,17 +503,33 @@ const armUrteil = ({ ausdruck: x, arm: a, klassen: k }) =>
 //   glatt/nyquist/beta  das Mikro-Detail je 8×8-Block (s. DAS MIKRO-DETAIL unten)
 //   weiss/wt      Anteil und Zahl der Pixel, die als Weiß lesen statt als Farbe (s. MILCHWEISS unten)
 //   kante/kr      die Geradheit des Umrisses gegen das Außen (s. DIE KANTE DER SILHOUETTE unten) und die Zahl seiner Pixel
-function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
-    const L = new Float32Array(W * H);
-    for (let p = 0; p < W * H; p++) L[p] = luma709(F, p * 4);
+// DAS BILD EINMAL (w4-proben-tempo, 30.10.; `pass`, ein Objekt je Schuss — `werkbank bild --klasse` misst jede Teil-Klasse an
+// DEMSELBEN Bild): die Luma des Bilds und die Projektion des Spiegels hängen nie an der Klasse, `pass` trägt sie über die Klassen;
+// je Klasse laufen die Fenster nur über den Rahmen ihrer Maske (ein Fenster ohne Klassen-Pixel trägt nie). Node, 1920 × 1080, vier
+// Klassen: 1 006 ms je Klasse, davon Spiegel 455 · Zweiton 156 · Luma 66 — dieselbe Rechnung, Byte für Byte dieselben Maße.
+function klassenMasse(F, m, W, H, aussen, ohne, spiegel, pass) {
+    let L = pass && pass.F === F ? pass.L : null;
+    if (!L || L.length !== W * H) {
+        L = new Float32Array(W * H);
+        for (let p = 0; p < W * H; p++) L[p] = luma709(F, p * 4);
+        if (pass) [pass.F, pass.L] = [F, L];
+    }
     let n = 0,
-        s = 0;
+        s = 0,
+        bx0 = W,
+        by0 = H,
+        bx1 = -1,
+        by1 = -1;
     for (let y = 0; y < H; y++)
         for (let x = 0; x < W; x++) {
             const p = y * W + x;
             if (m[p] !== 1) continue;
             n++;
             s += L[p];
+            if (x < bx0) bx0 = x;
+            if (x > bx1) bx1 = x;
+            if (y < by0) by0 = y;
+            if (y > by1) by1 = y;
         }
     // ZWEITON (K63-n2, das Dither-Raster): je Fenster 8×8 (Schritt 4), in dem die Klasse ≥ ¼ der Pixel trägt, das BILD (nicht
     // die Maske — ein Raster über dem Himmel zeigt die Klasse nur auf jedem zweiten Pixel): Kontrast p90 − p10 ≥ 40, höchstens
@@ -508,8 +538,9 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     // Alpha-Kante trägt Zwischentöne; ein Muster aus zwei Tönen im Pixel-Takt ist das sichtbare Dither (Prüfer K63 R2).
     const zmark = new Uint8Array(W * H);
     const zw = new Float32Array(64);
-    for (let y0 = 0; y0 + 8 <= H; y0 += 4)
-        for (let x0 = 0; x0 + 8 <= W; x0 += 4) {
+    const ab = (b0) => Math.max(0, Math.ceil((b0 - 7) / 4) * 4); // das erste Fenster (Schritt 4 ab 0), das den Rahmen berührt
+    for (let y0 = ab(by0); y0 + 8 <= H && y0 <= by1; y0 += 4)
+        for (let x0 = ab(bx0); x0 + 8 <= W && x0 <= bx1; x0 += 4) {
             let c = 0;
             for (let j = 0; j < 8; j++)
                 for (let i = 0; i < 8; i++) {
@@ -538,7 +569,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
                 for (let j = 0; j < 8; j++) for (let i = 0; i < 8; i++) zmark[(y0 + j) * W + x0 + i] = 1;
         }
     let zt = 0;
-    for (let p = 0; p < W * H; p++) if (m[p] === 1 && zmark[p]) zt++;
+    for (let y = Math.max(0, by0); y <= by1; y++) for (let p = y * W + bx0; p <= y * W + bx1; p++) if (m[p] === 1 && zmark[p]) zt++;
     // MILCHWEISS (K63-n4, die weiße Tafel): ein Pixel, das als Weiß liest statt als Farbe — ausgebrannt (Y > 240) oder unbunt
     // und hell (CIELAB D65 aus den linearisierten sRGB-Werten: C*ab < 5, zwei eben merkliche Unterschiede ΔE*ab 2,3 vom Grau,
     // Mahy et al. 1994; L* ≥ 50, heller als die 18-%-Karte)
@@ -552,20 +583,24 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
         wtZiel = 0,
         cs = 0;
     let cab = 0;
+    // die Linearisierung je Byte aus der Tafel (dieselbe Zahl wie `srgbLin`; ein Wert außerhalb 0–255 rechnet sie selbst)
+    const LIN = Float64Array.from({ length: 256 }, (_, i) => srgbLin(i));
+    const lin = (v) => (LIN[v] !== undefined ? LIN[v] : srgbLin(v));
     const weissIn = (U, p) => {
-        const [L, a, b] = cielab([0, 1, 2].map((k) => srgbLin(U[p * 4 + k])));
+        const [L, a, b] = cielab([lin(U[p * 4]), lin(U[p * 4 + 1]), lin(U[p * 4 + 2])]);
         cab = Math.hypot(a, b);
         if (luma709(U, p * 4) > 240) return true;
         return L >= 50 && cab < 5;
     };
-    for (let p = 0; p < W * H; p++) {
-        if (m[p] !== 1) continue;
-        const w = weissIn(F, p);
-        cs += cab;
-        if (!w) continue;
-        if (ohne && weissIn(ohne, p)) wtZiel++;
-        else wt++;
-    }
+    for (let y = Math.max(0, by0); y <= by1; y++)
+        for (let p = y * W + bx0; p <= y * W + bx1; p++) {
+            if (m[p] !== 1) continue;
+            const w = weissIn(F, p);
+            cs += cab;
+            if (!w) continue;
+            if (ohne && weissIn(ohne, p)) wtZiel++;
+            else wt++;
+        }
     // DIE KANTE DER SILHOUETTE: je Rand-Pixel der Klasse,
     // das ans Außen grenzt (`aussen`: kein gemessener Teil — Himmel, Boden, Holz; ohne `aussen` jedes Pixel außerhalb der
     // Klasse), die Kohärenz des Struktur-Tensors der geglätteten Maske (Gauß σ 2 px, Fenster 17 × 17 px):
@@ -585,18 +620,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
             R = 6,
             r = 8,
             pad = R + r + 2;
-        let bx0 = W,
-            by0 = H,
-            bx1 = -1,
-            by1 = -1;
-        for (let y = 0; y < H; y++)
-            for (let x = 0; x < W; x++)
-                if (m[y * W + x] === 1) {
-                    if (x < bx0) bx0 = x;
-                    if (x > bx1) bx1 = x;
-                    if (y < by0) by0 = y;
-                    if (y > by1) by1 = y;
-                }
+        // der Rahmen der Maske (bx0 … by1) steht oben
         if (bx1 >= 0) {
             const x0 = Math.max(0, bx0 - pad),
                 y0 = Math.max(0, by0 - pad),
@@ -677,7 +701,7 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     // DIE SPIEGEL-TREUE (D10, Nordstern §4.1): je 8×8-Block ganz im Wasser das Luma-Mittel gegen das seiner Partner (`spiegelPartner`
     // aus der Tiefe der Aufnahme `spiegel`; ein Block zählt mit der Hälfte seiner Pixel), Pearson r JE BLOCK-ZEILE mit dem Gewicht
     // Σb² (`sp`): Fresnel und Himmels-Verlauf hängen an der Zeile, der Spiegel steht längs ihr. Ohne Tiefe null; `spiegelEbene` = y_w.
-    const sa = spiegel ? spiegelPartner(m, W, H, spiegel) : null,
+    const sa = spiegel ? spiegelPartner(m, W, H, spiegel, pass) : null,
         pa = sa && sa.partner;
     const sp = [0, 0, 0, 0, 0, 0];
     for (let y0 = 0; pa && y0 + 8 <= H; y0 += 8) {
@@ -704,8 +728,9 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
     // Pixel-Raster 1, weißes Rauschen 1/3, eine glatte Fläche 0); `beta` die Steigung des Leistungsspektrums P ∝ f^−β aus der
     // Mittel-Pyramide (Band-Energie je Oktave ∝ f^(2−β): β = 2 + halbe Steigung von log2 E über die Stufen 0 … 2, Rauschen 0).
     const mk = [0, 0, 0, 0, 0, 0, 0]; // Blöcke, glatte, Σk², Σ(gx² + gy²), E je Stufe 0 … 2
-    for (let y0 = 0; y0 + 8 <= H; y0 += 8)
-        for (let x0 = 0; x0 + 8 <= W; x0 += 8) {
+    // nur die Blöcke im Rahmen der Maske (ein Block außerhalb liegt nie ganz in der Klasse), in derselben Reihe
+    for (let y0 = Math.floor(Math.max(0, by0) / 8) * 8; y0 + 8 <= H && y0 <= by1; y0 += 8)
+        for (let x0 = Math.floor(Math.max(0, bx0) / 8) * 8; x0 + 8 <= W && x0 <= bx1; x0 += 8) {
             let voll = true;
             const B = new Float32Array(64);
             for (let i = 0; i < 64 && voll; i++) {

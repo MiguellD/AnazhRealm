@@ -1405,11 +1405,13 @@ async function starte() {
                         if (!(saa > 0 && sbb > 0)) return { r: null, pixel: P, grund: "Bild oder Ziel ohne Struktur in der Öffnung" };
                         return { r: +(sab / Math.sqrt(saa * sbb)).toFixed(3), pixel: P, grund: null };
                     };
+                    // die Bild-Pässe der Maße EINMAL je Schuss (`pass`: Luma, Spiegel-Projektion — abnahme-urteil `klassenMasse`)
+                    const pass = {};
                     namen.forEach((n, j) => {
                         const m = new Uint8Array(W * H);
                         for (let p = 0; p < W * H; p++) m[p] = teil[p] === j + 1 ? 1 : 0;
                         const mb = /^portal-membran$/.test(n);
-                        const ms = __klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null, spiegel);
+                        const ms = __klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null, spiegel, pass);
                         if (mb && ms.pixel) ms.ziel = zielTreue(m);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
@@ -3261,10 +3263,12 @@ hauptLauf(async () => {
         if (fehl.length || SELBST) process.exit(fehl.length ? 1 : 0);
         const welt = {};
         const P = require("../spec/pruefbuehne/welt.json").architectures.find((a) => a.id === "saat-s7-platte");
+        // Bühne und Platte EINMAL vor den Uhren (w4-proben-tempo, 30.10.; bis dahin je Uhr beide, je Umstellen ein kalter Ring 4 —
+        // 24a0f3ef Radeon: fünf Ringe ≈ 170 s): die Uhr springt in der Linse (`kontaktSicht`, die Bühne je Uhr neu), der Spieler bleibt
+        await umstellen({ ort: "buehne", sicht: "ego" });
+        await umstellen({ x: P.position.x, z: P.position.z - 8 });
         for (const uhr of opt("--uhr", "0.5").split(",").map(Number)) {
-            await umstellen({ ort: "buehne", sicht: "ego" });
-            await umstellen({ x: P.position.x, z: P.position.z - 8 });
-            const o = { uhr, png: !!opt("--bilder"), platte: P.id };
+            const o = { uhr, png: !!opt("--bilder"), platte: P.id, zuwachs: hat("zuwachs") };
             const m = (welt[uhr] = (await evalRuf(`return await (${LL.kontaktSicht})(${JSON.stringify(o)});`)).ergebnis);
             for (const [pose, p] of Object.entries((m && m.posen) || {}))
                 if (p.png) pngDatei(path.resolve(opt("--bilder"), `kontakt-${uhr}-${pose}.png`), p.png), delete p.png;

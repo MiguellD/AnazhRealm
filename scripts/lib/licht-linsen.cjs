@@ -2696,27 +2696,47 @@ function kontaktSicht(o) {
             const x = Math.sqrt(m / 6.25);
             return c.map((v) => v * k + (m < 0.04 ? x - 6.25 * x * x : 0.04));
         };
+        // DER SCHUSS (w4-proben-tempo, 30.10.): EINE Aufnahme (bis dahin zwei, die erste verworfen) — `__ausgabeAufnahme` beginnt
+        // Folge, Geschichte, Dither und Schatten je Aufnahme neu (A8-n1), zwei Aufnahmen derselben Szene sind dasselbe Bild (G ↔ G2
+        // der Klassen-Teilung: GTX 18 von 18 Läufen, Radeon 11 von 11 mit 0 Pixeln); die TREUE nimmt den ersten Schuss ein zweites
+        // Mal und bricht laut an jedem Byte. Die Luma rechnet nur, wo eine Linie tastet (je Pixel einmal, `L(i)`), nie das ganze Bild.
+        const luma = (u8) => {
+            const L = new Float32Array(W * H).fill(NaN);
+            return (i) => {
+                if (L[i] !== L[i]) {
+                    const c = zurueck([lin[u8[4 * i]], lin[u8[4 * i + 1]], lin[u8[4 * i + 2]]]);
+                    L[i] = luma709(c) / rend.toneMappingExposure;
+                }
+                return L[i];
+            };
+        };
         const schuss = async () => {
-            for (let i = 0; i < 2; i++) r._schattenAlleNeu(), (o.u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8);
-            const L = new Float32Array(W * H);
-            for (let i = 0; i < W * H; i++) {
-                const c = zurueck([lin[o.u8[4 * i]], lin[o.u8[4 * i + 1]], lin[o.u8[4 * i + 2]]]);
-                L[i] = luma709(c) / rend.toneMappingExposure;
+            r._schattenAlleNeu();
+            o.u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+            if (!aus.treue) {
+                r._schattenAlleNeu();
+                const zwei = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+                let n = 0;
+                for (let i = 0; i < zwei.length; i++) if (zwei[i] !== o.u8[i]) n++;
+                aus.treue = { bytes: n };
+                if (n) throw new Error(`die Treue: zwei Aufnahmen derselben Szene weichen in ${n} Bytes ab — EINE Aufnahme je Schuss trägt hier nicht`);
             }
-            return L;
+            return luma(o.u8);
         };
         const v = new T.Vector3();
         const probe = (L) => {
             const [x, y] = [((v.x + 1) / 2) * W - 0.5, ((1 - v.y) / 2) * H - 0.5];
             const [x0, y0, fx, fy] = [Math.floor(x), Math.floor(y), x % 1, y % 1];
-            const g = (i, j) => L[(y0 + j) * W + x0 + i];
+            const g = (i, j) => L((y0 + j) * W + x0 + i);
             return (g(0, 0) * (1 - fx) + g(1, 0) * fx) * (1 - fy) + (g(0, 1) * (1 - fx) + g(1, 1) * fx) * fy;
         };
-        const aus = { uhr: o.uhr, sonneGrad: +((Math.asin(S.y) * 180) / Math.PI).toFixed(1), schattenM: +laenge.toFixed(2), posen: {} };
+        const aus = { uhr: o.uhr, sonneGrad: +((Math.asin(S.y) * 180) / Math.PI).toFixed(1), schattenM: +laenge.toFixed(2), posen: {}, treue: null };
+        // DIE LINIEN, die der Aufruf liest: der Fuß (s 0,05–0,3, Staffel 1) immer, die Linien des Zuwachses nur mit `o.zuwachs` (Staffel
+        // 2) — bis dahin schoss die Linse sie für jedes Urteil (die Hälfte der Schüsse für einen Fuß, der sie nie las)
         const ziele = {};
         for (let i = 0; i < 22; i++) {
             const s = i < 6 ? 0.05 * (i + 1) : 0.3 + ((laenge - 0.7) * (i - 5)) / 16;
-            if (i < 6 || s > 0.3) (ziele[s < 1 ? 0.25 : Math.floor(s / 2) * 2 + 1.25] ||= []).push(s);
+            if (i < 6 || (o.zuwachs && s > 0.3)) (ziele[s < 1 ? 0.25 : Math.floor(s / 2) * 2 + 1.25] ||= []).push(s);
         }
         // je Linie zwei Kanten beidseits des Kerns (h[0] Kern … Rand): gültig mit Kern ≤ 10 %, Rand ≥ 90 %, ohne Fleck; dunkle Flecken
         // (< 1/5 des Sonnen-Anteils) tragen kein f, Lücken bis 3 cm überbrückt die Gerade
@@ -2770,7 +2790,7 @@ function kontaktSicht(o) {
                 Object.assign((aus.posen[pose] ||= {}), {
                     linien,
                     fuss: { halbschattenCm: fu[fu.length >> 1], kanten: fu.length, von: 12 },
-                    zuwachs: { scheibeCmJeM: +(k / 0.688).toFixed(3), kanten: P.length, von: 2 * linien.length, wegM: Math.max(...Ls) - Math.min(...Ls) },
+                    ...(o.zuwachs ? { zuwachs: { scheibeCmJeM: +(k / 0.688).toFixed(3), kanten: P.length, von: 2 * linien.length, wegM: Math.max(...Ls) - Math.min(...Ls) } } : {}),
                 });
             }
         } finally {
