@@ -487,7 +487,7 @@ class AnazhRealm_daten {
         );
     }
 
-    // Das Wiesen-Grün: EINE Quelle für die Halm-WURZEL (`_grassInstanceMat` baseCol) UND den Wiesen-
+    // Das Wiesen-Grün: EINE Quelle für die Halm-WURZEL (der Fuß-Ton des Boden-Reliefs) UND den Wiesen-
     // Grund (`WIESEN_GRUND`) → der Halm wächst nahtlos aus dem Boden. Die Halm-Spitze
     // bleibt heller; die lush/dry-instanceColor moduliert Halm und Boden ko-variant. Es IST der Wiesen-Grund
     // der Boden-Palette (`mead`), dieselbe Farbe wie der Vertex der Wiese.

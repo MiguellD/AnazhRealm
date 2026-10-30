@@ -1368,10 +1368,11 @@ class AnazhRealm_bild_kosten {
     // DAS AUSGABE-ZIEL DER SZENE IN 32 BIT (0910-1 B, Host-VRAM Runde 2): r184s Szenen-Pass legt `output` als rgba16float an
     // (8 Byte je Pixel, 15,8 MB bei 1080p). Sein Inhalt ist lineares HDR-Licht ≥ 0, und der Kanal a steht an jedem Ort auf 1
     // (der Ziel-Zensus, 07.10.): TRAA reicht `currentColor.a` nur durch (vendor/TRAANode.js clipAABB), kein Leser wertet ihn.
-    // rg11b10ufloat trägt dieselben drei Kanäle in 4 Byte (−7,9 MB) mit 6/6/5 Bit Mantisse — für das EINE Bild eines Frames.
-    // Auflösung und Geschichte bleiben rgba16float: dort summiert die zeitliche Auflösung über 32 Frames, und rg11b10 posterisierte
-    // die Wolken zu Höhenlinien (W7, alle drei in 11/11/10). Ohne das Geräte-Feature `rg11b10ufloat-renderable` bleibt `output`
-    // rgba16float — LAUT (WARN mit Grund und Zahl, und der Ziel-Zensus nennt das Format), nie still.
+    // rg11b10ufloat trägt dieselben drei Kanäle in 4 Byte (−7,9 MB) mit 6/6/5 Bit Mantisse — für das EINE Bild eines Frames, das
+    // jedes Fragment gedithert schreibt (`_ausgabeDither`). Auflösung und Geschichte bleiben rgba16float: dort summiert die zeitliche
+    // Auflösung über 32 Frames, und rg11b10 posterisierte die Wolken zu Höhenlinien (W7, alle drei in 11/11/10). Ohne das
+    // Geräte-Feature `rg11b10ufloat-renderable` bleibt `output` rgba16float — LAUT (WARN mit Grund und Zahl, und der Ziel-Zensus
+    // nennt das Format), nie still.
     _ausgabeFormat(szenePass) {
         const rend = this.state.renderer;
         const be = rend && rend.backend;
@@ -1400,19 +1401,46 @@ class AnazhRealm_bild_kosten {
         ziel.texture.type = THREE.UnsignedInt101111Type;
         ziel.texture.format = THREE.RGBFormat;
         this.state._ausgabeFormat = "rg11b10ufloat";
+        szenePass.contextNode = this._ausgabeDither();
         this._ausgabeSonde(dev);
     }
 
+    // DIE DITHERUNG DES SZENEN-ZIELS (w4-ferne-blau): 6/6/5 Bit Mantisse teilen jede glatte Rampe — Wolke, Himmel, Dunst — in
+    // Stufen von 1/64 bzw. 1/32 ihres Werts (die Wolken-Decke am Kopf 715754fc in Höhenlinien je 1–2 Ausgabe-Stufen, Blau doppelt
+    // so grob), und weil das Gerät gegen null rundet, fällt der Fehler je Pixel in jedem Frame gleich: die zeitliche Auflösung
+    // mittelt ihn nie weg. Darum trägt jedes Fragment des Szenen-Passes vor dem Schreiben (u − Versatz) ulp seines Kanals — r184
+    // `PassNode.contextNode` · `getOutput` ist die EINE Stelle, durch die jeder Stoff dieses Passes ins Ziel schreibt, und der
+    // Programm-Schlüssel trägt ihn —, u aus dem Interleaved-Gradient-Rauschen der Stufen-Blende (`__phytoCore.lodDitherIGN`, quer
+    // gelesen, rotiert mit `uDitherT`). Der Versatz ist die Rundung des Geräts (`_ausgabeSonde`): gegen null 0, zum nächsten ½ —
+    // so ist jeder geschriebene Wert im Mittel das Licht selbst (E[⌊x/q + u⌋] = x/q), für JEDEN Leser des Ziels; über die 32
+    // Frames der Geschichte liest die Auflösung es ohne Stufe. Bis w4-ferne-blau hob ein Ausgleich nach dem Lesen das Mittel
+    // (E[1/m] des Gesetzes, 0,56 % / 1,13 %) — nur in der Post-Kette, der Spiegel des Wassers las das Ziel ohne ihn.
+    _ausgabeDither() {
+        const T = THREE.TSL;
+        const fc = T.screenCoordinate;
+        const u = T.fract(
+            T.float(52.9829189)
+                .mul(T.fract(fc.y.mul(0.06711056).add(fc.x.mul(0.00583715))))
+                .add(this._ensureLodUniforms().uDitherT)
+        );
+        const versatz = (this.state._ausgabeVersatz = this._uniformHeimatTeilen({ v: T.uniform(0) }).v);
+        return T.context({
+            getOutput: (n) => {
+                if (n.isOutputStructNode) return n;
+                const c = n.rgb.max(T.vec3(0));
+                const ulp = T.exp2(T.floor(T.log2(c.max(T.vec3(2 ** -14)))).sub(T.vec3(6, 6, 5)));
+                return T.vec4(c.add(ulp.mul(u.sub(versatz))).max(T.vec3(0)), n.a);
+            },
+        });
+    }
+
     // DIE RUNDUNG DES GERÄTS (0910-1 B): GTX 1060 und Radeon 890M runden beim Schreiben in 11/11/10 GEGEN NULL (Sonde: 1 + ¾ ulp
-    // → 1,0; W7 sah es auf der Radeon in der Geschichte). Je Kanal fehlt dann im Mittel ein halbes ulp — bei 6 Bit Mantisse
-    // 2⁻⁷ · E[1/m] = 0,56 %, beim Blau (5 Bit) 1,13 % (m die Mantisse, log-gleich verteilt: E[1/m] = 1/(2 ln 2) = 0,721): das
-    // Bild wurde 0,2–0,7 Luma-Stufen dunkler und gelber (gemessen OMEN, 16 Blicke, A/B gegen rgba16float). Die Sonde schreibt
-    // 1 + ¾ ulp in ein 1×1-Ziel und liest zurück; rundet das Gerät gegen null, hebt der Ausgleich jede Abtastung des
-    // Szenen-Bilds in der Post-Kette (`ausgabeAusgleich`) um dieses Mittel — rundet es zum nächsten, bleibt er 1.
+    // → 1,0; W7 sah es auf der Radeon in der Geschichte) — ohne Ditherung fehlte je Kanal im Mittel ein halbes ulp, das Bild
+    // wurde 0,2–0,7 Luma-Stufen dunkler und gelber (gemessen OMEN, 16 Blicke, A/B gegen rgba16float). Die Sonde schreibt 1 + ¾ ulp
+    // in ein 1×1-Ziel und liest zurück: rundet das Gerät gegen null, dithert das Ziel um u · ulp, rundet es zum nächsten, um
+    // (u − ½) · ulp (`_ausgabeVersatz`).
     _ausgabeSonde(dev) {
         const st = this.state;
-        if (!st._ausgabeAusgleich) st._ausgabeAusgleich = new THREE.Vector3(1, 1, 1);
-        const A = st._ausgabeAusgleich;
         const tex = dev.createTexture({
             label: "ausgabe-sonde",
             size: [1, 1],
@@ -1458,16 +1486,19 @@ class AnazhRealm_bild_kosten {
                 // R: Mantisse Bit 0–5 über 1 + ¾ ulp: 0 = gegen null, 1 = zum nächsten
                 const nullRund = (w & 0x3f) === 0;
                 st._ausgabeRundung = nullRund ? "gegen null" : "zum nächsten";
-                if (nullRund) A.set(1 + 0.721 / 128, 1 + 0.721 / 128, 1 + 0.721 / 64);
-                else A.set(1, 1, 1);
-                const faktor = A.toArray().map((x) => x.toFixed(4));
+                st._ausgabeVersatz.value = nullRund ? 0 : 0.5;
                 this.log(
-                    `AUSGABE: rg11b10ufloat, das Gerät rundet ${st._ausgabeRundung} — Ausgleich ${faktor.join("/")}`,
+                    `AUSGABE: rg11b10ufloat, das Gerät rundet ${st._ausgabeRundung} — die Ditherung trägt (u − ${st._ausgabeVersatz.value}) ulp`,
                     "INFO"
                 );
             })
             .catch((e) => {
-                this.log("AUSGABE: die Rundungs-Sonde fiel (" + ((e && e.message) || e) + ") — kein Ausgleich", "WARN");
+                this.log(
+                    "AUSGABE: die Rundungs-Sonde fiel (" +
+                        ((e && e.message) || e) +
+                        ") — die Ditherung nimmt gegen null an",
+                    "WARN"
+                );
             })
             .finally(() => {
                 tex.destroy();
@@ -1539,7 +1570,7 @@ class AnazhRealm_bild_kosten {
             // Wolken zu Höhenlinien, die Radeon rundet beim Schreiben gegen null (Sonde 1,0117 → 1,0; über die Geschichte das
             // Mittel −2…−3 % Luma) und die Ruhe halbierte sich (Frame zu Frame 0,29 → 0,58 Luma auf Armlänge) — 6 bzw. 5
             // Mantissen-Bit tragen die zeitliche Auflösung nicht. Das Szenen-Bild EINES Frames trägt sie: es liegt seit 0910-1 B
-            // in rg11b10ufloat (`_ausgabeFormat`, −7,9 MB), die Rundung gleicht `_ausgabeSonde` aus. Seit K50 ist sie der
+            // in rg11b10ufloat (`_ausgabeFormat`, −7,9 MB), gedithert geschrieben (`_ausgabeDither`). Seit K50 ist sie der
             // zeitliche HOCHSKALIERER (`_zeitAufloesung`): die Szene in der Szenen-Skala, Geschichte und Resolve in der Ausgabe.
             // Fehlt TRAANode im THREE der Seite (eine Cache-Kopie des Bootstraps von vor der zeitlichen Auflösung), bricht
             // die Kette LAUT — nie still ohne Kantenglättung, Bloom und Grading weiter.
@@ -1585,9 +1616,6 @@ class AnazhRealm_bild_kosten {
                 godrayStrength: uniform(0),
                 godrayDensity: uniform(0.55),
                 godrayThreshold: uniform(0.8),
-                // DER AUSGLEICH DER AUSGABE-RUNDUNG (0910-1 B, `_ausgabeSonde`): je Kanal der Faktor, um den das Szenen-Bild
-                // in 11/11/10 im Mittel zu dunkel ankommt — derselbe Vektor, den die Sonde setzt (1 ohne Sonde).
-                ausgabeAusgleich: uniform(this.state._ausgabeAusgleich || new THREE.Vector3(1, 1, 1)),
                 // DIE NACH-SCHÄRFE DER HOCHSKALIERUNG (K50): `ZEIT_SCHAERFE × (1 − Szenen-Skala)`, gestellt in `_loopRender` — bei
                 // Skala 1 null (die Stufe kostet dann nichts).
                 nachSchaerfe: uniform(0),
@@ -1624,9 +1652,9 @@ class AnazhRealm_bild_kosten {
             // verschmieren (9-Tap-Gauss via screenUV-Offsets), additiv zurueck
             // -> Glanz/Gluehen an Wasser/Sonne/Highlights. `bright` sampelt den
             // Szene-Textur-Node an versetzter UV. Die MITTE ist zugleich das Bild selbst (`base`): EINE Abtastung
-            // trägt beide (vorher zwei an derselben Stelle — die Ausgabe-UV des Quads ist screenUV).
-            // Jede Abtastung des Szenen-Bilds trägt den Ausgleich der Ausgabe-Rundung (`_ausgabeSonde`; 1 auf rgba16float).
-            const bild = (uv) => sceneColor.sample(uv).rgb.mul(u.ausgabeAusgleich);
+            // trägt beide (vorher zwei an derselben Stelle — die Ausgabe-UV des Quads ist screenUV). Das Szenen-Bild ist im Mittel
+            // das Licht selbst: die Rundung des Ziels trägt die Ditherung beim Schreiben (`_ausgabeDither`).
+            const bild = (uv) => sceneColor.sample(uv).rgb;
             // DIE NACH-SCHÄRFE (K50): die zeitliche Hochskalierung rekonstruiert die Ausgabe aus einer kleineren Szene, ihr Bild ist
             // um eine Spur weicher (gemessen am Ausgabe-Pfad, Gradient der Kanten). Wie jeder Hochskalierer (FSR2 RCAS, TSR) schärft
             // die Kette NACH dem Resolve — nie in die Geschichte: die Mitte gegen ihre vier Nachbarn in Ausgabe-Pixeln, geklemmt auf

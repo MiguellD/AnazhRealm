@@ -654,7 +654,7 @@ hauptLauf(async () => {
         check("Selbst-Test 2: Haupt-Thread öffnet den Asset-Store → S2b rot", t2 && !t2[1]);
         // die Klon-Linse an einem gebrochenen Stamm: die Datei mit dem Anker trägt den Bruch, die Klasse lädt ihn
         const gebrochen = (alt, neu) => {
-            const teile = stammLib.dateien(root).map((p) => ({ pfad: p, text: fs.readFileSync(path.join(root, p), "utf8") }));
+            const teile = stammLib.teileVon(root);
             const t = teile.find((x) => x.text.includes(alt));
             if (t) t.text = t.text.replace(alt, neu);
             else check(`Selbst-Test-Anker steht im Stamm: ${alt.slice(0, 70)}`, false);
