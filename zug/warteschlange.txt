@@ -213,3 +213,4 @@ takt24c-gtx 1 punkte sha=24a0f3eff6051ae954369fd774cce415d1f32dc5 geraet=gtx nur
 geraet-blick-1 1 station sha=24a0f3eff6051ae954369fd774cce415d1f32dc5 lauf=geraet-blick.sh
 dienst-urteil-1 1 station sha=24a0f3eff6051ae954369fd774cce415d1f32dc5 lauf=dienst-urteil.sh
 z80-abab 0 storno
+takt25-gtx 1 punkte sha=952a5603ffec4b4abb496394110f05de166a7ce6 geraet=gtx nur=physik.K2#2,tiere.K1#2,mensch.K1#1,oekologie.K4#2,mensch.K5#1,mensch.K4#1,haar.K2#1,vegetation.K1#1,vegetation.K5#1,licht.K5#1,material.K2#1,material.K1#1,lod.K1#1,lod.K5#1,lod.K2#1,material.K4#1,material.K5#1,studios.K2#2,studios.K3#2,bauen.K1#2,bauen.K5#2,studios.K4#1,fahrzeug.K3#1,siedlung.K1#2,siedlung.K4#2,fahrzeug.K5#1,spielgang.K3#1,fahrzeug.K2#1,fahrzeug.K2#2,ankunft.K2#1,ankunft.K3#1,profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K3#1,profiband.K5#1,klang.K4#1,speicher.K4#2
