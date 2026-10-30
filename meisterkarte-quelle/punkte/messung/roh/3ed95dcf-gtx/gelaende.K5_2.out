@@ -1,0 +1,151 @@
+$ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
+    const fs = require("fs");
+    const path = require("path");
+    const http = require("http");
+    const W = Number(process.env.WERKBANK_PORT);
+    const tor = { W, aus: process.argv[1], arg: process.argv.slice(2), browser: null, page: null };
+    // EIN Ruf (POST JSON, mit Frist); eine Antwort { fehler: "…" } der Werkbank wirft beim Namen
+    tor.ruf = (weg, nutzlast, ms = 120000) =>
+        new Promise((ok, nein) => {
+            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
+                let d = "";
+                a.on("data", (c) => (d += c));
+                a.on("end", () => {
+                    let j = null;
+                    try {
+                        j = JSON.parse(d);
+                    } catch (_e) {
+                        return nein(new Error(weg + ": keine JSON-Antwort: " + d.slice(0, 200)));
+                    }
+                    if (j && typeof j.fehler === "string") return nein(new Error(weg + ": " + j.fehler.slice(0, 300)));
+                    ok(j);
+                });
+            });
+            q.on("error", nein);
+            q.setTimeout(ms, () => q.destroy(new Error(weg + ": Frist " + ms + " ms")));
+            q.end(JSON.stringify(nutzlast || {}));
+        });
+    // die Karte der Welt: die Adapter-Zeile im Log ihrer Werkbank (der Zeuge der Wand GPU steht schon in der Sitzung)
+    tor.karte = () => {
+        const f = process.env.PUNKTE_SITZUNG_LOG;
+        const t = f && fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "";
+        const z = (/^\[linse-gpu\] .*$/m.exec(t) || [null])[0];
+        console.log(z || "KEINE KARTE: das Log der Sitzung nennt keinen [linse-gpu]");
+        return z;
+    };
+    tor.seite = async () => {
+        if (tor.page) return tor.page;
+        const s = await tor.ruf("/status", {}, 30000);
+        const profil = s && s.boot && s.boot.profil;
+        if (!profil) throw new Error("/status nennt kein Profil der Werkbank");
+        const [port, weg] = fs.readFileSync(path.join(profil, "DevToolsActivePort"), "utf8").split(/\r?\n/);
+        const puppeteer = require(path.resolve("node_modules/puppeteer"));
+        tor.browser = await puppeteer.connect({
+            browserWSEndpoint: "ws://127.0.0.1:" + port + weg,
+            defaultViewport: null,
+            protocolTimeout: 900000,
+        });
+        for (const p of await tor.browser.pages())
+            if (await p.evaluate(() => !!(window.anazhRealm && window.anazhRealm.state)).catch(() => false)) return (tor.page = p);
+        throw new Error("im Browser der Werkbank steht keine Seite mit der Welt");
+    };
+    const baum = (datei) => {
+        const text = fs.readFileSync(datei, "utf8");
+        const acorn = require(path.resolve("node_modules/acorn"));
+        const o = { ecmaVersion: "latest", sourceType: "script", allowHashBang: true, allowReturnOutsideFunction: true };
+        return { text, ast: acorn.parse(text, o) };
+    };
+    const ankern = (src, wo, anker) => {
+        for (const [a, b] of anker) {
+            const n = src.split(a).length - 1;
+            if (n !== 1) throw new Error("ANKER " + (n ? n + "-mal" : "fehlt") + " in " + wo + ": " + a.slice(0, 90));
+            src = src.replace(a, () => b);
+        }
+        return src;
+    };
+    // die Deklaration `name` auf oberster Ebene (eine Funktion: ihr Text; const: ihr Wert), jeder Anker [alt, neu] genau einmal ersetzt
+    tor.quelle = (datei, name, anker = []) => {
+        const { text, ast } = baum(datei);
+        for (const n of ast.body) {
+            if (n.type === "FunctionDeclaration" && n.id && n.id.name === name) return ankern(text.slice(n.start, n.end), datei + " " + name, anker);
+            if (n.type === "VariableDeclaration")
+                for (const d of n.declarations)
+                    if (d.id.type === "Identifier" && d.id.name === name && d.init) return ankern(text.slice(d.init.start, d.init.end), datei + " " + name, anker);
+        }
+        throw new Error(datei + ": keine Deklaration " + name + " auf oberster Ebene");
+    };
+    // die Deklarationen `namen` (Anweisungen der obersten Ebene) in der Reihe der Quelle — eine rechnet mit der vorigen
+    tor.dekl = (datei, namen) => {
+        const { text, ast } = baum(datei);
+        const da = new Set();
+        const teile = [];
+        for (const n of ast.body) {
+            const wer = n.type === "FunctionDeclaration" && n.id ? [n.id.name] : n.type === "VariableDeclaration" ? n.declarations.map((d) => d.id.name) : [];
+            if (wer.some((w) => namen.includes(w))) (teile.push(text.slice(n.start, n.end)), wer.forEach((w) => da.add(w)));
+        }
+        const fehlt = namen.filter((x) => !da.has(x));
+        if (fehlt.length) throw new Error(datei + ": keine Deklaration " + fehlt.join(", "));
+        return teile.join("\n");
+    };
+    tor.ende = async () => {
+        if (tor.browser) await tor.browser.disconnect().catch(() => {});
+    };
+    return tor;
+})();
+(async function bodenRollen(tor) {
+    const fs = require("fs");
+    const L = "scripts/diag-koerper-stand.cjs";
+    const n = new Function(tor.dekl(L, ["K8_UMFANG"]) + "\nreturn K8_UMFANG;")();
+    const rollen = tor.quelle(L, "rollen", [
+        ["async function rollen(n) {", "async function rollen(n, sicht) {"],
+        ["const W = window.__messWiese;", "r.setCameraMode(sicht); o.__sicht = s.cameraMode; const W = window.__messWiese;"],
+        ["R.fuss = bahn(", "R.fuss = 0 && bahn("],
+        ["R.falllinie = bahn(", "R.falllinie = 0 && bahn("],
+        ["R.stufe =", "R.stufe = 0 &&"],
+        ['if (ort !== "wiese") continue;', "continue;"],
+    ]);
+    const page = await tor.seite();
+    tor.karte();
+    await page.evaluate("window.__gezeichnet = " + tor.quelle(L, "gezeichnet") + "; window.__eignerKarte = " + tor.quelle(L, "eignerKarte") + ";");
+    const vor = await page.evaluate(() => {
+        const s = window.anazhRealm.state;
+        const p = s.playerMesh.position;
+        return { sicht: s.cameraMode, dorf: window.__anazhAutoSettlement, treppe: !!(s.blueprints && s.blueprints.messtreppe), uhr: s.creatureAnimationTime, p: [p.x, p.y, p.z] };
+    });
+    const erg = {};
+    try {
+        // die Mess-Wiese in IHREM Zustand wie die Linse (haushalt.json `dorfZug`): kein Auto-Dorf wächst an Wiese und Hang
+        await page.evaluate(() => (window.__anazhAutoSettlement = false));
+        for (const sicht of ["first", "third"]) {
+            const t = Date.now();
+            try {
+                const k8 = await page.evaluate("(" + rollen + ")(" + n + ", " + JSON.stringify(sicht) + ")");
+                erg[sicht] = { exit: 0, k8 };
+                const z = (o) => (o ? ["fein", "streu", "huf", "rad"].map((k) => k + " " + (o[k] ? o[k].p95 + "/" + o[k].n : "?")).join(" · ") : "fehlt");
+                console.log("== SICHT " + sicht + " (" + ((Date.now() - t) / 1000).toFixed(1) + " s): wiese " + z(k8.wiese) + " | hang " + z(k8.hang) + " (p95 cm / Kontakte)");
+            } catch (e) {
+                erg[sicht] = { exit: 1, k8: null, fehler: String((e && e.message) || e).split("\n")[0] };
+                console.log("== SICHT " + sicht + " FEHLER " + erg[sicht].fehler);
+            }
+        }
+    } finally {
+        await page.evaluate((v) => {
+            const r = window.anazhRealm;
+            const s = r.state;
+            if (v.dorf === undefined) delete window.__anazhAutoSettlement;
+            else window.__anazhAutoSettlement = v.dorf;
+            if (!v.treppe && s.blueprints) delete s.blueprints.messtreppe;
+            if (v.uhr !== undefined) s.creatureAnimationTime = v.uhr;
+            if (s.cameraMode !== v.sicht) r.setCameraMode(v.sicht);
+            s.playerMesh.position.set(v.p[0], v.p[1], v.p[2]);
+            s._fixedSimPos = null;
+            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+        }, vor);
+    }
+    fs.writeFileSync(tor.aus, JSON.stringify(erg));
+})(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\3ed95dcf-gtx\gelaende.K5_2.json
+[linse-gpu] nvidia/pascal
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
