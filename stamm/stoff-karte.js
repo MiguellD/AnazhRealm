@@ -734,6 +734,9 @@ class AnazhRealm_stoff_karte {
             setze(u.value, u);
         };
         still(wu && wu.uWindStrength, (w, u) => (u.value = 0));
+        // die Karte ist Sommer gebacken (volle Krone, wie der Studio-Bäcker): das Jahr der Welt (`uLaubPraesenz`) hält still
+        const su = this.state.seasonUniforms;
+        still(su && su.uLaubPraesenz, (w) => w.set(1, 1));
         still(lu && lu.uLaubKante, (w) => (w.y = 0));
         still(lu && lu.uKamNah, (w) => w.setScalar(-AnazhRealm.KAMERA_DURCHSICHT.saumM));
         still(lu && lu.uKamZiel, (w) => w.set(lu.uKamAuge.value.x, lu.uKamAuge.value.y, lu.uKamAuge.value.z, 0));

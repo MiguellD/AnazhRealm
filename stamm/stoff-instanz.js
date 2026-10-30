@@ -183,7 +183,10 @@ class AnazhRealm_stoff_instanz {
         mat.userData.windArt = new THREE.Vector3(baum ? baum.ht : 1, baum ? baum.delta : 0, baum ? baum.an : 0);
         mat.userData.baumWind = baum ? { ht: baum.ht, delta: baum.delta, an: baum.an } : null;
         if (!this._baumWindKnoten) this._baumWindKnoten = {};
-        const da = this._baumWindKnoten[laub ? "laub" : "ast"];
+        // die Gestalt mit Jahres-Ecken (`_jahrEcken`): ihr Laub zieht sich zuerst auf seine Mitte (`_jahrLage`), dann weht es
+        const jahr = mat.userData.jahr === true;
+        const knoten = (laub ? "laub" : "ast") + (jahr ? "|jahr" : "");
+        const da = this._baumWindKnoten[knoten];
         if (da) {
             mat.positionNode = da;
             return;
@@ -219,7 +222,22 @@ class AnazhRealm_stoff_instanz {
         const quer = w.quer.mul(uB.z);
         let off = T.vec3(wu.uWindDir.x.mul(quer), w.hoch.mul(uB.z), wu.uWindDir.y.mul(quer));
         if (laub) off = off.add(naht.richtung(T.normalLocal).mul(w.flattern.mul(uB.z)));
-        mat.positionNode = this._baumWindKnoten[laub ? "laub" : "ast"] = T.positionLocal.add(naht.vorlage(off));
+        const lage = jahr ? this._jahrLage(T) : T.positionLocal;
+        mat.positionNode = this._baumWindKnoten[knoten] = lage.add(naht.vorlage(off));
+    }
+
+    // DAS JAHR IM LAUB (vegetation.K5) — das Studio-Gesetz (foundry-core `injectWind`: transformed = mix(aCenter, transformed,
+    // pres)): jedes Blatt (aType SAISON_GESETZ `typ.laub`) zieht sich um die Laub-Präsenz auf seine Mitte, jede Blüte
+    // (`typ.bluete`) um die Präsenz der Blüte, alles andere steht — im Winter (0,06) ist die Krone kahl, im Frühling (0,72) treibt
+    // sie aus. Mitte und Lage im Raum der Vorlage (r184 rechnet den positionNode vor der Instanz, Lehre 22), im Satz der
+    // Nah-Streu beide in Welt-Lage (`_satzBlockEcken`); die Präsenz fährt `_tickSeason` (`uLaubPraesenz`, `_saisonPraesenz`).
+    _jahrLage(T) {
+        const SG = AnazhRealm._saisonGesetz();
+        const p = this._ensureSeasonUniforms().uLaubPraesenz;
+        const typ = T.attribute("aType", "float");
+        const ist = (n) => typ.sub(n).abs().lessThan(0.5);
+        const pres = T.select(ist(SG.typ.laub), p.x, T.select(ist(SG.typ.bluete), p.y, T.float(1)));
+        return T.mix(T.attribute("aCenter", "vec3"), T.positionLocal, pres.clamp(0, 1));
     }
     // DIE INSTANZ-MATRIX OHNE KAPAZITÄT IM SHADER — der EINE Bau jeder InstancedMesh der Welt: r184 legt
     // instanceMatrix bis 64 KB als UNIFORM-Array `array<mat4x4f, N>` in den Vertex-Shader (InstanceNode) —
@@ -1731,6 +1749,24 @@ class AnazhRealm_stoff_instanz {
         attr.__abschiede = (attr.__abschiede | 0) + 1;
         return true;
     }
+    // DER ABSCHIED EINES VERSCHRÄNKTEN PUFFERS (die Jahres-Ecken, `_jahrEcken`): er fällt nur GANZ — jede seiner Sichten im
+    // Register (`sichten`, der Kehraus gibt sie, wenn keine zeichnet) verlässt r184s Register, der geteilte GPU-Puffer fällt
+    // dabei, und das Backend vergisst ihn: r184 `destroyAttribute` zerstört den Puffer und hält seinen toten Eintrag — das
+    // nächste Hochladen fände ihn und zeichnete einen toten Puffer. Die Version steigt (die Observer-Diät lädt neu).
+    _gpuAbschiedVerschraenkt(daten, sichten) {
+        const rend = this.state.renderer;
+        if (!daten || !rend || !rend._attributes || !rend.backend || !rend.info) return 0;
+        let n = 0;
+        for (const a of sichten) {
+            if (!rend.info.memoryMap.has(a)) continue;
+            rend._attributes.delete(a);
+            n++;
+        }
+        rend.backend.delete(daten);
+        daten.needsUpdate = true;
+        daten.__abschiede = (daten.__abschiede | 0) + 1;
+        return n;
+    }
     // DER ABSCHIED EINER INSTANZ-SENKE — das Gegenstück zu `_instanzMesh`: ihre EIGENEN Instanz-Puffer (die Matrizen als
     // Speicher-Puffer, die Farben) verlassen die GPU. Der Speicher-Puffer fällt NUR hier: seine Bindegruppe hält ihn, und
     // r184 baut sie nur bei einem neuen Attribut-OBJEKT neu (`Bindings._update`), nie bei einem neu hochgeladenen Puffer —
@@ -2130,7 +2166,11 @@ class AnazhRealm_stoff_instanz {
             const erst = leaves[idx[0]];
             leaves[idx[0]] = Object.assign({}, erst, { geom: geo, _eigen: true });
             for (let j = 1; j < idx.length; j++) weg.add(idx[j]);
-            for (const k in geo.attributes) bytes += geo.attributes[k].array.byteLength;
+            // ein verschränkter Puffer (die Jahres-Ecken) zählt einmal, nie je Sicht
+            for (const p of new Set(
+                Object.values(geo.attributes).map((a) => (a.isInterleavedBufferAttribute ? a.data : a))
+            ))
+                bytes += p.array.byteLength;
             if (geo.index) bytes += geo.index.array.byteLength;
         }
         if (!weg.size) return;
@@ -2144,11 +2184,14 @@ class AnazhRealm_stoff_instanz {
     }
 
     // Hängt Geometrien GLEICHER Attribut-Form aneinander (derselbe Raum, keine Transformation): jedes
-    // Attribut wird kopiert, der Index versetzt (Uint32 ab 65 536 Vertices). Null bei abweichender Form.
+    // Attribut wird kopiert, der Index versetzt (Uint32 ab 65 536 Vertices). Null bei abweichender Form. Ein verschränkter
+    // Puffer (die Jahres-Ecken, `_jahrEcken`) gilt als EIN Glied der Form: dieselben Sichten an denselben Plätzen in jeder
+    // Geometrie, er wird einmal verbunden und trägt seine Sichten weiter.
     static _geoVerbinden(geoms) {
         const g0 = geoms[0];
         const namen = Object.keys(g0.attributes);
         const indiziert = !!g0.index;
+        const puffer = (a) => (a.isInterleavedBufferAttribute ? a.data : a);
         let nV = 0,
             nI = 0;
         for (const g of geoms) {
@@ -2156,15 +2199,42 @@ class AnazhRealm_stoff_instanz {
             for (const k of namen) {
                 const a = g.attributes[k],
                     b = g0.attributes[k];
-                if (!a || a.isInterleavedBufferAttribute || a.itemSize !== b.itemSize) return null;
-                if (a.normalized !== b.normalized || a.array.constructor !== b.array.constructor) return null;
+                if (!a || !!a.isInterleavedBufferAttribute !== !!b.isInterleavedBufferAttribute) return null;
+                if (a.itemSize !== b.itemSize || a.normalized !== b.normalized) return null;
+                if (puffer(a).array.constructor !== puffer(b).array.constructor) return null;
+                if (a.isInterleavedBufferAttribute && (a.offset !== b.offset || a.data.stride !== b.data.stride))
+                    return null;
+                // dieselben Sichten teilen denselben Puffer — in jeder Geometrie wie in der ersten
+                for (const j of namen)
+                    if (
+                        (g.attributes[j] && puffer(g.attributes[j]) === puffer(a)) !==
+                        (puffer(g0.attributes[j]) === puffer(b))
+                    )
+                        return null;
             }
             nV += g.attributes.position.count;
             if (indiziert) nI += g.index.count;
         }
         const out = new THREE.BufferGeometry();
+        const verbunden = new Map(); // je verschränkter Puffer der ersten Geometrie sein verbundener
         for (const k of namen) {
             const b = g0.attributes[k];
+            if (b.isInterleavedBufferAttribute) {
+                let d = verbunden.get(b.data);
+                if (!d) {
+                    const s = b.data.stride;
+                    const arr = new b.data.array.constructor(nV * s);
+                    let o = 0;
+                    for (const g of geoms) {
+                        const q = g.attributes[k].data;
+                        arr.set(q.array.subarray(0, q.count * s), o);
+                        o += q.count * s;
+                    }
+                    verbunden.set(b.data, (d = new THREE.InterleavedBuffer(arr, s)));
+                }
+                out.setAttribute(k, new THREE.InterleavedBufferAttribute(d, b.itemSize, b.offset, b.normalized));
+                continue;
+            }
             const arr = new b.array.constructor(nV * b.itemSize);
             let o = 0;
             for (const g of geoms) {
