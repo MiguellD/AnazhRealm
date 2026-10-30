@@ -15,7 +15,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
     const w13p1Results = await safeEvaluate(page, async () => {
         const out = {};
         // Identität ist nach init bereit.
-        const vp = r.state.vibePass;
+        const vp = st.vibePass;
         out.ready = !!vp && vp.ready === true;
         // vibePassId — kanonisches ed25519:<64hex>-Format.
         const id = r.vibePassId();
@@ -56,7 +56,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         // Genesis-Erinnerung im Journal (Typ "ritual"): der 200-FIFO-Cap kann den frühen Eintrag evicten →
         // primär den cap-unabhängigen seen-Schlüssel "vibepass:genesis" (journalAppendOnce) prüfen,
         // den entries-Scan nur als Fallback.
-        const wj = r.state.worldJournal || {};
+        const wj = st.worldJournal || {};
         const entries = wj.entries || [];
         out.journalGenesis =
             !!(wj.seen && wj.seen["vibepass:genesis"] === true) ||
@@ -109,10 +109,10 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
     const w13p2Results = await safeEvaluate(page, async () => {
         const out = {};
         // Einen eigenen Bauplan mit einem Part anlegen.
-        if (r.state.blueprints["_w13p2"]) delete r.state.blueprints["_w13p2"];
+        if (st.blueprints["_w13p2"]) delete st.blueprints["_w13p2"];
         r.createBlueprint("_w13p2", "W13P2-Werk");
         r.addPartToBlueprint("_w13p2", { shape: "box", material: "stein" });
-        const bp = r.state.blueprints["_w13p2"];
+        const bp = st.blueprints["_w13p2"];
         // _canonicalBlueprint ist deterministisch.
         out.canonDeterministic = r._canonicalBlueprint(bp) === r._canonicalBlueprint(bp);
         // Das Label ist NICHT Teil der signierten Substanz.
@@ -128,7 +128,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         out.signFields =
             typeof bp.signature === "string" &&
             /^[0-9a-f]{128}$/.test(bp.signature) &&
-            bp.authorPubKey === r.state.vibePass.publicKeyHex &&
+            bp.authorPubKey === st.vibePass.publicKeyHex &&
             typeof bp.signedHash === "string" &&
             typeof bp.signedAt === "number";
         out.statusValid = (await r.verifyBlueprintSignature(bp)) === "valid";
@@ -166,11 +166,11 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         bp.authorPubKey = r._vibeBytesToHex(r._vibeB64uToBytes(foreignJwk.x));
         bp.signedHash = r._fastHash(foreignCanon);
         out.crossAuthorValid = (await r.verifyBlueprintSignature(bp)) === "valid";
-        out.crossAuthorForeign = bp.authorPubKey !== r.state.vibePass.publicKeyHex;
+        out.crossAuthorForeign = bp.authorPubKey !== st.vibePass.publicKeyHex;
         // Ein Klon eines signierten Bauplans ist unsigniert (neues Werk).
-        if (r.state.blueprints["_w13p2clone"]) delete r.state.blueprints["_w13p2clone"];
+        if (st.blueprints["_w13p2clone"]) delete st.blueprints["_w13p2clone"];
         r.cloneBlueprint("_w13p2", "_w13p2clone");
-        const clone = r.state.blueprints["_w13p2clone"];
+        const clone = st.blueprints["_w13p2clone"];
         out.cloneUnsigned = !!clone && !clone.signature && !clone.authorPubKey;
         // verifyBlueprintSignature ist defensiv.
         out.verifyDefensive = (await r.verifyBlueprintSignature(null)) === "unsigned";
@@ -180,8 +180,8 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
             document.getElementById("workshop-action-zone") || document.getElementById("workshop-stats-panel");
         out.uiSigRow = !!machZone && !!machZone.querySelector(".workshop-sig-row");
         out.uiSigBtn = !!machZone && !!machZone.querySelector(".workshop-sig-btn");
-        delete r.state.blueprints["_w13p2"];
-        delete r.state.blueprints["_w13p2clone"];
+        delete st.blueprints["_w13p2"];
+        delete st.blueprints["_w13p2clone"];
         return out;
     });
 
@@ -214,7 +214,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
     // ### Vibe-Pass-Identität im Multi-User ###
     const w13p3Results = await safeEvaluate(page, async () => {
         const out = {};
-        const p2p = r.state.p2p;
+        const p2p = st.p2p;
         // Peer-Entry trägt die Vibe-Pass-Felder.
         const probe = r._p2pEnsurePeerEntry("_w13p3probe");
         out.peerFields = "vibePassId" in probe && "vibeVerified" in probe;
@@ -236,7 +236,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
             captured.vibePassId === r.vibePassId() &&
             typeof captured.proof === "string";
         out.broadcastProofVerifies =
-            !!captured && (await r._vibeVerify("_w13p3self", captured.proof, r.state.vibePass.publicKeyHex)) === true;
+            !!captured && (await r._vibeVerify("_w13p3self", captured.proof, st.vibePass.publicKeyHex)) === true;
         // Bei deaktiviertem P2P sendet _p2pBroadcastVibe nichts.
         captured = null;
         p2p.enabled = false;
@@ -341,7 +341,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
     // ### Bibliothek: browsbare Welt-Registry ###
     const w14Results = await safeEvaluate(page, () => {
         const out = {};
-        const REG = r.constructor.WORLD_REGISTRY;
+        const REG = AnazhRealm.WORLD_REGISTRY;
         // Jeder Registry-Eintrag trägt jetzt eine Beschreibung.
         out.registryHasDesc = Object.values(REG).every((w) => typeof w.desc === "string" && w.desc.length > 0);
         // Tab + Drawer im DOM.
@@ -435,7 +435,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         // Feed-A0: _feedItems vereint Welten + Rezepte + Wesen (jedes liest seinen Vektor + seine Wertung).
         const fi = r._feedItems();
         const fkinds = new Set(fi.map((it) => it.kind));
-        const hasCreatures = (r.state.creatures || []).length > 0;
+        const hasCreatures = (st.creatures || []).length > 0;
         out.feedHasAllKinds = fkinds.has("world") && fkinds.has("recipe") && (!hasCreatures || fkinds.has("creature"));
         out.feedItemsBundle = fi.length >= 3 && fi.every((it) => it.id && it.prof && typeof it.rating === "number");
         // Feed-A: der Strom rendert die Arten (Welt=.library-card, Rezept=.feed-recipe, Wesen=.feed-creature).
@@ -456,7 +456,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         r._setFeedRating("world:fluid", 4); // Toggle → 0
         out.feedRatingWorks = set4 && r._feedRating("world:fluid") === 0;
         // der Kind-Chip TREIBT den Strom (nur Rezepte sichtbar, Welten verborgen).
-        r.state.feedKind = "recipe";
+        st.feedKind = "recipe";
         r._applyLibraryFilter();
         const recCards = Array.from(stream.querySelectorAll(".feed-recipe"));
         const wCards = Array.from(stream.querySelectorAll(".library-card[data-kind='world']"));
@@ -464,7 +464,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
             recCards.length > 0 &&
             recCards.every((c) => c.style.display !== "none") &&
             wCards.every((c) => c.style.display === "none");
-        r.state.feedKind = "alle";
+        st.feedKind = "alle";
         r._applyLibraryFilter();
         out.feedKindChips = document.querySelectorAll("#feed-kinds .feed-kind-chip").length === 6; // V18.135 + „Gemerkt"; V18.142 + „Gefolgt"
         // jede Feed-Karte trägt eine VORSCHAU (Cover-Band, „quasi ein Bild") + den Art-Glyph.
@@ -476,18 +476,18 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         // nach oben). Die Chips wuchsen auf DREI (Neueste · ✦ Für dich
         // · ★ Bewertung) — der Test wandert mit.
         out.feedSortChips = document.querySelectorAll("#feed-sort .feed-kind-chip").length === 3;
-        const aRecipe = Object.values(r.state.blueprints).find((b) => b && !b.instanced && b.role !== "portal");
+        const aRecipe = Object.values(st.blueprints).find((b) => b && !b.instanced && b.role !== "portal");
         if (aRecipe) {
             r._setFeedRating("recipe:" + aRecipe.name, 0);
             r._setFeedRating("recipe:" + aRecipe.name, 5);
-            r.state.feedSort = "rating";
+            st.feedSort = "rating";
             r.renderLibraryUI();
             const firstBar = document.querySelector(
                 "#library-list .library-card .feed-rating, #library-list .feed-card .feed-rating"
             );
             out.feedSortWorks = !!firstBar && Number(firstBar.dataset.rating) === 5;
             r._setFeedRating("recipe:" + aRecipe.name, 5); // Toggle zurück → 0 (sauber)
-            r.state.feedSort = "neueste";
+            st.feedSort = "neueste";
             r.renderLibraryUI();
         }
         // der geteilte 3D-VORSCHAU-Bereich (EIN Renderer, das Hof-Bühnen-Muster) + die Klick-Fokus-Logik.
@@ -498,9 +498,9 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
             const recCard = stream.querySelector(".feed-recipe");
             r._feedFocus(recForFocus, recCard);
             out.feedPreviewFocus =
-                r.state.feedFocusId === recForFocus.id && !!recCard && recCard.classList.contains("is-previewing");
+                st.feedFocusId === recForFocus.id && !!recCard && recCard.classList.contains("is-previewing");
             // die Bühne idle lassen (kein RAF läuft ohne Drawer-Öffnen); Fokus zurücksetzen für spätere Bands.
-            r.state.feedFocusId = null;
+            st.feedFocusId = null;
         }
         // der Drawer-Fit: box-sizing:border-box, sonst überläuft das max-height um padding (der Drawer ragt unten aus dem Bild).
         const bibDrawer = document.querySelector('.drawer[data-drawer="bibliothek"]');
@@ -535,19 +535,19 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         // obtainPortalForWorld: klont welt_portal, richtet, legt ins Inventar.
         const res1 = r.obtainPortalForWorld("fluid");
         out.obtainOk = res1.ok === true && res1.blueprint === "portal_fluid";
-        const bp = r.state.blueprints.portal_fluid;
+        const bp = st.blueprints.portal_fluid;
         out.bpIsPortal = !!bp && bp.role === "portal" && bp.builtIn !== true;
         out.bpAimedAtFluid = !!bp && !!bp.portalMeta && bp.portalMeta.world === REG.fluid.world;
         // Der geholte Bauplan ist betretbar (Affordance isPortal).
         out.bpEnterable = !!bp && r.computeBlueprintAffordances(bp).isPortal === true;
         // Im Inventar gelandet.
-        const slot1 = r.state.player.inventory.find((s) => s && s.blueprintName === "portal_fluid");
+        const slot1 = st.player.inventory.find((s) => s && s.blueprintName === "portal_fluid");
         out.inInventory = !!slot1 && slot1.count >= 1;
         // Zweites Holen stackt — kein zweiter Bauplan.
-        const bpCountBefore = Object.keys(r.state.blueprints).length;
+        const bpCountBefore = Object.keys(st.blueprints).length;
         const res2 = r.obtainPortalForWorld("fluid");
-        const bpCountAfter = Object.keys(r.state.blueprints).length;
-        const slot2 = r.state.player.inventory.find((s) => s && s.blueprintName === "portal_fluid");
+        const bpCountAfter = Object.keys(st.blueprints).length;
+        const slot2 = st.player.inventory.find((s) => s && s.blueprintName === "portal_fluid");
         out.secondStacks = res2.ok === true && !!slot2 && slot2.count >= 2 && bpCountAfter === bpCountBefore;
         // Unbekannte Welt → abgelehnt.
         out.unknownRejected = r.obtainPortalForWorld("nirgendwo").ok === false;
@@ -558,9 +558,9 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         out.snapPersistsPortal =
             !!snapBp && snapBp.role === "portal" && !!snapBp.portalMeta && snapBp.portalMeta.world === REG.fluid.world;
         // Read-Seite: den Snapshot-Eintrag durch loadState zurückspielen.
-        delete r.state.blueprints.portal_fluid;
+        delete st.blueprints.portal_fluid;
         r.loadState({ blueprints: snapBp ? [snapBp] : [] });
-        const reBp = r.state.blueprints.portal_fluid;
+        const reBp = st.blueprints.portal_fluid;
         out.loadRestoresPortal =
             !!reBp && reBp.role === "portal" && !!reBp.portalMeta && reBp.portalMeta.world === REG.fluid.world;
         out.loadKeepsEnterable = !!reBp && r.computeBlueprintAffordances(reBp).isPortal === true;
@@ -572,17 +572,17 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
             reBp.role = "architecture";
         }
         r.obtainPortalForWorld("fluid");
-        const healedBp = r.state.blueprints.portal_fluid;
+        const healedBp = st.blueprints.portal_fluid;
         out.reaimHeals =
             !!healedBp &&
             healedBp.role === "portal" &&
             !!healedBp.portalMeta &&
             healedBp.portalMeta.world === REG.fluid.world;
         // Aufräumen, damit spätere Blöcke einen sauberen Stand sehen.
-        delete r.state.blueprints.portal_fluid;
-        for (let i = 0; i < r.state.player.inventory.length; i++) {
-            const s = r.state.player.inventory[i];
-            if (s && s.blueprintName === "portal_fluid") r.state.player.inventory[i] = null;
+        delete st.blueprints.portal_fluid;
+        for (let i = 0; i < st.player.inventory.length; i++) {
+            const s = st.player.inventory[i];
+            if (s && s.blueprintName === "portal_fluid") st.player.inventory[i] = null;
         }
         return out;
     });
@@ -675,7 +675,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
     // ### Welt-Manifest-Signatur ###
     const w14p2Results = await safeEvaluate(page, async () => {
         const out = {};
-        const REG = r.constructor.WORLD_REGISTRY;
+        const REG = AnazhRealm.WORLD_REGISTRY;
         // _canonicalManifest deterministisch + ignoriert world/desc.
         const c1 = r._canonicalManifest(REG.fluid);
         const c2 = r._canonicalManifest({
@@ -688,31 +688,30 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         out.canonDeterministic = c1 === c2 && c1.length > 0;
         out.canonIgnoresPath = !c1.includes("worlds/");
         // Vorzustand säubern.
-        delete r.state.signedWorlds.fluid;
-        delete r.state.signedWorlds.terrain;
+        delete st.signedWorlds.fluid;
+        delete st.signedWorlds.terrain;
         // Unsigniert → "unsigned".
         out.unsignedState = (await r.verifyWorldSignature("fluid")) === "unsigned";
         // signWorld signiert + persistiert.
         const signRes = await r.signWorld("fluid", { skipConfirm: true });
         out.signOk = signRes.ok === true && /^[0-9a-f]{64}$/i.test(signRes.authorPubKey || "");
-        out.signStored =
-            !!r.state.signedWorlds.fluid && /^[0-9a-f]+$/i.test(r.state.signedWorlds.fluid.signature || "");
+        out.signStored = !!st.signedWorlds.fluid && /^[0-9a-f]+$/i.test(st.signedWorlds.fluid.signature || "");
         out.signValid = (await r.verifyWorldSignature("fluid")) === "valid";
         // signWorld verwirft eine unbekannte Welt.
         out.signUnknownRejected = (await r.signWorld("nirgendwo")).ok === false;
         // localStorage-Persistenz: _loadSignedWorlds liest die Signatur zurück.
         const reloaded = r._loadSignedWorlds();
-        out.persistRoundtrip = !!reloaded.fluid && reloaded.fluid.signature === r.state.signedWorlds.fluid.signature;
+        out.persistRoundtrip = !!reloaded.fluid && reloaded.fluid.signature === st.signedWorlds.fluid.signature;
         // "modified" — der Manifest-Hash passt nicht mehr.
-        const realHash = r.state.signedWorlds.fluid.signedHash;
-        r.state.signedWorlds.fluid.signedHash = "deadbeef";
+        const realHash = st.signedWorlds.fluid.signedHash;
+        st.signedWorlds.fluid.signedHash = "deadbeef";
         out.modifiedState = (await r.verifyWorldSignature("fluid")) === "modified";
-        r.state.signedWorlds.fluid.signedHash = realHash;
+        st.signedWorlds.fluid.signedHash = realHash;
         // "forged" — die Signatur passt nicht zum Autor.
-        const realSig = r.state.signedWorlds.fluid.signature;
-        r.state.signedWorlds.fluid.signature = (realSig[0] === "a" ? "b" : "a") + realSig.slice(1);
+        const realSig = st.signedWorlds.fluid.signature;
+        st.signedWorlds.fluid.signature = (realSig[0] === "a" ? "b" : "a") + realSig.slice(1);
         out.forgedState = (await r.verifyWorldSignature("fluid")) === "forged";
-        r.state.signedWorlds.fluid.signature = realSig;
+        st.signedWorlds.fluid.signature = realSig;
         // Cross-Autor: ein mit FREMDEM Schlüssel signiertes Manifest verifiziert.
         const foreign = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
         const foreignJwk = await crypto.subtle.exportKey("jwk", foreign.privateKey);
@@ -727,7 +726,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
                 )
             )
         );
-        r.state.signedWorlds.terrain = {
+        st.signedWorlds.terrain = {
             authorPubKey: foreignPubHex,
             signature: foreignSig,
             signedHash: r._fastHash(canonTerrain),
@@ -753,8 +752,8 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         out.overlayShowsSigned = !!sigEl && sigEl.hidden === false && /signiert von/.test(sigEl.textContent);
         r._disposePortalOverlay();
         // Aufräumen.
-        delete r.state.signedWorlds.fluid;
-        delete r.state.signedWorlds.terrain;
+        delete st.signedWorlds.fluid;
+        delete st.signedWorlds.terrain;
         r._saveSignedWorlds();
         return out;
     });
@@ -799,14 +798,14 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         // Eigene Materialien/Werkzeuge reisen mit — Built-ins NICHT.
         // Plus: der 16er-Deckel hält den postMessage-Payload klein.
         for (let i = 0; i < 20; i++) {
-            r.state.materials["_w14m" + i] = {
+            st.materials["_w14m" + i] = {
                 builtIn: false,
                 color: 0x44cc88,
                 label: "M" + i,
                 tags: {},
             };
         }
-        r.state.tools._w14tool = {
+        st.tools._w14tool = {
             builtIn: false,
             label: "Testfeile",
             opName: "test_op",
@@ -818,8 +817,8 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         out.payloadMaterialCap = ownP.materials.length <= 16;
         out.payloadOwnTools =
             ownP.tools.some((t) => t.name === "_w14tool") && !ownP.tools.some((t) => t.name === "schmiede-hammer");
-        for (let i = 0; i < 20; i++) delete r.state.materials["_w14m" + i];
-        delete r.state.tools._w14tool;
+        for (let i = 0; i < 20; i++) delete st.materials["_w14m" + i];
+        delete st.tools._w14tool;
         return out;
     });
 
@@ -838,11 +837,11 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
     // ### fremde Welten empfangen ###
     const w14p3Results = await safeEvaluate(page, async () => {
         const out = {};
-        const REG = r.constructor.WORLD_REGISTRY;
+        const REG = AnazhRealm.WORLD_REGISTRY;
         // Vorzustand säubern.
-        r.state.customWorlds = {};
-        r.state.signedWorlds = r.state.signedWorlds || {};
-        delete r.state.signedWorlds.fluid;
+        st.customWorlds = {};
+        st.signedWorlds = st.signedWorlds || {};
+        delete st.signedWorlds.fluid;
         // _worldEntry: Built-in auflösbar.
         out.worldEntryBuiltin = r._worldEntry("fluid") === REG.fluid;
         // _sanitizeImportedManifest: Built-in-id + Müll-id abgelehnt.
@@ -910,7 +909,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         );
         out.importCrossAuthorValid =
             importValid.ok === true && importValid.signatureStatus === "valid" && importValid.reachable === true;
-        out.customWorldStored = !!(r.state.customWorlds && r.state.customWorlds["void-zwei"]);
+        out.customWorldStored = !!(st.customWorlds && st.customWorlds["void-zwei"]);
         out.verifyCustomValid = (await r.verifyWorldSignature("void-zwei")) === "valid";
         out.worldEntryCustom = !!r._worldEntry("void-zwei");
         out.libraryWorldsMerged =
@@ -942,8 +941,8 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         // Dichtefeld + Struktur-Box-Ray, kein physicsWorld/rayTest mehr). Es darf
         // NIE crashen und liefert den Extractor-Wert (hier den hit-Bool) zurück.
         try {
-            const rsA = r.setVec(r.state.tmpVec1, 0, 1000, 0);
-            const reA = r.setVec(r.state.tmpVec2, 0, -1000, 0);
+            const rsA = r.setVec(st.tmpVec1, 0, 1000, 0);
+            const reA = r.setVec(st.tmpVec2, 0, -1000, 0);
             const hit = r._runRaycast(rsA, reA, (_cb, h) => h);
             out.raycastNullSafe = typeof hit === "boolean";
         } catch {
@@ -952,22 +951,22 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         // localStorage-Rundlauf.
         const reloaded = r._loadCustomWorlds();
         out.customWorldsRoundtrip =
-            !!reloaded["void-zwei"] && reloaded["void-zwei"].signature === r.state.customWorlds["void-zwei"].signature;
+            !!reloaded["void-zwei"] && reloaded["void-zwei"].signature === st.customWorlds["void-zwei"].signature;
         // UI: renderLibraryUI rendert eine importierte Karte + Import-Knopf im DOM.
         r.renderLibraryUI();
         out.uiImportedCard =
             !!document.querySelector("#library-list .library-card-imported") &&
             !!document.querySelector("#library-list .library-imported-mark");
         // Aufräumen.
-        r.state.customWorlds = {};
+        st.customWorlds = {};
         r._saveCustomWorlds();
-        delete r.state.signedWorlds.fluid;
+        delete st.signedWorlds.fluid;
         r._saveSignedWorlds();
-        delete r.state.blueprints["portal_void-zwei"];
-        for (let i = 0; i < r.state.player.inventory.length; i++) {
-            const s = r.state.player.inventory[i];
+        delete st.blueprints["portal_void-zwei"];
+        for (let i = 0; i < st.player.inventory.length; i++) {
+            const s = st.player.inventory[i];
             if (s && typeof s.blueprintName === "string" && s.blueprintName.indexOf("portal_void") === 0) {
-                r.state.player.inventory[i] = null;
+                st.player.inventory[i] = null;
             }
         }
         r.renderLibraryUI();
@@ -1034,7 +1033,7 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
 // Welt-Snapshot oder Portal-Payload (GEMESSEN-schon-wahr, jetzt eingefroren).
 async function checkBandG8R0Sovereign({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const K = r.constructor;
+        const K = AnazhRealm;
         const out = {};
         // (1) SOVEREIGN_STATE benannt + eingefroren + die kanonischen Schlüssel.
         const S = K.SOVEREIGN_STATE;
@@ -1065,7 +1064,7 @@ async function checkBandG8R0Sovereign({ page, check }) {
         out.payloadIdPublic = !pay.vibePassId || /^ed25519:[0-9a-f]*$/.test(pay.vibePassId);
         // (5) DEFENSE: selbst ein injiziertes Privat-Feld in state.vibePass leckt
         // NICHT in den Snapshot (der fixe Key-Satz schließt vibePass ganz aus).
-        const vp = r.state.vibePass || (r.state.vibePass = {});
+        const vp = st.vibePass || (st.vibePass = {});
         const hadKey = Object.prototype.hasOwnProperty.call(vp, "privateKey");
         const saved = vp.privateKey;
         vp.privateKey = "SECRET-LEAK-CANARY-d-jwk";
@@ -1097,15 +1096,15 @@ async function checkBandG8R0Sovereign({ page, check }) {
 // souveränen Akt).
 async function checkBandG8R4Immunity({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const K = r.constructor;
+        const K = AnazhRealm;
         const out = {};
         // (1) revokedKeys benannt im innersten Ring + NIE im Snapshot.
         out.revokedInRing = K.SOVEREIGN_STATE.excludedStateKeys.includes("revokedKeys");
         out.revokedNotInSnapshot = JSON.stringify(r.buildStateSnapshot()).indexOf("revokedKeys") < 0;
         // Zustand sichern, den wir mutieren. revokedKeys ist eine Map → echte Map-Kopie; ein
         // Object.assign-Klon ergäbe {} und der Restore bräche das nächste .set().
-        const savedRevoked = new Map(r.state.revokedKeys);
-        const savedSigned = JSON.parse(JSON.stringify(r.state.signedWorlds || {}));
+        const savedRevoked = new Map(st.revokedKeys);
+        const savedSigned = JSON.parse(JSON.stringify(st.signedWorlds || {}));
         const KA = "aa".repeat(32);
         const KB = "bb".repeat(32);
         const KEVIL = "cc".repeat(32);
@@ -1144,25 +1143,25 @@ async function checkBandG8R4Immunity({ page, check }) {
                     { by: KB, at: 2 },
                 ],
             }) === false;
-        r.state.signedWorlds = r.state.signedWorlds || {};
-        r.state.signedWorlds["_g8r4_evil"] = {
+        st.signedWorlds = st.signedWorlds || {};
+        st.signedWorlds["_g8r4_evil"] = {
             authorPubKey: KEVIL,
             signature: "ab",
             provenance: [{ by: KEVIL, at: 1 }],
         };
-        r.state.signedWorlds["_g8r4_good"] = { authorPubKey: KA, signature: "cd", provenance: [{ by: KA, at: 1 }] };
+        st.signedWorlds["_g8r4_good"] = { authorPubKey: KA, signature: "cd", provenance: [{ by: KA, at: 1 }] };
         const purged = r._purgeRevokedArtifacts();
-        out.purgeDropsEvil = !r.state.signedWorlds["_g8r4_evil"] && !!r.state.signedWorlds["_g8r4_good"] && purged >= 1;
+        out.purgeDropsEvil = !st.signedWorlds["_g8r4_evil"] && !!st.signedWorlds["_g8r4_good"] && purged >= 1;
         // (5) QUARANTÄNE (4c): ein LLM-Source-DSL mit souveränem Op → sovereign_blocked
         // (die R2-Wand hält für den welt-exponierten Pfad — das Dual-LLM-Pattern).
         const llmRun = r.dslRun(["sign_manifest"], { source: "llm:grok" });
         out.llmCannotSovereign = Array.isArray(llmRun.log) && llmRun.log.some((e) => e.event === "sovereign_blocked");
         // restore
-        delete r.state.signedWorlds["_g8r4_evil"];
-        delete r.state.signedWorlds["_g8r4_good"];
+        delete st.signedWorlds["_g8r4_evil"];
+        delete st.signedWorlds["_g8r4_good"];
         r.unrevokeKey(KEVIL);
-        r.state.revokedKeys = savedRevoked;
-        r.state.signedWorlds = savedSigned;
+        st.revokedKeys = savedRevoked;
+        st.signedWorlds = savedSigned;
         r._saveSignedWorlds();
         r._saveRevokedKeys();
         return out;
@@ -1229,10 +1228,10 @@ async function checkBandG8R5LivingImmune({ page, check }) {
 // ein revoziertes Ketten-Glied → Rolle lokal emergiert, Portal sanitisiert, Klemme am Leser, Sieb.
 async function checkBandTailleOmega3({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const C = r.constructor;
+        const C = AnazhRealm;
         const out = {};
         const KEVIL = "ef".repeat(32);
-        const savedRevoked = r.state.revokedKeys;
+        const savedRevoked = st.revokedKeys;
         r.revokeKey(KEVIL, { silent: true });
         const mkPart = (material) => ({
             shape: "box",
@@ -1288,11 +1287,11 @@ async function checkBandTailleOmega3({ page, check }) {
         localStorage.setItem(r.worldStorageKey(srcId), JSON.stringify(srcSave));
         const resImp = r.importRecipesFromWorld(srcId);
         out.importOk = !!(resImp && resImp.ok);
-        const luegner = r.state.blueprints["o3_luegner"];
-        const mauer = r.state.blueprints["o3_mauer"];
-        const gift = r.state.blueprints["o3_gift"];
-        const goodTool = r.state.tools["o3_goodtool"];
-        const badTool = r.state.tools["o3_badtool"];
+        const luegner = st.blueprints["o3_luegner"];
+        const mauer = st.blueprints["o3_mauer"];
+        const gift = st.blueprints["o3_gift"];
+        const goodTool = st.tools["o3_goodtool"];
+        const badTool = st.tools["o3_badtool"];
         // (1) Behauptung/Wahrheit: roleClaimed trägt die Lüge, role emergiert
         // lokal (eine Box ist KEINE Werkstatt-Station), roleManual fiel.
         out.claimSeparated =
@@ -1306,7 +1305,7 @@ async function checkBandTailleOmega3({ page, check }) {
             !!luegner && (!luegner.portalMeta || !/evil\.example/.test(String(luegner.portalMeta.world)));
         // (3) die Klemme am Leser: die Gott-Mauer ist ABBAUBAR (fit klar über 0;
         // die Substanz selbst bleibt unangetastet — härte=10⁶ lebt im Material).
-        out.matMagnitudeKept = r.state.materials["o3_gott"] && r.state.materials["o3_gott"].tags["härte"] === 1e6;
+        out.matMagnitudeKept = st.materials["o3_gott"] && st.materials["o3_gott"].tags["härte"] === 1e6;
         const fit = r._harvestFitnessFromResist(r._architectureResistance({ type: "o3_mauer" }));
         out.wallBreakable = !!mauer && fit.fit > 0.01;
         out.ceilFrozen = Object.isFrozen(C.MATERIAL_TAG_CEIL) && C.MATERIAL_TAG_CEIL["härte"] === 2;
@@ -1317,7 +1316,7 @@ async function checkBandTailleOmega3({ page, check }) {
         // (6) die Signatur bleibt prüfbar über roleClaimed (Kanon liest
         // roleClaimed ?? role) — der goldene Pfad: signieren → importieren →
         // verify bleibt valid, obwohl die lokale Rolle re-derived wurde.
-        r.state.blueprints["_o3_signed"] = {
+        st.blueprints["_o3_signed"] = {
             name: "_o3_signed",
             label: "Ω3-Siegel",
             builtIn: false,
@@ -1327,10 +1326,10 @@ async function checkBandTailleOmega3({ page, check }) {
             connections: [],
         };
         let sigChain = false;
-        if (r.state.vibePass && r.state.vibePass.ready) {
+        if (st.vibePass && st.vibePass.ready) {
             const s = await r.signBlueprint("_o3_signed", { skipConfirm: true });
             if (s.ok) {
-                const wire = r._serializeBlueprint(r.state.blueprints["_o3_signed"]);
+                const wire = r._serializeBlueprint(st.blueprints["_o3_signed"]);
                 const admitted = r._admitForeignArtifact(wire);
                 sigChain =
                     !!admitted &&
@@ -1342,14 +1341,14 @@ async function checkBandTailleOmega3({ page, check }) {
         }
         out.signatureSurvivesRederive = sigChain;
         // Aufräumen.
-        delete r.state.blueprints["o3_luegner"];
-        delete r.state.blueprints["o3_mauer"];
-        delete r.state.blueprints["_o3_signed"];
-        delete r.state.materials["o3_gott"];
-        delete r.state.tools["o3_goodtool"];
+        delete st.blueprints["o3_luegner"];
+        delete st.blueprints["o3_mauer"];
+        delete st.blueprints["_o3_signed"];
+        delete st.materials["o3_gott"];
+        delete st.tools["o3_goodtool"];
         localStorage.removeItem(r.worldStorageKey(srcId));
         r.unrevokeKey(KEVIL);
-        r.state.revokedKeys = savedRevoked;
+        st.revokedKeys = savedRevoked;
         return out;
     });
     if (!res) {
@@ -1455,10 +1454,10 @@ async function checkBandTailleGolden({ page, check }) {
             out.snapWorldMeta = g.snapshotHead.worldMetaKeys.every((k) => wmKeys.includes(k));
             // (4) die p2p-Umschläge: pv-Vertrag + jeder goldene Typ hat einen
             // lebenden Handler (kanal-exklusiv ODER im ALLOWED-Durchreich-Satz).
-            out.pvMatches = g.envelopes.pv === r.constructor.PROTO_VERSION;
+            out.pvMatches = g.envelopes.pv === AnazhRealm.PROTO_VERSION;
             // am Ruf: je goldenem Typ erreicht ein Umschlag über den echten Kanal-Eingang seinen Handler (kanal-exklusiv steht an
             // der Liste KANAL, sonst die Registry hinter der ALLOWED-Durchreichung)
-            const H = r.constructor.P2P_MESSAGE_HANDLERS;
+            const H = AnazhRealm.P2P_MESSAGE_HANDLERS;
             const KANAL = { "social-rating": "_socialRatingReceive" };
             const dead = g.envelopes.types
                 .map((t) => t.type)
@@ -1500,7 +1499,7 @@ async function checkBandTailleGolden({ page, check }) {
 async function checkBandPhiArchipel({ page, check }) {
     const res = await safeEvaluate(page, async () => {
         const out = {};
-        const AR = window.AnazhRealm || r.constructor;
+        const AR = window.AnazhRealm || AnazhRealm;
 
         // (P1) FROZEN-Stufen-Sätze existieren + sind genau die Wörter aus dem Plan.
         out.visibilityStages =
@@ -1515,7 +1514,7 @@ async function checkBandPhiArchipel({ page, check }) {
 
         // (P2) worldMeta trägt die NEUEN Felder mit Erst-Wurf-Defaults
         // (Migrations-tolerant: ein Legacy-"private" heilt zu "privat").
-        const wm = r.state.worldMeta;
+        const wm = st.worldMeta;
         out.wmGuestRights = wm && wm.guestRights === "frieden";
         out.wmBanList = wm && wm.banList && Array.isArray(wm.banList.peerIds) && Array.isArray(wm.banList.vibePassKeys);
         out.wmWorldAddressNull = wm && wm.worldAddress === null;
@@ -1560,7 +1559,7 @@ async function checkBandPhiArchipel({ page, check }) {
         });
         // Revozierte Herkunft (R4-Wand): Schlüssel revozieren, dann admittieren.
         const fakeKey = "f".repeat(64);
-        const before = r.state.revokedKeys.size;
+        const before = st.revokedKeys.size;
         r.revokeKey(fakeKey);
         out.admitRevoked =
             r._admitForeignWorldAddress({
@@ -1572,9 +1571,9 @@ async function checkBandPhiArchipel({ page, check }) {
                 sig: "deadbeef",
             }) === null;
         // Aufräumen — wir haben gerade einen Test-Schlüssel revoziert.
-        r.state.revokedKeys.delete(fakeKey);
+        st.revokedKeys.delete(fakeKey);
         r._saveRevokedKeys();
-        out.revokeCleanup = r.state.revokedKeys.size === before;
+        out.revokeCleanup = st.revokedKeys.size === before;
 
         // (P6) Signieren + verifizieren mit dem vibePass (Round-Trip).
         const signed = await r.signWorldAddress({ skipConfirm: true, label: "test-welt", broker: "ws://h:4313" });
@@ -1589,18 +1588,16 @@ async function checkBandPhiArchipel({ page, check }) {
         // (P7) Portal trägt die Adresse als portalMeta-Feld; setPortalToActiveWorld
         // greift die signierte Adresse aus der aktiven Welt; Clear räumt sie weg.
         // Brauchen einen TEST-Bauplan.
-        r.state.blueprints["phi_test_portal"] = {
+        st.blueprints["phi_test_portal"] = {
             name: "phi_test_portal",
             label: "Φ-Test-Portal",
             builtIn: false,
-            parts: [
-                __teil("torus", "stein", 0, 1, 0, 2, 2, 0.4, { rotation: { x: 0, y: 0, z: 0 }, opChain: [] }),
-            ],
+            parts: [__teil("torus", "stein", 0, 1, 0, 2, 2, 0.4, { rotation: { x: 0, y: 0, z: 0 }, opChain: [] })],
             connections: [],
         };
         const setRes = r.setPortalToActiveWorld("phi_test_portal");
         out.portalSetOk = !!(setRes && setRes.ok);
-        const bp = r.state.blueprints["phi_test_portal"];
+        const bp = st.blueprints["phi_test_portal"];
         out.portalCarriesAddress = !!(bp && bp.portalMeta && bp.portalMeta.worldAddress);
         out.portalSigPreserved = !!(
             bp &&
@@ -1610,15 +1607,15 @@ async function checkBandPhiArchipel({ page, check }) {
         );
         const clearRes = r.setPortalAddress("phi_test_portal", null);
         out.portalClearOk = !!(clearRes && clearRes.ok && clearRes.cleared) && !bp.portalMeta.worldAddress;
-        delete r.state.blueprints["phi_test_portal"];
+        delete st.blueprints["phi_test_portal"];
 
         // (P8) Visibility-Setter wirkt + gelistet ruft die Lobby-BRIDGE (am Ruf). Den echten Round-Trip
         // deckt smoke-multiuser; headless returnt publishToLobby früh {ok:false, reason:"not_connected"}.
-        const visBefore = r.state.worldMeta.visibility;
+        const visBefore = st.worldMeta.visibility;
         r.setWorldVisibility("gelistet");
-        out.visGelistet = r.state.worldMeta.visibility === "gelistet";
+        out.visGelistet = st.worldMeta.visibility === "gelistet";
         r.setWorldVisibility("privat");
-        out.visPrivat = r.state.worldMeta.visibility === "privat";
+        out.visPrivat = st.worldMeta.visibility === "privat";
         out.lobbyBridgePublishes = window.__consumes(r, "setWorldVisibility", r, "publishToLobby", ["gelistet"]);
         r.setWorldVisibility(visBefore || "privat");
 
@@ -1633,11 +1630,11 @@ async function checkBandPhiArchipel({ page, check }) {
 
         // (P10) GuestRights-Setter: Default "frieden", Stufen klemmen ungültiges.
         r.setWorldGuestRights("mitschöpfer");
-        out.guestRightsMitschoepfer = r.state.worldMeta.guestRights === "mitschöpfer";
+        out.guestRightsMitschoepfer = st.worldMeta.guestRights === "mitschöpfer";
         const badGR = r.setWorldGuestRights("kosmisch");
         out.guestRightsRejectsMüll = !badGR.ok;
         r.setWorldGuestRights("frieden");
-        out.guestRightsBackToFrieden = r.state.worldMeta.guestRights === "frieden";
+        out.guestRightsBackToFrieden = st.worldMeta.guestRights === "frieden";
 
         // (P11) Snapshot-Round-Trip: die neuen Felder überleben buildStateSnapshot
         // + loadState bit-gleich (must-preserve am eigenen Welt-Save).
@@ -1647,7 +1644,7 @@ async function checkBandPhiArchipel({ page, check }) {
         out.snapHasWorldAddress = "worldAddress" in (snap.worldMeta || {});
 
         // Aufräumen — die signierte Test-Adresse aus der aktiven Welt entfernen.
-        r.state.worldMeta.worldAddress = null;
+        st.worldMeta.worldAddress = null;
         return out;
     });
 
@@ -1706,7 +1703,7 @@ async function checkBandPhiArchipel({ page, check }) {
 // antworten).
 async function checkBandPhiArchipelV2({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const AR = window.AnazhRealm || r.constructor;
+        const AR = window.AnazhRealm || AnazhRealm;
         const out = {};
 
         // ====================================================================
@@ -1734,7 +1731,7 @@ async function checkBandPhiArchipelV2({ page, check }) {
         out.roomNoWorld = r._regionRoomId("", "r0_0") === null;
 
         // (Q4) Default OFF: eine frische Welt hat regionsActive=false → eine Welt = ein Raum, kein Region-Suffix.
-        const wmBefore = r.state.worldMeta;
+        const wmBefore = st.worldMeta;
         out.regionsDefaultOff = wmBefore && wmBefore.regionsActive === false;
 
         // (Q5) setRegionsActive wirkt + initialisiert currentRegionKey.
@@ -1746,7 +1743,7 @@ async function checkBandPhiArchipelV2({ page, check }) {
 
         // (Q7) Übergangs-Detection: Spieler TIEF in eine neue Region setzen (≫ 10 m Hysterese-Margin) —
         // r2_2 hat Bounds 691.2–1036.8 je Achse, die Mitte 864 liegt 172.8 m von jeder Grenze.
-        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        const pm = st.playerMesh && st.playerMesh.position;
         let crossing = null;
         if (pm) {
             const oldX = pm.x;
@@ -1767,16 +1764,16 @@ async function checkBandPhiArchipelV2({ page, check }) {
 
         // Wieder OFF schalten (clean state für nachfolgende Tests).
         r.setRegionsActive(false);
-        out.deactivated = r.state.worldMeta.regionsActive === false;
-        out.currentRegionGone = !("currentRegionKey" in r.state.worldMeta);
+        out.deactivated = st.worldMeta.regionsActive === false;
+        out.currentRegionGone = !("currentRegionKey" in st.worldMeta);
 
         // ====================================================================
         // Φ4 — Anwesenheits-Schicht (regional aufgelöste Köpfe)
         // ====================================================================
 
         // (Q9) presence-Map existiert + ist leer am Start.
-        out.presenceMap = r.state.p2p && r.state.p2p.presence instanceof Map;
-        out.presenceEmpty = r.state.p2p.presence.size === 0;
+        out.presenceMap = st.p2p && st.p2p.presence instanceof Map;
+        out.presenceEmpty = st.p2p.presence.size === 0;
 
         // (Q10) worldPresence ohne Daten → null (sauber).
         out.presenceUnknownNull = r.worldPresence("never-polled") === null;
@@ -1792,7 +1789,7 @@ async function checkBandPhiArchipelV2({ page, check }) {
                     { region: "r0_0", peers: 2 },
                 ],
             },
-            r.state.p2p
+            st.p2p
         );
         const pres = r.worldPresence("welt-test");
         out.presenceCacheOk = !!(pres && pres.totalPeers === 5 && pres.regions.length === 2);
@@ -1808,13 +1805,13 @@ async function checkBandPhiArchipelV2({ page, check }) {
         // ====================================================================
 
         // (Q14) pinnedWorlds-Map existiert + ist leer am Start (im Test-Boot).
-        out.pinnedMap = r.state.p2p && r.state.p2p.pinnedWorlds instanceof Map;
-        const startPinned = r.state.p2p.pinnedWorlds.size;
+        out.pinnedMap = st.p2p && st.p2p.pinnedWorlds instanceof Map;
+        const startPinned = st.p2p.pinnedWorlds.size;
 
         // (Q15) pinCurrentWorld pinnt + hash + bytes — und schreibt persistiert.
         const pinRes = r.pinCurrentWorld({ silent: true });
         out.pinOk = !!(pinRes && pinRes.ok && pinRes.worldId && pinRes.hash && pinRes.bytes > 0);
-        out.pinInMap = r.state.p2p.pinnedWorlds.has(pinRes.worldId);
+        out.pinInMap = st.p2p.pinnedWorlds.has(pinRes.worldId);
         const lsManifest = localStorage.getItem("anazh.pinnedManifest");
         out.pinPersisted = !!(lsManifest && lsManifest.includes(pinRes.worldId));
         const lsSnapshot = localStorage.getItem(`anazh.pinnedSnapshot.${pinRes.worldId}`);
@@ -1830,8 +1827,8 @@ async function checkBandPhiArchipelV2({ page, check }) {
         // (Q17) der Träger-Pfad: ein NICHT-Host beantwortet einen world-request
         // mit der gepinnten Welt (_p2pMaybeServeAsCarrier). Wir stellen den
         // p2p.room auf den gepinnten worldId + rufen den Helper direkt.
-        const oldRoom = r.state.p2p.room;
-        r.state.p2p.room = pinRes.worldId;
+        const oldRoom = st.p2p.room;
+        st.p2p.room = pinRes.worldId;
         // Captures: wir hooken _p2pSignal kurz, um zu sehen, ob ein
         // world-snapshot mit carrier=true rausging.
         let lastSignal = null;
@@ -1841,7 +1838,7 @@ async function checkBandPhiArchipelV2({ page, check }) {
         };
         const served = r._p2pMaybeServeAsCarrier("test-joiner", {});
         r._p2pSignal = origSignal;
-        r.state.p2p.room = oldRoom;
+        st.p2p.room = oldRoom;
         out.carrierServed = served === true;
         out.carrierMsgValid =
             lastSignal &&
@@ -1853,7 +1850,7 @@ async function checkBandPhiArchipelV2({ page, check }) {
         // (Q18) unpinWorld räumt; idempotent.
         const unpinRes = r.unpinWorld(pinRes.worldId);
         out.unpinOk = !!(unpinRes && unpinRes.ok && unpinRes.removed);
-        out.unpinIdempotent = !r.state.p2p.pinnedWorlds.has(pinRes.worldId);
+        out.unpinIdempotent = !st.p2p.pinnedWorlds.has(pinRes.worldId);
         // Aufräumen: localStorage-Snapshot lassen wir liegen (kein Müll, nur
         // ein orphan; ein erneuter pinCurrentWorld überschreibt).
 
@@ -1942,7 +1939,7 @@ async function checkBandPhi7PortalHalls({ page, check }) {
         const out = {};
 
         // (H1) state.portalHalls ist eine Map (initial leer im Boot).
-        out.hallMap = r.state.portalHalls instanceof Map;
+        out.hallMap = st.portalHalls instanceof Map;
 
         // (H2) createPortalHall mit drei gültigen Adressen.
         const mkAddr = (id) => ({
@@ -1957,7 +1954,7 @@ async function checkBandPhi7PortalHalls({ page, check }) {
             { address: mkAddr("gamma"), label: "Dritte Welt" },
         ]);
         out.createOk = !!(created && created.ok && created.entries === 3);
-        out.hallStored = r.state.portalHalls.has("test-halle");
+        out.hallStored = st.portalHalls.has("test-halle");
 
         // (H3) createPortalHall siebt kaputte Einträge (broker non-ws fällt).
         const partial = r.createPortalHall("partial-halle", "Partial", [
@@ -1965,7 +1962,7 @@ async function checkBandPhi7PortalHalls({ page, check }) {
             { address: { ...mkAddr("kaputt"), broker: "http://bad" } }, // fällt
             { address: null }, // fällt
         ]);
-        const partialHall = r.state.portalHalls.get("partial-halle");
+        const partialHall = st.portalHalls.get("partial-halle");
         out.partialOk = !!(partial && partial.ok && partial.entries === 1);
         out.partialStored = partialHall && partialHall.entries.length === 1;
 
@@ -1975,7 +1972,7 @@ async function checkBandPhi7PortalHalls({ page, check }) {
 
         // (H5) _canonicalPortalHall ist deterministisch (gleiche Substanz →
         // gleicher String); v:1 + alle entries-Hash drin.
-        const hall1 = r.state.portalHalls.get("test-halle");
+        const hall1 = st.portalHalls.get("test-halle");
         const canon1 = r._canonicalPortalHall(hall1);
         // Mutiere ein Extra-Feld → der Canonical bleibt gleich (must-ignore).
         const hall2 = { ...hall1, xZukunft: { foo: 1 } };
@@ -1988,7 +1985,7 @@ async function checkBandPhi7PortalHalls({ page, check }) {
         // Manipulation am label kippt zu "modified" (signedHash mismatch).
         const sigRes = await r.signPortalHall("test-halle", { skipConfirm: true });
         out.signOk = !!(sigRes && sigRes.ok);
-        const hall = r.state.portalHalls.get("test-halle");
+        const hall = st.portalHalls.get("test-halle");
         out.signFieldsSet = !!(hall.sig && hall.authorPubKey && hall.signedHash);
         const status = await r.verifyPortalHall(hall);
         out.verifyValid = status === "valid";
@@ -2018,14 +2015,14 @@ async function checkBandPhi7PortalHalls({ page, check }) {
             provenance: [{ by: fakeKey, at: 1700000000000 }],
         });
         out.admitTaintedNull = admittedTainted === null;
-        r.state.revokedKeys.delete(fakeKey);
+        st.revokedKeys.delete(fakeKey);
         r._saveRevokedKeys();
 
         // (H9) materializePortalHall braucht einen Portal-Bauplan + Position.
         // Wir nehmen den ersten Built-In-Portal-Bauplan oder bauen einen ad hoc.
         let portalBp = null;
-        for (const bn of Object.keys(r.state.blueprints || {})) {
-            const bp = r.state.blueprints[bn];
+        for (const bn of Object.keys(st.blueprints || {})) {
+            const bp = st.blueprints[bn];
             if (bp && (bp.role === "portal" || /^portal_/.test(bn))) {
                 portalBp = bn;
                 break;
@@ -2033,7 +2030,7 @@ async function checkBandPhi7PortalHalls({ page, check }) {
         }
         // Falls keiner existiert, einen schnell-anlegen für den Test.
         if (!portalBp) {
-            r.state.blueprints["portal_torus"] = {
+            st.blueprints["portal_torus"] = {
                 name: "portal_torus",
                 label: "Test-Portal-Torus",
                 builtIn: false,
@@ -2045,15 +2042,15 @@ async function checkBandPhi7PortalHalls({ page, check }) {
             };
             portalBp = "portal_torus";
         }
-        const archBefore = r.state.architectures.length;
+        const archBefore = st.architectures.length;
         const matRes = r.materializePortalHall("test-halle", { x: 600, y: 0, z: 600 }, { portalBlueprint: portalBp });
         out.matOk = !!(matRes && matRes.ok && matRes.spawned.length === 3);
-        out.matSpawnedArch = r.state.architectures.length === archBefore + 3;
+        out.matSpawnedArch = st.architectures.length === archBefore + 3;
 
         // (H10) Jeder gespawnte Slot trägt SEINE eigene entry.portalMeta mit
         // worldAddress + hallName (die echte Φ7-Wahrheit: drei Slot-Portale,
         // drei verschiedene Welten).
-        const spawned = r.state.architectures.slice(-3);
+        const spawned = st.architectures.slice(-3);
         const allHavePortalMeta = spawned.every(
             (e) => e.portalMeta && e.portalMeta.worldAddress && e.portalMeta.hallName === "test-halle"
         );
@@ -2093,9 +2090,9 @@ async function checkBandPhi7PortalHalls({ page, check }) {
                 }
             }
         }
-        r.state.portalHalls.delete("test-halle");
-        r.state.portalHalls.delete("partial-halle");
-        r.state.portalHalls.delete("fremd-halle");
+        st.portalHalls.delete("test-halle");
+        st.portalHalls.delete("partial-halle");
+        st.portalHalls.delete("fremd-halle");
         // Test-Bauplan, wenn von uns erzeugt, lassen wir liegen (kein Müll;
         // andere Tests dürfen ihn finden — _enterPortalToAddress nutzt ihn nicht).
 
@@ -2149,8 +2146,8 @@ async function checkBandPhi6ComputeSpende({ page, check }) {
         const out = {};
 
         // (K1) Daten-Modelle existieren (Map + Array, initial leer).
-        out.contribMap = r.state.computeContributions instanceof Map;
-        out.runArray = Array.isArray(r.state.playtestContributions);
+        out.contribMap = st.computeContributions instanceof Map;
+        out.runArray = Array.isArray(st.playtestContributions);
 
         // (K2) Input-Hash ist deterministisch + ändert sich mit cx/cz/lod.
         const spec1 = { kind: "chunk-density", worldSeed: "test-seed", cx: 0, cz: 0, lod: 0 };
@@ -2193,7 +2190,7 @@ async function checkBandPhi6ComputeSpende({ page, check }) {
             sig: sigRes.sig,
         });
         out.pinOk = !!(pinRes && pinRes.ok && pinRes.status === "unverified");
-        out.pinInMap = r.state.computeContributions.has(h1);
+        out.pinInMap = st.computeContributions.has(h1);
 
         // (K6) Müll fällt am Eingang (kaputter Hash, Hex-Form verletzt).
         const badPin = await r.pinComputeContribution({ inputHash: "X!?", outputHash: "Y!?" });
@@ -2210,7 +2207,7 @@ async function checkBandPhi6ComputeSpende({ page, check }) {
             providedBy: sigRes.authorPubKey,
             sig: null, // sig optional für diesen Test (Sieb akzeptiert null)
         });
-        const entry = r.state.computeContributions.get(verifyHash);
+        const entry = st.computeContributions.get(verifyHash);
         const verifyRes = r.verifyComputeContribution(verifySpec, entry);
         out.verifyEhrlich = !!(verifyRes && verifyRes.ok && verifyRes.equal && entry.status === "verified");
 
@@ -2219,18 +2216,18 @@ async function checkBandPhi6ComputeSpende({ page, check }) {
         const forgedSpec = { kind: "chunk-density", worldSeed: "test-seed", cx: 5, cz: 5, lod: 0 };
         const forgedHash = r._computeJobInputHash(forgedSpec);
         const fakeKey = "a".repeat(64);
-        const revBefore = r.state.revokedKeys.size;
+        const revBefore = st.revokedKeys.size;
         await r.pinComputeContribution({
             inputHash: forgedHash,
             outputHash: "deadbeef", // falscher Hash
             providedBy: fakeKey,
             sig: null,
         });
-        const forgedEntry = r.state.computeContributions.get(forgedHash);
+        const forgedEntry = st.computeContributions.get(forgedHash);
         const forgedVerify = r.verifyComputeContribution(forgedSpec, forgedEntry);
         out.verifyForged = forgedVerify.equal === false && forgedEntry.status === "forged";
-        out.revokedSchummler = r.state.revokedKeys.has(fakeKey) && r.state.revokedKeys.size === revBefore + 1;
-        r.state.revokedKeys.delete(fakeKey);
+        out.revokedSchummler = st.revokedKeys.has(fakeKey) && st.revokedKeys.size === revBefore + 1;
+        st.revokedKeys.delete(fakeKey);
         r._saveRevokedKeys();
 
         // (K9) PLAYTEST-Lauf signieren + recordPlaytestRun ehrlicher Pfad.
@@ -2241,13 +2238,13 @@ async function checkBandPhi6ComputeSpende({ page, check }) {
         out.runSignOk = !!(runRes && runRes.ok && runRes.run.sig);
         const recordRes = await r.recordPlaytestRun(runRes.run);
         out.recordOk = !!(recordRes && recordRes.ok);
-        out.recordInArray = r.state.playtestContributions.some((e) => e.commit === "abc12345");
+        out.recordInArray = st.playtestContributions.some((e) => e.commit === "abc12345");
 
         // (K10) DEDUP: derselbe Anbieter darf denselben Commit nur einmal
         // bürgen (Update, kein Doppel-Eintrag).
-        const beforeLen = r.state.playtestContributions.length;
+        const beforeLen = st.playtestContributions.length;
         await r.recordPlaytestRun(runRes.run);
-        out.dedupOk = r.state.playtestContributions.length === beforeLen;
+        out.dedupOk = st.playtestContributions.length === beforeLen;
 
         // (K11) FORGED Sig fällt: ein Lauf mit kaputtem Sig wird verworfen.
         const badRun = {
@@ -2274,10 +2271,10 @@ async function checkBandPhi6ComputeSpende({ page, check }) {
         out.noSignPlaytestOp = !r.dslEffects.sign_playtest;
 
         // Aufräumen: die Test-Einträge.
-        r.state.computeContributions.delete(h1);
-        r.state.computeContributions.delete(verifyHash);
-        r.state.computeContributions.delete(forgedHash);
-        r.state.playtestContributions = r.state.playtestContributions.filter(
+        st.computeContributions.delete(h1);
+        st.computeContributions.delete(verifyHash);
+        st.computeContributions.delete(forgedHash);
+        st.playtestContributions = st.playtestContributions.filter(
             (e) => e.commit !== "abc12345" && e.commit !== "xyz98765"
         );
 

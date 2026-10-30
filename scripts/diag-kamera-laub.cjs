@@ -72,7 +72,7 @@ function urteil(m) {
         for (const modus of MODI) {
             const z = (o.modi || {})[modus];
             if (!z || !(z.n > 0)) {
-                out.push(`${ort.id} ${modus}: keine Stellung (Vorbedingung${z && z.grund ? `: ${z.grund}` : ""})`);
+                out.push(`${ort.id} ${modus}: keine Stellung (Vorbedingung${z?.grund ? `: ${z.grund}` : ""})`);
                 continue;
             }
             if (z.max > NAH_DECKUNG_MAX) {
@@ -283,6 +283,7 @@ function leibInstall(cfg) {
             await sleep(ms || 30);
         }
     };
+    // reißt der Deckel, nennt sein Wurf die Lücken des Weltbilds (`__deckel`)
     L.steht = async (ms) => {
         let n = 0;
         for (const weiter = window.__deckel("das Weltbild", ms / 45); weiter(); ) {
@@ -342,7 +343,7 @@ function leibInstall(cfg) {
                 if (L.inBox(c, b, R)) taeter.push(`in ${a.type}`);
                 else if (a !== ritt) {
                     const h = r._segmentAABB(k.x, k.y, k.z, c.x - k.x, c.y - k.y, c.z - k.z, b);
-                    if (h && h.t < 1) taeter.push(`${a.type} zwischen Ziel und Linse`);
+                    if (h?.t < 1) taeter.push(`${a.type} zwischen Ziel und Linse`);
                 }
             }
             const d = Math.hypot(c.x - k.x, c.y - k.y, c.z - k.z);
@@ -586,7 +587,7 @@ async function leibWiese(arg) {
         // DER VERFOLGER-RITT: dieselben Posen, der GT 3,2 m vor der Box, sein Heck zu ihr
         L.rittPosen(out, L.gtHolen(arg.x + 30, arg.z), posen, (p) => L.vor(p.b, p.seite, 3.2));
     } catch (e) {
-        out.err = (e && e.stack) || String(e);
+        out.err = e?.stack || String(e);
     }
     out.proben = L.proben;
     return out;
@@ -611,7 +612,7 @@ async function leibHang(arg) {
         }
         L.rittPosen(out, L.gtHolen(S.x + 12, S.fusZ - 10), posen, (p) => p);
     } catch (e) {
-        out.err = (e && e.stack) || String(e);
+        out.err = e?.stack || String(e);
     }
     out.proben = L.proben;
     return out;
@@ -728,7 +729,7 @@ async function leibGang(G) {
             out.senk = (await gang("senk", a, false, true)).taeter.length;
         }
     } catch (e) {
-        out.err = (e && e.stack) || String(e);
+        out.err = e?.stack || String(e);
     }
     return out;
 }
@@ -816,7 +817,7 @@ function ninja(arg) {
         const umgangen = e[2] > 28 && Math.abs(e[0]) > 3;
         out.tunnel = { ende: e, weg: +weg.toFixed(2), umgangen, gueltig: weg >= 3 || umgangen };
     } catch (e) {
-        out.err = (e && e.stack) || String(e);
+        out.err = e?.stack || String(e);
     }
     return out;
 }
@@ -875,8 +876,8 @@ async function probe(arg) {
                 if (Math.abs(m4.determinant()) < 1e-12) continue;
                 m4.premultiply(o.matrixWorld);
                 v.setFromMatrixPosition(m4);
-                const e = g && g.slotEntry ? g.slotEntry[i] : null;
-                out2.push({ x: v.x, z: v.z, werk: (e && e.type) || "Streu", e });
+                const e = g?.slotEntry ? g.slotEntry[i] : null;
+                out2.push({ x: v.x, z: v.z, werk: e?.type || "Streu", e });
             }
         });
         return out2;
@@ -885,7 +886,7 @@ async function probe(arg) {
     // fällt
     const imBlocker = (x, z) => {
         for (const a of st.architectures || [])
-            if (a && a.blockerAABBs && a.position && Math.abs(a.position.x - x) < 20 && Math.abs(a.position.z - z) < 20)
+            if (a?.blockerAABBs && a.position && Math.abs(a.position.x - x) < 20 && Math.abs(a.position.z - z) < 20)
                 for (const b of a.blockerAABBs) if (x > b.minX - 0.3 && x < b.maxX + 0.3 && z > b.minZ - 0.3 && z < b.maxZ + 0.3) return true;
         return false;
     };
@@ -912,8 +913,8 @@ async function probe(arg) {
             // (1) die Laub-Stoffe der Szene ohne Durchsicht
             const laub = new Map();
             st.scene.traverse((o) => {
-                const mt = o && o.material;
-                const k = mt && mt.userData ? mt.userData.foundryKind : null;
+                const mt = o?.material;
+                const k = mt?.userData ? mt.userData.foundryKind : null;
                 if ((k === "foliage" || k === "foliageTex") && mt.maskNode) laub.set(mt, mt.maskNode);
             });
             for (const mt of laub.keys()) mt.maskNode = null;
@@ -949,7 +950,7 @@ async function probe(arg) {
             window.__nahSpeicher = null; // der Fels liegt im Speicher: die nächste Stellung rechnet ihn neu
             s.ms = Math.round(performance.now() - tS);
         } catch (e) {
-            s.err = (e && e.stack) || String(e);
+            s.err = e?.stack || String(e);
         }
         return s;
     };
@@ -1098,7 +1099,7 @@ async function probe(arg) {
                 r.dismountArchitecture();
             } else z.modi.ritt = { n: 0, grund: gt ? "Aufsitzen scheiterte" : "kein GT" };
         } catch (e) {
-            z.err = (e && e.stack) || String(e);
+            z.err = e?.stack || String(e);
         }
         out.zeiten[ort.id] = Math.round(performance.now() - tO);
     }
@@ -1235,7 +1236,7 @@ hauptLauf(async () => {
     const adresse = BILD && !istHardwareAdapter(browser.adapter) ? "index.html?holz=kienspan" : "index.html";
     const bereit = async (rest = adresse, welt = null) => {
         await page.evaluate(() => window.__erstRuhe?.(() => {}, { erstFristMs: 6e5 }, "der Abschied der Welt"));
-        await (welt ? weltTor(page, welt, 0) : server.zeige(page, 0, rest));
+        await (welt ? weltTor(page, welt) : server.zeige(page, 0, rest));
         if (rest !== adresse) return;
         await page.evaluate(async () => (await window.__weltDa((r) => r.state.rendererReady)).state.renderer.setAnimationLoop(null));
         await buehne(page);

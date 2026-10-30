@@ -1757,7 +1757,8 @@ class AnazhRealm_bild_sicht {
                 "    let r1 = textureLoad(liste, vec2<i32>(bx + 3, ty), 0);\n" +
                 "    let r2 = textureLoad(liste, vec2<i32>(bx + 4, ty), 0);\n" +
                 "    let lm = lm4.xyz;\n" +
-                "    let lg = textureLoad(liste, vec2<i32>(bx + 6, ty), 0).xyz;\n" +
+                "    let lg4 = textureLoad(liste, vec2<i32>(bx + 6, ty), 0);\n" +
+                "    let lg = lg4.xyz;\n" + // .w: die eigene Farbe des Eintrags + 1 (`_weltFeldFarbe`, mensch.K4), 0 = die seines Satzes
                 "    let c4 = vec4<f32>(camPos, 1.0);\n" +
                 "    let oL = vec3<f32>(dot(r0, c4), dot(r1, c4), dot(r2, c4));\n" +
                 "    let dL = vec3<f32>(dot(r0.xyz, dir), dot(r1.xyz, dir), dot(r2.xyz, dir));\n" +
@@ -1931,6 +1932,8 @@ class AnazhRealm_bild_sicht {
                 "                    gvK = gradKeil(pL, pA.xyz, pB.xyz, pB.w);\n" +
                 "                    ci = u32(-pA.w - 1.0);\n" +
                 "                }\n" +
+                "                // die eigene Farbe des Eintrags (mensch.K4: der Bewohner in der Kapsel seiner Gestalt)\n" +
+                "                if (lg4.w > 0.5) { ci = u32(lg4.w - 0.5); }\n" +
                 "                if (dot(gvK, gvK) < 1e-10) {\n" +
                 "                    bestN = -dir;\n" +
                 "                } else {\n" +
@@ -2520,17 +2523,11 @@ class AnazhRealm_bild_sicht {
         if (!quelle || !st.atmoLut) return;
         if (!WL.pass) {
             const TSL = THREE.TSL;
-            const m = new THREE.MeshBasicNodeMaterial();
-            m.name = "welt-licht-himmel";
-            m.fragmentNode = TSL.vec4(TSL.pmremTexture(quelle, this._umgebungRichtung(TSL.uv()), TSL.float(1)).rgb, 1);
-            m.depthTest = false;
-            m.depthWrite = false;
-            m.toneMapped = false;
-            m.fog = false;
-            const q = st.atmoLut.qEq;
-            WL.pass = new THREE.Mesh(q.geometry, m);
-            WL.pass.frustumCulled = false;
-            WL.pass.userData = { kamera: q.userData.kamera, quelle };
+            WL.pass = AnazhRealm._schirmDreieck(
+                () => TSL.vec4(TSL.pmremTexture(quelle, this._umgebungRichtung(TSL.uv()), TSL.float(1)).rgb, 1),
+                "welt-licht-himmel"
+            );
+            WL.pass.userData.quelle = quelle;
         } else if (WL.pass.userData.quelle !== quelle)
             this._bruchMelden(
                 "LICHT: die Umgebung wechselte ihr Ziel — die Himmels-Sonde liest das erste (`_skyEnvRT` hält es)"

@@ -770,34 +770,56 @@ class AnazhRealm_gelaende_fern {
         const i0 = M.uZelle0.value.x;
         const j0 = M.uZelle0.value.y;
         const eps = 0.05;
-        const B = (a, b) => a >= 0 && b >= 0 && a < n && b < n && D[(b * n + a) * 4] / 255 > 0.5;
-        const S = (a, b) => (B(a, b) ? (D[(b * n + a) * 4 + 1] / 255) * 25.5 : 0);
+        // DIE ZELLEN EINMAL JE URTEIL (Lehre 25, w4-ankunft): gezeichnet (`bz`), Stufe (`sz`) und die größte Stufe der 3 × 3
+        // (`wz`, die Breite jedes Saums) je Zelle, dazu die Summen-Tafel der gezeichneten (`q`, (n+1)²) — ein Dreieck fragt
+        // „frei" in vier Lesern statt Zelle um Zelle und den Saum in einem statt neun; dieselben Zahlen (f64), dasselbe Urteil
+        const nn = n * n;
+        const bz = new Uint8Array(nn);
+        const sz = new Float64Array(nn);
+        const wz = new Float64Array(nn);
+        const q = new Int32Array((n + 1) * (n + 1));
         let sMax = 0;
         let a0 = n;
         let a1 = -1;
         let b0 = n;
         let b1 = -1;
         for (let b = 0; b < n; b++)
-            for (let a = 0; a < n; a++)
-                if (B(a, b)) {
-                    sMax = Math.max(sMax, S(a, b));
+            for (let a = 0; a < n; a++) {
+                const z = b * n + a;
+                if (D[z * 4] / 255 > 0.5) {
+                    bz[z] = 1;
+                    sz[z] = (D[z * 4 + 1] / 255) * 25.5;
+                    sMax = Math.max(sMax, sz[z]);
                     a0 = Math.min(a0, a);
                     a1 = Math.max(a1, a);
                     b0 = Math.min(b0, b);
                     b1 = Math.max(b1, b);
                 }
+                q[(b + 1) * (n + 1) + a + 1] =
+                    bz[z] + q[b * (n + 1) + a + 1] + q[(b + 1) * (n + 1) + a] - q[b * (n + 1) + a];
+            }
+        for (let b = 0; b < n; b++)
+            for (let a = 0; a < n; a++) {
+                let w = 0;
+                for (let db = Math.max(0, b - 1); db <= Math.min(n - 1, b + 1); db++)
+                    for (let da = Math.max(0, a - 1); da <= Math.min(n - 1, a + 1); da++)
+                        w = Math.max(w, sz[db * n + da]);
+                wz[b * n + a] = w;
+            }
+        const B = (a, b) => a >= 0 && b >= 0 && a < n && b < n && bz[b * n + a] === 1;
+        const S = (a, b) => (B(a, b) ? sz[b * n + a] : 0);
         const rand = 1.5 * sMax + eps;
         // DAS FENSTER (`alt`, K51-4): das Urteil eines Dreiecks liest die Zellen im Kasten ± rand und deren Nachbarn — liegt keine
         // geänderte Zelle darin, gilt sein altes Urteil; wechselt die größte Stufe (`sMax`, die Breite jedes Saums), alle neu
         const F = alt && alt.sMax === sMax ? alt.fenster : null;
         for (let t = 0; t < klasse.length; t++) {
             const p = I[t * 3] * 3;
-            const q = I[t * 3 + 1] * 3;
+            const r3 = I[t * 3 + 1] * 3;
             const r = I[t * 3 + 2] * 3;
-            const x0 = Math.min(P[p], P[q], P[r]);
-            const x1 = Math.max(P[p], P[q], P[r]);
-            const z0 = Math.min(P[p + 2], P[q + 2], P[r + 2]);
-            const z1 = Math.max(P[p + 2], P[q + 2], P[r + 2]);
+            const x0 = Math.min(P[p], P[r3], P[r]);
+            const x1 = Math.max(P[p], P[r3], P[r]);
+            const z0 = Math.min(P[p + 2], P[r3 + 2], P[r + 2]);
+            const z1 = Math.max(P[p + 2], P[r3 + 2], P[r + 2]);
             if (
                 F &&
                 (Math.floor((x1 + rand) / span) - i0 + 1 < F[0] ||
@@ -809,13 +831,16 @@ class AnazhRealm_gelaende_fern {
                 continue;
             }
             // frei: kein gezeichneter Chunk im Kasten ± rand
-            let gebaut = false;
             const ra0 = Math.max(a0, Math.floor((x0 - rand) / span) - i0);
             const ra1 = Math.min(a1, Math.floor((x1 + rand) / span) - i0);
             const rb0 = Math.max(b0, Math.floor((z0 - rand) / span) - j0);
             const rb1 = Math.min(b1, Math.floor((z1 + rand) / span) - j0);
-            for (let a = ra0; a <= ra1 && !gebaut; a++) for (let b = rb0; b <= rb1 && !gebaut; b++) gebaut = B(a, b);
-            if (!gebaut) {
+            const n1 = n + 1;
+            if (
+                ra0 > ra1 ||
+                rb0 > rb1 ||
+                q[(rb1 + 1) * n1 + ra1 + 1] - q[rb0 * n1 + ra1 + 1] - q[(rb1 + 1) * n1 + ra0] + q[rb0 * n1 + ra0] === 0
+            ) {
                 klasse[t] = 0;
                 continue;
             }
@@ -832,9 +857,7 @@ class AnazhRealm_gelaende_fern {
                         break;
                     }
                     const s = S(a, b);
-                    let w = 0;
-                    for (let da = -1; da <= 1; da++)
-                        for (let db = -1; db <= 1; db++) w = Math.max(w, S(a + da, b + db));
+                    const w = wz[b * n + a];
                     const ox = (a + i0) * span;
                     const oz = (b + j0) * span;
                     const uX = Math.max(x0 - eps, ox) - ox < 1.5 * w;

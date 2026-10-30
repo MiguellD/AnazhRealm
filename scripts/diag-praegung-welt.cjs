@@ -533,19 +533,20 @@ hauptLauf(async () => {
         return res;
     }, a));
 
-    // (T-WELT) B gibt den Welt-Code in den Chat: die Tür lädt in A's Welt; die Kontrolle ist ihr erstes Weltbild (das Ereignis
-    // `_weltbildKommt`, in der Zeit der Seite), dann trägt W den Leib
-    const neu = pageB.waitForNavigation({ timeout: 120000 });
+    // (T-WELT) B gibt den Welt-Code in den Chat: die Tür tauscht A's Welt am Ort ein (`_weltWechsel`, die Seite lädt nie neu —
+    // `seiten` zählt jede Navigation); die Kontrolle ist ihr erstes Weltbild (das Ereignis `_weltbildKommt` der angekommenen
+    // Welt, in der Zeit der Seite), dann trägt W den Leib
+    let seiten = 0;
+    pageB.on("framenavigated", (f) => f === pageB.mainFrame() && seiten++);
     uhr = Date.now();
     await chat(wCode);
-    await neu;
-    const w = await pageB.evaluate(async (autor) => {
-        await window.__weltDa();
+    const w = await pageB.evaluate(async (autor, wId) => {
+        await window.__weltDa((x) => x.state.worldMeta.worldId === wId && !x._weltTausch);
         const da = performance.timeOrigin + (await r._weltbildKommt());
         const [p, p0] = [r.state.playerMesh.position, r.state.playerMesh.position.clone()];
         window.__weg = () => Math.hypot(p.x - p0.x, p.z - p0.z);
         return [da, r.state.worldMeta, !!(await window.__anschluss(r, autor))];
-    }, a.autor);
+    }, a.autor, wId);
     const geht = await halteBis(pageB, { taste: "w", ziel: async () => (await window.__seitenTakt(), window.__weg() >= 1) });
     // ===== (U) FUSION: dieselben Eltern-Bytes in beiden Geräten → A+B (random-mix: Id, Saat, Geburt, Münzwurf) · B+A · der Täter =====
     const [uA, uB] = await Promise.all(
@@ -652,6 +653,7 @@ hauptLauf(async () => {
     check("WELT: A teilt die Welt — EIN Code, die Hülle des Werks, Signatur von A", hw.welt && hw.autor === a.autor && wCode.length <= 4096, `${wCode.length} Zeichen`);
     check("WELT: B steht in A's Welt (Id, Same, Gast, > 128 KB) und kennt A am Anschluss", worldId === wId && seed === wSame && role === "guest" && w[2] && kb > 128, `${worldId} ${kb} KB ${role} ${w[2]}`);
     check("WELT: KONTROLLE ≤ 5 s — Klick bis Code + Enter bis zum ersten Weltbild", ms <= 5000, `${Math.round(ms)} ms (A ${msW}, B ${B_ART})`);
+    check("WELT: am Ort — die Seite von B lädt nicht neu", seiten === 0, `${seiten} Navigationen`);
     check("WELT: der Leib geht unter W ≥ 1 m", geht.erreicht, `${geht.ms} ms`);
 
     console.log("\n=== (U) FUSION auf zwei Geräten ===");

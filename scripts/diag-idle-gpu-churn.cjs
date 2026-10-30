@@ -10,7 +10,7 @@
 // bevor irgendwer den Freeze spürt. Die Struktur trägt die Disziplin, nicht das Gedächtnis.
 //
 // Lauf: node scripts/diag-idle-gpu-churn.cjs   (CI: npm run gpu-lens)
-const { statikServer, starteBrowser, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep, laufUhr } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const server = statikServer();
 // generöse Schwelle: ein Recompile-CASCADE ist Dutzende+ (Sky-Env-Bug war ~270/Regen); ein paar
@@ -51,8 +51,7 @@ hauptLauf(async () => {
 
     // JEDER AUFRUF HAT EINEN NAMEN. `ruf` misst jeden evaluate, nennt jeden über LANG_MS beim Namen (mit seinen
     // Compiles), und der Crash-Pfad nennt den Aufruf, der die Frist riss.
-    const T0 = Date.now();
-    const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
+    const log = laufUhr();
     const LANG_MS = 20000;
     let maxRuf = { ms: 0, name: "-" };
     const ruf = async (name, fn, ...args) => {

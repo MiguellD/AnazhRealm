@@ -558,10 +558,7 @@ class AnazhRealm_werkstatt_vorschau {
                     p.dirty = true;
                 }
             }
-            if (p.dirty || p.drag || p.dragManipulator) {
-                this._workshopRender();
-                p.dirty = false;
-            }
+            if (p.dirty || p.drag || p.dragManipulator) p.dirty = this._workshopRender() !== true;
             p.rafId = requestAnimationFrame(tick);
         };
         ws.preview.rafId = requestAnimationFrame(tick);
@@ -1419,55 +1416,111 @@ class AnazhRealm_werkstatt_vorschau {
         // Scale + Mode-Visibility) VOR dem Render.
         this._workshopSyncGizmo();
         // Erst nach WebGPURenderer.init() rendern (rendererReady, wie das Haupt-Loop-Gate); ein Render-Fehler bricht in
-        // `_buehneRender` laut beim Namen.
-        if (!p.rendererReady) return;
+        // `_buehneRender` laut beim Namen. true: die Vorschau zeichnete GANZ (`ganz` der Bühne, sonst bleibt sie dirty).
+        if (!p.rendererReady) return false;
         this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");
+        return !p.renderer.buehne || p.renderer.buehne.ganz;
     }
 
-    // DIE WAHL JEDES NEBEN-RENDERERS (Werkstatt-Vorschau, Feed-, Hof-, Ich-Bühne): dieselbe EINE Frage wie die Welt
-    // (`_nullRendererGewaehlt`) — unter dem Null-Renderer zeichnet die Seite nichts, auch keine Bühne. Bis 25.10. baute jede
-    // Bühne ihren WebGPURenderer selbst: in der Werkstatt-Weg-Linse (Null-Renderer, swiftshader) kompilierte jede Vorschau
-    // 10–70 s im GPU-Prozess, der Compositor stand, rAF und jede Animation froren, das Warten der Linse riss (0 von 4
-    // Läufen unter Last grün). Stencil aus wie die Haupt-Welt (V10.0-j.b: kein Pure-Depth-stencilLoadOp-Crash); `bereit`
-    // folgt dem init() (das Gate der Bühne); null, wenn der Renderer nicht entsteht.
+    // DAS ZIEL JEDER BÜHNE (Werkstatt-Vorschau, Feed-, Hof-, Ich-Bühne): eine Leinwand des EINEN Welt-Renderers (r184
+    // `CanvasTarget`, dasselbe Gerät, dieselbe Erst-Zeichnung) — unter dem Null-Renderer dessen Hülle (die Seite zeichnet
+    // nichts, auch keine Bühne). Bis 30.10. baute jede Bühne ihren eigenen WebGPURenderer mit eigenem Gerät, außerhalb von
+    // `_configureRenderer`: ihr erster Render kompilierte jede Pipeline SYNCHRON, der GPU-Prozess zeigte so lange kein Bild.
+    // Gemessen (Radeon 890M, Mess-Wiese, `werkbank bedienung`): Tab öffnete die Ich-Bühne, ihre 9 Pipelines hielten das
+    // nächste Bild 5 054 ms (Menü-INP 5 088 ms; GTX 2 904 ms) — dieselben 9 Pipelines auf dem Welt-Gerät 1 593 ms: die Last
+    // ist der synchrone Bau, das Gesetz dagegen hat nur der Welt-Renderer. `bereit` folgt im selben Takt (die Bühne steht,
+    // sobald ihr Aufrufer sie hält); null ohne Welt-Renderer, laut.
     _buehneRenderer(canvas, w, h, klar, wer, bereit) {
-        let renderer;
-        try {
-            renderer = this._nullRendererGewaehlt()
-                ? this._makeHeadlessRenderer(canvas)
-                : new THREE.WebGPURenderer({ canvas, antialias: true, ...this._rendererGeraet() });
-            renderer.stencil = false;
-            renderer.setSize(w, h, false);
-            renderer.setPixelRatio(window.devicePixelRatio || 1);
-            renderer.setClearColor(klar, 1);
-            renderer
-                .init()
-                .then(bereit)
-                .catch((err) => this.log(`${wer} init: ${err && err.message}`, "ERROR"));
-        } catch (err) {
-            this.log(`${wer}: WebGPU-Renderer fehlgeschlagen (${err && err.message})`, "ERROR");
+        const welt = this.state.renderer;
+        const nur = this._nullRendererGewaehlt();
+        if (!nur && !(this.state.rendererReady === true && welt && typeof welt.getCanvasTarget === "function")) {
+            this.log(`${wer}: keine Bühne vor dem Welt-Renderer (rendererReady ${this.state.rendererReady})`, "ERROR");
             return null;
         }
-        return renderer;
+        const ziel = nur ? this._makeHeadlessRenderer(canvas) : new (welt.getCanvasTarget().constructor)(canvas);
+        ziel.setPixelRatio(window.devicePixelRatio || 1);
+        ziel.setSize(w, h, false);
+        if (!nur) ziel.buehne = { klar, wer, rt: null, quad: null, bilder: 0, ganz: false };
+        Promise.resolve().then(bereit);
+        return ziel;
     }
 
-    // DIE BÜHNE ZEIGT IHR WERK GANZ (Welle L, Befund V-D3): ein Neben-Renderer (Werkstatt-Vorschau, Feed-, Hof-,
-    // Ich-Bühne) zeichnet EIN Werk in EINER Stufe aus seiner eigenen Kamera. Die LOD-Maske misst vom Welt-Auge
-    // (`uLodAuge`, je Frame aus der Haupt-Kamera) und gehört der Welt: die Vorschau-Eiche im Ursprung lag vom Auge
-    // auf der Plattform 36 m weit, jenseits ihrer L0-Kante — 29 Meshes mit 21 108 Dreiecken in der Szene, 0 im Bild.
-    // Um den Bühnen-Render steht die Maske aus (uLodMaskOn 0; der geteilte renderGroup-Satz lädt je render() neu),
-    // danach zurück auf den Welt-Stand. Jeder Neben-Renderer zeichnet NUR hier. r184s render() ist SYNCHRON (es gibt
-    // kein Versprechen, dessen catch einen Fehler sähe — vier `.catch(… "INFO")` der Bühnen fingen nie etwas): ein
-    // Render-Fehler der Bühne bricht hier laut beim Namen (`wer`), und ihr Takt steht.
+    // DIE BÜHNE ZEIGT IHR WERK GANZ (Welle L, Befund V-D3): eine Bühne (Werkstatt-Vorschau, Feed-, Hof-, Ich-Bühne) zeichnet
+    // EIN Werk in EINER Stufe aus ihrer eigenen Kamera. Die LOD-Maske misst vom Welt-Auge (`uLodAuge`, je Frame aus der
+    // Haupt-Kamera) und gehört der Welt: die Vorschau-Eiche im Ursprung lag vom Auge auf der Plattform 36 m weit, jenseits
+    // ihrer L0-Kante — 29 Meshes mit 21 108 Dreiecken in der Szene, 0 im Bild. Um den Bühnen-Render steht die Maske aus
+    // (uLodMaskOn 0; der geteilte renderGroup-Satz lädt je render() neu), danach zurück auf den Welt-Stand. Jeder
+    // Neben-Render zeichnet NUR hier. Eine Bühne (`_buehneRenderer`) zeichnet der Welt-Renderer: die Szene in ihr Ziel
+    // (MSAA 4, linear — der Weg, den ihr eigener Renderer über sein Rahmen-Ziel ging), dann das Ausgabe-Dreieck (sRGB, ohne
+    // Tonkurve) in ihre Leinwand; die Erst-Zeichnung nimmt beide wie die Welt-Szene (`_buehneJetzt`), der Kehraus zählt
+    // sie zum Bild (`_buehnenBild`); der Stand des Renderers kehrt danach zurück. `ganz` an der Bühne: kein Bürger wartete
+    // auf Pipeline oder Bau (dasselbe Maß wie die Karten-Bühne) — eine Bühne, die nur auf Anforderung zeichnet (die
+    // Werkstatt), zeichnet bis dahin weiter. r184s render() ist SYNCHRON: ein Render-Fehler der Bühne bricht hier laut
+    // beim Namen (`wer`), und ihr Takt steht.
     _buehneRender(renderer, scene, camera, wer) {
         const lu = this.state.lodUniforms;
         const an = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
         if (an !== null) lu.uLodMaskOn.value = 0;
+        const B = renderer.buehne;
+        const R = B ? this.state.renderer : renderer;
+        let vor = null;
         try {
-            renderer.render(scene, camera);
+            if (!B) renderer.render(scene, camera);
+            else {
+                vor = [R.getCanvasTarget(), R.getRenderTarget(), R.getActiveCubeFace(), R.getActiveMipmapLevel()];
+                vor.push(
+                    R.getMRT(),
+                    R.getRenderObjectFunction(),
+                    R.autoClear,
+                    R.getClearColor(B.farbe || (B.farbe = new THREE.Color()))
+                );
+                vor.push(R.getClearAlpha(), R.toneMapping, R.outputColorSpace);
+                const g = this._schirmMessen(renderer); // die Leinwand der Bühne ist ihr Schirm (die EINE Quelle)
+                if (!B.rt) {
+                    B.rt = new THREE.RenderTarget(g.breite, g.hoehe, { samples: 4, type: THREE.HalfFloatType });
+                    // das Ausgabe-Dreieck in einer eigenen Szene: r184 reicht ein Mesh als Szene mit einer inneren Szene
+                    // an `_renderObjectDirect` weiter — so erkennt die Erst-Zeichnung es (`_buehneJetzt`) und baut es wie
+                    // die Bühne asynchron (Spur, Radeon: als Mesh-Szene baute es synchron, 57 ms im GPU-Prozess)
+                    B.quad = new THREE.Scene().add(
+                        AnazhRealm._schirmDreieck(() => {
+                            const T = THREE.TSL;
+                            return T.renderOutput(T.texture(B.rt.texture), THREE.NoToneMapping, THREE.SRGBColorSpace);
+                        }, "buehne-ausgabe")
+                    );
+                } else if (B.rt.width !== g.breite || B.rt.height !== g.hoehe) B.rt.setSize(g.breite, g.hoehe);
+                R.setMRT(null);
+                R.setRenderObjectFunction(null);
+                R.autoClear = true;
+                R.setClearColor(B.klar, 1);
+                R.setRenderTarget(B.rt);
+                const E = this._erstZeichnungStand(),
+                    offen = E.wartetN + E.verschoben;
+                this._buehneJetzt = scene;
+                R.render(scene, camera);
+                R.setCanvasTarget(renderer);
+                R.setRenderTarget(null);
+                R.toneMapping = THREE.NoToneMapping;
+                R.outputColorSpace = THREE.LinearSRGBColorSpace;
+                this._buehneJetzt = B.quad;
+                R.render(B.quad, B.quad.children[0].userData.kamera);
+                B.ganz = E.wartetN + E.verschoben === offen;
+                B.bilder++;
+                (this._buehnenBild || (this._buehnenBild = new Set())).add(scene).add(B.quad);
+            }
         } catch (e) {
             throw this._stoffBruch("die " + wer + " (Bühnen-Render)", e);
         } finally {
+            this._buehneJetzt = null;
+            if (vor) {
+                R.setCanvasTarget(vor[0]);
+                R.setRenderTarget(vor[1], vor[2], vor[3]);
+                R.setMRT(vor[4]);
+                R.setRenderObjectFunction(vor[5]);
+                R.autoClear = vor[6];
+                R.setClearColor(vor[7], vor[8]);
+                R.toneMapping = vor[9];
+                R.outputColorSpace = vor[10];
+            }
             if (an !== null) lu.uLodMaskOn.value = an;
         }
     }

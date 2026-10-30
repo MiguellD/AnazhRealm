@@ -594,7 +594,7 @@ class AnazhRealm {
                 meshActive: false,
                 // Welt-Snapshot über das Mesh: worldXfers puffert eingehende Stücke (xferId → {from, total, parts,
                 // received}); nur Stücke vom pendingPullFrom-Peer werden angenommen. _testNoReload unterdrückt den
-                // Reload nach dem Resync im Playtest.
+                // Welt-Wechsel nach dem Resync im Playtest.
                 worldXfers: new Map(),
                 pendingPullFrom: null,
                 _lastXferProgress: null,
@@ -923,6 +923,8 @@ class AnazhRealm {
                 if (!Array.isArray(p.opChain)) p.opChain = this._defaultPartOpChain();
             }
         }
+        // die Glieder des Zustands bei der Geburt: was init an ihnen neu setzt, ist die Seite (`_seite`, init)
+        this._zustandGeburt = { ...this.state };
     }
     // Die Setzung des Auges (`_lodAuge`): die Kamera steht jetzt für den Spieler, wo er jetzt steht.
     _lodAugeGesetzt(c) {
@@ -1821,7 +1823,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.134";
+AnazhRealm.VERSION = "18.546.136";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

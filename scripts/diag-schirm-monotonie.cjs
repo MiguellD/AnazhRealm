@@ -150,8 +150,8 @@ async function welt() {
         await window.__weltDa();
         if (!r.state.renderer || !r.state.renderer._isHeadlessNull) return { fatal: "kein Null-Renderer" };
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
-        await window.__weltDa(() => f && f.ready && f.recipeCount > 0);
-        if (!(f && f.ready)) return { fatal: "Foundry nicht bereit" };
+        await window.__weltDa(() => f?.ready && f.recipeCount > 0);
+        if (!f?.ready) return { fatal: "Foundry nicht bereit" };
         // DER TAKT der Wand: der echte Loop unter gehaltener Bühne (Mittag, Wetter fest).
         window.__schirmTakt = () => {
             st._frameOverBudget = false;
@@ -214,6 +214,12 @@ async function welt() {
         const takte = await window.__weltStehtNach(takt); // die Welt steht (das EINE Einschwingen, welt-boot)
         window.__buehne();
         window.__tiereHalten();
+        // DIE VÖGEL HALTEN STILL: Lied und Bahn je Revier folgen der Welt-Uhr (`_vogelTakt` liest `spielZeit`, der Schwarm ebenso),
+        // nie dem Schirm, und ihr Pool zählt jeden Sänger im Hör-Kreis, im Bild oder nicht — die Uhr lief durch die Reihe: am 30.10.
+        // (tore-k5-tuer-neu, zwei Läufe) sang im kleinen Fenster einer mehr, Klasse vogel 688 > 608–648 Dreiecke, VERKEHRT ohne ein
+        // Schirm-Gesetz (auf main schwankte dieselbe Klasse ±40 je Reihe, nur nie im Buckel der Mitte). Ihr Takt ruht: der Pool
+        // behält die Lage seines letzten Takts
+        r._vogelTakt = () => {};
         // DER WOLF DER FELL-PROBE: im Abstand d*, an dem das Fell-Gesetz im großen Fenster trägt (px ≥ pxMin·(1+hyst)) und
         // im kleinen nicht (px < pxMin·(1−hyst)) — das geometrische Mittel der Schwellen der beiden Ränder der Reihe.
         const cam = st.camera;
@@ -308,7 +314,7 @@ async function welt() {
                 }
                 const s = r._schirm();
                 const w = window.__schirmWolf;
-                const tB = w && w.userData._tierBaum;
+                const tB = w?.userData._tierBaum;
                 return {
                     schirm: { breite: s.breite, hoehe: s.hoehe, pxJeM: s.pxJeM == null ? null : +s.pxJeM.toFixed(1) },
                     fell: tB ? tB._fellAn : null,

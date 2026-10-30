@@ -11,8 +11,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 async function checkBandV1764ForgeAvatar({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const blu = r.state.blueprints;
-        const p = r.state.player;
+        const blu = st.blueprints;
+        const p = st.player;
         const savedMode = r.getGameMode();
         const savedSoul = p.soul;
 
@@ -83,7 +83,7 @@ async function checkBandV1764ForgeAvatar({ page, check }) {
         // cleanup
         delete blu.__soul;
         delete blu.__notsoul;
-        if (r.state.customSouls) delete r.state.customSouls["bp___soul"];
+        if (st.customSouls) delete st.customSouls["bp___soul"];
         r.applyPlayerSoul(savedSoul && r.playerSoulDefs[savedSoul] ? savedSoul : "human");
         p.inventory = new Array(27).fill(null);
         r.setGameMode(savedMode);
@@ -116,12 +116,12 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
     // Mensch + verkörperbare Tier-Körper: Default human, Wechsel ändert geometry+color, Chat-Pattern
     // routet, Save/Load-Roundtrip, unbekannte Namen abgelehnt, Position überlebt, Drawer + Status-Bar-UI.
     const ring5Results = await safeEvaluate(page, async () => {
-        if (!r || !r.state || !r.state.player || !r.state.playerMesh) return null;
+        if (!r || !st || !st.player || !st.playerMesh) return null;
         const out = {};
         // V2: state.playerMesh wird bei jedem Soul-Wechsel
         // ersetzt (neuer Group). Wir lesen jedes Mal frisch
         // aus state, statt eine Referenz festzuhalten.
-        const currentMesh = () => r.state.playerMesh;
+        const currentMesh = () => st.playerMesh;
         const currentParts = () => {
             const m = currentMesh();
             return m && m.userData && m.userData.parts;
@@ -146,7 +146,7 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
 
         // Cleanup: starte vom Default aus.
         r.applyPlayerSoul("human");
-        out.defaultIsHuman = r.state.player.soul === "human";
+        out.defaultIsHuman = st.player.soul === "human";
         // Die Farb-Wahrheit ist die ZAHL am Körper (userData.hautTon): Mitglied der koerper-core-Palette
         // (SKIN_TONES, Γ5-Anker aus dem Welt-Seed), kein Literal; die Pipe trägt Farben als Vertex-Daten auf
         // GETEILTEN Node-Materialien (kein per-Körper-Material).
@@ -188,8 +188,8 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
         // Studio-Baum (_tierBaum); die Rollen-Quelle bleibt der frozen Bauplan.
         const okPhoenix = r.applyPlayerSoul("wolf");
         out.applyReturnsTrue = !!okPhoenix && okPhoenix.ok !== false;
-        out.phoenixSoulSet = r.state.player.soul === "bp_koerper_wolf";
-        const wolfBp = r.state.blueprints.koerper_wolf;
+        out.phoenixSoulSet = st.player.soul === "bp_koerper_wolf";
+        const wolfBp = st.blueprints.koerper_wolf;
         let wolfMeshN = 0;
         currentMesh().traverse((n) => {
             if (n.isMesh) wolfMeshN++;
@@ -212,11 +212,11 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
         // Chat-Pattern: "werde hirsch" (der werde-Ring spricht die Tiere)
         r.processChatCommand("werde hirsch");
         out.chatRoutedToDsl =
-            Array.isArray(r.state.dsl.lastUserProgram) &&
-            r.state.dsl.lastUserProgram[0] === "player_soul" &&
-            r.state.dsl.lastUserProgram[1] === "hirsch";
-        out.dragonSoulSet = r.state.player.soul === "bp_koerper_wesen";
-        const hirschBp = r.state.blueprints.koerper_wesen;
+            Array.isArray(st.dsl.lastUserProgram) &&
+            st.dsl.lastUserProgram[0] === "player_soul" &&
+            st.dsl.lastUserProgram[1] === "hirsch";
+        out.dragonSoulSet = st.player.soul === "bp_koerper_wesen";
+        const hirschBp = st.blueprints.koerper_wesen;
         let hirschMeshN = 0;
         currentMesh().traverse((n) => {
             if (n.isMesh) hirschMeshN++;
@@ -236,29 +236,22 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
 
         // Umlaut-Alias (bär → koerper_baer) + Englisch (human)
         r.applyPlayerSoul("bär");
-        out.umlautAliasWorks = r.state.player.soul === "bp_koerper_baer";
+        out.umlautAliasWorks = st.player.soul === "bp_koerper_baer";
         r.applyPlayerSoul("human");
-        out.englishAliasWorks = r.state.player.soul === "human";
+        out.englishAliasWorks = st.player.soul === "human";
 
         // ALTLASTEN-NULL: ein unbekannter Name fällt FAIL-SOFT auf den Menschen
         // (alte Saves mit gefallenen Seelen-Namen laden heil — laute WARNING).
         r.applyPlayerSoul("wolf");
         const okBad = r.applyPlayerSoul("riese");
-        out.unknownRejected = okBad === true && r.state.player.soul === "human";
+        out.unknownRejected = okBad === true && st.player.soul === "human";
 
         // DSL-Op direkt aufrufbar
         const resDsl = r.dslRun(["player_soul", "human"]);
-        out.dslOpWorks = resDsl.ok === true && r.state.player.soul === "human";
+        out.dslOpWorks = resDsl.ok === true && st.player.soul === "human";
 
-        // Seele NICHT im atomic-Pool (Nexus soll Identität nicht überschreiben)
-        const seedRng = (seed) => {
-            let s = seed >>> 0 || 1;
-            return () => {
-                s = (s * 1664525 + 1013904223) >>> 0;
-                return s / 4294967296;
-            };
-        };
-        const rng = seedRng(2026);
+        // Seele NICHT im atomic-Pool (Nexus soll Identität nicht überschreiben); der Strom: das EINE LCG der Welt
+        const rng = r._samenStrom(2026);
         let seenSoulOp = false;
         for (let i = 0; i < 2000; i++) {
             const atom = r.dslComposeAtomic(rng);
@@ -283,7 +276,7 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
 
         // loadState wendet die gespeicherte Seele an (zurück auf den Menschen)
         r.loadState({ ...parsed, playerSoul: "human" });
-        out.loadAppliesSoul = r.state.player.soul === "human" && currentMesh().children.length >= 1;
+        out.loadAppliesSoul = st.player.soul === "human" && currentMesh().children.length >= 1;
 
         // Status-Bar (Label des getragenen Tier-Körpers)
         r.applyPlayerSoul("wolf");
@@ -314,10 +307,10 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
         // Die FLÜGEL-Rolle flattert im Idle durch den EINEN Kern (_animateCompoundMotion) über den echten
         // Spieler-Pfad (geflügelte Custom-Seele als Literal-Fixture). Emotionen NEUTRALISIEREN — Warmup-
         // Emotionen konfundieren sonst die Amplituden-Schwelle.
-        const savedEmo = Object.assign({}, r.state.player.emotions);
-        for (const k in r.state.player.emotions) r.state.player.emotions[k] = 0;
-        r.state.customSouls = r.state.customSouls || {};
-        r.state.customSouls.fluegelprobe = {
+        const savedEmo = Object.assign({}, st.player.emotions);
+        for (const k in st.player.emotions) st.player.emotions[k] = 0;
+        st.customSouls = st.customSouls || {};
+        st.customSouls.fluegelprobe = {
             label: "Flügel-Probe",
             bodyParts: [
                 {
@@ -342,7 +335,7 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
         };
         r.applyPlayerSoul("fluegelprobe");
         const phGroup = currentMesh();
-        r.state.player.animationLastTick = -Infinity;
+        st.player.animationLastTick = -Infinity;
         r.animatePlayerSoul(0.1);
         const wingRotA = phGroup.userData.parts.leftWing.rotation.z;
         r.animatePlayerSoul(0.3);
@@ -353,15 +346,15 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
         // tailAmp 0.1); t 0.1→3.1 hebt die Phase auf ~sin(1.55)≈1 → Delta ~0.095, robust über 0.05.
         r.applyPlayerSoul("hirsch");
         const drGroup = currentMesh();
-        r.state.player.animationLastTick = -Infinity;
+        st.player.animationLastTick = -Infinity;
         r.animatePlayerSoul(0.1);
         const drTail = ((drGroup.userData._tierBaum || {}).tailSegs || [])[0] || null;
         const tailA = drTail ? drTail.rotation.y : 0;
         r.animatePlayerSoul(3.1);
         const tailB = drTail ? drTail.rotation.y : 0;
         out.dragonTailWaves = !!drTail && Math.abs(tailA - tailB) > 0.05;
-        Object.assign(r.state.player.emotions, savedEmo);
-        delete r.state.customSouls.fluegelprobe;
+        Object.assign(st.player.emotions, savedEmo);
+        delete st.customSouls.fluegelprobe;
 
         // Cleanup
         r.applyPlayerSoul("human");
@@ -432,16 +425,16 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
     // Toggle wechselt state.cameraMode (persistiert in localStorage), die Kamera orbitet hinter den
     // Spieler, playerMesh dreht mit yaw.
     const cameraResults = await safeEvaluate(page, () => {
-        if (!r || !r.state || !r.state.playerMesh || !r.state.camera) return null;
+        if (!r || !st || !st.playerMesh || !st.camera) return null;
         const out = {};
         const toggle = document.getElementById("camera-mode-toggle");
         out.toggleInDom = !!toggle;
-        out.initialModeFirst = r.state.cameraMode === "first";
+        out.initialModeFirst = st.cameraMode === "first";
         out.initialLabelFirst = toggle && toggle.textContent.includes("1st");
 
         // setCameraMode("third") schaltet um + Label folgt
         r.setCameraMode("third");
-        out.modeAfterSet = r.state.cameraMode === "third";
+        out.modeAfterSet = st.cameraMode === "third";
         out.labelAfterSet = toggle && toggle.textContent.includes("3rd");
         out.ariaPressedAfterSet = toggle && toggle.getAttribute("aria-pressed") === "true";
         out.persistedThird = localStorage.getItem("anazhRealmCameraMode") === "third";
@@ -449,30 +442,30 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
         // Kamera ist im 3rd-Modus tatsächlich vom Spieler entfernt
         // (mind. 4 Welt-Einheiten). Wir setzen yaw=0, damit die
         // Distanz reproduzierbar in -Z-Richtung liegt.
-        r.state.yaw = 0;
-        r.state.pitch = 0;
+        st.yaw = 0;
+        st.pitch = 0;
         // BÜHNE: die Blick-Distanz in −Z (Render-Mechanik)
-        r.state.playerMesh.position.set(0, 20, 0);
+        st.playerMesh.position.set(0, 20, 0);
         // Render-Frame triggern: Loop läuft bereits, wir warten auf
         // den nächsten Tick im Test-Wrapper. Hier prüfen wir die
         // Math direkt, damit der Test deterministisch ist.
-        const dist = r.state.cameraThirdDistance;
+        const dist = st.cameraThirdDistance;
         const expectedZ = -Math.cos(0) * dist; // = -dist
         out.expectedDistance = dist;
         out.expectedZ = expectedZ;
 
         // playerMesh.rotation.y folgt yaw — setze yaw und renderFrame
-        r.state.yaw = Math.PI / 2;
+        st.yaw = Math.PI / 2;
 
         // setCameraMode("first") zurück
         r.setCameraMode("first");
-        out.modeBackToFirst = r.state.cameraMode === "first";
+        out.modeBackToFirst = st.cameraMode === "first";
         out.labelBackToFirst = toggle && toggle.textContent.includes("1st");
         out.persistedFirst = localStorage.getItem("anazhRealmCameraMode") === "first";
 
         // Unbekannter Modus fällt auf "first" zurück
         r.setCameraMode("xyz");
-        out.unknownFallsToFirst = r.state.cameraMode === "first";
+        out.unknownFallsToFirst = st.cameraMode === "first";
 
         return out;
     });
@@ -480,17 +473,17 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
     // Loop synchron treiben (_gameLoopTick = genau ein Frame): Headless-Chromium drosselt rAF auf ~1 Hz,
     // ein Warte-Fenster enthielte oft 0 Ticks.
     const cameraEffect = await safeEvaluate(page, () => {
-        if (!r || !r.state.camera || !r.state.playerMesh) return null;
+        if (!r || !st.camera || !st.playerMesh) return null;
         r._gameLoopTick(performance.now());
         return {
-            playerYaw: r.state.yaw,
-            playerRotationY: r.state.playerMesh.rotation.y,
-            cameraX: r.state.camera.position.x,
-            cameraY: r.state.camera.position.y,
-            cameraZ: r.state.camera.position.z,
-            playerX: r.state.playerMesh.position.x,
-            playerY: r.state.playerMesh.position.y,
-            playerZ: r.state.playerMesh.position.z,
+            playerYaw: st.yaw,
+            playerRotationY: st.playerMesh.rotation.y,
+            cameraX: st.camera.position.x,
+            cameraY: st.camera.position.y,
+            cameraZ: st.camera.position.z,
+            playerX: st.playerMesh.position.x,
+            playerY: st.playerMesh.position.y,
+            playerZ: st.playerMesh.position.z,
         };
     });
 
@@ -502,13 +495,13 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
     const setPitchAndRead = async (pitch) => {
         return await page.evaluate((p) => {
             r.setCameraMode("third");
-            r.state.yaw = 0;
-            r.state.pitch = p;
+            st.yaw = 0;
+            st.pitch = p;
             // Player-Velocity nullen (feld-nativ), damit der Spieler während der
             // drei Messungen nicht driftet.
-            if (r.state.playerVel) {
-                r.state.playerVel.setValue(0, 0, 0);
-                r.state._fieldVy = 0;
+            if (st.playerVel) {
+                st.playerVel.setValue(0, 0, 0);
+                st._fieldVy = 0;
             }
             r._gameLoopTick(performance.now());
             return {
@@ -524,7 +517,7 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
     const cameraPitch = { upDelta, geklemmt, downDelta };
     await page.evaluate(() => {
         r.setCameraMode("first");
-        r.state.pitch = 0;
+        st.pitch = 0;
     });
 
     if (!cameraResults || cameraResults.error) {
@@ -583,16 +576,16 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
 async function checkBandM3RittVollendet({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
-        const pm = r.state.playerMesh.position;
-        const savedMounted = r.state.player.mountedArch;
+        const pm = st.playerMesh.position;
+        const savedMounted = st.player.mountedArch;
         const savedPos = { x: pm.x, y: pm.y, z: pm.z };
         let entry = null;
         try {
             // AUSLÖSCHUNGS-WELLE — Wagen-Substanz (KIND_SUBSTANCE) als Test-Blueprint;
             // nah am Spieler spawnen (gebauter Chunk → getTerrainHeightAt trägt).
-            const KSm3 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
-            if (r.state.blueprints._t_m3_wagen) delete r.state.blueprints._t_m3_wagen;
-            r.state.blueprints._t_m3_wagen = {
+            const KSm3 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
+            if (st.blueprints._t_m3_wagen) delete st.blueprints._t_m3_wagen;
+            st.blueprints._t_m3_wagen = {
                 name: "_t_m3_wagen",
                 parts: JSON.parse(JSON.stringify(KSm3.fahrzeug_wagen.parts)),
                 connections: JSON.parse(JSON.stringify(KSm3.fahrzeug_wagen.connections || [])),
@@ -600,7 +593,7 @@ async function checkBandM3RittVollendet({ page, check }) {
             entry = r.spawnArchitecture("_t_m3_wagen", { x: pm.x + 6, y: pm.y, z: pm.z }, { silent: true });
             out.spawned = !!entry;
             if (!entry) return out;
-            const bp = r.state.blueprints._t_m3_wagen;
+            const bp = st.blueprints._t_m3_wagen;
 
             // (1) die RAD-ACHSE ist die Zylinder-Eigenachse (Welt-X am Wagen-Rad,
             // rotation.z=π/2) — NICHT die Verbindungs-Richtung (connAxis wäre "z" =
@@ -625,7 +618,7 @@ async function checkBandM3RittVollendet({ page, check }) {
             // der Reiter sitzt auf entry.y + sitz, und vy ist genullt (kein Versinken).
             r.mountArchitecture(entry);
             // Feld-nativ: die Vertikale lebt in state._fieldVy (kein Ammo-Body).
-            r.state._fieldVy = -8; // simulierter Fall
+            st._fieldVy = -8; // simulierter Fall
             for (let i = 0; i < 40; i++) r._rittSchritt(0.05); // settled (exp-Lerp) — der Sitz lebt im Sim-Schritt (Welle L)
             const terr = r.getTerrainHeightAt(entry.position.x, entry.position.z);
             // Die GERENDERTE Unterkante: die Basis liegt bei position.y − 0.5 (Instanz-Matrix · Gruppen-Bau) — die alte
@@ -674,7 +667,7 @@ async function checkBandM3RittVollendet({ page, check }) {
                 luft.map((v) => (+v).toFixed(3)).join("/") +
                 ` · schwimmt ${expectFloat} · Ort ${entry.position.x.toFixed(1)},${entry.position.z.toFixed(1)}`;
             out.riderFollows = Math.abs(pm.y - (entry.position.y - 0.5 + entry._sitzHeight)) < 0.05;
-            out.vyZeroed = Math.abs(r.state._fieldVy) < 1e-6;
+            out.vyZeroed = Math.abs(st._fieldVy) < 1e-6;
             // _groundClear ist GEOMETRIE-abgeleitet (−_compoundBottomY·scale), kein gefrorenes Maß → jede
             // Fahrzeug-Gestalt verankert korrekt; der Test prüft die Ableitung, keine Magie-Zahl.
             const expectClear = -r._compoundBottomY(bp) * (entry.scale || 1);
@@ -682,11 +675,11 @@ async function checkBandM3RittVollendet({ page, check }) {
 
             // (3) die SITZ-POSE: im Sattel winkelt der menschliche Avatar die Beine
             // an (Walk-Cycle ruht); beim Absteigen räumt _animateHuman die Pose.
-            const savedSoul = r.state.player.soul;
+            const savedSoul = st.player.soul;
             r.applyPlayerSoul("human");
-            r.state.player.animationLastTick = -Infinity;
+            st.player.animationLastTick = -Infinity;
             r.animatePlayerSoul(10.0);
-            const parts = r.state.playerMesh.userData.parts;
+            const parts = st.playerMesh.userData.parts;
             // angewinkelt = der Oberschenkel mindestens 69° nach vorn (0710-4 Klasse 4: er liegt waagerecht auf der
             // Sitzfläche, −π/2)
             out.seatPose = !!parts && parts.leftLeg.rotation.x <= -1.2;
@@ -698,13 +691,13 @@ async function checkBandM3RittVollendet({ page, check }) {
             return out;
         } finally {
             if (entry) r.removeArchitecture(entry);
-            delete r.state.blueprints._t_m3_wagen;
-            r.state.player.mountedArch = savedMounted === undefined ? null : savedMounted;
+            delete st.blueprints._t_m3_wagen;
+            st.player.mountedArch = savedMounted === undefined ? null : savedMounted;
             pm.set(savedPos.x, savedPos.y, savedPos.z);
             // Feld-nativ: Position über das Mesh, Velocity über playerVel + _fieldVy.
-            if (r.state.playerVel) {
-                r.state.playerVel.setValue(0, 0, 0);
-                r.state._fieldVy = 0;
+            if (st.playerVel) {
+                st.playerVel.setValue(0, 0, 0);
+                st._fieldVy = 0;
             }
         }
     });
@@ -768,24 +761,24 @@ async function checkBandWFFluss({ page, check }) {
 // Built-in Souls (human/phoenix/dragon) bleiben NEUTRAL (getunte intrinsische Seelen).
 async function checkBandV18195AvatarSizeHp({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
 
 
         // (S2) BUILT-IN NEUTRAL: human-Soul → mul=1.0 → die getunten Werte
         // sind unangetastet. Wir vergleichen den heutigen Spieler-Stats-Wert
         // mit der STAT_FROM_TAGS-Direktrechnung (ohne Größen-Multiplikator).
-        const savedSoul = r.state.player && r.state.player.soul;
-        const savedEquipped = r.state.player && JSON.parse(JSON.stringify(r.state.player.equipped || {}));
-        const savedBoosts = r.state.player && JSON.parse(JSON.stringify(r.state.player.boosts || []));
-        const savedCustomSouls = r.state.customSouls ? JSON.parse(JSON.stringify(r.state.customSouls)) : {};
-        const savedDeathWound = r.state.player ? r.state.player.deathWoundIntensity : 0;
+        const savedSoul = st.player && st.player.soul;
+        const savedEquipped = st.player && JSON.parse(JSON.stringify(st.player.equipped || {}));
+        const savedBoosts = st.player && JSON.parse(JSON.stringify(st.player.boosts || []));
+        const savedCustomSouls = st.customSouls ? JSON.parse(JSON.stringify(st.customSouls)) : {};
+        const savedDeathWound = st.player ? st.player.deathWoundIntensity : 0;
         try {
             // human: built-in, sollte sizeFactor 1 + mul 1 erhalten
-            r.state.player.soul = "human";
-            r.state.player.equipped = {};
-            r.state.player.boosts = [];
-            r.state.player.deathWoundIntensity = 0;
+            st.player.soul = "human";
+            st.player.equipped = {};
+            st.player.boosts = [];
+            st.player.deathWoundIntensity = 0;
             const humanComputed = r.computePlayerStats();
             out.humanHpMax = humanComputed.stats.hpMax;
             // Vergleich mit Direktrechnung ohne size-Mul: erwartet IDENTISCH
@@ -796,21 +789,21 @@ async function checkBandV18195AvatarSizeHp({ page, check }) {
             out.humanNeutralOk = out.humanNeutralDelta < 0.001;
 
             // (S3) CUSTOM SMALL: kleiner Avatar (kleine Parts) → soulSize<1 → hpMax<direkt
-            if (!r.state.customSouls) r.state.customSouls = {};
-            r.state.customSouls["bp_smallAvatar"] = {
+            if (!st.customSouls) st.customSouls = {};
+            st.customSouls["bp_smallAvatar"] = {
                 role: "soul",
                 bodyParts: [
                     { shape: "sphere", material: "fleisch", size: { x: 0.4, y: 0.4, z: 0.4 } },
                     { shape: "sphere", material: "fleisch", size: { x: 0.3, y: 0.3, z: 0.3 } },
                 ],
             };
-            r.state.blueprints = r.state.blueprints || {};
-            r.state.blueprints["bp_smallAvatar"] = r.state.customSouls["bp_smallAvatar"];
-            r.state.player.soul = "bp_smallAvatar";
+            st.blueprints = st.blueprints || {};
+            st.blueprints["bp_smallAvatar"] = st.customSouls["bp_smallAvatar"];
+            st.player.soul = "bp_smallAvatar";
             const smallComputed = r.computePlayerStats();
             out.smallHpMax = smallComputed.stats.hpMax;
             const smallDirect = A.STAT_FROM_TAGS.hpMax(smallComputed.tags);
-            out.smallSizeFactor = r._compoundSizeFactor({ parts: r.state.customSouls["bp_smallAvatar"].bodyParts });
+            out.smallSizeFactor = r._compoundSizeFactor({ parts: st.customSouls["bp_smallAvatar"].bodyParts });
             // Erwartung: smallHpMax = smallDirect * sqrt(smallSizeFactor)
             const expectedSmall = smallDirect * Math.sqrt(out.smallSizeFactor);
             out.smallMatchesFormula = Math.abs(smallComputed.stats.hpMax - expectedSmall) < 0.1;
@@ -819,19 +812,19 @@ async function checkBandV18195AvatarSizeHp({ page, check }) {
             out.smallHasLessHpThanDirect = out.smallSizeFactor < 1 ? smallComputed.stats.hpMax < smallDirect : true;
 
             // (S4) CUSTOM LARGE: großer Avatar (große Parts) → soulSize>1 → hpMax>direkt
-            r.state.customSouls["bp_largeAvatar"] = {
+            st.customSouls["bp_largeAvatar"] = {
                 role: "soul",
                 bodyParts: [
                     { shape: "sphere", material: "fleisch", size: { x: 2.5, y: 2.5, z: 2.5 } },
                     { shape: "box", material: "fleisch", size: { x: 1.8, y: 1.8, z: 1.8 } },
                 ],
             };
-            r.state.blueprints["bp_largeAvatar"] = r.state.customSouls["bp_largeAvatar"];
-            r.state.player.soul = "bp_largeAvatar";
+            st.blueprints["bp_largeAvatar"] = st.customSouls["bp_largeAvatar"];
+            st.player.soul = "bp_largeAvatar";
             const largeComputed = r.computePlayerStats();
             out.largeHpMax = largeComputed.stats.hpMax;
             const largeDirect = A.STAT_FROM_TAGS.hpMax(largeComputed.tags);
-            out.largeSizeFactor = r._compoundSizeFactor({ parts: r.state.customSouls["bp_largeAvatar"].bodyParts });
+            out.largeSizeFactor = r._compoundSizeFactor({ parts: st.customSouls["bp_largeAvatar"].bodyParts });
             out.largeHasMoreHpThanDirect = out.largeSizeFactor > 1 ? largeComputed.stats.hpMax > largeDirect : true;
             // small < large (selbst nach Mul, weil large viel größer ist)
             out.smallLessThanLarge = smallComputed.stats.hpMax < largeComputed.stats.hpMax;
@@ -851,16 +844,16 @@ async function checkBandV18195AvatarSizeHp({ page, check }) {
                 ) < 0.1;
         } finally {
             // Wiederherstellen
-            if (r.state.player) {
-                r.state.player.soul = savedSoul;
-                r.state.player.equipped = savedEquipped;
-                r.state.player.boosts = savedBoosts;
-                r.state.player.deathWoundIntensity = savedDeathWound;
+            if (st.player) {
+                st.player.soul = savedSoul;
+                st.player.equipped = savedEquipped;
+                st.player.boosts = savedBoosts;
+                st.player.deathWoundIntensity = savedDeathWound;
             }
-            r.state.customSouls = savedCustomSouls;
-            if (r.state.blueprints) {
-                delete r.state.blueprints["bp_smallAvatar"];
-                delete r.state.blueprints["bp_largeAvatar"];
+            st.customSouls = savedCustomSouls;
+            if (st.blueprints) {
+                delete st.blueprints["bp_smallAvatar"];
+                delete st.blueprints["bp_largeAvatar"];
             }
         }
         return out;
@@ -896,7 +889,7 @@ async function checkBandV18195AvatarSizeHp({ page, check }) {
 // (MANA_REGEN_PER_SEC, M7 fährt ihn).
 async function checkBandV18196ManaSymmetry({ page, check }) {
     const res = await safeEvaluate(page, async () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
 
         // (M2) Formel: leere Tags → base 50, magieleitung 1 → 150, +resoniert 1 → 180
@@ -913,7 +906,7 @@ async function checkBandV18196ManaSymmetry({ page, check }) {
 
 
         // (M4) computePlayerStats gibt stats.manaMax
-        const savedSoul = r.state.player && r.state.player.soul;
+        const savedSoul = st.player && st.player.soul;
         try {
             r.applyPlayerSoul("human");
             const computed = r.computePlayerStats();
@@ -933,9 +926,9 @@ async function checkBandV18196ManaSymmetry({ page, check }) {
 
             // (M6) recomputePlayerStats setzt state.player.mana + manaMax
             r.recomputePlayerStats();
-            out.statePlayerMana = typeof r.state.player.mana === "number";
-            out.statePlayerManaMax = typeof r.state.player.manaMax === "number" && r.state.player.manaMax > 0;
-            out.manaAtMaxAfterRecompute = r.state.player.mana === r.state.player.manaMax;
+            out.statePlayerMana = typeof st.player.mana === "number";
+            out.statePlayerManaMax = typeof st.player.manaMax === "number" && st.player.manaMax > 0;
+            out.manaAtMaxAfterRecompute = st.player.mana === st.player.manaMax;
         } finally {
             if (savedSoul) r.applyPlayerSoul(savedSoul);
         }
@@ -944,16 +937,16 @@ async function checkBandV18196ManaSymmetry({ page, check }) {
         try {
             r.applyPlayerSoul("human");
             r.recomputePlayerStats();
-            r.state.player.mana = 0;
-            const before = r.state.player.mana;
+            st.player.mana = 0;
+            const before = st.player.mana;
             // Simuliere Frames — _gameLoopTick treibt den Regen-Pfad mit
             for (let i = 0; i < 60; i++) {
                 try {
                     r._gameLoopTick && r._gameLoopTick(performance.now());
                 } catch {}
             }
-            const after = r.state.player.mana;
-            const maxAfter = r.state.player.manaMax; // aktueller Wert nach allen Ticks
+            const after = st.player.mana;
+            const maxAfter = st.player.manaMax; // aktueller Wert nach allen Ticks
             out.regenRunsInLoop = after > before;
             // Regen darf maxAfter nicht überschreiten (Math.min-Clamp im Loop).
             // Marge gegen Float-Drift.
@@ -996,13 +989,13 @@ async function checkBandV18201ManaKonsum({ page, check }) {
 
         // (K1) Helper existieren
 
-        const savedMana = r.state.player && r.state.player.mana;
-        const savedManaMax = r.state.player && r.state.player.manaMax;
+        const savedMana = st.player && st.player.mana;
+        const savedManaMax = st.player && st.player.manaMax;
         const savedMode = r.getGameMode ? r.getGameMode() : "frieden";
         try {
             if (r.setGameMode) r.setGameMode("pfad");
-            r.state.player.manaMax = 100;
-            r.state.player.mana = 60;
+            st.player.manaMax = 100;
+            st.player.mana = 60;
 
             // (K2) canPay: 50 ≤ 60 → true; 70 > 60 → false; 0/negativ → true
             out.canPayEnough = r._canPayMana(50) === true;
@@ -1011,28 +1004,28 @@ async function checkBandV18201ManaKonsum({ page, check }) {
             out.canPayNegative = r._canPayMana(-5) === true;
 
             // (K3) drainMana: erfolgreich zieht ab
-            r.state.player.mana = 60;
+            st.player.mana = 60;
             const drainOk = r._drainMana(20);
             out.drainSuccessReturnsTrue = drainOk === true;
-            out.drainReducesMana = r.state.player.mana === 40;
+            out.drainReducesMana = st.player.mana === 40;
 
             // (K4) drainMana: insufficient → false + Mana unverändert (atomar)
-            r.state.player.mana = 15;
+            st.player.mana = 15;
             const drainFail = r._drainMana(20);
             out.drainFailReturnsFalse = drainFail === false;
-            out.drainFailLeavesUnchanged = r.state.player.mana === 15;
+            out.drainFailLeavesUnchanged = st.player.mana === 15;
 
             // (K5) drainMana: nicht unter 0
-            r.state.player.mana = 5;
+            st.player.mana = 5;
             r._drainMana(5);
-            out.drainExactlyDepletes = r.state.player.mana === 0;
+            out.drainExactlyDepletes = st.player.mana === 0;
 
             // (K6) MODE-GATE: schöpfer = frei
             if (r.setGameMode) r.setGameMode("schöpfer");
-            r.state.player.mana = 10;
+            st.player.mana = 10;
             const schoepferDrain = r._drainMana(50);
             out.schoepferDrainSucceeds = schoepferDrain === true;
-            out.schoepferManaUnchanged = r.state.player.mana === 10; // kein Drain
+            out.schoepferManaUnchanged = st.player.mana === 10; // kein Drain
             out.schoepferCanPay = r._canPayMana(50) === true; // immer ok
 
             // (K7) Anti-Scope §3: KEIN DSL-Op für Mana-Drain
@@ -1044,13 +1037,13 @@ async function checkBandV18201ManaKonsum({ page, check }) {
 
             // (K8) Mode-Override per opts: opts.mode overschreibt getGameMode
             if (r.setGameMode) r.setGameMode("pfad");
-            r.state.player.mana = 20;
+            st.player.mana = 20;
             const optsOverride = r._drainMana(30, { mode: "schöpfer" });
-            out.optsModeOverride = optsOverride === true && r.state.player.mana === 20;
+            out.optsModeOverride = optsOverride === true && st.player.mana === 20;
         } finally {
-            if (r.state.player) {
-                r.state.player.mana = savedMana;
-                r.state.player.manaMax = savedManaMax;
+            if (st.player) {
+                st.player.mana = savedMana;
+                st.player.manaMax = savedManaMax;
             }
             if (r.setGameMode) r.setGameMode(savedMode);
         }
@@ -1083,15 +1076,15 @@ async function checkBandV18206SpeedTrade({ page, check }) {
         const out = {};
 
 
-        const savedSoul = r.state.player && r.state.player.soul;
-        const savedEquipped = r.state.player && JSON.parse(JSON.stringify(r.state.player.equipped || {}));
-        const savedCustomSouls = r.state.customSouls ? JSON.parse(JSON.stringify(r.state.customSouls)) : {};
+        const savedSoul = st.player && st.player.soul;
+        const savedEquipped = st.player && JSON.parse(JSON.stringify(st.player.equipped || {}));
+        const savedCustomSouls = st.customSouls ? JSON.parse(JSON.stringify(st.customSouls)) : {};
 
         try {
             // (S2) Built-in NEUTRAL: human-Soul → sizeFactor=1, kein Speed-Drift
-            r.state.player.soul = "human";
-            r.state.player.equipped = {};
-            r.state.player.boosts = [];
+            st.player.soul = "human";
+            st.player.equipped = {};
+            st.player.boosts = [];
             const human = r.computePlayerStats();
             out.humanSpeed = human.stats.speed;
             // Wir prüfen pragmatisch: human ist neutral, also speed entspricht
@@ -1099,35 +1092,35 @@ async function checkBandV18206SpeedTrade({ page, check }) {
             // schwer direkt zu testen. Wir verifizieren via SMALL/LARGE-Vergleich.
 
             // (S3) CUSTOM LARGE: großer Avatar (sizeFactor > 1) → speed LANGSAMER
-            if (!r.state.customSouls) r.state.customSouls = {};
-            r.state.customSouls["bp_largeAvatarS"] = {
+            if (!st.customSouls) st.customSouls = {};
+            st.customSouls["bp_largeAvatarS"] = {
                 role: "soul",
                 bodyParts: [
                     { shape: "sphere", material: "fleisch", size: { x: 2.5, y: 2.5, z: 2.5 } },
                     { shape: "box", material: "fleisch", size: { x: 1.8, y: 1.8, z: 1.8 } },
                 ],
             };
-            r.state.blueprints = r.state.blueprints || {};
-            r.state.blueprints["bp_largeAvatarS"] = r.state.customSouls["bp_largeAvatarS"];
-            r.state.player.soul = "bp_largeAvatarS";
+            st.blueprints = st.blueprints || {};
+            st.blueprints["bp_largeAvatarS"] = st.customSouls["bp_largeAvatarS"];
+            st.player.soul = "bp_largeAvatarS";
             const large = r.computePlayerStats();
-            out.largeSizeFactor = r._compoundSizeFactor({ parts: r.state.customSouls["bp_largeAvatarS"].bodyParts });
+            out.largeSizeFactor = r._compoundSizeFactor({ parts: st.customSouls["bp_largeAvatarS"].bodyParts });
             out.largeSpeed = large.stats.speed;
             out.largeAttackSpeed = large.stats.attackSpeed;
             out.largeJumpPower = large.stats.jumpPower;
 
             // (S4) CUSTOM SMALL: kleiner Avatar
-            r.state.customSouls["bp_smallAvatarS"] = {
+            st.customSouls["bp_smallAvatarS"] = {
                 role: "soul",
                 bodyParts: [
                     { shape: "sphere", material: "fleisch", size: { x: 0.4, y: 0.4, z: 0.4 } },
                     { shape: "sphere", material: "fleisch", size: { x: 0.3, y: 0.3, z: 0.3 } },
                 ],
             };
-            r.state.blueprints["bp_smallAvatarS"] = r.state.customSouls["bp_smallAvatarS"];
-            r.state.player.soul = "bp_smallAvatarS";
+            st.blueprints["bp_smallAvatarS"] = st.customSouls["bp_smallAvatarS"];
+            st.player.soul = "bp_smallAvatarS";
             const small = r.computePlayerStats();
-            out.smallSizeFactor = r._compoundSizeFactor({ parts: r.state.customSouls["bp_smallAvatarS"].bodyParts });
+            out.smallSizeFactor = r._compoundSizeFactor({ parts: st.customSouls["bp_smallAvatarS"].bodyParts });
             out.smallSpeed = small.stats.speed;
 
             // (S5) Vergleich: large < small bei speed/jumpPower (sizeFactor>1 → langsamer)
@@ -1157,14 +1150,14 @@ async function checkBandV18206SpeedTrade({ page, check }) {
             out.speedFloorRespected = large.stats.speed >= speedFloorS - 1e-9;
             out.attackSpeedFloorRespected = large.stats.attackSpeed >= 0.25;
         } finally {
-            if (r.state.player) {
-                r.state.player.soul = savedSoul;
-                r.state.player.equipped = savedEquipped;
+            if (st.player) {
+                st.player.soul = savedSoul;
+                st.player.equipped = savedEquipped;
             }
-            r.state.customSouls = savedCustomSouls;
-            if (r.state.blueprints) {
-                delete r.state.blueprints["bp_largeAvatarS"];
-                delete r.state.blueprints["bp_smallAvatarS"];
+            st.customSouls = savedCustomSouls;
+            if (st.blueprints) {
+                delete st.blueprints["bp_largeAvatarS"];
+                delete st.blueprints["bp_smallAvatarS"];
             }
         }
         return out;
@@ -1280,14 +1273,14 @@ async function checkBandKonvergenzTierBaum({ page, check }) {
         out.fernMeshN = -1;
         out.fernFar = false;
         out.fernNear = false;
-        const pm5 = r.state.playerMesh;
-        const saved5C = r.state.creatures;
-        const saved5E = r.state.creatureEmotions;
+        const pm5 = st.playerMesh;
+        const saved5C = st.creatures;
+        const saved5E = st.creatureEmotions;
         const origFrustum5 = r.isInFrustum;
         let t5 = null;
         try {
-            r.state.creatures = [];
-            r.state.creatureEmotions = [];
+            st.creatures = [];
+            st.creatureEmotions = [];
             t5 = r.spawnCreatureAt(pm5.position.x + 2, pm5.position.y, pm5.position.z + 2, "happy", "wolf");
             const gl5 = t5 && t5.userData._gelenk;
             if (gl5 && gl5.fern) {
@@ -1308,8 +1301,8 @@ async function checkBandKonvergenzTierBaum({ page, check }) {
         } finally {
             r.isInFrustum = origFrustum5;
             if (t5) r.removeCreature(t5);
-            r.state.creatures = saved5C;
-            r.state.creatureEmotions = saved5E;
+            st.creatures = saved5C;
+            st.creatureEmotions = saved5E;
         }
         return out;
     });
@@ -1350,8 +1343,8 @@ async function checkBandKonvergenzTierBaum({ page, check }) {
 // Sim-Spur (die Darstellung sickert nie in die Sim); (S) mit gestubbtem Schalter (immer nah) erkennt die Linse den alten Zustand.
 async function checkBandTierFern({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        const s = r.state,
-            A = r.constructor;
+        const s = st,
+            A = AnazhRealm;
         const o = { checks: {} };
         const pm = s.playerMesh && s.playerMesh.position;
         if (!pm) return { error: "kein Spieler" };
@@ -1503,14 +1496,8 @@ async function checkBandTierFern({ page, check }) {
         o.checks.hKeinGuss = gussCalls === 0 && o.memoDelta === 0;
         r.removeCreature(c);
     
-        // ── (D) DETERMINISMUS: Sim-Werte identisch mit/ohne Stufen-Schalter ──
-        const mulberry32 = (a) => () => {
-            a |= 0;
-            a = (a + 0x6d2b79f5) | 0;
-            let t = Math.imul(a ^ (a >>> 15), 1 | a);
-            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
+        // ── (D) DETERMINISMUS: Sim-Werte identisch mit/ohne Stufen-Schalter (der Vorlagen-RNG, phyto-core) ──
+        const { mulberry32 } = window.__phytoCore;
         const saveRandom = Math.random;
         // der Ort des Laufs: Land in 1,4·Schwelle (ein Wolf im Wasser triebe mit der Strömung — ein Leib, der sich
         // bewegt, behält seinen Gelenk-Baum)
@@ -1612,8 +1599,8 @@ async function checkBandTierFern({ page, check }) {
 // sich, Abgrund ohne NaN, Luft-Sperre); Selbsttests S1 (hartes Blend) und S2 (_slopePitch ≡ 0).
 async function checkBandKoerperBewegung({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        const s = r.state,
-            A = r.constructor;
+        const s = st,
+            A = AnazhRealm;
         const o = { checks: {} };
         for (const fn of [
             "_gaitGesetz",
