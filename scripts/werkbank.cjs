@@ -1106,7 +1106,7 @@ async function starte() {
                 if (r.state.cameraMode !== "first" || !k.klasse) throw new Error("--arm: Ego (--sicht ego) und --klasse");
                 for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100);
                 const a = r.state.camera.position.clone();
-                const tiefe = async () => (await __ausgabeAufnahme(64, 36, 1, { satz: "messung" }), await __spiegelDaten());
+                const tiefe = async () => (await __ausgabeAufnahme(64, 36, 1, { satz: "messung", tiefe: true }), await __spiegelDaten());
                 const re = new RegExp(k.klasse),
                     aus = [],
                     S = await tiefe();
@@ -1169,14 +1169,16 @@ async function starte() {
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
             let auf = null;
             let gewaehlt = null;
-            for (let i = 0; i < 2; i++) {
+            // die Blick-Wahl im ersten Schuss, der zweite steht an ihrer Pose; das Bild trägt die Wahl des ersten. Ohne Wahl
+            // (`--wahl 0`) ist der erste Schuss schon das Bild: er wartet, bis die Welt an der Pose steht (`__weltStehtWarten`),
+            // und jeder Schuss beginnt seine Geschichte neu — ein zweiter wäre dasselbe Bild (material.K2: sechs Armlängen)
+            for (const w of wahl > 0 ? [wahl, 0] : [0]) {
                 try {
                     if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
                 } catch {}
                 r._schattenAlleNeu();
-                // die Blick-Wahl im ersten Schuss, der zweite steht an ihrer Pose; das Bild trägt die Wahl des ersten
-                auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: i === 0 ? wahl : 0 });
-                if (i === 0) gewaehlt = auf.abnahme.wahl || null;
+                auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: w });
+                if (w) gewaehlt = auf.abnahme.wahl || null;
             }
             if (gewaehlt) {
                 auf.abnahme.wahl = gewaehlt;
