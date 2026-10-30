@@ -1426,6 +1426,14 @@ function k5Richter(lauf) {
     if (!hw) rot.push("Adapter: " + ad);
     const l = d.last || {}, an = d.anker || {};
     const paar = (x, y) => (x == null ? "?" : x) + " → " + (y == null ? "?" : y);
+    // OHNE STRECKE (w4-linsen-b): fehlt eine Marke, gibt es keine Dauer — die Zahl nennt, was der Strom trug, nie „undefined min in
+    // undefined Seite(n)" (3ed95dcf GTX: die Glätte fuhr in der Eich-Fahrt davor, die Dauer allein in ihrer eigenen Sitzung)
+    if (d.minuten == null)
+        return {
+            gruen: false,
+            zahl: "keine Dauer: Strom der Sitzung " + z.strom.bilder + " Bilder in " + z.strom.seiten + " Seite(n), Marke des Anfangs " + (d.anfang ? "da" : "fehlt") +
+                ", des Endes " + (d.ende ? "da" : "fehlt") + " · " + ad + " — ROT " + rot.length + ": " + rot.slice(0, 6).join(" | "),
+        };
     return {
         gruen: rot.length === 0,
         zahl:

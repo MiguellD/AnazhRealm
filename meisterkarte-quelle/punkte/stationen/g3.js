@@ -90,6 +90,14 @@ const befehlDer = (plan) => ["node", "-e", "(" + folge.toString() + ")(" + JSON.
 // MSYS2_ARG_CONV_EXCL: gpu-lauf.sh ruft node über die Git-bash; ohne diese Variable würde msys die Pfade in den Argumenten umschreiben.
 // Die Folge und die Albedo-Tafel (material.K1) treffen die Werkbank der Sitzung über WERKBANK_PORT (punkte.cjs setzt {PORT}+20000)
 const envDer = { MSYS2_ARG_CONV_EXCL: "*" };
+// DIE UHR DER POSE (w4-linsen-b): eine Probe stellt die Uhr (`setTimeOfDay`, die Bühne) und baut danach im Takt des Spiels — die Uhr
+// läuft dabei weiter. spiegel-lack (material.K4#1) stellt 0,5 und baut den GT bis `__gebautNach`: die Uhr stand danach bei 0,50058
+// (GTX 3ed95dcf), 0,50136 (Radeon 715754fc), 0,50188 (GTX 24a0f3ef) — die Gleichheit `uhr === 0.5` nahm jeder dieser Messungen die
+// Pose (an 3ed95dcf Lack 0,9683 ≥ 0,5 und doch ROT, ohne Grund in der Zahl). Die Pose gilt, wenn die Uhr ± UHR_TOL Tag (± 14,4 min)
+// bei der Soll-Stunde steht: am Mittag rückt die Sonne darin um höchstens 3,6° Stundenwinkel, ihre Höhe um Zehntelgrad. EIN Leser
+// für jede Uhr einer Pose in dieser Gruppe (licht.K2, ferne.K1/K2, material.K4/K5)
+const UHR_TOL = 0.01;
+const uhrIst = (ist, soll) => Number.isFinite(ist) && Math.abs(ist - soll) <= UHR_TOL;
 
 // Der Pfad des Wechsels (lod.K5, lod.K2): das Gesetz, seine Leser, der Regler, die Stufen der Kerne
 const LOD_PFAD = [
@@ -720,7 +728,7 @@ const stationen = [
             const st = e.stand || {};
             // gültig nur, wenn A = B an der Sonnen-Kugel (kein Schatten fällt) und A = C an der Schatten-Kugel (die Sonne ist weg)
             const gueltig = ab != null && Math.abs(ab - 1) <= 0.02 && ac != null && Math.abs(ac - 1) <= 0.02 && n >= 100;
-            const gruen = hw && gueltig && st.uhr === 0.5 && st.wetter === "sunny" && v >= 5 && v <= 12.5 && a >= 0.08 && a <= 0.2;
+            const gruen = hw && gueltig && uhrIst(st.uhr, 0.5) && st.wetter === "sunny" && v >= 5 && v <= 12.5 && a >= 0.08 && a <= 0.2;
             return {
                 gruen,
                 zahl:
@@ -781,7 +789,7 @@ const stationen = [
                 const n = S[0] && S[0]["G-sonne"] && S[0]["G-sonne"].oben ? S[0]["G-sonne"].oben.n : 0;
                 const gueltig = ab != null && Math.abs(ab - 1) <= 0.02 && ac != null && Math.abs(ac - 1) <= 0.02 && n >= 100;
                 const st = e.stand || {};
-                const spalte = Math.abs(st.uhr - u) <= 1e-6 && st.wetter === w;
+                const spalte = uhrIst(st.uhr, u) && st.wetter === w;
                 const b = e.bilanz || {};
                 const v = b.verhaeltnisG_oben;
                 const a = b.schattenAnteilG;
@@ -799,7 +807,7 @@ const stationen = [
             const hs = (h && h.seiten) || {};
             const hok =
                 !!h && h.ende === "ok" && h.himmelZurSonne >= 1.2 && hs.zur.n >= 100 && hs.weg.n >= 100 &&
-                Math.abs(hs.zur.belicht / hs.weg.belicht - 1) <= 0.01 && h.stand.uhr === 0.5 && h.stand.wetter === "sunny";
+                Math.abs(hs.zur.belicht / hs.weg.belicht - 1) <= 0.01 && uhrIst(h.stand.uhr, 0.5) && h.stand.wetter === "sunny";
             if (!hok) gruen = false;
             teile.push(
                 "Himmel zur Sonne " +
@@ -834,11 +842,11 @@ const stationen = [
             if (!z) return { gruen: false, zahl: "keine LUFT-Zeile (Exit " + L.exit + (L.fehler ? ", " + L.fehler : "") + "): " + L.rest.trim().slice(-200) };
             const s = /K1-1 (GRUEN|ROT)/.exec(z[2]);
             const q = ((j && j.zeilen) || [])
-                .filter((x) => x.uhr === 0.5)
+                .filter((x) => uhrIst(x.uhr, 0.5))
                 // die Bänder, die die Linse zählt (luft-referenz `mindest.n` 10)
                 .flatMap((x) => (x.baender || []).filter((b) => b.n >= 10).flatMap((b) => b.q || []))
                 .filter((x) => x != null);
-            const az = new Set(((j && j.zeilen) || []).filter((x) => x.uhr === 0.5).map((x) => x.az)).size;
+            const az = new Set(((j && j.zeilen) || []).filter((x) => uhrIst(x.uhr, 0.5)).map((x) => x.az)).size;
             const gruen = hw && !!s && s[1] === "GRUEN" && q.length > 0;
             return {
                 gruen,
@@ -867,7 +875,7 @@ const stationen = [
             const z = /^LUFT (GRUEN|ROT) · ([^\r\n]+)/m.exec(L.rest);
             if (!z) return { gruen: false, zahl: "keine LUFT-Zeile (Exit " + L.exit + (L.fehler ? ", " + L.fehler : "") + "): " + L.rest.trim().slice(-200) };
             const s = /K2-1 (GRUEN|ROT)/.exec(z[2]);
-            const r = ((j && j.zeilen) || []).filter((x) => x.uhr === 0.5 && x.rand && x.rand.C != null);
+            const r = ((j && j.zeilen) || []).filter((x) => uhrIst(x.uhr, 0.5) && x.rand && x.rand.C != null);
             const C = r.map((x) => x.rand.C);
             const km = r.map((x) => x.rand.km);
             const gruen = hw && !!s && s[1] === "GRUEN" && r.length >= 4;
@@ -944,7 +952,7 @@ const stationen = [
             const l = j.schritte.luft || {};
             const s = /LUFT (GRUEN|ROT) · [^\r\n]*K2-2 (GRUEN|ROT)/.exec(String(l.rest || ""));
             const m = j.dateien.luft;
-            const linie = (zs) => [0, 90, 180, 270].map((az) => ((zs || []).find((x) => x.uhr === 0.5 && x.az === az) || {}).kante).map((k) => (k ? k.linie : null));
+            const linie = (zs) => [0, 90, 180, 270].map((az) => ((zs || []).find((x) => uhrIst(x.uhr, 0.5) && x.az === az) || {}).kante).map((k) => (k ? k.linie : null));
             const huegel = linie(m && m.zeilen);
             const gipfel = linie(m && m.gipfel && m.gipfel.zeilen);
             const b = j.dateien.band;
@@ -1506,13 +1514,15 @@ const stationen = [
             if (!e) return { gruen: false, zahl: "keine Spiegel-Antwort (" + ((k && k.rest) || "").slice(-200) + ")" };
             if (e.ende !== "ok" || !e.ergebnis) return { gruen: false, zahl: "Probe: " + (e.fehler || e.ende) };
             const st = e.stand || {};
-            const pose = st.sicht === "first" && st.uhr === 0.5 && st.wetter === "sunny";
+            // DIE POSE beim Namen (w4-linsen-b): Ego, Mittag klar — die Uhr über `uhrIst` (die Probe baut den GT im Takt des Spiels)
+            const posefehl = [st.sicht === "first" ? null : "Sicht " + st.sicht, uhrIst(st.uhr, 0.5) ? null : "Uhr " + st.uhr + " nicht Mittag (± " + UHR_TOL + ")",
+                st.wetter === "sunny" ? null : "Wetter " + st.wetter].filter(Boolean);
             const teile = [];
             let gruen = false;
             for (const n of ["lack", "glas"]) {
                 const m = e.ergebnis[n] || {};
                 const gueltig = m.ebene >= 2000 && m.bloecke >= 8 && m.einfallGrad >= 45 && m.einfallGrad <= 85 && !m.quer;
-                if (hw && pose && gueltig && m.spiegelTreue != null && m.spiegelTreue >= 0.5) gruen = true;
+                if (hw && !posefehl.length && gueltig && m.spiegelTreue != null && m.spiegelTreue >= 0.5) gruen = true;
                 teile.push(
                     n + " spiegelTreue " + m.spiegelTreue + (gueltig ? "" : " UNGÜLTIG") + " (" + (m.fehler || m.ebene + " px in der Ebene, " + m.bloecke +
                         " Blöcke, Einfall " + m.einfallGrad + "°, Normale " + JSON.stringify(m.normale)) + ")"
@@ -1520,7 +1530,8 @@ const stationen = [
             }
             return {
                 gruen,
-                zahl: teile.join(" · ") + " · Soll ≥ 0,5 an Lack oder Scheibe · " + st.sicht + " Uhr " + st.uhr + " " + st.wetter + " · " + (j.adapter || "Adapter ungenannt"),
+                zahl: teile.join(" · ") + " · Soll ≥ 0,5 an Lack oder Scheibe · " + st.sicht + " Uhr " + st.uhr + " " + st.wetter +
+                    (posefehl.length ? " — POSE UNGÜLTIG: " + posefehl.join(", ") : "") + (hw ? "" : " — kein Adapter einer Karte") + " · " + (j.adapter || "Adapter ungenannt"),
             };
         },
         pfad: [
@@ -1591,7 +1602,7 @@ const stationen = [
                 );
             }
             const st = e.stand || {};
-            const gruen = hw && im >= 3 && st.uhr === 0.5 && st.wetter === "sunny";
+            const gruen = hw && im >= 3 && uhrIst(st.uhr, 0.5) && st.wetter === "sunny";
             return {
                 gruen,
                 zahl: im + " von 4 Klassen im Band (Soll ≥ 3): " + teile.join(" · ") + " · Sonne " + e.sonnenHoeheGrad + "°, Uhr " + st.uhr + " " + st.wetter + ", " + (j.adapter || "Adapter ungenannt"),
