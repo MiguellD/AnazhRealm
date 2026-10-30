@@ -773,8 +773,8 @@ jobs:
             - name: Foundry-Impostor auf dem EINEN Haupt-Renderer (P5 — kein Bake-iframe mehr)
               if: matrix.gruppe == 14
               # P5: der Impostor-Atlas backt über den Haupt-Renderer-RTT (foundry-Record + LOD1-Bake-Leaves)
-              # statt über ein GL-Bake-iframe. Beweist headless die MECHANIK (foundry-Record, kein asset-foundry-
-              # iframe im DOM, die drei iframe-Methoden geschnitten); der Atlas-LOOK ist das Schöpfer-Auge (GPU).
+              # statt über ein GL-Bake-iframe. Beweist die MECHANIK (Atlas-Zelle, Layout, Kleber, Wachsen) und C6 (lod.K3):
+              # die Karte aus jeder Blick-Hebung −20/0/40/80° gegen ihre Gestalt; das Urteil der Karte fällt an der Station.
               run: npm run gate:foundry-impostor
 
             - name: Asset-Inventur (H3, Nervensystem Phase γ — Zensus + requested ⊆ visible|cached)
