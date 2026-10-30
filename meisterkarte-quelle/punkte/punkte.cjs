@@ -464,8 +464,11 @@ function fahreGruppe(sts, ctx) {
         if (ctx.port) env.WERKBANK_PORT = String(ctx.port + 20000);
         // in der Sitzung: das Log der Welt (die Karte) und die Grundstellung als Befehl (`node "$PUNKTE_MASCHINE" grundstellung`:
         // eine Probe, die selbst mehrere frische Welten braucht — je nH, je Lauf —, holt sie so, nie mit eigenem Boot)
+        // DER DECKEL DES LAUFS (PUNKTE_PROBE_DECKEL_S, w4-linsen-a): die eigene Frist einer Probe folgt ihm, nie dem `sek` der Station —
+        // in der Eich-Fahrt (90 s) warf die Seite von halten.K1#2 jeden Takt nach 5 s (sek 10 − 6), Masse und Schneide trafen nie
+        // (Radeon 379e5f56: „masse-traf, schneide-traf“, die Eich-Zahl zensiert)
         if (sitz) Object.assign(env, { PUNKTE_SITZUNG_LOG: sitz.log, PUNKTE_MASCHINE: __filename.split(path.sep).join("/"), PUNKTE_SITZUNG_GRUND: sitz.grund || "",
-            ...(sitz.strom ? { PUNKTE_SITZUNG_STROM: sitz.strom, PUNKTE_PROBE: sitz.probe } : {}) });
+            PUNKTE_PROBE_DECKEL_S: String(deckelS), ...(sitz.strom ? { PUNKTE_SITZUNG_STROM: sitz.strom, PUNKTE_PROBE: sitz.probe } : {}) });
         // headless läuft ohne Karte: starteBrowser griffe lokal sonst die GPU (scripts/lib/software-gpu.cjs) — ohne Schloss
     if (!st.gpu) env.LINSE_GPU = "software";
     for (const [k, v] of Object.entries(st.env || {})) env[k] = ersetze(v, ctx);
@@ -729,6 +732,30 @@ function grundWie(r, grund, anders) {
     return wie;
 }
 const GRUND_TUER =(g) => "const s = JSON.parse(" + JSON.stringify(g.grund) + ").stand; return r._weltBetreten(s, null, { neuLaden: false });";
+// DER BAU DER WELT (w4-linsen-a, die Klasse „eine Probe legt etwas in die Welt und trägt kein `mutiert`“; GTX 3ed95dcf: siedlung.K4#2
+// setzte einen Ort von 1320 samt Haus und Uhr, die Sitzung stellte danach nicht zurück, und klang.K2#1 stand in ihm — archLod 5459
+// Einträge an der Mess-Wiese, nach einer Grundstellung 1297): vor und nach jeder Probe ohne `mutiert` der Abdruck dessen,
+// was eine Probe bleibend legt — die Werke je Id (ohne die Würfe des Gesetzes und ohne Bäume: sie folgen dem Ort und dem Wald, nie der
+// Probe), die Edits, die Orte im Gedächtnis der Welt (`settlementCells`), die Wege (`wegeAbdruck`). Läuft in der Seite (r = die Welt)
+function bauAbdruck(r) {
+    const st = r.state, wm = st.worldMeta || {};
+    const werke = (st.architectures || []).filter((e) => e && !e._ausGesetz && !e._lodSpecies).map((e) => String(e.id)).sort();
+    return { werke, edits: Array.isArray(wm.voxelEdits) ? wm.voxelEdits.length : 0, orte: Object.keys(wm.settlementCells || {}).sort(), wege: wegeAbdruck(r) };
+}
+// die Abweichung beim Namen — „werke +37 (−0) · orte +k3_-2 · wege +4 […]“ — oder null (ohne Abdruck auf einer Seite: null)
+function bauAbweichung(vor, nach) {
+    if (!vor || !nach) return null;
+    const plusMinus = (a, b) => [b.filter((x) => !a.includes(x)), a.filter((x) => !b.includes(x))];
+    const [wNeu, wFort] = plusMinus(vor.werke, nach.werke), [oNeu, oFort] = plusMinus(vor.orte, nach.orte);
+    const teile = [];
+    if (wNeu.length || wFort.length) teile.push("werke +" + wNeu.length + " (−" + wFort.length + ")");
+    if (vor.edits !== nach.edits) teile.push("edits " + vor.edits + " → " + nach.edits);
+    if (oNeu.length || oFort.length) teile.push("orte " + [...oNeu.map((x) => "+" + x), ...oFort.map((x) => "−" + x)].slice(0, 4).join(" "));
+    const w = wegeAbweichung(vor.wege, nach.wege);
+    if (w) teile.push(w);
+    return teile.length ? teile.join(" · ") : null;
+}
+const BAU_LIES = ("return (" + bauAbdruck + ")(r);").replace("wege: wegeAbdruck(r)", "wege: (" + wegeAbdruck + ")(r)");
 
 // ein Ruf an die Werkbank MIT Frist (werkbankRuf des Spiels wartet ewig): Rückgabe die Antwort, wirft bei Frist und Fehler.
 // JE RUF EINE VERBINDUNG (`agent: false`, Heilung 30.10.): der Agent von Node ≥ 19 hält den Socket offen (keepAlive), die Werkbank
@@ -1543,6 +1570,9 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         }
         const name = schluessel(g[0]).replace("#", "_");
         const aus = { aus: path.join(ctx.rohDir, name + ".json"), roh: path.join(ctx.rohDir, name + ".out") };
+        // DER BAU VOR DER PROBE (bauAbdruck): an jeder Probe ohne `mutiert`, sobald der Grund steht
+        const lies = () => rufFrist(W, "/eval", { code: BAU_LIES }, 30000).then((a) => (a && a.ergebnis && typeof a.ergebnis === "object" ? a.ergebnis : null)).catch(() => null);
+        const bauVor = !mutiertVon(g) && grundDa === true ? await lies() : null;
         const zeit = new Date().toISOString();
         aktuell = schluessel(g[0]);
         const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), fahrtMaxS, eich: !!ctx.eich } });
@@ -1565,7 +1595,14 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         const unter = (e) => (e.gruen || !weg ? e
             : { ...e, ungemessen: true, grund: "die Welt der Sitzung endete während der Probe (" + weg + ") — ungemessen", zahl: "die Welt der Sitzung endete während der Probe (" + weg + ") — ungemessen; die Probe sah: " + String(e.zahl).slice(0, 240) });
         abbruch = brachAb(es);
-        zuruecksetzen = mutiertVon(g) || abbruch;
+        // DIE PROBE LEGTE ETWAS IN DIE WELT UND SAGTE ES NICHT (bauAbweichung): die Sitzung setzt zurück wie nach einer mutierenden und
+        // nennt sie beim Namen (kopf.unerklaert) — die nächste Probe misst nie die Welt einer fremden
+        const unerklaert = bauVor && !weg ? bauAbweichung(bauVor, await lies()) : null;
+        if (unerklaert) {
+            (kopf.unerklaert = kopf.unerklaert || []).push({ probe: schluessel(g[0]), wie: unerklaert });
+            console.log("  SITZUNG " + schluessel(g[0]) + " ließ die Welt verändert und trägt kein mutiert: " + unerklaert + " — die Grundstellung folgt");
+        }
+        zuruecksetzen = mutiertVon(g) || abbruch || !!unerklaert;
         // die Eich-Fahrt urteilt erst nach Abbruch und Grundstellung (sie lesen den Grund der Probe, wie er fiel): je Probe ihre Zahl
         await melde(g, es.map(unter).map((e, i) => (ctx.eich ? eichEintrag(g[i], e) : e)), aus, zeit);
     }

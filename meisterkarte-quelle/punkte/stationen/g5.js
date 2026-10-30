@@ -132,11 +132,15 @@ async function haltenK1Seite(H) {
     );
     H.schritt("welt und labor");
     const page = await H.cdp().catch((e) => (console.log("@@PUNKTE@@ BILD ohne Seite: " + e.message), null));
+    // DAS LABOR IN SEINEM RAHMEN über CDP, wie die Linse (`lab.evaluate(K1_LABOR, l)`): ein `contentWindow.eval` aus der Seite
+    // fiel an der CSP des Labors (worlds/schmiede: script-src 'self', kein unsafe-eval) — die Erlaubnis der Auswertung gilt nur im
+    // Kontext der Welt, nie im Rahmen (GTX 3ed95dcf: „keine Zeile Q15 (Exit 2)“ nach 5,4 s — seit die Probe in der Sitzung misst)
+    const labor = page && page.frames().find((f) => f.url().includes("/worlds/schmiede/index.html"));
     const K = { welt: {}, labor: {} };
     for (const l of ["vor", "masse", "schneide"]) {
         K.welt[l] = await H.seite("return (" + KP.K1_BILD + ")(" + JSON.stringify(l) + ");").catch((e) => ({ abbruch: String(e.message).split("\n")[0] }));
         if (K.welt[l].traf && page) await page.screenshot({ path: H.aus + "-" + l + ".png" });
-        K.labor[l] = await H.seite("return document.getElementById(\"k1-labor\").contentWindow.eval(" + JSON.stringify("(" + KP.K1_LABOR + ")(" + JSON.stringify(l) + ")") + ");");
+        K.labor[l] = labor ? await labor.evaluate(KP.K1_LABOR, l) : { abbruch: "das Labor steht in keinem Rahmen der Seite (CDP)" };
         H.schritt(l);
     }
     await H.seite("window.__loop(); return 1;");
@@ -164,7 +168,7 @@ async function haltenK1Seite(H) {
 async function toreK3Seite(H) {
     const D = H.quelle(
         "scripts/diag-portal-konformanz.cjs",
-        ["WELTEN", "probefahrt", "stromZeichnet", "MITGEBRACHT", "TEILE", "abdruck", "UEBERSETZT", "betreten", "bereitBis", "werkHolen", "zaehler", "zaehlerAus", "schleuseNr", "schleusenZeit", "hinFrame", "seitenHelfer", "rueckHoerer", "schleuse"],
+        ["WELTEN", "probefahrt", "stromZeichnet", "MITGEBRACHT", "TEILE", "abdruck", "UEBERSETZT", "betreten", "bereitBis", "werkHolen", "zaehlerAus", "schleuseNr", "schleusenZeit", "hinFrame", "seitenHelfer", "rueckHoerer", "schleuse"],
         { halteBis: H.WB.halteBis, waitFor: H.WB.waitFor, sleep: H.WB.sleep },
         "rahmen: () => hinFrame"
     );
@@ -196,7 +200,14 @@ async function toreK3Seite(H) {
         const vor = await page.evaluate(D.abdruck, true);
         const b = await D.betreten(page, w);
         if (!b || !b.weg) {
-            console.log("  " + w.id + ": " + ((b && b.fehler) || "kein Tor"));
+            // DAS TOR, DAS NICHT AUFGING, beim Ort und im Bild: wo der Spieler stehen blieb, wie weit vom Tor, der Boden unter dem Tor
+            const wo = await page.evaluate(() => {
+                const t = window.__tor, p = r.state.playerMesh.position, f = (v) => +v.toFixed(1);
+                return t ? { tor: [f(t.position.x), f(t.position.y), f(t.position.z)], spieler: [f(p.x), f(p.y), f(p.z)], d: f(Math.hypot(p.x - t.position.x, p.z - t.position.z)),
+                    boden: f(r.getTerrainHeightAt(t.position.x, t.position.z) - t.position.y) } : null;
+            }).catch(() => null);
+            await page.screenshot({ path: H.aus + "-" + w.id + ".png" }).catch(() => {});
+            console.log("  " + w.id + ": " + ((b && b.fehler) || "kein Tor") + (wo ? " · " + JSON.stringify(wo) : ""));
             ring.push([w.id, null, vor, {}, {}, false]);
             continue;
         }
@@ -1214,7 +1225,9 @@ const stationen = [
         kriterium: "siedlung.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { ...START_DORF_PROBE,  sek: 33 },
+        // mutiert (w4-linsen-a): die Probe hebt das Start-Dorf (`__anazhAutoSettlement` an, bis seine Zelle steht) — der Bau der Welt
+        // nannte sie (Radeon 379e5f56: werke +14 · orte +start · wege +53)
+        probe: { ...START_DORF_PROBE, mutiert: true, sek: 33 },
         gpu: true,
         zeit: false,
         minuten: 1,
@@ -1490,7 +1503,9 @@ const stationen = [
             "rm -f \"$L/ring.abnahme.json\"",
             "teil BILD $W bild $K --uhr 0.5 --datei \"$L/ring.png\" --w 1600 --h 900",
             "cp \"$L/ring.abnahme.json\" \"$A\" 2> /dev/null; true"
-        ), sek: 33 },
+        // mutiert (w4-linsen-a): der Ort von 1320, sein Haus und 1500 s Welt-Uhr bleiben — ohne das Wort stellte die Sitzung danach nicht
+        // zurück, die nächste Probe stand in seinem Ort (GTX 3ed95dcf, klang.K2#1: archLod 5459 Einträge an der Mess-Wiese, sonst 1297)
+        ), mutiert: true, sek: 33 },
         gpu: true,
         zeit: false,
         minuten: 12,
