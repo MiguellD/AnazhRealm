@@ -1324,7 +1324,7 @@ const ZWILLINGE = [
         fiel: "Decke w3w-studios — der Fehler-Zweig ist erreichbar · ohneWurf",
     },
     {
-        muster: /if \(!r( \|\| !r\.state)?\) return\b/,
+        muster: /if \(!r( \|\| !(r\.state|st))?\) return\b/,
         gefallen: true,
         verboten: baender().concat(["scripts/playtest.cjs"]),
         fiel: "Decke w3w-studios — der stille Existenz-Wächter einer Probe",
