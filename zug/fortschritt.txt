@@ -1050,3 +1050,4 @@
 2026-10-30 23:11:43 z89-abab START 2 Zellen
 2026-10-30 23:27:09 z89-abab stadt VERLÄNGERN 15.3 · 1/2 (2+2)
 2026-10-30 23:39:21 z89-abab w-ego VERLÄNGERN 12.1 · 2/2 (2+2)
+2026-10-30 23:55:26 z89-abab stadt(4+4) nicht-langsamer 16.0 · verlängert (4+4)
