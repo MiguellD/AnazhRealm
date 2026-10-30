@@ -2117,6 +2117,13 @@
         const halfW = Math.max(halfH * 0.5, (maxRadial || 0) * 1.04);
         return { totalH: totalH, maxR: maxRadial || 0, halfH: halfH, halfW: halfW };
     }
+    // DIE HALBE BILD-HÖHE EINES HEBUNGS-RINGS (lod.K3): der Zylinder des Rahmens (Halbbreite hW, halbe Höhe hH um die Mitte
+    // der Stammachse) aus der Hebung e (rad) gesehen — hH·cos e + hW·|sin e|; bei e = 0 die halbe Rahmen-Höhe. EINE Formel
+    // über einer Algebra (WIND_ZAHLEN: die Bake-Kamera des Wirts, die TSL-Algebra: die gekippte Karte und ihr Ring im Stoff).
+    function karteRingHalbe(A, hH, hW, e) {
+        const s = A.sin(e);
+        return A.add(A.mul(hH, A.sin(A.add(e, A.k(Math.PI / 2)))), A.mul(hW, A.max(s, A.mul(s, A.k(-1)))));
+    }
     // Der radiale Vertex-Scan dazu (max x²+z² über ein xyz-Positions-Array, akkumulierend) —
     // die rotations-invariante Kronen-Spanne; rein, THREE-frei (nimmt attr.array).
     function scanRadialXZ(positions, prevMaxSq) {
@@ -3442,14 +3449,39 @@
         return k <= KARTEN_GESETZ.glaetteBis ? KARTEN_GESETZ.glaette : 1;
     }
 
+    // DIE HEBUNGS-RINGE EINER SCHICHT (lod.K3, die Atlas-Diät): die Blick-Hebungen des Rezepts (foundry-core
+    // PORTAL_RENDER_CONFIG.impostor.hebungen, Grad, aufsteigend, die 0° genau einmal) liegen als Bänder untereinander — der
+    // Ring 0° in voller Zelle (cw × ch, eine Ansicht je Zeile), jeder andere in 1/teiler je Achse (bei 2 ¼ der Zellfläche,
+    // zwei Ansichten je Zeile). Die Ansicht a des Rings i liegt bei x = (a mod t)·cw/t, y = y_i + ⌊a/t⌋·ch/t. Rückgabe
+    // { ringe: [{ hebung, teiler, y, h }], hoehe, zelle: [Breite, Höhe] der kleinsten Ansicht } — null bei Maß-Bruch.
+    function karteRinge(V, cw, ch, hebungen, teiler) {
+        const hb = Array.isArray(hebungen) && hebungen.length ? hebungen : [0];
+        const t = teiler == null ? 1 : teiler;
+        if (!(Number.isInteger(t) && t >= 1 && V % t === 0 && cw % t === 0 && ch % t === 0)) return null;
+        if (hb.filter((e) => e === 0).length !== 1) return null;
+        if (hb.some((e, i) => !(e > -90 && e < 90) || (i > 0 && !(e > hb[i - 1])))) return null;
+        const ringe = [];
+        let y = 0;
+        for (const e of hb) {
+            const ti = e === 0 ? 1 : t;
+            ringe.push({ hebung: e, teiler: ti, y: y, h: (V / ti) * (ch / ti) });
+            y += (V / ti) * (ch / ti);
+        }
+        return { ringe: ringe, hoehe: y, zelle: hb.length > 1 ? [cw / t, ch / t] : [cw, ch] };
+    }
+
     // Die Maße EINER Schicht je Format — Host (Array-Textur, Offsets) und Schale (Kodierung) rechnen damit:
     //   "bc"    Albedo BC1 (8 B je 4×4) mit voller Mip-Kette · Normale BC5 (16 B je 4×4) auf 1/normalTeiler
     //   "rgba8" Albedo rgba8 Stufe 0 · Normale rg8 Stufe 0 (die GPU zieht die Mips; ohne BC-Feature)
-    function karteMasse(cw, ch, V, nt, fmt) {
+    // `R` (karteRinge): die Schicht trägt die Hebungs-Ringe — ihre Höhe ist die der Bänder, die Mip-Kette endet an der
+    // kleinsten Ansicht; ohne R die eine waagrechte Reihe (V Ansichten in voller Zelle).
+    function karteMasse(cw, ch, V, nt, fmt, R) {
         const w = cw | 0,
-            h = (ch | 0) * (V | 0),
+            h = R ? R.hoehe : (ch | 0) * (V | 0),
             nw = Math.max(1, (cw / nt) | 0),
-            nh = Math.max(1, ((ch * V) / nt) | 0);
+            nh = Math.max(1, (h / nt) | 0);
+        const zb = R ? R.zelle[0] : cw,
+            zh = R ? R.zelle[1] : ch;
         const bc = fmt === "bc";
         const ebene = (bw, bh, n, bytesJe) => {
             const out = [];
@@ -3463,11 +3495,11 @@
             }
             return { stufen: out, bytes: off };
         };
-        const a = ebene(w, h, bc ? karteMipZahl(cw, ch) : 1, bc ? 8 : 4);
-        const n = ebene(nw, nh, bc ? karteMipZahl(nw, (ch / nt) | 0) : 1, bc ? 16 : 2);
+        const a = ebene(w, h, bc ? karteMipZahl(zb, zh) : 1, bc ? 8 : 4);
+        const n = ebene(nw, nh, bc ? karteMipZahl((zb / nt) | 0, (zh / nt) | 0) : 1, bc ? 16 : 2);
         // die Sonnen-Sicht (A7; F6 zweifach: der Zenit und der 45°-Kranz): rg8, eine Stufe, in jedem Format
         const lw = Math.max(1, (cw / KARTEN_GESETZ.lichtTeiler) | 0),
-            lh = Math.max(1, ((ch * V) / KARTEN_GESETZ.lichtTeiler) | 0);
+            lh = Math.max(1, (h / KARTEN_GESETZ.lichtTeiler) | 0);
         return {
             fmt: bc ? "bc" : "rgba8",
             w: w,
@@ -5227,6 +5259,7 @@
         buildTubeGesetz: buildTubeGesetz,
         STUFEN_BILD_PX: STUFEN_BILD_PX, // die Bild-Höhe eines Baums an der Nahkante seiner Stufe (S3; foundry-core: das Gerüst der L1 ohne Krone)
         impostorFrame: impostorFrame,
+        karteRingHalbe: karteRingHalbe, // lod.K3 — die halbe Bild-Höhe eines Hebungs-Rings über einer Algebra
         scanRadialXZ: scanRadialXZ,
         forestCellRng: forestCellRng,
         FOREST_STAND: FOREST_STAND,
@@ -5304,6 +5337,7 @@
         lodCrossfadeMask: lodCrossfadeMask, // W5.3 — die EINE Studio-Dither-Blenden-Quelle (FIX v37)
         KARTEN_GESETZ: KARTEN_GESETZ, // W6 — der Karten-Atlas: Schwelle · Normal-Teiler · kleinste Mip-Seite
         karteMasse: karteMasse,
+        karteRinge: karteRinge, // lod.K3 — die Hebungs-Ringe der Schicht (die Atlas-Diät)
         karteGlaetteGaenge: karteGlaetteGaenge,
         impostorMips: impostorMips,
         normalMips: normalMips,

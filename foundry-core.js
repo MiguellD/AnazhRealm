@@ -719,7 +719,10 @@ const PORTAL_RENDER_CONFIG = {
     // 8-Winkel-Impostors als DATEN — Blickwinkel + Zell-Maße. Studio-Bäcker (bakeImpostorAtlas)
     // UND AnazhRealms RTT-Bäcker lesen DIESELBEN Zahlen; wer die Fern-Karten-Auflösung ändert,
     // ändert sie HIER, nirgends sonst.
-    impostor: { views: 8, cellW: 128, cellH: 256 },
+    // DIE HEBUNGS-RINGE (lod.K3, additiv): die Blick-Hebungen der Welt-Karte in Grad, aufsteigend — je Hebung ein Ring
+    // der `views` Peilungen in derselben Schicht; der Ring 0° in voller Zelle, jeder andere in 1/ringTeiler je Achse
+    // (DIE ATLAS-DIÄT: ¼ der Zellfläche, ringTeiler Ansichten je Zeile). Der Studio-Bäcker liest nur den Ring 0°.
+    impostor: { views: 8, cellW: 128, cellH: 256, hebungen: [-20, 0, 40, 80], ringTeiler: 2 },
 };
 
 // DIE HALM-BIEGUNG des Labors (Gras, Blumen-Stiel): der Halm kippt starr um seinen Fuß. Der Baum liest sie nicht mehr
