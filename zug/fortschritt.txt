@@ -994,3 +994,4 @@
 2026-10-30 14:00:47 takt25h-gtx START 36 Stationen in 1 Läufen
 2026-10-30 14:11:00 takt25h-gtx gelaende.K2#1,gelaende.K3#1,gelaende.K5#2,wetter.K2#1,tiere.K3#2,vegetation.K4#1,tiere.K2#2,affekt.K1#2,mensch.K2#2,luftwasser.K5#1,vegetation.K2#1,haar.K1#1,licht.K2#1,ferne.K1#1,ferne.K2#1,ferne.K2#2,ferne.K5#1,material.K3#1,schatten.K1#1,pipeline.K4#1,fahrzeug.K4#1,siedlung.K2#1,siedlung.K5#1,leib.K1#1,leib.K2#1,leib.K4#1,halten.K2#1,halten.K5#1,halten.K1#2,tore.K3#1,streaming.K3#1,streaming.K4#2,klang.K2#1,klang.K5#2,speicher.K1#1,speicher.K2#1 OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN 10.1 · 36/36
 2026-10-30 14:11:18 schloss-blick-2 START 1 Stationen
+2026-10-30 14:11:28 schloss-blick-2 gpu-schloss-blick.sh Exit0 0.2 · 1/1
