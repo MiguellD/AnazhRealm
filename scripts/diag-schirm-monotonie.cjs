@@ -214,6 +214,23 @@ async function welt() {
         const takte = await window.__weltStehtNach(takt); // die Welt steht (das EINE Einschwingen, welt-boot)
         window.__buehne();
         window.__tiereHalten();
+        // DIE VÖGEL STEHEN AUF IHRER STUNDE: Lied und Bahn je Revier folgen der Welt-Uhr (`_vogelTakt` liest `spielZeit`, der Schwarm
+        // ebenso), nie dem Schirm, und ihr Pool zählt jeden Sänger im Hör-Kreis, im Bild oder nicht — die Uhr lief durch die Reihe:
+        // am 30.10. (tore-k5-tuer-neu, zwei Läufe) sang im kleinen Fenster einer mehr, Klasse vogel 688 > 608–648 Dreiecke, VERKEHRT
+        // ohne ein Schirm-Gesetz (auf main schwankte dieselbe Klasse ±40 je Reihe, nur nie im Buckel der Mitte)
+        {
+            const flug = r._vogelTakt;
+            const stunde = st.spielZeit;
+            r._vogelTakt = function () {
+                const jetzt = this.state.spielZeit;
+                this.state.spielZeit = stunde;
+                try {
+                    return flug.call(this);
+                } finally {
+                    this.state.spielZeit = jetzt;
+                }
+            };
+        }
         // DER WOLF DER FELL-PROBE: im Abstand d*, an dem das Fell-Gesetz im großen Fenster trägt (px ≥ pxMin·(1+hyst)) und
         // im kleinen nicht (px < pxMin·(1−hyst)) — das geometrische Mittel der Schwellen der beiden Ränder der Reihe.
         const cam = st.camera;

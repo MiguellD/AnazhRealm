@@ -471,21 +471,25 @@ function membranOhneFilm(an) {
 
 // DIE TIERE HALTEN STILL: zwischen Blick-Wahl und Schuss liegen hunderte Takte, in denen Tiere wandern
 // (ein Tier liefe in die Kamera). Nach jedem Kreatur-Tick fallen x/z auf den Stand davor zurück; Animation, Haut, Boden-Höhe
-// und LOD laufen weiter.
+// und LOD laufen weiter; die Vögel fliegen (sie folgen der Welt-Uhr, die Klang-Linse hört ihren Flug). Die Marke trägt die Hülle,
+// nie der Prototyp: er trägt nie Stand (`_weltAbschied` bricht beim Namen) — bis 30.10. lag `__tiereGehalten` auf ihm, und jeder
+// Tausch am Ort nach einem gehaltenen Lauf (`werkbank` vom Messort wiese zum Messort buehne) brach an dieser Marke.
 function tiereHalten() {
     const P = Object.getPrototypeOf(r);
-    if (P.__tiereGehalten) return;
+    if (P.updateCreatures.__gehalten) return;
     const org = P.updateCreatures;
-    P.__tiereGehalten = true;
-    P.updateCreatures = function (delta) {
-        const fest = (this.state.creatures || []).map((c) => [c, c.position.x, c.position.z]);
-        const o = org.call(this, delta);
-        for (const [c, x, z] of fest) {
-            c.position.x = x;
-            c.position.z = z;
-        }
-        return o;
-    };
+    P.updateCreatures = Object.assign(
+        function (delta) {
+            const fest = (this.state.creatures || []).map((c) => [c, c.position.x, c.position.z]);
+            const o = org.call(this, delta);
+            for (const [c, x, z] of fest) {
+                c.position.x = x;
+                c.position.z = z;
+            }
+            return o;
+        },
+        { __gehalten: true }
+    );
 }
 
 // DIE RUHE DER ERST-ZEICHNUNG (`_configureRenderer`) — die EINE Regel jeder Linse, die ein angekommenes Bild
@@ -640,7 +644,7 @@ function abnahmeMessen(opt) {
             wetter: st.weather || null,
             uhr: Number.isFinite(st.timeOfDay) ? +st.timeOfDay.toFixed(3) : null,
             bildUhr: window.__buehneUhr ? window.__buehneUhr.T : null, // die Bild-Uhr (A9), ohne Bühne frei
-            tiereGehalten: !!Object.getPrototypeOf(r).__tiereGehalten,
+            tiereGehalten: !!Object.getPrototypeOf(r).updateCreatures.__gehalten,
         },
         geraet: {
             backend: !be ? null : be.isWebGPUBackend ? "WebGPU" : be.isWebGLBackend ? "WebGL" : null,

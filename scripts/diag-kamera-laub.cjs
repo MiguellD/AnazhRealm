@@ -294,9 +294,9 @@ function leibInstall(cfg) {
                 if (n >= 4 && !r._weltbildFehlt(true).length) break;
             }
         } catch (f) {
+            // ein neuer Wurf: der Stapel (`out.err`) trägt die Kopfzeile seines Baus, ein angehängter Satz stünde nie darin
             const l = r._weltbildLuecken(true);
-            f.message += ` — es fehlt: ${l.map((x) => [x.satz, r._lueckeTaeter(x)].filter(Boolean).join(": ")).join(" · ") || "nichts"}`;
-            throw f;
+            throw new Error(`${f.message} — es fehlt: ${l.map((x) => [x.satz, r._lueckeTaeter(x)].filter(Boolean).join(": ")).join(" · ") || "nichts"}`);
         }
         return r._weltbildFehlt(true);
     };
