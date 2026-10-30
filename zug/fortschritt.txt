@@ -967,3 +967,4 @@
 2026-10-30 08:22:19 takt24-gtx profiband.K1#1,profiband.K2#1,profiband.K3#1 OFFEN/OFFEN/OFFEN 20.6 · 22/23
 2026-10-30 08:54:35 takt24-gtx profiband.K5#1 ROT 32.2 · 23/23
 2026-10-30 08:54:56 takt24b-gtx START 4 Stationen in 1 Läufen
+2026-10-30 09:05:04 takt24b-gtx mensch.K5#1,vegetation.K1#1,vegetation.K5#1,ferne.K1#2 GRÜN/ROT/ROT/ROT 10.0 · 4/4
