@@ -664,8 +664,13 @@ function grundWie(r, grund, anders) {
         const name = (e) => String(e && (e.name != null ? e.name : e.id != null ? e.id : J(e).slice(0, 40)));
         const A = new Map((a || []).map((e) => [name(e), e])), B = new Map((b || []).map((e) => [name(e), e]));
         const felder = (x, y) => Object.keys({ ...x, ...y }).filter((f) => J(x[f]) !== J(y[f])).slice(0, 6).join("/");
-        wie[k] = { vorher: A.size, nachher: B.size, fehlt: [...A.keys()].filter((n) => !B.has(n)).slice(0, 4),
-            neu: [...B.keys()].filter((n) => !A.has(n)).slice(0, 4),
+        // je Name seine ZAHL (ein Feld gleicher Glieder — Etiketten, „happy“ zweimal — zählt jedes; bis 30.10. faltete die Karte sie zu
+        // einem und nannte 1 → 1 Glied gleich, wo 1 → 2 stand)
+        const zahl = (L) => (L || []).reduce((m, e) => m.set(name(e), (m.get(name(e)) || 0) + 1), new Map());
+        const [ZA, ZB] = [zahl(a), zahl(b)];
+        const mehr = (X, Y) => [...X.keys()].filter((n) => X.get(n) > (Y.get(n) || 0)).map((n) => n + (X.get(n) - (Y.get(n) || 0) > 1 ? " ×" + (X.get(n) - (Y.get(n) || 0)) : ""));
+        wie[k] = { vorher: (a || []).length, nachher: (b || []).length, fehlt: mehr(ZA, ZB).slice(0, 4),
+            neu: mehr(ZB, ZA).slice(0, 4),
             anders: [...A.keys()].filter((n) => B.has(n) && J(A.get(n)) !== J(B.get(n))).slice(0, 4).map((n) => n + ":" + felder(A.get(n) || {}, B.get(n) || {})) };
     }
     return wie;
@@ -955,11 +960,10 @@ async function grundProbe(o) {
             delete st.blueprints.grundprobe_alt;
             const plan = r.createBlueprint("grundprobe_neu", "Grundprobe neu");
             const erd = r._erdbauSetzen("grundprobe", [{ art: "platte", cx: q.x + 30, cz: q.z, phi: 0, ex: 3, ez: 3, y: y(30) }], false);
-            // der Bestand weicht ab: ein Tier fällt, das Etikett eines anderen kippt
+            // der Bestand weicht ab: JEDES Tier fällt (wie das Rudel von oekologie.K4#2 — die Wiederkehr steht vor einer leeren Liste)
             const tiere0 = st.creatures.length;
-            if (tiere0) r.removeCreature(st.creatures[tiere0 - 1]);
-            if (st.creatureEmotions.length > 1) st.creatureEmotions[1] = "sad";
-            const tiere = tiere0 > 1 && st.creatures.length === tiere0 - 1;
+            for (const c of st.creatures.slice()) r.removeCreature(c);
+            const tiere = tiere0 > 1 && st.creatures.length === 0 && st.creatureEmotions.length === 0;
             window.__ortTakt = [];
             const z = r.constructor.GRUND_TAFEL.find((z) => z[0] === ${JSON.stringify(o.mutante || null)});
             if (z) z[2] = () => {};
