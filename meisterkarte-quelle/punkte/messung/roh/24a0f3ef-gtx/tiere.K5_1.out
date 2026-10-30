@@ -13,3 +13,11 @@ grep -E 'WERKBANK bereit' "$B-werkbank.log" || { echo 'WERKBANK startet nicht'; 
 grep -E '^\[linse-gpu\] ' "$B-werkbank.log"
 node scripts/werkbank.cjs fenster 1280 720 > /dev/null 2>&1
 for SICHT in ego third; do node scripts/werkbank.cjs umstellen --ort wiese --sicht $SICHT > "$B-umstellen-$SICHT.txt" 2>&1; node scripts/werkbank.cjs lauf 600 --ein 20 --tiere frei --wandern kreis > "$B-kreis-$SICHT.txt" 2>&1; echo "KREIS-$SICHT EXIT=$? $(grep -E '^KREIS ' "$B-kreis-$SICHT.txt" | cut -c7-)"; done
+WERKBANK bereit: Steuer 127.0.0.1:27754 · Seite :27753
+[linse-gpu] nvidia/pascal
+
+--- stderr ---
+tr: warning: an unescaped backslash at end of string is not portable
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

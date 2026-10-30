@@ -1,0 +1,78 @@
+$ C:\Program Files\nodejs\node.exe -e (async function folge(plan) {
+    const fs = require("fs");
+    const path = require("path");
+    const cp = require("child_process");
+    const crypto = require("crypto");
+    const [AUS, KOORD] = process.argv.slice(1);
+    const DIR = AUS + ".d";
+    fs.mkdirSync(DIR, { recursive: true });
+    const WB = path.join("scripts", "werkbank.cjs");
+    const P = String(process.env.WERKBANK_PORT);
+    const aus = { plan: plan.name, adapter: null, schritte: {}, dateien: {} };
+    // @DIR@ · @KOORD@ · @T:<name>@ (ein Text aus plan.texte) · @<schritt>.<i>@ (das i-te Feld des Ergebnisses eines früheren Schritts)
+    const ers = (s) =>
+        String(s)
+            .replace(/@T:([A-Z_]+)@/g, (_m, n) => plan.texte[n])
+            .split("@DIR@").join(DIR)
+            .split("@KOORD@").join(KOORD)
+            .replace(/@([a-z0-9-]+)\.(\d+)@/g, (_m, n, i) => {
+                const e = aus.schritte[n] && aus.schritte[n].json && aus.schritte[n].json.ergebnis;
+                if (!Array.isArray(e) || e[+i] == null) throw new Error("Schritt " + n + " trägt kein Feld " + i + ": " + JSON.stringify(e));
+                return String(e[+i]);
+            });
+    const duenn = (o) => (o == null ? null : JSON.parse(JSON.stringify(o, (_k, v) => (typeof v === "string" && v.length > 4096 ? undefined : v))));
+    const json = (t) => {
+        const s = String(t || "");
+        const e = s.lastIndexOf("}");
+        for (const i of [s.startsWith("{") ? 0 : -1, s.indexOf("\n{")])
+            if (i >= 0 && e > i)
+                try {
+                    return JSON.parse(s.slice(i, e + 1));
+                } catch (_e) {
+                    /* der nächste Anfang */
+                }
+        return null;
+    };
+    const wb = (args, ms) =>
+        cp.spawnSync(process.execPath, [WB, ...args, "--port", P], { encoding: "utf8", timeout: ms || 900000, maxBuffer: 1 << 28 });
+    let code = 0;
+    try {
+        aus.adapter = (/\[linse-gpu\][^\r\n]*/.exec(fs.readFileSync(String(process.env.PUNKTE_SITZUNG_LOG), "utf8")) || [null])[0];
+        for (const s of plan.schritte) {
+            let args = (s.args || []).map(ers);
+            if (s.probe) {
+                // eine Seiten-Probe aus einer Datei; ihr git-Blob ist fest, damit eine geänderte Probe nie still mitmisst
+                const roh = fs.readFileSync(ers(s.probe));
+                const blob = crypto.createHash("sha1").update("blob " + roh.length + "\0").update(roh).digest("hex");
+                if (blob !== s.blob) throw new Error("Probe " + s.probe + " ist Blob " + blob + ", die Station kennt " + s.blob);
+                args = ["eval", roh.toString("utf8")];
+            }
+            const r = wb(args, s.ms);
+            const e = { exit: r.status, json: duenn(json(r.stdout)) };
+            if (!e.json) e.rest = String((r.stdout || "") + (r.stderr || "")).slice(-1500);
+            aus.schritte[s.name] = e;
+            if (s.datei) {
+                const f = ers(s.datei);
+                aus.dateien[s.name] = fs.existsSync(f) ? duenn(JSON.parse(fs.readFileSync(f, "utf8"))) : null;
+            }
+            console.log("  " + s.name + " · Exit " + r.status + (e.json ? "" : " · " + String(e.rest).trim().split("\n").slice(-1)[0]));
+            if (s.muss && r.status !== 0) throw new Error(s.name + ": Exit " + r.status + " " + String(e.rest || "").slice(-300));
+        }
+    } catch (e) {
+        aus.fehler = String((e && e.message) || e);
+        code = 1;
+    } finally {
+        fs.writeFileSync(AUS, JSON.stringify(aus, null, 1));
+    }
+    console.log(aus.adapter || "[linse-gpu] ungenannt");
+    console.log(aus.fehler ? "FOLGE ROT: " + aus.fehler : "FOLGE " + plan.name + ": " + plan.schritte.length + " Schritte");
+    process.exit(code);
+})({"name":"material.K4#1","schritte":[{"name":"fenster","args":["fenster","1920","1080"],"muss":true},{"name":"spiegel","probe":"@KOORD@/bericht/2910-w3w-glanz/spiegel-lack.js","blob":"e9ba0e39b1c24c8773296cdefc57551d1b298d4c","muss":true}]}) C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\24a0f3ef-gtx\material.K4_1.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
+  fenster · Exit 0
+  spiegel · Exit 0
+[linse-gpu] nvidia/pascal
+FOLGE material.K4#1: 2 Schritte
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal

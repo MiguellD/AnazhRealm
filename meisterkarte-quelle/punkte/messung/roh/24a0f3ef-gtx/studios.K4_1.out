@@ -1,0 +1,16 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u; K=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte'); A=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\24a0f3ef-gtx\studios.K4_1.json'); export WERKBANK_PORT=$((7804+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" 7804
+[linse-gpu] nvidia/pascal
+K4 garage: ROT · Differenz — · Albedo — · ROT: das Werk fahrzeug_gt steht nach 30 s nicht in der Welt (keine Instanz der Familie f:) (33.6 s)
+K4 portale: ROT · Differenz — · Albedo — · ROT: das Werk tor_kathedrale steht nach 30 s nicht in der Welt (keine Instanz der Familie f:) (33.9 s)
+K4 schmiede: ROT · Differenz — · Albedo — · ROT: das Werk klinge_langschwert steht nach 30 s nicht in der Welt (keine Instanz der Familie f:) (33.7 s)
+K4 fachwerk: ROT · Differenz — · Albedo — · ROT: das Werk haus_viktorianisch steht nach 30 s nicht in der Welt (keine Instanz der Familie f:) (35.3 s)
+K4 terrain: ROT · Differenz — · Albedo — · ROT: die Bühne nennt kein Werk (der Knopf postet keine Übergabe) (3.9 s)
+K4 koerperstudio: ROT · Differenz — · Albedo — · ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau (10.7 s)
+K4 tetrapoda: ROT · Differenz — · Albedo — · ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau (4.2 s)
+K4 Gerät der Bühne: WebGPU pascal
+K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (441.2 s)
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
