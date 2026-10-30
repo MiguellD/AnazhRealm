@@ -1,7 +1,7 @@
 {
  "sha": "379e5f56ca38fd462a546925d5af562b716d5015",
  "geraet": "gtx",
- "zeit": "2026-10-30T20:22:13.800Z",
+ "zeit": "2026-10-30T20:41:27.818Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -759,6 +759,25 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "halten.K5#1",
+   "modus": "session"
+  },
+  "halten.K1#2": {
+   "gruen": false,
+   "zahl": "keine Zeile Q15 halten.K1 Staffel 2 (Exit 2)",
+   "exit": 2,
+   "minuten": 0.09,
+   "grund": "ROT: keine Zeile Q15 halten.K1 Staffel 2 (Exit 2)",
+   "gpu": "nvidia/pascal",
+   "s": 5.6,
+   "eich": {
+    "s": 5.6,
+    "sek": 10,
+    "gesetzS": 45
+   },
+   "zeit": "2026-10-30T20:41:21.934Z",
+   "abdruck": "1828e41c4182",
+   "port": 7804,
+   "bahn": "sitzung",
    "modus": "session"
   }
  },
@@ -1680,27 +1699,14 @@
    "zwilling": "siedlung.K2#1",
    "modus": "session"
   },
-  "halten.K1#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.742Z",
-   "abdruck": "1828e41c4182",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
   "fahrzeug.K5#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.746Z",
+   "zeit": "2026-10-30T20:41:27.778Z",
    "abdruck": "1a113efa7936",
    "port": 7804,
    "bahn": "sitzung",
@@ -1708,12 +1714,12 @@
   },
   "tore.K3#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.754Z",
+   "zeit": "2026-10-30T20:41:27.782Z",
    "abdruck": "7c1efdd2d08b",
    "port": 7804,
    "bahn": "sitzung",
@@ -1721,12 +1727,12 @@
   },
   "tore.K3#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.754Z",
+   "zeit": "2026-10-30T20:41:27.782Z",
    "abdruck": "1846cba6daca",
    "port": 7804,
    "bahn": "sitzung",
@@ -1735,12 +1741,12 @@
   },
   "fahrzeug.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.760Z",
+   "zeit": "2026-10-30T20:41:27.785Z",
    "abdruck": "cd6615e5a9f1",
    "port": 7804,
    "bahn": "sitzung",
@@ -1748,12 +1754,12 @@
   },
   "fahrzeug.K2#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.763Z",
+   "zeit": "2026-10-30T20:41:27.788Z",
    "abdruck": "1c7084fdd290",
    "port": 7804,
    "bahn": "sitzung",
@@ -1761,12 +1767,12 @@
   },
   "streaming.K4#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.769Z",
+   "zeit": "2026-10-30T20:41:27.792Z",
    "abdruck": "50a2e978b7c2",
    "port": 7804,
    "bahn": "sitzung",
@@ -1774,12 +1780,12 @@
   },
   "profiband.K1#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.773Z",
+   "zeit": "2026-10-30T20:41:27.798Z",
    "abdruck": "fa037a9df76c",
    "port": 7804,
    "bahn": "sitzung",
@@ -1787,12 +1793,12 @@
   },
   "profiband.K1#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.773Z",
+   "zeit": "2026-10-30T20:41:27.798Z",
    "abdruck": "8ad542eb2575",
    "port": 7804,
    "bahn": "sitzung",
@@ -1801,12 +1807,12 @@
   },
   "profiband.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.773Z",
+   "zeit": "2026-10-30T20:41:27.798Z",
    "abdruck": "689ec61e34ac",
    "port": 7804,
    "bahn": "sitzung",
@@ -1815,12 +1821,12 @@
   },
   "profiband.K2#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.773Z",
+   "zeit": "2026-10-30T20:41:27.798Z",
    "abdruck": "a74185382eba",
    "port": 7804,
    "bahn": "sitzung",
@@ -1829,12 +1835,12 @@
   },
   "profiband.K3#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.773Z",
+   "zeit": "2026-10-30T20:41:27.798Z",
    "abdruck": "463f09fafaf0",
    "port": 7804,
    "bahn": "sitzung",
@@ -1843,12 +1849,12 @@
   },
   "profiband.K3#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.773Z",
+   "zeit": "2026-10-30T20:41:27.798Z",
    "abdruck": "f97d4c4fd60b",
    "port": 7804,
    "bahn": "sitzung",
@@ -1857,12 +1863,12 @@
   },
   "klang.K4#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.781Z",
+   "zeit": "2026-10-30T20:41:27.804Z",
    "abdruck": "cac836c98bb9",
    "port": 7804,
    "bahn": "sitzung",
@@ -1870,12 +1876,12 @@
   },
   "klang.K4#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.781Z",
+   "zeit": "2026-10-30T20:41:27.804Z",
    "abdruck": "c2e728ea3fe6",
    "port": 7804,
    "bahn": "sitzung",
@@ -1884,12 +1890,12 @@
   },
   "klang.K5#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.786Z",
+   "zeit": "2026-10-30T20:41:27.808Z",
    "abdruck": "f778b3a4af51",
    "port": 7804,
    "bahn": "sitzung",
@@ -1897,12 +1903,12 @@
   },
   "speicher.K1#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.790Z",
+   "zeit": "2026-10-30T20:41:27.812Z",
    "abdruck": "c8362510f326",
    "port": 7804,
    "bahn": "sitzung",
@@ -1910,12 +1916,12 @@
   },
   "speicher.K1#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.790Z",
+   "zeit": "2026-10-30T20:41:27.812Z",
    "abdruck": "55171d38285a",
    "port": 7804,
    "bahn": "sitzung",
@@ -1924,12 +1930,12 @@
   },
   "speicher.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.795Z",
+   "zeit": "2026-10-30T20:41:27.814Z",
    "abdruck": "10d674852a56",
    "port": 7804,
    "bahn": "sitzung",
@@ -1937,12 +1943,12 @@
   },
   "speicher.K2#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.795Z",
+   "zeit": "2026-10-30T20:41:27.814Z",
    "abdruck": "c75f9380c676",
    "port": 7804,
    "bahn": "sitzung",
@@ -1951,12 +1957,12 @@
   },
   "speicher.K4#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-30T20:22:13.800Z",
+   "zeit": "2026-10-30T20:41:27.818Z",
    "abdruck": "ac33134651c2",
    "port": 7804,
    "bahn": "sitzung",
@@ -1964,327 +1970,47 @@
   }
  },
  "sitzung": {
-  "start": "2026-10-30T19:55:51.124Z",
+  "start": "2026-10-30T20:40:53.252Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.4,
-  "grundstellungS": [
-   7,
-   3.7,
-   3.1,
-   3.3,
-   2.7,
-   4,
-   3.6,
-   2.7,
-   2.9,
-   3.6,
-   2.5,
-   2.6,
-   2.3,
-   3.8,
-   3.6,
-   3.6,
-   6.6,
-   3.6,
-   3,
-   2.7,
-   3.9,
-   4.4
-  ],
-  "proben": 23,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
     "ort": null,
-    "vor": "gelaende.K2#1",
-    "s": 17.3,
-    "takte": 580,
+    "vor": "halten.K1#2",
+    "s": 21.3,
+    "takte": 584,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": null,
-    "vor": "wetter.K2#1",
-    "s": 12.5,
-    "takte": 586,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "physik.K2#2",
-    "s": 13.3,
-    "takte": 584,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K1#2",
-    "s": 13.2,
-    "takte": 581,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K3#2",
-    "s": 12.9,
-    "takte": 582,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "mensch.K1#1",
-    "s": 12.8,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "vegetation.K4#1",
-    "s": 13.3,
-    "takte": 582,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K2#2",
-    "s": 12.5,
-    "takte": 582,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "luftwasser.K5#1",
-    "s": 12.5,
-    "takte": 582,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "mensch.K5#1",
-    "s": 12.8,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "schatten.K1#1",
-    "s": 13.3,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "studios.K2#2",
-    "s": 13.7,
-    "takte": 584,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "pipeline.K4#1",
-    "s": 12.7,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "bauen.K1#2",
-    "s": 13,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "bauen.K5#2",
-    "s": 13.3,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "studios.K4#1",
-    "s": 13.2,
-    "takte": 587,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "fahrzeug.K3#1",
-    "s": 12.9,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "fahrzeug.K3#2",
-    "s": 13.1,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "siedlung.K2#1",
-    "s": 13.9,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "siedlung.K5#1",
-    "s": 12.9,
-    "takte": 582,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "leib.K2#1",
-    "s": 13.1,
-    "takte": 582,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "leib.K4#1",
-    "s": 12.9,
-    "takte": 582,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "halten.K5#1",
-    "s": 13,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
-  "wegeTueren": [
-   {
-    "vor": "wetter.K2#1",
-    "wege": "wege +112 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-137.1,-1156.6,-135,-1154.6/1] …",
-    "s": 7
-   },
-   {
-    "vor": "physik.K2#2",
-    "wege": "wege +91 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 3.7
-   },
-   {
-    "vor": "tiere.K1#2",
-    "wege": "wege +13 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 3.1
-   },
-   {
-    "vor": "tiere.K3#2",
-    "wege": "wege +18 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 3.3
-   },
-   {
-    "vor": "mensch.K1#1",
-    "wege": "wege +12 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 2.7
-   },
-   {
-    "vor": "vegetation.K4#1",
-    "wege": "wege +59 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 4
-   },
-   {
-    "vor": "tiere.K2#2",
-    "wege": "wege +62 [-100.4,-76.6,-100.1,-76.3/1] [-101.7,-59.6,-100.8,-58.7/1] [-104.5,-48.3,-103.6,-47.4/1] …",
-    "s": 3.6
-   },
-   {
-    "vor": "mensch.K5#1",
-    "wege": "wege +12 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 2.9
-   },
-   {
-    "vor": "schatten.K1#1",
-    "wege": "wege +59 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 3.6
-   },
-   {
-    "vor": "pipeline.K4#1",
-    "wege": "wege +12 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 2.6
-   },
-   {
-    "vor": "bauen.K5#2",
-    "wege": "wege +16 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 3.8
-   },
-   {
-    "vor": "studios.K4#1",
-    "wege": "wege +16 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …",
-    "s": 3.6
-   },
-   {
-    "vor": "fahrzeug.K3#2",
-    "wege": "wege +75 [-100.4,-1273.5,25.7,-1025.6/1] [-11.8,-1294.9,-9.7,-1292.8/1] [-111.2,-55,-109.1,-52.9/1] …",
-    "s": 6.6
-   },
-   {
-    "vor": "leib.K2#1",
-    "wege": "wege +29 [-578.1,-1154.8,-577.2,-1153.9/1] [-585.1,-1148.9,-584.2,-1148/1] [-606.4,-1152.9,-605.5,-1152/1] …",
-    "s": 2.7
-   },
-   {
-    "vor": "leib.K4#1",
-    "wege": "wege +51 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-171.7,-1014.1,-169.6,-1012/1] …",
-    "s": 3.9
-   },
-   {
-    "vor": "halten.K5#1",
-    "wege": "wege +57 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-145.8,-1096.2,-143.7,-1094.1/1] …",
-    "s": 4.4
-   }
-  ],
+  "wegeTueren": [],
   "eich": {
    "deckelS": 90,
    "gesetzS": 45,
    "ausnahmeS": 90,
    "fahrtMaxS": 1800
   },
-  "grund": "die Welt trägt nicht mehr vor halten.K1#2: abweichend vom Grund: playerLeben playerEquipped · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\",\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":\\\"ruestung_brustpanzer\\\"}\"}",
-  "ciBlicke": 24,
+  "grund": "die Welt trägt nicht mehr vor fahrzeug.K5#1: abweichend vom Grund: playerEquipped · wie {\"playerEquipped\":\"{\\\"held\\\":null,\\\"offhand\\\":null,\\\"armor\\\":null} → {\\\"held\\\":\\\"klinge_langschwert\\\",\\\"offhand\\\":null,\\\"armor\\\":null}\"}",
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 24449,
-   "frameP95": 33.5,
-   "taktP95": 33.9,
-   "vramMax": 208.6,
-   "seiten": 31,
+   "bilder": 57,
+   "frameP95": 133.4,
+   "taktP95": 124.8,
+   "vramMax": 114.7,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "zapfen": 1491,
-   "luecken": 13,
-   "letzteLuecke": "anazhRealm is not defined"
+   "zapfen": 30,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 1582.3,
-  "minuten": 26.45
+  "fahrtS": 34,
+  "minuten": 0.64
  }
 }
