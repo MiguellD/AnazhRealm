@@ -14,14 +14,13 @@
 //   R  Ruhe: RUHE Takte eingeschwungen, in keinem ein Satz < 64 m und am Ende keine Brücke < 64 m
 //   T  Rampe: 400 m fort (bis der Ring dort steht), zurück — binnen GRENZE_T Takten 0 Sätze < 64 m
 //   --selftest: ein erzwungener Kapsel-Satz in 20 m (ohne Träger) — die Linse wird rot und nennt ihn
-//   ANALOG_NAH_PORT=… node scripts/diag-analog-nah.cjs [--selftest]
+//   node scripts/diag-analog-nah.cjs [--selftest]
 "use strict";
 const { statikServer, starteBrowser, hauptLauf } = require("./lib/welt-boot.cjs");
 // DER MESSORT (spec/profiband/haushalt.json `messorte`, S1 W1f): die Linse steht an der Mess-Wiese in IHREM Zustand —
 // Spieler und Dorf-Zug (`dorfZug: false` = `window.__anazhAutoSettlement = false`). Mit laufendem Zug baute das Auto-Dorf
 // je nach Bildrate in der Ruhe ein Haus (haus_griechisch 23,6 m, „Studio-Stufe L2 lädt") — zwei Läufe maßen zwei Welten.
 const ORT = require("./lib/band-urteil.cjs").ladeSpec("wiese").ort;
-const PORT = Number(process.env.ANALOG_NAH_PORT || 4477);
 const SELBST = process.argv.includes("--selftest");
 const GRENZE_E = 1500; // Takte bis zum ersten satzfreien Zustand nach dem Boot
 const RUHE = 100; // Takte, in denen eingeschwungen kein Satz auftauchen darf
@@ -40,7 +39,7 @@ function urteil(z) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 1800000, dumpio: false });
     // Was der Browser-Prozess über seinen GPU-Prozess sagt (Absturz, Watchdog, Verlust), reist ins Log.
     {

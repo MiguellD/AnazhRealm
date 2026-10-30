@@ -208,7 +208,6 @@ if (process.argv.includes("--selftest")) {
 }
 
 
-const PORT = Number(process.env.KAMERA_TREUE_PORT) || 4472;
 const server = statikServer();
 
 // DIE BÜHNE (Seiten-Kontext): der echte Renderer des Spiels mit seinen Eingriffen (_configureRenderer), eine eigene
@@ -748,7 +747,7 @@ function buehne() {
 
 (async () => {
     console.log("=== KAMERA-TREUE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan, Schatten an): Stapel · Override · Bild ===");
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 });

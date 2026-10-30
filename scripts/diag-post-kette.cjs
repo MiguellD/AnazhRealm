@@ -33,7 +33,7 @@
 //       nicht schwarz — der Kontrast fadet zur Nacht aus wie die Entgrauung (25c).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Shader-Kosten-Linse an gebauten WGSL-Stücken und das
 // Urteil über einen grünen Lauf und je einen injizierten Täter — jeder fällt rot und wird genannt.
-//   node scripts/diag-post-kette.cjs [--selftest]   (npm run gate:post-kette; Port POST_KETTE_PORT, Standard 4583)
+//   node scripts/diag-post-kette.cjs [--selftest]   (npm run gate:post-kette)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
@@ -459,7 +459,6 @@ if (process.argv.includes("--selftest")) {
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");
 
-const PORT = Number(process.env.POST_KETTE_PORT) || 4583;
 const server = statikServer();
 
 // (f) DER SAUM AUF UNGERADER LEINWAND (Seiten-Kontext, nach `buehne`; die Seite steht auf einer ungeraden Größe): das Wasser
@@ -900,7 +899,7 @@ function buehne(nFrames, nachtLicht) {
     console.log(
         "=== POST-KETTE — echter Renderer (WebGPU, swiftshader-Adapter, kienspan): Weiche · Tiefe · Shader · Godrays ==="
     );
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 });

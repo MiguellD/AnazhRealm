@@ -21,7 +21,6 @@
 const { statikServer, starteBrowser, ROOT, hauptLauf } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 
-const PORT = Number(process.env.STUDIO_BEGEHEN_PORT || 4473);
 const SELBST = process.argv.includes("--selftest");
 
 // DIE BASIS-ZEILEN je Defekt: [Datei, geheilte Form, Basis-Form]. Der Selbsttest serviert die Basis-Form.
@@ -439,7 +438,7 @@ function zeile(o) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 600000 });
     let rot = 0;
     try {
