@@ -80,3 +80,4 @@ takt24c-gtx gemessen punkte 24a0f3ef gtx: 2 grün / 22 rot
 geraet-blick-1 Exit0 station geraet-blick.sh an 24a0f3ef
 dienst-urteil-1 Exit0 station dienst-urteil.sh an 24a0f3ef
 geraet-raeumen-1 Exit0 station geraet-raeumen.sh an 24a0f3ef
+takt25b-gtx gemessen punkte 6b3da705 gtx: 0 grün / 0 rot
