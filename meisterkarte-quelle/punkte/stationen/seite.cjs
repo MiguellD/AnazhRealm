@@ -30,7 +30,8 @@ async function seiteLauf() {
     const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
     const t0 = Date.now();
     const uhr = () => ((Date.now() - t0) / 1000).toFixed(1);
-    const H = { aus, port: Number(port), W, sek: Number(sek), WB, ende: [] };
+    // der Deckel des Laufs (punkte.cjs PUNKTE_PROBE_DECKEL_S: die Eich-Fahrt 90 s), sonst der der Station
+    const H = { aus, port: Number(port), W, sek: Number(process.env.PUNKTE_PROBE_DECKEL_S) || Number(sek), WB, ende: [] };
     H.ruf = async (weg, o) => {
         const a = await WB.werkbankRuf(W, weg, o || {});
         if (!a || a.fehler || a.roh !== undefined) throw new Error(weg + ": " + JSON.stringify(a).slice(0, 400));
