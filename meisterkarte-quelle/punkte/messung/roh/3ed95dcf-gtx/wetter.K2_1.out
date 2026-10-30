@@ -1,0 +1,35 @@
+$ C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --naesse dorf --datei C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\3ed95dcf-gtx\wetter.K2_1.json
+NÄSSE Selbsttest: 5/5
+{
+ "dorf": {
+  "ort": "dorf",
+  "haus": "haus_griechisch",
+  "naesse": 0.909,
+  "innen": {
+   "n": 13809,
+   "verhaeltnis": 1
+  },
+  "aussen": {
+   "n": 5949,
+   "verhaeltnis": 0.572
+  },
+  "dicht": 1,
+  "glanz": 16,
+  "regen": {
+   "innen": 0,
+   "aussen": 5
+  },
+  "regenbild": 0.954,
+  "dachBauten": {
+   "n": 2,
+   "trocken": 2,
+   "arten": [
+    "marktstand_dorf"
+   ]
+  }
+ }
+}
+NÄSSE GRUEN
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

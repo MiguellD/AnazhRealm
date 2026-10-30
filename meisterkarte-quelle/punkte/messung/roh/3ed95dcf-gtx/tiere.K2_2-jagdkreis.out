@@ -1,0 +1,19 @@
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:17804/index.html · der Puls steht seit 21.0 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 23.2 s
+[stall-akte] Puls 13×, zuletzt vor 21.0 s — complete · renderer bereit · weltbild da · frames 385 · welt 385 Takte · Ruhe 0 · zuletzt Fege-Takt archLod 768/1307, archCull wartet, streuLod 480/820 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 13452 105 % · GPU 19992 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 02:24 gpu 5/r 147 · 02:26 gpu 5/r 216 · 02:28 gpu 1/r 231 · 02:30 gpu 2/r 638 · 02:32 gpu 1/r 552 · 02:34 gpu 1/r 365 · 02:36 gpu 1/r 144 · 02:38 gpu 1/r 122 · 02:40 gpu 1/r 137 · 02:42 gpu 1/r 124 · 02:44 gpu 1/r 124 · 02:46 gpu 1/r 138 · 02:48 gpu 1/r 125 · 02:50 gpu 1/r 105 · 02:52 gpu 1/r 110 · 02:54 gpu 1/r 106 · 02:56 gpu 1/r 108 · 02:58 gpu 1/r 104 · 03:00 gpu 1/r 105
+[stall-akte] Stapel get BODEN_KARTE_TEILUNG :418 < _bodenSichtAt :28 < _standSicht :578 < updateCreatures :3544 < takt :260 < (anonym) :1785 < buehne :66 < kreaturProben :1685
+[stall-akte] Konsole log: [AnazhRealm V18.546.135] [INFO] State-Import (Lade Datei) initialisiert
+[stall-akte] Konsole log: [AnazhRealm V18.546.135] [INFO] Hauptschleife gestartet – Ultiversum pulsiert!
+[stall-akte] Konsole log: [AnazhRealm V18.546.135] [INFO] Grok: Hallo. Die Welt steht. Magst du dich umsehen?
+[stall-akte] Konsole log: [AnazhRealm V18.546.135] [INFO] Nervensystem: 75 neue Studio-Art(en) automatisch registriert.
+[stall-akte] Konsole log: [AnazhRealm V18.546.135] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.135] [WARN] AUSGABE: rg11b10ufloat ist auf diesem Gerät nicht renderbar (Feature rg11b10ufloat-renderable fehlt) — das Szenen-Ziel bleibt rgba16float, +7,9 MB bei 1080p
+[stall-akte] Konsole log: [AnazhRealm V18.546.135] [INFO] Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.
+[stall-akte] Konsole log: [AnazhRealm V18.546.135] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — Cannot read properties of undefined (reading 'enabled')
+[stall-akte] Konsole log: [AnazhRealm V18.546.135] [WARN] FPS-Einbruch: 9 (zuvor ~30)
+[stall-akte] Konsole log: [AnazhRealm V18.546.135] [WARN] Der Rundblick steht nach 120 Takten ohne: 13 Bäume und Bauten wachsen · 334 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] Konsole log: [AnazhRealm V18.546.135] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.135] [INFO] Welt-Beziehung: Pfad
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in get BODEN_KARTE_TEILUNG :418
