@@ -1027,3 +1027,4 @@
 2026-10-30 19:00:20 eich4b-gtx eich-gtx.sh Exit0 15.5 · 1/1
 2026-10-30 19:00:38 z83-bisekt4 START 1 Zellen
 2026-10-30 19:14:34 z83-bisekt4 w-ego VERLÄNGERN 13.8 · 1/1 (2+2)
+2026-10-30 19:28:36 z83-bisekt4 w-ego(4+4) LANGSAMER 13.9 · verlängert (4+4)
