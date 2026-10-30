@@ -692,47 +692,19 @@ class AnazhRealm_stoff_material {
     }
 
     // PBR-Material: `vertexColors`/`color`/`opacity`/`side` sind native Properties; _buildToonNodeMaterial
-    // delegiert hierher. roughness/metalness aus den MATERIAL-TAGS hergeleitet (BRDF = Physik):
-    //   dichte ≥ 0.85 + magieleitung ≥ 0.7 → Eisen m=0.85 r=0.3 · dichte ≥ 0.85 → Stein m=0 r=0.85
-    //   lebendig ≥ 0.7 → Laub m=0 r=0.95 · brennbar ≥ 0.7 → Glut m=0 r=0.4 · sonst m=0 r=0.7
+    // delegiert hierher. Rauheit und Metall LIEST der Stoff aus seiner Zeile (material.K5, `_stoffOptik`: `opts.stoff` beim
+    // Namen, sonst der nächste Verwandte seiner `opts.tags`) und merkt sich dort — eine Änderung der Zeile setzt ihn neu.
+    // Ohne Zeile ein Mittel-Stoff (0,7, kein Metall); `opts.roughness`/`opts.metalness` setzen ihn ausdrücklich. Bis material.K5
+    // leitete ein Zweig-Gesetz sie aus den Tags (Eisen nur mit magieleitung ≥ 0,7 metallisch — die Zeile Eisen trägt 0: sie
+    // zeichnete als rauer Stein, ebenso Bronze und Stahl).
     _buildPbrNodeMaterial(opts = {}) {
         if (typeof THREE === "undefined") return null;
         if (typeof THREE.MeshStandardNodeMaterial !== "function") return null;
-        // SUBSTANZ-HERLEITUNG für roughness + metalness — Physik-Form.
-        // Default ist ein Mittel-Material (raue Oberfläche, kein Metall).
-        let roughness = 0.7;
-        let metalness = 0.0;
+        const zeile = this._stoffOptik(opts.stoff, opts.tags);
+        const roughness = zeile ? zeile.rauheit : 0.7;
+        const metalness = zeile ? zeile.metall : 0;
         let emissiveColor = null;
         let emissiveIntensity = 0;
-        if (opts.tags) {
-            const t = opts.tags;
-            const dichte = Math.max(0, Math.min(3, +t.dichte || 0));
-            const magie = Math.max(0, Math.min(3, +t.magieleitung || 0));
-            const lebendig = Math.max(0, Math.min(3, +t.lebendig || 0));
-            const brennbar = Math.max(0, Math.min(3, +t.brennbar || 0));
-            // EISEN: dichte hoch + magieleitung hoch → metallisch + glatt
-            if (dichte >= 0.85 && magie >= 0.7) {
-                metalness = Math.min(1, 0.75 + magie * 0.15);
-                roughness = Math.max(0.15, 0.35 - magie * 0.05);
-            } else if (lebendig >= 0.7) {
-                // LAUB/HOLZ: lebendig → rauh, kein Metall
-                roughness = Math.min(0.98, 0.7 + lebendig * 0.2);
-                metalness = 0;
-            } else if (dichte >= 0.85) {
-                // STEIN: dichte ohne Metall-Marker → rauh, dielectric
-                roughness = 0.85;
-                metalness = 0;
-            } else if (brennbar >= 0.7) {
-                // GLUT: glatt-warm (das Emissiv kommt unten aus responseProfile.emissiv,
-                // dichte-UNABHÄNGIG — eine dichte Glut glüht trotzdem).
-                roughness = 0.4;
-                metalness = 0;
-            } else {
-                // Mittel-Material (Erde/Tuch/Default)
-                roughness = 0.7 + lebendig * 0.1;
-                metalness = 0;
-            }
-        }
         const params = {};
         if (opts.color !== undefined) params.color = opts.color;
         if (opts.side !== undefined) params.side = opts.side;
@@ -742,6 +714,8 @@ class AnazhRealm_stoff_material {
         params.roughness = opts.roughness !== undefined ? +opts.roughness : roughness;
         params.metalness = opts.metalness !== undefined ? +opts.metalness : metalness;
         const mat = new THREE.MeshStandardNodeMaterial(params);
+        if (zeile && opts.roughness === undefined && opts.metalness === undefined)
+            this._stoffOptikMerke(zeile.name, mat);
         // Die Welt-Antenne: derselbe Substance-Response wie im Toon-Pfad (profil-gewichteter Aerial-/Mikro-/
         // Rim-Term POST-lighting); _ensureAtmoUniforms ist idempotent + lazy. Das Emissiv folgt NACH
         // responseProfile (liest `responseProfile.emissiv`).
@@ -791,7 +765,7 @@ class AnazhRealm_stoff_material {
                                 worldPos: _Ta.positionWorld,
                                 tags: opts.tags || {},
                                 metal: 0,
-                                roughBase: params.roughness,
+                                roughBase: _Ta.materialRoughness,
                             });
                             albedoNode = _rk.albedo || albedoNode;
                             if (_rk.roughNode) mat.roughnessNode = _rk.roughNode;
@@ -1223,7 +1197,7 @@ class AnazhRealm_stoff_material {
                                 tags: opts.tags || {},
                                 metal: 0,
                                 bark: true,
-                                roughBase: params.roughness,
+                                roughBase: _Ta.materialRoughness,
                             });
                             albedoNode = _rb.albedo;
                             if (_rb.roughNode) mat.roughnessNode = _rb.roughNode;
@@ -1247,7 +1221,7 @@ class AnazhRealm_stoff_material {
                         worldPos: _Ta.positionWorld,
                         tags: opts.tags || {},
                         metal: params.metalness || 0,
-                        roughBase: params.roughness,
+                        roughBase: _Ta.materialRoughness,
                         bump: true,
                     });
                     albedoNode = _r.albedo;
@@ -2131,11 +2105,26 @@ class AnazhRealm_stoff_material {
             // (6) ROUGHNESS-VARIATION — nur mit Basis vom Aufrufer: das Korn variiert fein (Erhebung rau, Mulde
             // glänzt), Moos ist matt, eine feuchte kahle Niederung glänzt (`wetDrive`, Terrain). Für Werke sind
             // mossW/wetDrive ~0/null (kein Effekt).
+            // DIE RAUHEIT DER ZEILE IST IHR MITTEL (material.K5): Korn, Fläche und Kavität schwanken um die Basis, im Verhältnis zu
+            // ihr (die Ausschläge von 0,85 wie bis dahin) — eine polierte Bronze (0,25) bleibt poliert, und die Kavität zählt um
+            // ihr Mittel (0,851 = E[(1 − n²)^2,4] über gelaende-core `rauschRaum`, σ 0,266). Bis material.K5 trug sie Absolut-Werte
+            // und zog jedes Fragment im Nah-Feld um 0,153 glatter, als der Stoff sagt. Die Basis ist ein Knoten (die Rauheit des
+            // Stoffs, `materialRoughness`: r184 liest sie je Bild, eine Änderung der Zeile wirkt ohne neues Programm) oder eine Zahl.
             if (opts.roughBase != null) {
-                let _rN = f(opts.roughBase)
-                    .add(mottle.mul(fineFade).mul(f(0.3)))
-                    .add(broad.mul(f(0.14)))
-                    .sub(cavity.mul(fineFade).mul(f(0.18)))
+                let _rN = asNode(opts.roughBase, 0.7)
+                    .mul(
+                        mottle
+                            .mul(fineFade)
+                            .mul(f(0.3 / 0.85))
+                            .add(broad.mul(f(0.14 / 0.85)))
+                            .sub(
+                                cavity
+                                    .sub(f(0.851))
+                                    .mul(fineFade)
+                                    .mul(f(0.18 / 0.85))
+                            )
+                            .add(f(1.0))
+                    )
                     .add(mossW.mul(f(0.22)));
                 if (opts.wetDrive != null) _rN = _rN.sub(asNode(opts.wetDrive, 0).mul(f(0.4)));
                 out.roughNode = _rN.clamp(0.05, 1.0);

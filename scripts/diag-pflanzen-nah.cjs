@@ -99,7 +99,8 @@ function teile(meshes) {
             idx: m.index ? u32(m.index) : null,
         }));
 }
-const Y = (c, i) => 0.2126 * c[i * 3] + 0.7152 * c[i * 3 + 1] + 0.0722 * c[i * 3 + 2];
+const { luma709 } = require("./lib/abnahme-urteil.cjs");
+const Y = (c, i) => luma709(c, i * 3);
 const kreuz = (u, w) => [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
 function hoehe(T) {
     let hi = 0;
@@ -536,7 +537,7 @@ function kroneUrteil(fall, T, flipFrei, partien) {
                 nah++;
                 const e1 = [P[b] - P[a], P[b + 1] - P[a + 1], P[b + 2] - P[a + 2]],
                     e2 = [P[d] - P[a], P[d + 1] - P[a + 1], P[d + 2] - P[a + 2]];
-                const fl = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+                const fl = kreuz(e1, e2);
                 const vorn = fl[0] * e[0] + fl[1] * e[1] + fl[2] * e[2] > 0;
                 const n = [0, 1, 2].map((j) => N[a + j] + N[b + j] + N[d + j]);
                 const sg = flipFrei || vorn ? 1 : -1;
@@ -571,7 +572,7 @@ function frachtStufe(m, wert, teilen) {
         H = m.height,
         d = m.data,
         Z = W / 4;
-    const yw = 0.2126 * wert[0] + 0.7152 * wert[1] + 0.0722 * wert[2];
+    const yw = luma709(wert);
     const n = Math.min(512, Z * 2);
     const zellen = [];
     for (let c = 0; c < 4; c++) {

@@ -1577,6 +1577,26 @@ class AnazhRealm_bau_vorlagen {
             gras: { sigma: 11483, last: 0.166, tiefe: AnazhRealm.GRASS_BLADE_H, heiz: 18608000, mx: 0.12 },
             laub: { sigma: 8202, last: 0.654, tiefe: 0.061, heiz: 18608000, mx: 0.25 },
         };
+        // DIE OPTIK DER ZEILE (material.K5): Rauheit (r184 `roughness`, α = r²) und Metall (0 | 1) — die EINE Quelle jedes Stoffs,
+        // der aus einer Zeile baut (`_stoffOptik` → `_buildPbrNodeMaterial`); eine Änderung wirkt sofort in jedem gebauten Stoff
+        // (`_stoffOptikWirkt`). Wo eine gemessene BRDF die Klasse trägt, ist r die Form ihrer Spitze unter r184s GGX:
+        // MERL (Matusik et al. 2003, 100 gemessene Stoffe), gelesen über die NBRDF-Netze von Sztrajman et al. 2021 (github
+        // asztr/Neural-BRDF, data/merl_nbrdf.zip), bei θd 25° die Breite θ50 (Median der Spitzen-Energie über θh 0–20°) und
+        // die Spitze ρ (mittlere BRDF in θh ≤ 1° je Spitzen-Energie, 1/sr) — beide frei von der Absolut-Skala der MERL-Daten
+        // (ihr weißer Diffus-Ball trägt nur 0,30 Albedo). Eisen: black-oxidized-steel 11,09° / 8,2 → r 0,54 (10,73° / 6,8);
+        // Bronze: alum-bronze 7,79° / 51 und brass 1,31° / 471 → r 0,25 (3,51° / 77); Stahl: steel, ss440, chrome-steel
+        // 0,45–0,47° / 717–775 → r 0,09 (0,47° / 860); Quarz: black-obsidian 0,63° / 699 und aventurnine 1,45° / 437 →
+        // r 0,135 (1,05° / 500); Blech (Lack ohne Klarlack): blue-, gold-, green-, silver-metallic-paint(2) 7,87–9,49° /
+        // 10–13,3 → r 0,44 (8,77° / 11). Ohne Exemplar (MERL kennt kein rohes Holz, keinen rauen Fels, kein Leder) gilt die
+        // Zahl, die die Tags bis material.K5 herleiteten. Das Soll der Kugel-Bühne (die Bänder je Klasse) trägt ihre Station.
+        // prettier-ignore
+        const OPTIK = {
+            stein: [0.85, 0], holz: [0.84, 0], eisen: [0.54, 1], bronze: [0.25, 1], stahl: [0.09, 1], quarz: [0.135, 0],
+            leder: [0.4, 0], knochen: [0.9, 0], fleisch: [0.9, 0], leib: [0.9, 0], federn: [0.9, 0], schuppen: [0.9, 0],
+            glut: [0.9, 0], laub: [0.9, 0], erde: [0.755, 0], kraut: [0.9, 0], essenz: [0.76, 0], blech: [0.44, 1],
+            gras: [0.9, 0], wasser: [0.72, 0], eis: [0.7, 0],
+        };
+        const welt = this;
         const TB = AnazhRealm._schrittTimbre().material;
         // Stahl, Blech und Leib sind Stoffe der Körper (die Klinge der Schmiede, die Hülle des Wagens, der Mensch), Gras, Wasser
         // und Eis Stoffe der Welt, keine Bau-Stoffe: die Welt hat keine Quelle, aus der man sie sammelt, die Werkstatt bietet sie
@@ -1610,6 +1630,18 @@ class AnazhRealm_bau_vorlagen {
                 },
             });
             if (keinBauStoff.includes(name)) z.bauStoff = false;
+            const optik = OPTIK[name];
+            if (!optik) AnazhRealm._kernPflichtBruch("STOFF-TAFEL " + name + ": die Optik (Rauheit, Metall)");
+            ["rauheit", "metall"].forEach((k, i) =>
+                Object.defineProperty(z, k, {
+                    enumerable: true,
+                    get: () => optik[i],
+                    set: (v) => {
+                        optik[i] = +v;
+                        welt._stoffOptikWirkt(name);
+                    },
+                })
+            );
             const q = typeof RHO[name] === "object" ? RHO[name] : { wert: RHO[name] };
             if (!q.get) {
                 if (!(q.wert > 0)) throw new Error("STOFF-ZEILE ohne Dichte: " + name);

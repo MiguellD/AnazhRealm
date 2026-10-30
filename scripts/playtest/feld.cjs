@@ -21,21 +21,21 @@ async function checkRing2Dsl({ page, check }) {
             depthBudgetEnforced: false,
             delayScheduled: false,
         };
-        if (!r || !r.state) return out;
-        const m = r.state.worldMeta || {};
+        if (!r || !st) return out;
+        const m = st.worldMeta || {};
         out.worldIdSet = typeof m.worldId === "string" && m.worldId.length > 5;
         out.slugSet = typeof m.slug === "string" && m.slug.length > 0;
 
-        const jpBefore = r.state.jumpPower;
+        const jpBefore = st.jumpPower;
         // UHR UND WETTER GEHÖREN DEM SPIELER: die Probe spricht als Spieler — ein Programm ohne Quelle ist
         // eine Stimme der Welt und wünscht das Wetter nur (der Wetter-Zug zieht es in seinem Takt).
         const res0 = r.dslRun(["weather", "stormy"]);
         out.weltWuenscht =
             res0.ok &&
-            r.state.weather !== "stormy" &&
+            st.weather !== "stormy" &&
             res0.log.some((e) => e.event === "wetter_gewuenscht" || e.event === "wetter_gehalten");
         const res1 = r.dslRun(["weather", "rainy"], { source: "human" });
-        out.weatherEffect = res1.ok && r.state.weather === "rainy";
+        out.weatherEffect = res1.ok && st.weather === "rainy";
 
         // DIE KÖRPER-GESETZE SIND GESETZ: player_jump_power wiegt nur im Gesetz-Band des Leibs — der
         // Test wählt zwei Werte IM Band (17 und 22 lagen jenseits davon; dslEval weist sie benannt ab).
@@ -43,23 +43,23 @@ async function checkRing2Dsl({ page, check }) {
         const jA = +(jBand.min + 0.3 * (jBand.max - jBand.min)).toFixed(3);
         const jB = +(jBand.min + 0.7 * (jBand.max - jBand.min)).toFixed(3);
         const res2 = r.dslRun(["chain", ["weather", "sunny"], ["player_jump_power", jA]], { source: "human" });
-        out.chainEffect = res2.ok && r.state.weather === "sunny" && r.state.jumpPower === jA;
+        out.chainEffect = res2.ok && st.weather === "sunny" && st.jumpPower === jA;
 
-        const creBefore = r.state.creatures.length;
+        const creBefore = st.creatures.length;
         // maxCreatures 120→20 (Schöpfer-Anordnung): Raum für die 2 sichern,
         // damit dieser Band den spawn_creature-INTENT misst, nicht den Cap (der Warmup
         // kann nahe 20 liegen). Der Test wandert mit dem Code (kein Revert der Senkung).
-        const _saveMaxPos = r.state.maxCreatures;
-        r.state.maxCreatures = creBefore + 2;
+        const _saveMaxPos = st.maxCreatures;
+        st.maxCreatures = creBefore + 2;
         const res3 = r.dslRun(["spawn_creature", ["at_origin"], 2, "happy"]);
         out.positionEffect =
             res3.ok &&
             res3.log.some((e) => e.event === "spawned_creature") &&
-            r.state.creatures.length === creBefore + 2;
-        r.state.maxCreatures = _saveMaxPos;
+            st.creatures.length === creBefore + 2;
+        st.maxCreatures = _saveMaxPos;
 
         const res4 = r.dslRun(["when", ["weather_is", "sunny"], ["player_jump_power", jB]]);
-        out.conditionEffect = res4.ok && r.state.jumpPower === jB;
+        out.conditionEffect = res4.ok && st.jumpPower === jB;
 
         const res5 = r.dslRun(["unbekannte_op_xyz", 1, 2]);
         out.unknownOpRejected = !res5.ok && res5.log.some((e) => e.event === "unknown_op");
@@ -74,20 +74,20 @@ async function checkRing2Dsl({ page, check }) {
         const res6 = r.dslRun(deep);
         out.depthBudgetEnforced = res6.log.some((e) => e.event === "budget_exceeded" && e.budget === "depth");
 
-        const pendingBefore = r.state.dsl.pending.length;
+        const pendingBefore = st.dsl.pending.length;
         r.dslRun(["delay", 999, ["weather", "rainy"]]);
-        out.delayScheduled = r.state.dsl.pending.length === pendingBefore + 1;
-        r.state.dsl.pending = r.state.dsl.pending.filter((p) => p.runAt < 9999999);
+        out.delayScheduled = st.dsl.pending.length === pendingBefore + 1;
+        st.dsl.pending = st.dsl.pending.filter((p) => p.runAt < 9999999);
 
         // Phase 2: dslCompose + Loop-Dispatch.
         const composed = r.dslCompose();
         out.composeIsArray = Array.isArray(composed);
         out.composeRootIsChain = out.composeIsArray && composed[0] === "chain";
-        const histBefore = r.state.dsl.history.length;
+        const histBefore = st.dsl.history.length;
         // Der Nexus ZAHLT am Wirk-Tor; ein von früheren Bändern verarmtes Budget ließe die Test-Evolution
         // korrekt ruhen. Geprüft wird der DISPATCH (Ökonomie: checkBandPhasenBF) → Budget decken.
-        r.state.nexusWirk = r.constructor.NEXUS_WIRK.max;
-        r.state.nexusEvolutionQueue.push({
+        st.nexusWirk = AnazhRealm.NEXUS_WIRK.max;
+        st.nexusEvolutionQueue.push({
             name: `playtest_evo_${Date.now()}`,
             program: composed,
             source: "playtest",
@@ -108,16 +108,16 @@ async function checkRing2Dsl({ page, check }) {
             out.evoMaxHeavy = maxHeavy;
         }
 
-        r.state.jumpPower = jpBefore;
+        st.jumpPower = jpBefore;
         return out;
     });
 
     const phase2Results = await safeEvaluate(page, () => {
         for (let k = 0; k < 5; k++) r._gameLoopTick(performance.now());
         return {
-            historyLen: r.state.dsl.history.length,
-            queueLen: r.state.nexusEvolutionQueue.length,
-            lastHistory: r.state.dsl.history[r.state.dsl.history.length - 1] || null,
+            historyLen: st.dsl.history.length,
+            queueLen: st.nexusEvolutionQueue.length,
+            lastHistory: st.dsl.history[st.dsl.history.length - 1] || null,
         };
     });
 
@@ -176,41 +176,41 @@ async function checkRing2Dsl({ page, check }) {
 async function checkBandV1723Harmony({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        r.state.skyTint = null;
-        r.state.skyTintTarget = 0;
-        r.state.skyTintStrength = 0;
+        st.skyTint = null;
+        st.skyTintTarget = 0;
+        st.skyTintStrength = 0;
         r.dslRun(["skybox_color", "#d4a3ff"], { source: "test" });
-        out.skyTintSet = !!r.state.skyTint && r.state.skyTintTarget > 0;
-        const t0 = r.state.skyTintTarget;
+        out.skyTintSet = !!st.skyTint && st.skyTintTarget > 0;
+        const t0 = st.skyTintTarget;
         const tint = { skyR: 0.2, skyG: 0.3, skyB: 0.5 };
         for (let i = 0; i < 10; i++) r._dayNightApplySkybox(tint);
-        out.skyRamped = r.state.skyTintStrength > 0.05; // smooth hoch-gerampt (kein Snap)
-        out.skyDecays = r.state.skyTintTarget < t0; // Ziel fadet
-        r.state.skyTint = null; // Restore — kein Leak
-        r.state.skyTintTo = null;
-        r.state.skyTintTarget = 0;
-        r.state.skyTintStrength = 0;
+        out.skyRamped = st.skyTintStrength > 0.05; // smooth hoch-gerampt (kein Snap)
+        out.skyDecays = st.skyTintTarget < t0; // Ziel fadet
+        st.skyTint = null; // Restore — kein Leak
+        st.skyTintTo = null;
+        st.skyTintTarget = 0;
+        st.skyTintStrength = 0;
         // Farb-Cross-Fade: skyTint lerpt von Rot zur Ziel-Farbe Blau (ein
         // Farbwechsel springt nicht, er fadet). Erst rot (init), dann blau (skyTint
         // bleibt rot), dann ticken → skyTint wandert Richtung blau.
         r.dslRun(["skybox_color", "#ff0000"], { source: "test" });
         r.dslRun(["skybox_color", "#0000ff"], { source: "test" });
-        const beforeHex = r.state.skyTint.getHex();
+        const beforeHex = st.skyTint.getHex();
         for (let i = 0; i < 25; i++) r._dayNightApplySkybox({ skyR: 0.2, skyG: 0.3, skyB: 0.5 });
-        const afterHex = r.state.skyTint.getHex();
+        const afterHex = st.skyTint.getHex();
         out.colorCrossFades =
             (afterHex & 0xff) > (beforeHex & 0xff) && ((afterHex >> 16) & 0xff) < ((beforeHex >> 16) & 0xff);
-        r.state.skyTint = null; // Restore
-        r.state.skyTintTo = null;
-        r.state.skyTintTarget = 0;
-        r.state.skyTintStrength = 0;
+        st.skyTint = null; // Restore
+        st.skyTintTo = null;
+        st.skyTintTarget = 0;
+        st.skyTintStrength = 0;
         // drei Wesen am Spieler: sie stehen im Ring um ihn (4–6,5 m), nie auf ihm und nie gestapelt
-        const pmR = r.state.playerMesh.position;
-        const capR = r.state.maxCreatures,
-            n0 = r.state.creatures.length;
-        r.state.maxCreatures = n0 + 3;
+        const pmR = st.playerMesh.position;
+        const capR = st.maxCreatures,
+            n0 = st.creatures.length;
+        st.maxCreatures = n0 + 3;
         r.dslRun(["spawn_creature", ["at_player"], 3, "happy"], { source: "test" });
-        const born = r.state.creatures.slice(n0);
+        const born = st.creatures.slice(n0);
         const dR = born.map((c) => Math.hypot(c.position.x - pmR.x, c.position.z - pmR.z));
         out.spawnRings =
             born.length > 0 &&
@@ -221,7 +221,7 @@ async function checkBandV1723Harmony({ page, check }) {
                 )
             );
         born.forEach((c) => r.removeCreature(c));
-        r.state.maxCreatures = capR;
+        st.maxCreatures = capR;
         return out;
     });
     // Harmonie: skybox_color setzt eine Tönung (state.skyTint), snappt nicht himmelTint
@@ -241,10 +241,10 @@ async function checkBandV1723Harmony({ page, check }) {
 async function checkBandV1726FieldDirection({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — at_field_need misst hier das frozen Ring-Minimum
-        const pm = r.state.playerMesh.position;
+        if (st.lifeField) st.lifeField.clear(); // V17.27 — at_field_need misst hier das frozen Ring-Minimum
+        const pm = st.playerMesh.position;
         {
-            const ctx2 = { state: r.state, rng: () => 0.5, log: { push() {} }, budget: {} };
+            const ctx2 = { state: st, rng: () => 0.5, log: { push() {} }, budget: {} };
             const need = r.dslPositions.at_field_need([50], ctx2);
             const needLeb = r.auraAt(need.x, need.z).lebendig;
             let minLeb = Infinity;
@@ -275,12 +275,12 @@ async function checkBandV1726FieldDirection({ page, check }) {
 async function checkBandV1730EmotionFromBeing({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const A2E = r.constructor.ACTION_TO_EMOTION;
+        const A2E = AnazhRealm.ACTION_TO_EMOTION;
         // ALLE sechs Achsen werden von IRGENDEINER Tat erreicht (ueber alle Achsen)
         const axes = new Set();
         for (const t of Object.keys(A2E || {})) for (const a of Object.keys(A2E[t])) axes.add(a);
         out.allSixAxes = ["joy", "awe", "sorrow", "hope", "peace", "chaos"].every((a) => axes.has(a));
-        const e = r.state.player.emotions;
+        const e = st.player.emotions;
         const reset = () => {
             for (const k of Object.keys(e)) e[k] = 0;
         };
@@ -317,59 +317,59 @@ async function checkBandV1730EmotionFromBeing({ page, check }) {
 // TTL, Frame-Budget, Dedup, Cap+Eviction, keine Same-Tick-Kaskade, deterministische Regel-RNG.
 async function checkBandV1733WorldRules({ page, check }) {
     const res = await page.evaluate(() => {
-        const K = r.constructor;
+        const K = AnazhRealm;
         const out = {};
         const now = () => performance.now() / 1000;
 
         // --- Verdrahtung ---
         out.cfgWired = !!K.WORLD_RULES && K.WORLD_RULES.cap === 64 && typeof K.WORLD_RULES.minEverySec === "number";
-        out.registryArray = Array.isArray(r.state.worldRules);
+        out.registryArray = Array.isArray(st.worldRules);
         out.tickWired = window.__consumes(r, "_gameLoopTick", r, "_tickWorldRules", [performance.now()]); // der Takt ruft sie
 
         // Save world state we mutate
-        const savedRules = r.state.worldRules.slice();
-        const savedWeather = r.state.weather;
-        const e = r.state.player.emotions;
+        const savedRules = st.worldRules.slice();
+        const savedWeather = st.weather;
+        const e = st.player.emotions;
         const savedEmotions = Object.assign({}, e);
 
         // --- (1) Registrierung statt Sofort-Effekt ---
-        r.state.worldRules.length = 0;
-        r.state.weather = "sunny";
+        st.worldRules.length = 0;
+        st.weather = "sunny";
         for (const k of Object.keys(e)) e[k] = 0;
         e.sorrow = 0.8;
         const reg = r.dslRun(["rule", ["emotion_above", "sorrow", 0.5], ["weather", "rainy"], { everySec: 0.5 }], {
             source: "human",
         });
         out.regOk = reg.ok === true;
-        out.registeredOne = r.state.worldRules.length === 1;
-        out.notFiredOnRegister = r.state.weather === "sunny"; // registriert, Effekt NICHT sofort
+        out.registeredOne = st.worldRules.length === 1;
+        out.notFiredOnRegister = st.weather === "sunny"; // registriert, Effekt NICHT sofort
 
         // --- (2) Feuern bei wahrer Bedingung ---
         const t1 = now();
         r._tickWorldRules(t1);
-        out.firesWhenTrue = r.state.weather === "rainy";
+        out.firesWhenTrue = st.weather === "rainy";
 
         // --- (3) everySec-Gate: sofortiger Re-Tick feuert nicht erneut ---
-        r.state.weather = "sunny"; // wuerde wieder rainy, falls die Regel erneut feuerte
+        st.weather = "sunny"; // wuerde wieder rainy, falls die Regel erneut feuerte
         r._tickWorldRules(t1); // gleicher Zeitpunkt < everySec nach lastFired
-        out.everySecGate = r.state.weather === "sunny";
+        out.everySecGate = st.weather === "sunny";
 
         // --- (4) Bedingung false → feuert nicht ---
         e.sorrow = 0.0;
-        r.state.worldRules[0].lastFired = -Infinity; // Gate oeffnen → NUR die Bedingung entscheidet
+        st.worldRules[0].lastFired = -Infinity; // Gate oeffnen → NUR die Bedingung entscheidet
         r._tickWorldRules(now());
-        out.skipsWhenFalse = r.state.weather === "sunny";
+        out.skipsWhenFalse = st.weather === "sunny";
 
         // --- (5) TTL entfernt die Regel ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { ttlSec: 1 }], { source: "nexus" });
-        out.ttlRegistered = r.state.worldRules.length === 1;
-        r.state.worldRules[0].born = now() - 5; // 5 s alt, ttl 1 s → abgelaufen
+        out.ttlRegistered = st.worldRules.length === 1;
+        st.worldRules[0].born = now() - 5; // 5 s alt, ttl 1 s → abgelaufen
         r._tickWorldRules(now());
-        out.ttlRemoves = r.state.worldRules.length === 0;
+        out.ttlRemoves = st.worldRules.length === 0;
 
         // --- (6) Budget kappt Effekte/Frame ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         const N = K.WORLD_RULES.budgetPerFrame + 3; // mehr eligible als Budget
         for (let i = 0; i < N; i++) {
             // distinct cond (Dedup-frei) + immer true (rng < 1+ε); everySec klein
@@ -377,21 +377,21 @@ async function checkBandV1733WorldRules({ page, check }) {
                 source: "nexus",
             });
         }
-        out.budgetRegistered = r.state.worldRules.length === N;
+        out.budgetRegistered = st.worldRules.length === N;
         const tB = now();
         r._tickWorldRules(tB);
-        const firedCount = r.state.worldRules.filter((x) => x.lastFired === tB).length;
+        const firedCount = st.worldRules.filter((x) => x.lastFired === tB).length;
         out.budgetCaps = firedCount === K.WORLD_RULES.budgetPerFrame;
         out.firedCount = firedCount;
 
         // --- (7) Dedup: dieselbe Regel zweimal → ein Eintrag ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["random_chance", 1], ["weather", "rainy"]], { source: "human" });
         r.dslRun(["rule", ["random_chance", 1], ["weather", "rainy"]], { source: "human" });
-        out.dedup = r.state.worldRules.length === 1;
+        out.dedup = st.worldRules.length === 1;
 
         // --- (8) Cap + Eviction (Mensch ueberlebt die Nexus-Flut) ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         // eine Mensch-Regel zuerst (aelteste — darf NICHT verdraengt werden)
         r.dslRun(["rule", ["emotion_above", "joy", 0.99], ["weather", "rainy"], { everySec: 99 }], { source: "human" });
         for (let i = 0; i < K.WORLD_RULES.cap + 5; i++) {
@@ -399,13 +399,13 @@ async function checkBandV1733WorldRules({ page, check }) {
                 source: "nexus",
             });
         }
-        out.capHolds = r.state.worldRules.length <= K.WORLD_RULES.cap;
-        out.humanSurvives = r.state.worldRules.some((x) => x.source === "human");
+        out.capHolds = st.worldRules.length <= K.WORLD_RULES.cap;
+        out.humanSurvives = st.worldRules.some((x) => x.source === "human");
 
         // --- (9) Re-Entrancy: ein Regel-Effekt, der eine Regel registriert,
         //         feuert die NEUE nicht im selben Tick ---
-        r.state.worldRules.length = 0;
-        r.state.weather = "sunny";
+        st.worldRules.length = 0;
+        st.weather = "sunny";
         r.dslRun(
             ["rule", ["random_chance", 1], ["rule", ["random_chance", 1], ["weather", "rainy"]], { everySec: 0.5 }],
             {
@@ -414,11 +414,11 @@ async function checkBandV1733WorldRules({ page, check }) {
         );
         const tR = now();
         r._tickWorldRules(tR); // meta feuert → registriert child; child NICHT same-tick
-        out.reentrancyNoCascade = r.state.weather === "sunny";
-        out.childRegistered = r.state.worldRules.length === 2;
-        r.state.worldRules[1].lastFired = -Infinity; // naechster Frame: child darf feuern
+        out.reentrancyNoCascade = st.weather === "sunny";
+        out.childRegistered = st.worldRules.length === 2;
+        st.worldRules[1].lastFired = -Infinity; // naechster Frame: child darf feuern
         r._tickWorldRules(now() + 1);
-        out.childFiresNextFrame = r.state.weather === "rainy";
+        out.childFiresNextFrame = st.weather === "rainy";
 
         // --- (10) deterministische Regel-RNG: eine Funktion des Gesetzes (`_regelHash`), nie seiner Platz-Nummer ---
         const fake = { id: 4242, cond: ["random_chance", 0.3], effect: ["weather", "rainy"] };
@@ -430,8 +430,8 @@ async function checkBandV1733WorldRules({ page, check }) {
         out.rngDeterministic = r.dslCtx({ seed: s0a }).rng() === r.dslCtx({ seed: s0b }).rng();
 
         // restore world state
-        r.state.worldRules = savedRules;
-        r.state.weather = savedWeather;
+        st.worldRules = savedRules;
+        st.weather = savedWeather;
         for (const k of Object.keys(e)) e[k] = savedEmotions[k] || 0;
         return out;
     });
@@ -474,17 +474,17 @@ async function checkBandV1734FieldRules({ page, check }) {
         const mkCtx = () => r.dslCtx({ source: "test" });
 
         // Save world state
-        const savedLife = r.state.lifeField ? new Map(r.state.lifeField) : null;
-        const savedEmo = r.state.emotionField ? new Map(r.state.emotionField) : null;
-        const e = r.state.player.emotions;
+        const savedLife = st.lifeField ? new Map(st.lifeField) : null;
+        const savedEmo = st.emotionField ? new Map(st.emotionField) : null;
+        const e = st.player.emotions;
         const savedEmotions = Object.assign({}, e);
-        const savedRules = r.state.worldRules.slice();
+        const savedRules = st.worldRules.slice();
 
         // clean slates
-        if (r.state.lifeField) r.state.lifeField.clear();
-        if (r.state.emotionField) r.state.emotionField.clear();
+        if (st.lifeField) st.lifeField.clear();
+        if (st.emotionField) st.emotionField.clear();
         for (const k of Object.keys(e)) e[k] = 0;
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
 
         // Scanne einen KARGEN Ort (niedrigste frozen lebendig) — so ist die
         // Heilungs-Regel robust (sie kann nur an einem Ort < Schwelle feuern).
@@ -518,28 +518,28 @@ async function checkBandV1734FieldRules({ page, check }) {
         out.depositLifeReadBack = r.auraAt(A.x, A.z).lebendig > leb0;
 
         // --- (5) deposit_emotion SCHREIBT → field_above(emotion) liest es zurueck, RAEUMLICH ---
-        r.state.emotionField.clear();
+        st.emotionField.clear();
         r.dslEval(["deposit_emotion", "sorrow", 1.0, posB], mkCtx());
         out.depositEmotionReadBack = r.dslEvalCond(["field_above", "sorrow", 0.05, posB], mkCtx()) === true;
         out.depositEmotionSpatial = r.dslEvalCond(["field_above", "sorrow", 0.05, posA], mkCtx()) === false;
         out.emoSorrowB = r.auraAt(B.x, B.z).emotion.sorrow;
 
         // --- (6) Default-Position einer Feld-Op = at_player (nicht der Ursprung) ---
-        r.state.lifeField.clear();
-        const pm = r.state.playerMesh.position;
+        st.lifeField.clear();
+        const pm = st.playerMesh.position;
         const lebPlayer0 = r.auraAt(pm.x, pm.z).lebendig;
         r.dslEval(["deposit_life"], mkCtx()); // KEIN posNode → at_player
         out.defaultAtPlayer = r.auraAt(pm.x, pm.z).lebendig > lebPlayer0;
 
         // --- (7) DIE HEILUNGS-REGEL: der Feld-Loop schliesst sich ---
-        r.state.lifeField.clear();
-        r.state.worldRules.length = 0;
+        st.lifeField.clear();
+        st.worldRules.length = 0;
         const lebSeed = r.auraAt(A.x, A.z).lebendig; // frozen (overlay geleert)
         const T = Math.min(lebSeed + 0.3, 0.95); // erreichbar (overlay max 0.7), > lebSeed → field_below initial true
         r.dslRun(["rule", ["field_below", "lebendig", T, posA], ["deposit_life", posA], { everySec: 0.5 }], {
             source: "human",
         });
-        const ruleObj = r.state.worldRules[0];
+        const ruleObj = st.worldRules[0];
         let rose = false;
         let stopped = false;
         let prevLeb = lebSeed;
@@ -562,24 +562,24 @@ async function checkBandV1734FieldRules({ page, check }) {
         out.healSeed = lebSeed;
 
         // --- (8) invalide emotion-Achse → no-op, kein throw ---
-        r.state.emotionField.clear();
+        st.emotionField.clear();
         let threw = false;
         try {
             r.dslEval(["deposit_emotion", "bogus", 1.0, posA], mkCtx());
         } catch {
             threw = true;
         }
-        out.invalidAxisNoop = !threw && r.state.emotionField.size === 0;
+        out.invalidAxisNoop = !threw && st.emotionField.size === 0;
 
         // restore
-        r.state.worldRules = savedRules;
-        if (r.state.lifeField) {
-            r.state.lifeField.clear();
-            if (savedLife) for (const [k, v] of savedLife) r.state.lifeField.set(k, v);
+        st.worldRules = savedRules;
+        if (st.lifeField) {
+            st.lifeField.clear();
+            if (savedLife) for (const [k, v] of savedLife) st.lifeField.set(k, v);
         }
-        if (r.state.emotionField) {
-            r.state.emotionField.clear();
-            if (savedEmo) for (const [k, v] of savedEmo) r.state.emotionField.set(k, v);
+        if (st.emotionField) {
+            st.emotionField.clear();
+            if (savedEmo) for (const [k, v] of savedEmo) st.emotionField.set(k, v);
         }
         for (const k of Object.keys(e)) e[k] = savedEmotions[k] || 0;
         return out;
@@ -612,7 +612,7 @@ async function checkBandV1734FieldRules({ page, check }) {
 // Überlebenden. generateEvolution mischt Regel + Geste; dslMutate hält die Regel-Form.
 async function checkBandV1735NexusEvolvesRules({ page, check }) {
     const res = await page.evaluate(() => {
-        const K = r.constructor;
+        const K = AnazhRealm;
         const out = {};
         const now = () => performance.now() / 1000;
         const cfg = K.WORLD_RULES;
@@ -643,7 +643,7 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
         out.condReadsField = condHeads.has("field_below") || condHeads.has("field_above");
 
         // --- (D) generateEvolution: Misch aus Regeln + Gesten ---
-        const savedNextId = r.state.dsl.nextEntryId;
+        const savedNextId = st.dsl.nextEntryId;
         let ruleCount = 0;
         const N = 80;
         for (let i = 0; i < N; i++) {
@@ -652,16 +652,16 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
         }
         out.evoMix = ruleCount > 2 && ruleCount < N - 2; // Misch (prob ~0.35 → ~28)
         out.ruleCount = ruleCount;
-        r.state.dsl.nextEntryId = savedNextId; // den Zaehler zuruecksetzen (kein Seiteneffekt)
+        st.dsl.nextEntryId = savedNextId; // den Zaehler zuruecksetzen (kein Seiteneffekt)
 
         // ===== Fitness/Lifecycle: kontrollierte Regeln auf sauberem Registry =====
-        const savedRules = r.state.worldRules.slice();
-        const savedEmo = r.state.emotionField ? new Map(r.state.emotionField) : null;
-        const e = r.state.player.emotions;
+        const savedRules = st.worldRules.slice();
+        const savedEmo = st.emotionField ? new Map(st.emotionField) : null;
+        const e = st.player.emotions;
         const savedEmotions = Object.assign({}, e);
 
         // --- (E) Fitness: eine billige, feuernde Regel → hohe Fitness ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(
             [
                 "rule",
@@ -673,7 +673,7 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
                 source: "nexus",
             }
         );
-        const ruleE = r.state.worldRules[0];
+        const ruleE = st.worldRules[0];
         for (let i = 0; i < 3; i++) {
             ruleE.lastFired = -Infinity;
             r._tickWorldRules(now());
@@ -687,26 +687,26 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
         const idE = ruleE.id;
         ruleE.born = now() - ruleE.ttlSec - 1; // ttl ueberschritten
         r._tickWorldRules(now());
-        const stillThere = r.state.worldRules.find((x) => x.id === idE);
+        const stillThere = st.worldRules.find((x) => x.id === idE);
         out.renewSurvives = !!stillThere && now() - stillThere.born < 5 && (stillThere.fires || 0) === 0; // erneuert: born frisch, Akkus zurueck
 
         // --- (G) Verfall: eine inerte (nie feuernde) Regel verfaellt ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["random_chance", 0], ["deposit_life", ["at_player"]], { everySec: 0.5, ttlSec: 1000 }], {
             source: "nexus",
         });
-        const ruleG = r.state.worldRules[0];
+        const ruleG = st.worldRules[0];
         const idG = ruleG.id;
         ruleG.born = now() - ruleG.ttlSec - 1;
         r._tickWorldRules(now());
-        out.inertExpires = !r.state.worldRules.find((x) => x.id === idG);
+        out.inertExpires = !st.worldRules.find((x) => x.id === idG);
 
         // --- (H) Verfall: eine fehlerhafte Regel (100% errors) verfaellt ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["random_chance", 0], ["weather", "sunny"], { everySec: 0.5, ttlSec: 1000 }], {
             source: "nexus",
         });
-        const ruleH = r.state.worldRules[0];
+        const ruleH = st.worldRules[0];
         const idH = ruleH.id;
         ruleH.fires = 5;
         ruleH.errors = 5;
@@ -714,7 +714,7 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
         ruleH.born = now() - ruleH.ttlSec - 1;
         out.erroringFitness = r._worldRuleFitness(ruleH); // ~0.36 < renewFitness
         r._tickWorldRules(now());
-        out.erroringExpires = !r.state.worldRules.find((x) => x.id === idH);
+        out.erroringExpires = !st.worldRules.find((x) => x.id === idH);
 
         // --- (I) dslMutate haelt die Regel-Form (kein throw) ---
         let mutOk = true;
@@ -740,10 +740,10 @@ async function checkBandV1735NexusEvolvesRules({ page, check }) {
         out.composeNexusRule = composeOk;
 
         // restore
-        r.state.worldRules = savedRules;
-        if (r.state.emotionField) {
-            r.state.emotionField.clear();
-            if (savedEmo) for (const [k, v] of savedEmo) r.state.emotionField.set(k, v);
+        st.worldRules = savedRules;
+        if (st.emotionField) {
+            st.emotionField.clear();
+            if (savedEmo) for (const [k, v] of savedEmo) st.emotionField.set(k, v);
         }
         for (const k of Object.keys(e)) e[k] = savedEmotions[k] || 0;
         return out;
@@ -814,16 +814,16 @@ async function checkBandV1736HumanRules({ page, check }) {
             r._isRuleEffectAllowed(["spawn_village", ["at_player"]]) === false;
 
         // Save world state
-        const savedRules = r.state.worldRules.slice();
-        const savedWeather = r.state.weather;
-        const e = r.state.player.emotions;
+        const savedRules = st.worldRules.slice();
+        const savedWeather = st.weather;
+        const e = st.player.emotions;
         const savedEmotions = Object.assign({}, e);
 
         // --- (5) End-to-end: „wann immer X, dann Y" erstellt eine Mensch-Regel ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         const s1 = mkSink();
         const handled = r._chatTryRuleCommand("wann immer es regnet, dann setze wetter sunny", s1.input, s1.append);
-        const rule = r.state.worldRules.find((x) => x.source === "human" && x.cond && x.cond[0] === "weather_is");
+        const rule = st.worldRules.find((x) => x.source === "human" && x.cond && x.cond[0] === "weather_is");
         out.ruleCreated =
             handled === true &&
             !!rule &&
@@ -844,12 +844,12 @@ async function checkBandV1736HumanRules({ page, check }) {
         out.rulesListed = listed === true && s2.msgs.some((m) => /wann immer/i.test(m) && /von du/.test(m));
 
         // --- (10) unsicherer Effekt (frozen Worldgen) wird abgelehnt — KEINE Regel ---
-        const beforeUnsafe = r.state.worldRules.length;
+        const beforeUnsafe = st.worldRules.length;
         const s3 = mkSink();
         const h3 = r._chatTryRuleCommand("wann immer es regnet, dann setze terrain steilheit 2", s3.input, s3.append);
         out.unsafeRejected =
             h3 === true &&
-            r.state.worldRules.length === beforeUnsafe &&
+            st.worldRules.length === beforeUnsafe &&
             s3.msgs.some((m) => /keine stehende Welt-Regel/.test(m));
 
         // --- (11) unbekannte Bedingung → sanftes Feedback, keine Regel ---
@@ -860,11 +860,11 @@ async function checkBandV1736HumanRules({ page, check }) {
         // --- (9) „vergiss regeln" widerruft die Mensch-Gesetze ---
         const s5 = mkSink();
         const forgot = r._chatTryRulesListCommand("vergiss regeln", s5.input, s5.append);
-        out.rulesForgotten = forgot === true && !r.state.worldRules.some((x) => x.source === "human");
+        out.rulesForgotten = forgot === true && !st.worldRules.some((x) => x.source === "human");
 
         // restore
-        r.state.worldRules = savedRules;
-        r.state.weather = savedWeather;
+        st.worldRules = savedRules;
+        st.weather = savedWeather;
         for (const k of Object.keys(e)) e[k] = savedEmotions[k] || 0;
         return out;
     });
@@ -896,20 +896,20 @@ async function checkBandV1737RulesUI({ page, check }) {
         const host = document.getElementById("status-worldrules");
 
         // Save state
-        const savedRules = r.state.worldRules.slice();
+        const savedRules = st.worldRules.slice();
         const forceRender = () => {
             r._statusRefs.worldrulesSignature = ""; // Signature-Diff zuruecksetzen → echtes Re-Render
             r.renderWorldRulesList();
         };
 
         // --- Empty-State ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         forceRender();
         out.emptyState = /Noch keine Gesetze/.test(host.textContent);
 
         // --- Mensch-Regel: Row mit describeProgram + ✕ ---
         r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], { everySec: 3 }], { source: "human" });
-        const humanRule = r.state.worldRules.find((x) => x.source === "human");
+        const humanRule = st.worldRules.find((x) => x.source === "human");
         forceRender();
         const humanBtn = host.querySelector("button[data-forget-rule]");
         out.humanRow =
@@ -935,9 +935,9 @@ async function checkBandV1737RulesUI({ page, check }) {
         const idBefore = humanRule.id;
         const btn = host.querySelector(`button[data-forget-rule="${idBefore}"]`);
         if (btn) btn.click();
-        out.forgetWorks = !r.state.worldRules.some((x) => x.id === idBefore);
+        out.forgetWorks = !st.worldRules.some((x) => x.id === idBefore);
         // die Nexus-Regel bleibt (wir haben nur die Mensch-Regel ✕ geklickt)
-        out.nexusSurvives = r.state.worldRules.some((x) => x.source === "nexus");
+        out.nexusSurvives = st.worldRules.some((x) => x.source === "nexus");
 
         // --- Collapsible: die Hof-Sektionen (UI-Putz: Fähigkeiten + Gesetze leben jetzt
         // im Hof mit den Kreaturen + den Befehlen) sind als collapsible-header verdrahtet ---
@@ -947,18 +947,18 @@ async function checkBandV1737RulesUI({ page, check }) {
 
         // Hof-Partitur — ZWEI Gruppen (Deine Gesetze | Der Nexus erprobt), Nexus nach gelerntem
         // WERT sortiert + auf Top-5 gekappt, mit Wert-Chip (der value-Vektor wird endlich gelesen).
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"]], { source: "human" });
         // Distinkte Bedingung je Regel → distinkte Dedup-Signatur (sonst kollabieren identische zu EINER).
         for (let i = 0; i < 8; i++)
             r.dslRun(["rule", ["random_chance", 0.1 + i * 0.05], ["weather", "rainy"], { ttlSec: 60 }], {
                 source: "nexus",
             });
-        const nx = r.state.worldRules.filter((x) => x.source === "nexus");
+        const nx = st.worldRules.filter((x) => x.source === "nexus");
         nx.forEach((x, i) => {
             x.value = i * 0.1;
         }); // der letzte (0.70) ist der wertvollste
-        r.state.hofNexusExpanded = false;
+        st.hofNexusExpanded = false;
         forceRender();
         const heads = host.querySelectorAll(".worldrule-group-head");
         out.twoGroups =
@@ -970,13 +970,13 @@ async function checkBandV1737RulesUI({ page, check }) {
         out.nexusHasMoreLine = /\+\s*3\s*weitere/.test(host.textContent);
         const firstNexusChip = nexusRows[0] && nexusRows[0].querySelector(".rule-value-chip");
         out.nexusValueChipSorted = !!firstNexusChip && /\+0\.70/.test(firstNexusChip.textContent);
-        r.state.hofNexusExpanded = true;
+        st.hofNexusExpanded = true;
         forceRender();
         out.expandShowsAll = host.querySelectorAll(".ability-row.source-nexus").length === 8;
-        r.state.hofNexusExpanded = false;
+        st.hofNexusExpanded = false;
 
         // restore
-        r.state.worldRules = savedRules;
+        st.worldRules = savedRules;
         r._statusRefs.worldrulesSignature = "";
         return out;
     });
@@ -1015,9 +1015,9 @@ async function checkBandV1739RulesUX({ page, check }) {
         };
 
         // Save state
-        const savedRules = r.state.worldRules.slice();
-        const savedWeather = r.state.weather;
-        const savedMode = r.state.worldMeta.gameMode;
+        const savedRules = st.worldRules.slice();
+        const savedWeather = st.weather;
+        const savedMode = st.worldMeta.gameMode;
 
         // --- (A) Persistenz-Label: permanent / verfaellt / pausiert ---
         const human = { ttlSec: null, born: now(), fires: 0 };
@@ -1029,25 +1029,25 @@ async function checkBandV1739RulesUX({ page, check }) {
             r._worldRuleStatusLabel(paused, now()) === "pausiert";
 
         // --- (B) Pause: ein pausiertes Gesetz feuert NICHT (Tick skippt) ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["random_chance", 1], ["weather", "rainy"], { everySec: 0.5 }], { source: "human" });
-        const ruleB = r.state.worldRules[0];
+        const ruleB = st.worldRules[0];
         ruleB.disabled = true;
-        r.state.weather = "sunny";
+        st.weather = "sunny";
         ruleB.lastFired = -Infinity;
         r._tickWorldRules(now());
-        const pausedDidNotFire = r.state.weather === "sunny";
+        const pausedDidNotFire = st.weather === "sunny";
         ruleB.disabled = false; // wieder aktiv → feuert
         ruleB.lastFired = -Infinity;
         r._tickWorldRules(now());
-        out.pauseWorks = pausedDidNotFire && r.state.weather === "rainy";
+        out.pauseWorks = pausedDidNotFire && st.weather === "rainy";
 
         // --- (C) 📌-Klick adoptiert eine Nexus-Regel (pinned + ttlSec=null → permanent) ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { everySec: 3, ttlSec: 60 }], {
             source: "nexus",
         });
-        const ruleC = r.state.worldRules[0];
+        const ruleC = st.worldRules[0];
         forceRender();
         const pinBtn = host.querySelector(`button[data-pin-rule="${ruleC.id}"]`);
         if (pinBtn) pinBtn.click();
@@ -1055,31 +1055,31 @@ async function checkBandV1739RulesUX({ page, check }) {
         out.pinPermLabel = r._worldRuleStatusLabel(ruleC, now()) === "permanent";
 
         // --- (D) Eviction schuetzt eine angepinnte Regel ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["random_chance", 1.5], ["weather", "sunny"], { everySec: 3, ttlSec: 60 }], {
             source: "nexus",
         });
-        const keep = r.state.worldRules[0];
+        const keep = st.worldRules[0];
         keep.pinned = true;
         const keepId = keep.id;
         // das Registry mit ephemeren Nexus-Regeln ueber das Cap hinaus fluten
-        for (let i = 0; i < r.constructor.WORLD_RULES.cap + 5; i++) {
+        for (let i = 0; i < AnazhRealm.WORLD_RULES.cap + 5; i++) {
             r.dslRun(["rule", ["random_chance", 1 + i * 0.0001], ["weather", "rainy"], { everySec: 3, ttlSec: 60 }], {
                 source: "nexus",
             });
         }
         out.pinnedSurvivesEviction =
-            r.state.worldRules.length <= r.constructor.WORLD_RULES.cap &&
-            r.state.worldRules.some((x) => x.id === keepId);
+            st.worldRules.length <= AnazhRealm.WORLD_RULES.cap &&
+            st.worldRules.some((x) => x.id === keepId);
 
         // --- (E) ein ephemeres Nexus-Experiment ist DIREKT steuerbar — ⏸ + ✕ in JEDEM Modus
         //         (kein pin-zuerst-Trap). Geheilter Schöpfer-Befund „muss zuerst pinnen, um zu stoppen". ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { everySec: 3, ttlSec: 60 }], {
             source: "nexus",
         });
-        const ruleE = r.state.worldRules[0];
-        r.state.worldMeta.gameMode = "frieden";
+        const ruleE = st.worldRules[0];
+        st.worldMeta.gameMode = "frieden";
         forceRender();
         out.ephemeralControllable =
             !!host.querySelector(`button[data-toggle-rule="${ruleE.id}"]`) &&
@@ -1087,15 +1087,15 @@ async function checkBandV1739RulesUX({ page, check }) {
         // der ✕-Klick verwirft das Experiment WIRKLICH — auch in frieden (kein Modus-Gate mehr).
         const xBtnE = host.querySelector(`button[data-forget-rule="${ruleE.id}"]`);
         if (xBtnE) xBtnE.click();
-        out.ephemeralForgetWorks = !r.state.worldRules.some((x) => x.id === ruleE.id);
-        r.state.worldMeta.gameMode = savedMode;
+        out.ephemeralForgetWorks = !st.worldRules.some((x) => x.id === ruleE.id);
+        st.worldMeta.gameMode = savedMode;
 
         // --- (F) Sortierung: angepinnte (Favoriten) zuerst ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["random_chance", 1], ["weather", "rainy"], { everySec: 3 }], { source: "human" }); // id kleiner
         r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { everySec: 3 }], { source: "human" }); // id groesser
-        r.state.worldRules[1].pinned = true; // die spaetere anpinnen
-        const pinnedId = r.state.worldRules[1].id;
+        st.worldRules[1].pinned = true; // die spaetere anpinnen
+        const pinnedId = st.worldRules[1].id;
         forceRender();
         const firstRow = host.querySelector(".ability-row");
         const firstStar =
@@ -1104,21 +1104,21 @@ async function checkBandV1739RulesUX({ page, check }) {
         void pinnedId;
 
         // --- (G) Persistenz: pinned/disabled ueberleben Snapshot → Restore ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], { everySec: 3 }], { source: "human" });
-        r.state.worldRules[0].pinned = true;
-        r.state.worldRules[0].disabled = true;
+        st.worldRules[0].pinned = true;
+        st.worldRules[0].disabled = true;
         const snap = r.buildStateSnapshot();
         const snapHasFlags = snap.worldRules[0].pinned === true && snap.worldRules[0].disabled === true;
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r._loadStateRestoreWorldRules(snap);
         out.persistFlags =
-            snapHasFlags && r.state.worldRules[0].pinned === true && r.state.worldRules[0].disabled === true;
+            snapHasFlags && st.worldRules[0].pinned === true && st.worldRules[0].disabled === true;
 
         // restore
-        r.state.worldRules = savedRules;
-        r.state.weather = savedWeather;
-        r.state.worldMeta.gameMode = savedMode;
+        st.worldRules = savedRules;
+        st.weather = savedWeather;
+        st.worldMeta.gameMode = savedMode;
         r._statusRefs.worldrulesSignature = "";
         return out;
     });
@@ -1148,16 +1148,16 @@ async function checkBandV1740LlmRules({ page, check }) {
         const out = {};
         const now = () => performance.now() / 1000;
 
-        const savedRules = r.state.worldRules.slice();
-        const savedWeather = r.state.weather;
+        const savedRules = st.worldRules.slice();
+        const savedWeather = st.weather;
 
         // --- (1) die UNIVERSELLE Whitelist (in _registerWorldRule): eine LLM-Regel
         //         mit frozen-Worldgen-Effekt wird abgelehnt, ein reaktiver passiert ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["random_chance", 1], ["terrain_steepness", 2]], { source: "llm:grok" });
-        out.unsafeRejected = !r.state.worldRules.some((x) => x.source === "llm:grok");
+        out.unsafeRejected = !st.worldRules.some((x) => x.source === "llm:grok");
         r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "llm:grok" });
-        const llmRule = r.state.worldRules.find((x) => x.source === "llm:grok");
+        const llmRule = st.worldRules.find((x) => x.source === "llm:grok");
         out.safeRegistered = !!llmRule;
 
         // --- (2) eine LLM-Regel ist EPHEMER per Default (fitness-getestet, adoptierbar) ---
@@ -1165,17 +1165,17 @@ async function checkBandV1740LlmRules({ page, check }) {
 
         // --- (3) die LLM-Regel ist voll funktional (feuert) ---
         if (llmRule) {
-            r.state.worldRules = [llmRule];
-            r.state.weather = "rainy";
+            st.worldRules = [llmRule];
+            st.weather = "rainy";
             llmRule.lastFired = -Infinity;
             r._tickWorldRules(now());
         }
-        out.llmFires = r.state.weather === "sunny";
+        out.llmFires = st.weather === "sunny";
 
         // die Regel-Grammatik im Prompt der KI (rule-Op + Feld-Bedingungen) wacht gate:weltakt-wache (K)
 
         // --- (5) die Gesetze-Console labelt eine LLM-Regel als „Grok" (source-llm) ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"]], { source: "llm:grok" });
         r._statusRefs.worldrulesSignature = "";
         r.renderWorldRulesList();
@@ -1184,8 +1184,8 @@ async function checkBandV1740LlmRules({ page, check }) {
         out.consoleLabel = !!llmRow && /Grok/.test(llmRow.querySelector(".source").textContent);
 
         // restore
-        r.state.worldRules = savedRules;
-        r.state.weather = savedWeather;
+        st.worldRules = savedRules;
+        st.weather = savedWeather;
         r._statusRefs.worldrulesSignature = "";
         return out;
     });
@@ -1208,10 +1208,10 @@ async function checkBandV1741RuleThread({ page, check }) {
         const out = {};
         const now = () => performance.now() / 1000;
 
-        const savedRules = r.state.worldRules.slice();
-        const savedWeather = r.state.weather;
-        const savedEntries = r.state.worldJournal.entries.slice();
-        const savedSeen = { ...r.state.worldJournal.seen };
+        const savedRules = st.worldRules.slice();
+        const savedWeather = st.weather;
+        const savedEntries = st.worldJournal.entries.slice();
+        const savedSeen = { ...st.worldJournal.seen };
 
         // --- (1) der Aktivitäts-Faden ist LIVE (nicht sticky-binär „⚡ aktiv") ---
         const tNow = now();
@@ -1223,10 +1223,10 @@ async function checkBandV1741RuleThread({ page, check }) {
             r._worldRuleActivityLabel(mk({ fires: 2, lastFired: tNow, disabled: true }), tNow) === "pausiert";
 
         // --- (2) DOM-KONSUM: nach echtem Feuern zeigt der Namen-Span „⚡ feuert" + pulst ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
-        const domRule = r.state.worldRules.find((x) => x.source === "human");
-        r.state.weather = "rainy";
+        const domRule = st.worldRules.find((x) => x.source === "human");
+        st.weather = "rainy";
         domRule.lastFired = -Infinity;
         r._tickWorldRules(now());
         r._statusRefs.worldrulesSignature = "__force__"; // != aktuelle Signatur → echtes Re-Render
@@ -1239,13 +1239,13 @@ async function checkBandV1741RuleThread({ page, check }) {
         // --- (3) der Live-Faden treibt das Re-Render: feuert ein Gesetz, ändert sich
         //         die Signatur VON SELBST (kein manueller Reset → die 0.4-s-Render-
         //         Schleife pickt es auf, der Puls ist sichtbar) ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
-        const sigRule = r.state.worldRules.find((x) => x.source === "human");
+        const sigRule = st.worldRules.find((x) => x.source === "human");
         r._statusRefs.worldrulesSignature = "";
         r.renderWorldRulesList(); // rendert „ruht"
         const sigRuht = r._statusRefs.worldrulesSignature;
-        r.state.weather = "rainy";
+        st.weather = "rainy";
         sigRule.lastFired = -Infinity;
         r._tickWorldRules(now()); // feuert
         r.renderWorldRulesList(); // KEIN manueller Reset — die Signatur muss sich geändert haben
@@ -1254,52 +1254,52 @@ async function checkBandV1741RuleThread({ page, check }) {
 
         // --- (4) Journal-Erwachen: erstes Feuern einer MENSCH-Regel schreibt eine
         //         Welt-Erinnerung („Dein Gesetz erwachte — ...") ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
-        const hRule = r.state.worldRules.find((x) => x.source === "human");
-        delete r.state.worldJournal.seen["ruleAwoke:" + hRule._sig]; // sicherstellen: noch nicht erwacht
-        const jBefore = r.state.worldJournal.entries.length;
-        r.state.worldRules = [hRule];
-        r.state.weather = "rainy";
+        const hRule = st.worldRules.find((x) => x.source === "human");
+        delete st.worldJournal.seen["ruleAwoke:" + hRule._sig]; // sicherstellen: noch nicht erwacht
+        const jBefore = st.worldJournal.entries.length;
+        st.worldRules = [hRule];
+        st.weather = "rainy";
         hRule.lastFired = -Infinity;
         r._tickWorldRules(now()); // fires===1 → Erwachen
-        const awoke = r.state.worldJournal.entries
+        const awoke = st.worldJournal.entries
             .slice(jBefore)
             .find((e) => e.type === "rule" && /erwachte/.test(e.text));
-        out.journalAwoke = !!awoke && r.state.weather === "sunny";
+        out.journalAwoke = !!awoke && st.weather === "sunny";
 
         // --- (5) idempotent über die Signatur: dieselbe Regel NEU aufgestellt (frische
         //         Akkus, fires zurück auf 0→1) + gefeuert schreibt KEINE zweite
         //         Erinnerung (seen[ruleAwoke:sig] hält über die Regel-Instanz hinweg) ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
-        const hRule2 = r.state.worldRules.find((x) => x.source === "human"); // gleiche Signatur
-        const jBefore2 = r.state.worldJournal.entries.length;
-        r.state.worldRules = [hRule2];
-        r.state.weather = "rainy";
+        const hRule2 = st.worldRules.find((x) => x.source === "human"); // gleiche Signatur
+        const jBefore2 = st.worldJournal.entries.length;
+        st.worldRules = [hRule2];
+        st.weather = "rainy";
         hRule2.lastFired = -Infinity;
         r._tickWorldRules(now());
-        out.journalIdempotent = r.state.worldJournal.entries.length === jBefore2;
+        out.journalIdempotent = st.worldJournal.entries.length === jBefore2;
 
         // --- (6) Gating: eine NEXUS-Regel, die feuert, schreibt KEINE Erinnerung
         //         (der Faden ist „weil DEIN Gesetz wirkte" — Nexus/LLM bleiben dem
         //         Live-Console-Faden vorbehalten, kein Journal-Flut) ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["weather_is", "sunny"], ["weather", "rainy"], { ttlSec: 60 }], { source: "nexus" });
-        const nRule = r.state.worldRules.find((x) => x.source === "nexus");
-        const jBeforeN = r.state.worldJournal.entries.length;
-        r.state.worldRules = [nRule];
-        r.state.weather = "sunny";
+        const nRule = st.worldRules.find((x) => x.source === "nexus");
+        const jBeforeN = st.worldJournal.entries.length;
+        st.worldRules = [nRule];
+        st.weather = "sunny";
         nRule.lastFired = -Infinity;
         r._tickWorldRules(now());
         // die Nexus-Regel feuerte (sie wünscht das Wetter nur — Leben-Schau 2), und keine Erinnerung entstand
-        out.nexusNoJournal = r.state.worldJournal.entries.length === jBeforeN && nRule.fires === 1;
+        out.nexusNoJournal = st.worldJournal.entries.length === jBeforeN && nRule.fires === 1;
 
         // restore
-        r.state.worldRules = savedRules;
-        r.state.weather = savedWeather;
-        r.state.worldJournal.entries = savedEntries;
-        r.state.worldJournal.seen = savedSeen;
+        st.worldRules = savedRules;
+        st.weather = savedWeather;
+        st.worldJournal.entries = savedEntries;
+        st.worldJournal.seen = savedSeen;
         r._statusRefs.worldrulesSignature = "";
         return out;
     });
@@ -1335,24 +1335,24 @@ async function checkBandV1743RuleFitness({ page, check }) {
         const fHarm = r._worldRuleFitness(mkF(-1));
         out.fitnessDiscriminates = fHeal > 0.9 && fNeutral > 0.4 && fHarm < 0.1 && fHeal > fNeutral && fNeutral > fHarm;
         // renewFitness 0.5: der Heiler überlebt, neutral (sein δ trägt die Kosten nicht) und Schädling verfallen
-        const renew = r.constructor.WORLD_RULES.renewFitness;
+        const renew = AnazhRealm.WORLD_RULES.renewFitness;
         out.harmerDecays = fHarm < renew && fNeutral < renew && fHeal >= renew;
 
         // --- (2) _ruleRewardPos: der Effekt-Ort (at) bzw. Spieler (positionslos) ---
         const ctx0 = r._worldRuleCtx({ id: 0, source: "nexus", fires: 0 });
         const pHeal = r._ruleRewardPos(["deposit_life", ["at", 333, 0, 444]], ctx0);
         out.rewardPosFromEffect = Math.abs(pHeal.x - 333) < 1e-6 && Math.abs(pHeal.z - 444) < 1e-6;
-        const pm = r.state.playerMesh.position;
+        const pm = st.playerMesh.position;
         const pW = r._ruleRewardPos(["weather", "sunny"], ctx0);
         out.rewardPosFallbackPlayer = Math.abs(pW.x - pm.x) < 1e-6 && Math.abs(pW.z - pm.z) < 1e-6;
 
         // --- (3) END-TO-END: eine heilende Regel akkumuliert POSITIVEN Wert ---
-        const savedRules = r.state.worldRules.slice();
-        const savedLife = r.state.lifeField;
-        const savedWohl = r.state.wohlBaseline;
-        const savedWeather = r.state.weather;
-        r.state.lifeField = new Map();
-        r.state.wohlBaseline = new Map();
+        const savedRules = st.worldRules.slice();
+        const savedLife = st.lifeField;
+        const savedWohl = st.wohlBaseline;
+        const savedWeather = st.weather;
+        st.lifeField = new Map();
+        st.wohlBaseline = new Map();
         // einen Spot mit Leben-Headroom finden (frozen lebendig < 0.6)
         let sx = 2000,
             sz = 2000;
@@ -1365,14 +1365,14 @@ async function checkBandV1743RuleFitness({ page, check }) {
                 break;
             }
         }
-        r.state.worldRules = [];
+        st.worldRules = [];
         r.dslRun(
             ["rule", ["random_chance", 1], ["deposit_life", ["at", sx, 0, sz]], { everySec: 0.001, ttlSec: 9999 }],
             {
                 source: "nexus",
             }
         );
-        const heal = r.state.worldRules[0];
+        const heal = st.worldRules[0];
         heal.lastFired = -Infinity;
         r._tickWorldRules(1000); // Feuer 1: Baseline (niedrig) gesnapshottet, Leben deponiert
         heal.lastFired = -Infinity;
@@ -1380,11 +1380,11 @@ async function checkBandV1743RuleFitness({ page, check }) {
         out.healerPositiveValue = heal.value > 0.05;
 
         // --- (3b) eine NEUTRALE Regel (Wetter, berührt lebendig nicht) → value ≈ 0 ---
-        r.state.worldRules = [];
+        st.worldRules = [];
         r.dslRun(["rule", ["random_chance", 1], ["weather", "sunny"], { everySec: 0.001, ttlSec: 9999 }], {
             source: "nexus",
         });
-        const neutral = r.state.worldRules[0];
+        const neutral = st.worldRules[0];
         neutral.lastFired = -Infinity;
         r._tickWorldRules(2000);
         neutral.lastFired = -Infinity;
@@ -1408,17 +1408,17 @@ async function checkBandV1743RuleFitness({ page, check }) {
         out.evictProtectsHuman = rr2.some((x) => x.id === 1) && !rr2.some((x) => x.id === 2);
 
         // --- (6) value ist reaktiv (NICHT im Snapshot — wie die anderen Akkus) ---
-        r.state.worldRules = [];
+        st.worldRules = [];
         r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], {}], { source: "human" });
         const snap = r.buildStateSnapshot();
         out.valueNotInSnapshot =
             Array.isArray(snap.worldRules) && snap.worldRules[0] && snap.worldRules[0].value === undefined;
 
         // restore
-        r.state.worldRules = savedRules;
-        r.state.lifeField = savedLife;
-        r.state.wohlBaseline = savedWohl;
-        r.state.weather = savedWeather;
+        st.worldRules = savedRules;
+        st.lifeField = savedLife;
+        st.wohlBaseline = savedWohl;
+        st.weather = savedWeather;
         return out;
     });
 
@@ -1451,17 +1451,17 @@ async function checkBandV1743RuleFitness({ page, check }) {
 async function checkBandV1745EmotionCore({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const p = r.state.player;
-        const GEO = r.constructor.EMOTION_GEOMETRY;
-        const axes = r.constructor.EMOTION_AXES;
+        const p = st.player;
+        const GEO = AnazhRealm.EMOTION_GEOMETRY;
+        const axes = AnazhRealm.EMOTION_AXES;
 
         // save
         const savedEmo = { ...p.emotions };
         const savedBase = p.wohlBaseline;
         const savedTick = p.emotionLastTick;
-        const savedLife = r.state.lifeField;
-        const savedWohl = r.state.wohlBaseline;
-        const savedEmoField = r.state.emotionField;
+        const savedLife = st.lifeField;
+        const savedWohl = st.wohlBaseline;
+        const savedEmoField = st.emotionField;
         const savedHp = p.hp;
         const setEmo = (o) => {
             for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
@@ -1510,10 +1510,10 @@ async function checkBandV1745EmotionCore({ page, check }) {
         // (6) Die KOHÄRENZ — ein Gegenpol (sorrow) dämpft joy; eine EINZELNE klare
         // Emotion wird NICHT gedämpft (der V17.30-Wächter: 0.7 bleibt erreichbar).
         // Differential gegen die gleiche Welt-Position → gemeinsame Feld-Drift kürzt sich.
-        r.state.lifeField = new Map();
-        r.state.emotionField = new Map();
+        st.lifeField = new Map();
+        st.emotionField = new Map();
         p.hp = (p.stats && p.stats.hpMax) || 100; // keine HP-Drift
-        const pm = r.state.playerMesh.position;
+        const pm = st.playerMesh.position;
         const sit = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
         setEmo({ joy: 0.8, sorrow: 0.8 }); // joy + Gegenpol
         p.wohlBaseline = sit; // δ=0 → kein Appraisal
@@ -1533,9 +1533,9 @@ async function checkBandV1745EmotionCore({ page, check }) {
         p.wohlBaseline = savedBase;
         p.emotionLastTick = savedTick;
         p.hp = savedHp;
-        r.state.lifeField = savedLife;
-        r.state.wohlBaseline = savedWohl;
-        r.state.emotionField = savedEmoField;
+        st.lifeField = savedLife;
+        st.wohlBaseline = savedWohl;
+        st.emotionField = savedEmoField;
         return out;
     });
 
@@ -1574,12 +1574,12 @@ async function checkBandV1745EmotionCore({ page, check }) {
 async function checkBandV1746EmotionSubstance({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const p = r.state.player;
+        const p = st.player;
         const savedEmo = { ...p.emotions };
-        const savedLife = r.state.lifeField;
-        const savedEmoField = r.state.emotionField;
-        r.state.lifeField = new Map();
-        r.state.emotionField = new Map(); // Deposits gehen in eine Wegwerf-Map (kein Leak)
+        const savedLife = st.lifeField;
+        const savedEmoField = st.emotionField;
+        st.lifeField = new Map();
+        st.emotionField = new Map(); // Deposits gehen in eine Wegwerf-Map (kein Leak)
         const reset = () => {
             for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
         };
@@ -1633,8 +1633,8 @@ async function checkBandV1746EmotionSubstance({ page, check }) {
 
         // restore
         for (const k of Object.keys(savedEmo)) p.emotions[k] = savedEmo[k];
-        r.state.lifeField = savedLife;
-        r.state.emotionField = savedEmoField;
+        st.lifeField = savedLife;
+        st.emotionField = savedEmoField;
         return out;
     });
     // Substanz: lebendig → peace (Nähren), dichte → hope (Solidität) — die Substanz färbt
@@ -1667,16 +1667,16 @@ async function checkBandV1746EmotionSubstance({ page, check }) {
 async function checkBandV1747FastSlow({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const p = r.state.player;
-        const DECAY = r.constructor.EMOTION_DECAY;
-        const AX = r.constructor.EMOTION_AXES;
+        const p = st.player;
+        const DECAY = AnazhRealm.EMOTION_DECAY;
+        const AX = AnazhRealm.EMOTION_AXES;
         const savedEmo = { ...p.emotions };
         const savedMood = p.mood ? { ...p.mood } : null;
         const savedBase = p.wohlBaseline;
         const savedTick = p.emotionLastTick;
-        const savedLife = r.state.lifeField;
-        const savedWohl = r.state.wohlBaseline;
-        const savedEmoField = r.state.emotionField;
+        const savedLife = st.lifeField;
+        const savedWohl = st.wohlBaseline;
+        const savedEmoField = st.emotionField;
         const savedHp = p.hp;
         const setEmo = (o) => {
             for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
@@ -1685,9 +1685,9 @@ async function checkBandV1747FastSlow({ page, check }) {
             if (!p.mood) p.mood = {};
             for (const k of AX) p.mood[k] = o[k] || 0;
         };
-        r.state.lifeField = new Map();
+        st.lifeField = new Map();
         p.hp = (p.stats && p.stats.hpMax) || 100; // keine HP-Drift
-        const pm = r.state.playerMesh.position;
+        const pm = st.playerMesh.position;
         const sit = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
 
         // (1) die Decay-Tabelle: Furcht/chaos schnell, Trauer/peace langsam
@@ -1761,9 +1761,9 @@ async function checkBandV1747FastSlow({ page, check }) {
         p.wohlBaseline = savedBase;
         p.emotionLastTick = savedTick;
         p.hp = savedHp;
-        r.state.lifeField = savedLife;
-        r.state.wohlBaseline = savedWohl;
-        r.state.emotionField = savedEmoField;
+        st.lifeField = savedLife;
+        st.wohlBaseline = savedWohl;
+        st.emotionField = savedEmoField;
         return out;
     });
     // Fast/Slow: EMOTION_DECAY-Tabelle (chaos/Furcht schnell, sorrow/peace langsam)
@@ -1791,13 +1791,13 @@ async function checkBandV1747FastSlow({ page, check }) {
 async function checkBandV1748Social({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const p = r.state.player;
-        const AX = r.constructor.EMOTION_AXES;
+        const p = st.player;
+        const AX = AnazhRealm.EMOTION_AXES;
         const savedEmo = { ...p.emotions };
         const savedMood = p.mood ? { ...p.mood } : null;
-        const savedCreatures = r.state.creatures;
-        const savedCreatureEmotions = r.state.creatureEmotions;
-        const pm = r.state.playerMesh.position;
+        const savedCreatures = st.creatures;
+        const savedCreatureEmotions = st.creatureEmotions;
+        const pm = st.playerMesh.position;
         const setEmo = (o) => {
             for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
         };
@@ -1811,8 +1811,8 @@ async function checkBandV1748Social({ page, check }) {
             userData: { bond, task: { name: task || "wait" } },
         });
         const inject = (emo, bond, task) => {
-            r.state.creatures = [fake(bond, task)];
-            r.state.creatureEmotions = [emo];
+            st.creatures = [fake(bond, task)];
+            st.creatureEmotions = [emo];
         };
 
         // (2) CONTAGION — ein freudiges Wesen nah HEBT joy + peace; ein leidendes betrübt
@@ -1828,9 +1828,9 @@ async function checkBandV1748Social({ page, check }) {
         // (2c) Der VEKTOR ist die Wahrheit: ein Wesen mit awe-Innenleben steckt mit AWE an — das binäre
         // happy-Target (CONTAGION_TARGET) kennt kein awe, nur der Vektor-Pfad transportiert es.
         setEmo({});
-        r.state.creatures = [fake(1)];
-        r.state.creatures[0].userData.emotions = { joy: 0, awe: 0.7, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
-        r.state.creatureEmotions = ["happy"];
+        st.creatures = [fake(1)];
+        st.creatures[0].userData.emotions = { joy: 0, awe: 0.7, sorrow: 0, hope: 0, peace: 0, chaos: 0 };
+        st.creatureEmotions = ["happy"];
         r._tickEmotionContagion(1);
         out.vecContagionAwe = p.emotions.awe > 0;
 
@@ -1838,11 +1838,11 @@ async function checkBandV1748Social({ page, check }) {
         // ACTION_TO_EMOTION.damage (denselben Vektor-Eintrag wie der Spieler)
         // und die binäre "sad"-Projektion fällt aus der Valenz (Alt-Leser heil).
         const fcDmg = fake(0);
-        r.state.creatures = [fcDmg];
-        r.state.creatureEmotions = ["happy"];
+        st.creatures = [fcDmg];
+        st.creatureEmotions = ["happy"];
         r._feelCreatureAction(fcDmg, "damage", 2.5);
         out.creatureFeelsDamage =
-            !!fcDmg.userData.emotions && fcDmg.userData.emotions.sorrow > 0.2 && r.state.creatureEmotions[0] === "sad";
+            !!fcDmg.userData.emotions && fcDmg.userData.emotions.sorrow > 0.2 && st.creatureEmotions[0] === "sad";
 
         // (2b) gebounded: die Contagion treibt joy NICHT über das Ziel (0.5) hinaus (kein Runaway)
         setEmo({ joy: 0.5 });
@@ -1864,7 +1864,7 @@ async function checkBandV1748Social({ page, check }) {
         // (4) eine WARTENDE Kreatur baut keine Bindung auf (das Wachsen misst gate:kreatur-takt folgen)
         inject("happy", 0, "wait");
         r._tickEmotionContagion(2);
-        out.waitNoBond = r.state.creatures[0].userData.bond === 0;
+        out.waitNoBond = st.creatures[0].userData.bond === 0;
 
         // (5) BOND-LOSS — der Verlust einer GEBUNDENEN Kreatur schmerzt MEHR (∝ Bindung × Vitalität)
         const grief = (bond, leb) => 0.3 + bond * 1.2 + leb * 0.4; // die _creatureNaturalDeath-Formel
@@ -1879,22 +1879,22 @@ async function checkBandV1748Social({ page, check }) {
         // (6) KO-REGULATION — die KI TENDET bei anhaltend trüber Stimmung (Hoffnung + Wort)
         setEmo({});
         setMood({ sorrow: 0.9 }); // moodValence stark negativ
-        r.state.grok.lastSpoke = -Infinity;
-        r.state.grok.triggers.comfort.lastFired = -Infinity;
+        st.grok.lastSpoke = -Infinity;
+        st.grok.triggers.comfort.lastFired = -Infinity;
         r._aiTendPlayer();
         out.tendComforts = p.emotions.hope > 0;
         setEmo({});
         setMood({}); // ausgeglichene Stimmung → KEIN Trost (kein Trost ohne Trübsal)
-        r.state.grok.lastSpoke = -Infinity;
-        r.state.grok.triggers.comfort.lastFired = -Infinity;
+        st.grok.lastSpoke = -Infinity;
+        st.grok.triggers.comfort.lastFired = -Infinity;
         r._aiTendPlayer();
         out.noTendWhenOk = p.emotions.hope === 0;
 
         // restore
         setEmo(savedEmo);
         if (savedMood) setMood(savedMood);
-        r.state.creatures = savedCreatures;
-        r.state.creatureEmotions = savedCreatureEmotions;
+        st.creatures = savedCreatures;
+        st.creatureEmotions = savedCreatureEmotions;
         return out;
     });
     // Soziales: KONSUM — ein freudiges Wesen nah HEBT joy + peace (Contagion)
@@ -1924,7 +1924,7 @@ async function checkBandV1748Social({ page, check }) {
 // Regel kann einen souveränen Akt NIE auslösen — nur du, jetzt, über die Geste.
 async function checkBandG8R2SovereignWall({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const K = r.constructor;
+        const K = AnazhRealm;
         const out = {};
         const SA = K.SOVEREIGN_ACTIONS;
         // (2) DISJUNKTHEIT: kein souveräner Akt ist ein dslEffect, in
@@ -1950,12 +1950,12 @@ async function checkBandG8R2SovereignWall({ page, check }) {
             run.log.some((e) => e.event === "sovereign_blocked") &&
             !run.log.some((e) => e.event === "unknown_op");
         // genistet in einer Kette: der souveräne Op fällt, der legitime läuft.
-        const savedWeather = r.state.weather;
-        r.state.weather = "sunny";
+        const savedWeather = st.weather;
+        st.weather = "sunny";
         const run2 = r.dslRun(["chain", ["sign_manifest"], ["weather", "rainy"]], { source: "human" });
         out.chainBlocksSovereignNotRest =
-            run2.log.some((e) => e.event === "sovereign_blocked") && r.state.weather === "rainy";
-        r.state.weather = savedWeather;
+            run2.log.some((e) => e.event === "sovereign_blocked") && st.weather === "rainy";
+        st.weather = savedWeather;
         // (4) die Host-Geste: skipConfirm → true; ein NICHT-souveräner Akt → verweigert.
         out.gestureSkipConfirm = r._sovereignGesture("wallet_transfer", { what: "x" }, { skipConfirm: true }) === true;
         out.gestureRefusesUnknown = r._sovereignGesture("plant_a_tree", {}, { skipConfirm: true }) === false;

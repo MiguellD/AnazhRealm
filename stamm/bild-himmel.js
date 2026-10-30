@@ -632,6 +632,8 @@ class AnazhRealm_bild_himmel {
             const rt = st._skyPmrem.fromEquirectangular(A.rtEq.texture, st._skyEnvRT || null);
             st._skyEnvRT = rt;
             if (st.scene.environment !== rt.texture) st.scene.environment = rt.texture;
+            // was jeder Stoff spiegelt, ist die EINE Umgebung (material.K4): der Spiegel-Pass vor diesem Himmel
+            if (!st.scene.environmentNode) st.scene.environmentNode = this._spiegelUmgebung(rt.texture);
             this._weltLichtHimmel(); // das Licht der Welt liest dieselbe PMREM-Stufe wie jeder Stoff
             st._skyEnvLast = neu;
             st._skyEnvLastRegenMs = nowMs;

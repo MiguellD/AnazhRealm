@@ -21,7 +21,7 @@
 // GEGENPROBE im selben Lauf: ein Aktuator, der die Dichte nach jedem Takt um einen Schritt auf und ab stößt (die fehlende
 // Wand), fällt als DICHTE ATMET — sonst ist die Linse blind.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`).
-//   node scripts/diag-takt-atem.cjs [--selftest]   (npm run gate:takt-atem; Port TAKT_ATEM_PORT, 4399)
+//   node scripts/diag-takt-atem.cjs [--selftest]   (npm run gate:takt-atem)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
@@ -127,7 +127,6 @@ if (process.argv.includes("--selftest")) {
 }
 
 
-const PORT = Number(process.env.TAKT_ATEM_PORT) || 4399;
 const server = statikServer();
 
 // DER ATEM (Seiten-Kontext): der Regler in festen Schritten, je Takt Aktuator · Spiegel · Takt-Planer · Sicht des Hauptbilds.
@@ -263,7 +262,7 @@ function atem() {
 
 (async () => {
     console.log("=== TAKT-ATEM — der Regler atmet, der Takt rechnet nur, was sich ändert ===");
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 180 });

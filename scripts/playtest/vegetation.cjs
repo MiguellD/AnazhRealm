@@ -1266,18 +1266,18 @@ async function checkBandV18217VariantenPool({ page, check }) {
             }
         }
 
-        // ─── (E) Snapshot-Persistierung von variantSeed ───────────────
-        const snap = r.buildStateSnapshot();
-        const wmSnap = snap && snap.worldMeta;
-        out.snapshotCarriesPool = !!(wmSnap && wmSnap.variantSeed && typeof wmSnap.variantSeed === "object");
-        if (out.snapshotCarriesPool) {
-            const liveKey = "baum_eiche";
-            const livePool = r.state.worldMeta && r.state.worldMeta.variantSeed;
-            if (liveKey && livePool && Array.isArray(livePool[liveKey])) {
-                out.snapshotPoolMatchesLive =
-                    Array.isArray(wmSnap.variantSeed[liveKey]) &&
-                    wmSnap.variantSeed[liveKey].every((v, i) => v === livePool[liveKey][i]);
-            }
+        // ─── (E) der Stand und variantSeed (speicher.K3, w4-heil-speicher): die Zeile der Saat-Formel reist nie, eine eigene
+        // ganz; aus dem Stand rechnet der Leser `_variantSeedsFor` den Pool bit-identisch zur Live-Welt ───────────────
+        const wm0 = r.state.worldMeta;
+        wm0.variantSeed.eigen = ["a"];
+        const wmSnap = r.buildStateSnapshot().worldMeta; // der Stand trägt ein eigenes variantSeed (die Stand-Tafel)
+        delete wm0.variantSeed.eigen;
+        out.snapshotCarriesPool = !wmSnap.variantSeed.baum_eiche && String(wmSnap.variantSeed.eigen) === "a";
+        try {
+            r.state.worldMeta = wmSnap;
+            out.snapshotPoolMatchesLive = String(r._variantSeedsFor("baum_eiche")) === String(wm0.variantSeed.baum_eiche);
+        } finally {
+            r.state.worldMeta = wm0;
         }
 
         // ─── (F) Migration: Pool ohne Eintrag wird lazy ergänzt ───
@@ -1331,8 +1331,8 @@ async function checkBandV18217VariantenPool({ page, check }) {
     );
 
     // (E) Snapshot
-    check("(E1) Snapshot trägt worldMeta.variantSeed", res.snapshotCarriesPool === true);
-    check("(E2) Snapshot-Pool ist bit-identisch zur Live-Welt", res.snapshotPoolMatchesLive === true);
+    check("(E1) der Stand trägt die Zeile der Saat-Formel nie, eine eigene Zeile ganz", res.snapshotCarriesPool === true);
+    check("(E2) aus dem Stand kehrt der Pool bit-identisch zur Live-Welt zurück", res.snapshotPoolMatchesLive === true);
 
     // (F) Migration
     check("(F1) Migration: alte Welt ohne variantSeed bekommt lazy einen Pool", res.migrationFillsPool === true);
