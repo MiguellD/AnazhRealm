@@ -1,0 +1,6 @@
+alte Kette: 9480<-968 conhost.exe 25. 20:15 | 10432<-9480 bash.exe 25. 20:15 | 11160<-10432 bash.exe 25. 20:15 | 8604<-8620 bash.exe 25. 20:15
+Log C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/messplatz/waechter.out schweigt seit 2568 min
+beendet 9480 conhost.exe
+beendet 10432 bash.exe
+beendet 11160 bash.exe
+beendet 8604 bash.exe
