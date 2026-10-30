@@ -133,6 +133,11 @@ class AnazhRealm_speicher_laden {
             this._ladeOrt = null;
         }
         if (J(jetzt.playerTools) !== J(S.playerTools)) this.state.player.tools = [...S.playerTools];
+        // DIE TAG-LÄNGE des Grunds: der Stand trägt sie, die Lade-Kette setzt sie nie (die Wahl des Spielers, siehe „Tag-Länge“ in
+        // `_loadStateRestoreBasicState`) — an Ort und Stelle kehrt sie zurück. Radeon 30.10. (mess-session): licht.K5#1 fiel am Deckel
+        // mitten im Wetter-Zug (`st.dayLengthMinutes = 1e9`, das Zurück erst im finally), die Grundstellung meldete `dayLengthMinutes`
+        // abweichend, die Welt der Sitzung trug nicht mehr: 81 von 101 Stationen danach ungemessen
+        if (Number.isFinite(S.dayLengthMinutes)) this.state.dayLengthMinutes = S.dayLengthMinutes;
         const nach = Array.isArray(S.worldMeta.voxelEdits) ? S.worldMeta.voxelEdits : [];
         if (S.worldMeta.voxelEdits) this.state.worldMeta.voxelEdits = nach;
         else delete this.state.worldMeta.voxelEdits;
