@@ -1022,6 +1022,9 @@ async function grundProbe(o) {
             r.setCameraMode("third");
             [st.yaw, st.pitch] = [st.yaw + 1.3, 0.2];
             const ritt = r.mountArchitecture(r.spawnArchitecture("fahrzeug_gt", { x: q.x - 20, y: y(-20) + 0.5, z: q.z }, { silent: true })).ok;
+            // die Hand nimmt ein Schwert (eich8 GTX 379e5f56: halten.K1#2 ließ das Langschwert in der Hand, der Grund trug die leere —
+            // die Lade-Kette setzte nur volle Slots, die Sitzung endete an „playerEquipped“)
+            const hand = !st.player.equipped?.held && r.equipHeld("klinge_langschwert").ok && st.player.equipped.held === "klinge_langschwert";
             // der Weg der Probe (Mutante weg): 6 m breit, 60 m lang neben dem Spieler — wie tempo4 und die Straße von fahr-proben
             const weg = ${JSON.stringify(o.mutante || null)} === "weg" ? r._stlWegeBuild({ roads: [{ pts: [{ x: 0, z: 0 }, { x: 0, z: 60 }], w: 6 }] }, { x: q.x + 40, z: q.z - 30 }, "probe:grundprobe") : 0;
             const wegFlaeche = weg ? (${wegeAbdruck})(r).flaechen.find((f) => !${JSON.stringify((g.wege && g.wege.flaechen) || [])}.includes(f)) || null : null;
@@ -1049,10 +1052,10 @@ async function grundProbe(o) {
             if (mut === "wesen") r._restoreCreatureFromSnapshot = () => false;
             if (mut === "gefuehl") { const S0 = r.spawnCreatures.bind(r); r.spawnCreatures = (...a) => { const x = S0(...a); r.state.creatureEmotions = r.state.creatureEmotions.map(() => "happy"); return x; }; }
             if (mut === "erdbau") { const L = r.loadState.bind(r), E = st.worldMeta.erdbau; r.loadState = (s) => { const x = L(s); r.state.worldMeta.erdbau = E; return x; }; }
-            return { edit, bau, ritt, weg, wegFlaeche, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, tag: st.dayLengthMinutes, plan, erd, tiere, mutante: !!z || r._uhrSetzen.length === 0 || ["bauplaene", "werk", "erdbau", "wesen", "gefuehl", "weg"].includes(mut) };`);
+            return { edit, bau, ritt, hand, weg, wegFlaeche, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, tag: st.dayLengthMinutes, plan, erd, tiere, mutante: !!z || r._uhrSetzen.length === 0 || ["bauplaene", "werk", "erdbau", "wesen", "gefuehl", "weg"].includes(mut) };`);
         const z = await ev(grundSpielen(g));
         const soll = !o.mutante ? [] : { uhr: ["timeOfDay"], bauplaene: ["blueprints"], werk: ["architectures"], erdbau: ["worldMeta.erdbau"], wesen: ["creatures", "creatureEmotions"], gefuehl: ["creatureEmotions"], weg: ["wege +1 [x0,z0,x1,z1/Formen]"] }[o.mutante] || ["augenblick." + o.mutante];
-        const taten = tat.edit && tat.bau && tat.ritt && tat.feuer > 0 && tat.wetter === "rainy" && tat.tag === 1e9 && tat.plan && tat.erd && tat.tiere && (!o.mutante || tat.mutante) && (o.mutante !== "weg" || (tat.weg > 0 && !!tat.wegFlaeche));
+        const taten = tat.edit && tat.bau && tat.ritt && tat.hand && tat.feuer > 0 && tat.wetter === "rainy" && tat.tag === 1e9 && tat.plan && tat.erd && tat.tiere && (!o.mutante || tat.mutante) && (o.mutante !== "weg" || (tat.weg > 0 && !!tat.wegFlaeche));
         // die Wege-Linse nennt den Weg beim Rechteck seiner Fläche (6 × 66 m, 40 m neben dem Spieler; die Tat nennt sie, wie die Karte sie
         // trägt) — seine Marke nur, solange das Gedächtnis der Seite steht (ein anderes worldMeta beim Rückspielen vergisst `_stlWegeKeys`,
         // WELT_GRENZE): gefangen ist er, wenn genau DIESE neue Fläche abweicht
