@@ -612,6 +612,58 @@ class AnazhRealm_bild_sicht {
         return st.spiegelLeser;
     }
 
+    // DER GLANZ EINES PIXELS (material.K4, das Glanz-Ziel des Szenen-Passes): wie sehr die gezeichnete Fläche spiegelt — 1 bis
+    // zur Rauheit `glanzRauheit[0]`, 0 ab `glanzRauheit[1]`, der Klarlack (Lack, Klingen-Stahl) mit seiner eigenen. Nur ein
+    // Stoff, der Glanz trägt, spiegelt: r184 setzt `specularColor` in jedem Standard- und Physical-Stoff (0,04 bzw. aus ior);
+    // ein Basic- oder Lambert-Stoff (Wasser, Himmel, Funken, Schatten-Quads) setzt ihn nie, seine Variable bleibt WGSL-null.
+    // Das Wasser erkennt der Pass an seiner Zelle (`_spiegelPass`).
+    _glanzKnoten() {
+        const T = THREE.TSL;
+        const [a, b] = AnazhRealm.SPIEGEL.glanzRauheit;
+        const glatt = (r) => T.float(1).sub(T.smoothstep(a, b, r));
+        const g = T.max(glatt(T.roughness), T.clearcoat.mul(glatt(T.clearcoatRoughness)));
+        const traegt = T.max(T.specularColor.r, T.max(T.specularColor.g, T.specularColor.b)).greaterThan(1e-3);
+        return T.vec4(T.select(traegt, g, T.float(0)), 0, 0, 1);
+    }
+
+    // DIE EINE UMGEBUNG (material.K4, `scene.environmentNode`): was jeder Standard- und Physical-Stoff spiegelt — Glas, Lack,
+    // Metall, nasser Stein —, aus EINER Quelle mit dem Wasser: der Spiegel-Pass (`_spiegelPass`, das Ziel des Lesers) am
+    // Welt-Punkt des Fragments in der Ansicht seines Laufs, wo er die Fläche deckte, sonst der Himmel der EINEN Atmosphäre
+    // (die PMREM-Umgebung, `_skyEnvRT`) in Richtung und Stufe, die r184s Umgebungs-Licht reicht (`getUV`, `getTextureLevel`).
+    // Der Spiegel trägt nur die glatte Fläche (Gewicht 1 − smoothstep(`glanzRauheit`) der Stufe, wie sein Glanz-Ziel); das
+    // Umgebungs-Licht (Stufe 1, die Bestrahlung) liest den Himmel allein. Bis material.K4 spiegelte jeder Stoff außer dem
+    // Wasser den Himmel ohne Szene (die IBL des PMREM).
+    _spiegelUmgebung(quelle) {
+        if (this._spiegelUmgebungK) return this._spiegelUmgebungK;
+        const T = THREE.TSL;
+        const L = this._spiegelLeser();
+        // EIN Knoten des Himmels für jeden Stoff (wie r184s Umgebung): er frischt seine PMREM-Stufen einmal je Render
+        const himmel = T.pmremTexture(quelle);
+        const [a, b] = AnazhRealm.SPIEGEL.glanzRauheit;
+        const N = Object.getPrototypeOf(THREE.InstanceNode);
+        class SpiegelUmgebung extends N {
+            constructor() {
+                super("vec3");
+            }
+            setup(builder) {
+                const stufe = builder.context.getTextureLevel ? builder.context.getTextureLevel(this, builder) : null;
+                if (!stufe || stufe.isConstNode === true) return himmel;
+                const clip = L.vp.mul(T.vec4(T.positionWorld, 1));
+                const w = T.max(clip.w, 1e-4);
+                const uv = T.vec2(clip.x.div(w).mul(0.5).add(0.5), T.float(0.5).sub(clip.y.div(w).mul(0.5)));
+                const drin = T.step(0, uv.x).mul(T.step(uv.x, 1)).mul(T.step(0, uv.y)).mul(T.step(uv.y, 1));
+                const k = drin
+                    .mul(T.step(0, clip.w))
+                    .mul(L.an)
+                    .mul(T.float(1).sub(T.smoothstep(a, b, stufe)));
+                const sp = T.texture(L.rt.texture, uv).level(T.float(0));
+                return sp.rgb.mul(k).add(himmel.mul(T.float(1).sub(sp.a.mul(k))));
+            }
+        }
+        this._spiegelUmgebungK = T.nodeObject(new SpiegelUmgebung());
+        return this._spiegelUmgebungK;
+    }
+
     // DER PASS DES SPIEGELS (D10, A1): je Pixel in 1/teil der Ausgabe, dessen Tiefe (der Szenen-Pass, das GEZEICHNETE Wasser)
     // an einer Wasser-Zelle des Felds liegt, der gespiegelte Strahl ZUERST im Bild (die Tiefe und Farbe des Szenen-Passes:
     // jede gezeichnete Gestalt lagetreu, A1 — bis dahin spiegelte nur, was das Feld kannte: Boden und die Kronen im Kronen-Buch
@@ -621,6 +673,9 @@ class AnazhRealm_bild_sicht {
     // `halbierungen` und die Sekante; am Treffer die Albedo im
     // Licht der Welt (`_weltLicht` an der Normale des Felds) unter der EINEN Luft längs des
     // gespiegelten Wegs. Ausgabe (Strahlung, Treffer); ohne Versatz je Pixel (die Zeit-Auflösung mittelt Kanten, kein Rauschen).
+    // DER EINE SPIEGEL (material.K4): derselbe Strahl trägt jede glänzende Fläche (das Glanz-Ziel des Szenen-Passes,
+    // `_glanzKnoten`) — gespiegelt an der Normale ihrer Tiefe statt an der Waagrechten des Wassers, ihr Bild vor ihrer Ebene;
+    // jeder Standard- und Physical-Stoff liest ihn über die EINE Umgebung (`_spiegelUmgebung`), das Wasser wie bisher.
     _spiegelPass() {
         const st = this.state;
         if (st.spiegelPass) return st.spiegelPass;
@@ -645,6 +700,12 @@ class AnazhRealm_bild_sicht {
         if (!abbildTex || abbildTex.name !== "szene:tiefenabbild")
             throw new Error("SPIEGEL-PASS: das Tiefen-Abbild der Szene (`_szeneTiefe`) fehlt");
         const abbild = T.texture(abbildTex);
+        // DER GLANZ DES BILDS (material.K4, `_glanzKnoten`): woran der Pass jede spiegelnde Fläche erkennt, die nicht Wasser ist —
+        // fehlt das Ziel (der Szenen-Pass ohne MRT), bricht der Pass laut
+        const glanzTex = st.scenePass._textures && st.scenePass._textures.glanz;
+        if (!glanzTex || glanzTex.format !== THREE.RedFormat)
+            throw new Error("SPIEGEL-PASS: das Glanz-Ziel des Szenen-Passes (`_glanzKnoten`) fehlt");
+        const glanzBild = T.texture(glanzTex);
         // das Bild des Szenen-Passes (linear, vor Zeit-Auflösung und Tönung): der Spiegel liest die Strahlung, die es zeichnet
         const farbe = st.scenePass.getTextureNode().value;
         const webgpuRaum = st.renderer.coordinateSystem === THREE.WebGPUCoordinateSystem;
@@ -709,10 +770,42 @@ class AnazhRealm_bild_sicht {
                     const rel = pt.xz.sub(U.mitte).div(kante);
                     return max(abs(rel.x), abs(rel.y)).lessThan(0.48);
                 };
-                const wasser = aufWasser(P).and(imFeld(P));
-                If(wasser, () => {
+                const wasser = aufWasser(P).and(imFeld(P)).toVar();
+                const tiefeGr0 = vec2(tiefe.size());
+                const glaenzt = glanzBild
+                    .load(ivec2(screenUV.mul(vec2(glanzBild.size()))))
+                    .r.greaterThan(K.glanzSchwelle);
+                If(wasser.or(glaenzt), () => {
                     const v = normalize(P.sub(U.auge));
-                    const R = vec3(v.x, abs(v.y), v.z);
+                    // DIE FLÄCHE DES SPIEGELS (material.K4): das Wasser liegt waagrecht (sein Gesetz), jede andere glänzende Fläche
+                    // (Glas, Lack, Metall, nasser Stein) trägt die Normale ihrer Tiefe — je Achse der Nachbar mit dem kleineren
+                    // Sprung (an einer Kante der Fläche, nie über sie), zum Auge gewandt
+                    const n = vec3(0, 1, 0).toVar();
+                    const R = vec3(v.x, abs(v.y), v.z).toVar();
+                    If(wasser.not(), () => {
+                        const welt = (q) => {
+                            const qq = T.clamp(q, vec2(0), tiefeGr0.sub(1));
+                            const dq = tiefe.load(ivec2(qq)).r;
+                            const uq = qq.add(0.5).div(tiefeGr0);
+                            const h = U.invVP.mul(
+                                vec4(
+                                    uq.x.mul(2).sub(1),
+                                    float(1).sub(uq.y).mul(2).sub(1),
+                                    webgpuRaum ? dq : dq.mul(2).sub(1),
+                                    1
+                                )
+                            );
+                            return h.xyz.div(h.w);
+                        };
+                        const tq = floor(screenUV.mul(tiefeGr0));
+                        const pc = welt(tq).toVar();
+                        const naeher = (a, b) => select(a.length().lessThan(b.length()), a, b);
+                        const dx = naeher(welt(tq.add(vec2(1, 0))).sub(pc), pc.sub(welt(tq.sub(vec2(1, 0)))));
+                        const dy = naeher(welt(tq.add(vec2(0, 1))).sub(pc), pc.sub(welt(tq.sub(vec2(0, 1)))));
+                        const nn = normalize(T.cross(dx, dy));
+                        n.assign(select(dot(nn, U.auge.sub(pc)).lessThan(0.0), nn.negate(), nn));
+                        R.assign(T.reflect(v, n));
+                    });
                     // DER SPIEGEL DES BILDS (A1): der gespiegelte Strahl als Strecke im Schirm gegen die Tiefe des Szenen-Passes —
                     // was das Bild zeichnet (Baum jeder Art, Haus, Fels, Ufer, Leib, Wolke), steht im See, wo es steht, in der
                     // Auflösung des Bilds. Die Strecke endet bei `bildWeit` m oder vor der Nah-Ebene (steiler Blick: der Strahl
@@ -791,9 +884,13 @@ class AnazhRealm_bild_sicht {
                                 .lessThan(0.99999)
                                 .and(linear(dOpak).sub(wz).greaterThan(schicht))
                                 .and(wz.greaterThan(wPaar.sub(schicht)));
+                            // vor der Fläche des Spiegels (über dem Wasser, vor der Scheibe) um `bildUfer`; ein Wasser-Texel ist
+                            // nur dem Wasser nie sein Bild — die Scheibe am See zeigt den See
                             kandidat.assign(
                                 select(
-                                    h4.y.div(h4.w).greaterThan(P.y.add(K.bildUfer)).and(wasserTexel.not()),
+                                    dot(h4.xyz.div(h4.w).sub(P), n)
+                                        .greaterThan(K.bildUfer)
+                                        .and(wasserTexel.and(wasser).not()),
                                     float(1),
                                     float(0)
                                 )
@@ -848,17 +945,28 @@ class AnazhRealm_bild_sicht {
                             const rel = p.xz.sub(U.mitte).div(kante);
                             If(max(abs(rel.x), abs(rel.y)).greaterThan(0.5), () => Break());
                             const y = p.y.sub(U.bezug);
-                            If(y.greaterThan(U.hMax), () => Break());
-                            // DER SPRUNG: über der Höchsten seines Blocks trifft der steigende Strahl darin nichts — er springt an den
-                            // Rand des Blocks, der Rand ist der neue Punkt über dem Boden (die Höchste deckt den Filter bis dort)
+                            // über der Höchsten des Felds: der steigende Strahl trifft nichts mehr, der sinkende (der Spiegel einer
+                            // Scheibe, eines Lacks: material.K4) fällt bis zu ihr
+                            If(y.greaterThan(U.hMax), () => {
+                                If(R.y.greaterThanEqual(0.0), () => Break());
+                                t.addAssign(y.sub(U.hMax).div(R.y.negate()).add(0.01));
+                                tVor.assign(t);
+                                gVor.assign(0.01);
+                                Continue();
+                            });
+                            // DER SPRUNG: über der Höchsten seines Blocks trifft der Strahl darin nichts, solange er über ihr bleibt — er
+                            // springt an den Rand des Blocks oder, sinkend, bis auf die Höchste (die Höchste deckt den Filter bis dort)
                             const zb = floor(p.xz.div(blockM));
                             const hb = hoechste.load(ivec2(mod(zb, float(S.nb)))).r;
                             If(y.greaterThan(hb), () => {
                                 const randX = zb.x.add(step(0.0, R.x)).mul(blockM);
                                 const randZ = zb.y.add(step(0.0, R.z)).mul(blockM);
                                 const sprung = min(
-                                    abs(randX.sub(p.x)).div(max(abs(R.x), 1e-5)),
-                                    abs(randZ.sub(p.z)).div(max(abs(R.z), 1e-5))
+                                    min(
+                                        abs(randX.sub(p.x)).div(max(abs(R.x), 1e-5)),
+                                        abs(randZ.sub(p.z)).div(max(abs(R.z), 1e-5))
+                                    ),
+                                    select(R.y.lessThan(0.0), y.sub(hb).div(R.y.negate()), float(1e6))
                                 );
                                 tVor.assign(t.add(sprung));
                                 gVor.assign(y.add(R.y.mul(sprung)).sub(hb));
@@ -3516,7 +3624,13 @@ AnazhRealm.FELD_PANO = Object.freeze({
 // am Schirm-Rand (`bildRand`) blendet er in das Feld — das trägt nur den Strahl jenseits des Schirms; die Schritte liegen nach
 // q^`bildDichte` (dicht am Wasser-Punkt: das Ufer an der Linie ist wenige Pixel hoch), im Stand rechnet er je `bildRuheMs` neu,
 // frühestens nach `bildRuheBilder` Bildern (seltener als jedes 20. Bild: der Lauf im Stand trägt nie das p95).
+// DER GLANZ (material.K4): jede Fläche spiegelt durch denselben Pass, deren Glanz (`_glanzKnoten`) über `glanzSchwelle` liegt —
+// ganz bis zur Rauheit `glanzRauheit[0]`, nicht mehr ab `glanzRauheit[1]` (darüber trägt die Spitze den Spiegel nicht: Bronze
+// 0,25 hat θ50 3,5°, Eisen 0,54 schon 11°: die Optik der Stoff-Zeile, `_defaultMaterials`); dieselbe Kurve wiegt den Spiegel im Stoff
+// (`_spiegelUmgebung`).
 AnazhRealm.SPIEGEL = Object.freeze({
+    glanzRauheit: [0.25, 0.45],
+    glanzSchwelle: 0.02,
     bildSchritte: 48,
     bildDichte: 2,
     bildRuheMs: 500,

@@ -325,10 +325,14 @@
             // stoffe.K3 (rein additiv): das Eis — hart, kurz und hell wie Stein, eine Terz höher
             eis:    { filter: 'bandpass', freq: 1900, q: 2.0, dauer: 0.05, gain: 0.05 },
             // stoffe.K1 (rein additiv): die übrigen Zeilen — Holz hohl, Gras und Laub raschelnd, Metall klirrend, Leib dumpf
+            // klang.K4 (w4-heil-klang): die drei Pflanzen-Böden je eigen — trockenes Laub bricht und knistert am hellsten, Gras
+            //   raschelt, Kraut dämpft; Schwerpunkt am Abgriff (48 kHz) Kraut 4 707 · Gras 5 605 · Laub 6 395 Hz. Vorher
+            //   lagen sie in 433 Hz (Laub 2600/0,5 nur 87 Hz über Kraut 2800/0,6 und 346 Hz unter Gras), die Messung streut
+            //   σ 92 Hz — der Fuß auf Laub klang wie auf Gras.
             holz:     { filter: 'bandpass', freq: 700,  q: 1.2, dauer: 0.08, gain: 0.055 },
             gras:     { filter: 'bandpass', freq: 3200, q: 0.6, dauer: 0.12, gain: 0.035 },
-            laub:     { filter: 'bandpass', freq: 2600, q: 0.5, dauer: 0.15, gain: 0.045 },
-            kraut:    { filter: 'bandpass', freq: 2800, q: 0.6, dauer: 0.12, gain: 0.035 },
+            laub:     { filter: 'bandpass', freq: 4000, q: 0.6, dauer: 0.15, gain: 0.045 },
+            kraut:    { filter: 'bandpass', freq: 2400, q: 0.6, dauer: 0.12, gain: 0.035 },
             bronze:   { filter: 'bandpass', freq: 1800, q: 2.6, dauer: 0.08, gain: 0.05 },
             stahl:    { filter: 'bandpass', freq: 2400, q: 2.8, dauer: 0.07, gain: 0.055 },
             blech:    { filter: 'bandpass', freq: 1200, q: 3.0, dauer: 0.09, gain: 0.06 },
