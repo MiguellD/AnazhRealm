@@ -6,11 +6,12 @@
 # Schlosses. Jeder Aufruf mit Frist und Uhr — die Station hängt nie selbst.
 set -u
 H=$(dirname "$(dirname "$OUT")"); mkdir -p "$OUT"; o=$OUT/blick.txt
-S="${TEMP:-/tmp}/claude/gpu-schloss"
+. /c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh 2>/dev/null; S=${GPU_SCHLOSS:-/c/Users/micha/AppData/Local/Temp/claude/gpu-schloss}   # der Pfad der OMEN-gpu-lauf.sh (TEMP fehlt der Station)
 uhr() { local t=$(date +%s%N); timeout "$1" "${@:2}" 2>&1; local r=$?; echo "   [exit $r · $(( ($(date +%s%N) - t) / 1000000 )) ms${r:+$([ $r = 124 ] && echo ' · HÄNGT')}]"; }
 {
   echo "== $(date '+%F %T') Schloss $S"; ls -la "$S" 2>&1; echo "-- besitzer.txt:"; cat "$S/besitzer.txt" 2>&1; echo
-  [ -d "$S" ] && echo "-- Alter: $(( $(date +%s) - $(stat -c %Y "$S") )) s"
+  [ -d "$S" ] && echo "-- Alter: $(( $(date +%s) - $(stat -c %Y "$S") )) s · besitzer.txt $(( $(date +%s) - $(stat -c %Y "$S/besitzer.txt" 2>/dev/null || date +%s) )) s"
+  echo "-- date jetzt: $(date "+%F %T %Z") · uptime-Boot: $(date -d @$(( $(date +%s) - $(cut -d. -f1 /proc/uptime) )) "+%F %T")"
   p=$(grep -oE 'pid=[0-9]+' "$S/besitzer.txt" 2>/dev/null | head -n 1 | cut -d= -f2)
   [ -n "$p" ] && { echo "-- Halter pid $p:"; uhr 30 tasklist -FI "PID eq $p" -NH; }
   echo "== hook.log des Runners (ci_wartet liest die LETZTE Zeile, ci_ruhe_rest die letzte „ ende “):"; tail -n 8 /c/actions-runner/hooks/hook.log 2>&1 | cut -c1-200
