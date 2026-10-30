@@ -56,5 +56,18 @@
    "bahn": "sitzung",
    "modus": "session"
   }
+ },
+ "sitzung": {
+  "start": "2026-10-30T06:08:55.524Z",
+  "port": 7804,
+  "warten": 0.22,
+  "bootS": 8.5,
+  "grundstellungS": [
+   1.7,
+   2,
+   1.8
+  ],
+  "proben": 4,
+  "minuten": 24
  }
 }
