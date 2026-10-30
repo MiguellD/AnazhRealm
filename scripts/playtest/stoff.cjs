@@ -122,8 +122,8 @@ async function checkBandWEFrequenzband({ page, check }) {
         const achsen = [pEisen, pHolz, pGlut, pStein, pQuarz, SR.defaults.werk, SR.defaults.feld].flatMap(Object.keys);
         out.ohneBand =
             !achsen.some((k) => /^(rim|fuell|mond|waerme|glanz|glas|detail)$/.test(k)) && !("gras" in SR.defaults);
-        const gm = r._grassInstanceMat();
-        out.grasOhneAntwort = !!gm && gm.outputNode == null;
+        const gm = r._foundryTreeMaterial("grass", null);
+        out.grasOhneAntwort = gm.userData.halm === true && gm.outputNode == null;
         return out;
     });
     check(
@@ -282,51 +282,6 @@ async function checkBandWahrerAnblickSaeule1({ page, check }) {
     );
 }
 
-// Gras-Band: die Wiese liest den BODEN darunter (lush-grün ↔ dry-oliv aus lebendig + feuchte).
-// Proben messen KONSUM an den Nähten (Material, Boden-Albedo, Feld-Bake).
-async function checkBandWahrerAnblickGras({ page, check }) {
-    const res = await safeEvaluate(page, () => {
-        const out = {};
-
-        // (A) CONSUM Source-Probes
-        // Der Boden-Tint kommt über Three.js' nativen InstanceNode-Pfad (setupDiffuseColor multipliziert
-        // instanceColor selbst) — ein manueller instanceColor-Read ist redundant und wirft „instanceColor not
-        // found". __fehlt liest ohne die Kommentare, die den entfernten Read zitieren.
-        out.matNoManualInstanceColor = window.__fehlt(r._grassInstanceMat, /attribute\(["']instanceColor["']/);
-
-        // (B) Material baut (der instanceColor-colorNode kompiliert ohne Wurf)
-        const m = r._grassInstanceMat();
-        out.matBuilt = !!m;
-
-        // (B2) jedes gebaute Gras-Mesh trägt instanceColor (WebGPU-strikt)
-        let withColor = 0,
-            total = 0;
-        if (r.state.voxelChunkGrass) {
-            for (const inst of r.state.voxelChunkGrass.values()) {
-                if (inst && inst.isInstancedMesh) {
-                    total++;
-                    if (inst.instanceColor) withColor++;
-                }
-            }
-        }
-        out.grassMeshes = total;
-        out.grassWithColor = withColor;
-        out.allGrassColored = total === 0 || withColor === total;
-
-        return out;
-    });
-
-    check(
-        "Ω-OPSIS S2-Gras (A1, V18.267): Gras-Material OHNE manuelles attribute(instanceColor) — Boden-Tint via nativem Auto-Multiply (kein Konsolen-Fehler)",
-        res.matNoManualInstanceColor === true
-    );
-    check("Ω-OPSIS S2-Gras (B1) Gras-Material baut (instanceColor-colorNode kompiliert)", res.matBuilt === true);
-    check(
-        `Ω-OPSIS S2-Gras (B2) alle gebauten Gras-Meshes tragen instanceColor (${res.grassWithColor}/${res.grassMeshes})`,
-        res.allGrassColored === true
-    );
-}
-
 module.exports = {
     checkBandV18136Audit,
     checkBandM7LichtFeinschliff,
@@ -334,5 +289,4 @@ module.exports = {
     checkBandWEFrequenzband,
     checkBandV18223PbrKohaerenz,
     checkBandWahrerAnblickSaeule1,
-    checkBandWahrerAnblickGras,
 };

@@ -34,7 +34,7 @@ for (const presetId of ["farn", "schilf", "gestruepp", "totstamm", "stumpf"])
     for (const lod of [0, 1]) WALDBODEN.push({ presetId, seed: 7, lod, season: "summer" });
 WALDBODEN.push({ presetId: "blume", seed: 7, lod: 2, season: "summer" });
 // DAS GRAS (additiv gemünzt — die Fälle davor blieben byte-gleich): die zwei Vorlagen der
-// Nah-Wiese (Samen 1 und 2 = die Gestalten der Welt) je gelieferter Stufe L1/L2 — die gestufte Rispe ist eingefroren.
+// Nah-Wiese (Samen 1 und 2 = die Gestalten der Welt) je gelieferter Stufe L1/L2 — die gestufte Ähre ist eingefroren.
 const GRAS = [];
 for (const seed of [1, 2]) for (const lod of [1, 2]) GRAS.push({ presetId: "gras", seed, lod, season: "summer" });
 

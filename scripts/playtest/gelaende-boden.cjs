@@ -120,7 +120,6 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
         }
     });
     const voxelP1Results = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         const out = {};
 
         // Das Feld ist genuin 3D: bei festem (x,z) fällt die Dichte mit der Höhe — über mehrere
@@ -370,7 +369,6 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
     // Voxel-Chunks streamen um den Spieler, das Heightfield ruht.
     // Parallel, hinter dem Flag — jeder Schritt reversibel.
     const voxelP2bResults = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         const out = {};
         // Voxel ist permanent (keine Toggle-Methoden): der Ring ist beim Init gefüllt
         // (state.voxelTerrainActive default true).
@@ -690,7 +688,6 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
     // Voxel ist beim Init aktiv, `worldMeta.voxelTerrain` immer true (Zwangs-Migration in
     // `ensureWorldMeta`); Toggle-Methoden + `voxel terrain on/off`-Chat-Befehl sind weg.
     const voxelV935ToggleResults = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         const out = {};
         // Voxel ist beim Init aktiv (kein toggle nötig).
         out.voxelPermanent = r.state.voxelTerrainActive === true;
@@ -728,7 +725,6 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
     // min/maxHeight 0); updateCreatures setzt Kreaturen via getTerrainHeightAt auf die Voxel-Surface.
     // Alle Proben teilen dieselben generateNewWorld-Aufrufe (Heap-Schonung).
     const voxelP5c1Results = await safeEvaluate(page, async () => {
-        if (!r || !r.state) return null;
         const out = {};
 
         // (1) Voxel-Welt: kein initialer Chunk-Build + keine heightData.
@@ -787,7 +783,6 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
     // leben in den Voxel-Pendants (`_populateVoxelChunkVegetation`, `_buildVoxelChunkGrass`,
     // `_attachVoxelFieldColors`).
     const voxelV939Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         return {
             // populateChunkVegetation nennt noch ein Log-Text des Stamms, darum steht sie hier und nicht in gate:altlasten
             noPopulateChunkVegetation: typeof r.populateChunkVegetation !== "function",
@@ -814,7 +809,6 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
 // → Chunks world-aligned über die LOD-Grenze.
 async function checkBandWellePerf3bDistanceLod({ page, check }) {
     const res = await page.evaluate(() => {
-        if (!r || !r.state) return { error: "no realm" };
         const out = {};
         // 1) Config-Trennung LOD 0 vs LOD 1
         const cfg0 = r._voxelChunkConfig(0);
@@ -968,7 +962,6 @@ async function checkBandJedesHolzExistenzBoden({ page, check }) {
 // Wasser-Iso-Surface an der LOD-Grenze (Cell-Center step-abhängig). Terrain bleibt LOD-aware.
 async function checkBandWelle993WaterLodSeam({ page, check }) {
     const res = await page.evaluate(async () => {
-        if (!r || !r.state) return { error: "no realm" };
         const out = {};
         const cfg0 = r._voxelChunkConfig(0);
         out.expectedCellLen = cfg0.dim * cfg0.dim * cfg0.dimY; // T8: 24·24·232 = 133632

@@ -165,7 +165,6 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
     // Bau-Primitive als DSL-Ops mit Save-Roundtrip + FIFO-Cap + Atomic-Pool-Eintrag (niedrige
     // Gewichtung); Wasserfälle haben einen Animations-Hook im Tick.
     const ring6Results = await safeEvaluate(page, async () => {
-        if (!r || !r.state) return null;
         const out = {};
 
         // Cleanup: alle bestehenden Architekturen entfernen.
@@ -389,7 +388,6 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
     // Jede Architektur mit soliden Parts (dichte ≥ 0.3) trägt ab Spawn `entry.blockerAABBs` (Daten,
     // render-/distanz-unabhängig); `_stepCharacterStructures` löst die Spieler-Kapsel dagegen.
     const ring63Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // Cleanup
         for (const a of r.state.architectures.slice()) {
@@ -968,7 +966,6 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
 
     // ### Ring 6 V2 — Distance-Culling, Fraktal, Counter, Bau-Cursor ###
     const ring6v2Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         // Cleanup

@@ -151,9 +151,8 @@ class AnazhRealm {
             // device.queue.onSubmittedWorkDone() — resolved genau, wenn die GPU alle Submits durch hat.
             pendingDisposals: new Set(),
             // Wind-Uniforms (uWindTime/uWindStrength): EIN geteilter Slot für den TSL-positionNode-Wind
-            // (_grassInstanceMat + Streu); _loopRender schreibt sie pro Frame (Stärke aus dem Wetter).
+            // (Gras, Streu, Baum: `_windUniformsEnsure`); _loopRender schreibt sie pro Frame (Stärke aus dem Wetter).
             windUniforms: null,
-            _grassMat: null,
             floatingIslands: [],
             minHeight: 0,
             maxHeight: 0,

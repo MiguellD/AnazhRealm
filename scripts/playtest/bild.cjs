@@ -536,11 +536,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
     const v828Results = await safeEvaluate(page, () => {
         const out = {};
 
-        // --- Phase D: Wind + Wolken + Wasser ---
-        // Wind lebt jetzt im Instanced-Gras-Material.
-        const wm1 = r._grassInstanceMat ? r._grassInstanceMat() : null;
-        const wm2 = r._grassInstanceMat ? r._grassInstanceMat() : null;
-        out.windMatCached = !!(wm1 && wm1 === wm2); // geteilt
+        // --- Phase D: Wolken + Wasser ---
         // Wolken-Cover (der Uniform-Knoten in state.skyboxUniforms) folgt weather (liest state.skyboxUniforms). weatherTransition leeren: eine aktive
         // Warmup-Transition überstimmt state.weather in `_weatherBlendedValue` (beide Lesungen gleich).
         r.state.weatherTransition = null;
@@ -703,7 +699,6 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
     });
 
     if (v828Results && !v828Results.error) {
-        check("D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
         check("D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
         check(
             "V17.J3: die Sonne folgt der Kamera (|Pos−Kamera| ≈ skyOffset, nicht origin-orbit)",
@@ -811,7 +806,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             out.egoEbene = { knoten: knoten.length, leib, ego, zurueck };
         }
 
-        // --- Instanced-Gras: `state.voxelChunkGrass` (der Bau verbucht je Chunk), `_grassInstanceMat` ist geteilt
+        // --- Instanced-Gras: `state.voxelChunkGrass` (der Bau verbucht je Chunk), der Halm-Stoff ist geteilt
         out.chunkGrassMap = !!r.state.voxelChunkGrass && r.state.voxelChunkGrass instanceof Map;
         // die Wiese ist Boden-
         // Funktion — Gras-Zellen sind verbucht (null = bewusst halm-los), 0 InstancedMesh.
@@ -824,7 +819,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             }
         }
         out.grassCellsBookedHalmFree = grassCells > 0 && grassInstances === 0;
-        out.grassMatShared = r._grassInstanceMat() === r._grassInstanceMat();
+        out.grassMatShared = r._foundryTreeMaterial("grass", null) === r._foundryTreeMaterial("grass", null);
 
         // DIE BODEN-KARTE ist der GERENDERTE Boden: an 256 Punkten des Spieler-Chunks trifft `_bodenSichtAt`
         // (der EINE Leser, K21) die Mesh-Oberfläche (Strahl von oben, beide Seiten — die Surface-Nets-Wicklung zeigt

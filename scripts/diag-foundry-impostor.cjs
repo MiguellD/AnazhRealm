@@ -698,7 +698,7 @@ async function windProbe(page) {
             const W = 256,
                 H = 256;
             ren.setSize(W, H, false);
-            if (!r.state.windUniforms) r._grassInstanceMat();
+            r._windUniformsEnsure();
             const wu = r._ensureWindCoupling(T.TSL);
             const anker = new T.Vector3(30, 0, -10);
             const halb = 2; // Bild-Halbbreite in m (von oben): 1,6 cm je Pixel
