@@ -92,3 +92,4 @@ z83-abab2 LANGSAMER abab 6b3da705 gegen 73bdf938: stadt 4+4 LANGSAMER · w-ego 4
 z83-bisekt1 LANGSAMER abab 952a5603 gegen 73bdf938: w-ego 4+4 LANGSAMER
 eich1-gtx Exit0 station eich-gtx.sh an 3ed95dcf
 eich2-gtx Exit0 station eich-gtx.sh an 3ed95dcf
+z83-bisekt2b LANGSAMER abab 24a0f3ef gegen 73bdf938: w-ego 2+2 LANGSAMER
