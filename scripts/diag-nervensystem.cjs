@@ -162,7 +162,7 @@ hauptLauf(async () => {
             return t.length !== 1 || !t[0].startsWith("S: " + STAMM_SOLL.find(([x]) => x === k)[1]);
         });
         check(
-            "Selbsttest S: gesund grün, jeder Täter des Stammbaums beim Namen",
+            "Selbsttest S: jeder Täter beim Namen",
             !stammTaeter(gutS).length && !stumm.length,
             stumm.join(" · ")
         );
