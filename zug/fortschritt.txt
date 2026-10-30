@@ -963,3 +963,4 @@
 2026-10-30 07:41:17 takt24-gtx tiere.K5#1 OFFEN 10.1 · 17/23
 2026-10-30 07:51:28 takt24-gtx licht.K1#1 OFFEN 10.1 · 18/23
 2026-10-30 08:01:38 takt24-gtx licht.K3#1 OFFEN 10.1 · 19/23
+2026-10-30 08:22:13 takt24-gtx VORFAHRT profiband.K1#1,profiband.K2#1,profiband.K3#1 verloren 9.1
