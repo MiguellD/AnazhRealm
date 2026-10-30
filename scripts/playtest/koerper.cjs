@@ -1504,7 +1504,13 @@ async function checkBandTierFern({ page, check }) {
         r.removeCreature(c);
     
         // ── (D) DETERMINISMUS: Sim-Werte identisch mit/ohne Stufen-Schalter ──
-        const mulberry32 = window.__phytoCore.mulberry32; // der EINE Strom des Gesetzbuchs
+        const mulberry32 = (a) => () => {
+            a |= 0;
+            a = (a + 0x6d2b79f5) | 0;
+            let t = Math.imul(a ^ (a >>> 15), 1 | a);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
         const saveRandom = Math.random;
         // der Ort des Laufs: Land in 1,4·Schwelle (ein Wolf im Wasser triebe mit der Strömung — ein Leib, der sich
         // bewegt, behält seinen Gelenk-Baum)

@@ -535,10 +535,7 @@ function saumProbe(ort) {
                 r._szeneTiefeWert = wert;
                 r._tiefenKnotenTausch();
             }
-            const L = (u, x, y) => {
-                const i = (y * W + x) * 4;
-                return 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
-            };
+            const L = (u, x, y) => luma709(u, (y * W + x) * 4);
             // je Zeile der rechten Hälfte die linke Kante des Pfahls (das erste schwarze Pixel nach Wasser), das Wasser-Pixel
             // links davon: beide Aufnahmen
             let kanten = 0,
@@ -863,7 +860,7 @@ function buehne(nFrames, nachtLicht) {
                 setzeKamera();
                 const { u8 } = await window.__ausgabeAufnahme(32, 24, 1, { satz: "messung" });
                 let s = 0;
-                for (let i = 0; i < u8.length; i += 4) s += 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
+                for (let i = 0; i < u8.length; i += 4) s += luma709(u8, i);
                 return { luma: +(s / (u8.length / 4)).toFixed(1), k: rend.toneMappingExposure, nacht: nachtU ? nachtU.value : null };
             };
             try {

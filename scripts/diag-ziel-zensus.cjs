@@ -240,10 +240,7 @@ function karteOhneFarbe() {
             const px = await rend.readRenderTargetPixelsAsync(ziel, 0, 0, 64, 64);
             const u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
             const zeile = u8.length / 64;
-            const lum = (x, y) => {
-                const i = y * zeile + x * 4;
-                return 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
-            };
+            const lum = (x, y) => luma709(u8, y * zeile + x * 4);
             // Draufsicht (rechts = +x, Spalte = (x + 10) / 20 · 64, Zeile 32 = z 0): der Schatten bei x = −7,25 (Spalte 9),
             // freies Licht bei x = +6 (Spalte 51)
             const schatten = lum(9, 32),
@@ -293,7 +290,7 @@ function rundungProbe() {
                 const u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
                 const zeile = u8.length > W * 4 * H ? Math.ceil((W * 4) / 256) * 256 : W * 4; // WebGPU richtet Zeilen auf 256 Byte aus
                 let s = 0;
-                for (let i = 0, o = 0; i < W * H; i++, o = Math.floor(i / W) * zeile + (i % W) * 4) s += 0.2126 * u8[o] + 0.7152 * u8[o + 1] + 0.0722 * u8[o + 2];
+                for (let i = 0, o = 0; i < W * H; i++, o = Math.floor(i / W) * zeile + (i % W) * 4) s += luma709(u8, o);
                 m.push(s / (W * H));
             }
         } finally {
