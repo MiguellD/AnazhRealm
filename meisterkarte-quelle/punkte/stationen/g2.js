@@ -2661,6 +2661,51 @@ const stationen = [
         pfad: [...KREATUR],
         quelle: "1 = Geburt und Tod folgen der Nahrung an einem Ort (Mutante Nahrung halbiert → Bestand fällt)",
     },
+    // Staffel 2 (Zweig oeko-k2-bestand-neu, neu gesetzt auf main 715754fc): der Teil bestand der Probe kaskade (Familie der Station #1, derselbe Lauf, Null-
+    // Renderer) — der Bestand ist das Verzeichnis je Region (Kachel der Revier-Fläche, `state.faunaBestand`), ein Leib nur
+    // seine Zeichnung. Je Saat 8 Spielstunden am echten Lebenszyklus, der Spieler an der Ecke von vier Regionen: Grundlauf mit
+    // der Kappe des Spiels (20), Mutante „Kappe halbiert“ (der Eingriff ohne Wolf bei Kappe 10 gegen denselben Eingriff bei 20 —
+    // Soll: je Takt und naher Region dieselben Tiere, Leiber ≤ Kappe, der Bestand über der Kappe), Mutante „Nahrung halbiert“
+    // (Soll: in jeder Region, nah UND fern, Effekt ≤ −15 % mit 95-%-Intervall < 0); vier ferne Regionen als Zahl gelesen (ohne
+    // Leib), kein Leib aus einer fernen Region; der Takt des Lebenszyklus p95 ≤ 5,8 ms (der CPU-Takt des Profi-Bands). An main
+    // fehlt der Teil (ROT „ohne Bestand“). Am Zweig oeko-k2-bestand-neu (headless, trocken am Lauf der Linse): 0 von 17280
+    // Takten andere Tiere, Leiber 20/10 bei Bestand 34,5, halbe Nahrung senkt 8 von 8 Regionen (−0,345 … −0,416); der Takt p95
+    // 6,7 ms auf der geteilten Cloud-VM (der alte Zweig d9928c7e am selben Ort 8,0, an seiner eigenen 5,1) — das Urteil der
+    // Kosten fällt an der Farm.
+    {
+        kriterium: "oekologie.K2",
+        staffel: 2,
+        geraet: "headless",
+        befehl: ["node", "scripts/diag-kreatur-takt.cjs", "--proben", "kaskade"],
+        env: { KREATUR_TAKT_PORT: "{PORT}" },
+        gpu: false,
+        zeit: false,
+        minuten: 6,
+        urteil: (j, lauf) => {
+            const z = probeZeile(lauf.stdout, "kaskade");
+            if (!z) return { gruen: false, zahl: "keine Zeile der Probe kaskade (Exit " + lauf.exit + ")" };
+            const B = z.bestand;
+            if (z.fehler || !B || !Array.isArray(B.nahrung) || !Array.isArray(z.saaten) || !(B.ms >= 0))
+                return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "ohne Bestand, Nahrung, Saaten oder Kosten") };
+            const N = B.nahrung;
+            const fern = N.slice(B.nah);
+            const senkt = N.filter((o) => o.grund >= 1 && o.effekt <= -0.15 && o.ki[1] < 0).length;
+            const gruen =
+                z.saaten.length >= 8 && B.nah >= 2 && B.takte > 0 && B.anders === 0 && B.leiber[0] <= 20 && B.leiber[1] <= 10 &&
+                B.zahl > 20 && B.fremd === 0 && fern.length >= 4 && senkt === N.length && B.ms <= 5.8;
+            return {
+                gruen,
+                zahl:
+                    z.saaten.length + " Saaten · Kappe halbiert: " + B.anders + " von " + B.takte + " Takten andere Tiere in " +
+                    B.nah + " nahen Regionen, Leiber " + B.leiber.join("/") + " bei Bestand " + B.zahl + " · halbe Nahrung senkt " +
+                    senkt + " von " + N.length + " Regionen (" + fern.length + " fern, Effekt " +
+                    Math.max(...N.map((o) => o.effekt)) + " … " + Math.min(...N.map((o) => o.effekt)) + ") · Takt p95 " + B.ms +
+                    " ms",
+            };
+        },
+        pfad: [...KREATUR],
+        quelle: "2 = überall; fern als Zahl, nah als Körper; die Kappe am Schirm ändert nur, wer gezeichnet wird, nie den Bestand; im Profi-Band",
+    },
     {
         kriterium: "oekologie.K1",
         staffel: 1,
