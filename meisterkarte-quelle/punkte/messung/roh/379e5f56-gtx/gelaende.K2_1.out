@@ -290,6 +290,14 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     fs.writeFileSync(tor.aus, JSON.stringify(erg, null, 1));
 })(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\379e5f56-gtx\gelaende.K2_1.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
 [linse-gpu] nvidia/pascal
+  GRABEN {"sicht":"third","saat":11,"abstand":1,"verb":"abbau","bild":"2s","nassVor":139,"nassEnde":139,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"bilder":223}
+  GRABEN {"sicht":"third","saat":11,"abstand":3,"verb":"graben","bild":"2s","nassVor":55,"nassEnde":281,"gefuelltMs":278.6,"doppeltMax":0,"ueberMax":0,"bilder":202}
+  GRABEN {"sicht":"third","saat":37,"abstand":1,"verb":"graben","bild":"2s","nassVor":105,"nassEnde":306,"gefuelltMs":199,"doppeltMax":0,"ueberMax":0,"bilder":190}
+  GRABEN {"sicht":"third","saat":37,"abstand":3,"verb":"graben","bild":"2s","nassVor":243,"nassEnde":279,"gefuelltMs":66.5,"doppeltMax":0,"ueberMax":0,"bilder":191}
+  GRABEN {"sicht":"first","saat":23,"abstand":1,"verb":"pfluecken","bild":"2s","nassVor":112,"nassEnde":112,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"bilder":247}
+  GRABEN {"sicht":"first","saat":23,"abstand":3,"verb":"graben","bild":"2s","nassVor":41,"nassEnde":261,"gefuelltMs":214.3,"doppeltMax":0,"ueberMax":0,"bilder":230}
+  (a) 57.5 s
+  (b)(d) 16.9 s · Damm {"krone":27.79,"saeulen":0,"stromauf":[{"d":6,"wasser":25.25,"ueberlauf":25.24,"fluss":24.88},{"d":12,"wasser":25.25,"ueberlauf":25.23,"fluss":24.97}],"stromab":[{"d":6,"wasser":24.63,"fluss":24.63},{"d":12,"wasser":24.48,"fluss":24.48}]} · Ferne {"krone":27.79,"saeulen":21,"ring":{"punkte":5,"anders":5,"hubM":3.26,"faden":5}}
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

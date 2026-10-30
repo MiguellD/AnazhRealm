@@ -1,0 +1,22 @@
+$ C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\379e5f56-gtx\tiere.K2_2.json' | tr '\\' /); B="${A%.json}"
+S=$(( 7804 )); W=$(( 7804 + 20000 )); export WERKBANK_PORT=$W
+( KREATUR_TAKT_PORT=$(( 7804 + 10000 )) node scripts/diag-kreatur-takt.cjs --proben jagdkreis ) > "$B-jagdkreis.out" 2>&1 &
+node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1
+erg() { node -e 'const t = require("fs").readFileSync(0, "utf8"); console.log(JSON.stringify(JSON.parse(t.slice(t.indexOf("{"))).ergebnis))'; }
+O=$(node scripts/werkbank.cjs eval 'const pm = r.state.playerMesh.position; let O = null; for (let ring = 2; ring <= 16 && !O; ring++) for (let q = 0, n = ring * 6; q < n && !O; q++) { const a = (q / n) * 2 * Math.PI, x = pm.x + Math.cos(a) * ring * 25, z = pm.z + Math.sin(a) * ring * 25; if (r._landAt(x, z) && r._bodenKlasseAt(x, z) === "wald" && r._bodenKlasseAt(x + 30, z) !== "fluss" && r._kreaturGrundFrei(x, z) && r._kreaturGrundFrei(x + 30, z)) O = [+x.toFixed(1), +z.toFixed(1)]; } return O;' | erg); echo "ORT $O"
+node scripts/werkbank.cjs umstellen $(node -e 'const o = JSON.parse(process.argv[1]); console.log(o[0] + 30, o[1])' "$O") > "$B-umstellen.txt" 2>&1
+R=$(node scripts/werkbank.cjs eval 'const s = r.state, pm = s.playerMesh.position; r.setGameMode("pfad"); const O = { x: pm.x - 30, z: pm.z }; for (const c of [...s.creatures, ...s.leichname]) r.removeCreature(c); const neu = (x, z, seele, gr) => { const c = r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z) + 0.5, z, "happy", seele, { precise: true, bodySize: gr }); c.userData.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 }; return c; }; const kitz = neu(O.x, O.z, "wesen", 0.6); const W = [0, 1, 2, 3].map((i) => neu(O.x + Math.cos(Math.PI + (i - 1.5) * 0.5) * 25, O.z + Math.sin(Math.PI + (i - 1.5) * 0.5) * 25, "wolf", 1)); r._kreaturVerbinden(W); let rissS = null, k = 0; const frisst = () => W.filter((c) => c.userData._motionZustand === "fressen").length; for (; k < 7200 && (rissS === null || (frisst() < 3 && k / 60 < rissS + 20)); k++) { r._kreaturStossSchritt(1 / 60); r._leibKontakte(); r.updateCreatures(1 / 60); if (rissS === null && s.leichname.includes(kitz)) rissS = +(k / 60).toFixed(1); } const fressen = frisst(); const nah = W.filter((c) => Math.hypot(c.position.x - kitz.position.x, c.position.z - kitz.position.z) < 4).length; const K = kitz.position, d = Math.hypot(pm.x - K.x, pm.z - K.z) || 1, ax = K.x + ((pm.x - K.x) / d) * 8, az = K.z + ((pm.z - K.z) / d) * 8; return { ort: r._bodenKlasseAt(O.x, O.z), kamera: [ax, r.getTerrainHeightAt(ax, az) + 2.2, az, K.x, K.y + 0.4, K.z].map((v) => +v.toFixed(2)), klasse: r._bodenKlasseAt(kitz.position.x, kitz.position.z), rissS, fressen, nah, woelfe: W.length };' | erg); echo "REVIER $R"
+node scripts/werkbank.cjs bild $(node -e 'console.log(JSON.parse(process.argv[1]).kamera.join(" "))' "$R") --w 1920 --h 1080 --klasse '^tier:' --ziel Riss --datei "$B-wolfsrevier.png" > "$B-bild.txt" 2>&1
+echo "BILD $(grep -o '"abnahme": "[^"]*"' "$B-bild.txt")"
+cp "$B-wolfsrevier.abnahme.json" "$A"
+wait
+cat "$B-jagdkreis.out"
+ORT [50,0]
+REVIER {"ort":"wald","kamera":[66.46,91.64,1.23,58.5,88.99,1.95],"klasse":"wald","rissS":13.9,"fressen":3,"nah":4,"woelfe":4}
+BILD "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.35 m · Luma 47.7 σ 28.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.136 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 2 Posen"
+
+--- stderr ---
+tr: warning: an unescaped backslash at end of string is not portable
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

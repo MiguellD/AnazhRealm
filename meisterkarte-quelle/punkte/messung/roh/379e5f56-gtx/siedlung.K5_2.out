@@ -1,0 +1,458 @@
+$ C:\Program Files\nodejs\node.exe -e const H = (function sitzungWerkzeug() {
+    const fs = require("fs");
+    const path = require("path");
+    const os = require("os");
+    const http = require("http");
+    const S = Number(process.argv[1]);
+    const W = S + 20000;
+    const H = { S, W, AUS: process.argv[2], FRIST_S: Number(process.argv[3]) || 40, t0: Date.now(), fs, path, teil: undefined };
+    const abbau = [];
+    H.url = "http://localhost:" + S + "/index.html";
+    H.sek = () => +((Date.now() - H.t0) / 1000).toFixed(1);
+    H.rest = () => H.FRIST_S - (Date.now() - H.t0) / 1000;
+    H.schlaf = (ms) => new Promise((r) => setTimeout(r, ms));
+    H.zeile = (t) => console.log("@@ " + H.sek() + " s · " + t);
+    H.beimAbbau = (f) => abbau.push(f);
+    // höchstens ms warten: der Wert oder `ersatz` — ein Wurf des Wartenden (auch nach der Frist, etwa die Seite, die neu lädt) steht
+    // beim Namen in der Ausgabe, nie als unbehandelte Ablehnung, die die Probe risse
+    H.binnen = (p, ms, ersatz = null) =>
+        Promise.race([
+            Promise.resolve(p).catch((e) => (console.log("@@ " + H.sek() + " s · gewartet, geworfen: " + String((e && e.message) || e).split("\n")[0]), ersatz)),
+            H.schlaf(Math.max(0, ms)).then(() => ersatz),
+        ]);
+    // DIE WERKBANK der Sitzung (POST mit Frist)
+    H.wb = (weg, nutz, ms = 120000) =>
+        new Promise((ja, nein) => {
+            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (r) => {
+                let d = "";
+                r.on("data", (c) => (d += c));
+                r.on("end", () => {
+                    try {
+                        ja(JSON.parse(d));
+                    } catch (_e) {
+                        nein(new Error(weg + ": " + d.slice(0, 200)));
+                    }
+                });
+            });
+            q.setTimeout(Math.max(1000, ms), () => q.destroy(new Error(weg + " ohne Antwort binnen " + Math.round(ms / 1000) + " s")));
+            q.on("error", nein);
+            q.end(JSON.stringify(nutz || {}));
+        });
+    // ein Funktionsrumpf in der Seite der Welt (r = Welt, T = THREE), wie `werkbank eval`
+    H.evalWelt = async (code, ms) => {
+        const a = await H.wb("/eval", { code }, ms);
+        if (!a || a.fehler) throw new Error("werkbank eval: " + (a && a.fehler) + " " + JSON.stringify((a && a.stapel) || []));
+        return a.ergebnis;
+    };
+    // eine frische Welt in der Sitzung (die Grundstellung der Maschine: Spielstand weg, die Seite neu)
+    H.grundstellung = () => {
+        const p = require("child_process").spawnSync(process.execPath, [process.env.PUNKTE_MASCHINE, "grundstellung"], {
+            encoding: "utf8",
+            env: process.env,
+            timeout: 240000,
+        });
+        if (p.status !== 0) throw new Error("grundstellung: " + String((p.stdout || "") + (p.stderr || "")).trim().split(/\r?\n/).slice(-2).join(" | "));
+    };
+    // DER BROWSER DER SITZUNG
+    H.verbinde = async () => {
+        const pp = require("puppeteer");
+        const tmp = os.tmpdir();
+        const kand = fs
+            .readdirSync(tmp)
+            .filter((n) => n.startsWith("werkbank-profil-" + W + "-"))
+            .map((n) => path.join(tmp, n, "DevToolsActivePort"))
+            .filter((f) => fs.existsSync(f))
+            .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+        const fehl = [];
+        for (const f of kand) {
+            const [port, weg] = fs.readFileSync(f, "utf8").split(/\r?\n/);
+            let b = null;
+            try {
+                b = await pp.connect({ browserWSEndpoint: "ws://127.0.0.1:" + port + weg, defaultViewport: null, protocolTimeout: 600000 });
+                const seiten = await b.pages();
+                const page = seiten.find((p) => p.url().startsWith("http://localhost:" + S + "/"));
+                if (!page) throw new Error("keine Seite der Welt (" + seiten.map((p) => p.url()).join(" ") + ")");
+                const vorher = new Set(seiten);
+                // die souveräne Geste (window.confirm des Teilens, ein Dialog beim Verlassen) nimmt die Probe an — die Werkbank hört keinen
+                const ja = (d) => d.accept().catch(() => {});
+                page.on("dialog", ja);
+                H.beimAbbau(async () => {
+                    page.off("dialog", ja);
+                    await page.keyboard.up("KeyW").catch(() => {});
+                    for (const p of await b.pages().catch(() => [])) if (!vorher.has(p)) await p.close().catch(() => {});
+                    await page.bringToFront().catch(() => {});
+                    await b.disconnect();
+                });
+                Object.assign(H, { browser: b, page });
+                return { browser: b, page };
+            } catch (e) {
+                fehl.push(path.basename(path.dirname(f)) + ": " + e.message);
+                if (b) await b.disconnect().catch(() => {});
+            }
+        }
+        throw new Error("kein Browser der Sitzung an :" + W + " (" + (fehl.join(" · ") || "kein DevToolsActivePort unter " + tmp + "/werkbank-profil-" + W + "-*") + ")");
+    };
+    // DIE LINSE ALS BIBLIOTHEK
+    H.linse = (datei, namen, { argv = [], ersetze = [], stumm = {} } = {}) => {
+        const Module = require("module");
+        const f = path.resolve(datei);
+        let text = fs.readFileSync(f, "utf8").replace(/\r\n/g, "\n"); // die Anker in LF, wie auch immer der Baum auscheckt
+        for (const [alt, neu] of ersetze) {
+            const n = text.split(alt).length - 1;
+            if (n !== 1) throw new Error(datei + ": der Anker „" + alt.slice(0, 70) + "“ steht " + n + "× im Text (Soll 1) — die Linse änderte sich");
+            text = text.replace(alt, () => neu);
+        }
+        const wbt = require(path.resolve("scripts/lib/welt-boot.cjs"));
+        const ersatz = Object.assign({ hauptLauf: () => {} }, stumm);
+        const alt = Object.fromEntries(Object.keys(ersatz).map((k) => [k, wbt[k]]));
+        const av = process.argv;
+        Object.assign(wbt, ersatz);
+        process.argv = [av[0], f, ...argv];
+        try {
+            const m = new Module(f, module);
+            m.filename = f;
+            m.paths = Module._nodeModulePaths(path.dirname(f));
+            m._compile(text + "\n;module.exports = { " + namen.join(", ") + " };\n", f);
+            return m.exports;
+        } finally {
+            Object.assign(wbt, alt);
+            process.argv = av;
+        }
+    };
+    // DER EREIGNIS-STROM jeder Eingabe des Spielers (pointerdown · keydown · wheel, vor jedem Hörer der Seite) — wie die Linse
+    // diag-werkstatt-weg ihn je Seite anlegt; in einer schon geladenen Seite einmal
+    H.ereignisStrom = (page) =>
+        page.evaluate(() => {
+            if (window.__eingabeStrom) return;
+            const strom = (window.__eingabeStrom = []);
+            for (const typ of ["pointerdown", "keydown", "wheel"])
+                window.addEventListener(typ, (e) => strom.push({ was: typ === "keydown" ? e.code : typ === "wheel" ? "Rad" : "Klick", echt: e.isTrusted, t: performance.now() }), {
+                    capture: true,
+                    passive: true,
+                });
+        });
+    // DIE SEITE NEU im warmen Browser: warm der Zweit-Boot (nur die Seite neu: Platte, HTTP- und Shader-Cache bleiben), kalt vorher
+    // die Herkunft leer — IndexedDB (Welten, Platte, Chunk-Netze), localStorage, Cache- und Shader-Speicher — samt HTTP-Cache des
+    // Browsers und der Stand-Dateien des save-servers (Pflicht-OFFEN B: „IDB geleert, wie nach jedem Versions-Update"). Rückgabe
+    // die Uhr ab der Navigation (die Kontrolle von außen zählt ab ihr).
+    H.lade = async (page, { kalt = false } = {}) => {
+        if (kalt) {
+            const herkunft = "http://localhost:" + S;
+            await page.goto("about:blank", { waitUntil: "load", timeout: 60000 });
+            const c = await page.target().createCDPSession();
+            try {
+                await c.send("Storage.clearDataForOrigin", { origin: herkunft, storageTypes: "all" });
+                await c.send("Network.clearBrowserCache");
+            } finally {
+                await c.detach().catch(() => {});
+            }
+            for (const d of ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"]) fs.rmSync(d, { force: true });
+        }
+        const t0 = Date.now();
+        await page.goto(H.url, { waitUntil: "domcontentloaded", timeout: 120000 });
+        return t0;
+    };
+    // DER LAUF der Probe: ihr Ergebnis ist das JSON der Ausgabe; die Frist (H.FRIST_S) baut ab und schreibt den Stand `H.teil`
+    H.fahre = (fn) => {
+        let fertig = false;
+        const ende = async (code, j) => {
+            if (fertig) return;
+            fertig = true;
+            clearTimeout(uhr);
+            if (j !== undefined)
+                try {
+                    fs.writeFileSync(H.AUS, JSON.stringify(j));
+                } catch (e) {
+                    console.log("@@ Ausgabe: " + e.message);
+                }
+            for (const f of abbau.reverse()) await H.binnen(Promise.resolve().then(f).catch((e) => console.log("@@ Abbau: " + e.message)), 15000);
+            process.exit(code);
+        };
+        const uhr = setTimeout(() => {
+            console.log("@@ FRIST " + H.FRIST_S + " s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier");
+            ende(3, H.teil);
+        }, H.FRIST_S * 1000);
+        Promise.resolve()
+            .then(() => fn(H))
+            .then(
+                (j) => ende(0, j),
+                (e) => {
+                    console.log("@@ PROBE-FEHLER " + String((e && e.stack) || e).split("\n").slice(0, 5).join(" | "));
+                    ende(2, H.teil);
+                }
+            );
+    };
+    return H;
+})();
+H.seite = {
+DORF: async function dorfErwachen(M) {
+    const st = r.state;
+    const A = r.constructor.AUTO_SETTLEMENT;
+    const rend = st.renderer;
+    delete window.__anazhAutoSettlement; // der Dorf-Zug lebt wie im Spiel (ein Messort davor hielt ihn vielleicht an)
+    const info0 = r._autoSettlementCellInfo(M.zelle[0], M.zelle[1]);
+    if (!info0) return { fehler: "die Zelle trägt kein Dorf", zelle: M.zelle };
+    if ((st.worldMeta.settlementCells || {})[info0.key] || (r._dorfVorraete && r._dorfVorraete.has(info0.key)) || (r._autoSettlementRejected && r._autoSettlementRejected.has(info0.key)))
+        return { wach: true, zelle: M.zelle };
+    const info = Object.assign({}, info0, { nH: M.nH });
+    const orig = r._autoSettlementCellInfo;
+    r._autoSettlementCellInfo = function (x, z) {
+        return x === M.zelle[0] && z === M.zelle[1] ? info : orig.call(this, x, z);
+    };
+    const nah = A.nearM + (info.mehrM || 0);
+    const start = nah + M.vor;
+    const pm = st.playerMesh.position;
+    const rx = pm.x - info.x, rz = pm.z - info.z, rl = Math.hypot(rx, rz) || 1;
+    const sx = info.x + (rx / rl) * start, sz = info.z + (rz / rl) * start;
+    pm.set(sx, r._voxelSurfaceY(sx, sz) + 1.8, sz);
+    let erwacht = null, erstes = null, gesetzt = null, imRadius = null, bild = 0, hash = null, bereit = null, taktFehler = null;
+    const vorher = new Set(st.architectures);
+    const spawn = r._autoSettlementSpawnCell;
+    r._autoSettlementSpawnCell = function (cx, cz, i) {
+        if (cx === M.zelle[0] && cz === M.zelle[1] && !erwacht) erwacht = { t: performance.now(), bild, d: Math.hypot(pm.x - info.x, pm.z - info.z) };
+        return spawn.call(this, cx, cz, i);
+    };
+    const fnv = (s) => {
+        let h = 0x811c9dc5;
+        for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
+        return h.toString(16);
+    };
+    const vorrat = () => {
+        const v = r._dorfVorraete && r._dorfVorraete.get(info.key);
+        return !!(v && v.da);
+    };
+    const ruhig = () => {
+        try {
+            return !r._weltOffen().foundry;
+        } catch (_e) {
+            return false;
+        }
+    };
+    const cam = st.camera, frust = new T.Frustum(), mat = new T.Matrix4();
+    try {
+        await new Promise((ok) => {
+            let t0 = null, tGeh = null, still = 0;
+            const halt = () => (rend.setAnimationLoop(null), ok());
+            rend.setAnimationLoop((t) => {
+                try {
+                    bild++;
+                    t0 ??= t;
+                    if (tGeh == null) {
+                        still = vorrat() && ruhig() ? still + 1 : 0;
+                        if (still >= M.ruhig || t - t0 > M.vorlaufMs) {
+                            tGeh = t;
+                            bereit = { ms: Math.round(t - t0), bilder: bild, vorrat: vorrat(), ruhig: ruhig() };
+                        }
+                    }
+                    // die gehende Pose wie M36: 4 m/s auf den Anker zu, die Lage absolut je Bild gesetzt
+                    const weg = tGeh == null ? 0 : Math.min(start - 30, (4 * (t - tGeh)) / 1000);
+                    pm.set(sx - ((sx - info.x) / start) * weg, pm.y, sz - ((sz - info.z) / start) * weg);
+                    st.yaw = Math.atan2(info.x - pm.x, info.z - pm.z);
+                    st.pitch = 0;
+                    r._gameLoopTick(t);
+                    if (erwacht && !erstes) {
+                        cam.updateMatrixWorld(true);
+                        frust.setFromProjectionMatrix(mat.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
+                        const jetzt = () => ({ ms: +(performance.now() - erwacht.t).toFixed(1), bilder: bild - erwacht.bild });
+                        for (const e of st.architectures) {
+                            if (vorher.has(e) || !/^haus_/.test(e.type) || Math.hypot(e.position.x - info.x, e.position.z - info.z) > 260) continue;
+                            gesetzt ??= jetzt();
+                            if (!frust.containsPoint(e.position)) continue;
+                            const d = Math.hypot(e.position.x - pm.x, e.position.z - pm.z);
+                            const nahZone = d <= st.architectureCullingRadius;
+                            if (nahZone) imRadius ??= Object.assign(jetzt(), { radius: st.architectureCullingRadius });
+                            const h = e._ziegelSlot, L = st.weltMarch && st.weltMarch.listeDaten, fp = h && r._archFoundryPreset(e);
+                            const stufe = nahZone
+                                ? r._archIsRendered(e) ? "mesh" : null
+                                : h && L && L[h.feld * 32 + 3] !== 0 && fp && r._foundryFernForm(fp) === "huelle" ? "huelle" : null;
+                            if (!stufe) continue;
+                            erstes = Object.assign(jetzt(), {
+                                stufe,
+                                typ: e.type,
+                                same: e.seed,
+                                ort: [+e.position.x.toFixed(2), +e.position.z.toFixed(2)],
+                                abstand: +d.toFixed(1),
+                                auge: [+pm.x.toFixed(1), +pm.y.toFixed(1), +pm.z.toFixed(1)],
+                            });
+                            hash = fnv([info.seed, info.nH, info.x.toFixed(2), info.z.toFixed(2), e.type, e.seed, erstes.ort].join("|"));
+                            break;
+                        }
+                    }
+                    const ohneErwachen = tGeh != null && !erwacht && t - tGeh > 1000 * (M.vor / 4 + 6);
+                    if (erstes || ohneErwachen || (erwacht && performance.now() - erwacht.t > M.nachMs)) halt();
+                } catch (e) {
+                    taktFehler = String((e && e.message) || e);
+                    halt();
+                }
+            });
+        });
+    } finally {
+        r._autoSettlementCellInfo = orig;
+        r._autoSettlementSpawnCell = spawn;
+        rend.setAnimationLoop(null);
+    }
+    const zelle = (st.worldMeta.settlementCells || {})[info.key] || null;
+    return {
+        gesetzt, imRadius, erstes, hash, bereit, taktFehler, nah, start, zelle: M.zelle, nH: M.nH, same: info.seed,
+        anker: [+info.x.toFixed(1), +info.z.toFixed(1)], erwacht: erwacht && { bild: erwacht.bild, d: +erwacht.d.toFixed(1) }, bilder: bild, reserviert: zelle,
+    };
+}
+};
+H.fahre(async function probeDorf(H) {
+    const j = (H.teil = { je: {} });
+    for (const [i, nh] of [12, 300].entries()) {
+        let e = null;
+        for (let v = 0; v < 2 && H.rest() > 12; v++) {
+            if (i > 0 || v > 0) {
+                const tg = Date.now();
+                H.grundstellung();
+                H.zeile("frische Welt (Grundstellung) nach " + ((Date.now() - tg) / 1000).toFixed(1) + " s");
+            }
+            const M = { zelle: [-4, -6], nH: nh, vor: 8, ruhig: 20, vorlaufMs: 10000, nachMs: 8000 };
+            e = await H.evalWelt("return await (" + H.seite.DORF + ")(" + JSON.stringify(M) + ");", Math.max(5, H.rest() - 2) * 1000);
+            if (!e || !e.wach) break;
+            H.zeile("die Zelle " + M.zelle.join(",") + " ist schon wach — eine frische Welt");
+        }
+        j.je["nH" + nh] = e;
+        console.log("@@PUNKTE@@ NH" + nh);
+        console.log(JSON.stringify({ ergebnis: e }, null, 1));
+        console.log("@@PUNKTE@@ EXIT 0");
+    }
+    return j;
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\379e5f56-gtx\siedlung.K5_1.json 39
+@@PUNKTE@@ NH12
+{
+ "ergebnis": {
+  "gesetzt": {
+   "ms": 42.3,
+   "bilder": 0
+  },
+  "imRadius": {
+   "ms": 42.6,
+   "bilder": 0,
+   "radius": 150
+  },
+  "erstes": {
+   "ms": 42.6,
+   "bilder": 0,
+   "stufe": "mesh",
+   "typ": "haus_chinesisch",
+   "same": 934522,
+   "ort": [
+    -714.7,
+    -1170.07
+   ],
+   "abstand": 4.4,
+   "auge": [
+    -714.2,
+    43.1,
+    -1165.7
+   ]
+  },
+  "hash": "c8b1c0f4",
+  "bereit": {
+   "ms": 5442,
+   "bilder": 139,
+   "vorrat": true,
+   "ruhig": true
+  },
+  "taktFehler": null,
+  "nah": 260,
+  "start": 268,
+  "zelle": [
+   -4,
+   -6
+  ],
+  "nH": 12,
+  "same": 29749318,
+  "anker": [
+   -839.5,
+   -1373.1
+  ],
+  "erwacht": {
+   "bild": 334,
+   "d": 242.5
+  },
+  "bilder": 334,
+  "reserviert": {
+   "seed": 29749318,
+   "nH": 12,
+   "x": -839.5294117647059,
+   "z": -1373.113725490196,
+   "wx": -839.5294117647059,
+   "wz": -1373.113725490196,
+   "ort": "ort:29749318:-840,-1373"
+  }
+ }
+}
+@@PUNKTE@@ EXIT 0
+@@ 16.6 s · frische Welt (Grundstellung) nach 4.2 s
+@@PUNKTE@@ NH300
+{
+ "ergebnis": {
+  "gesetzt": {
+   "ms": 25,
+   "bilder": 0
+  },
+  "imRadius": {
+   "ms": 25,
+   "bilder": 0,
+   "radius": 150
+  },
+  "erstes": {
+   "ms": 25.1,
+   "bilder": 0,
+   "stufe": "mesh",
+   "typ": "haus_chinesisch",
+   "same": 651494,
+   "ort": [
+    -716.02,
+    -1159.9
+   ],
+   "abstand": 14.5,
+   "auge": [
+    -704.1,
+    44.5,
+    -1151.6
+   ]
+  },
+  "hash": "882a889c",
+  "bereit": {
+   "ms": 10008,
+   "bilder": 268,
+   "vorrat": true,
+   "ruhig": false
+  },
+  "taktFehler": null,
+  "nah": 260,
+  "start": 268,
+  "zelle": [
+   -4,
+   -6
+  ],
+  "nH": 300,
+  "same": 29749318,
+  "anker": [
+   -839.5,
+   -1373.1
+  ],
+  "erwacht": {
+   "bild": 303,
+   "d": 259.6
+  },
+  "bilder": 303,
+  "reserviert": {
+   "seed": 29749318,
+   "nH": 300,
+   "x": -839.5294117647059,
+   "z": -1373.113725490196,
+   "wx": -839.5294117647059,
+   "wz": -1373.113725490196,
+   "ort": "ort:29749318:-840,-1373"
+  }
+ }
+}
+@@PUNKTE@@ EXIT 0
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
