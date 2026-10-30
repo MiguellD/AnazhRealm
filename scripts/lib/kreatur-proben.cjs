@@ -2349,12 +2349,16 @@ async function kreaturProben(r, T, opts) {
     const bisDa = async (name, offen, max) => {
         for (const weiter = window.__deckel(name, max); weiter() && offen(); await sleep(16)) tick();
     };
-    // DIE UHR AUF DER STUNDE h, nie an der Uhr des Boots: erst der Takt sieht ihren Sprung (`_bewohnerAnkunft`), bis jeder
-    // steht (`da`); das Warten rückte sie, also beginnt der Tag danach genau auf h — seine Prüfpunkte treffen in jedem Lauf
-    // dieselben Wenden
+    // DIE UHR AUF DER STUNDE h, nie an der Uhr des Boots: ihr Sprung stellt jeden dorthin, wo sein Tag ihn um h sieht
+    // (`_bewohnerAnkunft`, je Takt `ankunftJeTakt`) — im Takt der Bewohner OHNE ZEIT (`_tickBewohner(0)`): die Uhr steht auf h,
+    // keiner geht, ehe der Letzte ankam, und die Prüfpunkte des Tags treffen in jedem Lauf dieselben Wenden; was danach offen
+    // ist (mit Bild die Felder der Leiber, `da`), wartet der Takt des Spiels ab, dann steht die Uhr wieder auf h. Bis heil-wackler
+    // trug der Takt an der Wanduhr die Ankunft: die Uhr lief weiter, die Ersten gingen, und die Uhr sprang zurück — 10 von 10
+    // Starts in anderer Lage, #809070 und #724672 berührten sich um 12,50 Uhr (CI 40967599389, 40970312506)
     const uhrAuf = async (h, wo, da, max) => {
         r._uhrSetzen(h / 24, "regler");
-        r._tickBewohner(0);
+        const kommt = () => [...(r._bewohnerSiedlungen || new Map()).values()].some((S) => S.liste && S.liste.some((b) => b.ankunft)); // prettier-ignore
+        for (const weiter = window.__deckel(wo, max, false); weiter() && (r._tickBewohner(0), kommt()); );
         await bisDa(wo, () => !da(), max);
         r._uhrSetzen(h / 24, "regler");
     };
