@@ -609,7 +609,7 @@ class AnazhRealm_netz_portal {
         // Der Beitritt (W11.5): broker + roomId → world-snapshot.
         this.log(`Reise zur Welt „${addr.label}" (${status}) — ${addr.broker} → ${addr.roomId}`, "INFO");
         // Der Beitritt geht durch DIE TÜR (`_importGuestWorld` → `_weltBetreten`): die alte Welt hält ihr Zeugnis fest und
-        // sichert sich, die fremde wird unsere lokale Welt (role:"guest", kein Portal-Overlay), Sperre und Reload. Bis 10.10.
+        // sichert sich, die fremde wird unsere lokale Welt (role:"guest", kein Portal-Overlay), Sperre und Wechsel. Bis 10.10.
         // lud das Adress-Portal nie neu: der nächste saveState setzte den Aktiv-Zeiger auf die alte Welt zurück, und der
         // Beitritt verschwand still (Gegenprüfung Runde 3).
         return this._weltBeitritt(addr, {

@@ -1130,8 +1130,7 @@ async function studioProbe(page) {
         // wird die aktive Welt — über ihr öffnet sich das Studio.
         const b0 = await booteWelt(page);
         if (!b0.ok) throw new Error("die Welt vor der fremden Welt erwachte nicht");
-        const nav0 = page.waitForNavigation(LADEN);
-        await page.evaluate(() => {
+        await page.evaluate(async () => {
             const G = window.__gelaendeCore;
             const snap = r._weltAusPlan({ art: G.PLAN_ART, v: G.PLAN_VERSION, saat: "studio-probe-fremd", regler: {} });
             snap.terrainBaseHeight = 7;
@@ -1146,9 +1145,9 @@ async function studioProbe(page) {
                 krone: 6,
                 boeschung: 40,
             });
-            setTimeout(() => r._weltBetreten(snap), 0);
+            r._weltBetreten(snap);
+            await r.erwacht; // der Welt-Wechsel am Ort (`_weltWechsel`)
         });
-        await nav0;
         await server.zeige(page, 60000, "index.html?studio=gelaende");
         const b = await booteWelt(page);
         if (!b.ok) throw new Error("die Welt unter dem Studio erwachte nicht in 120 s");
@@ -1314,11 +1313,10 @@ async function studioProbe(page) {
             console.log(`    Preset ${p.id.padEnd(14)} ${p.fehlt ? "kein Knopf" : ziele}${z}`);
         }
         befunde.push(...presetBefunde(presets));
-        // DIE WELT-TÜR: ohne Studio, die Datei durch das Welt-Tor („Ersetzen") — die Welt erwacht neu (Reload).
+        // DIE WELT-TÜR: ohne Studio, die Datei durch das Welt-Tor („Ersetzen") — die Welt tauscht am Ort (`_weltWechsel`).
         await server.zeige(page, 60000);
         const b2 = await booteWelt(page);
         if (!b2.ok) throw new Error("die Welt vor dem Import erwachte nicht");
-        const nav = page.waitForNavigation(LADEN);
         const tor = await page.evaluate((text) => {
             r._openWeltTorDialog(JSON.parse(text), { name: "gelaende-plan.json" });
             const p = r.state.pendingImport;
@@ -1330,10 +1328,9 @@ async function studioProbe(page) {
             befunde.push("die Welt-Tür liest den Plan nicht (das Welt-Tor macht aus ihm keine Welt)");
             throw new Error("Tür");
         }
-        await nav;
         const b3 = await booteWelt(page);
         if (!b3.ok) throw new Error("die Welt aus dem Plan erwachte nicht");
-        console.log(`  Import: Welt-Tor „Ersetzen" → Reload → Boot ${b3.ms} ms (Seed ${b3.seed})`);
+        console.log(`  Import: Welt-Tor „Ersetzen" → Wechsel am Ort → Boot ${b3.ms} ms (Seed ${b3.seed})`);
         const welt = await weltMessen(page);
         out.welt = welt;
         const gleich = welt.makroSha === studio.zustand.makroSha;
@@ -2100,17 +2097,17 @@ hauptLauf(async () => {
             const stationen = JSON.parse(
                 liesText(path.resolve(path.dirname(BUEHNE_DATEI), "stationen.json"))
             ).stationen;
-            // Geboren wie im Spiel: importWorldBeside (Welt-Tor), dann der Welt-Wechsel des Spiels (`_weltWechselNeuLaden`:
-            // Zeiger, Sperre, Reload) — ein Speichern der alten Seite bis zu ihrem Tod setzte den Zeiger sonst zurück
-            const nav = page.waitForNavigation(LADEN);
+            // Geboren wie im Spiel aus einer frischen Standard-Welt (der Selbsttest verfälschte den Kern des Fadens, und der Faden
+            // bleibt der Seite): importWorldBeside (Welt-Tor), dann der Welt-Wechsel des Spiels (`_weltWechsel`: Zeiger, Sperre,
+            // Tausch am Ort) — ein Speichern der alten Welt im Wechsel setzte den Zeiger sonst zurück
+            await frischBoot(page, url);
             const id = await page.evaluate((json) => {
                 const res = r.importWorldBeside(json);
                 if (!res.ok) return null;
-                setTimeout(() => r._weltWechselNeuLaden(res.worldId));
+                r._weltWechsel(res.worldId);
                 return res.worldId;
             }, json);
             if (!id) throw new Error("die Bühne ließ sich nicht importieren");
-            await nav;
             weltArg = { stationen };
         }
         const b = await booteWelt(page);

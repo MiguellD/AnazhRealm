@@ -146,8 +146,8 @@ class AnazhRealm_speicher_welten {
     // ### Ring 8 — Multi-Welt-Verwaltung ###
     // localStorage: `anazhRealmWorlds` (Index) · `anazhRealmState_<worldId>` (Snapshot je Welt) ·
     // `anazhRealmActiveWorld` (aktive worldId); Legacy-Key `anazhRealmState` migriert einmalig.
-    // Welt-Wechsel ist reload-basiert (saveState → activeWorldSet → reload): ein in-place-Tausch
-    // bräuchte tiefen Dispose (Chunks, Physik, Audio, Caches) und leckt State.
+    // Der Welt-Wechsel tauscht am Ort (`_weltWechsel`: die alte Welt geht ganz, `_weltAbschied`; die neue kommt an wie beim
+    // Boot); was die Seite trägt, nennt `AnazhRealm.WELT_GRENZE`.
 
     worldStorageKey(worldId) {
         return `anazhRealmState_${worldId}`;
@@ -364,7 +364,7 @@ class AnazhRealm_speicher_welten {
     }
 
     // Snapshot einer leeren Welt mit gegebenem worldMeta (optional mit Player-Snapshot für „Person
-    // übernehmen"). Wird vor dem Reload geschrieben — der Reload-Init findet einen gültigen Per-Welt-Save.
+    // übernehmen"). Wird vor dem Wechsel geschrieben — die Ankunft findet einen gültigen Per-Welt-Save.
     _buildEmptyWorldSnapshot(worldMeta, inheritPlayer) {
         const alt = this.state.worldMeta || {};
         const snap = {
@@ -404,7 +404,7 @@ class AnazhRealm_speicher_welten {
             dslHistory: [],
             dslPatternMemory: {},
             playerPathBuckets: null,
-            // Genesis-Eintrag gleich beim Anlegen mitschreiben (nach dem Reload setzt ensureWorldMeta ihn
+            // Genesis-Eintrag gleich beim Anlegen mitschreiben (nach dem Wechsel setzt ensureWorldMeta ihn
             // nicht mehr, worldId steht schon im Save); der „genesis"-Schlüssel in seen verhindert Duplikate.
             worldJournal: {
                 entries: [
@@ -456,7 +456,7 @@ class AnazhRealm_speicher_welten {
     }
 
     // Neue Welt anlegen, schreiben, aktiv setzen. reload standardmäßig aus (Tests prüfen die
-    // Daten-Schicht); mit `reload` läuft der Welt-Wechsel `_weltWechselNeuLaden` (Sperre, Zeiger, Reload).
+    // Daten-Schicht); mit `reload` läuft der Welt-Wechsel `_weltWechsel` (Sperre, Zeiger, Tausch am Ort).
     createNewWorld({ slug = null, inheritPlayer = false, reload = false, role = "solo" } = {}) {
         // Aktuelle Welt zuerst sichern, sonst geht der Stand verloren.
         if (this.state.worldMeta && this.state.worldMeta.worldId) {
@@ -469,7 +469,7 @@ class AnazhRealm_speicher_welten {
         const meta = this._generateFreshWorldMeta(slug);
         const snap = this._buildEmptyWorldSnapshot(meta, inheritPlayer);
         // Ring 11.5: Rolle in worldMeta einsetzen (default "solo"). Bei
-        // "host"/"guest" startet Init nach Reload automatisch Multi-User-Sync.
+        // "host"/"guest" startet die Ankunft automatisch Multi-User-Sync (`_weltAnschluss`).
         if (role === "host" || role === "guest") {
             snap.worldMeta.role = role;
         }
@@ -485,12 +485,12 @@ class AnazhRealm_speicher_welten {
             `Neue Welt erschaffen: ${meta.slug} (${meta.worldId.slice(0, 8)}…, inheritPlayer=${inheritPlayer})`,
             "INFO"
         );
-        if (reload) this._weltWechselNeuLaden(meta.worldId);
+        if (reload) this._weltWechsel(meta.worldId);
         return meta.worldId;
     }
 
     // Wechsel zu einer existierenden Welt. Sichert aktuelle, setzt aktiv,
-    // optional Reload. Gibt false zurück, wenn die Ziel-Welt nicht im
+    // mit `reload` der Welt-Wechsel (am Ort). Gibt false zurück, wenn die Ziel-Welt nicht im
     // Speicher existiert (Index-Eintrag ohne Save-Datei wäre ein Bug).
     switchToWorld(worldId, { reload = false } = {}) {
         if (!worldId || typeof worldId !== "string") return false;
@@ -514,7 +514,7 @@ class AnazhRealm_speicher_welten {
         // lastPlayed ist der Stempel des Platzes (die Rettungs-Kette wählt an ihm) — das Verlassen einer Welt setzt ihn.
         this.activeWorldSet(worldId);
         this.log(`Welt-Wechsel: aktiv ist nun ${worldId.slice(0, 8)}…`, "INFO");
-        if (reload) this._weltWechselNeuLaden(worldId);
+        if (reload) this._weltWechsel(worldId);
         return true;
     }
 
@@ -1829,7 +1829,7 @@ class AnazhRealm_speicher_welten {
         return this._speicher ? this._speicherAuftrag({ op: "still" }) : Promise.resolve({ ok: true });
     }
 
-    // DAS VERLASSEN DER WELT (`_weltWechselNeuLaden`): ihr Stand wird ihr Platz im localStorage (die Leser ohne Faden — die
+    // DAS VERLASSEN DER WELT (`_weltWechsel`): ihr Stand wird ihr Platz im localStorage (die Leser ohne Faden — die
     // Fusion, der Welt-Wechsel, die Rettungs-Kette ohne Platte — finden jede verlassene Welt dort) mit dem Stempel ihres
     // letzten Stands (`lastPlayed`; IndexedDB trägt denselben, die Rettungs-Kette wählt sie).
     async _speicherVerlassen() {
@@ -2749,7 +2749,172 @@ AnazhRealm.R5_STRUCTURE_TEXTURE = Object.freeze({
 //                Plan v2 je Ort samt Höhen und Erdbau (`_ortPlaene`), die Siedlungen der Bewohner (`_bewohnerSiedlungen`),
 //                die Lichter: das wache Tor, der Licht-Pool, der die Plätze hält) —
 //                sie fallen mit dem worldMeta (`_loadStateRestoreWorldMeta`)
+// DER WECHSEL AM ORT (`_weltAbschied`): die Seite bleibt, was init vor der Welt schrieb (`_seite`); dazu beim Namen, weil es
+// je nach Gerät vor oder nach der Welt entsteht (swiftshader legt Stoff-Pools und Uniformen erst mit dem ersten Bild an):
+//   ankunft      Glieder des Zustands, die init vor der Welt schreibt und doch jede Welt neu setzt: der Leib, sein Modus,
+//                das erste Weltbild — sie gehören nie zur Seite
+//   seite        Glieder des Zustands, die die Seite tragen: der Renderer und seine Kette, die Bühne (Szene, Kamera, Himmel,
+//                Licht, Kaskaden), jede Uniform und jede Karte, die ein bleibendes Programm liest (die Horizont-Karte der
+//                Kaskaden, der Leser des Spiegels, die Umgebung des Himmels), die Stoff-Pools, der Voxel-Faden und seine
+//                Zähler, die Wahl des Spielers (Tasten, Kamera, Tag-Länge), Begleiter, KI, Klang, Messung, Log, Pass, sein
+//                Name, die Werkstatt (ihre Bühne)
+//   wirt         Felder am Wirt, die die Seite tragen: die Fäden, ihre Hörer und Generationen, Takt und Messung, das Buch der
+//                Brüche, der Tacho, die UI-Räume, jedes Programm und seine Knoten, die Atlanten (Rauschen, Karten samt ihrer
+//                Back-Schlange, Laub, Blatt, Tor-Ziele, Tor-Profile), die Vorräte je Gattung (Ofen, Glieder), die Sperre und der
+//                Takt des Wechsels
+// Was eine Welt in eine dieser Karten malt, malt die neue neu (ihr Abschied leert sie: `_horizontKarteLeeren`).
 AnazhRealm.WELT_GRENZE = Object.freeze({
+    ankunft: Object.freeze([
+        "playerMesh",
+        "gameMode",
+        "_deferredAvatarSoul",
+        "_weltbildDa",
+        "_weltbildWarten",
+        "_nachlauf",
+        "_rundumDa",
+    ]),
+    seite: Object.freeze([
+        "renderer",
+        "rendererReady",
+        "_deviceLost",
+        "_holzProfil",
+        "_holzPixelCap",
+        "_holzExplizit",
+        "_traa",
+        "postProcessing",
+        "postProcessingFailed",
+        "traaNode",
+        "_traaR",
+        "scenePass",
+        "postProcessingUniforms",
+        "godrayUniforms",
+        "_ausgabeFormat",
+        "_ausgabeAusgleich",
+        "_ausgabeRundung",
+        "_renderScaleApplied",
+        "pendingDisposals",
+        "scene",
+        "camera",
+        "skybox",
+        "skyboxUniforms",
+        "starField",
+        "starFieldUniforms",
+        "sunMesh",
+        "moonMesh",
+        "directionalLight",
+        "ambientLight",
+        "hemiLight",
+        "csmNode",
+        "luft",
+        "atmoUniforms",
+        "atmoLut",
+        "seasonUniforms",
+        "lodUniforms",
+        "windUniforms",
+        "hydroSurfaceUniforms",
+        "weltLicht",
+        "spiegelLeser",
+        "horizontKarte",
+        "_skyPmrem",
+        "_skyEnvRT",
+        "_foliageMatCache",
+        "satzStoffe",
+        "voxelWorker",
+        "voxelWorkerReady",
+        "voxelWorkerNextRequestId",
+        "voxelWorkerStateGen",
+        "keys",
+        "verbTafel",
+        "padBelegung",
+        "keybindings",
+        "keybindRebind",
+        "isPointerLocked",
+        "cameraMode",
+        "cameraThirdDistance",
+        "cameraThirdHeight",
+        "mouseSensitivity",
+        "dayLengthMinutes",
+        "grok",
+        "llm",
+        "symphony",
+        "perfRegulator",
+        "perfSense",
+        "flightRecorder",
+        "logBuffer",
+        "displayedLogs",
+        "errorLog",
+        "revokedKeys",
+        "signedWorlds",
+        "customWorlds",
+        "vibePass",
+        "workshop",
+        "player.name",
+    ]),
+    wirt: Object.freeze([
+        "_speicher",
+        "_speicherOhnePlatte",
+        "_nebenFaeden",
+        "_voxelFadenQuelle",
+        "_hydroWelt",
+        "_stauHoert",
+        "_fernMemoGen",
+        "_takt",
+        "_gpuLeine",
+        "_ltObs",
+        "_ltAcc",
+        "_uploadBytesAcc",
+        "_uploadBuckets",
+        "_gpuTsKickMs",
+        "_gpuTsPending",
+        "_gpuTsLast",
+        "_gpuTsAtMs",
+        "_pipeLast",
+        "_bruchBuch",
+        "_kernWandGeprueft",
+        "_fahrTachoEl",
+        "_uiRooms",
+        "_uiDirtyRooms",
+        "_uiPulseQueued",
+        "_foundryMats",
+        "_foundryGraphen",
+        "_naesseHimmelK",
+        "_leuchtOhne",
+        "_leuchtKnoten",
+        "_instanzMatrixKnoten",
+        "_weltNahtKnoten",
+        "_instanzMitteKnoten",
+        "_baumWindKnoten",
+        "_karteWindU",
+        "_kamDurchKnoten",
+        "_szeneTiefeKnoten",
+        "_szeneTiefeWert",
+        "_phantomTintU",
+        "_ghostMatCache",
+        "_stlWegeMat",
+        "_membranGraphen",
+        "_kaskadenS",
+        "_blendeK",
+        "_feldPanoWgslText",
+        "_feldPanoPipe",
+        "_feldPanoPipeDev",
+        "_tiefenAbbildGpu",
+        "_spiegelMass",
+        "_rauschAtlasCache",
+        "_kartenAtlas",
+        "_impostorBakeQueue",
+        "_foliageAtlasTex",
+        "_blattAtlasBild",
+        "_torZielAtlas",
+        "_torProfile",
+        "_karteBuehneSatz",
+        "_karteRechnerSatz",
+        "_ofenVorratSteht",
+        "_gliederAuftraege",
+        "_gliedKapseln",
+        "_trefferGliedNamen",
+        "_weltWechselSperre",
+        "_weltTausch",
+    ]),
     geburt: Object.freeze(["visibility", "creator"]),
     platz: Object.freeze(["worldId", "slug", "bornAt"]),
     gedaechtnis: Object.freeze([

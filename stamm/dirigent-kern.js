@@ -595,7 +595,7 @@ class AnazhRealm {
                 meshActive: false,
                 // Welt-Snapshot über das Mesh: worldXfers puffert eingehende Stücke (xferId → {from, total, parts,
                 // received}); nur Stücke vom pendingPullFrom-Peer werden angenommen. _testNoReload unterdrückt den
-                // Reload nach dem Resync im Playtest.
+                // Welt-Wechsel nach dem Resync im Playtest.
                 worldXfers: new Map(),
                 pendingPullFrom: null,
                 _lastXferProgress: null,
@@ -924,6 +924,8 @@ class AnazhRealm {
                 if (!Array.isArray(p.opChain)) p.opChain = this._defaultPartOpChain();
             }
         }
+        // die Glieder des Zustands bei der Geburt: was init an ihnen neu setzt, ist die Seite (`_seite`, init)
+        this._zustandGeburt = { ...this.state };
     }
     // Die Setzung des Auges (`_lodAuge`): die Kamera steht jetzt für den Spieler, wo er jetzt steht.
     _lodAugeGesetzt(c) {

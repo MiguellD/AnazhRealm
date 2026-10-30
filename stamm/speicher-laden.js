@@ -1001,7 +1001,7 @@ class AnazhRealm_speicher_laden {
         }
     }
 
-    // DIE TÜR (Ring 8: ein Welt-Wechsel ist ein Reload): eine andere Welt betritt die Seite — das Welt-Tor „Ersetzen", der
+    // DIE TÜR (Ring 8; seit tore-k5-tuer tauscht die Seite am Ort): eine andere Welt betritt die Seite — das Welt-Tor „Ersetzen", der
     // Snapshot eines Mitspielers (WS-Snapshot eines Resyncs, world-pull) und der Beitritt (Einladung, Adress-Portal:
     // `_importGuestWorld`). EINE Stelle, in dieser Folge:
     //   0. SICHERN: die Welt der Seite ist noch ganz sie selbst — ihr Zeugnis (`zeugnisA`, das Adress-Portal) und ihr
@@ -1013,11 +1013,11 @@ class AnazhRealm_speicher_laden {
     //   2. ABLAGE: sie liegt, wie sie kam, unter ihrer Id (`_weltAblegen`, mit Probe) — misslingt das (Quota), bleibt die
     //      Seite in ihrer Welt und sagt es laut; kein Reload in einen alten Stand. `p2pAuto` (der Gast): danach die
     //      Auto-Verbindung zum Host.
-    //   3. SPERRE, ZEIGER, RELOAD (`_weltWechselNeuLaden`): die neue Welt erwacht in einer frischen Seite.
-    // Die Seite lädt sie nie in sich (die alte Welt lebte darin weiter: Tiere, Chunks, Worker, Wasser). `meta` legt Felder
-    // ins worldMeta (der Gast: role, hostInfo, slug); `neuLaden:false` legt nur ab (daneben legen, Tests), `aktiv:false`
-    // lässt dann auch den Aktiv-Zeiger (daneben legen). → {ok, worldId|reason}
-    _weltBetreten(snapshot, meta = null, { neuLaden = true, aktiv = true, zeugnisA = null, p2pAuto = null } = {}) {
+    //   3. SPERRE, ZEIGER, WECHSEL AM ORT (`_weltWechsel`): die alte Welt geht ganz (`_weltAbschied`), die neue kommt an wie
+    //      beim Boot — nie lädt die Seite sie über die alte (die lebte darin weiter: Tiere, Chunks, Worker, Wasser).
+    // `meta` legt Felder ins worldMeta (der Gast: role, hostInfo, slug); `wechseln:false` legt nur ab (daneben legen, Tests),
+    // `aktiv:false` lässt dann auch den Aktiv-Zeiger (daneben legen). → {ok, worldId|reason}
+    _weltBetreten(snapshot, meta = null, { wechseln = true, aktiv = true, zeugnisA = null, p2pAuto = null } = {}) {
         if (!snapshot || typeof snapshot !== "object") return { ok: false, reason: "kein Snapshot" };
         if (!this._weltWechselSperre && this.state.worldMeta && this.state.worldMeta.worldId) {
             if (zeugnisA)
@@ -1035,7 +1035,7 @@ class AnazhRealm_speicher_laden {
             };
         if (typeof welt.worldMeta.worldId !== "string" || !welt.worldMeta.worldId)
             welt.worldMeta.worldId = AnazhRealm._neueWeltId();
-        const ab = this._weltAblegen(welt, { aktiv: aktiv || neuLaden });
+        const ab = this._weltAblegen(welt, { aktiv: aktiv || wechseln });
         if (!ab.ok) {
             this.log(`Die Welt konnte nicht abgelegt werden (${ab.reason}) — die Seite bleibt in ihrer Welt.`, "ERROR");
             return ab;
@@ -1049,7 +1049,7 @@ class AnazhRealm_speicher_laden {
                 this.log(`Die Auto-Verbindung zum Host ließ sich nicht merken: ${e.message}`, "WARN");
             }
         }
-        if (neuLaden) this._weltWechselNeuLaden(ab.worldId);
+        if (wechseln) this._weltWechsel(ab.worldId);
         return ab;
     }
 
@@ -1086,32 +1086,137 @@ class AnazhRealm_speicher_laden {
         }
     }
 
-    // DER WELT-WECHSEL IST EIN RELOAD — UND BIS DIE SEITE STIRBT, SCHREIBT SIE NICHTS MEHR (Gegenprüfung Runde 3, 10.10.):
-    // zwischen `location.reload()` und dem Tod der Seite lief sie weiter, und jeder saveState (Loop-Autosave, Edit-Timer,
-    // Dorf-Rückruf, Settlement-Export) schrieb die lebende Seite unter den Namen der Ziel-Welt (6 698 Bytes mit dem Tier der
-    // alten im Platz der neuen) oder setzte den Aktiv-Zeiger auf die alte zurück (der Beitritt durchs Adress-Portal und die
-    // „Neue Welt" verschwanden still). DIE EINE SPERRE: der Edit-Timer fällt, `saveState` — jeder Speicher-Weg der lebenden
-    // Welt geht durch ihn — verweigert, der Zeiger zeigt auf die Ziel-Welt. Rufer: jeder Welt-Wechsel (Neue Welt, Wechsel,
-    // daneben-und-springen, Fusion, die Tür `_weltBetreten`, der Beitritt per Einladung und Adress-Portal). Der Reload wartet
-    // auf den Speicher-Faden: alles Gesendete ist fest, und die verlassene Welt liegt als Platz (`_speicherVerlassen`) — ein
-    // Reload vorher bräche seine Transaktion ab.
-    _weltWechselNeuLaden(zielId) {
+    // DER WELT-WECHSEL AM ORT (Karte tore-k5-tuer): die Seite bleibt, die Welt tauscht — Renderer, Programme, Buch und Fäden
+    // bleiben warm; bis hierhin lud jeder Wechsel die Seite neu und zahlte ihren Zweit-Boot (GTX 12,0 s, Pflicht-Offen B).
+    // DIE EINE SPERRE (Gegenprüfung Runde 3, 10.10.): bis die alte Welt gegangen ist, schreibt die Seite nichts — der Edit-Timer
+    // fällt, `saveState` (jeder Speicher-Weg der lebenden Welt geht durch ihn) verweigert, der Zeiger zeigt auf die Ziel-Welt;
+    // im Fenster des Reloads schrieb die lebende Seite unter den Namen der Ziel-Welt (6 698 Bytes mit dem Tier der alten im
+    // Platz der neuen) oder setzte den Zeiger zurück. Der Takt ruht (`_weltTausch`), der Ladeschirm steht. Der Tausch wartet auf
+    // den Speicher-Faden (alles Gesendete fest, die verlassene Welt liegt als Platz, `_speicherVerlassen`), dann geht die alte
+    // (`_weltAbschied`) und die Ziel-Welt kommt an wie beim Boot (`_weltAmOrt`). Sein Versprechen ist das Erwachen (`erwacht`,
+    // die Welt-Warte jeder Linse). Bricht er, sagt es der EINE Melder, und die Seite lädt neu (die Ziel-Welt liegt unter dem
+    // Zeiger). Rufer: jeder Welt-Wechsel (Neue Welt, Wechsel, daneben-und-springen, Fusion, die Tür `_weltBetreten`, der
+    // Beitritt per Einladung und Adress-Portal).
+    _weltWechsel(zielId) {
         this._weltWechselSperre = true;
+        this._weltTausch = true;
         if (this._editSaveTimer) {
             clearTimeout(this._editSaveTimer);
             this._editSaveTimer = null;
         }
         if (zielId) this.activeWorldSet(zielId);
-        const neu = () => {
-            if (typeof window !== "undefined" && window.location && typeof window.location.reload === "function")
-                window.location.reload();
-        };
-        this._speicherVerlassen()
+        const schirm = typeof document !== "undefined" && document.getElementById("ladeschirm");
+        if (schirm) {
+            schirm.hidden = false;
+            schirm.classList.remove("weg");
+        }
+        this._ladeschirmStand("die Welt wechselt");
+        const tausch = this._speicherVerlassen()
             .then(() => this._speicherStill())
-            .then(neu, (e) => {
-                this.log(`Der Speicher-Faden schloss die verlassene Welt nicht ab (${e.message}).`, "ERROR");
-                neu();
+            .catch((e) => this.log(`Der Speicher-Faden schloss die verlassene Welt nicht ab (${e.message}).`, "ERROR"))
+            .then(() => this._weltAmOrt());
+        this.erwacht = tausch.then(
+            () => true,
+            (e) => {
+                const wo = String((e && e.stack) || "").split("\n")[1] || "";
+                this._bruchMelden(
+                    `WELT-WECHSEL: der Tausch am Ort brach (${(e && e.message) || e} ${wo.trim()}) — die Seite lädt neu`
+                );
+                if (typeof window !== "undefined" && window.location && typeof window.location.reload === "function")
+                    window.location.reload();
+                return false;
+            }
+        );
+        return tausch;
+    }
+
+    // DIE ZIEL-WELT KOMMT AN (`_weltWechsel`): die alte geht (`_weltAbschied`), dann dieselben Glieder wie beim Boot (init) —
+    // die Vorlade, die Ankunft (Leib, Stand, Buch, Gelände), der Anschluss; die Seite dazwischen (Welt-Info, Werkstatt) liest
+    // die neue Welt. Der Null-Renderer zeigt kein Bild, auf das der Ladeschirm warten könnte: er weicht sofort, wie beim Boot.
+    async _weltAmOrt() {
+        this._weltAbschied();
+        this._applyHolzProfil(this.state._holzProfil); // die Wahl des Geräts deckelt jede Welt (init: vor ihrem Stand)
+        if (this.state.renderer._isHeadlessNull) this._weltbildSteht();
+        this.p2pLoadPersisted();
+        const verbunden = await this._weltVorlauf();
+        this.updateWorldInfo();
+        this._renderWorkshopDOM();
+        this._updateBuildModeHud();
+        this._weltWechselSperre = false;
+        // das Start-Dorf der neuen Welt wartet am Buch wie beim Boot (init, B5): das Buch steht schon, sein Wecker läuft im selben
+        // Augenblick der Ankunft wie dort (nach dem Stand, vor dem Gelände)
+        this._startDorfAmBuch();
+        await this._weltAnkunft();
+        this._weltAnschluss(verbunden);
+        this._weltTausch = false;
+    }
+
+    // DER ABSCHIED DER WELT AM ORT: was die Welt in die Seite legte, fällt — wie bei einem Reload, nur ohne die Seite. Ihre
+    // Leitung schließt, was sie außerhalb der Szene auf der GPU hält, geht über seine Abschiede (Chunks und ihre Zellen im
+    // Faden, Ring und Feld-Pass, Dach, Streu, Wasser), jede ihrer Gestalten verlässt die Szene (Senken und Render-Objekte lösen
+    // sich, die Puffer nimmt der Kehraus). Die Wartenden der alten Welt an Foundry und Fäden verfallen (ihre Antworten finden
+    // niemanden; die Pipeline bleibt im Cache), das Buch geht neu in die Welt (`_foundryWirtSteht`). Der Zustand wird frisch wie
+    // bei der Geburt, die Seite reist (`_seite`, `WELT_GRENZE.seite`), jedes Feld am Wirt, das die Welt anlegte, fällt
+    // (`WELT_GRENZE.wirt` bleibt), ihre Gedächtnisse auch.
+    _weltAbschied() {
+        const alt = this.state;
+        const G = AnazhRealm.WELT_GRENZE;
+        const S = this._seite;
+        this.shutdownP2PSync();
+        for (const key of alt.voxelChunks ? [...alt.voxelChunks.keys()] : []) this._disposeVoxelChunk(key);
+        this._fernRingDispose();
+        this._canopyDisposeAllChunks();
+        this._disposeAllScatterRegions();
+        this._disposeHydrosphereMeshes();
+        this._disposeFarWaterSheet();
+        for (const o of [...alt.scene.children]) {
+            if (S.szene.has(o)) continue;
+            alt.scene.remove(o);
+            const glieder = []; // erst gesammelt: ein Abschied (die Arena) nimmt Kinder aus dem Baum, den er geht
+            o.traverse((x) => glieder.push(x));
+            for (const x of glieder) x.isInstancedMesh ? this._instanzAbschied(x) : AnazhRealm._renderObjekteLoesen(x);
+        }
+        const f = this._foundry;
+        if (f) {
+            for (const k of f.pending.keys()) f.pending.set(k, () => {});
+            Object.assign(f, {
+                warte: [],
+                zuege: new Map(),
+                requested: new Set(),
+                nachAtlas: [],
+                wirt: false,
+                buch: f.buchRoh,
             });
+        }
+        for (const n of this._nebenFaeden ? this._nebenFaeden.values() : []) n.pending = new Map();
+        const neu = new AnazhRealm().state;
+        const reist = new Set([...S.zustand, ...G.seite]);
+        for (const k of reist) {
+            const [a, b] = k.split(".");
+            if (b) neu[a][b] = alt[a][b];
+            else if (k in alt) neu[k] = alt[k];
+        }
+        if (neu.voxelWorker) neu.voxelWorkerPending = new Map();
+        if (neu.workshop)
+            Object.assign(neu.workshop, { studioOv: {}, selectedBlueprint: "baum_eiche", selectedRecipe: null });
+        const bleibtFeld = (k) => S.felder.has(k) || G.wirt.includes(k);
+        // DIE KARTEN DER WELT (Texturen und Ziele in ihren Gliedern: Spiegel, March, Wege, Kronen) verlassen die GPU, wenn kein
+        // bleibendes Glied sie trägt (der Kehraus nimmt nur Puffer)
+        const karten = (v, aus, tiefe = 0) => {
+            if (!v || typeof v !== "object" || tiefe > 4 || v.isObject3D || v.isMaterial || ArrayBuffer.isView(v))
+                return;
+            if (v.isTexture || v.isRenderTarget) return void aus.add(v);
+            for (const x of v instanceof Map || v instanceof Set ? v.values() : Object.values(v))
+                karten(x, aus, tiefe + 1);
+        };
+        const [bleibt, faellt] = [new Set(), new Set()];
+        for (const k of Object.keys(alt)) karten(alt[k], reist.has(k) ? bleibt : faellt);
+        for (const k of Object.keys(this)) if (k !== "state") karten(this[k], bleibtFeld(k) ? bleibt : faellt);
+        for (const t of faellt) if (!bleibt.has(t)) this._queueDispose(t);
+        this.state = neu;
+        for (const k of Object.keys(this)) if (!bleibtFeld(k)) delete this[k];
+        for (const k of G.gedaechtnis) this[k] = null;
+        if (this._takt) this._gameLoopTick = this._takt; // was eine Linse am Takt hängte, fällt mit der Welt
     }
 
     // Globaler localStorage-Key `anazhRealmVersions` (versionsHistory ist nicht
@@ -1577,7 +1682,7 @@ class AnazhRealm_speicher_laden {
         );
         // durch DIE TÜR: die Welt der Seite sichert sich, die fremde liegt mit Probe unter ihrer neuen Id; mit `reload` der
         // Welt-Wechsel (Zeiger, Sperre, Reload), sonst bleibt die aktive Welt.
-        const ab = this._weltBetreten(cloned, null, { neuLaden: reload, aktiv: reload });
+        const ab = this._weltBetreten(cloned, null, { wechseln: reload, aktiv: reload });
         if (!ab.ok) return { ok: false, reason: `Speicher voll: ${ab.reason}` };
         this.log(
             `Welt „${slug}" als ${newWorldId.slice(0, 8)}… neben uns gelegt (Parent: ${originalId || "keine"})`,
@@ -1945,7 +2050,7 @@ class AnazhRealm_speicher_laden {
             "INFO"
         );
 
-        if (reload) this._weltWechselNeuLaden(identity.newWorldId);
+        if (reload) this._weltWechsel(identity.newWorldId);
         return {
             ok: true,
             worldId: identity.newWorldId,

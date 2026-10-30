@@ -56,7 +56,7 @@ class AnazhRealm_netz_p2p {
 
     // DER BEITRITT zu einer Welt-Adresse ({broker, roomId}, gesiebt von `_admitForeignWorldAddress`): kurzlebige WS, join +
     // world-request, auf world-snapshot warten; die Welt unter der host-worldId mit role="guest" + hostInfo durch die Tür
-    // `_weltBetreten` ablegen (Sichern, Probe, Sperre, Reload); `zeugnisA` hält die alte Welt vorher fest (das Adress-Portal).
+    // `_weltBetreten` ablegen (Sichern, Probe, Sperre, Wechsel am Ort); `zeugnisA` hält die alte Welt vorher fest (das Adress-Portal).
     // Rufer: der Welt-Code (`empfangeWerk`, Teilen in EINER Geste) und das Adress-Portal. → Promise<{ok, worldId|reason}>
     async _weltBeitritt(addr, { slugHint = null, timeoutMs = 10000, zeugnisA = null } = {}) {
         if (typeof WebSocket === "undefined") {
@@ -120,7 +120,7 @@ class AnazhRealm_netz_p2p {
                     roomId: addr.roomId,
                     peerId: typeof msg.peerId === "string" ? msg.peerId : null,
                 };
-                const worldId = this._importGuestWorld(msg.state, hostInfo, slugHint, { neuLaden: true, zeugnisA });
+                const worldId = this._importGuestWorld(msg.state, hostInfo, slugHint, { wechseln: true, zeugnisA });
                 finish(worldId ? { ok: true, worldId } : { ok: false, reason: "import_failed" });
             });
             ws.addEventListener("error", () => {
@@ -136,9 +136,9 @@ class AnazhRealm_netz_p2p {
     // (`_neueWeltId`). Was der Gast Eigenes trägt — der eindeutige slug, role, hostInfo, schemaVersion und die
     // Auto-Verbindung zum Host —, sind Parameter der EINEN Tür `_weltBetreten` (Sichern, Ablage mit Probe, Sperre). Bis
     // 10.10. schrieb diese Methode Platz, Index und Zeiger selbst (eigene Id-Regel `guest-<Zeit>`, keine Probe) — eine
-    // zweite Tür neben der ersten. `opts.neuLaden` (Einladung, Adress-Portal: true), `opts.zeugnisA` (das Zeugnis der
+    // zweite Tür neben der ersten. `opts.wechseln` (Einladung, Adress-Portal: true), `opts.zeugnisA` (das Zeugnis der
     // alten Welt). → worldId | null
-    _importGuestWorld(snapshot, hostInfo, slugHint, { neuLaden = false, zeugnisA = null } = {}) {
+    _importGuestWorld(snapshot, hostInfo, slugHint, { wechseln = false, zeugnisA = null } = {}) {
         if (!snapshot || typeof snapshot !== "object") return null;
         const erbgutNein = AnazhRealm._erbgutEinlass(snapshot);
         if (erbgutNein) {
@@ -172,7 +172,7 @@ class AnazhRealm_netz_p2p {
                 hostInfo: { url: h.url || null, roomId: h.roomId || worldId, peerId: h.peerId || null },
                 schemaVersion: meta.schemaVersion || "11.5-multiuser-v1",
             },
-            { neuLaden, zeugnisA, p2pAuto: h.url || AnazhRealm.P2P_DEFAULT_WS_URL }
+            { wechseln, zeugnisA, p2pAuto: h.url || AnazhRealm.P2P_DEFAULT_WS_URL }
         );
         if (!r.ok) {
             this.log(`Guest-Welt konnte nicht abgelegt werden: ${r.reason}`, "ERROR");
@@ -2055,7 +2055,7 @@ class AnazhRealm_netz_p2p {
     }
 
     // Empfangenen Welt-Snapshot übernehmen: die Welt des Hosts mit worldMeta.role = "guest" + hostInfo betritt die Seite
-    // durch DIE TÜR `_weltBetreten` (Identität, Ablage mit Probe, Sperre, Reload) — der WS-`world-snapshot` eines laufenden
+    // durch DIE TÜR `_weltBetreten` (Identität, Ablage mit Probe, Sperre, Wechsel am Ort) — der WS-`world-snapshot` eines laufenden
     // Resyncs und der Mesh-Resync world-pull („Welt neu holen"). DER SPEICHER TRÄGT DIE WELT DES HOSTS, NIE DIE MISCHUNG DER
     // SEITE: bis 10.10. lud die Seite sie in sich und schrieb sie per saveState — die Tiere der alten Welt und (mit dem
     // Spread des Restores) ihr Erbgut, ihr Anker, ihre Edits (gate:weltgrenze Weg „weltpull": 50 Felder der alten Welt im
@@ -2072,7 +2072,7 @@ class AnazhRealm_netz_p2p {
         const r = this._weltBetreten(
             state,
             { role: "guest", hostInfo: { url: p2p.url, roomId: p2p.room, peerId: senderId } },
-            { neuLaden: !p2p._testNoReload }
+            { wechseln: !p2p._testNoReload }
         );
         if (!r.ok) {
             this.log(`Welt-Snapshot konnte nicht übernommen werden: ${r.reason}`, "ERROR");

@@ -897,28 +897,27 @@ async function starte() {
     // Ratsche dieses Orts × Geräts × Sicht.
     let aktSicht = null;
     // DIE WELT DES ORTS (Toggle-Ort, haushalt.json `welt`): die Prüfbühne ist eine geborene Welt — sie betritt die
-    // Seite wie im Spiel durch DIE TÜR (`importWorldBeside` mit `reload`: Sperre, Zeiger, Neuladen). Steht die Seite schon in ihr
+    // Seite wie im Spiel durch DIE TÜR (`importWorldBeside` mit `reload`: Sperre, Zeiger, Wechsel am Ort). Steht die Seite schon in ihr
     // (derselbe slug), bleibt sie; ein Import, der nicht greift, oder eine Seite, die danach in einer anderen Welt steht, bricht laut.
     const weltDesOrts = async (ort) => {
         const json = JSON.parse(fs.readFileSync(path.join(root, "spec", ort.welt), "utf8"));
         const slug = json.worldMeta && json.worldMeta.slug;
         if (!slug) throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} trägt keinen worldMeta.slug`);
-        const steht = () =>
-            page.evaluate((s) => {
-                const m = anazhRealm.state.worldMeta;
-                return !!(m && m.slug === s);
-            }, slug);
+        const steht = () => page.evaluate((s) => st.worldMeta?.slug === s, slug);
         if (await steht()) return { slug, neu: false };
-        const nav = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 0 });
+        // DIE ANKUNFT WIE IM SPIEL: die Ziel-Welt kommt mit laufendem Takt an (der Neuladen bootete die Seite mit ihm bis
+        // `loopAus`), bis ihr Genesis-Ort steht — erst ihr Takt am Ankunfts-Ort baut ihn (`_tickGenesisOrt`: das Tor-Rund nur
+        // am Genesis-Ort); mit ruhendem Takt stand die Prüfbühne ohne ihn (7 statt 21 Werke, die Nah-Deckung der Aufnahme fand
+        // keine Instanz-Gruppe)
         const res = await page.evaluate((j) => {
             const x = anazhRealm.importWorldBeside(j, { reload: true });
-            return x && x.ok ? { id: x.worldId } : { fehler: JSON.stringify(x).slice(0, 200) };
+            return x && x.ok ? (__loop(1), { id: x.worldId }) : { fehler: JSON.stringify(x).slice(0, 200) };
         }, json);
         if (res.fehler)
             throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} ließ sich nicht importieren (${res.fehler})`);
-        await lade(nav);
+        await lade(page.evaluate(() => __weltDa(() => st.worldMeta.genesisPortalRing)));
         await loopAus();
-        if (!(await steht())) throw new Error(`Messort ${ort.id}: nach dem Neuladen steht die Seite nicht in ${slug}`);
+        if (!(await steht())) throw new Error(`Messort ${ort.id}: nach dem Wechsel steht die Seite nicht in ${slug}`);
         return { slug, neu: true, id: res.id };
     };
     // Der Adapter-Text des Geräts (WebGPU `adapterInfo`: Hersteller · Architektur · Beschreibung) — EIN Leser für Albedo und Band.

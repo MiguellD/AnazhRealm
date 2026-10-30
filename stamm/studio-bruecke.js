@@ -244,6 +244,7 @@ class AnazhRealm_studio_bruecke {
     // must-ignore: fehlt ein Teilfeld, bleibt dieser Teil byte-alt.
     _foundryIngestBook(m) {
         if (!m || typeof m !== "object") return;
+        if (this._foundry) this._foundry.buchRoh = m; // jeder Welt-Wechsel am Ort trägt es neu in die Welt (`_weltAbschied`)
         this._foundryIngestRecipes(m.book, m.paramsByKind, m.kindPolicy);
         this._foundryIngestWorldParams(m.worldParams);
         this._foundryIngestRenderConfig(m.renderConfig);
