@@ -1,0 +1,26 @@
+{
+    "quelle": "licht.K1: die Beleuchtungsstärke einer waagrechten Fläche unter klarem Himmel in lx (USNO Circular 171, Janiczek & DeYoung 1987, nach Messungen von Brown 1952; Sonne, Vollmond gegenüber, Nachthimmel 0,0005 lx) und die Stufen der 18-%-Karte gegen die Zenit-Sonne unter ihr (die Kamera AnazhRealm.BELICHTUNG). Ein HDR-Zeitraffer ist aus der Cloud nicht erreichbar.",
+    "spalten": [
+        "sonne",
+        "lux",
+        "stufen"
+    ],
+    "zeilen": [
+        [90, 123790, 0],
+        [75, 117970, -0.017],
+        [60, 102940, -0.067],
+        [45, 80020, -0.157],
+        [35, 61320, -0.253],
+        [25, 40920, -0.399],
+        [18, 26390, -0.557],
+        [14, 18390, -0.688],
+        [12, 14620, -0.77],
+        [10, 11080, -0.87],
+        [8, 7890, -0.957],
+        [0, 760, -1.303],
+        [-6, 3.01, -1.563],
+        [-12, 0.0506, -1.823],
+        [-20, 0.0963, -2.17],
+        [-90, 0.397, -2.17]
+    ]
+}

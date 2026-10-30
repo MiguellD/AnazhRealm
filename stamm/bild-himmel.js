@@ -961,9 +961,8 @@ class AnazhRealm_bild_himmel {
     // Dämmerungs-Anker des Himmels (`HIMMEL.grenzgroesse`: die Grenzgröße der Sterne je Sonnenhöhe). Die Kanäle:
     //   grenze      die Grenzgröße (die Sterne erscheinen, wie sie im Himmel erscheinen), linear zwischen den Ankern;
     //   daemmerung  1 im hellen Tag … 0 in astronomischer Nacht (im Maß der Grenzgröße): das Sternen-Licht leuchtet in ihrem Rest;
-    //   tag         das Auge zwischen Tag-Gesetz und geeichter Nacht (`_dayNightApplyBelichtung`, das Nacht-Auge der Post-Kette):
-    //               1 über dem ersten Ersatz-Licht der Nacht (wo `nacht` beginnt, ~14,5°), linear über die Höhe der Sonne bis
-    //               `BELICHTUNG.nachtGrad` auf 0 — die Gleitung beginnt, wo die Nacht beginnt, nie erst am Horizont;
+    //   tag         das Nacht-Auge der Post-Kette (mesopisch): 1 über dem ersten Ersatz-Licht der Nacht (wo `nacht` beginnt,
+    //               ~14,5°), linear über die Höhe der Sonne bis `BELICHTUNG.nachtGrad` auf 0 — es gleitet, wo die Nacht beginnt;
     //   nacht       die Ersatz-Lichter der Nacht (Ambient- und Hemi-Boden, die Zeitpläne der Leuchtquellen): 0 ab ~14,5°, 1 am
     //               Horizont und darunter;
     //   hell        die Leuchtdichte des Tageshimmels relativ zum Mittag (0,045 Nacht … 1), die Blässe des Mondes liest sie.
@@ -2103,7 +2102,7 @@ class AnazhRealm_bild_himmel {
             dl.intensity = M.intensity * tint.lightMul * this._mondDurchlass(md.y);
         }
         // `nightFactor` 0 = Tag → 1 = Nacht: das Auge der Nacht der Post-Kette (K66, mesopisch) liest ihn — am Tag fällt es. Es
-        // ist das Auge der EINEN Tag-Achse (`tag`): es gleitet, wie die Belichtung gleitet, vom Tag in die geeichte Nacht (mit
+        // ist das Auge der EINEN Tag-Achse (`tag`): es gleitet über die Sonnenhöhe vom Tag in die Nacht (mit
         // dem Rest der Dämmerung gemessen nahm es der Wiese 0,1–0,2 EV der Dämmerung, und ihr Schritt zur goldenen Stunde riss).
         if (this.state.postProcessingUniforms && this.state.postProcessingUniforms.nightFactor) {
             const ac = achse || this._tagAchse(sunDir.y);
@@ -2128,44 +2127,58 @@ class AnazhRealm_bild_himmel {
         }
     }
 
-    // DIE BELICHTUNG AUS DEM LICHT (V18.507, S7): die Kamera stellt die 18-%-Karte auf Mittelgrau + 1 EV (die Kamera-Konvention
-    // der Profi-Engines, UE5-Belichtungs-Bias +1; `BELICHTUNG.zielKarte` aus der Tonkurve). Die Karte steht der Sonne zugewandt
-    // (D3-N2, Sunny 16: die Blende folgt dem Durchlass, nie dem Sinus der Höhe) und liest L = 0,18/π · E.
-    // SYNCHRON (S7): E ist die Bestrahlung des Orts (`_waagrechtIrradianz`) plus das Richtlicht, das
-    // die Waagrechte nicht nimmt — der Himmel aus der Bestrahlungs-Tafel der EINEN Atmosphäre an der Sonne DIESER Anwendung.
-    // Bis S7 las sie den Himmel aus der zurückgelesenen Umgebung (eine Lesung nach der Malung): nach jedem Sprung der Uhr trug
-    // der erste Frame die Belichtung der vorigen Stunde (bis 0,57 EV, Uhr 0,75); die erste Runde von S7 setzte den Himmel als
-    // Mittags-Anteil fest (ein Zwilling der Bestrahlung: am Horizont fehlten 0,5 EV).
-    // DAS AUGE PASST SICH TEILWEISE AN (S7): um den klaren Mittag (die Zenit-Sonne der klaren Luft, `_belichtungAnker`) folgt die
-    // Belichtung dem Licht mit dem Exponenten `BELICHTUNG.anpassung` — die tiefe Sonne bleibt dunkler und wärmer als der Mittag.
-    // Bis S7 folgte sie ganz (die sonnenzugewandte Karte blieb bei jeder Höhe Mittelgrau + 1): Uhr 0,27 (Sonne 7°) stand die
-    // Belichtung bei 4,4 und das Bild +0,7 … +1,3 EV über dem Mittag.
-    // DER DECKEL GILT DER NACHT (D3-N2): über die Dämmerung gleitet das Auge geometrisch vom Tag-Gesetz in die geeichte Nacht
-    // (`BELICHTUNG.max`; Mond, Sternen-Licht und Hemi-Boden sind auf ihn geeicht), im Maß des Kanals `tag` der EINEN Tag-Achse:
-    // sie beginnt, wo die Ersatz-Lichter der Nacht beginnen (~14,5°), und endet in `BELICHTUNG.nachtGrad` — bis S7 brach die
-    // Gleitung am Horizont zusammen (Wiese Uhr 0,73 → 0,75: −2,1 EV), in der ersten Runde von S7 begann sie erst am Horizont,
-    // wo das Tag-Gesetz schon auf den Nacht-Böden stand (Belichtung 3,2 bei 0°, der Untergang hellte die Mauern +0,7 EV auf).
+    // DIE BELICHTUNG AUS DEM LICHT (licht.K1, H1): die Kamera ist ein Gesetz in Blenden-Stufen. Sie misst die Beleuchtungsstärke
+    // einer waagrechten Fläche des Orts (`_waagrechtIrradianz`: die Sonne mit dem Sinus ihrer Höhe, der Himmel der Bestrahlungs-
+    // Tafel der EINEN Atmosphäre, Hemi, Ambient — der Lichtmesser mit der Kalotte nach oben, dieselbe Größe, die die REF-Kurve aus
+    // gemessener Beleuchtungsstärke trägt, spec/farbe/tag-ref.json) und legt die 18-%-Karte unter der Zenit-Sonne der klaren Luft
+    // auf Mittelgrau (`zielKarte`, der absolute Anker des Mittags). Die Stufen gegen den Anker (`_belichtungStufen`) sind
+    // die EINE Kurve der Kamera über die Sonnenhöhe (`_tagAchse`): am Tag folgt sie dem Licht mit der Kompensations-Steigung
+    // (Frostbite: Kompensation statt voller Adaption), in der Dämmerung tragen die Stufen der Tag-Achse — dort hält die Welt ihr
+    // Licht (die Ersatz-Lichter, `_dayNightApplyAmbient`), das Bild fällt gleichmäßig in der Sonnenhöhe zur lesbaren Nacht.
+    // Bis H1 stand die sonnenzugewandte Karte auf Mittelgrau + 1 EV, das Auge folgte ihrem Licht mit 0,34 und glitt ab ~14,5°
+    // zum Deckel der Nacht: die Sonne in 7° stand an der Wiese einmal 0,16, einmal 1,29 EV unter dem Mittag (Radeon).
     _dayNightApplyBelichtung(achse) {
-        const st = this.state;
-        const rend = st.renderer;
-        const dl = st.directionalLight;
-        if (!rend || !dl) return;
-        const B = AnazhRealm.BELICHTUNG;
-        const e = this._waagrechtIrradianz(this._belichtungE || (this._belichtungE = [0, 0, 0]));
-        if (!e) return;
-        // die Waagrechte trägt das Richtlicht mit dem Sinus seiner Höhe (`_belichtungRichtung`, eben dort normiert) — die
-        // Karte der Sonne zugewandt nimmt es ganz
-        const dy = Math.max(0, this._belichtungRichtung.y);
-        const richt = dl.intensity * (0.2126 * dl.color.r + 0.7152 * dl.color.g + 0.0722 * dl.color.b);
-        const E = 0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2] + richt * (1 - dy);
-        const EA = this._belichtungAnker();
-        if (!EA) return;
-        const tag = (B.zielKarte / ((0.18 / Math.PI) * EA)) * Math.pow(EA / Math.max(E, 1e-6), B.anpassung);
-        rend.toneMappingExposure = Math.max(B.min, B.max * Math.pow(tag / B.max, achse.tag));
-        st._belichtungSteht = true;
+        const k = this._belichtungAusLicht(achse.e);
+        if (k == null) return;
+        this.state.renderer.toneMappingExposure = k;
+        this.state._belichtungSteht = true;
     }
 
-    // DER ANKER DER ANPASSUNG (S7): E der Karte unter der Zenit-Sonne der klaren Luft — E0 (`KEY_BASE` · `LEGACY_LICHT`) × (ihr
+    // DIE BELICHTUNG DES ORTS bei der Sonnenhöhe e (sin): das Gesetz der Kamera aus dem Licht, das jetzt gilt — null, solange
+    // Renderer, Richtlicht, der Himmel des Orts oder der Anker fehlen (dann schreibt niemand)
+    _belichtungAusLicht(e) {
+        const st = this.state;
+        if (!st.renderer || !st.directionalLight) return null;
+        const B = AnazhRealm.BELICHTUNG;
+        const w = this._waagrechtIrradianz(this._belichtungE || (this._belichtungE = [0, 0, 0]));
+        const EA = w && this._belichtungAnker();
+        if (!EA) return null;
+        const E = Math.max(0.2126 * w[0] + 0.7152 * w[1] + 0.0722 * w[2], 1e-6);
+        const h = (Math.asin(Math.max(-1, Math.min(1, e))) * 180) / Math.PI;
+        return Math.max(B.min, (B.zielKarte * 2 ** AnazhRealm._belichtungStufen(h, E / EA)) / ((0.18 / Math.PI) * E));
+    }
+
+    // DIE STUFEN DER KAMERA (rein): die Blenden-Stufen der 18-%-Karte gegen den Anker bei der Sonnenhöhe h (Grad) und dem Licht q
+    // (E gegen den Anker). Über `gleitung[0]` die Steigung: log2 q × (1 − `steigung`); unter `gleitung[1]` die Stufen der
+    // Tag-Achse (`stufen`, linear in h zwischen den Knoten, außen gehalten); dazwischen linear in h gemischt. Die Linse rechnet
+    // die Kurve aus demselben Glied (scripts/lib/licht-linsen.cjs `tagGesetzKurve`).
+    static _belichtungStufen(h, q) {
+        const B = AnazhRealm.BELICHTUNG;
+        const K = B.stufen;
+        let n = K[K.length - 1][1];
+        if (h >= K[0][0]) n = K[0][1];
+        else
+            for (let i = 1; i < K.length; i++)
+                if (h >= K[i][0]) {
+                    n = K[i][1] + ((K[i - 1][1] - K[i][1]) * (h - K[i][0])) / (K[i - 1][0] - K[i][0]);
+                    break;
+                }
+        const [oben, unten] = B.gleitung;
+        const t = Math.max(0, Math.min(1, (h - unten) / (oben - unten)));
+        return t * (1 - B.steigung) * Math.log2(q) + (1 - t) * n;
+    }
+
+    // DER ANKER DER KAMERA (S7, H1): E der waagrechten Karte unter der Zenit-Sonne der klaren Luft — E0 (`KEY_BASE` · `LEGACY_LICHT`) × (ihr
     // Durchlass, `ATMO_RECHNUNG.sonne`, e = 1, Bezug der Luft, + der Himmel der Bestrahlungs-Tafel derselben Luft, `_himmelsAnker`).
     // Eine Größe des Gesetzes, EINMAL gerechnet, sobald die Tafel liegt (vorher null: die Belichtung schreibt nicht, das erste
     // Weltbild wartet, `_weltbildLuecken` licht); der Null-Renderer malt keinen Himmel (Lehre 16), dort trägt die Karte keinen.
@@ -2186,7 +2199,7 @@ class AnazhRealm_bild_himmel {
     // Höhle der Boden-Funktion bekommt kein Himmels-Licht (gelaende-core `himmelsSicht`), und 40 m hinter der Mündung erreicht sie auch
     // keine Sonne — die Ich-Sicht war schwarz (Helligkeit 0). Das Licht steht am Auge (die Kamera), seine Stärke folgt dem
     // Anteil des Himmels, der fehlt (`_himmelAmAuge`: das Auge adaptiert — unter dem Himmel bleibt jede Höhle dunkel), und
-    // ist so geeicht, dass die 18-%-Karte in `AUGEN_LICHT.karteM` dasselbe Mittelgrau + 1 EV zeigt wie am Tag (die Belichtung
+    // ist so geeicht, dass die 18-%-Karte in `AUGEN_LICHT.karteM` dasselbe Mittelgrau zeigt wie am Mittag (die Belichtung
     // aus dem Licht: L = 0,18/π · E · Belichtung = zielKarte; der Abfall des EINEN Punktlicht-Gesetzes, fachwerk `lichtAbfall`).
     // Es ist ein PLATZ DES LICHT-POOLS mit Himmels-Ersatz (K11, `_leuchtTakt`): kein Szenen-Licht (K15), kein eigener Term —
     // es trägt nur, wo der Himmel fehlt (der Boden mit 1 − aHimmel), seine Stärke in der Zahl des Labors (÷ LEGACY_LICHT), damit
@@ -3130,7 +3143,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_bild_himmel]);
 
 // ===== ATLAS · Bild/himmel — Außen-Konstanten =====
 // DAS LICHT DES AUGES (`_dayNightApplyAugenLicht`): jede dem Auge zugewandte Fläche zeigt in seinem Schein dieselbe
-// Helligkeit wie am Tag — die 18-%-Karte in `karteM` das Mittelgrau + 1 EV (die Stärke folgt der Belichtung: das Auge
+// Helligkeit wie am Mittag — die 18-%-Karte in `karteM` das Mittelgrau (die Stärke folgt der Belichtung: das Auge
 // adaptiert an sein Licht). Es ist ein Platz des Licht-Pools mit Himmels-Ersatz (K11) und fällt nach dem EINEN Punktlicht-
 // Gesetz (fachwerk `lichtAbfall`, K11b): mit `abfall` 1 und dem weiten Kern `kernM` 8 (ein Schein, keine Flamme) zeigt die
 // Wand in 0,3 m 1,03× die Karte in 2 m (ihre Maserung), in 10 m 57 %, in 15 m 23 % (bis K11b, Legacy-Abfall (1 − d/R):
@@ -3235,25 +3248,25 @@ AnazhRealm.KEY_BASE = 2.6;
 // r128-Studio kopierten Rig-Werte (Key · Hemi-Tag) laufen durch diesen EINEN Faktor;
 // die Nacht bleibt unberührt (Mond-Pfad eigen, Hemi-Nacht-Floor außerhalb). Kein Tuning-Knopf.
 AnazhRealm.LEGACY_LICHT = Math.PI;
-// DIE BELICHTUNG (V18.507, `_dayNightApplyBelichtung`) — EINE Eichung mit der Tonkurve (F1): `kurve` ist die Tonkurve des
-// Renderers (25a liest sie, three r184: Khronos PBR Neutral), `zielKarte` die Leuchtdichte der 18-%-Karte nach der
-// Belichtung, die DIESE Kurve auf Mittelgrau + 1 EV legt (`npm run look-lens` rechnet sie aus der Kurve nach). Neutral gibt
-// unter der Schulter x − 0,04 aus: Mittelgrau (sRGB 118 = linear 0,18) braucht den Eingang 0,22, also k·L = 2 · 0,22 = 0,44
-// (unter ACES bis F1: 2 · 0,26227 · 0,6 = 0,3147). `max` hält die geeichte Nacht (über ihn hebt nur das Licht des Himmels,
-// D3-N2): die Nacht ist auf die Karte geeicht (Mond, Sternen-Licht, Hemi-Boden) — der Deckel legt sie so weit unter
-// Mittelgrau + 1 wie bis F1 die Belichtung 1,0 unter ACES, 0,44 / 0,3147 = 1,4. `min` ist nur die Wand gegen ein entartetes Licht.
-// `anpassung` (S7) ist der Exponent, mit dem das Auge dem Licht um den klaren Mittag folgt (1 = ganz, 0 = nie), `nachtGrad` (S7)
-// die Tiefe der Sonne, in der das Auge die geeichte Nacht erreicht (die Gleitung beginnt am Kanal `nacht` der Tag-Achse, ~14,5°).
-// Gemessen je Seite (Radeon, `werkbank licht --tag`): bei fester Belichtung fällt das Licht von der Sonne in 7° zum Horizont am
-// Spawn um 0,9 (Morgen) und 0,15 EV (Abend) und bleibt darunter bis Mitternacht flach (die Nacht-Böden) — der Morgen verlangt
-// zwischen 7° und 0° mindestens 0,41 EV Öffnung, der Abend höchstens 0,65; die goldene Stunde 0,5–1 EV unter dem Mittag (Mittel)
-// mit jeder Seite darunter legt anpassung 0,34 und nachtGrad −32 fest (Belichtung 1,68 bei 7°, 2,29 am Horizont, 1,4 bei −32°).
+// DIE BELICHTUNG (licht.K1, `_dayNightApplyBelichtung`) — EINE Eichung mit der Tonkurve (F1): `kurve` ist die Tonkurve des
+// Renderers (25a liest sie, three r184: Khronos PBR Neutral), `zielKarte` das k·L der 18-%-Karte, das DIESE Kurve auf Mittelgrau
+// legt (sRGB 118, der absolute Anker des Mittags: Luma 110–130; Neutral gibt unter der Schulter x − 0,04 aus, linear 0,18 braucht
+// 0,22 — `kartenEichung(kurve, 0)` in scripts/lib/licht-linsen.cjs rechnet es nach). `min` ist nur die Wand gegen ein
+// entartetes Licht. `steigung` ist die Kompensations-Steigung des Tags (1 = volle Adaption, 0 = feste Blende): die Karte fällt mit
+// 1 − s des gemessenen Lichts. `stufen` sind die Knoten [Grad, Stufen] der Tag-Achse für Dämmerung und Nacht, `gleitung`
+// [oben, unten] das Band, in dem die Kamera von der Steigung auf sie gleitet. Gemessen an der Mess-Wiese in Ego (swiftshader,
+// je Uhr das Histogramm der Szene vor der Tonkurve): s 0,75 legt die Sonne 10° morgens und abends 0,67 EV unter den Mittag (die
+// Karte selbst −0,87 Stufen, im Bild −1,17 EV: die Wiese als Dach fällt flacher als eine waagrechte Fläche), die Nacht −2,17
+// Stufen 3,14 EV darunter bei Luma 44; die Dämmerung fällt 1,3 Stufen über 30° — unter 0,1 EV je 0,72° Sonne auch im Fuß der
+// Kurve (6,25·x²), wo das Bild doppelt so steil fällt wie die Stufe. `nachtGrad` (S7) ist die Tiefe der Sonne, in der das
+// Nacht-Auge der Post-Kette ganz steht (der Kanal `tag` der Tag-Achse).
 AnazhRealm.BELICHTUNG = Object.freeze({
     kurve: "NeutralToneMapping",
-    zielKarte: 0.44,
-    min: 0.25,
-    max: 1.4,
-    anpassung: 0.34,
+    zielKarte: 0.22,
+    min: 0.05,
+    steigung: 0.75,
+    gleitung: Object.freeze([12, 8]),
+    stufen: Object.freeze([Object.freeze([10, -0.87]), Object.freeze([-20, -2.17])]),
     nachtGrad: -32,
 });
 // Mindestabstand zwischen zwei Sky-Env-PMREM-Regenerierungen (Wall-Clock): Tag-Nacht-Uhr und
