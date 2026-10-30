@@ -1493,7 +1493,12 @@ class AnazhRealm_bild_kosten {
                 );
             })
             .catch((e) => {
-                this.log("AUSGABE: die Rundungs-Sonde fiel (" + ((e && e.message) || e) + ") — die Ditherung nimmt gegen null an", "WARN");
+                this.log(
+                    "AUSGABE: die Rundungs-Sonde fiel (" +
+                        ((e && e.message) || e) +
+                        ") — die Ditherung nimmt gegen null an",
+                    "WARN"
+                );
             })
             .finally(() => {
                 tex.destroy();
