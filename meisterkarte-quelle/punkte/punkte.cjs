@@ -666,10 +666,17 @@ const GRUND_SEITE = ["__ortTakt", "__ortStell", "__ortSchritt", "__ortBahn", "__
 // räumt die Natur auf ihm (`_wegeRaeumen`); `_standRueckspielen` lässt Karte und Natur als Caches warm — der Weg einer Probe (tempo4,
 // die Straße von fahr-proben, ein erwachtes Dorf, die Stadt) blieb liegen, die Proben danach maßen neben ihm. Der Abdruck je Fläche
 // ihr Rechteck auf 0,1 m und die Zahl ihrer Formen, dazu die Marken; läuft in der Seite (r = die Welt).
+// DIE TRITTFLÄCHE IST KEIN GRUND (eich5 GTX 379e5f56, eich1 3ed95dcf ebenso: nach vegetation.K5 am Eich-Deckel ging die Grundstellung
+// durch die Tür und fand „wege −17“ — 17 Kästen 2,1 m mit EINER Form längs des Wegs, den profiband.K4 vor dem Grund ging; die Sitzung
+// endete, 64 Proben UNGEMESSEN): die Trittfläche der Ausstattung (Feuerstelle, Brunnen, Marktstand) setzt das Spiel einmal je Eintrag
+// beim ersten Studio-Platz, transient, ohne Snapshot (`_trittFlaecheSetzen`, stamm/siedlung-wege.js) — die neue Seite setzt sie erst,
+// wo der Eintrag wieder platziert wird. Der Abdruck trägt sie nie: sie hängt am Eintrag (`_trittBox`), und der Eintrag steht selbst im
+// Grund (`architectures`); eine Fläche, die kein Eintrag trägt, bleibt ein Weg.
 function wegeAbdruck(r) {
     const wk = r && r.state && r.state.wegeKarte, k = r && r._stlWegeKeys;
+    const tritt = new Set(((r && r.state && r.state.architectures) || []).map((e) => e && e._trittBox).filter(Boolean));
     const f = (b) => [b.x0, b.z0, b.x1, b.z1].map((v) => Math.round(v * 10) / 10).join(",") + "/" + (b.formen ? b.formen.length : 0);
-    return { flaechen: (wk ? wk.siedlungen : []).map(f).sort(), keys: k ? [...k].sort() : [] };
+    return { flaechen: (wk ? wk.siedlungen : []).filter((b) => !tritt.has(b)).map(f).sort(), keys: k ? [...k].sort() : [] };
 }
 // die Abweichung vom Abdruck des Grunds beim Namen — „wege +n [Fläche] (neue Marken) −m [Fläche]“ — oder null; eine Marke, die fiel, ist
 // keine (die Weltgrenze vergisst das Gedächtnis der Seite, `WELT_GRENZE.gedaechtnis`), eine neue auch ohne Fläche schon (die Natur,
@@ -3131,6 +3138,19 @@ async function selbsttest(o = {}) {
         pruef("SITZUNG MUTANTE ein Weg, der auch die Tür überlebt: die übrigen Proben UNGEMESSEN beim Namen des Wegs (nie ROT, nie still weiter)",
             r14.z.join(",") === "start,nimm,warm,grund,tuer,reload,grund,stop" && r14.es["m.K1#1"].gruen && r14.es["b.K1#1"].ungemessen === true &&
             /abweichend vom Grund: wege \+1 .*probe:tempo4/.test(r14.es["b.K1#1"].grund), JSON.stringify([r14.z, r14.es]));
+        // DIE TRITTFLÄCHE IST KEIN GRUND (eich5 GTX 379e5f56: „wege −17“ nach der Tür, die Sitzung endete): der Abdruck trägt die
+        // Trittfläche eines Eintrags nie — nach der Tür fehlt sie ohne Abweichung; eine Fläche, die kein Eintrag trägt, bleibt ein Weg
+        {
+            const kasten = (x) => ({ x0: x, z0: -63.7, x1: x + 2.1, z1: -61.6, formen: [{ typ: "kasten" }] });
+            const [weg, t1, t2] = [{ x0: -10, z0: 0, x1: 10, z1: 60, formen: [{}, {}] }, kasten(-119.9), kasten(-3.2)];
+            const welt = (fl, arch) => ({ state: { wegeKarte: { siedlungen: fl }, architectures: arch }, _stlWegeKeys: new Set(["dorf:1"]) });
+            const grund = wegeAbdruck(welt([weg, t1, t2], [{ _trittBox: t1 }, { _trittBox: t2 }, { _trittBox: false }]));
+            const tuer = wegeAbdruck(welt([weg], [{ _trittBox: undefined }, { _trittBox: undefined }, { _trittBox: false }]));
+            const waise = wegeAbdruck(welt([weg, t1], [{ _trittBox: undefined }]));
+            pruef("SITZUNG DIE TRITTFLÄCHE IST KEIN GRUND: der Abdruck trägt die Trittfläche eines Eintrags nie — nach der Tür fehlt sie ohne Abweichung (eich5: „wege −17“); eine Fläche ohne Eintrag bleibt ein Weg (+1)",
+                grund.flaechen.length === 1 && wegeAbweichung(grund, tuer) === null &&
+                /^wege \+1 \[-119\.9,-63\.7,-117\.8,-61\.6\/1\]$/.test(String(wegeAbweichung(grund, waise))), JSON.stringify([grund, tuer, waise]));
+        }
         // DER ABBRUCH VON ANFANG: fällt die letzte Probe von anfang am Deckel, lädt die Seite neu, ehe der Grund genommen wird
         const r10 = await lauf([[S("a.K1", 1, { befehl: ["node", "-e", "setTimeout(() => {}, 60000)"], sek: 2, stellung: "anfang" }, lies)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "gut", null);
         pruef("SITZUNG DER ABBRUCH VON ANFANG: die Seite neu, ehe der Grund genommen wird (nie ein Grund aus einer Seite, in der eine gefallene Probe arbeitet)",
