@@ -8,7 +8,9 @@ async function probeLeben(expected) {
     await window.__weltDa();
     const VC = window.__vehicleCore;
     const f = r._ensureAssetFoundry();
-    await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
+    await window.__weltDa(
+        () => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt
+    );
     const P = Object.getPrototypeOf(r);
     const A = P.constructor; // die Klasse der Welt (Gesetze und Konstanten)
     const DT = 1 / 60;
@@ -226,7 +228,21 @@ async function probeLeben(expected) {
     // DIE STRASSE der Proben: 6 m breit von (x, z) längs `fahrt` über `L` m, über den Hebel der Dörfer (`_stlWegeBuild`: Boden,
     // Natur-Wand, Wiese) — der Weg der W-Kette (K8) und der Anlauf zur Klippe (S2, S4).
     const strasse = (x, zz, fahrt, L) =>
-        r._stlWegeBuild({ roads: [{ pts: [{ x: 0, z: 0 }, { x: L * Math.sin(fahrt), z: L * Math.cos(fahrt) }], w: 6 }] }, { x, z: zz }, "probe:" + x);
+        r._stlWegeBuild(
+            {
+                roads: [
+                    {
+                        pts: [
+                            { x: 0, z: 0 },
+                            { x: L * Math.sin(fahrt), z: L * Math.cos(fahrt) },
+                        ],
+                        w: 6,
+                    },
+                ],
+            },
+            { x, z: zz },
+            "probe:" + x
+        );
     // DIE ANKUNFT: eine Station an einem neuen Ort misst erst, wenn die Welt um den Spieler steht (welt-boot `__weltStehtNach`).
     const ankommen = async (x, zz) => {
         stelle(x, zz, 2);
@@ -418,8 +434,15 @@ async function probeLeben(expected) {
             st.spielZeit += A.BRAND.schrittS;
             r._tickBrand();
             const q = r._leuchtQuellen(start.x, 0, start.z, 1e3).find((l) => l.id === herd);
-            const m = { regen: r._weatherFieldFor(st.weather).rain, naesse: st.naesse, stoff: r._ensureAtmoUniforms().naesse.value };
-            Object.assign(m, { brand: [...st.brandFeld.values()].includes(herd) ? herd.glut : 0, licht: q ? r._leuchtStaerke(q, 0) : 0 });
+            const m = {
+                regen: r._weatherFieldFor(st.weather).rain,
+                naesse: st.naesse,
+                stoff: r._ensureAtmoUniforms().naesse.value,
+            };
+            Object.assign(m, {
+                brand: [...st.brandFeld.values()].includes(herd) ? herd.glut : 0,
+                licht: q ? r._leuchtStaerke(q, 0) : 0,
+            });
             st.brandFeld.clear();
             st.worldMeta.taten.length = n0;
             out[name] = Object.assign(m, await bremse());
@@ -429,9 +452,17 @@ async function probeLeben(expected) {
         const fest = halte("_naesseTakt", () => st.naesse);
         await lage("trocken", "sunny");
         await lage("sturm", "stormy");
-        await lage("festRegen", "stormy", halte("_weatherFieldFor", () => P0._weatherFieldFor.call(r, "sunny")));
+        await lage(
+            "festRegen",
+            "stormy",
+            halte("_weatherFieldFor", () => P0._weatherFieldFor.call(r, "sunny"))
+        );
         await lage("festNaesse", "stormy", fest);
-        await lage("festBrand", "stormy", halte("_tickBrand", () => {}));
+        await lage(
+            "festBrand",
+            "stormy",
+            halte("_tickBrand", () => {})
+        );
         await lage("stern", "stormy", () => {
             const los = fest();
             r._fahrHaft = () => (r._weatherIsWet() ? 0.2 : 1);
@@ -474,10 +505,18 @@ async function probeLeben(expected) {
         const out = { hilfe: { zeilen: r._hilfeZeilen() }, tacho };
         r.initSymphony();
         const [stimmen, fx, hand] = [() => (st.symphony.fahrt || {}).size, [{}], [0, 0, 0, 0]];
-        const akt = { effects: ["dual-rumble"], playEffect: (t, f) => (fx.push(f), Promise.resolve()), reset: () => fx.push({}) };
+        const akt = {
+            effects: ["dual-rumble"],
+            playEffect: (t, f) => (fx.push(f), Promise.resolve()),
+            reset: () => fx.push({}),
+        };
         navigator.getGamepads = () => [{ connected: true, axes: [0, 0, 0, 0], buttons: [], vibrationActuator: akt }];
         strasse(start.x, start.z, Math.PI / 2, 72);
-        const orte = { glatt: [start.x, start.z, Math.PI / 2], drift: [start.x, start.z + 12, Math.PI / 2], hang: hang && [hang.x, hang.z, hang.fahrt] };
+        const orte = {
+            glatt: [start.x, start.z, Math.PI / 2],
+            drift: [start.x, start.z + 12, Math.PI / 2],
+            hang: hang && [hang.x, hang.z, hang.fahrt],
+        };
         const [M, L, Bu, V] = [new THREE.Matrix4(), new THREE.Matrix4(), new THREE.Matrix4(), new THREE.Vector3()];
         const lauf = async (n) => {
             const e = orte[n] && (await setzen("fahrzeug_gt", ...orte[n]));
@@ -488,7 +527,9 @@ async function probeLeben(expected) {
             const hu = r._fahrzeugGesetzFor(e).drive.huelle;
             const ecken = [hu.fAx, hu.rAx].flatMap((ax) => [-1, 1].map((q) => [ax, 0, (q * hu.spur) / 2]));
             const f = r._foundryFlattenFor(e, r._foundryPresetForEntry(e), e._servedLod ?? e._lodLevel);
-            const k = f.leaves.findIndex((lf, i) => !lf.rad && e.instSlots[i] && st.archInstanceGroups.get(e.instSlots[i].key));
+            const k = f.leaves.findIndex(
+                (lf, i) => !lf.rad && e.instSlots[i] && st.archInstanceGroups.get(e.instSlots[i].key)
+            );
             L.copy(f.leaves[k].localMatrix).invert();
             for (let i = 0; i < B.bilder; i++) {
                 const d = n === "drift" && i >= B.driftAb;
@@ -500,7 +541,8 @@ async function probeLeben(expected) {
                 if (i % 10 === 0 && el && ++tacho.proben) {
                     const [zahl, kmh] = [parseInt(el.textContent), Math.round(Math.abs(fz.vlong) * VC.FAHR.kmh)];
                     [tacho.unsichtbar, tacho.maxKmh] = [tacho.unsichtbar + !sichtbar(), Math.max(tacho.maxKmh, kmh)];
-                    if (!(Math.abs(zahl - kmh) <= B.tachoKmh) && ++tacho.falsch === 1) tacho.beispiel = `zeigt ${zahl}, Fahrt ${kmh} km/h`;
+                    if (!(Math.abs(zahl - kmh) <= B.tachoKmh) && ++tacho.falsch === 1)
+                        tacho.beispiel = `zeigt ${zahl}, Fahrt ${kmh} km/h`;
                 }
                 // das Bild: der Aufbau, wie er gezeichnet ist (Instanz-Matrix × Blatt⁻¹), je Ecke über dem Rahmen der Räder; der
                 // Boden-Stoß des Schritts; das letzte Rumble am Pad (stark, schwach)
@@ -508,7 +550,12 @@ async function probeLeben(expected) {
                 M.multiply(L);
                 r._archEntryWorldMatrix(e, Bu, true);
                 const { strongMagnitude: stark = 0, weakMagnitude: schwach = 0 } = fx[fx.length - 1];
-                m.bild.push([ecken.map((p) => V.set(...p).applyMatrix4(M).y - V.set(...p).applyMatrix4(Bu).y), Math.abs(fz.bodenStoss || 0), stark, schwach]);
+                m.bild.push([
+                    ecken.map((p) => V.set(...p).applyMatrix4(M).y - V.set(...p).applyMatrix4(Bu).y),
+                    Math.abs(fz.bodenStoss || 0),
+                    stark,
+                    schwach,
+                ]);
             }
             [bahnWache, m.klingt] = [null, stimmen()];
             weg(e);
@@ -536,9 +583,258 @@ async function probeLeben(expected) {
         }
         return out;
     };
-    if (expected.nurKette || expected.nurRueck) {
+    // ── DIE FAHRT AUF DEM WEGENETZ (fahrzeug.K2, `expected.wegenetz` {orte, mutante, gleich}): die Orte (Zellen, je zwei Nachbarn
+    // im Wegenetz) erwachen am Spieler wie im Spiel (der Dorf-Zug, `__anazhAutoSettlement`), ihre Feldwege legt das Gesetz; die
+    // Route ist die kürzeste über das Netz (`_wegenetzRoute`) von der Mess-Wiese zum letzten Ort, der GT fährt sie mit dem
+    // Fahrer am Steuer (`fahrerSetzen` → Verb-Tafel → der EINE Fahr-Schritt) in den Bildern der Probe (`gleich`: 60 fps); die
+    // Zählung des Sim-Takts trägt der Fahrer (`F.takte`, `F.tempo`, `F.fest`). Je 10 m der Route der Boden am Wagen: dorf (ein
+    // Haus in 25 m), wald (≥ 3 Bäume der Natur in 15 m), sonst wiese. `mutante` (die Weg-Erkennung aus): die Luftlinie.
+    const wegenetz = async (o) => {
+        await window.__weltDa(() => A._siedlungGesetz());
+        let i = 0;
+        const bild = () => (o.gleich ? r._gameLoopTick((tMs += 1000 / 60)) : frame(i++));
+        const orte = o.orte.map((k) => r._wegenetzNachbarn(k) && r._wegenetzMemo.orte.get(k));
+        for (const ort of orte) {
+            stelle(ort.x + 30, ort.z + 30, 2);
+            await window.__gebautNach("der Ort " + ort.key, {
+                takt: bild,
+                fertig: () => (r._bewohnerSiedlungen || new Map()).has(ort.key),
+            });
+        }
+        await Promise.all([...r._wegenetzKanten.values()].map((k) => k.fertig));
+        const [W, Z] = [{ x: mo[0], z: mo[1] }, orte[orte.length - 1]];
+        const route = o.mutante ? [W, Z] : r._wegenetzRoute([W, Z]);
+        if (!route) throw new Error("das Wegenetz trägt keine Route von der Wiese zum Ort " + Z.key);
+        const [a, c] = route;
+        await setzen("fahrzeug_gt", a.x, a.z, Math.atan2(c.x - a.x, c.z - a.z));
+        const F = r.fahrerSetzen(route);
+        const b = { wiese: 0, wald: 0, dorf: 0, weg: 0, n: 0 };
+        const p = st.playerMesh.position;
+        const nah = (x, m) => x && x.position && flach(x.position, p) < m;
+        for (let bis = 0; i < 30000 && !F.ende;) {
+            bild();
+            if (i % 4 === 3) await window.sleep();
+            if (F.s < bis) continue;
+            bis = F.s + 10; // je 10 m der Route: steht der Wagen auf Weg und Feldweg, welcher Boden trägt ihn
+            const baeume = st.architectures.filter((x) => nah(x, 15) && r._istNatur(x) && /^baum_/.test(x.type)).length;
+            b[st.architectures.some((x) => x && x.tuer && nah(x, 25)) ? "dorf" : baeume >= 3 ? "wald" : "wiese"]++;
+            [b.weg, b.n] = [b.weg + r._aufWeg(p.x, p.z, 0), b.n + 1];
+        }
+        r.fahrerSetzen(null);
+        const t = F.tempo;
+        // die Täter der langsamen Takte (der Fahrer zählt sie je `ortM` der Route): die schwersten Orte mit Takten, Täter, v min, Radius
+        const D = A.FAHRER;
+        const taeter = Object.entries(F.orte)
+            .sort((a, c) => c[1].n - a[1].n)
+            .slice(0, 12)
+            .map(([o, q]) => ({
+                s: +o * D.ortM,
+                n: q.n,
+                grund: Object.entries(q.grund).sort((a, c) => c[1] - a[1])[0][0],
+                v: +q.vMin.toFixed(1),
+                r: Number.isFinite(q.rMin) ? +q.rMin.toFixed(1) : null,
+            }));
+        return {
+            lang: Math.round(F.lang),
+            weg: Math.round(F.s),
+            ende: F.ende,
+            schritte: F.takte,
+            tempo: t,
+            steck: F.fest,
+            anteil: (t[8] + t[9] + t[10]) / F.takte,
+            wegAnteil: b.weg / b.n,
+            boden: { wiese: b.wiese / b.n, wald: b.wald / b.n, dorf: b.dorf / b.n },
+            lage: [p.x, p.z],
+            grund: F.grund,
+            taeter,
+        };
+    };
+    // ── VK — DER VERKEHR DER STADT (PFLICHT-OFFEN C): die Metropole des Messorts `stadt-voll` („dorf 7 300" an ihrem Anker), der
+    // Spieler an ihrem Markt neben der Trasse; je Stunde (`stunden`: Tag und Nacht) bis jeder Bewohner seinen Leib trägt und jeder
+    // Fahrer am Steuer sitzt, dann `sek` Sekunden im Takt des Spiels. Gezählt: die Wagen (Gesetz, gestellt, fahrend), ihr Weg, wer
+    // steckt, jeder Stoß der Hülle, jede Berührung eines Wagens mit einem Bewohner (die Kapsel tiefer als 0,1 m im Rechteck der
+    // Hülle) und zweier Wagen (ihre Rechtecke), wer ohne Schlüssel in der Kreuzung ist, die Ablage von der Spur (außer im Ort, den
+    // er allein hält) und die Kosten des Sim-Takts; wer weniger als 30 m fuhr oder am Ende steht, beim Namen.
+    const verkehr = async (o) => {
+        const ort = (await (await fetch("spec/profiband/haushalt.json")).json()).messorte.find(
+            (m) => m.id === "stadt-voll"
+        );
+        const [seed, [ax, az]] = [Number(ort.gruendung.wort.split(" ")[1]), ort.gruendung.anker];
+        await window.__weltDa(() => A._siedlungGesetz());
+        let i = 0;
+        const S0 = () =>
+            [...(r._bewohnerSiedlungen || new Map()).values()].find(
+                (q) => q.plan.seed === seed && Math.hypot(q.ox - ax, q.oz - az) < 200
+            );
+        if (!S0()) await r.spawnSettlement({ seed, nH: 300, position: { x: ax, y: 0, z: az } });
+        const S = S0();
+        if (!S) throw new Error("keine Stadt am Messort stadt-voll");
+        const R = A.PLAYER_WALL_RADIUS;
+        const P = Object.getPrototypeOf(r);
+        const lage = (W) => {
+            const f = W.entry._rideYaw || 0;
+            return {
+                x: W.entry.position.x,
+                z: W.entry.position.z,
+                fx: Math.sin(f),
+                fz: Math.cos(f),
+                hl: W.hl,
+                hw: W.hw,
+            };
+        };
+        // die Kapsel (x, z) im Rechteck des Wagens, tiefer als 0,1 m; zwei Rechtecke über die vier Achsen beider
+        const drin = (L, x, z) =>
+            Math.abs((x - L.x) * L.fx + (z - L.z) * L.fz) < L.hl + R - 0.1 &&
+            Math.abs((x - L.x) * L.fz - (z - L.z) * L.fx) < L.hw + R - 0.1;
+        const schnitt = (a, b) =>
+            [a.fx, a.fz, b.fx, b.fz].every((_, k) => {
+                const [ux, uz] =
+                    k & 1 ? [(k < 2 ? a : b).fz, -(k < 2 ? a : b).fx] : [(k < 2 ? a : b).fx, (k < 2 ? a : b).fz];
+                const p = (L) => Math.abs(L.fx * ux + L.fz * uz) * L.hl + Math.abs(L.fz * ux - L.fx * uz) * L.hw;
+                return Math.abs((b.x - a.x) * ux + (b.z - a.z) * uz) < p(a) + p(b) - 0.05;
+            });
+        const aus = {};
+        for (const stunde of o.stunden) {
+            stelle(S.ox, S.oz, 2);
+            r._uhrSetzen(stunde / 24, "regler");
+            const bereit = () =>
+                S.liste && S.liste.every((b) => b.leib) && S.verkehr && S.verkehr.wagen.every((W) => W.b.amSteuer);
+            for (const weiter = window.__deckel("verkehr: die Stadt steht", 4000); weiter() && !bereit(); i++) {
+                frame(i);
+                if (i % 8 === 7) await window.sleep();
+            }
+            const VK = S.verkehr;
+            if (!VK) throw new Error("die Stadt trägt keinen Verkehr");
+            // der Spieler steht am Markt neben der Trasse (nie in ihr): der erste freie Punkt der Ringe, 4 m und mehr von jeder Mitte
+            let platz = null;
+            for (let rr = 6; rr <= 30 && !platz; rr += 2)
+                for (let k = 0; k < 16 && !platz; k++) {
+                    const [x, z] = [S.ox + Math.cos((k * Math.PI) / 8) * rr, S.oz + Math.sin((k * Math.PI) / 8) * rr];
+                    const g = r._imGrundriss(x, z, 0.5);
+                    if (
+                        g !== "haus" &&
+                        g !== "bau" &&
+                        r._landAt(x, z) &&
+                        VK.strecken.every((s) => s.mitte.every((q) => Math.hypot(q.x - x, q.z - z) > 4))
+                    )
+                        platz = { x, z };
+                }
+            if (platz) stelle(platz.x, platz.z, 0.2);
+            const m = {
+                leib: 0,
+                leibOrte: [],
+                wagen: 0,
+                wagenOrte: [],
+                ohne: 0,
+                quer: 0,
+                querOrt: null,
+                takte: 0,
+                ms: 0,
+            };
+            r._verkehrSchritt = function (dt) {
+                const t0 = performance.now();
+                P._verkehrSchritt.call(this, dt);
+                [m.ms, m.takte] = [m.ms + performance.now() - t0, m.takte + 1];
+            };
+            const weg0 = new Map(VK.wagen.map((W) => [W, W.weg]));
+            const stoss0 = { ...VK.zahl.stoss };
+            const ort2 = (L) => [Math.round(L.x), Math.round(L.z)];
+            for (let k = 0; k < Math.round(o.sek * 60); k++, i++) {
+                frame(i);
+                if (i % 8 === 7) await window.sleep();
+                if (k % 4) continue;
+                const fahrend = VK.wagen.filter((W) => W.zustand === "faehrt" && W.entry);
+                const L = fahrend.map(lage);
+                for (const [n, W] of fahrend.entries()) {
+                    for (const Z of VK.zonen)
+                        if (
+                            Z.art === "kreuzung" &&
+                            Math.hypot(L[n].x - Z.x, L[n].z - Z.z) < Z.r - 1 &&
+                            !Z.halter.includes(W)
+                        )
+                            m.ohne++;
+                    const allein = W.zonen.some((z) => !z.weg && z.Z.halter.includes(W) && z.ein <= W.F.s + W.hl);
+                    if (!allein && W.F.quer > m.quer) [m.quer, m.querOrt] = [W.F.quer, [W.nr, k, ...ort2(L[n])]];
+                    for (const b of S.liste)
+                        if (b.leib && !b.drinnen && !b.amSteuer && drin(L[n], b.leib.position.x, b.leib.position.z)) {
+                            m.leib++;
+                            if (m.leibOrte.length < 6)
+                                m.leibOrte.push([
+                                    b.seed + "|" + W.nr,
+                                    k,
+                                    ...ort2(L[n]),
+                                    W.grund,
+                                    b.weg ? "geht" : "steht",
+                                ]);
+                        }
+                    for (let j = n + 1; j < fahrend.length; j++)
+                        if (schnitt(L[n], L[j])) {
+                            m.wagen++;
+                            if (m.wagenOrte.length < 6)
+                                m.wagenOrte.push([
+                                    W.nr + "|" + fahrend[j].nr,
+                                    k,
+                                    ...ort2(L[n]),
+                                    W.grund,
+                                    fahrend[j].grund,
+                                ]);
+                        }
+                }
+            }
+            delete r._verkehrSchritt;
+            const steher = VK.wagen
+                .filter((W) => W.weg - weg0.get(W) < 30 || W.entry._fahr.speed < 0.1)
+                .map((W) => {
+                    const z0 = W.zonen.find((q) => !q.weg);
+                    const v = W.vorne;
+                    return [
+                        W.nr,
+                        Math.round(W.weg - weg0.get(W)),
+                        W.grund,
+                        ...ort2(lage(W)),
+                        z0 ? z0.Z.art + ":" + (z0.Z.halter.map((q) => q.nr).join("/") || "-") : "",
+                        v
+                            ? "vorne " + v.gap.toFixed(1) + "@" + v.O.nr
+                            : W.grund === "leib" && W.wer
+                              ? "leib " + W.wer.nr
+                              : "",
+                    ];
+                });
+            const wege = VK.wagen.map((W) => W.weg - weg0.get(W)).sort((a, b) => a - b);
+            aus[stunde] = {
+                soll: VK.zahl.soll,
+                wagen: VK.wagen.length,
+                ohnePlatz: VK.zahl.ohnePlatz,
+                ohneFahrer: VK.zahl.ohneFahrer,
+                ohneNacht: VK.zahl.ohneNacht,
+                fahrend: VK.wagen.filter((W) => W.zustand === "faehrt").length,
+                netzM: Math.round(VK.zahl.laengeM),
+                wenden: VK.wenden.size,
+                enden: VK.kp.filter((K) => K.ende).length,
+                stufen: VK.zahl.stufen.slice(0, 6),
+                weg: {
+                    min: Math.round(wege[0] || 0),
+                    median: Math.round(wege[wege.length >> 1] || 0),
+                    summe: Math.round(wege.reduce((a, b) => a + b, 0)),
+                },
+                fest: VK.wagen.filter((W) => W.festOrt).map((W) => ({ ...W.festOrt, nr: W.nr })),
+                stoss: Object.fromEntries(Object.entries(VK.zahl.stoss).map(([k, v]) => [k, v - stoss0[k]])),
+                beruehrt: { leib: m.leib, wagen: m.wagen, orte: m.leibOrte, wagenOrte: m.wagenOrte },
+                ohneSchluessel: m.ohne,
+                steher,
+                querMax: +m.quer.toFixed(2),
+                querOrt: m.querOrt,
+                msJeSchritt: +(m.ms / Math.max(1, m.takte)).toFixed(3),
+                sek: o.sek,
+            };
+        }
+        return aus;
+    };
+    if (expected.nurKette || expected.nurRueck || expected.wegenetz || expected.verkehr) {
         try {
             if (expected.nurRueck) res.rueck = await rueck(expected.rueck);
+            else if (expected.verkehr) res.verkehr = await verkehr(expected.verkehr);
+            else if (expected.wegenetz) res.wegenetz = await wegenetz(expected.wegenetz);
             else res.kette = await kette(expected.kette);
         } catch (e) {
             res.err = String((e && e.stack) || e);
@@ -595,7 +891,11 @@ async function probeLeben(expected) {
         const g5 = await gtAmStart();
         bilder(120, () => st._kamFovVersatz); // der Übergang des Sichtfelds klingt aus (`_kamFov`)
         if (g5) {
-            const m5 = (res.tempo = window.__tempoSpion(VC, st.camera, (z5, vm) => z5 === g5._fahr && vm === g5._fahrSatz.vmax));
+            const m5 = (res.tempo = window.__tempoSpion(
+                VC,
+                st.camera,
+                (z5, vm) => z5 === g5._fahr && vm === g5._fahrSatz.vmax
+            ));
             m5.schreiber = [];
             bahnWache = { sx: start.x, sz: start.z, ux: 1, uz: 0, len: 90, quer: 8, n: 0 };
             tasten(true);
@@ -614,7 +914,11 @@ async function probeLeben(expected) {
                 }
             // R2: Z wiederholt ohne Ziel im Blick, ein Rezept-Satz ohne Tempo-Felder
             const [fo, mel, ziel] = [r._foundry, [], [true, false]];
-            Object.assign(r, { _hasMagnifyingInSight: () => ziel.shift(), _bruchMelden: (t) => mel.push(t), _foundryPresetFor: () => "k" });
+            Object.assign(r, {
+                _hasMagnifyingInSight: () => ziel.shift(),
+                _bruchMelden: (t) => mel.push(t),
+                _foundryPresetFor: () => "k",
+            });
             m5.zoom = r.setZoomActive(true) && r.setZoomActive(true);
             r.setZoomActive(false);
             r._foundry = { recipes: { k: { fx: { fahrprofil: { kamera: { dist: 1 } } } } } };
@@ -635,13 +939,25 @@ async function probeLeben(expected) {
         // `_archEntryWorldMatrix` × Blatt, der Gleichlauf des Wagens, in Third Azimut · Quer-Ruck · Höhe über seiner Ebene ·
         // `chaseKamera`; dann das erste Bild ohne Sim-Schritt nach dem Wiederaufstieg (der Wagen steht 1 rad gedreht).
         const steil = window.__weltOrt("hang", { min: 17, max: 32, basis: 3, bergab: [30, 12], rMax: 800 });
-        const w = (res.wechsel = { gestartet: false, ort: steil && [Math.round(steil.x), Math.round(steil.z), steil.neigung] });
+        const w = (res.wechsel = {
+            gestartet: false,
+            ort: steil && [Math.round(steil.x), Math.round(steil.z), steil.neigung],
+        });
         if (steil) {
             const ab = steil.gier + Math.PI;
             const sicht0 = st.cameraMode;
             r.setCameraMode("third");
             let e = await setzen("fahrzeug_gt", steil.x, steil.z, ab);
-            Object.assign(w, { gestartet: !!e, stufeM: 0, band: 0, ego: [], nach10: [], abV: [], abSprung: [], abFov: [] });
+            Object.assign(w, {
+                gestartet: !!e,
+                stufeM: 0,
+                band: 0,
+                ego: [],
+                nach10: [],
+                abV: [],
+                abSprung: [],
+                abFov: [],
+            });
             const [M, B, V, U] = [new THREE.Matrix4(), new THREE.Matrix4(), new THREE.Vector3(), new THREE.Vector3()];
             const [gleich, ruck, hoch, spur] = [[], [], [], []];
             const kurs = () => e.rotationY + Math.PI / 2; // Studio-Wagen: Bug +x
@@ -657,7 +973,11 @@ async function probeLeben(expected) {
                 const f0 = r._foundryFlattenFor(e, pr, lod);
                 const reihe = [[e.instSlots, f0, `L${lod}`]];
                 if (e.instSlotsBand && f0 && ++w.band)
-                    reihe.push([e.instSlotsBand, r._bandOhneZwilling(r._foundryFlattenFor(e, pr, e._lodBandLevel), f0), `L${e._lodBandLevel} (Band)`]);
+                    reihe.push([
+                        e.instSlotsBand,
+                        r._bandOhneZwilling(r._foundryFlattenFor(e, pr, e._lodBandLevel), f0),
+                        `L${e._lodBandLevel} (Band)`,
+                    ]);
                 for (const [liste, f, wer] of reihe)
                     for (let k = 0; liste && f && f.leaves && k < Math.min(liste.length, f.leaves.length); k++) {
                         const g = !f.leaves[k].rad && st.archInstanceGroups.get(liste[k].key);
@@ -749,7 +1069,12 @@ async function probeLeben(expected) {
                 r.setCameraMode(sicht0);
             }
             const pq = (a, p) => (a.sort((x, y) => x - y), a.length ? +a[Math.floor(a.length * p)].toFixed(3) : null);
-            Object.assign(w, { ruckN: ruck.length, ruckP95: pq(ruck, 0.95), gleichN: gleich.length, gleichP95: pq(gleich, 0.95) });
+            Object.assign(w, {
+                ruckN: ruck.length,
+                ruckP95: pq(ruck, 0.95),
+                gleichN: gleich.length,
+                gleichP95: pq(gleich, 0.95),
+            });
             Object.assign(w, { hochN: hoch.length, hochP05: pq(hoch, 0.05) });
         }
         // (3) Das Pferd: der richtungs-folgende Ritt ohne Lenk-Gesetz (W in Blick-Richtung +x).
@@ -1129,7 +1454,8 @@ async function probeLeben(expected) {
                     const zz = mo[1] + Math.sin((k * Math.PI) / 6) * ring * 24;
                     for (let d = 0; d < 8; d++) {
                         const a = (d * Math.PI) / 4;
-                        if (frei(x, zz, Math.sin(a), Math.cos(a))) return { x, z: zz, fahrt: a, ux: Math.sin(a), uz: Math.cos(a) };
+                        if (frei(x, zz, Math.sin(a), Math.cos(a)))
+                            return { x, z: zz, fahrt: a, ux: Math.sin(a), uz: Math.cos(a) };
                     }
                 }
             return null;
@@ -1171,7 +1497,11 @@ async function probeLeben(expected) {
                     S.huelleKonsum = {
                         gleiten: ruft(() => r._fahrHuelleKontakt(...k), r, "_wandGleiten"),
                         leibWagen: ruft(() => r._fahrHuelleKontakt(...k), r, "_kreaturLeib"),
-                        leibTier: ruft(() => r._kreaturHuellenKontakt(c, 0, c.position.x, c.position.z), r, "_kreaturLeib"),
+                        leibTier: ruft(
+                            () => r._kreaturHuellenKontakt(c, 0, c.position.x, c.position.z),
+                            r,
+                            "_kreaturLeib"
+                        ),
                     };
                     r.removeCreature(c);
                 }
@@ -1306,20 +1636,23 @@ async function probeLeben(expected) {
                 }
                 return aus;
             };
-            const abF = nachSchritt(() => {
-                const fz = gL._fahr;
-                if (!fz || !Number.isFinite(fz.y)) return;
-                m.schubMax = Math.max(m.schubMax, zug.schub);
-                if (zug.schub > 1e-3) m.kontakte++;
-                // wie weit der Wagen längs seiner Fahrt über den Ort hinaus kam
-                m.vor = Math.max(
-                    m.vor,
-                    (gL.position.x - L.ort[0]) * Math.sin(L.gier) + (gL.position.z - L.ort[1]) * Math.cos(L.gier)
-                );
-                m.yMin = Math.min(m.yMin, fz.y);
-            }, () => {
-                zug.schub = 0;
-            });
+            const abF = nachSchritt(
+                () => {
+                    const fz = gL._fahr;
+                    if (!fz || !Number.isFinite(fz.y)) return;
+                    m.schubMax = Math.max(m.schubMax, zug.schub);
+                    if (zug.schub > 1e-3) m.kontakte++;
+                    // wie weit der Wagen längs seiner Fahrt über den Ort hinaus kam
+                    m.vor = Math.max(
+                        m.vor,
+                        (gL.position.x - L.ort[0]) * Math.sin(L.gier) + (gL.position.z - L.ort[1]) * Math.cos(L.gier)
+                    );
+                    m.yMin = Math.min(m.yMin, fz.y);
+                },
+                () => {
+                    zug.schub = 0;
+                }
+            );
             anfahren(gL, L.v0, L.gier);
             const x0 = gL.position.x;
             const z0 = gL.position.z;
@@ -1457,48 +1790,51 @@ async function probeLeben(expected) {
                 };
             st._landImpactPending = 0;
             let vPrev = 0;
-            const abF = nachSchritt(() => {
-                const v = st.playerVel.x() * ux + st.playerVel.z() * uz;
-                m.ruck = Math.max(m.ruck, st._landImpactPending || 0);
-                if (m.kontakt < 0 && vPrev > 2 && z.kontakt) {
-                    m.kontakt = m.schritte;
-                    m.vVor = vPrev;
-                    m.vNach = v;
-                    m.vMinNach = v;
-                    // wer, unter welchem Winkel (Fahrt gegen die Richtung zum Ziel), wie weit vor dem Ziel (längs der Gasse)
-                    const pz = h.lage(ziel);
-                    const wx = pz.x - gS.position.x;
-                    const wz = pz.z - gS.position.z;
-                    const vx2 = st.playerVel.x();
-                    const vz2 = st.playerVel.z();
-                    const cw = (vPrev * (wx * ux + wz * uz)) / Math.max(1e-9, Math.hypot(wx, wz) * Math.abs(vPrev));
-                    m.erster = {
-                        mit: schrittEv.length ? schrittEv.join(" + ") : "der Löser ohne Stoß",
-                        winkel: +((Math.acos(Math.max(-1, Math.min(1, cw))) * 180) / Math.PI).toFixed(1),
-                        abstand: +(wx * ux + wz * uz).toFixed(2),
-                        quer: +Math.abs(wx * uz - wz * ux).toFixed(2),
-                        vQuer: +Math.abs(vx2 * uz - vz2 * ux).toFixed(2),
-                    };
-                } else if (m.kontakt >= 0 && m.schritte - m.kontakt <= 8) m.vMinNach = Math.min(m.vMinNach, v);
-                // die Gasse: Tiere, die während der Probe hineinkommen
-                let n = 0;
-                for (const cr of st.creatures || []) {
-                    if (!cr || !cr.position) continue;
-                    const dx = cr.position.x - gasse.x;
-                    const dz = cr.position.z - gasse.z;
-                    const l = dx * ux + dz * uz;
-                    if (l < -3 || l > 12 || Math.abs(dx * uz - dz * ux) > 3) continue;
-                    n++;
-                    const art = (cr.userData && cr.userData.soul) || "?";
-                    if (m.gasseArten.indexOf(art) < 0) m.gasseArten.push(art);
+            const abF = nachSchritt(
+                () => {
+                    const v = st.playerVel.x() * ux + st.playerVel.z() * uz;
+                    m.ruck = Math.max(m.ruck, st._landImpactPending || 0);
+                    if (m.kontakt < 0 && vPrev > 2 && z.kontakt) {
+                        m.kontakt = m.schritte;
+                        m.vVor = vPrev;
+                        m.vNach = v;
+                        m.vMinNach = v;
+                        // wer, unter welchem Winkel (Fahrt gegen die Richtung zum Ziel), wie weit vor dem Ziel (längs der Gasse)
+                        const pz = h.lage(ziel);
+                        const wx = pz.x - gS.position.x;
+                        const wz = pz.z - gS.position.z;
+                        const vx2 = st.playerVel.x();
+                        const vz2 = st.playerVel.z();
+                        const cw = (vPrev * (wx * ux + wz * uz)) / Math.max(1e-9, Math.hypot(wx, wz) * Math.abs(vPrev));
+                        m.erster = {
+                            mit: schrittEv.length ? schrittEv.join(" + ") : "der Löser ohne Stoß",
+                            winkel: +((Math.acos(Math.max(-1, Math.min(1, cw))) * 180) / Math.PI).toFixed(1),
+                            abstand: +(wx * ux + wz * uz).toFixed(2),
+                            quer: +Math.abs(wx * uz - wz * ux).toFixed(2),
+                            vQuer: +Math.abs(vx2 * uz - vz2 * ux).toFixed(2),
+                        };
+                    } else if (m.kontakt >= 0 && m.schritte - m.kontakt <= 8) m.vMinNach = Math.min(m.vMinNach, v);
+                    // die Gasse: Tiere, die während der Probe hineinkommen
+                    let n = 0;
+                    for (const cr of st.creatures || []) {
+                        if (!cr || !cr.position) continue;
+                        const dx = cr.position.x - gasse.x;
+                        const dz = cr.position.z - gasse.z;
+                        const l = dx * ux + dz * uz;
+                        if (l < -3 || l > 12 || Math.abs(dx * uz - dz * ux) > 3) continue;
+                        n++;
+                        const art = (cr.userData && cr.userData.soul) || "?";
+                        if (m.gasseArten.indexOf(art) < 0) m.gasseArten.push(art);
+                    }
+                    m.gasseTiere = Math.max(m.gasseTiere, n);
+                    if (h.je) h.je(ziel);
+                    vPrev = v;
+                    m.schritte++;
+                },
+                () => {
+                    schrittEv = [];
                 }
-                m.gasseTiere = Math.max(m.gasseTiere, n);
-                if (h.je) h.je(ziel);
-                vPrev = v;
-                m.schritte++;
-            }, () => {
-                schrittEv = [];
-            });
+            );
             tasten(true, false);
             bilder(150);
             tasten(false);
@@ -1554,7 +1890,7 @@ async function probeLeben(expected) {
             },
             lage: (c) => ({ x: c.position.x, z: c.position.z }),
             weg: (c) => {
-                if (A.__steuerLos) A.__steuerLos(), delete A.__steuerLos;
+                if (A.__steuerLos) (A.__steuerLos(), delete A.__steuerLos);
                 r.removeCreature(c);
             },
         });
@@ -1565,12 +1901,35 @@ async function probeLeben(expected) {
         if (gasse) {
             const stapel = (wach) => {
                 const [x, zz] = [gasse.x + gasse.ux * 12, gasse.z + gasse.uz * 12];
-                const K = [0, 1, 2, 3, 4].map((k) => r.spawnArchitecture("kiste", { x: x + 0.03 * Math.sin(k), y: hh(x, zz) + 0.6 + 0.7 * k, z: zz }, { silent: true, precise: true, rotationY: k * 1.3 })._frei);
+                const K = [0, 1, 2, 3, 4].map(
+                    (k) =>
+                        r.spawnArchitecture(
+                            "kiste",
+                            { x: x + 0.03 * Math.sin(k), y: hh(x, zz) + 0.6 + 0.7 * k, z: zz },
+                            { silent: true, precise: true, rotationY: k * 1.3 }
+                        )._frei
+                );
                 const lage = () => K.map((k) => k.p.slice());
                 const o = { m: K[0].m, ruheS: null, zittern: 0 };
                 let [a, t0] = [null, tMs];
-                bilder(wach ? 120 : 240, () => (o.ruheS === null && K.every((k) => k.schlaf) && ([o.ruheS, a] = [(tMs - t0) / 1000, lage()]), true));
-                bilder(a || wach ? 180 : 0, () => (a = a || lage(), (o.zittern = Math.max(o.zittern, ...K.map((k, j) => Math.hypot(...k.p.map((v, d) => v - a[j][d]))))), true));
+                bilder(
+                    wach ? 120 : 240,
+                    () => (
+                        o.ruheS === null && K.every((k) => k.schlaf) && ([o.ruheS, a] = [(tMs - t0) / 1000, lage()]),
+                        true
+                    )
+                );
+                bilder(
+                    a || wach ? 180 : 0,
+                    () => (
+                        (a = a || lage()),
+                        (o.zittern = Math.max(
+                            o.zittern,
+                            ...K.map((k, j) => Math.hypot(...k.p.map((v, d) => v - a[j][d])))
+                        )),
+                        true
+                    )
+                );
                 o.boden = K[0].p[1] - K[0].hy - r._koerperBodenUnter(K[0].p[0], K[0].p[1], K[0].p[2]);
                 o.fugen = K.slice(1).map((k, j) => k.p[1] - K[j].p[1] - k.hy - K[j].hy);
                 for (const k of K) r.removeArchitecture(k.e, { still: true });
@@ -1586,7 +1945,8 @@ async function probeLeben(expected) {
             const fass = async () => {
                 let kipp = 0;
                 const m = await stossProbe({
-                    setzen: (x, zz) => r.spawnArchitecture("fass", { x, y: hh(x, zz) + 0.5, z: zz }, { silent: true, precise: true }),
+                    setzen: (x, zz) =>
+                        r.spawnArchitecture("fass", { x, y: hh(x, zz) + 0.5, z: zz }, { silent: true, precise: true }),
                     lage: (e) => ({ x: e.position.x, z: e.position.z }),
                     weg: (e) => r.removeArchitecture(e),
                     je: (e) => (kipp = Math.max(kipp, (Math.acos(Math.min(1, e._frei.R[4])) * 180) / Math.PI)),
@@ -1782,8 +2142,7 @@ async function probeLeben(expected) {
                         r._gameLoopTick(tMs);
                         const fz = gS._fahr;
                         const jetzt = fz ? [fz.x, fz.z, fz.y, fz.vy, fz.speed, fz.yaw, fz.steig, fz.wank] : null;
-                        const d =
-                            jetzt && stand ? Math.max(...jetzt.map((v, k) => Math.abs(v - stand[k]))) : Infinity;
+                        const d = jetzt && stand ? Math.max(...jetzt.map((v, k) => Math.abs(v - stand[k]))) : Infinity;
                         ruhe = d <= 1e-9 ? ruhe + 1 : 0;
                         if (d > 1e-9 && jetzt && stand) {
                             const k = jetzt.findIndex((v, j) => Math.abs(v - stand[j]) === d);
@@ -1903,7 +2262,13 @@ async function probeLeben(expected) {
                     // über 1,2 m am Ort, und 4 m Fahrt in +x bleiben im tiefen (> 1 m), stillen Wasser; der Spiegel ist der JETZT
                     // (der Pegel lebt, wetter.K3), nie der des Funds
                     if (tief(0) > 1.2 && [0, 1, 2, 3, 4].every((d) => tief(d) > 1 && !r._waterFlowAt(x + d, zz)))
-                        ort = { x, z: zz, get spiegel() { return r._koerperWasser(x, zz, hh(x, zz)); } };
+                        ort = {
+                            x,
+                            z: zz,
+                            get spiegel() {
+                                return r._koerperWasser(x, zz, hh(x, zz));
+                            },
+                        };
                 }
             if (ort) {
                 r.dismountArchitecture();
@@ -2271,8 +2636,16 @@ function tempoVerdict(m) {
         ["zeigt", m.zeigt <= 0.01, `zeigt: camera.fov ${m.zeigt}° neben Ruhe + Tempo`],
         ["schreiber", String(m.schreiber) === "_kamFov", `schreiber ${m.schreiber} (Soll EINER, _kamFov)`],
         ["orbit", m.orbit >= 20, `orbit ${m.orbit}°: die Maus dreht das Rig nicht`],
-        ["rueck", !(m.orbit >= 20) || (m.rueck >= 1 && m.rueck <= 1.25), `rueck ${m.rueck} s nach dem Loslassen (Soll 1–1,25 s)`],
-        ["knick", m.knick <= 0.25, `knick: die Drehrate springt nach dem Loslassen um ${m.knick} der Kurve je Bild (Soll ≤ 0,25)`],
+        [
+            "rueck",
+            !(m.orbit >= 20) || (m.rueck >= 1 && m.rueck <= 1.25),
+            `rueck ${m.rueck} s nach dem Loslassen (Soll 1–1,25 s)`,
+        ],
+        [
+            "knick",
+            m.knick <= 0.25,
+            `knick: die Drehrate springt nach dem Loslassen um ${m.knick} der Kurve je Bild (Soll ≤ 0,25)`,
+        ],
         ["kern", !String(m.kern), `kern: dem Fahr-Kern fehlt ${m.kern}`],
         ["zoom", m.zoom, "zoom: das Auto-Repeat von Z kippt das Fernglas"],
         ["laut", m.laut, "laut: _kamSatz bricht still"],
@@ -2320,7 +2693,8 @@ function kernTempo(VC) {
     const [K, dt, vmax] = [VC.FAHR.kamera, 1 / 60, 16];
     const lauf = (c, n, g, sp, q = 0) => {
         let v;
-        for (let i = 0; i < n; i++) v = VC.chaseKamera(c, g, 0, dt, K, { vlong: sp, vlat: q, speed: Math.hypot(sp, q) }, vmax);
+        for (let i = 0; i < n; i++)
+            v = VC.chaseKamera(c, g, 0, dt, K, { vlong: sp, vlat: q, speed: Math.hypot(sp, q) }, vmax);
         return v;
     };
     const arm = (v) => Math.hypot(v.x, v.y - K.blickHoehe, v.z);
@@ -2348,7 +2722,9 @@ async function probeKoerper(opt) {
     await window.__weltDa();
     const A = Object.getPrototypeOf(r).constructor;
     const f = r._ensureAssetFoundry();
-    await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
+    await window.__weltDa(
+        () => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt
+    );
     const res = { err: null };
     const hh = (a, b) => r.getTerrainHeightAt(a, b);
     let tMs = performance.now();
@@ -2363,7 +2739,13 @@ async function probeKoerper(opt) {
                 if ([0, 2, 4, 6].every((d) => tief(x + d, z) > 2 && !r._waterFlowAt(x + d, z)))
                     // der Spiegel am Ort JETZT über die EINE Wasser-Wahrheit, nie der Fund-Moment: der Pegel ist eine Funktion des
                     // Wetter-Felds (wetter.K3), die 300 Takte der Messung heben ihn im Regen bis zur Krone (+0,2 m)
-                    ort = { x, z, get spiegel() { return r._koerperWasser(x, z, hh(x, z)); } };
+                    ort = {
+                        x,
+                        z,
+                        get spiegel() {
+                            return r._koerperWasser(x, z, hh(x, z));
+                        },
+                    };
             }
         if (!(res.ort = ort)) throw new Error("kein See");
         const steuerRoh = A._steuerGesetz;
@@ -2373,8 +2755,11 @@ async function probeKoerper(opt) {
         const alt = {};
         for (const n of Object.keys(mats)) if (mats[n].builtIn && n !== "wasser") alt[n] = mats[n].rho; // die Leiber und Dinge, nie das Medium
         const box = (m, sz, y) => ({ shape: "box", material: m, size: sz, position: { x: 0, y, z: 0 } });
-        for (const m of ["holz", "stein"]) st.blueprints["_k1_" + m] = { parts: [box(m, { x: 3, y: 0.6, z: 1.4 }, 0.3)] };
-        const eigen = { parts: [box("holz", { x: 0.15, y: 1.5, z: 0.15 }, 0), box("holz", { x: 0.6, y: 0.6, z: 0.6 }, 1.5)] };
+        for (const m of ["holz", "stein"])
+            st.blueprints["_k1_" + m] = { parts: [box(m, { x: 3, y: 0.6, z: 1.4 }, 0.3)] };
+        const eigen = {
+            parts: [box("holz", { x: 0.15, y: 1.5, z: 0.15 }, 0), box("holz", { x: 0.6, y: 0.6, z: 0.6 }, 1.5)],
+        };
         const keule = st.blueprints.klinge_keule;
         const messe = () => {
             const pm = st.playerMesh;
@@ -2382,7 +2767,10 @@ async function probeKoerper(opt) {
             st.playerVel.setValue(0, 0, 0);
             A._steuerGesetz = () => steht;
             st.maxCreatures = st.creatures.length + 1;
-            const wolf = r.spawnCreatureAt(ort.x + 3, ort.spiegel, ort.z, "calm", "wolf", { precise: true, bodySize: 1 });
+            const wolf = r.spawnCreatureAt(ort.x + 3, ort.spiegel, ort.z, "calm", "wolf", {
+                precise: true,
+                bodySize: 1,
+            });
             wolf.userData._steuer = { gier: 0, v: 0 };
             for (let i = 0; i < 300; i++) r._gameLoopTick((tMs += 16.7));
             A._steuerGesetz = steuerRoh;
@@ -2393,14 +2781,22 @@ async function probeKoerper(opt) {
                 return { kg, tief: +(sp - fuss).toFixed(3), grund: +(sp - g).toFixed(3), schwimmt, traegt };
             };
             const o = { spieler: leib(pm, pm.position.y - A.PLAYER_FOOT_OFFSET, !!st.playerUnderwater, true) };
-            o.wolf = leib(wolf, wolf.position.y, r._kreaturSchwimmt(wolf, hh(wolf.position.x, wolf.position.z)) !== null);
+            o.wolf = leib(
+                wolf,
+                wolf.position.y,
+                r._kreaturSchwimmt(wolf, hh(wolf.position.x, wolf.position.z)) !== null
+            );
             st.playerVel.setValue(3, 0, 0);
             wolf.userData._stossV = { x: 0, z: 0 };
             o.stoss = { J: r._stossPaar(pm, wolf, 1, 0), dvA: 3 - st.playerVel.x(), dvB: wolf.userData._stossV.x };
             st.playerVel.setValue(0, 0, 0);
             r.removeCreature(wolf);
             const werk = (typ) => {
-                const e = r.spawnArchitecture(typ, { x: ort.x, y: hh(ort.x, ort.z), z: ort.z }, { silent: true, precise: true });
+                const e = r.spawnArchitecture(
+                    typ,
+                    { x: ort.x, y: hh(ort.x, ort.z), z: ort.z },
+                    { silent: true, precise: true }
+                );
                 try {
                     const prof = r._vehicleProfile(e);
                     const K = r._stossKoerper(e, {});
@@ -2423,7 +2819,11 @@ async function probeKoerper(opt) {
             };
             [o.wagen, o.holz, o.stein] = ["fahrzeug_gt", "_k1_holz", "_k1_stein"].map(werk);
             const lab = window.__schmiedeCore.kampfMasze("keule").masseKg;
-            o.geschmiedet = { kg: r._schmiedeKampfMasze(keule).masseKg, labKg: lab, dauer: r._swingDauerFuerBlueprint(keule) };
+            o.geschmiedet = {
+                kg: r._schmiedeKampfMasze(keule).masseKg,
+                labKg: lab,
+                dauer: r._swingDauerFuerBlueprint(keule),
+            };
             o.lose = { kg: r._geraetMasze(eigen).masseKg, dauer: r._swingDauerFuerBlueprint(eigen) };
             return o;
         };

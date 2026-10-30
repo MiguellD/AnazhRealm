@@ -3313,6 +3313,21 @@ class AnazhRealm_studio_bruecke {
             mat.userData = mat.userData || {};
             mat.userData.satzSchluessel = key;
         }
+        // DIE WIESE IST EIN DACH (licht.K1): ihr Licht trägt die Normale des Dachs — oben, zu einem Zehntel die gesehene Klinge —
+        // und die Rauheit des Dachs (1: die Klingen streuen um es, kein Spiegel einer Fläche). Mit der Klinge allein lichtete der
+        // doppelseitige Halm wie eine Wand: der Sonne zugewandt hob die Nah-Wiese die Stunde 0,33 über den Mittag (Mess-Wiese Ego,
+        // swiftshader: +0,37 EV, ohne die Nah-Wiese −1,19 EV), die Sonne 10° stand morgens 1,6 und abends 0,5 EV über ihm; das Dach
+        // mit der Rauheit der Klinge (0,7) spiegelte die Abendsonne (+0,32 EV). Hinter dem Satz-Regler: er gilt jeder Wiese.
+        if (kind === "grass") {
+            mat.normalNode = TSL.normalize(
+                TSL.mix(
+                    TSL.normalViewGeometry.mul(TSL.faceDirection),
+                    TSL.cameraViewMatrix.transformDirection(TSL.vec3(0, 1, 0)),
+                    0.9
+                )
+            );
+            mat.roughnessNode = TSL.float(1);
+        }
         // DAS MIKRO-RELIEF DER FACETTE (material.K2, `_mikroGestalt`): der facettierte Studio-Stein (Fels, Kristall: kind
         // „unknown" mit flatShading) kippt seine Facetten in den Oktaven am Schirm, gewogen mit seiner Rauheit (glatt ≤ 0,3 nichts,
         // matt ≥ 0,6 ganz) — im Satz die Rauheit je Ecke, sonst die des Stoffs
