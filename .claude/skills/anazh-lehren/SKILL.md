@@ -40,8 +40,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 - ORT: der Genesis-Platz (`GENESIS_PLATZ`), jedes Bauwerk und jeder Dorfweg sind Grundriss gegen Natur, das Dorf EIN Plan des
   Fachwerk-Studios auf dem Gelände-Kern (`_ortPlaene`), jeder Wurf des Felds weicht ihm (`FELD_WURF`, `_weichtDemBau`). Heute hält die
   Instanz-Wand (`_naturWand`) Bauten frei, die Schicht (Halm, Nah-Wiese) noch nicht.
-- GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, fern
-  Glieder-Kapseln · jede Senke zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade,
+- GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, ihre Mips
+  deckungstreu mit dem Saum der Art (phyto-core `karteSaum`: die Zelle aus der Blattgröße in `treeParams`, Laub-Lappen, Nadel-Grate;
+  die GPU-Ablage `KARTE_RECHNER_WGSL` rechnet dasselbe Gesetz, `_karteSaumVon`), fern Glieder-Kapseln · jede Senke zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade,
   Matrizen im Storage-Puffer) · Baum = Studio-Karte bis 384 m, EINE Ableitung aus `treeParams` (gen ≥ 5), der gefühlte Baum ihr Skelett
   (`skelettDerGestalt`), EIN Wind-Term über die Naht `_weltNaht`, Blende je Instanz, laut (`_blendeBruch`) · Haus und Tor fern NUR-WURF,
   das Fenster Glas in jeder Stufe, der Tor-Hinterflügel eine Instanz (`_foundryFluegelInstanz`).

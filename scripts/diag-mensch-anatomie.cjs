@@ -152,20 +152,10 @@ const OFEN_QUELLEN = [
     "foundry-core.js",
 ];
 const ladeOfen = () => fadenScope(OFEN_QUELLEN);
-const lab = (r, g, b) => {
-    const X = 0.4124 * r + 0.3576 * g + 0.1805 * b,
-        Y = 0.2126 * r + 0.7152 * g + 0.0722 * b,
-        Z = 0.0193 * r + 0.1192 * g + 0.9505 * b;
-    const f = (t) => (t > 216 / 24389 ? Math.cbrt(t) : ((24389 / 27) * t + 16) / 116);
-    const fx = f(X / 0.95047),
-        fy = f(Y),
-        fz = f(Z / 1.08883);
-    return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
-};
-const linHex = (hx) =>
-    [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map((v) =>
-        v / 255 <= 0.04045 ? v / 255 / 12.92 : Math.pow((v / 255 + 0.055) / 1.055, 2.4)
-    );
+// CIELAB, sRGB und Luma: die EINEN der Linsen (abnahme-urteil)
+const { cielab, srgbLin, luma709 } = require("./lib/abnahme-urteil.cjs");
+const lab = (r, g, b) => cielab([r, g, b]);
+const linHex = (hx) => [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map(srgbLin);
 const farbKey = (c) => c.map((x) => x.toFixed(5)).join(",");
 function messeKopf(sb, eingriff) {
     const T = sb.THREE;
@@ -332,8 +322,7 @@ function messeKopf(sb, eingriff) {
         if (/^(head|eye[LR]|iris[LR]|lid[TB][LR])$/.test(jn(n)))
             tris += (n.geometry.index ? n.geometry.index.count : n.geometry.attributes.position.count) / 3;
     const luma = Object.values(K.SKIN_TONES).map((t) => {
-        const c = linHex(t.hex);
-        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+        return luma709(linHex(t.hex));
     });
     return {
         kopfAnteil: kH / Hk,

@@ -345,7 +345,7 @@ async function probe(cfg) {
         biasAnwenden();
     };
     const grund = cfg.versuch ? Object.assign({ art: "versuch" }, cfg.versuch) : { art: "spiel" };
-    const lum = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
+    const lum = luma709;
     const kamSetzen = (k) => {
         const cam = st.camera;
         cam.position.set(k.px, k.py, k.pz);

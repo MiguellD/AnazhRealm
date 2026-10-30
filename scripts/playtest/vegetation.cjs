@@ -1073,18 +1073,21 @@ async function checkBandV18217VariantenPool({ page, check }) {
         out["(D4) bp._grownSeed === variantSeed[species][index] (Re-Wachstum bit-genau)"] =
             !!(bp && pool && Array.isArray(pool.baum_eiche)) && bp._grownSeed === pool.baum_eiche[bp._variantIndex];
 
-        // ─── (E) Snapshot-Persistierung von variantSeed ───────────────
-        const snap = r.buildStateSnapshot();
-        const wmSnap = snap && snap.worldMeta;
-        const snapPool = !!(wmSnap && wmSnap.variantSeed && typeof wmSnap.variantSeed === "object");
-        out["(E1) Snapshot trägt worldMeta.variantSeed"] = snapPool;
-        const livePool = st.worldMeta.variantSeed;
-        out["(E2) Snapshot-Pool ist bit-identisch zur Live-Welt"] =
-            snapPool &&
-            !!livePool &&
-            Array.isArray(livePool.baum_eiche) &&
-            Array.isArray(wmSnap.variantSeed.baum_eiche) &&
-            wmSnap.variantSeed.baum_eiche.every((v, i) => v === livePool.baum_eiche[i]);
+        // ─── (E) der Stand und variantSeed (speicher.K3, w4-heil-speicher): die Zeile der Saat-Formel reist nie, eine eigene
+        // ganz; aus dem Stand rechnet der Leser `_variantSeedsFor` den Pool bit-identisch zur Live-Welt ───────────────
+        const wm0 = st.worldMeta;
+        wm0.variantSeed.eigen = ["a"];
+        const wmSnap = r.buildStateSnapshot().worldMeta; // der Stand trägt ein eigenes variantSeed (die Stand-Tafel)
+        delete wm0.variantSeed.eigen;
+        out["(E1) der Stand trägt die Zeile der Saat-Formel nie, eine eigene Zeile ganz"] =
+            !wmSnap.variantSeed.baum_eiche && String(wmSnap.variantSeed.eigen) === "a";
+        try {
+            r.state.worldMeta = wmSnap;
+            out["(E2) aus dem Stand kehrt der Pool bit-identisch zur Live-Welt zurück"] =
+                String(r._variantSeedsFor("baum_eiche")) === String(wm0.variantSeed.baum_eiche);
+        } finally {
+            r.state.worldMeta = wm0;
+        }
 
         // ─── (F) Migration: Pool ohne Eintrag wird lazy ergänzt ───
         // In einem TEMPORÄREN Meta-Kontext testen und den Welt-Stand restlos wiederherstellen — ein
