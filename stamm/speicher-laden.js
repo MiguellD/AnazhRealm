@@ -1192,6 +1192,9 @@ class AnazhRealm_speicher_laden {
         const f = this._foundry;
         if (f) {
             for (const k of f.pending.keys()) f.pending.set(k, () => {});
+            // die Bibliothek, die nach dem Buch bestellt hat, wartet auf Aufträge, die hier verfallen: ihre Phase fällt mit ihnen,
+            // der Starter beginnt sie neu (`_foundryVorraete`) — sonst hielt ihr Merker sie für laufend; vor dem Buch lebt ihr Lauf
+            if (f._vorrat === AnazhRealm.VORRAT_PHASE.bestellt && f.buchRoh) f._vorrat = false;
             Object.assign(f, {
                 warte: [],
                 zuege: new Map(),

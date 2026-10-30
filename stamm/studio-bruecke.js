@@ -127,11 +127,13 @@ class AnazhRealm_studio_bruecke {
     // auf das erste Bild (K60). Gerufen, sobald der Faden steht (`ready`), und vom Tausch am Ort, der sie nach dem ersten Bild der
     // alten Welt traf (`_weltAmOrt`): sein Abschied lässt jeden Wartenden an Foundry und Fäden verfallen, auch ihre Aufträge im Flug —
     // die Bibliothek hing bei „bestellt", der Ofen stand nie, kein Tier wurde mehr geboren (Radeon 30.10., 48 im Flug). Was steht,
-    // steht (`f._vorrat === false`, `_ofenVorratSteht`); jeder Vorrat fragt nur, was Cache und Memo nicht tragen.
+    // steht: die Bibliothek mit ihrem Stempel (`f._warmCritical`), der Ofen mit `_ofenVorratSteht`. Ihr Merker `f._vorrat` taugt
+    // nicht dazu — false heißt auch „steht noch nicht an": las der Starter ihn, lief die Bibliothek in keinem Boot (kein Wagen auf
+    // der Platte, kein Dorf-Export für den Zweit-Boot, gate:fluss W8 und W3). Jeder Vorrat fragt nur, was Cache und Memo nicht tragen.
     _foundryVorraete() {
         const f = this._foundry;
         if (!f || !f.ready) return;
-        if (f._vorrat !== false) this._foundryPrefetchLibrary();
+        if (!f._warmCritical) this._foundryPrefetchLibrary();
         if (!this._ofenVorratSteht) this._ofenPrefetchKreaturen().catch((e) => this._stoffBruch("der Ofen-Vorrat", e));
     }
     // Die Antwort eines Studio-Fadens löst ihren Auftrag ein: Körper (asset), Siedlung (settlement), Slot (slot), die Frage
