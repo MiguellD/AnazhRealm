@@ -867,17 +867,19 @@ class AnazhRealm_stoff_material {
                                     // DAS JAHR DER KARTE (vegetation.K5): die Laub-Art trägt eine kahle Jahres-Schicht
                                     // (`_karteJahr`) — je Pixel liest die Karte die volle oder die kahle, mit dem Anteil der
                                     // Laub-Präsenz zwischen den Polen des SAISON_GESETZ, über das Rauschen wie der Ring (TAAU
-                                    // löst es); Nadel und jede Karte ohne Jahr lesen sich selbst. Die Reihe liest der Programm-Bau.
-                                    const _schichtJahr = _Ta.Fn(() => {
+                                    // löst es); Nadel und jede Karte ohne Jahr lesen sich selbst. Die Reihe liest der Programm-Bau
+                                    // (ein Fn: sie wächst mit dem Atlas). Die Wahl ist eine Rechnung, ganzzahlig gewandelt: als
+                                    // select legte TSL sie in eine f32-Variable, die textureSampleLevel ungewandelt als Index
+                                    // bekam — WGSL verwarf das Programm der Karte (PIPELINE-ABSAGE, keine Karte zeichnete).
+                                    const _schichtJahr = (() => {
                                         const pol = AnazhRealm._saisonPole();
                                         const s = this._ensureSeasonUniforms()
                                             .uLaubPraesenz.x.sub(pol.kahl.pr)
                                             .div(pol.voll.pr - pol.kahl.pr)
                                             .clamp(0.0, 1.0);
-                                        const kahl = this._karteJahr(_Ta).element(_schicht.toInt());
-                                        // ganzzahlig: WGSL nimmt den Index einer Array-Textur nur als i32/u32 (ein f32 aus
-                                        // dem Fn verwarf das Programm der Karte — PIPELINE-ABSAGE, keine Karte zeichnete)
-                                        return _Ta.select(this._ditherIGN(_Ta, 2).lessThan(s), _schicht, kahl).toInt();
+                                        const kahl = _Ta.Fn(() => this._karteJahr(_Ta).element(_schicht.toInt()))();
+                                        const kahlW = _Ta.step(s, this._ditherIGN(_Ta, 2)); // 1: das Rauschen liegt über s
+                                        return _schicht.add(kahl.sub(_schicht).mul(kahlW)).toInt();
                                     })();
                                     // ── Instanz-Dekodierung (die Instanz-Matrix, `_instanzMatrixNode`) ──
                                     // r184 setzt den positionNode VOR die Instanzierung (WGSL der Karte gelesen, K20 13.10.): dort
