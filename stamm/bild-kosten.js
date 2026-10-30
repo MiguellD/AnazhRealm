@@ -766,6 +766,10 @@ class AnazhRealm_bild_kosten {
             },
             setRenderTarget: noop,
             getRenderTarget: () => null,
+            // die Farbe, die ein Pass vor dem Leeren merkt (`_atmoZeichne`: die Horizont-Karte des Lichts der Welt, w4) — wie r184
+            // nach dem Start: schwarz, deckend
+            getClearColor: (c) => c.set(0x000000),
+            getClearAlpha: () => 1,
             clear: noop,
             dispose: noop,
             _isHeadlessNull: true,
