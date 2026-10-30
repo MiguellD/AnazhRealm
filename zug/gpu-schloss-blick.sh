@@ -2,7 +2,8 @@
 # gpu-schloss-blick.sh (Station, nur lesen, 30.10.): der Zustand des GPU-Schlosses der OMEN — takt24c (3 Stationen), takt25b (38) und
 # takt25p (5) blieben ungemessen mit „gpu-lauf.sh schwieg 600 s beim Warten“, ohne CI-Job auf der OMEN. gpu-lauf.sh meldet beim Warten
 # alle 60 s; schweigt es, hängt ein Befehl davor (Verdacht: tasklist der Vorfahrt-Probe `worker`, oder der Start der Git-Bash selbst).
-# Jeder Aufruf mit Frist und Uhr — die Station hängt nie selbst.
+# Die OMEN-gpu-lauf.sh wartet STUMM auf: kein Runner.Worker · keine letzte hook.log-Zeile „wartet auf Schloss“ · CI-Ruhe 0 · mkdir des
+# Schlosses. Jeder Aufruf mit Frist und Uhr — die Station hängt nie selbst.
 set -u
 H=$(dirname "$(dirname "$OUT")"); mkdir -p "$OUT"; o=$OUT/blick.txt
 S="${TEMP:-/tmp}/claude/gpu-schloss"
@@ -12,6 +13,8 @@ uhr() { local t=$(date +%s%N); timeout "$1" "${@:2}" 2>&1; local r=$?; echo "   
   [ -d "$S" ] && echo "-- Alter: $(( $(date +%s) - $(stat -c %Y "$S") )) s"
   p=$(grep -oE 'pid=[0-9]+' "$S/besitzer.txt" 2>/dev/null | head -n 1 | cut -d= -f2)
   [ -n "$p" ] && { echo "-- Halter pid $p:"; uhr 30 tasklist -FI "PID eq $p" -NH; }
+  echo "== hook.log des Runners (ci_wartet liest die LETZTE Zeile, ci_ruhe_rest die letzte „ ende “):"; tail -n 8 /c/actions-runner/hooks/hook.log 2>&1 | cut -c1-200
+  ( . /c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh 2>/dev/null && { ci_wartet && echo "   ci_wartet: JA" || echo "   ci_wartet: nein"; echo "   ci_ruhe_rest: $(ci_ruhe_rest) s"; echo "   schloss_erster: $(schloss_erster)"; } )
   echo "== die Vorfahrt-Probe von gpu-lauf (worker):"; uhr 30 tasklist -FI "IMAGENAME eq Runner.Worker.exe"
   echo "== tasklist ohne Filter (Zahl):"; uhr 30 bash -c 'tasklist -NH | wc -l'
   echo "== Start einer Git-Bash:"; uhr 30 bash -c 'echo bash lebt'
