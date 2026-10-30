@@ -866,6 +866,22 @@ async function nullSeite(opts) {
     await nullRenderer(page);
     return { browser, page };
 }
+// DIE PROBE AN DER NULL-WELT (die Quell-Linsen der Nachbarschaft: blocker-netz, brennglas-takt, raum-tags — bis w4-takt-drift
+// trug jede denselben Lauf): der Server lauscht, die Null-Seite zeigt die Welt, bis der Spieler steht, `vor(page)` legt
+// Seiten-Helfer an, dann läuft `probe` in der Seite — Browser und Server gehen auch nach einem Wurf.
+async function nullWeltProbe(server, probe, vor) {
+    await server.lausche(0);
+    const { browser, page } = await nullSeite({ frist: 300000 });
+    try {
+        await server.zeige(page, 60000);
+        await page.evaluate(async () => void (await window.__weltDa((r) => r.state && r.state.player)));
+        if (vor) await vor(page);
+        return await page.evaluate(probe);
+    } finally {
+        await browser.close();
+        server.close();
+    }
+}
 async function warteAufWelt(page, frist = 120000) {
     await page.waitForFunction(() => r && typeof r._gameLoopTick === "function", {
         timeout: frist,
@@ -1337,6 +1353,7 @@ module.exports = {
     warteAufWelt,
     nullRenderer,
     nullSeite,
+    nullWeltProbe,
     halteBis,
     buehne,
     uferStellen,

@@ -1166,13 +1166,15 @@ class AnazhRealm {
         };
     }
 
-    // Hilfsmethode für UI/Tests: zählt Architekturen in Spieler-Nähe.
+    // Hilfsmethode für UI/Tests: zählt Architekturen in Spieler-Nähe — aus den Plätzen um ihn (`_blockerUmPlatz`), nie aus dem
+    // Bestand, der mit dem Weg wächst: die Status-Leiste fragt 2,5-mal je Sekunde (w4-takt-drift: 0,07 → 1,1 ms je Takt).
     countArchitecturesNearPlayer(radius = 60) {
         const playerPos = this.state.playerMesh ? this.state.playerMesh.position : null;
         if (!playerPos) return { near: 0, total: this.state.architectures.length };
         const radiusSq = radius * radius;
         let near = 0;
-        for (const entry of this.state.architectures) {
+        const nah = this._blockerUmPlatz(playerPos.x, playerPos.z, radius, []);
+        for (const entry of nah) {
             const dx = entry.position.x - playerPos.x;
             const dz = entry.position.z - playerPos.z;
             if (dx * dx + dz * dz <= radiusSq) near++;

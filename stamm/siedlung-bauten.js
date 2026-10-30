@@ -67,26 +67,40 @@ class AnazhRealm_siedlung_bauten {
         return keys;
     }
 
-    // Kronen-Dichte-Gitter neu bauen: jede Krone trägt ihr Gewicht (∝ scale·nominalH, geklammert) in
-    // IHRE 3m-Zelle; _occlusionOccludes marschiert die Sichtlinie hindurch. Periodisch (throttled), da
-    // Bäume streamen; architectures ist streaming-bounded → der Loop bleibt klein.
+    // Kronen-Dichte-Gitter neu: jede Krone trägt ihr Gewicht (∝ scale·nominalH, geklammert) in IHRE 3m-Zelle;
+    // _occlusionOccludes marschiert die Sichtlinie hindurch. Periodisch (throttled), da Bäume streamen. Gebaut wird der KASTEN
+    // um das Auge (±OCCLUSION.reichM, die Zellen ganz in ihm: `gx0…gx1 · gz0…gz1`) aus den Plätzen dort (`_blockerUmPlatz`, in der
+    // Ordnung des Bestands — je Zelle dieselbe Summe wie der Gang über alle); eine Zelle jenseits rechnet die Sichtlinie faul
+    // (`_occlusionOccludes`). Bis w4-takt-drift ging der Neubau jeden Eintrag („architectures ist streaming-bounded" galt nie:
+    // der gesetzte Wald bleibt als Daten) — an der Mess-Wiese nach dem Gang 23 929 Einträge, 8,7 ms je Neubau alle 20 Bilder
+    // (ohne Inlining), nur mit echtem Renderer.
     // Siehe _chooseLODForDistance (Hysterese aus LOD_DISTANCES) und _tickArchitectureLOD
     // (≤ maxSwitchesPerFrame Wechsel/Frame; Flag state.atmosphere.treeLOD; blockerAABBs bleiben).
-    _rebuildOcclusionGrid() {
+    _rebuildOcclusionGrid(auge) {
         const O = AnazhRealm.OCCLUSION;
         let grid = this._occlGrid;
         if (!grid) grid = this._occlGrid = new Map();
         else grid.clear();
-        const archs = this.state.architectures;
-        if (!Array.isArray(archs)) return grid;
         const cellM = O.cellM;
-        for (let i = 0; i < archs.length; i++) {
-            const e = archs[i];
+        const R = O.reichM;
+        // ohne Auge kein Kasten: jede Zelle rechnet die Sichtlinie faul
+        grid.kasten = null;
+        if (!auge || !Number.isFinite(auge.x) || !Number.isFinite(auge.z) || !Array.isArray(this.state.architectures))
+            return grid;
+        const [ax, az] = [auge.x, auge.z];
+        const [gx0, gx1, gz0, gz1] = (grid.kasten = [
+            Math.ceil((ax - R) / cellM),
+            Math.floor((ax + R) / cellM) - 1,
+            Math.ceil((az - R) / cellM),
+            Math.floor((az + R) / cellM) - 1,
+        ]);
+        for (const e of this._blockerUmPlatz(ax, az, R, [])) {
             if (!e || !e.instanced || !e._lodSpecies || !e.position) continue;
-            const s = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
-            const w = Math.max(O.weightMin, Math.min(O.weightMax, s * O.nominalH * O.weightPerM));
             const gx = Math.floor(e.position.x / cellM);
             const gz = Math.floor(e.position.z / cellM);
+            if (gx < gx0 || gx > gx1 || gz < gz0 || gz > gz1) continue;
+            const s = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
+            const w = Math.max(O.weightMin, Math.min(O.weightMax, s * O.nominalH * O.weightPerM));
             const k = gx + "," + gz;
             grid.set(k, (grid.get(k) || 0) + w);
         }
@@ -95,13 +109,13 @@ class AnazhRealm_siedlung_bauten {
 
     // Throttled: alle OCCLUSION.rebuildInterval Frames (~3×/s) neu bauen — die Bäume
     // sind quasi-statisch, ein leicht veraltetes Gitter fängt die Hysterese ab.
-    _maybeRebuildOcclusionGrid() {
+    _maybeRebuildOcclusionGrid(auge) {
         const O = AnazhRealm.OCCLUSION;
         this._occlFrameCounter = (this._occlFrameCounter || 0) + 1;
         if (!this._occlGrid || this._occlFrameCounter >= O.rebuildInterval) {
             this._occlFrameCounter = 0;
             this._occlGridRegung = this._weltRegung | 0; // der Bau-Stand, den das Gitter trägt (die Stand-Wache liest ihn)
-            this._rebuildOcclusionGrid();
+            this._rebuildOcclusionGrid(auge);
         }
     }
 
@@ -109,7 +123,7 @@ class AnazhRealm_siedlung_bauten {
     // → LOD2. Hysterese (thrLo für schon Verdeckte) gegen Flattern; kein Regler in der Schwelle (lod.K5).
     _occlusionOccludes(camX, camZ, tx, tz, dr, wasOccluded) {
         const grid = this._occlGrid;
-        if (!grid || grid.size === 0 || !(dr > 0)) return false;
+        if (!grid || !(dr > 0)) return false;
         const O = AnazhRealm.OCCLUSION;
         const cellM = O.cellM;
         const ix = (tx - camX) / dr;
@@ -120,7 +134,23 @@ class AnazhRealm_siedlung_bauten {
         for (let t = O.startM; t < tEnd; t += O.stepM) {
             const gx = Math.floor((camX + ix * t) / cellM);
             const gz = Math.floor((camZ + iz * t) / cellM);
-            const d = grid.get(gx + "," + gz);
+            const k = gx + "," + gz;
+            let d = grid.get(k);
+            const K = grid.kasten;
+            if (d === undefined && K && gx >= K[0] && gx <= K[1] && gz >= K[2] && gz <= K[3]) d = 0; // im Kasten: keine Krone
+            if (d === undefined) {
+                // jenseits des Kastens zum ersten Mal seit dem Neubau: ihre Kronen aus den Plätzen um sie (`_rebuildOcclusionGrid`)
+                d = 0;
+                const nah = this._occlNah || (this._occlNah = []);
+                nah.length = 0;
+                for (const e of this._blockerUmPlatz((gx + 0.5) * cellM, (gz + 0.5) * cellM, cellM, nah)) {
+                    if (!e || !e.instanced || !e._lodSpecies || !e.position) continue;
+                    if (Math.floor(e.position.x / cellM) !== gx || Math.floor(e.position.z / cellM) !== gz) continue;
+                    const sk = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
+                    d += Math.max(O.weightMin, Math.min(O.weightMax, sk * O.nominalH * O.weightPerM));
+                }
+                grid.set(k, d);
+            }
             if (d) {
                 s += d;
                 if (s > thr) return true;
@@ -157,7 +187,7 @@ class AnazhRealm_siedlung_bauten {
         // Kronen-Gitter throttled neu bauen (einmal je Tick eingehängt).
         const st = this.state;
         const occlOn = st.useOcclusionDemotion !== false && !(st.renderer && st.renderer._isHeadlessNull);
-        if (occlOn) this._maybeRebuildOcclusionGrid();
+        if (occlOn) this._maybeRebuildOcclusionGrid(pm);
         let switches = 0;
         const sliceLen = Math.min(archs.length, 256); // wieviele Einträge pro Frame ANSCHAUEN
         // Der Cursor rückt um die BESUCHTEN Einträge vor: endete die Scheibe am Wechsel-Budget, ging der Rest der Scheibe
@@ -2660,6 +2690,7 @@ AnazhRealm.OCCLUSION = Object.freeze({
     nominalH: 14, // nominale Baum-Sichthöhe (m) für das skalen-basierte Kronen-Gewicht
     weightPerM: 0.045, // Kronen-Gewicht ∝ (scale·nominalH) (scale 1 → 0.63, scale 2 → 1.26)
     rebuildInterval: 20, // Gitter-Neubau alle N Frames (Bäume streamen → periodisch, nicht statisch wie die Vorlage)
+    reichM: 128, // der Kasten des Neubaus um das Auge (±m, `_rebuildOcclusionGrid`): das Band der 3D-Stufen; jenseits rechnet die Sichtlinie faul
 });
 // Die Streu-Region-Kantenlänge (= _bakeRegionConfig().sizeM, 256 m): Region-Bundles und Fern-Superregion der
 // Streu. Der platzierte Bau keyt seit Welle B nicht mehr regional (global in der Mesh-Zone).

@@ -1804,12 +1804,14 @@ class AnazhRealm_wasser_zellen {
     // (`_stauFelder` bestellt sie), der Spiegel des Kerns trägt sie (gelaende-core `stauSpiegel` in `atlasSpiegel`).
 
     // Die Stau-Werke der Welt, zu Clustern verschmolzen (ein Damm aus vielen Blöcken/Fill-Kugeln ist EIN
-    // Werk). Identitäts- + Längen-gecacht: Edit-Push / Architektur-Spawn/-Remove invalidiert exakt.
-    // Deterministisch (stabile Listen-Ordnung).
+    // Werk). Identitäts- + Längen-gecacht: Edit-Push / der Eintritt, Austritt oder neue Boxen eines Bestands-Eintrags mit
+    // geschlossener Box (das Verzeichnis „stauwerk", `_blockerNamen`) invalidieren exakt. Deterministisch (die Ordnung des
+    // Bestands). Gegangen werden die Stauwerke, nie der Bestand: bis w4-takt-drift fiel der Cache mit jeder Länge der Liste —
+    // jeder gepflanzte Baum ging jeden Eintrag (an der Mess-Wiese nach dem Gang 33 279, 8,9 ms je Takt im Rückstau des Walds).
     _stauWorkClusters() {
         const meta = this.state.worldMeta;
         const edits = meta && Array.isArray(meta.voxelEdits) ? meta.voxelEdits : null;
-        const archs = Array.isArray(this.state.architectures) ? this.state.architectures : null;
+        const archs = Array.isArray(this.state.architectures) ? this._blockerMit("stauwerk") : null;
         const eLen = edits ? edits.length : 0;
         const aLen = archs ? archs.length : 0;
         const c = this._stauClusterCache;
@@ -2489,7 +2491,8 @@ AnazhRealm.CA_STAU = Object.freeze({
     CLUSTER_GAP: 4, // m — Werke näher als das verschmelzen zu EINEM Stau-Werk (ein Damm = viele Blöcke)
     MIN_EXTENT: 1.6, // m — schmalere Werke (Baum-Stämme, Deko-Säulen) stauen nichts (Perf-Vorfilter)
 });
-// DIE BOX, DIE STAUEN KANN (Leser: die Qualifikation (b) in `_stauWorkClusters` und der Cache-Wurf in `_blockerStampReach`):
+// DIE BOX, DIE STAUEN KANN (Leser: die Qualifikation (b) in `_stauWorkClusters`, der Cache-Wurf in `_blockerStampReach` und
+// der Name „stauwerk" im Verzeichnis, `_blockerNamen`):
 // geschlossen (in BEIDEN Achsen mindestens eine Sim-Zelle `zelle`) und dicht — wer keine Wasser-Zelle stempelt (`stempelfrei`:
 // der Wagen, die Pflanze, die Brücke mit Durchlass), hält auch kein Becken. Bis hier galt der fahrende Wagen als Damm: jede
 // Erneuerung seiner Boxen warf den Cluster-Cache, und der Haupt-Faden rechnete je Bild die Werke ALLER Bauten neu (Messort

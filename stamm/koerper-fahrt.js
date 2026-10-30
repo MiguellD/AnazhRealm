@@ -1740,7 +1740,8 @@ class AnazhRealm_koerper_fahrt {
         const F = this._fadenkreuzStrahl();
         if (!F) return false;
         const meshes = [];
-        for (const entry of this.state.architectures || []) {
+        // die Lupen des Verzeichnisses (`_blockerMit`), nie der Bestand, der mit dem Weg wächst (w4-takt-drift)
+        for (const entry of Array.isArray(this.state.architectures) ? this._blockerMit("magnifying") : []) {
             if (!entry.affordances || !entry.affordances.magnifying) continue;
             if (!entry.mesh) continue;
             entry.mesh.traverse((m) => {

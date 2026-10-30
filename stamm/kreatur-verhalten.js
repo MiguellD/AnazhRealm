@@ -2124,7 +2124,7 @@ class AnazhRealm_kreatur_verhalten {
         // Ein INSTANZIERTER Eintrag (Foundry/HISM, der Normalfall) trägt KEIN .mesh (lebt in instSlots) —
         // nacktes `!target.mesh` hieße „weg“ und erzwänge jeden Tick einen Nearest-Scan.
         // Weg = aus der Welt entfernt ODER weder Mesh noch Instanz.
-        const targetGone = !target || !this.state.architectures.includes(target) || (!target.mesh && !target.instanced);
+        const targetGone = !target || !this._imBestand(target) || (!target.mesh && !target.instanced);
         if (targetGone) {
             target = this._findNearestArchitectureWithMaterial(creature.position, material);
             if (!target) {
@@ -3002,11 +3002,15 @@ class AnazhRealm_kreatur_verhalten {
         // nur wem das Feld die Gestalt trägt (fern UND gebacken): ungebacken oder nah (`_kzNah`, auch im Takt, in dem er
         // `aus` nach außen kreuzt) zeichnet sein Mesh und wirft in die Kaskaden — er ruht nie
         if (!this._kzBesitztFeld(c)) return false;
+        // DER RING DER RUHE ist der Ring, an dem der Ziegel die Nah-Gestalt nimmt (`ein`): diesseits trüge ihn das Feld nicht
+        // mehr (er erwacht, bevor der Ziegel ihn zum Mesh macht); jenseits trägt ihn das Feld, solange er nicht nah war —
+        // auch im Band der Hysterese bis `aus`. Bis w4-takt-drift ruhte erst jenseits `aus`: an Genesis (Third, Feld wie nach
+        // dem Bake) gingen 6 Feld-Tiere bei 64–67 m außer Bild jeden Takt voll, ihre Skelette im Matrix-Gang
         const p = c.position;
         const N = AnazhRealm.KREATUR_NAH_MESH;
         const dx = p.x - playerPos.x,
             dz = p.z - playerPos.z;
-        if (dx * dx + dz * dz < N.aus * N.aus) return false;
+        if (dx * dx + dz * dz < N.ein * N.ein) return false;
         const v = u._steuer ? Math.abs(u._steuer.v) : 0;
         if (v * R.takt * delta > R.wegMax) return false;
         const w2 = R.witterungM * R.witterungM;
@@ -3929,13 +3933,14 @@ AnazhRealm.BOOT_PHASE3_SPAWN_MS = 280;
 // Boot exklusiv Boden-Streaming + Bewegung.
 AnazhRealm.BUEHNE_SETTLE_CAP_MS = 90000;
 // DER RUHENDE LEIB (K59, Gebot 7: Kosten an Schirm + Änderung): ein lebendes Tier außer Bild, dem das Feld die Gestalt
-// trägt (`_kzBesitztFeld`: jenseits der Nah-Gestalt `KREATUR_NAH_MESH.aus` und gebacken — sein Mesh zeichnet und wirft
-// nicht, das Feld wirft keinen Schatten), ohne laufenden Zustand ruht (`_kreaturRuht`): es geht nur jeden `takt`-ten Frame,
-// mit der aufgelaufenen Zeit (`_kreaturTaktDt` — die Zeit geht nie verloren), sein Satz ist aus (er zeichnet nirgends), und
-// es verlässt den Matrix-Gang der Szene. Der grobe Schritt bleibt kürzer als `wegMax` m (ein schnellerer Leib geht voll; der
-// Weg fegt in Teil-Schritten, `_kreaturWeg`). Der Blick-Test des Takts hinkt einen Frame (die Kamera dreht nach dem
-// Kreatur-Takt): der Rand wächst um `randGrad`° plus die doppelte Drehung des Vor-Frames, dazu `saumM` m — und der Blick
-// des Bilds (`_ruheImBild` in `_loopRender`) weckt, was die Kamera dieses Bilds dennoch sieht (Teleport, Portal, Aufnahme).
+// trägt (`_kzBesitztFeld`: jenseits des Rings der Nah-Gestalt `KREATUR_NAH_MESH.ein`, nicht nah und gebacken — sein
+// Mesh zeichnet und wirft nicht, das Feld wirft keinen Schatten), ohne laufenden Zustand ruht (`_kreaturRuht`): es geht
+// nur jeden `takt`-ten Frame, mit der aufgelaufenen Zeit (`_kreaturTaktDt` — die Zeit geht nie verloren), sein Satz ist
+// aus (er zeichnet nirgends), und es verlässt den Matrix-Gang der Szene. Der grobe Schritt bleibt kürzer als `wegMax` m
+// (ein schnellerer Leib geht voll; der Weg fegt in Teil-Schritten, `_kreaturWeg`). Der Blick-Test des Takts hinkt einen
+// Frame (die Kamera dreht nach dem Kreatur-Takt): der Rand wächst um `randGrad`° plus die doppelte Drehung des
+// Vor-Frames, dazu `saumM` m — und der Blick des Bilds (`_ruheImBild` in `_loopRender`) weckt, was die Kamera dieses
+// Bilds dennoch sieht (Teleport, Portal, Aufnahme).
 // In der Witterung eines Jägers (`witterungM` m) ruht kein Tier (der Biss liest seine Glieder). Ein Schatten reicht höchstens
 // `wurfM` m weit (`_kreaturWurfAusserBlick`).
 AnazhRealm.KREATUR_RUHE = Object.freeze({ takt: 4, wegMax: 0.25, randGrad: 10, saumM: 2, witterungM: 60, wurfM: 12 });

@@ -1780,11 +1780,14 @@ class AnazhRealm_vegetation_baum {
     // gewinnt oder verliert (K52), sein Objekt IST der Stand. Leser: `_imGrundriss` und wer eine Antwort merkt, die
     // durch die Natur-Wand geht (die Gestalt des Orts `_foundryGestaltFor`, die Streu-Gestalt `_scatterFoundrySeed`: ein
     // neues Haus über einem Nachbarn macht den Baum daneben frei).
+    // Gegangen werden die Einträge, die einen Grundriss tragen können (das Verzeichnis „grundriss", `_blockerNamen`, in der
+    // Ordnung des Bestands), nie der gesetzte Wald: bis w4-takt-drift ging jeder Neubau jeden Eintrag — im Rückstau des Walds
+    // nach dem Gang fiel das Gitter mit jedem Fels, und sein Neubau ging 33 279 Einträge (2,2 ms je Takt).
     _grundrissStand() {
         if (this._grundrissGitter) return this._grundrissGitter;
         const G = AnazhRealm.GRUNDRISS_ZELLE;
         const gitter = (this._grundrissGitter = { zellen: new Map(), lichtungen: [], wege: new Map() });
-        for (const e of this.state.architectures || []) {
+        for (const e of Array.isArray(this.state.architectures) ? this._blockerMit("grundriss") : []) {
             const fp = this._grundrissVon(e);
             if (!fp) continue;
             if (fp.lichtung) {
@@ -2337,12 +2340,14 @@ class AnazhRealm_vegetation_baum {
     // Architektur-Idle (Mühlen drehen, Banner flattern): je Architektur EINMAL lazy klassifiziert
     // (`_idleMotion` über `computeMotionRoles` mit den Bauplan-Verbindungen), gefiltert auf SICHERE Rollen
     // — NUR rad/segel/tuer/wirbel; bein/arm/kopf-Resonanz wackelt NIE (eine Statue läuft nicht).
+    // Gegangen wird die Mesh-Zone (`_cullWache().mesh`), nie der Bestand: bis w4-takt-drift ging der Takt jeden Eintrag, an
+    // der Mess-Wiese nach dem Gang 33 279 je Takt für die Handvoll mit Mesh (Null-Renderer, Selbstzeit des Loops 0,5 → 5,4 ms).
     tickArchitectures(currentTime) {
         const list = this.state.architectures;
         if (!list || list.length === 0) return;
         const tSec = currentTime / 1000;
         const mountedId = this.state.player && this.state.player.mountedArch;
-        for (const entry of list) {
+        for (const entry of this._cullWache().mesh) {
             if (!entry.mesh || !entry.mesh.userData) continue;
             // V18.150 — das GERITTENE Gefährt animiert der Fahr-Tick
             // (_tickMountedMovement: Phase ∝ Weg) — der Idle-Animator
@@ -2616,8 +2621,11 @@ class AnazhRealm_vegetation_baum {
 
     // DIE WACHE DES CULLS (`tickArchitectureCulling`): je Bestand (`state.architectures`, eine neue Liste oder ein neues Buch
     // weckt alle) die wachen Einträge (`wach`), die schlafenden in Eimern des Spieler-Wegs (`eimer`: Eimer b weckt, sobald der
-    // Weg `odo` b · CULL_EIMER_M erreicht; `_cullEimer` am Eintrag nennt seinen Eimer) und die autonomen (`autos`, der Deckel
-    // `_capNexusStructures`).
+    // Weg `odo` b · CULL_EIMER_M erreicht; `_cullEimer` am Eintrag nennt seinen Eimer), die autonomen (`autos`, der Deckel
+    // `_capNexusStructures`) und die mit eigenem Mesh (`mesh`: die Gruppen der Mesh-Zone, nachgeführt an jedem Bau und Abbau
+    // des Meshs, `_cullWecken`). Leser von `mesh`: der Idle-Takt der Bauten (`tickArchitectures`) und die freien Werfer der
+    // Kaskade (`_kaskadenWerferOben`) — der Bestand wächst mit jedem gefahrenen Meter (der gesetzte Wald bleibt als Daten), die
+    // Mesh-Zone nur mit dem Schirm (w4-takt-drift: 2 552 → 33 279 Einträge nach 5,4 km, je Takt jeder Eintrag gegangen).
     _cullWache() {
         const liste = this.state.architectures || [];
         const buch = this._foundryEnabled() && this._foundry ? this._foundry.recipes : null;
@@ -2630,6 +2638,7 @@ class AnazhRealm_vegetation_baum {
             wach: new Set(liste),
             eimer: new Map(),
             autos: new Set(liste.filter((e) => e.autonomous)),
+            mesh: new Set(liste.filter((e) => e && e.mesh)),
             odo: 0,
             ab: 0,
             px: null,
@@ -2648,6 +2657,8 @@ class AnazhRealm_vegetation_baum {
         entry._cullEimer = art === "weg" ? -1 : undefined;
         if (art === "weg") [K.wach.delete(entry), K.autos.delete(entry)];
         else [K.wach.add(entry), entry.autonomous && K.autos.add(entry)];
+        if (art !== "weg" && entry.mesh) K.mesh.add(entry);
+        else K.mesh.delete(entry);
     }
 
     // Autonome Bauten bounded: sie spawnen fern (far_player, jenseits des Cull-Radius), der Bestand ist

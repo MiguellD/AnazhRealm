@@ -616,7 +616,8 @@ class AnazhRealm_siedlung_ort {
 
     // Membran-Tick: je sichtbarem Portal-Eintrag mit Tor-Gestalt EINE Membran (Registry je entry.id),
     // Uniforms atmen, HINDURCHGEHEN prüfen (Ebenen-Kreuzung in der Apertur → enterPortal, derselbe
-    // Chokepoint wie die E-Taste). Scan 1 Hz (bounded), Uniform-Atem pro Frame.
+    // Chokepoint wie die E-Taste). Scan 1 Hz über die Tore des Verzeichnisses (`_blockerMit("isPortal")`, in der Ordnung des
+    // Bestands), nie über den Bestand, der mit dem Weg wächst (w4-takt-drift: 33 279 Einträge je Scan), Uniform-Atem pro Frame.
     _tickPortalMembranes(currentTime) {
         const st = this.state;
         if (!st || !st.scene || typeof THREE === "undefined") return;
@@ -632,9 +633,8 @@ class AnazhRealm_siedlung_ort {
         if (!this._membranScanAt || currentTime - this._membranScanAt > 1) {
             this._membranScanAt = currentTime;
             const seen = new Set();
-            const arches = st.architectures;
-            if (Array.isArray(arches)) {
-                for (const entry of arches) {
+            if (Array.isArray(st.architectures)) {
+                for (const entry of this._blockerMit("isPortal")) {
                     if (!entry || !entry.position) continue;
                     if (!(entry.affordances && entry.affordances.isPortal)) continue;
                     const tor = this._torGesetzFor(entry);
@@ -2184,8 +2184,9 @@ class AnazhRealm_siedlung_ort {
         });
         if (!namen.length) return;
         // Existenz-Probe: trägt die Welt schon ein Ring-Portal nahe des Genesis-Orts
-        // (Restore eines Saves ohne Stempel), gilt der Ring als gebaut.
-        for (const e of st.architectures || []) {
+        // (Restore eines Saves ohne Stempel), gilt der Ring als gebaut — gefragt sind die Tore des Verzeichnisses (jeder Name
+        // ist ein Bauplan der Rolle portal), nie der Bestand.
+        for (const e of this._blockerMit("isPortal")) {
             if (!e || !e.position) continue;
             const d2 = (e.position.x - M.x) ** 2 + (e.position.z - M.z) ** 2;
             if (d2 <= 20 * 20 && namen.includes(e.type)) {
@@ -2250,7 +2251,7 @@ class AnazhRealm_siedlung_ort {
         }
         const portalType = "welt_" + worldKey;
         let portal = null;
-        for (const e of arches) {
+        for (const e of this._blockerMit("isPortal")) {
             if (e && e.type === portalType && e.position) {
                 portal = e;
                 break;
@@ -2349,7 +2350,9 @@ class AnazhRealm_siedlung_ort {
             ["schmiede", "esse", "portal-preview-schmiede"],
             ["portale", "tor_drachentor", "portal-preview-portale"],
         ];
-        const arches = (this.state && this.state.architectures) || [];
+        // die Tore des Verzeichnisses (`_blockerMit("isPortal")`: jedes welt_-Tor ist ein Bauplan der Rolle portal), nie der
+        // Bestand, der mit dem Weg wächst — der Ort-Takt des Genesis-Rings fragt je Takt (w4-takt-drift)
+        const arches = this.state && Array.isArray(this.state.architectures) ? this._blockerMit("isPortal") : [];
         const R2 = 22 * 22;
         let nearAny = false;
         for (let i = 0; i < rows.length; i++) {
@@ -3161,9 +3164,10 @@ class AnazhRealm_siedlung_ort {
         return Object.assign({}, plan, { slots, laternen });
     }
     // Der Bau eines Orts (sein Same `same`) an (x, z), oder undefined. Der Zug, der wiederkehrt, hebt nur, was nicht steht; das
-    // Wachstum nimmt, was sein neuer Plan nicht trägt (`_ortWaechst`).
+    // Wachstum nimmt, was sein neuer Plan nicht trägt (`_ortWaechst`). Gefragt sind die Plätze am Ort (`_blockerUmPlatz`, in
+    // der Ordnung des Bestands), nie der Bestand, der mit dem Weg wächst: je Platz eines Zugs ging die Frage jeden Eintrag.
     _dorfHaus(x, z, same) {
-        return this.state.architectures.find(
+        return this._blockerUmPlatz(x, z, 0.05, []).find(
             (e) => e && e.seed === same && Math.abs(e.position.x - x) < 0.05 && Math.abs(e.position.z - z) < 0.05
         );
     }

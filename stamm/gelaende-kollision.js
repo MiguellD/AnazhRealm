@@ -278,8 +278,7 @@ class AnazhRealm_gelaende_kollision {
         entry._hausHuelleSkala = ws && ws.elements ? ws.elements[0] || 1 : 1;
         this._populateBlockerAABBs(entry);
         // mit der Hülle kennt das Haus seinen Grundriss (`_grundrissVon`): was dort wuchs, weicht (`_grundrissRaeumen`)
-        if (entry.position && this.state.architectures && this.state.architectures.includes(entry))
-            this._grundrissRaeumen(entry);
+        if (entry.position && this.state.architectures && this._imBestand(entry)) this._grundrissRaeumen(entry);
     }
 
     // DAS GESETZTE HAUS IST EIN SLOT SEINES PLANS (S4 · bauen.K2): ein Haus ohne Ort (gesetzt vom Spieler, der KI, der Vorschau
@@ -327,7 +326,7 @@ class AnazhRealm_gelaende_kollision {
         if (ov) msg.ov = ov;
         offen.add(entry);
         const wort = "FOUNDRY TIMEOUT: slot-plan(" + art.preset + ") nach 45 s Arbeit ohne Reply → null";
-        const steht = () => this.state.architectures.includes(entry);
+        const steht = () => this._imBestand(entry);
         return this._foundryAuftrag(f, "grd-", msg, this._foundryRang(0, true), 45000, wort)
             .then((sl) => {
                 if (!sl || !steht()) return null;
@@ -1089,8 +1088,12 @@ class AnazhRealm_gelaende_kollision {
     }
 
     // Die Namen eines Eintrags im Verzeichnis: jeder wahre Schlüssel seiner Affordanzen, „rauch", wenn er einen Kamin trägt,
-    // „glut", wenn er eine Brenn-Fläche trägt (`_glutFlaeche`; Leser: der Klang), und „licht", wenn er eine Leuchtquelle ist
-    // (`_lichtDatum`; Leser: der Licht-Takt `_leuchtTakt`).
+    // „glut", wenn er eine Brenn-Fläche trägt (`_glutFlaeche`; Leser: der Klang), „licht", wenn er eine Leuchtquelle ist
+    // (`_lichtDatum`; Leser: der Licht-Takt `_leuchtTakt`), „stauwerk", wenn eine seiner Boxen stauen kann
+    // (`AnazhRealm._stauBox`: geschlossen und dicht; Leser: die Werke des Staus `_stauWorkClusters`), und „grundriss", wenn
+    // er einen Grundriss tragen kann (jeder Eintrag, dessen Art nicht Natur ist, `_naturArt`, und jeder mit Platte,
+    // Fundament, Hülle oder Tür — eine Obermenge von `_grundrissVon`; Leser: das Gitter der Grundrisse `_grundrissStand`).
+    // Beide Leser gehen so nie den gesetzten Wald, der mit dem Weg wächst (w4-takt-drift).
     _blockerNamen(entry) {
         const out = [];
         const a = entry.affordances;
@@ -1098,6 +1101,18 @@ class AnazhRealm_gelaende_kollision {
         if ((entry.userData && entry.userData.rauchQuelle) || entry.chimney) out.push("rauch");
         if (this._glutFlaeche(entry) > 0) out.push("glut");
         if (this._lichtDatum(entry)) out.push("licht");
+        const boxen = entry.blockerAABBs;
+        const zelle = boxen && boxen.length ? this._voxelChunkConfig(0).step : 0;
+        if (zelle && boxen.some((b) => AnazhRealm._stauBox(b, zelle))) out.push("stauwerk");
+        if (
+            typeof entry.type !== "string" ||
+            !this._naturArt(entry) ||
+            entry.obb ||
+            entry.fundament ||
+            entry._hausHuelle ||
+            entry.tuer
+        )
+            out.push("grundriss");
         return out;
     }
 
@@ -1114,6 +1129,13 @@ class AnazhRealm_gelaende_kollision {
             N.verzeichnisListe.set(name, liste);
         }
         return liste;
+    }
+
+    // Steht der Eintrag im Bestand? Die Generation des Netzes, die sein Eintritt stempelt und sein Austritt löscht — dasselbe
+    // Urteil wie `state.architectures.includes(entry)`, ohne den Bestand zu gehen, der mit dem Weg wächst (w4-takt-drift: der
+    // Sammler fragte je Takt). Leser: der Sammel-Auftrag (`_tickCreatureGather`), die Hülle des Hauses (`_hausHuelleSetzen`).
+    _imBestand(entry) {
+        return !!entry && entry._blockerGen === this._blockerNetz().gen;
     }
 
     // Das Tor-Gesetz eines Eintrags: reine porta-Zahlen (Dial-Satz p · membranUniforms mu ·

@@ -41,8 +41,8 @@
      ""
     ],
     [
-     "this.state.architectures.includes(entry))\n            this._grundrissRaeumen(entry);",
-     "this.state.architectures.includes(entry)) void 0;"
+     "this._imBestand(entry)) this._grundrissRaeumen(entry);",
+     "this._imBestand(entry)) void 0;"
     ]
    ]
   ],

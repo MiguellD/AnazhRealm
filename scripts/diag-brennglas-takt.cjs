@@ -26,7 +26,8 @@
 //       an ihrem Platz und ihrer Zellen-Marke, nie an der Uhr), die Gegenprobe (das Orakel) greift jeden ihres Namens (sonst BLIND);
 //   (Q) QUELLE: keiner der Takte läuft über `state.architectures`; jeder Schreiber von Affordanzen und Kaminen steht beim Namen
 //       (Spawn, Tor), die Hitze schreibt nur der Brennglas-Takt; die Familie des Spiegel-Takts (D10,
-//       `_spiegel…`) gehört der Klasse;
+//       `_spiegel…`) gehört der Klasse, dazu jeder Leser der Welt im Takt, die mit dem Weg wächst (w4-takt-drift: Idle-Takt,
+//       Kaskaden-Werfer, Status-Zähler, Kronen-Gitter, Dach, Dorf-Haus, Tore, Lupe, Stau-Werke, Grundriss-Gitter);
 //   (W) DER WUCHS: kein Takt der Klasse leitet ein Skelett im Haupt-Faden ab — die Krone reist als Beipack aus dem Worker;
 //   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Quell-Wand ist am Stamm grün und fällt bei einer eingeschleusten
@@ -34,7 +35,7 @@
 //   node scripts/diag-brennglas-takt.cjs [--selftest]   (npm run gate:brennglas-takt)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullWeltProbe, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 
@@ -61,6 +62,23 @@ const TAKTE = [
     "_tickHausTueren",
     "_spiegelFeldTakt",
     "_spiegelKronen",
+    // DIE WELT IST EINE FUNKTION, KEIN SACK (w4-takt-drift, Gebot 7): der Bestand wächst mit jedem gefahrenen Meter — der
+    // gesetzte Wald bleibt als Daten (profiband.K5#1, GTX: Takt p95 16,7 → 19,7 ms über 5,4 km; headless nach dem Gang
+    // 2 552 → 27 958 Einträge, Takt p95 der letzten 5 min ×1,45). Diese Leser fragen die Mesh-Zone (`_cullWache().mesh`),
+    // die Takt-Nähe (`_blockerUmPlatz`) oder das Verzeichnis (`_blockerMit`: „isPortal", „stauwerk", „grundriss",
+    // „magnifying"); bis dahin ging jeder je Takt, je Änderung oder je Status-Bild den ganzen Bestand
+    "tickArchitectures",
+    "_kaskadenWerferOben",
+    "countArchitecturesNearPlayer",
+    "_rebuildOcclusionGrid",
+    "_dachTakt",
+    "_dorfHaus",
+    "_tickPortalMembranes",
+    "_genesisPortalRing",
+    "_portalApproachPrefetch",
+    "_hasMagnifyingInSight",
+    "_stauWorkClusters",
+    "_grundrissStand",
 ];
 // DIE FAMILIE DES SPIEGEL-TAKTS (D10): jede Methode `_spiegel…` läuft im Takt des Spiegel-Felds oder seines Passes — sie
 // gehört der Klasse wie die Takte oben (der Bestand nur über die Plätze, `_blockerUmPlatz`).
@@ -1364,16 +1382,7 @@ function urteil(S, stamm) {
 
 hauptLauf(async () => {
     const stamm = quellWand(stammLib.text(root));
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 });
-    await server.zeige(page, 60000);
-    await page.evaluate(async () => {
-        await window.__weltDa((r) => r.state && r.state.player);
-    });
-    await page.evaluate(`window.__naeheProbe = ${naeheProbe.toString()};`);
-    const S = await page.evaluate(probe);
-    await browser.close();
-    server.close();
+    const S = await nullWeltProbe(server, probe, (page) => page.evaluate(`window.__naeheProbe = ${naeheProbe};`));
     const T = S.tag;
     console.log(
         "=== DER BRENNGLAS-TAKT UND SEINE KLASSE — der Takt kostet, was ihn betrifft (Null-Renderer, eine echte Welt) ==="

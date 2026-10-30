@@ -1680,7 +1680,8 @@ async function checkBandTierSeparation({ page, check }) {
 // verdrahten, nicht neu bauen"): am ECHTEN Chokepoint (updateCreatures / _p2pUpdatePeer): (A) die Anim-Raten-Leiter nach Distanz
 // (voll · 1/2 · 1/4 · jenseits der Grenze gar nicht) · (B) jenseits der Grenze friert der Baum in der Kern-STAND_POSE · (C) die
 // gelenkige Grobstufe des Menschen, der EINE Stufen-Schalter, der echte Peer-Tick · (R) Starr-Bindung + Körper-Kugel · (F) Mensch
-// und Kopie ruhen · (G) die Ruhe der Leiber (Leser, Erwachen, Nah-Gestalt, Feld, Bild, KI) · (T)(W) · Selbsttests S1–S11.
+// und Kopie ruhen · (G) die Ruhe der Leiber (Leser, Erwachen, Nah-Gestalt, Feld, Bild, KI, das Band der Hysterese) · (T)(W) ·
+// Selbsttests S1–S12.
 async function checkBandKreaturKosten({ page, check }) {
     const out = await safeEvaluate(page, async () => {
         const s = st,
@@ -2601,7 +2602,9 @@ async function checkBandKreaturKosten({ page, check }) {
                 cam.updateMatrixWorld(true);
             };
             const g = { schritte: 0, zeit: 0, gaenge: 0 };
-            const probe = spawnAt(-120, 0);
+            // mitten im Band der Hysterese (`ein`…`aus`): dort trägt das Feld den Leib, der nicht nah war (w4-takt-drift)
+            const N = A.KREATUR_NAH_MESH;
+            const probe = spawnAt(-(N.ein + N.aus) / 2, 0);
             if (!probe) return { fehler: "Spawn fehlgeschlagen" };
             const u = probe.userData;
             u._kzVersuch = true;
@@ -2652,7 +2655,9 @@ async function checkBandKreaturKosten({ page, check }) {
                 return !!hit;
             };
             try {
-                // (G1) RUHT: 120 m hinter dem Blick — jeder `takt`-te Takt ein Schritt, die Zeit vollständig, kein Gang ins Kind
+                // (G1) RUHT: im Band der Hysterese hinter dem Blick (bis w4-takt-drift ruhte erst jenseits `aus`: an Genesis gingen 6
+                // Feld-Tiere bei 64–67 m außer Bild jeden Takt voll) — jeder `takt`-te Takt ein Schritt, die Zeit vollständig, kein
+                // Gang ins Kind
                 blick(1, 0);
                 takt(2);
                 nullen();
@@ -2706,6 +2711,12 @@ async function checkBandKreaturKosten({ page, check }) {
                 if (wachOrig === P._kreaturErwacht) delete r._kreaturErwacht;
                 else r._kreaturErwacht = wachOrig;
                 probe.position.z -= 5;
+                // (S12) SELBST-TEST: der Ring der Ruhe an `aus` (die Klasse vor w4-takt-drift) → der Leib im Band ruht nicht
+                A.KREATUR_NAH_MESH = { ein: N.aus };
+                blick(1, 0);
+                takt(2);
+                g.s12 = u._ruht;
+                A.KREATUR_NAH_MESH = N;
                 // (G4) NAH: 40 m hinter dem Blick (diesseits der Nah-Gestalt) — jeder Takt ein Schritt
                 blick(1, 0);
                 const nahX = -Math.min(40, A.KREATUR_NAH_MESH.aus - 10);
@@ -2844,6 +2855,7 @@ async function checkBandKreaturKosten({ page, check }) {
                 delete r._tickCreatureTaskDirection;
                 delete u._kzGlieder;
                 delete u._kzNah;
+                A.KREATUR_NAH_MESH = N;
                 if (u._ruht === true) r._kreaturErwacht(probe);
                 probe.remove(kind);
                 cleanup([probe]);
@@ -2882,6 +2894,7 @@ async function checkBandKreaturKosten({ page, check }) {
             o.checks.s11LensFires = !!G.s11 && G.s11.ruhteVorher && G.s11.ruht && G.s11.gerufen > 0;
             o.checks.gKi =
                 !!G.g11 && G.g11.band === 3 && G.g11.ruht && G.g11.schritte >= 5 && G.g11.ki === G.g11.schritte;
+            o.checks.s12LensFires = G.s12 === false;
         }
     
         o.ruheTakt = A.KREATUR_RUHE && A.KREATUR_RUHE.takt;
@@ -2908,7 +2921,7 @@ async function checkBandKreaturKosten({ page, check }) {
     const G = out.g || {};
     check("Kreatur-Kosten (G) die Probe der ruhenden Leiber lief", !G.fehler, G.fehler || "");
     gruppe("(G) Leiber ruhen fern, der Leser liest die jetzige Lage, sie erwachen nah, im Stoß, auf dem Weg, gefallen, im Feld, im Bild, für die KI", ["gRuht", "gLeser", "gErwacht", "gNahGestalt", "gNah", "gZustand", "gWeg", "gGefallen", "gFeldRuht", "gBildWeckt", "gKi"]);
-    gruppe("SELBSTTESTS S1–S11 feuern", ["s1LensFires", "s2LensFires", "s3LensFires", "s4LensFires", "s6LensFires", "s8LensFires", "s9LensFires", "s10LensFires", "s11LensFires"]);
+    gruppe("SELBSTTESTS S1–S12 feuern", ["s1LensFires", "s2LensFires", "s3LensFires", "s4LensFires", "s6LensFires", "s8LensFires", "s9LensFires", "s10LensFires", "s11LensFires", "s12LensFires"]);
     if (w[0] && w[0].s5) gruppe("SELBSTTEST S5: der gestubbte Zwilling lässt die nahe Stufe wieder werfen", ["s5LensFires"]);
     if (out.s7) gruppe("SELBSTTEST S7: der zur Mitte gezogene Zwilling verfehlt die Deckung", ["s7LensFires"]);
 }

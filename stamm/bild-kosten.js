@@ -2191,8 +2191,9 @@ class AnazhRealm_bild_kosten {
             frei(is.position.x + bs.center.x, is.position.y + bs.center.y, is.position.z + bs.center.z, bs.radius);
         }
         // Bauplan-Bauten, die als eigene Gruppe in der Szene stehen (kein Bundle, kein Instanz-Satz): ihre Welt-Kugel,
-        // einmal je Lage gerechnet (gate:schatten-werfer W6 nennt jede Werfer-Klasse, die hier fehlt).
-        for (const e of st.architectures || []) {
+        // einmal je Lage gerechnet (gate:schatten-werfer W6 nennt jede Werfer-Klasse, die hier fehlt). Gegangen wird die
+        // Mesh-Zone (`_cullWache().mesh`), nie der Bestand, der mit dem Weg wächst (w4-takt-drift).
+        for (const e of this._cullWache().mesh) {
             const m = e && e.mesh;
             if (!m || m.parent !== st.scene || m.visible === false) continue;
             const k = this._werferKugel(m);

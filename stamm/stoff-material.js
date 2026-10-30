@@ -1566,7 +1566,8 @@ class AnazhRealm_stoff_material {
         if (!auge || (w && w.stand === stand && Math.hypot(auge.x - w.x, auge.z - w.z) < N.dachSchrittM)) return;
         this._dachWahl = { stand, x: auge.x, z: auge.z };
         const decken = [];
-        for (const e of st.architectures || []) {
+        // die Plätze um das Auge (`_blockerUmPlatz`, in der Ordnung des Bestands), nie der Bestand, der mit dem Weg wächst
+        for (const e of this._blockerUmPlatz(auge.x, auge.z, N.dachUmkreisM, [])) {
             const hu = e._hausHuelle;
             if (!(hu || e._dachKasten) || !e.position) continue;
             if (Math.hypot(e.position.x - auge.x, e.position.z - auge.z) > N.dachUmkreisM) continue;

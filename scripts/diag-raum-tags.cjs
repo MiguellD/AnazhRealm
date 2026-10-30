@@ -22,7 +22,7 @@
 //   node scripts/diag-raum-tags.cjs [--selftest]   (npm run gate:raum-tags)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullWeltProbe, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 
@@ -498,15 +498,7 @@ function urteil(S, Q) {
 
 hauptLauf(async () => {
     const Q = quellWand(stammLib.text(root));
-    await server.lausche(0);
-    const { browser, page } = await nullSeite({ frist: 300000 });
-    await server.zeige(page, 60000);
-    await page.evaluate(async () => {
-        await window.__weltDa((r) => r.state && r.state.player);
-    });
-    const S = await page.evaluate(probe);
-    await browser.close();
-    server.close();
+    const S = await nullWeltProbe(server, probe);
     console.log(
         "=== DAS GEDÄCHTNIS DER RAUM-TAGS — der Schlüssel sieht jeden Schreiber (Null-Renderer, eine echte Welt) ==="
     );
