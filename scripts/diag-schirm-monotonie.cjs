@@ -20,14 +20,13 @@
 // (b) eine eingeschmuggelte Zeile liest die Canvas-Höhe an `_schirm` vorbei → Q rot, die Methode genannt; (d) dieselbe
 // Lesung über einen Alias (`leinwand = renderer.domElement`, `leinwand.height`) → Q rot; (c) die Quelle eingefroren (ein
 // fester Schirm) → K rot.
-//   node scripts/diag-schirm-monotonie.cjs [--selftest]       (npm run gate:schirm-monotonie; Port SCHIRM_PORT)
+//   node scripts/diag-schirm-monotonie.cjs [--selftest]       (npm run gate:schirm-monotonie)
 "use strict";
 const { statikServer, ROOT: root, hauptLauf, sleep, nullSeite } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
-const PORT = Number(process.env.SCHIRM_PORT || 4579);
 const SELBST = process.argv.includes("--selftest");
 // groß → klein; die Reihe läuft gespiegelt zurück (groß → klein → groß), jede kleinere Größe zwischen zwei Klammern
 const GROESSEN = [
@@ -135,7 +134,7 @@ function driftBefunde(reihe) {
 // ── die Welt ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 async function welt() {
     const server = statikServer();
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 900000 });
     await page.setViewport({ width: GROESSEN[0][0], height: GROESSEN[0][1], deviceScaleFactor: 1 });
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)

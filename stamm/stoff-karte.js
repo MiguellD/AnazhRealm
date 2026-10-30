@@ -1,5 +1,182 @@
 class AnazhRealm_stoff_karte {
-    // ===== ATLAS · Stoff/karte — Die Karte backt in der Welt: Bühne · je Takt ein Hebungs-Ring · GPU-Ablage (deckungstreue Mips, BC1/BC5, Sonnen-Sicht) =====
+    // ===== ATLAS · Stoff/karte — Der EINE Karten-Atlas · die Karte backt in der Welt, je Takt ein Hebungs-Ring · GPU-Ablage: deckungstreue Mips und der Saum der Art =====
+    // DER EINE KARTEN-ATLAS (W6): jede Impostor-Karte — Foundry-Art × Gestalt [× ov], gestreut und gesetzt — ist EINE
+    // Schicht einer Array-Textur (Albedo, Normale, Sonnen-Sicht), ihre HEBUNGS-RINGE (lod.K3, phyto-core `karteRinge`) als
+    // Bänder untereinander, je Ring V Peilungen, wie der Welt-Renderer sie zeichnet (Zeile 0 oben; der Ring 0° in voller
+    // Zelle, jeder andere in ¼ der Zellfläche, zwei Ansichten je Zeile). EIN Material, EIN Einheits-Quad, EINE globale Instanz-Gruppe
+    // (`IMPOSTOR_ATLAS_GRUPPE`); Schicht, Rahmen und Sichthöhe reisen je Instanz (aKarte — `_lodSlotStamp`). DIE KARTE BACKT
+    // IN DER WELT (S2, `_karteWeltBacken`): der Welt-Renderer zeichnet die L1-Gestalt, die GPU zieht die deckungstreuen Mips
+    // nach dem Karten-Gesetz und kodiert sie (`_karteAblage`) — kein Bäcker-Faden, kein zweiter Renderer; die BC-Bytes reisen
+    // EINMAL zurück auf die Platte der Schale, der Zweit-Boot legt sie, ohne zu backen (pipeline.K4 Stufe 2). Das FORMAT ist eine Stufe desselben Pfads: mit dem WebGPU-Feature texture-compression-bc BC1-sRGB-
+    // Albedo + BC5-Normale auf 1/normalTeiler + rg8-Sonnen-Sicht auf 1/lichtTeiler (CompressedArrayTexture, ~0,27 MiB je
+    // Schicht), ohne es (WebGL2, WebGPU ohne BC) zeichnet die Karte direkt in die Schicht eines rgba8-Array-Ziels, die GPU
+    // zieht die Mips (2,8 MiB je Schicht; `_impostorAtlasTexturen` meldet es EINMAL laut). Befund V18.528: je Karte zwei
+    // CanvasTextures, ein Material, eine Gruppe und ein Programm — 31 MB, ~90 Pipelines.
+    _impostorAtlas() {
+        if (this._kartenAtlas !== undefined) return this._kartenAtlas;
+        this._kartenAtlas = {
+            fmt: null, // "bc" | "rgba8" — beim ersten Textur-Bau aus dem Renderer
+            cw: 0,
+            ch: 0,
+            V: 0, // die Peilungen je Ring
+            ringe: null, // __phytoCore.karteRinge: die Hebungs-Ringe der Schicht (Hebung, Teiler, erste Zeile, Höhe)
+            offen: null, // die halb gebackene Karte {z, B, r: ihr nächster Ring}: ihr gehört die Bühne bis zum letzten Ring
+            nt: 0,
+            masse: null, // __phytoCore.karteMasse der Schicht
+            cap: 0, // Schichten der Texturen
+            n: 0, // vergebene Schichten
+            map: null,
+            nmap: null,
+            lmap: null, // die Sonnen-Sicht der Krone (A7-Term): der Anteil des Richtlichts, den die eigene Krone durchlässt
+            mapNode: null, // die Basis-Texturknoten: ein Wachsen tauscht nur ihren Wert
+            nmapNode: null,
+            lmapNode: null,
+            zellen: new Map(), // "fimp:<art>|<gestalt>[|ov:…]" → Zelle
+            quad: null,
+            mat: null,
+        };
+        return this._kartenAtlas;
+    }
+
+    // Das Schicht-Format: "bc" mit WebGPU und dem Feature texture-compression-bc (die GPU kodiert, `_karteAblage`), sonst
+    // "rgba8" (die Karte zeichnet direkt in ihre Schicht).
+    _impostorAtlasFormat() {
+        const r = this.state && this.state.renderer;
+        const dev =
+            r && !r._isHeadlessNull && r.backend && r.backend.isWebGPUBackend === true ? r.backend.device : null;
+        return dev && dev.features && dev.features.has("texture-compression-bc") ? "bc" : "rgba8";
+    }
+
+    // Die Texturen des Atlas für mindestens `bedarf` Schichten (in Schritten `KARTEN_ATLAS_SCHRITT`: das Verdoppeln hielt an
+    // der Mess-Wiese 32 Schichten für 18 Karten — +4 MB VRAM, als die Solitäre ihre Karte bekamen). Das Wachsen geschieht IN den
+    // Texturen: ein neues Bild, needsUpdate — die neue GPU-Form legt der EINE Abschied an (`_texturAbschied`: die alte fällt
+    // nach dem Submit, jedes Bündel nimmt neu auf), und die GPU kopiert die gebackenen Schichten in die neue Form
+    // (`_karteWachsen`, keine Karte backt neu). Knoten, Programm-Vorlage und jedes Render-Objekt binden so immer DIESELBE
+    // Textur (ein Tausch ließ die Textur des Programm-Baus wieder aufsteigen).
+    _impostorAtlasTexturen(at, bedarf) {
+        if (!at) return null;
+        // Das Karten-Gesetz ist KERN-PFLICHT: fehlt es (ein altes phyto-core im Cache), bricht es laut — nie eine Welt,
+        // die still für immer ohne Karte zeichnet.
+        const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
+        if (
+            !core ||
+            typeof core.karteMasse !== "function" ||
+            typeof core.karteRinge !== "function" ||
+            typeof core.karteGlaetteGaenge !== "function" ||
+            !core.KARTEN_GESETZ ||
+            !core.KARTEN_GESETZ.lichtTeiler
+        )
+            return AnazhRealm._kernPflichtBruch(
+                "phyto:karteMasse/karteRinge/karteGlaetteGaenge/KARTEN_GESETZ.lichtTeiler"
+            );
+        const soll = Math.max(bedarf || 0, at.n, 1);
+        if (at.map && at.cap >= soll) return at;
+        if (!at.masse) {
+            // Zell-Maße aus der EINEN Quelle (foundry-core PORTAL_RENDER_CONFIG.impostor, live über das Buch) und das
+            // Karten-Gesetz (phyto-core): Zell-Maße, Blickwinkel, Normal- und Licht-Teiler.
+            const ic = (AnazhRealm._studioRenderConfig && AnazhRealm._studioRenderConfig.impostor) || null;
+            if (!ic || !(ic.views > 0 && ic.cellW > 0 && ic.cellH > 0)) return null; // das Buch fehlt noch
+            at.V = ic.views;
+            at.cw = ic.cellW;
+            at.ch = ic.cellH;
+            // DIE HEBUNGS-RINGE (lod.K3): die Tafel des Karten-Gesetzes aus dem Rezept — höchstens vier (der Rechner der
+            // Ablage trägt sie in einem vec4); ein Maß-Bruch bricht laut, nie eine Karte, die still nur waagrecht sieht
+            at.ringe = core.karteRinge(ic.views, ic.cellW, ic.cellH, ic.hebungen, ic.ringTeiler);
+            if (!at.ringe || at.ringe.ringe.length > 4)
+                return AnazhRealm._kernPflichtBruch("terrain:PORTAL_RENDER_CONFIG.impostor.hebungen/ringTeiler");
+            at.nt = core.KARTEN_GESETZ.normalTeiler;
+            if (!at.fmt) {
+                at.fmt = this._impostorAtlasFormat();
+                const r = this.state.renderer;
+                if (at.fmt !== "bc" && r && !r._isHeadlessNull)
+                    this.log(
+                        `KARTE OHNE BC (${r.backend && r.backend.isWebGPUBackend ? "WebGPU ohne texture-compression-bc" : "WebGL2"}): ` +
+                            "die Karte zeichnet unkomprimiert in ihr rgba8-Ziel (2,8 MiB je Schicht statt 0,27)",
+                        "WARN"
+                    );
+            }
+            at.masse = core.karteMasse(at.cw, at.ch, at.V, at.nt, at.fmt, at.ringe);
+        }
+        const S = AnazhRealm.KARTEN_ATLAS_SCHRITT;
+        let cap = Math.max(8, at.cap || 0);
+        while (cap < soll) cap += S;
+        const M = at.masse;
+        const T = THREE;
+        const da = !!at.map;
+        if (at.fmt === "bc") {
+            const alt = da ? this._karteGpuTexturen(at) : null;
+            // Die Schichten füllt NUR die GPU (`_karteAblage`, `_karteWachsen`): kein CPU-Byte, keine Null-Ladung. r184 legt
+            // eine Textur mit version 0 als die geteilte 1×1-Vorgabe an (`createDefaultTexture`) — in sie passt keine Ablage,
+            // die Schicht blieb leer. Darum steht die Form ab dem Bau (needsUpdate) und lädt nichts (dataReady false; WebGPU
+            // nullt jede neue Textur).
+            const mips = (stufen) => stufen.map((s) => ({ data: null, width: s.w, height: s.h }));
+            if (da) {
+                at.map.mipmaps = mips(M.a);
+                at.map.image = { width: M.w, height: M.h, depth: cap };
+                at.nmap.mipmaps = mips(M.n);
+                at.nmap.image = { width: M.nw, height: M.nh, depth: cap };
+                at.lmap.image = { data: null, width: M.lw, height: M.lh, depth: cap };
+            } else {
+                // Die Namen tragen den Erzeuger (die Band-Linse zählt je Name).
+                at.map = new T.CompressedArrayTexture(mips(M.a), M.w, M.h, cap, T.RGBA_S3TC_DXT1_Format);
+                at.map.name = "karte-albedo:atlas";
+                at.map.colorSpace = T.SRGBColorSpace;
+                at.nmap = new T.CompressedArrayTexture(mips(M.n), M.nw, M.nh, cap, T.RED_GREEN_RGTC2_Format);
+                at.nmap.name = "karte-normal:atlas";
+                at.lmap = new T.DataArrayTexture(null, M.lw, M.lh, cap);
+                at.lmap.name = "karte-licht:atlas";
+                at.lmap.format = T.RGFormat; // die Sonnen-Sicht: r der Zenit, g der 45°-Kranz (F6)
+            }
+            for (const t of [at.map, at.nmap, at.lmap]) {
+                t.generateMipmaps = false;
+                t.minFilter = t === at.lmap ? T.LinearFilter : T.LinearMipmapLinearFilter;
+                t.magFilter = T.LinearFilter;
+                t.wrapS = T.ClampToEdgeWrapping;
+                t.wrapT = T.ClampToEdgeWrapping;
+                t.anisotropy = t === at.lmap ? 1 : 4;
+                t.source.dataReady = false;
+                t.needsUpdate = true; // die Form steht; gewachsen: die neue Form, die GPU kopiert die gebackenen Schichten
+            }
+            at.cap = cap;
+            if (alt) this._karteWachsen(at, alt);
+            return at;
+        }
+        // rgba8: das Array-Ziel IST die Schicht (Albedo sRGB, Normale vormultipliziert mit der Deckung in z, Sonnen-Sicht),
+        // die GPU zieht die Mips nach der letzten Ansicht; Wachsen legt das Ziel neu an, die Schichten backen nach.
+        if (da) {
+            at.rt.setSize(M.w, M.h, cap);
+            at.rtBereit = false;
+            at.offen = null; // die halbe Karte stand im alten Ziel: sie beginnt beim ersten Ring
+            const q = this._impostorBakeQueue || (this._impostorBakeQueue = []);
+            for (const z of at.zellen.values())
+                if (z.gebacken) {
+                    z._weltNeu = true;
+                    q.push(z.key);
+                }
+        } else {
+            at.rt = new T.RenderTarget(M.w, M.h, {
+                depth: cap,
+                count: 3,
+                depthBuffer: true,
+                generateMipmaps: true,
+                minFilter: T.LinearMipmapLinearFilter,
+                magFilter: T.LinearFilter,
+            });
+            [at.map, at.nmap, at.lmap] = at.rt.textures;
+            at.map.name = "karte-albedo:atlas";
+            at.map.colorSpace = T.SRGBColorSpace;
+            at.nmap.name = "karte-normal:atlas";
+            at.lmap.name = "karte-licht:atlas";
+            for (const t of at.rt.textures) {
+                t.wrapS = T.ClampToEdgeWrapping;
+                t.wrapT = T.ClampToEdgeWrapping;
+                t.anisotropy = 4;
+            }
+        }
+        at.cap = cap;
+        return at;
+    }
+
     // Die GPU-Texturen der Schichten (Albedo, Normale, Sonnen-Sicht) — null, solange r184 sie nicht angelegt hat.
     _karteGpuTexturen(at) {
         const be = this.state.renderer && this.state.renderer.backend;
@@ -33,6 +210,189 @@ class AnazhRealm_stoff_karte {
                 );
         }
         dev.queue.submit([enc.finish()]);
+    }
+
+    // Eine neue Zelle (Schicht) im Atlas; mit echtem Renderer reiht sie ihren Bake sofort ein (nah zuerst über
+    // `_bedarfD2`). Rahmen und Pixel liefert der Bake; der Null-Renderer bäckt nie (der Aufrufer setzt den Rahmen).
+    _impostorZelleNeu(at, key, preset, variant, ov) {
+        const z = {
+            key,
+            idx: at.n++,
+            preset,
+            variant,
+            ov: ov || null,
+            frame: null,
+            gebacken: false,
+            gescheitert: false,
+            _bedarfD2: Infinity,
+            _flat: null,
+            ende: null, // die Zusage der Karte: true gebacken, false gescheitert (`_karteEndet`)
+            _endeLoes: null,
+        };
+        z.ende = new Promise((r) => (z._endeLoes = r));
+        at.zellen.set(key, z);
+        this._karteNadel(null, z);
+        if (at.map && z.idx >= at.cap) this._impostorAtlasTexturen(at, z.idx + 1);
+        const rend = this.state && this.state.renderer;
+        if (rend && !rend._isHeadlessNull) {
+            if (!this._impostorBakeQueue) this._impostorBakeQueue = [];
+            this._impostorBakeQueue.push(key);
+        }
+        return z;
+    }
+    // DAS ENDE EINER KARTE (K38-N2): gebacken (`ok`) oder gescheitert — die EINE Stelle, die den Zustand der Zelle setzt
+    // und ihre Zusage `z.ende` löst. Wer auf die Karte wartet (die L2-Vorschau der Werkstatt), hängt sich per
+    // `_foundryWecker` an; bis K38-N2 hörte niemand den Bake, und die Vorschau blieb „pending", bis der Spieler neu wählte.
+    _karteEndet(z, ok) {
+        if (ok) z.gebacken = true;
+        else z.gescheitert = true;
+        if (z._endeLoes) z._endeLoes(!!ok);
+    }
+
+    // Das EINE Einheits-Quad der Karten (6 Verts auf der Stammachse, y ∈ {0,1}) mit DREI Vertex-Attributen: position,
+    // normal (PROBE (1,0,0): der InstanceNode macht daraus (cos r, 0, −sin r)/s → Rotation + Skala), uv (u = Ecke:
+    // ±1 = 2u−1, v = Höhe: Wind-Gewicht v²). Je Instanz EIN vec4 `aKarte` = (Schicht, Halbbreite, Höhe — template-
+    // lokal —, ±Sichthöhe), die Fassade ersetzt den Platzhalter je Slot; dazu instanceColor (Tint). Befund Echt-GPU 04.10.:
+    // mit color/aImpX/aFlex/aPhase/aOccl/aZelle/aRahmen trug die Pipeline 10 Vertex-Puffer (WebGPU-Grenze 8) — das
+    // @global-Bundle wurde ungültig, keine Karte zeichnete.
+    _impostorQuad(at) {
+        if (at.quad) return at.quad;
+        const VC = 6;
+        const ecken = [
+            [0, 0],
+            [1, 0],
+            [1, 1],
+            [0, 1],
+        ];
+        const tri = [0, 1, 2, 0, 2, 3];
+        const pos = new Float32Array(VC * 3),
+            nor = new Float32Array(VC * 3),
+            uv = new Float32Array(VC * 2),
+            karte = new Float32Array(VC * 4);
+        for (let ti = 0; ti < VC; ti++) {
+            const c = ecken[tri[ti]];
+            pos[ti * 3 + 1] = c[1];
+            nor[ti * 3] = 1;
+            uv[ti * 2] = c[0];
+            uv[ti * 2 + 1] = c[1];
+            karte[ti * 4 + 1] = 1; // Platzhalter: Schicht 0, Rahmen 1 × 1, ohne Sichthöhe
+            karte[ti * 4 + 2] = 1;
+        }
+        const g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+        g.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
+        g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+        g.setAttribute("aKarte", new THREE.BufferAttribute(karte, 4));
+        g.computeBoundingBox();
+        g.computeBoundingSphere();
+        at.quad = g;
+        return g;
+    }
+
+    // Das EINE Karten-Material (der Atlas-Zweig in `_buildPbrNodeMaterial`). Scheitert seine Verdrahtung, bricht der Bau
+    // laut beim Namen (`_stoffBruch` „die Karten-Verdrahtung", K22), fehlt der Karten-Codec, bricht `_impostorAtlasTexturen`
+    // (KERN-PFLICHT) — kein Zweig gibt still null, und keine Karte zeichnet unsichtbar.
+    _impostorAtlasMaterial() {
+        const at = this._impostorAtlas();
+        if (!at || !this._impostorAtlasTexturen(at)) return null;
+        if (at.mat) return at.mat;
+        // DIE ZAHLEN DER GESTALT (F6, Lehre 19: die Karte ist dieselbe Krone in einer anderen Stufe): ihr Stoff trägt die Regler
+        // des Gesetzbuchs, aus dem ihre Gestalt baut (phyto-core `budgetRegler("foliageTex")`: Rauheit 0,62, Metall 0) — nie
+        // die Wirts-Herleitung aus den Substanz-Tags des Laubs (Rauheit 0,9, dazu die Mikro-Kavität des Antwort-Profils, ein
+        // Faktor 0,905 auf jedem Licht, den keine Gestalt trägt). Bis F6 stand die Karte der Fichte darum mittags bei 0,82,
+        // nachts bei 0,54 ihrer Gestalt (Radeon, Mess-Wiese, `werkbank licht --laub --karte --uhr`).
+        const R = globalThis.__phytoCore.budgetRegler("foliageTex");
+        const matOpts = {
+            vertexColors: true,
+            useInstanceTint: true, // konstante Kronenfarbe je Baum über die LODs
+            pflanzenStoff: true, // Vertex-Albedo im colorNode, echte Normale, keine Geologie; Wind: `windAusschlag` über uv.y
+            impostorAtlas: true,
+            side: THREE.DoubleSide,
+            roughness: R.r,
+            metalness: R.mt,
+        };
+        const mat = this._sharedFoliageMaterial(matOpts);
+        at.mat = mat;
+        return mat;
+    }
+
+    // Das Karten-Leaf einer Zelle: Einheits-Quad + Atlas-Material, Schicht, Rahmen (Halbbreite, Höhe — template-lokal)
+    // und Sichthöhe (`sicht`: die Höhe der Höhen-Stufe, × Instanz-Skala gestempelt — dieselbe Zahl wie der aH0-Stempel
+    // der L1) reisen als Instanz-Werte über `_lodSlotStamp`, die Gruppe ist die EINE Atlas-Gruppe. Ohne Sichthöhe keine
+    // Karte: ihre Maske hätte kein wahres Stufen-Urteil.
+    _impostorLeaf(z, localMatrix, sicht) {
+        const at = this._impostorAtlas();
+        if (!at || !z || !z.frame || !(sicht > 0)) return null;
+        const mat = this._impostorAtlasMaterial();
+        if (!mat) return null;
+        return {
+            geom: this._impostorQuad(at),
+            mat,
+            localMatrix,
+            leafKey: "fimp:atlas",
+            atlasGruppe: AnazhRealm.IMPOSTOR_ATLAS_GRUPPE,
+            zelle: z.idx,
+            rahmen: [z.frame.halfW, z.frame.halfH * 2],
+            sicht,
+            castShadow: false,
+        };
+    }
+
+    // KARTEN-ZENSUS: Zellen · gebacken · gescheitert · wartend · Atlas-Bytes · Haupt-Faden-ms je Bake. Reist im
+    // Flugschreiber-Trace (anazhRealmPerf.json) und in der Fluss-Linse; devtools: anazhRealm._impostorCensus().
+    _impostorCensus() {
+        const at = this._kartenAtlas;
+        if (!at || at.zellen.size === 0) return null;
+        let gebacken = 0,
+            gescheitert = 0,
+            wartend = 0;
+        const gescheitertArten = [];
+        for (const z of at.zellen.values()) {
+            if (z.gebacken) gebacken++;
+            else if (z.gescheitert) {
+                gescheitert++;
+                if (gescheitertArten.length < 8) gescheitertArten.push(z.key);
+            } else wartend++;
+        }
+        const M = at.masse;
+        return {
+            zellen: at.zellen.size,
+            gebacken,
+            gescheitert,
+            wartend,
+            fmt: at.fmt,
+            schichten: at.cap,
+            hebungen: at.ringe ? at.ringe.ringe.map((r) => r.hebung) : null, // lod.K3 — die Ringe der Schicht
+            schichtB: M ? (at.fmt === "bc" ? M.aBytes + M.nBytes + M.lBytes : M.w * M.h * 16) : 0,
+            // bc: die Stufen der drei Schichten · rgba8: drei rgba8-Ziele voller Größe mit Mips (4/3)
+            mb: !M
+                ? 0
+                : at.fmt === "bc"
+                  ? +(((M.aBytes + M.nBytes + M.lBytes) * at.cap) / 1048576).toFixed(2)
+                  : +((M.w * M.h * 4 * 3 * (4 / 3) * at.cap) / 1048576).toFixed(2),
+            weltMs: at.weltMs ? at.weltMs.slice() : null,
+            schrittMs: at.schrittMs ? at.schrittMs.slice() : null, // je Ring-Schritt: die Last EINES Takts
+            gescheitertArten,
+        };
+    }
+
+    // Der EINE Bake-/Quad-Rahmen: Bake-Kamera UND Billboard-Geometrie lesen DIESELBE Formel → die Textur
+    // sitzt unverzerrt. halfH = volle Baumhöhe (+2 %), halfW ≥ Zell-Proportion (cw/ch = 0.5) bzw. die
+    // radiale Kronen-Spanne (+4 %).
+    _impostorFrame(skeleton) {
+        const totalH = Math.max(1, AnazhRealm._skelettPflicht(skeleton).totalH);
+        let maxR = 0;
+        if (skeleton && Array.isArray(skeleton.anchors)) {
+            for (const a of skeleton.anchors) {
+                const rr = Math.sqrt(a.x * a.x + a.z * a.z);
+                if (rr > maxR) maxR = rr;
+            }
+        }
+        // Die FORMEL lebt EINMAL in phyto-core (__phytoCore.impostorFrame); hier nur das Skelett-Lesen. Ohne Kern → null
+        // (kein Impostor), BEWUSST keine Formel-Kopie (Drift-Quelle; gate:constitution wacht).
+        const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
+        if (core && typeof core.impostorFrame === "function") return core.impostorFrame(totalH, maxR);
+        return null;
     }
 
     // DER KARTEN-TAKT (S2): die Karten der Schlange backen im Welt-Renderer (`_tickKarteWelt`); ist sie leer, ruht die
@@ -151,6 +511,7 @@ class AnazhRealm_stoff_karte {
             licht: new T.OrthographicCamera(-1, 1, 1, -1, 0.1, 500),
             huellen: [],
             box: new T.Box3(),
+            laub: new T.Box3(), // die Hülle des Laubs der Gestalt (der Kronen-Fuß des Saums)
             mitte: new T.Vector3(),
             farbe: new T.Color(),
             bereit: false,
@@ -315,6 +676,7 @@ class AnazhRealm_stoff_karte {
         B.wurzel.rotation.set(0, 0, 0);
         let rad2 = 0;
         let h = 0;
+        const laub = []; // die Laub-Hüllen: ihr tiefster Punkt ist der Kronen-Fuß des Saums (`_karteSaumVon`)
         for (const c of g.children) {
             if (!c.isMesh || c.isInstancedMesh || !c.geometry || !c.material) continue;
             // der Wurf-Teil (S3 `teil: "schatten"`) lebt nur in den Kaskaden — das Auge sieht ihn nie
@@ -327,9 +689,13 @@ class AnazhRealm_stoff_karte {
             m.matrix.copy(c.matrix);
             m.frustumCulled = false;
             B.wurzel.add(m);
+            // die Sippe ist die EINE Material-Identität des Gesetzes (phyto-core `budgetStoff`): sie beginnt mit der Art
+            if (/^foliage/.test(c.userData.__sippe || "")) laub.push(m);
             rad2 = core.scanRadialXZ(c.geometry.attributes.position.array, rad2);
         }
         B.wurzel.updateMatrixWorld(true);
+        B.laub.makeEmpty();
+        for (const m of laub) B.laub.expandByObject(m);
         const vor = {
             rt: rend.getRenderTarget(),
             face: rend.getActiveCubeFace(),
@@ -468,13 +834,30 @@ class AnazhRealm_stoff_karte {
             rest: z._liefer.rest,
             frame: { halfW: fr.halfW, halfH: fr.halfH },
         };
-        if (bc) this._karteAblage(at, z.idx, B, platte);
+        if (bc) this._karteAblage(at, z.idx, B, platte, this._karteSaumVon(at, z, fr, B.laub));
         B.zuletzt = performance.now();
         this._foundryLiefer(this._foundry, "haupt", "karte", z._liefer, summe + B.zuletzt - t0);
         (at.weltMs || (at.weltMs = [])).push(+(summe + B.zuletzt - t0).toFixed(2));
         z._weltNeu = false;
         if (!z.gebacken) this._karteGebacken(z, fr);
         return true;
+    }
+
+    // DER SAUM DER KARTE (w4-laub-saum, phyto-core `karteSaum`): die Blattgröße der Art aus ihrem Gesetz (`treeParams` der
+    // Nah-Stufe, mit dem Samen der Gestalt — dieselbe Ableitung, aus der ihr Körper wächst) im Rahmen der Karte, Laub oder
+    // Nadel, und der Kronen-Fuß (das tiefste Laub der L1) als Stufe-0-Zeile der Ansicht: [e, nadel, Stärke, Fuß] für die
+    // GPU-Ablage (`saumK`). Ohne Krone (keine Pflanzen-Art, kein Laub) Fuß −1: jede Zeile wählt mit dem geglätteten Schlüssel.
+    _karteSaumVon(at, z, fr, laub) {
+        const pc = globalThis.__phytoCore;
+        const tab = globalThis.__terrainCore && globalThis.__terrainCore.PHYTO_PRESETS;
+        const rec = tab && tab[z.preset];
+        const s =
+            rec && rec.s && (rec.kind === "tree" || rec.kind === "shrub") && !laub.isEmpty()
+                ? pc.karteSaum(pc.treeParams(rec.s, z.variant, 0, rec, 0), fr.halfH, at.ch)
+                : null;
+        return s
+            ? Float32Array.of(s.e, s.nadel ? 1 : 0, pc.KARTEN_GESETZ.saum, (1 - laub.min.y / (2 * fr.halfH)) * at.ch)
+            : Float32Array.of(0, 0, 0, -1);
     }
 
     // DER RECHNER DER ABLAGE: die Compute-Programme (WGSL `KARTE_RECHNER_WGSL`) entstehen asynchron
@@ -494,12 +877,13 @@ class AnazhRealm_stoff_karte {
                 tex(2),
                 tex(3),
                 ...[4, 5, 6, 7, 8, 9, 10].map(puffer),
+                S(11, { buffer: { type: "uniform" } }), // der Saum der Karte (`_karteSaumVon`), je Bake
             ],
         });
         const modul = dev.createShaderModule({ label: "karte-rechner", code: AnazhRealm.KARTE_RECHNER_WGSL });
         const satz = (this._karteRechnerSatz = { bereit: false, layout, pipes: {}, dev });
         const pl = dev.createPipelineLayout({ bindGroupLayouts: [layout] });
-        const namen = ["stufe0", "summeK", "glaette", "grenzeK", "bc1", "normalK", "bc5", "sicht"];
+        const namen = ["stufe0", "summeK", "glaette", "saumK", "grenzeK", "bc1", "normalK", "bc5", "sicht"];
         Promise.all(
             namen.map((n) =>
                 dev
@@ -560,6 +944,7 @@ class AnazhRealm_stoff_karte {
                 "hA0",
                 "gi",
                 "t",
+                "r0",
             ];
             ord.forEach((n, i) => {
                 const v = p[n] == null ? 0 : p[n];
@@ -579,7 +964,8 @@ class AnazhRealm_stoff_karte {
             kopien.push({ tex, mip, off, zeileB, zeilen, w, h });
             return { aus: off / 4, zeile: zeileB / 4, vonW };
         };
-        const base = { V, thr: G.schwelle, w0: W, hA0: at.ch };
+        // r0: der waagrechte Ring — in ihm gilt der Saum (`saumK`, sein Rahmen ist der des Gesetzes)
+        const base = { V, thr: G.schwelle, w0: W, hA0: at.ch, r0: rg.findIndex((r) => r.hebung === 0) };
         zug("stufe0", Object.assign({}, base, { w: W, h: H }), Math.ceil(W / 16), Math.ceil(H / 16));
         // Albedo: Stufe 0 binär, k ≥ 1 deckungstreu
         let so = 0;
@@ -604,7 +990,16 @@ class AnazhRealm_stoff_karte {
                         Math.ceil(wk / 16),
                         Math.ceil(hk / 16)
                     );
-                flag = gaenge & 1;
+                // DER SAUM (phyto-core `karteSaum`): der Schlüssel der Wahl — über dem Kronen-Fuß die Deckung des Fußabdrucks
+                // und das Muster der Art, darunter die geglättete Deckung (im Puffer `flag` der Glätte) — in den anderen Puffer;
+                // Grenze und Ablage lesen ihn
+                zug(
+                    "saumK",
+                    Object.assign({}, base, { w: wk, h: hk, k, ziel: so, fuss, flag: gaenge & 1 }),
+                    Math.ceil(wk / 16),
+                    Math.ceil(hk / 16)
+                );
+                flag = 1 - (gaenge & 1);
                 zug("grenzeK", Object.assign({}, base, { w: wk, h: hk, k, ziel: so, fuss, flag, gi: k * V }), V, 1);
             }
             const a = ablage(0, k, wk, hk, 8);
@@ -671,8 +1066,9 @@ class AnazhRealm_stoff_karte {
             dA: mk("dA", (W / 2) * (H / 2) * 4, U.STORAGE),
             dB: mk("dB", (W / 2) * (H / 2) * 4, U.STORAGE),
             zahl: mk("zahl", (V + 3) * 4, U.STORAGE | U.COPY_DST),
-            grenze: mk("grenze", M.a.length * V * 4, U.STORAGE),
+            grenze: mk("grenze", M.a.length * V * 8, U.STORAGE), // je Stufe und Ansicht (Grenzwert-Bits, Lage)
             aus: mk("aus", ausB, U.STORAGE | U.COPY_SRC),
+            saum: mk("saum", 16, U.UNIFORM | U.COPY_DST), // [e, nadel, Stärke, Kronen-Fuß] je Bake (`_karteSaumVon`)
         };
         const roh = new Uint8Array(slots.length * 256);
         slots.forEach((u, i) => roh.set(new Uint8Array(u.buffer), i * 256));
@@ -682,8 +1078,9 @@ class AnazhRealm_stoff_karte {
 
     // DIE ABLAGE: die GPU zieht aus der Bühne die Stufen der Schicht und kodiert sie, die Kopien legen sie in die Schicht
     // `idx` der Atlas-Texturen. Mit `platte` ({preset, rest, frame}, die Platte trägt die Karte nicht) reisen dieselben Bytes
-    // zurück und per Transfer in den Faden der Schale (`karte-ablage`) — der Haupt-Faden schreibt keine Platte.
-    _karteAblage(at, idx, B, platte) {
+    // zurück und per Transfer in den Faden der Schale (`karte-ablage`) — der Haupt-Faden schreibt keine Platte. `saum`
+    // ([e, nadel, Stärke, Kronen-Fuß], `_karteSaumVon`) liest die Wahl der Stufen (`saumK`).
+    _karteAblage(at, idx, B, platte, saum) {
         const rend = this.state.renderer;
         const dev = rend.backend.device;
         const R = this._karteRechner();
@@ -699,13 +1096,14 @@ class AnazhRealm_stoff_karte {
                 entries: [
                     { binding: 0, resource: { buffer: P.param, size: 96 } },
                     ...quellen.map((q, i) => ({ binding: 1 + i, resource: q.createView() })),
-                    ...["summe", "nsum", "dA", "dB", "zahl", "grenze", "aus"].map((n, i) => ({
+                    ...["summe", "nsum", "dA", "dB", "zahl", "grenze", "aus", "saum"].map((n, i) => ({
                         binding: 4 + i,
                         resource: { buffer: P[n] },
                     })),
                 ],
             });
         }
+        dev.queue.writeBuffer(plan.P.saum, 0, saum);
         // die Schichten bekommen ihre GPU-Form vor der ersten Ablage (gezeichnet wird eine Karte erst gebacken)
         if (!this._karteGpuTexturen(at)) for (const t of [at.map, at.nmap, at.lmap]) rend.initTexture(t);
         const ziele = this._karteGpuTexturen(at);
@@ -760,10 +1158,76 @@ class AnazhRealm_stoff_karte {
         if (typeof window !== "undefined") window.__impostorRttBaked = (window.__impostorRttBaked || 0) + 1;
         return true;
     }
+
+    // IMPOSTOR-LEAF des Grammatik-Baums (nur das Foundry-aus-Regime der Gates und die Einbettung ohne Worker):
+    // dieselbe Atlas-Zelle wie die Foundry-Art des Skeletts (`_foundryPresetFor`) — kein zweiter Kartenbauer. Mit
+    // echtem Renderer erst, wenn die Zelle gebacken ist (sonst null → der Aufrufer zeichnet die Grammatik-LOD2); der
+    // Null-Renderer bäckt nie, dort trägt der Skelett-Rahmen (`_impostorFrame`) die Mechanik.
+    _buildImpostorLeaf(bp, skel) {
+        if (!skel) return null;
+        const at = this._impostorAtlas();
+        const species = bp && bp._grownSpecies ? bp._grownSpecies : "baum";
+        const preset = this._foundryPresetFor(species);
+        if (!at || !preset) return null;
+        const variant = bp && Number.isFinite(bp._variantIndex) ? bp._variantIndex : 0;
+        // Die Grammatik-Zelle trägt den Skelett-Rahmen (Grammatik-Welt-Maß, rahmenFest) — die Foundry-Zelle derselben
+        // Art den Bake-Rahmen (Template-Maß); getrennte Schlüssel, derselbe Bäcker.
+        const key = "fimp:g:" + species + "|" + variant;
+        let z = at.zellen.get(key);
+        if (!z) {
+            z = this._impostorZelleNeu(at, key, preset, variant, null);
+            z.frame = this._impostorFrame(skel);
+            z.rahmenFest = true;
+        }
+        const rend = this.state && this.state.renderer;
+        if (rend && !rend._isHeadlessNull && !z.gebacken) return null;
+        // Die Grammatik-Karte trägt ihren eigenen Rahmen als Sichthöhe (der Skelett-Baum kennt kein Höhen-Buch).
+        return this._impostorLeaf(z, new THREE.Matrix4(), z.frame.halfH * 2);
+    }
+
+    // DIE NADEL DER KARTE (K19): je Atlas-Schicht 1 für die Nadel-Art (der Phänotyp der Zelle, K24), sonst 0 — EINE
+    // Uniform-Reihe für jede Karte jeder Art. Wächst der Atlas über die Reihe, wächst sie mit (verdoppelnd) und die Karte baut
+    // ihr Programm neu (die Länge steht im Programm-Schlüssel); ohne Wachsen kostet sie nichts.
+    _karteNadel(T, z) {
+        const at = this._impostorAtlas();
+        const tab = globalThis.__terrainCore && globalThis.__terrainCore.PHYTO_PRESETS;
+        if (!tab) return AnazhRealm._kernPflichtBruch("terrain:PHYTO_PRESETS");
+        let n = at.nadelU ? at.nadelU.array.length : 0;
+        if (n < Math.max(at.n, 1)) {
+            const alt = at.nadelU ? at.nadelU.array : [];
+            while (n < Math.max(at.n, 1)) n = Math.max(32, n * 2);
+            const a = new Array(n).fill(0);
+            for (let i = 0; i < alt.length; i++) a[i] = alt[i];
+            at.nadelU = (T || THREE.TSL).uniformArray(a, "float");
+            if (at.mat) at.mat.needsUpdate = true;
+        }
+        if (z) {
+            const rec = tab[z.preset];
+            // Die Nadel-Art ist der Phänotyp der Art (K24: phyto-core artPhaenotyp, dieselbe Quelle wie der Baum).
+            const pc = globalThis.__phytoCore;
+            at.nadelU.array[z.idx] =
+                rec && rec.s && (rec.kind === "tree" || rec.kind === "shrub") && pc.artPhaenotyp(rec.s, rec).conifer
+                    ? 1
+                    : 0;
+        }
+        return at.nadelU;
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_stoff_karte]);
 
 // ===== ATLAS · Stoff/karte — Außen-Konstanten =====
+// W4.3 — die EINE Bake-Uhr: die Anfrage-Frist des Studio-Bakes (Worker-Reply); danach null → Retry, dann gescheitert
+// (der Flatten serviert Geometrie). Der Tick-Watchdog greift 2 s später (ein Versprechen, das nie abschließt). Befund
+// 30.09.: eine zweite, engere Uhr (15 s) gab Bakes auf, während der SERIELLE Worker noch rechnete, und schob den
+// nächsten nach — auf langsamem Holz eine Kaskade (7 hängend, 3 gescheitert, 0 gebacken; die schweren nahen Arten zuerst).
+// W6 — DIE EINE Karten-Gruppe: jede Impostor-Instanz jeder Art (Streu, gesetzt, Band-Partner) zeichnet in DIESER
+// globalen Gruppe (`_archInstanceGroupFor`), die Schicht wählt aKarte.x (`_impostorAtlas`).
+AnazhRealm.IMPOSTOR_ATLAS_GRUPPE = "impostor#fimp:atlas";
+// Der Karten-Atlas wächst je 2 Schichten (`_impostorAtlasTexturen`, Start 8): je Schicht 0,49 MiB mit den Hebungs-Ringen (lod.K3:
+// BC1-Albedo 298 KB + RGTC2-Normale 149 KB + Sonnen-Sicht 56 KB, 128 × 3584 samt Mips; waagrecht allein 0,28 MiB), das Wachsen
+// kopiert nur beim Einzug einer Art (Mess-Wiese 18 Karten in 18 Schichten).
+AnazhRealm.KARTEN_ATLAS_SCHRITT = 2;
+
 // Das Budget-Fenster der Welt-Karte je Takt (ms Haupt-Faden; die erste Karte eines Takts backt immer — Spike S1).
 AnazhRealm.KARTE_WELT_MS = 4;
 // Die Bühne gibt ihren Speicher frei, wenn die Schlange so lange leer ist (ms; `_karteBuehneRuhe`).
@@ -788,7 +1252,7 @@ struct P {
     w: u32, h: u32, k: u32, quelle: u32,
     ziel: u32, V: u32, fuss: f32, aus: u32,
     zeile: u32, thr: f32, flag: u32, w0: u32,
-    hA0: u32, gi: u32, t: u32,
+    hA0: u32, gi: u32, t: u32, r0: u32,
     ringY: vec4<u32>, ringT: vec4<u32>,
 };
 @group(0) @binding(0) var<uniform> p: P;
@@ -800,7 +1264,7 @@ struct P {
 @group(0) @binding(6) var<storage, read_write> dA: array<f32>;
 @group(0) @binding(7) var<storage, read_write> dB: array<f32>;
 @group(0) @binding(8) var<storage, read_write> zahl: array<atomic<u32>>;
-@group(0) @binding(9) var<storage, read_write> grenze: array<f32>;
+@group(0) @binding(9) var<storage, read_write> grenze: array<u32>;
 @group(0) @binding(10) var<storage, read_write> aus: array<u32>;
 
 fn deckt(x: u32, y: u32) -> bool {
@@ -892,15 +1356,66 @@ fn glaette(@builtin(global_invocation_id) g: vec3<u32>) {
     if (p.flag == 1u) { dA[o] = nb / 16.0; } else { dB[o] = nb / 16.0; }
 }
 
-// Der Schlüssel eines Texels der Stufe: die geglättete Deckung (+ die eigene als Gleichstand), 0 ohne eigene Deckung
-fn schluessel(i: u32) -> f32 {
+// DER SAUM DER KARTE (phyto-core karteSaum, karteSaumMuster — dieselben Zahlen): x die Blattgröße der Art in Stufe-0-Texeln,
+// y Nadel (1) oder Laub (0), z die Stärke, w der Kronen-Fuß (Stufe-0-Zeile der Ansicht; −1: keine Krone)
+@group(0) @binding(11) var<uniform> saum: vec4<f32>;
+fn saumHash(ix: i32, iy: i32, s: u32) -> f32 {
+    var h = (bitcast<u32>(ix) * 0x27d4eb2du) ^ (bitcast<u32>(iy) * 0x165667b1u) ^ (s * 0x9e3779b9u);
+    h = (h ^ (h >> 15u)) * 0x85ebca6bu;
+    h = (h ^ (h >> 13u)) * 0xc2b2ae35u;
+    return f32(h ^ (h >> 16u)) / 4294967296.0;
+}
+// Laub 1 − F1 (runde Lappen), Nadel (F2 − F1) · 1,5 (Grate zwischen den Büscheln), Zelle e
+fn saumMuster(X: f32, Y: f32, e: f32, nadel: bool) -> f32 {
+    let q = vec2<f32>(X, Y) / e;
+    let q0 = vec2<i32>(floor(q));
+    var f1 = 9.0;
+    var f2 = 9.0;
+    for (var j = -1; j <= 1; j++) {
+        for (var i = -1; i <= 1; i++) {
+            let c = q0 + vec2<i32>(i, j);
+            let d = length(vec2<f32>(c) + vec2<f32>(saumHash(c.x, c.y, 1u), saumHash(c.x, c.y, 8u)) - q);
+            if (d < f1) { f2 = f1; f1 = d; } else if (d < f2) { f2 = d; }
+        }
+    }
+    return select(max(0.0, 1.0 - f1), min(1.0, (f2 - f1) * 1.5), nadel);
+}
+// DER SCHLÜSSEL DER WAHL: über dem Kronen-Fuß die Deckung des Fußabdrucks + Stärke × (Muster − ½), das Muster nie feiner als
+// zwei Texel der Stufe; darunter (der Stamm) die geglättete Deckung des Puffers flag; dazu die eigene als Gleichstand, 0 ohne
+// eigene Deckung — in den anderen Puffer
+@compute @workgroup_size(16, 16)
+fn saumK(@builtin(global_invocation_id) g: vec3<u32>) {
+    if (g.x >= p.w || g.y >= p.h) { return; }
+    let i = g.y * p.w + g.x;
     let s = summe[p.ziel + i].a;
-    if (s <= 0.0) { return 0.0; }
-    return select(dA[i], dB[i], p.flag == 1u) + 1e-6 * s / p.fuss;
+    var kk = 0.0;
+    if (s > 0.0) {
+        // die Lage in der Ansicht (ihr Feld, lod.K3); der Saum gilt im waagrechten Ring r0 — dort ist der Rahmen der des
+        // Gesetzes (halfH, der Kronen-Fuß eine Zeile), die gehobenen Ringe wählen geglättet
+        let v = ansicht(g.x, g.y);
+        let fe = feld(v);
+        let f = f32(1u << p.k);
+        let X = (f32(g.x - fe.x) + 0.5) * f;
+        let Y = (f32(g.y - fe.y) + 0.5) * f;
+        if (v / jeRing() == p.r0 && Y <= saum.w) {
+            kk = max(1e-9, s / p.fuss + saum.z * (saumMuster(X, Y, max(saum.x, 2.0 * f), saum.y > 0.5) - 0.5));
+        } else {
+            kk = dLies(i, p.flag == 1u);
+        }
+        kk += 1e-6 * s / p.fuss;
+    }
+    if (p.flag == 1u) { dA[i] = kk; } else { dB[i] = kk; }
+}
+
+// Der Schlüssel eines Texels der Stufe: saumK schrieb ihn in den Puffer flag (0 ohne eigene Deckung)
+fn schluessel(i: u32) -> f32 {
+    return select(dA[i], dB[i], p.flag == 1u);
 }
 
 // DIE DECKUNGSTREUE WAHL je Ansicht: genau M = min(positiv, round(Deckung₀ · nA)) Texel decken — die Grenze ist der
-// M-größte Schlüssel (Halbierung über die Bits nicht-negativer Zahlen: exakt, 31 Schritte)
+// M-größte Schlüssel (Halbierung über die Bits nicht-negativer Zahlen: exakt, 31 Schritte); vom Grenzwert selbst decken nur
+// die ersten M − (Texel über ihm) nach ihrer Lage in der Ansicht (wie das Gesetz, phyto-core impostorMips): je Ansicht das
+// Paar (Grenzwert-Bits, Lage)
 var<workgroup> wz: atomic<u32>;
 var<workgroup> wc: u32;
 @compute @workgroup_size(256)
@@ -923,7 +1438,10 @@ fn grenzeK(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index
     }
     let M = workgroupUniformLoad(&wc);
     if (M == 0u) {
-        if (li == 0u) { grenze[p.gi + v] = 3.0e38; }
+        if (li == 0u) {
+            grenze[2u * (p.gi + v)] = bitcast<u32>(3.0e38);
+            grenze[2u * (p.gi + v) + 1u] = 0u;
+        }
         return;
     }
     var lo = 0u;
@@ -945,7 +1463,41 @@ fn grenzeK(@builtin(workgroup_id) wg: vec3<u32>, @builtin(local_invocation_index
         let zahlT = workgroupUniformLoad(&wc);
         if (zahlT >= M) { lo = mid; } else { hi = mid; }
     }
-    if (li == 0u) { grenze[p.gi + v] = bitcast<f32>(lo); }
+    // DER GLEICHSTAND: über dem Grenzwert t liegen c < M Texel; die Lage j, vor der genau M − c Gleichstände liegen (Halbierung)
+    let t = bitcast<f32>(lo);
+    workgroupBarrier();
+    if (li == 0u) { atomicStore(&wz, 0u); }
+    workgroupBarrier();
+    var cg = 0u;
+    for (var i = li; i < nA; i += 256u) {
+        if (schluessel(imFeld(f, i)) > t) { cg++; }
+    }
+    atomicAdd(&wz, cg);
+    workgroupBarrier();
+    if (li == 0u) { wc = M - atomicLoad(&wz); }
+    let rest = workgroupUniformLoad(&wc);
+    var jlo = 0u;
+    var jhi = nA;
+    loop {
+        if (jhi - jlo <= 1u) { break; }
+        let mid = jlo + (jhi - jlo) / 2u;
+        workgroupBarrier();
+        if (li == 0u) { atomicStore(&wz, 0u); }
+        workgroupBarrier();
+        var c = 0u;
+        for (var i = li; i < mid; i += 256u) {
+            if (schluessel(imFeld(f, i)) == t) { c++; }
+        }
+        atomicAdd(&wz, c);
+        workgroupBarrier();
+        if (li == 0u) { wc = atomicLoad(&wz); }
+        let zahlJ = workgroupUniformLoad(&wc);
+        if (zahlJ >= rest) { jhi = mid; } else { jlo = mid; }
+    }
+    if (li == 0u) {
+        grenze[2u * (p.gi + v)] = lo;
+        grenze[2u * (p.gi + v) + 1u] = jhi;
+    }
 }
 
 fn srgb(x: f32) -> f32 {
@@ -972,7 +1524,11 @@ fn bc1(@builtin(global_invocation_id) g: vec3<u32>) {
     var ok: array<bool, 16>;
     var n = 0u;
     var mitte = vec3<f32>(0.0);
-    let gr = grenze[p.gi + ansicht(g.x * 4u, g.y * 4u)];
+    let gv0 = ansicht(g.x * 4u, g.y * 4u);
+    let gf = feld(gv0);
+    let gv = 2u * (p.gi + gv0);
+    let gr = bitcast<f32>(grenze[gv]);
+    let gj = grenze[gv + 1u];
     for (var t = 0u; t < 16u; t++) {
         let x = g.x * 4u + (t & 3u);
         let y = g.y * 4u + (t >> 2u);
@@ -984,7 +1540,8 @@ fn bc1(@builtin(global_invocation_id) g: vec3<u32>) {
         } else {
             let i = y * p.w + x;
             let s = summe[p.ziel + i];
-            o = s.a > 0.0 && schluessel(i) >= gr;
+            let kk = schluessel(i);
+            o = s.a > 0.0 && (kk > gr || (kk == gr && (y - gf.y) * gf.z + (x - gf.x) < gj));
             if (o) { c = s.rgb / s.a; }
         }
         ok[t] = o;

@@ -205,7 +205,6 @@ const { statikServer, starteBrowser, selbsttest: selbstMarke, laufUhr } = requir
 const { linsenGpu } = require("./lib/software-gpu.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
-const PORT = Number(process.env.VERDECKUNG_PORT) || 4613;
 const server = statikServer();
 
 // Vor jedem Seiten-Skript: die Fehler je Phase (Device-Meldung und Seitenfehler; die Phase setzt die Linse).
@@ -594,7 +593,7 @@ async function verdeckungPhase(opts) {
 
 (async () => {
     console.log("=== VERDECKUNGS-ABFRAGE — der Aussteige-Ablauf am Bach (WebGPU auf swiftshader) ===");
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 1200000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 180 });
