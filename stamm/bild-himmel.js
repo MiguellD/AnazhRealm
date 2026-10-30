@@ -2303,6 +2303,12 @@ class AnazhRealm_bild_himmel {
     // DIE BESTRAHLUNG EINER WAAGRECHTEN FLÄCHE (rgb, E): Sonne/Mond auf der Waagrechten + der Himmel über dem Ort
     // (`_himmelsBestrahlung`, synchron aus der Bestrahlungs-Tafel der EINEN Atmosphäre) + Hemi + Ambient — dieselben Lichter,
     // die jedes Material liest. Die Rechnung der Belichtung (die 18-%-Karte); null, solange der Himmel des Orts noch nicht steht.
+    // DIE TAFEL IM FLUG (licht.K5): jede Stufe des Mediums zeichnet die Tafel neu, ihre Lesung kommt Takte später. Bis dahin trägt
+    // der Himmel der letzten Lesung je Einheit des Lichts (E0 · Tönung, jetzt) die Belichtung — nur solange das Auge in der Höhen-
+    // Stufe der Tafel blieb und das Medium höchstens `ATMO_LUT.flug` Stufen wanderte; jeder Sprung (Höhe, Ort, ein Wort ohne
+    // Übergang) liest nie die Luft von vorher: null, die Belichtung hält. Bis licht.K5 hielt sie an JEDER Stufe — im Zug klar →
+    // Regen stand sie in den Takten ohne Lesung (die Linse: 10 je Spiel-Sekunde) still, das Richtlicht sank weiter, und sie holte
+    // in einem Schlag auf (+0,109 EV in einer Sekunde, swiftshader).
     _waagrechtIrradianz(out) {
         const st = this.state;
         const dl = st.directionalLight;
@@ -2318,7 +2324,27 @@ class AnazhRealm_bild_himmel {
             out[2] += c.b * k;
         };
         add(dl.color, dl.intensity * dy);
-        const himmel = this._himmelsBestrahlung(this._himmelE || (this._himmelE = [0, 0, 0]));
+        let himmel = this._himmelsBestrahlung(this._himmelE || (this._himmelE = [0, 0, 0]));
+        const A = st.atmoLut;
+        if (A) {
+            const U = A.U;
+            const k = [U.toenung.value.x, U.toenung.value.y, U.toenung.value.z].map((x) => x * U.licht.value);
+            const stufe = Math.round(U.hKm.value * 10);
+            const f = this._himmelFlug || (this._himmelFlug = { je: [0, 0, 0], medium: 0, stufe: NaN });
+            if (himmel) {
+                for (let c = 0; c < 3; c++) f.je[c] = himmel[c] / Math.max(k[c], 1e-9);
+                f.medium = A.mediumBeta;
+                f.stufe = stufe;
+            } else if (
+                f.stufe === stufe &&
+                f.medium > 0 &&
+                Math.abs(Math.log(A.mediumBeta / f.medium)) <=
+                    AnazhRealm.ATMO_LUT.flug * AnazhRealm.ATMO_LUT.mediumStufe + 1e-9
+            ) {
+                himmel = this._himmelE;
+                for (let c = 0; c < 3; c++) himmel[c] = f.je[c] * k[c];
+            }
+        }
         if (!himmel) return null;
         out[0] += himmel[0];
         out[1] += himmel[1];
@@ -3230,8 +3256,12 @@ AnazhRealm.MOONLIGHT = Object.freeze({
 // 256×64 und Ψ_ms 32×32 je Medium, die Himmels-Sicht 192×108 je Stufe der Sonne, die Umgebung 128×64 (Equirekt, PMREM).
 // mediumStufe: die Stufe des Mediums im Logarithmus der Extinktion (`_atmoMediumJetzt`) — 2 % halten den Zenit-Durchlass
 // der klaren Luft (Aerosol-Tiefe 0,18) unter einer 8-bit-Stufe; ein Übergang klar → Sturm (Faktor 13) sind 130 Stufen.
+// flug: so viele Stufen darf das Medium wandern, solange die Tafel im Flug ist (`_waagrechtIrradianz`) — der steilste Anstieg im
+// Zug klar → Regen (β ×1,13 je Sekunde, 6 Stufen) bleibt eine Sekunde darunter, der Himmel je E0 folgt ihm mit ≤ β^0,62:
+// 8 Stufen sind ≤ 10 % am Himmel, am Mittag ≤ 0,02 EV an der Karte.
 AnazhRealm.ATMO_LUT = Object.freeze({
     mediumStufe: 0.02,
+    flug: 8,
     durchlass: Object.freeze([256, 64]),
     mehrfach: Object.freeze([32, 32]),
     himmel: Object.freeze([192, 108]),
