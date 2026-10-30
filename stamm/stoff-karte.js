@@ -148,8 +148,10 @@ class AnazhRealm_stoff_karte {
             at.rtBereit = false;
             at.offen = null; // die halbe Karte stand im alten Ziel: sie beginnt beim ersten Ring
             const q = this._impostorBakeQueue || (this._impostorBakeQueue = []);
+            // jede gebackene Schicht backt nach — auch die Sommer-Schicht einer Laub-Karte, die noch auf ihre Jahres-Schicht
+            // wartet (`z.jahr`, `_karteSchichtSteht`): sie ist noch nicht `gebacken`, ihr Bild stand aber im alten Ziel
             for (const z of at.zellen.values())
-                if (z.gebacken) {
+                if (z.gebacken || z.jahr) {
                     z._weltNeu = true;
                     q.push(z.key);
                 }
