@@ -1513,6 +1513,15 @@ class AnazhRealm_bild_kosten {
             // nächsten Frame neu an wie ein Fenster-Wechsel (`_loopRender`), nie je Last.
             scenePass.setResolutionScale(this._szeneSkalaWirk());
             this._ausgabeFormat(scenePass); // das Szenen-Ziel in rg11b10ufloat (0910-1 B), vor dem ersten Render
+            // DER GLANZ DES BILDS (material.K4): ein zweites Ziel des Szenen-Passes (r8, MRT) trägt je Pixel, wie sehr seine
+            // Fläche spiegelt (`_glanzKnoten`) — daran erkennt der EINE Spiegel-Pass (`_spiegelPass`) Glas, Lack, Metall und
+            // Nässe wie das Wasser an seiner Zelle. r184 mischt nur `output` nach dem Stoff, das Glanz-Ziel schreibt ohne
+            // Mischung (MRTNode `_noBlending`): eine Scheibe trägt ihren Glanz ganz. 1,17 MB bei 1080p und Skala 0,75.
+            scenePass.setMRT(TSL.mrt({ output: TSL.output, glanz: this._glanzKnoten() }));
+            const glanz = scenePass.getTexture("glanz");
+            glanz.type = THREE.UnsignedByteType;
+            glanz.format = THREE.RedFormat;
+            glanz.minFilter = glanz.magFilter = THREE.NearestFilter;
             this.state.scenePass = scenePass;
             // EIN Szene-Pass, eine Diät-Wahrheit: ein zweiter Szene-Pass (die Fern-Schicht) ließ Material-Diät
             // und Uniform-Updates zwischen den Pässen racen (Schwarz-Flackern); das Ferne trägt der Welt-March.
@@ -2237,10 +2246,11 @@ class AnazhRealm_bild_kosten {
 
     // DAS SCHATTEN-GESETZ DER SONNEN-SCHEIBE (schatten.K1, die Kontakt-Härtung) — der EINE Filter jeder Kaskade
     // (`shadow.filterNode`: r184 `ShadowNode.setupShadow` nimmt ihn vor dem Filter des Karten-Typs, gate:vendor-anker). Der
-    // Halbschatten ist so breit, wie die Sonne (`sonneTan`, 0,53°) ihn über den Abstand Werfer → Empfänger zieht, nie schmaler
-    // als `filterTexel` Texel der Karte: die Werfer sucht er im Umkreis `sucheM` der Kaskade (5 Vogel-Punkte, Karten-Tiefen ohne
+    // Halbschatten ist so breit, wie die Sonne (`sonneTan`, 0,53°) ihn über den Abstand Werfer → Empfänger zieht, auf dem Boden
+    // von `filterTexel` Texeln der Karte: die Werfer sucht er im Umkreis `sucheM` der Kaskade (5 Vogel-Punkte, Karten-Tiefen ohne
     // Vergleich), ihr Mittel längs des Lichts in Metern (`anazhTiefeM`, orthographisch linear); dann der Vergleich wie r184-PCF
-    // (5 Vogel-Punkte, gedreht je Bildpunkt) im Radius max(Halbschatten/2, Boden). Ohne Suche (k0 ab 15 m, k1: `sucheM` 0; WebGL2:
+    // (5 Vogel-Punkte, gedreht je Bildpunkt) im Radius Halbschatten/2 + Boden — die Sonne weicht ab dem ersten Zentimeter
+    // Abstand (schatten.K1#2: unter max(Halbschatten/2, Boden) trug der Boden jede Kante bis 4,9 m gleich breit). Ohne Suche (k0 ab 15 m, k1: `sucheM` 0; WebGL2:
     // GLSL lädt keine Tiefe aus sampler2DShadow, gate:webgl-probe W5) bleibt der Boden-Radius, der r184-PCF. Box + Tiefe: `_kaskadeFit`.
     _schattenFilter(i) {
         const T = THREE.TSL;
@@ -2271,7 +2281,7 @@ class AnazhRealm_bild_kosten {
                     .abs()
                     .mul(ref("anazhTiefeM", "float"));
                 const halb = T.select(zahl.greaterThan(0), abstand.mul(K.sonneTan * 0.5).min(sucheM), 0);
-                r = T.max(T.vec2(halb).div(box), r);
+                r = T.vec2(halb).div(box).add(r);
             }
             let s = T.texture(depthTexture, vogel(0, r)).compare(z);
             for (let k = 1; k < 5; k++) s = s.add(T.texture(depthTexture, vogel(k, r)).compare(z));
@@ -3547,12 +3557,12 @@ AnazhRealm.SCHATTEN_RUHE_EPS = 1e-4;
 // über N·L 0 … `zuwendungSaum` weich (der Saum am Terminator, sonst die Hang-Akne).
 // DIE KONTAKT-KASKADE (schatten.K1): die ersten `kontaktM` Meter tragen eine eigene Kaskade bei `texelM[0]` (≤ 5 cm, 1024²);
 // DER FILTER jeder Kaskade ist das EINE Gesetz der Sonnen-Scheibe (`_schattenFilter`): Halbschatten = Abstand Werfer →
-// Empfänger längs des Lichts × `sonneTan` (0,53°), die Werfer gesucht im Umkreis `sucheM` je Kaskade, nie schmaler als
-// `filterTexel` Texel (k0 und k1: 1 Texel ohne Suche, der r184-PCF bis K1 — ihr Texel trägt den Halbschatten der Sonne nie).
+// Empfänger längs des Lichts × `sonneTan` (0,53°), die Werfer gesucht im Umkreis `sucheM` je Kaskade, der Radius `filterTexel`
+// Texel + Halbschatten/2 (k0 und k1: 1 Texel ohne Suche, der r184-PCF bis K1 — ihr Texel trägt den Halbschatten der Sonne nie).
 AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     kontaktM: 15,
     texelM: Object.freeze([0.045, 0.17, 0.47]),
-    filterTexel: Object.freeze([0.5, 1, 1]),
+    filterTexel: Object.freeze([0.25, 1, 1]),
     sonneTan: 0.00925,
     sucheM: Object.freeze([0.25, 0, 0]),
     bezugAspekt: 16 / 9,

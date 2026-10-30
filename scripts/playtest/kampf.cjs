@@ -10,8 +10,8 @@ const { safeEvaluate } = require("../playtest.cjs");
 async function checkBandV1755HarvestEffort({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const p = r.state.player;
-        const H = r.constructor.HARVEST;
+        const p = st.player;
+        const H = AnazhRealm.HARVEST;
         const savedTool = p.equipped ? p.equipped.held : null;
         const savedStam = p.stamina;
         const savedInv = p.inventory.slice();
@@ -27,7 +27,7 @@ async function checkBandV1755HarvestEffort({ page, check }) {
             );
         const strikeUntilGone = (a, cap) => {
             let s = 0;
-            while (r.state.architectures.indexOf(a) !== -1 && s < cap) {
+            while (st.architectures.indexOf(a) !== -1 && s < cap) {
                 r._strikeArchitecture(a);
                 s++;
             }
@@ -57,7 +57,7 @@ async function checkBandV1755HarvestEffort({ page, check }) {
         // Ertrags-SOCKEL (yieldMin): wer den Bruch erarbeitet, erntet mindestens 1/3 — auch die Faust an
         // Hartem; Untauglichkeit bestraft über Tempo + Stamina (fitnessDifferentiates daneben).
         out.handYieldsNothingOnHard =
-            fitHand.yieldMult >= (r.constructor.HARVEST.yieldMin || 0.34) - 1e-9 && fitHand.yieldMult < 0.5;
+            fitHand.yieldMult >= (AnazhRealm.HARVEST.yieldMin || 0.34) - 1e-9 && fitHand.yieldMult < 0.5;
 
         // (5)+(6) KONSUM: Mühe (viele Hiebe) + gutes Werkzeug schneller + Ertrag skaliert.
         // In frieden (keine Stamina-Störung) den Hieb-Kern _strikeArchitecture direkt treiben.
@@ -75,15 +75,15 @@ async function checkBandV1755HarvestEffort({ page, check }) {
         const steinTool = steinCount();
         out.multiStrikeHand = handStrikes > 1; // die Faust: KEIN Instant
         out.brokeEventually =
-            r.state.architectures.indexOf(aHand) === -1 && r.state.architectures.indexOf(aTool) === -1;
+            st.architectures.indexOf(aHand) === -1 && st.architectures.indexOf(aTool) === -1;
         out.toolFasterThanHand = toolStrikes >= 1 && toolStrikes < handStrikes;
         out.yieldScalesWithFitness = steinTool > steinHand && steinTool > 0;
 
         // (7) der Hold-Tick ist gegated (ohne die gehaltene Abbau-Aktion der Verb-Tafel → nichts)
-        r.state.verbTafel.gehalten.break = false;
-        const beforeTick = r.state.architectures.length;
+        st.verbTafel.gehalten.break = false;
+        const beforeTick = st.architectures.length;
         r._tickHarvest();
-        out.tickGuarded = r.state.architectures.length === beforeTick;
+        out.tickGuarded = st.architectures.length === beforeTick;
 
         // (8) KONSUM Stamina: ein Hieb in pfad zieht Stamina (∝ invers zur Effizienz)
         r.setGameMode("pfad");
@@ -93,13 +93,13 @@ async function checkBandV1755HarvestEffort({ page, check }) {
         const stamBefore = p.stamina;
         r._strikeArchitecture(aS);
         out.staminaDrains = p.stamina < stamBefore;
-        if (r.state.architectures.indexOf(aS) !== -1) r.removeArchitecture(aS);
+        if (st.architectures.indexOf(aS) !== -1) r.removeArchitecture(aS);
 
         // cleanup
-        for (const a of [aHand, aTool]) if (a && r.state.architectures.indexOf(a) !== -1) r.removeArchitecture(a);
+        for (const a of [aHand, aTool]) if (a && st.architectures.indexOf(a) !== -1) r.removeArchitecture(a);
         p.equipped.held = savedTool;
         p.stamina = savedStam;
-        r.state.verbTafel.gehalten.break = false;
+        st.verbTafel.gehalten.break = false;
         clearInv();
         for (let i = 0; i < savedInv.length; i++) p.inventory[i] = savedInv[i];
         r.setGameMode(savedMode);
@@ -138,8 +138,8 @@ async function checkBandV1755HarvestEffort({ page, check }) {
 async function checkBandV1755W2Profile({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const p = r.state.player;
-        const blu = r.state.blueprints;
+        const p = st.player;
+        const blu = st.blueprints;
         const savedTool = p.equipped ? p.equipped.held : null;
         const savedWeapon = p.equipped ? p.equipped.held : null;
         if (!p.equipped) p.equipped = {};
@@ -182,11 +182,11 @@ async function checkBandV1755W2Profile({ page, check }) {
 
         // (7) der W1-Bug behoben: ein echtes Werkzeug ist eine Instanz (sourceBlueprint), nicht direkt ein Bauplan
         p.equipped.held = null;
-        const savedTools = r.state.tools;
-        r.state.tools = Object.assign({}, savedTools || {}, { __w2_realtool: { sourceBlueprint: "__w2_maul" } });
+        const savedTools = st.tools;
+        st.tools = Object.assign({}, savedTools || {}, { __w2_realtool: { sourceBlueprint: "__w2_maul" } });
         p.equipped.held = "__w2_realtool";
         out.toolInstanceResolves = r._heldImplementBlueprint() === blu.__w2_maul;
-        r.state.tools = savedTools;
+        st.tools = savedTools;
 
         // (8) END-TO-END am ECHTEN Bauwerk (stein_block = Fels): die Keule (Wucht) gewinnt KLAR über die
         // Klinge (Fels ist unschneidbar) — robuster Fit-Vergleich (keine Rundungs-Marge) + der Kanal ist mine.
@@ -202,12 +202,12 @@ async function checkBandV1755W2Profile({ page, check }) {
         p.equipped.held = "__w2_maul";
         const aRock = r.spawnArchitecture("stein_block", { x: p.x + 8, y: p.y, z: p.z });
         let rs = 0;
-        while (aRock && r.state.architectures.indexOf(aRock) !== -1 && rs < 300) {
+        while (aRock && st.architectures.indexOf(aRock) !== -1 && rs < 300) {
             r._strikeArchitecture(aRock);
             rs++;
         }
-        out.maulBreaksRock = rs >= 1 && (!aRock || r.state.architectures.indexOf(aRock) === -1);
-        if (aRock && r.state.architectures.indexOf(aRock) !== -1) r.removeArchitecture(aRock);
+        out.maulBreaksRock = rs >= 1 && (!aRock || st.architectures.indexOf(aRock) === -1);
+        if (aRock && st.architectures.indexOf(aRock) !== -1) r.removeArchitecture(aRock);
 
         // cleanup
         delete blu.__w2_blade;
@@ -250,7 +250,7 @@ async function checkBandV1755W2Profile({ page, check }) {
 async function checkBandV1759CapabilityReadout({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const blu = r.state.blueprints;
+        const blu = st.blueprints;
         // greifbare Klinge (octahedron) vs greifbarer Brecher (box), DIESELBE Materie stein, eine Position (span 0)
         blu.__cap_blade = {
             name: "__cap_blade",
@@ -329,7 +329,7 @@ async function checkBandV1759CapabilityReadout({ page, check }) {
 async function checkBandV1775MakeActCost({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const p = r.state.player;
+        const p = st.player;
         const setMode = (m) => {
             r.setGameMode(m);
         };
@@ -340,8 +340,8 @@ async function checkBandV1775MakeActCost({ page, check }) {
         const savedInv = Array.isArray(p.inventory) ? JSON.parse(JSON.stringify(p.inventory)) : [];
         const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
         const invLen = Array.isArray(p.inventory) ? p.inventory.length : 27;
-        if (r.state.customSouls) delete r.state.customSouls["bp_koerper_human"];
-        if (r.state.blueprints["koerper_human"]) delete r.state.blueprints["koerper_human"].forgedPrecision;
+        if (st.customSouls) delete st.customSouls["bp_koerper_human"];
+        if (st.blueprints["koerper_human"]) delete st.blueprints["koerper_human"].forgedPrecision;
 
         // (1) schöpfer (Gott-Modus) → kein Kosten-Marker (frei)
         setMode("schöpfer");
@@ -370,7 +370,7 @@ async function checkBandV1775MakeActCost({ page, check }) {
         // (5) das Select RENDERT den Mangel sichtbar im Option-Text (kein stiller Fehlschlag).
         // KÖRPER GANZ (T6): koerper_human ist aus der Sicht (Alt-Doppel) — der Marker wird
         // am STUDIO-Eintrag gemessen (koerper_wolf, un-verkörpert → Kosten-Suffix am Namen).
-        if (r.state.customSouls) delete r.state.customSouls["bp_koerper_wolf"];
+        if (st.customSouls) delete st.customSouls["bp_koerper_wolf"];
         r._refreshSoulSelect();
         const soulSel = document.getElementById("player-soul-select");
         const avatarOpt = soulSel ? [...soulSel.options].find((o) => o.value === "koerper_wolf") : null;
@@ -378,20 +378,20 @@ async function checkBandV1775MakeActCost({ page, check }) {
 
         // (6) ein GESCHMIEDETES Gerät → kein Marker (der Gebrauch ist frei).
         // AUSLÖSCHUNGS-WELLE — Test-Blueprint aus der Werkzeug-Substanz (KIND_SUBSTANCE).
-        const KS75 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
-        if (r.state.blueprints._t_v1775) delete r.state.blueprints._t_v1775;
-        r.state.blueprints._t_v1775 = {
+        const KS75 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
+        if (st.blueprints._t_v1775) delete st.blueprints._t_v1775;
+        st.blueprints._t_v1775 = {
             name: "_t_v1775",
             parts: JSON.parse(JSON.stringify(KS75.geraet_spitzhacke.parts)),
         };
-        const tb = r.state.blueprints["_t_v1775"];
+        const tb = st.blueprints["_t_v1775"];
         tb.forgedPrecision = 0.8;
         out.forgedFree = r._makeActCostSuffix("_t_v1775") === "";
-        delete r.state.blueprints._t_v1775;
+        delete st.blueprints._t_v1775;
 
         // restore
         setMode(savedMode);
-        if (r.state.customSouls) delete r.state.customSouls["bp_koerper_human"];
+        if (st.customSouls) delete st.customSouls["bp_koerper_human"];
         r.applyPlayerSoul(savedSoul);
         if (p) {
             p.inventory = savedInv;
@@ -445,7 +445,7 @@ async function checkBandV1783ImplementClassification({ page, check }) {
         out.handleRole = r.computeBlueprintRole(handle);
         out.largeRole = r.computeBlueprintRole(largeBlock);
         out.cubeRole = r.computeBlueprintRole(smallCube);
-        out.bodyRole = r.computeBlueprintRole(r.state.blueprints["koerper_human"]); // ein echter körper-förmiger Soul-Bauplan
+        out.bodyRole = r.computeBlueprintRole(st.blueprints["koerper_human"]); // ein echter körper-förmiger Soul-Bauplan
         void body;
         // (1) der KERN-FIX: ein spitzes greifbares Gerät → Waffe (NICHT mehr architecture)
         out.spikeWeapon = out.spikeRole === "weapon";
@@ -522,13 +522,13 @@ async function checkBandV1786WorkshopCoherence({ page, check }) {
         };
         // (1) der Schwert-Samen — AUSLÖSCHUNGS-WELLE: der Blueprint fiel, die Judge-Substanz lebt
         // eingefroren in KIND_SUBSTANCE.geraet_schwert (Klinge, schneidet, gehaltenes Implement).
-        const KS86 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        const KS86 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
         const sw = KS86.geraet_schwert ? { parts: JSON.parse(JSON.stringify(KS86.geraet_schwert.parts)) } : null;
         out.schwertExists = !!(sw && Array.isArray(sw.parts) && sw.parts.length > 0);
         out.schwertRole = sw ? r.computeBlueprintRole(sw) : "(missing)";
         out.schwertHeld = out.schwertRole === "tool" || out.schwertRole === "weapon"; // ein Gerät in der Hand
         // (2) das Rolle-Label liest das VOLLE Register (Esse → „Werkstatt", nicht der rohe „workshop-station")
-        const esse = r.state.blueprints["esse"];
+        const esse = st.blueprints["esse"];
         const esseRender = esse ? renderFor("esse") : null;
         out.esseRoleChip = esseRender ? esseRender.roleChip : "(keine esse)";
         out.esseLabeled = !esse || esseRender.roleChip === "Werkstatt";
@@ -566,17 +566,17 @@ async function checkBandV1786WorkshopCoherence({ page, check }) {
 async function checkBandM6ErnteSpawn({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
-        const pm = r.state.playerMesh.position;
+        const pm = st.playerMesh.position;
         const savedMode = r.getGameMode();
-        const savedInv = JSON.parse(JSON.stringify(r.state.player.inventory));
-        const savedStamina = r.state.player.stamina;
+        const savedInv = JSON.parse(JSON.stringify(st.player.inventory));
+        const savedStamina = st.player.stamina;
         let baum = null;
         let clampSpawn = null;
         try {
             // (1) der ERTRAGS-SOCKEL: yieldMult ≥ yieldMin auch bei Faust-fit < floor; end-to-end: die Faust erntet den
             // Baum.
             const fitProbe = r._harvestFitnessFromResist({ mineResist: 3.0, cutResist: 3.0 });
-            out.sockel = fitProbe.yieldMult >= (r.constructor.HARVEST.yieldMin || 0.34) - 1e-9;
+            out.sockel = fitProbe.yieldMult >= (AnazhRealm.HARVEST.yieldMin || 0.34) - 1e-9;
             r.setGameMode("frieden");
             baum = r.spawnArchitecture(
                 "baum_eiche",
@@ -584,10 +584,10 @@ async function checkBandM6ErnteSpawn({ page, check }) {
                 { silent: true, precise: true }
             );
             const fitBaum = r._harvestFitness(baum);
-            for (let i = 0; i < 40 && (r.state.architectures || []).some((e) => e === baum); i++) {
+            for (let i = 0; i < 40 && (st.architectures || []).some((e) => e === baum); i++) {
                 r._strikeArchitecture(baum);
             }
-            const holz = (r.state.player.inventory || []).reduce(
+            const holz = (st.player.inventory || []).reduce(
                 (n, s) => n + (s && s.kind === "material" && s.material === "holz" ? s.count : 0),
                 0
             );
@@ -602,10 +602,10 @@ async function checkBandM6ErnteSpawn({ page, check }) {
             // erst die Schlag-Zahl vollendet; die Stamina ist ANTEILIG (Σ ≈ alter
             // Ein-Hieb-Preis — die Faust KANN weiter graben); frieden bleibt instant.
             r.setGameMode("pfad");
-            r.state.player.stamina = 100;
+            st.player.stamina = 100;
             const digFit = r._harvestFitnessFromResist({
-                mineResist: r.constructor.HARVEST.terrainResist,
-                cutResist: r.constructor.HARVEST.terrainCutResist,
+                mineResist: AnazhRealm.HARVEST.terrainResist,
+                cutResist: AnazhRealm.HARVEST.terrainCutResist,
             });
             out.terrainBrauchtSchlaege = digFit.progress < 1; // die Faust ein-hiebt NICHT
             const perStrike = digFit.stamina * Math.min(1, digFit.progress);
@@ -619,11 +619,11 @@ async function checkBandM6ErnteSpawn({ page, check }) {
                 _pickScatterAtCrosshair: nix, _kampfKegelZiel: nix, _geraetGraebt: () => true, _raycastWorldHit: () => ziel,
                 dslRun: (prog) => (prog[0] === "voxel_carve" && loecher.push(prog), true) };
             Object.assign(r, buehne);
-            const mausVerb = r.state.player._mausVerb;
+            const mausVerb = st.player._mausVerb;
             try {
-                r.state.player._dig = null;
+                st.player._dig = null;
                 r.tryMouseBreak();
-                const ersterHieb = loecher.length === 0 && Math.abs(r.state.player.stamina - (100 - perStrike)) < 1e-9;
+                const ersterHieb = loecher.length === 0 && Math.abs(st.player.stamina - (100 - perStrike)) < 1e-9;
                 let acc = digFit.progress,
                     n = 1;
                 while (acc < 1) (acc += digFit.progress), n++;
@@ -633,16 +633,16 @@ async function checkBandM6ErnteSpawn({ page, check }) {
                 out.musyntax = ersterHieb && vorLetztem === 0 && loecher.length === 1 && loecher[0][1] === ziel.x;
             } finally {
                 for (const k in buehne) delete r[k];
-                if (mausVerb === undefined) delete r.state.player._mausVerb;
-                else r.state.player._mausVerb = mausVerb;
+                if (mausVerb === undefined) delete st.player._mausVerb;
+                else st.player._mausVerb = mausVerb;
             }
 
             // (3) die WURZEL-KLEMME: ein großer Spawn AUF dem Spieler (ohne Opt-out) weicht aus; precise/silent/
             // string-id bleiben EXAKT. Test-Blueprint: haus_basis-Substanz (KIND_SUBSTANCE, Footprint ≥ MIN).
             r.setGameMode("frieden");
-            const KSm6 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
-            if (r.state.blueprints._t_m6_haus) delete r.state.blueprints._t_m6_haus;
-            r.state.blueprints._t_m6_haus = {
+            const KSm6 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
+            if (st.blueprints._t_m6_haus) delete st.blueprints._t_m6_haus;
+            st.blueprints._t_m6_haus = {
                 name: "_t_m6_haus",
                 parts: JSON.parse(JSON.stringify(KSm6.haus_basis.parts)),
             };
@@ -657,15 +657,15 @@ async function checkBandM6ErnteSpawn({ page, check }) {
             out.idExakt = !!clampSpawn && clampSpawn.position.x === pm.x;
             if (clampSpawn) r.removeArchitecture(clampSpawn);
             clampSpawn = null;
-            delete r.state.blueprints._t_m6_haus;
+            delete st.blueprints._t_m6_haus;
             return out;
         } finally {
             if (baum) r.removeArchitecture(baum);
             if (clampSpawn) r.removeArchitecture(clampSpawn);
             r.setGameMode(savedMode);
-            r.state.player.inventory = savedInv;
-            r.state.player.stamina = savedStamina;
-            if (r.state.player._dig) r.state.player._dig.progress = 0;
+            st.player.inventory = savedInv;
+            st.player.stamina = savedStamina;
+            if (st.player._dig) st.player._dig.progress = 0;
         }
     });
     check(

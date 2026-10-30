@@ -17,7 +17,6 @@ const { statikServer, starteBrowser, hauptLauf, sleep } = require("./lib/welt-bo
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 // Port der Linse (4463 — neben diag-blick 4461, nie der save-server 4312).
-const PORT = Number(process.env.HITCH_PORT || 4463);
 // Laufzeit nach dem Welt-Settle: ~15 s echte Loop-Zeit, damit Sekunden-Grenzen,
 // EWMA und Ringe wirklich GEFÜLLT sind (nicht nur initialisiert).
 const LAUFZEIT_MS = 15000;
@@ -669,7 +668,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     // Echtes WebGPU auf swiftshader — die Schalter je Plattform trägt das EINE Rezept (scripts/lib/software-gpu.cjs).
     const browser = await starteBrowser({ art: "linse", frist: 600000, zeit: true }); // Band 1 (LongTasks) ist auf swiftshader geeicht
     const page = await browser.newPage();

@@ -41,7 +41,6 @@
 const { statikServer, starteBrowser, hauptLauf, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
-const PORT = Number(process.env.PORTAL_MEMBRAN_PORT || 4439);
 const server = statikServer();
 
 const { errs, check } = pruefer();
@@ -271,7 +270,7 @@ async function hellProbe() {
         // DER MILCH-LESER (HS): die Öffnung als helles Weiß (dreifach über der Belichtung — die ACES-Schulter, das Bild vor D8)
         setze(() => TSL.vec4(TSL.vec3(3.0).mul(r._torZiele().uBelicht), 1.0));
         const R = await uhr("R", schuss);
-        const Y = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
+        const Y = luma709;
         // EINE Maske für alle drei Bilder: die Pixel, in denen die Welt eine Membran zeigt — mit Membran steht ein Kanal um
         // mindestens STUFE anders als ohne (swiftshader: Stufe 10 nimmt 7 876 der 8 014 magenta Pixel, 1 außerhalb; 6 griff
         // 71 Pixel neben die Membran, 16 ließ 353 Rand-Pixel fallen)
@@ -440,7 +439,7 @@ async function blickStufe(check) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 300000 });
     await server.zeige(page, 30000);
 
