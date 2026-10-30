@@ -2496,7 +2496,10 @@ async function kreaturProben(r, T, opts) {
                     // wechseln kein Ziel
                     if (b.ziel !== sp.ziel && ab(sp.ziel, b.ziel) >= 2) sp.n.add(((b.tagAb + 24) % 24).toFixed(4));
                     sp.ziel = b.ziel;
-                    const da = b.drinnen ? !b.hinaus : !b.ziel || (!b.drinnenSoll && ab(b.leib.position, b.ziel) < 1.5);
+                    // (am Steuer gehört der Leib dem Wagen: ob er steckt, urteilt der Verkehr — gate:fahr-leben VK `fest`)
+                    const da =
+                        b.amSteuer ||
+                        (b.drinnen ? !b.hinaus : !b.ziel || (!b.drinnenSoll && ab(b.leib.position, b.ziel) < 1.5));
                     if (da || Math.hypot(x - sp.ax, z - sp.az) >= 1) Object.assign(sp, { ax: x, az: z, seit: minute });
                     else if (minute - sp.seit >= 5 && !sp.steckt) stecken.push(wann(b));
                     // die Berührung: ein anderer Leib draußen näher als zwei Kapseln
