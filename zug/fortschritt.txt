@@ -958,3 +958,4 @@
 2026-10-30 07:00:33 z78-bisekt stadt VERLÄNGERN 25.0 · 1/1 (2+2)
 2026-10-30 07:25:41 z78-bisekt stadt(4+4) LANGSAMER 25.1 · verlängert (4+4)
 2026-10-30 07:25:54 takt24-gtx START 23 Stationen in 6 Läufen
+2026-10-30 07:31:01 takt24-gtx VORFAHRT mensch.K4#1,licht.K2#2,licht.K5#1,material.K2#1,material.K3#2,schatten.K1#2,lod.K1#1,lod.K5#1,lod.K2#1,material.K4#1,material.K5#1,studios.K4#1,fahrzeug.K3#1,siedlung.K4#2,leib.K1#2,spielgang.K3#1 verloren 1.0
