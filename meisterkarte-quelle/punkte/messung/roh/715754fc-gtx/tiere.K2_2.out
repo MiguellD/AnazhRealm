@@ -1,0 +1,47 @@
+$ C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\715754fc-gtx\tiere.K2_2.json' | tr '\\' /); B="${A%.json}"
+S=$(( 7804 )); W=$(( 7804 + 20000 )); export WERKBANK_PORT=$W
+KREATUR_TAKT_PORT=$(( 7804 + 10000 )) node scripts/diag-kreatur-takt.cjs --proben jagdkreis
+node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1
+erg() { node -e 'const t = require("fs").readFileSync(0, "utf8"); console.log(JSON.stringify(JSON.parse(t.slice(t.indexOf("{"))).ergebnis))'; }
+O=$(node scripts/werkbank.cjs eval 'const pm = r.state.playerMesh.position; let O = null; for (let ring = 2; ring <= 16 && !O; ring++) for (let q = 0, n = ring * 6; q < n && !O; q++) { const a = (q / n) * 2 * Math.PI, x = pm.x + Math.cos(a) * ring * 25, z = pm.z + Math.sin(a) * ring * 25; if (r._landAt(x, z) && r._bodenKlasseAt(x, z) === "wald" && r._bodenKlasseAt(x + 30, z) !== "fluss" && r._kreaturGrundFrei(x, z) && r._kreaturGrundFrei(x + 30, z)) O = [+x.toFixed(1), +z.toFixed(1)]; } return O;' | erg); echo "ORT $O"
+node scripts/werkbank.cjs umstellen $(node -e 'const o = JSON.parse(process.argv[1]); console.log(o[0] + 30, o[1])' "$O") > "$B-umstellen.txt" 2>&1
+R=$(node scripts/werkbank.cjs eval 'const s = r.state, pm = s.playerMesh.position; r.setGameMode("pfad"); const O = { x: pm.x - 30, z: pm.z }; for (const c of [...s.creatures, ...s.leichname]) r.removeCreature(c); const neu = (x, z, seele, gr) => { const c = r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z) + 0.5, z, "happy", seele, { precise: true, bodySize: gr }); c.userData.emotions = { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 }; return c; }; const kitz = neu(O.x, O.z, "wesen", 0.6); const W = [0, 1, 2, 3].map((i) => neu(O.x + Math.cos(Math.PI + (i - 1.5) * 0.5) * 25, O.z + Math.sin(Math.PI + (i - 1.5) * 0.5) * 25, "wolf", 1)); r._kreaturVerbinden(W); let rissS = null, k = 0; const frisst = () => W.filter((c) => c.userData._motionZustand === "fressen").length; for (; k < 7200 && (rissS === null || (frisst() < 3 && k / 60 < rissS + 20)); k++) { r._kreaturStossSchritt(1 / 60); r._leibKontakte(); r.updateCreatures(1 / 60); if (rissS === null && s.leichname.includes(kitz)) rissS = +(k / 60).toFixed(1); } const fressen = frisst(); const nah = W.filter((c) => Math.hypot(c.position.x - kitz.position.x, c.position.z - kitz.position.z) < 4).length; const K = kitz.position, d = Math.hypot(pm.x - K.x, pm.z - K.z) || 1, ax = K.x + ((pm.x - K.x) / d) * 8, az = K.z + ((pm.z - K.z) / d) * 8; return { ort: r._bodenKlasseAt(O.x, O.z), kamera: [ax, r.getTerrainHeightAt(ax, az) + 2.2, az, K.x, K.y + 0.4, K.z].map((v) => +v.toFixed(2)), klasse: r._bodenKlasseAt(kitz.position.x, kitz.position.z), rissS, fressen, nah, woelfe: W.length };' | erg); echo "REVIER $R"
+node scripts/werkbank.cjs bild $(node -e 'console.log(JSON.parse(process.argv[1]).kamera.join(" "))' "$R") --w 1920 --h 1080 --klasse '^tier:' --ziel Riss --datei "$B-wolfsrevier.png" > "$B-bild.txt" 2>&1
+echo "BILD $(grep -o '"abnahme": "[^"]*"' "$B-bild.txt")"
+cp "$B-wolfsrevier.abnahme.json" "$A"
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:17804/index.html · der Puls steht seit 20.6 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 22.0 s
+[stall-akte] Puls 13×, zuletzt vor 20.6 s — complete · renderer bereit · weltbild da · frames 340 · welt 340 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 13584 107 % · GPU 1520 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 20:14 gpu 5/r 157 · 20:16 gpu 4/r 225 · 20:18 gpu 1/r 274 · 20:20 gpu 1/r 594 · 20:22 gpu 2/r 591 · 20:24 gpu 1/r 320 · 20:26 gpu 2/r 116 · 20:28 gpu 1/r 121 · 20:30 gpu 1/r 137 · 20:32 gpu 1/r 119 · 20:34 gpu 1/r 121 · 20:36 gpu 1/r 154 · 20:38 gpu 1/r 118 · 20:40 gpu 1/r 114 · 20:42 gpu 1/r 102 · 20:44 gpu 1/r 110 · 20:46 gpu 1/r 106 · 20:48 gpu 1/r 109
+[stall-akte] Stapel AnazhRealm._streckenNah2D :3914 < _leibPaar :1122 < _leibGegenLeiber :1189 < _kreaturWeg :1230 < updateCreatures :3497 < takt :254 < (anonym) :1778 < buehne :61
+[stall-akte] Konsole log: [AnazhRealm V18.546.129] [INFO] Hauptschleife gestartet – Ultiversum pulsiert!
+[stall-akte] Konsole log: [AnazhRealm V18.546.129] [INFO] Grok: Hallo. Die Welt steht. Magst du dich umsehen?
+[stall-akte] Konsole log: [AnazhRealm V18.546.129] [INFO] Nervensystem: 74 neue Studio-Art(en) automatisch registriert.
+[stall-akte] Konsole log: [AnazhRealm V18.546.129] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.129] [WARN] AUSGABE: rg11b10ufloat ist auf diesem Gerät nicht renderbar (Feature rg11b10ufloat-renderable fehlt) — das Szenen-Ziel bleibt rgba16float, +7,9 MB bei 1080p
+[stall-akte] Konsole log: [AnazhRealm V18.546.129] [INFO] Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.
+[stall-akte] Konsole log: [AnazhRealm V18.546.129] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — Cannot read properties of undefined (reading 'enabled')
+[stall-akte] Konsole log: [AnazhRealm V18.546.129] [WARN] FPS-Einbruch: 19 (zuvor ~29)
+[stall-akte] Konsole log: [AnazhRealm V18.546.129] [WARN] FPS-Einbruch: 12 (zuvor ~28)
+[stall-akte] Konsole log: [AnazhRealm V18.546.129] [WARN] Der Rundblick steht nach 120 Takten ohne: 2 Bäume und Bauten wachsen · 354 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] Konsole log: [AnazhRealm V18.546.129] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.129] [INFO] Welt-Beziehung: Pfad
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in AnazhRealm._streckenNah2D :3914
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ jagdkreis {"riss":{"quote":{"einWolf":{"jagden":20,"risse":0,"erschoepft":20,"hp0":168},"rudel":{"jagden":60,"risse":18,"erschoepft":42,"hp0":168},"kitz":{"jagden":20,"risse":20,"erschoepft":0,"hp0":60}},"rissS":49,"fleisch0":56.5,"fleischEnde":0,"fressS":110.7,"gaeste":[{"seele":"fuchs","kommtS":20.2,"frissS":31.14},{"seele":"baer","kommtS":16.8,"frissS":32.16}]}}
+
+  (128 s) — Sekunden je Probe: jagdkreis: 109
+
+✅ GRÜN — jagdkreis
+ORT [50,0]
+REVIER {"ort":"wald","kamera":[58.96,91.24,-2.97,51.04,89.53,-4.09],"klasse":"wald","rissS":13.6,"fressen":3,"nah":4,"woelfe":4}
+BILD "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 89.2 σ 39.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen"
+
+--- stderr ---
+tr: warning: an unescaped backslash at end of string is not portable
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

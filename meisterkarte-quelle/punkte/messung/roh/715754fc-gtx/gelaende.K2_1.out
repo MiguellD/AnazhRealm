@@ -1,0 +1,20 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:/Program Files/Git/bin/bash.exe -c set -u; B=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx'); K=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte'); A=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\715754fc-gtx\gelaende.K2_1.json'); D="${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D/roh"; cp -r "$K/bericht/2210-messschuld-6cfce/skripte/." "$D/"; sed -i -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/mess-6cfce#$B#g" -e "s#C:/Users/micha/AnazhRealm-profiband/.claude/worktrees/koordination#$K#g" "$D"/*.cjs; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; (PORT=7754 node save-server.js > "$D/save.log" 2>&1 < /dev/null &); for t in $(seq 1 60); do curl -s -o /dev/null http://localhost:7754/ && break; sleep 1; done; export SPIEL_URL=http://localhost:7754; node "$D/m2-graben.cjs"; E=$?; cp "$D/roh/m2-graben.json" "$A" 2>/dev/null; rm -f anazhRealmState.json anazhRealmState.json.bak anazhRealmPerf.json; exit $E
+[linse-gpu] nvidia/pascal
+{"saat":11,"abstand":1,"sicht":"third","bild":"vor+2s","verb":"abbau","edits":0,"k":62,"krone":3.68,"nassVor":139,"nassEnde":139,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":296}
+{"saat":11,"abstand":3,"sicht":"third","bild":"vor+2s","verb":"graben","edits":1,"k":62,"krone":3.68,"nassVor":55,"nassEnde":281,"gefuelltMs":366.6,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":266}
+{"saat":23,"abstand":1,"sicht":"third","bild":"","verb":"pfluecken","edits":1,"k":49,"krone":3.68,"nassVor":112,"nassEnde":112,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":450}
+{"saat":23,"abstand":3,"sicht":"third","bild":"","verb":"graben","edits":2,"k":49,"krone":3.68,"nassVor":41,"nassEnde":263,"gefuelltMs":293.6,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":340}
+{"saat":37,"abstand":1,"sicht":"third","bild":"2s","verb":"graben","edits":3,"k":47,"krone":3.34,"nassVor":105,"nassEnde":306,"gefuelltMs":290.7,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":221}
+{"saat":37,"abstand":3,"sicht":"third","bild":"2s","verb":"graben","edits":4,"k":47,"krone":3.34,"nassVor":240,"nassEnde":273,"gefuelltMs":67.6,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":234}
+{"saat":51,"abstand":1,"sicht":"third","bild":"","verb":"graben","edits":5,"k":7,"krone":3.34,"nassVor":153,"nassEnde":337,"gefuelltMs":285.9,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":324}
+{"saat":51,"abstand":3,"sicht":"third","bild":"","verb":"graben","edits":6,"k":7,"krone":3.34,"nassVor":262,"nassEnde":282,"gefuelltMs":45.7,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":278}
+{"saat":73,"abstand":1,"sicht":"third","bild":"","verb":"graben","edits":7,"k":16,"krone":3.34,"nassVor":116,"nassEnde":291,"gefuelltMs":241.8,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":255}
+{"saat":73,"abstand":3,"sicht":"third","bild":"","verb":"graben","edits":8,"k":16,"krone":3.34,"nassVor":211,"nassEnde":247,"gefuelltMs":52.4,"doppeltMax":0,"ueberMax":0,"ueberMaxM":0,"bilder":262}
+
+--- stderr ---
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 13260 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
