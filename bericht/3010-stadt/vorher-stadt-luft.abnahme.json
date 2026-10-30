@@ -1,0 +1,541 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.132",
+  "sha": "24a0f3eff6051ae954369fd774cce415d1f32dc5"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 95
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   640,
+   360
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 251.55,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   603,
+   261.201,
+   297.4
+  ],
+  "blick": [
+   0,
+   -0.87539,
+   0.48341
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1280,
+  "h": 720,
+  "mittel": 75.1,
+  "sigma": 24,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 251.55 m · Luma 75.1 σ 24 schwarz 0.0 % weiß 0.0 % · Stand 18.546.132 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 42 Posen",
+ "wahl": {
+  "versucht": 42,
+  "gewaehlt": 41,
+  "kamera": [
+   603,
+   261.201,
+   297.4
+  ],
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     603,
+     211,
+     609
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Mesh in 230.39 m"
+    ]
+   },
+   {
+    "k": 1,
+    "kamera": [
+     553.824,
+     210.798,
+     602.526
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Mesh in 228.8 m"
+    ]
+   },
+   {
+    "k": 2,
+    "kamera": [
+     652.176,
+     211.86,
+     602.526
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Mesh in 230.81 m"
+    ]
+   },
+   {
+    "k": 3,
+    "kamera": [
+     508,
+     211.357,
+     583.545
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Mesh in 229.31 m"
+    ]
+   },
+   {
+    "k": 4,
+    "kamera": [
+     698,
+     214.329,
+     583.545
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Mesh in 231.97 m"
+    ]
+   },
+   {
+    "k": 5,
+    "kamera": [
+     468.65,
+     212.368,
+     553.35
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Mesh in 231.16 m"
+    ]
+   },
+   {
+    "k": 6,
+    "kamera": [
+     737.35,
+     217.574,
+     553.35
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 233.64 m"
+    ]
+   },
+   {
+    "k": 7,
+    "kamera": [
+     438.455,
+     215.243,
+     514
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 231.55 m"
+    ]
+   },
+   {
+    "k": 8,
+    "kamera": [
+     767.545,
+     225.796,
+     514
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 239.41 m"
+    ]
+   },
+   {
+    "k": 9,
+    "kamera": [
+     413,
+     217.087,
+     419
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 233.37 m"
+    ]
+   },
+   {
+    "k": 10,
+    "kamera": [
+     793,
+     232.43,
+     419
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 244.52 m"
+    ]
+   },
+   {
+    "k": 11,
+    "kamera": [
+     468.65,
+     229.936,
+     284.65
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 240.11 m"
+    ]
+   },
+   {
+    "k": 12,
+    "kamera": [
+     737.35,
+     262.055,
+     284.65
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 264.84 m"
+    ]
+   },
+   {
+    "k": 13,
+    "kamera": [
+     603,
+     274.135,
+     229
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 276.68 m"
+    ]
+   },
+   {
+    "k": 14,
+    "kamera": [
+     603,
+     212.927,
+     571
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Mesh in 206.47 m"
+    ]
+   },
+   {
+    "k": 15,
+    "kamera": [
+     563.66,
+     212.051,
+     565.821
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Mesh in 205.13 m"
+    ]
+   },
+   {
+    "k": 16,
+    "kamera": [
+     642.34,
+     214.526,
+     565.821
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Mesh in 207.57 m"
+    ]
+   },
+   {
+    "k": 17,
+    "kamera": [
+     527,
+     213.4,
+     550.636
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Mesh in 205.1 m"
+    ]
+   },
+   {
+    "k": 18,
+    "kamera": [
+     679,
+     216.975,
+     550.636
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 209 m"
+    ]
+   },
+   {
+    "k": 19,
+    "kamera": [
+     495.52,
+     214.363,
+     526.48
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 205.94 m"
+    ]
+   },
+   {
+    "k": 20,
+    "kamera": [
+     710.48,
+     221.331,
+     526.48
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 212.48 m"
+    ]
+   },
+   {
+    "k": 21,
+    "kamera": [
+     471.364,
+     217.247,
+     495
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Mesh in 209.69 m"
+    ]
+   },
+   {
+    "k": 22,
+    "kamera": [
+     734.636,
+     228.323,
+     495
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 218.21 m"
+    ]
+   },
+   {
+    "k": 23,
+    "kamera": [
+     451,
+     223.119,
+     419
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 214.38 m"
+    ]
+   },
+   {
+    "k": 24,
+    "kamera": [
+     755,
+     238.332,
+     419
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 226.52 m"
+    ]
+   },
+   {
+    "k": 25,
+    "kamera": [
+     495.52,
+     236.752,
+     311.52
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 223.22 m"
+    ]
+   },
+   {
+    "k": 26,
+    "kamera": [
+     710.48,
+     255.87,
+     311.52
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 238.27 m"
+    ]
+   },
+   {
+    "k": 27,
+    "kamera": [
+     603,
+     267.041,
+     267
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 249.97 m"
+    ]
+   },
+   {
+    "k": 28,
+    "kamera": [
+     603,
+     214.949,
+     540.6
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Mesh in 190.41 m"
+    ]
+   },
+   {
+    "k": 29,
+    "kamera": [
+     571.528,
+     214.268,
+     536.457
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 189.84 m"
+    ]
+   },
+   {
+    "k": 30,
+    "kamera": [
+     634.472,
+     216.895,
+     536.457
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 192.11 m"
+    ]
+   },
+   {
+    "k": 31,
+    "kamera": [
+     542.2,
+     214.404,
+     524.309
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Mesh in 189.56 m"
+    ]
+   },
+   {
+    "k": 32,
+    "kamera": [
+     663.8,
+     220.252,
+     524.309
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 195.01 m"
+    ]
+   },
+   {
+    "k": 33,
+    "kamera": [
+     517.016,
+     215.865,
+     504.984
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Mesh in 190.58 m"
+    ]
+   },
+   {
+    "k": 34,
+    "kamera": [
+     688.984,
+     224.708,
+     504.984
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Mesh in 198.87 m"
+    ]
+   },
+   {
+    "k": 35,
+    "kamera": [
+     497.691,
+     219.094,
+     479.8
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Mesh in 193.78 m"
+    ]
+   },
+   {
+    "k": 36,
+    "kamera": [
+     708.309,
+     228.842,
+     479.8
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 202.47 m"
+    ]
+   },
+   {
+    "k": 37,
+    "kamera": [
+     481.4,
+     229.321,
+     419
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 203.11 m"
+    ]
+   },
+   {
+    "k": 38,
+    "kamera": [
+     724.6,
+     237.334,
+     419
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 209.92 m"
+    ]
+   },
+   {
+    "k": 39,
+    "kamera": [
+     517.016,
+     244.034,
+     333.016
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 214.57 m"
+    ]
+   },
+   {
+    "k": 40,
+    "kamera": [
+     688.984,
+     255.277,
+     333.016
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von Gelände in 224.96 m"
+    ]
+   },
+   {
+    "k": 41,
+    "kamera": [
+     603,
+     261.201,
+     297.4
+    ],
+    "rot": []
+   }
+  ]
+ }
+}
