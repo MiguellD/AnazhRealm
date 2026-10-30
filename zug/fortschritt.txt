@@ -947,3 +947,4 @@
 2026-10-30 04:16:40 takt23-gtx VORFAHRT mensch.K5#1,mensch.K4#1,haar.K2#1,vegetation.K1#1,vegetation.K5#1,licht.K2#2,ferne.K1#2,licht.K5#1,material.K2#1,material.K3#2,lod.K5#1,lod.K2#1,material.K4#1,material.K5#1,studios.K4#1,fahrzeug.K3#1,siedlung.K4#2,leib.K1#2,spielgang.K3#1 verloren 7.0
 2026-10-30 04:16:51 takt23-gtx mensch.K5#1,mensch.K4#1,haar.K2#1,vegetation.K1#1,vegetation.K5#1,licht.K2#2,ferne.K1#2,licht.K5#1,material.K2#1,material.K3#2,lod.K5#1,lod.K2#1,material.K4#1,material.K5#1,studios.K4#1,fahrzeug.K3#1,siedlung.K4#2,leib.K1#2,spielgang.K3#1 ROT/ROT/ROT/ROT/ROT/ROT/ROT/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN 10.2 · 19/28
 2026-10-30 04:27:03 takt23-gtx tiere.K5#1 OFFEN 10.1 · 20/28
+2026-10-30 04:35:21 takt23-gtx licht.K1#1 ROT 8.2 · 21/28
