@@ -1341,7 +1341,9 @@ async function vegetationLauf() {
     const fs = require("fs");
     const path = require("path");
     const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
-    const [aus, port, plan] = process.argv.slice(1);
+    // `zaehlen`: "ohne-budget", wo kein Urteil des Laufs das Budget der Nah-Wiese liest — das Jahr (`jahrUrteil`) liest es nie,
+    // vegetation.K1 (`wieseUrteil`) immer
+    const [aus, port, plan, zaehlen] = process.argv.slice(1);
     const W = Number(port) + 20000;
     const B = aus.replace(/\.json$/, "");
     const erg = { schuesse: [] };
@@ -1382,8 +1384,10 @@ async function vegetationLauf() {
             if (wiese) {
                 const a = kl.abstand;
                 Object.assign(sch, { baender: a.baender, cos: a.cos, klassen: a.klassen, farbton: a.farbton.kacheln });
-                const zl = (await ruf("/zaehlen", { px, py, pz, lx, ly, lz, alle: true })).klassen.filter((x) => /^nahWiese:L[12]$/.test(x.klasse));
-                sch.budget = [zl.reduce((q, x) => q + ((x.je || {}).haupt || 0), 0), zl.reduce((q, x) => q + ((x.jeTris || {}).haupt || 0), 0)];
+                if (zaehlen !== "ohne-budget") {
+                    const zl = (await ruf("/zaehlen", { px, py, pz, lx, ly, lz, alle: true })).klassen.filter((x) => /^nahWiese:L[12]$/.test(x.klasse));
+                    sch.budget = [zl.reduce((q, x) => q + ((x.je || {}).haupt || 0), 0), zl.reduce((q, x) => q + ((x.jeTris || {}).haupt || 0), 0)];
+                }
             }
             erg.schuesse.push(sch);
         }
@@ -1457,12 +1461,12 @@ const vegetationDeckel = (plan) => {
     });
     return Math.ceil(s / 5) * 5;
 };
-// die Ausnahme eines Plans über 45 s beim Namen seiner Arbeit
-const vegetationProbe = (plan) => {
+// die Ausnahme eines Plans über 45 s beim Namen seiner Arbeit; `zaehlen` "ohne-budget", wo kein Urteil das Budget der Nah-Wiese liest
+const vegetationProbe = (plan, zaehlen = "") => {
     const sek = vegetationDeckel(plan);
     const n = (was) => plan.filter((p) => p[4] === was).length;
     return { sek, ...(sek > 45 ? { ausnahme: n("krone") + " Schüsse der Krone und " + n("wiese") + " der Wiese je 10 s an einem Stand — die Arbeit des Plans, nie das Einschwingen" } : {}),
-        befehl: ["node", "-e", "(" + knapp(vegetationLauf) + ")()", "{AUS}", "{PORT}", JSON.stringify(plan)] };
+        befehl: ["node", "-e", "(" + knapp(vegetationLauf) + ")()", "{AUS}", "{PORT}", JSON.stringify(plan), ...(zaehlen ? [zaehlen] : [])] };
 };
 const wieseStation = (staffel, posen, quelle) => ({
     kriterium: "vegetation.K1",
@@ -1554,7 +1558,7 @@ const jahrStation =(staffel, lauf, eigen, zeiten, quelle) => ({
     kriterium: "vegetation.K5",
     staffel,
     geraet: ["radeon", "gtx"],
-    probe: vegetationProbe(lauf),
+    probe: vegetationProbe(lauf, "ohne-budget"),
     gpu: true,
     zeit: false,
     minuten: staffel === 1 ? 2 : 6,
@@ -3600,6 +3604,11 @@ const stationen = [
     // DIE ARBEIT GETEILT (w4-sitzung-reif): beide Staffeln sind EIN Lauf (Zwillinge) — seine ersten Schüsse sind die Kronen von Sommer und
     // Winter am Stand der Staffel 1; sie urteilt nur sie (der Rest des Laufs, auch sein Fehler, ist Sache der Staffel 2). Getrennt kosteten
     // sie 25 s + 65 s der Fahrt, so 65 s
+    // DAS TEMPO (w4-proben-tempo, 30.10.; GTX 379e5f56 ≥ 90 s am Eich-Deckel, „zuletzt: SCHRITT /eval“): DIE TÄTER je Schuss — die
+    // Klassen-Maße je Teil-Klasse mit dem ganzen Bild (Luma, Spiegel-Projektion; abnahme-urteil `klassenMasse` jetzt mit `pass`, Node
+    // 567 → 242 ms je Klasse), der Licht-Pool fest 20 × 50 ms (`bild --uhr`, jetzt bis zu seinem Fixpunkt), der Zähler je Wiesen-Schuss
+    // (`/zaehlen`, sein Budget liest nur vegetation.K1 — das Jahr läuft „ohne-budget“). Offen beim Namen: der Abstands-Marsch der Wiese
+    // (je 2×2-Block ein Strahl bis 200 m, ~20 Mio. Rufe `_bodenSichtAt`, 6–11 s je Wiesen-Schuss) — der EINE Boden-Leser im Spiel
     jahrStation(1, JAHR_LAUF, ["sommer", "winter"].map((z) => JAHR_LAUF.find((p) => p[3] === z && p[4] === "krone")), ["sommer", "winter"], "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose"),
     jahrStation(2, JAHR_LAUF, JAHR_LAUF, ["sommer", "winter", "fruehling"], "2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte"),
 ];
