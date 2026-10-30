@@ -3,7 +3,7 @@
 // 11 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 // Avatar: einen Körper FORMEN durch denselben WERK-Kern (der Avatar
 // ist KEINE Ausnahme — formen kostet, tragen frei); forgeAvatar (role:soul, pay+freeze+verkörpern) +
@@ -368,13 +368,7 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!ring5Results || ring5Results.error) {
-        check(
-            "Ring 5: Seele-Snapshot erreichbar",
-            false,
-            ring5Results && ring5Results.error ? ring5Results.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 5: Seele-Snapshot erreichbar", ring5Results)) {
         check("Ring 5: Dropdown im Spieler-Drawer", ring5Results.drawerSelectInDom);
         check("Ring 5: Status-Bar zeigt Seele-Item", ring5Results.statusBarSoulInDom);
         check(
@@ -527,13 +521,7 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
         r.state.pitch = 0;
     });
 
-    if (!cameraResults || cameraResults.error) {
-        check(
-            "Ring 5 V2-Prep: Kamera-Snapshot erreichbar",
-            false,
-            cameraResults && cameraResults.error ? cameraResults.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 5 V2-Prep: Kamera-Snapshot erreichbar", cameraResults)) {
         check("Ring 5 V2-Prep: #camera-mode-toggle im DOM", cameraResults.toggleInDom);
         check("Ring 5 V2-Prep: Initial-Modus ist 'first'", cameraResults.initialModeFirst);
         check("Ring 5 V2-Prep: Initial-Label trägt '1st'", cameraResults.initialLabelFirst);

@@ -990,8 +990,8 @@ class AnazhRealm {
     }
 
     // WAS DER PASS LIEST, IST SEINE SIGNATUR: das Auge (`ruheM`), der Blick (`ruheRad`), die Projektion, der Stand des Felds
-    // (jede Antwort des Workers, jedes Leeren, jede Kronen-Farbe), der Stand des Wasser-Satzes und das Ziel-Maß exakt, das Licht der Welt (`_weltLicht`)
-    // und die EINE Luft auf `ruheLicht`. Weicht eine Größe von der des letzten Laufs ab, rechnet er neu und merkt sie.
+    // (jede Antwort des Workers, jedes Leeren, jede Kronen-Farbe), der Stand des Wasser-Satzes, die Horizont-Karte des Schattens und das
+    // Ziel-Maß exakt, das Licht der Welt (`_weltLicht`) und die EINE Luft auf `ruheLicht`. Weicht eine Größe von der des letzten Laufs ab, rechnet er neu und merkt sie.
     _spiegelPassWach(L) {
         const st = this.state;
         const K = AnazhRealm.SPIEGEL;
@@ -1032,6 +1032,9 @@ class AnazhRealm {
         v[k++] = S.stand;
         v[k++] = S.wasserSatz ? S.wasserSatz.stand : -1;
         v[k++] = this._weltLicht().stand; // die Himmels-Sonde des Lichts der Welt
+        const H = st.horizontKarte; // ihr Schatten jenseits der Kaskaden (`_horizontSicht`): jede Malung, an/aus, die Reichweite
+        v[k++] = H ? H.malZahl * 2 + H.U.aktiv.value : -1;
+        v[k++] = H ? H.U.ab.value : -1;
         v[k++] = m.w;
         v[k++] = m.h;
         // Licht und Luft

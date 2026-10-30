@@ -1013,10 +1013,7 @@ class AnazhRealm_bild_himmel {
         const sunDir = this._dayNightSunDirection(angle);
         // Mond-Richtung aus der EINEN Quelle: `_dayNightSunDirection(angle+π)` ist exakt die Formel des
         // sichtbaren Mond-Meshes (`_updateCelestialBodies`); −sunDir hätte eine andere z-Komponente.
-        // `lightDir` = der AKTIVE Himmelskörper (Sonne über dem Horizont, sonst Mond) → Richtlicht,
-        // Wasser-Glitzer, Gras-Translucency; die Skybox behält sunDir (der Wolken-Glow ist Sonne).
         const moonDir = this._dayNightSunDirection(angle + Math.PI);
-        const lightDir = sunDir.y >= 0 ? sunDir : moonDir;
         // DIE EINE TAG-ACHSE (S7): jeder Anwender liest dieselben Kanäle derselben Sonnenhöhe
         const achse = this._tagAchse(sunDir.y);
         // DIE EINE ATMOSPHÄRE (D3): der Durchlass zur Sonne EINMAL je Anwendung (das Richtlicht), die Tafeln im Takt ihrer
@@ -1037,7 +1034,9 @@ class AnazhRealm_bild_himmel {
         const sprung = this._himmelSprung === true;
         this._himmelSprung = false;
         if (!this.state._skyEnvFailed) this._ensureSkyEnvironment(false, sprung);
-        this._dayNightApplyWaterMaterials(lightDir);
+        // DAS LICHT DER WELT folgt der Uhr sofort (`_weltLichtTakt`): Feld-Pass, Panorama und Wasser lesen die Lichter, die jetzt gelten
+        this._weltLichtTakt();
+        this._dayNightApplyWaterMaterials();
         this._dayNightApplyBelichtung(achse);
         this._dayNightApplyAugenLicht();
     }
@@ -2537,21 +2536,12 @@ class AnazhRealm_bild_himmel {
         }
     }
 
-    // Das Wasser-Material (hydroSurfaceMaterial für Meer/Fluss/See) folgt der
-    // Tag-Nacht-Sprache: uSunDir + uLight (die Luft legt `scene.fogNode` auf). `lightDir` ist der AKTIVE
-    // Himmelskörper (vom Aufrufer _applyDayNightToScene) → der Glitzer folgt tags der Sonne, nachts dem Mond.
-    _dayNightApplyWaterMaterials(lightDir) {
-        if (!this.state.directionalLight) return;
-        const dl = this.state.directionalLight;
-        const lightVal = Math.max(0.22, dl.intensity);
-        // Das Licht des Orts für Körper und Schaum ist das Licht der Welt (`_weltLicht`): sein Schreiber folgt der Uhr sofort
-        this._weltLichtTakt();
+    // Das Wasser-Material (hydroSurfaceMaterial für Meer/Fluss/See) folgt dem Tag in Wind und Eis; sein Licht — Körper, Schaum,
+    // Glanz des aktiven Himmelskörpers — ist das Licht der Welt (`_weltLicht`, sein Schreiber `_weltLichtTakt`).
+    _dayNightApplyWaterMaterials() {
         // Die Uniforms leben in state.hydroSurfaceUniforms.
         const applyToTSL = (uniforms) => {
             if (!uniforms) return;
-            if (uniforms.sunDir) uniforms.sunDir.value.copy(lightDir);
-            if (uniforms.light) uniforms.light.value = lightVal;
-            if (uniforms.sunCol) uniforms.sunCol.value.copy(dl.color);
             // Der Wind am Wasser (0 ruhig … 1 Sturm): der EINE Wind am Auge (`_windAt`, die Stärke ohne Verstärker) kräuselt es.
             const cam = this.state.camera;
             if (uniforms.wind && cam)

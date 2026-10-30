@@ -48,7 +48,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 - BODEN Rausch-Gesetz, Fels und Halm-Schichten als reine WGSL-Funktionen, EIN Leser `_bodenSichtAt`, Fels-Stoff im Worker (`_felsStoff`).
 - LICHT EIN Leuchtquellen-Gesetz (`kelvin`, EIN Pool) · EIN Himmel · EINE Koschmieder-Luft · Schatten 2 Kaskaden (`_schattenBias`), EIN
   Werfer je Gestalt · Sätze EIN Pool je Stoff, EIN Programm je Signatur · alles Opake in EINER Reihe (`_zeichenRang`: Bau · Boden · Fern ·
-  Himmel), Kinder `_buendelKinderReihe`. Heute doppelt: Tag-Achsen ×5, Belichtungs-Schreiber ×3, Lichtwege ×4 (W7).
+  Himmel), Kinder `_buendelKinderReihe` · Feld, Spiegel, Panorama und Wasser nehmen jedes Licht aus dem EINEN Baustein `_weltLicht`
+  (Wache `checkBandLichtBaustein`). Heute doppelt: Tag-Achsen ×5, Belichtungs-Schreiber ×3, die Karten-Sonne rechnet eigen (W7).
 - KOSTEN die EINE Skala (TAAU: `SZENE_SKALA` 0,75, Spieler-Wahl `state.szeneSkala`, `_zeitAufloesung` auf volle Ausgabe) · `_passTrifft`
   + `_wahlHaelt` · `_schirm` · `TAKT_DECKEL_S` · Takt-Nähe `_blockerUmPlatz` · Boden-Satz `_satzPacke` · `_instanzAbschied` +
   `_gpuKehraus` · `_foundryAuftrag` · `_foundrySchale` · BRUCH = EIN Melder (`_stoffBruch` → `_bruchMelden`) · ANKUNFT = EIN Schreiber des
@@ -118,7 +119,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 21. **Die Licht-Kette ist EINE Eichung:** Paletten-Hex = sRGB, Albedo linear (FARB-GESETZ: foundry-core, fachwerk · porta · vehicle ·
     schmiede); die Welt fügt nur den echten Himmel als EINE Umgebung hinzu, Fill · Rim · Back leben im Labor; Belichtung aus dem Licht
     (die Karte mittags auf Mittelgrau, die Stufen der Tag-Achse gegen die REF spec/farbe/tag-ref.json); Albedo `werkbank albedo` / `diag-albedo-tafel --labor` (Karte 0,180), Verhältnisse
-    `werkbank licht` — nie das Auge. Heute trägt die Eichung den Mesh-Lichtweg; Feld/Panorama, Wasser und die Karten-Sonne rechnen eigen (W7).
+    `werkbank licht` — nie das Auge. Die Eichung trägt den Mesh-Lichtweg und den EINEN Baustein der Pässe (`_weltLicht`: dieselben Quellen,
+    die Sonne hinter dem Schatten jedes Mesh-Empfängers); heute rechnet die Karten-Sonne eigen (W7).
 22. **Der sichtbare Boden ist das Mesh:** Surface-Nets auf 1,8 m trägt die Feinform nicht (±0,2 m); was AUF dem Boden steht, liest
     `_bodenSichtAt` (gebautes Mesh, je Ecke die oberste Fläche aus Eigner und Nachbarn), Körper stehen auf dem Gesetz; r184 rechnet den
     positionNode VOR der Instanz-Matrix (am Vendor entschieden, integ-547 08b57ed8; `gate:foundry-impostor` C4): dort sind

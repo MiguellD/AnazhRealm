@@ -582,7 +582,9 @@ class AnazhRealm_wasser_hydro {
 
     // DER BLICK DES WASSERS (K16, EIN Baustein für den Wasser-Stoff und den Fern-Ring): was die Fläche mit der Normale `n`
     // dem Auge `viewDir` zurückwirft, über dem Grund mit dem Durchlass `T` — der Körper im Licht des Orts (R∞ × E/π), soweit
-    // er den Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Liefert { eigen, fres }.
+    // er den Grund deckt (1 − T) und nicht gespiegelt wird (1 − F); der Himmel × F; der Glanz. Jedes Licht kommt aus dem EINEN
+    // Baustein am Wasser-Punkt `o.ort` (`_weltLicht`: die Sonne hinter dem Schatten des Orts, Himmel, Umgebung) — bis w4 glänzte
+    // das Wasser in einer eigenen Sonne (`max(0,22, Stärke)`) und ohne Schatten. Liefert { eigen, fres, licht }.
     // DAS EIS (stoffe.K3): die Deckung `o.eis` (`_eisDeckung`) legt über das Wasser die gefrorene Fläche — deckend, ihr Körper
     // der Schnee der Boden-Palette im Licht des Orts, der Himmel nach demselben Fresnel (n Eis 1,31 ≈ n Wasser 1,33); wo sie
     // deckt, trägt dieselbe Fläche den Körper (`_eisAt`).
@@ -590,6 +592,10 @@ class AnazhRealm_wasser_hydro {
         const { float, vec2, vec3, vec4, normalize, reflect, max, dot, pow, clamp, texture, step, mix } = TSL;
         const HG =
             AnazhRealm.Gesetz("terrain:HIMMEL_GESETZ", null) || AnazhRealm._kernPflichtBruch("terrain:HIMMEL_GESETZ");
+        const WL = this._weltLicht();
+        const sicht = WL.sicht(o.ort);
+        const licht = WL.at(vec3(0, 1, 0), sicht);
+        const sonne = WL.sonne(sicht);
         // Schlick-Fresnel (WASSER_GESETZ): fres = f0 + f1·(1−n·v)^f2 — EIN Fresnel für Spiegel UND Durchlass.
         const ndvW = clamp(dot(o.n, o.viewDir), 0.0, 1.0);
         const fres = float(WG.fresnel[0]).add(
@@ -624,21 +630,22 @@ class AnazhRealm_wasser_hydro {
         // Wasser die Zenit-Tönung × die SONNEN-Stärke (uLight 7,4): 3–5× über dem Himmel, weiß wie Eis (Blick-Tour 07).
         const _R = reflect(o.viewDir.negate(), o.n);
         const _Rh = normalize(vec3(_R.x, max(_R.y, float(HG.hor[0])), _R.z));
-        const himmel = sp.rgb.mul(deckt).add(this._atmoLutBau().himmelFarbe(_Rh).mul(float(1).sub(w)));
-        // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn aus dem Gesetz, die Sonne selbst
-        // (Rayleigh-Farbe sunCol × ihre Stärke light).
-        const spec = pow(max(dot(reflect(normalize(o.sunDir).negate(), o.n), o.viewDir), 0.0), float(WG.spec[0]));
-        const glanz = o.sunCol.mul(spec).mul(WG.spec[1]).mul(o.light);
+        const himmel = sp.rgb.mul(deckt).add(WL.himmelLicht(_Rh).mul(float(1).sub(w)));
+        // W10 — der Sonnen-Glitzer der Vorlage: reflect-basiert, Exponent/Gewinn aus dem Gesetz, die Sonne des Bausteins
+        // (ihre Farbe × Stärke, hinter dem Schatten des Orts).
+        const spec = pow(max(dot(reflect(sonne.richtung.negate(), o.n), o.viewDir), 0.0), float(WG.spec[0]));
+        const glanz = sonne.strahlung.mul(spec).mul(WG.spec[1]);
         const eigen = o.koerper
-            .mul(o.irr)
+            .mul(licht)
             .mul(float(1.0).sub(o.T))
             .mul(float(1.0).sub(fres))
             .add(himmel.mul(fres))
             .add(glanz);
         const eis = o.eis;
         return {
-            eigen: mix(eigen, mix(vec3(...AnazhRealm.BODEN_FARBE.schnee).mul(o.irr), himmel, fres), eis),
+            eigen: mix(eigen, mix(vec3(...AnazhRealm.BODEN_FARBE.schnee).mul(licht), himmel, fres), eis),
             fres: mix(fres, float(1.0), eis),
+            licht,
         };
     }
 

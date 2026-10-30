@@ -378,8 +378,10 @@ function kostenTabelle(nach, vor) {
 // cameraPosition, normalView …), zählt er als `bibliothek`, sonst als `verborgen` (ein Rumpf des Spiels, den der Graph
 // nicht sieht — dort könnte ein Rauschen wohnen). Ausgenommen sind die ZWEIGE des Stamms (`zweige`: die Rümpfe von
 // `AnazhRealm._zweigTSL`, K17-2) — ihr Rumpf liest nur seine Argumente, und die sind Kinder des Aufrufs: der Graph sieht den
-// Inhalt, gezählt als `zweig`. Rein — läuft in der Seite und im Selbsttest.
-function stoffGraph(stoff, rauschQuelle, tsl, zweige) {
+// Inhalt, gezählt als `zweig`. EIN BAUSTEIN (`marken`: Knoten → seine Eingaben, das Licht der Welt `_weltLicht`) zählt als
+// `baustein`, nur seine Eingaben laufen weiter; `uniformen` (eine Liste des Rufers) sammelt jede Uniform außerhalb. Rein — läuft
+// in der Seite und im Selbsttest.
+function stoffGraph(stoff, rauschQuelle, tsl, zweige, marken, uniformen) {
     const ist = new RegExp(rauschQuelle, "i");
     const aus = {
         slots: [],
@@ -390,6 +392,7 @@ function stoffGraph(stoff, rauschQuelle, tsl, zweige) {
         verborgen: 0,
         bibliothek: 0,
         zweig: 0,
+        baustein: 0,
     };
     if (!stoff) return Object.assign(aus, { fehler: "kein Stoff" });
     const bib = new Set();
@@ -415,9 +418,15 @@ function stoffGraph(stoff, rauschQuelle, tsl, zweige) {
     const gesehen = new Set();
     while (stapel.length) {
         const n = stapel.pop();
-        if (gesehen.has(n.id)) continue;
+        if (!n || !n.isNode || gesehen.has(n.id)) continue;
         gesehen.add(n.id);
+        if (marken && marken.has(n)) {
+            aus.baustein++;
+            stapel.push(...marken.get(n));
+            continue;
+        }
         aus.knoten++;
+        if (n.isUniformNode && uniformen) uniformen.push(n);
         let name = null;
         if (n.isShaderCallNodeInternal === true) {
             const lay = n.shaderNode && n.shaderNode.layout;
@@ -891,7 +900,7 @@ module.exports = {
         mxLookup3.toString() +
         `window.__shaderKosten = ${shaderKostenSeite.toString()};` +
         `window.__rauschProbe = ${rauschProbe.toString()};` +
-        `window.__stoffGraph = (stoff) => (${stoffGraph.toString()})(stoff, ${JSON.stringify(RAUSCH_NAME.source)}, window.THREE.TSL, ` +
+        `window.__stoffGraph = (stoff, ...m) => (${stoffGraph.toString()})(stoff, ${JSON.stringify(RAUSCH_NAME.source)}, window.THREE.TSL, ` +
         `window.anazhRealm && typeof window.anazhRealm.constructor._zweigTSL === "function" ? ` +
-        `[window.anazhRealm.constructor._zweigTSL(window.THREE.TSL).shaderNode] : []);`,
+        `[window.anazhRealm.constructor._zweigTSL(window.THREE.TSL).shaderNode] : [], ...m);`,
 };

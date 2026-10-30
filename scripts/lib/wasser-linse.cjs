@@ -1286,12 +1286,10 @@ async function wasserBild(o = {}) {
     const gefuehlAlt = U.emotion ? U.emotion.value : null;
     if (U.emotion) U.emotion.value = 0;
     const WL = Object.values(r._weltLicht().U), wlAlt = WL.map((u) => (u.value.clone ? u.value.clone() : u.value));
-    const lichtAlt = U.light.value;
     const mess = async (zeit) => {
         U.time.value = zeit;
         WL.forEach((u) => (u.value = u.value.clone ? u.value.setScalar(0) : 0));
-        r._weltLicht().U.ambientFarbe.value.setScalar(Math.PI); // das Licht der Welt E/π = 1 (allein Ambient π)
-        U.light.value = 0;
+        r._weltLicht().U.ambientFarbe.value.setScalar(Math.PI); // das Licht der Welt E/π = 1 (allein Ambient π, ohne Sonne kein Glanz)
         // DAS BILD OHNE SCHAUM: derselbe Frame mit dem Schaum-Faktor des Gesetzes auf 0 (foamD × (1 +
         // uEmotion), uEmotion −1) — „hell" zählt nur, wo der SCHAUM das Pixel hebt, nie der Himmel im Fresnel des
         // Streiflichts
@@ -1352,7 +1350,6 @@ async function wasserBild(o = {}) {
         if (U.wind) U.wind.value = windAlt;
         U.time.value = zeitAlt;
         WL.forEach((u, i) => (u.value = u.value.copy ? u.value.copy(wlAlt[i]) : wlAlt[i]));
-        U.light.value = lichtAlt;
         himmelMittag(tagAlt, weltTagAlt);
         if (U.emotion) U.emotion.value = gefuehlAlt;
         geom.dispose();

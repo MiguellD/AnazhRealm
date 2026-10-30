@@ -3,7 +3,7 @@
 // 10 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 // GROSSE Strukturen (Dorf/Tempel/Wasserfall) spawnen nicht AUF dem Spieler (Chunk-Remesh →
 // Durchfall), kleine Platzierungen unberührt; ein Void-Boden holt aus jedem Durchfall zurück.
@@ -334,13 +334,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!ring6Results || ring6Results.error) {
-        check(
-            "Ring 6: Architecture-Snapshot erreichbar",
-            false,
-            ring6Results && ring6Results.error ? ring6Results.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 6: Architecture-Snapshot erreichbar", ring6Results)) {
         check("Ring 6: spawnArchitecture(haus_basis-Substanz) liefert Group", ring6Results.villageBuilt);
         check(
             "Ring 6: Haus ist vollständig (≥5 Substanz-Teile: Wände + Dach; Render gemergt)",
@@ -461,13 +455,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!ring63Results || ring63Results.error) {
-        check(
-            "Ring 6.3: Kollisions-Snapshot erreichbar",
-            false,
-            ring63Results && ring63Results.error ? ring63Results.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 6.3: Kollisions-Snapshot erreichbar", ring63Results)) {
         check("Ring 6.3: Architektur hat Mesh nach Spawn", ring63Results.entryHasMesh);
         check("Ring 6.3: Architektur hat feld-native Kollision via blockerAABBs", ring63Results.entryHasCollision);
         check(
@@ -662,13 +650,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!ring64Results || ring64Results.error) {
-        check(
-            "Ring 6.4: Bauplan-Snapshot erreichbar",
-            false,
-            ring64Results && ring64Results.error ? ring64Results.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 6.4: Bauplan-Snapshot erreichbar", ring64Results)) {
         check(
             "Ring 6.4: Alle 8 Primitive (box/sphere/cylinder/cone/pyramid/octahedron/plane/torus) renderbar",
             ring64Results.allShapesRender
@@ -785,13 +767,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!ring65Results || ring65Results.error) {
-        check(
-            "Ring 6.5: Hotbar-Snapshot erreichbar",
-            false,
-            ring65Results && ring65Results.error ? ring65Results.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 6.5: Hotbar-Snapshot erreichbar", ring65Results)) {
         check("Ring 6.5: #hotbar im DOM", ring65Results.hotbarInDom);
         check("Ring 6.5: Hotbar hat 9 Slots", ring65Results.hotbarHasNineSlots);
         check("Ring 6.5: Default-Hotbar = der Start-Gurt aus dem Katalog (_startGurt)", ring65Results.defaultHotbar);
@@ -932,13 +908,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!ring66Results || ring66Results.error) {
-        check(
-            "Ring 6.6: Werkstatt-Snapshot erreichbar",
-            false,
-            ring66Results && ring66Results.error ? ring66Results.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 6.6: Werkstatt-Snapshot erreichbar", ring66Results)) {
         check("Ring 6.6: Werkstatt-Tab in Topbar", ring66Results.workshopTabInDom);
         check("Ring 6.6: Werkstatt-Drawer im DOM", ring66Results.workshopDrawerInDom);
         check("Ring 6.6: #workshop-list im DOM", ring66Results.workshopListInDom);
@@ -1115,13 +1085,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (!ring6v2Results || ring6v2Results.error) {
-        check(
-            "Ring 6 V2: Snapshot erreichbar",
-            false,
-            ring6v2Results && ring6v2Results.error ? ring6v2Results.error : "page.evaluate fehlgeschlagen"
-        );
-    } else {
+    if (erreichbar(check, "Ring 6 V2: Snapshot erreichbar", ring6v2Results)) {
         // Culling
         check("Ring 6 V2: Nahe Struktur hat Mesh", ring6v2Results.nearHasMesh);
         check("Ring 6 V2: Weite Struktur startet 'cold'", ring6v2Results.farIsCold);

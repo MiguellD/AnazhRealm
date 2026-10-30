@@ -1181,7 +1181,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
         return out;
     });
 
-    if (translatorResults && !translatorResults.error) {
+    if (erreichbar(check, "KI-Übersetzer: Phase-1-Tests laufen", translatorResults)) {
         check(
             "KI-Übersetzer: _buildTranslatorPrompt nennt das Manifest-Schema (id/label/dsl)",
             translatorResults.promptNamesSchema
@@ -1245,8 +1245,6 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
             "KI-Übersetzer: Übersetzer-Sektion (Eingabe + Knopf + Review) im DOM",
             translatorResults.uiTranslatorSection
         );
-    } else {
-        check("KI-Übersetzer: Phase-1-Tests laufen", false, translatorResults ? translatorResults.error : "no result");
     }
 
     // ### KI-Übersetzer Phase 2 — die Welt bekommt einen Körper ###
@@ -1414,7 +1412,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
         return out;
     });
 
-    if (transl2Results && !transl2Results.error) {
+    if (erreichbar(check, "KI-Übersetzer P2: Phase-2-Tests laufen", transl2Results)) {
         check("KI-Übersetzer P2: PORTAL_TRANSLATED_WORLD-Konstante", transl2Results.constant);
         check(
             "KI-Übersetzer P2: _buildSceneTranslatorPrompt nennt das Szenen-Schema",
@@ -1473,8 +1471,6 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
             "KI-Übersetzer P2: renderLibraryUI rendert 'Welt aufbauen' bzw. nach dem Aufbau 'Portal holen' + 'neu aufbauen'",
             transl2Results.uiBuildButton && transl2Results.uiBuiltCard
         );
-    } else {
-        check("KI-Übersetzer P2: Phase-2-Tests laufen", false, transl2Results ? transl2Results.error : "no result");
     }
 
     // ### Untrusted-Welt-Tor: echte fremde Engine, null-origin ###
@@ -1582,7 +1578,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
         return out;
     });
 
-    if (sandboxResults && !sandboxResults.error) {
+    if (erreichbar(check, "Untrusted-Tor: V8.70-Tests laufen", sandboxResults)) {
         check(
             "Untrusted-Tor: WORLD_REGISTRY.schwarm existiert + trust:sandboxed + desc + dsl",
             sandboxResults.registryEntry
@@ -1626,8 +1622,6 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
         );
         check("Untrusted-Tor: trust überlebt den buildStateSnapshot/loadState-Rundlauf", sandboxResults.trustRoundtrip);
         check("Untrusted-Tor: renderLibraryUI rendert eine Schwarm-Welt-Karte", sandboxResults.uiSchwarmCard);
-    } else {
-        check("Untrusted-Tor: V8.70-Tests laufen", false, sandboxResults ? sandboxResults.error : "no result");
     }
 
     // ### der Auto-Vendor-Pfad ###
@@ -1741,7 +1735,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
         return out;
     });
 
-    if (vendorResults && !vendorResults.error) {
+    if (erreichbar(check, "W15 Auto-Vendor: Phase-1-Tests laufen", vendorResults)) {
         check("W15 Auto-Vendor: _vendorSanitizeBundle akzeptiert ein sauberes Bündel", vendorResults.sanitizeOk);
         check("W15 Auto-Vendor: _vendorSanitizeBundle lehnt eine ungültige Welt-id ab", vendorResults.rejectsBadId);
         check(
@@ -1797,8 +1791,6 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
             "W15 Auto-Vendor: die 'Welt andocken'-Sektion (id + Ordner-Picker + Knopf) im DOM",
             vendorResults.uiVendorSection
         );
-    } else {
-        check("W15 Auto-Vendor: Phase-1-Tests laufen", false, vendorResults ? vendorResults.error : "no result");
     }
 
     // ### der GitHub-Fetch ###
@@ -1901,7 +1893,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
         return out;
     });
 
-    if (vendor2Results && !vendor2Results.error) {
+    if (erreichbar(check, "W15 GitHub-Fetch: Phase-2-Tests laufen", vendor2Results)) {
         check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine ungültige Welt-id ab", vendor2Results.rejectsBadId);
         check("W15 GitHub-Fetch: vendorWorldFromRepo lehnt eine Built-in-id ab", vendor2Results.rejectsReservedId);
         check(
@@ -1933,8 +1925,6 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
             "W15 GitHub-Fetch: die repo-vendorte Welt überlebt den localStorage-Rundlauf",
             vendor2Results.roundtripKeepsTrust
         );
-    } else {
-        check("W15 GitHub-Fetch: Phase-2-Tests laufen", false, vendor2Results ? vendor2Results.error : "no result");
     }
 }
 

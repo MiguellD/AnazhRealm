@@ -879,6 +879,7 @@ if (require.main === module) hauptLauf(async () => {
             await timed(BAND.checkBandSzeneSkala, ctx);
             await timed(BAND.checkBandHimmelTag, ctx);
             await timed(BAND.checkBandSchattenTakt, ctx);
+            await timed(BAND.checkBandLichtBaustein, ctx);
             await timed(BAND.checkBandReglerSim, ctx);
             await timed(BAND.checkBandRezeptKatalog, ctx);
             await timed(BAND.checkBandSchrittKlang, ctx);

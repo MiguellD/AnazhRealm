@@ -1,11 +1,12 @@
 "use strict";
 // scripts/playtest/bild.cjs — der Richter von Bild (spec/stamm/modul-karte.json): Renderer · TAAU und die EINE Skala · Ausgabe · Post · Schatten-Kaskaden · Pass-Wahl · Schirm · GPU-Kehraus · Bündel- und Zeichen-Reihe · Szene-Tiefe · Spiegel · Feld-Pass · Panorama · Höhlen-Sicht · Tag-Nacht · Atmosphäre · Himmelskörper · Sterne · Saison · Regen.
-// 10 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
+// 11 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
 const path = require("path");
+const SK = require("../lib/shader-kosten.cjs");
 const stammLib = require("../lib/stamm.cjs");
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
 // Emotion treibt die Welt KONTINUIERLICH (Licht + Wasser), geprüft als KONSUM: der Welt-Tint liest
@@ -140,7 +141,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }
         return out;
     });
 
-    if (wave6g3Results && !wave6g3Results.error) {
+    if (erreichbar(check, "Welle 6.G3: alle Tests laufen", wave6g3Results)) {
         // --- a) Tag-Nacht
         check(
             "Welle 6.G3.a: dayLengthMinutes == DAY_LENGTH_DEFAULT (die EINE Konstante)",
@@ -189,8 +190,6 @@ async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }
             "Welle 6.G3.b: tickWeatherTransition löscht Transition bei progress=1",
             wave6g3Results.transitionClearedOnComplete
         );
-    } else {
-        check("Welle 6.G3: alle Tests laufen", false, wave6g3Results ? wave6g3Results.error : "no result");
     }
 
     // ### Welle 6.G3 V2 — Vision-Invarianten ###
@@ -366,7 +365,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }
         return out;
     });
 
-    if (wave6g3v2Results && !wave6g3v2Results.error) {
+    if (erreichbar(check, "Welle 6.G3 V2: Vision-Tests laufen", wave6g3v2Results)) {
         check(
             "Welle 6.G3 V2 Vision: Affinity-Pick wählt magieSoul in magie-Welt (>66%, 30 Runs)",
             wave6g3v2Results.affinityPicksMagieInMagieField
@@ -401,8 +400,6 @@ async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }
             "Welle 6.G3 V2 Vision: magie-Welt-Region hebt Sky-Blau (vs dichte-Region)",
             wave6g3v2Results.magieFieldRaisesBlue
         );
-    } else {
-        check("Welle 6.G3 V2: Vision-Tests laufen", false, wave6g3v2Results ? wave6g3v2Results.error : "no result");
     }
 }
 
@@ -505,7 +502,7 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
         return out;
     });
 
-    if (v827Results && !v827Results.error) {
+    if (erreichbar(check, "Tiefe-Welle Tests laufen", v827Results)) {
         check(
             "V8.27/D3: die Luft streut den Himmel der EINEN Atmosphäre, _applyDayNightToScene setzt sein Licht",
             v827Results.fogColorSet
@@ -521,8 +518,6 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
             "V8.28/234: Architektur-Material reagiert auf Licht (MeshToon ODER MeshStandard/PBR)",
             v827Results.architectureUsesLambert
         );
-    } else {
-        check("Tiefe-Welle Tests laufen", false, v827Results ? v827Results.error : "no result");
     }
 
     // ### V8.28 6.G4.b — Welt-Atem-Vollendung (Sterne/Terrain/Cel/Wind/Wolken/Wasser) ###
@@ -697,7 +692,7 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
         return out;
     });
 
-    if (v828Results && !v828Results.error) {
+    if (erreichbar(check, "Welt-Atem-Vollendung Tests laufen", v828Results)) {
         check("D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
         check("D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
         check(
@@ -761,8 +756,6 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
             "Slider-Headroom — Kavitäts-AO/Oberflächen-Textur clampen auf 2.0, nicht 1.0",
             v828Results.sliderHeadroom
         );
-    } else {
-        check("Welt-Atem-Vollendung Tests laufen", false, v828Results ? v828Results.error : "no result");
     }
 
     // ### Die lebendige Welt (Instanced-Gras, Avatar-Hide,
@@ -901,7 +894,7 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
         return out;
     });
 
-    if (v829Results && !v829Results.error) {
+    if (erreichbar(check, "Die lebendige Welt Tests laufen", v829Results)) {
         {
             const e = v829Results.egoEbene || {};
             check(
@@ -927,8 +920,6 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
         check("Genesis-Plattform-Architektur nach Spawn vorhanden", v829Results.genesisArchExists);
         check("_ensureGenesisPlatform ist idempotent (keine Doppel-Plattform)", v829Results.genesisIdempotent);
         check("state.waterLevel ist gesetzt (adaptiv)", v829Results.waterAdaptive);
-    } else {
-        check("Die lebendige Welt Tests laufen", false, v829Results ? v829Results.error : "no result");
     }
 
     // ### Welle 6.G4.e: Tauchen + Schwimm-Animation + Gerstner ###
@@ -1032,7 +1023,7 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
         return out;
     });
 
-    if (v833Results && !v833Results.error) {
+    if (erreichbar(check, "Wasser-Vollendung Tests laufen", v833Results)) {
         check("Tauchen — Shift erzeugt Sink-Geschwindigkeit", v833Results.diveSinks);
         check("Auftauchen — Space erzeugt Aufwärts-Geschwindigkeit", v833Results.riseLifts);
         check("Neutral — natürlicher Auftrieb treibt zur Oberfläche", v833Results.neutralFloats);
@@ -1046,8 +1037,6 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
         check("Schwimm-Pose wird an Land zurückgesetzt (rotation.x=0)", v833Results.humanSwimReset);
         check("(NULL): Wolf-Körper neigt sich unter Wasser (Schwimm-Pose)", v833Results.phoenixSwimLean);
         check("(NULL): Bär-Körper neigt sich unter Wasser (Schwimm-Pose)", v833Results.dragonSwimLean);
-    } else {
-        check("Wasser-Vollendung Tests laufen", false, v833Results ? v833Results.error : "no result");
     }
 }
 
@@ -1074,11 +1063,9 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
         stammLib.dateien(path.join(SKRIPTE, ".."))
     );
 
-    if (v840Results && !v840Results.error) {
+    if (erreichbar(check, "Regler-Tests laufen", v840Results)) {
         check("V8.40/E2: Sicht-Ring-Regler 1–12, Default 4 (9×9)", v840Results.ringSliderRange);
         check("jede Stamm-Datei mit Cache-Buster ?v= eingebunden", v840Results.cacheBust);
-    } else {
-        check("Regler-Tests laufen", false, v840Results ? v840Results.error : "no result");
     }
 
     // ### Shadow-Bias gegen Shadow-Acne auf flachen Flächen (der Wetter-Blend V8.46 lebt in koerper-seele D5a) ###
@@ -1147,15 +1134,13 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
         return out;
     });
 
-    if (v848Results && !v848Results.error) {
+    if (erreichbar(check, "Terrain-Schatten-Tests laufen", v848Results)) {
         check("Light-Target im Szenengraph", v848Results.targetInScene);
         check("Shadow-Frustum folgt dem Spieler (Target = Spieler-xz, ±Texel)", v848Results.shadowFollowsPlayer);
         check(
             "Perf-2.b: Stable-Shadow-Snap — Sub-Texel-Bewegung verschiebt Target NICHT",
             v848Results.shadowSnapStable
         );
-    } else {
-        check("Terrain-Schatten-Tests laufen", false, v848Results ? v848Results.error : "no result");
     }
 
     // ### updateCreatures-Politur (Off-Screen-Sparsamkeit + Distanz-LOD) ###
@@ -1199,12 +1184,10 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
         return out;
     });
 
-    if (v849Results && !v849Results.error) {
+    if (erreichbar(check, "updateCreatures-Politur-Tests laufen", v849Results)) {
         check("updateCreatures läuft mit 60 Kreaturen ohne Crash", v849Results.noCrash, v849Results.err);
         check("Kreaturen bewegen sich weiterhin (Verhalten erhalten)", v849Results.creaturesMoved);
         check("alle Kreatur-Positionen endlich (keine NaN)", v849Results.allFinite);
-    } else {
-        check("updateCreatures-Politur-Tests laufen", false, v849Results ? v849Results.error : "no result");
     }
 
     // ### Welle 6.X.4 B3 + D2 — Stats-HUD + Slider ###
@@ -1353,7 +1336,7 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
         return out;
     });
 
-    if (wave6x4cResults && !wave6x4cResults.error) {
+    if (erreichbar(check, "Welle 6.X.4 V8.16: Rolle-Synergie-Tests laufen", wave6x4cResults)) {
         check("Welle 6.X.4 V8.16: Leere opChain → keine Domain-Counts", wave6x4cResults.emptyChainNoDomain);
         check(
             "Welle 6.X.4 V8.16: Schmiede-Hammer-Anwendung erhöht forging-Count",
@@ -1366,15 +1349,9 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
             "Spec-Sheet: der Wachstums-Hinweis spiegelt die Domain nach Schmiede-Hammer-Op",
             wave6x4cResults.domainBarsAppearAfterOp
         );
-    } else {
-        check(
-            "Welle 6.X.4 V8.16: Rolle-Synergie-Tests laufen",
-            false,
-            wave6x4cResults ? wave6x4cResults.error : "no result"
-        );
     }
 
-    if (wave6x4bResults && !wave6x4bResults.error) {
+    if (erreichbar(check, "Welle 6.X.4 B3+D2: Stats-HUD + Slider-Tests laufen", wave6x4bResults)) {
         check("Welle 6.X.4 B3: #stats-hud im DOM", wave6x4bResults.statsHudExists);
         check("Welle 6.X.4 B3: #stats-hud-stam-fill SVG-Element existiert", wave6x4bResults.statsHudStamFillExists);
         check("Welle 6.X.4 B3: HP-Text zeigt 50/100 nach Setzen", wave6x4bResults.hpTextShowsRatio);
@@ -1395,12 +1372,6 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
         );
         check("Welle 6.X.4 D2: Ring-Slider ändert state.chunkRingRadius", wave6x4bResults.ringSliderUpdates);
         check("Welle 6.X.4 D2: Ring-Wert-Display zeigt '7×7' bei value=3", wave6x4bResults.ringValueDisplaysCorrectly);
-    } else {
-        check(
-            "Welle 6.X.4 B3+D2: Stats-HUD + Slider-Tests laufen",
-            false,
-            wave6x4bResults ? wave6x4bResults.error : "no result"
-        );
     }
 }
 
@@ -1947,6 +1918,72 @@ async function checkBandSchattenTakt({ page, check }) {
     );
 }
 
+// DIE LICHTWEGE (Licht K3, w4): jeder Pass nimmt sein Licht aus dem EINEN Baustein (`_weltLicht`) — Wasser, Fern-Wasser, Feld-March
+// und Panorama, GPU-frei gebaut (der Spiegel baut nur am WebGPU-Abbild der Szene: seine Zeilen misst die Station, `werkbank licht
+// --laub spiegel`). Der Läufer geht jeden Knoten ab den Slots des Stoffs; ein Knoten des Bausteins (seine Marke) zählt, nur seine
+// Eingaben laufen weiter. ROT beim Namen: ein Pass ohne Baustein · eine Größe des Lichts am Baustein vorbei (Uniform oder Textur des
+// Bausteins, des Himmels, der Atmosphäre, der Horizont-Karte, die Wind-Sonne oder ein Licht der Szene selbst) · eine Uniform des
+// Passes, die der Uhr folgt (Mittag → Abend → Dämmerung über das Spieler-Wort: ein eigener Schreiber des Lichts); frei sind die EINE
+// Luft und Wind und Eis des Wassers. An 34ad22a5 17 Befunde: das Wasser las die Atmosphäre direkt, seine eigene Sonne folgte der Uhr.
+async function checkBandLichtBaustein({ page, check }) {
+    await page.evaluate(SK.SHADER_INSTALL);
+    const a = await safeEvaluate(page, () => {
+        const [T, WL, dl, he, uhr, seam] = [window.THREE, r._weltLicht(), st.directionalLight, st.hemiLight, st.timeOfDay, window.__anazhFernRing];
+        window.__anazhFernRing = true; // der Pass unter dem Linsen-Seam (der Null-Renderer zeichnet nie)
+        const fp = r._feldPassEnsure(st.fernRing || {});
+        window.__anazhFernRing = seam;
+        const P = { wasser: r._ensureHydroSurfaceMaterial(), "fern-wasser": { emissiveNode: r._fernWasserBlickNode(T.TSL) }, march: fp.matMarch, panorama: fp.mat };
+        const N = new Map();
+        const nimm = (o) => Object.entries(o).forEach(([h, x]) => Object.entries(x || {}).forEach(([k, v]) => v && N.set(v, `${h}.${k}`)));
+        nimm({ weltLicht: WL.U, skyboxUniforms: st.skyboxUniforms, atmoLut: st.atmoLut.U, horizontKarte: (st.horizontKarte || {}).U, windUniforms: { uSunDir: st.windUniforms.uSunDir }, directionalLight: { color: dl.color, position: dl.position }, ambientLight: { color: st.ambientLight.color }, hemiLight: { color: he.color, groundColor: he.groundColor } });
+        const L = new Set(N.keys());
+        nimm({ hydroSurfaceUniforms: st.hydroSurfaceUniforms, feldPass: fp.U, luft: (st.luft || {}).U });
+        const wert = (u) => JSON.stringify(u.value && u.value.toArray ? u.value.toArray() : u.value);
+        const urteil = () => {
+            const [b, vor] = [[], []];
+            for (const [p, m] of Object.entries(P)) {
+                const u = [];
+                const g = window.__stoffGraph(m, WL.marken, u);
+                if (!g.baustein) b.push(p + ": liest den Baustein nicht");
+                for (const x of u) if (L.has(x) || L.has(x.value)) b.push(`${p}: ${N.get(x) || N.get(x.value)} am Baustein vorbei`);
+                    else vor.push([p, x, wert(x)]);
+                for (const t in g.texturen) if (/^(welt-licht|atmo-|horizont)/.test(t)) b.push(`${p}: Textur ${t} am Baustein vorbei`);
+                b.zahl = (b.zahl || "") + ` ${p} ${g.baustein}`;
+            }
+            for (const t of [0.27, 0.05, uhr]) {
+                r.setTimeOfDay(t, "human");
+                for (const [p, x, w] of vor) {
+                    const f = `${p}: ${N.get(x) || "Uniform #" + x.id} folgt der Uhr`;
+                    if (t !== uhr && wert(x) !== w && !/(luft|\.wind|\.eis)/.test(f) && !b.includes(f)) b.push(f);
+                }
+            }
+            return b;
+        };
+        // DIE MUTANTEN in EINEM Lauf: ein eigener Term (die Himmels-Sonne im Panorama), ein Pass ohne Baustein (der March im
+        // Licht der Szene), ein eigener Schreiber (die Wasser-Sonne vor w4: Farbe × max(0,22, Stärke), je Anwendung des Tags)
+        const [alt, u] = [[P.panorama.outputNode, P.march.outputNode, P.wasser.colorNode], T.TSL.uniform(new T.Color())];
+        const echt = urteil();
+        try {
+            P.panorama.outputNode = alt[0].mul(T.TSL.vec4(st.skyboxUniforms.sunCol, 1));
+            P.march.outputNode = T.TSL.vec4(T.TSL.uniform(dl.color), 1);
+            P.wasser.colorNode = alt[2].add(T.TSL.vec4(u, 0));
+            r._dayNightApplyWaterMaterials = () => u.value.copy(dl.color).multiplyScalar(Math.max(0.22, dl.intensity));
+            return { echt, zahl: echt.zahl, mutant: urteil().join() };
+        } finally {
+            [P.panorama.outputNode, P.march.outputNode, P.wasser.colorNode] = alt;
+            delete r._dayNightApplyWaterMaterials;
+            r.setTimeOfDay(uhr, "human");
+        }
+    });
+    const [e, m] = a ? [a.echt, a.mutant] : [["keine Antwort der Seite"], ""];
+    check("Licht-Baustein: Wasser, Fern-Wasser, Feld-March und Panorama nehmen jedes Licht aus dem EINEN Baustein", !e.length, e.join(" · ") || "Baustein-Knoten:" + a.zahl);
+    check(
+        "Licht-Baustein SELBSTTEST: eigener Term, Pass ohne Baustein, eigener Schreiber — ROT beim Namen",
+        /march: liest den Baustein nicht,march: directionalLight.color am.*panorama: skyboxUniforms.sunCol am.*wasser: Uniform #\d+ folgt der Uhr/.test(m),
+        m
+    );
+}
+
 module.exports = {
     checkBandV1731EmotionDrivesWorld,
     checkBandWelle6G3Lebendigkeit,
@@ -1958,4 +1995,5 @@ module.exports = {
     checkBandLookPhysik,
     checkBandHimmelTag,
     checkBandSchattenTakt,
+    checkBandLichtBaustein,
 };

@@ -1860,11 +1860,12 @@ function lab(rgb) {
 // demselben Auge) und im Licht eines Wegs, der den Baustein `_weltLicht` ruft — `panorama` (seine Textur grau), `feld` (ein grauer
 // Kasten im Welt-March), `spiegel` (die Spiegelung einer grauen Wand über Wasser), `wasser` (der Körper: das Bild mit minus ohne sein
 // Licht, ÷ R∞) — je Stunde, ohne Luft und Schatten. Eine Zahl am Namen (`feld0`, `spiegel180`) stellt die Fläche senkrecht, ihre
-// Normale so viele Grad neben dem Azimut der Sonne (0 zur Sonne); `feld` liegt waagrecht. Das Urteil ist absolut (`weg`): 0,9–1,1.
+// Normale so viele Grad neben dem Azimut der Sonne (0 zur Sonne); `feld` liegt waagrecht, die Welt des Spiegels auch (der Boden
+// des Spiegel-Felds im Licht des Boden-Stoffs). Das Urteil ist absolut (`weg`): 0,9–1,1.
 function lichtWeg(opts) {
     return (async () => {
         const T = window.THREE, sc = st.scene, rend = st.renderer, cam = st.camera, fp = st.feldPass;
-        const [, art, grad] = /^([a-z]+)(\d*)$/.exec(opts.weg), senkrecht = grad !== "" || art === "spiegel";
+        const [, art, grad] = /^([a-z]+)(\d*)$/.exec(opts.weg), senkrecht = grad !== "" && art !== "spiegel";
         rend.setAnimationLoop(null);
         if (window.__buehne) window.__buehne();
         if (Number.isFinite(opts.uhr)) (st.world && (st.world.timeOfDay = opts.uhr), r.setTimeOfDay(opts.uhr, "human"));
@@ -1908,7 +1909,9 @@ function lichtWeg(opts) {
         };
         const panoAlt = fp.panoDaten.slice(), WL = Object.values(r._weltLicht().U), wlAlt = WL.map((u) => (u.value.clone ? u.value.clone() : u.value));
         try {
+            // ohne Wurf trägt kein Stoff einen Schatten — der Baustein liest es im Takt (`wurf`): die Pässe messen wie die Karte
             dl.castShadow = false;
+            r._weltLichtTakt();
             luftZurueck = zl.ohneLuft();
             let welt = await lies(karte, senkrecht ? nh.clone().multiplyScalar(-3) : unten, senkrecht);
             let weg;
@@ -1919,7 +1922,8 @@ function lichtWeg(opts) {
             } else if (art === "spiegel") {
                 // DER SPIEGEL: über einer Wasser-Fläche (Feld-Zellen Art 1) 30 m voraus eine graue Wand (18 %, ihre Fläche 45° neben
                 // der Sonne: Sonne und Himmel, kein Glanz der Karte im Rücken des Auges), das Auge 2 m darüber blickt 25° hinab (Öffnung 20°) — jeder gespiegelte Strahl verlässt den Schirm, das
-                // Feld des Spiegel-Passes trägt ihn. Die Welt: dieselbe Karte senkrecht, mit derselben Normale, aus demselben Auge.
+                // Feld des Spiegel-Passes trägt ihn. Die Wand des Felds ist Boden (Art 0): der Spiegel lichtet sie wie der Boden-Stoff (die
+                // geflattete Licht-Normale, ohne Wurf keine Zuwendung, w4) — die Welt ist die Karte waagrecht aus demselben Auge.
                 const S = r._spiegelFeld(), L = r._spiegelLeser(), K = r.constructor.SPIEGEL, n = S.n, alt = [S.daten.slice(), S.stoff.slice(), S.hoechste.slice(), S.mitte, S.hMax];
                 const H = see.position.y - S.bezug, fov = cam.fov;
                 const I0 = Math.floor(o.x / K.texel) - n / 2, J0 = Math.floor(o.z / K.texel) - n / 2, w = (k, k0, a) => (k0 + ((((k - k0) % n) + n) % n) + 0.5) * K.texel - a;
