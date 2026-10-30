@@ -255,6 +255,28 @@ self.onmessage = function (e) {
             // Zustand des Gesetzes (gelaende-core `hoehenRaster`) — der Wirt reicht es dem Export, dessen Gassen ihm folgen
             const raster = G.hoehenRaster(state, msg.x, msg.z, msg.rahmen);
             self.postMessage({ type: "ort-raster-result", requestId: msg.requestId, raster }, [raster.h.buffer]);
+        } else if (msg.type === "ort-weg") {
+            // DER FELDWEG ZWISCHEN ZWEI ORTEN (fahrzeug.K2): das Raster seines Rahmens am Zustand des Gesetzes und sein Lauf
+            // über dem Grund von den Wegen des einen Orts (a) zu denen des anderen (b, fachwerk `wegZwischen`) — beides im
+            // Faden, der Wirt legt die Punkte (`_wegenetzLegen`)
+            if (!self.__fachwerkCore)
+                importScripts((self.__anazhBase || "") + "fachwerk-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
+            const raster = G.hoehenRaster(state, msg.x, msg.z, msg.rahmen);
+            // das Wasser des Gesetzes über die Breite des Wegs (`wegHalbM` um den Punkt des Rasters): das Urteil der Ort-Wahl
+            // (`ortNass`, ohne Erdbau) — am Punkt allein fädelte er zwischen zwei Armen eines Bachs, die Räder im Wasser
+            const nass = (x, z) =>
+                [0, 0, msg.wegHalbM, 0, -msg.wegHalbM, 0, 0, msg.wegHalbM, 0, -msg.wegHalbM].some(
+                    (v, i, R) => i % 2 === 0 && ortNass(msg, null, msg.x + x + v, msg.z + z + R[i + 1])
+                );
+            const pts = self.__fachwerkCore.wegZwischen(raster, msg.a, msg.b, msg.sperren, nass);
+            // je Punkt sein Wasser (dasselbe Urteil) und die Höhe des Gesetzes: die Brücken des Feldwegs (fachwerk `brueckenAmWeg`)
+            self.postMessage({
+                type: "ort-weg-result",
+                requestId: msg.requestId,
+                pts,
+                nass: pts ? pts.map((p) => nass(p.x, p.z)) : null,
+                ys: pts ? pts.map((p) => G.hoehe(state, msg.x + p.x, msg.z + p.z, true)) : null,
+            });
         } else if (msg.type === "stau") {
             // DER STAU IM FADEN (`stauRechnen`): der Voxel-Faden antwortet dem Main (`stau-result`, er trägt die Rückfrage-Nummer),
             // die Felder als Kopie per Transfer (Lehre 24; er behält seine), wenn eines kam, fiel oder neu ist, und die Fenster,

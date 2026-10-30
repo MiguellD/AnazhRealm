@@ -855,6 +855,7 @@ class AnazhRealm_dirigent_takt {
         this._rittSchritt(dt);
         // ein im Flug verlassener Gesetz-Wagen fällt auf der Vertikale des Kerns, bis er steht (Gegenprüfung 07.10.)
         if (this._fahrLos && this._fahrLos.size) this._fahrNachlauf(dt);
+        this._verkehrSchritt(dt); // die Wagen der Städte mit ihren Fahrern (PFLICHT-OFFEN C)
         // DER GESTOSSENE LEIB und LEIB AN LEIB im Sim-Schritt (0710-5): was einen Körper bewegt, läuft im festen Schritt.
         this._kreaturStossSchritt(dt);
         this._leibKontakte();
@@ -1112,6 +1113,7 @@ class AnazhRealm_dirigent_takt {
         const _ct = performance.now();
         this.updateCreatures(delta);
         this._tickBewohner(delta); // die Bewohner der Siedlungen (Meisterkarte mensch.K1)
+        this._tickVerkehr(); // wer einsteigt, heimfährt, aussteigt; der Leib am Steuer (PFLICHT-OFFEN C)
         this._vogelTakt(); // die Vögel des Hör-Kreises (Klang K1: jeder Ruf hat einen Leib)
         this._perfSenseLap("creatures", _ct);
         // DER WETTER-ZUG AUF DER WELT-UHR (wetter.K1, feld.K2#2): je `WETTER_ZUG_SEK` (120 s) der Welt-Uhr (`spielZeit`) EIN Zug
