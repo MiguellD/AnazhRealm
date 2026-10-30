@@ -129,13 +129,16 @@
             }
 
             /* Pergament-Helper: Noise-Filter + warme Vignette. ::before liefert
-           die Faser-Textur, ::after eine weiche Randverdunklung. */
+           die Faser-Textur, ::after eine weiche Randverdunklung.
+           DER SCHATTEN UNTEN RECHTS ist eine NORMALE Schicht (spielgang.K3): als `multiply` (rgba(140,90,30,0.18))
+           verlangte er beim ersten Zeigen eine eigene GPU-Pipeline (Graphite „RadialGradient4 … Multiply“, kalt
+           übersetzt 100–250 ms im GPU-Prozess, Radeon), ein Pergament-Fenster wartete darauf. rgba(70,29,0,0.152)
+           malt dasselbe über dem Pergament-Grund: höchstens 0,8 Stufen Abstand (Mittel 0,24) bei 1896×996 wie 300×996. */
             .parchment {
                 background:
                     radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
-                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(140, 90, 30, 0.18), transparent 70%),
+                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(70, 29, 0, 0.152), transparent 70%),
                     linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
-                background-blend-mode: normal, multiply, normal;
                 position: relative;
                 color: var(--parch-ink);
             }
@@ -825,9 +828,8 @@
                     radial-gradient(circle 4px at 12px calc(100% - 12px), #1a1410 0 60%, transparent 65%),
                     radial-gradient(circle 4px at calc(100% - 12px) calc(100% - 12px), #1a1410 0 60%, transparent 65%),
                     radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
-                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(140, 90, 30, 0.18), transparent 70%),
+                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(70, 29, 0, 0.152), transparent 70%),
                     linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
-                background-blend-mode: normal, normal, normal, normal, normal, multiply, normal;
                 border-radius: 12px;
                 /* der geteilte Drawer-Rahmen (1:1 aus .drawer) — Eisen/Messing-Inset-Ringe. */
                 box-shadow:
@@ -2322,7 +2324,7 @@
                 margin-left: 10px;
             }
 
-            /* Drawer: rechte Pergament-Schriftrolle, slidet rein bei .open. */
+            /* Drawer: Pergament-Schriftrolle unter der Topbar, steht beim Öffnen sofort (siehe .drawer[hidden]). */
             .drawer {
                 position: absolute;
                 /* V18.43 — direkt unter den Hauptbanner gesetzt (Schöpfer „Menü sollte oben direkt an den
@@ -2360,9 +2362,8 @@
                     radial-gradient(circle 4px at 12px calc(100% - 12px), #1a1410 0 60%, transparent 65%),
                     radial-gradient(circle 4px at calc(100% - 12px) calc(100% - 12px), #1a1410 0 60%, transparent 65%),
                     radial-gradient(ellipse 60% 80% at 30% 20%, rgba(255, 250, 220, 0.6), transparent 70%),
-                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(140, 90, 30, 0.18), transparent 70%),
+                    radial-gradient(ellipse 70% 60% at 75% 85%, rgba(70, 29, 0, 0.152), transparent 70%),
                     linear-gradient(135deg, var(--parch-1) 0%, var(--parch-2) 60%, var(--parch-3) 100%);
-                background-blend-mode: normal, normal, normal, normal, normal, multiply, normal;
                 /* Border-Ringe direkt als inset box-shadow — bleibt fest am
                    Element, nicht im scroll-flow. */
                 box-shadow:
@@ -2374,28 +2375,18 @@
                     inset 0 0 0 9px rgba(0, 0, 0, 0.4);
                 padding: 24px 20px 18px 20px;
                 color: var(--parch-ink);
-                transition:
-                    transform 0.32s cubic-bezier(0.2, 0.7, 0.2, 1),
-                    opacity 0.32s ease,
-                    display 0.32s allow-discrete;
-                transform: translateX(0);
-                opacity: 1;
             }
             /* K2 Belegung (21.10.): geschlossen verlässt der Drawer das Rendering — als display:block lagen alle vier mit
                2548 Layout-Objekten im Baum, ihr pulsierendes „⚡ feuert" trug Stil + Layout + Paint in JEDES Bild
-               (Radeon, Mess-Wiese: lebenszyklus p95 4,4 ms). Das Ausschieben hält display bis zum Ende der Transition
-               (allow-discrete), das Einschieben beginnt am @starting-style. */
+               (Radeon, Mess-Wiese: lebenszyklus p95 4,4 ms).
+               DIE SCHUBLADE STEHT SOFORT DA wie das Ich (spielgang.K3): das Ein- und Ausgleiten (transform + opacity, 0,32 s)
+               hob sie für die Dauer auf eine EIGENE Compositor-Ebene, und ihr erstes Raster dort verlangte am kalten Profil
+               einen eigenen Satz Graphite-Pipelines (Rund-Rechteck- und AnalyticClip-Varianten von Pergament, Feldern,
+               Schrift und Pfeil, MSAA, dazu die Deckkraft-Ebene im Compositor) — der GPU-Prozess wartete auf ihre Übersetzung
+               (Radeon: 136 + 27 + 23 ms, Esc danach 248–616 ms). Auf der Ebene der Welt-Oberfläche gemalt braucht sie
+               keine neue Pipeline. */
             .drawer[hidden] {
                 display: none;
-                transform: translateX(110%);
-                opacity: 0;
-                pointer-events: none;
-            }
-            @starting-style {
-                .drawer:not([hidden]) {
-                    transform: translateX(110%);
-                    opacity: 0;
-                }
             }
             .drawer > * {
                 position: relative;
