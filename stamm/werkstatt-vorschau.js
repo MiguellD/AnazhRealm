@@ -30,123 +30,200 @@ class AnazhRealm_werkstatt_vorschau {
         this._workshopRenderTail(selected);
     }
 
+    // DIE BIBLIOTHEK DER WERKSTATT (Studio-Vertrag B8): die Liste ist der EINE Stammbaum (`_stammbaum`) — oben GRIFFBEREIT (die
+    // eigenen Werke und die der Hotbar in ihrer Reihe, `_katalogReihe`, bauen.K1: der erste Klick wählt), darunter je Studio
+    // seine Bereiche und je Bereich seine Teile, wie die Gesetzbücher sie nennen, dann die Werkstatt, das Ultiversum und die
+    // Werke des Wirts ohne Gesetzbuch. Jeder sichtbare Bauplan steht EINMAL als Bauplan-Zeile (`workshop-list-row`; im Baum ein
+    // Verweis, wenn er oben griffbereit steht), ein Teil ohne sichtbaren Bauplan (Werk-Verb, verborgener Träger, ohne Ziel) als
+    // Rezept-Zeile (`workshop-studio-recipe-row`: anschaubar, regelbar). Ein Klick wählt (Vorschau · Regler · Kosten), der Griff
+    // ⤓ legt das Teil in die Welt (`_stammbaumGriff`), ein Kopf klappt seinen Ast (`ws.stammbaumZu`); die Suche liest Zeile, Pfad
+    // und Gesetz (`data-such`, `_applyWorkshopFilter`). Bis 30.10. war die Liste flach, und ein Werk der Ausstattung stand
+    // zweimal (sein Bauplan und sein Rezept).
     _workshopRenderBlueprintList(list, ws) {
-        // Die Liste liest die EINE Katalog-Regel (_katalogSichtbar): Streaming-Varianten (`grown_<art>_v<N>`)
-        // sind Worldgen-Render-Details, keine Baupläne; von Fels-/Kristall-/Glut-Formationen zeigt sie EINEN
-        // Repräsentanten (`*_var0`) — var1+ bleiben in state.blueprints für den Scatter.
-        const blueprintNames = this._katalogReihe(
-            Object.keys(this.state.blueprints).filter((n) => this._katalogSichtbar(n))
-        );
-        // Liste der Baupläne
+        const baum = this._stammbaum();
+        const bps = this.state.blueprints;
+        const zu = ws.stammbaumZu || (ws.stammbaumZu = new Set());
         list.innerHTML = "";
-        for (const name of blueprintNames) {
-            const bp = this.state.blueprints[name];
-            const row = document.createElement("div");
-            row.className = "workshop-list-row" + (name === ws.selectedBlueprint ? " selected" : "");
-            row.setAttribute("data-blueprint", name);
-            // V8.39 — Farb-Sprache: die Bauplan-Zeile leuchtet links in der
-            // Rollen-Farbe → ein Blick sagt, was jeder Bauplan IST.
-            {
-                const rRole = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
-                const rColor = AnazhRealm.BLUEPRINT_ROLE_COLORS[rRole];
-                if (rColor) row.style.borderLeft = `3px solid ${rColor}`;
-            }
-            const nameSpan = document.createElement("span");
-            nameSpan.className = "name";
-            nameSpan.textContent = bp.label || name;
-            const badge = document.createElement("span");
-            badge.className = "badge";
-            badge.textContent = bp.builtIn ? "fest" : "eigen";
-            row.appendChild(nameSpan);
-            row.appendChild(badge);
-            row.addEventListener("click", () => {
-                this.selectBlueprintForEdit(name);
-                this._workshopClosePicker();
+        const hb = (this.state.hotbar || []).length;
+        // griffbereit ist ein sichtbares Ziel des Baums (die Reihe des Spielers bleibt die seines Katalogs)
+        const griff = this._katalogReihe(
+            Object.keys(bps).filter(
+                (n) => baum.zielVon.has(n) && baum.zielVon.get(n).sichtbar && this._katalogRang(n) < hb
+            )
+        );
+        const oben = new Set(griff);
+        const kopf = (ebene, id, text, zahl, pfad) => {
+            const h = document.createElement("div");
+            h.className = "workshop-list-section stammbaum-" + ebene + (zu.has(id) ? " zu" : "");
+            h.setAttribute("data-knoten", id);
+            h.setAttribute("data-pfad", pfad);
+            h.textContent = text || "⚠ ohne Namen";
+            const n = document.createElement("span");
+            n.className = "stammbaum-zahl";
+            n.textContent = String(zahl);
+            h.appendChild(n);
+            h.addEventListener("click", () => {
+                if (zu.has(id)) zu.delete(id);
+                else zu.add(id);
+                this._workshopRenderBlueprintList(list, ws);
             });
-            list.appendChild(row);
+            return h;
+        };
+        if (griff.length) {
+            list.appendChild(kopf("studio", "griffbereit", "Griffbereit", griff.length, ""));
+            for (const n of griff)
+                list.appendChild(this._stammbaumZeile(baum.zielVon.get(n), ws, "griffbereit", false, ["Griffbereit"]));
         }
-        // W-A1 (Katalysator §5) — DIE „STUDIO-REZEPTE"-SEKTION: das LIVE-Buch unter den
-        // Blueprints (jedes Rezept ohne Katalog-Blueprint — heute Farn, Strauch, Fels-Sorten, Klang, Körper, Gattung).
-        this._workshopAppendStudioRecipeSection(list, ws);
-        // V18.36 — den Such-Filter nach dem Neu-Aufbau wieder anwenden (Zeilen neu erzeugt).
+        for (const w of baum.wurzeln) {
+            const zahl = w.kinder.reduce((s, b) => s + b.kinder.length, 0);
+            list.appendChild(kopf("studio", w.id, w.lab, zahl, ""));
+            for (const b of w.kinder) {
+                list.appendChild(kopf("bereich", b.id, b.lab, b.kinder.length, w.id));
+                for (const t of b.kinder)
+                    list.appendChild(
+                        this._stammbaumZeile(t, ws, w.id + "|" + b.id, t.sichtbar && oben.has(t.ziel), [w.lab, b.lab])
+                    );
+            }
+        }
         this._applyWorkshopFilter();
     }
 
-    // Rezept-Ids des LIVE-Buchs OHNE Katalog-Blueprint: gedeckt ist ein Rezept, wenn ein Blueprint unter
-    // seiner Id existiert ODER via KIND_POLICY-Präfix darauf zeigt (baum_eiche → eiche, fahrzeug_gt → gt).
-    // Der Rest (Farn, Strauch, Fels-Sorten …) ist nur hier regelbar (Blume und Gras sind seit KI K2 Natur-Baupläne);
-    // place.mode entscheidet die Welt.
-    _workshopStudioRecipeIds() {
-        const f = this._foundry;
-        if (!f || !f.recipes) return [];
-        const bps = this.state.blueprints || {};
-        const KP = AnazhRealm.KIND_POLICY;
-        const out = [];
-        for (const id in f.recipes) {
-            if (!Object.prototype.hasOwnProperty.call(f.recipes, id)) continue;
-            const rec = f.recipes[id];
-            if (!rec || typeof rec !== "object") continue;
-            if (bps[id]) continue; // ein Blueprint traegt die Id direkt
-            const pol = typeof rec.kind === "string" ? KP[rec.kind] : null;
-            if (pol && pol.prefix && bps[pol.prefix + id]) continue; // Auto-Blueprint zeigt darauf
-            out.push(id);
+    // Die Zeile EINES Teils der Bibliothek: sein Name (der Kopf; der ganze steht im Titel und in der Suche), die Marke (Studio ·
+    // fest · eigen · Rezept · Wesen · Prägung, ⚠ ohne Buch), der Griff ⤓ (nur mit Ziel) und als Titel sein Gesetz (Datei · Anker)
+    // und sein Leser. `verweis`: der Bauplan steht schon griffbereit; `pfadLab`: die Namen seines Pfads (Studio, Bereich) für
+    // die Suche.
+    _stammbaumZeile(t, ws, pfad, verweis, pfadLab) {
+        const bp = t.sichtbar ? this.state.blueprints[t.ziel] : null;
+        const row = document.createElement("div");
+        if (verweis) {
+            row.className = "stammbaum-verweis";
+            row.setAttribute("data-verweis", t.ziel);
+        } else if (bp) {
+            row.className = "workshop-list-row" + (t.ziel === ws.selectedBlueprint ? " selected" : "");
+            row.setAttribute("data-blueprint", t.ziel);
+        } else {
+            row.className = "workshop-studio-recipe-row" + (t.rezept === ws.selectedRecipe ? " selected" : "");
+            row.setAttribute("data-recipe", t.rezept);
         }
-        out.sort();
-        return out;
-    }
-
-    // W-A1 — die Sektion rendern: ein Kopf + je Rezept eine Zeile (Klasse BEWUSST nicht
-    // `workshop-list-row` — die Blueprint-Zaehlung der Liste bleibt rezept-frei). Die
-    // Eintraege sind NUR anschaubar/regelbar (kein Hotbar-/Platzier-Knopf).
-    _workshopAppendStudioRecipeSection(list, ws) {
-        const ids = this._workshopStudioRecipeIds();
-        if (!ids.length) return;
-        const f = this._foundry;
-        const head = document.createElement("div");
-        head.className = "workshop-list-section";
-        head.textContent = "Studio-Rezepte";
-        head.title = "Das LIVE-Rezeptbuch der Labore — anschaubar + regelbar, nicht platzierbar.";
-        list.appendChild(head);
-        for (const id of ids) {
-            const rec = f.recipes[id];
-            const row = document.createElement("div");
-            row.className = "workshop-studio-recipe-row" + (id === ws.selectedRecipe ? " selected" : "");
-            row.setAttribute("data-recipe", id);
-            const nameSpan = document.createElement("span");
-            nameSpan.className = "name";
-            nameSpan.textContent = (rec && rec.lab) || id.charAt(0).toUpperCase() + id.slice(1);
-            const badge = document.createElement("span");
-            badge.className = "badge";
-            badge.textContent = "Rezept";
-            row.appendChild(nameSpan);
-            row.appendChild(badge);
-            row.addEventListener("click", () => {
-                this.selectStudioRecipeForView(id);
-                this._workshopClosePicker();
+        row.setAttribute("data-knoten", t.id);
+        row.setAttribute("data-pfad", pfad);
+        // V8.39 — Farb-Sprache: die Bauplan-Zeile leuchtet links in der Rollen-Farbe → ein Blick sagt, was jeder Bauplan IST.
+        if (bp) {
+            const rColor = AnazhRealm.BLUEPRINT_ROLE_COLORS[bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE];
+            if (rColor) row.style.borderLeft = `3px solid ${rColor}`;
+        }
+        const nameSpan = document.createElement("span");
+        nameSpan.className = "name";
+        nameSpan.textContent = String(t.lab).split(t.rezept ? /\s[·—(]/ : /\s[—(]/)[0];
+        const badge = document.createElement("span");
+        badge.className = "badge";
+        badge.textContent = t.waise
+            ? "⚠ ohne Buch"
+            : t.werk === "wesen"
+              ? "Wesen"
+              : t.werk === "praegung"
+                ? "Prägung"
+                : !bp
+                  ? "Rezept"
+                  : bp.builtIn
+                    ? "fest"
+                    : t.rezept
+                      ? "Studio"
+                      : "eigen";
+        row.appendChild(nameSpan);
+        row.appendChild(badge);
+        const q = t.quelle || {};
+        const gesetz = q.datei ? `${q.datei} · ${q.anker}` : t.eigen ? "dein Werk" : "der Wirt";
+        row.title = `${t.lab} — Gesetz: ${gesetz} · Leser: ${t.konsum || "keiner (tot)"}${t.ziel ? "" : " · kein Griff: nur anschaubar"}`;
+        const rec = t.rezept && this._foundry && this._foundry.recipes ? this._foundry.recipes[t.rezept] : null;
+        const ort = rec && rec.fx && rec.fx.place ? [rec.fx.place.mode, rec.fx.place.siteTag] : [];
+        row.setAttribute(
+            "data-such",
+            [t.lab, t.rezept, t.ziel, t.art, t.konsum, t.werk, ...ort, ...pfadLab].filter(Boolean).join(" ")
+        );
+        if (t.ziel) {
+            const g = document.createElement("button");
+            g.type = "button";
+            g.className = "stammbaum-griff";
+            g.textContent = "⤓";
+            g.title = `${t.lab} in die Welt legen — ein Griff (${t.werk === "praegung" ? "prägt die Welt" : t.werk === "wesen" ? "ein Wesen erscheint" : "das Werk steht, wohin du blickst"})`;
+            g.addEventListener("click", (e) => {
+                e.stopPropagation();
+                this._stammbaumGriff(t);
             });
-            list.appendChild(row);
+            row.appendChild(g);
         }
+        row.addEventListener("click", () => {
+            if (bp) this.selectBlueprintForEdit(t.ziel);
+            else this.selectStudioRecipeForView(t.rezept);
+            this._workshopClosePicker();
+        });
+        return row;
     }
 
-    // Bauplan-Suche (search-not-scroll, wie Hof-Befehle + Rezeptbuch): blendet Nicht-Treffer aus.
+    // DER GRIFF DER BIBLIOTHEK: ein Klick legt das Teil in die Welt, über den EINEN Weg seines Ziels — ein Bauplan über das
+    // Fertigen des Spielers (`fertigeBlueprint`: rollen-gerecht, das Werk steht, wohin er blickt, das Material nach dem Gesetz des
+    // Modus), ein Werk-Verb über den Satz der KI (`spawn_studio`: derselbe Stempel `_studioStampFor`; ein Wesen erscheint vor dem
+    // Spieler, eine Prägung trifft ihren Leser). Ein Teil ohne Ziel hat keinen Griff.
+    _stammbaumGriff(t) {
+        if (!t || !t.ziel) return { ok: false, reason: "kein_ziel" };
+        if (t.werk) {
+            // Das Werk eines Verbs (Wesen, Prägung) über seine Wurzel unter der Sprache (`_spawnStudioWerk`, auch der Op
+            // `spawn_studio`), wie der Bauplan über das Mach-Tor — nie über den Interpreter: der zöge jede Op in die Werkstatt
+            // (gate:v1-pfad W7 sah die Takte des Dorfs als Poll der Foundry-Familie). Der Ort vor dem Spieler fehlt nur ohne
+            // Spieler — dann bricht der Griff laut (`dslEvalPos` wirft benannt, kein Fang um den Bau: gate:altlasten). Das Urteil
+            // steht im Log: ein Werk, das weniger setzt, als gewollt war (`_ergebnisSatz`), oder eine Absage; beides spricht der
+            // Spieler-Kanal. Was steht, reist mit aufgelöstem Ort als das EINE Programm zum Mitspieler (wie `confirmBuild`).
+            const programm = ["spawn_studio", t.ziel, ["at_player_forward", 4], 1];
+            const ctx = this.dslCtx({ source: "human" });
+            this._spawnStudioWerk(programm.slice(1), ctx);
+            const weicht = this._ergebnisSatz(ctx.log);
+            const ok = !weicht && ctx.log.some((e) => e.event === "ergebnis" && e.gesetzt > 0);
+            if (!ok) this._spielerSagt(weicht ? weicht.satz : this._dslAbsageSatz(ctx.log));
+            else if (this.state.p2p && this.state.p2p.enabled) this.p2pBroadcastDsl(this._dslMitOrten(programm, ctx));
+            return { ok, werk: t.werk, log: ctx.log };
+        }
+        const res = this.fertigeBlueprint(t.ziel);
+        if (!res.ok) this._spielerSagt(`${String(t.lab).split(/\s[·—(]/)[0]}: ${this._machTorHint(res)}`);
+        return res;
+    }
+
+    // Die Suche der Bibliothek (search-not-scroll, wie Hof-Befehle + Rezeptbuch): blendet Nicht-Treffer aus, ein Kopf steht,
+    // solange sein Ast einen Treffer trägt; ohne Suche verbirgt ein zugeklappter Kopf seinen Ast (`ws.stammbaumZu`).
     _applyWorkshopFilter() {
         if (typeof document === "undefined") return;
         const list = document.getElementById("workshop-list");
         const search = document.getElementById("workshop-search");
         if (!list || !search) return;
         const q = search.value.trim().toLowerCase();
+        const zu = this._ensureWorkshopState().stammbaumZu || new Set();
+        const koepfe = [];
+        const trifft = new Set();
         for (const row of list.children) {
-            if (!q) {
-                row.style.display = "";
+            const pfad = (row.getAttribute("data-pfad") || "").split("|").filter(Boolean);
+            if (row.classList.contains("workshop-list-section")) {
+                koepfe.push([row, row.getAttribute("data-knoten")]);
+                row.style.display = q || !pfad.some((id) => zu.has(id)) ? "" : "none";
                 continue;
             }
-            // M4 (V18.158) — die EINE Such-Sprache (V18.48 wollte sie, baute sie aber
-            // PRIVAT nach): der geteilte Blueprint-Heuhaufen + _matchQuery — „Bauwerk"
-            // trifft die Rolle, „eisen" das Material, „Härte" die Tag-Achse, überall gleich.
-            const bp = this.state.blueprints[row.getAttribute("data-blueprint")];
-            const hay = (row.textContent || "") + " " + (bp ? this._blueprintSearchText(bp) : "");
-            row.style.display = this._matchQuery(hay, q) ? "" : "none";
+            if (!q) {
+                row.style.display = pfad.some((id) => zu.has(id)) ? "none" : "";
+                continue;
+            }
+            // M4 (V18.158) — die EINE Such-Sprache: der geteilte Blueprint-Heuhaufen + _matchQuery — „Bauwerk" trifft die Rolle,
+            // „eisen" das Material, „Härte" die Tag-Achse; dazu der Pfad und das Gesetz des Teils (Studio, Bereich, Ort).
+            const bp = this.state.blueprints[row.getAttribute("data-blueprint") || row.getAttribute("data-verweis")];
+            const hay =
+                (row.textContent || "") +
+                " " +
+                (row.getAttribute("data-such") || "") +
+                " " +
+                (bp ? this._blueprintSearchText(bp) : "");
+            const ja = this._matchQuery(hay, q);
+            row.style.display = ja ? "" : "none";
+            if (ja) for (const id of pfad) trifft.add(id);
         }
+        if (q) for (const [k, id] of koepfe) k.style.display = trifft.has(id) ? "" : "none";
     }
 
     _workshopRenderTail(selected) {

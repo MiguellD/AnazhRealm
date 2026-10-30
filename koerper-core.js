@@ -1509,6 +1509,8 @@
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
         PARAMS_BY_KIND: { koerper: PARAMS },
+        // B8 — der Stammbaum (studios.K5): wie das Buch sich und seine Arten nennt (der Wirt leitet den EINEN Baum ab)
+        STAMMBAUM: { studio: "Da Vinci", arten: { koerper: "Gestalt des Spielers" } },
         LEIB: LEIB,
         WEBE: WEBE,
         // mensch.K2 — DER TAG (VERHALTEN): das Gesetz, der Beruf, der Plan der Stunde (Leser: _bewohnerListe, _tickBewohner)

@@ -819,20 +819,9 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         // UI vorhanden
         out.workshopTabInDom = !!document.querySelector('#topbar [data-tab="werkstatt"]');
         out.workshopDrawerInDom = !!document.querySelector('.drawer[data-drawer="werkstatt"]');
-        out.workshopListInDom = !!document.getElementById("workshop-list");
         out.workshopStatsPanelInDom = !!document.getElementById("workshop-stats-panel"); // V17.91 — der intuitive Readout (statt des entfernten #workshop-editor)
 
-        // Ein Eintrag je SICHTBAREM Bauplan — derselbe Filter wie `_workshopRenderBlueprintList`: ohne
-        // `grown_*`-Streaming-Varianten, ohne `(fels|kristall|glut)_var1+` (var0 vertritt die Sorte), ohne
-        // donorOnly. Studio-Rezepte tragen .workshop-studio-recipe-row → die .workshop-list-row-Zählung
-        // bleibt rezept-frei.
-        const list = document.getElementById("workshop-list");
-        const _hidden = (n) =>
-            /^grown_/.test(n) ||
-            /^(fels|kristall|glut)_var([1-9]\d*)$/.test(n) ||
-            !!(r.state.blueprints[n] && r.state.blueprints[n].donorOnly);
-        const listableCount = Object.keys(r.state.blueprints).filter((n) => !_hidden(n)).length;
-        out.listShowsAllBlueprints = list && list.querySelectorAll(".workshop-list-row").length === listableCount;
+        // (Ein Eintrag je sichtbarem Bauplan in der Bibliothek der Werkstatt prüft gate:nervensystem S am Stammbaum.)
 
         // createBlueprint
         const beforeCount = Object.keys(r.state.blueprints).length;
@@ -941,12 +930,10 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
     } else {
         check("Ring 6.6: Werkstatt-Tab in Topbar", ring66Results.workshopTabInDom);
         check("Ring 6.6: Werkstatt-Drawer im DOM", ring66Results.workshopDrawerInDom);
-        check("Ring 6.6: #workshop-list im DOM", ring66Results.workshopListInDom);
         check(
             "Ring 6.6 (V17.91): #workshop-stats-panel im DOM (intuitiver Readout, der Editor ist entfernt)",
             ring66Results.workshopStatsPanelInDom
         );
-        check("Ring 6.6: Liste zeigt einen Eintrag pro Bauplan", ring66Results.listShowsAllBlueprints);
         check("Ring 6.6: createBlueprint legt neuen eigenen Bauplan an", ring66Results.createBlueprintOk);
         check("Ring 6.6: createBlueprint lehnt doppelte Namen ab", ring66Results.duplicateNameRejected);
         check("Ring 6.6: addPartToBlueprint hängt Part an", ring66Results.addPartOk);
