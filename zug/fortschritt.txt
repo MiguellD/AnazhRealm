@@ -942,3 +942,4 @@
 2026-10-30 02:57:35 z78-abab START 2 Zellen
 2026-10-30 03:26:54 z78-abab stadt VERLÄNGERN 29.2 · 1/2 (2+2)
 2026-10-30 03:40:54 z78-abab w-ego nicht-langsamer 13.9 · 2/2 (2+2)
+2026-10-30 04:06:14 z78-abab stadt(4+4) LANGSAMER 25.2 · verlängert (4+4)
