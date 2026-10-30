@@ -479,10 +479,13 @@ class AnazhRealm_dirigent_takt {
         const gleit = st._ankunftGleit;
         o.ankunft = gleit >= 0 && gleit < AnazhRealm.ANKUNFT_GLEIT_BILDER ? AnazhRealm.ANKUNFT_GLEIT_BILDER - gleit : 0;
         o.bau = st.bauSatzRaten ? st.bauSatzRaten.size : 0; // ein Bau-Bereich, der in Raten eintritt, steht noch nicht
+        // (der Fahrer am Steuer ist nicht offen: sein Leib gehört dem Wagen, kein Feld trägt ihn (`_verkehrEinsteigen`) — bis hier
+        // zählte er für immer, die Welt einer Stadt mit Verkehr stand nie: z78, GTX, Messort stadt „offen leiber 4–6")
         o.leiber = 0;
         if (this._bewohnerSiedlungen && st.renderer && !st.renderer._isHeadlessNull)
             for (const S of this._bewohnerSiedlungen.values())
-                for (const b of S.liste || []) if (b.leib && !b.drinnen && !b.leib.userData._kzVersuch) o.leiber++;
+                for (const b of S.liste || [])
+                    if (b.leib && !b.drinnen && !b.amSteuer && !b.leib.userData._kzVersuch) o.leiber++;
         return o;
     }
     _weltSteht() {
