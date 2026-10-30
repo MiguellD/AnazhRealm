@@ -20,8 +20,9 @@
 //        der Plan der Farm: die Läufe in höchstens --jobs Scheiben, die schwersten zuerst (JSON auf stdout = die Matrix)
 //   node punkte.cjs vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben scheiben.json] [--beginn <s>]
 //        die Teil-Messungen der Scheiben zur EINEN messung/<sha8>-<geraet>.json samt Roh-Ausgaben
-//   node punkte.cjs buchen --kopf <sha>
+//   node punkte.cjs buchen --kopf <sha> [--trocken]
 //        liest alle messung/*.json, urteilt R6 (Pfad und Linse unberührt seit der Messung) und R10, schreibt stand.json
+//        (--trocken: dieselben Zeilen samt RÜCKFALL, stand.json bleibt unberührt)
 //   node punkte.cjs liste [--kopf <sha>]   die registrierten Stationen, geprüft gegen src/gN.js und jeder pfad-Glob gegen den
 //        Kopf (sonst origin/main des Spiel-Klons)
 //   node punkte.cjs gtx-nutzen --kopf <sha>   die GTX-Stationen, deren Messung am Kopf Punkte ändern kann (nur=… für die OMEN):
@@ -43,7 +44,7 @@
 // FORMAT (stationen/g1.js .. g6.js, module.exports = [ … ]), je Eintrag:
 //   kriterium "gelaende.K2" (Bereich-Schlüssel.K<n> wie in src/gN.js) · staffel 1|2 · geraet "radeon"|"gtx"|"headless"
 //   oder eine Liste (Staffel 2 einer GPU-Station verlangt ["radeon","gtx"]) · befehl argv im Spiel-Baum (argv[0] "node"
-//   oder "bash"; Platzhalter {PORT} {AUS} {BAUM} {KOORD}) · env (optional, dieselben Platzhalter) · gpu true|false (true →
+//   oder "bash"; Platzhalter {PORT} {AUS} {BAUM} {KOORD}, {SEK} der Deckel des Laufs in s) · env (optional, dieselben Platzhalter) · gpu true|false (true →
 //   über gpu-lauf.sh, nie ohne Schloss) · zeit true|false (true: das Urteil fällt an der Wanduhr — ms, Latenz, Frame-Zeit,
 //   Sekunden bis sichtbar —, die Station fährt allein; false: Bild oder Funktion, sie verträgt parallele Bahnen; je Station
 //   Pflicht) · minuten (Deckel = 2 × minuten, mindestens 2 min) · urteil (j, lauf) →
@@ -76,6 +77,9 @@
 // hereinholen“): ohne frische Messung (R6-alt, ungemessen, Station neu) gilt je Station und Gerät das GRÜN der letzten Buchung
 // weiter („gehalten“, mit Mess-SHA und Zahl von damals); nur ein frisches ROT nimmt es (RÜCKFALL beim Namen), die Wand PFAD
 // hält nie. Ohne Vorbuchung (oder `buchen --ohne-ratsche`) ist ungemessen 0.
+// KEIN URTEIL IST KEIN ROT (w4-sitzung-urteil, keinUrteil in fahreGruppe — die EINE Stelle, an der Stations-Ergebnisse entstehen): ein
+// Lauf, dessen Urteils-Zeile fehlt, dessen Linse vor ihr abstürzt oder dessen eigene Frist reißt, ist UNGEMESSEN beim Namen (der Grund
+// wörtlich in m.ungemessen), nie ein frisches ROT — die Ratsche hält gegen ihn; ein echtes ROT (die Linse misst, das Maß reißt) bleibt.
 // ZWEI WÄNDE (24.10., Prüfung der Buchung 61 → 80): (PFAD) jeder `pfad`-Glob trifft am Mess-SHA und am Kopf mindestens eine
 // Datei, sonst ist die Station ROT — ein toter Glob macht R6 blind (die KAMPF-Liste nannte einen Schmiede-Kern, den es nicht gab);
 // (GPU) eine GPU-Station zählt nur, wenn ihr Lauf beweist, dass eine Linse auf der Karte zeichnete: ein Adapter eines Herstellers
@@ -283,6 +287,41 @@ function pruefeFehlt(fehlt, karte, stationen) {
     }
     return fehler;
 }
+// DAS URTEIL EINER STATION über einen Lauf: { gruen, zahl } — oder { fehler } beim Namen (es warf, es ist ungültig)
+function urteilVon(st, j, lauf) {
+    try {
+        const u = st.urteil(j, lauf);
+        if (!u || typeof u.gruen !== "boolean" || typeof u.zahl !== "string" || !u.zahl) return { fehler: "Urteil ungültig (verlangt { gruen: bool, zahl: Text })" };
+        return { gruen: u.gruen, zahl: u.zahl };
+    } catch (e) {
+        return { fehler: "Urteil warf: " + String((e && e.message) || e).split("\n")[0] };
+    }
+}
+// KEIN URTEIL (w4-sitzung-urteil; die Regel des Koordinators mit der Ratsche des Schöpfers — 3ed95dcf GTX: sechs Proben trugen als
+// jüngste Messung ein „ROT“, das kein Urteil über das Spiel war: „kein K8 der Linse (Exit 2)“, „keine Art-Zeile oder kein Kern-Wechsel“,
+// der Gang „Täter: Gang: Error: die Frist der Probe“, und die Buchung stand). Ein Lauf ohne Urteil ist kein frisches ROT, sondern
+// UNGEMESSEN beim Namen (eintragen legt ihn nach m.ungemessen, der Grund wörtlich; die Ratsche hält ein gebuchtes GRÜN):
+//   (a) die Urteils-Zeile fehlt — das Urteil der Station über den Lauf gleicht ihrem Urteil über den LEEREN Lauf (kein JSON, im stdout
+//       nur der Zeuge der Karte, derselbe Exit, dieselbe Diagnose auf stderr): die Ausgabe trug nichts, was es las; darunter
+//   (b) der Absturz ohne Zeile (Exit ≠ 0 oder ein Signal: die Linse warf vor ihrer Zeile) — derselbe Vergleich;
+//   (c) die eigene Frist der Probe riss — die Marke ihres Läufers (FRIST_MARKE: stationen/seite.cjs, stationen/sitzung-seite.js).
+// Ein echtes ROT — die Linse misst, das Maß reißt — bleibt ROT, ebenso ein kaputtes Urteil (es warf, es ist ungültig: laut, nie
+// gehalten); über den leeren Lauf urteilt jede Station ROT (Selbsttest 1c), ein GRÜN ist darum nie „ohne Urteil“, außer an der Marke
+// (c). Rückgabe der Grund beim Namen oder null.
+const FRIST_MARKE = /^@@PUNKTE@@ FRIST (\d+(?:\.\d+)?) s der Probe gerissen\b/m;
+function keinUrteil(u, leer, stdout) {
+    const f = FRIST_MARKE.exec(String(stdout || ""));
+    if (f) return "Frist der Probe " + f[1] + " s gerissen";
+    if (u.gruen || u.fehler || leer.fehler) return null;
+    return leer.gruen === false && leer.zahl === u.zahl ? "die Urteils-Zeile fehlt" : null;
+}
+// DER LEERE LAUF (Selbsttest 1c, die Voraussetzung von keinUrteil): über einen Lauf ohne JSON und ohne Zeile — im stdout nur der Zeuge der
+// Karte, Exit 0 · 1 · 2 oder ein Signal — urteilt jede Station ROT; ein GRÜN dort buchte eine Probe ohne Ausgabe, ein Wurf machte „kein
+// Urteil“ blind. Rückgabe die Täter beim Namen
+const leerUrteile = (stationen) => stationen.flatMap((st) => [0, 1, 2, null].flatMap((exit) => {
+    const u = urteilVon(st, null, { exit, stdout: "[linse-gpu] nvidia/pascal", stderr: "" });
+    return u.fehler || u.gruen ? [schluessel(st) + " Exit " + exit + ": " + (u.fehler || "GRÜN „" + u.zahl.slice(0, 80) + "“")] : [];
+}));
 // DIE PROBEN (`proben`): jede Station urteilt ihre Roh-Ausgaben, wie sie es sagt — Rückgabe die Abweichungen beim Namen
 function probenUrteil(stationen) {
     const falsch = [];
@@ -412,8 +451,13 @@ function baumTot(pid) {
     else try { process.kill(-pid, "SIGKILL"); } catch (_e) { try { process.kill(pid, "SIGKILL"); } catch (_f) {} }
 }
 
+// {SEK} (w4-sitzung-urteil): der Deckel DIESES Laufs in s — die eigene Frist eines Proben-Läufers folgt ihm (seite.cjs, sitzung-seite.js:
+// Deckel − 6 s), in der Sitzung, in der Eich-Fahrt (90 s) und am Rest der Fahrt. Bis dahin trug argv die Frist aus der Definition der
+// Probe: ANKUNFT 84 s unter dem Deckel 10 s der Station, DORF 39 s unter 27 s — der Deckel tötete, ehe die Probe abbauen und schreiben
+// konnte; die Eich-Fahrt (90 s) maß an der Frist der Definition (leib.K4: 27 s), nie den Bedarf.
 const ersetze = (s, ctx) =>
-    s.replace(/\{PORT\}/g, String(ctx.port)).replace(/\{AUS\}/g, ctx.aus).replace(/\{BAUM\}/g, ctx.baum).replace(/\{KOORD\}/g, ctx.koord);
+    s.replace(/\{PORT\}/g, String(ctx.port)).replace(/\{AUS\}/g, ctx.aus).replace(/\{BAUM\}/g, ctx.baum).replace(/\{KOORD\}/g, ctx.koord)
+        .replace(/\{SEK\}/g, String(ctx.sek));
 
 // DIE EINE gpu-lauf.sh (26.10., Prüfung gpu-bahnen): run und Selbsttest fahren dieselbe Datei, die neben dieser Maschine
 // (werkzeug/, mit gpu-schloss.sh); eine andere nur ausdrücklich per PUNKTE_GPU_LAUF, und dann prüft der Selbsttest sie. Bis dahin
@@ -426,7 +470,7 @@ const SCHLOSS_STILL_S = 600;
 const istZeit = (sts) => sts.some((st) => st.zeit === true);
 // fährt EINE Station; ctx = { baum, koord, port, band, aus, roh, geraet, bahn, plaetze, gpuLauf, bash, deckelMinS }
 // Rückgabe { gruen, zahl, exit, minuten, grund?, ungemessen? } — ein Fehler, ein Absturz, ein Deckel ist ROT mit Grund, nie still;
-// ein Schloss, das nie kam, ist ungemessen mit Grund.
+// ein Schloss, das nie kam, und ein Lauf ohne Urteil (keinUrteil: die Zeile fehlt, die eigene Frist riss) sind ungemessen mit Grund.
 function fahreStation(st, ctx) {
     return fahreGruppe([st], ctx).then((r) => r[0]);
 }
@@ -458,7 +502,7 @@ function fahreGruppe(sts, ctx) {
         const sitzDeckelS = sitz && sitz.eich ? PROBE_AUSNAHME_S : probeSek(st);
         const fahrtKappt = !!sitz && sitz.restS != null && sitz.restS < sitzDeckelS;
         const deckelS = sitz ? (fahrtKappt ? Math.max(1, Math.floor(sitz.restS)) : sitzDeckelS) : Math.max(ctx.deckelMinS != null ? ctx.deckelMinS : 120, Math.ceil(st.minuten * 60 * 2));
-        let argv = befehlVon(st).map((a) => ersetze(a, ctx));
+        let argv = befehlVon(st).map((a) => ersetze(a, { ...ctx, sek: deckelS }));
         const env = { ...process.env };
         // die Werkbank der Bahn: wer sie ohne --port ruft, trifft die seines Bands (nie die 4490 einer Nachbar-Bahn)
         if (ctx.port) env.WERKBANK_PORT = String(ctx.port + 20000);
@@ -468,7 +512,7 @@ function fahreGruppe(sts, ctx) {
             ...(sitz.strom ? { PUNKTE_SITZUNG_STROM: sitz.strom, PUNKTE_PROBE: sitz.probe } : {}) });
         // headless läuft ohne Karte: starteBrowser griffe lokal sonst die GPU (scripts/lib/software-gpu.cjs) — ohne Schloss
     if (!st.gpu) env.LINSE_GPU = "software";
-    for (const [k, v] of Object.entries(st.env || {})) env[k] = ersetze(v, ctx);
+    for (const [k, v] of Object.entries(st.env || {})) env[k] = ersetze(v, { ...ctx, sek: deckelS });
     if (!st.gpu && env.LINSE_GPU !== "software") return rot("headless verlangt LINSE_GPU=software — die Karte nur unter dem Schloss");
         let exe;
         if (argv[0] === "node") exe = process.execPath;
@@ -559,7 +603,6 @@ function fahreGruppe(sts, ctx) {
             // nie GRÜN); der Rest der Fahrt kappte sie: die Fahrt riss FAHRT_MAX_S
             if (tot && sitz) return offen((fahrtKappt ? "Deckel der Fahrt " + (sitz.fahrtMaxS || FAHRT_MAX_S) + " s gerissen nach " + deckelS + " s der Probe" : "Deckel " + deckelS + " s gerissen") + " — beendet, UNGEMESSEN" + wobei, code);
             if (tot) return rot("Deckel " + (schloss ? deckelS + 120 : deckelS) + " s überschritten — beendet" + wobei, code);
-            if (sig) return rot("Absturz: Signal " + sig, code);
             const blockiert = (/^SCHLOSS BLOCKIERT .*$/m.exec(out) || [""])[0].trim();
             if (schloss && code === 75) return offen("GPU-Schloss blockiert (gpu-lauf.sh Exit 75" + (blockiert ? ": " + blockiert : "") + ") — ungemessen", code);
             if (schloss && code === 124) return rot("GPU-Deckel " + deckelS + " s (gpu-lauf.sh Exit 124)", code);
@@ -571,18 +614,27 @@ function fahreGruppe(sts, ctx) {
             const zeuge = st.gpu ? gpuZeuge(zeugeText + "\n" + out + "\n" + err) : null;
             const wand = zeuge && gpuWand(zeuge);
             const gz = zeuge ? { gpu: zeuge.karte, ...(zeuge.fremd ? { gpuFremd: zeuge.fremd } : {}), ...(zeuge.nie ? { gpuNie: zeuge.nie } : {}) } : {};
+            // die Zeugen-Zeilen sind Ausgabe der Station, auch aus Kindern mit eigenem Log (werkbank --eigen am werkbankTor seit
+            // tk1-herde): das Urteil liest den Adapter wie die Wand GPU. Der LEERE Lauf (keinUrteil): derselbe Exit, derselbe Zeuge,
+            // dieselbe Diagnose, kein JSON und keine Zeile. Ein Absturz (Signal) urteilt über das, was er schrieb — nie GRÜN
+            const lauf = { exit: code, stdout: out + (zeugeText ? "\n" + zeugeText : ""), stderr: err };
+            const leer = { exit: code, stdout: zeugeText, stderr: err };
+            const absturz = sig ? "Absturz: Signal " + sig : null;
+            // DER TÄTER eines Laufs ohne Urteil beim Namen: die Fehler-Zeile seines Läufers (seite.cjs, sitzung-seite.js, proben-welt.cjs),
+            // sonst die letzte Zeile auf stderr, sonst die letzte der Ausgabe
+            const letzte = (t) => String(t).split(/\r?\n/).map((l) => l.trim()).filter(Boolean).pop();
+            const taeter = (/^(?:@@PUNKTE@@ FEHLER|@@ PROBE-FEHLER|PROBE-FEHLER) .*$/m.exec(out) || [])[0] || letzte(err) || zuletzt;
             ganz(sts.map((s) => {
                 const r = (grund) => ({ gruen: false, zahl: grund, exit: code, minuten: m, grund, ...gz });
-                let u;
-                try {
-                    // die Zeugen-Zeilen sind Ausgabe der Station, auch aus Kindern mit eigenem Log (werkbank --eigen am werkbankTor
-                    // seit tk1-herde): das Urteil liest den Adapter wie die Wand GPU
-                    u = s.urteil(j, { exit: code, stdout: out + (zeugeText ? "\n" + zeugeText : ""), stderr: err });
-                } catch (e) {
-                    return r("Urteil warf: " + String((e && e.message) || e).split("\n")[0]);
+                const u = urteilVon(s, j, lauf);
+                const ohne = keinUrteil(u, urteilVon(s, null, leer), lauf.stdout);
+                if (ohne) {
+                    const grund = (absturz ? absturz + " — " : "") + ohne + " — kein Urteil, UNGEMESSEN (die Probe sah: " + String(u.fehler || u.zahl).slice(0, 240) + ")" +
+                        (taeter ? " · Täter: " + taeter.slice(0, 300) : "");
+                    return { ...r(grund), ungemessen: true };
                 }
-                if (!u || typeof u.gruen !== "boolean" || typeof u.zahl !== "string" || !u.zahl)
-                    return r("Urteil ungültig (verlangt { gruen: bool, zahl: Text })");
+                if (u.fehler) return r(u.fehler);
+                if (absturz) return r(absturz + " · " + u.zahl);
                 if (wand) return { gruen: false, zahl: "Wand GPU: " + wand + " · " + u.zahl, exit: code, minuten: m, grund: "Wand GPU: " + wand, ...gz };
                 return { gruen: u.gruen, zahl: u.zahl, exit: code, minuten: m, ...(u.gruen ? {} : { grund: "ROT: " + u.zahl }), ...gz };
             }));
@@ -1287,8 +1339,8 @@ const sitzungsReihe = (gruppen) => [
     ...gruppen.filter((g) => stellungVon(g) === "ende"),
     ...nachOrt(gruppen.filter((g) => !stellungVon(g) && mutiertVon(g))),
 ];
-// eine Probe, die abbrach (Deckel, Absturz, Start), ließ die Welt vielleicht mitten im Werk — danach die Grundstellung
-const brachAb = (es) => es.some((e) => /^(Deckel |Absturz|Start:)/.test(e.grund || ""));
+// eine Probe, die abbrach (Deckel, die eigene Frist, Absturz, Start), ließ die Welt vielleicht mitten im Werk — danach die Grundstellung
+const brachAb = (es) => es.some((e) => /^(Deckel |Frist der Probe |Absturz|Start:)/.test(e.grund || ""));
 // DIE WELT STEHT, wo der Spieler steht (DER WARME START, fahreSitzung): das EINE Einschwingen von welt-boot (`__weltStehtNach`, jede Seite
 // der Werkbank trägt es, WARTEN_SEITE) — kein Messort, kein Umstellen: der Spieler bleibt, wo Boot, Grundstellung oder Tür ihn ließen
 const WELT_STEHT = "await __weltDa(); const takte = await __weltStehtNach(); return { takte, chunks: r.state.voxelChunks ? r.state.voxelChunks.size : 0, ring: r._builtRingRadius() };";
@@ -1302,7 +1354,8 @@ const WELT_STEHT = "await __weltDa(); const takte = await __weltStehtNach(); ret
 // Eich-Fahrt (eichOffen: ohne frische Messung und ohne Zahl am SHA)
 const gesetzVon = (st) => (st.probe && st.probe.ausnahme !== undefined ? PROBE_AUSNAHME_S : PROBE_DECKEL_S);
 function eichEintrag(st, e) {
-    const am = !!e.ungemessen && /^Deckel \d+ s gerissen/.test(e.grund || "");
+    // am Eich-Deckel: der Deckel riss, oder die eigene Frist der Probe ({SEK} − 6 s) — die Zahl ist zensiert, „≥ 90 s“
+    const am = !!e.ungemessen && /^(Deckel|Frist der Probe) \d+(\.\d+)? s gerissen/.test(e.grund || "");
     if (e.ungemessen && !am) return e;
     const eich = { s: e.s, sek: probeSek(st), gesetzS: gesetzVon(st), ...(am ? { gerissen: true } : {}) };
     if (am) return { ...e, eich, grund: "EICH: ≥ " + PROBE_AUSNAHME_S + " s — " + e.grund, zahl: "EICH: ≥ " + PROBE_AUSNAHME_S + " s — " + e.zahl };
@@ -2020,9 +2073,12 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
         const tot = opt.tot ? opt.tot(st) : [];
         if (tot.length) return { gruen: false, ungemessen: true, tot: true, grund: pfadGrund(tot, "am Kopf") };
         const ab = abdruck(st, hilfe);
-        let alt = 0, fremd = 0, unbekannt = 0, ohneZeugen = null, taeter = [], linse = 0, linsenTaeter = [], unlesbar = null;
+        let alt = 0, fremd = 0, unbekannt = 0, ohneZeugen = null, taeter = [], linse = 0, linsenTaeter = [], unlesbar = null, zuletzt = null;
         const frisch = [];
         for (const m of messungen) {
+            // der jüngste Lauf ohne Messung (m.ungemessen: kein Urteil, Deckel, Schloss) nennt sich im Grund — nie still gehalten
+            const u = m.geraet === g && m.ungemessen && m.ungemessen[id];
+            if (u && u.abdruck === ab && (!zuletzt || String(u.zeit) > String(zuletzt.zeit))) zuletzt = { ...u, sha: m.sha };
             if (m.geraet !== g || !m.je || !m.je[id]) continue;
             const e = m.je[id];
             if (e.abdruck !== ab) { fremd++; continue; }
@@ -2046,7 +2102,8 @@ function frischUrteil(messungen, geaendert, hilfe = hilfeText(), opt = {}) {
         if (frisch.length) return frisch[0];
         // der Grund der jüngsten verworfenen Art zuerst: ein GRÜN ohne Zeugen vor dem R6 einer älteren Messung
         const nenne = (xs) => xs.slice(0, 3).join(", ") + (xs.length > 3 ? " +" + (xs.length - 3) : "");
-        return { gruen: false, ungemessen: true, grund: ohneZeugen ? "Wand GPU: " + ohneZeugen : linse ? "Linse seit der Messung geändert (R6: " + nenne(linsenTaeter) + ")" : alt ? "Pfad seit der Messung geändert (R6: " + nenne(taeter) + ")" : unlesbar ? "Linse unlesbar — kein R6-Urteil (" + unlesbar + ")" : unbekannt ? "Mess-SHA unbekannt — kein R6-Urteil" : fremd ? "Station seit der Messung geändert" : "ungemessen (R10)" };
+        const grund = ohneZeugen ? "Wand GPU: " + ohneZeugen : linse ? "Linse seit der Messung geändert (R6: " + nenne(linsenTaeter) + ")" : alt ? "Pfad seit der Messung geändert (R6: " + nenne(taeter) + ")" : unlesbar ? "Linse unlesbar — kein R6-Urteil (" + unlesbar + ")" : unbekannt ? "Mess-SHA unbekannt — kein R6-Urteil" : fremd ? "Station seit der Messung geändert" : "ungemessen (R10)";
+        return { gruen: false, ungemessen: true, grund: grund + (zuletzt ? " — zuletzt an " + String(zuletzt.sha).slice(0, 8) + ": " + String(zuletzt.grund).slice(0, 200) : "") };
     };
 }
 
@@ -2372,12 +2429,16 @@ function buchenCli(opt) {
     if (vorher) s.vorher = vorher.kopf;
     if (opt.trocken) return s;
     fs.writeFileSync(path.join(DIR, "stand.json"), JSON.stringify(s, null, 1) + "\n");
+    buchungZeigen(s, "→ stand.json");
+    return s;
+}
+// die Zeilen einer Buchung — `buchen` nach dem Schreiben, `buchen --trocken` ohne (stand.json bleibt unberührt)
+function buchungZeigen(s, wohin) {
     for (const [k, e] of Object.entries(s.je)) console.log("  " + k + " " + e.punkte + " · " + e.beleg);
     for (const r of s.rueckfall) console.log("  RÜCKFALL " + r);
     const gehalten = Object.values(s.je).reduce((a, e) => a + e.stationen.filter((x) => x.gehalten).length, 0);
     console.log("Kopf " + s.kopf + " · Maschine " + Object.keys(s.je).length + " Kriterien · Σ " + Object.values(s.je).reduce((a, e) => a + e.punkte, 0) +
-        (vorher ? " · Ratsche gegen " + vorher.kopf + ": gehalten " + gehalten + ", Rückfall " + s.rueckfall.length : " · ohne Ratsche") + " → stand.json");
-    return s;
+        (s.vorher ? " · Ratsche gegen " + s.vorher + ": gehalten " + gehalten + ", Rückfall " + s.rueckfall.length : " · ohne Ratsche") + " " + wohin);
 }
 
 // ───────────────────────────────── Übergang in gen.cjs ─────────────────────────────────
@@ -2422,6 +2483,14 @@ async function selbsttest(o = {}) {
         const luegt = probenUrteil([{ kriterium: "a.K1", staffel: 1, urteil: (j, l) => ({ gruen: /GRÜN/.test(l.stdout), zahl: "z" }),
             proben: [{ name: "Roh", stdout: "GRÜN", gruen: true }, { name: "Mutante", stdout: "ROT", gruen: true }] }]);
         pruef("PROBEN eine Probe, deren Urteil nicht stimmt, beim Namen", luegt.join() === "a.K1#1 Mutante: ROT statt GRÜN (z)", luegt.join());
+    }
+    // (1c) DER LEERE LAUF (w4-sitzung-urteil): jede echte Station urteilt über ihn ROT — die Voraussetzung von keinUrteil; die Mutanten
+    // (ein Urteil, das ohne Ausgabe GRÜN spricht, eines, das an ihr wirft) beim Namen
+    {
+        const falsch = leerUrteile(echt.stationen);
+        pruef("LEERER LAUF jede Station urteilt über ihn ROT (" + echt.stationen.length + " Stationen × Exit 0 · 1 · 2 · Signal)", !falsch.length, falsch.slice(0, 6).join(" | "));
+        const mut = leerUrteile([{ kriterium: "a.K1", staffel: 1, urteil: () => ({ gruen: true, zahl: "still grün" }) }, { kriterium: "a.K2", staffel: 1, urteil: (j) => ({ gruen: j.n === 0, zahl: "n" }) }]);
+        pruef("LEERER LAUF die Mutanten beim Namen (still grün, wirft)", mut.length === 8 && /^a\.K1#1 Exit 0: GRÜN „still grün“$/.test(mut[0]) && /^a\.K2#1 Exit 0: Urteil warf/.test(mut[4]), mut.join(" | "));
     }
     // (1b) R6 liest Bytes ohne Stempel: Versions-Stempel fallen, Code, Binär und Werkzeug bleiben (welches Werkzeug zählt, urteilt
     // frischUrteil an der Linse der Station)
@@ -2508,7 +2577,7 @@ async function selbsttest(o = {}) {
     e = await fahreStation({ ...st0, befehl: schreib({ n: 3 }), urteil: lies }, ctx("rot"));
     pruef("LÄUFER rot", e.gruen === false && /ROT: n 3/.test(e.grund), JSON.stringify(e));
     e = await fahreStation({ ...st0, befehl: ["node", "-e", "process.exit(3)"], urteil: lies }, ctx("absturz"));
-    pruef("LÄUFER Absturz ohne Ausgabe", e.gruen === false && e.exit === 3 && /Urteil warf/.test(e.grund), JSON.stringify(e));
+    pruef("LÄUFER ein Urteil, das am Lauf ohne Ausgabe wirft, bleibt ROT beim Namen (kaputt: laut, nie gehalten)", e.gruen === false && !e.ungemessen && e.exit === 3 && /Urteil warf/.test(e.grund), JSON.stringify(e));
     e = await fahreStation({ ...st0, minuten: 0.01, befehl: ["node", "-e", "console.log('SCHRITT /umstellen 41.3 s'); setTimeout(()=>{}, 60000)"], urteil: () => ({ gruen: true, zahl: "still" }) }, ctx("deckel"));
     pruef("LÄUFER Deckel, beim Namen der letzten Zeile", e.gruen === false && /Deckel .* \(zuletzt: SCHRITT \/umstellen 41\.3 s\)$/.test(e.grund), JSON.stringify(e));
     // ein Enkel erbt das Rohr und schläft 20 s (wie ein Herzschlag `( while sleep 300 … ) &` ohne Umleitung): die Station endet
@@ -2821,6 +2890,46 @@ async function selbsttest(o = {}) {
         r = buchen("kopf", [s1, s2], m2, alt6, h);
         pruef("RATSCHE ohne Vorbuchung ist ungemessen 0", r.je["gelaende.K4"].punkte === 0, r.je["gelaende.K4"].beleg);
     }
+    // (5c) KEIN URTEIL IST KEIN ROT (w4-sitzung-urteil, keinUrteil in fahreGruppe): die Attrappe ohne Zeile, die vor ihrer Zeile abstürzt
+    // und die, deren eigene Frist riss (die Marke ihres Läufers), sind UNGEMESSEN beim Namen; die mit rotem Maß bleibt ROT, die mit
+    // grünem GRÜN. Die Buchung hält das gebuchte GRÜN gegen den Lauf ohne Zeile (gehalten, sein Grund im Stand) und nennt das rote Maß
+    // als RÜCKFALL
+    {
+        const mass = (j, l) => {
+            const z = /^MASS (\d+)$/m.exec(l.stdout);
+            return z ? { gruen: +z[1] <= 3, zahl: "Maß " + z[1] + " (Soll ≤ 3)" } : { gruen: false, zahl: "keine MASS-Zeile (Exit " + l.exit + ")" };
+        };
+        const at = { ...st0, urteil: mass };
+        const zeigt = (zeilen, exit = 0) => ["node", "-e", "for (const z of " + JSON.stringify(zeilen) + ") console.log(z); process.exitCode = " + exit];
+        const [ohne, sturz, frist, rotM, gruenM] = [
+            await fahreStation({ ...at, befehl: zeigt(["die Linse lief, ihre Zeile kam nie"]) }, ctx("ohne-zeile")),
+            await fahreStation({ ...at, befehl: ["node", "-e", "console.error('TypeError: k8 is undefined'); process.exit(2)"] }, ctx("ohne-sturz")),
+            await fahreStation({ ...at, befehl: zeigt(["MASS 9", "@@PUNKTE@@ FRIST 27 s der Probe gerissen: jeder Takt danach warf"], 1) }, ctx("ohne-frist")),
+            await fahreStation({ ...at, befehl: zeigt(["MASS 9"], 1) }, ctx("rot-mass")),
+            await fahreStation({ ...at, befehl: zeigt(["MASS 2"]) }, ctx("gruen-mass")),
+        ];
+        pruef("KEIN URTEIL die Attrappe ohne Zeile, mit Absturz vor ihr, mit gerissener eigener Frist ist UNGEMESSEN beim Namen; das rote Maß ROT, das grüne GRÜN",
+            ohne.ungemessen === true && /^die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN \(die Probe sah: keine MASS-Zeile \(Exit 0\)\) · Täter: die Linse lief, ihre Zeile kam nie$/.test(ohne.grund) &&
+            sturz.ungemessen === true && sturz.exit === 2 && /^die Urteils-Zeile fehlt .* · Täter: TypeError: k8 is undefined$/.test(sturz.grund) &&
+            frist.ungemessen === true && /^Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN \(die Probe sah: Maß 9/.test(frist.grund) && brachAb([frist]) &&
+            rotM.gruen === false && !rotM.ungemessen && rotM.grund === "ROT: Maß 9 (Soll ≤ 3)" && gruenM.gruen === true && !gruenM.ungemessen,
+            JSON.stringify([ohne, sturz, frist, rotM, gruenM].map((x) => [x.gruen, !!x.ungemessen, x.grund || x.zahl])));
+        const id = schluessel(at);
+        const lauf = (sha, e) => {
+            const m = { sha, geraet: "headless", je: {} };
+            eintragen(m, id, stationsEintrag(e, { zeit: "2026-10-30T18:00:00Z", abdruck: abdruck(at, h), port: null, bahn: "1/1" }));
+            return m;
+        };
+        const alt1 = (sha) => (sha === "a1" ? ["stamm/wasser-hydro.js"] : []);
+        const vor = buchen("alt", [at], [M("a1", "headless", id, at, true)], keine, h);
+        const halt = buchen("kopf", [at], [M("a1", "headless", id, at, true), lauf("c3", ohne)], alt1, h, [], { vorher: vor });
+        const fall = buchen("kopf", [at], [M("a1", "headless", id, at, true), lauf("c3", rotM)], alt1, h, [], { vorher: vor });
+        const st = halt.je["gelaende.K4"].stationen[0];
+        pruef("KEIN URTEIL die Buchung hält das gebuchte GRÜN gegen den Lauf ohne Zeile (sein Grund im Stand), das rote Maß ist RÜCKFALL",
+            halt.je["gelaende.K4"].punkte === 1 && !halt.rueckfall.length && st.gehalten === true && /zuletzt an c3: die Urteils-Zeile fehlt/.test(st.grund) &&
+            fall.je["gelaende.K4"].punkte === 0 && fall.rueckfall.length === 1 && /^gelaende\.K4#1 headless: Maß 9 \(Soll ≤ 3\) an c3/.test(fall.rueckfall[0]),
+            JSON.stringify([halt.je["gelaende.K4"], halt.rueckfall, fall.rueckfall]));
+    }
     b = buchen("kopf", [s1, s2], m2, () => ["stamm/klang.js", "README.md"], h);
     pruef("BUCHUNG R6 fremde Datei → bleibt 2", b.je["gelaende.K4"].punkte === 2, b.je["gelaende.K4"].beleg);
     b = buchen("kopf", [s1, s2], m2, (sha) => { if (sha === "a1") throw new Error("unbekannt"); return []; }, h);
@@ -3087,7 +3196,9 @@ async function selbsttest(o = {}) {
             !gl || (schloss.length === 1 && /^punkte-radeon-sitzung zeit \d+$/.test(schloss[0])), JSON.stringify(schloss));
         pruef("SITZUNG das Format von heute: je Station gruen, zahl, exit, minuten, zeit, abdruck, port, bahn und modus \"session\"; die Zeile liest zug.cjs",
             Object.values(x).every((e) => ["gruen", "zahl", "exit", "minuten", "zeit", "abdruck", "port", "bahn"].every((k) => k in e) && e.modus === "session" && e.bahn === "sitzung") &&
-            Object.entries(x).every(([id, e]) => (e.ungemessen ? /^  OFFEN \S+ · Deckel .* · Sitzung · ungemessen/ : zeile).test(stationsZeile(id, e)) && / · Sitzung · /.test(stationsZeile(id, e))),
+            Object.entries(x).every(([id, e]) => (e.ungemessen ? /^  OFFEN \S+ · (Deckel .*|.* — kein Urteil, UNGEMESSEN .*) · Sitzung · ungemessen/ : zeile).test(stationsZeile(id, e)) && / · Sitzung · /.test(stationsZeile(id, e))) &&
+            // die Attrappe c stürzt ohne Zeile ab (Exit 1, ihr Urteil liest nur den Exit): kein Urteil, UNGEMESSEN beim Namen (keinUrteil)
+            x["c.K1#1"].ungemessen === true && /^die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN \(die Probe sah: exit 1\)$/.test(x["c.K1#1"].grund),
             JSON.stringify(Object.entries(x).map(([id, e]) => stationsZeile(id, e))));
         // DIE REIHE und DER STROM: anfang, die Welt lassend, ende, mutierend — die Grundstellung nur nach der mutierenden; jede Probe kennt
         // den Strom und ihren Namen, die Bilder ihres Loops stehen unter ihrem Namen, der Kopf trägt die Dauerlast
@@ -3360,7 +3471,10 @@ if (require.main === module) {
         else if (verb === "grundprobe") process.exitCode = (await grundProbe(o)) ? 0 : 1;
         else if (verb === "scheiben") scheibenCli(o);
         else if (verb === "vereine") vereineCli(o);
-        else if (verb === "buchen") buchenCli(o);
+        else if (verb === "buchen") {
+            const s = buchenCli(o);
+            if (o.trocken) buchungZeigen(s, "(trocken: stand.json unberührt)");
+        }
         else if (verb === "gtx-nutzen") gtxNutzenCli(o);
         else if (verb === "eichtafel") eichtafelCli(o);
         else if (verb === "plan") planCli(o);
@@ -3382,7 +3496,7 @@ if (require.main === module) {
             process.exitCode = fehler.length ? 1 : 0;
         } else if (verb === "selbsttest") process.exitCode = await selbsttest(o);
         else {
-            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--eich] [--trocken] [--bahnen 3] [--port-basis 7700] [--farm <name>] · gruppen --geraet <g> [--nur id,id] · scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur …] · vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben <json>] [--beginn <s>] · buchen --kopf <sha> · liste [--kopf <sha>] · eichtafel --sha <sha> --geraet radeon|gtx · selbsttest [--ohne 3c]");
+            console.log("Verben: run --sha <sha> --geraet radeon|gtx|headless [--nur id,id] [--offen] [--eich] [--trocken] [--bahnen 3] [--port-basis 7700] [--farm <name>] · gruppen --geraet <g> [--nur id,id] · scheiben --sha <sha> --geraet headless [--jobs 12] [--offen|--nur …] · vereine --sha <voll> --geraet headless --farm <name> --teile <dir> [--scheiben <json>] [--beginn <s>] · buchen --kopf <sha> [--trocken] · liste [--kopf <sha>] · eichtafel --sha <sha> --geraet radeon|gtx · selbsttest [--ohne 3c]");
             process.exitCode = 2;
         }
     })().catch((e) => {
