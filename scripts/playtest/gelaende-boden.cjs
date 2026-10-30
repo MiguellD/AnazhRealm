@@ -18,9 +18,7 @@ async function checkBandV1749Adventure({ page, check }) {
         const savedVisited = r.state.visitedRegions;
         const savedLife = r.state.lifeField;
         const savedPos = { x: pm.x, y: pm.y, z: pm.z };
-        const setEmo = (o) => {
-            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
-        };
+        const setEmo = (o) => __emo(p, o);
         const fresh = () => {
             r.state.visitedRegions = new Set();
         };
@@ -1756,15 +1754,7 @@ async function checkBandTodZensus({ page, check }) {
             altMax = s.maxCreatures,
             altModus = r.getGameMode();
         const restore = [];
-        const decke = (name, fn) => {
-            const hatte = Object.prototype.hasOwnProperty.call(r, name);
-            const alt = r[name];
-            r[name] = fn(alt);
-            restore.push(() => {
-                if (hatte) r[name] = alt;
-                else delete r[name];
-            });
-        };
+        const decke = (name, fn) => restore.push(leihe(r, { [name]: fn(r[name]) }));
         s.creatures = [];
         s.creatureEmotions = [];
         s.leichname = [];

@@ -2071,13 +2071,13 @@ async function checkBandCarveWorker({ page, check }) {
         // den Build-Aufruf bespitzeln → die forceSync-ENTSCHEIDUNG ablesen
         const o = {};
         let lastForceSync = null;
-        const eigen = Object.prototype.hasOwnProperty.call(r, "_acquireVoxelChunkBuild");
-        const vorher = r._acquireVoxelChunkBuild;
-        const orig = vorher.bind(r);
-        r._acquireVoxelChunkBuild = function (a, b, c, opts) {
-            lastForceSync = !!(opts && opts.forceSync);
-            return orig(a, b, c, opts);
-        };
+        const orig = r._acquireVoxelChunkBuild.bind(r);
+        const zurueck = leihe(r, {
+            _acquireVoxelChunkBuild(a, b, c, opts) {
+                lastForceSync = !!(opts && opts.forceSync);
+                return orig(a, b, c, opts);
+            },
+        });
         try {
             for (const [k, ueber, opts] of [["gesund", false, undefined], ["ueber", true, undefined], ["force", true, { forceSync: true }]]) {
                 st._frameOverBudget = ueber;
@@ -2086,8 +2086,7 @@ async function checkBandCarveWorker({ page, check }) {
                 o[k] = lastForceSync;
             }
         } finally {
-            if (eigen) r._acquireVoxelChunkBuild = vorher;
-            else delete r._acquireVoxelChunkBuild;
+            zurueck();
             st._frameOverBudget = false;
         }
         return o;

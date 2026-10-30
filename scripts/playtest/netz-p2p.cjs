@@ -2779,15 +2779,12 @@ async function checkBandM8MakroFenster({ page, check }) {
         out.statsCached = !!p2p.brokerStats && p2p.brokerStats.rooms === 3 && p2p.brokerStats.peers === 7;
         out.statsShown = !!el && /7 online in 3/.test(el.textContent);
         // das welcome des Brokers fragt die stats über den bestehenden Kanal an (gefangen am Senden)
-        const sendEigen = Object.prototype.hasOwnProperty.call(r, "p2pSend"),
-            sendAlt = r.p2pSend,
-            gesendet = [];
-        r.p2pSend = (m) => (gesendet.push(m), true);
+        const gesendet = [];
+        const zurueck = leihe(r, { p2pSend: (m) => (gesendet.push(m), true) });
         try {
             r._p2pMsgWelcome({ peers: [] }, p2p);
         } finally {
-            if (sendEigen) r.p2pSend = sendAlt;
-            else delete r.p2pSend;
+            zurueck();
         }
         out.welcomeAsks = gesendet.some((m) => m && m.type === "stats");
         // Müll fällt (defensive Wand).

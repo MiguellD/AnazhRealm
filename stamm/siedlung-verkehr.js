@@ -476,15 +476,24 @@ class AnazhRealm_siedlung_verkehr {
                     W.sitzt = false;
                     continue;
                 }
-                this._gelenkStufe(g, d2);
+                // DER SICHTBARE LEIB AM STEUER: die Sitz-Pose hängt am Sitz des Wagens, nie an seiner Lage — gesetzt beim Eintritt
+                // ins Bild und nach jedem Wechsel der Gelenk-Stufe (`_gelenkStufe` stellt die Knochen fern in Ruhe); die Knochen zieht
+                // er nur nach, wenn sein Wagen sich seit dem letzten Bild bewegte (Kosten an Änderung). Bis hier rechnete `_sitzLage`
+                // je Bild dieselbe Lage samt eigenem Knochen-Gang neu (Messort stadt, Null-Renderer: 0,12 ms je Takt im Stand)
+                const fern = this._gelenkStufe(g, d2);
                 const sitzH = Number.isFinite(e._sitzHeight) ? e._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
-                g.position.set(e.position.x, e.position.y - 0.5 + sitzH + (e._rideHeave || 0), e.position.z);
-                g.rotation.set(0, Number.isFinite(e._rideYaw) ? e._rideYaw : g.rotation.y, 0);
-                if (!W.sitzt) {
+                const [x, y, z] = [e.position.x, e.position.y - 0.5 + sitzH + (e._rideHeave || 0), e.position.z];
+                const gier = Number.isFinite(e._rideYaw) ? e._rideYaw : g.rotation.y;
+                const L = W.leibLage || (W.leibLage = { x: NaN, y: NaN, z: NaN, gier: NaN });
+                if (W.sitzt && W.fern === fern && L.x === x && L.y === y && L.z === z && L.gier === gier) continue;
+                g.position.set(x, y, z);
+                g.rotation.set(0, gier, 0);
+                if (!W.sitzt || W.fern !== fern) {
                     this._applySeatPose(g, 0, e);
-                    W.sitzt = true;
-                } else this._sitzLage(g, g.userData.rig, e);
+                    [W.sitzt, W.fern] = [true, fern];
+                }
                 this._leibMatrix(g);
+                Object.assign(L, { x, y, z, gier });
             }
         }
     }
@@ -556,8 +565,12 @@ class AnazhRealm_siedlung_verkehr {
             const { vc } = AnazhRealm._fahrSchrittGesetz();
             vc.fahrStand(fz, e._fahrSatz, this._fahrBoden(e), 0);
             if (Number.isFinite(fz.y)) this._wagenLage(e, fz);
-            this._blockerBewegt(e);
-            if (e.blockerAABBs) this._populateBlockerAABBs(e);
+            // der neue Platz gestempelt (kein Beweger); der nächste Fahr-Schritt stempelt mit seinem Rand (`_wagenSchritt`)
+            this._blockerBewegt(e, e.blockerAABBs ? 0 : undefined);
+            if (e.blockerAABBs) {
+                this._populateBlockerAABBs(e);
+                e._blockerStampAt = null;
+            }
             [F.i, F.s] = [i, F.bogen[i]];
             W.ankunftOrt = { x: q.x, z: q.z, s: Math.round(s) };
             for (const z of W.zonen) if (z.aus + W.hl < s) z.weg = true;
@@ -627,7 +640,7 @@ class AnazhRealm_siedlung_verkehr {
         W.letzter = null;
         W.F = null;
         e._verkehrFaehrt = false;
-        this._blockerBewegt(e);
+        this._blockerBewegt(e, e.blockerAABBs ? 0 : undefined); // er steht: sein Platz ohne Rand, kein Beweger
         if (e.blockerAABBs) {
             this._populateBlockerAABBs(e);
             e._blockerStampAt = null;

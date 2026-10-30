@@ -345,9 +345,7 @@ async function checkBandV1744Appraisal({ page, check }) {
         const savedWohl = st.wohlBaseline;
         const savedEmoField = st.emotionField;
         const savedWeather = st.weather;
-        const setEmo = (o) => {
-            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
-        };
+        const setEmo = (o) => __emo(p, o);
 
         // --- (1) die Situation IGNORIERT die Stimmung (kein Feedback-Input) ---
         st.lifeField = new Map();
@@ -485,9 +483,7 @@ async function checkBandV1750Klammer({ page, check }) {
         const savedLife = st.lifeField;
         const savedWohl = st.wohlBaseline;
         const savedEmoField = st.emotionField;
-        const setEmo = (o) => {
-            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
-        };
+        const setEmo = (o) => __emo(p, o);
 
         // (2) ANTI-GAMING an der WURZEL: appraisalDelta trackt die SITUATION (lebendig+HP),
         // NICHT die gestempelte Emotion → eine Regel kann den Bonus nicht über Emotion faken.
