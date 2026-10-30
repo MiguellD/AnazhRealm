@@ -993,7 +993,11 @@ class AnazhRealm_speicher_laden {
     // die Vorlade, die Ankunft (Leib, Stand, Buch, Gelände), der Anschluss; die Seite dazwischen (Welt-Info, Werkstatt) liest
     // die neue Welt. Der Null-Renderer zeigt kein Bild, auf das der Ladeschirm warten könnte: er weicht sofort, wie beim Boot.
     async _weltAmOrt() {
+        // hatte die alte Welt ihr erstes Bild, sind die Vorräte der Seite über ihre Wartenden hinaus — ihre Aufträge im Flug fallen
+        // mit dem Abschied, sie beginnen neu (`_foundryVorraete`); vorher reisen ihre Wartenden (`_weltAbschied`)
+        const nachBild = !!this.state._weltbildDa;
         this._weltAbschied();
+        if (nachBild) this._foundryVorraete();
         this._applyHolzProfil(this.state._holzProfil); // die Wahl des Geräts deckelt jede Welt (init: vor ihrem Stand)
         if (this.state.renderer._isHeadlessNull) this._weltbildSteht();
         this.p2pLoadPersisted();

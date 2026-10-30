@@ -106,14 +106,7 @@ class AnazhRealm_studio_bruecke {
                 if (!m || typeof m !== "object") return;
                 if (m.type === "ready" && m.world === "terrain") {
                     f.ready = true; // der Stand-Stempel liest die Antwort selbst (`_standStempel`)
-                    // EIN Umschlag: das komplette Studio-Buch (Rezepte + B4-Tabellen + Welt-Palette + Wahrnehmung)
-                    // ist mit der Geburt gefragt, DANN die Assets vorwärmen. Der Vorrat wartet ohne Frist auf das
-                    // Buch (`f.buchDa`): fällt die Anfrage, bricht sie LAUT beim Namen (K22).
-                    this._foundryPrefetchLibrary();
-                    // DIE EINE PIPE: die Gattungs-Templates off-thread vorwärmen —
-                    // Welt-Spawns treffen dann nur noch das Memo (Clone, kein Freeze). Er wartet auf das erste
-                    // Bild (K60) wie der Vorrat der Bibliothek; ein Bruch seines Gusses meldet sich laut.
-                    this._ofenPrefetchKreaturen().catch((e) => this._stoffBruch("der Ofen-Vorrat", e));
+                    this._foundryVorraete();
                 } else if (m.type === "book") {
                     // das Buch geht in die Welt, sobald der Wirt steht (nach dem Spielstand, `_foundryWirtSteht`)
                     if (f.wirt) this._foundryIngestBook(m);
@@ -126,6 +119,20 @@ class AnazhRealm_studio_bruecke {
             this._stoffBruch("die Foundry bootet nicht", _e);
         }
         return f;
+    }
+    // DIE VORRÄTE DER SEITE (EIN Starter): der Vorrat der Bibliothek — EIN Umschlag, das komplette Studio-Buch (Rezepte, B4-Tabellen,
+    // Welt-Palette, Wahrnehmung) ist mit der Geburt gefragt, DANN wärmen die Assets vor; er wartet ohne Frist auf das Buch
+    // (`f.buchDa`), fällt die Anfrage, bricht sie LAUT beim Namen (K22) — und DIE EINE PIPE des Ofens: die Gattungs-Vorlagen
+    // off-thread, Welt-Spawns treffen dann nur das Memo (Clone, kein Freeze), ein Bruch seines Gusses meldet sich laut. Beide warten
+    // auf das erste Bild (K60). Gerufen, sobald der Faden steht (`ready`), und vom Tausch am Ort, der sie nach dem ersten Bild der
+    // alten Welt traf (`_weltAmOrt`): sein Abschied lässt jeden Wartenden an Foundry und Fäden verfallen, auch ihre Aufträge im Flug —
+    // die Bibliothek hing bei „bestellt", der Ofen stand nie, kein Tier wurde mehr geboren (Radeon 30.10., 48 im Flug). Was steht,
+    // steht (`f._vorrat === false`, `_ofenVorratSteht`); jeder Vorrat fragt nur, was Cache und Memo nicht tragen.
+    _foundryVorraete() {
+        const f = this._foundry;
+        if (!f || !f.ready) return;
+        if (f._vorrat !== false) this._foundryPrefetchLibrary();
+        if (!this._ofenVorratSteht) this._ofenPrefetchKreaturen().catch((e) => this._stoffBruch("der Ofen-Vorrat", e));
     }
     // Die Antwort eines Studio-Fadens löst ihren Auftrag ein: Körper (asset), Siedlung (settlement), Slot (slot), die Frage
     // der Karte an die Platte (karte; sie backt seit S2 im Welt-Renderer, `_karteWeltBacken`) — EINE pending-Map, die reqIds
