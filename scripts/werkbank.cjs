@@ -915,7 +915,17 @@ async function starte() {
         }, json);
         if (res.fehler)
             throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} ließ sich nicht importieren (${res.fehler})`);
-        await lade(page.evaluate(() => __weltDa(() => st.worldMeta.genesisPortalRing)));
+        // DER HAKEN DES START-ORTS (w4-proben-tempo, 30.10.): `start --ort <ohne Dorf-Zug>` legt `__anazhAutoSettlement = false` vor JEDE
+        // Ladung — in der Ziel-Welt lebte der Dorf-Takt darum nie, und mit ihm nie ihr Genesis-Ort (`_dorfTaktLebt` in `_tickGenesisOrt`,
+        // stamm/siedlung-ort.js:2776): die Ankunft wartete ohne Frist (die Sitzung bootet seit 30.10. mit `--ort wiese`; schatten.K1#1 GTX
+        // 379e5f56 ≥ 90 s „zuletzt: fenster“, swiftshader 28 min ohne Ring). Die Ankunft hebt ihn wie im Spiel, bis der Ring steht; den
+        // Zug des Orts stellt danach `umstellen` (die Bühne: dorfZug false)
+        await lade(
+            page.evaluate(() => {
+                delete window.__anazhAutoSettlement;
+                return __weltDa(() => st.worldMeta.genesisPortalRing);
+            })
+        );
         await loopAus();
         if (!(await steht())) throw new Error(`Messort ${ort.id}: nach dem Wechsel steht die Seite nicht in ${slug}`);
         return { slug, neu: true, id: res.id };
