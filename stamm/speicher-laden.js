@@ -507,16 +507,20 @@ class AnazhRealm_speicher_laden {
         }
         if (state.playerEquipped && typeof state.playerEquipped === "object") {
             const pe = state.playerEquipped;
-            // V17.57 W2-B — ein „held"-Slot; Alt-Saves (tool/weapon) wandern darauf (Waffe
-            // bevorzugt, sonst Werkzeug — beide routen via equipHeld auf denselben Slot).
-            if (pe.held) this.equipHeld(pe.held);
-            else if (pe.weapon) this.equipHeld(pe.weapon);
-            else if (pe.tool) this.equipHeld(pe.tool);
-            if (pe.armor) this.equipArmor(pe.armor);
-            // V18.109 — E8: die Off-Hand reist im selben playerEquipped-Objekt.
-            if (pe.offhand && this.state.blueprints && this.state.blueprints[pe.offhand] && this.state.player) {
+            // DER STAND SETZT JEDEN SLOT, auch den leeren (eich8 GTX 379e5f56: halten.K1#2 ließ die Hand am Langschwert, die
+            // Grundstellung spielte den Grund `held: null` zurück, die Hand blieb voll — „abweichend vom Grund: playerEquipped“,
+            // die Sitzung endete; ein Spieler, der mit leerer Hand gespeichert hat, lud ebenso das Schwert des Augenblicks mit).
+            // V17.57 W2-B — ein „held"-Slot; Alt-Saves (tool/weapon) wandern darauf (Waffe bevorzugt, sonst Werkzeug — beide
+            // routen via equipHeld auf denselben Slot); equipHeld(null) und equipArmor(null) leeren ihn.
+            const eq = (this.state.player && this.state.player.equipped) || {};
+            const hand = pe.held || pe.weapon || pe.tool || null;
+            if (hand || eq.held) this.equipHeld(hand);
+            if (pe.armor || eq.armor) this.equipArmor(pe.armor || null);
+            // V18.109 — E8: die Off-Hand reist im selben playerEquipped-Objekt (ein Bauplan, den die Welt nicht kennt, lässt sie leer).
+            const off = pe.offhand && this.state.blueprints && this.state.blueprints[pe.offhand] ? pe.offhand : null;
+            if (this.state.player && (off || eq.offhand)) {
                 this.state.player.equipped = this.state.player.equipped || { held: null, offhand: null, armor: null };
-                this.state.player.equipped.offhand = pe.offhand;
+                this.state.player.equipped.offhand = off;
                 if (typeof this._refreshHeldMesh === "function") this._refreshHeldMesh();
             }
         }
