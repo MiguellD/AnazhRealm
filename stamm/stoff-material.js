@@ -9,12 +9,16 @@ class AnazhRealm_stoff_material {
     //   kein Flimmern; ein liegender Halm (n nahe Y) trägt keine Breiten-Richtung und bleibt eben;
     //   die ALBEDO × die Adern und die hellere Mittel-Rippe (`halmAder`, mittelfrei, gefiltert);
     //   die NARBE: das Himmels-Licht × exp(−kHimmel · Λ) als Verdeckung — das direkte Licht dämpft das Laub-Licht des Halms
-    //   (`_laubLichtStoff` mit der Narbe: Lambert, Glanz und Durchlass der Quelle × exp(−K(θ) · Λ)).
+    //   (`_laubLichtStoff` mit der Narbe: Lambert, Glanz und Durchlass der Quelle × exp(−K(θ) · Λ));
+    //   das DACH (licht.K1, w3v-licht; `HALM_GESETZ.dach`): trägt der Pixel des Schirms mehrere Halme, lichtet die Wiese als Dach —
+    //   die Normale zu 0,9 oben, die Rauheit 1 (der doppelseitige Halm lichtete sonst wie eine Wand: die Stunde 0,33 über dem
+    //   Mittag, +0,37 EV); auf Armlänge trägt der Halm seinen Querschnitt und die Cuticula der Stoff-Zeile (Satz: `aRegler`).
     // Bis dahin war der Halm ein flaches Band in seiner Vertex-Farbe (die Normale über die Breite gleich), kein Durchscheinen,
     // kein Schatten am Fuß, 18 % des Himmels; der Zwilling `_grassInstanceMat` (eigener Verlauf, eigenes Gegenlicht-Leuchten)
-    // zeichnete nichts mehr und fiel.
-    _halmStoff(T, mat, farbe) {
+    // zeichnete nichts mehr und fiel. Das Dach stand bis dahin als zweite Normale hinter dem Halm (`_foundryTreeMaterial`).
+    _halmStoff(T, mat) {
         const PC = globalThis.__phytoCore;
+        const H = PC.HALM_GESETZ;
         const A = AnazhRealm._windTsl(T);
         const uv = T.uv();
         const fw = T.fwidth(uv.x).mul(this._ensureAtmoUniforms().schirmJeSzene);
@@ -23,8 +27,13 @@ class AnazhRealm_stoff_material {
         const ql = quer.length();
         const t = quer.div(ql.max(1e-4)).mul(T.smoothstep(0.02, 0.12, ql));
         const n = T.normalize(nGeo.sub(t.mul(PC.halmQuer(A, uv.x, fw)))).mul(T.faceDirection);
-        mat.normalNode = T.cameraViewMatrix.transformDirection(n);
-        mat.colorNode = T.vec4(farbe.mul(PC.halmAder(A, uv.x, fw)), 1.0);
+        // der Pixel des Schirms in Metern quer über den Halm: fw Adern × aderM
+        const dach = T.smoothstep(H.dach.px[0], H.dach.px[1], fw.mul(H.aderM));
+        mat.normalNode = T.cameraViewMatrix.transformDirection(
+            T.normalize(T.mix(n, T.vec3(0.0, 1.0, 0.0), dach.mul(H.dach.oben)))
+        );
+        mat.roughnessNode = T.mix(mat.roughnessNode || T.float(mat.roughness), T.float(1.0), dach);
+        mat.colorNode = T.vec4(mat.colorNode.rgb.mul(PC.halmAder(A, uv.x, fw)), mat.colorNode.a);
         mat.aoNode = PC.halmNarbe(A, uv.y, T.float(1.0)).himmel;
         mat.userData.halm = true;
         return mat;

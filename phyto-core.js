@@ -5131,6 +5131,11 @@
     //   aehre      DIE ÄHRE: Ährchen wechselständig an der Spindel (zweizeilig, Lolium · Elymus), `aehrchen` die volle Zahl
     //              (die gelieferten Stufen lesen ihre Budget-Zeile), `winkel` gegen die Spindel, `laenge` je Abstand (sie decken
     //              sich), `breite` je Länge (lanzettlich 7–20 × 3–7 mm), `drehung` um die Spindel je zweitem Ährchen
+    //   dach       DIE WIESE ALS DACH (licht.K1, w3v-licht): trägt der Pixel einen Halm oder mehr (Schirm-Meter je Pixel ab
+    //              `px[1]`, die Halm-Breite der Natur 3–6 mm), lichtet die Narbe als Dach — die Normale zu `oben` nach oben, die
+    //              Rauheit 1 (die Klingen streuen um sie, kein Spiegel einer Fläche); bis `px[0]` (drei Pixel je Halm: Armlänge,
+    //              1080p und 75° bis 0,7 m) trägt der Halm seinen Querschnitt und seine Cuticula. Der Übergang folgt dem Pixel des
+    //              Schirms, nie dem Abstand; ab 2,1 m (der nächste Boden des Ego-Bilds steht in 2,2 m) lichtet die Wiese als Dach.
     var HALM_GESETZ = Object.freeze({
         kiel: 0.35,
         rund: 0.6,
@@ -5143,6 +5148,7 @@
         narbe: Object.freeze({ x: 0.7, kHimmel: 0.7 }),
         rauheit: 0.55,
         aehre: Object.freeze({ aehrchen: 16, winkel: 0.42, laenge: 1.7, breite: 0.38, drehung: 0.35 }),
+        dach: Object.freeze({ px: Object.freeze([0.001, 0.003]), oben: 0.9 }),
     });
     // Der Pixel als Filter einer Welle mit ν Perioden je Ader: exp(−π² (ν·fw)² / 2) — die Gauss-Glättung des Pixels (fw: der
     // Pixel in Adern, `fwidth` des Lesers). Eine Welle unter zwei Pixeln trägt nichts mehr: kein Flimmern in der Ferne.
