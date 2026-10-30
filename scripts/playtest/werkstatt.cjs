@@ -60,7 +60,6 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
     void finalState;
     // ### CAD-Werkstatt (3D-Preview + Manipulator-Gizmo) ###
     const wave6bResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         try {
             // --- Phase 1: State-Schema ---
@@ -373,7 +372,6 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
 
     // ### Resize-Handles (Konsole + Drawer) + Background-Fix ###
     const resizeResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         try {
             const consoleEl = document.getElementById("console");
@@ -449,7 +447,6 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
 
     // ### DIE OMNIBOX (Ctrl/Cmd+K): Tag → Treffer → Ausführung (KONSUM) ###
     const omniResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         try {
             // (1) c:wetter → nur Befehls-Treffer, mind. einer enthält „wetter", run ist ausführbar
@@ -508,7 +505,6 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
 
     // ### Drawer-Scroll-Wrapper + Canvas-Sync (Bug-Fixes nach Browser-Test) ###
     const v801Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         try {
             // Jeder Drawer hat .drawer-scroll-Wrapper als direktes child
@@ -595,7 +591,6 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
 
     // ### Shape-Drag-Drop + Klick-Klick-Connection ###
     const v802Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         try {
             // Shape-Palette: 9 Cards im DOM
@@ -754,7 +749,6 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
     // ### Camera-CAD-Konventionen (Pan + Zoom-to-Cursor + Wheel-Stop) +
     //             seitliche Material/Color-Palette
     const v803Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         try {
             // Tab → Werkstatt + eigenen Bauplan vorbereiten
@@ -1144,7 +1138,6 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
 
     // ### UI V2 — Topbar + Status-Bar + Drawer-System ###
     const uiResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         const topbar = document.getElementById("topbar");
         const statusbar = document.getElementById("statusbar");
@@ -1259,7 +1252,6 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
     // Die Balken tragen deutsche Namen + Wirkungs-Tooltip (Legende); ein Bildschirmrand-Schimmer + Label
     // zeigen die dominante Emotion in JEDER Kamera (via _emotionState — dieselbe Quelle wie KI/Journal).
     const emoClarityResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         const spieler = document.getElementById("inventory-overlay"); // UI-Putz: das "Ich" ist das Inventar
 
@@ -1334,7 +1326,6 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
 
     // ### UI V2 — Quick-Buttons + Hilfe-Sektion in Einstellungen (Tab-System) ###
     const uiActionsResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         // (a) #help-section und #quick-actions sind aufgelöst — die Omnibox (Ctrl+K, `c:`) trägt ALLE Befehle
@@ -1394,7 +1385,6 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
 
     // ### UI V1 — Abilities-Liste + Save/Load ###
     const uiAbilitiesResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         const container = document.getElementById("status-abilities");
         // der Spieler öffnet den Hof: nur dort schreibt der Status-Takt die Gesten (K2 Belegung)
@@ -1523,7 +1513,6 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
 
     // ### UI V1 — Live-Tuning Slider ###
     const uiTuningResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         const sliders = {
             threshold: document.getElementById("tune-threshold"),
@@ -2443,12 +2432,10 @@ async function checkBandRezeptKatalog({ page, check }) {
                 res.b.err = (e && e.message) || String(e);
             }
 
-            // ===== (c) KATALOG: Studio-Rezepte-Sektion + Donor-Abschied im DOM =====
+            // ===== (c) KATALOG: der Donor-Abschied im DOM (jedes Rezept als Knoten der Bibliothek: gate:nervensystem S) =====
             try {
                 r._renderWorkshopDOM();
                 const list = document.getElementById("workshop-list");
-                res.c.farnRow = !!(list && list.querySelector('.workshop-studio-recipe-row[data-recipe="farn"]'));
-                res.c.recipeRows = list ? list.querySelectorAll(".workshop-studio-recipe-row").length : -1;
                 res.c.wagenRow = !!(list && list.querySelector('[data-blueprint="fahrzeug_wagen"]'));
                 res.c.torBasisRow = !!(list && list.querySelector('[data-blueprint="tor_basis"]'));
                 // die Alt-Donoren sind ABWESEND, die Substanz-Tabelle traegt sie.
@@ -2570,15 +2557,14 @@ async function checkBandRezeptKatalog({ page, check }) {
             `sum0=${JSON.stringify(b.sum0)} sumOv=${JSON.stringify(b.sumOv)} blume ${JSON.stringify(b.blume0)}/${JSON.stringify(b.blumeOv)}`
     );
     check(
-        "Rezept-Katalog (c) der Katalog zeigt `farn`, die Alt-Donoren fehlen im DOM und in state.blueprints, die Substanz-Tabelle trägt sie (wagen 17 · tor 4)",
-        c.farnRow === true &&
-            c.wagenRow === false &&
+        "Rezept-Katalog (c) die Alt-Donoren fehlen im DOM und in state.blueprints, die Substanz-Tabelle trägt sie (wagen 17 · tor 4)",
+        c.wagenRow === false &&
             c.torBasisRow === false &&
             c.wagenAbsent === true &&
             c.torBasisAbsent === true &&
             c.wagenSubstanzParts === 17 &&
             c.torSubstanzParts === 4,
-        c.err || `rezeptZeilen=${c.recipeRows} wagen=${c.wagenSubstanzParts} tor=${c.torSubstanzParts}`
+        c.err || `wagen=${c.wagenSubstanzParts} tor=${c.torSubstanzParts}`
     );
     check(
         "Rezept-Katalog (d) tor_drachentor: Slider = PARAMS-Länge des porta-Kerns, der ov treibt die Vorschau, kein ov-Schlüssel im Welt-Cache",

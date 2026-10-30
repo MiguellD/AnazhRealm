@@ -129,7 +129,6 @@ async function checkBandRing8({ page, check, errors, finalState }) {
     // Daten-Plane: Index, Per-Welt-Key, createNewWorld, switchToWorld, deleteWorld, Migration,
     // Player-Übernahme — mit reload:false, damit alle Pfade in einer Session laufen (Reload = UI).
     const ring8Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         // Schema-Version-Bump (Zeiger, Index, Platz und Legacy-Migration fährt gate:boot-rettung am echten Boot)
@@ -371,7 +370,6 @@ async function checkBandRing8({ page, check, errors, finalState }) {
 
     // ### Multi-Welt-Verwaltung: UI ###
     const ring8UiResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // die "Andere Welten" sind in den rechten Schöpfen-Block vereint (3er-Block + Picker-Liste),
         // die eigene #world-picker-section entfiel — der Picker lebt als #world-picker-list.
@@ -414,7 +412,6 @@ async function checkBandRing8({ page, check, errors, finalState }) {
     // Jede Welt trägt ihren Seed in worldMeta; SimplexNoise wird damit gefüttert → verschiedene Welten
     // liefern verschiedene Geometrie.
     const ring81Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         const oldSeed = st.worldMeta.seed;
@@ -503,7 +500,6 @@ async function checkBandRing8({ page, check, errors, finalState }) {
 
     // ### Status-Bar-Welt + der Erst-Spawn ### (der Lage-Rundlauf über echte Boots: gate:persistence (T))
     const ring82Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         // Ein leerer createNewWorld-Snapshot (playerPosition:null) zählt NICHT als generiert: das Flag bleibt
@@ -557,7 +553,6 @@ async function checkBandRing9to10({ page, check, errors, finalState }) {
     // Reload-UI indirekt über Daten-Methoden: importWorldBeside (Index-Eintrag + Per-Welt-Save mit
     // parentWorlds-Spur), Dialog-Markup im DOM, _openWeltTorDialog setzt pendingImport, Esc/cancel räumt.
     const ring9Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         // Dialog-Markup im DOM (der Fusion-Knopf: klickbar)
@@ -685,7 +680,6 @@ async function checkBandRing9to10({ page, check, errors, finalState }) {
     // Diskrimination: zwei Eltern mit JE einer eindeutigen Sache (Material, Bauplan, Emotion) — die
     // Fusion trägt beide, die drei Strategien zeigen unterscheidbare Emotion-Aggregation.
     const ring10Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         // Dialog + Stammbaum-DOM (Dialog und Eltern-B-Dropdown liest die Dialog-Probe unten)
@@ -924,7 +918,6 @@ async function checkBandRing9to10({ page, check, errors, finalState }) {
     // `importRecipesFromWorld(sourceId)` kopiert Baupläne + Materialien + Werkzeuge der Quelle in die
     // aktive Welt; Konflikte bekommen `-import`-Suffix, Cross-Refs (sourceBlueprint, refName) folgen.
     const recipeResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         const srcId = r.createNewWorld({ slug: "recipe-source", inheritPlayer: false, reload: false });

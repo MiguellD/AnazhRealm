@@ -11,7 +11,6 @@ async function checkBandW4LofiPad({ page, check }) {
     // emotion-getrieben), kein fester Akkord-Satz. Je Probe EINE Zeile der Seite: ihr Satz und ihr Urteil (dazu, wo nötig,
     // der Grund) — der Richter liest sie in ihrer Folge.
     const w4v2Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // W4 V3 — Harmonie-Markov-Kette definiert. ZWILLINGS-ABSCHIED 19.07.:
         // die Konstanten-Zwillinge LOFI_SCALE/LOFI_BPM sind ABWESEND — Skala

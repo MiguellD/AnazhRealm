@@ -2456,10 +2456,13 @@ class AnazhRealm_kreatur_verhalten {
         // die restoriert statt neu gewürfelt.
         const pending = this.state._pendingCreatureSnapshots;
         if (Array.isArray(pending) && pending.length > 0) {
+            // DIE ETIKETTEN DES STANDS (die Projektion der Gefühle, feld-sprache `_projectCreatureEmotion`; das Speicher-Gesetz trägt
+            // sie) VOR dem Abräumen gelesen — `clearCreatures` legt ein leeres Etikett-Feld an: bis 30.10. las die Wiederkehr danach und
+            // jedes Tier kam „happy“ zurück (Laden wie Grundstellung; die Mess-Sitzung fand `creatureEmotions` abweichend, 13 Stationen tot)
+            const emotions = Array.isArray(this.state.creatureEmotions) ? this.state.creatureEmotions.slice() : [];
             this.clearCreatures();
             const symBefore = this.state.symphony && this.state.symphony.enabled;
             if (this.state.symphony) this.state.symphony.enabled = false;
-            const emotions = Array.isArray(this.state.creatureEmotions) ? this.state.creatureEmotions : [];
             let restored = 0;
             this._verbandWiederkehr = new Map(); // S6: die Verbände des Stands, neu gebunden (_restoreCreatureFromSnapshot)
             for (let i = 0; i < pending.length; i++) {

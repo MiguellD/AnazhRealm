@@ -41,9 +41,7 @@ async function checkBandV1731EmotionDrivesWorld({ page, check }) {
     );
 }
 
-async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWelle6G3Lebendigkeit({ page, check }) {
     // ### Welle 6.G3 — Welt-Lebendigkeit ###
     // (a) Tag-Nacht-Zyklus, (b) sanfter Wetter-Übergang —
     // Konstanten, Methoden, Persistenz, DSL-Op, UI-DOM.
@@ -406,9 +404,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }
     }
 }
 
-async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWelle6G4Atmosphere({ page, check }) {
     // ### 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Licht-Material + Fog) ###
     // Tiefe statt homogenem Licht: Hemisphere-Light (Sky-Tint oben, Erd-Tint unten) + licht-reaktives
     // Material + atmosphärischer Fog.
@@ -531,11 +527,7 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
     const v828Results = await safeEvaluate(page, () => {
         const out = {};
 
-        // --- Phase D: Wind + Wolken + Wasser ---
-        // Wind lebt jetzt im Instanced-Gras-Material.
-        const wm1 = r._grassInstanceMat ? r._grassInstanceMat() : null;
-        const wm2 = r._grassInstanceMat ? r._grassInstanceMat() : null;
-        out.windMatCached = !!(wm1 && wm1 === wm2); // geteilt
+        // --- Phase D: Wolken + Wasser ---
         // Wolken-Cover (der Uniform-Knoten in state.skyboxUniforms) folgt weather (liest state.skyboxUniforms). weatherTransition leeren: eine aktive
         // Warmup-Transition überstimmt state.weather in `_weatherBlendedValue` (beide Lesungen gleich).
         st.weatherTransition = null;
@@ -695,7 +687,6 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
     });
 
     if (v828Results && !v828Results.error) {
-        check("D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
         check("D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
         check(
             "V17.J3: die Sonne folgt der Kamera (|Pos−Kamera| ≈ skyOffset, nicht origin-orbit)",
@@ -803,7 +794,7 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
             out.egoEbene = { knoten: knoten.length, leib, ego, zurueck };
         }
 
-        // --- Instanced-Gras: `state.voxelChunkGrass` (der Bau verbucht je Chunk), `_grassInstanceMat` ist geteilt
+        // --- Instanced-Gras: `state.voxelChunkGrass` (der Bau verbucht je Chunk), der Halm-Stoff ist geteilt
         out.chunkGrassMap = !!st.voxelChunkGrass && st.voxelChunkGrass instanceof Map;
         // die Wiese ist Boden-
         // Funktion — Gras-Zellen sind verbucht (null = bewusst halm-los), 0 InstancedMesh.
@@ -816,7 +807,7 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
             }
         }
         out.grassCellsBookedHalmFree = grassCells > 0 && grassInstances === 0;
-        out.grassMatShared = r._grassInstanceMat() === r._grassInstanceMat();
+        out.grassMatShared = r._foundryTreeMaterial("grass", null) === r._foundryTreeMaterial("grass", null);
 
         // DIE BODEN-KARTE ist der GERENDERTE Boden: an 256 Punkten des Spieler-Chunks trifft `_bodenSichtAt`
         // (der EINE Leser, K21) die Mesh-Oberfläche (Strahl von oben, beide Seiten — die Surface-Nets-Wicklung zeigt
@@ -891,7 +882,7 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
         out.genesisIdempotent = before === after;
 
         // --- Adaptives Wasser ---
-        out.waterAdaptive = typeof st.waterLevel === "number" && Number.isFinite(st.waterLevel);
+        out.waterAdaptive = Number.isFinite(st.waterLevel);
 
         return out;
     });
@@ -1046,9 +1037,7 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
     }
 }
 
-async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
     // ### Regler: Sicht-Ring + Cel-Stufen + Fog ###
     const v840Results = await safeEvaluate(
         page,

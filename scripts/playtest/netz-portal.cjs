@@ -13,7 +13,6 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
     // stellt ihn in sein iframe zu. Geprüft: Broadcast, Kanal-Verfolgung, Sub-Raum-Eingrenzung,
     // Rate-Limit + Deckel; Zwei-Browser-Durchlauf: smoke-webrtc.cjs.
     const w17bResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         const MAXB = AnazhRealm.SUBWORLD_NET_MAX_BYTES;
         const CAP = AnazhRealm.SUBWORLD_NET_RATE_MAX;
@@ -249,7 +248,6 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
     // sandgesicherten iframe), Gäste routen an ihn (subworld-srv), Antworten kommen gezielt zurück
     // (subworld-cli). Geprüft: Routing-Methoden; Zwei-Browser-Durchlauf: smoke-webrtc.
     const w17jsResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         const MAXB = AnazhRealm.SUBWORLD_NET_MAX_BYTES;
         const SUBW = "worlds/skeleton/index.html";
@@ -545,7 +543,6 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
     // Verlässt der Compute-Host das Mesh, wählt jeder Gast aus dem zuletzt annoncierten Roster
     // deterministisch denselben Nachfolger (kleinste peerId); der baut einen frischen Server-Kontext.
     const w17mResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         const SUBW = "worlds/skeleton/index.html";
         const selfConn = r._portalSelfConnId();
@@ -721,7 +718,6 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
     // Wer ein Multiplayer-Portal betritt, broadcastet portal-invite; Mitspieler bekommen „mitkommen?“,
     // „Ja“ holt + betritt das Portal.
     const w17cResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         out.pendingInviteInit = st.p2p.pendingInvite === null;
@@ -898,7 +894,6 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
     // Die Multiplayer-Marke fließt durch _sanitizeImportedManifest, _vendorRegisterWorld, den
     // Welt-Katalog und aimBlueprintAtWorld → obtainPortalForWorld baut ein einladendes Multiplayer-Portal.
     const w17mpResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         // _sanitizeImportedManifest trägt multiplayer.
@@ -1008,7 +1003,6 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
     // serverMode fließt durch _sanitizeImportedManifest, _vendorRegisterWorld, _p2pBuildCatalog/-Sanitize
     // und den Welt-Katalog — sonst verlöre eine vendorte js-compute-Welt still ihren serverMode (→ relay).
     const w17svResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         // _sanitizeImportedManifest trägt serverMode js-compute +

@@ -2401,15 +2401,18 @@ hauptLauf(async () => {
     if (schalter("--kern")) process.exit(errs.length ? 1 : 0); // Station K allein
 
     await server.lausche(PORT);
-    // `--rueckmeldung` allein zeichnet auf der Karte (GPU-Station fahrzeug.K5; welt-boot nennt den Adapter, `[linse-gpu]`)
+    // `--rueckmeldung` und `--wegenetz` zeichnen auf der Karte (die GPU-Stationen fahrzeug.K5 und fahrzeug.K2: die Welt kommt je
+    // Bild, wie im Spiel; welt-boot nennt den Adapter, `[linse-gpu]`) — bis w4-proben-heil fuhr das Wegenetz den Null-Renderer, und die
+    // Wand GPU der Punkte-Maschine wies jede Fahrt ab („keine Linse nennt eine Karte“, 98ef98bb bis 73bdf938 GTX)
     const rm = schalter("--rueckmeldung");
+    const karte = rm || schalter("--wegenetz");
     const browser = await starteBrowser({
-        art: rm ? "linse" : "null",
+        art: karte ? "linse" : "null",
         frist: 1800000,
         zusatz: ["--autoplay-policy=no-user-gesture-required"],
     });
     const page = await browser.newPage();
-    if (!rm) await nullRenderer(page);
+    if (!karte) await nullRenderer(page);
     if (schalter("--wegenetz")) await page.evaluateOnNewDocument(() => (window.__anazhAutoSettlement = true)); // die Orte erwachen
     await server.zeige(page, 30000);
     // der Messort der Mess-Wiese (spec/profiband/haushalt.json `messorte`, S1 W1f) — derselbe Leser wie gate:vehicle-drive B-e

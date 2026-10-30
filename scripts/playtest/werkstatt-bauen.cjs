@@ -592,7 +592,6 @@ async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
     // LMB abbauen / RMB platzieren über Keybinding. Architektur-Hit → removeArchitecture; kein Hit →
     // Voxel-carve. Stamina-Gate via getGameMode wie applyOpToPart.
     const wave6a6Results = await safeEvaluate(page, () => {
-        if (!r || !st) return null;
         const out = {};
         // Statische Konstante
         out.hasStaminaCost = AnazhRealm._aktionAusdauer() === 5;
@@ -687,7 +686,6 @@ async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
     // Eine Architektur mit resoniert ≥ resonance_mild verstummt mit einem Sinus-Ping; stille
     // Strukturen bleiben stumm.
     const wave6a6V2Results = await safeEvaluate(page, () => {
-        if (!r || !st) return null;
         const out = {};
         // Threshold-Konstante existiert
         const thr = AnazhRealm.WORLD_EFFECT_THRESHOLDS;
@@ -772,7 +770,6 @@ async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
     // _updateBuildModeHud baut den Text aus state.keybindings über _formatBindingCode; setKeybinding
     // + resetKeybindings triggern ein HUD-Refresh (nie veraltete Beschriftung).
     const wave6c3V2Results = await safeEvaluate(page, () => {
-        if (!r || !st) return null;
         const out = {};
         r.resetKeybindings();
         r.setHotbarSlot(0, "stein_block");
@@ -822,7 +819,6 @@ async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
     // Sechs Aktionen rebindable: break, place, confirmBuild, inventory, cancelBuild, jump.
     // Konflikt-Auflösung über Swap; persistiert in localStorage.
     const wave6c3Results = await safeEvaluate(page, () => {
-        if (!r || !st) return null;
         const out = {};
         // Statische Konstanten
         out.hasDefaults =
@@ -969,7 +965,6 @@ async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
 // das Instancing verschoben. Dazu: water_wave nicht instancbar; Leaf-Farbe gleich (Mirror-Drift).
 async function checkBandWellePerfCArchInstancing({ page, check }) {
     const res = await page.evaluate(() => {
-        if (!r || !st) return { error: "no realm" };
         const out = {};
 
         // Gate: ein gewachsener Baum (Grammatik) ist instancbar. Er ist _isMerged (Bark+Foliage = 2 Leaves);

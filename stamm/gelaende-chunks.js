@@ -856,7 +856,7 @@ class AnazhRealm_gelaende_chunks {
     // Generation seiner Chunks steigt (`_voxelStand`), ihre Antworten im Flug fallen beim Eintreffen; aus den Caches
     // fallen nur die Chunks, deren Stand er ändert (sein Karten-Fußabdruck samt 3×3), je LOD. Der Rest der Welt streamt
     // weiter (bis K23 leerte jeder Edit beide Caches der ganzen Welt und verwarf jede Antwort im Flug).
-    _voxelWorkerNotifyEdit(ed) {
+    _voxelWorkerNotifyEdit(ed, anhang = true) {
         if (!this.state.voxelWorker) return;
         const k = this._voxelEditKarte();
         const span = k.span;
@@ -871,6 +871,7 @@ class AnazhRealm_gelaende_chunks {
                 for (let cz = cz0; cz <= cz1; cz++)
                     for (let lod = 0; lod <= 3; lod++) cache.delete(`${cx},${cz},${lod}`);
         }
+        if (!anhang) return; // die ganze Liste reist danach (`_standRueckspielen`)
         try {
             this._voxelZustandPost({
                 type: "state-update",
@@ -3053,12 +3054,27 @@ class AnazhRealm_gelaende_chunks {
         // Kein Deckel (K23): jeder Edit bleibt, Main und Worker tragen dieselbe Liste; die Leser fragen je Chunk (die
         // Karte, `_voxelEditKarte`). Bis K23 verdrängte ein FIFO-Deckel (256) still den ersten — nur im Main.
         edits.push(newEdit);
+        this._editWirkt(newEdit, true);
+        // Fill unter sich darf den Spieler nicht begraben (sonst steckt er Meter unter der neuen
+        // Oberfläche im Fels) → Rettung. Nur fill schließt ein; carve öffnet.
+        if (mode === "fill") this._rescuePlayerFromEditSolid(x, yClamped, z, radius);
+        // Persistenz debounced (~1.2 s nach dem letzten Hit): der nächste Stand reicht dem Speicher-Faden die neuen Edits als
+        // Anhang. Der Edit liegt schon in `worldMeta.voxelEdits`; jeder andere Save nimmt ihn sofort mit.
+        this._scheduleEditSave();
+        return true;
+    }
+
+    // DIE WIRKUNG EINES EDITS (der EINE Reaktiv-Pfad): Faden, Stau, Gras, Neubau, Wasser — für den neuen Edit (`neu`: der Faden
+    // bekommt ihn als Anhang, das stehende Netz trägt seine Säule vorläufig) und für jeden, der mit einem zurückgespielten Stand
+    // kam oder fiel (`_standRueckspielen`: der Faden bekommt danach die ganze Liste, der Neubau trägt den Boden ohne ihn).
+    _editWirkt(ed, neu) {
         // DIE REICHWEITE DES EDITS (gelaende-core `editReich`): so weit ändert seine Form die Dichte — jeder Neubau, jede
         // Wasser-Kappe, jede Weckung unten deckt sie (der Radius allein ließ die Kehle der Vereinigung im Nachbar-Chunk alt).
-        const reich = globalThis.__gelaendeCore.editReich(newEdit);
+        const { x, z } = ed;
+        const reich = globalThis.__gelaendeCore.editReich(ed);
         // Edit-Delta an den Worker: die Generation der berührten Chunks steigt, ihre Antworten im Flug und im Cache
         // fallen; der Pump fordert frisch nach. No-op ohne gespawnten Worker (vor Worldgen).
-        this._voxelWorkerNotifyEdit(newEdit);
+        this._voxelWorkerNotifyEdit(ed, neu);
         // der Stau der Werke folgt dem Edit, ehe ein Faden die Chunks neu baut (ein Damm hält, ein Schnitt öffnet ihn)
         this._stauFelder();
         // `_remeshVoxelChunksAround` ist der EINZIGE Reaktiv-Pfad: die Chunks bauen neu, das Cell-Feld
@@ -3079,16 +3095,13 @@ class AnazhRealm_gelaende_chunks {
         // nah zuerst), bis dahin trägt das stehende Netz die Säule (`_editGestaltVorlaeufig`) — dasselbe Bild, in dem der
         // Klick fiel. Bis bau-faden baute der Edit seinen Fußabdruck synchron (`_syncRebuildEditFootprint`, 4 Chunks:
         // 215 ms je Bau-Klick im Haupt-Faden, höchstens 374 ms).
-        this._editGestaltVorlaeufig(newEdit);
+        if (neu) this._editGestaltVorlaeufig(ed);
         // Kappen/Quell-Markierungen/Stau-Felder der Region verwerfen — der Spill-Scan muss die FRISCHEN Zellen sehen (ein
         // Fill kann Damm sein, ein Carve ihn öffnen; die Zellen des Neubaus verwirft `_finalizeVoxelChunkBuild` ebenso), und
         // der Lazy-Neubau legt das Level auf das Gesetz der neuen Zellen (`_ensureWaterCALevel`, F3). Bis F3 säte der Edit das Level
         // vorher aus den alten Zellen (`_preSeedWaterCAForEdit`), damit der Automat den Graben sichtbar fülle — sein Dach
         // stand dabei je Spalte auf einer eigenen Höhe neben dem Spiegel (die zweite Fläche).
         this._invalidateWaterCapsAround(x, z, reich);
-        // Fill unter sich darf den Spieler nicht begraben (sonst steckt er Meter unter der neuen
-        // Oberfläche im Fels) → Rettung. Nur fill schließt ein; carve öffnet.
-        if (mode === "fill") this._rescuePlayerFromEditSolid(x, yClamped, z, radius);
         // T4a-2 — den Wasser-Automaten in der Carve-Region + 1-Ring WECKEN: die Zellen änderten sich
         // (neuer Raum geöffnet/verfüllt) → das Wasser strömt nach (active-cell, settled danach inaktiv).
         {
@@ -3099,10 +3112,6 @@ class AnazhRealm_gelaende_chunks {
             const maxCZ = Math.floor((z + reich) / span) + 1;
             for (let cx = minCX; cx <= maxCX; cx++) for (let cz = minCZ; cz <= maxCZ; cz++) this._wakeWaterCA(cx, cz);
         }
-        // Persistenz debounced (~1.2 s nach dem letzten Hit): der nächste Stand reicht dem Speicher-Faden die neuen Edits als
-        // Anhang. Der Edit liegt schon in `worldMeta.voxelEdits`; jeder andere Save nimmt ihn sofort mit.
-        this._scheduleEditSave();
-        return true;
     }
 
     carveVoxel(x, y, z, r) {

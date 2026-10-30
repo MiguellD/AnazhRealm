@@ -1577,6 +1577,8 @@
         MESHFREI: MESHFREI,
         PRESETS: VERTRAG_PRESETS,
         PARAMS_BY_KIND: { klang: PARAMS },
+        // B8 — der Stammbaum (studios.K5): wie das Buch sich und seine Arten nennt (der Wirt leitet den EINEN Baum ab)
+        STAMMBAUM: { studio: "Genesis", arten: { klang: "Musik der Welt" } },
         // Die Lab-Quellen (die Shell liest DIESE eine Quelle — Aliasse):
         GENRES: PRESETS,
         SCALES: SCALES,

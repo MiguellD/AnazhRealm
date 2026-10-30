@@ -930,7 +930,6 @@ async function checkBandWave4({ page, check, errors, finalState }) {
     void finalState;
     // ### Materialien als Tag-Profile ###
     const wave4p1Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // Statisches Tag-Schema
         const keys = AnazhRealm.MATERIAL_TAG_KEYS;
@@ -1056,7 +1055,6 @@ async function checkBandWave4({ page, check, errors, finalState }) {
 
     // ### Helix + Form-Tag-Aktivierungs-Matrix ###
     const wave4p2Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // FORM_TAG_ACTIVATION existiert + frozen
         const M = AnazhRealm.FORM_TAG_ACTIVATION;
@@ -1188,7 +1186,6 @@ async function checkBandWave4({ page, check, errors, finalState }) {
 
     // ### Werkzeuge + opChain + Präzision ###
     const wave4p3Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // Werkzeug-State + Konstanten
         const tools = st.tools || {};
@@ -1412,7 +1409,6 @@ async function checkBandWave5({ page, check, errors, finalState }) {
     void finalState;
     // ### räumliche Emergenz (Spitze richtet + Kontakt überträgt) ###
     const wave5bResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // Konstanten
         out.pointedShapesFrozen = Object.isFrozen(AnazhRealm.SPATIAL_POINTED_SHAPES);
@@ -1582,7 +1578,6 @@ async function checkBandWave5({ page, check, errors, finalState }) {
 
     // ### Hohlraum + Symmetrieachse + Resonanz-Array ###
     const wave5bp2Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         out.hollowShapesFrozen = Object.isFrozen(AnazhRealm.SPATIAL_HOLLOW_SHAPES);
         out.hollowHasSphere = AnazhRealm.SPATIAL_HOLLOW_SHAPES.has("sphere");
@@ -1712,7 +1707,6 @@ async function checkBandWave5({ page, check, errors, finalState }) {
 
     // ### Verbindungstypen mit Lastformel ###
     const wave5aResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // Konstanten
         out.connectionTypesFrozen = Object.isFrozen(AnazhRealm.CONNECTION_TYPES);
@@ -1894,7 +1888,6 @@ async function checkBandWave5({ page, check, errors, finalState }) {
 
     // ### Maschinen-Rekursivitaet (Bauplan als Werkzeug) ###
     const wave5cResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         out.opClassesFrozen = Object.isFrozen(AnazhRealm.TOOL_OP_CLASSES);
         out.opClassesCount = AnazhRealm.TOOL_OP_CLASSES.size === 4;
@@ -2075,7 +2068,6 @@ async function checkBandWave5({ page, check, errors, finalState }) {
 
     // ### Bugfixes nach Welle-5-Reflexion ###
     const bugfixResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         // Bug 1: Part-Loesch raeumt connections auf
@@ -2199,7 +2191,6 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
     void finalState;
     // ### Werkzeug-Domains + emergente Bauplan-Rolle ###
     const wave9aResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const AR = AnazhRealm;
         const out = {};
         try {
@@ -2399,7 +2390,6 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
 
     // ### Domain-Werkzeuge + UI-Anzeige der Rolle ###
     const wave9bResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const AR = AnazhRealm;
         const out = {};
         try {
@@ -2538,7 +2528,6 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
 
     // ### Welt-Werkstatt-Architekturen + Distance-Gate ###
     const wave9cResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         try {
             const stationNames = ["esse", "brennkolben", "webstuhl", "seelenstein_altar", "drehbank"];
@@ -2641,7 +2630,6 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
 
     // ### Maschinen-Bonus + Seelen-Bauplane ###
     const wave9dResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         try {
             // Maschinen-Bonus
@@ -2746,7 +2734,6 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
 
     // ### Präzision als Stat-Multiplikator ###
     const wave10aResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         try {
             // Helper-Methode existiert

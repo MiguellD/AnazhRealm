@@ -1,8 +1,9 @@
 {
-    "quelle": "Koschmieder 1924 (C = C0 e^(-beta d), Schwelle 0,02 fuer Ziele ab 1 Grad nach Middleton 1952: V = 3,912/beta bei 550 nm); klare Sicht 20 km (DWD-Sichtklasse sehr gut 20-50 km, unterer Rand); Rayleigh auf Meereshoehe bei 680/550/440 nm nach Bucholtz 1995 (Appl. Opt. 34(15):2765); das Aerosol grau; Dunst-Skalenhoehe der Grenzschicht 1 km (Elterman 1968)",
+    "quelle": "Koschmieder 1924 (C = C0 e^(-beta d), Schwelle 0,02 fuer Ziele ab 1 Grad nach Middleton 1952: V = 3,912/beta bei 550 nm); klare Sicht 20 km (DWD-Sichtklasse sehr gut 20-50 km, unterer Rand); Rayleigh auf Meereshoehe bei 680/550/440 nm nach Bucholtz 1995 (Appl. Opt. 34(15):2765); das Aerosol je Kanal nach Angstroem (AERONET: Europa im Sommer alpha 1,2-1,4, Dubovik et al. 2002, J. Atmos. Sci. 59:590); Dunst-Skalenhoehe der Grenzschicht 1 km (Elterman 1968)",
     "sichtKlarM": 20000,
     "kontrast": 0.02,
     "rayleigh": [4.6e-6, 1.16e-5, 2.88e-5],
+    "aerosol": { "angstroem": 1.3, "wellenNm": [680, 550, 440] },
     "skalenHoeheM": 1000,
     "baenderM": [1000, 2000, 5000, 8000],
     "uhren": [0.5, 0.27],
@@ -10,10 +11,9 @@
     "band": { "T": 0.15, "kanal": [0.5, 1.5], "dh": 10, "rand": 0.02, "linie": 1, "seite": 1.2, "weissRB": 1.3, "himmelTon": 15 },
     "wetter": { "sichtSturmM": 1500, "band": 0.15, "zugEvS": 0.1 },
     "weiss": { "m": 5000, "seite": 300 },
-    "himmel": { "ton": 222, "quelle": "der Horizont nach Hillaire 2020 (CGF 39(4), Gl. 5-9) mit den Konstanten von Bruneton 2017 und dem Boden grau 0,1, Auge 120 m ueber Genesis, Sonne 74 Grad: Ton 222-223 Grad (CPU-Integrator himmel-ton 8fde2616)" },
+    "himmel": { "ton": 222, "quelle": "der Horizont nach Hillaire 2020 (CGF 39(4), Gl. 5-9) mit den Konstanten von Bruneton 2017 und dem Boden grau 0,1, Auge 120 m ueber Genesis, Sonne 74 Grad: Ton 222-223 Grad (CPU-Integrator himmel-ton 8fde2616); auf der CIE-Tageslicht-Ortskurve (Judd, MacAdam, Wyszecki 1964: 622 gemessene Spektren) liegt jedes Himmelslicht ueber 6 600 K bei 214-223 Grad" },
     "offen": {
-        "FARBTON": "das Gelaende bei 8 km ist gelbgruen (Ton 70-78 Grad, Y 0,75-0,88 der In-Streuung): ueber blauem Horizont 30-50 Grad, auch mit halber Albedo 11-17 Grad (ferne-blau-k1); Hillaire ueber Wiese 22-27 Grad",
-        "HIMMEL": "ATMO_BODEN (Laub und Wald-Boden, G/B 3,1) faerbt den Horizont gruen (Ton 120-135 Grad); grau 0,1 misst 221-225 Grad, der Schaetzer JE KANAL schwankt dann bis 1,64 (ferne-blau-k1)",
-        "SONNENSEITE Uhr 0.5": "bei Sonne 74 Grad gibt die Phase 1,17 (Hillaire 1,169, CIE-Klarhimmel Typ 12 1,17); Uhr 0,27 misst 5,2"
+        "FARBTON": "das Gelaende bei 8 km ist die Wiese der Ferne (Fern-Farbe 0,105/0,128/0,052, ohne Luft Y 0,75-0,88 der In-Streuung, Erde ~0,4): ihre Farbe traegt den Ton gegen einen fast weissen Horizont (Saettigung 0,07); der CPU-Nachbau gab nach w4-ferne-blau (mit dem Boden der Ferne und den quadratischen Zeilen der Mehrfachstreuung, die mit heil-w4-ferne-blau fielen) 18-21 Grad, selbst mit grauem Boden 0,1 noch 11-22 Grad: die helle Wiese der Ferne allein haelt ihn ueber 10 Grad",
+        "HIMMEL": "ATMO_BODEN (Laub und Wald-Boden der Albedo-Tafel, G/B 3,1) toent ueber die Mehrfachstreuung den Horizont gruen. Der Boden der Ferne (Fern-Farbe 0,113/0,134/0,065 bis 100 km, das Doppelte von Grasland im Satelliten-Band) toente ihn weniger (CPU-Nachbau w4-ferne-blau: Ton 151-175 Grad, Duv +0,004 bis +0,006 statt Radeon +0,007 bis +0,010) und fiel mit heil-w4-ferne-blau: derselbe Boden ist die untere Haelfte der EINEN Umgebung, die jeder nahe Stoff spiegelt (der Film der Tore milchweiss 5,3 % > 5 %)"
     }
 }

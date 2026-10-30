@@ -275,6 +275,19 @@
         ]
     },
     {
+        "warum": "DIE WAHL DER GPU (Spike gpu-wahl): der Haken des Passes läuft vor seinem Encoder (der Compute geht vor dem Zug), der Compute bindet die Puffer der Arena über r184s Attribut-Arten",
+        "anker": [
+            {
+                "sub": "l.onBeforeRender(this,e,t,p);const v=t.isArrayCamera?",
+                "organ": "_instanzWahlGpu (der Haken des Passes vor seinem Encoder)"
+            },
+            {
+                "sub": "const Ay=1,Ey=2,wy=3,Cy=4",
+                "organ": "_wahlRechnen (r184 AttributeType: 3 Speicher, 4 Auftrag)"
+            }
+        ]
+    },
+    {
         "warum": "DER POSITIONS-KNOTEN VOR DER INSTANZ-MATRIX: `setupPosition` legt die Zuweisung des positionNode auf den Stapel, der Instanz-Knoten hängt sein `positionLocal = M × positionLocal` erst in seinem setup an, und `StackNode.build` baut nachgereichte Knoten NACH den ersten — im positionNode sind positionLocal, normalLocal und positionWorld die VORLAGE. Wer die Welt braucht, liest die EINE Naht `_weltNaht`.",
         "anker": [
             {

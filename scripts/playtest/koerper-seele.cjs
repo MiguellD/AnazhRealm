@@ -992,7 +992,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
     // MATERIAL_TAG_KEYS sind die EINE Achsen-Sprache für Soul- und Material-Tags. STAT_FROM_TAGS sind
     // reine Funktionen → Diskriminations-Tests prüfen Verhältnisse (Fuchs schneller, Bär mehr HP).
     const wave6dResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         // AnazhRealm-Klasse ist global im Script-Scope; page.evaluate
         // sieht sie direkt (kein window-Prefix nötig).
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : AnazhRealm;
@@ -1055,7 +1054,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
                 "knockback",
                 "attackSpeed",
                 "defense",
-            ].every((k) => typeof computed.stats[k] === "number" && Number.isFinite(computed.stats[k]));
+            ].every((k) => Number.isFinite(computed.stats[k]));
 
         // ALTLASTEN-NULL Diskriminations-Test: drei TIER-KÖRPER → drei Profile
         // aus der GRÖSSEN-Achse (die eine Fold-Quelle): Fuchs flink, Bär tank,
@@ -1136,7 +1135,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
     // (1) WASD-Mapping · (2) „damage X“ als Chat-Pattern · (3) Aura-Absenz · (4) Tod und Wunde: gate:kampf-gefuehl Q13
     // · (5) Werkzeug-Anwendung kostet Stamina · (6) Konsumables aus Compound-Tags.
     const reflexResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         // (2) Chat-Pattern für damage
@@ -1326,7 +1324,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
 
     // ### Welle 6.D Etappe 3b — Equipment + Aura ###
     const wave6d3bResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : AnazhRealm;
         const out = {};
         // Konstanten + Methoden
@@ -1475,7 +1472,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
 
     // ### Welle 6.D Etappe 3a — Tod, Min-Regel-Hybrid, Konsumables ###
     const wave6d3aResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : AnazhRealm;
         const out = {};
         // Tests für Tod/Stamina/Phönix laufen im pfad-
@@ -1623,7 +1619,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
     // state.player.boosts ist ein Array; tickPlayerBoosts filtert Abgelaufene + triggert Emotion +
     // Resonance 1×/s; computePlayerStats addiert aktive Deltas vor der Stat-Berechnung.
     const wave6d2Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : AnazhRealm;
         const out = {};
         out.hasBoostsField = Array.isArray(st.player.boosts);
@@ -1786,7 +1781,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
     // define_soul(name, bodyParts) komponiert eigene Charaktere — Form × Material über dieselbe
     // Hylomorphismus-Pipe wie Bauwerke.
     const wave6d16Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         out.customSoulsContainerExists = st.customSouls && typeof st.customSouls === "object";
 
@@ -1875,7 +1869,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
 
     // ### Welle 6.D Etappe 1.7 — Visueller Avatar-Editor ###
     const wave6d17Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // der Ich-Soul-Editor ist geschnitten; die Seelen-Schöpfung lebt in der Werkstatt
         // (die Seele IST ein Bauplan, soulToBlueprint + „Körper holen"). Die customSoul-CRUD bleibt als
@@ -2115,7 +2108,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
 // PHASEN B–F — die Kern-KONSUM-Beweise des Phasen-Zugs.
 async function checkBandPhasenBF({ page, check }) {
     const res = await page.evaluate(async () => {
-        if (!r || !st) return { error: "no realm" };
         const out = {};
         // C1 — Gelenke: ein synthetischer 2-Part-Bauplan mit Verbindung → Joint-Rolle mit Anker.
         const roles = r.computeMotionRoles(
