@@ -72,7 +72,7 @@ function urteil(m) {
         for (const modus of MODI) {
             const z = (o.modi || {})[modus];
             if (!z || !(z.n > 0)) {
-                out.push(`${ort.id} ${modus}: keine Stellung (Vorbedingung${z && z.grund ? `: ${z.grund}` : ""})`);
+                out.push(`${ort.id} ${modus}: keine Stellung (Vorbedingung${z?.grund ? `: ${z.grund}` : ""})`);
                 continue;
             }
             if (z.max > NAH_DECKUNG_MAX) {
@@ -283,20 +283,13 @@ function leibInstall(cfg) {
             await sleep(ms || 30);
         }
     };
-    // reißt der Deckel, nennt der Wurf die Lücken des Weltbilds samt ihrem Täter (`_lueckeTaeter`) — „die Welt hat nichts mehr
-    // offen" allein sagte nie, worauf das Bild wartete
+    // reißt der Deckel, nennt sein Wurf die Lücken des Weltbilds (`__deckel`)
     L.steht = async (ms) => {
         let n = 0;
-        try {
-            for (const weiter = window.__deckel("das Weltbild", ms / 45); weiter(); ) {
-                await L.tick(5, 40);
-                n++;
-                if (n >= 4 && !r._weltbildFehlt(true).length) break;
-            }
-        } catch (f) {
-            // ein neuer Wurf: der Stapel (`out.err`) trägt die Kopfzeile seines Baus, ein angehängter Satz stünde nie darin
-            const l = r._weltbildLuecken(true);
-            throw new Error(`${f.message} — es fehlt: ${l.map((x) => [x.satz, r._lueckeTaeter(x)].filter(Boolean).join(": ")).join(" · ") || "nichts"}`);
+        for (const weiter = window.__deckel("das Weltbild", ms / 45); weiter(); ) {
+            await L.tick(5, 40);
+            n++;
+            if (n >= 4 && !r._weltbildFehlt(true).length) break;
         }
         return r._weltbildFehlt(true);
     };
@@ -350,7 +343,7 @@ function leibInstall(cfg) {
                 if (L.inBox(c, b, R)) taeter.push(`in ${a.type}`);
                 else if (a !== ritt) {
                     const h = r._segmentAABB(k.x, k.y, k.z, c.x - k.x, c.y - k.y, c.z - k.z, b);
-                    if (h && h.t < 1) taeter.push(`${a.type} zwischen Ziel und Linse`);
+                    if (h?.t < 1) taeter.push(`${a.type} zwischen Ziel und Linse`);
                 }
             }
             const d = Math.hypot(c.x - k.x, c.y - k.y, c.z - k.z);
@@ -594,7 +587,7 @@ async function leibWiese(arg) {
         // DER VERFOLGER-RITT: dieselben Posen, der GT 3,2 m vor der Box, sein Heck zu ihr
         L.rittPosen(out, L.gtHolen(arg.x + 30, arg.z), posen, (p) => L.vor(p.b, p.seite, 3.2));
     } catch (e) {
-        out.err = (e && e.stack) || String(e);
+        out.err = e?.stack || String(e);
     }
     out.proben = L.proben;
     return out;
@@ -619,7 +612,7 @@ async function leibHang(arg) {
         }
         L.rittPosen(out, L.gtHolen(S.x + 12, S.fusZ - 10), posen, (p) => p);
     } catch (e) {
-        out.err = (e && e.stack) || String(e);
+        out.err = e?.stack || String(e);
     }
     out.proben = L.proben;
     return out;
@@ -736,7 +729,7 @@ async function leibGang(G) {
             out.senk = (await gang("senk", a, false, true)).taeter.length;
         }
     } catch (e) {
-        out.err = (e && e.stack) || String(e);
+        out.err = e?.stack || String(e);
     }
     return out;
 }
@@ -824,7 +817,7 @@ function ninja(arg) {
         const umgangen = e[2] > 28 && Math.abs(e[0]) > 3;
         out.tunnel = { ende: e, weg: +weg.toFixed(2), umgangen, gueltig: weg >= 3 || umgangen };
     } catch (e) {
-        out.err = (e && e.stack) || String(e);
+        out.err = e?.stack || String(e);
     }
     return out;
 }
@@ -883,8 +876,8 @@ async function probe(arg) {
                 if (Math.abs(m4.determinant()) < 1e-12) continue;
                 m4.premultiply(o.matrixWorld);
                 v.setFromMatrixPosition(m4);
-                const e = g && g.slotEntry ? g.slotEntry[i] : null;
-                out2.push({ x: v.x, z: v.z, werk: (e && e.type) || "Streu", e });
+                const e = g?.slotEntry ? g.slotEntry[i] : null;
+                out2.push({ x: v.x, z: v.z, werk: e?.type || "Streu", e });
             }
         });
         return out2;
@@ -893,7 +886,7 @@ async function probe(arg) {
     // fällt
     const imBlocker = (x, z) => {
         for (const a of st.architectures || [])
-            if (a && a.blockerAABBs && a.position && Math.abs(a.position.x - x) < 20 && Math.abs(a.position.z - z) < 20)
+            if (a?.blockerAABBs && a.position && Math.abs(a.position.x - x) < 20 && Math.abs(a.position.z - z) < 20)
                 for (const b of a.blockerAABBs) if (x > b.minX - 0.3 && x < b.maxX + 0.3 && z > b.minZ - 0.3 && z < b.maxZ + 0.3) return true;
         return false;
     };
@@ -957,7 +950,7 @@ async function probe(arg) {
             window.__nahSpeicher = null; // der Fels liegt im Speicher: die nächste Stellung rechnet ihn neu
             s.ms = Math.round(performance.now() - tS);
         } catch (e) {
-            s.err = (e && e.stack) || String(e);
+            s.err = e?.stack || String(e);
         }
         return s;
     };
@@ -1106,7 +1099,7 @@ async function probe(arg) {
                 r.dismountArchitecture();
             } else z.modi.ritt = { n: 0, grund: gt ? "Aufsitzen scheiterte" : "kein GT" };
         } catch (e) {
-            z.err = (e && e.stack) || String(e);
+            z.err = e?.stack || String(e);
         }
         out.zeiten[ort.id] = Math.round(performance.now() - tO);
     }

@@ -31,7 +31,7 @@ function seitenfehlerZaehlen() {
 }
 
 function saisonFest() {
-    if (r && r.state) r.state.autoSeason = false;
+    if (r?.state) r.state.autoSeason = false;
     else setTimeout(saisonFest, 50);
 }
 
@@ -306,7 +306,7 @@ function bildUhren() {
 function uhrHalten() {
     const S = window.__buehneUhr || (window.__buehneUhr = { T: 12.5, verweigert: 0 });
     const d = Object.getOwnPropertyDescriptor(r, "_bildZeit");
-    if (d && d.get && d.get.__buehne) return;
+    if (d?.get?.__buehne) return;
     const get = Object.assign(() => S.T, { __buehne: true });
     Object.defineProperty(r, "_bildZeit", { configurable: true, enumerable: true, get, set: () => void S.verweigert++ });
     r._tickPortalMembranes(performance.now() / 1000);
@@ -343,10 +343,10 @@ function buehne(o) {
     // die Bühne bindet die Welt selbst: ihr Selbsttest ruft sie in Node mit einem gestellten `window` (`buehneSelbsttest`)
     const r = window.anazhRealm;
     const st = r.state;
-    const w = (o && o.wetter) || "sunny";
+    const w = o?.wetter || "sunny";
     window.__weltaktSpion();
     st.autoSeason = false;
-    const s = r.setSeason((o && o.saison) || "sommer");
+    const s = r.setSeason(o?.saison || "sommer");
     if (st.world) st.world.timeOfDay = 0.5;
     st.timeOfDay = 0.5;
     // Wetter und Saison: das Wort des Spielers (`o`, werkbank `bild --wetter --saison`), sonst Sonne und Sommer — über den
@@ -354,7 +354,7 @@ function buehne(o) {
     if (!s || window.__wetterSetzen(w) !== w) throw new Error(`DIE BÜHNE: das Wort gilt nicht ${JSON.stringify(o)}`);
     window.__uhrHalten();
     // die Nässe der Bühne: `o.naesse` Sekunden des Worts (die Linse `werkbank licht --naesse`), sonst sein Ruhezustand
-    r._naesseTakt(o && o.naesse != null ? o.naesse : 1e6);
+    r._naesseTakt(o?.naesse ?? 1e6);
     r._tickRain();
     // Das Gemüt des Spielers färbt das Licht (`_emotionModulate`): die Bühne hält es ruhig (A9-n2, Licht-Bilanz 5,156 ↔ 5,169)
     for (const k in (st.player && st.player.emotions) || {}) st.player.emotions[k] = 0;
@@ -370,7 +370,7 @@ function buehne(o) {
     // Spieler, aus EINEM Samen, mit der Seele des Spiels (`spawnCreatureAt`, die Kappe hebt sich um sie); ein zweiter Ruf füllt
     // nur auf, was fehlt. Stehen nicht alle, bricht die Bühne laut.
     const buehnenTiere = () => st.creatures.filter((c) => c.userData.buehne).length;
-    if (o && o.tiere > 0) {
+    if (o?.tiere > 0) {
         const p = st.playerMesh.position;
         st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + o.tiere - buehnenTiere());
         let saat = 11;
@@ -440,7 +440,7 @@ function membranOhneFilm(an) {
         n++;
         const G =
             rec.tor && rec.tor.gesetz ? r._membranGraph(rec.tor.gesetz) : null;
-        if (G && G.ohneFilm) {
+        if (G?.ohneFilm) {
             if (an) {
                 rec.__farbeVorFilm = mat.colorNode;
                 mat.colorNode = G.ohneFilm;
@@ -455,7 +455,7 @@ function membranOhneFilm(an) {
         if (an) {
             const stoffe = [];
             for (const v of Object.values(rec))
-                if (v && v.isObject3D)
+                if (v?.isObject3D)
                     v.traverse((o) => {
                         for (const m of [].concat(o.material || [])) if (m && !stoffe.includes(m)) stoffe.push(m);
                     });
@@ -588,7 +588,7 @@ function abnahmeMessen(opt) {
         if (Array.isArray(z.ohne)) ohne.push(...z.ohne);
         const rz = z.r != null ? z.r : 1.5;
         for (const e of st.architectures || [])
-            if (e && e.position && Math.hypot(e.position.x - z.x, e.position.z - z.z) <= rz) ohne.push(e.id);
+            if (e?.position && Math.hypot(e.position.x - z.x, e.position.z - z.z) <= rz) ohne.push(e.id);
     }
     const E = cam.position;
     // ein Ziel in Armlänge (material.K2, `bild --arm`) ist selbst die nahe Fläche: verdeckt ist, was näher als die halbe Armlänge liegt

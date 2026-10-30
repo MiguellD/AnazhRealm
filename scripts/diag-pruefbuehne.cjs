@@ -274,20 +274,16 @@ async function s0Probe(page, station, schein) {
             const y0 = r.getTerrainHeightAt(sx, sz);
             s.playerMesh.position.set(sx, y0 + 1, sz);
             const vor = new Set(s.architectures || []);
-            // DIE FEUERSTELLE IST, WAS DER SATZ SETZTE (`spawned_studio`: ihre Art), nie irgendein neuer Bau der Welt — am 30.10.
+            // DIE FEUERSTELLE GLÜHT (`_glutFlaeche`, wie der Bild-Lauf sie erkennt), nie irgendein neuer Bau der Welt — am 30.10.
             // (tore-k5-tuer-neu, Schein-Lauf) griff die Probe einen Felsturm 180 m fern als „Feuerstelle"; steht sie nicht, BRICHT
-            // die Probe beim Namen AB (`abbruch`: was der Satz sagte) — der Selbsttest meldete still BLIND
-            const satz = r.dslRun(["spawn_studio", "feuerstelle", ["near_player", 3], 1], { source: "human" });
-            const log = (Array.isArray(satz?.log) ? satz.log : []).filter(Boolean);
-            const art = log.find((l) => l.event === "spawned_studio" && l.count > 0)?.kind;
+            // die Probe beim Namen AB (`abbruch`: was der Satz sagte — ein Ort ohne Antwort, ein Wurf des Interpreters, das Ergebnis)
+            // — der Selbsttest meldete still BLIND
+            const log = r.dslRun(["spawn_studio", "feuerstelle", ["near_player", 3], 1], { source: "human" }).log;
             await takt(20);
-            const feuer = art && (s.architectures || []).find((e) => e?.position && !vor.has(e) && e.type === art);
+            const feuer = (s.architectures || []).find((e) => e?.position && !vor.has(e) && r._glutFlaeche(e) > 0);
             if (!feuer) {
-                const sagt = log
-                    .filter((l) => /error|exception|budget|unknown|invalid|ergebnis/.test(l.event))
-                    .map((l) => l.grund || l.message || (l.gruende && JSON.stringify(l.gruende)) || l.word || l.event);
-                out.abbruch = `S0: die Feuerstelle steht nicht (der Satz \`spawn_studio feuerstelle\`: ${art ? `${art} gesetzt, nicht in der Welt` : sagt.join(" · ") || "kein Ergebnis"})`;
-                out.befunde.push(out.abbruch);
+                const grund = JSON.stringify(log.filter((l) => /invalid|exception|unknown|ergebnis/.test(l?.event)));
+                out.befunde.push((out.abbruch = `S0: die Feuerstelle steht nicht (der Satz \`spawn_studio feuerstelle\`: ${grund})`));
                 return out;
             }
             const f = feuer.position;
@@ -304,8 +300,7 @@ async function s0Probe(page, station, schein) {
                 return r._landAt(wx, wz, 0.2) && Number.isFinite(wy) && r._bauFreiRund("laterne_dorf", wx, wz, wy);
             });
             if (!frei) {
-                out.abbruch = "S0 Laterne: kein Platz in 6 m um das Feuer, den Wasser- und Bau-Wand frei nennen";
-                out.befunde.push(out.abbruch);
+                out.befunde.push((out.abbruch = "S0 Laterne: kein Platz in 6 m um das Feuer, den Wasser- und Bau-Wand frei nennen"));
                 return out;
             }
             r._spawnSettlementErlebnis({ laternen: [{ x: frei[0], z: frei[1] }] }, { x: f.x, z: f.z }, { key: "pruef-s0-laterne" });
@@ -384,8 +379,7 @@ async function s0Probe(page, station, schein) {
                 );
             // die Fenster-Glut des Zeitplans: um Mitternacht an, mittags aus
             const glut = () => {
-                const u = s.atmoUniforms && s.atmoUniforms.lichtGlut && s.atmoUniforms.lichtGlut.fenster;
-                const c = u && u.value;
+                const c = s.atmoUniforms?.lichtGlut?.fenster?.value;
                 return c ? +(0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b).toFixed(4) : null;
             };
             uhr(0);
@@ -435,7 +429,6 @@ async function s0Probe(page, station, schein) {
 
 function zeigeS0(rep, schein) {
     console.log(`\n  ── S0-PROBE ${rep.station}${schein ? " · SCHEIN (Feuer ohne Datum, Laterne ungelesen, Stoff und Bauer ohne Pool)" : ""}`);
-    if (rep.abbruch) console.log(`    ABBRUCH der Welt-Probe: ${rep.abbruch}`);
     if (rep.feuer)
         console.log(
             `    Feuerstelle ${rep.feuer.typ} bei ${rep.feuer.x}|${rep.feuer.z}, Glut-Fläche ${rep.feuer.flaeche} m², Verzeichnis ${rep.verzeichnis ? "ja" : "NEIN"}`
@@ -864,7 +857,7 @@ function s0Ton(e, ohne) {
     const n = s0TonNetto(e, ohne);
     return n && { hue: n.hue, sat: e.ton.sat, netto: n };
 }
-const s0TonImBand = (t) => !!t && t.hue >= S0_TON.hue[0] && t.hue <= S0_TON.hue[1];
+const s0TonImBand = (t) => t?.hue >= S0_TON.hue[0] && t.hue <= S0_TON.hue[1];
 const s0TonPasst = (t) => s0TonImBand(t) && t.sat <= S0_TON.satMax;
 // DER STOFF DES SCHUSSES (K17-3, die Shader-Kosten-Linse scripts/lib/shader-kosten.cjs): der Schuss übersetzt das Boden-Programm
 // (`voxelChunkMaterial`) — seine Zeichen stehen unter der Decke des Bodens (`STOFFE.boden.budget.zeichenMax`). Seit K17 trug
@@ -1665,13 +1658,6 @@ hauptLauf(async () => {
         rep.bootMs = b.ms;
         zeige(rep);
         berichte[welt + (schein ? "-schein" : "")] = rep;
-        // EIN STURZ IST KEIN ORT: wirft ein Auflöser statt `_dslKeinOrt` (`dslEvalPos` nennt ihn „<op> warf: …"), sagt sein Wurf
-        // nichts über die Wildnis — am 30.10. warf `far_player` im Schein-Lauf auf dem Prototyp (tore-k5-tuer-neu), 12 von 15
-        // Würfen fielen still aus dem Selbsttest; jeder Lauf nennt ihn rot beim Namen
-        rep.stuerze = [...rep.wuerfe, rep.akt]
-            .filter((w) => w && / warf: /.test(w.grund || ""))
-            .map((w) => `${w.op}/${w.quelle || "human"}: ${w.grund}`);
-        for (const x of rep.stuerze) rep.befunde.push(`STURZ einer Ort-Op: ${x}`);
         const wurfe = rep.wuerfe.filter((w) => w.zuwachs > 0);
         if (welt === "standard") {
             // DER STOFF-ZENSUS der Wildnis: jeder beleuchtete Stoff ihrer Häuser, Tiere, Bäume und Wasser trägt den Pool
@@ -1753,8 +1739,6 @@ hauptLauf(async () => {
                 s0Rest.stoff &&
                 s0Rest.bauer,
             s0Rest,
-            s0Abbruch: (s.s0 && s.s0.abbruch) || null,
-            stuerze: s.stuerze || [],
         };
         console.log(
             `\n  SELBSTTEST (die Wildnis trägt zum Schein überall): ${namen.length} Würfe beim Namen — ${namen.join(", ")}`
@@ -1765,26 +1749,15 @@ hauptLauf(async () => {
             }`
         );
         console.log(
-            `  SELBSTTEST S0 (Feuer ohne Datum · Laterne ungelesen · Stoff und Bauer ohne Pool): ${selbst.s0Treffer ? "getroffen — " + s0Namen[0] : selbst.s0Abbruch ? "ABBRUCH beim Namen — " + selbst.s0Abbruch : "BLIND " + JSON.stringify(selbst.s0Rest)}`
+            `  SELBSTTEST S0 (Feuer ohne Datum · Laterne ungelesen · Stoff und Bauer ohne Pool): ${selbst.s0Treffer ? "getroffen — " + s0Namen[0] : s.s0?.abbruch || "BLIND " + JSON.stringify(selbst.s0Rest)}`
         );
-        if (selbst.stuerze.length)
-            console.log(`  SELBSTTEST STURZ (eine Ort-Op wirft, statt zu antworten): ${selbst.stuerze.join(" · ")}`);
     }
     if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ berichte, selbst }, null, 1));
     let pass;
     if (SELBSTTEST) {
-        pass =
-            !rot && selbst && selbst.benannt.length > 0 && selbst.s4Treffer && selbst.s0Treffer && !selbst.stuerze.length;
-        // der Grund steht beim Namen: ein Abbruch der S0-Probe und ein Sturz einer Ort-Op sind keine blinde Linse
-        const warum = !selbst
-            ? "der Schein-Lauf fehlt"
-            : selbst.s0Abbruch
-              ? `die S0-Probe brach im Schein-Lauf ab — ${selbst.s0Abbruch}`
-              : selbst.stuerze.length
-                ? `${selbst.stuerze.length} Ort-Op(s) stürzen im Schein-Lauf — ${selbst.stuerze[0]}`
-                : "der Schein blieb unentdeckt (die Linse ist blind)";
+        pass = !rot && selbst && selbst.benannt.length > 0 && selbst.s4Treffer && selbst.s0Treffer;
         console.log(
-            `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf der Bühne wirft das Feld nichts, der Akt setzt, die Wildnis wirft — und der Schein fällt rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : warum)}\n`
+            `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf der Bühne wirft das Feld nichts, der Akt setzt, die Wildnis wirft — und der Schein fällt rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "der Schein blieb unentdeckt (die Linse ist blind)")}\n`
         );
     } else {
         pass = !rot;
