@@ -518,7 +518,9 @@ function laubKanteUrteil(e) {
         const b = a && a.bild;
         if (!k || !k.klassen || !b || b.w !== 1920 || b.h !== 1080) {
             gruen = false;
-            teile.push(titel + ": " + String((o && o.fehler) || (s && s.rest) || "kein Bild der Klassen in 1920 × 1080").slice(-160));
+            // der Grund steht am ANFANG der Zeile der Abnahme („ABNAHME ROT [Feld …]“) — bis w4-proben-tempo zeigte die Zahl ihr Ende
+            // (Luma, Stand, Gerät: GTX 24a0f3ef · 3ed95dcf · 379e5f56 „Spielgang: … Luma 51 σ 26.8“, der Täter fehlte)
+            teile.push(titel + ": " + String((o && o.fehler) || (s && s.rest) || "kein Bild der Klassen in 1920 × 1080").slice(0, 220));
             continue;
         }
         const je = Object.entries(k.klassen).filter(([, m]) => m.pixel >= LAUB_PIXEL_MIN && m.kante != null);
@@ -1475,13 +1477,17 @@ const stationen = [
         // IN DER SITZUNG (29.10.): EINE Sekunde Gehen (4 m in 8 Schritten) je Schritt zwei Schüsse — Ziel 25 s. DAS TEMPO
         // (w4-proben-tempo, 30.10.; GTX 379e5f56 49,3 s über dem Gesetz): sechs Aufnahmen je Schuss (96 zu 33 Bildern, die letzte
         // zählte) → EINE, die Treue einmal: 17 Aufnahmen (swiftshader Treue 0 Bytes, Pop 0,635 %/s ROT wie zuvor) — der Deckel aus der
-        // Arbeit: 17 Aufnahmen (GTX ≈ 0,43 s) + 8 × 24 Takte des Spiels — 22 s; die Eich-Fahrt der GTX richtet ihn
+        // Arbeit: 17 Aufnahmen (GTX ≈ 0,43 s) + 8 × 24 Takte des Spiels — 22 s; die Eich-Fahrt der GTX richtet ihn.
+        // DER TÄTER IM MASS (w4-proben-tempo): der Feld-Pass der Ferne trug im Schuss die Kamera des letzten Takts (`_tickFeldPass`, im
+        // Takt gesetzt) — vor A die des Rigs am alten Ort, vor B die am neuen: der Horizont sprang, die Probe zählte ihn als Pop (allein
+        // 1 926 Pixel je Schuss, 71 % oben). pop.js stellt den Feld-Pass auf die Kamera der Pose wie `werkbank bild`: swiftshader in
+        // derselben Welt 8 226 → 1 566 Pop-Pixel (0,397 → 0,0755 %/s, jeder der acht Schritte fällt), ROT bleibt bei den Stufen-Wechseln
         probe: { sek: 22, befehl: befehlDer({
             name: "lod.K2#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
                 { name: "umstellen", args: ["umstellen", "--ort", "wiese", "--sicht", "ego"], muss: true },
-                { name: "pop", probe: "@KOORD@/bericht/2910-lod-k5/pop.js", blob: "16db9f06fb6384ac170302e26e7d0dc73069b8e8", muss: true, ms: 1800000 },
+                { name: "pop", probe: "@KOORD@/bericht/2910-lod-k5/pop.js", blob: "b5fed3ff01548fa387c674bc1c70b0247e0780f3", muss: true, ms: 1800000 },
             ],
         }) },
         env: envDer,

@@ -18,12 +18,18 @@ const pm = st.playerMesh.position;
 const fwd = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion).setY(0).normalize();
 const start = pm.clone();
 const boden = (x, z) => r._voxelSurfaceY(x, z);
+// DIE KAMERA DES SCHUSSES AUCH IM FELD (w4-proben-tempo, 30.10.): der Feld-Pass der Ferne trägt seine Kamera als Uniform
+// (`_tickFeldPass`: camPos, vp, invVP — Stellvertreter und Strahl aus DERSELBEN Matrix), gesetzt im Takt; im Schuss stand dort die
+// Kamera des letzten Takts — vor A die des Rigs am alten Ort, vor B die am neuen: der Horizont sprang zwischen A und B, und die Probe
+// zählte ihn als Pop (Werkbank swiftshader: 1 926 Pixel je Schuss allein aus der alten Uniform, 71 % in der oberen Bildhälfte).
+// Wie `werkbank bild` vor jeder Aufnahme: der Feld-Pass nimmt die Kamera der Pose
 const pose = (p) => {
     cam.fov = A.KAM_FOV_GRAD;
     cam.updateProjectionMatrix();
     cam.position.set(p.x, boden(p.x, p.z) + 1.7, p.z);
     cam.lookAt(p.x + fwd.x * 50, boden(p.x, p.z) + 1.7, p.z + fwd.z * 50);
     cam.updateMatrixWorld(true);
+    if (st.fernRing) r._tickFeldPass(st.fernRing);
 };
 const schuss = async () => {
     const lu = st.lodUniforms;
