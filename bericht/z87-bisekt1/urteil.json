@@ -1,0 +1,156 @@
+{
+ "gesamt": "LANGSAMER",
+ "ergebnisse": [
+  {
+   "zelle": "stadt",
+   "n": {
+    "A": 2,
+    "B": 2
+   },
+   "urteil": "LANGSAMER",
+   "verlaengern": false,
+   "zeilen": [
+    {
+     "gang": "steht",
+     "titel": "fps",
+     "A": 70,
+     "B": 69,
+     "d": -1,
+     "zweiSigma": 2.039607805437115,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "steht",
+     "titel": "Frame p95 ms",
+     "A": 21,
+     "B": 24.95,
+     "d": 3.9499999999999993,
+     "zweiSigma": 8.000624975587844,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "steht",
+     "titel": "CPU-Takt p95 ms",
+     "A": 10.7,
+     "B": 10.85,
+     "d": 0.15000000000000036,
+     "zweiSigma": 0.5000000000000007,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "steht",
+     "titel": "Belegung p95 ms",
+     "A": 16.67,
+     "B": 17.375,
+     "d": 0.7049999999999983,
+     "zweiSigma": 2.628402556687237,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "geht",
+     "titel": "fps",
+     "A": 38.15,
+     "B": 34.25,
+     "d": -3.8999999999999986,
+     "zweiSigma": 1.3038404810405264,
+     "u": "LANGSAMER"
+    },
+    {
+     "gang": "geht",
+     "titel": "Frame p95 ms",
+     "A": 49.9,
+     "B": 58.3,
+     "d": 8.399999999999999,
+     "zweiSigma": 0.20000000000000284,
+     "u": "LANGSAMER"
+    },
+    {
+     "gang": "geht",
+     "titel": "CPU-Takt p95 ms",
+     "A": 43.5,
+     "B": 49.25,
+     "d": 5.75,
+     "zweiSigma": 3.4713109915419627,
+     "u": "LANGSAMER"
+    },
+    {
+     "gang": "geht",
+     "titel": "Belegung p95 ms",
+     "A": 48.175,
+     "B": 54.629999999999995,
+     "d": 6.454999999999998,
+     "zweiSigma": 3.163621342702065,
+     "u": "LANGSAMER"
+    }
+   ],
+   "zaehl": {
+    "steht Befehle": {
+     "A": [
+      62,
+      62
+     ],
+     "B": [
+      61,
+      62
+     ]
+    },
+    "steht Dreiecke p95": {
+     "A": [
+      1320604,
+      1320424
+     ],
+     "B": [
+      1282050,
+      1293257
+     ]
+    },
+    "steht VRAM MB": {
+     "A": [
+      175.5,
+      175.8
+     ],
+     "B": [
+      178.7,
+      177.1
+     ]
+    },
+    "geht Befehle": {
+     "A": [
+      78,
+      78
+     ],
+     "B": [
+      83,
+      83
+     ]
+    },
+    "geht Dreiecke p95": {
+     "A": [
+      1370013,
+      1371878
+     ],
+     "B": [
+      1364201,
+      1366625
+     ]
+    },
+    "geht VRAM MB": {
+     "A": [
+      172.1,
+      244.7
+     ],
+     "B": [
+      179.6,
+      179.5
+     ]
+    }
+   }
+  }
+ ],
+ "instrument": {
+  "stadt-A1": "957a615c1",
+  "stadt-A2": "957a615c1",
+  "stadt-B1": "957a615c1",
+  "stadt-B2": "957a615c1"
+ }
+}
