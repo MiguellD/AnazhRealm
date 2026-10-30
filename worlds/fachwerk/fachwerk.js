@@ -757,8 +757,8 @@ function formSetzen(o){ formRegler.setzen(o,true); }
 // Bau wie der Foundry-Worker) gegen die Budget-Zeile je Stufe, die NUR-WURF-Stufe 3 eingeschlossen. Ohne Kultur
 // („manuell“/„Samen“) misst sie die Kultur des Samens.
 const kostenLeiste=AnazhHuelle.kosten($('kosten'),{budget:FC.PORTAL_RENDER_CONFIG.lod.budget.haus,stufen:FC.PORTAL_RENDER_CONFIG.lod.kindStages.haus,renderer:renderer,
-  bauen:s=>{ const k=$('pK').value; const id=FC.PRESETS[k]?k:kulturFromSeed(SEED); const ov={}; HAUS_PARAMS.forEach(z=>{ ov[z.id]=RW[z.id]; }); return FC.buildInstance(id,1,s,ov); },
-  quelle:'gemessen an der Welt-Gestalt (fachwerk-core buildInstance, Same 1, die Regler als ov); L3·Wurf = der Fernkörper im Schatten'});
+  bauen:s=>{ const k=$('pK').value; const id=FC.PRESETS[k]?k:kulturFromSeed(SEED); const ov={}; HAUS_PARAMS.forEach(z=>{ ov[z.id]=RW[z.id]; }); return FC.buildInstance(id,SEED,s,ov); },
+  quelle:'gemessen an der Welt-Gestalt (fachwerk-core buildInstance, der Same der Bühne, die Regler als ov); L3·Wurf = der Fernkörper im Schatten'});
 const metaRegler=AnazhHuelle.regler($('reglerMeta'),BED_META,{werte:RW,sitzung:sitz,format:reglerFmt,gruppen:false,zuruecksetzen:false,
   nachRuhe:()=>{ applyMeta(); regen(true); }});   // META-GESETZ treibt alle Form-Regler — Zug + Folge sind EIN Rückgängig-Schritt
 AnazhHuelle.regler($('reglerLOD'),BED_LOD,{werte:RW,sitzung:sitz,format:reglerFmt,gruppen:false,zuruecksetzen:false,
@@ -1033,8 +1033,9 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
             return mode !== "walk"; /* Esc = Pointer-Lock im Begeh-Modus */
         },
         /* DAS WERK DER BÜHNE (der EINE Übergabe-Kanal der Hülle): das Einzelstück der Ausstattung mit seiner Gestalt, sonst
-           das Haus der gewählten Kultur mit Same 1 und den Werten der Haus-Zeilen (die Welt-Gestalt der Kosten-Leiste) — das
-           nächste gesetzte Werk des Rezepts trägt es. */
+           das Haus der gewählten Kultur mit dem Samen der Bühne und den Werten der Haus-Zeilen (die Welt-Gestalt der
+           Kosten-Leiste) — das nächste gesetzte Werk des Rezepts trägt es. Der Same ist die Gestalt (`_foundryGestaltFor`):
+           das Haus zieht Fenstertakt, OG-Stoff, Giebel-Verband und Gauben aus ihm; bis 30.10. reiste Same 1 (studios.K4). */
         werk: function () {
             var aus = document.getElementById("pAus") ? document.getElementById("pAus").value : "haus";
             if (aus !== "haus" && FC.AUSSTATTUNG[aus])
@@ -1044,7 +1045,7 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
             FC.PARAMS_BY_KIND.haus.forEach(function (z) {
                 ov[z.id] = RW[z.id];
             });
-            return { kind: "haus", preset: FC.PRESETS[k] ? k : kulturFromSeed(SEED), seed: 1, ov: ov };
+            return { kind: "haus", preset: FC.PRESETS[k] ? k : kulturFromSeed(SEED), seed: SEED, ov: ov };
         },
     });
 })();
