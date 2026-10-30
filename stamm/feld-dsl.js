@@ -1025,7 +1025,9 @@ class AnazhRealm_feld_dsl {
             // Wasser (_dslSpawnStudioItems). Unbekanntes Wort → Log-Eintrag, kein Raten, kein Ersatz-Baum. `ov` (die
             // Regler {id: Zahl}, KI K2) prägt das Werk über denselben Stempel, am Vertrag der Art geklemmt. Eine Prägung (der
             // Klang der Welt, die Gestalt des Spielers — KIND_POLICY `werk`) steht an keinem Ort: Ort und Zahl zählen dort nicht.
-            spawn_studio: (args, ctx) => this._spawnStudioWerk(args, ctx),
+            // die Signatur ist die Form des Verbs (`_dslForm`: Prompt und Antwort-Form der Welt-KI lesen sie) — sie bleibt hier
+            spawn_studio: ([what, positionNode, count, seed, ov], ctx) =>
+                this._spawnStudioWerk([what, positionNode, count, seed, ov], ctx),
             spawn_island: ([positionNode, height, seed, size], ctx) => {
                 const pos = this.dslEvalPos(positionNode, ctx);
                 if (ctx.budget.spawnsLeft <= 0) {
