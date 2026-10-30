@@ -1,9 +1,20 @@
 // diag-settlement.cjs (gate:settlement) — Teil J (`--nur-j` allein): die Jahresringe der Chronik (`jahresringe`, siedlung.K4) ·
-// Teil Z (`--nur-z` allein): das Rang-Gesetz (`rangZensus`) · N: der Export
+// Teil Z (`--nur-z` allein): das Rang-Gesetz (`rangZensus`) · K (`--nur-k` nach Z): die Kreuzung als EINE Fläche
+// (`kreuzungsUrteil`) · N: der Export
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
 // Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände.
 // --selftest: jede Wand feuert an injizierten Brüchen.
-const { statikServer, waitFor, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern } = require("./lib/welt-boot.cjs");
+const {
+    statikServer,
+    waitFor,
+    ROOT: root,
+    hauptLauf,
+    nullSeite,
+    pruefer,
+    wandEnde,
+    selbsttestEnde,
+    studioKern,
+} = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
@@ -538,102 +549,42 @@ function gassenLicht(quellen, wege, haeuser, hfov) {
 }
 const GASSE_SOLL = 4;
 
-// DER GT AUF DEM DORFWEG: im Browser,
-// durch den echten Spiel-Takt (`_gameLoopTick`, feste 60-Hz-Frames) und echte Tasten. Der Weg ist die längste Kette der
-// Hauptwege (gen 0, Weg an Weg, wo der nächste beginnt, wo der vorige endet) des Plans, den die Welt trägt; der Wagen startet
-// 2 m hinter ihrem Anfang in ihrer Richtung, der Fahrer hält W und lenkt (A/D) zum Punkt 6 m voraus auf der Kette. Gemessen:
-// der Fortschritt längs der Kette in `sek` Sekunden (gtWeg), die gefahrene Strecke, die größte Ablage von der Kette und der
-// Anteil der Frames auf dem Weg. Läuft im Browser (page.evaluate) — selbstgenügsam.
+// DER GT AUF DEM DORFWEG: im Browser, durch den echten Spiel-Takt (`_gameLoopTick`, feste 60-Hz-Frames) mit dem EINEN Fahrer am
+// Steuer (`fahrerSetzen`: die Verb-Tafel, der Fahr-Schritt des Kerns — bis fahrzeug.K2 ein zweiter Fahrer aus W und A/D). Der
+// Weg ist die längste Kette der Hauptwege (gen 0, Weg an Weg, wo der nächste beginnt, wo der vorige endet) des Plans, den die
+// Welt trägt; der Wagen startet 2 m hinter ihrem Anfang in ihrer Richtung. Gemessen: der Fortschritt längs der Kette in `sek`
+// Sekunden (gtWeg, `F.s`), die gefahrene Strecke, die größte Ablage von der Kette (`F.quer`) und der Anteil der Frames auf dem
+// Weg. Läuft im Browser (page.evaluate) — selbstgenügsam.
 async function gtDorfweg(v2, anker, sek) {
     const res = {};
     try {
         const wege = (v2.roads || []).filter((w) => w.gen === 0 && Array.isArray(w.pts) && w.pts.length > 1);
-        const laenge = (w) => {
-            let L = 0;
-            for (let k = 1; k < w.pts.length; k++)
-                L += Math.hypot(w.pts[k].x - w.pts[k - 1].x, w.pts[k].z - w.pts[k - 1].z);
-            return L;
-        };
+        const laenge = (w) =>
+            w.pts.reduce((L, p, k) => (k ? L + Math.hypot(p.x - w.pts[k - 1].x, p.z - w.pts[k - 1].z) : 0), 0);
         let best = null;
         for (const w0 of wege) {
             const kette = [w0];
-            let L = laenge(w0);
-            for (;;) {
-                const ende = kette[kette.length - 1].pts[kette[kette.length - 1].pts.length - 1];
-                const nx = wege.find(
-                    (w) => !kette.includes(w) && Math.hypot(w.pts[0].x - ende.x, w.pts[0].z - ende.z) < 0.5
-                );
-                if (!nx) break;
-                kette.push(nx);
-                L += laenge(nx);
+            for (let nx = w0; nx;) {
+                const ende = nx.pts[nx.pts.length - 1];
+                nx = wege.find((w) => !kette.includes(w) && Math.hypot(w.pts[0].x - ende.x, w.pts[0].z - ende.z) < 0.5);
+                if (nx) kette.push(nx);
             }
+            const L = kette.reduce((s, w) => s + laenge(w), 0);
             if (!best || L > best.L) best = { kette, L };
         }
         if (!best) return { err: "kein Hauptweg im Plan" };
         const P = [];
-        for (const w of best.kette)
-            for (const p of w.pts) {
-                const q = { x: anker.x + p.x, z: anker.z + p.z };
-                if (!P.length || Math.hypot(q.x - P[P.length - 1].x, q.z - P[P.length - 1].z) > 1e-3) P.push(q);
-            }
-        const S = [0];
-        for (let k = 1; k < P.length; k++) S.push(S[k - 1] + Math.hypot(P[k].x - P[k - 1].x, P[k].z - P[k - 1].z));
+        for (const p of best.kette.flatMap((w) => w.pts)) {
+            const q = { x: anker.x + p.x, z: anker.z + p.z };
+            if (!P.length || Math.hypot(q.x - P[P.length - 1].x, q.z - P[P.length - 1].z) > 1e-3) P.push(q);
+        }
         const hw = (best.kette[0].w || 5) / 2;
-        // die Lage auf der Kette: Bogenlänge s und Ablage
-        const lage = (x, z) => {
-            let bs = 0;
-            let bd = Infinity;
-            for (let k = 1; k < P.length; k++) {
-                const dx = P[k].x - P[k - 1].x;
-                const dz = P[k].z - P[k - 1].z;
-                const l2 = dx * dx + dz * dz || 1e-9;
-                let t = ((x - P[k - 1].x) * dx + (z - P[k - 1].z) * dz) / l2;
-                t = t < 0 ? 0 : t > 1 ? 1 : t;
-                const d = Math.hypot(x - P[k - 1].x - dx * t, z - P[k - 1].z - dz * t);
-                if (d < bd) {
-                    bd = d;
-                    bs = S[k - 1] + Math.sqrt(l2) * t;
-                }
-            }
-            return { s: bs, d: bd };
-        };
-        const punkt = (s) => {
-            s = Math.max(0, Math.min(S[S.length - 1], s));
-            let k = 1;
-            while (k < P.length - 1 && S[k] < s) k++;
-            const t = (s - S[k - 1]) / Math.max(1e-9, S[k] - S[k - 1]);
-            return { x: P[k - 1].x + (P[k].x - P[k - 1].x) * t, z: P[k - 1].z + (P[k].z - P[k - 1].z) * t };
-        };
-        res.kette = Math.round(S[S.length - 1] * 10) / 10;
+        res.kette = Math.round(best.L * 10) / 10;
         let tMs = performance.now();
-        const frame = () => {
-            tMs += 1000 / 60;
-            r._gameLoopTick(tMs);
-        };
-        const TASTE = {
-            w: { key: "w", code: "KeyW" },
-            a: { key: "a", code: "KeyA" },
-            d: { key: "d", code: "KeyD" },
-            e: { key: "e", code: "KeyE" },
-        };
-        const gehalten = new Set();
-        const ereignis = (art, k) =>
-            window.dispatchEvent(new KeyboardEvent(art, Object.assign({ bubbles: true }, TASTE[k])));
-        const halte = (liste) => {
-            for (const k of Array.from(gehalten))
-                if (!liste.includes(k)) {
-                    ereignis("keyup", k);
-                    gehalten.delete(k);
-                }
-            for (const k of liste)
-                if (!gehalten.has(k)) {
-                    ereignis("keydown", k);
-                    gehalten.add(k);
-                }
-        };
-        const a0 = punkt(2);
-        const a1 = punkt(4);
-        const fahrt = Math.atan2(a1.x - a0.x, a1.z - a0.z); // Bug (sin, cos)
+        const frame = () => r._gameLoopTick((tMs += 1000 / 60));
+        const u = Math.hypot(P[1].x - P[0].x, P[1].z - P[0].z);
+        const a0 = { x: P[0].x + ((P[1].x - P[0].x) * 2) / u, z: P[0].z + ((P[1].z - P[0].z) * 2) / u };
+        const fahrt = Math.atan2(P[1].x - P[0].x, P[1].z - P[0].z); // Bug (sin, cos)
         st.playerMesh.position.set(
             a0.x + Math.cos(fahrt) * 1.5,
             r.getTerrainHeightAt(a0.x, a0.z) + 1.8,
@@ -648,69 +599,54 @@ async function gtDorfweg(v2, anker, sek) {
         );
         if (!e) return Object.assign(res, { err: "kein GT" });
         await window.__gebautNach(e, { takt: frame });
-        ereignis("keydown", "e");
-        ereignis("keyup", "e");
-        frame();
-        if (st.player.mountedArch !== e.id) return Object.assign(res, { err: "der Fahrer sitzt nicht im GT" });
+        const auf = r.mountArchitecture(e);
+        if (!auf || !auf.ok || st.player.mountedArch !== e.id)
+            return Object.assign(res, { err: "der Fahrer sitzt nicht im GT" });
         for (let i = 0; i < 12; i++) frame();
-        const s0 = lage(st.playerMesh.position.x, st.playerMesh.position.z).s;
-        let px = st.playerMesh.position.x;
-        let pz = st.playerMesh.position.z;
-        let strecke = 0;
-        let ablage = 0;
-        let aufWeg = 0;
-        let gezaehlt = 0;
-        const N = Math.round(sek * 60);
-        for (let i = 0; i < N; i++) {
-            const z = e._fahr;
-            const pos = st.playerMesh.position;
-            const lg = lage(pos.x, pos.z);
-            const ziel = punkt(lg.s + 6);
-            let fehler = 0;
-            if (z && Number.isFinite(z.yaw)) {
-                fehler = Math.atan2(-(ziel.z - pos.z), ziel.x - pos.x) - z.yaw; // die Fahrt-Richtung ist (cos yaw, −sin yaw)
-                fehler = Math.atan2(Math.sin(fehler), Math.cos(fehler));
-            }
-            halte(fehler > 0.04 ? ["w", "a"] : fehler < -0.04 ? ["w", "d"] : ["w"]);
+        const F = r.fahrerSetzen(P);
+        frame();
+        const s0 = F.s;
+        let [px, pz, strecke, ablage, aufWeg, gezaehlt] = [
+            st.playerMesh.position.x,
+            st.playerMesh.position.z,
+            0,
+            0,
+            0,
+            0,
+        ];
+        for (let i = 0, N = Math.round(sek * 60); i < N; i++) {
             frame();
+            const pos = st.playerMesh.position;
             strecke += Math.hypot(pos.x - px, pos.z - pz);
-            px = pos.x;
-            pz = pos.z;
-            const nach = lage(pos.x, pos.z);
-            ablage = Math.max(ablage, nach.d);
-            if (nach.s >= S[S.length - 1] - 1) {
+            [px, pz, ablage] = [pos.x, pos.z, Math.max(ablage, F.quer)];
+            if (F.ende) {
                 res.endeNachS = Math.round(((i + 1) / 60) * 10) / 10;
                 break;
             }
             gezaehlt++;
-            if (nach.d <= hw) aufWeg++;
+            if (F.quer <= hw) aufWeg++;
             else if (!res.verlassen) {
                 // der Täter beim Namen: der nächste Bau mit Blocker am Ort, wo der Wagen den Weg verlässt
-                let naechster = null;
-                let nd = Infinity;
-                for (const a of st.architectures) {
-                    if (!a || a === e || !a.position || !Array.isArray(a.blockerAABBs) || !a.blockerAABBs.length)
-                        continue;
-                    const dd = Math.hypot(a.position.x - pos.x, a.position.z - pos.z);
-                    if (dd < nd) {
-                        nd = dd;
-                        naechster = a.type;
-                    }
-                }
-                res.verlassen = {
-                    s: Math.round((nach.s - s0) * 10) / 10,
-                    naechster,
-                    abstand: Math.round(nd * 10) / 10,
-                };
+                const [nd, naechster] = st.architectures
+                    .filter((a) => a && a !== e && a.position && Array.isArray(a.blockerAABBs) && a.blockerAABBs.length)
+                    .reduce(
+                        (b, a) =>
+                            Math.hypot(a.position.x - pos.x, a.position.z - pos.z) < b[0]
+                                ? [Math.hypot(a.position.x - pos.x, a.position.z - pos.z), a.type]
+                                : b,
+                        [Infinity, null]
+                    );
+                res.verlassen = { s: Math.round((F.s - s0) * 10) / 10, naechster, abstand: Math.round(nd * 10) / 10 };
             }
         }
-        halte([]);
-        const s1 = lage(st.playerMesh.position.x, st.playerMesh.position.z).s;
-        res.gtWeg = Math.round((s1 - s0) * 100) / 100;
-        res.strecke = Math.round(strecke * 100) / 100;
-        res.ablage = Math.round(ablage * 100) / 100;
-        res.aufWeg = Math.round((1000 * aufWeg) / Math.max(1, gezaehlt)) / 1000;
-        res.start = { x: Math.round(a0.x * 10) / 10, z: Math.round(a0.z * 10) / 10 };
+        r.fahrerSetzen(null);
+        Object.assign(res, {
+            gtWeg: Math.round((F.s - s0) * 100) / 100,
+            strecke: Math.round(strecke * 100) / 100,
+            ablage: Math.round(ablage * 100) / 100,
+            aufWeg: Math.round((1000 * aufWeg) / Math.max(1, gezaehlt)) / 1000,
+            start: { x: Math.round(a0.x * 10) / 10, z: Math.round(a0.z * 10) / 10 },
+        });
         r.dismountArchitecture();
         r.removeArchitecture(e);
     } catch (err) {
@@ -952,6 +888,66 @@ function feldWurfImOrt(anker, defekt) {
     return res;
 }
 
+// ===== TEIL K (PFLICHT-OFFEN C): DIE KREUZUNG IST EINE FLÄCHE — je Fixture (T · X · Knick · Fort · Schräg) über einem Hang
+// von 6, 12 und 20 % der Plan v2 (fachwerk `ortPlan`), sein Erdbau wie die Welt ihn liest (gelaende-core `erdbauY`, der Leser
+// jeder Höhe: Körper, Rad, die Stufen-Probe des Verkehrs `_verkehrAnlegen`): auf jeder Fahrbahn (den Kernen) springt der Boden
+// je 0,5 m höchstens um das Gefälle des Gesetzes (`ORT_GESETZ.gefaelle` 12 % → 0,06 m). Bis K hatte jeder Weg an der
+// Kreuzung sein eigenes Profil, die letzte Trasse gewann: 0,15–0,67 m je 0,5 m (T 0,61 · X 0,67 · Knick 0,36 · Fort 0,36),
+// in der Metropole 60 Stellen, an denen jeder Wagen stand. `stoer` (Selbsttest) hebt die Fahrbahn des zweiten Wegs um 0,3 m.
+function kreuzungsUrteil(FC, Gb, o = {}) {
+    const lauf = (dx, dz, n, w, x0 = 0) => ({
+        pts: Array.from({ length: n }, (_, i) => ({ x: x0 + dx * i * 3, z: dz * i * 3 })),
+        w,
+    });
+    const quer = lauf(1, 0, 31, 5, -45);
+    const faelle = {
+        T: [quer, lauf(0, 1, 15, 3.9)],
+        X: [quer, lauf(0, 1, 15, 5), lauf(0, -1, 15, 5)],
+        Knick: [lauf(1, 0, 16, 5, -45), lauf(0.6, 0.8, 15, 5)],
+        Fort: [lauf(1, 0, 16, 5, -45), lauf(1, 0, 15, 5)],
+        Schraeg: [quer, lauf(0.707, 0.707, 15, 3.9)],
+    };
+    const strecke = (p, a, b) => {
+        const [dx, dz] = [b.x - a.x, b.z - a.z];
+        const t = Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.z - a.z) * dz) / (dx * dx + dz * dz)));
+        return Math.hypot(p.x - a.x - dx * t, p.z - a.z - dz * t);
+    };
+    const amKern = (roads, p) => roads.some((r) => r.pts.some((q, i) => i && strecke(p, r.pts[i - 1], q) <= r.w / 2));
+    const aus = { max: 0, wo: "", je: [] };
+    for (const [name, roads] of Object.entries(faelle))
+        for (const hang of [0.06, 0.12, 0.2]) {
+            const ctx = {
+                hoeheAt: (x, z) => x * hang + z * hang * 0.5 + Math.sin(x * 0.2) * 0.5,
+                flaeche: (sp) =>
+                    (
+                        (E) => (x, z) =>
+                            Gb.erdbauFlaeche(E, x, z)
+                    )(Gb.erdbauNormal(sp)),
+            };
+            const v2 = FC.ortPlan({ slots: [], roads, laternen: [] }, { x: 0, z: 0 }, ctx); // BÜHNE: reines ortPlan-Fixture am Hang
+            const E = Gb.erdbauNormal(
+                v2.erdbau.map((q) => (o.stoer && q.weg === 3 ? { ...q, y0: q.y0 + 0.3, y1: q.y1 + 0.3 } : q))
+            );
+            let [max, wo] = [0, ""];
+            for (let x = -44; x < 44; x += 0.5)
+                for (let z = -44; z < 44; z += 0.5) {
+                    if (!amKern(roads, { x, z })) continue;
+                    const a = Gb.erdbauY(E, x, z, NaN);
+                    for (const [u, v] of [
+                        [0.5, 0],
+                        [0, 0.5],
+                    ]) {
+                        const b = amKern(roads, { x: x + u, z: z + v }) ? Gb.erdbauY(E, x + u, z + v, NaN) : NaN;
+                        if (Math.abs(b - a) > max) [max, wo] = [Math.abs(b - a), `${x}/${z}`];
+                    }
+                }
+            aus.je.push(`${name} ${hang * 100} % ${max.toFixed(3)}`);
+            if (max > aus.max) [aus.max, aus.wo] = [max, `${name} am Hang ${hang * 100} % bei ${wo}`];
+        }
+    aus.gruen = aus.max <= 0.06 + 1e-6;
+    return aus;
+}
+
 // Die dp-Fixtures der Goldens (klein = schnell; ein Dorf + ein Weiler).
 const FIXTURES = [
     { seed: 7, nH: 12 },
@@ -1143,6 +1139,16 @@ hauptLauf(async () => {
                 JSON.stringify({ br, freiN, yMit, yOhne, deck: mit.roads[0].ys[10] })
             );
         }
+        // V-K (PFLICHT-OFFEN C): die Kreuzung — das Gesetz GRÜN, eine um 0,3 m gehobene Fahrbahn des zweiten Wegs ROT beim Namen
+        {
+            require(path.join(root, "gelaende-core.js"));
+            const [k0, k1] = [{}, { stoer: 1 }].map((o) => kreuzungsUrteil(FC, globalThis.__gelaendeCore, o));
+            check(
+                "Selbst-Test K KREUZUNG: das Gesetz GRÜN · die gehobene Fahrbahn ROT beim Namen",
+                k0.gruen && !k1.gruen && /bei -?\d/.test(k1.wo),
+                `Gesetz ${k0.max.toFixed(3)} · Mutante ${k1.max.toFixed(3)} (${k1.wo})`
+            );
+        }
         // V-Z (siedlung.K2): der Zensus am Rang-Gesetz mit festem Export (das Fenster misst die Größen allein) — das Gesetz
         // GRÜN; ROT beim Namen ZIPF: gleich große Siedlungen, jede Stufe so groß wie die erste, ein Export ohne Graph, einer
         // ohne Mauer (Z1: keine Stadt), kein Rang
@@ -1246,6 +1252,16 @@ hauptLauf(async () => {
             Z.zipf.gruen
         );
         if (process.argv.includes("--nur-z")) process.exit(errs.length ? 1 : 0);
+
+        console.log("=== TEIL K: DIE KREUZUNG IST EINE FLÄCHE (PFLICHT-OFFEN C) ===");
+        require(path.join(root, "gelaende-core.js"));
+        const K = kreuzungsUrteil(FC, globalThis.__gelaendeCore);
+        console.log("KREUZUNG " + JSON.stringify({ max: +K.max.toFixed(3), wo: K.wo, je: K.je }));
+        check(
+            `K1 KREUZUNG: der größte Sprung der Fahrbahn je 0,5 m ${K.max.toFixed(3)} m (Soll ≤ 0,06) — ${K.wo}`,
+            K.gruen
+        );
+        if (process.argv.includes("--nur-k")) process.exit(errs.length ? 1 : 0);
 
         console.log("=== N5.7 SETTLEMENT — TEIL N: exportSettlement (Node, deterministisch + eingefroren) ===");
         const plans = {};
@@ -2037,14 +2053,15 @@ hauptLauf(async () => {
                     });
             }
             // C6 — DER WEGE-SCHLÜSSEL TRÄGT DEN ORT: zwei Siedlungen mit DEMSELBEN Samen an
-            // zwei Orten bauen je ihre Wege (die Wege-Formen werden am echten Bau gezählt, `_stlWegeBuild` läuft durch).
+            // zwei Orten bauen je ihre Wege (die Wege-Formen werden am echten Bau gezählt, `_stlWegeBuild` läuft durch; die Nähte
+            // seines Netzes legt der Ort als Feldweg ohne Gassen, fahrzeug.K2 — gezählt wird der Bau mit Gassen).
             window.__marke("C6");
             {
                 const orig = r._stlWegeBuild;
                 const formen = [];
                 r._stlWegeBuild = function (...a) {
                     const n6 = orig.apply(this, a);
-                    formen.push(n6);
+                    if (a[0] && a[0].roads) formen.push(n6);
                     return n6;
                 };
                 await r.spawnSettlement({ seed: 4711, nH: 6, position: { x: 1500, y: 0, z: 1500 } });
@@ -2834,12 +2851,13 @@ hauptLauf(async () => {
                     res.vorplatzN = vpN;
                     res.vorplatzFehl = vpFehl;
                     // die Altwelten: Bauten, die kein Ort trägt (kein Haus mit Grundriss, keine Ausstattung des Dorfs: brunnen_dorf,
-                    // marktstand_dorf), auf dem Erdbau eines Orts — nie das gesetzte Haus auf seinem EIGENEN Grund (`haus:`, S4)
+                    // marktstand_dorf, keine Brücke seiner Gassen: bruecke_jochfeld), auf dem Erdbau eines Orts — nie das gesetzte
+                    // Haus auf seinem EIGENEN Grund (`haus:`, S4)
                     let fremd = 0;
                     for (const e of r.state.architectures)
                         if (
                             !e.fundament &&
-                            !/_dorf$/.test(e.type) &&
+                            !/_dorf$|^bruecke_/.test(e.type) &&
                             !r.state.worldMeta.erdbau[
                                 `haus:${Math.round(e.position.x * 100)},${Math.round(e.position.z * 100)}`
                             ] &&
