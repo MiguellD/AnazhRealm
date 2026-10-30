@@ -491,6 +491,11 @@ const WELT_MESSEN = async () => {
     praesenz.push(pr());
     let laub = 0;
     for (const g of f.cache.values()) for (const c of g?.children || []) laub += !!(c.material?.userData?.jahr && c.geometry.attributes.aCenter); // prettier-ignore
+    // DIE KARTE TRÄGT DAS JAHR: eine Laub-Zelle (Rahmen mit `jahr`) zieht ihre kahle Jahres-Schicht nach und steht erst mit
+    // ihr — die Leser beim Namen: `_karteSchichtSteht`, die Reihe `_karteJahr`, aus der der Karten-Stoff je Pixel liest
+    const at = r._impostorAtlas(), zk = r._impostorZelleNeu(at, "fimp:j", "-", 0, null), jr = { jahr: true }; // prettier-ignore
+    r._karteSchichtSteht(at, zk, jr);
+    const karte = !zk.gebacken && r._karteSchichtSteht(at, zk.jahr, jr) && zk.gebacken && r._karteJahr().array[zk.idx] === zk.jahr.idx; // prettier-ignore
     return {
         G,
         T,
@@ -511,6 +516,7 @@ const WELT_MESSEN = async () => {
             name: r.state.season,
             praesenz,
             laub,
+            karte,
         },
     };
 };
@@ -571,9 +577,9 @@ function urteilWelt(d) {
     );
     const dreh = Math.abs(s.mul1[0] - s.mul0[0]) + Math.abs(s.mul1[1] - s.mul0[1]) + Math.abs(s.mul1[2] - s.mul0[2]);
     pruef(
-        "W2b die Farbe dreht und das Laub fällt (Sommer → Herbst): uSeasonMul, uLaubPraesenz, Laub über aCenter",
-        dreh > 0.3 && s.name === "autumn" && s.praesenz[1] < s.praesenz[0] && s.laub > 0,
-        `${s.mul0} → ${s.mul1} · ${s.name} · Präsenz ${s.praesenz} · ${s.laub} Laub-Körper`
+        "W2b die Farbe dreht und das Laub fällt (Sommer → Herbst): uSeasonMul, uLaubPraesenz, Laub über aCenter, Karte mit kahler Schicht",
+        dreh > 0.3 && s.name === "autumn" && s.praesenz[1] < s.praesenz[0] && s.laub > 0 && s.karte,
+        `${s.mul0} → ${s.mul1} · ${s.name} · Präsenz ${s.praesenz} · ${s.laub} Laub-Körper · Karte ${s.karte}`
     );
     const wk = d.boot && d.boot.werk;
     const bahnen = (wk && wk.bahnen) || [];
@@ -730,6 +736,7 @@ hauptLauf(async () => {
                 name: "autumn",
                 praesenz: [1, 0.55],
                 laub: 12,
+                karte: true,
             },
         };
         const rot = (d, w) => urteilWelt(d).find((g) => g[0].startsWith(w))[1] === false;
@@ -747,6 +754,7 @@ hauptLauf(async () => {
             ["10b: Saison-Wechsel mit 131 Aufträgen / 131 neuen Schlüsseln", mit("saison", { posts: 131, neueSchluessel: 131 }), "W2a"], // prettier-ignore
             ["10e: unruhige Welt (Kontroll-Fenster bestellt — die Sonde misst nicht sauber)", mit("saison", { kontrolle: { posts: 7, removes: 0 } }), "W2a"], // prettier-ignore
             ["10k: das Laub steht im Herbst (die Präsenz bleibt 1)", mit("saison", { praesenz: [1, 1] }), "W2b"],
+            ["10l: Laub-Karte ohne kahle Schicht", mit("saison", { karte: false }), "W2b"],
             ["10c: Eiche bestellt 16 Samen", mit("samen", { eiche: [...Array(16).keys()].map((i) => i + 1) }), "W1a"],
             ["10d: 16 Eichen-Karten", mit("karten", { eiche: 16 }), "W1b"],
             ["10f: 56 Baum-L2-Aufträge im Boot", mit("boot", { kartenArtL2: 56 }), "W1c"],

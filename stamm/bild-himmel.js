@@ -3171,7 +3171,7 @@ AnazhRealm.AUGEN_LICHT = Object.freeze({
 });
 // DAS SAISON-GESETZ (foundry-core SAISON_GESETZ, V18.527): die Jahres-Stützstellen des Studios — der EINE Leser
 // (`_saisonMul`, `_saisonPraesenz`, Laub- und Karten-Stoff), fail-closed in EINER Gültigkeits-Wand: je Stütze Tönung,
-// Laub-Präsenz und Blüte, die Typen des Jahrs (vegetation.K5) und die Karten-Schwelle.
+// Laub-Präsenz und Blüte und die Typen des Jahrs (vegetation.K5).
 AnazhRealm._saisonGesetz = function () {
     const SG = AnazhRealm.Gesetz("terrain:SAISON_GESETZ", null);
     if (
@@ -3185,11 +3185,17 @@ AnazhRealm._saisonGesetz = function () {
         Number.isFinite(SG.kartenGewicht) &&
         SG.typ &&
         Number.isFinite(SG.typ.laub) &&
-        Number.isFinite(SG.typ.bluete) &&
-        Number.isFinite(SG.karteSchwelle)
+        Number.isFinite(SG.typ.bluete)
     )
         return SG;
     return AnazhRealm._kernPflichtBruch("terrain:SAISON_GESETZ");
+};
+// DIE POLE DES JAHRS (vegetation.K5): die Stützen der vollsten und der kahlsten Krone (größtes, kleinstes `pr`) — an ihnen
+// backt die Welt-Karte ihre Schichten (`_karteWeltBacken`), zwischen ihnen mischt ihr Stoff (`_karteJahr`).
+AnazhRealm._saisonPole = function () {
+    const S = AnazhRealm._saisonGesetz().stuetzen;
+    const pol = (besser) => S.reduce((a, b) => (besser(b.pr, a.pr) ? b : a));
+    return { voll: pol((x, y) => x > y), kahl: pol((x, y) => x < y) };
 };
 // Die Lage einer Welt-Phase zwischen den vier Stützen des SAISON_GESETZ (Studio-t: 0 Frühling · .25 Sommer · .5 Herbst · .75
 // Winter, linear im Ring): die Welt-Phase zählt die Saison-MITTEN (Sommer 0,375) → t = phase − 0,125. Die EINE Lage, die

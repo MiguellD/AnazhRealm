@@ -235,8 +235,8 @@ var SAISON_GESETZ = {
     kartenGewicht: 0.8,  // die Karte folgt der Saison zu 80 % (Impostor-Shader mix(1, uSeasonMul, 0.8))
     // vegetation.K5 (30.10., additiv) — DIE PRAESENZ DES JAHRS: `pr` zieht jedes Blatt (aType typ.laub), `bl` jede Bluete
     // (typ.bluete) auf seine Mitte (injectWind: transformed = mix(aCenter, transformed, pres)), Labor UND Welt (`_jahrLage`);
-    // alles andere (Rinde 0, Nadel 2, Halm 4) steht. Die Karte hebt ihre Alpha-Schwelle um (1 - pr) * karteSchwelle (der
-    // Studio-Impostor, die Welt-Karte) — die gebackene Karte ist Sommer (volle Krone).
+    // alles andere (Rinde 0, Nadel 2, Halm 4) steht. Der Studio-Impostor hebt seine Alpha-Schwelle um (1 - pr) * karteSchwelle;
+    // die Welt-Karte (binaere Deckung, BC1) backt die Gestalt an den Polen (groesstes, kleinstes pr) und mischt dazwischen.
     typ: { laub: 1, bluete: 3 },
     karteSchwelle: 0.5,
 };

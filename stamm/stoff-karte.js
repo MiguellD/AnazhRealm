@@ -232,6 +232,7 @@ class AnazhRealm_stoff_karte {
         z.ende = new Promise((r) => (z._endeLoes = r));
         at.zellen.set(key, z);
         this._karteNadel(null, z);
+        this._karteJahr(null);
         if (at.map && z.idx >= at.cap) this._impostorAtlasTexturen(at, z.idx + 1);
         const rend = this.state && this.state.renderer;
         if (rend && !rend._isHeadlessNull) {
@@ -247,6 +248,8 @@ class AnazhRealm_stoff_karte {
         if (ok) z.gebacken = true;
         else z.gescheitert = true;
         if (z._endeLoes) z._endeLoes(!!ok);
+        // scheitert die Jahres-Schicht, scheitert ihre Karte (laut, nie eine Laub-Karte ohne Jahr)
+        if (!ok && z.jahrVon && !z.jahrVon.gebacken) this._karteEndet(z.jahrVon, false);
     }
 
     // Das EINE Einheits-Quad der Karten (6 Verts auf der Stammachse, y ∈ {0,1}) mit DREI Vertex-Attributen: position,
@@ -345,9 +348,11 @@ class AnazhRealm_stoff_karte {
         if (!at || at.zellen.size === 0) return null;
         let gebacken = 0,
             gescheitert = 0,
-            wartend = 0;
+            wartend = 0,
+            jahr = 0; // vegetation.K5 — die kahlen Jahres-Schichten der Laub-Karten (`_karteJahrZelle`)
         const gescheitertArten = [];
         for (const z of at.zellen.values()) {
+            if (z.jahrVon) jahr++;
             if (z.gebacken) gebacken++;
             else if (z.gescheitert) {
                 gescheitert++;
@@ -360,6 +365,7 @@ class AnazhRealm_stoff_karte {
             gebacken,
             gescheitert,
             wartend,
+            jahr,
             fmt: at.fmt,
             schichten: at.cap,
             hebungen: at.ringe ? at.ringe.ringe.map((r) => r.hebung) : null, // lod.K3 — die Ringe der Schicht
@@ -641,9 +647,7 @@ class AnazhRealm_stoff_karte {
                         { width: q.w, height: q.h, depthOrArrayLayers: 1 }
                     );
                 this._foundryLiefer(this._foundry, "platte", "karte", z._liefer, performance.now() - t0);
-                z._weltNeu = false;
-                if (!z.gebacken) this._karteGebacken(z, k.frame);
-                return true;
+                return this._karteSchichtSteht(at, z, k.frame);
             }
         }
         if (bc && !this._karteRechner()) return null; // die Programme der GPU-Ablage kompilieren noch
@@ -676,11 +680,13 @@ class AnazhRealm_stoff_karte {
         B.wurzel.rotation.set(0, 0, 0);
         let rad2 = 0;
         let h = 0;
+        let jahr = false; // trägt die Gestalt das Jahr (Laub, Blüte über den Jahres-Ecken: `mat.userData.jahr`)
         const laub = []; // die Laub-Hüllen: ihr tiefster Punkt ist der Kronen-Fuß des Saums (`_karteSaumVon`)
         for (const c of g.children) {
             if (!c.isMesh || c.isInstancedMesh || !c.geometry || !c.material) continue;
             // der Wurf-Teil (S3 `teil: "schatten"`) lebt nur in den Kaskaden — das Auge sieht ihn nie
             if (c.userData && typeof c.userData.__teil === "string") continue;
+            if (c.material.userData && c.material.userData.jahr === true) jahr = true;
             const m = B.huellen[h] || (B.huellen[h] = new T.Mesh());
             h++;
             m.geometry = c.geometry;
@@ -734,9 +740,11 @@ class AnazhRealm_stoff_karte {
             setze(u.value, u);
         };
         still(wu && wu.uWindStrength, (w, u) => (u.value = 0));
-        // die Karte ist Sommer gebacken (volle Krone, wie der Studio-Bäcker): das Jahr der Welt (`uLaubPraesenz`) hält still
+        // DAS JAHR DER BÜHNE: die Karte backt am vollen Pol des SAISON_GESETZ, ihre Jahres-Schicht (`_karteJahrZelle`) am
+        // kahlen — die Welt-Präsenz (`uLaubPraesenz`) hält still; dazwischen mischt der Stoff (`_karteJahr`)
         const su = this.state.seasonUniforms;
-        still(su && su.uLaubPraesenz, (w) => w.set(1, 1));
+        const pol = AnazhRealm._saisonPole()[z.jahrVon ? "kahl" : "voll"];
+        still(su && su.uLaubPraesenz, (w) => w.set(pol.pr, pol.bl));
         still(lu && lu.uLaubKante, (w) => (w.y = 0));
         still(lu && lu.uKamNah, (w) => w.setScalar(-AnazhRealm.KAMERA_DURCHSICHT.saumM));
         still(lu && lu.uKamZiel, (w) => w.set(lu.uKamAuge.value.x, lu.uKamAuge.value.y, lu.uKamAuge.value.z, 0));
@@ -832,18 +840,41 @@ class AnazhRealm_stoff_karte {
             return 0;
         }
         at.offen = null;
-        const platte = z._liefer && {
-            preset: z.preset,
-            rest: z._liefer.rest,
-            frame: { halfW: fr.halfW, halfH: fr.halfH },
-        };
+        const rahmen = { halfW: fr.halfW, halfH: fr.halfH, jahr };
+        const platte = z._liefer && { preset: z.preset, rest: z._liefer.rest, frame: rahmen };
         if (bc) this._karteAblage(at, z.idx, B, platte, this._karteSaumVon(at, z, fr, B.laub));
         B.zuletzt = performance.now();
         this._foundryLiefer(this._foundry, "haupt", "karte", z._liefer, summe + B.zuletzt - t0);
         (at.weltMs || (at.weltMs = [])).push(+(summe + B.zuletzt - t0).toFixed(2));
+        return this._karteSchichtSteht(at, z, rahmen);
+    }
+
+    // DIE SCHICHT STEHT (vegetation.K5) — das Ende jedes Bakes und jedes Platten-Treffers: trägt die Gestalt das Jahr
+    // (`rahmen.jahr`, auch auf der Platte), backt ihre Jahres-Schicht nach (`_karteJahrZelle`), und die Karte steht erst mit
+    // ihr — nie eine Laub-Karte, die im Winter grün steht, während ihre Gestalt kahl ist.
+    _karteSchichtSteht(at, z, rahmen) {
         z._weltNeu = false;
-        if (!z.gebacken) this._karteGebacken(z, fr);
+        const k = z.jahrVon;
+        if (k) {
+            this._karteJahr(null).array[k.idx] = z.idx;
+            this._karteEndet(z, true);
+            if (!k.gebacken && k._rahmen) this._karteGebacken(k, k._rahmen);
+            return true;
+        }
+        if (rahmen.jahr === true && !z.jahr) {
+            z._rahmen = rahmen;
+            z.jahr = this._karteJahrZelle(at, z);
+        } else if (!z.gebacken && (!z.jahr || z.jahr.gebacken)) this._karteGebacken(z, rahmen);
         return true;
+    }
+
+    // DIE JAHRES-SCHICHT einer Laub-Karte: eine eigene Zelle des Atlas für dieselbe Gestalt (Art, Gestalt, ov), am kahlen Pol
+    // gebacken; ihr Rang IST der ihrer Karte (die Schlange, die Ankunft und die Platte lesen ihn).
+    _karteJahrZelle(at, z) {
+        const j = this._impostorZelleNeu(at, z.key + "|jahr", z.preset, z.variant, z.ov);
+        j.jahrVon = z;
+        Object.defineProperty(j, "_bedarfD2", { get: () => z._bedarfD2, set() {} });
+        return j;
     }
 
     // DER SAUM DER KARTE (w4-laub-saum, phyto-core `karteSaum`): die Blattgröße der Art aus ihrem Gesetz (`treeParams` der
@@ -1214,6 +1245,21 @@ class AnazhRealm_stoff_karte {
                     : 0;
         }
         return at.nadelU;
+    }
+
+    // DAS JAHR DER KARTE (vegetation.K5): je Atlas-Schicht die Schicht ihrer kahlen Gestalt (`_karteSchichtSteht`), sonst sie
+    // selbst (Nadel, Fels, eine Karte ohne Jahr) — EINE Uniform-Reihe wie die Nadel, sie wächst mit dem Atlas.
+    _karteJahr(T) {
+        const at = this._impostorAtlas();
+        let n = at.jahrU ? at.jahrU.array.length : 0;
+        if (n < Math.max(at.n, 1)) {
+            const alt = at.jahrU ? at.jahrU.array : [];
+            while (n < Math.max(at.n, 1)) n = Math.max(32, n * 2);
+            const a = Array.from({ length: n }, (_, i) => (i < alt.length ? alt[i] : i));
+            at.jahrU = (T || THREE.TSL).uniformArray(a, "float");
+            if (at.mat) at.mat.needsUpdate = true;
+        }
+        return at.jahrU;
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_stoff_karte]);
