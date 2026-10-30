@@ -1306,7 +1306,10 @@ const stationen = [
         // Zuwachses mit (Staffel 2; die Hälfte der Schüsse, die Staffel 1 nie liest) und zwei Aufnahmen je Schuss. Jetzt nennt die
         // Probe den Ort buehne (die Sitzung stellt ihn VOR dem Deckel, punkte.cjs `probeOrt`), `licht --kontakt` schießt nur den Fuß
         // (ohne `--zuwachs`), EINE Aufnahme je Schuss, die Treue einmal: 7 statt 24 Aufnahmen, im Deckel der warme Ort und der Ring
-        // an der Platte
+        // an der Platte. DER TÄTER DES RISSES (Spiel-Baum w4-proben-tempo, scripts/werkbank.cjs `weltDesOrts`): seit 30.10. bootet die
+        // Sitzung mit `--ort wiese`, ihr Dorf-Haken lag vor jeder Ladung — in der Prüfbühne baute `_tickGenesisOrt` (stamm/siedlung-ort.js
+        // :2776) den Ring nie, die Ankunft wartete ohne Frist (swiftshader 28 min); die Ankunft hebt ihn jetzt, bis der Ring steht:
+        // swiftshader Bühne 70 s (vor dem Deckel), Kontakt 41 s, Treue 0 Bytes
         probe: { sek: 33,  befehl: befehlDer({
             name: "schatten.K1#1",
             schritte: [
