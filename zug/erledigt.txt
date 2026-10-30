@@ -94,3 +94,4 @@ eich1-gtx Exit0 station eich-gtx.sh an 3ed95dcf
 eich2-gtx Exit0 station eich-gtx.sh an 3ed95dcf
 z83-bisekt2b LANGSAMER abab 24a0f3ef gegen 73bdf938: w-ego 2+2 LANGSAMER
 eich3-gtx Exit0 station eich-gtx.sh an 3ed95dcf
+z83-bisekt3 nicht-langsamer abab 4df8c302 gegen 73bdf938: w-ego 2+2 nicht-langsamer
