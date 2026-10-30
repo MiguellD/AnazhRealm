@@ -488,15 +488,28 @@ const { probeBefehl } = require("./sitzung-seite.js");
 // Mesh, dahinter die Hülle seines Gesetzbuchs im Welt-March), dazu der Bau-Hash. Die Probe endet am ersten Haus (bis 29.10. ging der
 // Spieler 450 m an und weiter bis zum ersten Mesh: je nH ein eigener Boot, 6,3 min Radeon b3f9ae95). Eine schon wache Zelle meldet
 // `wach` (die Probe holt eine frische Welt).
+// DIE ZELLE UND NUR SIE (w4-sitzung-urteil; Radeon b3f9ae95 und GTX 3ed95dcf: in der Sitzung erwachte nH 12 im Gang nie oder galt ein
+// `haus_chinesisch` in 13,7–14,9 m als ihr erstes Haus — das Haus der Nachbarzelle −3,−5; der Einzel-Lauf maß `haus_alemannisch`, Hülle
+// in 234 m, Bau-Hash 175269cc): M36 ging 450 m an, die Nachbarn, durch deren Nah-Ring der Weg führt, erwachten unterwegs und standen
+// fertig, als die Zelle erwachte. Die Probe beginnt M.vor m vor dem Rand, bis dahin aus der Richtung, in der die Sitzung den Spieler
+// ließ — im Nah-Ring von −3,−5 (193 m): sie erwachte zuerst, ihr Export und ihr Zug hielten den Dorf-Zug (EIN Akt je Takt; ein Ruf der
+// Zelle fiel ab und galt doch als Erwachen), und jedes neue Haus im Umkreis von 260 m zählte. Darum (a) der ANMARSCH aus der Richtung
+// (je 5°), deren Bahn vom Start bis zum Rand am weitesten vor dem Nah-Ring jeder Nachbarzelle des Zell-Gesetzes bleibt
+// (`_autoSettlementCellInfo` der 5 × 5 Zellen); (b) gegangen wird erst, wenn auch der DORF-ZUG FREI ist (kein Zug, kein Export im
+// Flug, keine Wiederkehr) — wird er es im Vorlauf nicht, hat die Probe kein Urteil (`frist`, die Marke beim Namen); (c) das ERWACHEN
+// ist der Ruf, den das Spiel annimmt (die Zelle ist danach der Export im Flug oder im Gedächtnis); (d) gezählt wird nur ein Haus
+// IHRES PLANS (Same und Ort eines Slots aus dem Zug der Zelle, `cellKey`). Der Dorf-Zug steht danach, wie die Probe ihn fand.
 async function dorfErwachen(M) {
     const st = r.state;
     const A = r.constructor.AUTO_SETTLEMENT;
     const rend = st.renderer;
+    const zugVorher = "__anazhAutoSettlement" in window ? { wert: window.__anazhAutoSettlement } : null;
+    const zugZurueck = () => (zugVorher ? (window.__anazhAutoSettlement = zugVorher.wert) : delete window.__anazhAutoSettlement);
     delete window.__anazhAutoSettlement; // der Dorf-Zug lebt wie im Spiel (ein Messort davor hielt ihn vielleicht an)
     const info0 = r._autoSettlementCellInfo(M.zelle[0], M.zelle[1]);
-    if (!info0) return { fehler: "die Zelle trägt kein Dorf", zelle: M.zelle };
+    if (!info0) return (zugZurueck(), { fehler: "die Zelle trägt kein Dorf", zelle: M.zelle });
     if ((st.worldMeta.settlementCells || {})[info0.key] || (r._dorfVorraete && r._dorfVorraete.has(info0.key)) || (r._autoSettlementRejected && r._autoSettlementRejected.has(info0.key)))
-        return { wach: true, zelle: M.zelle };
+        return (zugZurueck(), { wach: true, zelle: M.zelle });
     const info = Object.assign({}, info0, { nH: M.nH });
     const orig = r._autoSettlementCellInfo;
     r._autoSettlementCellInfo = function (x, z) {
@@ -505,16 +518,47 @@ async function dorfErwachen(M) {
     const nah = A.nearM + (info.mehrM || 0);
     const start = nah + M.vor;
     const pm = st.playerMesh.position;
-    const rx = pm.x - info.x, rz = pm.z - info.z, rl = Math.hypot(rx, rz) || 1;
-    const sx = info.x + (rx / rl) * start, sz = info.z + (rz / rl) * start;
+    const nachbarn = [];
+    for (let dx = -2; dx <= 2; dx++)
+        for (let dz = -2; dz <= 2; dz++) {
+            const n = dx || dz ? orig.call(r, M.zelle[0] + dx, M.zelle[1] + dz) : null;
+            if (n) nachbarn.push(n);
+        }
+    let anmarsch = null;
+    for (let g = 0; g < 360; g += 5) {
+        const u = [Math.cos((g * Math.PI) / 180), Math.sin((g * Math.PI) / 180)];
+        let rand = Infinity;
+        for (const d of [start, nah])
+            for (const n of nachbarn) rand = Math.min(rand, Math.hypot(info.x + u[0] * d - n.x, info.z + u[1] * d - n.z) - (A.nearM + (n.mehrM || 0)));
+        if (!anmarsch || rand > anmarsch.rand) anmarsch = { grad: g, u, rand };
+    }
+    const sx = info.x + anmarsch.u[0] * start, sz = info.z + anmarsch.u[1] * start;
     pm.set(sx, r._voxelSurfaceY(sx, sz) + 1.8, sz);
-    let erwacht = null, erstes = null, gesetzt = null, imRadius = null, bild = 0, hash = null, bereit = null, taktFehler = null;
+    let erwacht = null, erstes = null, gesetzt = null, imRadius = null, bild = 0, hash = null, bereit = null, taktFehler = null, frist = null, abgewiesen = 0;
     const vorher = new Set(st.architectures);
     const spawn = r._autoSettlementSpawnCell;
     r._autoSettlementSpawnCell = function (cx, cz, i) {
-        if (cx === M.zelle[0] && cz === M.zelle[1] && !erwacht) erwacht = { t: performance.now(), bild, d: Math.hypot(pm.x - info.x, pm.z - info.z) };
-        return spawn.call(this, cx, cz, i);
+        const ruf = { t: performance.now(), bild, d: Math.hypot(pm.x - info.x, pm.z - info.z) };
+        const p = spawn.call(this, cx, cz, i);
+        if (cx === M.zelle[0] && cz === M.zelle[1] && !erwacht) {
+            if (this._autoSettlementPendingKey === info.key || (st.worldMeta.settlementCells || {})[info.key]) erwacht = ruf;
+            else abgewiesen++;
+        }
+        return p;
     };
+    // der Plan der Zelle: der Zug mit ihrem Schlüssel — oder ihr Ort im Gedächtnis (`_ortPlaene`) — trägt je Slot Same und Ort
+    // (`_spawnSettlementSlot`: origin + slot, seed); je Bild nach dem Erwachen geholt, bis er steht
+    let plan = null;
+    const planHolen = () => {
+        const q = r._autoSettlementQueue, c = (st.worldMeta.settlementCells || {})[info.key];
+        const [v, o] = q && q.plan && q.cellKey === info.key ? [q.plan, q.origin] : c && r._ortPlaene && r._ortPlaene.get(c.ort) ? [r._ortPlaene.get(c.ort), { x: c.x, z: c.z }] : [];
+        if (v && Array.isArray(v.slots)) plan = { o, slots: new Map(v.slots.map((s) => [s.seed >>> 0, s])) };
+    };
+    const derZelle = (e) => {
+        const sl = plan && plan.slots.get(e.seed >>> 0);
+        return !!sl && Math.hypot(e.position.x - plan.o.x - sl.x, e.position.z - plan.o.z - sl.z) < 1;
+    };
+    const zugFrei = () => !r._autoSettlementQueue && !r._autoSettlementPendingKey && !r._stlWegePending && !r._ortWachsFlug;
     const fnv = (s) => {
         let h = 0x811c9dc5;
         for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619) >>> 0;
@@ -541,10 +585,17 @@ async function dorfErwachen(M) {
                     bild++;
                     t0 ??= t;
                     if (tGeh == null) {
-                        still = vorrat() && ruhig() ? still + 1 : 0;
+                        still = vorrat() && ruhig() && zugFrei() ? still + 1 : 0;
                         if (still >= M.ruhig || t - t0 > M.vorlaufMs) {
+                            bereit = { ms: Math.round(t - t0), bilder: bild, vorrat: vorrat(), ruhig: ruhig(), zugFrei: zugFrei() };
+                            const q = r._autoSettlementQueue;
+                            // ohne freien Dorf-Zug erwachte die Zelle nie im Gang (der Zug eines Nachbarn hält ihn): kein Urteil
+                            if (!bereit.zugFrei) {
+                                frist = "der Dorf-Zug wurde im Vorlauf von " + M.vorlaufMs + " ms nicht frei (Zug " + ((q && q.cellKey) || "—") + ", Export " +
+                                    (r._autoSettlementPendingKey || "—") + (r._stlWegePending ? ", Wiederkehr" : "") + ")";
+                                return halt();
+                            }
                             tGeh = t;
-                            bereit = { ms: Math.round(t - t0), bilder: bild, vorrat: vorrat(), ruhig: ruhig() };
                         }
                     }
                     // die gehende Pose wie M36: 4 m/s auf den Anker zu, die Lage absolut je Bild gesetzt
@@ -553,12 +604,13 @@ async function dorfErwachen(M) {
                     st.yaw = Math.atan2(info.x - pm.x, info.z - pm.z);
                     st.pitch = 0;
                     r._gameLoopTick(t);
+                    if (erwacht && !plan) planHolen();
                     if (erwacht && !erstes) {
                         cam.updateMatrixWorld(true);
                         frust.setFromProjectionMatrix(mat.multiplyMatrices(cam.projectionMatrix, cam.matrixWorldInverse));
                         const jetzt = () => ({ ms: +(performance.now() - erwacht.t).toFixed(1), bilder: bild - erwacht.bild });
                         for (const e of st.architectures) {
-                            if (vorher.has(e) || !/^haus_/.test(e.type) || Math.hypot(e.position.x - info.x, e.position.z - info.z) > 260) continue;
+                            if (vorher.has(e) || !/^haus_/.test(e.type) || !derZelle(e)) continue;
                             gesetzt ??= jetzt();
                             if (!frust.containsPoint(e.position)) continue;
                             const d = Math.hypot(e.position.x - pm.x, e.position.z - pm.z);
@@ -593,11 +645,13 @@ async function dorfErwachen(M) {
         r._autoSettlementCellInfo = orig;
         r._autoSettlementSpawnCell = spawn;
         rend.setAnimationLoop(null);
+        zugZurueck();
     }
     const zelle = (st.worldMeta.settlementCells || {})[info.key] || null;
     return {
-        gesetzt, imRadius, erstes, hash, bereit, taktFehler, nah, start, zelle: M.zelle, nH: M.nH, same: info.seed,
-        anker: [+info.x.toFixed(1), +info.z.toFixed(1)], erwacht: erwacht && { bild: erwacht.bild, d: +erwacht.d.toFixed(1) }, bilder: bild, reserviert: zelle,
+        gesetzt, imRadius, erstes, hash, bereit, taktFehler, frist, nah, start, zelle: M.zelle, nH: M.nH, same: info.seed,
+        anker: [+info.x.toFixed(1), +info.z.toFixed(1)], anmarsch: { grad: anmarsch.grad, rand: +anmarsch.rand.toFixed(1), nachbarn: nachbarn.length },
+        erwacht: erwacht && { bild: erwacht.bild, d: +erwacht.d.toFixed(1) }, abgewiesen, plan: plan ? plan.slots.size : null, bilder: bild, reserviert: zelle,
     };
 }
 // die Probe: nH 12 in der Welt, wie die Sitzung sie hält (eine schon wache Zelle holt eine frische), nH 300 in einer frischen Welt
@@ -607,6 +661,8 @@ async function probeDorf(H) {
     const j = (H.teil = { je: {} });
     for (const [i, nh] of [12, 300].entries()) {
         let e = null;
+        // ein nH, das die Frist nicht mehr trägt, oder ein Vorlauf ohne freien Dorf-Zug: kein Urteil (die EINE Marke, punkte.cjs FRIST_MARKE)
+        if (!(H.rest() > 12)) H.fristRiss("nH " + nh + " ausgelassen (" + H.rest().toFixed(1) + " s Rest)");
         for (let v = 0; v < 2 && H.rest() > 12; v++) {
             if (i > 0 || v > 0) {
                 const tg = Date.now();
@@ -618,6 +674,7 @@ async function probeDorf(H) {
             if (!e || !e.wach) break;
             H.zeile("die Zelle " + M.zelle.join(",") + " ist schon wach — eine frische Welt");
         }
+        if (e && e.frist) H.fristRiss("nH " + nh + ": " + e.frist);
         j.je["nH" + nh] = e;
         console.log("@@PUNKTE@@ NH" + nh);
         console.log(JSON.stringify({ ergebnis: e }, null, 1));
@@ -902,6 +959,9 @@ async function probeStartDorf(H) {
     }
     const o = { WB: 480, HB: 270, fristMs: Math.max(5, H.rest() - 6) * 1000 };
     const j = (H.teil = await H.evalWelt("return await (" + H.seite.INNEN + ")(" + JSON.stringify(o) + ");", Math.max(5, H.rest() - 1) * 1000));
+    // ein Haus an der Frist (Gang oder Bild ausgelassen): kein ganzes Urteil — die EINE Marke (punkte.cjs FRIST_MARKE)
+    const aus = ((j && j.haeuser) || []).filter((h) => h.fehler === "Frist der Probe" || h.bildFehlt === "Frist der Probe");
+    if (aus.length) H.fristRiss(aus.length + " von " + j.haeuser.length + " Häusern an der Frist ausgelassen");
     for (const h of (j && j.haeuser) || [])
         console.log(
             `  ${h.typ} · Gang Hub ${h.gang ? h.gang.hub.toFixed(2) + " m" + (h.gang.fehlt.length ? " · fehlt " + h.gang.fehlt.join(" · ") : "") : "—"} · ` +

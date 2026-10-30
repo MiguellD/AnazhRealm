@@ -367,8 +367,13 @@ async function probeBildWeg(H) {
     const j = (H.teil = { gestartet: true, bild: true, echt: true, wege: {}, faelle: [], frei });
     j.konsum = await L.bauWeg(page, "konsum");
     for (const [weg, lage, werk, sicht] of H.seite.FAELLE) {
-        if (H.rest() < 6) break;
+        // ein Fall an der Frist fällt aus: die Probe trägt kein ganzes Urteil (die EINE Marke, punkte.cjs FRIST_MARKE)
+        if (H.rest() < 6) {
+            H.fristRiss("Fall " + [weg, lage, werk, sicht].join(" · ") + " und die folgenden ausgelassen");
+            break;
+        }
         const e = await H.binnen(L.wegLauf(page, { lage, weg, name: L.WERKE[werk], sicht }), (H.rest() - 4) * 1000, { fehler: "Frist der Probe" });
+        if (e.fehler === "Frist der Probe" && H.rest() <= 4) H.fristRiss("Fall " + [weg, lage, werk, sicht].join(" · ") + " an der Frist");
         (((j.wege[lage] ||= {})[weg] ||= {})[werk] ||= {})[sicht] = e;
         j.faelle.push([weg, lage, werk, sicht]);
         const z = e.zeiten || [];
@@ -412,11 +417,16 @@ async function probeVerben(H) {
     await L.bauWeg(page, "wort");
     const j = (H.teil = { verbenJe: {}, faelle: [], frei });
     for (const [h, sicht, werk] of H.seite.FAELLE) {
-        if (H.rest() < 6) break;
+        // ein Fall an der Frist fällt aus: die Probe trägt kein ganzes Urteil (die EINE Marke, punkte.cjs FRIST_MARKE)
+        if (H.rest() < 6) {
+            H.fristRiss("Fall " + [h, sicht, werk].join(" · ") + " und die folgenden ausgelassen");
+            break;
+        }
         const [name, verb, weg] = L.VERBEN[werk];
         const e = await H.binnen(L.wegLauf(page, { lage: "schöpfer", weg: h === "werkstatt" ? weg || h : h, name, sicht, verb }), (H.rest() - 4) * 1000, {
             fehler: "Frist der Probe",
         });
+        if (e.fehler === "Frist der Probe" && H.rest() <= 4) H.fristRiss("Fall " + [h, sicht, werk].join(" · ") + " an der Frist");
         ((j.verbenJe[h] ||= {})[sicht] ||= {})[werk] = e;
         j.faelle.push([h, sicht, werk]);
         const ok = e.steht === 1 && e.verb === true && !e.fehler;

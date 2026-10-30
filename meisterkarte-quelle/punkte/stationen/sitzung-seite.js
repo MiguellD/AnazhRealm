@@ -6,8 +6,12 @@
 // DER ANSCHLUSS: die Probe hängt sich an den Browser der Welt der Sitzung — `werkbank start --echt` startet ihn über
 // puppeteer.launch ohne pipe, Chrome legt DevToolsActivePort in sein Profil (os.tmpdir()/werkbank-profil-<W>-<Zeit>). Nie ein
 // eigener Browser, nie ein eigener save-server; am Ende löst sie sich (disconnect, nie close), jede Seite, die sie öffnete, fällt,
-// die Welt kommt nach vorn (ein Tab dahinter zeichnet nie). Ihre eigene Frist liegt unter dem Deckel der Sitzung (probe.sek − 6 s):
-// wer sie reißt, baut ab und schreibt, was er bis dahin maß — nie hinterlässt eine Probe einen offenen Tab oder eine gehaltene Taste.
+// die Welt kommt nach vorn (ein Tab dahinter zeichnet nie). Ihre eigene Frist liegt 6 s unter dem Deckel DIESES Laufs ({SEK}, punkte.cjs
+// ersetze — in der Sitzung probe.sek, in der Eich-Fahrt 90 s, am Rest der Fahrt dieser): wer sie reißt, baut ab, schreibt, was er bis
+// dahin maß, und die EINE Marke „@@PUNKTE@@ FRIST <s> s der Probe gerissen“ (punkte.cjs FRIST_MARKE: kein Urteil, UNGEMESSEN) — nie
+// hinterlässt eine Probe einen offenen Tab oder eine gehaltene Taste. Eine Probe, die selbst Fälle an ihrer Frist auslässt, sagt es mit
+// `H.fristRiss(was)` (dieselbe Marke). Bis w4-sitzung-urteil trug argv die Frist aus der Definition (ANKUNFT 84 s unter dem Deckel 10 s
+// der Station): der Deckel tötete die Probe, ehe sie abbauen und schreiben konnte.
 //
 // DIE LINSE DES SPIELS MISST: `H.linse(datei, namen)` lädt ein diag-Skript des Spiel-Baums als Bibliothek — sein hauptLauf stumm,
 // die genannten Glieder als Export, auf Wunsch argv der Linse, stille Glieder von welt-boot (der Browser, der Server der Sitzung) und
@@ -15,10 +19,10 @@
 // nur den Lauf (Stichprobe statt Raster, die Ruhe statt der Uhr).
 //
 // Der Text dieser Funktionen steht wörtlich im argv der Probe (`node -e`) — er ist Teil des Abdrucks jeder Station, die ihn trägt.
-// Darum trägt er nie die Platzhalter des Läufers (in geschweiften Klammern PORT, AUS, BAUM, KOORD): sie stünden ersetzt im Code.
+// Darum trägt er nie die Platzhalter des Läufers (in geschweiften Klammern PORT, AUS, BAUM, KOORD, SEK): sie stünden ersetzt im Code.
 "use strict";
 
-// läuft IN der Probe (node -e, cwd = Spiel-Baum; argv: der Port der Sitzung, die Ausgabe, die eigene Frist in s)
+// läuft IN der Probe (node -e, cwd = Spiel-Baum; argv: der Port der Sitzung, die Ausgabe, der Deckel des Laufs in s — die Frist 6 s darunter)
 function sitzungWerkzeug() {
     const fs = require("fs");
     const path = require("path");
@@ -26,7 +30,18 @@ function sitzungWerkzeug() {
     const http = require("http");
     const S = Number(process.argv[1]);
     const W = S + 20000;
-    const H = { S, W, AUS: process.argv[2], FRIST_S: Number(process.argv[3]) || 40, t0: Date.now(), fs, path, teil: undefined };
+    const H = { S, W, AUS: process.argv[2], FRIST_S: Number(process.argv[3]) - 6, t0: Date.now(), fs, path, teil: undefined };
+    if (!(H.FRIST_S > 0)) {
+        console.log("@@ PROBE-FEHLER der Deckel des Laufs fehlt (argv „" + process.argv[3] + "“: der Läufer ersetzt den Platzhalter SEK)");
+        process.exit(2);
+    }
+    // DIE MARKE der gerissenen Frist (punkte.cjs FRIST_MARKE), EINMAL je Probe: am Deckel der Frist (H.fahre) oder wo die Probe selbst
+    // Fälle an ihr auslässt
+    H.fristRiss = (was) => {
+        if (H.gerissen) return;
+        H.gerissen = was;
+        console.log("@@PUNKTE@@ FRIST " + H.FRIST_S + " s der Probe gerissen — " + was);
+    };
     const abbau = [];
     H.url = "http://localhost:" + S + "/index.html";
     H.sek = () => +((Date.now() - H.t0) / 1000).toFixed(1);
@@ -190,7 +205,7 @@ function sitzungWerkzeug() {
             process.exit(code);
         };
         const uhr = setTimeout(() => {
-            console.log("@@ FRIST " + H.FRIST_S + " s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier");
+            H.fristRiss("Abbau, die Ausgabe trägt den Stand bis hier");
             ende(3, H.teil);
         }, H.FRIST_S * 1000);
         Promise.resolve()
@@ -207,12 +222,12 @@ function sitzungWerkzeug() {
 }
 
 // der argv einer Probe: die Werkzeuge, die Seiten-Funktionen (`H.seite.NAME`, als Text an die Werkbank oder an page.evaluate), dann
-// die Probe `fn(H)`. Die eigene Frist liegt 6 s unter dem Deckel `sek` der Sitzung.
+// die Probe `fn(H)`. Die eigene Frist liegt 6 s unter dem Deckel des Laufs ({SEK}); `sek` ist der Deckel der Station.
 function probeBefehl(fn, sek, seite = {}) {
     const s = Object.entries(seite).map(([k, f]) => k + ": " + f).join(",\n");
     return {
         sek,
-        befehl: ["node", "-e", "const H = (" + sitzungWerkzeug + ")();\nH.seite = {\n" + s + "\n};\nH.fahre(" + fn + ");", "{PORT}", "{AUS}", String(sek - 6)],
+        befehl: ["node", "-e", "const H = (" + sitzungWerkzeug + ")();\nH.seite = {\n" + s + "\n};\nH.fahre(" + fn + ");", "{PORT}", "{AUS}", "{SEK}"],
     };
 }
 
@@ -265,6 +280,7 @@ async function probeAnkunft(H) {
         );
     // 1 KALT
     const k = await kontrolle(await H.lade(page, { kalt: true }));
+    if (!k.tK && !(H.rest() > 4)) H.fristRiss("die Kontrolle des Kalt-Boots an der Frist");
     Object.assign(j, k);
     H.zeile("kalt: t(Kontrolle) " + (k.tK ? (k.tK / 1000).toFixed(2) + " s" : "—"));
     if (k.tK) {
@@ -273,7 +289,9 @@ async function probeAnkunft(H) {
         const a = await page.evaluate(L.SCHUSS, 960, 540, false);
         pngDatei(H.AUS + ".png", a.png);
         const tr = Date.now();
-        const lk = await ruhe(Math.min(40000, (H.rest() - 40) * 1000));
+        const ruheMs = Math.min(40000, (H.rest() - 40) * 1000);
+        const lk = await ruhe(ruheMs);
+        if (!lk && ruheMs < 40000) H.fristRiss("die Ruhe des Kalt-Boots an der Frist (" + Math.max(0, Math.round(ruheMs / 1000)) + " von 40 s)");
         const ruheS = +((Date.now() - tr) / 1000).toFixed(1);
         const b = await page.evaluate(L.SCHUSS, 960, 540, false);
         pngDatei(H.AUS + "-ruhe.png", b.png);
@@ -288,16 +306,22 @@ async function probeAnkunft(H) {
             ohne: (window.anazhRealm.state.logBuffer || []).filter((z) => /Das erste Weltbild steht ohne/.test(z)),
         }))
     );
-    // 2 WARM ×2
+    // 2 WARM ×2 — was die Frist nicht mehr trägt, fällt mit der EINEN Marke aus (H.fristRiss: kein ganzes Urteil, UNGEMESSEN)
     let liste = null;
-    for (let n = 1; n <= 2 && H.rest() > 14; n++) {
+    for (let n = 1; n <= 2; n++) {
+        if (!(H.rest() > 14)) {
+            H.fristRiss("der Zweit-Boot " + n + " und der Kern-Wechsel ausgelassen");
+            break;
+        }
         await sichern();
         const w = await kontrolle(await H.lade(page));
+        if (!w.tK && !(H.rest() > 4)) H.fristRiss("die Kontrolle des Zweit-Boots " + n + " an der Frist");
         j.warm.push(w.tK);
         warmZeile(w);
         if (n > 1) continue;
         const lief = await ruhe(Math.min(20000, (H.rest() - 14) * 1000));
         if (!lief) {
+            if (!(H.rest() > 14)) H.fristRiss("die Ruhe des Zweit-Boots an der Frist");
             console.log("  ❌ LIEFERUNG zweit: die Foundry ruht am Zweit-Boot nicht binnen der Frist");
             continue;
         }
@@ -306,25 +330,30 @@ async function probeAnkunft(H) {
         console.log(`  ${k4.artGruen ? "✅ " : "❌ "}${k4.artZeile}`);
         [liste, j.lieferung] = [lief.liste, { platte: lief.platte, werk: lief.werk, haupt: lief.haupt, leer: lief.leer, auftrag: lief.auftrag }];
     }
-    // 3 KERN-WECHSEL fachwerk
+    // 3 KERN-WECHSEL fachwerk — wie die Linse (diag-boot-stage mit KERN: zeige → die Kontrolle von außen → RUHE → die Liefer-Marke):
+    // erst trägt die Taste den Leib, dann zählt die Ruhe der Foundry (w4-sitzung-urteil; bis dahin fragte die Probe die Ruhe gleich
+    // nach domcontentloaded, ehe die Welt einen Auftrag gab — die Marke war leer, „die Foundry ruht nach dem Wechsel nicht binnen der
+    // Frist“ nach 0 s: GTX eich3 an 3ed95dcf, Radeon b3f9ae95)
+    if (liste && !(H.rest() > 8)) H.fristRiss("der Kern-Wechsel ausgelassen");
     if (liste && H.rest() > 8) {
         const kern = JSON.parse(fs.readFileSync("cores.manifest.json", "utf8")).find((x) => x.id === "fachwerk");
         const alt = kern.scripts.map((p) => [p, fs.readFileSync(p)]);
         const zurueck = () => alt.forEach(([p, b]) => fs.writeFileSync(p, b));
         H.beimAbbau(zurueck);
         await sichern();
-        let lief = null;
+        let lief = null, w = null;
         try {
             for (const [p, b] of alt) fs.writeFileSync(p, Buffer.concat([b, Buffer.from("//")]));
-            await H.lade(page);
-            lief = await ruhe((H.rest() - 3) * 1000);
+            w = await kontrolle(await H.lade(page));
+            if (w.tK) lief = await ruhe((H.rest() - 3) * 1000);
         } finally {
             zurueck();
         }
+        if (!lief && !(H.rest() > 4)) H.fristRiss("der Kern-Wechsel an der Frist (" + (w && w.tK ? "die Ruhe" : "die Kontrolle") + ")");
         if (lief) {
-            const w = L.wechselUrteil(liste, lief.liste, kern.id);
-            console.log(`  ${w.gruen ? "✅" : "❌"} ${w.zeile}`);
-        } else console.log("  ❌ KERN-WECHSEL fachwerk: die Foundry ruht nach dem Wechsel nicht binnen der Frist");
+            const u = L.wechselUrteil(liste, lief.liste, kern.id);
+            console.log(`  ${u.gruen ? "✅" : "❌"} ${u.zeile}`);
+        } else console.log("  ❌ KERN-WECHSEL fachwerk: die Foundry ruht nach dem Wechsel nicht binnen der Frist" + (w && !w.tK ? " (die Taste trug den Leib nie)" : ""));
     }
     return j;
 }
