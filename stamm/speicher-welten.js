@@ -2795,6 +2795,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_ausgabeRundung",
         "_renderScaleApplied",
         "pendingDisposals",
+        "tonTafel",
         "scene",
         "camera",
         "skybox",
