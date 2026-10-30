@@ -457,8 +457,8 @@ function halmUrteil(fall, t, rc, lod, S) {
 }
 // DER PIXEL ALS FILTER (phyto-core halmFilter): die Welle quer über eine Ader (u 20–21, wo der Kiel flach ist) trägt auf
 // Armlänge (0,1 Adern je Pixel) ≥ 90 % ihrer Höhe, fern (1,5) < 1 % — Detail je Pixel, nie Flimmern. Die Konstanten des
-// Gesetzes gegen die Literatur (Kiel, Rippen-Abstand, Glanz, Durchlass, Extinktion) rechnet der Rumpf von w4-wiese-nah, das
-// Soll des Bilds auf Armlänge misst die Station.
+// Gesetzes gegen die Literatur (Kiel 20,1° in 15–30°, Rippen 0,7 mm in 0,5–1, Rauheit 0,55 in 0,45–0,71, K 0,385 und 0,50 in
+// 0,3–0,55, K des Himmels 0,70 in 0,6–0,8) rechnet der Rumpf von w4-wiese-nah; das Bild auf Armlänge urteilt die GPU.
 function halmPixelUrteil(quer = PC.halmQuer) {
     const Z = PC.WIND_ZAHLEN, H = PC.HALM_GESETZ; // prettier-ignore
     const welle = (f, fw, amp) => ((y) => (Math.max(...y) - Math.min(...y)) / 2 / amp)([...Array(41).keys()].map((i) => f(Z, 20 + i / 40, fw))); // prettier-ignore
