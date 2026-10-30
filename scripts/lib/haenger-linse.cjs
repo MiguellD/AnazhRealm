@@ -201,14 +201,23 @@ function profilLesen(p) {
         return s;
     };
     const fnName = (id) => knoten.get(id).n.callFrame.functionName || "";
-    return { zeiten, samples: p.samples, name, stapel, fnName };
+    // der Ort eines Rahmens: die Datei unter der Seite (eine Stamm-Datei mit ihrem Pfad) und die Zeile seiner Definition
+    const ort = (id) => {
+        const c = knoten.get(id).n.callFrame;
+        const pfad = String(c.url || "")
+            .replace(/^[a-z]+:\/\/[^/]*\//, "")
+            .split("?")[0];
+        return pfad ? `${/^pptr:/.test(pfad) ? "werkbank" : pfad}:${c.lineNumber + 1}` : "";
+    };
+    return { zeiten, samples: p.samples, name, stapel, fnName, ort };
 }
 
 // DIE STICHPROBEN AUS DER EINEN SPUR (`lauf`, Kategorie `disabled-by-default-v8.cpu_profiler`, 1 ms; Leser: Hänger-Linse,
-// `profil`): das Profile auf dem Faden der Takt-Marken und seine ProfileChunks (Knoten mit Eltern) als EIN CDP-Profil auf der
-// Spur-Uhr, dazu die Takt-Marken (`anazh-takt`, Spur-Uhr) — je Takt eine, sie legen die Takte auf die Proben.
-function spurProfil(ev) {
-    const marken = ev.filter((e) => /user_timing/.test(e.cat) && e.name === "anazh-takt").sort((x, y) => x.ts - y.ts);
+// `profil`, die Kalt-Zeile): das Profile auf dem Faden der Marken und seine ProfileChunks (Knoten mit Eltern) als EIN CDP-Profil
+// auf der Spur-Uhr, dazu die Marken (Spur-Uhr) — die Takt-Marke `anazh-takt` je Takt legt die Takte auf die Proben, die
+// Kalt-Probe setzt `anazh-kalt` (diag-boot-stage).
+function spurProfil(ev, marke = "anazh-takt") {
+    const marken = ev.filter((e) => /user_timing/.test(e.cat) && e.name === marke).sort((x, y) => x.ts - y.ts);
     const kopf = marken[0] && ev.find((e) => e.name === "Profile" && e.pid === marken[0].pid && e.tid === marken[0].tid);
     if (!kopf) return null;
     const knoten = new Map(), samples = [], timeDeltas = [];
@@ -709,6 +718,201 @@ function linseWerten(roh, spur, b) {
     return Object.assign(a, { befunde: haengerLinsenBefunde(a), tabelle: haengerTabelle(a) });
 }
 
+// DIE HALTER DER ANKUNFT (Pflicht-OFFEN B, die Kalt-Zeile `diag-boot-stage --kalt`): jede Aufgabe des Haupt-Fadens vor dem
+// ersten Weltbild über ANKUNFT_HALT_MS (die lange Aufgabe des Browsers, `longtask`) mit den Funktionen, die sie hielten, beim
+// Namen: je Aufgabe der Rahmen-Baum ihrer Stichproben (ohne die Hüllen, `rahmenBaum`), Halter ist der tiefste Rahmen, der in
+// ihr ≥ ANKUNFT_HALT_MS trägt, während keines seiner Kinder es tut — trägt ein Rahmen über seinen haltenden Kindern noch
+// ≥ ANKUNFT_HALT_MS, hält er selbst „verteilt"; hält kein Rahmen, ist die Aufgabe verteilt (ihre drei schwersten Zweige).
+// Dazu je Funktion die Summe vor dem Bild (inklusiv, ohne Rekursion doppelt; selbst) und die belegte Zeit. `seite`: die
+// Aufgaben (`lang` [Start, Dauer] auf der Seiten-Uhr), die Marken der Kalt-Probe (Seiten-Uhr, ms) und `bis` (das Bild).
+// Die Stichproben trägt die EINE Spur (`spurProfil`, Marke `anazh-kalt`); Uhr-Versatz = Median der Marken-Paare.
+const ANKUNFT_HALT_MS = 50;
+function ankunftsHalter(spur, seite, opts) {
+    const o = Object.assign({ schwelle: ANKUNFT_HALT_MS, top: 25 }, opts);
+    const P = spur && spur.profil && spur.profil.samples.length ? profilLesen(spur.profil) : null;
+    const s = seite || {};
+    const n = Math.min(spur ? spur.marken.length : 0, (s.marken || []).length);
+    const paare = [];
+    for (let i = 0; i < n; i++) paare.push(spur.marken[i] - s.marken[i] * 1000);
+    paare.sort((x, y) => x - y);
+    const versatz = P && n ? paare[n >> 1] : null;
+    const out = {
+        profil: !!P,
+        marken: n,
+        versatz,
+        bisMs: s.bis,
+        aufgaben: [],
+        summen: [],
+        befunde: [],
+        belegtMs: 0,
+        kosten: {},
+        vorBild: {},
+        halter: [],
+    };
+    if (versatz == null)
+        return Object.assign(out, {
+            befunde: ["keine Stichproben auf den Marken der Kalt-Probe — die Halter ohne Namen"],
+        });
+    const bisUs = s.bis * 1000 + versatz;
+    // das Gewicht jeder Probe: ihr Abstand zur nächsten (µs → ms), höchstens 10 ms (eine Lücke der Spur zählt nie als Arbeit)
+    const gew = (i) =>
+        Math.min(10, ((i + 1 < P.zeiten.length ? P.zeiten[i + 1] : P.zeiten[i] + 1000) - P.zeiten[i]) / 1000);
+    const ortVon = new Map();
+    const merke = (id) => {
+        for (const x of P.stapel(id)) if (!ortVon.has(P.name(x))) ortVon.set(P.name(x), P.ort(x));
+    };
+    // die Summen vor dem Bild: belegt (ohne Leerlauf), je Funktion inklusiv und selbst; die Meilensteine der Seite
+    // (`seite.meilensteine` {Name: Seiten-ms}) tragen die belegte Zeit bis zu ihnen
+    const inkl = new Map(),
+        selbst = new Map(),
+        klasse = { "(idle)": 0, "(program)": 0, "(garbage collector)": 0 };
+    const M = Object.entries(s.meilensteine || {})
+        .filter(([, t]) => Number.isFinite(t))
+        .map(([name, t]) => ({ name, t: Math.round(t), us: t * 1000 + versatz, belegtMs: null }))
+        .sort((a, b) => a.t - b.t);
+    // DIE KLASSEN je Sekunde (`seite.klassen` {Funktion: Klasse}; in der `familie` zählt nur die äußere, sonst zählt verschachtelt
+    // jede): die Kosten-Spalte der Kalt-Zeile und die Summe der Familie bis zum Bild (`vorBild`)
+    const KL = s.klassen || null,
+        FAM = new Set(s.familie || []);
+    [out.kosten, out.vorBild] = [{}, {}];
+    let summe = 0;
+    for (let i = 0, m = 0; i < P.zeiten.length; i++) {
+        for (; m < M.length && M[m].us <= P.zeiten[i]; m++) M[m].belegtMs = Math.round(summe);
+        const id = P.samples[i],
+            g = gew(i),
+            fn = P.fnName(id);
+        if (fn !== "(idle)") summe += g;
+        if (KL && fn !== "(idle)") {
+            const sek = Math.floor((P.zeiten[i] - versatz) / 1e6);
+            const da = new Set();
+            let famDa = false;
+            for (const x of P.stapel(id)) {
+                const k = KL[P.fnName(x)];
+                if (!k || da.has(k) || (FAM.has(k) && famDa)) continue;
+                da.add(k);
+                famDa = famDa || FAM.has(k);
+                const z = out.kosten[k] || (out.kosten[k] = {});
+                z[sek] = (z[sek] || 0) + g;
+                if (FAM.has(k) && P.zeiten[i] < bisUs) out.vorBild[k] = (out.vorBild[k] || 0) + g;
+            }
+        }
+        if (P.zeiten[i] >= bisUs) continue;
+        if (fn in klasse) klasse[fn] += g;
+        if (fn === "(idle)") continue;
+        out.belegtMs += g;
+        merke(id);
+        const namen = new Set(P.stapel(id).map((x) => P.name(x)));
+        for (const nm of namen) if (nm !== "(root)") inkl.set(nm, (inkl.get(nm) || 0) + g);
+        selbst.set(P.name(id), (selbst.get(P.name(id)) || 0) + g);
+    }
+    const S = o.schwelle;
+    const halterIn = (knot, name, liste) => {
+        const kinder = [...knot.k.entries()].filter(([, c]) => c.n >= S);
+        if (!kinder.length) return name && liste.push({ name, ms: knot.n });
+        let rest = knot.n;
+        for (const [k, c] of kinder) ((rest -= c.n), halterIn(c, k, liste));
+        if (rest >= S && name) liste.push({ name: name + " (verteilt)", ms: rest });
+    };
+    for (const [start, dauer] of s.lang || []) {
+        if (start >= s.bis || dauer < S) continue;
+        const lo = start * 1000 + versatz,
+            hi = (start + dauer) * 1000 + versatz;
+        const ids = [],
+            gs = [];
+        for (let i = 0; i < P.zeiten.length && P.zeiten[i] < hi; i++)
+            if (P.zeiten[i] >= lo && P.fnName(P.samples[i]) !== "(idle)") (ids.push(P.samples[i]), gs.push(gew(i)));
+        // die Proben mit ihrem Abstand; was die Dauer der Aufgabe (der Browser misst sie) über die Proben hinaus trägt, hielt der
+        // Faden ohne JS-Probe (nativ, eine synchrone Antwort) — es steht beim Namen „(ohne Probe)", nie verteilt auf die Proben
+        const wurzel = { n: 0, k: new Map() };
+        ids.forEach((id, k) => (merke(id), rahmenBaum(P, [id], gs[k], wurzel)));
+        const ohne = dauer - wurzel.n;
+        if (ohne >= S) [wurzel.n, wurzel.k] = [dauer, wurzel.k.set("(ohne Probe)", { n: ohne, k: new Map() })];
+        const halter = [];
+        halterIn(wurzel, null, halter);
+        const zweige = [...wurzel.k.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 3);
+        if (!halter.length)
+            halter.push({
+                name: `verteilt (${zweige.map(([k, c]) => `${k} ${Math.round(c.n)}`).join(" · ")})`,
+                ms: dauer,
+            });
+        out.aufgaben.push({
+            t: Math.round(start),
+            ms: Math.round(dauer),
+            halter: halter
+                .sort((a, b) => b.ms - a.ms)
+                .map((h) => ({
+                    name: h.name,
+                    ort: ortVon.get(h.name.replace(/ \(verteilt\)$/, "")) || "",
+                    ms: Math.round(h.ms),
+                })),
+        });
+    }
+    out.aufgaben.sort((a, b) => b.ms - a.ms);
+    out.summen = [...inkl.entries()]
+        .filter(([nm]) => !(nm in klasse))
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, o.top)
+        .map(([nm, ms]) => ({
+            name: nm,
+            ort: ortVon.get(nm) || "",
+            ms: Math.round(ms),
+            selbstMs: Math.round(selbst.get(nm) || 0),
+        }));
+    out.belegtMs = Math.round(out.belegtMs);
+    out.klasse = Object.fromEntries(Object.entries(klasse).map(([k, v]) => [k, Math.round(v)]));
+    out.meilensteine = M.map(({ name, t, belegtMs }) => ({
+        name,
+        t,
+        belegtMs: belegtMs == null ? Math.round(summe) : belegtMs,
+    }));
+    // DAS URTEIL: je Halter-Name die längste Aufgabe, die er hielt, und wie oft — ROT beim Namen
+    const je = new Map();
+    for (const a of out.aufgaben)
+        for (const h of a.halter) {
+            const e = je.get(h.name) || { name: h.name, ort: h.ort, n: 0, maxMs: 0, summeMs: 0, t: a.t };
+            e.n++;
+            e.summeMs += h.ms;
+            if (h.ms > e.maxMs) ((e.maxMs = h.ms), (e.t = a.t));
+            je.set(h.name, e);
+        }
+    out.halter = [...je.values()].sort((a, b) => b.summeMs - a.summeMs);
+    out.befunde = out.halter.map(
+        (h) =>
+            `${h.name}${h.ort ? ` (${h.ort})` : ""} hält den Haupt-Faden vor dem ersten Bild ${h.maxMs} ms (bei ${(h.t / 1000).toFixed(1)} s; ${h.n}× ≥ ${S} ms, Σ ${h.summeMs} ms)`
+    );
+    return out;
+}
+// Die Tafel der Halter: die längsten Aufgaben mit ihren Haltern, die Funktions-Summen vor dem Bild.
+function ankunftsHalterTafel(a, nAufgaben = 10, nSummen = 15) {
+    const z = [];
+    const kl = a.klasse || {};
+    z.push(
+        `  DER HAUPT-FADEN bis zum Bild (${((a.bisMs || 0) / 1000).toFixed(2)} s): belegt ${a.belegtMs} ms · Collector ${kl["(garbage collector)"] || 0} · ` +
+            `Programm ${kl["(program)"] || 0} · leer ${kl["(idle)"] || 0} ms`
+    );
+    if ((a.meilensteine || []).length)
+        z.push(
+            `  die Phasen (t · Haupt-Faden belegt bis dahin): ${a.meilensteine.map((m) => `${m.name} ${(m.t / 1000).toFixed(2)} s · ${m.belegtMs} ms`).join(" | ")}`
+        );
+    z.push(
+        `  die ${Math.min(nAufgaben, a.aufgaben.length)} längsten Aufgaben vor dem Bild (von ${a.aufgaben.length} ≥ ${ANKUNFT_HALT_MS} ms):`
+    );
+    for (const x of a.aufgaben.slice(0, nAufgaben))
+        z.push(
+            `    ${(x.t / 1000).toFixed(2).padStart(6)} s ${String(x.ms).padStart(5)} ms  ` +
+                x.halter
+                    .slice(0, 3)
+                    .map((h) => `${h.name}${h.ort ? ` ${h.ort}` : ""} ${h.ms}`)
+                    .join(" · ")
+        );
+    z.push(`  die Funktionen vor dem Bild (inklusiv · selbst ms):`);
+    for (const x of a.summen.slice(0, nSummen))
+        z.push(
+            `    ${String(x.ms).padStart(6)} · ${String(x.selbstMs).padStart(5)}  ${x.name}${x.ort ? ` ${x.ort}` : ""}`
+        );
+    return z.join("\n");
+}
+
 // DER SELBSTTEST (ohne Welt): ein erfundener Lauf mit Hängern bekannter Ursache (Takt-Last, Neben-Last, Collector,
 // GPU-Warten nach synchronen Pipelines, ein Auftrag des GPU-Prozesses) als Spur (Profile, zwei ProfileChunks, Takt-Marken
 // auf einer gegen die Seite versetzten Uhr) — die Auswertung muss jeden beim Namen nennen und keinen ruhigen Frame zählen; fehlt eine Takt-Marke, ist sie ROT.
@@ -882,6 +1086,102 @@ function selbsttest() {
     const urteil = [fahrt("_teilC", 500), fahrt("computeVertexNormals", 500), fahrt("_teilC", 20)];
     if (urteil[0] || !/^Fahrt-Posten computeVertexNormals: 2[^,]*$/.test(urteil[1]) || !/^die Fahrt stand[^,]*$/.test(urteil[2]))
         f.push("die Fahrt falsch geurteilt: " + urteil.join(" | "));
+    return f.concat(ankunftsSelbsttest());
+}
+
+// DER SELBSTTEST DER HALTER (ohne Welt): eine erfundene Kalt-Spur auf einer gegen die Seite versetzten Uhr — vor dem Bild
+// (3 000 ms) hält `_lastVorBild` 120 ms (der Täter beim Namen, Datei und Zeile), drei Teile zu je 30 ms tragen eine Aufgabe von
+// 90 ms nur gemeinsam (verteilt), eine Aufgabe von 100 ms trägt 40 Proben (die letzte vor der Lücke wiegt höchstens 10 ms, der
+// Rest steht „(ohne Probe)"), 30 ms bleiben unter der Schwelle; nach dem Bild hält `_lastNachBild` 200 ms (nie ein Befund). Ohne Marken ist die Linse ROT (blind), ihre Klassen
+// zählen die Last je Sekunde, der Meilenstein Bild trägt die belegte Zeit bis zu ihm.
+function ankunftsSelbsttest() {
+    const f = [];
+    const D = "http://x:1/stamm/dienst.js?v=1";
+    const nodes = [];
+    const knoten = (id, fn, url, parent, zeile = 0) =>
+        nodes.push({ id, callFrame: { functionName: fn, url: url || "", lineNumber: zeile }, parent });
+    knoten(1, "(root)", "");
+    knoten(2, "_gameLoopTick", D, 1, 40);
+    knoten(3, "_lastVorBild", D, 2, 122);
+    knoten(4, "_klein", D, 2, 7);
+    knoten(5, "(idle)", "", 1);
+    knoten(6, "_lastNachBild", D, 2, 300);
+    for (const [id, fn] of [
+        [8, "_teilA"],
+        [9, "_teilB"],
+        [10, "_teilC"],
+    ])
+        knoten(id, fn, D, 2, id);
+    const V = 7e6; // Spur-Uhr = Seite · 1000 + V
+    const [samples, deltas] = [[], []];
+    let letzte = V;
+    const probe = (ms, id) => {
+        samples.push(id);
+        deltas.push(ms * 1000 + V - letzte);
+        letzte = ms * 1000 + V;
+    };
+    const last = (von, bis, id) => {
+        for (let t = von; t < bis; t++) probe(t + 0.5, typeof id === "function" ? id(t) : id);
+    };
+    last(0, 1000, 5);
+    last(1000, 1120, 3);
+    last(1120, 1500, 5);
+    last(1500, 1590, (t) => [8, 9, 10][Math.floor((t - 1500) / 30)]);
+    last(1590, 2000, 5);
+    last(2000, 2040, 4); // 40 ms Proben, die Aufgabe dauert 100 ms
+    probe(2100.5, 5);
+    last(2101, 2500, 5);
+    last(2500, 2530, 4);
+    last(2530, 3500, 5);
+    last(3500, 3700, 6);
+    last(3700, 4000, 5);
+    const profil = { nodes, startTime: V, endTime: letzte, samples, timeDeltas: deltas };
+    const seiteMarken = [100, 600, 1100, 2200, 3300, 3900];
+    const spur = { profil, marken: seiteMarken.map((m) => m * 1000 + V + 30) };
+    const seite = {
+        lang: [
+            [1000, 120],
+            [1500, 90],
+            [2000, 100],
+            [2500, 30],
+            [3500, 200],
+        ],
+        marken: seiteMarken,
+        bis: 3000,
+        meilensteine: { Bild: 3000 },
+        klassen: { _lastVorBild: "Last", _lastNachBild: "Last" },
+    };
+    const a = ankunftsHalter(spur, seite);
+    const [n1, n2, n3] = [
+        a.aufgaben.find((x) => x.t === 1000),
+        a.aufgaben.find((x) => x.t === 1500),
+        a.aufgaben.find((x) => x.t === 2000),
+    ];
+    if (a.aufgaben.length !== 3)
+        f.push(
+            `Halter: ${a.aufgaben.length} Aufgaben vor dem Bild, erwartet 3 (≥ ${ANKUNFT_HALT_MS} ms, die nach dem Bild nie)`
+        );
+    const h1 = n1 && n1.halter[0];
+    if (!h1 || h1.name !== "_lastVorBild" || h1.ort !== "stamm/dienst.js:123" || Math.abs(h1.ms - 120) > 3)
+        f.push(`Halter: der gepflanzte Täter nicht beim Namen — ${JSON.stringify(n1)}`);
+    if (!n2 || n2.halter.length !== 1 || !/^verteilt \(_teilA 30 · _teilB 30 · _teilC 30\)$/.test(n2.halter[0].name))
+        f.push(`Halter: die verteilte Aufgabe nennt ihre drei Zweige nicht — ${JSON.stringify(n2)}`);
+    if (!n3 || n3.halter[0].name !== "(ohne Probe)" || Math.abs(n3.halter[0].ms - 51) > 3)
+        f.push(`Halter: der Halt ohne Probe steht nicht beim Namen — ${JSON.stringify(n3)}`);
+    if (
+        a.befunde.some((b) => /_lastNachBild/.test(b)) ||
+        !a.befunde.some((b) =>
+            /^_lastVorBild \(stamm\/dienst\.js:123\) hält den Haupt-Faden vor dem ersten Bild 120 ms/.test(b)
+        )
+    )
+        f.push(`Halter: das Urteil nennt den Täter vor dem Bild nicht (oder einen nach ihm): ${a.befunde.join(" | ")}`);
+    if (Math.abs((a.kosten.Last || {})[1] - 120) > 3 || Math.abs((a.kosten.Last || {})[3] - 200) > 3)
+        f.push(`Halter: die Klasse zählt die Last je Sekunde nicht (${JSON.stringify(a.kosten)})`);
+    const bild = (a.meilensteine || [])[0];
+    if (!bild || Math.abs(bild.belegtMs - 289) > 4)
+        f.push(`Halter: der Meilenstein Bild trägt ${bild && bild.belegtMs} ms belegt, erwartet 289`);
+    const blind = ankunftsHalter({ profil, marken: [] }, seite);
+    if (!blind.befunde.length || blind.aufgaben.length) f.push("Halter: ohne Marken bleibt die Linse grün (blind)");
     return f;
 }
 
@@ -1070,6 +1370,9 @@ function latenzSelbsttest() {
 }
 
 module.exports = {
+    ANKUNFT_HALT_MS,
+    ankunftsHalter,
+    ankunftsHalterTafel,
     latenzAn,
     latenzUrteil,
     latenzSelbsttest,

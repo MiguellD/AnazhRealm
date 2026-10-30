@@ -46,7 +46,9 @@ const rim=new THREE.DirectionalLight(_lin(0x6fd0e8),0.6*PI);rim.position.set(-2,
    Nachbau). Die Shell behält Szene/UI/Overlays/Fahrmodell und LIEST den Kern. ── */
 const VC=window.__vehicleCore;
 const M=VC.materials();            // dieselben geteilten Materialien (nie disposen); der Lack-Wechsel wählt VC.lackStoff (W5)
-let bodyMat=M.clay; // umschaltbar Clay/Lack
+// DIE BÜHNE STEHT IM LACK (studios.K4, Labor = Welt): sie zeigt die Gestalt, die „In der Welt ansehen" trägt (`werkSame`) —
+// das Ton-Modell (Clay) ist die Anatomie-Ansicht auf Zuruf, die Welt kennt keins (LACK_VIS host).
+let lackMat=VC.lackStoff(5), bodyMat=lackMat; // Start Azurblau; umschaltbar Clay/Lack
 const {box,cyl,dot,seg,ring,hardpoints,evalLehren,scal,taperBody,CULTURES,PRESETS}=VC;
 const PARAMS=VC.PARAMS_BY_KIND.vehicle; // SYNERGIE-WELLE (Vertrag v1.2): die EINE B4-Form ist die Map — die Shell liest ihren kind-Eintrag
 
@@ -221,14 +223,18 @@ function syncLayerButtons(){LY.forEach(([key],i)=>ldiv.children[i].classList.tog
 // Kinematik + Clay/Lack
 let kin=false;const kinB=document.getElementById('kin');
 kinB.onclick=()=>{kin=!kin;kinB.classList.toggle('on');};
-const clayB=document.getElementById('clay');
-let lackMat=VC.lackStoff(5);   // W5: der Lack der Leiste ist der Lack der Welt (vehicle-core `lackStoff`: Farbe + Lack-Art + Klarlack); Start Azurblau
+const clayB=document.getElementById('clay');clayB.classList.toggle('on',bodyMat!==M.clay);   // W5: der Lack der Leiste ist der Lack der Welt (vehicle-core `lackStoff`: Farbe + Lack-Art + Klarlack)
 clayB.onclick=()=>{bodyMat=(bodyMat===M.clay)?lackMat:M.clay;clayB.classList.toggle('on');rebuild();};
 // V18.491.230 — Lab Lack-Swatches = das LACK_GESETZ des Kerns (W5: der Zwilling PAINTS_FALLBACK fiel — VC ist Pflicht, M kommt schon aus VC.materials()).
 const PAINTS=VC.LACK_GESETZ;
+// DER SAME DES WERKS (studios.K4): die Gestalt der Welt, die den Lack der Leiste trägt — der Kern wählt je Gestalt einen Lack
+// (`lackIndex`), die Welt stellt ein Werk in die Gestalt, die die Bühne zeigte (`_foundryGestaltFor` liest den Samen als
+// `__gestalt`); Übergabe und Kosten-Leiste bauen sie. null, wenn keine Gestalt den Lack trägt (die Hülle sagt es).
+function werkSame(){const li=PAINTS.findIndex(pt=>pt[0]===lackMat.userData.__lack);for(let s=1;s<PAINTS.length;s++)if(VC.lackIndex(s)===li)return s;return null;}
 const prow=document.getElementById('paintrow');
 PAINTS.forEach((pt,li)=>{const sw=document.createElement('button');sw.className='sw';sw.title=pt[0];
   sw.style.cssText='width:21px;height:21px;border-radius:50%;border:2px solid rgba(120,150,175,.32);background:#'+pt[1].toString(16).padStart(6,'0')+';cursor:pointer;padding:0;flex:none';
+  if(pt[0]===lackMat.userData.__lack)sw.style.boxShadow='0 0 0 2px var(--steel-bright)';
   sw.onclick=()=>{if(pt[2]){bodyMat=M.clay;}else{lackMat=VC.lackStoff(li);bodyMat=lackMat;}   // W5: das Farbfeld IST der Lack der Welt (FARB-GESETZ + Lack-Art, derselbe Stoff je Lack)
     document.querySelectorAll('#paintrow .sw').forEach(b=>b.style.boxShadow='');sw.style.boxShadow='0 0 0 2px var(--steel-bright)';clayB.classList.toggle('on',!pt[2]);rebuild();};
   prow.appendChild(sw);});
@@ -248,8 +254,8 @@ function syncSliders(){regler.sync();}
 // Die Kosten-Leiste der Hülle: die WELT-Gestalt (buildInstance des Kerns mit P als ov — derselbe Bau wie der Foundry-Worker)
 // gegen die Budget-Zeile je Stufe; neu gemessen, wenn der Regler-Zug ruht.
 const kostenLeiste=AnazhHuelle.kosten(document.getElementById('kosten'),{budget:VC.PORTAL_RENDER_CONFIG.lod.budget.vehicle,
-  stufen:VC.PORTAL_RENDER_CONFIG.lod.kindStages.vehicle,bauen:s=>VC.buildInstance(presetId,1,s,P),renderer:R,
-  quelle:'gemessen an der Welt-Gestalt (vehicle-core buildInstance, Same 1); Befehle nach dem Budget-Gesetz ≤ Zeile'});
+  stufen:VC.PORTAL_RENDER_CONFIG.lod.kindStages.vehicle,bauen:s=>VC.buildInstance(presetId,werkSame(),s,P),renderer:R,
+  quelle:'gemessen an der Welt-Gestalt (vehicle-core buildInstance, die Gestalt des Lacks der Leiste); Befehle nach dem Budget-Gesetz ≤ Zeile'});
 
 // ════════════════════════════════════════════════════════════════════
 // FAHRMODELL — kinematisches Fahrradmodell (Sawicki/Monster, timestep-stabil):
@@ -483,11 +489,14 @@ AnazhHuelle.bruecke({
         return mode !== "fahren";
     },
     // DAS WERK DER BÜHNE (der EINE Übergabe-Kanal der Hülle, 18.10. „In der Welt ansehen"): der Wagen des Bauers der Welt —
-    // Gattung, Same 1, die Werte der Regler-Zeilen aus P und die Kultur; der nächste gesetzte Wagen der Gattung trägt ihn.
+    // Gattung, die Gestalt des Lacks der Leiste (`werkSame`), die Werte der Regler-Zeilen aus P und die Kultur; der nächste
+    // gesetzte Wagen der Gattung trägt ihn. Bis 30.10. reiste Same 1: jeder Wagen stand in der Welt Racing-Grün.
     werk: function () {
+        const seed = werkSame();
+        if (seed === null) return null;
         const ov = Object.assign({}, kulturId && VC.CULTURES[kulturId] ? VC.CULTURES[kulturId].fx : {});
         PARAMS.forEach((z) => (ov[z.id] = P[z.id]));
-        return { kind: "vehicle", preset: presetId, seed: 1, ov };
+        return { kind: "vehicle", preset: presetId, seed, ov };
     },
     werkOrt: document.getElementById("werkOrt"),
 });

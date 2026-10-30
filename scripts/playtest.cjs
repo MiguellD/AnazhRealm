@@ -75,14 +75,14 @@ async function gatherInitialFinalState(page) {
         const szenenZensus = { renderables: 0, klassen: 0, unbenannt: [] };
         {
             const klassen = new Set();
-            r.state.scene.traverse((o) => {
+            st.scene.traverse((o) => {
                 if (!(o.isMesh || o.isSprite || o.isPoints || o.isLine)) return;
                 szenenZensus.renderables++;
                 const k = r._taeterKlasse(o);
                 klassen.add(k);
                 if (k.startsWith("UNBENANNT:") && szenenZensus.unbenannt.length < 8) {
                     const kette = [];
-                    for (let q = o; q && q !== r.state.scene && kette.length < 4; q = q.parent)
+                    for (let q = o; q && q !== st.scene && kette.length < 4; q = q.parent)
                         kette.push(q.type + (q.name ? "(" + q.name + ")" : ""));
                     szenenZensus.unbenannt.push(k + " < " + kette.join(" < "));
                 }
@@ -90,20 +90,20 @@ async function gatherInitialFinalState(page) {
             szenenZensus.klassen = klassen.size;
         }
         return {
-            terrainEverGenerated: r.state.terrainEverGenerated,
-            chunkMapSize: r.state.chunkMap?.size || 0,
+            terrainEverGenerated: st.terrainEverGenerated,
+            chunkMapSize: st.chunkMap?.size || 0,
             // die Eingangs-Welt ist voxel: chunkMap/groundChunks leer, voxelChunks/voxelTerrainActive tragen
-            voxelChunksSize: r.state.voxelChunks?.size || 0,
-            voxelTerrainActive: r.state.voxelTerrainActive === true,
-            voxelTerrainFlag: !!(r.state.worldMeta && r.state.worldMeta.voxelTerrain),
-            playerY: r.state.playerMesh?.position?.y,
-            playerX: r.state.playerMesh?.position?.x,
-            playerZ: r.state.playerMesh?.position?.z,
-            creatures: r.state.creatures?.length || 0,
-            floatingIslands: r.state.floatingIslands?.length || 0,
-            hasPlayerBody: !!r.state.playerVel,
-            grokSeenFirstSpawn: r.state.grok?.seenFirstSpawn === true,
-            grokLastSpoke: r.state.grok?.lastSpoke || 0,
+            voxelChunksSize: st.voxelChunks?.size || 0,
+            voxelTerrainActive: st.voxelTerrainActive === true,
+            voxelTerrainFlag: !!(st.worldMeta && st.worldMeta.voxelTerrain),
+            playerY: st.playerMesh?.position?.y,
+            playerX: st.playerMesh?.position?.x,
+            playerZ: st.playerMesh?.position?.z,
+            creatures: st.creatures?.length || 0,
+            floatingIslands: st.floatingIslands?.length || 0,
+            hasPlayerBody: !!st.playerVel,
+            grokSeenFirstSpawn: st.grok?.seenFirstSpawn === true,
+            grokLastSpoke: st.grok?.lastSpoke || 0,
             grokRenderProbe,
             grokRenderEmptyGuard,
             szenenZensus,
@@ -162,8 +162,8 @@ if (require.main === module) hauptLauf(async () => {
         // der Genesis-Plattform, ein Grundriss, das Wasser) — nie auf den Ursprung, auf dem seit K16 die Plattform steht
         // (die offene Stelle der Ankunft ist der Ursprung). Rückgabe { x, y, z } oder null.
         window.__setzOrt = (name) => {
-            const bm = r.state.buildMode;
-            const p = r.state.playerMesh.position;
+            const bm = st.buildMode;
+            const p = st.playerMesh.position;
             for (let R = 0; R <= 240; R += 6)
                 for (let a = 0; a < (R ? 16 : 1); a++) {
                     const x = p.x + R * Math.cos((a / 16) * 2 * Math.PI);
@@ -195,7 +195,7 @@ if (require.main === module) hauptLauf(async () => {
                 return { ...c, hydro: r._hydroFor(c.x, c.z) };
             }
             const L = r._gelaende();
-            const wl = r.state.waterLevel;
+            const wl = st.waterLevel;
             const zelle = (h, q) => ({
                 x: h.originX + ((q % h.dim) + 0.5) * h.cell,
                 z: h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell,
@@ -224,7 +224,7 @@ if (require.main === module) hauptLauf(async () => {
                 // dem Boden; die Meter-Probe einer Spalte fand unter dem See eine Höhle, die keine Zelle trägt (0 von 0).
                 const cfgH = r._voxelChunkConfig(0);
                 const S = cfgH.step;
-                const oyH = (r.state.terrainBaseHeight || 0) - cfgH.floorDrop;
+                const oyH = (st.terrainBaseHeight || 0) - cfgH.floorDrop;
                 const zelleFest = (cx, cy, cz) => {
                     let d = 0;
                     for (const ex of [-S / 2, S / 2])
@@ -270,7 +270,7 @@ if (require.main === module) hauptLauf(async () => {
                     }
                 }
             } else if (art === "fall") {
-                const size = r.constructor.HYDROSPHERE.regionSize;
+                const size = AnazhRealm.HYDROSPHERE.regionSize;
                 for (let ring = 0; ring <= 2 && !ort; ring++)
                     for (let rz = -ring; rz <= ring && !ort; rz++)
                         for (let rx = -ring; rx <= ring && !ort; rx++) {
@@ -307,21 +307,21 @@ if (require.main === module) hauptLauf(async () => {
         // Der Wasser-Chunk am Wasser-Ort: synchron gebaut über den EINEN Build-Eingang und in die Chunk-Menge gelegt (der
         // Stream räumt ihn wie jeden fernen Chunk). Steht er schon mit Wasser-Zellen, bleibt alles, wie es ist.
         window.__wasserChunk = async (art) => {
-            if (!r.state.voxelChunks) r.state.voxelChunks = new Map();
+            if (!st.voxelChunks) st.voxelChunks = new Map();
             const ort = await window.__wasserOrt(art);
             if (!ort) return null;
             const { span } = r._voxelChunkConfig(0);
             const cx = Math.floor(ort.x / span);
             const cz = Math.floor(ort.z / span);
             const key = `${cx},${cz}`;
-            const da = r.state.voxelChunks.get(key);
+            const da = st.voxelChunks.get(key);
             if (da && da.mesh && da.waterCells) return key;
             await window.__weltDa(() => r._hydroSteht(cx, cz)); // die Kacheln um den Chunk kommen aus dem Faden
             r._disposeVoxelChunk(key);
-            r.state.voxelChunks.delete(key);
+            st.voxelChunks.delete(key);
             const fresh = r._acquireVoxelChunkBuild(cx, cz, 0, { forceSync: true });
             if (fresh && fresh !== "pending") r._finalizeVoxelChunkBuild(cx, cz, 0, fresh, true);
-            return r.state.voxelChunks.has(key) ? key : null;
+            return st.voxelChunks.has(key) ? key : null;
         };
         // DER STOFF-ZEUGE: jeder Bruch eines Stoffs meldet ERROR „STOFF: …" (`_stoffBruch`). Eine Prüfzeile „kein
         // Fehler" zählt diese Meldungen über ihren Bau (`const z = __stoffZeuge(r); …bauen…; z.zu()` → die Brüche) — nie
@@ -493,17 +493,17 @@ if (require.main === module) hauptLauf(async () => {
             // NICHT `_loopRender`: die Bänder sind pixel-blind, lesen aber seine billigen Uniform-Updates
             // (skybox/starField, hydroSurfaceUniforms.time/.emotion); der Screenshot-Pfad stellt ihn wieder her.
             // Beim Null-Renderer NICHT stubben — sein render() macht die Matrix-Buchhaltung für den Raycast.
-            if (r.state.renderer && !r.state.renderer._isHeadlessNull) {
-                window.__origRendererRender = r.state.renderer.render.bind(r.state.renderer);
-                r.state.renderer.render = function () {};
-                if (typeof r.state.renderer.renderAsync === "function") {
-                    r.state.renderer.renderAsync = function () {
+            if (st.renderer && !st.renderer._isHeadlessNull) {
+                window.__origRendererRender = st.renderer.render.bind(st.renderer);
+                st.renderer.render = function () {};
+                if (typeof st.renderer.renderAsync === "function") {
+                    st.renderer.renderAsync = function () {
                         return Promise.resolve();
                     };
                 }
             }
             // Post-Processing (falls aktiv) auf den nun-no-op renderer.render-Pfad zwingen.
-            r.state.postProcessingFailed = true;
+            st.postProcessingFailed = true;
             // Phase 2 — Loop synchron pumpen; setTimeout(0) yieldet für Mikrotasks und ist headless NICHT
             // gedrosselt (rAF schon) → CPU- statt frame-gebunden. Count-basiert statt Wall-Clock: mindestens
             // WARMUP_MIN_MS (zeit-getriebene Trigger), dann bis ≥ TARGET_VOXEL_CHUNKS + PLATEAU (Chunk-Zahl
@@ -515,8 +515,8 @@ if (require.main === module) hauptLauf(async () => {
             const HARD_CAP_MS = Math.max(durationMs * 3, 90000);
             // Voxel-Worker für den Warmup aushängen → der Streaming-Tick baut jeden Ring-Chunk SYNC: unter
             // CPU-Last hungert die Async-Lieferung aus (voxelChunks=0). Sync = load-unabhängig + bit-identisch.
-            const _warmupSavedWorker = r.state.voxelWorker;
-            r.state.voxelWorker = null;
+            const _warmupSavedWorker = st.voxelWorker;
+            st.voxelWorker = null;
             let lastBuilt = -1;
             let lastGrowthAt = start;
             for (;;) {
@@ -527,7 +527,7 @@ if (require.main === module) hauptLauf(async () => {
                     // abbrechen; die `pageerror`-Listener fangen ihn auf.
                 }
                 const elapsed = performance.now() - start;
-                const built = r.state && r.state.voxelChunks ? r.state.voxelChunks.size : 0;
+                const built = st && st.voxelChunks ? st.voxelChunks.size : 0;
                 if (built !== lastBuilt) {
                     lastBuilt = built;
                     lastGrowthAt = performance.now();
@@ -576,7 +576,7 @@ if (require.main === module) hauptLauf(async () => {
             }
             // Worker wieder einhängen — die Folge-Bänder nutzen den echten async-Pfad
             // (er re-synct seine Worldgen-Kachel lazy beim ersten Request).
-            r.state.voxelWorker = _warmupSavedWorker;
+            st.voxelWorker = _warmupSavedWorker;
             return {
                 foundryWarmMs: foundryReadyMs,
                 foundryReady: _fdry ? _fdry.ready === true : false,
@@ -944,9 +944,9 @@ if (require.main === module) hauptLauf(async () => {
                     if (box && box.textContent) box.classList.add("visible");
                     // [PERF] den für die Mess-Phase gestubbten GPU-Render wiederherstellen +
                     // ein echtes Frame zeichnen, damit der Screenshot die Welt zeigt.
-                    if (r && r.state.renderer && window.__origRendererRender) {
-                        r.state.renderer.render = window.__origRendererRender;
-                        r.state.postProcessingFailed = false;
+                    if (r && st.renderer && window.__origRendererRender) {
+                        st.renderer.render = window.__origRendererRender;
+                        st.postProcessingFailed = false;
                         try {
                             r._gameLoopTick(performance.now());
                         } catch {}
