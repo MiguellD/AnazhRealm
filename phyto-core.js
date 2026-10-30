@@ -3393,7 +3393,7 @@
     // Schale fiel mit S2 — `karteKodiere` las niemand mehr):
     //   schwelle      Alpha-Schwelle: Binarisierung der Karte, Mip-Deckung und der alphaTest der Welt
     //   normalTeiler  die Welt-Normale liegt auf 1/normalTeiler der Albedo-Auflösung (weiche Licht-Modulation fern):
-    //                 der Codec mittelt die volle Studio-Normale als Vektor (normalMips) und beginnt dort
+    //                 die Ablage mittelt die volle Normale der Bühne als Vektor (KARTE_RECHNER_WGSL normalK) und beginnt dort
     //   minSeite      die Mip-Kette endet, bevor eine Ansicht unter 4 px fällt (BC-Block, keine Ansichten-Mischung)
     //   minOpak       die NICHT-LEERE-WAND: eine Karte mit weniger opaken Stufe-0-Texeln ist ein Bäcker-Fehler (Clear-
     //                 Pixel) — sie reist nie auf die Platte und wird nie Schicht
@@ -3788,67 +3788,6 @@
             lwA = nwA;
         }
         return { stufen: stufen, deckung: deckung, opak: opak };
-    }
-
-    // Die Mips der Normale (rg8: n·0,5 + 0,5, z = √(1 − x² − y²)): je Stufe das Mittel der vier Kinder als
-    // Vektor, normiert (ein bloßes RG-Mittel kippte die Fernkrone zur Kamera). Eingang rgba (Studio) oder rg.
-    function normalMips(src, w, h, kanaele, nStufen) {
-        const n0 = w * h;
-        let nx = new Float32Array(n0),
-            ny = new Float32Array(n0),
-            nz = new Float32Array(n0);
-        for (let i = 0; i < n0; i++) {
-            const x = (src[i * kanaele] / 255) * 2 - 1,
-                y = (src[i * kanaele + 1] / 255) * 2 - 1;
-            nx[i] = x;
-            ny[i] = y;
-            nz[i] = Math.sqrt(Math.max(0, 1 - x * x - y * y));
-        }
-        const rg = (ax, ay, n) => {
-            const d = new Uint8Array(n * 2);
-            for (let i = 0; i < n; i++) {
-                d[i * 2] = Math.max(0, Math.min(255, Math.round((ax[i] * 0.5 + 0.5) * 255)));
-                d[i * 2 + 1] = Math.max(0, Math.min(255, Math.round((ay[i] * 0.5 + 0.5) * 255)));
-            }
-            return d;
-        };
-        const stufen = [{ w: w, h: h, data: rg(nx, ny, n0) }];
-        let lw = w,
-            lh = h;
-        for (let k = 1; k < nStufen; k++) {
-            const qw = lw >> 1,
-                qh = lh >> 1;
-            if (qw < 1 || qh < 1) break;
-            const n = qw * qh;
-            const tx = new Float32Array(n),
-                ty = new Float32Array(n),
-                tz = new Float32Array(n);
-            for (let y = 0; y < qh; y++)
-                for (let x = 0; x < qw; x++) {
-                    const o = y * qw + x;
-                    let ax = 0,
-                        ay = 0,
-                        az = 0;
-                    for (let dy = 0; dy < 2; dy++)
-                        for (let dx = 0; dx < 2; dx++) {
-                            const s = (y * 2 + dy) * lw + x * 2 + dx;
-                            ax += nx[s];
-                            ay += ny[s];
-                            az += nz[s];
-                        }
-                    const l = Math.sqrt(ax * ax + ay * ay + az * az) || 1;
-                    tx[o] = ax / l;
-                    ty[o] = ay / l;
-                    tz[o] = az / l;
-                }
-            stufen.push({ w: qw, h: qh, data: rg(tx, ty, n) });
-            nx = tx;
-            ny = ty;
-            nz = tz;
-            lw = qw;
-            lh = qh;
-        }
-        return stufen;
     }
 
     // BC1 (DXT1) einer vormultiplizierten, binären Karte: je 4×4-Block die Hauptachse der opaken Farben (PCA),
@@ -5308,7 +5247,6 @@
         karteMasse: karteMasse,
         karteGlaetteGaenge: karteGlaetteGaenge,
         impostorMips: impostorMips,
-        normalMips: normalMips,
         bc1Kodiere: bc1Kodiere,
         bc3Kodiere: bc3Kodiere, // die Fracht mit stetiger Alpha (der Blatt-Atlas, K20)
         bcDekodiere: bcDekodiere,

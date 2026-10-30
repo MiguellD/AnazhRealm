@@ -56,6 +56,7 @@ const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 const { runWithWorker } = require("./lib/asset-worker-harness.cjs");
 const { hauptLauf, wandEnde } = require("./lib/welt-boot.cjs");
+const { luma709, srgbLin } = require("./lib/abnahme-urteil.cjs");
 require("../phyto-core.js");
 const PC = globalThis.__phytoCore;
 const ROOT = path.resolve(__dirname, "..");
@@ -94,7 +95,7 @@ function teile(meshes) {
             idx: m.index ? u32(m.index) : null,
         }));
 }
-const Y = (c, i) => 0.2126 * c[i * 3] + 0.7152 * c[i * 3 + 1] + 0.0722 * c[i * 3 + 2];
+const Y = (c, i) => luma709(c, i * 3);
 function hoehe(T) {
     let hi = 0;
     for (const t of T) for (let i = 1; i < t.pos.length; i += 3) hi = Math.max(hi, t.pos[i]);
@@ -355,14 +356,7 @@ function teppichDeckung(T, step, skala, neigung = TEPPICH_NEIGUNG) {
         pv = [0, 0, 0];
     for (let gj = Math.ceil(-3 / step); gj * step <= 3; gj++)
         for (let gi = Math.ceil(-3 / step); gi * step <= 3; gi++) {
-            let hs = ((gi * 73856093) ^ (gj * 19349663) ^ 0x6a09e667) >>> 0 || 1;
-            const w = () => {
-                hs = (hs + 0x6d2b79f5) >>> 0;
-                let t = hs;
-                t = Math.imul(t ^ (t >>> 15), t | 1);
-                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-            };
+            const w = PC.mulberry32(((gi * 73856093) ^ (gj * 19349663) ^ 0x6a09e667) >>> 0 || 1);
             const cx = gi * step + (w() - 0.5) * 0.68,
                 cz = gj * step + (w() - 0.5) * 0.68,
                 s = skala * (0.7 + w() * 0.7),
@@ -410,9 +404,13 @@ function teppichUrteil(fall, T, lod, step, skala) {
     const v =
         min != null && d >= min
             ? []
-            : [`${fall}: Halm-Deckung des Bodens unter ${TEPPICH_NEIGUNG}° ${d.toFixed(3)} < ${min} (Büschel auf glattem Grün)`];
+            : [
+                  `${fall}: Halm-Deckung des Bodens unter ${TEPPICH_NEIGUNG}° ${d.toFixed(3)} < ${min} (Büschel auf glattem Grün)`,
+              ];
     if (!(fuss <= FUSS_MAX))
-        v.push(`${fall}: der Halm schwebt — sein Fuß steht ${(100 * fuss).toFixed(1)} % der Büschel-Höhe über dem Boden`);
+        v.push(
+            `${fall}: der Halm schwebt — sein Fuß steht ${(100 * fuss).toFixed(1)} % der Büschel-Höhe über dem Boden`
+        );
     return { v, m: { teppich: d, fuss } };
 }
 // (V) DIE NORMALE DER KRONE — gelichtet, wie die Leser lesen (flipFrei), aus 8 Peilungen (Höhe 0,25) über der nahen Hälfte.
@@ -429,7 +427,7 @@ function partienDerKrone(f, pre, sk) {
         while (lo < hi) L[(lo + hi) >> 1].pos[0] < c[i] - 1e-3 ? (lo = ((lo + hi) >> 1) + 1) : (hi = (lo + hi) >> 1);
         for (let j = lo; j < L.length && L[j].pos[0] <= c[i] + 1e-3; j++) {
             const q = (L[j].pos[0] - c[i]) ** 2 + (L[j].pos[1] - c[i + 1]) ** 2 + (L[j].pos[2] - c[i + 2]) ** 2;
-            if (q < d2) (d2 = q), (best = partie(L[j].run));
+            if (q < d2) ((d2 = q), (best = partie(L[j].run)));
         }
         return best;
     };
@@ -440,8 +438,11 @@ function partienDerKrone(f, pre, sk) {
         for (let i = 0; i < pa.length; i++) {
             const k = 3 * i;
             pa[i] = i && C[k] === C[k - 3] && C[k + 1] === C[k - 2] && C[k + 2] === C[k - 1] ? pa[i - 1] : suche(C, k);
-            const b = box.get(pa[i]) || box.set(pa[i], [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity]).get(pa[i]);
-            for (let a = 0; a < 3; a++) (b[a] = Math.min(b[a], t.pos[k + a])), (b[a + 3] = Math.max(b[a + 3], t.pos[k + a]));
+            const b =
+                box.get(pa[i]) ||
+                box.set(pa[i], [Infinity, Infinity, Infinity, -Infinity, -Infinity, -Infinity]).get(pa[i]);
+            for (let a = 0; a < 3; a++)
+                ((b[a] = Math.min(b[a], t.pos[k + a])), (b[a + 3] = Math.max(b[a + 3], t.pos[k + a])));
         }
         out.set(ti, pa);
     });
@@ -484,7 +485,11 @@ function kroneUrteil(fall, T, flipFrei, partien) {
                 nah++;
                 const e1 = [P[b] - P[a], P[b + 1] - P[a + 1], P[b + 2] - P[a + 2]],
                     e2 = [P[d] - P[a], P[d + 1] - P[a + 1], P[d + 2] - P[a + 2]];
-                const fl = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+                const fl = [
+                    e1[1] * e2[2] - e1[2] * e2[1],
+                    e1[2] * e2[0] - e1[0] * e2[2],
+                    e1[0] * e2[1] - e1[1] * e2[0],
+                ];
                 const vorn = fl[0] * e[0] + fl[1] * e[1] + fl[2] * e[2] > 0;
                 const n = [0, 1, 2].map((j) => N[a + j] + N[b + j] + N[d + j]);
                 const sg = flipFrei || vorn ? 1 : -1;
@@ -507,52 +512,55 @@ function kroneUrteil(fall, T, flipFrei, partien) {
 // (F) DIE FRACHT — die GPU nachgerechnet: sRGB-Byte → linear je Texel, bilinear (clamp), alphaTest 0,5.
 const FRACHT_MIN_ZELLE = 8;
 const FRACHT_TOL = 0.03;
-const LIN8 = new Float64Array(256);
-for (let c = 0; c < 256; c++) {
-    const x = c / 255;
-    LIN8[c] = x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
+const LIN8 = Float64Array.from({ length: 256 }, (_, c) => srgbLin(c));
+// Die Stufe linear: rgb je Texel sRGB → linear (wie die GPU dekodiert), alpha bleibt das Byte.
+const linear = (m) => ({
+    width: m.width,
+    height: m.height,
+    data: Float64Array.from(m.data, (x, i) => (i % 4 === 3 ? x : LIN8[x])),
+});
+// Der EINE Abtaster einer Atlas-Stufe `m` { width, height, data } mit 4 Zellen nebeneinander, bilinear mit clamp wie die
+// GPU: am Ort (u, v) der Zelle c das gewichtete Mittel von `wert(data, o)` (o = Ort des Texels in data). Ihn lesen die
+// Fracht, das Korn und das Farb-Korn.
+function abtast(m, c, u, v, wert) {
+    const W = m.width,
+        H = m.height,
+        x = ((c + u) / 4) * W - 0.5,
+        y = v * H - 0.5;
+    const x0 = Math.floor(x),
+        y0 = Math.floor(y),
+        fx = x - x0,
+        fy = y - y0;
+    let s = 0;
+    for (let q = 0; q < 4; q++) {
+        const dx = q & 1,
+            dy = q >> 1;
+        s +=
+            (dx ? fx : 1 - fx) *
+            (dy ? fy : 1 - fy) *
+            wert(m.data, (Math.min(H - 1, Math.max(0, y0 + dy)) * W + Math.min(W - 1, Math.max(0, x0 + dx))) * 4);
+    }
+    return s;
 }
+const alphaByte = (d, o) => d[o + 3];
 // je Zelle: Deckung (Anteil der Proben über dem alphaTest) und die Luminanz des Lesers relativ zu Y(wert);
 // `teilen`: der Leser teilt das gefilterte rgb durch alpha (die Welt), sonst liest er es gerade (das Labor, blutend).
 function frachtStufe(m, wert, teilen) {
-    const W = m.width,
-        H = m.height,
-        d = m.data,
-        Z = W / 4;
-    const yw = 0.2126 * wert[0] + 0.7152 * wert[1] + 0.0722 * wert[2];
-    const n = Math.min(512, Z * 2);
+    const Z = m.width / 4,
+        n = Math.min(512, Z * 2),
+        L = linear(m);
     const zellen = [];
     for (let c = 0; c < 4; c++) {
         let ok = 0,
             sy = 0;
         for (let j = 0; j < n; j++)
             for (let i = 0; i < n; i++) {
-                const x = ((c + (i + 0.5) / n) / 4) * W - 0.5,
-                    y = ((j + 0.5) / n) * H - 0.5;
-                const x0 = Math.floor(x),
-                    y0 = Math.floor(y),
-                    fx = x - x0,
-                    fy = y - y0;
-                let r = 0,
-                    g = 0,
-                    b = 0,
-                    a = 0;
-                for (let q = 0; q < 4; q++) {
-                    const dx = q & 1,
-                        dy = q >> 1;
-                    const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
-                    const o = (Math.min(H - 1, Math.max(0, y0 + dy)) * W + Math.min(W - 1, Math.max(0, x0 + dx))) * 4;
-                    r += w * LIN8[d[o]];
-                    g += w * LIN8[d[o + 1]];
-                    b += w * LIN8[d[o + 2]];
-                    a += (w * d[o + 3]) / 255;
-                }
+                const a = abtast(L, c, (i + 0.5) / n, (j + 0.5) / n, alphaByte) / 255;
                 if (a < 0.5) continue;
                 ok++;
-                const k = teilen ? 1 / Math.max(1e-3, a) : 1;
-                sy += (0.2126 * r + 0.7152 * g + 0.0722 * b) * k;
+                sy += abtast(L, c, (i + 0.5) / n, (j + 0.5) / n, luma709) * (teilen ? 1 / Math.max(1e-3, a) : 1);
             }
-        zellen.push({ dk: ok / (n * n), Y: ok ? sy / ok / yw : 0 });
+        zellen.push({ dk: ok / (n * n), Y: ok ? sy / ok / luma709(wert) : 0 });
     }
     return { Z, zellen };
 }
@@ -623,25 +631,7 @@ const kornSchwelle = () => 0.5;
 const KORN_MAX = 0.083;
 function kornReihe(mips, zBasis) {
     // `mips` je Stufe { width, height, data rgba8 }, 4 Zellen nebeneinander; `zBasis` = Zell-Breite der ersten Stufe.
-    const stufeA = (m, c, u, v) => {
-        const W = m.width,
-            H = m.height,
-            d = m.data;
-        const x = ((c + u) / 4) * W - 0.5,
-            y = v * H - 0.5;
-        const x0 = Math.floor(x),
-            y0 = Math.floor(y),
-            fx = x - x0,
-            fy = y - y0;
-        let a = 0;
-        for (let q = 0; q < 4; q++) {
-            const dx = q & 1,
-                dy = q >> 1;
-            const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
-            a += w * d[(Math.min(H - 1, Math.max(0, y0 + dy)) * W + Math.min(W - 1, Math.max(0, x0 + dx))) * 4 + 3];
-        }
-        return a / 255;
-    };
+    const stufeA = (m, c, u, v) => abtast(m, c, u, v, alphaByte) / 255;
     const versatz = Math.log2(PC.BLATT_ATLAS_ZELLE / zBasis);
     return (lambda) => {
         const N = Math.max(4, Math.round(PC.BLATT_ATLAS_ZELLE / Math.pow(2, lambda)));
@@ -687,33 +677,8 @@ function kornReihe(mips, zBasis) {
 // aus dem Stamm gelesen), die Deckung λ. Ziel: Farb-Korn der Welt ≤ FARB_KORN_ANTEIL × Farb-Korn ohne Oktave.
 const FARB_KORN_ANTEIL = 0.5;
 function farbKornReihe(mips, zBasis) {
-    const lin = new Float64Array(256);
-    for (let i = 0; i < 256; i++) {
-        const v = i / 255;
-        lin[i] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-    }
-    const stufe = (m, c, u, v) => {
-        const W = m.width,
-            H = m.height,
-            d = m.data;
-        const x = ((c + u) / 4) * W - 0.5,
-            y = v * H - 0.5;
-        const x0 = Math.floor(x),
-            y0 = Math.floor(y),
-            fx = x - x0,
-            fy = y - y0;
-        let l = 0,
-            a = 0;
-        for (let q = 0; q < 4; q++) {
-            const dx = q & 1,
-                dy = q >> 1;
-            const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
-            const o = (Math.min(H - 1, Math.max(0, y0 + dy)) * W + Math.min(W - 1, Math.max(0, x0 + dx))) * 4;
-            l += w * (0.2126 * lin[d[o]] + 0.7152 * lin[d[o + 1]] + 0.0722 * lin[d[o + 2]]);
-            a += (w * d[o + 3]) / 255;
-        }
-        return [l, a];
-    };
+    mips = mips.map(linear);
+    const stufe = (m, c, u, v) => [abtast(m, c, u, v, luma709), abtast(m, c, u, v, alphaByte) / 255];
     const versatz = Math.log2(PC.BLATT_ATLAS_ZELLE / zBasis);
     const probe = (lam, c, u, v) => {
         const l = Math.max(0, lam - versatz),
@@ -824,13 +789,7 @@ function kornUrteil(reihen, lambdaKrone, deckungLabor) {
 const HOEHE_SPANNE = { buche: [30, 45], fichte: [30, 50], eiche: [15, 35], birke: [15, 25] };
 const HD_BESTAND = [40, 100];
 function altbestandGroesse() {
-    let a = 0x2545f491;
-    const rng = () => {
-        a = (a + 0x6d2b79f5) | 0;
-        let t = Math.imul(a ^ (a >>> 15), 1 | a);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
+    const rng = PC.mulberry32(0x2545f491);
     const s = [];
     for (let i = 0; i < 4000; i++) s.push(PC.forestTreeSize(rng, i / 4000));
     s.sort((x, y) => x - y);
@@ -933,7 +892,9 @@ function hoehenUrteil(roh, skala) {
 // (H) DIE KRONE DES PFLANZ-GESETZES (T2): der Abstand des Walds liest die gewachsene Krone (phyto-core FOREST_PACK.crown) — je
 // Laub-Art der Tafel der sichtbare L0-Radius (Gestalt 1: Karten-Stichproben mit Atlas-Alpha ≥ 0,5, halbe Breite über 8 Azimute
 // × Welt-Skala) binnen ±12 %; die Kegel-Krone der Koniferen ist ein eigenes Gesetz.
-const KRONE_W = [0, 1, 2, 3, 4, 5, 6].flatMap((s) => [...Array(7 - s).keys()].map((r) => [1 - (s + r) / 6, s / 6, r / 6]));
+const KRONE_W = [0, 1, 2, 3, 4, 5, 6].flatMap((s) =>
+    [...Array(7 - s).keys()].map((r) => [1 - (s + r) / 6, s / 6, r / 6])
+);
 function pflanzKroneUrteil(roh, skala, a, nadel) {
     const v = [], m = {}, px = (u, n) => Math.min(n - 1, Math.max(0, Math.floor(u * n))); // prettier-ignore
     for (const [art, soll] of Object.entries(PC.FOREST_PACK.crown)) {
@@ -943,7 +904,8 @@ function pflanzKroneUrteil(roh, skala, a, nadel) {
             for (let i = 0; i < t.idx.length; i += 3)
                 for (const w of KRONE_W) {
                     const at = (A, n, j) => w[0] * A[t.idx[i] * n + j] + w[1] * A[t.idx[i + 1] * n + j] + w[2] * A[t.idx[i + 2] * n + j]; // prettier-ignore
-                    if (a.data[(px(at(t.uv, 2, 1), a.height) * a.width + px(at(t.uv, 2, 0), a.width)) * 4 + 3] < 128) continue;
+                    if (a.data[(px(at(t.uv, 2, 1), a.height) * a.width + px(at(t.uv, 2, 0), a.width)) * 4 + 3] < 128)
+                        continue;
                     for (let k = 0, u; k < 8; k++)
                         (u = at(t.pos, 3, 0) * Math.cos((k * Math.PI) / 8) + at(t.pos, 3, 2) * Math.sin((k * Math.PI) / 8)), (lo[k] = Math.min(lo[k], u)), (hi[k] = Math.max(hi[k], u)); // prettier-ignore
                 }
@@ -963,7 +925,6 @@ function deckungStufe0(bild) {
         for (let x = 0; x < m.width; x++) if (m.data[(y * m.width + x) * 4 + 3] >= 128) out[Math.min(3, (x / Z) | 0)]++;
     return out.map((n) => n / (Z * m.height));
 }
-
 
 // (WI) DER WIND — das Wind-Gesetz des Kerns (phyto-core WIND_GESETZ · windSchlankheit · windAusschlag) gegen die gelieferte
 // Gestalt und seine Leser:
@@ -1183,7 +1144,11 @@ hauptLauf(async () => {
     fails.push(...hz.v);
     const nadel = (p) => !buch[p] || PC.artPhaenotyp(buch[p].s, buch[p]).conifer, pk = pflanzKroneUrteil(roh, skala, bild.mips[0], nadel); // prettier-ignore
     fails.push(...pk.v);
-    console.log(`Krone des Pflanz-Gesetzes (Laub, L0 Gestalt 1): ${Object.entries(pk.m).map((e) => e.join(" ")).join(" · ")}`);
+    console.log(
+        `Krone des Pflanz-Gesetzes (Laub, L0 Gestalt 1): ${Object.entries(pk.m)
+            .map((e) => e.join(" "))
+            .join(" · ")}`
+    );
     const so = solitaerUrteil(roh, skala);
     fails.push(...so.v);
     console.log(
@@ -1263,7 +1228,9 @@ hauptLauf(async () => {
     // (V) die Normale der Krone nach innen (gekehrt), der kehrende Leser, der Welt-Stoff mit Seite, die Kuppel des Wirts zurück
     if (tanne) {
         const innen = tanne.T.map((t) =>
-            (t.kind === "foliage" || t.kind === "foliageTex") && t.nor ? Object.assign({}, t, { nor: t.nor.map((x) => -x) }) : t
+            (t.kind === "foliage" || t.kind === "foliageTex") && t.nor
+                ? Object.assign({}, t, { nor: t.nor.map((x) => -x) })
+                : t
         );
         st.push(["Krone nach innen", kroneUrteil("innen", innen, true).v.length > 0]);
         st.push(["Leser kehrt die Krone", kroneUrteil("kehrt", tanne.T, false).v.length > 0]);
@@ -1271,7 +1238,11 @@ hauptLauf(async () => {
     // (V) die Laubkrone als EINE gelichtet (K68, vor T2): dieselben Karten der Eiche, ihre Normalen neu aus dem einen Ellipsoid
     if (eiche) {
         const eine = eiche.T.map((t) => ((t.kind === "foliage" || t.kind === "foliageTex") && t.nor ? Object.assign({}, t, { nor: Float32Array.from(t.nor) }) : t)); // prettier-ignore
-        PC.kronenNormalen(eine.filter((t) => t.kind === "foliage" || t.kind === "foliageTex").map((t) => ({ pos: Float32Array.from(t.pos), nor: t.nor })));
+        PC.kronenNormalen(
+            eine
+                .filter((t) => t.kind === "foliage" || t.kind === "foliageTex")
+                .map((t) => ({ pos: Float32Array.from(t.pos), nor: t.nor }))
+        );
         const pa = partienDerKrone(eiche, buch.eiche, skala("eiche"));
         st.push(["Laubkrone als EINE gelichtet", !!pa && kroneUrteil("eine", eine, true, pa).v.length > 0]);
     } else st.push(["Eiche gebaut", false]);
@@ -1332,7 +1303,10 @@ hauptLauf(async () => {
         st.push(["Höhe gestaucht (Buche × 0,6)", krank(0.6, 1).some((x) => /^Höhe buche:/.test(x))]);
         st.push(["Stamm × 4 (Buche H/D)", krank(1, 4).some((x) => /^H\/D buche:/.test(x))]);
         const rk = Object.assign({}, roh, { "eiche-s1-L0": { T: verzerrt(roh["eiche-s1-L0"].T, 1, 1.4) } });
-        st.push(["Krone × 1,4 (Eiche)", pflanzKroneUrteil(rk, skala, bild.mips[0], nadel).v.some((x) => /^Krone eiche:/.test(x))]);
+        st.push([
+            "Krone × 1,4 (Eiche)",
+            pflanzKroneUrteil(rk, skala, bild.mips[0], nadel).v.some((x) => /^Krone eiche:/.test(x)),
+        ]);
         // der kranke Solitär: die Bestandsgestalt an seiner Stelle (FREISTAND ungelesen) muss beim Namen feuern
         const r3 = Object.assign({}, roh);
         if (roh["eiche-s1-L0"]) r3["eiche-s1-L0-frei"] = roh["eiche-s1-L0"];
@@ -1360,7 +1334,7 @@ hauptLauf(async () => {
     if (gras1) {
         const T = gras1.T.map((t) => {
             const p = Float32Array.from(t.pos);
-            for (let i = 0; i < p.length; i += 3) (p[i] *= 0.3), (p[i + 2] *= 0.3);
+            for (let i = 0; i < p.length; i += 3) ((p[i] *= 0.3), (p[i + 2] *= 0.3));
             return Object.assign({}, t, { pos: p });
         });
         st.push([

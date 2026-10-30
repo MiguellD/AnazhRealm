@@ -1325,13 +1325,7 @@ async function kreaturProben(r, T, opts) {
                     }
             );
         // (a) DER WÜRFEL: ein fester Strom (mulberry32) über den Kompositions-Pool des Nexus.
-        let sd = 0x9e3779b9;
-        const rng = () => {
-            sd = (sd + 0x6d2b79f5) | 0;
-            let t = Math.imul(sd ^ (sd >>> 15), 1 | sd);
-            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
+        const rng = window.__phytoCore.mulberry32(0x9e3779b9);
         const flach = (n, out) => {
             if (Array.isArray(n)) {
                 if (typeof n[0] === "string") out.push(n[0]);
