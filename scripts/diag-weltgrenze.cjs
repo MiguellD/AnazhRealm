@@ -215,6 +215,11 @@ function seitenPruefer() {
             // der Plan v2 je Ort (K10, `_ortWahl`): Saat und Anker sind sein Schlüssel, seine Höhen und sein Erdbau sind A —
             // eine Welt B mit demselben Samen am selben Anker läse sonst A's Gelände
             r._ortPlaene = new Map([[T, { herkunft: T }]]);
+            // DIE OFFENE ARBEIT DER SEITE: eine ungebackene Karte (ihr Atlas gehört keiner Welt) und ihr Platz in der Back-Schlange
+            // reisen mit der Seite — fiel die Schlange mit der Welt, backte die Karte nie (die GT-Vorschau der Prüfbühne wartete nach
+            // dem Wechsel ewig, „Fege-Takt archCull wartet", tore-k5-tuer-neu)
+            r._impostorAtlas().zellen.set(T, {});
+            r._impostorBakeQueue = [T];
             const pm = r.state.playerMesh;
             const x = pm ? pm.position.x + 6 : 6;
             const z = pm ? pm.position.z + 6 : 6;
@@ -230,10 +235,10 @@ function seitenPruefer() {
             r._ensureAtmoUniforms();
             r._leuchtTakt();
             const tier = r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z) + 1, z, "happy", null, { precise: true });
-            if (tier && tier.userData) tier.userData.name = T;
+            if (tier?.userData) tier.userData.name = T;
             const licht = [
-                r._portalLeuchte && r._portalLeuchte.herkunft === T ? null : "_portalLeuchte",
-                r._leuchtPool && r._leuchtPool.halter.some((h) => h && h.herkunft === T) ? null : "_leuchtPool",
+                r._portalLeuchte?.herkunft === T ? null : "_portalLeuchte",
+                r._leuchtPool?.halter.some((h) => h?.herkunft === T) ? null : "_leuchtPool",
             ].filter(Boolean);
             return { erbgut: r._erbgut().terme.map((t) => t.art), tier: !!tier, lichtBlind: licht };
         },
@@ -254,19 +259,20 @@ function seitenPruefer() {
                 out.push(`Leser _erbgut() [${e.terme.map((t) => t.art).join(", ")}]`);
             const ws = r._voxelWorkerSnapshotState();
             for (const p of pfade(ws, "Worker-Spiegel")) out.push(p);
-            if (!(ws.erbgut && ws.erbgut.wildnis === 1)) out.push("Worker-Spiegel.erbgut (keine Wildnis)");
+            if (ws.erbgut?.wildnis !== 1) out.push("Worker-Spiegel.erbgut (keine Wildnis)");
             const ged = {
                 _genesisRingFertig: r._genesisRingFertig === true,
-                _portalPreviewFertig: !!(r._portalPreviewFertig && r._portalPreviewFertig.fachwerk),
-                _autoSettlementRejected: !!(r._autoSettlementRejected && r._autoSettlementRejected.has(T)),
+                _portalPreviewFertig: !!r._portalPreviewFertig?.fachwerk,
+                _autoSettlementRejected: !!r._autoSettlementRejected?.has(T),
                 _autoSettlementStartHopeless: r._autoSettlementStartHopeless === true,
-                _autoSettlementQueue: !!(r._autoSettlementQueue && r._autoSettlementQueue.cellKey === T),
-                _stlWegeKeys: !!(r._stlWegeKeys && r._stlWegeKeys.has(T)),
-                _ortPlaene: !!(r._ortPlaene && r._ortPlaene.has(T)),
-                _portalLeuchte: !!(r._portalLeuchte && r._portalLeuchte.herkunft === T),
-                _leuchtPool: !!(r._leuchtPool && r._leuchtPool.halter.some((h) => h && h.herkunft === T)),
+                _autoSettlementQueue: r._autoSettlementQueue?.cellKey === T,
+                _stlWegeKeys: !!r._stlWegeKeys?.has(T),
+                _ortPlaene: !!r._ortPlaene?.has(T),
+                _portalLeuchte: r._portalLeuchte?.herkunft === T,
+                _leuchtPool: !!r._leuchtPool?.halter.some((h) => h?.herkunft === T),
             };
             for (const k of Object.keys(ged)) if (ged[k]) out.push(`Gedächtnis this.${k}`);
+            if (r._kartenAtlas?.zellen.has(T) && !r._impostorBakeQueue?.includes(T)) out.push("Seite: Karte ohne Back-Schlange");
             if (ganz) {
                 const snap = r.buildStateSnapshot();
                 for (const p of pfade(snap, "Snapshot", 3)) if (!ok.has(p.replace(/^Snapshot\./, ""))) out.push(p);
@@ -506,7 +512,7 @@ async function fahreWeg(browser, weg, schein) {
                 B,
                 aId
             )
-            .catch((e) => ({ abbruch: String(e && e.message ? e.message : e) }));
+            .catch((e) => ({ abbruch: String(e?.message || e) }));
         if ((basis === "portal" || basis === "einladung") && gemeldet) Object.assign(lauf, gemeldet);
         if (lauf && lauf.inSeite) for (const f of lauf.inSeite) rep.befunde.push(`in der Seite: ${f}`);
         if (basis === "laden") return rep;

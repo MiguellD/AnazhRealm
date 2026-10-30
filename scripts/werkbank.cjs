@@ -903,19 +903,20 @@ async function starte() {
         const json = JSON.parse(fs.readFileSync(path.join(root, "spec", ort.welt), "utf8"));
         const slug = json.worldMeta && json.worldMeta.slug;
         if (!slug) throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} trägt keinen worldMeta.slug`);
-        const steht = () =>
-            page.evaluate((s) => {
-                const m = anazhRealm.state.worldMeta;
-                return !!(m && m.slug === s);
-            }, slug);
+        const steht = () => page.evaluate((s) => st.worldMeta?.slug === s, slug);
         if (await steht()) return { slug, neu: false };
+        // DIE ANKUNFT WIE IM SPIEL: die Ziel-Welt kommt mit laufendem Takt an (der Neuladen bootete die Seite mit ihm bis
+        // `loopAus`), bis ihr Genesis-Ort steht — erst ihr Takt am Ankunfts-Ort baut ihn (`_tickGenesisOrt`: das Tor-Rund nur
+        // am Genesis-Ort); mit ruhendem Takt stand die Prüfbühne ohne ihn (7 statt 21 Werke, die Nah-Deckung der Aufnahme fand
+        // keine Instanz-Gruppe)
         const res = await page.evaluate((j) => {
             const x = anazhRealm.importWorldBeside(j, { reload: true });
-            return x && x.ok ? { id: x.worldId } : { fehler: JSON.stringify(x).slice(0, 200) };
+            return x && x.ok ? (__loop(1), { id: x.worldId }) : { fehler: JSON.stringify(x).slice(0, 200) };
         }, json);
         if (res.fehler)
             throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} ließ sich nicht importieren (${res.fehler})`);
-        await lade(page.evaluate(() => anazhRealm.erwacht)); // der Takt bleibt, wie er war (aus)
+        await lade(page.evaluate(() => __weltDa(() => st.worldMeta.genesisPortalRing)));
+        await loopAus();
         if (!(await steht())) throw new Error(`Messort ${ort.id}: nach dem Wechsel steht die Seite nicht in ${slug}`);
         return { slug, neu: true, id: res.id };
     };

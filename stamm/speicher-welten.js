@@ -2727,8 +2727,9 @@ AnazhRealm.R5_STRUCTURE_TEXTURE = Object.freeze({
 //                Zähler, die Wahl des Spielers (Tasten, Kamera, Tag-Länge), Begleiter, KI, Klang, Messung, Log, Pass, sein
 //                Name, die Werkstatt (ihre Bühne)
 //   wirt         Felder am Wirt, die die Seite tragen: die Fäden, ihre Hörer und Generationen, Takt und Messung, das Buch der
-//                Brüche, der Tacho, die UI-Räume, jedes Programm und seine Knoten, die Atlanten (Rauschen, Karten, Laub,
-//                Blatt, Tor-Ziele, Tor-Profile), die Vorräte je Gattung (Ofen, Glieder), die Sperre und der Takt des Wechsels
+//                Brüche, der Tacho, die UI-Räume, jedes Programm und seine Knoten, die Atlanten (Rauschen, Karten samt ihrer
+//                Back-Schlange, Laub, Blatt, Tor-Ziele, Tor-Profile), die Vorräte je Gattung (Ofen, Glieder), die Sperre und der
+//                Takt des Wechsels
 // Was eine Welt in eine dieser Karten malt, malt die neue neu (ihr Abschied leert sie: `_horizontKarteLeeren`).
 AnazhRealm.WELT_GRENZE = Object.freeze({
     ankunft: Object.freeze([
@@ -2868,6 +2869,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_spiegelMass",
         "_rauschAtlasCache",
         "_kartenAtlas",
+        "_impostorBakeQueue",
         "_foliageAtlasTex",
         "_blattAtlasBild",
         "_torZielAtlas",
