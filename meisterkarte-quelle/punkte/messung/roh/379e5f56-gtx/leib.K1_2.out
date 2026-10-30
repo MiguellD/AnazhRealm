@@ -1,0 +1,46 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u
+WP=$((7804 + 20000)); LP=$((7804 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; FRISCH=1
+boot() { if [ -z "$FRISCH" ]; then node "$PUNKTE_MASCHINE" grundstellung > "$L/grund.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; cat "$L/grund.txt"; exit 3; }; fi; FRISCH=; if [ $# -gt 0 ]; then timeout 300 $W umstellen "$@" > "$L/boot.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/boot.txt"; exit 3; }; fi; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+rm -f "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\379e5f56-gtx\leib.K1_2.json.lauf1.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil HAKEN1 $W eval 'const L = (window.__hs = { n: 0, dauer: [], takte: 0, gleit: 0 }); const pj = r._kampfHitJuice.bind(r); r._kampfHitJuice = function (c, now, u, ke) { const v = pj(c, now, u, ke); L.n++; L.dauer.push(r.state.player._hitStopUntil - now); return v; }; const pm = r.state.playerMesh, V = new T.Vector3(); let vor = null; const tick = r._gameLoopTick.bind(r); r._gameLoopTick = function (t) { const v = tick(t); const p = r.state.player; if (p && p._hitStopUntil > performance.now() / 1000) { const w = pm.userData.rig.armR.wrist.getWorldPosition(V).sub(pm.position).toArray(); if (vor && vor.id === p._hitStopUntil) { L.takte++; L.gleit = Math.max(L.gleit, Math.hypot(w[0] - vor.w[0], w[1] - vor.w[1], w[2] - vor.w[2])); } vor = { id: p._hitStopUntil, w }; } return v; }; return 1;'
+teil LATENZ1 $W latenz --proben 15 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\379e5f56-gtx\leib.K1_2.json.lauf1.json"
+teil SPIEL1 $W eval 'const L = window.__hs; return { gesetzt: L.n, dauerMs: [Math.min(...L.dauer), Math.max(...L.dauer)].map((x) => Math.round(x * 1000)), haltTakte: L.takte, gleitMm: Math.round(L.gleit * 10000) / 10 };'
+node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\379e5f56-gtx\leib.K1_2.json" "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\379e5f56-gtx\leib.K1_2.json.lauf1.json"
+@@PUNKTE@@ HAKEN1
+{
+ "ms": 2,
+ "ergebnis": 1
+}
+@@PUNKTE@@ EXIT 0
+@@PUNKTE@@ LATENZ1
+ego/gehen {"n":15,"fehlt":0,"p50":32.1,"p95":88.3,"max":88.3,"eingabe":0.3,"hoerer":0,"kette":21.4,"kurve":16,"takte":4}
+ego/springen {"n":15,"fehlt":0,"p50":21.4,"p95":29.8,"max":29.8,"eingabe":0.3,"hoerer":0.2,"kette":18.6,"kurve":0,"takte":3}
+ego/einsteigen {"n":15,"fehlt":0,"p50":13.8,"p95":72.7,"max":72.7,"eingabe":0.4,"hoerer":0.5,"kette":10.8,"kurve":0,"takte":1}
+ego/hieb {"n":15,"fehlt":0,"p50":15.2,"p95":57.4,"max":57.4,"eingabe":0.4,"hoerer":1.7,"kette":10.3,"kurve":0,"takte":2,"halt":13}
+third/gehen {"n":15,"fehlt":0,"p50":28.1,"p95":43.7,"max":43.7,"eingabe":1.1,"hoerer":0,"kette":9.8,"kurve":16.6,"takte":3}
+third/springen {"n":15,"fehlt":0,"p50":9.9,"p95":20.3,"max":20.3,"eingabe":0.4,"hoerer":0.2,"kette":8.3,"kurve":0,"takte":1}
+third/einsteigen {"n":15,"fehlt":0,"p50":13.3,"p95":15.7,"max":15.7,"eingabe":0.3,"hoerer":0.3,"kette":11.9,"kurve":0,"takte":1}
+third/hieb {"n":15,"fehlt":0,"p50":28.6,"p95":40.1,"max":40.1,"eingabe":10.3,"hoerer":2.5,"kette":18.8,"kurve":0,"takte":3,"halt":12}
+LATENZ ROT (Bild 14.9 ms) ego/gehen p95 88.3 ms > 50 (fehlt 0) — Täter kette 21.4 ms, 4 Takte · ego/einsteigen p95 72.7 ms > 50 (fehlt 0) — Täter kette 10.8 ms, 1 Takte · ego/hieb p95 57.4 ms > 50 (fehlt 0) — Täter kette 10.3 ms, 2 Takte
+@@PUNKTE@@ EXIT 1
+@@PUNKTE@@ SPIEL1
+{
+ "ms": 1,
+ "ergebnis": {
+  "gesetzt": 30,
+  "dauerMs": [
+   158,
+   173
+  ],
+  "haltTakte": 552,
+  "gleitMm": 0
+ }
+}
+@@PUNKTE@@ EXIT 0
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

@@ -1,0 +1,7 @@
+$ C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --luft --wetter stormy --datei C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\379e5f56-gtx\ferne.K5_1.json
+
+✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT
+SICHT GRUEN · Sicht im Wetter stormy 1506 m (Soll 1500 ±15 %, 4 Azimute)
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
