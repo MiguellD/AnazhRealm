@@ -59,15 +59,15 @@ function check(name, ok) {
         // ── KURZER PLATEAU-WARMUP (render-gestubbt, chirurgisch wie playtest.cjs) ──
         await page.evaluate(async () => {
             if (!r || typeof r._gameLoopTick !== "function") return;
-            if (r.state.renderer) {
-                window.__origRender = r.state.renderer.render.bind(r.state.renderer);
-                r.state.renderer.render = function () {};
-                if (typeof r.state.renderer.renderAsync === "function")
-                    r.state.renderer.renderAsync = function () {
+            if (st.renderer) {
+                window.__origRender = st.renderer.render.bind(st.renderer);
+                st.renderer.render = function () {};
+                if (typeof st.renderer.renderAsync === "function")
+                    st.renderer.renderAsync = function () {
                         return Promise.resolve();
                     };
             }
-            r.state.postProcessingFailed = true;
+            st.postProcessingFailed = true;
             const start = performance.now();
             const TARGET = 4; // schneller Warmup: ein paar Chunks genügen für die Kern-Gesundheit
             const MIN_MS = 3000;
@@ -76,8 +76,8 @@ function check(name, ok) {
             // wie der volle Gate: den Worker für den Warmup aushängen →
             // der Ring baut SYNC + deterministisch (load-unabhängig), kein
             // Async-Worker-Hunger unter CPU-Last (s. playtest.cjs-Warmup-Kommentar).
-            const _warmupSavedWorker = r.state.voxelWorker;
-            r.state.voxelWorker = null;
+            const _warmupSavedWorker = st.voxelWorker;
+            st.voxelWorker = null;
             let lastBuilt = -1,
                 lastGrowth = start;
             for (;;) {
@@ -85,7 +85,7 @@ function check(name, ok) {
                     r._gameLoopTick(performance.now());
                 } catch {}
                 const elapsed = performance.now() - start;
-                const built = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
+                const built = st.voxelChunks ? st.voxelChunks.size : 0;
                 if (built !== lastBuilt) {
                     lastBuilt = built;
                     lastGrowth = performance.now();
@@ -94,7 +94,7 @@ function check(name, ok) {
                 if ((built >= TARGET && stable >= PLATEAU_MS && elapsed >= MIN_MS) || elapsed >= CAP_MS) break;
                 await sleep(0);
             }
-            r.state.voxelWorker = _warmupSavedWorker;
+            st.voxelWorker = _warmupSavedWorker;
         });
 
         // DAS BUCH IST DA, bevor ein Check seine Rezepte liest (K69-2: die Kern-Checks lasen r._foundry.recipes vor
@@ -103,7 +103,7 @@ function check(name, ok) {
         await page
             .waitForFunction(
                 () => {
-                    return !!r?._foundry?.recipes?.[r.constructor.KOERPER_HOST_RECIPE];
+                    return !!r?._foundry?.recipes?.[AnazhRealm.KOERPER_HOST_RECIPE];
                 },
                 { polling: 100, timeout: 180000 }
             )
@@ -164,7 +164,7 @@ function check(name, ok) {
             // ALTLASTEN-NULL — glutwesen/sprite/geist sind GEFALLEN: die Seelen-
             // Menge ist exakt die vier ehrlichen Tiere.
             out.creatureGlut = safe(() => {
-                const names = (window.AnazhRealm || r.constructor).CREATURE_SOUL_NAMES || [];
+                const names = (window.AnazhRealm || AnazhRealm).CREATURE_SOUL_NAMES || [];
                 const exakt = names.length === 4 && ["wesen", "wolf", "fuchs", "baer"].every((n) => names.includes(n));
                 return { ok: exakt };
             });
@@ -227,7 +227,7 @@ function check(name, ok) {
                 // koerperstudio-Dials (dieselbe Quelle wie das Rig) tragen
                 // Stats: mehr Masse/Höhe → mehr HP, weniger Tempo.
                 let menschDials = false;
-                const rec = r._foundry && r._foundry.recipes && r._foundry.recipes[r.constructor.KOERPER_HOST_RECIPE];
+                const rec = r._foundry && r._foundry.recipes && r._foundry.recipes[AnazhRealm.KOERPER_HOST_RECIPE];
                 if (rec?.s) {
                     const saved = JSON.parse(JSON.stringify(rec.s));
                     r.applyPlayerSoul("human");
@@ -256,7 +256,7 @@ function check(name, ok) {
             // AnazhRealm.KIND_SUBSTANCE (headless: window.AnazhRealm ist undefined →
             // r.constructor.KIND_SUBSTANCE, die dokumentierte Falle).
             out.blueprintBuilds = safe(() => {
-                const KS = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+                const KS = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
                 const names = ["esse", "welt_portal", "ruestung_brustpanzer"];
                 const res = {};
                 res.geraet_schwert = KS.geraet_schwert
@@ -278,7 +278,7 @@ function check(name, ok) {
             });
             // RESONANZ: Substanz/Built-ins tragen sinnvolle Rollen (Form×Material → Rolle)
             out.roles = safe(() => {
-                const KS = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+                const KS = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
                 const res = {};
                 res.geraet_schwert = KS.geraet_schwert
                     ? r.computeBlueprintRole({ parts: KS.geraet_schwert.parts }) || "?"

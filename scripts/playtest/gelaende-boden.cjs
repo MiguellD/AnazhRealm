@@ -11,16 +11,16 @@ const { safeEvaluate } = require("../playtest.cjs");
 async function checkBandV1749Adventure({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const p = r.state.player;
-        const E = r.constructor.EXPLORE;
-        const pm = r.state.playerMesh.position;
+        const p = st.player;
+        const E = AnazhRealm.EXPLORE;
+        const pm = st.playerMesh.position;
         const savedEmo = { ...p.emotions };
-        const savedVisited = r.state.visitedRegions;
-        const savedLife = r.state.lifeField;
+        const savedVisited = st.visitedRegions;
+        const savedLife = st.lifeField;
         const savedPos = { x: pm.x, y: pm.y, z: pm.z };
         const setEmo = (o) => __emo(p, o);
         const fresh = () => {
-            r.state.visitedRegions = new Set();
+            st.visitedRegions = new Set();
         };
 
         // (1) Config
@@ -34,33 +34,33 @@ async function checkBandV1749Adventure({ page, check }) {
 
         // (3) HOLISTISCH — kühnes Erkunden (neu + fern + karg) ≫ vertrautes Pendeln (Wiederkehr + nah + üppig)
         fresh();
-        r.state.lifeField = new Map(); // karg
+        st.lifeField = new Map(); // karg
         pm.x = 3000;
         pm.z = 0; // fern
         const magAdventure = r._exploreMagnitude(222, 222); // neu
-        r.state.visitedRegions = new Set(["333,333"]); // markiert → Wiederkehr
+        st.visitedRegions = new Set(["333,333"]); // markiert → Wiederkehr
         pm.x = savedPos.x;
         pm.z = savedPos.z; // nah
         r._depositLife(pm.x, pm.z, 1.0);
         r._depositLife(pm.x, pm.z, 1.0); // üppig
         const magCommute = r._exploreMagnitude(333, 333);
         out.adventureGrades = magAdventure > magCommute + 0.5;
-        r.state.lifeField = new Map();
+        st.lifeField = new Map();
 
         // (4) KÜHNHEIT — in eine karge Aura wagen staunt mehr als in eine üppige (liest auraAt;
         // gegated für bereits-üppige Spots, wo kein Boldness-Spielraum bleibt)
         pm.x = savedPos.x;
         pm.z = savedPos.z;
-        r.state.lifeField = new Map();
+        st.lifeField = new Map();
         const lebFrozen = r.auraAt(pm.x, pm.z, 0).lebendig || 0;
-        r.state.visitedRegions = new Set(["444,444"]);
+        st.visitedRegions = new Set(["444,444"]);
         const magBarren = r._exploreMagnitude(444, 444);
         r._depositLife(pm.x, pm.z, 1.0);
         r._depositLife(pm.x, pm.z, 1.0);
-        r.state.visitedRegions = new Set(["444,444"]);
+        st.visitedRegions = new Set(["444,444"]);
         const magLush = r._exploreMagnitude(444, 444);
         out.boldnessGrades = lebFrozen >= 0.85 ? magLush <= magBarren + 1e-6 : magBarren > magLush + 0.02;
-        r.state.lifeField = new Map();
+        st.lifeField = new Map();
 
         // (5) KONSUM end-to-end: die explore-Tat SKALIERT mit der Magnitude (awe graduiert)
         setEmo({});
@@ -74,14 +74,14 @@ async function checkBandV1749Adventure({ page, check }) {
         // (6) visitedRegions bounded (Prune beim Überlauf)
         const big = new Set();
         for (let i = 0; i < E.maxRegions + 5; i++) big.add("d" + i);
-        r.state.visitedRegions = big;
+        st.visitedRegions = big;
         r._exploreMagnitude(99999, 99999);
-        out.bounded = r.state.visitedRegions.size <= E.maxRegions;
+        out.bounded = st.visitedRegions.size <= E.maxRegions;
 
         // restore
         setEmo(savedEmo);
-        r.state.visitedRegions = savedVisited;
-        r.state.lifeField = savedLife;
+        st.visitedRegions = savedVisited;
+        st.lifeField = savedLife;
         pm.x = savedPos.x;
         pm.y = savedPos.y;
         pm.z = savedPos.z;
@@ -113,8 +113,8 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
     // Voxel-Chunks abräumen; die folgenden Tests bauen ihren Ring per _tickVoxelChunkStreaming neu
     // (Test-Isolation).
     await page.evaluate(() => {
-        if (r && r.state && r.state.voxelChunks) {
-            for (const key of [...r.state.voxelChunks.keys()]) r._disposeVoxelChunk(key);
+        if (r && st && st.voxelChunks) {
+            for (const key of [...st.voxelChunks.keys()]) r._disposeVoxelChunk(key);
         }
     });
     const voxelP1Results = await safeEvaluate(page, () => {
@@ -137,7 +137,7 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
         for (let sx = -160; sx <= 160 && !foundCave; sx += 20) {
             for (let sz = -160; sz <= 160 && !foundCave; sz += 20) {
                 const surf = r._terrainMacroSurfaceY(sx, sz);
-                for (let sy = (r.state.terrainBaseHeight || 0) - 22; sy <= surf - 10 && !foundCave; sy += 3) {
+                for (let sy = (st.terrainBaseHeight || 0) - 22; sy <= surf - 10 && !foundCave; sy += 3) {
                     if (
                         r._terrainDensityAt(sx, sy, sz) < 0 &&
                         r._terrainDensityAt(sx, sy - 6, sz) > 0 &&
@@ -152,7 +152,7 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
 
         // Der Voxel-Chunk fasst das ganze Oberflächen-Band: Boden überall fest, Decke überall Luft →
         // keine Klipp-Löcher.
-        const cBase = r.state.terrainBaseHeight || 0;
+        const cBase = st.terrainBaseHeight || 0;
         let floorAllSolid = true;
         let ceilAllAir = true;
         for (let sx = -220; sx <= 220; sx += 20) {
@@ -288,19 +288,19 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
 
         // Die Kollision ist feld-nativ (Dichtefeld), es gibt kein per-Chunk-Kollisions-Artefakt —
         // geprüft wird nur der Mesh-in-Szene-Lebenszyklus von _spawnVoxelTestChunk.
-        if (r.state.scene) {
-            const before = r.state.scene.children.length;
+        if (st.scene) {
+            const before = st.scene.children.length;
             const m1 = r._spawnVoxelTestChunk();
-            const afterOne = r.state.scene.children.length;
+            const afterOne = st.scene.children.length;
             const m2 = r._spawnVoxelTestChunk();
-            const afterTwo = r.state.scene.children.length;
+            const afterTwo = st.scene.children.length;
             out.spawnAddsMesh = !!(m1 && m1.isMesh) && afterOne > before;
             // Ein zweiter Aufruf ersetzt — kein Mesh-Wildwuchs.
             out.spawnReplaces = !!(m2 && m2.isMesh) && afterTwo === afterOne;
             // Aufräumen — der Test-Chunk bleibt nicht in der Welt. (P3: keine Ammo-Kollision
             // mehr freizugeben — feld-nativ.)
             if (r._voxelTestMesh) {
-                r.state.scene.remove(r._voxelTestMesh);
+                st.scene.remove(r._voxelTestMesh);
                 r._voxelTestMesh = null;
             }
         }
@@ -373,27 +373,27 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
 
         // Der Game-Loop läuft headless gedrosselt (~1 Hz im Hintergrund-Tab) → den Voxel-Ring hier
         // explizit synchron bauen; im Spiel-Pfad läuft alles asynchron.
-        const pmInit = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+        const pmInit = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
         // Der Spieler-Chunk baut async im Worker, dessen Callback im synchronen Test-Pump nie feuert →
         // Worker temporär „nicht synced“: `_acquireVoxelChunkBuild` baut dann synchron (Stage-3-Fallback).
-        const _wgSynced = r.state.voxelWorkerWorldgenSynced;
-        r.state.voxelWorkerWorldgenSynced = false;
+        const _wgSynced = st.voxelWorkerWorldgenSynced;
+        st.voxelWorkerWorldgenSynced = false;
         r._drainDirtyVoxelChunks();
         for (let s = 0; s < 50; s++) r._tickVoxelChunkStreaming(pmInit);
-        r.state.voxelWorkerWorldgenSynced = _wgSynced;
+        st.voxelWorkerWorldgenSynced = _wgSynced;
         // Gras ist deferred (enqueue im Finalize, Build ≤1/Frame im Loop): das Streaming enqueued nur,
         // die Test-Naht drainet sofort — sonst sieht der Grass-Check leere Chunks.
         r._drainPendingGrass();
-        out.activated = r.state.voxelTerrainActive === true;
-        out.ringFilled = !!(r.state.voxelChunks && r.state.voxelChunks.size > 0);
+        out.activated = st.voxelTerrainActive === true;
+        out.ringFilled = !!(st.voxelChunks && st.voxelChunks.size > 0);
         // DETERMINISMUS-BOGEN P3 — Voxel-Chunks tragen kein per-Objekt-Kollisions-
         // Artefakt mehr (Ammo entfernt); der Boden lebt feld-nativ im Dichtefeld.
 
         // der Voxel-Chunk grünt
         let grassEntries = 0;
         let grassBlades = 0;
-        if (r.state.voxelChunkGrass) {
-            for (const g of r.state.voxelChunkGrass.values()) {
+        if (st.voxelChunkGrass) {
+            for (const g of st.voxelChunkGrass.values()) {
                 grassEntries++;
                 if (g && g.isInstancedMesh) grassBlades += g.count;
             }
@@ -420,20 +420,20 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
             r._terrainDensityAt(12, sy + 0.6, -8) <= 0;
 
         // Der Voxel-Chunk-Ring folgt dem Sicht-Ring-Regler.
-        const ringBefore = r.state.chunkRingRadius;
-        const activeBefore = r.state._activeRingRadius;
-        r.state.chunkRingRadius = 6;
+        const ringBefore = st.chunkRingRadius;
+        const activeBefore = st._activeRingRadius;
+        st.chunkRingRadius = 6;
         // Der Lade-Ramp `_activeRingRadius` sitzt zwischen Slider und ringRadius (`min(target, active)`).
         // Geprüft wird der STEADY-STATE → Ramp aufs Ziel setzen (ein langsamer Warmup ließe active < 6).
-        r.state._activeRingRadius = 6;
+        st._activeRingRadius = 6;
         out.voxelRingFollowsSlider = r._voxelChunkConfig().ringRadius === 6;
-        r.state.chunkRingRadius = ringBefore;
-        r.state._activeRingRadius = activeBefore;
+        st.chunkRingRadius = ringBefore;
+        st._activeRingRadius = activeBefore;
         // Der Voxel-Vegetations-Pass ist idempotent: ein zweiter
         // Aufruf für denselben Chunk spawnt nichts mehr.
         r._populateVoxelChunkVegetation(777, 777);
         out.voxelVegIdempotent = r._populateVoxelChunkVegetation(777, 777) === 0;
-        out.voxelVegMarksChunk = !!(r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has("777,777"));
+        out.voxelVegMarksChunk = !!(st.voxelPopulatedChunks && st.voxelPopulatedChunks.has("777,777"));
 
         // Die Höhen-Konsumenten sind voxel-aware: getTerrainHeightAt + findSurfaceAbove liefern die
         // Voxel-Oberfläche.
@@ -451,13 +451,13 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
         // Zwangs-Migration: eine alte Welt OHNE voxelTerrain-Flag UND eine explizite Heightfield-Opt-out-
         // Welt werden BEIDE voxel-basiert. Welt-Journal vorher sichern + danach restoren — sonst flutet
         // der Migrations-Genesis-Eintrag den folgenden „Journal nicht überflutet“-Test.
-        const origMeta = r.state.worldMeta;
-        const origJournalEntries = r.state.worldJournal ? r.state.worldJournal.entries.slice() : null;
+        const origMeta = st.worldMeta;
+        const origJournalEntries = st.worldJournal ? st.worldJournal.entries.slice() : null;
         const origJournalSeen =
-            r.state.worldJournal && r.state.worldJournal.seen ? Object.assign({}, r.state.worldJournal.seen) : null;
+            st.worldJournal && st.worldJournal.seen ? Object.assign({}, st.worldJournal.seen) : null;
         // Alte Welt geladen, kein voxelTerrain-Flag → migrate.
         const oldMeta = { worldId: "test-old-w", slug: "test-old", bornAt: 100, seed: "test" };
-        r.state.worldMeta = oldMeta;
+        st.worldMeta = oldMeta;
         r.ensureWorldMeta();
         out.migrationFlipsOldWorld = oldMeta.voxelTerrain === true;
         // ein Heightfield-Opt-out wird zwangs-migriert
@@ -468,13 +468,13 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
             seed: "test",
             voxelTerrain: false,
         };
-        r.state.worldMeta = optOutMeta;
+        st.worldMeta = optOutMeta;
         r.ensureWorldMeta();
         out.migrationForcesOptOut = optOutMeta.voxelTerrain === true;
-        r.state.worldMeta = origMeta;
-        if (r.state.worldJournal && origJournalEntries) {
-            r.state.worldJournal.entries = origJournalEntries;
-            if (origJournalSeen) r.state.worldJournal.seen = origJournalSeen;
+        st.worldMeta = origMeta;
+        if (st.worldJournal && origJournalEntries) {
+            st.worldJournal.entries = origJournalEntries;
+            if (origJournalSeen) st.worldJournal.seen = origJournalSeen;
         }
 
         // Welt-Feld-Farbe + Naht-Skirt
@@ -483,7 +483,7 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
         let colorMax = 0;
         let skirtProven = false;
         const cfg0 = r._voxelChunkConfig();
-        for (const e of r.state.voxelChunks.values()) {
+        for (const e of st.voxelChunks.values()) {
             if (!e || !e.mesh || !e.mesh.geometry) continue;
             const col = e.mesh.geometry.getAttribute("color");
             if (col) {
@@ -504,20 +504,20 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
         out.voxelSkirt = skirtProven;
 
         // Streaming: alles abräumen, ein Tick baut wieder auf.
-        for (const key of [...r.state.voxelChunks.keys()]) r._disposeVoxelChunk(key);
-        const pos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+        for (const key of [...st.voxelChunks.keys()]) r._disposeVoxelChunk(key);
+        const pos = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
         // Ein Tick im synchronen Test erzeugt nur pending Worker-Requests, keine Chunk-Einträge →
         // synchron bauen (Stage-3, Worker temporär „nicht synced“) wie der Pump oben; im Spiel läuft der
         // Tick async.
-        const _wgSyncedTick = r.state.voxelWorkerWorldgenSynced;
-        r.state.voxelWorkerWorldgenSynced = false;
+        const _wgSyncedTick = st.voxelWorkerWorldgenSynced;
+        st.voxelWorkerWorldgenSynced = false;
         r._tickVoxelChunkStreaming(pos);
-        r.state.voxelWorkerWorldgenSynced = _wgSyncedTick;
-        out.tickBuilds = r.state.voxelChunks.size >= 1;
+        st.voxelWorkerWorldgenSynced = _wgSyncedTick;
+        out.tickBuilds = st.voxelChunks.size >= 1;
         // Prune: ein ferner Spieler-Ort räumt alle nahen Chunks.
         // BÜHNE: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
         r._pruneDistantVoxelChunks({ x: 99999, y: 0, z: 99999 });
-        out.pruneRemovesFar = r.state.voxelChunks.size === 0;
+        out.pruneRemovesFar = st.voxelChunks.size === 0;
 
         // nach dem Prune den Spieler-Ring neu (die folgenden Proben brauchen Voxel-Chunks)
         r._tickVoxelChunkStreaming(pos);
@@ -562,7 +562,7 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
         const b = (rr) => r._detailBand(rr);
         // die Kaskade trägt keine Geometrie-Stufe mehr (ihr Leser zog in die Kette des Bodens, K51)
         out.bandLods = [0, 2, 3, 8, 9, 10, 11, 99].every((rr) => !("lod" in b(rr)));
-        const BS = r.constructor.BODEN_STUFEN;
+        const BS = AnazhRealm.BODEN_STUFEN;
         const kette = (d) => BS.stufen.find((x) => d < x.bis + BS.vorlauf).lod;
         out.lodReadsBand =
             Object.isFrozen(BS) &&
@@ -580,14 +580,14 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
             r._voxelChunkLodFor(1, 0, 5.2, 21.6, 1) === 0 &&
             BS.halt > 0 &&
             BS.vorlauf > 0;
-        out.cascadeFrozen = Object.isFrozen(r.constructor.DETAIL_CASCADE);
+        out.cascadeFrozen = Object.isFrozen(AnazhRealm.DETAIL_CASCADE);
         // die Kreaturen lesen die Kaskade: das `aiDiv`-Band-Feld
         // (nah jeden Frame, fern seltener) + der Richtungs-Cache nach einem Tick.
         out.bandAiDiv = b(0).aiDiv === 1 && b(8).aiDiv === 1 && b(9).aiDiv === 3 && b(11).aiDiv === 6;
         r.updateCreatures(0.016);
         out.creatureAiCached =
-            r.state.creatures.length === 0 ||
-            r.state.creatures.some((c) => c.userData && c.userData.aiDir && c.userData.aiDir.isVector3);
+            st.creatures.length === 0 ||
+            st.creatures.some((c) => c.userData && c.userData.aiDir && c.userData.aiDir.isVector3);
         return out;
     });
 
@@ -688,8 +688,8 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
     const voxelV935ToggleResults = await safeEvaluate(page, () => {
         const out = {};
         // Voxel ist beim Init aktiv (kein toggle nötig).
-        out.voxelPermanent = r.state.voxelTerrainActive === true;
-        out.metaPermanent = !!(r.state.worldMeta && r.state.worldMeta.voxelTerrain === true);
+        out.voxelPermanent = st.voxelTerrainActive === true;
+        out.metaPermanent = !!(st.worldMeta && st.worldMeta.voxelTerrain === true);
         // Der Welt-Snapshot trägt das Flag (überlebt Reload).
         const snap = r.buildStateSnapshot();
         out.snapshotHasFlag = !!(snap && snap.worldMeta && snap.worldMeta.voxelTerrain === true);
@@ -726,32 +726,32 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
         const out = {};
 
         // (1) Voxel-Welt: kein initialer Chunk-Build + keine heightData.
-        r.state.worldMeta.voxelTerrain = true;
-        r.state.lastWorldgen = 0;
+        st.worldMeta.voxelTerrain = true;
+        st.lastWorldgen = 0;
         await r.generateNewWorld({ force: true }); // die Heimat kommt aus dem Faden
         // keine Heightfield-Chunks: `chunkMap` abwesend oder leer
-        out.voxelChunkMapEmpty = !r.state.chunkMap || r.state.chunkMap.size === 0;
-        out.voxelMaterialKept = r.state.terrainMaterial != null;
+        out.voxelChunkMapEmpty = !st.chunkMap || st.chunkMap.size === 0;
+        out.voxelMaterialKept = st.terrainMaterial != null;
         // heightData/minHeight/maxHeight nicht allokiert
-        out.voxelGroundFieldNull = r.state.groundHeightField === null;
-        out.voxelMinHeightZero = r.state.minHeight === 0;
-        out.voxelMaxHeightZero = r.state.maxHeight === 0;
-        out.voxelMinHeightFinite = Number.isFinite(r.state.minHeight);
+        out.voxelGroundFieldNull = st.groundHeightField === null;
+        out.voxelMinHeightZero = st.minHeight === 0;
+        out.voxelMaxHeightZero = st.maxHeight === 0;
+        out.voxelMinHeightFinite = Number.isFinite(st.minHeight);
 
         // das Tier auf dem sichtbaren Boden misst gate:koerper-stand K8 huf (der Huf gegen das gezeichnete Mesh, 200 Kontakte)
 
         // Selbst wenn ein Test-Setup `voxelTerrain = false` setzt, baut der Welt-Generator keine
         // Heightfield-Chunks (chunkMap bleibt leer) — der `else`-Pfad in `generateTerrainWithParameters`
         // ist gelöscht.
-        r.state.worldMeta.voxelTerrain = false;
-        r.state.lastWorldgen = 0;
+        st.worldMeta.voxelTerrain = false;
+        st.lastWorldgen = 0;
         await r.generateNewWorld({ force: true });
         // „abwesend ODER leer": kein Heightfield-Chunk gebaut.
-        out.heightfieldElseDead = !r.state.chunkMap || r.state.chunkMap.size === 0;
+        out.heightfieldElseDead = !st.chunkMap || st.chunkMap.size === 0;
         // Restore: voxelTerrain auf true zurück + Regen, damit
         // die nachfolgenden Tests eine Voxel-Welt haben.
-        r.state.worldMeta.voxelTerrain = true;
-        r.state.lastWorldgen = 0;
+        st.worldMeta.voxelTerrain = true;
+        st.lastWorldgen = 0;
         await r.generateNewWorld({ force: true });
         return out;
     });
@@ -784,8 +784,8 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
         return {
             // populateChunkVegetation nennt noch ein Log-Text des Stamms, darum steht sie hier und nicht in gate:altlasten
             noPopulateChunkVegetation: typeof r.populateChunkVegetation !== "function",
-            terrainMaterialNull: r.state.terrainMaterial === null,
-            voxelGrassAlive: r.state.voxelChunkGrass instanceof Map,
+            terrainMaterialNull: st.terrainMaterial === null,
+            voxelGrassAlive: st.voxelChunkGrass instanceof Map,
         };
     });
 
@@ -832,16 +832,16 @@ async function checkBandWellePerf3bDistanceLod({ page, check }) {
         // Verteilung history-abhängig (Flake) → EINEN LOD-1-Chunk deterministisch bauen (Worker aus →
         // sync, ferner frischer Chunk, lod=1 explizit).
         {
-            const _savedW88 = r.state.voxelWorker;
-            r.state.voxelWorker = null;
+            const _savedW88 = st.voxelWorker;
+            st.voxelWorker = null;
             const span88 = r._voxelChunkConfig(0).span;
-            const pmc = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+            const pmc = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
             const pcx88 = Math.floor(pmc.x / span88) + 20; // fern → frisch (nicht vom Warmup gebaut)
             const pcz88 = Math.floor(pmc.z / span88) + 20;
-            if (!r.state.voxelChunks.has(`${pcx88},${pcz88}`)) r._ensureVoxelChunkAt(pcx88, pcz88, 1);
-            r.state.voxelWorker = _savedW88;
+            if (!st.voxelChunks.has(`${pcx88},${pcz88}`)) r._ensureVoxelChunkAt(pcx88, pcz88, 1);
+            st.voxelWorker = _savedW88;
         }
-        if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
+        if (!st.voxelChunks || st.voxelChunks.size === 0) {
             return { ...out, error: "no chunks streamed" };
         }
         // Sammle Chunks pro LOD
@@ -849,7 +849,7 @@ async function checkBandWellePerf3bDistanceLod({ page, check }) {
         let lod1Count = 0;
         let lod0Cells = null;
         let lod1Cells = null;
-        for (const [, entry] of r.state.voxelChunks.entries()) {
+        for (const [, entry] of st.voxelChunks.entries()) {
             if (!entry || !entry.mesh) continue;
             const elod = Number.isFinite(entry.lod) ? entry.lod : 0;
             if (elod === 0) {
@@ -972,7 +972,7 @@ async function checkBandWelle993WaterLodSeam({ page, check }) {
         let lod1WithCells = 0;
         let allCellsAreLod0 = true;
         let firstMismatchLen = null;
-        for (const [, entry] of r.state.voxelChunks.entries()) {
+        for (const [, entry] of st.voxelChunks.entries()) {
             if (!entry || !entry.waterCells) continue;
             totalWithCells++;
             const cellLen = entry.waterCells.length;
@@ -1013,15 +1013,15 @@ async function checkBandWelle993WaterLodSeam({ page, check }) {
 // ist LAZY (erster echter Material-Build) → hier Konstruktion + Vertrag; Look + Maps misst die Sonde diag-csm (git-Archiv).
 async function checkBandV18130CsmShadow({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
         out.vendorSymbol = typeof window.THREE.CSMShadowNode === "function";
-        const csm = r.state.csmNode;
+        const csm = st.csmNode;
         out.active = !!csm;
         if (csm) {
             out.cascades = csm.cascades;
             out.fade = csm.fade === true;
-            out.isShadowNode = r.state.directionalLight && r.state.directionalLight.shadow.shadowNode === csm;
+            out.isShadowNode = st.directionalLight && st.directionalLight.shadow.shadowNode === csm;
             out.mode = csm.mode;
             const span = r._voxelChunkConfig(0).span;
             const e0 = (A.DETAIL_CASCADE[0].maxRing + 0.5) * span;
@@ -1048,8 +1048,8 @@ async function checkBandV18130CsmShadow({ page, check }) {
             out.breaks = zeilen.join(" ");
             // die Boot-Tiefe liest dieselbe Größe wie der Regler (Decke × Faktor), nie eine eigene Zahl
             const decke =
-                r.state.atmosphere && Number.isFinite(r.state.atmosphere.shadowRange)
-                    ? r.state.atmosphere.shadowRange
+                st.atmosphere && Number.isFinite(st.atmosphere.shadowRange)
+                    ? st.atmosphere.shadowRange
                     : A.PERF_SHADOW_RANGE_MAX;
             const applied = Number.isFinite(r._shadowRangeApplied) ? r._shadowRangeApplied : decke;
             out.maxFarIstReichweite = Math.abs(csm.maxFar - applied * F) < 1e-6;
@@ -1084,7 +1084,7 @@ async function checkBandV18130CsmShadow({ page, check }) {
 async function checkBandV18132FerneSeen({ page, check }) {
     const res = await safeEvaluate(page, async () => {
         const out = {};
-        if (!r.state.hydrosphere || !r.state.hydrosphere.ready) {
+        if (!st.hydrosphere || !st.hydrosphere.ready) {
             out.unmeasurable = true; // Welt zu jung — unmessbar = bestanden (V13.1)
             return out;
         }
@@ -1101,7 +1101,7 @@ async function checkBandV18132FerneSeen({ page, check }) {
         };
         const before = fp();
         await window.__weltDa(() => !r._ensureHydroTilesAround(-2048, 0, 10)); // Kachel WEST (-1,0) aus dem Faden
-        const tile = r.state.hydroTiles ? r.state.hydroTiles.get("-1,0") : null;
+        const tile = st.hydroTiles ? st.hydroTiles.get("-1,0") : null;
         out.tileBuilt = !!(tile && tile.ready);
         out.tileSubstanz = tile ? tile.fluesse + tile.seen : 0;
         out.homeIdentical = fp() === before;
@@ -1109,7 +1109,7 @@ async function checkBandV18132FerneSeen({ page, check }) {
         // und jeder Kachel. K16: das Band kannte nur die Seen (23,7 m), die Flüsse der Landform steigen bis 55 m — der
         // Zell-Bau ließ jede Fluss-Zelle über dem Band AIR (Heimat 344 von 549 Segmenten ohne gezeichnetes Wasser).
         let maxSpiegel = -Infinity;
-        for (const h of [r.state.hydrosphere, ...(r.state.hydroTiles ? r.state.hydroTiles.values() : [])]) {
+        for (const h of [st.hydrosphere, ...(st.hydroTiles ? st.hydroTiles.values() : [])]) {
             if (!h) continue;
             for (const lk of h.lakes || [])
                 if (Number.isFinite(lk.level) && lk.level > maxSpiegel) maxSpiegel = lk.level;
@@ -1117,8 +1117,8 @@ async function checkBandV18132FerneSeen({ page, check }) {
                 for (const p of fl.points || []) if (Number.isFinite(p.S) && p.S > maxSpiegel) maxSpiegel = p.S;
         }
         out.maxSpiegel = maxSpiegel;
-        out.bandTop = r.state.hydroBand ? r.state.hydroBand.top : null;
-        out.bandCovers = !Number.isFinite(maxSpiegel) || (r.state.hydroBand && r.state.hydroBand.top >= maxSpiegel);
+        out.bandTop = st.hydroBand ? st.hydroBand.top : null;
+        out.bandCovers = !Number.isFinite(maxSpiegel) || (st.hydroBand && st.hydroBand.top >= maxSpiegel);
         // die Leser der Kachel im Haupt-Faden misst gate:worker-dichte `--kern` (am See in seiner Kachel)
         const cfg = r._voxelChunkConfig(0);
         // DER WORKER SPIEGELT DIE KACHEL (Lehre 7), auch ein nach ihr geborener (`_getVoxelWorker` bestellt sie ihm): bit-gleich.
@@ -1126,16 +1126,16 @@ async function checkBandV18132FerneSeen({ page, check }) {
         const p = fl ? fl.points[fl.points.length >> 1] : { x: -2048, z: 0 };
         const cx = Math.floor(p.x / cfg.span);
         const cz = Math.floor(p.z / cfg.span);
-        const g = [cx * cfg.span - cfg.step, (r.state.terrainBaseHeight || 0) - cfg.floorDrop, cz * cfg.span - cfg.step];
+        const g = [cx * cfg.span - cfg.step, (st.terrainBaseHeight || 0) - cfg.floorDrop, cz * cfg.span - cfg.step];
         g.push(cfg.dim + 3, cfg.dimY, cfg.dim + 3, cfg.step);
         const main = r._voxelEditedDensityGrid(`ferne-seen|${cx},${cz}`, ...g);
-        r.state.voxelBaseDensityCache.delete(`ferne-seen|${cx},${cz}`);
-        const alt = r.state.voxelWorker;
-        r.state.voxelWorker = null;
+        st.voxelBaseDensityCache.delete(`ferne-seen|${cx},${cz}`);
+        const alt = st.voxelWorker;
+        st.voxelWorker = null;
         const neu = r._getVoxelWorker();
         const wk = await r._voxelWorkerComputeDensity(...g).catch((e) => String(e));
         neu.terminate();
-        r.state.voxelWorker = alt;
+        st.voxelWorker = alt;
         const bits = (a) => new Uint32Array(a.buffer, a.byteOffset, a.length);
         out.workerMirror =
             !wk || typeof wk === "string" ? String(wk) : main.length === wk.length && bits(main).every((v, i) => v === bits(wk)[i]);
@@ -1171,15 +1171,15 @@ async function checkBandV18132FerneSeen({ page, check }) {
 async function checkBandV18150Ride({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
-        const pm = r.state.playerMesh.position;
-        const savedMounted = r.state.player.mountedArch;
+        const pm = st.playerMesh.position;
+        const savedMounted = st.player.mountedArch;
         let entry = null;
         try {
             // AUSLÖSCHUNGS-WELLE — der fahrzeug_wagen-Blueprint fiel; die Wagen-Substanz
             // (KIND_SUBSTANCE, parts + connections) trägt die Fahr-Tiefe als Test-Blueprint.
-            const KSr = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
-            if (r.state.blueprints._t_ride_wagen) delete r.state.blueprints._t_ride_wagen;
-            r.state.blueprints._t_ride_wagen = {
+            const KSr = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
+            if (st.blueprints._t_ride_wagen) delete st.blueprints._t_ride_wagen;
+            st.blueprints._t_ride_wagen = {
                 name: "_t_ride_wagen",
                 parts: JSON.parse(JSON.stringify(KSr.fahrzeug_wagen.parts)),
                 connections: JSON.parse(JSON.stringify(KSr.fahrzeug_wagen.connections || [])),
@@ -1222,14 +1222,14 @@ async function checkBandV18150Ride({ page, check }) {
             // die Kapsel mitten in einer Box des gerittenen Wagens bleibt stehen, ohne Sattel schiebt dieselbe Box sie hinaus
             const b = entry.blockerAABBs && entry.blockerAABBs[0];
             const schub = (id) => {
-                r.state.player.mountedArch = id;
+                st.player.mountedArch = id;
                 const k = { x: (b.minX + b.maxX) / 2, z: (b.minZ + b.maxZ) / 2 };
-                r._stepCharacterStructures(k, b.botY - 1, b.topY + 1, r.constructor.PLAYER_WALL_RADIUS, null, null);
+                r._stepCharacterStructures(k, b.botY - 1, b.topY + 1, AnazhRealm.PLAYER_WALL_RADIUS, null, null);
                 return Math.hypot(k.x - (b.minX + b.maxX) / 2, k.z - (b.minZ + b.maxZ) / 2);
             };
             const schubImSattel = b ? schub(entry.id) : NaN;
             const schubOhne = b ? schub(null) : NaN;
-            r.state.player.mountedArch = entry.id;
+            st.player.mountedArch = entry.id;
             out.collisionRests = !!b && schubImSattel === 0 && schubOhne > 0;
             out.kapselSchub = `im Sattel ${schubImSattel} m · ohne ${schubOhne} m`;
             out.profileConsumed = r._mountedVehicleProfile() === prof;
@@ -1239,16 +1239,16 @@ async function checkBandV18150Ride({ page, check }) {
             // (4) das Gefährt fährt in seine Bug-Richtung + die Räder rollen (Phase ∝ Weg).
             // ein Werk mit vier Rädern trägt das Fahr-Gesetz (exportDrive aus seiner Hülle) und fährt den
             // EINEN Fahr-Schritt des Kerns im ECHTEN Sim-Schritt (W gehalten); die Pose zeichnet der Frame.
-            for (const k of ["w", "a", "s", "d", "shift"]) r.state.keys[k] = false;
-            r.state.keys.w = true;
+            for (const k of ["w", "a", "s", "d", "shift"]) st.keys[k] = false;
+            st.keys.w = true;
             let tSim = 1000;
             for (let i = 0; i < 30; i++) {
                 tSim += 1 / 60;
                 r._stepFixedSim(tSim, 1 / 60);
                 r._tickMountedMovement(1 / 60);
             }
-            r.state.keys.w = false;
-            const vFahrt = r.state.playerVel;
+            st.keys.w = false;
+            const vFahrt = st.playerVel;
             const yawTarget = Math.atan2(vFahrt.x(), vFahrt.z());
             out.orients =
                 Number.isFinite(entry._rideYaw) &&
@@ -1261,17 +1261,17 @@ async function checkBandV18150Ride({ page, check }) {
                 `v ${Math.hypot(vFahrt.x(), vFahrt.z()).toFixed(2)} m/s · Bug ${(+entry._rideYaw).toFixed(3)} · Fahrt ` +
                 `${yawTarget.toFixed(3)} · Bild ${entry.mesh ? (+entry.mesh.rotation.y).toFixed(3) : "-"} · Rad-Phase ` +
                 `${(+(entry._ridePhase || 0)).toFixed(2)}`;
-            r.state.playerVel.setValue(0, 0, 0);
-            r.state._fieldVy = 0;
+            st.playerVel.setValue(0, 0, 0);
+            st._fieldVy = 0;
             // (7) Absteigen: die Kollision darf lazy wiederkommen (kein Dauer-Skip).
             r.dismountArchitecture();
-            out.dismounts = r.state.player.mountedArch === null;
+            out.dismounts = st.player.mountedArch === null;
             // der Spieler steht danach, wo ihn die folgenden Bänder erwarten (der Aufstieg setzte ihn an den alten Ort)
             pm.set(pmAlt.x, r.getTerrainHeightAt(pmAlt.x, pmAlt.z) + 1, pmAlt.z);
         } finally {
             if (entry) r.removeArchitecture(entry);
-            delete r.state.blueprints._t_ride_wagen;
-            r.state.player.mountedArch = savedMounted === undefined ? null : savedMounted;
+            delete st.blueprints._t_ride_wagen;
+            st.player.mountedArch = savedMounted === undefined ? null : savedMounted;
         }
         return out;
     });
@@ -1295,18 +1295,18 @@ async function checkBandV18150Ride({ page, check }) {
 
 async function checkBandGammaGenese({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
-        const origGen = r.state.worldMeta ? r.state.worldMeta.genVersion : undefined;
+        const origGen = st.worldMeta ? st.worldMeta.genVersion : undefined;
         try {
-            if (!r.state.worldMeta) r.state.worldMeta = {};
-            r.state.worldMeta.genVersion = 2;
+            if (!st.worldMeta) st.worldMeta = {};
+            st.worldMeta.genVersion = 2;
             // (1) Struktur: Konstanten frozen.
             out.struct = Object.isFrozen(A.FEUCHTE);
             // (2) FEUCHTE am ECHTEN Fluss: der Senkrecht-Walk findet die Bank
             // (erste Land-Zelle neben der Mittellinie) — dort muss das Feld
             // mindestens den schilf-floor tragen; Legacy-Tor an derselben Stelle.
-            const hydro = r.state.hydrosphere;
+            const hydro = st.hydrosphere;
             const rivers = hydro && Array.isArray(hydro.rivers) ? hydro.rivers : [];
             out.rivers = rivers.length;
             let bank = null;
@@ -1340,9 +1340,9 @@ async function checkBandGammaGenese({ page, check }) {
             out.bankFound = !!bank;
             if (bank) {
                 out.feuchteBank = r._feuchteAt(bank.x, bank.z, bank.sy);
-                r.state.worldMeta.genVersion = 1;
+                st.worldMeta.genVersion = 1;
                 out.feuchteLegacy = r._feuchteAt(bank.x, bank.z, bank.sy);
-                r.state.worldMeta.genVersion = 2;
+                st.worldMeta.genVersion = 2;
             }
             // (3) Affinitäts-KONSUM kontrolliert: DERSELBE Punkt, feuchte 1 vs 0 → Δ = tags.lebendig × Gewicht/4,
             // exakt und welt-zustands-unabhängig. Punkt mit unsaturierter Basis wählen (der [0,1]-Clamp fräße Δ).
@@ -1404,9 +1404,9 @@ async function checkBandGammaGenese({ page, check }) {
             const snap = r.buildStateSnapshot();
             out.snapGen = snap && snap.worldMeta ? snap.worldMeta.genVersion : null;
         } finally {
-            if (r.state.worldMeta) {
-                if (origGen === undefined) delete r.state.worldMeta.genVersion;
-                else r.state.worldMeta.genVersion = origGen;
+            if (st.worldMeta) {
+                if (origGen === undefined) delete st.worldMeta.genVersion;
+                else st.worldMeta.genVersion = origGen;
             }
         }
         return out;
@@ -1426,7 +1426,7 @@ async function checkBandGammaGenese({ page, check }) {
     );
     // Γ1-Lesart-4 BODEN-ATMET: die Feuchte zieht die EINE Boden-Farbe zur feuchten Erde (BODEN_FARBE.wet) — am Ruf gemessen.
     const zugNass = await safeEvaluate(page, () => {
-        const pm = r.state.playerMesh.position;
+        const pm = st.playerMesh.position;
         const y = r._voxelSurfaceY(pm.x, pm.z) ?? pm.y;
         const farbe = (f) => {
             r._feuchteAt = () => f;
@@ -1438,7 +1438,7 @@ async function checkBandGammaGenese({ page, check }) {
         };
         const c0 = farbe(0);
         const c5 = farbe(0.5); // = LICHEN.feuchteLo: die Flechte bleibt 0, nur die feuchte Erde mischt
-        const w = r.constructor.BODEN_FARBE.wet;
+        const w = AnazhRealm.BODEN_FARBE.wet;
         return [0, 1, 2].reduce((sum, i) => sum + (c5[i] - c0[i]) * (w[i] - c0[i]), 0);
     });
     check(`Γ1-Lesart-4 die Feuchte zieht die Boden-Farbe zur feuchten Erde (Zug ${zugNass})`, zugNass > 0);
@@ -1532,7 +1532,7 @@ async function checkBandGammaGenese({ page, check }) {
 // Math-Probe der Formel + Source-Probe in Main + Worker (V17.100-Bit-Vertrag).
 async function checkBandV18199GammaMLichen({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
 
         // (L1) die LICHEN-Konstanten
@@ -1620,7 +1620,7 @@ async function checkBandV18199GammaMLichen({ page, check }) {
 // packt (packedDirt, Main ↔ Worker bit-identisch) + das Gras weicht. Proben: KONSUM + Feld-Logik.
 async function checkBandWahrerAnblickPfade({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
 
         // (A) Logik: fern jeden Flusses → kein Pfad
@@ -1688,7 +1688,7 @@ async function checkBandWahrerAnblickPfade({ page, check }) {
 async function checkBandSeamNormal({ page, check }) {
     const out = await safeEvaluate(page, () => {
         const { dim, step, span, dimY, floorDrop } = r._voxelChunkConfig(0);
-        const oy = (r.state.terrainBaseHeight || 0) - floorDrop;
+        const oy = (st.terrainBaseHeight || 0) - floorDrop;
         const fullSample = (x, y, z) => r._terrainDensityAt(x, y, z);
         const build = (cx, cz) => r._voxelChunkGeometry(cx * span - step, oy, cz * span - step, dim + 3, dimY, dim + 3, step, fullSample, 1, null, 1);
         const q = (v) => Math.round(v * 1e5) / 1e5;
@@ -2343,7 +2343,7 @@ async function checkBandTodZensus({ page, check }) {
 // als Sprint × TAKT_DECKEL_S; Selbsttests: die gepinnte Position und der fehlende Takt-Deckel werden rot, dieser an JEDEM Wolf (W10).
 async function checkBandBewegungUnterLast({ page, check }) {
     const out = await safeEvaluate(page, async (selftest) => {
-        const s = r.state;
+        const s = st;
         const mesh = s.playerMesh;
         if (!mesh || !s.playerVel) return { error: "kein Spieler" };
         const span = r._voxelChunkConfig(0).span;
@@ -2456,7 +2456,7 @@ async function checkBandBewegungUnterLast({ page, check }) {
         // Vier Wölfe laufen auf den stehenden Spieler zu; im ersten Takt nach der Pause trägt kein Tier weiter als
         // sein Sprint (Steuer-Gesetz: sprintTempo der Hüft-Höhe) × den Takt-Deckel. deckelAus (Selbst-Test) hebt
         // den Deckel auf — der ungedeckelte Takt (Tempo × Pause) MUSS die Linse rot machen.
-        const K = r.constructor;
+        const K = AnazhRealm;
         const pauseLauf = (deckelAus) => {
             resetSim(nearSpot);
             s.keys = {};

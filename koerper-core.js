@@ -788,7 +788,14 @@
     //     Kinn — jede Hülle über ihnen verschluckte den Hals).
     //   kopfHaut: Raster und Verrundung im Kopf-Raum (1 Einheit ≈ 0,21 m: 5,5 mm, 12 mm — das Budget koerper L0 hält),
     //     mundSpalt = halbe Breite der Mund-Linie als Anteil des Abstands der Lippen-Mitten · hoehleSaum = wie weit (in
-    //     Halbachsen über ihrem Rand) die Haut um das Auge den Ton der Höhle trägt (A4: sie liegt unter der Haut) · handHaut: Raster und
+    //     Halbachsen über ihrem Rand) die Haut um das Auge den Ton der Höhle trägt (A4: sie liegt unter der Haut) · brauSaum =
+    //     [seitlich, Höhe] wie weit über ihre Haare hinaus die Haut den Ton der Braue trägt (mensch.K4) · brauBogen = der Bogen
+    //     unter der Braue trägt keinen Ton der Höhle (die Haut zwischen Brauen-Haar und Lid-Falte, ~8 mm: auf 6 m ein Bildpunkt —
+    //     vorher grenzte die dunkle Höhle an die helle Braue, und ihr Ring las im Bild die Braue) · verdeckung = was die
+    //     Haut selbst verdeckt, empfängt weniger Licht (mensch.K4: die Falte unter der Nase, die Mund-Linie, der Winkel des Auges;
+    //     das Feld der Haut entlang seines Gradienten und, um `oben` zur Hoch-Achse gekippt, unter dem, was über ihr hängt —
+    //     der Brauen-Bogen über der Höhle, die Nase über der Oberlippe —, je in `stufen` Schritten von `schritt`, im Mittel der
+    //     beiden Strahlen × `staerke` (2: jeder Strahl ganz), über `frei` der Ton genau) · handHaut: Raster und
     //     Verrundung im Körper-Raum (1 Einheit ≈ 0,29 m: 3,5 mm, 6 mm; die Welt bewegt die Finger nicht).
     //   K57 (KOPF_SOLL): kopf.mass 0,72 → 0,75 (8,05 → 7,6 Köpfe) · auge.abstand 0,7 → 0,8 (die Lücke eine Augenbreite) ·
     //     auge.zurueck = der Augapfel tiefer in der Höhle (er stand 0,056 kH vor der Haut) · schaedel.hoch = die Kalotte
@@ -804,6 +811,18 @@
     //     darüber und darunter. gesicht.mundTiefer = der Mund (Lippen, Philtrum, Mundwinkel, Oberkiefer-Mitte) tiefer:
     //     die Nasen-Basis saß AUF der Oberlippe (sn–sto 0,19 von sn–gn statt 0,31–0,33, Farkas) — die Oberlippe lag im
     //     Schatten unter der Nase und hinter ihr (im Bild Δa* 0,7).
+    //   mensch.K4 (das Gesicht auf 6 m): auge.iris = die Iris kreisförmig (hoch 1 → 0,8 wie ihre Breite: sie stand als Oval 14,4 mm
+    //     hoch über 11,6 mm breit, Farkas 11,7 mm rund) und um `vor` nach vorn, bis ihr freier Teil 11,4 mm misst (die Pupille
+    //     folgt ihr) — auf 6 m reichte die Iris ±0,86 px um ihre Mitte bis an die Zeilen der Lider · auge.schatten = das Lid
+    //     beschattet den Augapfel: Sklera und Iris tragen unter dem Lid `tief` ihres Tons, im Saum (Augen-Raum, über dem
+    //     Lid-Rand) weich auf ihren Ton (die Verschattung durch Lid und Wimpern, die das Licht nie zeichnet: die Kaskade wirft im
+    //     Gesicht keinen Millimeter) · auge.lidRand = der Rand des Lids am Augapfel (die Wimpern-Linie, die Falte zwischen Lid
+    //     und Auge): die Haut des Lids trägt `tief` ihres Tons, wo sie den Augapfel berührt, im Saum weich auf ihn — vorher lag
+    //     das Unterlid als heller Sims in der Mittags-Sonne (L* 30 über der Wange im Schatten, 8–13) und nahm der Iris ihre
+    //     untere Zeile; der Saum 3 → 6 mm, `tief` 0,35 → 0,25 (die Haut des Unterlids unter der Wölbung des Augapfels: auf 6 m
+    //     las sein Sims noch L* 25 und gewann den Bildpunkt unter der Iris) · auge.zurueck 0,04 → 0,03 (der Augapfel 2 mm vor,
+    //     augenVorstand 0,024 → 0,032: auf 6 m deckte die Haut des inneren Augenwinkels zwei der sechs Bildpunkte der Iris,
+    //     augeFrei 0,76) · kopfHaut.mundSpalt 0,35 → 0,45 (die Mund-Linie trägt auf 6 m einen Bildpunkt).
     // prettier-ignore
     var MENSCH_GESTALT = Object.freeze({
         hand: Object.freeze({ mass: 0.67, breite: 0.8 }),
@@ -811,7 +830,9 @@
         handgelenk: Object.freeze({ breite: 0.72, tiefe: 0.52 }),
         fuss: Object.freeze({ laenge: 0.9 }),
         kopf: Object.freeze({ mass: 0.75, breite: 0.86 }),
-        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.04, lid: Object.freeze([0.045, 0.035]) }),
+        auge: Object.freeze({ mass: 0.5, abstand: 0.8, pupille: 0.55, hoehle: 1.15, zurueck: 0.03, lid: Object.freeze([0.045, 0.035]),
+            iris: Object.freeze({ hoch: 0.8, vor: 0.09 }), schatten: Object.freeze({ saum: 0.015, tief: 0.15 }),
+            lidRand: Object.freeze({ saum: 0.06, tief: 0.25 }) }),
         schaedel: Object.freeze({ hoch: 0.08 }),
         ohr: Object.freeze({ mass: 0.755, tiefer: 0.082 }),
         augeRaster: Object.freeze({ w: 12, h: 8 }),
@@ -819,7 +840,8 @@
             brauHoch: 0.028, kiefer: 0.72, kieferBreite: 0.78, kieferTiefe: 0.85, kinnZurueck: 0.04, unten: 0.84,
             mundTiefer: 0.035 }),
         rumpf: Object.freeze({ brustkorb: 0.52, nacken: 0.7 }),
-        kopfHaut: Object.freeze({ vox: 0.026, blend: 0.055, mundSpalt: 0.35, hoehleSaum: 0.8 }),
+        kopfHaut: Object.freeze({ vox: 0.026, blend: 0.055, mundSpalt: 0.45, hoehleSaum: 0.8, brauSaum: Object.freeze([0.05, 0.008]),
+            brauBogen: 0.04, verdeckung: Object.freeze({ schritt: 0.05, stufen: 4, staerke: 2, frei: 0.97, oben: 1 }) }),
         handHaut: Object.freeze({ vox: 0.012, blend: 0.02 }),
     });
     // DAS SOLL in Zahlen (gate:mensch-anatomie, normiert auf die Körperhöhe Hk; Bänder um den erwachsenen Mann):
@@ -852,12 +874,15 @@
     //   · haarDeckung = Anteil der Kopf-Haut über der Haarlinie (0,80 kH über dem Kinn, das Trichion), die das Haar
     //   als VOLUMEN trägt (Stil mittel; die Strähnen sind sein Rand, nie der Fleck auf der Glatze) · kopfDreiecke =
     //   der Kopf-Anteil der L0-Zeile 40 000 (Haut, Höhlen, Augen, Lider, Haar).
+    //   mensch.K4 (das Gesicht auf 6 m): brauKontrast = |ΔL*| des Brauen-Tons gegen die Haut (die Braue ist Fläche, nie fünf
+    //   Striche unter einem Bildpunkt).
     // prettier-ignore
     var KOPF_SOLL = Object.freeze({
         kopfAnteil: [0.127, 0.14], augenLinie: [0.45, 0.53], augenSpalt: [0.9, 1.25], mundZuPupille: [0.78, 1.0],
         ohrOben: [-0.02, 0.1], ohrUnten: [-0.06, 0.03], ohrLaenge: [0.23, 0.3], augenVorstand: [0.01, 0.035], augeFrei: [0.9, 1.0],
         lippeL: [-14, -4], lippeA: [4, 14], hoehleL: [-12, 0], hoehleA: [-2, 6], hautAlbedo: [0.05, 0.62],
         haarDeckung: [0.9, 1.0], kopfDreiecke: [0, 12000], haarLinie: 0.8,
+        brauKontrast: [8, 80],
     });
 
     // DIE TÖNE DES GESICHTS (K57, KOPF_SOLL lippe/hoehle): Lippe und Augenhöhle sind die HAUT, in CIELAB verschoben
@@ -865,7 +890,19 @@
     // gleich für jeden Hautton. Der Ofen liest kopfToene(Haut-Hex) → { lips, socket } (Hex, sRGB). A4: die Lippe −11/+13 (vorher
     // −9/+9 — im Bild der Mahagoni-Haut im Schatten trägt das Licht rund ein Viertel des Albedo-Δa* (+10 → +0,7 bei
     // freigelegter Oberlippe +2,5, +13 → +3,6, ohne den Saum-Überschuss +5,2); im Band des Albedos [4; 14] bleibt sie).
-    var KOPF_TON = Object.freeze({ lippe: Object.freeze([-11, 13, 2]), hoehle: Object.freeze([-6, 2, 1]) });
+    // mensch.K4: die Braue ist das Haar über der Haut (`brauTon`, Deckung linear) · die Höhle −6 → −8 (im Bild auf 6 m trug der
+    // Ring um das Auge den Schimmer der Sklera: hoehleL −0,44 headless, +0,28 GTX gegen ≤ 0), Δa* +2 → +5 (die dünne Haut um das
+    // Auge ist röter als die Wange; auf 6 m mischten Sklera und Iris ihr Rot weg, hoehleA −2,3 gegen ≥ −2) · die Mund-Linie ist
+    // die dunkle ROTE Innenlippe (`mundLinie`, je Kanal ein Anteil der Lippe; vorher [0,25, 0,2, 0,2] — dunkel ohne Rot; 0,4 →
+    // 0,6 im Rot: im Schatten der Nase trug der Mund auf 6 m nur Δa* 1,8 über der Wange, Soll ≥ 4; 0,75 hob Δa* auf 3,7 und
+    // ΔL* auf −3,3 — Rot und Dunkel des Munds tauschen auf 6 m gegeneinander) · die Lippe
+    // −11 → −13 (auf 6 m mischt jeder Bildpunkt des Munds die Wange hinein: −11 las −2,7 gegen die Wange, Soll ≤ −4)
+    var KOPF_TON = Object.freeze({
+        lippe: Object.freeze([-13, 13, 2]),
+        hoehle: Object.freeze([-8, 5, 1]),
+        braue: Object.freeze({ deckung: 0.75 }),
+        mundLinie: Object.freeze([0.6, 0.2, 0.2]),
+    });
     function _hexLab(hx) {
         var c = [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map(function (v) {
             v /= 255;
@@ -923,6 +960,70 @@
             SH = MENSCH_GESTALT.schaedel.hoch;
         var sy = 1.12 + SH / (2 * r);
         return [{ c: [0, P.skullCY + SH / 2 + t[1], -t[2]], r: r, sc: [1 + t[0], sy + t[0], 1 + t[0]] }];
+    }
+
+    // DIE TÖNE DES MENSCHEN (mensch.K4, rein additiv) — DIE FARBE FOLGT DEM SAMEN. Jede Ecke eines gegossenen Menschen trägt
+    // ihren TON (`aTon`, der Ofen stempelt ihn je Ecke): den Eintrag der Palette, aus dem ihre Farbe kommt — die Haut und ihre
+    // Töne (Lippe, Höhle, Braue), das Haar, jede Kleid-Zone in der Reihe von kleidZonen, das Feste (Augapfel, Iris, Pupille).
+    // DIE PALETTE eines Menschen (`menschPalette`, linear, 3 Werte je Ton) ist die EINE Quelle seiner Farben: der Ofen gießt
+    // mit ihr, und wer eine Gestalt in den Farben eines anderen Samens zeichnet (die Bewohner einer Gestalt: Leib, Satz, Feld),
+    // skaliert jede Ecke mit dem Verhältnis seiner Palette zu der der Gestalt — der Mund-Spalt und der Wurzel-Verlauf der
+    // Strähnen sind Vielfache ihres Tons und bleiben es. Bis mensch.K4 trug jeder Bewohner die Farben seiner Gestalt: vier
+    // Typen, vier Kleider, 17 von 1 225 Paaren unter 1 px.
+    var MENSCH_TON = Object.freeze(["haut", "lippe", "hoehle", "braue", "haar", "kleid0", "kleid1", "kleid2", "fest"]);
+    // der Ton einer Stoff-Klasse des Baums: skin · joint · shadow · dark · haut sind Haut, lips · socket ihre Töne, braue die Braue,
+    // hair und die Haar-Kappe das Haar, die Kleid-Zone (`zone`, ihr Platz in kleidZonen) ihr Eintrag; das Auge (eye · iris ·
+    // pupil) ist fest
+    function menschTon(klasse, zone) {
+        if (typeof zone === "number" && zone >= 0) return Math.min(2, zone) + 5;
+        if (klasse === "lips") return 1;
+        if (klasse === "socket") return 2;
+        if (klasse === "braue") return 3;
+        if (klasse === "hair" || klasse === "haarKappe") return 4;
+        if (klasse === "eye" || klasse === "iris" || klasse === "pupil" || klasse === "cornea") return 8;
+        return 0;
+    }
+    // DIE BRAUE (mensch.K4 Staffel 1, das Gesicht auf 6 m): die Haut unter den Brauen-Haaren trägt den Ton der Braue — von fern
+    // ist die Braue das Mittel ihrer Haare über der Haut (Deckung `KOPF_TON.braue`, linear), nie fünf Striche unter einem
+    // Bildpunkt. Hex (sRGB) wie kopfToene.
+    function brauTon(hautHex, haarHex) {
+        var a = _hexLin(hautHex),
+            b = _hexLin(haarHex),
+            k = KOPF_TON.braue.deckung;
+        return _linHex([a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k]);
+    }
+    function _hexLin(hx) {
+        return [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map(function (v) {
+            v /= 255;
+            return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+        });
+    }
+    function _linHex(c) {
+        var h = 0;
+        for (var i = 0; i < 3; i++) {
+            var v = Math.min(1, Math.max(0, c[i]));
+            v = v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+            h = h * 256 + Math.round(v * 255);
+        }
+        return h;
+    }
+    // die Palette (Float-Reihe, MENSCH_TON.length × 3, linear wie der Guss): Haut und Haar als Hex des Gusses (der Farb-Münzer des
+    // Wirts reicht sie, sonst die Wahl der Dials), die Kleid-Zonen aus kleidZonen(dials); eine fehlende Zone und das Feste sind 1
+    function menschPalette(dials, hautHex, haarHex) {
+        var d = dials || {};
+        var hs = typeof hautHex === "number" ? hautHex : (SKIN_TONES[d.skinTone] || SKIN_TONES[START_PARAMS.skinTone]).hex;
+        var hh = typeof haarHex === "number" ? haarHex : (HAIR_COLORS[d.hairColor] || HAIR_COLORS[START_PARAMS.hairColor]).base;
+        var kt = kopfToene(hs);
+        var zonen = kleidZonen(d);
+        var hexe = [hs, kt.lips, kt.socket, brauTon(hs, hh), hh];
+        for (var z = 0; z < 3; z++) hexe.push(zonen[z] ? zonen[z].hex : null);
+        hexe.push(null);
+        var out = [];
+        for (var i = 0; i < hexe.length; i++) {
+            var c = hexe[i] === null ? [1, 1, 1] : _hexLin(hexe[i]);
+            out.push(c[0], c[1], c[2]);
+        }
+        return out;
     }
 
     // Dial→Genom-Achsen des Menschen (die Lab-Slider-Semantik als DATEN —
@@ -1266,7 +1367,7 @@
         const glabella=s(0.05,matSkin,[0.8,0.6,1.0]);glabella.position.set(0,bY+0.06,0.38);headGroup.add(glabella);
         const browRidge=s(0.15,matSkin,[2.0,0.42,0.72]);browRidge.position.set(0,bY,0.36);headGroup.add(browRidge);
         const AU=MENSCH_GESTALT.auge,aD=eyeDist*AU.abstand,aS=AU.mass*AU.hoehle;[-1,1].forEach(sd=>{const sock=s(0.145*aS,matSocket,[1.0/HEAD_B,0.88,0.50]);sock.position.set(sd*aD/2,eyeY,0.3+0.145*0.5*(1-aS)-AU.zurueck);headGroup.add(sock);});
-        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,1,0.8]);iris.position.z=0.08;e.add(iris);const pupil=s(0.04*AU.pupille,matPupil);pupil.position.z=0.14-0.04*AU.pupille;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lidT=s(0.14,matSkin,[1.15,0.35,0.9]);lidT.position.y=0.07+AU.lid[0];e.add(lidT);const lidB=s(0.14,matSkin,[1.15,0.45,0.95]);lidB.position.y=-0.09-AU.lid[1];e.add(lidB);e.scale.set(AU.mass/HEAD_B,AU.mass,AU.mass);e.position.set(sd*aD/2,eyeY,0.32+0.12*(1-AU.mass)*0.85-AU.zurueck);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
+        [-1,1].forEach(sd=>{const e=F.gruppe();e.add(s(0.12,matEye,[1,1.1,1]));const iris=s(0.07,matIris,[0.8,AU.iris.hoch,0.8]);iris.position.z=AU.iris.vor;e.add(iris);const pupil=s(0.04*AU.pupille,matPupil);pupil.position.z=AU.iris.vor+0.06-0.04*AU.pupille;e.add(pupil);e.add(s(0.13,matCornea,[1,1.1,1]));const lidT=s(0.14,matSkin,[1.15,0.35,0.9]);lidT.position.y=0.07+AU.lid[0];e.add(lidT);const lidB=s(0.14,matSkin,[1.15,0.45,0.95]);lidB.position.y=-0.09-AU.lid[1];e.add(lidB);e.scale.set(AU.mass/HEAD_B,AU.mass,AU.mass);e.position.set(sd*aD/2,eyeY,0.32+0.12*(1-AU.mass)*0.85-AU.zurueck);headGroup.add(e);if(sd<0){eyeL=reg('eyeL',e);irisL=reg('irisL',iris);lidTL=reg('lidTL',lidT);lidBL=reg('lidBL',lidB);}else{eyeR=reg('eyeR',e);irisR=reg('irisR',iris);lidTR=reg('lidTR',lidT);lidBR=reg('lidBR',lidB);}});
         [-1,1].forEach(sd=>{const g=F.gruppe();const bone=reg('cheekbone'+(sd===1?'1':'-1'),s(0.13,matSkin,[1.15,0.52,0.72]));bone.position.set(sd*0.22,eyeY-0.04,0.27);bone.rotation.y=sd*0.12;bone.rotation.z=sd*-0.05;g.add(bone);headGroup.add(g);});
         [-1,1].forEach(sd=>{const b=reg('buccal'+(sd===1?'1':'-1'),s(0.14,matSkin,[0.75*MENSCH_GESTALT.gesicht.wange,0.65*MENSCH_GESTALT.gesicht.wange,0.5*MENSCH_GESTALT.gesicht.wange]));b.position.set(sd*0.18,(cheekY+jawY)/2,0.22);headGroup.add(b);});
         const GS=MENSCH_GESTALT.gesicht;const maxilla=s(0.15,matSkin,[0.75,0.88,0.85*GS.oberkiefer]);maxilla.position.set(0,(lipY+nY)/2,0.325-0.15*0.85*(1-GS.oberkiefer));headGroup.add(maxilla);
@@ -1492,6 +1593,14 @@
         KOPF_SOLL: KOPF_SOLL,
         kopfToene: kopfToene,
         haarKappe: haarKappe,
+        // mensch.K4 — die Schnitte mit Volumen (je Stil die Kappe): die Gestalten einer Siedlung wählen aus ihnen
+        HAAR_KAPPE: HAAR_KAPPE,
+        // mensch.K4 — die Töne des Menschen: der Ton je Stoff-Klasse, die Braue, die Palette (Leser: der Ofen, der Wirt)
+        MENSCH_TON: MENSCH_TON,
+        KOPF_TON: KOPF_TON,
+        menschTon: menschTon,
+        brauTon: brauTon,
+        menschPalette: menschPalette,
         SKIN_TONES: SKIN_TONES,
         CLOTH_COLORS: CLOTH_COLORS,
         // V18.463 — die Hüllen-Maschine (verbatim, THREE-frei):

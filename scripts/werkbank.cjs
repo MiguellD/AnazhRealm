@@ -1414,19 +1414,18 @@ async function starte() {
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
                     // DIE PROBEN DES GESICHTS (`--gesicht`): je Vertex des Kopfs sein Zug (Iris am Gelenk, auf der
-                    // Kopf-Haut der Ton des Ofens, koerper `kopfToene`), projiziert auf den Schirm; `__gesichtMasse` liest das BILD dort,
-                    // wo die Teilung den Teil des Vertex zeigt (abnahme-urteil). Die Töne kommen aus dem Leib selbst (der häufigste
-                    // Vertex-Ton der Kopf-Haut ist die Haut, der der Strähnen das Haar), nie von Hand. Die Maße gehören der Klasse, die
-                    // die Kopf-Haut wählt (mensch-kopf `^spieler:kopf/`); wählt sie sie nicht (haar `^spieler:kopf/hair$`), ist `--gesicht`
-                    // nur die Pose — bis dahin warf jeder Haar-Schuss „keine Kopf-Haut am Gelenk head“ (haar.K2#1 third, beide Geräte).
+                    // Kopf-Haut der Ton seiner Ecke, `aTon` — koerper `menschTon`: Haut, Lippe, Höhle, Haar-Kappe), projiziert auf den
+                    // Schirm; `__gesichtMasse` liest das BILD dort, wo die Teilung den Teil des Vertex zeigt (abnahme-urteil). Die Töne
+                    // kommen aus dem Leib selbst, nie von Hand — bis mensch.K4 aus der Farbe der Ecke, die die Verdeckung der Haut dunkelt.
+                    // Die Maße gehören der Klasse, die die Kopf-Haut wählt (mensch-kopf `^spieler:kopf/`); wählt sie sie nicht (haar
+                    // `^spieler:kopf/hair$`), ist `--gesicht` nur die Pose — bis dahin warf jeder Haar-Schuss „keine Kopf-Haut am Gelenk
+                    // head“ (haar.K2#1 third, beide Geräte).
                     let gesicht = null;
                     if (k.gesicht != null && ["spieler:kopf/haut", "spieler:kopf/skin"].some((n) => re.test(n))) {
                         const T = THREE;
                         const K = window.__koerperCore;
-                        if (!K || typeof K.kopfToene !== "function" || !K.KOPF_SOLL)
-                            throw new Error("--gesicht: koerper-core ohne kopfToene/KOPF_SOLL in der Seite");
-                        const lin = (hx) => [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map(srgbLin);
-                        const hexAus = (c) => c.reduce((h, x) => h * 256 + Math.max(0, Math.min(255, Math.round(linSrgb(x) * 255))), 0);
+                        if (!K || typeof K.menschTon !== "function" || !K.KOPF_SOLL)
+                            throw new Error("--gesicht: koerper-core ohne menschTon/KOPF_SOLL in der Seite");
                         const knochen = (o, i) => {
                             const si = o.geometry.attributes.skinIndex,
                                 sw = o.geometry.attributes.skinWeight;
@@ -1442,40 +1441,12 @@ async function starte() {
                             }
                             return best;
                         };
-                        const modus = (liste) => {
-                            const z = new Map();
-                            for (const c of liste) {
-                                const key = c.map((x) => x.toFixed(3)).join(",");
-                                z.set(key, (z.get(key) || 0) + 1);
-                            }
-                            const best = [...z.entries()].sort((a, b) => b[1] - a[1])[0];
-                            return best ? best[0].split(",").map(Number) : null;
-                        };
-                        const farbe = (o, i) => {
-                            const ca = o.geometry.attributes.color;
-                            return ca
-                                ? [ca.getX(i), ca.getY(i), ca.getZ(i)]
-                                : [o.material.color.r, o.material.color.g, o.material.color.b];
-                        };
-                        const hautVs = [],
-                            haarVs = [];
-                        for (const [n, os] of teile) {
-                            if (!/^spieler:kopf\//.test(n)) continue;
-                            for (const o of os) {
-                                const pa = o.geometry.attributes.position;
-                                for (let i = 0; i < pa.count; i++) {
-                                    if (/\/hair$/.test(n)) haarVs.push(farbe(o, i));
-                                    else if (/\/(haut|skin)$/.test(n) && knochen(o, i) === "head")
-                                        hautVs.push(farbe(o, i));
-                                }
-                            }
-                        }
-                        const hautLin = modus(hautVs),
-                            haarLin = modus(haarVs);
-                        if (!hautLin) throw new Error("--gesicht: keine Kopf-Haut am Gelenk head");
-                        const KT = K.kopfToene(hexAus(hautLin));
-                        const toene = { haut: hautLin, lippe: lin(KT.lips), hoehle: lin(KT.socket) };
-                        if (haarLin) toene.kappe = haarLin;
+                        const ZUG = new Map([
+                            [K.menschTon("skin"), "haut"],
+                            [K.menschTon("lips"), "lippe"],
+                            [K.menschTon("socket"), "hoehle"],
+                            [K.menschTon("haarKappe"), "kappe"],
+                        ]);
                         const v = new T.Vector3();
                         const roh = [];
                         let minY = Infinity,
@@ -1495,15 +1466,9 @@ async function starte() {
                                         z = "iris";
                                         seite = kn;
                                     } else if (kn === "head" && /\/(haut|skin)$/.test(n)) {
-                                        const c = farbe(o, i);
-                                        let bd = 1e-4;
-                                        for (const [t, tc] of Object.entries(toene)) {
-                                            const d = (c[0] - tc[0]) ** 2 + (c[1] - tc[1]) ** 2 + (c[2] - tc[2]) ** 2;
-                                            if (d < bd) {
-                                                bd = d;
-                                                z = t;
-                                            }
-                                        }
+                                        const ta = o.geometry.attributes.aTon;
+                                        if (!ta) throw new Error(`--gesicht: ${n} trägt keinen Ton je Ecke (aTon, koerper menschTon)`);
+                                        z = ZUG.get(Math.round(ta.getX(i))) || null;
                                     }
                                     if (!z) continue;
                                     o.getVertexPosition(i, v);
@@ -1549,10 +1514,8 @@ async function starte() {
                                 kalotte: p.z !== "iris" && p.w.y > yHaar,
                             }));
                         const haarK = namen.map((n, j) => (/^spieler:kopf\/hair$/.test(n) ? j + 1 : 0)).filter(Boolean);
+                        if (!nm) throw new Error("--gesicht: keine Kopf-Haut am Gelenk head");
                         gesicht = __gesichtMasse(u8, teil, W, H, proben, haarK);
-                        gesicht.toene = Object.fromEntries(
-                            Object.entries(toene).map(([t, c]) => [t, hexAus(c).toString(16).padStart(6, "0")])
-                        );
                     }
                     let abstand = null;
                     if (k.abstand) {
@@ -3721,7 +3684,7 @@ hauptLauf(async () => {
         const spitze = cmd === "takt";
         if (SELBST) {
             const f = HL.selbsttest();
-            selbsttestEnde(f, "die Hänger-Linse nennt Takt-Last, Neben-Last, Collector, GPU-Warten nach synchronen Pipelines und den Auftrag des GPU-Prozesses beim Namen, die Takt-Marken legen die Stichproben der Spur auf die Takte; die Takt-Spitze nennt eine 3-ms-Last je 10. Takt allein beim Namen und ist ohne Last GRÜN, in Fahrt ein computeVertexNormals im Takt beim Namen und einen stehenden Wagen");
+            selbsttestEnde(f, "die Hänger-Linse nennt Takt-Last, Neben-Last, Collector, GPU-Warten nach synchronen Pipelines und den Auftrag des GPU-Prozesses beim Namen, die Takt-Marken legen die Stichproben der Spur auf die Takte; die Takt-Spitze nennt eine 3-ms-Last je 10. Takt allein beim Namen und ist ohne Last GRÜN, in Fahrt ein computeVertexNormals im Takt beim Namen und einen stehenden Wagen; die Halter der Ankunft nennen jede Aufgabe ≥ 50 ms vor dem ersten Bild mit Funktion und Datei:Zeile, nie eine danach, und sind blind ROT");
             process.exit(0);
         }
         // `--auswerten <x.roh.json>`: ein gesicherter Lauf neu geurteilt (nur Node — eine andere Schwelle, eine neue Linse)

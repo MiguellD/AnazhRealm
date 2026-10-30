@@ -575,7 +575,7 @@ const KERN_HILFE = `self.__kern = {
 async function kernPlan(page, M, N) {
     return page.evaluate(
         async (MX, MZ, N) => {
-            const zufall = ((z) => (w) => (z() * 2 - 1) * w)(wasserZufall(0x2545f491));
+            const zufall = ((z) => (w) => (z() * 2 - 1) * w)(window.__phytoCore.mulberry32(0x2545f491));
             const { fluss: kanal, see } = await window.__wasserOrte({ mess: [MX, MZ] });
             const hoehle = ((h) => h && { x: h.x, y: h.grund + 1.5, z: h.z })(window.__weltOrt("hoehle", { mitte: [MX, MZ], schritt: 24 }));
             if (!kanal || !see || !hoehle) return { fehler: "keinen Kanal, See oder keine Höhle nahe der Mess-Wiese" };

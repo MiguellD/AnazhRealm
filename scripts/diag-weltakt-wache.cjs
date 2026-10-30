@@ -317,13 +317,7 @@ async function probe(GESCHICKT) {
     aus.ops = Object.keys(r.dslEffects);
     const gruppen = { Orte: Object.keys(r.dslPositions), Bedingungen: Object.keys(r.dslConditions) };
     aus.ki = { prompt: r.llmBuildSystemPrompt(), gruppen };
-    let s = 0x5eed;
-    const rng = () => {
-        s = (s + 0x6d2b79f5) | 0;
-        let x = Math.imul(s ^ (s >>> 15), 1 | s);
-        x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
-        return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
-    };
+    const rng = window.__phytoCore.mulberry32(0x5eed); // der Vorlagen-RNG (phyto-core)
     const ops = new Set(aus.ops);
     const nexusOps = {};
     const lauf = (n) => {

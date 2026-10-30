@@ -18,8 +18,15 @@
 // — nie `_weltbildDa` (die Eigenmeldung steht daneben). Urteil: t ≤ 5 s ohne halbes Weltbild (kalt: Pflicht-OFFEN B; mit
 // `--profil` am Zweit-Boot: die Wiederkehr, ankunft K3). `--bild`: das Bild der Kontrolle gegen dieselbe Pose nach 60 s Ruhe
 // (ankunft K2: ≤ 2 % Lücke, nichts offen im Bild). `--mutante eigenmeldung|bild`: die Schlupflöcher, ROT beim Namen.
-// Ohne `--echt` swiftshader, mit `--echt` die Hardware-GPU (1920×1080).
-//   node scripts/diag-boot-stage.cjs --kalt [--echt] [--profil ordner] [--json datei] [--bild kontrolle.png] [--mutante m]
+// Ohne `--echt` swiftshader, mit `--echt` die Hardware-GPU (1920×1080); `--holz <profil>` setzt das Holz der Seite.
+// DIE SPUR (B, w4-ankunft): die Zeile fährt die EINE Spur der Hänger-Familie (CDP-Trace, CPU-Stichproben jedes Fadens) von der
+// Navigation bis zur Kontrolle und urteilt sie (`ankunftsHalter`, scripts/lib/haenger-linse.cjs): die Phasen (HTML, Skripte, DOM,
+// Buch, der Schluss jedes Terms des ersten Weltbilds, Ring, erstes Lade-Bild, Weltbild, Kontrolle — je mit der belegten Zeit des
+// Haupt-Fadens bis dahin), die längsten Aufgaben vor dem Bild mit ihren HALTERN (Funktion · Datei:Zeile · ms) und die
+// Funktionen vor dem Bild (inklusiv · selbst). DIE HALTER-LINSE ist ROT beim Namen jeder Funktion, die vor dem ersten Bild den
+// Haupt-Faden ≥ 50 ms hält (Selbsttest: `werkbank takt --selbsttest`). `--spur datei` legt Spur und Seite ab, `--spur-lesen
+// datei` urteilt sie neu (ohne Welt).
+//   node scripts/diag-boot-stage.cjs --kalt [--echt] [--holz h] [--profil ordner] [--json datei] [--spur datei] [--bild kontrolle.png] [--mutante m]
 //
 // DIE LIEFER-ZEILE (pipeline.K4 Stufe 1): die Kalt-Zeile liest die Liefer-Marke des Spiels (`_foundryLiefer`: Körper-Aufträge,
 // Antworten von der Platte · im Werk gebaut · leer, Güsse des Haupt-Fadens). Mit `--profil` wartet sie auf die Ruhe der Foundry
@@ -33,6 +40,7 @@
 // es mit Bruch-Daten).
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei } = require("./lib/welt-boot.cjs");
+const HL = require("./lib/haenger-linse.cjs");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
@@ -129,66 +137,50 @@ function wechselUrteil(vor, nach, kern) {
 }
 
 // ── DIE KALT-ZEILE (`--kalt`): die Probe je 200 ms in der Seite, ab dem ersten Skript ──
+// Die Haupt-Thread-Zeit je Sekunde der schweren Ankunfts-Arbeiter liest die Spur (`ankunftsHalter`, Klassen über die Namen der
+// Rahmen; verschachtelt zählt doppelt, nur in der Klasse Pflanzen der Äußere). Bis w4-ankunft wickelte die Probe diese
+// Methoden am Prototyp (zwei Uhr-Rufe je Ruf): die Gestalt des Orts läuft je Takt tausendfach, die Hülle allein trug headless
+// kalt 2,7–4,0 s Selbstzeit vor dem Bild (`P.<computed>`) — das Instrument maß sich selbst mit.
+const KALT_KLASSEN = {
+    _buildVoxelChunkDataFromWorkerMesh: "Boden",
+    _buildVoxelChunkData: "Boden",
+    _scatterRegion: "Streu",
+    _rebuildArchitectureMesh: "Bauten",
+    _foundryBuildGroup: "Gruppen-Bau",
+    _foundryIngestBook: "Buch",
+    _spawnSettlementSlot: "Dorf",
+    // DIE KLASSE PFLANZEN (B): die Saat der Chunks, der Plan des Walds, die Gestalt des Orts — in der Familie zählt der
+    // Äußere (die Gestalt in der Streu ist Streu), ihre Summe bis zum Bild steht in der Klassen-Zeile
+    _populateVoxelChunkVegetation: "Saat",
+    _forestPlantChunk: "Saat",
+    _tickWaldPlan: "Wald-Plan",
+    _ortGestaltSame: "Gestalt",
+};
+const KALT_PFLANZEN = ["Streu", "Saat", "Wald-Plan", "Gestalt"];
 function KALT_PROBE() {
-    const A = (window.__kalt = { proben: [], lang: [] });
+    // `marken`: die Seiten-Uhr jeder Marke `anazh-kalt` — die Spur trägt sie auf ihrer Uhr (der Versatz legt die Proben an)
+    const A = (window.__kalt = { proben: [], lang: [], marken: [] });
     new PerformanceObserver((l) => {
         for (const e of l.getEntries()) A.lang.push([Math.round(e.startTime), Math.round(e.duration)]);
     }).observe({ type: "longtask", buffered: true });
-    let gewickelt = false;
-    // die Haupt-Thread-Zeit je Sekunde der schweren Ankunfts-Arbeiter (synchron gemessen; verschachtelt zählt doppelt, nur in der Klasse Pflanzen der Äußere)
-    A.kosten = {};
-    const KOSTEN = {
-        _buildVoxelChunkDataFromWorkerMesh: "Boden",
-        _buildVoxelChunkData: "Boden",
-        _scatterRegion: "Streu",
-        _rebuildArchitectureMesh: "Bauten",
-        _foundryBuildGroup: "Gruppen-Bau",
-        _foundryIngestBook: "Buch",
-        _spawnSettlementSlot: "Dorf",
-        // DIE KLASSE PFLANZEN (B): die Saat der Chunks, der Plan des Walds, die Gestalt des Orts — in der Familie zählt der
-        // Äußere (die Gestalt in der Streu ist Streu), ihre Summe bis zum Bild steht in der Klassen-Zeile
-        _populateVoxelChunkVegetation: "Saat",
-        _forestPlantChunk: "Saat",
-        _tickWaldPlan: "Wald-Plan",
-        _ortGestaltSame: "Gestalt",
-    };
-    const PFLANZEN = new Set(["Streu", "Saat", "Wald-Plan", "Gestalt"]);
-    A.vorBild = {};
-    let pTief = 0;
     // WANN der Vorrat wartet und bestellt, sagt sein Merker (`f._vorrat`, je Sekunde unten); dass er erst nach dem ersten Bild
     // bestellt, urteilt gate:ankunft L2a — die Kalt-Zeile zählt nur noch die Arbeit vor dem Bild
-    const wickle = (P) => {
-        for (const [name, k] of Object.entries(KOSTEN)) {
-            const alt = P[name];
-            if (typeof alt === "function")
-                P[name] = function (...a) {
-                    const [t0, pf] = [performance.now(), PFLANZEN.has(k)];
-                    const aussen = !pf || !pTief;
-                    pTief += pf;
-                    try {
-                        return alt.apply(this, a);
-                    } finally {
-                        const [t1, z, sek] = [performance.now(), (A.kosten[k] = A.kosten[k] || {}), Math.floor(t0 / 1000)];
-                        pTief -= pf;
-                        if (aussen) z[sek] = (z[sek] || 0) + t1 - t0;
-                        if (pf && aussen && !r.state._weltbildDa) A.vorBild[k] = (A.vorBild[k] || 0) + t1 - t0;
-                        if (name === "_foundryIngestBook" && !A.buchDa) A.buchDa = Math.round(t1);
-                    }
-                };
-        }
-    };
     setInterval(() => {
         const o = { t: Math.round(performance.now()) };
+        A.marken.push(performance.mark("anazh-kalt").startTime);
         if (r && r.state) {
-            if (!gewickelt) {
-                gewickelt = true;
-                wickle(Object.getPrototypeOf(r));
-            }
+            if (!A.buchDa && r._foundry && r._foundry.ready && r._foundry.recipes) A.buchDa = o.t;
             try {
-                o.fehlt = r._weltbildFehlt();
+                const L = r._weltbildLuecken();
+                o.fehlt = L.map((l) => l.satz);
+                o.terme = L.map((l) => l.term);
             } catch (e) {
                 o.fehlt = ["Probe warf: " + e.message];
             }
+            // der Ring (der Boden um den Spieler bis zu seinem Ziel) und das erste gezeichnete Lade-Bild
+            const st = r.state;
+            o.ring = [st._activeRingRadius, st.chunkRingRadius];
+            o.bilder = r._gpuLeine ? r._gpuLeine.gerendert : 0;
             const f = r._foundry;
             if (f) {
                 o.vorrat = f._vorrat || null; // die Phase wörtlich (VORRAT_PHASE), null = steht nicht an oder ist durch
@@ -231,8 +223,17 @@ async function kaltLauf() {
         await page.evaluateOnNewDocument(() =>
             window.__weltDa().then((r) => (r.state._weltbildDa = performance.now()))
         );
+    // DIE SPUR DER ANKUNFT (B): die CPU-Stichproben jedes Fadens ab der Navigation (die EINE Spur der Hänger-Linse,
+    // `spurProfil`), die Marken der Probe legen sie auf die Seiten-Uhr — sie endet mit der Kontrolle
+    const cdp = await page.target().createCDPSession();
+    const ev = [];
+    cdp.on("Tracing.dataCollected", (e) => e.value.forEach((x) => ev.push(x)));
+    await cdp.send("Tracing.start", {
+        traceConfig: { includedCategories: ["blink.user_timing", "disabled-by-default-v8.cpu_profiler"] },
+    });
     const t0 = Date.now();
-    await server.zeige(page, 120000);
+    // `--holz <profil>`: das Holz der Seite (`?holz=`), sonst wählt sie selbst (swiftshader → kienspan)
+    await server.zeige(page, 120000, OPT("--holz") ? `index.html?holz=${OPT("--holz")}` : "index.html");
     // DIE KONTROLLE VON AUSSEN (ankunft K1–K3, nie die Eigenmeldung `_weltbildDa`): der Spieler hält W über das Protokoll des
     // Browsers; je Atem schickt er den Druck neu (Autorepeat — der Ladeschirm hält jede Taste, die erste nach ihm gilt), bis
     // die Taste den Leib um ≥ KONTROLLE_M trägt: t ist die Prozess-Uhr ab Navigation, als der Weg gesehen wurde.
@@ -240,6 +241,9 @@ async function kaltLauf() {
     for (; !tK && druecke++ < KONTROLLE_DRUECKE; await page.keyboard.down("KeyW"))
         if (await page.evaluate(LEIB_WEG, KONTROLLE_M)) tK = Date.now() - t0;
     await page.keyboard.up("KeyW");
+    const spurDa = new Promise((f) => cdp.once("Tracing.tracingComplete", f));
+    await cdp.send("Tracing.end");
+    await spurDa;
     // DAS BILD DER KONTROLLE (`--bild datei.png`, ankunft K2): der Schuss bei t(Kontrolle) aus dem Ausgabe-Pfad
     // (scripts/lib/ausgabe-aufnahme.cjs) und derselbe nach RUHE_MS Ruhe (der Loop läuft), daneben `<datei>-ruhe.png`; dazu der
     // offene Bedarf im Bild in dem Moment (`_weltbildLuecken`, im Blick)
@@ -266,7 +270,15 @@ async function kaltLauf() {
             const i = st.renderer.backend.device.adapterInfo;
             adapter = [i.vendor, i.architecture, i.device, i.description].filter(Boolean).join(" ") || null;
         } catch {}
+        // das Laden der Seite (Navigation und Ressourcen, Seiten-Uhr): HTML da, die Skripte da, DOM bereit
+        const nav = performance.getEntriesByType("navigation")[0] || {};
+        const skripte = performance.getEntriesByType("resource").filter((e) => e.initiatorType === "script");
         return Object.assign({}, window.__kalt, {
+            laden: {
+                html: Math.round(nav.responseEnd || 0),
+                skripte: Math.round(Math.max(0, ...skripte.map((e) => e.responseEnd))),
+                dom: Math.round(nav.domContentLoadedEventEnd || 0),
+            },
             weltbildDa: Math.round(st._weltbildDa),
             holz: st._holzProfil || null,
             version: r.constructor.VERSION,
@@ -282,6 +294,38 @@ async function kaltLauf() {
     await browser.close();
     server.close();
     if (!profilBenannt) fs.rmSync(profil, { recursive: true, force: true });
+    // DIE PHASEN der Ankunft (Seiten-Uhr): das Laden (HTML, Skripte, DOM), das Buch, je Term des ersten Weltbilds sein Schluss
+    // (die erste Probe nach seiner letzten), der Ring an seinem Ziel, das erste Lade-Bild, das Weltbild, die Kontrolle
+    const P0 = out.proben.filter((p) => p.t <= out.weltbildDa);
+    const meilensteine = {
+        "HTML da": out.laden.html,
+        "Skripte da": out.laden.skripte,
+        "DOM bereit": out.laden.dom,
+        "Buch da": out.buchDa,
+    };
+    for (const term of new Set(P0.flatMap((p) => p.terme || []))) {
+        const letzte = P0.findLastIndex((p) => (p.terme || []).includes(term));
+        meilensteine[`${term} steht`] = (P0[letzte + 1] || { t: out.weltbildDa }).t;
+    }
+    meilensteine["Ring am Ziel"] = (out.proben.find((p) => p.ring && p.ring[0] >= p.ring[1]) || {}).t;
+    meilensteine["erstes Lade-Bild"] = (out.proben.find((p) => p.bilder > 0) || {}).t;
+    Object.assign(meilensteine, { Weltbild: out.weltbildDa, Kontrolle: tK || undefined });
+    // DIE HALTER (Hänger-Familie, `ankunftsHalter`): jede Aufgabe ≥ 50 ms vor dem Bild mit ihren Funktionen beim Namen
+    // `--spur datei`: die Spur des Haupt-Fadens (Profil + Marken) und die Seite dazu — `--spur-lesen datei` urteilt sie neu
+    const spur = HL.spurProfil(ev, "anazh-kalt");
+    const seite = {
+        lang: out.lang,
+        marken: out.marken,
+        bis: out.weltbildDa,
+        meilensteine,
+        klassen: KALT_KLASSEN,
+        familie: KALT_PFLANZEN,
+    };
+    if (OPT("--spur") && spur)
+        fs.writeFileSync(OPT("--spur"), JSON.stringify({ spur: { profil: spur.profil, marken: spur.marken }, seite }));
+    out.halter = HL.ankunftsHalter(spur, seite);
+    [out.kosten, out.vorBild] = [out.halter.kosten, out.halter.vorBild];
+    delete out.marken;
     const json = OPT("--json");
     if (json) fs.writeFileSync(json, JSON.stringify(out, null, 1));
     // je Sekunde: der Stand am Ende der Sekunde (die letzte Probe) und die blockierten ms des Haupt-Threads
@@ -326,6 +370,13 @@ async function kaltLauf() {
                 kl.map(([k, ms]) => `${k} ${Math.round(ms)}`).join(" · ") +
                 ")"
         );
+    console.log(HL.ankunftsHalterTafel(out.halter));
+    // DIE HALTER-LINSE (Hänger-Familie, Selbsttest `werkbank takt --selbsttest`): ROT beim Namen jeder Funktion, die vor dem
+    // ersten Bild den Haupt-Faden ≥ ANKUNFT_HALT_MS hält (blind ohne Marken ist sie ROT)
+    const halter = out.halter.befunde;
+    console.log(
+        `  ${halter.length ? "❌" : "✅"} DIE HALTER vor dem ersten Bild: ${halter.slice(0, 6).join(" · ") || "keiner"}`
+    );
     const halb = out.ohne[0];
     const gut = tK > 0 && tK <= ANKUNFT_SOLL_MS && !halb;
     if (halb) console.log(`  ❌ das halbe Weltbild: ${halb}`);
@@ -344,11 +395,15 @@ async function kaltLauf() {
     console.log(`  ${zweit ? (k4.gruen ? "✅ " : "❌ ") : ""}${k4.zeile}`);
     console.log(`  ${zweit ? (k4.artGruen ? "✅ " : "❌ ") : ""}${k4.artZeile}`);
     if (wechsel) console.log(`  ${wechsel.gruen ? "✅" : "❌"} ${wechsel.zeile}`);
-    process.exit(gut && ganz ? 0 : 1);
+    process.exit(gut && ganz && !halter.length ? 0 : 1);
 }
 
 hauptLauf(async () => {
     if (ARGV.includes("--kalt")) return kaltLauf();
+    if (OPT("--spur-lesen")) {
+        const { spur, seite } = JSON.parse(fs.readFileSync(OPT("--spur-lesen")));
+        return console.log(HL.ankunftsHalterTafel(HL.ankunftsHalter(spur, seite)));
+    }
     const SELFTEST = ARGV.includes("--selftest");
     await server.lausche(PORT);
     const { browser, page } = await nullSeite({ frist: 300000 });
