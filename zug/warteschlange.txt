@@ -217,3 +217,4 @@ takt25-gtx 1 punkte sha=952a5603ffec4b4abb496394110f05de166a7ce6 geraet=gtx nur=
 z82b-abab 2 abab A=73bdf9388f22f5c1789e0da5b0c63b6121b045c8 B=952a5603ffec4b4abb496394110f05de166a7ce6 zellen=stadt,w-ego
 takt25-gtx 0 storno
 geraet-raeumen-1 1 station sha=24a0f3eff6051ae954369fd774cce415d1f32dc5 lauf=geraet-raeumen.sh
+z82b-abab 0 storno
