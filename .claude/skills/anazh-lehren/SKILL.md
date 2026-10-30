@@ -92,7 +92,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 12. **Stamm-Chirurgie:** Werkzeug liest den Stamm NUR über `scripts/lib/stamm.cjs` (`text()` = der virtuelle Stamm, `ort()`, `dateiVon()`;
     die alte Datei `anazhRealm.js` ist tot, ein Leser auf ihren Namen ist ROT); ein neues Glied trägt seinen Eintrag in der Modul-Karte, über der
     Decke teilt die Karte das Modul (`Modul/teil`), dann `node scripts/stamm-umzug.cjs --nach-karte`; ein Zweig von vor dem Umzug zieht per
-    `stamm-rehome` um; `cut-method` (AST-sicher) · sofort `diag-atlas --check` + `npm run stamm:lint` · seriell committen, nie Batch;
+    `stamm-rehome` um; jeder Merge vereint Karte, Stamm-Tags und `?v=` je Name im Treiber `merge=register` (die Versions-Stufe
+    `scripts/bump-version.cjs`, je Klon einmal `npm run setup:merge`); `cut-method` (AST-sicher) · sofort `diag-atlas --check` +
+    `npm run stamm:lint` · seriell committen, nie Batch;
     Arbeiter zweigen vom Kopf von integ-probe ab, nie von einem ungemergten R3-Zweig (gestapelte Zweige erben jede Röte).
 13. **Der Loop:** Streaming prio 0, Bewegung nie am Render-Signal; EIN PID, Totband 59–77 fps; NaN-Wand vor jedem EWMA; Existenz vor
     Framerate (der Ring wächst im Strom bis zu seinem Ziel, nie an Bildrate oder Regler, `_ringWaechst`; der PID regelt nur

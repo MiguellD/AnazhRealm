@@ -40,34 +40,9 @@ const gitOk = (root, args) => {
 const gitDir = (root) => path.resolve(root, git(root, ["rev-parse", "--git-dir"]).trim());
 
 // ── der Merge auf dem virtuellen Stamm ────────────────────────────────────────────────────────────────────────────
-// git merge-file auf drei Texten; Labels wie git merge (Kopf-Name, Basis, Zweig-Name). Ergebnis samt Konfliktzahl.
-function mergeText(kopf, basis, zweig, labels, markerSize = 7) {
-    const d = fs.mkdtempSync(path.join(os.tmpdir(), "stamm-rehome-"));
-    try {
-        const [k, b, z] = ["k", "b", "z"].map((n) => path.join(d, n));
-        fs.writeFileSync(k, kopf);
-        fs.writeFileSync(b, basis);
-        fs.writeFileSync(z, zweig);
-        const args = ["merge-file", "-p", "--diff-algorithm=histogram", `--marker-size=${markerSize}`];
-        for (const l of labels) args.push("-L", l);
-        let text;
-        let n = 0;
-        try {
-            text = execFileSync("git", [...args, k, b, z], {
-                encoding: "utf8",
-                ...MB,
-                stdio: ["ignore", "pipe", "pipe"],
-            });
-        } catch (e) {
-            if (!(e.status > 0 && e.status < 128) || typeof e.stdout !== "string") throw e;
-            text = e.stdout;
-            n = e.status;
-        }
-        return { text, n };
-    } finally {
-        fs.rmSync(d, { recursive: true, force: true });
-    }
-}
+// git merge-file auf drei Texten (der EINE Text-Merge, histogram wie merge-ort); Labels wie git merge (Kopf-Name, Basis,
+// Zweig-Name). Ergebnis samt Konfliktzahl.
+const mergeText = (kopf, basis, zweig, labels, groesse = 7) => stamm.textMerge(kopf, basis, zweig, { labels, groesse, histogram: true });
 
 // Die Basis wie merge-ort: eine Merge-Basis → ihr Stamm-Text; mehrere → paarweise rekursiv zur virtuellen Basis.
 function basisText(root, a, b, tiefe = 0) {
