@@ -249,3 +249,5 @@ eich6-gtx 1 station sha=379e5f56ca38fd462a546925d5af562b716d5015 lauf=eich-gtx.s
 eich7-gtx 1 station sha=379e5f56ca38fd462a546925d5af562b716d5015 lauf=eich-gtx.sh
 z83-bisekt5 2 abab A=81ce43926eccd996aa9d4fc76769108def84f4ce B=24a0f3eff6051ae954369fd774cce415d1f32dc5 zellen=w-ego
 z87-abab 3 abab A=6b3da705074d6eacd348a192aecbaeb8d2592495 B=379e5f56ca38fd462a546925d5af562b716d5015 zellen=stadt,w-ego
+eich8-gtx 1 station sha=379e5f56ca38fd462a546925d5af562b716d5015 lauf=eich-gtx.sh
+z83-bisekt6 2 abab A=81ce43926eccd996aa9d4fc76769108def84f4ce B=abb24c37e5eccc8f6ceff03b33acde9ad28fa18e zellen=w-ego
