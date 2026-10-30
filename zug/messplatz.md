@@ -20,7 +20,7 @@ Am 23.10. warteten deshalb vier Aufträge 2 h, während die Sitzung die Serie f�
 
 | art | Schlüssel | tut |
 |---|---|---|
-| `abab` | `A=<sha40> B=<sha40> zellen=w-ego,g-third,d-ego[,stadt,fahrt,sturm]` | die Serie (Folge, Zellen, Größen, Urteil wie `bericht/2310-abab-zug5/serie.sh`, sequentiell, siehe unten), Urteil-Zeile `<B> nicht-langsamer\|LANGSAMER\|UNENTSCHIEDEN <id>` in `zug/abab.txt` |
+| `abab` | `A=<sha40> B=<sha40> zellen=w-ego,g-third,d-ego[,stadt,fahrt,sturm]` | das warme ABAB (Zellen, Größen, Urteil wie `bericht/2310-abab-zug5/serie.sh`, je Zelle ein Boot je Seite, siehe unten), Urteil-Zeile `<B> nicht-langsamer\|LANGSAMER\|UNENTSCHIEDEN <id>` in `zug/abab.txt` |
 | `punkte` | `sha=<sha40> geraet=gtx [nur=<ids>]` | je Zeile von `punkte.cjs gruppen --geraet gtx [--nur …]` (Zwillinge in EINEM Lauf) ein `node meisterkarte-quelle/punkte/punkte.cjs run --sha <sha> --geraet gtx --nur <ids>` aus einem Baum des Zweigs `punkte-maschine`, die Mess-Datei (ohne `*-werk/`) nach `punkte-maschine` |
 | `station` | `sha=<sha40> lauf=<datei unter zug/>` | ein benanntes Skript aus koordination am Baum `<sha>` (Forschung, prio 3) |
 
@@ -39,16 +39,23 @@ Bäume:
 - `git worktree add` am SHA, je SHA einmal, sauber geprüft (`status --porcelain` leer).
 - Keine Hand-Bäume mehr (`n2010-b2a` …).
 
-Unverändert aus `serie.sh` gelten:
-- Schloss (`p3/gpu-schloss.sh`) und Seiten-Wache (Fingerabdruck).
-- `vorfahrt` bei `Runner.Worker`, also hat der echt-Job Vorrang.
-- Nachtruhe, `stopp.ps1` und frischer save-server je Boot.
+Aus `serie.sh` gelten:
+- Schloss (`p3/gpu-schloss.sh`) und `vorfahrt` bei `Runner.Worker` je Mess-Fenster: zwischen zwei Fenstern ist das Schloss frei, der
+  echt-Job hat Vorrang, die warmen Welten schlafen derweil.
+- Seiten-Wache (Fingerabdruck) bei jedem Öffnen der Pforte :4312 und nach jedem Fenster.
+- `stopp.ps1` je Zelle (davor und danach), ein frischer Spielstand je Boot, eine Frist mit HÄNGER-Zeile an jedem Werkbank-Befehl.
 
-**Sequentiell, die GTX-Zeit an der Frage:**
-- Je Zelle zuerst 2+2 (A1 B1 A2 B2).
-- Liegt eine Größe zwischen 1σ und 2σ (gepoolt) oder schlägt der Kern-Richter an, wird nur diese Zelle auf 4+4 verlängert.
-- Sonst steht das Urteil nach 2+2.
-- Das Urteil je Größe lautet Δ ≤ max(2σ, Auflösung), wie bisher.
+**DAS WARME ABAB (30.10., `serie.sh`; vorher bootete jede Seite für jede Messung neu, ein Boot 3,8–7,5 min, davon ~1 min Messung):**
+- Je Zelle bootet jede Seite EINMAL (A, dann B). Danach wechseln die Mess-Fenster in den warmen Welten, in Thue-Morse-Folge
+  A1 B1 B2 A2 (| B3 A3 A4 B4): die GPU bleibt ohne Boot-Pause heiß, jede lineare (und bei 4+4 quadratische) Drift fällt aus A − B.
+- EINE SEITE ZUR ZEIT: die ruhende Welt ist eingefroren und minimiert (`werkzeug/schlaf.cjs`, CDP `Page.setWebLifecycleState`), ihr
+  save-server aus; die gemessene Seite besitzt die Pforte `http://localhost:4312` wie bisher. Eine schlafende Welt altert nicht:
+  Fenster k von A und von B treffen Welten gleichen Alters; jedes Fenster stellt den Ort neu und räumt, was ein Fenster hinterließ.
+- Der Beweis je Fenster steht in `<zelle>-warm.txt` und in der Tabelle: CPU-Sekunden der ruhenden Chrome-Prozesse im Fenster (gegen
+  die gemessene Seite), die längste Stille ihres 1-Hz-Zeitgebers gegen die Dauer ihrer Ruhe, die System-Last je Seite.
+- Liegt nach dem ersten 2+2 eine Größe zwischen 1σ und 2σ (gepoolt) oder schlägt der Kern-Richter an, verlängert die Serie diese Zelle
+  sofort in DENSELBEN Welten auf 4+4; sonst steht das Urteil nach 2+2 (KLAR NACH 2+2 wie bisher).
+- Das Urteil je Größe lautet Δ ≤ max(2σ, Auflösung), wie bisher; σ ist die Streuung der Fenster.
 
 **Bericht:**
 - Die Tabelle der Zellen (wie `2310-abab-zug5.md`, ohne Prosa) wird aus den Roh-Dateien erzeugt.
