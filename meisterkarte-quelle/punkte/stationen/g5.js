@@ -1225,7 +1225,9 @@ const stationen = [
         kriterium: "siedlung.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { ...START_DORF_PROBE,  sek: 33 },
+        // mutiert (w4-linsen-a): die Probe hebt das Start-Dorf (`__anazhAutoSettlement` an, bis seine Zelle steht) — der Bau der Welt
+        // nannte sie (Radeon 379e5f56: werke +14 · orte +start · wege +53)
+        probe: { ...START_DORF_PROBE, mutiert: true, sek: 33 },
         gpu: true,
         zeit: false,
         minuten: 1,
@@ -1501,7 +1503,9 @@ const stationen = [
             "rm -f \"$L/ring.abnahme.json\"",
             "teil BILD $W bild $K --uhr 0.5 --datei \"$L/ring.png\" --w 1600 --h 900",
             "cp \"$L/ring.abnahme.json\" \"$A\" 2> /dev/null; true"
-        ), sek: 33 },
+        // mutiert (w4-linsen-a): der Ort von 1320, sein Haus und 1500 s Welt-Uhr bleiben — ohne das Wort stellte die Sitzung danach nicht
+        // zurück, die nächste Probe stand in seinem Ort (GTX 3ed95dcf, klang.K2#1: archLod 5459 Einträge an der Mess-Wiese, sonst 1297)
+        ), mutiert: true, sek: 33 },
         gpu: true,
         zeit: false,
         minuten: 12,
