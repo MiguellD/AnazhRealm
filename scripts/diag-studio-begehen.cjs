@@ -374,7 +374,7 @@ function b3Zahl(o) {
             }
             z.laeufe++;
             if (c.klemm > 0) z.klemm++;
-            if (c.kopfraum !== null && c.kopfraum !== undefined) {
+            if (c.kopfraum != null) {
                 if (c.kopfraum < z.kopfMin) z.kopfMin = c.kopfraum;
                 if (c.kopfraum < o.PH) z.kopfZu++;
             }
