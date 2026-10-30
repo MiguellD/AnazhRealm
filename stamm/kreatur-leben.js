@@ -1511,17 +1511,35 @@ class AnazhRealm_kreatur_leben {
     // jede Methode beim Namen, die die Oberkante der Säule liest UND die Höhe eines Leibs berührt, ohne als Platzierung
     // (Geburt, Ersteh-Ort, Rettung aus der Leere) benannt zu sein.
     // DAS EIS (stoffe.K3) trägt wie Fels: ein gefrorener Spiegel (`_eisAt`) über der Fels-Grenze ist der Grund.
+    // DIE BRÜCKE (fahrzeug.K2) trägt wie der Grund: die Trittfläche eines Werks unter der Stufe des Körpers (`_trittUeber`, die
+    // Bahn der Jochbrücke) — der Wagen fährt, das Tier und der Bewohner gehen über den Bach, nie durch sein Bett.
     _koerperBodenUnter(x, yRef, z) {
         if (Number.isFinite(yRef)) {
             // eingegraben (der Hang stieg unter dem Schritt): nur eine Stufe aufwärts suchen — tiefer im Fels ist kein
             // Gang (ein Spawn im Gestein), dort trägt die Säule
             const y0 = yRef + AnazhRealm.PLAYER_STEP_UP;
             const g = this._koerperGrund(x, y0, z, this._fieldSolid(x, y0, z) ? 2 : 40);
-            if (g !== null) return g;
+            if (g !== null) return this._trittUeber(x, z, g, y0);
         }
         const oben = this._voxelSurfaceY(x, z);
         const eis = this._eisAt(x, z, NaN, Infinity, oben);
         return eis !== null && !(oben >= eis) ? eis : oben;
+    }
+
+    // DIE TRITTFLÄCHE ÜBER DEM GRUND (fahrzeug.K2): die höchste Oberkante einer Box mit `tritt` (die Bahn eines Jochfelds,
+    // `_populateBlockerAABBs`) über (x, z) zwischen dem Grund `g` und `bis` (die Stufe des Körpers) — sonst g. Der billige Beweis
+    // zuerst (Lehre 25): ohne Trittfläche in der Welt (`_trittDa`) fragt kein Körper das Blocker-Netz. Leser: jeder Körper
+    // (`_koerperBodenUnter`) und die Strecke des Gehenden (`_bewohnerWand`).
+    _trittUeber(x, z, g, bis) {
+        if (!this._trittDa) return g;
+        const kand = this._trittKand || (this._trittKand = []);
+        kand.length = 0;
+        this._blockerNahe(x, z, 0, 0, kand);
+        let top = g;
+        for (const e of kand)
+            for (const box of e.blockerAABBs || [])
+                if (box.tritt && box.topY > top && box.topY <= bis && this._boxAbstand2(box, x, z) <= 0) top = box.topY;
+        return top;
     }
 
     // DER GRUND EINES KÖRPERS unter y0 binnen `maxDist`: die Fels-Grenze (`_fieldSurfaceBelow`) oder das Eis über ihr
