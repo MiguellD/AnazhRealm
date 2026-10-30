@@ -1003,17 +1003,20 @@ async function starte() {
                 // in Bau-Ereignissen, nie an der Wanduhr. Der Ort schwingt unter REGLER VOLL ein (die Bedingung der Messung, E): der Ring
                 // steht an seinem Ziel, gehalten wie `stell.ring`, nie nach der Last der Nachbarn auf der geteilten GPU (A9, Mess-Wiese:
                 // Ring 2 statt 4, boden-nah 2,391 statt 1,814 — die nahen Kronen fehlten)
-                const ziel = stell && stell.ring ? stell.ring : Math.min(12, r.state.chunkRingRadius || 4);
-                const decke = r.state.perfTargetMs;
-                r.state.perfTargetMs = 1000;
+                const ziel = stell && stell.ring ? stell.ring : Math.min(12, st.chunkRingRadius || 4);
+                const decke = st.perfTargetMs;
+                st.perfTargetMs = 1000;
+                // DER TAKT DES ORTS geht im Schritt der Seite (`__seitenTakt`: ein Bild, dann der Takt) — bis 30.10. schlief er 50 ms je Takt:
+                // an der Radeon (Mess-Sitzung, Ort wiese) waren 27–30 s von 40–48 s Ring-Zeit dieser Schlaf (537–607 Takte × 50 ms), nicht
+                // das Streaming; die Ankunft des Spielers geht im Bild-Takt
                 const takt = async () => {
-                    if (r.state._activeRingRadius < ziel) r.state._activeRingRadius = ziel;
+                    if (st._activeRingRadius < ziel) st._activeRingRadius = ziel;
                     try {
                         __buehne();
                         __ortSchritt();
                         r._gameLoopTick(performance.now());
                     } catch {}
-                    await sleep(50);
+                    await new Promise((ok) => requestAnimationFrame(ok));
                 };
                 let takte;
                 try {
@@ -1039,7 +1042,7 @@ async function starte() {
                             throw new Error(`Messort ${o.ort}: kein Dach bei ${o.dach} m (Träger ${r.state._kapselTraegerY})`);
                     }
                 } finally {
-                    r.state.perfTargetMs = decke;
+                    st.perfTargetMs = decke;
                 }
                 // ein Dorf, das vor dem Ort losging (ein Ort ohne Dorf-Zug, der Zug lief im Boot): sein Plan schwebt — Wege und
                 // Platz stehen, der Wald weicht, das Dorf wächst nie. Beim Namen (die Folge startet mit `start --ort`).
