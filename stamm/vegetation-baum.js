@@ -785,7 +785,7 @@ class AnazhRealm_vegetation_baum {
                 side: THREE.DoubleSide,
                 baumWind,
             };
-            if (holzMat && holzMat.tags) barkMatOpts.tags = holzMat.tags;
+            if (holzMat && holzMat.tags) Object.assign(barkMatOpts, { tags: holzMat.tags, stoff: "holz" });
             const barkMat = this._sharedFoliageMaterial(barkMatOpts);
             leaves.push({ geom: barkGeom, mat: barkMat, localMatrix: new THREE.Matrix4() });
         }
@@ -811,7 +811,7 @@ class AnazhRealm_vegetation_baum {
                 side: THREE.DoubleSide,
                 baumWind,
             };
-            if (laubMat && laubMat.tags) foliageMatOpts.tags = laubMat.tags;
+            if (laubMat && laubMat.tags) Object.assign(foliageMatOpts, { tags: laubMat.tags, stoff: "laub" });
             // Klingen-Material: DIESELBE Opts-Signatur + `foliageBlade` → eigenes geteiltes
             // Singleton, das den Atlas-Sample überspringt (die Klinge IST Geometrie, alpha=1;
             // alphaTest bleibt fürs Dither-Crossfade am L0→L1-Band).

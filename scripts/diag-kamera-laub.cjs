@@ -16,7 +16,7 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde, weltTor } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -1233,9 +1233,9 @@ hauptLauf(async () => {
     // jede offene Pipeline (`__erstRuhe`; steht der Bau 10 min ohne Fortschritt, bricht sie beim Namen — auf swiftshader dauert
     // EIN Programm bis Minuten), die neue Welt ist da (`__weltDa`); ein Hänger steht in der Stall-Akte.
     const adresse = BILD && !istHardwareAdapter(browser.adapter) ? "index.html?holz=kienspan" : "index.html";
-    const bereit = async (rest = adresse) => {
+    const bereit = async (rest = adresse, welt = null) => {
         await page.evaluate(() => window.__erstRuhe?.(() => {}, { erstFristMs: 6e5 }, "der Abschied der Welt"));
-        await server.zeige(page, 0, rest);
+        await (welt ? weltTor(page, welt, 0) : server.zeige(page, 0, rest));
         if (rest !== adresse) return;
         await page.evaluate(async () => (await window.__weltDa((r) => r.state.rendererReady)).state.renderer.setAnimationLoop(null));
         await buehne(page);
@@ -1263,20 +1263,11 @@ hauptLauf(async () => {
             gang = await page.evaluate(leibGang, { ...GANG, zwei: TEILE.includes("gang2") });
             zeiten.gang = Date.now() - tG;
         }
-        // die Prüfbühne, geboren wie im Spiel: Welt-Tor importWorldBeside + aktiv + Reload
+        // die Prüfbühne, geboren wie im Spiel durch die Tür (`weltTor`)
         const tH = Date.now();
-        const pb = JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "welt.json"), "utf8"));
-        const id = await page.evaluate((j) => {
-            const res = r.importWorldBeside(j);
-            if (!res || !res.ok) return null;
-            r.activeWorldSet(res.worldId);
-            return res.worldId;
-        }, pb);
-        if (id) {
-            await bereit();
-            await page.evaluate(leibInstall, { R: LEIB_R });
-            leib.hang = await page.evaluate(leibHang, { hang: HANG, n: LEIB_HANG_N });
-        } else leib.hang = { err: "die Prüfbühne ließ sich nicht importieren" };
+        await bereit(adresse, JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "welt.json"), "utf8")));
+        await page.evaluate(leibInstall, { R: LEIB_R });
+        leib.hang = await page.evaluate(leibHang, { hang: HANG, n: LEIB_HANG_N });
         zeiten.hang = Date.now() - tH;
         leib.proben = [...(leib.wiese.proben || []), ...(leib.hang.proben || [])];
         leib.spruenge = leib.wiese.spruenge;
