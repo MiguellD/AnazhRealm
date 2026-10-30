@@ -896,7 +896,7 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
         out.genesisIdempotent = before === after;
 
         // --- Adaptives Wasser ---
-        out.waterAdaptive = typeof r.state.waterLevel === "number" && Number.isFinite(r.state.waterLevel);
+        out.waterAdaptive = Number.isFinite(r.state.waterLevel);
 
         return out;
     });
