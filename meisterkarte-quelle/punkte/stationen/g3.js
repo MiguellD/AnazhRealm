@@ -1393,6 +1393,53 @@ const stationen = [
         pfad: [...BILD, ...LOD_PFAD, "stamm/gelaende-*.js"],
         quelle: "1 = eine Bewegungsart an einem Gerät ≤ 0,05 % Pop-Pixel je Sekunde",
     },
+    // ───────── lod.K3 — aus jeder Blick-Hebung (w4-hebungsringe) ─────────
+    // DIE HEBUNGS-RINGE (foundry-core impostor.hebungen −20/0/40/80, ringTeiler 2: der Ring 0° in voller Zelle, die übrigen in ¼
+    // der Zellfläche — die Atlas-Diät, phyto-core `karteRinge`): die Karte backt je Takt EINEN Ring, kippt zum Auge und wählt je
+    // Pixel den Ring der Hebung. gate:foundry-impostor C6 backt eine flache Krone über einem Stamm durch den ECHTEN Bake (gedreht
+    // −119°, Skala 1,5, abseits des Ursprungs) und misst je Hebung Deckung K/G und IoU gegen dieselbe Gestalt als Mesh, je
+    // Schicht-Format (bc mit WebGPU-BC, rgba8); Selbsttest: jeder Ring waagrecht gebacken. Cloud (swiftshader, w4-hebungsringe
+    // 69d7d3f2): bc −20° 1,004/0,966 · 0° 1,064/0,894 · 40° 1,003/0,983 · 80° 0,97/0,97, waagrecht 80° 0,341/0,237; dieselbe Probe
+    // an main 715754fc: 80° 0,064/0,064, 40° 0,294/0,272, −20° 0,493/0,432.
+    {
+        kriterium: "lod.K3",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        befehl: ["node", "scripts/diag-foundry-impostor.cjs"],
+        env: { FIMP_PORT: "{PORT}" },
+        gpu: true,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const t = String(lauf.stdout || "");
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(t) || ["[linse-gpu] ungenannt"])[0];
+            const hw = !/swiftshader|llvmpipe|lavapipe|software|subzero|ungenannt|kein /i.test(ad);
+            const je = [...t.matchAll(/C6 HEBUNG \[(\w+)\]: ([^|\r\n]*)\| waagrecht 80° ([\d.]+)\/([\d.]+)/g)].map(([, fmt, rest, sd, si]) => {
+                const w = {};
+                for (const m of rest.matchAll(/(-?\d+)° ([\d.]+)\/([\d.]+)/g)) w[m[1]] = [+m[2], +m[3]];
+                const ok = [-20, 0, 40, 80].every((p) => w[p] && w[p][0] >= 0.75 && w[p][1] >= 0.65) && +si < 0.65;
+                return { ok, text: fmt + " " + [-20, 0, 40, 80].map((p) => p + "° " + (w[p] ? w[p].join("/") : "—")).join(" · ") + " (waagrecht 80° " + sd + "/" + si + ")" };
+            });
+            if (!je.length) return { gruen: false, zahl: "keine C6-Zeile (Exit " + lauf.exit + ") · " + ad };
+            return { gruen: hw && je.every((x) => x.ok), zahl: "Deckung/IoU " + je.map((x) => x.text).join(" · ") + " (Soll ≥ 0,75/0,65) · " + ad };
+        },
+        proben: (() => {
+            const zeile = (fmt, w, s) => "  C6 HEBUNG [" + fmt + "]: " + w + " | waagrecht 80° " + s + " · Ringe -20,0,40,80 · Schicht 515200 B";
+            const ringe = "0° 1.064/0.894 · 40° 1.003/0.983 · 60° 0.882/0.745 · 80° 0.97/0.97 · -20° 1.004/0.966";
+            const waag = "0° 1.065/0.894 · 40° 0.294/0.272 · 60° 0.182/0.179 · 80° 0.064/0.064 · -20° 0.493/0.432";
+            const radeon = "[linse-gpu] webgl2/ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)";
+            return [
+                { name: "eigener Lauf (swiftshader, Cloud)", stdout: "[linse-gpu] google/swiftshader\n" + zeile("bc", ringe, "0.341/0.237"), gruen: false },
+                { name: "dieselben Zahlen auf der Karte", stdout: radeon + "\n" + zeile("bc", ringe, "0.341/0.237") + "\n" + zeile("rgba8", ringe, "0.341/0.237"), gruen: true },
+                { name: "Mutante: die waagrechte Karte (main 715754fc, dieselbe Probe)", stdout: radeon + "\n" + zeile("bc", waag, "0.064/0.064"), gruen: false },
+                { name: "Mutante: der Selbsttest ist blind (waagrecht 80° besteht)", stdout: radeon + "\n" + zeile("bc", ringe, "0.97/0.97"), gruen: false },
+                { name: "ein Format reißt (rgba8 aus 80° 0,4)", stdout: radeon + "\n" + zeile("bc", ringe, "0.341/0.237") + "\n" + zeile("rgba8", ringe.replace("80° 0.97/0.97", "80° 0.4/0.38"), "0.341/0.237"), gruen: false },
+                { name: "keine C6-Zeile (die Linse vor lod.K3)", stdout: radeon + "\n✅ GRÜN — die Welt-Fernstufe liest die im Welt-Renderer gebackene Karte", gruen: false },
+            ];
+        })(),
+        pfad: [...BILD, "phyto-core.js", "foundry-bruecke.js", "stamm/siedlung-satz.js", "stamm/vegetation-baum.js", "scripts/diag-foundry-impostor.cjs"],
+        quelle: "1 = Karten-Deckung ≥ 0,75 und IoU ≥ 0,65 bei −20/0/40/80° für Bäume an einem Gerät",
+    },
     {
         kriterium: "material.K4",
         staffel: 1,
@@ -1520,6 +1567,17 @@ const stationen = [
 
 // Was sich nicht als Station fassen lässt. Steht neben der Liste; der Läufer liest es nicht.
 stationen.fehlt = [
+    {
+        kriterium: "lod.K3",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        befehl: null,
+        grund:
+            "Je Familie fehlt die Karte selbst: Haus und Tor sind fern NUR-WURF, der Wagen trägt keine Karte — die Hebungs-Ringe " +
+            "(w4-hebungsringe) gelten den Bäumen. Messbar wäre schon das VRAM-Band (werkbank band: tex:karte-albedo/-normal/-licht, " +
+            "mit den Ringen 515 200 statt 294 784 B je Schicht; die Ratschen-Zeilen tragen das Vorher).",
+        quelle: "2 = je Familie (Baum, Haus, Tor, Wagen), Atlas im VRAM-Band (≤ 118 MB gesamt), beide Geräte",
+    },
     {
         kriterium: "material.K2",
         staffel: 2,
