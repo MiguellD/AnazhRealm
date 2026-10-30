@@ -31,6 +31,7 @@
 //   node scripts/diag-haus-fern.cjs [--selftest] [--nur <regex>] [--zeilen]
 "use strict";
 const { wandEnde, studioKern } = require("./lib/welt-boot.cjs");
+const { rasterDreieck } = require("./lib/kronen-linse.cjs");
 
 const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
 const T = global.THREE;
@@ -225,32 +226,8 @@ function maske(roh, box) {
     const { r } = roh;
     const nu = Math.ceil((box.u1 - box.u0) / r) + 1,
         nv = Math.ceil((box.v1 - box.v0) / r) + 1;
-    const m = new Uint8Array(nu * nv);
-    for (const q of roh.uv)
-        for (let j = 0; j < q.length; j += 6) {
-            const ax = q[j],
-                ay = q[j + 1],
-                bx = q[j + 2],
-                by = q[j + 3],
-                cx = q[j + 4],
-                cy = q[j + 5];
-            const ar = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
-            if (Math.abs(ar) < 1e-12) continue;
-            const i0 = Math.max(0, Math.floor((Math.min(ax, bx, cx) - box.u0) / r)),
-                i1 = Math.min(nu - 1, Math.ceil((Math.max(ax, bx, cx) - box.u0) / r));
-            const k0 = Math.max(0, Math.floor((Math.min(ay, by, cy) - box.v0) / r)),
-                k1 = Math.min(nv - 1, Math.ceil((Math.max(ay, by, cy) - box.v0) / r));
-            for (let k = k0; k <= k1; k++) {
-                const py = box.v0 + (k + 0.5) * r;
-                for (let i = i0; i <= i1; i++) {
-                    const px = box.u0 + (i + 0.5) * r;
-                    const w0 = (bx - px) * (cy - py) - (by - py) * (cx - px),
-                        w1 = (cx - px) * (ay - py) - (cy - py) * (ax - px),
-                        w2 = (ax - px) * (by - py) - (ay - py) * (bx - px);
-                    if ((w0 >= 0 && w1 >= 0 && w2 >= 0) || (w0 <= 0 && w1 <= 0 && w2 <= 0)) m[k * nu + i] = 1;
-                }
-            }
-        }
+    const [m, R] = [new Uint8Array(nu * nv), { u0: box.u0, v0: box.v0, r, nu, nv }];
+    for (const q of roh.uv) for (let j = 0; j < q.length; j += 6) rasterDreieck(...q.subarray(j, j + 6), R, (o) => (m[o] = 1));
     return m;
 }
 function iou(rohe, r) {
@@ -494,7 +471,7 @@ function fensterMisch(F, o, sum, fach) {
         v0 = o.cy - o.h / 2;
     const nu = Math.max(1, Math.round(o.w / GLAS_R)),
         nv = Math.max(1, Math.round(o.h / GLAS_R));
-    const px = Array.from({ length: nu * nv }, () => []);
+    const [px, R] = [Array.from({ length: nu * nv }, () => []), { u0, v0, r: GLAS_R, nu, nv }];
     const gesehen = new Set();
     for (let b = Math.floor(v0 / FACH); b <= Math.floor((v0 + o.h) / FACH); b++) {
         const l = fach.get(b) || [];
@@ -517,30 +494,14 @@ function fensterMisch(F, o, sum, fach) {
                 dc = sg * (horiz ? w[t + 8] : w[t + 6]);
             // vor der Wand höchstens 1,5 m (Laden, offener Flügel, Bank), dahinter der Raum bis zur Gegenwand
             if (Math.max(da, db, dc) < wand - 14 || Math.min(da, db, dc) > wand + 1.5) continue;
-            const ar = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
-            if (Math.abs(ar) < 1e-12) continue;
             // die Welt zeichnet einen einseitigen Stoff nur von vorn (`side` reist mit, _foundryBuildMesh): eine Fläche, die
             // vom Auge draußen weg schaut, sieht kein Strahl — die Rückseite jeder Scheibe zählte doppelt
-            if (!f.zwei && (horiz ? sg : -sg) * ar <= 0) continue;
-            const i0 = Math.max(0, Math.floor((Math.min(ax, bx, cx) - u0) / GLAS_R)),
-                i1 = Math.min(nu - 1, Math.ceil((Math.max(ax, bx, cx) - u0) / GLAS_R));
-            const k0 = Math.max(0, Math.floor((Math.min(ay, by, cy) - v0) / GLAS_R)),
-                k1 = Math.min(nv - 1, Math.ceil((Math.max(ay, by, cy) - v0) / GLAS_R));
+            if (!f.zwei && (horiz ? sg : -sg) * ((bx - ax) * (cy - ay) - (by - ay) * (cx - ax)) <= 0) continue;
             const ci = t / 3;
-            for (let k = k0; k <= k1; k++) {
-                const py = v0 + (k + 0.5) * GLAS_R;
-                for (let i = i0; i <= i1; i++) {
-                    const qx = u0 + (i + 0.5) * GLAS_R;
-                    const w0 = ((bx - qx) * (cy - py) - (by - py) * (cx - qx)) / ar,
-                        w1 = ((cx - qx) * (ay - py) - (cy - py) * (ax - qx)) / ar,
-                        w2 = 1 - w0 - w1;
-                    if (w0 < 0 || w1 < 0 || w2 < 0) continue;
-                    const col = [0, 1, 2].map(
-                        (j) => w0 * f.c[ci * 3 + j] + w1 * f.c[ci * 3 + 3 + j] + w2 * f.c[ci * 3 + 6 + j]
-                    );
-                    px[k * nu + i].push([w0 * da + w1 * db + w2 * dc, f.al, col, f.gl]);
-                }
-            }
+            rasterDreieck(ax, ay, bx, by, cx, cy, R, (o, w0, w1, w2) => {
+                const col = [0, 1, 2].map((j) => w0 * f.c[ci * 3 + j] + w1 * f.c[ci * 3 + 3 + j] + w2 * f.c[ci * 3 + 6 + j]);
+                px[o].push([w0 * da + w1 * db + w2 * dc, f.al, col, f.gl]);
+            });
         }
     }
     for (const L of px) {

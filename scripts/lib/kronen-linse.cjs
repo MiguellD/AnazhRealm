@@ -30,6 +30,28 @@ const AZIMUTE = 8;
 const HEBUNGEN = [0, Math.PI / 6, Math.PI / 3];
 const ANSICHTEN = AZIMUTE * HEBUNGEN.length;
 
+// DAS EINE DREIECKS-RASTER jeder CPU-Rasterung eines Baus (die Krone hier, das Bild des Baus `bauBild`, der Wurf der Tor-Linse,
+// Maske und Glas der Haus-Linse, der Umriss der Kreatur-Kosten — bis zur Decke w3w-studios rasterte jede selbst): das Raster
+// `R` = { u0, v0, r, nu, nv } (Ursprung, Kante, Spalten, Zeilen; ohne u0 · v0 · r die Pixel-Einheit), je Pixel, dessen Mitte das
+// Dreieck a-b-c deckt, `pixel(k·nu + i, w0, w1, w2)` mit seinen Baryzentren; `eps` lässt die Kante um so viel zu, ein entartetes
+// Dreieck deckt nichts. Ohne Bezug nach außen: eine Seite trägt es per toString (asset-worker-harness `BAU_BILD_QUELLE`, das Band
+// der Kreatur-Kosten als Argument). Die Rückkehr-Wand: gate:altlasten (Zwillings-Wand, „Dreiecks-Raster").
+function rasterDreieck(ax, ay, bx, by, cx, cy, R, pixel, eps = 0) {
+    const fl = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax);
+    if (Math.abs(fl) < 1e-12) return;
+    const { u0 = 0, v0 = 0, r = 1, nu, nv } = R;
+    const i1 = Math.min(nu - 1, Math.ceil((Math.max(ax, bx, cx) - u0) / r)),
+        k1 = Math.min(nv - 1, Math.ceil((Math.max(ay, by, cy) - v0) / r));
+    for (let k = Math.max(0, Math.floor((Math.min(ay, by, cy) - v0) / r)); k <= k1; k++) {
+        const py = v0 + (k + 0.5) * r;
+        for (let i = Math.max(0, Math.floor((Math.min(ax, bx, cx) - u0) / r)); i <= i1; i++) {
+            const px = u0 + (i + 0.5) * r,
+                w0 = ((bx - px) * (cy - py) - (by - py) * (cx - px)) / fl,
+                w1 = ((cx - px) * (ay - py) - (cy - py) * (ax - px)) / fl;
+            if (w0 >= -eps && w1 >= -eps && 1 - w0 - w1 >= -eps) pixel(k * nu + i, w0, w1, 1 - w0 - w1);
+        }
+    }
+}
 // DAS RASTER DER 24 ANSICHTEN (bildDeckung, bildLagen): je Ansicht (r = horizontal quer zur Blickrichtung, u = Bild-Oben,
 // senkrecht zu r und zum Blick, der um e nach oben zeigt) die Netze, die `nimm` wählt, auf ein Raster der Kante `px` —
 // `jeAnsicht(W, H)` bekommt die Raster-Größe (ohne Ausdehnung 0 × 0, dann kein Pixel) und liefert den Pixel-Leser
@@ -80,22 +102,7 @@ function rastere(meshes, px, nimm, jeAnsicht) {
                     by = (p[b * 3] * ux + p[b * 3 + 1] * uy + p[b * 3 + 2] * uz - v0) / px;
                 const qx = (p[c * 3] * cx + p[c * 3 + 2] * cz - u0) / px,
                     qy = (p[c * 3] * ux + p[c * 3 + 1] * uy + p[c * 3 + 2] * uz - v0) / px;
-                const fl = (bx - ax) * (qy - ay) - (by - ay) * (qx - ax);
-                if (Math.abs(fl) < 1e-12) continue;
-                const xa = Math.max(0, Math.floor(Math.min(ax, bx, qx))),
-                    xb = Math.min(W - 1, Math.ceil(Math.max(ax, bx, qx))),
-                    ya = Math.max(0, Math.floor(Math.min(ay, by, qy))),
-                    yb = Math.min(H - 1, Math.ceil(Math.max(ay, by, qy)));
-                for (let y = ya; y <= yb; y++) {
-                    const sy = y + 0.5;
-                    for (let x = xa; x <= xb; x++) {
-                        const sx = x + 0.5;
-                        const w0 = ((bx - sx) * (qy - sy) - (by - sy) * (qx - sx)) / fl,
-                            w1 = ((qx - sx) * (ay - sy) - (qy - sy) * (ax - sx)) / fl,
-                            w2 = 1 - w0 - w1;
-                        if (w0 >= 0 && w1 >= 0 && w2 >= 0) pixel(y * W + x, w0, w1, w2, m, a, b, c);
-                    }
-                }
+                rasterDreieck(ax, ay, bx, by, qx, qy, { nu: W, nv: H }, (o, w0, w1, w2) => pixel(o, w0, w1, w2, m, a, b, c));
             }
         }
     }
@@ -423,6 +430,7 @@ function unterBoden(krone) {
 }
 
 module.exports = {
+    rasterDreieck,
     dek,
     bildDeckung,
     bildLagen,

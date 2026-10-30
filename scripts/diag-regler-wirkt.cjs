@@ -45,7 +45,7 @@
 // Ofen-Kanals über REGLER_WIRKT_OFEN_PORT, Standard Port + 1.
 "use strict";
 const { statikServer, starteBrowser, ROOT, hauptLauf, ausDatei, SELBSTTEST, path, stammLib } = require("./lib/welt-boot.cjs");
-const { runWithWorker, bauBild, bauAbdruck } = require("./lib/asset-worker-harness.cjs");
+const { runWithWorker, bauBild, bauAbdruck, BAU_BILD_QUELLE } = require("./lib/asset-worker-harness.cjs");
 // DIE BILD-SCHWELLE (studios.K1, das Schlupfloch „0,1 mm am Hash"): ein Regler wirkt, wo sein Rand das Bild des Baus
 // (`bauBild`, die Vorschau-Pose) an mindestens 1 % der Gestalt-Pixel um mehr als 18 Luma bewegt — ein Hash allein zählt nie.
 const BILD_SCHWELLE = 0.01;
@@ -282,7 +282,7 @@ function ofenMessen(page, opts) {
             B.koerper = altBaecker;
         }
         return aus;
-    }, { bildQuelle: bauBild.toString(), abdruckQuelle: bauAbdruck.toString(), schwelle: BILD_SCHWELLE, ...opts });
+    }, { bildQuelle: BAU_BILD_QUELLE, abdruckQuelle: bauAbdruck.toString(), schwelle: BILD_SCHWELLE, ...opts });
     }
 // ── DIE LESER DER GESETZ-WERTE (studios.K1 „jeder Griff wirkt sichtbar oder hörbar"). Eine Zeile `uniform: true` bewegt kein
 // Bau-Byte (Vertrag B4): sie wirkt, wo die Welt sie liest — die Linse misst DORT, im echten Stamm, mit dem Stempel am Eintrag

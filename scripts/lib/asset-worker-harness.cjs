@@ -9,6 +9,7 @@
 // Dauer-Gate) LESEN diese eine Datei — kein zweiter Boot-Pfad, der driften kann.
 const { statikServer, starteBrowser, ausDatei, path, crypto } = require("./welt-boot.cjs");
 const { installiereDrift, FUNKTIONEN } = require("./plattform-probe.cjs");
+const { rasterDreieck } = require("./kronen-linse.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 
@@ -109,19 +110,15 @@ function bauBild(teile, rahmen) {
       for (let f = 0; f + 2 < I.length; f += 3) {
         const [X, Y, Z] = [0, 1, 2].map((k) => [I[f], I[f + 1], I[f + 2]].map((v) => q[v * 3 + k]));
         const nv = [(Y[1] - Y[0]) * (Z[2] - Z[0]) - (Z[1] - Z[0]) * (Y[2] - Y[0]), (Z[1] - Z[0]) * (X[2] - X[0]) - (X[1] - X[0]) * (Z[2] - Z[0]), (X[1] - X[0]) * (Y[2] - Y[0]) - (Y[1] - Y[0]) * (X[2] - X[0])];
-        if (!nv[2]) continue;
         const licht = 0.25 + 0.75 * Math.abs((nv[0] * Lv[0] + nv[1] * Lv[1] + nv[2] * Lv[2]) / Math.hypot(...nv));
         const alb = [0, 1, 2].map((k) => (t.farbe ? [I[f], I[f + 1], I[f + 2]].reduce((s, v) => s + t.farbe[v * t.fs + k], 0) / 3 : t.grund[k]));
         const lin = neutral(alb.map((x, k) => K * (x * (licht + (t.glutK || 0)) + (t.leucht ? t.leucht[k] : 0))));
         const Yl = Math.min(1, Math.max(0, 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]));
         const wert = 1 + Math.round(254 * (Yl <= 0.0031308 ? 12.92 * Yl : 1.055 * Math.pow(Yl, 1 / 2.4) - 0.055));
-        for (let py = Math.max(0, Math.floor(Math.min(...Y))); py <= Math.min(N - 1, Math.max(...Y)); py++)
-          for (let px = Math.max(0, Math.floor(Math.min(...X))); px <= Math.min(N - 1, Math.max(...X)); px++) {
-            const [u, w] = [px + 0.5, py + 0.5];
-            const l0 = ((X[1] - u) * (Y[2] - w) - (Y[1] - w) * (X[2] - u)) / nv[2], l1 = ((X[2] - u) * (Y[0] - w) - (Y[2] - w) * (X[0] - u)) / nv[2];
-            const z = l0 * Z[0] + l1 * Z[1] + (1 - l0 - l1) * Z[2], i = py * N + px;
-            if (l0 >= 0 && l1 >= 0 && l0 + l1 <= 1 && z > tiefe[i]) [tiefe[i], bild[i]] = [z, wert];
-          }
+        rasterDreieck(X[0], Y[0], X[1], Y[1], X[2], Y[2], { nu: N, nv: N }, (i, l0, l1, l2) => {
+          const z = l0 * Z[0] + l1 * Z[1] + l2 * Z[2];
+          if (z > tiefe[i]) [tiefe[i], bild[i]] = [z, wert];
+        });
       }
     }
     return bild;
@@ -134,6 +131,8 @@ function bauBild(teile, rahmen) {
     }));
   return { rahmen, bilder, abstand };
 }
+// das Bild in der Seite samt seinem Raster (die Brücken-Seite hier, der Ofen der Werkstatt in gate:regler-wirkt)
+const BAU_BILD_QUELLE = `(() => { const rasterDreieck = ${rasterDreieck}; return ${bauBild}; })()`;
 // Die Teile eines Brücken-Baus für das Bild: was das Auge sieht (der Wurf-Teil „schatten" und der Beipack nicht).
 function bauTeile(meshes) {
   return (meshes || [])
@@ -260,7 +259,7 @@ function pageHtml() {
     return fertigP.then(() => a);
   };
   const bauAbdruck = ${bauAbdruck.toString()};
-  const bauBild = ${bauBild.toString()};
+  const bauBild = ${BAU_BILD_QUELLE};
   const bauTeile = ${bauTeile.toString()};
   window.__probeLauf = async (liste, d, welche, bis, fangen) => {
     if (!probeAsk) probeAsk = probeBoot();
@@ -515,5 +514,6 @@ module.exports = {
     kanalImVm,
     bauAbdruck,
     bauBild,
+    BAU_BILD_QUELLE,
     ersteAbweichung,
 };

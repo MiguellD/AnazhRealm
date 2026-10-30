@@ -21,6 +21,7 @@
 "use strict";
 
 const { studioKern, pruefer, ROOT: root, stammLib } = require("./lib/welt-boot.cjs");
+const { rasterDreieck } = require("./lib/kronen-linse.cjs");
 const PC = studioKern("porta-core.js", "__portaCore");
 const ARG = process.argv;
 const SELBST = ARG.includes("--selftest");
@@ -86,24 +87,10 @@ function abdruck(D, d, box) {
         const t = Math.max(0, y) / d[1];
         return [x - d[0] * t, z - d[2] * t];
     };
+    const R = { u0: box.u0, v0: box.v0, r: RASTER, nu, nv };
     for (let i = 0; i < D.length; i += 9) {
-        const a = pr(D[i], D[i + 1], D[i + 2]),
-            b = pr(D[i + 3], D[i + 4], D[i + 5]),
-            c = pr(D[i + 6], D[i + 7], D[i + 8]);
-        const ar = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
-        if (Math.abs(ar) < 1e-12) continue;
-        const i0 = Math.max(0, Math.floor((Math.min(a[0], b[0], c[0]) - box.u0) / RASTER)),
-            i1 = Math.min(nu - 1, Math.ceil((Math.max(a[0], b[0], c[0]) - box.u0) / RASTER));
-        const k0 = Math.max(0, Math.floor((Math.min(a[1], b[1], c[1]) - box.v0) / RASTER)),
-            k1 = Math.min(nv - 1, Math.ceil((Math.max(a[1], b[1], c[1]) - box.v0) / RASTER));
-        for (let k = k0; k <= k1; k++)
-            for (let ii = i0; ii <= i1; ii++) {
-                const px = box.u0 + (ii + 0.5) * RASTER,
-                    py = box.v0 + (k + 0.5) * RASTER;
-                const w0 = ((b[0] - px) * (c[1] - py) - (b[1] - py) * (c[0] - px)) / ar,
-                    w1 = ((c[0] - px) * (a[1] - py) - (c[1] - py) * (a[0] - px)) / ar;
-                if (w0 >= -1e-9 && w1 >= -1e-9 && 1 - w0 - w1 >= -1e-9) m[k * nu + ii] = 1;
-            }
+        const [a, b, c] = [0, 3, 6].map((j) => pr(D[i + j], D[i + j + 1], D[i + j + 2]));
+        rasterDreieck(...a, ...b, ...c, R, (o) => (m[o] = 1), 1e-9);
     }
     return m;
 }
