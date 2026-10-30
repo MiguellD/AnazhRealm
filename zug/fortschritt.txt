@@ -970,3 +970,4 @@
 2026-10-30 09:05:04 takt24b-gtx mensch.K5#1,vegetation.K1#1,vegetation.K5#1,ferne.K1#2 GRÜN/ROT/ROT/ROT 10.0 · 4/4
 2026-10-30 09:05:21 takt24c-gtx START 21 Stationen in 5 Läufen
 2026-10-30 10:01:28 takt24c-gtx licht.K2#2,licht.K5#1,material.K2#1,material.K3#2,schatten.K1#2,lod.K1#1,lod.K5#1,lod.K2#1,material.K4#1,material.K5#1,studios.K4#1,fahrzeug.K3#1,siedlung.K4#2,leib.K1#2,spielgang.K3#1 ROT/ROT/ROT/ROT/ROT/ROT/ROT/ROT/ROT/ROT/ROT/GRÜN/ROT/ROT/ROT 56.0 · 15/21
+2026-10-30 10:11:51 takt24c-gtx tiere.K5#1 OFFEN 10.3 · 16/21
