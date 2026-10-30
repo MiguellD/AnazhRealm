@@ -49,7 +49,7 @@
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt, weltTor } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -2420,21 +2420,13 @@ async function lauf() {
                 // unter dem Stausee die Chunks von vor dem Damm, und D sah es nie
                 await p2.evaluateOnNewDocument(() => (window.__anazhChunkIdb = true));
                 await server.zeige(p2, 120000);
-                // die Bühne, geboren wie im Spiel (Welt-Tor + aktiv + Reload): ihre Klamm S6 trägt den Stau (s. Kopf D)
+                // die Bühne, geboren wie im Spiel durch die Tür (`weltTor`): ihre Klamm S6 trägt den Stau (s. Kopf D)
                 const buehne = JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "welt.json"), "utf8"));
                 const S6 = JSON.parse(
                     fs.readFileSync(path.join(root, "spec", "pruefbuehne", "stationen.json"), "utf8")
                 ).stationen.find((s) => s.id === "s6-klamm");
                 if (!S6) throw new Error("D: keine Station s6-klamm in spec/pruefbuehne/stationen.json");
-                const weltId = await p2.evaluate(async (json) => {
-                    await window.__weltDa();
-                    const res = r.importWorldBeside(json);
-                    if (!res.ok) return null;
-                    r.activeWorldSet(res.worldId);
-                    return res.worldId;
-                }, buehne);
-                if (!weltId) throw new Error("D: die Prüfbühne ließ sich nicht importieren");
-                await p2.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
+                await weltTor(p2, buehne);
                 const D = { takte: 1200, R: 40, fassen: 4 };
                 // der Ort: die Klamm der Prüfbühne (S6), deren Bach der Damm fasst (`--damm x,z` fragt einen anderen Ort der Bühne)
                 const dammOrt = argListe("--damm") ? argListe("--damm").map(Number) : [S6.x, S6.z];

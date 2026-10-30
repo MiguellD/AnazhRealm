@@ -1369,7 +1369,7 @@ async function starte() {
                                 const zx = Math.min(Z.w - 1, Math.max(0, Math.floor(uu * Z.w))),
                                     zy = Math.min(Z.h - 1, Math.max(0, Math.floor(vv * Z.h)));
                                 const zi = (zy * Z.w + zx) * 4;
-                                ziel.push(0.2126 * Z.daten[zi] + 0.7152 * Z.daten[zi + 1] + 0.0722 * Z.daten[zi + 2]);
+                                ziel.push(luma709(Z.daten, zi));
                                 bild.push(luma709(u8, p * 4));
                             }
                         const P = bild.length;

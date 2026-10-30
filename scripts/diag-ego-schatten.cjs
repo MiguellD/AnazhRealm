@@ -282,7 +282,7 @@ function buehne(arg) {
                 for (let y = 0; y < H; y++)
                     for (let x = 0; x < W; x++) {
                         const i = y * zeile + x * 4;
-                        l[y * W + x] = 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
+                        l[y * W + x] = luma709(u8, i);
                     }
                 if (bilder) {
                     const rgba = new Uint8ClampedArray(W * H * 4);

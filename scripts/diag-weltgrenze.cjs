@@ -18,8 +18,8 @@
 //   portal              das Adress-Portal (`_enterPortalToAddress` → `_weltBeitritt` gegen einen Schein-Broker)
 //   einladung           der Beitritt per Einladung (`_weltBeitritt` → `_importGuestWorld`, Schein-Broker)
 //   geburt              „Neue Welt" (`createNewWorld`) — erlaubt ist nur die Positiv-Liste (visibility, creator)
-//   reload              B liegt im Speicher, die Seite lädt neu (Boot: Vorlade + Restore; die Formen ohne worldId,
-//                       ohne worldMeta, korrupt, nur IndexedDB fährt gate:boot-rettung)
+//   reload              B liegt im Speicher, die Seite betritt sie durch die Tür (`switchToWorld`, Boot: Vorlade + Restore;
+//                       die Formen ohne worldId, ohne worldMeta, korrupt, nur IndexedDB fährt gate:boot-rettung)
 // Dazu je Tür: A trägt nach dem letzten Autosave noch MARKER-A-SPAET (Fortschritt) — die Tür sichert A vor der Sperre.
 // Und statisch (Absenz): eine ganze Welt schreibt in den Speicher nur saveState (die lebende) und `_weltAblegen` (die EINE
 // Ablage), `location.reload` steht nur im lauten Rückfall des Wechsels `_weltWechsel` — jeder andere Schreiber fällt beim Namen.
@@ -42,7 +42,7 @@
 //                                      „ersetzen" MUSS rot werden: die Seite erwacht in A) — beide beim Namen
 // Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt, weltTor } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -502,7 +502,6 @@ async function fahreWeg(browser, weg, schein) {
                             bornAt: Date.now(),
                             lastPlayed: Date.now(),
                         });
-                        r.activeWorldSet(id);
                         return { ziel: id };
                     }
                     return {};
@@ -513,6 +512,8 @@ async function fahreWeg(browser, weg, schein) {
                 aId
             )
             .catch((e) => ({ abbruch: String(e?.message || e) }));
+        // B liegt im Speicher: die Seite betritt sie durch die Tür (`weltTor`, der Wechsel am Ort), nie über den Zeiger von Hand
+        if (basis === "reload" && lauf && lauf.ziel) await weltTor(page, lauf.ziel, 60000);
         if ((basis === "portal" || basis === "einladung") && gemeldet) Object.assign(lauf, gemeldet);
         if (lauf && lauf.inSeite) for (const f of lauf.inSeite) rep.befunde.push(`in der Seite: ${f}`);
         if (basis === "laden") return rep;

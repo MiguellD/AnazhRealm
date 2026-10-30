@@ -65,6 +65,14 @@ class AnazhRealm_speicher_welten {
         m.voxelTerrain = true;
         // K16: das Gelände ist das Flussnetz des Gesetzbuchs — der Ein-Massiv-Anker alter Welten fällt (sie ziehen um).
         delete m.macro;
+        // DAS GEDÄCHTNIS EINES ORTS KOMMT GANZ ZURÜCK (w4-heil-speicher): eine Zelle ohne `x`/`z`, mit dem Ort ihrer Trasse
+        // (`wx`/`wz`), reiste knapp (die Stand-Tafel, `worldMeta`) — ihr Anker ist er, der Schlüssel ihres Erdbaus folgt aus Same
+        // und Anker. Eine Zelle von vor der Trasse trägt `x`/`z` ohne `wx` und bleibt, wie sie ist.
+        for (const c of Object.values(m.settlementCells || {}))
+            if (c && !Number.isFinite(c.x) && Number.isFinite(c.wx) && Number.isFinite(c.wz)) {
+                [c.x, c.z] = [c.wx, c.wz];
+                if (c.ort === undefined) c.ort = AnazhRealm._ortSchluessel(c, c);
+            }
     }
 
     // DIE WELTGRENZE (Gegenprüfung Runde 2, 10.10.): eine geladene Welt ERSETZT das worldMeta der Seite — die Vorlage,
@@ -889,6 +897,10 @@ class AnazhRealm_speicher_welten {
             // Die Promotion der Streu ist eine Funktion des Wegs (der Boot promotet neu, wo der Spieler naht) und reist nicht; ein
             // älterer Stand behält seine Liste (`worldMeta.scatterPromoted`, seine promoteten Bäume reisen mit ihm). Der Erdbau
             // eines Orts mit Gedächtnis (`settlementCells`) reist nie: der Ort kehrt aus ihm wieder (`_tickAutoSettlement`).
+            // Das Gedächtnis selbst reist ohne sein Abgeleitetes (w4-heil-speicher, 5 km in 30 min: 3,4 kB in 20 Zellen, je Ort
+            // der Anker doppelt und sein Erdbau-Schlüssel): der Anker einmal als Ort der Trasse (`wx`/`wz` — `x`/`z` sind derselbe
+            // Punkt), `ort` nie, wo er `_ortSchluessel` aus Same und Anker ist; eine Zeile der Varianten-Saat nie, wo sie
+            // `_variantenSaat` gleicht. `_weltMetaHeil` stellt beides beim Laden wieder; was abweicht, reist ganz.
             [
                 "worldMeta",
                 (stand) => {
@@ -899,6 +911,21 @@ class AnazhRealm_speicher_welten {
                         for (const k in wm.erdbau)
                             if (/^ort:/.test(k) && orte.has(+k.split(":")[1])) delete wm.erdbau[k];
                     }
+                    const zellen =
+                        wm.settlementCells && typeof wm.settlementCells === "object" ? wm.settlementCells : {};
+                    wm.settlementCells = {};
+                    for (const [k, c] of Object.entries(zellen)) {
+                        const knapp = c && c.x === c.wx && c.z === c.wz && c.ort === AnazhRealm._ortSchluessel(c, c);
+                        wm.settlementCells[k] = knapp ? { ...c, x: undefined, z: undefined, ort: undefined } : c;
+                    }
+                    const saat = wm.variantSeed && typeof wm.variantSeed === "object" ? wm.variantSeed : {};
+                    const eigen = (art) =>
+                        JSON.stringify(saat[art]) !== JSON.stringify(AnazhRealm._variantenSaat(wm, art));
+                    wm.variantSeed = Object.fromEntries(
+                        Object.keys(saat)
+                            .filter(eigen)
+                            .map((art) => [art, saat[art]])
+                    );
                     if (stand) delete wm.voxelEdits;
                     return wm;
                 },

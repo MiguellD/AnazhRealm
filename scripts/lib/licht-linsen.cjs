@@ -7,7 +7,7 @@
 //   `BundleGroup` folgen `visible` erst nach `needsUpdate`;
 // - ein 8-Bit-Ziel quantisiert die lineare Albedo in 0,0039 — die Albedo-Schüsse lesen rgba16float.
 // Die Luma (Rec. 709) liest jede Linse aus abnahme-urteil (`luma709`; in der Seite global über ABNAHME_INSTALL).
-const { luma709, cielab } = require("./abnahme-urteil.cjs");
+const { luma709, cielab, linSrgb } = require("./abnahme-urteil.cjs");
 
 // DIE AUSWERTUNG beider Albedo-Linsen (Welt r184 und Labor r128 lesen DIESE Funktion): `hell`/`dunkel` sind lineare
 // RGBA-Werte (Float32, je Pixel 4), `deckung` die Alpha-Schwelle eines gezählten Pixels. Albedo = hell − dunkel (die
@@ -20,8 +20,7 @@ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
         const em = (dunkel[i * 4] + dunkel[i * 4 + 1] + dunkel[i * 4 + 2]) / 3;
         pix.push([a[0], a[1], a[2], em]);
     }
-    const srgb = (x) => (x <= 0.0031308 ? 12.92 * x : 1.055 * Math.pow(x, 1 / 2.4) - 0.055);
-    const Y = (p) => 0.2126 * p[0] + 0.7152 * p[1] + 0.0722 * p[2];
+    const Y = (p) => luma709(p);
     const mittel = (arr) => {
         if (!arr.length) return null;
         const m = [0, 0, 0, 0];
@@ -59,7 +58,7 @@ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
             continue;
         }
         for (let c = 0; c < 3; c++)
-            img.data[o + c] = Math.round(255 * srgb(Math.min(1, Math.max(0, hell[o + c] - dunkel[o + c]))));
+            img.data[o + c] = Math.round(255 * linSrgb(Math.min(1, Math.max(0, hell[o + c] - dunkel[o + c]))));
         img.data[o + 3] = 255;
     }
     return {
