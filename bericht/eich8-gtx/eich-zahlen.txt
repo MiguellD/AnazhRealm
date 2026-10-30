@@ -1,0 +1,7 @@
+  SITZUNG gtx · die Welt steht nach 6.3 s (Schloss nach 0.01 min) · 12 Proben · Welt :27804
+  SITZUNG EICH-FAHRT: jede Probe bis 90 s — das Gesetz: je Probe ≤ 45 s, mit ausnahme ≤ 90 s, die Fahrt ≤ 1800 s; ein Urteil zählt nur im Gesetz, je Probe ihre Sekunden (eich)
+  SITZUNG der Grund der Welt: 77 Größen in 0 s
+  SITZUNG die Welt vor halten.K1#2: 21.3 s (584 Takte, 81 Chunks)
+  EICH 5.6 s · halten.K1#2 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG die Welt trägt nicht mehr vor fahrzeug.K5#1: abweichend vom Grund: playerEquipped · wie {"playerEquipped":"{\"held\":null,\"offhand\":null,\"armor\":null} → {\"held\":\"klinge_langschwert\",\"offhand\":null,\"armor\":null}"}
+  SITZUNG Fahrt 34 s (Soll ≤ 1800 s) · 1 Proben · Grundstellung 0×
