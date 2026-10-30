@@ -2271,11 +2271,16 @@ class AnazhRealm_bild_kosten {
     // DAS SCHATTEN-GESETZ DER SONNEN-SCHEIBE (schatten.K1, die Kontakt-Härtung) — der EINE Filter jeder Kaskade
     // (`shadow.filterNode`: r184 `ShadowNode.setupShadow` nimmt ihn vor dem Filter des Karten-Typs, gate:vendor-anker). Der
     // Halbschatten ist so breit, wie die Sonne (`sonneTan`, 0,53°) ihn über den Abstand Werfer → Empfänger zieht, auf dem Boden
-    // von `filterTexel` Texeln der Karte: die Werfer sucht er im Umkreis `sucheM` der Kaskade (5 Vogel-Punkte, Karten-Tiefen ohne
-    // Vergleich), ihr Mittel längs des Lichts in Metern (`anazhTiefeM`, orthographisch linear); dann der Vergleich wie r184-PCF
+    // von `filterTexel` Texeln der Karte: die Werfer sucht er IM KEGEL DER SONNE über dem Empfänger (5 Vogel-Punkte, Karten-Tiefen
+    // ohne Vergleich) — ein Werfer verdunkelt ihn nur, wo er in seinem halben Halbschatten liegt, und der fernste liegt `luftM` unter
+    // der nahen Ebene der Kaskade (`_kaskadeFit`): der Radius ist (Tiefe des Empfängers unter ihr − `luftM`) · sonneTan/2, höchstens
+    // `sucheM`. Ihr Mittel längs des Lichts in Metern (`anazhTiefeM`, orthographisch linear); dann der Vergleich wie r184-PCF
     // (5 Vogel-Punkte, gedreht je Bildpunkt) im Radius Halbschatten/2 + Boden — die Sonne weicht ab dem ersten Zentimeter
-    // Abstand (schatten.K1#2: unter max(Halbschatten/2, Boden) trug der Boden jede Kante bis 4,9 m gleich breit). Ohne Suche (k0 ab 15 m, k1: `sucheM` 0; WebGL2:
-    // GLSL lädt keine Tiefe aus sampler2DShadow, gate:webgl-probe W5) bleibt der Boden-Radius, der r184-PCF. Box + Tiefe: `_kaskadeFit`.
+    // Abstand (schatten.K1#2: unter max(Halbschatten/2, Boden) trug der Boden jede Kante bis 4,9 m gleich breit). Bis w4-licht-uhr
+    // suchte er im festen Umkreis `sucheM` (0,25 m): am Mittag ragte er über die Spitze eines kurzen Schattens hinaus, die Treffer
+    // lagen tiefer am Werfer, der Abstand fiel bis 0,8 m zu kurz — der Zuwachs 0,484 statt 0,9 cm je m (GTX, takt24c). Ohne Suche
+    // (k0 ab 15 m, k1: `sucheM` 0; WebGL2: GLSL lädt keine Tiefe aus sampler2DShadow, gate:webgl-probe W5) bleibt der Boden-Radius,
+    // der r184-PCF. Box + Tiefe: `_kaskadeFit`.
     _schattenFilter(i) {
         const T = THREE.TSL;
         const K = AnazhRealm.SCHATTEN_KASKADE;
@@ -2289,21 +2294,29 @@ class AnazhRealm_bild_kosten {
             const vogel = (k, r) => shadowCoord.xy.add(T.vogelDiskSample(k, 5, phi).mul(r));
             let r = T.vec2(je(K.filterTexel)).div(karte);
             if (sucheM > 0 && builder.renderer.backend.isWebGPUBackend === true) {
+                const umgekehrt = builder.renderer.reversedDepthBuffer === true;
+                const tiefe = ref("anazhTiefeM", "float");
+                const kegel = (umgekehrt ? z.oneMinus() : z)
+                    .mul(tiefe)
+                    .sub(K.luftM)
+                    .max(0)
+                    .mul(K.sonneTan * 0.5)
+                    .min(sucheM);
                 const summe = T.float(0).toVar();
                 const zahl = T.float(0).toVar();
                 for (let k = 0; k < 5; k++) {
                     const d = T.textureLoad(
                         depthTexture,
-                        vogel(k, T.vec2(sucheM).div(box)).clamp(0, 1).mul(karte).min(karte.sub(1))
+                        vogel(k, T.vec2(kegel).div(box)).clamp(0, 1).mul(karte).min(karte.sub(1))
                     );
-                    const wirft = builder.renderer.reversedDepthBuffer === true ? d.greaterThan(z) : d.lessThan(z);
+                    const wirft = umgekehrt ? d.greaterThan(z) : d.lessThan(z);
                     summe.addAssign(T.select(wirft, d, 0));
                     zahl.addAssign(T.select(wirft, 1, 0));
                 }
                 const abstand = z
                     .sub(summe.div(zahl.max(1)))
                     .abs()
-                    .mul(ref("anazhTiefeM", "float"));
+                    .mul(tiefe);
                 const halb = T.select(zahl.greaterThan(0), abstand.mul(K.sonneTan * 0.5).min(sucheM), 0);
                 r = T.vec2(halb).div(box).add(r);
             }
@@ -3736,7 +3749,8 @@ AnazhRealm.SCHATTEN_RUHE_EPS = 1e-4;
 // über N·L 0 … `zuwendungSaum` weich (der Saum am Terminator, sonst die Hang-Akne).
 // DIE KONTAKT-KASKADE (schatten.K1): die ersten `kontaktM` Meter tragen eine eigene Kaskade bei `texelM[0]` (≤ 5 cm, 1024²);
 // DER FILTER jeder Kaskade ist das EINE Gesetz der Sonnen-Scheibe (`_schattenFilter`): Halbschatten = Abstand Werfer →
-// Empfänger längs des Lichts × `sonneTan` (0,53°), die Werfer gesucht im Umkreis `sucheM` je Kaskade, der Radius `filterTexel`
+// Empfänger längs des Lichts × `sonneTan` (0,53°), die Werfer gesucht im Kegel der Sonne über dem Empfänger (höchstens `sucheM`
+// je Kaskade; der Saum `luftM` über dem höchsten Werfer ist sein Scheitel), der Radius `filterTexel`
 // Texel + Halbschatten/2 (k0 und k1: 1 Texel ohne Suche, der r184-PCF bis K1 — ihr Texel trägt den Halbschatten der Sonne nie).
 AnazhRealm.SCHATTEN_KASKADE = Object.freeze({
     kontaktM: 15,
