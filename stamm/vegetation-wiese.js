@@ -397,25 +397,6 @@ class AnazhRealm_vegetation_wiese {
         }
         nw.vorlagen.set(kopf, { flat: fl, senken, cy: cy || 0, r, weite });
         nw.neu = true;
-        if (stufe === 1) this._nahWieseNarbe();
-    }
-
-    // DIE NARBE ÜBER DEM GRUND (w4-wiese-nah, EIN Schreiber von `atmoUniforms.narbeFuss`): die Blatt-Fläche über dem Fuß der
-    // nahen Büschel — je Stufe-1-Vorlage die größte Narbe ihrer Ecken (uv.y am Fuß, foundry-core `emitGrass`), ihr Mittel. Der
-    // Boden unter der Nah-Wiese liest sie (`_buildPbrNodeMaterial`: Sonne und Himmel × `halmNarbe`).
-    _nahWieseNarbe() {
-        const fuss = [];
-        for (const [kopf, vl] of this.state.nahWiese.vorlagen) {
-            if (!kopf.endsWith(":L1")) continue;
-            let m = 0;
-            for (const a of vl.senken) {
-                const uv = a.geo.attributes.uv;
-                if (!uv) throw new Error(`Nah-Wiese: Vorlage ${a.key} ohne uv — der Halm trägt seine Narbe im uv`);
-                for (let i = 1; i < uv.array.length; i += uv.itemSize) if (uv.array[i] > m) m = uv.array[i];
-            }
-            fuss.push(m);
-        }
-        this._ensureAtmoUniforms().narbeFuss.value = fuss.length ? fuss.reduce((s, x) => s + x, 0) / fuss.length : 0;
     }
 
     // Eine Senke fällt (ihre Vorlage wurde ersetzt): die Mesh verlässt die Szene, die Studio-Referenz geht zurück — war

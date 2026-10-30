@@ -3214,8 +3214,7 @@ function emitGrass(P) {
 // DIE NARBE DES BÜSCHELS (HALM_GESETZ, uv.y je Ecke): die einseitige Blatt-Fläche des Büschels ÜBER der Höhe der Ecke je Fläche
 // seiner Raster-Zelle (die Wiese pflanzt je Zelle einen Büschel, `understory.grassStep`; `k` = Welt-Skala / Raster, die Vorlage
 // in Zell-Kanten) — 0 an der höchsten Ähre, am Fuß der Blatt-Flächen-Index des Büschels. Das Licht in ihrer Tiefe rechnet der
-// Stoff (`halmNarbe`: Monsi & Saeki, Campbell), der Boden darunter liest denselben Fuß. Jedes Dreieck zählt mit seinem
-// Schwerpunkt.
+// Stoff des Halms (`halmNarbe`: Monsi & Saeki, Campbell). Jedes Dreieck zählt mit seinem Schwerpunkt.
 function __halmNarbe(geos, k) {
     const dreiecke = [];
     for (const g of geos) {

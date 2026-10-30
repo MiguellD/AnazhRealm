@@ -39,17 +39,6 @@ class AnazhRealm_stoff_material {
         return mat;
     }
 
-    // DER ANTEIL DER NAH-WIESE über dem Grund am Fragment (w4-wiese-nah): das Rand-Band ihres Sicht-Satzes (`_nahWieseSicht`: ein
-    // Büschel zeichnet, solange seine Würfel-Ordnung unter (radius − d) / rand + ½ liegt) in der waagrechten Entfernung zum Auge
-    // (`uLodAuge`, nie die Kamera eines Passes) — EIN Knoten für die Boden-Stoffe.
-    _narbeAnteil(T) {
-        if (this._narbeAnteilK) return this._narbeAnteilK;
-        const NW = AnazhRealm.NAH_WIESE;
-        const d = T.positionWorld.xz.sub(this._ensureLodUniforms().uLodAuge.xz).length();
-        this._narbeAnteilK = T.float(NW.radius).sub(d).div(NW.rand).add(0.5).clamp(0.0, 1.0);
-        return this._narbeAnteilK;
-    }
-
     // DIE KANONISCHE WIND-SWAY-GRÖSSE — jeder Wind-Leser LIEST sie;
     // Charakter als Parameter: `ampX` (Gras 1.5), `windScale` (Wipfel-Dämpfen, fehlt → 1).
     // phase = uWindTime·1.7 + dot(worldXZ, uWindDir)·0.35; hf = max(positionLocal.y, 0);
@@ -566,9 +555,6 @@ class AnazhRealm_stoff_material {
             ),
             lichtErsatz: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
             lichtKern: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
-            // DIE NARBE DER NAH-WIESE über ihrem Grund (w4-wiese-nah): die Blatt-Fläche über dem Fuß ihrer nahen Büschel (Λ, das
-            // Mittel der Stufe-1-Vorlagen am Fuß, uv.y) — EIN Schreiber `_nahWieseSenken`; ohne Büschel 0 (kein Dach über dem Grund)
-            narbeFuss: TSL.uniform(0),
             // DER SCHIRM-PIXEL JE SZENEN-PIXEL (w4-wiese-nah, `_szeneSkalaWirk`): unter dem zeitlichen Hochskalierer rendert die
             // Szene in 0,75 × Ausgabe, ihr `fwidth` und ihr `screenSize` messen den Pixel der SZENE — das Mikro-Detail der Stoffe
             // (`_mikroRelief`, `_halmStoff`, das Schutt-Korn) gilt dem Pixel des SCHIRMS: die Geschichte löst welt-feste Oktaven
@@ -720,9 +706,6 @@ class AnazhRealm_stoff_material {
         // Rim-Term POST-lighting); _ensureAtmoUniforms ist idempotent + lazy. Das Emissiv folgt NACH
         // responseProfile (liest `responseProfile.emissiv`).
         this._ensureAtmoUniforms();
-        // das Gewicht der Nah-Wiese über dem Grund (`_terrainGeologyAlbedo`) und ihre Verdeckung seines Himmels (unten)
-        let _narbeBoden = null,
-            _narbeHimmel = null;
         const _SR = AnazhRealm.SUBSTANCE_RESPONSE;
         const isFlatStructure = !opts.vertexColors && opts.color !== undefined;
         const responseProfile = opts.tags
@@ -809,7 +792,6 @@ class AnazhRealm_stoff_material {
                             albedoNode = _alb;
                             mat.colorNode = _Ta.vec4(_alb, 1.0);
                             if (_terrRough.node) mat.roughnessNode = _terrRough.node;
-                            _narbeBoden = _terrRough.narbe || null;
                         }
                     } else if (opts.pflanzenStoff) {
                         // Vegetation (Rinde + Laub) trägt die Per-Vertex-Albedo EXPLIZIT als colorNode (VOR der Response) —
@@ -1314,20 +1296,7 @@ class AnazhRealm_stoff_material {
                         _Tn.float(AnazhRealm.SCHATTEN_KASKADE.zuwendungSaum),
                         _Tn.dot(_Tn.normalize(_nWahr), this._windUniformsEnsure().uSunDir)
                     );
-                    // DER GRUND UNTER DER NARBE (w4-wiese-nah): die Sonne erreicht ihn × exp(−K(θ) · Λ) — dasselbe Gesetz wie der
-                    // Fuß des Halms (`halmNarbe`), Λ = die Narbe der nahen Büschel × ihr Gewicht über ihm; den Himmel verdeckt sie
-                    // unten (aoNode)
-                    const _narbe = _narbeBoden
-                        ? globalThis.__phytoCore.halmNarbe(
-                              AnazhRealm._windTsl(_Tn),
-                              _narbeBoden.mul(_aun.narbeFuss),
-                              this._windUniformsEnsure().uSunDir.y
-                          )
-                        : null;
-                    _narbeHimmel = _narbe ? _narbe.himmel : null;
-                    mat.receivedShadowNode = _narbe
-                        ? (schatten) => schatten.mul(_zu).mul(_narbe.direkt)
-                        : (schatten) => schatten.mul(_zu);
+                    mat.receivedShadowNode = (schatten) => schatten.mul(_zu);
                 }
             } catch (_e) {
                 throw this._stoffBruch("die Boden-Normale (Flatten · Relief · Zuwendung)", _e);
@@ -1335,7 +1304,6 @@ class AnazhRealm_stoff_material {
             // DIE HIMMELS-SICHT als Verdeckung: das Himmels-Licht (Umgebung, Hemi, Ambient) erreicht nur, was den Himmel
             // sieht — r184 multipliziert `aoNode` in das indirekte Licht (diffus und Glanz).
             if (opts.himmelsSicht) mat.aoNode = this._bodenStufenKnoten().himmel;
-            if (_narbeHimmel) mat.aoNode = mat.aoNode ? mat.aoNode.mul(_narbeHimmel) : _narbeHimmel;
             if (_mikroH) this._mikroStoff(THREE.TSL, mat, _mikroH);
             // DAS LICHT DES AUGES (K02a, K15, K11 — `_dayNightApplyAugenLicht`, `AUGEN_LICHT`) ist ein Platz des Licht-Pools mit
             // Himmels-Ersatz: es trägt nur, wo der Himmel fehlt — der Boden reicht dem Pool seine Himmels-Sicht (`aHimmel`) unten
@@ -2248,8 +2216,10 @@ class AnazhRealm_stoff_material {
             // Feld-Pass zeichnet (gate:nah-fern, Luft aus). Hier lebt nur noch die Farbe des Halms für das Relief der Nähe.
             const _mg = AnazhRealm.MEADOW_GREEN;
             const _sp = AnazhRealm.GRAS_SPITZE;
+            const _wg = AnazhRealm.WIESEN_GRUND.farbe;
             const _wurzel = _T.vec3(_mg[0], _mg[1], _mg[2]);
             const _spitze = _T.vec3(_sp[0], _sp[1], _sp[2]);
+            const _krone = _T.vec3(_wg[0], _wg[1], _wg[2]);
             // (Der Waldboden liegt unter den echten Kronen — `_wegeBodenFarbe` mischt die Laubstreu der Kronen-Karte;
             // der Fragment-Zwilling, der grüne feuchte Niederungen zum dunklen Wald-Kern-Ton zog, ist gefallen.)
             // Gras als Oberflächen-Funktion: keine Halm-Geometrie — die Wiese lebt als hochfrequente Blatt-
@@ -2313,20 +2283,26 @@ class AnazhRealm_stoff_material {
                 // tiefer liegende Treffer im Eigen-Schatten der Büschel (0,65 … 1); die Lücke zeigt den Wurzelgrund im
                 // Schatten (0,5 × Wurzel). Bis 05.10. war der Halm die Wurzelfarbe × 0,35 … 1,30: ein Oliv-Tarnmuster
                 // unter grellen Nah-Halmen.
-                // DER GRUND UNTER DER NARBE (w4-wiese-nah): wo die Nah-Wiese ihre Büschel zeichnet (der Anteil ihres Rand-Bands
-                // am Fragment, `_narbeAnteil`), liegt hier der Grund unter ihren Halmen — der Fuß-Ton des Halms, sein Licht
-                // dämpft die Narbe (`halmNarbe`, im Licht des Bodens: `roughOut.narbe`); die Parallax-Halme tragen die Wiese nur,
-                // wo keine Büschel stehen. Bis dahin lag unter den echten Halmen ihr Relief zu 40 % (die Halme im 11-cm-Takt über
-                // dem Halm-Mittel): aus 1 m ein grünes Rauschen zwischen den Halmen, voll im Licht.
-                const _anteil = this._narbeAnteil(_T);
+                // Wo die Nah-Wiese steht (Radius NAH_WIESE.radius), tragen IHRE Halme das Gras; der Boden darunter ist
+                // ihr ruhigerer Wurzelgrund (das Relief zu 40 % über dem Halm-Mittel im Schatten, × 0,7) — das volle
+                // Relief erst zu ihrem Rand hin (die acht Schichten lasen sich auf Armlänge als Höhenlinien, Linse 05.10.).
+                // w4-wiese-nah legte hier den Grund UNTER die Narbe (flach der Fuß-Ton, Sonne und Himmel × `halmNarbe`) im ganzen
+                // Band der Nah-Wiese um das Auge, auch wo sie keinen Büschel zeichnet: am Feuer der Prüfbühne stand kein Halm,
+                // und der Boden ohne Feuer fiel nachts auf Luma 6,1 (Soll ≥ 22), das Feuer auf ihm auf 25,4° (Soll 28–45°,
+                // gate:pruefbuehne-licht S0, Radeon) — heil-w4-wiese-nah: der Grund folgt dem Band, nie dem Bestand, darum fiel er.
+                const _nwR = AnazhRealm.NAH_WIESE.radius;
+                const _relief = _T
+                    .smoothstep(_T.float(_nwR * 0.5), _T.float(_nwR), _camD)
+                    .mul(0.6)
+                    .add(0.4);
                 const _halmCol = _T.mix(
-                    _wurzel,
+                    _krone.mul(_T.float(0.7)),
                     _T.mix(
                         _wurzel.mul(_T.float(0.5)),
                         _T.mix(_wurzel, _spitze, _trefH).mul(_T.float(0.65).add(_trefH.mul(_T.float(0.35)))),
                         _traf
                     ),
-                    _T.float(1.0).sub(_anteil)
+                    _relief
                 );
                 const _halmW = _green
                     .mul(_flat.mul(_T.float(1.0).sub(_rockW)))
@@ -2336,8 +2312,6 @@ class AnazhRealm_stoff_material {
                     .mul(_T.float(0.95))
                     .clamp(0.0, 1.0);
                 _out = _T.mix(_out, _halmCol, _halmW);
-                // der Grund unter der Narbe trägt ihr Licht: das Gewicht, mit dem hier Büschel über ihm stehen
-                if (roughOut) roughOut.narbe = _halmW.mul(_anteil);
             }
             // Die Geologie treibt die Bruch-Struktur: wo Fels/Geröll durchbricht (`rockW`+`screeW`), bricht der
             // Boden karstig (hardDrive); die flache Wiese bleibt weich (Basis-härte 0.36). Kein neuer Noise.
