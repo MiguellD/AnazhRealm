@@ -82,3 +82,4 @@ dienst-urteil-1 Exit0 station dienst-urteil.sh an 24a0f3ef
 geraet-raeumen-1 Exit0 station geraet-raeumen.sh an 24a0f3ef
 takt25b-gtx gemessen punkte 6b3da705 gtx: 0 grün / 0 rot
 takt25p-gtx gemessen punkte 6b3da705 gtx: 0 grün / 0 rot
+schloss-blick-1 Exit0 station gpu-schloss-blick.sh an 6b3da705

@@ -1,0 +1,71 @@
+== 2026-10-30 14:00:29 Schloss /tmp/claude/gpu-schloss
+ls: cannot access '/tmp/claude/gpu-schloss': No such file or directory
+-- besitzer.txt:
+cat: /tmp/claude/gpu-schloss/besitzer.txt: No such file or directory
+
+== die Vorfahrt-Probe von gpu-lauf (worker):
+INFORMATION: Es werden keine Aufgaben mit den angegebenen Kriterien ausgef�hrt.
+   [exit 0 · 244 ms]
+== tasklist ohne Filter (Zahl):
+261
+   [exit 0 · 477 ms]
+== Start einer Git-Bash:
+bash lebt
+   [exit 0 · 154 ms]
+== Prozesse (gpu-lauf · werkbank · serie · punkte · messplatz · chrome mit Debug-Port):
+15324 <-13792 06:55:46 "C:\Program Files\Git\usr\bin\bash.exe" /c/Users/micha/Desktop/AnazhRealm-OMEN/p3/messplatz/messplatz.sh
+8808 <-15324 14:00:28 "C:\Program Files\Git\usr\bin\bash.exe" /c/Users/micha/Desktop/AnazhRealm-OMEN/p3/messplatz/messplatz.sh
+11068 <-10516 14:00:30 "C:\Program Files\Git\usr\bin\timeout.exe" 60 powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'gpu-lauf|werkbank|serie\.sh|punk
+20796 <-11068 14:00:30 "C:\Program Files\Git\usr\bin\timeout.exe" 60 powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'gpu-lauf|werkbank|serie\.sh|punk
+5920 <-20796 14:00:30 C:\windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -match 'gpu-lauf|werkbank|serie\.sh|pun
+   [exit 0 · 677 ms]
+== bash-Prozesse: 6
+   [exit 0 · 293 ms]
+== /c/Users/micha/Desktop/AnazhRealm-OMEN/p3/messplatz/lauf/takt25b-gtx.out (40 Zeilen, Ende)
+  OFFEN material.K1#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN material.K4#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN material.K5#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN lod.K3#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN siedlung.K1#2 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN siedlung.K4#2 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN oekologie.K4#2 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN physik.K2#2 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN tiere.K1#2 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN mensch.K1#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN mensch.K5#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN studios.K2#2 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN studios.K3#2 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN bauen.K1#2 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN bauen.K5#2 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN studios.K4#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K3#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K5#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K2#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K2#2 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN ankunft.K2#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN ankunft.K3#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN klang.K4#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN speicher.K4#2 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+→ meisterkarte-quelle\punkte\messung\6b3da705-gtx.json
+== /c/Users/micha/Desktop/AnazhRealm-OMEN/p3/messplatz/lauf/takt25p-gtx.out (7 Zeilen, Ende)
+Punkte-Maschine: 5 Station(en) in 3 Läufen auf gtx am 6b3da705 · Sitzung 3 Proben in EINER Welt (Deckel Σ 2 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C
+  OFFEN profiband.K4#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K5#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K1#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K2#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K3#1 · GPU-Schloss nie bekommen: gpu-lauf.sh schwieg 600 s beim Warten · Sitzung · ungemessen, `run --offen` misst neu
+→ meisterkarte-quelle\punkte\messung\6b3da705-gtx.json
+-- /c/Users/micha/Desktop/AnazhRealm-OMEN/p3/messplatz/lauf/z83-abab:
+drwxr-xr-x 1 micha 197609   0 Okt 30 13:51 fahrt
+-rw-r--r-- 1 micha 197609 390 Okt 30 14:00 fortschritt.log
+drwxr-xr-x 1 micha 197609   0 Okt 30 13:59 gehen
+-rw-r--r-- 1 micha 197609 565 Okt 30 14:00 serie.out
+drwxr-xr-x 1 micha 197609   0 Okt 30 13:59 stand
+-rw-r--r-- 1 micha 197609  47 Okt 30 13:59 stopp.log
+-- /c/Users/micha/Desktop/AnazhRealm-OMEN/p3/messplatz/lauf/z82b-abab:
+drwxr-xr-x 1 micha 197609   0 Okt 30 13:22 fahrt
+-rw-r--r-- 1 micha 197609 390 Okt 30 13:30 fortschritt.log
+drwxr-xr-x 1 micha 197609   0 Okt 30 13:29 gehen
+-rw-r--r-- 1 micha 197609 668 Okt 30 13:30 serie.out
+drwxr-xr-x 1 micha 197609   0 Okt 30 13:29 stand
+-rw-r--r-- 1 micha 197609  47 Okt 30 13:29 stopp.log
