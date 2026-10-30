@@ -1,0 +1,10 @@
+{
+ "ms": 324173,
+ "fehler": "DIE WELT STEHT NICHT nach 3905 Takten: Ruhe 3379, zuletzt brach sie: Fege-Takt deckWache 6400/6528 (DIE WELT HÄNGT: die Welt nach 3905 Takten — offen {\"foundry\":0,\"chunks\":0,\"wald\":0,\"karten\":0,\"felder\":0,\"leiber\":5,\"dorf\":0,\"leib\":0,\"ankunft\":0,\"stau\":0,\"horizont\":0,\"bau\":0} ohne Bau-Ereignis)",
+ "stapel": [
+  "weltStehtNach (pptr:evaluate;lade%20(C%3A%5CUsers%5Cmicha%5CDesktop%5CAnazhRealm-OMEN%5Cp3%5Cmp-baum%5C715754fc%5Cscripts%5Cwerkbank.cjs%3A862%3A24):908:15)",
+  "at weltStehtNach (evaluate at lade (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\mp-baum\\715754fc\\scripts\\werkbank.cjs:862:24), <anonymous>:907:14)",
+  "at #evaluate (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:391:56)",
+  "at async ExecutionContext.evaluate (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\ExecutionContext.js:277:16)"
+ ]
+}
