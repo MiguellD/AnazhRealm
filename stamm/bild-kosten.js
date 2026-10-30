@@ -521,7 +521,9 @@ class AnazhRealm_bild_kosten {
                 // Bake-Versuch (13 Render-Aufrufe), nie je Aufruf
                 const B = welt._karteBuehneSatz;
                 const buehne = !!B && scene === B.szene;
-                if (scene !== welt.state.scene && !buehne) {
+                // DIE BÜHNEN (Werkstatt-Vorschau, Ich-, Hof-, Feed-Bühne: `_buehneRender` → `_buehneJetzt`) zeichnen wie die
+                // Welt — bis 30.10. eigene Renderer, deren erster Render jede Pipeline synchron baute (Tab: 5 054 ms ohne Bild)
+                if (scene !== welt.state.scene && !buehne && scene !== welt._buehneJetzt) {
                     zeichne(this, ro, aufnahme, false);
                     return;
                 }
@@ -957,7 +959,7 @@ class AnazhRealm_bild_kosten {
         if (st._gpuKehrausT && jetzt - st._gpuKehrausT < AnazhRealm.GPU_KEHRAUS_MS) return 0;
         st._gpuKehrausT = jetzt;
         const lebt = new Set();
-        st.scene.traverse((o) => {
+        const sammle = (o) => {
             // eine Senke in der Arena (G1) zeichnet nicht: ihre Gestalt trägt das Lager, ihre Instanzen die Arena
             if (o.__arena) return;
             const g = o.geometry;
@@ -977,7 +979,11 @@ class AnazhRealm_bild_kosten {
             // eine Senke zeichnet über ihren Zeichner (1410-1): dessen Render-Objekte zeichnen ihre Attribute
             const zro = o.__zeichner && o.__zeichner.__renderObjekte;
             if (zro) for (const ro of zro) if (ro.attributes) for (const a of ro.attributes) lebt.add(a);
-        });
+        };
+        st.scene.traverse(sammle);
+        // die Bühnen sind Bild: was eine Bühne seit dem letzten Kehraus zeichnete (`_buehneRender`), lebt wie der Graph
+        if (this._buehnenBild) for (const s of this._buehnenBild) s.traverse(sammle);
+        if (this._buehnenBild) this._buehnenBild.clear();
         const gezeichnet = rend._geometries.attributeCall;
         const weg = [];
         for (const [a, v] of rend.info.memoryMap) {
@@ -3533,13 +3539,16 @@ class AnazhRealm_bild_kosten {
     // V18.531 las das Fell-Gesetz die Canvas-Höhe selbst (Rückfall 1080, Sichtfeld-Rückfall 60°), und der Geräte-Seed
     // las `innerWidth·innerHeight·dpr²` VERKEHRT herum (ab 4 MPix weniger Welt: ein größerer Schirm startete ärmer).
     // gate:schirm-monotonie zählt die Welt in drei Fenstergrößen je Pass und Klasse und nennt jeden zweiten Weg.
-    // Ohne Renderer oder Perspektiv-Kamera ist pxJeM null — ein fehlender Wert ist nie 0.
-    _schirmMessen() {
+    // Ohne Renderer oder Perspektiv-Kamera ist pxJeM null — ein fehlender Wert ist nie 0. Eine BÜHNE (`ziel`, eine Leinwand
+    // des Welt-Renderers mit ihrem Satz `ziel.buehne`) ist ihr eigener Schirm: derselbe Weg misst ihren Zeichenpuffer in
+    // ihren Satz (ohne Welt-Kamera, pxJeM null) — ihr Ziel folgt ihrer Leinwand, nie dem Fenster der Welt.
+    _schirmMessen(ziel = null) {
         const st = this.state;
-        const rend = st.renderer;
-        const cam = st.camera;
-        const v = this._schirmPuffer || (this._schirmPuffer = new THREE.Vector2());
-        const s = this._schirmWert || (this._schirmWert = { breite: 0, hoehe: 0, pxJeM: null });
+        const rend = ziel || st.renderer;
+        const cam = ziel ? null : st.camera;
+        const h = ziel ? ziel.buehne : this;
+        const v = h._schirmPuffer || (h._schirmPuffer = new THREE.Vector2());
+        const s = h._schirmWert || (h._schirmWert = { breite: 0, hoehe: 0, pxJeM: null });
         if (rend && typeof rend.getDrawingBufferSize === "function") rend.getDrawingBufferSize(v);
         else v.set(0, 0);
         s.breite = v.x;

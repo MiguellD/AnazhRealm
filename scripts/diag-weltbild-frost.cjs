@@ -1,6 +1,7 @@
-// diag-weltbild-frost.cjs — DIE FROST-WAND (gate:weltbild-frost): jede Bühne (Werkstatt · Ich · Hof · Feed) ist ein eigenes
-// WebGPU-Backend, das Geometrie und Stoffe mit der Welt teilt; das Backend-Gesetz (`_backendGesetz`: schmaler Index ·
-// Index-Wache · GPU-Wache) gilt an jedem. Die Chronik der Befunde steht in git.
+// diag-weltbild-frost.cjs — DIE FROST-WAND (gate:weltbild-frost): jede Bühne (Werkstatt · Ich · Hof · Feed) zeichnet über den
+// Welt-Renderer (`_buehneRenderer`: eine Leinwand, EIN Gerät; bis 30.10. je ein eigenes WebGPU-Backend) und teilt Geometrie
+// und Stoffe mit der Welt; das Backend-Gesetz (`_backendGesetz`: schmaler Index · Index-Wache · GPU-Wache) gilt an jedem
+// Backend. Die Chronik der Befunde steht in git.
 //
 // Je Schritt (Werkstatt mit Eiche · Tab/Ich-Bühne · Hof-Bühne) prüft die Wand am ECHTEN Renderer (der Null-Renderer ist blind):
 //   I  DER INDEX-ZENSUS: jeder Index-Puffer der Welt-GPU trägt das Format, das der Draw bindet (Bytes des Arrays ≤ Puffer)
@@ -13,8 +14,8 @@
 // ist die EINE Regel jeder Gruppe, die Welt-Vorlagen teilt, `_ofenVorlage` sagt, was eine Gruppe besitzt):
 //   S1 der Spielerpfad (jede Tetrapoda-Art↔human; der Mitspieler empfängt jede Seele, dann sein Abschied) und die Hof-Bühne
 //      entsorgen keine Welt-Geometrie, keinen Welt-Stoff; je Seele tragen Ich-Bühne und Mitspieler (S4) den Leib der Welt
-//   S2 keine GPU kompiliert dabei nach (Welt, Ich-, Hof-Bühne je ≤ 2 Module/Pipelines gegen die geschlossene Bühne): der
-//      Knoten-Bau einer Seele überlebt die Lösung des Leibs, der ihn eben noch teilte
+//   S2 die GPU kompiliert dabei nicht nach (≤ 2 Module/Pipelines gegen die geschlossene Bühne, Welt und Bühnen auf EINEM
+//      Gerät): der Knoten-Bau einer Seele überlebt die Lösung des Leibs, der ihn eben noch teilte
 //   S3 die Feed-Vorschau (4 Wesen + eine Rezept-Karte) entsorgt keine Welt-Geometrie, keinen Welt-Stoff
 //   S5 der Werkstatt-Ofen, Regler-Zug 20 Werte: kein Einzelstück im Ofen-Memo, Grafikspeicher und Geometrie-Zahl der
 //      Werkstatt, die dispose-Hörer der geteilten Stoffe und der JS-Speicher bleiben beschränkt (kein Welt-Satz verdichtet darin)
@@ -142,13 +143,24 @@ function pruefRaum(echt) {
     // der Deckel zählt einen Gang nur, wenn ihr Renderer bereit ist und ihr Gerät die eingereichte Arbeit abgegeben hat
     // (swiftshader kompiliert im GPU-Prozess, Compositor und Bühnen-Takt stehen derweil) — die Bühne urteilt in GPU-Ereignissen,
     // nie im Takt der Wanduhr (bis 25.10. zählte er je 50/200 ms, 20/180 s bis ROT); fehlt die Bühne, zählt er und nennt sie
-    F.gezeichnet = (s) => (s && s.renderer ? s.renderer.info.render.calls : 0);
+    // die Bilder einer Bühne zählen erst, wenn jedes sichtbare Mesh in ihrem Blick gezeichnet hat (die Erst-Zeichnung baut
+    // asynchron, ein Bild ohne seine Bürger ist kein Bild der Bühne)
+    const blick = new T.Frustum(),
+        m4 = new T.Matrix4();
+    F.gezeichnet = (s) => {
+        const b = s && s.renderer && s.renderer.buehne;
+        if (!b) return 0;
+        blick.setFromProjectionMatrix(m4.multiplyMatrices(s.camera.projectionMatrix, s.camera.matrixWorldInverse));
+        let fehlt = 0;
+        s.scene.traverseVisible((o) => (fehlt += o.isMesh && blick.intersectsObject(o) && !r._erstZeichnung.gezeichnet.get(o)));
+        return fehlt ? 0 : b.bilder;
+    };
     F.buehne = async (name, holen, bis) => {
         let fragt = false;
         const offen = (s = holen()) =>
             !s || !s.rendererReady
                 ? !!s
-                : fragt || ((fragt = true), s.renderer.backend.device.queue.onSubmittedWorkDone().then(() => (fragt = false)), false);
+                : fragt || ((fragt = true), rend.backend.device.queue.onSubmittedWorkDone().then(() => (fragt = false)), false);
         for (const weiter = window.__deckel(name, 400, offen); !bis(F.gezeichnet(holen())) && weiter(); )
             await sleep(50);
     };
@@ -686,29 +698,19 @@ hauptLauf(async () => {
                 await F.zeichne(echt ? 8 : 2);
             };
             await durchgang();
-            const devs = {
-                welt: r.state.renderer.backend.device,
-                ich: r.state.ichStage && r.state.ichStage.renderer.backend.device,
-                hof: r.state.hofStage && r.state.hofStage.renderer.backend.device,
-            };
-            const alle = () => Object.fromEntries(Object.entries(devs).map(([k, d]) => [k, E.bau(d)]));
-            const messe = async () => {
-                const vor = alle();
-                await F.zeichne(echt ? 8 : 2);
-                const ruhe = alle();
-                const n0 = (devs.welt.__frostNamen || []).length;
-                await durchgang();
-                const nach = alle(),
-                    neubau = {},
-                    d = (k, g) => nach[k][g] - ruhe[k][g] - (ruhe[k][g] - vor[k][g]);
-                for (const k of Object.keys(devs)) neubau[k] = { module: d(k, "module"), pipelines: d(k, "pipelines") };
-                return { neubau, neu: (devs.welt.__frostNamen || []).slice(n0, n0 + 6) };
-            };
-            const { neubau, neu } = await messe();
+            // das EINE Gerät (die Bühnen zeichnen auf ihm): Bauten vor und nach der Ruhe, dann der gemessene Durchgang
+            const dev = r.state.renderer.backend.device;
+            const vor = E.bau(dev);
+            await F.zeichne(echt ? 8 : 2);
+            const ruhe = E.bau(dev);
+            const n0 = (dev.__frostNamen || []).length;
+            await durchgang();
+            const nach = E.bau(dev),
+                d = (g) => nach[g] - ruhe[g] - (ruhe[g] - vor[g]);
+            const neubau = { module: d("module"), pipelines: d("pipelines") };
+            const neu = (dev.__frostNamen || []).slice(n0, n0 + 6);
             const zwillinge = (codes) => codes.length - new Set(codes.map((c) => c.replace(/NodeBuffer_\d+/g, ""))).size;
-            const programmZwillinge = [r.state.renderer, r.state.ichStage.renderer, r.state.hofStage.renderer].map((x) =>
-                zwillinge([...x._pipelines.programs.vertex.keys()])
-            );
+            const programmZwillinge = zwillinge([...r.state.renderer._pipelines.programs.vertex.keys()]);
             const zwillingSelbst = zwillinge(["NodeBuffer_1", "NodeBuffer_2", "x"]);
             r.state.scene.remove(peer.mesh);
             E.im("seelen", () => r._disposeSoulGroup(peer.mesh)); // der Abschied des Mitspielers
@@ -738,15 +740,15 @@ hauptLauf(async () => {
     check("S1 Selbsttest: leere Bühne und Block-Zwilling sind ROT", !leibGut(seelen.selbst.leer) && !leibGut(seelen.selbst.zwilling), seelen.selbst);
     // nie vakuös: die Bühnen tauschten wirklich ihre Gestalt (dass sie Geometrie trugen, zeigt der Leib je Seele)
     check("S1 die Probe wechselt wirklich (Ich ×8 + Hof ×8 je Durchgang)", seelen.tausch >= 24, `${seelen.tausch} Wechsel`);
-    // je Device und gemessenem Durchgang
-    for (const [k, n] of Object.entries(seelen.neubau))
-        check(
-            `S2 ${k === "welt" ? "die Welt-GPU" : k === "ich" ? "die Ich-Bühne" : "die Hof-Bühne"} kompiliert beim Seelenwechsel nicht nach (der Knoten-Bau der Zwischen-Seele bleibt)`,
-            n.module <= NEUBAU_MAX && n.pipelines <= NEUBAU_MAX,
-            `+${n.module} Module / +${n.pipelines} Pipelines gegen die geschlossene Bühne (Soll ≤ ${NEUBAU_MAX})${k === "welt" && seelen.neu.length ? " — neu: " + seelen.neu.join(", ") : ""}`
-        );
+    // je gemessenem Durchgang, auf dem EINEN Gerät (Welt, Ich- und Hof-Bühne)
+    const n = seelen.neubau;
+    check(
+        "S2 die GPU (Welt und Bühnen) kompiliert beim Seelenwechsel nicht nach (der Knoten-Bau der Zwischen-Seele bleibt)",
+        n.module <= NEUBAU_MAX && n.pipelines <= NEUBAU_MAX,
+        `+${n.module} Module / +${n.pipelines} Pipelines gegen die geschlossene Bühne (Soll ≤ ${NEUBAU_MAX})${seelen.neu.length ? " — neu: " + seelen.neu.join(", ") : ""}`
+    );
 
-    check("S2 je Gestalt EIN Programm (Welt · Ich · Hof: kein Zwilling, den nur NodeBuffer_<id> trennt)", seelen.programmZwillinge.join() === "0,0,0" && seelen.zwillingSelbst === 1, `Zwillinge ${seelen.programmZwillinge} · Selbsttest ${seelen.zwillingSelbst} (Soll 1)`);
+    check("S2 je Gestalt EIN Programm (Welt und Bühnen: kein Zwilling, den nur NodeBuffer_<id> trennt)", seelen.programmZwillinge === 0 && seelen.zwillingSelbst === 1, `Zwillinge ${seelen.programmZwillinge} · Selbsttest ${seelen.zwillingSelbst} (Soll 1)`);
 
     // S3 — die Feed-Vorschau: Wesen-Karten (4 Seelen) und eine Rezept-Karte (Bauplan-Teile, eigene Geometrie), zweimal.
     const feed = await page.evaluate(async () => {
@@ -839,7 +841,7 @@ hauptLauf(async () => {
         const stoffe = new Set();
         const O = (window.__frostOfen = { id, dial, basis: basis[dial], stoffe });
         O.mess = () => {
-            const m = ws.preview && ws.preview.renderer ? ws.preview.renderer.info.memory : {};
+            const m = r.state.renderer.info.memory; // die Werkstatt zeichnet auf der Welt-GPU (die Welt ruht in der Probe)
             let hoerer = 0;
             for (const s of stoffe) hoerer += s._listeners && s._listeners.dispose ? s._listeners.dispose.length : 0;
             const MB = +(((m.attributesSize || 0) + (m.indexAttributesSize || 0)) / 1048576).toFixed(2);
@@ -990,7 +992,7 @@ hauptLauf(async () => {
     }
 
     // P2 — DER PFAD UND DER ZWANG: ein Index ungerader Länge der Ich-Bühne, neu (wie `_gpuAbschied`), ganz und ab Element 1
-    const p2 = await page.evaluate(() => {
+    const p2 = await page.evaluate(async () => {
         const T = window.THREE,
             W = window.__frostHoer.puffer,
             st = r.state.ichStage;
@@ -1005,6 +1007,11 @@ hauptLauf(async () => {
                 if (k > 1) g.index.addUpdateRange(1, 3);
                 g.index.needsUpdate = k > 0;
                 r._buehneRender(st.renderer, st.scene, st.camera, "Ich-Bühne");
+                // die Erst-Zeichnung baut asynchron: erst wenn die Probe zeichnete, schreibt der nächste Gang nach
+                for (let i = 0; i < 200 && !r._erstZeichnung.gezeichnet.get(m); i++) {
+                    await sleep(50);
+                    r._buehneRender(st.renderer, st.scene, st.camera, "Ich-Bühne");
+                }
             }
         } catch (e) {
             bruch = e.message;

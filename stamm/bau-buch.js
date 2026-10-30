@@ -629,10 +629,15 @@ class AnazhRealm_bau_buch {
     // ANGEZEIGTE Rolle: ein deklarierter Override (roleManual = Spieler-Intent, oder built-in-Saat-Rolle)
     // gilt; sonst die EMERGENTE (computeBlueprintRole) — sonst zeigte ein rollenloser Bauplan (bp.role
     // undefined) den „Bauwerk"-Default statt seiner wahren Rolle.
+    // Während EINES Baus des Rezeptbuchs (`_rollenMemo`, renderRecipeBook) rechnet jede Rolle einmal: Sicht, Art, Such-Text,
+    // Zeile und Warum-Chip fragten sie je Bauplan fünfmal (Tab, erstes Öffnen: 551 Rollen für 109 Rezepte, 79 ms).
     _displayRole(bp) {
         if (!bp) return AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
         if ((bp.roleManual || bp.builtIn) && bp.role) return bp.role;
-        return this.computeBlueprintRole(bp);
+        const m = this._rollenMemo;
+        if (!m) return this.computeBlueprintRole(bp);
+        if (!m.has(bp)) m.set(bp, this.computeBlueprintRole(bp));
+        return m.get(bp);
     }
     // Aktivierte Tags je Part (Form × Material): Werte 0..3 = FORM_TAG_ACTIVATION × MATERIAL_TAG (0..1).
     // Unbekannte Shape (z. B. "blueprint") oder fehlendes Material → leeres Objekt.
