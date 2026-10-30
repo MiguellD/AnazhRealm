@@ -227,7 +227,8 @@ function maske(roh, box) {
     const nu = Math.ceil((box.u1 - box.u0) / r) + 1,
         nv = Math.ceil((box.v1 - box.v0) / r) + 1;
     const [m, R] = [new Uint8Array(nu * nv), { u0: box.u0, v0: box.v0, r, nu, nv }];
-    for (const q of roh.uv) for (let j = 0; j < q.length; j += 6) rasterDreieck(...q.subarray(j, j + 6), R, (o) => (m[o] = 1));
+    for (const q of roh.uv)
+        for (let j = 0; j < q.length; j += 6) rasterDreieck(...q.subarray(j, j + 6), R, (o) => (m[o] = 1));
     return m;
 }
 function iou(rohe, r) {
@@ -499,7 +500,9 @@ function fensterMisch(F, o, sum, fach) {
             if (!f.zwei && (horiz ? sg : -sg) * ((bx - ax) * (cy - ay) - (by - ay) * (cx - ax)) <= 0) continue;
             const ci = t / 3;
             rasterDreieck(ax, ay, bx, by, cx, cy, R, (o, w0, w1, w2) => {
-                const col = [0, 1, 2].map((j) => w0 * f.c[ci * 3 + j] + w1 * f.c[ci * 3 + 3 + j] + w2 * f.c[ci * 3 + 6 + j]);
+                const col = [0, 1, 2].map(
+                    (j) => w0 * f.c[ci * 3 + j] + w1 * f.c[ci * 3 + 3 + j] + w2 * f.c[ci * 3 + 6 + j]
+                );
                 px[o].push([w0 * da + w1 * db + w2 * dc, f.al, col, f.gl]);
             });
         }

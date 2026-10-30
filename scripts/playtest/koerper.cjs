@@ -1920,7 +1920,10 @@ async function checkBandGamepadVerben({ page, check }) {
         c.selbsttest = leser().includes("__zwillingLeser");
         delete proto.__zwillingLeser;
         c.absenz = o.leser.length === 0;
-        if (!P || !T || !B) return Object.assign(o, { error: `keine Verb-Tafel (state.verbTafel · PAD_GESETZ · PAD_BELEGUNG) · rohe Tasten-Leser [${o.leser}]` });
+        if (!P || !T || !B)
+            return Object.assign(o, {
+                error: `keine Verb-Tafel (state.verbTafel · PAD_GESETZ · PAD_BELEGUNG) · rohe Tasten-Leser [${o.leser}]`,
+            });
         const pad = { connected: true, axes: [0, 0, 0, 0], buttons: [...Array(17)].map(() => ({ pressed: false, value: 0 })) };
         pad.vibrationActuator = { type: "dual-rumble", playEffect: (art, e) => (fx.push(e), Promise.resolve()), reset() {} };
         Object.defineProperty(navigator, "getGamepads", { value: () => [pad], configurable: true });

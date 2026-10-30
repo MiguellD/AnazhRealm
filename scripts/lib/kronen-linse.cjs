@@ -102,7 +102,9 @@ function rastere(meshes, px, nimm, jeAnsicht) {
                     by = (p[b * 3] * ux + p[b * 3 + 1] * uy + p[b * 3 + 2] * uz - v0) / px;
                 const qx = (p[c * 3] * cx + p[c * 3 + 2] * cz - u0) / px,
                     qy = (p[c * 3] * ux + p[c * 3 + 1] * uy + p[c * 3 + 2] * uz - v0) / px;
-                rasterDreieck(ax, ay, bx, by, qx, qy, { nu: W, nv: H }, (o, w0, w1, w2) => pixel(o, w0, w1, w2, m, a, b, c));
+                rasterDreieck(ax, ay, bx, by, qx, qy, { nu: W, nv: H }, (o, w0, w1, w2) =>
+                    pixel(o, w0, w1, w2, m, a, b, c)
+                );
             }
         }
     }

@@ -1304,6 +1304,31 @@ const ZWILLINGE = [
         verboten: STAMM,
         fiel: "K-ICH-BÜHNE-PUFFER — die Arena rundete neben der EINEN Wort-Schrift (_schreibWorte)",
     },
+    // DECKE w3w-studios — das EINE Dreiecks-Raster: wer ein Dreieck rastert, ruft kronen-linse `rasterDreieck`; die Kante der
+    // Pixel-Bahn am Raster-Rand ist sein Abdruck. Rest: diag-pflanzen-nah (die Karte w3w-wald schreibt seine Teppich-Deckung neu).
+    // (Krone, Bild des Baus, Tor-Wurf, Haus-Maske und -Glas, Kreatur-Umriss rasterten bis dahin je selbst)
+    {
+        muster: /Math\.min\(\w+ - 1, Math\.(?:ceil\(\(?Math\.max\(|max\(\.\.\.)/,
+        gesetzbuch: "scripts/lib/kronen-linse.cjs",
+        verboten: gelaendeLeser()
+            .filter((d) => /^scripts\/(?!lib\/kronen|diag-pflanzen)/.test(d))
+            .concat(baender(true)),
+        fiel: "Decke w3w-studios — das Dreiecks-Raster wohnt in kronen-linse",
+    },
+    // DECKE w3w-studios — die Erreichbarkeit einer Probe: der Wurf trägt sich selbst (safeEvaluate → WUERFE), Fehler und Wurf liest
+    // der EINE Zweig des Läufers (`erreichbar` · `ohneWurf`); der Wächter vor der Probe und der Zweig von Hand sind seine Zwillinge.
+    {
+        muster: /if \((?:(\w+) && !\1|!(\w+) \|\| \2)\.error\)/,
+        gesetzbuch: "scripts/playtest.cjs",
+        verboten: baender(),
+        fiel: "Decke w3w-studios — der Fehler-Zweig ist erreichbar · ohneWurf",
+    },
+    {
+        muster: /if \(!r( \|\| !r\.state)?\) return\b/,
+        gefallen: true,
+        verboten: baender().concat(["scripts/playtest.cjs"]),
+        fiel: "Decke w3w-studios — der stille Existenz-Wächter einer Probe",
+    },
 ];
 
 // Die Leser des Gelände-Gesetzes, die es nie nachrechnen: jede JS-Datei der Wurzel außer dem Gesetzbuch und dem Seh-
@@ -1323,6 +1348,15 @@ function gelaendeLeser() {
             .filter((f) => /\.(?:c|m)?js$/.test(f) && f !== "diag-altlasten.cjs")
             .map((f) => d + "/" + f);
     return wurzel.concat(skripte("scripts"), skripte("scripts/lib"), skripte("worlds/gelaende"));
+}
+// die Bänder des Läufers; ohne `mitRest` ohne die sieben der Karte spike-ci-konsum (sie zieht die Erreichbarkeit dort selbst,
+// 759c0e1b · dc6fc0b3 — bis sie landet, der Rest der Wände)
+function baender(mitRest) {
+    const rest = /^(bild|gelaende-boden|kreatur|netz-portal|siedlung|studio|vegetation)\./;
+    return fs
+        .readdirSync(path.join(__dirname, "playtest"))
+        .filter((f) => mitRest || !rest.test(f))
+        .map((f) => "scripts/playtest/" + f);
 }
 
 // `ersatz` (Selbsttest): { datei: Text } liest statt der Platte. Ein Abdruck ist ein Text (`fingerprint`) oder ein
@@ -3824,6 +3858,9 @@ function main() {
             still("voxel-worker.js", cont0) &&
             still(STAMM[0], maske) &&
             feuert(WORT_BUCH, "q.writeBuffer(b, 0, a.buffer, a.byteOffset + 0, 4);".repeat(2), "neben 2 .*Wort-Schrift") &&
+            feuert("scripts/diag-tor-fern.cjs", "Math.min(n - 1, Math.ceil(Math.max(a)));", "Raster") &&
+            feuert("scripts/playtest/gelaende.cjs", "if (o && !o.error) f();", "Fehler-Zweig") &&
+            feuert("scripts/playtest/netz.cjs", "if (!r) return;", "Wächter") &&
             feuert(STAMM[0], '"return vec4<f32>(pT.rgb * ((l0c * max(l0d.y, 0.0) + ambientFarbe) * (1.0 / PI)), pT.a);"', "weltLicht") &&
             still(STAMM[0], '"return vec4<f32>(pT.rgb * ((l0c * max(l0d.y, 0.0) + ambientFarbe) * (1.0 / PI)), pT.a);"');
         console.log(

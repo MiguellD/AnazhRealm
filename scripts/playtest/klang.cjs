@@ -185,7 +185,8 @@ async function checkBandW4LofiPad({ page, check }) {
         Object.assign(emo, eBefore);
         return out;
     });
-    if (erreichbar(check, "W4 V2/V3 erreichbar", w4v2Results)) for (const [satz, urteil] of Object.entries(w4v2Results)) check(satz, ...[urteil].flat());
+    if (erreichbar(check, "W4 V2/V3 erreichbar", w4v2Results))
+        for (const [satz, urteil] of Object.entries(w4v2Results)) check(satz, ...[urteil].flat());
 }
 
 // Der Fuß spielt den Boden, nicht die Uhr — eingefaltet aus gate:schritt-klang (D3b, Orakel Tier-1 #7): die drei Schritt-Klang-
