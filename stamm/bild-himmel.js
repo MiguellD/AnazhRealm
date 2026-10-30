@@ -1752,6 +1752,14 @@ class AnazhRealm_bild_himmel {
             rtBS,
             qBS: quad(passBestrahlung, "atmo-bestrahlung"),
             tafelSchluessel: null,
+            // DIE LESUNG LEBT MIT DER TAFEL (`_himmelsTafelLesen`): die Bestrahlung auf der CPU, ihre Lese-Nummer, der Anker des Himmels
+            // und der Belichtung — sie teilen die Lebenszeit der Tafel, die sie lasen. Als Felder am Wirt fielen sie beim Tausch am
+            // Ort (`_weltAbschied`), die Tafel blieb mit ihrem Schlüssel und las nie neu: die Belichtung stand nie mehr, das erste
+            // Weltbild jeder Ziel-Welt erst am Deckel (60 s, Radeon 30.10.)
+            tafel: null,
+            tafelNr: 0,
+            anker: null,
+            belichtung: null,
             himmelFarbe,
             durchlass,
             RG,
@@ -1807,10 +1815,10 @@ class AnazhRealm_bild_himmel {
         const st = this.state;
         const A = this._atmoLutBau();
         const U = A.U;
-        // DER ANKER ZUERST (S7): bis die Tafel der klaren Luft am Boden einmal zurückkam (`_himmelsAnker`, der Himmel der Karte
+        // DER ANKER ZUERST (S7): bis die Tafel der klaren Luft am Boden einmal zurückkam (`anker`, der Himmel der Karte
         // unter der Zenit-Sonne), zeichnet der Takt sie — in jedem Wetter und jeder Höhe des Auges; danach das Medium jetzt.
         // Der Null-Renderer malt keinen Himmel (Lehre 16): dort trägt die Karte keinen.
-        const anker = this._himmelsAnker == null && !(st.renderer && st.renderer._isHeadlessNull);
+        const anker = A.anker == null && !(st.renderer && st.renderer._isHeadlessNull);
         const klar = anker ? this._atmoRechnung().betaKlar(this._atmoGesetz()) : 0;
         const M = anker ? this._atmoMedium(klar) : this._atmoMediumJetzt();
         const mB = anker ? klar : this._atmoMBeta;
@@ -1859,7 +1867,7 @@ class AnazhRealm_bild_himmel {
             this._atmoZeichne(A.qBS, A.rtBS);
             A.tafelSchluessel = tafel;
             // bis die neue Tafel zurückkommt, liest kein Leser die Luft von vorher (die Belichtung schreibt dann nicht, sie hält)
-            this._himmelsTafel = null;
+            A.tafel = null;
             this._himmelsTafelLesen();
         }
         this._horizontKarteTakt();
@@ -1869,8 +1877,9 @@ class AnazhRealm_bild_himmel {
     // DIE BESTRAHLUNGS-TAFEL AUF DIE CPU (je Neuzeichnung, EINMAL je Medium und Höhe): je Sonnenhöhe die Bestrahlung einer
     // waagrechten Fläche durch den Himmel je Einheit E0 (rgb), der letzte Texel das Sternen-Licht je Einheit `nachtE`. Eine
     // spätere Lesung überholt eine frühere. Die erste Tafel der klaren Luft am Boden (`_atmoTakt` zeichnet sie zuerst) trägt den
-    // ANKER der Belichtung: den Himmel unter der Zenit-Sonne (`_himmelsAnker`, je Einheit E0, `_belichtungAnker`). Bis S7 stand er
-    // als Konstante neben der Tafel (0,24 gegen gerechnet 0,232, eine Wand bei ±0,02 nur am klaren Boden).
+    // ANKER der Belichtung: den Himmel unter der Zenit-Sonne (`anker`, je Einheit E0, `_belichtungAnker`). Bis S7 stand er
+    // als Konstante neben der Tafel (0,24 gegen gerechnet 0,232, eine Wand bei ±0,02 nur am klaren Boden). Lesung, Nummer und
+    // Anker leben an der Tafel (`state.atmoLut`): wer sie trägt, trägt ihre Lesung.
     _himmelsTafelLesen() {
         const st = this.state;
         const A = st.atmoLut;
@@ -1881,19 +1890,18 @@ class AnazhRealm_bild_himmel {
             );
         const W = A.rtBS.width;
         const klar = A.mediumBeta === this._atmoRechnung().betaKlar(this._atmoGesetz()) && A.U.hKm.value < 0.05;
-        const nr = (this._himmelsTafelNr = (this._himmelsTafelNr || 0) + 1);
+        const nr = ++A.tafelNr;
         return r.readRenderTargetPixelsAsync(A.rtBS, 0, 0, W, 1).then(
             (px) => {
-                if (nr !== this._himmelsTafelNr) return false;
+                if (nr !== A.tafelNr) return false;
                 const halb = px instanceof Uint16Array;
                 const w = new Float32Array(W * 3);
                 for (let i = 0; i < W; i++)
                     for (let c = 0; c < 3; c++)
                         w[i * 3 + c] = halb ? AnazhRealm._halbZuFloat(px[i * 4 + c]) : px[i * 4 + c];
-                this._himmelsTafel = { W, werte: w };
-                if (klar && this._himmelsAnker == null)
-                    this._himmelsAnker =
-                        0.2126 * w[(W - 2) * 3] + 0.7152 * w[(W - 2) * 3 + 1] + 0.0722 * w[(W - 2) * 3 + 2];
+                A.tafel = { W, werte: w };
+                if (klar && A.anker == null)
+                    A.anker = 0.2126 * w[(W - 2) * 3] + 0.7152 * w[(W - 2) * 3 + 1] + 0.0722 * w[(W - 2) * 3 + 2];
                 return true;
             },
             (e) => {
@@ -1916,8 +1924,8 @@ class AnazhRealm_bild_himmel {
         out[0] = out[1] = out[2] = 0;
         if (st.renderer && st.renderer._isHeadlessNull) return out;
         const A = st.atmoLut;
-        const T = this._himmelsTafel;
-        if (!A || !T) return null;
+        const T = A && A.tafel;
+        if (!T) return null;
         const U = A.U;
         const W = T.W,
             w = T.werte;
@@ -2176,20 +2184,23 @@ class AnazhRealm_bild_himmel {
     }
 
     // DER ANKER DER KAMERA (S7, H1): E der waagrechten Karte unter der Zenit-Sonne der klaren Luft — E0 (`KEY_BASE` · `LEGACY_LICHT`) × (ihr
-    // Durchlass, `ATMO_RECHNUNG.sonne`, e = 1, Bezug der Luft, + der Himmel der Bestrahlungs-Tafel derselben Luft, `_himmelsAnker`).
+    // Durchlass, `ATMO_RECHNUNG.sonne`, e = 1, Bezug der Luft, + der Himmel der Bestrahlungs-Tafel derselben Luft, ihr `anker`).
     // Eine Größe des Gesetzes, EINMAL gerechnet, sobald die Tafel liegt (vorher null: die Belichtung schreibt nicht, das erste
-    // Weltbild wartet, `_weltbildLuecken` licht); der Null-Renderer malt keinen Himmel (Lehre 16), dort trägt die Karte keinen.
+    // Weltbild wartet, `_weltbildLuecken` licht), gemerkt an der Tafel (`belichtung`, `_atmoLutBau`); der Null-Renderer malt keinen
+    // Himmel (Lehre 16), dort trägt die Karte keinen.
     _belichtungAnker() {
-        if (this._belichtungA) return this._belichtungA;
+        const A = this.state.atmoLut;
+        if (!A) return null;
+        if (A.belichtung) return A.belichtung;
         const rend = this.state.renderer;
-        const himmel = rend && rend._isHeadlessNull ? 0 : this._himmelsAnker;
+        const himmel = rend && rend._isHeadlessNull ? 0 : A.anker;
         if (himmel == null) return null;
         const G = this._atmoGesetz();
         const R = this._atmoRechnung();
         const M = this._atmoMedium(R.betaKlar(G));
         const s = R.sonne(G, M, 0.001, 1, AnazhRealm.ATMO_LUT.schritte.durchlass, [0, 0, 0]);
         const l = 0.2126 * s.col.r + 0.7152 * s.col.g + 0.0722 * s.col.b;
-        return (this._belichtungA = AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * (s.lum * l + himmel));
+        return (A.belichtung = AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * (s.lum * l + himmel));
     }
 
     // DAS LICHT DES AUGES (K02a, Auge 11 bei 762/−138): wo der Himmel das Auge nicht erreicht, trägt der Leib sein Licht. Die
