@@ -119,7 +119,6 @@ const FREI = {
     _chunkSatzMesh: "Object.assign in das userData des Meshes eines Chunk-Satzes — nie ein Eintrag des Bestands",
 };
 function quellWand(quelle) {
-    const lauf = (n, f) => (f(n), stammLib.kinder(n, (c) => lauf(c, f)));
     const feld = (m) =>
         m.computed ? (m.property.type === "Literal" ? String(m.property.value) : null) : m.property.name;
     const text = (n) => quelle.slice(n.start, n.end).replace(/\s+/g, "");
@@ -205,7 +204,7 @@ function quellWand(quelle) {
             }
         };
         for (let d = 0; d < 3; d++)
-            lauf(body, (n) => {
+            stammLib.wandere(body, (n) => {
                 if (n.type === "VariableDeclarator") binde(n.id, n.init);
                 if (n.type === "AssignmentExpression" && n.operator === "=" && n.left.type === "Identifier")
                     binde(n.left, n.right);
@@ -221,14 +220,14 @@ function quellWand(quelle) {
         const meld = (n, art) => befunde.push(`${name} Zeile ${stammLib.zeileVon(quelle, n.start)}: ${art} — ${text(n).slice(0, 70)}`);
         if (istTakt(name)) {
             gesehen.add(name);
-            lauf(body, (n) => {
+            stammLib.wandere(body, (n) => {
                 if (n.type === "CallExpression" && n.callee.type === "MemberExpression" && WUCHS.has(feld(n.callee)))
                     meld(n, `leitet ein Skelett im Haupt-Faden ab (.${feld(n.callee)})`);
                 if ((n.type === "ForOfStatement" || n.type === "ForInStatement") && istBestand(n.right))
                     meld(n, "läuft über den Bestand (for-of)");
                 if (n.type === "ForStatement" && n.test) {
                     let hit = false;
-                    lauf(n.test, (x) => {
+                    stammLib.wandere(n.test, (x) => {
                         if (x.type === "MemberExpression" && feld(x) === "length" && istBestand(x.object)) hit = true;
                     });
                     if (hit) meld(n, "läuft über den Bestand (bis .length)");
@@ -267,7 +266,7 @@ function quellWand(quelle) {
                 rechts.right.properties.length === 0
             );
         };
-        lauf(body, (n) => {
+        stammLib.wandere(body, (n) => {
             let zielFeld = null,
                 hitze = false,
                 wie = "";
@@ -489,7 +488,7 @@ async function probe() {
             const vorher = target.heatBuildup || 0;
             if (!(vorher > 0) && !punkte.length) continue;
             if (target.affordances && target.affordances.focusing) continue;
-            if (riddenId !== null && riddenId !== undefined && target.id === riddenId) continue;
+            if (riddenId != null && target.id === riddenId) continue;
             const w = r._brennWaerme(target, punkte, focusing, dt);
             if (!w) continue;
             target.heatBuildup = w.dT;

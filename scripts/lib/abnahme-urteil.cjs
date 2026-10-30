@@ -1270,7 +1270,7 @@ const MASS_RECHNER = {
     // vor D8.
     zielTreue: (ma, q) =>
         aperturMittel(ma, q, 3, (k, s, n) => {
-            const zahl = (x) => typeof x === "number" && Number.isFinite(x);
+            const zahl = Number.isFinite;
             const z = k.ziel;
             if (z === undefined) return { fehler: `${s}: die Messung ohne Ziel (${n}) — vor D8 gemessen` };
             if (!z || typeof z !== "object") return { fehler: `${s}: das Ziel von ${n} ist keine Messung` };
@@ -1601,7 +1601,7 @@ function sollTafelUrteil(tafel, q) {
     if (!kl.length) fehler.push("die Tafel trägt keine Klasse (vakuös)");
     const welt = haushalt ? haushalt.band.vramMB - ((haushalt.renderZiele && haushalt.renderZiele.mb) || 0) : null;
     const summeTris = haushalt ? haushalt.klassen.reduce((a, k) => a + (k.dreiecke || 0), 0) : 0;
-    const zahl = (x) => typeof x === "number" && Number.isFinite(x);
+    const zahl = Number.isFinite;
     const ids = new Set();
     for (const k of kl) {
         const wo = `Klasse ${k.id || "?"}`;

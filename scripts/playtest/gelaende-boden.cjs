@@ -417,7 +417,7 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
         // _voxelSurfaceY: liefert eine endliche Höhe AUF dem Nulldurchgang (interpoliert wie die
         // Mesh-Kante) — 0,6 m darunter Grund, 0,6 m darüber Luft.
         const sy = r._voxelSurfaceY(12, -8);
-        out.voxelSurfaceFinite = typeof sy === "number" && Number.isFinite(sy);
+        out.voxelSurfaceFinite = Number.isFinite(sy);
         out.voxelSurfaceIsBoundary =
             out.voxelSurfaceFinite &&
             r._terrainDensityAt(12, sy - 0.6, -8) > 0 &&
@@ -450,7 +450,7 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
             Math.abs(ghVoxel - vsRef) < 0.01;
         const fsVoxel = r.findSurfaceAbove(10, 9999, 10);
         out.findSurfaceVoxelAware =
-            typeof fsVoxel === "number" && Number.isFinite(fsVoxel) && Math.abs(fsVoxel - vsRef) < 0.01;
+            Number.isFinite(fsVoxel) && Math.abs(fsVoxel - vsRef) < 0.01;
 
         // Zwangs-Migration: eine alte Welt OHNE voxelTerrain-Flag UND eine explizite Heightfield-Opt-out-
         // Welt werden BEIDE voxel-basiert. Welt-Journal vorher sichern + danach restoren — sonst flutet
@@ -737,7 +737,7 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
         await r.generateNewWorld({ force: true }); // die Heimat kommt aus dem Faden
         // keine Heightfield-Chunks: `chunkMap` abwesend oder leer
         out.voxelChunkMapEmpty = !r.state.chunkMap || r.state.chunkMap.size === 0;
-        out.voxelMaterialKept = r.state.terrainMaterial !== null && r.state.terrainMaterial !== undefined;
+        out.voxelMaterialKept = r.state.terrainMaterial != null;
         // heightData/minHeight/maxHeight nicht allokiert
         out.voxelGroundFieldNull = r.state.groundHeightField === null;
         out.voxelMinHeightZero = r.state.minHeight === 0;
