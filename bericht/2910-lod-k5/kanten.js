@@ -3,9 +3,17 @@
 // Messorts, das Auge des Spielers (1,7 m über dem Boden, KAM_FOV_GRAD) im Wechsel-Abstand des Gesetzes (`_wechselAbstand` · die
 // Schwellen der Masken von Baum und Wagen · `_archStufenGrenzen`), Blick auf die halbe Höhe. Ohne Blende und ohne Band (lodMaskOn, foundryCrossfade aus,
 // der LOD-Takt ruht: jede Stufe zeichnet voll, allein): je Abstand ein Schuss OHNE das Exemplar, einer mit der L0, einer mit der
-// gewählten Stufe — Ausgabe-Pfad 1920 × 1080 (`__ausgabeAufnahme`, je dreimal, der letzte zählt). Die Maske einer Stufe = die Pixel,
+// gewählten Stufe — Ausgabe-Pfad 1920 × 1080 (`__ausgabeAufnahme`, EINE Aufnahme je Schuss). Die Maske einer Stufe = die Pixel,
 // deren Kanal sich gegen den Schuss ohne Exemplar um > 18 hebt; der Kanten-Versatz = Chamfer der Masken-Kanten (Euklid-Distanz-
 // Transformation, beidseitig gemittelt) in Bildpunkten. Die Karte bäckt die Welt (`_tickImpostorBake`), bevor sie zählt.
+// DIE LIEFERUNG IM RUHENDEN LOOP (w4-proben-tempo, 30.10.): die Foundry gibt, was ihr Faden baute, nur im Takt frei
+// (`_tickFoundryIngest`, stamm/dirigent-takt.js:307) — die Welt ruht in der Probe, und `stelle` wartete 400 × 50 ms auf eine Stufe,
+// die nie freikam: jeder Fall „Stufe nicht gestellt“ an GTX und Radeon (24a0f3ef, 715754fc, 98ef98bb), 14 × 20 s, der Eich-Deckel
+// 90 s riss (379e5f56). Jetzt bestellt die Probe je Familie L0 und jede gezeigte Stufe gleich nach dem Setzen und gibt die Lieferung
+// frei, bis jede steht — VOR dem ersten Schuss; zwischen leer, L0 und Stufe gibt sie nichts frei (die drei Schüsse sehen EINE
+// Szene). Der Schuss ist EINE Aufnahme (bis dahin drei, die letzte zählte): `__ausgabeAufnahme` beginnt Folge, Geschichte, Dither und
+// Schatten je Aufnahme neu (A8-n1), zwei Aufnahmen derselben Szene sind dasselbe Bild (G ↔ G2 der Klassen-Teilung: GTX 18 von 18
+// Läufen, Radeon 11 von 11 Tafel-Messungen mit 0 Pixeln); die TREUE nimmt die erste L0 ein zweites Mal und bricht laut an jedem Byte.
 const st = r.state, rend = st.renderer, cam = st.camera, A = r.constructor;
 const warte = (ms) => new Promise((ok) => setTimeout(ok, ms));
 const W = 1920, H = 1080;
@@ -14,10 +22,12 @@ window.__buehne({});
 const P0 = st.playerMesh.position.clone();
 const fov0 = cam.fov, kam0 = [cam.position.clone(), cam.quaternion.clone()];
 const merk = { maske: st.lodMaskOn, band: st.foundryCrossfade, takt: st.atmosphere && st.atmosphere.treeLOD };
-st.lodMaskOn = false;
-st.foundryCrossfade = false;
 st.atmosphere = st.atmosphere || {};
-st.atmosphere.treeLOD = false;
+// die Schalter der Schüsse (ohne Blende, ohne Band, der LOD-Takt ruht) und die der Welt: geliefert wird nur unter denen der Welt —
+// ein Körper, den die Foundry unter `foundryCrossfade` aus konvertiert, trägt keine Stufen-Stempel (`_foundryBuildMesh`), und die
+// Nah-Streu, die ihn danach setzt, bricht laut (`_satzBlock(streuNah:stumpf:1:L1:…)`: Attribut aLodLevel fehlt, Werkbank 30.10.)
+const schuesse = () => ([st.lodMaskOn, st.foundryCrossfade, st.atmosphere.treeLOD] = [false, false, false]);
+const welt = () => ([st.lodMaskOn, st.foundryCrossfade, st.atmosphere.treeLOD] = [merk.maske, merk.band, merk.takt]);
 const boden = (x, z) => r._voxelSurfaceY(x, z);
 const fwd = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion).setY(0).normalize();
 const FAELLE = [
@@ -29,12 +39,20 @@ const FAELLE = [
     { kind: "vehicle", typ: () => "fahrzeug_limousine", stufen: [1] },
 ];
 const schuss = async () => {
-    let x = null;
-    for (let i = 0; i < 3; i++) {
-        r._schattenAlleNeu();
-        x = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" });
+    r._schattenAlleNeu();
+    return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+};
+// die Lieferung der Stufen: je Stufe der Flatten der Foundry (null: lädt; false: kann nicht; sonst steht sie), die Freigabe des
+// Takts im ruhenden Loop (höchstens INGEST_BURST_CAP je Ruf), die Karte bäckt — bis jede Stufe antwortet
+const liefere = async (e, stufen) => {
+    const p = r._foundryPresetForEntry(e);
+    for (let i = 0; i < 400; i++) {
+        if (stufen.every((s) => r._foundryFlattenFor(e, p, s) !== null)) return true;
+        r._tickFoundryIngest(0.25);
+        r._tickImpostorBake();
+        await warte(50);
     }
-    return x.u8;
+    return false;
 };
 const maske = (a, b) => {
     const m = new Uint8Array(W * H);
@@ -104,13 +122,14 @@ const stelle = async (e, s, d) => {
     }
     return false;
 };
-const aus = { schirm: [W, H], fov: A.KAM_FOV_GRAD, faelle: [] };
+const aus = { schirm: [W, H], fov: A.KAM_FOV_GRAD, faelle: [], treue: null };
 const neu = [];
 try {
     cam.fov = A.KAM_FOV_GRAD;
     cam.updateProjectionMatrix();
     st.playerMesh.visible = false;
     for (const F of FAELLE) {
+        welt();
         const m = P0.clone().addScaledVector(fwd, 40);
         m.y = boden(m.x, m.z);
         const e = r.spawnArchitecture(F.typ(), { x: m.x, y: m.y, z: m.z }, { silent: true, seed: 1 });
@@ -121,7 +140,9 @@ try {
         neu.push(e);
         if (!e.instanced) r._rebuildArchitectureMesh(e);
         const preset = r._foundryPresetForEntry(e);
-        for (let i = 0; i < 400 && (F.kind !== "tree" || r._lodTreeVisHeight(e) == null); i++) await warte(50);
+        const geliefert = await liefere(e, [0, ...F.stufen]);
+        for (let i = 0; i < 400 && (F.kind !== "tree" || r._lodTreeVisHeight(e) == null); i++) (r._tickFoundryIngest(0.25), await warte(50));
+        schuesse();
         const hoehe = F.kind === "tree" ? r._lodTreeVisHeight(e) : null;
         const D = A.LOD_DISTANCES, ref = st.lodRef > 0 ? st.lodRef : D.lodRef;
         const G = r._archStufenGrenzen(e); // null: eine Karten-Art (Baum, Wagen) wechselt an den Schwellen ihrer Maske
@@ -138,18 +159,24 @@ try {
             const leer = await schuss();
             const ok0 = await stelle(e, 0, d);
             const b0 = await schuss();
+            if (!aus.treue) {
+                // DIE TREUE (einmal je Lauf): dieselbe Szene ein zweites Mal — EINE Aufnahme je Schuss trägt nur, wenn sie Byte für Byte gleich ist
+                const b0b = await schuss();
+                let n = 0;
+                for (let i = 0; i < b0.length; i++) if (b0[i] !== b0b[i]) n++;
+                aus.treue = { fall: F.kind + " L0", bytes: n };
+                if (n) throw new Error("die Treue: zwei Aufnahmen derselben Szene (" + F.kind + " L0) weichen in " + n + " Bytes ab — EINE Aufnahme je Schuss trägt hier nicht");
+            }
             const oks = await stelle(e, s, d);
             const bs = await schuss();
             const k = chamfer(maske(b0, leer), maske(bs, leer));
-            aus.faelle.push({ kind: F.kind, preset, stufe: s, d: +d.toFixed(2), hoehe, px: k.px == null ? null : +k.px.toFixed(3), pixel: k.pixel, ok: ok0 && oks });
+            aus.faelle.push({ kind: F.kind, preset, stufe: s, d: +d.toFixed(2), hoehe, px: k.px == null ? null : +k.px.toFixed(3), pixel: k.pixel, ok: ok0 && oks, geliefert });
         }
         r._archInstanceRemove(e);
     }
 } finally {
     for (const e of neu) r.removeArchitecture(e);
-    st.lodMaskOn = merk.maske;
-    st.foundryCrossfade = merk.band;
-    st.atmosphere.treeLOD = merk.takt;
+    welt();
     cam.fov = fov0;
     cam.updateProjectionMatrix();
     cam.position.copy(kam0[0]), cam.quaternion.copy(kam0[1]), cam.updateMatrixWorld(true);

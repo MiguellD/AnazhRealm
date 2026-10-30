@@ -519,7 +519,11 @@ function laubKanteUrteil(e) {
         const s = e.schritte && e.schritte[schuss];
         const o = s && s.json;
         const k = o && o.klasse;
-        const b = o && o.abnahme && o.abnahme.bild;
+        // die Leinwand des Schusses steht im Begleit-JSON (`<bild>.abnahme.json`, die Folge liest es als `dateien`) — die Zeile der
+        // Werkbank trägt `abnahme` als Satz (scripts/werkbank.cjs `/bild`), ihr `.bild` war nie da: bis w4-proben-tempo fiel jede
+        // Messung „kein Bild der Klassen in 1920 × 1080“ (GTX 379e5f56: die Tafel stand nach 27,3 s, die Zahl las sie nicht)
+        const a = e.dateien && e.dateien[schuss];
+        const b = a && a.bild;
         if (!k || !k.klassen || !b || b.w !== 1920 || b.h !== 1080) {
             gruen = false;
             teile.push(titel + ": " + String((o && o.fehler) || (s && s.rest) || "kein Bild der Klassen in 1920 × 1080").slice(-160));
@@ -552,10 +556,17 @@ function laubKanteProben() {
             },
             o
         );
-    const schuss = (klassen, w = 1920) => ({ exit: 0, json: { klasse: { klassen }, abnahme: { bild: { w, h: (w * 9) / 16 } } } });
+    // ein Schuss: der Schritt der Folge (die Zeile der Werkbank, `abnahme` als Satz) und sein Begleit-JSON (`dateien`, die Leinwand)
+    const schuss = (klassen, w = 1920) => ({ exit: 0, json: { klasse: { klassen }, abnahme: "ABNAHME ok" }, datei: { bild: { w, h: (w * 9) / 16 } } });
     const zeile = (o = {}) => {
-        const e = { plan: "lod.K1#1", adapter: "[linse-gpu] amd/rdna-3", schritte: { tafel: schuss(kl()), spielgang: schuss(kl()) } };
-        return "LOD-K1 " + JSON.stringify(Object.assign(e, o, { schritte: Object.assign(e.schritte, o.schritte || {}) }));
+        const sch = Object.assign({ tafel: schuss(kl()), spielgang: schuss(kl()) }, o.schritte || {});
+        const e = { plan: "lod.K1#1", adapter: "[linse-gpu] amd/rdna-3", ...o, schritte: {}, dateien: {} };
+        for (const [n, s] of Object.entries(sch)) {
+            const { datei, ...schritt } = s;
+            e.schritte[n] = schritt;
+            if (datei) e.dateien[n] = datei;
+        }
+        return "LOD-K1 " + JSON.stringify(e);
     };
     const ohne = (n) => Object.fromEntries(Object.entries(kl()).filter(([k]) => k !== n));
     return [
@@ -566,6 +577,7 @@ function laubKanteProben() {
         { name: "Spielgang ohne Karte", stdout: zeile({ schritte: { spielgang: schuss(ohne("fimp:atlas:L2")) } }), gruen: false },
         { name: "Schuss in 1280 × 720", stdout: zeile({ schritte: { spielgang: schuss(kl(), 1280) } }), gruen: false },
         { name: "der Spielgang fehlt", stdout: zeile({ schritte: { spielgang: { exit: 1, json: null, rest: "Exit 1" } } }), gruen: false },
+        { name: "die Tafel ohne Begleit-JSON (die Leinwand nur in der Zeile)", stdout: zeile({ schritte: { tafel: { exit: 0, json: { klasse: { klassen: kl() }, abnahme: "ABNAHME ok" } } } }), gruen: false },
         { name: "swiftshader", stdout: zeile({ adapter: "[linse-gpu] google/swiftshader" }), gruen: false },
     ];
 }
@@ -1297,10 +1309,20 @@ const stationen = [
         // IN DER SITZUNG (29.10.): EINE Uhr (0,5), zwei Posen je drei Schüsse — Ziel 25 s; der Messort buehne importiert die Welt der
         // Prüfbühne und lädt die Seite in ihr: danach steht die Sitzung in einer fremden Welt (mutiert). DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 45,0 s GRÜN am Deckel
         // 45 — die GTX risse ihn): der Deckel steht in der Tafel der Fahrt (punkte.cjs DIE DECKEL)
+        // DAS TEMPO (w4-proben-tempo, 30.10.; GTX 379e5f56 ≥ 90 s am Eich-Deckel, „zuletzt: fenster“): DIE TÄTER — der Wechsel in die
+        // Welt der Prüfbühne (Tür, Neuladen, Ring) lag IM Deckel (die Probe nannte keinen Ort), die Linse schoss die Linien des
+        // Zuwachses mit (Staffel 2; die Hälfte der Schüsse, die Staffel 1 nie liest) und zwei Aufnahmen je Schuss. Jetzt nennt die
+        // Probe den Ort buehne (die Sitzung stellt ihn VOR dem Deckel, punkte.cjs `probeOrt`), `licht --kontakt` schießt nur den Fuß
+        // (ohne `--zuwachs`), EINE Aufnahme je Schuss, die Treue einmal: 7 statt 24 Aufnahmen, im Deckel der warme Ort und der Ring
+        // an der Platte. DER TÄTER DES RISSES (Spiel-Baum w4-proben-tempo, scripts/werkbank.cjs `weltDesOrts`): seit 30.10. bootet die
+        // Sitzung mit `--ort wiese`, ihr Dorf-Haken lag vor jeder Ladung — in der Prüfbühne baute `_tickGenesisOrt` (stamm/siedlung-ort.js
+        // :2776) den Ring nie, die Ankunft wartete ohne Frist (swiftshader 28 min); die Ankunft hebt ihn jetzt, bis der Ring steht:
+        // swiftshader Bühne 70 s (vor dem Deckel), Kontakt 41 s, Treue 0 Bytes
         probe: { sek: 33,  befehl: befehlDer({
             name: "schatten.K1#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
+                { name: "buehne", args: ["umstellen", "--ort", "buehne", "--sicht", "ego"], muss: true },
                 { name: "kontakt", args: ["licht", "--kontakt"], ms: 900000 },
             ],
         }), mutiert: true },
@@ -1346,11 +1368,11 @@ const stationen = [
             name: "lod.K1#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
-                { name: "tafel", args: ["bild", "-284", "+1.7", "-1042", "-269", "34", "-1036", "--ziel", "tanne", "--klasse", LAUB_KLASSE, "--datei", "@DIR@/tafel.png"] },
+                { name: "tafel", args: ["bild", "-284", "+1.7", "-1042", "-269", "34", "-1036", "--ziel", "tanne", "--klasse", LAUB_KLASSE, "--datei", "@DIR@/tafel.png"], datei: "@DIR@/tafel.abnahme.json" },
                 { name: "wiese", args: ["umstellen", "--ort", "wiese", "--sicht", "ego"], muss: true },
                 { name: "gang", args: ["lauf", "8", "--ein", "2", "--wandern", "bahn"] },
                 { name: "auge", args: ["eval", LAUB_AUGE], muss: true },
-                { name: "spielgang", args: ["bild", "@auge.0@", "@auge.1@", "@auge.2@", "@auge.3@", "@auge.4@", "@auge.5@", "--wahl", "0", "--klasse", LAUB_KLASSE, "--datei", "@DIR@/spielgang.png"] },
+                { name: "spielgang", args: ["bild", "@auge.0@", "@auge.1@", "@auge.2@", "@auge.3@", "@auge.4@", "@auge.5@", "--wahl", "0", "--klasse", LAUB_KLASSE, "--datei", "@DIR@/spielgang.png"], datei: "@DIR@/spielgang.abnahme.json" },
             ],
         }) },
         env: envDer,
@@ -1377,14 +1399,21 @@ const stationen = [
         kriterium: "lod.K5",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        // IN DER SITZUNG (29.10.): EIN Ort (Wiese), 7 Fälle Familie × Stufe je drei Schüsse (leer, L0, Stufe) zu je drei Aufnahmen;
-        // die Exemplare fallen am Ende, die Schalter kehren zurück
-        probe: { sek: 33, befehl: befehlDer({
+        // IN DER SITZUNG (29.10.): EIN Ort (Wiese), 7 Fälle Familie × Stufe je drei Schüsse (leer, L0, Stufe); die Exemplare fallen
+        // am Ende, die Schalter kehren zurück. DAS TEMPO (w4-proben-tempo, 30.10.; GTX 379e5f56 ≥ 90 s am Eich-Deckel): DER TÄTER — die
+        // Foundry gibt ihre Lieferung nur im Takt frei (`_tickFoundryIngest`, stamm/dirigent-takt.js:307), die Welt ruht in der Probe:
+        // `stelle` wartete je Stufe 400 × 50 ms ins Leere (jeder Fall „Stufe nicht gestellt“ an GTX und Radeon seit 29.10., 14 × 20 s);
+        // dazu drei Aufnahmen je Schuss (63 zu 33 Bildern). Jetzt bestellt kanten.js L0 und Stufe gleich nach dem Setzen, gibt die
+        // Lieferung unter den Schaltern der Welt frei (eine Lieferung ohne `foundryCrossfade` trägt keine Stufen-Stempel — die Nah-Streu
+        // bricht an ihr, Werkbank 30.10.) und schießt EINE Aufnahme je Schuss, die Treue einmal: 22 Aufnahmen, swiftshader alle 14 Stufen
+        // gestellt (vorher 0), Treue 0 Bytes. Der Deckel aus der Arbeit: 22 Aufnahmen (GTX ≈ 0,43 s je Aufnahme aus lod.K2#1) + 14
+        // Lieferungen (kalt 0,15–1,0 s) — 26 s; die Eich-Fahrt der GTX richtet ihn
+        probe: { sek: 26, befehl: befehlDer({
             name: "lod.K5#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
                 { name: "umstellen", args: ["umstellen", "--ort", "wiese"], muss: true },
-                { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "c87ffc92ffac2801f75fc7eb5fdb7d956706f099", muss: true, ms: 1800000 },
+                { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "502a3c926930826c854b377e5c00452d4159741f", muss: true, ms: 1800000 },
             ],
         }), },
         env: envDer,
@@ -1451,13 +1480,16 @@ const stationen = [
         kriterium: "lod.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        // IN DER SITZUNG (29.10.): EINE Sekunde Gehen (4 m in 8 Schritten) je Schritt zwei Schüsse — Ziel 25 s
-        probe: { sek: 15, befehl: befehlDer({
+        // IN DER SITZUNG (29.10.): EINE Sekunde Gehen (4 m in 8 Schritten) je Schritt zwei Schüsse — Ziel 25 s. DAS TEMPO
+        // (w4-proben-tempo, 30.10.; GTX 379e5f56 49,3 s über dem Gesetz): sechs Aufnahmen je Schuss (96 zu 33 Bildern, die letzte
+        // zählte) → EINE, die Treue einmal: 17 Aufnahmen (swiftshader Treue 0 Bytes, Pop 0,635 %/s ROT wie zuvor) — der Deckel aus der
+        // Arbeit: 17 Aufnahmen (GTX ≈ 0,43 s) + 8 × 24 Takte des Spiels — 22 s; die Eich-Fahrt der GTX richtet ihn
+        probe: { sek: 22, befehl: befehlDer({
             name: "lod.K2#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
                 { name: "umstellen", args: ["umstellen", "--ort", "wiese", "--sicht", "ego"], muss: true },
-                { name: "pop", probe: "@KOORD@/bericht/2910-lod-k5/pop.js", blob: "711c63c1c83fc438d1e29dedb4a9fc6cfa96e84a", muss: true, ms: 1800000 },
+                { name: "pop", probe: "@KOORD@/bericht/2910-lod-k5/pop.js", blob: "16db9f06fb6384ac170302e26e7d0dc73069b8e8", muss: true, ms: 1800000 },
             ],
         }) },
         env: envDer,

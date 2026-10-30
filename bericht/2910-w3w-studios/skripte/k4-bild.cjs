@@ -198,7 +198,12 @@ for (const [dx, dz] of [[16, 16], [-16, 16], [16, -16], [-16, -16], [24, 0], [0,
 if (!E) return { fehler: "kein Ort trägt " + name };
 window.__k4Werk = E;
 return { name, typ: E.type, pos: [E.position.x, E.position.y, E.position.z].map((v) => +v.toFixed(2)) };`;
-const RAHMEN = (pose) => `const E = window.__k4Werk, K = r.constructor, bb = new T.Box3(), b = new T.Box3(), m = new T.Matrix4(), klassen = new Set();
+// DIE LIEFERUNG IM RUHENDEN LOOP (w4-proben-tempo, 30.10.): die Foundry gibt, was ihr Faden baute, nur im Takt frei
+// (`_tickFoundryIngest`, stamm/dirigent-takt.js:307) — die Welt ruht zwischen den Befehlen der Werkbank, und das Werk stand an GTX
+// und Radeon nie („steht nach 30 s nicht in der Welt“ für garage, portale, schmiede, fachwerk: 24a0f3ef, 715754fc). Jeder Blick
+// auf den Rahmen gibt die Lieferung frei, wie der Takt des Spiels es täte
+const RAHMEN = (pose) => `r._tickFoundryIngest(0.25);
+const E = window.__k4Werk, K = r.constructor, bb = new T.Box3(), b = new T.Box3(), m = new T.Matrix4(), klassen = new Set();
 for (const [key, g] of r.state.archInstanceGroups || []) {
     const s = g.slotEntry ? g.slotEntry.indexOf(E) : -1;
     const kl = K._instanzKlasse(key);
@@ -218,17 +223,21 @@ return { R: +R.toFixed(3), dist: +dist.toFixed(3), blick, mitte: c.toArray(), ka
 const WEG = `if (window.__k4Werk) r.removeArchitecture(window.__k4Werk, { still: true }); window.__k4Werk = null; return 1;`;
 const esc = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-async function albedoMessen(aus) {
+// `nur`: die Studios, deren Bild-Differenz gemessen ist — nur ihre Albedo kann ein Urteil tragen (ein Studio ohne Differenz ist nie
+// GRÜN); das Labor misst nur sie (`diag-albedo-tafel --labor --nur`), und nur ihre Zeilen gehen in die Zahl (für die übrigen trägt die
+// Labor-Datei die Werte der Tafel, nie eine Messung dieses Laufs)
+async function albedoMessen(aus, nur) {
     // die Welt-Seite am Ort der Tafel (wie diag-albedo-tafel neuMessen), dann die Labor-Seite je Studio
     const t = JSON.parse(fs.readFileSync(path.join("spec", "farbe", "albedo-tafel.json"), "utf8"));
     const gw = (t.gemessen && t.gemessen.welt) || {};
+    // der Ort der Tafel steht, wenn `umstellen` zurückkommt (der Ring an seinem Ziel, die Welt steht, `__weltStehtNach`); der feste
+    // Schlaf von 10 s danach fiel (w4-proben-tempo): die Welt ruht zwischen den Befehlen der Werkbank, er wartete auf nichts
     const um = wb(gw.ort ? ["umstellen", "--ort", gw.ort] : ["umstellen", ...(gw.spieler || [0, 0]).map(String)]);
     if (um.status !== 0) throw new Error("umstellen: Exit " + um.status);
-    await welt("await new Promise((x) => setTimeout(x, 10000)); return 1");
     const wd = path.join(DIR, "albedo-welt.json"), ld = path.join(DIR, "albedo-labor.json");
     const a = wb(["albedo", "--tafel", "--datei", wd, "--ordner", path.join(DIR, "albw")]);
     if (!fs.existsSync(wd)) throw new Error("albedo --tafel ohne Messung: Exit " + a.status + " " + String(a.stdout + a.stderr).slice(-300));
-    const l = cp.spawnSync(process.execPath, [path.join("scripts", "diag-albedo-tafel.cjs"), "--labor", "--echt", "--datei", ld], {
+    const l = cp.spawnSync(process.execPath, [path.join("scripts", "diag-albedo-tafel.cjs"), "--labor", "--echt", "--nur", nur.join(","), "--datei", ld], {
         encoding: "utf8",
         timeout: 900000,
         maxBuffer: 1 << 28,
@@ -238,7 +247,7 @@ async function albedoMessen(aus) {
     const [Wm, Lm] = [wd, ld].map((f) => JSON.parse(fs.readFileSync(f, "utf8")));
     aus.albedo = { welt: { echt: Wm.echt === true, eichung: Wm.eichung }, labor: { echt: Lm.echt === true, eichung: (Lm.eichung || {}).labor || {} }, zeilen: [] };
     for (const z of t.zeilen) {
-        if (!z.labor || !z.labor.studio) continue;
+        if (!z.labor || !z.labor.studio || !nur.includes(z.labor.studio)) continue;
         const L = (Lm.labor || {})[z.id], Y = (Wm.welt || {})[z.id];
         const v = L && Y && L.Y > 0 && Y.Y > 0 ? +(L.Y / Y.Y).toFixed(4) : null;
         aus.albedo.zeilen.push({ id: z.id, studio: z.labor.studio, labor: L ? L.Y : null, welt: Y ? Y.Y : null, v });
@@ -247,11 +256,8 @@ async function albedoMessen(aus) {
 
 async function main() {
     const aus = { plan: "studios.K4", pose: POSE, soll: SOLL, leinwand: [W, H], geraet: null, studios: {}, albedo: null, fehler: [] };
-    try {
-        await albedoMessen(aus);
-    } catch (e) {
-        aus.fehler.push("Albedo: " + String((e && e.message) || e).slice(0, 300));
-    }
+    // DIE REIHE (w4-proben-tempo, 30.10.): zuerst die Bilder je Studio, dann die Albedo-Tafel — nur für die Studios mit gemessener
+    // Differenz (ohne sie ist keines GRÜN); bis dahin lief die Tafel zuerst, und jede Zeile `K4 <studio>` stand hinter ihr
     const seiten = Object.fromEntries(STUDIOS.map((s) => ["/k4-" + s + ".html", GAST(AT.STUDIOS[s].pfad)]));
     const server = WB.statikServer({ seiten });
     await server.lausche(PORT + 3);
@@ -286,8 +292,8 @@ async function main() {
                 }
                 let rahmen = { wartet: true };
                 for (let i = 0; rahmen.wartet; i++) {
-                    if (i > 60) throw new Error("das Werk " + gesetzt.name + " steht nach 30 s nicht in der Welt (keine Instanz der Familie f:)");
-                    await WB.sleep(500);
+                    if (i > 300) throw new Error("das Werk " + gesetzt.name + " steht nach 30 s nicht in der Welt (keine Instanz der Familie f:)");
+                    await WB.sleep(100);
                     rahmen = await welt(RAHMEN(POSE));
                 }
                 const datei = path.join(DIR, sid + "-welt.png");
@@ -305,25 +311,40 @@ async function main() {
                 const [ls, ms] = [s.luma, s.maske].map((x) => new Uint8Array(Buffer.from(x, "base64")));
                 z.buehne = { R: s.rad, pixel: ms.reduce((a, v) => a + v, 0) };
                 z.differenz = differenz(lw, kw, ls, ms);
-                const az = ((aus.albedo && aus.albedo.zeilen) || []).filter((x) => x.studio === sid);
-                const ab = az.map((x) => (x.v == null ? Infinity : Math.abs(x.v - 1)));
-                z.albedo = { zeilen: az.map((x) => x.id + " " + x.v), max: az.length ? +Math.max(...ab).toFixed(4) : null };
-                const dOk = z.differenz.anteil != null && z.differenz.anteil <= SOLL.differenz && z.welt.pixel > 0 && z.buehne.pixel > 0;
-                const aOk = z.albedo.max != null && z.albedo.max <= SOLL.albedo;
-                z.gruen = dOk && aOk;
-                z.grund = (dOk ? "" : "Differenz " + z.differenz.anteil + " > " + SOLL.differenz + " ") + (aOk ? "" : "Albedo " + (z.albedo.max == null ? "ohne Zeile" : "|L/W − 1| " + z.albedo.max + " > " + SOLL.albedo));
             } catch (e) {
                 z.grund = "ROT: " + String((e && e.message) || e).slice(0, 300);
                 await welt(WEG).catch(() => {});
             } finally {
                 z.sek = sek(ts);
                 await page.close().catch(() => {});
-                console.log(`K4 ${sid}: ${z.gruen ? "GRÜN" : "ROT"} · Differenz ${z.differenz ? z.differenz.anteil : "—"} · Albedo ${z.albedo ? z.albedo.max : "—"} · ${z.grund || ""} (${z.sek} s)`);
+                console.log(`K4 ${sid}: Differenz ${z.differenz ? z.differenz.anteil : "—"} · ${z.grund || ""} (${z.sek} s)`);
             }
         }
     } finally {
         await b.close().catch(() => {});
         server.close();
+    }
+    const gemessen = STUDIOS.filter((sid) => aus.studios[sid].differenz);
+    if (gemessen.length)
+        try {
+            await albedoMessen(aus, gemessen);
+        } catch (e) {
+            aus.fehler.push("Albedo: " + String((e && e.message) || e).slice(0, 300));
+        }
+    for (const sid of STUDIOS) {
+        const z = aus.studios[sid];
+        if (!z.differenz) {
+            console.log(`K4 ${sid}: ROT · Differenz — · Albedo — · ${z.grund || ""} (${z.sek} s)`);
+            continue;
+        }
+        const az = ((aus.albedo && aus.albedo.zeilen) || []).filter((x) => x.studio === sid);
+        const ab = az.map((x) => (x.v == null ? Infinity : Math.abs(x.v - 1)));
+        z.albedo = { zeilen: az.map((x) => x.id + " " + x.v), max: az.length ? +Math.max(...ab).toFixed(4) : null };
+        const dOk = z.differenz.anteil != null && z.differenz.anteil <= SOLL.differenz && z.welt.pixel > 0 && z.buehne.pixel > 0;
+        const aOk = z.albedo.max != null && z.albedo.max <= SOLL.albedo;
+        z.gruen = dOk && aOk;
+        z.grund = (dOk ? "" : "Differenz " + z.differenz.anteil + " > " + SOLL.differenz + " ") + (aOk ? "" : "Albedo " + (z.albedo.max == null ? "ohne Zeile" : "|L/W − 1| " + z.albedo.max + " > " + SOLL.albedo));
+        console.log(`K4 ${sid}: ${z.gruen ? "GRÜN" : "ROT"} · Differenz ${z.differenz.anteil} · Albedo ${z.albedo.max} · ${z.grund || ""} (${z.sek} s)`);
     }
     aus.sek = sek(t0);
     aus.gruen = STUDIOS.filter((s) => aus.studios[s].gruen);

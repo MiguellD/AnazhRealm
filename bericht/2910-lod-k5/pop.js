@@ -3,8 +3,12 @@
 // aus dem Ausgabe-Pfad (1920 × 1080, `__ausgabeAufnahme`): A mit dem Stand der Welt vom vorigen Ort, B nachdem der echte Takt
 // (`_gameLoopTick`, 12 Takte: Stufen-Wahl, Band, Streu, Wachstum am Rand des Laubs, der Regler des Spielers) am neuen Ort lief. Der
 // Kamera-Fluss zwischen A und B ist null — jeder Pixel mit ΔLuma > 18 (Rec. 709) ist ein Pop, den keine Bewegung erklärt. Die
-// Blende dithert in beiden Schüssen dieselbe Folge (uDitherT vor jedem Schuss auf 0, 6 Bilder je Schuss, das letzte zählt). Summe
-// über die Sekunde ÷ Pixel des Schirms = Pop-Pixel je Sekunde (Soll ≤ 0,05 %); dazu je Schritt die Stufen-Wechsel der Bauten.
+// Blende dithert in beiden Schüssen dieselbe Folge (uDitherT vor jedem Schuss auf 0). Summe über die Sekunde ÷ Pixel des Schirms
+// = Pop-Pixel je Sekunde (Soll ≤ 0,05 %); dazu je Schritt die Stufen-Wechsel der Bauten.
+// EINE AUFNAHME JE SCHUSS (w4-proben-tempo, 30.10.; bis dahin sechs, die letzte zählte — 96 Aufnahmen zu 33 Bildern, 49,3 s an der
+// GTX 379e5f56 über dem Gesetz): `__ausgabeAufnahme` beginnt Folge, Geschichte, Dither und Schatten je Aufnahme neu (A8-n1), zwei
+// Aufnahmen derselben Szene sind dasselbe Bild (G ↔ G2 der Klassen-Teilung: GTX 18 von 18 Läufen, Radeon 11 von 11 mit 0 Pixeln);
+// die TREUE nimmt den ersten Schuss A ein zweites Mal und bricht laut an jedem Byte.
 const st = r.state, rend = st.renderer, cam = st.camera, A = r.constructor;
 const warte = (ms) => new Promise((ok) => setTimeout(ok, ms));
 const W = 1920, H = 1080, SCHRITTE = 8, WEG = 4, LUMA = 18;
@@ -24,13 +28,11 @@ const pose = (p) => {
 const schuss = async () => {
     const lu = st.lodUniforms;
     if (lu && lu.uDitherT) lu.uDitherT.value = 0;
-    let x = null;
-    for (let i = 0; i < 6; i++) x = await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" });
-    return x.u8;
+    return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
 };
 const luma = (u, i) => 0.2126 * u[i] + 0.7152 * u[i + 1] + 0.0722 * u[i + 2];
 const wechsel = () => (st.architectures || []).reduce((s, e) => s + (e && e._lodLevel != null ? e._lodLevel * 7 + (e._lodBandLevel | 0) : 0), 0);
-const aus = { schirm: [W, H], weg: WEG, schritte: [], perfTargetMs: st.perfTargetMs, laub: [], bau: [] };
+const aus = { schirm: [W, H], weg: WEG, schritte: [], perfTargetMs: st.perfTargetMs, laub: [], bau: [], treue: null };
 let summe = 0;
 try {
     for (let i = 0; i < SCHRITTE; i++) {
@@ -41,6 +43,14 @@ try {
         const w0 = wechsel();
         pose(p1);
         const a = await schuss();
+        if (!aus.treue) {
+            // DIE TREUE (einmal je Lauf): dieselbe Szene ein zweites Mal — EINE Aufnahme je Schuss trägt nur, wenn sie Byte für Byte gleich ist
+            const a2 = await schuss();
+            let n = 0;
+            for (let k = 0; k < a.length; k++) if (a[k] !== a2[k]) n++;
+            aus.treue = { schritt: i, bytes: n };
+            if (n) throw new Error("die Treue: zwei Aufnahmen derselben Szene (Schritt " + i + ", A) weichen in " + n + " Bytes ab — EINE Aufnahme je Schuss trägt hier nicht");
+        }
         pm.set(p1.x, boden(p1.x, p1.z) + 0.05, p1.z);
         for (let t = 0; t < 12; t++) (r._gameLoopTick(performance.now()), await warte(5));
         pose(p1);
