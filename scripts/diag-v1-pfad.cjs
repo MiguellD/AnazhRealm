@@ -2301,7 +2301,7 @@ async function feindLauf(a) {
     r._portalOverlay = null;
     lauf.call(r, ["define_ability", I.faehigkeit, ["weather", "sunny"]], { source: "remote:feind" });
     const tuer = r._weltBetreten({ worldJournal: { entries: [{ type: "genesis", text: I.welt, d: 1 }] } }, null, {
-        neuLaden: false,
+        wechseln: false,
         aktiv: false,
     });
     st.worldJournal.entries.push(
