@@ -1,0 +1,135 @@
+$ bash -c for t in 1 2 3; do node scripts/diag-regler-wirkt.cjs --teil=$t; echo "TEIL $t EXIT $?"; done; node -e "console.log('RATSCHE ' + JSON.stringify(require('./spec/vertraege/ratsche.json').reglerBudget || null))"
+✅ SELBST-TEST Urteil: gleich grün · neu tot rot (a:x:3) · geheilt rot bis die Zeile fällt (a:x:2) · je Teil nur seine Zeilen (✓✓✓✓✓: Teil 1 · 2 · 3 grün, der Zeuge fällt in Teil 3 rot, ungefiltert rot)
+✅ SELBST-TEST Täter (ov erreicht die Brücke nicht): 15/15 Regler der Art vehicle tot → rot (neu tot: vehicle:vehicle:dach, vehicle:vehicle:damping, vehicle:vehicle:fahrhoehe …) · ohne Täter 1 tot
+✅ SELBST-TEST Täter (ein Regler bricht den Bau): vehicle:vehicle:radstand BRICHT — radstand=2.2 an gt: 0 Teile (der Bau wirft oder liefert nichts) · radstand=3.4 an gt: 92013 nicht-endliche Werte (NaN/Inf) in den Puffern · andere BRICHT 0 · ohne Täter BRICHT 0
+✅ SELBST-TEST Ofen-Kanal (koerper im Host-Ofen): heil 8/8 wirken · Täter (der Ofen verliert den Wert) 8/8 tot → rot (neu tot: koerper:koerper:age, koerper:koerper:arms, koerper:koerper:gender …)
+✅ SELBST-TEST Ofen-Täter (der Mensch-Bäcker wirft): koerper:koerper:height — BRICHT — height=1.15 an mensch: der Guss meldet ERROR: Mensch-Ofen kalt-Guss scheiterte (Täter: der Mensch-Bäcker wirft)
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] kathedrale L3: [{"feld":"tris","ist":22024,"soll":12000}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] kathedrale L3: [{"feld":"tris","ist":12736,"soll":12000}]
+✅ SELBST-TEST STUFEN (Täter: die Stufe reduziert nicht): 3 Rezepte über der Zeile L1 (brunnen L1: tris 3338 > 620) · Quote ausstattung:L1 1.000 an brunnen · ohne Täter 0 Regler über Budget, kein Rezept · Täter „die Stufe 1 liefert nichts" leer: ausstattung brunnen L1, ausstattung brunnen groesse=0.8 L1
+✅ SELBST-TEST WURF (Täter: der Zwilling wirft immer): heil 49 Paare, 0 rot · Täter 39 rot (gate kathedrale: wirft 7488 Dreiecke von der teureren Stufe (Zwilling 7488 ≥ Stufe 0 7380) · gate kathedrale wMono=0: wirft 5788 Dreiecke von der teureren Stufe (Zwilling 5788 ≥ Stufe 0 5408))
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] kathedrale L3: [{"feld":"tris","ist":22024,"soll":12000}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] kathedrale L3: [{"feld":"tris","ist":12736,"soll":12000}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] maurentor L3: [{"feld":"tris","ist":20784,"soll":12000}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] maurentor L3: [{"feld":"tris","ist":12448,"soll":12000}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] verkalkt L3: [{"feld":"tris","ist":30080,"soll":12000}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] verkalkt L3: [{"feld":"tris","ist":17640,"soll":12000}]
+Regler-wirkt Teil 1 (ohne haus): 99 PARAMS-Zeilen · 2685 Bauten über die echte Brücke (Seed 1, jede Stufe — die Wirkung an der ersten) · 26 Güsse im Host-Ofen der Werkstatt (klang ohne Bäcker, koerper, kreatur)
+  fachwerk    11 wirken ·   0 tot (von 11)
+  klang        0 wirken ·   7 tot (von 7)
+  koerper      8 wirken ·   0 tot (von 8)
+  phyto        9 wirken ·   0 tot (von 9)
+  porta       18 wirken ·   8 tot (von 26)
+  schmiede    18 wirken ·   0 tot (von 18)
+  tetrapoda    5 wirken ·   0 tot (von 5)
+  vehicle     14 wirken ·   1 tot (von 15)
+  TOT porta:gate:wave — bewegt den Bau an keinem der 7 Rezepte (min 0 · max 1)
+  TOT porta:gate:tunnel — bewegt den Bau an keinem der 7 Rezepte (min 0 · max 1)
+  TOT porta:gate:fractal — bewegt den Bau an keinem der 7 Rezepte (min 0 · max 1)
+  TOT porta:gate:twist — bewegt den Bau an keinem der 7 Rezepte (min 0 · max 1)
+  TOT porta:gate:swirl — bewegt den Bau an keinem der 7 Rezepte (min 0 · max 1)
+  TOT porta:gate:reflect — bewegt den Bau an keinem der 7 Rezepte (min 0 · max 1)
+  TOT porta:gate:temp — bewegt den Bau an keinem der 7 Rezepte (min 0 · max 1)
+  TOT porta:gate:energy — bewegt den Bau an keinem der 7 Rezepte (min 0 · max 1)
+  TOT vehicle:vehicle:grip — bewegt den Bau an keinem der 5 Rezepte (min 0.6 · max 1.4)
+  TOT klang:klang:bpm — kein Guss: die Werkstatt fragt den Host-Ofen, die Art hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — der Wert hat keinen Leser
+  TOT klang:klang:swing — kein Guss: die Werkstatt fragt den Host-Ofen, die Art hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — der Wert hat keinen Leser
+  TOT klang:klang:darkness — kein Guss: die Werkstatt fragt den Host-Ofen, die Art hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — der Wert hat keinen Leser
+  TOT klang:klang:color — kein Guss: die Werkstatt fragt den Host-Ofen, die Art hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — der Wert hat keinen Leser
+  TOT klang:klang:flow — kein Guss: die Werkstatt fragt den Host-Ofen, die Art hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — der Wert hat keinen Leser
+  TOT klang:klang:tension — kein Guss: die Werkstatt fragt den Host-Ofen, die Art hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — der Wert hat keinen Leser
+  TOT klang:klang:space — kein Guss: die Werkstatt fragt den Host-Ofen, die Art hat keinen Gestalt-Bäcker (MESHFREI ohne BAKERS_BY_KIND, Vertrag §8.4) — der Wert hat keinen Leser
+STUFEN (B2c, pipeline.K3): 2685 Bauten (jede Stufe × Rezept × Regler-Rand) · über Budget 0 · Reduktion je Art ausstattung L1/L0 0.33 · bank L1/L0 0.23 · bruecke L1/L0 0.10 · flower L2/L0 0.14 · gate L1/L0 0.49 L2/L0 0.15 · grass  · leiter L1/L0 0.17 · vehicle L1/L0 0.36 · weapon 
+WURF (Kosten-Regel des Wirts, N5): 340 Bauten-Paare über die Regler-Hülle (gate L0→3) · 0 Bauten · die Stufe wirft selbst an 73 · die NUR-WURF-Stufe über ihrer Zeile an 6
+  WURF gate geisttor: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor wMason=1: Stufe 0 wirft (6 500 Dreiecke; der Zwilling trüge 10 664)
+  WURF gate geisttor wLace=0: Stufe 0 wirft (444 Dreiecke; der Zwilling trüge 696)
+  WURF gate geisttor orders=1: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor orders=9: Stufe 0 wirft (4 256 Dreiecke; der Zwilling trüge 5 120)
+  WURF gate geisttor depth=0: Stufe 0 wirft (2 888 Dreiecke; der Zwilling trüge 3 320)
+  WURF gate geisttor wave=0: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor wave=1: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor tunnel=0: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor tunnel=1: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor fractal=0: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor twist=0: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor twist=1: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor realm=0: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor realm=1: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor swirl=0: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor swirl=1: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor reflect=0: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor reflect=1: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor ogee=1: Stufe 0 wirft (2 282 Dreiecke; der Zwilling trüge 2 436)
+  WURF gate geisttor aspect=1.4: Stufe 0 wirft (2 024 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor metal=0: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor metal=1: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor glow=0: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor hue=0: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor hue=1: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor weather=1: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor ruin=1: Stufe 0 wirft (2 228 Dreiecke; der Zwilling trüge 2 456)
+  WURF gate geisttor temp=0: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor temp=1: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor energy=0: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate geisttor energy=1: Stufe 0 wirft (2 132 Dreiecke; der Zwilling trüge 2 136)
+  WURF gate kathedrale: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale wMono=0: Stufe 0 wirft (5 408 Dreiecke; der Zwilling trüge 5 788)
+  WURF gate kathedrale wLace=0: Stufe 0 wirft (6 340 Dreiecke; der Zwilling trüge 7 088)
+  WURF gate kathedrale wLace=1: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale orders=9: Stufe 0 wirft (16 900 Dreiecke; der Zwilling trüge 22 024)
+  WURF gate kathedrale depth=0: Stufe 0 wirft (11 124 Dreiecke; der Zwilling trüge 12 736)
+  WURF gate kathedrale depth=1: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale wave=0: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale wave=1: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale tunnel=0: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale tunnel=1: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale fractal=0: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale fractal=1: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale twist=0: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale twist=1: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale realm=0: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale realm=1: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale swirl=0: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale swirl=1: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale reflect=0: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale reflect=1: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale k=3.4: Stufe 0 wirft (7 280 Dreiecke; der Zwilling trüge 8 416)
+  WURF gate kathedrale rise=1.25: Stufe 0 wirft (7 270 Dreiecke; der Zwilling trüge 8 748)
+  WURF gate kathedrale ogee=1: Stufe 0 wirft (7 790 Dreiecke; der Zwilling trüge 8 016)
+  WURF gate kathedrale horse=1: Stufe 0 wirft (7 290 Dreiecke; der Zwilling trüge 8 096)
+  WURF gate kathedrale aspect=1.4: Stufe 0 wirft (5 402 Dreiecke; der Zwilling trüge 6 672)
+  WURF gate kathedrale metal=0: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale metal=1: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale glow=0: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale glow=1: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale hue=0: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale hue=1: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale weather=0: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale weather=1: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale ruin=1: Stufe 0 wirft (5 964 Dreiecke; der Zwilling trüge 6 476)
+  WURF gate kathedrale temp=0: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale temp=1: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale energy=0: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate kathedrale energy=1: Stufe 0 wirft (7 380 Dreiecke; der Zwilling trüge 7 488)
+  WURF gate ruine k=3.4: Stufe 0 wirft (3 592 Dreiecke; der Zwilling trüge 5 168)
+  WURF gate verkalkt wBraid=0: Stufe 0 wirft (4 912 Dreiecke; der Zwilling trüge 6 532)
+  WURF gate maurentor orders=9: der Zwilling wirft (20 784 über der Zeile, billiger als Stufe 0 mit 38 910)
+  WURF gate maurentor depth=0: der Zwilling wirft (12 448 über der Zeile, billiger als Stufe 0 mit 33 938)
+  WURF gate verkalkt orders=9: der Zwilling wirft (30 080 über der Zeile, billiger als Stufe 0 mit 44 898)
+  WURF gate verkalkt depth=0: der Zwilling wirft (17 640 über der Zeile, billiger als Stufe 0 mit 39 922)
+✅ gate:regler-wirkt Teil 1: 83/99 Regler wirken · 0 brechen · 16 tot = Ratsche 16 von 16 (Soll 0, Synthese §4 W1 „tote Regler beim Namen“, W4 „Regler-wirkt-Probe grün“ (Regler-Generator mit fest/festText, N2)) · über Budget 0 = Ratsche 0 von 0 (Staffel 0, Soll 0) · über der Quote 0 · WURF 340 Paare, nie von der teureren Stufe
+TEIL 1 EXIT 0
+Regler-wirkt Teil 2 (haus Regler W,storeys,terrAsym,pitchDeg,roofCurve,kuppel,balcony,arkade,zinnen,vorkragung,terrasse): 11 PARAMS-Zeilen · 2136 Bauten über die echte Brücke (Seed 1, jede Stufe — die Wirkung an der ersten) · 0 Güsse im Host-Ofen der Werkstatt ()
+  fachwerk    11 wirken ·   0 tot (von 11)
+STUFEN (B2c, pipeline.K3): 2136 Bauten (jede Stufe × Rezept × Regler-Rand) · über Budget 0 · Reduktion je Art haus L1/L0 0.49 L2/L0 0.12
+WURF (Kosten-Regel des Wirts, N5): 534 Bauten-Paare über die Regler-Hülle (haus L0→3) · 0 Bauten · die Stufe wirft selbst an 0 · die NUR-WURF-Stufe über ihrer Zeile an 0
+✅ gate:regler-wirkt Teil 2: 11/11 Regler wirken · 0 brechen · 0 tot = Ratsche 0 von 16 (Soll 0, Synthese §4 W1 „tote Regler beim Namen“, W4 „Regler-wirkt-Probe grün“ (Regler-Generator mit fest/festText, N2)) · über Budget 0 = Ratsche 0 von 0 (Staffel 0, Soll 0) · über der Quote 0 · WURF 534 Paare, nie von der teureren Stufe
+TEIL 2 EXIT 0
+Regler-wirkt Teil 3 (haus Regler D,bend,doppel,hip,treppgiebel,annexN,portikus,turm,veranda,pilotis): 10 PARAMS-Zeilen · 1832 Bauten über die echte Brücke (Seed 1, jede Stufe — die Wirkung an der ersten) · 0 Güsse im Host-Ofen der Werkstatt ()
+  fachwerk    10 wirken ·   0 tot (von 10)
+STUFEN (B2c, pipeline.K3): 1832 Bauten (jede Stufe × Rezept × Regler-Rand) · über Budget 0 · Reduktion je Art haus L1/L0 0.45 L2/L0 0.13
+WURF (Kosten-Regel des Wirts, N5): 450 Bauten-Paare über die Regler-Hülle (haus L0→3) · 0 Bauten · die Stufe wirft selbst an 0 · die NUR-WURF-Stufe über ihrer Zeile an 0
+✅ gate:regler-wirkt Teil 3: 10/10 Regler wirken · 0 brechen · 0 tot = Ratsche 0 von 16 (Soll 0, Synthese §4 W1 „tote Regler beim Namen“, W4 „Regler-wirkt-Probe grün“ (Regler-Generator mit fest/festText, N2)) · über Budget 0 = Ratsche 0 von 0 (Staffel 0, Soll 0) · über der Quote 0 · WURF 450 Paare, nie von der teureren Stufe
+TEIL 3 EXIT 0
+RATSCHE {"zweck":"Ein Regler, dessen Rand-Wert (min oder max) eine Stufe über ihre Budget-Zeile treibt (Studio-Vertrag B2c: PORTAL_RENDER_CONFIG.lod.budget[kind][stufe]): der Bau steht, das Gesetz bricht. gate:asset-contract baut nur die Rezepte ohne ov; die Stufen-Probe von gate:regler-wirkt baut jede Stufe jeder Budget-Art an jedem Rezept und jedem Regler-Rand über die echte Brücke (die Ofen-Arten am Host-Ofen). staffel = die Decke der Ratsche (Karte pipeline.K3: Staffel 1 ≤ 3, Staffel 2 = 0); quote = die Stufen über ihrer Reduktion (L1/L0 ≤ 0,5, L2/L0 ≤ 0,15 Dreiecke, das Höchste über Rezepte × Rand), Schlüssel art:Lstufe. Schlüssel kern:art:id, Wert = der Befund.","soll":0,"staffel":0,"sollQuelle":"Studio-Vertrag B2c: jede Gestalt verlässt das Studio auf ihrer Budget-Zeile — auch am Rand jedes Reglers (Heilung am Studio, Lehre 19)","bruch":{},"quote":{}}
