@@ -1457,9 +1457,10 @@ const server = statikServer();
                     atmo.lichtErsatz.every((u) => haelt(term, u));
                 aus.code.augenVorZweig =
                     bed.length > 0 && bed.every((c) => haelt(c, THREE.TSL.normalView) && haelt(c, THREE.TSL.positionView));
-                // das EINE Punktlicht-Gesetz: der Pool ruft die BRDF (je Platz), kein zweiter Rufer, kein nacktes 1/d
+                // das EINE Punktlicht-Gesetz: der Pool ruft die BRDF (je Platz), kein zweiter Rufer, kein nacktes 1/d — über die
+                // Deskriptoren (nie `P[n]` zuerst: ein Getter liefe mit dem Prototyp als this und legte seinen Speicher dort ab)
                 const brdfRufer = Object.getOwnPropertyNames(P).filter(
-                    (n) => n !== "constructor" && typeof P[n] === "function" && !window.__fehlt(P[n], /this\._punktLichtBrdf\(/)
+                    (n) => n !== "constructor" && typeof Object.getOwnPropertyDescriptor(P, n).value === "function" && !window.__fehlt(P[n], /this\._punktLichtBrdf\(/)
                 );
                 aus.code.poolGesetz =
                     brdf >= atmo.lichtLage.length &&

@@ -19,6 +19,8 @@ class AnazhRealm_dirigent_takt {
             const delta = Math.min(wandDelta, AnazhRealm.TAKT_DECKEL_S);
             lastTime = t;
             const currentTime = t / 1000;
+            // DER WELT-WECHSEL AM ORT (`_weltWechsel`): die alte Welt geht, die neue kommt an — bis sie steht, taktet keine
+            if (this._weltTausch) return;
 
             // W12 — ist ein Portal offen, friert die Heimat-Welt ein: der
             // Loop kehrt VOR Physik/Ticks/Render um. lastTime wurde gerade
@@ -330,6 +332,7 @@ class AnazhRealm_dirigent_takt {
         // Loop-Funktion exponieren, damit Tests (playtest.cjs) einen Frame SYNCHRON treiben können statt
         // auf das headless gedrosselte rAF zu warten; der Loop selbst läuft weiter über setAnimationLoop.
         this._gameLoopTick = loop;
+        this._takt = loop; // er bleibt der Seite: der Welt-Wechsel am Ort legt ihn neu aus (`_weltAbschied`)
         this.state.renderer.setAnimationLoop(loop);
     }
 

@@ -1593,9 +1593,15 @@ class AnazhRealm_koerper_leib {
     // jeder Mitspieler — sein Guss trägt seine Farben). Die Bewohner einer Siedlung belegen je Gestalt und je Kopf eine Zeile
     // (`_tonZeile`, in EINEM Zug je Siedlung: die Tafel lädt einmal hoch), die Siedlung gibt sie mit ihren Leibern zurück
     // (`_tonZeileFrei`). Leser: der Stoff jedes Menschen (`_tonFaktor`: Leib und Satz der Menge) und das Feld (`_tonFeldFarbe`).
+    // Die Tafel gehört der Seite (WELT_GRENZE.seite: ein bleibendes Programm liest sie), ihre Belegung der Welt: nach dem Wechsel am
+    // Ort beginnt die neue Welt mit leeren Zeilen über derselben Karte — sonst gab der Abschied die Karte frei, die der Stoff des
+    // Spielers weiter las („Destroyed texture ton-tafel used in a submit“, z86).
     _tonTafel() {
         const st = this.state;
-        if (st.tonTafel) return st.tonTafel;
+        if (st.tonTafel) {
+            if (!st.tonTafelFrei) [st.tonTafelFrei, st.tonTafelZeilen] = [[], 1];
+            return st.tonTafel;
+        }
         const kc = window.__koerperCore;
         if (!kc || !kc.MENSCH_TON) return AnazhRealm._kernPflichtBruch("koerper:MENSCH_TON");
         const T = THREE;

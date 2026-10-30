@@ -19,8 +19,8 @@ class AnazhRealm_werkstatt_sozial {
 
     // Welt-Erstellungs-Dialog (native <dialog>) mit drei Pfaden:
     //   1) Allein → private Welt (createNewWorld)
-    //   2) Host → createNewWorld mit role="host", Auto-Start P2P nach Reload, Host-Banner (den Code gibt `teileWelt`)
-    //   3) Joinen → der Welt-Code (`empfangeWerk` → `_weltBeitritt`: world-request → world-snapshot → _importGuestWorld → Reload)
+    //   2) Host → createNewWorld mit role="host", Auto-Start P2P nach dem Wechsel, Host-Banner (den Code gibt `teileWelt`)
+    //   3) Joinen → der Welt-Code (`empfangeWerk` → `_weltBeitritt`: world-request → world-snapshot → _importGuestWorld → Wechsel)
     _openNewWorldDialog() {
         const dialog = document.getElementById("new-world-dialog");
         if (!dialog || typeof dialog.showModal !== "function") {

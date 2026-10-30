@@ -111,15 +111,16 @@ async function gebautNach(e, { takt, fertig, bau, max, offen, warum } = {}) {
     return n;
 }
 // DER EINE DECKEL jeder wartenden Schleife (`for (const weiter = window.__deckel(name, max, offen); weiter(); )`): er zählt einen
-// Gang nur, wenn weder die Welt (`_weltOffen`) noch die Linse (`offen()`) offen hat, und wirft nach `max` (120) beim Namen;
-// `offen === false`: jeder Gang zählt. Ein Offenes, das sich 3600 Gänge nicht rührt, wirft beim Namen.
+// Gang nur, wenn weder die Welt (`_weltOffen`) noch die Linse (`offen()`) offen hat, und wirft nach `max` (120) beim Namen —
+// samt jeder Lücke des Weltbilds (`_weltbildFehlt`: nach dem Tausch am Ort stand das Licht des Orts nie, und der Deckel sagte
+// nur „nichts mehr offen"); `offen === false`: jeder Gang zählt. Ein Offenes, das sich 3600 Gänge nicht rührt, wirft beim Namen.
 function deckel(name, max, offen) {
     let n = 0,
         k = 0,
         still = 0,
         vor = "";
     return () => {
-        const o = r && r._weltOffen ? r._weltOffen() : { welt: 1 };
+        const o = r?._weltOffen ? r._weltOffen() : { welt: 1 };
         const auf = Object.values(o).some(Boolean);
         const jetzt = JSON.stringify(o);
         still = auf && jetzt === vor ? still + 1 : 0;
@@ -128,7 +129,7 @@ function deckel(name, max, offen) {
             throw new Error(`DIE WELT HÄNGT: ${name} nach ${n} Takten — offen ${jetzt} ohne Bau-Ereignis`);
         if ((offen === false || (!auf && !(offen && offen()))) && ++k > (max || 120))
             throw new Error(
-                `DER BAU STEHT NICHT: ${name} nach ${n} Takten — ${offen === false ? "die Linse zählte jeden Gang" : "die Welt hat nichts mehr offen"}`
+                `DER BAU STEHT NICHT: ${name} nach ${n} Takten — ${offen === false ? "die Linse zählte jeden Gang" : "die Welt hat nichts mehr offen"}${(r?._weltbildFehlt?.(true) || []).map((l) => ` · dem Weltbild fehlt: ${l}`).join("")}`
             );
         return ++n > 0;
     };
@@ -140,7 +141,7 @@ async function weltDa(bed) {
     window.__weltDaWartet = bed ? String(bed).replace(/\s+/g, " ").slice(0, 160) : "den Stamm";
     // erst das Erwachen des Boots (`erwacht`: init samt der Heimat aus dem Faden) — eine Linse, die vorher taktet, taktet
     // eine halbe Welt (der Spieler fällt, ehe die Tiere geboren sind)
-    while (!(r && r.erwacht)) await sleep(50);
+    while (!r?.erwacht) await sleep(50);
     await r.erwacht;
     for (let r; !((r = window.anazhRealm) && typeof r._gameLoopTick === "function" && (!bed || bed(r)));)
         await sleep(50);
@@ -157,14 +158,14 @@ function abdruck(x, alle) {
         for (let i = 0; i < u.length; i++) h = Math.imul(h ^ u[i], 0x01000193);
     };
     const geo = (g) => {
-        const at = g && g.attributes;
+        const at = g?.attributes;
         if (!at || !at.position) return;
         n++;
         for (const k of alle ? Object.keys(at).sort() : ["position"]) ein(at[k].array || at[k].data.array);
         if (alle && g.index) ein(g.index.array);
     };
-    if (x && x.leaves) for (const g of new Set(x.leaves.filter((l) => !l.shadowTwin).map((l) => l.geom))) geo(g);
-    else if (x && x.traverse) x.traverse((o) => geo(o.geometry));
+    if (x?.leaves) for (const g of new Set(x.leaves.filter((l) => !l.shadowTwin).map((l) => l.geom))) geo(g);
+    else if (x?.traverse) x.traverse((o) => geo(o.geometry));
     else geo(x);
     return (h >>> 0).toString(16) + "/" + n;
 }
@@ -316,7 +317,7 @@ function melde(art, text) {
         .slice(0, 3)
         .join(" | ")
         .slice(0, 400);
-    if (sammlung.erwartet && sammlung.erwartet.test(t)) return;
+    if (sammlung.erwartet?.test(t)) return;
     // ab `selbsttest(name)` setzt die Linse ihren Täter selbst: was die Seite meldet, steht als SELBSTTEST
     if (sammlung.selbsttest && (art === "console.error" || art === "pageerror"))
         return console.log(`[welt-boot] SELBSTTEST ${sammlung.selbsttest} ${art}: ${t}`);
@@ -339,7 +340,7 @@ function fehlerSammler(page) {
     if (!page || page.__weltBootSammler) return page;
     page.__weltBootSammler = true;
     page.on("pageerror", (e) => melde("pageerror", (e && (e.stack || e.message)) || e));
-    page.on("error", (e) => melde("absturz", (e && e.message) || e));
+    page.on("error", (e) => melde("absturz", e?.message || e));
     page.on("console", (m) => {
         if (m.type() !== "error") return;
         const t = m.text();
@@ -380,7 +381,7 @@ function pulsSeite() {
         }
     };
     const stempel = (text) => ((Z.letzt = text), sende("stempel", text));
-    const G = window.WebGL2RenderingContext && window.WebGL2RenderingContext.prototype;
+    const G = window.WebGL2RenderingContext?.prototype;
     if (G) {
         const lp = G.linkProgram;
         G.linkProgram = function () {
@@ -407,7 +408,7 @@ function pulsSeite() {
             };
         }
     }
-    const D = window.GPUDevice && window.GPUDevice.prototype;
+    const D = window.GPUDevice?.prototype;
     if (D)
         for (const m of [
             "createRenderPipeline",
@@ -418,29 +419,28 @@ function pulsSeite() {
             const o = D[m];
             if (typeof o !== "function") continue;
             D[m] = function (d) {
-                stempel(`gpu.${m} #${++Z.programme} ${(d && d.label) || ""}`);
+                stempel(`gpu.${m} #${++Z.programme} ${d?.label || ""}`);
                 return o.apply(this, arguments);
             };
         }
     // der Stoff-Name je Pipeline am Backend der Welt (r184 createRenderPipeline(renderObject)), sobald es steht
     const stoffHaken = () => {
-        const st = r && r.state;
-        const be = st && st.renderer && st.renderer.backend;
+        const be = r?.state?.renderer?.backend;
         if (!be || be.__weltPulsHaken || typeof be.createRenderPipeline !== "function") return;
         be.__weltPulsHaken = true;
         const crp = be.createRenderPipeline;
         be.createRenderPipeline = function (ro) {
-            const m = ro && ro.material;
-            const o = ro && ro.object;
-            const p = ro && ro.pipeline;
+            const m = ro?.material;
+            const o = ro?.object;
+            const p = ro?.pipeline;
             const len = (s) => (s && typeof s.code === "string" ? s.code.length : "?");
             const lichter =
-                ro && ro.lightsNode && typeof ro.lightsNode.getLights === "function"
+                typeof ro?.lightsNode?.getLights === "function"
                     ? ro.lightsNode.getLights().length
                     : "?";
-            const name = `${(m && (m.name || m.type)) || "?"} · ${(o && (o.name || o.type)) || "?"}`;
+            const name = `${m?.name || m?.type || "?"} · ${o?.name || o?.type || "?"}`;
             stempel(
-                `Pipeline ${name} · vs ${len(p && p.vertexProgram)} fs ${len(p && p.fragmentProgram)} Zeichen · ${lichter} Lichter`
+                `Pipeline ${name} · vs ${len(p?.vertexProgram)} fs ${len(p?.fragmentProgram)} Zeichen · ${lichter} Lichter`
             );
             const t0 = performance.now();
             const aus = crp.apply(this, arguments);
@@ -451,7 +451,7 @@ function pulsSeite() {
     };
     const phase = () => {
         stoffHaken();
-        const st = r && r.state;
+        const st = r?.state;
         const t = [document.readyState];
         if (document.visibilityState === "hidden") t.push("verborgen");
         if (st) {
@@ -496,7 +496,7 @@ function zeichnetHaken() {
             "drawArrays",
             "linkProgram",
         ])
-            if (K && K.prototype[m]) K.prototype[m] = merke(K.prototype[m]);
+            if (K?.prototype[m]) K.prototype[m] = merke(K.prototype[m]);
 }
 // DIE WEICHE: ein Echt-Rezept, dessen Welt-Seiten nie zeichnen, belegt eine GPU-Gruppe (und die Karte) umsonst — ROT beim Namen
 async function weicheUrteil(browser, art) {
@@ -550,8 +550,8 @@ async function akteAnlegen(page, b) {
             return o.apply(this, a).then(
                 (v) => (A.offen.delete(auf), v),
                 async (e) => {
-                    const msg = (e && e.message) || String(e);
-                    if ((e && e.name === "TimeoutError") || /timed out/i.test(msg))
+                    const msg = e?.message || String(e);
+                    if (e?.name === "TimeoutError" || /timed out/i.test(msg))
                         await akte(
                             page,
                             `${auf.was} riss nach ${sek(Date.now() - auf.an)} s: ${msg.split("\n")[0].slice(0, 160)}`
@@ -576,7 +576,7 @@ async function akteAnlegen(page, b) {
         await page.evaluateOnNewDocument(pulsSeite);
         if (b.stapel) (await s.send("Debugger.enable"), (A.dbg = true));
     } catch (e) {
-        if (!page.isClosed()) console.log(`[stall-akte] Seite #${A.id} ohne Puls: ${(e && e.message) || e}`);
+        if (!page.isClosed()) console.log(`[stall-akte] Seite #${A.id} ohne Puls: ${e?.message || e}`);
     }
     if (!akteUhr) {
         akteUhr = setInterval(() => {
@@ -590,7 +590,7 @@ async function akteAnlegen(page, b) {
                 const luecke = Date.now() - P.puls.an;
                 if (luecke >= P.b.stallMs)
                     akte(p, `der Puls steht seit ${sek(luecke)} s`).catch((e) =>
-                        console.log(`[stall-akte] Akte brach: ${e && e.message}`)
+                        console.log(`[stall-akte] Akte brach: ${e?.message}`)
                     );
             }
         }, 1000);
@@ -689,7 +689,7 @@ async function cpuDelta(b, ms) {
             faeden: faedenText(fa, fz, ms),
         };
     } catch (e) {
-        return { text: `SystemInfo: ${(e && e.message) || e}`, renderer: 0, gpu: 0, faeden: null };
+        return { text: `SystemInfo: ${e?.message || e}`, renderer: 0, gpu: 0, faeden: null };
     }
 }
 
@@ -759,7 +759,7 @@ async function starteBrowser(opts = {}) {
         offen: true,
     };
     const proc = browser.process();
-    if (proc && proc.stderr) {
+    if (proc?.stderr) {
         let rest = "";
         proc.stderr.on("data", (d) => {
             const z = (rest + d.toString()).split("\n");
@@ -908,7 +908,7 @@ async function uferStellen(opts) {
     let h = null;
     await window.__weltDa((w) => (w._ensureHydroTilesAround(mx, mz, 200), (h = w._hydroFor(mx, mz)) && h.ready));
     let P = null;
-    for (const f of (h && h.rivers) || [])
+    for (const f of h?.rivers || [])
         f.points.forEach((q, i) => {
             const d = Math.hypot(q.x - mx, q.z - mz);
             if (!P || d < P.d) P = { x: q.x, z: q.z, d, f, i };
@@ -940,9 +940,9 @@ async function uferStellen(opts) {
     };
     const abbild = () => {
         const t = r._szeneTiefeKnoten && r._szeneTiefeKnoten.value;
-        return t && t.image ? t.image.width : 0;
+        return t?.image ? t.image.width : 0;
     };
-    const fern = () => !!(st.farWater && st.farWater.mesh && st.farWater.mesh.parent);
+    const fern = () => !!st.farWater?.mesh?.parent;
     const welt = (l) => !opts.welt || opts.welt.includes(l.term); // und die Szenen-Tiefe trägt die Welt, nie nur Himmel
     const steht = () => sichtbaresWasser() > 0 && abbild() > 1 && fern() && E.gezeichnet.has(st.farWater.mesh);
     // das EINE Warten (`__gebautNach`): Takt um Takt der Seite, bis Wasser, Abbild und Weltbild stehen (Deckel: Takte ohne Offenes)
@@ -1062,7 +1062,7 @@ async function eigenePorte(...variablen) {
 // Namen mit dem Stapel, `zuletzt` räumt eigene Kinder-Prozesse, und der Lauf endet mit 2 — nie still grün (Lehre 6)
 const hauptLauf = (rumpf, zuletzt) =>
     rumpf().catch((e) => {
-        console.error(`${path.basename(process.argv[1] || "-e")} ABSTURZ:`, (e && e.stack) || e);
+        console.error(`${path.basename(process.argv[1] || "-e")} ABSTURZ:`, e?.stack || e);
         if (zuletzt) zuletzt();
         process.exit(2);
     });
@@ -1157,7 +1157,7 @@ function booteWelt(page, name = "der Boot der Welt") {
                     /* der Boot reift */
                 }
                 const s = r.state;
-                if (s && s.voxelChunks && s.voxelChunks.size > 4 && s.voxelWorkerReady && s.voxelWorkerWorldgenSynced)
+                if (s?.voxelChunks?.size > 4 && s.voxelWorkerReady && s.voxelWorkerWorldgenSynced)
                     return { ok: true, ms: Math.round(performance.now() - start), seed: s.worldMeta.seed };
             }
             await sleep(16);
@@ -1166,24 +1166,21 @@ function booteWelt(page, name = "der Boot der Welt") {
     }, name);
 }
 
-// DIE TÜR DER WELT (Ring 8: ein Welt-Wechsel ist ein Reload) — die EINE Stelle, an der eine Linse die Welt ihrer Seite wechselt:
-// durch die Tür des Spiels, `welt` als Snapshot (`importWorldBeside(welt, {reload: true})`: daneben gelegt) oder als liegende
-// worldId (`switchToWorld`), beide über `_weltWechselNeuLaden` (die Sperre, der Zeiger, der Speicher-Faden still, der Reload),
-// bis die neue Seite lädt → ihre worldId. Bis heil-glanz setzten fünf Linsen den Zeiger selbst und luden selbst neu: ein
-// Leerlauf-saveState der alten Seite dazwischen setzte ihn auf die lebende Welt zurück (`saveState` → `activeWorldSet`), und
-// die Prüfbühne erwachte als Wildnis (CI 40970322757) — die Tür-Wand im Selbsttest nennt jeden eigenen Zeiger.
-async function weltTor(page, welt, frist = 120000) {
-    const neu = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: frist });
+// DIE TÜR DER WELT — die EINE Stelle, an der eine Linse die Welt ihrer Seite wechselt: durch die Tür des Spiels, `welt` als
+// Snapshot (`importWorldBeside(welt, {reload: true})`: daneben gelegt) oder als liegende worldId (`switchToWorld`), beide über
+// `_weltWechsel` (die Sperre, der Zeiger, der Speicher-Faden still, der Tausch am Ort — seit tore-k5-tuer lädt die Seite nicht
+// neu), bis die Ziel-Welt erwacht (`erwacht`, das Versprechen des Tauschs) → ihre worldId; ein Hänger endet an der Frist des
+// Browsers. Bricht der Tausch, lädt die Seite neu, und die Tür öffnet NICHT: sie nennt den Satz des Melders (`_bruchBuch`) —
+// bis heute wartete sie auf die worldId und hieß den Rückfall gut. Bis heil-glanz setzten fünf Linsen den Zeiger selbst und
+// luden selbst neu: ein Leerlauf-saveState der alten Seite dazwischen setzte ihn auf die lebende Welt zurück (`saveState` →
+// `activeWorldSet`), und die Prüfbühne erwachte als Wildnis (CI 40970322757) — die Tür-Wand im Selbsttest nennt jeden eigenen Zeiger.
+async function weltTor(page, welt) {
     const res = await page.evaluate(async (w) => {
         const r = await window.__weltDa();
-        if (typeof w !== "string") return r.importWorldBeside(w, { reload: true });
-        return r.switchToWorld(w, { reload: true }) ? { ok: true, worldId: w } : { ok: false, reason: `keine Welt ${w}` };
+        const x = typeof w !== "string" ? r.importWorldBeside(w, { reload: true }) : r.switchToWorld(w, { reload: true }) ? { ok: true, worldId: w } : { ok: false, reason: `keine Welt ${w}` }; // prettier-ignore
+        return x?.ok && !(await r.erwacht) ? { reason: [...r._bruchBuch.keys()].pop() } : x;
     }, welt);
-    if (!res || !res.ok) {
-        neu.catch(() => {});
-        throw new Error(`die Tür der Welt öffnete nicht: ${(res && res.reason) || "kein Ergebnis"}`);
-    }
-    await neu;
+    if (!res || !res.ok) throw new Error(`die Tür der Welt öffnete nicht: ${res?.reason || "kein Ergebnis"}`);
     return res.worldId;
 }
 
@@ -1266,7 +1263,7 @@ function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(requir
                             b.operator === "!" &&
                             hat(
                                 b.argument,
-                                (x) => x.object && x.object.type === "Identifier" && BAU.test(x.property.name)
+                                (x) => x.object?.type === "Identifier" && BAU.test(x.property.name)
                             )
                     );
                 if (bau && name !== "scripts/lib/welt-boot.cjs")
@@ -1280,20 +1277,20 @@ function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(requir
             ) {
                 const s = schleifen.filter((l) => l.body.start <= n.start && n.end <= l.body.end).pop();
                 if (s) fristen.add(s);
-            } else if (n.type === "CallExpression" && n.callee.property && n.callee.property.name === "catch") {
+            } else if (n.type === "CallExpression" && n.callee.property?.name === "catch") {
                 const w = n.callee.object;
                 const o =
-                    w.callee && w.callee.property && w.callee.property.name === "waitForFunction" && w.arguments[1];
+                    w.callee?.property?.name === "waitForFunction" && w.arguments[1];
                 const f = n.arguments[0];
                 const wirft = f && hat(f, (c) => c.type === "ThrowStatement");
                 if (
                     o &&
                     !wirft &&
-                    (o.properties || []).some((p) => p.key && p.key.name === "timeout" && p.value.value !== 0)
+                    (o.properties || []).some((p) => p.key?.name === "timeout" && p.value.value !== 0)
                 )
                     fristen.add(n);
                 else if (
-                    hat(w, (c) => c.property && c.property.name === "__gebautNach") &&
+                    hat(w, (c) => c.property?.name === "__gebautNach") &&
                     f &&
                     f.body &&
                     f.body.type === "BlockStatement" &&
@@ -1401,6 +1398,7 @@ async function selbsttest() {
         const takte = await window.__gebautNach(langsam, { max: 5, takt }).catch((x) => x.message);
         const aus = { langsam: { takte, steht: !!langsam.mesh, ms: Math.round(performance.now() - t0) } };
         r.offen = 0;
+        r._weltbildFehlt = () => ["das Licht des Orts wird gemessen"];
         aus.tot = await window.__gebautNach({ type: "tot", id: 2 }, { max: 5, takt }).then(
             (n) => `steht nach ${n} Takten`,
             (x) => x.message
@@ -1586,7 +1584,7 @@ async function selbsttest() {
             `Bau LANGSAM (3,2 s, eine Karte offen): ${bau ? `steht nach ${bau.langsam.takte} Takten, ${bau.langsam.ms} ms` : "kein Befund"}`,
         ],
         [
-            !!bau && /^DER BAU STEHT NICHT: tot#2/.test(bau.tot),
+            !!bau && /^DER BAU STEHT NICHT: tot#2 .* · dem Weltbild fehlt: das Licht des Orts/.test(bau.tot),
             `Bau TOT (nichts offen): ${bau ? bau.tot : "kein Befund"}`,
         ],
         [

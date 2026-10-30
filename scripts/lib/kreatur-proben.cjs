@@ -1236,8 +1236,8 @@ async function kreaturProben(r, T, opts) {
                     }
             );
         const namen = new Set(BENANNT);
-        for (const n of Object.getOwnPropertyNames(A.prototype))
-            if (/creature|kreatur|fauna|^_?tier|Tier/i.test(n) && typeof A.prototype[n] === "function") namen.add(n);
+        for (const n of Object.getOwnPropertyNames(A.prototype)) // der Deskriptor, nie A.prototype[n] (ein Getter legte seinen Speicher auf den Prototyp)
+            if (/creature|kreatur|fauna|^_?tier|Tier/i.test(n) && typeof Object.getOwnPropertyDescriptor(A.prototype, n).value === "function") namen.add(n); // prettier-ignore
         const fehlt = [];
         const treffer = [];
         for (const n of namen) {
