@@ -34,18 +34,21 @@ class AnazhRealm_vegetation_baum {
     _variantSeedsFor(species) {
         const wm = this.state.worldMeta;
         if (!wm) return null;
-        const N = AnazhRealm.VARIANTS_PER_SPECIES;
         if (!wm.variantSeed || typeof wm.variantSeed !== "object") wm.variantSeed = {};
         const pool = wm.variantSeed;
         // Eine bestehende Zeile bleibt UNANGETASTET (bit-identischer Wuchs); eine neue entsteht nur für eine Art mit
         // Rezept-Zeile im Gesetzbuch (_phytoArt) — dasselbe Saat-Schema, darum P2P string-gleich.
-        if (Array.isArray(pool[species]) && pool[species].length === N) return pool[species];
+        if (Array.isArray(pool[species]) && pool[species].length === AnazhRealm.VARIANTS_PER_SPECIES)
+            return pool[species];
         if (!this._phytoArt(species)) return null;
+        return (pool[species] = AnazhRealm._variantenSaat(wm, species));
+    }
+
+    // DIE VARIANTEN-SAAT EINER ART — eine Funktion der Welt-Saat: VARIANTS_PER_SPECIES Saaten `<Welt-Saat>-<Art>-var<i>`. Leser:
+    // der Pool (`_variantSeedsFor`) und der Stand, der eine Zeile, die ihr gleicht, nie trägt (speicher.K3: Abgeleitetes reist nie).
+    static _variantenSaat(wm, species) {
         const worldSeed = wm.seed || "anazh-realm-seed";
-        const variants = new Array(N);
-        for (let i = 0; i < N; i++) variants[i] = `${worldSeed}-${species}-var${i}`;
-        pool[species] = variants;
-        return variants;
+        return Array.from({ length: AnazhRealm.VARIANTS_PER_SPECIES }, (_, i) => `${worldSeed}-${species}-var${i}`);
     }
 
     // EINE bark-BufferGeometry aus dem Skeleton (Polylinien): Ring von 6 Vertices je Punkt, zu Quads
