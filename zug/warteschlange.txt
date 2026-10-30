@@ -244,3 +244,8 @@ eich4-gtx 0 storno
 takt26-gtx 1 punkte sha=3ed95dcf9cf6942278164d3a73d98a37dbfe64e7 geraet=gtx nur=leib.K2#1,leib.K2#2,leib.K4#1,pipeline.K4#2,siedlung.K5#1,siedlung.K5#2
 eich4b-gtx 1 station sha=3ed95dcf9cf6942278164d3a73d98a37dbfe64e7 lauf=eich-gtx.sh
 z83-bisekt4 2 abab A=4df8c302d20ce3a314c0394d9404054db87abc3e B=81ce43926eccd996aa9d4fc76769108def84f4ce zellen=w-ego
+eich5-gtx 1 station sha=379e5f56ca38fd462a546925d5af562b716d5015 lauf=eich-gtx.sh
+eich6-gtx 1 station sha=379e5f56ca38fd462a546925d5af562b716d5015 lauf=eich-gtx.sh
+eich7-gtx 1 station sha=379e5f56ca38fd462a546925d5af562b716d5015 lauf=eich-gtx.sh
+z83-bisekt5 2 abab A=81ce43926eccd996aa9d4fc76769108def84f4ce B=24a0f3eff6051ae954369fd774cce415d1f32dc5 zellen=w-ego
+z87-abab 3 abab A=6b3da705074d6eacd348a192aecbaeb8d2592495 B=379e5f56ca38fd462a546925d5af562b716d5015 zellen=stadt,w-ego
