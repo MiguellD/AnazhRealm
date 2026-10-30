@@ -1,0 +1,67 @@
+$ C:\Program Files\nodejs\node.exe -e (async function vegetationLauf() {
+const fs = require("fs");
+const path = require("path");
+const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const [aus, port, plan] = process.argv.slice(1);
+const W = Number(port) + 20000;
+const B = aus.replace(/\.json$/, "");
+const erg = { schuesse: [] };
+const ruf = async (weg, o) => {
+const t0 = Date.now();
+const a = await werkbankRuf(W, weg, o);
+console.log("SCHRITT " + weg + " " + ((Date.now() - t0) / 1000).toFixed(1) + " s");
+if (!a || a.fehler) throw new Error(weg + ": " + JSON.stringify(a).slice(0, 300));
+return a;
+};
+const SPIEL =
+"const s = r.state; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = s.camera, d = new T.Vector3(); c.getWorldDirection(d); const p = c.position; " +
+"const unter = (t) => { const x = p.x + d.x * t, z = p.z + d.z * t, b = r._bodenSichtAt(x, z), y = b == null ? r._voxelSurfaceY(x, z) : b; return y != null && p.y + d.y * t <= y; }; " +
+"let a = 0, t = 0.5; while (t < 2000 && !unter(t)) { a = t; t += Math.max(0.25, t * 0.01); } " +
+"if (t < 2000) { for (let k = 0; k < 24; k++) { const m = (a + t) / 2; if (unter(m)) t = m; else a = m; } } else t = 100; " +
+"return [p.x, p.y, p.z, p.x + d.x * t, p.y + d.y * t, p.z + d.z * t].map((v) => +v.toFixed(3));";
+const KRONE = "const p = r.state.playerMesh.position; let e0 = null, d0 = Infinity; for (const e of r.state.architectures) { if (!e || !e.position || !/^(eiche|birke|buche)$/.test(r._foundryPresetForEntry(e) || \"\")) continue; const d = Math.hypot(e.position.x - p.x, e.position.z - p.z); if (d >= 15 && d <= 80 && d < d0) [e0, d0] = [e, d]; } if (!e0) return \"kein Laubbaum 15–80 m um den Spieler\"; const q = e0.position, x = q.x + ((p.x - q.x) / d0) * 14, z = q.z + ((p.z - q.z) / d0) * 14; return [x, r._voxelSurfaceY(x, z) + 1.7, z, q.x, q.y + 6, q.z].map((v) => +v.toFixed(3));";
+for (const z of fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8").split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+try {
+await ruf("/fenster", { w: 1920, h: 1080 });
+let stand = null;
+for (const [ort, sicht, uhr, saison, was] of JSON.parse(plan)) {
+const n = [ort, sicht, uhr, saison, was].join("-");
+if (stand !== ort + "|" + sicht) await ruf("/umstellen", { ort, sicht });
+stand = ort + "|" + sicht;
+const k = (await ruf("/eval", { code: was === "krone" ? KRONE : SPIEL })).ergebnis;
+if (!Array.isArray(k)) throw new Error(n + ": " + JSON.stringify(k));
+const [px, py, pz, lx, ly, lz] = k;
+const wiese = was === "wiese";
+const datei = B + "-" + n + ".png";
+const b = await ruf("/bild", {
+px, py, pz, lx, ly, lz, w: 1920, h: 1080, wahl: 0, uhr, saison: saison || undefined, datei, abstand: wiese, ringe: wiese ? "2,5,10,20,40" : undefined,
+klasse: wiese ? "^(nahWiese:.*|streuSatz|bodenSatz)$" : "^f:(eiche|birke|buche):L[01]$",
+});
+const ab = JSON.parse(fs.readFileSync(datei.replace(/\.png$/, ".abnahme.json"), "utf8"));
+const kl = b.klasse || {};
+const sch = { n, was, kamera: k, pose: ab.pose, leinwand: [ab.bild.w, ab.bild.h], ok: ab.ok, zeile: String(ab.zeile || "").slice(0, 300), pixel: Object.values(kl.klassen || {}).reduce((q, v) => q + (v.pixel || 0), 0) };
+if (wiese) {
+const a = kl.abstand;
+Object.assign(sch, { baender: a.baender, cos: a.cos, klassen: a.klassen, farbton: a.farbton.kacheln });
+const zl = (await ruf("/zaehlen", { px, py, pz, lx, ly, lz, alle: true })).klassen.filter((x) => /^nahWiese:L[12]$/.test(x.klasse));
+sch.budget = [zl.reduce((q, x) => q + ((x.je || {}).haupt || 0), 0), zl.reduce((q, x) => q + ((x.jeTris || {}).haupt || 0), 0)];
+}
+erg.schuesse.push(sch);
+}
+} catch (e) {
+erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+}
+fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+console.log("VEGETATION " + JSON.stringify(erg));
+})() C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\379e5f56-gtx\vegetation.K1_1.json 7804 [["wiese","third",0.5,null,"wiese"]]
+[linse-gpu] nvidia/pascal
+SCHRITT /fenster 0.0 s
+SCHRITT /umstellen 0.8 s
+SCHRITT /eval 0.0 s
+SCHRITT /bild 37.1 s
+SCHRITT /zaehlen 0.2 s
+VEGETATION {"schuesse":[{"n":"wiese-third-0.5--wiese","was":"wiese","kamera":[-274.642,30.109,-1043.811,-288.047,27.683,-1049.493],"pose":{"kamera":[-274.642,30.109,-1043.811],"blick":[-0.90819,-0.16436,-0.38495]},"leinwand":[1920,1080],"ok":true,"zeile":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.76 m · Luma 55.4 σ 29.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.136 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal","pixel":1146134,"baender":[0,2,5,10,14,30,80,200],"cos":[null,0.5673,0.3578,0.2169,0.126,0.046,0.0222],"klassen":{"bodenSatz":[0,45287,44554,8165,137721,73320,5479],"streuSatz":[0,4018,6010,1925,3974,56,0],"nahWiese:L2":[0,163,213849,102263,34024,0,0],"nahWiese:L1":[0,327750,105628,0,0,0,0]},"farbton":[["-140,-523",10212,-3871.436,8302.792,10210],["-140,-524",2666,-1310.829,2277.732,2666],["-140,-522",18055,-8883.441,14685.079,18049],["-139,-524",23285,-10197.493,19894.864,23281],["-139,-525",2882,-1188.725,2553.747,2882],["-139,-523",22023,-8903.334,19554.883,22023],["-140,-521",8158,-4379.819,6626.932,8151],["-139,-522",10570,-5150.34,8893.902,10568],["-138,-525",3500,-1531.317,3086.781,3500],["-138,-524",2388,-870.741,2164.534,2388],["-139,-521",25,-15.954,17.666,25]],"budget":[4,67349]}]}
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
