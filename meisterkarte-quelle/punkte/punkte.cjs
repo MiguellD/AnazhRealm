@@ -464,8 +464,11 @@ function fahreGruppe(sts, ctx) {
         if (ctx.port) env.WERKBANK_PORT = String(ctx.port + 20000);
         // in der Sitzung: das Log der Welt (die Karte) und die Grundstellung als Befehl (`node "$PUNKTE_MASCHINE" grundstellung`:
         // eine Probe, die selbst mehrere frische Welten braucht — je nH, je Lauf —, holt sie so, nie mit eigenem Boot)
+        // DER DECKEL DES LAUFS (PUNKTE_PROBE_DECKEL_S, w4-linsen-a): die eigene Frist einer Probe folgt ihm, nie dem `sek` der Station —
+        // in der Eich-Fahrt (90 s) warf die Seite von halten.K1#2 jeden Takt nach 5 s (sek 10 − 6), Masse und Schneide trafen nie
+        // (Radeon 379e5f56: „masse-traf, schneide-traf“, die Eich-Zahl zensiert)
         if (sitz) Object.assign(env, { PUNKTE_SITZUNG_LOG: sitz.log, PUNKTE_MASCHINE: __filename.split(path.sep).join("/"), PUNKTE_SITZUNG_GRUND: sitz.grund || "",
-            ...(sitz.strom ? { PUNKTE_SITZUNG_STROM: sitz.strom, PUNKTE_PROBE: sitz.probe } : {}) });
+            PUNKTE_PROBE_DECKEL_S: String(deckelS), ...(sitz.strom ? { PUNKTE_SITZUNG_STROM: sitz.strom, PUNKTE_PROBE: sitz.probe } : {}) });
         // headless läuft ohne Karte: starteBrowser griffe lokal sonst die GPU (scripts/lib/software-gpu.cjs) — ohne Schloss
     if (!st.gpu) env.LINSE_GPU = "software";
     for (const [k, v] of Object.entries(st.env || {})) env[k] = ersetze(v, ctx);
