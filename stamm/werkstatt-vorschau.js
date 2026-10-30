@@ -168,12 +168,20 @@ class AnazhRealm_werkstatt_vorschau {
     _stammbaumGriff(t) {
         if (!t || !t.ziel) return { ok: false, reason: "kein_ziel" };
         if (t.werk) {
-            // das Urteil des Programms, nie ein behauptetes: steht weniger, als gewollt war, oder wirkte es nicht, spricht der
-            // Ergebnis-Satz (`_ergebnisSatz`) bzw. die Absage (`_dslAbsageSatz`) — wie nach jedem Satz im Chat
-            const res = this.dslRun(["spawn_studio", t.ziel, ["at_player_forward", 4], 1], { source: "human" });
-            const weicht = this._ergebnisSatz(res.log);
-            if (weicht || !res.ok) this._spielerSagt(weicht ? weicht.satz : this._dslAbsageSatz(res.log));
-            return { ok: res.ok && !weicht, werk: t.werk, log: res.log };
+            // Das Werk eines Verbs (Wesen, Prägung) über seine Wurzel unter der Sprache (`_spawnStudioWerk`, auch der Op
+            // `spawn_studio`), wie der Bauplan über das Mach-Tor — nie über den Interpreter: der zöge jede Op in die Werkstatt
+            // (gate:v1-pfad W7 sah die Takte des Dorfs als Poll der Foundry-Familie). Der Ort vor dem Spieler fehlt nur ohne
+            // Spieler — dann bricht der Griff laut (`dslEvalPos` wirft benannt, kein Fang um den Bau: gate:altlasten). Das Urteil
+            // steht im Log: ein Werk, das weniger setzt, als gewollt war (`_ergebnisSatz`), oder eine Absage; beides spricht der
+            // Spieler-Kanal. Was steht, reist mit aufgelöstem Ort als das EINE Programm zum Mitspieler (wie `confirmBuild`).
+            const programm = ["spawn_studio", t.ziel, ["at_player_forward", 4], 1];
+            const ctx = this.dslCtx({ source: "human" });
+            this._spawnStudioWerk(programm.slice(1), ctx);
+            const weicht = this._ergebnisSatz(ctx.log);
+            const ok = !weicht && ctx.log.some((e) => e.event === "ergebnis" && e.gesetzt > 0);
+            if (!ok) this._spielerSagt(weicht ? weicht.satz : this._dslAbsageSatz(ctx.log));
+            else if (this.state.p2p && this.state.p2p.enabled) this.p2pBroadcastDsl(this._dslMitOrten(programm, ctx));
+            return { ok, werk: t.werk, log: ctx.log };
         }
         const res = this.fertigeBlueprint(t.ziel);
         if (!res.ok) this._spielerSagt(`${String(t.lab).split(/\s[·—(]/)[0]}: ${this._machTorHint(res)}`);

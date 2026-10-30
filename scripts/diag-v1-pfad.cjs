@@ -952,8 +952,9 @@ function wand(src) {
         ],
         [
             "W4 keine Op bewacht ihren Ort selbst (0 `if (!pos)` in den DSL-Effekten — sie lesen die Engstelle)",
-            fehltIn("dslEffects", /if \(!pos\)/),
-            ohne("dslEffects").slice(3),
+            // der Rumpf von spawn_studio lebt seit 30.10. in `_spawnStudioWerk` (der Griff der Bibliothek ruft ihn ohne Interpreter)
+            fehltIn("dslEffects", /if \(!pos\)/) && fehltIn("_spawnStudioWerk", /if \(!pos\)/),
+            ohne("dslEffects", "_spawnStudioWerk").slice(3),
         ],
         [
             "W5 die Genesis-Plattform hat EINE Quelle (`_genesisPlattform` sucht sie; Spawn-Idempotenz und Rückkehr-Anker lesen sie)",
@@ -2676,7 +2677,7 @@ hauptLauf(async () => {
                 'this._buehneRender(p.renderer, p.scene, p.camera, "Werkstatt-Vorschau");',
                 "p.renderer.render(p.scene, p.camera);",
             ],
-            // der Orts-Vertrag beim Vorher: dslEvalPos gibt null weiter, spawn_studio bewacht sich selbst
+            // der Orts-Vertrag beim Vorher: dslEvalPos gibt null weiter, spawn_studio (sein Rumpf `_spawnStudioWerk`) bewacht sich selbst
             ["dslEvalPos", "            throw fehler;\n", "            return null;\n"],
             // der Rest der Klasse beim Vorher: der Feld-Akt nimmt für jeden Nicht-Array-Knoten den Spieler
             [
@@ -2685,9 +2686,9 @@ hauptLauf(async () => {
                 'return Array.isArray(posNode) && posNode.length > 0 ? this.dslEvalPos(posNode, ctx) : this.dslEvalPos(["at_player"], ctx);',
             ],
             [
-                "dslEffects",
-                "const pos = this.dslEvalPos(positionNode, ctx); // kein Ort",
-                "const pos = this.dslEvalPos(positionNode, ctx);\n                if (!pos) return; // kein Ort",
+                "_spawnStudioWerk",
+                "const pos = this.dslEvalPos(positionNode, ctx);",
+                "const pos = this.dslEvalPos(positionNode, ctx);\n        if (!pos) return;",
             ],
             // die Zwillings-Suche beim Vorher: der Rückkehr-Anker sucht die Plattform selbst
             [
