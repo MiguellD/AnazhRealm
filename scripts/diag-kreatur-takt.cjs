@@ -7,7 +7,7 @@
 //   --selftest  je Probe jeder alte Defekt als Täter (TAETER): er muss sie ROT machen, beim Namen genannt
 //   --teil=k/n  Teil k: die längste Probe (DAUER_S) zuerst in den leichtesten Teil, jede in GENAU einem
 "use strict";
-const { statikServer, CODE_OF_SEITE, werkbankRuf, teilAus, ROOT: root, hauptLauf, nullSeite, urteilEnde, argOpt: opt } = require("./lib/welt-boot.cjs"); // prettier-ignore
+const { statikServer, CODE_OF_SEITE, werkbankRuf, teilAus, ROOT: root, hauptLauf, nullSeite, urteilEnde, argOpt: opt, weltTor } = require("./lib/welt-boot.cjs"); // prettier-ignore
 const fs = require("fs");
 const path = require("path");
 const { KREATUR_PROBEN_SRC, PROBEN, TAETER, EIN_LAUF, urteil } = require("./lib/kreatur-proben.cjs");
@@ -54,7 +54,7 @@ const DAUER_S = {
     furcht: 31,
     lebensraum: 21,
     tagesbudget: 15,
-    kaskade: 87,
+    kaskade: 350,
     folgen: 42,
 };
 const TEIL = teilAus(argv);
@@ -110,22 +110,11 @@ async function headless(laeufe) {
         await bereit();
         await einschwingen();
         for (const l of laeufe) aus.push(await zeit(l.proben[0], () => lauf(l)));
-        // eine fremde Welt aus json: frische Platte, importiert, aktiv, geladen, eingeschwungen
+        // eine fremde Welt aus json: frische Platte, durch die Tür (`weltTor`), geladen, eingeschwungen
         const fremdeWelt = async (json) => {
             await page.evaluate(() => localStorage.clear());
             await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
-            await page.waitForFunction(() => window.anazhRealm && window.anazhRealm.importWorldBeside, {
-                timeout: 120000,
-            });
-            const id = await page.evaluate((json) => {
-                const r = window.anazhRealm;
-                const res = r.importWorldBeside(json);
-                if (!res.ok) return null;
-                r.activeWorldSet(res.worldId);
-                return res.worldId;
-            }, json);
-            if (!id) throw new Error(`${json.worldMeta.seed} ließ sich nicht importieren`);
-            await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
+            await weltTor(page, json);
             await bereit();
             const seed = await page.evaluate(() => window.anazhRealm.state.worldMeta.seed);
             if (seed !== json.worldMeta.seed) throw new Error(`${json.worldMeta.seed} ist nicht aktiv (Seed ${seed})`);
