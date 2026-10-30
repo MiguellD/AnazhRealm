@@ -720,6 +720,41 @@ const stationen = [
         quelle: "1 = Karte und Fern-Ring je Uhr 0,5/0,27/0,05 im Band 0,9–1,1 an einem Gerät",
     },
     {
+        kriterium: "licht.K3",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // w4-licht-baustein: dieselbe F6-Linse (werkbank licht --laub … --karte --uhr, licht-linsen.cjs `laubGegenlicht`, `lichtWeg`,
+        // `laubLichtUrteil`) über die Fernstufen der Staffel 1 (die Karte fichte/tanne gegen ihre Gestalt, der Fern-Ring gegen den
+        // Boden-Satz) UND die Wege, die ihr Licht aus dem EINEN Baustein `_weltLicht` nehmen: die graue Fläche (18 %) im Licht der
+        // Welt-Stoffe gegen den Feld-March (waagrecht, senkrecht 0/90/180° neben der Sonne), das Panorama, den Spiegel (der Boden des
+        // Spiegel-Felds gegen die waagrechte Karte, zur Sonne und abgewandt) und den Wasser-Körper — je Uhr 0,5/0,27/0,05, ohne Luft
+        // und Schatten (Messort dorf). Das Soll der Staffel: jede Zeile Weg bzw. Fernstufe gegen die Welt 0,9–1,1; das Urteil fällt je
+        // Gerät, die Staffel gilt mit beiden. Die Mechanik (jeder Pass nimmt jedes Licht aus dem Baustein, drei Mutanten ROT beim
+        // Namen) urteilt der Playtest (`checkBandLichtBaustein`).
+        befehl: ["node", "scripts/werkbank.cjs", "licht", "--laub", "fichte,tanne,ring,feld,feld0,feld90,feld180,panorama,spiegel,spiegel180,wasser", "--karte", "--uhr", "0.5,0.27,0.05", "--eigen", "--port", "{PORT}", "--datei", "{AUS}"],
+        env: { MSYS2_ARG_CONV_EXCL: "*" },
+        gpu: true,
+        zeit: false,
+        minuten: 40,
+        urteil: (j, lauf) => {
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(lauf.stdout) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const w = (j && j.welt) || {};
+            let gruen = hw;
+            const teile = [];
+            for (const art of ["fichte", "tanne", "ring", "feld", "feld0", "feld90", "feld180", "panorama", "spiegel", "spiegel180", "wasser"])
+                for (const uhr of ["0.5", "0.27", "0.05"]) {
+                    const z = w[art + "@" + uhr];
+                    const v = z && z.karte ? z.karte.verhaeltnis : null;
+                    if (!(v >= 0.9 && v <= 1.1)) gruen = false;
+                    teile.push(art + "@" + uhr + " " + (v != null ? v : (z && z.fehler) || "ungemessen"));
+                }
+            return { gruen, zahl: teile.join(" · ") + " · Soll 0,9–1,1 · " + (ad || "Adapter ungenannt") };
+        },
+        pfad: [...BILD, "phyto-core.js", "gelaende-core.js", "stamm/gelaende-*.js", "stamm/vegetation-*.js", "stamm/studio-bruecke.js", "stamm/wasser-*.js"],
+        quelle: "2 = auch Feld-Pass, Panorama und Wasser, beide Geräte",
+    },
+    {
         kriterium: "ferne.K1",
         staffel: 1,
         geraet: ["radeon", "gtx"],
