@@ -605,6 +605,51 @@ async function fahreWeg(browser, weg, schein) {
     return rep;
 }
 
+// DIE VORRÄTE DER SEITE ÜBER DIE TÜR (tore-heil 30.10.): die Tür gleich nach dem Erwachen von A, der Ofen (Gattungen, Glieder)
+// und die Bibliothek im Flug — der Abschied lässt ihre Aufträge verfallen, `_foundryVorraete` beginnt sie in B neu. Stehen sie
+// danach nicht (`_ofenVorratSteht` — ohne ihn gebiert `_kreaturenBereit` kein Tier mehr —, die Bibliothek `f._vorrat`), fällt die
+// Tür beim Namen; war vor der Tür nichts im Flug, misst die Probe nichts und ist rot (blind). `schein`: der Neubeginn fehlt.
+async function vorratWeg(browser, schein) {
+    const ctx = await browser.createBrowserContext();
+    const page = await ctx.newPage();
+    await nullRenderer(page);
+    try {
+        await server.zeige(page, 60000);
+        const v = await page.evaluate(
+            async (B, schein) => {
+                await window.__weltDa();
+                const f = r._foundry;
+                const vor = { ofen: !!r._ofenVorratSteht, flug: f ? f.pending.size + (f.warte || []).length : 0 };
+                // der Schein am Prototyp (eine Funktion, kein Stand): ein Glied am Exemplar fiele mit dem Abschied der Welt
+                if (schein) Object.getPrototypeOf(r)._foundryVorraete = function () {};
+                const x = r.importWorldBeside(B, { reload: true });
+                if (!x || !x.ok || !(await r.erwacht)) return { tuer: JSON.stringify(x).slice(0, 160) };
+                let n = 0;
+                for (; n < 1500 && !(r._ofenVorratSteht && r._foundry._vorrat === false); n++) {
+                    try {
+                        r._gameLoopTick(performance.now());
+                    } catch {}
+                    await sleep(10);
+                }
+                return { vor, n, ofen: !!r._ofenVorratSteht, vorrat: r._foundry._vorrat };
+            },
+            BUEHNE,
+            !!schein
+        );
+        if (v.tuer) return { v, befund: `die Tür öffnete nicht (${v.tuer})` };
+        if (v.vor.ofen || !(v.vor.flug > 0))
+            return { v, befund: `blind: vor der Tür stand der Ofen schon oder war nichts im Flug (${JSON.stringify(v.vor)})` };
+        if (!v.ofen || v.vorrat !== false)
+            return {
+                v,
+                befund: `die Vorräte der Seite stehen ${v.n} Takte nach der Tür nicht (Ofen ${v.ofen}, Bibliothek ${v.vorrat}) — der Abschied ließ ihre Aufträge verfallen, \`_foundryVorraete\` begann sie nicht neu`,
+            };
+        return { v, befund: null };
+    } finally {
+        await ctx.close();
+    }
+}
+
 hauptLauf(async () => {
     const tStart = Date.now();
     await server.lausche(PORT);
@@ -638,15 +683,28 @@ hauptLauf(async () => {
         );
         for (const f of rep.befunde) console.log(`      ⛔ ${f}`);
     }
+    const vorrat = await vorratWeg(browser, false);
+    if (vorrat.befund) rot = true;
+    console.log(
+        `  ${vorrat.befund ? "⛔" : "✓"} vorrat             ${vorrat.befund || `Ofen und Bibliothek stehen ${vorrat.v.n} Takte nach der Tür (vor ihr ${vorrat.v.vor.flug} Aufträge im Flug)`}`
+    );
     let selbst = null;
     if (SELBSTTEST) {
         const spread = await fahreWeg(browser, "laden", "spread");
         const sperre = await fahreWeg(browser, "ersetzen", "sperre");
         const stand = await fahreWeg(browser, "reload", "stand");
+        const ohne = await vorratWeg(browser, true);
         const namen = spread.befunde.filter((f) => f.startsWith("in der Seite: worldMeta."));
         const fenster = sperre.befunde.filter((f) => /zeigt der Aktiv-Zeiger|erwachte in/.test(f));
         const proto = stand.befunde.filter((f) => /_dslPositionsCache/.test(f));
-        selbst = { spread: namen, sperre: fenster, stand: proto, befunde: { spread: spread.befunde, sperre: sperre.befunde } };
+        const neubeginn = ohne.befund && /_foundryVorraete/.test(ohne.befund) ? [ohne.befund] : [];
+        selbst = {
+            spread: namen,
+            sperre: fenster,
+            stand: proto,
+            vorrat: neubeginn,
+            befunde: { spread: spread.befunde, sperre: sperre.befunde, vorrat: ohne.befund },
+        };
         console.log(
             `\n  SELBSTTEST 1 (der alte Spread am Lade-Engpass zum Schein): ${namen.length} Felder von A beim Namen — ${namen
                 .map((f) => f.replace("in der Seite: ", ""))
@@ -657,13 +715,22 @@ hauptLauf(async () => {
             `  SELBSTTEST 2 (saveState ohne die Sperre des Welt-Wechsels zum Schein): ${fenster.length} Befunde — ${fenster.join(" · ")}`
         );
         console.log(`  SELBSTTEST 3 (der Prototyp trägt Stand zum Schein): ${proto[0] || "BLIND"}`);
+        console.log(
+            `  SELBSTTEST 4 (die Vorräte der Seite beginnen nach der Tür nicht neu, zum Schein): ${neubeginn[0] || "BLIND " + (ohne.befund || "")}`
+        );
     }
-    if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ root, absenz: abs, berichte, selbst }, null, 1));
+    if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ root, absenz: abs, berichte, vorrat, selbst }, null, 1));
     let pass;
     if (SELBSTTEST) {
-        pass = !rot && selbst && selbst.spread.length > 0 && selbst.sperre.length > 0 && selbst.stand.length > 0;
+        pass =
+            !rot &&
+            selbst &&
+            selbst.spread.length > 0 &&
+            selbst.sperre.length > 0 &&
+            selbst.stand.length > 0 &&
+            selbst.vorrat.length > 0;
         console.log(
-            `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf keinem Weg trägt B ein Feld von A oder geht eine Welt verloren — und alle drei Scheine fallen rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "ein Schein blieb unentdeckt (die Linse ist blind)")}`
+            `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf keinem Weg trägt B ein Feld von A oder geht eine Welt verloren, die Vorräte der Seite stehen nach der Tür — und alle vier Scheine fallen rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "ein Schein blieb unentdeckt (die Linse ist blind)")}`
         );
     } else {
         pass = !rot;
