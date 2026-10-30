@@ -1,0 +1,193 @@
+{
+ "gesamt": "LANGSAMER",
+ "ergebnisse": [
+  {
+   "zelle": "w-ego",
+   "n": {
+    "A": 4,
+    "B": 4
+   },
+   "urteil": "LANGSAMER",
+   "verlaengern": false,
+   "zeilen": [
+    {
+     "gang": "steht",
+     "titel": "fps",
+     "A": 75.5,
+     "B": 72.125,
+     "d": -3.375,
+     "zweiSigma": 0.6964194138592038,
+     "u": "LANGSAMER"
+    },
+    {
+     "gang": "steht",
+     "titel": "Frame p95 ms",
+     "A": 16.8,
+     "B": 16.8,
+     "d": 0,
+     "zweiSigma": 0,
+     "u": "nicht langsamer"
+    },
+    {
+     "gang": "steht",
+     "titel": "CPU-Takt p95 ms",
+     "A": 4.6,
+     "B": 5.175,
+     "d": 0.5750000000000002,
+     "zweiSigma": 0.13540064007726618,
+     "u": "LANGSAMER"
+    },
+    {
+     "gang": "steht",
+     "titel": "GPU je Bild ms (gpu-bank)",
+     "A": 12.625,
+     "B": 13.2975,
+     "d": 0.6724999999999994,
+     "zweiSigma": 0.21224985276791114,
+     "u": "LANGSAMER"
+    },
+    {
+     "gang": "steht",
+     "titel": "Belegung p95 ms",
+     "A": 6.645,
+     "B": 7.31,
+     "d": 0.665,
+     "zweiSigma": 0.06782329983125289,
+     "u": "LANGSAMER"
+    },
+    {
+     "gang": "geht",
+     "titel": "fps",
+     "A": 59.650000000000006,
+     "B": 56.974999999999994,
+     "d": -2.6750000000000114,
+     "zweiSigma": 0.5759050847723698,
+     "u": "LANGSAMER"
+    },
+    {
+     "gang": "geht",
+     "titel": "Frame p95 ms",
+     "A": 25.049999999999997,
+     "B": 25.1,
+     "d": 0.05000000000000426,
+     "zweiSigma": 0.08164965809277376,
+     "u": "nicht langsamer (1σ–2σ)"
+    },
+    {
+     "gang": "geht",
+     "titel": "CPU-Takt p95 ms",
+     "A": 18.825,
+     "B": 19.9,
+     "d": 1.0749999999999993,
+     "zweiSigma": 0.7245688373094707,
+     "u": "LANGSAMER"
+    },
+    {
+     "gang": "geht",
+     "titel": "Belegung p95 ms",
+     "A": 21.995,
+     "B": 23.04,
+     "d": 1.0449999999999982,
+     "zweiSigma": 0.30144098372097144,
+     "u": "LANGSAMER"
+    }
+   ],
+   "zaehl": {
+    "steht Befehle": {
+     "A": [
+      39,
+      39,
+      39,
+      39
+     ],
+     "B": [
+      39,
+      39,
+      39,
+      39
+     ]
+    },
+    "steht Dreiecke p95": {
+     "A": [
+      264822,
+      264272,
+      264244,
+      264272
+     ],
+     "B": [
+      278100,
+      278108,
+      278096,
+      278108
+     ]
+    },
+    "steht VRAM MB": {
+     "A": [
+      108.5,
+      108.4,
+      108.4,
+      108.4
+     ],
+     "B": [
+      114.7,
+      114.8,
+      114.7,
+      114.9
+     ]
+    },
+    "geht Befehle": {
+     "A": [
+      56,
+      57,
+      57,
+      57
+     ],
+     "B": [
+      57,
+      57,
+      57,
+      57
+     ]
+    },
+    "geht Dreiecke p95": {
+     "A": [
+      379570,
+      381342,
+      381647,
+      381181
+     ],
+     "B": [
+      394065,
+      394489,
+      397928,
+      394931
+     ]
+    },
+    "geht VRAM MB": {
+     "A": [
+      112.6,
+      112.1,
+      112.1,
+      112.1
+     ],
+     "B": [
+      115.9,
+      116.3,
+      115.7,
+      115.7
+     ]
+    }
+   }
+  }
+ ],
+ "instrument": {
+  "w-ego-A1": "73bdf9388",
+  "w-ego-A2": "73bdf9388",
+  "w-ego-A3": "73bdf9388",
+  "w-ego-A4": "73bdf9388",
+  "w-ego-B1": "73bdf9388",
+  "w-ego-B2": "73bdf9388",
+  "w-ego-B3": "73bdf9388",
+  "w-ego-B4": "73bdf9388"
+ }
+}

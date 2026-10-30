@@ -1,0 +1,80 @@
+{
+ "ms": 2,
+ "ergebnis": {
+  "gesamt": 4,
+  "arten": {
+   "bear": 2,
+   "wolf": 2
+  },
+  "zustand": {
+   "-": 3,
+   "fressen": 1
+  },
+  "jaeger": 0,
+  "wuerfeAb2": 1,
+  "tiereInWuerfen": 2,
+  "gruppen": [
+   {
+    "wurf": "wolf@-253.2,-1032.6",
+    "n": 2,
+    "mitte": [
+     -189.3,
+     -937.5
+    ],
+    "spanneM": 1.8,
+    "spielerM": 141.4
+   }
+  ],
+  "verbandFeld": true,
+  "verbaendeAb2": 1,
+  "verbaende": [
+   {
+    "vb": "c7",
+    "n": 1,
+    "art": {
+     "bear": 1
+    },
+    "leitLebt": true,
+    "mitte": [
+     -286.3,
+     -1340.9
+    ],
+    "spanneM": 0,
+    "spielerM": 295.4
+   },
+   {
+    "vb": "c8",
+    "n": 2,
+    "art": {
+     "wolf": 2
+    },
+    "leitLebt": false,
+    "mitte": [
+     -189.3,
+     -937.5
+    ],
+    "spanneM": 1.8,
+    "spielerM": 141.4
+   },
+   {
+    "vb": "c12",
+    "n": 1,
+    "art": {
+     "bear": 1
+    },
+    "leitLebt": true,
+    "mitte": [
+     -387,
+     -857.6
+    ],
+    "spanneM": 0,
+    "spielerM": 216.1
+   }
+  ],
+  "verbaendeMap": 3,
+  "spieler": [
+   -280.4,
+   -1045.6
+  ]
+ }
+}
