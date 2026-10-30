@@ -2041,6 +2041,21 @@ class AnazhRealm_stoff_instanz {
         stand(satz);
         tex.needsUpdate = true;
         const knoten = AnazhRealm._gangSatzKnoten(tex, N, B);
+        // DER TON JE ECKE (mensch.K4): tragen die Quellen ihn (der Mensch, koerper `menschTon`), färbt jede Instanz ihre Ecken nach
+        // ihrer Palette — die Zeilen der Ton-Tafel [Leib, Gestalt] reisen je Instanz in `aGang.zw` (`_gangSatzInstanz`)
+        const ton = spec.quellen.every((q) => !!q.m.geometry.attributes.aTon);
+        satz.ton = ton;
+        const TSL = T.TSL;
+        const tonFarbe = ton
+            ? TSL.vec4(
+                  TSL.varying(
+                      TSL.attribute("color", "vec3").mul(this._tonFaktor(TSL, TSL.attribute("aGang", "vec4").zw)),
+                      "vTonFarbe"
+                  ),
+                  1
+              )
+            : null;
+        const S = ton ? 15 : 14; // die Ecke im EINEN Puffer: Vorlage, Normale, Knochen, Gewichte (und ihr Ton)
         const klone = new Map();
         const D = tex.image.data;
         const e = new Float32Array(6);
@@ -2050,6 +2065,7 @@ class AnazhRealm_stoff_instanz {
                 stoff = sk.stoff.clone();
                 stoff.name = spec.name;
                 stoff.positionNode = knoten;
+                if (tonFarbe) stoff.colorNode = tonFarbe;
                 klone.set(sk.stoff, stoff);
                 satz.stoffe.push(stoff);
             }
@@ -2060,6 +2076,7 @@ class AnazhRealm_stoff_instanz {
             const RN = [];
             const KI = [];
             const KW = [];
+            const TN = [];
             const I = [];
             for (const q of sk.quellen) {
                 const a = q.m.geometry.attributes;
@@ -2072,6 +2089,7 @@ class AnazhRealm_stoff_instanz {
                     C.push(a.color.getX(i), a.color.getY(i), a.color.getZ(i));
                     R.push(a.position.getX(i), a.position.getY(i), a.position.getZ(i));
                     RN.push(a.normal.getX(i), a.normal.getY(i), a.normal.getZ(i));
+                    if (ton) TN.push(a.aTon.getX(i));
                     for (let c = 0; c < 4; c++) {
                         KI.push(q.platz[a.skinIndex.getComponent(i, c)]);
                         KW.push(a.skinWeight.getComponent(i, c));
@@ -2093,6 +2111,7 @@ class AnazhRealm_stoff_instanz {
                             KI.push(KI[i * 4 + c]);
                             KW.push(KW[i * 4 + c]);
                         }
+                        if (ton) TN.push(TN[i]);
                     }
                     for (let t = 0; t < ix.length; t += 3) I.push(b2 + ix[t], b2 + ix[t + 2], b2 + ix[t + 1]);
                 }
@@ -2102,22 +2121,27 @@ class AnazhRealm_stoff_instanz {
             geo.setAttribute("position", new T.BufferAttribute(new Float32Array(P), 3));
             geo.setAttribute("normal", new T.BufferAttribute(new Float32Array(Nn), 3));
             geo.setAttribute("color", new T.BufferAttribute(new Float32Array(C), 3));
-            // die Vorlage und die Knochen in EINEM Puffer (WebGPU trägt höchstens 8 Vertex-Puffer je Pipeline)
-            const V = new Float32Array(n * 14);
+            // die Vorlage und die Knochen in EINEM Puffer (WebGPU trägt höchstens 8 Vertex-Puffer je Pipeline), der Ton mit ihnen
+            const V = new Float32Array(n * S);
             for (let i = 0; i < n; i++) {
-                V.set(R.slice(i * 3, i * 3 + 3), i * 14);
-                V.set(RN.slice(i * 3, i * 3 + 3), i * 14 + 3);
-                V.set(KI.slice(i * 4, i * 4 + 4), i * 14 + 6);
-                V.set(KW.slice(i * 4, i * 4 + 4), i * 14 + 10);
+                V.set(R.slice(i * 3, i * 3 + 3), i * S);
+                V.set(RN.slice(i * 3, i * 3 + 3), i * S + 3);
+                V.set(KI.slice(i * 4, i * 4 + 4), i * S + 6);
+                V.set(KW.slice(i * 4, i * 4 + 4), i * S + 10);
+                if (ton) V[i * S + 14] = TN[i];
             }
-            const vb = new T.InterleavedBuffer(V, 14);
+            const vb = new T.InterleavedBuffer(V, S);
             geo.setAttribute("aRoh", new T.InterleavedBufferAttribute(vb, 3, 0));
             geo.setAttribute("aRohN", new T.InterleavedBufferAttribute(vb, 3, 3));
             geo.setAttribute("aKnochen", new T.InterleavedBufferAttribute(vb, 4, 6));
             geo.setAttribute("aGewicht", new T.InterleavedBufferAttribute(vb, 4, 10));
-            for (const nm of ["aLodLevel", "aH0", "aH0L"])
-                geo.setAttribute(nm, new T.BufferAttribute(new Float32Array(n), 1));
-            geo.setAttribute("aGang", new T.InstancedBufferAttribute(new Float32Array(spec.cap * 2), 2));
+            if (ton) geo.setAttribute("aTon", new T.InterleavedBufferAttribute(vb, 1, 14));
+            // der Mensch blendet nie (`_foundryTreeMaterial`): seine Menge trägt keinen Stufen-Stempel
+            if (!ton)
+                for (const nm of ["aLodLevel", "aH0", "aH0L"])
+                    geo.setAttribute(nm, new T.BufferAttribute(new Float32Array(n), 1));
+            const G = ton ? 4 : 2; // je Instanz Band + Phase und Gewicht (und die Zeilen ihrer Palette)
+            geo.setAttribute("aGang", new T.InstancedBufferAttribute(new Float32Array(spec.cap * G), G));
             geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(Uint32Array.from(I), n), 1));
             geo.computeBoundingSphere();
             satz.geos.push(geo);
@@ -2180,10 +2204,14 @@ class AnazhRealm_stoff_instanz {
     }
 
     // DIE INSTANZ i EINER SENKE DES SATZES: die Matrix und der Gang (Band + Phase in Zyklen — der ganze Teil wählt das Band,
-    // der Rest die Phase — und das Gewicht des Gangs, 0 = der Stand)
-    static _gangSatzInstanz(m, i, m4, band, phase, w) {
+    // der Rest die Phase — und das Gewicht des Gangs, 0 = der Stand); trägt der Satz den Ton (mensch.K4), die Zeilen ihrer
+    // Palette in der Ton-Tafel [Leib, Gestalt] (`zeilen`, ohne sie die Eins)
+    static _gangSatzInstanz(m, i, m4, band, phase, w, zeilen) {
         m.setMatrixAt(i, m4);
-        m.geometry.attributes.aGang.setXY(i, band + phase - Math.floor(phase), w);
+        const a = m.geometry.attributes.aGang;
+        const x = band + phase - Math.floor(phase);
+        if (a.itemSize === 4) a.setXYZW(i, x, w, zeilen ? zeilen[0] : 0, zeilen ? zeilen[1] : 0);
+        else a.setXY(i, x, w);
     }
     // DIE ZAHL EINER SENKE DES SATZES (dicht, [0, n) lebt): `_instanzZahl`, und was sich schrieb, lädt neu
     static _gangSatzZahl(m, n) {

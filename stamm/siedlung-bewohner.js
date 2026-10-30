@@ -17,7 +17,9 @@ class AnazhRealm_siedlung_bewohner {
     // DIE GESTALTEN EINER SIEDLUNG: `BEWOHNER.gestalten` Genome aus dem Samen des Plans (beide Geschlechter im Wechsel), je
     // Gestalt die Dials des Bauplans (`_koerperStudioDials` ohne die Übergabe des Spielers — der Sentinel des Mitspielers)
     // unter dem Genom, ihre Farben aus dem EINEN Farb-Münzer und die Ofen-Schlüssel beider Stufen — derselbe Merge wie der
-    // Bau (`_buildHumanGroup` → `_buildHumanoidRig`), damit die Geburt das Memo warm trifft.
+    // Bau (`_buildHumanGroup` → `_buildHumanoidRig`), damit die Geburt das Memo warm trifft. DIE GESTALT IST DIE FORM (mensch.K4):
+    // Geschlecht, Bau, Muskel, der Schnitt des Haars, seine Länge und Fülle, das Alter (das Gesicht) — die Farben trägt jeder
+    // Bewohner aus seinem eigenen Samen (`_bewohnerGenome`, die Ton-Tafel); bis mensch.K4 vier Gestalten, ein Schnitt.
     _bewohnerGestalten(S) {
         const kc = window.__koerperCore;
         if (!kc || !kc.START_PARAMS) return AnazhRealm._kernPflichtBruch("koerper:START_PARAMS");
@@ -39,47 +41,80 @@ class AnazhRealm_siedlung_bewohner {
         for (let gi = 0; gi < AnazhRealm.BEWOHNER.gestalten; gi++) {
             const gen = this._rollHumanoidGenome(`${S.plan.seed >>> 0}:${gi}`);
             gen.sex = gi % 2 ? 0.75 + gen.sex * 0.25 : gen.sex * 0.25;
-            const ov = Object.assign(this._dialsAusGenom(gen), { top: T.top, bottom: T.bottom, shoes: T.shoes });
-            for (const k of ["topColor", "bottomColor", "shoeColor"])
-                if (!T.farben.includes(ov[k])) ov[k] = T.farben[Math.max(0, tuch.indexOf(ov[k])) % T.farben.length];
+            const ov = Object.assign(this._bewohnerTracht(this._dialsAusGenom(gen), T, tuch), {
+                hairStyle: gen.schnitt,
+                hairLen: gen.haarLaenge,
+                hairVol: gen.haarFuelle,
+                age: gen.alter,
+            });
             const dB = Object.assign({}, buch || {}, ov);
             const dK = Object.assign({}, kc.START_PARAMS, dB);
             const f = this._menschGussFarben(dB);
             const keys = [0, 1, 2, 3].map((lod) => this._ofenMenschKey(dK, f.skin, f.hair, lod));
-            aus.push({ gen, ov, dK, f, keys, bestellt: keys.map(() => false), satz: null });
+            aus.push({ gen, ov, dK, f, keys, bestellt: keys.map(() => false), satz: null, tonZeile: 0 });
         }
         return aus;
     }
+    // DIE TRACHT DER EPOCHE an einem Satz Dials: ihr Schnitt (fachwerk `kleidung`), die Farben des Genoms in ihre Farben
+    _bewohnerTracht(d, T, tuch) {
+        const ov = Object.assign(d, { top: T.top, bottom: T.bottom, shoes: T.shoes });
+        for (const k of ["topColor", "bottomColor", "shoeColor"])
+            if (!T.farben.includes(ov[k])) ov[k] = T.farben[Math.max(0, tuch.indexOf(ov[k])) % T.farben.length];
+        return ov;
+    }
 
     // DAS GENOM JEDES BEWOHNERS (mensch.K4, die EINE Quelle seines Leibs): sein Same („Plan:Haus:Person") rollt sein Genom
-    // (`_rollHumanoidGenome`); er trägt die Gestalt seiner Siedlung, die seinem Genom am nächsten ist (Geschlecht, Bau, Muskel,
-    // Kopf, Haut, Haar — die Typen backt der Ofen, Lehre 23: die Befehle hängen an den Typen, nie an der Kopfzahl), und seine
-    // eigenen Maße als Rest: die Höhe seines Genoms (`groesse` = seine Höhe ÷ die des Typs — bis mensch.K4 eine zweite Größe der
-    // Liste über der des Typs, ±4 % auf ±9,3 %) und Breite und Tiefe aus seinem Bau gegen den des Typs (`breite`, `tiefe`,
-    // je ±`restMax`).
+    // (`_rollHumanoidGenome`); er trägt die Gestalt seiner Siedlung, deren FORM seinem Genom am nächsten ist (Geschlecht, Bau,
+    // Muskel, Kopf, der Schnitt des Haars, das Alter — die Typen backt der Ofen, Lehre 23: die Befehle hängen an den Typen, nie an
+    // der Kopfzahl), und seine eigenen Maße als Rest: die Höhe seines Genoms (`groesse` = seine Höhe ÷ die des Typs) und Breite
+    // und Tiefe aus seinem Bau gegen den des Typs (`breite`, `tiefe`, je ±`restMax`). SEINE FARBEN sind seine eigenen: Haut, Haar
+    // und die Farben seiner Tracht aus seinem Samen (`farben`), als Palette in der Ton-Tafel (`tonZeilen` [Kopf, Gestalt],
+    // koerper `menschPalette`) — Leib, Satz und Feld zeigen sie (bis mensch.K4 trug jeder die Farben seiner Gestalt).
     _bewohnerGenome(S) {
         const BW = AnazhRealm.BEWOHNER;
         const kc = window.__koerperCore;
-        const haut = Object.keys(kc.SKIN_TONES);
+        if (typeof kc.menschPalette !== "function") return AnazhRealm._kernPflichtBruch("koerper:menschPalette");
         const ab = (a, t) =>
             3 * Math.abs(a.sex - t.sex) +
             Math.abs(a.build - t.build) +
             Math.abs(a.muscle - t.muscle) +
             Math.abs(a.headRatio - t.headRatio) / 0.24 +
-            Math.abs(haut.indexOf(a.skinTone) - haut.indexOf(t.skinTone)) / haut.length +
-            (a.hairColor === t.hairColor ? 0 : 0.3);
+            Math.abs(a.alter - t.alter) +
+            (a.schnitt === t.schnitt ? 0 : 0.5);
         const rest = (x) => 1 + Math.max(-BW.restMax, Math.min(BW.restMax, x));
+        const tuch = Object.keys(kc.CLOTH_COLORS);
+        for (const G of S.gestalten)
+            if (!G.tonZeile) G.tonZeile = this._tonZeile(kc.menschPalette(G.dK, G.f.skin, G.f.hair));
         for (const b of S.liste) {
             const gen = (b.genom = this._rollHumanoidGenome(b.seed));
             let best = 0;
             S.gestalten.forEach((G, gi) => {
                 if (ab(gen, G.gen) < ab(gen, S.gestalten[best].gen)) best = gi;
             });
-            const t = S.gestalten[best].gen;
+            const G = S.gestalten[best];
+            const t = G.gen;
             b.gestalt = best;
             b.groesse = gen.kh / t.kh;
             b.breite = rest(BW.restBau[0] * (gen.build - t.build) + BW.restBau[1] * (gen.muscle - t.muscle));
             b.tiefe = rest(BW.restBau[2] * (gen.build - t.build) + BW.restBau[3] * (gen.muscle - t.muscle));
+            const d = this._bewohnerTracht(
+                {
+                    skinTone: gen.skinTone,
+                    hairColor: gen.hairColor,
+                    topColor: gen.topColor,
+                    bottomColor: gen.bottomColor,
+                    shoeColor: gen.shoeColor,
+                },
+                S.plan.kleidung,
+                tuch
+            );
+            b.farben = { skinTone: d.skinTone, hairColor: d.hairColor, topColor: d.topColor, bottomColor: d.bottomColor, shoeColor: d.shoeColor }; // prettier-ignore
+            const f = this._menschGussFarben(d);
+            if (b.tonZeilen) this._tonZeileFrei(b.tonZeilen[0]);
+            b.tonZeilen = [
+                this._tonZeile(kc.menschPalette(Object.assign({}, G.dK, b.farben), f.skin, f.hair)),
+                G.tonZeile,
+            ];
         }
     }
 
@@ -456,8 +491,13 @@ class AnazhRealm_siedlung_bewohner {
         g.userData.gattung = `mensch:${S.key}:${b.gestalt}`;
         g.scale.setScalar(b.groesse);
         // Breite und Tiefe seines Genoms tragen die Hüllen (im Raum des Leibs, nach der Haut — wie die Matrix seines Satzes);
-        // das Rig, die Glieder des Felds und der Stand bleiben in seiner Höhe
-        g.traverse((n) => n.isSkinnedMesh && n.scale.set(b.breite, 1, b.tiefe));
+        // das Rig, die Glieder des Felds und der Stand bleiben in seiner Höhe. SEINE FARBEN (mensch.K4): jedes Teil liest seine
+        // Palette aus der Ton-Tafel (`userData.__ton` [Kopf, Gestalt], `_tonFaktor`), das Feld seine Glieder (`_tonFeldFarbe`)
+        g.userData.__tonZeilen = b.tonZeilen;
+        g.traverse((n) => {
+            if (n.isSkinnedMesh) n.scale.set(b.breite, 1, b.tiefe);
+            if (n.isMesh) n.userData.__ton = b.tonZeilen;
+        });
         this._bewohnerStellen(b, g, b.x, b.z);
         g.rotation.y = b.blick;
         gl.haltungFest = true;
@@ -679,7 +719,8 @@ class AnazhRealm_siedlung_bewohner {
                 m4,
                 0,
                 Z.fertig ? (b.walkPhase || 0) / (2 * Math.PI) : 0,
-                Z.fertig ? b._gaitW || 0 : 0
+                Z.fertig ? b._gaitW || 0 : 0,
+                b.tonZeilen
             );
         if (bewegt) {
             const dran = new Set();
@@ -2396,6 +2437,8 @@ class AnazhRealm_siedlung_bewohner {
     _bewohnerFort(S) {
         this._verkehrFort(S); // die Wagen gehen mit (ihre Fahrer sind Leiber der Liste)
         for (const b of S.liste || []) {
+            if (b.tonZeilen) this._tonZeileFrei(b.tonZeilen[0]); // die Palette des Kopfs geht mit ihm (mensch.K4)
+            b.tonZeilen = null;
             const g = b.leib;
             if (!g) continue;
             this._kreaturZiegelTod(g);
@@ -2404,6 +2447,7 @@ class AnazhRealm_siedlung_bewohner {
         }
         const memo = AnazhRealm._tierOfenMemo;
         for (const G of S.gestalten || []) {
+            this._tonZeileFrei(G.tonZeile);
             if (G.satz) this._gangSatzAbschied(G.satz);
             for (const key of G.keys) {
                 const v = memo && memo.get(key);
@@ -2433,8 +2477,9 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // (Raster cellM · Seltenheit rarity · Größe nHMin/nHSpan) lebt EINMAL in
 // fachwerk-core (SIEDLUNG) — der Zwilling hier fiel (Welle L, Karte Dorf/Stadt DEFEKT 4: stiller Fallback mit Kopien).
 // DIE BEWOHNER (Meisterkarte mensch.K1, `_tickBewohner`): gestalten = die Gestalten je Siedlung (Vorlagen im Ofen, je
-// Gestalt beide Stufen ~2,45 MB Geometrie: vier halten das Profi-Band 118 MB, gemessen 21.10. Radeon; mit dem Leib der Menge
-// je Gestalt zwei Senken — Leib und Wurf, vorher Haut, Rest und Wurf: 12 statt 16 Befehle am Start-Dorf) · restBau /
+// Gestalt beide Stufen ~2,45 MB Geometrie auf der CPU, auf der GPU nur, was nah zeichnet — der Kehraus; mit dem Leib der Menge
+// je Gestalt zwei Senken — Leib und Wurf, vorher Haut, Rest und Wurf: 12 statt 16 Befehle am Start-Dorf). mensch.K4: die
+// Gestalt ist die FORM (Geschlecht, Bau, Schnitt, Alter), acht statt vier; die Farben trägt jeder Kopf (die Ton-Tafel) · restBau /
 // restMax = die eigenen Maße jedes Bewohners gegen seinen Typ (`_bewohnerGenome`): [Breite je Bau, je Muskel, Tiefe je Bau,
 // je Muskel] der Genom-Achsen (0…1), Breite und Tiefe je höchstens ±restMax (die Breite trägt auch der Kopf: mit ±6 % lag die
 // Kopf-Breite 0,098 über MENSCH_SOLL 0,096) · platzAnteil = so viele
@@ -2469,7 +2514,7 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // die persönliche Distanz ab 0,45 m), geweitet von der erinnerten Furcht (`_bewohnerSpielerAbstand`) · zeugeM = so weit sieht
 // er den Schlag des Spielers und erinnert ihn (`_bewohnerZeuge`).
 AnazhRealm.BEWOHNER = Object.freeze({
-    gestalten: 4,
+    gestalten: 8,
     restMax: 0.03,
     restBau: Object.freeze([0.06, 0.03, 0.07, -0.02]),
     platzAnteil: 0.45,

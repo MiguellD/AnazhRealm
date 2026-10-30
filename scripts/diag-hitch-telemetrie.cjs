@@ -595,9 +595,10 @@ function erstWandInstall(BUNDLE_FRAMES) {
     };
     // DIE ABSAGE EINER PIPELINE: ein Stummel am Gerät sagt den Bau eines neuen Stoffs ab (r184 verschluckt die Absage,
     // `catch(e){}`) — das Spiel MUSS sie als ERROR `PIPELINE-ABSAGE renderPipeline_<Stoff>_<id>` melden und die Pipeline aus
-    // der Warteschlange nehmen, und die Beweis-Aufnahme MUSS beim Namen abbrechen (der Bürger bleibt unsichtbar). Dazu die
-    // Backend-Weiche: auf WebGL2 meldet sich niemand an (dort ersetzt `_completeCompile` das Datenobjekt, ein Setter
-    // feuerte nie), der wartende Draw zählt nur.
+    // der Warteschlange nehmen, und die Beweis-Aufnahme MUSS beim Namen abbrechen (der Bürger bleibt unsichtbar) — der Bürger
+    // steht in einem BÜNDEL wie jeder Leib (mensch.K4, 30.10.: ein abgesagter Bürger des Leib-Bündels fiel still, das Bündel
+    // versiegelte ohne ihn, und die Aufnahme stand grün). Dazu die Backend-Weiche: auf WebGL2 meldet sich niemand an (dort
+    // ersetzt `_completeCompile` das Datenobjekt, ein Setter feuerte nie), der wartende Draw zählt nur.
     const absage = () => buehne(() => absageAufDerBuehne());
     const absageAufDerBuehne = async () => {
         const ruheMs = await ruhe();
@@ -619,7 +620,9 @@ function erstWandInstall(BUNDLE_FRAMES) {
         M.name = "wand-absage-stoff";
         M.colorNode = TSL.vec3(0.71, 0.33, 0.09 + 0.0013 * serie);
         const D = probeMesh(M, 0, 3.5);
-        welt.add(D);
+        const bg = buendel();
+        bg.add(D);
+        welt.add(bg);
         const a0 = ESt.absagenN || 0;
         // DER EINE MELDER: die Absage geht über die GPU-Wache des Spiels (`_gpuWacheMeldung`) — sie
         // zählt dort, und dieselbe Absage steht genau EINMAL im Log
@@ -640,7 +643,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
             GP.createRenderPipelineAsync = crpaRoh;
             if (eigenLog) r.log = logRoh;
             else delete r.log;
-            welt.remove(D);
+            welt.remove(bg);
             D.geometry.dispose();
         }
         // die Backend-Weiche: eine Anmeldung auf WebGL2 trägt sich nicht in die Schlange ein, der wartende Draw zählt

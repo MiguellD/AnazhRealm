@@ -156,7 +156,6 @@ const ladeOfen = () => fadenScope(OFEN_QUELLEN);
 const { cielab, srgbLin, luma709 } = require("./lib/abnahme-urteil.cjs");
 const lab = (r, g, b) => cielab([r, g, b]);
 const linHex = (hx) => [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map(srgbLin);
-const farbKey = (c) => c.map((x) => x.toFixed(5)).join(",");
 function messeKopf(sb, eingriff) {
     const T = sb.THREE;
     const K = sb.__koerperCore;
@@ -218,30 +217,13 @@ function messeKopf(sb, eingriff) {
         hc.push([ca.getX(i), ca.getY(i), ca.getZ(i)]);
     }
     const bkH = spanne(hp, 1).l,
-        byK = spanne(hp, 1).a,
-        zVorn = spanne(hp, 2).b;
-    const zaehl = (filter) => {
-        const z = new Map();
-        hp.forEach((p, i) => {
-            if (!filter(p, i)) return;
-            const k = farbKey(hc[i]);
-            z.set(k, (z.get(k) || 0) + 1);
-        });
-        const top = [...z.entries()].sort((a, b) => b[1] - a[1])[0];
-        return top ? top[0] : null;
-    };
-    // die Haut = der häufigste Ton im Gesicht (unter der Haarlinie); die Lippe = der häufigste andere Ton am Mund
-    const hautKey = zaehl((p) => (p[1] - byK) / bkH < 0.6);
-    const hautC = hautKey.split(",").map(Number);
-    const lippeKey = zaehl((p, i) => {
-        const h = (p[1] - byK) / bkH;
-        return farbKey(hc[i]) !== hautKey && h > 0.12 && h < 0.4 && p[2] > zVorn - 0.12 * bkH;
-    });
-    const lH = lab(...hautC);
-    const lL = lippeKey ? lab(...lippeKey.split(",").map(Number)) : [NaN, NaN, NaN];
-    // die Augenhöhle: ein eigener Stoff (Klasse socket) oder ein Ton der Haut am Auge
-    const sock = ms.find((n) => kl(n) === "socket");
-    let lS = sock ? lab(sock.material.color.r, sock.material.color.g, sock.material.color.b) : null;
+        byK = spanne(hp, 1).a;
+    // DIE TÖNE DES GUSSES (mensch.K4): je Ton der Kopf-Haut (`aTon`, koerper `menschTon`) seine Albedo in CIELAB — die Farbe
+    // seiner hellsten Ecke (die Verdeckung der Haut dunkelt nur, die Mund-Linie ist dunkler: die hellste trägt den Ton genau):
+    // die Haut, die Lippe, die Augenhöhle (der Ton der Haut am Auge) und die Braue
+    const tonA = hautK.geometry.attributes.aTon;
+    const labTon = (k) => lab(...(hc.filter((c, i) => tonA && tonA.getX(i) === K.menschTon(k)).sort((a, b) => luma709(b) - luma709(a))[0] || [NaN, NaN, NaN])); // prettier-ignore
+    const [lH, lL, lS, lB] = ["skin", "lips", "socket", "braue"].map(labTon);
     // die Hornhaut vor der Haut: der Augapfel-Scheitel gegen den Median der Haut im Ring 1,0–1,8 Augapfel-Radien
     let vorstand = -Infinity;
     for (const n of ms.filter((n) => kl(n) === "eye")) {
@@ -260,10 +242,6 @@ function messeKopf(sb, eingriff) {
         const zs = ring.map((i) => hp[i][2]).sort((a, b) => a - b);
         const zMed = zs.length ? zs[zs.length >> 1] : NaN;
         vorstand = Math.max(vorstand, (sz.b - zMed) / bkH);
-        if (!lS) {
-            const k = zaehl((p, i) => ring.includes(i) && farbKey(hc[i]) !== hautKey);
-            if (k) lS = lab(...k.split(",").map(Number));
-        }
     }
     // das freie Auge: je Punkt der Iris-Vorderseite ein Strahl nach vorn (+z) gegen die Dreiecke der Kopf-Haut
     const idx = hautK.geometry.index ? hautK.geometry.index.array : null;
@@ -298,9 +276,7 @@ function messeKopf(sb, eingriff) {
             if (!trifft(p)) irisFrei++;
         }
     }
-    // das Haar als Volumen: die Kopf-Haut über der Haarlinie in Haar-Farbe (näher am Haar-Ton als am Haut-Ton)
-    const haarC = linHex(K.HAIR_COLORS[K.START_PARAMS.hairColor].base);
-    const d2 = (a, b) => (a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2 + (a[2] - b[2]) ** 2;
+    // das Haar als Volumen: die Kopf-Haut über der Haarlinie im Ton des Haars (koerper `menschTon`: die Kappe)
     // die Haarlinie aus der Kopfhöhe OHNE Haar (das Gesetz), in den Ofen-Raum über den Pupillen-Abstand
     const iz = ms
         .filter((n) => kl(n) === "iris")
@@ -315,7 +291,7 @@ function messeKopf(sb, eingriff) {
     hp.forEach((p, i) => {
         if (p[1] < yHaar) return;
         kal++;
-        if (d2(hc[i], haarC) < d2(hc[i], hautC)) bedeckt++;
+        if (tonA && tonA.getX(i) === K.menschTon("haarKappe")) bedeckt++;
     });
     let tris = 0;
     for (const n of ms)
@@ -336,11 +312,13 @@ function messeKopf(sb, eingriff) {
         augeFrei: irisN ? irisFrei / irisN : NaN,
         lippeL: lL[0] - lH[0],
         lippeA: lL[1] - lH[1],
-        hoehleL: lS ? lS[0] - lH[0] : NaN,
-        hoehleA: lS ? lS[1] - lH[1] : NaN,
+        hoehleL: lS[0] - lH[0],
+        hoehleA: lS[1] - lH[1],
         hautAlbedoMin: Math.min(...luma),
         hautAlbedoMax: Math.max(...luma),
         haarDeckung: kal ? bedeckt / kal : NaN,
+        // DIE BRAUE (mensch.K4): ihr Ton gegen die Haut (|ΔL*|)
+        brauKontrast: Math.abs(lB[0] - lH[0]),
         kopfDreiecke: tris,
     };
 }
@@ -356,6 +334,40 @@ function urteile(sb, m, soll = "MENSCH_SOLL") {
     });
 }
 const urteileKopf = (sb, m) => urteile(sb, m, "KOPF_SOLL");
+
+// DIE MENGE (mensch.K4 Staffel 2): 50 Bewohner aus 50 Samen je Siedlung, gerechnet von DENSELBEN Gliedern wie in der Welt
+// (`_bewohnerGestalten`, `_bewohnerGenome`; der Stamm im vm, stamm.cjs `ladeKlasse`), je Plan des Fachwerk-Kerns seine Tracht.
+// Die Gestalt-Distanz eines Paars wie die Station mensch.K4#2: gleicher Typ und gleiche Farben (Haut, Haar, Tracht — das
+// Geschlecht trägt der Typ), dann der größte Unterschied der Maße (die Vorlage × Höhe · Breite · Tiefe des Genoms) in Bildpunkten
+// am Rand der Nah-Wahl (BEWOHNER.nahM, 1080 Zeilen, KAM_FOV_GRAD); unter 1 px ist gleich. Die Vorlage ist der Kasten der
+// Mengen-Stufe (Ofen L2, Start-Dials) im Welt-Maß (8 · PLAYER_KH / 6 je Lab-Einheit). `eingriff(A)` verzerrt die Klasse.
+const MENGE_PLAENE = [0x51ed, 0x7a11]; // die Samen der Pläne (je Plan seine Epoche und Tracht)
+function messeMenge(eingriff) {
+    const { AnazhRealm: A, ctx } = require("./lib/stamm.cjs").ladeKlasse(require("path").join(__dirname, ".."));
+    if (eingriff) eingriff(A);
+    const r = Object.assign(Object.create(A.prototype), { state: {} });
+    const box = new ctx.THREE.Box3().setFromObject(ctx.BAKERS_BY_KIND.koerper(ctx.__koerperCore, "mensch", 1, 2, null)).getSize(new ctx.THREE.Vector3()); // prettier-ignore
+    const px = (1080 / (2 * Math.tan((A.KAM_FOV_GRAD * Math.PI) / 360)) / A.BEWOHNER.nahM) * ((8 * A.PLAYER_KH) / 6);
+    const m = { gleich: 0, min: Infinity, paar: null };
+    for (const seed of MENGE_PLAENE) {
+        const S = { plan: ctx.__fachwerkCore.exportSettlement({ seed, nH: 12 }), liste: [...Array(50)].map((_, i) => ({ seed: `${seed}:${i >> 1}:${i & 1}` })) }; // prettier-ignore
+        S.gestalten = r._bewohnerGestalten(S);
+        r._bewohnerGenome(S);
+        // je Bewohner seine Gestalt — der Typ und die Farben (die eigenen, sonst die des Typs, wie die Station) — und seine
+        // Maße in Bildpunkten
+        const je = S.liste.map((b) => [b.gestalt + JSON.stringify(b.farben || S.gestalten[b.gestalt].dK), [box.x * b.breite, box.y, box.z * b.tiefe].map((x) => x * b.groesse * px), b.seed]); // prettier-ignore
+        je.forEach(([g, a, s], i) =>
+            je.slice(i + 1).forEach(([h, c, t]) => {
+                const d = g === h ? Math.max(...a.map((x, e) => Math.abs(x - c[e]))) : Infinity;
+                if (d < 1) m.gleich++;
+                if (d < m.min) [m.min, m.paar] = [d, `${s}/${t}`];
+            })
+        );
+    }
+    return m;
+}
+// das Urteil der Menge: kein Paar gleicher Gestalt (unter 1 px)
+const urteileMenge = (m) => (m.gleich ? [`menge.gleich ${m.gleich} Paare unter 1 px (${m.paar})`] : []);
 
 const zeige = (m) =>
     console.log(
@@ -373,7 +385,8 @@ if (process.argv.includes("--selftest")) {
     // je Fall der Eingriff am Gesetz (`verzerre`) oder am Kopf (`eingriff`, mit `kopf`): er muss sein Maß beim Namen rot machen
     const pruefe = (name, verzerre, muster, kopf) => {
         const sb = kopf ? ladeOfen() : ladeWelt();
-        const f = kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre));
+        const f =
+            kopf === "menge" ? urteileMenge(messeMenge(verzerre)) : kopf ? urteileKopf(sb, messeKopf(sb, verzerre)) : urteile(sb, messe(sb, verzerre)); // prettier-ignore
         const ok = f.some((x) => muster.test(x));
         console.log(`  ${ok ? "✅" : "❌"} ${name}${ok ? " — " + f.find((x) => muster.test(x)) : ""}`);
         if (!ok) rot++;
@@ -412,6 +425,15 @@ if (process.argv.includes("--selftest")) {
                 },
             }),
     });
+    // DAS GESICHT AUF 6 m (mensch.K4): die Braue ohne ihren Ton (sie ist die Haut)
+    pruefe(
+        "B1 die Braue ohne Ton (der Ton der Haut) wird erkannt",
+        { kern: (K) => Object.assign({}, K, { brauTon: (haut) => haut }) },
+        /^brauKontrast/,
+        true
+    );
+    // DIE MENGE (mensch.K4): die Farben der Gestalt statt der eigenen (der Stand vor mensch.K4)
+    pruefe("M1 die Farben der Gestalt (vor mensch.K4) werden erkannt", (A, roh = A.prototype._bewohnerGenome) => (A.prototype._bewohnerGenome = function (S) { roh.call(this, S); S.liste.forEach((b) => (b.farben = null)); }), /^menge\.gleich/, "menge"); // prettier-ignore
     pruefe("S5 der aufgesetzte Augapfel (eine Augapfel-Breite vor) wird erkannt", auge(0.12), /^augenVorstand/, true);
     pruefe("S7 das begrabene Auge (eine Augapfel-Breite zurück) wird erkannt", auge(-0.12), /^(augeFrei|augenVorstand)/, true);
     const rot0 = (K) => (h) => Object.assign({}, K.kopfToene(h), { lips: 0xaa5544 });
@@ -438,6 +460,8 @@ console.log(
             .map(([k, x]) => `${k} ${+x.toFixed(4)}`)
             .join(" · ")
 );
-if (process.argv.includes("--json")) console.log(JSON.stringify(Object.assign({}, m, mk), null, 1));
-const fehler = urteile(sb, m).concat(urteileKopf(so, mk));
+const mm = messeMenge();
+console.log(`  MENGE: ${mm.gleich} gleiche Paare · Gestalt-Distanz min ${mm.min} px ${mm.paar}`);
+if (process.argv.includes("--json")) console.log(JSON.stringify(Object.assign({}, m, mk, { menge: mm }), null, 1));
+const fehler = urteile(sb, m).concat(urteileKopf(so, mk), urteileMenge(mm));
 urteilEnde(fehler.length, `\n❌ ROT — ${fehler.length} Abweichung(en):\n  ` + fehler.join("\n  "), "\n✅ GRÜN — der Mensch steht in seinen Anthropometrie-Bändern (Hand · Arm · Kopf · Gesicht · Fuß).");
