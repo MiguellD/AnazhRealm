@@ -913,8 +913,8 @@ async function probe(arg) {
             // (1) die Laub-Stoffe der Szene ohne Durchsicht
             const laub = new Map();
             st.scene.traverse((o) => {
-                const mt = o && o.material;
-                const k = mt && mt.userData ? mt.userData.foundryKind : null;
+                const mt = o?.material;
+                const k = mt?.userData ? mt.userData.foundryKind : null;
                 if ((k === "foliage" || k === "foliageTex") && mt.maskNode) laub.set(mt, mt.maskNode);
             });
             for (const mt of laub.keys()) mt.maskNode = null;

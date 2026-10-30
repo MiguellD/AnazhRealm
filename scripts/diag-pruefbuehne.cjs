@@ -274,13 +274,14 @@ async function s0Probe(page, station, schein) {
             const y0 = r.getTerrainHeightAt(sx, sz);
             s.playerMesh.position.set(sx, y0 + 1, sz);
             const vor = new Set(s.architectures || []);
-            // DIE FEUERSTELLE GLÜHT (`_glutFlaeche`, wie der Bild-Lauf sie erkennt), nie irgendein neuer Bau der Welt — am 30.10.
-            // (tore-k5-tuer-neu, Schein-Lauf) griff die Probe einen Felsturm 180 m fern als „Feuerstelle"; steht sie nicht, BRICHT
-            // die Probe beim Namen AB (`abbruch`: was der Satz sagte — ein Ort ohne Antwort, ein Wurf des Interpreters, das Ergebnis)
-            // — der Selbsttest meldete still BLIND
+            // DIE FEUERSTELLE IST, WAS DER SATZ SETZTE (`spawned_studio`: ihre Art), nie irgendein neuer Bau der Welt — am 30.10.
+            // (tore-k5-tuer-neu, Schein-Lauf) griff die Probe einen Felsturm 180 m fern als „Feuerstelle", nach ihm die Glut eines
+            // Dorfs des Scheins, während der Satz warf; steht sie nicht, BRICHT die Probe beim Namen AB (`abbruch`: was der Satz
+            // sagte — ein Ort ohne Antwort, ein Wurf des Interpreters, das Ergebnis) — der Selbsttest meldete still BLIND
             const log = r.dslRun(["spawn_studio", "feuerstelle", ["near_player", 3], 1], { source: "human" }).log;
+            const art = log.find((l) => l?.event === "spawned_studio" && l.count > 0)?.kind;
             await takt(20);
-            const feuer = (s.architectures || []).find((e) => e?.position && !vor.has(e) && r._glutFlaeche(e) > 0);
+            const feuer = (s.architectures || []).find((e) => e?.position && !vor.has(e) && e.type === art);
             if (!feuer) {
                 const grund = JSON.stringify(log.filter((l) => /invalid|exception|unknown|ergebnis/.test(l?.event)));
                 out.befunde.push((out.abbruch = `S0: die Feuerstelle steht nicht (der Satz \`spawn_studio feuerstelle\`: ${grund})`));

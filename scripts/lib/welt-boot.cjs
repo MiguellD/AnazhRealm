@@ -426,8 +426,7 @@ function pulsSeite() {
         }
     // der Stoff-Name je Pipeline am Backend der Welt (r184 createRenderPipeline(renderObject)), sobald es steht
     const stoffHaken = () => {
-        const st = r && r.state;
-        const be = st && st.renderer && st.renderer.backend;
+        const be = r?.state?.renderer?.backend;
         if (!be || be.__weltPulsHaken || typeof be.createRenderPipeline !== "function") return;
         be.__weltPulsHaken = true;
         const crp = be.createRenderPipeline;
@@ -453,7 +452,7 @@ function pulsSeite() {
     };
     const phase = () => {
         stoffHaken();
-        const st = r && r.state;
+        const st = r?.state;
         const t = [document.readyState];
         if (document.visibilityState === "hidden") t.push("verborgen");
         if (st) {
