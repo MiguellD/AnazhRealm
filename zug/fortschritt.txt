@@ -990,3 +990,4 @@
 2026-10-30 13:51:47 z83-abab START 2 Zellen
 2026-10-30 14:00:14 z83-abab STORNO in stadt
 2026-10-30 14:00:24 schloss-blick-1 START 1 Stationen
+2026-10-30 14:00:32 schloss-blick-1 gpu-schloss-blick.sh Exit0 0.1 · 1/1
