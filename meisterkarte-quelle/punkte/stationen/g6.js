@@ -56,7 +56,7 @@ async function sitzungLauf(lauf) {
     const port = Number(process.env.WERKBANK_PORT);
     const ruf = (weg, nutz, ms = 60000) =>
         new Promise((ja, nein) => {
-            const q = http.request({ host: "127.0.0.1", port, path: weg, method: "POST", headers: { "Content-Type": "application/json" } }, (a) => {
+            const q = http.request({ host: "127.0.0.1", port, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
                 let d = "";
                 a.on("data", (c) => (d += c));
                 a.on("end", () => {

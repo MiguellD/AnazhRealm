@@ -650,10 +650,14 @@ const grundSpielen = (g) =>
     "neu: z.neu || null, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta && r.state.worldMeta.worldId };";
 const GRUND_TUER = (g) => "const s = JSON.parse(" + JSON.stringify(g.grund) + ").stand; return r._weltBetreten(s, null, { neuLaden: false });";
 
-// ein Ruf an die Werkbank MIT Frist (werkbankRuf des Spiels wartet ewig): Rückgabe die Antwort, wirft bei Frist und Fehler
+// ein Ruf an die Werkbank MIT Frist (werkbankRuf des Spiels wartet ewig): Rückgabe die Antwort, wirft bei Frist und Fehler.
+// JE RUF EINE VERBINDUNG (`agent: false`, Heilung 30.10.): der Agent von Node ≥ 19 hält den Socket offen (keepAlive), die Werkbank
+// schließt einen ruhenden nach 5 s (keepAliveTimeout) — stand die Schleife des Läufers länger still (ciWartet als spawnSync: 20 s),
+// nahm der nächste Ruf im selben Takt den toten Socket: „read ECONNRESET“ am ersten /fenster, die Welt galt als tot, 69 von 69
+// Proben ungemessen (Radeon 3ed96b3f). Dieselbe Regel tragen die Rufe der Proben (sitzungTor, sitzungWerkzeug, sitzungLauf).
 function rufFrist(port, weg, nutzlast, ms) {
     return new Promise((ja, nein) => {
-        const req = require("http").request({ host: "127.0.0.1", port, path: weg, method: "POST", headers: { "Content-Type": "application/json" } }, (r) => {
+        const req = require("http").request({ host: "127.0.0.1", port, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (r) => {
             let d = "";
             r.on("data", (c) => (d += c));
             r.on("end", () => { try { ja(JSON.parse(d)); } catch (_e) { ja({ roh: d }); } });
@@ -768,9 +772,27 @@ async function schlossLoesen(h) {
     if ((await Promise.race([h.ende, warteMs(30000).then(() => "frist")])) === "frist") baumTot(h.kind.pid);
     fs.rmSync(h.los, { force: true });
 }
-// wartet ein CI-Job auf das Schloss? (gpu-schloss.sh neben gpu-lauf.sh: `ci_wartet`, die letzte Zeile von hook.log)
-const ciWartet = (o) => spawnSync(o.bash, ["-c", '. "$1" && ci_wartet', "ci", path.join(path.dirname(o.gpuLauf), "gpu-schloss.sh")],
-    { env: { ...process.env, ...(o.hookLog ? { GPU_HOOK_LOG: o.hookLog } : {}) }, windowsHide: true, timeout: 20000 }).status === 0;
+// wartet ein CI-Job auf das Schloss? (gpu-schloss.sh neben gpu-lauf.sh: `ci_wartet`, die letzte Zeile von hook.log) — EIN Blick als
+// eigener Prozess, nie im Takt des Läufers: Rückgabe ein Promise<bool> mit `.kind` (Heilung 30.10.: als spawnSync stand der Läufer an
+// jeder Proben-Grenze, bis bash fertig war — Radeon-Laptop 5,2 s, mit Waisen daneben 20 s an der Frist und dann immer „nein“; derweil
+// schloss die Werkbank den ruhenden Socket, rufFrist). Die Frist CI_BLICK_S fällt den Baum (ein hängendes bash): „nein“
+const CI_BLICK_S = 60;
+const ciWartet = (o) => {
+    let kind = null;
+    const p = new Promise((ja) => {
+        try {
+            kind = spawn(o.bash, ["-c", '. "$1" && ci_wartet', "ci", path.join(path.dirname(o.gpuLauf), "gpu-schloss.sh")],
+                { env: { ...process.env, ...(o.hookLog ? { GPU_HOOK_LOG: o.hookLog } : {}) }, windowsHide: true, stdio: "ignore" });
+        } catch (_e) {
+            return ja(false);
+        }
+        const frist = setTimeout(() => baumTot(kind.pid), CI_BLICK_S * 1000);
+        kind.on("error", () => (clearTimeout(frist), ja(false)));
+        kind.on("exit", (c) => (clearTimeout(frist), ja(c === 0)));
+    });
+    p.kind = kind;
+    return p;
+};
 
 // startet den Halter (daneben das GANZE Schloss, wenn gpuLauf: `schlossNehmen`); Rückgabe { ok, kind, schloss, warten (min), bootS, grund?, ungemessen? }
 async function sitzungStarten(o) {
@@ -864,7 +886,8 @@ async function grundstellung(w, datei) {
 }
 // DIE GRUNDPROBE (`punkte.cjs grundprobe --baum <Spiel-Baum> [--mutante <zeile>] [--port P]`, Null-Renderer, Karte w4-grundstellung):
 // eine Welt des Spiel-Baums (welt-boot `nullSeite`), der Grund über DIESELBE Zeile wie die Sitzung (GRUND_NIMM), dann gräbt der
-// Spieler, baut einen Block, sieht von außen und wendet den Blick, steigt in einen Wagen, die Uhr springt, ein Feuer fängt, Regen zieht auf und ein Ort-Takt der Werkbank
+// Spieler, baut einen Block, sieht von außen und wendet den Blick, steigt in einen Wagen, die Uhr springt, ein Feuer fängt, Regen zieht auf,
+// die Tag-Länge springt auf 1e9 (der Wetter-Zug von licht.K5#1, am Deckel ohne sein finally: Radeon 30.10.) und ein Ort-Takt der Werkbank
 // hängt an der Seite — und die Grundstellung der Sitzung (`grundSpielen`) spielt den Grund zurück: GRÜN, wenn jede Tat geschah und
 // danach keine Größe vom Grund abweicht. `--mutante <zeile>`: das Wort dieser Zeile der GRUND_TAFEL schweigt (`uhr`: der EINE
 // Uhr-Schreiber des Spiels, eine Größe des Stands) — gefangen nur, wenn genau `augenblick.<zeile>` (`timeOfDay`) abweicht: die Mutante
@@ -895,14 +918,15 @@ async function grundProbe(o) {
             let t = performance.now();
             for (let i = 1; i <= 30; i++) if ((r._gameLoopTick((t += 100)), i % 5 === 0)) await new Promise((f) => setTimeout(f, 0));
             r._setWeather("rainy", "regler");
+            st.dayLengthMinutes = 1e9; // der Wetter-Zug von licht.K5#1 (licht-linsen wetterZug), am Deckel ohne sein finally
             window.__ortTakt = [];
             const z = r.constructor.GRUND_TAFEL.find((z) => z[0] === ${JSON.stringify(o.mutante || null)});
             if (z) z[2] = () => {};
             if (${JSON.stringify(o.mutante || null)} === "uhr") r._uhrSetzen = () => false;
-            return { edit, bau, ritt, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, mutante: !!z || r._uhrSetzen.length === 0 };`);
+            return { edit, bau, ritt, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, tag: st.dayLengthMinutes, mutante: !!z || r._uhrSetzen.length === 0 };`);
         const z = await ev(grundSpielen(g));
         const soll = !o.mutante ? [] : o.mutante === "uhr" ? ["timeOfDay"] : ["augenblick." + o.mutante];
-        const taten = tat.edit && tat.bau && tat.ritt && tat.feuer > 0 && tat.wetter === "rainy" && (!o.mutante || tat.mutante);
+        const taten = tat.edit && tat.bau && tat.ritt && tat.feuer > 0 && tat.wetter === "rainy" && tat.tag === 1e9 && (!o.mutante || tat.mutante);
         const gruen = taten && z.ok && JSON.stringify(z.anders) === JSON.stringify(soll);
         const wie = o.mutante ? "MUTANTE " + o.mutante + (gruen ? " ROT beim Namen" : " NICHT beim Namen gefangen") : gruen ? "GRÜN" : "ROT";
         console.log("GRUNDPROBE " + wie +
@@ -1138,19 +1162,39 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         zapf(aktuell).finally(() => (frei = true));
     }, ctx.stromTaktMs || STROM_TAKT_MS);
     await zapf(aktuell);
+    // DIE CI-WACHE (Heilung 30.10.): der Blick `ciWartet` läuft neben der Probe, nie an ihrer Grenze — die Grenze liest den letzten
+    // fertigen Blick seit der letzten Nahme des Schlosses und stößt den nächsten an (er läuft in der folgenden Probe); fehlt einer seit
+    // der Nahme (die erste Grenze, die nach einer Freigabe), wartet sie auf ihn, sonst nie
+    const ci = { seit: t0, fertig: null, laeuft: null, n: 0 };
+    const ciFrisch = () => !!ci.fertig && ci.fertig.t0 >= ci.seit;
+    const ciLos = () => {
+        if (!ci.laeuft) {
+            const t = Date.now();
+            ci.laeuft = ciWartet(ctx);
+            ci.laeuft.then((ja) => ((ci.fertig = { t0: t, ja }), (ci.laeuft = null), ci.n++));
+        }
+        return ci.laeuft;
+    };
+    const ciWartetJetzt = async () => {
+        while (!ciFrisch()) await ciLos();
+        const ja = ci.fertig.ja;
+        ciLos();
+        return ja;
+    };
     let zuruecksetzen = false, gerissen = null, grundDa = null;
     for (const g of gruppen) {
         // DAS SCHLOSS AN DER PROBEN-GRENZE: fiel es (gpu-lauf.sh endete), trägt die Sitzung nicht mehr; wartet ein CI-Job darauf, geht es
         // an ihn und kommt danach wieder — die Welt bleibt warm, das Warten zählt nie in die Fahrt
         if (!tot && s.schloss && s.schloss.kind.exitCode != null) tot = "das Schloss der Sitzung fiel (gpu-lauf.sh Exit " + s.schloss.kind.exitCode + ")";
         if (tot && !kopf.grund) kopf.grund = "die Sitzung trägt nicht mehr vor " + schluessel(g[0]) + ": " + tot;
-        if (!tot && !gerissen && s.schloss && ciWartet(ctx)) {
+        if (!tot && !gerissen && s.schloss && (await ciWartetJetzt())) {
             const tf = Date.now();
             ruht = true;
             await schlossLoesen(s.schloss);
             console.log("  SITZUNG das Schloss geht an den wartenden CI-Job (vor " + schluessel(g[0]) + ")");
             s.schloss = await schlossNehmen({ ...ctx, stop }, kopf.freigaben.length + 1);
             ruht = false;
+            ci.seit = Date.now(); // ein Blick von vor der Freigabe sah den CI-Job, dem das Schloss eben gehörte: er zählt nie mehr
             const pause = Date.now() - tf;
             fahrt0 += pause;
             kopf.freigaben.push({ vor: schluessel(g[0]), s: +(pause / 1000).toFixed(1) });
@@ -1174,8 +1218,10 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             await zapf(aktuell);
             const gs = grundDa === true ? await grundstellung(W, grund) : { ok: false, grund: grundDa || "kein Grund vor " + schluessel(g[0]) };
             ruht = false;
-            if (gs.ok) kopf.grundstellungS.push(gs.s);
-            else {
+            if (gs.ok) {
+                kopf.grundstellungS.push(gs.s);
+                console.log("  SITZUNG Grundstellung vor " + schluessel(g[0]) + ": " + gs.s + " s (im Spiel " + gs.ms + " ms" + (gs.tuer ? ", durch die Tür" : "") + ")");
+            } else {
                 tot = gs.grund;
                 kopf.grund = "die Welt trägt nicht mehr vor " + schluessel(g[0]) + ": " + tot;
                 console.log("  SITZUNG " + kopf.grund);
@@ -1207,6 +1253,8 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         await melde(g, es, aus, zeit);
     }
     clearInterval(takt);
+    if (ci.laeuft && ci.laeuft.kind && ci.laeuft.kind.exitCode == null) baumTot(ci.laeuft.kind.pid); // kein Blick überlebt die Sitzung
+    kopf.ciBlicke = ci.n;
     await zapf(aktuell);
     kopf.strom = stromKopf(strom, zz);
     kopf.fahrtS = +((Date.now() - fahrt0) / 1000).toFixed(1);
@@ -2670,6 +2718,19 @@ async function selbsttest() {
             pruef("SITZUNG DAS SCHLOSS ZWISCHEN DEN PROBEN: ein wartender CI-Job bekommt es an jeder Proben-Grenze, die Sitzung nimmt es neu, die Welt bleibt (ein Start)",
                 sl.length === 3 && r8.kopf.freigaben.length === 2 && r8.z.filter((l) => l === "start").length === 1 && r8.es["a.K1#1"].gruen && r8.es["b.K1#1"].gruen,
                 JSON.stringify([sl, r8.kopf.freigaben, r8.z]));
+            // DER LANGSAME BLICK (Heilung 30.10., Radeon 3ed96b3f: 69 von 69 Proben ungemessen, „read ECONNRESET“ am ersten /fenster):
+            // ci_wartet braucht hier 7 s (der Laptop 5,2 s, mit Waisen daneben 20 s) — als spawnSync stand der Läufer so lange, die Werkbank
+            // schloss den ruhenden Socket (keepAliveTimeout 5 s), der nächste Ruf nahm ihn: die Welt galt als tot. Der Blick läuft neben
+            // der Probe, jeder Ruf hat seine Verbindung: die Welt trägt über jede Grenze, beide Proben messen, keine Freigabe
+            const langsam = path.join(tmp, "langsam");
+            fs.mkdirSync(langsam, { recursive: true });
+            fs.copyFileSync(gl, path.join(langsam, "sitzung-schloss.sh"));
+            fs.writeFileSync(path.join(langsam, "gpu-schloss.sh"), "ci_wartet() { sleep 7; return 1; }\n");
+            const r9 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "gut",
+                path.join(langsam, "sitzung-schloss.sh"));
+            pruef("SITZUNG DER LANGSAME BLICK: ci_wartet 7 s hält den Läufer nie an — die Welt trägt über jede Proben-Grenze, beide Proben messen, keine Freigabe",
+                !!r9.es["a.K1#1"] && r9.es["a.K1#1"].gruen && !!r9.es["b.K1#1"] && r9.es["b.K1#1"].gruen && !r9.kopf.grund && r9.kopf.freigaben.length === 0 && r9.kopf.ciBlicke >= 1,
+                JSON.stringify([r9.es, r9.kopf.grund, r9.kopf.freigaben, r9.kopf.ciBlicke]));
         }
         // DIE WACHE DER FAHRT: reißt die Uhr der Fahrt (hier 8 s), fällt die laufende Probe am Rest (UNGEMESSEN beim Namen), jede folgende
         // ist offen, die Sitzung endet und nennt sie; die Fahrt davor misst wie immer

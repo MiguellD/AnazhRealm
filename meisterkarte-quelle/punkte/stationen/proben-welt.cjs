@@ -21,7 +21,7 @@ function sitzungTor() {
     // EIN Ruf (POST JSON, mit Frist); eine Antwort { fehler: "…" } der Werkbank wirft beim Namen
     tor.ruf = (weg, nutzlast, ms = 120000) =>
         new Promise((ok, nein) => {
-            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", headers: { "Content-Type": "application/json" } }, (a) => {
+            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
                 let d = "";
                 a.on("data", (c) => (d += c));
                 a.on("end", () => {

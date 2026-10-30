@@ -44,7 +44,7 @@ function sitzungWerkzeug() {
     // DIE WERKBANK der Sitzung (POST mit Frist)
     H.wb = (weg, nutz, ms = 120000) =>
         new Promise((ja, nein) => {
-            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", headers: { "Content-Type": "application/json" } }, (r) => {
+            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (r) => {
                 let d = "";
                 r.on("data", (c) => (d += c));
                 r.on("end", () => {
