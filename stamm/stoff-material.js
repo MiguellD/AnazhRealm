@@ -875,7 +875,9 @@ class AnazhRealm_stoff_material {
                                             .div(pol.voll.pr - pol.kahl.pr)
                                             .clamp(0.0, 1.0);
                                         const kahl = this._karteJahr(_Ta).element(_schicht.toInt());
-                                        return _Ta.select(this._ditherIGN(_Ta, 2).lessThan(s), _schicht, kahl);
+                                        // ganzzahlig: WGSL nimmt den Index einer Array-Textur nur als i32/u32 (ein f32 aus
+                                        // dem Fn verwarf das Programm der Karte — PIPELINE-ABSAGE, keine Karte zeichnete)
+                                        return _Ta.select(this._ditherIGN(_Ta, 2).lessThan(s), _schicht, kahl).toInt();
                                     })();
                                     // ── Instanz-Dekodierung (die Instanz-Matrix, `_instanzMatrixNode`) ──
                                     // r184 setzt den positionNode VOR die Instanzierung (WGSL der Karte gelesen, K20 13.10.): dort
