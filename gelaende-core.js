@@ -1752,10 +1752,12 @@
         }
         return { n: splats.length, splats, zellen, gruende, grundZellen, kellerZellen, hohl, schnitt };
     }
-    // Der Erdbau an (x, z) über der Höhe h (die Normalform E, `erdbauNormal`).
-    function erdbauY(E, x, z, h) {
+    // Der Erdbau an (x, z) über der Höhe h (die Normalform E, `erdbauNormal`). `gang` (optional) trägt, ob der Punkt auf einer
+    // Fläche liegt (`gang.flaeche`, die Höhe kam aus ihr, nicht aus der Böschung) — die Wand in `hoehe` liest es aus DIESEM Gang.
+    function erdbauY(E, x, z, h, gang) {
         const Z = ERDBAU.zelleM;
         const liste = E.zellen.get((Math.floor(x / Z) + 32768) * 65536 + (Math.floor(z / Z) + 32768));
+        if (gang) gang.flaeche = false;
         if (!liste) return h;
         const R = ERDBAU.reichweiteM;
         const B = ERDBAU.boeschung;
@@ -1811,6 +1813,7 @@
             if (h > y + b) h = y + b;
             else if (h < y - b) h = y - b;
         }
+        if (gang) gang.flaeche = fest === fest;
         return fest === fest ? fest : h;
     }
     // Die FLÄCHE des Erdbaus an (x, z): die Höhe der Fläche, auf der der Punkt liegt (dieselbe Regel wie `erdbauY`: die letzte
@@ -2356,16 +2359,21 @@
     // Erdbaus (`aus.wand` 0 | 1, K66: der Grund-Zweig von `erdbauWand` — der Erdbau hebt oder senkt den Grund um mehr als
     // `wandM` / 2, und (x, z) liegt auf keiner Fläche; der Leser ist die Ferne, die keine Normale kennt — Ring, Kronen-Karte,
     // Feld-Pass: der Schutt des Fels-Stoffs mit dem vollen Gewicht wie im Netz).
+    // Die Wand liest die Fläche aus DEMSELBEN Gang des Erdbaus (`ERDBAU_GANG`): bis V18.546.132 fragte sie zwei Gänge mehr
+    // (`erdbauY(…, NaN)` zweimal) — auf jeder Trasse und jedem Platz, die den Grund um mehr als `wandM` / 2 heben, kostete
+    // jede Spalte der Dichte drei Gänge über ihre Liste (am Messort stadt 123 Splats: das Feld des stehenden Spielers 0,35 →
+    // 0,73 ms je Takt).
+    const ERDBAU_GANG = { flaeche: false };
     function hoehe(L, x, z, mitDetail = true, aus) {
         let h = hoeheGrund(L, x, z, mitDetail, aus);
         if (aus) aus.wand = 0;
         // der Erdbau der Orte (K10) liegt als letzter Term auf allem: der Ort vor dem Hang
         const E = L.erdbau;
         if (E) {
-            const h2 = erdbauY(E, x, z, h);
+            const h2 = erdbauY(E, x, z, h, ERDBAU_GANG);
             if (aus && h2 !== h) {
                 aus.hang = 0;
-                if (Math.abs(h2 - h) > ERDBAU.wandM / 2 && !(erdbauY(E, x, z, NaN) === erdbauY(E, x, z, NaN))) aus.wand = 1;
+                if (Math.abs(h2 - h) > ERDBAU.wandM / 2 && !ERDBAU_GANG.flaeche) aus.wand = 1;
             }
             h = h2;
         }

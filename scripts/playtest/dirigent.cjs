@@ -1264,15 +1264,8 @@ async function checkBandExistenzBoden({ page, check }) {
         r._dispatchFrameJobs([{ name: "sonde", prio: 2, run: () => (sondeLief = true) }], leer);
         res.bodenIstBoden = sondeLief === false;
         // (d) DER DAUER-STROM: gezählt wird das Innere der Deko (der Scatter-Takt), nicht der Job
-        const eigen = (k) => Object.prototype.hasOwnProperty.call(r, k);
-        const alt = { strom: eigen("_tickVoxelChunkStreaming"), deko: eigen("_tickScatterStreaming") };
-        const altStrom = r._tickVoxelChunkStreaming;
-        const altDeko = r._tickScatterStreaming;
         let innen = 0;
-        r._tickVoxelChunkStreaming = () => 1;
-        r._tickScatterStreaming = () => {
-            innen++;
-        };
+        const zurueck = leihe(r, { _tickVoxelChunkStreaming: () => 1, _tickScatterStreaming: () => innen++ });
         const voll = { remainingMs: () => 16 };
         try {
             r._schedFrameNo = 0;
@@ -1284,10 +1277,7 @@ async function checkBandExistenzBoden({ page, check }) {
             r._dispatchFrameJobs(r._buildDeferrableJobs(pos), voll);
             res.terrainZuerst = innen === 0;
         } finally {
-            if (alt.strom) r._tickVoxelChunkStreaming = altStrom;
-            else delete r._tickVoxelChunkStreaming;
-            if (alt.deko) r._tickScatterStreaming = altDeko;
-            else delete r._tickScatterStreaming;
+            zurueck();
             r._schedFrameNo = frameNo;
         }
         return res;
