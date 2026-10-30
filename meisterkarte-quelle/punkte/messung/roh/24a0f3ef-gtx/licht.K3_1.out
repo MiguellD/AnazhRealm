@@ -1,0 +1,1 @@
+$ C:/Program Files/Git/bin/bash.exe C:/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh punkte-gtx-1 C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --laub fichte,tanne,ring --karte --uhr 0.5,0.27,0.05 --eigen --port 7754 --datei C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\24a0f3ef-gtx\licht.K3_1.json
