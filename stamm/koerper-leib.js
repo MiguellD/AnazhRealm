@@ -1640,6 +1640,46 @@ class AnazhRealm_koerper_leib {
     _tonZeileFrei(z) {
         if (z > 0 && this.state.tonTafel) this.state.tonTafelFrei.push(z);
     }
+    // DER KAHLE KOPF (haar.K2: die Klasse haar am Spieler): das Haar ist die Kappe UND ihre Strähnen (K57, koerper HAAR_KAPPE ·
+    // haarStreu) — die Kappe gießt der Ofen in die Kopf-Haut, ihre Ecken tragen den Ton des Haars (`aTon`, koerper `menschTon`) und
+    // seine Farbe. Verbirgt eine Linse die Strähnen des Spielers (`aus`: was sie verbirgt), tragen die Ecken der Kappe die Farbe der
+    // Haut ihres Kopfs; jeder Ruf stellt zuerst zurück, was der vorige färbte (ohne Strähnen in `aus`: nur zurück). Rückgabe die Zahl
+    // der gefärbten Ecken. Bis hier zeigte das Bild ohne Haar (die Teilung der Werkbank, `bild --klasse spieler:kopf/hair`) die Kappe
+    // im Ton ihrer Strähnen — getrennt wurden nur Strähnen-Ränder, die Klasse zeigte keine inneren Pixel (haar.K2#1 an 3ed95dcf, GTX)
+    _kopfKahl(aus) {
+        const pm = this.state.playerMesh;
+        for (const [c, alt] of this._kahlStand || []) {
+            for (const [i, x, y, z] of alt) c.setXYZ(i, x, y, z);
+            c.needsUpdate = true;
+        }
+        this._kahlStand = [];
+        const haar = (o) => !!o && ((o.userData && o.userData.__klasse) || (o.material && o.material.userData && o.material.userData.__klasse)) === "hair";
+        const vomSpieler = (o) => {
+            for (let p = o; p; p = p.parent) if (p === pm) return true;
+            return false;
+        };
+        const KC = typeof window !== "undefined" && window.__koerperCore;
+        if (!pm || !KC || !(aus || []).some((o) => haar(o) && vomSpieler(o))) return 0;
+        const [tH, tS] = [KC.menschTon("haarKappe"), KC.menschTon("skin")];
+        let n = 0;
+        pm.traverse((o) => {
+            const a = o.isMesh && !haar(o) && o.geometry && o.geometry.attributes;
+            const [t, c] = a ? [a.aTon, a.color] : [];
+            if (!t || !c) return;
+            const m = [0, 0, 0, 0];
+            for (let i = 0; i < t.count; i++)
+                if (Math.round(t.getX(i)) === tS) (m[0] += c.getX(i)), (m[1] += c.getY(i)), (m[2] += c.getZ(i)), m[3]++;
+            if (!m[3]) return;
+            const alt = [];
+            for (let i = 0; i < t.count; i++)
+                if (Math.round(t.getX(i)) === tH) alt.push([i, c.getX(i), c.getY(i), c.getZ(i)]), c.setXYZ(i, m[0] / m[3], m[1] / m[3], m[2] / m[3]);
+            if (!alt.length) return;
+            this._kahlStand.push([c, alt]);
+            c.needsUpdate = true;
+            n += alt.length;
+        });
+        return n;
+    }
     // DAS VERHÄLTNIS DER PALETTEN je Ecke (der Stoff liest es im Vertex-Takt): die Palette des Leibs (Zeile x) zu der seiner
     // Gestalt (Zeile y) am Ton der Ecke (`aTon`). `zeilen` (vec2-Knoten, optional): die Zeilen je Instanz (der Satz der Menge);
     // ohne sie die des zeichnenden Objekts (`userData.__ton`, `_tonLeibZeilen`).

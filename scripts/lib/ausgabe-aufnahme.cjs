@@ -105,7 +105,7 @@ function wetterSpion() {
             wert = v;
         },
     });
-    if (!Object.prototype.hasOwnProperty.call(r, "_setWeather"))
+    if (!Object.hasOwn(r, "_setWeather"))
         r._setWeather = function (name, quelle) {
             const vor = this.state.weather;
             const q0 = S.quelle,
@@ -207,7 +207,7 @@ function uhrSpion() {
             wert = v;
         },
     });
-    if (!Object.prototype.hasOwnProperty.call(r, "_uhrSetzen"))
+    if (!Object.hasOwn(r, "_uhrSetzen"))
         r._uhrSetzen = function (t, quelle) {
             const vor = this.state.timeOfDay;
             const q0 = S.quelle,
@@ -262,7 +262,7 @@ function weltaktSpion(ersatz) {
             return fn.call(this, args, ctx);
         };
     }
-    if (!S.blind && !Object.prototype.hasOwnProperty.call(r, "_weltaktGehalten"))
+    if (!S.blind && !Object.hasOwn(r, "_weltaktGehalten"))
         r._weltaktGehalten = function (op, ctx) {
             buche({ art: "verweigert", op, quelle: (ctx && ctx.source) || "?" });
             return Object.getPrototypeOf(this)._weltaktGehalten.call(this, op, ctx);
@@ -444,7 +444,7 @@ function membranOhneFilm(an) {
             if (an) {
                 rec.__farbeVorFilm = mat.colorNode;
                 mat.colorNode = G.ohneFilm;
-            } else if (Object.prototype.hasOwnProperty.call(rec, "__farbeVorFilm")) {
+            } else if (Object.hasOwn(rec, "__farbeVorFilm")) {
                 mat.colorNode = rec.__farbeVorFilm;
                 delete rec.__farbeVorFilm;
             }
