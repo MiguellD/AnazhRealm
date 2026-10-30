@@ -251,7 +251,11 @@ const stationen = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         // Garage: gate:garage-labor mit dem Mess-Patch bei vmax (bericht/2110-mk-kopf/garage-mk.diff, Zeile MK2110); Welt: der GT
-        // auf freier Bahn an der Mess-Wiese, Third, Vollgas (bericht/3010-heil-fahrzeug/tempo4.js über werkbank eval, M27).
+        // auf dem RUNDKURS der Stadt, Third, Vollgas (bericht/3010-stadt-orte/tempo5.js über werkbank eval, M27).
+        // DER ORT MIT ROLLE (w4-stadt-orte, 30.10.): die Welt-Probe fährt dort, wo die Wagen der Welt fahren — auf dem Rundkurs, den
+        // das Stadt-Gesetz an den Rand der Großstadt „dorf 7 120" legt (`boot --ort stadt`; fachwerk ORTE_GESETZ.rundkurs: die
+        // äußere Gerade 240 m, die Bahn auf EINER Ebene, Sturzraum frei) und dessen Fläche die Welt frei hält (die Natur-Wand und
+        // jeder Wurf des Felds lesen sie). tempo4.js legte dafür einen 40-m-Weg nur für die Probe über die Mess-Wiese.
         // DIE BAHN IST FREI, WEIL DIE WELT SIE FREI HÄLT (w4-heil-fahrzeug, 30.10.): tempo3.js prüfte nur die Hüllen der Bauten —
         // die Natur, die das Feld erst wirft, wenn der Spieler naht, und ein Baum mit wartender Gestalt (K20) standen nicht in ihr; der
         // Wagen fuhr in sie, und das Tempo am Stoß hieß „top" (Radeon-Sitzung 715754fc 13,26 m/s, FOV +7,6°; Null-Renderer an
@@ -262,49 +266,50 @@ const stationen = [
             'echo "@@PUNKTE@@ GARAGE"',
             'git apply "$K/bericht/2110-mk-kopf/garage-mk.diff" && GARAGE_LABOR_PORT=$LP LINSE_GPU=hardware timeout 600 node scripts/diag-garage-mk.cjs',
             'echo "@@PUNKTE@@ EXIT $?"; git checkout -q -- scripts/diag-garage-labor.cjs; rm -f scripts/diag-garage-mk.cjs',
-            "boot",
-            'teil WELT $W eval "$(cat "$K/bericht/3010-heil-fahrzeug/tempo4.js")"'
+            "boot --ort stadt",
+            'teil WELT $W eval "$(cat "$K/bericht/3010-stadt-orte/tempo5.js")"'
         ),
         env: K,
         gpu: true,
         zeit: false,
-        minuten: 8,
+        minuten: 10,
         urteil: (j, lauf) => {
             const teil = (n) => lauf.stdout.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
             const g = jsonZeile(teil("GARAGE"), /^MK2110 /);
             const b = jsonBlock(teil("WELT"));
             const w = b && (b.ergebnis || b);
             if (!g || !g.ruhe || !g.top) return { gruen: false, zahl: "Garage: keine Zeile MK2110 (Exit " + lauf.exit + ")" };
-            if (!w || !w.top || w.fehler) return { gruen: false, zahl: "Welt: kein Ergebnis von tempo4.js" + (w && w.fehler ? " — " + w.fehler : "") };
+            if (!w || !w.top || w.fehler) return { gruen: false, zahl: "Welt: kein Ergebnis von tempo5.js" + (w && w.fehler ? " — " + w.fehler : "") };
             const gFov = g.top.fov - g.ruhe.fov;
             const gArm = g.top.arm / g.ruhe.arm - 1;
-            const gruen = w.ende === "ok" && gFov >= 8 && gArm >= 0.15 && w.top.fovPlus >= 8 && w.top.armPlus >= 0.15;
+            const frei = Array.isArray(w.naturAufBahn) && !w.naturAufBahn.length && !w.stoss;
+            const gruen = w.ende === "ok" && frei && gFov >= 8 && gArm >= 0.15 && w.top.fovPlus >= 8 && w.top.armPlus >= 0.15;
             return {
                 gruen,
                 zahl:
                     "Garage FOV +" + gFov.toFixed(2) + "° Arm +" + (gArm * 100).toFixed(1) + " % bei " + Number(g.top.v).toFixed(2) + "/" +
-                    Number(g.top.vmax).toFixed(2) + " m/s · Welt FOV +" + w.top.fovPlus + "° Arm +" + (w.top.armPlus * 100).toFixed(1) +
-                    " % bei " + w.top.v + " m/s (Ende " + w.ende + ")",
+                    Number(g.top.vmax).toFixed(2) + " m/s · Welt (Rundkurs) FOV +" + w.top.fovPlus + "° Arm +" + (w.top.armPlus * 100).toFixed(1) +
+                    " % bei " + w.top.v + " m/s, Natur auf der Bahn " + (w.naturAufBahn || ["?"]).length + ", Stoß " + (w.stoss ? w.stoss.an.join("/") : 0) + " (Ende " + w.ende + ")",
             };
         },
-        pfad: [...FAHRT, "worlds/garage/**", "scripts/diag-garage-labor.cjs", "scripts/lib/welt-boot.cjs"],
+        pfad: [...FAHRT, "worlds/garage/**", "scripts/diag-garage-labor.cjs", "scripts/lib/welt-boot.cjs", "fachwerk-core.js", "stamm/siedlung-*.js", "spec/profiband/haushalt.json"],
         quelle: "1 = FOV (+≥ 8°) und Arm (+≥ 15 %) aus v/vmax in Garage UND Welt gemessen",
     },
     {
         kriterium: "fahrzeug.K3",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        // die Zusätze der 2: Drift, Rückkehr (tempo4.js in der Welt, auf dem Weg der Probe), Ruck (gate:fahr-leben T4) und EIN
-        // FOV-Schreiber (T5)
-        probe: sitzung(480,
+        // die Zusätze der 2: Drift, Rückkehr (tempo5.js in der Welt, auf dem Rundkurs der Stadt `stadt`), Ruck (gate:fahr-leben T4)
+        // und EIN FOV-Schreiber (T5)
+        probe: sitzung(600,
             'teil FAHR env FAHR_LEBEN_PORT=$LP node scripts/diag-fahr-leben.cjs',
-            "boot",
-            'teil WELT $W eval "$(cat "$K/bericht/3010-heil-fahrzeug/tempo4.js")"'
+            "boot --ort stadt",
+            'teil WELT $W eval "$(cat "$K/bericht/3010-stadt-orte/tempo5.js")"'
         ),
         env: K,
         gpu: true,
         zeit: false,
-        minuten: 8,
+        minuten: 10,
         urteil: (j, lauf) => {
             const teil = (n) => lauf.stdout.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
             const t4 = jsonZeile(teil("FAHR"), /^\s*(✅|❌) T4 /);
@@ -312,7 +317,7 @@ const stationen = [
             const b = jsonBlock(teil("WELT"));
             const w = b && (b.ergebnis || b);
             if (!t4 || !t5) return { gruen: false, zahl: "gate:fahr-leben ohne Zeile T4/T5 (Exit " + lauf.exit + ")" };
-            if (!w || !w.drift || !w.rueck || w.fehler) return { gruen: false, zahl: "Welt: kein Ergebnis von tempo4.js" + (w && w.fehler ? " — " + w.fehler : "") };
+            if (!w || !w.drift || !w.rueck || w.fehler) return { gruen: false, zahl: "Welt: kein Ergebnis von tempo5.js" + (w && w.fehler ? " — " + w.fehler : "") };
             const d = w.drift;
             const r = w.rueck.rueckS;
             const schreiber = t5.schreiber || [];
@@ -327,7 +332,7 @@ const stationen = [
                     (w.ende === "ok" ? "" : " · Ende " + w.ende),
             };
         },
-        pfad: [...FAHRT, "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/lib/welt-boot.cjs"],
+        pfad: [...FAHRT, "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/lib/welt-boot.cjs", "fachwerk-core.js", "stamm/siedlung-*.js", "spec/profiband/haushalt.json"],
         quelle: "2 = dazu Azimut auf dem Fahrtvektor im Drift (Fehler ≤ 15°), Maus-Orbit mit Rückkehr nach 1–1,5 s, seitlicher Ruck p95 ≤ 0,02 m je Bild, EIN FOV-Schreiber",
     },
 

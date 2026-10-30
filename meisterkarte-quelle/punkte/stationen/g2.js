@@ -36,17 +36,20 @@ const SCHWARM = [
     "scripts/lib/software-gpu.cjs",
 ];
 
-// ───────── DIE HERDE AM HANG (tiere.K1 Staffel 2): drei Funktionen, ihr Text geht in den Befehl (und in den Abdruck) ─────────
-// In der Seite der Werkbank (`werkbank eval`, r = Welt, T = THREE): o.phase "start" stellt die Bühne (Mittag, Sonne, Sommer), den
-// Frieden und das Ego, nimmt jedes Tier der Welt und setzt den Wurf scheuer Hirsche (`_kreaturWurf`, wie die Probe herde) an
-// den nächsten trockenen Hang 15–30° um den Spieler (das Gesetz über ±4 m; die Fall-Linie 50 m bergab bis 60 m bergauf trocken,
-// kein Werk in 70 m); der Spieler geht 60 m über ihr bergab mit 1,4 m/s im Kreatur-Takt der Probe herde (Stoß-Schritt,
-// Leib-Kontakte, `updateCreatures`), bis ein Glied flieht, und bleibt stehen; die Alarm-Kette läuft, bis jedes Glied flieht,
-// dann eine halbe Sekunde. Der Standort des Blicks steht 43 m quer zur Fall-Linie auf ihrer tieferen Seite (der Hang zeigt die
-// Herde im Profil; von oben sah das Ego aus 40 m nur ihr Heck, 4–15 px breit zwischen den Stämmen). "weiter" schreitet o.takte
-// Takte. Zurück die Pose des Ego-Schusses (das Auge `EGO_AUGE_M` über dem Boden, der Blick auf das Mittel der Herde), die
-// Mitte jedes Leibs (`punkte`, das Ziel der Blick-Wahl) und die Lage der Herde.
-function herdeSzene(r, T, o) {
+// ───────── DIE HERDE IM GEHEGE (tiere.K1 Staffel 2): drei Funktionen, ihr Text geht in den Befehl (und in den Abdruck) ─────────
+// w4-stadt-orte (30.10.): die Bild-Serie misst am GEHEGE der Stadt — dem Ort mit Rolle, den das Stadt-Gesetz legt und frei hält
+// (fachwerk ORTE_GESETZ.gehege: eine Wiese im Zaun, die Aussicht 45 m vor ihrer Mitte auf der Seite, von der die Herde frei im
+// Blick ist; die Herde setzt das Gehege selbst, `_gehegeHerden`, der Zaun hält sie). Bis hierher suchte die Serie einen Hang in
+// der wilden Welt (15–30°, 600 m um den Spieler) und warf ihre Herde dort: am 715754fc auf der GTX fand sie in 14 Posen keinen
+// freien Blick, das Gelände verdeckte die Herde in 34 m. In der Seite der Werkbank (`werkbank eval`, r = Welt, T = THREE): o.phase
+// "start" nimmt den Plan v2 der Stadt mit Gehege, der dem Spieler am nächsten liegt (die Werkbank steht am Ort `stadt`), stellt
+// die Bühne (Mittag, Sonne, Sommer), den Frieden und das Ego, nimmt jedes Tier, das nicht der Herde des Geheges gehört, setzt die
+// Herde (der Spieler an der Aussicht, `_gehegeHerden`), und der Spieler — die Bedrohung — geht von der Seite quer zur Aussicht mit
+// 1,4 m/s im Kreatur-Takt der Probe herde auf die Mitte zu, bis ein Glied flieht; die Alarm-Kette läuft, bis jedes flieht, dann eine
+// halbe Sekunde. Die Herde flieht längs der Wiese, die Aussicht sieht sie im Profil. "weiter" schreitet o.takte Takte. Zurück die
+// Pose des Ego-Schusses (das Auge `EGO_AUGE_M` über dem Grund der Aussicht, der Blick auf das Mittel der Herde), die Mitte jedes
+// Leibs (`punkte`) und die Lage der Herde.
+async function herdeSzene(r, T, o) {
     const s = r.state;
     const A = r.constructor;
     const pm = s.playerMesh.position;
@@ -62,15 +65,18 @@ function herdeSzene(r, T, o) {
     const lebend = () => Z.glieder.filter((c) => s.creatures.includes(c));
     const flieht = (c) => c.userData._motionZustand === "flucht";
     const mitte = (g) => g.reduce((a, c) => a.add(c.position.clone().multiplyScalar(1 / g.length)), new T.Vector3());
-    // die Mitte eines Leibs (die Lage um die halbe Höhe seiner Box, wie `herdePulk`): die Punkte des Ziels der Blick-Wahl
     const leibMitte = (c) => {
         const b = new T.Box3().setFromObject(c);
         return [c.position.x, c.position.y + (b.isEmpty() ? 0.5 : Math.min(3, b.max.y - b.min.y) / 2), c.position.z].map((v) => +v.toFixed(2));
     };
+    const imZaun = (c) => {
+        const g = Z.wiese, cs = Math.cos(g.phi), sn = Math.sin(g.phi), dx = c.position.x - g.cx, dz = c.position.z - g.cz;
+        return Math.abs(dx * cs - dz * sn) <= g.ex + 0.01 && Math.abs(dx * sn + dz * cs) <= g.ez + 0.01;
+    };
     const pose = () => {
         const g = lebend();
         const m = mitte(g);
-        const a = Z.auge || pm;
+        const a = Z.auge;
         const ey = H(a.x, a.z) + A.EGO_AUGE_M;
         return {
             kamera: [a.x, ey, a.z, m.x, m.y + 0.6, m.z].map((v) => +v.toFixed(2)),
@@ -78,6 +84,7 @@ function herdeSzene(r, T, o) {
             punkte: g.map(leibMitte),
             glieder: g.length,
             fliehen: g.filter(flieht).length,
+            imZaun: g.filter(imZaun).length,
             takte: Z.takte,
         };
     };
@@ -86,40 +93,22 @@ function herdeSzene(r, T, o) {
         return pose();
     }
     s.renderer.setAnimationLoop(null);
+    const plaene = [...((r._ortPlaene && r._ortPlaene.values()) || [])].filter((p) => p && p.version === 2 && p.ort && (p.orte || []).some((q) => q.rolle === "gehege"));
+    plaene.sort((a, b) => Math.hypot(a.ort.x - pm.x, a.ort.z - pm.z) - Math.hypot(b.ort.x - pm.x, b.ort.z - pm.z));
+    const plan = plaene[0];
+    if (!plan) return { fehler: "keine Stadt mit Gehege (Plan v2) — steht die Werkbank am Ort stadt?" };
+    const gh = plan.orte.find((q) => q.rolle === "gehege");
+    Z.wiese = { cx: plan.ort.x + gh.cx, cz: plan.ort.z + gh.cz, phi: gh.phi, ex: gh.ex, ez: gh.ez };
+    Z.auge = { x: plan.ort.x + gh.auge.x, z: plan.ort.z + gh.auge.z };
     window.__buehne();
     r.setGameMode("frieden");
     r.setCameraMode("first");
-    for (const c of s.creatures.slice()) r.removeCreature(c);
-    const trocken = (x, z) => r._landAt(x, z) && !r._nassAt(x, z);
-    let hang = null;
-    for (let ring = 0; ring < 50 && !hang; ring++)
-        for (let q = 0, n = Math.max(1, ring * 6); q < n && !hang; q++) {
-            const a = (q / n) * 2 * Math.PI;
-            const x = pm.x + Math.cos(a) * ring * 12;
-            const z = pm.z + Math.sin(a) * ring * 12;
-            if (!trocken(x, z)) continue;
-            const gx = (H(x + 4, z) - H(x - 4, z)) / 8;
-            const gz = (H(x, z + 4) - H(x, z - 4)) / 8;
-            const t = Math.hypot(gx, gz);
-            const grad = (Math.atan(t) * 180) / Math.PI;
-            if (!(grad >= 15 && grad <= 30)) continue;
-            const [ux, uz] = [gx / t, gz / t];
-            let frei = true;
-            for (let d = -50; d <= 60 && frei; d += 5) frei = trocken(x + ux * d, z + uz * d);
-            if (frei && !(s.architectures || []).some((e) => e && e.position && Math.hypot(e.position.x - x, e.position.z - z) < 70))
-                hang = { x, z, ux, uz, neigung: +grad.toFixed(1) };
-        }
-    if (!hang) return { fehler: "kein trockener Hang 15–30° in 600 m um den Spieler" };
-    // der Wurf wie in der Probe herde: der Spieler 140 m fort, sein Blick von ihm weg (der Wurf wirft nur fern und außer Blick)
-    pm.set(hang.x + 140, H(hang.x + 140, hang.z) + 0.5, hang.z);
-    s.camera.position.set(pm.x, pm.y + 1.6, pm.z);
-    s.camera.lookAt(pm.x + 1, pm.y + 1.6, pm.z);
-    s.camera.updateMatrixWorld(true);
-    r._loopFrustumCulling();
-    Object.assign(s, { maxCreatures: 64, creatureAnimationTime: 100 });
-    r._faunaStroeme = null;
-    Z.glieder = r._kreaturWurf({ x: hang.x, z: hang.z }, "wesen", "happy", r._faunaRng("verband"), 7);
-    // kein Tier der Welt wächst in das Bild nach
+    // der Spieler an der Aussicht: die Welt um das Gehege steht, das Gehege setzt seine Herde
+    pm.set(Z.auge.x, H(Z.auge.x, Z.auge.z) + 0.5, Z.auge.z);
+    for (const c of s.creatures.slice()) if (!(c.userData.gehege && Math.hypot(c.userData.gehege.cx - Z.wiese.cx, c.userData.gehege.cz - Z.wiese.cz) < 1)) r.removeCreature(c);
+    r._gehegeHerden();
+    Z.glieder = s.creatures.filter((c) => c.userData.gehege && Math.hypot(c.userData.gehege.cx - Z.wiese.cx, c.userData.gehege.cz - Z.wiese.cz) < 1);
+    if (Z.glieder.length < 3) return { fehler: "das Gehege trägt " + Z.glieder.length + " Tiere (Soll " + gh.herde.n + ")" };
     s.maxCreatures = s.creatures.length;
     // DER SCHUSS HÄLT DIE HERDE (wie `__tiereHalten`): die Aufnahme wartet im Takt der Seite, bis die Welt steht — dort steht
     // jedes Tier an seiner Lage; der eigene Takt oben ruft den Kreatur-Takt am Prototyp vorbei
@@ -129,22 +118,20 @@ function herdeSzene(r, T, o) {
         for (const [c, x, z] of fest) [c.position.x, c.position.z] = [x, z];
         return aus;
     };
-    // der Spieler 60 m ÜBER ihr, er geht bergab: die Herde flieht talwärts, der Blick fällt auf sie (von unten verdeckte der Hang sie)
-    let d = 60;
-    for (; Z.takte < 3600 && !Z.glieder.some(flieht); d -= 1.4 / 60) {
-        [Z.sx, Z.sz] = [hang.x + hang.ux * d, hang.z + hang.uz * d];
+    // die Bedrohung kommt quer zur Aussicht: von der Mitte der Wiese längs ihrer Achse, die nicht zur Aussicht zeigt
+    const [ax, az] = [Z.auge.x - Z.wiese.cx, Z.auge.z - Z.wiese.cz];
+    const al = Math.hypot(ax, az) || 1;
+    const [qx, qz] = [-az / al, ax / al];
+    const lang = Math.abs(qx * Math.cos(gh.phi) - qz * Math.sin(gh.phi)) > 0.5 ? gh.ex : gh.ez;
+    let d = lang + 40;
+    for (; Z.takte < 3600 && !Z.glieder.some(flieht) && d > 0; d -= 1.4 / 60) {
+        [Z.sx, Z.sz] = [Z.wiese.cx + qx * d, Z.wiese.cz + qz * d];
         takt();
     }
-    if (!Z.glieder.some(flieht)) return Object.assign(pose(), { fehler: "die Herde flieht nicht (der Spieler ging bis " + d.toFixed(0) + " m)" });
-    // die Alarm-Kette läuft (≤ 1 s), dann eine halbe Sekunde Flucht: jedes Glied flieht im ersten Schuss
+    if (!Z.glieder.some(flieht)) return Object.assign(pose(), { fehler: "die Herde flieht nicht (der Spieler ging bis " + d.toFixed(0) + " m vor die Mitte)" });
     for (let k = 0; k < 120 && lebend().some((c) => !flieht(c)); k++) takt();
     for (let k = 0; k < 30; k++) takt();
-    // DER STANDORT des Blicks: 43 m quer zur Fall-Linie (der Flucht) auf der tieferen Seite, das Auge Ego — der Hang zeigt die
-    // Herde im Profil; die Blick-Wahl dreht von dort, bis jedes Glied frei steht
-    const m = mitte(lebend());
-    const seiten = [1, -1].map((s) => ({ x: m.x - s * hang.uz * 43, z: m.z + s * hang.ux * 43 }));
-    Z.auge = seiten.sort((a, b) => H(a.x, a.z) - H(b.x, b.z))[0];
-    return Object.assign(pose(), { hang: { x: +hang.x.toFixed(1), z: +hang.z.toFixed(1), neigung: hang.neigung }, wurf: Z.glieder.length, fluchtBei: +d.toFixed(1) });
+    return Object.assign(pose(), { gehege: { x: +Z.wiese.cx.toFixed(1), z: +Z.wiese.cz.toFixed(1), frei: gh.frei }, wurf: Z.glieder.length, fluchtBei: +d.toFixed(1) });
 }
 // DER PULK IM BILD (in der Seite, nach `bild --klasse ^tier`): die Teilung des Schusses (`__letzteTeilung`, werkbank) gegen die
 // Glieder der Herde. Je Glied die Tier-Pixel im Kreis seines Leibs am Schirm (Mitte über der Lage um die halbe Höhe seiner Box,
@@ -225,7 +212,8 @@ function herdePulk(r, T, o) {
     };
 }
 // Der Lauf (im Spiel-Baum, cwd): EINE Werkbank headless an der Weiche (die Karte; `[linse-gpu]` nennt sie), Port {PORT}+20000
-// (die Seite eins darunter); darin (a)–(d) der Probe herde (`diag-kreatur-takt --werkbank`), dann die Serie: der Schirm
+// (die Seite eins darunter); darin (a)–(d) der Probe herde (`diag-kreatur-takt --werkbank`), dann die Serie am Gehege der Stadt
+// (die Werkbank stellt um auf den Ort `stadt`: die Großstadt „dorf 7 120“ erwacht, ihr Gehege meldet sich): der Schirm
 // 1280×720, `herdeSzene`, je Schuss `bild --klasse ^tier --ziel Herde --punkte … --wahl 14` (die Blick-Wahl EINES Rings: Abstand
 // und Augenhöhe des Ego bleiben, nur der Azimut dreht, bis JEDES Glied frei steht — die Mitte einer Herde zwischen Stämmen sagt
 // nichts über ihre Glieder) mit `herdePulk` an der Pose des Schusses, drei Schüsse je 0,5 s Spielzeit; der Beobachter bleibt an
@@ -256,6 +244,8 @@ async function herdeHang() {
         });
         process.stdout.write(p.stdout || "");
         process.stderr.write(p.stderr || "");
+        const um = await werkbankRuf(W, "/umstellen", { ort: "stadt" });
+        if (um && um.fehler) throw new Error("umstellen --ort stadt: " + String(um.fehler).slice(0, 200));
         await werkbankRuf(W, "/fenster", { w: 1280, h: 720 });
         erg.szene = await ruf(szene, { phase: "start" });
         let auge = null;
@@ -274,6 +264,7 @@ async function herdeHang() {
                 spieler: q.abstand,
                 glieder: q.glieder,
                 fliehen: q.fliehen,
+                imZaun: q.imZaun,
                 takte: q.takte,
                 kamera: kam,
                 abnahme: (b && b.abnahme) || null,
@@ -290,7 +281,7 @@ async function herdeHang() {
     }
     fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
     const kurz = erg.serie.map((x) => [x.abstand, x.fliehen + "/" + x.glieder, x.pulk, x.fehler]);
-    console.log("HERDE AM HANG " + JSON.stringify({ szene: erg.szene, fehler: erg.fehler || null, serie: kurz }));
+    console.log("HERDE IM GEHEGE " + JSON.stringify({ szene: erg.szene, fehler: erg.fehler || null, serie: kurz }));
 }
 
 // der Text einer Funktion ohne Einzug und Kommentar-Zeilen (ein Argument des Befehls, s. herdeHang)
@@ -1692,8 +1683,10 @@ const stationen = [
     // ≥ 0,8 über ≥ 60 Flucht-Takte; (c) der letzte Flüchter läuft ≤ 1,0 s nach dem ersten, ≥ 1 Glied aus zweiter Hand; (d) 600 s
     // neben einem fremden Verband derselben Art, beide fliehen ≥ 3 s, die Glieder des Gesetzes bleiben dieselben Leiber;
     // Schlupfloch: Glieder ≥ 3, Fluchtanteil ≥ 0,1, Fluchtweg je Glied ≥ 30 m. Dazu die Bild-Serie „Herde am Hang" in derselben
-    // Werkbank (`herdeHang` oben): drei Ego-Schüsse aus dem Ausgabe-Pfad, der erste 40–50 m vom Auge zum Mittel der Herde, je
-    // Schuss flieht die Herde (jedes Glied in Flucht), die Abnahme des Bilds hält, und sie steht als EIN Pulk im Bild (jedes
+    // Werkbank (`herdeHang` oben) — seit w4-stadt-orte (30.10.) am GEHEGE der Stadt `stadt`, dem Ort mit Rolle, von dessen Aussicht
+    // die Herde frei im Blick ist (vorher ein Hang der wilden Welt: am 715754fc auf der GTX in 14 Posen kein freier Blick): drei
+    // Ego-Schüsse aus dem Ausgabe-Pfad von der Aussicht, der erste 40–50 m vom Auge zum Mittel der Herde, je Schuss flieht die
+    // Herde (jedes Glied in Flucht) und steht im Zaun, die Abnahme des Bilds hält, und sie steht als EIN Pulk im Bild (jedes
     // lebende Glied ≥ 20 Tier-Pixel in seinem Kreis, die Tier-Pixel EIN Fleck über einen Leib).
     {
         kriterium: "tiere.K1",
@@ -1724,15 +1717,15 @@ const stationen = [
             const S = (j && j.serie) || [];
             const sz = (j && j.szene) || {};
             const schuss = (x) =>
-                !x.fehler && !!x.pulk && !x.pulk.fehler && x.glieder >= 3 && x.fliehen === x.glieder && x.pulk.glieder === x.glieder &&
-                x.pulk.sichtbar === x.pulk.glieder && x.pulk.flecken === 1;
+                !x.fehler && !!x.pulk && !x.pulk.fehler && x.glieder >= 3 && x.fliehen === x.glieder && x.imZaun === x.glieder &&
+                x.pulk.glieder === x.glieder && x.pulk.sichtbar === x.pulk.glieder && x.pulk.flecken === 1;
             const bild = S.length === 3 && S[0].abstand >= 40 && S[0].abstand <= 50 && S.every(schuss);
             const serie = !j
                 ? "ohne Ergebnis in {AUS}"
                 : j.fehler || sz.fehler
                   ? "ROT: " + (j.fehler || sz.fehler)
-                  : (bild ? "GRÜN" : "ROT") + " am Hang " + (sz.hang ? sz.hang.neigung + "° " + sz.hang.x + "/" + sz.hang.z : "?") + ", Flucht bei " + sz.fluchtBei +
-                    " m: " + S.map((x) => x.abstand + " m " + x.fliehen + "/" + x.glieder + " fliehen" + (x.pulk ? ", " + x.pulk.sichtbar + " sichtbar, " + x.pulk.flecken +
+                  : (bild ? "GRÜN" : "ROT") + " im Gehege " + (sz.gehege ? sz.gehege.x + "/" + sz.gehege.z + " (Sicht " + sz.gehege.frei + ")" : "?") + ", Flucht bei " + sz.fluchtBei +
+                    " m: " + S.map((x) => x.abstand + " m " + x.fliehen + "/" + x.glieder + " fliehen, " + x.imZaun + " im Zaun" + (x.pulk ? ", " + x.pulk.sichtbar + " sichtbar, " + x.pulk.flecken +
                     " Fleck(en) (" + x.pulk.pixel + " px)" : "") + (x.fehler ? " " + x.fehler : "")).join(" · ");
             return {
                 gruen: ad && bild,
@@ -1740,7 +1733,7 @@ const stationen = [
                     "(a)–(d) auf der Karte " + (ad ? "GRÜN" : "ROT") + ": Kohäsion " + W.mittel + " / " + F.fluchtMittel + ", Φ " + R.mittel +
                     " über " + R.takte + " Takte, letzter Flüchter " + K.letzterS + " s (" + K.zweiteHand + " aus zweiter Hand), Fluchtweg " +
                     z.fluchtWegM + " m, ID 600 s " + (I.bruch ? "bricht nach " + I.bruch[0] + " s" : "hält") + " (Flucht " + I.fluchtS.join(" / ") +
-                    " s) · Bild-Serie „Herde am Hang“ " + serie,
+                    " s) · Bild-Serie „Herde am Hang“ im Gehege der Stadt " + serie,
             };
         },
         pfad: [
@@ -1751,10 +1744,13 @@ const stationen = [
             "stamm/stoff-*.js",
             "stamm/vegetation-*.js",
             "stamm/gelaende-boden.js",
+            "stamm/siedlung-*.js",
             "stamm/daten.js",
             "tetrapoda-core.js",
             "gelaende-core.js",
             "phyto-core.js",
+            "fachwerk-core.js",
+            "spec/profiband/haushalt.json",
             "scripts/diag-kreatur-takt.cjs",
             "scripts/lib/kreatur-proben.cjs",
             "scripts/lib/welt-boot.cjs",

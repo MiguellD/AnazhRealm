@@ -1,0 +1,86 @@
+{
+ "stadt": {
+  "raenge": [
+   "haupt",
+   "gasse"
+  ],
+  "quartiere": [
+   "kern",
+   "wohnen",
+   "wohnen",
+   "wohnen",
+   "wohnen",
+   "vorstadt",
+   "vorstadt",
+   "vorstadt",
+   "vorstadt",
+   "rennen",
+   "tiere"
+  ],
+  "orte": [
+   "rundkurs",
+   "gehege"
+  ],
+  "zufahrten": [
+   "rundkurs",
+   "gehege"
+  ],
+  "hallen": 0,
+  "gewerbe": []
+ },
+ "stadt-voll": {
+  "raenge": [
+   "haupt",
+   "gasse"
+  ],
+  "quartiere": [
+   "kern",
+   "wohnen",
+   "wohnen",
+   "wohnen",
+   "wohnen",
+   "vorstadt",
+   "vorstadt",
+   "vorstadt",
+   "rennen",
+   "tiere"
+  ],
+  "orte": [
+   "rundkurs",
+   "gehege"
+  ],
+  "zufahrten": [
+   "rundkurs",
+   "gehege"
+  ],
+  "hallen": 0,
+  "gewerbe": []
+ },
+ "moderne": {
+  "raenge": [
+   "haupt",
+   "gasse"
+  ],
+  "quartiere": [
+   "kern",
+   "gewerbe",
+   "wohnen",
+   "wohnen",
+   "wohnen",
+   "rennen",
+   "tiere"
+  ],
+  "orte": [
+   "rundkurs",
+   "gehege"
+  ],
+  "zufahrten": [
+   "rundkurs",
+   "gehege"
+  ],
+  "hallen": 39,
+  "gewerbe": [
+   70
+  ]
+ }
+}

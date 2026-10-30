@@ -1,0 +1,20 @@
+{
+  "zweig": "claude/festive-hawking-6b9aa9 (nach integ-probe V18.546.132)",
+  "stadt_dorf_7_120": {
+    "vorher": { "wege_mit_rang": "0/29", "quartiere": 0, "orte_mit_rolle": 0, "haeuser_an_strasse": 0.946 },
+    "nachher": { "wege_mit_rang": "29/29", "hauptstrassen": { "n": 11, "m": 450 }, "gassen": { "n": 18, "m": 961 }, "quartiere": 11, "orte_mit_rolle": ["rundkurs", "gehege"], "haeuser_an_strasse": 0.946, "an_hauptstrasse": "27/92" }
+  },
+  "staedte_der_welt": { "staedte": 14, "rundkurs": 12, "gehege": 14, "zufahrt_rundkurs": "12/12", "zufahrt_gehege": "14/14", "rundkurs_fehlt_laut": ["2,-14 metropole", "2,11 grossstadt"], "rest_um_ebene_median_m": 1.04, "rest_um_ebene_max_m": 5.96 },
+  "zufahrt_je_grenze": { "180": "15/20", "300": "18/20", "500": "20/20" },
+  "gewerbe": { "vorher_erreichbar": "0/14 (Schwelle 0,3; Moderne stärkstes Viertel 16/70)", "nachher": { "gipfel_metropole": "19/105 bei 50 Hallen", "moderne_metropole": "16/70 bei 39 Hallen" } },
+  "linse_teil_r": { "frei_min_m": 23.02, "rest_max_m": 1.34, "sicht_min": 1, "verkehr_m_mit_ohne_haupt": [207, 0], "bahn_im_erdbau": "76/76", "ebene_ab_m": 0.000056 },
+  "welt_null_renderer_lauf7": {
+    "stadt": { "x": 669.1, "z": 422.6, "slots": 101 },
+    "rundkurs": { "natur": 0, "wuerfe": 0, "raster_gehalten": "1600/1600", "nexus_at_abgewiesen": "50/50" },
+    "gehege": { "natur": 0, "wuerfe": 0, "raster_gehalten": "225/225", "nexus_at_abgewiesen": "50/50" },
+    "nexus_fern": { "wuerfe": 2000, "auf_ort": 0, "an_der_rolle_abgewiesen": 191 },
+    "herde": { "gesetzt": "7/7", "fliehen": "7/7", "im_zaun": "7/7", "takte_ausserhalb": 0, "erster_schuss_m": 45.1, "fenster_m": [40, 50], "flucht_bei_m": 16.3 },
+    "rundkurs_gefahren": { "gerade_m": 240, "natur_auf_bahn": 0, "stoss": 0, "v_top": 15.38, "fov_plus_grad": 9.59, "arm_plus": 0.186 }
+  },
+  "decke": { "scripts_atome": -59, "teil_r": 3165, "zahlstelle": -3224 }
+}
