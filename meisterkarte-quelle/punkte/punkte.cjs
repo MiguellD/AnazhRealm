@@ -1455,7 +1455,8 @@ function messPlan(stationen, da, genannt, zeit) {
         if (st.staffel === 1) {
             const gruen = ge.filter((g) => da(id, g) && da(id, g).gruen);
             if (gruen.length) plan[zeit(id) && gruen.includes("gtx") ? "gtx" : gruen.includes("radeon") ? "radeon" : "gtx"].push(id);
-            else if (heil) for (const g of ge) plan[g].push(id);
+            // ein Heil-Versuch misst auf der GTX — EIN grünes Gerät trägt die 1, die Radeon entwickelt und misst nicht groß (Schöpfer 30.10.)
+            else if (heil) plan[ge.includes("gtx") ? "gtx" : ge[0]].push(id);
             else plan.uebersprungen.push(id);
             continue;
         }
@@ -1499,6 +1500,18 @@ function planCli(opt) {
     console.log("MESS-PLAN " + neu.slice(0, 8) + " nach " + alt.slice(0, 8) + " · genannt: " + ([...genannt].join(" ") || "—"));
     for (const g of ["radeon", "gtx"]) console.log(g + " " + p[g].length + " Stationen ~" + sum(p[g]) + " min · nur=" + p[g].join(","));
     console.log("übersprungen " + p.uebersprungen.length + " (rot ohne Heil-Versuch oder Staffel 2 ohne stehende 1): " + p.uebersprungen.join(" "));
+    // DIE RATSCHE im Plan (30.10.): was gebucht GRÜN steht, hält ohne Neumessung — es zu messen ist Rückfall-Probe (die GTX-Hälfte
+    // prio 3 im Leerlauf der OMEN, die Radeon-Hälfte nur, wenn die Werkbank ruht); nur der Rest kann gewinnen (prio 1) — sonst misst
+    // jeder Kopf ~130 gehaltene Stationen nach (73bdf938: Radeon 72 → 13 Stationen, ~290 → ~23 min)
+    const gebucht = new Set();
+    for (const e of Object.values((liesStand() || {}).je || {})) for (const x of e.stationen || []) if (x.gruen) gebucht.add(x.id + "|" + x.geraet);
+    p.gewinn = {}; p.halten = {};
+    for (const g of ["radeon", "gtx"]) {
+        p.gewinn[g] = p[g].filter((id) => !gebucht.has(id + "|" + g));
+        p.halten[g] = p[g].filter((id) => gebucht.has(id + "|" + g));
+        console.log(g + " gewinn " + p.gewinn[g].length + " Stationen ~" + sum(p.gewinn[g]) + " min (prio 1) · nur=" + p.gewinn[g].join(","));
+        console.log(g + " halten " + p.halten[g].length + " Stationen ~" + sum(p.halten[g]) + " min (Rückfall-Probe, prio 3) · nur=" + p.halten[g].join(","));
+    }
     return p;
 }
 
@@ -2022,8 +2035,8 @@ async function selbsttest() {
         V("d.K1#1", "radeon", false), V("d.K1#1", "gtx", true), V("d.K1#2", "radeon", true), V("d.K1#2", "gtx", false)];
     const mp = messPlan([P("a.K1", 1, ["radeon", "gtx"]), P("a.K1", 2, ["radeon", "gtx"]), P("b.K1", 1, ["radeon", "gtx"]), P("c.K1", 1, ["radeon", "gtx"]), P("d.K1", 1, ["radeon", "gtx"]), P("d.K1", 2, ["radeon", "gtx"])],
         (id, g) => vor.find((x) => x.id === id && x.geraet === g) || null, new Set(["c.K1"]), (id) => id === "d.K1#1");
-    pruef("MESS-PLAN Staffel 1 auf EINEM Gerät (Zeit auf der GTX), rot ohne Heil-Versuch fällt, genannt fährt beide, Staffel 2 nur ganz grün oder geheilt",
-        mp.radeon.join() === "a.K1#1,a.K1#2,c.K1#1" && mp.gtx.join() === "a.K1#2,c.K1#1,d.K1#1" && mp.uebersprungen.join() === "b.K1#1,d.K1#2", JSON.stringify(mp));
+    pruef("MESS-PLAN Staffel 1 auf EINEM Gerät (Zeit auf der GTX), rot ohne Heil-Versuch fällt, genannt fährt auf der GTX (Radeon = Werkbank), Staffel 2 nur ganz grün oder geheilt",
+        mp.radeon.join() === "a.K1#1,a.K1#2" && mp.gtx.join() === "a.K1#2,c.K1#1,d.K1#1" && mp.uebersprungen.join() === "b.K1#1,d.K1#2", JSON.stringify(mp));
     {
         const bv = [V("e.K1#1", "radeon", true), V("e.K1#1", "gtx", true), V("f.K1#1", "radeon", true), V("f.K1#1", "gtx", false)];
         const bp = messPlan([{ ...P("e.K1", 1, ["radeon", "gtx"]), beide: true }, { ...P("f.K1", 1, ["radeon", "gtx"]), beide: true }],
