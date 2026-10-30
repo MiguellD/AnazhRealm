@@ -20,11 +20,10 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 const { statikServer, starteBrowser, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
-const PORT = Number(process.env.WGLP_PORT || 4671);
 const server = statikServer();
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "webgl", frist: 300000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(() => {

@@ -302,10 +302,6 @@ function todVerdict(T) {
         v.push(
             "tod-wesen: der Leichnam steht in der Liste der Wesen (state.creatures) — jeder Leser zählt oder wählt ihn"
         );
-    if (T.aeltester !== false)
-        v.push(
-            "tod-aeltester: der Lebenszyklus wählt den Leichnam als Ältesten (_findOldestCreature) — er stirbt ein zweites Mal und ist sofort fort"
-        );
     if (T.naechster !== false)
         v.push("tod-naechster: findNearestCreature wählt den Leichnam — er bekommt einen Auftrag");
     if (!(T.stromAnteil >= 1))
@@ -1652,7 +1648,6 @@ async function k1Ende(browser, K) {
             platzFrei: false,
             nexusZaehlt: true,
             unterWesen: true,
-            aeltester: true,
             naechster: true,
             stromAnteil: 1,
             kopieOben: 1,
@@ -1668,7 +1663,6 @@ async function k1Ende(browser, K) {
             platzFrei: true,
             nexusZaehlt: false,
             unterWesen: false,
-            aeltester: false,
             naechster: false,
             stromAnteil: 0,
             kopieOben: null,
@@ -1683,7 +1677,6 @@ async function k1Ende(browser, K) {
             platzFrei: true,
             nexusZaehlt: false,
             unterWesen: false,
-            aeltester: false,
             naechster: false,
             stromAnteil: 1,
             kopieOben: 0.12,
@@ -1691,7 +1684,7 @@ async function k1Ende(browser, K) {
             alterLiegt: true,
         });
         // "Selbst-Test T22: die Befunde (auf dem Hinterteil, nach 22 Takten fort; der Leichnam als Ziel, Platz, Zahl,
-        // Ältester und Nächster, die stehende Kopie, die Leser mit eigener Frage, der Tod am Alter ohne Leib; der Strom
+        // Nächster, die stehende Kopie, die Leser mit eigener Frage, der Tod am Alter ohne Leib; der Strom
         // ohne ihn) nennen jeden Täter; ein Tier auf der Flanke, das kein Wesen mehr ist und beim Mitspieler liegt, bleibt
         // grün"
         check(
@@ -1703,7 +1696,6 @@ async function k1Ende(browser, K) {
                     "tod-platz",
                     "tod-zaehlt",
                     "tod-wesen",
-                    "tod-aeltester",
                     "tod-naechster",
                     "tod-kopie",
                     "tod-frage",

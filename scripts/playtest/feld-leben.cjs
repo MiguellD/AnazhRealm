@@ -11,7 +11,7 @@ const { safeEvaluate } = require("../playtest.cjs");
 async function checkBandV1721LivingFieldAura({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        if (r.state.lifeField) r.state.lifeField.clear(); // V17.27 — Feld-Lese-Tests messen den frozen Kern
+        if (st.lifeField) st.lifeField.clear(); // V17.27 — Feld-Lese-Tests messen den frozen Kern
         const wf = r.worldFieldAt(123, -456);
         const au = r.auraAt(123, -456);
         out.auraWrapsField =
@@ -33,26 +33,26 @@ async function checkBandV1721LivingFieldAura({ page, check }) {
             }
         }
         out.bestLebendig = best;
-        if (spot && r.state.playerMesh && r.state.player && r.state.player.emotions) {
-            const origPos = r.state.playerMesh.position.clone();
-            const origEmo = { ...r.state.player.emotions };
-            const origTick = r.state.player.emotionLastTick;
-            r.state.playerMesh.position.set(spot.x, origPos.y, spot.z);
-            for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
-            r.state.player.emotionLastTick = -Infinity;
+        if (spot && st.playerMesh && st.player && st.player.emotions) {
+            const origPos = st.playerMesh.position.clone();
+            const origEmo = { ...st.player.emotions };
+            const origTick = st.player.emotionLastTick;
+            st.playerMesh.position.set(spot.x, origPos.y, spot.z);
+            for (const k of Object.keys(st.player.emotions)) st.player.emotions[k] = 0;
+            st.player.emotionLastTick = -Infinity;
             let t = 1000;
             r.updatePlayerEmotions(t); // delta=0 (prev=-Inf): kein Effekt
             for (let i = 0; i < 40; i++) {
                 t += 2;
                 r.updatePlayerEmotions(t);
             }
-            out.peaceVal = r.state.player.emotions.peace;
+            out.peaceVal = st.player.emotions.peace;
             out.peaceRose = out.peaceVal > 0.04; // die Aura hat peace gehoben
             out.peaceBelowTrigger = out.peaceVal < 0.7; // nie selbst-auslösend
             // Restore — kein State-Leak in Folge-Bänder.
-            r.state.playerMesh.position.copy(origPos);
-            for (const k of Object.keys(origEmo)) r.state.player.emotions[k] = origEmo[k];
-            r.state.player.emotionLastTick = origTick;
+            st.playerMesh.position.copy(origPos);
+            for (const k of Object.keys(origEmo)) st.player.emotions[k] = origEmo[k];
+            st.player.emotionLastTick = origTick;
         }
         return out;
     });
@@ -75,16 +75,16 @@ async function checkBandV1721LivingFieldAura({ page, check }) {
 async function checkBandV1727WritableField({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const cfg = r.constructor.LIFE_FIELD;
+        const cfg = AnazhRealm.LIFE_FIELD;
         // die Geburt trägt Leben ins Feld: ein spawn_creature über die DSL deponiert an der Wiege (am Ruf)
-        const capD = r.state.maxCreatures;
-        const nD = r.state.creatures.length;
-        r.state.maxCreatures = nD + 1;
+        const capD = st.maxCreatures;
+        const nD = st.creatures.length;
+        st.maxCreatures = nD + 1;
         out.spawnDeposits = window.__consumes(r, "dslRun", r, "_depositLife", [["spawn_creature", ["at_player"], 1, "happy"], { source: "test" }]);
-        if (r.state.creatures[nD]) r.removeCreature(r.state.creatures[nD]);
-        r.state.maxCreatures = capD;
+        if (st.creatures[nD]) r.removeCreature(st.creatures[nD]);
+        st.maxCreatures = capD;
         // sauberer Start
-        if (r.state.lifeField) r.state.lifeField.clear();
+        if (st.lifeField) st.lifeField.clear();
         const X = 12345,
             Z = -6789; // ein fester, vom Spieler entfernter Test-Ort
         const frozen = r.worldFieldAt(X, Z).lebendig;
@@ -97,21 +97,21 @@ async function checkBandV1727WritableField({ page, check }) {
         out.depositRaises = afterDeposit > frozen;
         out.depositExact = Math.abs(afterDeposit - Math.min(1, frozen + cfg.pulseCenter)) < 1e-6;
         // (3) Decay senkt zurück zum Substrat (t zurückdrehen = ~120 s vergangen)
-        const cell = r.state.lifeField.get(r._lifeCellKey(X, Z));
+        const cell = st.lifeField.get(r._lifeCellKey(X, Z));
         const beforeDecay = r.auraAt(X, Z).lebendig;
         cell.t -= 120; // λ=0.008 → ×e^(−0.96) ≈ 0.38
         const afterDecay = r.auraAt(X, Z).lebendig;
         out.decayLowers = afterDecay < beforeDecay && afterDecay > frozen;
         // (4) Sättigung: viele Deposits → Overlay kappt exakt bei max
-        r.state.lifeField.clear();
+        st.lifeField.clear();
         for (let i = 0; i < 20; i++) r._depositLife(X, Z);
-        out.saturates = Math.abs(r.state.lifeField.get(r._lifeCellKey(X, Z)).a - cfg.max) < 1e-6;
+        out.saturates = Math.abs(st.lifeField.get(r._lifeCellKey(X, Z)).a - cfg.max) < 1e-6;
         // (5) DER LOOP SCHLIESST SICH: Deposit am ärmsten Ring-Punkt → ein
         // ANDERER wird der ärmste (Leben spreizt in die Welt, kein Abladen)
-        r.state.lifeField.clear();
-        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        st.lifeField.clear();
+        const pm = st.playerMesh && st.playerMesh.position;
         if (pm && r.dslPositions && typeof r.dslPositions.at_field_need === "function") {
-            const ctx2 = { state: r.state, rng: () => 0.5, log: { push() {} }, budget: {} };
+            const ctx2 = { state: st, rng: () => 0.5, log: { push() {} }, budget: {} };
             const p1 = r.dslPositions.at_field_need([50], ctx2);
             for (let i = 0; i < 6; i++) r._depositLife(p1.x, p1.z); // sättigen am alten Minimum
             const p2 = r.dslPositions.at_field_need([50], ctx2);
@@ -121,7 +121,7 @@ async function checkBandV1727WritableField({ page, check }) {
             out.loopSpreads = true;
             out.p1Raised = true;
         }
-        if (r.state.lifeField) r.state.lifeField.clear(); // sauberes Ende — keine Pollution für Folge-Bands
+        if (st.lifeField) st.lifeField.clear(); // sauberes Ende — keine Pollution für Folge-Bands
         return out;
     });
     check("Schreib-Feld: die Geburt (spawn_creature) deponiert Leben (_depositLife)", res.spawnDeposits);
@@ -144,8 +144,8 @@ async function checkBandV1727WritableField({ page, check }) {
 async function checkBandV1729CreatureTrickle({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const cfg = r.constructor.LIFE_FIELD;
-        if (r.state.lifeField) r.state.lifeField.clear();
+        const cfg = AnazhRealm.LIFE_FIELD;
+        if (st.lifeField) st.lifeField.clear();
         // (1) eine TENDENDE Kreatur traeufelt Leben in ihre Zelle
         const X = 23456,
             Z = -8765;
@@ -156,19 +156,19 @@ async function checkBandV1729CreatureTrickle({ page, check }) {
         const after = r._lifeOverlayAt(X, Z);
         out.tendingDeposits = after > before;
         // (2) Rate-Limit: sofort nochmal (selbe Zeit) → kein zweiter Deposit (die GESPEICHERTE Menge `a`).
-        const aStored = r.state.lifeField.get(key).a;
+        const aStored = st.lifeField.get(key).a;
         r._tickCreatureLifeTrickle(tending, 1000);
-        out.rateLimited = r.state.lifeField.get(key).a === aStored;
+        out.rateLimited = st.lifeField.get(key).a === aStored;
         // (3) nach dem Intervall → traeufelt wieder (lastLifeTrickle wandert)
         r._tickCreatureLifeTrickle(tending, 1000 + cfg.trickleEverySec + 1);
         out.tickedAgain = tending.userData.lastLifeTrickle > 1000;
         // (4) eine AMBIENTE Kreatur (kein tendsLife) traeufelt NICHT (kein Runaway)
-        r.state.lifeField.clear();
+        st.lifeField.clear();
         // BÜHNE: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
         const ambient = { position: { x: 34567, z: -9876 }, userData: { tendsLife: false } };
         r._tickCreatureLifeTrickle(ambient, 2000);
         out.ambientInert = r._lifeOverlayAt(34567, -9876) === 0;
-        if (r.state.lifeField) r.state.lifeField.clear(); // sauberes Ende
+        if (st.lifeField) st.lifeField.clear(); // sauberes Ende
         return out;
     });
     check("Trickle: eine tendende Kreatur traeufelt Leben in ihre Zelle (sustainiert)", res.tendingDeposits);
@@ -183,8 +183,8 @@ async function checkBandV1729CreatureTrickle({ page, check }) {
 async function checkBandV1732SpatialEmotion({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        if (r.state.emotionField) r.state.emotionField.clear();
-        const e = r.state.player.emotions;
+        if (st.emotionField) st.emotionField.clear();
+        const e = st.player.emotions;
         const saved = Object.assign({}, e);
         for (const k of Object.keys(e)) e[k] = 0;
         // BÜHNE: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
@@ -201,22 +201,22 @@ async function checkBandV1732SpatialEmotion({ page, check }) {
         out.spatial = (auraA.sorrow || 0) > (auraB.sorrow || 0) + 0.05;
         // (4) Decay senkt (das Gefuehl verblasst)
         const key = r._lifeCellKey(A.x, A.z);
-        const stored = r.state.emotionField.get(key).axes.sorrow;
-        r.state.emotionField.get(key).t -= 120;
+        const stored = st.emotionField.get(key).axes.sorrow;
+        st.emotionField.get(key).t -= 120;
         out.decays = r.auraAt(A.x, A.z).emotion.sorrow < stored;
         // (5) Anti-Passagier-Beweis: ein räumlicher sorrow-Abdruck FÄRBT den Tint am Spieler (sorrow senkt
         // die Sättigung), obwohl die globale Stimmung neutral ist — gleicher Ort, nur der Abdruck differiert.
         out.tintColors = true;
         const THREE = window.THREE;
-        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        const pm = st.playerMesh && st.playerMesh.position;
         if (THREE && THREE.Color && pm) {
             // Default auraTintStrength=0 (realistischer Himmel, Schöpfer-Wunsch); der
             // KONSUM-Mechanismus lebt weiter → für die Anti-Passagier-Probe auf 1 forcieren
             // (deterministisch), dann den Default (0) wiederherstellen.
-            const _origAuraK1732 = r.state.atmosphere && r.state.atmosphere.auraTintStrength;
-            if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
+            const _origAuraK1732 = st.atmosphere && st.atmosphere.auraTintStrength;
+            if (st.atmosphere) st.atmosphere.auraTintStrength = 1;
             for (const k of Object.keys(e)) e[k] = 0;
-            r.state.emotionField.clear();
+            st.emotionField.clear();
             const sat = (c) => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
             const fresh = r._dayNightComputeTint();
             r._depositEmotion(pm.x, pm.z, { sorrow: 0.8 });
@@ -224,9 +224,9 @@ async function checkBandV1732SpatialEmotion({ page, check }) {
             out.tintColors = sat(imprinted.skyColor) < sat(fresh.skyColor) - 1e-4;
             out.freshSat = sat(fresh.skyColor);
             out.imprintedSat = sat(imprinted.skyColor);
-            if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = _origAuraK1732; // restore Default (0)
+            if (st.atmosphere) st.atmosphere.auraTintStrength = _origAuraK1732; // restore Default (0)
         }
-        r.state.emotionField.clear();
+        st.emotionField.clear();
         for (const k of Object.keys(e)) e[k] = saved[k] || 0;
         return out;
     });
@@ -250,7 +250,7 @@ async function checkBandV1732SpatialEmotion({ page, check }) {
 async function checkBandV1742Wohl({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const W = window.AnazhRealm ? window.AnazhRealm.WERTUNG : r.constructor.WERTUNG;
+        const W = window.AnazhRealm ? window.AnazhRealm.WERTUNG : AnazhRealm.WERTUNG;
 
         // --- (1) das Wohl-Maß: Struktur = lebendig; Erlebt = Valenz (Russell) ---
         const a0 = r.auraAt(0, 0, 0);
@@ -261,10 +261,10 @@ async function checkBandV1742Wohl({ page, check }) {
             Math.abs(r._fieldWohlErlebt({ emotion: { awe: 1 } })) < 1e-9; // awe ambivalent → 0
 
         // --- (2) die Feld-Baseline: Cold-Start = erste Beobachtung ---
-        const savedLife = r.state.lifeField;
-        const savedWohl = r.state.wohlBaseline;
-        r.state.lifeField = new Map();
-        r.state.wohlBaseline = new Map();
+        const savedLife = st.lifeField;
+        const savedWohl = st.wohlBaseline;
+        st.lifeField = new Map();
+        st.wohlBaseline = new Map();
         // eine Zelle mit Headroom (frozen lebendig < 0.7) finden
         let sx = 1000,
             sz = 1000,
@@ -300,15 +300,15 @@ async function checkBandV1742Wohl({ page, check }) {
 
         // --- (5) Prune: eine alte (lange nicht beobachtete) Zelle fällt, sobald ein Blick nach ihrem Tod schreibt (`_feldTod`) ---
         r._observeFieldWohl(9 * W.cell, 9 * W.cell, 0);
-        r._observeFieldWohl(sx, sz, W.pruneAgeSec + 2 * r.constructor.FELD_TOD_EIMER_S);
-        out.prunes = !r.state.wohlBaseline.has("9,9");
+        r._observeFieldWohl(sx, sz, W.pruneAgeSec + 2 * AnazhRealm.FELD_TOD_EIMER_S);
+        out.prunes = !st.wohlBaseline.has("9,9");
 
         // (Die SPIELER-Baseline + ihr Appraisal-Konsum sind Phase 3 → getestet in
         // checkBandV1744Appraisal, mit der Situations-Semantik statt der Stimmung.)
 
         // restore
-        r.state.lifeField = savedLife;
-        r.state.wohlBaseline = savedWohl;
+        st.lifeField = savedLife;
+        st.wohlBaseline = savedWohl;
         return out;
     });
 
@@ -334,24 +334,24 @@ async function checkBandV1742Wohl({ page, check }) {
 async function checkBandV1744Appraisal({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const p = r.state.player;
-        const pm = r.state.playerMesh.position;
+        const p = st.player;
+        const pm = st.playerMesh.position;
 
         // save
         const savedEmo = { ...p.emotions };
         const savedBase = p.wohlBaseline;
         const savedTick = p.emotionLastTick;
-        const savedLife = r.state.lifeField;
-        const savedWohl = r.state.wohlBaseline;
-        const savedEmoField = r.state.emotionField;
-        const savedWeather = r.state.weather;
+        const savedLife = st.lifeField;
+        const savedWohl = st.wohlBaseline;
+        const savedEmoField = st.emotionField;
+        const savedWeather = st.weather;
         const setEmo = (o) => {
             for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
         };
 
         // --- (1) die Situation IGNORIERT die Stimmung (kein Feedback-Input) ---
-        r.state.lifeField = new Map();
-        r.state.emotionField = new Map();
+        st.lifeField = new Map();
+        st.emotionField = new Map();
         setEmo({ joy: 1, hope: 1, peace: 1 });
         const sitHighMood = r._playerSituationWohl(r.auraAt(pm.x, pm.z, 0));
         setEmo({});
@@ -365,8 +365,8 @@ async function checkBandV1744Appraisal({ page, check }) {
         out.situationRisesWithLife = sit1 > sit0 + 0.05 || sit0 > 0.9;
 
         // --- (3) die Baseline trackt die SITUATION, nicht die Stimmung (der no-Feedback-Beweis) ---
-        r.state.lifeField = new Map();
-        r.state.wohlBaseline = new Map();
+        st.lifeField = new Map();
+        st.wohlBaseline = new Map();
         setEmo({ joy: 1, hope: 1, peace: 1 }); // Stimmung HOCH …
         p.wohlBaseline = undefined;
         p.emotionLastTick = 1000;
@@ -377,8 +377,8 @@ async function checkBandV1744Appraisal({ page, check }) {
 
         // --- (4) Überraschung: die Situation springt (Leben deponiert) → joy-Puls ---
         setEmo({});
-        r.state.lifeField = new Map();
-        r.state.wohlBaseline = new Map();
+        st.lifeField = new Map();
+        st.wohlBaseline = new Map();
         p.wohlBaseline = undefined;
         p.emotionLastTick = 2000;
         r.updatePlayerEmotions(2001); // Cold-Start: baseline = sit (karg/frozen)
@@ -393,8 +393,8 @@ async function checkBandV1744Appraisal({ page, check }) {
 
         // --- (5) Gewöhnung + KEIN Feedback-Runaway (feedback-frei bewiesen) ---
         setEmo({});
-        r.state.lifeField = new Map();
-        r.state.wohlBaseline = new Map();
+        st.lifeField = new Map();
+        st.wohlBaseline = new Map();
         p.wohlBaseline = 0; // Erwartung: karg
         p.emotionLastTick = 4000;
         r._depositLife(pm.x, pm.z, 0.5);
@@ -423,7 +423,7 @@ async function checkBandV1744Appraisal({ page, check }) {
         setEmo({});
         for (let i = 0; i < 10; i++) r._feelAction("build"); // joy → ~1.0 (ACTION_TO_EMOTION, V17.30)
         const joyHigh = p.emotions.joy;
-        const freude = r.state.worldRules.find((g) => g.source === "emotion:joy");
+        const freude = st.worldRules.find((g) => g.source === "emotion:joy");
         freude.lastFired = -Infinity;
         r._tickWorldRules(5001); // das Gesetz des Gemüts `emotion:joy` feuert (affekt.K2)
         out.triggerPreserved = joyHigh >= 0.7 && freude.lastFired === 5001;
@@ -432,10 +432,10 @@ async function checkBandV1744Appraisal({ page, check }) {
         setEmo(savedEmo);
         p.wohlBaseline = savedBase;
         p.emotionLastTick = savedTick;
-        r.state.lifeField = savedLife;
-        r.state.wohlBaseline = savedWohl;
-        r.state.emotionField = savedEmoField;
-        r.state.weather = savedWeather;
+        st.lifeField = savedLife;
+        st.wohlBaseline = savedWohl;
+        st.emotionField = savedEmoField;
+        st.weather = savedWeather;
         return out;
     });
 
@@ -475,25 +475,25 @@ async function checkBandV1744Appraisal({ page, check }) {
 async function checkBandV1750Klammer({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const p = r.state.player;
-        const pm = r.state.playerMesh.position;
+        const p = st.player;
+        const pm = st.playerMesh.position;
         const savedEmo = { ...p.emotions };
         const savedMood = p.mood ? { ...p.mood } : null;
         const savedBase = p.wohlBaseline;
         const savedDelta = p.appraisalDelta;
         const savedTick = p.emotionLastTick;
-        const savedLife = r.state.lifeField;
-        const savedWohl = r.state.wohlBaseline;
-        const savedEmoField = r.state.emotionField;
+        const savedLife = st.lifeField;
+        const savedWohl = st.wohlBaseline;
+        const savedEmoField = st.emotionField;
         const setEmo = (o) => {
             for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
         };
 
         // (2) ANTI-GAMING an der WURZEL: appraisalDelta trackt die SITUATION (lebendig+HP),
         // NICHT die gestempelte Emotion → eine Regel kann den Bonus nicht über Emotion faken.
-        r.state.lifeField = new Map();
-        r.state.wohlBaseline = new Map();
-        r.state.emotionField = new Map();
+        st.lifeField = new Map();
+        st.wohlBaseline = new Map();
+        st.emotionField = new Map();
         // (a) die Situation STEIGT (Leben deponiert, Erwartung niedriger) → appraisalDelta steigt
         setEmo({});
         p.appraisalDelta = 0;
@@ -514,7 +514,7 @@ async function checkBandV1750Klammer({ page, check }) {
         out.deltaIgnoresEmotion = Math.abs(p.appraisalDelta) < 0.05;
 
         // (3)+(4) DIE KLAMMER: der lokale Reward + der Spieler-Bonus (nah + positiv) vs der Gate (fern)
-        r.state.lifeField = new Map();
+        st.lifeField = new Map();
         const measureRule = (vx, vz, vbase, pd) => {
             p.appraisalDelta = pd;
             const rule = { value: 0, _vPending: true, _vPos: { x: vx, z: vz }, _vBase: vbase };
@@ -544,9 +544,9 @@ async function checkBandV1750Klammer({ page, check }) {
         p.wohlBaseline = savedBase;
         p.appraisalDelta = savedDelta;
         p.emotionLastTick = savedTick;
-        r.state.lifeField = savedLife;
-        r.state.wohlBaseline = savedWohl;
-        r.state.emotionField = savedEmoField;
+        st.lifeField = savedLife;
+        st.wohlBaseline = savedWohl;
+        st.emotionField = savedEmoField;
         return out;
     });
     check(
@@ -579,15 +579,15 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
     // `_groundedCache` und trifft Bauwerke über `entry.blockerAABBs`. groundDistance 0.6 (nicht 0.5),
     // damit der y-Offset eines Sub-Compounds auf einer Plattform den Sprung nicht blockiert.
     const wave6aResults = await safeEvaluate(page, () => {
-        if (!r || !r.state.playerVel) return null;
+        if (!r || !st.playerVel) return null;
         const out = {};
 
 
         // 6.A2 Diskrimination an eindeutiger Setup-Position (frühere Tests verschieben mesh.position):
         // in der Luft → not grounded, auf gespawntem Bauwerk → grounded.
-        const savedX = r.state.playerMesh.position.x;
-        const savedY = r.state.playerMesh.position.y;
-        const savedZ = r.state.playerMesh.position.z;
+        const savedX = st.playerMesh.position.x;
+        const savedY = st.playerMesh.position.y;
+        const savedZ = st.playerMesh.position.z;
 
         // Bau an eindeutiger Position neben dem Spieler, auf der Höhe des Gelände-Gesetzes → überlappt das Boden-Niveau
         // (typischer In-Spiel-Fall). Seit K16 liegt der Boden am Spawn nicht mehr bei y = 0: ein Bau auf y = 0 stak im
@@ -595,12 +595,12 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
         const archX = savedX + 20;
         const archZ = savedZ + 20;
         const archY = r._terrainMacroSurfaceY(archX, archZ);
-        const vorArch = new Set(r.state.architectures);
+        const vorArch = new Set(st.architectures);
         // AUSLÖSCHUNGS-WELLE — temple fiel; die begehbare haus_basis-Substanz (KIND_SUBSTANCE)
         // trägt die Erdungs-Probe als Test-Blueprint (flaches Dach, solide blockerAABBs).
-        const KS6a = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
-        if (r.state.blueprints._t_w6a_haus) delete r.state.blueprints._t_w6a_haus;
-        r.state.blueprints._t_w6a_haus = {
+        const KS6a = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
+        if (st.blueprints._t_w6a_haus) delete st.blueprints._t_w6a_haus;
+        st.blueprints._t_w6a_haus = {
             name: "_t_w6a_haus",
             parts: JSON.parse(JSON.stringify(KS6a.haus_basis.parts)),
         };
@@ -634,9 +634,9 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
         if (entry && topY !== null) {
             // Negativ-Kontrolle: 50 m über Tempel-Top — Ray reicht nur
             // 2.5 m runter, also trifft das Bauwerk nicht.
-            r.state.playerMesh.position.set(archX, topY + 50, archZ);
+            st.playerMesh.position.set(archX, topY + 50, archZ);
             // Cache invalidieren vor frischem Compute.
-            delete r.state._groundedCachedAt;
+            delete st._groundedCachedAt;
             out.isGroundedHighInSky = r.isPlayerGrounded();
             // Positiv-Test: die visuelle Top-BBox ist nicht 1:1 die Kollision (Dekor-Spitzen ragen über die
             // Sub-Boxes) → steigende dy abtasten; EIN Treffer beweist die Bauwerks-Erdung (groundDistance 0.6
@@ -645,10 +645,10 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
             let foundGrounded = false;
             let groundedAtDy = null;
             for (const dy of [0.1, 0.3, 0.5, 0.7, 1.0, 1.5, 2.0]) {
-                r.state.playerMesh.position.set(archX, topY + dy, archZ);
+                st.playerMesh.position.set(archX, topY + dy, archZ);
                 // Cache vor jeder Position-Probe invalidieren: im Spiel ändert der Physics-Tick die Position zwischen
                 // Frames, hier setzen wir sie manuell.
-                delete r.state._groundedCachedAt;
+                delete st._groundedCachedAt;
                 if (r.isPlayerGrounded()) {
                     foundGrounded = true;
                     groundedAtDy = dy;
@@ -658,15 +658,15 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
             out.isGroundedOnArchitecture = foundGrounded;
             out.groundedAtDy = groundedAtDy;
             // Restore
-            r.state.playerMesh.position.set(savedX, savedY, savedZ);
+            st.playerMesh.position.set(savedX, savedY, savedZ);
         } else {
             out.isGroundedOnArchitecture = false;
             out.isGroundedHighInSky = false;
         }
         // Cleanup nach Identität über den EINEN Abbau-Pfad (jedes Aufräumen der Bänder): ein Bau lässt Feld-Würfe
         // weichen (`_weichtDemBau`) — die Kürzung auf die alte Länge ließ ihn dann als Waise ohne Bauplan in der Welt
-        for (const e of r.state.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
-        delete r.state.blueprints._t_w6a_haus;
+        for (const e of st.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
+        delete st.blueprints._t_w6a_haus;
 
         // Kein per-Frame-Pfad ruft optimizePhysics/processOptimization (leckte WASM, flutete die Konsole).
         // __fehlt liest ohne Kommentare — sonst träfe der Absenz-Grep den Kommentar, der den Code zitiert.
@@ -702,11 +702,10 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
     // begehbar (Normal-Y < hang.maxSlopeY = 0.5, >60°), gilt `state.onSteepSlope = true` und der
     // Bewegungs-Input wird auf 20 % gedrosselt — kein Kleben an senkrechten Wänden.
     const wave6a3Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // 6.A3 — Tests wandern 19.07.: der State-Zwilling fiel, die Leser
         // lesen das Steilhang-Gesetz (hang.maxSlopeY) fail-closed direkt.
-        const hangMax = r.constructor._bewegungsBlock("hang", ["maxSlopeY", "malus"]).maxSlopeY;
+        const hangMax = AnazhRealm._bewegungsBlock("hang", ["maxSlopeY", "malus"]).maxSlopeY;
         out.hasHangMaxSlopeY = typeof hangMax === "number";
         out.hangMaxSlopeYValue = hangMax;
         out.hangMaxSlopeYIs05 = Math.abs(hangMax - 0.5) < 0.001;
@@ -714,32 +713,32 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
         // Diskriminations-Test onSteepSlope (= isGrounded && bestNormalY<0.5) in zwei Setups:
         // (a) Spieler hoch im Himmel → nicht geerdet → false; (b) auf flachem Tempel-Dach (Normal-Y ~1)
         // → false. Nicht am prozeduralen Initial-Terrain — das darf lokal steil sein.
-        const _savedX = r.state.playerMesh.position.x;
-        const _savedY = r.state.playerMesh.position.y;
-        const _savedZ = r.state.playerMesh.position.z;
+        const _savedX = st.playerMesh.position.x;
+        const _savedY = st.playerMesh.position.y;
+        const _savedZ = st.playerMesh.position.z;
 
         // (a) Himmel: `_groundedCachedAt` vor jedem isPlayerGrounded-Call nullen — der Cache hält zwei Schritte
         // und trüge sonst einen stale Wert der alten Spieler-Position.
         // BÜHNE: der Himmel 5 km über jedem Boden
-        r.state.playerMesh.position.set(0, 5000, 0);
-        r.state._groundedCachedAt = 0;
+        st.playerMesh.position.set(0, 5000, 0);
+        st._groundedCachedAt = 0;
         r.isPlayerGrounded();
-        out.skyOnSteepSlope = r.state.onSteepSlope;
-        out.skyGroundNormalY = r.state.groundNormalY;
+        out.skyOnSteepSlope = st.onSteepSlope;
+        out.skyGroundNormalY = st.groundNormalY;
 
         // (b) Flaches Bauwerks-Dach: separater Tempel-Spawn. Spieler-Position VOR dem Spawn restoren —
         // `spawnArchitecture` baut den Mesh nur im architectureCullingRadius (XZ) um den SPIELER; stünde
         // er noch bei (0,5000,0), bliebe der Spawn cold (mesh=null) und der Test mäße nichts.
-        r.state.playerMesh.position.set(_savedX, _savedY, _savedZ);
-        const vorArch = new Set(r.state.architectures);
+        st.playerMesh.position.set(_savedX, _savedY, _savedZ);
+        const vorArch = new Set(st.architectures);
         let _entryA3 = null;
         let _spawnErrA3 = null;
         try {
             // AUSLÖSCHUNGS-WELLE — temple fiel; das flache haus_basis-Dach (KIND_SUBSTANCE) trägt
             // die „flaches Dach ist nicht steil"-Probe als Test-Blueprint.
-            const KSa3 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
-            if (r.state.blueprints._t_w6a3_haus) delete r.state.blueprints._t_w6a3_haus;
-            r.state.blueprints._t_w6a3_haus = {
+            const KSa3 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
+            if (st.blueprints._t_w6a3_haus) delete st.blueprints._t_w6a3_haus;
+            st.blueprints._t_w6a3_haus = {
                 name: "_t_w6a3_haus",
                 parts: JSON.parse(JSON.stringify(KSa3.haus_basis.parts)),
             };
@@ -776,21 +775,21 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
         }
         if (_entryA3 && topYA3 !== null) {
             // Setze Spieler knapp über die Top-Fläche
-            r.state.playerMesh.position.set(_savedX + 40, topYA3 + 0.3, _savedZ + 40);
-            r.state._groundedCachedAt = 0;
+            st.playerMesh.position.set(_savedX + 40, topYA3 + 0.3, _savedZ + 40);
+            st._groundedCachedAt = 0;
             // Nur werten, wenn der Raycast wirklich das flache Dach traf (groundNormalY > 0.7): unter CPU-Last
             // kann die Architektur-Kollision verzögert gebaut sein, dann erdet der Spieler auf steilem Terrain
             // (grounded allein trennt das nicht). Kein flaches Dach getroffen → unmessbar = bestanden.
             const _groundedOnTopA3 = r.isPlayerGrounded();
-            const _nyA3 = r.state.groundNormalY;
-            flatBlueprintNotSteep = _groundedOnTopA3 && _nyA3 > 0.7 ? r.state.onSteepSlope === false : true;
-            out.archTopGroundNormalY = r.state.groundNormalY;
-            out.archTopOnSteepSlope = r.state.onSteepSlope;
+            const _nyA3 = st.groundNormalY;
+            flatBlueprintNotSteep = _groundedOnTopA3 && _nyA3 > 0.7 ? st.onSteepSlope === false : true;
+            out.archTopGroundNormalY = st.groundNormalY;
+            out.archTopOnSteepSlope = st.onSteepSlope;
         }
         out.flatBlueprintNotSteep = flatBlueprintNotSteep;
-        for (const e of r.state.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
-        delete r.state.blueprints._t_w6a3_haus;
-        r.state.playerMesh.position.set(_savedX, _savedY, _savedZ);
+        for (const e of st.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
+        delete st.blueprints._t_w6a3_haus;
+        st.playerMesh.position.set(_savedX, _savedY, _savedZ);
 
 
 
@@ -816,7 +815,6 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
     // Kamera ab der Ebene des Ziels — Gegenprüfung Runde 2, nie was zwischen Kamera und Spieler liegt) ({x, y, z,
     // isStable, hit}): das Phantom folgt der Blickrichtung (Pitch wirkt), Tint grün bei stabilem Boden, sonst rot.
     const wave6a45Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
 
@@ -824,10 +822,10 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
 
         // Build-Modus auf "stein_block"-Slot 0, Kamera in den Boden schauen lassen, tickBuildMode →
         // Phantom liegt im Treffer-Bereich + isStable=true.
-        const savedYaw = r.state.yaw;
-        const savedCamPos = r.state.camera ? r.state.camera.position.clone() : null;
-        const savedCamQuat = r.state.camera ? r.state.camera.quaternion.clone() : null;
-        const savedPlayerPos = r.state.playerMesh.position.clone();
+        const savedYaw = st.yaw;
+        const savedCamPos = st.camera ? st.camera.position.clone() : null;
+        const savedCamQuat = st.camera ? st.camera.quaternion.clone() : null;
+        const savedPlayerPos = st.playerMesh.position.clone();
 
         // Garantiert flache Test-Oberfläche: Tempel-Dach (Normal-Y ~1) statt prozeduralem Heightfield.
         // Spawn-Y=200 hebt den Tempel über die Voxel-Chunks (Surface ≤ base+64), sonst träfe der Raycast
@@ -835,12 +833,12 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
         const _spawnArchX = 60;
         const _spawnArchZ = 60;
         const _spawnArchY = 200;
-        const vorArch = new Set(r.state.architectures);
+        const vorArch = new Set(st.architectures);
         // AUSLÖSCHUNGS-WELLE — temple fiel; das flache haus_basis-Dach (KIND_SUBSTANCE)
         // liefert die garantiert-flache Raycast-Fläche als Test-Blueprint.
-        const KSa45 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
-        if (r.state.blueprints._t_w6a45_haus) delete r.state.blueprints._t_w6a45_haus;
-        r.state.blueprints._t_w6a45_haus = {
+        const KSa45 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
+        if (st.blueprints._t_w6a45_haus) delete st.blueprints._t_w6a45_haus;
+        st.blueprints._t_w6a45_haus = {
             name: "_t_w6a45_haus",
             parts: JSON.parse(JSON.stringify(KSa45.haus_basis.parts)),
         };
@@ -855,40 +853,40 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
             const _box = new THREE.Box3().setFromObject(_archEntry.mesh);
             _archTopY = _box.max.y;
         }
-        r.state.playerMesh.position.set(_spawnArchX, _archTopY + 5, _spawnArchZ);
+        st.playerMesh.position.set(_spawnArchX, _archTopY + 5, _spawnArchZ);
         // Kamera 8m über Bauwerks-Top, blickt steil nach unten auf die Mitte
-        r.state.camera.position.set(_spawnArchX, _archTopY + 8, _spawnArchZ);
-        r.state.camera.lookAt(_spawnArchX, _archTopY, _spawnArchZ);
+        st.camera.position.set(_spawnArchX, _archTopY + 8, _spawnArchZ);
+        st.camera.lookAt(_spawnArchX, _archTopY, _spawnArchZ);
         // Build-Modus auf Slot 0 (stein_block, gesetzt — der Start-Gurt liest den Katalog)
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
-        out.buildModeActive = r.state.buildMode.active;
-        out.phantomExists = !!r.state.buildMode.phantomMesh;
-        if (r.state.buildMode.phantomMesh) {
+        out.buildModeActive = st.buildMode.active;
+        out.phantomExists = !!st.buildMode.phantomMesh;
+        if (st.buildMode.phantomMesh) {
             r.tickBuildMode();
-            const phantomPos = r.state.buildMode.phantomMesh.position;
+            const phantomPos = st.buildMode.phantomMesh.position;
             // Erwartung: Phantom landet auf Bauwerks-Top bei
             // _archTopY, alter Fallback wäre playerY-0.5 = _archTopY+4.5.
             // Hit-Y ist klar < playerY−1.
             out.phantomY = phantomPos.y;
-            out.phantomYDownward = phantomPos.y < r.state.playerMesh.position.y - 1;
+            out.phantomYDownward = phantomPos.y < st.playerMesh.position.y - 1;
             // Stabilität: Boden flache Oberseite → Normal-Y ~ 1 → isStable=true
-            out.phantomOnGroundAfterTick = r.state.buildMode.phantomOnGround;
+            out.phantomOnGroundAfterTick = st.buildMode.phantomOnGround;
 
             // Diskrimination 2: Kamera nach oben in den Himmel → kein Hit → fallback
-            r.state.camera.lookAt(_spawnArchX, _archTopY + 100, _spawnArchZ + 1);
+            st.camera.lookAt(_spawnArchX, _archTopY + 100, _spawnArchZ + 1);
             r.tickBuildMode();
-            out.phantomOnGroundSky = r.state.buildMode.phantomOnGround;
+            out.phantomOnGroundSky = st.buildMode.phantomOnGround;
         }
 
         // Cleanup
         r._clearBuildMode();
-        for (const e of r.state.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
-        delete r.state.blueprints._t_w6a45_haus;
-        if (savedCamPos) r.state.camera.position.copy(savedCamPos);
-        if (savedCamQuat) r.state.camera.quaternion.copy(savedCamQuat);
-        r.state.playerMesh.position.copy(savedPlayerPos);
-        r.state.yaw = savedYaw;
+        for (const e of st.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
+        delete st.blueprints._t_w6a45_haus;
+        if (savedCamPos) st.camera.position.copy(savedCamPos);
+        if (savedCamQuat) st.camera.quaternion.copy(savedCamQuat);
+        st.playerMesh.position.copy(savedPlayerPos);
+        st.yaw = savedYaw;
 
         return out;
     });
@@ -912,7 +910,6 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
 
     // ### Welle 6.E1 — Fähigkeit-Beschreibung (describeProgram) ###
     const wave6e1Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // Vorlagen-Smoke-Tests
         out.weatherDesc = r.describeProgram(["weather", "rainy"]);
@@ -929,25 +926,25 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
         out.whenOk = /joy/.test(out.whenDesc) && /Himmel/.test(out.whenDesc);
         out.unknownOk = /fictional_op/.test(out.unknownDesc);
         // Diskrimination: Beschreibung wird beim addNewAbility gespeichert
-        const beforeCount = r.state.dsl.abilities.length;
+        const beforeCount = st.dsl.abilities.length;
         r.addNewAbility("test_desc_e1", ["weather", "rainy"], "test");
-        const added = r.state.dsl.abilities.find((a) => a.name === "test_desc_e1");
+        const added = st.dsl.abilities.find((a) => a.name === "test_desc_e1");
         out.persistedDescription = added ? added.description : null;
         out.persistedOk = !!(added && added.description && /Wetter/.test(added.description));
-        r.state.dsl.abilities = r.state.dsl.abilities.slice(0, beforeCount);
-        delete r.state.abilities.test_desc_e1;
+        st.dsl.abilities = st.dsl.abilities.slice(0, beforeCount);
+        delete st.abilities.test_desc_e1;
         // Lazy-Compute für Legacy-Save: Eintrag ohne description hinzufügen,
         // renderAbilitiesList ruft → description wird befüllt.
-        r.state.dsl.abilities.push({
+        st.dsl.abilities.push({
             name: "legacy_test_e1",
             program: ["weather", "sunny"],
             source: "test",
             createdAt: 0,
         });
         r.renderAbilitiesList();
-        const legacyAfter = r.state.dsl.abilities.find((a) => a.name === "legacy_test_e1");
+        const legacyAfter = st.dsl.abilities.find((a) => a.name === "legacy_test_e1");
         out.lazyComputed = !!(legacyAfter && legacyAfter.description);
-        r.state.dsl.abilities = r.state.dsl.abilities.filter((a) => a.name !== "legacy_test_e1");
+        st.dsl.abilities = st.dsl.abilities.filter((a) => a.name !== "legacy_test_e1");
         return out;
     });
 
@@ -968,7 +965,6 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
     // Beweist: das alte Intro-Modal ist restlos weg; der Begleiter (Eins) lädt EINMAL diegetisch ein
     // (Einladung, keine Steuerungs-Anleitung), gegated + idempotent.
     const wowStartResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // (a) Das Anleitungs-Modal ist restlos entfernt (seine Methoden bewacht gate:altlasten).
         out.noDialogInDom = !document.getElementById("intro-dialog");
@@ -982,7 +978,7 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
         } catch {
             /* localStorage gesperrt — worldJournal trägt das Flag */
         }
-        if (r.state.worldJournal && r.state.worldJournal.seen) r.state.worldJournal.seen.intro = false;
+        if (st.worldJournal && st.worldJournal.seen) st.worldJournal.seen.intro = false;
         const box = document.getElementById("dialogue-box");
         if (box) box.textContent = "";
         r._firstWorldWelcome({ immediate: true });
@@ -1007,7 +1003,6 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
     // (computeConnectionStrength → grün/gelb/rot). Schwächste Verbindung < 0.7 →
     // _applyCompoundWorldEffects schreibt einen idempotenten weakness-Journal-Eintrag.
     const wave6fResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         // Farb-Mapping
@@ -1020,7 +1015,7 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
 
         // Test-Bauplan mit zwei Parts + einer expliziten Verbindung
         const testName = "wave6f_test";
-        r.state.blueprints[testName] = {
+        st.blueprints[testName] = {
             name: testName,
             label: "Test",
             builtIn: false,
@@ -1045,7 +1040,7 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
         // Build und auf THREE.Line prüfen — die Linien sind ein
         // WERKSTATT-Werkzeug (opts.connectionLines), der Test bestellt sie
         // wie der Werkstatt-Viewer (der Test wandert mit).
-        const built = r._buildFromBlueprint(r.state.blueprints[testName], 0, undefined, { connectionLines: true });
+        const built = r._buildFromBlueprint(st.blueprints[testName], 0, undefined, { connectionLines: true });
         // eine Verbindung erzeugt jetzt eine Linie UND
         // einen Mittelpunkt-Marker (beide isConnectionLine), damit
         // die Verbindung auch bei überlappenden Parts sichtbar ist.
@@ -1069,7 +1064,7 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
         // OHNE Bestellung (= jeder Welt-Spawn) bleibt das Werk REIN:
         // keine Linien/Marker über gespawnten Gefährten/Portalen.
         let worldLines = 0;
-        const builtPlain = r._buildFromBlueprint(r.state.blueprints[testName]);
+        const builtPlain = r._buildFromBlueprint(st.blueprints[testName]);
         builtPlain.traverse((node) => {
             if (node.userData && node.userData.isConnectionLine) worldLines++;
         });
@@ -1078,7 +1073,7 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
         // 6.F2 Brech-Warning: extrem schwache Verbindung → Journal-Eintrag
         // (wir erzwingen weak indem wir partB sehr weit weg setzen → contactArea=0)
         const weakName = "wave6f_weak";
-        r.state.blueprints[weakName] = {
+        st.blueprints[weakName] = {
             name: weakName,
             label: "Schwach",
             builtIn: false,
@@ -1099,39 +1094,39 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
             connections: [{ type: "gluing", partA: 0, partB: 1 }],
         };
         const weakStrength = r.computeConnectionStrength(
-            r.state.blueprints[weakName].connections[0],
-            r.state.blueprints[weakName]
+            st.blueprints[weakName].connections[0],
+            st.blueprints[weakName]
         );
         out.weakStrength = weakStrength;
         out.weakIsBelowThreshold = weakStrength < 0.7;
 
         // Journal-Counter vor spawn
         const beforeJournal =
-            r.state.worldJournal && r.state.worldJournal.entries ? r.state.worldJournal.entries.length : 0;
+            st.worldJournal && st.worldJournal.entries ? st.worldJournal.entries.length : 0;
         const beforeSeenKeys =
-            r.state.worldJournal && r.state.worldJournal.seen
-                ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
+            st.worldJournal && st.worldJournal.seen
+                ? Object.keys(st.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
                 : 0;
-        const vorArch = new Set(r.state.architectures);
+        const vorArch = new Set(st.architectures);
         r.spawnArchitecture(weakName, { x: 250, y: 0, z: 250 }, { seed: 1 });
         const afterSeenKeys =
-            r.state.worldJournal && r.state.worldJournal.seen
-                ? Object.keys(r.state.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
+            st.worldJournal && st.worldJournal.seen
+                ? Object.keys(st.worldJournal.seen).filter((k) => k.startsWith("weak_connection:")).length
                 : 0;
         const afterJournal =
-            r.state.worldJournal && r.state.worldJournal.entries ? r.state.worldJournal.entries.length : 0;
+            st.worldJournal && st.worldJournal.entries ? st.worldJournal.entries.length : 0;
         out.weakJournalIncrement = afterJournal - beforeJournal >= 1;
         out.weakSeenKeyAdded = afterSeenKeys > beforeSeenKeys;
 
         // 6.F2 Idempotenz: zweimal spawnen → kein zweiter Eintrag
         r.spawnArchitecture(weakName, { x: 260, y: 0, z: 260 }, { seed: 2 });
         const after2Journal =
-            r.state.worldJournal && r.state.worldJournal.entries ? r.state.worldJournal.entries.length : 0;
+            st.worldJournal && st.worldJournal.entries ? st.worldJournal.entries.length : 0;
         out.weakIsIdempotent = after2Journal === afterJournal;
 
         // Negativ-Kontrolle: starker Bauplan → KEIN weak_connection-Eintrag
         const strongName = "wave6f_strong";
-        r.state.blueprints[strongName] = {
+        st.blueprints[strongName] = {
             name: strongName,
             label: "Stark",
             builtIn: false,
@@ -1152,25 +1147,25 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
             connections: [{ type: "welding", partA: 0, partB: 1 }],
         };
         const strongStrength = r.computeConnectionStrength(
-            r.state.blueprints[strongName].connections[0],
-            r.state.blueprints[strongName]
+            st.blueprints[strongName].connections[0],
+            st.blueprints[strongName]
         );
         out.strongStrength = strongStrength;
         out.strongIsAboveThreshold = strongStrength >= 0.7;
-        const seenBefore3 = Object.keys(r.state.worldJournal.seen || {}).filter((k) =>
+        const seenBefore3 = Object.keys(st.worldJournal.seen || {}).filter((k) =>
             k.startsWith("weak_connection:" + strongName)
         ).length;
         r.spawnArchitecture(strongName, { x: 270, y: 0, z: 270 }, { seed: 3 });
-        const seenAfter3 = Object.keys(r.state.worldJournal.seen || {}).filter((k) =>
+        const seenAfter3 = Object.keys(st.worldJournal.seen || {}).filter((k) =>
             k.startsWith("weak_connection:" + strongName)
         ).length;
         out.strongNoWarning = seenAfter3 === seenBefore3;
 
         // Cleanup
-        for (const e of r.state.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
-        delete r.state.blueprints[testName];
-        delete r.state.blueprints[weakName];
-        delete r.state.blueprints[strongName];
+        for (const e of st.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
+        delete st.blueprints[testName];
+        delete st.blueprints[weakName];
+        delete st.blueprints[strongName];
 
         return out;
     });
@@ -1210,11 +1205,11 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
     // Bäume laufen durchs Architektur-System (spawn_tree-DSL-Op → spawnArchitecture): EINE Sprache,
     // EIN Renderpfad. Inseln + UFOs bleiben Sonderpfad (Inseln = floating-chunk-Disziplin).
     const wave6gResults = await safeEvaluate(page, async () => {
-        if (!r || !r.state) return null;
+        if (!r || !st) return null;
         const out = {};
         // Hylomorphismus-Baupläne: baum_eiche + baum_kiefer +
         // laub-Material müssen als Built-ins existieren.
-        const bps = r.state.blueprints || {};
+        const bps = st.blueprints || {};
         // Bäume wachsen aus der Grammatik (keine statischen baum_eiche/baum_kiefer-Baupläne): einen wachsen
         // und die SUBSTANZ prüfen — ≥2 Parts, holz-Stamm + laub-Krone als Materialien. Die FORM
         // (Tube-Rinde + Blatt-Karten) ist grammatik-getrieben und wird nicht geprüft.
@@ -1234,14 +1229,14 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         const istBaum = (a) => typeof a.type === "string" && /^(baum_|stamm_|grown_)/.test(a.type);
         const wald = () =>
             r._weltbildLuecken(true).filter((l) => /^(pflanzung|bauten)$/.test(l.term)).map((l) => l.satz).join(" · ");
-        out.waldErsterBlick = r.state.architectures.filter(istBaum).length;
+        out.waldErsterBlick = st.architectures.filter(istBaum).length;
         out.waldLueckeErst = wald();
         for (out.waldTakte = 0; wald() && out.waldTakte < 1500; out.waldTakte++) {
             r._gameLoopTick(performance.now());
             await sleep(0);
         }
         out.waldLueckeRest = wald();
-        const archTrees = r.state.architectures.filter(istBaum);
+        const archTrees = st.architectures.filter(istBaum);
         out.worldgenTreesInArchitectures = archTrees.length;
         // Mindestens ein gerenderter Baum (instanced, kein a.mesh) muss Kollision tragen — feld-nativ via
         // blockerAABBs (beim Spawn gefüllt, render-unabhängig), kein Ammo-Body.
@@ -1252,14 +1247,14 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
 
         // DETERMINISMUS-BOGEN P3 — Inseln tragen kein per-Objekt-Kollisions-Artefakt
         // mehr (Ammo entfernt); der Boden lebt feld-nativ.
-        const initIslands = Array.isArray(r.state.floatingIslands) ? r.state.floatingIslands : [];
+        const initIslands = Array.isArray(st.floatingIslands) ? st.floatingIslands : [];
         out.initIslandsCount = initIslands.length;
 
         // DSL-Op-Tests: spawn_tree → erzeugt Architektur.
-        const archsBefore = r.state.architectures.length;
-        const islandsBefore = r.state.floatingIslands.length;
-        const ufosBefore = r.state.ufos ? r.state.ufos.length : 0;
-        const playerPos = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+        const archsBefore = st.architectures.length;
+        const islandsBefore = st.floatingIslands.length;
+        const ufosBefore = st.ufos ? st.ufos.length : 0;
+        const playerPos = st.playerMesh ? st.playerMesh.position : { x: 0, y: 50, z: 0 };
         // der Ort des Baums liegt auf dem LAND (die Natur-Wand lässt keinen Baum ins Wasser — der feste Versatz
         // +50/+50 lag im Wasser, der Baum fiel benannt „wasser")
         let tx = playerPos.x + 50;
@@ -1277,14 +1272,14 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         });
         r.dslRun(["spawn_ufo", ["at", tx + 40, ty + 10, tz + 40]], { source: "test" });
 
-        const archsAfter = r.state.architectures.length;
-        const islandsAfter = r.state.floatingIslands.length;
-        const ufosAfter = r.state.ufos ? r.state.ufos.length : 0;
+        const archsAfter = st.architectures.length;
+        const islandsAfter = st.floatingIslands.length;
+        const ufosAfter = st.ufos ? st.ufos.length : 0;
         out.treeAddedToArchitectures = archsAfter === archsBefore + 1;
         out.islandSpawned = islandsAfter > islandsBefore;
         out.ufoSpawned = ufosAfter > ufosBefore;
 
-        const newTreeArch = archsAfter > archsBefore ? r.state.architectures[archsAfter - 1] : null;
+        const newTreeArch = archsAfter > archsBefore ? st.architectures[archsAfter - 1] : null;
         out.newTreeIsBaumEiche = !!(newTreeArch && newTreeArch.type === "baum_eiche");
         // DER WALD PLANT IM TAKT: die Gestalt des Baums wartet auf den Plan der Wald-Zellen um seinen Ort, wie auf ein
         // kaltes Buch — die Schlange des Walds (`_tickWaldPlan`) plant sie im Takt, dann steht er mit Gestalt und Hülle. Der
@@ -1312,14 +1307,14 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         );
         // Compound-Tags müssen Holz+Laub spiegeln (lebendig+brennbar).
         if (newTreeArch) {
-            const bp = r.state.blueprints[newTreeArch.type];
+            const bp = st.blueprints[newTreeArch.type];
             const tags = r.computeCompoundTags(bp);
             out.treeTagsLebendig = tags && tags.lebendig > 0.5;
             out.treeTagsBrennbar = tags && tags.brennbar > 0.5;
         }
 
-        const newIsland = islandsAfter > islandsBefore ? r.state.floatingIslands[islandsAfter - 1] : null;
-        const newUfo = ufosAfter > ufosBefore ? r.state.ufos[ufosAfter - 1] : null;
+        const newIsland = islandsAfter > islandsBefore ? st.floatingIslands[islandsAfter - 1] : null;
+        const newUfo = ufosAfter > ufosBefore ? st.ufos[ufosAfter - 1] : null;
         // DETERMINISMUS-BOGEN P3 — Inseln tragen kein per-Objekt-Kollisions-Artefakt
         // mehr (Ammo entfernt); der UFO-Negativtest bleibt (er hat nie Kollision).
         out.ufoHasNoCollision = !!(newUfo && (!newUfo.userData || !newUfo.userData.collision));
@@ -1337,11 +1332,11 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         }
 
         // Diskrimination: derselbe Seed → dieselben Vertices.
-        const beforeIslandsCount = r.state.floatingIslands.length;
+        const beforeIslandsCount = st.floatingIslands.length;
         r.dslRun(["spawn_island", ["at", tx + 80, ty, tz], 5, 99999], { source: "test" });
         r.dslRun(["spawn_island", ["at", tx + 100, ty, tz], 5, 99999], { source: "test" });
-        const i1 = r.state.floatingIslands[beforeIslandsCount];
-        const i2 = r.state.floatingIslands[beforeIslandsCount + 1];
+        const i1 = st.floatingIslands[beforeIslandsCount];
+        const i2 = st.floatingIslands[beforeIslandsCount + 1];
         if (i1 && i2 && i1.geometry && i2.geometry) {
             const v1 = i1.geometry.attributes.position.array;
             const v2 = i2.geometry.attributes.position.array;
@@ -1414,7 +1409,7 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         // benachbarte Chunks bauen — an der gemeinsamen Naht teilen >50 % der Vertices die Position
         // (ohne die Disziplin ~0).
         const r42bSkirt = await page.evaluate(() => {
-            const chunks = [...r.state.voxelChunks.values()].filter((c) => c && c.mesh && c.mesh.geometry).slice(0, 9);
+            const chunks = [...st.voxelChunks.values()].filter((c) => c && c.mesh && c.mesh.geometry).slice(0, 9);
             if (chunks.length < 2) return { err: "weniger als 2 Voxel-Chunks" };
             const seen = new Map();
             let dup = 0;
@@ -1448,10 +1443,10 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         );
         // DSL spawn_island akzeptiert 5. `size`-Argument.
         const r42bDsl = await page.evaluate(() => {
-            const before = r.state.floatingIslands.length;
+            const before = st.floatingIslands.length;
             r.dslRun(["spawn_island", ["at", 200, 80, 200], 8, 77777, 30], { source: "test" });
-            const after = r.state.floatingIslands.length;
-            const isle = r.state.floatingIslands[before];
+            const after = st.floatingIslands.length;
+            const isle = st.floatingIslands[before];
             if (!isle) return { spawned: false };
             const bbox = new window.THREE.Box3().setFromObject(isle);
             return { spawned: after === before + 1, width: bbox.max.x - bbox.min.x };
@@ -1542,10 +1537,10 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
     // magieleitung) — KEINE Tabelle: Bauplan-Compound-Tags resonieren mit dem Welt-Tag-Feld.
     // Baupläne: stein_block (dichte), kristall_geode (magieleitung), glutbrunnen (glut).
     const wave6gP2Results = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
+        if (!r || !st) return null;
         const out = {};
         // der Voxel-Populator ist die lebende Schicht.
-        const bps = r.state.blueprints || {};
+        const bps = st.blueprints || {};
         // worldFieldAt liefert 4 Tag-Achsen.
         const sample = r.worldFieldAt(0, 0);
         out.fieldHas4Axes = !!(
@@ -1618,7 +1613,7 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         // Initial-Worldgen: state.architectures enthält jetzt
         // Affinity-gespawnte Strukturen — Bäume + (idealerweise)
         // mindestens eine der drei neuen Bauplan-Typen.
-        const archs = Array.isArray(r.state.architectures) ? r.state.architectures : [];
+        const archs = Array.isArray(st.architectures) ? st.architectures : [];
         out.archCount = archs.length;
         const typeCounts = {};
         for (const a of archs) typeCounts[a.type] = (typeCounts[a.type] || 0) + 1;
@@ -1630,11 +1625,11 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         const before = archs.length;
         // Ein bereits-befüllter Chunk: zweiter Aufruf MUSS 0
         // zurückgeben dank voxelPopulatedChunks-Cache.
-        const firstChunkKey = r.state.voxelPopulatedChunks ? [...r.state.voxelPopulatedChunks][0] : null;
+        const firstChunkKey = st.voxelPopulatedChunks ? [...st.voxelPopulatedChunks][0] : null;
         if (firstChunkKey) {
             const [cx, cz] = firstChunkKey.split(",").map(Number);
             const secondReturn = r._populateVoxelChunkVegetation(cx, cz);
-            const after = r.state.architectures.length;
+            const after = st.architectures.length;
             out.populateIdempotent = secondReturn === 0 && after === before;
         }
         // Affinitäts-Tag-Wächter: die Parts einer spawnbaren Architektur bestimmen WO sie spawnt
@@ -1768,9 +1763,9 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
     // felsbogen (Trilithon, begehbarer Überhang) + felsturm (Fels-Nadel) als Welt-Bürger — KEIN
     // Voxel-Terrain: die Per-Part-Kollision lässt zwischen den Pfeilern eine echte begehbare Lücke.
     const wave6gP3Results = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
+        if (!r || !st) return null;
         const out = {};
-        const bps = r.state.blueprints || {};
+        const bps = st.blueprints || {};
         const fb = bps.felsbogen;
         const ft = bps.felsturm;
 
@@ -1820,7 +1815,7 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         // solidem Stein-Part); die Lücke zwischen den Pfeilern hat keinen Part → begehbarer Durchgang.
         // Unter Foundry hinge „gerendert + Farbe“ am Varianten-Cache (lauf-abhängig warm/kalt) — geprüft
         // wird der klassische/Grammatik-Spawn unter lokalem __withNoFoundry-Hook (deterministisch).
-        const pm = r.state.playerMesh;
+        const pm = st.playerMesh;
         const px = pm ? pm.position.x : 0;
         const pz = pm ? pm.position.z : 0;
         window.__withNoFoundry(() => {
@@ -1883,14 +1878,14 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         // Placement-Probe über den Voxel-Populator: über ein Raster frischer Chunks MUSS mindestens ein
         // Felsbogen + ein Felsturm spawnen (Landmark-Wurf 0.014 × Affinitäts-Floor; 12×12=144 Chunks =
         // statistisch sicher).
-        const vorArch = new Set(r.state.architectures);
+        const vorArch = new Set(st.architectures);
         // Frische Voxel-Chunk-Indices, deutlich außerhalb des
         // initialen 9×9-Voxel-Rings (cx,cz ∈ [-4..4]).
         const fresh = new Set();
         for (let cx = 20; cx <= 31; cx++) {
             for (let cz = 20; cz <= 31; cz++) {
                 const key = `${cx},${cz}`;
-                if (r.state.voxelPopulatedChunks && r.state.voxelPopulatedChunks.has(key)) continue;
+                if (st.voxelPopulatedChunks && st.voxelPopulatedChunks.has(key)) continue;
                 fresh.add(key);
                 // der Test-Pfad braucht synchrone Spawns (er
                 // misst gleich danach state.architectures); im echten
@@ -1900,7 +1895,7 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         }
         let fbCount = 0;
         let ftCount = 0;
-        for (const e of r.state.architectures) {
+        for (const e of st.architectures) {
             if (vorArch.has(e)) continue;
             const t = e.type;
             if (t === "felsbogen") fbCount++;
@@ -1911,12 +1906,12 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         out.placementWorks = fbCount > 0 && ftCount > 0;
         // die Würfe ferner Daten-Chunks (nie gebaut) fallen nach Identität aus der Liste — der Abbau-Pfad schriebe je Wurf
         // einen Journal-Eintrag und füllte dessen Deckel (200)
-        r.state.architectures = r.state.architectures.filter((x) => vorArch.has(x));
+        st.architectures = st.architectures.filter((x) => vorArch.has(x));
         // Test-Räume aus dem Voxel-Idempotenz-Cache löschen
         // (sonst leben die Test-Chunk-Keys dauerhaft + blockieren
         // einen späteren echten Pass).
         for (const k of fresh) {
-            if (r.state.voxelPopulatedChunks) r.state.voxelPopulatedChunks.delete(k);
+            if (st.voxelPopulatedChunks) st.voxelPopulatedChunks.delete(k);
         }
         return out;
     });
@@ -1960,7 +1955,7 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
     // Ein Grabe-Hieb löst Terrain in Material auf, dessen Identität aus worldFieldAt emergiert (die
     // sichtbare Farbe ist das Material, das der Spieler bekommt) — keine Biom-Tabelle.
     const wave6gP4Results = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
+        if (!r || !st) return null;
         const out = {};
 
         // Resonanz — die dominante Welt-Achse bestimmt das Material.
@@ -2002,7 +1997,7 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         // Das gegrabene Material schichtet nach Tiefe: DENSELBEN 3-arg-Aufruf wie digTerrain machen,
         // sonst rechnet der Test ohne Tiefe gegen die Strata.
         const expectMat = r._terrainMaterialAt(digX, digZ, digY);
-        const inv = r.state.player.inventory;
+        const inv = st.player.inventory;
         // Inventar tief snapshotten — der Grabe-Test darf den
         // Spieler-Zustand nicht verschmutzen (spätere 6.C1-Tests
         // prüfen „Inventar initial leer"). Disziplin.
@@ -2021,12 +2016,12 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         // Un-mocked Realpfad: der ECHTE _raycastWorldHit gegen das echte Terrain; nur
         // _pickArchitectureAtCrosshair wird genullt (garantiert den Terrain-Zweig). Kamera blickt nach
         // unten → beweist Raycast + `carveVoxel` + Material-Yield ohne Mock.
-        if (r.state.camera && r.state.playerMesh) {
+        if (st.camera && st.playerMesh) {
             // Ein paar Loop-Ticks pumpen, damit der Spieler per Schwerkraft auf der Oberfläche settled —
             // sonst hängt der feld-native Raycast vom zufälligen Welt-Zustand ab (renderer-unabhängig).
             for (let k = 0; k < 12; k++) r._gameLoopTick(performance.now());
-            const cam = r.state.camera;
-            const pm = r.state.playerMesh;
+            const cam = st.camera;
+            const pm = st.playerMesh;
             const savedPos = cam.position.clone();
             const savedQuat = cam.quaternion.clone();
             cam.position.set(pm.position.x, pm.position.y + 4, pm.position.z);
@@ -2084,7 +2079,7 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
 // Legacy gen<3 = bit-identisch zu Pre-V18.203 (V18.181/Disziplin).
 async function checkBandV18203Gamma3FeldCharakter({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
 
         // (F1) FIELD_CHARACTER frozen Konstanten
@@ -2101,17 +2096,17 @@ async function checkBandV18203Gamma3FeldCharakter({ page, check }) {
         }
 
         // Save state für Tests
-        const origGen = r.state.worldMeta ? r.state.worldMeta.genVersion : undefined;
-        const origField = r.state.worldField;
+        const origGen = st.worldMeta ? st.worldMeta.genVersion : undefined;
+        const origField = st.worldField;
         try {
             // (F2) LEGACY gen=1: bit-identisch zu Pre-V18.203. Lass uns die
             // ALTE Form selbst nachrechnen (s=0.005 für alle vier) und mit
             // worldFieldAt vergleichen.
-            r.state.worldMeta = { ...(r.state.worldMeta || {}), genVersion: 1 };
-            r.state.worldField = null; // re-init
+            st.worldMeta = { ...(st.worldMeta || {}), genVersion: 1 };
+            st.worldField = null; // re-init
             const f1 = r.worldFieldAt(100, 200);
             const ws = 0.005;
-            const f1Manual = r.state.worldField;
+            const f1Manual = st.worldField;
             const n01 = (v) => Math.max(0, Math.min(1, (v + 1) / 2));
             const legacyExpected = {
                 lebendig: n01(f1Manual.lebendigNoise.noise2D(100 * ws, 200 * ws)),
@@ -2127,8 +2122,8 @@ async function checkBandV18203Gamma3FeldCharakter({ page, check }) {
 
             // (F3) GEN=3: Frequenz-Fächer aktiv — anderer Wert als Legacy am
             // selben Punkt.
-            r.state.worldMeta.genVersion = 3;
-            r.state.worldField = null;
+            st.worldMeta.genVersion = 3;
+            st.worldField = null;
             const f3 = r.worldFieldAt(100, 200);
             // f3 sollte ANDERE Werte als f1 haben (mindestens eine Stimme)
             out.gen3DiffersFromLegacy =
@@ -2147,16 +2142,16 @@ async function checkBandV18203Gamma3FeldCharakter({ page, check }) {
 
             // (F5) GEN=2 zwischen Tor: gen 2 ist Γ1-Feuchte, NICHT Γ3.
             // Verhalten = LEGACY (s=0.005 für alle, kein Frequenz-Fächer).
-            r.state.worldMeta.genVersion = 2;
-            r.state.worldField = null;
+            st.worldMeta.genVersion = 2;
+            st.worldField = null;
             const f2 = r.worldFieldAt(100, 200);
             out.gen2StaysLegacy = Math.abs(f1.lebendig - f2.lebendig) < 1e-9 && Math.abs(f1.dichte - f2.dichte) < 1e-9;
 
             // (F6) Wellenlängen-Effekt: dichte (λ340) sollte LANGSAMER variieren
             // als magieleitung (λ160) bei gen 3. Wir testen über eine kurze
             // Distanz (40 m) → magie sollte mehr "Bewegung" zeigen.
-            r.state.worldMeta.genVersion = 3;
-            r.state.worldField = null;
+            st.worldMeta.genVersion = 3;
+            st.worldField = null;
             let totalDeltaMagie = 0;
             let totalDeltaDichte = 0;
             const fA = r.worldFieldAt(0, 0);
@@ -2174,10 +2169,10 @@ async function checkBandV18203Gamma3FeldCharakter({ page, check }) {
             // (F9) DOMAIN-WARP: bei gen=3 verschiebt der Warp die Lese-Position.
             // Wir vergleichen: worldFieldAt(x,z) mit warp vs. ohne warp
             // (manuell, mit den ECHTEN Noise-Instanzen).
-            r.state.worldMeta.genVersion = 3;
-            r.state.worldField = null;
+            st.worldMeta.genVersion = 3;
+            st.worldField = null;
             const fW = r.worldFieldAt(500, 700);
-            const fwNoise = r.state.worldField;
+            const fwNoise = st.worldField;
             // Berechne ohne Warp (warpAmp = 0)
             const sLeb = 1 / FC.lambdaLebendig;
             const noWarp = n01(fwNoise.lebendigNoise.noise2D(500 * sLeb, 700 * sLeb));
@@ -2192,22 +2187,22 @@ async function checkBandV18203Gamma3FeldCharakter({ page, check }) {
 
 
             // (F11) Bei gen<3: warp wird NICHT angewendet (Legacy bleibt clean)
-            r.state.worldMeta.genVersion = 1;
-            r.state.worldField = null;
+            st.worldMeta.genVersion = 1;
+            st.worldField = null;
             const fLeg2 = r.worldFieldAt(500, 700);
             const wsLeg = 0.005;
             const legacyExpected2 = {
-                lebendig: n01(r.state.worldField.lebendigNoise.noise2D(500 * wsLeg, 700 * wsLeg)),
+                lebendig: n01(st.worldField.lebendigNoise.noise2D(500 * wsLeg, 700 * wsLeg)),
             };
             // legacy verwendet KEINEN Warp → exakt der unWarp-Wert
             out.legacyNoWarp = Math.abs(fLeg2.lebendig - legacyExpected2.lebendig) < 1e-9;
         } finally {
             if (origGen === undefined) {
-                if (r.state.worldMeta) delete r.state.worldMeta.genVersion;
-            } else if (r.state.worldMeta) {
-                r.state.worldMeta.genVersion = origGen;
+                if (st.worldMeta) delete st.worldMeta.genVersion;
+            } else if (st.worldMeta) {
+                st.worldMeta.genVersion = origGen;
             }
-            r.state.worldField = origField;
+            st.worldField = origField;
         }
         return out;
     });
