@@ -1153,8 +1153,16 @@ async function starte() {
                 if (st.world) st.world.timeOfDay = k.uhr;
                 // der Pfad des Spielers (sein Satz „nacht"): der Uhr-Schreiber springt, der Himmel folgt im selben Anwenden
                 r.setTimeOfDay(k.uhr, "human");
+                // DER POOL ZU SEINEM FIXPUNKT (w4-proben-tempo, 30.10.; bis dahin fest 20 × 50 ms je Schuss): jeder Platz hält eine
+                // gewählte Quelle mit Blende 1 oder ist frei mit Blende 0, jede Gewählte hat ihren Platz — danach ändert kein Takt
+                // mehr etwas (die Bild-Uhr steht unter der Bühne, die Wahl am stehenden Auge); höchstens dieselbe Sekunde wie zuvor
+                const fest = (P) =>
+                    !!P &&
+                    P.halter.every((h, j) => (h ? P.blende[j] === 1 && P.wahl.some((w) => w.id === h.id) : P.blende[j] === 0)) &&
+                    (!P.halter.includes(null) || P.wahl.every((w) => P.halter.some((h) => h && h.id === w.id)));
                 for (let i = 0; i < 20; i++) {
                     r._leuchtTakt();
+                    if (fest(r._leuchtPool)) break;
                     await sleep(50);
                 }
             }
