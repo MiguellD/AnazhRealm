@@ -3,7 +3,7 @@
  "je": {
   "affekt.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 6.38 dB, Nachbar 0 dB, Stempel 0/0 an 715754fc headless · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Tag third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht first GRÜN: fällen -0.12 -4.77 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.76 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 715754fc radeon · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Tag third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.78 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 715754fc gtx",
+   "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 6.38 dB, Nachbar 0 dB, Stempel 0/0 an 715754fc headless · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Tag third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht first GRÜN: fällen -0.12 -4.77 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.76 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 715754fc radeon · Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.76 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 3ed95dcf gtx",
    "stationen": [
     {
      "id": "affekt.K1#1",
@@ -27,10 +27,9 @@
      "id": "affekt.K1#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Tag third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.78 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25)",
-     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.76 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25)",
+     "sha": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
+     "grund": null
     }
    ]
   },
@@ -621,7 +620,7 @@
   },
   "ferne.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Sicht im Sturm 1493 m (Azimute 1457/1459/1493/1614, Soll 1 500 m ±15 %), [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Sicht im Sturm 1470 m (Azimute 1454/1456/1470/1599, Soll 1 500 m ±15 %), [linse-gpu] nvidia/pascal an b3f9ae95 gtx",
+   "beleg": "Maschine: gehalten: Sicht im Sturm 1493 m (Azimute 1457/1459/1493/1614, Soll 1 500 m ±15 %), [linse-gpu] amd/rdna-3 an 715754fc radeon · Sicht im Sturm 1506 m (Azimute 1442/1494/1506/1509, Soll 1 500 m ±15 %), [linse-gpu] nvidia/pascal an 3ed95dcf gtx",
    "stationen": [
     {
      "id": "ferne.K5#1",
@@ -636,10 +635,9 @@
      "id": "ferne.K5#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Sicht im Sturm 1470 m (Azimute 1454/1456/1470/1599, Soll 1 500 m ±15 %), [linse-gpu] nvidia/pascal",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "Sicht im Sturm 1506 m (Azimute 1442/1494/1506/1509, Soll 1 500 m ±15 %), [linse-gpu] nvidia/pascal",
+     "sha": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
+     "grund": null
     }
    ]
   },
@@ -711,7 +709,7 @@
   },
   "gelaende.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: spiegelTreue 0.7801 (wasserSatz 36243 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 122.9 σ 52.1 schwarz 0.0 % weiß 0.1 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 an 715754fc radeon · gehalten: spiegelTreue 0.7712 (wasserSatz 36180 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 123 σ 52.1 schwarz 0.0 % weiß 0.1 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal an 715754fc gtx — offen: gelaende.K3#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: gehalten: spiegelTreue 0.7801 (wasserSatz 36243 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 122.9 σ 52.1 schwarz 0.0 % weiß 0.1 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 an 715754fc radeon · spiegelTreue 0.7569 (wasserSatz 36253 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 100.1 σ 41.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.135 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal an 3ed95dcf gtx — offen: gelaende.K3#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "gelaende.K3#1",
@@ -726,10 +724,9 @@
      "id": "gelaende.K3#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "spiegelTreue 0.7712 (wasserSatz 36180 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 123 σ 52.1 schwarz 0.0 % weiß 0.1 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
-     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "spiegelTreue 0.7569 (wasserSatz 36253 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 100.1 σ 41.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.135 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
+     "sha": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
+     "grund": null
     }
    ]
   },
@@ -792,7 +789,7 @@
   },
   "haar.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: arm GRÜN strich 0.5135 Soll [0.4358,0.6538] · third GRÜN strich 0.5293 Soll [0.4358,0.6538] an 715754fc radeon · gehalten: arm GRÜN strich 0.5287 Soll [0.4358,0.6538] · third GRÜN strich 0.4976 Soll [0.4358,0.6538] an b3f9ae95 gtx",
+   "beleg": "Maschine: gehalten: arm GRÜN strich 0.5135 Soll [0.4358,0.6538] · third GRÜN strich 0.5293 Soll [0.4358,0.6538] an 715754fc radeon",
    "stationen": [
     {
      "id": "haar.K1#1",
@@ -806,11 +803,10 @@
     {
      "id": "haar.K1#1",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "arm GRÜN strich 0.5287 Soll [0.4358,0.6538] · third GRÜN strich 0.4976 Soll [0.4358,0.6538]",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "gruen": false,
+     "zahl": "arm GRÜN strich 0.4405 Soll [0.4358,0.6538] · third ROT strich 0.7051 Soll [0.4358,0.6538] — strich 0.7051 > 0.6538",
+     "sha": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
+     "grund": "ROT: arm GRÜN strich 0.4405 Soll [0.4358,0.6538] · third ROT strich 0.7051 Soll [0.4358,0.6538] — strich 0.7051 > 0.6538"
     }
    ]
   },
@@ -1097,7 +1093,7 @@
   },
   "klang.K2": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: r 0.81 bei Lag 0 (n 119), Spitze 0.84 bei -0.5 s, CV Bild 0.27 / Ohr 0.55, 115.8 fps, Klang an an b3f9ae95 radeon · gehalten: r 0.66 bei Lag 0 (n 119), Spitze 0.72 bei -1 s, CV Bild 0.30 / Ohr 0.55, 80.7 fps, Klang an an 715754fc gtx · gehalten: Ufer r 0.93 bei Lag 0 (n 269, Spitze 0.93 bei 0.5 s, CV Bild 0.31 / Ohr 0.41, stumm 0/267) · Regen r 1.00 bei Lag 0 (n 269, Spitze 1.00 bei -0.5 s, CV Bild 0.62 / Ohr 0.63, stumm 0/261) · Selbsttest (eingefroren) ROT an 715754fc headless",
+   "beleg": "Maschine: gehalten: r 0.81 bei Lag 0 (n 119), Spitze 0.84 bei -0.5 s, CV Bild 0.27 / Ohr 0.55, 115.8 fps, Klang an an b3f9ae95 radeon · gehalten: Ufer r 0.93 bei Lag 0 (n 269, Spitze 0.93 bei 0.5 s, CV Bild 0.31 / Ohr 0.41, stumm 0/267) · Regen r 1.00 bei Lag 0 (n 269, Spitze 1.00 bei -0.5 s, CV Bild 0.62 / Ohr 0.63, stumm 0/261) · Selbsttest (eingefroren) ROT an 715754fc headless",
    "stationen": [
     {
      "id": "klang.K2#1",
@@ -1111,11 +1107,10 @@
     {
      "id": "klang.K2#1",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "r 0.66 bei Lag 0 (n 119), Spitze 0.72 bei -1 s, CV Bild 0.30 / Ohr 0.55, 80.7 fps, Klang an",
-     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "gruen": false,
+     "zahl": "keine Wind-Zeile (Exit 1)",
+     "sha": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
+     "grund": "ROT: keine Wind-Zeile (Exit 1)"
     },
     {
      "id": "klang.K2#2",
@@ -1220,7 +1215,7 @@
   },
   "leib.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: schlechtester von 3 Läufen p95 ms ego/gehen 49.2 · third/gehen 45.5 · ego/wechsel 44.6 · third/wechsel 39.9 · Bild 16.7/16.9/16.8 ms an 715754fc radeon · gehalten: schlechtester von 3 Läufen p95 ms ego/gehen 45 · third/gehen 43.2 · ego/wechsel 27.7 · third/wechsel 24.8 · Bild 15/14.7/14.8 ms an b3f9ae95 gtx — offen: leib.K1#2 radeon: Station seit der Messung geändert · leib.K1#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: schlechtester von 3 Läufen p95 ms ego/gehen 49.2 · third/gehen 45.5 · ego/wechsel 44.6 · third/wechsel 39.9 · Bild 16.7/16.9/16.8 ms an 715754fc radeon · schlechtester von 1 Läufen p95 ms ego/gehen 43.2 · third/gehen 37.2 · ego/wechsel 26.6 · third/wechsel 38.5 · Bild 16.4 ms an 3ed95dcf gtx — offen: leib.K1#2 radeon: Station seit der Messung geändert · leib.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "leib.K1#1",
@@ -1235,10 +1230,9 @@
      "id": "leib.K1#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 45 · third/gehen 43.2 · ego/wechsel 27.7 · third/wechsel 24.8 · Bild 15/14.7/14.8 ms",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "schlechtester von 1 Läufen p95 ms ego/gehen 43.2 · third/gehen 37.2 · ego/wechsel 26.6 · third/wechsel 38.5 · Bild 16.4 ms",
+     "sha": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
+     "grund": null
     },
     {
      "id": "leib.K1#2",
@@ -1370,22 +1364,21 @@
   },
   "licht.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: ROT: genesis: Karte Luma 124.1, Sprung 0.372 EV, Buckel 1.58 EV, Sonne 10° 1.53 EV R/B ×1.68 | 0.89 EV R/B ×1.43, Nacht -0.34 EV Luma 55.8 · wiese: Karte Luma 124.1, Sprung 0.581 EV, Buckel 1.22 EV, Sonne 10° 0.10 EV R/B ×1.35 | 0.39 EV R/B ×0.97, Nacht -2.11 EV Luma 29 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 1.90 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 1.90 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 1.90 Stufen neben  · [linse-gpu] nvidia/pascal an 3ed95dcf",
    "stationen": [
     {
      "id": "licht.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "genesis: Karte Luma 124.1, Sprung 0.372 EV, Buckel 1.58 EV, Sonne 10° 1.53 EV R/B ×1.68 | 0.89 EV R/B ×1.43, Nacht -0.34 EV Luma 55.8 · wiese: Karte Luma 124.1, Sprung 0.581 EV, Buckel 1.22 EV, Sonne 10° 0.10 EV R/B ×1.35 | 0.39 EV R/B ×0.97, Nacht -2.11 EV Luma 29 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 1.90 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 1.90 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 1.90 Stufen neben  · [linse-gpu] nvidia/pascal",
+     "sha": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
+     "grund": "ROT: genesis: Karte Luma 124.1, Sprung 0.372 EV, Buckel 1.58 EV, Sonne 10° 1.53 EV R/B ×1.68 | 0.89 EV R/B ×1.43, Nacht -0.34 EV Luma 55.8 · wiese: Karte Luma 124.1, Sprung 0.581 EV, Buckel 1.22 EV, Sonne 10° 0.10 EV R/B ×1.35 | 0.39 EV R/B ×0.97, Nacht -2.11 EV Luma 29 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 1.90 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 1.90 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 1.90 Stufen neben  · [linse-gpu] nvidia/pascal"
     }
    ]
   },
   "licht.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Verhältnis 5.067 (5–12,5), Schatten-Anteil 0.1974 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Verhältnis 5.012 (5–12,5), Schatten-Anteil 0.1995 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: licht.K2#2 radeon: Station seit der Messung geändert · licht.K2#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Verhältnis 5.067 (5–12,5), Schatten-Anteil 0.1974 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an 715754fc radeon · Verhältnis 5.231 (5–12,5), Schatten-Anteil 0.1912 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 3ed95dcf gtx — offen: licht.K2#2 radeon: Station seit der Messung geändert · licht.K2#2 gtx: ROT: Uhr 0.5 klar (Sonne 74.2°) 5.231, Schatten-Anteil 0.1912 · Uhr 0.27 klar (Sonne 7.2°) 0.89 UNGÜLTIG (A/B 0.767, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.033 UNGÜLTIG (A/B 0.791, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.759 UNGÜLTIG (A/B 1.000, A/C 1.028, 1463 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.938 · Uhr 0.73 Regen (Sonne 6.7°) 1.063 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal an 3ed95dcf",
    "stationen": [
     {
      "id": "licht.K2#1",
@@ -1400,10 +1393,9 @@
      "id": "licht.K2#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Verhältnis 5.012 (5–12,5), Schatten-Anteil 0.1995 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "Verhältnis 5.231 (5–12,5), Schatten-Anteil 0.1912 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal",
+     "sha": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
+     "grund": null
     },
     {
      "id": "licht.K2#2",
@@ -1418,16 +1410,15 @@
      "id": "licht.K2#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "Uhr 0.5 klar (Sonne 74.2°) 5.231, Schatten-Anteil 0.1912 · Uhr 0.27 klar (Sonne 7.2°) 0.89 UNGÜLTIG (A/B 0.767, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.033 UNGÜLTIG (A/B 0.791, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.759 UNGÜLTIG (A/B 1.000, A/C 1.028, 1463 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.938 · Uhr 0.73 Regen (Sonne 6.7°) 1.063 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal",
+     "sha": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
+     "grund": "ROT: Uhr 0.5 klar (Sonne 74.2°) 5.231, Schatten-Anteil 0.1912 · Uhr 0.27 klar (Sonne 7.2°) 0.89 UNGÜLTIG (A/B 0.767, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.033 UNGÜLTIG (A/B 0.791, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.759 UNGÜLTIG (A/B 1.000, A/C 1.028, 1463 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.938 · Uhr 0.73 Regen (Sonne 6.7°) 1.063 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal"
     }
    ]
   },
   "licht.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: licht.K3#1 radeon: ungemessen (R10) · licht.K3#1 gtx: ungemessen (R10) · licht.K3#2 radeon: ungemessen (R10) · licht.K3#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: licht.K3#1 radeon: ungemessen (R10) · licht.K3#1 gtx: ROT: fichte@0.5 1.116 · fichte@0.27 1.062 · fichte@0.05 1.19 · tanne@0.5 1.004 · tanne@0.27 1.053 · tanne@0.05 1.116 · ring@0.5 1 · ring@0.27 0.997 · ring@0.05 1 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 3ed95dcf · licht.K3#2 radeon: ungemessen (R10) · licht.K3#2 gtx: ROT: fichte@0.5 1.116 · fichte@0.27 1.062 · fichte@0.05 1.19 · tanne@0.5 1.004 · tanne@0.27 1.053 · tanne@0.05 1.116 · ring@0.5 1 · ring@0.27 0.997 · ring@0.05 1 · feld@0.5 0.947 · feld@0.27 0.939 · feld@0.05 0.961 · feld0@0.5 0.923 · feld0@0.27 0.943 · feld0@0.05 0.967 · feld90@0.5 0.937 · feld90@0.27 0.957 · feld90@0.05 0.975 · feld180@0.5 0.936 · feld180@0.27 0.96 · feld180@0.05 0.975 · panorama@0.5 0.944 · panorama@0.27 0.975 · panorama@0.05 0.959 · spiegel@0.5 1.057 · spiegel@0.27 0.952 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.981 · spiegel180@0.05 0.995 · wasser@0.5 0.917 · wasser@0.27 0.956 · wasser@0.05 0.94 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 3ed95dcf",
    "stationen": [
     {
      "id": "licht.K3#1",
@@ -1442,10 +1433,9 @@
      "id": "licht.K3#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "fichte@0.5 1.116 · fichte@0.27 1.062 · fichte@0.05 1.19 · tanne@0.5 1.004 · tanne@0.27 1.053 · tanne@0.05 1.116 · ring@0.5 1 · ring@0.27 0.997 · ring@0.05 1 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+     "sha": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
+     "grund": "ROT: fichte@0.5 1.116 · fichte@0.27 1.062 · fichte@0.05 1.19 · tanne@0.5 1.004 · tanne@0.27 1.053 · tanne@0.05 1.116 · ring@0.5 1 · ring@0.27 0.997 · ring@0.05 1 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal"
     },
     {
      "id": "licht.K3#2",
@@ -1460,10 +1450,9 @@
      "id": "licht.K3#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "ungemessen (R10)",
-     "ungemessen": true
+     "zahl": "fichte@0.5 1.116 · fichte@0.27 1.062 · fichte@0.05 1.19 · tanne@0.5 1.004 · tanne@0.27 1.053 · tanne@0.05 1.116 · ring@0.5 1 · ring@0.27 0.997 · ring@0.05 1 · feld@0.5 0.947 · feld@0.27 0.939 · feld@0.05 0.961 · feld0@0.5 0.923 · feld0@0.27 0.943 · feld0@0.05 0.967 · feld90@0.5 0.937 · feld90@0.27 0.957 · feld90@0.05 0.975 · feld180@0.5 0.936 · feld180@0.27 0.96 · feld180@0.05 0.975 · panorama@0.5 0.944 · panorama@0.27 0.975 · panorama@0.05 0.959 · spiegel@0.5 1.057 · spiegel@0.27 0.952 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.981 · spiegel180@0.05 0.995 · wasser@0.5 0.917 · wasser@0.27 0.956 · wasser@0.05 0.94 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal",
+     "sha": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
+     "grund": "ROT: fichte@0.5 1.116 · fichte@0.27 1.062 · fichte@0.05 1.19 · tanne@0.5 1.004 · tanne@0.27 1.053 · tanne@0.05 1.116 · ring@0.5 1 · ring@0.27 0.997 · ring@0.05 1 · feld@0.5 0.947 · feld@0.27 0.939 · feld@0.05 0.961 · feld0@0.5 0.923 · feld0@0.27 0.943 · feld0@0.05 0.967 · feld90@0.5 0.937 · feld90@0.27 0.957 · feld90@0.05 0.975 · feld180@0.5 0.936 · feld180@0.27 0.96 · feld180@0.05 0.975 · panorama@0.5 0.944 · panorama@0.27 0.975 · panorama@0.05 0.959 · spiegel@0.5 1.057 · spiegel@0.27 0.952 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.981 · spiegel180@0.05 0.995 · wasser@0.5 0.917 · wasser@0.27 0.956 · wasser@0.05 0.94 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal"
     }
    ]
   },
@@ -1541,16 +1530,15 @@
   },
   "lod.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/haenger-linse.cjs, scripts/lib/shader-kosten.cjs, scripts/werkbank.cjs)",
+   "beleg": "Maschine: 0 — offen: lod.K3#1 gtx: ROT: keine C6-Zeile (Exit 1) · [linse-gpu] nvidia/pascal an 3ed95dcf",
    "stationen": [
     {
      "id": "lod.K3#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/haenger-linse.cjs, scripts/lib/shader-kosten.cjs, scripts/werkbank.cjs)",
-     "ungemessen": true
+     "zahl": "keine C6-Zeile (Exit 1) · [linse-gpu] nvidia/pascal",
+     "sha": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
+     "grund": "ROT: keine C6-Zeile (Exit 1) · [linse-gpu] nvidia/pascal"
     }
    ]
   },
@@ -1778,7 +1766,7 @@
   },
   "material.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K4#1 radeon: Station seit der Messung geändert · material.K4#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/haenger-linse.cjs, scripts/lib/shader-kosten.cjs, scripts/werkbank.cjs)",
+   "beleg": "Maschine: 0 — offen: material.K4#1 radeon: Station seit der Messung geändert · material.K4#1 gtx: ROT: lack spiegelTreue 0.9683 (9411 px in der Ebene, 13 Blöcke, Einfall 52.9°, Normale [0.025,0.982,-0.185]) · glas spiegelTreue 0.3409 (9565 px in der Ebene, 74 Blöcke, Einfall 55.5°, Normale [0.042,0.999,-0.001]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5005786388888824 sunny · [linse-gpu] nvidia/pascal an 3ed95dcf",
    "stationen": [
     {
      "id": "material.K4#1",
@@ -1793,10 +1781,9 @@
      "id": "material.K4#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/haenger-linse.cjs, scripts/lib/shader-kosten.cjs, scripts/werkbank.cjs)",
-     "ungemessen": true
+     "zahl": "lack spiegelTreue 0.9683 (9411 px in der Ebene, 13 Blöcke, Einfall 52.9°, Normale [0.025,0.982,-0.185]) · glas spiegelTreue 0.3409 (9565 px in der Ebene, 74 Blöcke, Einfall 55.5°, Normale [0.042,0.999,-0.001]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5005786388888824 sunny · [linse-gpu] nvidia/pascal",
+     "sha": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
+     "grund": "ROT: lack spiegelTreue 0.9683 (9411 px in der Ebene, 13 Blöcke, Einfall 52.9°, Normale [0.025,0.982,-0.185]) · glas spiegelTreue 0.3409 (9565 px in der Ebene, 74 Blöcke, Einfall 55.5°, Normale [0.042,0.999,-0.001]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5005786388888824 sunny · [linse-gpu] nvidia/pascal"
     }
    ]
   },
@@ -2424,7 +2411,7 @@
   },
   "profiband.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: ungemessen (R10) · profiband.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/haenger-linse.cjs, scripts/lib/shader-kosten.cjs, scripts/werkbank.cjs) · profiband.K5#2 radeon: ungemessen (R10) · profiband.K5#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: ungemessen (R10) · profiband.K5#1 gtx: ROT: Dauer undefined min in undefined Seite(n), undefined Proben: Dauerlast undefined Bilder · Bild-p95 undefined (p99 undefined, max undefined) ms · Takt-p95 undefined ms · VRAM-p95 undefined MB · Anker Bild-p95 ? → ? ms · Heap ? → ? MB · VRAM nach GC ? → ? MB · Weg 0.0 km (gegangen/gefahren 0.0) · [linse-gpu] nvidia/pascal — ROT 1: kein Stand des Anfangs (die Glätte fuhr nicht vor der Dauer) an 3ed95dcf · profiband.K5#2 radeon: ungemessen (R10) · profiband.K5#2 gtx: ROT: Dauer undefined min in undefined Seite(n), undefined Proben: Dauerlast undefined Bilder · Bild-p95 undefined (p99 undefined, max undefined) ms · Takt-p95 undefined ms · VRAM-p95 undefined MB · Anker Bild-p95 ? → ? ms · Heap ? → ? MB · VRAM nach GC ? → ? MB · Weg 0.0 km (gegangen/gefahren 0.0) · [linse-gpu] nvidia/pascal — ROT 1: kein Stand des Anfangs (die Glätte fuhr nicht vor der Dauer) an 3ed95dcf",
    "stationen": [
     {
      "id": "profiband.K5#1",
@@ -2439,10 +2426,9 @@
      "id": "profiband.K5#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/haenger-linse.cjs, scripts/lib/shader-kosten.cjs, scripts/werkbank.cjs)",
-     "ungemessen": true
+     "zahl": "Dauer undefined min in undefined Seite(n), undefined Proben: Dauerlast undefined Bilder · Bild-p95 undefined (p99 undefined, max undefined) ms · Takt-p95 undefined ms · VRAM-p95 undefined MB · Anker Bild-p95 ? → ? ms · Heap ? → ? MB · VRAM nach GC ? → ? MB · Weg 0.0 km (gegangen/gefahren 0.0) · [linse-gpu] nvidia/pascal — ROT 1: kein Stand des Anfangs (die Glätte fuhr nicht vor der Dauer)",
+     "sha": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
+     "grund": "ROT: Dauer undefined min in undefined Seite(n), undefined Proben: Dauerlast undefined Bilder · Bild-p95 undefined (p99 undefined, max undefined) ms · Takt-p95 undefined ms · VRAM-p95 undefined MB · Anker Bild-p95 ? → ? ms · Heap ? → ? MB · VRAM nach GC ? → ? MB · Weg 0.0 km (gegangen/gefahren 0.0) · [linse-gpu] nvidia/pascal — ROT 1: kein Stand des Anfangs (die Glätte fuhr nicht vor der Dauer)"
     },
     {
      "id": "profiband.K5#2",
@@ -2457,10 +2443,9 @@
      "id": "profiband.K5#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "Dauer undefined min in undefined Seite(n), undefined Proben: Dauerlast undefined Bilder · Bild-p95 undefined (p99 undefined, max undefined) ms · Takt-p95 undefined ms · VRAM-p95 undefined MB · Anker Bild-p95 ? → ? ms · Heap ? → ? MB · VRAM nach GC ? → ? MB · Weg 0.0 km (gegangen/gefahren 0.0) · [linse-gpu] nvidia/pascal — ROT 1: kein Stand des Anfangs (die Glätte fuhr nicht vor der Dauer)",
+     "sha": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
+     "grund": "ROT: Dauer undefined min in undefined Seite(n), undefined Proben: Dauerlast undefined Bilder · Bild-p95 undefined (p99 undefined, max undefined) ms · Takt-p95 undefined ms · VRAM-p95 undefined MB · Anker Bild-p95 ? → ? ms · Heap ? → ? MB · VRAM nach GC ? → ? MB · Weg 0.0 km (gegangen/gefahren 0.0) · [linse-gpu] nvidia/pascal — ROT 1: kein Stand des Anfangs (die Glätte fuhr nicht vor der Dauer)"
     }
    ]
   },
@@ -2829,7 +2814,7 @@
   },
   "spielgang.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: spielgang.K3#1 radeon: Station seit der Messung geändert · spielgang.K3#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: spielgang.K3#1 radeon: Station seit der Messung geändert · spielgang.K3#1 gtx: ROT: HUD deckt 3.93 % (1920×1080, im Spiel) · INP HUD 160 ms (50) · Menü 2920 ms (20) an 3ed95dcf",
    "stationen": [
     {
      "id": "spielgang.K3#1",
@@ -2844,10 +2829,9 @@
      "id": "spielgang.K3#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "HUD deckt 3.93 % (1920×1080, im Spiel) · INP HUD 160 ms (50) · Menü 2920 ms (20)",
+     "sha": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
+     "grund": "ROT: HUD deckt 3.93 % (1920×1080, im Spiel) · INP HUD 160 ms (50) · Menü 2920 ms (20)"
     }
    ]
   },
@@ -3681,8 +3665,11 @@
    ]
   }
  },
- "rueckfall": [],
+ "rueckfall": [
+  "haar.K1#1 gtx: arm GRÜN strich 0.4405 Soll [0.4358,0.6538] · third ROT strich 0.7051 Soll [0.4358,0.6538] — strich 0.7051 > 0.6538 an 3ed95dcf (grün gebucht an b3f9ae95)",
+  "klang.K2#1 gtx: keine Wind-Zeile (Exit 1) an 3ed95dcf (grün gebucht an 715754fc)"
+ ],
  "kopfVoll": "3ed95dcf9cf6942278164d3a73d98a37dbfe64e7",
- "zeit": "2026-10-30T16:03:47.336Z",
- "vorher": "24a0f3ef"
+ "zeit": "2026-10-30T16:43:46.310Z",
+ "vorher": "3ed95dcf"
 }

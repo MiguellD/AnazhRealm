@@ -7,7 +7,7 @@
   "max": 330,
   "maschine": {
     "kopf": "3ed95dcf",
-    "zeit": "2026-10-30T16:03:47.336Z",
+    "zeit": "2026-10-30T16:43:46.310Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -269,7 +269,7 @@
           "punkte": 1,
           "staffel": "1 = spiegelTreue ≥ 0,6 an einer Pose in Ausgabe-Größe mit der Kamera des Spiels an einem Gerät · 2 = alle 12 Posen (Ego/Third × Mittag/Nacht/Regen × beide Geräte) und Fließ-Anisotropie ≥ 1,5",
           "messung": "werkbank bild --klasse wasser --ist am See 1816/−6168 und an einem Fluss mit Gefälle, 1920×1080, Ausgabe-Pfad, Kamera aus `_loopCamera` (keine Koordinaten im Werkzeug-Text). Soll-Tafel wasser: spiegelTreue ≥ 0,6; Fließ-Bild: Normalen-Anisotropie längs/quer zum Lauf ≥ 1,5 aus Gefälle × Einzugsgebiet. Uhr und Regen als Spieler-Wort (R9).",
-          "beleg": "Maschine: gehalten: spiegelTreue 0.7801 (wasserSatz 36243 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 122.9 σ 52.1 schwarz 0.0 % weiß 0.1 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 an 715754fc radeon · gehalten: spiegelTreue 0.7712 (wasserSatz 36180 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 123 σ 52.1 schwarz 0.0 % weiß 0.1 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal an 715754fc gtx — offen: gelaende.K3#2: kein Werkzeug (fehlt)",
+          "beleg": "Maschine: gehalten: spiegelTreue 0.7801 (wasserSatz 36243 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 122.9 σ 52.1 schwarz 0.0 % weiß 0.1 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 an 715754fc radeon · spiegelTreue 0.7569 (wasserSatz 36253 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 100.1 σ 41.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.135 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal an 3ed95dcf gtx — offen: gelaende.K3#2: kein Werkzeug (fehlt)",
           "schlupfloch": "Der Punkt stieg schon einmal am Lineal statt am Wasser (A13, 79e000ba: 0,473 → 0,706 ohne Welt-Byte). Die Neumessung in Ausgabe-Größe steht als Messschuld M1 und schreibt den Ist fest; ein Gewinn verlangt ein Welt-Byte (R6). Die Bühne hält Mittag (Lehre 17) — Pflicht ist die Posen-Liste, nicht die Bühne.",
           "aenderung": "640×360 und eine Kamera, die das Spiel nicht hat, trugen 1 → 0 (B09); gemessen 21.10. in Ausgabe-Größe an der Kamera des Spiels 0 → 1 (M1).",
           "maschine": true
@@ -1313,7 +1313,7 @@
           "punkte": 2,
           "staffel": "1 = Gewöhnung (δ von Tat 10 ≤ 0,3 × Tat 1) und Antwort am Ort (ΔE ≥ 2 am Ort der Tat gegen die Nachbarzelle, oder ein Klang-Parameter am Ort) an einer Pose · 2 = eine schädliche Tat kehrt das Vorzeichen um, nach 30 min Ruhe Baseline, Tag und Nacht, Ego und Third, beide Geräte",
           "messung": "Spielgang-Sequenz über werkbank eval mit echten Verben (pflegen, fällen, töten), 10× in 5 min; δ aus der Situation (lebendig + HP, `_playerSituationWohl`), nie aus der Emotion; Antwort im Ausgabe-Pfad binnen 2 s.",
-          "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 6.38 dB, Nachbar 0 dB, Stempel 0/0 an 715754fc headless · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Tag third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht first GRÜN: fällen -0.12 -4.77 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.76 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 715754fc radeon · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Tag third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.78 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 715754fc gtx",
+          "beleg": "Maschine: gehalten: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 6.38 dB, Nachbar 0 dB, Stempel 0/0 an 715754fc headless · gehalten: Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Tag third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht first GRÜN: fällen -0.12 -4.77 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.76 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 715754fc radeon · Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.76 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 3ed95dcf gtx",
           "schlupfloch": "„ΔE ≥ 2 am Spieler“ erfüllte der globale Tint, ohne Ort — die Täuschung, die Feld K5 verbietet (B32): er trägt 0; die Emotion direkt zu stempeln täuscht ebenso.",
           "aenderung": "Aus Leben-Feld K4; die Antwort muss örtlich sein (B32).",
           "maschine": true
@@ -1460,7 +1460,7 @@
           "punkte": 1,
           "staffel": "1 = Klasse fell in der Soll-Tafel (Soll aus externer REF), GRÜN auf Armlänge (0,7 m) und im Third (4 m) an einem Gerät · 2 = jede Gattung, L0 bis Karte ohne Ton-Sprung, beide Geräte",
           "messung": "werkbank bild --klasse fell: Strich-Kohärenz gegen REF, Albedo im realen Band, Ton je Stufe; Mutation einer Fell-Zeile ändert das Bild.",
-          "beleg": "Maschine: gehalten: arm GRÜN strich 0.5135 Soll [0.4358,0.6538] · third GRÜN strich 0.5293 Soll [0.4358,0.6538] an 715754fc radeon · gehalten: arm GRÜN strich 0.5287 Soll [0.4358,0.6538] · third GRÜN strich 0.4976 Soll [0.4358,0.6538] an b3f9ae95 gtx",
+          "beleg": "Maschine: gehalten: arm GRÜN strich 0.5135 Soll [0.4358,0.6538] · third GRÜN strich 0.5293 Soll [0.4358,0.6538] an 715754fc radeon",
           "schlupfloch": "Eine Fell-Textur ohne Gesetz bestünde das Bild an einer Gattung: die Messung je Gattung mit Mutation verlangt das Gesetz.",
           "aenderung": "Neu (V09, B72).",
           "maschine": true
@@ -1717,7 +1717,7 @@
           "punkte": 0,
           "staffel": "1 = an einem Gerät in einer Sicht über die ganze Bahn im Soll · 2 = beide Geräte, Ego UND Third",
           "messung": "werkbank licht --tag (die S7-Linse, gate:tag-achse:echt), erweitert: Uhr 0…1 in Schritten von 0,01 (um den Horizont 0,002), Spawn und Mess-Wiese, Ego UND Third, Ausgabe-Pfad, ≤ 3 min je Gerät. Soll: Mittag absolut verankert (18-%-Karte Luma 110–130); Sprung ≤ 0,1 EV je Schritt; keine Stunde > Mittag + 0,15 EV; Sonne 10° morgens und abends einzeln −0,5…−1,0 EV und R/B ≥ 1,3× Mittag; Nacht −3…−5 EV bei Luma ≥ 22; die Kurve folgt einer REF-Kurve aus realen HDR-Zeitraffern (Datei in spec/farbe) auf ±0,3 EV.",
-          "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: licht.K1#1 gtx: ROT: genesis: Karte Luma 124.1, Sprung 0.372 EV, Buckel 1.58 EV, Sonne 10° 1.53 EV R/B ×1.68 | 0.89 EV R/B ×1.43, Nacht -0.34 EV Luma 55.8 · wiese: Karte Luma 124.1, Sprung 0.581 EV, Buckel 1.22 EV, Sonne 10° 0.10 EV R/B ×1.35 | 0.39 EV R/B ×0.97, Nacht -2.11 EV Luma 29 · Linse TAG-ACHSE ROT: REF genesis: Uhr 0 (Sonne -74.21°) 1.90 Stufen neben der REF | REF genesis: Uhr 0.01 (Sonne -74.28°) 1.90 Stufen neben der REF | REF genesis: Uhr 0.02 (Sonne -73.56°) 1.90 Stufen neben  · [linse-gpu] nvidia/pascal an 3ed95dcf",
           "schlupfloch": "Das Fenster-Urteil (TAG_SOLL tief [−18; 15]°) ließ den Buckel darüber durch; Grenzen nur relativ zum Mittag bestünde, wer jede Nicht-Mittags-Stunde abdunkelt (B34) — darum der absolute Anker und die REF-Kurve; eine Kurve nur in Ego an einem Blick ist über die Richtung zur Sonne stellbar — darum Ego UND Third, zwei Orte, Luma nur aus dem Ausgabe-Bild.",
           "aenderung": "Mittag-Anker und REF-Kurve neu (B34); S7 ist seit f2904a72 auf main, sein Buckel ist das Vorher von H1.",
           "maschine": true
@@ -1727,7 +1727,7 @@
           "punkte": 1,
           "staffel": "1 = klar am Mittag Verhältnis 5–12,5 und Schatten-Anteil 0,08–0,20 an einem Gerät · 2 = alle Spalten Uhr 0,5/0,27/0,73 × klar/Regen, beide Geräte",
           "messung": "Spielgang-Station Mess-Wiese: eine 18-%- und eine Weiß-Kugel als Proben-Leib über das EINE Stoff-Programm der Welt (Albedo-Zeile der Tafel; ein eigenes MeshStandardMaterial auf der Kugel ist im Selbsttest ROT); aus der Luma von Sonnen- und Schattenseite im Ausgabe-Bild Licht-Verhältnis, Schatten-Anteil und Himmels-Azimut. Soll (Liu & Jordan 1960): klar mittags 5–12,5, Schatten-Anteil 0,08–0,20, Himmel zur Sonne ≥ 1,2; Sonne 10° ≥ 2,5; bedeckt ≤ 1,5.",
-          "beleg": "Maschine: gehalten: Verhältnis 5.067 (5–12,5), Schatten-Anteil 0.1974 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Verhältnis 5.012 (5–12,5), Schatten-Anteil 0.1995 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: licht.K2#2 radeon: Station seit der Messung geändert · licht.K2#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: gehalten: Verhältnis 5.067 (5–12,5), Schatten-Anteil 0.1974 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an 715754fc radeon · Verhältnis 5.231 (5–12,5), Schatten-Anteil 0.1912 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 3ed95dcf gtx — offen: licht.K2#2 radeon: Station seit der Messung geändert · licht.K2#2 gtx: ROT: Uhr 0.5 klar (Sonne 74.2°) 5.231, Schatten-Anteil 0.1912 · Uhr 0.27 klar (Sonne 7.2°) 0.89 UNGÜLTIG (A/B 0.767, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.033 UNGÜLTIG (A/B 0.791, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.759 UNGÜLTIG (A/B 1.000, A/C 1.028, 1463 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.938 · Uhr 0.73 Regen (Sonne 6.7°) 1.063 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal an 3ed95dcf",
           "schlupfloch": "Wer die Rechnung misst, misst sich selbst: ein Fehler hinter der Rechnung (Stoff-Antwort, Ton-Kurve, Schatten-Knoten) bliebe grün. Eine Kugel mit eigenem Stoff mäße die Probe statt der Welt (B35).",
           "aenderung": "Karte 1.0 gab Licht K1 „Mittag GRÜN“ aus der Rechnung der Belichtung → 0; die Kugel muss über den Welt-Stoff zeichnen (B35).",
           "maschine": true
@@ -1737,7 +1737,7 @@
           "punkte": 0,
           "staffel": "1 = Karte und Fern-Ring je Uhr 0,5/0,27/0,05 im Band 0,9–1,1 an einem Gerät · 2 = auch Feld-Pass, Panorama und Wasser, beide Geräte",
           "messung": "Die F6-Linse (werkbank licht --laub fichte,tanne,ring,haus --karte --uhr), erweitert um Feld-Pass, Panorama und Wasser: Luma-Verhältnis Fernstufe/Gestalt an der Naht je Uhr 0,5/0,27/0,05. Die Sicht im Wetter zählt Ferne K5.",
-          "beleg": "Maschine: 0 — offen: licht.K3#1 radeon: ungemessen (R10) · licht.K3#1 gtx: ungemessen (R10) · licht.K3#2 radeon: ungemessen (R10) · licht.K3#2 gtx: ungemessen (R10)",
+          "beleg": "Maschine: 0 — offen: licht.K3#1 radeon: ungemessen (R10) · licht.K3#1 gtx: ROT: fichte@0.5 1.116 · fichte@0.27 1.062 · fichte@0.05 1.19 · tanne@0.5 1.004 · tanne@0.27 1.053 · tanne@0.05 1.116 · ring@0.5 1 · ring@0.27 0.997 · ring@0.05 1 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 3ed95dcf · licht.K3#2 radeon: ungemessen (R10) · licht.K3#2 gtx: ROT: fichte@0.5 1.116 · fichte@0.27 1.062 · fichte@0.05 1.19 · tanne@0.5 1.004 · tanne@0.27 1.053 · tanne@0.05 1.116 · ring@0.5 1 · ring@0.27 0.997 · ring@0.05 1 · feld@0.5 0.947 · feld@0.27 0.939 · feld@0.05 0.961 · feld0@0.5 0.923 · feld0@0.27 0.943 · feld0@0.05 0.967 · feld90@0.5 0.937 · feld90@0.27 0.957 · feld90@0.05 0.975 · feld180@0.5 0.936 · feld180@0.27 0.96 · feld180@0.05 0.975 · panorama@0.5 0.944 · panorama@0.27 0.975 · panorama@0.05 0.959 · spiegel@0.5 1.057 · spiegel@0.27 0.952 · spiegel@0.05 1.003 · spiegel180@0.5 0.942 · spiegel180@0.27 0.981 · spiegel180@0.05 0.995 · wasser@0.5 0.917 · wasser@0.27 0.956 · wasser@0.05 0.94 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal an 3ed95dcf",
           "schlupfloch": "Der Mittag versteckt jeden Hand-Term (bei hoher Sonne fallen 0,3 + 0,7·N·L und Lambert fast zusammen): die Spalten 0,27 und 0,05. Eine Absenz-Probe auf Text wäre Linsen-Kosmetik: es urteilt das Bild-Verhältnis.",
           "aenderung": "Die F6-Messung zählte zweimal (Licht K3, Ferne K5) — EIN Heim hier.",
           "maschine": true
@@ -1884,7 +1884,7 @@
           "punkte": 1,
           "staffel": "1 = im Sturm Sicht 1,5 km ±15 % im Bild an einem Gerät · 2 = der Regenvorhang einer Front (Wetter K1) ist aus 2 km sichtbar, Nebel im Tal folgt dem Gelände, beide Geräte",
           "messung": "Station Hügel mit Wetter als Spieler-Wort (steht seit wetter-saat, 428fb6fe): Kontrast-Abfall gegen Distanz im Sturm; Vorhang als Luma-Kante am Ort der Front.",
-          "beleg": "Maschine: gehalten: Sicht im Sturm 1493 m (Azimute 1457/1459/1493/1614, Soll 1 500 m ±15 %), [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Sicht im Sturm 1470 m (Azimute 1454/1456/1470/1599, Soll 1 500 m ±15 %), [linse-gpu] nvidia/pascal an b3f9ae95 gtx",
+          "beleg": "Maschine: gehalten: Sicht im Sturm 1493 m (Azimute 1457/1459/1493/1614, Soll 1 500 m ±15 %), [linse-gpu] amd/rdna-3 an 715754fc radeon · Sicht im Sturm 1506 m (Azimute 1442/1494/1506/1509, Soll 1 500 m ±15 %), [linse-gpu] nvidia/pascal an 3ed95dcf gtx",
           "schlupfloch": "Nur bei klarem Mittag gemessen trägt jede Ferne: der Sturm ist Pflicht; ein Vorhang als Billboard ohne Front wäre Kulisse: er muss am Ort der Front aus Wetter K1 stehen.",
           "aenderung": "Die F6-Hälfte (Karte/Gestalt je Uhr) zählte Licht K3 doppelt; hier bleibt das Wetter.",
           "maschine": true
@@ -2006,7 +2006,7 @@
           "punkte": 0,
           "staffel": "1 = spiegelTreue ≥ 0,5 an Fenster-Glas ODER Lack aus Ego an einem Gerät · 2 = jede glänzende Klasse aus Ego und Third, kein Spiegel-Flimmern unter Bewegung, ≤ 1 ms an der GTX, beide Geräte",
           "messung": "werkbank bild an Haus-Fenster, GT-Lack und Klinge; derselbe Baustein, den `_wasserBlick` liest; fehlt die Spur, meldet der Rückfall auf die Himmels-Umgebung laut.",
-          "beleg": "Maschine: 0 — offen: material.K4#1 radeon: Station seit der Messung geändert · material.K4#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/haenger-linse.cjs, scripts/lib/shader-kosten.cjs, scripts/werkbank.cjs)",
+          "beleg": "Maschine: 0 — offen: material.K4#1 radeon: Station seit der Messung geändert · material.K4#1 gtx: ROT: lack spiegelTreue 0.9683 (9411 px in der Ebene, 13 Blöcke, Einfall 52.9°, Normale [0.025,0.982,-0.185]) · glas spiegelTreue 0.3409 (9565 px in der Ebene, 74 Blöcke, Einfall 55.5°, Normale [0.042,0.999,-0.001]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5005786388888824 sunny · [linse-gpu] nvidia/pascal an 3ed95dcf",
           "schlupfloch": "Eine gebackene Umgebung je Ort bestünde ein Standbild: Bewegung und eine zweite Pose verlangen die Spur; ein zweiter Spiegel-Weg neben dem Wasser wäre ein Zwilling.",
           "aenderung": "Neu (V08, B73). Das Nässe-Bild der Synthese-K5 zählt Wetter K2 (V23); die Ton-Kette Studio = Welt (Synthese-K2) zählt Studios K4 (B39, V16).",
           "maschine": true
@@ -2269,7 +2269,7 @@
           "punkte": 0,
           "staffel": "1 = Karten-Deckung ≥ 0,75 und IoU ≥ 0,65 bei −20/0/40/80° für Bäume an einem Gerät · 2 = je Familie (Baum, Haus, Tor, Wagen), Atlas im VRAM-Band (≤ 118 MB gesamt), beide Geräte",
           "messung": "Tor C6 (diag-foundry-impostor) und werkbank bild an Hügel und hohem Third.",
-          "beleg": "Maschine: 0 — offen: lod.K3#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/haenger-linse.cjs, scripts/lib/shader-kosten.cjs, scripts/werkbank.cjs)",
+          "beleg": "Maschine: 0 — offen: lod.K3#1 gtx: ROT: keine C6-Zeile (Exit 1) · [linse-gpu] nvidia/pascal an 3ed95dcf",
           "schlupfloch": "Mehr Ansichten ohne VRAM-Grenze erfüllen C6 und brechen E: das Band ist Teil des Solls; nur Bäume zu messen ließe Häuser und Wagen aus.",
           "maschine": true
         },
@@ -3291,7 +3291,7 @@
           "punkte": 1,
           "staffel": "1 = Taste → bewegter Leib im Ausgabe-Bild p95 ≤ 50 ms an einem Gerät (gehen, Sicht-Wechsel) · 2 = jedes Verb (gehen, springen, schwingen, einsteigen), beide Geräte",
           "messung": "Spielgang-Station leib: Eingabe-Ereignis (CDP) bis zum ersten Ausgabe-Bild mit Bewegung im Leib-Band, je 50 Proben, Ego und Third.",
-          "beleg": "Maschine: gehalten: schlechtester von 3 Läufen p95 ms ego/gehen 49.2 · third/gehen 45.5 · ego/wechsel 44.6 · third/wechsel 39.9 · Bild 16.7/16.9/16.8 ms an 715754fc radeon · gehalten: schlechtester von 3 Läufen p95 ms ego/gehen 45 · third/gehen 43.2 · ego/wechsel 27.7 · third/wechsel 24.8 · Bild 15/14.7/14.8 ms an b3f9ae95 gtx — offen: leib.K1#2 radeon: Station seit der Messung geändert · leib.K1#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: gehalten: schlechtester von 3 Läufen p95 ms ego/gehen 49.2 · third/gehen 45.5 · ego/wechsel 44.6 · third/wechsel 39.9 · Bild 16.7/16.9/16.8 ms an 715754fc radeon · schlechtester von 1 Läufen p95 ms ego/gehen 43.2 · third/gehen 37.2 · ego/wechsel 26.6 · third/wechsel 38.5 · Bild 16.4 ms an 3ed95dcf gtx — offen: leib.K1#2 radeon: Station seit der Messung geändert · leib.K1#2 gtx: Station seit der Messung geändert",
           "schlupfloch": "Taste bis Sim-Schritt wäre die Eigenmeldung: gezählt wird bis zum Pixel (das Maß von LDAT).",
           "aenderung": "Neu (V02); 22.10. jedes Verb an beiden Geräten gemessen 1 → 2.",
           "maschine": true
@@ -3541,7 +3541,7 @@
           "punkte": 0,
           "staffel": "1 = HUD und Menü antworten INP ≤ 200 ms und das HUD deckt ≤ 5 % des Bilds, an einem Gerät · 2 = Text ≥ 16 px bei 1080p, Tastenbelegung frei, beide Geräte",
           "messung": "Event-Timing-API am echten Fenster über den Spielgang; HUD-Maske aus dem Ausgabe-Bild.",
-          "beleg": "Maschine: 0 — offen: spielgang.K3#1 radeon: Station seit der Messung geändert · spielgang.K3#1 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: spielgang.K3#1 radeon: Station seit der Messung geändert · spielgang.K3#1 gtx: ROT: HUD deckt 3.93 % (1920×1080, im Spiel) · INP HUD 160 ms (50) · Menü 2920 ms (20) an 3ed95dcf",
           "schlupfloch": "Ein ausgeblendetes HUD deckt nichts und erklärt nichts: K2 in derselben Sitzung.",
           "aenderung": "Neu (Fehlliste B: HUD und Bedienung).",
           "maschine": true
@@ -4041,7 +4041,7 @@
           "punkte": 0,
           "staffel": "1 = an einem Gerät · 2 = an beiden",
           "messung": "Spielgang 20 min am Stück (ankommen, gehen, fahren, bauen, Tor, Nacht, Weg ≥ 5 km): p95 der letzten 5 min ≤ p95 der ersten 5 min × 1,05; VRAM-Drift ≤ 2 MB zurück am Start; `buf:ruhend` und `buf:verwaist` = 0 (`werkbank puffer`); Takt und Drossel beim Namen.",
-          "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: ungemessen (R10) · profiband.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/haenger-linse.cjs, scripts/lib/shader-kosten.cjs, scripts/werkbank.cjs) · profiband.K5#2 radeon: ungemessen (R10) · profiband.K5#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: ungemessen (R10) · profiband.K5#1 gtx: ROT: Dauer undefined min in undefined Seite(n), undefined Proben: Dauerlast undefined Bilder · Bild-p95 undefined (p99 undefined, max undefined) ms · Takt-p95 undefined ms · VRAM-p95 undefined MB · Anker Bild-p95 ? → ? ms · Heap ? → ? MB · VRAM nach GC ? → ? MB · Weg 0.0 km (gegangen/gefahren 0.0) · [linse-gpu] nvidia/pascal — ROT 1: kein Stand des Anfangs (die Glätte fuhr nicht vor der Dauer) an 3ed95dcf · profiband.K5#2 radeon: ungemessen (R10) · profiband.K5#2 gtx: ROT: Dauer undefined min in undefined Seite(n), undefined Proben: Dauerlast undefined Bilder · Bild-p95 undefined (p99 undefined, max undefined) ms · Takt-p95 undefined ms · VRAM-p95 undefined MB · Anker Bild-p95 ? → ? ms · Heap ? → ? MB · VRAM nach GC ? → ? MB · Weg 0.0 km (gegangen/gefahren 0.0) · [linse-gpu] nvidia/pascal — ROT 1: kein Stand des Anfangs (die Glätte fuhr nicht vor der Dauer) an 3ed95dcf",
           "schlupfloch": "Die Sitzung im Stand verbringen: feste Stationen mit Pflicht-Weg.",
           "maschine": true
         }
@@ -4129,7 +4129,7 @@
           "punkte": 2,
           "staffel": "1 = Wind an einem Gerät: Kreuzkorrelation Luma-Varianz der Halme/Kronen ↔ Pegel des Wind-Busses r ≥ 0,6 · 2 = auch Ufer (Pegel ↔ sichtbare Strömung) und Regen, beide Geräte",
           "messung": "`werkbank bild --zeit` und Klang-Abgriff in derselben Sitzung (60 s, Wiese, Böen frei); Mindest-Varianz beider Signale.",
-          "beleg": "Maschine: gehalten: r 0.81 bei Lag 0 (n 119), Spitze 0.84 bei -0.5 s, CV Bild 0.27 / Ohr 0.55, 115.8 fps, Klang an an b3f9ae95 radeon · gehalten: r 0.66 bei Lag 0 (n 119), Spitze 0.72 bei -1 s, CV Bild 0.30 / Ohr 0.55, 80.7 fps, Klang an an 715754fc gtx · gehalten: Ufer r 0.93 bei Lag 0 (n 269, Spitze 0.93 bei 0.5 s, CV Bild 0.31 / Ohr 0.41, stumm 0/267) · Regen r 1.00 bei Lag 0 (n 269, Spitze 1.00 bei -0.5 s, CV Bild 0.62 / Ohr 0.63, stumm 0/261) · Selbsttest (eingefroren) ROT an 715754fc headless",
+          "beleg": "Maschine: gehalten: r 0.81 bei Lag 0 (n 119), Spitze 0.84 bei -0.5 s, CV Bild 0.27 / Ohr 0.55, 115.8 fps, Klang an an b3f9ae95 radeon · gehalten: Ufer r 0.93 bei Lag 0 (n 269, Spitze 0.93 bei 0.5 s, CV Bild 0.31 / Ohr 0.41, stumm 0/267) · Regen r 1.00 bei Lag 0 (n 269, Spitze 1.00 bei -0.5 s, CV Bild 0.62 / Ohr 0.63, stumm 0/261) · Selbsttest (eingefroren) ROT an 715754fc headless",
           "schlupfloch": "Den Wind konstant setzen: Mindest-Varianz beider Signale und die Böen-Zeitskala aus dem Gesetz.",
           "aenderung": "EIN Heim der Kopplung Bild ↔ Ohr (Vegetation K2 trägt sie nicht mehr; B16, V25); gemessen 21.10. 0 → 1 (M15); nach R6 (klang-takt bdf4b129) 22.10. 1 → 0; am Kopf 6cfce28a gemessen (M33, r 0,87) 22.10. 0 → 1.",
           "maschine": true
