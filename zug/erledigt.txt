@@ -97,3 +97,4 @@ eich3-gtx Exit0 station eich-gtx.sh an 3ed95dcf
 z83-bisekt3 nicht-langsamer abab 4df8c302 gegen 73bdf938: w-ego 2+2 nicht-langsamer
 takt26-gtx gemessen punkte 3ed95dcf gtx: 12 grün / 28 rot
 eich4b-gtx Exit0 station eich-gtx.sh an 3ed95dcf
+z83-bisekt4 LANGSAMER abab 81ce4392 gegen 4df8c302: w-ego 4+4 LANGSAMER
