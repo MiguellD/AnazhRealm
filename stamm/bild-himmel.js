@@ -1464,14 +1464,14 @@ class AnazhRealm_bild_himmel {
             ).rgb;
             return select(amBoden(r, mu), vec3(0), t);
         };
-        // Ψ_ms in Zeilen QUADRATISCH in der Höhe (w = √(h/H)): die Grenzschicht des Dunsts (Skalenhöhe 1 km) trägt Zeilen
-        // bei 0, 0,10, 0,42, 0,94, 1,7 km. Linear (bis w4-ferne-blau) lag die zweite Zeile bei 3,2 km: jede Probe der Luft unter
-        // 1 km las zu mehr als zwei Dritteln die Zeile 1 m über dem Boden, wo die Bodenhälfte voll grün leuchtet — Duv +0,0009 …
-        // +0,0012 über dem genauen Integral (CPU-Nachbau der Tafeln: Radeon 715754fc +0,0074, der Nachbau +0,0074).
+        // Ψ_ms in Zeilen LINEAR in der Höhe (Hillaire): die zweite Zeile liegt bei 3,2 km. Quadratisch (w = √(h/H), Zeilen bei 0,
+        // 0,10, 0,42, 0,94 km — w4-ferne-blau, Duv −0,001 am Horizont) löste die Grenzschicht des Dunsts auf und hob im dichten
+        // Dunst des Regens das Licht des Himmels: das Regenbild stieg über das der Sonne (werkbank licht --naesse, Radeon: Wiese
+        // 0,966 → 1,012, Dorf 0,951 → 1,050; gate:naesse:echt ROT) — heil-w4-ferne-blau.
         const mehrfach = (h, mus) =>
             texture(
                 rtMS.texture,
-                vec2(subUv(mus.add(1).mul(0.5), Z.mehrfach[0]), subUv(sqrt(max(h, 0).div(RT - RG)), Z.mehrfach[1]))
+                vec2(subUv(mus.add(1).mul(0.5), Z.mehrfach[0]), subUv(h.div(RT - RG), Z.mehrfach[1]))
             ).level(float(0)).rgb;
         const phaseR = (nu) =>
             nu
@@ -1522,8 +1522,7 @@ class AnazhRealm_bild_himmel {
         const passMehrfach = Fn(() => {
             const q = uv();
             const mus = ausUv(q.x, Z.mehrfach[0]).mul(2).sub(1).toVar();
-            const w = ausUv(q.y, Z.mehrfach[1]);
-            const h = max(w.mul(w).mul(RT - RG), 0.001).toVar();
+            const h = max(ausUv(q.y, Z.mehrfach[1]).mul(RT - RG), 0.001).toVar();
             const r = h.add(RG).toVar();
             const sun = vec3(sqrt(max(float(1).sub(mus.mul(mus)), 0)), mus, 0).toVar();
             const Lsum = vec3(0).toVar();
@@ -3236,13 +3235,12 @@ AnazhRealm.ATMO_LUT = Object.freeze({
     richtungen: Object.freeze([12, 24]),
     schritte: Object.freeze({ durchlass: AnazhRealm._atmoKern().durchlassSchritte, mehrfach: 20, himmel: 32 }),
 });
-// DER BODEN DER ATMOSPHÄRE (D3, w4-ferne-blau): die Albedo der Welt, wie die Ferne sie zeichnet (linear) — das Mittel der EINEN
-// Fern-Farbe (`fernFarbeTeile` im Fern-Faden, `_fernAuftrag("feld")`, Sommer) auf einem 2-km-Gitter ±100 km um den Ursprung
-// (10 201 Punkte: 0,1130/0,1344/0,0646; um Genesis bis 20 km 0,1132/0,1341/0,0643), nie ein Grau. Er trägt die Mehrfach-
-// streuung und die untere Hälfte der Umgebung; das Playtest-Band der Atmosphäre hält ihn an der Ferne (2-km-Gitter ±20 km,
-// ±5 % je Kanal). Bis w4-ferne-blau das Mittel aus Laub und Wald-Boden der Albedo-Tafel (0,1003/0,1385/0,0449): das Blatt
-// statt des Bestands.
-AnazhRealm.ATMO_BODEN = Object.freeze([0.113, 0.1344, 0.0646]);
+// DER BODEN DER ATMOSPHÄRE (D3): die gemessene Welt-Albedo (linear) — das Mittel aus Laub und Wald-Boden der Albedo-Tafel
+// (spec/farbe/albedo-tafel.json, ist.welt; `werkbank albedo --tafel`), nie ein Grau 0,3. Er trägt die Mehrfachstreuung UND die
+// untere Hälfte der EINEN Umgebung — den Boden, den jeder nahe Stoff spiegelt. w4-ferne-blau setzte das Mittel der Fern-Farbe
+// ±100 km (0,1130/0,1344/0,0646, G/B 2,1 statt 3,1): der graue Boden der Ferne stand in jeder nahen Spiegelung, der Film der
+// Tore las als Milch (gate:portal-membran H, Radeon: milchweiß 4,7 → 5,3 % > 5 %) — heil-w4-ferne-blau.
+AnazhRealm.ATMO_BODEN = Object.freeze([0.1003, 0.1385, 0.0449]);
 // Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
 AnazhRealm.KEY_BASE = 2.6;
 // r128→r184-Licht-Übersetzung (three.js r155, useLegacyLights → physisch): Legacy-Licht hatte keine

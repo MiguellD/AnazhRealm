@@ -431,11 +431,6 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
         const intensityNight = r.state.hemiLight.intensity;
         const nacht = gesetz();
         out.hemiNurNachtboden = intensityNoon < 0.01 && intensityNight > 0.05;
-        // DER BODEN DER ATMOSPHÄRE IST DIE FERNE (w4-ferne-blau): `ATMO_BODEN` je Kanal gegen das Mittel der EINEN Fern-Farbe
-        // (`_fernAuftrag("feld")`, Sommer: Phase 0,375) auf dem 2-km-Gitter seiner Messung, ±20 km um Genesis (441 Punkte)
-        const punkte = Float32Array.from({ length: 882 }, (_, i) => ((i & 1 ? Math.floor(i / 42) : (i >> 1) % 21) - 10) * 2000);
-        const fern = (await r._fernAuftrag("feld", { punkte, ax: 0, az: 0, azN: 4096, hr: 500, saison: r._saisonMul(0.375, {}) }, [punkte.buffer])).daten;
-        out.boden = r.constructor.ATMO_BODEN.map((b, c) => +(fern.reduce((a, v, k) => (k % 4 === c + 1 ? a + v : a), 0) / 441 / b).toFixed(3));
         out.belichtungAusLicht = [mittag, nacht].every(([k, soll]) => Math.abs(k / soll - 1) < 1e-6);
         out.belichtungZahlen = [...mittag, ...nacht].map((v) => +(+v).toFixed(3)).join(" / ");
 
@@ -512,10 +507,6 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             v827Results.fogColorSet
         );
         check("EIN Himmel — Hemi trägt nur den Nachthimmel-Boden (Mittag 0)", v827Results.hemiNurNachtboden);
-        check(
-            `Der Boden der Atmosphäre ist die Ferne (Fern-Farbe / ATMO_BODEN ${v827Results.boden.join(" / ")}, ±5 %)`,
-            v827Results.boden.every((q) => Math.abs(q - 1) <= 0.05)
-        );
         check(
             `Belichtung aus dem Licht — mittags und nachts das Gesetz der Kamera (Mittag / Gesetz / Nacht / Gesetz ${v827Results.belichtungZahlen})`,
             v827Results.belichtungAusLicht

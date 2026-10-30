@@ -1401,21 +1401,26 @@ class AnazhRealm_bild_kosten {
         ziel.texture.type = THREE.UnsignedInt101111Type;
         ziel.texture.format = THREE.RGBFormat;
         this.state._ausgabeFormat = "rg11b10ufloat";
-        szenePass.contextNode = this._ausgabeDither();
+        this.state._ausgabeVersatz = this._uniformHeimatTeilen({ v: THREE.TSL.uniform(0) }).v;
         this._ausgabeSonde(dev);
     }
 
     // DIE DITHERUNG DES SZENEN-ZIELS (w4-ferne-blau): 6/6/5 Bit Mantisse teilen jede glatte Rampe — Wolke, Himmel, Dunst — in
     // Stufen von 1/64 bzw. 1/32 ihres Werts (die Wolken-Decke am Kopf 715754fc in Höhenlinien je 1–2 Ausgabe-Stufen, Blau doppelt
     // so grob), und weil das Gerät gegen null rundet, fällt der Fehler je Pixel in jedem Frame gleich: die zeitliche Auflösung
-    // mittelt ihn nie weg. Darum trägt jedes Fragment des Szenen-Passes vor dem Schreiben (u − Versatz) ulp seines Kanals — r184
-    // `PassNode.contextNode` · `getOutput` ist die EINE Stelle, durch die jeder Stoff dieses Passes ins Ziel schreibt, und der
-    // Programm-Schlüssel trägt ihn —, u aus dem Interleaved-Gradient-Rauschen der Stufen-Blende (`__phytoCore.lodDitherIGN`, quer
-    // gelesen, rotiert mit `uDitherT`). Der Versatz ist die Rundung des Geräts (`_ausgabeSonde`): gegen null 0, zum nächsten ½ —
-    // so ist jeder geschriebene Wert im Mittel das Licht selbst (E[⌊x/q + u⌋] = x/q), für JEDEN Leser des Ziels; über die 32
-    // Frames der Geschichte liest die Auflösung es ohne Stufe. Bis w4-ferne-blau hob ein Ausgleich nach dem Lesen das Mittel
-    // (E[1/m] des Gesetzes, 0,56 % / 1,13 %) — nur in der Post-Kette, der Spiegel des Wassers las das Ziel ohne ihn.
-    _ausgabeDither() {
+    // mittelt ihn nie weg. Darum trägt jedes Fragment des Szenen-Passes vor dem Schreiben (u − Versatz) ulp seines Kanals, u aus
+    // dem Interleaved-Gradient-Rauschen der Stufen-Blende (`__phytoCore.lodDitherIGN`, quer gelesen, rotiert mit `uDitherT`).
+    // Der Versatz ist die Rundung des Geräts (`_ausgabeSonde`): gegen null 0, zum nächsten ½ — so ist jeder geschriebene Wert im
+    // Mittel das Licht selbst (E[⌊x/q + u⌋] = x/q), für JEDEN Leser des Ziels; über die 32 Frames der Geschichte liest die
+    // Auflösung es ohne Stufe. DIE EINE STELLE ist der Eintrag `output` des MRT des Szenen-Passes (`_ensurePostProcessing`): unter
+    // einem MRT schreibt r184 (`NodeMaterial.setup`) jeden Stoff über den MRT-Knoten ins Ziel — das `getOutput` im Kontext des
+    // Passes (w4-ferne-blau) erreichte nur die Stoffe mit eigenem `outputNode`: zwei Phasen änderten 2,4 % der Pixel statt des
+    // ganzen Bilds, die übrigen schrieben ohne Ausgleich, gegen null gerundet (heil-w4-ferne-blau, gate:ziel-zensus RUNDUNG: 0,024
+    // → 0,758). `farbe` ohne 11/11/10 unverändert. Bis w4-ferne-blau hob ein Ausgleich nach dem Lesen das Mittel (E[1/m] des
+    // Gesetzes, 0,56 % / 1,13 %) — nur in der Post-Kette, der Spiegel des Wassers las das Ziel ohne ihn.
+    _ausgabeDither(farbe) {
+        const versatz = this.state._ausgabeVersatz;
+        if (this.state._ausgabeFormat !== "rg11b10ufloat" || !versatz) return farbe;
         const T = THREE.TSL;
         const fc = T.screenCoordinate;
         const u = T.fract(
@@ -1423,15 +1428,9 @@ class AnazhRealm_bild_kosten {
                 .mul(T.fract(fc.y.mul(0.06711056).add(fc.x.mul(0.00583715))))
                 .add(this._ensureLodUniforms().uDitherT)
         );
-        const versatz = (this.state._ausgabeVersatz = this._uniformHeimatTeilen({ v: T.uniform(0) }).v);
-        return T.context({
-            getOutput: (n) => {
-                if (n.isOutputStructNode) return n;
-                const c = n.rgb.max(T.vec3(0));
-                const ulp = T.exp2(T.floor(T.log2(c.max(T.vec3(2 ** -14)))).sub(T.vec3(6, 6, 5)));
-                return T.vec4(c.add(ulp.mul(u.sub(versatz))).max(T.vec3(0)), n.a);
-            },
-        });
+        const c = farbe.rgb.max(T.vec3(0));
+        const ulp = T.exp2(T.floor(T.log2(c.max(T.vec3(2 ** -14)))).sub(T.vec3(6, 6, 5)));
+        return T.vec4(c.add(ulp.mul(u.sub(versatz))).max(T.vec3(0)), farbe.a);
     }
 
     // DIE RUNDUNG DES GERÄTS (0910-1 B): GTX 1060 und Radeon 890M runden beim Schreiben in 11/11/10 GEGEN NULL (Sonde: 1 + ¾ ulp
@@ -1543,8 +1542,9 @@ class AnazhRealm_bild_kosten {
             // DER GLANZ DES BILDS (material.K4): ein zweites Ziel des Szenen-Passes (r8, MRT) trägt je Pixel, wie sehr seine
             // Fläche spiegelt (`_glanzKnoten`) — daran erkennt der EINE Spiegel-Pass (`_spiegelPass`) Glas, Lack, Metall und
             // Nässe wie das Wasser an seiner Zelle. r184 mischt nur `output` nach dem Stoff, das Glanz-Ziel schreibt ohne
-            // Mischung (MRTNode `_noBlending`): eine Scheibe trägt ihren Glanz ganz. 1,17 MB bei 1080p und Skala 0,75.
-            scenePass.setMRT(TSL.mrt({ output: TSL.output, glanz: this._glanzKnoten() }));
+            // Mischung (MRTNode `_noBlending`): eine Scheibe trägt ihren Glanz ganz. 1,17 MB bei 1080p und Skala 0,75. Der Eintrag
+            // `output` trägt die Ditherung des Ziels (`_ausgabeDither`): durch ihn schreibt jeder Stoff des Passes.
+            scenePass.setMRT(TSL.mrt({ output: this._ausgabeDither(TSL.output), glanz: this._glanzKnoten() }));
             const glanz = scenePass.getTexture("glanz");
             glanz.type = THREE.UnsignedByteType;
             glanz.format = THREE.RedFormat;
