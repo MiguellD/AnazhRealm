@@ -53,7 +53,6 @@ function ohneWurf(check, name, res, zeile) {
 // Initial-State-Probe: liefert `finalState` für die Basis-Checks + Ring 1 (Grok).
 async function gatherInitialFinalState(page) {
     return await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         // Deterministische Mechanik-Probe (statt des flaky Box-Inhalts am Lauf-Ende): grokRender schreibt
         // einen Prüfsatz, die Box muss ihn tragen; ein leerer/null-Satz blankt sie NICHT.
         let grokRenderProbe = null;

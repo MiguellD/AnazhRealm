@@ -192,7 +192,6 @@ async function checkBandV18278LoopErrorBoundary({ page, check }) {
 // NIE. `_nexusAdaptiveQuality(fps)` ist nur der fps-Eingang in DENSELBEN Regler.
 async function checkBandWellePerfENexusGovernor({ page, check }) {
     const res = await page.evaluate(() => {
-        if (!r || !r.state) return { error: "no realm" };
         const A = r.constructor; // window.AnazhRealm headless undefined (V18.259-Gotcha)
         const out = {};
         out.noGravityPflaster = window.__fehlt(r.selfAwarenessAnalyze, /gravity\s*\*=/);

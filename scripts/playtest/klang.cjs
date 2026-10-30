@@ -3,7 +3,7 @@
 // 2 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 async function checkBandW4LofiPad({ page, check }) {
     // ### W4 V2/V3 — die Lofi-Pad-Schicht (generative Harmonie) ###
@@ -11,7 +11,6 @@ async function checkBandW4LofiPad({ page, check }) {
     // emotion-getrieben), kein fester Akkord-Satz. Je Probe EINE Zeile der Seite: ihr Satz und ihr Urteil (dazu, wo nötig,
     // der Grund) — der Richter liest sie in ihrer Folge.
     const w4v2Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // W4 V3 — Harmonie-Markov-Kette definiert. ZWILLINGS-ABSCHIED 19.07.:
         // die Konstanten-Zwillinge LOFI_SCALE/LOFI_BPM sind ABWESEND — Skala
@@ -186,9 +185,7 @@ async function checkBandW4LofiPad({ page, check }) {
         Object.assign(emo, eBefore);
         return out;
     });
-    if (!w4v2Results || w4v2Results.error)
-        check("W4 V2/V3 erreichbar", false, w4v2Results?.error || "page.evaluate fehlgeschlagen");
-    else for (const [satz, urteil] of Object.entries(w4v2Results)) check(satz, ...[urteil].flat());
+    if (erreichbar(check, "W4 V2/V3 erreichbar", w4v2Results)) for (const [satz, urteil] of Object.entries(w4v2Results)) check(satz, ...[urteil].flat());
 }
 
 // Der Fuß spielt den Boden, nicht die Uhr — eingefaltet aus gate:schritt-klang (D3b, Orakel Tier-1 #7): die drei Schritt-Klang-
@@ -323,7 +320,7 @@ async function checkBandSchrittKlang({ page, check }) {
 
         return o;
     });
-    if (!out || out.error) return check("Schritt-Klang: die Bühne steht (human-Rig, gestubbte Velocity)", false, out ? out.error : "keine Antwort der Seite");
+    if (!erreichbar(check, "Schritt-Klang: die Bühne steht (human-Rig, gestubbte Velocity)", out)) return;
     const c = out.checks || {};
     const alle = (...k) => k.filter((x) => c[x] !== true);
     const zeig = (k) => (k.length ? "ROT: " + k.join(" · ") : "");

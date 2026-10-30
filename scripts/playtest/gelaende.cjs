@@ -3,7 +3,7 @@
 // 8 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 async function checkBandVoxelP3AndInventory({ page, check, errors, finalState }) {
     void errors;
@@ -11,7 +11,6 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
     // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
     // `carveVoxel` nimmt eine Säule aus dem Dichte-Feld (gelaende-core `editForm`: Radius r, halbe Höhe r).
     const voxelP3Results = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         const out = {};
         if (r.state.worldMeta) {
             const base = r.state.terrainBaseHeight || 0;
@@ -35,7 +34,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (voxelP3Results && !voxelP3Results.error) {
+    if (erreichbar(check, "Voxel P3: Tests laufen", voxelP3Results)) {
         check(
             "Voxel P3: der Schnitt nimmt die Säule r aus dem Fels (Kern und Rand Luft, außerhalb Fels)",
             voxelP3Results.carveSubtracts
@@ -46,7 +45,6 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
     // Async-Rebuild via Dirty-Queue: ein Edit markiert Voxel-Chunks dirty statt sync zu rebuilden, der
     // Game-Loop-Tick verteilt die Rebuilds; `_drainDirtyVoxelChunks` ist die Test-Naht (sync-Drain).
     const voxelV940cResults = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         const out = {};
         // Den Test-Voxel-Ring SYNC auffüllen, damit der Edit Chunks zum Markieren findet: ein Tick-Loop
         // ohne Event-Loop-Yield bekommt keine Worker-Antwort (Ring bliebe leer, Flake). Darum Worker AUS
@@ -178,7 +176,6 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
     // Dispose-Before-Build + Retry-Counter: den alten Chunk VOR dem Neubau entsorgen (alt + neu
     // parallel im Heap → kaskadierende OOMs).
     const voxelV940dResults = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         const out = {};
         // Dieses Band prüft die SYNC-Bau-Mechanik (dispose-before-build, Fail-Retry-Counter, OOM-give-up)
         // des lebenden Stufe-3-Fallbacks. Worker für die Dauer des Tests aus → `_acquireVoxelChunkBuild`
@@ -264,7 +261,6 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
     // (2) `_disposeVoxelChunk` räumt `voxelRebuildAttempts` mit; (3) `_ensureVoxelChunkAt` (Streaming)
     // trägt einen Retry-Counter wie der Re-Mesh-Pfad — beide Bau-Pfade konsistent.
     const voxelV940eResults = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         const out = {};
         const base = r.state.terrainBaseHeight || 0;
         // (1) Edit-Y-Bound: weit-außerhalb-Edit wird verworfen.
@@ -314,7 +310,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (voxelV940eResults && !voxelV940eResults.error) {
+    if (erreichbar(check, "Voxel V9.40-e: Tests laufen", voxelV940eResults)) {
         check(
             "_addVoxelEdit verwirft Edit weit über der Chunk-Decke (Schöpfer-Hinweis)",
             voxelV940eResults.farEditRejected && voxelV940eResults.farEditNotStored
@@ -346,7 +342,6 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
 
     // ### Voxel-Terrain-Bogen Phase 3b — Aufschütten ### (die Säule des Füll-Edits über die Maus und den Reload: gate:fall-waechter B)
     const voxelP3bResults = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         const out = {};
         if (r.state.worldMeta) {
             const base = r.state.terrainBaseHeight || 0;
@@ -373,7 +368,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (voxelP3bResults && !voxelP3bResults.error) {
+    if (erreichbar(check, "Voxel P3b: Tests laufen", voxelP3bResults)) {
         check("Voxel P3b: ein mode-loser Alt-Edit gilt als carve (Backward-Compat)", voxelP3bResults.modelessIsCarve);
         check("Voxel P3b: der Chat-Befehl `voxel fill` schüttet auf", voxelP3bResults.chatFillAddsEdit);
     }
@@ -434,7 +429,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (voxelP3cResults && !voxelP3cResults.error) {
+    if (erreichbar(check, "Voxel P3c: Tests laufen", voxelP3cResults)) {
         check("Voxel P3c: _consumeAnyMaterial zieht bei genug Material ab", voxelP3cResults.consumeEnough);
         check(
             "Voxel P3c: _consumeAnyMaterial lehnt bei zu wenig ab + lässt das Inventar unberührt",
@@ -459,7 +454,6 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
     // Drei Welt-Beziehungs-Modi. Persistiert in worldMeta.gameMode.
     // damagePlayer + Stamina-Kosten sind modus-gated.
     const wave6c2Results = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         const out = {};
         // Default-Modus NEUER Welten ist frieden — geprüft über `_buildEmptyWorldSnapshot` (init-time),
         // nicht über den Runtime-State (frühere Tests schalten evtl. auf pfad).
@@ -572,7 +566,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (wave6c2Results && !wave6c2Results.error) {
+    if (erreichbar(check, "Welle 6.C2: Tests laufen", wave6c2Results)) {
         check("Welle 6.C2: Neue Welten starten im frieden-Modus (init-time)", wave6c2Results.defaultModeFrieden);
         check(
             "Welle 6.C2: GAME_MODES[0] === 'frieden' (kanonischer Default)",
@@ -614,7 +608,6 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
     // 27 Slots mit Tag-Resonanz; Tag-Profile emergieren aus computeCompoundTags(blueprint).
     // Drag-Click-Pfad: Inventar-Slot wählen → Hotbar-Slot klicken → Bauplan abgelegt.
     const wave6c1Results = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         const out = {};
         // Datenmodell
         out.hasInventoryArray = Array.isArray(r.state.player && r.state.player.inventory);
@@ -836,7 +829,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (wave6c1Results && !wave6c1Results.error) {
+    if (erreichbar(check, "Welle 6.C1: Tests laufen", wave6c1Results)) {
         check("Welle 6.C1: state.player.inventory ist Array", wave6c1Results.hasInventoryArray);
         check("Welle 6.C1: Inventar hat exakt 27 Slots", wave6c1Results.inventoryHas27Slots);
         check("Welle 6.C1: Inventar initial leer (alle 27 null)", wave6c1Results.initiallyEmpty);
@@ -933,7 +926,6 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
     // Das Inventar listet die craftbaren Baupläne mit Kosten + rollen-gerechtem Fertigen-Knopf und
     // zeigt sichtbar, was getragen wird.
     const recipeBookResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         // Inventar öffnen → Equip-Status rendern (das Rezeptbuch fährt diag-werkstatt-weg mit echten Klicks).
@@ -979,7 +971,6 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
     // Vier Pfade: inv→inv (swap), inv→hot (Hotbar setzt), hot→hot (swap), hot→inv (Hotbar räumen).
     // HTML5-Drag-Events sind headless inkonsistent → Drop-Handler direkt mit fingiertem state.drag.
     const dragResults = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         const out = {};
 
         // Setup: zwei Bauplan-Einträge im Inventar, leerer Hotbar.
@@ -1122,7 +1113,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (dragResults && !dragResults.error) {
+    if (erreichbar(check, "Welle 6.C1 Drag: Tests laufen", dragResults)) {
         check("Welle 6.C1 Drag: inv→inv tauscht Slot-Inhalte", dragResults.invToInvSwap);
         check("Welle 6.C1 Drag: inv→hot legt Bauplan in Hotbar", dragResults.invToHotPlaces);
         check(
@@ -1158,7 +1149,6 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
     // Inventar öffnen → exitPointerLock (Cursor erscheint, HTML5-Drag&Drop geht); WASD bleibt aktiv;
     // Esc schließt das Inventar.
     const lockResults = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         const out = {};
         // Setup: Inventar zu, keys ggf. setzen (Spieler hält W).
         r.toggleInventoryOverlay(false);
@@ -1212,7 +1202,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (lockResults && !lockResults.error) {
+    if (erreichbar(check, "Welle 6.C1 Lock: Tests laufen", lockResults)) {
         check("Welle 6.C1 Lock: exitPointerLock wird beim Inventar-Öffnen gerufen", lockResults.exitLockCalledOnOpen);
         check("Welle 6.C1 Lock: state.inventoryOpen wird true nach toggleOpen", lockResults.overlayOpenAfterToggle);
         check(
@@ -1234,7 +1224,6 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
 // water (das Wasser fließt per Cell-Klassifikation ins Loch, kein BFS).
 async function checkBandWelleC3CellularReaction({ page, check }) {
     const res = await page.evaluate(() => {
-        if (!r || !r.state) return { error: "no realm" };
         const out = {};
         const STATE = r.constructor.CELL_STATE;
         // Test-Isolation: das Band misst den Damm-STEMPEL-Revert (spawn → SOLID → remove → exakter
@@ -1621,7 +1610,6 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
 // (3) Worker-Density-Build == Sync-Build; (4) voxelEdit notifiziert den Worker (state-gen bumpt).
 async function checkBandWellePerf3cPhase2Async({ page, check }) {
     const res = await page.evaluate(async () => {
-        if (!r || !r.state) return { error: "no realm" };
         const out = {};
         // 1) Worker-Methoden existieren
         // 2) State-Felder existieren
@@ -1684,7 +1672,6 @@ async function checkBandWellePerf3cPhase2Async({ page, check }) {
 // des Worker-Builds gleichen dem Sync-Build.
 async function checkBandWellePerf3cPhase3FullMesh({ page, check }) {
     const res = await page.evaluate(async () => {
-        if (!r || !r.state) return { error: "no realm" };
         const out = {};
         // Worker initialisieren + Worldgen-State synchronisieren (im realen
         // Lauf passiert das beim Worldgen-Hook, hier explizit für den Test).
@@ -1891,7 +1878,6 @@ async function checkBandWellePerf3cPhase3FullMesh({ page, check }) {
 // nach dem Warmup ist der Worker engagiert (worldgenSynced), Bootstrap + Spieler-Chunk-async stehen.
 async function checkBandV17118WorkerEngaged({ page, check }) {
     const res = await page.evaluate(() => {
-        if (!r || !r.state) return { error: "no realm" };
         return {
             // Behavioral: der Worker ist nach dem Warmup gebootstrappt + getrusted.
             workerSpawned: !!r.state.voxelWorker,

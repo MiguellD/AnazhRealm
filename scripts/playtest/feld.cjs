@@ -21,7 +21,6 @@ async function checkRing2Dsl({ page, check }) {
             depthBudgetEnforced: false,
             delayScheduled: false,
         };
-        if (!r || !r.state) return out;
         const m = r.state.worldMeta || {};
         out.worldIdSet = typeof m.worldId === "string" && m.worldId.length > 5;
         out.slugSet = typeof m.slug === "string" && m.slug.length > 0;

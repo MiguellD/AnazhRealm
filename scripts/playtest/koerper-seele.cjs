@@ -3,7 +3,7 @@
 // 15 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, ohneWurf } = require("../playtest.cjs");
 
 // Der EINE „in der Hand“-Slot (Werkzeug + Waffe, kein Rollen-Schloss): equipHeld nimmt JEDEN
 // Bauplan; das Gerät faltet über die Equip-Pipeline in die Kombat-Stats (kein eigener
@@ -992,7 +992,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
     // MATERIAL_TAG_KEYS sind die EINE Achsen-Sprache für Soul- und Material-Tags. STAT_FROM_TAGS sind
     // reine Funktionen → Diskriminations-Tests prüfen Verhältnisse (Fuchs schneller, Bär mehr HP).
     const wave6dResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         // AnazhRealm-Klasse ist global im Script-Scope; page.evaluate
         // sieht sie direkt (kein window-Prefix nötig).
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
@@ -1136,7 +1135,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
     // (1) WASD-Mapping · (2) „damage X“ als Chat-Pattern · (3) Aura-Absenz · (4) Tod und Wunde: gate:kampf-gefuehl Q13
     // · (5) Werkzeug-Anwendung kostet Stamina · (6) Konsumables aus Compound-Tags.
     const reflexResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         // (2) Chat-Pattern für damage
@@ -1270,7 +1268,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (reflexResults && !reflexResults.error) {
+    if (ohneWurf(check, "Reflex-Tests Block lief ohne Exception", reflexResults, true)) {
         // (2) Chat
         check("Reflex 2: 'schade mir 42' chat-pattern → DSL ['damage', 42, ...]", reflexResults.damageChatParses);
         check("Reflex 2: 'trink X' chat-pattern → DSL ['apply_boost', ...]", reflexResults.trinkChatParses);
@@ -1325,13 +1323,10 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             reflexResults.boostTagBonusFromCompound
         );
         check("Reflex 6: Boost-Dauer aus consumableMeta.durationSeconds", reflexResults.boostUsesBlueprintDuration);
-    } else if (reflexResults && reflexResults.error) {
-        check("Reflex-Tests Block lief ohne Exception", false, reflexResults.error);
     }
 
     // ### Welle 6.D Etappe 3b — Equipment + Aura ###
     const wave6d3bResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
         // Konstanten + Methoden
@@ -1432,7 +1427,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6d3bResults && !wave6d3bResults.error) {
+    if (ohneWurf(check, "Welle 6.D Etappe 3b: Test-Block lief ohne Exception", wave6d3bResults, true)) {
         check("Welle 6.D Etappe 3b: ARMOR_STAT_WEIGHT == 0.3", wave6d3bResults.armorWeight03);
         check("Welle 6.D Etappe 3b: TOOL_STAT_WEIGHT == 0.15", wave6d3bResults.toolWeight015);
         check(
@@ -1480,13 +1475,10 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             "Welle 6.D Etappe 3b: buildStateSnapshot persistiert playerEquipped (held)",
             wave6d3bResults.snapHasEquipped
         );
-    } else if (wave6d3bResults && wave6d3bResults.error) {
-        check("Welle 6.D Etappe 3b: Test-Block lief ohne Exception", false, wave6d3bResults.error);
     }
 
     // ### Welle 6.D Etappe 3a — Tod, Min-Regel-Hybrid, Konsumables ###
     const wave6d3aResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
         // Tests für Tod/Stamina/Phönix laufen im pfad-
@@ -1590,7 +1582,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6d3aResults && !wave6d3aResults.error) {
+    if (ohneWurf(check, "Welle 6.D Etappe 3a: Test-Block lief ohne Exception", wave6d3aResults, true)) {
         // Schaden
         check(
             "Welle 6.D Etappe 3a: damage-Op in NON_BROADCASTABLE_OPS (privat)",
@@ -1626,15 +1618,12 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             wave6d3aResults.applyBoostNonBroadcast
         );
         check("Welle 6.D Etappe 3a: buildStateSnapshot persistiert consumables", wave6d3aResults.snapHasConsumables);
-    } else if (wave6d3aResults && wave6d3aResults.error) {
-        check("Welle 6.D Etappe 3a: Test-Block lief ohne Exception", false, wave6d3aResults.error);
     }
 
     // ### Boosts (temporäre Tag-Deltas) ###
     // state.player.boosts ist ein Array; tickPlayerBoosts filtert Abgelaufene + triggert Emotion +
     // Resonance 1×/s; computePlayerStats addiert aktive Deltas vor der Stat-Berechnung.
     const wave6d2Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
         const out = {};
         out.hasBoostsField = Array.isArray(r.state.player.boosts);
@@ -1748,7 +1737,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6d2Results && !wave6d2Results.error) {
+    if (ohneWurf(check, "Welle 6.D Etappe 2: Test-Block lief ohne Exception", wave6d2Results, true)) {
         check("Welle 6.D Etappe 2: state.player.boosts ist Array", wave6d2Results.hasBoostsField);
         check(
             "Welle 6.D Etappe 2: BOOST_EMOTION_TAG-Map mit 6 Emotionen",
@@ -1790,15 +1779,12 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             "Welle 6.D Etappe 2: Negativ-Kontrolle — außerhalb Reichweite KEIN Resonanz-Boost",
             wave6d2Results.resonanceNotTriggeredFar
         );
-    } else if (wave6d2Results && wave6d2Results.error) {
-        check("Welle 6.D Etappe 2: Test-Block lief ohne Exception", false, wave6d2Results.error);
     }
 
     // ### Custom-Seelen via DSL ###
     // define_soul(name, bodyParts) komponiert eigene Charaktere — Form × Material über dieselbe
     // Hylomorphismus-Pipe wie Bauwerke.
     const wave6d16Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         out.customSoulsContainerExists = r.state.customSouls && typeof r.state.customSouls === "object";
 
@@ -1887,7 +1873,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
 
     // ### Welle 6.D Etappe 1.7 — Visueller Avatar-Editor ###
     const wave6d17Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // der Ich-Soul-Editor ist geschnitten; die Seelen-Schöpfung lebt in der Werkstatt
         // (die Seele IST ein Bauplan, soulToBlueprint + „Körper holen"). Die customSoul-CRUD bleibt als
@@ -1968,7 +1953,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6d17Results && !wave6d17Results.error) {
+    if (ohneWurf(check, "Welle 6.D Etappe 1.7: Test-Block lief ohne Exception", wave6d17Results, true)) {
         check(
             "Ich-H: der parallele Ich-Soul-Editor ist geschnitten (Schöpfung in der Werkstatt)",
             wave6d17Results.ichSoulEditorGone
@@ -2008,8 +1993,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             "Welle 6.D Etappe 1.7: Löschen der aktiven Seele schaltet zurück auf 'human'",
             wave6d17Results.fallbackToHuman
         );
-    } else if (wave6d17Results && wave6d17Results.error) {
-        check("Welle 6.D Etappe 1.7: Test-Block lief ohne Exception", false, wave6d17Results.error);
     }
 
     if (wave6d16Results) {
@@ -2128,7 +2111,6 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
 // PHASEN B–F — die Kern-KONSUM-Beweise des Phasen-Zugs.
 async function checkBandPhasenBF({ page, check }) {
     const res = await page.evaluate(async () => {
-        if (!r || !r.state) return { error: "no realm" };
         const out = {};
         // C1 — Gelenke: ein synthetischer 2-Part-Bauplan mit Verbindung → Joint-Rolle mit Anker.
         const roles = r.computeMotionRoles(

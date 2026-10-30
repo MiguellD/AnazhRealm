@@ -3,7 +3,8 @@
 // 5 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
+const { rasterDreieck } = require("../lib/kronen-linse.cjs");
 
 async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
     void errors;
@@ -128,7 +129,7 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6hResults && !wave6hResults.error) {
+    if (erreichbar(check, "Welle 6.H: Tests laufen", wave6hResults)) {
         check("CREATURE_TASKS frozen mit ≥3 Aufträgen", wave6hResults.hasTasks);
         check("CREATURE_TASK_AURA_HUE map (wander=null)", wave6hResults.hasAuraHueMap);
         check(
@@ -287,7 +288,7 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6hV2Results && !wave6hV2Results.error) {
+    if (erreichbar(check, "Welle 6.H V2: Tests laufen", wave6hV2Results)) {
         check("Welle 6.H V2: Symphony initialisierbar im Headless", wave6hV2Results.symphonyReady);
         if (wave6hV2Results.symphonyReady) {
             check(
@@ -340,7 +341,6 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
     // Multi-Mesh-Groups aus bodyParts × Material (dieselbe Sprache wie Spieler-Seele + Architektur);
     // drei Built-in-Seelen sprite/wesen/geist, Tag-Profil emergent.
     const wave6hP2aResults = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         const out = {};
         const souls = r.constructor.CREATURE_SOULS;
         out.soulsFrozen = !!souls && Object.isFrozen(souls);
@@ -524,7 +524,7 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6hP2aResults && !wave6hP2aResults.error) {
+    if (erreichbar(check, "Welle 6.H P2a: Tests laufen", wave6hP2aResults)) {
         check("CREATURE_SOULS frozen", wave6hP2aResults.soulsFrozen);
         check("exakt vier Seelen — Hirsch·Wolf·Fuchs·Bär", wave6hP2aResults.threeSouls);
         check("CREATURE_SOUL_NAMES Array", wave6hP2aResults.hasSoulNames);
@@ -794,7 +794,7 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6hP2bResults && !wave6hP2bResults.error) {
+    if (erreichbar(check, "Welle 6.H P2b: Tests laufen", wave6hP2bResults)) {
         check("CREATURE_TASKS enthält 'gather'", wave6hP2bResults.tasksHasGather);
         check("AURA_HUE.gather === 200 (cyan)", wave6hP2bResults.auraHueGather);
         check(
@@ -988,7 +988,7 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6hP2b5Results && !wave6hP2b5Results.error) {
+    if (erreichbar(check, "Welle 6.H P2b5: Tests laufen", wave6hP2b5Results)) {
         check(
             "stein_block-Harvest liefert ≥10 Stein (volumen-basiert)",
             wave6hP2b5Results.steinBlockHasStein
@@ -1130,7 +1130,7 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
         return out;
     });
 
-    if (wave6hP2cResults && !wave6hP2cResults.error) {
+    if (erreichbar(check, "Welle 6.H P2c: Tests laufen", wave6hP2cResults)) {
         check(
             "computeBuildCost ≡ harvestArchitecture (Wertneutralität)",
             wave6hP2cResults.symmetryHarvest
@@ -1644,7 +1644,7 @@ async function checkBandTierSeparation({ page, check }) {
         o.creaturesAfter = s.creatures.length;
         return o;
     });
-    if (!out || out.error) return check("Tier-Separation: die Bühne steht", false, out ? out.error : "keine Antwort der Seite");
+    if (!erreichbar(check, "Tier-Separation: die Bühne steht", out)) return;
     const c = out.checks || {};
     const rot = (...k) => k.filter((x) => c[x] !== true).join(" · ");
     const a = rot("aStacked0", "aSeparated", "aBounded", "cLensFires");
@@ -1680,7 +1680,9 @@ async function checkBandTierSeparation({ page, check }) {
 // gelenkige Grobstufe des Menschen, der EINE Stufen-Schalter, der echte Peer-Tick · (R) Starr-Bindung + Körper-Kugel · (F) Mensch
 // und Kopie ruhen · (G) die Ruhe der Leiber (Leser, Erwachen, Nah-Gestalt, Feld, Bild, KI) · (T)(W) · Selbsttests S1–S11.
 async function checkBandKreaturKosten({ page, check }) {
-    const out = await safeEvaluate(page, async () => {
+    // das EINE Dreiecks-Raster (kronen-linse) reist als Quelle in die Seite: der Umriss der Werfer rastert dort
+    const out = await safeEvaluate(page, async (rasterQuelle) => {
+        const rasterDreieck = (0, eval)("(" + rasterQuelle + ")");
         const s = r.state,
             A = r.constructor;
         const o = { checks: {} };
@@ -2169,27 +2171,11 @@ async function checkBandKreaturKosten({ page, check }) {
                     const i0 = m.idx ? m.idx[t * 3] : t * 3,
                         i1 = m.idx ? m.idx[t * 3 + 1] : t * 3 + 1,
                         i2 = m.idx ? m.idx[t * 3 + 2] : t * 3 + 2;
-                    const a = pr(m.P, i0),
-                        b = pr(m.P, i1),
-                        c = pr(m.P, i2);
-                    const d = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
-                    if (Math.abs(d) < 1e-12) continue;
-                    const x0 = Math.max(0, Math.floor(Math.min(a[0], b[0], c[0]))),
-                        x1 = Math.min(nx - 1, Math.ceil(Math.max(a[0], b[0], c[0]))),
-                        z0 = Math.max(0, Math.floor(Math.min(a[1], b[1], c[1]))),
-                        z1 = Math.min(nz - 1, Math.ceil(Math.max(a[1], b[1], c[1])));
                     let wer = null;
-                    for (let z = z0; z <= z1; z++)
-                        for (let x = x0; x <= x1; x++) {
-                            const px = x + 0.5,
-                                pz = z + 0.5;
-                            const w0 = ((b[0] - px) * (c[1] - pz) - (b[1] - pz) * (c[0] - px)) / d,
-                                w1 = ((c[0] - px) * (a[1] - pz) - (c[1] - pz) * (a[0] - px)) / d;
-                            if (w0 < 0 || w1 < 0 || 1 - w0 - w1 < 0) continue;
-                            const id = x + nx * z;
-                            M[id] = 1;
-                            if (G && !G[id]) G[id] = wer || (wer = m.knochen(i0));
-                        }
+                    rasterDreieck(...pr(m.P, i0), ...pr(m.P, i1), ...pr(m.P, i2), { nu: nx, nv: nz }, (id) => {
+                        M[id] = 1;
+                        if (G && !G[id]) G[id] = wer || (wer = m.knochen(i0));
+                    });
                 }
             }
             return { M, G };
@@ -2880,8 +2866,8 @@ async function checkBandKreaturKosten({ page, check }) {
         o.ruheTakt = A.KREATUR_RUHE && A.KREATUR_RUHE.takt;
         o.creaturesAfter = s.creatures.length;
         return o;
-    });
-    if (!out || out.error) return check("Kreatur-Kosten: die Bühne steht", false, out ? out.error : "keine Antwort der Seite");
+    }, rasterDreieck.toString());
+    if (!erreichbar(check, "Kreatur-Kosten: die Bühne steht", out)) return;
     const c = out.checks || {};
     const gruppe = (titel, keys) => {
         const rot = keys.filter((x) => c[x] !== true);

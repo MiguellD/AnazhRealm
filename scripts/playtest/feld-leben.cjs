@@ -3,7 +3,7 @@
 // 10 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 // Lebendiges Feld, Lese-Seite: auraAt umhüllt das eingefrorene worldFieldAt; die lokale Aura HEBT die
 // Emotion (FIELD_TO_EMOTION: lebendige Region → peace), bleibt aber unter der 0.7-Trigger-Schwelle.
@@ -702,7 +702,6 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
     // begehbar (Normal-Y < hang.maxSlopeY = 0.5, >60°), gilt `state.onSteepSlope = true` und der
     // Bewegungs-Input wird auf 20 % gedrosselt — kein Kleben an senkrechten Wänden.
     const wave6a3Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // 6.A3 — Tests wandern 19.07.: der State-Zwilling fiel, die Leser
         // lesen das Steilhang-Gesetz (hang.maxSlopeY) fail-closed direkt.
@@ -816,7 +815,6 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
     // Kamera ab der Ebene des Ziels — Gegenprüfung Runde 2, nie was zwischen Kamera und Spieler liegt) ({x, y, z,
     // isStable, hit}): das Phantom folgt der Blickrichtung (Pitch wirkt), Tint grün bei stabilem Boden, sonst rot.
     const wave6a45Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
 
@@ -912,7 +910,6 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
 
     // ### Welle 6.E1 — Fähigkeit-Beschreibung (describeProgram) ###
     const wave6e1Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // Vorlagen-Smoke-Tests
         out.weatherDesc = r.describeProgram(["weather", "rainy"]);
@@ -968,7 +965,6 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
     // Beweist: das alte Intro-Modal ist restlos weg; der Begleiter (Eins) lädt EINMAL diegetisch ein
     // (Einladung, keine Steuerungs-Anleitung), gegated + idempotent.
     const wowStartResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // (a) Das Anleitungs-Modal ist restlos entfernt (seine Methoden bewacht gate:altlasten).
         out.noDialogInDom = !document.getElementById("intro-dialog");
@@ -1007,7 +1003,6 @@ async function checkBandWelle6APolish({ page, check, errors, finalState }) {
     // (computeConnectionStrength → grün/gelb/rot). Schwächste Verbindung < 0.7 →
     // _applyCompoundWorldEffects schreibt einen idempotenten weakness-Journal-Eintrag.
     const wave6fResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
 
         // Farb-Mapping
@@ -1210,7 +1205,6 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
     // Bäume laufen durchs Architektur-System (spawn_tree-DSL-Op → spawnArchitecture): EINE Sprache,
     // EIN Renderpfad. Inseln + UFOs bleiben Sonderpfad (Inseln = floating-chunk-Disziplin).
     const wave6gResults = await safeEvaluate(page, async () => {
-        if (!r || !r.state) return null;
         const out = {};
         // Hylomorphismus-Baupläne: baum_eiche + baum_kiefer +
         // laub-Material müssen als Built-ins existieren.
@@ -1379,7 +1373,7 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         return out;
     });
 
-    if (wave6gResults && !wave6gResults.error) {
+    if (erreichbar(check, "Welle 6.G: Tests laufen", wave6gResults)) {
         // Inseln teilen die Surface-Nets-Pipeline mit den Voxel-Chunks: `_voxelChunkGeometry` nimmt einen
         // `densityFn`-Callback (Default = Welt-Chunks, Insel-Pfad übergibt `_islandDensityAt`).
         const r42a = await page.evaluate(() => {
@@ -1542,7 +1536,6 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
     // magieleitung) — KEINE Tabelle: Bauplan-Compound-Tags resonieren mit dem Welt-Tag-Feld.
     // Baupläne: stein_block (dichte), kristall_geode (magieleitung), glutbrunnen (glut).
     const wave6gP2Results = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         const out = {};
         // der Voxel-Populator ist die lebende Schicht.
         const bps = r.state.blueprints || {};
@@ -1672,7 +1665,7 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         return out;
     });
 
-    if (wave6gP2Results && !wave6gP2Results.error) {
+    if (erreichbar(check, "Welle 6.G P2: Tests laufen", wave6gP2Results)) {
         // Der `hasPopulateChunk`-Flag prüft das Voxel-Pendant `_populateVoxelChunkVegetation`
         // (umgewidmet im evaluate-Block; `populateChunkVegetation` ist gelöscht).
         check(
@@ -1768,7 +1761,6 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
     // felsbogen (Trilithon, begehbarer Überhang) + felsturm (Fels-Nadel) als Welt-Bürger — KEIN
     // Voxel-Terrain: die Per-Part-Kollision lässt zwischen den Pfeilern eine echte begehbare Lücke.
     const wave6gP3Results = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         const out = {};
         const bps = r.state.blueprints || {};
         const fb = bps.felsbogen;
@@ -1921,7 +1913,7 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         return out;
     });
 
-    if (wave6gP3Results && !wave6gP3Results.error) {
+    if (erreichbar(check, "W6.G P3: Tests laufen", wave6gP3Results)) {
         check(
             `W6.G P3: Felsbogen-Pfeiler lassen eine begehbare Lücke (Gap=${(wave6gP3Results.felsbogenGap || 0).toFixed(1)}m > 2m)`,
             wave6gP3Results.felsbogenWalkable
@@ -1960,7 +1952,6 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
     // Ein Grabe-Hieb löst Terrain in Material auf, dessen Identität aus worldFieldAt emergiert (die
     // sichtbare Farbe ist das Material, das der Spieler bekommt) — keine Biom-Tabelle.
     const wave6gP4Results = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         const out = {};
 
         // Resonanz — die dominante Welt-Achse bestimmt das Material.
@@ -2053,7 +2044,7 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
         return out;
     });
 
-    if (wave6gP4Results && !wave6gP4Results.error) {
+    if (erreichbar(check, "W6.G P4: Tests laufen", wave6gP4Results)) {
         check("W6.G P4: _terrainMaterialAt liefert ein bekanntes Boden-Material", wave6gP4Results.returnsKnownMaterial);
         check("W6.G P4: lebendig-dominante Region → erde (Resonanz)", wave6gP4Results.lebendigYieldsErde);
         check("W6.G P4: dichte-dominante Region → stein (Resonanz)", wave6gP4Results.dichteYieldsStein);
