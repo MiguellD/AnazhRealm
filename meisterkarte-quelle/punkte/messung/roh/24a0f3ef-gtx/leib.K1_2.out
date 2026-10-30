@@ -1,0 +1,52 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u
+WP=$((7804 + 20000)); LP=$((7804 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; FRISCH=1
+boot() { if [ -z "$FRISCH" ]; then node "$PUNKTE_MASCHINE" grundstellung > "$L/grund.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; cat "$L/grund.txt"; exit 3; }; fi; FRISCH=; if [ $# -gt 0 ]; then timeout 300 $W umstellen "$@" > "$L/boot.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/boot.txt"; exit 3; }; fi; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+rm -f "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\24a0f3ef-gtx\leib.K1_2.json.lauf1.json" "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\24a0f3ef-gtx\leib.K1_2.json.lauf2.json" "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\24a0f3ef-gtx\leib.K1_2.json.lauf3.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ1 $W latenz --proben 50 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\24a0f3ef-gtx\leib.K1_2.json.lauf1.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ2 $W latenz --proben 50 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\24a0f3ef-gtx\leib.K1_2.json.lauf2.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ3 $W latenz --proben 50 --sicht ego,third --verb gehen,springen,einsteigen,hieb --json "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\24a0f3ef-gtx\leib.K1_2.json.lauf3.json"
+node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\24a0f3ef-gtx\leib.K1_2.json" "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\24a0f3ef-gtx\leib.K1_2.json.lauf1.json" "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\24a0f3ef-gtx\leib.K1_2.json.lauf2.json" "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\24a0f3ef-gtx\leib.K1_2.json.lauf3.json"
+@@PUNKTE@@ LATENZ1
+ego/gehen {"n":50,"fehlt":0,"p50":30.8,"p95":45.1,"max":62.9,"eingabe":0.3,"hoerer":0,"kette":12.2,"kurve":16.5,"takte":4}
+ego/springen {"n":50,"fehlt":0,"p50":20.6,"p95":32.9,"max":35,"eingabe":0.3,"hoerer":0.1,"kette":12.4,"kurve":8.1,"takte":3}
+ego/einsteigen {"n":50,"fehlt":0,"p50":22.8,"p95":40,"max":72.6,"eingabe":4,"hoerer":0.4,"kette":19.9,"kurve":0,"takte":2}
+ego/hieb {"n":50,"fehlt":0,"p50":17,"p95":33.2,"max":48.4,"eingabe":1.3,"hoerer":1.3,"kette":8.9,"kurve":0,"takte":2,"halt":13}
+third/gehen {"n":50,"fehlt":0,"p50":31.7,"p95":43.6,"max":44,"eingabe":7.9,"hoerer":0,"kette":7.8,"kurve":16.1,"takte":3}
+third/springen {"n":50,"fehlt":0,"p50":20.5,"p95":36.9,"max":64.4,"eingabe":8.4,"hoerer":0.2,"kette":8.6,"kurve":9.1,"takte":2}
+third/einsteigen {"n":50,"fehlt":0,"p50":20.1,"p95":63.4,"max":96.8,"eingabe":2.3,"hoerer":0.3,"kette":17,"kurve":0,"takte":2}
+third/hieb {"n":50,"fehlt":0,"p50":44,"p95":52.8,"max":56.1,"eingabe":17.4,"hoerer":2.9,"kette":25.7,"kurve":0,"takte":3,"halt":11}
+LATENZ ROT (Bild 14.2 ms) third/einsteigen p95 63.4 ms > 50 (fehlt 0) — Täter kette 17 ms, 2 Takte · third/hieb p95 52.8 ms > 50 (fehlt 0) — Täter kette 25.7 ms, 3 Takte
+@@PUNKTE@@ EXIT 1
+@@PUNKTE@@ LATENZ2
+ego/gehen {"n":50,"fehlt":0,"p50":35.6,"p95":52.9,"max":80.9,"eingabe":0.4,"hoerer":0,"kette":21.6,"kurve":12.1,"takte":4}
+ego/springen {"n":50,"fehlt":0,"p50":13.3,"p95":26,"max":26.6,"eingabe":0.3,"hoerer":0.1,"kette":12.9,"kurve":0,"takte":2}
+ego/einsteigen {"n":50,"fehlt":0,"p50":15.2,"p95":31.9,"max":89.2,"eingabe":1,"hoerer":0.4,"kette":12,"kurve":0,"takte":1}
+ego/hieb {"n":50,"fehlt":0,"p50":14.4,"p95":30.5,"max":65,"eingabe":1.9,"hoerer":1.4,"kette":9,"kurve":0,"takte":2,"halt":13}
+third/gehen {"n":50,"fehlt":0,"p50":32.2,"p95":43.3,"max":43.6,"eingabe":8.4,"hoerer":0,"kette":8.6,"kurve":14,"takte":3}
+third/springen {"n":50,"fehlt":0,"p50":16.2,"p95":24.7,"max":27,"eingabe":9.3,"hoerer":0.2,"kette":6.7,"kurve":0,"takte":2}
+third/einsteigen {"n":50,"fehlt":0,"p50":23.7,"p95":36,"max":39.6,"eingabe":9.6,"hoerer":0.3,"kette":15.3,"kurve":0,"takte":2}
+third/hieb {"n":50,"fehlt":0,"p50":41.5,"p95":53.1,"max":57.2,"eingabe":18.2,"hoerer":2.6,"kette":23.8,"kurve":0,"takte":3,"halt":11}
+LATENZ ROT (Bild 14.6 ms) ego/gehen p95 52.9 ms > 50 (fehlt 0) — Täter kette 21.6 ms, 4 Takte · third/hieb p95 53.1 ms > 50 (fehlt 0) — Täter kette 23.8 ms, 3 Takte
+@@PUNKTE@@ EXIT 1
+@@PUNKTE@@ LATENZ3
+ego/gehen {"n":50,"fehlt":0,"p50":30.2,"p95":43.1,"max":71,"eingabe":0.3,"hoerer":0,"kette":13,"kurve":16.7,"takte":4}
+ego/springen {"n":50,"fehlt":0,"p50":22.2,"p95":31.1,"max":34.5,"eingabe":0.4,"hoerer":0.1,"kette":12.6,"kurve":0,"takte":3}
+ego/einsteigen {"n":50,"fehlt":0,"p50":16.1,"p95":32.9,"max":72.8,"eingabe":1.1,"hoerer":0.4,"kette":12.3,"kurve":0,"takte":1}
+ego/hieb {"n":50,"fehlt":0,"p50":12.4,"p95":34.5,"max":41.7,"eingabe":1.5,"hoerer":1.2,"kette":9.1,"kurve":0,"takte":2,"halt":13}
+third/gehen {"n":50,"fehlt":0,"p50":30.6,"p95":44.2,"max":51.7,"eingabe":7.2,"hoerer":0,"kette":9.2,"kurve":12.6,"takte":3}
+third/springen {"n":50,"fehlt":0,"p50":14.4,"p95":18.8,"max":21.5,"eingabe":1.6,"hoerer":0.2,"kette":9.2,"kurve":0,"takte":2}
+third/einsteigen {"n":50,"fehlt":0,"p50":18.1,"p95":36.4,"max":45.4,"eingabe":2,"hoerer":0.3,"kette":16.2,"kurve":0,"takte":2}
+third/hieb {"n":50,"fehlt":0,"p50":43.2,"p95":49.5,"max":56,"eingabe":17.6,"hoerer":2.5,"kette":25.9,"kurve":0,"takte":3,"halt":11}
+LATENZ GRÜN (Bild 14.7 ms) 
+@@PUNKTE@@ EXIT 0
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
