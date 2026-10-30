@@ -5311,9 +5311,12 @@ function __tierMergeGeos(geos, fuell) {
     // DIE BINDUNG REIST MIT (S3): ein geskinnter Eimer (die gelenkige Grobstufe: Haut + starr gebundene Teile, Gewicht 1)
     // verschmilzt mit seinen Gewichten — jeder Teil zeigt auf dieselbe Bone-Ordnung.
     const mitHaut = geos.every((g) => g.attributes.skinIndex && g.attributes.skinWeight);
+    // DER TON REIST MIT (mensch.K4): trägt jeder Teil des Eimers seinen Ton je Ecke (koerper `menschTon`), trägt ihn die Hülle
+    const mitTon = geos.every((g) => g.attributes.aTon);
     const pos = new Float32Array(nv * 3);
     const nor = new Float32Array(nv * 3);
     const col = mitFarbe ? new Float32Array(nv * 3) : null;
+    const ton = mitTon ? new Float32Array(nv) : null;
     const sIx = mitHaut ? new Float32Array(nv * 4) : null;
     const sGw = mitHaut ? new Float32Array(nv * 4) : null;
     const idx = new Uint32Array(ni);
@@ -5325,6 +5328,7 @@ function __tierMergeGeos(geos, fuell) {
         const c = g.attributes.position.count;
         if (col && g.attributes.color) col.set(g.attributes.color.array, vo * 3);
         else if (col) for (let i = 0; i < c; i++) col.set(fuell, (vo + i) * 3);
+        if (ton) ton.set(g.attributes.aTon.array, vo);
         if (mitHaut) {
             sIx.set(g.attributes.skinIndex.array, vo * 4);
             sGw.set(g.attributes.skinWeight.array, vo * 4);
@@ -5343,6 +5347,7 @@ function __tierMergeGeos(geos, fuell) {
     out.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     out.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
     if (col) out.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    if (ton) out.setAttribute("aTon", new THREE.BufferAttribute(ton, 1));
     if (mitHaut) {
         out.setAttribute("skinIndex", new THREE.BufferAttribute(sIx, 4));
         out.setAttribute("skinWeight", new THREE.BufferAttribute(sGw, 4));
@@ -6554,6 +6559,9 @@ function __mengenFarben(kern, L, toene) {
     const g = S.geo;
     const sp = g.attributes.aSpreiz.array;
     const col = new Float32Array((sp.length / 3) * 3);
+    // je Ecke ihr Ton (mensch.K4, koerper `menschTon`): die Zone 0 Haut, Lippe oder Höhle, 1 das Haar, 2 + i die Kleid-Zone i —
+    // der Satz der Menge färbt jede Ecke nach der Palette ihres Bewohners
+    const ton = new Float32Array(sp.length / 3);
     const normiert = (p, x, y, z) => {
         const m = p.Mi;
         const qx = m[0] * x + m[4] * y + m[8] * z + m[12],
@@ -6564,6 +6572,7 @@ function __mengenFarben(kern, L, toene) {
     for (let i = 0; i < sp.length / 3; i++) {
         const z = S.zone[i];
         let c = toene.zonen[z];
+        let t = z === 1 ? kern.menschTon("hair") : z >= 2 ? kern.menschTon(null, z - 2) : kern.menschTon("skin");
         if (z === 0) {
             const [x, y, w] = [sp[i * 3], sp[i * 3 + 1], sp[i * 3 + 2]];
             let best = null,
@@ -6573,13 +6582,15 @@ function __mengenFarben(kern, L, toene) {
                 const d = __tierAbstand(p, x, y, w);
                 if (d < bd) [bd, best] = [d, p];
             }
-            if (best && best.node.material.userData.__klasse === "lips") c = toene.lippe;
-            else if (L.hoehlen.some((h) => normiert(h, x, y, w) < saum)) c = toene.hoehle;
+            if (best && best.node.material.userData.__klasse === "lips") [c, t] = [toene.lippe, kern.menschTon("lips")];
+            else if (L.hoehlen.some((h) => normiert(h, x, y, w) < saum)) [c, t] = [toene.hoehle, kern.menschTon("socket")];
         }
         col.set(c, i * 3);
+        ton[i] = t;
     }
     g.deleteAttribute("aSpreiz");
     g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    g.setAttribute("aTon", new THREE.BufferAttribute(ton, 1));
     L.mesh.geometry.dispose();
     L.mesh.geometry = g;
 }
@@ -6994,6 +7005,63 @@ function __tierPrims(baum, ref, nimm, vox, blend, gelenkVon, klassen, zylinder) 
     });
     prims.sort((a, b) => b.ext - a.ext);
     return prims;
+}
+
+// DAS FELD AN EINEM PUNKT (trilinear; außerhalb des Rasters frei, der Deckel von `__tierFeld`): F = { f, nx, ny, nz, lo }
+function __feldWert(F, vox, x, y, z) {
+    const gx = (x - F.lo[0]) / vox,
+        gy = (y - F.lo[1]) / vox,
+        gz = (z - F.lo[2]) / vox;
+    const i = Math.floor(gx),
+        j = Math.floor(gy),
+        k = Math.floor(gz);
+    if (i < 0 || j < 0 || k < 0 || i >= F.nx - 1 || j >= F.ny - 1 || k >= F.nz - 1) return 8 * vox;
+    const fx = gx - i,
+        fy = gy - j,
+        fz = gz - k;
+    const at = (a, b, c) => F.f[a + F.nx * (b + F.ny * c)];
+    const l = (a, b, t) => a + (b - a) * t;
+    return l(
+        l(l(at(i, j, k), at(i + 1, j, k), fx), l(at(i, j + 1, k), at(i + 1, j + 1, k), fx), fy),
+        l(l(at(i, j, k + 1), at(i + 1, j, k + 1), fx), l(at(i, j + 1, k + 1), at(i + 1, j + 1, k + 1), fx), fy),
+        fz
+    );
+}
+// DIE VERDECKUNG EINES PUNKTS DER FLÄCHE aus ihrem Abstandsfeld (mensch.K4): entlang eines Strahls in `V.stufen` Schritten
+// `V.schritt` der Anteil, um den das Feld hinter dem freien Abstand zurückbleibt (jede Stufe halb so schwer wie die vorige) —
+// 1 frei, 0 ganz verdeckt; `V.staerke` skaliert. Zwei Strahlen, gemittelt: der Gradient (die Falte, die Mund-Linie, der Winkel
+// des Auges) und der zum Himmel gekippte (`V.oben`: Gradient + oben × die Hoch-Achse) — was über der Fläche hängt, der
+// Brauen-Bogen über der Höhle, die Nase über der Oberlippe, nimmt ihr das Licht von oben
+function __feldVerdeckung(F, vox, x, y, z, V) {
+    const e = 0.5 * vox;
+    let gx = __feldWert(F, vox, x + e, y, z) - __feldWert(F, vox, x - e, y, z),
+        gy = __feldWert(F, vox, x, y + e, z) - __feldWert(F, vox, x, y - e, z),
+        gz = __feldWert(F, vox, x, y, z + e) - __feldWert(F, vox, x, y, z - e);
+    const L = Math.hypot(gx, gy, gz);
+    if (!(L > 1e-12)) return 1;
+    // das Feld der Ellipsoide wächst nicht mit 1 je Einheit: frei ist, was mit seinem Gradienten |∇f| wächst — entlang eines
+    // Strahls um seinen Anteil c am Gradienten
+    const g = L / (2 * e);
+    gx /= L;
+    gy /= L;
+    gz /= L;
+    const d0 = __feldWert(F, vox, x, y, z);
+    const strahl = (rx, ry, rz) => {
+        const c = rx * gx + ry * gy + rz * gz;
+        if (!(c > 0.2)) return 0;
+        let occ = 0,
+            ws = 0;
+        for (let s = 1, w = 0.5; s <= V.stufen; s++, w *= 0.5) {
+            const h = s * V.schritt;
+            const d = __feldWert(F, vox, x + rx * h, y + ry * h, z + rz * h) - d0;
+            occ += w * Math.min(1, Math.max(0, (g * h * c - d) / (g * h * c)));
+            ws += w;
+        }
+        return occ / ws;
+    };
+    const uL = Math.hypot(gx, gy + V.oben, gz);
+    const oben = uL > 1e-6 ? strahl(gx / uL, (gy + V.oben) / uL, gz / uL) : 0;
+    return Math.max(0, 1 - (V.staerke * (strahl(gx, gy, gz) + oben)) / 2);
 }
 
 // Das glatte SDF-Feld der Primitive (polynomiales smin, Verrundung ~blend) auf einem Raster der Weite vox.
@@ -7760,6 +7828,11 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     if (!(zeilenZiel > 0)) throw new Error("MENSCH-GUSS: die Budget-Zeile der Stufe fehlt (koerper-core budget)");
     if (menge && !(typeof kern.surfaceNets === "function" && typeof kern.kleidZonen === "function" && typeof kern.kopfToene === "function"))
         throw new Error("MENGEN-LEIB: Hüllen-Maschine oder Kleid-Zonen fehlen (fail-closed)");
+    // DER TON JE ECKE (mensch.K4): jede Fläche des Menschen trägt den Eintrag der Palette, aus dem ihre Farbe kommt — ohne Gesetz
+    // kein Mensch (fail-closed)
+    if (typeof kern.menschTon !== "function" || typeof kern.brauTon !== "function")
+        throw new Error("MENSCH-GUSS: koerper-Kern ohne menschTon/brauTon — die Farbe folgt dem Samen (fail-closed)");
+    const tonStempel = (geo, t) => geo.setAttribute("aTon", new THREE.BufferAttribute(new Float32Array(geo.attributes.position.count).fill(t), 1));
     let mengenLeib = null;
     if (typeof kern.surfaceNets === "function" && typeof kern.kleidZonen === "function") {
         B.character.updateMatrixWorld(true);
@@ -7927,8 +8000,10 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 if (B.parts[an]) B.parts[an].traverse((n) => n.isMesh && MENSCH_MENGE.klassen.includes(n.material.userData.__klasse) && fuss.push(n));
             sohlen.set(mengenLeib.mesh, fuss);
         }
-        // 2) DIE KLEID-ZONEN (das Gesetz sagt WAS, die Maschine baut die Hülle):
+        // 2) DIE KLEID-ZONEN (das Gesetz sagt WAS, die Maschine baut die Hülle) — jede trägt den Ton ihres Platzes (mensch.K4):
+        let zi = -1;
         for (const z of menge ? [] : kern.kleidZonen(dials) || []) {
+            zi++;
             const km = "stoff_" + (z.hex >>> 0).toString(16);
             // STOFF-CHARAKTER (V18.464): rough je Schnitt aus der Gesetz-Zeile
             // (Lab getCloth verbatim) + Webungs-Art als must-ignore-Marker.
@@ -7941,6 +8016,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 // um das halbe Raster-Mehr weiter draußen, damit ihr Umriss den der feinen trägt (gate:kreatur-kosten DECKUNG)
                 const aus = __stoffAusHaut(hautHuelle.geometry, hautTeile, z.teile || [], z.dicke + (fein ? 0.5 * 0.05 * (voxMul - 1) : 0));
                 if (aus) {
+                    tonStempel(aus.geo, kern.menschTon(null, zi));
                     const stoff = new THREE.Mesh(aus.geo, matFuer(km));
                     stoff.userData.__skinned = true;
                     stoff.userData.__huelle = true;
@@ -7970,6 +8046,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             }
             const stoff = backeHuelle(pts, zen, km, 0.06 * voxMul, 1.5, 0.38, z.abstand);
             if (stoff) {
+                tonStempel(stoff.geometry, kern.menschTon(null, zi));
                 if (z.sohle) sohlen.set(stoff, quellen);
                 lebtInHuelle(quellen);
                 stoffHuellen.push(stoff);
@@ -8140,6 +8217,66 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             lid.geometry = new THREE.SphereGeometry(alt.parameters.radius, AR.w, AR.h);
             alt.dispose();
         }
+        // DAS LID BESCHATTET DEN AUGAPFEL (mensch.K4 Staffel 1, koerper MENSCH_GESTALT.auge.schatten): je Ecke von Sklera und
+        // Iris der senkrechte Abstand zur Fläche jedes Lids ihres Auges (Augen-Raum; unter dem Lid negativ) — darunter `tief`
+        // ihres Tons, im Saum weich auf ihn. Vorher stand der Augapfel unter dem Lid weiß wie in der Lidspalte: auf 6 m las das
+        // Auge als weißer Fleck mit Punkt, und wo das Lid ihn deckt, gehörte das Pixel dem Lid.
+        const AS = kern.MENSCH_GESTALT.auge.schatten;
+        if (!AS || !(AS.saum > 0) || !(AS.tief >= 0)) throw new Error("MENSCH-HAUT: auge.schatten fehlt (fail-closed)");
+        const LR = kern.MENSCH_GESTALT.auge.lidRand;
+        if (!LR || !(LR.saum > 0) || !(LR.tief >= 0)) throw new Error("MENSCH-HAUT: auge.lidRand fehlt (fail-closed)");
+        for (const [eye, oben, unten] of [
+            [B.augen.eyeL, B.parts.lidTL, B.parts.lidBL],
+            [B.augen.eyeR, B.parts.lidTR, B.parts.lidBR],
+        ]) {
+            const lider = [oben, unten].map((l) => {
+                const r = l.geometry.parameters.radius;
+                return { l, c: l.position, a: r * l.scale.x, b: r * l.scale.y, cz: r * l.scale.z, s: l === oben ? -1 : 1 };
+            });
+            const v = new THREE.Vector3();
+            for (const m of eye.children) {
+                const kl = m.isMesh && m.material && m.material.userData ? m.material.userData.__klasse : null;
+                if (kl !== "eye" && kl !== "iris") continue;
+                const pa = m.geometry.attributes.position;
+                const c0 = lin(KL[kl].c);
+                const col = new Float32Array(pa.count * 3);
+                m.updateMatrix();
+                for (let i = 0; i < pa.count; i++) {
+                    v.fromBufferAttribute(pa, i).applyMatrix4(m.matrix);
+                    let f = 1;
+                    for (const L of lider) {
+                        const q = 1 - ((v.x - L.c.x) / L.a) ** 2 - ((v.z - L.c.z) / L.cz) ** 2;
+                        if (q <= 0) continue;
+                        // die Fläche des Lids über (unter) der Ecke: Abstand > 0 in der Lidspalte
+                        const d = L.s * (v.y - (L.c.y + L.s * L.b * Math.sqrt(q)));
+                        const t = Math.min(1, Math.max(0, d / AS.saum));
+                        f = Math.min(f, AS.tief + (1 - AS.tief) * t * t * (3 - 2 * t));
+                    }
+                    col.set([c0[0] * f, c0[1] * f, c0[2] * f], i * 3);
+                }
+                m.geometry.setAttribute("color", new THREE.BufferAttribute(col, 3));
+            }
+            // DER RAND DES LIDS (koerper auge.lidRand): wo die Haut des Lids den Augapfel berührt (die Wimpern-Linie, die Falte
+            // zwischen Lid und Auge), trägt sie `tief` ihres Tons, im Saum (Abstand zur Fläche des Augapfels, Augen-Raum) weich
+            // auf ihn
+            const ball = eye.children.find((m) => m.isMesh && m.material.userData.__klasse === "eye");
+            const rb = ball.geometry.parameters.radius,
+                bs = ball.scale;
+            const hautC = lin(KL.skin.c);
+            for (const l of [oben, unten]) {
+                l.updateMatrix();
+                const pa = l.geometry.attributes.position;
+                const col = new Float32Array(pa.count * 3);
+                for (let i = 0; i < pa.count; i++) {
+                    v.fromBufferAttribute(pa, i).applyMatrix4(l.matrix);
+                    const d = (Math.hypot(v.x / (rb * bs.x), v.y / (rb * bs.y), v.z / (rb * bs.z)) - 1) * rb;
+                    const t = Math.min(1, Math.max(0, d / LR.saum));
+                    const f = LR.tief + (1 - LR.tief) * t * t * (3 - 2 * t);
+                    col.set([hautC[0] * f, hautC[1] * f, hautC[2] * f], i * 3);
+                }
+                l.geometry.setAttribute("color", new THREE.BufferAttribute(col, 3));
+            }
+        }
         const kappen = kern.haarKappe(dials).map((k) => {
             const m = new THREE.Mesh(new THREE.SphereGeometry(k.r, 8, 6), matFuer("haarKappe"));
             m.position.set(k.c[0], k.c[1], k.c[2]);
@@ -8179,8 +8316,39 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // Haut trägt ihren Ton, so weit sie innerhalb hoehleSaum Halbachsen über ihrem Rand liegt (der Ring um das Auge, die
         // Muschel des Ohrs); die Lippe bleibt Lippe. Ohne Saum keine Höhle (fail-closed).
         if (!(KH.hoehleSaum >= 0)) throw new Error("MENSCH-HAUT: kopfHaut.hoehleSaum fehlt (fail-closed)");
+        // DER BRAUEN-BOGEN (mensch.K4): die Höhle beginnt unter ihm — so weit um die Braue (Kopf-Raum) trägt die Haut keinen Ton
+        // der Höhle (die Haut des Bogens zwischen Brauen-Haar und Lid-Falte)
+        if (!(KH.brauBogen >= 0)) throw new Error("MENSCH-HAUT: kopfHaut.brauBogen fehlt (fail-closed)");
+        // DIE BRAUE IST EIN TON DER HAUT (mensch.K4 Staffel 1, das Gesicht auf 6 m): unter den Brauen-Haaren (die Gruppen
+        // browL/browR des Baums) trägt die Haut den Ton der Braue (koerper `brauTon`: das Haar über der Haut) — die Ellipse um
+        // ihre Haare im Kopf-Raum, um `brauSaum` [seitlich, Höhe] weiter (die Braue reicht über die Lidspalte hinaus); von fern
+        // liest die Braue als Fläche, nie als fünf Striche unter einem Bildpunkt. Die Haare bleiben (nah).
+        const BS = KH.brauSaum;
+        if (!(Array.isArray(BS) && BS[0] >= 0 && BS[1] >= 0)) throw new Error("MENSCH-HAUT: kopfHaut.brauSaum fehlt (fail-closed)");
+        const brauLin = lin(kern.brauTon(skinCol, hairCol));
+        const kopfInv = new THREE.Matrix4().copy(kopf.matrixWorld).invert();
+        const brauen = [B.augen.browL, B.augen.browR].filter(Boolean).map((g) => {
+            const bb = new THREE.Box3();
+            const v = new THREE.Vector3();
+            g.traverse((n) => {
+                if (!n.isMesh) return;
+                const p = n.geometry.attributes.position;
+                const M = new THREE.Matrix4().multiplyMatrices(kopfInv, n.matrixWorld);
+                for (let k = 0; k < p.count; k++) bb.expandByPoint(v.fromBufferAttribute(p, k).applyMatrix4(M));
+            });
+            const c = bb.getCenter(new THREE.Vector3()),
+                h = bb.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+            return { c, hx: h.x + BS[0], hy: h.y + BS[1], z0: bb.min.z - 3 * BS[1] };
+        });
+        if (brauen.length < 2) throw new Error("MENSCH-HAUT: die Brauen (browL/browR) fehlen (fail-closed)");
+        // die Ellipse der Brauen, um m (Kopf-Raum) in jeder Richtung weiter: m = 0 die Braue, m = brauBogen ihr Bogen
+        const imBrau = (x, y, z, m) => brauen.some((b) => z > b.z0 - m && ((x - b.c.x) / (b.hx + m)) ** 2 + ((y - b.c.y) / (b.hy + m)) ** 2 < 1);
+        const ML = kern.KOPF_TON && kern.KOPF_TON.mundLinie;
+        if (!Array.isArray(ML) || ML.length !== 3) throw new Error("MENSCH-HAUT: KOPF_TON.mundLinie fehlt (fail-closed)");
         const pa = geo.attributes.position;
         const col = new Float32Array(pa.count * 3);
+        // je Ecke ihr Ton (mensch.K4, koerper `menschTon`): Haut, Lippe (die Mund-Linie eingeschlossen), Höhle, Braue, Haar-Kappe
+        const ton = new Float32Array(pa.count);
         for (let i = 0; i < pa.count; i++) {
             const x = pa.getX(i),
                 y = pa.getY(i),
@@ -8211,13 +8379,35 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     hoehle = p;
                 }
             }
-            if (hd < KH.hoehleSaum && best.node.material.userData.__klasse !== "lips") best = hoehle;
-            // die Mund-Linie: auf der Lippe, in der Höhe zwischen den Lippen-Mitten (dunkel, ein Viertel der Lippe)
+            if (hd < KH.hoehleSaum && best.node.material.userData.__klasse !== "lips" && !imBrau(x, y, z, KH.brauBogen)) best = hoehle;
+            const kl = best.node.material.userData.__klasse;
+            if (kl !== "lips" && kl !== "haarKappe" && imBrau(x, y, z, 0)) {
+                col.set(brauLin, i * 3);
+                ton[i] = kern.menschTon("braue");
+                continue;
+            }
+            // die Mund-Linie: auf der Lippe, in der Höhe zwischen den Lippen-Mitten — die dunkle rote Innenlippe (koerper
+            // KOPF_TON.mundLinie, je Kanal ein Anteil der Lippe)
             const fb = farbeVon.get(best);
-            const spalt = best.node.material.userData.__klasse === "lips" && Math.abs(y - mundY) < KH.mundSpalt * mundH;
-            col.set(spalt ? [fb[0] * 0.25, fb[1] * 0.2, fb[2] * 0.2] : fb, i * 3);
+            const spalt = kl === "lips" && Math.abs(y - mundY) < KH.mundSpalt * mundH;
+            col.set(spalt ? fb.map((x, c) => x * ML[c]) : fb, i * 3);
+            ton[i] = kern.menschTon(kl);
+        }
+        // DIE VERDECKUNG DER KOPF-HAUT (mensch.K4 Staffel 1, koerper MENSCH_GESTALT.kopfHaut.verdeckung): was die Haut selbst
+        // verdeckt — die Falte unter der Nase, die Mund-Linie, der Winkel des Auges —, empfängt weniger Licht; die Kaskade wirft im
+        // Gesicht keinen Millimeter (Lehre 19: was die Karte des Labors trägt, trägt kartenlos der Vertex). Je Ecke tastet das Feld,
+        // aus dem die Haut wuchs (`Fk`), entlang seines Gradienten (`__feldVerdeckung`); über `frei` trägt die Ecke ihren Ton genau.
+        // Vorher lag der Sims der Oberlippe unter der Nase im vollen Licht der Mittags-Sonne, heller als die Wange im Schatten der
+        // Braue: auf 6 m las der Mund ΔL* −2,2 statt dunkler (KOPF_SOLL lippeL ≤ −4).
+        const VD = KH.verdeckung;
+        if (!VD || !(VD.schritt > 0) || !(VD.stufen >= 1) || !(VD.staerke >= 0) || !(VD.frei > 0) || !(VD.oben >= 0))
+            throw new Error("MENSCH-HAUT: kopfHaut.verdeckung fehlt (fail-closed)");
+        for (let i = 0; i < pa.count; i++) {
+            const ao = __feldVerdeckung(Fk, KH.vox, pa.getX(i), pa.getY(i), pa.getZ(i), VD);
+            if (ao < VD.frei) for (let c = 0; c < 3; c++) col[i * 3 + c] *= ao;
         }
         geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+        geo.setAttribute("aTon", new THREE.BufferAttribute(ton, 1));
         const kopfHaut = new THREE.Mesh(geo, matFuer("haut")); // Kopf-lokal gebacken (Identität)
         kopfHaut.userData.__huelle = true;
         kopf.add(kopfHaut);
@@ -8271,6 +8461,17 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             const geo = __streuGeo(row, seedH, tonH);
             if (geo) wirt.add(new THREE.Mesh(geo, matFuer("hair")));
         }
+    }
+    // DER TON JEDES ÜBRIGEN TEILS (mensch.K4): was keinen Ton je Ecke trägt (Kopf-Haut, Kleid-Zonen und der Leib der Menge
+    // tragen ihn), trägt den Ton seiner Stoff-Klasse (koerper `menschTon`) — die Haare der Brauen den der Braue
+    {
+        const brauHaar = new Set();
+        for (const g of [B.augen.browL, B.augen.browR]) if (g) g.traverse((n) => brauHaar.add(n));
+        B.character.traverse((n) => {
+            if (!n.isMesh || !n.geometry || n.geometry.attributes.aTon) return;
+            const kl = n.material && n.material.userData ? n.material.userData.__klasse : null;
+            tonStempel(n.geometry, brauHaar.has(n) ? kern.menschTon("braue") : kern.menschTon(kl));
+        });
     }
     const namen = [
         "torso",

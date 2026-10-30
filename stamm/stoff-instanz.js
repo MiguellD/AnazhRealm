@@ -1805,9 +1805,10 @@ class AnazhRealm_stoff_instanz {
     // Render-Objekte: der Abschied einer Senke (`_instanzAbschied`) löst sie, der Kehraus liest aus ihnen, was das Objekt
     // WIRKLICH zeichnet — auch Attribute, die kein `geometry.attributes` trägt (r184s InstanceNode zeichnet die Instanz-
     // Farbe aus einem EIGENEN Attribut über `instanceColor.array`).
-    // Das Register sitzt an der KLASSE der Render-Objekt-Verwaltung (Frost-Nachbesserung 4): jeder Renderer der Seite (Welt,
-    // Werkstatt, Ich-, Hof-, Feed-Bühne) meldet seine Render-Objekte am Objekt an — die Bühnen zeichnen Gestalten aus Welt-
-    // Vorlagen mit geteilten Stoffen, ihre Render-Objekte hingen sonst für immer an diesen Stoffen.
+    // Das Register sitzt an der KLASSE der Render-Objekt-Verwaltung (Frost-Nachbesserung 4): jeder Renderer der Seite meldet
+    // seine Render-Objekte am Objekt an — die Bühnen (Werkstatt, Ich-, Hof-, Feed-Bühne; seit 30.10. über den Welt-Renderer,
+    // `_buehneRenderer`) zeichnen Gestalten aus Welt-Vorlagen mit geteilten Stoffen, ihre Render-Objekte hingen sonst für
+    // immer an diesen Stoffen.
     _renderObjektRegister(renderer) {
         const inst = renderer && renderer._objects;
         const objs = inst && Object.getPrototypeOf(inst);
@@ -1882,9 +1883,10 @@ class AnazhRealm_stoff_instanz {
     // Uint16-Index, unorm16/unorm8 — ganz oder je Bereich) geht durch die EINE Wort-Schrift `_schreibWorte`, die auch
     // die Arena ruft (gate:vendor-anker pinnt beide Vendor-Stellen, gate:weltbild-frost P2 jeden writeBuffer).
     //
-    // DAS BACKEND-GESETZ (Frost 07.10.): die Hüllen des WebGPU-Backends sitzen an der KLASSE, nie an einer Instanz. Die
-    // Seite trägt fünf WebGPU-Renderer (Welt · Werkstatt · Ich-, Hof-, Feed-Bühne), und sie TEILEN Geometrie (die Mensch-
-    // Vorlage `sharedGeom`, die Studio-Gestalten). r184 schreibt beim Anlegen die geweitete Form in das GETEILTE Attribut
+    // DAS BACKEND-GESETZ (Frost 07.10.): die Hüllen des WebGPU-Backends sitzen an der KLASSE, nie an einer Instanz. Bis
+    // 30.10. trug die Seite fünf WebGPU-Renderer (Welt · Werkstatt · Ich-, Hof-, Feed-Bühne; seither zeichnen die Bühnen
+    // über den Welt-Renderer, `_buehneRenderer`), und sie TEILTEN Geometrie (die Mensch-Vorlage `sharedGeom`, die
+    // Studio-Gestalten). r184 schreibt beim Anlegen die geweitete Form in das GETEILTE Attribut
     // zurück (`createAttribute`: `array = new Uint32Array(array)`), und der Draw bindet das Index-Format nach dem Array-Typ.
     // Befund (echte GPU, Radeon 890M, main V18.534): die Hülle lag nur an der Welt-Instanz; Tab öffnete die Ich-Bühne, ihr
     // Backend weitete die Mensch-Indizes, die Welt band acht Mensch-Meshes als uint32 auf 16-bit-Puffern („Index range …

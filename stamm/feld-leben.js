@@ -1149,7 +1149,7 @@ class AnazhRealm_feld_leben {
                 run: (m, append) => {
                     // Verweigert die Sperre des Welt-Wechsels, sagt der Befehl es — nie „gespeichert", wenn nichts geschrieben wurde.
                     if (this.saveState() === false) {
-                        append("Nicht gespeichert: die Seite wechselt gerade die Welt (der Reload läuft).");
+                        append("Nicht gespeichert: die Seite wechselt gerade die Welt.");
                         return;
                     }
                     this.saveToProjectFolder().then((result) => {
@@ -1212,7 +1212,7 @@ class AnazhRealm_feld_leben {
                 re: /^wechsle\s+zur?\s+(?:welt\s+)?(.+)$/i,
                 run: (m, append) => {
                     // Ring 8: Wechsel zu einer existierenden Welt via slug (genauer
-                    // Match oder Präfix), dann Reload.
+                    // Match oder Präfix), dann der Wechsel.
                     const targetSlug = m[1].toLowerCase().trim();
                     const idx = this.worldsIndexLoad();
                     const exact = idx.find((e) => e.slug === targetSlug);

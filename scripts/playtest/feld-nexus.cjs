@@ -220,15 +220,6 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
     const phase7Results = await safeEvaluate(page, () => {
         const out = {};
 
-        // Seeded RNG für deterministische Tests.
-        const makeRng = (seed) => {
-            let s = seed >>> 0 || 1;
-            return () => {
-                s = (s * 1664525 + 1013904223) >>> 0;
-                return s / 4294967296;
-            };
-        };
-
         // History mit klar getrennten Fitness-Werten.
         const injHist = [
             {
@@ -245,7 +236,7 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
             },
         ];
         // (a) Selektion: über 500 Calls sollte highfit deutlich häufiger gewählt werden.
-        const rngA = makeRng(42);
+        const rngA = r._samenStrom(42); // Seeded RNG für deterministische Tests: das EINE LCG der Welt
         let highCount = 0;
         let lowCount = 0;
         for (let i = 0; i < 500; i++) {
@@ -258,7 +249,7 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
         out.selectionCoversAll = highCount + lowCount === 500;
 
         // (b) Mutation behält chain-Wurzel und Array-Struktur
-        const rngB = makeRng(7);
+        const rngB = r._samenStrom(7);
         const base = ["chain", ["weather", "sunny"], ["creatures_emotion", "happy"]];
         let chainRootKept = true;
         let allArrays = true;
@@ -271,7 +262,7 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
         out.mutationKeepsArrayChildren = allArrays;
 
         // (c) dslCompose mit erzwungener History-Quelle
-        const rngC = makeRng(99);
+        const rngC = r._samenStrom(99);
         let usedHistory = 0;
         for (let i = 0; i < 30; i++) {
             const comp = r.dslCompose({

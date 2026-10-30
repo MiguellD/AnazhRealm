@@ -2201,6 +2201,14 @@ async function WELLE_L(ort) {
         // (T23) der Biss trifft, wo die Geste schnappt: Jagd auf den Spieler, Beute-Biss und Gegenwehr im echten Takt (1/60
         // s); gemessen die Geste und der Spalt Kopf ↔ Leib des Gebissenen.
         await teil("T23", async () => {
+            // der Ort aus der Welt (K16, Orts-Wand): Ringe je 8 Richtungen um den Start, je Radius die Versätze
+            const ringe8 = (radien) =>
+                radien.flatMap((rr) =>
+                    [0, 1, 2, 3, 4, 5, 6, 7].map((k) => [
+                        Math.round(Math.cos((k * Math.PI) / 4) * rr),
+                        Math.round(Math.sin((k * Math.PI) / 4) * rr),
+                    ])
+                );
             const kopfKapseln = (c) => {
                 c.updateMatrixWorld(true);
                 return (r._kreaturTrefferGlieder(c) || [])
@@ -2396,13 +2404,7 @@ async function WELLE_L(ort) {
                     };
                     // der Ort aus der Welt (K16, Orts-Wand): Ringe je 8 Richtungen um den Start, 20 … 180 m — der erste, der die Prüfung
                     // unten trägt (eben, trocken, frei); kein Versatz der alten Welt als Liste
-                    const ortR = ((radien) =>
-                        radien.flatMap((rr) =>
-                            [0, 1, 2, 3, 4, 5, 6, 7].map((k) => [
-                                Math.round(Math.cos((k * Math.PI) / 4) * rr),
-                                Math.round(Math.sin((k * Math.PI) / 4) * rr),
-                            ])
-                        ))([20, 57, 70, 100, 140, 180]).find(
+                    const ortR = ringe8([20, 57, 70, 100, 140, 180]).find(
                         ([ox, oz]) =>
                             j2 &&
                             r2 &&
@@ -2616,13 +2618,7 @@ async function WELLE_L(ort) {
                             return r._kreaturSchwimmt(wolfS, r._creatureGroundY(wolfS)) === null;
                         };
                         const ort = wolfS
-                            ? ((radien) =>
-                                  radien.flatMap((rr) =>
-                                      [0, 1, 2, 3, 4, 5, 6, 7].map((k) => [
-                                          Math.round(Math.cos((k * Math.PI) / 4) * rr),
-                                          Math.round(Math.sin((k * Math.PI) / 4) * rr),
-                                      ])
-                                  ))([57, 70]).find(
+                            ? ringe8([57, 70]).find(
                                   ([ox, oz]) => trocken(P0.x + ox, P0.z + oz) && trocken(P0.x + ox + 0.4, P0.z + oz + 6)
                               )
                             : null;

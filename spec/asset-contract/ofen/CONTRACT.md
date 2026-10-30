@@ -77,6 +77,18 @@ HAUT: die Höhlen-Kugeln (Klasse socket) werden nicht mehr gegossen, ihr Ton lie
 und der Haut-Saum (`HAUT_LOOK.sssAmt`): `mensch-L1|{skin,shadow,lips}|mensch` (Dreiecke gleich). Neu geprägt NUR diese 18 Schlüssel,
 461 → 460 Klassen; alle übrigen 442 byte-gleich (jedes Tier, beide Mensch-Beipacks mit `leibV`), Ratsche `ofen` 461 → 460 Fälle.
 
+Vertrags-Akt mensch.K4 (30.10.2026, die Farbe folgt dem Samen, das Gesicht auf 6 m — Stationen mensch.K4#1/#2): (1) DER TON JE
+ECKE: jede Ecke des Menschen trägt `aTon` (koerper `MENSCH_TON`/`menschTon`: Haut · Lippe · Höhle · Braue · Haar · drei
+Kleid-Zonen · fest), der Stoff jedes Bewohners färbt sie nach der Palette seines Samens (`menschPalette`, die Ton-Tafel des
+Stamms). (2) DAS GESICHT: die Iris kreisförmig und vor dem Augapfel (`auge.iris`), der Augapfel 2 mm vor (`auge.zurueck`
+0,04 → 0,03), der Lid-Schatten auf Sklera und Iris (`auge.schatten`), der Rand der Lider am Augapfel 6 mm bei 0,25 ihres Tons
+(`auge.lidRand`), die Braue als Ton der Kopf-Haut (`brauTon`, `brauSaum`), die Höhle unter dem Brauen-Bogen (`brauBogen`) bei
+−8/+5 (ΔL*/Δa*), die Lippe −13 L* mit roter Mund-Linie (`KOPF_TON.mundLinie` [0,6, 0,2, 0,2], `mundSpalt` 0,45), die Verdeckung
+der Kopf-Haut aus ihrem Feld entlang des Gradienten und zum Himmel (`kopfHaut.verdeckung`, `oben` 1, `staerke` 2). Neu geprägt
+NUR die 64 Mensch-Schlüssel (L0 26 · L1 20 · L2 9 · L3 9, mit den Gelenken von Augapfel, Iris und Lidern), Dreiecke gleich, Ecken
+gleich bis auf den Leib der Mengen-Stufe (L2 952 → 951); alle übrigen 446 Klassen byte-gleich (jedes Tier, beide Mensch-Beipacks),
+510 → 510 Klassen.
+
 ## Invarianten des Gates
 
 - **Determinismus:** ein frischer Ofen (neuer vm-Kontext) gießt jede Klasse byte-gleich.

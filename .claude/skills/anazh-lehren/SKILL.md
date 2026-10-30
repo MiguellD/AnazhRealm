@@ -145,7 +145,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 26. **Der Schatten liest, was das Auge sieht:** der r184-Schattenpass (Kaskaden-Kamera) liest nur colorNode.a · map.a · maskShadowNode,
     nie opacityNode — LOD-Masken vom Auge (`uLodAuge`), Ausschnitte in colorNode.a (`gate:foundry-crossfade`); Bundles nach jedem
     castShadow-Wechsel neu. Ein normalNode liest nie `normalWorld` (EINE Variable je Programm), sondern `normalWorldGeometry` ×
-    `faceDirection`. CPU-Raster-Linsen fahren `?holz=kienspan` (swiftshader kompiliert synchron, 42–292 s je Pipeline); `_gameLoopTick`
+    `faceDirection`; r184 schreibt einen Knoten, wo er ZUERST gebaut wird — was ein Baustein nur in `If` liest, baut der Aufrufer
+    vor dem Zweig (`toVar`), sonst liest jeder Leser danach die ungerechnete Variable (B7 in `gate:wasser-leben:bild`). CPU-Raster-Linsen fahren `?holz=kienspan` (swiftshader kompiliert synchron, 42–292 s je Pipeline); `_gameLoopTick`
     rendert selbst, darum trägt jeder benannte Linsen-Aufruf höchstens EINEN kalten Programm-Schlüssel (`gpu-lens`); Wände urteilen in
     Bau-Ereignissen, nie in Wanduhr-Sekunden. castShadow IST die Wurf-Ebene (`_wurfEbene`, K72): die Kaskade sieht nur Werfer und
     Lichter, r184 projiziert keinen Nicht-Werfer.
