@@ -103,3 +103,4 @@ eich6-gtx Exit0 station eich-gtx.sh an 379e5f56
 eich7-gtx Exit0 station eich-gtx.sh an 379e5f56
 z83-bisekt5 LANGSAMER abab 24a0f3ef gegen 81ce4392: w-ego 2+2 LANGSAMER
 eich8-gtx Exit0 station eich-gtx.sh an 379e5f56
+z87-abab LANGSAMER abab 379e5f56 gegen 6b3da705: stadt 4+4 LANGSAMER · w-ego 4+4 nicht-langsamer

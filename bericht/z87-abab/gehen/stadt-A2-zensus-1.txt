@@ -1,0 +1,152 @@
+{
+ "ms": 5,
+ "ergebnis": {
+  "gesamt": 15,
+  "arten": {
+   "deer": 10,
+   "bear": 2,
+   "wolf": 3
+  },
+  "zustand": {
+   "-": 15
+  },
+  "jaeger": 0,
+  "wuerfeAb2": 4,
+  "tiereInWuerfen": 13,
+  "gruppen": [
+   {
+    "wurf": "deer@517.1,249.3",
+    "n": 2,
+    "mitte": [
+     369.4,
+     237.8
+    ],
+    "spanneM": 1.5,
+    "spielerM": 300.5
+   },
+   {
+    "wurf": "wolf@644.3,86.3",
+    "n": 3,
+    "mitte": [
+     648,
+     83.2
+    ],
+    "spanneM": 1.5,
+    "spielerM": 338
+   },
+   {
+    "wurf": "deer@382.7,628.8",
+    "n": 3,
+    "mitte": [
+     383.3,
+     627.8
+    ],
+    "spanneM": 2.5,
+    "spielerM": 307.5
+   },
+   {
+    "wurf": "deer@821.2,80.7",
+    "n": 5,
+    "mitte": [
+     822.1,
+     79
+    ],
+    "spanneM": 3.1,
+    "spielerM": 401.2
+   }
+  ],
+  "verbandFeld": true,
+  "verbaendeAb2": 4,
+  "verbaende": [
+   {
+    "vb": "c1",
+    "n": 2,
+    "art": {
+     "deer": 2
+    },
+    "leitLebt": false,
+    "mitte": [
+     369.4,
+     237.8
+    ],
+    "spanneM": 1.5,
+    "spielerM": 300.5
+   },
+   {
+    "vb": "c7",
+    "n": 1,
+    "art": {
+     "bear": 1
+    },
+    "leitLebt": true,
+    "mitte": [
+     566.1,
+     69.2
+    ],
+    "spanneM": 0,
+    "spielerM": 352.5
+   },
+   {
+    "vb": "c8",
+    "n": 3,
+    "art": {
+     "wolf": 3
+    },
+    "leitLebt": true,
+    "mitte": [
+     648,
+     83.2
+    ],
+    "spanneM": 1.5,
+    "spielerM": 338
+   },
+   {
+    "vb": "c11",
+    "n": 3,
+    "art": {
+     "deer": 3
+    },
+    "leitLebt": true,
+    "mitte": [
+     383.3,
+     627.8
+    ],
+    "spanneM": 2.5,
+    "spielerM": 307.5
+   },
+   {
+    "vb": "c14",
+    "n": 5,
+    "art": {
+     "deer": 5
+    },
+    "leitLebt": true,
+    "mitte": [
+     822.1,
+     79
+    ],
+    "spanneM": 3.1,
+    "spielerM": 401.2
+   },
+   {
+    "vb": "c19",
+    "n": 1,
+    "art": {
+     "bear": 1
+    },
+    "leitLebt": true,
+    "mitte": [
+     520,
+     40.8
+    ],
+    "spanneM": 0,
+    "spielerM": 388.6
+   }
+  ],
+  "verbaendeMap": 6,
+  "spieler": [
+   609.1,
+   419
+  ]
+ }
+}
