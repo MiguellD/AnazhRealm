@@ -2,8 +2,8 @@
  "kopf": "715754fc",
  "je": {
   "affekt.K1": {
-   "punkte": 1,
-   "beleg": "Maschine: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 6.38 dB, Nachbar 0 dB, Stempel 0/0 an 715754fc headless · Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Tag third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht first GRÜN: fällen -0.12 -4.77 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.76 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 715754fc radeon — offen: affekt.K1#2 gtx: Station seit der Messung geändert",
+   "punkte": 2,
+   "beleg": "Maschine: δ Tat 1 0.1607 → Tat 10 -0.0018 (0.011 ≤ 0,3), Vogel-Chor am Ort 6.38 dB, Nachbar 0 dB, Stempel 0/0 an 715754fc headless · Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Tag third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht first GRÜN: fällen -0.12 -4.77 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.76 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 715754fc radeon · Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Tag third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.78 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) an 715754fc gtx",
    "stationen": [
     {
      "id": "affekt.K1#1",
@@ -24,11 +24,10 @@
     {
      "id": "affekt.K1#2",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Tag third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.78 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25)",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     }
    ]
   },
@@ -276,7 +275,7 @@
   },
   "fahrzeug.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: fahrzeug.K2#1 radeon: ungemessen (R10) · fahrzeug.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/fahr-proben.cjs)",
+   "beleg": "Maschine: 0 — offen: fahrzeug.K2#1 radeon: ungemessen (R10) · fahrzeug.K2#1 gtx: Wand GPU: keine Linse nennt eine Karte ([linse-gpu] <Hersteller>/…) an 715754fc",
    "stationen": [
     {
      "id": "fahrzeug.K2#1",
@@ -291,24 +290,24 @@
      "id": "fahrzeug.K2#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/fahr-proben.cjs)",
-     "ungemessen": true
+     "zahl": "Wand GPU: keine Linse nennt eine Karte ([linse-gpu] <Hersteller>/…) · keine WEGENETZ-Zeile (Exit 0)",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": "Wand GPU: keine Linse nennt eine Karte ([linse-gpu] <Hersteller>/…)"
     }
    ]
   },
   "fahrzeug.K3": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: Drift Kamera ≤ 2.7° neben dem Fahrtvektor (Schlupf bis 1.2°) · Rückkehr 1.08 s nach 69° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov] an b3f9ae95 radeon · gehalten: Drift Kamera ≤ 0° neben dem Fahrtvektor (Schlupf bis 4.7°) · Rückkehr 1.08 s nach 67° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov] an b3f9ae95 gtx — offen: fahrzeug.K3#1 radeon: ROT: Garage FOV +9.06° Arm +18.1 % bei 15.20/16.00 m/s · Welt FOV +7.6° Arm +14.8 % bei 13.26 m/s (Ende ok) an 715754fc · fahrzeug.K3#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Drift Kamera ≤ 2.7° neben dem Fahrtvektor (Schlupf bis 1.2°) · Rückkehr 1.08 s nach 69° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov] an b3f9ae95 radeon · gehalten: Drift Kamera ≤ 0° neben dem Fahrtvektor (Schlupf bis 4.7°) · Rückkehr 1.08 s nach 67° Orbit · Ruck p95 0.002 m (165) · FOV-Schreiber [_kamFov] an b3f9ae95 gtx — offen: fahrzeug.K3#1 radeon: Station seit der Messung geändert · fahrzeug.K3#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "fahrzeug.K3#1",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "Garage FOV +9.06° Arm +18.1 % bei 15.20/16.00 m/s · Welt FOV +7.6° Arm +14.8 % bei 13.26 m/s (Ende ok)",
-     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "ROT: Garage FOV +9.06° Arm +18.1 % bei 15.20/16.00 m/s · Welt FOV +7.6° Arm +14.8 % bei 13.26 m/s (Ende ok)"
+     "zahl": null,
+     "sha": null,
+     "grund": "Station seit der Messung geändert",
+     "ungemessen": true
     },
     {
      "id": "fahrzeug.K3#1",
@@ -619,7 +618,7 @@
   },
   "gelaende.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5) an b3f9ae95 radeon · gehalten: 8 von 10 Gräben über das Verb, in 2193 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 48.2–373.3 ms (1 m 3, 3 m 5) an b3f9ae95 gtx — offen: gelaende.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-wasser-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6) · gelaende.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-wasser-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
+   "beleg": "Maschine: gehalten: 8 von 10 Gräben über das Verb, in 1752 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 34.4–203.2 ms (1 m 3, 3 m 5) an b3f9ae95 radeon · 8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5) an 715754fc gtx — offen: gelaende.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-wasser-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6) · gelaende.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-wasser-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
    "stationen": [
     {
      "id": "gelaende.K2#1",
@@ -634,10 +633,9 @@
      "id": "gelaende.K2#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "8 von 10 Gräben über das Verb, in 2193 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 48.2–373.3 ms (1 m 3, 3 m 5)",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +7)",
-     "gehalten": true
+     "zahl": "8 von 10 Gräben über das Verb, in 2180 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 45.7–366.6 ms (1 m 3, 3 m 5)",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     },
     {
      "id": "gelaende.K2#2",
@@ -661,7 +659,7 @@
   },
   "gelaende.K3": {
    "punkte": 1,
-   "beleg": "Maschine: spiegelTreue 0.7801 (wasserSatz 36243 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 122.9 σ 52.1 schwarz 0.0 % weiß 0.1 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 an 715754fc radeon · gehalten: spiegelTreue 0.773 (wasserSatz 36669 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.5 σ 51.4 schwarz 0.0 % weiß 0.1 % · Stand 18.546.121 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal an b3f9ae95 gtx — offen: gelaende.K3#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: spiegelTreue 0.7801 (wasserSatz 36243 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 122.9 σ 52.1 schwarz 0.0 % weiß 0.1 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 an 715754fc radeon · spiegelTreue 0.7712 (wasserSatz 36180 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 123 σ 52.1 schwarz 0.0 % weiß 0.1 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal an 715754fc gtx — offen: gelaende.K3#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "gelaende.K3#1",
@@ -675,10 +673,9 @@
      "id": "gelaende.K3#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "spiegelTreue 0.773 (wasserSatz 36669 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.5 σ 51.4 schwarz 0.0 % weiß 0.1 % · Stand 18.546.121 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "spiegelTreue 0.7712 (wasserSatz 36180 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 123 σ 52.1 schwarz 0.0 % weiß 0.1 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     }
    ]
   },
@@ -706,7 +703,7 @@
   },
   "gelaende.K5": {
    "punkte": 2,
-   "beleg": "Maschine: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 0.8 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an 715754fc headless · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an b3f9ae95 radeon · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an b3f9ae95 gtx",
+   "beleg": "Maschine: im Soll beider Sichten: streu@wiese, huf@wiese, rad@wiese, streu@hang, huf@hang, rad@hang — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 0.8 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an 715754fc headless · gehalten: alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an b3f9ae95 radeon · alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht) an 715754fc gtx",
    "stationen": [
     {
      "id": "gelaende.K5#1",
@@ -730,9 +727,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "alle Rollen im Soll — wiese fein 1.1 · streu 0.5 · huf 0.2 · rad 0.2 | hang fein 4.3 · streu 1 · huf 0.4 · rad 2.4 cm (p95, schlechtere Sicht)",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-koerper-stand.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
-     "gehalten": true
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     }
    ]
   },
@@ -784,7 +780,7 @@
   },
   "halten.K1": {
    "punkte": 2,
-   "beleg": "Maschine: (A) I1=[{\"I1\":349.92,\"I2\":699.84,\"D1\":0.763,\"D2\":1.08},1.414,1.414] · 0 von 5 Proben ROT an 715754fc headless · gehalten: vor: Treffer KE 76.0 J · p 6.02 · v 23.5 · Schaden 16.1 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 109.2 J · p 7.96 · v 25.0 · Schaden 23.5 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE 113.5 J · p 7.05 · v 28.0 · Schaden 24.5 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7° an b3f9ae95 radeon · gehalten: vor: Treffer KE 76.0 J · p 6.02 · v 23.5 · Schaden 16.1 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 108.1 J · p 7.91 · v 25.4 · Schaden 23.3 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE 115.3 J · p 7.11 · v 27.8 · Schaden 24.9 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7° an b3f9ae95 gtx",
+   "beleg": "Maschine: (A) I1=[{\"I1\":349.92,\"I2\":699.84,\"D1\":0.763,\"D2\":1.08},1.414,1.414] · 0 von 5 Proben ROT an 715754fc headless · gehalten: vor: Treffer KE 76.0 J · p 6.02 · v 23.5 · Schaden 16.1 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 109.2 J · p 7.96 · v 25.0 · Schaden 23.5 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE 113.5 J · p 7.05 · v 28.0 · Schaden 24.5 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7° an b3f9ae95 radeon · vor: Treffer KE 74.6 J · p 5.96 · v 23.3 · Schaden 15.8 · edgeQ 1.000/Bild 0.998 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 79.9 J · p 6.80 · v 22.1 · Schaden 17.2 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE 72.3 J · p 5.63 · v 23.5 · Schaden 15.6 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7° an 715754fc gtx",
    "stationen": [
     {
      "id": "halten.K1#1",
@@ -807,10 +803,9 @@
      "id": "halten.K1#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "vor: Treffer KE 76.0 J · p 6.02 · v 23.5 · Schaden 16.1 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 108.1 J · p 7.91 · v 25.4 · Schaden 23.3 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE 115.3 J · p 7.11 · v 27.8 · Schaden 24.9 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7°",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kampf-gefuehl.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
-     "gehalten": true
+     "zahl": "vor: Treffer KE 74.6 J · p 5.96 · v 23.3 · Schaden 15.8 · edgeQ 1.000/Bild 0.998 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 79.9 J · p 6.80 · v 22.1 · Schaden 17.2 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE 72.3 J · p 5.63 · v 23.5 · Schaden 15.6 · edgeQ 1.000/Bild 1.000 · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7°",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     }
    ]
   },
@@ -892,7 +887,7 @@
   },
   "halten.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 4.5 cm / 29.2° 4.5 cm · Tod jagd, Anker 0.0 m · Abdruck 1566c4d6e4ba → 1566c4d6e4ba an b3f9ae95 radeon · gehalten: Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 4.5 cm / 29.2° 4.5 cm · Tod jagd, Anker 0.0 m · Abdruck 1566c4d6e4ba → 1566c4d6e4ba an b3f9ae95 gtx · gehalten: hpMax/staminaMax/manaMax/defense leer 116.0/158.0/84.5/10.4 · Werk eisen 154.9/129.8/84.5/15.9 · bronze 152.7/131.0/84.5/15.5 · holz 131.9/144.5/84.5/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184.0/104.5/92.9/19.8 · Nahrung im Stand [[\"consume:_k5\"],[\"consume:_k5\"]] an b3f9ae95 radeon · gehalten: hpMax/staminaMax/manaMax/defense leer 116.0/158.0/84.5/10.4 · Werk eisen 154.9/129.8/84.5/15.9 · bronze 152.7/131.0/84.5/15.5 · holz 131.9/144.5/84.5/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184.0/104.5/92.9/19.8 · Nahrung im Stand [[\"consume:_k5\"],[\"consume:_k5\"]] an b3f9ae95 gtx",
+   "beleg": "Maschine: gehalten: Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 4.5 cm / 29.2° 4.5 cm · Tod jagd, Anker 0.0 m · Abdruck 1566c4d6e4ba → 1566c4d6e4ba an b3f9ae95 radeon · gehalten: Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 4.5 cm / 29.2° 4.5 cm · Tod jagd, Anker 0.0 m · Abdruck 1566c4d6e4ba → 1566c4d6e4ba an b3f9ae95 gtx · gehalten: hpMax/staminaMax/manaMax/defense leer 116.0/158.0/84.5/10.4 · Werk eisen 154.9/129.8/84.5/15.9 · bronze 152.7/131.0/84.5/15.5 · holz 131.9/144.5/84.5/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184.0/104.5/92.9/19.8 · Nahrung im Stand [[\"consume:_k5\"],[\"consume:_k5\"]] an b3f9ae95 radeon · hpMax/staminaMax/manaMax/defense leer 116.0/158.0/84.5/10.4 · Werk eisen 154.9/129.8/84.5/15.9 · bronze 152.7/131.0/84.5/15.5 · holz 131.9/144.5/84.5/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184.0/104.5/92.9/19.8 · Nahrung im Stand [[\"consume:_k5\"],[\"consume:_k5\"]] an 715754fc gtx",
    "stationen": [
     {
      "id": "halten.K5#1",
@@ -926,9 +921,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "hpMax/staminaMax/manaMax/defense leer 116.0/158.0/84.5/10.4 · Werk eisen 154.9/129.8/84.5/15.9 · bronze 152.7/131.0/84.5/15.5 · holz 131.9/144.5/84.5/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184.0/104.5/92.9/19.8 · Nahrung im Stand [[\"consume:_k5\"],[\"consume:_k5\"]]",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kampf-gefuehl.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
-     "gehalten": true
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     }
    ]
   },
@@ -1028,7 +1022,7 @@
   },
   "klang.K2": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: r 0.81 bei Lag 0 (n 119), Spitze 0.84 bei -0.5 s, CV Bild 0.27 / Ohr 0.55, 115.8 fps, Klang an an b3f9ae95 radeon · gehalten: r 0.87 bei Lag 0 (n 119), Spitze 0.87 bei 0 s, CV Bild 0.24 / Ohr 0.52, 82.6 fps, Klang an an b3f9ae95 gtx · Ufer r 0.93 bei Lag 0 (n 269, Spitze 0.93 bei 0.5 s, CV Bild 0.31 / Ohr 0.41, stumm 0/267) · Regen r 1.00 bei Lag 0 (n 269, Spitze 1.00 bei -0.5 s, CV Bild 0.62 / Ohr 0.63, stumm 0/261) · Selbsttest (eingefroren) ROT an 715754fc headless",
+   "beleg": "Maschine: gehalten: r 0.81 bei Lag 0 (n 119), Spitze 0.84 bei -0.5 s, CV Bild 0.27 / Ohr 0.55, 115.8 fps, Klang an an b3f9ae95 radeon · r 0.66 bei Lag 0 (n 119), Spitze 0.72 bei -1 s, CV Bild 0.30 / Ohr 0.55, 80.7 fps, Klang an an 715754fc gtx · Ufer r 0.93 bei Lag 0 (n 269, Spitze 0.93 bei 0.5 s, CV Bild 0.31 / Ohr 0.41, stumm 0/267) · Regen r 1.00 bei Lag 0 (n 269, Spitze 1.00 bei -0.5 s, CV Bild 0.62 / Ohr 0.63, stumm 0/261) · Selbsttest (eingefroren) ROT an 715754fc headless",
    "stationen": [
     {
      "id": "klang.K2#1",
@@ -1043,10 +1037,9 @@
      "id": "klang.K2#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "r 0.87 bei Lag 0 (n 119), Spitze 0.87 bei 0 s, CV Bild 0.24 / Ohr 0.52, 82.6 fps, Klang an",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +6)",
-     "gehalten": true
+     "zahl": "r 0.66 bei Lag 0 (n 119), Spitze 0.72 bei -1 s, CV Bild 0.30 / Ohr 0.55, 80.7 fps, Klang an",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     },
     {
      "id": "klang.K2#2",
@@ -1074,7 +1067,7 @@
   },
   "klang.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: gras 5526 Hz (n 18) · laub 5166 Hz (n 21) · quarz 3204 Hz (n 13) — kleinster Abstand 360 Hz an b3f9ae95 radeon · gehalten: ✅ Schritte gras 5653 Hz (n 20) · laub 5076 Hz (n 20) · quarz 3140 Hz (n 13), kleinster Abstand 577 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.51 dB je m/s, r 0.9958 (1 m 4.4 m/s -52.8 dB · 2 m 6.2 m/s -51.6 dB · 4 m 8.8 m/s -50.1 dB · 8 m 12.6 m/s -48.3 dB · 12 m 15.4 m/s -47.2 dB) · ✅ Doppler Steigung 1.0001 r 1.0000 (-9 m 13.3 m/s 1.0404/1.0404 · -4.5 m 9.6 m/s 1.0289/1.0289 · -2 m 5.0 m/s 1.0147/1.0147 · 2 m -5.2 m/s 0.9850/0.9850 · 4.5 m -7.3 m/s 0.9792/0.9792 · 9 m -6.5 m/s 0.9814/0.9814) an b3f9ae95 radeon · gehalten: ✅ Schritte gras 5680 Hz (n 36) · laub 5342 Hz (n 18) · quarz 3236 Hz (n 21), kleinster Abstand 338 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.51 dB je m/s, r 0.9958 (1 m 4.4 m/s -52.8 dB · 2 m 6.2 m/s -51.6 dB · 4 m 8.8 m/s -50.1 dB · 8 m 12.6 m/s -48.3 dB · 12 m 15.4 m/s -47.2 dB) · ✅ Doppler Steigung 1.0001 r 1.0000 (-9 m 13.3 m/s 1.0404/1.0404 · -4.5 m 9.6 m/s 1.0289/1.0289 · -2 m 5.0 m/s 1.0147/1.0147 · 2 m -5.2 m/s 0.9850/0.9850 · 4.5 m -7.3 m/s 0.9792/0.9792 · 9 m -6.5 m/s 0.9814/0.9814) an b3f9ae95 gtx",
+   "beleg": "Maschine: gehalten: gras 5526 Hz (n 18) · laub 5166 Hz (n 21) · quarz 3204 Hz (n 13) — kleinster Abstand 360 Hz an b3f9ae95 radeon · gehalten: ✅ Schritte gras 5653 Hz (n 20) · laub 5076 Hz (n 20) · quarz 3140 Hz (n 13), kleinster Abstand 577 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.51 dB je m/s, r 0.9958 (1 m 4.4 m/s -52.8 dB · 2 m 6.2 m/s -51.6 dB · 4 m 8.8 m/s -50.1 dB · 8 m 12.6 m/s -48.3 dB · 12 m 15.4 m/s -47.2 dB) · ✅ Doppler Steigung 1.0001 r 1.0000 (-9 m 13.3 m/s 1.0404/1.0404 · -4.5 m 9.6 m/s 1.0289/1.0289 · -2 m 5.0 m/s 1.0147/1.0147 · 2 m -5.2 m/s 0.9850/0.9850 · 4.5 m -7.3 m/s 0.9792/0.9792 · 9 m -6.5 m/s 0.9814/0.9814) an b3f9ae95 radeon · ✅ Schritte gras 5591 Hz (n 30) · laub 5159 Hz (n 19) · quarz 3213 Hz (n 20), kleinster Abstand 432 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.51 dB je m/s, r 0.9958 (1 m 4.4 m/s -52.8 dB · 2 m 6.2 m/s -51.6 dB · 4 m 8.8 m/s -50.1 dB · 8 m 12.6 m/s -48.3 dB · 12 m 15.4 m/s -47.2 dB) · ✅ Doppler Steigung 1.0000 r 1.0000 (-9 m 13.3 m/s 1.0404/1.0404 · -4.5 m 9.6 m/s 1.0289/1.0289 · -2 m 5.0 m/s 1.0147/1.0147 · 2 m -5.2 m/s 0.9850/0.9850 · 4.5 m -7.3 m/s 0.9792/0.9792 · 9 m -6.5 m/s 0.9814/0.9814) an 715754fc gtx",
    "stationen": [
     {
      "id": "klang.K4#1",
@@ -1106,10 +1099,9 @@
      "id": "klang.K4#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "✅ Schritte gras 5680 Hz (n 36) · laub 5342 Hz (n 18) · quarz 3236 Hz (n 21), kleinster Abstand 338 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.51 dB je m/s, r 0.9958 (1 m 4.4 m/s -52.8 dB · 2 m 6.2 m/s -51.6 dB · 4 m 8.8 m/s -50.1 dB · 8 m 12.6 m/s -48.3 dB · 12 m 15.4 m/s -47.2 dB) · ✅ Doppler Steigung 1.0001 r 1.0000 (-9 m 13.3 m/s 1.0404/1.0404 · -4.5 m 9.6 m/s 1.0289/1.0289 · -2 m 5.0 m/s 1.0147/1.0147 · 2 m -5.2 m/s 0.9850/0.9850 · 4.5 m -7.3 m/s 0.9792/0.9792 · 9 m -6.5 m/s 0.9814/0.9814)",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
-     "gehalten": true
+     "zahl": "✅ Schritte gras 5591 Hz (n 30) · laub 5159 Hz (n 19) · quarz 3213 Hz (n 20), kleinster Abstand 432 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.51 dB je m/s, r 0.9958 (1 m 4.4 m/s -52.8 dB · 2 m 6.2 m/s -51.6 dB · 4 m 8.8 m/s -50.1 dB · 8 m 12.6 m/s -48.3 dB · 12 m 15.4 m/s -47.2 dB) · ✅ Doppler Steigung 1.0000 r 1.0000 (-9 m 13.3 m/s 1.0404/1.0404 · -4.5 m 9.6 m/s 1.0289/1.0289 · -2 m 5.0 m/s 1.0147/1.0147 · 2 m -5.2 m/s 0.9850/0.9850 · 4.5 m -7.3 m/s 0.9792/0.9792 · 9 m -6.5 m/s 0.9814/0.9814)",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     }
    ]
   },
@@ -1188,7 +1180,7 @@
   },
   "leib.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.2 (n 201) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0 an b3f9ae95 gtx · gehalten: Ego 0.323/2.846 → 0.179/2.156 → 0.504/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.504/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.2 (n 201) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0 an b3f9ae95 gtx — offen: leib.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-koerper-stand.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
+   "beleg": "Maschine: gehalten: hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.2 (n 201) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0 an b3f9ae95 gtx · Ego 0.323/2.846 → 0.179/2.156 → 0.503/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.503/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.4 (n 200) · falllinie 1.2 (n 200) · treppe hang 1.2 (n 201) · treppe wiese 0.4 (n 200) cm p95 · Steckenbleiber 0 an 715754fc gtx — offen: leib.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-koerper-stand.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
    "stationen": [
     {
      "id": "leib.K2#1",
@@ -1221,10 +1213,9 @@
      "id": "leib.K2#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Ego 0.323/2.846 → 0.179/2.156 → 0.504/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.504/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.2 (n 201) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-koerper-stand.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
-     "gehalten": true
+     "zahl": "Ego 0.323/2.846 → 0.179/2.156 → 0.503/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.503/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.4 (n 200) · falllinie 1.2 (n 200) · treppe hang 1.2 (n 201) · treppe wiese 0.4 (n 200) cm p95 · Steckenbleiber 0",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     }
    ]
   },
@@ -1292,6 +1283,32 @@
     }
    ]
   },
+  "licht.K1": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: licht.K1#1 radeon: pfad-Glob trifft am Kopf keine Datei (R6 blind): spec/farbe/tag-ref.json · licht.K1#1 gtx: pfad-Glob trifft am Kopf keine Datei (R6 blind): spec/farbe/tag-ref.json",
+   "stationen": [
+    {
+     "id": "licht.K1#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "pfad-Glob trifft am Kopf keine Datei (R6 blind): spec/farbe/tag-ref.json",
+     "ungemessen": true,
+     "tot": true
+    },
+    {
+     "id": "licht.K1#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "pfad-Glob trifft am Kopf keine Datei (R6 blind): spec/farbe/tag-ref.json",
+     "ungemessen": true,
+     "tot": true
+    }
+   ]
+  },
   "licht.K2": {
    "punkte": 1,
    "beleg": "Maschine: Verhältnis 5.067 (5–12,5), Schatten-Anteil 0.1974 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Verhältnis 5.012 (5–12,5), Schatten-Anteil 0.1995 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: licht.K2#2 radeon: Station seit der Messung geändert · licht.K2#2 gtx: Station seit der Messung geändert",
@@ -1329,6 +1346,30 @@
      "zahl": null,
      "sha": null,
      "grund": "Station seit der Messung geändert",
+     "ungemessen": true
+    }
+   ]
+  },
+  "licht.K3": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: licht.K3#1 radeon: ungemessen (R10) · licht.K3#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "licht.K3#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "licht.K3#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     }
    ]
@@ -1641,7 +1682,7 @@
   },
   "mensch.K1": {
    "punkte": 1,
-   "beleg": "Maschine: Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 30 Ego / 34 Third; Third-Bild 8 Uhr am Dorfplatz 30 Menschen im Bild, 20 gehend, 119.2 fps an 715754fc radeon — offen: mensch.K1#2 radeon: ROT: Probe-Fehler: keine volle Stadt an 715754fc · mensch.K1#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 30 Ego / 34 Third; Third-Bild 8 Uhr am Dorfplatz 30 Menschen im Bild, 20 gehend, 119.2 fps an 715754fc radeon — offen: mensch.K1#2 radeon: ROT: Probe-Fehler: keine volle Stadt an 715754fc · mensch.K1#2 gtx: ROT: Probe-Fehler: keine volle Stadt an 715754fc",
    "stationen": [
     {
      "id": "mensch.K1#1",
@@ -1655,10 +1696,9 @@
      "id": "mensch.K1#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "Deckel 300 s überschritten — beendet",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": "Deckel 300 s überschritten — beendet"
     },
     {
      "id": "mensch.K1#2",
@@ -1672,10 +1712,9 @@
      "id": "mensch.K1#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "Probe-Fehler: keine volle Stadt",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": "ROT: Probe-Fehler: keine volle Stadt"
     }
    ]
   },
@@ -1846,7 +1885,7 @@
   },
   "oekologie.K4": {
    "punkte": 1,
-   "beleg": "Maschine: 6 Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch 0 s · umstellt 17.4 s · Lücke beim ersten Biss 125° · Pirsch im Frieden / am leeren Anker 0 / 0 Takte (Soll ≤ 600 s Kreatur-Uhr, 0 / 0) an 715754fc headless — offen: oekologie.K4#2 radeon: ROT: first ROT: umstellt null s, Furcht chaos 0 (Gegenlauf 0), 0 Jäger fallen, Triumph joy+hope 0 (Gegenlauf 0) | third ROT: umstellt null s, Furcht chaos 0 (Gegenlauf 0), 0 Jäger fallen, Triumph joy+hope 0 (Gegenlauf 0) an 715754fc · oekologie.K4#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 6 Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch 0 s · umstellt 17.4 s · Lücke beim ersten Biss 125° · Pirsch im Frieden / am leeren Anker 0 / 0 Takte (Soll ≤ 600 s Kreatur-Uhr, 0 / 0) an 715754fc headless — offen: oekologie.K4#2 radeon: ROT: first ROT: umstellt null s, Furcht chaos 0 (Gegenlauf 0), 0 Jäger fallen, Triumph joy+hope 0 (Gegenlauf 0) | third ROT: umstellt null s, Furcht chaos 0 (Gegenlauf 0), 0 Jäger fallen, Triumph joy+hope 0 (Gegenlauf 0) an 715754fc · oekologie.K4#2 gtx: ROT: first ROT: umstellt null s, Furcht chaos 0 (Gegenlauf 0), 0 Jäger fallen, Triumph joy+hope 0 (Gegenlauf 0) | third ROT: umstellt null s, Furcht chaos 0 (Gegenlauf 0), 0 Jäger fallen, Triumph joy+hope 0 (Gegenlauf 0) an 715754fc",
    "stationen": [
     {
      "id": "oekologie.K4#1",
@@ -1868,10 +1907,9 @@
      "id": "oekologie.K4#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Station seit der Messung geändert",
-     "ungemessen": true
+     "zahl": "first ROT: umstellt null s, Furcht chaos 0 (Gegenlauf 0), 0 Jäger fallen, Triumph joy+hope 0 (Gegenlauf 0) | third ROT: umstellt null s, Furcht chaos 0 (Gegenlauf 0), 0 Jäger fallen, Triumph joy+hope 0 (Gegenlauf 0)",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": "ROT: first ROT: umstellt null s, Furcht chaos 0 (Gegenlauf 0), 0 Jäger fallen, Triumph joy+hope 0 (Gegenlauf 0) | third ROT: umstellt null s, Furcht chaos 0 (Gegenlauf 0), 0 Jäger fallen, Triumph joy+hope 0 (Gegenlauf 0)"
     }
    ]
   },
@@ -2011,7 +2049,7 @@
   },
   "pipeline.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 183 von 183 build-asset von der Platte (100.0 %), Bau-Ereignisse Werk 0 · Haupt-Faden 0, leer 0, verschluckt 0 an b3f9ae95 radeon · gehalten: 183 von 183 build-asset von der Platte (100.0 %), Bau-Ereignisse Werk 0 · Haupt-Faden 0, leer 0, verschluckt 0 an b3f9ae95 gtx — offen: pipeline.K4#2 radeon: ungemessen (R10) · pipeline.K4#2 gtx: Pfad seit der Messung geändert (R6: stamm/siedlung-ort.js, stamm/studio-bruecke.js, stamm/vegetation-baum.js)",
+   "beleg": "Maschine: gehalten: 183 von 183 build-asset von der Platte (100.0 %), Bau-Ereignisse Werk 0 · Haupt-Faden 0, leer 0, verschluckt 0 an b3f9ae95 radeon · gehalten: 183 von 183 build-asset von der Platte (100.0 %), Bau-Ereignisse Werk 0 · Haupt-Faden 0, leer 0, verschluckt 0 an b3f9ae95 gtx · Zweit-Boot von der Platte blatt-atlas 1/1 0 ms · dorf-export 2/2 0 ms · karte 19/19 7 ms · Kern-Wechsel fachwerk: 43 Leser neu, fremd 0 , alt 0  an 715754fc gtx — offen: pipeline.K4#2 radeon: ungemessen (R10)",
    "stationen": [
     {
      "id": "pipeline.K4#1",
@@ -2043,11 +2081,10 @@
     {
      "id": "pipeline.K4#2",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: stamm/siedlung-ort.js, stamm/studio-bruecke.js, stamm/vegetation-baum.js)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Zweit-Boot von der Platte blatt-atlas 1/1 0 ms · dorf-export 2/2 0 ms · karte 19/19 7 ms · Kern-Wechsel fachwerk: 43 Leser neu, fremd 0 , alt 0 ",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     }
    ]
   },
@@ -2225,7 +2262,7 @@
   },
   "profiband.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: ungemessen (R10) · profiband.K5#1 gtx: Linse seit der Messung geändert (R6: spec/profiband/haushalt.json) · profiband.K5#2 radeon: ungemessen (R10) · profiband.K5#2 gtx: Linse seit der Messung geändert (R6: spec/profiband/haushalt.json)",
+   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: ungemessen (R10) · profiband.K5#1 gtx: ROT: Frame p95 erste 5 min 25 → 25.1 ms letzte (×1.004) · Takt p95 17.1 → 19.5 ms · Drossel loadScale 1 → 1 · Weg 5.4 km · Gang VRAM 111.5 → 112.5 MB, Heap 377.5 → 373.7 MB in 1.82245 min · 20 min VRAM 106.6 → 111.8 MB · Puffer ruhend 0 verwaist 0 MB · [linse-gpu] nvidia/pascal — ROT 1: Gang: vram: +3.4 MB zurück am Start — buf:szene:tier:wesen +2.4 MB · buf:szene:spieler +1.6 MB · uhr: das Spieler-Wort setzte die Uhr auf 0.5135135277777864 · 0.520960166666664 · 0.5454621111111247 (Mittag · Mitternacht · Mittag) an 715754fc · profiband.K5#2 radeon: ungemessen (R10) · profiband.K5#2 gtx: Linse seit der Messung geändert (R6: spec/profiband/haushalt.json)",
    "stationen": [
     {
      "id": "profiband.K5#1",
@@ -2240,10 +2277,9 @@
      "id": "profiband.K5#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: spec/profiband/haushalt.json)",
-     "ungemessen": true
+     "zahl": "Frame p95 erste 5 min 25 → 25.1 ms letzte (×1.004) · Takt p95 17.1 → 19.5 ms · Drossel loadScale 1 → 1 · Weg 5.4 km · Gang VRAM 111.5 → 112.5 MB, Heap 377.5 → 373.7 MB in 1.82245 min · 20 min VRAM 106.6 → 111.8 MB · Puffer ruhend 0 verwaist 0 MB · [linse-gpu] nvidia/pascal — ROT 1: Gang: vram: +3.4 MB zurück am Start — buf:szene:tier:wesen +2.4 MB · buf:szene:spieler +1.6 MB · uhr: das Spieler-Wort setzte die Uhr auf 0.5135135277777864 · 0.520960166666664 · 0.5454621111111247 (Mittag · Mitternacht · Mittag)",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": "ROT: Frame p95 erste 5 min 25 → 25.1 ms letzte (×1.004) · Takt p95 17.1 → 19.5 ms · Drossel loadScale 1 → 1 · Weg 5.4 km · Gang VRAM 111.5 → 112.5 MB, Heap 377.5 → 373.7 MB in 1.82245 min · 20 min VRAM 106.6 → 111.8 MB · Puffer ruhend 0 verwaist 0 MB · [linse-gpu] nvidia/pascal — ROT 1: Gang: vram: +3.4 MB zurück am Start — buf:szene:tier:wesen +2.4 MB · buf:szene:spieler +1.6 MB · uhr: das Spieler-Wort setzte die Uhr auf 0.5135135277777864 · 0.520960166666664 · 0.5454621111111247 (Mittag · Mitternacht · Mittag)"
     },
     {
      "id": "profiband.K5#2",
@@ -2416,7 +2452,7 @@
   },
   "siedlung.K5": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: nH 12 erstes Haus nach 69.6 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 133.8 ms (haus_fraenkisch, mesh in 23.6 m, Bau-Hash 88b58bbf) an b3f9ae95 radeon · gehalten: nH 12 erstes Haus nach 53.8 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 192.9 ms (haus_fraenkisch, mesh in 23.5 m, Bau-Hash 88b58bbf) an b3f9ae95 gtx · gehalten: nH 12 erstes Haus nach 69.6 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 133.8 ms (haus_fraenkisch, mesh in 23.6 m, Bau-Hash 88b58bbf) an b3f9ae95 radeon · gehalten: nH 12 erstes Haus nach 53.8 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 192.9 ms (haus_fraenkisch, mesh in 23.5 m, Bau-Hash 88b58bbf) an b3f9ae95 gtx",
+   "beleg": "Maschine: gehalten: nH 12 erstes Haus nach 69.6 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 133.8 ms (haus_fraenkisch, mesh in 23.6 m, Bau-Hash 88b58bbf) an b3f9ae95 radeon · nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf) an 715754fc gtx · gehalten: nH 12 erstes Haus nach 69.6 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 133.8 ms (haus_fraenkisch, mesh in 23.6 m, Bau-Hash 88b58bbf) an b3f9ae95 radeon · nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf) an 715754fc gtx",
    "stationen": [
     {
      "id": "siedlung.K5#1",
@@ -2431,10 +2467,9 @@
      "id": "siedlung.K5#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "nH 12 erstes Haus nach 53.8 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 192.9 ms (haus_fraenkisch, mesh in 23.5 m, Bau-Hash 88b58bbf)",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +20)",
-     "gehalten": true
+     "zahl": "nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf)",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     },
     {
      "id": "siedlung.K5#2",
@@ -2449,16 +2484,15 @@
      "id": "siedlung.K5#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "nH 12 erstes Haus nach 53.8 ms (haus_alemannisch, huelle in 234.4 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 192.9 ms (haus_fraenkisch, mesh in 23.5 m, Bau-Hash 88b58bbf)",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +20)",
-     "gehalten": true
+     "zahl": "nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf)",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     }
    ]
   },
   "speicher.K1": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: 20 Tode: Alter max 1.507 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt an b3f9ae95 radeon · gehalten: 20 Tode: Alter max 1.941 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt an b3f9ae95 gtx · gehalten: 20 Tode: Alter max 1.507 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an b3f9ae95 radeon · gehalten: 20 Tode: Alter max 1.941 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an b3f9ae95 gtx",
+   "beleg": "Maschine: gehalten: 20 Tode: Alter max 1.507 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt an b3f9ae95 radeon · 20 Tode: Alter max 3.339 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt an 715754fc gtx · gehalten: 20 Tode: Alter max 1.507 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an b3f9ae95 radeon · 20 Tode: Alter max 3.339 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2 an 715754fc gtx",
    "stationen": [
     {
      "id": "speicher.K1#1",
@@ -2473,10 +2507,9 @@
      "id": "speicher.K1#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "20 Tode: Alter max 1.941 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +4)",
-     "gehalten": true
+     "zahl": "20 Tode: Alter max 3.339 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     },
     {
      "id": "speicher.K1#2",
@@ -2491,16 +2524,15 @@
      "id": "speicher.K1#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "20 Tode: Alter max 1.941 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +4)",
-     "gehalten": true
+     "zahl": "20 Tode: Alter max 3.339 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     }
    ]
   },
   "speicher.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 97 Rufe in 7713 Bildern; aufgefüllt je Bild p95 0, blind) an b3f9ae95 radeon · gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.3 / max 0.4 ms (Soll p95 ≤ 0,3; 93 Rufe in 5088 Bildern; aufgefüllt je Bild p95 0, blind) an b3f9ae95 gtx — offen: speicher.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +2) · speicher.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +2)",
+   "beleg": "Maschine: gehalten: je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 97 Rufe in 7713 Bildern; aufgefüllt je Bild p95 0, blind) an b3f9ae95 radeon · je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 100 Rufe in 4733 Bildern; aufgefüllt je Bild p95 0, blind) an 715754fc gtx — offen: speicher.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +2) · speicher.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +2)",
    "stationen": [
     {
      "id": "speicher.K2#1",
@@ -2515,10 +2547,9 @@
      "id": "speicher.K2#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "je Speicher-Bild (Ruf) p50 0 / p95 0.3 / max 0.4 ms (Soll p95 ≤ 0,3; 93 Rufe in 5088 Bildern; aufgefüllt je Bild p95 0, blind)",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/kamera-nah.cjs +4)",
-     "gehalten": true
+     "zahl": "je Speicher-Bild (Ruf) p50 0 / p95 0.2 / max 0.4 ms (Soll p95 ≤ 0,3; 100 Rufe in 4733 Bildern; aufgefüllt je Bild p95 0, blind)",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     },
     {
      "id": "speicher.K2#2",
@@ -2736,7 +2767,7 @@
   },
   "streaming.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Frame p95 Median 42.1 ms (42.1 · 42 · 42.2) · CPU-Takt p95 26.1 · 25.2 · 24.7 ms · die Welt steht nach 9 · 8.9 · 8.9 s · Bauten sonst 0/0/0 · 3 von 3 gültig · TAKT: _loopVoxelStreaming › _runFrameScheduler x9 | TAKT: verteilt x4 · [linse-gpu] amd/rdna-3 an b3f9ae95 radeon",
+   "beleg": "Maschine: gehalten: Frame p95 Median 42.1 ms (42.1 · 42 · 42.2) · CPU-Takt p95 26.1 · 25.2 · 24.7 ms · die Welt steht nach 9 · 8.9 · 8.9 s · Bauten sonst 0/0/0 · 3 von 3 gültig · TAKT: _loopVoxelStreaming › _runFrameScheduler x9 | TAKT: verteilt x4 · [linse-gpu] amd/rdna-3 an b3f9ae95 radeon · Frame p95 Median 49.9 ms (41.7 · 49.9 · 49.9) · CPU-Takt p95 40.3 · 42.4 · 44.1 ms · die Welt steht nach 14.4 · 15.2 · 15.2 s · Bauten sonst 0/0/0 · 3 von 3 gültig · TAKT: _dispatchFrameJobs › run x11 | TAKT: _loopVoxelStreaming › _runFrameScheduler x6 | TAKT: verteilt x2 · [linse-gpu] nvidia/pascal an 715754fc gtx",
    "stationen": [
     {
      "id": "streaming.K3#1",
@@ -2750,17 +2781,16 @@
     {
      "id": "streaming.K3#1",
      "geraet": "gtx",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +17)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Frame p95 Median 49.9 ms (41.7 · 49.9 · 49.9) · CPU-Takt p95 40.3 · 42.4 · 44.1 ms · die Welt steht nach 14.4 · 15.2 · 15.2 s · Bauten sonst 0/0/0 · 3 von 3 gültig · TAKT: _dispatchFrameJobs › run x11 | TAKT: _loopVoxelStreaming › _runFrameScheduler x6 | TAKT: verteilt x2 · [linse-gpu] nvidia/pascal",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     }
    ]
   },
   "streaming.K4": {
    "punkte": 2,
-   "beleg": "Maschine: Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Bauten 31 an Sync-Stellen · 0 sonst an 715754fc headless · gehalten: Bauten 0 außerhalb der Sync-Stellen · 3 an ihnen {\"naht\":3} · Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Gang 120.0 s · 6 Bau-Klicks · [linse-gpu] amd/rdna-3 an b3f9ae95 radeon · gehalten: Bauten 0 außerhalb der Sync-Stellen · 5 an ihnen {\"naht\":5} · Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Gang 120.0 s · 6 Bau-Klicks · [linse-gpu] nvidia/pascal an b3f9ae95 gtx",
+   "beleg": "Maschine: Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Bauten 31 an Sync-Stellen · 0 sonst an 715754fc headless · gehalten: Bauten 0 außerhalb der Sync-Stellen · 3 an ihnen {\"naht\":3} · Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Gang 120.0 s · 6 Bau-Klicks · [linse-gpu] amd/rdna-3 an b3f9ae95 radeon · Bauten 0 außerhalb der Sync-Stellen · 5 an ihnen {\"naht\":5} · Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Gang 120.0 s · 6 Bau-Klicks · [linse-gpu] nvidia/pascal an 715754fc gtx",
    "stationen": [
     {
      "id": "streaming.K4#1",
@@ -2784,9 +2814,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "Bauten 0 außerhalb der Sync-Stellen · 5 an ihnen {\"naht\":5} · Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Gang 120.0 s · 6 Bau-Klicks · [linse-gpu] nvidia/pascal",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-worker-dichte.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
-     "gehalten": true
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     }
    ]
   },
@@ -2868,7 +2897,7 @@
   },
   "studios.K3": {
    "punkte": 1,
-   "beleg": "Maschine: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 715754fc headless — offen: studios.K3#2 radeon: ungemessen (R10) · studios.K3#2 gtx: Linse seit der Messung geändert (R6: spec/profiband/haushalt.json)",
+   "beleg": "Maschine: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 715754fc headless — offen: studios.K3#2 radeon: ungemessen (R10) · studios.K3#2 gtx: ROT: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.144 ms), ohne garage L0 GPU 0.0451 ms↔Bank 7.975 (+1), schmiede L0 GPU 0.0061 ms↔Bank 0.2917, portale L0 Bank 2.525 ms nicht GPU-gebunden (CPU 2.4083) (+3), fachwerk L0 GPU 0.0123 ms↔Bank 0.1417 (+3), koerperstudio L0 GPU 0.1024 ms↔Bank 0.6917 (+3), tetrapoda L0 GPU 0.0113 ms↔Bank 0.3417 (+1), terrain L0 GPU 0.001 ms↔Bank 0.175 (+2) an 715754fc",
    "stationen": [
     {
      "id": "studios.K3#1",
@@ -2891,10 +2920,9 @@
      "id": "studios.K3#2",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: spec/profiband/haushalt.json)",
-     "ungemessen": true
+     "zahl": "Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.144 ms), ohne garage L0 GPU 0.0451 ms↔Bank 7.975 (+1), schmiede L0 GPU 0.0061 ms↔Bank 0.2917, portale L0 Bank 2.525 ms nicht GPU-gebunden (CPU 2.4083) (+3), fachwerk L0 GPU 0.0123 ms↔Bank 0.1417 (+3), koerperstudio L0 GPU 0.1024 ms↔Bank 0.6917 (+3), tetrapoda L0 GPU 0.0113 ms↔Bank 0.3417 (+1), terrain L0 GPU 0.001 ms↔Bank 0.175 (+2)",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": "ROT: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.144 ms), ohne garage L0 GPU 0.0451 ms↔Bank 7.975 (+1), schmiede L0 GPU 0.0061 ms↔Bank 0.2917, portale L0 Bank 2.525 ms nicht GPU-gebunden (CPU 2.4083) (+3), fachwerk L0 GPU 0.0123 ms↔Bank 0.1417 (+3), koerperstudio L0 GPU 0.1024 ms↔Bank 0.6917 (+3), tetrapoda L0 GPU 0.0113 ms↔Bank 0.3417 (+1), terrain L0 GPU 0.001 ms↔Bank 0.175 (+2)"
     }
    ]
   },
@@ -2963,7 +2991,7 @@
   },
   "tiere.K1": {
    "punkte": 1,
-   "beleg": "Maschine: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.257) an 715754fc headless · gehalten: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.997 über 1150 Takte, letzter Flüchter 0.4 s (1 aus zweiter Hand), Fluchtweg 32.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ GRÜN am Hang 17.7° -62.4/-36, Flucht bei 14.2 m: 43 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (869 px) · 43.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (835 px) · 45.8 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (722 px) an b3f9ae95 gtx — offen: tiere.K1#2 radeon: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.997 über 1150 Takte, letzter Flüchter 0.4 s (1 aus zweiter Hand), Fluchtweg 32.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 19° 83.1/48, Flucht bei 17.4 m: 43.1 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 34.11 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 43.15 m · Luma 99.7 σ 42 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts · 164.6 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 3.34 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 164.42 m · Luma 93.8 σ 35.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts · 164.6 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 4.06 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 164.59 m · Luma 92.8 σ 36.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts an 715754fc",
+   "beleg": "Maschine: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.257) an 715754fc headless — offen: tiere.K1#2 radeon: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.997 über 1150 Takte, letzter Flüchter 0.4 s (1 aus zweiter Hand), Fluchtweg 32.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 19° 83.1/48, Flucht bei 17.4 m: 43.1 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 34.11 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 43.15 m · Luma 99.7 σ 42 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts · 164.6 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 3.34 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 164.42 m · Luma 93.8 σ 35.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts · 164.6 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 4.06 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 164.59 m · Luma 92.8 σ 36.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts an 715754fc · tiere.K1#2 gtx: ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.997 über 1150 Takte, letzter Flüchter 0.4 s (1 aus zweiter Hand), Fluchtweg 32.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 19° 83.1/48, Flucht bei 17.4 m: 43.1 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 34.11 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 43.15 m · Luma 99.6 σ 41.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts · 164.6 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 3.34 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 164.42 m · Luma 93.7 σ 35.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts · 164.6 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 4.06 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 164.59 m · Luma 92.6 σ 36.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts an 715754fc",
    "stationen": [
     {
      "id": "tiere.K1#1",
@@ -2984,17 +3012,16 @@
     {
      "id": "tiere.K1#2",
      "geraet": "gtx",
-     "gruen": true,
-     "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.997 über 1150 Takte, letzter Flüchter 0.4 s (1 aus zweiter Hand), Fluchtweg 32.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ GRÜN am Hang 17.7° -62.4/-36, Flucht bei 14.2 m: 43 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (869 px) · 43.6 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (835 px) · 45.8 m 5/5 fliehen, 5 sichtbar, 1 Fleck(en) (722 px)",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "gruen": false,
+     "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.997 über 1150 Takte, letzter Flüchter 0.4 s (1 aus zweiter Hand), Fluchtweg 32.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 19° 83.1/48, Flucht bei 17.4 m: 43.1 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 34.11 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 43.15 m · Luma 99.6 σ 41.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts · 164.6 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 3.34 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 164.42 m · Luma 93.7 σ 35.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts · 164.6 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 4.06 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 164.59 m · Luma 92.6 σ 36.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": "ROT: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.997 über 1150 Takte, letzter Flüchter 0.4 s (1 aus zweiter Hand), Fluchtweg 32.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 19° 83.1/48, Flucht bei 17.4 m: 43.1 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 34.11 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 43.15 m · Luma 99.6 σ 41.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts · 164.6 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 3.34 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 164.42 m · Luma 93.7 σ 35.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts · 164.6 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 4.06 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 164.59 m · Luma 92.6 σ 36.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts"
     }
    ]
   },
   "tiere.K2": {
    "punkte": 2,
-   "beleg": "Maschine: Riss je Jagd einWolf 0/20 (HP 168) · rudel 18/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 49 s an 715754fc headless · Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 11.8 s, 3 fressen: tier:wolf 8845 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.31 m · Luma 75.5 σ 33.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 715754fc radeon · gehalten: Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.3 s, 3 fressen: tier:wolf 6552 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.26 m · Luma 79.2 σ 36.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.121 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an b3f9ae95 gtx",
+   "beleg": "Maschine: Riss je Jagd einWolf 0/20 (HP 168) · rudel 18/60 (HP 168) · kitz 20/20 (HP 60) · erster Riss 49 s an 715754fc headless · Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 11.8 s, 3 fressen: tier:wolf 8845 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.31 m · Luma 75.5 σ 33.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 715754fc radeon · Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.6 s, 3 fressen: tier:wolf 12459 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 89.2 σ 39.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 715754fc gtx",
    "stationen": [
     {
      "id": "tiere.K2#1",
@@ -3016,16 +3043,15 @@
      "id": "tiere.K2#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.3 s, 3 fressen: tier:wolf 6552 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.26 m · Luma 79.2 σ 36.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.121 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.6 s, 3 fressen: tier:wolf 12459 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 89.2 σ 39.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     }
    ]
   },
   "tiere.K3": {
    "punkte": 2,
-   "beleg": "Maschine: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an 715754fc headless · Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2790/1193/5941/3990 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 83.8 σ 36.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 715754fc radeon · gehalten: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2791/1214/5978/4057 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 82.7 σ 35.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.121 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an b3f9ae95 gtx",
+   "beleg": "Maschine: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an 715754fc headless · Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2790/1193/5941/3990 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 83.8 σ 36.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 715754fc radeon · Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2783/1210/5942/4024 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 83.8 σ 36.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen an 715754fc gtx",
    "stationen": [
     {
      "id": "tiere.K3#1",
@@ -3047,10 +3073,9 @@
      "id": "tiere.K3#2",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2791/1214/5978/4057 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 82.7 σ 35.6 schwarz 0.0 % weiß 0.0 % · Stand 18.546.121 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2783/1210/5942/4024 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 83.8 σ 36.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     }
    ]
   },
@@ -3102,7 +3127,7 @@
   },
   "tore.K3": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: 30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koerperstudio E, tetrapoda E) an b3f9ae95 radeon · gehalten: 30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koerperstudio E, tetrapoda E) an b3f9ae95 gtx · gehalten: leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim an b3f9ae95 radeon · gehalten: leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim an b3f9ae95 gtx",
+   "beleg": "Maschine: gehalten: 30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koerperstudio E, tetrapoda E) an b3f9ae95 radeon · gehalten: 30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koerperstudio E, tetrapoda E) an b3f9ae95 gtx · gehalten: leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim an b3f9ae95 radeon · leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim an 715754fc gtx",
    "stationen": [
     {
      "id": "tore.K3#1",
@@ -3136,9 +3161,8 @@
      "geraet": "gtx",
      "gruen": true,
      "zahl": "leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-portal-konformanz.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
-     "gehalten": true
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     }
    ]
   },
@@ -3417,7 +3441,7 @@
   },
   "wetter.K2": {
    "punkte": 1,
-   "beleg": "Maschine: Dorf porös draußen 0.553 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 5 (n 5949/13809), Wiese draußen 0.771 an 715754fc radeon · gehalten: Dorf porös draußen 0.552 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 5 (n 5949/13809), Wiese draußen 0.771 an b3f9ae95 gtx — offen: wetter.K2#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: Dorf porös draußen 0.553 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 5 (n 5949/13809), Wiese draußen 0.771 an 715754fc radeon · Dorf porös draußen 0.552 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 5 (n 5949/13809), Wiese draußen 0.77 an 715754fc gtx — offen: wetter.K2#2: kein Werkzeug (fehlt)",
    "stationen": [
     {
      "id": "wetter.K2#1",
@@ -3431,10 +3455,9 @@
      "id": "wetter.K2#1",
      "geraet": "gtx",
      "gruen": true,
-     "zahl": "Dorf porös draußen 0.552 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 5 (n 5949/13809), Wiese draußen 0.771",
-     "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Station seit der Messung geändert",
-     "gehalten": true
+     "zahl": "Dorf porös draußen 0.552 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 5 (n 5949/13809), Wiese draußen 0.77",
+     "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
+     "grund": null
     }
    ]
   },
@@ -3476,13 +3499,9 @@
   }
  },
  "rueckfall": [
-  "fahrzeug.K3#1 radeon: Garage FOV +9.06° Arm +18.1 % bei 15.20/16.00 m/s · Welt FOV +7.6° Arm +14.8 % bei 13.26 m/s (Ende ok) an 715754fc (grün gebucht an b3f9ae95)",
-  "klang.K4#1 gtx: gras 5552 Hz (n 33) · laub 5271 Hz (n 20) · quarz 3220 Hz (n 13) — kleinster Abstand 281 Hz an 98ef98bb (grün gebucht an b3f9ae95)",
-  "speicher.K3#1 headless: ❌ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 5.7 kB, Platte 11.3 kB, am stärksten worldMeta.settlementCells 3.4 kB · gesamt roh 51.7 kB, Platte 103.3 kB · Leben worldJournal 26.2 kB, dslHistory 12.4 kB, dslAbilities 3.1 kB, knowledgeBase 2.8 kB, creatures 1.4 kB, dslPatternMemory 0 | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1009.0 kB, Platte 2018.1 kB, am stärksten wegSpur 1009.0 kB · gesamt roh 1009.0 kB, Platte 2018.1 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl an 715754fc (grün gebucht an b3f9ae95)",
-  "speicher.K3#2 headless: ❌ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 5.7 kB, Platte 11.3 kB, am stärksten worldMeta.settlementCells 3.4 kB · gesamt roh 51.7 kB, Platte 103.3 kB · Leben worldJournal 26.2 kB, dslHistory 12.4 kB, dslAbilities 3.1 kB, knowledgeBase 2.8 kB, creatures 1.4 kB, dslPatternMemory 0 | ✅ (D) 1000 Edits, Soll ≤ 100 kB: ohne Leben Δ roh 42.8 kB, Platte 85.6 kB, am stärksten voxelEdits 42.8 kB · gesamt roh 44.3 kB, Platte 88.5 kB · Leben dslHistory 1.0 kB, dslAbilities 0.2 kB, knowledgeBase 0.2 kB, creatures 0.0 kB, dslPatternMemory 0.0 kB, worldJournal 0.0 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 1009.0 kB, Platte 2018.1 kB, am stärksten wegSpur 1009.0 kB · gesamt roh 1009.0 kB, Platte 2018.1 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worl an 715754fc (grün gebucht an b3f9ae95)",
-  "tore.K5#1 headless: ROT: Stempel, Bau-Hash · Zeit 319 ms (A 688) · A=9c183437/12 B=515787a7/12 ohne=515787a7/12 · Profil A, B, Kontext-Probe: profile-ZmOCxP · profile-aufHL2 · profile-ZmOCxP an 715754fc (grün gebucht an b3f9ae95)"
+  "tiere.K1#2 gtx: (a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.997 über 1150 Takte, letzter Flüchter 0.4 s (1 aus zweiter Hand), Fluchtweg 32.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 19° 83.1/48, Flucht bei 17.4 m: 43.1 m 5/5 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 34.11 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 43.15 m · Luma 99.6 σ 41.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts · 164.6 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 3.34 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 164.42 m · Luma 93.7 σ 35.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts · 164.6 m 0/0 fliehen ABNAHME ROT [Ziel Herde verdeckt von Gelände in 4.06 m] · beweis · Sicht 0.0 % · Ziel Herde im Bild VERDECKT 164.59 m · Luma 92.6 σ 36.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 14 Posen — die Blick-Wahl fand in 14 Posen keine freie — die Aufnahme speichert nichts an 715754fc (grün gebucht an b3f9ae95)"
  ],
  "kopfVoll": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
- "zeit": "2026-10-30T00:21:44.736Z",
- "vorher": "b3f9ae95"
+ "zeit": "2026-10-30T02:00:57.525Z",
+ "vorher": "715754fc"
 }
