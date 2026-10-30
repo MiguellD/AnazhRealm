@@ -891,19 +891,18 @@ class AnazhRealm_vegetation_baum {
     // Stand des Wald-Gesetzes (`_forestDartStand`: Same, Buch, Hydrosphäre) und dem der Grundrisse am Ort — das Gedächtnis
     // liegt in Eimern von `ORT_SAME_EIMER` m, ein Grundriss fällt nur in den Eimern seiner Reichweite (`_grundrissFaellt`).
     // Vor dem Worldgen wartet die Gestalt (null, nie gemerkt) — für jeden Leser gleich.
-    _ortGestaltSame(x, z, T, seed, preset) {
+    // `merk` (optional, der Eintrag `_foundryGestaltFor`): bekommt Karte, Eimer-Schlüssel, Eimer und Schlüssel der Antwort — der
+    // Eintrag trägt ihren ORT in diesem EINEN Gedächtnis (nie ihren Wert), solange derselbe Eimer in derselben Karte liegt
+    // (`_ortSameKarte`), und liest die Antwort dort, ohne den Schlüssel aus fünf Zahlen neu zu bauen.
+    _ortGestaltSame(x, z, T, seed, preset, merk) {
         const seedInt = this._forestSeedInt();
-        const stand = this._forestDartStand(seedInt);
-        if (this._ortSameStand !== stand || !this._ortSame || this._ortSameN > 16384) {
-            this._ortSame = new Map();
-            this._ortSameN = 0;
-            this._ortSameStand = stand;
-        }
+        const karte = this._ortSameKarte();
         const B = AnazhRealm.ORT_SAME_EIMER;
         const ek = Math.floor(x / B) + "," + Math.floor(z / B);
-        let eimer = this._ortSame.get(ek);
+        let eimer = karte.get(ek);
         const k = x + "," + z + "," + T + "," + seed + "," + preset;
         const hat = eimer ? eimer.get(k) : undefined;
+        if (merk) [merk.karte, merk.ek, merk.eimer, merk.k] = [karte, ek, eimer, k];
         if (hat !== undefined) return hat;
         let wartet = false;
         const same = this._foundryGestaltSame(seed, preset, () => {
@@ -926,7 +925,21 @@ class AnazhRealm_vegetation_baum {
         if (!eimer) this._ortSame.set(ek, (eimer = new Map()));
         eimer.set(k, same);
         this._ortSameN = (this._ortSameN | 0) + 1;
+        // räumte die Frage die Karte (ein Grundriss, der Stand des Walds), liegt dieser Eimer nicht mehr in ihr: der Eintrag
+        // fragt beim nächsten Ruf neu
+        if (merk) [merk.karte, merk.eimer] = [this._ortSame, eimer];
         return same;
+    }
+    // DIE KARTE DER GESTALT DES ORTS am Stand des Walds (`_forestDartStand`): ein neuer Stand (oder ein übervolles Gedächtnis)
+    // legt eine neue an — ihre Identität ist ihr Stand für jeden, der eine Antwort am Eintrag trägt (`_foundryGestaltFor`).
+    _ortSameKarte() {
+        const stand = this._forestDartStand(this._forestSeedInt());
+        if (this._ortSameStand !== stand || !this._ortSame || this._ortSameN > 16384) {
+            this._ortSame = new Map();
+            this._ortSameN = 0;
+            this._ortSameStand = stand;
+        }
+        return this._ortSame;
     }
 
     // Steht der geborene Dart `d` der Zelle (gx, gz)? Kronen-Schüchternheit: er steht, wenn KEIN besserer Dart (prio,
@@ -2553,20 +2566,23 @@ class AnazhRealm_vegetation_baum {
             let versuche = 0,
                 bauZu = false,
                 hand = null; // über Budget: EIN Takt-Garantie-Blick je Tick, er deckt Versuche bis zum ersten Bau
+            // DER STAND DER BEREITSCHAFT (`_bereitStand`): ein Studio-Eintrag, der zu diesem Stand nicht platz-bereit war und
+            // bestellt hat, wartet auf das Ereignis, das ihn ändert — kein Peek, kein zweiter Bau-Ruf je Takt
+            const stand = fAn ? this._bereitStand(this._lodAuge()) : -1;
             for (const entry of nahOffen) {
                 const fPre = fAn ? this._foundryPresetForEntry(entry) : null;
-                if (
-                    fPre &&
-                    this._kappeOffen(uhr() - jetztN, AnazhRealm.ARCH_PLATZ_MS) &&
-                    this._foundryPlatzBereit(entry, fPre)
-                ) {
-                    this._rebuildArchitectureMesh(entry);
-                    if (this._archIsRendered(entry)) {
-                        entry._nahWartet = null;
-                        if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, false);
-                        regung++;
-                        continue;
-                    }
+                if (fPre && entry._platzNein === stand) continue;
+                let nein = false;
+                if (fPre && this._kappeOffen(uhr() - jetztN, AnazhRealm.ARCH_PLATZ_MS)) {
+                    if (this._foundryPlatzBereit(entry, fPre)) {
+                        this._rebuildArchitectureMesh(entry);
+                        if (this._archIsRendered(entry)) {
+                            entry._nahWartet = null;
+                            if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, false);
+                            regung++;
+                            continue;
+                        }
+                    } else nein = true;
                 }
                 if (bauZu) continue;
                 const w = entry._nahWartet;
@@ -2589,7 +2605,10 @@ class AnazhRealm_vegetation_baum {
                     if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, false);
                     if (entry.mesh) entry.mesh.visible = true;
                     regung++;
-                } else entry._nahWartet = { a: fA, t: jetztN };
+                } else {
+                    entry._nahWartet = { a: fA, t: jetztN };
+                    if (nein) entry._platzNein = stand; // nicht bereit und bestellt: er schläft bis zum nächsten Stand
+                }
             }
             nahOffen.length = 0;
         }
@@ -2643,6 +2662,8 @@ class AnazhRealm_vegetation_baum {
     // `_blockerBewegt`, die Instanz-Naht (`_archInstanceAdd`, `_archInstanceRemove`) und das Mesh (`_rebuildArchitectureMesh`,
     // `_cullArchitectureMesh`).
     _cullWecken(entry, art) {
+        // sein Urteil liest Lage, Typ und Stufe: die gemerkte Bereitschaft (`_bereitStand`) gilt nicht mehr
+        if (entry) entry._platzNein = entry._dockNein = undefined;
         const K = this._cullWacheStand;
         if (!K || K.liste !== this.state.architectures || !entry || (entry._cullEimer === -1 && art !== "ein")) return;
         entry._cullEimer = art === "weg" ? -1 : undefined;

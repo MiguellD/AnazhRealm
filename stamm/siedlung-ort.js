@@ -3186,6 +3186,7 @@ class AnazhRealm_siedlung_ort {
         if (!this._ortSame) return;
         if (![x0, z0, x1, z1].every(Number.isFinite)) {
             this._ortSame = null;
+            this._ortSameGen = (this._ortSameGen | 0) + 1; // die Bereitschaft wartender Einträge fragt neu (`_bereitStand`)
             return;
         }
         const R = AnazhRealm.ORT_SAME_REICH;
@@ -3204,6 +3205,7 @@ class AnazhRealm_siedlung_ort {
                 if (!eimer) continue;
                 this._ortSameN -= eimer.size;
                 M.delete(ek);
+                this._ortSameGen = (this._ortSameGen | 0) + 1; // die Gestalt am Ort kann wechseln (`_bereitStand`)
             }
     }
 
