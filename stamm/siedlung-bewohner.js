@@ -789,21 +789,27 @@ class AnazhRealm_siedlung_bewohner {
             // (`_bewohnerRuhig`) gestaffelt je `fernS` Sekunden einmal, mit seiner Zeit seit seinem letzten Takt (`uhrAb`); was ihn
             // weckt (der Plan, der Platz, der Sprung der Uhr, die Wache), nimmt ihn in diesen Takt (`_bewohnerWecken`). Das Raster
             // hält seine Zelle (`_bewohnerRasterLage`). Bis bewohner-takt gingen drei Schleifen je Takt über jeden Kopf der
-            // Siedlung: an stadt-voll 1 094, von denen um 7 Uhr 140 im Nah-Ring standen.
-            if (S.aktivListe !== S.liste) {
+            // Siedlung: an stadt-voll 1 094, von denen um 7 Uhr 140 im Nah-Ring standen. DER SPRUNG DER UHR (mensch.K2: um sprungH
+            // oder mehr, das Wort des Spielers) richtet den Takt der Köpfe neu ein wie eine neue Liste — wach, die Uhren auf 0, das
+            // Raster in der Reihe der Liste, der Plan von vorn —, und unten beginnt jedem Kopf sein Gang neu: der Tag danach ist
+            // f(Same, t). Bis heil-wackler trug der Sprung den Takt davor mit (die Uhren, die Staffel, die Reihe der Zellen, den
+            // Gang), und der Tag danach hing an der Geschichte der Seite: #724672 steckte um 12,62 Uhr in einem von 8 Läufen.
+            const dU = Math.abs(stunde - S.uhrStunde);
+            S.uhrStunde = stunde;
+            const sprung = Math.min(dU, 24 - dU) >= BW.sprungH;
+            if (sprung || S.aktivListe !== S.liste) {
                 [S.aktivListe, S.aktiv, S.ruhend, S.raster, S.taktUhr] = [S.liste, S.liste.slice(), [], new Map(), 0];
-                S.liste.forEach((b, i) => Object.assign(b, { nr: i, ruht: false, rk: undefined, uhrAb: 0 }));
+                [S.planI, S.ruhSoll] = [0, 0];
+                S.liste.forEach((b, i) => Object.assign(b, { nr: i, ruht: false, rk: undefined, uhr: 0, uhrAb: 0 }));
                 for (const b of S.liste) this._bewohnerRasterLage(S, b);
             }
             const koepfe = (S.koepfe = this._bewohnerKoepfe || (this._bewohnerKoepfe = []));
             koepfe.length = 0;
             for (const b of S.aktiv) koepfe.push(b);
             S.ruhSoll = Math.min(S.ruhend.length, (S.ruhSoll || 0) + (S.ruhend.length * delta) / BW.fernS);
-            for (const b of S.ruhend.splice(0, Math.floor(S.ruhSoll)))
-                if (b.ruht) {
-                    b.ruht = false;
-                    koepfe.push(b);
-                }
+            // geweckt wird nur durch DEN Weckruf (`_bewohnerWecken`: die Uhr des Ruhenden zuerst) — bis heil-wackler weckte der
+            // gestaffelte Takt ohne sie, und fiel eine Wende auf seinen Takt, rechnete `zielUhr` mit der Uhr seines letzten Takts
+            for (const b of S.ruhend.splice(0, Math.floor(S.ruhSoll))) this._bewohnerWecken(S, b);
             S.ruhSoll -= Math.floor(S.ruhSoll);
             // DIE WACHE (mensch.K3): wechselt eine Hülle im Rechteck der Wege, prüft jeder Gehende den Rest seines Wegs
             if (S.wache.stand !== S.wegeStand) {
@@ -816,16 +822,14 @@ class AnazhRealm_siedlung_bewohner {
             let anders = false; // eine Wahl wechselt: der Satz neu (`_bewohnerSatzSchreiben`); sonst rücken die Bewegten
             const bewegt = this._bewohnerBewegt || (this._bewohnerBewegt = []);
             bewegt.length = 0;
-            // DER SPRUNG DER UHR (mensch.K2): springt sie um sprungH oder mehr (das Wort des Spielers), stellt sich jeder Leib
-            // dorthin, wo sein Tag ihn jetzt sieht (`_bewohnerAnkunft`)
-            const dU = Math.abs(stunde - S.uhrStunde);
-            S.uhrStunde = stunde;
-            if (Math.min(dU, 24 - dU) >= BW.sprungH)
-                for (const b of S.liste)
-                    if (b.leib) {
-                        b.ankunft = true;
-                        this._bewohnerWecken(S, b);
-                    }
+            // DER SPRUNG DER UHR (oben eingerichtet): jeder Leib stellt sich dorthin, wo sein Tag ihn jetzt sieht
+            // (`_bewohnerAnkunft`), ohne den Gang davor — Tempo, Lauf, Rückstand, Schritt-Takt der Raten-Leiter, Platz und Tür
+            if (sprung)
+                for (const b of S.liste) {
+                    Object.assign(b, { gegangen: 0, gehTakt: 0, tempoJetzt: 0, tempoTag: undefined, rueck: 0 });
+                    Object.assign(b, { vx: 0, vz: 0, platz: false, hinaus: false, ankunft: !!b.leib });
+                    this._bewohnerRasterLage(S, b);
+                }
             // DAS SOLL DER STUNDE (mensch.K2): je `planH` liest jeder seinen Plan einmal — gestaffelt, dt-gerecht: je Takt so viele
             // Köpfe der Reihe nach (`planI`), wie die Uhr dieses Takts von planH trägt; die erste Liste und ein Sprung um planH
             // lesen alle. Bis bewohner-takt las jeder Kopf im selben Takt: an stadt-voll (1 094 Köpfe) eine Spitze von 6,3 ms je
@@ -838,6 +842,7 @@ class AnazhRealm_siedlung_bewohner {
             for (let n = Math.min(N, Math.floor(S.planSoll)); n > 0; n--, S.planSoll--) {
                 S.planI = ((S.planI || 0) + 1) % N;
                 const b = S.liste[S.planI];
+                if (b.ankunft) continue; // wer noch ankommt, liest seinen Plan in seiner Ankunft (`_bewohnerAnkunft`)
                 const z0 = (this._bewohnerUhrNach(S, b), b.ziel);
                 if (this._bewohnerZiel(b, stunde, true)) anders = true;
                 if (b.ziel !== z0) this._bewohnerWecken(S, b);
@@ -871,6 +876,9 @@ class AnazhRealm_siedlung_bewohner {
                 }
                 const g = b.leib;
                 const u = g.userData;
+                // WER NOCH ANKOMMT (der Sprung der Uhr, die Geburt), handelt nicht, bis seine Ankunft dran ist (`ankunftJeTakt`) —
+                // bis heil-wackler suchten die Wartenden Wege, traten aus Türen und zählten ihren Schritt-Takt aus der Lage vor ihr
+                if (b.ankunft && ankuenfte >= BW.ankunftJeTakt) continue;
                 // AM STEUER gehört sein Leib dem Wagen (`_tickVerkehr`) — springt die Uhr, steigt er aus, und seine Ankunft gilt
                 if (b.amSteuer && !(b.ankunft && ankuenfte < BW.ankunftJeTakt)) continue;
                 if (b.ankunft && ankuenfte < BW.ankunftJeTakt) {
@@ -1087,13 +1095,14 @@ class AnazhRealm_siedlung_bewohner {
     }
 
     // DIE ZELLE DES LEIBS im Raster seiner Siedlung (`S.raster`, mensch.K3): wer draußen ist, steht in der Zelle seiner Lage
-    // (`rasterM`), wer drinnen ist, am Steuer sitzt oder keinen Leib trägt, in keiner — umgelegt nur, wenn sie wechselt (`rk`).
+    // (`rasterM`), wer drinnen ist, am Steuer sitzt, keinen Leib trägt oder noch ankommt (seine Lage ist die vor dem Sprung —
+    // ein Ankommender wich ihr bis heil-wackler aus), in keiner — umgelegt nur, wenn sie wechselt (`rk`).
     // Der Wagen des Verkehrs legt seine Leiber durch dieselbe Lage (`_verkehrImRaster`).
     _bewohnerRasterLage(S, b) {
         const M = AnazhRealm.BEWOHNER.rasterM;
         const g = b.leib;
         const k =
-            g && !b.drinnen && !b.amSteuer
+            g && !b.drinnen && !b.amSteuer && !b.ankunft
                 ? Math.floor(g.position.x / M) * 2097152 + Math.floor(g.position.z / M)
                 : null;
         if (k === b.rk) return;
@@ -1800,7 +1809,10 @@ class AnazhRealm_siedlung_bewohner {
             const r2 = X[i] * X[i] + Z[i] * Z[i];
             C[i] = r2 - kO(o) ** 2;
             const ro = o.rueck || 0;
-            if (!(o.weg && (rb > ro || (rb === ro && o.same < b.same)))) geachtet.push(i);
+            // gleich weit ist gleich weit — das Rauschen der Uhr (je 1e-14 m) ist kein Rückstand: dann geht der höhere Same vor
+            // (bis heil-wackler entschied es zwischen zwei Pünktlichen, und wer wich, hing an der Laufzeit der Seite)
+            const vor = Math.abs(rb - ro) < 1e-6 ? o.same < b.same : rb > ro;
+            if (!(o.weg && vor)) geachtet.push(i);
             if (r2 < ((o.kR || K) + v * dt) ** 2) naechste.push(i);
         }
         // DIE WACHE: der Schritt mit (cx, cz) endet in keiner Kapsel (wer schon zu nah ist, entfernt sich) — sonst der, in
