@@ -1475,9 +1475,9 @@ class AnazhRealm_werkstatt_vorschau {
                     R.getClearColor(B.farbe || (B.farbe = new THREE.Color()))
                 );
                 vor.push(R.getClearAlpha(), R.toneMapping, R.outputColorSpace);
-                const g = renderer.getDrawingBufferSize(B.g || (B.g = new THREE.Vector2()));
+                const g = this._schirmMessen(renderer); // die Leinwand der Bühne ist ihr Schirm (die EINE Quelle)
                 if (!B.rt) {
-                    B.rt = new THREE.RenderTarget(g.x, g.y, { samples: 4, type: THREE.HalfFloatType });
+                    B.rt = new THREE.RenderTarget(g.breite, g.hoehe, { samples: 4, type: THREE.HalfFloatType });
                     // das Ausgabe-Dreieck in einer eigenen Szene: r184 reicht ein Mesh als Szene mit einer inneren Szene
                     // an `_renderObjectDirect` weiter — so erkennt die Erst-Zeichnung es (`_buehneJetzt`) und baut es wie
                     // die Bühne asynchron (Spur, Radeon: als Mesh-Szene baute es synchron, 57 ms im GPU-Prozess)
@@ -1487,7 +1487,7 @@ class AnazhRealm_werkstatt_vorschau {
                             return T.renderOutput(T.texture(B.rt.texture), THREE.NoToneMapping, THREE.SRGBColorSpace);
                         }, "buehne-ausgabe")
                     );
-                } else if (B.rt.width !== g.x || B.rt.height !== g.y) B.rt.setSize(g.x, g.y);
+                } else if (B.rt.width !== g.breite || B.rt.height !== g.hoehe) B.rt.setSize(g.breite, g.hoehe);
                 R.setMRT(null);
                 R.setRenderObjectFunction(null);
                 R.autoClear = true;

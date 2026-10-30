@@ -3535,13 +3535,16 @@ class AnazhRealm_bild_kosten {
     // V18.531 las das Fell-Gesetz die Canvas-Höhe selbst (Rückfall 1080, Sichtfeld-Rückfall 60°), und der Geräte-Seed
     // las `innerWidth·innerHeight·dpr²` VERKEHRT herum (ab 4 MPix weniger Welt: ein größerer Schirm startete ärmer).
     // gate:schirm-monotonie zählt die Welt in drei Fenstergrößen je Pass und Klasse und nennt jeden zweiten Weg.
-    // Ohne Renderer oder Perspektiv-Kamera ist pxJeM null — ein fehlender Wert ist nie 0.
-    _schirmMessen() {
+    // Ohne Renderer oder Perspektiv-Kamera ist pxJeM null — ein fehlender Wert ist nie 0. Eine BÜHNE (`ziel`, eine Leinwand
+    // des Welt-Renderers mit ihrem Satz `ziel.buehne`) ist ihr eigener Schirm: derselbe Weg misst ihren Zeichenpuffer in
+    // ihren Satz (ohne Welt-Kamera, pxJeM null) — ihr Ziel folgt ihrer Leinwand, nie dem Fenster der Welt.
+    _schirmMessen(ziel = null) {
         const st = this.state;
-        const rend = st.renderer;
-        const cam = st.camera;
-        const v = this._schirmPuffer || (this._schirmPuffer = new THREE.Vector2());
-        const s = this._schirmWert || (this._schirmWert = { breite: 0, hoehe: 0, pxJeM: null });
+        const rend = ziel || st.renderer;
+        const cam = ziel ? null : st.camera;
+        const h = ziel ? ziel.buehne : this;
+        const v = h._schirmPuffer || (h._schirmPuffer = new THREE.Vector2());
+        const s = h._schirmWert || (h._schirmWert = { breite: 0, hoehe: 0, pxJeM: null });
         if (rend && typeof rend.getDrawingBufferSize === "function") rend.getDrawingBufferSize(v);
         else v.set(0, 0);
         s.breite = v.x;
