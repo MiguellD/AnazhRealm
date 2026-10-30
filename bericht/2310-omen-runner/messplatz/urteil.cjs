@@ -48,6 +48,13 @@ const zaehl = (dir, zelle, suffix) => {
     return r;
 };
 const AUSLOESER = new Set(["Frame p95 ms", "CPU-Takt p95 ms", "GPU je Bild ms (gpu-bank)"]); // der 1σ–2σ-Auslöser der Verlängerung
+// KLAR NACH 2+2 (30.10., z78-bisekt: CPU-Takt p95 7,4 → 9,8 ms = 12σ, geht Frame p95 41,7 → 50 ms — die 4+4 kosteten 25 GTX-Minuten ohne
+// neue Auskunft): eine Kern-Größe, deren Δ in Richtung langsamer 4σ UND 10 % des A-Werts übersteigt, urteilt LANGSAMER schon bei n = 2;
+// verlängert wird nur das Grenzband (2σ–4σ oder unter 10 %) und der 1σ–2σ-Auslöser. ZWEI stetige Größen müssen es tragen: Frame p95/p99
+// liegen auf dem vsync-Raster (16,8 · 33,4 · 41,7 · 50 ms), bei n = 2 täuscht dort σ = 0 (z77-abab: geht Frame p95 33,4 → 41,7 nach 2+2,
+// nach 4+4 nicht-langsamer) — eine stufige Größe urteilt nie allein
+const klar = (ds, sig, ma) => Number.isFinite(sig) && sig > 0 && Number.isFinite(ma) && ds > 4 * sig && ds >= 0.1 * Math.abs(ma);
+const STUFIG = new Set(["Frame p95", "Frame p99", "Frame p95 ms", "Frame p99 ms"]);
 const ergebnisse = [];
 for (const zelle of ZL.split(",").filter(Boolean)) {
     if (zelle === "fahrt") {
@@ -58,7 +65,7 @@ for (const zelle of ZL.split(",").filter(Boolean)) {
         const KERN = [["fps", (l) => l.fps, -1, 0.1], ["Frame p95", (l) => l.frameMs.p95, 1, 0.1], ["Frame p99", (l) => l.frameMs.p99, 1, 0.1], ["CPU-Takt p95", (l) => l.cpuTaktMs.p95, 1, 0.1], ["Belegung p95", (l) => l.belegung.belegungMs.p95, 1, 0.01]];
         const a = voll.filter((x) => x.b[0] === "A"), b = voll.filter((x) => x.b[0] === "B");
         const zeilen = [];
-        let urteil = "nicht-langsamer", verlaengern = false;
+        let urteil = "nicht-langsamer", verlaengern = false, klarN = 0;
         if (!a.length || !b.length || a.length + b.length < 3) {
             if (Math.min(n.A, n.B) < 4) verlaengern = true;
             else urteil = "UNENTSCHIEDEN";
@@ -68,10 +75,12 @@ for (const zelle of ZL.split(",").filter(Boolean)) {
                 const xa = a.map((x) => f(x.l)), xb = b.map((x) => f(x.l));
                 const d = m(xb) - m(xa), s = a.length + b.length > 2 ? sigD(xa, xb) : NaN, ds = richtung * d;
                 const langsam = Number.isFinite(s) ? ds > Math.max(2 * s, aufl) : false;
-                if (langsam && titel !== "Frame p99") { if (Math.min(n.A, n.B) < 4) verlaengern = true; else urteil = "LANGSAMER"; }
+                if (langsam && titel !== "Frame p99") { if (!STUFIG.has(titel) && klar(ds, s, m(xa))) klarN++; if (Math.min(n.A, n.B) < 4) verlaengern = true; else urteil = "LANGSAMER"; }
                 if ((titel === "Frame p95" || titel === "CPU-Takt p95") && Number.isFinite(s) && ds > s && ds <= 2 * s && Math.min(n.A, n.B) < 4) verlaengern = true;
                 zeilen.push({ gang: "volle Fahrt", titel, A: m(xa), B: m(xb), d, zweiSigma: 2 * s, u: langsam ? "LANGSAMER" : "nicht langsamer" });
             }
+        if (klarN >= 2) urteil = "LANGSAMER";
+        if (urteil === "LANGSAMER") verlaengern = false;
         ergebnisse.push({ zelle, n, voll: voll.map((x) => x.b), urteil: verlaengern ? "VERLÄNGERN" : urteil, verlaengern, zeilen, zaehl: zaehl(dir, "fahrt", "lauf") });
         continue;
     }
@@ -98,9 +107,10 @@ for (const zelle of ZL.split(",").filter(Boolean)) {
         const ds = (x.titel === "fps" ? -1 : 1) * x.d;
         if (x.u !== "nicht langsamer") langsam = true;
         if (AUSLOESER.has(x.titel) && Number.isFinite(x.sig) && x.sig > 0 && ds > x.sig && ds <= 2 * x.sig) x.zwischen = true;
+        if (x.u !== "nicht langsamer" && !STUFIG.has(x.titel) && klar(ds, x.sig, x.ma)) x.klar = true;
     }
     const klein = Math.min(n.A, n.B) < 4;
-    if (klein && (langsam || kern.some((x) => x.zwischen))) verlaengern = true;
+    if (klein && kern.filter((x) => x.klar).length < 2 && (langsam || kern.some((x) => x.zwischen))) verlaengern = true;
     const zeilen = kern.map((x) => ({ gang: x.gang, titel: x.titel, A: x.ma, B: x.mb, d: x.d, zweiSigma: 2 * x.sig, u: x.u + (x.zwischen ? " (1σ–2σ)" : "") }));
     const z = {};
     for (const s of ["steht", "geht-1"]) for (const [k, w] of Object.entries(zaehl(dir, zelle, s))) z[(s === "steht" ? "steht " : "geht ") + k] = w;
