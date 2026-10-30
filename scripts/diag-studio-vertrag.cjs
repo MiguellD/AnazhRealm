@@ -1113,9 +1113,7 @@ function validateManifest(m, kern) {
     }
     // EIN WERT, EINE STELLE (K2) — die Linse (`einWertTaeter`) über dem Code-Baum des Stamms; Kommentare zitieren straflos.
     (function einWertEineStelle() {
-        const dateien = stammLib
-            .dateien(root)
-            .map((d) => ({ name: d, src: fs.readFileSync(path.join(root, d), "utf8") }));
+        const dateien = stammLib.teileVon(root).map((t) => ({ name: t.pfad, src: t.text }));
         const taeter = einWertTaeter(dateien, KERNE);
         check(
             "EIN WERT, EINE STELLE: kein Ersatz-Literal auf eine Konstante, kein Gesetz-Ersatz, kein stiller catch im Gesetz-Leser, kein Zahlen-Zwilling eines Kerns",

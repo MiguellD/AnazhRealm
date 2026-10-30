@@ -1054,7 +1054,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
                 "knockback",
                 "attackSpeed",
                 "defense",
-            ].every((k) => typeof computed.stats[k] === "number" && Number.isFinite(computed.stats[k]));
+            ].every((k) => Number.isFinite(computed.stats[k]));
 
         // ALTLASTEN-NULL Diskriminations-Test: drei TIER-KÖRPER → drei Profile
         // aus der GRÖSSEN-Achse (die eine Fold-Quelle): Fuchs flink, Bär tank,
