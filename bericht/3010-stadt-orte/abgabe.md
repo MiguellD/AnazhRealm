@@ -26,8 +26,11 @@ C, E unverändert.
 
 ## Die Wände (Stand nach dem Merge von integ-probe V18.546.132)
 
-`check:statik` (darin die DECKE: scripts −59 Atome, die Zahlstelle −3224 bezahlt Teil R +3165), `gate:welt-boot`, `gate:haus-fern`,
-`playtest:fast`, `diag-settlement` (Selbsttest und voll), `diag-fahr-leben --verkehr` — Zahlen im Abgabe-Commit.
+Kopf `4b958d88` auf `claude/festive-hawking-6b9aa9`: GRÜN `check:statik` (250 s; darin die DECKE: scripts −59 Atome, die
+Zahlstelle −3224 bezahlt Teil R +3165), `gate:welt-boot` (23 s), `gate:haus-fern` (138 s), `playtest:fast` (16 s), `diag-settlement`
+Selbsttest (37 s) und voll (366 s). ROT `diag-fahr-leben --verkehr` allein an VK „Sim-Takt" 1,066/1,075 ms > 1 ms — dieselbe Wand reißt
+an `origin/integ-probe` 24a0f3ef ohne diese Welle im selben Container (1,134/1,04 ms); vor dem Merge stand der Zweig bei 0,965/0,923 ms,
+jede andere Prüfung des Verkehrs GRÜN (20/20 Wagen fahren, Stoß 0, Wenden 4/4).
 
 ## Ehrlich offen
 
