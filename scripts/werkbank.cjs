@@ -1158,8 +1158,11 @@ async function starte() {
             }
             if (r.state.playerMesh) r.state.playerMesh.visible = !!k.spieler;
             // DAS ZIEL des Bilds ist der Blick-Punkt: die Aufnahme prüft, ob es im Bild und frei ist, und die Blick-Wahl
-            // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42; `--wahl 0` schießt nur die genannte Pose)
-            const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel", punkte: k.punkte };
+            // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42; `--wahl 0` schießt nur die genannte Pose).
+            // Das Ziel einer Pose aus dem Leib (`--gesicht`, `--arm`) ist der Kopf oder die Fläche auf Armlänge, kein Werk hinter
+            // einer Kuppe: sein Fuß (ausgabe-aufnahme `punkte`, ein Ziel 0,6–40 m über dem Boden) liegt unter dem Bild — 0,7 m vor
+            // dem Gesicht 1,4 m tiefer, haar.K2#1 „Ziel Blickziel nicht im Bild (ndc [0,0])“ auf beiden Geräten —, `fuss: false`
+            const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel", punkte: k.punkte, ...(gpos ? { fuss: false } : {}) };
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
             let auf = null;
             let gewaehlt = null;
@@ -1411,9 +1414,11 @@ async function starte() {
                     // DIE PROBEN DES GESICHTS (`--gesicht`): je Vertex des Kopfs sein Zug (Iris am Gelenk, auf der
                     // Kopf-Haut der Ton des Ofens, koerper `kopfToene`), projiziert auf den Schirm; `__gesichtMasse` liest das BILD dort,
                     // wo die Teilung den Teil des Vertex zeigt (abnahme-urteil). Die Töne kommen aus dem Leib selbst (der häufigste
-                    // Vertex-Ton der Kopf-Haut ist die Haut, der der Strähnen das Haar), nie von Hand.
+                    // Vertex-Ton der Kopf-Haut ist die Haut, der der Strähnen das Haar), nie von Hand. Die Maße gehören der Klasse, die
+                    // die Kopf-Haut wählt (mensch-kopf `^spieler:kopf/`); wählt sie sie nicht (haar `^spieler:kopf/hair$`), ist `--gesicht`
+                    // nur die Pose — bis dahin warf jeder Haar-Schuss „keine Kopf-Haut am Gelenk head“ (haar.K2#1 third, beide Geräte).
                     let gesicht = null;
-                    if (k.gesicht != null) {
+                    if (k.gesicht != null && ["spieler:kopf/haut", "spieler:kopf/skin"].some((n) => re.test(n))) {
                         const T = THREE;
                         const K = window.__koerperCore;
                         if (!K || typeof K.kopfToene !== "function" || !K.KOPF_SOLL)
