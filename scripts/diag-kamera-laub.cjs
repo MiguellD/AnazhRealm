@@ -1235,7 +1235,7 @@ hauptLauf(async () => {
     const adresse = BILD && !istHardwareAdapter(browser.adapter) ? "index.html?holz=kienspan" : "index.html";
     const bereit = async (rest = adresse, welt = null) => {
         await page.evaluate(() => window.__erstRuhe?.(() => {}, { erstFristMs: 6e5 }, "der Abschied der Welt"));
-        await (welt ? weltTor(page, welt, 0) : server.zeige(page, 0, rest));
+        await (welt ? weltTor(page, welt) : server.zeige(page, 0, rest));
         if (rest !== adresse) return;
         await page.evaluate(async () => (await window.__weltDa((r) => r.state.rendererReady)).state.renderer.setAnimationLoop(null));
         await buehne(page);

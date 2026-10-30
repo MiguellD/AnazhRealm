@@ -1160,19 +1160,18 @@ function booteWelt(page, name = "der Boot der Welt") {
 // DIE TÜR DER WELT — die EINE Stelle, an der eine Linse die Welt ihrer Seite wechselt: durch die Tür des Spiels, `welt` als
 // Snapshot (`importWorldBeside(welt, {reload: true})`: daneben gelegt) oder als liegende worldId (`switchToWorld`), beide über
 // `_weltWechsel` (die Sperre, der Zeiger, der Speicher-Faden still, der Tausch am Ort — seit tore-k5-tuer lädt die Seite nicht
-// neu), bis die Ziel-Welt erwacht (`__weltDa` wartet auf `erwacht`, das Versprechen des Tauschs) → ihre worldId; `frist` 0
-// wartet ohne Ende. Bis heil-glanz setzten fünf Linsen den Zeiger selbst und luden selbst neu: ein Leerlauf-saveState der alten
-// Seite dazwischen setzte ihn auf die lebende Welt zurück (`saveState` → `activeWorldSet`), und die Prüfbühne erwachte als
-// Wildnis (CI 40970322757) — die Tür-Wand im Selbsttest nennt jeden eigenen Zeiger.
-async function weltTor(page, welt, frist = 120000) {
+// neu), bis die Ziel-Welt erwacht (`erwacht`, das Versprechen des Tauschs) → ihre worldId; ein Hänger endet an der Frist des
+// Browsers. Bricht der Tausch, lädt die Seite neu, und die Tür öffnet NICHT: sie nennt den Satz des Melders (`_bruchBuch`) —
+// bis heute wartete sie auf die worldId und hieß den Rückfall gut. Bis heil-glanz setzten fünf Linsen den Zeiger selbst und
+// luden selbst neu: ein Leerlauf-saveState der alten Seite dazwischen setzte ihn auf die lebende Welt zurück (`saveState` →
+// `activeWorldSet`), und die Prüfbühne erwachte als Wildnis (CI 40970322757) — die Tür-Wand im Selbsttest nennt jeden eigenen Zeiger.
+async function weltTor(page, welt) {
     const res = await page.evaluate(async (w) => {
         const r = await window.__weltDa();
-        if (typeof w !== "string") return r.importWorldBeside(w, { reload: true });
-        return r.switchToWorld(w, { reload: true }) ? { ok: true, worldId: w } : { ok: false, reason: `keine Welt ${w}` };
+        const x = typeof w !== "string" ? r.importWorldBeside(w, { reload: true }) : r.switchToWorld(w, { reload: true }) ? { ok: true, worldId: w } : { ok: false, reason: `keine Welt ${w}` }; // prettier-ignore
+        return x && x.ok && !(await r.erwacht) ? { reason: [...r._bruchBuch.keys()].pop() } : x;
     }, welt);
     if (!res || !res.ok) throw new Error(`die Tür der Welt öffnete nicht: ${(res && res.reason) || "kein Ergebnis"}`);
-    const da = async (id) => (await window.__weltDa()).state.worldMeta.worldId === id;
-    await page.waitForFunction(da, { timeout: frist, polling: 100 }, res.worldId);
     return res.worldId;
 }
 

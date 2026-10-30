@@ -236,10 +236,13 @@ async function s0Probe(page, station, schein) {
             // den Pool nie (`_leuchtStoff` wirft), ein Knoten-Stoff nur, wo die Methode ihn in den Pool legt
             const LIT = /new\s+[A-Za-z_$][\w$]*\.Mesh(Standard|Physical|Lambert|Phong|Toon)Material\(/;
             for (const n of Object.getOwnPropertyNames(P)) {
-                if (n === "constructor" || typeof P[n] !== "function") continue;
-                if (!window.__fehlt(P[n], /new THREE\.PointLight\(/)) out.bauer.push(n);
-                if (!window.__fehlt(P[n], LIT)) out.ohnePool.push(n);
-                if (!window.__fehlt(P[n], /this\._punktLichtBrdf\(/)) out.brdf.push(n);
+                // der Wert, nie der Getter: `P[n]` rief den Getter mit dem Prototyp als `this` (`dslPositions` legte seinen
+                // Speicher `_dslPositionsCache` auf den Prototyp), und nach dem Tausch am Ort las die neue Welt ihn
+                const f = Object.getOwnPropertyDescriptor(P, n).value;
+                if (n === "constructor" || typeof f !== "function") continue;
+                if (!window.__fehlt(f, /new THREE\.PointLight\(/)) out.bauer.push(n);
+                if (!window.__fehlt(f, LIT)) out.ohnePool.push(n);
+                if (!window.__fehlt(f, /this\._punktLichtBrdf\(/)) out.brdf.push(n);
             }
             if (schein) delete P._scheinRueckfall;
             // das EINE Punktlicht-Gesetz am Ruf: der Pool-Term rechnet jeden Platz über _punktLichtBrdf (Spion am Ruf)
@@ -273,7 +276,7 @@ async function s0Probe(page, station, schein) {
             const vor = new Set(s.architectures || []);
             r.dslRun(["spawn_studio", "feuerstelle", ["near_player", 3], 1], { source: "human" });
             await takt(20);
-            const feuer = (s.architectures || []).find((e) => e && e.position && !vor.has(e));
+            const feuer = (s.architectures || []).find((e) => e?.position && !vor.has(e));
             if (!feuer) {
                 out.befunde.push("S0: die Feuerstelle steht nicht (der Satz `spawn_studio feuerstelle`)");
                 return out;
@@ -307,7 +310,7 @@ async function s0Probe(page, station, schein) {
                 });
                 let e2 = 0;
                 const pool = r._leuchtPool;
-                for (const p of (pool && pool.plaetze) || []) {
+                for (const p of pool?.plaetze || []) {
                     if (!(p.staerke > 0) || Math.hypot(p.x - um.x, p.y - um.y, p.z - um.z) > umkreis) continue;
                     // das Licht DIESER Feuerstelle steht über ihrem Bett (≤ 1,5 m waagrecht); jedes andere zählt nur als Licht
                     const eigen = Math.hypot(p.x - um.x, p.z - um.z) <= 1.5;
@@ -352,7 +355,7 @@ async function s0Probe(page, station, schein) {
             // die Laterne: nachts ein Platz, mittags keiner
             const lp = { x: f.x + frei[0], y: f.y + 3, z: f.z + frei[1] };
             const laterneAn = () =>
-                ((r._leuchtPool && r._leuchtPool.plaetze) || []).filter(
+                (r._leuchtPool?.plaetze || []).filter(
                     (p) => p.quelle === "laterne_dorf" && Math.hypot(p.x - lp.x, p.z - lp.z) < 1
                 ).length;
             cam.position.set(lp.x - 2, lp.y - 1.5, lp.z);
@@ -461,7 +464,7 @@ function zeigeS4(rep, schein) {
 async function probe(page, welt, wuerfe, evolutionen, schein) {
     return page.evaluate(
         async (welt, wuerfe, evolutionen, schein) => {
-            const s = r.state;
+            const s = st;
             const out = { welt, wuerfe: [], akt: null, nexus: null, zensus: null, befunde: [] };
             const takt = async (ms) => {
                 for (let i = 0; i * 16 < ms; i++) {
@@ -521,20 +524,20 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                 try {
                     res = r.dslRun(prog, { source: quelle });
                 } catch (e) {
-                    res = { wurf: String((e && e.message) || e).slice(0, 160) };
+                    res = { wurf: String(e?.message || e).slice(0, 160) };
                 }
                 // das Dorf (und das Fraktal) reist über den Worker, die Pflanz-Schlange leert sich im Takt
                 await takt(prog[0] === "spawn_village" || prog[0] === "spawn_fractal" ? 3000 : 700);
                 const z = zuwachs(vor, substanz());
                 const log = res && Array.isArray(res.log) ? res.log : [];
-                const halt = log.find((l) => l && l.event === "invalid_position");
+                const halt = log.find((l) => l?.event === "invalid_position");
                 return {
                     op: prog[0],
                     quelle,
                     zuwachs: z.summe,
                     was: z.d,
                     ereignisse: log
-                        .map((l) => l && l.event)
+                        .map((l) => l?.event)
                         .filter(Boolean)
                         .slice(0, 4),
                     grund: halt ? halt.grund : null,
@@ -560,7 +563,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                     const evo = r.generateEvolution(); // der Takt selbst ruht headless (Gate-Treue)
                     s.nexusEvolutionQueue.push(evo);
                     const kopf = evo && Array.isArray(evo.program) ? String(evo.program[0]) : "?";
-                    const innen = JSON.stringify((evo && evo.program) || []).match(/"spawn_[a-z_]+"/g) || [];
+                    const innen = JSON.stringify(evo?.program || []).match(/"spawn_[a-z_]+"/g) || [];
                     for (const w of innen) zaehl[w.replace(/"/g, "")] = (zaehl[w.replace(/"/g, "")] || 0) + 1;
                     if (kopf) laeufe++;
                     r._loopNexusUpdate();
@@ -573,12 +576,12 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
             // (4) DER ABSENZ-ZENSUS in 300 m um den Ursprung der Welt (die Genesis-Plattform)
             {
                 const pl = r._genesisPlattform();
-                const M = pl && pl.position ? { x: pl.position.x, z: pl.position.z } : { x: 0, z: 0 };
+                const M = pl?.position ? { x: pl.position.x, z: pl.position.z } : { x: 0, z: 0 };
                 const R = 300;
                 const d = (p) => Math.hypot(p.x - M.x, p.z - M.z);
                 const fremd = {};
                 for (const e of s.architectures || [])
-                    if (e && e.position && d(e.position) <= R && !bestand.has(e))
+                    if (e?.position && d(e.position) <= R && !bestand.has(e))
                         fremd[e.type] = (fremd[e.type] || 0) + 1;
                 let streu = 0;
                 const SC = r.constructor.SCATTER;
@@ -586,10 +589,10 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                     for (const [key, reg] of s.scatterRegions) {
                         const [rx, rz] = key.split(",").map(Number);
                         const c = { x: (rx + 0.5) * SC.regionM, z: (rz + 0.5) * SC.regionM };
-                        if (d(c) <= R + SC.regionM * 0.71) streu += (reg && reg.instanceCount) || 0;
+                        if (d(c) <= R + SC.regionM * 0.71) streu += reg?.instanceCount || 0;
                     }
                 let nahStreu = 0;
-                if (s.nahStreu && s.nahStreu.kacheln)
+                if (s.nahStreu?.kacheln)
                     for (const k of s.nahStreu.kacheln.values()) nahStreu += (k.items || []).length;
                 const h = s.hydrosphere;
                 out.zensus = {
@@ -597,7 +600,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                     fremdeBauten: fremd,
                     streuZellen: streu,
                     nahStreu,
-                    tiere: (s.creatures || []).filter((c) => c && c.position && d(c.position) <= R).length,
+                    tiere: (s.creatures || []).filter((c) => c?.position && d(c.position) <= R).length,
                     inseln: (s.floatingIslands || []).length,
                     dorfZellen: Object.keys(wm().settlementCells || {}).length,
                     pflanzSchlange: (s.pendingVegSpawns || []).length,
@@ -646,7 +649,7 @@ const S0_NAH_INSTALL = () => {
         // — gefragt beim Zeichnen: der Bau-Satz entsteht erst im ersten Frame des Schusses (`_tickBauSatz` vor dem Render)
         const feuer = window.__s0Feuer;
         const gruppen = () => st.archInstanceGroups || new Map();
-        const feuerGruppe = (g) => !!g && !!g.slotEntry && g.slotEntry.includes(feuer);
+        const feuerGruppe = (g) => !!g?.slotEntry?.includes(feuer);
         const satzVon = (o) => {
             for (const s of (st.chunkSaetze || new Map()).values()) if (s.mesh === o) return s;
             return null;
@@ -654,14 +657,14 @@ const S0_NAH_INSTALL = () => {
         const liest = (o, ohne) => {
             if (ohne) return false;
             for (let p = o; p; p = p.parent) {
-                if ((mit && mit.includes(p)) || (feuer && p === feuer.mesh)) return true;
+                if (mit?.includes(p) || (feuer && p === feuer.mesh)) return true;
                 const s = satzVon(p);
                 if (s) {
                     if (s.art === "boden") return true;
                     for (const key of s.bloecke.keys()) if (feuerGruppe(gruppen().get(key))) return true;
                     return false;
                 }
-                if (p.isInstancedMesh && feuerGruppe(gruppen().get(p.userData && p.userData.archInstanceKey))) return true;
+                if (p.isInstancedMesh && feuerGruppe(gruppen().get(p.userData?.archInstanceKey))) return true;
             }
             return false;
         };
@@ -717,7 +720,7 @@ const S0_NAH_INSTALL = () => {
                 for (const k of s.bloecke.keys()) for (const m of String(k).matchAll(/f:([^|]+)/g)) formen.add(m[1]);
                 return `${q.name}(${[...formen].join(",")})`;
             }
-            return q.name || (q.userData && q.userData.inventar) || q.type;
+            return q.name || q.userData?.inventar || q.type;
         };
         const fremd = (ohne) => {
             const out = {};
@@ -733,11 +736,11 @@ const S0_NAH_INSTALL = () => {
         const jenseits = (m) => {
             const out = {};
             for (const s of (st.chunkSaetze || new Map()).values()) {
-                const a = s.abschnitte && s.abschnitte.get("haupt");
+                const a = s.abschnitte?.get("haupt");
                 if (!a || !(a.n > 0) || !gezeichnet.has(s.mesh)) continue;
                 let n = 0;
-                for (const z of a.liste || []) if (z && z.huelle && !z.huelle.isEmpty() && z.huelle.distanceToPoint(m) > radius) n++;
-                const k = (s.mesh && s.mesh.name) || s.art;
+                for (const z of a.liste || []) if (z?.huelle && !z.huelle.isEmpty() && z.huelle.distanceToPoint(m) > radius) n++;
+                const k = s.mesh?.name || s.art;
                 if (n) out[k] = (out[k] || 0) + n;
             }
             return out;
@@ -776,9 +779,9 @@ const S0_GESTALT_INSTALL = () => {
         return weg.call(this, e, ...rest);
     };
     window.__s0Gestalt = (feuer) => {
-        const s = r.state;
+        const s = st;
         if (!feuer || !s.architectures.includes(feuer))
-            return { fiel: (feuer && feuer.__s0Fiel) || "nicht über removeArchitecture", fehlt: [] };
+            return { fiel: feuer?.__s0Fiel || "nicht über removeArchitecture", fehlt: [] };
         const fehlt = [];
         if (!r._archIsRendered(feuer)) fehlt.push("die Feuerstelle wächst");
         const ring = r._builtRingRadius();
@@ -884,7 +887,7 @@ const S0_HIMMEL_TOL = 0.03; // relativ, plus 0,005 absolut: die Umgebung nach de
 async function himmelProbe(page, taub) {
     return page.evaluate(
         async (taub, tol) => {
-            const s = r.state;
+            const s = st;
             const out = { himmel: [], befunde: [] };
             const uhr = (t) => {
                 if (r.setTimeOfDay(t, "human") !== true) throw new Error("S0: die Uhr nimmt den Spieler nicht (" + t + ")");
@@ -1031,7 +1034,7 @@ async function lichtLauf() {
     try {
         await phase("Laden", async (rest) => {
             await page.goto(url, { waitUntil: "domcontentloaded", timeout: rest });
-            await weltTor(page, json, Math.max(1, bis - Date.now()));
+            await weltTor(page, json);
             zeit("die Bühne importiert");
         });
         await phase("Boot", async () => {
@@ -1163,7 +1166,7 @@ async function lichtLauf() {
         for (const schein of schuesse) {
             ergebnis[schein || "sauber"] = await phase(schein ? "Schuss " + schein : "Schuss", () =>
                 page.evaluate(async (schein, nahM, palette) => {
-                    const s = r.state;
+                    const s = st;
                     const T = window.THREE;
                     const rend = s.renderer;
                     // der Pfad des Spielers: der Himmel folgt dem Sprung, frisch gemalt (die Umgebung der Nacht trägt ihr Licht) —
@@ -1236,7 +1239,7 @@ async function lichtLauf() {
                         const ro = roh.apply(this, a);
                         if (ro && ro.material === s.voxelChunkMaterial) {
                             const st = ro.getNodeBuilderState();
-                            if (st && st.fragmentShader) bodenWgsl.set(st.fragmentShader, (bodenWgsl.get(st.fragmentShader) || 0) + 1);
+                            if (st?.fragmentShader) bodenWgsl.set(st.fragmentShader, (bodenWgsl.get(st.fragmentShader) || 0) + 1);
                         }
                         return ro;
                     };
@@ -1330,11 +1333,11 @@ async function lichtLauf() {
                             punkte: nt / 9,
                         };
                     }
-                    const pool = (r._leuchtPool && r._leuchtPool.plaetze) || [];
+                    const pool = r._leuchtPool?.plaetze || [];
                     // die Programme und Pipelines (ein Wechsel der Plätze baut keins: Pool voll und leer zählen gleich)
                     const PL = rend._pipelines;
                     const zaehl =
-                        PL && PL.programs
+                        PL?.programs
                             ? [PL.programs.vertex.size, PL.programs.fragment.size, PL.caches ? PL.caches.size : null]
                             : null;
                     const eigen = pool.find((p) => Math.hypot(p.x - f.x, p.z - f.z) <= 1.5);
@@ -1363,7 +1366,7 @@ async function lichtLauf() {
             zeit(schein ? `der Schuss (${schein}) aufgenommen` : "das Feuer aufgenommen");
         }
     } catch (e) {
-        if (e && e.message === "FRIST")
+        if (e?.message === "FRIST")
             await ende(
                 `die Frist von ${S0_FRIST_S} s riss in der Phase „${phaseJetzt}" — der Deckel der Linse (≤ 3 min CI) hält nicht`
             );
@@ -1373,7 +1376,7 @@ async function lichtLauf() {
     // 5 m zurück — die Figur im Licht des Pools; dazu das Feuer aus 6 m (K11b: der Lichtkreis und sein Saum)
     if (BILD && ergebnis.sauber && !ergebnis.sauber.fehler) {
         const pngs = await page.evaluate(async (nahM) => {
-            const s = r.state;
+            const s = st;
             const f = window.__s0Feuer.position;
             const g = (x, z) => r._voxelSurfaceY(x, z);
             const wolf = r.spawnCreatureAt(f.x, g(f.x, f.z - 2.3) + 0.5, f.z - 2.3, "calm", "wolf", { precise: true, bodySize: 1 });
@@ -1488,7 +1491,7 @@ async function lichtLauf() {
     }
     // DIE WAND DER NAH-BÜHNE: kein Satz zeichnet im Schuss eine Zelle jenseits der Kugel (sonst übersetzt der Schuss die Stoffe
     // der Welt, nicht die des Feuers)
-    const s0Jenseits = (e) => Object.entries((e && e.nah && e.nah.jenseits) || {});
+    const s0Jenseits = (e) => Object.entries(e?.nah?.jenseits || {});
     const s0Liste = (o) =>
         Object.entries(o || {})
             .map(([k, n]) => `${k} ${n}`)
@@ -1527,7 +1530,7 @@ async function lichtLauf() {
         );
         const prog = sauber && !sauber.fehler && sauber.boden && sauber.boden[0];
         const gross = prog ? S0_STOFF.urteil(prog, prog.length - 1) : null;
-        const grossGetroffen = !!gross && gross.rot.length === 1;
+        const grossGetroffen = gross?.rot.length === 1;
         console.log(
             `  SELBSTTEST S0 PROGRAMM-GRÖSSE (die Decke ein Zeichen unter dem Boden-Programm): ${grossGetroffen ? `getroffen — ${gross.rot[0].split(" — ")[0]}` : "BLIND"}`
         );
@@ -1547,7 +1550,7 @@ async function lichtLauf() {
         console.log(
             `  SELBSTTEST S0 WACHE (ein Werk fällt durch einen benannten Rufer): ${wacheGetroffen ? `getroffen — das Urteil nennt ${wa.fiel}` : "BLIND " + JSON.stringify(wa)}`
         );
-        const hb = (himmel.taub && himmel.taub.befunde) || [];
+        const hb = himmel.taub?.befunde || [];
         const taubGetroffen = hb.some((b) => /^S0 Himmel: nach dem Sprung auf Mitternacht .*`_ensureSkyEnvironment`/.test(b));
         console.log(
             `  SELBSTTEST S0 HIMMEL (der Maler taub): ${taubGetroffen ? `getroffen — ${hb.find((b) => /Mitternacht/.test(b)).split(" — ")[0]}` : "BLIND " + JSON.stringify(hb)}`
@@ -1596,7 +1599,7 @@ hauptLauf(async () => {
         // DER STOFF-ZENSUS: jeder direkt beleuchtete Stoff der Szene (Standard, Physical, Lambert, Phong, Toon — Basic
         // trägt in r184 nur das indirekte Licht) trägt den Licht-Pool (`userData.lichtPool`, `_leuchtStoff`) oder ist Quelle
         window.__stoffZensus = () => {
-            const s = r.state;
+            const s = st;
             const gesehen = new Set();
             const ohne = new Map();
             let lit = 0;
@@ -1607,7 +1610,7 @@ hauptLauf(async () => {
                     gesehen.add(m);
                     if (!/^Mesh(Standard|Physical|Lambert|Phong|Toon|SSS)(Node)?Material$/.test(m.type)) continue;
                     lit++;
-                    if (m.userData && m.userData.lichtPool) continue;
+                    if (m.userData?.lichtPool) continue;
                     const name =
                         o.name ||
                         (o.userData && (o.userData.inventar || o.userData.poolKennung)) ||
@@ -1639,7 +1642,7 @@ hauptLauf(async () => {
     if (SELBSTTEST) laeufe.push(["buehne", true]);
     for (const [welt, schein] of laeufe) {
         // jeder Bühnen-Lauf auf frischer Bühne, geboren wie im Spiel durch die Tür (der Schein-Lauf erbt nichts vom sauberen)
-        if (welt === "buehne") await weltTor(page, JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8")), 60000);
+        if (welt === "buehne") await weltTor(page, JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8")));
         const b = await booteWelt(page);
         if (!b.ok) {
             console.log(`  ⛔ Welt ${welt}: Boot nicht bereit nach 120 s`);

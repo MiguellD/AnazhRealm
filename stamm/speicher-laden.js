@@ -1016,8 +1016,17 @@ class AnazhRealm_speicher_laden {
     // sich, die Puffer nimmt der Kehraus). Die Wartenden der alten Welt an Foundry und Fäden verfallen (ihre Antworten finden
     // niemanden; die Pipeline bleibt im Cache), das Buch geht neu in die Welt (`_foundryWirtSteht`). Der Zustand wird frisch wie
     // bei der Geburt, die Seite reist (`_seite`, `WELT_GRENZE.seite`), jedes Feld am Wirt, das die Welt anlegte, fällt
-    // (`WELT_GRENZE.wirt` bleibt), ihre Gedächtnisse auch.
+    // (`WELT_GRENZE.wirt` bleibt), ihre Gedächtnisse auch. DER PROTOTYP TRÄGT NIE STAND: ein Feld dort überlebte jeden Abschied
+    // unter dem Namen, der hier fällt, und die nächste Welt läse es — der Zensus der Prüfbühne weckte den Getter `dslPositions`
+    // mit dem Prototyp als `this`, sein Speicher `_dslPositionsCache` rief nach dem Tausch `far_player` auf einem Zustand, den es
+    // nicht gibt (Selbsttest blind). Trägt er Stand, bricht der Tausch beim Namen, bevor die alte Welt geht.
     _weltAbschied() {
+        const P = AnazhRealm.prototype;
+        const stand = Object.getOwnPropertyNames(P).filter((k) => {
+            const d = Object.getOwnPropertyDescriptor(P, k);
+            return "value" in d && typeof d.value !== "function";
+        });
+        if (stand.length) throw new Error(`der Prototyp trägt Stand (${stand.join(", ")})`);
         const alt = this.state;
         const G = AnazhRealm.WELT_GRENZE;
         const S = this._seite;
