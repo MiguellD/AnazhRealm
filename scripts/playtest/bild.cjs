@@ -334,21 +334,20 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             atmoU.licht.value > 0 && mE.x + mE.y + mE.z > 0;
 
         // EIN Himmel: am Tag IST die Himmels-Umgebung der Himmel — Hemi trägt nur den
-        // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht: mittags steht die
-        // 18-%-Karte am Anker (Mittelgrau + 1 EV unter der Zenit-Sonne, `_belichtungAnker`), nachts am Deckel.
+        // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht (licht.K1): mittags und nachts
+        // steht das Gesetz der Kamera aus dem Licht des Orts (`_belichtungAusLicht`, die Stufen der Sonnenhöhe gegen den Anker).
         // Die Belichtung liest die Lichter ihrer Anwendung (S7), nie die zurückgelesene Umgebung.
+        const gesetz = () => [st.renderer.toneMappingExposure, r._belichtungAusLicht(r._sonnenRichtung().y)];
         r.setTimeOfDay(0.5, "human");
         const intensityNoon = st.hemiLight.intensity;
-        const belichtungMittag = st.renderer.toneMappingExposure;
+        const mittag = gesetz();
         r.setTimeOfDay(0, "human");
-        const belichtungNacht = st.renderer.toneMappingExposure;
+        const nacht = gesetz();
         out["EIN Himmel — Hemi trägt nur den Nachthimmel-Boden (Mittag 0)"] =
             intensityNoon < 0.01 && st.hemiLight.intensity > 0.05;
-        const B = r.constructor.BELICHTUNG;
-        const kAnker = B.zielKarte / ((0.18 / Math.PI) * r._belichtungAnker());
         out[
-            `Belichtung aus dem Licht — mittags die Karte am Anker, nachts am Deckel (Mittag / Anker / Nacht ${[belichtungMittag, kAnker, belichtungNacht].map((v) => +(+v).toFixed(3)).join(" / ")})`
-        ] = Math.abs(belichtungMittag / kAnker - 1) < 0.1 && Math.abs(belichtungNacht - B.max) < 1e-6;
+            `Belichtung aus dem Licht — mittags und nachts das Gesetz der Kamera (Mittag / Gesetz / Nacht / Gesetz ${[...mittag, ...nacht].map((v) => +(+v).toFixed(3)).join(" / ")})`
+        ] = [mittag, nacht].every(([k, soll]) => Math.abs(k / soll - 1) < 1e-6);
 
         // 3. Hemisphere-groundColor moduliert mit Welt-Affinität. Der Feld→Boden-Term ist hinter
         // `tint.auraK` gegated (Default `auraTintStrength` 0) — der MECHANISMUS lebt als Opt-in → das Band
@@ -1356,11 +1355,11 @@ async function checkBandLookPhysik({ page, check }) {
         tintOk && wi.sunny < wi.rainy && wi.rainy < wi.stormy,
         `intensity ${wi.sunny}/${wi.rainy}/${wi.stormy}`
     );
-    // 5) die Tonkurve = die Kurve der Eichung, die 18-%-Karte auf Mittelgrau + 1 EV; 6) lineares Farb-Management
+    // 5) die Tonkurve = die Kurve der Eichung, die 18-%-Karte auf Mittelgrau (der Anker des Mittags); 6) lineares Farb-Management
     const B = b.belichtung || {};
-    const sollKarte = kartenEichung(B.kurve);
+    const sollKarte = kartenEichung(B.kurve, 0);
     check(
-        "Look-Physik: Tonkurve = die Kurve der Eichung, die 18-%-Karte auf Mittelgrau + 1 EV, Farb-Management linear",
+        "Look-Physik: Tonkurve = die Kurve der Eichung, die 18-%-Karte auf Mittelgrau, Farb-Management linear",
         Number.isFinite(b.kurveConst) &&
             b.toneMapping === b.kurveConst &&
             sollKarte != null &&

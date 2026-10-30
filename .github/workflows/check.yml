@@ -861,6 +861,8 @@ jobs:
               # Statische Wand: der Sitz lebt im Sim-Schritt, der Frame-Tick schreibt nie den Reiter. Inklusive Selbst-Test.
               # RM (fahrzeug.K5): Glatt · Drift · Hang — die Federung im gezeichneten Bild antwortet dem Boden-Stoß und wankt im
               # Drift, das Rumble am Stub-Pad folgt Schlupf und Stoß, die Stimme schweigt nach dem Absteigen; die Mutante ROT.
+              # VK (PFLICHT-OFFEN C): der Verkehr der Metropole (stadt-voll) um 10 und 23 Uhr je 40 s — jeder Wagen des Gesetzes
+              # fährt mit seinem Fahrer, keiner steckt, 0 Berührungen mit Leib und Wagen, 0 Stoß, Sim-Takt ≤ 1 ms (~2 min).
               run: npm run gate:fahr-leben
 
             - name: Die Labor-Linse der Garage (Welle L — Maus, HUD, Tacho, Preset, Kultur)
