@@ -378,7 +378,8 @@ function kostenTabelle(nach, vor) {
 // cameraPosition, normalView …), zählt er als `bibliothek`, sonst als `verborgen` (ein Rumpf des Spiels, den der Graph
 // nicht sieht — dort könnte ein Rauschen wohnen). Ausgenommen sind die ZWEIGE des Stamms (`zweige`: die Rümpfe von
 // `AnazhRealm._zweigTSL`, K17-2) — ihr Rumpf liest nur seine Argumente, und die sind Kinder des Aufrufs: der Graph sieht den
-// Inhalt, gezählt als `zweig`. Rein — läuft in der Seite und im Selbsttest.
+// Inhalt, gezählt als `zweig`. Dazu je benanntem Uniform seine Knoten (`uniformen`: der Schirm-Pixel des Mikro-Details,
+// material.K2). Rein — läuft in der Seite und im Selbsttest.
 function stoffGraph(stoff, rauschQuelle, tsl, zweige) {
     const ist = new RegExp(rauschQuelle, "i");
     const aus = {
@@ -390,6 +391,7 @@ function stoffGraph(stoff, rauschQuelle, tsl, zweige) {
         verborgen: 0,
         bibliothek: 0,
         zweig: 0,
+        uniformen: {},
     };
     if (!stoff) return Object.assign(aus, { fehler: "kein Stoff" });
     const bib = new Set();
@@ -433,6 +435,7 @@ function stoffGraph(stoff, rauschQuelle, tsl, zweige) {
             aus.rauschen++;
             aus.rauschNamen[name] = (aus.rauschNamen[name] || 0) + 1;
         }
+        if (n.isUniformNode === true && n.name) aus.uniformen[n.name] = (aus.uniformen[n.name] || 0) + 1;
         if (n.isTextureNode === true && n.value) {
             const t = n.value.name || "namenlos";
             aus.texturen[t] = (aus.texturen[t] || 0) + 1;

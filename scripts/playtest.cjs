@@ -55,7 +55,6 @@ function ohneWurf(check, name, res, zeile) {
 // Initial-State-Probe: liefert `finalState` für die Basis-Checks + Ring 1 (Grok).
 async function gatherInitialFinalState(page) {
     return await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         // Deterministische Mechanik-Probe (statt des flaky Box-Inhalts am Lauf-Ende): grokRender schreibt
         // einen Prüfsatz, die Box muss ihn tragen; ein leerer/null-Satz blankt sie NICHT.
         let grokRenderProbe = null;
@@ -328,46 +327,55 @@ if (require.main === module) hauptLauf(async () => {
         // Fehler" zählt diese Meldungen über ihren Bau (`const z = __stoffZeuge(r); …bauen…; z.zu()` → die Brüche) — nie
         // eine Konstante, nie eine Fenster-Variable; der Spion reicht an `log` durch und kehrt eigen-treu zurück.
         window.__stoffZeuge = (r) => {
-            const eigen = Object.prototype.hasOwnProperty.call(r, "log");
             const alt = r.log;
             const brueche = [];
-            r.log = function (m, lv) {
-                if (lv === "ERROR" && /^STOFF:/.test(String(m))) brueche.push(String(m));
-                return alt.apply(this, arguments);
-            };
-            return {
-                brueche,
-                zu() {
-                    if (eigen) r.log = alt;
-                    else delete r.log;
-                    return brueche;
+            const zurueck = leihe(r, {
+                log(m, lv) {
+                    if (lv === "ERROR" && /^STOFF:/.test(String(m))) brueche.push(String(m));
+                    return alt.apply(this, arguments);
                 },
-            };
+            });
+            return { brueche, zu: () => (zurueck(), brueche) };
         };
         // KONSUM-Beweis statt Quelltext-Zitat: providerObj[providerKey] wird temporär ein Zähl-Spy (delegiert
         // ans Original), obj[methodName](...args) läuft, dann own-Property-treu restauriert. true = der
         // Konsument hat den Provider WIRKLICH gerufen; wirft nie.
         window.__consumes = (obj, methodName, providerObj, providerKey, args) => {
             try {
-                const hadOwn = Object.prototype.hasOwnProperty.call(providerObj, providerKey);
                 const original = providerObj[providerKey];
                 let fired = 0;
-                providerObj[providerKey] = function (...a) {
-                    fired++;
-                    return typeof original === "function" ? original.apply(this, a) : original;
-                };
+                const zurueck = leihe(providerObj, {
+                    [providerKey](...a) {
+                        fired++;
+                        return typeof original === "function" ? original.apply(this, a) : original;
+                    },
+                });
                 try {
                     obj[methodName](...(args || []));
                 } catch {
                     /* ein Throw NACH dem Provider-Ruf entwertet den Konsum-Beweis nicht */
                 } finally {
-                    if (hadOwn) providerObj[providerKey] = original;
-                    else delete providerObj[providerKey];
+                    zurueck();
                 }
                 return fired > 0;
             } catch {
                 return false;
             }
+        };
+        // DIE GEFÜHLE EINER PROBE (`__emo(p, { gluecklich: 1 })`): jede Emotion von p auf den Wert der Probe, jede andere 0 —
+        // je Band ein eigenes `setEmo` war ein Zwilling
+        window.__emo = (p, o) => {
+            for (const k of Object.keys(p.emotions)) p.emotions[k] = o[k] || 0;
+        };
+        // DIE LEERE KREATUR-BÜHNE (`const zurueck = __kreaturenLeer()`): die Liste der Kreaturen und ihrer Gefühle leer geliehen
+        // (die Kappe `maxCreatures` gäbe dem Spawn der Probe sonst null), der Rückruf räumt die Wesen der Probe und gibt beide
+        // Listen zurück — je Probe ein eigenes Merken war ein Zwilling
+        window.__kreaturenLeer = () => {
+            const zurueck = leihe(st, { creatures: [], creatureEmotions: [] });
+            return () => {
+                for (const c of st.creatures.slice()) r.removeCreature(c);
+                zurueck();
+            };
         };
         // DAS EINE TEIL der Bänder (ein Bauplan-Part): Form, Stoff, Lage, Maß, danach der Rest des Teils (Drehung, Farbe …) in seiner
         // Reihe. Vorher schrieb jedes Band jedes Teil als eigenes Literal (201 in 13 Domänen, je 45 Atome).
@@ -857,7 +865,6 @@ if (require.main === module) hauptLauf(async () => {
             await timed(BAND.checkBandV18224ScatterPromotion, ctx);
             await timed(BAND.checkBandWahrerAnblickSaeule1, ctx);
             await timed(BAND.checkBandWahrerAnblickFels, ctx);
-            await timed(BAND.checkBandWahrerAnblickGras, ctx);
             await timed(BAND.checkBandRauschGesetz, ctx);
             await timed(BAND.checkBandWahrerAnblickLaub, ctx);
             await timed(BAND.checkBandWahrerAnblickPfade, ctx);

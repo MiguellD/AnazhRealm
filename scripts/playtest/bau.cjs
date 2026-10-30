@@ -10,7 +10,6 @@ async function checkBandWaves1to3({ page, check, errors, finalState }) {
     void finalState;
     // ### Welt-Journal ###
     const journalResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         out.genesisWritten = r.state.worldJournal.entries.some((e) => e.type === "genesis");
         out.bornAtSet = typeof r.state.worldMeta.bornAt === "number" && r.state.worldMeta.bornAt > 0;
@@ -49,7 +48,6 @@ async function checkBandWaves1to3({ page, check, errors, finalState }) {
 
     // ### Fraktale Baupläne + Schöpfer-DSL-Ops ###
     const wave2Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // C — Validation lehnt unbekannte Shape ab
         out.rejectsUnknownShape = !r.validateBlueprintParts([{ shape: "alien" }]).ok;
@@ -144,7 +142,6 @@ async function checkBandWaves1to3({ page, check, errors, finalState }) {
 
     // ### Welt-Initiative + Welt-Tor ###
     const wave3Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         // E — neue Trigger im pool + triggers-Map
         out.hasJournalEventTrigger = !!r.state.grok.triggers.journalEvent;
@@ -458,7 +455,6 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
     void finalState;
     // ### Compound-Tag-Affordances (Erkennung + UI) ###
     const wave10bResults = await safeEvaluate(page, () => {
-        if (!r) return null;
         const AR = r.constructor;
         const out = {};
         try {
@@ -1029,7 +1025,6 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
 
     // ### Welt-Reaktionen (die Mount-Absagen + zoom) ###
     const wave10b3Results = await safeEvaluate(page, () => {
-        if (!r) return null;
         const out = {};
         try {
 

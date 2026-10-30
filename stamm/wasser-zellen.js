@@ -1845,7 +1845,8 @@ class AnazhRealm_wasser_zellen {
         if (archs) {
             // Stau-Qualifikation: ein Architektur-AABB zählt NUR als Damm, wenn es (a) GEERDET ist (Basis ≤ 1
             // Sim-Zelle = 1,8 m über dem Terrain seiner Spalte) UND (b) GESCHLOSSEN (deckt in BEIDEN Achsen ≥ 1
-            // volle Sim-Zelle) — schmaler versiegelt keine Spalte; Pfosten, dünne Wände, Stege fallen, ein Haus
+            // volle Sim-Zelle) und DICHT (`AnazhRealm._stauBox`: kein Wagen, keine Pflanze, keine Brücke mit Durchlass) —
+            // schmaler versiegelt keine Spalte; Pfosten, dünne Wände, Stege fallen, ein Haus
             // wird nie zum Damm. Fill-Edits sind Terrain (bleiben). Linse: `gate:wasser-wahrheit` Fixture 4,
             // Stau-Harness `gate:carve`. Geschlossen und geerdet sind je Bau gemerkt (seine Hülle und ihre Länge): ein Takt fragt
             // nur einen neuen Bau (Lehre 25) — bis gk2-damm-faden fragte jeder neue Bau jede Box jedes Baus (die Fahrt nach Osten:
@@ -1859,7 +1860,7 @@ class AnazhRealm_wasser_zellen {
                 if (!m || m.huelle !== huelle || m.n !== huelle.length || m.cell !== CELL) {
                     je.set(entry, (m = { huelle, n: huelle.length, cell: CELL, werke: [] }));
                     for (const a of huelle) {
-                        if (Math.min(a.maxX - a.minX, a.maxZ - a.minZ) < CELL) continue; // (b) geschlossen
+                        if (!AnazhRealm._stauBox(a, CELL)) continue; // (b) geschlossen und dicht
                         const terrY = this._terrainMacroSurfaceY((a.minX + a.maxX) * 0.5, (a.minZ + a.maxZ) * 0.5);
                         if (Number.isFinite(terrY) && Number.isFinite(a.botY) && a.botY > terrY + CELL) continue; // (a) geerdet
                         const box = {
@@ -2488,3 +2489,9 @@ AnazhRealm.CA_STAU = Object.freeze({
     CLUSTER_GAP: 4, // m — Werke näher als das verschmelzen zu EINEM Stau-Werk (ein Damm = viele Blöcke)
     MIN_EXTENT: 1.6, // m — schmalere Werke (Baum-Stämme, Deko-Säulen) stauen nichts (Perf-Vorfilter)
 });
+// DIE BOX, DIE STAUEN KANN (Leser: die Qualifikation (b) in `_stauWorkClusters` und der Cache-Wurf in `_blockerStampReach`):
+// geschlossen (in BEIDEN Achsen mindestens eine Sim-Zelle `zelle`) und dicht — wer keine Wasser-Zelle stempelt (`stempelfrei`:
+// der Wagen, die Pflanze, die Brücke mit Durchlass), hält auch kein Becken. Bis hier galt der fahrende Wagen als Damm: jede
+// Erneuerung seiner Boxen warf den Cluster-Cache, und der Haupt-Faden rechnete je Bild die Werke ALLER Bauten neu (Messort
+// stadt, Null-Renderer, je Takt: `_stauFelder` steht 0,42 ms, geht 0,77 ms; vor dem Verkehr 0,002 und 0,12).
+AnazhRealm._stauBox = (a, zelle) => !a.stempelfrei && Math.min(a.maxX - a.minX, a.maxZ - a.minZ) >= zelle;

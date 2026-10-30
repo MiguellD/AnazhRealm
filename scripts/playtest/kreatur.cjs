@@ -219,9 +219,7 @@ async function checkBandV1754PlayerAttack({ page, check }) {
         const p = st.player;
         const pm = st.playerMesh.position;
         const e = p.emotions;
-        const setEmo = (o) => {
-            for (const k of Object.keys(e)) e[k] = o[k] || 0;
-        };
+        const setEmo = (o) => __emo(p, o);
         const savedEmo = { ...e };
         const savedLastAtk = p.lastAttackAt;
         const savedInv = JSON.parse(JSON.stringify(p.inventory));

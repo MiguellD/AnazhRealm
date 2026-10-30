@@ -1657,26 +1657,26 @@ const BRANDLAUF = process.argv.includes("--brand");
                                     Math.hypot(b.position.x - ox, b.position.z - oz)
                             )
                             .slice(0, 5);
-                        const saveEigen = Object.prototype.hasOwnProperty.call(r, "saveState");
                         const saveRoh = r.saveState;
                         let saves = 0;
                         let saveMs = 0;
-                        r.saveState = function () {
-                            const t2 = performance.now();
-                            saves++;
-                            try {
-                                return saveRoh.apply(this, arguments);
-                            } finally {
-                                saveMs += performance.now() - t2;
-                            }
-                        };
+                        const zurueck = leihe(r, {
+                            saveState() {
+                                const t2 = performance.now();
+                                saves++;
+                                try {
+                                    return saveRoh.apply(this, arguments);
+                                } finally {
+                                    saveMs += performance.now() - t2;
+                                }
+                            },
+                        });
                         try {
                             let ab = 0;
                             for (const e of natur) if (r.removeArchitecture(e)) ab++;
                             O.raeumung = { abbau: ab, saves, saveMs: +saveMs.toFixed(1) };
                         } finally {
-                            if (saveEigen) r.saveState = saveRoh;
-                            else delete r.saveState;
+                            zurueck();
                         }
                     } finally {
                         core.planForestCell = pfcRoh;
@@ -1886,7 +1886,6 @@ const BRANDLAUF = process.argv.includes("--brand");
                         const sz = Math.round(pm.z);
                         const sy = r._voxelSurfaceY(sx, sz);
                         const A = { ort: [sx, sz], gelegt: false, dirty: 0, takte: 0, heil: false, sync: [] };
-                        const bauEigen = Object.prototype.hasOwnProperty.call(r, "_buildVoxelChunkData");
                         const bauRoh = r._buildVoxelChunkData;
                         let imTakt = false;
                         const kette = () =>
@@ -1897,15 +1896,17 @@ const BRANDLAUF = process.argv.includes("--brand");
                                 .slice(1, 5)
                                 .reverse()
                                 .join(" › ");
-                        r._buildVoxelChunkData = function () {
-                            const t4 = performance.now();
-                            try {
-                                return bauRoh.apply(this, arguments);
-                            } finally {
-                                const ms = performance.now() - t4;
-                                if (imTakt) A.sync.push({ ms: +ms.toFixed(1), kette: kette() });
-                            }
-                        };
+                        const zurueck = leihe(r, {
+                            _buildVoxelChunkData() {
+                                const t4 = performance.now();
+                                try {
+                                    return bauRoh.apply(this, arguments);
+                                } finally {
+                                    const ms = performance.now() - t4;
+                                    if (imTakt) A.sync.push({ ms: +ms.toFixed(1), kette: kette() });
+                                }
+                            },
+                        });
                         try {
                             A.gelegt = r._erdbauSetzen("gate-stand-takt-am-spieler", [
                                 {
@@ -1928,8 +1929,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                                 }
                             });
                         } finally {
-                            if (bauEigen) r._buildVoxelChunkData = bauRoh;
-                            else delete r._buildVoxelChunkData;
+                            zurueck();
                         }
                         O.amSpieler = A;
                     }
@@ -1947,27 +1947,26 @@ const BRANDLAUF = process.argv.includes("--brand");
                     // (`_tickWaldPlan`) — gezählt, was ein anderer Aufrufer am Stück plant, mit dem Namen des ersten
                     const core = globalThis.__phytoCore;
                     const roh = core.planForestCell;
-                    const jobEigen = Object.prototype.hasOwnProperty.call(r, "_tickWaldPlan");
-                    const jobRoh = r._tickWaldPlan;
+                    const [jobRoh, anRoh] = [r._tickWaldPlan, r._waldDartsAn];
                     const W = { imJob: 0, aussen: 0, ms: 0, taeter: null, maxTakt: 0 };
                     let tiefe = 0;
                     let jetztTakt = 0;
-                    r._tickWaldPlan = function () {
-                        tiefe++;
-                        try {
-                            return jobRoh.apply(this, arguments);
-                        } finally {
-                            tiefe--;
-                        }
-                    };
                     // der Rechner der Schlange ist der Wald-Faden: seine Lieferungen (`_waldDartsAn`) plante die
                     // Schlange — sie zählen wie ihre Zellen im Job
-                    const anEigen = Object.prototype.hasOwnProperty.call(r, "_waldDartsAn");
-                    const anRoh = r._waldDartsAn;
-                    r._waldDartsAn = function (memo, zellen, res) {
-                        if (res && zellen) W.imJob += zellen.length / 2;
-                        return anRoh.apply(this, arguments);
-                    };
+                    const zurueck = leihe(r, {
+                        _tickWaldPlan() {
+                            tiefe++;
+                            try {
+                                return jobRoh.apply(this, arguments);
+                            } finally {
+                                tiefe--;
+                            }
+                        },
+                        _waldDartsAn(memo, zellen, res) {
+                            if (res && zellen) W.imJob += zellen.length / 2;
+                            return anRoh.apply(this, arguments);
+                        },
+                    });
                     core.planForestCell = function () {
                         const t5 = performance.now();
                         try {
@@ -2001,10 +2000,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                         nach = await bisDa("der Wald am fremden Ort", () => false, 240, gang);
                     } finally {
                         core.planForestCell = roh;
-                        if (jobEigen) r._tickWaldPlan = jobRoh;
-                        else delete r._tickWaldPlan;
-                        if (anEigen) r._waldDartsAn = anRoh;
-                        else delete r._waldDartsAn;
+                        zurueck();
                     }
                     W.ms = +W.ms.toFixed(1);
                     aus.strom = {

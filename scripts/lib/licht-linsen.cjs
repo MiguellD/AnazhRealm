@@ -2187,7 +2187,7 @@ function luftTiefe(o) {
             const szene = z < 1 && Math.abs(q.set(nx, ny, z).applyMatrix4(D.iv).distanceTo(cam.position) / t - 1) <= 0.15;
             return { d: t, szene, g: Math.exp(-(gy - (st.waterLevel || 0)) / Hs) * (Math.abs(k) < 1e-3 ? 1 - k / 2 : (1 - Math.exp(-k)) / k) };
         };
-        const bRef = R.rayleigh.map((x) => -Math.log(R.kontrast) / R.sichtKlarM - R.rayleigh[1] + x);
+        const bRef = luftBetaRef(R);
         const uhr = (u) => {
             if (st.world) st.world.timeOfDay = u;
             if (r.setTimeOfDay(u, "human") !== true) throw new Error(`__luftTiefe: die Uhr nimmt den Spieler nicht (${u})`);
@@ -2295,6 +2295,26 @@ function luftTiefe(o) {
     })();
 }
 
+// DIE EXTINKTION DER REFERENZ je Kanal (1/m): Rayleigh (Bucholtz) und das Aerosol der klaren Sicht (Koschmieder bei 550 nm)
+// nach Ångström (`aerosol`, AERONET) — die Messung (in der Seite), das Urteil und der Selbsttest lesen sie hier.
+function luftBetaRef(R) {
+    const a = -Math.log(R.kontrast) / R.sichtKlarM - R.rayleigh[1];
+    return R.rayleigh.map((x, c) => x + a * (R.aerosol.wellenNm[c] / 550) ** -R.aerosol.angstroem);
+}
+
+// DER ABSTAND ZUR TAGESLICHT-ORTSKURVE (w4-ferne-blau): Duv einer linearen sRGB-Farbe (D65) gegen die CIE-Kurve des
+// gemessenen Tageslichts (Judd, MacAdam, Wyszecki 1964: y = 2,87x − 3x² − 0,275 in xy) in uv (1960), grüner als die Kurve
+// positiv — der Ton (HSV) eines fast weißen Horizonts springt mit jedem Promille, Duv nicht. Der Abstand ist das Lot auf die
+// Tangente der Kurve am x der Farbe (gegen die Suche des nächsten Kurvenpunkts gleich auf 4 Stellen); die Zeilen X und
+// X+Y+Z der sRGB-Matrix (IEC 61966-2-1), Y ist `luma709`.
+function duvTageslicht(c) {
+    const uv = (x, y = x * (2.87 - 3 * x) - 0.275) => [4 * x, 6 * y].map((w) => w / (12 * y - 2 * x + 3));
+    const S = 0.6443 * c[0] + 1.192 * c[1] + 1.2032 * c[2];
+    const x = (0.4124 * c[0] + 0.3576 * c[1] + 0.1805 * c[2]) / S;
+    const [u, v] = uv(x, luma709(c) / S), [a, b] = uv(x), [e, f] = uv(x + 1e-3);
+    return +(((v - b) * (e - a) - (u - a) * (f - b)) / Math.hypot(e - a, f - b)).toFixed(4);
+}
+
 // DAS URTEIL DER LUFT (die Bänder in spec/farbe/luft-referenz.json): K1-1 KOSCHMIEDER, K1-2 JE KANAL (Δβ blau−rot gegen die
 // Referenz, grau = 0) · FARBTON, K2-1 KANTE; was die Referenz `offen` nennt, steht OFFEN und hält die Wand nicht. Jede Sicht
 // (Uhr × Azimut) misst `mindest`, sonst ROT beim Namen: eine leere Messung ist nie grün.
@@ -2302,7 +2322,8 @@ function luftTiefeUrteil(m, R) {
     const B = R.band;
     const M = R.mindest;
     const liste = [];
-    const dRef = R.rayleigh[2] - R.rayleigh[0];
+    const bR = luftBetaRef(R);
+    const dRef = bR[2] - bR[0];
     const gemessen = R.baenderM.map(() => 0);
     for (const u of R.uhren)
         for (const az of [0, 90, 180, 270]) {
@@ -2335,7 +2356,7 @@ function luftTiefeUrteil(m, R) {
         const d = Math.max(r, g, b) - Math.min(r, g, b);
         const h = d > 0 && b >= Math.max(r, g) ? +(60 * ((r - g) / d + 4)).toFixed(1) : null;
         if (!(Math.abs(h - R.himmel.ton) <= B.himmelTon))
-            liste.push(`K1-2 HIMMEL Azimut ${z.az}°: Ton der In-Streuung ${h == null ? "nicht blau " + z.himmel : h + "°"} statt ${R.himmel.ton}° ±${B.himmelTon}`);
+            liste.push(`K1-2 HIMMEL Azimut ${z.az}°: Ton der In-Streuung ${h == null ? "nicht blau " + z.himmel : h + "°"} statt ${R.himmel.ton}° ±${B.himmelTon} (Duv ${duvTageslicht([r, g, b])})`);
     }
     for (const u of R.uhren) {
         const h = [0, 180].map((az) => Y((m.zeilen.find((x) => x.uhr === u && x.az === az) || {}).himmel));
@@ -2404,7 +2425,7 @@ function wetterLuftUrteil(m, R) {
 }
 
 function luftTiefeSelbsttest(R) {
-    const ref = R.rayleigh.map((x) => -Math.log(R.kontrast) / R.sichtKlarM - R.rayleigh[1] + x);
+    const ref = luftBetaRef(R);
     const sichten = (dk, C, n = 50, linie = 0, seite = 1.3, himmel = [0.7, 0.79, 1]) =>
         R.uhren.flatMap((uhr) =>
             [0, 90, 180, 270].map((az) => ({
@@ -2433,7 +2454,7 @@ function luftTiefeSelbsttest(R) {
         urteil(sichten(k, 0.005, 50, R.band.linie)).staffel["K2-2"] === "ROT" || "eine Linie an der Schwelle ist nicht ROT",
         urteil(sichten(k, 0.005), []).staffel["K2-2"] === "ROT" || "ein fehlender Gipfel ist nicht ROT",
         urteil(sichten(k, 0.005, 50, 0, 1.15)).befunde.some((b) => /SONNENSEITE/.test(b)) || "die Sonnenseite 1,15 ist nicht ROT",
-        urteil(sichten(k, 0.005, 50, 0, 1.3, [0.39, 0.45, 0.39])).befunde.some((b) => /HIMMEL/.test(b)) || "ein grüner Horizont ist nicht ROT",
+        urteil(sichten(k, 0.005, 50, 0, 1.3, [0.39, 0.45, 0.39])).befunde.some((b) => /HIMMEL.*\(Duv 0\.008\)/.test(b)) || "ein grüner Horizont ist nicht ROT",
         urteil(sichten(k, 0.005), undefined, null).befunde.some((b) => /FERNES WEISS/.test(b)) || "ein ungemessenes fernes Weiß ist nicht ROT",
         (bild(0.05) >= 400 && bild(0.01) === 0 && bild(0.05, true) <= 8) || `Linie bei Stufe 5 % ${bild(0.05)} px, 1 % ${bild(0.01)}, Zacken ${bild(0.05, true)}`,
         (leer["K1-1"] === "ROT" && leer["K1-2"] === "ROT" && leer["K2-1"] === "ROT" && leer["K2-2"] === "ROT") || "eine leere Messung ist nicht ROT",
@@ -2803,6 +2824,7 @@ module.exports = {
     naesseSicht,
     naesseUrteil,
     kantenLinie,
+    luftBetaRef,
     luftTiefe,
     luftTiefeUrteil,
     luftTiefeSelbsttest,

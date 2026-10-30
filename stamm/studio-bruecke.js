@@ -245,7 +245,7 @@ class AnazhRealm_studio_bruecke {
     _foundryIngestBook(m) {
         if (!m || typeof m !== "object") return;
         if (this._foundry) this._foundry.buchRoh = m; // jeder Welt-Wechsel am Ort trägt es neu in die Welt (`_weltAbschied`)
-        this._foundryIngestRecipes(m.book, m.paramsByKind, m.kindPolicy);
+        this._foundryIngestRecipes(m.book, m.paramsByKind, m.kindPolicy, m.stammbaum);
         this._foundryIngestWorldParams(m.worldParams);
         this._foundryIngestRenderConfig(m.renderConfig);
         this._foundryIngestSiedlung(m.siedlung);
@@ -325,10 +325,14 @@ class AnazhRealm_studio_bruecke {
             AnazhRealm._siedlungGesetzMemo = s;
         }
     }
-    _foundryIngestRecipes(book, paramsByKind, kindPolicy) {
+    _foundryIngestRecipes(book, paramsByKind, kindPolicy, stammbaum) {
         const f = this._foundry;
         if (!f || !book || typeof book !== "object") return;
         f.recipes = book;
+        // B8 — die Tafeln des Stammbaums (je Kern Studio, Bereiche, Rezepte, Datei; die Zwillinge der Brücke): der EINE Baum
+        // (`_stammbaum`) leitet aus ihnen ab. Ein Umschlag ohne Feld (eine Alt-Brücke) trägt keinen — jedes Rezept hängt dann
+        // ohne Eltern, und die Linse nennt es.
+        f.stammbaum = stammbaum && typeof stammbaum === "object" ? stammbaum : null;
         // B4-Regler-Tabellen der Kerne je kind (id/lab/min/max/step/def/law/grp): die Werkstatt rendert ihre
         // Slider daraus. must-ignore: Alt-Brücke ohne Feld → {} (keine Studio-Regler).
         f.paramsByKind = paramsByKind && typeof paramsByKind === "object" ? paramsByKind : {};
@@ -1332,67 +1336,7 @@ class AnazhRealm_studio_bruecke {
     // Die Foundry-Art einer Grammatik-Spezies (Bäume, Sträucher …): ihre Fernstufe ist die Karte, die die Welt aus der L1
     // derselben Art bäckt (`_karteWeltBacken`).
     _foundryPresetFor(species) {
-        const map = {
-            // Baeume
-            baum_eiche: "eiche",
-            baum_fichte: "fichte",
-            baum_tanne: "tanne",
-            baum_birke: "birke",
-            baum_weide: "weide",
-            baum_mammut: "mammut",
-            baum_kiefer: "fichte",
-            // Wald-Nischen (_forestCellDarts) auf Vorlagen-Arten: baum_erle → weide. Buche und Karst-Baum sind seit 04.10.
-            // eigene Studio-Arten (die Aliase auf Mammut und belaubte Eiche fielen), die Mammut-Nische des Wald-Generators
-            // heißt baum_mammut. Stehendes Totholz hat in der Welt keinen Erzeuger (der Alias baum_totholz → eiche fiel
-            // 05.10. mit der Grammatik-Art); die Studio-Art totholz pflanzt der Labor-Wald.
-            baum_erle: "weide",
-            baum_buche: "buche",
-            baum_karst: "karst",
-            // Restliche Wald-Nischen (`_scatterSpeciesForLayer`) auf die nächste Studio-Art: Zypresse (schlanke
-            // Konifere) → tanne, Palme (Einzelstamm mit Krone) → weide.
-            baum_zypresse: "tanne",
-            baum_palme: "weide",
-            // Fels: ALLE 6 Vorlagen-Stein-Rezepte (emitRock), nach Charakter verteilt — vorher
-            // fielen sediment/zacken/geroell durch (nur findling/basalt genutzt = Rueckzug).
-            // findling = runder Findling:
-            noiserock: "findling",
-            findling: "findling",
-            // basalt = Saeulen:
-            stein_block: "basalt",
-            stein: "basalt",
-            // sediment = Schichtfels (geschichtet):
-            fels: "sediment",
-            fels_var: "sediment",
-            schichtfels: "sediment",
-            sediment: "sediment",
-            // zacken = Felszacken (schroffe Tuerme/Boegen):
-            felsturm: "zacken",
-            felszacken: "zacken",
-            felsbogen: "zacken",
-            zacken: "zacken",
-            // geroell = Geroellhalde (Schutt/Talus/Kiesel):
-            geroell: "geroell",
-            talus: "geroell",
-            felsbrocken: "geroell",
-            kiesel: "geroell",
-            // Kristall (emitCrystals)
-            kristall_geode: "kristalle",
-            geode: "kristalle",
-            kristall: "kristalle",
-            kristalle: "kristalle",
-            kristall_var: "kristalle",
-            // Blume (emitFlower) + Strauch — die Bodenflora der Streu-Regionen (blume_gross); die Arten-Namen des gefallenen
-            // Klein-Vegetations-Zwillings (Tulpe · Klee · Mohn) fielen mit ihm (Waldboden 04.10.).
-            blume_gross: "blume",
-            blume: "blume",
-            // Straeucher -> Vorlagen-strauch (LOD haelt die Perf: lod2 ~16k Verts; die Distanz-
-            // LOD-Wahl gibt dem fernen Busch die leichte Stufe, instanziert).
-            busch_hazel: "strauch",
-            busch: "strauch",
-            // Das Kraut-Stratum feuchter Senken (`_scatterSpeciesForLayer` moisture>0.55) ist der Studio-Farn (Waldboden
-            // 04.10., integriert 05.10.): der Alias auf den Strauch fiel wie Buche, Karst-Baum und Totholz.
-            farn_busch: "farn",
-        };
+        const map = AnazhRealm.STREU_NAMEN;
         if (map[species]) return map[species];
         // Generische Regel hinter der Tabelle: `baum_<preset>`/`<preset>` mit Preset im LIVE-Rezeptbuch
         // (`f.recipes`) löst ohne Tabellen-Edit auf; die Tabelle trägt nur historische Namen (baum_kiefer …).
@@ -1414,6 +1358,253 @@ class AnazhRealm_studio_bruecke {
         }
         return null;
     }
+    // DER STAMMBAUM (Studio-Vertrag B8, studios.K5): der EINE Katalog der Teile, aus den Gesetzbüchern abgeleitet, nie von Hand
+    // gepflegt — Studio → Bereich → Teil. Je Kern seine Tafel aus dem Umschlag (`f.stammbaum`: der Name des Studios, je Art der
+    // Name ihres Bereichs, die Vertrags-Datei, die Rezepte in der Reihe des Buchs), je Rezept ein Teil samt seinem ZIEL, dem
+    // Werk-Ziel, das ihn in die Welt legt. Die Regel des Ziels steht NUR hier, der Wort-Katalog der KI (`_studioWortKatalog`) und
+    // die Werkstatt-Bibliothek (`_workshopRenderBlueprintList`) lesen sie: eine Art mit Präfix über ihr Präfix (ein Tor-Wort fällt
+    // nie auf das welt_-Portal derselben Gestalt — ein echtes Tor mit Trigger, kein Bauwerk), eine Art mit Werk-Verb (KIND_POLICY
+    // `werk`: die Gattung, der Körper, der Klang) als ihr eigenes Werk-Ziel, sonst der Bauplan, der ihre Gestalt trägt (die
+    // Ausstattung: feuerstelle → glutbrunnen), sonst der erste Bauplan ihrer Studio-Art (`_foundryPresetForEntry`: der Fels). Die
+    // sichtbaren Baupläne ohne Rezept hängen, woher sie kommen: die eigenen des Spielers in der Werkstatt, die Tore in die Welten
+    // im Ultiversum (`portalMeta` aus `WORLD_REGISTRY`), die übrigen des Wirts nach ihrer Rolle — ohne Gestalt aus einem Buch sind
+    // sie die WAISEN. Je Knoten die Quelle (`datei` · `anker`; die Zeile löst gate:nervensystem S) und je Teil sein Leser
+    // (`konsum`): `werk` (der Bauplan des Ziels) · `wesen` · `praegung` · `streu` (die Nah-Streu, ein Name der Streu
+    // `STREU_NAMEN`) · `welt` (das Platz-Gesetz führt in den Wald- oder Siedlungs-Kanal); null ist ein toter Knoten. Ein
+    // Zwilling steht beim Namen: ein Rezept unter einer schon vergebenen id (die Brücke nimmt es nicht) oder ein zweiter
+    // eingebauter Träger einer Gestalt neben ihrem Ziel. Gemerkt je Buch, Tafel und dem Stand, den der Baum liest.
+    // { wurzeln: [Studio → Bereich → Teil], teile, teilVon: Rezept → Teil, zielVon: Ziel → Teil, befund }
+    _stammbaum() {
+        const bps = this.state.blueprints || {};
+        const f = this._foundry;
+        const recipes = f && f.recipes ? f.recipes : {};
+        const tafel = (f && f.stammbaum) || null;
+        // DER STAND des Merkers: je Bauplan sein Name und jedes Feld, das seinen Platz im Baum setzt — nie ihre Zahl (bis 30.10.
+        // lieferte ein Tausch bei gleicher Zahl, ein Werk fällt und ein anderes kommt, den alten Baum, und die Bibliothek brach
+        // an der Zeile des neuen; die Teil-Edits zählen nicht, der Baum liest keine Teile). Flach in der Reihe des Speichers und
+        // Feld für Feld verglichen: ein Treffer liest nur (je Wort des Prompts einer; ein Stand als String mit sortierten Namen
+        // kostete 115 µs je Treffer und hob das Prompt von 4,4 auf 19,6 ms), sortiert wird nur beim Neubau
+        const stand = [];
+        for (const n of Object.keys(bps)) {
+            const b = bps[n] || {};
+            const welt = b.portalMeta ? "@" + b.portalMeta.world : null;
+            stand.push(
+                n,
+                b.label,
+                b.role,
+                b.builtIn,
+                b.donorOnly,
+                welt,
+                b.studioGestalt,
+                b._formClass,
+                b._foundryAutoSpecies
+            );
+        }
+        const cfg = AnazhRealm._studioRenderConfig || null;
+        const alt = this._stammbaumMerker;
+        if (
+            alt &&
+            alt.recipes === recipes &&
+            alt.tafel === tafel &&
+            alt.cfg === cfg &&
+            alt.stand.length === stand.length &&
+            alt.stand.every((v, i) => v === stand[i])
+        )
+            return alt;
+        const namen = Object.keys(bps).sort();
+        const KP = AnazhRealm.KIND_POLICY;
+        const istTor = (n) => !bps[n] || bps[n].role === "portal";
+        const sichtbar = (n) => !!(n && bps[n] && this._katalogSichtbar(n, bps[n]));
+        const nachArt = {};
+        for (const n of namen) {
+            if (istTor(n) || bps[n]._foundryAutoSpecies) continue;
+            const pr = this._foundryPresetForEntry({ type: n });
+            if (pr && !nachArt[pr]) nachArt[pr] = n;
+        }
+        // die Leser der Welt ohne Bauplan: die Nah-Streu (ihre Boden-Arten) und die Namen der Streu
+        const streu = new Set(Object.values(AnazhRealm.STREU_NAMEN));
+        for (const a of (cfg && this._nahStreuArten()) || []) streu.add(a.id);
+        const gross = (w) => w.charAt(0).toUpperCase() + w.slice(1);
+        const teile = [];
+        const teilVon = new Map();
+        const zielVon = new Map();
+        const teil = (id, kern, datei) => {
+            const rec = recipes[id];
+            const pol = KP[rec.kind];
+            const werk = (pol && pol.werk) || null;
+            let ziel = null;
+            if (pol && pol.prefix) ziel = bps[pol.prefix + id] ? pol.prefix + id : null;
+            else if (werk) ziel = id;
+            else
+                ziel =
+                    namen.find((n) => !istTor(n) && bps[n].studioGestalt === id && !bps[n]._foundryAutoSpecies) ||
+                    nachArt[id] ||
+                    null;
+            const kanal = this._placeDispatch(this._placePolicyFor(rec));
+            const t = {
+                id: "rezept:" + id,
+                ebene: "teil",
+                rezept: id,
+                art: rec.kind,
+                kern,
+                lab: (sichtbar(ziel) && bps[ziel].label) || rec.lab || gross(id),
+                ziel,
+                werk,
+                sichtbar: sichtbar(ziel),
+                konsum:
+                    werk ||
+                    (ziel
+                        ? "werk"
+                        : streu.has(id)
+                          ? "streu"
+                          : kanal === "forest" || kanal === "settlement"
+                            ? "welt"
+                            : null),
+                quelle: { datei, anker: id },
+            };
+            teile.push(t);
+            teilVon.set(id, t);
+            if (ziel && !zielVon.has(ziel)) zielVon.set(ziel, t);
+            return t;
+        };
+        // je Kern ein Studio, je Art ein Bereich — in der Reihe des Buchs; ein Rezept ohne Kern-Tafel hängt unter einer
+        // namenlosen Wurzel (ein Teil ohne Eltern, die Linse nennt es)
+        const wurzeln = [];
+        const studio = (kern, lab, datei, arten) => {
+            const s = {
+                id: "kern:" + kern,
+                ebene: "studio",
+                kern,
+                lab,
+                quelle: { datei, anker: "STAMMBAUM" },
+                kinder: [],
+            };
+            const je = new Map();
+            s.bereich = (art) => {
+                if (!je.has(art)) {
+                    const b = {
+                        id: "art:" + kern + ":" + art,
+                        ebene: "bereich",
+                        art,
+                        kern,
+                        lab: arten && typeof arten[art] === "string" ? arten[art] : null,
+                        quelle: { datei, anker: "STAMMBAUM.arten." + art },
+                        kinder: [],
+                    };
+                    je.set(art, b);
+                    s.kinder.push(b);
+                }
+                return je.get(art);
+            };
+            wurzeln.push(s);
+            return s;
+        };
+        const getafelt = new Set();
+        for (const k of (tafel && tafel.kerne) || []) {
+            const s = studio(k.kern, k.studio || null, k.datei || null, k.arten);
+            for (const id of k.rezepte || [])
+                if (recipes[id] && !getafelt.has(id)) {
+                    getafelt.add(id);
+                    s.bereich(recipes[id].kind).kinder.push(teil(id, k.kern, k.datei || null));
+                }
+        }
+        const ohneTafel = Object.keys(recipes).filter((id) => !getafelt.has(id) && recipes[id] && recipes[id].kind);
+        if (ohneTafel.length) {
+            const s = studio("?", null, null, null);
+            for (const id of ohneTafel) s.bereich(recipes[id].kind).kinder.push(teil(id, null, null));
+        }
+        // die sichtbaren Baupläne, die kein Rezept trägt: die eigenen (Werkstatt), die Tore in die Welten (Ultiversum),
+        // die des Wirts (nach Rolle); ein eingebauter Träger einer Gestalt neben ihrem Ziel ist ein Zwilling
+        const zwillinge = ((tafel && tafel.zwillinge) || []).map((z) => ({
+            art: "rezept",
+            name: z.id,
+            text: `das Rezept „${z.id}" steht in ${z.traeger} und ${z.kern}`,
+        }));
+        const werkstatt = { id: "werkstatt", ebene: "studio", lab: "Werkstatt", quelle: null, kinder: [] };
+        const ultiversum = { id: "ultiversum", ebene: "studio", lab: "Ultiversum", quelle: null, kinder: [] };
+        const wirt = { id: "wirt", ebene: "studio", lab: "Ohne Gesetzbuch", quelle: null, kinder: [] };
+        const ast = (w, id, lab) => {
+            let b = w.kinder.find((x) => x.id === id);
+            if (!b) w.kinder.push((b = { id, ebene: "bereich", lab, quelle: null, kinder: [] }));
+            return b;
+        };
+        for (const n of namen) {
+            const bp = bps[n];
+            if (!sichtbar(n) || zielVon.has(n)) continue;
+            const gestalt = this._foundryPresetForEntry({ type: n });
+            const t = {
+                id: "bauplan:" + n,
+                ebene: "teil",
+                rezept: null,
+                lab: bp.label || n,
+                ziel: n,
+                werk: null,
+                sichtbar: true,
+                konsum: "werk",
+                gestalt: gestalt && teilVon.has(gestalt) ? gestalt : null,
+                quelle: { datei: null, anker: n },
+            };
+            if (bp.role === "portal" && bp.portalMeta) {
+                t.welt = bp.portalMeta.world || null;
+                ast(ultiversum, "ultiversum:tore", "Tore in die Welten").kinder.push(t);
+            } else if (!bp.builtIn && !bp._foundryAutoSpecies) {
+                t.eigen = true;
+                ast(werkstatt, "werkstatt:eigen", "Eigene Werke").kinder.push(t);
+            } else {
+                // die deklarierte Rolle (Daten), nie die errechnete: `_displayRole` baut für die emergente Rolle Gestalt
+                // (`_makePartGeometry`) — der Baum liegt auf dem Prompt-Pfad der KI
+                const rolle = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+                t.waise = !t.gestalt;
+                ast(wirt, "wirt:" + rolle, AnazhRealm.BLUEPRINT_ROLE_LABELS[rolle] || rolle).kinder.push(t);
+                if (t.gestalt)
+                    zwillinge.push({
+                        art: "traeger",
+                        name: n,
+                        text: `„${n}" trägt die Gestalt „${t.gestalt}" neben ihrem Ziel „${teilVon.get(t.gestalt).ziel}"`,
+                    });
+            }
+            teile.push(t);
+            zielVon.set(n, t);
+        }
+        if (werkstatt.kinder.length) wurzeln.unshift(werkstatt);
+        if (ultiversum.kinder.length) wurzeln.push(ultiversum);
+        if (wirt.kinder.length) wurzeln.push(wirt);
+        // DER BEFUND (die Zahlen der Linse): Teile · mit Gesetz-Quelle (ihr Werk baut ein Buch) · ohne Eltern (ein Rezept ohne
+        // Kern-Tafel, ein namenloses Studio oder ein namenloser Bereich, ein Werk des Wirts ohne Buch) · Zwillinge · tot (kein
+        // Leser) · ohne Griff (kein Ziel, die Bibliothek legt es nicht in die Welt)
+        const ohneEltern = [];
+        for (const w of wurzeln)
+            for (const b of w.kinder)
+                for (const t of b.kinder)
+                    if (t.waise)
+                        ohneEltern.push({ name: t.ziel, text: `„${t.ziel}" (${b.lab}) trägt kein Gesetzbuch` });
+                    else if (t.rezept && (!w.lab || !b.lab))
+                        ohneEltern.push({
+                            name: t.rezept,
+                            text: `das Rezept „${t.rezept}" hängt ohne ${!w.lab ? "Studio" : "Bereich"} (Art ${t.art}, Kern ${t.kern || "?"})`,
+                        });
+        const befund = {
+            teile: teile.length,
+            mitQuelle: teile.filter((t) => t.rezept || t.gestalt).length,
+            ohneEltern,
+            zwillinge,
+            tot: teile.filter((t) => !t.konsum).map((t) => t.rezept || t.ziel),
+            ohneGriff: teile.filter((t) => !t.ziel).map((t) => t.rezept),
+        };
+        this._stammbaumMerker = {
+            recipes,
+            tafel,
+            cfg,
+            stand,
+            wurzeln,
+            teile,
+            teilVon,
+            zielVon,
+            befund,
+        };
+        return this._stammbaumMerker;
+    }
+
     // DER WORT-KATALOG (Welle L Folge, L-Wortschatz): ein Wort des Co-Schöpfers („eiche", „birken", „fachwerkhaus",
     // „häuser", „wagen") löst über den EINEN Rezept-Katalog auf — die Studio-Arten des Buchs, ihre Bauplan-Träger, das
     // Art-Gesetz (`KIND_POLICY`) und die Studios (`WORLD_REGISTRY`) —, nie über eine Hand-Liste (die Brücke STUDIO_WORT
@@ -1449,20 +1640,20 @@ class AnazhRealm_studio_bruecke {
     //   (3) die Art-Wörter des Art-Gesetzes: der Präfix-Stamm („baum", „haus", „fahrzeug") und der Stamm des Spenders,
     //       der kein eigener Bauplan ist („fahrzeug_wagen" → „wagen") → das erste Werk der Art;
     //   (4) die Studio-Namen, deren Kompositum-Kopf ein Art-Wort ist („Fachwerkhaus" → das erste Haus).
-    // Der Träger eines Rezepts: eine Art MIT Präfix nur über ihr Präfix — ein Tor-Wort fällt nie auf das welt_-Portal
-    // derselben Gestalt (ein echtes Tor mit Trigger, kein Bauwerk); sonst der Bauplan, der seine Gestalt trägt (die
-    // Ausstattung: feuerstelle → glutbrunnen), sonst der erste Bauplan seiner Studio-Art (`_foundryPresetForEntry`: der
-    // Fels). Eine Art mit Werk-Verb (KIND_POLICY `werk`: die Gattung, der Körper, der Klang) hat keinen Bauplan — ihr Rezept
-    // ist sein eigenes Werk-Ziel (KI K2: vorher war „Wolf", „Lofi", „Mensch" kein Wort der Welt). Gemerkt je Buch und
-    // Bauplan-Zahl. { stufen: [Map Wort → Werk-Ziel] ×4, artVon: Werk-Ziel → Art, woerter }.
+    // Der Träger eines Rezepts ist das Ziel seines Teils im EINEN Stammbaum (`_stammbaum`, die Regel steht dort): Satz → Wort →
+    // Knoten → Ziel → Stempel; ein zweiter Katalog entsteht nicht. Eine Art mit Werk-Verb (die Gattung, der Körper, der Klang)
+    // hat keinen Bauplan — ihr Rezept ist sein eigenes Werk-Ziel (KI K2: vorher war „Wolf", „Lofi", „Mensch" kein Wort der
+    // Welt). Gemerkt je Stammbaum, Buch und Bauplan-Zahl. { stufen: [Map Wort → Werk-Ziel] ×4, artVon: Werk-Ziel → Art, woerter }.
     _studioWortKatalog() {
         const bps = this.state.blueprints || {};
         const f = this._foundry;
         const recipes = f && f.recipes ? f.recipes : {};
         const ids = Object.keys(recipes);
-        const namen = Object.keys(bps).sort();
+        // der Stand der Baupläne (Namen, Rolle, Name im Katalog) ist der des Baums: ein neuer Baum, ein neuer Katalog
+        const baum = this._stammbaum();
         const alt = this._wortKatalogMerker;
-        if (alt && alt.recipes === recipes && alt.nRez === ids.length && alt.nBp === namen.length) return alt;
+        if (alt && alt.baum === baum && alt.recipes === recipes && alt.nRez === ids.length) return alt;
+        const namen = Object.keys(bps).sort();
         const KP = AnazhRealm.KIND_POLICY;
         const falte = AnazhRealm._wortFalten;
         const kopf = (label) =>
@@ -1473,28 +1664,14 @@ class AnazhRealm_studio_bruecke {
                 .map(falte);
         const istTor = (n) => !bps[n] || bps[n].role === "portal";
         const label = (t) => (bps[t] ? bps[t].label : recipes[t] && recipes[t].lab);
-        const nachArt = {};
-        for (const n of namen) {
-            if (istTor(n) || bps[n]._foundryAutoSpecies) continue;
-            const pr = this._foundryPresetForEntry({ type: n });
-            if (pr && !nachArt[pr]) nachArt[pr] = n;
-        }
+        // der Träger je Rezept ist das Ziel seines Teils im EINEN Stammbaum (`_stammbaum` trägt die Regel)
         const traeger = {};
         const artVon = {};
         for (const id of ids) {
-            const rec = recipes[id];
-            const pol = rec && KP[rec.kind];
-            let t = null;
-            if (pol && pol.prefix) t = bps[pol.prefix + id] ? pol.prefix + id : null;
-            else if (pol && pol.werk) t = id;
-            else if (rec)
-                t =
-                    namen.find((n) => !istTor(n) && bps[n].studioGestalt === id && !bps[n]._foundryAutoSpecies) ||
-                    nachArt[id] ||
-                    null;
+            const t = baum.teilVon.has(id) ? baum.teilVon.get(id).ziel : null;
             if (!t) continue;
             traeger[id] = t;
-            if (!artVon[t]) artVon[t] = rec.kind;
+            if (!artVon[t]) artVon[t] = recipes[id].kind;
         }
         const stufen = [new Map(), new Map(), new Map(), new Map()];
         const setze = (s, wort, ziel) => {
@@ -1560,7 +1737,7 @@ class AnazhRealm_studio_bruecke {
                     if (w.length > art.length && w.endsWith(art)) studioPaare.push([w, ziel]);
         eindeutig(3, studioPaare);
         const woerter = [...nennWoerter, ...werkWoerter];
-        this._wortKatalogMerker = { recipes, nRez: ids.length, nBp: namen.length, stufen, artVon, woerter };
+        this._wortKatalogMerker = { baum, recipes, nRez: ids.length, stufen, artVon, woerter };
         return this._wortKatalogMerker;
     }
 
@@ -1592,24 +1769,12 @@ class AnazhRealm_studio_bruecke {
     // — der Prompt nennt sie, die Antwort-Form der Welt-KI (`_kiAntwortSchema`) erlaubt GENAU sie, je Art mit ihren Reglern.
     _studioWortGruppen() {
         const K = this._studioWortKatalog();
-        const GRUPPE = {
-            tree: "Bäume",
-            rock: "Stein",
-            haus: "Häuser",
-            gate: "Tore",
-            vehicle: "Fahrzeuge",
-            ausstattung: "Ausstattung",
-            weapon: "Klingen",
-            flower: "Blumen",
-            grass: "Gras",
-            kreatur: "Tiere",
-            koerper: "Gestalt des Spielers",
-            klang: "Musik der Welt",
-        };
-        // eine Art, deren Wirts-Zeile ihr Gesetzbuch bringt (B7, `_kindPolicyVereinen`), heißt, wie das Buch sie nennt —
-        // ohne sie fiel jedes Wort einer neuen Art still aus dem Prompt (studios.K5: die KI kannte das neunte Buch nie)
-        const KP = AnazhRealm.KIND_POLICY;
-        for (const a of Object.keys(KP)) if (KP[a].kern && !GRUPPE[a]) GRUPPE[a] = KP[a].substanz.label;
+        // die Gruppen sind die Bereiche des EINEN Stammbaums (`_stammbaum`): je Art der Name, den ihr Gesetzbuch ihr gibt (B8) —
+        // der Wirt nennt keine Art, auch das neunte Buch steht unter seinem eigenen Namen im Prompt (studios.K5; bis 30.10.
+        // trug der Wirt hier eine Hand-Liste von zwölf Arten-Namen neben den Büchern)
+        const GRUPPE = {};
+        for (const w of this._stammbaum().wurzeln)
+            for (const b of w.kinder) if (b.art && b.lab && !GRUPPE[b.art]) GRUPPE[b.art] = b.lab;
         const gruppen = {};
         for (const [w, nennung] of K.woerter) {
             const ziel = this._studioBlueprintForWord(w);
@@ -3311,21 +3476,12 @@ class AnazhRealm_studio_bruecke {
             mat.userData = mat.userData || {};
             mat.userData.satzSchluessel = key;
         }
-        // DIE WIESE IST EIN DACH (licht.K1): ihr Licht trägt die Normale des Dachs — oben, zu einem Zehntel die gesehene Klinge —
-        // und die Rauheit des Dachs (1: die Klingen streuen um es, kein Spiegel einer Fläche). Mit der Klinge allein lichtete der
-        // doppelseitige Halm wie eine Wand: der Sonne zugewandt hob die Nah-Wiese die Stunde 0,33 über den Mittag (Mess-Wiese Ego,
-        // swiftshader: +0,37 EV, ohne die Nah-Wiese −1,19 EV), die Sonne 10° stand morgens 1,6 und abends 0,5 EV über ihm; das Dach
-        // mit der Rauheit der Klinge (0,7) spiegelte die Abendsonne (+0,32 EV). Hinter dem Satz-Regler: er gilt jeder Wiese.
-        if (kind === "grass") {
-            mat.normalNode = TSL.normalize(
-                TSL.mix(
-                    TSL.normalViewGeometry.mul(TSL.faceDirection),
-                    TSL.cameraViewMatrix.transformDirection(TSL.vec3(0, 1, 0)),
-                    0.9
-                )
-            );
-            mat.roughnessNode = TSL.float(1);
-        }
+        // DER HALM (w4-wiese-nah, phyto-core HALM_GESETZ): Querschnitt, Adern und Narbe je Pixel des Schirms, fern die Wiese als
+        // DACH (licht.K1: die Normale des Dachs, Rauheit 1) — EIN Gesetz (`_halmStoff`), hinter dem Satz-Regler (er gilt jeder
+        // Wiese, die Cuticula liest dessen Rauheit); das direkte Licht im Laub-Licht mit der Narbe (unten). Mit der Klinge allein
+        // lichtete der doppelseitige Halm wie eine Wand: die Nah-Wiese hob die Stunde 0,33 über den Mittag (Mess-Wiese Ego,
+        // swiftshader: +0,37 EV), das Dach mit der Rauheit der Klinge (0,7) spiegelte die Abendsonne (+0,32 EV).
+        if (kind === "grass") this._halmStoff(TSL, mat);
         // DAS MIKRO-RELIEF DER FACETTE (material.K2, `_mikroGestalt`): der facettierte Studio-Stein (Fels, Kristall: kind
         // „unknown" mit flatShading) kippt seine Facetten in den Oktaven am Schirm, gewogen mit seiner Rauheit (glatt ≤ 0,3 nichts,
         // matt ≥ 0,6 ganz) — im Satz die Rauheit je Ecke, sonst die des Stoffs
@@ -3381,7 +3537,7 @@ class AnazhRealm_studio_bruecke {
         // der Spieler biegt die Halme (uBend). Gemessen W7 (WGSL der Senke): r184 rechnet den Versatz VOR der
         // Instanzierung — Phase und Biegung lesen den Vorlagen-Raum, der Versatz dreht und skaliert mit der Instanz.
         if (kind === "grass") {
-            if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") this._grassInstanceMat();
+            this._windUniformsEnsure();
             const _sk = this._foundryWorldScaleMatrix("gras").elements[0];
             const _sway = this._windSwayOffset(TSL, { ampX: 1.5, hoehe: TSL.positionGeometry.y.mul(_sk) });
             mat.positionNode = TSL.positionLocal.add(_sway);
@@ -3393,7 +3549,7 @@ class AnazhRealm_studio_bruecke {
             // Welt, der Versatz liegt in Welt-Richtung). Jeder Teil einer Pflanze trägt denselben Versatz — Rute und
             // Laub, Stiel und Blüte bleiben verbunden; der Charakter (ampX 1,2) ist der des gefallenen
             // Klein-Vegetations-Zwillings.
-            if (!this.state.windUniforms) this._grassInstanceMat();
+            this._windUniformsEnsure();
             const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.attribute("aWiege", "float") });
             mat.positionNode = TSL.positionLocal.add(_sway);
         }
@@ -3458,6 +3614,7 @@ class AnazhRealm_studio_bruecke {
         if (xfade && !wiegen && (isBark || kind === "foliage" || kind === "foliageTex" || kind === "schatten"))
             this._baumWindStoff(mat, kind, baum);
         if (kind === "foliage" || kind === "foliageTex") this._laubLichtStoff(mat, kind === "foliageTex");
+        else if (kind === "grass") this._laubLichtStoff(mat, false, TSL.uv().y);
         return mat;
     }
     // DAS WURF-RECHT EINES GELIEFERTEN TEILS (der EINE Leser: `_foundryBuildMesh`; gate:regler-wirkt liest ihn aus der
@@ -3597,6 +3754,70 @@ AnazhRealm.KIND_POLICY = Object.freeze({
     klang: Object.freeze({ werk: "praegung" }),
 });
 AnazhRealm.KNUTH_INVERS = 244002641;
+// DIE NAMEN DER STREU (`_foundryPresetFor`, die Tabelle vor der generischen Regel): die Spezies, unter denen Wald, Streu und
+// Scatter der Welt ein Studio-Rezept setzen (historische Namen, Nischen, Fels- und Kristall-Formen) → das Rezept, das ihre Gestalt
+// baut. Der Stammbaum (`_stammbaum`) liest sie als Leser der Streu: ein Rezept, auf das ein Name zeigt, konsumiert die Welt.
+AnazhRealm.STREU_NAMEN = Object.freeze({
+    // Baeume
+    baum_eiche: "eiche",
+    baum_fichte: "fichte",
+    baum_tanne: "tanne",
+    baum_birke: "birke",
+    baum_weide: "weide",
+    baum_mammut: "mammut",
+    baum_kiefer: "fichte",
+    // Wald-Nischen (_forestCellDarts) auf Vorlagen-Arten: baum_erle → weide. Buche und Karst-Baum sind seit 04.10.
+    // eigene Studio-Arten (die Aliase auf Mammut und belaubte Eiche fielen), die Mammut-Nische des Wald-Generators
+    // heißt baum_mammut. Stehendes Totholz hat in der Welt keinen Erzeuger (der Alias baum_totholz → eiche fiel
+    // 05.10. mit der Grammatik-Art); die Studio-Art totholz pflanzt der Labor-Wald.
+    baum_erle: "weide",
+    baum_buche: "buche",
+    baum_karst: "karst",
+    // Restliche Wald-Nischen (`_scatterSpeciesForLayer`) auf die nächste Studio-Art: Zypresse (schlanke
+    // Konifere) → tanne, Palme (Einzelstamm mit Krone) → weide.
+    baum_zypresse: "tanne",
+    baum_palme: "weide",
+    // Fels: ALLE 6 Vorlagen-Stein-Rezepte (emitRock), nach Charakter verteilt — vorher
+    // fielen sediment/zacken/geroell durch (nur findling/basalt genutzt = Rueckzug).
+    // findling = runder Findling:
+    noiserock: "findling",
+    findling: "findling",
+    // basalt = Saeulen:
+    stein_block: "basalt",
+    stein: "basalt",
+    // sediment = Schichtfels (geschichtet):
+    fels: "sediment",
+    fels_var: "sediment",
+    schichtfels: "sediment",
+    sediment: "sediment",
+    // zacken = Felszacken (schroffe Tuerme/Boegen):
+    felsturm: "zacken",
+    felszacken: "zacken",
+    felsbogen: "zacken",
+    zacken: "zacken",
+    // geroell = Geroellhalde (Schutt/Talus/Kiesel):
+    geroell: "geroell",
+    talus: "geroell",
+    felsbrocken: "geroell",
+    kiesel: "geroell",
+    // Kristall (emitCrystals)
+    kristall_geode: "kristalle",
+    geode: "kristalle",
+    kristall: "kristalle",
+    kristalle: "kristalle",
+    kristall_var: "kristalle",
+    // Blume (emitFlower) + Strauch — die Bodenflora der Streu-Regionen (blume_gross); die Arten-Namen des gefallenen
+    // Klein-Vegetations-Zwillings (Tulpe · Klee · Mohn) fielen mit ihm (Waldboden 04.10.).
+    blume_gross: "blume",
+    blume: "blume",
+    // Straeucher -> Vorlagen-strauch (LOD haelt die Perf: lod2 ~16k Verts; die Distanz-
+    // LOD-Wahl gibt dem fernen Busch die leichte Stufe, instanziert).
+    busch_hazel: "strauch",
+    busch: "strauch",
+    // Das Kraut-Stratum feuchter Senken (`_scatterSpeciesForLayer` moisture>0.55) ist der Studio-Farn (Waldboden
+    // 04.10., integriert 05.10.): der Alias auf den Strauch fiel wie Buche, Karst-Baum und Totholz.
+    farn_busch: "farn",
+});
 // Die Faltung eines Worts für den Wort-Katalog (`_studioWortKatalog`): klein, Umlaute ausgeschrieben, ß → ss, Leer- und
 // Bindestriche → „_" (die Form der Bauplan-Namen und Rezept-ids).
 AnazhRealm._wortFalten = function (wort) {
