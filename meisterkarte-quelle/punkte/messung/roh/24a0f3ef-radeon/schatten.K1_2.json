@@ -1,0 +1,2287 @@
+{
+ "plan": "schatten.K1#2",
+ "adapter": "[linse-gpu] amd/rdna-3",
+ "schritte": {
+  "fenster": {
+   "exit": 0,
+   "json": {
+    "ms": 3,
+    "fenster": [
+     1920,
+     1080
+    ]
+   }
+  },
+  "wiese": {
+   "exit": 0,
+   "json": {
+    "ms": 40322,
+    "ort": "wiese",
+    "sicht": "ego",
+    "pose": null,
+    "welt": null,
+    "spieler": [
+     -280.4,
+     -1045.6
+    ],
+    "wiese": {
+     "messung": {
+      "x": -280.4,
+      "z": -1045.6,
+      "y": 27.48,
+      "hang": 1.81,
+      "rauh": 0.14,
+      "nass": 0,
+      "krone": 0.108,
+      "baeume": 8,
+      "kranz": 0.204,
+      "imBlick": 0,
+      "horizont": 2.6,
+      "blick": [
+       -289.6,
+       -1049.5
+      ],
+      "gras": 1
+     },
+     "befunde": []
+    },
+    "takte": 534,
+    "steht": true,
+    "chunks": 81,
+    "gier": -1.9717,
+    "dorfZug": false,
+    "ortTakt": [],
+    "dorfSchwebt": "Plan 0/18 (Zelle start)"
+   }
+  },
+  "kosten": {
+   "exit": 0,
+   "json": null,
+   "rest": "al_timestamp_render → buffer_timestamp_resolve_render 0,1× · ausserhalb: Puffer buffer_timestamp_resolve_render → buffer_timestamp_result_render 0,1×\n  Hochladen (49,4×, 0,01 MB): k0: Puffer bindingBufferundefined_UniformBuffer_#_(vertex) 3,0× 0,00 MB · haupt: Puffer bindingBuffer#_render_(vertex,fragment,compute) 17,0× 0,00 MB · haupt: Puffer bindingBufferundefined_UniformBuffer_#_(fragment) 12,0× 0,00 MB · haupt: Puffer ? 6,0× 0,00 MB · k0: Puffer bindingBuffer#_render_(vertex,fragment,compute) 3,2× · k0: Puffer ? 2,8× · k1: Puffer ? 1,5× · k1: Puffer bindingBuffer#_render_(vertex,fragment,compute) 1,2× · TRAA: Puffer bindingBuffer#_object_(vertex,fragment,compute) 1,0× · k2: Puffer bindingBuffer#_render_(vertex,fragment,compute) 0,7×\n  Submits 3,9 (Befehls-Puffer 3,9) · executeBundles 1,0 (3,0 Bundles) · setPipeline 29,3 · setBindGroup 57,0 · Leinwand 1,0\n  direkte Draws: haupt 24,0× · k0 10,0× · k1 3,3× · k2 1,5× · TRAA 1,0× · post 1,0×\n  Anlagen je Frame: createCommandEncoder 3,9 · createRenderBundleEncoder 0,1 · createBuffer 1,3 · createBindGroup 0,3 · createShaderModule 0,2\n\nZustand zurück (Sichtbarkeit, Weiche, Knoten-Haken, Ausgabe-Knoten, Pipeline-Kontext, Ketten-Graph, Pass-Uhr, Prototypen, Schatten-Flaggen) · 4.8 s\nSTEMPEL-POOL GRUEN: 0 verweigerte Abfragen in der Zerlegung (seit Boot 0, Warnung 1), Spitze 94/2048\n\nC:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\koordination\\meisterkarte-quelle\\punkte\\messung\\roh\\24a0f3ef-radeon\\schatten.K1_2.json.d\\k0.json\n"
+  },
+  "kontakt": {
+   "exit": 1,
+   "json": {
+    "0.5": {
+     "uhr": 0.5,
+     "sonneGrad": 74.2,
+     "schattenM": 0.85,
+     "posen": {
+      "ego": {
+       "linien": [
+        [
+         0.05,
+         1.1,
+         1.8,
+         1.8
+        ],
+        [
+         0.1,
+         1.29,
+         1.8,
+         1.8
+        ],
+        [
+         0.15000000000000002,
+         1.47,
+         1.8,
+         1.8
+        ],
+        [
+         0.2,
+         1.65,
+         1.8,
+         1.8
+        ],
+        [
+         0.25,
+         1.84,
+         2.1,
+         1.8
+        ],
+        [
+         0.30000000000000004,
+         2.02,
+         2.1,
+         2.1
+        ],
+        [
+         0.309283008588991,
+         2.05,
+         2.1,
+         2.1
+        ],
+        [
+         0.31856601717798205,
+         2.09,
+         2.1,
+         2.1
+        ],
+        [
+         0.32784902576697306,
+         2.12,
+         2.1,
+         2.1
+        ],
+        [
+         0.33713203435596406,
+         2.16,
+         2.1,
+         2.1
+        ],
+        [
+         0.34641504294495506,
+         2.19,
+         2.1,
+         2.1
+        ],
+        [
+         0.35569805153394607,
+         2.23,
+         2.1,
+         2.1
+        ],
+        [
+         0.36498106012293713,
+         2.26,
+         2.1,
+         2.1
+        ],
+        [
+         0.37426406871192813,
+         2.29,
+         2.1,
+         2.1
+        ],
+        [
+         0.38354707730091914,
+         2.33,
+         2.1,
+         2.1
+        ],
+        [
+         0.3928300858899102,
+         2.36,
+         2.1,
+         2.4
+        ],
+        [
+         0.4021130944789012,
+         2.4,
+         2.1,
+         2.1
+        ],
+        [
+         0.4113961030678922,
+         2.43,
+         2.1,
+         2.1
+        ],
+        [
+         0.4206791116568832,
+         2.46,
+         2.1,
+         2.1
+        ],
+        [
+         0.4299621202458742,
+         2.5,
+         2.1,
+         2.4
+        ],
+        [
+         0.4392451288348653,
+         2.53,
+         2.1,
+         2.4
+        ],
+        [
+         0.4485281374238563,
+         2.57,
+         2.1,
+         2.4
+        ]
+       ],
+       "fuss": {
+        "halbschattenCm": 1.8,
+        "kanten": 10,
+        "von": 12
+       },
+       "zuwachs": {
+        "scheibeCmJeM": 0.484,
+        "kanten": 44,
+        "von": 44,
+        "wegM": 1.4699999999999998
+       }
+      },
+      "third": {
+       "linien": [
+        [
+         0.05,
+         1.1,
+         2.1,
+         1.8
+        ],
+        [
+         0.1,
+         1.29,
+         2.1,
+         1.8
+        ],
+        [
+         0.15000000000000002,
+         1.47,
+         2.1,
+         1.8
+        ],
+        [
+         0.2,
+         1.65,
+         2.1,
+         1.8
+        ],
+        [
+         0.25,
+         1.84,
+         2.1,
+         1.8
+        ],
+        [
+         0.30000000000000004,
+         2.02,
+         2.1,
+         2.1
+        ],
+        [
+         0.309283008588991,
+         2.05,
+         2.1,
+         2.1
+        ],
+        [
+         0.31856601717798205,
+         2.09,
+         2.1,
+         2.1
+        ],
+        [
+         0.32784902576697306,
+         2.12,
+         2.1,
+         2.1
+        ],
+        [
+         0.33713203435596406,
+         2.16,
+         2.1,
+         2.1
+        ],
+        [
+         0.34641504294495506,
+         2.19,
+         2.4,
+         2.1
+        ],
+        [
+         0.35569805153394607,
+         2.23,
+         2.4,
+         2.1
+        ],
+        [
+         0.36498106012293713,
+         2.26,
+         2.7,
+         2.1
+        ],
+        [
+         0.37426406871192813,
+         2.29,
+         2.7,
+         2.1
+        ],
+        [
+         0.38354707730091914,
+         2.33,
+         2.7,
+         2.1
+        ],
+        [
+         0.3928300858899102,
+         2.36,
+         2.7,
+         2.1
+        ],
+        [
+         0.4021130944789012,
+         2.4,
+         2.7,
+         2.1
+        ],
+        [
+         0.4113961030678922,
+         2.43,
+         2.7,
+         2.1
+        ],
+        [
+         0.4206791116568832,
+         2.46,
+         2.7,
+         2.1
+        ],
+        [
+         0.4299621202458742,
+         2.5,
+         2.7,
+         2.1
+        ],
+        [
+         0.4392451288348653,
+         2.53,
+         2.7,
+         2.1
+        ],
+        [
+         0.4485281374238563,
+         2.57,
+         2.7,
+         2.1
+        ]
+       ],
+       "fuss": {
+        "halbschattenCm": 2.1,
+        "kanten": 10,
+        "von": 12
+       },
+       "zuwachs": {
+        "scheibeCmJeM": 0.604,
+        "kanten": 44,
+        "von": 44,
+        "wegM": 1.4699999999999998
+       }
+      }
+     }
+    },
+    "0.3": {
+     "uhr": 0.3,
+     "sonneGrad": 18,
+     "schattenM": 9.25,
+     "posen": {
+      "ego": {
+       "linien": [
+        [
+         0.05,
+         0.32,
+         1.5,
+         1.5
+        ],
+        [
+         0.1,
+         0.37,
+         1.8,
+         1.5
+        ],
+        [
+         0.15000000000000002,
+         0.42,
+         1.5,
+         1.5
+        ],
+        [
+         0.2,
+         0.47,
+         1.8,
+         1.5
+        ],
+        [
+         0.25,
+         0.53,
+         1.8,
+         1.5
+        ],
+        [
+         0.30000000000000004,
+         0.58,
+         1.5,
+         1.5
+        ],
+        [
+         0.8345633288594161,
+         1.14,
+         2.1,
+         2.1
+        ],
+        [
+         1.3691266577188324,
+         1.7,
+         2.1,
+         2.1
+        ],
+        [
+         1.9036899865782486,
+         2.26,
+         2.4,
+         2.4
+        ],
+        [
+         2.4382533154376644,
+         2.83,
+         2.7,
+         2.7
+        ],
+        [
+         2.9728166442970805,
+         3.39,
+         3,
+         3.3
+        ],
+        [
+         3.507379973156497,
+         3.95,
+         3.3,
+         3.3
+        ],
+        [
+         4.0419433020159135,
+         4.51,
+         3.9,
+         3.6
+        ],
+        [
+         4.576506630875329,
+         5.07,
+         3.9,
+         3.9
+        ],
+        [
+         5.1110699597347455,
+         5.64,
+         4.5,
+         3.9
+        ],
+        [
+         5.645633288594161,
+         6.2,
+         4.5,
+         4.5
+        ],
+        [
+         6.180196617453578,
+         6.76,
+         5.1,
+         5.1
+        ],
+        [
+         6.714759946312994,
+         7.32,
+         5.7,
+         5.4
+        ],
+        [
+         7.24932327517241,
+         7.88,
+         5.7,
+         5.7
+        ],
+        [
+         7.783886604031826,
+         8.45,
+         6,
+         6
+        ],
+        [
+         8.318449932891243,
+         9.01,
+         6.3,
+         6.3
+        ],
+        [
+         8.85301326175066,
+         9.57,
+         6.3,
+         6.9
+        ]
+       ],
+       "fuss": {
+        "halbschattenCm": 1.5,
+        "kanten": 10,
+        "von": 12
+       },
+       "zuwachs": {
+        "scheibeCmJeM": 0.803,
+        "kanten": 44,
+        "von": 44,
+        "wegM": 9.25
+       }
+      },
+      "third": {
+       "linien": [
+        [
+         0.05,
+         0.32,
+         2.1,
+         1.8
+        ],
+        [
+         0.1,
+         0.37,
+         2.1,
+         1.8
+        ],
+        [
+         0.15000000000000002,
+         0.42,
+         2.1,
+         1.8
+        ],
+        [
+         0.2,
+         0.47,
+         2.1,
+         1.8
+        ],
+        [
+         0.25,
+         0.53,
+         2.1,
+         1.8
+        ],
+        [
+         0.30000000000000004,
+         0.58,
+         2.1,
+         1.8
+        ],
+        [
+         0.8345633288594161,
+         1.14,
+         2.1,
+         1.8
+        ],
+        [
+         1.3691266577188324,
+         1.7,
+         2.1,
+         2.1
+        ],
+        [
+         1.9036899865782486,
+         2.26,
+         2.4,
+         2.4
+        ],
+        [
+         2.4382533154376644,
+         2.83,
+         3,
+         2.4
+        ],
+        [
+         2.9728166442970805,
+         3.39,
+         3,
+         3
+        ],
+        [
+         3.507379973156497,
+         3.95,
+         3,
+         3
+        ],
+        [
+         4.0419433020159135,
+         4.51,
+         3.3,
+         3.6
+        ],
+        [
+         4.576506630875329,
+         5.07,
+         3.9,
+         3.6
+        ],
+        [
+         5.1110699597347455,
+         5.64,
+         4.2,
+         4.2
+        ],
+        [
+         5.645633288594161,
+         6.2,
+         4.8,
+         4.5
+        ],
+        [
+         6.180196617453578,
+         6.76,
+         4.8,
+         4.8
+        ],
+        [
+         6.714759946312994,
+         7.32,
+         5.4,
+         5.4
+        ],
+        [
+         7.24932327517241,
+         7.88,
+         5.4,
+         5.4
+        ],
+        [
+         7.783886604031826,
+         8.45,
+         6,
+         6
+        ],
+        [
+         8.318449932891243,
+         9.01,
+         6,
+         6.6
+        ],
+        [
+         8.85301326175066,
+         9.57,
+         6.3,
+         6.6
+        ]
+       ],
+       "fuss": {
+        "halbschattenCm": 2.1,
+        "kanten": 10,
+        "von": 12
+       },
+       "zuwachs": {
+        "scheibeCmJeM": 0.729,
+        "kanten": 44,
+        "von": 44,
+        "wegM": 9.25
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "dateien": {
+  "kosten": {
+   "echt": true,
+   "boot": {
+    "art": "zweit",
+    "serie": null,
+    "ladungen": 2
+   },
+   "inventur": {
+    "zensus": {
+     "klassen": [
+      {
+       "klasse": "f:tanne:L0",
+       "stufe": 0,
+       "art": "tree",
+       "cmd": 12,
+       "tris": 26292,
+       "je": {
+        "haupt": 12
+       },
+       "jeTris": {
+        "haupt": 26292
+       },
+       "inst": 6,
+       "exemplare": 2,
+       "dMin": 8,
+       "dMax": 21
+      },
+      {
+       "klasse": "tier:?",
+       "stufe": null,
+       "art": null,
+       "cmd": 11,
+       "tris": 68886,
+       "je": {
+        "k0": 1,
+        "k1": 1,
+        "k2": 1,
+        "haupt": 8
+       },
+       "jeTris": {
+        "k0": 5194,
+        "k1": 5194,
+        "k2": 5194,
+        "haupt": 53304
+       },
+       "inst": 0,
+       "exemplare": 0,
+       "dMin": null,
+       "dMax": null
+      },
+      {
+       "klasse": "f:tanne:L1",
+       "stufe": 1,
+       "art": "tree",
+       "cmd": 10,
+       "tris": 19414,
+       "je": {
+        "haupt": 4,
+        "k0": 3,
+        "k1": 3
+       },
+       "jeTris": {
+        "haupt": 12180,
+        "k0": 2996,
+        "k1": 4238
+       },
+       "inst": 14,
+       "exemplare": 4,
+       "dMin": 21,
+       "dMax": 56
+      },
+      {
+       "klasse": "fscatter:fichte:L1",
+       "stufe": 1,
+       "art": "tree",
+       "cmd": 8,
+       "tris": 8460,
+       "je": {
+        "haupt": 4,
+        "k1": 2,
+        "k2": 2
+       },
+       "jeTris": {
+        "haupt": 5600,
+        "k1": 1430,
+        "k2": 1430
+       },
+       "inst": 6,
+       "exemplare": 3,
+       "dMin": 69,
+       "dMax": 106
+      },
+      {
+       "klasse": "streuSatz",
+       "stufe": null,
+       "art": null,
+       "cmd": 8,
+       "tris": 31665,
+       "je": {
+        "k0": 2,
+        "k1": 2,
+        "haupt": 4
+       },
+       "jeTris": {
+        "k0": 3970,
+        "k1": 2690,
+        "haupt": 25005
+       },
+       "inst": 0,
+       "exemplare": 0,
+       "dMin": null,
+       "dMax": null
+      },
+      {
+       "klasse": "f:eiche:L1",
+       "stufe": 1,
+       "art": "tree",
+       "cmd": 7,
+       "tris": 5472,
+       "je": {
+        "haupt": 4,
+        "k0": 1,
+        "k1": 2
+       },
+       "jeTris": {
+        "haupt": 3746,
+        "k0": 484,
+        "k1": 1242
+       },
+       "inst": 6,
+       "exemplare": 2,
+       "dMin": 23,
+       "dMax": 72
+      },
+      {
+       "klasse": "f:fichte:L1",
+       "stufe": 1,
+       "art": "tree",
+       "cmd": 7,
+       "tris": 10374,
+       "je": {
+        "haupt": 2,
+        "k0": 2,
+        "k1": 2,
+        "k2": 1
+       },
+       "jeTris": {
+        "haupt": 5688,
+        "k0": 946,
+        "k1": 3278,
+        "k2": 462
+       },
+       "inst": 6,
+       "exemplare": 3,
+       "dMin": 34,
+       "dMax": 79
+      },
+      {
+       "klasse": "f:strauch:L1",
+       "stufe": 1,
+       "art": "shrub",
+       "cmd": 6,
+       "tris": 9748,
+       "je": {
+        "haupt": 2,
+        "k0": 2,
+        "k1": 2
+       },
+       "jeTris": {
+        "haupt": 3060,
+        "k0": 2608,
+        "k1": 4080
+       },
+       "inst": 6,
+       "exemplare": 2,
+       "dMin": 18,
+       "dMax": 24
+      },
+      {
+       "klasse": "spieler",
+       "stufe": null,
+       "art": null,
+       "cmd": 5,
+       "tris": 13517,
+       "je": {
+        "k0": 5
+       },
+       "jeTris": {
+        "k0": 13517
+       },
+       "inst": 0,
+       "exemplare": 0,
+       "dMin": null,
+       "dMax": null
+      },
+      {
+       "klasse": "f:mammut:L1",
+       "stufe": 1,
+       "art": "tree",
+       "cmd": 4,
+       "tris": 3192,
+       "je": {
+        "haupt": 2,
+        "k1": 1,
+        "k2": 1
+       },
+       "jeTris": {
+        "haupt": 2340,
+        "k1": 426,
+        "k2": 426
+       },
+       "inst": 2,
+       "exemplare": 1,
+       "dMin": 67,
+       "dMax": 67
+      },
+      {
+       "klasse": "fscatter:tanne:L1",
+       "stufe": 1,
+       "art": "tree",
+       "cmd": 4,
+       "tris": 2524,
+       "je": {
+        "haupt": 2,
+        "k1": 1,
+        "k2": 1
+       },
+       "jeTris": {
+        "haupt": 1696,
+        "k1": 414,
+        "k2": 414
+       },
+       "inst": 2,
+       "exemplare": 1,
+       "dMin": 72,
+       "dMax": 72
+      },
+      {
+       "klasse": "formationenSatz",
+       "stufe": null,
+       "art": null,
+       "cmd": 4,
+       "tris": 14720,
+       "je": {
+        "k0": 1,
+        "k1": 1,
+        "k2": 1,
+        "haupt": 1
+       },
+       "jeTris": {
+        "k0": 960,
+        "k1": 5760,
+        "k2": 3840,
+        "haupt": 4160
+       },
+       "inst": 0,
+       "exemplare": 0,
+       "dMin": null,
+       "dMax": null,
+       "inhalt": {
+        "k0": [
+         {
+          "klasse": "f:zacken:L0",
+          "stufe": 0,
+          "art": "rock",
+          "zellen": 3,
+          "tris": 960,
+          "eintraege": [
+           13,
+           14,
+           17
+          ]
+         }
+        ],
+        "k1": [
+         {
+          "klasse": "f:zacken:L0",
+          "stufe": 0,
+          "art": "rock",
+          "zellen": 18,
+          "tris": 5760,
+          "eintraege": [
+           22,
+           24,
+           226,
+           265,
+           367,
+           380,
+           14,
+           282,
+           17,
+           95,
+           340,
+           123,
+           290,
+           267,
+           301,
+           183,
+           181,
+           300
+          ]
+         }
+        ],
+        "k2": [
+         {
+          "klasse": "f:zacken:L0",
+          "stufe": 0,
+          "art": "rock",
+          "zellen": 10,
+          "tris": 3200,
+          "eintraege": [
+           367,
+           380,
+           95,
+           340,
+           290,
+           409,
+           267,
+           301,
+           181,
+           300
+          ]
+         },
+         {
+          "klasse": "lücke",
+          "stufe": null,
+          "art": null,
+          "zellen": 0,
+          "tris": 640,
+          "eintraege": []
+         }
+        ],
+        "haupt": [
+         {
+          "klasse": "f:zacken:L0",
+          "stufe": 0,
+          "art": "rock",
+          "zellen": 13,
+          "tris": 4160,
+          "eintraege": [
+           22,
+           265,
+           367,
+           380,
+           282,
+           95,
+           340,
+           290,
+           409,
+           267,
+           301,
+           181,
+           300
+          ]
+         }
+        ]
+       }
+      },
+      {
+       "klasse": "f:birke:L1",
+       "stufe": 1,
+       "art": "tree",
+       "cmd": 4,
+       "tris": 2714,
+       "je": {
+        "k0": 1,
+        "k1": 1,
+        "haupt": 2
+       },
+       "jeTris": {
+        "k0": 232,
+        "k1": 232,
+        "haupt": 2250
+       },
+       "inst": 2,
+       "exemplare": 1,
+       "dMin": 24,
+       "dMax": 24
+      },
+      {
+       "klasse": "bodenSatz",
+       "stufe": null,
+       "art": null,
+       "cmd": 4,
+       "tris": 34708,
+       "je": {
+        "k0": 1,
+        "k1": 1,
+        "k2": 1,
+        "haupt": 1
+       },
+       "jeTris": {
+        "k0": 2815,
+        "k1": 11622,
+        "k2": 9277,
+        "haupt": 10994
+       },
+       "inst": 0,
+       "exemplare": 0,
+       "dMin": null,
+       "dMax": null
+      },
+      {
+       "klasse": "fern-ring",
+       "stufe": null,
+       "art": null,
+       "cmd": 4,
+       "tris": 39936,
+       "je": {
+        "haupt": 4
+       },
+       "jeTris": {
+        "haupt": 39936
+       },
+       "inst": 0,
+       "exemplare": 0,
+       "dMin": null,
+       "dMax": null
+      },
+      {
+       "klasse": "bauWurf",
+       "stufe": null,
+       "art": null,
+       "cmd": 3,
+       "tris": 1032,
+       "je": {
+        "k0": 1,
+        "k1": 1,
+        "k2": 1
+       },
+       "jeTris": {
+        "k0": 72,
+        "k1": 600,
+        "k2": 360
+       },
+       "inst": 0,
+       "exemplare": 0,
+       "dMin": null,
+       "dMax": null,
+       "inhalt": {
+        "k0": [
+         {
+          "klasse": "f:feuerstelle:L3",
+          "stufe": 3,
+          "art": "ausstattung",
+          "zellen": 3,
+          "tris": 72,
+          "eintraege": [
+           19,
+           15,
+           18
+          ]
+         }
+        ],
+        "k1": [
+         {
+          "klasse": "f:feuerstelle:L3",
+          "stufe": 3,
+          "art": "ausstattung",
+          "zellen": 25,
+          "tris": 600,
+          "eintraege": [
+           19,
+           20,
+           26,
+           78,
+           110,
+           143,
+           151,
+           165,
+           180,
+           200,
+           209,
+           250,
+           270,
+           317,
+           15,
+           18,
+           21,
+           23,
+           25,
+           27,
+           84,
+           152,
+           185,
+           238,
+           256
+          ]
+         }
+        ],
+        "k2": [
+         {
+          "klasse": "f:feuerstelle:L3",
+          "stufe": 3,
+          "art": "ausstattung",
+          "zellen": 15,
+          "tris": 360,
+          "eintraege": [
+           110,
+           143,
+           151,
+           165,
+           180,
+           200,
+           209,
+           250,
+           270,
+           317,
+           84,
+           152,
+           185,
+           238,
+           256
+          ]
+         }
+        ]
+       }
+      },
+      {
+       "klasse": "bauSatz",
+       "stufe": null,
+       "art": null,
+       "cmd": 2,
+       "tris": 13685,
+       "je": {
+        "haupt": 2
+       },
+       "jeTris": {
+        "haupt": 13685
+       },
+       "inst": 0,
+       "exemplare": 0,
+       "dMin": null,
+       "dMax": null,
+       "inhalt": {
+        "haupt": [
+         {
+          "klasse": "f:feuerstelle:L1",
+          "stufe": 1,
+          "art": "ausstattung",
+          "zellen": 46,
+          "tris": 13685,
+          "eintraege": [
+           19,
+           20,
+           26,
+           78,
+           110,
+           143,
+           151,
+           165,
+           180,
+           200,
+           209,
+           250,
+           270,
+           317,
+           21,
+           23,
+           25,
+           27,
+           84,
+           152,
+           185,
+           238,
+           256
+          ]
+         }
+        ]
+       }
+      },
+      {
+       "klasse": "nahWiese:L1",
+       "stufe": 1,
+       "art": null,
+       "cmd": 2,
+       "tris": 40638,
+       "je": {
+        "haupt": 2
+       },
+       "jeTris": {
+        "haupt": 40638
+       },
+       "inst": 53,
+       "exemplare": 48,
+       "dMin": 3,
+       "dMax": 5
+      },
+      {
+       "klasse": "nahWiese:L2",
+       "stufe": 2,
+       "art": null,
+       "cmd": 2,
+       "tris": 36802,
+       "je": {
+        "haupt": 2
+       },
+       "jeTris": {
+        "haupt": 36802
+       },
+       "inst": 353,
+       "exemplare": 316,
+       "dMin": 5,
+       "dMax": 16
+      },
+      {
+       "klasse": "feld-pass",
+       "stufe": null,
+       "art": null,
+       "cmd": 2,
+       "tris": 13,
+       "je": {
+        "haupt": 2
+       },
+       "jeTris": {
+        "haupt": 13
+       },
+       "inst": 0,
+       "exemplare": 0,
+       "dMin": null,
+       "dMax": null
+      },
+      {
+       "klasse": "Render Pipeline",
+       "stufe": null,
+       "art": null,
+       "cmd": 1,
+       "tris": 1,
+       "je": {
+        "OrthographicCamera": 1
+       },
+       "jeTris": {
+        "OrthographicCamera": 1
+       },
+       "inst": 0,
+       "exemplare": 0,
+       "dMin": null,
+       "dMax": null
+      },
+      {
+       "klasse": "TRAA",
+       "stufe": null,
+       "art": null,
+       "cmd": 1,
+       "tris": 1,
+       "je": {
+        "OrthographicCamera": 1
+       },
+       "jeTris": {
+        "OrthographicCamera": 1
+       },
+       "inst": 0,
+       "exemplare": 0,
+       "dMin": null,
+       "dMax": null
+      },
+      {
+       "klasse": "fimp:atlas:L2",
+       "stufe": 2,
+       "art": null,
+       "cmd": 1,
+       "tris": 1444,
+       "je": {
+        "haupt": 1
+       },
+       "jeTris": {
+        "haupt": 1444
+       },
+       "inst": 722,
+       "exemplare": 583,
+       "dMin": 21,
+       "dMax": 327
+      },
+      {
+       "klasse": "vogel",
+       "stufe": null,
+       "art": null,
+       "cmd": 1,
+       "tris": 880,
+       "je": {
+        "haupt": 1
+       },
+       "jeTris": {
+        "haupt": 880
+       },
+       "inst": 110,
+       "exemplare": 36,
+       "dMin": 18,
+       "dMax": 98
+      },
+      {
+       "klasse": "himmel",
+       "stufe": null,
+       "art": null,
+       "cmd": 1,
+       "tris": 1984,
+       "je": {
+        "haupt": 1
+       },
+       "jeTris": {
+        "haupt": 1984
+       },
+       "inst": 0,
+       "exemplare": 0,
+       "dMin": null,
+       "dMax": null
+      },
+      {
+       "klasse": "himmel-sonne",
+       "stufe": null,
+       "art": null,
+       "cmd": 1,
+       "tris": 480,
+       "je": {
+        "haupt": 1
+       },
+       "jeTris": {
+        "haupt": 480
+       },
+       "inst": 0,
+       "exemplare": 0,
+       "dMin": null,
+       "dMax": null
+      },
+      {
+       "klasse": "farWater",
+       "stufe": null,
+       "art": null,
+       "cmd": 1,
+       "tris": 594,
+       "je": {
+        "haupt": 1
+       },
+       "jeTris": {
+        "haupt": 594
+       },
+       "inst": 0,
+       "exemplare": 0,
+       "dMin": null,
+       "dMax": null
+      },
+      {
+       "klasse": "wasserSatz",
+       "stufe": null,
+       "art": null,
+       "cmd": 1,
+       "tris": 183,
+       "je": {
+        "haupt": 1
+       },
+       "jeTris": {
+        "haupt": 183
+       },
+       "inst": 0,
+       "exemplare": 0,
+       "dMin": null,
+       "dMax": null
+      },
+      {
+       "klasse": "spiegel:strahl",
+       "stufe": null,
+       "art": null,
+       "cmd": 1,
+       "tris": 1,
+       "je": {
+        "OrthographicCamera": 1
+       },
+       "jeTris": {
+        "OrthographicCamera": 1
+       },
+       "inst": 0,
+       "exemplare": 0,
+       "dMin": null,
+       "dMax": null
+      }
+     ],
+     "passe": {
+      "OrthographicCamera": {
+       "cmd": 3,
+       "tris": 3,
+       "ro": 3
+      },
+      "haupt": {
+       "cmd": 66,
+       "tris": 292954,
+       "ro": 32
+      },
+      "k0": {
+       "cmd": 20,
+       "tris": 33794,
+       "ro": 14
+      },
+      "k1": {
+       "cmd": 20,
+       "tris": 41206,
+       "ro": 9
+      },
+      "k2": {
+       "cmd": 9,
+       "tris": 21403,
+       "ro": 5
+      }
+     },
+     "gesamt": {
+      "cmd": 118,
+      "tris": 389360
+     },
+     "unbenannt": 0
+    },
+    "passe": [
+     {
+      "name": "post",
+      "n": 1,
+      "tiefe": 0,
+      "eltern": null,
+      "kinder": [
+       "TRAA"
+      ]
+     },
+     {
+      "name": "TRAA",
+      "n": 1,
+      "tiefe": 1,
+      "eltern": "post",
+      "kinder": [
+       "haupt"
+      ]
+     },
+     {
+      "name": "haupt",
+      "n": 1,
+      "tiefe": 2,
+      "eltern": "TRAA",
+      "kinder": [
+       "k0",
+       "k1",
+       "k2"
+      ]
+     },
+     {
+      "name": "k0",
+      "n": 1,
+      "tiefe": 3,
+      "eltern": "haupt",
+      "kinder": []
+     },
+     {
+      "name": "k1",
+      "n": 1,
+      "tiefe": 3,
+      "eltern": "haupt",
+      "kinder": []
+     },
+     {
+      "name": "k2",
+      "n": 1,
+      "tiefe": 3,
+      "eltern": "haupt",
+      "kinder": []
+     },
+     {
+      "name": "spiegel:strahl",
+      "n": 1,
+      "tiefe": 0,
+      "eltern": null,
+      "kinder": []
+     }
+    ],
+    "knoten": {
+     "post": true,
+     "traa": true,
+     "tiefenkopie": true
+    },
+    "kette": {
+     "bloomStrength": {
+      "tiefe": 3,
+      "knoten": 1141,
+      "kante": "OperatorNode(+).bNode"
+     },
+     "godrayStrength": {
+      "tiefe": 3,
+      "knoten": 1141,
+      "kante": "OperatorNode(+).bNode"
+     },
+     "localContrast": {
+      "tiefe": 3,
+      "knoten": 1141,
+      "kante": "OperatorNode(+).bNode"
+     }
+    },
+    "schattenTakt": {
+     "k0": 1,
+     "k1": 3
+    },
+    "anatomie": {
+     "frames": 12,
+     "renderPaesse": [
+      {
+       "was": "TRAA",
+       "n": 1,
+       "mb": 17.798,
+       "ziele": "rgba16float 1920×1080 clear + r8unorm 1920×1080 clear"
+      },
+      {
+       "was": "haupt (Neustart)",
+       "n": 2,
+       "mb": 12.236,
+       "ziele": "rg11b10ufloat 1440×810 load + r8unorm 1440×810 load + depth24plus 1440×810 load"
+      },
+      {
+       "was": "haupt",
+       "n": 1,
+       "mb": 10.011,
+       "ziele": "rg11b10ufloat 1440×810 clear + r8unorm 1440×810 clear + depth24plus 1440×810 clear"
+      },
+      {
+       "was": "post",
+       "n": 1,
+       "mb": 7.91,
+       "ziele": "bgra8unorm 1920×1080 clear"
+      },
+      {
+       "was": "k1",
+       "n": 0.17,
+       "mb": 1.333,
+       "ziele": "depth16unorm 2048×2048 clear"
+      },
+      {
+       "was": "k2",
+       "n": 0.17,
+       "mb": 1.333,
+       "ziele": "depth16unorm 2048×2048 clear"
+      },
+      {
+       "was": "k0",
+       "n": 0.5,
+       "mb": 1,
+       "ziele": "depth16unorm 1024×1024 clear"
+      }
+     ],
+     "renderSumme": {
+      "n": 5.83,
+      "mb": 51.622
+     },
+     "ungestempelt": [
+      {
+       "was": "haupt [szene:tiefenabbild]",
+       "n": 1,
+       "mb": 0
+      }
+     ],
+     "stempelBruch": [
+      {
+       "was": "haupt",
+       "n": 1,
+       "mb": 0
+      }
+     ],
+     "computePaesse": [],
+     "dispatches": 0,
+     "kopien": [
+      {
+       "was": "haupt: Textur depth → szene:tiefenabbild:bruch",
+       "n": 1,
+       "mb": 0
+      },
+      {
+       "was": "ausserhalb: Abfragen queryset_global_timestamp_render → buffer_timestamp_resolve_render",
+       "n": 0.08,
+       "mb": 0
+      },
+      {
+       "was": "ausserhalb: Puffer buffer_timestamp_resolve_render → buffer_timestamp_result_render",
+       "n": 0.08,
+       "mb": 0
+      }
+     ],
+     "kopienSumme": {
+      "n": 1.17,
+      "mb": 0
+     },
+     "hochladen": [
+      {
+       "was": "k0: Puffer bindingBufferundefined_UniformBuffer_#_(vertex)",
+       "n": 3,
+       "mb": 0.004
+      },
+      {
+       "was": "haupt: Puffer bindingBuffer#_render_(vertex,fragment,compute)",
+       "n": 17,
+       "mb": 0.002
+      },
+      {
+       "was": "haupt: Puffer bindingBufferundefined_UniformBuffer_#_(fragment)",
+       "n": 12,
+       "mb": 0.001
+      },
+      {
+       "was": "haupt: Puffer ?",
+       "n": 6,
+       "mb": 0.001
+      },
+      {
+       "was": "k0: Puffer bindingBuffer#_render_(vertex,fragment,compute)",
+       "n": 3.17,
+       "mb": 0
+      },
+      {
+       "was": "k0: Puffer ?",
+       "n": 2.75,
+       "mb": 0
+      },
+      {
+       "was": "k1: Puffer ?",
+       "n": 1.5,
+       "mb": 0
+      },
+      {
+       "was": "k1: Puffer bindingBuffer#_render_(vertex,fragment,compute)",
+       "n": 1.17,
+       "mb": 0
+      },
+      {
+       "was": "TRAA: Puffer bindingBuffer#_object_(vertex,fragment,compute)",
+       "n": 1,
+       "mb": 0
+      },
+      {
+       "was": "k2: Puffer bindingBuffer#_render_(vertex,fragment,compute)",
+       "n": 0.67,
+       "mb": 0
+      },
+      {
+       "was": "k2: Puffer ?",
+       "n": 0.67,
+       "mb": 0
+      },
+      {
+       "was": "haupt: Puffer bindingBuffer#_object_(vertex,fragment,compute)",
+       "n": 0.17,
+       "mb": 0
+      },
+      {
+       "was": "k1: Puffer bindingBufferundefined_UniformBuffer_#_(vertex)",
+       "n": 0.17,
+       "mb": 0
+      },
+      {
+       "was": "k2: Puffer bindingBufferundefined_UniformBuffer_#_(vertex)",
+       "n": 0.17,
+       "mb": 0
+      }
+     ],
+     "hochladenSumme": {
+      "n": 49.42,
+      "mb": 0.01
+     },
+     "submits": 3.92,
+     "befehlsPuffer": 3.92,
+     "executeBundles": 1,
+     "bundles": 3,
+     "draws": [
+      {
+       "was": "haupt",
+       "n": 24,
+       "mb": 0
+      },
+      {
+       "was": "k0",
+       "n": 10,
+       "mb": 0
+      },
+      {
+       "was": "k1",
+       "n": 3.33,
+       "mb": 0
+      },
+      {
+       "was": "k2",
+       "n": 1.5,
+       "mb": 0
+      },
+      {
+       "was": "TRAA",
+       "n": 1,
+       "mb": 0
+      },
+      {
+       "was": "post",
+       "n": 1,
+       "mb": 0
+      }
+     ],
+     "setPipeline": 29.33,
+     "setBindGroup": 57,
+     "anlegen": {
+      "createCommandEncoder": 3.92,
+      "createRenderBundleEncoder": 0.08,
+      "createBuffer": 1.33,
+      "createBindGroup": 0.33,
+      "createShaderModule": 0.17
+     },
+     "leinwand": 1
+    },
+    "leinwand": [
+     1920,
+     1080
+    ],
+    "kamera": {
+     "pos": [
+      -280.4,
+      29.7,
+      -1045.6
+     ],
+     "blick": [
+      -0.92,
+      0,
+      -0.39
+     ]
+    },
+    "adapter": "amd rdna-3"
+   },
+   "schalter": {
+    "schalter": [
+     {
+      "id": "k0",
+      "titel": "Kaskade k0 (im Schatten-Takt alle 1 Frames)",
+      "art": "pass",
+      "passe": [
+       "k0"
+      ],
+      "sigma": false
+     }
+    ],
+    "huellen": [],
+    "unbekannt": [
+     "pass:spiegel:strahl"
+    ],
+    "fehlend": []
+   },
+   "auswertung": {
+    "n": 12,
+    "runden": 4,
+    "gesamtMs": 17.65,
+    "gesamtCpuMs": 2.12,
+    "gesamtStempelMs": 0.39,
+    "stempelJePass": {
+     "post": 0.08,
+     "TRAA": 0.11,
+     "haupt": 0.13,
+     "k0": 0.07,
+     "spiegel:strahl": 0.01
+    },
+    "gpuGebunden": true,
+    "sigmaMs": 0,
+    "restMs": 17.65,
+    "leererFrameMs": null,
+    "wechselwirkungMs": null,
+    "zeilen": [
+     {
+      "id": "k0",
+      "titel": "Kaskade k0 (im Schatten-Takt alle 1 Frames)",
+      "art": "pass",
+      "sigma": false,
+      "deltaMs": -5.19,
+      "streuungMs": 2.08,
+      "spanneMs": [
+       -7.75,
+       1.54
+      ],
+      "deltas": [
+       -4.95,
+       -5.43,
+       -7.75,
+       1.54
+      ],
+      "anMs": 17.65,
+      "ausMs": 23.16,
+      "deltaCpuMs": 0.05,
+      "deltaStempelMs": 0.08,
+      "stempelAn": {
+       "post": 0.062,
+       "TRAA": 0.082,
+       "haupt": 0.094,
+       "k0": 0.047
+      },
+      "stempelAus": {
+       "post": 0.066,
+       "TRAA": 0.08,
+       "haupt": 0.081,
+       "k2": 0.014
+      },
+      "geschaltet": true,
+      "beleg": "Renders 24→0",
+      "klassen": null,
+      "anteilPct": -29.4
+     }
+    ],
+    "bildRauschenPct": null,
+    "zurueck": [],
+    "sekunden": 4.8,
+    "fenster": []
+   },
+   "roh": {
+    "n": 12,
+    "runden": 4,
+    "schalter": [
+     {
+      "id": "k0",
+      "runden": [
+       {
+        "an": {
+         "ms": 18.033,
+         "cpu": 1.9,
+         "stempel": 0.285,
+         "jePass": {
+          "post": 0.062,
+          "TRAA": 0.082,
+          "haupt": 0.094,
+          "k0": 0.047
+         },
+         "zaehl": {
+          "post": {
+           "an": 12,
+           "aus": 0
+          },
+          "TRAA": {
+           "an": 12,
+           "aus": 0
+          },
+          "haupt": {
+           "an": 12,
+           "aus": 0
+          },
+          "k0": {
+           "an": 6,
+           "aus": 0
+          },
+          "k1": {
+           "an": 2,
+           "aus": 0
+          },
+          "k2": {
+           "an": 2,
+           "aus": 0
+          }
+         },
+         "treffer": 0
+        },
+        "aus": {
+         "ms": 22.983,
+         "cpu": 2.058,
+         "stempel": 0.241,
+         "jePass": {
+          "post": 0.066,
+          "TRAA": 0.08,
+          "haupt": 0.081,
+          "k2": 0.014
+         },
+         "zaehl": {
+          "post": {
+           "an": 12,
+           "aus": 0
+          },
+          "TRAA": {
+           "an": 12,
+           "aus": 0
+          },
+          "haupt": {
+           "an": 12,
+           "aus": 0
+          },
+          "k0": {
+           "an": 0,
+           "aus": 6
+          },
+          "k1": {
+           "an": 2,
+           "aus": 0
+          },
+          "k2": {
+           "an": 2,
+           "aus": 0
+          }
+         },
+         "treffer": 0
+        }
+       },
+       {
+        "aus": {
+         "ms": 22.683,
+         "cpu": 1.967,
+         "stempel": 0.371,
+         "jePass": {
+          "post": 0.094,
+          "TRAA": 0.116,
+          "haupt": 0.147,
+          "k2": 0.014
+         },
+         "zaehl": {
+          "post": {
+           "an": 12,
+           "aus": 0
+          },
+          "TRAA": {
+           "an": 12,
+           "aus": 0
+          },
+          "haupt": {
+           "an": 12,
+           "aus": 0
+          },
+          "k0": {
+           "an": 0,
+           "aus": 6
+          },
+          "k1": {
+           "an": 2,
+           "aus": 0
+          },
+          "k2": {
+           "an": 2,
+           "aus": 0
+          }
+         },
+         "treffer": 0
+        },
+        "an": {
+         "ms": 17.258,
+         "cpu": 2.233,
+         "stempel": 0.486,
+         "jePass": {
+          "post": 0.106,
+          "TRAA": 0.133,
+          "haupt": 0.158,
+          "k0": 0.089
+         },
+         "zaehl": {
+          "post": {
+           "an": 12,
+           "aus": 0
+          },
+          "TRAA": {
+           "an": 12,
+           "aus": 0
+          },
+          "haupt": {
+           "an": 12,
+           "aus": 0
+          },
+          "k0": {
+           "an": 6,
+           "aus": 0
+          },
+          "k1": {
+           "an": 2,
+           "aus": 0
+          },
+          "k2": {
+           "an": 2,
+           "aus": 0
+          }
+         },
+         "treffer": 0
+        }
+       },
+       {
+        "an": {
+         "ms": 15.592,
+         "cpu": 2.008,
+         "stempel": 0.296,
+         "jePass": {
+          "post": 0.06,
+          "TRAA": 0.086,
+          "haupt": 0.095,
+          "k0": 0.048,
+          "spiegel:strahl": 0.007
+         },
+         "zaehl": {
+          "post": {
+           "an": 12,
+           "aus": 0
+          },
+          "TRAA": {
+           "an": 12,
+           "aus": 0
+          },
+          "haupt": {
+           "an": 12,
+           "aus": 0
+          },
+          "k0": {
+           "an": 6,
+           "aus": 0
+          },
+          "k1": {
+           "an": 2,
+           "aus": 0
+          },
+          "k2": {
+           "an": 2,
+           "aus": 0
+          },
+          "spiegel:strahl": {
+           "an": 1,
+           "aus": 0
+          }
+         },
+         "treffer": 0
+        },
+        "aus": {
+         "ms": 23.342,
+         "cpu": 2.442,
+         "stempel": 0.245,
+         "jePass": {
+          "post": 0.067,
+          "TRAA": 0.079,
+          "haupt": 0.091,
+          "k2": 0.008
+         },
+         "zaehl": {
+          "post": {
+           "an": 12,
+           "aus": 0
+          },
+          "TRAA": {
+           "an": 12,
+           "aus": 0
+          },
+          "haupt": {
+           "an": 12,
+           "aus": 0
+          },
+          "k0": {
+           "an": 0,
+           "aus": 6
+          },
+          "k1": {
+           "an": 2,
+           "aus": 0
+          },
+          "k2": {
+           "an": 2,
+           "aus": 0
+          }
+         },
+         "treffer": 0
+        }
+       },
+       {
+        "aus": {
+         "ms": 30.767,
+         "cpu": 2.883,
+         "stempel": 0.591,
+         "jePass": {
+          "post": 0.159,
+          "TRAA": 0.252,
+          "haupt": 0.163,
+          "k2": 0.018
+         },
+         "zaehl": {
+          "post": {
+           "an": 12,
+           "aus": 0
+          },
+          "TRAA": {
+           "an": 12,
+           "aus": 0
+          },
+          "haupt": {
+           "an": 12,
+           "aus": 0
+          },
+          "k0": {
+           "an": 0,
+           "aus": 6
+          },
+          "k1": {
+           "an": 2,
+           "aus": 0
+          },
+          "k2": {
+           "an": 2,
+           "aus": 0
+          }
+         },
+         "treffer": 0
+        },
+        "an": {
+         "ms": 32.308,
+         "cpu": 4.375,
+         "stempel": 0.729,
+         "jePass": {
+          "post": 0.164,
+          "TRAA": 0.292,
+          "haupt": 0.164,
+          "k0": 0.109
+         },
+         "zaehl": {
+          "post": {
+           "an": 12,
+           "aus": 0
+          },
+          "TRAA": {
+           "an": 12,
+           "aus": 0
+          },
+          "haupt": {
+           "an": 12,
+           "aus": 0
+          },
+          "k0": {
+           "an": 6,
+           "aus": 0
+          },
+          "k1": {
+           "an": 2,
+           "aus": 0
+          },
+          "k2": {
+           "an": 2,
+           "aus": 0
+          }
+         },
+         "treffer": 0
+        }
+       }
+      ],
+      "treffer": 0,
+      "objekte": 0,
+      "beleg": {
+       "befehleAn": 0,
+       "befehleAus": 0,
+       "kollateral": 20,
+       "kollateralKlassen": [
+        "tier:? 11→10",
+        "f:tanne:L1 10→7",
+        "streuSatz 8→6",
+        "f:eiche:L1 7→6",
+        "f:fichte:L1 7→5",
+        "f:strauch:L1 6→4",
+        "spieler 5→0",
+        "formationenSatz 4→3"
+       ],
+       "abtastungenAus": 40,
+       "passeAn": {
+        "OrthographicCamera": {
+         "cmd": 2,
+         "tris": 2,
+         "ro": 2
+        },
+        "haupt": {
+         "cmd": 66,
+         "tris": 292954,
+         "ro": 32
+        },
+        "k0": {
+         "cmd": 20,
+         "tris": 33794,
+         "ro": 14
+        },
+        "k1": {
+         "cmd": 20,
+         "tris": 41142,
+         "ro": 9
+        },
+        "k2": {
+         "cmd": 9,
+         "tris": 20763,
+         "ro": 5
+        }
+       },
+       "passeAus": {
+        "OrthographicCamera": {
+         "cmd": 2,
+         "tris": 2,
+         "ro": 2
+        },
+        "haupt": {
+         "cmd": 66,
+         "tris": 292954,
+         "ro": 32
+        },
+        "k1": {
+         "cmd": 20,
+         "tris": 41142,
+         "ro": 9
+        },
+        "k2": {
+         "cmd": 9,
+         "tris": 20763,
+         "ro": 5
+        }
+       }
+      }
+     }
+    ],
+    "fenster": [],
+    "abtastungenAn": 40,
+    "bildRauschenPct": null,
+    "zurueck": [],
+    "sekunden": 4.8
+   },
+   "selbsttest": null,
+   "stempel": {
+    "imZerlegen": 0,
+    "seitBoot": 0,
+    "warnung": 1,
+    "spitze": 94,
+    "pool": {
+     "stand": 0,
+     "max": 2048
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,60 @@
+{
+ "sha": "24a0f3eff6051ae954369fd774cce415d1f32dc5",
+ "geraet": "radeon",
+ "zeit": "2026-10-30T06:17:07.670Z",
+ "host": "MiguellD",
+ "je": {
+  "licht.K2#2": {
+   "gruen": false,
+   "zahl": "Uhr 0.5 klar (Sonne 74.2°) 5.034, Schatten-Anteil 0.1986 · Uhr 0.27 klar (Sonne 7.2°) 0.891 UNGÜLTIG (A/B 0.784, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.019 UNGÜLTIG (A/B 0.803, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.77 UNGÜLTIG (A/B 1.000, A/C 1.022, 1463 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.875 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 1.57,
+   "grund": "ROT: Uhr 0.5 klar (Sonne 74.2°) 5.034, Schatten-Anteil 0.1986 · Uhr 0.27 klar (Sonne 7.2°) 0.891 UNGÜLTIG (A/B 0.784, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.019 UNGÜLTIG (A/B 0.803, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.77 UNGÜLTIG (A/B 1.000, A/C 1.022, 1463 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.875 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-30T06:09:17.171Z",
+   "abdruck": "dbca7de11218",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "schatten.K1#2": {
+   "gruen": false,
+   "zahl": "Uhr 0.5 ego 0.484 cm/m (44/44 Kanten, 1.4699999999999998 m, Fuß 1.8 cm) · Uhr 0.5 third 0.604 cm/m (44/44 Kanten, 1.4699999999999998 m, Fuß 2.1 cm) · Uhr 0.3 ego 0.803 cm/m (44/44 Kanten, 9.25 m, Fuß 1.5 cm) · Uhr 0.3 third 0.729 cm/m (44/44 Kanten, 9.25 m, Fuß 2.1 cm) · Kontakt-Kaskade k0 -5.19 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 3.94,
+   "grund": "ROT: Uhr 0.5 ego 0.484 cm/m (44/44 Kanten, 1.4699999999999998 m, Fuß 1.8 cm) · Uhr 0.5 third 0.604 cm/m (44/44 Kanten, 1.4699999999999998 m, Fuß 2.1 cm) · Uhr 0.3 ego 0.803 cm/m (44/44 Kanten, 9.25 m, Fuß 1.5 cm) · Uhr 0.3 third 0.729 cm/m (44/44 Kanten, 9.25 m, Fuß 2.1 cm) · Kontakt-Kaskade k0 -5.19 ms, [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-30T06:10:53.140Z",
+   "abdruck": "e909091fa91e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K4#2": {
+   "gruen": false,
+   "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1744, Häuser 12 → 20/21, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ohne Abnahme (Exit 0)",
+   "exit": 0,
+   "minuten": 2.24,
+   "grund": "ROT: W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1744, Häuser 12 → 20/21, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ohne Abnahme (Exit 0)",
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-30T06:14:51.485Z",
+   "abdruck": "fba786973aaf",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "leib.K1#2": {
+   "gruen": false,
+   "zahl": "latenz-JSON in 0 von 3 Läufen",
+   "exit": 0,
+   "minuten": 14.52,
+   "grund": "ROT: latenz-JSON in 0 von 3 Läufen",
+   "gpu": "amd/rdna-3",
+   "zeit": "2026-10-30T06:17:07.670Z",
+   "abdruck": "274ad9be362f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ }
+}
