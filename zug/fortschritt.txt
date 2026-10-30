@@ -951,3 +951,4 @@
 2026-10-30 04:45:31 takt23-gtx licht.K3#1 OFFEN 10.1 · 22/28
 2026-10-30 04:49:28 takt23-gtx studios.K3#2 ROT 3.9 · 23/28
 2026-10-30 04:54:27 takt23-gtx fahrzeug.K2#1 ROT 4.9 · 24/28
+2026-10-30 05:58:42 takt23-gtx VORFAHRT profiband.K1#1,profiband.K2#1,profiband.K3#1 verloren 54.0
