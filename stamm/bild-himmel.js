@@ -580,42 +580,36 @@ class AnazhRealm_bild_himmel {
     // HIMMEL DER EINEN ATMOSPHÄRE (D3): der Wandel-Pass legt die Himmels-Sicht (Azimut absolut, mit Boden) als Equirekt
     // 128×64 ab, PMREM filtert sie — azimut-abhängig (zur Sonne heller als von ihr weg), in derselben E0 wie das Richtlicht.
     // Bis D3 malte die CPU einen azimut-konstanten Verlauf aus Tint-Farben (128×64 sRGB): Licht-Verhältnis 4,2 statt 5,1.
-    // Grober Takt: neu nur, wenn die Sonne sich um mehr als ein halbes Grad drehte, Tönung oder E0 sich änderten, höchstens
-    // je `SKY_ENV_REGEN_MIN_MS` (der Sprung der Uhr geht an der Drossel vorbei); die Bestrahlung liest die CPU zurück
-    // (`_himmelUmgebungLesen` → `_himmelsIrradianz`).
+    // Sie trägt den Himmel JE EINHEIT DES LICHTS (`passUmgebung`): E0 und Tönung nehmen ihre Leser je Bild (`_umgebungLicht`),
+    // sie zeichnen sie nie neu. Grober Takt: neu nur, wenn die Sonne sich um mehr als ein halbes Grad drehte, Mond, Medium oder
+    // Höhe des Auges sich änderten, höchstens je `SKY_ENV_REGEN_MIN_MS` der WELT-UHR (`spielZeit`; der Sprung der Uhr geht an
+    // der Drossel vorbei); die Bestrahlung liest die CPU zurück (`_himmelUmgebungLesen` → `_himmelsIrradianz`).
     _ensureSkyEnvironment(force, sprung) {
         const st = this.state;
         if (typeof THREE === "undefined" || !st.scene || !st.renderer) return false;
         if (!st.rendererReady) return false; // das Env-Sampling braucht den initialisierten Renderer
         const A = this._atmoLutBau();
         const U = A.U;
-        const t = U.toenung.value;
         const neu = {
             sx: U.sonne.value.x,
             sy: U.sonne.value.y,
             sz: U.sonne.value.z,
             my: U.mond.value.y,
-            t: t.x + t.y + t.z,
-            e: U.licht.value,
             m: A.mediumBeta,
             h: U.hKm.value,
         };
         const last = st._skyEnvLast;
-        const nowMs = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+        // die Welt-Uhr, nie die Wanduhr: das Medium des Wetters zieht in Welt-Sekunden, die Umgebung folgt ihm auf jedem Gerät
+        // gleich (eine Uhr, die zurückläuft — ein geladener Stand —, drosselt nicht)
+        const nowMs = (st.spielZeit || 0) * 1000;
+        const seit = nowMs - (st._skyEnvLastRegenMs == null ? -Infinity : st._skyEnvLastRegenMs);
         const gleich =
             !!last &&
             last.sx * neu.sx + last.sy * neu.sy + last.sz * neu.sz > Math.cos((0.5 * Math.PI) / 180) &&
             Math.abs(last.my - neu.my) < 0.01 &&
-            Math.abs(last.t - neu.t) < 0.02 * Math.max(1, neu.t) &&
-            Math.abs(last.e - neu.e) < 0.02 * Math.max(1e-3, neu.e) &&
             last.m === neu.m &&
             Math.abs(last.h - neu.h) < 0.05;
-        if (
-            !force &&
-            last &&
-            (gleich || (!sprung && nowMs - (st._skyEnvLastRegenMs || -Infinity) < AnazhRealm.SKY_ENV_REGEN_MIN_MS))
-        )
-            return true;
+        if (!force && last && (gleich || (!sprung && seit >= 0 && seit < AnazhRealm.SKY_ENV_REGEN_MIN_MS))) return true;
         try {
             // Null-Renderer (headless): kein Pass, kein PMREM — die Equirekt-Tafel ist die Umgebung (ungezeichnet).
             if (st.renderer._isHeadlessNull) {
@@ -717,6 +711,16 @@ class AnazhRealm_bild_himmel {
     // Neuzeichnung → kein Texture-Identitäts-Wechsel.
     _himmelUmgebungTex() {
         return this._atmoLutBau().rtEq.texture;
+    }
+
+    // DAS LICHT DER UMGEBUNG JETZT (TSL, rgb): die Umgebung trägt den Himmel je Einheit des Lichts (`passUmgebung`), wie die
+    // Tafeln; E0 (`U.licht`) und die Tönung (`U.toenung`) nimmt jeder Leser je Bild aus denselben geteilten Uniforms wie die
+    // Kuppel und die Bestrahlung der Belichtung — die Stoffe (`_spiegelUmgebung`), das Licht der Welt (`_weltLicht`), der Film
+    // des Tors; die CPU (`_himmelsIrradianz`) ihre Werte. Bis licht.K5 backte die Neuzeichnung beide ein, höchstens je 6 s
+    // Wanduhr: im Wetter-Zug sprang das Bild, sobald die Umgebung nachzog (GTX 0,230 EV/s, takt24c).
+    _umgebungLicht() {
+        const U = this._atmoLutBau().U;
+        return U.toenung.mul(U.licht);
     }
 
     // DIE KRONE EINES BAUM-KÖRPERS (D10) aus dem Kronen-Buch (`_foundryCacheSet`, Beipack `__krone` der Höhen-Stufe): die
@@ -1686,11 +1690,12 @@ class AnazhRealm_bild_himmel {
             return vec4(marsch(v, [{ dir: U.sonne }, { dir: U.mond, gewicht: U.mondE }], U.nachtE), 1);
         });
         // DIE FARBE DES HIMMELS in Richtung `dir` (Welt): die Himmels-Sicht (je Einheit E0) × das Licht jetzt (E0) × die Tönung
-        // (Wetter, Feld, Gefühl, DSL — relativ zum Himmel des Studios, `_dayNightApplySkybox`). Leser: die Kuppel, die Umgebung, die Luft.
-        const himmelFarbe = (dir) =>
-            texture(rtSV.texture, himmelUv(dir)).level(float(0)).rgb.mul(U.licht).mul(U.toenung);
-        // ── die Umgebung: Equirekt (three `equirectUV`: u = atan(z, x)/2π + ½, v = asin(y)/π + ½) aus der Himmels-Sicht ──
-        const passUmgebung = Fn(() => vec4(himmelFarbe(this._umgebungRichtung(uv()).toVar()), 1));
+        // (Wetter, Feld, Gefühl, DSL — relativ zum Himmel des Studios, `_dayNightApplySkybox`). Leser: die Kuppel, die Luft.
+        const himmelJeLicht = (dir) => texture(rtSV.texture, himmelUv(dir)).level(float(0)).rgb;
+        const himmelFarbe = (dir) => himmelJeLicht(dir).mul(U.licht).mul(U.toenung);
+        // ── die Umgebung: Equirekt (three `equirectUV`: u = atan(z, x)/2π + ½, v = asin(y)/π + ½) aus der Himmels-Sicht, JE
+        // EINHEIT DES LICHTS wie die Tafeln: das Licht jetzt (E0 · Tönung) trägt jeder ihrer Leser je Bild (`_umgebungLicht`) ──
+        const passUmgebung = Fn(() => vec4(himmelJeLicht(this._umgebungRichtung(uv()).toVar()), 1));
         // ── DIE BESTRAHLUNGS-TAFEL (S7): je Texel eine Sonnenhöhe e (quadratisch dicht um den Horizont, e = c·|c|) und die
         // Bestrahlung einer waagrechten Fläche durch den Himmel dieser Sonne, je Einheit E0 — derselbe Marsch wie die Himmels-
         // Sicht über die obere Halbkugel (kosinus-gewichtet, `ATMO_LUT.richtungen`); der letzte Texel trägt das Sternen-Licht je
@@ -3269,10 +3274,13 @@ AnazhRealm.BELICHTUNG = Object.freeze({
     stufen: Object.freeze([Object.freeze([10, -0.87]), Object.freeze([-20, -2.17])]),
     nachtGrad: -32,
 });
-// Mindestabstand zwischen zwei Sky-Env-PMREM-Regenerierungen (Wall-Clock): Tag-Nacht-Uhr und
-// Emotions-Cross-Fade driften die Himmelsfarbe, jede Regeneration rendert einen PMREM-Pass (teuer
-// auf schwacher GPU). 6 s deckelt einen 45-s-Cross-Fade auf ~7; der IBL-Nachlauf ist unmerklich.
-AnazhRealm.SKY_ENV_REGEN_MIN_MS = 6000;
+// Mindestabstand zwischen zwei Neuzeichnungen der Umgebung (PMREM) in WELT-Zeit (`spielZeit`, ms). E0 und Tönung zeichnen sie
+// nicht mehr neu (`_umgebungLicht`), es bleiben Sonne, Mond, Medium und Höhe des Auges. Bis w4-licht-uhr 6 000 ms Wanduhr: der
+// Himmel je Einheit E0 wächst im Übergang klar → Regen mit dem Medium (0,163 → 0,335, etwa β^0,35), die Umgebung zog ihm in
+// Stufen nach, auf der GTX alle ~8 Spiel-Sekunden, auf swiftshader jede — das Bild sprang je Gerät anders (licht.K5 GTX
+// 0,230 EV/s, takt24c). Im steilsten Anstieg (β ×1,13 je Sekunde) wächst er 0,11 EV je Sekunde: eine halbe Welt-Sekunde hält
+// jede Stufe der Umgebung bei 0,05 EV, höchstens zwei PMREM je Sekunde und nur im Übergang, auf jedem Gerät dieselbe Folge.
+AnazhRealm.SKY_ENV_REGEN_MIN_MS = 500;
 // Die Obergrenze der Sonnen-Stufe (`_sonnenStufe`): N·L ändert sich bei einer Drehung um α höchstens um α — unter einer
 // 8-bit-Stufe ist sie unsichtbar.
 AnazhRealm.SONNEN_STUFE_SCHATTIERUNG = 1 / 255;

@@ -373,12 +373,14 @@ class AnazhRealm_siedlung_ort {
             act.mul(FI.act[1]).add(FI.act[0])
         );
         // der Film spiegelt die Heimat: die EINE Umgebung (`_himmelUmgebungTex`, wie die IBL jedes PBR-Stoffs) in der Spiegel-Richtung, aus dem
-        // Rahmen des Tors in die Welt gedreht (Stoff-Wert `dreh` = rotationY), in seinen Interferenz-Farben
+        // Rahmen des Tors in die Welt gedreht (Stoff-Wert `dreh` = rotationY), in seinen Interferenz-Farben, im Licht jetzt (`_umgebungLicht`)
         const Rf = TSL.reflect(rd, N);
         const cr = TSL.cos(dreh);
         const sr = TSL.sin(dreh);
         const RfW = TSL.vec3(Rf.x.mul(cr).add(Rf.z.mul(sr)), Rf.y, Rf.z.mul(cr).sub(Rf.x.mul(sr)));
-        const spiegel = TSL.texture(this._himmelUmgebungTex(), TSL.equirectUV(RfW)).level(F(0)).rgb;
+        const spiegel = TSL.texture(this._himmelUmgebungTex(), TSL.equirectUV(RfW))
+            .level(F(0))
+            .rgb.mul(this._umgebungLicht());
         const glanz = film.mul(spiegel).mul(F(FI.glanz[0])).mul(pulse.mul(FI.glanz[2]).add(FI.glanz[1]));
         const col = TSL.mix(ziel, glanz, filmW);
         // `ohneFilm`: dieselbe Öffnung ohne den Film — nur das Ziel (die Linse milchweiss: Milch ist, was der Film dem Ziel
