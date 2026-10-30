@@ -6114,11 +6114,89 @@
                 background: linear-gradient(180deg, rgba(255, 235, 190, 0.5), rgba(180, 140, 80, 0.3));
                 border-color: var(--violet-1);
             }
-            .workshop-studio-recipe-row .badge {
+            .workshop-studio-recipe-row .badge,
+            .stammbaum-verweis .badge {
                 font-size: 9px;
                 text-transform: uppercase;
                 letter-spacing: 0.8px;
                 color: var(--parch-ink-faded);
+            }
+            /* B8 — DIE BIBLIOTHEK (der Stammbaum der Teile, `_workshopRenderBlueprintList`): Studio- und Bereichs-Köpfe spannen
+               beide Spalten, ein Klick klappt den Ast; der Verweis steht im Baum für eine Zeile, die oben griffbereit ist; der
+               Griff ⤓ legt das Teil in die Welt (`_stammbaumGriff`). */
+            .workshop-list-section.stammbaum-studio,
+            .workshop-list-section.stammbaum-bereich {
+                display: flex;
+                align-items: baseline;
+                gap: 4px;
+                cursor: pointer;
+                user-select: none;
+            }
+            .workshop-list-section.stammbaum-studio {
+                margin-top: 8px;
+                font-size: 11px;
+                color: var(--parch-ink);
+                border-bottom: 1px solid var(--brass-2);
+            }
+            .workshop-list-section.stammbaum-bereich {
+                margin-top: 3px;
+                padding-left: 14px;
+                font-size: 9.5px;
+                border-bottom: 1px dotted rgba(138, 106, 54, 0.4);
+            }
+            .workshop-list-section.stammbaum-studio::before,
+            .workshop-list-section.stammbaum-bereich::before {
+                content: "▾";
+            }
+            .workshop-list-section.stammbaum-studio.zu::before,
+            .workshop-list-section.stammbaum-bereich.zu::before {
+                content: "▸";
+            }
+            .stammbaum-zahl {
+                margin-left: auto;
+                font-size: 9px;
+                opacity: 0.7;
+            }
+            .stammbaum-verweis {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 4px 8px;
+                border: 1px dashed rgba(138, 106, 54, 0.4);
+                border-radius: 3px;
+                cursor: pointer;
+                font-family: "Cinzel", Georgia, serif;
+                font-size: 11px;
+                color: var(--parch-ink-faded);
+            }
+            .stammbaum-griff {
+                flex: 0 0 auto;
+                margin-left: 6px;
+                padding: 0 5px;
+                font-size: 11px;
+                line-height: 16px;
+                color: var(--parch-ink);
+                background: rgba(255, 235, 190, 0.35);
+                border: 1px solid var(--brass-2);
+                border-radius: 3px;
+                cursor: pointer;
+            }
+            .stammbaum-griff:hover {
+                background: rgba(255, 235, 190, 0.7);
+            }
+            .workshop-list-row,
+            .workshop-studio-recipe-row,
+            .stammbaum-verweis {
+                gap: 6px;
+            }
+            .workshop-list-row .name,
+            .workshop-studio-recipe-row .name,
+            .stammbaum-verweis .name {
+                flex: 1 1 auto;
+                min-width: 0;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
             }
             /* W-A1 — das ehrliche Interim: die Status-Zeile im Stats-Element. */
             .workshop-studio-status {
@@ -8550,8 +8628,8 @@
                                 type="text"
                                 id="workshop-search"
                                 class="help-search"
-                                placeholder="Bauplan …"
-                                aria-label="Baupläne wählen oder durchsuchen"
+                                placeholder="Bibliothek: Teil · Studio · Bereich …"
+                                aria-label="Die Bibliothek der Teile (Studio → Bereich → Teil) wählen oder durchsuchen"
                                 autocomplete="off"
                             />
                             <div id="workshop-list"></div>

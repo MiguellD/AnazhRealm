@@ -385,6 +385,8 @@
         LEHREN: LEHREN,
         messen: messen,
         KIND_POLICY: KIND_POLICY,
+        // B8 — der Stammbaum: das Buch nennt sich und seine Art selbst; der Wirt hängt es in den EINEN Baum, ohne eine Zeile zu lernen
+        STAMMBAUM: { studio: "Neuntes Buch", arten: { stele: "Stelen" } },
         buildInstance: buildInstance,
     };
 })(typeof self !== "undefined" ? self : globalThis);
