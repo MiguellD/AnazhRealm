@@ -86,3 +86,4 @@ schloss-blick-1 Exit0 station gpu-schloss-blick.sh an 6b3da705
 takt25h-gtx gemessen punkte 6b3da705 gtx: 0 grün / 0 rot
 schloss-blick-2 Exit0 station gpu-schloss-blick.sh an 6b3da705
 omen-gpu-lauf-1 Exit0 station omen-gpu-lauf.sh an 6b3da705
+takt25c-gtx gemessen punkte 6b3da705 gtx: 0 grün / 2 rot

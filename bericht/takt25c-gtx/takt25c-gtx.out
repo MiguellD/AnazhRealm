@@ -1,0 +1,90 @@
+Punkte-Maschine: 38 Station(en) in 36 Läufen auf gtx am 6b3da705 · Sitzung 36 Proben in EINER Welt (Deckel Σ 15 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  SITZUNG gtx · die Welt steht nach 7.1 s (Schloss nach 0.29 min) · 36 Proben · Welt :27804
+  SITZUNG der Grund der Welt: 77 Größen in 0 s
+  SITZUNG Ort wiese vor mensch.K4#1: 20.3 s (549 Takte, 81 Chunks)
+  OFFEN mensch.K4#1 · Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: KAMERA {"leib":0,"vorn":true,"abstand":6.1,"d":6}) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor haar.K2#1: 2.1 s (im Spiel 36.7 ms, durch die Tür)
+  SITZUNG Ort wiese vor haar.K2#1: 15.4 s (543 Takte, 81 Chunks, nach der Tür)
+  OFFEN haar.K2#1 · Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: ARM {"urteil":"ROT","ist":null,"band":[0.3554,0.533],"grund":"strich ungemessen","taeter":null,"teile":null,"stand":null}) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor vegetation.K1#1: 2.1 s (im Spiel 35.6 ms, durch die Tür)
+  SITZUNG Ort wiese vor vegetation.K1#1: 15.1 s (543 Takte, 81 Chunks, nach der Tür)
+  OFFEN vegetation.K1#1 · Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor vegetation.K5#1: 2 s (im Spiel 38.5 ms, durch die Tür)
+  SITZUNG Ort wiese vor vegetation.K5#1: 15.1 s (543 Takte, 81 Chunks, nach der Tür)
+  OFFEN vegetation.K5#1 · Deckel 65 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor licht.K2#2: 2.1 s (im Spiel 31.2 ms, durch die Tür)
+  SITZUNG Ort wiese vor licht.K2#2: 15.1 s (543 Takte, 81 Chunks, nach der Tür)
+  OFFEN licht.K2#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: setz-5 · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor material.K2#1: 2.2 s (im Spiel 41.7 ms, durch die Tür)
+  SITZUNG Ort wiese vor material.K2#1: 15.6 s (543 Takte, 81 Chunks, nach der Tür)
+  OFFEN material.K2#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: boden-2 · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor lod.K1#1: 1.9 s (im Spiel 41.1 ms, durch die Tür)
+  SITZUNG Ort wiese vor lod.K1#1: 15.9 s (545 Takte, 81 Chunks, nach der Tür)
+  OFFEN lod.K1#1 · Deckel 30 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor lod.K5#1: 2.2 s (im Spiel 36.6 ms, durch die Tür)
+  SITZUNG Ort wiese vor lod.K5#1: 17 s (545 Takte, 81 Chunks, nach der Tür)
+  OFFEN lod.K5#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor lod.K2#1: 2 s (im Spiel 38.7 ms, durch die Tür)
+  SITZUNG Ort wiese vor lod.K2#1: 15.8 s (545 Takte, 81 Chunks, nach der Tür)
+  OFFEN lod.K2#1 · Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor spielgang.K3#1: 2.4 s (im Spiel 35.2 ms, durch die Tür)
+  SITZUNG Ort wiese vor spielgang.K3#1: 16.6 s (545 Takte, 81 Chunks, nach der Tür)
+  OFFEN spielgang.K3#1 · Deckel 13 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ BEDIENUNG) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor ferne.K1#2: 2.1 s (im Spiel 38 ms, durch die Tür)
+  SITZUNG Ort genesis vor ferne.K1#2: 18.8 s (578 Takte, 81 Chunks, nach der Tür)
+  OFFEN ferne.K1#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor licht.K1#1: 2.2 s (im Spiel 43.8 ms, durch die Tür)
+  SITZUNG Ort genesis vor licht.K1#1: 16.5 s (579 Takte, 81 Chunks, nach der Tür)
+  OFFEN licht.K1#1 · Deckel 40 s gerissen — beendet, UNGEMESSEN (zuletzt: RUF /eval return await __tagKurve({"uhren":[0,0.01,0.02,0. (100 Uhren) · 9.5 s · 36.4 s) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor licht.K3#1: 2.2 s (im Spiel 35.8 ms, durch die Tür)
+  SITZUNG Ort dorf vor licht.K3#1: 25 s (760 Takte, 81 Chunks, nach der Tür)
+  OFFEN licht.K3#1 · Deckel 60 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 18 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 66 Takten, 0.7 s · 59.3 s) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor licht.K5#1: 2.1 s (im Spiel 40.5 ms, durch die Tür)
+  OFFEN licht.K5#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor material.K1#1: 2.2 s (im Spiel 38.9 ms, durch die Tür)
+  OFFEN material.K1#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor material.K4#1: 2.2 s (im Spiel 41.7 ms, durch die Tür)
+  ROT  material.K4#1 · lack spiegelTreue undefined UNGÜLTIG (zu wenig Pixel) · glas spiegelTreue undefined UNGÜLTIG (zu wenig Pixel) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5015879444444445 sunny · [linse-gpu] nvidia/pascal · Sitzung · Exit 0 · 0.11 min
+  OFFEN material.K5#1 · Deckel 11 s gerissen — beendet, UNGEMESSEN (zuletzt: fenster · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor lod.K3#1: 2.2 s (im Spiel 40.5 ms, durch die Tür)
+  ROT  lod.K3#1 · keine C6-Zeile (Exit 1) · [linse-gpu] nvidia/pascal · Sitzung · Exit 1 · 0.01 min
+  OFFEN siedlung.K1#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor siedlung.K4#2: 2.5 s (im Spiel 35.6 ms, durch die Tür)
+  OFFEN siedlung.K4#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: }) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor oekologie.K4#2: 2.4 s (im Spiel 41.5 ms, durch die Tür)
+  SITZUNG Ort wiese vor oekologie.K4#2: 16.1 s (543 Takte, 81 Chunks, nach der Tür)
+  OFFEN oekologie.K4#2 · Deckel 31 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor physik.K2#2: 2 s (im Spiel 46.9 ms, durch die Tür)
+  OFFEN physik.K2#2 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor tiere.K1#2: 2.1 s (im Spiel 38.5 ms, durch die Tür)
+  OFFEN tiere.K1#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor mensch.K1#1: 5.5 s (im Spiel 38.7 ms, durch die Tür)
+  OFFEN mensch.K1#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor mensch.K5#1: 2.1 s (im Spiel 38.5 ms, durch die Tür)
+  OFFEN mensch.K5#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor studios.K2#2: 2.1 s (im Spiel 35.4 ms, durch die Tür)
+  OFFEN studios.K2#2 · Deckel 25 s gerissen — beendet, UNGEMESSEN (zuletzt: portale         16 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain) · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN studios.K3#2 · Deckel 25 s gerissen — beendet, UNGEMESSEN (zuletzt: portale         16 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor bauen.K1#2: 1.7 s (im Spiel 183.2 ms, durch die Tür)
+  OFFEN bauen.K1#2 · Deckel 10 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor bauen.K5#2: 2.2 s (im Spiel 181.1 ms, durch die Tür)
+  OFFEN bauen.K5#2 · Deckel 10 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor studios.K4#1: 2.2 s (im Spiel 192.4 ms, durch die Tür)
+  OFFEN studios.K4#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor fahrzeug.K3#1: 2 s (im Spiel 164.9 ms, durch die Tür)
+  OFFEN fahrzeug.K3#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ WELT) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor fahrzeug.K5#1: 1.9 s (im Spiel 133.2 ms, durch die Tür)
+  OFFEN fahrzeug.K5#1 · Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor fahrzeug.K2#1: 2.1 s (im Spiel 303.1 ms, durch die Tür)
+  OFFEN fahrzeug.K2#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor fahrzeug.K2#2: 3.5 s (im Spiel 174.7 ms, durch die Tür)
+  OFFEN fahrzeug.K2#2 · Deckel 55 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor ankunft.K2#1: 1.9 s (im Spiel 136.4 ms, durch die Tür)
+  OFFEN ankunft.K2#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN ankunft.K3#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor klang.K4#1: 2.2 s (im Spiel 299.7 ms, durch die Tür)
+  OFFEN klang.K4#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor speicher.K4#2: 2 s (im Spiel 153.5 ms, durch die Tür)
+  OFFEN speicher.K4#2 · Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Fahrt 1266.3 s (Soll ≤ 1800 s) · 36 Proben · Grundstellung 33×
+→ meisterkarte-quelle\punkte\messung\6b3da705-gtx.json
