@@ -419,7 +419,7 @@ function bandBefunde(messung, basis) {
         else traeger = new Map(basis.rot.filter((r) => r && r.schluessel).map((r) => [r.schluessel, r]));
     }
     const tol = (basis && basis.toleranz) || messung.toleranz || null;
-    const zahl = (x) => typeof x === "number" && Number.isFinite(x);
+    const zahl = Number.isFinite;
     for (const r of messung.rot) {
         const a = traeger && r.schluessel ? traeger.get(r.schluessel) : null;
         if (a && !(zahl(r.ist) && zahl(a.ist) && r.groesse && BAND.ueberRatsche(r.ist, a.ist, tol, r.groesse))) continue;
