@@ -43,19 +43,8 @@ if (!name) {
 
 const src = fs.readFileSync(file, "utf8");
 
-// Zeilen-Offset-Tabelle: char-Offset → (1-indizierte) Zeile.
-const lineStarts = [0];
-for (let i = 0; i < src.length; i++) if (src[i] === "\n") lineStarts.push(i + 1);
-const lineOf = (off) => {
-    let lo = 0,
-        hi = lineStarts.length - 1;
-    while (lo < hi) {
-        const mid = (lo + hi + 1) >> 1;
-        if (lineStarts[mid] <= off) lo = mid;
-        else hi = mid - 1;
-    }
-    return lo + 1;
-};
+// char-Offset → (1-indizierte) Zeile: der EINE Zeilen-Zähler (scripts/lib/stamm.cjs `zeileVon`)
+const lineOf = (off) => stammLib.zeileVon(src, off);
 
 const comments = [];
 let ast;

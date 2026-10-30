@@ -24,7 +24,7 @@
 //                                                           (Koschmieder je Kanal, Farbton, Sonnenseite, fernes Weiß; Rand und Kante an
 //                                                           Hügel und Gipfel; im Wetter die Sicht, mit --zug klar → Wort → klar je Sekunde)
 //   node scripts/werkbank.cjs licht --laub [eiche,birke] [--ordner d] [--karte --uhr u,u] | --selbsttest  DAS LAUB IM GEGENLICHT
-//   node scripts/werkbank.cjs licht --kontakt [--uhr 0.5,0.3] [--bilder d] | --selbsttest  DER KONTAKT-SCHATTEN (schatten.K1)
+//   node scripts/werkbank.cjs licht --kontakt [--zuwachs] [--uhr 0.5,0.3] [--bilder d] | --selbsttest  DER KONTAKT-SCHATTEN (schatten.K1)
 //   node scripts/werkbank.cjs licht --naesse [wiese,dorf] [--bilder d] [--datei f] | --selbsttest  DIE NÄSSE (wetter.K2)
 //   node scripts/werkbank.cjs fernwald [--blicke nord,ost] DIE FERNWALD-LINSE (scripts/lib/fernwald-linse.cjs)
 //   node scripts/werkbank.cjs zaehlen [px py pz lx ly lz] [--alle]  DER DRAW-ZÄHLER je Pass (scripts/lib/draw-zaehler.cjs)
@@ -3280,19 +3280,25 @@ hauptLauf(async () => {
         console.log(JSON.stringify(u.kurven, null, 1));
         urteilEnde("TAG-ACHSE", u);
     } else if (cmd === "licht" && hat("kontakt")) {
-        // DER KONTAKT-SCHATTEN (schatten.K1): `kontaktSicht` auf der Prüfbühne je Uhr, das Urteil `kontaktUrteil`
-        const fehl = LL.kontaktSelbsttest();
-        console.log(`KONTAKT Selbsttest ${fehl.length ? "ROT: " + fehl.join(" | ") : "3/3"}`);
+        // DER KONTAKT-SCHATTEN (schatten.K1): `kontaktSicht` an der Platte saat-s7-platte der Prüfbühne je Uhr, das Urteil `kontaktUrteil`
+        // (Staffel 1 am Fuß; `--zuwachs` dazu Staffel 2, der Zuwachs je m). DIE GESETZ-PROBE DES RADIUS (schatten.K1#2) am Stamm: im
+        // `_schattenFilter` legt sich der Halbschatten der Sonne auf den Boden-Radius (Halbschatten/2 + `filterTexel`), nie max(…) —
+        // unter dem max trug der Boden jede Kante bis 4,9 m gleich breit; die Mutante (der Radius ohne Boden) macht die Probe ROT
+        const summe = (q) => !stammLib.fehlt("_schattenFilter", /\.div\(box\)\.add\(r\)/, q);
+        const fehl = LL.kontaktSelbsttest().concat(summe() && !summe((t) => stammLib.ersetze(t, "_schattenFilter", ".add(r)", "")) ? [] : ["RADIUS nicht Boden + Sonne"]);
+        console.log(`KONTAKT Selbsttest ${fehl.length ? "ROT: " + fehl.join(" | ") : "5/5"}`);
         if (fehl.length || SELBST) process.exit(fehl.length ? 1 : 0);
         const welt = {};
+        const P = require("../spec/pruefbuehne/welt.json").architectures.find((a) => a.id === "saat-s7-platte");
         for (const uhr of opt("--uhr", "0.5").split(",").map(Number)) {
             await umstellen({ ort: "buehne", sicht: "ego" });
-            const o = { uhr, png: !!opt("--bilder") };
+            await umstellen({ x: P.position.x, z: P.position.z - 8 });
+            const o = { uhr, png: !!opt("--bilder"), platte: P.id };
             const m = (welt[uhr] = (await evalRuf(`return await (${LL.kontaktSicht})(${JSON.stringify(o)});`)).ergebnis);
             for (const [pose, p] of Object.entries((m && m.posen) || {}))
                 if (p.png) pngDatei(path.resolve(opt("--bilder"), `kontakt-${uhr}-${pose}.png`), p.png), delete p.png;
         }
-        const rot = Object.entries(welt).flatMap(([uhr, m]) => LL.kontaktUrteil(m).befunde.map((b) => `Uhr ${uhr} ${b}`));
+        const rot = Object.entries(welt).flatMap(([uhr, m]) => LL.kontaktUrteil(m, hat("zuwachs")).befunde.map((b) => `Uhr ${uhr} ${b}`));
         console.log(JSON.stringify(welt, null, 1));
         endeMit(`KONTAKT ${rot.length ? "ROT: " + rot.join(" | ") : "GRUEN"}`, !rot.length);
     } else if (cmd === "licht" && hat("naesse")) {

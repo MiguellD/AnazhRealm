@@ -16,9 +16,10 @@ const kiUrteil = (m) => ["zwilling", "ohneWerk", "unbewegt", "ohneWort"].flatMap
 
 const { errs, check } = pruefer();
 
-// Die Probe beider Seiten: das Flat eines Eintrags, sobald die Foundry es trägt, und sein Abdruck (der EINE, welt-boot).
+// Die Probe beider Seiten: das Flat eines Eintrags, sobald die Foundry es trägt, und sein Abdruck (der EINE, welt-boot) — am Preset
+// des Eintrags selbst (bis w4-heil-tore fest „gt": B's Eiche hieß „ungeprägter GT").
 function proben() {
-    window.__flatFor = async (r, entry, preset = "gt") => {
+    window.__flatFor = async (r, entry, preset = r._foundryPresetForEntry(entry)) => {
         let flat;
         for (const weiter = window.__deckel("das Flat der Gestalt", 300); !(flat = r._foundryFlattenFor(entry, preset, 0))?.leaves && weiter(); )
             await sleep(50);
@@ -101,7 +102,6 @@ hauptLauf(async () => {
         const fp = window.__abdruck; // der EINE Abdruck (welt-boot)
 
         // ===== WARM-ANKER: Boot → f.ready → Buch (langschwert + gt) → !_vorrat (__weltDa wartet, bis alles steht) =====
-        await window.__weltDa();
         const f = r._ensureAssetFoundry();
         const bps = () => r.state.blueprints || {};
         await window.__weltDa(() => f.ready && f.recipes?.langschwert && f.recipes.gt && bps().klinge_langschwert && bps().fahrzeug_gt && !f._vorrat);
@@ -254,7 +254,7 @@ hauptLauf(async () => {
             // seinem Stempel liest (die Membran und die Hülle des Tors, das Fahr-Gesetz des Wagens)
             const bau = async (e) => {
                 const [t, z] = [r._torGesetzFor(e), r._fahrzeugGesetzFor(e)];
-                const flat = await window.__flatFor(r, e, r._foundryPresetForEntry(e));
+                const flat = await window.__flatFor(r, e);
                 r.removeArchitecture(e);
                 return flat && fp(flat, true) + "|" + h([t && [t.p, t.mu], z && z.drive]);
             };
@@ -387,10 +387,12 @@ hauptLauf(async () => {
     const leer = await pageB.evaluate(async () => (await indexedDB.databases()).length + localStorage.length);
     await welt(pageB, B_ART);
     page.on("dialog", (d) => d.accept()); // die souveräne Geste des Senders (window.confirm)
-    // die Geste in echten Klicks, bis der Code in der Zeile steht
+    // die Geste in echten Klicks, bis der Code in der Zeile steht — DER KNOPF AM DOM, NIE AM PIXEL (wie die Bibliothek unten): der
+    // Klick auf die Lage traf, während die Lade glitt, daneben, die Werkstatt hielt ihre Wahl, und A teilte die Eiche (CI
+    // 40407492230, Farm 715754fc: B baute sie, ihr Abdruck am Preset gt hieß „ungeprägt")
     let uhr = Date.now();
     for (const s of ['[data-tab="werkstatt"]', '[data-blueprint="fahrzeug_gt"]', 'button[data-teilen="werk"]'])
-        await (await page.waitForSelector(s, { visible: true })).click();
+        await (await page.waitForSelector(s, { visible: true })).evaluate((k) => k.click());
     await page.waitForFunction(() => document.querySelector('code[data-teilen="werk"]').textContent);
     const msA = Date.now() - uhr;
     const a = await page.evaluate(async () => {
@@ -464,8 +466,7 @@ hauptLauf(async () => {
     // der zweite Fluss: A öffnet den Raum seiner Welt (der Host beantwortet den world-request) und teilt sie in EINER Geste
     await page.waitForFunction(() => anazhRealm.state.p2p.connected);
     uhr = Date.now();
-    await (await page.waitForSelector('[data-tab="bibliothek"]')).click();
-    await page.$eval('button[data-teilen="welt"]', (k) => k.click()); // die Lade gleitet noch: der Knopf am DOM, nie am Pixel
+    for (const s of ['[data-tab="bibliothek"]', 'button[data-teilen="welt"]']) await page.$eval(s, (k) => k.click()); // die Lade gleitet noch
     await page.waitForFunction(() => document.querySelector('code[data-teilen="welt"]').textContent);
     const msW = Date.now() - uhr;
     // die Welt reist größer als ein Rahmen (Chrome teilt ab ~128 KB): die Fragmente am signaling-server (27.10.: verworfen)
@@ -498,10 +499,13 @@ hauptLauf(async () => {
         return res;
     }, a, url, raum);
     // (T) die Geste des Empfängers: die Chat-Taste, der Code, Enter
+    const chat = async (code) => {
+        await pageB.keyboard.press("Enter");
+        await pageB.keyboard.sendCharacter(code);
+        await pageB.keyboard.press("Enter");
+    };
     uhr = Date.now();
-    await pageB.keyboard.press("Enter");
-    await pageB.keyboard.sendCharacter(a.code);
-    await pageB.keyboard.press("Enter");
+    await chat(a.code);
     Object.assign(b, await pageB.evaluate(async (a) => {
         const lauf = window.__lauf;
         const res = { gut: window.__spur ? await window.__spur : { grund: "der Chat rief empfangeWerk nie" } };
@@ -535,9 +539,7 @@ hauptLauf(async () => {
     let seiten = 0;
     pageB.on("framenavigated", (f) => f === pageB.mainFrame() && seiten++);
     uhr = Date.now();
-    await pageB.keyboard.press("Enter");
-    await pageB.keyboard.sendCharacter(wCode);
-    await pageB.keyboard.press("Enter");
+    await chat(wCode);
     const w = await pageB.evaluate(async (autor, wId) => {
         await window.__weltDa((x) => x.state.worldMeta.worldId === wId && !x._weltTausch);
         const da = performance.timeOrigin + (await r._weltbildKommt());
@@ -637,7 +639,7 @@ hauptLauf(async () => {
     check("A: Werkstatt → GT → Teilen liefert EINEN Code ≤ 4 KB", a.code?.length <= 4096, a.fehler || `${a.code?.length} Zeichen, eigener Bauplan ${a.eigen?.length}`);
     check("B ist ein ANDERES GERÄT: eigener Browser-Prozess, frisches Profil (Platte + localStorage vor dem Boot leer)", ger[0] !== ger[1] && !leer, `${ger} ${leer}`);
     check("SELBST-TEST: B als zweiter Kontext im Chrome von A ist ROT", ger[0] === ger[2]);
-    check("B: Chat-Taste · Code · Enter — das Werk steht, Signatur von A (der Peer am Anschluss)", b.gut?.ok && b.gut.autor === a.autor, b.netz + JSON.stringify(b.gut));
+    check("B: Chat-Taste · Code · Enter — das Werk steht, Signatur von A (der Peer am Anschluss)", b.gut?.ok && b.gut.autor === a.autor && b.gut.name === "fahrzeug_gt", b.netz + JSON.stringify(b.gut));
     check("B: gezeichnet an der eigenen Pose (≤ 24 m, im Bild)", t.d <= 24 && t.ndc.every((v) => Math.abs(v) <= 1), `${t.d} m ${t.ndc}`);
     check("ZEIT: Klick bis Code + Enter bis gezeichnet ≤ 10 s", t.ms <= 10000, `${t.ms} ms (A ${msA})`);
     check("B: Stempel und Same reisen tief gleich", b.stempel);

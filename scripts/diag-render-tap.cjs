@@ -15,8 +15,6 @@
 // am Lauf, die Text-Proben am Tap und am Flugschreiber fielen). GPU-frei, hardware-unabhängig.
 // ─────────────────────────────────────────────────────────────────────────
 const { statikServer, starteBrowser, warteAufWelt, urteilEnde } = require("./lib/welt-boot.cjs");
-// Port über RENDER_TAP_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4402.
-const PORT = Number(process.env.RENDER_TAP_PORT || 4402);
 const server = statikServer();
 
 (async () => {
@@ -25,7 +23,7 @@ const server = statikServer();
     // Lebenszeit-Detektor am echten r184-Info — die nightly Light-Real-Hälfte; der
     // GPU-freie Fake-Vertrag oben bleibt der CI-Pfad).
     const REAL = process.env.REAL_RENDERER === "1";
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: REAL ? "linse" : "null", frist: 300000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument((real) => {
