@@ -1,0 +1,48 @@
+  SITZUNG gtx · die Welt steht nach 5.4 s (Schloss nach 0.01 min) · 12 Proben · Welt :27804
+  SITZUNG EICH-FAHRT: jede Probe bis 90 s — das Gesetz: je Probe ≤ 45 s, mit ausnahme ≤ 90 s, die Fahrt ≤ 1800 s; ein Urteil zählt nur im Gesetz, je Probe ihre Sekunden (eich)
+  SITZUNG der Grund der Welt: 77 Größen in 0 s
+  SITZUNG die Welt vor halten.K1#2: 20.3 s (580 Takte, 81 Chunks)
+  EICH 5.4 s · halten.K1#2 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor fahrzeug.K5#1: 2.4 s (im Spiel 40.4 ms, durch die Tür — wege +13 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …)
+  SITZUNG die Welt vor fahrzeug.K5#1: 12.5 s (582 Takte, 81 Chunks, nach der Tür)
+  EICH 23.4 s · fahrzeug.K5#1 · Deckel 15 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor tore.K3#1: 2.1 s (im Spiel 34.4 ms, durch die Tür — wege +52 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-145.8,-1096.2,-143.7,-1094.1/1] …)
+  SITZUNG die Welt vor tore.K3#1: 12.7 s (583 Takte, 81 Chunks, nach der Tür)
+  EICH 0.2 s · tore.K3#1 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  EICH 0.2 s · tore.K3#2 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt (Zwilling von tore.K3#1)
+  SITZUNG Grundstellung vor fahrzeug.K2#1: 2.3 s (im Spiel 44.3 ms, durch die Tür — wege +12 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …)
+  SITZUNG die Welt vor fahrzeug.K2#1: 12.6 s (583 Takte, 81 Chunks, nach der Tür)
+  EICH ≥ 90 s · fahrzeug.K2#1 · Deckel 10 s · Gesetz 45 s · am Eich-Deckel
+  SITZUNG Grundstellung vor fahrzeug.K2#2: 3 s (im Spiel 38 ms, durch die Tür)
+  SITZUNG die Welt vor fahrzeug.K2#2: 13.3 s (582 Takte, 81 Chunks, nach der Tür)
+  EICH ≥ 90 s · fahrzeug.K2#2 · Deckel 55 s · Gesetz 90 s · am Eich-Deckel
+  SITZUNG Grundstellung vor streaming.K4#2: 2.3 s (im Spiel 39.8 ms, durch die Tür)
+  SITZUNG die Welt vor streaming.K4#2: 13.6 s (584 Takte, 81 Chunks, nach der Tür)
+  EICH 40.7 s · streaming.K4#2 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor profiband.K1#1: 2.1 s (im Spiel 39 ms, durch die Tür)
+  SITZUNG die Welt vor profiband.K1#1: 13.2 s (583 Takte, 81 Chunks, nach der Tür)
+  EICH 64.2 s · profiband.K1#1 · Deckel 64 s · Gesetz 90 s · im Gesetz, das Urteil zählt
+  EICH 64.2 s · profiband.K1#2 · Deckel 64 s · Gesetz 90 s · im Gesetz, das Urteil zählt (Zwilling von profiband.K1#1)
+  EICH 64.2 s · profiband.K2#1 · Deckel 64 s · Gesetz 90 s · im Gesetz, das Urteil zählt (Zwilling von profiband.K1#1)
+  EICH 64.2 s · profiband.K2#2 · Deckel 64 s · Gesetz 90 s · im Gesetz, das Urteil zählt (Zwilling von profiband.K1#1)
+  EICH 64.2 s · profiband.K3#1 · Deckel 64 s · Gesetz 90 s · im Gesetz, das Urteil zählt (Zwilling von profiband.K1#1)
+  EICH 64.2 s · profiband.K3#2 · Deckel 64 s · Gesetz 90 s · im Gesetz, das Urteil zählt (Zwilling von profiband.K1#1)
+  SITZUNG Grundstellung vor klang.K4#1: 2.4 s (im Spiel 39 ms, durch die Tür — wege +60 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-145.8,-1096.2,-143.7,-1094.1/1] …)
+  SITZUNG die Welt vor klang.K4#1: 13.2 s (583 Takte, 81 Chunks, nach der Tür)
+  EICH 37.6 s · klang.K4#1 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  EICH 37.6 s · klang.K4#2 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt (Zwilling von klang.K4#1)
+  SITZUNG Grundstellung vor klang.K5#2: 2.1 s (im Spiel 38.3 ms, durch die Tür — wege +64 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-137.1,-1156.6,-135,-1154.6/1] …)
+  SITZUNG die Welt vor klang.K5#2: 12.7 s (583 Takte, 81 Chunks, nach der Tür)
+  EICH 27.9 s · klang.K5#2 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor speicher.K1#1: 2.1 s (im Spiel 41.3 ms, durch die Tür — wege +58 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-145.8,-1096.2,-143.7,-1094.1/1] …)
+  SITZUNG die Welt vor speicher.K1#1: 13.3 s (582 Takte, 81 Chunks, nach der Tür)
+  EICH 57.9 s · speicher.K1#1 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie
+  EICH 57.9 s · speicher.K1#2 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie (Zwilling von speicher.K1#1)
+  SITZUNG Grundstellung vor speicher.K2#1: 0.1 s (im Spiel 36.2 ms)
+  SITZUNG die Welt vor speicher.K2#1: 8.1 s (539 Takte, 81 Chunks, nach der Grundstellung)
+  EICH 50.4 s · speicher.K2#1 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (GRÜN) zählt nie
+  EICH 50.4 s · speicher.K2#2 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie (Zwilling von speicher.K2#1)
+  SITZUNG Grundstellung vor speicher.K4#2: 2.5 s (im Spiel 47.7 ms, durch die Tür — wege +13 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …)
+  SITZUNG die Welt vor speicher.K4#2: 13.3 s (582 Takte, 81 Chunks, nach der Tür)
+  EICH 40.7 s · speicher.K4#2 · Deckel 15 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Fahrt 717.7 s (Soll ≤ 1800 s) · 12 Proben · Grundstellung 11×
