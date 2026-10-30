@@ -2432,12 +2432,10 @@ async function checkBandRezeptKatalog({ page, check }) {
                 res.b.err = (e && e.message) || String(e);
             }
 
-            // ===== (c) KATALOG: Studio-Rezepte-Sektion + Donor-Abschied im DOM =====
+            // ===== (c) KATALOG: der Donor-Abschied im DOM (jedes Rezept als Knoten der Bibliothek: gate:nervensystem S) =====
             try {
                 r._renderWorkshopDOM();
                 const list = document.getElementById("workshop-list");
-                res.c.farnRow = !!(list && list.querySelector('.workshop-studio-recipe-row[data-recipe="farn"]'));
-                res.c.recipeRows = list ? list.querySelectorAll(".workshop-studio-recipe-row").length : -1;
                 res.c.wagenRow = !!(list && list.querySelector('[data-blueprint="fahrzeug_wagen"]'));
                 res.c.torBasisRow = !!(list && list.querySelector('[data-blueprint="tor_basis"]'));
                 // die Alt-Donoren sind ABWESEND, die Substanz-Tabelle traegt sie.
@@ -2559,15 +2557,14 @@ async function checkBandRezeptKatalog({ page, check }) {
             `sum0=${JSON.stringify(b.sum0)} sumOv=${JSON.stringify(b.sumOv)} blume ${JSON.stringify(b.blume0)}/${JSON.stringify(b.blumeOv)}`
     );
     check(
-        "Rezept-Katalog (c) der Katalog zeigt `farn`, die Alt-Donoren fehlen im DOM und in state.blueprints, die Substanz-Tabelle trägt sie (wagen 17 · tor 4)",
-        c.farnRow === true &&
-            c.wagenRow === false &&
+        "Rezept-Katalog (c) die Alt-Donoren fehlen im DOM und in state.blueprints, die Substanz-Tabelle trägt sie (wagen 17 · tor 4)",
+        c.wagenRow === false &&
             c.torBasisRow === false &&
             c.wagenAbsent === true &&
             c.torBasisAbsent === true &&
             c.wagenSubstanzParts === 17 &&
             c.torSubstanzParts === 4,
-        c.err || `rezeptZeilen=${c.recipeRows} wagen=${c.wagenSubstanzParts} tor=${c.torSubstanzParts}`
+        c.err || `wagen=${c.wagenSubstanzParts} tor=${c.torSubstanzParts}`
     );
     check(
         "Rezept-Katalog (d) tor_drachentor: Slider = PARAMS-Länge des porta-Kerns, der ov treibt die Vorschau, kein ov-Schlüssel im Welt-Cache",

@@ -666,6 +666,21 @@ dasselbe Werk auf jedem Weg mit dem Bau-Hash der gezeigten Stufe: KI-Satz (`spaw
 Foundry (`build-asset` L0–L2), P2P (der Mitspieler baut es byte-gleich), und der Atlas (`npm run atlas -- --find neuntes`)
 nennt das Buch als die EINE Quelle der Art.
 
+### B8 — DER STAMMBAUM: WIE DAS BUCH SICH UND SEINE ARTEN NENNT (SOLL, studios.K5)
+
+Ein Kern mit Rezepten trägt `STAMMBAUM = { studio, arten: { <kind>: <Name des Bereichs> } }` (der Haupt-Kern top-level, ein
+Zweit-Kern unter seinem Namensraum) — rein additiv, PRESETS und Bau bleiben byte-gleich. Die Brücke reicht je Kern seine Tafel,
+seine Vertrags-Datei und die Rezepte, die er ins Buch trug, im Umschlag (`stammbaum`, neben dem eingefrorenen Buch, nie in ihm),
+dazu jeden Zwilling (ein Rezept unter einer schon vergebenen id — das Buch nimmt es nicht, der Stammbaum nennt es). Der Wirt
+leitet daraus den EINEN Baum Studio → Bereich → Teil ab (`_stammbaum`): je Rezept ein Teil mit seinem Ziel (die Regel des
+Trägers steht nur dort), seiner Quelle (Datei · Anker) und seinem Leser (`werk` · `wesen` · `praegung` · `streu` · `welt`; ohne
+Leser ein toter Knoten); die sichtbaren Baupläne ohne Rezept hängen in der Werkstatt (die eigenen), im Ultiversum (die Tore in
+die Welten) und beim Wirt ohne Gesetzbuch (die Waisen). Die Werkstatt-Bibliothek (`_workshopRenderBlueprintList`: Baum, Suche,
+der Griff `_stammbaumGriff`) und der Wort-Katalog der KI (`_studioWortKatalog`, die Gruppen des Prompts `_studioWortGruppen`)
+lesen denselben Baum — der Wirt nennt kein Studio und keine Art. Wache: `gate:nervensystem` S (jedes Teil mit Eltern
+und Quelle auf Datei:Zeile, kein Zwilling, kein toter Knoten, das neunte Buch unter seinem eigenen Namen, der Griff und das
+Wort der KI an EINEM Knoten).
+
 ## §4 Die Empfänger-Gesetze (Taille-Erbe)
 
 Diese vier gelten für JEDEN Leser des Manifests (AnazhRealm heute, P2P-geteilte
@@ -727,6 +742,8 @@ Fünf Schritte, immer dieselben — das ist „die gleiche Pipeline für alles":
    Substanz); der EINE Auto-Register-Chokepoint liest sie aus dem Buch — keine
    Zeile im Wirt, kein zweiter Register-Pfad. Nur eine Art, die ein Wirts-Verb
    braucht (wachsen, Portal, Hand), trägt ihre Zeile im Wirt.
+   Ebenso nennt der Kern sich und seine Arten selbst (B8, `STAMMBAUM`): sein Werk
+   hängt im EINEN Stammbaum der Werkstatt und der KI, ohne Zeile im Wirt.
 5. **Wächter:** `gate:nervensystem` E beweist den Weg für JEDES neue Buch
    (Werkstatt → Welt, Stufen, Kosten, Speicher, ohne eine Zeile AnazhRealm-Edit),
    ein `gate:nervensystem-<domäne>` die Komponenten der Domäne + eingefrorene

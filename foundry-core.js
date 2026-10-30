@@ -5144,6 +5144,24 @@ function setSeasonColors(s) {
     }
 }
 
+// B8 — DER STAMMBAUM (Studio-Vertrag B8, studios.K5, rein additiv): wie das Buch sich und seine Arten nennt. Die Brücke
+// reicht die Tafel je Kern im Umschlag (`stammbaum`), der Wirt leitet daraus den EINEN Baum Studio → Bereich → Teil ab
+// (`_stammbaum`) — die Werkstatt-Bibliothek und der Wort-Katalog der KI lesen ihn, kein Wirt nennt eine Art beim Namen.
+var STAMMBAUM = {
+    studio: "Phytogenesis & Lithos",
+    arten: {
+        tree: "Bäume",
+        shrub: "Sträucher",
+        flower: "Blumen",
+        grass: "Gras",
+        rock: "Stein",
+        fern: "Farne",
+        reed: "Schilf",
+        brush: "Gestrüpp",
+        deadwood: "Stämme und Stümpfe",
+    },
+};
+
 // ERFINDER-WELLE (Katalysator §2 B4, „regelbar, alle Assets") — DIE REGLER-TABELLEN DER
 // PFLANZEN-DOMAENEN: die ov-Reise existiert in buildInstance seit je (Object.assign(P, ov)
 // NACH deriveParams*), diese Tabellen machen sie SICHTBAR (die Werkstatt rendert ihre

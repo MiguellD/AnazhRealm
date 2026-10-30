@@ -12,6 +12,10 @@
 //   E2 (AUF ALLEN WEGEN): je Weg der Bau-Hash der gezeigten Stufe — Werkstatt · KI-Satz (die Antwort der KI ein fester
 //     DSL-Text, das Prompt lehrt das Wort) · Foundry (build-asset L0–L2 = die gezeigten Stufen) · P2P (ein Mitspieler baut das
 //     Werk byte-gleich) — und der Atlas nennt die EINE Quelle.
+//   S (DER STAMMBAUM, Studio-Vertrag B8): der EINE Katalog Studio → Bereich → Teil (`_stammbaum`) wird ROT, sobald ein Teil ohne
+//     Eltern oder als Zwilling auftaucht — je Teil Quelle auf Datei:Zeile und Leser, kein toter Knoten, die Bibliothek der
+//     Werkstatt trägt jeden Knoten (auch nach einem Tausch bei gleicher Zahl: der Merker liest den Stand, nie die Zahl), ihr
+//     Griff setzt den Meilenstein, das Wort der KI trifft jeden Knoten.
 const { statikServer,
     starteBrowser,
     nullRenderer,
@@ -42,7 +46,6 @@ const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 // DAS URTEIL E (rein): je Soll sein Täter; leer = grün.
 const NEUN_SOLL = [
     ["3/3 Baupläne (_kindPolicyVereinen → _foundryAutoRegisterSpecies)", (m) => m.bauplaene === 3 && m.regler === 7],
-    ["das Wort (_studioBlueprintForWord)", (m) => m.wort === "stele_meilenstein"],
     ["site am Weg streut nicht (_placePolicyFor)", (m) => m.ort === "weg"],
     [
         "Kosten-Leiste L0–L2 im Budget (_workshopKostenLeiste)",
@@ -57,6 +60,42 @@ const NEUN_SOLL = [
     ["der Wirt nennt die Art nie", (m) => m.nennt === 0],
 ];
 const neunTaeter = (m) => NEUN_SOLL.filter(([, ok]) => !ok({ kosten: [], lod: [], ...m })).map(([n]) => n);
+// S — DIE RATSCHEN (30.10., beim Namen): die Werke des Wirts ohne Gesetzbuch und die Teile ohne Ziel (der Waldboden: sein Buch
+// bringt keine Wirts-Zeile B7, die Streu trägt ihn). Sie fallen nur — ein neuer Name taucht auf (ROT), ein geheilter fällt hier.
+const WAISEN =
+    "brennkolben damm drehbank esse esse_meister fass kiste ruestung_brustpanzer seelenstein_altar stamm_gefallen start_plattform trank_lebenssaft waterfall webstuhl";
+const OHNE_GRIFF = "farn gestruepp schilf strauch stumpf totstamm";
+// je Soll sein Schlüssel im Befund (der Selbsttest verdirbt ihn), sein Name und sein Urteil; die Ratschen stehen als Gleichheit
+const STAMM_SOLL = [
+    ["waisen", "ohne Eltern nur WAISEN", (v) => v === WAISEN],
+    ["ohneGriff", "ohne Griff nur OHNE_GRIFF", (v) => v === OHNE_GRIFF],
+    ...[
+        "zwillinge Zwilling",
+        "tot toter Knoten",
+        "ohneZeile Quelle ohne Zeile",
+        "bibliothek Bibliothek ohne Knoten",
+        "wort Wort am Knoten vorbei",
+    ].map((z) => [z.split(" ")[0], "kein " + z.slice(z.indexOf(" ") + 1), (v) => !v]),
+];
+const stammTaeter = (s) => STAMM_SOLL.filter(([k, , ok]) => !ok(s[k])).map(([k, n]) => `S: ${n} (${s[k]})`);
+// die Zeile einer Quelle: die Tafel, ein Bereich (ab der Tafel seine `arten`-Zeile, sonst die Zeile, die die Art trägt), ein
+// Rezept (ab PRESETS die Zeile seines Schlüssels mit einem Objekt, sonst in der Datei, sonst unter dem Namen seiner Zeile, sonst
+// die Zeile, die ihn als Wert nennt) — nie eine Zeile, die die id nur mit einer Zahl nennt (Skala, Budget)
+function zeileIn(datei, anker, name) {
+    const z = lies(datei).split("\n");
+    const suche = (re, von = 0) => z.findIndex((l, i) => i >= von && re.test(l)) + 1;
+    const [T, P, art] = [
+        suche(/\bSTAMMBAUM\s*[:=]/),
+        suche(/\bPRESETS\s*=\s*\{/),
+        /^STAMMBAUM\.arten\.(.+)/.exec(anker),
+    ];
+    if (art) return suche(RegExp(`\\b${art[1]}: "`), T - 1) || suche(RegExp(`kind: "${art[1]}"`));
+    const zeile = (a) => RegExp(`(^|[{,\\s])"?${a.replace(/[^\w-]/g, "\\$&")}"?\\s*:\\s*\\{`);
+    return anker === "STAMMBAUM"
+        ? T
+        : [anker, name].reduce((n, a) => n || suche(zeile(a), P - 1) || suche(zeile(a)), 0) ||
+              suche(RegExp(`\\b${anker}: "`));
+}
 // DIE WEGE (rein): je Weg sein Bau-Hash und sein Soll
 const WEGE = [
     ["Werkstatt", (m) => m.lod[0].bau, (m) => m.steht === true],
@@ -94,7 +133,6 @@ hauptLauf(async () => {
         const gut = {
             bauplaene: 3,
             regler: 7,
-            wort: "stele_meilenstein",
             ort: "weg",
             kosten,
             steht: true,
@@ -106,7 +144,7 @@ hauptLauf(async () => {
             foundry: { lod: ["b0", "b1", "b2"], ki: "k", roh: "r" },
             p2p: { bau: "b0", stand: "s" },
         };
-        const main = { regler: 7, bauplaene: 0, wort: null, ort: "weg", nennt: 0 }; // gemessen an f7dd313c
+        const main = { regler: 7, bauplaene: 0, ort: "weg", nennt: 0 }; // gemessen an f7dd313c
         check("Selbsttest E: gesund ist grün", !neunTaeter(gut).length, neunTaeter(gut).join(" · "));
         check("Selbsttest E: main nennt den Register-Chokepoint", /_kindPolicyVereinen/.test(neunTaeter(main)[0]));
         const rot = (m) => wege({ ...gut, ...m }).flatMap((w) => (w.ok ? [] : [w.weg]));
@@ -115,6 +153,18 @@ hauptLauf(async () => {
             "Selbsttest E2: gesund trägt jeden Weg, ein fremder Hash nennt P2P, ein stummes Prompt den KI-Satz",
             r === "|P2P|KI-Satz",
             r
+        );
+        // S: gesund grün; je Soll ein verdorbener Befund (eine neue Waise, ein geheilter Name, …), der genau sein Soll beim Namen nennt
+        const gutS = { waisen: WAISEN, ohneGriff: OHNE_GRIFF };
+        const boes = [...STAMM_SOLL.map(([k]) => [k, "x " + gutS[k]]), ["waisen", WAISEN.slice(12)]];
+        const stumm = boes.filter(([k, v]) => {
+            const t = stammTaeter({ ...gutS, [k]: v });
+            return t.length !== 1 || !t[0].startsWith("S: " + STAMM_SOLL.find(([x]) => x === k)[1]);
+        });
+        check(
+            "Selbsttest S: gesund grün, jeder Täter des Stammbaums beim Namen",
+            !stammTaeter(gutS).length && !stumm.length,
+            stumm.join(" · ")
         );
         process.exit(errs.length ? 1 : 0);
     }
@@ -168,12 +218,51 @@ hauptLauf(async () => {
         const e = {
             regler: (f.paramsByKind.stele || []).length,
             bauplaene: ["meilenstein", "grenzstein", "obelisk"].filter(bp).length,
-            wort: r._studioBlueprintForWord("meilenstein"),
             ort: r._placeDispatch(pl, {}) === null && pl.siteTag,
+        };
+        // S — der Stammbaum der lebenden Welt und seine Bibliothek (jeder Knoten ein Element, jeder sichtbare Bauplan EINE Zeile),
+        // gerendert nach einem Tausch bei gleicher Zahl: der Merker sah __s, dann fällt __s und __t kommt — ein Merker, der die
+        // Zahl statt des Stands liest, liefert den alten Baum, und die Bibliothek zählt eine Zeile zu wenig (30.10., M4-Band)
+        const B = r._stammbaum();
+        const bps = st.blueprints;
+        bps.__s = {};
+        r._stammbaum();
+        bps.__t = bps.__s;
+        delete bps.__s;
+        const liste = document.getElementById("workshop-list");
+        r._workshopRenderBlueprintList(liste, r._ensureWorkshopState());
+        const im = new Set([...liste.querySelectorAll("[data-knoten]")].map((x) => x.dataset.knoten));
+        const zeilen = [...liste.querySelectorAll(".workshop-list-row")].map((x) => x.dataset.blueprint);
+        const sichtbar = Object.keys(bps).filter((n) => r._katalogSichtbar(n)).length;
+        delete bps.__t;
+        const baum = B.wurzeln
+            .flatMap((w) => [w, ...w.kinder.flatMap((b) => [b, ...b.kinder])])
+            .map((k) => [k.id, k.lab, k.quelle, k.ziel, k.konsum]);
+        const namen = (l) =>
+            l
+                .map((x) => x.name || x)
+                .sort()
+                .join(" ");
+        e.stamm = {
+            teile: [B.befund.teile, B.befund.mitQuelle],
+            waisen: namen(B.befund.ohneEltern),
+            zwillinge: namen(B.befund.zwillinge),
+            tot: namen(B.befund.tot),
+            ohneGriff: namen(B.befund.ohneGriff),
+            bibliothek:
+                baum.flatMap(([id]) => (im.has(id) ? [] : id)).join(" ") +
+                (zeilen.length === new Set(zeilen).size && zeilen.length === sichtbar
+                    ? ""
+                    : `${zeilen.length} Zeilen ≠ ${sichtbar} nach dem Tausch`),
+            wort: B.teile
+                .filter((t) => t.rezept && t.ziel && r._studioBlueprintForWord(t.rezept) !== t.ziel)
+                .map((t) => t.rezept)
+                .join(" "),
+            baum,
         };
         return [c.map((v) => +v.toFixed(4)), e];
     });
-    // der Weg des Spielers: B, die Suche, der Meilenstein, „Fertigen", F
+    // der Weg des Spielers: B, die Suche, der Meilenstein (die Kosten-Leiste), sein Griff in der Bibliothek, F
     const klick = async (sel) => {
         await (await page.waitForSelector(sel, { visible: true })).click();
     };
@@ -187,7 +276,8 @@ hauptLauf(async () => {
             return t.length && t.every((x) => x.leiste) && t;
         };
         e.kosten = await (await page.waitForFunction(leiste, { timeout: 60000 })).jsonValue();
-        await klick("#workshop-action-zone .workshop-fertigen");
+        await klick("#workshop-search");
+        await klick('#workshop-list [data-knoten="rezept:meilenstein"] .stammbaum-griff');
         await page.keyboard.press("KeyF");
         // steht er vor dem Spieler, tritt der Spieler 4 · 25 · 50 m zurück: L0 · L1 · L2
         Object.assign(
@@ -306,6 +396,21 @@ hauptLauf(async () => {
     );
     e.atlas = [...String(atlas).matchAll(/^ {2}(\S+):\d+ +\w+ {2}→ {2}Gesetzbuch/gm)].map((m) => m[1]).join(" + ");
 
+    // S — jede Quelle auf Datei:Zeile; die Tafel druckt den Baum (Studio › Bereich › Teil [Datei:Zeile] → Ziel · Leser)
+    const { baum, ...S } = e.stamm;
+    const ohne = [];
+    console.log("\n=== S: DER STAMMBAUM DER TEILE ===");
+    for (const [id, lab, q, ziel, konsum] of baum) {
+        const z = q && q.datei && zeileIn(q.datei, q.anker, lab);
+        if (q && q.datei && !z) ohne.push(`${q.datei} ${q.anker}`);
+        console.log(
+            `  ${id} „${lab}" ${z ? `[${q.datei}:${z}]` : ""} ${ziel ? `→ ${ziel} · ${konsum}` : konsum || ""}`
+        );
+    }
+    S.ohneZeile = ohne.join(" · ");
+    const sTaeter = stammTaeter(S);
+    console.log("S-ZAHL " + JSON.stringify(S));
+    check("S: der Stammbaum", !sTaeter.length, sTaeter.join(" · "));
     check("C: die Welt-Skala liest die Daten (4.16·0.82)", c[0] === 3.4112, String(c[0]));
     check("C: LIVE GEWINNT — scale.eiche ×2 → 8.32·0.82", c[1] === 6.8224, String(c[1]));
     const taeter = neunTaeter(e);
