@@ -1,0 +1,30 @@
+#!/bin/bash
+# gpu-schloss-blick.sh (Station, nur lesen, 30.10.): der Zustand des GPU-Schlosses der OMEN — takt24c (3 Stationen), takt25b (38) und
+# takt25p (5) blieben ungemessen mit „gpu-lauf.sh schwieg 600 s beim Warten“, ohne CI-Job auf der OMEN. gpu-lauf.sh meldet beim Warten
+# alle 60 s; schweigt es, hängt ein Befehl davor (Verdacht: tasklist der Vorfahrt-Probe `worker`, oder der Start der Git-Bash selbst).
+# Die OMEN-gpu-lauf.sh wartet STUMM auf: kein Runner.Worker · keine letzte hook.log-Zeile „wartet auf Schloss“ · CI-Ruhe 0 · mkdir des
+# Schlosses. Jeder Aufruf mit Frist und Uhr — die Station hängt nie selbst.
+set -u
+H=$(dirname "$(dirname "$OUT")"); mkdir -p "$OUT"; o=$OUT/blick.txt
+. /c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh 2>/dev/null; S=${GPU_SCHLOSS:-/c/Users/micha/AppData/Local/Temp/claude/gpu-schloss}   # der Pfad der OMEN-gpu-lauf.sh (TEMP fehlt der Station)
+uhr() { local t=$(date +%s%N); timeout "$1" "${@:2}" 2>&1; local r=$?; echo "   [exit $r · $(( ($(date +%s%N) - t) / 1000000 )) ms${r:+$([ $r = 124 ] && echo ' · HÄNGT')}]"; }
+{
+  echo "== $(date '+%F %T') Schloss $S"; ls -la "$S" 2>&1; echo "-- besitzer.txt:"; cat "$S/besitzer.txt" 2>&1; echo
+  [ -d "$S" ] && echo "-- Alter: $(( $(date +%s) - $(stat -c %Y "$S") )) s · besitzer.txt $(( $(date +%s) - $(stat -c %Y "$S/besitzer.txt" 2>/dev/null || date +%s) )) s"
+  echo "-- date jetzt: $(date "+%F %T %Z") · uptime-Boot: $(date -d @$(( $(date +%s) - $(cut -d. -f1 /proc/uptime) )) "+%F %T")"
+  p=$(grep -oE 'pid=[0-9]+' "$S/besitzer.txt" 2>/dev/null | head -n 1 | cut -d= -f2)
+  [ -n "$p" ] && { echo "-- Halter pid $p:"; uhr 30 tasklist -FI "PID eq $p" -NH; }
+  echo "== hook.log des Runners (ci_wartet liest die LETZTE Zeile, ci_ruhe_rest die letzte „ ende “):"; tail -n 8 /c/actions-runner/hooks/hook.log 2>&1 | cut -c1-200
+  ( . /c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh 2>/dev/null && { ci_wartet && echo "   ci_wartet: JA" || echo "   ci_wartet: nein"; echo "   ci_ruhe_rest: $(ci_ruhe_rest) s"; echo "   schloss_erster: $(schloss_erster)"; } )
+  echo "== die Vorfahrt-Probe von gpu-lauf (worker):"; uhr 30 tasklist -FI "IMAGENAME eq Runner.Worker.exe"
+  echo "== tasklist ohne Filter (Zahl):"; uhr 30 bash -c 'tasklist -NH | wc -l'
+  echo "== Start einer Git-Bash:"; uhr 30 bash -c 'echo bash lebt'
+  echo "== Prozesse (gpu-lauf · werkbank · serie · punkte · messplatz · chrome mit Debug-Port):"
+  uhr 60 powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { \$_.CommandLine -match 'gpu-lauf|werkbank|serie\.sh|punkte\.cjs|messplatz\.sh|remote-debugging-port' } | ForEach-Object { '{0} <-{1} {2:HH:mm:ss} {3}' -f \$_.ProcessId, \$_.ParentProcessId, \$_.CreationDate, \$_.CommandLine.Substring(0,[Math]::Min(180,\$_.CommandLine.Length)) }"
+  echo "== bash-Prozesse: $(uhr 30 bash -c 'tasklist -FI "IMAGENAME eq bash.exe" -NH | grep -c bash')"
+  for id in takt25b-gtx takt25p-gtx z83-abab z82b-abab; do
+    for f in "$H/lauf/$id.out" "$H/lauf/$id/punkte.out"; do [ -f "$f" ] && { echo "== $f ($(wc -l < "$f") Zeilen, Ende)"; grep -v '^\s*$' "$f" | tail -n 25 | cut -c1-240; }; done
+    [ -d "$H/lauf/$id" ] && { echo "-- $H/lauf/$id:"; ls -la "$H/lauf/$id" | tail -n 6; }
+  done
+} > "$o" 2>&1
+cat "$o"
