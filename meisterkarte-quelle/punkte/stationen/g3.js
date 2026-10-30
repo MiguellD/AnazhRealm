@@ -1355,6 +1355,59 @@ const stationen = [
         pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "spec/pruefbuehne/**"],
         quelle: "1 = Halbschatten am Fuß ≤ 3 cm an einem Gerät",
     },
+    {
+        kriterium: "schatten.K1",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        // schatten-k1-zuwachs-neu: der Halbschatten wächst mit dem Abstand — `_schattenFilter` (stamm/bild-kosten.js) legt den
+        // Halbschatten der Sonne auf den Boden-Radius (Halbschatten/2 + filterTexel statt max: unter dem max trug der Boden jede Kante
+        // bis 4,9 m gleich breit). Die Linse: werkbank licht --kontakt --zuwachs an der Platte saat-s7-platte der Prüfbühne
+        // (spec/pruefbuehne/welt.json, der Boden-Stoff ohne Relief), Uhr 0,5 und 0,3, je Pose die Gerade der 10–90-%-Breite über L
+        // (Weg Werfer → Empfänger längs des Lichts), `kontaktUrteil` (scripts/lib/licht-linsen.cjs). Die Kosten: zerlegen --nur k0 an
+        // der Mess-Wiese (die Kontakt-Kaskade ABBA am echten Weg), VOR der Bühne (nach dem Welt-Tor stünde „wiese" auf der Insel).
+        // SOLL je Uhr 0,5 | 0,3 und Pose ego | third: die Scheibe 0,9 ± 0,25 cm je m aus ≥ 75 % gültigen Kanten über ≥ 1 m Weg, der
+        // Fuß ≤ 3 cm, Exit 0, Adapter echt; an der GTX dazu die Kontakt-Kaskade k0 ≤ 0,3 ms.
+        // GPU-PROBE: node scripts/werkbank.cjs fenster 1920 1080 · umstellen --ort wiese · zerlegen --nur k0 --json k0.json ·
+        // licht --kontakt --zuwachs --uhr 0.5,0.3 (je mit --port $WERKBANK_PORT in der Welt der Sitzung); das Urteil fällt an Radeon und GTX
+        probe: { sek: 900, befehl: befehlDer({
+            name: "schatten.K1#2",
+            schritte: [
+                { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
+                { name: "wiese", args: ["umstellen", "--ort", "wiese"], muss: true },
+                { name: "kosten", args: ["zerlegen", "--nur", "k0", "--json", "@DIR@/k0.json"], datei: "@DIR@/k0.json", ms: 300000 },
+                { name: "kontakt", args: ["licht", "--kontakt", "--zuwachs", "--uhr", "0.5,0.3"], ms: 540000 },
+            ],
+        }) },
+        env: envDer,
+        gpu: true,
+        zeit: true,
+        minuten: 15,
+        urteil: (j) => {
+            if (!j) return { gruen: false, zahl: "keine Messung in {AUS}" };
+            const hw = !!j.adapter && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(j.adapter);
+            const k = j.schritte && j.schritte.kontakt;
+            const w = k && k.json;
+            if (j.fehler || !w) return { gruen: false, zahl: "Folge: " + String(j.fehler || (k && k.rest) || "").slice(-200) };
+            const z = ["0.5", "0.3"].flatMap((u) =>
+                ["ego", "third"].map((p) => {
+                    const q = ((w[u] || {}).posen || {})[p] || {};
+                    const [zu, fu] = [q.zuwachs || {}, (q.fuss || {}).halbschattenCm];
+                    const ok = Math.abs(zu.scheibeCmJeM - 0.9) <= 0.25 && zu.kanten >= 0.75 * zu.von && zu.wegM >= 1 && fu != null && fu <= 3;
+                    return [ok, `Uhr ${u} ${p} ${zu.scheibeCmJeM} cm/m (${zu.kanten}/${zu.von} Kanten, ${zu.wegM} m, Fuß ${fu} cm)`];
+                })
+            );
+            const k0 = ((((j.dateien || {}).kosten || {}).auswertung || {}).zeilen || []).find((x) => x.id === "k0");
+            const ms = k0 ? k0.deltaMs : null;
+            const gtx = /nvidia/i.test(j.adapter || "");
+            const gruen = hw && k.exit === 0 && z.every(([ok]) => ok) && ms != null && (!gtx || ms <= 0.3);
+            return {
+                gruen,
+                zahl: z.map(([, s]) => s).join(" · ") + ` · Kontakt-Kaskade k0 ${ms} ms${gtx ? " (GTX ≤ 0,3)" : ""}, ` + (j.adapter || "Adapter ungenannt"),
+            };
+        },
+        pfad: [...BILD, "gelaende-core.js", "stamm/gelaende-*.js", "spec/pruefbuehne/**", "scripts/lib/zerlege-linse.cjs"],
+        quelle: "2 = Zuwachs ≈ 0,9 cm je m, Uhr 0,5 und 0,3, Kosten ≤ +0,3 ms an der GTX, beide Geräte",
+    },
 
     // ───────── lod.K1 — der Umriss hält in jeder Stufe (w4-laub-saum) ─────────
     // DER SAUM AUS DEM GESETZ im Spiel-Baum (phyto-core `karteSaum` · `karteSaumMuster` in der Wahl der Stufen `impostorMips`, die
@@ -1700,19 +1753,6 @@ stationen.fehlt = [
             "`bild --arm` (material-mikro) hat Ziele nur für Boden und Fels; für Rinde, Putz, Holz und Haut auf Armlänge fehlt das Ziel. " +
             "β misst klassenMasse zwar, aber eine Linse gegen Kachel-Muster gibt es nicht.",
         quelle: "2 = Boden, Fels, Rinde, Putz, Holz, Haut, kein Kachel-Muster (1/f^β, β 0–2,4), beide Geräte",
-    },
-    {
-        kriterium: "schatten.K1",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund:
-            "Werkzeug fehlt: licht --kontakt misst den Zuwachs je m nicht als Urteil (3 m hinter dem Pfosten 2,5 cm aus 2/6 Kanten), " +
-            "bei Uhr 0,3 brechen dunkle Bodenflecken der Prüfbühne die Linie (2/12 Kanten gültig); die Kosten ≤ +0,3 ms an der GTX " +
-            "misst kein ABAB der Station. Dazu (25.10., `kontaktSicht` an d43cb61c gelesen): die Ebene `fern` entsteht nur bei einem Schatten " +
-            "> 3,6 m — bei Uhr 0,5 wirft der 3-m-Pfosten keinen, der Zuwachs je m hat am Mittag keine zweite Ebene; und die Kosten sind " +
-            "die einer Kontakt-Härtung gegen ihr Fehlen — die Welt trägt keine (Kaskaden-Texel 0,17 m), es gibt nichts abzuschalten.",
-        quelle: "2 = Zuwachs ≈ 0,9 cm je m, Uhr 0,5 und 0,3, Kosten ≤ +0,3 ms an der GTX, beide Geräte",
     },
 ];
 
