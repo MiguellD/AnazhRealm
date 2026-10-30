@@ -88,3 +88,4 @@ schloss-blick-2 Exit0 station gpu-schloss-blick.sh an 6b3da705
 omen-gpu-lauf-1 Exit0 station omen-gpu-lauf.sh an 6b3da705
 takt25c-gtx gemessen punkte 6b3da705 gtx: 0 grün / 2 rot
 takt25q-gtx gemessen punkte 6b3da705 gtx: 0 grün / 6 rot
+z83-abab2 LANGSAMER abab 6b3da705 gegen 73bdf938: stadt 4+4 LANGSAMER · w-ego 4+4 LANGSAMER
