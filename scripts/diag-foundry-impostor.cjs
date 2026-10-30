@@ -4,14 +4,16 @@
 // sind GESCHNITTEN. Zwei Teile:
 //   A (Null-Renderer, HART): die MECHANIK — `_foundryEnsureImpostorRecord` legt eine Atlas-Zelle mit Rahmen an (aus
 //     der L1-Geometrie; headless bäckt nie jemand); Eiche + Fichte teilen Quad, Material und EINE Karten-Gruppe, die
-//     Schicht und der Rahmen reisen je Instanz (aKarte) über beide Slot-Chokepoints; KEIN asset-foundry-iframe im DOM; die
-//     gefallenen Methoden wacht gate:constitution (G3).
+//     Schicht und der Rahmen reisen je Instanz (aKarte) über beide Slot-Chokepoints; das Bake-iframe und die gefallenen
+//     Methoden wacht gate:constitution (G3).
 //   C (echter Renderer — CI: WebGL2 auf swiftshader, lokal WebGPU auf der Karte; HART): das LAYOUT — eine Probe-Gestalt (links oben eine Tafel) backt durch den ECHTEN Bake
 //     (`_karteWeltBacken`: Bühne, MRT, Ablage BC bzw. rgba8) und steht links oben (nicht gedreht, nicht gespiegelt) — und
 //     die Kamera-Kleber-Wand (ein befreiter Slot zeichnet nie: die Gruppe verdichtet, der Lebende zieht mit Matrix und Karte
 //     in die Lücke). C5: der Atlas wächst in SEINEN Texturen über den EINEN Abschied (`_texturAbschied`), die Vorlage des
-//     Programms bindet die lebende (Selbsttest: das alte Wachsen). Teil C beginnt erst, wenn die Welt
-//     steht (`weltRuht`, die EINE Ruhe); eine fremde Zelle im Probe-Atlas ist ROT beim Namen.
+//     Programms bindet die lebende (Selbsttest: das alte Wachsen). C6 (lod.K3): die Karte einer flachen Krone, gedreht und
+//     skaliert, aus jeder Blick-Hebung −20/0/40/80° gegen ihre Gestalt (Deckung, IoU; Selbsttest: jeder Ring waagrecht
+//     gebacken). Teil C beginnt erst, wenn die Welt steht (`weltRuht`, die EINE Ruhe); eine fremde Zelle im Probe-Atlas
+//     ist ROT beim Namen.
 //   node scripts/diag-foundry-impostor.cjs
 const { statikServer, starteBrowser, hauptLauf, wandEnde } = require("./lib/welt-boot.cjs");
 

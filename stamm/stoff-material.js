@@ -1221,8 +1221,8 @@ class AnazhRealm_stoff_material {
                                     const _lz = _lkZ.div(_ll);
                                     // right = cross(up, look) = (look.z, 0, −look.x)
                                     const _off = _ecke.mul(_rahmen.x);
-                                    const _cV = _Ta.cos(_phiV),
-                                        _sV2 = _Ta.sin(_phiV);
+                                    const _cPhi = _Ta.cos(_phiV),
+                                        _sPhi = _Ta.sin(_phiV);
                                     const _bV = _Ta.positionGeometry.y
                                         .mul(2.0)
                                         .sub(1.0)
@@ -1267,9 +1267,9 @@ class AnazhRealm_stoff_material {
                                     );
                                     const _swayT = _naht.vorlage(_swayW);
                                     mat.positionNode = _Ta.vec3(
-                                        _axis.x.add(_lz.mul(_off)).sub(_sV2.mul(_lx).mul(_bV)).add(_swayT.x),
-                                        _hHv.add(_cV.mul(_bV)).add(_swayT.y),
-                                        _axis.z.add(_lx.negate().mul(_off)).sub(_sV2.mul(_lz).mul(_bV)).add(_swayT.z)
+                                        _axis.x.add(_lz.mul(_off)).sub(_sPhi.mul(_lx).mul(_bV)).add(_swayT.x),
+                                        _hHv.add(_cPhi.mul(_bV)).add(_swayT.y),
+                                        _axis.z.add(_lx.negate().mul(_off)).sub(_sPhi.mul(_lz).mul(_bV)).add(_swayT.z)
                                     );
                                     mat.userData = mat.userData || {};
                                     mat.userData.impostorBillboard = true; // Linsen-Marker (diag-impostor)
