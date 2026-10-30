@@ -15,7 +15,7 @@
     },
     "belichtung": {
         "kurve": "ACESFilmicToneMapping",
-        "quelle": "die Tonkurve der r128-Labore (worlds/*: ACESFilmicToneMapping, Belichtung 1,0): die 18-%-Karte nach der Belichtung auf Mittelgrau + 1 EV, k·L 0,3158; die Welt fährt seit F1 Khronos PBR Neutral (AnazhRealm.BELICHTUNG, k·L 0,44)"
+        "quelle": "die Tonkurve der r128-Labore (worlds/*: ACESFilmicToneMapping, Belichtung 1,0): die 18-%-Karte nach der Belichtung auf Mittelgrau + 1 EV, k·L 0,3158; die Welt fährt seit F1 Khronos PBR Neutral, ihre Karte seit licht.K1 auf Mittelgrau (AnazhRealm.BELICHTUNG, k·L 0,22)"
     },
     "gemessen": {
         "labor": {
