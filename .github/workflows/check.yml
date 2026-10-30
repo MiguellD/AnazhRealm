@@ -1466,7 +1466,8 @@ jobs:
               if: matrix.gruppe == 18
               # Fährt den ECHTEN Renderer (swiftshader, Software-Holz) mit dem echten Wasser-Material auf einem Fluss-Bogen:
               # kein Zebra bei Wasser-Uhr 3600 s gegen 60 s, kein Schaum ohne Gesetz-Grund, der Sturm bewegt das Wasser
-              # (Wind-Zeile des Gesetzes); der Sturm-Regen allein auf Schwarz zeigt Schlieren, quer zum Wind geneigt.
+              # (Wind-Zeile des Gesetzes); der Sturm-Regen allein auf Schwarz zeigt Schlieren, quer zum Wind geneigt; das
+              # Fragment-WGSL des Bogens liest keine Variable, die nur ein Zweig rechnet (B7, das TSL-Leck).
               run: npm run gate:wasser-leben:bild
 
             - name: Look-Golden-Linse (Selbst-Test der perzeptuellen MSSIM-Metrik)
