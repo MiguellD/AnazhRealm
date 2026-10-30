@@ -10,10 +10,9 @@ const { ausDatei, path, fs } = require("./lib/welt-boot.cjs");
 //        heilt die Karte (ein Name ohne Karte folgt seinem Vorgänger, ein toter fällt — beide benannt), ordnet, schreibt die
 //        Dateien, die Stamm-Tags in index.html und die Karte, zieht die Stamm-Quellen der Tafeln mit (frisch bleibt frisch,
 //        veraltet bleibt veraltet) und beweist wie --beweis. Eine Datei über der Decke teilt die Karte (Modul/teil), nie a/b/c.
-//   --beweis [--rev HEAD~1] [--liste <datei>]
+//   --beweis [--rev HEAD~1]
 //        vm-Fingerabdruck alt (der Stamm an rev als EIN Skript) ↔ neu (die Dateien des Baums): je Glied Deskriptor-Art,
 //        toString-sha, name/length, Datenwert — 0 Abweichungen; die Schlüssel-Ordnung zählt nicht (sie IST der Umzug).
-//        --liste schreibt die Rumpf-Hash-Liste (je Glied: Seite|Name|Art|sha alt|sha neu).
 //   --fmt | --lint [--basis origin/main]
 //        prettier --write bzw. eslint NUR auf den Stamm-Dateien, die gegen die Merge-Basis geändert sind (samt Arbeitsbaum
 //        und neuen Dateien) — npm run stamm:fmt / stamm:lint
@@ -137,17 +136,15 @@ function beweise(root, T, teile) {
     const ma = new Map(fa.map((x) => [schl(x), x]));
     const ab = { art: 0, quelle: 0, namelen: 0, daten: 0, nurAlt: 0, nurNeu: 0 };
     const namen = [];
-    const liste = [];
     for (const x of fa) {
         const y = mb.get(schl(x));
-        liste.push([x.s, x.k, x.art, x.quelle || x.daten || "", y ? y.quelle || y.daten || "" : "-"].join("|"));
         if (!y) (ab.nurAlt++, namen.push(`nur alt: ${x.k}`));
         else for (const k of ["art", "quelle", "namelen", "daten"]) if (x[k] !== y[k]) (ab[k]++, namen.push(`${k}: ${x.k}`));
     }
     for (const y of fb) if (!ma.has(schl(y))) (ab.nurNeu++, namen.push(`nur neu: ${y.k}`));
     const ordnung = fa.filter((x, i) => !fb[i] || schl(x) !== schl(fb[i])).length;
     const summe = Object.values(ab).reduce((s, v) => s + v, 0);
-    return { n: fa.length, ab, summe, namen, liste, ordnung, msAlt: alt.ms, msNeu: neu.ms, dateien: teile.length };
+    return { n: fa.length, ab, summe, namen, ordnung, msAlt: alt.ms, msNeu: neu.ms, dateien: teile.length };
 }
 const beweisZeile = (r) =>
     `Fingerabdruck: ${r.n} Glieder, Abweichungen ${r.summe} (Art ${r.ab.art}, Rumpf ${r.ab.quelle}, name/length ${r.ab.namelen}, ` +
@@ -474,12 +471,11 @@ function main() {
         const r = beweise(ROOT, stamm.textAusRev(ROOT, opt("--rev", "HEAD~1")), teileVon(ROOT));
         console.log(beweisZeile(r));
         for (const n of r.namen.slice(0, 20)) console.log("  ✗ " + n);
-        if (opt("--liste")) fs.writeFileSync(path.resolve(opt("--liste")), r.liste.join("\n") + "\n");
         return r.summe ? 1 : 0;
     }
     if (argv.includes("--fmt") || argv.includes("--lint"))
         return werkzeugLauf(ROOT, argv.includes("--fmt") ? "fmt" : "lint", opt("--basis", "origin/main"));
-    console.log("stamm-umzug: --nach-karte [--trocken] | --beweis [--rev] [--liste <datei>] | --fmt | --lint | --selftest");
+    console.log("stamm-umzug: --nach-karte [--trocken] | --beweis [--rev] | --fmt | --lint | --selftest");
     return 2;
 }
 

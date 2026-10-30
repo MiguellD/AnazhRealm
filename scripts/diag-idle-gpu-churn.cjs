@@ -12,8 +12,6 @@
 // Lauf: node scripts/diag-idle-gpu-churn.cjs   (CI: npm run gpu-lens)
 const { statikServer, starteBrowser, hauptLauf, sleep } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-// Port über IDLE_GPU_CHURN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4395.
-const PORT = Number(process.env.IDLE_GPU_CHURN_PORT || 4395);
 const server = statikServer();
 // generöse Schwelle: ein Recompile-CASCADE ist Dutzende+ (Sky-Env-Bug war ~270/Regen); ein paar
 // Erst-Compile-Nachzügler im Idle-Fenster (eine neue Animations-/LOD-Variante) sind kein Churn.
@@ -25,7 +23,7 @@ const REGEN_THRESHOLD = 4; // Env-Regenerierung — MUSS ~0 sein (die scharfe Wa
 const KASKADE = 40; // Gesamt-Compiles je Fenster, egal ob neu oder wiederholt
 let laufenderRuf = "-"; // der benannte evaluate, der gerade läuft — ein Frist-Riss nennt ihn
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "webgl", frist: 300000, zusatz: ["--enable-webgl", "--ignore-gpu-blocklist"] });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 }); // klein → schnelle Rasterung; Compile ist res-unabhängig

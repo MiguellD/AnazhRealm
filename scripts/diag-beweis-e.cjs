@@ -25,7 +25,6 @@ const argOf = (k, d) => {
     const i = process.argv.indexOf(k);
     return i > 0 ? process.argv[i + 1] : d;
 };
-const PORT = Number(process.env.BEWEIS_PORT || 4463);
 const TAG = argOf("--tag", "head");
 const OUT = path.resolve(argOf("--out", path.join(root, "artifacts", "beweis-e")));
 const KLASSEN = argOf("--klassen", "kreatur,baum,haus,wiese").split(",");
@@ -197,7 +196,7 @@ const SCHUSS_FN = async (kam) => {
 
 hauptLauf(async () => {
     fs.mkdirSync(OUT, { recursive: true });
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: PROTO_MS });
     const page = await browser.newPage();
     await page.setViewport({ width: W, height: H });

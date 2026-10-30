@@ -65,7 +65,6 @@
 //   node scripts/diag-schatten-werfer.cjs [--selftest]
 const { statikServer, warteAufWelt, nullSeite, pruefer, stammLib } = require("./lib/welt-boot.cjs");
 
-const PORT = Number(process.env.SCHATTEN_WERFER_PORT || 4577);
 const SELBSTTEST = process.argv.includes("--selftest");
 const server = statikServer();
 
@@ -1425,7 +1424,7 @@ function probe(selbsttest) {
 }
 
 (async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite();
     const { errs, check } = pruefer();
     try {

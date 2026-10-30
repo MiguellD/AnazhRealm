@@ -31,7 +31,6 @@
 "use strict";
 const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, vm } = require("./lib/welt-boot.cjs");
 
-const PORT = Number(process.env.CROSSFADE_PORT || 4418);
 const { errs, check } = pruefer();
 
 // ===== TEIL (a): die geladene Klasse, das Gesetz und die Studio-Blende =====
@@ -305,7 +304,7 @@ function mitTaeter(glied, taeter) {
 // ===== TEIL (b) — W5.4: die CPU-Doppel-Mitgliedschaft im lebenden System (headless) =====
 async function runPartB() {
     const server = statikServer();
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 240000 });
     await server.zeige(page, 30000);
 

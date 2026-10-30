@@ -38,7 +38,7 @@
 // Port: PRUEFBUEHNE_PORT (Default 4394). Exit 1 bei einem Wurf auf der Bühne, einem gehaltenen Akt, einer blinden
 // Kontrolle, einem Page-Error oder einem roten Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, argOpt: opt, pngDatei, booteWelt, ausDatei, path, fs } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, argOpt: opt, pngDatei, booteWelt, ausDatei, path, fs, weltTor } = require("./lib/welt-boot.cjs");
 
 const argv = process.argv.slice(2);
 const SELBSTTEST = argv.includes("--selftest");
@@ -833,8 +833,7 @@ const S0_TON = { hue: [28, 45], satMax: 0.75, palette: { hex: 0xff7a35, nacht: 1
 // DAS LICHT ADDIERT LINEAR (F1, die Foto-Kette): mit minus ohne Feuer je Kanal im LINEAREN Licht der Ausgabe (sRGB entschlüsselt),
 // der Rest wieder in sRGB — unter der Tonkurve Khronos PBR Neutral (linear bis zur Schulter, der Schwarzpunkt fällt in der
 // Differenz) ist das das Licht des Feuers auf dem Boden (die Differenz der sRGB-Werte zöge die Nacht nichtlinear ab).
-const s0Lin = (c) => (c / 255 <= 0.04045 ? c / 255 / 12.92 : Math.pow((c / 255 + 0.055) / 1.055, 2.4));
-const s0Srgb = (l) => (l <= 0.0031308 ? 12.92 * l : 1.055 * Math.pow(l, 1 / 2.4) - 0.055);
+const { srgbLin: s0Lin, linSrgb: s0Srgb } = require("./lib/abnahme-urteil.cjs");
 function s0TonNetto(e, ohne) {
     if (!e || !e.ton || !ohne || !ohne.ton) return null;
     const [R, G, B] = e.ton.rgb.map((c, i) => s0Srgb(Math.max(0, s0Lin(c) - s0Lin(ohne.ton.rgb[i]))));
@@ -1030,21 +1029,8 @@ async function lichtLauf() {
     try {
         await phase("Laden", async (rest) => {
             await page.goto(url, { waitUntil: "domcontentloaded", timeout: rest });
-            const id = await page.evaluate(
-                async (json) => {
-                    await window.__weltDa((w) => w.importWorldBeside);
-                    if (!r || !r.importWorldBeside) return null;
-                    const res = r.importWorldBeside(json);
-                    if (!res.ok) return null;
-                    r.activeWorldSet(res.worldId);
-                    return res.worldId;
-                },
-                json,
-                rest
-            );
-            if (!id) throw new Error("die Bühne ließ sich nicht importieren");
+            await weltTor(page, json, Math.max(1, bis - Date.now()));
             zeit("die Bühne importiert");
-            await page.reload({ waitUntil: "domcontentloaded", timeout: Math.max(1, bis - Date.now()) });
         });
         await phase("Boot", async () => {
             const b = await booteWelt(page);
@@ -1270,11 +1256,10 @@ async function lichtLauf() {
                         }
                         // das Licht des Himmels im Schuss (der Täter der Nacht beim Namen): die Bestrahlung der Umgebung von oben
                         // und das Sternen-Licht der EINEN Atmosphäre (Zenit-Leuchtdichte, Welt-Einheiten) bei der Sonne des Schusses
-                        const L3 = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
                         const env = r._himmelsIrradianz();
                         const sonneY = r._dayNightSunDirection(r._sonnenWinkel(s.timeOfDay)).y;
-                        himmelL = env ? +(Math.PI * L3(env.oben)).toFixed(4) : null;
-                        sternL = +L3(r._atmoSternenLicht(sonneY)).toFixed(4);
+                        himmelL = env ? +(Math.PI * luma709(env.oben)).toFixed(4) : null;
+                        sternL = +luma709(r._atmoSternenLicht(sonneY)).toFixed(4);
                     } finally {
                         r._leuchtTakt = alt;
                         if (schein === "tag") {
@@ -1290,7 +1275,7 @@ async function lichtLauf() {
                         }
                     }
                     const u8 = auf.u8;
-                    const lum = (i) => (0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2]) / 255;
+                    const lum = (i) => luma709(u8, i) / 255;
                     const v = new T.Vector3();
                     // je Ring rr (m) um die Feuerstelle 24 Winkel: der Boden-Punkt im Bild, je der 3×3 Pixel um ihn fn(i)
                     const ringe = (radien, fn) => {
@@ -1650,27 +1635,9 @@ hauptLauf(async () => {
         ["buehne", false],
     ];
     if (SELBSTTEST) laeufe.push(["buehne", true]);
-    let importiert = false;
     for (const [welt, schein] of laeufe) {
-        if (welt === "buehne" && !importiert) {
-            const json = ausDatei(BUEHNE_DATEI, true);
-            // Geboren wie im Spiel: importWorldBeside (Welt-Tor) + aktiv + Reload.
-            const id = await page.evaluate((json) => {
-                const res = r.importWorldBeside(json);
-                if (!res.ok) return null;
-                r.activeWorldSet(res.worldId);
-                return res.worldId;
-            }, json);
-            if (!id) throw new Error("die Bühne ließ sich nicht importieren");
-            importiert = id;
-        }
-        if (welt === "buehne") {
-            // jeder Bühnen-Lauf auf frischer Bühne (der Schein-Lauf erbt nichts vom sauberen)
-            await page.evaluate((id) => {
-                r.activeWorldSet(id);
-            }, importiert);
-            await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
-        }
+        // jeder Bühnen-Lauf auf frischer Bühne, geboren wie im Spiel durch die Tür (der Schein-Lauf erbt nichts vom sauberen)
+        if (welt === "buehne") await weltTor(page, ausDatei(BUEHNE_DATEI, true), 60000);
         const b = await booteWelt(page);
         if (!b.ok) {
             console.log(`  ⛔ Welt ${welt}: Boot nicht bereit nach 120 s`);

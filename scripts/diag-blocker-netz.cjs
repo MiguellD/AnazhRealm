@@ -23,12 +23,11 @@
 //   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): der Stamm ist sauber, drei eingeschleuste Schreiber fallen rot
 // beim Namen, ein gestempelter bleibt grün.
-//   node scripts/diag-blocker-netz.cjs [--selftest]   (npm run gate:blocker-netz; Port BLOCKER_NETZ_PORT)
+//   node scripts/diag-blocker-netz.cjs [--selftest]   (npm run gate:blocker-netz)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde, stammLib } = require("./lib/welt-boot.cjs");
 
-const PORT = Number(process.env.BLOCKER_NETZ_PORT || 4604);
 
 // DIE BOX-WAND (AST, acorn — Kommentare und Zeichenketten fallen mit dem Parser): jeder Schreiber der Blocker-Boxen beim Namen.
 //   ein Schreiben IN die Boxen: Feld- oder Index-Zuweisung, ++/--, delete, eine mutierende Array-Methode oder Object.assign an
@@ -844,7 +843,7 @@ function urteil(S) {
 }
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 300000 });
     await server.zeige(page, 60000);
     await page.evaluate(async () => {

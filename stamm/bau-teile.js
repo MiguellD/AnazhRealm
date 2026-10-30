@@ -2185,6 +2185,7 @@ class AnazhRealm_bau_teile {
             // W-E (§8.3) — die Antenne IST die Substanz: das Material-Tag-Profil
             // reist in den Material-Bau (Glut glimmt, Eisen spiegelt, Holz wärmt).
             if (partMatDef && partMatDef.tags) matOpts.tags = partMatDef.tags;
+            if (partMatDef) matOpts.stoff = part.material; // die Optik der Zeile (material.K5, `_stoffOptik`)
             // Trägt die Part-Geometrie ein `color`-Attribut (der Fels-Stoff, gelaende-core `felsNetz`), liest das Material die
             // Vertex-Farbe als Albedo (`vertexColorAlbedo` in _buildPbrNodeMaterial, ohne Terrain-Geologie-
             // Overlay). Rein geometrie-getrieben; Parts ohne color-Attribut unverändert.

@@ -19,12 +19,11 @@
 //   (P) kein Page-Error — der EINE Sammler (welt-boot) macht den Lauf ROT mit Namen.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): die Quell-Wand ist am Stamm grün und fällt bei einem eingeschleusten
 // Zustands-Leser, einem Instanz-Feld, einem Tabellen-Schreiber und einem Leser vorbei am Gedächtnis rot.
-//   node scripts/diag-raum-tags.cjs [--selftest]   (npm run gate:raum-tags; Port RAUM_TAGS_PORT)
+//   node scripts/diag-raum-tags.cjs [--selftest]   (npm run gate:raum-tags)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde, stammLib } = require("./lib/welt-boot.cjs");
 
-const PORT = Number(process.env.RAUM_TAGS_PORT || 4606);
 
 // DIE QUELL-WAND: der Aufrufbaum von `_raumTagsRechnen` (über `this.<methode>(`), seine Eingänge und seine Tabellen.
 const MUTIERER = /^(add|delete|clear|set|push|pop|splice|shift|unshift|sort|reverse|fill|copyWithin)$/;
@@ -498,7 +497,7 @@ function urteil(S, Q) {
 
 hauptLauf(async () => {
     const Q = quellWand(stammLib.text(root));
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 300000 });
     await server.zeige(page, 60000);
     await page.evaluate(async () => {

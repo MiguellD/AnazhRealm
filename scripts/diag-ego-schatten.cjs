@@ -26,7 +26,7 @@
 // GEGENPROBE im selben Lauf: sechs Täter fallen je beim Namen — die Regel von main (`visible`), „Ebene 0 bleibt", „fremde
 // Ebene", „das Gerät mit", „Zwilling geweckt" und die Bühne ohne Frame-Schritt („Karte steht"); fällt einer nicht, ist die Linse blind.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): das Urteil über einen grünen Lauf und je einen Täter.
-//   node scripts/diag-ego-schatten.cjs [--selftest]   (npm run gate:ego-schatten; Port EGO_SCHATTEN_PORT, 4398)
+//   node scripts/diag-ego-schatten.cjs [--selftest]   (npm run gate:ego-schatten)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
@@ -152,7 +152,6 @@ if (process.argv.includes("--selftest")) {
 const { statikServer, starteBrowser, laufUhr, path, fs } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
-const PORT = Number(process.env.EGO_SCHATTEN_PORT) || 4398;
 const BILDER = (() => {
     const i = process.argv.indexOf("--bilder");
     return i > 0 ? path.resolve(process.argv[i + 1]) : null;
@@ -281,7 +280,7 @@ function buehne(arg) {
                 for (let y = 0; y < H; y++)
                     for (let x = 0; x < W; x++) {
                         const i = y * zeile + x * 4;
-                        l[y * W + x] = 0.2126 * u8[i] + 0.7152 * u8[i + 1] + 0.0722 * u8[i + 2];
+                        l[y * W + x] = luma709(u8, i);
                     }
                 if (bilder) {
                     const rgba = new Uint8ClampedArray(W * H * 4);
@@ -506,7 +505,7 @@ function buehne(arg) {
 
 (async () => {
     console.log("=== EGO-SCHATTEN — der Leib wirft in der Ego-Sicht, das Auge sieht ihn nicht ===");
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 600000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 180 });

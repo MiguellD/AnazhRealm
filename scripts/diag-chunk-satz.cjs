@@ -380,14 +380,13 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const PORT = Number(process.env.CHUNK_SATZ_PORT) || 4483;
 const server = statikServer();
 
 const { errs, check } = pruefer();
 
 (async () => {
     console.log("=== CHUNK-SATZ (Welle B) — Null-Renderer, die Render-Bürger je Klasse ===");
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 300000 });
     page.setDefaultTimeout(280000);
     let out = null;

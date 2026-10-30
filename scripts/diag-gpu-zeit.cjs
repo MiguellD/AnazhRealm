@@ -33,15 +33,13 @@
 //   node scripts/diag-gpu-zeit.cjs      (npm run gate:gpu-zeit)
 // ─────────────────────────────────────────────────────────────────────────
 
-// Port über GPU_ZEIT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4431.
 const { statikServer, warteAufWelt, nullSeite, pruefer, wandEnde } = require("./lib/welt-boot.cjs");
-const PORT = Number(process.env.GPU_ZEIT_PORT || 4431);
 const server = statikServer();
 
 const { errs, check } = pruefer();
 
 (async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 300000 }); // GPU-frei ⇒ der Proxy-Pfad ist die Wahrheit
     page.setDefaultTimeout(280000);
     let out = null;

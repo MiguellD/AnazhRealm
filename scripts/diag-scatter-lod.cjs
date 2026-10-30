@@ -28,7 +28,6 @@
 "use strict";
 const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, stammLib } = require("./lib/welt-boot.cjs");
 
-const PORT = Number(process.env.SCATTER_LOD_PORT || 4441);
 const server = statikServer();
 
 const { errs, check } = pruefer();
@@ -48,7 +47,7 @@ hauptLauf(async () => {
         stammLib.fehlt.wo
     );
 
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 300000 });
     await server.zeige(page, 30000);
 

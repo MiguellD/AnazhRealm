@@ -5,7 +5,6 @@
 const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, studioKern, SELBSTTEST, stammLib } = require("./lib/welt-boot.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
-const PORT = Number(process.env.DRIVE_PORT || 4411);
 const server = statikServer();
 
 const { errs, check } = pruefer();
@@ -203,7 +202,7 @@ hauptLauf(async () => {
     );
 
     console.log("\n=== TEIL B: der lebende Draht (Browser, foundry-ON) ===");
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 180000 });
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // die Orte aus der Welt (`__weltOrte`, scripts/lib/welt-orte.cjs)
     await server.zeige(page, 30000);

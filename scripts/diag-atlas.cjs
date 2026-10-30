@@ -31,14 +31,14 @@ const ROOT = path.resolve(__dirname, "..");
 const RATSCHE = "spec/stamm/ratsche.json";
 const UMZUG = "node scripts/stamm-umzug.cjs --nach-karte";
 
-// ── die Teile eines Baums: je Datei Text, Zeilen und Marker (beide Formen, mit Zeile) ───────────────────────────────
+// ── die Teile eines Baums: je Datei Text, Zeilen und Marker (mit Zeile) ──────────────────────────────────────────
 const zeileAn = (text, at) => text.slice(0, at).split("\n").length;
 function lies(root) {
     return stammLib.dateien(root).map((p) => {
         const text = ausDatei(path.join(root, p));
         const marker = stammLib.marker(text).map((m) => ({
-            id: m.schluessel || m.nn + m.x,
-            name: m.schluessel || m.name,
+            id: m.schluessel,
+            name: m.schluessel,
             themen: m.themen,
             line: zeileAn(text, m.at),
         }));
@@ -113,11 +113,9 @@ function pruefe(root, opt = {}) {
         fehler.push(
             `R5 NAME: ${stammLib.ALT} lebt — der Stamm ist ${stammLib.DIR}/ (die Datei fällt, Lese-Ziel nur in scripts/lib/stamm.cjs)`
         );
-    // R3 die EINE Liste (Tags = Platte; die lib wirft mit den fremden und fehlenden Pfaden)
+    // R3 die EINE Liste (Tags = Platte; die lib wirft mit den fremden und fehlenden Pfaden und an der Form vor dem Schnitt)
     let teile;
     try {
-        if (stammLib.layout(root) !== "zonen")
-            throw new Error(`Layout ${stammLib.layout(root)} statt ${stammLib.DIR}/`);
         teile = lies(root);
     } catch (e) {
         fehler.push(`R3 LISTE: ${e.message}`);
@@ -149,7 +147,7 @@ function pruefe(root, opt = {}) {
         try {
             const K = opt.karte || stammLib.karteVon(root);
             const r = stammLib.ordne(T, K);
-            const datei = (s) => (/^§/.test(s || "") ? `§${s.slice(1)}` : stammLib.pfadVon(s || "?"));
+            const datei = (s) => stammLib.pfadVon(s || "?");
             for (const f of r.fremd)
                 fehler.push(`R7 DOMÄNE: ${f.name} steht in ${datei(f.ist)}, gehört nach ${datei(f.soll)} (Karte: ${f.soll}) — ${UMZUG}`);
             for (const n of r.neu)

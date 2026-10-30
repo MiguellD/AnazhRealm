@@ -71,16 +71,16 @@ const SCHLUPF = (spur, leib, ab, bein, uhr) => {
 // Knochen-Puffer an Band, Phase und Gewicht × Instanz-Matrix, die Uhr ist die Phase der Instanz. Mit `g` geht es unter der
 // Schwere g der Welt (state.gravity; v̂ misst mit ihr — die DSL setzt sie, die Zeile des Tiers muss sie lesen).
 const LAUF = (k) => {
-    const s = r.state;
+    const s = st;
     const T = window.THREE;
     const core = window.__tetrapodaCore;
-    const [echt, wahl, g0] = [core.gangSchritt, r.constructor._gangWahl, s.gravity];
+    const [echt, wahl, g0] = [core.gangSchritt, AnazhRealm._gangWahl, s.gravity];
     // die Täter des Selbsttests (`taeter`): der Vor-Welle-Gang (fester Takt, feste Auslenkung) · der Satz wählt ohne das
     // Gedächtnis des Leibs (das rohe Tempo ohne die Gangart des Vor-Takts — so trabte vor `_gangWahl` jedes anlaufende
     // Satz-Tier bei Fr 0,55) · die Zeile des Tiers ohne die Schwere der Welt
     if (k.taeter === "gang")
         core.gangSchritt = () => ({ omega: 3.2, S: 0.06, schritt: 0.12, tast: 0.5, folge: core.GANG_FOLGE.trab });
-    if (k.taeter === "satz") r.constructor._gangWahl = (g, v, dt, l, L, Z) => echt(v || 0, L, Z);
+    if (k.taeter === "satz") AnazhRealm._gangWahl = (g, v, dt, l, L, Z) => echt(v || 0, L, Z);
     if (k.taeter === "schwere") r._gangZeile = () => undefined;
     if (k.g) s.gravity = -k.g;
     const pm = s.playerMesh.position;
@@ -183,14 +183,14 @@ const LAUF = (k) => {
             seele: k.seele,
             vh: k.vh,
             v,
-            band: satz ? r.constructor.KREATUR_SATZ.baender[cr.userData._satzBand] : null,
+            band: satz ? AnazhRealm.KREATUR_SATZ.baender[cr.userData._satzBand] : null,
             last: !!k.last,
             name: k.last ? `${k.fps} fps · Leiter 1/${maxDiv}` : k.name,
             hueftM: +hueft.toFixed(3),
             ...window.__schlupf(spur, leib, 60, hueft, uhr), // nach 60 Takten Einschwingen
         };
     } finally {
-        [core.gangSchritt, r.constructor._gangWahl, s.gravity] = [echt, wahl, g0];
+        [core.gangSchritt, AnazhRealm._gangWahl, s.gravity] = [echt, wahl, g0];
         delete r._gangZeile;
         if (cr) r.removeCreature(cr);
     }
@@ -204,8 +204,8 @@ const LAUF = (k) => {
 // Gang-Phase je Sekunde, Soll ≥ 1,5 beim Gehen) und die Schritt-Töne (state._schrittKlang.schritte) gegen 2·v·t/Λ, Λ der
 // Doppelschritt des Chokepoints (jeder Schritt klingt).
 const LEIB = (k) => {
-    const s = r.state,
-        A = r.constructor;
+    const s = st,
+        A = AnazhRealm;
     const T = window.THREE;
     const core = window.__tetrapodaCore;
     const p = s.player;
@@ -273,7 +273,7 @@ const LEIB = (k) => {
             if (vor && !lock.on) {
                 zaehl.loeser++;
                 zaehl.wo.push(
-                    +(r.state.player.walkPhase % (2 * Math.PI)).toFixed(2) + "@" + zaehl.takt
+                    +(st.player.walkPhase % (2 * Math.PI)).toFixed(2) + "@" + zaehl.takt
                 );
             }
         }
@@ -371,8 +371,8 @@ const LEIB = (k) => {
 // Takt-Quotient im Schritt, den der Bein-Winkel bei jeder Schwere gleich deckelt. --selftest: die Zeile ohne die Schwere der
 // Welt (der Vor-K07-Gang) → ROT.
 const SCHWERE = (k) => {
-    const s = r.state,
-        A = r.constructor;
+    const s = st,
+        A = AnazhRealm;
     const core = window.__tetrapodaCore;
     const G_MOND = 1.62;
     const rig = s.playerMesh.userData.rig;

@@ -46,12 +46,10 @@
 //   node scripts/diag-asset-inventory.cjs [--selftest]
 const { statikServer, hauptLauf, nullSeite, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
-// Port über ASSET_INVENTORY_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4517.
-const PORT = Number(process.env.ASSET_INVENTORY_PORT || 4517);
 const server = statikServer();
 hauptLauf(async () => {
     const selftest = SELBSTTEST;
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 240000 });
     await page.evaluateOnNewDocument(installWieseSicht);
     await server.zeige(page, 30000);

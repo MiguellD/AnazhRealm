@@ -17,14 +17,13 @@
 
 const { statikServer, hauptLauf, nullSeite, pruefer, urteilEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const SELFTEST = SELBSTTEST;
-const PORT = Number(process.env.PLACE_PORT || 4421);
 const server = statikServer();
 
 const { errs, check } = pruefer();
 
 hauptLauf(async () => {
     console.log(`=== N5 PLACE-POLICY (H8) — foundry-ON, Null-Renderer${SELFTEST ? " · mit Selbst-Test" : ""} ===`);
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 30000);
 

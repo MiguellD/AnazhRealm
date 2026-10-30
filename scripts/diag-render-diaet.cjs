@@ -32,7 +32,6 @@
 "use strict";
 const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, stammLib } = require("./lib/welt-boot.cjs");
 
-const PORT = Number(process.env.RENDER_DIAET_PORT || 4444);
 // Der nur-sinkende ANKER: die 6-Farben-Fixture darf höchstens SO viele Material-Familien
 // erzeugen (heute 1 — EIN geteiltes Material; er darf nie steigen).
 const RD_FAMILIEN_ANKER = 1;
@@ -48,7 +47,7 @@ hauptLauf(async () => {
         stammLib.fehlt(["_archInstanceAdd", "_scatterInstanceAdd"], /userData\.useInstanceTint\)[\s\S]{0,80}setColorAt/),
         stammLib.fehlt.wo
     );
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 300000 });
     await server.zeige(page, 30000);
 

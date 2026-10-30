@@ -181,8 +181,9 @@ function teileDerRuhe(sb, g) {
     return { teile, sk, lage };
 }
 
-const sRGB = (l) => (l <= 0.0031308 ? 12.92 * l : 1.055 * Math.pow(l, 1 / 2.4) - 0.055) * 255;
-const lum = (c) => 0.2126 * sRGB(c[0]) + 0.7152 * sRGB(c[1]) + 0.0722 * sRGB(c[2]);
+const { linSrgb, luma709 } = require("./lib/abnahme-urteil.cjs");
+const sRGB = (l) => linSrgb(l) * 255;
+const lum = (c) => luma709(c.map(sRGB));
 
 function messe(sb, g) {
     const { teile, sk, lage } = teileDerRuhe(sb, g);

@@ -13,13 +13,21 @@
 //   (4) DIE LAMBERT-WAND: der kommentar-freie Stamm baut keinen Lambert-Stoff (das Fundament fiel mit dem Podest, K10);
 //   (5) DIE KARTEN-FARBE: die Studio-Karte reist linear (Render-Target), die Welt-Schicht ist sRGB markiert — der
 //       Karten-Codec (phyto-core impostorMips) kodiert jede Mip-Stufe linear → sRGB, gemessen am echten Codec gegen
-//       die Referenz-Formel (alle 256 Stufen, Stufe 0 und die linear gemittelte Stufe 1); Normalen bleiben Daten.
+//       die Referenz-Formel (alle 256 Stufen, Stufe 0 und die linear gemittelte Stufe 1) (die CPU-Mips der Normale fielen mit
+//       `karteKodiere`: die GPU-Ablage mittelt sie, KARTE_RECHNER_WGSL normalK);
+//   (6) DER SAUM DER KARTE (w4-laub-saum, lod.K1; phyto-core `karteSaum`): EINE Krone aus 900 4 × 4-Flecken je Ansicht
+//       (8 Ansichten 128 × 256 wie der Atlas, Lage aus dem Gesetz-Zufall mulberry32), je Baum- und Strauch-Art des Kerns ihre
+//       Stufen mit dem Saum ihres Gesetzes (treeParams der Nah-Stufe, Same 1, Rahmen-Höhe 1,02 × Wuchshöhe): (a) jede Stufe
+//       deckt den Anteil der Stufe 0 (± ½ Texel je Ansicht, gezählt in ihren Bytes — kein Ausdünnen in der Ferne); (b) der
+//       Umriss folgt der Art: je Saum-Gesetz (Zelle, Laub oder Nadel) ein eigener Umriss der Stufe 2 (ein stummer Saum, ein
+//       Saum der Stärke 0 gibt allen Arten denselben); (c) die Konifere (artPhaenotyp) trägt den Nadel-Saum, die Nadel ist
+//       feiner als das kleinste Blatt.
 // (D3c: der Stoff der Senke, sein Wind und die sRGB-Marke des Atlas standen am Stamm-TEXT und fielen ohne Welt im Skript.)
 // Die Außen-Normalen des Fels-Oktaeders fielen mit dem Host-Bauer (gate:altlasten hält _scatterSpeciesGeometry);
 // die Studio-Gestalt ist byte-genau eingefroren (gate:asset-contract).
 // --selftest: ein Farn mit roher Palette, ein Schilf mit rohem Hex, eine Boden-Zeile ohne Preset, Lambert-Wege und die
-// Karten-Brüche (Hüllen um den Codec) → alle
-// MÜSSEN beim Namen feuern.
+// Karten-Brüche (Hüllen um den Codec: ungekodiert, roh gemittelt, der Saum stumm, Ausdünnen in der Ferne, die Nadel als
+// Laub) → alle MÜSSEN beim Namen feuern.
 // Exit: 0 grün · 1 rot.
 // ============================================================================
 "use strict";
@@ -35,12 +43,12 @@ function codecAus(phytoSrc) {
     new Function("self", phytoSrc)(sandbox);
     return sandbox.__phytoCore || null;
 }
-// linear → sRGB nach IEC 61966-2-1 (die Referenz der Linse, unabhängig vom Codec).
-const srgbSoll = (v) => Math.round((v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055) * 255);
+// linear → sRGB nach IEC 61966-2-1: die Referenz der Linse (abnahme-urteil linSrgb), unabhängig vom Codec.
+const { linSrgb } = require("./lib/abnahme-urteil.cjs");
+const srgbSoll = (v) => Math.round(linSrgb(v) * 255);
 function kartenFarbe(core) {
     const fehler = [];
-    if (!core || typeof core.impostorMips !== "function" || typeof core.normalMips !== "function")
-        return ["der Karten-Codec (phyto-core impostorMips/normalMips) fehlt"];
+    if (!core || typeof core.impostorMips !== "function") return ["der Karten-Codec (phyto-core impostorMips) fehlt"];
     // Stufe 0: 256 opake Texel (16 × 16, V = 1), Texel i trägt den linearen Wert i in r, g, b.
     const w = 16,
         h = 16;
@@ -65,24 +73,25 @@ function kartenFarbe(core) {
             if (!d1 || Math.abs(d1[o * 4] - srgbSoll(m / 4 / 255)) > 1) ab1++;
         }
     if (ab1) fehler.push(`die gemittelte Mip-Stufe ist nicht linear gemittelt und sRGB-kodiert (${ab1} von ${(w * h) / 4} Texeln)`);
-    // Die Normale ist DATEN: ein Byte-Paar reist unverändert durch Stufe 0.
-    const nrm = new Uint8Array(4 * 4);
-    for (let i = 0; i < 4; i++) {
-        nrm[i * 4] = 200;
-        nrm[i * 4 + 1] = 50;
-    }
-    const n0 = core.normalMips(nrm, 2, 2, 4, 1)[0].data;
-    if (n0[0] !== 200 || n0[1] !== 50) fehler.push("die Normalen-Karte wird kodiert — Normalen sind Daten");
     return fehler;
 }
 
-// Kommentare strippen, Strings bewahren (zeichenweise, string-bewusst).
-const ohneKommentare = stammLib.ohneKommentare;
-
-// Den Rumpf ab dem ersten `{` nach dem Kopf (Klammer-Zählung).
-// der EINE Rumpf-Schneider (scripts/lib/stamm.cjs): der Block an der Definition, nie am ersten Text-Treffer
-function rumpf(src, kopf) {
-    return stammLib.rumpf(src, kopf);
+// (6) DER SAUM DER KARTE — ein Rausch-Feld (30 % deckend, 8 Ansichten 128 × 256 wie der Atlas), je Baum- und Strauch-Art des
+// Kerns seine Stufen mit dem Saum ihres Gesetzes; Rückgabe { fehler, n: die Saum-Gesetze }
+function kartenSaum(core, presets) {
+    const [rnd, rgba, fehler, umriss] = [core.mulberry32(1), new Uint8Array(1 << 20), [], new Map()];
+    rgba.forEach((x, i) => i % 4 === 3 && rnd() < 0.3 && (rgba[i] = 255));
+    for (const [art, pre] of Object.entries(presets)) {
+        if (!pre.s || !/^(tree|shrub)$/.test(pre.kind)) continue;
+        const P = core.treeParams(pre.s, 1, 0, pre, 0), sa = core.karteSaum(P, 0.51 * P.height, 256);
+        const st = core.impostorMips(rgba, 128, 2048, 8, null, 6, { saum: Object.assign({ fuss: 256 }, sa) }).stufen.map((s) => s.data.filter((x, i) => i % 4 === 3));
+        const d = st.map((m) => m.filter((x) => x).length / m.length);
+        d.forEach((x, k) => Math.abs(x - d[0]) > 0.5 / (32768 >> (2 * k)) && fehler.push(`Saum ${art}: Stufe ${k} deckt ${x} statt ${d[0]} — die Karte dünnt aus`));
+        if (sa.nadel !== !!core.artPhaenotyp(pre.s, pre).conifer) fehler.push(`Saum ${art}: Laub und Nadel vertauscht`);
+        umriss.set(sa.e + " " + sa.nadel, String(st[2]));
+    }
+    if (new Set(umriss.values()).size < umriss.size) fehler.push(`Saum: ${umriss.size} Saum-Gesetze, ${new Set(umriss.values()).size} Umrisse — der Umriss folgt nicht der Art`);
+    return { fehler, n: umriss.size };
 }
 
 // Ein absorbierender Proxy: frisst jeden THREE-Aufruf der Top-Level-Ausführung des Kerns — nur die Daten zählen
@@ -117,7 +126,7 @@ function kernDaten(phytoSrc, kernSrc) {
 }
 // Der Rumpf einer Kern-Funktion `function name(` (kommentar-frei), null wenn sie fehlt.
 function kernFn(kernNC, name) {
-    return /^[A-Za-z_]\w*$/.test(name) ? rumpf(kernNC, new RegExp("\\nfunction " + name + "\\(")) : null;
+    return /^[A-Za-z_]\w*$/.test(name) ? stammLib.rumpf(kernNC, new RegExp("\\nfunction " + name + "\\(")) : null;
 }
 // Der Emitter eines kind: buildInstance dispatcht flower → emitFlower, grass → emitGrass, die Boden-Arten über
 // WALDBODEN_EMIT, rock über emitRock (die Gestein-Bahn), sonst emitTree.
@@ -139,7 +148,7 @@ function emitterVon(kernNC, kind) {
 function pruefe(o = {}) {
     const fehler = [];
     const kernSrc = o.kern || KERN;
-    const kernNC = ohneKommentare(kernSrc);
+    const kernNC = stammLib.ohneKommentare(kernSrc);
     // (1) DIE STUDIO-ARTEN der Nah-Streu
     const d = kernDaten(PHYTO, kernSrc);
     if (d && o.daten) o.daten(d);
@@ -179,7 +188,10 @@ function pruefe(o = {}) {
     // jeder übrige Stoff steht unter der Lambert-Wand oben
     // (5) DIE KARTEN-FARBE — am echten Codec (phyto-core); die Welt-Schicht ist sRGB markiert
     for (const f of kartenFarbe(o.core || codecAus(PHYTO))) fehler.push(f);
-    return { fehler, arten, weich };
+    // (6) DER SAUM DER KARTE — am echten Codec, je Art des Kerns
+    const saum = kartenSaum(o.core || codecAus(PHYTO), d.presets);
+    fehler.push(...saum.fehler);
+    return { fehler, arten, weich, saum: saum.n };
 }
 
 function main() {
@@ -198,6 +210,9 @@ function main() {
                 { src: (t) => stammLib.ersetze(t, "_kistenPool", "new THREE.MeshStandardNodeMaterial({ color: 0xffffff, roughness: 1, metalness: 0 })", "new THREE.MeshLambertMaterial({ color: 0xffffff })") },
             ],
             ["Karte ohne Kodierung", /Karten-Kodierung weicht/, { core: codec((m, lin) => (m.stufen[0].data.set(lin), m)) }],
+            ["Saum stumm", /der Umriss folgt nicht der Art/, { core: ((c) => ((c.KARTEN_GESETZ.saum = 0), c))(codecAus(PHYTO)) }],
+            ["Ausdünnen in der Ferne", /die Karte dünnt aus/, { core: codec((m) => (m.stufen.slice(3).forEach((s) => s.data.fill(0)), m)) }],
+            ["Nadel als Laub", /Laub und Nadel vertauscht/, { core: ((c, f = c.karteSaum) => Object.assign(c, { karteSaum: (...a) => ({ ...f(...a), nadel: false }) }))(codecAus(PHYTO)) }],
             ["Mip-Stufe roh gemittelt", /linear gemittelt/, { core: codec((m) => { const [a, b] = m.stufen; for (let o = 0; o < b.data.length / 4; o++) { const x = o % b.width, y = (o / b.width) | 0, w = a.width; b.data[o * 4] = Math.round((a.data[(2 * y * w + 2 * x) * 4] + a.data[(2 * y * w + 2 * x + 1) * 4] + a.data[((2 * y + 1) * w + 2 * x) * 4] + a.data[((2 * y + 1) * w + 2 * x + 1) * 4]) / 4); } return m; }) }],
         ];
         let ok = Array.isArray(echt.fehler) && echt.fehler.length === 0;
@@ -217,7 +232,7 @@ function main() {
         process.exit(1);
     }
     console.log(
-        `✅ DIE STREU-WAHRHEIT steht — ${r.arten} Studio-Arten der Nah-Streu (placement.boden ring "nah"), ${r.weich} mit weichem Gewebe backen jede Palette über vegFarbe, kein Lambert-Stoff im Stamm (Fundament, Wege, Fern-Ring, Rauch, Gras lesen den EINEN Himmel), der Karten-Codec kodiert die Studio-Karte sRGB.`
+        `✅ DIE STREU-WAHRHEIT steht — ${r.arten} Studio-Arten der Nah-Streu (placement.boden ring "nah"), ${r.weich} mit weichem Gewebe backen jede Palette über vegFarbe, kein Lambert-Stoff im Stamm (Fundament, Wege, Fern-Ring, Rauch, Gras lesen den EINEN Himmel), der Karten-Codec kodiert die Studio-Karte sRGB, der Saum der Karte deckungstreu je Stufe, ${r.saum} Saum-Gesetze mit eigenem Umriss.`
     );
 }
 main();

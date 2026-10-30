@@ -140,9 +140,7 @@ function selfTest() {
 // ── Render-Pfad (opt-in): den settled Spot rendern, Luma lesen, gegen Golden ──
 async function renderLuma() {
     const server = statikServer();
-    // Port über LOOK_GOLDEN_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4320.
-    const PORT = Number(process.env.LOOK_GOLDEN_PORT || 4320);
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "standard", frist: 600000, zusatz: ["--use-angle=swiftshader"] });
     const page = await browser.newPage();
     await page.setViewport({ width: 640, height: 400 });

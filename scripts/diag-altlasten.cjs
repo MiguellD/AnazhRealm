@@ -2860,8 +2860,9 @@ function scanStufenWand(srcRoh) {
     return errs;
 }
 
-// DIE PORT-WAND (Integration W6): jedes Gate liest seinen Port aus EINER eigenen Variable (`<GATE>_PORT`,
-// Standard sein fester Port) — zwei Formen nebeneinander (die geteilte `DIAG_PORT` in 21 Gates, je-Gate-Variablen in den
+// DIE PORT-WAND (Integration W6): ein Gate, das einen Port von außen braucht, liest ihn aus EINER eigenen Variable (`<GATE>_PORT`);
+// sonst lauscht es frei (`server.lausche(0)`; 29.10. fielen die festen Vorgaben der 55 Linsen ohne Station, die Linsen der Stationen
+// tragen ihre bis zu ihrem nächsten Schnitt) — zwei Formen nebeneinander (die geteilte `DIAG_PORT` in 21 Gates, je-Gate-Variablen in den
 // übrigen) waren ein Zwilling: eine Serie, die DIAG_PORT setzt, gab allen 21 denselben Port. Rot mit Datei.
 // K-WANDUHR: kein Gate steht auf den Ports der Server des Schöpfers (4312, 4313) außer im ANSCHLUSS (die Werkzeuge an seiner
 // offenen Welt; die Liste schrumpft nur) — der eigene Port ist welt-boot `eigenePorte`.
