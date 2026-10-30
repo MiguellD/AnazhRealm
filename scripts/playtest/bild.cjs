@@ -41,9 +41,7 @@ async function checkBandV1731EmotionDrivesWorld({ page, check }) {
     );
 }
 
-async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWelle6G3Lebendigkeit({ page, check }) {
     // ### Welle 6.G3 — Welt-Lebendigkeit ###
     // (a) Tag-Nacht-Zyklus, (b) sanfter Wetter-Übergang —
     // Konstanten, Methoden, Persistenz, DSL-Op, UI-DOM.
@@ -406,9 +404,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }
     }
 }
 
-async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWelle6G4Atmosphere({ page, check }) {
     // ### 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Licht-Material + Fog) ###
     // Tiefe statt homogenem Licht: Hemisphere-Light (Sky-Tint oben, Erd-Tint unten) + licht-reaktives
     // Material + atmosphärischer Fog.
@@ -1046,9 +1042,7 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
     }
 }
 
-async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
     // ### Regler: Sicht-Ring + Cel-Stufen + Fog ###
     const v840Results = await safeEvaluate(
         page,
