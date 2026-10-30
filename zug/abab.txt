@@ -41,3 +41,4 @@ a03b7b0626826d1dd47c21a85bdcf123ecae6e39 LANGSAMER z55n-abab
 b3f9ae95d3bf1188285b135c757b074a12ee3f22 nicht-langsamer takt19-abab
 29a5f696dbfa0ddac659b8ce808e83f32bf1ad29 LANGSAMER z67-bisekt
 715754fc0cff89917d8ee933ba23e208bfdd54fb nicht-langsamer z77-abab
+73bdf9388f22f5c1789e0da5b0c63b6121b045c8 LANGSAMER z78-abab
