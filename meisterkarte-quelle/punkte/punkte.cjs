@@ -52,7 +52,11 @@
 // BUCHUNG (R2 · R6 · R10): je Station und Gerät zählt die JÜNGSTE Messung, deren Abdruck (Befehl, Urteil, Pfad, Hilfen)
 // der Station gleicht und deren Pfad und Linse zwischen Mess-SHA und Kopf ohne Stempel unberührt sind (stempelDateien, linsenVon). 1 = jede
 // Staffel-1-Station auf mindestens einem ihrer Geräte grün · 2 = dazu jede Staffel-2-Station auf JEDEM ihrer Geräte grün ·
-// sonst 0. Ein jüngeres ROT schlägt ein älteres GRÜN; ungemessen ist 0.
+// sonst 0. Ein jüngeres ROT schlägt ein älteres GRÜN.
+// DIE RATSCHE (Schöpfer 30.10.: „Tests sichern nur den Rückfall, nie den Fortschritt — das jetzige Minimum sichern und mehr
+// hereinholen“): ohne frische Messung (R6-alt, ungemessen, Station neu) gilt je Station und Gerät das GRÜN der letzten Buchung
+// weiter („gehalten“, mit Mess-SHA und Zahl von damals); nur ein frisches ROT nimmt es (RÜCKFALL beim Namen), die Wand PFAD
+// hält nie. Ohne Vorbuchung (oder `buchen --ohne-ratsche`) ist ungemessen 0.
 // ZWEI WÄNDE (24.10., Prüfung der Buchung 61 → 80): (PFAD) jeder `pfad`-Glob trifft am Mess-SHA und am Kopf mindestens eine
 // Datei, sonst ist die Station ROT — ein toter Glob macht R6 blind (die KAMPF-Liste nannte einen Schmiede-Kern, den es nicht gab);
 // (GPU) eine GPU-Station zählt nur, wenn ihr Lauf beweist, dass eine Linse auf der Karte zeichnete: ein Adapter eines Herstellers
@@ -1233,7 +1237,21 @@ function stufen(sts, urteil) {
 }
 
 function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehlt = [], opt = {}) {
-    const stand = frischUrteil(messungen, geaendert, hilfe, opt);
+    const frisch = frischUrteil(messungen, geaendert, hilfe, opt);
+    // DIE RATSCHE: das GRÜN der letzten Buchung je Station und Gerät (opt.vorher = stand.json der letzten Buchung)
+    const vorher = new Map();
+    for (const e of Object.values((opt.vorher && opt.vorher.je) || {}))
+        for (const x of e.stationen || []) if (x.gruen && x.sha) vorher.set(x.id + "|" + x.geraet, x);
+    const rueckfall = [];
+    const stand = (st, g) => {
+        const e = frisch(st, g), v = vorher.get(schluessel(st) + "|" + g);
+        if (!v || e.tot) return e;
+        if (!e.ungemessen) {
+            if (!e.gruen) rueckfall.push(schluessel(st) + " " + g + ": " + (e.zahl || "ROT") + " an " + String(e.sha).slice(0, 8) + " (grün gebucht an " + v.sha.slice(0, 8) + ")");
+            return e;
+        }
+        return { gruen: true, zahl: v.zahl, sha: v.sha, gehalten: true, grund: e.grund };
+    };
     const je = {};
     const kriterien = [...new Set(stationen.map((s) => s.kriterium))].sort();
     for (const k of kriterien) {
@@ -1244,7 +1262,7 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
         for (const [n, s] of [[1, s1], [2, s2]])
             for (const x of s.r)
                 for (const y of x.je) {
-                    if (y.e.gruen) teile.push(y.e.zahl + " an " + y.e.sha.slice(0, 8) + " " + y.g);
+                    if (y.e.gruen) teile.push((y.e.gehalten ? "gehalten: " : "") + y.e.zahl + " an " + y.e.sha.slice(0, 8) + " " + y.g);
                     else if (!(n === 1 && s.ok)) offen.push(k + "#" + n + " " + y.g + ": " + (y.e.ungemessen ? y.e.grund : y.e.grund || "ROT: " + y.e.zahl) + (y.e.sha ? " an " + y.e.sha.slice(0, 8) : ""));
                 }
         // eine Staffel ohne Werkzeug (fehlt) nennt sich im Beleg — die Maschine bucht sie nie
@@ -1254,10 +1272,11 @@ function buchen(kopf, stationen, messungen, geaendert, hilfe = hilfeText(), fehl
             beleg: "Maschine: " + (teile.length ? teile.join(" · ") : "0") + (offen.length ? " — offen: " + offen.join(" · ") : ""),
             // ungemessen/tot: das Frische-Urteil selbst — keine frische Messung am Kopf (tot: die Wand PFAD, eine Messung heilt sie nie)
             stationen: [s1, s2].flatMap((s) => s.r.flatMap((x) => x.je.map((y) => ({ id: schluessel(x.s), geraet: y.g, gruen: !!y.e.gruen, zahl: y.e.zahl || null, sha: y.e.sha || null, grund: y.e.grund || null,
-                ...(y.e.ungemessen ? { ungemessen: true } : {}), ...(y.e.tot ? { tot: true } : {}), ...(x.s.beide ? { beide: true } : {}) })))),
+                ...(y.e.ungemessen ? { ungemessen: true } : {}), ...(y.e.tot ? { tot: true } : {}), ...(y.e.gehalten ? { gehalten: true } : {}),
+                ...(x.s.beide ? { beide: true } : {}) })))),
         };
     }
-    return { kopf, je };
+    return { kopf, je, rueckfall };
 }
 
 function ladeMessungen(mdir = path.join(DIR, "messung")) {
@@ -1498,15 +1517,21 @@ function buchenCli(opt) {
     const repo = spielRepo();
     const kopfVoll = voll(repo, opt.kopf);
     const dateien = dateienAm(repo, kopfVoll);
+    // die Ratsche hält gegen die letzte Buchung (stand.json vor dem Schreiben)
+    const vorher = opt.ohneRatsche ? null : liesStand();
     const s = buchen(kopfVoll.slice(0, 8), stationen, ladeMessungen(), (sha) =>
         stempelDateien(git(["diff", "--name-only", sha, kopfVoll], repo), git(["diff", "-U0", "--no-color", sha, kopfVoll], repo)),
-        hilfeText(), fehlt, { tot: (st) => toteGlobs(st.pfad, dateien), roh: rohAus(), linsen: linsenAm(repo, kopfVoll) });
+        hilfeText(), fehlt, { tot: (st) => toteGlobs(st.pfad, dateien), roh: rohAus(), linsen: linsenAm(repo, kopfVoll), vorher });
     s.kopfVoll = kopfVoll;
     s.zeit = new Date().toISOString();
+    if (vorher) s.vorher = vorher.kopf;
     if (opt.trocken) return s;
     fs.writeFileSync(path.join(DIR, "stand.json"), JSON.stringify(s, null, 1) + "\n");
     for (const [k, e] of Object.entries(s.je)) console.log("  " + k + " " + e.punkte + " · " + e.beleg);
-    console.log("Kopf " + s.kopf + " · Maschine " + Object.keys(s.je).length + " Kriterien · Σ " + Object.values(s.je).reduce((a, e) => a + e.punkte, 0) + " → stand.json");
+    for (const r of s.rueckfall) console.log("  RÜCKFALL " + r);
+    const gehalten = Object.values(s.je).reduce((a, e) => a + e.stationen.filter((x) => x.gehalten).length, 0);
+    console.log("Kopf " + s.kopf + " · Maschine " + Object.keys(s.je).length + " Kriterien · Σ " + Object.values(s.je).reduce((a, e) => a + e.punkte, 0) +
+        (vorher ? " · Ratsche gegen " + vorher.kopf + ": gehalten " + gehalten + ", Rückfall " + s.rueckfall.length : " · ohne Ratsche") + " → stand.json");
     return s;
 }
 
@@ -1904,6 +1929,19 @@ async function selbsttest() {
     pruef("BUCHUNG 2 Geräte → 2", b.je["gelaende.K4"].punkte === 2, b.je["gelaende.K4"].beleg);
     b = buchen("kopf", [s1, s2], m2, (sha) => (sha === "b2" ? ["stamm/wasser-hydro.js"] : ["docs/x.md"]), h);
     pruef("BUCHUNG R6 Pfad geändert → GTX alt → 1", b.je["gelaende.K4"].punkte === 1 && /R6/.test(b.je["gelaende.K4"].beleg), b.je["gelaende.K4"].beleg);
+    // DIE RATSCHE: das GRÜN der letzten Buchung hält ohne frische Messung, ein frisches ROT nimmt es beim Namen, die Wand PFAD hält nie
+    {
+        const vor = buchen("alt", [s1, s2], m2, keine, h);
+        const alt6 = (sha) => (sha === "a1" || sha === "b2" ? ["stamm/wasser-hydro.js"] : []);
+        let r = buchen("kopf", [s1, s2], m2, alt6, h, [], { vorher: vor });
+        pruef("RATSCHE R6-alt hält das GRÜN der letzten Buchung → 2", r.je["gelaende.K4"].punkte === 2 && /gehalten: z an a1/.test(r.je["gelaende.K4"].beleg) && !r.rueckfall.length, r.je["gelaende.K4"].beleg);
+        r = buchen("kopf", [s1, s2], [...m2, M("c3", "gtx", "gelaende.K4#2", s2, false, "2026-10-24T10:00:00Z")], alt6, h, [], { vorher: vor });
+        pruef("RATSCHE frisches ROT nimmt die Staffel und nennt den RÜCKFALL → 1", r.je["gelaende.K4"].punkte === 1 && r.rueckfall.length === 1 && /^gelaende\.K4#2 gtx: rot an c3/.test(r.rueckfall[0]), r.rueckfall.join(" | "));
+        r = buchen("kopf", [s1, s2], m2, alt6, h, [], { vorher: vor, tot: () => ["stamm/wasser-weg.js"] });
+        pruef("RATSCHE die Wand PFAD hält nie → 0", r.je["gelaende.K4"].punkte === 0, r.je["gelaende.K4"].beleg);
+        r = buchen("kopf", [s1, s2], m2, alt6, h);
+        pruef("RATSCHE ohne Vorbuchung ist ungemessen 0", r.je["gelaende.K4"].punkte === 0, r.je["gelaende.K4"].beleg);
+    }
     b = buchen("kopf", [s1, s2], m2, () => ["stamm/klang.js", "README.md"], h);
     pruef("BUCHUNG R6 fremde Datei → bleibt 2", b.je["gelaende.K4"].punkte === 2, b.je["gelaende.K4"].beleg);
     b = buchen("kopf", [s1, s2], m2, (sha) => { if (sha === "a1") throw new Error("unbekannt"); return []; }, h);
