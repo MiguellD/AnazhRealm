@@ -3,16 +3,17 @@
 // scripts/lib/stamm.cjs — DIE EINE Lese-Schnittstelle des Stamms (Stamm-Zerlegung).
 //
 // Jedes Werkzeug, das den Stamm als TEXT liest, liest ihn hier: `text(root)` ist der virtuelle Stamm — die Umkehrung der
-// Dateien unter stamm/ (ein Stand vor der Zerlegung: die eine Datei `ALT`). Die Layout-Weiche ist laut: liegen
-// beide Formen oder keine im Baum, wirft sie; ein Text unter 5 MB wirft („Probe blind"). Der Name der alten Datei steht
-// als Lese-Ziel NUR hier (Absenz-Linse in diag-altlasten).
+// Dateien unter stamm/. Die Layout-Weiche ist laut: trägt der Baum die alte Datei `ALT` (die Form vor der Zerlegung) oder
+// kein stamm/*.js, wirft sie; ein Text unter 5 MB wirft („Probe blind"). Der Name der alten Datei steht als Lese-Ziel NUR
+// hier (Absenz-Linse in diag-altlasten).
 //
 // Der Schnitt S ist eine REINE Funktion des Texts an den ATLAS-Markern (`schneide`), seine Umkehrung `fuege`; beide
 // leben in dieser Datei, damit es EIN Gesetz gibt. Die DOMÄNE (D2, `ordne` nach spec/stamm/modul-karte.json):
 //   stamm/<kern>.js     Kopf + `class AnazhRealm {` + die erste Zone (Konstruktor) + `}` + die Naht-Funktion `_stammZonen`
 //   stamm/<modul>.js    `class AnazhRealm_<modul> {` + die Zone `ATLAS · Modul[/teil]` + `}` + ihr Naht-Ruf, dahinter ihre
 //                       Außen-Anweisungen (`AnazhRealm.X = …`) ab ihrem Außen-Marker; Datei-Name = Modul[-teil]
-// Die LAGE (ein Stand vor D2) liest S⁻¹ weiter: stamm/NN[x].js je Marker §NN[x], der Naht-Ruf in 26a.
+// Die LAGE (stamm/NN[x].js je Marker §NN[x], vor D2) fiel mit dem Register-Treiber (scripts/bump-version.cjs): seit dem 20.10.
+// trägt sie kein Zweig, und jeder Zweig der Domäne merged über git.
 // Die Leerzeile vor jedem Marker trägt die Umkehrung; S verlangt sie (sonst wirft S).
 //
 //   node scripts/lib/stamm.cjs --selftest     beweist Umkehrung, Ordnung, Layout-Weiche, 5-MB-Wand, Kanon, ort, liefere
@@ -25,11 +26,10 @@ const DIR = "stamm";
 const KARTE = "spec/stamm/modul-karte.json";
 const MIN_BYTES = 5 * 1024 * 1024;
 const KLASSE_AUF = "class AnazhRealm {";
-const MARKER_RX = /^( {4})?\/\/ ===== ATLAS §(\d\d)([a-z]?) · ([^—]+?) — (.+?) =====\s*$/;
 const DOMAENE_RX = /^( {4})?\/\/ ===== ATLAS · ([A-Z][a-z]+(?:\/[a-z][a-z0-9]*)?) — (.+?) =====\s*$/;
 const ZONEN_DATEI_RX = /^stamm\/[a-z0-9]+(?:-[a-z0-9]+)?\.js$/;
 const STAMM_TAG_RX =
-    /^([ \t]*)<script src="((?:anazhRealm\.js|stamm\/[a-z0-9]+(?:-[a-z0-9]+)?\.js))(\?v=[^"]*)?" defer><\/script>[ \t]*$/;
+    /^([ \t]*)<script src="(stamm\/[a-z0-9]+(?:-[a-z0-9]+)?\.js)(\?v=[^"]*)?" defer><\/script>[ \t]*$/;
 // die Domäne „Modul/teil" heißt in der Datei modul-teil, ihre Klasse AnazhRealm_modul_teil
 const stammName = (s) => s.toLowerCase().replace("/", "-");
 const pfadVon = (s) => `${DIR}/${stammName(s)}.js`;
@@ -64,15 +64,6 @@ const NAHT_FN = [
     "    for (const Z of zonen) tragen(Z, Ziel, statisch, true);",
     "}",
 ];
-// die Naht der LAGE (ein Stand vor D2: EIN Ruf am Kopf von 26a über alle Zonen) — S⁻¹ liest sie weiter
-const NAHT_LAGE = [
-    "",
-    "// DIE NAHT (scripts/stamm-umzug.cjs schreibt sie, scripts/lib/stamm.cjs liest sie zurück): die Zonen-Klassen",
-    "// stamm/NN.js tragen ihre Glieder auf AnazhRealm — in Datei-Ordnung, je Glied sein Deskriptor; erst alle Methoden",
-    "// und Accessoren, dann die statischen Felder (wie die Klassen-Auswertung). Ein Zwilling bricht laut.",
-    ...NAHT_FN.slice(4),
-];
-const nahtRuf = (klassen) => ["_stammZonen(AnazhRealm, [", ...klassen.map((k) => `    ${k},`), "]);", ""];
 
 // ── S: der Schnitt ────────────────────────────────────────────────────────────────────────────────────────────────
 // Auf Zeichen-Positionen, nie auf Zeilen-Feldern (108k Zeilen spalten und fügen kostete 0,5 s je Richtung).
@@ -82,17 +73,14 @@ const zeilenIn = (s) => {
     return n;
 };
 
-// Beide Marker-Formen: die LAGE (`§NN[x] · NAME — themen`) und die DOMÄNE (`· Modul[/teil] — themen`, `schluessel`).
+// Die Marker der DOMÄNE (`· Modul[/teil] — themen`, `schluessel`).
 function marker(t) {
     const out = [];
     const nadel = "// ===== ATLAS ";
     for (let i = t.indexOf(nadel); i >= 0; i = t.indexOf(nadel, i + nadel.length)) {
         const a = t.lastIndexOf("\n", i) + 1;
         const e = t.indexOf("\n", i);
-        const z = t.slice(a, e < 0 ? t.length : e);
-        const m = MARKER_RX.exec(z);
-        if (m) out.push({ at: a, eingerueckt: !!m[1], nn: m[2], x: m[3], name: m[4].trim(), themen: m[5].trim() });
-        const d = m ? null : DOMAENE_RX.exec(z);
+        const d = DOMAENE_RX.exec(t.slice(a, e < 0 ? t.length : e));
         if (d) out.push({ at: a, eingerueckt: !!d[1], schluessel: d[2], themen: d[3].trim() });
     }
     return out;
@@ -119,54 +107,29 @@ function schneide(t) {
     for (const m of mk.slice(1))
         if (t.slice(m.at - 2, m.at) !== "\n\n")
             throw new Error(`S: vor dem Marker in Zeile ${zeilenIn(t.slice(0, m.at)) + 1} fehlt die Leerzeile`);
-    const nI = innen.length;
-    const ende01 = nI > 1 ? innen[1].at - 1 : zu;
+    const ende01 = innen.length > 1 ? innen[1].at - 1 : zu;
     const zone = (L, j, ende) => t.slice(L[j].at, j + 1 < L.length ? L[j + 1].at - 1 : ende);
-    const domaene = mk.filter((m) => m.schluessel).length;
-    if (domaene && domaene < mk.length) throw new Error("S: Marker der Lage und der Domäne gemischt");
-    if (domaene) {
-        // DIE DOMÄNE: je Schlüssel eine Datei — die Zone samt Naht-Ruf, dahinter die Außen-Zone desselben Schlüssels
-        const si = innen.map((m) => m.schluessel);
-        const sa = aussen.map((m) => m.schluessel);
-        const doppelt = [si, sa].map((l) => l.find((s, i) => l.indexOf(s) !== i)).find(Boolean);
-        if (doppelt) throw new Error(`S: die Zone ${doppelt} steht zweimal`);
-        const reihe = si.concat(sa.filter((s) => !si.includes(s)));
-        if (reihe.filter((s) => sa.includes(s)).join() !== sa.join())
-            throw new Error("S: die Außen-Zonen stehen nicht in der Datei-Ordnung der Zonen");
-        return reihe.map((s) => {
-            const i = si.indexOf(s);
-            const a = sa.indexOf(s);
-            const aus = a < 0 ? "" : (i < 0 ? "" : "\n") + zone(aussen, a, t.length);
-            if (i <= 0) return { pfad: pfadVon(s), text: i < 0 ? aus : t.slice(0, ende01) + "}\n" + NAHT_FN.join("\n") + "\n" + aus };
-            const klasse = klasseVon(s);
-            return { pfad: pfadVon(s), klasse, text: `class ${klasse} {\n${zone(innen, i, zu)}}\n${zonenRuf(klasse)}${aus}` };
-        });
-    }
-    // DIE LAGE: eine Zone mit Unter-Markern heißt NNa, NNb, …; die Nummern steigen streng, die Buchstaben ebenso.
-    const ids = [];
-    for (let j = 0; j < mk.length; j++) {
-        const m = mk[j];
-        const teilt = mk.some((n) => n.nn === m.nn && n.x);
-        if (m.x && (j === 0 || mk[j - 1].nn !== m.nn))
-            throw new Error(`S: Unter-Marker §${m.nn}${m.x} ohne seine Zone davor`);
-        const id = m.nn + (m.x || (teilt ? "a" : ""));
-        const v = mk[j - 1];
-        if (j > 0 && (v.nn === m.nn ? !(m.x && (v.x || "a") < m.x) : !(Number(m.nn) > Number(v.nn))))
-            throw new Error(`S: Marker-Ordnung bricht bei §${id} (Zeile ${zeilenIn(t.slice(0, m.at)) + 1})`);
-        ids.push(id);
-    }
-    const klassen = ids.slice(1, nI).map((id) => `AnazhRealm_Z${id}`);
-    const teile = [{ pfad: `${DIR}/${ids[0]}.js`, text: t.slice(0, ende01) + "}\n" + NAHT_LAGE.join("\n") + "\n" }];
-    for (let j = 1; j < nI; j++)
-        teile.push({ pfad: `${DIR}/${ids[j]}.js`, klasse: klassen[j - 1], text: `class ${klassen[j - 1]} {\n${zone(innen, j, zu)}}\n` });
-    for (let j = 0; j < aussen.length; j++) {
-        const kopf = j === 0 ? nahtRuf(klassen).join("\n") + "\n" : "";
-        teile.push({ pfad: `${DIR}/${ids[nI + j]}.js`, text: kopf + zone(aussen, j, t.length) });
-    }
-    return teile;
+    // je Schlüssel eine Datei — die Zone samt Naht-Ruf, dahinter die Außen-Zone desselben Schlüssels
+    const si = innen.map((m) => m.schluessel);
+    const sa = aussen.map((m) => m.schluessel);
+    const doppelt = [si, sa].map((l) => l.find((s, i) => l.indexOf(s) !== i)).find(Boolean);
+    if (doppelt) throw new Error(`S: die Zone ${doppelt} steht zweimal`);
+    const reihe = si.concat(sa.filter((s) => !si.includes(s)));
+    if (reihe.filter((s) => sa.includes(s)).join() !== sa.join())
+        throw new Error("S: die Außen-Zonen stehen nicht in der Datei-Ordnung der Zonen");
+    return reihe.map((s) => {
+        const i = si.indexOf(s);
+        const a = sa.indexOf(s);
+        const aus = a < 0 ? "" : (i < 0 ? "" : "\n") + zone(aussen, a, t.length);
+        if (i <= 0) return { pfad: pfadVon(s), text: i < 0 ? aus : t.slice(0, ende01) + "}\n" + NAHT_FN.join("\n") + "\n" + aus };
+        const klasse = klasseVon(s);
+        return { pfad: pfadVon(s), klasse, text: `class ${klasse} {\n${zone(innen, i, zu)}}\n${zonenRuf(klasse)}${aus}` };
+    });
 }
 
-// S⁻¹: die Zonen-Dateien → der Stamm. `stuecke` (optional) bekommt je Stück [pfad, ersteDateiZeile, zeilen, ersteStammZeile].
+// S⁻¹: die Zonen-Dateien → der Stamm — der Kern bis zur Naht, je Zonen-Datei die Klasse bis zu ihrem Naht-Ruf, danach alle
+// Außen-Zonen in Datei-Ordnung (je nach einer Leerzeile). `stuecke` (optional) bekommt je Stück [pfad, ersteDateiZeile,
+// zeilen, ersteStammZeile].
 function fuege(teile, stuecke) {
     const out = [];
     let zeile = 1;
@@ -178,44 +141,6 @@ function fuege(teile, stuecke) {
     for (const x of teile)
         if (!x.text.endsWith("\n")) throw new Error(`S⁻¹: ${x.pfad} endet nicht mit einem Zeilenumbruch`);
     if (!teile.length) throw new Error("S⁻¹: keine Stamm-Datei");
-    const kern = teile[0].text;
-    const naht = "}\n" + NAHT_LAGE.join("\n") + "\n";
-    if (!kern.endsWith("\n" + naht)) return fuegeDomaene(teile, nimm, out);
-    if (!/\/01\.js$/.test(teile[0].pfad)) throw new Error("S⁻¹: die erste Datei der Lage ist nicht stamm/01.js");
-    nimm(teile[0].pfad, kern.slice(0, kern.length - naht.length), 1);
-    const klassen = [];
-    let j = 1;
-    for (; j < teile.length; j++) {
-        const z = teile[j].text;
-        const m = /^class (AnazhRealm_Z\d\d[a-z]?) \{\n/.exec(z);
-        if (!m) break;
-        if (!z.endsWith("\n}\n")) throw new Error(`S⁻¹: ${teile[j].pfad} schließt nicht mit \`}\``);
-        klassen.push(m[1]);
-        nimm(teile[j].pfad, "\n", 1);
-        nimm(teile[j].pfad, z.slice(m[0].length, -2), 2);
-    }
-    if (j >= teile.length) throw new Error("S⁻¹: keine §26-Datei nach den Zonen");
-    nimm(teile[j - 1].pfad, "}\n\n", zeilenIn(teile[j - 1].text));
-    for (let e = j; e < teile.length; e++) {
-        const z = teile[e].text;
-        if (e === j) {
-            const ruf = nahtRuf(klassen).join("\n") + "\n";
-            if (!z.startsWith(ruf))
-                throw new Error(
-                    `S⁻¹: ${teile[e].pfad} beginnt nicht mit dem Naht-Ruf über die ${klassen.length} Zonen`
-                );
-            nimm(teile[e].pfad, z.slice(ruf.length), zeilenIn(ruf) + 1);
-        } else {
-            if (/^class AnazhRealm_Z/.test(z)) throw new Error(`S⁻¹: Zonen-Klasse ${teile[e].pfad} nach §26`);
-            nimm(teile[e].pfad, "\n", 1);
-            nimm(teile[e].pfad, z, 1);
-        }
-    }
-    return out.join("");
-}
-// S⁻¹ der DOMÄNE: der Kern bis zur Naht, je Zonen-Datei die Klasse bis zu ihrem Naht-Ruf, danach alle Außen-Zonen in
-// Datei-Ordnung (je nach einer Leerzeile).
-function fuegeDomaene(teile, nimm, out) {
     const kern = teile[0].text;
     const naht = "\n}\n" + NAHT_FN.join("\n") + "\n";
     const n = kern.indexOf(naht);
@@ -298,9 +223,8 @@ function ordne(T, karte) {
         const b = anfang(n.start);
         const vorlauf = T.slice(a, b).split("\n").filter((z) => {
             const d = DOMAENE_RX.exec(z);
-            const l = d ? null : MARKER_RX.exec(z);
-            if (d || l) ist = d ? d[2] : `§${l[2]}${l[3]}`;
-            return !(d || l);
+            if (d) ist = d[2];
+            return !d;
         });
         const bekannt = name != null && Object.hasOwn(karte.mod, name);
         const soll = bekannt ? karte.mod[name] : vor;
@@ -356,13 +280,11 @@ function karteText(K) {
 }
 
 // ── der Baum ──────────────────────────────────────────────────────────────────────────────────────────────────────
+// Die Layout-Weiche ist laut: die alte Datei im Baum (die Form vor dem Schnitt) oder kein stamm/*.js wirft.
 function layout(root) {
-    const datei = fs.existsSync(path.join(root, ALT));
-    const zonen = fs.existsSync(path.join(root, DIR)) && fs.readdirSync(path.join(root, DIR)).some((f) => /\.js$/.test(f));
-    if (datei && zonen)
-        throw new Error(`Stamm-Layout: ${root} trägt ${ALT} UND ${DIR}/ — beide Formen, keine Wahrheit`);
-    if (!datei && !zonen) throw new Error(`Stamm-Layout: ${root} trägt weder ${ALT} noch ${DIR}/*.js`);
-    return datei ? "datei" : "zonen";
+    if (fs.existsSync(path.join(root, ALT))) throw new Error(`Stamm-Layout: ${root} trägt ${ALT} — die Form vor dem Schnitt`);
+    if (!fs.existsSync(path.join(root, DIR)) || !fs.readdirSync(path.join(root, DIR)).some((f) => /\.js$/.test(f)))
+        throw new Error(`Stamm-Layout: ${root} trägt kein ${DIR}/*.js`);
 }
 
 // Die Stamm-Tags einer index.html, in Lade-Ordnung.
@@ -375,13 +297,12 @@ function tagsVon(html) {
     return out;
 }
 
-// DIE EINE LISTE: die Stamm-Dateien, wie index.html sie lädt (vor dem Schnitt: die eine Datei).
+// DIE EINE LISTE: die Stamm-Dateien, wie index.html sie lädt.
 function dateien(root) {
-    if (layout(root) === "datei") return [ALT];
+    layout(root);
     const html = path.join(root, "index.html");
     if (!fs.existsSync(html)) throw new Error(`Stamm-Liste: ${html} fehlt (die Tags sind die EINE Liste)`);
     const liste = tagsVon(fs.readFileSync(html, "utf8")).map((t) => t.pfad);
-    if (liste.includes(ALT)) throw new Error(`Stamm-Liste: index.html lädt ${ALT} neben ${DIR}/`);
     const platte = fs
         .readdirSync(path.join(root, DIR))
         .filter((f) => f.endsWith(".js"))
@@ -418,36 +339,25 @@ function ausZonen(teile, stuecke) {
     return t;
 }
 
-// DER virtuelle Stamm. `pfad` = Wurzel eines Baums (Layout-Weiche) ODER ausdrücklich eine Stamm-Datei (ein Stand vor dem
-// Umzug: git-Archiv, A/B-Basis, werkbank --quelle).
+// DER virtuelle Stamm. `pfad` = Wurzel eines Baums (Layout-Weiche) ODER ausdrücklich eine Stamm-Datei (der virtuelle Text
+// als EINE Datei: git-Archiv, A/B-Basis, werkbank --quelle).
 function text(pfad) {
     const p = path.resolve(pfad);
     if (fs.statSync(p).isFile()) return blind(fs.readFileSync(p, "utf8"), p);
-    if (layout(p) === "datei") return blind(fs.readFileSync(path.join(p, ALT), "utf8"), p);
     return blind(ausZonen(teileVon(p)), p);
 }
 
-// Der Stamm-Text an einer git-Revision (beide Layouts), ohne Arbeitsbaum.
+// Der Stamm-Text an einer git-Revision, ohne Arbeitsbaum (die Liste aus ihren Tags).
 function textAusRev(root, rev) {
     const { execFileSync } = require("child_process");
     const git = (args) => execFileSync("git", ["-C", root, ...args], { encoding: "utf8", maxBuffer: 1 << 30 });
-    // ls-tree mit `stamm/` nennt die Dateien darin, nie das Verzeichnis
-    const namen = git(["ls-tree", "--name-only", rev, "--", ALT, `${DIR}/`])
-        .split("\n")
-        .filter(Boolean);
-    const zonen = namen.some((n) => n.startsWith(`${DIR}/`));
-    if (namen.includes(ALT)) {
-        if (zonen) throw new Error(`Stamm-Layout an ${rev}: ${ALT} UND ${DIR}/`);
-        return blind(git(["show", `${rev}:${ALT}`]), rev);
-    }
-    if (!zonen) throw new Error(`Stamm-Layout an ${rev}: weder ${ALT} noch ${DIR}/*.js`);
     const liste = tagsVon(git(["show", `${rev}:index.html`])).map((t) => t.pfad);
+    if (!liste.length) throw new Error(`Stamm-Layout an ${rev}: kein Stamm-Tag (eine Form vor dem Schnitt)`);
     return blind(ausZonen(liste.map((p) => ({ pfad: p, text: git(["show", `${rev}:${p}`]) }))), rev);
 }
 
 // Eine Stamm-Zeile (1-basiert, im virtuellen Text) → `datei:zeile` im Baum.
 function ort(root, zeile) {
-    if (layout(root) === "datei") return `${ALT}:${zeile}`;
     const st = [];
     ausZonen(teileVon(root), st);
     const s = st.find(([, , n, ab]) => zeile >= ab && zeile < ab + n);
@@ -698,18 +608,11 @@ function dateiMit(root, stelle) {
 
 const istStammDatei = (rel) => rel === ALT || ZONEN_DATEI_RX.test(rel);
 
-// Ist die URL (Server-Pfad, „/…") eine Stamm-Datei dieses Baums?
-function istStammUrl(root, urlPfad) {
-    const rel = String(urlPfad).replace(/^\//, "");
-    return layout(root) === "datei" ? rel === ALT : ZONEN_DATEI_RX.test(rel);
-}
-
-// Server-Patcher: die Bytes einer Stamm-URL aus einem (gepatchten) virtuellen Stamm `t` — die Datei, die die Zeile
-// trägt, im Layout des Baums. Keine Stamm-URL → null; eine Stamm-URL, die S(t) nicht kennt, wirft.
+// Server-Patcher: die Bytes einer Stamm-URL („/stamm/…") aus einem (gepatchten) virtuellen Stamm `t` — die Datei, die die
+// Zeile trägt. Keine Stamm-URL → null; eine Stamm-URL, die S(t) nicht kennt, wirft.
 const lieferCache = { t: null, teile: null };
 function liefere(root, urlPfad, t) {
-    if (!istStammUrl(root, urlPfad)) return null;
-    if (layout(root) === "datei") return Buffer.from(t, "utf8");
+    if (!ZONEN_DATEI_RX.test(String(urlPfad).replace(/^\//, ""))) return null;
     if (lieferCache.t !== t) Object.assign(lieferCache, { t, teile: schneide(t) });
     const rel = String(urlPfad).replace(/^\//, "");
     const teil = lieferCache.teile.find((x) => x.pfad === rel);
@@ -1029,6 +932,23 @@ function fehlt(glied, re, quelle) {
     });
 }
 
+// DER EINE Text-Merge: git merge-file auf drei Texten → { text, n Konflikte } — der Rahmen um die Register (der Treiber,
+// scripts/bump-version.cjs) und der virtuelle Stamm des Re-Home (`histogram`, der Algorithmus von merge-ort, ab git 2.44)
+function textMerge(a, o, b, { labels = ["ours", "base", "theirs"], groesse = 7, histogram = false } = {}) {
+    const d = fs.mkdtempSync(path.join(require("os").tmpdir(), "text-merge-"));
+    const f = [a, o, b].map((t, i) => (fs.writeFileSync(path.join(d, "aob"[i]), t), path.join(d, "aob"[i])));
+    const args = ["merge-file", "-p", `--marker-size=${groesse}`, ...(histogram ? ["--diff-algorithm=histogram"] : [])];
+    try {
+        const o2 = { encoding: "utf8", maxBuffer: 1 << 30, stdio: ["ignore", "pipe", "pipe"] };
+        return { text: require("child_process").execFileSync("git", [...args, ...labels.flatMap((l) => ["-L", l]), ...f], o2), n: 0 };
+    } catch (e) {
+        if (!(e.status > 0 && e.status < 128) || typeof e.stdout !== "string") throw e;
+        return { text: e.stdout, n: e.status };
+    } finally {
+        fs.rmSync(d, { recursive: true, force: true });
+    }
+}
+
 // DER PRÜFER der Stamm-Werkzeuge (stamm-lib · stamm-umzug · stamm-rehome): `pruef(name, ok, info)` je Zeile, `pruef.ende(wer)`
 // nennt das Urteil des Selbsttests und liefert die Zahl der Roten
 function pruefZaehler() {
@@ -1043,6 +963,7 @@ function pruefZaehler() {
 
 module.exports = {
     pruefZaehler,
+    textMerge,
     kinder,
     ohneKommentare,
     fehlt,
@@ -1062,7 +983,6 @@ module.exports = {
     karteText,
     schneide,
     fuege,
-    layout,
     tagsVon,
     tagsSetzen,
     dateien,
@@ -1157,15 +1077,7 @@ if (require.main === module && process.argv.includes("--selftest")) {
         );
         const tafel = stripperTafel(root);
         pruef("der EINE Kommentar-Stripper hält seine Tafel und den Stamm gegen acorn", !tafel.length, tafel.join(" · "));
-        const lay = layout(root);
         const T = text(root);
-        // 1) heute: text() = die Datei, Byte für Byte
-        if (lay === "datei")
-            pruef(
-                "text(root) = anazhRealm.js (sha)",
-                sha(T) === sha(fs.readFileSync(path.join(root, ALT), "utf8")),
-                sha(T).slice(0, 16)
-            );
         // 2) die Umkehrung am Kopf: S⁻¹(S(T)) = T und S(S⁻¹(S(T))) = S(T)
         const t0 = Date.now();
         const S = schneide(T);
@@ -1175,55 +1087,37 @@ if (require.main === module && process.argv.includes("--selftest")) {
             "S∘S⁻¹ = id am Kopf",
             schneide(T2).every((x, i) => x.pfad === S[i].pfad && x.text === S[i].text)
         );
-        // 3) ein Fixture mit Unter-Markern in einer Zone und in §26
+        // 3) ein Fixture: zwei Zonen, je mit Außen-Zone
         const fx = [
             "// Kopf",
             KLASSE_AUF,
-            "    // ===== ATLAS §01 · KERN — a =====",
+            "    // ===== ATLAS · Dirigent/kern — a =====",
             "    constructor() {}",
             "",
-            "    // ===== ATLAS §02 · ZWEI — b =====",
+            "    // ===== ATLAS · Wasser — b =====",
             "    zwei() {}",
-            "",
-            "    // ===== ATLAS §02b · ZWEI — Block X =====",
-            "    zweiB() {}",
             "}",
             "",
-            "// ===== ATLAS §26 · AUSSEN — c =====",
+            "// ===== ATLAS · Dirigent/kern — c =====",
             'AnazhRealm.VERSION = "1.2.3";',
             "",
-            "// ===== ATLAS §26b · AUSSEN — Block Y =====",
+            "// ===== ATLAS · Wasser — d =====",
             "AnazhRealm.X = 1;",
             "",
         ].join("\n");
         const fS = schneide(fx);
-        pruef(
-            "Fixture: Namen 01 · 02a · 02b · 26a · 26b, Umkehrung",
-            fS.map((x) => x.pfad.slice(6, -3)).join(",") === "01,02a,02b,26a,26b" && fuege(fS) === fx,
-            fS.map((x) => x.pfad).join(" ")
-        );
-        pruef(
-            "S wirft ohne Leerzeile vor dem Marker",
-            wirft(() => schneide(fx.replace("\n\n    // ===== ATLAS §02b", "\n    // ===== ATLAS §02b")), /Leerzeile/)
-        );
-        pruef(
-            "S wirft bei fallender Marker-Ordnung",
-            wirft(() => schneide(fx.replace("§02b", "§01b")), /Ordnung|ohne seine Zone/)
-        );
+        pruef("Fixture: dirigent-kern · wasser, Umkehrung", fS.map((x) => x.pfad).join() === "stamm/dirigent-kern.js,stamm/wasser.js" && fuege(fS) === fx, fS.map((x) => x.pfad).join(" "));
+        pruef("S wirft ohne Leerzeile vor dem Marker", wirft(() => schneide(fx.replace("\n\n    // ===== ATLAS · Wasser", "\n    // ===== ATLAS · Wasser")), /Leerzeile/));
+        pruef("S wirft bei einer Zone zweimal", wirft(() => schneide(fx.replace("ATLAS · Wasser — b", "ATLAS · Dirigent/kern — b")), /zweimal/));
         // 4) die Layout-Weiche: keins / beides wirft; unter 5 MB wirft
         const leer = path.join(tmp, "leer");
         fs.mkdirSync(leer);
         pruef(
             "Layout: keine Form → wirft",
-            wirft(() => text(leer), /weder/)
+            wirft(() => text(leer), /kein stamm/)
         );
-        const klein = path.join(tmp, "klein");
-        fs.mkdirSync(klein);
-        fs.writeFileSync(path.join(klein, ALT), fx);
-        pruef(
-            "text() unter 5 MB → wirft (Probe blind)",
-            wirft(() => text(klein), /Probe blind/)
-        );
+        fs.writeFileSync(path.join(tmp, "klein.js"), fx);
+        pruef("text() unter 5 MB → wirft (Probe blind)", wirft(() => text(path.join(tmp, "klein.js")), /Probe blind/));
         // 5) der Zonen-Baum: text() = T, ort, dateiVon, liefere, versionsDatei
         const htmlAlt = fs.readFileSync(path.join(root, "index.html"), "utf8");
         const z = baum(
@@ -1251,7 +1145,7 @@ if (require.main === module && process.argv.includes("--selftest")) {
             dateiMit(z, T.split("\n")[zeileV - 1]) === od &&
                 dateiMit(z, "// diese Zeile steht nirgends\u0001") === null &&
                 wirft(() => dateiMit(z, "\n    }\n"), /tragen/) &&
-                dateiMit(root, T.split("\n")[zeileV - 1]) === (lay === "datei" ? ALT : versionsDatei(root)),
+                dateiMit(root, T.split("\n")[zeileV - 1]) === versionsDatei(root),
             od
         );
         const dv = dateiVon(z, "_bodenSichtAt");
@@ -1266,14 +1160,9 @@ if (require.main === module && process.argv.includes("--selftest")) {
             liefere(z, url, T).toString("utf8") === S[3].text && liefere(z, "/index.html", T) === null,
             url
         );
-        // im Datei-Layout liefert die alte URL den ganzen Text, im Zonen-Baum ist sie keine Stamm-URL mehr (null → 404 laut)
-        pruef(
-            lay === "datei" ? "liefere(Datei) = der ganze Text" : "liefere(alte URL) im Zonen-Baum = null",
-            lay === "datei"
-                ? liefere(root, "/" + ALT, T).length === Buffer.byteLength(T)
-                : liefere(root, "/" + ALT, T) === null
-        );
-        // 6) ein Zonen-Baum, der nicht im Bild von S liegt, wirft: Datei ohne Tag · fehlende Datei · Rahmen verändert · beide Formen
+        // die alte URL ist keine Stamm-URL (null → 404 laut)
+        pruef("liefere(alte URL) = null", liefere(root, "/" + ALT, T) === null);
+        // 6) ein Zonen-Baum, der nicht im Bild von S liegt, wirft: Datei ohne Tag · fehlende Datei · Rahmen verändert · die alte Datei
         fs.writeFileSync(path.join(z, DIR, "99.js"), "// fremd\n");
         pruef(
             "Datei ohne Tag → wirft",
@@ -1301,8 +1190,8 @@ if (require.main === module && process.argv.includes("--selftest")) {
         fs.writeFileSync(p7, S[7].text);
         fs.writeFileSync(path.join(z, ALT), T);
         pruef(
-            "beide Formen → wirft",
-            wirft(() => text(z), /beide Formen/)
+            "die alte Datei im Baum → wirft",
+            wirft(() => text(z), /Form vor dem Schnitt/)
         );
         fs.unlinkSync(path.join(z, ALT));
         pruef("der Zonen-Baum trägt wieder", sha(text(z)) === sha(T));

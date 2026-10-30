@@ -3,13 +3,12 @@
 // wäre jede „0 Fehler"-Zahl der Werkbank vakuös. Eine nackte WebGPU-Seite (swiftshader, kein Spiel): eine Pipeline mit
 // ZWEI Vertex-Puffern, gesetzt nur Slot 0, ein drawIndexed → die Linse nennt Slot 1; dieselbe Pipeline mit beiden Slots →
 // kein Eintrag.
-//   node scripts/diag-gpu-fehler.cjs --selftest          Port: GPU_FEHLER_PORT (Standard 4423)
+//   node scripts/diag-gpu-fehler.cjs --selftest
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser, hauptLauf, sleep, selbsttestEnde } = require("./lib/welt-boot.cjs");
 const { GPU_FEHLER_INSTALL, GPU_ABGABE } = require("./lib/gpu-fehler.cjs");
 
-const PORT = Number(process.env.GPU_FEHLER_PORT || 4423);
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
 
 async function probe() {
@@ -80,7 +79,7 @@ hauptLauf(async () => {
     }
     console.log("=== SELBST-TEST: die GPU-Fehler-Linse nennt den Draw ohne Vertex-Slot beim Namen ===");
     const server = statikServer({ seiten: { "/": "<!doctype html><title>gpu-fehler</title>" } });
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "linse" });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);

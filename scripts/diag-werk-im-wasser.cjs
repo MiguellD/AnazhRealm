@@ -46,7 +46,7 @@
 //       √((aEngine − rollDecel) / (kStirn·Tiefe + dragK)) ± 5 %; steht das Wasser an der Ansaugung (Gürtellinie), fährt er
 //       aus dem Stand keine 5 cm (seine Masse: gate:fahr-leben --koerper).
 //
-//   node scripts/diag-werk-im-wasser.cjs [--selftest]          Port: WERK_WASSER_PORT (Standard 4643)
+//   node scripts/diag-werk-im-wasser.cjs [--selftest]
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt } = require("./lib/welt-boot.cjs");
@@ -2351,14 +2351,13 @@ async function weltOrte(A) {
 const argListe = (name, w = argOpt(name)) => (w ? w.split(",") : null);
 
 async function lauf() {
-    const PORT = Number(process.env.WERK_WASSER_PORT || 4643);
     const root = path.resolve(__dirname, "..");
     const befund = {};
     befund.leser = leserUrteil();
     require(path.join(root, "vehicle-core.js"));
     befund.kern = kernUrteil(globalThis.__vehicleCore);
     const server = statikServer();
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "null", frist: 900000 });
     let exit = 2;
     try {

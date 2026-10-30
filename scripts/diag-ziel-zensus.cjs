@@ -20,7 +20,7 @@
 //       Mittel des Ausgabe-Bilds, zurückgestellt steht es bit-gleich wieder — drei Bilder EINES Frames, W9).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): das Urteil an gebauten Läufen — sauber grün, je Klasse ein
 // Täter beim Namen.
-//   node scripts/diag-ziel-zensus.cjs [--selftest]   (npm run gate:ziel-zensus; Port ZIEL_ZENSUS_PORT, Standard 4597)
+//   node scripts/diag-ziel-zensus.cjs [--selftest]   (npm run gate:ziel-zensus)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
@@ -172,7 +172,6 @@ const { FALTE_INSTALL, ZAEHLER_INSTALL } = require("./lib/draw-zaehler.cjs");
 const { ZERLEGE_INSTALL } = require("./lib/zerlege-linse.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
-const PORT = Number(process.env.ZIEL_ZENSUS_PORT) || 4597;
 const server = statikServer();
 
 // DIE SCHATTEN-BÜHNE (Seite): ein Richtungslicht mit einem r184-Schatten-Knoten, der durch die Hülle der Kaskaden geht
@@ -308,7 +307,7 @@ function rundungProbe() {
 
 (async () => {
     console.log("=== ZIEL-ZENSUS — die Wand am echten Frame (WebGPU auf swiftshader) ===");
-    await server.lausche(PORT);
+    await server.lausche(0);
     const browser = await starteBrowser({ art: "linse", frist: 900000 });
     const page = await browser.newPage();
     await page.setViewport({ width: 320, height: 240 });

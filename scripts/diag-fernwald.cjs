@@ -29,18 +29,17 @@
 //               (3) kein Band jenseits des Radius — D2 rot; (4) ein Gedächtnis mit
 //               gekippter Gestalt macht E rot; (5) dasselbe Haus ohne Grundriss macht F rot.
 //
-//   node scripts/diag-fernwald.cjs        (Port: FERNWALD_PORT)
+//   node scripts/diag-fernwald.cjs
 "use strict";
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 const { statikServer, hauptLauf, nullSeite, pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
 
-const PORT = Number(process.env.FERNWALD_PORT || 4598);
 const server = statikServer();
 
 const { errs, check } = pruefer();
 
 hauptLauf(async () => {
-    await server.lausche(PORT);
+    await server.lausche(0);
     const { browser, page } = await nullSeite({ frist: 900000 });
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     // das Holz der Mess-Wiese ist „voll" (Ring 4): seit die Holz-Wahl auf dem WebGL2-Rückfall den GL-Renderer fragt,
