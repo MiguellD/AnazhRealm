@@ -234,3 +234,6 @@ takt25i-gtx 0 storno
 z83-bisekt1 2 abab A=73bdf9388f22f5c1789e0da5b0c63b6121b045c8 B=952a5603ffec4b4abb496394110f05de166a7ce6 zellen=w-ego
 eich1-gtx 1 station sha=3ed95dcf9cf6942278164d3a73d98a37dbfe64e7 lauf=eich-gtx.sh
 z83-bisekt2 2 abab A=73bdf9388f22f5c1789e0da5b0c63b6121b045c8 B=24a0f3eff6051ae954369fd774cce415d1f32dc5 zellen=w-ego
+z83-bisekt2 0 storno
+eich2-gtx 1 station sha=3ed95dcf9cf6942278164d3a73d98a37dbfe64e7 lauf=eich-gtx.sh
+z83-bisekt2b 2 abab A=73bdf9388f22f5c1789e0da5b0c63b6121b045c8 B=24a0f3eff6051ae954369fd774cce415d1f32dc5 zellen=w-ego
