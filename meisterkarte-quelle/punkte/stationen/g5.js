@@ -251,13 +251,19 @@ const stationen = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         // Garage: gate:garage-labor mit dem Mess-Patch bei vmax (bericht/2110-mk-kopf/garage-mk.diff, Zeile MK2110); Welt: der GT
-        // auf freier Bahn an der Mess-Wiese, Third, Vollgas (bericht/2110-gtx-messschuld/tempo3.js über werkbank eval, M27)
+        // auf freier Bahn an der Mess-Wiese, Third, Vollgas (bericht/3010-heil-fahrzeug/tempo4.js über werkbank eval, M27).
+        // DIE BAHN IST FREI, WEIL DIE WELT SIE FREI HÄLT (w4-heil-fahrzeug, 30.10.): tempo3.js prüfte nur die Hüllen der Bauten —
+        // die Natur, die das Feld erst wirft, wenn der Spieler naht, und ein Baum mit wartender Gestalt (K20) standen nicht in ihr; der
+        // Wagen fuhr in sie, und das Tempo am Stoß hieß „top" (Radeon-Sitzung 715754fc 13,26 m/s, FOV +7,6°; Null-Renderer an
+        // 98ef98bb und 715754fc gleich: Stoß nach 35,5 m an Felsbogen und Kiefer, 13,77 m/s, FOV +8,06°, Arm +15,6 %). tempo4.js legt
+        // den Weg der Probe über die Bahn (die Welt räumt die Natur auf ihm), das Gas endet am Plateau der Sim-Zeit, ein Stoß endet
+        // es beim Namen (Ende ≠ ok). Null-Renderer 715754fc: Plateau nach 7,9 Sim-s, 15,18 m/s, FOV +9,47°, Arm +18,4 %.
         probe: sitzung(600,
             'echo "@@PUNKTE@@ GARAGE"',
             'git apply "$K/bericht/2110-mk-kopf/garage-mk.diff" && GARAGE_LABOR_PORT=$LP LINSE_GPU=hardware timeout 600 node scripts/diag-garage-mk.cjs',
             'echo "@@PUNKTE@@ EXIT $?"; git checkout -q -- scripts/diag-garage-labor.cjs; rm -f scripts/diag-garage-mk.cjs',
             "boot",
-            'teil WELT $W eval "$(cat "$K/bericht/2110-gtx-messschuld/tempo3.js")"'
+            'teil WELT $W eval "$(cat "$K/bericht/3010-heil-fahrzeug/tempo4.js")"'
         ),
         env: K,
         gpu: true,
@@ -269,7 +275,7 @@ const stationen = [
             const b = jsonBlock(teil("WELT"));
             const w = b && (b.ergebnis || b);
             if (!g || !g.ruhe || !g.top) return { gruen: false, zahl: "Garage: keine Zeile MK2110 (Exit " + lauf.exit + ")" };
-            if (!w || !w.top || w.fehler) return { gruen: false, zahl: "Welt: kein Ergebnis von tempo3.js" + (w && w.fehler ? " — " + w.fehler : "") };
+            if (!w || !w.top || w.fehler) return { gruen: false, zahl: "Welt: kein Ergebnis von tempo4.js" + (w && w.fehler ? " — " + w.fehler : "") };
             const gFov = g.top.fov - g.ruhe.fov;
             const gArm = g.top.arm / g.ruhe.arm - 1;
             const gruen = w.ende === "ok" && gFov >= 8 && gArm >= 0.15 && w.top.fovPlus >= 8 && w.top.armPlus >= 0.15;
@@ -288,11 +294,12 @@ const stationen = [
         kriterium: "fahrzeug.K3",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        // die Zusätze der 2: Drift, Rückkehr (tempo3.js in der Welt), Ruck (gate:fahr-leben T4) und EIN FOV-Schreiber (T5)
+        // die Zusätze der 2: Drift, Rückkehr (tempo4.js in der Welt, auf dem Weg der Probe), Ruck (gate:fahr-leben T4) und EIN
+        // FOV-Schreiber (T5)
         probe: sitzung(480,
             'teil FAHR env FAHR_LEBEN_PORT=$LP node scripts/diag-fahr-leben.cjs',
             "boot",
-            'teil WELT $W eval "$(cat "$K/bericht/2110-gtx-messschuld/tempo3.js")"'
+            'teil WELT $W eval "$(cat "$K/bericht/3010-heil-fahrzeug/tempo4.js")"'
         ),
         env: K,
         gpu: true,
@@ -305,7 +312,7 @@ const stationen = [
             const b = jsonBlock(teil("WELT"));
             const w = b && (b.ergebnis || b);
             if (!t4 || !t5) return { gruen: false, zahl: "gate:fahr-leben ohne Zeile T4/T5 (Exit " + lauf.exit + ")" };
-            if (!w || !w.drift || !w.rueck || w.fehler) return { gruen: false, zahl: "Welt: kein Ergebnis von tempo3.js" + (w && w.fehler ? " — " + w.fehler : "") };
+            if (!w || !w.drift || !w.rueck || w.fehler) return { gruen: false, zahl: "Welt: kein Ergebnis von tempo4.js" + (w && w.fehler ? " — " + w.fehler : "") };
             const d = w.drift;
             const r = w.rueck.rueckS;
             const schreiber = t5.schreiber || [];
@@ -316,7 +323,8 @@ const stationen = [
                 gruen,
                 zahl:
                     "Drift Kamera ≤ " + d.kameraGegenFahrtMax + "° neben dem Fahrtvektor (Schlupf bis " + d.schlupfMax + "°) · Rückkehr " + r +
-                    " s nach " + w.rueck.orbitGrad + "° Orbit · Ruck p95 " + t4.ruckP95 + " m (" + t4.ruckN + ") · FOV-Schreiber [" + schreiber + "]",
+                    " s nach " + w.rueck.orbitGrad + "° Orbit · Ruck p95 " + t4.ruckP95 + " m (" + t4.ruckN + ") · FOV-Schreiber [" + schreiber + "]" +
+                    (w.ende === "ok" ? "" : " · Ende " + w.ende),
             };
         },
         pfad: [...FAHRT, "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/lib/welt-boot.cjs"],
