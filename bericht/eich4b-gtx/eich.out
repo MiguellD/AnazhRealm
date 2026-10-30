@@ -1,0 +1,71 @@
+Punkte-Maschine: 21 Station(en) in 12 Läufen auf gtx am 3ed95dcf · Sitzung 12 Proben in EINER Welt (Deckel Σ 5 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  SITZUNG gtx · die Welt steht nach 5.4 s (Schloss nach 0.01 min) · 12 Proben · Welt :27804
+  SITZUNG EICH-FAHRT: jede Probe bis 90 s — das Gesetz: je Probe ≤ 45 s, mit ausnahme ≤ 90 s, die Fahrt ≤ 1800 s; ein Urteil zählt nur im Gesetz, je Probe ihre Sekunden (eich)
+  SITZUNG der Grund der Welt: 77 Größen in 0 s
+  SITZUNG die Welt vor halten.K1#2: 20.3 s (580 Takte, 81 Chunks)
+  ROT  halten.K1#2 · keine Zeile Q15 halten.K1 Staffel 2 (Exit 2) · Sitzung · Exit 2 · 0.09 min
+  EICH 5.4 s · halten.K1#2 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor fahrzeug.K5#1: 2.4 s (im Spiel 40.4 ms, durch die Tür — wege +13 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …)
+  SITZUNG die Welt vor fahrzeug.K5#1: 12.5 s (582 Takte, 81 Chunks, nach der Tür)
+  GRÜN fahrzeug.K5#1 · Federung im Bild: Drift-Wank 10.263 gegen Glatt 0.542 mm, Stoß-Antwort Glatt/Hang 7.239/10.022 mm (Mutante 2.768/0.896) · Rumble Drift 1 gegen Glatt 0.004, Summen 0.594/0.539 (Mutante 0, 0.126) · Motor 66.7 Hz je 1000 Upm (klang-zensus F) · RM1–3 ✅✅✅ · Sitzung · Exit 0 · 0.39 min
+  EICH 23.4 s · fahrzeug.K5#1 · Deckel 15 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor tore.K3#1: 2.1 s (im Spiel 34.4 ms, durch die Tür — wege +52 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-145.8,-1096.2,-143.7,-1094.1/1] …)
+  SITZUNG die Welt vor tore.K3#1: 12.7 s (583 Takte, 81 Chunks, nach der Tür)
+  ROT  tore.K3#1 · keine K8-Tafel (Exit 2) · Sitzung · Exit 2 · 0 min
+  EICH 0.2 s · tore.K3#1 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  ROT  tore.K3#2 · keine K8-Tafel (Exit 2) · Sitzung · Exit 2 · 0 min (Zwilling von tore.K3#1)
+  EICH 0.2 s · tore.K3#2 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt (Zwilling von tore.K3#1)
+  SITZUNG Grundstellung vor fahrzeug.K2#1: 2.3 s (im Spiel 44.3 ms, durch die Tür — wege +12 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …)
+  SITZUNG die Welt vor fahrzeug.K2#1: 12.6 s (583 Takte, 81 Chunks, nach der Tür)
+  OFFEN fahrzeug.K2#1 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · fahrzeug.K2#1 · Deckel 10 s · Gesetz 45 s · am Eich-Deckel
+  SITZUNG Grundstellung vor fahrzeug.K2#2: 3 s (im Spiel 38 ms, durch die Tür)
+  SITZUNG die Welt vor fahrzeug.K2#2: 13.3 s (582 Takte, 81 Chunks, nach der Tür)
+  OFFEN fahrzeug.K2#2 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · fahrzeug.K2#2 · Deckel 55 s · Gesetz 90 s · am Eich-Deckel
+  SITZUNG Grundstellung vor streaming.K4#2: 2.3 s (im Spiel 39.8 ms, durch die Tür)
+  SITZUNG die Welt vor streaming.K4#2: 13.6 s (584 Takte, 81 Chunks, nach der Tür)
+  GRÜN streaming.K4#2 · Bauten 0 außerhalb der Sync-Stellen · 1 an ihnen {"naht":1} · Hydrosphären 14 aus dem Faden · 0 im Haupt-Faden · Gang 3.0 s · 6 Bau-Klicks · [linse-gpu] nvidia/pascal · Sitzung · Exit 0 · 0.68 min
+  EICH 40.7 s · streaming.K4#2 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor profiband.K1#1: 2.1 s (im Spiel 39 ms, durch die Tür)
+  SITZUNG die Welt vor profiband.K1#1: 13.2 s (583 Takte, 81 Chunks, nach der Tür)
+  ROT  profiband.K1#1 · Bild-p95 ≤ 33: wiese-ego-geht 25.1 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 58.4 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 64 s · [linse-gpu] nvidia/pascal — ROT 5: wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-third-geht Bild-p95 58.4 > 33 | stadt-ego-geht: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 58 s trug den Schritt nicht) · Sitzung · Exit 0 · 1.07 min
+  EICH 64.2 s · profiband.K1#1 · Deckel 64 s · Gesetz 90 s · im Gesetz, das Urteil zählt
+  ROT  profiband.K1#2 · Bild-p95 ≤ 16.7: wiese-ego-steht 16.9 · wiese-third-steht ? · genesis-ego-steht 83.3 · genesis-third-steht 16.8 · wiese-ego-geht 25.1 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 58.4 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 64 s · [linse-gpu] nvidia/pascal — ROT 10: wiese-ego-steht Bild-p95 16.9 > 16.7 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Bild-p95 83.3 > 16.7 | genesis-third-steht Bild-p95 16.8 > 16.7 | wiese-ego-geht Bild-p95 25.1 > 16.7 | wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht) · Sitzung · Exit 0 · 1.07 min (Zwilling von profiband.K1#1)
+  EICH 64.2 s · profiband.K1#2 · Deckel 64 s · Gesetz 90 s · im Gesetz, das Urteil zählt (Zwilling von profiband.K1#1)
+  ROT  profiband.K2#1 · Belegung p95 ≤ 5.8: wiese-ego-steht 8.6 · wiese-third-steht ? · genesis-ego-steht 81.21 · genesis-third-steht 10.14 · Gang 64 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 8.6 > 5.8 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 81.21 > 5.8 | genesis-third-steht Belegung p95 10.14 > 5.8 · Sitzung · Exit 0 · 1.07 min (Zwilling von profiband.K1#1)
+  EICH 64.2 s · profiband.K2#1 · Deckel 64 s · Gesetz 90 s · im Gesetz, das Urteil zählt (Zwilling von profiband.K1#1)
+  ROT  profiband.K2#2 · Belegung p95 ≤ 5.8: wiese-ego-steht 8.6 · wiese-third-steht ? · genesis-ego-steht 81.21 · genesis-third-steht 10.14 ‖ Belegung p95 ≤ 8: wiese-ego-geht 25.26 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 56.06 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 64 s · [linse-gpu] nvidia/pascal — ROT 10: wiese-ego-steht Belegung p95 8.6 > 5.8 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 81.21 > 5.8 | genesis-third-steht Belegung p95 10.14 > 5.8 | wiese-ego-geht Belegung p95 25.26 > 8 | wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht) · Sitzung · Exit 0 · 1.07 min (Zwilling von profiband.K1#1)
+  EICH 64.2 s · profiband.K2#2 · Deckel 64 s · Gesetz 90 s · im Gesetz, das Urteil zählt (Zwilling von profiband.K1#1)
+  ROT  profiband.K3#1 · Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 98 · 286k · 112.2 MB · 15.02 ms | wiese-third ? | genesis-ego 132 · 356k · 131 MB · 15.42 ms | genesis-third 168 · 409k · 125.2 MB · 12.99 ms | dorf-ego ? | dorf-third ? · Gang 64 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: Band ROT baum k1: 12 befehle über der Ratsche 5 (Täter: f:tanne:L1, f:eiche:L1, f:tanne:L0) · baum k1: 11260 dreiecke über der Ratsche 2732 (Täter: f:tanne:L1, f:eiche:L, gpu-bank 15.02 ms > 12, nicht eingeschwungen | Band wiese-third: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band genesis-ego: Band ROT boden k1: 14321 dreiecke über der Ratsche 7845 (Täter: fern-ring, bodenSatz, farWater) · baum k1: 8 befehle über der Ratsche 0 (Täter: f:tanne:L1, f:fichte:L1, , gpu-bank 15.42 ms > 12, nicht eingeschwungen | Band genesis-third: Band ROT baum k1: 8 befehle über der Ratsche 3 (Täter: f:tanne:L1, f:fichte:L1, f:fichte:L0) · baum k1: 8826 dreiecke über der Ratsche 1400 (Täter: f:tanne:L1, f:fichte:, gpu-bank 12.99 ms > 12, nicht eingeschwungen | Band dorf-ego: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 58 s trug den Schritt nicht) · Sitzung · Exit 0 · 1.07 min (Zwilling von profiband.K1#1)
+  EICH 64.2 s · profiband.K3#1 · Deckel 64 s · Gesetz 90 s · im Gesetz, das Urteil zählt (Zwilling von profiband.K1#1)
+  ROT  profiband.K3#2 · Befehle p95 ≤ 208: wiese-ego-steht 44 · wiese-third-steht ? · genesis-ego-steht 79 · genesis-third-steht 94 · wiese-ego-geht 85 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 152 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiecke p95 ≤ 680000: wiese-ego-steht 268961 · wiese-third-steht ? · genesis-ego-steht 306436 · genesis-third-steht 351702 · wiese-ego-geht 333871 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 417274 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ VRAM MB ≤ 118: wiese-ego-steht 112.2 · wiese-third-steht ? · genesis-ego-steht 124.2 · genesis-third-steht 125.2 · wiese-ego-geht 111.9 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 127.8 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ GPU p95 ≤ 12: wiese-ego-steht NaN · wiese-third-steht ? · genesis-ego-steht 1.87 · genesis-third-steht NaN · wiese-ego-geht 2.21 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 2.03 · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 98 · 286k · 112.2 MB · 15.02 ms | wiese-third ? | genesis-ego 132 · 356k · 131 MB · 15.42 ms | genesis-third 168 · 409k · 125.2 MB · 12.99 ms | dorf-ego ? | dorf-third ? · Gang 64 s · [linse-gpu] nvidia/pascal — ROT 31: wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 58 s trug den Schritt nicht) | stadt-ego-geht: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) · Sitzung · Exit 0 · 1.07 min (Zwilling von profiband.K1#1)
+  EICH 64.2 s · profiband.K3#2 · Deckel 64 s · Gesetz 90 s · im Gesetz, das Urteil zählt (Zwilling von profiband.K1#1)
+  SITZUNG Grundstellung vor klang.K4#1: 2.4 s (im Spiel 39 ms, durch die Tür — wege +60 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-145.8,-1096.2,-143.7,-1094.1/1] …)
+  SITZUNG die Welt vor klang.K4#1: 13.2 s (583 Takte, 81 Chunks, nach der Tür)
+  GRÜN klang.K4#1 · gras 5551 Hz (n 14) · quarz 3285 Hz (n 10) · glut 1825 Hz (n 12) — kleinster Abstand 1460 Hz · Sitzung · Exit 0 · 0.63 min
+  EICH 37.6 s · klang.K4#1 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  GRÜN klang.K4#2 · ✅ Schritte gras 5551 Hz (n 14) · quarz 3285 Hz (n 10) · glut 1825 Hz (n 12), kleinster Abstand 1460 Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.51 dB je m/s, r 0.9958 (1 m 4.4 m/s -52.8 dB · 2 m 6.2 m/s -51.6 dB · 4 m 8.8 m/s -50.1 dB · 8 m 12.6 m/s -48.3 dB · 12 m 15.4 m/s -47.2 dB) · ✅ Doppler Steigung 1.0000 r 1.0000 (-9 m 13.3 m/s 1.0404/1.0404 · -4.5 m 9.6 m/s 1.0289/1.0289 · -2 m 5.0 m/s 1.0147/1.0147 · 2 m -5.2 m/s 0.9850/0.9850 · 4.5 m -7.3 m/s 0.9792/0.9792 · 9 m -6.5 m/s 0.9814/0.9814) · Sitzung · Exit 0 · 0.63 min (Zwilling von klang.K4#1)
+  EICH 37.6 s · klang.K4#2 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt (Zwilling von klang.K4#1)
+  SITZUNG Grundstellung vor klang.K5#2: 2.1 s (im Spiel 38.3 ms, durch die Tür — wege +64 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-137.1,-1156.6,-135,-1154.6/1] …)
+  SITZUNG die Welt vor klang.K5#2: 12.7 s (583 Takte, 81 Chunks, nach der Tür)
+  ROT  klang.K5#2 · Klang-Takt p95 gehen 0.2 · fahrt 0.2 · nacht 0.2 ms · Aussetzer 0 in 21 s Wiedergabe (0 s still; verdichtet, Staffel: 10 min) (Exit 0) · Sitzung · Exit 0 · 0.47 min
+  EICH 27.9 s · klang.K5#2 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor speicher.K1#1: 2.1 s (im Spiel 41.3 ms, durch die Tür — wege +58 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-145.8,-1096.2,-143.7,-1094.1/1] …)
+  SITZUNG die Welt vor speicher.K1#1: 13.3 s (582 Takte, 81 Chunks, nach der Tür)
+  OFFEN speicher.K1#1 · EICH: 57.9 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: Sonde blind: in keinem Zyklus entstand ein Edit) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 57.9 s · speicher.K1#1 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie
+  OFFEN speicher.K1#2 · EICH: 57.9 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: Sonde blind: in keinem Zyklus entstand ein Edit) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 57.9 s · speicher.K1#2 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie (Zwilling von speicher.K1#1)
+  SITZUNG Grundstellung vor speicher.K2#1: 0.1 s (im Spiel 36.2 ms)
+  SITZUNG die Welt vor speicher.K2#1: 8.1 s (539 Takte, 81 Chunks, nach der Grundstellung)
+  OFFEN speicher.K2#1 · EICH: 50.4 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (GRÜN: je Speicher-Bild in der frischen Welt p50 0.1 / p95 0.2 / max 0.3 ms (Soll p95 ≤ 0,3; 20 Stände, 245 Speicher-Bilder)) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 50.4 s · speicher.K2#1 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (GRÜN) zählt nie
+  OFFEN speicher.K2#2 · EICH: 50.4 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: Speicher-Bild frisch p50 0.1 / p95 0.2 / max 0.3 ms (245 Bilder), 0 von 75 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0 / p95 0.1 / max 0.4 ms (540 Bilder), 0 von 23 Bildern > 16,7 ms du) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 50.4 s · speicher.K2#2 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie (Zwilling von speicher.K2#1)
+  SITZUNG Grundstellung vor speicher.K4#2: 2.5 s (im Spiel 47.7 ms, durch die Tür — wege +13 [-111.2,-55,-109.1,-52.9/1] [-119.9,-63.7,-117.8,-61.6/1] [-3.2,-63.7,-1.1,-61.6/1] …)
+  SITZUNG die Welt vor speicher.K4#2: 13.3 s (582 Takte, 81 Chunks, nach der Tür)
+  GRÜN speicher.K4#2 · bild-diff 0.40 % (Soll ≤ 1; Rauschen ohne Neuladen 0.20 %) · Pflicht vor {"bau":true,"grube":true,"wasser":2} · nach {"bau":true,"grube":true,"wasser":2} · [linse-gpu] nvidia/pascal · Sitzung · Exit 0 · 0.68 min
+  EICH 40.7 s · speicher.K4#2 · Deckel 15 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Fahrt 717.7 s (Soll ≤ 1800 s) · 12 Proben · Grundstellung 11×
+→ meisterkarte-quelle\punkte\messung\3ed95dcf-gtx.json

@@ -1,0 +1,18 @@
+Punkte-Maschine: 6 Station(en) in 4 Läufen auf gtx am 3ed95dcf · Sitzung 4 Proben in EINER Welt (Deckel Σ 2 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  SITZUNG gtx · die Welt steht nach 6.3 s (Schloss nach 0.01 min) · 4 Proben · Welt :27804
+  SITZUNG der Grund der Welt: 77 Größen in 0 s
+  SITZUNG die Welt vor pipeline.K4#2: 20.6 s (583 Takte, 81 Chunks)
+  OFFEN pipeline.K4#2 · Deckel 10 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor siedlung.K5#1: 2.8 s (im Spiel 42.8 ms, durch die Tür)
+  SITZUNG die Welt vor siedlung.K5#1: 14.9 s (582 Takte, 81 Chunks, nach der Tür)
+  OFFEN siedlung.K5#1 · Deckel 27 s gerissen — beendet, UNGEMESSEN (zuletzt: @@ 16.9 s · frische Welt (Grundstellung) nach 2.4 s) · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN siedlung.K5#2 · Deckel 27 s gerissen — beendet, UNGEMESSEN (zuletzt: @@ 16.9 s · frische Welt (Grundstellung) nach 2.4 s) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor leib.K2#1: 2 s (im Spiel 38 ms, durch die Tür)
+  SITZUNG die Welt vor leib.K2#1: 14.2 s (582 Takte, 81 Chunks, nach der Tür)
+  OFFEN leib.K2#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN leib.K2#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor leib.K4#1: 2.3 s (im Spiel 35.9 ms, durch die Tür)
+  SITZUNG die Welt vor leib.K4#1: 13.9 s (582 Takte, 81 Chunks, nach der Tür)
+  ROT  leib.K4#1 · keine Gang-Zeile — ROT: Täter: Gang: Error: die Frist der Probe · Sitzung · Exit 1 · 0.45 min
+  SITZUNG Fahrt 178.1 s (Soll ≤ 1800 s) · 4 Proben · Grundstellung 3×
+→ meisterkarte-quelle\punkte\messung\3ed95dcf-gtx.json
