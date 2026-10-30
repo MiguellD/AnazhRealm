@@ -1397,6 +1397,20 @@ class AnazhRealm_kreatur_verhalten {
         // die End-Achse in die Wand und machte sie frei (der Umweg dreht an der Wand: die Schnauze 0,4 m im Stein, Probe folgen)
         const gierVor = ud && Number.isFinite(ud._gierKontakt) ? ud._gierKontakt : creature.rotation.y || 0;
         if (ud) ud._gierKontakt = creature.rotation.y || 0;
+        // DER ZAUN DES GEHEGES (w4-stadt-orte): ein Tier seiner Herde (`ud.gehege`, `_gehegeHerden`) bleibt in der Wiese — der Leib
+        // um `GEHEGE_LEIB_M` hinter dem Zaun (die Streifen des Zauns sind kein Blocker: das Dorf bleibt dem Spieler durchlässig)
+        const gz = ud && ud.gehege;
+        if (gz) {
+            const c = Math.cos(gz.phi);
+            const s = Math.sin(gz.phi);
+            const dx = p.x - gz.cx;
+            const dz = p.z - gz.cz;
+            const R = AnazhRealm.GEHEGE_LEIB_M;
+            const lx = Math.max(-(gz.ex - R), Math.min(gz.ex - R, dx * c - dz * s));
+            const lz = Math.max(-(gz.ez - R), Math.min(gz.ez - R, dx * s + dz * c));
+            p.x = gz.cx + lx * c + lz * s;
+            p.z = gz.cz - lx * s + lz * c;
+        }
         // DIE FELS-WAND (`_creatureGroundY`): die Ebene vor der Wand hält den Leib — er geht seitlich und zurück, nie hinein
         const wh = ud && ud._wandHalt;
         if (wh) {

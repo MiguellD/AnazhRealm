@@ -3701,7 +3701,13 @@
         if(!(fx>=0&&fz>=0&&fx<=n-1&&fz<=n-1)){ mass.aussen++; fx=Math.max(0,Math.min(n-1,fx||0)); fz=Math.max(0,Math.min(n-1,fz||0)); }
         const i=Math.min(n-2,fx|0), j=Math.min(n-2,fz|0), u=fx-i, v=fz-j, k=i+j*n;
         return (h[k]*(1-u)+h[k+1]*u)*(1-v)+(h[k+n]*(1-u)+h[k+n+1]*u)*v; };
-      H.mass=mass; return H; }
+      H.mass=mass;
+      // DAS WASSER DES RASTERS (w4-stadt-orte, `nass` je Punkt: der Ort-Faden urteilt `ortNass`, wie der Plan v2): nass ist ein Ort,
+      // an dessen Zelle ein Punkt des Rasters Wasser trägt (die vier Ecken — ein Bach zwischen zwei Punkten zählt auf beiden Seiten);
+      // ohne Maske (das Labor, die Linse) kennt das Raster kein Wasser
+      if(r.nass&&r.nass.length===n*n) H.nass=(x,z)=>{ const fx=Math.max(0,Math.min(n-1,(x-r.x0)/d)), fz=Math.max(0,Math.min(n-1,(z-r.z0)/d));
+        const i=Math.min(n-2,fx|0), j=Math.min(n-2,fz|0), k=i+j*n; return !!(r.nass[k]||r.nass[k+1]||r.nass[k+n]||r.nass[k+n+1]); };
+      return H; }
     // DER FELDWEG ZWISCHEN ORTEN (fahrzeug.K2): das Wegenetz der Welt verbindet je zwei benachbarte Orte über einen Feldweg, der
     // dem Grund folgt — der günstigste Lauf von einem Punkt der Wege des einen Orts (`A`) zu einem des anderen (`B`) über das
     // Höhen-Raster `r` um die Strecke (alle Punkte in seinen Koordinaten; er beginnt, wo das Netz ihm am günstigsten liegt — vom
@@ -3841,16 +3847,18 @@
           const q={x:(pts[i-1].x+2*p.x+pts[i+1].x)/4, z:(pts[i-1].z+2*p.z+pts[i+1].z)/4};
           return g(pts[i-1],q)<=Math.max(max,g(pts[i-1],p))&&g(q,pts[i+1])<=Math.max(max,g(p,pts[i+1]))&&!gesperrt(sperren,q.x,q.z)? q : p; });
       return pts; }
-    // WAS EINEM WEG IM PLAN IM WEG STEHT (fahrzeug.K2): der Grundriss jedes Slots (seine obb) und der Tritt jeder Ausstattung
-    // (Stand, Brunnen, Laterne, Hof-Baum: AUSSTATTUNG `tritt`, der Baum 0,8 m) — je eine gedrehte Box {cx, cz, phi, ex, ez}, um
-    // `halbM` (die halbe Breite des Wagens) gewachsen, am Ursprung (ox, oz). Leser: die Nähte des Netzes (`wegeNetz`) und der
-    // Feldweg zwischen zwei Orten (`wegZwischen`), beide über `gesperrt`.
+    // WAS EINEM WEG IM PLAN IM WEG STEHT (fahrzeug.K2): der Grundriss jedes Slots (seine obb), der Tritt jeder Ausstattung
+    // (Stand, Brunnen, Laterne, Hof-Baum: AUSSTATTUNG `tritt`, der Baum 0,8 m) und die Fläche jedes Orts mit Rolle (`ortFlaechen`,
+    // w4-stadt-orte: kein Weg, keine Wende des Verkehrs und kein Feldweg zwischen Orten läuft über den Rundkurs oder durch das
+    // Gehege) — je eine gedrehte Box {cx, cz, phi, ex, ez}, um `halbM` (die halbe Breite des Wagens) gewachsen, am Ursprung
+    // (ox, oz). Leser: die Nähte des Netzes (`wegeNetz`), der Feldweg zwischen zwei Orten (`wegZwischen`) und der Verkehr, über `gesperrt`.
     function planSperren(plan, ox, oz, halbM){
       const A=AUSSTATTUNG, box=(x,z,phi,ex,ez)=>({cx:ox+x, cz:oz+z, phi:phi||0, ex:ex+halbM, ez:ez+halbM});
       const kreis=(p,r)=>box(p.x,p.z,0,r,r);
       return [].concat((plan.slots||[]).filter(sl=>sl.obb).map(sl=>box(sl.obb.cx,sl.obb.cz,sl.obb.phi,sl.obb.ex,sl.obb.ez)),
         (plan.staende||[]).map(p=>box(p.x,p.z,0,A.marktstand.tritt.ex,A.marktstand.tritt.ez)), (plan.brunnen||[]).map(p=>kreis(p,A.brunnen.tritt.r)),
-        (plan.laternen||[]).filter(p=>!p.wand).map(p=>kreis(p,A.laterne.tritt.r)), (plan.trees||[]).map(p=>kreis(p,0.8)))
+        (plan.laternen||[]).filter(p=>!p.wand).map(p=>kreis(p,A.laterne.tritt.r)), (plan.trees||[]).map(p=>kreis(p,0.8)),
+        ...(plan.orte||[]).map(o=>ortFlaechen(o,0).map(f=>box(f.cx,f.cz,f.phi,f.ex,f.ez))))
         .filter(o=>isFinite(o.cx)&&isFinite(o.cz)); }
     function gesperrt(sperren, x, z){
       for(const o of sperren){ const c=Math.cos(o.phi), s=Math.sin(o.phi), dx=x-o.cx, dz=z-o.cz;
@@ -3862,7 +3870,7 @@
     // sechs, Lücken 21–41 m längs der Hauptstraße, der Feldweg 33 m vor dem letzten Stück im Wald). DIE NÄHTE schließen es: der
     // kürzeste freie gerade Schritt aus dem Teil des ersten Knotens zum Rest (bis `bisM`), frei, wo er keinen Grundriss (die
     // obb jedes Slots) und keinen Tritt der Ausstattung (Stand, Brunnen, Laterne, Hof-Baum) näher als `halbM` streift — bis
-    // EIN Netz steht. Rückgabe {knoten (je Knoten die Breite w seines Wegs), kanten (je Knoten die Paare j, Länge, die Nähte darin), naehte [[i, j]]}. Leser: der
+    // EIN Netz steht. Rückgabe {knoten (je Knoten die Breite w und der Rang seines Wegs), kanten (je Knoten die Paare j, Länge, die Nähte darin), naehte [[i, j]]}. Leser: der
     // Wirt (`_wegeNetzGrund`: die Bewohner gehen, der Fahrer fährt es, die Nähte liegen als Feldweg).
     function wegeNetz(plan, kreuzM, halbM, bisM){
       const kn=[], kan=[], zug=[], naehte=[];
@@ -3870,7 +3878,7 @@
       let wi=0;
       for(const rd of (plan.roads||[]).concat(plan.feldwege||[])){ let vor=-1;
         for(const q of wegUeberBruecken(rd.pts||[], rd.bruecken)){ if(!q||!isFinite(q.x)||!isFinite(q.z)) continue;   /*über dem Wasser die Achse der Brücke (`wegUeberBruecken`)*/
-          kn.push({x:q.x,z:q.z,w:rd.w||0}); kan.push([]); zug.push(wi); if(vor>=0) kante(vor,kn.length-1); vor=kn.length-1; }
+          kn.push({x:q.x,z:q.z,w:rd.w||0,rang:rd.rang||null}); kan.push([]); zug.push(wi); if(vor>=0) kante(vor,kn.length-1); vor=kn.length-1; }
         wi++; }
       for(let i=0;i<kn.length;i++) for(let j=i+1;j<kn.length;j++)
         if(zug[i]!==zug[j]&&(kn[i].x-kn[j].x)**2+(kn[i].z-kn[j].z)**2<kreuzM*kreuzM) kante(i,j);
@@ -3894,8 +3902,8 @@
     // ═══ DER VERKEHR (PFLICHT-OFFEN C, gesetzt 25.10.): Wagen mit Bewohnern am Steuer auf den Trassen der Stadt ═══
     // DIE MENGE (`verkehrVon`): je `hausJeWagen` Häuser einer städtischen Siedlung (Markt bis Metropole, `plan.staedtisch`) EIN
     // Wagen, sein Fahrer ein Bewohner des Hauses floor((w + ½) · Häuser / Wagen) — gleichmäßig über den Plan; ein Dorf fährt nicht.
-    // DAS NETZ (`verkehrsNetz`, am Ursprung ox/oz): die Trassen, die zwei Wagen nebeneinander tragen (jede Straße ab `breiteM`:
-    // die Hauptstraßen der Stadt; Punkte zweier Trassen näher als `naheM` treffen sich), ihr längster zusammenhängender Teil. Knoten mit drei und
+    // DAS NETZ (`verkehrsNetz`, am Ursprung ox/oz): die Trassen, die zwei Wagen nebeneinander tragen (jede Straße vom Rang haupt,
+    // `STRASSEN_RANG`: die Hauptstraßen der Stadt; Punkte zweier Trassen näher als `naheM` treffen sich), ihr längster zusammenhängender Teil. Knoten mit drei und
     // mehr Nachbarn näher als `kreuzM` sind EINE Kreuzung (mit drei und mehr Ausgängen; zwei Stücke derselben Straße stoßen
     // nur aneinander), jedes Ende ein Knotenpunkt, dazwischen die Strecken. Jede Strecke trägt zwei Spuren (rechts der Fahrt um
     // `spurM`, an einer Kreuzung um ihren Radius gekürzt), jeder Punkt frei für den halben Wagen (`halbM`): wo ein Brunnen, eine
@@ -3910,7 +3918,7 @@
     // Spur zur Wende. Der Plan v2 (`ortPlan`) wählt je Ende die erste, deren Kreis und Plätze Land tragen und nicht steiler als
     // `hangMax` liegen und deren Bahn auf jeder Fläche, die sie kreuzt, binnen `flaecheM` deren Höhe trägt, und legt sie als
     // Boden (`verkehrsBoden`).
-    var VERKEHR_GESETZ = { hausJeWagen: 15, breiteM: 4.9, naheM: 2.5, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, kreiselRandM: 1, wendeM: 6.5,
+    var VERKEHR_GESETZ = { hausJeWagen: 15, naheM: 2.5, spurM: 1.25, halbM: 1.2, ausweichM: 3, einweichM: 2.5, kreuzM: 6, kurveR: 5.5, abbiegRandM: 0.3, kreiselRandM: 1, wendeM: 6.5,
       wendeRandM: 1.2, wendeAbM: [7, 40], wendeN: 8, parkL: 5.4, parkB: 2.3, parkRandM: 0.6, zelleM: 8, hangMax: 0.3, ringRandM: 1, flaecheM: 0.1, kreuzSpurM: 3 };
     function verkehrVon(plan){
       const sl=(plan&&plan.slots)||[], N=plan&&plan.staedtisch?Math.ceil(sl.length/VERKEHR_GESETZ.hausJeWagen):0, slots=[];
@@ -3940,7 +3948,7 @@
       (plan.roads||[]).concat(plan.feldwege||[]).forEach((rd,ri)=>{ let vor=null;
         for(const q of wegUeberBruecken(rd.pts||[], rd.bruecken)){ if(!q||!isFinite(q.x)||!isFinite(q.z)) continue; const P={x:ox+q.x, z:oz+q.z};
           if(vor) laeufe.push([vor,P]); vor=P;
-          if((rd.w||0)<V.breiteM) continue; const i=kn.length; kn.push(P); nb.push([]);
+          if(rd.rang!=="haupt") continue; const i=kn.length; kn.push(P); nb.push([]);
           if(i>0&&kn[i-1].ri===ri){ nb[i].push(i-1); nb[i-1].push(i); } P.ri=ri;
           const ix=Math.floor(P.x/zN), iz=Math.floor(P.z/zN);
           for(let a=ix-1;a<=ix+1;a++) for(let b=iz-1;b<=iz+1;b++) for(const j of netz.get(a*2097152+b)||[])
@@ -4493,12 +4501,660 @@
       for(let du=0; du<=DORF_LICHT_WEG/2-1; du+=1){ if((u+du<L&&(amWeg(rd,u+du,fl)||amWeg(rd,u+du,-fl)))||(du&&u-du>0&&(amWeg(rd,u-du,fl)||amWeg(rd,u-du,-fl)))) break; } } } }
   const sp=at(roads[0],Math.min(roads[0].len||8,8));
   const nzyk=roads.length-(G.nodes.length-1);                                                // Zyklen = E − V + 1 (zusammenhängend)
-  return {pl, roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w, gen:rd.gen, len:rd.len||0, quer:rd.quer||false})),   /*Whitelist +quer — das Flag starb an dieser Kopie (#1-Sonde: 0 Gassen im lay)*/
-          feldwege, platz, brunnen, fences, felder, staende, spawn:{x:sp.x,z:sp.z}, trees, jitAmp, DS, mauer,
+  return {pl, roads:roads.map(rd=>({pts:rd.pts.filter((_,k2)=>k2*DS<=(rd.len||0)+DS), w:rd.w, gen:rd.gen, len:rd.len||0, quer:rd.quer||false, rang:strassenRang(rd.gen)})),   /*Whitelist +quer — das Flag starb an dieser Kopie (#1-Sonde: 0 Gassen im lay); +rang (STRASSEN_RANG, w4-stadt-orte)*/
+          feldwege:feldwege.map(fw=>Object.assign({}, fw, {rang:"feldweg"})), platz, brunnen, fences, felder, staende, spawn:{x:sp.x,z:sp.z}, trees, jitAmp, DS, mauer,
           laternen, marken,
           graph:{nV:G.nodes.length, nE:roads.length, zyklen:Math.max(0,nzyk)},
           welt:{x0:X0-9,x1:X1+9,z0:Z0-9,z1:Z1+9}};
 }
+
+    // ═══ DIE ORDNUNG DER STADT (w4-stadt-orte, 30.10., siedlung.K2): EINE Straßen-Hierarchie, Quartiere mit Rolle und Orte, deren
+    // Rolle ihr Gesetz frei hält ═══ Der Schöpfer (30.10.): die Städte brauchen saubere, kohärente Orte — dann läuft jede Prüfung
+    // in der Umgebung ihrer Rolle, und jeder Fehler wird dort sichtbar. Gemessen vorher (der Export am Grund der Welt, vier
+    // Mess-Städte: stadt 92 · stadt-voll 304 · hochhaus-dach 375 · die Rang-Stadt −2,−6 36 Slots): kein Weg nannte seinen Rang —
+    // drei Leser (der Verkehr, der Gehweg der Menge, seine Flächen) lasen die Hauptstraße aus der Schwelle VERKEHR_GESETZ.breiteM
+    // 4,9 (die Metropole trägt 23 Breiten) —, 0 Quartiere, 0 Orte mit Rolle; frei blieb nur der Platz (275–318 m² in Städten von
+    // 4,3–69 ha). Die Prüfungen suchten sich ihren Ort in der wilden Welt: die Tempo-Probe fuhr in Fels und Kiefer, die das Feld
+    // erst warf, als der Spieler nahte; die Herde am Hang verschwand hinter dem Gelände.
+    //
+    // DIE STRASSEN-HIERARCHIE: jeder Weg trägt seinen Rang — haupt (die Arterien des Graphen, gen 0: vom Platz zu den Toren, zwei
+    // Spuren; der Verkehr fährt nur sie, die Menge geht an ihrem Gehweg) · gasse (Äste, Quergassen, Ausfall und Vorstadt, gen 1
+    // und 2: dem Fuß) · feldweg (aus dem Ort hinaus, die Zufahrt eines Orts); über ihnen der Platz, der Kern. Leser: der Verkehr
+    // (`verkehrsNetz`), das Wege-Netz (`wegeNetz`, je Knoten), der Gehweg der Menge und seine Flächen (der Wirt).
+    var STRASSEN_RANG = { haupt: [0], gasse: [1, 2] };
+    function strassenRang(gen) {
+        for (var r in STRASSEN_RANG) if (STRASSEN_RANG[r].indexOf(gen) >= 0) return r;
+        throw new Error("fachwerk: kein Straßen-Rang für die Generation " + gen);
+    }
+    // DIE QUARTIERE: die Stadt teilt sich nach ihrem eigenen Gesetz — der KERN um den Platz (bis `kern` des bebauten Radius,
+    // mindestens `kernM`: die Altstadt, die Downtown), die VIERTEL zwischen den Hauptstraßen (die Arterien schneiden den Ring in
+    // Sektoren: WOHNEN), jenseits der Mauer die VORSTADT ihres Sektors, und am Rand je Ort mit Rolle sein Quartier (rennen ·
+    // tiere). Das GEWERBE ist EIN Quartier: das Gewerbe-Gesetz stellt seine Hallen um EINEN Winkel (`sektor`, der Gewerbe-Zwang
+    // der Lose); das Viertel oder die Vorstadt mit den meisten Hallen ist es — eine Stadt ohne Halle (vor 1850, das Gesetz der
+    // Lose) trägt keins. Je Quartier {rolle, bogen [a0, a1] (rad, gegen den Uhrzeiger ab +x; der Kern und ein Ort ohne Sektor den
+    // ganzen Kreis), r [r0, r1] (m), slots}; je Slot `quartier` (sein Index). Nur eine Stadt (`ORTE_GESETZ.klassen`) trägt
+    // Quartiere — ein Dorf ist EIN Ort.
+    var QUARTIER_GESETZ = { kern: 0.35, kernM: 30 };
+    function stadtQuartiere(slots, roads, mauer, orte) {
+        var Q = QUARTIER_GESETZ;
+        var TAU = 2 * Math.PI;
+        var winkel = function (x, z) {
+            var a = Math.atan2(z, x);
+            return a < 0 ? a + TAU : a;
+        };
+        // die Richtungen der Arterien am Platz: je Hauptstraße, die im Ursprung beginnt, ihr Punkt nach rund 20 m
+        var arterien = [];
+        roads.forEach(function (rd) {
+            if (rd.rang !== "haupt" || !rd.pts.length || Math.hypot(rd.pts[0].x, rd.pts[0].z) > 1) return;
+            var q = rd.pts[Math.min(rd.pts.length - 1, 7)];
+            var a = winkel(q.x, q.z);
+            if (!arterien.some(function (b) { return Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b))) < 0.35; })) arterien.push(a);
+        });
+        arterien.sort(function (a, b) { return a - b; });
+        var sektor = function (a) {
+            if (arterien.length < 2) return 0;
+            var k = arterien.length - 1;
+            for (var j = 0; j < arterien.length; j++) if (arterien[j] <= a) k = j;
+            return k;
+        };
+        var bogen = function (k) {
+            if (arterien.length < 2) return [0, TAU];
+            return [arterien[k], k + 1 < arterien.length ? arterien[k + 1] : arterien[0] + TAU];
+        };
+        var R = 0;
+        slots.forEach(function (sl) {
+            var r = Math.hypot(sl.obb.cx, sl.obb.cz);
+            if (!mauer || r < mauer.R) R = Math.max(R, r);
+        });
+        var rKern = Math.max(Q.kernM, Q.kern * R);
+        var je = new Map();
+        slots.forEach(function (sl, i) {
+            var r = Math.hypot(sl.obb.cx, sl.obb.cz);
+            var k = sektor(winkel(sl.obb.cx, sl.obb.cz));
+            var schl = mauer && r >= mauer.R ? "vorstadt:" + k : r <= rKern ? "kern" : "viertel:" + k;
+            if (!je.has(schl)) je.set(schl, { k: k, idx: [], hallen: 0, r1: 0 });
+            var q = je.get(schl);
+            q.idx.push(i);
+            q.r1 = Math.max(q.r1, r);
+            if (sl.rolle === "halle") q.hallen++;
+        });
+        var aus = [];
+        var setze = function (schl, rolle, b, r0) {
+            var q = je.get(schl);
+            if (!q) return;
+            q.idx.forEach(function (i) {
+                slots[i].quartier = aus.length;
+            });
+            aus.push({ rolle: rolle, bogen: b.map(r4), r: [r4(r0), r4(q.r1)], slots: q.idx.length });
+        };
+        var gewerbe = null;
+        je.forEach(function (q, schl) {
+            if (schl !== "kern" && q.hallen > 0 && (!gewerbe || q.hallen > je.get(gewerbe).hallen)) gewerbe = schl;
+        });
+        setze("kern", "kern", [0, TAU], 0);
+        for (var k = 0; k < Math.max(1, arterien.length); k++) setze("viertel:" + k, gewerbe === "viertel:" + k ? "gewerbe" : "wohnen", bogen(k), rKern);
+        for (k = 0; k < Math.max(1, arterien.length); k++) if (mauer) setze("vorstadt:" + k, gewerbe === "vorstadt:" + k ? "gewerbe" : "vorstadt", bogen(k), mauer.R);
+        (orte || []).forEach(function (o) {
+            var m = ortMitte(o);
+            var r = Math.hypot(m.x, m.z);
+            var ext = ortReich(o);
+            aus.push({ rolle: ORTE_GESETZ[o.rolle].quartier, ort: o.rolle, bogen: [r4(winkel(m.x, m.z) - Math.atan2(ext, r)), r4(winkel(m.x, m.z) + Math.atan2(ext, r))], r: [r4(Math.max(0, r - ext)), r4(r + ext)], slots: 0 });
+        });
+        return aus;
+    }
+    function r4(v) {
+        return Math.round(v * 1e4) / 1e4;
+    }
+    // DIE ORTE MIT ROLLE: Flächen am Rand der Stadt, deren Rolle ihr Gesetz frei hält — gelegt vom Gesetz, gehalten vom Wirt (die
+    // Natur-Wand und die Würfe des Felds lesen ihre Fläche, das Gehege trägt seine Herde). Nur eine Stadt (`klassen`) trägt sie.
+    //   der RUNDKURS (fahrzeug.K2/K3, dort fahren die Wagen): eine geschlossene Bahn — zwei Geraden (`geradeM`) und zwei Kurven
+    //   (`kurveR`, die Mitte der Bahn), `breiteM` breit, um sie `sturzM` Sturzraum (frei wie die Bahn, Wiese). Er liegt auf EINER
+    //   Ebene: der Ausgleichs-Ebene seines Grunds (`bahnEbene`: kleinste Quadrate über die Punkte der Bahn je `probeM`, ihr
+    //   Gefälle gekappt auf `gefaelle`) — der Plan v2 legt die Bahn auf sie (`ortPlan`), darum nur, wo der Grund unter der Bahn um
+    //   höchstens `hubM` von ihr abweicht (die Spanne des Rests). Bis zum Schnitt verlangte die Wahl eine waagrechte Bahn: an der
+    //   Metropole am 172-m-Gipfel (Zelle 2,−14) spannte jeder freie Ort ≥ 9,5 m. Seine Fläche ist die Kapsel um die Achse zwischen
+    //   den Kurven-Mitten (`achse`, `halb`); `geraden` die beiden Geraden in Fahrtrichtung.
+    //   das GEHEGE (tiere.K1/K4/K5, dort sieht man die Tiere): eine Wiese (`exM` × `ezM` halb) im Zaun (Felder `zaunM` lang,
+    //   `zaunHoch` hoch), das Tor (`torM`) zur
+    //   AUSSICHT, die `blickM` vor der Mitte auf der Seite steht, von der die Herde frei im Blick ist: vom Auge (`augeM` über dem
+    //   Grund) trifft die Sicht mindestens `frei` der Punkte der Wiese (`zielM` über dem Grund) über dem Gelände; die Wiese steigt
+    //   höchstens `hangMax`; zwischen Zaun und Aussicht bleibt ein Streifen (`sichtM` halb) frei. Die Herde (`herde`: Seele,
+    //   Kopfzahl) setzt der Wirt.
+    // DIE WAHL (`wahl`): je Richtung (`winkel` um den Ursprung) der bebaute Rand — die weiteste Fläche des Plans im Band des Orts
+    // (Grundriss, Weg, Feldweg, Feld, Platz, Ausstattung, Mauer) — und `abM` davor der Ort quer zur Richtung, in `stufen`
+    // Schritten von `stufeM` weiter hinaus. Ein Ort trägt, wo seine Fläche keine Fläche des Plans samt `randM` und keinen
+    // früheren Ort berührt, im Höhen-Raster liegt (ohne Raster: ebener Grund) und kein Wasser des Gesetzes unter der Bahn, in der
+    // Wiese oder an der Aussicht steht (die Maske des Rasters, `hoeheAusRaster` H.nass); der Rundkurs mit dem kleinsten Hub, das Gehege
+    // mit der freiesten Sicht — je 100 m Weg vom Ursprung um `nahJe100M` gewogen. DIE ZUFAHRT: ein Feldweg vom Eingang (die Mitte
+    // der inneren Geraden, die Aussicht) zum nächsten Weg des Plans — der kürzeste Lauf über das Raster der Wahl, der keine Fläche
+    // des Plans außer den Säumen der Wege und keinen früheren Ort berührt (höchstens `zufahrtM`), gespannt zu Geraden, so weit sie
+    // frei laufen (bei 180 m fanden 15 der 20 Orte der Welt-Städte ihre Zufahrt, bei 300 m 18, bei 500 m alle 20 — dieselben ms).
+    // Trägt kein Ort, fehlt er laut (`orteFehlen`: Rolle und Grund).
+    var ORTE_GESETZ = {
+        // die Größen-Klassen, die Orte mit Rolle und Quartiere tragen (`GROESSE_BAND`: ab 27 Häusern)
+        klassen: ["stadt", "grossstadt", "metropole"],
+        rundkurs: { quartier: "rennen", geradeM: 240, kurveR: 30, breiteM: 9, sturzM: 6, hubM: 6, gefaelle: 0.04, kurveSchritt: Math.PI / 18, probeM: 3 },
+        gehege: { quartier: "tiere", exM: 32, ezM: 22, blickM: 45, augeM: 1.7, zielM: 0.9, frei: 0.95, hangMax: 0.18, sichtM: 6, umM: 2, zaunM: 4, zaunHoch: 1.2, torM: 4, herde: { seele: "wesen", n: 7 } },
+        wahl: { winkel: 48, abM: 24, stufen: 4, stufeM: 18, randM: 4, rasterM: 2, nahJe100M: 0.5, zufahrtM: 500 },
+    };
+    // DIE EBENE DER BAHN: die Ausgleichs-Ebene y = a + b·x + c·z über die Punkte `P` [{x, z}] mit ihren Höhen `ys` (kleinste Quadrate),
+    // ihr Gefälle |(b, c)| gekappt auf `gefaelle` (die Höhe a dann der Mittelwert des Rests); dazu die Spanne des Rests (`hub`).
+    // Leser: die Wahl des Rundkurses (`stadtOrte`) und der Plan v2 (`ortPlan`: die Höhe jedes Punkts der Bahn).
+    function bahnEbene(P, ys, gefaelle) {
+        var n = P.length;
+        var mx = 0, mz = 0, my = 0;
+        for (var i = 0; i < n; i++) {
+            mx += P[i].x / n;
+            mz += P[i].z / n;
+            my += ys[i] / n;
+        }
+        var sxx = 0, sxz = 0, szz = 0, sxy = 0, szy = 0;
+        for (i = 0; i < n; i++) {
+            var dx = P[i].x - mx, dz = P[i].z - mz, dy = ys[i] - my;
+            sxx += dx * dx;
+            sxz += dx * dz;
+            szz += dz * dz;
+            sxy += dx * dy;
+            szy += dz * dy;
+        }
+        var det = sxx * szz - sxz * sxz;
+        var b = det > 1e-9 ? (sxy * szz - szy * sxz) / det : 0;
+        var c = det > 1e-9 ? (szy * sxx - sxy * sxz) / det : 0;
+        var g = Math.hypot(b, c);
+        if (g > gefaelle) {
+            b *= gefaelle / g;
+            c *= gefaelle / g;
+        }
+        var a = 0;
+        for (i = 0; i < n; i++) a += (ys[i] - b * P[i].x - c * P[i].z) / n;
+        var lo = Infinity, hi = -Infinity;
+        for (i = 0; i < n; i++) {
+            var rest = ys[i] - (a + b * P[i].x + c * P[i].z);
+            lo = Math.min(lo, rest);
+            hi = Math.max(hi, rest);
+        }
+        return { a: a, b: b, c: c, hub: hi - lo };
+    }
+    // die Punkte einer Bahn je höchstens `schritt` m (ohne den letzten, der den ersten wiederholt)
+    function bahnProben(bahn, schritt) {
+        var aus = [];
+        for (var k = 1; k < bahn.length; k++) {
+            var A = bahn[k - 1];
+            var B = bahn[k];
+            var n = Math.max(1, Math.ceil(Math.hypot(B.x - A.x, B.z - A.z) / schritt));
+            for (var u = 0; u < n; u++) aus.push({ x: A.x + ((B.x - A.x) * u) / n, z: A.z + ((B.z - A.z) * u) / n });
+        }
+        return aus;
+    }
+    // DIE SICHT DER AUSSICHT (das Gehege `o` {cx, cz, phi, ex, ez}, das Auge {x, z}, h die Höhe am Ort): der Anteil der 5 × 5 Punkte
+    // der Wiese (`zielM` über dem Grund), die die Gerade vom Auge (`augeM` über dem Grund) trifft, ohne dass der Grund sie berührt
+    // (je 2 m geprobt, 5 cm Luft). Leser: die Wahl des Geheges (`stadtOrte`, am Raster) und die Linse (diag-settlement Teil R, am
+    // Gesetz der Höhe).
+    function gehegeSicht(o, auge, h) {
+        var GH = ORTE_GESETZ.gehege;
+        var c = Math.cos(o.phi);
+        var s = Math.sin(o.phi);
+        var ey = h(auge.x, auge.z) + GH.augeM;
+        var ja = 0;
+        for (var a = -2; a <= 2; a++)
+            for (var b = -2; b <= 2; b++) {
+                var lx = 0.4 * a * o.ex;
+                var lz = 0.4 * b * o.ez;
+                var tx = o.cx + lx * c + lz * s;
+                var tz = o.cz - lx * s + lz * c;
+                var ty = h(tx, tz) + GH.zielM;
+                var d = Math.hypot(tx - auge.x, tz - auge.z);
+                var frei = true;
+                for (var u = 1; u < d - 1 && frei; u += 2) {
+                    var f = u / d;
+                    frei = h(auge.x + (tx - auge.x) * f, auge.z + (tz - auge.z) * f) < ey + (ty - ey) * f - 0.05;
+                }
+                if (frei) ja++;
+            }
+        return ja / 25;
+    }
+    // die Breite der Zufahrt: die eines Feldwegs des Plans (`dorfLayout`: sW · 0,6)
+    var ZUFAHRT_W = DORF_NORM.strasseW * 0.6;
+    // die Mitte und die Reichweite eines Orts (plan-lokal): der Rundkurs um seine Achse, das Gehege um seine Wiese samt Aussicht
+    function ortMitte(o) {
+        return o.rolle === "rundkurs" ? { x: (o.achse.ax + o.achse.bx) / 2, z: (o.achse.az + o.achse.bz) / 2 } : { x: o.cx, z: o.cz };
+    }
+    function ortReich(o) {
+        return o.rolle === "rundkurs" ? Math.hypot(o.achse.bx - o.achse.ax, o.achse.bz - o.achse.az) / 2 + o.halb : Math.max(Math.hypot(o.ex, o.ez), Math.hypot(o.auge.x - o.cx, o.auge.z - o.cz));
+    }
+    // DIE FLÄCHE EINES ORTS als gedrehte Boxen {cx, cz, phi, ex, ez} (plan-lokal, um `rand` gewachsen): der Rundkurs der Kasten um
+    // seine Kapsel, das Gehege seine Wiese samt Umgang und der Streifen der Sicht bis zur Aussicht. Leser: `planSperren` (kein Weg,
+    // keine Naht, keine Wende des Verkehrs und kein Feldweg zwischen Orten läuft durch einen Ort) und der Wirt.
+    function ortFlaechen(o, rand) {
+        var m = rand || 0;
+        if (o.rolle === "rundkurs") {
+            var A = o.achse;
+            var L = Math.hypot(A.bx - A.ax, A.bz - A.az);
+            return [{ cx: (A.ax + A.bx) / 2, cz: (A.az + A.bz) / 2, phi: Math.atan2(-(A.bz - A.az), A.bx - A.ax), ex: L / 2 + o.halb + m, ez: o.halb + m }];
+        }
+        var G = ORTE_GESETZ.gehege;
+        var dx = o.auge.x - o.cx;
+        var dz = o.auge.z - o.cz;
+        var d = Math.hypot(dx, dz) || 1;
+        var tief = Math.abs((dx / d) * Math.cos(o.phi) - (dz / d) * Math.sin(o.phi)) > 0.5 ? o.ex : o.ez;
+        var lang = (d - tief) / 2;
+        return [
+            { cx: o.cx, cz: o.cz, phi: o.phi, ex: o.ex + G.umM + m, ez: o.ez + G.umM + m },
+            { cx: o.cx + (dx / d) * (tief + lang), cz: o.cz + (dz / d) * (tief + lang), phi: Math.atan2(-dz, dx), ex: lang + G.umM + m, ez: G.sichtM + m },
+        ];
+    }
+    // Liegt (x, z) (plan-lokal) auf der Fläche eines Orts mit Rolle (`ortFlaechen` samt `rand`)? Die Rolle des ersten, sonst null.
+    // Leser: der Export (die Hof-Bäume seiner Orte fallen), die Linse.
+    function imOrt(orte, x, z, rand) {
+        for (var i = 0; i < (orte || []).length; i++) {
+            var fl = ortFlaechen(orte[i], rand || 0);
+            for (var k = 0; k < fl.length; k++) {
+                var f = fl[k];
+                var c = Math.cos(f.phi);
+                var s = Math.sin(f.phi);
+                var dx = x - f.cx;
+                var dz = z - f.cz;
+                if (Math.abs(dx * c - dz * s) <= f.ex && Math.abs(dx * s + dz * c) <= f.ez) return orte[i].rolle;
+            }
+        }
+        return null;
+    }
+    function stadtOrte(lay, slots, mauer, H, rahmen) {
+        var W = ORTE_GESETZ.wahl;
+        var zM = W.rasterM;
+        var wl = lay.welt;
+        var weit = W.abM + W.stufen * W.stufeM + ORTE_GESETZ.rundkurs.geradeM / 2 + 60;
+        var x0 = wl.x0 - weit;
+        var z0 = wl.z0 - weit;
+        var nx = Math.ceil((wl.x1 - wl.x0 + 2 * weit) / zM) + 1;
+        var nz = Math.ceil((wl.z1 - wl.z0 + 2 * weit) / zM) + 1;
+        // ZWEI RASTER: `haus` die Flächen des Plans außer den Wegen und die gelegten Orte (samt randM), `weg` die Wege — 1 ihr Saum
+        // (randM), 2 ihr Kern (die halbe Breite). Ein Ort trägt nur auf Zellen, die beide frei lassen; die Zufahrt läuft über jede
+        // Zelle ohne `haus` und endet am Kern eines Wegs.
+        var haus = new Uint8Array(nx * nz);
+        var weg = new Uint8Array(nx * nz);
+        // die Zellen, deren Mitte die Probe `drin` trifft, im Kasten um (cx, cz) mit der Reichweite `r`: malen oder prüfen
+        var zellen = function (cx, cz, r, drin, f) {
+            var i0 = Math.floor((cx - r - x0) / zM);
+            var i1 = Math.floor((cx + r - x0) / zM);
+            var j0 = Math.floor((cz - r - z0) / zM);
+            var j1 = Math.floor((cz + r - z0) / zM);
+            for (var j = j0; j <= j1; j++)
+                for (var i = i0; i <= i1; i++) {
+                    var x = x0 + (i + 0.5) * zM;
+                    var z = z0 + (j + 0.5) * zM;
+                    if (drin(x, z) && f(i, j) === false) return false;
+                }
+            return true;
+        };
+        var male = function (s, raster, wert) {
+            zellen(s.cx, s.cz, s.r, s.drin, function (i, j) {
+                if (i >= 0 && j >= 0 && i < nx && j < nz) raster[i + j * nx] = Math.max(raster[i + j * nx], wert || 1);
+            });
+        };
+        var frei = function (s) {
+            return zellen(s.cx, s.cz, s.r, s.drin, function (i, j) {
+                return i >= 0 && j >= 0 && i < nx && j < nz && !haus[i + j * nx] && !weg[i + j * nx];
+            });
+        };
+        var kasten = function (o, m) {
+            var c = Math.cos(o.phi || 0);
+            var s = Math.sin(o.phi || 0);
+            return {
+                cx: o.cx,
+                cz: o.cz,
+                r: Math.hypot(o.ex + m, o.ez + m),
+                drin: function (x, z) {
+                    var dx = x - o.cx;
+                    var dz = z - o.cz;
+                    return Math.abs(dx * c - dz * s) <= o.ex + m && Math.abs(dx * s + dz * c) <= o.ez + m;
+                },
+            };
+        };
+        var kapsel = function (ax, az, bx, bz, h) {
+            var dx = bx - ax;
+            var dz = bz - az;
+            var L2 = dx * dx + dz * dz;
+            return {
+                cx: (ax + bx) / 2,
+                cz: (az + bz) / 2,
+                r: Math.sqrt(L2) / 2 + h,
+                drin: function (x, z) {
+                    var t = L2 > 1e-9 ? Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / L2)) : 0;
+                    return Math.hypot(x - ax - dx * t, z - az - dz * t) <= h;
+                },
+            };
+        };
+        // DIE FLÄCHEN DES PLANS samt randM, und je Fläche ihre Punkte für den Rand (x, z, Reichweite)
+        var rand = [];
+        var m0 = W.randM;
+        slots.forEach(function (sl) {
+            if (!sl.obb) return;
+            male(kasten(sl.obb, m0), haus);
+            rand.push([sl.obb.cx, sl.obb.cz, Math.hypot(sl.obb.ex, sl.obb.ez) + m0]);
+        });
+        lay.roads.concat(lay.feldwege || []).forEach(function (rd) {
+            var hw = (rd.w || 3) / 2;
+            for (var k = 0; k < rd.pts.length; k++) {
+                var A = rd.pts[k];
+                var B = rd.pts[Math.min(rd.pts.length - 1, k + 1)];
+                male(kapsel(A.x, A.z, B.x, B.z, hw + m0), weg, 1);
+                male(kapsel(A.x, A.z, B.x, B.z, hw), weg, 2);
+                rand.push([A.x, A.z, hw + m0]);
+            }
+        });
+        (lay.felder || []).concat(lay.platz ? [lay.platz] : []).forEach(function (f) {
+            male(kasten(f, m0), haus);
+            rand.push([f.cx, f.cz, Math.hypot(f.ex, f.ez) + m0]);
+        });
+        (lay.brunnen || []).concat(lay.staende || [], lay.laternen || []).forEach(function (p) {
+            male(kapsel(p.x, p.z, p.x, p.z, 1.5 + m0), haus);
+            rand.push([p.x, p.z, 1.5 + m0]);
+        });
+        if (mauer) {
+            var hm = STADTMAUER.krone.dick / 2 + m0;
+            mauer.segs.forEach(function (s) {
+                male(kapsel(s.x0, s.z0, s.x1, s.z1, hm), haus);
+                rand.push([s.x0, s.z0, hm]);
+            });
+            mauer.towers.forEach(function (t) {
+                male(kasten({ cx: t.x, cz: t.z, phi: 0, ex: STADTMAUER.turm.breit / 2, ez: STADTMAUER.turm.breit / 2 }, m0), haus);
+            });
+        }
+        // im Höhen-Raster (ohne Raster: überall): der Rahmen, den der Wirt füllt (`trasseRahmen`); außerhalb liest kein Ort
+        var imRahmen = function (x, z) {
+            return !rahmen || (x >= rahmen.x0 && z >= rahmen.z0 && x <= rahmen.x0 + (rahmen.n - 1) * rahmen.d && z <= rahmen.z0 + (rahmen.n - 1) * rahmen.d);
+        };
+        var h = function (x, z) {
+            return H ? H(x, z) : 0;
+        };
+        // das Wasser des Gesetzes an einem Ort (das Raster des Wirts trägt es, `hoeheAusRaster` H.nass; ohne Maske keins)
+        var nass = function (x, z) {
+            return !!(H && H.nass && H.nass(x, z));
+        };
+        // je Richtung der Rand im Band des Orts (halbe Länge `hl` quer zur Richtung): die weiteste Fläche des Plans
+        var randIn = function (ux, uz, hl) {
+            var r0 = 0;
+            for (var k = 0; k < rand.length; k++) {
+                var p = rand[k];
+                var l = p[0] * ux + p[1] * uz;
+                if (l > 0 && Math.abs(-p[0] * uz + p[1] * ux) <= hl + p[2]) r0 = Math.max(r0, l + p[2]);
+            }
+            return mauer ? Math.max(r0, mauer.R + STADTMAUER.krone.dick + m0) : r0;
+        };
+        var aus = [];
+        var fehlen = [];
+        var zufahrten = [];
+        // DIE ZUFAHRT vom Eingang `e` (vor dem Malen seines Orts): der kürzeste Lauf über die Zellen ohne `haus` (Dijkstra, acht
+        // Nachbarn) bis zum Kern eines Wegs, höchstens `zufahrtM`; dann gespannt — von jedem Punkt die fernste Zelle des Laufs, die
+        // eine Gerade über freie Zellen erreicht. Rückgabe die Punkte vom Weg zum Eingang oder null (kein Lauf).
+        var zufahrt = function (e) {
+            var ie = Math.floor((e.x - x0) / zM);
+            var je = Math.floor((e.z - z0) / zM);
+            if (ie < 0 || je < 0 || ie >= nx || je >= nz || haus[ie + je * nx]) return null;
+            var kost = new Float64Array(nx * nz).fill(Infinity);
+            var von = new Int32Array(nx * nz).fill(-1);
+            var heap = [[0, ie + je * nx]];
+            kost[ie + je * nx] = 0;
+            var ziel = -1;
+            while (heap.length && ziel < 0) {
+                var top = heap[0];
+                var last = heap.pop();
+                if (heap.length) {
+                    heap[0] = last;
+                    for (var p = 0; ; ) {
+                        var l = 2 * p + 1, q = l + 1, m = p;
+                        if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
+                        if (q < heap.length && heap[q][0] < heap[m][0]) m = q;
+                        if (m === p) break;
+                        var t0 = heap[m];
+                        heap[m] = heap[p];
+                        heap[p] = t0;
+                        p = m;
+                    }
+                }
+                var c = top[1];
+                if (top[0] > kost[c]) continue;
+                if (weg[c] === 2) {
+                    ziel = c;
+                    break;
+                }
+                var ci = c % nx, cj = (c - ci) / nx;
+                for (var di = -1; di <= 1; di++)
+                    for (var dj = -1; dj <= 1; dj++) {
+                        if (!di && !dj) continue;
+                        var ni = ci + di, nj = cj + dj;
+                        if (ni < 0 || nj < 0 || ni >= nx || nj >= nz || haus[ni + nj * nx]) continue;
+                        var k2 = ni + nj * nx;
+                        var k = kost[c] + zM * (di && dj ? Math.SQRT2 : 1);
+                        if (k > W.zufahrtM || k >= kost[k2]) continue;
+                        kost[k2] = k;
+                        von[k2] = c;
+                        heap.push([k, k2]);
+                        for (var hp = heap.length - 1; hp > 0; ) {
+                            var pa = (hp - 1) >> 1;
+                            if (heap[pa][0] <= heap[hp][0]) break;
+                            var t1 = heap[pa];
+                            heap[pa] = heap[hp];
+                            heap[hp] = t1;
+                            hp = pa;
+                        }
+                    }
+            }
+            if (ziel < 0) return null;
+            var lauf = [];
+            for (var z1 = ziel; z1 >= 0; z1 = von[z1]) lauf.push({ x: x0 + ((z1 % nx) + 0.5) * zM, z: z0 + (((z1 - (z1 % nx)) / nx) + 0.5) * zM });
+            lauf[lauf.length - 1] = { x: e.x, z: e.z };
+            var sieht = function (a, b) {
+                var n = Math.max(1, Math.ceil(Math.hypot(b.x - a.x, b.z - a.z) / (zM / 2)));
+                for (var u = 0; u <= n; u++) {
+                    var i = Math.floor((a.x + ((b.x - a.x) * u) / n - x0) / zM);
+                    var j = Math.floor((a.z + ((b.z - a.z) * u) / n - z0) / zM);
+                    if (haus[i + j * nx]) return false;
+                }
+                return true;
+            };
+            var aus2 = [lauf[0]];
+            for (var a = 0; a < lauf.length - 1; ) {
+                var b = lauf.length - 1;
+                while (b > a + 1 && !sieht(lauf[a], lauf[b])) b--;
+                aus2.push(lauf[b]);
+                a = b;
+            }
+            return aus2.map(function (pt) {
+                return { x: r4(pt.x), z: r4(pt.z) };
+            });
+        };
+        // die Zufahrt wird eine Fläche des Plans: kein späterer Ort legt sich über sie
+        var zufahrtMalen = function (zf) {
+            for (var k = 1; k < zf.length; k++) male(kapsel(zf[k - 1].x, zf[k - 1].z, zf[k].x, zf[k].z, ZUFAHRT_W / 2 + m0), haus);
+        };
+        // ── DER RUNDKURS ──
+        var RK = ORTE_GESETZ.rundkurs;
+        var halb = RK.kurveR + RK.breiteM / 2 + RK.sturzM;
+        var bahnVon = function (A, B, nX, nZ) {
+            var tx = B.x - A.x;
+            var tz = B.z - A.z;
+            var L = Math.hypot(tx, tz);
+            tx /= L;
+            tz /= L;
+            var R = RK.kurveR;
+            var P = [{ x: A.x + nX * R, z: A.z + nZ * R }, { x: B.x + nX * R, z: B.z + nZ * R }];
+            for (var f = RK.kurveSchritt; f < Math.PI - 1e-9; f += RK.kurveSchritt)
+                P.push({ x: B.x + R * (nX * Math.cos(f) + tx * Math.sin(f)), z: B.z + R * (nZ * Math.cos(f) + tz * Math.sin(f)) });
+            P.push({ x: B.x - nX * R, z: B.z - nZ * R }, { x: A.x - nX * R, z: A.z - nZ * R });
+            for (f = RK.kurveSchritt; f < Math.PI - 1e-9; f += RK.kurveSchritt)
+                P.push({ x: A.x - R * (nX * Math.cos(f) + tx * Math.sin(f)), z: A.z - R * (nZ * Math.cos(f) + tz * Math.sin(f)) });
+            P.push({ x: P[0].x, z: P[0].z });
+            return P;
+        };
+        // der Rest des Grunds unter der Bahn um ihre Ebene (`bahnEbene`): seine Spanne, das Gefälle der Ebene
+        var hubVon = function (P) {
+            var pr = bahnProben(P, RK.probeM);
+            if (!pr.every(function (p) { return imRahmen(p.x, p.z) && !nass(p.x, p.z); })) return { hub: Infinity };
+            var e = bahnEbene(pr, pr.map(function (p) { return h(p.x, p.z); }), RK.gefaelle);
+            return { hub: e.hub, gefaelle: Math.hypot(e.b, e.c) };
+        };
+        var wahl = null;
+        for (var wi = 0; wi < W.winkel; wi++) {
+            var th = (wi / W.winkel) * 2 * Math.PI;
+            var ux = Math.cos(th);
+            var uz = Math.sin(th);
+            var r0 = randIn(ux, uz, RK.geradeM / 2 + halb);
+            for (var st = 0; st < W.stufen; st++) {
+                var r = r0 + W.abM + halb + st * W.stufeM;
+                var A = { x: ux * r + uz * (RK.geradeM / 2), z: uz * r - ux * (RK.geradeM / 2) };
+                var B = { x: ux * r - uz * (RK.geradeM / 2), z: uz * r + ux * (RK.geradeM / 2) };
+                var form = kapsel(A.x, A.z, B.x, B.z, halb);
+                if (!imRahmen(A.x + ux * halb, A.z + uz * halb) || !imRahmen(B.x - ux * halb, B.z - uz * halb) || !frei(form)) continue;
+                var bahn = bahnVon(A, B, ux, uz);
+                var hb = hubVon(bahn);
+                if (!(hb.hub <= RK.hubM)) continue;
+                var wert = hb.hub + (W.nahJe100M * r) / 100;
+                if (!wahl || wert < wahl.wert) wahl = { wert: wert, A: A, B: B, bahn: bahn, hub: hb.hub, gefaelle: hb.gefaelle };
+            }
+        }
+        if (wahl) {
+            var rk = {
+                rolle: "rundkurs",
+                achse: { ax: r4(wahl.A.x), az: r4(wahl.A.z), bx: r4(wahl.B.x), bz: r4(wahl.B.z) },
+                halb: halb,
+                breite: RK.breiteM,
+                bahn: wahl.bahn.map(function (p) { return { x: r4(p.x), z: r4(p.z) }; }),
+                hub: r4(wahl.hub),
+                gefaelle: r4(wahl.gefaelle),
+            };
+            var iB = 2 + Math.round(Math.PI / RK.kurveSchritt) - 1; // der Anfang der zweiten Geraden (nach der ersten Kurve)
+            rk.geraden = [
+                { ax: rk.bahn[0].x, az: rk.bahn[0].z, bx: rk.bahn[1].x, bz: rk.bahn[1].z },
+                { ax: rk.bahn[iB].x, az: rk.bahn[iB].z, bx: rk.bahn[iB + 1].x, bz: rk.bahn[iB + 1].z },
+            ];
+            // die innere Gerade (die dem Ursprung nähere) ist der Eingang: ihre Mitte
+            var gi = rk.geraden.map(function (g) { return Math.hypot((g.ax + g.bx) / 2, (g.az + g.bz) / 2); });
+            var gIn = rk.geraden[gi[0] <= gi[1] ? 0 : 1];
+            var zf = zufahrt({ x: (gIn.ax + gIn.bx) / 2, z: (gIn.az + gIn.bz) / 2 });
+            male(kapsel(wahl.A.x, wahl.A.z, wahl.B.x, wahl.B.z, halb + m0), haus);
+            if (zf) {
+                zufahrten.push({ pts: zf, ort: "rundkurs" });
+                zufahrtMalen(zf);
+            }
+            aus.push(rk);
+        } else fehlen.push({ rolle: "rundkurs", grund: "kein Ort am Rand trägt die Bahn (frei, im Raster, Rest des Grunds ≤ " + RK.hubM + " m um die Ebene)" });
+        // ── DAS GEHEGE ──
+        var GH = ORTE_GESETZ.gehege;
+        var sicht = function (auge, o) {
+            return H ? gehegeSicht(o, auge, h) : 1;
+        };
+        var hangVon = function (o) {
+            if (!H) return 0;
+            var c = Math.cos(o.phi);
+            var s = Math.sin(o.phi);
+            var g = [];
+            for (var a = -2; a <= 2; a++)
+                for (var b = -2; b <= 2; b++) {
+                    var lx = 0.5 * a * o.ex;
+                    var lz = 0.5 * b * o.ez;
+                    var x = o.cx + lx * c + lz * s;
+                    var z = o.cz - lx * s + lz * c;
+                    if (!imRahmen(x, z) || nass(x, z)) return Infinity;
+                    g.push(h(x, z));
+                }
+            var m = 0;
+            for (var k = 0; k < 25; k++) {
+                if (k % 5 < 4) m = Math.max(m, Math.abs(g[k + 1] - g[k]) / (0.5 * o.ex));
+                if (k < 20) m = Math.max(m, Math.abs(g[k + 5] - g[k]) / (0.5 * o.ez));
+            }
+            return m;
+        };
+        var gwahl = null;
+        for (wi = 0; wi < W.winkel; wi++) {
+            th = (wi / W.winkel) * 2 * Math.PI;
+            ux = Math.cos(th);
+            uz = Math.sin(th);
+            r0 = randIn(ux, uz, GH.exM + GH.umM);
+            for (st = 0; st < W.stufen; st++) {
+                r = r0 + W.abM + GH.blickM + st * W.stufeM;
+                // die lange Seite quer zur Richtung (die lokale x-Achse liegt auf (−uz, ux)); lokal +z zeigt zum Ursprung
+                var o = { cx: ux * r, cz: uz * r, phi: Math.atan2(-ux, -uz), ex: GH.exM, ez: GH.ezM };
+                if (!(hangVon(o) <= GH.hangMax)) continue;
+                var c0 = Math.cos(o.phi);
+                var s0 = Math.sin(o.phi);
+                // die vier Seiten: lokal +z (zum Ursprung, die erste), −z, +x, −x — je die Aussicht blickM vor der Mitte
+                [[0, 1], [0, -1], [1, 0], [-1, 0]].forEach(function (sd, si) {
+                    var auge = { x: o.cx + sd[0] * GH.blickM * c0 + sd[1] * GH.blickM * s0, z: o.cz - sd[0] * GH.blickM * s0 + sd[1] * GH.blickM * c0 };
+                    if (!imRahmen(auge.x, auge.z) || nass(auge.x, auge.z)) return;
+                    var kand = Object.assign({}, o, { auge: auge });
+                    var fl = ortFlaechen(kand, 0);
+                    if (!fl.every(function (f) { return frei(kasten(f, 0)); })) return;
+                    var fr = sicht(auge, o);
+                    if (fr < GH.frei) return;
+                    var wert = -10 * fr + si * 0.01 + (W.nahJe100M * r) / 100 - 0.001 * (h(auge.x, auge.z) - h(o.cx, o.cz));
+                    if (!gwahl || wert < gwahl.wert) gwahl = { wert: wert, o: kand, fr: fr, sd: sd };
+                });
+            }
+        }
+        if (gwahl) {
+            var g = gwahl.o;
+            var c1 = Math.cos(g.phi);
+            var s1 = Math.sin(g.phi);
+            var welt = function (lx, lz) {
+                return { x: g.cx + lx * c1 + lz * s1, z: g.cz - lx * s1 + lz * c1 };
+            };
+            // der Zaun: je Seite Felder bis zaunM, die Seite der Aussicht trägt in ihrer Mitte das Tor
+            var zaun = [];
+            var ecken = [[-g.ex, -g.ez], [g.ex, -g.ez], [g.ex, g.ez], [-g.ex, g.ez]];
+            var torSeite = gwahl.sd[1] === -1 ? 0 : gwahl.sd[0] === 1 ? 1 : gwahl.sd[1] === 1 ? 2 : 3;
+            var tor = null;
+            for (var e = 0; e < 4; e++) {
+                var P0 = ecken[e];
+                var P1 = ecken[(e + 1) % 4];
+                var L = Math.hypot(P1[0] - P0[0], P1[1] - P0[1]);
+                var nZ = Math.ceil(L / GH.zaunM);
+                for (var zi = 0; zi < nZ; zi++) {
+                    var f0 = zi / nZ;
+                    var f1 = (zi + 1) / nZ;
+                    if (e === torSeite) {
+                        var lm = L / 2;
+                        var a0 = f0 * L;
+                        var a1 = f1 * L;
+                        if (a1 > lm - GH.torM / 2 && a0 < lm + GH.torM / 2) {
+                            if (a0 < lm - GH.torM / 2) f1 = (lm - GH.torM / 2) / L;
+                            else if (a1 > lm + GH.torM / 2) f0 = (lm + GH.torM / 2) / L;
+                            else continue;
+                        }
+                    }
+                    var q0 = welt(P0[0] + (P1[0] - P0[0]) * f0, P0[1] + (P1[1] - P0[1]) * f0);
+                    var q1 = welt(P0[0] + (P1[0] - P0[0]) * f1, P0[1] + (P1[1] - P0[1]) * f1);
+                    zaun.push({ x0: r4(q0.x), z0: r4(q0.z), x1: r4(q1.x), z1: r4(q1.z) });
+                }
+                if (e === torSeite) tor = welt((P0[0] + P1[0]) / 2, (P0[1] + P1[1]) / 2);
+            }
+            var gh = {
+                rolle: "gehege",
+                cx: r4(g.cx),
+                cz: r4(g.cz),
+                phi: r4(g.phi),
+                ex: g.ex,
+                ez: g.ez,
+                zaun: zaun,
+                tor: { x: r4(tor.x), z: r4(tor.z) },
+                auge: { x: r4(g.auge.x), z: r4(g.auge.z) },
+                blick: { x: r4(g.cx), z: r4(g.cz) },
+                frei: r4(gwahl.fr),
+                herde: { seele: GH.herde.seele, n: GH.herde.n },
+            };
+            var zg = zufahrt(gh.auge);
+            ortFlaechen(gh, m0).forEach(function (f) {
+                male(kasten(f, 0), haus);
+            });
+            if (zg) {
+                zufahrten.push({ pts: zg, ort: "gehege" });
+                zufahrtMalen(zg);
+            }
+            aus.push(gh);
+        } else fehlen.push({ rolle: "gehege", grund: "kein Ort am Rand trägt die Wiese (frei, im Raster, Hang ≤ " + GH.hangMax + ", Sicht ≥ " + GH.frei + ")" });
+        return { orte: aus, fehlen: fehlen, zufahrten: zufahrten };
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     //  B4 PARAMS (Vertrags-Form {id,lab,min,max,step,def,law,grp}) — ABGELEITET
@@ -7405,7 +8061,6 @@
                     return l.wand ? { x: l.x, z: l.z, th: l.th, gas: l.gas, wand: true, slot: slotVon[l.haus] } : l;
                 }),
         };
-        if (Htr) aus.trasse = { aussen: Htr.mass.aussen }; // der Rahmen trug jeden Lese-Punkt der Trasse (die Linse verlangt 0)
         // die Mauer des Schnitts liegt in der Welt des Plans wie die der Gestalt (dorfLayout: ihr Radius + 8 m, der Rand 9 m)
         if (mz && !lay.mauer)
             aus.welt = {
@@ -7414,6 +8069,25 @@
                 z0: Math.min(lay.welt.z0, -mz.R - 17),
                 z1: Math.max(lay.welt.z1, mz.R + 17),
             };
+        // DIE ORDNUNG DER STADT (w4-stadt-orte): eine Stadt (ab der Klasse `ORTE_GESETZ.klassen`) legt ihre Orte mit Rolle an ihren
+        // Rand (`stadtOrte`, nach der Mauer: ihr Ring ist eine Fläche des Plans), ihre Zufahrten sind Feldwege, die Hof-Bäume ihrer
+        // Fläche fallen; dann teilt sie sich in Quartiere (`stadtQuartiere`). Dorf und Markt tragen beides nicht.
+        if (ORTE_GESETZ.klassen.indexOf(aus.groesse) >= 0) {
+            var so = stadtOrte(Object.assign({}, lay, { welt: aus.welt }), slots, mz, Htr, dp.hoehe || null);
+            aus.orte = so.orte;
+            if (so.fehlen.length) aus.orteFehlen = so.fehlen;
+            if (so.zufahrten.length)
+                aus.feldwege = aus.feldwege.concat(
+                    so.zufahrten.map(function (z) {
+                        return { pts: z.pts, w: ZUFAHRT_W, rang: "feldweg", ort: z.ort };
+                    })
+                );
+            aus.trees = aus.trees.filter(function (t) {
+                return !imOrt(so.orte, t.x, t.z, 1);
+            });
+            aus.quartiere = stadtQuartiere(slots, lay.roads, mz, so.orte);
+        }
+        if (Htr) aus.trasse = { aussen: Htr.mass.aussen }; // der Rahmen trug jeden Lese-Punkt der Trasse (die Linse verlangt 0)
         if (plan.chronik) aus.chronik = plan.chronik; // die Chronik der Gestalt (Staffel 2: ihr Leser ist `wachstum`)
         return aus;
     }
@@ -8331,6 +9005,48 @@
                 var y1 = { y: yl === null ? r6(H(l.x, l.z)) : yl };
                 return Object.assign({}, l, l.wand ? { slot: neuSi[l.slot], y: y1.y } : y1);
             });
+        // 5) DIE ORTE MIT ROLLE (w4-stadt-orte): der RUNDKURS liegt auf EINER Ebene — der Ausgleichs-Ebene seines Grunds (`bahnEbene`
+        //    über die Punkte der Bahn je `probeM`, das Gefälle gekappt wie bei der Wahl), je Punkt der Bahn ihre Höhe (`ebene`
+        //    plan-lokal {a, b, c}); der Erdbau trägt sie wie einen Weg (Saum und Kern, `trasse`; keine Fläche des Plans deckt sie).
+        //    Steht Welt-Wasser unter der Bahn oder in der Wiese des GEHEGES (ctx.wasserAt), nimmt es den Ort, laut (`orteImWasser`):
+        //    eine Bahn über einen Bach trüge eine Stufe an jedem Ufer, die Herde stünde im Wasser. Das Gehege folgt dem Grund (kein
+        //    Erdbau), seine Wiese trägt den Median ihres Grunds, die Aussicht die Höhe ihres Grunds.
+        var orte = [];
+        var orteImWasser = [];
+        var ortSplats = [];
+        (Array.isArray(plan.orte) ? plan.orte : []).forEach(function (o, oi) {
+            if (o.rolle === "rundkurs") {
+                var probe = bahnProben(o.bahn, ORTE_GESETZ.rundkurs.probeM);
+                if (probe.some(function (p) { return wasserAm(p.x, p.z); })) return void orteImWasser.push(o.rolle);
+                var eb = bahnEbene(probe, probe.map(function (p) { return H(p.x, p.z); }), ORTE_GESETZ.rundkurs.gefaelle);
+                var aufEbene = function (p) {
+                    return r6(eb.a + eb.b * p.x + eb.c * p.z);
+                };
+                for (k = 1; k < o.bahn.length; k++)
+                    for (var tier = 0; tier < 2; tier++)
+                        ortSplats.push({
+                            art: "trasse",
+                            x0: r6(ox + o.bahn[k - 1].x),
+                            z0: r6(oz + o.bahn[k - 1].z),
+                            y0: aufEbene(o.bahn[k - 1]),
+                            x1: r6(ox + o.bahn[k].x),
+                            z1: r6(oz + o.bahn[k].z),
+                            y1: aufEbene(o.bahn[k]),
+                            w: r6(o.breite + (tier ? 0 : 2 * O.saumM)),
+                            weg: 2 * (roads.length + oi) + tier,
+                        });
+                orte.push(Object.assign({}, o, { ebene: { a: r6(eb.a), b: r6(eb.b), c: r6(eb.c) }, ys: o.bahn.map(aufEbene) }));
+            } else if (o.rolle === "gehege") {
+                var wiese = rechteck(o.cx, o.cz, o.phi, o.ex, o.ez);
+                var c = Math.cos(o.phi);
+                var s = Math.sin(o.phi);
+                var nass = false;
+                for (var a = -2; a <= 2 && !nass; a++)
+                    for (var b = -2; b <= 2 && !nass; b++) nass = wasserAm(o.cx + 0.5 * a * o.ex * c + 0.5 * b * o.ez * s, o.cz - 0.5 * a * o.ex * s + 0.5 * b * o.ez * c);
+                if (nass || wasserAm(o.auge.x, o.auge.z)) return void orteImWasser.push(o.rolle);
+                orte.push(Object.assign({}, o, { y: r6(median(wiese)), auge: { x: o.auge.x, z: o.auge.z, y: r6(H(o.auge.x, o.auge.z)) } }));
+            } else throw new Error("fachwerk ortPlan: kein Ort der Rolle " + o.rolle);
+        });
         var v2 = Object.assign({}, plan, {
             version: 2,
             ort: { x: ox, z: oz },
@@ -8339,10 +9055,12 @@
             platz: platzY === null ? plan.platz : Object.assign({}, pz, { y: platzY }),
             laternen: laternen,
             // DIE REIHENFOLGE DER FLÄCHEN (die letzte gewinnt, wo sie sich decken): die Säume der Wege, die Grundrisse, die Wege
-            // selbst und der Platz (der Gang bleibt durchgehend, kein Saum eines Nachbarn liegt auf der Gasse), zuletzt die
-            // Vorplätze (die Stufe vor der Tür liegt auf allem)
-            erdbau: wegSaeume.concat(hausPlatten, wegKerne, erdbau, vorplaetze, freiSplats),
+            // selbst und der Platz (der Gang bleibt durchgehend, kein Saum eines Nachbarn liegt auf der Gasse), die Vorplätze (die
+            // Stufe vor der Tür liegt auf allem), die Bahn der Orte (sie deckt keine Fläche des Plans)
+            erdbau: wegSaeume.concat(hausPlatten, wegKerne, erdbau, vorplaetze, ortSplats, freiSplats),
         });
+        if (Array.isArray(plan.orte)) v2.orte = orte;
+        if (orteImWasser.length) v2.orteImWasser = orteImWasser;
         // die Slots, die das Wasser nahm (der Leser zählt das Dorf ehrlich: geplant = stehend + im Wasser gefallen)
         if (wasserSlots) v2.wasserSlots = wasserSlots;
         // die Feldwege weichen den Fremd-Slots wie die Gassen (sie tragen kein Profil); `fest`: die Fremd-Slots, denen ein Weg wich
@@ -8535,7 +9253,16 @@
         VERKEHR_GESETZ: VERKEHR_GESETZ, // PFLICHT-OFFEN C — der Verkehr der Stadt (Wagen je Häuser, halbe Breite, der Platz)
         verkehrVon: verkehrVon, // PFLICHT-OFFEN C — wie viele Wagen eine Siedlung fährt und aus welchen Häusern ihre Fahrer kommen
         verkehrsNetz: verkehrsNetz, // PFLICHT-OFFEN C — das Netz der Wagen: die zweispurigen Trassen, ihre Kreuzungen, Spuren, Wenden und Plätze
-        planSperren: planSperren, // fahrzeug.K2 — was einem Weg im Plan im Weg steht (Grundrisse und Tritte, um die halbe Wagen-Breite)
+        planSperren: planSperren, // fahrzeug.K2 — was einem Weg im Plan im Weg steht (Grundrisse, Tritte und Orte, um die halbe Wagen-Breite)
+        STRASSEN_RANG: STRASSEN_RANG, // w4-stadt-orte — der Rang jedes Wegs (haupt · gasse; der Feldweg trägt feldweg): Verkehr, Wege-Netz, Gehweg lesen ihn
+        strassenRang: strassenRang,
+        QUARTIER_GESETZ: QUARTIER_GESETZ, // w4-stadt-orte — die Quartiere der Stadt (Kern, Viertel, Vorstadt, je Ort mit Rolle eins)
+        ORTE_GESETZ: ORTE_GESETZ, // w4-stadt-orte — die Orte mit Rolle (Rundkurs, Gehege), ihre Maße und ihre Wahl am Rand der Stadt
+        ortFlaechen: ortFlaechen, // w4-stadt-orte — die Fläche eines Orts als gedrehte Boxen (der Wirt hält sie frei)
+        imOrt: imOrt, // w4-stadt-orte — liegt ein Punkt auf der Fläche eines Orts (die Rolle)
+        bahnEbene: bahnEbene, // w4-stadt-orte — die Ausgleichs-Ebene der Bahn des Rundkurses (Wahl, Plan v2, Linse)
+        bahnProben: bahnProben, // w4-stadt-orte — die Punkte einer Bahn je höchstens `schritt` m
+        gehegeSicht: gehegeSicht, // w4-stadt-orte — die Sicht der Aussicht über die Wiese (die Wahl am Raster, die Linse am Gesetz der Höhe)
         BRUECKE_GESETZ: BRUECKE_GESETZ, // fahrzeug.K2 — die Jochbrücke des Wegs (Feld, lichte Breite, Geländer, Pfahl, Einbindung)
         nasseLaeufe: nasseLaeufe, // fahrzeug.K2 — die nassen Läufe eines Wegs und ihre Widerlager (Gasse und Feldweg)
         brueckenAmWeg: brueckenAmWeg, // fahrzeug.K2 — die Spannen der Brücken eines Wegs (der Feldweg zwischen zwei Orten)

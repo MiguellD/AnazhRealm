@@ -1772,6 +1772,23 @@ class AnazhRealm_vegetation_baum {
         return false;
     }
 
+    // Liegt (x, z) auf der Fläche eines Orts mit Rolle (w4-stadt-orte: der Rundkurs, das Gehege — die Formen der Wege-Karte, die
+    // ihre Rolle tragen, `_stlWegeBuild`)? Die Rolle, sonst null. Dieselben Formen und dasselbe Gitter wie die Natur-Wand
+    // (`_aufWeg`): wo die Natur dem Ort weicht, wirft auch das Feld nichts. Leser: die Engstelle des Orts der DSL (`dslEvalPos`,
+    // jeder Ort, den der Nexus wählt).
+    _ortRolleAt(x, z) {
+        const G = AnazhRealm.GRUNDRISS_ZELLE;
+        const l = this._grundrissStand().wege.get(
+            AnazhRealm._grundrissSchluessel(Math.floor(x / G), Math.floor(z / G))
+        );
+        if (!l) return null;
+        for (const b of l) {
+            if (x < b.x0 || x > b.x1 || z < b.z0 || z > b.z1) continue;
+            for (const f of b.formen) if (f.rolle && AnazhRealm._wegeFormAbstand(f, x, z) < 0) return f.rolle;
+        }
+        return null;
+    }
+
     // DER STAND DER GRUNDRISSE (K20): das Gitter der Häuser, Bauten, Lichtungen und Dorf-Flächen, faul aus den Einträgen und
     // der Wege-Karte gebaut; es fällt bei jedem Spawn/Abriss eines Baus mit Grundriss und mit jeder Fläche, die die Wege-Karte
     // gewinnt oder verliert (K52), sein Objekt IST der Stand. Leser: `_imGrundriss` und wer eine Antwort merkt, die

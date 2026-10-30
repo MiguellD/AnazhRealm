@@ -227,6 +227,8 @@ class AnazhRealm_kreatur_leben {
             // S6 — der Verband und sein Revier reisen mit (ohne sie zerfiele die Herde beim Reload)
             verband: ud.verband != null ? String(ud.verband) : undefined,
             feldWurf: ud.feldWurf === true ? true : undefined, // die Herkunft weicht dem Bau auch nach dem Reload
+            // w4-stadt-orte — das Gehege seiner Herde reist mit: der Zaun hält es nach dem Reload, das Gehege setzt keine zweite Herde
+            gehege: ud.gehege ? Object.assign({}, ud.gehege) : undefined,
             revier:
                 ud.wanderAnchor && Number.isFinite(ud.wanderAnchor.x) && Number.isFinite(ud.wanderAnchor.z)
                     ? { x: ud.wanderAnchor.x, z: ud.wanderAnchor.z }
@@ -312,6 +314,9 @@ class AnazhRealm_kreatur_leben {
         if (snap.revier && Number.isFinite(snap.revier.x) && Number.isFinite(snap.revier.z))
             c.userData.wanderAnchor = { x: snap.revier.x, z: snap.revier.z };
         if (snap.feldWurf === true) c.userData.feldWurf = true;
+        const gz = snap.gehege;
+        if (gz && typeof gz.key === "string" && ["cx", "cz", "phi", "ex", "ez"].every((k) => Number.isFinite(gz[k])))
+            c.userData.gehege = { key: gz.key, cx: gz.cx, cz: gz.cz, phi: gz.phi, ex: gz.ex, ez: gz.ez };
         // die Wunde als Anteil des Lebens, das der Leib jetzt hat; ein Stand vor dem Anteil (Q12 bis Welle LF kampf Nachbesserung 2)
         // trug hp gegen das Leben VOR dem Massen-Gesetz (Substanz × Größen-Symmetrie, computeCreatureStats.hpOhneMasse) —
         // vorher stand ein voller Hirsch danach bei 124/168, ein voller Bär bei 159/391 (verwundet, ohne Wunde)
@@ -1633,6 +1638,7 @@ class AnazhRealm_kreatur_leben {
     _findOldestCreature(gattung, nur = null) {
         let oldest = null;
         for (const c of this.state.creatures) {
+            if (c.userData.gehege) continue; // die Herde eines Geheges stirbt nicht der Bilanz der Wildnis (`_kreaturBestand`)
             if ((gattung && AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul] !== gattung) || (nur && !nur.has(c)))
                 continue;
             if (!oldest || (c.userData.alterS || 0) > (oldest.userData.alterS || 0)) oldest = c;
@@ -1800,6 +1806,56 @@ class AnazhRealm_kreatur_leben {
         if (symphonie) this.state.symphony.enabled = true;
         this._kreaturVerbinden(geboren);
         return geboren;
+    }
+
+    // DIE HERDE DES GEHEGES (w4-stadt-orte, fachwerk ORTE_GESETZ.gehege.herde): ein gemeldetes Gehege (`_gehegeOrte`, der
+    // Erlebnis-Gang des Orts) trägt seine Herde — naht der Spieler auf `GEHEGE_NAH_M` und lebt kein Tier mit seiner Marke, setzt das
+    // Gehege sie: die Kopfzahl des Gesetzes (so weit `maxCreatures` Platz lässt) auf der Sonnenblumen-Spirale um die Mitte der
+    // Wiese, die Leine an der Mitte, gebunden zu EINEM Verband; jedes Tier trägt die Marke (`ud.gehege`: Schlüssel und Wiese),
+    // die der Zaun liest (`_kreaturHuellenKontakt`) und die der Stand mitnimmt. Kein Wurf des Felds: die Herde ist das Gesetz des
+    // Orts, sie weicht keinem Bau und zählt nicht zur Bilanz der Wildnis. Ein Tier, das schon lebt (der Reload), ist die Herde.
+    // Das Gehege fragt EINMAL je Ankunft (`da`, bis der Spieler sich entfernt): was unter seinen Augen fällt, steht erst wieder,
+    // wenn er fort war — nie eine Herde aus dem Nichts im nächsten Bild.
+    _gehegeHerden() {
+        const G = this._gehegeOrte;
+        const pm = this.state.playerMesh;
+        if (!G || !G.size || !pm || !this._kreaturenBereit()) return;
+        for (const g of G.values()) {
+            if (Math.hypot(g.cx - pm.position.x, g.cz - pm.position.z) > AnazhRealm.GEHEGE_NAH_M) {
+                g.da = false;
+                continue;
+            }
+            if (g.da) continue;
+            if (this.state.creatures.some((c) => c.userData.gehege && c.userData.gehege.key === g.key)) continue;
+            const soul = this._pickCreatureSoulName(g.herde.seele);
+            if (!soul) continue;
+            const n = Math.min(g.herde.n, this.state.maxCreatures - this.state.creatures.length);
+            const c0 = Math.cos(g.phi);
+            const s0 = Math.sin(g.phi);
+            // die Plätze der Herde (die Sonnenblumen-Spirale um die Mitte) auf ihrem Grund — trägt eine Säule noch keinen Grund,
+            // wartet das Gehege auf den nächsten Takt (nie ein geratener Boden)
+            const plaetze = [];
+            for (let k = 0; k < n; k++) {
+                const r = 2.2 * Math.sqrt(k);
+                const lx = r * Math.cos(k * 2.39996);
+                const lz = r * Math.sin(k * 2.39996);
+                const x = g.cx + lx * c0 + lz * s0;
+                const z = g.cz - lx * s0 + lz * c0;
+                plaetze.push([x, this.getTerrainHeightAt(x, z), z]);
+            }
+            if (!plaetze.every((q) => Number.isFinite(q[1]))) continue;
+            g.da = true;
+            const herde = [];
+            for (const [x, y, z] of plaetze) {
+                const c = this.spawnCreatureAt(x, y + 1, z, "happy", soul);
+                if (!c) break;
+                c.userData.wanderAnchor = { x: g.cx, z: g.cz };
+                c.userData.gehege = { key: g.key, cx: g.cx, cz: g.cz, phi: g.phi, ex: g.ex, ez: g.ez };
+                herde.push(c);
+            }
+            this._kreaturVerbinden(herde);
+            g.gesetzt = (g.gesetzt || 0) + herde.length;
+        }
     }
 
     // DER VERBAND (S6): der Wurf bindet seine Geborenen — das Rudel, die Herde — zu EINEM Verband, ein Datum am Leib
@@ -1990,7 +2046,9 @@ class AnazhRealm_kreatur_leben {
                 return AnazhRealm._kernPflichtBruch("tetrapoda:GATTUNGEN." + g + ".diet");
             diet[g] = d.dials.diet;
         }
-        const gattung = (c) => AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul];
+        // die Herde eines Geheges (w4-stadt-orte, `ud.gehege`) lebt nicht vom Revier der Wildnis: sie zählt nicht, kein Jäger reißt
+        // sie, kein Hunger nimmt sie (`_findOldestCreature`)
+        const gattung = (c) => (c.userData.gehege ? null : AnazhRealm.TETRAPODA_SOUL_MAP[c.userData.soul]);
         for (const c of this.state.creatures) if (gattung(c) in n) n[gattung(c)]++;
         // der Riss: wer einem wilden Jäger Beute ist, je Gattung gezählt, mit seinem nächsten Jäger, und die Kost der Jäger je
         // Gattung, die sie jagen
@@ -2091,6 +2149,7 @@ class AnazhRealm_kreatur_leben {
     tickFaunaLifecycle() {
         const st = this.state;
         const L = st.faunaLifecycle;
+        this._gehegeHerden();
         if (st.spielZeit - (L.lastTick || 0) < AnazhRealm._bestandGesetz().B.taktS) return;
         L.lastTick = st.spielZeit;
         // das Alter in Spiel-Zeit: je Takt taktS (dieselbe Uhr wie die Bilanz; vorher zählte die Wanduhr, Date.now − bornAt:
@@ -3033,6 +3092,11 @@ AnazhRealm._kampfGroesseGesetz = function () {
     AnazhRealm._kampfGroesseMemo = Object.freeze({ refKg: K.refKg, biss: K.biss, haut: K.haut, leben: K.leben });
     return AnazhRealm._kampfGroesseMemo;
 };
+// DAS GEHEGE (w4-stadt-orte, `_gehegeHerden`): so nah (m) setzt ein Gehege seine Herde, wenn der Spieler naht (im Ring der Tiere,
+// diesseits des Erwachens einer Stadt) · so weit hält der Zaun den Leib eines Tiers seiner Herde (die halbe Länge eines Hirschs,
+// `_kreaturHuellenKontakt`)
+AnazhRealm.GEHEGE_NAH_M = 260;
+AnazhRealm.GEHEGE_LEIB_M = 1.2;
 
 // CREATURE_ARCHETYPES — Tier-Baupläne als Bruchteile der Körper-Länge L: legFrac = Hüfte→Boden,
 // segRatio = Ober:Unterschenkel, torsoW/H = Rumpf-Querschnitt, neckFrac/neckTilt = Hals, headFrac,

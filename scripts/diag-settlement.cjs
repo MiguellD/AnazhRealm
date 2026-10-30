@@ -1,6 +1,6 @@
 // diag-settlement.cjs (gate:settlement) — Teil J (`--nur-j` allein): die Jahresringe der Chronik (`jahresringe`, siedlung.K4) ·
 // Teil Z (`--nur-z` allein): das Rang-Gesetz (`rangZensus`) · K (`--nur-k` nach Z): die Kreuzung als EINE Fläche
-// (`kreuzungsUrteil`) · N: der Export
+// (`kreuzungsUrteil`) · R (`--nur-r` allein, sonst nach K): die Ordnung der Stadt (`ordnungsUrteil`) · N: der Export
 // deterministisch und eingefroren (spec/asset-contract/v6/golden/siedlung.json, gemintet nur ohne Datei) · B (Browser): Worker,
 // Slots am Anker, Wasser- und fail-closed-Wand, Erlebnis-Schichten · C: die Auto-Zellen · O: der Ort auf dem Gelände.
 // --selftest: jede Wand feuert an injizierten Brüchen.
@@ -38,12 +38,12 @@ function fingerprint(plan) {
 // Median mit 1 − 2 · 0,5⁸ = 99,2 % (die Ordnungs-Statistik der Kaskade); GRÜN nur ganz in 0,8–1,2, und jede Stadt aus Z1
 // exportiert Mauer und Graph.
 const mittel = (a) => a.reduce((s, v) => s + v, 0) / a.length;
+const fnv = (t) => [...t].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261);
 function rangZensus(FC, o = {}) {
     const [S, N, Z] = [o.S || FC.SIEDLUNG, o.saaten || 8, { saaten: [], mitStadt: 0, graph: 0, je: [], n: [] }];
     const W = Math.round(32000 / S.cellM);
     let lcg = 7;
     const zuf = () => ((lcg = (Math.imul(lcg, 1664525) + 1013904223) >>> 0) / 2 ** 32 - 0.5) * 16000;
-    const fnv = (t) => [...t].reduce((h, c) => Math.imul(h ^ c.charCodeAt(0), 16777619) >>> 0, 2166136261);
     for (let k = 0; k < N; k++) {
         const [M, st, sx, sz, H] = [new Map(), [], zuf(), zuf(), (u, v) => fnv(`saat-${k}:dorf:${u},${v}`)];
         const [x0, z0] = [sx, sz].map((v) => Math.floor(v / S.cellM - W / 2));
@@ -948,6 +948,116 @@ function kreuzungsUrteil(FC, Gb, o = {}) {
     return aus;
 }
 
+// ===== TEIL R (w4-stadt-orte, siedlung.K2): DIE ORDNUNG DER STADT — je Mess-Stadt der Export am Grund der Welt (Saat
+// anazh-realm-seed, das Höhen-Raster des Wirts um ihren Ort): stadt „dorf 7 120" · stadt-voll „dorf 7 300" · die Metropole am
+// Gipfel (Zelle 2,−14, 1913: ihre 50 Hallen) · die Rang-Stadt (Zelle −2,−6). R1 HIERARCHIE: jeder Weg trägt
+// seinen Rang (haupt ⇔ gen 0, sonst gasse; jeder Feldweg feldweg). R2 QUARTIERE: die Quartiere tragen jeden Slot genau einmal,
+// EIN Gewerbe dort, wo die meisten Hallen stehen (keins ohne Halle).
+// R3 ORTE: das Gehege in jeder Stadt, der Rundkurs, wo der Grund ihn trägt (sonst fehlt er beim Namen, `orteFehlen`); jede Fläche
+// eines Orts (`ortFlaechen`) hält randM − √2·rasterM zu jedem Grundriss, Weg (außer seiner Zufahrt), Feld, Platz, Stück
+// Ausstattung, zur Mauer und zum anderen Ort — die Trennung der gedrehten Kästen (eine untere Schranke des Abstands), kein
+// Raster —, jeder Ort hat seine Zufahrt, kein Hof-Baum steht auf ihr; der Rest des Grunds um die Ebene der Bahn ≤ hubM + 0,5 m
+// und die Sicht der Aussicht (fachwerk `gehegeSicht`, dieselbe wie die Wahl) ≥ frei − 0,04 — beides am Gesetz der Höhe
+// (gelaende-core `hoehe`), nicht am Raster der Wahl. R4 (an der Rang-Stadt) der Verkehr liest den Rang (die Mutante „kein Weg
+// haupt" fährt 0 m), der Plan v2 legt die Bahn im Erdbau auf ihre Ebene, die Sperren der Wege tragen die Orte. Bis
+// w4-stadt-orte nannte kein Weg seinen Rang, die Stadt trug 0 Quartiere und 0
+// Orte mit Rolle — die Prüfungen suchten ihren Ort in der wilden Welt (fahrzeug.K3#1 fuhr in Fels und Kiefer, tiere.K1#2 fand
+// keinen freien Blick).
+const ORDNUNG_STAEDTE = [
+    { id: "stadt", dp: { seed: 7, nH: 120 }, ort: { x: 663, z: 423 } }, // BÜHNE: der Messort stadt (spec/profiband/haushalt.json)
+    { id: "stadt-voll", dp: { seed: 7, nH: 300 }, ort: { x: 836.2, z: 438.5 } }, // BÜHNE: der Messort stadt-voll
+    { id: "gipfel-metropole", zelle: [2, -14] },
+    { id: "rang-stadt", zelle: [-2, -6] },
+];
+// ein Stück Weg oder Mauer (Breite w) als Kasten um seine Kapsel: die Trennung zweier Kästen (`obbSep`, SAT) ist eine untere
+// Schranke ihres Abstands — das Urteil „≥ Soll" ist damit streng
+const segKasten = (a, b, w) => ({ cx: (a.x + b.x) / 2, cz: (a.z + b.z) / 2, phi: Math.atan2(a.z - b.z, b.x - a.x), ex: Math.hypot(b.x - a.x, b.z - a.z) / 2 + w / 2, ez: w / 2 });
+// DAS URTEIL EINER STADT P (der Export, `O` sein Ort in der Welt, H das Gesetz der Höhe in der Welt): die Brüche beim Namen
+function ordnungStadt(FC, P, O, H, name) {
+    const [OG, fehl, r, h] = [FC.ORTE_GESETZ, [], (v) => +v.toFixed(2), (x, z) => H(O.x + x, O.z + z)];
+    const nein = (t) => fehl.push(`${name}: ${t}`);
+    // R1 HIERARCHIE
+    P.roads.forEach((rd, i) => rd.rang !== FC.strassenRang(rd.gen) && nein(`Weg ${i} (gen ${rd.gen}) trägt den Rang ${rd.rang}`));
+    (P.feldwege || []).forEach((fw, i) => fw.rang !== "feldweg" && nein(`Feldweg ${i} trägt den Rang ${fw.rang}`));
+    // R2 QUARTIERE — das Gewerbe: EIN Quartier, das (außer dem Kern) mit den meisten Hallen, keins ohne Halle
+    const Q = P.quartiere || [];
+    const [je, hallen] = [Q.map(() => 0), Q.map(() => 0)];
+    for (const sl of P.slots) [je[sl.quartier]++, sl.rolle === "halle" && hallen[sl.quartier]++];
+    if (Q.some((q, k) => q.slots !== je[k]) || je.reduce((s, n) => s + n, 0) !== P.slots.length) nein(`die Quartiere tragen ${je} von ${P.slots.length} Slots`);
+    const gw = Q.flatMap((q, k) => (q.rolle === "gewerbe" ? [hallen[k]] : []));
+    const maxH = Math.max(0, ...Q.map((q, k) => (q.rolle === "kern" ? 0 : hallen[k])));
+    if (maxH ? gw.length !== 1 || gw[0] !== maxH : gw.length) nein(`${gw.length} Gewerbe bei ${maxH} Hallen im stärksten Viertel`);
+    // R3 ORTE
+    const orte = P.orte || [];
+    const fehlen = (P.orteFehlen || []).map((f) => f.rolle);
+    for (const rolle of ["rundkurs", "gehege"]) if (!orte.some((o) => o.rolle === rolle) && (rolle === "gehege" || !fehlen.includes(rolle))) nein(`kein ${rolle}`);
+    const plan = [
+        ...P.slots.map((sl, i) => [sl.obb, `Slot ${i}`]),
+        ...(P.felder || []).map((f, i) => [f, `Feld ${i}`]),
+        ...(P.platz ? [[P.platz, "der Platz"]] : []),
+        ...(P.brunnen || []).concat(P.staende || [], P.laternen || []).map((p) => [{ cx: p.x, cz: p.z, phi: 0, ex: 1.5, ez: 1.5 }, "Ausstattung"]),
+        ...((P.mauer && P.mauer.segs) || []).map((g) => [segKasten({ x: g.x0, z: g.z0 }, { x: g.x1, z: g.z1 }, FC.STADTMAUER.krone.dick), "die Mauer"]),
+    ];
+    const zahl = { name, gewerbe: gw, fehlen, orte: {} };
+    for (const o of orte) {
+        const wege = P.roads.concat(P.feldwege || []).flatMap((rd, i) => (rd.ort === o.rolle ? [] : rd.pts.slice(1).map((q, k) => [segKasten(rd.pts[k], q, rd.w || 3), `Weg ${i}`])));
+        const andere = orte.flatMap((o2) => (o2 === o ? [] : FC.ortFlaechen(o2, 0).map((f) => [f, `der ${o2.rolle}`])));
+        let [min, an] = [Infinity, null];
+        for (const f of FC.ortFlaechen(o, 0)) for (const [k, was] of plan.concat(wege, andere)) if (FC.obbSep(f, k) < min) [min, an] = [FC.obbSep(f, k), was];
+        if (min < OG.wahl.randM - Math.SQRT2 * OG.wahl.rasterM) nein(`der ${o.rolle} liegt ${r(Math.max(0, min))} m an ${an}`);
+        for (const t of P.trees || []) if (FC.imOrt([o], t.x, t.z, 0)) nein(`ein Hof-Baum steht auf dem ${o.rolle}`);
+        if (!(P.feldwege || []).some((f) => f.ort === o.rolle)) nein(`der ${o.rolle} ohne Zufahrt`);
+        const Z = (zahl.orte[o.rolle] = { freiM: r(min) });
+        if (o.rolle === "gehege") {
+            if (!((Z.sicht = r(FC.gehegeSicht(o, o.auge, h))) >= OG.gehege.frei - 0.04)) nein(`die Aussicht sieht ${Z.sicht} der Wiese`);
+        } else {
+            const pr = FC.bahnProben(o.bahn, OG.rundkurs.probeM);
+            Z.restM = r(FC.bahnEbene(pr, pr.map((p) => h(p.x, p.z)), OG.rundkurs.gefaelle).hub);
+            if (!(Z.restM <= OG.rundkurs.hubM + 0.5)) nein(`der Grund weicht ${Z.restM} m von der Ebene der Bahn`);
+        }
+    }
+    return { fehl, zahl };
+}
+// je Mess-Stadt ihr Urteil; an der Rang-Stadt R4: der Verkehr liest den Rang (alle Wege Gasse: 0 m), der Plan v2 legt die Bahn
+// auf ihre Ebene und die Sperren der Wege tragen die Orte
+function ordnungsUrteil(FC, GN, o = {}) {
+    const L = GN.lageGrund("anazh-realm-seed", require(path.join(root, "vendor/simplex-noise.js")));
+    const aus = { fehl: [], je: [] };
+    for (const S of o.staedte || ORDNUNG_STAEDTE) {
+        const q = S.zelle && FC.siedlungsZelle(FC.SIEDLUNG, ...S.zelle, (x, z) => fnv(`anazh-realm-seed:dorf:${x},${z}`), new Map());
+        const [dp, ort] = q ? [{ seed: q.seed, nH: q.nH, epoche: FC.siedlungsEpoche(q.seed) }, q] : [S.dp, S.ort];
+        const P = FC.exportSettlement({ ...dp, hoehe: GN.hoehenRaster(L, ort.x, ort.z, FC.trasseRahmen(dp.nH)) });
+        const u = ordnungStadt(FC, o.mutiere ? o.mutiere(P) : P, ort, (x, z) => GN.hoehe(L, x, z, true), S.id);
+        aus.fehl.push(...u.fehl);
+        aus.je.push(u.zahl);
+        if (S.id !== "rang-stadt" || o.ohneV2) continue;
+        const ohne = JSON.parse(JSON.stringify(P));
+        ohne.roads.forEach((rd) => (rd.rang = "gasse"));
+        const v2 = FC.ortPlan(P, ort, GN.ortCtx(L));
+        const rk = v2.orte.find((q2) => q2.rolle === "rundkurs");
+        const bahn = v2.erdbau.filter((e) => e.art === "trasse" && e.weg >= 2 * v2.roads.length);
+        const sp = (orte) => FC.planSperren({ ...v2, orte }, 0, 0, 0).length;
+        aus.v2 = {
+            verkehrM: [P, ohne].map((p) => Math.round(FC.verkehrsNetz(p, 0, 0).laenge)),
+            bahn: [bahn.length, 2 * (rk.bahn.length - 1)],
+            abM: Math.max(...bahn.flatMap((e) => [[e.x0, e.z0, e.y0], [e.x1, e.z1, e.y1]].map(([x, z, y]) => Math.abs(y - rk.ebene.a - rk.ebene.b * (x - ort.x) - rk.ebene.c * (z - ort.z))))),
+            sperren: [sp(v2.orte) - sp([]), FC.planSperren({ orte: v2.orte }, 0, 0, 0).length],
+        };
+        const V = aus.v2;
+        if (!(V.verkehrM[0] > 0 && !V.verkehrM[1] && V.bahn[0] === V.bahn[1] && V.abM <= 1e-4 && V.sperren[0] === V.sperren[1])) aus.fehl.push(`R4 ${JSON.stringify(V)}`);
+    }
+    aus.gruen = !aus.fehl.length;
+    return aus;
+}
+
+// DER LAUF VON TEIL R (`--nur-r` allein, sonst nach Teil K)
+function teilR(FC) {
+    require(path.join(root, "gelaende-core.js"));
+    const R = ordnungsUrteil(FC, globalThis.__gelaendeCore);
+    check(`R ORDNUNG ${JSON.stringify(R.je)} · v2 ${JSON.stringify(R.v2)}`, R.gruen, R.fehl.slice(0, 6).join(" · "));
+    if (process.argv.includes("--nur-r")) process.exit(errs.length ? 1 : 0);
+}
+
 // Die dp-Fixtures der Goldens (klein = schnell; ein Dorf + ein Weiler).
 const FIXTURES = [
     { seed: 7, nH: 12 },
@@ -1178,6 +1288,28 @@ hauptLauf(async () => {
             );
         const [Wg, Wz] = [{}, { wachstum: zeitplan }].map((o) => wachstumsGang(FC, { ...o, orte: [[1]] }));
         check("Selbst-Test W: das Gesetz hält ohne Bewohner, ein Zeitplan nicht (W2)", Wg.halt && !Wz.halt, Wz.halten);
+        // Selbst-Test R (w4-stadt-orte): an der Rang-Stadt hält das Gesetz; ein Haus mitten im Rundkurs, ein Weg ohne Rang, das
+        // Gewerbe der modernen Metropole als Wohnen und ein Wall von 30 m zwischen Aussicht und Wiese fallen je beim Namen
+        {
+            require(path.join(root, "gelaende-core.js"));
+            const R = (mutiere, id = "rang-stadt") =>
+                ordnungsUrteil(FC, globalThis.__gelaendeCore, { staedte: ORDNUNG_STAEDTE.filter((S) => S.id === id), ohneV2: true, mutiere: mutiere && ((P) => mutiere(JSON.parse(JSON.stringify(P)))) });
+            const [R0, haus, rang, gewerbe] = [
+                R(null),
+                R((Q) => (Q.slots.push({ ...Q.slots[0], obb: FC.ortFlaechen(Q.orte[0], 0)[0] }), Q)),
+                R((Q) => (delete Q.roads[0].rang, Q)),
+                R((Q) => (Q.quartiere.forEach((q) => q.rolle === "gewerbe" && (q.rolle = "wohnen")), Q), "gipfel-metropole"),
+            ];
+            const gh0 = FC.exportSettlement({ seed: 1, nH: 36 }).orte.find((o) => o.rolle === "gehege");
+            const wall = (x, z) => (Math.hypot(x - (gh0.auge.x + gh0.cx) / 2, z - (gh0.auge.z + gh0.cz) / 2) < 8 ? 30 : 0);
+            const sicht = [() => 0, wall].map((H) => FC.gehegeSicht(gh0, gh0.auge, H));
+            check(
+                "Selbst-Test R ORDNUNG: das Gesetz GRÜN · ein Haus im Rundkurs, ein Weg ohne Rang, ein Wall vor der Aussicht, das Gewerbe als Wohnen ROT beim Namen",
+                R0.gruen && /rundkurs liegt 0 m an Slot/.test(haus.fehl.join(" ")) && /Weg 0 \(gen \d\) trägt den Rang undefined/.test(rang.fehl.join(" ")) &&
+                    sicht[0] === 1 && sicht[1] < FC.ORTE_GESETZ.gehege.frei - 0.04 && /0 Gewerbe bei \d+ Hallen/.test(gewerbe.fehl.join(" ")),
+                JSON.stringify({ gesetz: R0.fehl.slice(0, 3), haus: haus.fehl.slice(0, 2), rang: rang.fehl.slice(0, 2), sicht, gewerbe: gewerbe.fehl.slice(0, 2) })
+            );
+        }
         selbsttestEnde(errs);
         process.exit(0);
     }
@@ -1185,6 +1317,7 @@ hauptLauf(async () => {
     // Teil J urteilt über das Gesetz und seine Mutanten: ohne Erbe bricht die Überdeckung, der Turm von 1455 (bis K4 die
     // Ring-Stadt) und ein Export ohne Tracht fallen beim Namen
     const [nur, ww] = [(t) => process.argv.includes("--nur-" + t), process.argv.includes("--nur-ww")];
+    if (nur("r")) teilR(FC);
     if (!nur("z") && !nur("w") && !ww) {
         console.log("=== TEIL J: DIE JAHRESRINGE (siedlung.K4) ===");
         const mut = (dp) =>
@@ -1262,6 +1395,8 @@ hauptLauf(async () => {
             K.gruen
         );
         if (process.argv.includes("--nur-k")) process.exit(errs.length ? 1 : 0);
+
+        teilR(FC);
 
         console.log("=== N5.7 SETTLEMENT — TEIL N: exportSettlement (Node, deterministisch + eingefroren) ===");
         const plans = {};

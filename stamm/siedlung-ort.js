@@ -1269,6 +1269,9 @@ class AnazhRealm_siedlung_ort {
                   x: ort.x,
                   z: ort.z,
                   rahmen: globalThis.__fachwerkCore.trasseRahmen(d.nH),
+                  // das Wasser des Rasters (`nass`): dasselbe Urteil wie die Wahl des Orts (`ortNass` im Faden) — die Orte mit Rolle
+                  W: AnazhRealm.ORT_WAHL,
+                  M: AnazhRealm.WERK_LAND_M,
               }).then(
                   (r) => r.raster,
                   (e) => (
@@ -1572,6 +1575,23 @@ class AnazhRealm_siedlung_ort {
         if (!plan || !origin) return;
         this._bewohnerMelden(plan, origin, so && so.key ? so.key : null); // die Bewohner des Plans (`_tickBewohner`)
         this._stlWegeBuild(plan, origin, so && so.key ? so.key : null);
+        // DIE HERDE DES GEHEGES (w4-stadt-orte): jedes Gehege des Plans meldet sich dem Takt der Tiere (`_gehegeHerden` setzt seine
+        // Herde, wenn der Spieler naht) — Wiese und Herde in der Welt, je Ort einmal (der Schlüssel: die Mitte der Wiese)
+        for (const o of plan.orte || []) {
+            if (o.rolle !== "gehege") continue;
+            const G = this._gehegeOrte || (this._gehegeOrte = new Map()); // Instanz-Feld (die _editSaveTimer-Klasse)
+            const key = `${Math.round(origin.x + o.cx)},${Math.round(origin.z + o.cz)}`;
+            if (!G.has(key))
+                G.set(key, {
+                    key,
+                    cx: origin.x + o.cx,
+                    cz: origin.z + o.cz,
+                    phi: o.phi,
+                    ex: o.ex,
+                    ez: o.ez,
+                    herde: o.herde,
+                });
+        }
         // DIE BRÜCKEN DER GASSEN (fahrzeug.K2): das Brücken-Etikett des Plans v2 (fachwerk `ortPlan`: je Gasse über Welt-Wasser
         // die Widerlager [wa, wb] und die Höhen `ys` ihres Wegs) trägt eine Jochbrücke (`_brueckenLegen`)
         const spannen = [];

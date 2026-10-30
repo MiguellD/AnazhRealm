@@ -154,12 +154,12 @@ class AnazhRealm_siedlung_verkehr {
         if (!VK.wenden.size) return VK;
         // DIE WENDE IST BODEN DER STADT (der Hebel der Dörfer, `_stlWegeBuild`): ihr Ring und ihre Plätze tragen Weg — die Natur
         // weicht ihnen (die Natur-Wand, `_aufWeg`), was schon dort wuchs, räumt der Takt. DER GEHWEG gehört zur Straße: jede
-        // Trasse (ab `breiteM`) trägt ihn beidseits, so weit die Menge auf ihr geht (`_bewohnerStrecke`: `gehwegM` samt Streuung
-        // und Kapsel) — bis hier ging sie neben der gemalten Straße, die Gangzeit auf Wegen fiel von 0,87 auf 0,51
+        // Trasse (eine Hauptstraße, fachwerk STRASSEN_RANG) trägt ihn beidseits, so weit die Menge auf ihr geht (`_bewohnerStrecke`:
+        // `gehwegM` samt Streuung und Kapsel) — bis hier ging sie neben der gemalten Straße, die Gangzeit auf Wegen fiel von 0,87 auf 0,51
         const BW = AnazhRealm.BEWOHNER;
         const flaechen = {
             roads: S.plan.roads
-                .filter((r) => r.w >= VG.breiteM)
+                .filter((r) => r.rang === "haupt")
                 .map((r) => ({
                     pts: r.pts.map((q) => ({ x: S.ox + q.x, z: S.oz + q.z })),
                     w: 2 * (BW.gehwegM + BW.gehwegBreiteM + AnazhRealm.PLAYER_WALL_RADIUS),

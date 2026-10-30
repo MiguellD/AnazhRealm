@@ -381,6 +381,12 @@ class AnazhRealm_feld_dsl {
         }
         if (!grund && this._feldHandelt(ctx) && !this._wildnisTraegt(pos.x, pos.z))
             grund = `die Wildnis trägt (${Math.round(pos.x)}|${Math.round(pos.z)}) nicht — das Feld wirft hier nichts`;
+        // DIE ROLLE DER FLÄCHE (w4-stadt-orte): auf einem Ort mit Rolle (der Rundkurs, das Gehege — `_ortRolleAt`) wirft das Feld
+        // nichts; bis dahin warf der Nexus alle 24 s an `far_player` (180–380 m) auch auf sie — ein Tempel auf der Bahn, ein Rudel
+        // im Gehege
+        const rolle = !grund && this._feldHandelt(ctx) ? this._ortRolleAt(pos.x, pos.z) : null;
+        if (rolle)
+            grund = `(${Math.round(pos.x)}|${Math.round(pos.z)}) ist ein Ort mit Rolle (${rolle}) — das Feld wirft hier nichts`;
         if (grund) {
             const eintrag = { event: "invalid_position", op, grund, program_id: ctx.programId };
             ctx.log.push(eintrag);

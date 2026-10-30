@@ -252,9 +252,22 @@ self.onmessage = function (e) {
             self.postMessage(Object.assign({ type: "ort-wahl-result", requestId: msg.requestId }, ortWahl(msg)));
         } else if (msg.type === "ort-raster") {
             // DAS HÖHEN-RASTER DER TRASSE (siedlung.K3): der Grund im Rahmen `rahmen` (fachwerk `trasseRahmen`) um den Ort x/z am
-            // Zustand des Gesetzes (gelaende-core `hoehenRaster`) — der Wirt reicht es dem Export, dessen Gassen ihm folgen
+            // Zustand des Gesetzes (gelaende-core `hoehenRaster`) — der Wirt reicht es dem Export, dessen Gassen ihm folgen. DAS
+            // WASSER DES RASTERS (w4-stadt-orte): mit `W`/`M` je Punkt dasselbe Urteil `ortNass`, das der Plan v2 als ctx.wasserAt
+            // liest (`nass`, 1 = Wasser) — die Wahl der Orte mit Rolle legt keinen in einen Bach (fachwerk `stadtOrte`); bis hier kannte
+            // sie nur die Höhe, und der Plan v2 nahm den Rundkurs der Großstadt „dorf 7 120" (`orteImWasser`)
             const raster = G.hoehenRaster(state, msg.x, msg.z, msg.rahmen);
-            self.postMessage({ type: "ort-raster-result", requestId: msg.requestId, raster }, [raster.h.buffer]);
+            const zu = [raster.h.buffer];
+            if (msg.W) {
+                const r = msg.rahmen;
+                raster.nass = new Uint8Array(r.n * r.n);
+                for (let j = 0; j < r.n; j++)
+                    for (let i = 0; i < r.n; i++)
+                        if (ortNass(msg, null, msg.x + r.x0 + i * r.d, msg.z + r.z0 + j * r.d))
+                            raster.nass[i + j * r.n] = 1;
+                zu.push(raster.nass.buffer);
+            }
+            self.postMessage({ type: "ort-raster-result", requestId: msg.requestId, raster }, zu);
         } else if (msg.type === "ort-weg") {
             // DER FELDWEG ZWISCHEN ZWEI ORTEN (fahrzeug.K2): das Raster seines Rahmens am Zustand des Gesetzes und sein Lauf
             // über dem Grund von den Wegen des einen Orts (a) zu denen des anderen (b, fachwerk `wegZwischen`) — beides im

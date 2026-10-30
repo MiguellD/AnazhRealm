@@ -911,8 +911,11 @@ class AnazhRealm_siedlung_wege {
         if (key && this._stlWegeKeys.has(key)) return 0;
         if (key) this._stlWegeKeys.add(key);
         const wk = this._wegeKarteEnsure();
+        // KEINE KAPPE (w4-stadt-orte): jede Fläche des Plans trägt ihren Boden und ihre Natur-Wand — die Zahl der Formen begrenzt das
+        // Gesetz des Exports (GROESSE_WAND). Bis hier fiel ab 900 Formen je Siedlung jede weitere still: die Metropole „dorf 7 300“
+        // trägt 1 725 — 232 Straßen-Stücke, alle 230 Feldweg-Stücke, der Markt, 307 Vorplätze und 55 Äcker standen ohne Boden, und die
+        // Natur wuchs auf ihnen (die Großstadt „dorf 7 120“: 21 Äcker).
         let n = 0;
-        const MAX = 900; // Kappe je Siedlung
         // Die Siedlung merkt ihre Formen samt Hülle (der Fenster-Umzug verwirft ferne Siedlungen in O(1)).
         const box = { x0: Infinity, z0: Infinity, x1: -Infinity, z1: -Infinity, formen: [], plan };
         const form = (f) => {
@@ -927,7 +930,7 @@ class AnazhRealm_siedlung_wege {
         };
         const strasse = (pts, w) => {
             if (!Array.isArray(pts)) return;
-            for (let i = 0; i + 1 < pts.length && n < MAX; i++) {
+            for (let i = 0; i + 1 < pts.length; i++) {
                 const ax = origin.x + pts[i].x;
                 const az = origin.z + pts[i].z;
                 const bx = origin.x + pts[i + 1].x;
@@ -943,7 +946,7 @@ class AnazhRealm_siedlung_wege {
         // (`kanal` −1), und die Natur-Wand hält sein Inneres frei wie das Gesetzbuch des Dorfs (fachwerk-core: kein Baum
         // tiefer als 1 m im Anger, `sperr` −1 statt des Stamm-Rands).
         const pz = plan.platz;
-        if (pz && Number.isFinite(pz.cx) && Number.isFinite(pz.ex) && n < MAX) {
+        if (pz && Number.isFinite(pz.cx) && Number.isFinite(pz.ex)) {
             const wx = origin.x + pz.cx;
             const wz = origin.z + pz.cz;
             const anger = pz.typ === "gras";
@@ -970,7 +973,7 @@ class AnazhRealm_siedlung_wege {
         // (`_pfadFeldAt`) und die Natur-Wand (`_aufWeg`) lesen dieselbe Form.
         const FC = globalThis.__fachwerkCore;
         const kasten = (vp) => {
-            if (!vp || n >= MAX || !this._landAt(vp.cx, vp.cz, 0.2)) return;
+            if (!vp || !this._landAt(vp.cx, vp.cz, 0.2)) return;
             form({
                 typ: "kasten",
                 kanal: 0,
@@ -1022,7 +1025,6 @@ class AnazhRealm_siedlung_wege {
         // Die ÄCKER (felder-Schicht): je OBB ein gedrehtes Acker-Rechteck (Kanal G) — die Layout-Wahrheit des
         // Gesetzbuchs lebt im Boden.
         for (const fd of plan.felder || []) {
-            if (n >= MAX) break;
             if (!fd || !Number.isFinite(fd.cx) || !Number.isFinite(fd.ex)) continue;
             const wx = origin.x + fd.cx;
             const wz = origin.z + fd.cz;
@@ -1040,6 +1042,41 @@ class AnazhRealm_siedlung_wege {
                 halb: 0,
             });
         }
+        // DIE ORTE MIT ROLLE (w4-stadt-orte, fachwerk `ORTE_GESETZ`): ihre Fläche (`ortFlaechen`: der Rundkurs samt Sturzraum, das
+        // Gehege samt Umgang und dem Streifen der Sicht) ist ein Kasten ohne Boden-Kanal — die Natur-Wand hält ihn frei wie den Anger
+        // (`_aufWeg`), die Wiese wächst —, die Bahn des Rundkurses ein Weg (zwei Geraden, je Kurve 18 Stücke). Jede Form trägt die
+        // Rolle ihres Orts (`rolle`): die Würfe des Felds lesen sie (`_ortRolleAt`).
+        for (const o of plan.orte || []) {
+            for (const f of FC.ortFlaechen(o, 0)) {
+                const wx = origin.x + f.cx;
+                const wz = origin.z + f.cz;
+                form({
+                    typ: "kasten",
+                    kanal: -1,
+                    ax: wx,
+                    az: wz,
+                    bx: wx,
+                    bz: wz,
+                    ex: f.ex,
+                    ez: f.ez,
+                    phi: f.phi,
+                    halb: 0,
+                    rolle: o.rolle,
+                });
+            }
+            if (o.rolle !== "rundkurs") continue;
+            for (let i = 0; i + 1 < o.bahn.length; i++)
+                form({
+                    typ: "segment",
+                    kanal: 0,
+                    ax: origin.x + o.bahn[i].x,
+                    az: origin.z + o.bahn[i].z,
+                    bx: origin.x + o.bahn[i + 1].x,
+                    bz: origin.z + o.bahn[i + 1].z,
+                    halb: o.breite / 2,
+                    rolle: o.rolle,
+                });
+        }
         if (box.formen.length) {
             wk.siedlungen.push(box);
             wk.raeumen.push(box); // was schon auf Weg, Platz und Acker wuchs, räumt der Takt (`_wegeRaeumen`)
@@ -1055,7 +1092,6 @@ class AnazhRealm_siedlung_wege {
         // ZÄUNE (fences-Schicht): je Segment ein schmaler hüfthoher Holz-Streifen aus dem Zaun-Pool (sy 0.85)
         // — bewusst KEIN Blocker, das Dorf bleibt durchlässig.
         for (const fz of plan.fences || []) {
-            if (n >= MAX) break;
             if (!fz || !Number.isFinite(fz.x0) || !Number.isFinite(fz.x1)) continue;
             const ax = origin.x + fz.x0;
             const az = origin.z + fz.z0;
@@ -1081,6 +1117,38 @@ class AnazhRealm_siedlung_wege {
                 0x6a4e32
             );
             n++;
+        }
+        // DER ZAUN DES GEHEGES (w4-stadt-orte): je Feld (`zaun`, fachwerk ORTE_GESETZ.gehege.zaunM lang) ein Pfosten an seinem Anfang
+        // (`zaunHoch` hoch) und zwei Holme (auf 0,4 und 0,9 der Höhe) aus dem Pool des Hof-Zauns — ein Zaun, durch den die Aussicht
+        // die Herde sieht (die Herde hält er im Takt der Tiere, `_kreaturHuellenKontakt`); die Lücke ist das Tor zur Aussicht
+        for (const o of plan.orte || []) {
+            if (o.rolle !== "gehege") continue;
+            const ZH = FC.ORTE_GESETZ.gehege.zaunHoch;
+            for (const fz of o.zaun) {
+                const ax = origin.x + fz.x0;
+                const az = origin.z + fz.z0;
+                const bx = origin.x + fz.x1;
+                const bz = origin.z + fz.z1;
+                const len = Math.hypot(bx - ax, bz - az);
+                const y0 = this.getTerrainHeightAt(ax, az);
+                const y1 = this.getTerrainHeightAt(bx, bz);
+                if (!(len > 0.4) || !Number.isFinite(y0) || !Number.isFinite(y1)) continue;
+                const yaw = Math.atan2(bx - ax, bz - az);
+                this._stlZaunAddStrip(ax, y0 + ZH / 2, az, yaw, 0, 0.14, ZH, 0.14, 0x5a4028);
+                for (const hoch of [0.4, 0.9])
+                    this._stlZaunAddStrip(
+                        (ax + bx) / 2,
+                        (y0 + y1) / 2 + ZH * hoch,
+                        (az + bz) / 2,
+                        yaw,
+                        -Math.atan2(y1 - y0, len),
+                        0.07,
+                        0.1,
+                        len,
+                        0x6a4e32
+                    );
+                n += 3;
+            }
         }
         return n + this._stlMauerBuild(plan, origin);
     }
@@ -1211,6 +1279,8 @@ class AnazhRealm_siedlung_wege {
             }
             this.state[feld] = null;
         }
+        // die Gehege der alten Welt setzen keine Herde mehr (`_gehegeHerden`; der Erlebnis-Gang der neuen meldet ihre)
+        if (this._gehegeOrte) this._gehegeOrte.clear();
         // Die Wege-Karte leert sich (die Formen und die Kronen gehören der alten Welt; die neue pflanzt neu); die
         // Texturen bleiben (kein Re-Compile).
         const wk = this.state.wegeKarte;

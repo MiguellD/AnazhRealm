@@ -1478,13 +1478,13 @@ class AnazhRealm_siedlung_bewohner {
         for (let k = e; k >= 0 && k !== a; k = vor[k]) kette.push(k);
         kette.push(a);
         kette.reverse();
-        // DER GEHWEG (PFLICHT-OFFEN C): auf der Trasse des Verkehrs (ein Weg ab fachwerk VERKEHR_GESETZ.breiteM) geht er an
-        // ihrem Rand, auf der Seite seiner Spur (`gehwegM` von der Mitte, gestreut um `gehwegBreiteM`), um die Ecke auf dem
-        // Schnitt der Ränder beider Beine (höchstens doppelt so fern) — die Fahrbahn quert er nur, wo sein Weg sie kreuzt. Bis
-        // hier ging die Menge ±`spurM` um die Mitte der Trasse, und jeder Wagen hielt vor ihr (10 Uhr: die Kreuzung der
-        // Metropole stand, ihr Halter wartete auf einen Gehenden zwischen den Wagen).
+        // DER GEHWEG (PFLICHT-OFFEN C): auf der Trasse des Verkehrs (eine Hauptstraße, fachwerk STRASSEN_RANG: der Rang des
+        // Knotens) geht er an ihrem Rand, auf der Seite seiner Spur (`gehwegM` von der Mitte, gestreut um `gehwegBreiteM`), um
+        // die Ecke auf dem Schnitt der Ränder beider Beine (höchstens doppelt so fern) — die Fahrbahn quert er nur, wo sein Weg
+        // sie kreuzt. Bis hier ging die Menge ±`spurM` um die Mitte der Trasse, und jeder Wagen hielt vor ihr (10 Uhr: die
+        // Kreuzung der Metropole stand, ihr Halter wartete auf einen Gehenden zwischen den Wagen).
         const BW = AnazhRealm.BEWOHNER;
-        const breit = S.verkehr && S.verkehr.wagen.length ? globalThis.__fachwerkCore.VERKEHR_GESETZ.breiteM : Infinity;
+        const fahrt = !!(S.verkehr && S.verkehr.wagen.length);
         const geh = Math.sign(spur) * BW.gehwegM + (spur / BW.spurM) * BW.gehwegBreiteM;
         const alt = [];
         const pts = kette.map((k, i) => {
@@ -1493,7 +1493,7 @@ class AnazhRealm_siedlung_bewohner {
             const q1 = N.knoten[kette[Math.min(kette.length - 1, i + 1)]];
             const l = Math.hypot(q1.x - q0.x, q1.z - q0.z) || 1;
             const p = { x: q.x - ((q1.z - q0.z) / l) * spur, z: q.z + ((q1.x - q0.x) / l) * spur };
-            if (!spur || !(q.w >= breit)) return p;
+            if (!spur || !fahrt || q.rang !== "haupt") return p;
             // die Normalen beider Beine (ein Ende: die des einen), ihre Summe n: der Rand um die Ecke liegt um 2·geh / |n|² · n
             const [l0, l1] = [Math.hypot(q.x - q0.x, q.z - q0.z), Math.hypot(q1.x - q.x, q1.z - q.z)];
             const n0 = l0 > 1e-6 ? [(q0.z - q.z) / l0, (q.x - q0.x) / l0] : null;
