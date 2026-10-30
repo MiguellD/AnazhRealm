@@ -15,15 +15,15 @@ async function checkBandV18136Audit({ page, check }) {
         // (1) der Slider treibt unter CSM die Kaskaden-Reichweite (kein toter Knopf). Der
         // `csm.maxFar`-Antrieb wanderte in `_applyEffectiveShadowRange` (DIE EINE Anwende-Quelle, die
         // setShadowRange UND der Perf-Regler rufen) — am Ruf: der Pfad des Reglers treibt maxFar, der Setter ruft die Quelle.
-        const savedCsm = r.state.csmNode;
-        const savedRange = r.state.atmosphere && r.state.atmosphere.shadowRange;
+        const savedCsm = st.csmNode;
+        const savedRange = st.atmosphere && st.atmosphere.shadowRange;
         const savedApplied = r._shadowRangeApplied;
-        r.state.csmNode = { maxFar: 0, camera: null, updateFrustums() {} };
+        st.csmNode = { maxFar: 0, camera: null, updateFrustums() {} };
         r._applyEffectiveShadowRange(150);
-        out.rangeSrc = Math.abs(r.state.csmNode.maxFar - 150 * r.constructor.SCHATTEN_FERN_FAKTOR) < 1e-9;
+        out.rangeSrc = Math.abs(st.csmNode.maxFar - 150 * AnazhRealm.SCHATTEN_FERN_FAKTOR) < 1e-9;
         out.rangeSrc = window.__consumes(r, "setShadowRange", r, "_applyEffectiveShadowRange", [200]) && out.rangeSrc;
-        out.rangeDrives = Math.abs(r.state.csmNode.maxFar - 360) < 1e-9;
-        r.state.csmNode = savedCsm;
+        out.rangeDrives = Math.abs(st.csmNode.maxFar - 360) < 1e-9;
+        st.csmNode = savedCsm;
         if (Number.isFinite(savedRange)) r.setShadowRange(savedRange);
         if (Number.isFinite(savedApplied)) r._applyEffectiveShadowRange(savedApplied);
         // (2) die Kachel-Erosion ist gefallen: der Kachel-Eingang baut nur noch die Hydrosphäre.
@@ -91,7 +91,7 @@ async function checkBandLambda3Wind({ page, check }) {
 async function checkBandWEFrequenzband({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
-        const mats = r.state.materials;
+        const mats = st.materials;
         // (1) die ANTENNE emergiert aus der Substanz (Ordnung der Achsen).
         const pEisen = r._substanceResponseProfile(mats.eisen.tags);
         const pHolz = r._substanceResponseProfile(mats.holz.tags);
@@ -118,7 +118,7 @@ async function checkBandWEFrequenzband({ page, check }) {
         out.tagsImBuilder = mStein.userData.leafTint === true && _glow(mStein) === 0;
         // (4) KEIN PROFIL TRÄGT LICHT (F6): das additive Band (Rim, Nacht-Boden, Mond-Rim, der Gegenlicht-Glow) ist fort — kein Profil nennt
         // eine Licht-Achse, das Gras trägt keine Antwort (Gewicht 0 = kein Knoten; der Boden: V17.J), das Licht ist die EINE Kette
-        const SR = r.constructor.SUBSTANCE_RESPONSE;
+        const SR = AnazhRealm.SUBSTANCE_RESPONSE;
         const achsen = [pEisen, pHolz, pGlut, pStein, pQuarz, SR.defaults.werk, SR.defaults.feld].flatMap(Object.keys);
         out.ohneBand =
             !achsen.some((k) => /^(rim|fuell|mond|waerme|glanz|glas|detail)$/.test(k)) && !("gras" in SR.defaults);
@@ -146,11 +146,11 @@ async function checkBandWEFrequenzband({ page, check }) {
 async function checkBandV18223PbrKohaerenz({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
-        const Z = r.state.materials;
+        const Z = st.materials;
         const m0 = r._buildToonNodeMaterial({ color: 0x808080 });
         // V18.234: PBR ist Default, ohne Zeile ein Mittel-Stoff
         out.mittel =
-            r.state.atmosphere.materialMode === "pbr" &&
+            st.atmosphere.materialMode === "pbr" &&
             /MeshStandardNode/.test(m0.type) &&
             m0.userData.isPbrMaterial === true &&
             m0.roughness === 0.7 &&
@@ -260,7 +260,7 @@ async function checkBandWahrerAnblickSaeule1({ page, check }) {
         const chunkMat = r._getVoxelChunkMaterial();
         if (chunkMat && chunkMat.colorNode && chunkMat.vertexColors === true) out.farbeQuadrat.push("chunk-boden");
         out.szeneQuadrat = [];
-        r.state.scene.traverse((o) => {
+        st.scene.traverse((o) => {
             const m = o.isMesh && o.material;
             if (!m || Array.isArray(m) || !m.colorNode || m.vertexColors !== true) return;
             if (o.geometry && o.geometry.getAttribute && o.geometry.getAttribute("color"))
@@ -301,8 +301,8 @@ async function checkBandWahrerAnblickGras({ page, check }) {
         // (B2) jedes gebaute Gras-Mesh trägt instanceColor (WebGPU-strikt)
         let withColor = 0,
             total = 0;
-        if (r.state.voxelChunkGrass) {
-            for (const inst of r.state.voxelChunkGrass.values()) {
+        if (st.voxelChunkGrass) {
+            for (const inst of st.voxelChunkGrass.values()) {
                 if (inst && inst.isInstancedMesh) {
                     total++;
                     if (inst.instanceColor) withColor++;

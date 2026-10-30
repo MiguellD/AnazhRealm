@@ -10,22 +10,22 @@ const { safeEvaluate } = require("../playtest.cjs");
 async function checkBandV1728SpawnClearance({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const MIN = r.constructor.STRUCTURE_CLEAR_MIN_FOOTPRINT;
-        const MARGIN = r.constructor.STRUCTURE_PLAYER_CLEAR_MARGIN;
+        const MIN = AnazhRealm.STRUCTURE_CLEAR_MIN_FOOTPRINT;
+        const MARGIN = AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN;
         out.hasConsts =
-            typeof MIN === "number" && typeof MARGIN === "number" && typeof r.constructor.PLAYER_VOID_Y === "number";
+            typeof MIN === "number" && typeof MARGIN === "number" && typeof AnazhRealm.PLAYER_VOID_Y === "number";
         // Footprint-Radius: Siedlungs-Klasse gross (>= MIN), Felsblock klein (< MIN) — gemessen über die
         // Substanz-Zeile haus_basis (KIND_SUBSTANCE-Fallback in _blueprintFootprintRadius, wie spawn_village).
         const fpVillage = r._blueprintFootprintRadius("haus_basis");
         const fpBlock = r._blueprintFootprintRadius("stein_block");
         out.villageBig = fpVillage >= MIN;
         out.blockSmall = fpBlock < MIN;
-        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        const pm = st.playerMesh && st.playerMesh.position;
         if (pm) {
             const px = pm.x,
                 py = pm.y,
                 pz = pm.z;
-            const ctx2 = { state: r.state, rng: () => 0.5 };
+            const ctx2 = { state: st, rng: () => 0.5 };
             // (1) Haus-Substanz AUF dem Spieler → wird auf >= clearance geschoben
             const onPlayer = { x: px, y: py, z: pz };
             const cleared = r._structureSpawnPos("haus_basis", onPlayer, ctx2);
@@ -40,16 +40,16 @@ async function checkBandV1728SpawnClearance({ page, check }) {
             out.farUntouched = Math.abs(farCleared.x - (px + 200)) < 1e-6;
             // (4) Void-Rettung: faellt der Spieler durch, kommt er an die Oberflaeche
             pm.set ? pm.set(px, -200, pz) : (pm.y = -200);
-            r.state.playerMesh.position.set(px, -200, pz);
+            st.playerMesh.position.set(px, -200, pz);
             r._rescuePlayerFromVoid();
-            const rescuedY = r.state.playerMesh.position.y;
-            out.voidRescued = rescuedY > r.constructor.PLAYER_VOID_Y && rescuedY > -90;
+            const rescuedY = st.playerMesh.position.y;
+            out.voidRescued = rescuedY > AnazhRealm.PLAYER_VOID_Y && rescuedY > -90;
             out.rescuedY = rescuedY;
             // Restore Spieler-Position (feld-nativ: Mesh + Velocity) — kein Seiteneffekt fuer Folge-Bands
-            r.state.playerMesh.position.set(px, py, pz);
-            if (r.state.playerVel) {
-                r.state.playerVel.setValue(0, 0, 0);
-                r.state._fieldVy = 0;
+            st.playerMesh.position.set(px, py, pz);
+            if (st.playerVel) {
+                st.playerVel.setValue(0, 0, 0);
+                st._fieldVy = 0;
             }
         }
         return out;
@@ -81,20 +81,20 @@ async function checkBandV1728SpawnClearance({ page, check }) {
 // Region alle cold-Einträge auf einmal (FPS-Sturm).
 async function checkBandWellePerfDBudget({ page, check }) {
     const res = await page.evaluate(() => {
-        if (!r || !r.state || !r.state.playerMesh) return { error: "no realm/player" };
+        if (!r || !st || !st.playerMesh) return { error: "no realm/player" };
         const out = {};
-        out.hasBudgetField = Number.isFinite(r.state.architectureBuildBudgetPerFrame);
-        const budget = r.state.architectureBuildBudgetPerFrame;
+        out.hasBudgetField = Number.isFinite(st.architectureBuildBudgetPerFrame);
+        const budget = st.architectureBuildBudgetPerFrame;
         out.budget = budget;
         // N7.3 — UNIT-RICHTER: der Prüf-Gegenstand ist der budgetierte GRAMMATIK-Bau-Pfad
         // (`_rebuildArchitectureMesh` klassisch/instanced); foundry-ON hinge derselbe Spawn
         // an der Studio-Varianten-Cache-Lage (variant-abhängig kalt) → lokaler Hook.
         window.__withNoFoundry(() => {
-            const pp = r.state.playerMesh.position;
+            const pp = st.playerMesh.position;
             // 12 cold-in-range Einträge: cullingRadius=0 beim Spawn (cold), dann
             // restaurieren, sodass sie alle im Render-Radius liegen.
-            const origRadius = r.state.architectureCullingRadius;
-            r.state.architectureCullingRadius = 0;
+            const origRadius = st.architectureCullingRadius;
+            st.architectureCullingRadius = 0;
             const ids = [];
             const N = 12;
             for (let i = 0; i < N; i++) {
@@ -105,13 +105,12 @@ async function checkBandWellePerfDBudget({ page, check }) {
                 );
                 if (e) ids.push(e.id);
             }
-            r.state.architectureCullingRadius = Math.max(origRadius, 300);
+            st.architectureCullingRadius = Math.max(origRadius, 300);
             // tickArchitectureCulling baut 0 bei `_frameOverBudget` (Bau nur in freier Zeit) → Kopfraum
             // erzwingen, sonst hängt der Bau-Pfad-Test am Warmup-Leftover (langsamer Warmup = Flake).
-            r.state._frameOverBudget = false;
+            st._frameOverBudget = false;
             const idSet = new Set(ids);
-            const renderedCount = () =>
-                r.state.architectures.filter((e) => idSet.has(e.id) && r._archIsRendered(e)).length;
+            const renderedCount = () => st.architectures.filter((e) => idSet.has(e.id) && r._archIsRendered(e)).length;
             out.coldBefore = ids.length - renderedCount();
             // EIN Tick → höchstens `budget` der 12 gebaut (kein Burst).
             const renderedPre = renderedCount();
@@ -121,14 +120,14 @@ async function checkBandWellePerfDBudget({ page, check }) {
             // Alle 12 bauen: das Cull-Budget ist GLOBAL, unter kumulativer Last verhungern die Test-Bäume an
             // Hunderten cold-Architekturen. Darum den Bau-Pfad DIREKT prüfen — `_rebuildArchitectureMesh` ist
             // dieselbe Bau-Quelle, die der Cull-Tick budgetiert ruft.
-            for (const e of r.state.architectures.filter((x) => idSet.has(x.id) && !r._archIsRendered(x))) {
+            for (const e of st.architectures.filter((x) => idSet.has(x.id) && !r._archIsRendered(x))) {
                 r._rebuildArchitectureMesh(e);
             }
             out.builtAfterManyTicks = renderedCount();
             out.allEventuallyBuilt = out.builtAfterManyTicks === ids.length;
             // Cleanup.
-            for (const e of r.state.architectures.filter((x) => idSet.has(x.id))) r.removeArchitecture(e);
-            r.state.architectureCullingRadius = origRadius;
+            for (const e of st.architectures.filter((x) => idSet.has(x.id))) r.removeArchitecture(e);
+            st.architectureCullingRadius = origRadius;
         });
         return out;
     });
@@ -165,29 +164,29 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
     // Bau-Primitive als DSL-Ops mit Save-Roundtrip + FIFO-Cap + Atomic-Pool-Eintrag (niedrige
     // Gewichtung); Wasserfälle haben einen Animations-Hook im Tick.
     const ring6Results = await safeEvaluate(page, async () => {
-        if (!r || !r.state) return null;
+        if (!r || !st) return null;
         const out = {};
 
         // Cleanup: alle bestehenden Architekturen entfernen.
-        for (const a of r.state.architectures) {
+        for (const a of st.architectures) {
             if (a.mesh) {
-                r.state.scene.remove(a.mesh);
+                st.scene.remove(a.mesh);
                 r._disposeSoulGroup(a.mesh);
             }
         }
-        r.state.architectures = [];
+        st.architectures = [];
 
         // (a) Direkter Spawn jeder Sorte. AUSLÖSCHUNGS-WELLE — village/temple fielen als
         // Blueprints; die eingefrorenen Substanz-Zeilen (KIND_SUBSTANCE haus_basis/tor_basis)
         // tragen die Spawn-/Save-/Cull-Mechanik als Test-Blueprints (am Band-Ende geräumt).
-        const KSr6 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
-        if (r.state.blueprints._t_r6_haus) delete r.state.blueprints._t_r6_haus;
-        r.state.blueprints._t_r6_haus = {
+        const KSr6 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
+        if (st.blueprints._t_r6_haus) delete st.blueprints._t_r6_haus;
+        st.blueprints._t_r6_haus = {
             name: "_t_r6_haus",
             parts: JSON.parse(JSON.stringify(KSr6.haus_basis.parts)),
         };
-        if (r.state.blueprints._t_r6_tor) delete r.state.blueprints._t_r6_tor;
-        r.state.blueprints._t_r6_tor = {
+        if (st.blueprints._t_r6_tor) delete st.blueprints._t_r6_tor;
+        st.blueprints._t_r6_tor = {
             name: "_t_r6_tor",
             parts: JSON.parse(JSON.stringify(KSr6.tor_basis.parts)),
         };
@@ -197,15 +196,15 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         // zusammen. Die Vollständigkeit prüfen wir an der QUELLE (Bauplan-Teile), nicht an
         // der gerenderten Kind-Zahl: die haus_basis-Substanz trägt alle 6 Wand-/Dach-Teile.
         out.villageHasChildren =
-            v && v.mesh && !!r.state.blueprints._t_r6_haus && (r.state.blueprints._t_r6_haus.parts || []).length >= 5;
-        out.villageInScene = v && r.state.scene.children.indexOf(v.mesh) >= 0;
+            v && v.mesh && !!st.blueprints._t_r6_haus && (st.blueprints._t_r6_haus.parts || []).length >= 5;
+        out.villageInScene = v && st.scene.children.indexOf(v.mesh) >= 0;
 
         const t = r.spawnArchitecture("_t_r6_tor", { x: 30, y: 5, z: 10 }, { seed: 7 });
         out.templeBuilt = !!t && t.type === "_t_r6_tor" && !!t.mesh;
         // 2 Pfosten + Sturz + Schwelle = 4 Substanz-Teile (tor_basis; per Material
         // gemergt → die Vollständigkeit lebt im Bauplan, nicht der Kind-Zahl).
         out.templeHasPillars =
-            t && t.mesh && !!r.state.blueprints._t_r6_tor && (r.state.blueprints._t_r6_tor.parts || []).length >= 4;
+            t && t.mesh && !!st.blueprints._t_r6_tor && (st.blueprints._t_r6_tor.parts || []).length >= 4;
 
         const w = r.spawnArchitecture("waterfall", { x: 50, y: 5, z: 10 }, { seed: 99 });
         out.waterfallBuilt = !!w && w.type === "waterfall" && !!w.mesh;
@@ -216,8 +215,8 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         out.unknownTypeRejected = bad === null;
 
         // (c) state.architectures wächst korrekt
-        out.architectureCountAfterThree = r.state.architectures.length === 3;
-        out.idsAreUnique = new Set(r.state.architectures.map((a) => a.id)).size === r.state.architectures.length;
+        out.architectureCountAfterThree = st.architectures.length === 3;
+        out.idsAreUnique = new Set(st.architectures.map((a) => a.id)).size === st.architectures.length;
 
         // (d) DSL-Op: spawn_village wirkt durch Interpreter. AUSLÖSCHUNGS-WELLE — das VERB
         // hebt jetzt das Studio-DORF (spawnSettlement, async über den Worker) statt einen
@@ -239,23 +238,22 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
 
         // (e) Chat-Pattern routet auf DSL. AUSLÖSCHUNGS-WELLE — spawn_temple spawnt
         // haus_griechisch (Foundry warm) ODER skippt fail-closed (studio_kalt, kein Bau).
-        const beforeChat = r.state.architectures.length;
+        const beforeChat = st.architectures.length;
         r.processChatCommand("Baue Tempel hier");
-        out.chatRoutesToDsl =
-            Array.isArray(r.state.dsl.lastUserProgram) && r.state.dsl.lastUserProgram[0] === "spawn_temple";
-        const tempelWarm = !!(r.state.blueprints && r.state.blueprints.haus_griechisch);
-        out.chatActuallySpawned = r.state.architectures.length === beforeChat + (tempelWarm ? 1 : 0);
+        out.chatRoutesToDsl = Array.isArray(st.dsl.lastUserProgram) && st.dsl.lastUserProgram[0] === "spawn_temple";
+        const tempelWarm = !!(st.blueprints && st.blueprints.haus_griechisch);
+        out.chatActuallySpawned = st.architectures.length === beforeChat + (tempelWarm ? 1 : 0);
 
         // (f) V2: KEIN Cap mehr — 50 Strukturen können koexistieren.
         // Datenmäßig unbegrenzt; GPU-Last per Distance-Culling.
-        const beforeMany = r.state.architectures.length;
+        const beforeMany = st.architectures.length;
         for (let i = 0; i < 50; i++) {
             r.spawnArchitecture("_t_r6_tor", { x: 500 + i * 2, y: 5, z: 500 }, { seed: i });
         }
-        out.unboundedSpawn = r.state.architectures.length === beforeMany + 50;
+        out.unboundedSpawn = st.architectures.length === beforeMany + 50;
         // Die weiten (500m) Strukturen müssen ohne Mesh sein
         // (cold) — Spieler ist nahe (0,0,0).
-        const farEntries = r.state.architectures.filter((a) => a.position.x >= 500);
+        const farEntries = st.architectures.filter((a) => a.position.x >= 500);
         out.farStructuresAreCold = farEntries.length === 50 && farEntries.every((a) => a.mesh === null);
 
         // (g) Atomic-Pool: spawn_village/temple/waterfall sind enthalten
@@ -316,21 +314,20 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
             ],
         };
         r.loadState(loadInput);
-        out.loadRebuildsCount = r.state.architectures.length === 2;
-        out.loadRebuildsTypes =
-            r.state.architectures[0].type === "_t_r6_haus" && r.state.architectures[1].type === "_t_r6_tor";
-        out.loadRebuildsSeeds = r.state.architectures[0].seed === 12345 && r.state.architectures[1].seed === 67890;
+        out.loadRebuildsCount = st.architectures.length === 2;
+        out.loadRebuildsTypes = st.architectures[0].type === "_t_r6_haus" && st.architectures[1].type === "_t_r6_tor";
+        out.loadRebuildsSeeds = st.architectures[0].seed === 12345 && st.architectures[1].seed === 67890;
 
         // Cleanup (inkl. Test-Blueprints — kein Katalog-Leck)
-        for (const a of r.state.architectures) {
+        for (const a of st.architectures) {
             if (a.mesh) {
-                r.state.scene.remove(a.mesh);
+                st.scene.remove(a.mesh);
                 r._disposeSoulGroup(a.mesh);
             }
         }
-        r.state.architectures = [];
-        delete r.state.blueprints._t_r6_haus;
-        delete r.state.blueprints._t_r6_tor;
+        st.architectures = [];
+        delete st.blueprints._t_r6_haus;
+        delete st.blueprints._t_r6_tor;
         return out;
     });
 
@@ -392,27 +389,27 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         if (!r) return null;
         const out = {};
         // Cleanup
-        for (const a of r.state.architectures.slice()) {
+        for (const a of st.architectures.slice()) {
             if (a.mesh) {
                 r._cullArchitectureMesh(a);
             }
         }
-        r.state.architectures = [];
+        st.architectures = [];
 
         // Struktur nahe spawnen → Mesh + feld-native blockerAABBs gleich da.
         // AUSLÖSCHUNGS-WELLE — temple fiel; die begehbare haus_basis-Substanz (KIND_SUBSTANCE,
         // solide Wände + Tür-Lücke als per-Part-Kollision) trägt die Kollisions-Probe.
-        const KSr63 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
-        if (r.state.blueprints._t_r63_haus) delete r.state.blueprints._t_r63_haus;
-        r.state.blueprints._t_r63_haus = {
+        const KSr63 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
+        if (st.blueprints._t_r63_haus) delete st.blueprints._t_r63_haus;
+        st.blueprints._t_r63_haus = {
             name: "_t_r63_haus",
             parts: JSON.parse(JSON.stringify(KSr63.haus_basis.parts)),
         };
-        const px = r.state.playerMesh.position.x;
-        const pz = r.state.playerMesh.position.z;
+        const px = st.playerMesh.position.x;
+        const pz = st.playerMesh.position.z;
         const entry = r.spawnArchitecture(
             "_t_r63_haus",
-            { x: px + 8, y: r.state.playerMesh.position.y, z: pz + 4 },
+            { x: px + 8, y: st.playerMesh.position.y, z: pz + 4 },
             { seed: 11 }
         );
         out.entryHasMesh = !!entry && !!entry.mesh;
@@ -453,11 +450,11 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         );
 
         // Cleanup (inkl. Test-Blueprint)
-        for (const a of r.state.architectures.slice()) {
+        for (const a of st.architectures.slice()) {
             if (a.mesh) r._cullArchitectureMesh(a);
         }
-        r.state.architectures = [];
-        delete r.state.blueprints._t_r63_haus;
+        st.architectures = [];
+        delete st.blueprints._t_r63_haus;
         return out;
     });
 
@@ -496,44 +493,44 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
     // entry.blockerAABBs) muss ihn aufhalten — gedrückte W-Taste (yaw=0 → forward=+Z), synchrone
     // _gameLoopTick-Pumps (Headless-rAF ~1 Hz).
     const collisionLive = await page.evaluate(() => {
-        for (const a of r.state.architectures.slice()) {
+        for (const a of st.architectures.slice()) {
             if (a.mesh) r._cullArchitectureMesh(a);
         }
-        r.state.architectures = [];
+        st.architectures = [];
         // AUSLÖSCHUNGS-WELLE — temple fiel; das Haus (haus_basis-Substanz) direkt vor dem
         // Welt-Ursprung platzieren. x=1.925 versetzt: so trifft der bei x=0 laufende Spieler
         // ein WAND-Segment (nicht im Weg).
-        const KSlive = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
-        if (r.state.blueprints._t_live_haus) delete r.state.blueprints._t_live_haus;
-        r.state.blueprints._t_live_haus = {
+        const KSlive = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
+        if (st.blueprints._t_live_haus) delete st.blueprints._t_live_haus;
+        st.blueprints._t_live_haus = {
             name: "_t_live_haus",
             parts: JSON.parse(JSON.stringify(KSlive.haus_basis.parts)),
         };
         r.spawnArchitecture("_t_live_haus", { x: 1.925, y: 5, z: 5 }, { seed: 11 });
         // Player nach (0, 5, −2) — Haus liegt in +Z, Spieler läuft in +Z auf es zu.
         // BÜHNE: der Spieler vor dem gestellten Haus (Haus und Spieler in derselben Anordnung)
-        r.state.playerMesh.position.set(0, 5, -2);
-        if (r.state.playerVel) {
-            r.state.playerVel.setValue(0, 0, 0);
-            r.state._fieldVy = 0;
+        st.playerMesh.position.set(0, 5, -2);
+        if (st.playerVel) {
+            st.playerVel.setValue(0, 0, 0);
+            st._fieldVy = 0;
         }
         // yaw=0 → forward = (sin0,0,cos0) = +Z; W drückt vorwärts.
-        const savedYaw = r.state.yaw;
-        const savedKeys = { ...r.state.keys };
-        r.state.yaw = 0;
-        r.state.keys = { w: true };
+        const savedYaw = st.yaw;
+        const savedKeys = { ...st.keys };
+        st.yaw = 0;
+        st.keys = { w: true };
         // ~0.8 s simulierte Bewegung: ~48 Frames à 1/60 s (synchron via _gameLoopTick).
         for (let i = 0; i < 48; i++) {
             r._gameLoopTick(performance.now());
         }
-        const playerZ = r.state.playerMesh.position.z;
-        const playerY = r.state.playerMesh.position.y;
+        const playerZ = st.playerMesh.position.z;
+        const playerY = st.playerMesh.position.y;
         // restore Eingabe-Zustand (zustands-neutral für Folge-Bands)
-        r.state.yaw = savedYaw;
-        r.state.keys = savedKeys;
-        if (r.state.playerVel) {
-            r.state.playerVel.setValue(0, 0, 0);
-            r.state._fieldVy = 0;
+        st.yaw = savedYaw;
+        st.keys = savedKeys;
+        if (st.playerVel) {
+            st.playerVel.setValue(0, 0, 0);
+            st._fieldVy = 0;
         }
         return { playerZ, playerY };
     });
@@ -546,11 +543,11 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
     );
     // Cleanup (inkl. Test-Blueprint)
     await page.evaluate(() => {
-        for (const a of r.state.architectures.slice()) {
+        for (const a of st.architectures.slice()) {
             if (a.mesh) r._cullArchitectureMesh(a);
         }
-        r.state.architectures = [];
-        delete r.state.blueprints._t_live_haus;
+        st.architectures = [];
+        delete st.blueprints._t_live_haus;
     });
 
     // ### Ring 6.4 — Bauplan-Datenschicht ###
@@ -576,7 +573,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
             testGroup && testGroup.children.length === 8 && testGroup.children.every((c) => !!c.geometry);
 
         // Erstellung via JSON: User-Bauplan registrieren + spawnen
-        r.state.blueprints["test_hut"] = {
+        st.blueprints["test_hut"] = {
             name: "test_hut",
             label: "Test-Hütte",
             builtIn: false,
@@ -595,23 +592,23 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
                 },
             ],
         };
-        for (const a of r.state.architectures.slice()) {
+        for (const a of st.architectures.slice()) {
             if (a.mesh) r._cullArchitectureMesh(a);
         }
-        r.state.architectures = [];
+        st.architectures = [];
         const userEntry = r.spawnArchitecture("test_hut", { x: 0, y: 5, z: 5 }, { seed: 1 });
         out.userBlueprintBuilds = !!userEntry && !!userEntry.mesh && userEntry.mesh.children.length === 2;
 
         // DSL-Op spawn_blueprint funktioniert
-        for (const a of r.state.architectures.slice()) {
+        for (const a of st.architectures.slice()) {
             if (a.mesh) r._cullArchitectureMesh(a);
         }
-        r.state.architectures = [];
+        st.architectures = [];
         const dslRes = r.dslRun(["spawn_blueprint", "test_hut", ["at_origin"]]);
         out.dslSpawnBlueprintOk =
             dslRes.ok === true &&
-            r.state.architectures.length === 1 &&
-            r.state.architectures[0].type === "test_hut" &&
+            st.architectures.length === 1 &&
+            st.architectures[0].type === "test_hut" &&
             dslRes.log.some((e) => e.event === "spawned_blueprint");
 
         // Unbekannter Bauplan-Name wird abgelehnt
@@ -633,7 +630,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
             !!parsed && Array.isArray(parsed.blueprints) && !parsed.blueprints.some((bp) => bp.name === "waterfall");
 
         // loadState mit eigenem Bauplan reaktiviert ihn
-        delete r.state.blueprints["test_hut"];
+        delete st.blueprints["test_hut"];
         r.loadState({
             blueprints: [
                 {
@@ -650,15 +647,15 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
                 },
             ],
         });
-        out.loadRestoresUserBlueprint = !!r.state.blueprints["test_hut_2"];
+        out.loadRestoresUserBlueprint = !!st.blueprints["test_hut_2"];
 
         // Cleanup
-        for (const a of r.state.architectures.slice()) {
+        for (const a of st.architectures.slice()) {
             if (a.mesh) r._cullArchitectureMesh(a);
         }
-        r.state.architectures = [];
-        delete r.state.blueprints["test_hut"];
-        delete r.state.blueprints["test_hut_2"];
+        st.architectures = [];
+        delete st.blueprints["test_hut"];
+        delete st.blueprints["test_hut_2"];
         return out;
     });
 
@@ -697,7 +694,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
             bar.querySelectorAll('.hotbar-slot[data-slot="offhand"]').length === 1;
         // Leben-Schau 07.10. (L7) — die Default-Hotbar ist der Start-Gurt aus dem Katalog (`_startGurt`: je Studio-Art
         // ein Werk; bei kaltem Buch leer), nie mehr [stein_block, waterfall, damm].
-        const hb0 = r.state.hotbar;
+        const hb0 = st.hotbar;
         const gurt = r._startGurt() || [];
         out.defaultHotbar =
             Array.isArray(hb0) &&
@@ -707,11 +704,10 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         // Slot-Label folgt aus blueprints.label
         const firstSlotLabel = bar.querySelector('.hotbar-slot[data-slot="0"] .label');
         out.firstSlotShowsLabel =
-            !!firstSlotLabel &&
-            (!hb0[0] || firstSlotLabel.textContent === (r.state.blueprints[hb0[0]].label || hb0[0]));
+            !!firstSlotLabel && (!hb0[0] || firstSlotLabel.textContent === (st.blueprints[hb0[0]].label || hb0[0]));
 
         // setHotbarSlot setzt slot 5 auf eigenen Bauplan
-        r.state.blueprints["test_hotbar_bp"] = {
+        st.blueprints["test_hotbar_bp"] = {
             name: "test_hotbar_bp",
             label: "Test-Bp",
             builtIn: false,
@@ -725,14 +721,14 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
             ],
         };
         const setOk = r.setHotbarSlot(5, "test_hotbar_bp");
-        out.setHotbarOk = setOk === true && r.state.hotbar[5] === "test_hotbar_bp";
+        out.setHotbarOk = setOk === true && st.hotbar[5] === "test_hotbar_bp";
         // DOM hat label aktualisiert
         const slot5Label = bar.querySelector('.hotbar-slot[data-slot="5"] .label');
         out.hotbarDomReflectsSet = slot5Label && slot5Label.textContent === "Test-Bp";
 
         // Unbekannter Bauplan-Name wird abgelehnt
         const setBad = r.setHotbarSlot(5, "definitiv_nicht_da");
-        out.setHotbarRejectsUnknown = setBad === false && r.state.hotbar[5] === "test_hotbar_bp";
+        out.setHotbarRejectsUnknown = setBad === false && st.hotbar[5] === "test_hotbar_bp";
 
         // der belegte Slot führt in den Bau-Modus und F setzt das Werk: diag-werkstatt-weg L-WERKSTATT (Ziffer-Taste, echte Eingabe)
         r.selectHotbarSlot(5);
@@ -742,11 +738,11 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
 
         // selectHotbarSlot(idx) auf leeren Slot deaktiviert Build-Mode
         r.selectHotbarSlot(8); // leer
-        out.emptySlotDeactivates = r.state.buildMode.active === false;
+        out.emptySlotDeactivates = st.buildMode.active === false;
 
         // setHotbarSlot(idx, null) leert den Slot
         r.setHotbarSlot(5, null);
-        out.clearedSlotIsNull = r.state.hotbar[5] === null;
+        out.clearedSlotIsNull = st.hotbar[5] === null;
         const slot5LabelAfter = bar.querySelector('.hotbar-slot[data-slot="5"] .label');
         out.clearedDomShowsEmpty = slot5LabelAfter && slot5LabelAfter.textContent === "—";
 
@@ -769,19 +765,19 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
             !!parsed && Array.isArray(parsed.hotbar) && parsed.hotbar.length === 9 && parsed.hotbar[7] === "damm";
 
         // loadState restauriert hotbar
-        r.state.hotbar = [null, null, null, null, null, null, null, null, null];
+        st.hotbar = [null, null, null, null, null, null, null, null, null];
         r.loadState({ hotbar: ["damm", null, "waterfall", null, null, null, null, null, null] });
-        out.loadRestoresHotbar = r.state.hotbar[0] === "damm" && r.state.hotbar[2] === "waterfall";
+        out.loadRestoresHotbar = st.hotbar[0] === "damm" && st.hotbar[2] === "waterfall";
 
         // Cleanup
-        delete r.state.blueprints["test_hotbar_bp"];
+        delete st.blueprints["test_hotbar_bp"];
         r._clearBuildMode();
-        r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
+        st.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
         r._renderHotbarDOM();
-        for (const a of r.state.architectures.slice()) {
+        for (const a of st.architectures.slice()) {
             if (a.mesh) r._cullArchitectureMesh(a);
         }
-        r.state.architectures = [];
+        st.architectures = [];
         return out;
     });
 
@@ -830,17 +826,17 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         const _hidden = (n) =>
             /^grown_/.test(n) ||
             /^(fels|kristall|glut)_var([1-9]\d*)$/.test(n) ||
-            !!(r.state.blueprints[n] && r.state.blueprints[n].donorOnly);
-        const listableCount = Object.keys(r.state.blueprints).filter((n) => !_hidden(n)).length;
+            !!(st.blueprints[n] && st.blueprints[n].donorOnly);
+        const listableCount = Object.keys(st.blueprints).filter((n) => !_hidden(n)).length;
         out.listShowsAllBlueprints = list && list.querySelectorAll(".workshop-list-row").length === listableCount;
 
         // createBlueprint
-        const beforeCount = Object.keys(r.state.blueprints).length;
+        const beforeCount = Object.keys(st.blueprints).length;
         const ok1 = r.createBlueprint("test_hut", "Test-Hütte");
         out.createBlueprintOk =
             ok1 === true &&
-            Object.keys(r.state.blueprints).length === beforeCount + 1 &&
-            r.state.blueprints["test_hut"].builtIn === false;
+            Object.keys(st.blueprints).length === beforeCount + 1 &&
+            st.blueprints["test_hut"].builtIn === false;
 
         // createBlueprint mit existierendem Namen wird abgelehnt
         const okDup = r.createBlueprint("test_hut", "Doppelt");
@@ -853,7 +849,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
             position: { x: 0, y: 1, z: 0 },
             size: { x: 2, y: 2, z: 2 },
         });
-        out.addPartOk = ok2 === true && r.state.blueprints["test_hut"].parts.length === 1;
+        out.addPartOk = ok2 === true && st.blueprints["test_hut"].parts.length === 1;
 
         // Built-in akzeptiert keine addPart (stein_block — lebendes builtIn)
         const okBuiltIn = r.addPartToBlueprint("stein_block", { shape: "sphere" });
@@ -864,50 +860,47 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
             color: 0x00ff00,
             position: { y: 2.5 },
         });
-        const p = r.state.blueprints["test_hut"].parts[0];
+        const p = st.blueprints["test_hut"].parts[0];
         out.updatePartMerges = p.color === 0x00ff00 && p.position.y === 2.5 && p.position.x === 0 && p.position.z === 0;
 
         // removePartFromBlueprint
         r.addPartToBlueprint("test_hut", { shape: "cone" });
         r.addPartToBlueprint("test_hut", { shape: "sphere" });
-        const beforeRm = r.state.blueprints["test_hut"].parts.length;
+        const beforeRm = st.blueprints["test_hut"].parts.length;
         r.removePartFromBlueprint("test_hut", 1);
-        out.removePartShrinks = r.state.blueprints["test_hut"].parts.length === beforeRm - 1;
+        out.removePartShrinks = st.blueprints["test_hut"].parts.length === beforeRm - 1;
 
         // cloneBlueprint (Built-in → eigen; damm — lebendes builtIn)
         const okClone = r.cloneBlueprint("damm", "my_temple");
         out.cloneBlueprintOk =
             okClone === true &&
-            r.state.blueprints["my_temple"].builtIn === false &&
-            r.state.blueprints["my_temple"].parts.length === r.state.blueprints["damm"].parts.length;
+            st.blueprints["my_temple"].builtIn === false &&
+            st.blueprints["my_temple"].parts.length === st.blueprints["damm"].parts.length;
 
         // Klone können editiert werden
         const okClonePart = r.removePartFromBlueprint("my_temple", 0);
         out.cloneIsEditable =
-            okClonePart === true &&
-            r.state.blueprints["my_temple"].parts.length === r.state.blueprints["damm"].parts.length - 1;
+            okClonePart === true && st.blueprints["my_temple"].parts.length === st.blueprints["damm"].parts.length - 1;
 
         // deleteBlueprint (eigen)
-        const beforeDel = Object.keys(r.state.blueprints).length;
+        const beforeDel = Object.keys(st.blueprints).length;
         const okDel = r.deleteBlueprint("test_hut");
         out.deleteBlueprintOk =
-            okDel === true &&
-            Object.keys(r.state.blueprints).length === beforeDel - 1 &&
-            !r.state.blueprints["test_hut"];
+            okDel === true && Object.keys(st.blueprints).length === beforeDel - 1 && !st.blueprints["test_hut"];
 
         // deleteBlueprint Built-in wird abgelehnt (stein_block — lebendes builtIn)
         const okDelBuiltIn = r.deleteBlueprint("stein_block");
-        out.builtInProtectedFromDelete = okDelBuiltIn === false && !!r.state.blueprints["stein_block"];
+        out.builtInProtectedFromDelete = okDelBuiltIn === false && !!st.blueprints["stein_block"];
 
         // delete räumt Hotbar-Slots auf, die diesen Bauplan halten
-        r.state.hotbar[4] = "my_temple";
+        st.hotbar[4] = "my_temple";
         r.deleteBlueprint("my_temple");
-        out.deleteCascadesHotbar = r.state.hotbar[4] === null;
+        out.deleteCascadesHotbar = st.hotbar[4] === null;
 
         // selectBlueprintForEdit + DOM update
         r.createBlueprint("ed_test", "Editier-Test");
         r.selectBlueprintForEdit("ed_test");
-        out.selectUpdatesWorkshop = r.state.workshop.selectedBlueprint === "ed_test";
+        out.selectUpdatesWorkshop = st.workshop.selectedBlueprint === "ed_test";
 
         // Editor zeigt Selected-Status
         const selectedRow = document.querySelector('.workshop-list-row[data-blueprint="ed_test"]');
@@ -972,93 +965,93 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         const out = {};
 
         // Cleanup
-        for (const a of r.state.architectures) {
+        for (const a of st.architectures) {
             if (a.mesh) {
-                r.state.scene.remove(a.mesh);
+                st.scene.remove(a.mesh);
                 r._disposeSoulGroup(a.mesh);
             }
         }
-        r.state.architectures = [];
+        st.architectures = [];
         r._clearBuildMode();
         // Der Cull-Tick baut nur bei Kopfraum (`_frameOverBudget ? 0 : budget`); nach dem Warmup kann das
         // Flag stehen → nullen, gemessen wird die Rebuild-MECHANIK, nicht die Perf-Drossel.
-        r.state._frameOverBudget = false;
+        st._frameOverBudget = false;
 
         // === A) Distance-Culling ===
         // AUSLÖSCHUNGS-WELLE — temple fiel; die haus_basis-Substanz (KIND_SUBSTANCE)
         // trägt die Cull-/Rebuild-Mechanik als Test-Blueprint (am Band-Ende geräumt).
-        const KSr6v2 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
-        if (r.state.blueprints._t_r6v2_haus) delete r.state.blueprints._t_r6v2_haus;
-        r.state.blueprints._t_r6v2_haus = {
+        const KSr6v2 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
+        if (st.blueprints._t_r6v2_haus) delete st.blueprints._t_r6v2_haus;
+        st.blueprints._t_r6v2_haus = {
             name: "_t_r6v2_haus",
             parts: JSON.parse(JSON.stringify(KSr6v2.haus_basis.parts)),
         };
         // Setze Spieler auf (0,0,0), spawne weit + nah.
         // BÜHNE: nah und fern zum gestellten Haus (Cull-Mechanik)
-        r.state.playerMesh.position.set(0, 20, 0);
+        st.playerMesh.position.set(0, 20, 0);
         const near = r.spawnArchitecture("_t_r6v2_haus", { x: 5, y: 5, z: 5 }, { seed: 1 });
         const far = r.spawnArchitecture("_t_r6v2_haus", { x: 400, y: 5, z: 400 }, { seed: 2 });
         out.nearHasMesh = !!near.mesh;
         out.farIsCold = far.mesh === null;
         // Spieler weg vom near → cull-Tick muss near disposen
         // BÜHNE: nah und fern zum gestellten Haus (Cull-Mechanik)
-        r.state.playerMesh.position.set(400, 20, 400);
+        st.playerMesh.position.set(400, 20, 400);
         r.tickArchitectureCulling(1.0);
         out.nearCulledAfterWalkAway = near.mesh === null;
         out.farRebuiltAfterApproach = !!far.mesh;
         // Zurück gehen → near baut sich wieder auf
         // BÜHNE: nah und fern zum gestellten Haus (Cull-Mechanik)
-        r.state.playerMesh.position.set(0, 20, 0);
+        st.playerMesh.position.set(0, 20, 0);
         r.tickArchitectureCulling(2.0);
         out.nearRebuiltAfterReturn = !!near.mesh;
 
         // === B) spawn_fractal ===
         // Cleanup first
-        for (const a of r.state.architectures) {
+        for (const a of st.architectures) {
             if (a.mesh) {
-                r.state.scene.remove(a.mesh);
+                st.scene.remove(a.mesh);
                 r._disposeSoulGroup(a.mesh);
             }
         }
-        r.state.architectures = [];
-        const before = r.state.architectures.length;
+        st.architectures = [];
+        const before = st.architectures.length;
         const dslRes = r.dslRun(["spawn_fractal", ["at_origin"], "temple", 2, 0.5]);
         // depth=2 mit 6 Kindern: 1 + 6 + 36 = 43
-        out.fractalSpawnsExpected = dslRes.ok === true && r.state.architectures.length === before + 43;
+        out.fractalSpawnsExpected = dslRes.ok === true && st.architectures.length === before + 43;
         const eventFound = dslRes.log.find((e) => e.event === "spawned_fractal");
         out.fractalEventEmitted = !!eventFound && eventFound.count === 43;
         // Positionen hängen am Root-Seed (ctx.rng()), die HEXAGONAL-Anordnung bleibt: 6 Kinder auf einem
         // Kreis um die Wurzel. Visit ist depth-first (root, child0 + Enkel, child1, …) → direkte Kinder
         // über scale 0.5 finden (ratio 0.5), Enkel haben 0.25.
-        const rootEntry = r.state.architectures[before];
-        const directChildren = r.state.architectures.slice(before).filter((e) => Math.abs(e.scale - 0.5) < 1e-6);
+        const rootEntry = st.architectures[before];
+        const directChildren = st.architectures.slice(before).filter((e) => Math.abs(e.scale - 0.5) < 1e-6);
         const childRadii = directChildren.map((e) =>
             Math.hypot(e.position.x - rootEntry.position.x, e.position.z - rootEntry.position.z)
         );
         out.fractalChildrenAreHexagonal =
             childRadii.length === 6 && childRadii.every((rad) => Math.abs(rad - childRadii[0]) < 0.5);
         // Scale-Hierarchie: Root=1, direkte Kinder=0.5, Grand-Children=0.25
-        const grandChildren = r.state.architectures.slice(before).filter((e) => Math.abs(e.scale - 0.25) < 1e-6);
+        const grandChildren = st.architectures.slice(before).filter((e) => Math.abs(e.scale - 0.25) < 1e-6);
         out.fractalScalesShrink = rootEntry.scale === 1 && directChildren.length === 6 && grandChildren.length === 36;
 
         // Chat-Pattern
         r.processChatCommand("baue fraktal wasserfall");
         out.chatFractalRoutes =
-            Array.isArray(r.state.dsl.lastUserProgram) &&
-            r.state.dsl.lastUserProgram[0] === "spawn_fractal" &&
-            r.state.dsl.lastUserProgram[2] === "waterfall";
+            Array.isArray(st.dsl.lastUserProgram) &&
+            st.dsl.lastUserProgram[0] === "spawn_fractal" &&
+            st.dsl.lastUserProgram[2] === "waterfall";
 
         // === C) Counter ===
         // Cleanup, baue 3 nah, 5 weit
-        for (const a of r.state.architectures) {
+        for (const a of st.architectures) {
             if (a.mesh) {
-                r.state.scene.remove(a.mesh);
+                st.scene.remove(a.mesh);
                 r._disposeSoulGroup(a.mesh);
             }
         }
-        r.state.architectures = [];
+        st.architectures = [];
         // BÜHNE: nah und fern zum gestellten Haus (Cull-Mechanik)
-        r.state.playerMesh.position.set(0, 20, 0);
+        st.playerMesh.position.set(0, 20, 0);
         for (let i = 0; i < 3; i++) r.spawnArchitecture("_t_r6v2_haus", { x: i * 10, y: 5, z: 0 }, { seed: i });
         for (let i = 0; i < 5; i++) r.spawnArchitecture("_t_r6v2_haus", { x: 300 + i * 5, y: 5, z: 0 }, { seed: i });
         const counts = r.countArchitecturesNearPlayer(60);
@@ -1075,11 +1068,11 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         out.hudInDom = !!document.getElementById("build-mode-hud");
         out.hudInitiallyHidden = document.getElementById("build-mode-hud").hidden === true;
         // Ring 6.5: Hotbar-API ersetzt setBuildMode. Slot 0 = stein_block (gesetzt: der Start-Gurt liest den Katalog).
-        r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
+        st.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
         r.selectHotbarSlot(0);
         out.hudShownWhenActive = document.getElementById("build-mode-hud").hidden === false;
         let foundTransparent = false;
-        r.state.buildMode.phantomMesh.traverse((node) => {
+        st.buildMode.phantomMesh.traverse((node) => {
             if (node.material && node.material.transparent && node.material.opacity < 1) {
                 foundTransparent = true;
             }
@@ -1087,30 +1080,30 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         out.phantomIsTransparent = foundTransparent;
         // Toggle (gleicher Slot nochmal → off)
         r.selectHotbarSlot(0);
-        out.toggleOffSameForm = r.state.buildMode.active === false;
+        out.toggleOffSameForm = st.buildMode.active === false;
         // Slot wechseln (Slot 1 = waterfall)
         r.selectHotbarSlot(1);
-        out.switchFormChanges = r.state.buildMode.blueprintName === "waterfall";
+        out.switchFormChanges = st.buildMode.blueprintName === "waterfall";
         // confirmBuild platziert echte Struktur — S2: in schöpfer testen, weil
         // frieden jetzt Material zahlt; dieser Test prüft den SPAWN-Mechanismus, nicht die Kosten.
         r.setGameMode("schöpfer");
-        const arBefore = r.state.architectures.length;
+        const arBefore = st.architectures.length;
         r.confirmBuild();
-        out.confirmBuildSpawns = r.state.architectures.length === arBefore + 1;
-        out.confirmBuildKeepsMode = r.state.buildMode.active === true;
+        out.confirmBuildSpawns = st.architectures.length === arBefore + 1;
+        out.confirmBuildKeepsMode = st.buildMode.active === true;
         // ESC räumt auf
         r._clearBuildMode();
-        out.clearEndsMode = r.state.buildMode.active === false && r.state.buildMode.phantomMesh === null;
+        out.clearEndsMode = st.buildMode.active === false && st.buildMode.phantomMesh === null;
 
         // Cleanup (inkl. Test-Blueprint)
-        for (const a of r.state.architectures) {
+        for (const a of st.architectures) {
             if (a.mesh) {
-                r.state.scene.remove(a.mesh);
+                st.scene.remove(a.mesh);
                 r._disposeSoulGroup(a.mesh);
             }
         }
-        r.state.architectures = [];
-        delete r.state.blueprints._t_r6v2_haus;
+        st.architectures = [];
+        delete st.blueprints._t_r6v2_haus;
         r.setGameMode("frieden"); // S2 — Modus zurücksetzen (schöpfer war nur für den Spawn-Test)
         return out;
     });
@@ -1296,8 +1289,8 @@ async function checkBandArchetypBank({ page, check }) {
             // (KIND_SUBSTANCE, parts + connections) trägt die Bank-Probe unverändert.
             {
                 n: "substanz fahrzeug_wagen (KIND_SUBSTANCE)",
-                p: (r.constructor.KIND_SUBSTANCE || {}).fahrzeug_wagen.parts,
-                c: (r.constructor.KIND_SUBSTANCE || {}).fahrzeug_wagen.connections,
+                p: (AnazhRealm.KIND_SUBSTANCE || {}).fahrzeug_wagen.parts,
+                c: (AnazhRealm.KIND_SUBSTANCE || {}).fahrzeug_wagen.connections,
                 e: "vehicle",
             },
             { n: "builtin reittier_holzross", b: "reittier_holzross", e: "vehicle" },
@@ -1323,7 +1316,7 @@ async function checkBandArchetypBank({ page, check }) {
         const fails = [];
         for (const tc of BANK) {
             const bp = tc.b
-                ? r.state.blueprints[tc.b]
+                ? st.blueprints[tc.b]
                 : { name: "_bank", parts: tc.p, ...(tc.c ? { connections: tc.c } : {}) };
             if (!bp) {
                 fails.push(`${tc.n}: builtin fehlt`);
@@ -1345,7 +1338,7 @@ async function checkBandArchetypBank({ page, check }) {
 async function checkBandLambda2HismSynthese({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
-        const A = r.constructor;
+        const A = AnazhRealm;
         out.instanceTintFrozen = Object.isFrozen(A.INSTANCE_TINT);
         out.instanceTintShape =
             Number.isFinite(A.INSTANCE_TINT.rangeH) &&
@@ -1357,9 +1350,9 @@ async function checkBandLambda2HismSynthese({ page, check }) {
         const tints = [];
         const tintS = [];
         const tintV = [];
-        const savedArch = r.state.architectures.slice();
+        const savedArch = st.architectures.slice();
         try {
-            r.state.architectures = [];
+            st.architectures = [];
             for (let i = 0; i < 50; i++) {
                 // Echte 32-bit-Seeds: die Bit-Bänder (>>> 5, >>> 13, >>> 21) brauchen die volle Breite, sonst ist
                 // >>> 21 bei seed < 2²¹ immer 0 (σ = 0). Der multiplikative Hash streut kleine i über 32 bit.
@@ -1376,7 +1369,7 @@ async function checkBandLambda2HismSynthese({ page, check }) {
                 }
             }
         } finally {
-            r.state.architectures = savedArch;
+            st.architectures = savedArch;
         }
         // σ-Berechnungen.
         const avg = (arr) => arr.reduce((s, v) => s + v, 0) / Math.max(1, arr.length);
@@ -1391,8 +1384,8 @@ async function checkBandLambda2HismSynthese({ page, check }) {
         out.tintCount = tints.length;
         // Snapshot+Restore-Test: tintH muss bit-treu durchreisen.
         if (tints.length >= 1) {
-            const probe = r.state.architectures[0] || { tintH: 0.5, tintS: 0.5, tintV: 0.5 };
-            r.state.architectures = [
+            const probe = st.architectures[0] || { tintH: 0.5, tintS: 0.5, tintV: 0.5 };
+            st.architectures = [
                 {
                     type: "baum_eiche",
                     id: "λ2_probe",
@@ -1412,7 +1405,7 @@ async function checkBandLambda2HismSynthese({ page, check }) {
                 Math.abs(snapEntry.tintH - 0.42) < 1e-9 &&
                 Math.abs(snapEntry.tintS - 0.31) < 1e-9 &&
                 Math.abs(snapEntry.tintV - 0.67) < 1e-9;
-            r.state.architectures = savedArch;
+            st.architectures = savedArch;
             void probe;
         }
         return out;
@@ -1442,11 +1435,11 @@ async function checkBandLambda5MischwaldSynthese({ page, check }) {
         // die statischen Mischwald-Baupläne sind GESCHNITTEN; die Arten
         // leben jetzt in SPECIES_TAG_REFERENCE (Tags) + dem Gesetzbuch (Form, _phytoArt) +
         // der candidates-Liste (Spawn). KEINE statischen _jung/_alt-Varianten mehr.
-        const ref = r.constructor.SPECIES_TAG_REFERENCE || {};
+        const ref = AnazhRealm.SPECIES_TAG_REFERENCE || {};
         out.fourNewSpecies = !!(ref.baum_birke && ref.baum_erle && ref.baum_buche && ref.baum_tanne);
         // die Liste der Würfe des Felds (`FELD_WURF`, K10-6: die EINE, die _vegetationSampleSpawn liest) trägt die 4 NEUEN,
         // aber NICHT die Varianten — gelesen an der Liste, nie am Rumpf-Text (Lehre 6)
-        const liste = r.constructor.FELD_WURF || [];
+        const liste = AnazhRealm.FELD_WURF || [];
         out.candidatesBirke = liste.includes("baum_birke");
         out.candidatesErle = liste.includes("baum_erle");
         out.candidatesBuche = liste.includes("baum_buche");
@@ -1483,12 +1476,12 @@ async function checkBandWHWald({ page, check }) {
         // (1) die statischen Gestalt-Varianten (baum_*_breit/jung/schlank)
         // sind GESCHNITTEN; die Tag-Wahrheit lebt in der frozen SPECIES_TAG_REFERENCE,
         // die Form-Vielfalt voll in der Grammatik (sizeClass/age-Genom). Kein „rundes Ding" mehr.
-        const refTbl = r.constructor.SPECIES_TAG_REFERENCE || {};
+        const refTbl = AnazhRealm.SPECIES_TAG_REFERENCE || {};
         out.refTableHat = !!(refTbl.baum_eiche && refTbl.baum_kiefer);
         // (2) die Bäume treten im Affinitäts-Wettstreit (candidates) NUR als kanonische Art an — keine
         // statische _jung/_alt/_breit-Variante im Pool; die Gestalt entsteht NACH dem Sieg.
         // (die Liste der Würfe des Felds, `FELD_WURF` — K10-6: gelesen an der Liste, nie am Rumpf-Text)
-        const feldWurf = r.constructor.FELD_WURF || [];
+        const feldWurf = AnazhRealm.FELD_WURF || [];
         out.notInCandidates =
             feldWurf.includes("baum_eiche") &&
             feldWurf.includes("baum_kiefer") &&
@@ -1501,7 +1494,7 @@ async function checkBandWHWald({ page, check }) {
         Object.assign(r, { _enqueueVegetationSpawn: (n, p, o) => calls.push({ n, o }), _scatterRegisterCell() {}, _scatterIncrementCounter() {}, _vegSpawnImmediate: true });
         try {
             const span = r._voxelChunkConfig().span;
-            const pm = r.state.playerMesh.position;
+            const pm = st.playerMesh.position;
             for (let i = -3; i <= 3; i++) for (let j = -3; j <= 3; j++) r._forestPlantChunk(Math.floor(pm.x / span) + i, Math.floor(pm.z / span) + j);
         } finally {
             for (const k of ["_enqueueVegetationSpawn", "_scatterRegisterCell", "_scatterIncrementCounter", "_vegSpawnImmediate"]) delete r[k];
@@ -1545,7 +1538,7 @@ async function checkBandV18198Gamma2Totholz({ page, check }) {
 
 
         // (T2) Bauplan `stamm_gefallen` ist registriert
-        const bp = r.state.blueprints && r.state.blueprints["stamm_gefallen"];
+        const bp = st.blueprints && st.blueprints["stamm_gefallen"];
         out.bpExists = !!bp;
         out.bpBuiltIn = bp && bp.builtIn === true;
         out.bpInstanced = bp && bp.instanced === true;
@@ -1568,10 +1561,7 @@ async function checkBandV18198Gamma2Totholz({ page, check }) {
         const targetAxes = ["lebendig", "dichte", "brennbar", "magieleitung"];
         // die Baum-Referenz-Tags aus der frozen SPECIES_TAG_REFERENCE
         // (der statische baum_eiche-Bauplan ist geschnitten).
-        const __treeRef =
-            (r.constructor.SPECIES_TAG_REFERENCE &&
-                r.constructor.SPECIES_TAG_REFERENCE.baum_eiche) ||
-            null;
+        const __treeRef = (AnazhRealm.SPECIES_TAG_REFERENCE && AnazhRealm.SPECIES_TAG_REFERENCE.baum_eiche) || null;
         if (bp && __treeRef) {
             const totTags = r.computeCompoundTags(bp);
             const diffs = {};
@@ -1587,7 +1577,7 @@ async function checkBandV18198Gamma2Totholz({ page, check }) {
 
         // (T7) DIREKT-SPAWN-TEST: spawnArchitecture("stamm_gefallen", ...) klappt
         // und das Entry trägt blockerAABBs (V13.10-Solidität).
-        const before = r.state.architectures.length;
+        const before = st.architectures.length;
         try {
             const e = r.spawnArchitecture("stamm_gefallen", { x: 1234, y: 50, z: 1234 }, { silent: true });
             out.directSpawnOk = !!e;
@@ -1596,7 +1586,7 @@ async function checkBandV18198Gamma2Totholz({ page, check }) {
         } catch (err) {
             out.directSpawnError = err && err.message ? err.message : String(err);
         }
-        out.archCountUnchanged = r.state.architectures.length === before;
+        out.archCountUnchanged = st.architectures.length === before;
 
         return out;
     });
@@ -1631,8 +1621,8 @@ async function checkBandV18213MeshMerge({ page, check }) {
         // (die laufen classic, ohne HISM/Merge) — manche Seeds erzeugen moveable-Tannen.
         let testBp = null;
         let testKey = null;
-        for (const key of Object.keys(r.state.blueprints)) {
-            const b = r.state.blueprints[key];
+        for (const key of Object.keys(st.blueprints)) {
+            const b = st.blueprints[key];
             if (!b || !b._isGrown) continue;
             const aff = r.computeBlueprintAffordances(b);
             if (aff.moveable || aff.magnifying) continue;
@@ -1646,8 +1636,8 @@ async function checkBandV18213MeshMerge({ page, check }) {
             // Routing-Schritt unverdorben gemessen wird.
             const origIsMerged = testBp._isMerged;
             testBp._isMerged = true;
-            if (r.state.archFlattenCache) r.state.archFlattenCache.delete(testKey);
-            if (r.state.archMergedGeomCache) r.state.archMergedGeomCache.delete(testKey);
+            if (st.archFlattenCache) st.archFlattenCache.delete(testKey);
+            if (st.archMergedGeomCache) st.archMergedGeomCache.delete(testKey);
 
             out.bpHasIsMerged = testBp._isMerged === true;
             out.bpStillHasParts = Array.isArray(testBp.parts) && testBp.parts.length >= 50; // V18.211: 75-80
@@ -1715,13 +1705,13 @@ async function checkBandV18213MeshMerge({ page, check }) {
             // ─── (M9) Snapshot-Restore: _isMerged wird neu gesetzt ─
             // der Snapshot persistiert NUR architektur-referenzierte grown-Baupläne;
             // eine Sentinel-Architektur hält testKey (sonst korrekt herausgefiltert).
-            r.state.architectures = r.state.architectures || [];
-            r.state.architectures.push({ id: "v213-snap-arch", type: testKey, position: { x: 0, y: 0, z: 0 } });
+            st.architectures = st.architectures || [];
+            st.architectures.push({ id: "v213-snap-arch", type: testKey, position: { x: 0, y: 0, z: 0 } });
             // Wir bauen einen Snapshot, prüfen das relevante Feld.
             const snap = r.buildStateSnapshot();
             const gb = snap && snap.grownBlueprints && snap.grownBlueprints[testKey];
             out.snapshotHasEntry = !!gb;
-            r.state.architectures = r.state.architectures.filter((a) => a.id !== "v213-snap-arch");
+            st.architectures = st.architectures.filter((a) => a.id !== "v213-snap-arch");
             // gb hat KEIN _isMerged (das wird beim Restore aus genVersion abgeleitet).
             out.snapshotHasNoMergedFlag = gb ? gb._isMerged === undefined : false;
 
@@ -1731,7 +1721,7 @@ async function checkBandV18213MeshMerge({ page, check }) {
 
         // ─── (M10) Welt-Wechsel-Reset: archMergedGeomCache wird disposed ─
         // Voraussetzung: state.archMergedGeomCache ist initialisiert + nicht-leer.
-        const cacheBeforeReset = r.state.archMergedGeomCache;
+        const cacheBeforeReset = st.archMergedGeomCache;
         out.cacheExists = !!cacheBeforeReset && cacheBeforeReset.size > 0;
         // Simulate Welt-Wechsel-Reset (NUR der merged-Cache-Pfad — NICHT die
         // anderen Teile von _loadStateRestoreWorldMeta, das würde die Welt
@@ -1749,7 +1739,7 @@ async function checkBandV18213MeshMerge({ page, check }) {
         }
         // Auch den archFlattenCache-Eintrag des Test-Bauplans räumen (selektiv), sonst zögen Folge-Bands
         // stale Einträge mit zerstörten merged-Geom-Referenzen.
-        if (testKey && r.state.archFlattenCache) r.state.archFlattenCache.delete(testKey);
+        if (testKey && st.archFlattenCache) st.archFlattenCache.delete(testKey);
 
         return out;
     });

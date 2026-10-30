@@ -111,7 +111,7 @@ async function checkBandStoffSignatur({ page, check }) {
 async function checkBandV18493CoSchoepferStudio({ page, check }) {
     const res = await page.evaluate(async () => {
         const out = {};
-        const archs = r.state.architectures;
+        const archs = st.architectures;
         const vorherAll = archs.length;
         try {
             out.eiche = r._studioBlueprintForWord("eiche");
@@ -128,7 +128,7 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
             // Ein sicher trockener Fleck nahe dem Spieler (der Test soll nie am Zufall des Sees hängen) — 50 m vor der
             // Genesis-Mitte: ihre Lichtung ist ein Grundriss der Natur-Wand, dort wächst keine Eiche, deren Krone über die
             // Scheibe reicht (Integration Welle L, Entscheid D3; die Eiche reicht mit Hain-Streuung bis ~36 m).
-            const p = r.state.playerMesh.position;
+            const p = st.playerMesh.position;
             const gM = r._genesisMitte();
             let spot = null;
             for (let i = 0; i < 64 && !spot; i++) {
@@ -162,7 +162,7 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
             // near_water liefert einen trockenen Ufer-Ort am Wasser — oder, ohne Wasser im Umkreis, KEINEN
             // (die Engstelle `dslEvalPos` wirft benannt), nie still den Spieler-Ort. Ob es Wasser gibt, sagt ein EIGENES
             // 4-m-Raster über den Kreis (nicht die Such-Funktion des Spiels); der Rand-Gürtel 150–166 m gilt beides.
-            const pm0 = r.state.playerMesh.position;
+            const pm0 = st.playerMesh.position;
             let nassNah = false,
                 nassFern = false;
             const nassPunkte = [];
@@ -193,7 +193,7 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
             out.nearWaterBefund = { nassNah, nassFern, nw, nwFehler };
             out.nearWaterTrocken = nw ? r._landAt(nw.x, nw.z, 0.3) : benannt;
             out.promptWoerter = /Bäume: /.test(r.llmBuildSystemPrompt()); // jedes Verb mit Form: gate:weltakt-wache (K)
-            out.ruleVerbot = r.constructor.RULE_FORBIDDEN_EFFECT_OPS.has("spawn_studio");
+            out.ruleVerbot = AnazhRealm.RULE_FORBIDDEN_EFFECT_OPS.has("spawn_studio");
             // Die Anthropic-Anfrage folgt der aktuellen Generation: 5er-Modelle mit effort +
             // fallbacks + Beta-Header, Haiku 4.5 schlicht (es kennt beides nicht).
             const an = r.llmProviderDefs().anthropic;
@@ -270,7 +270,7 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
         await window.__weltDa();
         await window
             .__gebautNach("25 Chunks um den Spieler", {
-                fertig: () => (r.state.voxelChunks ? r.state.voxelChunks.size : 0) >= 25,
+                fertig: () => (st.voxelChunks ? st.voxelChunks.size : 0) >= 25,
                 takt: async () => {
                     try {
                         r._gameLoopTick(performance.now());
@@ -283,10 +283,10 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
         await window.__weltDa(() => !f || f.ready);
         // dichten Wald streamen.
         for (let it = 0; it < 300; it++) {
-            r.state._frameOverBudget = false;
+            st._frameOverBudget = false;
             try {
                 r._gameLoopTick && r._gameLoopTick(performance.now());
-                const pp = r.state.playerMesh && r.state.playerMesh.position;
+                const pp = st.playerMesh && st.playerMesh.position;
                 if (pp) r._tickScatterStreaming(pp);
             } catch {}
             await sleep(6);
@@ -304,8 +304,8 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
         const snap = () => ({ built: (f._geomBuiltCount || 0), disposed: (f._geomDisposedCount || 0), cache: f.cache ? f.cache.size : 0 });
         // DER CHURN: Cache-Deckel auf 32 (die Welt hält gerade weit mehr) und je Zyklus alle 16 Gestalten von sechs
         // '*'-Arten flach anfordern (96 Schlüssel, Stufe 0) — die LRU muss räumen, jeder Zyklus baut die geräumten neu.
-        const CAP0 = r.constructor.FOUNDRY_CACHE_CAP;
-        r.constructor.FOUNDRY_CACHE_CAP = 32;
+        const CAP0 = AnazhRealm.FOUNDRY_CACHE_CAP;
+        AnazhRealm.FOUNDRY_CACHE_CAP = 32;
         // Der Anstoß: der Vorrat hat alle Gestalten schon warm (kein Neubau, keine Räumung) — EINE Räumung über die EINE
         // Naht, dann baut die erste Ankunft neu und der Deckel räumt die LRU auf 32 (der Churn läuft ab Zyklus 1).
         r._foundryCacheEvict(r._foundryKoerperKey("findling", 1, 0));
@@ -322,10 +322,10 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
                     r._foundryFlattenFor({ seed: s, position: { x: 0, y: 0, z: 0 } }, sp, 0);
                 }
             }
-            for (let it = 0; it < 400; it++) { r.state._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); } catch {} if (f.pending.size === 0 && !(f.warte && f.warte.length) && it > 30) break; await sleep(6); }
+            for (let it = 0; it < 400; it++) { st._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); } catch {} if (f.pending.size === 0 && !(f.warte && f.warte.length) && it > 30) break; await sleep(6); }
             cycles.push(snap());
         }
-        r.constructor.FOUNDRY_CACHE_CAP = CAP0;
+        AnazhRealm.FOUNDRY_CACHE_CAP = CAP0;
         return { maxRefsAtDispose, disposeCalls, cycles, capacity: 32 };
     });
     const fails = [];
@@ -353,11 +353,11 @@ async function checkBandKristallKleid({ page, check }) {
         // die Ausstattung löst über das LIVE-Buch auf (studioGestalt): warten, bis das Gesetzbuch der Architektur da ist
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => !!(f && f.ready && f.recipes && f.recipes.feuerstelle));
-        const bp = r.state.blueprints || {};
+        const bp = st.blueprints || {};
         const res = {};
         for (const t of ["kristall_var0", "kristall_var7", "fels_var0", "fels_var5", "fels_var7", "glut_var0", "glutbrunnen", "marktstand_dorf", "brunnen_dorf", "laterne_dorf", "kristall_geode", "felsturm", "stein_block"])
             res[t] = { exists: !!bp[t], preset: r._foundryPresetForEntry({ type: t }) };
-        res._umzug = r.constructor.BAUPLAN_UMZUG ? r.constructor.BAUPLAN_UMZUG.glut_var3 : null;
+        res._umzug = AnazhRealm.BAUPLAN_UMZUG ? AnazhRealm.BAUPLAN_UMZUG.glut_var3 : null;
         const wort = (w) => r._studioBlueprintForWord(w);
         res._wort = [wort("feuerstelle"), wort("marktstand"), wort("brunnen"), wort("laterne")].join("/");
         const portal = Object.keys(bp).find((n) => bp[n] && bp[n].role === "portal" && typeof bp[n].studioGestalt === "string");
@@ -395,7 +395,7 @@ async function checkBandKeinZweiterBaumbaecker({ page, check }) {
         await window.__weltDa();
         await window
             .__gebautNach("25 Chunks um den Spieler", {
-                fertig: () => (r.state.voxelChunks ? r.state.voxelChunks.size : 0) >= 25,
+                fertig: () => (st.voxelChunks ? st.voxelChunks.size : 0) >= 25,
                 takt: async () => {
                     try {
                         r._gameLoopTick(performance.now());
@@ -410,10 +410,10 @@ async function checkBandKeinZweiterBaumbaecker({ page, check }) {
         o.foundryReady = !!(f && f.ready);
         // Kräftig ticken → der Scatter streamt Regionen um den Spieler; Studio-Assets kommen an.
         for (let it = 0; it < 350; it++) {
-            r.state._frameOverBudget = false;
+            st._frameOverBudget = false;
             try {
                 r._gameLoopTick && r._gameLoopTick(performance.now());
-                const pp = r.state.playerMesh && r.state.playerMesh.position;
+                const pp = st.playerMesh && st.playerMesh.position;
                 if (pp) r._tickScatterStreaming(pp);
             } catch {}
             await sleep(10);
@@ -421,7 +421,7 @@ async function checkBandKeinZweiterBaumbaecker({ page, check }) {
         // Instanz-Gruppen enumerieren: Schlüssel = Bauplan-Name#leaf[@region].
         const groups = [];
         const eat = (map) => { if (!map) return; for (const [k, g] of map) { let c = 0; if (g && g.mesh && Number.isFinite(g.mesh.count)) c = g.mesh.count; else if (g && Number.isFinite(g.count)) c = g.count; groups.push({ key: String(k), count: c }); } };
-        eat(r.state.archInstanceGroups);
+        eat(st.archInstanceGroups);
         // Klassifizieren: die FOUNDRY-Herkunft lebt im LEAF-Key (nach `#`): `f:`/`fimp:` = Foundry-Geometrie/
         // -Impostor (auch für die PLATZIERTE Architektur, deren Gruppen-NAME die Art `baum_tanne` trägt, aber
         // deren Leaf `f:tanne|…` ist). `fscatter:` im Namen = Foundry-Scatter. Ein GRAMMATIK-Baum hat einen
@@ -438,7 +438,7 @@ async function checkBandKeinZweiterBaumbaecker({ page, check }) {
         const presets = new Set();
         for (const k of o.foundryScatterKeys) { const m = k.match(/^fscatter:([a-z]+)/); if (m) presets.add(m[1]); }
         // W6: die Karten (L2) zeichnen in der EINEN Atlas-Gruppe — die Art eines lebenden Slots nennt seine Schicht.
-        const ag = r.state.archInstanceGroups && r.state.archInstanceGroups.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE);
+        const ag = st.archInstanceGroups && st.archInstanceGroups.get(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE);
         const ak = ag && ag.mesh && ag.mesh.geometry.attributes.aKarte; // (Schicht, Halbbreite, Höhe, verdeckt)
         if (ak && r._kartenAtlas) {
             const artVon = new Map();

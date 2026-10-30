@@ -11,7 +11,7 @@ const { safeEvaluate, erreichbar, ohneWurf } = require("../playtest.cjs");
 async function checkBandV1769RoleResonance({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const blu = r.state.blueprints;
+        const blu = st.blueprints;
         const part = (mat, x, y, z) => ({
             shape: "box",
             material: mat,
@@ -19,12 +19,12 @@ async function checkBandV1769RoleResonance({ page, check }) {
             position: { x, y, z },
         });
 
-        out.signaturen = !!r.constructor.FORM_ROLE_SIGNATURES;
+        out.signaturen = !!AnazhRealm.FORM_ROLE_SIGNATURES;
 
         // (1) der Produkt-Vektor trägt die räumliche Schicht (R2): bodyShape/portalShape als Achsen neben den Tags.
         // der temple-Blueprint fiel; dieselbe Klasse (gespiegelte Stein-Säulen
         // + Sturz) lebt eingefroren als KIND_SUBSTANCE.tor_basis — der Test wandert auf die Substanz-Zeile.
-        const KS169 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        const KS169 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
         const templeFix = { parts: JSON.parse(JSON.stringify(KS169.tor_basis.parts)) };
         const tv = r._blueprintProductVector(templeFix);
         out.vectorHasSpatial = "bodyShape" in tv && "portalShape" in tv && "dichte" in tv;
@@ -35,8 +35,8 @@ async function checkBandV1769RoleResonance({ page, check }) {
         out.templeHealed = r.computeBlueprintRole(templeFix) === "architecture";
         out.felsbogenHealed = r.computeBlueprintRole(blu.felsbogen) === "architecture";
         const tvBody = r._isBodyShaped(templeFix);
-        const archScore = r._blueprintResonance(tv, r.constructor.FORM_ROLE_SIGNATURES.architecture);
-        const soulScore = r._blueprintResonance(tv, r.constructor.FORM_ROLE_SIGNATURES.soul);
+        const archScore = r._blueprintResonance(tv, AnazhRealm.FORM_ROLE_SIGNATURES.architecture);
+        const soulScore = r._blueprintResonance(tv, AnazhRealm.FORM_ROLE_SIGNATURES.soul);
         out.healMechanism = tvBody === false || archScore > soulScore;
 
         // (3) DER WÄCHTER — die Form-Fallback-Built-ins, Baseline eingefroren (felsbogen jetzt architecture).
@@ -108,7 +108,7 @@ async function checkBandV1769RoleResonance({ page, check }) {
         blu.__rr_forge = { name: "__rr_forge", parts: [part("eisen", 0, 0, 0)] };
         const savedMode = r.getGameMode();
         r.setGameMode("schöpfer");
-        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer"); // V17.88 op-Bibliothek leihen
+        if (!st.player.tools.includes("schmiede-hammer")) st.player.tools.push("schmiede-hammer"); // V17.88 op-Bibliothek leihen
         r.applyOpToPart("__rr_forge", 0, "schmiede-hammer");
         const forgeRole = r.computeBlueprintRole(blu.__rr_forge);
         out.domainPriority = forgeRole === "tool" || forgeRole === "armor";
@@ -149,12 +149,12 @@ async function checkBandV1769RoleResonance({ page, check }) {
 async function checkBandV1771ToolOpFromForm({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const blu = r.state.blueprints;
+        const blu = st.blueprints;
         const mk = (shape, mat) => ({
             parts: [{ shape, material: mat, size: { x: 0.6, y: 1.2, z: 0.6 }, position: { x: 0, y: 0, z: 0 } }],
         });
 
-        out.signaturen = !!r.constructor.OP_CLASS_SIGNATURES;
+        out.signaturen = !!AnazhRealm.OP_CLASS_SIGNATURES;
         // der Produkt-Vektor trägt auch die Katalysator-Geometrie (pointedFraction)
         out.vectorHasPointed = "pointedFraction" in r._blueprintProductVector(mk("cone", "eisen"));
 
@@ -190,9 +190,9 @@ async function checkBandV1771ToolOpFromForm({ page, check }) {
         out.rejectsBadClass = r.setBlueprintToolMeta("__op_man", "x", "uberklasse").ok === false; // Validierung unbroken
 
         // cleanup
-        if (r.state.tools && r.state.tools.__op_blade) delete r.state.tools.__op_blade;
-        if (r.state.player && Array.isArray(r.state.player.tools))
-            r.state.player.tools = r.state.player.tools.filter((t) => t !== "__op_blade");
+        if (st.tools && st.tools.__op_blade) delete st.tools.__op_blade;
+        if (st.player && Array.isArray(st.player.tools))
+            st.player.tools = st.player.tools.filter((t) => t !== "__op_blade");
         delete blu.__op_blade;
         delete blu.__op_man;
         return out;
@@ -258,8 +258,8 @@ async function checkBandOmegaPhi1CoM({ page, check }) {
 // Flake.
 async function checkBandOmegaPhysisSaeuleI_II({ page, check }) {
     const res = await page.evaluate(() => {
-        const C = r.constructor;
-        const mats = r.state.materials || {};
+        const C = AnazhRealm;
+        const mats = st.materials || {};
         let dense = mats.eisen ? "eisen" : null,
             light = mats.holz ? "holz" : null;
         if (!dense || !light) {
@@ -333,9 +333,9 @@ async function checkBandOmegaPhysisSaeuleI_II({ page, check }) {
         // temple/fahrzeug_wagen fielen; die lebenden Built-ins tragen die Probe
         // (stein_block=architecture · welt_portal=portal · reittier_holzross=vehicle, nicht-vakuös).
         o.builtinsHold =
-            r.computeBlueprintRole(r.state.blueprints.stein_block) === "architecture" &&
-            r.computeBlueprintRole(r.state.blueprints.welt_portal) === "portal" &&
-            r.computeBlueprintRole(r.state.blueprints.reittier_holzross) === "vehicle";
+            r.computeBlueprintRole(st.blueprints.stein_block) === "architecture" &&
+            r.computeBlueprintRole(st.blueprints.welt_portal) === "portal" &&
+            r.computeBlueprintRole(st.blueprints.reittier_holzross) === "vehicle";
         // ── Ω-L3 Geltungsbereich-Markierung ──
         o.l3Marks =
             C.AXIS_CLASS &&
@@ -343,7 +343,7 @@ async function checkBandOmegaPhysisSaeuleI_II({ page, check }) {
             C.AXIS_CLASS.magieleitung === "konvention" &&
             C.AXIS_CLASS.spread === "form";
         // ── Ω-W1 der Warum-Chip zitiert gerechnete Physik (KONSUM-Beweis) ──
-        const why = r._blueprintRoleWhy(r.state.blueprints.reittier_holzross || veh);
+        const why = r._blueprintRoleWhy(st.blueprints.reittier_holzross || veh);
         o.w1ConsumesPhysik = !!(why && Array.isArray(why.beitraege) && why.beitraege.some((b) => b.cls === "physik"));
         return o;
     });
@@ -368,7 +368,7 @@ async function checkBandOmegaPhysisSaeuleI_II({ page, check }) {
 async function checkBandV1779RoleFitQuality({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const cfg = r.constructor.QUALITY_ROLE_FIT;
+        const cfg = AnazhRealm.QUALITY_ROLE_FIT;
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
         const blade = {
             name: "_rf_blade",
@@ -413,15 +413,15 @@ async function checkBandV1779RoleFitQuality({ page, check }) {
             ],
         };
         out.consumableDiscriminates =
-            r._blueprintRoleFit(r.state.blueprints["trank_lebenssaft"], "consumable") >
+            r._blueprintRoleFit(st.blueprints["trank_lebenssaft"], "consumable") >
             r._blueprintRoleFit(deadC, "consumable");
         // (5) unbekannte Rolle → 1.0 (neutral)
         out.unknownNeutral = r._blueprintRoleFit(blade, "kein_rollen_name") === 1.0; // V17.81: soul ist jetzt eine echte Rolle
         // (6) KONSUM — das gehaltene SCHWERT gibt mehr Schaden als der gleich-materielle KLOTZ (Form-Fit
         //     erreicht die echten Spieler-Stats — genau das Schöpfer-Beispiel).
-        r.state.blueprints["_rf_blade"] = blade;
-        r.state.blueprints["_rf_blob"] = blob;
-        const savedHeld = r.state.player.equipped ? r.state.player.equipped.held : null;
+        st.blueprints["_rf_blade"] = blade;
+        st.blueprints["_rf_blob"] = blob;
+        const savedHeld = st.player.equipped ? st.player.equipped.held : null;
         r.equipHeld("_rf_blade");
         const dmgBlade = r.computePlayerStats().stats.damage;
         r.equipHeld("_rf_blob");
@@ -431,8 +431,8 @@ async function checkBandV1779RoleFitQuality({ page, check }) {
         out.dmgBlob = round(dmgBlob);
         // restore
         r.equipHeld(savedHeld);
-        delete r.state.blueprints["_rf_blade"];
-        delete r.state.blueprints["_rf_blob"];
+        delete st.blueprints["_rf_blade"];
+        delete st.blueprints["_rf_blob"];
         return out;
     });
     check(
@@ -532,8 +532,8 @@ async function checkBandV1780FormAxes({ page, check }) {
 async function checkBandV1781RoleRegister({ page, check }) {
     const res = await page.evaluate(() => {
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
-        const REG = r.constructor.ROLE_SIGNATURES;
-        const cfg = r.constructor.QUALITY_ROLE_FIT;
+        const REG = AnazhRealm.ROLE_SIGNATURES;
+        const cfg = AnazhRealm.QUALITY_ROLE_FIT;
         const out = {};
         const roles = [
             "held",
@@ -683,38 +683,38 @@ async function checkBandV1785RoleDisplayAndUndo({ page, check }) {
         // (#3a) ein ROLLENLOSER Bauplan zeigt seine EMERGENTE Form-Rolle, nicht den Default.
         // der builtIn geraet_spitzhacke fiel; die Werkzeug-Substanz
         // (KIND_SUBSTANCE) trägt dieselbe Probe als registriertes Test-Blueprint (rollenlos).
-        const KS85 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
-        if (r.state.blueprints._t_v1785_spitz) delete r.state.blueprints._t_v1785_spitz;
-        r.state.blueprints._t_v1785_spitz = {
+        const KS85 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
+        if (st.blueprints._t_v1785_spitz) delete st.blueprints._t_v1785_spitz;
+        st.blueprints._t_v1785_spitz = {
             name: "_t_v1785_spitz",
             parts: JSON.parse(JSON.stringify(KS85.geraet_spitzhacke.parts)),
         };
-        const spit = r.state.blueprints["_t_v1785_spitz"];
+        const spit = st.blueprints["_t_v1785_spitz"];
         out.spitRoleField = spit ? spit.role || "(undefined)" : "(missing)";
         out.spitDisplay = spit ? r._displayRole(spit) : "(missing)";
         out.spitEmergent = spit ? r.computeBlueprintRole(spit) : "(missing)";
         out.spitShowsTool = out.spitDisplay === "tool"; // war „architecture" (bp.role||DEFAULT)
         // (#3b) eine built-in-Rüstung (Substanz-Zwilling architecture) bleibt „armor" — die Saat ist autoritativ
-        const armor = r.state.blueprints["ruestung_brustpanzer"];
+        const armor = st.blueprints["ruestung_brustpanzer"];
         out.armorDisplay = armor ? r._displayRole(armor) : "(missing)";
         out.armorStaysArmor = out.armorDisplay === "armor";
         // (#3c) cloneBlueprint materialisiert die emergente Rolle → ein frischer Spitzhacke-Klon trägt „tool"
-        delete r.state.blueprints["_v1785_clone"];
+        delete st.blueprints["_v1785_clone"];
         r.cloneBlueprint("_t_v1785_spitz", "_v1785_clone");
-        const clone = r.state.blueprints["_v1785_clone"];
+        const clone = st.blueprints["_v1785_clone"];
         out.cloneRoleField = clone ? clone.role || "(undefined)" : "(missing)";
         out.cloneCarriesTool = clone && clone.role === "tool";
-        delete r.state.blueprints["_v1785_clone"];
+        delete st.blueprints["_v1785_clone"];
         // (#1) removePartOp — die Op rückgängig (Mechanik + Rolle re-emergiert)
         const prevMode = r.getGameMode();
         r.setGameMode("schöpfer"); // keine Stamina-Kosten
-        const savedTools = Array.isArray(r.state.player.tools) ? r.state.player.tools.slice() : [];
-        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
-        delete r.state.blueprints["_v1785_undo"];
+        const savedTools = Array.isArray(st.player.tools) ? st.player.tools.slice() : [];
+        if (!st.player.tools.includes("schmiede-hammer")) st.player.tools.push("schmiede-hammer");
+        delete st.blueprints["_v1785_undo"];
         r.createBlueprint("_v1785_undo", "Undo-Test");
         // ein stumpfer, dichter eisen-Block → der Form nach „architecture" (kein Pointed-Blade-Gate)
         r.addPartToBlueprint("_v1785_undo", __teil("box", "eisen", 0, 1, 0, 1, 1, 1));
-        const ub = r.state.blueprints["_v1785_undo"];
+        const ub = st.blueprints["_v1785_undo"];
         out.roleBeforeApply = r.computeBlueprintRole(ub); // erwartet: architecture
         // (#1a) removePartOp auf der Grund-Kette → nichts zu entfernen
         const remEmpty = r.removePartOp("_v1785_undo", 0);
@@ -736,9 +736,9 @@ async function checkBandV1785RoleDisplayAndUndo({ page, check }) {
         const remBuiltin = r.removePartOp("ruestung_brustpanzer", 0);
         out.remBuiltinRejected = remBuiltin.ok === false && remBuiltin.reason === "cannot_modify_builtin";
         // restore
-        delete r.state.blueprints["_t_v1785_spitz"];
-        delete r.state.blueprints["_v1785_undo"];
-        r.state.player.tools = savedTools;
+        delete st.blueprints["_t_v1785_spitz"];
+        delete st.blueprints["_v1785_undo"];
+        st.player.tools = savedTools;
         r.setGameMode(prevMode);
         return out;
     });
@@ -779,10 +779,10 @@ async function checkBandV1785RoleDisplayAndUndo({ page, check }) {
 async function checkBandV1787UndoRedo({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        delete r.state.blueprints["_ur"];
-        if (r.state.blueprintEditHistory) delete r.state.blueprintEditHistory["_ur"];
+        delete st.blueprints["_ur"];
+        if (st.blueprintEditHistory) delete st.blueprintEditHistory["_ur"];
         r.createBlueprint("_ur", "Undo-Redo-Test");
-        const parts = () => r.state.blueprints["_ur"].parts.length;
+        const parts = () => st.blueprints["_ur"].parts.length;
         // zwei Parts hinzu → 2; undo → 1 → 0; redo → 1 → 2
         r.addPartToBlueprint("_ur", { shape: "box", material: "stein" });
         r.addPartToBlueprint("_ur", { shape: "cone", material: "eisen" });
@@ -796,30 +796,29 @@ async function checkBandV1787UndoRedo({ page, check }) {
         r.redoBlueprintEdit("_ur");
         r.redoBlueprintEdit("_ur");
         out.afterRedo = parts();
-        out.redoShape = r.state.blueprints["_ur"].parts[1].shape; // cone wiederhergestellt
+        out.redoShape = st.blueprints["_ur"].parts[1].shape; // cone wiederhergestellt
         // ein NEUER Edit nach einem Undo verwirft den Redo-Zweig
         r.undoBlueprintEdit("_ur"); // → 1
         r.addPartToBlueprint("_ur", { shape: "sphere", material: "quarz" });
-        out.newEditShape = r.state.blueprints["_ur"].parts[1].shape; // sphere, nicht cone
+        out.newEditShape = st.blueprints["_ur"].parts[1].shape; // sphere, nicht cone
         out.redoCleared = r.canRedoBlueprintEdit("_ur") === false;
         // eine Op anwenden + undo (der opChain-Akt ist auch umkehrbar)
         r.setGameMode("schöpfer");
-        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
+        if (!st.player.tools.includes("schmiede-hammer")) st.player.tools.push("schmiede-hammer");
         r.addPartToBlueprint("_ur", { shape: "box", material: "eisen" });
         const idx = parts() - 1;
-        const opBefore = (r.state.blueprints["_ur"].parts[idx].opChain || []).length;
+        const opBefore = (st.blueprints["_ur"].parts[idx].opChain || []).length;
         r.applyOpToPart("_ur", idx, "schmiede-hammer");
-        const opAfter = (r.state.blueprints["_ur"].parts[idx].opChain || []).length;
+        const opAfter = (st.blueprints["_ur"].parts[idx].opChain || []).length;
         r.undoBlueprintEdit("_ur");
-        out.opUndoReverts =
-            opAfter > opBefore && (r.state.blueprints["_ur"].parts[idx].opChain || []).length === opBefore;
+        out.opUndoReverts = opAfter > opBefore && (st.blueprints["_ur"].parts[idx].opChain || []).length === opBefore;
         // Built-in lehnt ab (unveränderlich → keine Geschichte) — lebendes builtIn: Brustpanzer
         out.builtinReject = r.undoBlueprintEdit("ruestung_brustpanzer").ok === false;
         // die Geschichte ist NICHT persistiert (reaktive Editor-Schicht)
         const snap = r.buildStateSnapshot();
         out.notPersisted = snap.blueprintEditHistory === undefined;
-        delete r.state.blueprints["_ur"];
-        if (r.state.blueprintEditHistory) delete r.state.blueprintEditHistory["_ur"];
+        delete st.blueprints["_ur"];
+        if (st.blueprintEditHistory) delete st.blueprintEditHistory["_ur"];
         return out;
     });
     check(
@@ -849,9 +848,9 @@ async function checkBandV1788WorkshopAsProcess({ page, check }) {
         const out = {};
         const prevMode = r.getGameMode();
         // (1) der Spieler startet mit den Basics: nur hände ist Starter, die Domain-Ops sind op-Bibliothek
-        const tools = r.state.tools || {};
+        const tools = st.tools || {};
         out.handOnlyStarter =
-            (r.state.player.tools || []).includes("hände") &&
+            (st.player.tools || []).includes("hände") &&
             tools["hände"].isStarter === true &&
             ["schmiede-hammer", "mörser", "webstuhl-schiffchen", "ritueller-stab", "drehbank-meißel"].every(
                 (n) => tools[n] && tools[n].isStarter === false
@@ -861,7 +860,7 @@ async function checkBandV1788WorkshopAsProcess({ page, check }) {
             return !!(p && p.opClass === "plastic" && p.opName === "forge_shape");
         })();
         // ein eigener eisen-Bauplan
-        delete r.state.blueprints["_wp88"];
+        delete st.blueprints["_wp88"];
         r.createBlueprint("_wp88", "WP88");
         r.addPartToBlueprint("_wp88", __teil("box", "eisen", 0, 1, 0, 1, 1, 1));
         // (2) SCHÖPFER: alle besessenen Werkstätten verfügbar (frei, ohne Platzieren)
@@ -880,23 +879,23 @@ async function checkBandV1788WorkshopAsProcess({ page, check }) {
         out.schoepferApply = apS.ok === true && Math.abs((apS.cap || 0) - meisterP.cap) < 1e-6;
         // (4) FRIEDEN: ohne platzierte Station → kein Werkstatt-Prozess + Ablehnung (nur die Hand)
         r.setGameMode("frieden");
-        const arches = r.state.architectures || [];
-        r.state.architectures = arches.filter((e) => !(e && e.type === "esse" && e.__v88)); // sauber starten
+        const arches = st.architectures || [];
+        st.architectures = arches.filter((e) => !(e && e.type === "esse" && e.__v88)); // sauber starten
         out.friedenEmpty = r._workshopProcessesForMenu().length === 0;
         const apF0 = r.applyWorkshopProcessToPart("_wp88", 0, "esse");
         out.friedenRejects = apF0.ok === false && apF0.reason === "workshop_not_placed_near";
         // (5) eine Esse beim Spieler platzieren → der Prozess erscheint + lässt sich anwenden (der wahre Weg)
-        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        const pm = st.playerMesh && st.playerMesh.position;
         const placed = pm ? { type: "esse", position: { x: pm.x, y: pm.y, z: pm.z }, __v88: true } : null;
-        if (placed) r.state.architectures.push(placed);
+        if (placed) st.architectures.push(placed);
         out.friedenAppears = !!pm && r._workshopProcessesForMenu().some((p) => p.stationName === "esse");
         const apF1 = pm ? r.applyWorkshopProcessToPart("_wp88", 0, "esse") : { ok: false };
         out.friedenAppliesAfterPlacement = apF1.ok === true;
         // restore
-        r.state.architectures = (r.state.architectures || []).filter((e) => !(e && e.__v88));
+        st.architectures = (st.architectures || []).filter((e) => !(e && e.__v88));
         r.setGameMode(prevMode);
-        delete r.state.blueprints["_wp88"];
-        if (r.state.blueprintEditHistory) delete r.state.blueprintEditHistory["_wp88"];
+        delete st.blueprints["_wp88"];
+        if (st.blueprintEditHistory) delete st.blueprintEditHistory["_wp88"];
         return out;
     });
     check(
@@ -934,11 +933,11 @@ async function checkBandWave4({ page, check, errors, finalState }) {
         if (!r) return null;
         const out = {};
         // Statisches Tag-Schema
-        const keys = r.constructor.MATERIAL_TAG_KEYS;
+        const keys = AnazhRealm.MATERIAL_TAG_KEYS;
         out.tagKeysFrozen = Object.isFrozen(keys);
         out.tagKeyCount = Array.isArray(keys) ? keys.length : 0;
         // 6 Built-ins, alle markiert
-        const mats = r.state.materials || {};
+        const mats = st.materials || {};
         const builtIns = Object.values(mats).filter((m) => m.builtIn);
         out.builtInCount = builtIns.length;
         out.expectedBuiltIns = ["stein", "holz", "eisen", "bronze", "quarz", "leder"].every(
@@ -976,7 +975,7 @@ async function checkBandWave4({ page, check, errors, finalState }) {
         r.dslRun(["define_material", "schimmer", 0xeeeeee, { magieleitung: 0.7 }], { source: "test" });
         out.dslDefineMaterial = !!mats.schimmer && !mats.schimmer.builtIn;
         // Built-in-Bauplan-Parts haben material gesetzt (stein_block — lebendes builtIn)
-        const villageParts = r.state.blueprints.stein_block.parts;
+        const villageParts = st.blueprints.stein_block.parts;
         out.builtInPartsHaveMaterial = villageParts.every((p) => typeof p.material === "string" && mats[p.material]);
         // Save-Roundtrip: eigenes Material überlebt
         const snap = r.buildStateSnapshot();
@@ -995,24 +994,24 @@ async function checkBandWave4({ page, check, errors, finalState }) {
         };
         r.loadState(oldSnap);
         out.legacyPartGotDefaultMaterial =
-            r.state.blueprints["legacy-test"] && r.state.blueprints["legacy-test"].parts[0].material === "stein";
+            st.blueprints["legacy-test"] && st.blueprints["legacy-test"].parts[0].material === "stein";
         // Material wählt man per ZIEHEN aus der MATERIALIEN-Palette auf einen Part im 3D; datennah geprüft
         // (Container + ≥6 Materialien), ohne erzwungenes Re-Render (störte die Card-Zählung späterer Tests).
         r.selectBlueprintForEdit("legacy-test");
         out.uiHasMaterialDropdown = !!document.getElementById("workshop-material-palette");
-        out.uiDropdownLists6PlusOptions = Object.keys(r.state.materials || {}).length >= 6;
+        out.uiDropdownLists6PlusOptions = Object.keys(st.materials || {}).length >= 6;
         // updatePartInBlueprint mit recolor zieht Farbe nach
         r.updatePartInBlueprint("legacy-test", 0, { material: "quarz", recolor: true });
-        out.recolorAppliesMaterialColor = r.state.blueprints["legacy-test"].parts[0].color === mats.quarz.color;
+        out.recolorAppliesMaterialColor = st.blueprints["legacy-test"].parts[0].color === mats.quarz.color;
         // define_ability blockiert nested define_material
         const runRes2 = r.dslRun(["define_ability", "evil-mat", ["define_material", "bad", 0, {}]], {
             source: "test",
         });
         out.nestedDefineMaterialBlocked = runRes2.log.some((e) => e.event === "ability_nested_define_forbidden");
         // Aufräumen
-        delete r.state.materials["kupfer"];
-        delete r.state.materials["schimmer"];
-        delete r.state.blueprints["legacy-test"];
+        delete st.materials["kupfer"];
+        delete st.materials["schimmer"];
+        delete st.blueprints["legacy-test"];
         r._renderWorkshopDOM();
         return out;
     });
@@ -1060,7 +1059,7 @@ async function checkBandWave4({ page, check, errors, finalState }) {
         if (!r) return null;
         const out = {};
         // FORM_TAG_ACTIVATION existiert + frozen
-        const M = r.constructor.FORM_TAG_ACTIVATION;
+        const M = AnazhRealm.FORM_TAG_ACTIVATION;
         out.matrixFrozen = Object.isFrozen(M);
         out.matrixHasNineForms = [
             "box",
@@ -1074,7 +1073,7 @@ async function checkBandWave4({ page, check, errors, finalState }) {
             "helix",
         ].every((f) => M[f] && typeof M[f] === "object");
         // Vollständigkeit: jedes Form × Tag definiert (kein undefined)
-        const keys = r.constructor.MATERIAL_TAG_KEYS;
+        const keys = AnazhRealm.MATERIAL_TAG_KEYS;
         let undefCount = 0;
         for (const f of Object.keys(M)) {
             for (const t of keys) if (typeof M[f][t] !== "number") undefCount++;
@@ -1128,20 +1127,20 @@ async function checkBandWave4({ page, check, errors, finalState }) {
         out.notSumAggregation = comp.dichte < 4.0;
 
         // DSL-Condition compound_has_tag
-        r.state.blueprints["test-quarz-orb"] = {
+        st.blueprints["test-quarz-orb"] = {
             name: "test-quarz-orb",
             label: "Quarz-Orb",
             builtIn: false,
             parts: [{ shape: "sphere", material: "quarz" }],
         };
         out.condResonatesHigh = r.dslConditions.compound_has_tag.call(r, ["test-quarz-orb", "resoniert", 2.5], {
-            state: r.state,
+            state: st,
         });
         out.condResonatesAboveSig = !r.dslConditions.compound_has_tag.call(r, ["test-quarz-orb", "resoniert", 3.5], {
-            state: r.state,
+            state: st,
         });
         out.condUnknownTagFalse = !r.dslConditions.compound_has_tag.call(r, ["test-quarz-orb", "phlogiston", 0.5], {
-            state: r.state,
+            state: st,
         });
 
         // Aktive Tags stehen im Stats-Panel (.tag-chip in einer .stat-row „Tags“); Formen (inkl. helix) sind
@@ -1157,7 +1156,7 @@ async function checkBandWave4({ page, check, errors, finalState }) {
         out.uiShapeIncludesHelix = !!document.querySelector('.workshop-shape-card[data-shape="helix"]');
 
         // Aufräumen
-        delete r.state.blueprints["test-quarz-orb"];
+        delete st.blueprints["test-quarz-orb"];
         r._renderWorkshopDOM();
         return out;
     });
@@ -1192,7 +1191,7 @@ async function checkBandWave4({ page, check, errors, finalState }) {
         if (!r) return null;
         const out = {};
         // Werkzeug-State + Konstanten
-        const tools = r.state.tools || {};
+        const tools = st.tools || {};
         // hände ist der einzige Starter; die Domain-Ops existieren als Werkstatt-Op-Bibliothek.
         out.fiveStarterTools =
             !!tools["hände"] &&
@@ -1200,12 +1199,12 @@ async function checkBandWave4({ page, check, errors, finalState }) {
             ["schmiede-hammer", "mörser", "webstuhl-schiffchen", "drehbank-meißel"].every(
                 (n) => tools[n] && !tools[n].isStarter
             );
-        out.playerOwnsStarters = (r.state.player.tools || []).includes("hände");
-        out.matCompatFrozen = Object.isFrozen(r.constructor.MATERIAL_OP_COMPATIBILITY);
-        out.thresholdsFrozen = Object.isFrozen(r.constructor.WORLD_EFFECT_THRESHOLDS);
+        out.playerOwnsStarters = (st.player.tools || []).includes("hände");
+        out.matCompatFrozen = Object.isFrozen(AnazhRealm.MATERIAL_OP_COMPATIBILITY);
+        out.thresholdsFrozen = Object.isFrozen(AnazhRealm.WORLD_EFFECT_THRESHOLDS);
         out.steinSubtractiveOnly =
-            r.constructor.MATERIAL_OP_COMPATIBILITY.stein.length === 1 &&
-            r.constructor.MATERIAL_OP_COMPATIBILITY.stein[0] === "subtractive";
+            AnazhRealm.MATERIAL_OP_COMPATIBILITY.stein.length === 1 &&
+            AnazhRealm.MATERIAL_OP_COMPATIBILITY.stein[0] === "subtractive";
 
         // computePartPrecision: min, nicht max/avg
         const part1 = {
@@ -1224,10 +1223,10 @@ async function checkBandWave4({ page, check, errors, finalState }) {
         // die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für die
         // direkten applyOpToPart-/Tools-Box-Tests leihen wir sie aus der Op-Bibliothek (state.tools).
         for (const dt of ["schmiede-hammer", "mörser", "webstuhl-schiffchen", "ritueller-stab", "drehbank-meißel"]) {
-            if (!r.state.player.tools.includes(dt)) r.state.player.tools.push(dt);
+            if (!st.player.tools.includes(dt)) st.player.tools.push(dt);
         }
         // applyOpToPart — Tool-Gating
-        r.state.blueprints["test-precision"] = {
+        st.blueprints["test-precision"] = {
             name: "test-precision",
             label: "Test",
             builtIn: false,
@@ -1235,9 +1234,9 @@ async function checkBandWave4({ page, check, errors, finalState }) {
         };
         // drehbank-meißel (subtractive) auf eisen-cone: OK (subtractive matches eisen)
         const ap1 = r.applyOpToPart("test-precision", 0, "drehbank-meißel");
-        out.applyOpAppends = ap1.ok && r.state.blueprints["test-precision"].parts[0].opChain.length === 2;
+        out.applyOpAppends = ap1.ok && st.blueprints["test-precision"].parts[0].opChain.length === 2;
         // Schmiede-Hammer (plastic) auf stein (subtractive only): FAIL
-        r.state.blueprints["test-precision-stein"] = {
+        st.blueprints["test-precision-stein"] = {
             name: "test-precision-stein",
             label: "Stein-Test",
             builtIn: false,
@@ -1246,23 +1245,23 @@ async function checkBandWave4({ page, check, errors, finalState }) {
         const ap2 = r.applyOpToPart("test-precision-stein", 0, "schmiede-hammer");
         out.materialOpIncompat = !ap2.ok && ap2.reason === "material_op_incompatible";
         // Tool not owned (drehbank-meißel ist subtractive + Starter)
-        r.state.player.tools = r.state.player.tools.filter((t) => t !== "drehbank-meißel");
+        st.player.tools = st.player.tools.filter((t) => t !== "drehbank-meißel");
         const ap3 = r.applyOpToPart("test-precision", 0, "drehbank-meißel");
         out.toolOwnershipEnforced = !ap3.ok && ap3.reason === "tool_not_owned";
-        r.state.player.tools.push("drehbank-meißel"); // restore
+        st.player.tools.push("drehbank-meißel"); // restore
         // Built-in protection (stein_block — lebendes builtIn; die Wand greift VOR der Material-Kompat)
         const ap4 = r.applyOpToPart("stein_block", 0, "schmiede-hammer");
         out.builtInBlueprintProtected = !ap4.ok && ap4.reason === "cannot_modify_builtin";
 
         // Diskrimination: hand-roh (precision 0.4) vs. poliert (cap 0.97) — die Welt-Effekt-Schwelle
         // precision_high=0.8 liegt dazwischen: der polierte triggert, der rohe nicht.
-        r.state.blueprints["raw-orb"] = {
+        st.blueprints["raw-orb"] = {
             name: "raw-orb",
             label: "Rau-Orb",
             builtIn: false,
             parts: [{ shape: "sphere", material: "quarz", opChain: r._defaultPartOpChain() }],
         };
-        r.state.blueprints["polished-orb"] = {
+        st.blueprints["polished-orb"] = {
             name: "polished-orb",
             label: "Polier-Orb",
             builtIn: false,
@@ -1274,30 +1273,29 @@ async function checkBandWave4({ page, check, errors, finalState }) {
                 },
             ],
         };
-        const rawPrec = r._compoundAvgPrecision(r.state.blueprints["raw-orb"]);
-        const polPrec = r._compoundAvgPrecision(r.state.blueprints["polished-orb"]);
+        const rawPrec = r._compoundAvgPrecision(st.blueprints["raw-orb"]);
+        const polPrec = r._compoundAvgPrecision(st.blueprints["polished-orb"]);
         out.precisionDiscriminates =
-            rawPrec < r.constructor.WORLD_EFFECT_THRESHOLDS.precision_high &&
-            polPrec >= r.constructor.WORLD_EFFECT_THRESHOLDS.precision_high;
+            rawPrec < AnazhRealm.WORLD_EFFECT_THRESHOLDS.precision_high &&
+            polPrec >= AnazhRealm.WORLD_EFFECT_THRESHOLDS.precision_high;
 
         // Welt-Effekt: polished-orb sollte einen "singing"-Journal-
         // Eintrag schreiben, raw-orb nicht.
-        const journalBefore = r.state.worldJournal.entries.length;
+        const journalBefore = st.worldJournal.entries.length;
         r._applyCompoundWorldEffects("polished-orb");
-        const afterPolished = r.state.worldJournal.entries.length;
+        const afterPolished = st.worldJournal.entries.length;
         out.singingEntryWritten =
-            afterPolished > journalBefore &&
-            r.state.worldJournal.entries.slice(-3).some((e) => /singt/.test(e.text || ""));
+            afterPolished > journalBefore && st.worldJournal.entries.slice(-3).some((e) => /singt/.test(e.text || ""));
         // Idempotent: zweiter Aufruf gleicher Bauplan → kein neuer Eintrag
         r._applyCompoundWorldEffects("polished-orb");
-        out.singingEntryIdempotent = r.state.worldJournal.entries.length === afterPolished;
+        out.singingEntryIdempotent = st.worldJournal.entries.length === afterPolished;
         // Roh-Variante triggert nicht (precision zu niedrig)
-        const beforeRaw = r.state.worldJournal.entries.length;
+        const beforeRaw = st.worldJournal.entries.length;
         r._applyCompoundWorldEffects("raw-orb");
-        out.rawDoesNotTrigger = r.state.worldJournal.entries.length === beforeRaw;
+        out.rawDoesNotTrigger = st.worldJournal.entries.length === beforeRaw;
 
         // Magie-Effekt: pyramid+quarz (magieleitung hoch)
-        r.state.blueprints["mage-pyramid"] = {
+        st.blueprints["mage-pyramid"] = {
             name: "mage-pyramid",
             label: "Magier-Pyramide",
             builtIn: false,
@@ -1311,16 +1309,16 @@ async function checkBandWave4({ page, check, errors, finalState }) {
         };
         // awe auf 0: hat der Warmup awe schon an die Decke (1.0) gehoben, kann der Magie-Compound nicht
         // weiter heben → falsch-rot. Geprüft wird die Absicht (Magie hebt awe), deterministisch ab 0.
-        r.state.player.emotions.awe = 0;
-        const aweBefore = r.state.player.emotions.awe;
+        st.player.emotions.awe = 0;
+        const aweBefore = st.player.emotions.awe;
         r._applyCompoundWorldEffects("mage-pyramid");
-        out.magicLiftsAwe = r.state.player.emotions.awe > aweBefore;
+        out.magicLiftsAwe = st.player.emotions.awe > aweBefore;
 
         // Visible-Precision-Tint: low precision → dimmer color
         // Build-Pfad rendert Group; wir verifizieren via Mesh-
         // Materials direkt.
-        const rawGroup = r._buildFromBlueprint(r.state.blueprints["raw-orb"]);
-        const polGroup = r._buildFromBlueprint(r.state.blueprints["polished-orb"]);
+        const rawGroup = r._buildFromBlueprint(st.blueprints["raw-orb"]);
+        const polGroup = r._buildFromBlueprint(st.blueprints["polished-orb"]);
         const rawCol = rawGroup.children[0].material.color.getHex();
         const polCol = polGroup.children[0].material.color.getHex();
         // Same base color (quarz blau-weiß); polished should be brighter
@@ -1360,11 +1358,11 @@ async function checkBandWave4({ page, check, errors, finalState }) {
         out.opChainCapClamped = v.ok && v.parts[0].opChain[0].cap === 1;
 
         // Aufräumen
-        delete r.state.blueprints["test-precision"];
-        delete r.state.blueprints["test-precision-stein"];
-        delete r.state.blueprints["raw-orb"];
-        delete r.state.blueprints["polished-orb"];
-        delete r.state.blueprints["mage-pyramid"];
+        delete st.blueprints["test-precision"];
+        delete st.blueprints["test-precision-stein"];
+        delete st.blueprints["raw-orb"];
+        delete st.blueprints["polished-orb"];
+        delete st.blueprints["mage-pyramid"];
         r._renderWorkshopDOM();
         return out;
     });
@@ -1417,11 +1415,11 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         if (!r) return null;
         const out = {};
         // Konstanten
-        out.pointedShapesFrozen = Object.isFrozen(r.constructor.SPATIAL_POINTED_SHAPES);
-        out.transferableTagsFrozen = Object.isFrozen(r.constructor.SPATIAL_TRANSFERABLE_TAGS);
-        out.pointedHasCone = r.constructor.SPATIAL_POINTED_SHAPES.has("cone");
-        out.pointedHasHelix = r.constructor.SPATIAL_POINTED_SHAPES.has("helix");
-        out.pointedNoSphere = !r.constructor.SPATIAL_POINTED_SHAPES.has("sphere");
+        out.pointedShapesFrozen = Object.isFrozen(AnazhRealm.SPATIAL_POINTED_SHAPES);
+        out.transferableTagsFrozen = Object.isFrozen(AnazhRealm.SPATIAL_TRANSFERABLE_TAGS);
+        out.pointedHasCone = AnazhRealm.SPATIAL_POINTED_SHAPES.has("cone");
+        out.pointedHasHelix = AnazhRealm.SPATIAL_POINTED_SHAPES.has("helix");
+        out.pointedNoSphere = !AnazhRealm.SPATIAL_POINTED_SHAPES.has("sphere");
 
         // Bounding-Box-Mathematik: Compound mit drei Parts
         const testBp = {
@@ -1487,7 +1485,7 @@ async function checkBandWave5({ page, check, errors, finalState }) {
             !r._classifyPartPosition(outsideBp.parts[1], outsideBB).has("at_outside");
 
         // UI: räumliche Reihe erscheint bei pointed-am-Rand
-        r.state.blueprints["wave5b-test"] = {
+        st.blueprints["wave5b-test"] = {
             name: "wave5b-test",
             label: "Welle-5B-Test",
             builtIn: false,
@@ -1497,20 +1495,18 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         // (computeSpatialTags) bleibt das Subjekt + ihre Wirkung ist im neuen UI in der Resonanz-/Fähigkeit-
         // Zeile reflektiert. Wir prüfen, dass die räumliche Emergenz die FORM diskriminiert.
         r.selectBlueprintForEdit("wave5b-test");
-        const spatPointed = r.computeSpatialTags(r.state.blueprints["wave5b-test"]) || {};
+        const spatPointed = r.computeSpatialTags(st.blueprints["wave5b-test"]) || {};
         out.uiSpatialRow = Object.keys(spatPointed).length > 0;
 
         // Reiner atomarer Bauplan: Hinweis sollte nicht "Spitze richtet" benennen
-        r.state.blueprints["wave5b-atomar"] = {
+        st.blueprints["wave5b-atomar"] = {
             name: "wave5b-atomar",
             label: "Atomar-Test",
             builtIn: false,
-            parts: [
-                __teil("box", "stein", 0, 0, 0, 1, 1, 1, { opChain: r._defaultPartOpChain() }),
-            ],
+            parts: [__teil("box", "stein", 0, 0, 0, 1, 1, 1, { opChain: r._defaultPartOpChain() })],
         };
         r.selectBlueprintForEdit("wave5b-atomar");
-        const spatAtomar = r.computeSpatialTags(r.state.blueprints["wave5b-atomar"]) || {};
+        const spatAtomar = r.computeSpatialTags(st.blueprints["wave5b-atomar"]) || {};
         // der pointed-am-Rand-Bauplan trägt ANDERE räumliche Tags als der reine Box-Bauplan (die Form zählt)
         out.uiSpatialDiscriminates = JSON.stringify(spatPointed) !== JSON.stringify(spatAtomar);
 
@@ -1518,20 +1514,20 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         out.dslSpatialCondHigh = r.dslConditions.compound_has_spatial_tag.call(
             r,
             ["wave5b-test", "magieleitung", 2.0],
-            { state: r.state }
+            { state: st }
         );
 
         // Welt-Effekt: gleicher Bauplan, Pyramide oben vs. unten, beide poliert (precision_high); oben hebt
         // die räumlich verstärkte Magieleitung über die Schwelle.
         const polished = r._defaultPartOpChain();
         polished.push({ tool: "polierscheibe", op: "polish", cap: 0.97 });
-        r.state.blueprints["wave5b-tip-polished"] = {
+        st.blueprints["wave5b-tip-polished"] = {
             name: "wave5b-tip-polished",
             label: "Tip-Polished",
             builtIn: false,
             parts: tipBp.parts.map((p) => ({ ...p, opChain: [...polished] })),
         };
-        r.state.blueprints["wave5b-bottom-polished"] = {
+        st.blueprints["wave5b-bottom-polished"] = {
             name: "wave5b-bottom-polished",
             label: "Bottom-Polished",
             builtIn: false,
@@ -1539,22 +1535,22 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         };
         // awe auf BASIS 0 — sonst confoundiert
         // (Warmup-awe an der Decke → der Tip-Magie-Effekt kann nicht weiter heben).
-        r.state.player.emotions.awe = 0;
-        const aweBefore = r.state.player.emotions.awe;
+        st.player.emotions.awe = 0;
+        const aweBefore = st.player.emotions.awe;
         r._applyCompoundWorldEffects("wave5b-tip-polished");
-        const aweAfterTip = r.state.player.emotions.awe;
+        const aweAfterTip = st.player.emotions.awe;
         out.tipTriggersMagic = aweAfterTip > aweBefore;
         // Ob bottom triggert, bleibt offen (journalAppendOnce per bp-Name); geprüft wird: tip-polished
         // trägt MEHR räumliche magieleitung als bottom.
-        const tipMagic = r.computeSpatialTags(r.state.blueprints["wave5b-tip-polished"]).magieleitung || 0;
-        const bottomMagic = r.computeSpatialTags(r.state.blueprints["wave5b-bottom-polished"]).magieleitung || 0;
+        const tipMagic = r.computeSpatialTags(st.blueprints["wave5b-tip-polished"]).magieleitung || 0;
+        const bottomMagic = r.computeSpatialTags(st.blueprints["wave5b-bottom-polished"]).magieleitung || 0;
         out.tipMagicExceedsBottom = tipMagic > bottomMagic + 0.1;
 
         // Aufräumen
-        delete r.state.blueprints["wave5b-test"];
-        delete r.state.blueprints["wave5b-atomar"];
-        delete r.state.blueprints["wave5b-tip-polished"];
-        delete r.state.blueprints["wave5b-bottom-polished"];
+        delete st.blueprints["wave5b-test"];
+        delete st.blueprints["wave5b-atomar"];
+        delete st.blueprints["wave5b-tip-polished"];
+        delete st.blueprints["wave5b-bottom-polished"];
         r._renderWorkshopDOM();
         return out;
     });
@@ -1588,10 +1584,10 @@ async function checkBandWave5({ page, check, errors, finalState }) {
     const wave5bp2Results = await safeEvaluate(page, () => {
         if (!r) return null;
         const out = {};
-        out.hollowShapesFrozen = Object.isFrozen(r.constructor.SPATIAL_HOLLOW_SHAPES);
-        out.hollowHasSphere = r.constructor.SPATIAL_HOLLOW_SHAPES.has("sphere");
-        out.hollowHasTorus = r.constructor.SPATIAL_HOLLOW_SHAPES.has("torus");
-        out.hollowNoBox = !r.constructor.SPATIAL_HOLLOW_SHAPES.has("box");
+        out.hollowShapesFrozen = Object.isFrozen(AnazhRealm.SPATIAL_HOLLOW_SHAPES);
+        out.hollowHasSphere = AnazhRealm.SPATIAL_HOLLOW_SHAPES.has("sphere");
+        out.hollowHasTorus = AnazhRealm.SPATIAL_HOLLOW_SHAPES.has("torus");
+        out.hollowNoBox = !AnazhRealm.SPATIAL_HOLLOW_SHAPES.has("box");
 
         // Prinzip 2: Sphere mit Inhalt → Resonanz-Bonus
         const bellBp = {
@@ -1719,8 +1715,8 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         if (!r) return null;
         const out = {};
         // Konstanten
-        out.connectionTypesFrozen = Object.isFrozen(r.constructor.CONNECTION_TYPES);
-        const types = r.constructor.CONNECTION_TYPES;
+        out.connectionTypesFrozen = Object.isFrozen(AnazhRealm.CONNECTION_TYPES);
+        const types = AnazhRealm.CONNECTION_TYPES;
         const expectedTypes = ["hafting", "lashing", "pinning", "welding", "gluing", "masonry", "sewing", "magic_bind"];
         out.eightTypes = expectedTypes.every((t) => types[t]);
         out.eachTypeHasStrongTags = expectedTypes.every(
@@ -1740,42 +1736,36 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         out.farContactZero = r._partsContactArea(a, c) === 0;
 
         // computeConnectionStrength: hafting zwischen zwei harten Materialien
-        r.state.blueprints["w5a-test"] = {
+        st.blueprints["w5a-test"] = {
             name: "w5a-test",
             label: "W5A Test",
             builtIn: false,
-            parts: [
-                __teil("cylinder", "eisen", 0, 0, 0, 1, 1, 1),
-                __teil("box", "eisen", 0.95, 0, 0, 1, 1, 1),
-            ],
+            parts: [__teil("cylinder", "eisen", 0, 0, 0, 1, 1, 1), __teil("box", "eisen", 0.95, 0, 0, 1, 1, 1)],
             connections: [],
         };
         const haftStrength = r.computeConnectionStrength(
             { type: "hafting", partA: 0, partB: 1 },
-            r.state.blueprints["w5a-test"]
+            st.blueprints["w5a-test"]
         );
         out.haftingStrengthOk = haftStrength > 1.0 && haftStrength < 3.0;
 
         // Weichere Materialien → schwächere hafting
-        r.state.blueprints["w5a-soft"] = {
+        st.blueprints["w5a-soft"] = {
             name: "w5a-soft",
             label: "W5A Soft",
             builtIn: false,
-            parts: [
-                __teil("cylinder", "leder", 0, 0, 0, 1, 1, 1),
-                __teil("box", "leder", 0.95, 0, 0, 1, 1, 1),
-            ],
+            parts: [__teil("cylinder", "leder", 0, 0, 0, 1, 1, 1), __teil("box", "leder", 0.95, 0, 0, 1, 1, 1)],
             connections: [],
         };
         const softStrength = r.computeConnectionStrength(
             { type: "hafting", partA: 0, partB: 1 },
-            r.state.blueprints["w5a-soft"]
+            st.blueprints["w5a-soft"]
         );
         out.softHaftingWeaker = softStrength < haftStrength;
         // Aber lashing (zähigkeit) ist auf leder STÄRKER als hafting auf leder
         const lashSoftStrength = r.computeConnectionStrength(
             { type: "lashing", partA: 0, partB: 1 },
-            r.state.blueprints["w5a-soft"]
+            st.blueprints["w5a-soft"]
         );
         out.lashingFitsLeather = lashSoftStrength > softStrength;
 
@@ -1810,17 +1800,17 @@ async function checkBandWave5({ page, check, errors, finalState }) {
 
         // addConnectionToBlueprint
         const addR = r.addConnectionToBlueprint("w5a-test", { type: "welding", partA: 0, partB: 1 });
-        out.addConnectionOk = addR.ok && r.state.blueprints["w5a-test"].connections.length === 1;
+        out.addConnectionOk = addR.ok && st.blueprints["w5a-test"].connections.length === 1;
         // Built-in protection (stein_block — lebendes builtIn; die Wand greift VOR der Index-Validierung)
         const addBuiltin = r.addConnectionToBlueprint("stein_block", { type: "welding", partA: 0, partB: 1 });
         out.builtinBlocked = !addBuiltin.ok && addBuiltin.reason === "cannot_modify_builtin";
         // remove
         const rmR = r.removeConnectionFromBlueprint("w5a-test", 0);
-        out.removeOk = rmR && r.state.blueprints["w5a-test"].connections.length === 0;
+        out.removeOk = rmR && st.blueprints["w5a-test"].connections.length === 0;
 
         // DSL-Op apply_connection
         r.dslRun(["apply_connection", "w5a-test", "magic_bind", 0, 1], { source: "test" });
-        out.dslConnectionPersisted = r.state.blueprints["w5a-test"].connections.length === 1;
+        out.dslConnectionPersisted = st.blueprints["w5a-test"].connections.length === 1;
 
         // Save-Roundtrip
         const snap = r.buildStateSnapshot();
@@ -1844,7 +1834,7 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         r._workshopCloseConnectPopover();
 
         // Solid-Threshold: schwache Verbindung hat workshop-conn-weak class
-        r.state.blueprints["w5a-weak"] = {
+        st.blueprints["w5a-weak"] = {
             name: "w5a-weak",
             label: "W5A Weak",
             builtIn: false,
@@ -1859,14 +1849,14 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         // kleinen Holz-Parts liegt unter der Schwelle (Brech-Risiko).
         const weakConnStrength = r.computeConnectionStrength(
             { type: "sewing", partA: 0, partB: 1 },
-            r.state.blueprints["w5a-weak"]
+            st.blueprints["w5a-weak"]
         );
-        out.weakClassApplied = weakConnStrength < (r.constructor.CONNECTION_SOLID_THRESHOLD || 0.7);
+        out.weakClassApplied = weakConnStrength < (AnazhRealm.CONNECTION_SOLID_THRESHOLD || 0.7);
 
         // Aufräumen
-        delete r.state.blueprints["w5a-test"];
-        delete r.state.blueprints["w5a-soft"];
-        delete r.state.blueprints["w5a-weak"];
+        delete st.blueprints["w5a-test"];
+        delete st.blueprints["w5a-soft"];
+        delete st.blueprints["w5a-weak"];
         r._renderWorkshopDOM();
         return out;
     });
@@ -1906,8 +1896,8 @@ async function checkBandWave5({ page, check, errors, finalState }) {
     const wave5cResults = await safeEvaluate(page, () => {
         if (!r) return null;
         const out = {};
-        out.opClassesFrozen = Object.isFrozen(r.constructor.TOOL_OP_CLASSES);
-        out.opClassesCount = r.constructor.TOOL_OP_CLASSES.size === 4;
+        out.opClassesFrozen = Object.isFrozen(AnazhRealm.TOOL_OP_CLASSES);
+        out.opClassesCount = AnazhRealm.TOOL_OP_CLASSES.size === 4;
 
         // computeBlueprintPrecisionCap: min der Part-Praezisionen
         const polishedChain = [{ tool: "polierscheibe", op: "polish", cap: 0.97 }];
@@ -1922,7 +1912,7 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         out.precisionCapIsMin = Math.abs(r.computeBlueprintPrecisionCap(mixedBp) - 0.4) < 0.001;
 
         // setBlueprintToolMeta + Validierung
-        r.state.blueprints["w5c-lathe"] = {
+        st.blueprints["w5c-lathe"] = {
             name: "w5c-lathe",
             label: "Drehbank",
             builtIn: false,
@@ -1933,7 +1923,7 @@ async function checkBandWave5({ page, check, errors, finalState }) {
             connections: [],
         };
         const metaOk = r.setBlueprintToolMeta("w5c-lathe", "lathe", "subtractive");
-        out.setMetaOk = metaOk.ok && r.state.blueprints["w5c-lathe"].role === "tool";
+        out.setMetaOk = metaOk.ok && st.blueprints["w5c-lathe"].role === "tool";
         // Bad opClass
         const metaBadClass = r.setBlueprintToolMeta("w5c-lathe", "lathe", "uberklasse");
         out.rejectsInvalidClass = !metaBadClass.ok && metaBadClass.reason === "invalid_op_class";
@@ -1946,14 +1936,14 @@ async function checkBandWave5({ page, check, errors, finalState }) {
 
         // registerBlueprintAsTool
         const regOk = r.registerBlueprintAsTool("w5c-lathe");
-        out.registerOk = regOk.ok && !!r.state.tools["w5c-lathe"];
-        out.toolCapMatchesBlueprint = Math.abs(r.state.tools["w5c-lathe"].precisionCap - 0.97) < 0.001;
-        out.toolInPlayerInventory = (r.state.player.tools || []).includes("w5c-lathe");
-        out.toolSourceMarked = r.state.tools["w5c-lathe"].sourceBlueprint === "w5c-lathe";
-        out.toolNotBuiltin = r.state.tools["w5c-lathe"].builtIn === false;
+        out.registerOk = regOk.ok && !!st.tools["w5c-lathe"];
+        out.toolCapMatchesBlueprint = Math.abs(st.tools["w5c-lathe"].precisionCap - 0.97) < 0.001;
+        out.toolInPlayerInventory = (st.player.tools || []).includes("w5c-lathe");
+        out.toolSourceMarked = st.tools["w5c-lathe"].sourceBlueprint === "w5c-lathe";
+        out.toolNotBuiltin = st.tools["w5c-lathe"].builtIn === false;
 
         // Cannot register a non-tool blueprint
-        r.state.blueprints["w5c-not-a-tool"] = {
+        st.blueprints["w5c-not-a-tool"] = {
             name: "w5c-not-a-tool",
             label: "Just-a-Box",
             builtIn: false,
@@ -1964,7 +1954,7 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         out.rejectsUnmarked = !regNotMarked.ok && regNotMarked.reason === "not_marked_as_tool";
 
         // Cannot override starter tool name (schmiede-hammer ist ein Built-in-Starter)
-        r.state.blueprints["schmiede-hammer"] = {
+        st.blueprints["schmiede-hammer"] = {
             name: "schmiede-hammer",
             label: "Mein Schmiede-Hammer",
             builtIn: false,
@@ -1975,10 +1965,10 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         };
         const regHammerOverride = r.registerBlueprintAsTool("schmiede-hammer");
         out.starterProtected = !regHammerOverride.ok && regHammerOverride.reason === "starter_name_protected";
-        delete r.state.blueprints["schmiede-hammer"];
+        delete st.blueprints["schmiede-hammer"];
 
         // Recursive: das neue Werkzeug funktioniert in applyOpToPart
-        r.state.blueprints["w5c-target"] = {
+        st.blueprints["w5c-target"] = {
             name: "w5c-target",
             label: "Ziel",
             builtIn: false,
@@ -1986,7 +1976,7 @@ async function checkBandWave5({ page, check, errors, finalState }) {
             connections: [],
         };
         const applyR = r.applyOpToPart("w5c-target", 0, "w5c-lathe");
-        const partAfter = r.state.blueprints["w5c-target"].parts[0];
+        const partAfter = st.blueprints["w5c-target"].parts[0];
         const lastOp = partAfter.opChain && partAfter.opChain[partAfter.opChain.length - 1];
         // Erfolg: Op ist angewandt, letzte Chain-Eintrag zeigt
         // auf das eigene Werkzeug. Praezision selbst bleibt 0.4
@@ -1995,7 +1985,7 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         out.opChainGrew = Array.isArray(partAfter.opChain) && partAfter.opChain.length === 2;
 
         // Schief gebaute Drehbank → schlechter Cap
-        r.state.blueprints["w5c-bad-lathe"] = {
+        st.blueprints["w5c-bad-lathe"] = {
             name: "w5c-bad-lathe",
             label: "Schlechte Drehbank",
             builtIn: false,
@@ -2007,10 +1997,10 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         };
         r.setBlueprintToolMeta("w5c-bad-lathe", "bad-lathe", "subtractive");
         r.registerBlueprintAsTool("w5c-bad-lathe");
-        out.badLatheLowerCap = r.state.tools["w5c-bad-lathe"].precisionCap === 0.4;
+        out.badLatheLowerCap = st.tools["w5c-bad-lathe"].precisionCap === 0.4;
         // Recursive Konzept-Test: eine Box mit dem schlechten Tool
         // erreicht keine bessere Praezision als 0.4.
-        r.state.blueprints["w5c-target2"] = {
+        st.blueprints["w5c-target2"] = {
             name: "w5c-target2",
             label: "Ziel 2",
             builtIn: false,
@@ -2018,10 +2008,10 @@ async function checkBandWave5({ page, check, errors, finalState }) {
             connections: [],
         };
         r.applyOpToPart("w5c-target2", 0, "w5c-bad-lathe");
-        out.recursivePrecisionCascade = r.computePartPrecision(r.state.blueprints["w5c-target2"].parts[0]) === 0.4;
+        out.recursivePrecisionCascade = r.computePartPrecision(st.blueprints["w5c-target2"].parts[0]) === 0.4;
 
         // DSL-Ops
-        r.state.blueprints["w5c-dsl-test"] = {
+        st.blueprints["w5c-dsl-test"] = {
             name: "w5c-dsl-test",
             label: "DSL Test",
             builtIn: false,
@@ -2032,7 +2022,7 @@ async function checkBandWave5({ page, check, errors, finalState }) {
             source: "test",
         });
         r.dslRun(["register_tool", "w5c-dsl-test"], { source: "test" });
-        out.dslToolInState = !!r.state.tools["w5c-dsl-test"];
+        out.dslToolInState = !!st.tools["w5c-dsl-test"];
 
         // Save-Roundtrip
         const snap = r.buildStateSnapshot();
@@ -2042,18 +2032,16 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         out.snapshotHasTool = (snap.tools || []).some((t) => t.name === "w5c-lathe" && t.precisionCap === 0.97);
 
         // Cleanup
-        delete r.state.tools["w5c-lathe"];
-        delete r.state.tools["w5c-bad-lathe"];
-        delete r.state.tools["w5c-dsl-test"];
-        r.state.player.tools = r.state.player.tools.filter(
-            (t) => !["w5c-lathe", "w5c-bad-lathe", "w5c-dsl-test"].includes(t)
-        );
-        delete r.state.blueprints["w5c-lathe"];
-        delete r.state.blueprints["w5c-bad-lathe"];
-        delete r.state.blueprints["w5c-target"];
-        delete r.state.blueprints["w5c-target2"];
-        delete r.state.blueprints["w5c-not-a-tool"];
-        delete r.state.blueprints["w5c-dsl-test"];
+        delete st.tools["w5c-lathe"];
+        delete st.tools["w5c-bad-lathe"];
+        delete st.tools["w5c-dsl-test"];
+        st.player.tools = st.player.tools.filter((t) => !["w5c-lathe", "w5c-bad-lathe", "w5c-dsl-test"].includes(t));
+        delete st.blueprints["w5c-lathe"];
+        delete st.blueprints["w5c-bad-lathe"];
+        delete st.blueprints["w5c-target"];
+        delete st.blueprints["w5c-target2"];
+        delete st.blueprints["w5c-not-a-tool"];
+        delete st.blueprints["w5c-dsl-test"];
         r._renderWorkshopDOM();
         return out;
     });
@@ -2091,7 +2079,7 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         const out = {};
 
         // Bug 1: Part-Loesch raeumt connections auf
-        r.state.blueprints["bug1-test"] = {
+        st.blueprints["bug1-test"] = {
             name: "bug1-test",
             label: "Bug1 Test",
             builtIn: false,
@@ -2109,12 +2097,12 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         // Part 1 loeschen: connection 0-1 + 1-2 weg, 0-2 bleibt
         // und wird zu 0-1 (Index 2 → 1).
         r.removePartFromBlueprint("bug1-test", 1);
-        const remaining = r.state.blueprints["bug1-test"].connections;
+        const remaining = st.blueprints["bug1-test"].connections;
         out.connectionsFilteredOnPartDelete = remaining.length === 1;
         out.connectionIndicesShifted = remaining[0] && remaining[0].partA === 0 && remaining[0].partB === 1;
 
         // Bug 1 edge case: delete part 0, connection 1-2 wird zu 0-1
-        r.state.blueprints["bug1-shift"] = {
+        st.blueprints["bug1-shift"] = {
             name: "bug1-shift",
             label: "Shift Test",
             builtIn: false,
@@ -2126,65 +2114,66 @@ async function checkBandWave5({ page, check, errors, finalState }) {
             connections: [{ type: "hafting", partA: 1, partB: 2 }],
         };
         r.removePartFromBlueprint("bug1-shift", 0);
-        const shifted = r.state.blueprints["bug1-shift"].connections;
+        const shifted = st.blueprints["bug1-shift"].connections;
         out.shiftedToZeroOne = shifted.length === 1 && shifted[0].partA === 0 && shifted[0].partB === 1;
 
         // Bug 2: Bauplan-Loesch raeumt eigene Werkzeuge auf
-        r.state.blueprints["bug2-lathe"] = {
+        st.blueprints["bug2-lathe"] = {
             name: "bug2-lathe",
             label: "Test Lathe",
             builtIn: false,
             role: "tool",
             toolMeta: { opName: "bug2-op", opClass: "subtractive" },
             parts: [
-                __teil("box", "eisen", 0, 0, 0, 1, 1, 1, { opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }] }),
+                __teil("box", "eisen", 0, 0, 0, 1, 1, 1, {
+                    opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }],
+                }),
             ],
             connections: [],
         };
         r.registerBlueprintAsTool("bug2-lathe");
-        out.toolWasRegistered = !!r.state.tools["bug2-lathe"];
-        out.playerOwnedToolBefore = (r.state.player.tools || []).includes("bug2-lathe");
+        out.toolWasRegistered = !!st.tools["bug2-lathe"];
+        out.playerOwnedToolBefore = (st.player.tools || []).includes("bug2-lathe");
         r.deleteBlueprint("bug2-lathe");
-        out.toolRemovedFromState = !r.state.tools["bug2-lathe"];
-        out.toolRemovedFromPlayer = !(r.state.player.tools || []).includes("bug2-lathe");
+        out.toolRemovedFromState = !st.tools["bug2-lathe"];
+        out.toolRemovedFromPlayer = !(st.player.tools || []).includes("bug2-lathe");
         // die Op-Bibliothek (schmiede-hammer-Definition) + der Hand-Starter überleben einen
         // Bauplan-Lösch unberührt (das Werkzeug ist nicht mehr im player.tools-Starter-Satz).
-        out.starterToolsUnaffected =
-            !!r.state.tools["schmiede-hammer"] && (r.state.player.tools || []).includes("hände");
+        out.starterToolsUnaffected = !!st.tools["schmiede-hammer"] && (st.player.tools || []).includes("hände");
 
         // Negativ: deleteBlueprint eines non-tool-Bauplans laesst
         // andere Tools komplett unberuehrt.
-        r.state.blueprints["bug2-noisy-tool"] = {
+        st.blueprints["bug2-noisy-tool"] = {
             name: "bug2-noisy-tool",
             label: "Noisy Tool",
             builtIn: false,
             role: "tool",
             toolMeta: { opName: "noisy-op", opClass: "subtractive" },
             parts: [
-                __teil("box", "eisen", 0, 0, 0, 1, 1, 1, { opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }] }),
+                __teil("box", "eisen", 0, 0, 0, 1, 1, 1, {
+                    opChain: [{ tool: "polierscheibe", op: "polish", cap: 0.97 }],
+                }),
             ],
             connections: [],
         };
         r.registerBlueprintAsTool("bug2-noisy-tool");
-        r.state.blueprints["bug2-plain"] = {
+        st.blueprints["bug2-plain"] = {
             name: "bug2-plain",
             label: "Plain Blueprint",
             builtIn: false,
-            parts: [
-                __teil("box", "stein", 0, 0, 0, 1, 1, 1),
-            ],
+            parts: [__teil("box", "stein", 0, 0, 0, 1, 1, 1)],
             connections: [],
         };
         r.deleteBlueprint("bug2-plain");
-        out.unrelatedToolUntouched = !!r.state.tools["bug2-noisy-tool"];
+        out.unrelatedToolUntouched = !!st.tools["bug2-noisy-tool"];
 
         // Cleanup — wichtig: Werkstatt-DOM neu rendern, damit
         // spätere Tests (Ring 6.6) nicht Stale-Rows sehen.
-        delete r.state.tools["bug2-noisy-tool"];
-        r.state.player.tools = r.state.player.tools.filter((t) => t !== "bug2-noisy-tool");
-        delete r.state.blueprints["bug2-noisy-tool"];
-        delete r.state.blueprints["bug1-test"];
-        delete r.state.blueprints["bug1-shift"];
+        delete st.tools["bug2-noisy-tool"];
+        st.player.tools = st.player.tools.filter((t) => t !== "bug2-noisy-tool");
+        delete st.blueprints["bug2-noisy-tool"];
+        delete st.blueprints["bug1-test"];
+        delete st.blueprints["bug1-shift"];
         r._renderWorkshopDOM();
         return out;
     });
@@ -2211,7 +2200,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
     // ### Werkzeug-Domains + emergente Bauplan-Rolle ###
     const wave9aResults = await safeEvaluate(page, () => {
         if (!r) return null;
-        const AR = r.constructor;
+        const AR = AnazhRealm;
         const out = {};
         try {
             // Konstanten
@@ -2232,7 +2221,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             out.defaultRole = AR.DEFAULT_BLUEPRINT_ROLE === "architecture";
 
             // Default-Tools sind alle generic (domain=null)
-            const tools = r.state.tools || {};
+            const tools = st.tools || {};
             // die generische Präzisions-Leiter ist gefallen (feuerstein/hammer/feile/
             // polier RAUS, die Werkstatt trägt die Präzision); nur `hände` bleibt domain-neutral (0.4).
             // Die Domain-Tools tragen jeweils eine domain ∈ TOOL_DOMAINS.
@@ -2243,15 +2232,15 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
                 .every((t) => AR.TOOL_DOMAINS.includes(t.domain));
 
             // Leerer Bauplan / nur generic-Werkzeuge → null Domain, role=architecture
-            if (r.state.blueprints["test_9a_empty"]) r.deleteBlueprint("test_9a_empty");
+            if (st.blueprints["test_9a_empty"]) r.deleteBlueprint("test_9a_empty");
             r.cloneBlueprint("stein_block", "test_9a_empty");
             // Werkzeug "hände" anwenden auf Part 0 — domain=null bleibt
             r.applyOpToPart("test_9a_empty", 0, "hände");
-            out.emptyDomainNull = r.computeBlueprintDomain(r.state.blueprints.test_9a_empty) === null;
-            out.emptyRoleArchitecture = r.computeBlueprintRole(r.state.blueprints.test_9a_empty) === "architecture";
+            out.emptyDomainNull = r.computeBlueprintDomain(st.blueprints.test_9a_empty) === null;
+            out.emptyRoleArchitecture = r.computeBlueprintRole(st.blueprints.test_9a_empty) === "architecture";
 
             // Simuliere ein Domain-tragendes Werkzeug (manuell hinzufügen für Test)
-            r.state.tools["test_forge_hammer"] = {
+            st.tools["test_forge_hammer"] = {
                 name: "test_forge_hammer",
                 label: "Schmiede-Hammer (Test)",
                 opClass: "plastic",
@@ -2261,24 +2250,24 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
                 builtIn: false,
                 domain: "forging",
             };
-            if (!r.state.player.tools.includes("test_forge_hammer")) {
-                r.state.player.tools.push("test_forge_hammer");
+            if (!st.player.tools.includes("test_forge_hammer")) {
+                st.player.tools.push("test_forge_hammer");
             }
-            if (r.state.blueprints["test_9a_forging"]) r.deleteBlueprint("test_9a_forging");
+            if (st.blueprints["test_9a_forging"]) r.deleteBlueprint("test_9a_forging");
             r.cloneBlueprint("stein_block", "test_9a_forging");
             // Erst Material auf eisen wechseln (stein lehnt plastic-opClass ab,
             // forging-Hammer hat opClass=plastic — applyOp würde sonst scheitern).
             r.updatePartInBlueprint("test_9a_forging", 0, { material: "eisen", recolor: true });
             r.applyOpToPart("test_9a_forging", 0, "test_forge_hammer");
-            out.forgingDomainDetected = r.computeBlueprintDomain(r.state.blueprints.test_9a_forging) === "forging";
+            out.forgingDomainDetected = r.computeBlueprintDomain(st.blueprints.test_9a_forging) === "forging";
 
             // Forging-Split via Compound-Tags
-            const forgingRole = r.computeBlueprintRole(r.state.blueprints.test_9a_forging);
+            const forgingRole = r.computeBlueprintRole(st.blueprints.test_9a_forging);
             out.forgingResolvedTo = forgingRole;
             out.forgingIsToolOrArmor = forgingRole === "tool" || forgingRole === "armor";
 
             // Alchemy-Domain → consumable
-            r.state.tools["test_alchemy_mortar"] = {
+            st.tools["test_alchemy_mortar"] = {
                 name: "test_alchemy_mortar",
                 label: "Mörser (Test)",
                 opClass: "additive",
@@ -2288,17 +2277,17 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
                 builtIn: false,
                 domain: "alchemy",
             };
-            if (!r.state.player.tools.includes("test_alchemy_mortar")) {
-                r.state.player.tools.push("test_alchemy_mortar");
+            if (!st.player.tools.includes("test_alchemy_mortar")) {
+                st.player.tools.push("test_alchemy_mortar");
             }
-            if (r.state.blueprints["test_9a_alchemy"]) r.deleteBlueprint("test_9a_alchemy");
+            if (st.blueprints["test_9a_alchemy"]) r.deleteBlueprint("test_9a_alchemy");
             r.cloneBlueprint("stein_block", "test_9a_alchemy");
             r.updatePartInBlueprint("test_9a_alchemy", 0, { material: "holz", recolor: true });
             r.applyOpToPart("test_9a_alchemy", 0, "test_alchemy_mortar");
-            out.alchemyRoleIsConsumable = r.computeBlueprintRole(r.state.blueprints.test_9a_alchemy) === "consumable";
+            out.alchemyRoleIsConsumable = r.computeBlueprintRole(st.blueprints.test_9a_alchemy) === "consumable";
 
             // Mechanism-Domain → machine
-            r.state.tools["test_lathe"] = {
+            st.tools["test_lathe"] = {
                 name: "test_lathe",
                 label: "Drehbank (Test)",
                 opClass: "subtractive",
@@ -2308,27 +2297,27 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
                 builtIn: false,
                 domain: "mechanism",
             };
-            if (!r.state.player.tools.includes("test_lathe")) {
-                r.state.player.tools.push("test_lathe");
+            if (!st.player.tools.includes("test_lathe")) {
+                st.player.tools.push("test_lathe");
             }
-            if (r.state.blueprints["test_9a_mech"]) r.deleteBlueprint("test_9a_mech");
+            if (st.blueprints["test_9a_mech"]) r.deleteBlueprint("test_9a_mech");
             r.cloneBlueprint("stein_block", "test_9a_mech");
             r.applyOpToPart("test_9a_mech", 0, "test_lathe");
-            out.mechanismRoleIsMachine = r.computeBlueprintRole(r.state.blueprints.test_9a_mech) === "machine";
+            out.mechanismRoleIsMachine = r.computeBlueprintRole(st.blueprints.test_9a_mech) === "machine";
 
             // Emergent-Refresh: addPart triggert _refreshBlueprintRoleEmergent
-            if (r.state.blueprints["test_9a_emergent"]) r.deleteBlueprint("test_9a_emergent");
+            if (st.blueprints["test_9a_emergent"]) r.deleteBlueprint("test_9a_emergent");
             r.cloneBlueprint("stein_block", "test_9a_emergent");
             r.applyOpToPart("test_9a_emergent", 0, "test_lathe");
-            out.emergentRoleSetOnApply = r.state.blueprints.test_9a_emergent.role === "machine";
+            out.emergentRoleSetOnApply = st.blueprints.test_9a_emergent.role === "machine";
 
             // Manueller Override: setBlueprintAsArmor sperrt emergenten Pfad
             r.setBlueprintAsArmor("test_9a_emergent");
-            out.manualOverrideSetsRole = r.state.blueprints.test_9a_emergent.role === "armor";
-            out.manualOverrideMarksFlag = r.state.blueprints.test_9a_emergent.roleManual === true;
+            out.manualOverrideSetsRole = st.blueprints.test_9a_emergent.role === "armor";
+            out.manualOverrideMarksFlag = st.blueprints.test_9a_emergent.roleManual === true;
             // Nochmal applyOpToPart — role bleibt manual=armor (kein emergent override)
             r.applyOpToPart("test_9a_emergent", 0, "test_lathe");
-            out.manualOverrideStaysAfterApply = r.state.blueprints.test_9a_emergent.role === "armor";
+            out.manualOverrideStaysAfterApply = st.blueprints.test_9a_emergent.role === "armor";
 
             // Cleanup
             for (const n of [
@@ -2338,11 +2327,11 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
                 "test_9a_mech",
                 "test_9a_emergent",
             ]) {
-                if (r.state.blueprints[n]) r.deleteBlueprint(n);
+                if (st.blueprints[n]) r.deleteBlueprint(n);
             }
             for (const t of ["test_forge_hammer", "test_alchemy_mortar", "test_lathe"]) {
-                delete r.state.tools[t];
-                r.state.player.tools = r.state.player.tools.filter((x) => x !== t);
+                delete st.tools[t];
+                st.player.tools = st.player.tools.filter((x) => x !== t);
             }
             r._renderWorkshopDOM();
         } catch (err) {
@@ -2411,7 +2400,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
     // ### Domain-Werkzeuge + UI-Anzeige der Rolle ###
     const wave9bResults = await safeEvaluate(page, () => {
         if (!r) return null;
-        const AR = r.constructor;
+        const AR = AnazhRealm;
         const out = {};
         try {
             // 5 neue Domain-Werkzeuge in state.tools
@@ -2422,27 +2411,25 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
                 "ritueller-stab",
                 "drehbank-meißel",
             ];
-            out.allDomainToolsExist = domainToolNames.every((n) => !!r.state.tools[n]);
+            out.allDomainToolsExist = domainToolNames.every((n) => !!st.tools[n]);
 
             // Korrektes domain-Mapping pro Tool
-            out.schmiedeHammerForging =
-                r.state.tools["schmiede-hammer"] && r.state.tools["schmiede-hammer"].domain === "forging";
-            out.morserAlchemy = r.state.tools["mörser"] && r.state.tools["mörser"].domain === "alchemy";
+            out.schmiedeHammerForging = st.tools["schmiede-hammer"] && st.tools["schmiede-hammer"].domain === "forging";
+            out.morserAlchemy = st.tools["mörser"] && st.tools["mörser"].domain === "alchemy";
             out.webstuhlTextile =
-                r.state.tools["webstuhl-schiffchen"] && r.state.tools["webstuhl-schiffchen"].domain === "textile";
-            out.stabSoulwork = r.state.tools["ritueller-stab"] && r.state.tools["ritueller-stab"].domain === "soulwork";
-            out.drehbankMechanism =
-                r.state.tools["drehbank-meißel"] && r.state.tools["drehbank-meißel"].domain === "mechanism";
+                st.tools["webstuhl-schiffchen"] && st.tools["webstuhl-schiffchen"].domain === "textile";
+            out.stabSoulwork = st.tools["ritueller-stab"] && st.tools["ritueller-stab"].domain === "soulwork";
+            out.drehbankMechanism = st.tools["drehbank-meißel"] && st.tools["drehbank-meißel"].domain === "mechanism";
 
             // die 5 Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); sie
             // bleiben als Op-Bibliothek in state.tools (isStarter:false), aus der die Werkstatt schöpft.
             out.allDomainToolsInInventory = domainToolNames.every(
-                (n) => r.state.tools[n] && r.state.tools[n].isStarter === false
+                (n) => st.tools[n] && st.tools[n].isStarter === false
             );
 
             // insgesamt 6 Built-in-Werkzeuge: hände (domain-neutrale Baseline) + 5 domain;
             // die generische Präzisions-Leiter (feuerstein/hammer/feile/polier) ist gefallen.
-            const builtIns = Object.values(r.state.tools).filter((t) => t.builtIn);
+            const builtIns = Object.values(st.tools).filter((t) => t.builtIn);
             out.sixBuiltInTools = builtIns.length === 6;
 
             // Konstanten für UI: Labels + Farben
@@ -2465,7 +2452,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             // UI: Werkstatt-Status zeigt Rolle live nach Edit
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
-            if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
+            if (st.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
             r.cloneBlueprint("stein_block", "test_9b");
             r.selectBlueprintForEdit("test_9b");
             r._renderWorkshopDOM();
@@ -2478,7 +2465,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
                 roleChip9b.textContent.includes("Bauwerk") &&
                 roleChip9b.classList.contains("role-emergent");
             // Apply schmiede-hammer auf eisen-Part (Domain-Op aus der Op-Bibliothek leihen)
-            if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
+            if (!st.player.tools.includes("schmiede-hammer")) st.player.tools.push("schmiede-hammer");
             r.updatePartInBlueprint("test_9b", 0, { material: "eisen", recolor: true });
             r.applyOpToPart("test_9b", 0, "schmiede-hammer");
             r._renderWorkshopDOM();
@@ -2496,12 +2483,12 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
                 document.querySelectorAll("#workshop-tool-palette .workshop-tool-domain-dot").length > 0;
 
             // Cleanup
-            if (r.state.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
+            if (st.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
             r.selectBlueprintForEdit("stein_block");
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
             r.closeAllDrawers();
-            r.state.yaw = 0;
-            if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+            st.yaw = 0;
+            if (st.playerMesh) st.playerMesh.rotation.y = 0;
         } catch (err) {
             out.error = err && err.message;
         }
@@ -2555,24 +2542,24 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
         const out = {};
         try {
             const stationNames = ["esse", "brennkolben", "webstuhl", "seelenstein_altar", "drehbank"];
-            out.allStationsExist = stationNames.every((n) => !!r.state.blueprints[n]);
+            out.allStationsExist = stationNames.every((n) => !!st.blueprints[n]);
             out.allHaveRole = stationNames.every(
-                (n) => r.state.blueprints[n] && r.state.blueprints[n].role === "workshop-station"
+                (n) => st.blueprints[n] && st.blueprints[n].role === "workshop-station"
             );
             // die bediente Domäne EMERGIERT aus der Substanz
             // (_computeWorkshopDomain), kein hardcoded workshopDomain-Feld mehr.
-            out.esseForging = r._computeWorkshopDomain(r.state.blueprints.esse) === "forging";
-            out.brennkolbenAlchemy = r._computeWorkshopDomain(r.state.blueprints.brennkolben) === "alchemy";
-            out.webstuhlTextile = r._computeWorkshopDomain(r.state.blueprints.webstuhl) === "textile";
-            out.altarSoulwork = r._computeWorkshopDomain(r.state.blueprints.seelenstein_altar) === "soulwork";
-            out.drehbankMechanism = r._computeWorkshopDomain(r.state.blueprints.drehbank) === "mechanism";
-            out.noHardcodedDomain = r.state.blueprints.esse.workshopDomain === undefined;
+            out.esseForging = r._computeWorkshopDomain(st.blueprints.esse) === "forging";
+            out.brennkolbenAlchemy = r._computeWorkshopDomain(st.blueprints.brennkolben) === "alchemy";
+            out.webstuhlTextile = r._computeWorkshopDomain(st.blueprints.webstuhl) === "textile";
+            out.altarSoulwork = r._computeWorkshopDomain(st.blueprints.seelenstein_altar) === "soulwork";
+            out.drehbankMechanism = r._computeWorkshopDomain(st.blueprints.drehbank) === "mechanism";
+            out.noHardcodedDomain = st.blueprints.esse.workshopDomain === undefined;
 
             // Modus auf pfad für strikten Test
             r.setGameMode("pfad");
 
             // Forging-Bauplan vorbereiten
-            if (r.state.blueprints["test_9c_forging"]) r.deleteBlueprint("test_9c_forging");
+            if (st.blueprints["test_9c_forging"]) r.deleteBlueprint("test_9c_forging");
             r.cloneBlueprint("stein_block", "test_9c_forging");
             r.updatePartInBlueprint("test_9c_forging", 0, { material: "eisen", recolor: true });
             r.applyOpToPart("test_9c_forging", 0, "schmiede-hammer");
@@ -2608,8 +2595,8 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             out.archNoCheck = gateArch && gateArch.ok === true;
 
             // Cleanup
-            if (r.state.blueprints["test_9c_forging"]) r.deleteBlueprint("test_9c_forging");
-            r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");
+            if (st.blueprints["test_9c_forging"]) r.deleteBlueprint("test_9c_forging");
+            st.architectures = st.architectures.filter((e) => e.type !== "esse");
             r.setGameMode("frieden");
         } catch (err) {
             out.error = err && err.message;
@@ -2658,42 +2645,42 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
         const out = {};
         try {
             // Maschinen-Bonus
-            if (r.state.blueprints["test_9d_machine"]) r.deleteBlueprint("test_9d_machine");
+            if (st.blueprints["test_9d_machine"]) r.deleteBlueprint("test_9d_machine");
             r.cloneBlueprint("stein_block", "test_9d_machine");
             r.setBlueprintToolMeta("test_9d_machine", "turn", "subtractive");
             // setBlueprintToolMeta setzt role=tool; force machine:
-            r.state.blueprints.test_9d_machine.role = "machine";
-            r.state.blueprints.test_9d_machine.roleManual = true;
-            const minP = r.computeBlueprintPrecisionCap(r.state.blueprints.test_9d_machine);
+            st.blueprints.test_9d_machine.role = "machine";
+            st.blueprints.test_9d_machine.roleManual = true;
+            const minP = r.computeBlueprintPrecisionCap(st.blueprints.test_9d_machine);
             const reg = r.registerBlueprintAsTool("test_9d_machine");
             out.regOk = reg && reg.ok === true;
             if (reg && reg.ok) {
-                const tool = r.state.tools["test_9d_machine"];
+                const tool = st.tools["test_9d_machine"];
                 const expected = Math.min(1.0, minP + 0.05);
                 out.toolHasBonus = Math.abs(tool.precisionCap - expected) < 0.001;
                 out.toolMarkedMachine = tool.isMachine === true;
             }
 
             // Ohne machine: kein Bonus
-            if (r.state.blueprints["test_9d_normaltool"]) r.deleteBlueprint("test_9d_normaltool");
+            if (st.blueprints["test_9d_normaltool"]) r.deleteBlueprint("test_9d_normaltool");
             r.cloneBlueprint("stein_block", "test_9d_normaltool");
             r.setBlueprintToolMeta("test_9d_normaltool", "file", "subtractive");
-            const minP2 = r.computeBlueprintPrecisionCap(r.state.blueprints.test_9d_normaltool);
+            const minP2 = r.computeBlueprintPrecisionCap(st.blueprints.test_9d_normaltool);
             r.registerBlueprintAsTool("test_9d_normaltool");
-            const toolNoBonus = r.state.tools["test_9d_normaltool"];
+            const toolNoBonus = st.tools["test_9d_normaltool"];
             out.normalToolNoBonus = toolNoBonus && Math.abs(toolNoBonus.precisionCap - minP2) < 0.001;
             out.normalToolNotMachine = toolNoBonus && toolNoBonus.isMachine === false;
 
             // Seelen-Bauplan
-            if (r.state.blueprints["test_9d_soul"]) r.deleteBlueprint("test_9d_soul");
+            if (st.blueprints["test_9d_soul"]) r.deleteBlueprint("test_9d_soul");
             r.cloneBlueprint("stein_block", "test_9d_soul");
-            r.state.blueprints.test_9d_soul.role = "soul";
-            r.state.blueprints.test_9d_soul.roleManual = true;
-            const soulBefore = r.state.player.soul;
+            st.blueprints.test_9d_soul.role = "soul";
+            st.blueprints.test_9d_soul.roleManual = true;
+            const soulBefore = st.player.soul;
             const soulRes = r.applyPlayerSoulFromBlueprint("test_9d_soul");
             out.soulApplyOk = soulRes && soulRes.ok === true;
-            out.soulApplyChangedSoul = r.state.player.soul !== soulBefore;
-            out.customSoulRegistered = !!(r.state.customSouls && r.state.customSouls["bp_test_9d_soul"]);
+            out.soulApplyChangedSoul = st.player.soul !== soulBefore;
+            out.customSoulRegistered = !!(st.customSouls && st.customSouls["bp_test_9d_soul"]);
 
             const archRes = r.applyPlayerSoulFromBlueprint("stein_block");
             out.nonSoulReject = archRes && archRes.ok === false && archRes.reason === "blueprint_not_soul";
@@ -2711,14 +2698,14 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             // Cleanup
             r.applyPlayerSoul("human");
             for (const n of ["test_9d_machine", "test_9d_normaltool", "test_9d_soul"]) {
-                if (r.state.blueprints[n]) r.deleteBlueprint(n);
+                if (st.blueprints[n]) r.deleteBlueprint(n);
             }
-            if (r.state.customSouls) delete r.state.customSouls["bp_test_9d_soul"];
+            if (st.customSouls) delete st.customSouls["bp_test_9d_soul"];
             r.selectBlueprintForEdit("stein_block");
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
             r.closeAllDrawers();
-            r.state.yaw = 0;
-            if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+            st.yaw = 0;
+            if (st.playerMesh) st.playerMesh.rotation.y = 0;
         } catch (err) {
             out.error = err && err.message;
         }
@@ -2789,10 +2776,10 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
 
             // Custom-Soul mit opChain auf bodyParts → Stats * soulMul
             // Synthese: Soul-Bauplan + opChain
-            if (r.state.blueprints["test_10a_soul"]) r.deleteBlueprint("test_10a_soul");
+            if (st.blueprints["test_10a_soul"]) r.deleteBlueprint("test_10a_soul");
             r.cloneBlueprint("stein_block", "test_10a_soul");
             // Setze role:soul + opChain auf alle parts (simuliert "roh gebauter Soul")
-            const bp = r.state.blueprints.test_10a_soul;
+            const bp = st.blueprints.test_10a_soul;
             bp.role = "soul";
             bp.roleManual = true;
             for (const p of bp.parts) {
@@ -2822,9 +2809,9 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             // Tool-Precision-Multiplier in computePlayerStats
             // Wir registrieren einen eigenen Bauplan als Tool und prüfen ob die
             // Tool-Tags mit Präzision multipliziert werden.
-            if (r.state.blueprints["test_10a_tool"]) r.deleteBlueprint("test_10a_tool");
+            if (st.blueprints["test_10a_tool"]) r.deleteBlueprint("test_10a_tool");
             r.cloneBlueprint("stein_block", "test_10a_tool");
-            const toolBp = r.state.blueprints.test_10a_tool;
+            const toolBp = st.blueprints.test_10a_tool;
             for (const p of toolBp.parts) {
                 p.opChain = [{ tool: "hände", op: "hand_knap", cap: 0.4 }];
             }
@@ -2847,11 +2834,11 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             // Cleanup
             r.equipTool(null);
             for (const n of ["test_10a_soul", "test_10a_tool"]) {
-                if (r.state.blueprints[n]) r.deleteBlueprint(n);
+                if (st.blueprints[n]) r.deleteBlueprint(n);
             }
-            delete r.state.tools["test_10a_tool"];
-            r.state.player.tools = r.state.player.tools.filter((t) => t !== "test_10a_tool");
-            if (r.state.customSouls) delete r.state.customSouls["bp_test_10a_soul"];
+            delete st.tools["test_10a_tool"];
+            st.player.tools = st.player.tools.filter((t) => t !== "test_10a_tool");
+            if (st.customSouls) delete st.customSouls["bp_test_10a_soul"];
             r._renderWorkshopDOM();
         } catch (err) {
             out.error = err && err.message;
@@ -2887,13 +2874,13 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
 async function checkBandM2RollenWahrheit({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const blu = r.state.blueprints;
-        const sigs = r.constructor.FORM_ROLE_SIGNATURES;
+        const blu = st.blueprints;
+        const sigs = AnazhRealm.FORM_ROLE_SIGNATURES;
 
         // (1) die fahrzeug-Rolle: der Wagen (4 rad-Gelenke + sitz) und das Holzross (sitz + moveable)
         // emergieren vehicle; am Holzross schlägt die vehicle-Resonanz soul (rideable-Konjunktion). Der
         // Wagen lebt in KIND_SUBSTANCE + hier als Test-Blueprint (für den Klon-Erbe-Teil (5)).
-        const KSm2 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        const KSm2 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
         if (blu._t_m2_wagen) delete blu._t_m2_wagen;
         blu._t_m2_wagen = {
             name: "_t_m2_wagen",
@@ -2999,7 +2986,7 @@ async function checkBandM2RollenWahrheit({ page, check }) {
 async function checkBandV18164AutoConnect({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
-        const blu = r.state.blueprints;
+        const blu = st.blueprints;
         const P = (shape, material, x, y, z, sx, sy, sz, rot) => ({
             shape,
             material,
@@ -3146,7 +3133,7 @@ async function checkBandV18164AutoConnect({ page, check }) {
 // unverändert (tag-neutral).
 async function checkBandV18214SkeletonMesh({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
 
         // ─── (T1) Source-Probes: die vier neuen Helper + Routing ─────
@@ -3171,8 +3158,8 @@ async function checkBandV18214SkeletonMesh({ page, check }) {
         // ─── (T4) Behavioral: Skeleton wird beim Wachsen gesetzt ───
         // genVersion temporär 7, dann (Seed, Spezies)-Kombis probieren, bis ein NICHT-moveable Bauplan
         // wächst — manche Seeds erzeugen moveable-Tannen, der Test darf nicht an diesem Edge-Case hängen.
-        const origGen = r.state.worldMeta ? r.state.worldMeta.genVersion : null;
-        if (r.state.worldMeta) r.state.worldMeta.genVersion = 7;
+        const origGen = st.worldMeta ? st.worldMeta.genVersion : null;
+        if (st.worldMeta) st.worldMeta.genVersion = 7;
         let grownKey = null;
         const tries = [
             ["baum_kiefer", "skel-t1"],
@@ -3187,8 +3174,8 @@ async function checkBandV18214SkeletonMesh({ page, check }) {
         for (const [sp, sd] of tries) {
             try {
                 const candidate = r._growTreeBlueprintForSpawn(sp, sd);
-                if (!candidate || !r.state.blueprints[candidate]) continue;
-                const bp2 = r.state.blueprints[candidate];
+                if (!candidate || !st.blueprints[candidate]) continue;
+                const bp2 = st.blueprints[candidate];
                 const aff = r.computeBlueprintAffordances(bp2);
                 if (aff.moveable || aff.magnifying) continue;
                 grownKey = candidate;
@@ -3197,8 +3184,8 @@ async function checkBandV18214SkeletonMesh({ page, check }) {
                 out.growError = String(_e && _e.message);
             }
         }
-        if (grownKey && r.state.blueprints[grownKey]) {
-            const bp = r.state.blueprints[grownKey];
+        if (grownKey && st.blueprints[grownKey]) {
+            const bp = st.blueprints[grownKey];
             out.bpHasSkeleton = !!bp._skeleton && Array.isArray(bp._skeleton.branches);
             out.bpStillHasParts = Array.isArray(bp.parts) && bp.parts.length >= 50;
             if (out.bpHasSkeleton) {
@@ -3212,8 +3199,8 @@ async function checkBandV18214SkeletonMesh({ page, check }) {
             }
 
             // ─── (T5) Behavioral: archFlattenBlueprint baut Tube+Cards ───
-            if (r.state.archFlattenCache) r.state.archFlattenCache.delete(grownKey);
-            if (r.state.archMergedGeomCache) r.state.archMergedGeomCache.delete(grownKey);
+            if (st.archFlattenCache) st.archFlattenCache.delete(grownKey);
+            if (st.archMergedGeomCache) st.archMergedGeomCache.delete(grownKey);
             const flat = r._archFlattenBlueprint(grownKey);
             out.flatIsSkeleton = flat && flat.skeleton === true;
             out.flatHasMergedMarker = flat && flat.merged === true;
@@ -3269,17 +3256,17 @@ async function checkBandV18214SkeletonMesh({ page, check }) {
 
             // ─── (T10) Snapshot: _skeleton NICHT persistiert ─────────
             // Snapshot hält NUR architektur-referenzierte grown-Baupläne; Sentinel-Arch.
-            r.state.architectures = r.state.architectures || [];
-            r.state.architectures.push({ id: "v214-snap-arch", type: grownKey, position: { x: 0, y: 0, z: 0 } });
+            st.architectures = st.architectures || [];
+            st.architectures.push({ id: "v214-snap-arch", type: grownKey, position: { x: 0, y: 0, z: 0 } });
             const snap = r.buildStateSnapshot();
             const gb = snap && snap.grownBlueprints && snap.grownBlueprints[grownKey];
             out.snapshotHasEntry = !!gb;
             out.snapshotNoSkeletonField = gb ? gb._skeleton === undefined : false;
-            r.state.architectures = r.state.architectures.filter((a) => a.id !== "v214-snap-arch");
+            st.architectures = st.architectures.filter((a) => a.id !== "v214-snap-arch");
         }
 
         // genVersion-Restore (defensive)
-        if (r.state.worldMeta && origGen !== null) r.state.worldMeta.genVersion = origGen;
+        if (st.worldMeta && origGen !== null) st.worldMeta.genVersion = origGen;
 
         return out;
     });

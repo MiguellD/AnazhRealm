@@ -12,23 +12,23 @@ async function checkBandWaves1to3({ page, check, errors, finalState }) {
     const journalResults = await safeEvaluate(page, () => {
         if (!r) return null;
         const out = {};
-        out.genesisWritten = r.state.worldJournal.entries.some((e) => e.type === "genesis");
-        out.bornAtSet = typeof r.state.worldMeta.bornAt === "number" && r.state.worldMeta.bornAt > 0;
+        out.genesisWritten = st.worldJournal.entries.some((e) => e.type === "genesis");
+        out.bornAtSet = typeof st.worldMeta.bornAt === "number" && st.worldMeta.bornAt > 0;
         // journalAppend schreibt
-        const before = r.state.worldJournal.entries.length;
+        const before = st.worldJournal.entries.length;
         r.journalAppend("test", "Erinnerung-Test");
-        out.appendIncreases = r.state.worldJournal.entries.length === before + 1;
+        out.appendIncreases = st.worldJournal.entries.length === before + 1;
         // Once-Variante schreibt nur ein Mal
         r.journalAppendOnce("uniq1", "test", "Einmaliger Eintrag");
         r.journalAppendOnce("uniq1", "test", "Doppelt-Versuch");
-        const uniqCount = r.state.worldJournal.entries.filter((e) => e.text === "Einmaliger Eintrag").length;
+        const uniqCount = st.worldJournal.entries.filter((e) => e.text === "Einmaliger Eintrag").length;
         out.onceIsIdempotent = uniqCount === 1;
         // Auszug für LLM enthält Genesis
         const excerpt = r.journalForPrompt();
         out.excerptHasGenesis = /genesis/.test(excerpt);
         // LLM-System-Prompt erwähnt slug + worldId
         const sys = r.llmBuildSystemPrompt();
-        out.systemPromptIdentity = sys.includes(r.state.worldMeta.slug) && sys.includes(r.state.worldMeta.worldId);
+        out.systemPromptIdentity = sys.includes(st.worldMeta.slug) && sys.includes(st.worldMeta.worldId);
         out.systemPromptInventory = /Kreaturen.*Bauwerke.*Baupläne/.test(sys);
         out.systemPromptTendency = /Höhe.*Distanz.*Wetter.*Aktivität/.test(sys);
         out.systemPromptFirstPerson = /sprich.*ich|in erster Person/i.test(sys);
@@ -58,26 +58,24 @@ async function checkBandWaves1to3({ page, check, errors, finalState }) {
         // C — blueprint-Part validiert refName
         out.rejectsInvalidRef = !r.validateBlueprintParts([{ shape: "blueprint", refName: "../etc" }]).ok;
         // B — define_blueprint legt eigenen Bauplan an
-        delete r.state.blueprints["wave2-test"];
+        delete st.blueprints["wave2-test"];
         const res = r.dslRun(
             ["define_blueprint", "wave2-test", [{ shape: "box", color: 0xff0000, size: { x: 2, y: 2, z: 2 } }]],
             { source: "test" }
         );
-        out.defineBlueprintWorks =
-            res.ok && !!r.state.blueprints["wave2-test"] && !r.state.blueprints["wave2-test"].builtIn;
+        out.defineBlueprintWorks = res.ok && !!st.blueprints["wave2-test"] && !st.blueprints["wave2-test"].builtIn;
         // B — Built-in lässt sich nicht überschreiben (stein_block — lebendes builtIn)
-        const builtInBefore = r.state.blueprints.stein_block && r.state.blueprints.stein_block.parts.length;
+        const builtInBefore = st.blueprints.stein_block && st.blueprints.stein_block.parts.length;
         r.dslRun(["define_blueprint", "stein_block", [{ shape: "box" }]], { source: "test" });
-        out.builtInProtected =
-            r.state.blueprints.stein_block && r.state.blueprints.stein_block.parts.length === builtInBefore;
+        out.builtInProtected = st.blueprints.stein_block && st.blueprints.stein_block.parts.length === builtInBefore;
         // C — Selbst-Referenz wird verboten
-        delete r.state.blueprints["self-ref"];
+        delete st.blueprints["self-ref"];
         r.dslRun(["define_blueprint", "self-ref", [{ shape: "blueprint", refName: "self-ref" }]], {
             source: "test",
         });
-        out.selfReferenceBlocked = !r.state.blueprints["self-ref"];
+        out.selfReferenceBlocked = !st.blueprints["self-ref"];
         // C — fraktale Verschachtelung baut Sub-Group
-        delete r.state.blueprints["wave2-outer"];
+        delete st.blueprints["wave2-outer"];
         r.dslRun(
             [
                 "define_blueprint",
@@ -89,22 +87,22 @@ async function checkBandWaves1to3({ page, check, errors, finalState }) {
             ],
             { source: "test" }
         );
-        const outerGroup = r._buildFromBlueprint(r.state.blueprints["wave2-outer"]);
+        const outerGroup = r._buildFromBlueprint(st.blueprints["wave2-outer"]);
         out.nestedGroupHasSubgroup = outerGroup.children.length === 2 && outerGroup.children[1].type === "Group";
         // C — Tiefen-Cap greift (selbst wenn man programmatisch zyklisch konstruiert)
-        r.state.blueprints["cycle-a"] = {
+        st.blueprints["cycle-a"] = {
             name: "cycle-a",
             label: "a",
             builtIn: false,
             parts: [{ shape: "blueprint", refName: "cycle-b" }],
         };
-        r.state.blueprints["cycle-b"] = {
+        st.blueprints["cycle-b"] = {
             name: "cycle-b",
             label: "b",
             builtIn: false,
             parts: [{ shape: "blueprint", refName: "cycle-a" }],
         };
-        const cycleGroup = r._buildFromBlueprint(r.state.blueprints["cycle-a"]);
+        const cycleGroup = r._buildFromBlueprint(st.blueprints["cycle-a"]);
         // Sollte nicht in Endlos-Rekursion gehen
         out.cycleHandled = !!cycleGroup;
         // B — define_ability mit verbotenem nested define_blueprint
@@ -116,14 +114,14 @@ async function checkBandWaves1to3({ page, check, errors, finalState }) {
         const abilOk = r.dslRun(["define_ability", "wave2-dance", ["weather", "rainy"]], {
             source: "test",
         });
-        out.defineAbilityWorks = abilOk.ok && (r.state.dsl.abilities || []).some((a) => a.name === "wave2-dance");
+        out.defineAbilityWorks = abilOk.ok && (st.dsl.abilities || []).some((a) => a.name === "wave2-dance");
         // Test-Artefakte sauber entfernen, damit nachfolgende
         // Workshop-Invarianten konsistent zählen.
-        delete r.state.blueprints["wave2-test"];
-        delete r.state.blueprints["wave2-outer"];
-        delete r.state.blueprints["cycle-a"];
-        delete r.state.blueprints["cycle-b"];
-        r.state.dsl.abilities = (r.state.dsl.abilities || []).filter((a) => a.name !== "wave2-dance");
+        delete st.blueprints["wave2-test"];
+        delete st.blueprints["wave2-outer"];
+        delete st.blueprints["cycle-a"];
+        delete st.blueprints["cycle-b"];
+        st.dsl.abilities = (st.dsl.abilities || []).filter((a) => a.name !== "wave2-dance");
         r._renderWorkshopDOM();
         return out;
     });
@@ -147,12 +145,10 @@ async function checkBandWaves1to3({ page, check, errors, finalState }) {
         if (!r) return null;
         const out = {};
         // E — neue Trigger im pool + triggers-Map
-        out.hasJournalEventTrigger = !!r.state.grok.triggers.journalEvent;
-        out.hasEmotionShiftTrigger = !!r.state.grok.triggers.emotionShift;
-        out.hasJournalEventPool =
-            Array.isArray(r.state.grok.pool.journalEvent) && r.state.grok.pool.journalEvent.length > 0;
-        out.hasEmotionShiftPool =
-            Array.isArray(r.state.grok.pool.emotionShift) && r.state.grok.pool.emotionShift.length > 0;
+        out.hasJournalEventTrigger = !!st.grok.triggers.journalEvent;
+        out.hasEmotionShiftTrigger = !!st.grok.triggers.emotionShift;
+        out.hasJournalEventPool = Array.isArray(st.grok.pool.journalEvent) && st.grok.pool.journalEvent.length > 0;
+        out.hasEmotionShiftPool = Array.isArray(st.grok.pool.emotionShift) && st.grok.pool.emotionShift.length > 0;
         // E — grokSpeakFromJournal existiert
         // F — die aktive Welt lebt als Insel in der BIBLIOTHEK (der Welt-Manager); die
         // Einstellungen tragen keine Welt-Akte mehr (Profi-Struktur). Die alte
@@ -166,7 +162,7 @@ async function checkBandWaves1to3({ page, check, errors, finalState }) {
         // F — updateWorldInfo treibt die Insel (kein #world-info mehr); sie zeigt den slug
         r.updateWorldInfo();
         const islandText = (document.getElementById("feed-active-ident") || {}).textContent || "";
-        out.worldInfoShowsSlug = islandText.includes(r.state.worldMeta.slug);
+        out.worldInfoShowsSlug = islandText.includes(st.worldMeta.slug);
         // Tagebuch: List-DOM + Count + Erinnerungs-Zeile
         out.journalListInDom = !!document.getElementById("world-journal-list");
         out.journalCountInDom = !!document.getElementById("world-journal-count");
@@ -237,10 +233,10 @@ async function checkBandWaves1to3({ page, check, errors, finalState }) {
 async function checkBandV1767WorkshopDomainEmergent({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const blu = r.state.blueprints;
+        const blu = st.blueprints;
         const savedMode = r.getGameMode();
-        const pm = r.state.playerMesh && r.state.playerMesh.position;
-        const savedArch = r.state.architectures.slice();
+        const pm = st.playerMesh && st.playerMesh.position;
+        const savedArch = st.architectures.slice();
         const mk = (mat, shape) => ({
             parts: [{ shape, material: mat, size: { x: 0.8, y: 0.8, z: 0.8 }, position: { x: 0, y: 0, z: 0 } }],
         });
@@ -284,22 +280,22 @@ async function checkBandV1767WorkshopDomainEmergent({ page, check }) {
         delete blu.__wd_work;
         blu.__wd_work = mk("eisen", "box");
         blu.__wd_work.name = "__wd_work";
-        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer"); // V17.88 op-Bibliothek leihen
+        if (!st.player.tools.includes("schmiede-hammer")) st.player.tools.push("schmiede-hammer"); // V17.88 op-Bibliothek leihen
         r.applyOpToPart("__wd_work", 0, "schmiede-hammer"); // forging-Domain über die opChain
         out.workIsForging = r.computeBlueprintDomain(blu.__wd_work) === "forging";
         r.setGameMode("pfad");
-        r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse" && e.type !== "brennkolben");
-        r.state.architectures.push({ type: "esse", position: { x: pm.x, y: pm.y, z: pm.z }, id: "__wd_esse" });
+        st.architectures = st.architectures.filter((e) => e.type !== "esse" && e.type !== "brennkolben");
+        st.architectures.push({ type: "esse", position: { x: pm.x, y: pm.y, z: pm.z }, id: "__wd_esse" });
         const gEsse = r._workshopStationGate("__wd_work", { x: pm.x, y: pm.y, z: pm.z });
         out.esseMatchesForging = gEsse.ok === true && gEsse.found === "esse";
-        r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");
-        r.state.architectures.push({ type: "brennkolben", position: { x: pm.x, y: pm.y, z: pm.z }, id: "__wd_brk" });
+        st.architectures = st.architectures.filter((e) => e.type !== "esse");
+        st.architectures.push({ type: "brennkolben", position: { x: pm.x, y: pm.y, z: pm.z }, id: "__wd_brk" });
         const gBrk = r._workshopStationGate("__wd_work", { x: pm.x, y: pm.y, z: pm.z });
         out.brennkolbenWrongDomain = gBrk.ok === false && gBrk.neededDomain === "forging";
 
         // cleanup
         delete blu.__wd_work;
-        r.state.architectures = savedArch;
+        st.architectures = savedArch;
         r.setGameMode(savedMode);
         return out;
     });
@@ -330,7 +326,7 @@ async function checkBandV1767WorkshopDomainEmergent({ page, check }) {
 // Verjüngung + Hohlkehle). Physik-Garant: Tempel steht, 1:7-Säulen knicken nicht, Balance gerechnet.
 async function checkBandOmegaGrammatik({ page, check }) {
     const res = await page.evaluate(() => {
-        const C = r.constructor;
+        const C = AnazhRealm;
         const o = {};
         // ── Ω-B1/B4 der klassische Tempel — AUSLÖSCHUNGS-WELLE: der temple-Blueprint + der
         // _classicalTempleVariant-Seed-Roller sind gefallen; die LEBENDE Grammatik-Maschine
@@ -402,7 +398,7 @@ async function checkBandOmegaGrammatik({ page, check }) {
         // ── Ω-B2 die Oakeshott-Klinge — AUSLÖSCHUNGS-WELLE: der geraet_schwert-Blueprint fiel;
         // seine Judge-Substanz lebt eingefroren in KIND_SUBSTANCE.geraet_schwert (bladeProfile
         // mit Verjüngung + Hohlkehle) — der Test liest die Substanz-Zeile.
-        const KSog = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        const KSog = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
         const sword = KSog.geraet_schwert ? { parts: JSON.parse(JSON.stringify(KSog.geraet_schwert.parts)) } : null;
         o.swordOk = !!(sword && Array.isArray(sword.parts));
         const blades = o.swordOk ? sword.parts.filter((p) => p.shape === "bladeProfile") : [];
@@ -459,7 +455,7 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
     // ### Compound-Tag-Affordances (Erkennung + UI) ###
     const wave10bResults = await safeEvaluate(page, () => {
         if (!r) return null;
-        const AR = r.constructor;
+        const AR = AnazhRealm;
         const out = {};
         try {
             out.thresholdsFrozen = !!AR.AFFORDANCE_THRESHOLDS && Object.isFrozen(AR.AFFORDANCE_THRESHOLDS);
@@ -481,51 +477,49 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
             out.bpNoParts = Object.keys(r.computeBlueprintAffordances({ parts: [] })).length === 0;
             // Die kein-Affordance-Kontrolle ist stein_block (Fels, gemessen leer): das Dorf bietet über seine
             // flachen Fundamente emergent `balancing` (form-, nicht tag-getrieben).
-            out.steinNoAffordances =
-                Object.keys(r.computeBlueprintAffordances(r.state.blueprints.stein_block)).length === 0;
+            out.steinNoAffordances = Object.keys(r.computeBlueprintAffordances(st.blueprints.stein_block)).length === 0;
 
             // moveable
-            if (r.state.blueprints["test_10b_car"]) r.deleteBlueprint("test_10b_car");
+            if (st.blueprints["test_10b_car"]) r.deleteBlueprint("test_10b_car");
             r.cloneBlueprint("stein_block", "test_10b_car");
-            r.state.blueprints.test_10b_car.parts = [
+            st.blueprints.test_10b_car.parts = [
                 __teil("cylinder", "eisen", -1, 0.3, 0, 0.6, 0.4, 0.6),
                 __teil("cylinder", "eisen", 1, 0.3, 0, 0.6, 0.4, 0.6),
                 __teil("box", "quarz", 0, 1, 0, 1.2, 0.8, 0.6),
             ];
-            out.carIsMoveable = r.computeBlueprintAffordances(r.state.blueprints.test_10b_car).moveable === true;
+            out.carIsMoveable = r.computeBlueprintAffordances(st.blueprints.test_10b_car).moveable === true;
 
             // VISION-TEST: Box-Stützen (KEINE Cylinder/Torus) + Antrieb → moveable
             // Beweis dass die Form-Whitelist wirklich raus ist und räumliche
             // Konfiguration entscheidet.
-            if (r.state.blueprints["test_10b_sled"]) r.deleteBlueprint("test_10b_sled");
+            if (st.blueprints["test_10b_sled"]) r.deleteBlueprint("test_10b_sled");
             r.cloneBlueprint("stein_block", "test_10b_sled");
-            r.state.blueprints.test_10b_sled.parts = [
+            st.blueprints.test_10b_sled.parts = [
                 // Stein-Boxen als Stütze (NICHT cylinder, NICHT torus)
                 __teil("box", "eisen", -1, 0.2, 0, 0.5, 0.4, 0.5),
                 __teil("box", "eisen", 1, 0.2, 0, 0.5, 0.4, 0.5),
                 // Quarz-Antrieb oben
                 __teil("octahedron", "quarz", 0, 1.2, 0, 0.6, 0.6, 0.6),
             ];
-            out.boxSledIsMoveable = r.computeBlueprintAffordances(r.state.blueprints.test_10b_sled).moveable === true;
+            out.boxSledIsMoveable = r.computeBlueprintAffordances(st.blueprints.test_10b_sled).moveable === true;
 
             // ohne Antrieb → nicht moveable
-            if (r.state.blueprints["test_10b_carless"]) r.deleteBlueprint("test_10b_carless");
+            if (st.blueprints["test_10b_carless"]) r.deleteBlueprint("test_10b_carless");
             r.cloneBlueprint("stein_block", "test_10b_carless");
-            r.state.blueprints.test_10b_carless.parts = [
+            st.blueprints.test_10b_carless.parts = [
                 __teil("cylinder", "stein", -1, 0.3, 0, 0.6, 0.4, 0.6),
                 __teil("cylinder", "stein", 1, 0.3, 0, 0.6, 0.4, 0.6),
             ];
-            out.carlessNotMoveable = !r.computeBlueprintAffordances(r.state.blueprints.test_10b_carless).moveable;
+            out.carlessNotMoveable = !r.computeBlueprintAffordances(st.blueprints.test_10b_carless).moveable;
 
             // magnifying
-            if (r.state.blueprints["test_10b_scope"]) r.deleteBlueprint("test_10b_scope");
+            if (st.blueprints["test_10b_scope"]) r.deleteBlueprint("test_10b_scope");
             r.cloneBlueprint("stein_block", "test_10b_scope");
-            r.state.blueprints.test_10b_scope.parts = [
+            st.blueprints.test_10b_scope.parts = [
                 __teil("sphere", "quarz", 0, 1, 0, 0.5, 0.5, 0.5),
                 __teil("cylinder", "holz", 0, 1, -0.6, 0.4, 1.2, 0.4),
             ];
-            out.scopeIsMagnifying =
-                r.computeBlueprintAffordances(r.state.blueprints.test_10b_scope).magnifying === true;
+            out.scopeIsMagnifying = r.computeBlueprintAffordances(st.blueprints.test_10b_scope).magnifying === true;
 
             // ── W10 ext. — radiating (resonanz-strahlendes Compound) ──
             out.radiatingLabel = AR.AFFORDANCE_LABELS.radiating === "strahlend";
@@ -535,34 +529,34 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
                 AR.AFFORDANCE_THRESHOLDS.radiating.resoniertMin === 1.5;
             // Ein radialer Quarz-Cluster (≥3 Parts, um einen Kern
             // gespreizt, NICHT auf einer Achse) strahlt.
-            if (r.state.blueprints["test_10ext_radiator"]) r.deleteBlueprint("test_10ext_radiator");
+            if (st.blueprints["test_10ext_radiator"]) r.deleteBlueprint("test_10ext_radiator");
             r.cloneBlueprint("stein_block", "test_10ext_radiator");
-            r.state.blueprints.test_10ext_radiator.parts = [
+            st.blueprints.test_10ext_radiator.parts = [
                 __teil("octahedron", "quarz", 1.2, 0.5, 0, 0.6, 0.6, 0.6),
                 __teil("octahedron", "quarz", -1.2, 0.5, 0, 0.6, 0.6, 0.6),
                 __teil("octahedron", "quarz", 0, 0.5, 1.2, 0.6, 0.6, 0.6),
                 __teil("octahedron", "quarz", 0, 0.5, -1.2, 0.6, 0.6, 0.6),
             ];
             out.radiatorIsRadiating =
-                r.computeBlueprintAffordances(r.state.blueprints.test_10ext_radiator).radiating === true;
+                r.computeBlueprintAffordances(st.blueprints.test_10ext_radiator).radiating === true;
             // Ein Quarz-Mast (≥3 Parts auf der y-Achse) strahlt NICHT radial — das räumliche Gate greift trotz
             // hohem resoniert (die Konfiguration entscheidet, keine Form-Whitelist).
-            if (r.state.blueprints["test_10ext_mast"]) r.deleteBlueprint("test_10ext_mast");
+            if (st.blueprints["test_10ext_mast"]) r.deleteBlueprint("test_10ext_mast");
             r.cloneBlueprint("stein_block", "test_10ext_mast");
-            r.state.blueprints.test_10ext_mast.parts = [
+            st.blueprints.test_10ext_mast.parts = [
                 __teil("octahedron", "quarz", 0, 0.3, 0, 0.6, 0.6, 0.6),
                 __teil("octahedron", "quarz", 0, 0.9, 0, 0.6, 0.6, 0.6),
                 __teil("octahedron", "quarz", 0, 1.5, 0, 0.6, 0.6, 0.6),
             ];
-            out.mastNotRadiating = r.computeBlueprintAffordances(r.state.blueprints.test_10ext_mast).radiating !== true;
+            out.mastNotRadiating = r.computeBlueprintAffordances(st.blueprints.test_10ext_mast).radiating !== true;
             // Welt-Reaktion: nahe einem Strahler steigen awe + peace.
-            const emoR = r.state.player.emotions;
+            const emoR = st.player.emotions;
             const aweBefore0 = emoR.awe;
             const peaceBefore0 = emoR.peace;
             const chaosBefore0 = emoR.chaos;
             const radEntry = r.spawnArchitecture("test_10ext_radiator", { x: 60, y: 0, z: 60 }, { silent: true });
             out.radEntryAffordance = !!(radEntry && radEntry.affordances && radEntry.affordances.radiating === true);
-            const pmR = r.state.playerMesh && r.state.playerMesh.position;
+            const pmR = st.playerMesh && st.playerMesh.position;
             const pmBefore = pmR ? { x: pmR.x, y: pmR.y, z: pmR.z } : null;
             if (pmR) {
                 pmR.x = 60;
@@ -578,7 +572,7 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
             const aweFar = emoR.awe;
             for (let i = 0; i < 10; i++) r.tickAffordances(0.1);
             out.radFarNoChange = Math.abs(emoR.awe - aweFar) < 0.0001;
-            r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_radiator");
+            st.architectures = st.architectures.filter((e) => e.type !== "test_10ext_radiator");
 
             // ── W10 ext. — broadcasting (leitfähiger Relais-Mast) ──
             out.broadcastingLabel = AR.AFFORDANCE_LABELS.broadcasting === "sendend";
@@ -587,22 +581,21 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
                 AR.AFFORDANCE_THRESHOLDS.broadcasting.alignMin === 0.6 &&
                 AR.AFFORDANCE_THRESHOLDS.broadcasting.leitfaehigMin === 0.4;
             // Der Quarz-Mast (aufrecht, axial, leitfähig) → broadcasting.
-            out.mastIsBroadcasting =
-                r.computeBlueprintAffordances(r.state.blueprints.test_10ext_mast).broadcasting === true;
+            out.mastIsBroadcasting = r.computeBlueprintAffordances(st.blueprints.test_10ext_mast).broadcasting === true;
             // Der radiale Cluster ist KEIN Mast → NICHT broadcasting.
             out.radiatorNotBroadcasting =
-                r.computeBlueprintAffordances(r.state.blueprints.test_10ext_radiator).broadcasting !== true;
+                r.computeBlueprintAffordances(st.blueprints.test_10ext_radiator).broadcasting !== true;
             // Eine waagrechte Eisen-Linie (leitfähig, aber Achse x,
             // nicht y) → NICHT broadcasting (ein Mast steht aufrecht).
-            if (r.state.blueprints["test_10ext_bcline"]) r.deleteBlueprint("test_10ext_bcline");
+            if (st.blueprints["test_10ext_bcline"]) r.deleteBlueprint("test_10ext_bcline");
             r.cloneBlueprint("stein_block", "test_10ext_bcline");
-            r.state.blueprints.test_10ext_bcline.parts = [
+            st.blueprints.test_10ext_bcline.parts = [
                 __teil("cylinder", "eisen", -1.5, 0, 0, 0.4, 0.4, 0.4),
                 __teil("cylinder", "eisen", 0, 0, 0, 0.4, 0.4, 0.4),
                 __teil("cylinder", "eisen", 1.5, 0, 0, 0.4, 0.4, 0.4),
             ];
             out.horizLineNotBroadcasting =
-                r.computeBlueprintAffordances(r.state.blueprints.test_10ext_bcline).broadcasting !== true;
+                r.computeBlueprintAffordances(st.blueprints.test_10ext_bcline).broadcasting !== true;
             // Relais: ein broadcasting-Mast nahe einem Strahler verstärkt dessen Reichweite — Spieler 22 m vom
             // Strahler: außerhalb der Basis (14 m), innerhalb der verstärkten (28 m).
             if (pmR) {
@@ -611,7 +604,7 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
                 pmR.z = 82;
             }
             // Cleanup natürlicher Strahler im Test-Bereich.
-            r.state.architectures = r.state.architectures.filter((e) => {
+            st.architectures = st.architectures.filter((e) => {
                 if (!e || !e.position || !e.affordances) return true;
                 if (!e.affordances.radiating && !e.affordances.broadcasting) return true;
                 const dx = e.position.x - 60;
@@ -629,40 +622,39 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
             out.relayMastAffordance = !!(mastE && mastE.affordances && mastE.affordances.broadcasting === true);
             for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
             out.relayMitMastReicheWeiter = emoR.awe > 0.1;
-            r.state.architectures = r.state.architectures.filter(
+            st.architectures = st.architectures.filter(
                 (e) => e.type !== "test_10ext_radiator" && e.type !== "test_10ext_mast"
             );
             void radE;
 
             // ── W10 ext. Politur — die Affordance-Stärke skaliert ──
-            out.strengthEmptyForNone =
-                Object.keys(r.computeAffordanceStrength(r.state.blueprints.stein_block)).length === 0;
+            out.strengthEmptyForNone = Object.keys(r.computeAffordanceStrength(st.blueprints.stein_block)).length === 0;
             // Ein Quarz-Sphären-Strahler (resoniert 2.7) ist STÄRKER
             // als der Quarz-Octahedron-Strahler (resoniert 1.8) —
             // dieselbe Substanz, andere Form, messbar bessere Antenne.
-            if (r.state.blueprints["test_10ext_radstrong"]) r.deleteBlueprint("test_10ext_radstrong");
+            if (st.blueprints["test_10ext_radstrong"]) r.deleteBlueprint("test_10ext_radstrong");
             r.cloneBlueprint("stein_block", "test_10ext_radstrong");
-            r.state.blueprints.test_10ext_radstrong.parts = [
+            st.blueprints.test_10ext_radstrong.parts = [
                 __teil("sphere", "quarz", 1.2, 0.5, 0, 0.6, 0.6, 0.6),
                 __teil("sphere", "quarz", -1.2, 0.5, 0, 0.6, 0.6, 0.6),
                 __teil("sphere", "quarz", 0, 0.5, 1.2, 0.6, 0.6, 0.6),
                 __teil("sphere", "quarz", 0, 0.5, -1.2, 0.6, 0.6, 0.6),
             ];
-            const radWeakStr = r.computeAffordanceStrength(r.state.blueprints.test_10ext_radiator).radiating;
-            const radStrongStr = r.computeAffordanceStrength(r.state.blueprints.test_10ext_radstrong).radiating;
+            const radWeakStr = r.computeAffordanceStrength(st.blueprints.test_10ext_radiator).radiating;
+            const radStrongStr = r.computeAffordanceStrength(st.blueprints.test_10ext_radstrong).radiating;
             out.radStrengthScales = typeof radWeakStr === "number" && radStrongStr > radWeakStr && radStrongStr <= 1;
             // Ein Quarz-Mast ist eine STÄRKERE Antenne als ein Holz-Mast.
-            if (r.state.blueprints["test_10ext_mastweak"]) r.deleteBlueprint("test_10ext_mastweak");
+            if (st.blueprints["test_10ext_mastweak"]) r.deleteBlueprint("test_10ext_mastweak");
             r.cloneBlueprint("stein_block", "test_10ext_mastweak");
-            r.state.blueprints.test_10ext_mastweak.parts = [
+            st.blueprints.test_10ext_mastweak.parts = [
                 __teil("cylinder", "holz", 0, 0, 0, 0.5, 1, 0.5),
                 __teil("cylinder", "holz", 0, 1, 0, 0.5, 1, 0.5),
                 __teil("cylinder", "holz", 0, 2, 0, 0.5, 1, 0.5),
             ];
-            const mastWeakStr = r.computeAffordanceStrength(r.state.blueprints.test_10ext_mastweak).broadcasting;
-            const mastStrongStr = r.computeAffordanceStrength(r.state.blueprints.test_10ext_mast).broadcasting;
+            const mastWeakStr = r.computeAffordanceStrength(st.blueprints.test_10ext_mastweak).broadcasting;
+            const mastStrongStr = r.computeAffordanceStrength(st.blueprints.test_10ext_mast).broadcasting;
             out.mastWeakIsBroadcasting =
-                r.computeBlueprintAffordances(r.state.blueprints.test_10ext_mastweak).broadcasting === true;
+                r.computeBlueprintAffordances(st.blueprints.test_10ext_mastweak).broadcasting === true;
             out.broadcastStrengthScales = typeof mastWeakStr === "number" && mastStrongStr > mastWeakStr;
             // spawnArchitecture friert die Stärke ein.
             const radSnap = r.spawnArchitecture("test_10ext_radiator", { x: 70, y: 0, z: 70 }, { silent: true });
@@ -671,7 +663,7 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
                 radSnap.affordanceStrength &&
                 typeof radSnap.affordanceStrength.radiating === "number"
             );
-            r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_radiator");
+            st.architectures = st.architectures.filter((e) => e.type !== "test_10ext_radiator");
             // Ein STARKER Mast relais-verstärkt weiter als ein SCHWACHER: Spieler 23 m vom Strahler, nur der
             // starke erreicht ihn. Natürliche Strahler/Sender im 100-m-Radius entfernen (sonst kontaminiert).
             if (pmR) {
@@ -679,7 +671,7 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
                 pmR.y = 0;
                 pmR.z = 83;
             }
-            r.state.architectures = r.state.architectures.filter((e) => {
+            st.architectures = st.architectures.filter((e) => {
                 if (!e || !e.position || !e.affordances) return true;
                 if (!e.affordances.radiating && !e.affordances.broadcasting) return true;
                 const dx = e.position.x - 60;
@@ -692,11 +684,11 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
             emoR.peace = 0.1;
             for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
             out.weakMastTooWeak = Math.abs(emoR.awe - 0.1) < 0.0001;
-            r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_mastweak");
+            st.architectures = st.architectures.filter((e) => e.type !== "test_10ext_mastweak");
             r.spawnArchitecture("test_10ext_mast", { x: 66, y: 0, z: 60 }, { silent: true });
             for (let i = 0; i < 20; i++) r.tickAffordances(0.1);
             out.strongMastReachesFarther = emoR.awe > 0.1;
-            r.state.architectures = r.state.architectures.filter(
+            st.architectures = st.architectures.filter(
                 (e) => e.type !== "test_10ext_radiator" && e.type !== "test_10ext_mast"
             );
 
@@ -707,35 +699,35 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
                 AR.AFFORDANCE_THRESHOLDS.balancing.bottomHeavyMin === 0.6 &&
                 AR.AFFORDANCE_THRESHOLDS.balancing.dichteMin === 1.5;
             // Eine breite, flache, schwere Stein-Box-Plattform gründet.
-            if (r.state.blueprints["test_10ext_platform"]) r.deleteBlueprint("test_10ext_platform");
+            if (st.blueprints["test_10ext_platform"]) r.deleteBlueprint("test_10ext_platform");
             r.cloneBlueprint("stein_block", "test_10ext_platform");
-            r.state.blueprints.test_10ext_platform.parts = [
+            st.blueprints.test_10ext_platform.parts = [
                 __teil("box", "stein", 1.5, 0.2, 0, 1, 0.4, 1),
                 __teil("box", "stein", -1.5, 0.2, 0, 1, 0.4, 1),
                 __teil("box", "stein", 0, 0.2, 1.5, 1, 0.4, 1),
                 __teil("box", "stein", 0, 0.2, -1.5, 1, 0.4, 1),
             ];
             out.platformIsBalancing =
-                r.computeBlueprintAffordances(r.state.blueprints.test_10ext_platform).balancing === true;
+                r.computeBlueprintAffordances(st.blueprints.test_10ext_platform).balancing === true;
             // Ein aufrechter Mast ist hoch, nicht breit → NICHT balancing.
-            out.mastNotBalancing = r.computeBlueprintAffordances(r.state.blueprints.test_10ext_mast).balancing !== true;
+            out.mastNotBalancing = r.computeBlueprintAffordances(st.blueprints.test_10ext_mast).balancing !== true;
             // Der Quarz-Cluster ist breit + flach + bodenlastig, aber
             // zu LEICHT (dichte 1.3 < 1.5) → NICHT balancing (der
             // dichte-Gate beweist: nur genuin Schweres gründet).
             out.lightClusterNotBalancing =
-                r.computeBlueprintAffordances(r.state.blueprints.test_10ext_radiator).balancing !== true;
+                r.computeBlueprintAffordances(st.blueprints.test_10ext_radiator).balancing !== true;
             // Stärke skaliert: eine Stein-Box-Plattform (dichte 2.55)
             // gründet stärker als eine Stein-Cylinder-Plattform (1.7).
-            if (r.state.blueprints["test_10ext_platweak"]) r.deleteBlueprint("test_10ext_platweak");
+            if (st.blueprints["test_10ext_platweak"]) r.deleteBlueprint("test_10ext_platweak");
             r.cloneBlueprint("stein_block", "test_10ext_platweak");
-            r.state.blueprints.test_10ext_platweak.parts = [
+            st.blueprints.test_10ext_platweak.parts = [
                 __teil("cylinder", "stein", 1.5, 0.2, 0, 1, 0.4, 1),
                 __teil("cylinder", "stein", -1.5, 0.2, 0, 1, 0.4, 1),
                 __teil("cylinder", "stein", 0, 0.2, 1.5, 1, 0.4, 1),
                 __teil("cylinder", "stein", 0, 0.2, -1.5, 1, 0.4, 1),
             ];
-            const balStrong = r.computeAffordanceStrength(r.state.blueprints.test_10ext_platform).balancing;
-            const balWeak = r.computeAffordanceStrength(r.state.blueprints.test_10ext_platweak).balancing;
+            const balStrong = r.computeAffordanceStrength(st.blueprints.test_10ext_platform).balancing;
+            const balWeak = r.computeAffordanceStrength(st.blueprints.test_10ext_platweak).balancing;
             out.balancingStrengthScales = typeof balWeak === "number" && balStrong > balWeak && balStrong <= 1;
             // die Welt-Reaktion: der Prüf-Satz (gate:werkstatt-weg)
             emoR.chaos = chaosBefore0;
@@ -747,37 +739,36 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
                 AR.AFFORDANCE_THRESHOLDS.lifting.magieMin === 1.5 &&
                 AR.AFFORDANCE_THRESHOLDS.lifting.dichteMax === 1.0;
             // Ein Quarz-Cone-Cluster (magie 1.7, dichte 0.65) hebt.
-            if (r.state.blueprints["test_10ext_lifter"]) r.deleteBlueprint("test_10ext_lifter");
+            if (st.blueprints["test_10ext_lifter"]) r.deleteBlueprint("test_10ext_lifter");
             r.cloneBlueprint("stein_block", "test_10ext_lifter");
-            r.state.blueprints.test_10ext_lifter.parts = [
+            st.blueprints.test_10ext_lifter.parts = [
                 __teil("cone", "quarz", 1, 0.5, 0, 0.6, 0.8, 0.6),
                 __teil("cone", "quarz", -1, 0.5, 0, 0.6, 0.8, 0.6),
                 __teil("cone", "quarz", 0, 0.5, 1, 0.6, 0.8, 0.6),
             ];
-            out.lifterIsLifting = r.computeBlueprintAffordances(r.state.blueprints.test_10ext_lifter).lifting === true;
+            out.lifterIsLifting = r.computeBlueprintAffordances(st.blueprints.test_10ext_lifter).lifting === true;
             // Eine schwere Stein-Plattform → NICHT lifting (magie zu tief).
-            out.platformNotLifting =
-                r.computeBlueprintAffordances(r.state.blueprints.test_10ext_platform).lifting !== true;
+            out.platformNotLifting = r.computeBlueprintAffordances(st.blueprints.test_10ext_platform).lifting !== true;
             // Der Quarz-Octahedron-Cluster ist magie-geladen, aber zu
             // DICHT (dichte 1.3 > 1.0) → NICHT lifting (der dichte-
             // Deckel beweist: Magie hebt kein Gewicht).
             out.denseClusterNotLifting =
-                r.computeBlueprintAffordances(r.state.blueprints.test_10ext_radiator).lifting !== true;
+                r.computeBlueprintAffordances(st.blueprints.test_10ext_radiator).lifting !== true;
             // _liftVerticalVelocity: dämpft den Fall + hebt sanft.
             out.liftCushionsFall = r._liftVerticalVelocity(-10, 1) > -10;
             out.liftDriftsUp = r._liftVerticalVelocity(0, 1) > 0;
             out.liftNoFieldNoEffect = r._liftVerticalVelocity(-10, 0) === -10;
             // Stärke skaliert: ein Quarz-Helix-Heber (magie 2.55) hebt
             // stärker als der Quarz-Cone-Heber (magie 1.7).
-            if (r.state.blueprints["test_10ext_lifterstrong"]) r.deleteBlueprint("test_10ext_lifterstrong");
+            if (st.blueprints["test_10ext_lifterstrong"]) r.deleteBlueprint("test_10ext_lifterstrong");
             r.cloneBlueprint("stein_block", "test_10ext_lifterstrong");
-            r.state.blueprints.test_10ext_lifterstrong.parts = [
+            st.blueprints.test_10ext_lifterstrong.parts = [
                 __teil("helix", "quarz", 1, 0.5, 0, 0.6, 1, 2),
                 __teil("helix", "quarz", -1, 0.5, 0, 0.6, 1, 2),
                 __teil("helix", "quarz", 0, 0.5, 1, 0.6, 1, 2),
             ];
-            const liftWeak = r.computeAffordanceStrength(r.state.blueprints.test_10ext_lifter).lifting;
-            const liftStrong = r.computeAffordanceStrength(r.state.blueprints.test_10ext_lifterstrong).lifting;
+            const liftWeak = r.computeAffordanceStrength(st.blueprints.test_10ext_lifter).lifting;
+            const liftStrong = r.computeAffordanceStrength(st.blueprints.test_10ext_lifterstrong).lifting;
             out.liftStrengthScales = typeof liftWeak === "number" && liftStrong > liftWeak && liftStrong <= 1;
             // Welt-Reaktion: _tickLiftingAffordances setzt das Feld-Flag.
             const liftE = r.spawnArchitecture("test_10ext_lifter", { x: 80, y: 0, z: 80 }, { silent: true });
@@ -794,11 +785,11 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
                 pmR.z = 82;
             }
             r._tickLiftingAffordances();
-            out.liftFieldActiveNear = !!(r.state.player.liftingField && r.state.player.liftingField.active);
+            out.liftFieldActiveNear = !!(st.player.liftingField && st.player.liftingField.active);
             if (pmR) pmR.z = 400;
             r._tickLiftingAffordances();
-            out.liftFieldInactiveFar = !(r.state.player.liftingField && r.state.player.liftingField.active);
-            r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10ext_lifter");
+            out.liftFieldInactiveFar = !(st.player.liftingField && st.player.liftingField.active);
+            st.architectures = st.architectures.filter((e) => e.type !== "test_10ext_lifter");
 
             emoR.awe = aweBefore0;
             emoR.peace = peaceBefore0;
@@ -815,7 +806,7 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
             out.entryHasAffordances = !!(entry && entry.affordances && entry.affordances.moveable === true);
 
             // Cleanup spawned entry
-            r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b_car");
+            st.architectures = st.architectures.filter((e) => e.type !== "test_10b_car");
 
             // UI: Werkstatt-Status zeigt "fahrbar"
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
@@ -843,14 +834,14 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
                 "test_10ext_lifter",
                 "test_10ext_lifterstrong",
             ]) {
-                if (r.state.blueprints[n]) r.deleteBlueprint(n);
+                if (st.blueprints[n]) r.deleteBlueprint(n);
             }
             r.selectBlueprintForEdit("stein_block");
             r._renderWorkshopDOM();
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
             if (r) r.closeAllDrawers();
-            r.state.yaw = 0;
-            if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+            st.yaw = 0;
+            if (st.playerMesh) st.playerMesh.rotation.y = 0;
         } catch (err) {
             out.error = err && err.message;
         }
@@ -1034,15 +1025,15 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
         try {
 
             // der fahrbare Bauplan für die Reichweite (100 m fern)
-            if (r.state.blueprints["test_10b3_far"]) r.deleteBlueprint("test_10b3_far");
+            if (st.blueprints["test_10b3_far"]) r.deleteBlueprint("test_10b3_far");
             r.cloneBlueprint("stein_block", "test_10b3_far");
-            r.state.blueprints.test_10b3_far.parts = [
+            st.blueprints.test_10b3_far.parts = [
                 __teil("cylinder", "eisen", -1, 0.3, 0, 0.6, 0.4, 0.6),
                 __teil("cylinder", "eisen", 1, 0.3, 0, 0.6, 0.4, 0.6),
                 __teil("box", "quarz", 0, 1, 0, 1.2, 0.8, 0.6),
             ];
             // Aufsitzen, Fahren und Absteigen über die echte Taste am gesetzten Wagen trägt diag-werkstatt-weg (L-VERBEN)
-            const ppos = r.state.playerMesh.position;
+            const ppos = st.playerMesh.position;
             const dummy = { affordances: { moveable: false } };
             const failRes = r.mountArchitecture(dummy);
             out.nonMoveableRejected = failRes && failRes.ok === false && failRes.reason === "not_moveable";
@@ -1051,18 +1042,17 @@ async function checkBandWave10b({ page, check, errors, finalState }) {
             r.spawnArchitecture("test_10b3_far", { x: ppos.x + 100, y: ppos.y, z: ppos.z + 100 }, { silent: true });
             const farMountRes = r.toggleMountAtPlayer();
             out.farMountRejected = farMountRes && farMountRes.ok === false && farMountRes.reason === "none_in_range";
-            r.state.architectures = r.state.architectures.filter((e) => e.type !== "test_10b3_far");
+            st.architectures = st.architectures.filter((e) => e.type !== "test_10b3_far");
 
             // Zoom-Test: _hasMagnifyingInSight raycastet gegen ALLE magnifying-Architekturen; eine autonom
             // gespawnte Geode im Strahl kippte die „kein Target“-Prüfung → Architektur-Liste kurz leeren.
-            const initialFov = r.state.camera.fov;
-            out.zoomInactiveInitial = !r.state._zoomActive;
-            const zoomArchBackup = r.state.architectures;
-            r.state.architectures = [];
+            const initialFov = st.camera.fov;
+            out.zoomInactiveInitial = !st._zoomActive;
+            const zoomArchBackup = st.architectures;
+            st.architectures = [];
             const noTargetRes = r.setZoomActive(true);
-            r.state.architectures = zoomArchBackup;
-            out.zoomFailsWithoutTarget =
-                noTargetRes === false && !r.state._zoomActive && r.state.camera.fov === initialFov;
+            st.architectures = zoomArchBackup;
+            out.zoomFailsWithoutTarget = noTargetRes === false && !st._zoomActive && st.camera.fov === initialFov;
 
             // das Brennglas (Mittag, Nacht, Regen, Kühlung) trägt diag-werkstatt-weg BRENNGLAS: gebaut über den Bau-Weg
             r.deleteBlueprint("test_10b3_far");
@@ -1097,12 +1087,12 @@ async function checkBandTailleOmega6({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
         const mkMat = (name, extraTags) => {
-            r.state.materials[name] = {
+            st.materials[name] = {
                 name,
                 label: name,
                 builtIn: false,
                 color: 0x888888,
-                tags: { ...r.constructor.MATERIAL_TAG_DEFAULTS, härte: 0.6, dichte: 0.7, ...extraTags },
+                tags: { ...AnazhRealm.MATERIAL_TAG_DEFAULTS, härte: 0.6, dichte: 0.7, ...extraTags },
             };
         };
         mkMat("_o6_rein", {});
@@ -1125,8 +1115,8 @@ async function checkBandTailleOmega6({ page, check }) {
         });
         const a = mkBp("_o6_rein");
         const b = mkBp("_o6_fremd");
-        r.state.blueprints[a.name] = a;
-        r.state.blueprints[b.name] = b;
+        st.blueprints[a.name] = a;
+        st.blueprints[b.name] = b;
         // (1) must-ignore BEHAVIORAL: jede Kern-Lesart ist BIT-GLEICH —
         // das fremde Vokabular (x:-Tag 99 + unbekannte nackte Achse 42)
         // trägt zu KEINER Kern-Resonanz bei.
@@ -1138,19 +1128,18 @@ async function checkBandTailleOmega6({ page, check }) {
             JSON.stringify(r.computeBuildCost(b.name)).replace(/_o6_fremd/g, "M");
         // (2) must-preserve: das fremde Vokabular REIST durch den Material-
         // Zwilling (Ω2) bit-gleich.
-        const ser = r._serializeMaterial(r.state.materials["_o6_fremd"]);
+        const ser = r._serializeMaterial(st.materials["_o6_fremd"]);
         out.travels = ser.tags["x:v25:aether"] === 99 && ser.tags["leuchtkraft"] === 42;
         // (3) der KERN ist eingefroren + die Doktrin steht am Kern (frozen +
         // Kommentar-Anker ist Doku; hier der strukturelle Teil).
-        out.coreFrozen =
-            Object.isFrozen(r.constructor.MATERIAL_TAG_KEYS) && r.constructor.MATERIAL_TAG_KEYS.length === 10;
+        out.coreFrozen = Object.isFrozen(AnazhRealm.MATERIAL_TAG_KEYS) && AnazhRealm.MATERIAL_TAG_KEYS.length === 10;
         // (4) die Wachstumsregel: eine NEUE Achse wäre additiv mit Default 0 —
         // MATERIAL_TAG_DEFAULTS trägt für jede Kern-Achse 0 (per Konstruktion).
-        out.defaultsZero = r.constructor.MATERIAL_TAG_KEYS.every((k) => r.constructor.MATERIAL_TAG_DEFAULTS[k] === 0);
-        delete r.state.blueprints[a.name];
-        delete r.state.blueprints[b.name];
-        delete r.state.materials["_o6_rein"];
-        delete r.state.materials["_o6_fremd"];
+        out.defaultsZero = AnazhRealm.MATERIAL_TAG_KEYS.every((k) => AnazhRealm.MATERIAL_TAG_DEFAULTS[k] === 0);
+        delete st.blueprints[a.name];
+        delete st.blueprints[b.name];
+        delete st.materials["_o6_rein"];
+        delete st.materials["_o6_fremd"];
         return out;
     });
     if (!res) {
@@ -1171,7 +1160,7 @@ async function checkBandTailleOmega6({ page, check }) {
 // trägt zusätzlich eine harte Schranke (0.35): dort wird Übersprechen zur falschen ROLLE.
 async function checkBandPsi0Winkel({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const cos = (a, b) => {
             const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
             let dot = 0;
@@ -1300,7 +1289,7 @@ async function checkBandLambda1LivingCenter({ page, check }) {
         out.humanoidBody = r._isBodyShaped(humanoid);
         out.steinTempelNotBody = !r._isBodyShaped(steinTempel);
         // SUBSTANCE_ROLE_THRESHOLDS.body trägt die drei Λ.1-Felder.
-        const T = r.constructor.SUBSTANCE_ROLE_THRESHOLDS.body;
+        const T = AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS.body;
         out.thresholdsExist =
             Number.isFinite(T.livingMassMin) &&
             Number.isFinite(T.livingCenterMinY) &&

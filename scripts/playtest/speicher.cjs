@@ -13,11 +13,11 @@ async function checkBandV1738RulePersistence({ page, check }) {
         const out = {};
         const now = () => performance.now() / 1000;
 
-        const savedRules = r.state.worldRules.slice();
-        const savedWeather = r.state.weather;
+        const savedRules = st.worldRules.slice();
+        const savedWeather = st.weather;
 
         // --- (1) buildStateSnapshot serialisiert worldRules (definierende Felder) ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r.dslRun(["rule", ["weather_is", "rainy"], ["weather", "sunny"], { everySec: 3 }], { source: "human" });
         r.dslRun(["rule", ["random_chance", 1], ["weather", "rainy"], { everySec: 3, ttlSec: 60 }], {
             source: "nexus",
@@ -35,12 +35,12 @@ async function checkBandV1738RulePersistence({ page, check }) {
             snap.worldRules[0].born === undefined;
 
         // --- (2) loadState-Restore: frische Akkus, korrekte Felder ---
-        r.state.worldRules.length = 0;
+        st.worldRules.length = 0;
         r._loadStateRestoreWorldRules(snap);
-        const rr = r.state.worldRules;
+        const rr = st.worldRules;
         // die Gesetze des Gemüts stehen in jeder geladenen Welt (`_gemuetGesetze`, affekt.K2) — hinter den geladenen
         out.restoreWorks =
-            rr.length === 2 + r.constructor.EMOTION_AXES.length &&
+            rr.length === 2 + AnazhRealm.EMOTION_AXES.length &&
             rr.slice(2).every((g) => /^emotion:/.test(g.source) && g.pinned) &&
             JSON.stringify(rr[0].cond) === JSON.stringify(["weather_is", "rainy"]) &&
             rr[0].source === "human" &&
@@ -53,11 +53,11 @@ async function checkBandV1738RulePersistence({ page, check }) {
         // --- (3) eine RESTAURIERTE Regel feuert (sie ist voll funktional) ---
         // Isoliert auf die Mensch-Regel (rainy→sunny) — sonst überschriebe die
         // mit-restaurierte Nexus-Regel (random_chance→rainy) das Ergebnis im Tick.
-        r.state.worldRules = [rr[0]];
-        r.state.weather = "rainy";
+        st.worldRules = [rr[0]];
+        st.weather = "rainy";
         rr[0].lastFired = -Infinity;
         r._tickWorldRules(now());
-        out.restoredFires = r.state.weather === "sunny";
+        out.restoredFires = st.weather === "sunny";
 
         // --- (4) Dedup beim Restore (zweimal dieselbe Regel → ein Eintrag) ---
         const dupSnap = {
@@ -79,12 +79,12 @@ async function checkBandV1738RulePersistence({ page, check }) {
             ],
         };
         r._loadStateRestoreWorldRules(dupSnap);
-        out.restoreDedup = r.state.worldRules.filter((g) => g.source === "human").length === 1;
+        out.restoreDedup = st.worldRules.filter((g) => g.source === "human").length === 1;
 
         // --- (5) alter Save ohne worldRules → no-op (state bleibt) ---
-        r.state.worldRules = [{ id: 999, cond: ["x"], effect: ["y"], source: "human" }];
+        st.worldRules = [{ id: 999, cond: ["x"], effect: ["y"], source: "human" }];
         r._loadStateRestoreWorldRules({}); // kein worldRules-Feld
-        out.oldSaveNoop = r.state.worldRules.length === 1 && r.state.worldRules[0].id === 999;
+        out.oldSaveNoop = st.worldRules.length === 1 && st.worldRules[0].id === 999;
 
         // --- (6) fuseWorlds: die Regel-Saetze werden VEREINIGT (Union + Dedup) ---
         const ruleX = { cond: ["weather_is", "rainy"], effect: ["weather", "sunny"], everySec: 3, source: "human" };
@@ -103,8 +103,8 @@ async function checkBandV1738RulePersistence({ page, check }) {
             merged.some((m) => JSON.stringify(m.cond) === JSON.stringify(["field_below", "lebendig", 0.3]));
 
         // restore
-        r.state.worldRules = savedRules;
-        r.state.weather = savedWeather;
+        st.worldRules = savedRules;
+        st.weather = savedWeather;
         return out;
     });
 
@@ -133,16 +133,16 @@ async function checkBandRing8({ page, check, errors, finalState }) {
         const out = {};
 
         // Schema-Version-Bump (Zeiger, Index, Platz und Legacy-Migration fährt gate:boot-rettung am echten Boot)
-        out.schemaIsMultiworld = r.state.worldMeta.schemaVersion === "8.0-multiworld-v1";
-        const activeId = r.state.worldMeta.worldId;
+        out.schemaIsMultiworld = st.worldMeta.schemaVersion === "8.0-multiworld-v1";
+        const activeId = st.worldMeta.worldId;
 
         // DIE GEBURT ERBT NICHTS (Positiv-Liste): die alte Welt trägt jedes Identitäts-Feld (Anker, Edits,
         // Dorf-Zellen, Ring- und Vorschau-Stempel, Erbgut, Saat, Rolle, Bann-Liste …) — der leere Snapshot der neuen Welt
         // darf davon keins tragen, nur die Wahl des Schöpfers (visibility, creator). Die alte Welt steht dafür nur
         // synchron in state.worldMeta (kein Takt dazwischen), danach wieder die echte.
         {
-            const echt = r.state.worldMeta;
-            r.state.worldMeta = Object.assign({}, echt, {
+            const echt = st.worldMeta;
+            st.worldMeta = Object.assign({}, echt, {
                 macro: { massivC: { x: 1, z: 2 } },
                 voxelEdits: [{ x: 1, y: 2, z: 3, r: 2, mode: "carve" }],
                 settlementCells: { start: { x: 0, z: 0 } },
@@ -164,7 +164,7 @@ async function checkBandRing8({ page, check, errors, finalState }) {
             try {
                 leer = r._buildEmptyWorldSnapshot(r._generateFreshWorldMeta("test-erbe"), false);
             } finally {
-                r.state.worldMeta = echt;
+                st.worldMeta = echt;
             }
             const NEU = new Set(["worldId", "slug", "bornAt", "seed", "genVersion", "variantSeed"]);
             const SCHNAPPSCHUSS = new Set(["parentWorlds", "bauSame", "schemaVersion", "gameMode"]);
@@ -222,11 +222,11 @@ async function checkBandRing8({ page, check, errors, finalState }) {
             });
             const index0 = r.worldsIndexLoad().length;
             const zeiger0 = r.activeWorldGet();
-            const welt0 = r.state.worldMeta;
-            const p2pRolle0 = r.state.p2p.role;
+            const welt0 = st.worldMeta;
+            const p2pRolle0 = st.p2p.role;
             const daneben = r.importWorldBeside(fremd());
             const gast = r._importGuestWorld(fremd(), { url: "ws://127.0.0.1:1", roomId: "w-tuer-korridor" }, null);
-            r.state.p2p.pendingWorldSnapshot = true;
+            st.p2p.pendingWorldSnapshot = true;
             const mitspieler = r._p2pApplyWorldSnapshot("tuer-peer", fremd());
             out.erbgutTueren = {
                 daneben: daneben && daneben.ok === false && /unbekannte Term-Art/.test(daneben.reason),
@@ -234,10 +234,10 @@ async function checkBandRing8({ page, check, errors, finalState }) {
                 mitspieler: mitspieler && mitspieler.ok === false && /unbekannte Term-Art/.test(mitspieler.reason),
                 index: r.worldsIndexLoad().length === index0,
                 zeiger: r.activeWorldGet() === zeiger0,
-                welt: r.state.worldMeta === welt0 && r.state.p2p.role === p2pRolle0,
+                welt: st.worldMeta === welt0 && st.p2p.role === p2pRolle0,
                 gespeichert: localStorage.getItem(r.worldStorageKey("w-tuer-korridor")) === null,
             };
-            r.state.p2p.pendingWorldSnapshot = false;
+            st.p2p.pendingWorldSnapshot = false;
         }
 
         // createNewWorld (ohne Reload) erzeugt eine neue Welt im Index.
@@ -249,7 +249,7 @@ async function checkBandRing8({ page, check, errors, finalState }) {
         out.indexGrewByOne = idx2.length === beforeCount + 1;
         out.newWorldInIndex = !!idx2.find((e) => e.worldId === newId && e.slug === "test-zweite");
         // state.worldMeta bleibt auf der alten (kein Reload; den Zeiger prüft die Ablage selbst, `_weltAblegen`)
-        out.stateWorldMetaUnchanged = r.state.worldMeta.worldId === activeId;
+        out.stateWorldMetaUnchanged = st.worldMeta.worldId === activeId;
 
         // Slug-Unique: weitere Welt mit demselben Slug bekommt Suffix -2.
         const newId2 = r.createNewWorld({ slug: "test-zweite", inheritPlayer: false, reload: false });
@@ -262,8 +262,8 @@ async function checkBandRing8({ page, check, errors, finalState }) {
         // NULL: der getragene Wolf-Körper — custom soul — reist mit).
         r.applyPlayerSoul("wolf");
         // Phantasy-eigenes Tool im player-Inventory damit Übernahme prüfbar
-        if (!r.state.tools["übernahme-marker"]) {
-            r.state.tools["übernahme-marker"] = {
+        if (!st.tools["übernahme-marker"]) {
+            st.tools["übernahme-marker"] = {
                 name: "übernahme-marker",
                 label: "Übernahme-Marker",
                 opClass: "schneiden",
@@ -272,7 +272,7 @@ async function checkBandRing8({ page, check, errors, finalState }) {
                 builtIn: false,
                 sourceBlueprint: null,
             };
-            r.state.player.tools.push("übernahme-marker");
+            st.player.tools.push("übernahme-marker");
         }
         const inheritId = r.createNewWorld({ slug: "test-mit-person", inheritPlayer: true, reload: false });
         const inheritSave = JSON.parse(localStorage.getItem(r.worldStorageKey(inheritId)) || "{}");
@@ -380,7 +380,7 @@ async function checkBandRing8({ page, check, errors, finalState }) {
         // Rendern mit zwei Test-Welten und prüfen, dass UI sie zeigt
         r.createNewWorld({ slug: "test-ui-eins", inheritPlayer: false, reload: false });
         r.createNewWorld({ slug: "test-ui-zwei", inheritPlayer: false, reload: false });
-        r.activeWorldSet(r.state.worldMeta.worldId);
+        r.activeWorldSet(st.worldMeta.worldId);
         r._renderWorldPicker();
         const list = document.getElementById("world-picker-list");
         const rows = list ? list.querySelectorAll(".world-picker-row") : [];
@@ -394,11 +394,9 @@ async function checkBandRing8({ page, check, errors, finalState }) {
         }
         out.pickerShowsBothSlugs = foundUiEins && foundUiZwei;
         // Aktive Welt ist NICHT in der „Andere Welten"-Liste
-        out.pickerHidesActive = !Array.from(rows).some((row) =>
-            (row.textContent || "").includes(r.state.worldMeta.slug)
-        );
+        out.pickerHidesActive = !Array.from(rows).some((row) => (row.textContent || "").includes(st.worldMeta.slug));
         // Cleanup
-        const activeId = r.state.worldMeta.worldId;
+        const activeId = st.worldMeta.worldId;
         for (const e of r.worldsIndexLoad()) {
             if (e.worldId !== activeId) r.deleteWorld(e.worldId);
         }
@@ -419,7 +417,7 @@ async function checkBandRing8({ page, check, errors, finalState }) {
         if (!r) return null;
         const out = {};
 
-        const oldSeed = r.state.worldMeta.seed;
+        const oldSeed = st.worldMeta.seed;
         out.activeHasSeed = typeof oldSeed === "string" && oldSeed.length > 0;
 
         // Zwei neue Welten parallel anlegen, ohne Reload, und ihre
@@ -475,7 +473,7 @@ async function checkBandRing8({ page, check, errors, finalState }) {
         }
 
         // Aufräumen
-        const keepId = r.state.worldMeta.worldId;
+        const keepId = st.worldMeta.worldId;
         r.activeWorldSet(keepId);
         for (const e of r.worldsIndexLoad()) {
             if (e.worldId !== keepId) r.deleteWorld(e.worldId);
@@ -516,16 +514,16 @@ async function checkBandRing8({ page, check, errors, finalState }) {
             false
         );
         out.emptySnapHasNoPosition = emptySnap.playerPosition === null;
-        const savedPos = r.state.playerMesh ? r.state.playerMesh.position.clone() : null;
-        r.state.terrainEverGenerated = false;
+        const savedPos = st.playerMesh ? st.playerMesh.position.clone() : null;
+        st.terrainEverGenerated = false;
         // BÜHNE: der Reset-Wert vor dem Restore (Speicher-Mechanik)
-        if (r.state.playerMesh) r.state.playerMesh.position.set(7, 8, 9);
+        if (st.playerMesh) st.playerMesh.position.set(7, 8, 9);
         r._loadStateRestorePlayerPosition(emptySnap);
-        out.emptySnapKeepsFirstSpawn = r.state.terrainEverGenerated === false;
-        out.emptySnapKeepsPosition = r.state.playerMesh && Math.abs(r.state.playerMesh.position.x - 7) < 0.01;
+        out.emptySnapKeepsFirstSpawn = st.terrainEverGenerated === false;
+        out.emptySnapKeepsPosition = st.playerMesh && Math.abs(st.playerMesh.position.x - 7) < 0.01;
         // Lauf-Zustand zurück: die Welt IST generiert + Position restauriert.
-        r.state.terrainEverGenerated = true;
-        if (savedPos && r.state.playerMesh) r.state.playerMesh.position.copy(savedPos);
+        st.terrainEverGenerated = true;
+        if (savedPos && st.playerMesh) st.playerMesh.position.copy(savedPos);
 
         // Status-Bar zeigt aktuelle Welt
         const slugEl = document.getElementById("status-slug");
@@ -535,7 +533,7 @@ async function checkBandRing8({ page, check, errors, finalState }) {
         out.statusLabelIsWelt = labelText === "Welt";
         // Tick den Status-Panel-Update
         r.updateStatusPanel(performance.now() / 1000);
-        out.statusSlugShowsActiveWorld = slugEl && slugEl.textContent === (r.state.worldMeta.slug || "—");
+        out.statusSlugShowsActiveWorld = slugEl && slugEl.textContent === (st.worldMeta.slug || "—");
 
         return out;
     });
@@ -614,7 +612,7 @@ async function checkBandRing9to10({ page, check, errors, finalState }) {
         out.witnessEntryHasProvenance =
             witnessEntry && witnessEntry.ctx && witnessEntry.ctx.fromWorldId === originalSrcId;
         // Aktive Welt wurde NICHT umgeleitet
-        out.activeUnchanged = r.activeWorldGet() === r.state.worldMeta.worldId;
+        out.activeUnchanged = r.activeWorldGet() === st.worldMeta.worldId;
         out.activeNotImport = r.activeWorldGet() !== result.worldId;
 
         // Slug-Kollision: nochmal mit gleichem Slug importieren
@@ -623,13 +621,13 @@ async function checkBandRing9to10({ page, check, errors, finalState }) {
 
         // _openWeltTorDialog setzt pendingImport
         r._openWeltTorDialog(importedSnapshot, { name: "test.json", size: 100 });
-        out.pendingImportSet = !!(r.state.pendingImport && r.state.pendingImport.parsed);
+        out.pendingImportSet = !!(st.pendingImport && st.pendingImport.parsed);
         // Cancel räumt pendingImport
         r._closeWeltTorDialog();
-        out.pendingClearedAfterCancel = r.state.pendingImport === null;
+        out.pendingClearedAfterCancel = st.pendingImport === null;
 
         // _weltTorImportBeside ohne pendingImport ist no-op (ein Wurf bräche die ganze Probe)
-        r.state.pendingImport = null;
+        st.pendingImport = null;
         r._weltTorImportBeside();
 
         // Eine importierte Welt OHNE worldJournal bekommt trotzdem einen Witness-Eintrag (nie still
@@ -649,7 +647,7 @@ async function checkBandRing9to10({ page, check, errors, finalState }) {
         }
 
         // Aufräumen: alle Test-Welten weg
-        const keepId = r.state.worldMeta.worldId;
+        const keepId = st.worldMeta.worldId;
         for (const e of r.worldsIndexLoad()) {
             if (e.worldId !== keepId) r.deleteWorld(e.worldId);
         }
@@ -873,7 +871,7 @@ async function checkBandRing9to10({ page, check, errors, finalState }) {
         out.cascadeRewiredRefName = !!fractal && fractal.parts.some((p) => p.refName === "kollidierer-fusion");
 
         // Cleanup
-        const keepId = r.state.worldMeta.worldId;
+        const keepId = st.worldMeta.worldId;
         for (const e of r.worldsIndexLoad()) {
             if (e.worldId !== keepId) r.deleteWorld(e.worldId);
         }
@@ -973,42 +971,42 @@ async function checkBandRing9to10({ page, check, errors, finalState }) {
         ];
         localStorage.setItem(r.worldStorageKey(srcId), JSON.stringify(srcSave));
 
-        const beforeBPCount = Object.keys(r.state.blueprints).length;
-        const beforeMatCount = Object.keys(r.state.materials).length;
-        const beforeToolCount = Object.keys(r.state.tools).length;
+        const beforeBPCount = Object.keys(st.blueprints).length;
+        const beforeMatCount = Object.keys(st.materials).length;
+        const beforeToolCount = Object.keys(st.tools).length;
 
         const result = r.importRecipesFromWorld(srcId);
         out.importOk = result.ok === true;
         out.importCounts =
             result.ok && result.counts.blueprints === 3 && result.counts.materials === 1 && result.counts.tools === 1;
-        out.bpAddedToState = !!r.state.blueprints["fremder-altar"];
-        out.materialAdded = !!r.state.materials["rosa-quarz"];
-        out.toolAdded = !!r.state.tools["fremder-hammer"];
-        const altar = r.state.blueprints["fremder-altar"];
+        out.bpAddedToState = !!st.blueprints["fremder-altar"];
+        out.materialAdded = !!st.materials["rosa-quarz"];
+        out.toolAdded = !!st.tools["fremder-hammer"];
+        const altar = st.blueprints["fremder-altar"];
         out.bpContentPreserved = !!altar && altar.parts.length === 1 && altar.parts[0].shape === "box";
-        out.activeWorldStillSame = r.state.worldMeta.worldId !== srcId && r.activeWorldGet() !== srcId;
-        const j = r.state.worldJournal && r.state.worldJournal.entries;
+        out.activeWorldStillSame = st.worldMeta.worldId !== srcId && r.activeWorldGet() !== srcId;
+        const j = st.worldJournal && st.worldJournal.entries;
         out.witnessEntryWritten =
             Array.isArray(j) &&
             j.some((e) => e.type === "witness" && e.text && e.text.includes("Rezepte aus „recipe-source"));
-        out.bpStateGrew = Object.keys(r.state.blueprints).length - beforeBPCount === 3;
-        out.matStateGrew = Object.keys(r.state.materials).length - beforeMatCount === 1;
-        out.toolStateGrew = Object.keys(r.state.tools).length - beforeToolCount === 1;
+        out.bpStateGrew = Object.keys(st.blueprints).length - beforeBPCount === 3;
+        out.matStateGrew = Object.keys(st.materials).length - beforeMatCount === 1;
+        out.toolStateGrew = Object.keys(st.tools).length - beforeToolCount === 1;
 
         const result2 = r.importRecipesFromWorld(srcId);
         out.secondImportOk = result2.ok === true;
-        out.collisionAddsImportSuffix = !!r.state.blueprints["fremder-altar-import"];
-        const fraktalImport = r.state.blueprints["fremder-fraktal-import"];
+        out.collisionAddsImportSuffix = !!st.blueprints["fremder-altar-import"];
+        const fraktalImport = st.blueprints["fremder-fraktal-import"];
         out.fractalRefRewired =
             !!fraktalImport &&
             fraktalImport.parts &&
             fraktalImport.parts.some((p) => p.refName === "fremder-altar-import");
-        const hammerImport = r.state.tools["fremder-hammer-import"];
+        const hammerImport = st.tools["fremder-hammer-import"];
         out.toolRefRewired = !!hammerImport && hammerImport.sourceBlueprint === "fremder-hammer-bp-import";
 
         const noId = r.importRecipesFromWorld("");
         out.rejectsEmptyId = !noId.ok;
-        const activeId = r.state.worldMeta.worldId;
+        const activeId = st.worldMeta.worldId;
         const selfImport = r.importRecipesFromWorld(activeId);
         out.rejectsSelfImport = !selfImport.ok;
         const ghostImport = r.importRecipesFromWorld("does-not-exist-xxx");
@@ -1027,20 +1025,20 @@ async function checkBandRing9to10({ page, check, errors, finalState }) {
         }
         out.uiHasRecipesBtn = hasRecipesBtn;
 
-        delete r.state.blueprints["fremder-altar"];
-        delete r.state.blueprints["fremder-altar-import"];
-        delete r.state.blueprints["fremder-hammer-bp"];
-        delete r.state.blueprints["fremder-hammer-bp-import"];
-        delete r.state.blueprints["fremder-fraktal"];
-        delete r.state.blueprints["fremder-fraktal-import"];
-        delete r.state.materials["rosa-quarz"];
-        delete r.state.materials["rosa-quarz-import"];
-        delete r.state.tools["fremder-hammer"];
-        delete r.state.tools["fremder-hammer-import"];
+        delete st.blueprints["fremder-altar"];
+        delete st.blueprints["fremder-altar-import"];
+        delete st.blueprints["fremder-hammer-bp"];
+        delete st.blueprints["fremder-hammer-bp-import"];
+        delete st.blueprints["fremder-fraktal"];
+        delete st.blueprints["fremder-fraktal-import"];
+        delete st.materials["rosa-quarz"];
+        delete st.materials["rosa-quarz-import"];
+        delete st.tools["fremder-hammer"];
+        delete st.tools["fremder-hammer-import"];
         // Workshop-DOM neu rendern, damit nachfolgende Tests
         // keine Geister-Einträge sehen.
         r._renderWorkshopDOM();
-        const keepId = r.state.worldMeta.worldId;
+        const keepId = st.worldMeta.worldId;
         for (const e of r.worldsIndexLoad()) {
             if (e.worldId !== keepId) r.deleteWorld(e.worldId);
         }
@@ -1074,7 +1072,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
     // ### KI-Übersetzer Phase 1 — fremde Welt → Portal-Manifest ###
     const translatorResults = await safeEvaluate(page, async () => {
         const out = {};
-        r.state.customWorlds = {};
+        st.customWorlds = {};
         // _buildTranslatorPrompt nennt das Manifest-Schema.
         const prompt = r._buildTranslatorPrompt();
         out.promptNamesSchema =
@@ -1139,7 +1137,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
             desc: "Eine Voxel-Sandbox.",
             dsl: ["place_block"],
         });
-        const stored = r.state.customWorlds && r.state.customWorlds["voxel-traum"];
+        const stored = st.customWorlds && st.customWorlds["voxel-traum"];
         out.acceptCommits =
             acc.ok === true &&
             acc.id === "voxel-traum" &&
@@ -1168,7 +1166,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
             !!document.getElementById("translator-run") &&
             !!document.getElementById("translator-review");
         // Aufräumen.
-        r.state.customWorlds = {};
+        st.customWorlds = {};
         r._saveCustomWorlds();
         const cleanReview = document.getElementById("translator-review");
         if (cleanReview) {
@@ -1252,8 +1250,8 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
     // ### KI-Übersetzer Phase 2 — die Welt bekommt einen Körper ###
     const transl2Results = await safeEvaluate(page, async () => {
         const out = {};
-        out.constant = r.constructor.PORTAL_TRANSLATED_WORLD === "worlds/translated/index.html";
-        r.state.customWorlds = {};
+        out.constant = AnazhRealm.PORTAL_TRANSLATED_WORLD === "worlds/translated/index.html";
+        st.customWorlds = {};
         // _buildSceneTranslatorPrompt nennt das Szenen-Schema.
         const prompt = r._buildSceneTranslatorPrompt();
         out.promptNamesSchema =
@@ -1316,9 +1314,9 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
                 desc: "Eine Voxel-Welt mit Wetter.",
                 dsl: ["set_weather", "place_block"],
             });
-            out.beforeBuildNotReachable = r.state.customWorlds["voxel-bau"].reachable === false;
+            out.beforeBuildNotReachable = st.customWorlds["voxel-bau"].reachable === false;
             const bw = await r.buildTranslatedWorld("voxel-bau");
-            const built = r.state.customWorlds["voxel-bau"];
+            const built = st.customWorlds["voxel-bau"];
             out.buildAttachesScene =
                 bw.ok === true &&
                 !!built.scene &&
@@ -1326,7 +1324,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
                 built.world === "worlds/translated/index.html";
             out.buildUnknownRejected = (await r.buildTranslatedWorld("nirgendwo")).reason === "world_unknown";
             // Eine nicht-übersetzte Welt lässt sich nicht aufbauen.
-            r.state.customWorlds["plain-w"] = {
+            st.customWorlds["plain-w"] = {
                 id: "plain-w",
                 label: "Plain",
                 world: "worlds/skeleton/index.html",
@@ -1334,7 +1332,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
                 reachable: true,
             };
             out.buildNonTranslatedRejected = (await r.buildTranslatedWorld("plain-w")).reason === "not_translated";
-            delete r.state.customWorlds["plain-w"];
+            delete st.customWorlds["plain-w"];
             // translateWorldScene → no_scene_in_response bei Müll.
             r.llmCall = async () => ({ raw: "ich weiss es nicht" });
             out.translateSceneNoScene =
@@ -1344,7 +1342,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
             r.llmCall = origLlm;
         }
         // _sanitizeImportedManifest bewahrt die Szene.
-        const reSan = r._sanitizeImportedManifest(r.state.customWorlds["voxel-bau"]);
+        const reSan = r._sanitizeImportedManifest(st.customWorlds["voxel-bau"]);
         out.sanitizeKeepsScene = !!reSan && !!reSan.scene && reSan.scene.ground.style === "hills";
         // localStorage-Rundlauf — die aufgebaute Welt überlebt.
         const reloaded = r._loadCustomWorlds();
@@ -1352,7 +1350,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
             !!reloaded["voxel-bau"] && !!reloaded["voxel-bau"].scene && reloaded["voxel-bau"].reachable === true;
         // obtainPortalForWorld holt jetzt die AUFGEBAUTE übersetzte Welt.
         const ob = r.obtainPortalForWorld("voxel-bau");
-        const portalBp = r.state.blueprints["portal_voxel-bau"];
+        const portalBp = st.blueprints["portal_voxel-bau"];
         out.obtainBuilt =
             ob.ok === true &&
             !!portalBp &&
@@ -1369,9 +1367,9 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
         const snap = r.buildStateSnapshot();
         const snapBp = (snap.blueprints || []).find((b) => b && b.name === "portal_voxel-bau");
         out.snapKeepsId = !!snapBp && !!snapBp.portalMeta && snapBp.portalMeta.translatedWorldId === "voxel-bau";
-        delete r.state.blueprints["portal_voxel-bau"];
+        delete st.blueprints["portal_voxel-bau"];
         r.loadState({ blueprints: snapBp ? [snapBp] : [] });
-        const reBp = r.state.blueprints["portal_voxel-bau"];
+        const reBp = st.blueprints["portal_voxel-bau"];
         out.loadKeepsId = !!reBp && !!reBp.portalMeta && reBp.portalMeta.translatedWorldId === "voxel-bau";
         // _portalSendEnter trägt die Szene mit (Fake-Overlay).
         const savedPo = r._portalOverlay;
@@ -1401,13 +1399,13 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
         );
         out.uiBuildButton = !!rohCard && !!rohCard.querySelector(".library-build");
         // Aufräumen.
-        r.state.customWorlds = {};
+        st.customWorlds = {};
         r._saveCustomWorlds();
-        delete r.state.blueprints["portal_voxel-bau"];
-        for (let i = 0; i < r.state.player.inventory.length; i++) {
-            const s = r.state.player.inventory[i];
+        delete st.blueprints["portal_voxel-bau"];
+        for (let i = 0; i < st.player.inventory.length; i++) {
+            const s = st.player.inventory[i];
             if (s && typeof s.blueprintName === "string" && s.blueprintName.indexOf("portal_voxel") === 0) {
-                r.state.player.inventory[i] = null;
+                st.player.inventory[i] = null;
             }
         }
         r.renderLibraryUI();
@@ -1480,7 +1478,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
     // ### Untrusted-Welt-Tor: echte fremde Engine, null-origin ###
     const sandboxResults = await safeEvaluate(page, async () => {
         const out = {};
-        const REG = r.constructor.WORLD_REGISTRY;
+        const REG = AnazhRealm.WORLD_REGISTRY;
         // schwarm in der Registry, als sandboxed markiert.
         out.registryEntry =
             !!REG.schwarm &&
@@ -1503,13 +1501,13 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
         r.cloneBlueprint("welt_portal", "_t_tr");
         r.aimBlueprintAtWorld("_t_tr", "terrain");
         out.aimCarriesTrust =
-            r.state.blueprints["_t_sb"].portalMeta.trust === "sandboxed" &&
-            r.state.blueprints["_t_tr"].portalMeta.trust === "trusted";
-        delete r.state.blueprints["_t_sb"];
-        delete r.state.blueprints["_t_tr"];
+            st.blueprints["_t_sb"].portalMeta.trust === "sandboxed" &&
+            st.blueprints["_t_tr"].portalMeta.trust === "trusted";
+        delete st.blueprints["_t_sb"];
+        delete st.blueprints["_t_tr"];
         // obtainPortalForWorld holt die Schwarm-Welt.
         const ob = r.obtainPortalForWorld("schwarm");
-        const pbp = r.state.blueprints["portal_schwarm"];
+        const pbp = st.blueprints["portal_schwarm"];
         out.obtainSchwarm =
             ob.ok === true &&
             !!pbp &&
@@ -1555,9 +1553,9 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
         // buildStateSnapshot/loadState — trust überlebt den Rundlauf.
         const snap = r.buildStateSnapshot();
         const snapBp = (snap.blueprints || []).find((b) => b && b.name === "portal_schwarm");
-        delete r.state.blueprints["portal_schwarm"];
+        delete st.blueprints["portal_schwarm"];
         r.loadState({ blueprints: snapBp ? [snapBp] : [] });
-        const reBp = r.state.blueprints["portal_schwarm"];
+        const reBp = st.blueprints["portal_schwarm"];
         out.trustRoundtrip =
             !!snapBp &&
             snapBp.portalMeta &&
@@ -1571,11 +1569,11 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
             /Schwarm-Welt/.test(c.textContent)
         );
         // Aufräumen.
-        delete r.state.blueprints["portal_schwarm"];
-        for (let i = 0; i < r.state.player.inventory.length; i++) {
-            const s = r.state.player.inventory[i];
+        delete st.blueprints["portal_schwarm"];
+        for (let i = 0; i < st.player.inventory.length; i++) {
+            const s = st.player.inventory[i];
             if (s && typeof s.blueprintName === "string" && s.blueprintName.indexOf("portal_schwarm") === 0) {
-                r.state.player.inventory[i] = null;
+                st.player.inventory[i] = null;
             }
         }
         r.renderLibraryUI();
@@ -1635,7 +1633,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
     // der echte save-server-Round-Trip lebt in der Sonde smoke-vendor (git-Archiv).
     const vendorResults = await safeEvaluate(page, async () => {
         const out = {};
-        r.state.customWorlds = {};
+        st.customWorlds = {};
         const okBundle = [{ path: "index.html", content: "<!doctype html><title>x</title>" }];
         // _vendorSanitizeBundle — REIN, kein Netz.
         const s1 = r._vendorSanitizeBundle("voxel-fremd", okBundle);
@@ -1669,7 +1667,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
                 dsl: ["sturm"],
                 files: okBundle,
             });
-            const stored = r.state.customWorlds && r.state.customWorlds["vendor-test"];
+            const stored = st.customWorlds && st.customWorlds["vendor-test"];
             out.vendorRegisters =
                 v.ok === true &&
                 !!stored &&
@@ -1690,12 +1688,12 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
             out.vendorPropagatesPostFail =
                 vUnreach.ok === false &&
                 vUnreach.reason === "save_server_unreachable" &&
-                !(r.state.customWorlds && r.state.customWorlds["vendor-test-2"]);
+                !(st.customWorlds && st.customWorlds["vendor-test-2"]);
         } finally {
             r._vendorPostBundle = origPost;
         }
         // _sanitizeImportedManifest bewahrt trust + vendored.
-        const reSan = r._sanitizeImportedManifest(r.state.customWorlds["vendor-test"]);
+        const reSan = r._sanitizeImportedManifest(st.customWorlds["vendor-test"]);
         out.sanitizeKeepsTrustVendored = !!reSan && reSan.trust === "sandboxed" && reSan.vendored === true;
         // vendored erzwingt trust:"sandboxed", auch bei trust:"trusted".
         const forced = r._sanitizeImportedManifest({
@@ -1714,7 +1712,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
             reloaded["vendor-test"].vendored === true;
         // obtainPortalForWorld — der Portal-Bauplan trägt trust:"sandboxed".
         const ob = r.obtainPortalForWorld("vendor-test");
-        const portalBp = r.state.blueprints && r.state.blueprints["portal_vendor-test"];
+        const portalBp = st.blueprints && st.blueprints["portal_vendor-test"];
         out.portalCarriesSandbox =
             ob.ok === true && !!portalBp && !!portalBp.portalMeta && portalBp.portalMeta.trust === "sandboxed";
         // renderLibraryUI rendert eine „angedockt"-Karte.
@@ -1728,13 +1726,13 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
             !!document.getElementById("vendor-files") &&
             !!document.getElementById("vendor-dock");
         // Aufräumen.
-        if (r.state.blueprints) delete r.state.blueprints["portal_vendor-test"];
-        if (r.state.player && Array.isArray(r.state.player.inventory)) {
-            r.state.player.inventory.forEach((sl, i) => {
-                if (sl && sl.blueprintName === "portal_vendor-test") r.state.player.inventory[i] = null;
+        if (st.blueprints) delete st.blueprints["portal_vendor-test"];
+        if (st.player && Array.isArray(st.player.inventory)) {
+            st.player.inventory.forEach((sl, i) => {
+                if (sl && sl.blueprintName === "portal_vendor-test") st.player.inventory[i] = null;
             });
         }
-        r.state.customWorlds = {};
+        st.customWorlds = {};
         r._saveCustomWorlds();
         r.saveState();
         r.renderLibraryUI();
@@ -1806,7 +1804,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
     // deterministisch in der Sonde smoke-vendor (git-Archiv) (lokales Fake-GitHub).
     const vendor2Results = await safeEvaluate(page, async () => {
         const out = {};
-        r.state.customWorlds = {};
+        st.customWorlds = {};
         const origRepo = r._vendorPostRepo;
         const origBundle = r._vendorPostBundle;
         try {
@@ -1837,7 +1835,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
                 desc: "Aus einem Repo geholt.",
                 dsl: ["sturm"],
             });
-            const stored = r.state.customWorlds && r.state.customWorlds["gh-test"];
+            const stored = st.customWorlds && st.customWorlds["gh-test"];
             out.registersOnSuccess =
                 v.ok === true &&
                 v.fileCount === 5 &&
@@ -1861,12 +1859,10 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
                 repoUrl: "https://github.com/owner/nope",
             });
             out.propagatesPostFail =
-                vFail.ok === false &&
-                /404/.test(vFail.reason) &&
-                !(r.state.customWorlds && r.state.customWorlds["gh-missing"]);
+                vFail.ok === false && /404/.test(vFail.reason) && !(st.customWorlds && st.customWorlds["gh-missing"]);
             // _vendorRegisterWorld direkt — sandgesichert + vendored.
             const reg = r._vendorRegisterWorld("reg-test", { label: "Reg" });
-            const regStored = r.state.customWorlds && r.state.customWorlds["reg-test"];
+            const regStored = st.customWorlds && st.customWorlds["reg-test"];
             out.registerWorldDirect =
                 reg.ok === true &&
                 !!regStored &&
@@ -1882,8 +1878,8 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
             });
             out.bundlePathStillWorks =
                 vb.ok === true &&
-                !!(r.state.customWorlds && r.state.customWorlds["bundle-regress"]) &&
-                r.state.customWorlds["bundle-regress"].trust === "sandboxed";
+                !!(st.customWorlds && st.customWorlds["bundle-regress"]) &&
+                st.customWorlds["bundle-regress"].trust === "sandboxed";
         } finally {
             r._vendorPostRepo = origRepo;
             r._vendorPostBundle = origBundle;
@@ -1894,7 +1890,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
             !!reloaded["gh-test"] && reloaded["gh-test"].trust === "sandboxed" && reloaded["gh-test"].vendored === true;
         // UI: die GitHub-Holen-Sektion im DOM.
         // Aufräumen.
-        r.state.customWorlds = {};
+        st.customWorlds = {};
         r._saveCustomWorlds();
         r.saveState();
         r.renderLibraryUI();
@@ -1944,7 +1940,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
 async function checkBandTailleOmega2({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
-        const C = r.constructor;
+        const C = AnazhRealm;
         out.constants =
             Number.isFinite(C.TAILLE_UNKNOWN_FIELD_MAX) &&
             Object.isFrozen(C.BLUEPRINT_KNOWN_KEYS) &&
@@ -2015,8 +2011,8 @@ async function checkBandTailleOmega2({ page, check }) {
         // (5) Material-RESTORE ist substanz-treu (label + exakte Magnitude +
         // fremde Achse + Unbekanntes) — aber defineMaterial (die lokale
         // Geste/DSL) bleibt die strenge [0,1]-Whitelist-Wand.
-        delete r.state.materials["_omega2_mat"];
-        const beforeKeys = Object.keys(r.state.materials).length;
+        delete st.materials["_omega2_mat"];
+        const beforeKeys = Object.keys(st.materials).length;
         r._loadStateRestoreCraftingInventory({
             materials: [
                 {
@@ -2028,7 +2024,7 @@ async function checkBandTailleOmega2({ page, check }) {
                 },
             ],
         });
-        const restored = r.state.materials["_omega2_mat"];
+        const restored = st.materials["_omega2_mat"];
         out.matRestoreTrue =
             !!restored &&
             restored.label === "Ω2-Stoff" &&
@@ -2037,11 +2033,11 @@ async function checkBandTailleOmega2({ page, check }) {
             restored.xZukunft &&
             restored.xZukunft.e === 5;
         const strict = r.defineMaterial("_omega2_strict", 0x111111, { härte: 9, "x:fremd": 0.5 });
-        const strictEntry = strict.ok ? r.state.materials[strict.name] : null;
+        const strictEntry = strict.ok ? st.materials[strict.name] : null;
         out.gestureStaysStrict =
             !!strictEntry && strictEntry.tags["härte"] === 1 && strictEntry.tags["x:fremd"] === undefined;
-        delete r.state.materials["_omega2_mat"];
-        delete r.state.materials["_omega2_strict"];
+        delete st.materials["_omega2_mat"];
+        delete st.materials["_omega2_strict"];
         void beforeKeys;
         return out;
     });
@@ -2072,7 +2068,7 @@ async function checkBandTailleOmega2({ page, check }) {
 // platt wirken. Source-Probe + Konstante.
 async function checkBandV18207R5StructureTexture({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
 
         // (R1) R5_STRUCTURE_TEXTURE

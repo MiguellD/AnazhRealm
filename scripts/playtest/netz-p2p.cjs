@@ -13,7 +13,7 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
     // die Welt-Mod läuft über die broadcastbaren voxel_carve/voxel_fill (Chat `grabe loch`/`hebe hügel`
     // mit Spieler-Position; CREATURE_PROPOSED_OPS führt sie statt modify_terrain).
     const voxelV936Results = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
+        if (!r || !st) return null;
         const out = {};
 
         // (2) Die neuen voxel_carve/voxel_fill-DSL-Ops leben.
@@ -37,25 +37,23 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
         // den Fill-Pfad nicht abweist.
         const oldMode = r.getGameMode();
         r.setGameMode("frieden");
-        if (!Array.isArray(r.state.worldMeta.voxelEdits)) r.state.worldMeta.voxelEdits = [];
-        r.state.worldMeta.voxelEdits = [];
+        if (!Array.isArray(st.worldMeta.voxelEdits)) st.worldMeta.voxelEdits = [];
+        st.worldMeta.voxelEdits = [];
         r.dslRun(["voxel_carve", 0, 50, 0, 3], { source: "playtest" });
-        out.voxelCarveAddsEdit =
-            r.state.worldMeta.voxelEdits.length === 1 && r.state.worldMeta.voxelEdits[0].mode !== "fill";
+        out.voxelCarveAddsEdit = st.worldMeta.voxelEdits.length === 1 && st.worldMeta.voxelEdits[0].mode !== "fill";
         // voxel_fill addiert einen mode:"fill"-Edit
-        r.state.worldMeta.voxelEdits = [];
+        st.worldMeta.voxelEdits = [];
         r.dslRun(["voxel_fill", 0, 50, 0, 3], { source: "playtest" });
-        out.voxelFillAddsEdit =
-            r.state.worldMeta.voxelEdits.length === 1 && r.state.worldMeta.voxelEdits[0].mode === "fill";
+        out.voxelFillAddsEdit = st.worldMeta.voxelEdits.length === 1 && st.worldMeta.voxelEdits[0].mode === "fill";
         // Invalid pos (NaN) → kein Edit + der benannte Eintrag der Orts-Engstelle (`dslEvalPos`, Welle L V-k5)
-        const before = r.state.worldMeta.voxelEdits.length;
+        const before = st.worldMeta.voxelEdits.length;
         const invalidResult = r.dslRun(["voxel_carve", NaN, 0, 0, 3], { source: "playtest" });
         out.voxelCarveRejectsInvalidPos =
-            r.state.worldMeta.voxelEdits.length === before &&
+            st.worldMeta.voxelEdits.length === before &&
             invalidResult.log &&
             invalidResult.log.some((l) => l.event === "invalid_position" && l.effekt === "voxel_carve");
         r.setGameMode(oldMode);
-        r.state.worldMeta.voxelEdits = [];
+        st.worldMeta.voxelEdits = [];
 
         // (5) describeProgram kennt die neuen Ops.
         const dCarve = r.describeProgram(["voxel_carve", 1, 2, 3, 4]);
@@ -65,7 +63,7 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
 
         // (6) CREATURE_PROPOSED_OPS-Whitelist trägt voxel_carve+
         // voxel_fill statt modify_terrain.
-        const proposed = r.constructor.CREATURE_PROPOSED_OPS;
+        const proposed = AnazhRealm.CREATURE_PROPOSED_OPS;
         out.creatureProposedHasVoxelOps = proposed && proposed.has("voxel_carve") && proposed.has("voxel_fill");
 
         return out;
@@ -107,17 +105,17 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
         const out = {};
 
         out.hasP2PState =
-            r.state.p2p &&
-            typeof r.state.p2p.enabled === "boolean" &&
-            typeof r.state.p2p.url === "string" &&
-            r.state.p2p.peers instanceof Map;
+            st.p2p &&
+            typeof st.p2p.enabled === "boolean" &&
+            typeof st.p2p.url === "string" &&
+            st.p2p.peers instanceof Map;
 
         // initP2PSync ohne Welt-ID → sauberer Ablehnung
-        const savedWorldId = r.state.worldMeta.worldId;
-        r.state.worldMeta.worldId = null;
+        const savedWorldId = st.worldMeta.worldId;
+        st.worldMeta.worldId = null;
         const noRoomResult = r.initP2PSync(null);
         out.rejectsNoRoom = noRoomResult.ok === false && noRoomResult.reason === "no_room";
-        r.state.worldMeta.worldId = savedWorldId;
+        st.worldMeta.worldId = savedWorldId;
 
         // peerId-Generator liefert nicht-leeren String
         const pid1 = r.p2pGenerateId();
@@ -126,42 +124,42 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
         out.peerIdUnique = pid1 !== pid2;
 
         // Persistenz-Pfad: persist + load idempotent
-        r.state.p2p.url = "ws://example.org:9999";
-        r.state.p2p.enabled = true;
+        st.p2p.url = "ws://example.org:9999";
+        st.p2p.enabled = true;
         r.p2pPersist();
-        r.state.p2p.url = "";
-        r.state.p2p.enabled = false;
+        st.p2p.url = "";
+        st.p2p.enabled = false;
         r.p2pLoadPersisted();
-        out.persistRoundTrip = r.state.p2p.url === "ws://example.org:9999" && r.state.p2p.enabled === true;
+        out.persistRoundTrip = st.p2p.url === "ws://example.org:9999" && st.p2p.enabled === true;
         // wieder auf Default
-        r.state.p2p.url = "ws://127.0.0.1:4313";
-        r.state.p2p.enabled = false;
+        st.p2p.url = "ws://127.0.0.1:4313";
+        st.p2p.enabled = false;
         r.p2pPersist();
 
         // Handle-Message Pfade — welcome, peer-join, der Leib und der Knopf urteilt gate:mp-sync an zwei echten Seiten
         // („beide kennen einander mit Gestalt über die Leitung", „Knopf aus/an"); ihre Mock-Zwillinge fielen mit ultiversum.K4
-        r.state.p2p.peerId = "self-test";
+        st.p2p.peerId = "self-test";
         r.p2pHandleMessage(JSON.stringify({ type: "welcome", peers: ["peerA", "peerB"] }));
         r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "peerA", x: 10, y: 5, z: 3, yaw: 1.5 }));
-        const peerA = r.state.p2p.peers.get("peerA");
+        const peerA = st.p2p.peers.get("peerA");
         out.posUpdatesPeer = peerA && peerA.x === 10 && peerA.y === 5 && peerA.z === 3 && peerA.yaw === 1.5;
 
         // peer-leave entfernt peer + mesh aus scene
-        const sceneSizeBefore = r.state.scene.children.length;
+        const sceneSizeBefore = st.scene.children.length;
         r.p2pHandleMessage(JSON.stringify({ type: "peer-leave", peerId: "peerA" }));
-        out.peerLeaveRemoves = !r.state.p2p.peers.has("peerA");
-        out.peerLeaveDisposesMesh = r.state.scene.children.length === sceneSizeBefore - 1;
+        out.peerLeaveRemoves = !st.p2p.peers.has("peerA");
+        out.peerLeaveDisposesMesh = st.scene.children.length === sceneSizeBefore - 1;
 
         // Eigener peerId wird verworfen
         r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "self-test", x: 1, y: 1, z: 1, yaw: 0 }));
-        out.ownPeerIgnored = !r.state.p2p.peers.has("self-test");
+        out.ownPeerIgnored = !st.p2p.peers.has("self-test");
 
         // Invalid pos (NaN) wird verworfen — über den Draht reist NaN als null (JSON.stringify), und Number(null) === 0
         // (Lehre 17): der ortlos geborene peerB darf davon nicht in den Ursprung springen, er bleibt ohne Ort.
         r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "peerB", x: NaN, y: 0, z: 0, yaw: 0 }));
         r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "peerB", x: 4, y: null, z: 2, yaw: 0 }));
         r.p2pHandleMessage(JSON.stringify({ type: "pos", peerId: "peerB", x: 4, y: 1, z: "", yaw: 0 }));
-        const peerB = r.state.p2p.peers.get("peerB");
+        const peerB = st.p2p.peers.get("peerB");
         out.nanPosNotApplied =
             !!peerB &&
             ![peerB.x, peerB.y, peerB.z].some(Number.isFinite) &&
@@ -174,25 +172,25 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
         const nullAlsNull = [];
         if (r._sanitizePose(draht({ x: NaN, y: 0, z: 0, yaw: 0 })) !== null) nullAlsNull.push("subworld-pose");
         r._p2pHandleCreaturePos("peerB", draht({ list: [{ id: "ortlos", x: NaN, y: 0, z: 0, soul: "wesen" }] }));
-        if (r.state.p2p.remoteCreatures.has("peerB:ortlos")) nullAlsNull.push("creature-pos");
+        if (st.p2p.remoteCreatures.has("peerB:ortlos")) nullAlsNull.push("creature-pos");
         r._p2pMsgInput(draht({ peerId: "peerB", s0: 1, f: [[0, 0]], a: { s: 1, t: 0, x: 1, y: NaN, z: 2 } }));
-        const lsB = r.state.p2p.peers.get("peerB").lockstep;
+        const lsB = st.p2p.peers.get("peerB").lockstep;
         if (lsB && lsB.anchor) nullAlsNull.push("lockstep-anker");
-        const statsVorher = r.state.p2p.brokerStats;
-        r.state.p2p.brokerStats = null;
-        r._p2pMsgStats(draht({ rooms: NaN, peers: 3 }), r.state.p2p);
-        if (r.state.p2p.brokerStats) nullAlsNull.push("stats");
-        r.state.p2p.brokerStats = statsVorher;
+        const statsVorher = st.p2p.brokerStats;
+        st.p2p.brokerStats = null;
+        r._p2pMsgStats(draht({ rooms: NaN, peers: 3 }), st.p2p);
+        if (st.p2p.brokerStats) nullAlsNull.push("stats");
+        st.p2p.brokerStats = statsVorher;
         if (!out.nanPosNotApplied) nullAlsNull.unshift("pos");
         out.drahtNullAlsNull = nullAlsNull;
 
         // p2pSend ohne open WS liefert false
-        r.state.p2p.ws = null;
+        st.p2p.ws = null;
         out.sendWithoutWsFalse = r.p2pSend({ type: "ping" }) === false;
 
         // p2pTick ohne enabled → no-op (kein Crash)
-        r.state.p2p.enabled = false;
-        r.state.p2p.connected = false;
+        st.p2p.enabled = false;
+        st.p2p.connected = false;
         let tickError = null;
         try {
             r.p2pTick(performance.now());
@@ -220,7 +218,7 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
         out.uiStatusExists = !!document.getElementById("p2p-status");
 
         // Cleanup
-        for (const pid of Array.from(r.state.p2p.peers.keys())) r._p2pRemovePeer(pid);
+        for (const pid of Array.from(st.p2p.peers.keys())) r._p2pRemovePeer(pid);
 
         return out;
     });
@@ -259,7 +257,7 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
     const w7Results = await safeEvaluate(page, () => {
         if (!r) return null;
         const out = {};
-        const p2p = r.state.p2p;
+        const p2p = st.p2p;
 
         out.w7StateFields =
             p2p.rtcPeers instanceof Map &&
@@ -429,13 +427,13 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
     const w7p2Results = await safeEvaluate(page, () => {
         if (!r) return null;
         const out = {};
-        const p2p = r.state.p2p;
+        const p2p = st.p2p;
 
         out.w7p2StateFields =
             p2p.worldXfers instanceof Map &&
             p2p.pendingPullFrom === null &&
-            Number.isInteger(r.constructor.P2P_WORLD_CHUNK_SIZE) &&
-            r.constructor.P2P_WORLD_CHUNK_SIZE > 0;
+            Number.isInteger(AnazhRealm.P2P_WORLD_CHUNK_SIZE) &&
+            AnazhRealm.P2P_WORLD_CHUNK_SIZE > 0;
 
         // _p2pChunkXferId: nicht-leer + zwei Aufrufe verschieden.
         const x1 = r._p2pChunkXferId();
@@ -450,7 +448,7 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
             return true;
         };
         p2p.enabled = true;
-        r.state.worldMeta.role = "host";
+        st.worldMeta.role = "host";
         r._p2pBroadcastSoul();
         out.soulCarriesWorldRole = sent.some((m) => m.type === "soul" && m.worldRole === "host");
         r.p2pSend = origSend;
@@ -539,7 +537,7 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
         // den Platz der Welt der Seite), liegt mit role guest + hostInfo im Speicher, der Aktiv-Zeiger zeigt auf ihn (sonst
         // landet ein Reload in der ALTEN Welt); die Seite lädt ihn nicht in sich. `_testNoReload` hält den Reload an.
         const zeiger0 = r.activeWorldGet();
-        const welt0 = r.state.worldMeta.worldId;
+        const welt0 = st.worldMeta.worldId;
         p2p.role = "host";
         p2p._testNoReload = true;
         const applyRes = r._p2pApplyWorldSnapshot("hostX", { worldMeta: {} });
@@ -559,7 +557,7 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
             !!applyRes.worldId &&
             applyRes.worldId !== welt0 &&
             r.activeWorldGet() === applyRes.worldId &&
-            r.state.worldMeta.worldId === welt0;
+            st.worldMeta.worldId === welt0;
         if (applyRes.worldId) {
             localStorage.removeItem(r.worldStorageKey(applyRes.worldId));
             r.worldsIndexRemove(applyRes.worldId);
@@ -569,8 +567,8 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
         // die Härtung: Rate-Limit-Datenstruktur + Konstante.
         out.pullCooldownFields =
             p2p._pullServedAt instanceof Map &&
-            Number.isInteger(r.constructor.P2P_PULL_COOLDOWN_MS) &&
-            r.constructor.P2P_PULL_COOLDOWN_MS > 0;
+            Number.isInteger(AnazhRealm.P2P_PULL_COOLDOWN_MS) &&
+            AnazhRealm.P2P_PULL_COOLDOWN_MS > 0;
 
         // UI: der Resync-Knopf existiert im DOM.
         out.resyncButtonExists = !!document.getElementById("p2p-resync");
@@ -586,7 +584,7 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
         p2p.connected = false;
         p2p.role = "solo";
         p2p._testNoReload = false;
-        r.state.worldMeta.role = "solo";
+        st.worldMeta.role = "solo";
 
         return out;
     });
@@ -626,25 +624,25 @@ async function checkBandW16Distribution({ page, check, errors, finalState }) {
     const w16Results = await safeEvaluate(page, async () => {
         if (!r) return null;
         const out = {};
-        const p2p = r.state.p2p;
-        if (!r.state.customWorlds) r.state.customWorlds = {};
+        const p2p = st.p2p;
+        if (!st.customWorlds) st.customWorlds = {};
 
         out.stateFields =
             p2p.bundleXfers instanceof Map &&
             p2p.pendingBundlePull === null &&
             p2p._bundleServedAt instanceof Map &&
-            Number.isInteger(r.constructor.P2P_BUNDLE_PULL_COOLDOWN_MS) &&
-            r.constructor.P2P_BUNDLE_PULL_COOLDOWN_MS > 0;
+            Number.isInteger(AnazhRealm.P2P_BUNDLE_PULL_COOLDOWN_MS) &&
+            AnazhRealm.P2P_BUNDLE_PULL_COOLDOWN_MS > 0;
 
         // requestWorldBundleFromPeer — Validierungs-Pfade.
         out.rejectsBadId = r.requestWorldBundleFromPeer("Bad ID!", "x").reason === "invalid_world_id";
-        r.state.customWorlds["have-w16"] = {
+        st.customWorlds["have-w16"] = {
             id: "have-w16",
             label: "Da",
             world: "worlds/have-w16/index.html",
         };
         out.rejectsAlreadyHave = r.requestWorldBundleFromPeer("have-w16", "x").reason === "already_have";
-        delete r.state.customWorlds["have-w16"];
+        delete st.customWorlds["have-w16"];
         out.rejectsNoPeer = r.requestWorldBundleFromPeer("fresh-w16", "ghost-peer").reason === "no_such_peer";
         r._p2pEnsurePeerEntry("chanless-w16");
         out.rejectsNoChannel = r.requestWorldBundleFromPeer("fresh-w16", "chanless-w16").reason === "no_channel";
@@ -682,7 +680,7 @@ async function checkBandW16Distribution({ page, check, errors, finalState }) {
             ok: true,
             files: [{ path: "index.html", content: "<html><body>w16</body></html>" }],
         });
-        r.state.customWorlds["mesh-send-w16"] = {
+        st.customWorlds["mesh-send-w16"] = {
             id: "mesh-send-w16",
             label: "Sende-Welt",
             desc: "Test",
@@ -704,7 +702,7 @@ async function checkBandW16Distribution({ page, check, errors, finalState }) {
                 return false;
             }
         });
-        delete r.state.customWorlds["mesh-send-w16"];
+        delete st.customWorlds["mesh-send-w16"];
 
         // _p2pHandleWorldBundlePull — eine unbekannte Welt → fail.
         sent.length = 0;
@@ -904,7 +902,7 @@ async function checkBandW16Distribution({ page, check, errors, finalState }) {
         // ### der Welt-Katalog ###
         // _p2pBuildCatalog — nur vendored-Welten (eine importierte
         // Manifest-Welt hat kein teilbares Bündel).
-        r.state.customWorlds["cat-vendored-w16"] = {
+        st.customWorlds["cat-vendored-w16"] = {
             id: "cat-vendored-w16",
             label: "Katalog-Welt",
             world: "worlds/cat-vendored-w16/index.html",
@@ -912,7 +910,7 @@ async function checkBandW16Distribution({ page, check, errors, finalState }) {
             trust: "sandboxed",
             bundleHash: "abc123",
         };
-        r.state.customWorlds["cat-imported-w16"] = {
+        st.customWorlds["cat-imported-w16"] = {
             id: "cat-imported-w16",
             label: "Importiert",
             world: "worlds/cat-imported-w16/index.html",
@@ -956,7 +954,7 @@ async function checkBandW16Distribution({ page, check, errors, finalState }) {
             soulMsg.catalog.some((c) => c.id === "reg-broadcast-w16" && c.hash === "cafe11");
         r.p2pSend = origSend;
         p2p.enabled = false;
-        delete r.state.customWorlds["reg-broadcast-w16"];
+        delete st.customWorlds["reg-broadcast-w16"];
 
         // Der soul-Handler speichert den Katalog am Peer-Eintrag.
         r._p2pEnsurePeerEntry("cat-peer-w16");
@@ -984,7 +982,7 @@ async function checkBandW16Distribution({ page, check, errors, finalState }) {
             bundleHash: "ABCDEF0123",
         });
         out.sanitizeKeepsHash = !!sanM && sanM.bundleHash === "abcdef0123";
-        r.state.customWorlds["hash-rt-w16"] = sanM;
+        st.customWorlds["hash-rt-w16"] = sanM;
         r._saveCustomWorlds();
         const reloaded = r._loadCustomWorlds();
         out.hashSurvivesRoundtrip = !!reloaded["hash-rt-w16"] && reloaded["hash-rt-w16"].bundleHash === "abcdef0123";
@@ -1039,12 +1037,12 @@ async function checkBandW16Distribution({ page, check, errors, finalState }) {
         p2p.bundleXfers.clear();
         p2p.pendingBundlePull = null;
         p2p._bundleServedAt.clear();
-        delete r.state.customWorlds["mesh-send-w16"];
-        delete r.state.customWorlds["have-w16"];
-        delete r.state.customWorlds["cat-vendored-w16"];
-        delete r.state.customWorlds["cat-imported-w16"];
-        delete r.state.customWorlds["hash-rt-w16"];
-        delete r.state.customWorlds["hashpass-w16"];
+        delete st.customWorlds["mesh-send-w16"];
+        delete st.customWorlds["have-w16"];
+        delete st.customWorlds["cat-vendored-w16"];
+        delete st.customWorlds["cat-imported-w16"];
+        delete st.customWorlds["hash-rt-w16"];
+        delete st.customWorlds["hashpass-w16"];
         // localStorage von den Test-Welten säubern (der Rundlauf-
         // Test hat sie via _saveCustomWorlds geschrieben).
         r._saveCustomWorlds();
@@ -1162,24 +1160,24 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
         // spawn_blueprint-Op mit archId.
         r.dslRun(["spawn_blueprint", "stein_block", ["at", 20, 4, 20], 0, "a-unit-2"], { source: "test" });
         // Idempotenz: zweiter Lauf mit derselben id → kein zweiter Spawn.
-        const before = r.state.architectures.filter((a) => a && a.id === "a-unit-2").length;
+        const before = st.architectures.filter((a) => a && a.id === "a-unit-2").length;
         r.dslRun(["spawn_blueprint", "stein_block", ["at", 21, 4, 21], 0, "a-unit-2"], { source: "test" });
-        const after = r.state.architectures.filter((a) => a && a.id === "a-unit-2").length;
+        const after = st.architectures.filter((a) => a && a.id === "a-unit-2").length;
         out.spawnBlueprintIdempotent = before === 1 && after === 1;
 
         // Unbekannte id / eine Zahl-Id vom Mitspieler (jeder Peer zählt selbst) → kein Crash, keine Entfernung; der Abbau per
         // Zahl- und String-Id: gate:weltakt-wache (K).
-        const cnt = r.state.architectures.length;
+        const cnt = st.architectures.length;
         r.dslRun(["remove_architecture", "a-does-not-exist"], { source: "test" });
         r.dslRun(["remove_architecture", eLocal.id], { source: "remote:peer-unit" });
-        out.removeArchitectureSafe = r.state.architectures.length === cnt;
+        out.removeArchitectureSafe = st.architectures.length === cnt;
 
         // describeProgram kennt remove_architecture.
         out.describeRemove = /ab/i.test(r.describeProgram(["remove_architecture", "a-x"]) || "");
 
         // spawn_blueprint + remove_architecture MÜSSEN broadcasten
         // (nicht in NON_BROADCASTABLE_OPS).
-        const nb = window.AnazhRealm ? window.AnazhRealm.NON_BROADCASTABLE_OPS : r.constructor.NON_BROADCASTABLE_OPS;
+        const nb = window.AnazhRealm ? window.AnazhRealm.NON_BROADCASTABLE_OPS : AnazhRealm.NON_BROADCASTABLE_OPS;
         out.opsAreBroadcastable = !nb.has("spawn_blueprint") && !nb.has("remove_architecture");
 
         // Persistenz: buildStateSnapshot trägt die arch-id.
@@ -1216,8 +1214,8 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
     const w7p3Results = await safeEvaluate(page, async () => {
         if (!r) return null;
         const out = {};
-        const p2p = r.state.p2p;
-        const K = r.constructor;
+        const p2p = st.p2p;
+        const K = AnazhRealm;
 
         out.stateFields =
             p2p.voiceShared === false &&
@@ -1228,10 +1226,10 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
             Number.isInteger(K.P2P_VOICE_PROMPT_MAX);
 
         // Capability-Gate: ohne aktives LLM kann ich nicht teilen.
-        const wasEnabled = r.state.llm.enabled;
-        r.state.llm.enabled = false;
+        const wasEnabled = st.llm.enabled;
+        st.llm.enabled = false;
         out.setVoiceSharedGated = r.setVoiceShared(true) === false && p2p.voiceShared === false;
-        r.state.llm.enabled = wasEnabled;
+        st.llm.enabled = wasEnabled;
 
         // soul-Broadcast trägt voiceShared; soul-Empfang speichert es.
         const sent = [];
@@ -1317,10 +1315,10 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
         p2p._voiceRequests.delete("rq-w");
 
         // Das Antwort-Programm läuft durch dslRun (Sandbox).
-        const weatherBefore = r.state.weather;
+        const weatherBefore = st.weather;
         p2p._voiceRequests.set("rq-prog", { cb: () => {}, timeout: null, peerId: "voicePeer" });
         r._p2pHandleLlmResponse("voicePeer", { reqId: "rq-prog", say: "", program: ["weather", "rainy"] });
-        out.programRanInSandbox = r.state.weather === "rainy";
+        out.programRanInSandbox = st.weather === "rainy";
         r.dslRun(["weather", weatherBefore || "sunny"], { source: "test" });
 
         // _p2pRequestSharedVoice ohne Voice-Peer → no_voice.
@@ -1377,7 +1375,7 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
     const w7p4Results = await safeEvaluate(page, () => {
         if (!r) return null;
         const out = {};
-        const p2p = r.state.p2p;
+        const p2p = st.p2p;
 
         // ── Lobby ──
         out.lobbyState =
@@ -1427,11 +1425,11 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
         // ── Kreatur-Sicht-Sync ──
         // spawnCreatureAt vergibt eine netId. Cap-Headroom sichern (Warmup nahe maxCreatures → null →
         // flaky); gemessen wird die netId/Broadcast-Mechanik, nicht der Cap.
-        const _saveMaxNet = r.state.maxCreatures;
-        r.state.maxCreatures = r.state.creatures.length + 1;
+        const _saveMaxNet = st.maxCreatures;
+        st.maxCreatures = st.creatures.length + 1;
         // BÜHNE: netId/Broadcast-Mechanik, der Ort trägt nichts
         const testC = r.spawnCreatureAt(20, 6, 20, "happy");
-        r.state.maxCreatures = _saveMaxNet;
+        st.maxCreatures = _saveMaxNet;
         out.creatureHasNetId = !!testC && typeof testC.userData.netId === "string" && testC.userData.netId.length > 0;
 
         // _p2pBroadcastCreatures sendet creature-pos. state.creatures temporär = [testC]: der Broadcast hat
@@ -1439,10 +1437,10 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
         const csent = [];
         const origSend2 = r.p2pSend;
         r.p2pSend = (o) => csent.push(o);
-        const origCreatures = r.state.creatures;
-        r.state.creatures = [testC];
+        const origCreatures = st.creatures;
+        st.creatures = [testC];
         r._p2pBroadcastCreatures();
-        r.state.creatures = origCreatures;
+        st.creatures = origCreatures;
         const cmsg = csent.find((m) => m.type === "creature-pos");
         out.broadcastSendsCreatures =
             !!cmsg && Array.isArray(cmsg.list) && cmsg.list.some((e) => e.id === testC.userData.netId);
@@ -1456,7 +1454,7 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
         out.remoteCreatureCreated = p2p.remoteCreatures.has("farPeer:c9");
         // NICHT in state.creatures (updateCreatures ignoriert sie).
         const rc = p2p.remoteCreatures.get("farPeer:c9");
-        out.remoteNotInLocalSim = !!rc && r.state.creatures.indexOf(rc.mesh) === -1;
+        out.remoteNotInLocalSim = !!rc && st.creatures.indexOf(rc.mesh) === -1;
 
         // Reconcile: eine Liste OHNE c9 → die Sicht-Kreatur verschwindet.
         r._p2pHandleCreaturePos("farPeer", {
@@ -1512,8 +1510,8 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
     const w11v4Results = await safeEvaluate(page, () => {
         if (!r) return null;
         const out = {};
-        const p2p = r.state.p2p;
-        const grok = r.state.grok;
+        const p2p = st.p2p;
+        const grok = st.grok;
 
         // p2pSend mocken.
         const sent = [];
@@ -1661,15 +1659,15 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
         const sent = [];
         const origSend = r.p2pSend;
         r.p2pSend = (obj) => sent.push(obj);
-        Object.assign(r.state.p2p, { enabled: true, connected: true, peerId: "self-test" });
+        Object.assign(st.p2p, { enabled: true, connected: true, peerId: "self-test" });
         r.dslRun(["weather", "rainy"], { source: "llm:grok" });
         out.llmDoesNotBroadcast = sent.length === 0;
-        r.state.p2p.connected = false;
+        st.p2p.connected = false;
         r.dslRun(["weather", "sunny"], { source: "human" });
         out.disconnectedSkipsBroadcast = sent.length === 0;
-        r.state.weather = "sunny";
+        st.weather = "sunny";
         r.p2pHandleMessage(JSON.stringify({ type: "dsl", peerId: "self-test", program: ["weather", "rainy"] }));
-        out.ownPeerDslIgnored = r.state.weather === "sunny";
+        out.ownPeerDslIgnored = st.weather === "sunny";
         try {
             r.p2pHandleMessage(JSON.stringify({ type: "dsl", peerId: "peerX", program: "not-array" }));
             out.nonArrayDslNoCrash = true;
@@ -1677,7 +1675,7 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
             out.nonArrayDslNoCrash = false;
         }
         r.p2pSend = origSend;
-        Object.assign(r.state.p2p, { enabled: false, connected: false, peerId: null });
+        Object.assign(st.p2p, { enabled: false, connected: false, peerId: null });
         return out;
     });
     if (erreichbar(check, "Ring 11 V2: Snapshot erreichbar", ring11V2Results)) {
@@ -1699,31 +1697,31 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
         const out = {};
 
         // 1. Raum-Override: state.p2p.roomOverride existiert + persist
-        r.state.p2p.roomOverride = "test-shared-room-xyz";
+        st.p2p.roomOverride = "test-shared-room-xyz";
         r.p2pPersist();
-        r.state.p2p.roomOverride = "";
+        st.p2p.roomOverride = "";
         r.p2pLoadPersisted();
-        out.roomOverridePersists = r.state.p2p.roomOverride === "test-shared-room-xyz";
-        r.state.p2p.roomOverride = "";
+        out.roomOverridePersists = st.p2p.roomOverride === "test-shared-room-xyz";
+        st.p2p.roomOverride = "";
         r.p2pPersist();
 
         // 2. NON_BROADCASTABLE_OPS-Liste vorhanden + sinnvoll
         out.hasNonBroadcastSet =
-            r.constructor.NON_BROADCASTABLE_OPS instanceof Set &&
-            r.constructor.NON_BROADCASTABLE_OPS.has("player_jump_power") &&
-            r.constructor.NON_BROADCASTABLE_OPS.has("player_speed") &&
-            r.constructor.NON_BROADCASTABLE_OPS.has("player_soul") &&
-            r.constructor.NON_BROADCASTABLE_OPS.has("set_visible");
+            AnazhRealm.NON_BROADCASTABLE_OPS instanceof Set &&
+            AnazhRealm.NON_BROADCASTABLE_OPS.has("player_jump_power") &&
+            AnazhRealm.NON_BROADCASTABLE_OPS.has("player_speed") &&
+            AnazhRealm.NON_BROADCASTABLE_OPS.has("player_soul") &&
+            AnazhRealm.NON_BROADCASTABLE_OPS.has("set_visible");
 
         // 3. _dslContainsAnyOp-Helfer findet Op im Tree
-        out.containsOpFlat = r._dslContainsAnyOp(["player_speed", 5], r.constructor.NON_BROADCASTABLE_OPS);
+        out.containsOpFlat = r._dslContainsAnyOp(["player_speed", 5], AnazhRealm.NON_BROADCASTABLE_OPS);
         out.containsOpNested = r._dslContainsAnyOp(
             ["chain", ["weather", "rainy"], ["player_speed", 5]],
-            r.constructor.NON_BROADCASTABLE_OPS
+            AnazhRealm.NON_BROADCASTABLE_OPS
         );
         out.containsOpClean = !r._dslContainsAnyOp(
             ["chain", ["weather", "rainy"], ["voxel_carve", 0, 50, 0, 3]],
-            r.constructor.NON_BROADCASTABLE_OPS
+            AnazhRealm.NON_BROADCASTABLE_OPS
         );
 
         // 4. p2pBroadcastDsl skipped wenn non-broadcastable Op enthalten
@@ -1875,9 +1873,9 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
         }
 
         // 7. world-snapshot wird nur bei pending=true akzeptiert
-        r.state.p2p.peerId = "self-id";
-        r.state.p2p.pendingWorldSnapshot = false;
-        const originalRole = r.state.worldMeta.role;
+        st.p2p.peerId = "self-id";
+        st.p2p.pendingWorldSnapshot = false;
+        const originalRole = st.worldMeta.role;
         r.p2pHandleMessage(
             JSON.stringify({
                 type: "world-snapshot",
@@ -1886,7 +1884,7 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
             })
         );
         // Welt darf nicht überschrieben sein
-        out.snapshotRejectedWhenNotPending = r.state.worldMeta.role === originalRole;
+        out.snapshotRejectedWhenNotPending = st.worldMeta.role === originalRole;
 
         // 8. world-request: nur der Host antwortet (world-snapshot). world-snapshot ist Signaling über
         // _p2pSignal (WS), nicht das mesh-bewusste p2pSend → der Mock fängt _p2pSignal ab.
@@ -1897,11 +1895,11 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
             return true;
         };
         // Guest oder Solo: kein Snapshot raus
-        r.state.p2p.role = "solo";
+        st.p2p.role = "solo";
         r.p2pHandleMessage(JSON.stringify({ type: "world-request", peerId: "asker" }));
         out.soloDoesNotAnswerRequest = sentMsgs.length === 0;
         // Host: schickt snapshot mit to=asker
-        r.state.p2p.role = "host";
+        st.p2p.role = "host";
         r.p2pHandleMessage(JSON.stringify({ type: "world-request", peerId: "asker" }));
         const sentSnap = sentMsgs.find((m) => m.type === "world-snapshot" && m.to === "asker");
         out.hostAnswersRequestWithSnapshot = !!sentSnap && !!sentSnap.state;
@@ -1910,17 +1908,17 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
         // Wildnis darunter; ein Leser (`erbgut` ≥ 1) bekommt ihn. Die lebende Welt trägt das Erbgut nur synchron (kein
         // Takt dazwischen), ihr Erbgut-Merker bleibt unberührt.
         {
-            const T = r.constructor;
+            const T = AnazhRealm;
             const buehne = {
                 terme: [{ art: "insel", x: 0, z: 0, r: 420, plateau: 9, kuppel: 0.003, schelf: 60, grund: -15 }],
             };
-            const echt = r.state.worldMeta;
-            r.state.worldMeta = Object.assign({}, echt, { erbgut: buehne });
+            const echt = st.worldMeta;
+            st.worldMeta = Object.assign({}, echt, { erbgut: buehne });
             sentMsgs.length = 0;
             try {
                 r.p2pHandleMessage(JSON.stringify({ type: "world-request", peerId: "alt-build" }));
             } finally {
-                r.state.worldMeta = echt;
+                st.worldMeta = echt;
             }
             out.erbgutReise = {
                 altVerweigert: sentMsgs.length === 0,
@@ -1932,7 +1930,7 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
         }
         r._p2pSignal = origSignal;
         sentMsgs.length = 0;
-        r.state.p2p.role = "solo";
+        st.p2p.role = "solo";
 
         // 9. UI-Elemente vorhanden
         out.dialogExists = !!document.getElementById("new-world-dialog");
@@ -1985,7 +1983,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
     // ### Soul-Sync (Peer-Avatar = echte Seele) ###
     const v834Results = await safeEvaluate(page, () => {
         const out = {};
-        const p2p = r.state.p2p;
+        const p2p = st.p2p;
         p2p.peerId = "self-v834";
         p2p.enabled = false;
 
@@ -2133,12 +2131,12 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
         out.broadcastSoulPayload =
             !!captured &&
             captured.type === "soul" &&
-            captured.soulName === r.state.player.soul &&
+            captured.soulName === st.player.soul &&
             typeof captured.name === "string";
 
         // player_soul bleibt NON_BROADCASTABLE — Soul-Sync läuft über
         // den dedizierten `soul`-Kanal, NICHT über die DSL.
-        out.playerSoulStillLocal = r.constructor.NON_BROADCASTABLE_OPS.has("player_soul");
+        out.playerSoulStillLocal = AnazhRealm.NON_BROADCASTABLE_OPS.has("player_soul");
 
         // _p2pRemovePeer räumt Peer + Mesh + Name-Schild.
         r._p2pRemovePeer("pv1");
@@ -2235,27 +2233,27 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
 
         // --- _refreshBlueprintRoleEmergent: registrierter Körper-
         //     Bauplan emergiert OHNE Werkzeug-Op als "soul" ---
-        r.state.blueprints["_t835_body_reg"] = {
+        st.blueprints["_t835_body_reg"] = {
             name: "_t835_body_reg",
             label: "Test-Körper",
             builtIn: false,
             parts: JSON.parse(JSON.stringify(bodyBp.parts)),
         };
         r._refreshBlueprintRoleEmergent("_t835_body_reg");
-        out.refreshEmergesSoul = r.state.blueprints["_t835_body_reg"].role === "soul";
+        out.refreshEmergesSoul = st.blueprints["_t835_body_reg"].role === "soul";
 
         // registrierte Nahrung emergiert als "consumable"
-        r.state.blueprints["_t835_food_reg"] = {
+        st.blueprints["_t835_food_reg"] = {
             name: "_t835_food_reg",
             label: "Test-Frucht",
             builtIn: false,
             parts: JSON.parse(JSON.stringify(foodBp.parts)),
         };
         r._refreshBlueprintRoleEmergent("_t835_food_reg");
-        out.refreshEmergesFood = r.state.blueprints["_t835_food_reg"].role === "consumable";
+        out.refreshEmergesFood = st.blueprints["_t835_food_reg"].role === "consumable";
 
         // --- Manueller Override schlägt die Emergenz weiterhin ---
-        r.state.blueprints["_t835_manual"] = {
+        st.blueprints["_t835_manual"] = {
             name: "_t835_manual",
             label: "Test-Manuell",
             builtIn: false,
@@ -2264,23 +2262,23 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
             parts: JSON.parse(JSON.stringify(bodyBp.parts)),
         };
         r._refreshBlueprintRoleEmergent("_t835_manual");
-        out.roleManualStillWins = r.state.blueprints["_t835_manual"].role === "architecture";
+        out.roleManualStillWins = st.blueprints["_t835_manual"].role === "architecture";
 
         // --- activateConsumable funktioniert OHNE consumableMeta
         //     (emergente Nahrung ist essbar) ---
-        r.state.blueprints["_t835_food_reg"].role = "consumable";
-        const before = (r.state.player.boosts || []).length;
+        st.blueprints["_t835_food_reg"].role = "consumable";
+        const before = (st.player.boosts || []).length;
         const eatRes = r.activateConsumable("_t835_food_reg");
-        out.metaLessConsumableWorks = !!(eatRes && eatRes.ok) && (r.state.player.boosts || []).length > before;
+        out.metaLessConsumableWorks = !!(eatRes && eatRes.ok) && (st.player.boosts || []).length > before;
 
         // Aufräumen
-        if (r.state.player.boosts) {
-            r.state.player.boosts = r.state.player.boosts.filter((b) => b.source !== "consume:_t835_food_reg");
+        if (st.player.boosts) {
+            st.player.boosts = st.player.boosts.filter((b) => b.source !== "consume:_t835_food_reg");
             r.recomputePlayerStats();
         }
-        delete r.state.blueprints["_t835_body_reg"];
-        delete r.state.blueprints["_t835_food_reg"];
-        delete r.state.blueprints["_t835_manual"];
+        delete st.blueprints["_t835_body_reg"];
+        delete st.blueprints["_t835_food_reg"];
+        delete st.blueprints["_t835_manual"];
         return out;
     });
 
@@ -2315,7 +2313,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
         // 4. KILLPLANE: ein Körper tief unter jedem Boden steht nach EINEM Charakter-Schritt auf der Oberfläche
         // (die leere Säule ist Bühne; die Wand-Kugel schiebt nicht seitlich).
         {
-            const s = r.state,
+            const s = st,
                 pm = s.playerMesh,
                 pos = pm.position.clone();
             const buehne = {
@@ -2329,7 +2327,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
                 pm.position.set(pos.x, -1e4, pos.z);
                 s._fieldVy = 0;
                 s.playerVel.setValue(0, 0, 0);
-                r._stepCharacter(r.constructor.FIXED_DT, 0);
+                r._stepCharacter(AnazhRealm.FIXED_DT, 0);
                 const p1 = pm.position;
                 out.waterGate = p1.y > -1e3 && Math.abs(p1.y - r.findSurfaceAbove(p1.x, 0, p1.z)) < 3;
             } finally {
@@ -2358,12 +2356,12 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
 
         // 6. Neue Werkstatt-Parts landen im Ursprung (0,0,0).
         {
-            if (r.state.blueprints["_t836"]) delete r.state.blueprints["_t836"];
+            if (st.blueprints["_t836"]) delete st.blueprints["_t836"];
             r.createBlueprint("_t836", "T836");
             r.selectBlueprintForEdit("_t836");
-            const before = (r.state.blueprints["_t836"].parts || []).length;
+            const before = (st.blueprints["_t836"].parts || []).length;
             r._workshopHandleShapeDrop("box");
-            const parts = r.state.blueprints["_t836"].parts || [];
+            const parts = st.blueprints["_t836"].parts || [];
             const np = parts[parts.length - 1];
             out.partAtOrigin =
                 parts.length === before + 1 &&
@@ -2372,7 +2370,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
                 np.position.x === 0 &&
                 np.position.y === 0 &&
                 np.position.z === 0;
-            delete r.state.blueprints["_t836"];
+            delete st.blueprints["_t836"];
         }
 
         return out;
@@ -2394,9 +2392,9 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
 
         // A — Bau-Kosten sichtbar im Werkstatt-Stats-Panel.
         {
-            if (r.state.blueprints["_t837a"]) delete r.state.blueprints["_t837a"];
+            if (st.blueprints["_t837a"]) delete st.blueprints["_t837a"];
             r.createBlueprint("_t837a", "T837A");
-            r.state.blueprints["_t837a"].parts = [
+            st.blueprints["_t837a"].parts = [
                 {
                     shape: "box",
                     material: "stein",
@@ -2413,13 +2411,13 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
             const cost = r.computeBuildCost("_t837a");
             out.costPanelShown = /Bau-Kosten/.test(txt);
             out.costPanelValue = (cost.stein || 0) > 0 && txt.includes(`${cost.stein}× stein`);
-            delete r.state.blueprints["_t837a"];
+            delete st.blueprints["_t837a"];
         }
 
         // B — 3D-Raster + Achsenkreuz im Werkstatt-Preview.
         {
             r._workshopEnsurePreview();
-            const pre = r.state.workshop && r.state.workshop.preview;
+            const pre = st.workshop && st.workshop.preview;
             out.gridInScene = !!pre && !!pre.gridHelper && pre.scene.children.includes(pre.gridHelper);
             out.axesInScene = !!pre && !!pre.axesHelper && pre.scene.children.includes(pre.axesHelper);
             // raycast der Helfer ist als eigene no-op-Property
@@ -2461,16 +2459,16 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
 
         // E — FPS als gleitender 1-s-Durchschnitt (nicht 1/delta).
         {
-            r.state._fpsFrames = 0;
-            r.state._fpsElapsed = 0;
-            r.state.fps = 0;
+            st._fpsFrames = 0;
+            st._fpsElapsed = 0;
+            st.fps = 0;
             for (let i = 0; i < 90; i++) r.updateFps(1 / 60);
-            out.fpsRollingAvg = r.state.fps === 60;
+            out.fpsRollingAvg = st.fps === 60;
             out.fpsNotSingleFrame = window.__fehlt(r.updateFps, /Math\.round\(1 \/ delta\)/);
-            r.state._fpsFrames = 5;
-            r.state._fpsElapsed = 0.3;
+            st._fpsFrames = 5;
+            st._fpsElapsed = 0.3;
             r.updateFps(2.0); // abnormaler Delta → Fenster verwerfen
-            out.fpsResetsOnStall = r.state._fpsFrames === 0 && r.state._fpsElapsed === 0;
+            out.fpsResetsOnStall = st._fpsFrames === 0 && st._fpsElapsed === 0;
         }
 
         return out;
@@ -2498,9 +2496,9 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
 
         // C — Hover-Material-Info auf Bauplan-Slots.
         {
-            if (r.state.blueprints["_t838c"]) delete r.state.blueprints["_t838c"];
+            if (st.blueprints["_t838c"]) delete st.blueprints["_t838c"];
             r.createBlueprint("_t838c", "T838C");
-            r.state.blueprints["_t838c"].parts = [
+            st.blueprints["_t838c"].parts = [
                 {
                     shape: "box",
                     material: "stein",
@@ -2512,29 +2510,29 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
             ];
             const tip = r._blueprintCostTooltip("_t838c");
             out.costTooltipText = /Bau-Kosten/.test(tip) && /stein/.test(tip) && /hast/.test(tip);
-            const origHotbar0 = r.state.hotbar[0];
-            r.state.hotbar[0] = "_t838c";
+            const origHotbar0 = st.hotbar[0];
+            st.hotbar[0] = "_t838c";
             r._renderHotbarDOM();
             const hslot = document.querySelector('#hotbar .hotbar-slot[data-slot="0"]');
             out.hotbarSlotTitle = !!hslot && /Bau-Kosten/.test(hslot.title || "");
-            r.state.hotbar[0] = origHotbar0;
+            st.hotbar[0] = origHotbar0;
             r._renderHotbarDOM();
-            const origInv0 = r.state.player.inventory[0];
-            r.state.player.inventory[0] = { kind: "blueprint", blueprintName: "_t838c", count: 1 };
+            const origInv0 = st.player.inventory[0];
+            st.player.inventory[0] = { kind: "blueprint", blueprintName: "_t838c", count: 1 };
             r.renderInventoryUI();
             const islot = document.querySelector('#inventory-grid .inventory-slot[data-inv-slot="0"]');
             out.invSlotTitle = !!islot && /Bau-Kosten/.test(islot.title || "");
-            r.state.player.inventory[0] = origInv0;
+            st.player.inventory[0] = origInv0;
             r.renderInventoryUI();
-            delete r.state.blueprints["_t838c"];
+            delete st.blueprints["_t838c"];
         }
 
         // D — Verbindungen im 3D-Preview sichtbar.
         {
-            const origSel = r.state.workshop && r.state.workshop.selectedBlueprint;
-            if (r.state.blueprints["_t838d"]) delete r.state.blueprints["_t838d"];
+            const origSel = st.workshop && st.workshop.selectedBlueprint;
+            if (st.blueprints["_t838d"]) delete st.blueprints["_t838d"];
             r.createBlueprint("_t838d", "T838D");
-            const bp = r.state.blueprints["_t838d"];
+            const bp = st.blueprints["_t838d"];
             bp.parts = [
                 {
                     shape: "box",
@@ -2565,15 +2563,15 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
             r.selectBlueprintForEdit("_t838d");
             r._workshopEnsurePreview();
             r._workshopRebuildPreviewMesh();
-            const pre = r.state.workshop && r.state.workshop.preview;
+            const pre = st.workshop && st.workshop.preview;
             out.connNotCountedAsPart = !!pre && pre.partMeshes.size === 2;
             r._renderWorkshopDOM();
             // die Verbindungs-Erklärung lebte in der alten Editor-Liste (entfernt); Verbindungen
             // werden jetzt im 3D-Connect-Modus angelegt/gelöst. Der frühere „Sollbruchstelle"-Text-Check entfiel.
-            delete r.state.blueprints["_t838d"];
+            delete st.blueprints["_t838d"];
             // Auswahl wiederherstellen — kein hängender Verweis auf
             // den gelöschten Test-Bauplan für nachfolgende Tests.
-            if (origSel && r.state.blueprints[origSel]) {
+            if (origSel && st.blueprints[origSel]) {
                 r.selectBlueprintForEdit(origSel);
             }
         }
@@ -2606,7 +2604,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
         const out = {};
 
         // Farb-Sprache: Rollen-Farben-Konstante.
-        const rc = r.constructor && r.constructor.BLUEPRINT_ROLE_COLORS;
+        const rc = AnazhRealm && AnazhRealm.BLUEPRINT_ROLE_COLORS;
         out.roleColorsExist =
             !!rc &&
             typeof rc.armor === "string" &&
@@ -2635,9 +2633,9 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
         {
             const prevMode = r.getGameMode();
             r.setGameMode("pfad");
-            if (r.state.blueprints["_t839s"]) delete r.state.blueprints["_t839s"];
+            if (st.blueprints["_t839s"]) delete st.blueprints["_t839s"];
             r.createBlueprint("_t839s", "T839S");
-            r.state.blueprints["_t839s"].parts = [
+            st.blueprints["_t839s"].parts = [
                 {
                     shape: "box",
                     material: "eisen",
@@ -2648,24 +2646,24 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
                     opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
                 },
             ];
-            r.state.player.stamina = 500;
-            const b1 = r.state.player.stamina;
+            st.player.stamina = 500;
+            const b1 = st.player.stamina;
             const res1 = r.applyOpToPart("_t839s", 0, "hände");
-            const costLow = b1 - r.state.player.stamina;
-            const b2 = r.state.player.stamina;
+            const costLow = b1 - st.player.stamina;
+            const b2 = st.player.stamina;
             const res2 = r.applyOpToPart("_t839s", 0, "drehbank-meißel"); // cap 0.9 → niedrigere Mühe (V17.78: polier raus)
-            const costHigh = b2 - r.state.player.stamina;
+            const costHigh = b2 - st.player.stamina;
             out.staminaScales = !!res1.ok && !!res2.ok && costLow > costHigh && costLow >= 9 && costHigh <= 7;
             r.setGameMode(prevMode);
-            delete r.state.blueprints["_t839s"];
+            delete st.blueprints["_t839s"];
         }
 
         // Farb-Sprache im DOM: Rollen-Chip-Glow + Bauplan-Zeilen-Glow + Qualität-Zeile.
         {
-            const origSel = r.state.workshop && r.state.workshop.selectedBlueprint;
-            if (r.state.blueprints["_t839c"]) delete r.state.blueprints["_t839c"];
+            const origSel = st.workshop && st.workshop.selectedBlueprint;
+            if (st.blueprints["_t839c"]) delete st.blueprints["_t839c"];
             r.createBlueprint("_t839c", "T839C");
-            r.state.blueprints["_t839c"].parts = [
+            st.blueprints["_t839c"].parts = [
                 {
                     shape: "box",
                     material: "stein",
@@ -2685,8 +2683,8 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
             r._renderWorkshopDOM();
             const lrow = document.querySelector("#workshop-list .workshop-list-row");
             out.listRowGlow = !!lrow && !!lrow.style.borderLeft && lrow.style.borderLeft.length > 0;
-            delete r.state.blueprints["_t839c"];
-            if (origSel && r.state.blueprints[origSel]) {
+            delete st.blueprints["_t839c"];
+            if (origSel && st.blueprints[origSel]) {
                 r.selectBlueprintForEdit(origSel);
             }
         }
@@ -2724,7 +2722,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
 // klingt von selbst ab (Verwerfen, nicht Puffern; der Bucket settled).
 async function checkBandG8R1DampedChannel({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const K = r.constructor;
+        const K = AnazhRealm;
         const out = {};
         // (1) Konstanten verdrahtet.
         out.consts = K.PORTAL_CHANNEL_RATE_MAX === 200 && K.PORTAL_CHANNEL_RATE_WINDOW_MS === 1000;
@@ -2772,8 +2770,8 @@ async function checkBandM8MakroFenster({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
         // (1) der stats-Handler: im Dispatch + cached + schreibt die Anzeige.
-        out.dispatch = r.constructor.P2P_MESSAGE_HANDLERS.stats === "_p2pMsgStats";
-        const p2p = r.state.p2p || (r.state.p2p = {});
+        out.dispatch = AnazhRealm.P2P_MESSAGE_HANDLERS.stats === "_p2pMsgStats";
+        const p2p = st.p2p || (st.p2p = {});
         r._p2pMsgStats({ rooms: 3, peers: 7 }, p2p);
         const el = document.getElementById("p2p-broker-stats");
         out.statsCached = !!p2p.brokerStats && p2p.brokerStats.rooms === 3 && p2p.brokerStats.peers === 7;
@@ -2809,30 +2807,30 @@ async function checkBandM8MakroFenster({ page, check }) {
             };
             const cA = mk("aa11");
             const cB = mk("bb22");
-            const savedKind = r.state.feedKind;
-            r.state.feedKind = "alle";
-            r.state._libraryAuthorFilter = "aa11";
+            const savedKind = st.feedKind;
+            st.feedKind = "alle";
+            st._libraryAuthorFilter = "aa11";
             r._applyLibraryFilter();
             const banner = list.querySelector(".library-author-banner");
             const filtered = cA.style.display !== "none" && cB.style.display === "none" && !!banner;
             const clearBtn = banner && banner.querySelector(".library-author-clear");
             if (clearBtn) clearBtn.click();
             const cleared =
-                !r.state._libraryAuthorFilter &&
+                !st._libraryAuthorFilter &&
                 cB.style.display !== "none" &&
                 !list.querySelector(".library-author-banner");
             out.identity = filtered && cleared;
             cA.remove();
             cB.remove();
-            r.state.feedKind = savedKind;
+            st.feedKind = savedKind;
             r._applyLibraryFilter();
         }
         // (3) der Karten-Chip: ein Klick auf 👤 setzt den Autor-Filter auf den Autor der Karte + der Backup-Hinweis steht.
-        const filterVor = r.state._libraryAuthorFilter;
+        const filterVor = st._libraryAuthorFilter;
         const chip = r._feedRatingBar({ id: "m8probe-chip", author: "aa11" }).querySelector(".feed-ident");
         if (chip) chip.click();
-        out.identChip = !!chip && r.state._libraryAuthorFilter === "aa11";
-        r.state._libraryAuthorFilter = filterVor;
+        out.identChip = !!chip && st._libraryAuthorFilter === "aa11";
+        st._libraryAuthorFilter = filterVor;
         r._applyLibraryFilter();
         const hint = document.getElementById("vibe-pass-backup-hint");
         out.backupHint = !!hint && /Schlüssel/.test(hint.textContent) && /Fälschung/.test(hint.textContent);

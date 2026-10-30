@@ -12,8 +12,8 @@ const SKRIPTE = path.join(__dirname, "..");
 // GPU-Flake; der LOOK des Wankens ist headless nicht prüfbar.
 async function checkBandOmegaWerkstattSpiegel({ page, check }) {
     const res = await page.evaluate(() => {
-        const C = r.constructor;
-        const mats = r.state.materials || {};
+        const C = AnazhRealm;
+        const mats = st.materials || {};
         let dense = mats.eisen ? "eisen" : null,
             light = mats.holz ? "holz" : null;
         if (!dense || !light) {
@@ -71,7 +71,7 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
             out.defaultSnapEnabled = ws.snapEnabled;
 
             // --- Phase 2: Konstanten ---
-            const AR = r.constructor;
+            const AR = AnazhRealm;
             out.gizmoColorsFrozen =
                 !!AR.WORKSHOP_GIZMO_COLORS &&
                 Object.isFrozen(AR.WORKSHOP_GIZMO_COLORS) &&
@@ -150,7 +150,7 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
                 // intern wegen builtIn früh aussteigen (kein dragManipulator gesetzt).
                 // Wir können das nur prüfen wenn preview existiert.
                 r._workshopEnsurePreview();
-                const pre = r.state.workshop.preview;
+                const pre = st.workshop.preview;
                 if (pre) {
                     r._workshopBeginManipulation("translate", "x", 100, 100);
                     out.builtInRejected = pre.dragManipulator === null;
@@ -166,13 +166,13 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
             if (cloneOk) {
                 r.selectBlueprintForEdit("test_wave6b");
                 r._workshopSetSelection(0);
-                const partBefore = JSON.parse(JSON.stringify(r.state.blueprints.test_wave6b.parts[0]));
+                const partBefore = JSON.parse(JSON.stringify(st.blueprints.test_wave6b.parts[0]));
                 out.posBefore = partBefore.position.x;
                 // Drag begin auf eigenem Bauplan
                 r._workshopEnsurePreview();
-                const pre = r.state.workshop.preview;
+                const pre = st.workshop.preview;
                 out.p2PreviewExists = !!pre;
-                out.p2SelIdx = r.state.workshop.selectedPartIdx;
+                out.p2SelIdx = st.workshop.selectedPartIdx;
                 if (pre) {
                     // Klick-Koordinate = Mitte der ECHTEN Canvas-Rect, nie hartcodiert: ein fester Punkt kann über
                     // dem Canvas liegen (ndcY>1) → der Ray verfehlt die Ebene.
@@ -209,7 +209,7 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
 
             // --- Phase 2: Gizmo-Aufbau ---
             r._workshopEnsurePreview();
-            const pre = r.state.workshop.preview;
+            const pre = st.workshop.preview;
             if (pre && pre.gizmo) {
                 out.gizmoBuilt = true;
                 out.gizmoChildren = pre.gizmo.children.length === 3; // translate/rotate/scale
@@ -467,7 +467,7 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
             out.gehFindsRoom = rooms.length > 0 && rooms[0].kindLabel === "Raum" && rooms[0].label === "Werkstatt";
             if (out.gehFindsRoom) {
                 rooms[0].run();
-                out.gehOpensWorkshop = r.state.uiActiveDrawer === "werkstatt";
+                out.gehOpensWorkshop = st.uiActiveDrawer === "werkstatt";
                 r.closeAllDrawers();
             }
             // (4) Freitext ohne Präfix → der Nexus-Pfad als Fallback (letzter Treffer)
@@ -561,8 +561,8 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
             // CRITICAL Cleanup: zurück zum Default-Blick (alle Drawer zu) + Yaw auf 0,
             // sonst stören die nachgelagerten Drawer- und Ring-5-V2-Prep-Tests.
             r.closeAllDrawers();
-            r.state.yaw = 0;
-            if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+            st.yaw = 0;
+            if (st.playerMesh) st.playerMesh.rotation.y = 0;
         } catch (err) {
             out.error = err && err.message;
         }
@@ -623,28 +623,28 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
 
             // Drop-Handler-Test: auf Built-in muss er ablehnen
             r.selectBlueprintForEdit("stein_block");
-            const partsBeforeBuiltIn = r.state.blueprints.stein_block.parts.length;
+            const partsBeforeBuiltIn = st.blueprints.stein_block.parts.length;
             r._workshopHandleShapeDrop("box", 100, 100);
-            const partsAfterBuiltIn = r.state.blueprints.stein_block.parts.length;
+            const partsAfterBuiltIn = st.blueprints.stein_block.parts.length;
             out.dropOnBuiltInRejected = partsBeforeBuiltIn === partsAfterBuiltIn;
 
             // Drop-Handler auf eigenem Bauplan: fügt Part hinzu + selektiert ihn
-            if (r.state.blueprints["test_phase3"]) r.deleteBlueprint("test_phase3");
+            if (st.blueprints["test_phase3"]) r.deleteBlueprint("test_phase3");
             r.cloneBlueprint("stein_block", "test_phase3");
             r.selectBlueprintForEdit("test_phase3");
             r._workshopEnsurePreview();
-            const partsBefore = r.state.blueprints.test_phase3.parts.length;
+            const partsBefore = st.blueprints.test_phase3.parts.length;
             r._workshopHandleShapeDrop("sphere", 100, 100);
-            const partsAfter = r.state.blueprints.test_phase3.parts.length;
+            const partsAfter = st.blueprints.test_phase3.parts.length;
             out.dropOnCustomAddsPart = partsAfter === partsBefore + 1;
-            const newPart = r.state.blueprints.test_phase3.parts[partsAfter - 1];
+            const newPart = st.blueprints.test_phase3.parts[partsAfter - 1];
             out.newPartIsSphere = newPart && newPart.shape === "sphere";
-            out.newPartSelected = r.state.workshop.selectedPartIdx === partsAfter - 1;
+            out.newPartSelected = st.workshop.selectedPartIdx === partsAfter - 1;
 
             // Der Sphere-Drop auf den 1-Part-Fels kann eine AUTO-Verbindung gebären (+ „✂ Lösen“-Kachel, 14
             // statt 13 Buttons) → das Test-Paar startet unverbunden; die Auto-Geburt prüft ihr eigenes §7.1-Band.
             {
-                const bp3 = r.state.blueprints.test_phase3;
+                const bp3 = st.blueprints.test_phase3;
                 bp3.connections = (bp3.connections || []).filter(
                     (c) =>
                         !(
@@ -656,11 +656,11 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
 
             // Connect-Modus: setWorkshopManipulatorMode akzeptiert "connect"
             out.connectModeAccepted = r.setWorkshopManipulatorMode("connect") === true;
-            out.modeIsConnect = r.state.workshop.manipulatorMode === "connect";
+            out.modeIsConnect = st.workshop.manipulatorMode === "connect";
 
             // Klick auf Part 0 im Connect-Mode → connectFirstPartIdx wird Source
             r._workshopHandleConnectClick(0);
-            out.connectFirstSetTo0 = r.state.workshop.connectFirstPartIdx === 0;
+            out.connectFirstSetTo0 = st.workshop.connectFirstPartIdx === 0;
             // Klick auf Part 1 → öffnet Popover
             r._workshopHandleConnectClick(1);
             const popover = document.getElementById("workshop-connect-overlay");
@@ -675,34 +675,34 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
 
             // Apply Connection
             r._workshopApplyConnection(0, 1, "lashing");
-            const conns = r.state.blueprints.test_phase3.connections || [];
+            const conns = st.blueprints.test_phase3.connections || [];
             out.connectionAdded = conns.some((c) => c.partA === 0 && c.partB === 1 && c.type === "lashing");
             // Popover wurde geschlossen
             out.popoverClosedAfterApply = !document.getElementById("workshop-connect-overlay");
             // Connect-State zurückgesetzt
-            out.connectStateReset = r.state.workshop.connectFirstPartIdx === null;
+            out.connectStateReset = st.workshop.connectFirstPartIdx === null;
 
             // Duplikat-Schutz: gleiche Connection zweimal → bleibt 1
             r._workshopApplyConnection(0, 1, "lashing");
-            const connsAfterDup = r.state.blueprints.test_phase3.connections || [];
+            const connsAfterDup = st.blueprints.test_phase3.connections || [];
             const lashingCount = connsAfterDup.filter(
                 (c) => c.type === "lashing" && c.partA === 0 && c.partB === 1
             ).length;
             out.dupRejected = lashingCount === 1;
 
             // Apply lehnt unbekannten Type ab
-            const beforeBogus = (r.state.blueprints.test_phase3.connections || []).length;
+            const beforeBogus = (st.blueprints.test_phase3.connections || []).length;
             r._workshopApplyConnection(0, 1, "nonsense_type");
-            const afterBogus = (r.state.blueprints.test_phase3.connections || []).length;
+            const afterBogus = (st.blueprints.test_phase3.connections || []).length;
             out.bogusTypeRejected = afterBogus === beforeBogus;
 
             // ESC im Connect-Mode mit pending Source → cancelt nur Connect, nicht Drawer
             r._workshopHandleConnectClick(0); // Source = 0
-            r.state.uiActiveDrawer = "werkstatt";
+            st.uiActiveDrawer = "werkstatt";
             r.closeAllDrawers();
-            out.escCancelsConnectOnly = r.state.workshop.connectFirstPartIdx === null;
+            out.escCancelsConnectOnly = st.workshop.connectFirstPartIdx === null;
             // Drawer sollte noch aktiv sein, weil ESC nur Connect canceled
-            out.drawerStillActiveAfterEsc = r.state.uiActiveDrawer === "werkstatt";
+            out.drawerStillActiveAfterEsc = st.uiActiveDrawer === "werkstatt";
 
             // Cleanup
             r.setWorkshopManipulatorMode("translate");
@@ -760,11 +760,11 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
             // Tab → Werkstatt + eigenen Bauplan vorbereiten
             const tab = document.querySelector('#topbar [data-tab="werkstatt"]');
             if (tab) tab.click();
-            if (r.state.blueprints["test_v803"]) r.deleteBlueprint("test_v803");
+            if (st.blueprints["test_v803"]) r.deleteBlueprint("test_v803");
             r.cloneBlueprint("stein_block", "test_v803");
             r.selectBlueprintForEdit("test_v803");
             r._workshopEnsurePreview();
-            const pre = r.state.workshop.preview;
+            const pre = st.workshop.preview;
 
             // Layout-Struktur
             out.previewRowInDom = !!document.getElementById("workshop-preview-row");
@@ -787,7 +787,7 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
             const matCards = document.querySelectorAll(".workshop-material-card");
             out.matCardsCount = matCards.length;
             out.matCardsMatchState =
-                matCards.length === Object.values(r.state.materials).filter((m) => m.bauStoff !== false).length;
+                matCards.length === Object.values(st.materials).filter((m) => m.bauStoff !== false).length;
             // Color-Palette: 12 Swatches
             const colorSwatches = document.querySelectorAll(".workshop-color-swatch");
             out.twelveColorSwatches = colorSwatches.length === 12;
@@ -820,13 +820,13 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
             }
 
             // Cleanup
-            r.state.workshop.selectedPartIdx = null;
+            st.workshop.selectedPartIdx = null;
             r.deleteBlueprint("test_v803");
             r.selectBlueprintForEdit("stein_block");
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
             r.closeAllDrawers();
-            r.state.yaw = 0;
-            if (r.state.playerMesh) r.state.playerMesh.rotation.y = 0;
+            st.yaw = 0;
+            if (st.playerMesh) st.playerMesh.rotation.y = 0;
         } catch (err) {
             out.error = err && err.message;
         }
@@ -862,77 +862,77 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
     void finalState;
     // ### Player-Emotionen → Welt ###
     const ring3Results = await safeEvaluate(page, async () => {
-        if (!r || !r.state || !r.state.player) return null;
+        if (!r || !st || !st.player) return null;
         const out = {};
 
         // Reset: für deterministische Tests alle Werte + die Takte der Gesetze des Gemüts löschen.
-        for (const k of Object.keys(r.state.player.emotions)) {
-            r.state.player.emotions[k] = 0;
+        for (const k of Object.keys(st.player.emotions)) {
+            st.player.emotions[k] = 0;
         }
-        for (const g of r.state.worldRules) if (/^emotion:/.test(g.source)) g.lastFired = -Infinity;
-        r.state.player.emotionLastTick = -Infinity;
+        for (const g of st.worldRules) if (/^emotion:/.test(g.source)) g.lastFired = -Infinity;
+        st.player.emotionLastTick = -Infinity;
 
         // (a) collectPlayerEmotions reagiert auf deutsche Stichwörter
         r.collectPlayerEmotions("Was für ein schöner und magischer Moment");
-        out.joyAfterCollect = r.state.player.emotions.joy;
-        out.aweAfterCollect = r.state.player.emotions.awe;
+        out.joyAfterCollect = st.player.emotions.joy;
+        out.aweAfterCollect = st.player.emotions.awe;
         out.collectJoyOk = out.joyAfterCollect >= 0.1 - 1e-9;
         out.collectAweOk = out.aweAfterCollect >= 0.1 - 1e-9;
 
         // (b) Decay über simulierten Zeitfortschritt, isoliert: der Appraisal-Kanal hebt joy bei δ>0 und
         // überstimmt den 0.05-Decay → lifeField leeren + Spieler-Baseline = aktuelle Situation (δ=0).
-        const savedLifeRing3 = r.state.lifeField;
-        r.state.lifeField = new Map();
-        const pmRing3 = r.state.playerMesh.position;
-        for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0; // nur joy → keine Kohärenz-Dämpfung
-        r.state.player.emotions.joy = 0.5;
-        r.state.player.wohlBaseline = r._playerSituationWohl(r.auraAt(pmRing3.x, pmRing3.z, 110));
-        r.state.player.emotionLastTick = 100;
+        const savedLifeRing3 = st.lifeField;
+        st.lifeField = new Map();
+        const pmRing3 = st.playerMesh.position;
+        for (const k of Object.keys(st.player.emotions)) st.player.emotions[k] = 0; // nur joy → keine Kohärenz-Dämpfung
+        st.player.emotions.joy = 0.5;
+        st.player.wohlBaseline = r._playerSituationWohl(r.auraAt(pmRing3.x, pmRing3.z, 110));
+        st.player.emotionLastTick = 100;
         r.updatePlayerEmotions(110); // 10s vergangen
-        out.joyAfterDecay = r.state.player.emotions.joy;
+        out.joyAfterDecay = st.player.emotions.joy;
         out.decayLowered = out.joyAfterDecay < 0.5 && out.joyAfterDecay > 0;
-        r.state.lifeField = savedLifeRing3;
+        st.lifeField = savedLifeRing3;
 
         // (c) Schwellen-Trigger: sorrow > 0.7 → Regen. lastTick nahe currentTime, damit der Decay sorrow nicht vor dem
         // Trigger unter die Schwelle drückt. UHR UND WETTER GEHÖREN DEM SPIELER: die Emotion ist eine
         // Stimme der Welt — sie WÜNSCHT das Wort, der Wetter-Zug zieht es in seinem Takt (ohne stehendes Wort des Spielers).
         r._wetterFreigeben("human");
-        r.state.weather = "sunny";
-        r.state.player.emotions.sorrow = 0.9;
-        r.state.player.emotionLastTick = 199;
+        st.weather = "sunny";
+        st.player.emotions.sorrow = 0.9;
+        st.player.emotionLastTick = 199;
         r.updatePlayerEmotions(200);
         r._tickWorldRules(200); // das Gesetz des Gemüts `emotion:sorrow` (affekt.K2)
-        out.sorrowAfterTick = r.state.player.emotions.sorrow;
-        const sorrowWunsch = r.state.wetterWunsch && r.state.wetterWunsch.wort;
-        r.state.spielZeit += r.constructor.WETTER_ZUG_SEK;
+        out.sorrowAfterTick = st.player.emotions.sorrow;
+        const sorrowWunsch = st.wetterWunsch && st.wetterWunsch.wort;
+        st.spielZeit += AnazhRealm.WETTER_ZUG_SEK;
         r._loopWeatherAndGrowth(0);
-        out.sorrowTriggersRain = sorrowWunsch === "rainy" && r.state.weather === "rainy";
+        out.sorrowTriggersRain = sorrowWunsch === "rainy" && st.weather === "rainy";
 
         // (d) Trigger respektiert Cooldown — zweiter Tick 5s später
         //     darf nicht wieder feuern (kein neuer Wunsch).
-        r.state.weather = "sunny";
-        r.state.wetterWunsch = null;
+        st.weather = "sunny";
+        st.wetterWunsch = null;
         r._tickWorldRules(205);
-        out.cooldownRespected = r.state.weather === "sunny" && r.state.wetterWunsch === null;
+        out.cooldownRespected = st.weather === "sunny" && st.wetterWunsch === null;
 
         // (e) DSL-Condition emotion_above
-        r.state.player.emotions.joy = 0.9;
+        st.player.emotions.joy = 0.9;
         const condTrue = r.dslEvalCond(["emotion_above", "joy", 0.5], {
-            state: r.state,
+            state: st,
             rng: Math.random,
             log: [],
         });
-        r.state.player.emotions.joy = 0.2;
+        st.player.emotions.joy = 0.2;
         const condFalse = r.dslEvalCond(["emotion_above", "joy", 0.5], {
-            state: r.state,
+            state: st,
             rng: Math.random,
             log: [],
         });
         out.dslConditionJoyAbove = condTrue === true && condFalse === false;
 
         // (f) Save-Roundtrip
-        r.state.player.emotions.joy = 0.42;
-        r.state.player.emotions.chaos = 0.13;
+        st.player.emotions.joy = 0.42;
+        st.player.emotions.chaos = 0.13;
         r.saveState();
         const raw = await window.__stand();
         let parsed = null;
@@ -979,9 +979,9 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
 
     // ### Achsen-Vollabdeckung + Generator-Modulation ###
     const ring3v2Results = await safeEvaluate(page, () => {
-        if (!r || !r.state || !r.state.player) return null;
+        if (!r || !st || !st.player) return null;
         const out = {};
-        const p = r.state.player;
+        const p = st.player;
 
         const makeRng = (seed) => {
             let s = seed >>> 0 || 1;
@@ -993,45 +993,45 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
 
         // (a) awe > 0.7 → skybox-Farbe wird gesetzt
         for (const k of Object.keys(p.emotions)) p.emotions[k] = 0;
-        for (const g of r.state.worldRules) if (/^emotion:/.test(g.source)) g.lastFired = -Infinity;
+        for (const g of st.worldRules) if (/^emotion:/.test(g.source)) g.lastFired = -Infinity;
         p.emotionLastTick = -Infinity;
         p.emotions.awe = 0.9;
         // skybox_color setzt eine fadende state.skyTint-Tönung (blendet in den Tag-Nacht-Himmel): der
         // awe-Trigger ["skybox_color","#d4a3ff"] → skyTint + skyTintTarget > 0.
-        r.state.skyTint = null;
-        r.state.skyTintTarget = 0;
+        st.skyTint = null;
+        st.skyTintTarget = 0;
         r._tickWorldRules(300);
-        out.aweTriggersSkybox = !!r.state.skyTint && r.state.skyTintTarget > 0 && r.state.skyTint.getHex() === 0xd4a3ff;
+        out.aweTriggersSkybox = !!st.skyTint && st.skyTintTarget > 0 && st.skyTint.getHex() === 0xd4a3ff;
 
         // (b) hope > 0.7 → wetter sunny + kreaturen happy (das Wetter wünscht die Emotion, der Wetter-Zug zieht es —
         // die Welt schreibt das Wetter nie selbst)
-        for (const g of r.state.worldRules) if (/^emotion:/.test(g.source)) g.lastFired = -Infinity;
+        for (const g of st.worldRules) if (/^emotion:/.test(g.source)) g.lastFired = -Infinity;
         p.emotions.hope = 0.9;
         r._wetterFreigeben("human");
-        r.state.weather = "rainy";
-        r.state.creatureEmotions = r.state.creatures.map(() => "sad");
+        st.weather = "rainy";
+        st.creatureEmotions = st.creatures.map(() => "sad");
         r._tickWorldRules(400);
-        const happyCount = r.state.creatureEmotions.filter((e) => e === "happy").length;
-        const hopeWunsch = r.state.wetterWunsch && r.state.wetterWunsch.wort;
-        r.state.spielZeit += r.constructor.WETTER_ZUG_SEK;
+        const happyCount = st.creatureEmotions.filter((e) => e === "happy").length;
+        const hopeWunsch = st.wetterWunsch && st.wetterWunsch.wort;
+        st.spielZeit += AnazhRealm.WETTER_ZUG_SEK;
         r._loopWeatherAndGrowth(0);
         out.hopeTriggersSunnyHappy =
-            hopeWunsch === "sunny" && r.state.weather === "sunny" && happyCount === r.state.creatureEmotions.length;
+            hopeWunsch === "sunny" && st.weather === "sunny" && happyCount === st.creatureEmotions.length;
 
         // (c) peace > 0.7 → creatures_speed_mul = 0.7: der Tempo-Hauch der Tiere — jedes Tier trägt den Hauch, und sein
         // Charakter-Tempo LIEST ihn (im Band).
-        for (const g of r.state.worldRules) if (/^emotion:/.test(g.source)) g.lastFired = -Infinity;
+        for (const g of st.worldRules) if (/^emotion:/.test(g.source)) g.lastFired = -Infinity;
         p.emotions.peace = 0.9;
         // den Hauch zurücksetzen, damit der Vergleich verlässlich ist
-        const tempoVor = r.state.creatures.map((cr) => {
+        const tempoVor = st.creatures.map((cr) => {
             if (cr.userData) cr.userData.tempoHauch = 1;
             return r._creatureMoveCharacter(cr).speedMul;
         });
         r._tickWorldRules(500);
-        const W = r.constructor._verhaltenGesetz().wandern;
+        const W = AnazhRealm._verhaltenGesetz().wandern;
         const allSlowed =
-            r.state.creatures.length > 0 &&
-            r.state.creatures.every((cr, i) => {
+            st.creatures.length > 0 &&
+            st.creatures.every((cr, i) => {
                 const sm = r._creatureMoveCharacter(cr).speedMul;
                 return (
                     cr.userData &&
@@ -1107,13 +1107,13 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
 
     // ### anazhSymphony ###
     const ring4Results = await safeEvaluate(page, () => {
-        if (!r || !r.state || !r.state.symphony) return null;
+        if (!r || !st || !st.symphony) return null;
         const out = {};
 
         // (a) initSymphony erfolgreich — EIN Master (UMWELT.masterBasis × Regler), die Klang-Welt auf ihrem Bus
         const initOk = r.initSymphony();
-        const s = r.state.symphony;
-        const UM = r.constructor._umweltGesetz().UMWELT;
+        const s = st.symphony;
+        const UM = AnazhRealm._umweltGesetz().UMWELT;
         out.initOk = initOk === true && s.enabled === true && !!s.ctx;
         // Die Klang-Welt selbst (Stimmen je Ort, kein Oszillator ohne Gesetz, der Regen aus dem Wetter-Feld, der Ruf eines Leibs
         // mit seiner Richtung am Ohr) misst gate:klang-zensus am Abgriff: (G)(H)(S), (N) regen, (R) und (Ra).
@@ -1158,11 +1158,11 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         out.allSixAxes = rows.length === 6;
 
         // Werte aktualisieren mit kontrollierten Emotionen
-        for (const k of Object.keys(r.state.player.emotions)) {
-            r.state.player.emotions[k] = 0;
+        for (const k of Object.keys(st.player.emotions)) {
+            st.player.emotions[k] = 0;
         }
-        r.state.player.emotions.joy = 0.5;
-        r.state.player.emotions.chaos = 0.8;
+        st.player.emotions.joy = 0.5;
+        st.player.emotions.chaos = 0.8;
         if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
         r.updateStatusPanel(1000);
 
@@ -1183,7 +1183,7 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
             out.weatherText !== "—" && out.weatherText.length > 0 && out.slugText !== "—" && out.slugText.length > 0;
 
         // Throttle: zweiter Aufruf direkt danach ändert nichts
-        r.state.player.emotions.joy = 0.9;
+        st.player.emotions.joy = 0.9;
         r.updateStatusPanel(1000.1);
         const joyFill2 = ichRaum ? ichRaum.querySelector(".emotion.joy .bar > div") : null;
         out.throttleHolds = joyFill2 ? joyFill2.style.width === "50%" : false;
@@ -1209,8 +1209,8 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         );
 
         // Cleanup
-        for (const k of Object.keys(r.state.player.emotions)) {
-            r.state.player.emotions[k] = 0;
+        for (const k of Object.keys(st.player.emotions)) {
+            st.player.emotions[k] = 0;
         }
         if (r._statusRefs) r._statusRefs.lastTick = -Infinity;
         r.updateStatusPanel(2000);
@@ -1277,17 +1277,17 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         out.labelInDom = !!lab && !document.getElementById("emotion-label") && !!lab.closest("#statusbar");
 
         // (c) Eine starke Emotion entzündet das Leisten-Wort (dominante = Freude).
-        for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
-        r.state.player.emotions.joy = 0.9;
+        for (const k of Object.keys(st.player.emotions)) st.player.emotions[k] = 0;
+        st.player.emotions.joy = 0.9;
         r._updateEmotionFeedback();
         out.labelShowsDominant = !!lab && lab.textContent === "Freude";
 
         // (d) Ruhe (alle ~0) verblasst das Leisten-Wort wieder.
-        for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
+        for (const k of Object.keys(st.player.emotions)) st.player.emotions[k] = 0;
         r._updateEmotionFeedback();
         out.labelFadesWhenCalm = !!lab && parseFloat(lab.style.opacity || "0") === 0;
 
-        for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
+        for (const k of Object.keys(st.player.emotions)) st.player.emotions[k] = 0;
         return out;
     });
 
@@ -1403,7 +1403,7 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         // (a) Initial: leere Meldung oder bestehende Fähigkeiten —
         //     je nach Test-Vorlauf. Wir setzen erst eine bekannte
         //     Ability, dann erzwingen das Rendering.
-        r.state.dsl.abilities = [];
+        st.dsl.abilities = [];
         if (r._statusRefs) {
             r._statusRefs.abilitiesSignature = "";
             r._statusRefs.lastTick = -Infinity;
@@ -1426,8 +1426,8 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         // (c) Run-Button klicken → ability läuft, Welt-Effekt
         // Kreatur ist Group; rote Vor-Color auf
         // alle Sub-Meshes setzen, sonst crasht das Test-Setup.
-        if (r.state.creatures[0]) {
-            const cR = r.state.creatures[0];
+        if (st.creatures[0]) {
+            const cR = st.creatures[0];
             if (cR.material && cR.material.color) cR.material.color.setHex(0xff0000);
             else if (typeof cR.traverse === "function") {
                 cR.traverse((n) => {
@@ -1438,7 +1438,7 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         const runBtn = rows[0] && rows[0].querySelector("[data-run-ability]");
         if (runBtn) runBtn.click();
         // Kreatur ist Group; Color über Sub-Meshes lesen.
-        const cFirst = r.state.creatures[0];
+        const cFirst = st.creatures[0];
         let colorAfter = 0;
         if (cFirst) {
             if (cFirst.material && cFirst.material.color) {
@@ -1484,8 +1484,8 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
 
         // Cleanup: Test-Ability wieder rausnehmen, damit andere
         //         Snapshots sauber sind.
-        r.state.dsl.abilities = r.state.dsl.abilities.filter((a) => a.name !== "uiAbilityTest");
-        delete r.state.abilities.uiAbilityTest;
+        st.dsl.abilities = st.dsl.abilities.filter((a) => a.name !== "uiAbilityTest");
+        delete st.abilities.uiAbilityTest;
         if (r._statusRefs) {
             r._statusRefs.abilitiesSignature = "";
         }
@@ -1534,14 +1534,14 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
 
         // Initiale Slider-Werte spiegeln state.player-Defaults
         out.initialThreshold = sliders.threshold ? parseFloat(sliders.threshold.value) : -1;
-        out.initialMatchesState = Math.abs(out.initialThreshold - r.state.player.emotionThreshold) < 1e-6;
+        out.initialMatchesState = Math.abs(out.initialThreshold - st.player.emotionThreshold) < 1e-6;
 
         // Slider-Bewegung → state.player.emotionThreshold ändert sich
         if (sliders.threshold) {
             sliders.threshold.value = "0.5";
             sliders.threshold.dispatchEvent(new Event("input", { bubbles: true }));
         }
-        out.thresholdAfterMove = r.state.player.emotionThreshold;
+        out.thresholdAfterMove = st.player.emotionThreshold;
         out.thresholdUpdatesState = Math.abs(out.thresholdAfterMove - 0.5) < 1e-6;
 
         // Value-Label spiegelt den Wert
@@ -1553,7 +1553,7 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
             sliders.decay.value = "0.020";
             sliders.decay.dispatchEvent(new Event("input", { bubbles: true }));
         }
-        out.decayUpdatesState = Math.abs(r.state.player.emotionDecayPerSec - 0.02) < 1e-6;
+        out.decayUpdatesState = Math.abs(st.player.emotionDecayPerSec - 0.02) < 1e-6;
 
         // Cooldown-Slider
         if (sliders.cooldown) {
@@ -1561,14 +1561,14 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
             sliders.cooldown.dispatchEvent(new Event("input", { bubbles: true }));
         }
         out.cooldownUpdatesState =
-            r.state.player.emotionApplyCooldown === 60 &&
-            r.state.worldRules.filter((g) => /^emotion:/.test(g.source) && g.everySec === 60).length === 6;
+            st.player.emotionApplyCooldown === 60 &&
+            st.worldRules.filter((g) => /^emotion:/.test(g.source) && g.everySec === 60).length === 6;
 
         // Cleanup: defaults wiederherstellen, damit weitere Tests
         // konsistent sind (falls dieser Test vorgezogen wird).
-        r.state.player.emotionThreshold = 0.7;
-        r.state.player.emotionDecayPerSec = 0.005;
-        r.state.player.emotionApplyCooldown = 30;
+        st.player.emotionThreshold = 0.7;
+        st.player.emotionDecayPerSec = 0.005;
+        st.player.emotionApplyCooldown = 30;
         r._gemuetGesetze();
 
         return out;
@@ -1677,13 +1677,13 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
 async function checkBandV18134Social({ page, check }) {
     const res = await safeEvaluate(page, async () => {
         const out = {};
-        out.consts = !!r.constructor.SOCIAL && Object.isFrozen(r.constructor.SOCIAL);
-        if (!r.state.vibePass || !r.state.vibePass.ready || typeof crypto === "undefined" || !crypto.subtle) {
+        out.consts = !!AnazhRealm.SOCIAL && Object.isFrozen(AnazhRealm.SOCIAL);
+        if (!st.vibePass || !st.vibePass.ready || typeof crypto === "undefined" || !crypto.subtle) {
             out.unmeasurable = true;
             return out;
         }
-        const saved = r.state.socialRatings;
-        r.state.socialRatings = new Map();
+        const saved = st.socialRatings;
+        st.socialRatings = new Map();
         try {
             const own = await r._socialSignOwnRating("welt:band134", 4);
             out.ownSigned = !!(own && own.sig);
@@ -1716,11 +1716,11 @@ async function checkBandV18134Social({ page, check }) {
                 (await r._socialRatingReceive("peerX", await mk("welt:band134", 3, Date.now() + 1000))) === false;
             // revokedKeys ist eine Map: .delete() direkt, ohne `if (…delete)`-Existenz-Gate (das lief bei
             // einem Object still leer).
-            r.state.revokedKeys.delete(pubHex.toLowerCase());
+            st.revokedKeys.delete(pubHex.toLowerCase());
             const batch = r._socialAnnounceBatch();
             out.batchCarries = !!(batch && batch.type === "social-ratings" && batch.list.length >= 1);
         } finally {
-            r.state.socialRatings = saved || new Map();
+            st.socialRatings = saved || new Map();
             r._saveSocialRatings();
         }
         return out;
@@ -1779,7 +1779,7 @@ async function checkBandV18142Follow({ page, check }) {
         // Toggle-Roundtrip + Persistenz + Hex-Wand + witness-Journal.
         const pub = "ab".repeat(32);
         const was = r._feedFollowed(pub);
-        const jBefore = ((r.state.worldJournal && r.state.worldJournal.entries) || []).length;
+        const jBefore = ((st.worldJournal && st.worldJournal.entries) || []).length;
         const on = r._toggleFeedFollow(pub);
         out.toggleOn = on === true && r._feedFollowed(pub) === true;
         let persisted = false;
@@ -1792,7 +1792,7 @@ async function checkBandV18142Follow({ page, check }) {
         // Das Journal cappt bei entryCap (200) — nach dem langen Warmup wächst
         // length NICHT mehr; der Beweis sitzt am NEUESTEN Eintrag.
         void jBefore;
-        const j = (r.state.worldJournal && r.state.worldJournal.entries) || [];
+        const j = (st.worldJournal && st.worldJournal.entries) || [];
         out.witnessWritten = j.slice(-3).some((e) => e.type === "witness" && /folge nun/.test(e.text || ""));
         const off = r._toggleFeedFollow(pub);
         out.toggleOff = off === false && r._feedFollowed(pub) === false;
@@ -1820,20 +1820,20 @@ async function checkBandV18142Follow({ page, check }) {
 async function checkBandV18143Comments({ page, check }) {
     const res = await safeEvaluate(page, async () => {
         const out = {};
-        const S = r.constructor.SOCIAL;
+        const S = AnazhRealm.SOCIAL;
         out.config = Number.isFinite(S.maxComments) && Number.isFinite(S.maxCommentLen) && S.maxCommentsShown > 0;
         out.canonical = r._socialCommentCanonical({ id: "a", t: 5, pub: "p", x: "x|y" }) === "comment|a|5|p|x|y";
-        if (!r.state.vibePass || !r.state.vibePass.ready) {
+        if (!st.vibePass || !st.vibePass.ready) {
             out.skipCrypto = true;
             return out;
         }
-        const saved = r.state.socialComments;
-        r.state.socialComments = new Map();
+        const saved = st.socialComments;
+        st.socialComments = new Map();
         // (1) das EIGENE Wort: signiert + gespeichert + share-Journal.
         const own = await r._socialSignOwnComment("band143:ziel", "  Ein gutes Werk!  ");
         out.ownSigned = !!own && own.x === "Ein gutes Werk!" && typeof own.sig === "string";
         out.ownStored = r._feedComments("band143:ziel").length === 1;
-        const j = (r.state.worldJournal && r.state.worldJournal.entries) || [];
+        const j = (st.worldJournal && st.worldJournal.entries) || [];
         out.shareWritten = j.slice(-3).some((e) => e.type === "share" && /Wort/.test(e.text || ""));
         // (2) die ZWEITE Identitaet: ihr Wort verifiziert + landet; Tamper bricht.
         const pair = await crypto.subtle.generateKey({ name: "Ed25519" }, true, ["sign", "verify"]);
@@ -1872,7 +1872,7 @@ async function checkBandV18143Comments({ page, check }) {
             roh,
         ]);
         const X = "<img src=x onerror=window.__xss143=1><b>boese</b>";
-        r.state.socialComments.set("band143:xss|" + "ab".repeat(32) + "|1", {
+        st.socialComments.set("band143:xss|" + "ab".repeat(32) + "|1", {
             id: "band143:xss",
             x: X,
             t: 1,
@@ -1884,7 +1884,7 @@ async function checkBandV18143Comments({ page, check }) {
         const tx = panel.querySelector(".feed-comment-text");
         out.xssWall = !!tx && tx.textContent === X && tx.children.length === 0 && !panel.querySelector("img, b");
         // restore
-        r.state.socialComments = saved;
+        st.socialComments = saved;
         r._saveSocialComments();
         return out;
     });
@@ -1925,21 +1925,21 @@ async function checkBandV18147ForYou({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
         // (2)-(3) BEHAVIORAL mit injizierten Signalen (restauriert).
-        const savedFollows = r.state.feedFollows;
-        const savedBookmarks = r.state.feedBookmarks;
+        const savedFollows = st.feedFollows;
+        const savedBookmarks = st.feedBookmarks;
         try {
             const pub = "ab".repeat(32);
-            r.state.feedFollows = { [pub]: true };
-            r.state.feedBookmarks = {};
+            st.feedFollows = { [pub]: true };
+            st.feedBookmarks = {};
             const plain = r._feedForYouScore({ id: "world:forYouTest", author: "" });
             const followed = r._feedForYouScore({ id: "world:forYouTest", author: pub });
             out.followBoost = followed - plain >= 3.9;
-            r.state.feedBookmarks = { "world:forYouTest": true };
+            st.feedBookmarks = { "world:forYouTest": true };
             const marked = r._feedForYouScore({ id: "world:forYouTest", author: "" });
             out.bookmarkBoost = marked - plain >= 1.9;
         } finally {
-            r.state.feedFollows = savedFollows;
-            r.state.feedBookmarks = savedBookmarks;
+            st.feedFollows = savedFollows;
+            st.feedBookmarks = savedBookmarks;
         }
         return out;
     });
@@ -1996,7 +1996,7 @@ async function checkBandM5HudPolitur({ page, check }) {
             );
         }
         // (4) Boost-Chips: Effekt-Label + data-expires + LIVE-Tick ändert den Text.
-        const p = r.state.player;
+        const p = st.player;
         const savedBoosts = p.boosts;
         const nowSec = performance.now() / 1000;
         p.boosts = [{ source: "test", label: "Probe", tagDelta: { magieleitung: 0.4 }, expiresAt: nowSec + 40 }];
@@ -2015,12 +2015,12 @@ async function checkBandM5HudPolitur({ page, check }) {
         }
         p.boosts = savedBoosts;
         // (6) das HOF-GEMÜT als Balken: injizierte Emotion → .hof-emotion-bar gefüllt.
-        const pm = r.state.playerMesh.position;
+        const pm = st.playerMesh.position;
         // Cap-Gotcha: den Cap für die EINE Test-Kreatur heben (sonst spawn=null → Bar leer).
-        const _saveMaxM5 = r.state.maxCreatures;
-        r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 2;
+        const _saveMaxM5 = st.maxCreatures;
+        st.maxCreatures = (st.creatures ? st.creatures.length : 0) + 2;
         const c = r.spawnCreatureAt(pm.x + 4, pm.y, pm.z, "happy", "wesen");
-        r.state.maxCreatures = _saveMaxM5;
+        st.maxCreatures = _saveMaxM5;
         let sheet = null;
         if (c) {
             c.userData.emotions = { joy: 0.8, sorrow: 0, awe: 0.1, fear: 0, curiosity: 0.2, calm: 0.1 };
@@ -2057,7 +2057,7 @@ async function checkBandM5HudPolitur({ page, check }) {
 async function checkBandM4SuchKern({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
-        const blu = r.state.blueprints;
+        const blu = st.blueprints;
         try {
             // (1) der KERN: Mehrwort-UND, leere Query trifft alles.
             out.kern =
@@ -2134,13 +2134,13 @@ async function checkBandWBHofKarte({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
         // Die Karte: 6 Gefühls-Reihen mit eingebrannter Füllung + Natur als <details>.
-        const pm = r.state.playerMesh.position;
+        const pm = st.playerMesh.position;
         // den maxCreatures-Cap (20) für die EINE Test-Kreatur
         // temporär heben — sonst gibt spawnCreatureAt bei vollem Cap null → "Reihen undefined".
-        const _saveMaxWB = r.state.maxCreatures;
-        r.state.maxCreatures = (r.state.creatures ? r.state.creatures.length : 0) + 2;
+        const _saveMaxWB = st.maxCreatures;
+        st.maxCreatures = (st.creatures ? st.creatures.length : 0) + 2;
         const c = r.spawnCreatureAt(pm.x + 4, pm.y, pm.z, "happy", "wesen");
-        r.state.maxCreatures = _saveMaxWB;
+        st.maxCreatures = _saveMaxWB;
         if (!c) return { ...out, fehler: "kein Spawn" };
         c.userData.emotions = { joy: 0.8, awe: 0.1, sorrow: 0, hope: 0.2, peace: 0.1, chaos: 0 };
         const sheet = r._hofBuildSpecSheet(r._creatureProfile(c));
@@ -2165,7 +2165,7 @@ async function checkBandWBHofKarte({ page, check }) {
             (fillBg.backgroundColor !== "rgba(0, 0, 0, 0)" || fillBg.backgroundImage !== "none");
         document.body.removeChild(sheet);
         r.removeCreature(c);
-        r.state.creatures = (r.state.creatures || []).filter((x) => x !== c);
+        st.creatures = (st.creatures || []).filter((x) => x !== c);
         // Das ICH konsumiert weiter live: 6 Reihen im #status-emotions (bestehende
         // Invarianten prüfen das mit — hier nur der Renderer-Konsum oben).
         return out;
@@ -2199,17 +2199,17 @@ async function checkBandWCIchWahrheit({ page, check }) {
         // EHRLICH strukturiert, der Hint nennt das fehlende Material. Deterministisch:
         // Inventar + forgedPrecision (ein früheres Band könnte gefertigt haben) gesichert.
         const savedMode = r.getGameMode();
-        const savedInv = r.state.player.inventory;
-        const bpArmor = r.state.blueprints.ruestung_brustpanzer;
+        const savedInv = st.player.inventory;
+        const bpArmor = st.blueprints.ruestung_brustpanzer;
         const savedForged = bpArmor && bpArmor.forgedPrecision;
-        const savedArmor = r.state.player.equipped && r.state.player.equipped.armor;
-        r.state.player.inventory = [];
+        const savedArmor = st.player.equipped && st.player.equipped.armor;
+        st.player.inventory = [];
         if (bpArmor) delete bpArmor.forgedPrecision;
         r.setGameMode("frieden");
         const wres = r.wearArmor("ruestung_brustpanzer");
         out.torEhrlich =
             !!wres && wres.ok === false && wres.reason === "not_enough_material" && /eisen/.test(r._machTorHint(wres));
-        out.keinAnlegen = (r.state.player.equipped && r.state.player.equipped.armor) === savedArmor;
+        out.keinAnlegen = (st.player.equipped && st.player.equipped.armor) === savedArmor;
         // die drei Inline-Konsumenten: Slot-Wechsel, Rezept-Zeile und FERTIGEN sprechen das Mach-Tor an ihrer Stelle
         r._renderInventoryEquip();
         const sel = document.querySelector("#inventory-equip .equip-slot-select");
@@ -2226,7 +2226,7 @@ async function checkBandWCIchWahrheit({ page, check }) {
             window.__consumes(sel, "dispatchEvent", r, "_showMachTorHint", [new Event("change")]) &&
             window.__consumes(bR, "click", r, "_showMachTorHint", []) &&
             window.__consumes(bF, "click", r, "_showMachTorHint", []);
-        r.state.player.inventory = savedInv;
+        st.player.inventory = savedInv;
         if (bpArmor && Number.isFinite(savedForged)) bpArmor.forgedPrecision = savedForged;
         r.setGameMode(savedMode);
         // (a) der PREIS lesbar: die Stat-Folge der Rüstung trägt Abwehr-Delta.
@@ -2234,7 +2234,7 @@ async function checkBandWCIchWahrheit({ page, check }) {
         out.preisLesbar = /Abwehr/.test(delta || "");
         // (b) EIN Boost-Band: injizierter Boost → GENAU ein DOM-Ort (#ich-boosts-host);
         // die Selbst-Sheet-Fußzeile trägt KEINE ✺-Chips mehr; der Tick ENTFERNT Abgelaufene.
-        const p = r.state.player;
+        const p = st.player;
         const savedBoosts = p.boosts;
         const nowSec = performance.now() / 1000;
         p.boosts = [{ source: "wc", label: "WC-Probe", tagDelta: { magieleitung: 0.3 }, expiresAt: nowSec + 30 }];
@@ -2267,25 +2267,25 @@ async function checkBandWCIchWahrheit({ page, check }) {
         // (h) der WARUM-CHIP: lesbare Emergenz an Eiche (architektur-ehrlich: dichte/
         // härte-Familie) + Trank (lebendig) + die sichtbare spec-why-line im Werkstatt-Quell.
         const __whyKey = r._growTreeBlueprintForSpawn("baum_eiche", "why");
-        const whyEiche = __whyKey ? r._blueprintRoleWhy(r.state.blueprints[__whyKey]) : null;
-        const whyTrank = r._blueprintRoleWhy(r.state.blueprints.trank_lebenssaft);
+        const whyEiche = __whyKey ? r._blueprintRoleWhy(st.blueprints[__whyKey]) : null;
+        const whyTrank = r._blueprintRoleWhy(st.blueprints.trank_lebenssaft);
         out.warumEiche = !!whyEiche && /Dichte|Härte|dichte|härte|bulk|Standfläche/.test(whyEiche.text);
         out.warumTrank = !!whyTrank && /Lebendig|lebendig/.test(whyTrank.text);
         // die drei Flächen tragen das EINE Warum-Gesetz sichtbar: die spec-why-line der Werkstatt (am Ruf), der Tooltip der
         // Rezept-Zeile und der Rollen-Chip der Bibliotheks-Karte
         const traegt = (t) => !!whyTrank && typeof t === "string" && t.includes(whyTrank.text);
         const panW = document.createElement("div");
-        r._specRenderBody(panW, r.state.blueprints.trank_lebenssaft);
+        r._specRenderBody(panW, st.blueprints.trank_lebenssaft);
         const wl = panW.querySelector(".spec-why-line");
         out.warumFlaechen =
             !!wl &&
             traegt(wl.textContent) &&
             window.__consumes(r, "_specRenderBody", r, "_blueprintRoleWhy", [
                 document.createElement("div"),
-                r.state.blueprints.trank_lebenssaft,
+                st.blueprints.trank_lebenssaft,
             ]);
         const chipB = r
-            ._feedRecipeCard({ kind: "recipe", prof: r._recipeProfile(r.state.blueprints.trank_lebenssaft) })
+            ._feedRecipeCard({ kind: "recipe", prof: r._recipeProfile(st.blueprints.trank_lebenssaft) })
             .querySelector(".feed-role-chip");
         out.warumKarten = traegt(r._recipeRow("trank_lebenssaft", "drink").title) && !!chipB && traegt(chipB.title);
         // (g) bei Ruhe verlässt das Emotions-Item den FLOW (display:none nach dem 1.4-s-Fade, sonst ein
@@ -2294,20 +2294,20 @@ async function checkBandWCIchWahrheit({ page, check }) {
             const lab = document.getElementById("status-emotion");
             const item = document.getElementById("status-emotion-item");
             const saved = {};
-            for (const k of Object.keys(r.state.player.emotions)) saved[k] = r.state.player.emotions[k];
-            for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
-            r.state.player.emotions.joy = 0.9;
+            for (const k of Object.keys(st.player.emotions)) saved[k] = st.player.emotions[k];
+            for (const k of Object.keys(st.player.emotions)) st.player.emotions[k] = 0;
+            st.player.emotions.joy = 0.9;
             r._updateEmotionFeedback();
             const anImFlow = !!item && item.style.display !== "none" && !!lab && lab.textContent === "Freude";
-            for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = 0;
+            for (const k of Object.keys(st.player.emotions)) st.player.emotions[k] = 0;
             r._updateEmotionFeedback();
             await sleep(1700);
             const ruheAusFlow = !!item && item.style.display === "none";
-            r.state.player.emotions.joy = 0.9;
+            st.player.emotions.joy = 0.9;
             r._updateEmotionFeedback();
             const zurueck = !!item && item.style.display !== "none";
             out.leistenLochTot = anImFlow && ruheAusFlow && zurueck;
-            for (const k of Object.keys(r.state.player.emotions)) r.state.player.emotions[k] = saved[k];
+            for (const k of Object.keys(st.player.emotions)) st.player.emotions[k] = saved[k];
             r._updateEmotionFeedback();
         }
         return out;
@@ -2452,9 +2452,9 @@ async function checkBandRezeptKatalog({ page, check }) {
                 res.c.wagenRow = !!(list && list.querySelector('[data-blueprint="fahrzeug_wagen"]'));
                 res.c.torBasisRow = !!(list && list.querySelector('[data-blueprint="tor_basis"]'));
                 // die Alt-Donoren sind ABWESEND, die Substanz-Tabelle traegt sie.
-                const KS = r.constructor.KIND_SUBSTANCE || {};
-                res.c.wagenAbsent = !(r.state.blueprints && r.state.blueprints.fahrzeug_wagen);
-                res.c.torBasisAbsent = !(r.state.blueprints && r.state.blueprints.tor_basis);
+                const KS = AnazhRealm.KIND_SUBSTANCE || {};
+                res.c.wagenAbsent = !(st.blueprints && st.blueprints.fahrzeug_wagen);
+                res.c.torBasisAbsent = !(st.blueprints && st.blueprints.tor_basis);
                 res.c.wagenSubstanzParts =
                     KS.fahrzeug_wagen && Array.isArray(KS.fahrzeug_wagen.parts) ? KS.fahrzeug_wagen.parts.length : 0;
                 res.c.torSubstanzParts =
@@ -2497,7 +2497,7 @@ async function checkBandRezeptKatalog({ page, check }) {
             // ===== (e) INTERIM: kalte Auswahl → pending, KEINE Donor-Part-Meshes =====
             try {
                 const ws = r._ensureWorkshopState();
-                res.e.gtExists = !!(r.state.blueprints && r.state.blueprints.fahrzeug_gt);
+                res.e.gtExists = !!(st.blueprints && st.blueprints.fahrzeug_gt);
                 // Kuenstlich kalt: alle gt-Cache-/Wachen-Keys raus (der naechste Blick zieht neu).
                 for (const k of Array.from(f.cache.keys())) if (k.indexOf("gt|") === 0) f.cache.delete(k);
                 if (f.requested)

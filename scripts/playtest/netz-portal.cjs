@@ -15,8 +15,8 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
     const w17bResults = await safeEvaluate(page, () => {
         if (!r) return null;
         const out = {};
-        const MAXB = r.constructor.SUBWORLD_NET_MAX_BYTES;
-        const CAP = r.constructor.SUBWORLD_NET_RATE_MAX;
+        const MAXB = AnazhRealm.SUBWORLD_NET_MAX_BYTES;
+        const CAP = AnazhRealm.SUBWORLD_NET_RATE_MAX;
 
         // _sanitizePortalMeta — das multiplayer-Flag (Phase-A-Erbe).
         const sanDefault = r._sanitizePortalMeta({ world: "worlds/skeleton/index.html" }, "fb");
@@ -185,8 +185,8 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
         // (der feste Feld-Satz — Lehre); _sanitizePortalMeta
         // (oben geprüft) ist der Lade-Pfad → zusammen der Rundlauf.
         const bpName = "_w17b_portal";
-        const wp = r.state.blueprints["welt_portal"];
-        r.state.blueprints[bpName] = {
+        const wp = st.blueprints["welt_portal"];
+        st.blueprints[bpName] = {
             name: bpName,
             label: "W17 Test-Portal",
             builtIn: false,
@@ -201,7 +201,7 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
         const snap = r.buildStateSnapshot();
         const snapBp = (snap.blueprints || []).find((b) => b.name === bpName);
         out.snapshotKeepsMultiplayer = !!snapBp && !!snapBp.portalMeta && snapBp.portalMeta.multiplayer === true;
-        delete r.state.blueprints[bpName];
+        delete st.blueprints[bpName];
 
         return out;
     });
@@ -251,7 +251,7 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
     const w17jsResults = await safeEvaluate(page, () => {
         if (!r) return null;
         const out = {};
-        const MAXB = r.constructor.SUBWORLD_NET_MAX_BYTES;
+        const MAXB = AnazhRealm.SUBWORLD_NET_MAX_BYTES;
         const SUBW = "worlds/skeleton/index.html";
         const OTHER = "worlds/fluid/index.html";
 
@@ -263,8 +263,8 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
 
         // aimBlueprintAtWorld trägt serverMode aus dem Eintrag.
         let aimCarries = false;
-        r.state.customWorlds = r.state.customWorlds || {};
-        r.state.customWorlds._w17js_e = {
+        st.customWorlds = st.customWorlds || {};
+        st.customWorlds._w17js_e = {
             id: "_w17js_e",
             label: "W17 JS-Welt",
             world: "worlds/_w17js_e/index.html",
@@ -275,11 +275,11 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
         };
         if (r.cloneBlueprint("welt_portal", "_w17js_aim")) {
             const aim = r.aimBlueprintAtWorld("_w17js_aim", "_w17js_e");
-            const bp = r.state.blueprints["_w17js_aim"];
+            const bp = st.blueprints["_w17js_aim"];
             aimCarries = aim.ok && !!bp.portalMeta && bp.portalMeta.serverMode === "js-compute";
-            delete r.state.blueprints["_w17js_aim"];
+            delete st.blueprints["_w17js_aim"];
         }
-        delete r.state.customWorlds._w17js_e;
+        delete st.customWorlds._w17js_e;
         out.aimCarriesServerMode = aimCarries;
 
         // _buildPortalOverlay — ein js-compute-Host baut ein
@@ -452,8 +452,8 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
 
         // enterPortal eines js-compute-Portals → Compute-Host.
         const ebp = "_w17js_enter";
-        const wp = r.state.blueprints["welt_portal"];
-        r.state.blueprints[ebp] = {
+        const wp = st.blueprints["welt_portal"];
+        st.blueprints[ebp] = {
             name: ebp,
             label: "JS-Enter",
             builtIn: false,
@@ -474,7 +474,7 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
         const snap = r.buildStateSnapshot();
         const snapBp = (snap.blueprints || []).find((b) => b.name === ebp);
         out.snapshotKeepsServerMode = !!snapBp && !!snapBp.portalMeta && snapBp.portalMeta.serverMode === "js-compute";
-        delete r.state.blueprints[ebp];
+        delete st.blueprints[ebp];
 
         return out;
     });
@@ -724,7 +724,7 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
         if (!r) return null;
         const out = {};
 
-        out.pendingInviteInit = r.state.p2p.pendingInvite === null;
+        out.pendingInviteInit = st.p2p.pendingInvite === null;
         out.bannerInDom = !!document.getElementById("portal-invite-banner");
 
         // _resolvePortalWorldId — Pfad-Match gegen die Bibliothek.
@@ -733,8 +733,8 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
 
         // aimBlueprintAtWorld trägt multiplayer aus dem Eintrag.
         let aimCarriesMp = false;
-        r.state.customWorlds = r.state.customWorlds || {};
-        r.state.customWorlds._w17c_mp = {
+        st.customWorlds = st.customWorlds || {};
+        st.customWorlds._w17c_mp = {
             id: "_w17c_mp",
             label: "W17C MP-Welt",
             world: "worlds/_w17c_mp/index.html",
@@ -744,11 +744,11 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
         };
         if (r.cloneBlueprint("welt_portal", "_w17c_aimbp")) {
             const aim = r.aimBlueprintAtWorld("_w17c_aimbp", "_w17c_mp");
-            const bp = r.state.blueprints["_w17c_aimbp"];
+            const bp = st.blueprints["_w17c_aimbp"];
             aimCarriesMp = aim.ok && !!bp.portalMeta && bp.portalMeta.multiplayer === true;
-            delete r.state.blueprints["_w17c_aimbp"];
+            delete st.blueprints["_w17c_aimbp"];
         }
-        delete r.state.customWorlds._w17c_mp;
+        delete st.customWorlds._w17c_mp;
         out.aimCarriesMp = aimCarriesMp;
 
         // p2pSend hooken: portal-invite-Broadcasts einfangen.
@@ -758,7 +758,7 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
             if (obj && obj.type === "portal-invite") sent.push(obj);
             return false;
         };
-        const p2p = r.state.p2p;
+        const p2p = st.p2p;
         const wasEnabled = p2p.enabled;
         const wasConnected = p2p.connected;
         p2p.enabled = true;
@@ -827,14 +827,14 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
         p2p.pendingInvite = { peerId: "peerA", worldId: "_nichtda", label: "X", at: 0 };
         out.joinUnknownWorld = r.joinPortalInvite().reason === "world_unknown";
         // ... eine bekannte Welt → Portal geholt + multiplayer betreten.
-        const invSlots = r.state.player.inventory.slice();
+        const invSlots = st.player.inventory.slice();
         p2p.pendingInvite = { peerId: "peerA", worldId: "skeleton", label: "Skelett-Welt", at: 0 };
         const jr = r.joinPortalInvite();
         out.joinEntersMultiplayer =
             jr.ok === true && !!r._portalOverlay && r._portalOverlay.multiplayer === true && p2p.pendingInvite === null;
         r._disposePortalOverlay();
-        delete r.state.blueprints["portal_skeleton"];
-        r.state.player.inventory = invSlots;
+        delete st.blueprints["portal_skeleton"];
+        st.player.inventory = invSlots;
         p2p.enabled = wasEnabled;
         p2p.connected = wasConnected;
         p2p.pendingInvite = null;
@@ -922,21 +922,21 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
         out.sanitizeSurvivesRoundtrip = !!rt && rt.multiplayer === true;
 
         // _vendorRegisterWorld setzt multiplayer am customWorlds-Eintrag.
-        r.state.customWorlds = r.state.customWorlds || {};
+        st.customWorlds = st.customWorlds || {};
         const reg = r._vendorRegisterWorld("_mp_vend", {
             label: "MP Vendored",
             dsl: [],
             multiplayer: true,
         });
         out.vendorRegisterCarriesMp =
-            reg.ok && !!r.state.customWorlds["_mp_vend"] && r.state.customWorlds["_mp_vend"].multiplayer === true;
+            reg.ok && !!st.customWorlds["_mp_vend"] && st.customWorlds["_mp_vend"].multiplayer === true;
 
         // aimBlueprintAtWorld + obtainPortalForWorld → ein selbst-
         // deklariertes Multiplayer-Portal (der Kern: A's geholtes
         // Portal IST multiplayer, broadcastet beim Betreten).
-        const invSlots = r.state.player.inventory.slice();
+        const invSlots = st.player.inventory.slice();
         const obt = r.obtainPortalForWorld("_mp_vend");
-        const portalBp = obt.ok && r.state.blueprints[obt.blueprint];
+        const portalBp = obt.ok && st.blueprints[obt.blueprint];
         out.obtainProducesMpPortal = !!portalBp && !!portalBp.portalMeta && portalBp.portalMeta.multiplayer === true;
 
         // _p2pBuildCatalog trägt multiplayer.
@@ -953,7 +953,7 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
 
         // renderLibraryUI rendert die Multiplayer-Marke — nur für
         // die Multiplayer-Welt, nicht für eine Single-Welt.
-        r.state.customWorlds["_mp_single"] = r._sanitizeImportedManifest({
+        st.customWorlds["_mp_single"] = r._sanitizeImportedManifest({
             id: "_mp_single",
             label: "Single Vendored",
             world: "worlds/_mp_single/index.html",
@@ -971,10 +971,10 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
         out.vendorCheckboxInDom = !!document.getElementById("vendor-multiplayer");
 
         // Aufräumen.
-        delete r.state.customWorlds["_mp_vend"];
-        delete r.state.customWorlds["_mp_single"];
-        delete r.state.blueprints["portal__mp_vend"];
-        r.state.player.inventory = invSlots;
+        delete st.customWorlds["_mp_vend"];
+        delete st.customWorlds["_mp_single"];
+        delete st.blueprints["portal__mp_vend"];
+        st.player.inventory = invSlots;
         r.renderLibraryUI();
 
         return out;
@@ -1032,23 +1032,21 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
         out.sanitizeSurvivesRoundtrip = !!rt && rt.serverMode === "js-compute";
 
         // _vendorRegisterWorld setzt serverMode am customWorlds-Eintrag.
-        r.state.customWorlds = r.state.customWorlds || {};
+        st.customWorlds = st.customWorlds || {};
         const reg = r._vendorRegisterWorld("_sv_vend", {
             label: "JS Vendored",
             dsl: [],
             serverMode: "js-compute",
         });
         out.vendorRegisterCarriesServerMode =
-            reg.ok &&
-            !!r.state.customWorlds["_sv_vend"] &&
-            r.state.customWorlds["_sv_vend"].serverMode === "js-compute";
+            reg.ok && !!st.customWorlds["_sv_vend"] && st.customWorlds["_sv_vend"].serverMode === "js-compute";
 
         // obtainPortalForWorld → ein js-compute-Portal: eine
         // vendorte js-compute-Welt verliert ihren serverMode NICHT
         // mehr, das geholte Portal wird Compute-Host-fähig.
-        const invSlots = r.state.player.inventory.slice();
+        const invSlots = st.player.inventory.slice();
         const obt = r.obtainPortalForWorld("_sv_vend");
-        const portalBp = obt.ok && r.state.blueprints[obt.blueprint];
+        const portalBp = obt.ok && st.blueprints[obt.blueprint];
         out.obtainProducesJsComputePortal =
             !!portalBp && !!portalBp.portalMeta && portalBp.portalMeta.serverMode === "js-compute";
 
@@ -1075,9 +1073,9 @@ async function checkBandW17Multiplayer({ page, check, errors, finalState }) {
         out.vendorJsComputeCheckboxInDom = !!document.getElementById("vendor-js-compute");
 
         // Aufräumen.
-        delete r.state.customWorlds["_sv_vend"];
-        delete r.state.blueprints["portal__sv_vend"];
-        r.state.player.inventory = invSlots;
+        delete st.customWorlds["_sv_vend"];
+        delete st.blueprints["portal__sv_vend"];
+        st.player.inventory = invSlots;
         r.renderLibraryUI();
 
         return out;
@@ -1115,7 +1113,7 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
     // ### Welt-Portal: Rolle + Built-in welt_portal ###
     const w12c1Results = await safeEvaluate(page, () => {
         const out = {};
-        const C = r.constructor;
+        const C = AnazhRealm;
 
         // Rolle "portal" in Label- + Farb-Konstanten.
         out.roleLabel = !!C && !!C.BLUEPRINT_ROLE_LABELS && C.BLUEPRINT_ROLE_LABELS.portal === "Portal";
@@ -1125,7 +1123,7 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
         out.skeletonConst = typeof C.PORTAL_SKELETON_WORLD === "string" && /^worlds\//.test(C.PORTAL_SKELETON_WORLD);
 
         // Built-in welt_portal-Bauplan.
-        const wp = r.state.blueprints && r.state.blueprints.welt_portal;
+        const wp = st.blueprints && st.blueprints.welt_portal;
         out.builtinExists = !!wp && wp.builtIn === true;
         out.builtinRole = !!wp && wp.role === "portal" && wp.roleManual === true;
         out.builtinMeta =
@@ -1136,10 +1134,10 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
         out.builtinHasParts = !!wp && Array.isArray(wp.parts) && wp.parts.length >= 2;
 
         // setBlueprintAsPortal — Marker-Methode.
-        if (r.state.blueprints["_w12p"]) delete r.state.blueprints["_w12p"];
+        if (st.blueprints["_w12p"]) delete st.blueprints["_w12p"];
         r.createBlueprint("_w12p", "W12P");
         const markRes = r.setBlueprintAsPortal("_w12p");
-        const marked = r.state.blueprints["_w12p"];
+        const marked = st.blueprints["_w12p"];
         out.markOk =
             !!markRes &&
             markRes.ok === true &&
@@ -1151,7 +1149,7 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
 
         // Manueller Override bleibt nach _refreshBlueprintRoleEmergent.
         r._refreshBlueprintRoleEmergent("_w12p");
-        out.manualSticks = r.state.blueprints["_w12p"].role === "portal";
+        out.manualSticks = st.blueprints["_w12p"].role === "portal";
 
         // Built-in-Schutz + Unknown-Reject (stein_block — lebendes builtIn).
         const builtinRej = r.setBlueprintAsPortal("stein_block");
@@ -1213,7 +1211,7 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
         out.tinyRingNotPortal = r._isPortalShaped(tinyRing) === false;
 
         // kristall_geode (magisch, aber massiv, kein Ring) → KEIN Portal.
-        const geode = r.state.blueprints && r.state.blueprints.kristall_geode;
+        const geode = st.blueprints && st.blueprints.kristall_geode;
         out.geodeNotPortal = !!geode && r._isPortalShaped(geode) === false;
 
         // Built-in welt_portal erfüllt selbst die emergente Regel.
@@ -1221,9 +1219,9 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
 
         // Emergenter Pfad: ein eigener Bauplan mit Magie-Ring wird via
         // _refreshBlueprintRoleEmergent zum Portal — OHNE setBlueprintAsPortal.
-        if (r.state.blueprints["_w12e"]) delete r.state.blueprints["_w12e"];
+        if (st.blueprints["_w12e"]) delete st.blueprints["_w12e"];
         r.createBlueprint("_w12e", "W12E");
-        r.state.blueprints["_w12e"].parts = [
+        st.blueprints["_w12e"].parts = [
             {
                 shape: "torus",
                 material: "quarz",
@@ -1232,10 +1230,10 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
             },
         ];
         r._refreshBlueprintRoleEmergent("_w12e");
-        out.emergentRefreshPortal = r.state.blueprints["_w12e"].role === "portal";
-        delete r.state.blueprints["_w12e"];
+        out.emergentRefreshPortal = st.blueprints["_w12e"].role === "portal";
+        delete st.blueprints["_w12e"];
 
-        delete r.state.blueprints["_w12p"];
+        delete st.blueprints["_w12p"];
         return out;
     });
 
@@ -1330,15 +1328,15 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
 
         // Portal-Affordance: welt_portal trägt AUSSCHLIESSLICH isPortal
         // (kein moveable/magnifying/focusing — ein Tor ist kein Fahrzeug).
-        const wpAff = r.computeBlueprintAffordances(r.state.blueprints.welt_portal);
+        const wpAff = r.computeBlueprintAffordances(st.blueprints.welt_portal);
         out.affPortal = wpAff.isPortal === true;
         out.affPortalExclusive = !wpAff.moveable && !wpAff.magnifying && !wpAff.focusing;
-        out.affNonPortal = !r.computeBlueprintAffordances(r.state.blueprints.stein_block).isPortal;
+        out.affNonPortal = !r.computeBlueprintAffordances(st.blueprints.stein_block).isPortal;
 
         // spawnArchitecture eines Portals → Entry trägt affordances.isPortal.
-        const pm = r.state.playerMesh.position;
+        const pm = st.playerMesh.position;
         r.spawnArchitecture("welt_portal", { x: pm.x, y: pm.y, z: pm.z });
-        const portalEntry = (r.state.architectures || []).find((e) => e.type === "welt_portal");
+        const portalEntry = (st.architectures || []).find((e) => e.type === "welt_portal");
         out.spawnedHasAffordance =
             !!portalEntry && !!portalEntry.affordances && portalEntry.affordances.isPortal === true;
 
@@ -1350,20 +1348,20 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
         out.rejectsDoubleEnter = !doubleRes.ok && doubleRes.reason === "already_in_portal";
 
         // Loop friert die Heimat-Welt ein, solange das Portal offen ist.
-        const framesBefore = r.state._fpsFrames;
+        const framesBefore = st._fpsFrames;
         r._gameLoopTick(performance.now());
-        const framesInPortal = r.state._fpsFrames;
+        const framesInPortal = st._fpsFrames;
         out.loopFreezesInPortal = framesInPortal === framesBefore;
 
         // exitPortal räumt Overlay + Tasten-Zustand.
-        r.state.keys.w = true;
+        st.keys.w = true;
         const exitRes = r.exitPortal();
         out.exitDisposesOverlay = !!exitRes.ok && !document.getElementById("portal-overlay") && !r._portalOverlay;
-        out.exitClearsKeys = !r.state.keys.w;
+        out.exitClearsKeys = !st.keys.w;
 
         // Loop nimmt die Heimat-Welt nach dem Verlassen wieder auf.
         r._gameLoopTick(performance.now());
-        out.loopResumesAfterPortal = r.state._fpsFrames !== framesInPortal;
+        out.loopResumesAfterPortal = st._fpsFrames !== framesInPortal;
 
         // exitPortal ohne offenes Portal + enterPortal auf Nicht-Portal.
         const exitAgain = r.exitPortal();
@@ -1427,7 +1425,7 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
         const out = {};
 
         // Built-in welt_strom-Portal.
-        const ws = r.state.blueprints && r.state.blueprints.welt_strom;
+        const ws = st.blueprints && st.blueprints.welt_strom;
         out.stromIsPortal = !!ws && ws.role === "portal" && ws.roleManual === true;
         out.stromMeta = !!ws && !!ws.portalMeta && ws.portalMeta.world === "worlds/fluid/index.html";
 
@@ -1441,9 +1439,9 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
             r._sanitizePortalMeta({ world: "worlds/fluid/index.html" }, "fb").world === "worlds/fluid/index.html";
 
         // enterPortal(welt_strom) → Overlay-iframe zeigt auf die Fluid-Welt.
-        const pm = r.state.playerMesh.position;
+        const pm = st.playerMesh.position;
         r.spawnArchitecture("welt_strom", { x: pm.x, y: pm.y, z: pm.z });
-        const stromEntry = (r.state.architectures || []).find((e) => e.type === "welt_strom");
+        const stromEntry = (st.architectures || []).find((e) => e.type === "welt_strom");
         const enterRes = stromEntry ? r.enterPortal(stromEntry) : { ok: false };
         const frame = document.querySelector("#portal-overlay iframe.portal-frame");
         out.enterFluidWorld = !!enterRes.ok && !!frame && frame.src.includes("worlds/fluid/index.html");
@@ -1481,8 +1479,8 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
         out.sanitizeNoDsl = r._sanitizePortalMeta({ world: "worlds/skeleton/index.html" }).dsl === null;
 
         // Built-in-Manifeste.
-        const ws = r.state.blueprints.welt_strom;
-        const wp = r.state.blueprints.welt_portal;
+        const ws = st.blueprints.welt_strom;
+        const wp = st.blueprints.welt_portal;
         out.stromManifest =
             !!ws.portalMeta.dsl &&
             ws.portalMeta.dsl.includes("weather") &&
@@ -1496,9 +1494,9 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
             JSON.stringify(r._portalProgramOps(["chain", ["weather", "sunny"], ["sturm"]])) === '["weather","sturm"]';
 
         // enterPortal(welt_strom) → Overlay trägt das Manifest + body.in-portal.
-        const pm = r.state.playerMesh.position;
+        const pm = st.playerMesh.position;
         r.spawnArchitecture("welt_strom", { x: pm.x, y: pm.y, z: pm.z });
-        const entry = (r.state.architectures || []).find((e) => e.type === "welt_strom");
+        const entry = (st.architectures || []).find((e) => e.type === "welt_strom");
         r.enterPortal(entry);
         out.overlayCarriesManifest =
             !!r._portalOverlay && Array.isArray(r._portalOverlay.dsl) && r._portalOverlay.dsl.includes("sturm");
@@ -1521,9 +1519,9 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
 
         // Intercept: Chat-DSL im Portal läuft NICHT auf der Heimat-Welt.
         r._portalOverlay.dsl = ["weather"];
-        r.state.weather = "sunny";
+        st.weather = "sunny";
         r.processChatCommand("setze wetter rainy");
-        out.homeWeatherUntouched = r.state.weather === "sunny";
+        out.homeWeatherUntouched = st.weather === "sunny";
 
         r.exitPortal();
         out.bodyClassCleared = !document.body.classList.contains("in-portal");
@@ -1557,7 +1555,7 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
         const out = {};
 
         // Built-in welt_terrain-Portal + Manifest.
-        const wt = r.state.blueprints && r.state.blueprints.welt_terrain;
+        const wt = st.blueprints && st.blueprints.welt_terrain;
         out.terrainIsPortal = !!wt && wt.role === "portal" && wt.roleManual === true;
         out.terrainMeta = !!wt && !!wt.portalMeta && wt.portalMeta.world === "worlds/terrain/index.html";
         out.terrainManifest =
@@ -1572,9 +1570,9 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
         out.terrainPortalShaped = r._isPortalShaped(wt) === true;
 
         // enterPortal(welt_terrain) → iframe + Brücke trägt einen Manifest-Op.
-        const pm = r.state.playerMesh.position;
+        const pm = st.playerMesh.position;
         r.spawnArchitecture("welt_terrain", { x: pm.x, y: pm.y, z: pm.z });
-        const entry = (r.state.architectures || []).find((e) => e.type === "welt_terrain");
+        const entry = (st.architectures || []).find((e) => e.type === "welt_terrain");
         const enterRes = entry ? r.enterPortal(entry) : { ok: false };
         const frame = document.querySelector("#portal-overlay iframe.portal-frame");
         out.enterTerrainWorld = !!enterRes.ok && !!frame && frame.src.includes("worlds/terrain/index.html");
@@ -1605,7 +1603,7 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
     // ### Welt-Registry + Portal-Zielen ###
     const w12registryResults = await safeEvaluate(page, () => {
         const out = {};
-        const REG = r.constructor.WORLD_REGISTRY;
+        const REG = AnazhRealm.WORLD_REGISTRY;
 
         // Welt-Registry — eine Quelle, drei Welten je mit Pfad + Manifest.
         out.registryExists = !!REG && !!REG.skeleton && !!REG.fluid && !!REG.terrain;
@@ -1616,9 +1614,9 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
             REG.fluid.dsl.includes("sturm");
 
         // Die 3 Built-in-Portale beziehen ihr portalMeta aus der Registry.
-        const ws = r.state.blueprints.welt_strom;
-        const wt = r.state.blueprints.welt_terrain;
-        const wp = r.state.blueprints.welt_portal;
+        const ws = st.blueprints.welt_strom;
+        const wt = st.blueprints.welt_terrain;
+        const wp = st.blueprints.welt_portal;
         out.builtinsFromRegistry =
             ws.portalMeta.world === REG.fluid.world &&
             wt.portalMeta.world === REG.terrain.world &&
@@ -1627,7 +1625,7 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
             wt.portalMeta.dsl.includes("wald");
 
         // Ein eigener (nicht-Built-in) Bauplan zum Zielen.
-        r.state.blueprints.test_portal_ring = {
+        st.blueprints.test_portal_ring = {
             name: "test_portal_ring",
             label: "Test-Ring",
             builtIn: false,
@@ -1642,14 +1640,13 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
         const aimId = r.aimBlueprintAtWorld("test_portal_ring", "fluid");
         out.aimById =
             aimId.ok === true &&
-            r.state.blueprints.test_portal_ring.role === "portal" &&
-            r.state.blueprints.test_portal_ring.portalMeta.world === "worlds/fluid/index.html";
+            st.blueprints.test_portal_ring.role === "portal" &&
+            st.blueprints.test_portal_ring.portalMeta.world === "worlds/fluid/index.html";
 
         // aimBlueprintAtWorld per Label (case-insensitive).
         const aimLabel = r.aimBlueprintAtWorld("test_portal_ring", "Phytogenesis & Lithos");
         out.aimByLabel =
-            aimLabel.ok === true &&
-            r.state.blueprints.test_portal_ring.portalMeta.world === "worlds/terrain/index.html";
+            aimLabel.ok === true && st.blueprints.test_portal_ring.portalMeta.world === "worlds/terrain/index.html";
 
         // Unbekannte Welt + Built-in werden abgelehnt.
         out.aimUnknownRejected = r.aimBlueprintAtWorld("test_portal_ring", "nirgendwo").ok === false;
@@ -1657,13 +1654,13 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
 
         // DSL-Op set_portal.
         r.dslRun(["set_portal", "test_portal_ring", "skeleton"]);
-        out.dslSetPortal = r.state.blueprints.test_portal_ring.portalMeta.world === REG.skeleton.world;
+        out.dslSetPortal = st.blueprints.test_portal_ring.portalMeta.world === REG.skeleton.world;
 
         // Chat-Pattern „richte portal X auf Y".
         const parsed = r.parseChatToDsl("richte portal test_portal_ring auf fluid");
         out.chatPattern = !!parsed && JSON.stringify(parsed.program) === '["set_portal","test_portal_ring","fluid"]';
 
-        delete r.state.blueprints.test_portal_ring;
+        delete st.blueprints.test_portal_ring;
         r.renderPlayerEquipUI();
         return out;
     });
@@ -1707,10 +1704,10 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
         out.ironStillNotPortal = r._isPortalShaped(torusBp(passage * 2.5, "eisen")) === false;
         // Built-in-Portale bleiben Tore (Ring 3.4/3.6 > Avatar).
         out.builtinsStayPortal =
-            r._isPortalShaped(r.state.blueprints.welt_strom) === true &&
-            r._isPortalShaped(r.state.blueprints.welt_terrain) === true;
+            r._isPortalShaped(st.blueprints.welt_strom) === true &&
+            r._isPortalShaped(st.blueprints.welt_terrain) === true;
         // minRingSize ist als feste Zahl entfernt.
-        out.noFixedThreshold = r.constructor.SUBSTANCE_ROLE_THRESHOLDS.portal.minRingSize === undefined;
+        out.noFixedThreshold = AnazhRealm.SUBSTANCE_ROLE_THRESHOLDS.portal.minRingSize === undefined;
         return out;
     });
 
@@ -1734,7 +1731,7 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
     // Bauplans + der ✨-Emergent-Reset.
     const w12markResults = await safeEvaluate(page, () => {
         const out = {};
-        r.state.blueprints.test_mark_ring = {
+        st.blueprints.test_mark_ring = {
             name: "test_mark_ring",
             label: "TestMarkRing",
             builtIn: false,
@@ -1760,12 +1757,12 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
         const reset = r.resetBlueprintRole("test_mark_ring");
         out.resetWorks =
             reset.ok === true &&
-            r.state.blueprints.test_mark_ring.roleManual === undefined &&
-            r.state.blueprints.test_mark_ring.role === r.computeBlueprintRole(r.state.blueprints.test_mark_ring);
+            st.blueprints.test_mark_ring.roleManual === undefined &&
+            st.blueprints.test_mark_ring.role === r.computeBlueprintRole(st.blueprints.test_mark_ring);
         // das ICH trägt die Doublette NICHT mehr (nur Verweis + Schnell-Trünke).
         r.renderPlayerEquipUI();
         out.ichClean = document.querySelectorAll("#player-equip .equip-portal-select").length === 0;
-        delete r.state.blueprints.test_mark_ring;
+        delete st.blueprints.test_mark_ring;
         ws.selectedBlueprint = savedSel;
         return out;
     });
@@ -1791,7 +1788,7 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
     // ### Teil A: Ereignisse zurück (Sub-Welt → Journal) ###
     const w12p3aResults = await safeEvaluate(page, () => {
         const out = {};
-        const journal = () => r.state.worldJournal.entries;
+        const journal = () => st.worldJournal.entries;
         const lastEntry = () => journal()[journal().length - 1];
         // Stub-Overlay: _portalReceiveEvent braucht nur _portalOverlay-Truthiness.
         r._portalOverlay = { label: "Test-Welt", world: "worlds/skeleton/index.html", dsl: null };
@@ -1809,9 +1806,9 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
         r._portalReceiveEvent({ type: "event", text: "x".repeat(400) });
         out.textCapped = lastEntry().text.length <= 160;
         // SICHERHEIT: ein Ereignis mit program-Feld führt NICHTS aus.
-        const weatherBefore = r.state.weather;
+        const weatherBefore = st.weather;
         r._portalReceiveEvent({ type: "event", text: "harmlos", program: ["weather", "rainy"] });
-        out.eventNeverExecutes = r.state.weather === weatherBefore && lastEntry().text === "harmlos";
+        out.eventNeverExecutes = st.weather === weatherBefore && lastEntry().text === "harmlos";
         // Außerhalb eines Portals ist _portalReceiveEvent ein No-op.
         r._portalOverlay = null;
         out.noopOutsidePortal = r._portalReceiveEvent({ type: "event", text: "z" }) === false;
@@ -1848,7 +1845,7 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
         // enterPortal schreibt den Erst-Besuch (journalAppendOnce).
         // Der seen-Schlüssel wird vorab geleert — ein früherer
         // Portal-Test könnte die Skelett-Welt schon betreten haben.
-        r.state.blueprints.test_p3_ring = {
+        st.blueprints.test_p3_ring = {
             name: "test_p3_ring",
             label: "Test-P3-Ring",
             builtIn: false,
@@ -1856,7 +1853,7 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
             portalMeta: { world: "worlds/skeleton/index.html", label: "P3-Tor", dsl: null },
         };
         const visitKey = "portalVisit:worlds/skeleton/index.html";
-        if (r.state.worldJournal.seen) delete r.state.worldJournal.seen[visitKey];
+        if (st.worldJournal.seen) delete st.worldJournal.seen[visitKey];
         r.enterPortal({ type: "test_p3_ring", affordances: { isPortal: true } });
         const visit = lastEntry();
         out.entryJournaled = !!visit && visit.type === "portal" && /P3-Tor/.test(visit.text);
@@ -1866,8 +1863,8 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
         r.enterPortal({ type: "test_p3_ring", affordances: { isPortal: true } });
         out.entryOncePerWorld = lastEntry() === reGuard;
         r.exitPortal();
-        if (r.state.worldJournal.seen) delete r.state.worldJournal.seen[visitKey];
-        delete r.state.blueprints.test_p3_ring;
+        if (st.worldJournal.seen) delete st.worldJournal.seen[visitKey];
+        delete st.blueprints.test_p3_ring;
         return out;
     });
 
@@ -1948,7 +1945,7 @@ async function checkBandW12WorldPortal({ page, check, errors, finalState }) {
         r._disposePortalOverlay();
         // Das Registry-Literal kennt „flut" NICHT — der Beweis,
         // dass die native Stufe mehr trägt als die übersetzte.
-        out.registryLacksFlut = !r.constructor.WORLD_REGISTRY.fluid.dsl.includes("flut");
+        out.registryLacksFlut = !AnazhRealm.WORLD_REGISTRY.fluid.dsl.includes("flut");
         return out;
     });
 
@@ -2028,7 +2025,7 @@ async function checkBandW18CoPresence({ page, check }) {
             r._sanitizePortalMeta({ world: "worlds/begegnung/index.html", coPresence: "ja" }, "x").coPresence === false;
         // (3) die Registry trägt die erste Ko-Präsenz-Welt (sandboxed — das
         // Protokoll quert die VOLLE null-origin-Wand).
-        const reg = r.constructor.WORLD_REGISTRY.begegnung;
+        const reg = AnazhRealm.WORLD_REGISTRY.begegnung;
         out.registry =
             !!reg && reg.coPresence === true && reg.trust === "sandboxed" && /worlds\/begegnung\//.test(reg.world);
         // (4) der Mesh-Pfad ist verdrahtet: ALLOWED-Liste + Dispatch-Tabelle +
@@ -2041,7 +2038,7 @@ async function checkBandW18CoPresence({ page, check }) {
                 pose: { x: 0, y: 0, z: 0, yaw: 0 },
             }),
         ]);
-        out.dispatch = r.constructor.P2P_MESSAGE_HANDLERS["subworld-pose"] === "_p2pMsgSubworldPose";
+        out.dispatch = AnazhRealm.P2P_MESSAGE_HANDLERS["subworld-pose"] === "_p2pMsgSubworldPose";
         // (5)-(8) BEHAVIORAL am gestubbten Overlay (kein echtes iframe nötig —
         // die postMessage-Injektion wird über ein Fake-contentWindow gefangen).
         const savedPo = r._portalOverlay;
@@ -2067,7 +2064,7 @@ async function checkBandW18CoPresence({ page, check }) {
             for (let i = 0; i < 30; i++) {
                 if (r._portalReceiveLocalPose({ pose: { x: i, y: 0, z: 0, yaw: 0 } })) accepted++;
             }
-            out.rateCapped = accepted <= r.constructor.SUBWORLD_POSE_RATE_MAX;
+            out.rateCapped = accepted <= AnazhRealm.SUBWORLD_POSE_RATE_MAX;
             // (6) Zustellung: die ERSTE Pose gebiert peer-join VOR peer-state,
             // die zweite nur peer-state; eine fremde worldId fällt (B2).
             sent.length = 0;
@@ -2085,18 +2082,18 @@ async function checkBandW18CoPresence({ page, check }) {
                 r._portalPoseDeliver("peer-test-2", { worldId: "worlds/anders/index.html", pose: msg.pose }) === false;
             // (7) der Abwesenheits-Sweep: verstummt → peer-leave + raus.
             r._portalOverlay.peers.get("peer-test-1").lastAt =
-                performance.now() - (r.constructor.SUBWORLD_POSE_TIMEOUT_MS + 1000);
+                performance.now() - (AnazhRealm.SUBWORLD_POSE_TIMEOUT_MS + 1000);
             sent.length = 0;
             r._portalSweepPosePeers();
             out.sweep =
                 !r._portalOverlay.peers.has("peer-test-1") && sent.length === 1 && sent[0].type === "peer-leave";
             // die Peer-Rate-Wand: ein flutender Gefährte erreicht das iframe höchstens SUBWORLD_POSE_PEER_RATE_MAX-mal
             sent.length = 0;
-            const M = r.constructor.SUBWORLD_POSE_PEER_RATE_MAX;
+            const M = AnazhRealm.SUBWORLD_POSE_PEER_RATE_MAX;
             for (let i = 0; i < M + 5; i++)
                 r._p2pMsgSubworldPose(
                     { peerId: "peer-flut-pose", worldId: msg.worldId, pose: { x: i, y: 0, z: 0, yaw: 0 } },
-                    r.state.p2p
+                    st.p2p
                 );
             out.peerRate = sent.filter((m) => m.type === "peer-state").length === M;
             if (r._portalOverlay.poseTimer) {
@@ -2137,8 +2134,8 @@ async function checkBandW18InputBridge({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
         // (1) das eingefrorene Vokabular + die Tasten-Karte (WASD/Pfeile).
-        const A = r.constructor.PORTAL_INPUT_ACTIONS;
-        const K = r.constructor.PORTAL_INPUT_KEYMAP;
+        const A = AnazhRealm.PORTAL_INPUT_ACTIONS;
+        const K = AnazhRealm.PORTAL_INPUT_KEYMAP;
         out.vocab = Object.isFrozen(A) && A.includes("forward") && A.includes("use") && A.length === 6;
         out.keymap = Object.isFrozen(K) && K.KeyW === "forward" && K.ArrowDown === "back" && K.Space === "jump";
         const savedPo = r._portalOverlay;
@@ -2242,15 +2239,15 @@ async function checkBandW18Dwell({ page, check }) {
             };
             // „wohne hier" annonciert das Wohnen im soul-Kanal (gefangen am Senden)
             const gesendet = [],
-                p2pAn = r.state.p2p.enabled;
+                p2pAn = st.p2p.enabled;
             r.p2pSend = (m) => gesendet.push(m);
-            r.state.p2p.enabled = true;
+            st.p2p.enabled = true;
             let dw;
             try {
                 dw = r.dwellInPortal();
             } finally {
                 delete r.p2pSend;
-                r.state.p2p.enabled = p2pAn;
+                st.p2p.enabled = p2pAn;
             }
             out.soulSends = gesendet.some((m) => m.type === "soul" && m.dwell === "Begegnungs-Feld");
             const marker = r._loadPortalDwelling();
@@ -2263,7 +2260,7 @@ async function checkBandW18Dwell({ page, check }) {
                 r._loadPortalStates().begegnung &&
                 r._loadPortalStates().begegnung.data === '{"x":7,"y":-9}';
             out.stateOversize =
-                r._portalReceiveState({ data: "x".repeat(r.constructor.PORTAL_STATE_MAX_BYTES + 1) }) === false;
+                r._portalReceiveState({ data: "x".repeat(AnazhRealm.PORTAL_STATE_MAX_BYTES + 1) }) === false;
             out.stateGarbage = r._portalReceiveState({ data: 42 }) === false;
             // (4) der Zustand kehrt im enter zurück (restoreState).
             sent.length = 0;
@@ -2288,11 +2285,11 @@ async function checkBandW18Dwell({ page, check }) {
         // (7) der Empfänger merkt sich, wo der Gefährte wohnt, und sein Namensschild zeichnet es; die Chat-Gesten
         // „wohne hier"/„ziehe heim" stehen in der EINEN Tabelle.
         const pid = "peer-dwell-zensus";
-        r._p2pMsgSoul({ peerId: pid, soulName: "human", name: "Bo" }, r.state.p2p);
-        const pe = r.state.p2p.peers.get(pid);
+        r._p2pMsgSoul({ peerId: pid, soulName: "human", name: "Bo" }, st.p2p);
+        const pe = st.p2p.peers.get(pid);
         const schild = () => (pe && pe.nameLabel ? pe.nameLabel.material.map.image.toDataURL() : "");
         const ohne = schild();
-        r._p2pMsgSoul({ peerId: pid, soulName: "human", name: "Bo", dwell: "Feld" }, r.state.p2p);
+        r._p2pMsgSoul({ peerId: pid, soulName: "human", name: "Bo", dwell: "Feld" }, st.p2p);
         out.soulReads = !!pe && pe.dwellingIn === "Feld";
         out.labelShows = !!ohne && schild() !== ohne;
         r._p2pRemovePeer(pid);
@@ -2326,12 +2323,12 @@ async function checkBandR6Capability({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
         const savedPo = r._portalOverlay;
-        const savedProps = r.state.capabilityProposals;
-        const savedCaps = r.state.grantedCapabilities;
-        const savedWeather = r.state.weather;
+        const savedProps = st.capabilityProposals;
+        const savedCaps = st.grantedCapabilities;
+        const savedWeather = st.weather;
         try {
-            r.state.capabilityProposals = new Map();
-            r.state.grantedCapabilities = {};
+            st.capabilityProposals = new Map();
+            st.grantedCapabilities = {};
             r._portalOverlay = {
                 world: "worlds/begegnung/index.html",
                 label: "Begegnungs-Feld",
@@ -2345,7 +2342,7 @@ async function checkBandR6Capability({ page, check }) {
                     name: "regen-tanz",
                     desc: "ruft den Regen",
                     dsl: ["weather", "rainy"],
-                }) === true && r.state.capabilityProposals.has("regen-tanz");
+                }) === true && st.capabilityProposals.has("regen-tanz");
             out.rejectsWorldgen =
                 r._portalReceiveCapability({ type: "capability", name: "graben", dsl: ["voxel_carve", 0, 0, 0, 3] }) ===
                 false;
@@ -2357,7 +2354,7 @@ async function checkBandR6Capability({ page, check }) {
                 false;
             out.rejectsGarbage =
                 r._portalReceiveCapability({ type: "capability", name: "ÜBEL!", dsl: ["weather", "rainy"] }) === false;
-            out.notExecuted = r.state.weather === savedWeather;
+            out.notExecuted = st.weather === savedWeather;
             out.grantNoProposal = r.grantCapability("gibtsnicht").reason === "no_proposal";
             // die souveräne Geste: ohne Ja landet nichts, der Vorschlag bleibt in der Quarantäne
             const altConfirm = window.confirm;
@@ -2373,27 +2370,27 @@ async function checkBandR6Capability({ page, check }) {
                 gefragt === 1 &&
                 nein.ok === false &&
                 nein.reason === "declined" &&
-                !r.state.grantedCapabilities["regen-tanz"] &&
-                r.state.capabilityProposals.has("regen-tanz");
+                !st.grantedCapabilities["regen-tanz"] &&
+                st.capabilityProposals.has("regen-tanz");
             const granted = r.grantCapability("regen-tanz", { skipConfirm: true });
             out.grants =
                 granted.ok === true &&
-                !!r.state.grantedCapabilities["regen-tanz"] &&
-                !r.state.capabilityProposals.has("regen-tanz");
+                !!st.grantedCapabilities["regen-tanz"] &&
+                !st.capabilityProposals.has("regen-tanz");
             const ran = r.runCapability("regen-tanz");
-            out.runs = ran.ok === true && r.state.weather === "rainy";
+            out.runs = ran.ok === true && st.weather === "rainy";
             const pub = "cd".repeat(32);
-            r.state.grantedCapabilities["regen-tanz"].authorPubKey = pub;
+            st.grantedCapabilities["regen-tanz"].authorPubKey = pub;
             // revokedKeys ist eine Map → .set(); kein Gate auf die Set-API (fiel bei einem Object still ins
             // else und meldete grün, ohne dass ein revozierter Schlüssel die Wand traf).
-            r.state.revokedKeys.set(pub, { at: Date.now() });
+            st.revokedKeys.set(pub, { at: Date.now() });
             out.revokeStops = r.runCapability("regen-tanz").reason === "revoked";
             r._portalReceiveCapability({ type: "capability", name: "zweite", dsl: ["weather", "sunny"] });
-            const p2 = r.state.capabilityProposals.get("zweite");
+            const p2 = st.capabilityProposals.get("zweite");
             if (p2) p2.authorPubKey = pub;
             out.revokeGates = r.grantCapability("zweite", { skipConfirm: true }).reason === "revoked";
-            r.state.revokedKeys.delete(pub);
-            r.state.grantedCapabilities["regen-tanz"].authorPubKey = "";
+            st.revokedKeys.delete(pub);
+            st.grantedCapabilities["regen-tanz"].authorPubKey = "";
             const snap = r.buildStateSnapshot();
             out.travels = !!(snap.grantedCapabilities && snap.grantedCapabilities["regen-tanz"]);
             r._loadStateRestoreMiscState({
@@ -2402,13 +2399,13 @@ async function checkBandR6Capability({ page, check }) {
                     boese: { dsl: ["voxel_carve", 0, 0, 0, 9] },
                 },
             });
-            out.restoreWalled = !!r.state.grantedCapabilities["regen-tanz"] && !r.state.grantedCapabilities["boese"];
+            out.restoreWalled = !!st.grantedCapabilities["regen-tanz"] && !st.grantedCapabilities["boese"];
             const ex = r.chatSystemPatterns.map((p) => p.example);
             out.chatGestures = ex.includes("gewähre <fähigkeit>") && ex.includes("wirke <fähigkeit>");
         } finally {
             r._portalOverlay = savedPo || null;
-            r.state.capabilityProposals = savedProps;
-            r.state.grantedCapabilities = savedCaps;
+            st.capabilityProposals = savedProps;
+            st.grantedCapabilities = savedCaps;
             r._setWeather(savedWeather, "human");
         }
         return out;

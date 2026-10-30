@@ -67,7 +67,7 @@ async function checkBandW4LofiPad({ page, check }) {
         // _lofiChordDurationMs — sorrow verlangsamt das Tempo. Das Tempo führt das Studio-Genre
         // (_klangStudioPreset, lofi bpm 78; kaltes Buch → fail-closed); die Erwartung liest DIESELBE Quelle
         // (kein Timing-Flake, das Buch lädt async).
-        const emo = r.state.player.emotions;
+        const emo = st.player.emotions;
         const eBefore = { ...emo };
         const kStudio = r._klangStudioPreset();
         const kBpm = Number.isFinite(kStudio?.bpm) && kStudio.bpm > 0 ? kStudio.bpm : 78;
@@ -77,10 +77,10 @@ async function checkBandW4LofiPad({ page, check }) {
         const durSad = r._lofiChordDurationMs();
         out["W4 V2: sorrow verlangsamt"] = durSad > durCalm && durSad <= (60000 / kBpm) * 4 * 1.5 + 1;
         // Frischer Symphony-Start, damit s.lofi vom aktuellen Code stammt.
-        if (r.state.symphony?.enabled) r.disposeSymphony();
+        if (st.symphony?.enabled) r.disposeSymphony();
         Object.assign(emo, { joy: 0, hope: 0, sorrow: 0 });
         r.initSymphony();
-        const sym = r.state.symphony;
+        const sym = st.symphony;
         if (!(sym?.enabled && sym.ctx))
             out["W4 V2: Symphony im Headless initialisierbar"] = [false, "initSymphony nicht bereit"];
         else {
@@ -199,8 +199,8 @@ async function checkBandW4LofiPad({ page, check }) {
 // gate:klang-zensus (F) am Bus über den echten Leib-Löser.
 async function checkBandSchrittKlang({ page, check }) {
     const out = await safeEvaluate(page, () => {
-        const s = r.state,
-            A = r.constructor;
+        const s = st,
+            A = AnazhRealm;
         const o = { checks: {} };
         if (!A.SCHRITT_KLANG) return { error: "SCHRITT_KLANG-Tabelle fehlt" };
         const T = A.SCHRITT_KLANG;

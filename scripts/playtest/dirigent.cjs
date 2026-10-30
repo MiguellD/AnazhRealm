@@ -96,7 +96,7 @@ function checkRing1Grok({ check, finalState, logs }) {
 async function checkBandV1778LadderCut({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const tools = r.state.tools || {};
+        const tools = st.tools || {};
         out.removedGone = !["feuerstein-knapper", "hammer", "feile", "polierscheibe"].some((n) => tools[n]);
         // nur `hände` ist STARTER (die Basics); die 5 Domain-Werkzeuge bleiben als OP-Bibliothek
         // (Definition da, isStarter:false), aus der die platzierte Werkstatt ihren Prozess zieht.
@@ -110,7 +110,7 @@ async function checkBandV1778LadderCut({ page, check }) {
         const classes = new Set(Object.values(tools).map((t) => t.opClass));
         out.allOpClasses = ["subtractive", "plastic", "additive", "phaseChange"].every((c) => classes.has(c));
         // KONSUM — ein Material ist weiter bearbeitbar (hände subtractive auf eisen) → der Crafting-Pfad lebt
-        r.state.blueprints["_cut_test"] = {
+        st.blueprints["_cut_test"] = {
             name: "_cut_test",
             parts: [{ shape: "box", material: "eisen", opChain: r._defaultPartOpChain() }],
         };
@@ -119,7 +119,7 @@ async function checkBandV1778LadderCut({ page, check }) {
         const ap = r.applyOpToPart("_cut_test", 0, "hände");
         out.stillRefinable = ap.ok === true;
         r.setGameMode(prevMode);
-        delete r.state.blueprints["_cut_test"];
+        delete st.blueprints["_cut_test"];
         return out;
     });
     check(
@@ -192,8 +192,8 @@ async function checkBandV18278LoopErrorBoundary({ page, check }) {
 // NIE. `_nexusAdaptiveQuality(fps)` ist nur der fps-Eingang in DENSELBEN Regler.
 async function checkBandWellePerfENexusGovernor({ page, check }) {
     const res = await page.evaluate(() => {
-        if (!r || !r.state) return { error: "no realm" };
-        const A = r.constructor; // window.AnazhRealm headless undefined (V18.259-Gotcha)
+        if (!r || !st) return { error: "no realm" };
+        const A = AnazhRealm; // window.AnazhRealm headless undefined (V18.259-Gotcha)
         const out = {};
         out.noGravityPflaster = window.__fehlt(r.selfAwarenessAnalyze, /gravity\s*\*=/);
         // KEIN Parallel-Governor mehr: selfAwarenessAnalyze ruft _nexusAdaptiveQuality NICHT.
@@ -236,7 +236,8 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
             phase: { streaming: 20, render: 0, archCulling: 1, waterIso: 1, creatures: 0, physics: 0 },
         });
         const streamPos = (st._voxelStreamBudgetMs - L.streamBudgetMs[0]) / (L.streamBudgetMs[1] - L.streamBudgetMs[0]);
-        const budgetPos = (b) => (b - A.ARCH_QUALITY_BUDGET_MIN) / (A.ARCH_QUALITY_BUDGET_MAX - A.ARCH_QUALITY_BUDGET_MIN);
+        const budgetPos = (b) =>
+            (b - A.ARCH_QUALITY_BUDGET_MIN) / (A.ARCH_QUALITY_BUDGET_MAX - A.ARCH_QUALITY_BUDGET_MIN);
         const archPos = budgetPos(st.architectureBuildBudgetPerFrame);
         out.synergyStreamThrottledMore = streamPos < archPos - 0.1;
         out.synergyStreamPos = +streamPos.toFixed(2);
@@ -444,9 +445,9 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
 async function checkBandWaldbodenKaskade({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
-        const bands = r.constructor.DETAIL_CASCADE;
+        const bands = AnazhRealm.DETAIL_CASCADE;
         out.kaskadeOhneDeko = bands.every((b) => !("deko" in b) && Number.isFinite(b.aiDiv));
-        const NS = r.constructor.NAH_STREU;
+        const NS = AnazhRealm.NAH_STREU;
         out.schirmGebunden =
             !!NS && NS.stufe0 < NS.radius && NS.kachel > 0 && NS.radius <= 40 && NS.kachel % NS.zelle === 0;
         return out;
@@ -468,12 +469,15 @@ async function checkBandWaldbodenKaskade({ page, check }) {
 async function checkBandTailleOmega5({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
-        r.state.blueprints["_o5_werk"] = {
+        st.blueprints["_o5_werk"] = {
             name: "_o5_werk",
             label: "Ω5-Werk",
             builtIn: false,
             parts: [
-                __teil("box", "stein", 0, 0.75, 0, 1.5, 1.5, 1.5, { rotation: { x: 0, y: 0, z: 0 }, opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }] }),
+                __teil("box", "stein", 0, 0.75, 0, 1.5, 1.5, 1.5, {
+                    rotation: { x: 0, y: 0, z: 0 },
+                    opChain: [{ tool: "hände", op: "hand_knap", cap: 0.4, at: 0 }],
+                }),
             ],
             connections: [],
         };
@@ -499,7 +503,7 @@ async function checkBandTailleOmega5({ page, check }) {
         const loot3 = e3 ? r.harvestArchitecture(e3, "player", 1) : null;
         out.paidStillYields = !!loot3 && (loot3.materials["stein"] || 0) > 0;
         r.setGameMode(savedMode);
-        delete r.state.blueprints["_o5_werk"];
+        delete st.blueprints["_o5_werk"];
         return out;
     });
     if (!res) {
@@ -643,7 +647,7 @@ async function checkBandV18165KonsoleHeil({ page, check }) {
 // durch, die Antennen läsen alte Werte) — fängt die ganze Getter-Schatten-Klasse.
 async function checkBandV18177AAA({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
         // LIVE-Werte (was die Antennen wirklich lesen), NICHT Source-Strings.
         const aer = A.AERIAL || {};
@@ -678,7 +682,7 @@ async function checkBandV18177AAA({ page, check }) {
 // _tickCreatureScentStrike (wild-KI liest scent) · A4 applyOpToPart/applyWorkshopProcessToPart → Mana.
 async function checkBandV18210Verdrahtung({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
 
         // ============== A1: Γ7 WORLDGEN-HOOK ==============
@@ -691,7 +695,7 @@ async function checkBandV18210Verdrahtung({ page, check }) {
         const k2 = r._growTreeBlueprintForSpawn("baum_eiche", 12345);
         out.a1Deterministic = k1 && k1 === k2;
         // (A1d) Cache-Reuse: SELBER cacheKey → SELBES Bauplan-Objekt
-        out.a1CacheReuse = k1 && r.state.blueprints[k1] && r.state.blueprints[k1] === r.state.blueprints[k2];
+        out.a1CacheReuse = k1 && st.blueprints[k1] && st.blueprints[k1] === st.blueprints[k2];
         // (A1e) ALLE N Varianten leben: über 8·N Seeds muss jeder Varianten-Bucket getroffen werden. Fängt
         // degenerierte Buckets (die fnv-1a-LOW-Bits sind mod 8 degeneriert → `_growTreeBlueprintForSpawn`
         // wählt mit den HOHEN Bits `hash >>> 24`).
@@ -705,18 +709,15 @@ async function checkBandV18210Verdrahtung({ page, check }) {
         // (A1f) V17.16-Schutz: cache-Bauplan hat tag-Achsen ≈ baum_eiche
         // die Referenz-Tags kommen aus der frozen SPECIES_TAG_REFERENCE
         // (der statische baum_eiche-Bauplan ist geschnitten).
-        const ref =
-            (r.constructor.SPECIES_TAG_REFERENCE &&
-                r.constructor.SPECIES_TAG_REFERENCE.baum_eiche) ||
-            null;
-        const grownBp = k1 && r.state.blueprints[k1];
+        const ref = (AnazhRealm.SPECIES_TAG_REFERENCE && AnazhRealm.SPECIES_TAG_REFERENCE.baum_eiche) || null;
+        const grownBp = k1 && st.blueprints[k1];
         out.a1TagNeutral = false;
         if (ref && grownBp) {
             const got = r.computeCompoundTags(grownBp);
             let neutral = true;
             // Variations-Wand: deklarierte Spezies-Variation (SPECIES_TAG_VARIATION, Eiche lebendig +0.05) ist
             // erlaubt; Toleranz je Achse = 0.05 + |deklarierte Variation|.
-            const V = (r.constructor.SPECIES_TAG_VARIATION || {}).baum_eiche || {};
+            const V = (AnazhRealm.SPECIES_TAG_VARIATION || {}).baum_eiche || {};
             for (const a of ["lebendig", "dichte", "brennbar", "magieleitung"]) {
                 const declared = Math.abs(V[a] || 0);
                 const allowed = 0.05 + declared + 1e-9; // float-tolerance
@@ -738,31 +739,29 @@ async function checkBandV18210Verdrahtung({ page, check }) {
         // Setze einen test-grown-Bauplan + Architektur, force CAP-Überlauf,
         // prüfe dass der referenzierte Bauplan überlebt.
         const testKey = "grown_baum_eiche_testkey";
-        r.state.blueprints[testKey] = {
+        st.blueprints[testKey] = {
             name: testKey,
             label: "Test",
             builtIn: true,
             _isGrown: true,
             _grownSpecies: "baum_eiche",
             instanced: true,
-            parts: [
-                __teil("cylinder", "holz", 0, 0, 0, 1, 1, 1),
-            ],
+            parts: [__teil("cylinder", "holz", 0, 0, 0, 1, 1, 1)],
         };
-        r.state.architectures = r.state.architectures || [];
+        st.architectures = st.architectures || [];
         const sentinelArch = {
             id: "test-arch-v18210",
             type: testKey,
             position: { x: 0, y: 0, z: 0 },
         };
-        r.state.architectures.push(sentinelArch);
+        st.architectures.push(sentinelArch);
         // Saved Ring-State + Init
         const savedRing = r._growTreeRing ? [...r._growTreeRing] : null;
         r._growTreeRing = [testKey];
         // Erzeuge 260+ Dummy-Bauplane, um CAP=256 zu überschreiten
         for (let i = 0; i < 260; i++) {
             const dummyKey = `grown_dummy_${i}`;
-            r.state.blueprints[dummyKey] = {
+            st.blueprints[dummyKey] = {
                 name: dummyKey,
                 builtIn: true,
                 _isGrown: true,
@@ -773,11 +772,11 @@ async function checkBandV18210Verdrahtung({ page, check }) {
         // Trigger Eviction durch einen weiteren Spawn-Versuch
         r._growTreeBlueprintForSpawn("baum_eiche", "trigger-eviction");
         // Der referenzierte testKey muss überleben
-        out.a1EvictionRespectsActive = !!r.state.blueprints[testKey];
+        out.a1EvictionRespectsActive = !!st.blueprints[testKey];
         // Cleanup
-        r.state.architectures = r.state.architectures.filter((a) => a.id !== sentinelArch.id);
-        delete r.state.blueprints[testKey];
-        for (let i = 0; i < 260; i++) delete r.state.blueprints[`grown_dummy_${i}`];
+        st.architectures = st.architectures.filter((a) => a.id !== sentinelArch.id);
+        delete st.blueprints[testKey];
+        for (let i = 0; i < 260; i++) delete st.blueprints[`grown_dummy_${i}`];
         r._growTreeRing = savedRing;
         // (Heilung #3) SPEZIES-DIVERSITÄT: 6 Arten erzeugen unterschiedliche Geometrie
         const species = ["baum_eiche", "baum_kiefer", "baum_birke", "baum_erle", "baum_buche", "baum_tanne"];
@@ -809,7 +808,7 @@ async function checkBandV18210Verdrahtung({ page, check }) {
         const before = au.r5StructureBoost.value;
         r.setStructureBoost(2.0);
         out.a2SetterUpdatesUniform = au.r5StructureBoost.value === 2.0;
-        out.a2SetterPersists = r.state.atmosphere.r5StructureBoost === 2.0;
+        out.a2SetterPersists = st.atmosphere.r5StructureBoost === 2.0;
         // Range clamp: 3.0 → 2.5 (cap), 0.1 → 0.5 (floor)
         r.setStructureBoost(5.0);
         out.a2SetterCapsHi = au.r5StructureBoost.value === 2.5;
@@ -820,20 +819,20 @@ async function checkBandV18210Verdrahtung({ page, check }) {
         // ============== A3: der Biss der KREATUR-KI ==============
         // (die Witterung urteilt gate:kreatur-takt jagdkreis am echten Takt)
         const savedMode = r.getGameMode();
-        const savedCreatures = r.state.creatures;
+        const savedCreatures = st.creatures;
         try {
             r.setGameMode("pfad");
             // Strike-Range-Test mit ECHTEN Leibern (0710-4: der Biss stößt durch das EINE Impuls-Gesetz und liest die
             // Masse aus der Gestalt — ein körperloser Stub hat keine, der Biss bräche fail-closed): ein Wolf, ein Fuchs
             // in 1,2 m → der Ansprung trifft UND stößt die Beute vom Jäger weg.
-            r.state.creatures = savedCreatures;
-            const pmS = r.state.playerMesh.position;
-            const capS = r.state.maxCreatures;
-            r.state.maxCreatures = Math.max(capS || 0, savedCreatures.length + 2);
+            st.creatures = savedCreatures;
+            const pmS = st.playerMesh.position;
+            const capS = st.maxCreatures;
+            st.maxCreatures = Math.max(capS || 0, savedCreatures.length + 2);
             const opt = { precise: true, bodySize: 1 };
             const jaeger = r.spawnCreatureAt(pmS.x + 340, pmS.y, pmS.z - 340, "calm", "wolf", opt);
             const beute = jaeger && r.spawnCreatureAt(pmS.x + 342, pmS.y, pmS.z - 340, "calm", "fuchs", opt);
-            r.state.maxCreatures = capS;
+            st.maxCreatures = capS;
             if (jaeger && beute) {
                 const B0 = { x: jaeger.position.x + 1.2, z: jaeger.position.z };
                 beute.position.set(B0.x, jaeger.position.y, B0.z);
@@ -841,7 +840,7 @@ async function checkBandV18210Verdrahtung({ page, check }) {
                 beute.userData._stossV = null;
                 jaeger.rotation.set(0, Math.PI / 2, 0); // der Beute zugewandt
                 jaeger.userData._steuer = null;
-                r.state.creatures = [jaeger, beute];
+                st.creatures = [jaeger, beute];
                 jaeger.userData.nextHuntStrikeAt = -Infinity;
                 const struck = r._tickCreatureScentStrike(jaeger);
                 // DER BISS IST DER ANSPRUNG (Posten 5): der Takt des Spiels läuft (der Kreatur-Takt, dann
@@ -858,14 +857,14 @@ async function checkBandV18210Verdrahtung({ page, check }) {
                 }
                 const sv = beute.userData._stossV;
                 out.a3StrikeHits = struck === true && !!sv && sv.x > 0;
-                r.state.creatures = savedCreatures;
+                st.creatures = savedCreatures;
             }
             if (jaeger) r.removeCreature(jaeger);
             if (beute) r.removeCreature(beute);
         } catch (e) {
             out.a3Error = String((e && e.message) || e);
         } finally {
-            r.state.creatures = savedCreatures;
+            st.creatures = savedCreatures;
             r.setGameMode(savedMode);
         }
 
@@ -874,23 +873,23 @@ async function checkBandV18210Verdrahtung({ page, check }) {
         const sm = r.getGameMode();
         // saubere Test-Hygiene: state vorher
         // SCHNAPPEN (Stat-Felder + tools-Liste), nachher EXAKT restaurieren.
-        const savedManaA4 = r.state.player.mana;
-        const savedManaMaxA4 = r.state.player.manaMax;
-        const savedStamA4 = r.state.player.stamina;
-        const savedStamMaxA4 = r.state.player.staminaMax;
-        const savedToolsA4 = Array.isArray(r.state.player.tools) ? [...r.state.player.tools] : [];
+        const savedManaA4 = st.player.mana;
+        const savedManaMaxA4 = st.player.manaMax;
+        const savedStamA4 = st.player.stamina;
+        const savedStamMaxA4 = st.player.staminaMax;
+        const savedToolsA4 = Array.isArray(st.player.tools) ? [...st.player.tools] : [];
         try {
             r.setGameMode("pfad");
-            r.state.player.manaMax = 100;
-            r.state.player.mana = 50;
-            r.state.player.staminaMax = 100;
-            r.state.player.stamina = 50;
+            st.player.manaMax = 100;
+            st.player.mana = 50;
+            st.player.staminaMax = 100;
+            st.player.stamina = 50;
             // Ein eigener Bauplan zum Editieren (kein builtIn)
             const bpName = "test_v18210_bp";
-            if (!r.state.player.tools.includes("ritueller-stab")) {
-                r.state.player.tools.push("ritueller-stab");
+            if (!st.player.tools.includes("ritueller-stab")) {
+                st.player.tools.push("ritueller-stab");
             }
-            r.state.blueprints[bpName] = {
+            st.blueprints[bpName] = {
                 name: bpName,
                 label: "Test",
                 builtIn: false,
@@ -903,34 +902,34 @@ async function checkBandV18210Verdrahtung({ page, check }) {
                     },
                 ],
             };
-            const manaBefore = r.state.player.mana;
-            const stamBefore = r.state.player.stamina;
+            const manaBefore = st.player.mana;
+            const stamBefore = st.player.stamina;
             const result = r.applyOpToPart(bpName, 0, "ritueller-stab");
             out.a4ResultOk = result && result.ok === true;
-            out.a4ManaWasDrained = r.state.player.mana < manaBefore;
-            out.a4StaminaUntouched = r.state.player.stamina === stamBefore;
+            out.a4ManaWasDrained = st.player.mana < manaBefore;
+            out.a4StaminaUntouched = st.player.stamina === stamBefore;
             // Mana zu klein → ablehnen, Mana unverändert (atomar)
-            r.state.player.mana = 1;
+            st.player.mana = 1;
             const result2 = r.applyOpToPart(bpName, 0, "ritueller-stab");
             out.a4InsufficientRejected = result2 && result2.ok === false && result2.reason === "not_enough_mana";
-            out.a4InsufficientAtomic = r.state.player.mana === 1;
+            out.a4InsufficientAtomic = st.player.mana === 1;
             // Stamina-Op (hände) zieht Stamina, NICHT Mana
-            r.state.player.mana = 100;
-            r.state.player.stamina = 50;
-            const manaBeforeStam = r.state.player.mana;
-            const stamBeforeStam = r.state.player.stamina;
+            st.player.mana = 100;
+            st.player.stamina = 50;
+            const manaBeforeStam = st.player.mana;
+            const stamBeforeStam = st.player.stamina;
             r.applyOpToPart(bpName, 0, "hände");
-            out.a4HandsZiehtStamina = r.state.player.stamina < stamBeforeStam;
-            out.a4HandsManaUntouched = r.state.player.mana === manaBeforeStam;
+            out.a4HandsZiehtStamina = st.player.stamina < stamBeforeStam;
+            out.a4HandsManaUntouched = st.player.mana === manaBeforeStam;
             // Schöpfer-Modus: keine Kosten
             r.setGameMode("schöpfer");
-            r.state.player.mana = 50;
-            r.state.player.stamina = 50;
+            st.player.mana = 50;
+            st.player.stamina = 50;
             const result3 = r.applyOpToPart(bpName, 0, "ritueller-stab");
             out.a4SchoepferOk = result3 && result3.ok === true;
-            out.a4SchoepferKostenfrei = r.state.player.mana === 50 && r.state.player.stamina === 50;
+            out.a4SchoepferKostenfrei = st.player.mana === 50 && st.player.stamina === 50;
             // Cleanup
-            delete r.state.blueprints[bpName];
+            delete st.blueprints[bpName];
         } catch (e) {
             out.a4Error = String(e && (e.message || e));
         } finally {
@@ -938,11 +937,11 @@ async function checkBandV18210Verdrahtung({ page, check }) {
             // exakt restaurieren, damit
             // nachfolgende Bands den Spieler frisch sehen (sonst leaken
             // ritueller-stab im Werkzeug-Inventar + Stat-Drift).
-            r.state.player.mana = savedManaA4;
-            r.state.player.manaMax = savedManaMaxA4;
-            r.state.player.stamina = savedStamA4;
-            r.state.player.staminaMax = savedStamMaxA4;
-            r.state.player.tools = savedToolsA4;
+            st.player.mana = savedManaA4;
+            st.player.manaMax = savedManaMaxA4;
+            st.player.stamina = savedStamA4;
+            st.player.staminaMax = savedStamMaxA4;
+            st.player.tools = savedToolsA4;
         }
 
         return out;
@@ -1017,7 +1016,7 @@ async function checkBandRauschGesetz({ page, check }) {
     await page.evaluate(SK.SHADER_INSTALL);
     const res =
         (await safeEvaluate(page, () => {
-            const A = r.constructor;
+            const A = AnazhRealm;
             const out = {};
             const stoffe = [
                 "_terrainGeologyAlbedo",
@@ -1034,7 +1033,7 @@ async function checkBandRauschGesetz({ page, check }) {
             for (const n of ["felsFein", "felsWelle", "schuttKorn"])
                 if (!window.__fehlt(GK[n], /wert3|mx_noise/)) out.absenz.push(n + " (Gitter-Rauschen aus Ziehungen)");
             // KONSUM: der Knoten-Graph des Stoffs, den der Boden zeichnet (vor dem Bau — was der Compiler liest)
-            out.graph = window.__stoffGraph(r.state.voxelChunkMaterial);
+            out.graph = window.__stoffGraph(st.voxelChunkMaterial);
             // DIE ATLAS-BYTES: die MaterialX-Gradienten aus lookup3 (eigene Portierung), gepackt je Komponente × 4 Ecken
             const P = A.RAUSCH_GESETZ.P;
             const d = A._rauschAtlasDaten();
@@ -1105,7 +1104,7 @@ async function checkBandRauschGesetz({ page, check }) {
 
 async function checkBandV18331ReplayDeterminism({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const s = r.state;
+        const s = st;
         const out = {};
         if (!s.playerMesh || !s.playerVel) return out;
         const DT = 1 / 60;
@@ -1185,11 +1184,11 @@ async function checkBandPerfPanel({ page, check }) {
             }
             await sleep(110);
         }
-        const panelVorher = r.state.perfPanel;
-        r.state.perfPanel = true;
+        const panelVorher = st.perfPanel;
+        st.perfPanel = true;
         r._perfPanelLast = 0;
         r._perfPanelRender();
-        const fr = r.state.flightRecorder;
+        const fr = st.flightRecorder;
         res.ringN = fr && fr.secRingN ? fr.secRingN : 0;
         res.head = (document.getElementById("pp-head") || {}).textContent || "";
         res.grid = (document.getElementById("pp-grid") || {}).textContent || "";
@@ -1207,11 +1206,11 @@ async function checkBandPerfPanel({ page, check }) {
         res.export = exp ? { name: exp.name, bytes: exp.bytes } : null;
         const trace = exp ? r._flightRecorderBuildTrace() : null;
         res.trace = !!(trace && trace.session && trace.session.frames > 0 && "impostorZensus" in trace && trace.version);
-        const saved = r.state.flightRecorder;
-        r.state.flightRecorder = null;
+        const saved = st.flightRecorder;
+        st.flightRecorder = null;
         res.selbstTestKeinTrace = r._exportPerfTrace() === null;
-        r.state.flightRecorder = saved;
-        r.state.perfPanel = panelVorher;
+        st.flightRecorder = saved;
+        st.perfPanel = panelVorher;
         return res;
     });
     const o = out || {};
@@ -1235,7 +1234,7 @@ async function checkBandPerfPanel({ page, check }) {
 // JEDEN Frame, Deko (prio ≥ 2) jeden 4.; K40 der Dauer-Strom: baut jeder Takt Terrain, läuft das Deko-Innere trotzdem jeden 4.
 async function checkBandExistenzBoden({ page, check }) {
     const out = await safeEvaluate(page, () => {
-        const s = r.state;
+        const s = st;
         const pos = s.playerMesh.position;
         const res = {};
         const leer = { remainingMs: () => 0 }; // die render-gebundene Maschine des Schöpfers
@@ -1306,12 +1305,12 @@ async function checkBandExistenzBoden({ page, check }) {
 // und aus); (B) der Perf-Hebel als ZAHL: Last → 0, Kopfraum → MAX, headless → MAX.
 async function checkBandGodray({ page, check }) {
     const o = await safeEvaluate(page, () => {
-        const out = { MAX: r.constructor.PERF_GODRAY_MAX };
+        const out = { MAX: AnazhRealm.PERF_GODRAY_MAX };
         // die reine `_godrayFrameGate`: Sonne hoch + klar → hoch; unter Horizont → 0; Sturm → ~0
         out.gateHigh = r._godrayFrameGate(0.9, 1.0);
         out.gateBelow = r._godrayFrameGate(-0.2, 1.0);
         out.gateTief = r._godrayFrameGate(0.03, 1.0);
-        out.gateStorm = r._godrayFrameGate(0.9, r.constructor.WEATHER_FIELD.stormy.sun);
+        out.gateStorm = r._godrayFrameGate(0.9, AnazhRealm.WEATHER_FIELD.stormy.sun);
         // (B) PERF-HEBEL als ZAHL — headless-Kurzschluss kontrolliert umgehen (wie der Schatten-Regler)
         const wasNull = st.renderer && st.renderer._isHeadlessNull;
         const sense = (ls, calls, frameMs) => ({ loadScale: ls, phase: { archCulling: 1, render: 1, streaming: 0, waterIso: 0 }, renderCalls: calls, frameMs });
@@ -1346,7 +1345,7 @@ async function checkBandGodray({ page, check }) {
 async function checkBandSzeneSkala({ page, check }) {
     const o = await safeEvaluate(page, () => {
         const THREE = window.THREE;
-        const K = r.constructor;
+        const K = AnazhRealm;
         const LAYER = K.FOLIAGE_LAYER;
         const out = { MIN: K.SZENE_SKALA_MIN, SKALA: K.SZENE_SKALA };
         // (1) die EINE Szenen-Skala
@@ -1415,7 +1414,7 @@ async function checkBandSzeneSkala({ page, check }) {
 // 30/60/144 fps und Regler ±10 % gleich, die Mutante wandert) · S7 der Ladeschirm misst nichts.
 async function checkBandReglerSim({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        const A = window.AnazhRealm || r.constructor;
+        const A = window.AnazhRealm || AnazhRealm;
         const o = {};
         const pos = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
         // ── SIM-RAHMEN: den headless-Zweig lüften (die ECHTEN Regel-Pfade laufen),
