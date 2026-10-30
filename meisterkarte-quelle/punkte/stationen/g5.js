@@ -926,7 +926,10 @@ const stationen = [
         // den Weg der Probe über die Bahn (die Welt räumt die Natur auf ihm), das Gas endet am Plateau der Sim-Zeit, ein Stoß endet
         // es beim Namen (Ende ≠ ok). Null-Renderer 715754fc: Plateau nach 7,9 Sim-s, 15,18 m/s, FOV +9,47°, Arm +18,4 %.
         // IN DER SITZUNG (29.10.): die Garage (eigenes Labor auf {PORT}+20001) läuft NEBEN dem Ritt in der Welt der Sitzung, ihre Zeilen
-        // danach; der Patch fällt vor und nach ihr. Der GT und der Weg der Probe bleiben in der Welt (mutiert)
+        // danach; der Patch fällt vor und nach ihr. Der GT und der Weg der Probe bleiben in der Welt (mutiert). Den GT nimmt die
+        // Grundstellung zurück (das Werk im Stand), den Weg nicht: `_stlWegeBuild` schreibt die Wege-Karte, das Speicher-Gesetz trägt sie
+        // nicht (`_standRueckspielen`) — nur die Tür nach einem Abbruch lädt sie neu. Die mutierenden Proben danach (die Reihe der
+        // Sitzung, darunter der Gang des Profi-Bands an der Wiese) stehen sonst neben dem 40-m-Weg (offen am Merge w4-koord-sitzung)
         probe: { ...sitzung(90,
             "git checkout -q -- scripts/diag-garage-labor.cjs; rm -f scripts/diag-garage-mk.cjs",
             '( git apply "$K/bericht/2110-mk-kopf/garage-mk.diff" && GARAGE_LABOR_PORT=$LP LINSE_GPU=hardware timeout 85 node scripts/diag-garage-mk.cjs; ' +
