@@ -98,13 +98,19 @@ class AnazhRealm_studio_gestalt {
             if (m[nm] && m[nm].array) geo.setAttribute(nm, new T.BufferAttribute(m[nm].array, m[nm].itemSize || 3));
         // Der Schatten-Teil (S3) trägt je Vertex, ob er deckt (Rinde 1) oder die Atlas-Alpha schneidet (Karte 0).
         if (m.aDeckt && m.aDeckt.array) geo.setAttribute("aDeckt", new T.BufferAttribute(m.aDeckt.array, 1));
+        // DER TON JE ECKE (mensch.K4, koerper `menschTon`): der Mensch trägt ihn — sein Stoff färbt jede Ecke nach der Palette
+        // des Leibs, der ihn zeichnet (`_tonFaktor`)
+        const ton = !!(m.aTon && m.aTon.array);
+        if (ton) geo.setAttribute("aTon", new T.BufferAttribute(m.aTon.array, 1));
+        // DIE ECKEN DER GESTALT, wie sie geliefert sind: ihr Stoff liest Ton und Jahr an ihrem Namen (`_foundryTreeMaterial`)
+        const ecken = { ton, jahr: jahr === 2 };
         if (m.index) geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(m.index, vcount), 1));
         if (!m.normal || !m.normal.array) geo.computeVertexNormals();
         // Attribut-Wand: unter foundryCrossfade lesen die geteilten foundry-Materialien aH0/aH0L/aLodLevel —
         // jeder Direkt-Konsument dieser Konversion (Kreatur-Ofen …) braucht sie, sonst warnt three je
         // RenderObject. Der Null-Stempel macht „0 = ungemaskt" physisch wahr (Bild gleich); der Gruppen-Bau
-        // überschreibt mit echten Stufen-Werten.
-        if (this.state && this.state.foundryCrossfade === true) {
+        // überschreibt mit echten Stufen-Werten. Der Mensch (`ton`) trägt keinen: sein Stoff blendet nie (`_foundryTreeMaterial`).
+        if (this.state && this.state.foundryCrossfade === true && !ton) {
             const _z = new Float32Array(vcount);
             geo.setAttribute("aLodLevel", new T.BufferAttribute(_z, 1));
             geo.setAttribute("aH0", new T.BufferAttribute(new Float32Array(vcount), 1));
@@ -118,17 +124,15 @@ class AnazhRealm_studio_gestalt {
             for (let v = 0; v < si.length; v++) si[v] = m.skinIndex.array[v];
             geo.setAttribute("skinIndex", new T.Uint16BufferAttribute(si, m.skinIndex.itemSize || 4));
             geo.setAttribute("skinWeight", AnazhRealm._hautGewicht(m.skinWeight.array, m.skinWeight.itemSize || 4));
-            mesh = new T.SkinnedMesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
-        } else {
-            const mat = this._foundryTreeMaterial(
-                m.kind || "bark",
-                m.mat || null,
-                false,
-                baum || null,
-                undefined,
-                !!jahr
+            mesh = new T.SkinnedMesh(
+                geo,
+                this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, null, false, ecken)
             );
-            mesh = new T.Mesh(geo, mat);
+        } else {
+            mesh = new T.Mesh(
+                geo,
+                this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, baum || null, false, ecken)
+            );
         }
         mesh.castShadow = AnazhRealm._teilWirft(m);
         mesh.receiveShadow = true;
@@ -268,6 +272,7 @@ class AnazhRealm_studio_gestalt {
                 const _D = AnazhRealm.LOD_DISTANCES;
                 const _capL = _D.leafVisCap;
                 for (const ch of group.children) {
+                    if (ch.geometry.attributes.aTon) continue; // der Mensch blendet nie (`_foundryTreeMaterial`)
                     const _n = ch.geometry.attributes.position.count;
                     const _fk = ch.material && ch.material.userData ? ch.material.userData.foundryKind : null;
                     const _isFol = _fk === "foliage" || _fk === "foliageTex" || _fk === "grass";
@@ -498,6 +503,32 @@ class AnazhRealm_studio_gestalt {
             this._foundryStufeBereit(entry, preset, 2)
         );
     }
+    // DIE BEREITSCHAFT WARTET AUF IHR EREIGNIS (Lehre 25, w4-ankunft): ein kalter Eintrag, dessen Peek „nicht gedockt" sagte
+    // und dessen Bestellung draußen ist, ändert sein Urteil erst mit einer Eingabe des Peeks — einer Antwort des Studios
+    // (`f.ankunft`), dem Buch, der Wahrnehmung und der Ankunft aus der Ferne (alle im Stand-Stempel), einer gebackenen Karte
+    // oder einer Stufen-Wahl des Vorlaufs (`_bauRegung`), der Gestalt seines Orts (der Stand des Walds, ein Grundriss am Ort:
+    // `_ortSameGen`) oder dem Auge, das seine Wunsch-Stufe verschiebt (STAND_RAND_FERN_M). Dieser Stand ist EINE Zahl je Takt;
+    // der Cull-Gang (`_platzNein`) und der Rewarm (`_dockNein`) merken sie am Eintrag und fragen bis zu ihrem Wechsel nicht
+    // neu. Bis hierher ging jeder Takt jeden Wartenden ganz durch (Wunsch-Stufe, Sichthöhe, Gestalt des Orts, Stufen-Klammer,
+    // Dock): headless kalt am Kopf 24a0f3ef hielt das 35–65 s lang 19,8 s Haupt-Faden, während die Karten auf ihre Programme
+    // warteten — die Karte selbst ist die Arbeit der GPU, das Fragen war Leerlauf.
+    _bereitStand(auge) {
+        const B = this._bereitWert || (this._bereitWert = { v: [], id: 0, ax: NaN, az: NaN });
+        const v = [
+            this._standStempel(),
+            this._bauRegung | 0,
+            this._ortSameGen | 0,
+            this._forestDartStand(this._forestSeedInt()),
+        ];
+        let neu = v.some((x, i) => x !== B.v[i]);
+        const R = AnazhRealm.STAND_RAND_FERN_M;
+        if (auge && !((auge.x - B.ax) ** 2 + (auge.z - B.az) ** 2 <= R * R)) {
+            [B.ax, B.az] = [auge.x, auge.z];
+            neu = true;
+        }
+        if (neu) [B.v, B.id] = [v, B.id + 1];
+        return B.id;
+    }
     // Der Dock-Peek EINER Stufe (rein lesend, kein Bake): liegt Stufe `lod` dieses Eintrags gedockt bereit? Der
     // Eintrags-Peek oben fragt seine Wunsch-Stufe, die Brücke (`_rebuildArchitectureMesh`) die Karte.
     _foundryStufeBereit(entry, preset, lod) {
@@ -584,8 +615,12 @@ class AnazhRealm_studio_gestalt {
             kand.push(entry);
         }
         kand.sort((a, b) => a._rewarmD2 - b._rewarmD2);
+        // der Stand der Bereitschaft (`_bereitStand`): wer zu ihm nicht gedockt war (oder nicht platz-bereit, `_platzNein`) und
+        // bestellt hat, schläft bis zum nächsten Stand — er zählt weiter als Kandidat (die Stand-Wache des Culls hält ihn wach)
+        const stand = this._bereitStand(this._lodAuge());
         for (const entry of kand) {
             if (placeBudget <= 0 && bakeBudget <= 0) break;
+            if (entry._dockNein === stand || entry._platzNein === stand) continue;
             const preset = this._foundryPresetForEntry(entry);
             const cold = !entry.instanced && !entry.mesh;
             const classic = !cold && !entry.instFoundry;
@@ -606,8 +641,8 @@ class AnazhRealm_studio_gestalt {
                 if (bakeBudget <= 0) continue;
                 this._rebuildArchitectureMesh(entry); // löst _foundryFlattenFor → _foundryRequest aus
                 bakeBudget--;
-            }
-            // classic + nicht ready: der klassische Look bleibt sichtbar, bis das Asset andockt (kein Pop).
+                if (!entry.instanced && !entry.mesh) entry._dockNein = stand; // bestellt: er schläft bis zum Stand
+            } else entry._dockNein = stand; // classic + nicht ready: der klassische Look bleibt sichtbar, bis das Asset andockt (kein Pop)
         }
         return kand.length;
     }
@@ -666,7 +701,30 @@ class AnazhRealm_studio_gestalt {
         const p = entry && entry.position;
         if (!p) return this._foundryVariantFor(entry ? entry.seed : 0, preset, Vk);
         const krone = AnazhRealm.FOREST.crown[entry._lodSpecies || entry.type];
-        const same = this._ortGestaltSame(p.x, p.z, krone > 0 ? krone * (entry.scale || 1) : 0, entry.seed, preset);
+        const T = krone > 0 ? krone * (entry.scale || 1) : 0;
+        // DER ORT DER ANTWORT AM EINTRAG (Lehre 25, w4-ankunft): der Eintrag trägt, wo seine Antwort im EINEN Gedächtnis liegt
+        // (Eimer und Schlüssel, `_ortGestaltSame` mit `merk`), nie die Antwort selbst — solange der Eimer in der Karte des
+        // Stands liegt (`_ortSameKarte`; ein Grundriss am Ort räumt ihn, ein neuer Stand die Karte) und Lage, Krone, Same und
+        // Art stehen, liest er sie dort, ohne den Schlüssel aus fünf Zahlen je Ruf neu zu bauen (Cull, Rewarm, Stufen-Wahl und
+        // Sichthöhe fragen je Takt); fehlt sie, fragt er den Ort neu
+        const M = entry._ortMerk;
+        const karte = this._ortSameKarte();
+        let same =
+            M &&
+            M.karte === karte &&
+            karte.get(M.ek) === M.eimer &&
+            M.x === p.x &&
+            M.z === p.z &&
+            M.T === T &&
+            M.seed === entry.seed &&
+            M.preset === preset
+                ? M.eimer.get(M.k)
+                : undefined;
+        if (same === undefined) {
+            const m = {};
+            same = this._ortGestaltSame(p.x, p.z, T, entry.seed, preset, m);
+            entry._ortMerk = same === null ? null : Object.assign(m, { x: p.x, z: p.z, T, seed: entry.seed, preset });
+        }
         const g = same === null ? null : this._foundryVariantFor(same, preset, Vk);
         if (Number.isInteger(g) && (entry._huelleWartet || (entry._huelleG != null && entry._huelleG !== g)))
             this._populateBlockerAABBs(entry);

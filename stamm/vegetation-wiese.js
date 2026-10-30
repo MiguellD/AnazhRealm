@@ -692,7 +692,9 @@ class AnazhRealm_vegetation_wiese {
             ernte: art.ernte,
             geo: lf.geom,
             mat: wiegt
-                ? this._foundryTreeMaterial(u.foundryKind, u.foundryMp, true, null, u.krone === true, u.jahr === true)
+                ? this._foundryTreeMaterial(u.foundryKind, u.foundryMp, true, null, u.krone === true, {
+                      jahr: u.jahr === true,
+                  })
                 : lf.mat,
             lokal: lf.localMatrix,
             wiegt: !!wiegt,
