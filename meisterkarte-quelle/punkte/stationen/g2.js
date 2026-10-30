@@ -3608,7 +3608,9 @@ const stationen = [
     // Klassen-Maße je Teil-Klasse mit dem ganzen Bild (Luma, Spiegel-Projektion; abnahme-urteil `klassenMasse` jetzt mit `pass`, Node
     // 567 → 242 ms je Klasse), der Licht-Pool fest 20 × 50 ms (`bild --uhr`, jetzt bis zu seinem Fixpunkt), der Zähler je Wiesen-Schuss
     // (`/zaehlen`, sein Budget liest nur vegetation.K1 — das Jahr läuft „ohne-budget“). Offen beim Namen: der Abstands-Marsch der Wiese
-    // (je 2×2-Block ein Strahl bis 200 m, ~20 Mio. Rufe `_bodenSichtAt`, 6–11 s je Wiesen-Schuss) — der EINE Boden-Leser im Spiel
+    // (je 2×2-Block ein Strahl bis 200 m, ~20 Mio. Rufe `_bodenSichtAt`, 6–11 s je Wiesen-Schuss) — der EINE Boden-Leser im Spiel.
+    // DAS SPIEL-MASS (Werkbank swiftshader am Kopf e9ebd232, 640 × 360, Teilung von Hand): die Birke 23 m vor dem Auge deckt im Winter
+    // 1 964 statt 19 848 Pixel (0,099 × Sommer, Soll ≤ 0,3) — das ROT der Radeon (b3f9ae95: 1,004 × Sommer) lag vor w4-laub-jahr
     jahrStation(1, JAHR_LAUF, ["sommer", "winter"].map((z) => JAHR_LAUF.find((p) => p[3] === z && p[4] === "krone")), ["sommer", "winter"], "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose"),
     jahrStation(2, JAHR_LAUF, JAHR_LAUF, ["sommer", "winter", "fruehling"], "2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte"),
 ];

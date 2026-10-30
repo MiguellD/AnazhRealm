@@ -1354,6 +1354,12 @@ const stationen = [
     // nennt ihn, `probeOrt`), die Tafel-Pose liegt 5 m neben ihm im gebauten Ring; der Gang schwingt 2 s statt 20 s ein (die 20 s trugen
     // den kalten Ring des eigenen Boots — `--ein` misst nichts, es wartet), dann 8 s Gang auf der Bahn. Die Arbeit: Tafel-Bild ~6 s,
     // Teleport in den Ring ~3 s, Gang 10 s, Spielgang-Bild ~6 s — der Deckel 30 s; die GPU-Fahrt nennt, ob er warm hält
+    // DIE ZAHL DER GTX (379e5f56, 47 s über dem Gesetz): das Tafel-Bild allein 27,3 s (3ed95dcf 26,9 s) — je Teil-Klasse eine Aufnahme
+    // zu 33 Bildern und ihre Maße (abnahme-urteil `klassenMasse` je Klasse mit dem ganzen Bild; jetzt `pass` je Schuss, Node 567 → 242 ms
+    // je Klasse, Byte-gleich); der Spielgang warf an GTX und Radeon an der Abnahme des Beweisbilds (Exit 1, 24a0f3ef · 3ed95dcf · 379e5f56)
+    // und kostete darum fast nichts; das Urteil las die Leinwand an `abnahme.bild`, das die Zeile der Werkbank nie trägt (jetzt das
+    // Begleit-JSON). Offen beim Namen: zwei Teilungen zu je (Klassen + 4) Aufnahmen und der Gang von 8 s — über 30 s, sobald der Spielgang
+    // wieder misst; die Abnahme des Spielgangs nennt die nächste Fahrt beim Namen (der Anfang der Zeile)
     {
         kriterium: "lod.K1",
         staffel: 1,
