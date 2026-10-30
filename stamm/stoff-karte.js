@@ -425,20 +425,27 @@ class AnazhRealm_stoff_karte {
         }
         const f = this._ensureAssetFoundry();
         if (!f || !f.ready || !this._impostorAtlasTexturen(at)) return 0;
-        // Die Karte ist GPU-Arbeit wie das Bild: sie geht an der EINEN Leine (`_gpuLeineStraff`), ihr Takt bindet sich an
-        // (`_gpuLeineBinden`) — auf einer langsamen GPU wartet so das nächste Bild auf sie, statt hinter ihr zu verhungern.
-        if (this._gpuLeineStraff()) return 0;
+        // die halbe Karte (`at.offen`: ihr nächster Ring); fiel ihre Zelle, ist die Bühne frei
+        if (at.offen) {
+            const o = at.offen.z;
+            if (o.gescheitert || at.zellen.get(o.key) !== o) at.offen = null;
+        }
+        // DIE LEINE FRAGT DIE KARTE, NIE DEN RING (lod.K3): die Karte ist GPU-Arbeit wie das Bild — sie BEGINNT an der EINEN
+        // Leine (`_gpuLeineStraff`), und jeder Takt, der zeichnete, bindet sich an (`_gpuLeineBinden`): auf einer langsamen GPU
+        // wartet so das nächste Bild auf sie, statt hinter ihr zu verhungern. Eine begonnene Karte backt ihre übrigen Ringe Takt
+        // um Takt ohne neue Frage, an gespannter Leine nur sie — fragte jeder Ring, zöge jeder ein Bild hinter sich her
+        // (swiftshader, Mess-Wiese: ein Bild 10,7 s GPU, die Karte mit vier Ringen 3,3 s; je Ring gefragt stand das Weltbild
+        // der 19 Karten nach 701,7 s und 82 Bildern, je Karte nach 243,4 s und 31). Steht einer ihrer Ringe nicht ganz
+        // (`at.offen.frage`), fragt sie wieder: die Queue wächst je Karte um höchstens ihre Ringe.
+        const nurHalbe = this._gpuLeineStraff();
+        if (nurHalbe && !(at.offen && !at.offen.frage)) return 0;
         const d2 = (k) => {
             const z = at.zellen.get(k);
             return z && Number.isFinite(z._bedarfD2) ? z._bedarfD2 : 1e30;
         };
         q.sort((a, b) => d2(a) - d2(b));
-        // die halbe Karte zuerst (`at.offen`: ihr nächster Ring); fiel ihre Zelle, ist die Bühne frei
-        if (at.offen) {
-            const o = at.offen.z;
-            if (o.gescheitert || at.zellen.get(o.key) !== o) at.offen = null;
-            else if (q.includes(o.key)) q.unshift(...q.splice(q.indexOf(o.key), 1));
-        }
+        // die halbe Karte zuerst
+        if (at.offen && q.includes(at.offen.z.key)) q.unshift(...q.splice(q.indexOf(at.offen.z.key), 1));
         const t0 = performance.now();
         let n = 0;
         const gezeichnet = () => (this._karteBuehneSatz && this._karteBuehneSatz.versuchN) || 0; // je Bühnen-Zeichnung +1
@@ -449,6 +456,7 @@ class AnazhRealm_stoff_karte {
                 q.splice(i, 1);
                 continue;
             }
+            if (nurHalbe && !(at.offen && at.offen.z === z)) break; // an gespannter Leine nur die begonnene Karte
             const e = this._karteWeltBacken(at, z);
             // null: die L1 reist, ein Bürger der Bühne wartet auf seine Pipeline oder die Bühne trägt eine halbe Karte;
             // 0: ein Ring steht — im Budget backt derselbe Takt den nächsten
@@ -821,7 +829,10 @@ class AnazhRealm_stoff_karte {
             }
             B.wurzel.clear();
         }
-        if (!ganz) return null;
+        if (!ganz) {
+            if (at.offen) at.offen.frage = true; // ihr nächster Ring fragt wieder die Leine (`_tickKarteWelt`)
+            return null;
+        }
         const summe = at.offen ? at.offen.ms : 0;
         (at.schrittMs || (at.schrittMs = [])).push(+(performance.now() - t0).toFixed(2));
         if (!letzter) {
