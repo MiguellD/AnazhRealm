@@ -1,0 +1,716 @@
+{
+ "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
+ "geraet": "radeon",
+ "wahrheit": "messung/b3f9ae95-radeon.json (Takt 19, 392 min Wanduhr)",
+ "fahrten": [
+  {
+   "start": "2026-10-29T15:45:41.119Z",
+   "wartenMin": 23.6,
+   "bootS": 8.9,
+   "fahrtS": 1800,
+   "proben": 34,
+   "grundstellungen": 21,
+   "grund": "die Fahrt riss 1800 s in tiere.K1#2 — offen: tiere.K1#2, tiere.K3#2, mensch.K1#1, mensch.K2#2, mensch.K1#2, vegetation.K4#1, vegetation.K4#2, tiere.K2#2, affekt.K1#2, oekologie.K4#2, luftwasser.K5#2, mensch.K5#1, haar.K1#1, schatten.K1#1, studios.K2#2, studios.K3#2, pipeline.K4#1, pipeline.K4#2, ankunft.K2#1, ankunft.K3#1, bauen.K1#2, bauen.K5#2, fahrzeug.K3#1, fahrzeug.K3#2, fahrzeug.K4#1, fahrzeug.K4#2, siedlung.K2#1, siedlung.K2#2, siedlung.K5#1, siedlung.K5#2, leib.K1#2, halten.K2#1, leib.K2#1, leib.K2#2, leib.K4#1, leib.K4#2, halten.K5#1, halten.K5#2, halten.K1#2, fahrzeug.K5#1, tore.K3#1, tore.K3#2, fahrzeug.K2#1, streaming.K4#2, profiband.K1#1, profiband.K1#2, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, klang.K4#1, klang.K4#2, klang.K5#2, speicher.K1#1, speicher.K1#2, speicher.K2#1, speicher.K2#2, speicher.K4#2",
+   "offen": [
+    "tiere.K1#2",
+    "tiere.K3#2",
+    "mensch.K1#1",
+    "mensch.K2#2",
+    "mensch.K1#2",
+    "vegetation.K4#1",
+    "vegetation.K4#2",
+    "tiere.K2#2",
+    "affekt.K1#2",
+    "oekologie.K4#2",
+    "luftwasser.K5#2",
+    "mensch.K5#1",
+    "haar.K1#1",
+    "schatten.K1#1",
+    "studios.K2#2",
+    "studios.K3#2",
+    "pipeline.K4#1",
+    "pipeline.K4#2",
+    "ankunft.K2#1",
+    "ankunft.K3#1",
+    "bauen.K1#2",
+    "bauen.K5#2",
+    "fahrzeug.K3#1",
+    "fahrzeug.K3#2",
+    "fahrzeug.K4#1",
+    "fahrzeug.K4#2",
+    "siedlung.K2#1",
+    "siedlung.K2#2",
+    "siedlung.K5#1",
+    "siedlung.K5#2",
+    "leib.K1#2",
+    "halten.K2#1",
+    "leib.K2#1",
+    "leib.K2#2",
+    "leib.K4#1",
+    "leib.K4#2",
+    "halten.K5#1",
+    "halten.K5#2",
+    "halten.K1#2",
+    "fahrzeug.K5#1",
+    "tore.K3#1",
+    "tore.K3#2",
+    "fahrzeug.K2#1",
+    "streaming.K4#2",
+    "profiband.K1#1",
+    "profiband.K1#2",
+    "profiband.K2#1",
+    "profiband.K2#2",
+    "profiband.K3#1",
+    "profiband.K3#2",
+    "klang.K4#1",
+    "klang.K4#2",
+    "klang.K5#2",
+    "speicher.K1#1",
+    "speicher.K1#2",
+    "speicher.K2#1",
+    "speicher.K2#2",
+    "speicher.K4#2"
+   ],
+   "strom": {
+    "bilder": 4531,
+    "frameP95": 67.2,
+    "taktP95": 66.4,
+    "vramMax": 146.5,
+    "seiten": 22
+   }
+  },
+  {
+   "start": "2026-10-29T16:41:53.361Z",
+   "wartenMin": 1.52,
+   "bootS": 7.1,
+   "fahrtS": 1799.8,
+   "proben": 36,
+   "grundstellungen": 35,
+   "grund": "die Fahrt riss 1800 s in speicher.K4#2 — offen: speicher.K4#2",
+   "offen": [
+    "speicher.K4#2"
+   ],
+   "strom": {
+    "bilder": 7987,
+    "frameP95": 83.7,
+    "taktP95": 66.4,
+    "vramMax": 148.4,
+    "seiten": 46
+   }
+  }
+ ],
+ "summe": {
+  "stationen": 101,
+  "gruen": 17,
+  "rot": 41,
+  "offen": 43,
+  "gleichheit": "25/36"
+ },
+ "abweichungen": [
+  {
+   "id": "gelaende.K2#1",
+   "takt19": "GRÜN",
+   "sitzung": "ROT",
+   "grund": "Probe verlangt main: nach (a) wirft die Seite „r is not defined“ — die Seiten-Globalen r/st (welt-boot weltR, w3u-nachfolge 27bb6088) kamen nach b3f9ae95"
+  },
+  {
+   "id": "klang.K2#1",
+   "takt19": "GRÜN",
+   "sitzung": "ROT",
+   "grund": "die Welt der Sitzung steht nicht: weltStehtNach warf nach 1914 Takten (Fege-Takt archLod 256/2729, streuLod 160/820) — Takt 19 maß in einem eigenen frischen Boot"
+  },
+  {
+   "id": "affekt.K1#2",
+   "takt19": "ROT",
+   "sitzung": "GRÜN",
+   "grund": "das alte Urteil ist das falsche: Takt 19 fuhr werkbankTor ohne --echt, der Spieler am Start — „kein Baum nahe der Wiese“; die Probe stellt auf die Wiese um und findet ihn"
+  },
+  {
+   "id": "klang.K4#2",
+   "takt19": "GRÜN",
+   "sitzung": "ROT",
+   "grund": "Zwilling von klang.K4#1, derselbe Grund (Motor, Landung grün)"
+  },
+  {
+   "id": "streaming.K4#2",
+   "takt19": "GRÜN",
+   "sitzung": "ROT",
+   "grund": "Probe verlangt main: „r is not defined“ im Takt der Faden-Haken (weltR erst nach b3f9ae95)"
+  },
+  {
+   "id": "pipeline.K4#1",
+   "takt19": "GRÜN",
+   "sitzung": "ROT",
+   "grund": "Probe verlangt main: diag-boot-stage am SHA kennt wechselUrteil nicht (ReferenceError)"
+  },
+  {
+   "id": "leib.K4#1",
+   "takt19": "GRÜN",
+   "sitzung": "ROT",
+   "grund": "die Frist der Probe (90 s) schneidet die neun Gänge — „Täter: Gang: Error: die Frist der Probe“"
+  },
+  {
+   "id": "halten.K1#2",
+   "takt19": "GRÜN",
+   "sitzung": "ROT",
+   "grund": "die Seite der Sitzung verbietet das String-eval der Probe (CSP script-src 'self', kein 'unsafe-eval') — die Probe ist in der echten Seite blind"
+  },
+  {
+   "id": "tore.K3#1",
+   "takt19": "GRÜN",
+   "sitzung": "ROT",
+   "grund": "Probe verlangt main: „st is not defined“ in der Ausstattung des Reisenden (weltR erst nach b3f9ae95)"
+  },
+  {
+   "id": "tore.K3#2",
+   "takt19": "GRÜN",
+   "sitzung": "ROT",
+   "grund": "Zwilling von tore.K3#1, derselbe Grund"
+  },
+  {
+   "id": "klang.K4#1",
+   "takt19": "GRÜN",
+   "sitzung": "ROT",
+   "grund": "die Probe ist zu kurz geschnitten: 3,5 s Gehen je Stoff tragen nur quarz (n 5), gras und laub ohne Schritte — Takt 19 ging 10 s je Stoff (n 13–21)"
+  }
+ ],
+ "je": {
+  "gelaende.K2#1": {
+   "urteil": "ROT",
+   "minuten": 0.87,
+   "zahl": "kein Graben über das Verb graben (Exit 1)"
+  },
+  "gelaende.K2#2": {
+   "urteil": "ROT",
+   "minuten": 0.87,
+   "zahl": "keine Ausgabe (Exit 1)",
+   "zwilling": "gelaende.K2#1"
+  },
+  "luftwasser.K5#2": {
+   "urteil": "GRÜN",
+   "minuten": 0.01,
+   "zahl": "Klasse vogel 2 Befehle {\"haupt\":2}, 565 Instanzen (500 des Schwarms, 5 Teile je Glied), 100 Glieder im Blick je Reihe (Soll ≤ 10 Befehle)"
+  },
+  "bauen.K1#2": {
+   "urteil": "ROT",
+   "minuten": 0.02,
+   "zahl": "keine Ausgabe des Bild-Wegs auf der Karte (Exit 2)"
+  },
+  "siedlung.K5#1": {
+   "urteil": "GRÜN",
+   "minuten": 0.45,
+   "zahl": "nH 12 erstes Haus nach 33.9 ms (haus_chinesisch, mesh in 13.7 m, Bau-Hash 88a3d9d2) · nH 300 erstes Haus nach 20.2 ms (haus_chinesisch, mesh in 14 m, Bau-Hash 882a889c)"
+  },
+  "siedlung.K5#2": {
+   "urteil": "GRÜN",
+   "minuten": 0.45,
+   "zahl": "nH 12 erstes Haus nach 33.9 ms (haus_chinesisch, mesh in 13.7 m, Bau-Hash 88a3d9d2) · nH 300 erstes Haus nach 20.2 ms (haus_chinesisch, mesh in 14 m, Bau-Hash 882a889c)",
+   "zwilling": "siedlung.K5#1"
+  },
+  "spielgang.K3#1": {
+   "urteil": "ROT",
+   "minuten": 0.96,
+   "zahl": "HUD deckt 4.17 % (1920×1080, im Spiel) · INP HUD 128 ms (50) · Menü 2064 ms (20)"
+  },
+  "streaming.K3#1": {
+   "urteil": "GRÜN",
+   "minuten": 0.71,
+   "zahl": "Frame p95 Median 42 ms (50.4 · 42 · 41.9) · CPU-Takt p95 30.1 · 29.1 · 28.3 ms · die Welt steht nach 10.1 · 8 · 8.8 s · Bauten sonst 0/0/0 · 3 von 3 gültig · TAKT: _loopVoxelStreaming › _runFrameScheduler x16 | TAKT: verteilt x7 | GPU: Uplo"
+  },
+  "klang.K2#1": {
+   "urteil": "ROT",
+   "minuten": 0.37,
+   "zahl": "keine Wind-Zeile (Exit 1)"
+  },
+  "klang.K5#2": {
+   "urteil": "ROT",
+   "minuten": 0.35,
+   "zahl": "Klang-Takt p95 gehen ? · fahrt ? · nacht ? ms · Aussetzer ungezählt (Exit 1)"
+  },
+  "speicher.K1#1": {
+   "urteil": "GRÜN",
+   "minuten": 0.95,
+   "zahl": "4 Tode: Alter max 3.566 s, 0 über 10 s · 0 korrupt · 0 halbe Welten · 0 Haken verfehlt"
+  },
+  "speicher.K1#2": {
+   "urteil": "GRÜN",
+   "minuten": 0.95,
+   "zahl": "4 Tode: Alter max 3.566 s · 0 korrupt · 0 halbe · 0 verfehlt · Tod-Arten idb/platz/erwachen-hart/erwachen-idb · im laufenden Erwachen 2",
+   "zwilling": "speicher.K1#1"
+  },
+  "speicher.K2#1": {
+   "urteil": "GRÜN",
+   "minuten": 1.22,
+   "zahl": "je Speicher-Bild in der frischen Welt p50 0.1 / p95 0.2 / max 5.2 ms (Soll p95 ≤ 0,3; 20 Stände, 261 Speicher-Bilder)"
+  },
+  "speicher.K2#2": {
+   "urteil": "ROT",
+   "minuten": 1.22,
+   "zahl": "Speicher-Bild frisch p50 0.1 / p95 0.2 / max 5.2 ms (261 Bilder), 0 von 222 Bildern > 16,7 ms durch Speichern · nach 10000 Edits p50 0 / p95 0.2 / max 0.5 ms (120 Bilder), 0 von 144 Bildern > 16,7 ms durch Speichern (Soll p95 ≤ 0,1)",
+   "zwilling": "speicher.K2#1"
+  },
+  "physik.K2#2": {
+   "urteil": "ROT",
+   "minuten": 0.17,
+   "zahl": "(V) Wagen oder gestoßener Bär fehlt in der Ausgabe (Exit 0)"
+  },
+  "bauen.K5#2": {
+   "urteil": "ROT",
+   "minuten": 0.72,
+   "zahl": "5/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal) — offen: werkstatt · Ego · Haus (#workshop-search: nicht offen)"
+  },
+  "siedlung.K1#2": {
+   "urteil": "ROT",
+   "minuten": 0.82,
+   "zahl": "18 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 2 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min 0.087 · Median 0.105 (Soll ≥ 0,15) · dunkel: haus_gotisch 0.017397316680859774/0.166387026816"
+  },
+  "licht.K2#2": {
+   "urteil": "ROT",
+   "minuten": 0.98,
+   "zahl": "Uhr 0.5 klar (Sonne 74.2°) 5.067, Schatten-Anteil 0.1974 · Uhr 0.27 klar (Sonne 7.2°) 0.9 UNGÜLTIG (A/B 0.802, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.027 UNGÜLTIG (A/B 0.822, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.6"
+  },
+  "tiere.K3#2": {
+   "urteil": "GRÜN",
+   "minuten": 0.99,
+   "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen"
+  },
+  "tiere.K2#2": {
+   "urteil": "GRÜN",
+   "minuten": 1.07,
+   "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 12.8 s, 3 fressen: tier:wolf 7763 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.31 m · Luma 80 σ 35.2 schwar"
+  },
+  "affekt.K1#2": {
+   "urteil": "GRÜN",
+   "minuten": 0.72,
+   "zahl": "Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0."
+  },
+  "klang.K4#2": {
+   "urteil": "ROT",
+   "minuten": 0.55,
+   "zahl": "❌ Schritte quarz 3086 Hz (n 5), kleinster Abstand — Hz · ✅ Motor r 1.0000 (20 Abgriffe, 66.7 Hz je 1000 Upm) · ✅ Landung 0.51 dB je m/s, r 0.9958 (1 m 4.4 m/s -52.8 dB · 2 m 6.2 m/s -51.6 dB · 4 m 8.8 m/s -50.1 dB · 8 m 12.6 m/s -48.3 dB · ",
+   "zwilling": "klang.K4#1"
+  },
+  "mensch.K5#1": {
+   "urteil": "ROT",
+   "minuten": 0.5,
+   "zahl": "Urteil warf: z.nah is not iterable"
+  },
+  "schatten.K1#1": {
+   "urteil": "GRÜN",
+   "minuten": 0.75,
+   "zahl": "Uhr 0.5 ego 2.3 cm (12 Kanten) · Uhr 0.5 third 2.3 cm (12 Kanten), [linse-gpu] amd/rdna-3"
+  },
+  "fahrzeug.K3#1": {
+   "urteil": "GRÜN",
+   "minuten": 0.79,
+   "zahl": "Garage FOV +9.07° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.22° Arm +17.9 % bei 14.93 m/s (Ende ok)"
+  },
+  "leib.K4#2": {
+   "urteil": "ROT",
+   "minuten": 1.41,
+   "zahl": "keine Gang-Zeile — ROT: Staffel 1: Täter: Gang: Error: die Frist der Probe · Täter: Gang: Error: die Frist der Probe · kein Gang innen, innen-sprint, steil, steil-sprint",
+   "zwilling": "leib.K4#1"
+  },
+  "streaming.K4#2": {
+   "urteil": "ROT",
+   "minuten": 0.05,
+   "zahl": "keine Gang- oder Faden-Zeile (die Linse kennt --echt nicht?) · Exit 1"
+  },
+  "pipeline.K4#1": {
+   "urteil": "ROT",
+   "minuten": 0,
+   "zahl": "keine Liefer-Zeile am Zweit-Boot (Exit 2)"
+  },
+  "leib.K4#1": {
+   "urteil": "ROT",
+   "minuten": 1.41,
+   "zahl": "stamm baum_kiefer: 1102 Bilder · heran 8.54 → 0.89 m · Kugel {\"rückwärts: im Stamm baum_kiefer\":19} · Nah-Pixel {} · Ruck p95 0.0018 höchstens 0.052 m | fels felsturm: 1144 Bilder · heran 8.56 → 0.42 m · Kugel {\"orbit fern: im Stamm baum_ta"
+  },
+  "halten.K1#2": {
+   "urteil": "ROT",
+   "minuten": 0.35,
+   "zahl": "keine Zeile Q15 halten.K1 Staffel 2 (Exit 2)"
+  },
+  "tore.K3#1": {
+   "urteil": "ROT",
+   "minuten": 0.01,
+   "zahl": "keine K8-Tafel (Exit 2)"
+  },
+  "tore.K3#2": {
+   "urteil": "ROT",
+   "minuten": 0.01,
+   "zahl": "keine K8-Tafel (Exit 2)",
+   "zwilling": "tore.K3#1"
+  },
+  "licht.K2#1": {
+   "urteil": "GRÜN",
+   "minuten": 0.19,
+   "zahl": "Verhältnis 5.067 (5–12,5), Schatten-Anteil 0.1974 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3"
+  },
+  "klang.K4#1": {
+   "urteil": "ROT",
+   "minuten": 0.55,
+   "zahl": "1 Stoffe mit ≥ 5 Schritten (Exit 0)"
+  },
+  "halten.K5#1": {
+   "urteil": "GRÜN",
+   "minuten": 0.32,
+   "zahl": "Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 5.8 cm / 29.2° 5.8 cm · Tod jagd, Anker 0.0 m · Abdruck 1566c4d6e4ba → 1566c4d6e4ba"
+  },
+  "halten.K5#2": {
+   "urteil": "GRÜN",
+   "minuten": 0.32,
+   "zahl": "hpMax/staminaMax/manaMax/defense leer 116.0/158.0/84.5/10.4 · Werk eisen 154.9/129.8/84.5/15.9 · bronze 152.7/131.0/84.5/15.5 · holz 131.9/144.5/84.5/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/1",
+   "zwilling": "halten.K5#1"
+  },
+  "vegetation.K1#1": {
+   "urteil": "ROT",
+   "minuten": 0.68,
+   "zahl": "ohne alle Schüsse: /bild: {\"ms\":2122,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Gelände in 14.76 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 100 m · Luma 81.9 σ 36.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.121 · Bühn"
+  },
+  "vegetation.K1#2": {
+   "urteil": "ROT",
+   "minuten": 0.11,
+   "zahl": "ohne alle Schüsse: /bild: {\"ms\":2137,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Gelände in 61.5 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 100 m · Luma 83.1 σ 36.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.121 · Bühne"
+  },
+  "vegetation.K5#1": {
+   "urteil": "ROT",
+   "minuten": 0.44,
+   "zahl": "Krone sommer 195914 px · winter 196689 px → Winter 1.004 × Sommer"
+  },
+  "vegetation.K5#2": {
+   "urteil": "ROT",
+   "minuten": 1.13,
+   "zahl": "ohne alle Schüsse: /bild: {\"ms\":1836,\"fehler\":\"ABNAHME ROT [Ziel Blickziel verdeckt von Gelände in 61.5 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 100 m · Luma 83.1 σ 36.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.121 · Bühne"
+  },
+  "material.K4#1": {
+   "urteil": "ROT",
+   "minuten": 0.08,
+   "zahl": "lack spiegelTreue undefined UNGÜLTIG (zu wenig Pixel) · glas spiegelTreue undefined UNGÜLTIG (zu wenig Pixel) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5009241111111111 sunny · [linse-gpu] amd/rdna-3"
+  },
+  "material.K5#1": {
+   "urteil": "ROT",
+   "minuten": 0.19,
+   "zahl": "0 von 4 Klassen im Band (Soll ≥ 3): eisen θ50 10.889° im Band, ρ 13.01 NEBEN dem Band — black-oxidized-steel · bronze θ50 13.353° NEBEN dem Band, ρ 19.1 NEBEN dem Band — alum-bronze 7,79°/51,4, brass 1,31°/471,3 · quarz θ50 11.332° NEBEN de"
+  },
+  "tiere.K1#2": {
+   "urteil": "ROT",
+   "minuten": 0.92,
+   "zahl": "(a)–(d) auf der Karte GRÜN: Kohäsion 1 / 1, Φ 0.997 über 1150 Takte, letzter Flüchter 0.4 s (1 aus zweiter Hand), Fluchtweg 32.9 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 19° 83.1/48, Flucht bei 17.4 m: 43.1"
+  },
+  "oekologie.K4#2": {
+   "urteil": "ROT",
+   "minuten": 1.41,
+   "zahl": "first ROT: umstellt null s, Furcht chaos 0 (Gegenlauf 0), 0 Jäger fallen, Triumph joy+hope 0 (Gegenlauf 0)"
+  },
+  "studios.K2#2": {
+   "urteil": "ROT",
+   "minuten": 1.16,
+   "zahl": "p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 16 ms portale, Neubau höchstens 1410 ms fachwerk, je Studio null Griffe) · Neuladen 5/8 · A/B 5/8"
+  },
+  "studios.K3#2": {
+   "urteil": "ROT",
+   "minuten": 1.16,
+   "zahl": "Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 Befehle undefined↔undefined (+1), schmiede L0 Befehle undefined↔undefined, portale L0 Befehle undefined↔undefined (+3), fachwe",
+   "zwilling": "studios.K2#2"
+  },
+  "pipeline.K4#2": {
+   "urteil": "ROT",
+   "minuten": 0,
+   "zahl": "keine Art-Zeile oder kein Kern-Wechsel (Exit 2)",
+   "zwilling": "pipeline.K4#1"
+  },
+  "ankunft.K2#1": {
+   "urteil": "ROT",
+   "minuten": 0,
+   "zahl": "kein Bild der Kontrolle (t(Kontrolle) ? ms, Exit 2) · [linse-gpu] amd/rdna-3",
+   "zwilling": "pipeline.K4#1"
+  },
+  "ankunft.K3#1": {
+   "urteil": "ROT",
+   "minuten": 0,
+   "zahl": "0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 2) · [linse-gpu] amd/rdna-3",
+   "zwilling": "pipeline.K4#1"
+  },
+  "leib.K2#1": {
+   "urteil": "GRÜN",
+   "minuten": 0.87,
+   "zahl": "hang 1.5 (n 200) · falllinie 1.2 (n 200) · treppe hang 1.4 (n 201) · treppe wiese 0.4 (n 200) cm p95 · Steckenbleiber 0"
+  },
+  "leib.K2#2": {
+   "urteil": "GRÜN",
+   "minuten": 0.87,
+   "zahl": "Ego 0.323/2.846 → 0.179/2.156 → 0.504/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.504/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.5 (n 200) · falllinie 1.2 (n 200) · treppe hang 1.4 (n 201) · treppe wiese 0.4 (n 200) cm p95 · Stec",
+   "zwilling": "leib.K2#1"
+  },
+  "fahrzeug.K2#1": {
+   "urteil": "ROT",
+   "minuten": 0,
+   "zahl": "keine WEGENETZ-Zeile (Exit 1)"
+  },
+  "profiband.K1#1": {
+   "urteil": "ROT",
+   "minuten": 0.95,
+   "zahl": "Bild-p95 ≤ 33: wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 56.6 s · [linse-gpu] amd/rdna-3 — ROT 6: wiese-ego-geht: ungemessen (die Uhr 58 s trug den Schritt nic"
+  },
+  "profiband.K1#2": {
+   "urteil": "ROT",
+   "minuten": 0.95,
+   "zahl": "Bild-p95 ≤ 16.7: wiese-ego-steht ? · wiese-third-steht ? · genesis-ego-steht 83.5 · genesis-third-steht ? · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 56.6 s · ",
+   "zwilling": "profiband.K1#1"
+  },
+  "profiband.K2#1": {
+   "urteil": "ROT",
+   "minuten": 0.95,
+   "zahl": "Belegung p95 ≤ 5.8: wiese-ego-steht ? · wiese-third-steht ? · genesis-ego-steht 76.29 · genesis-third-steht ? · Gang 56.6 s · [linse-gpu] amd/rdna-3 — ROT 4: wiese-ego-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-third-st",
+   "zwilling": "profiband.K1#1"
+  },
+  "profiband.K2#2": {
+   "urteil": "ROT",
+   "minuten": 0.95,
+   "zahl": "Belegung p95 ≤ 5.8: wiese-ego-steht ? · wiese-third-steht ? · genesis-ego-steht 76.29 · genesis-third-steht ? ‖ Belegung p95 ≤ 8: wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-st",
+   "zwilling": "profiband.K1#1"
+  },
+  "profiband.K3#1": {
+   "urteil": "ROT",
+   "minuten": 0.95,
+   "zahl": "Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego ? | wiese-third ? | genesis-ego 115 · 283k · 106.8 MB · 14.28 ms | genesis-third ? | dorf-ego ? | dorf-third ? · Gang 56.6 s · [linse-gpu] amd/rdna-3 — ROT 6: Band wiese-ego: u",
+   "zwilling": "profiband.K1#1"
+  },
+  "profiband.K3#2": {
+   "urteil": "ROT",
+   "minuten": 0.95,
+   "zahl": "Befehle p95 ≤ 208: wiese-ego-steht ? · wiese-third-steht ? · genesis-ego-steht 77 · genesis-third-steht ? · wiese-ego-geht ? · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht ? · stadt-ego-geht ? · wiese-ego-sturm ? ‖ Dreiecke p95 ≤",
+   "zwilling": "profiband.K1#1"
+  },
+  "vegetation.K2#1": {
+   "urteil": "OFFEN",
+   "minuten": 0.76,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN"
+  },
+  "speicher.K4#2": {
+   "urteil": "OFFEN",
+   "minuten": 0.14,
+   "zahl": "Deckel der Fahrt 1800 s gerissen nach 8 s der Probe — beendet, UNGEMESSEN"
+  },
+  "mensch.K1#1": {
+   "urteil": "OFFEN",
+   "minuten": 1.51,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN"
+  },
+  "profiband.K4#1": {
+   "urteil": "OFFEN",
+   "minuten": 0.68,
+   "zahl": "Deckel 40 s gerissen — beendet, UNGEMESSEN"
+  },
+  "profiband.K4#2": {
+   "urteil": "OFFEN",
+   "minuten": 0.68,
+   "zahl": "Deckel 40 s gerissen — beendet, UNGEMESSEN",
+   "zwilling": "profiband.K4#1"
+  },
+  "gelaende.K3#1": {
+   "urteil": "OFFEN",
+   "minuten": 0.78,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN"
+  },
+  "gelaende.K5#2": {
+   "urteil": "OFFEN",
+   "minuten": 0.77,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN"
+  },
+  "tiere.K5#1": {
+   "urteil": "OFFEN",
+   "minuten": 1.51,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN"
+  },
+  "mensch.K4#1": {
+   "urteil": "OFFEN",
+   "minuten": 0.81,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN"
+  },
+  "haar.K2#1": {
+   "urteil": "OFFEN",
+   "minuten": 0.8,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN"
+  },
+  "ferne.K1#1": {
+   "urteil": "OFFEN",
+   "minuten": 1.52,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN"
+  },
+  "ferne.K2#1": {
+   "urteil": "OFFEN",
+   "minuten": 1.52,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "zwilling": "ferne.K1#1"
+  },
+  "ferne.K1#2": {
+   "urteil": "OFFEN",
+   "minuten": 1.52,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "zwilling": "ferne.K1#1"
+  },
+  "ferne.K2#2": {
+   "urteil": "OFFEN",
+   "minuten": 1.52,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "zwilling": "ferne.K1#1"
+  },
+  "ferne.K5#1": {
+   "urteil": "OFFEN",
+   "minuten": 0.77,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN"
+  },
+  "licht.K5#1": {
+   "urteil": "OFFEN",
+   "minuten": 1.51,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN"
+  },
+  "material.K2#1": {
+   "urteil": "OFFEN",
+   "minuten": 1.51,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN"
+  },
+  "material.K3#1": {
+   "urteil": "OFFEN",
+   "minuten": 1.51,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN"
+  },
+  "material.K3#2": {
+   "urteil": "OFFEN",
+   "minuten": 1.51,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "zwilling": "material.K3#1"
+  },
+  "material.K1#1": {
+   "urteil": "OFFEN",
+   "minuten": 1.5,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN"
+  },
+  "material.K1#2": {
+   "urteil": "OFFEN",
+   "minuten": 1.5,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "zwilling": "material.K1#1"
+  },
+  "lod.K5#1": {
+   "urteil": "OFFEN",
+   "minuten": 1.51,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN"
+  },
+  "lod.K2#1": {
+   "urteil": "OFFEN",
+   "minuten": 0.76,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN"
+  },
+  "siedlung.K4#2": {
+   "urteil": "OFFEN",
+   "minuten": 1.54,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN"
+  },
+  "leib.K1#1": {
+   "urteil": "OFFEN",
+   "minuten": 0.79,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN"
+  },
+  "profiband.K5#1": {
+   "urteil": "OFFEN",
+   "minuten": 0.68,
+   "zahl": "Deckel 40 s gerissen — beendet, UNGEMESSEN"
+  },
+  "profiband.K5#2": {
+   "urteil": "OFFEN",
+   "minuten": 0.68,
+   "zahl": "Deckel 40 s gerissen — beendet, UNGEMESSEN",
+   "zwilling": "profiband.K5#1"
+  },
+  "wetter.K2#1": {
+   "urteil": "OFFEN",
+   "minuten": 1.5,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN"
+  },
+  "mensch.K2#2": {
+   "urteil": "OFFEN",
+   "minuten": 1.51,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "zwilling": "mensch.K1#1"
+  },
+  "mensch.K1#2": {
+   "urteil": "OFFEN",
+   "minuten": 1.51,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN"
+  },
+  "vegetation.K4#1": {
+   "urteil": "OFFEN",
+   "minuten": 1.52,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN"
+  },
+  "vegetation.K4#2": {
+   "urteil": "OFFEN",
+   "minuten": 1.52,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "zwilling": "vegetation.K4#1"
+  },
+  "haar.K1#1": {
+   "urteil": "OFFEN",
+   "minuten": 0.76,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN"
+  },
+  "fahrzeug.K3#2": {
+   "urteil": "OFFEN",
+   "minuten": 1.51,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN"
+  },
+  "fahrzeug.K4#1": {
+   "urteil": "OFFEN",
+   "minuten": 1.51,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "zwilling": "fahrzeug.K3#2"
+  },
+  "fahrzeug.K4#2": {
+   "urteil": "OFFEN",
+   "minuten": 1.51,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "zwilling": "fahrzeug.K3#2"
+  },
+  "siedlung.K2#1": {
+   "urteil": "OFFEN",
+   "minuten": 1.54,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN"
+  },
+  "siedlung.K2#2": {
+   "urteil": "OFFEN",
+   "minuten": 1.54,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "zwilling": "siedlung.K2#1"
+  },
+  "leib.K1#2": {
+   "urteil": "OFFEN",
+   "minuten": 1.54,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN"
+  },
+  "halten.K2#1": {
+   "urteil": "OFFEN",
+   "minuten": 1.54,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "zwilling": "leib.K1#2"
+  },
+  "fahrzeug.K5#1": {
+   "urteil": "OFFEN",
+   "minuten": 0.75,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN"
+  },
+  "studios.K4#1": {
+   "urteil": "OFFEN",
+   "minuten": 1.51,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN"
+  },
+  "studios.K4#2": {
+   "urteil": "OFFEN",
+   "minuten": 1.51,
+   "zahl": "Deckel 90 s gerissen — beendet, UNGEMESSEN",
+   "zwilling": "studios.K4#1"
+  }
+ }
+}

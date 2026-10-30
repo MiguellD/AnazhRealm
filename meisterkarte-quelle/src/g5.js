@@ -102,11 +102,11 @@ module.exports = {
         {
           name: "Die Fahrt kommt durch: das Wegenetz trägt das Rad",
           punkte: 0,
-          staffel: "1 = auf der festen 2-km-Route entlang Weg und Feldweg (Wiese → Wald → Dorf) 0 Steckenbleiber und ≥ 80 % der Takte über 0,8 × vmax, an einem Gerät · 2 = auch 25°-Hang und Furt, Ego und Third, beide Geräte",
-          messung: "Spielgang-Station fahrt: das Fahrer-Skript folgt dem Wegenetz des Gesetzes, nie querfeldein; gezählt aus der Fahr-Telemetrie. Lücken und Tempo-Decke zählen Streaming K1, das Band Profiband K1.",
+          staffel: "1 = auf der festen 2-km-Route entlang Weg und Feldweg (Wiese → Wald → Dorf) 0 Steckenbleiber und ≥ 80 % der Takte über 0,8 × vmax, an einem Gerät · 2 = auch 25°-Hang und Furt, Ego und Third, und der Verkehr der Stadt (PFLICHT-OFFEN C): um 10 und 23 Uhr fährt jeder Wagen des Gesetzes mit seinem Fahrer am Steuer, keiner steckt, keiner berührt Bewohner, Wagen oder Bau, beide Geräte",
+          messung: "Spielgang-Station fahrt: das Fahrer-Skript folgt dem Wegenetz des Gesetzes, nie querfeldein; gezählt aus der Fahr-Telemetrie. Lücken und Tempo-Decke zählen Streaming K1, das Band Profiband K1. Der Verkehr der Stadt (die 2): gate:fahr-leben `--verkehr` als Probe der Sitzung (`fahrVerkehr`), die Metropole von stadt-voll.",
           beleg: "Am Kopf 3528f2d0 (23.10.) ROT, GTX (Zug 3, `bericht/2310-abab-zug3.md` § Fahrt): der Fahrer hängt an 2 von 4 Boots (v50 2,7–3,8 m/s, Anteil 8–12 m/s 0,32–0,39; die vollen Boots 9,9/10,0 m/s, 0,65/0,72), weiter keine Route auf dem Wegenetz; fahrt-takt senkt nur den Geomorph-Posten (Radeon 2,59 → 1,64 ms). Davor: Im Bündel-ABAB vom 20.10. (GTX) fuhr nur etwa die Hälfte der Takte voll schnell (Anteil 8–12 m/s 0,49–0,53), der Wagen blieb im Wald hängen, der Fahrer setzte zurück (`bericht/2010-buendel-abab.md`); eine Route auf dem Wegenetz fuhr niemand.",
           schlupfloch: "Eine Route über die leere Ebene besteht immer: die feste Route führt durch Wald und Dorf auf Wegen, die das Gesetz legt.",
-          aenderung: "Neu: „Tempo mit Welt“ zählte doppelt mit Streaming und Profi-Band (V26, V27); hier bleibt, was nur der Fahrer erlebt."
+          aenderung: "Neu: „Tempo mit Welt“ zählte doppelt mit Streaming und Profi-Band (V26, V27); hier bleibt, was nur der Fahrer erlebt. Die 2 strenger um PFLICHT-OFFEN C (w4-sitzung-reif, 30.10.): der Verkehr der Stadt ist die Fahrt, die durchkommt, für die Wagen des Gesetzes am Steuer ihrer Bewohner — C wohnt hier, kein anderes Kriterium der Karte misst ihn."
         },
         {
           name: "Die Kamera atmet das Tempo — EIN Rig aus dem Kern",

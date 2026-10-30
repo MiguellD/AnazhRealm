@@ -1,0 +1,63 @@
+{
+ "ms": 586,
+ "kamera": [
+  1866.6,
+  3.93,
+  -6193.9
+ ],
+ "hell": 106.1,
+ "kontrast": 9.85,
+ "dc": 36,
+ "dreiecke": 318871,
+ "klasse": {
+  "ausdruck": "^(wasserSatz|farWater|chunk-water-[a-z]+)$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "farWater=255/80/80",
+   "wasserSatz=80/255/80"
+  ],
+  "klassen": {
+   "wasserSatz": {
+    "objekte": 1,
+    "spiegelTreue": 0.7853,
+    "spiegelEbene": 0.89,
+    "sp": [
+     160,
+     0,
+     0,
+     112041.19,
+     112041.19,
+     87984.19
+    ],
+    "zweiton": 0,
+    "weiss": 0.0106,
+    "wt": 391,
+    "wtZiel": null,
+    "bunt": 20.99,
+    "pixel": 36802,
+    "luma": 102.75,
+    "kante": 0.2831,
+    "kr": 9272,
+    "strich": 0.4207,
+    "si": 5780,
+    "bloecke": 225,
+    "glatt": 0.1689,
+    "nyquist": 0.1261,
+    "beta": 2.7299
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\mess-session\\meisterkarte-quelle\\punkte\\gegenlauf\\roh\\b3f9ae95-radeon\\gelaende.K3_1-werk\\wasser.maske.png"
+ },
+ "zeit": null,
+ "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124.6 σ 51.4 schwarz 0.0 % weiß 0.1 % · Stand 18.546.121 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "datei": "C:\\Users\\micha\\AppData\\Local\\Temp\\claude\\mess-session\\meisterkarte-quelle\\punkte\\gegenlauf\\roh\\b3f9ae95-radeon\\gelaende.K3_1-werk\\wasser.png",
+ "gesamtMs": 12223
+}

@@ -6,7 +6,9 @@
 //        fährt jede Station des Geräts im Spiel-Baum am SHA, schreibt messung/<sha8>-<geraet>.json
 //        --offen: nur die Stationen ohne frische Messung am SHA (das Frische-Urteil der Buchung) · --trocken: nur nennen
 //        DIE SITZUNG zuerst (radeon|gtx, fahreSitzung): jede Station mit `probe` in EINER warmen Welt am SHA unter dem ganzen Schloss,
-//        die Einträge mit modus "session" und bahn "sitzung", der Kopf der Sitzung als m.sitzung; danach die befehl-Stationen
+//        die Einträge mit modus "session" und bahn "sitzung", der Kopf der Sitzung als m.sitzung (darin m.sitzung.strom: die Dauerlast
+//        jedes Bilds der Sitzung, stromSeite); die Reihe anfang · was die Welt lässt · ende · was sie ändert, die Grundstellung nur nach
+//        einer mutierenden Probe oder einem Abbruch; danach die befehl-Stationen
 //        Zwillinge (gleicher Befehl und Umgebung) fahren EINMAL; DER BAHN-PLAN (fahrePlan): jede Zeit-Station allein, die übrigen
 //        auf bis zu N Bahnen (Vorgabe 3, höchstens 5) zugleich, jede Bahn mit eigenem Spiel-Baum und eigenem Port-Band (portBand) —
 //        auf radeon|gtx über das Platz-Schloss (werkzeug/gpu-lauf.sh: ein Bild-Lauf nimmt einen Platz, ein Zeit-Lauf alle)
@@ -27,7 +29,11 @@
 //   node punkte.cjs gruppen --geraet radeon|gtx|headless [--nur id,id]   je Zeile die Ids EINES Laufs (Zwillinge zusammen, Reihe von
 //        nur; jede Probe-Station in der ERSTEN Zeile: die Sitzung ist ein Lauf) — der Messplatz der OMEN fährt je Zeile ein
 //        `run --nur`, nie einen Zwilling zweimal, nie eine zweite Welt
-//   node punkte.cjs grundstellung   (in einer Probe der Sitzung) die Welt an WERKBANK_PORT frisch: Spielstand weg, die Seite neu
+//   node punkte.cjs grundstellung   (in einer Probe der Sitzung) der Grund der Sitzung (PUNKTE_SITZUNG_GRUND) kehrt in die Welt an
+//        WERKBANK_PORT zurück, ohne Neuladen (`_grundstellung` des Spiels); ROT nennt die Größen, die vom Grund abweichen
+//   node punkte.cjs grundprobe --baum <Spiel-Baum> [--mutante <zeile>] [--port P]   (Null-Renderer) die Grundstellung der Sitzung
+//        an einer Welt des Baums: Grund → graben, bauen, Ritt, Uhr, Brand, Regen, Ort-Takt → zurück, keine Größe weicht ab; die
+//        Mutante (ein Wort der GRUND_TAFEL schweigt) ist ROT beim Namen
 //   node punkte.cjs selbsttest   jeder Fall beim Namen
 //
 // FORMAT (stationen/g1.js .. g6.js, module.exports = [ … ]), je Eintrag:
@@ -42,11 +48,20 @@
 //   radeon und gtx: die Staffel nennt beide Geräte, die 1 zählt erst, wenn JEDES grün ist — Pflicht, wo die quelle sie nennt) ·
 //   proben (optional): [{ name, stdout, gruen }] Roh-Ausgaben des Befehls mit dem Urteil, das die Station über sie spricht
 //   (die Schlupflöcher der Soll-Tafel als Mutanten; der Selbsttest urteilt jede).
-//   probe (statt befehl, nur gpu true): { befehl: argv wie oben, sek: Deckel in s (Vorgabe PROBE_SEK, höchstens PROBE_MAX_S) } —
+//   probe (statt befehl, nur gpu true): { befehl: argv wie oben, sek: Deckel in s (Vorgabe und höchstens PROBE_DECKEL_S, mit ausnahme
+//   höchstens PROBE_AUSNAHME_S) } —
 //   die Station misst als Probe in der EINEN warmen Welt der Sitzung (fahreSitzung), nie mit eigenem Boot; dazu {PORT} = der Port
-//   der Sitzung (save-server {PORT}, Werkbank {PORT}+20000 = WERKBANK_PORT), PUNKTE_SITZUNG_LOG = das Log ihrer Werkbank. Eine Station
-//   trägt GENAU EINES von befehl und probe; befehl bleibt nur, wo das Kriterium Kälte oder Dauer misst oder das Spiel-Skript
-//   selbst bootet.
+//   der Sitzung (save-server {PORT}, Werkbank {PORT}+20000 = WERKBANK_PORT), PUNKTE_SITZUNG_LOG = das Log ihrer Werkbank,
+//   PUNKTE_SITZUNG_STROM = der Strom der Sitzung (je Bild eine Zeile, stromSeite; Zapfen, Marke und Leser exportiert diese Maschine),
+//   PUNKTE_PROBE = ihr Name. Dazu optional: mutiert (true: sie ändert die Welt — baut, gräbt, Tab-Tod, Speichern/Laden —, nur nach
+//   ihr setzt die Sitzung die Welt zurück) · stellung ("anfang" | "ende": die Reihe der Sitzung, sitzungsReihe) · ausnahme (der Grund,
+//   warum sie über PROBE_DECKEL_S braucht; nie über PROBE_AUSNAHME_S, nie an einer Probe bis PROBE_DECKEL_S). Eine Station trägt GENAU
+//   EINES von befehl und probe; auf radeon|gtx NUR probe (DIE FAHRT, fahrtUrteil).
+// DIE FAHRT (29.10., das Gesetz des Schöpfers: „Ein kpl. Fahrt durch jedes System max 30 min, inbegriff ist dann auch die dauerlast"):
+//   je Karte (radeon, gtx) die Summe der Deckel ihrer Läufe in der Sitzung (Zwillinge einmal) plus der Boot ≤ FAHRT_MAX_S — sonst
+//   ROT mit den drei größten beim Namen (pruefeStationen: liste, run und buchen fallen dort); im Läufer die Wache (fahreSitzung):
+//   reißt eine Probe ihren Deckel, fällt sie und ist UNGEMESSEN beim Namen, reißt die Fahrt FAHRT_MAX_S, endet sie und nennt die
+//   offenen Proben (m.sitzung.offen).
 // Je Kriterium und Staffel EINE Station (Schlüssel "<kriterium>#<staffel>"); ein Kriterium ohne Staffel-1-Station ist ROT.
 //
 // BUCHUNG (R2 · R6 · R10): je Station und Gerät zählt die JÜNGSTE Messung, deren Abdruck (Befehl, Urteil, Pfad, Hilfen)
@@ -96,14 +111,31 @@ function hilfeText() {
 // DIE PROBE der Sitzung (29.10., Takt 19 an b3f9ae95 Radeon: 64 GPU-Stationen 879 Stations-Minuten, Mittel 13,7 min — 282 min am
 // Schloss, 103 min Abbau-Schwanz, jede Station ihr eigener Boot; die Welt lädt warm in Sekunden): argv und Deckel; eine Station mit
 // probe hat keinen befehl. Der Abdruck einer befehl-Station bleibt Byte für Byte (pr nur an einer Probe)
-const PROBE_SEK = 90;
-const PROBE_MAX_S = 1200;
+// DAS BUDGET DER PROBE (29.10., der Schöpfer: „Eine komplette Fahrt durch jedes System max 30 min"): Ziel ≤ 15 s, Deckel 45 s, nur
+// mit `ausnahme` (der Grund beim Namen) bis 90 s — darüber ROT, auch mit ausnahme; DIE FAHRT je Karte ≤ FAHRT_MAX_S samt Boot
+// DIE DECKEL (30.10., Karte w4-grundstellung) — je Probe ihr `sek`, aus dem Gegenlauf Radeon b3f9ae95 (gegenlauf/fahrt-b3f9ae95-radeon.json,
+// die Reihe der Sitzung): der gemessene Lauf; lief die Probe nach einer Grundstellung mit Neuladen (nach einer mutierenden oder einer
+// gerissenen — die Kaskade: jeder gerissene Deckel lud die Seite neu, und die nächste riss wieder) und war ROT oder OFFEN, ohne den
+// Ring-Neubau (45 s je Probe), OFFEN dort mindestens 15 s (gerissen: die Messung ist zensiert); eine GRÜNE Messung bleibt ganz;
+// mindestens 10 s. Selbst getaktet (eigene Uhr, feste Fenster) und darum nach eigenem Bedarf: das Profi-Band (gang 64 s, glätte und
+// dauer 45 s). Über dem Budget (FAHRT_MAX_S − SITZUNG_BOOT_S) die EINE Kappe 33 s: Σ 1 656 s in 69 Läufen; 31 Proben stehen dort
+// unter ihrem Bedarf (ferne.K1 91, siedlung.K4#2 92, speicher.K2 73, vegetation.K5#2 68, tiere.K2#2 64, licht.K2#2 59, tiere.K3#2 59,
+// speicher.K1 57, tiere.K1#2 55, leib.K2 52, siedlung.K1#2 49, fahrzeug.K3#1 47, leib.K1#2, siedlung.K2 47, licht.K5#1, lod.K5#1,
+// material.K2#1, material.K3, mensch.K1, mensch.K1#2, studios.K4, tiere.K5#1, vegetation.K4, fahrzeug.K3#2 46, material.K1, wetter.K2#1,
+// schatten.K1#1 45, streaming.K3#1, affekt.K1#2 43, oekologie.K4#2, leib.K4 40 s) — die GPU-Fahrt nennt, wer warm am Deckel fällt
+// (UNGEMESSEN beim Namen), ihre Zahl ersetzt die Schätzung.
+const PROBE_DECKEL_S = 45;
+const PROBE_AUSNAHME_S = 90;
+const PROBE_SEK = PROBE_DECKEL_S;
+const FAHRT_MAX_S = 1800;
+const PROBE_SCHLUESSEL = ["befehl", "sek", "mutiert", "ausnahme", "stellung"];
 const befehlVon = (st) => (st.probe ? st.probe.befehl : st.befehl);
 const probeSek = (st) => (st.probe && st.probe.sek) || PROBE_SEK;
 function abdruck(st, hilfe = hilfeText()) {
     const roh = JSON.stringify({
         k: st.kriterium, s: st.staffel, g: geraeteVon(st), b: st.befehl, e: st.env || {}, gpu: !!st.gpu,
-        u: String(st.urteil), p: st.pfad, q: st.quelle, h: hilfe, ...(st.probe ? { pr: [st.probe.befehl, probeSek(st)] } : {}),
+        u: String(st.urteil), p: st.pfad, q: st.quelle, h: hilfe,
+        ...(st.probe ? { pr: [st.probe.befehl, probeSek(st), ...(st.probe.mutiert ? ["mutiert"] : []), ...(st.probe.stellung ? [st.probe.stellung] : [])] } : {}),
     });
     return crypto.createHash("sha1").update(roh).digest("hex").slice(0, 12);
 }
@@ -153,16 +185,25 @@ function pruefeStationen(liste, karte) {
             if (st.befehl !== undefined) f.push("genau eines von befehl und probe");
             if (!p || typeof p !== "object") f.push("probe ist kein { befehl, sek }");
             else {
-                if (p.sek !== undefined && !(Number.isInteger(p.sek) && p.sek >= 1 && p.sek <= PROBE_MAX_S))
-                    f.push("probe.sek nicht 1.." + PROBE_MAX_S);
-                if (Object.keys(p).some((k) => !["befehl", "sek"].includes(k))) f.push("probe trägt nur befehl und sek");
+                // DER DECKEL (die Fahrt, b): bis PROBE_DECKEL_S frei, darüber nur mit ausnahme bis PROBE_AUSNAHME_S, darüber nie
+                const sek = probeSek(st);
+                if (p.sek !== undefined && !(Number.isInteger(p.sek) && p.sek >= 1)) f.push("probe.sek keine ganze Zahl ≥ 1");
+                else if (sek > PROBE_AUSNAHME_S) f.push("Deckel " + sek + " s über " + PROBE_AUSNAHME_S + " s — nie, auch mit ausnahme (die Fahrt ≤ " + FAHRT_MAX_S / 60 + " min)");
+                else if (sek > PROBE_DECKEL_S && p.ausnahme === undefined) f.push("Deckel " + sek + " s über " + PROBE_DECKEL_S + " s ohne ausnahme (der Grund beim Namen, bis " + PROBE_AUSNAHME_S + " s)");
+                else if (sek <= PROBE_DECKEL_S && p.ausnahme !== undefined) f.push("ausnahme an einem Deckel von " + sek + " s — sie trägt nur einen über " + PROBE_DECKEL_S + " s");
+                if (Object.keys(p).some((k) => !PROBE_SCHLUESSEL.includes(k))) f.push("probe trägt nur " + PROBE_SCHLUESSEL.join(", "));
+                if (p.mutiert !== undefined && typeof p.mutiert !== "boolean") f.push("probe.mutiert nicht boolesch");
+                if (p.stellung !== undefined && !["anfang", "ende"].includes(p.stellung)) f.push("probe.stellung nicht anfang|ende");
+                if (p.ausnahme !== undefined && !(typeof p.ausnahme === "string" && p.ausnahme.length >= 12)) f.push("probe.ausnahme ohne Grund");
                 if (Array.isArray(p.befehl) && p.befehl.every((a) => typeof a === "string")) {
                     const feind = sitzungsFeinde(p.befehl);
                     if (feind.length) f.push("probe greift die Welt der Sitzung an: " + feind.join(", "));
                 }
             }
             if (!st.gpu || ge.includes("headless")) f.push("probe nur an einer GPU-Station (die Sitzung hält die Welt einer Karte)");
-        }
+        } else if (ge.some((g) => g !== "headless") && st.befehl !== undefined)
+            // DIE FAHRT (a): auf einer Karte misst jede Station als Probe der EINEN Welt — ein eigener Boot je Station war die 610 min
+            f.push("befehl auf " + ge.filter((g) => g !== "headless").join("+") + " — eine Station der Karte misst nur als Probe der Sitzung (die Fahrt ≤ " + FAHRT_MAX_S / 60 + " min)");
         const argv = befehlVon(st);
         if (!Array.isArray(argv) || !argv.length || argv.some((a) => typeof a !== "string"))
             f.push((st.probe ? "probe." : "") + "befehl ist kein argv");
@@ -186,7 +227,25 @@ function pruefeStationen(liste, karte) {
     const kr = new Set(ok.map((s) => s.kriterium));
     for (const k of kr)
         if (!ok.some((s) => s.kriterium === k && s.staffel === 1)) fehler.push(k + ": keine Staffel-1-Station (eine 2 ohne 1 zählt nie)");
+    fehler.push(...fahrtUrteil(ok));
     return { stationen: ok, fehler };
+}
+// DIE FAHRT einer Karte (c): die Läufe ihrer Sitzung (Zwillinge einmal, gruppiere) mit ihrem Deckel, die größten zuerst, und die
+// Summe samt Boot (SITZUNG_BOOT_S) — die Wanduhr, die die Sitzung nie überschreiten kann, außer an der Grundstellung
+function fahrtSumme(stationen, geraet) {
+    const je = gruppiere(stationen.filter((st) => st.probe && geraeteVon(st).includes(geraet)))
+        .map((g) => [g.map(schluessel).join("+"), probeSek(g[0])])
+        .sort((a, b) => b[1] - a[1]);
+    return { je, deckel: je.reduce((s, x) => s + x[1], 0), boot: SITZUNG_BOOT_S, summe: je.reduce((s, x) => s + x[1], 0) + SITZUNG_BOOT_S };
+}
+function fahrtUrteil(stationen) {
+    return GERAETE.filter((g) => g !== "headless").flatMap((g) => {
+        const f = fahrtSumme(stationen, g);
+        if (f.summe <= FAHRT_MAX_S) return [];
+        return [g + ": die Fahrt " + f.summe + " s über " + FAHRT_MAX_S + " s (Σ Deckel " + f.deckel + " s in " + f.je.length + " Läufen + Boot " + f.boot +
+            " s) — die größten: " + f.je.slice(0, 3).map(([n, s]) => n + " " + s + " s").join(", ") +
+            ((n) => (n > 3 ? " (" + n + " Läufe am Deckel " + f.je[0][1] + " s)" : ""))(f.je.filter((x) => x[1] === f.je[0][1]).length)];
+    });
 }
 
 function ladeStationen(dir = path.join(DIR, "stationen"), teil = "liste") {
@@ -387,14 +446,17 @@ function fahreGruppe(sts, ctx) {
         // ein Lauf, der das Schloss nie bekam, ist KEINE Messung: ungemessen beim Grund (eintragen legt ihn nie nach m.je)
         const offen = (grund, exit = null) => fertig({ gruen: false, ungemessen: true, zahl: grund, exit, minuten: min(), grund });
         if (!!sitz !== !!st.probe) return rot(st.probe ? "eine Probe misst nur in der Sitzung (fahreSitzung)" : "ein befehl fährt nie in der Sitzung");
-        const deckelS = sitz ? probeSek(st) : Math.max(ctx.deckelMinS != null ? ctx.deckelMinS : 120, Math.ceil(st.minuten * 60 * 2));
+        // in der Sitzung der Deckel der Probe, gekappt am Rest der Fahrt (sitz.restS, fahreSitzung)
+        const fahrtKappt = !!sitz && sitz.restS != null && sitz.restS < probeSek(st);
+        const deckelS = sitz ? (fahrtKappt ? Math.max(1, Math.floor(sitz.restS)) : probeSek(st)) : Math.max(ctx.deckelMinS != null ? ctx.deckelMinS : 120, Math.ceil(st.minuten * 60 * 2));
         let argv = befehlVon(st).map((a) => ersetze(a, ctx));
         const env = { ...process.env };
         // die Werkbank der Bahn: wer sie ohne --port ruft, trifft die seines Bands (nie die 4490 einer Nachbar-Bahn)
         if (ctx.port) env.WERKBANK_PORT = String(ctx.port + 20000);
         // in der Sitzung: das Log der Welt (die Karte) und die Grundstellung als Befehl (`node "$PUNKTE_MASCHINE" grundstellung`:
         // eine Probe, die selbst mehrere frische Welten braucht — je nH, je Lauf —, holt sie so, nie mit eigenem Boot)
-        if (sitz) Object.assign(env, { PUNKTE_SITZUNG_LOG: sitz.log, PUNKTE_MASCHINE: __filename.split(path.sep).join("/") });
+        if (sitz) Object.assign(env, { PUNKTE_SITZUNG_LOG: sitz.log, PUNKTE_MASCHINE: __filename.split(path.sep).join("/"), PUNKTE_SITZUNG_GRUND: sitz.grund || "",
+            ...(sitz.strom ? { PUNKTE_SITZUNG_STROM: sitz.strom, PUNKTE_PROBE: sitz.probe } : {}) });
         // headless läuft ohne Karte: starteBrowser griffe lokal sonst die GPU (scripts/lib/software-gpu.cjs) — ohne Schloss
     if (!st.gpu) env.LINSE_GPU = "software";
     for (const [k, v] of Object.entries(st.env || {})) env[k] = ersetze(v, ctx);
@@ -480,9 +542,13 @@ function fahreGruppe(sts, ctx) {
             }
             if (tot && !amSchloss) return offen("GPU-Schloss nie bekommen: gpu-lauf.sh schwieg " + stillS + " s beim Warten — beendet, ungemessen", code);
             // der Deckel nennt, wobei er traf: die letzte Zeile der Ausgabe (vegetation.K5#1 hieß an 715754fc und 73bdf938 nur „Deckel 60 s
-            // überschritten“ — ihr erster Schuss stand nach 51 s, der zweite trug den Deckel)
+            // überschritten“ — ihr erster Schuss stand nach 51 s, der zweite trug den Deckel); in der Sitzung ebenso die Wache
             const zuletzt = String(out).split(/\r?\n/).map((l) => l.trim()).filter(Boolean).pop();
-            if (tot) return rot("Deckel " + (schloss ? deckelS + 120 : deckelS) + " s überschritten — beendet" + (zuletzt ? " (zuletzt: " + zuletzt.slice(0, 160) + ")" : ""), code);
+            const wobei = zuletzt ? " (zuletzt: " + zuletzt.slice(0, 160) + ")" : "";
+            // DIE WACHE DER FAHRT: in der Sitzung ist eine Probe am Deckel UNGEMESSEN beim Namen (sie misst nicht, was sie soll — nie ROT,
+            // nie GRÜN); der Rest der Fahrt kappte sie: die Fahrt riss FAHRT_MAX_S
+            if (tot && sitz) return offen((fahrtKappt ? "Deckel der Fahrt " + (sitz.fahrtMaxS || FAHRT_MAX_S) + " s gerissen nach " + deckelS + " s der Probe" : "Deckel " + deckelS + " s gerissen") + " — beendet, UNGEMESSEN" + wobei, code);
+            if (tot) return rot("Deckel " + (schloss ? deckelS + 120 : deckelS) + " s überschritten — beendet" + wobei, code);
             if (sig) return rot("Absturz: Signal " + sig, code);
             const blockiert = (/^SCHLOSS BLOCKIERT .*$/m.exec(out) || [""])[0].trim();
             if (schloss && code === 75) return offen("GPU-Schloss blockiert (gpu-lauf.sh Exit 75" + (blockiert ? ": " + blockiert : "") + ") — ungemessen", code);
@@ -554,29 +620,103 @@ async function baumSperre(repo, geraet) {
 // ───────────────────────────────── Sitzung ─────────────────────────────────
 // DIE SITZUNG (29.10.; der Schöpfer: „eine Messung eines Teilsystems über 10 min heißt, man besichtigt fast alle Funktionen — die Welt
 // ist in Sekunden geladen“): je Gerät und SHA EINE Welt — save-server {PORT} und `werkbank start --echt` {PORT}+20000 im Spiel-Baum
-// des Geräts, gehalten vom Halter (`punkte.cjs halter`) unter dem GANZEN Schloss (gpu-lauf.sh, zeit, die CI-Ruhe einmal) — und darin
-// jede Station mit `probe` der Reihe nach. Vor jeder Probe außer der ersten die GRUNDSTELLUNG: Spielstand weg (localStorage, die
-// Welten der IndexedDB „anazhRealm“, die Stand-Dateien des save-servers), die Seite neu im warmen Browser (`/reload`; Asset-, Chunk-
-// und Shader-Cache bleiben), das Fenster 1920×1080 wie beim Start — jede Probe beginnt in einer frisch geborenen Welt wie früher jeder Boot, und eine gescheiterte Probe
-// hinterlässt nichts. Die Sitzung startet nie neu: trägt die Welt nicht mehr (Grundstellung scheitert), sind die übrigen Proben
-// ungemessen beim Grund, nie ROT. Bis dahin fuhr jede Station ihren eigenen Boot (Takt 19: 282 min Schloss, 103 min Abbau-Schwanz).
-const SITZUNG_MAX_S = 4 * 3600;
-const SITZUNG_BOOT_S = 600;
+// des Geräts, gehalten vom Halter (`punkte.cjs halter`), daneben das GANZE Schloss (gpu-lauf.sh um den Schloss-Halter, zeit, die
+// CI-Ruhe einmal; `schlossNehmen`) — und darin jede Station mit `probe` in der Reihe sitzungsReihe. DAS SCHLOSS ZWISCHEN DEN PROBEN
+// (Karte w4-grundstellung): wartet ein CI-Job darauf (`ci_wartet`, gpu-schloss.sh), gibt die Sitzung es an der Proben-Grenze frei und
+// nimmt es danach neu — die Welt bleibt warm, das Warten zählt nie in die Fahrt. Bis dahin hielt die Sitzung es bis 55 min am Stück.
+// DIE GRUNDSTELLUNG OHNE NEULADEN (29.10., Karte w4-grundstellung; der Schöpfer: „Die Welt ist in wenigen Sekunden geladen — das
+// Prüftheater hat ein Ende“): nach der Reihe `anfang` nimmt die Sitzung den GRUND der Welt (das Spiel: `_grundstellung`, das
+// Speicher-Gesetz samt GRUND_TAFEL), nach jeder mutierenden Probe oder einem Abbruch spielt sie ihn in die laufende Seite zurück
+// (sonst nie); Ring, Fern-Ring, Streu, Kronen, Leib und Shader bleiben warm. Bis dahin leerte sie den Spielstand (localStorage, die
+// Welten der IndexedDB, die Stand-Dateien des save-servers) und lud die Seite neu — die nächste Probe baute ihren Ring neu (Radeon
+// b3f9ae95 29.10.: ~45 s je Probe, die Fahrt ~4 h). DIE TAFEL DER GRUNDSTELLUNG, je Größe ihr Wort zurück:
+//   der Stand (Speicher-Gesetz, `_standRueckspielen`): Spieler-Ort und Leben, Uhr, Saison, Wetter und Wetter-Wort, das worldMeta
+//     (Taten, Erdbau, Orte, Siedlungen), die Edits (je Reichweite neu, der Faden bekommt die Liste), die Werke (je Id), die Säcke
+//     (Baupläne, Stoffe, Werkzeuge je Glied), Inventar, Hotbar, Seele, Regler, Wesen samt Leichen, Pfeile, Tagebuch, Gesetze, DSL;
+//   die GRUND_TAFEL des Spiels: Ritt (aussteigen), Sicht, Blick, Nässe und Wetter-Übergang, die Zellen des Brands;
+//   GRUND_SEITE (hier): die Globalen der Werkbank an der Seite (`umstellen`: Ort-Takt, Stellgrößen, Bahn, Dorf-Zug) — was beim Grund
+//     fehlte, fällt —, das Fenster 1920×1080 (`/fenster`);
+//   nie zurück: die Welt-Uhr (`spielZeit`, monoton, feld.K2#2), die Würfe des Gesetzes (sie folgen dem Ort, speicher.K3), die Caches.
+// Weicht nach dem Rückspielen eine Größe vom Grund ab, trägt die Welt nicht mehr: die übrigen Proben sind ungemessen beim Namen der
+// Größe, nie ROT. Verließ eine Probe die Welt (ein Tor), kehrt die Seite durch die Tür des Spiels zurück (`_weltBetreten`, dann
+// `/reload`: ein Welt-Wechsel ist ein Reload, Ring 8) und spielt den Grund danach. Bis dahin fuhr jede Station ihren eigenen Boot
+// (Takt 19: 282 min Schloss, 103 min Abbau-Schwanz). DER BOOT der Welt zählt in die Fahrt (fahrtUrteil): Radeon b3f9ae95 29.10.
+// stand die Welt nach 10,5 und 40 s — der Deckel 120 s; das Schloss hält der Halter die Fahrt lang samt Abbau (SITZUNG_MAX_S)
+const SITZUNG_BOOT_S = 120;
+const SITZUNG_MAX_S = FAHRT_MAX_S + 600;
 const GRUNDSTELLUNG_S = 180;
 const STAND_DATEIEN = ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"];
-const GRUNDSTELLUNG =
-    'localStorage.clear(); sessionStorage.clear(); const db = await new Promise((x) => { const q = indexedDB.open("anazhRealm", 1); ' +
-    'q.onupgradeneeded = () => { if (!q.result.objectStoreNames.contains("worlds")) q.result.createObjectStore("worlds"); }; ' +
-    "q.onsuccess = () => x(q.result); q.onerror = q.onblocked = () => x(null); }); let welten = -1; " +
-    'if (db) { await new Promise((x) => { const t = db.transaction("worlds", "readwrite"); t.objectStore("worlds").clear(); ' +
-    "t.oncomplete = t.onerror = t.onabort = () => x(); }); welten = await new Promise((x) => { " +
-    'const c = db.transaction("worlds").objectStore("worlds").count(); c.onsuccess = () => x(c.result); c.onerror = () => x(-1); }); db.close(); } ' +
-    "return { ls: localStorage.length, welten };";
+const GRUND_SEITE = ["__ortTakt", "__ortStell", "__ortSchritt", "__ortBahn", "__anazhAutoSettlement"];
+// DIE WEGE-LINSE DER GRUNDSTELLUNG (w4-sitzung-reif; der Weg von tempo4 lag nach der Grundstellung weiter über der Mess-Wiese):
+// `_stlWegeBuild` malt die Flächen eines Wegs in die Wege-Karte (`state.wegeKarte.siedlungen`), merkt seine Marke (`_stlWegeKeys`) und
+// räumt die Natur auf ihm (`_wegeRaeumen`); `_standRueckspielen` lässt Karte und Natur als Caches warm — der Weg einer Probe (tempo4,
+// die Straße von fahr-proben, ein erwachtes Dorf, die Stadt) blieb liegen, die Proben danach maßen neben ihm. Der Abdruck je Fläche
+// ihr Rechteck auf 0,1 m und die Zahl ihrer Formen, dazu die Marken; läuft in der Seite (r = die Welt).
+function wegeAbdruck(r) {
+    const wk = r && r.state && r.state.wegeKarte, k = r && r._stlWegeKeys;
+    const f = (b) => [b.x0, b.z0, b.x1, b.z1].map((v) => Math.round(v * 10) / 10).join(",") + "/" + (b.formen ? b.formen.length : 0);
+    return { flaechen: (wk ? wk.siedlungen : []).map(f).sort(), keys: k ? [...k].sort() : [] };
+}
+// die Abweichung vom Abdruck des Grunds beim Namen — „wege +n [Fläche] (neue Marken) −m [Fläche]“ — oder null; eine Marke, die fiel, ist
+// keine (die Weltgrenze vergisst das Gedächtnis der Seite, `WELT_GRENZE.gedaechtnis`), eine neue auch ohne Fläche schon (die Natur,
+// die ihr Weg räumte, kehrt an Ort und Stelle nicht zurück)
+function wegeAbweichung(soll, ist) {
+    const zahl = (L) => L.reduce((m, x) => m.set(x, (m.get(x) || 0) + 1), new Map());
+    const mehr = (A, B) => [...A.keys()].flatMap((x) => Array(Math.max(0, A.get(x) - (B.get(x) || 0))).fill(x));
+    const [S, I] = [zahl(soll.flaechen || []), zahl(ist.flaechen || [])];
+    const neu = mehr(I, S), fort = mehr(S, I), marken = (ist.keys || []).filter((x) => !(soll.keys || []).includes(x));
+    if (!neu.length && !fort.length && !marken.length) return null;
+    const liste = (L) => L.slice(0, 3).map((x) => "[" + x + "]").join(" ") + (L.length > 3 ? " …" : "");
+    return "wege" + (neu.length ? " +" + neu.length + " " + liste(neu) : "") + (marken.length ? " (" + marken.slice(0, 4).join(", ") + ")" : "") +
+        (fort.length ? " −" + fort.length + " " + liste(fort) : "");
+}
+const GRUND_NIMM =
+    'if (typeof r._grundstellung !== "function") return { fehlt: true }; const t0 = performance.now(); const g = r._grundstellung(); ' +
+    "return { grund: g.grund, n: Object.keys(g.abdruck).length, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta.worldId, " +
+    "seite: " + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window), wege: (" + wegeAbdruck + ")(r) };";
+const grundSpielen = (g) =>
+    "for (const k of " + JSON.stringify(GRUND_SEITE) + ") if (!" + JSON.stringify(g.seite) + ".includes(k)) delete window[k]; " +
+    "const t0 = performance.now(); const z = r._grundstellung(" + JSON.stringify(g.grund) + "); " +
+    "const weg = " + (g.wege ? "(" + wegeAbweichung + ")(" + JSON.stringify(g.wege) + ", (" + wegeAbdruck + ")(r))" : "null") + "; return { ok: z.ok, grund: z.grund || null, " +
+    "anders: (z.anders || []).concat(" + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window && !" + JSON.stringify(g.seite) + ".includes(k)).map((k) => \"seite.\" + k), weg ? [weg] : []), " +
+    "neu: z.neu || null, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta && r.state.worldMeta.worldId, wie: (" + grundWie + ")(r, " +
+    JSON.stringify(g.grund) + ", z.anders || []) };";
+// WIE eine Größe vom Grund abweicht (Heilung 30.10.: „abweichend vom Grund: blueprints“ nannte nie den Täter): je Liste des Stands
+// (Baupläne, Werke, Stoffe, Werkzeuge) die Glieder, die fehlen, neu sind oder anders stehen — je anderes Glied seine Felder; je
+// worldMeta-Feld seine Länge vorher → nachher. Läuft in der Seite (r = die Welt), nur bei einer Abweichung
+function grundWie(r, grund, anders) {
+    if (!anders.length || !r || typeof r.buildStateSnapshot !== "function") return null;
+    const soll = JSON.parse(grund).stand, ist = r.buildStateSnapshot(), J = (x) => JSON.stringify(x), wie = {};
+    for (const k of anders) {
+        const [a, b] = k.startsWith("worldMeta.") ? [(soll.worldMeta || {})[k.slice(10)], (ist.worldMeta || {})[k.slice(10)]] : [soll[k], ist[k]];
+        if (!Array.isArray(a) && !Array.isArray(b)) {
+            wie[k] = String(J(a)).slice(0, 80) + " → " + String(J(b)).slice(0, 80);
+            continue;
+        }
+        const name = (e) => String(e && (e.name != null ? e.name : e.id != null ? e.id : J(e).slice(0, 40)));
+        const A = new Map((a || []).map((e) => [name(e), e])), B = new Map((b || []).map((e) => [name(e), e]));
+        const felder = (x, y) => Object.keys({ ...x, ...y }).filter((f) => J(x[f]) !== J(y[f])).slice(0, 6).join("/");
+        // je Name seine ZAHL (ein Feld gleicher Glieder — Etiketten, „happy“ zweimal — zählt jedes; bis 30.10. faltete die Karte sie zu
+        // einem und nannte 1 → 1 Glied gleich, wo 1 → 2 stand)
+        const zahl = (L) => (L || []).reduce((m, e) => m.set(name(e), (m.get(name(e)) || 0) + 1), new Map());
+        const [ZA, ZB] = [zahl(a), zahl(b)];
+        const mehr = (X, Y) => [...X.keys()].filter((n) => X.get(n) > (Y.get(n) || 0)).map((n) => n + (X.get(n) - (Y.get(n) || 0) > 1 ? " ×" + (X.get(n) - (Y.get(n) || 0)) : ""));
+        wie[k] = { vorher: (a || []).length, nachher: (b || []).length, fehlt: mehr(ZA, ZB).slice(0, 4),
+            neu: mehr(ZB, ZA).slice(0, 4),
+            anders: [...A.keys()].filter((n) => B.has(n) && J(A.get(n)) !== J(B.get(n))).slice(0, 4).map((n) => n + ":" + felder(A.get(n) || {}, B.get(n) || {})) };
+    }
+    return wie;
+}
+const GRUND_TUER =(g) => "const s = JSON.parse(" + JSON.stringify(g.grund) + ").stand; return r._weltBetreten(s, null, { neuLaden: false });";
 
-// ein Ruf an die Werkbank MIT Frist (werkbankRuf des Spiels wartet ewig): Rückgabe die Antwort, wirft bei Frist und Fehler
+// ein Ruf an die Werkbank MIT Frist (werkbankRuf des Spiels wartet ewig): Rückgabe die Antwort, wirft bei Frist und Fehler.
+// JE RUF EINE VERBINDUNG (`agent: false`, Heilung 30.10.): der Agent von Node ≥ 19 hält den Socket offen (keepAlive), die Werkbank
+// schließt einen ruhenden nach 5 s (keepAliveTimeout) — stand die Schleife des Läufers länger still (ciWartet als spawnSync: 20 s),
+// nahm der nächste Ruf im selben Takt den toten Socket: „read ECONNRESET“ am ersten /fenster, die Welt galt als tot, 69 von 69
+// Proben ungemessen (Radeon 3ed96b3f). Dieselbe Regel tragen die Rufe der Proben (sitzungTor, sitzungWerkzeug, sitzungLauf).
 function rufFrist(port, weg, nutzlast, ms) {
     return new Promise((ja, nein) => {
-        const req = require("http").request({ host: "127.0.0.1", port, path: weg, method: "POST", headers: { "Content-Type": "application/json" } }, (r) => {
+        const req = require("http").request({ host: "127.0.0.1", port, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (r) => {
             let d = "";
             r.on("data", (c) => (d += c));
             r.on("end", () => { try { ja(JSON.parse(d)); } catch (_e) { ja({ roh: d }); } });
@@ -633,7 +773,11 @@ async function halter(o) {
         await warteMs(1000);
     }
     const wl = fs.openSync(o.log, "w");
-    const wa = (welt ? welt.werkbank : ["node", "scripts/werkbank.cjs", "start", "--echt", "--port", String(W), "--seite", "http://localhost:" + S]).map(ers);
+    // DIE WELT DER SITZUNG OHNE DORF-ZUG (30.10.): `--ort wiese` legt den Dorf-Zug des Orts (haushalt.json `dorfZug: false`) vor das
+    // erste Skript JEDER Ladung der Seite (werkbank START_ORT) — wie jede Messung, die mit `start --ort` bootete. Bis dahin bootete die
+    // Sitzung ohne Ort: ein Dorf wuchs vom Boot an (`dorfWaechst` in 74 % der Zapfen des Eichlaufs 00763f54, die Foundry mit seinen
+    // Häusern belegt — lod.K5#1 92 s Foundry), die Grundstellung spielte es zurück; ein Ort mit Dorf-Zug stellt ihn selbst an
+    const wa = (welt ? welt.werkbank : ["node", "scripts/werkbank.cjs", "start", "--echt", "--port", String(W), "--seite", "http://localhost:" + S, "--ort", "wiese"]).map(ers);
     const env = { ...process.env, WERKBANK_PORT: String(W), PUNKTE_GPU_ZEUGE: path.resolve(o.zeuge),
         NODE_OPTIONS: ((process.env.NODE_OPTIONS || "") + ' --require "' + ZEUGE_DATEI.split(path.sep).join("/") + '"').trim() };
     wb = spawn(exe(wa), wa.slice(1), { cwd: baum, env, stdio: ["ignore", wl, wl], windowsHide: true });
@@ -653,88 +797,492 @@ async function halter(o) {
     }
 }
 
-// startet den Halter (unter dem GANZEN Schloss, wenn gpuLauf); Rückgabe { ok, kind, warten (min), bootS, grund?, ungemessen? }
-function sitzungStarten(o) {
+// DER SCHLOSS-HALTER der Sitzung (Karte w4-grundstellung): gpu-lauf.sh (zeit, die CI-Ruhe einmal, Deckel SITZUNG_MAX_S) um einen
+// Wartenden, der endet, wenn die Datei `los` liegt oder der Läufer stirbt — er hält das Schloss, nie die Welt: sie lebt daneben und
+// bleibt warm, wenn die Sitzung das Schloss einem wartenden CI-Job gibt. Rückgabe { ok, kind, los, warten (min), grund?, ungemessen? }
+function schlossNehmen(o, nr) {
+    return new Promise((fertig) => {
+        if (!o.bash) return fertig({ ok: false, grund: "keine Git-bash gefunden (PUNKTE_BASH) für gpu-lauf.sh" });
+        const t0 = Date.now(), los = o.stop + ".los-" + nr;
+        fs.rmSync(los, { force: true });
+        const warte = 'const fs = require("fs"); const [los, p] = process.argv.slice(1); setInterval(() => { let da = true; ' +
+            'try { process.kill(Number(p), 0); } catch (e) { da = e.code === "EPERM"; } if (fs.existsSync(los) || !da) process.exit(0); }, 500);';
+        const env = { ...process.env, GPU_LAUF_ART: "zeit", GPU_LAUF_PLAETZE: "1", GPU_LAUF_MAX_S: String(SITZUNG_MAX_S) };
+        delete env.NODE_OPTIONS;
+        const kind = spawn(o.bash, [o.gpuLauf, "punkte-" + o.geraet + "-sitzung", process.execPath, "-e", warte, los, String(process.pid)],
+            { cwd: o.baum, env, windowsHide: true, detached: process.platform !== "win32" });
+        let out = "", gemeldet = false, uhr = null;
+        const h = { kind, los, ende: new Promise((r) => kind.on("exit", (c) => r(c))), aus: () => out };
+        const melde = (r) => {
+            if (gemeldet) return;
+            gemeldet = true;
+            clearTimeout(uhr);
+            fertig(Object.assign(h, { warten: +((Date.now() - t0) / 60000).toFixed(2) }, r));
+        };
+        const still = o.stillS || SCHLOSS_STILL_S;
+        const lies = (d) => {
+            out += String(d);
+            if (/^gpu-lauf: Schloss /m.test(out)) return melde({ ok: true });
+            clearTimeout(uhr);
+            uhr = setTimeout(() => (baumTot(kind.pid), melde({ ok: false, ungemessen: true, grund: "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg " + still + " s beim Warten" })), still * 1000);
+        };
+        kind.stdout.on("data", lies);
+        kind.stderr.on("data", lies);
+        lies("");
+        kind.on("error", (e) => melde({ ok: false, grund: "gpu-lauf.sh: " + e.message }));
+        kind.on("exit", (code) => setTimeout(() => {
+            const blockiert = (/^SCHLOSS BLOCKIERT .*$/m.exec(out) || [""])[0].trim();
+            if (code === 75) return melde({ ok: false, ungemessen: true, grund: "GPU-Schloss blockiert (gpu-lauf.sh Exit 75" + (blockiert ? ": " + blockiert : "") + ") — ungemessen" });
+            melde({ ok: false, grund: "gpu-lauf.sh endete vor dem Schloss (Exit " + code + "): " + out.trim().split(/\r?\n/).slice(-2).join(" | ").slice(0, 300) });
+        }, 300));
+    });
+}
+// gibt das Schloss frei: der Wartende endet, gpu-lauf.sh löst (trap); sonst fällt sein Baum
+async function schlossLoesen(h) {
+    if (!h || !h.kind || h.kind.exitCode != null) return;
+    fs.writeFileSync(h.los, "los\n");
+    if ((await Promise.race([h.ende, warteMs(30000).then(() => "frist")])) === "frist") baumTot(h.kind.pid);
+    fs.rmSync(h.los, { force: true });
+}
+// wartet ein CI-Job auf das Schloss? (gpu-schloss.sh neben gpu-lauf.sh: `ci_wartet`, die letzte Zeile von hook.log) — EIN Blick als
+// eigener Prozess, nie im Takt des Läufers: Rückgabe ein Promise<bool> mit `.kind` (Heilung 30.10.: als spawnSync stand der Läufer an
+// jeder Proben-Grenze, bis bash fertig war — Radeon-Laptop 5,2 s, mit Waisen daneben 20 s an der Frist und dann immer „nein“; derweil
+// schloss die Werkbank den ruhenden Socket, rufFrist). Die Frist CI_BLICK_S fällt den Baum (ein hängendes bash): „nein“
+const CI_BLICK_S = 60;
+const ciWartet = (o) => {
+    let kind = null;
+    const p = new Promise((ja) => {
+        try {
+            kind = spawn(o.bash, ["-c", '. "$1" && ci_wartet', "ci", path.join(path.dirname(o.gpuLauf), "gpu-schloss.sh")],
+                { env: { ...process.env, ...(o.hookLog ? { GPU_HOOK_LOG: o.hookLog } : {}) }, windowsHide: true, stdio: "ignore" });
+        } catch (_e) {
+            return ja(false);
+        }
+        const frist = setTimeout(() => baumTot(kind.pid), CI_BLICK_S * 1000);
+        kind.on("error", () => (clearTimeout(frist), ja(false)));
+        kind.on("exit", (c) => (clearTimeout(frist), ja(c === 0)));
+    });
+    p.kind = kind;
+    return p;
+};
+
+// startet den Halter (daneben das GANZE Schloss, wenn gpuLauf: `schlossNehmen`); Rückgabe { ok, kind, schloss, warten (min), bootS, grund?, ungemessen? }
+async function sitzungStarten(o) {
+    const schloss = o.gpuLauf ? await schlossNehmen(o, 0) : null;
+    if (schloss && !schloss.ok) return schloss;
     return new Promise((fertig) => {
         const t0 = Date.now();
-        let argv = [__filename, "halter", "--baum", o.baum, "--port", String(o.port), "--log", o.log, "--zeuge", o.zeuge, "--stop", o.stop,
+        const argv = [__filename, "halter", "--baum", o.baum, "--port", String(o.port), "--log", o.log, "--zeuge", o.zeuge, "--stop", o.stop,
             "--eltern", String(process.pid), "--band", [].concat(o.band || o.port).join(","), ...(o.welt ? ["--welt", o.welt] : [])];
-        let exe = process.execPath;
         const env = { ...process.env };
         delete env.NODE_OPTIONS; // der Zeuge sitzt in der Werkbank, nie im Halter (er nennt keine Karte)
-        if (o.gpuLauf) {
-            if (!o.bash) return fertig({ ok: false, grund: "keine Git-bash gefunden (PUNKTE_BASH) für gpu-lauf.sh" });
-            argv = [o.gpuLauf, "punkte-" + o.geraet + "-sitzung", exe, ...argv];
-            exe = o.bash;
-            Object.assign(env, { GPU_LAUF_ART: "zeit", GPU_LAUF_PLAETZE: "1", GPU_LAUF_MAX_S: String(SITZUNG_MAX_S) });
-        }
-        let out = "", tSchloss = o.gpuLauf ? null : t0, gemeldet = false, uhr = null;
-        const kind = spawn(exe, argv, { cwd: o.baum, env, windowsHide: true, detached: process.platform !== "win32" });
-        const s = { kind, ende: new Promise((r) => kind.on("exit", (c) => r(c))), aus: () => out, datei: o.log + ".halter" };
+        let out = "", gemeldet = false, uhr = null;
+        const kind = spawn(process.execPath, argv, { cwd: o.baum, env, windowsHide: true, detached: process.platform !== "win32" });
+        const s = { kind, schloss, ende: new Promise((r) => kind.on("exit", (c) => r(c))), aus: () => out, datei: o.log + ".halter" };
         const melde = (r) => {
             if (gemeldet) return;
             gemeldet = true;
             clearTimeout(uhr);
             fs.writeFileSync(o.log + ".halter", out);
-            fertig(Object.assign(s, { warten: +(((tSchloss || Date.now()) - t0) / 60000).toFixed(2), bootS: tSchloss ? +((Date.now() - tSchloss) / 1000).toFixed(1) : null }, r));
+            fertig(Object.assign(s, { warten: schloss ? schloss.warten : 0, bootS: +((Date.now() - t0) / 1000).toFixed(1) }, r));
         };
-        const stelle = (sek, grund, ungemessen) => { clearTimeout(uhr); uhr = setTimeout(() => { baumTot(kind.pid); melde({ ok: false, grund, ungemessen }); }, sek * 1000); };
         const lies = (d) => {
             out += String(d);
-            if (!tSchloss && /^gpu-lauf: Schloss /m.test(out)) tSchloss = Date.now();
             if (/^SITZUNG bereit/m.test(out)) return melde({ ok: true });
-            if (tSchloss) stelle(SITZUNG_BOOT_S + 120, "die Welt der Sitzung steht nach " + (SITZUNG_BOOT_S + 120) + " s nicht");
-            else stelle(o.stillS || SCHLOSS_STILL_S, "GPU-Schloss nie bekommen: gpu-lauf.sh schwieg " + (o.stillS || SCHLOSS_STILL_S) + " s beim Warten", true);
+            clearTimeout(uhr);
+            uhr = setTimeout(() => (baumTot(kind.pid), melde({ ok: false, grund: "die Welt der Sitzung steht nach " + (SITZUNG_BOOT_S + 120) + " s nicht" })), (SITZUNG_BOOT_S + 120) * 1000);
         };
         kind.stdout.on("data", lies);
         kind.stderr.on("data", lies);
         lies("");
         kind.on("error", (e) => melde({ ok: false, grund: "Halter: " + e.message }));
         kind.on("exit", (code) => setTimeout(() => {
-            const blockiert = (/^SCHLOSS BLOCKIERT .*$/m.exec(out) || [""])[0].trim();
-            if (o.gpuLauf && code === 75) return melde({ ok: false, ungemessen: true, grund: "GPU-Schloss blockiert (gpu-lauf.sh Exit 75" + (blockiert ? ": " + blockiert : "") + ") — ungemessen" });
             const f = (/^SITZUNG FEHLER (.*)$/m.exec(out) || [])[1];
             melde({ ok: false, grund: "die Welt der Sitzung startet nicht" + (f ? ": " + f : " (Halter Exit " + code + "): " + out.trim().split(/\r?\n/).slice(-2).join(" | ").slice(0, 300)) });
         }, 300));
     });
 }
-// legt die Stop-Datei, wartet auf das Ende des Halters (er löst das Schloss), sonst fällt sein Baum
+// legt die Stop-Datei, wartet auf das Ende des Halters, sonst fällt sein Baum; dann löst das Schloss
 async function sitzungStoppen(s, stop) {
     fs.writeFileSync(stop, "stop\n");
     const ende = await Promise.race([s.ende, warteMs(90000).then(() => "frist")]);
     if (ende === "frist") baumTot(s.kind.pid);
     fs.writeFileSync(s.datei, s.aus());
+    await schlossLoesen(s.schloss);
     return ende;
 }
-// DIE GRUNDSTELLUNG vor einer Probe: Rückgabe { ok, s, grund? }
-async function grundstellung(w, baum) {
+// DER GRUND der Welt (`_grundstellung` des Spiels) in die Datei `datei` (die Grundstellung der Sitzung und jeder Probe liest sie):
+// Rückgabe { ok, n (Größen), s, grund? }
+async function grundNehmen(w, datei) {
     const t0 = Date.now();
     try {
-        const a = await rufFrist(w, "/eval", { code: GRUNDSTELLUNG }, 60000);
+        const a = await rufFrist(w, "/eval", { code: GRUND_NIMM }, 60000);
         const e = a && a.ergebnis;
-        if (!e || e.ls !== 0 || !(e.welten === 0 || e.welten === -1))
-            throw new Error("der Spielstand fällt nicht: " + JSON.stringify(a).slice(0, 300));
-        for (const d of STAND_DATEIEN) fs.rmSync(path.join(baum, d), { force: true });
-        const n = await rufFrist(w, "/reload", {}, GRUNDSTELLUNG_S * 1000);
-        if (!n || n.neu !== true) throw new Error("/reload: " + JSON.stringify(n).slice(0, 300));
+        if (e && e.fehlt) throw new Error("der Kopf trägt `_grundstellung` nicht (Karte w4-grundstellung)");
+        if (!e || typeof e.grund !== "string") throw new Error("kein Grund: " + JSON.stringify(a).slice(0, 300));
+        fs.writeFileSync(datei, JSON.stringify(e));
+        return { ok: true, n: e.n, s: +((Date.now() - t0) / 1000).toFixed(1) };
+    } catch (e) {
+        return { ok: false, s: +((Date.now() - t0) / 1000).toFixed(1), grund: "der Grund der Welt: " + String((e && e.message) || e).split("\n")[0] };
+    }
+}
+// DIE GRUNDSTELLUNG vor einer Probe: der Grund (`datei`) kehrt in die laufende Seite zurück, ohne Neuladen; hat eine Probe die Welt
+// verlassen, durch die Tür und `/reload` (Ring 8). Rückgabe { ok, s, ms, neu, tuer?, grund? } — ROT nennt die abweichenden Größen.
+// `o.abbruch` (Heilung 30.10.): die Probe davor fiel (Deckel, Absturz, Start) — ihre Seiten-Funktion lief weiter (Radeon 3ed96b3f:
+// licht.K5#1 am Deckel, der Wetter-Zug drehte Tag-Länge, Wetter und Bühne weiter) und verdarb den Stand. Dann geht die Grundstellung
+// IMMER durch die Tür: das Neuladen beendet jede Arbeit der gefallenen Probe in der Seite, ehe der Grund greift.
+// DER WEG SEIT DEM GRUND (w4-sitzung-reif, die Wege-Linse `wegeAbweichung`): nennt das Rückspielen an Ort und Stelle einen Weg, den die
+// Probe legte, geht die Grundstellung durch die Tür — die Lade-Kette des Speicher-Gesetzes baut Wege-Karte und Natur aus dem Grund
+// neu (an Ort und Stelle bleiben beide warm, `_standRueckspielen`); steht der Weg auch danach, ist die Welt ROT beim Namen des Wegs.
+// Rückgabe dann zusätzlich `wege` (der Weg, der durch die Tür ging)
+async function grundstellung(w, datei, o = {}) {
+    const t0 = Date.now();
+    try {
+        if (!datei || !fs.existsSync(datei)) throw new Error("kein Grund der Sitzung (" + datei + ")");
+        const g = JSON.parse(fs.readFileSync(datei, "utf8"));
+        const spiel = async () => {
+            const a = await rufFrist(w, "/eval", { code: grundSpielen(g) }, 120000);
+            if (!a || !a.ergebnis) throw new Error("/eval: " + JSON.stringify(a).slice(0, 300));
+            return a.ergebnis;
+        };
+        let z = o.abbruch ? { ok: false, welt: null } : await spiel(), tuer = false;
+        const wege = z.ok ? (z.anders || []).find((a) => /^wege\b/.test(a)) || null : null;
+        if (wege) z = { ok: false, welt: null };
+        if (!z.ok && z.welt !== g.welt) {
+            const t = await rufFrist(w, "/eval", { code: GRUND_TUER(g) }, 60000);
+            if (!t || !t.ergebnis || !t.ergebnis.ok) throw new Error("die Tür zurück in die Welt " + g.welt + ": " + JSON.stringify(t).slice(0, 300));
+            const n = await rufFrist(w, "/reload", {}, GRUNDSTELLUNG_S * 1000);
+            if (!n || n.neu !== true) throw new Error("/reload: " + JSON.stringify(n).slice(0, 300));
+            (z = await spiel()), (tuer = true);
+        }
+        if (!z.ok) throw new Error(z.grund || "das Rückspielen scheitert");
+        if (z.anders.length) throw new Error("abweichend vom Grund: " + z.anders.join(" ") + (z.wie ? " · wie " + JSON.stringify(z.wie).slice(0, 600) : ""));
         // das Fenster wie beim Start der Welt (1920×1080): eine Probe davor stellte es vielleicht anders
         const f = await rufFrist(w, "/fenster", {}, 30000);
         if (!f || !Array.isArray(f.fenster)) throw new Error("/fenster: " + JSON.stringify(f).slice(0, 300));
-        return { ok: true, s: +((Date.now() - t0) / 1000).toFixed(1) };
+        return { ok: true, s: +((Date.now() - t0) / 1000).toFixed(1), ms: z.ms, neu: z.neu, ...(tuer ? { tuer } : {}), ...(wege ? { wege } : {}) };
     } catch (e) {
         return { ok: false, s: +((Date.now() - t0) / 1000).toFixed(1), grund: String((e && e.message) || e).split("\n")[0] };
     }
 }
+// DIE GRUNDPROBE (`punkte.cjs grundprobe --baum <Spiel-Baum> [--mutante <zeile>] [--port P]`, Null-Renderer, Karte w4-grundstellung):
+// eine Welt des Spiel-Baums (welt-boot `nullSeite`), der Grund über DIESELBE Zeile wie die Sitzung (GRUND_NIMM), dann gräbt der
+// Spieler, baut einen Block, sieht von außen und wendet den Blick, steigt in einen Wagen, die Uhr springt, ein Feuer fängt, Regen zieht auf,
+// die Tag-Länge springt auf 1e9 (der Wetter-Zug von licht.K5#1, am Deckel ohne sein finally: Radeon 30.10.) und ein Ort-Takt der Werkbank
+// hängt an der Seite — und die Grundstellung der Sitzung (`grundSpielen`) spielt den Grund zurück: GRÜN, wenn jede Tat geschah und
+// danach keine Größe vom Grund abweicht. `--mutante <zeile>`: das Wort dieser Zeile der GRUND_TAFEL schweigt (`uhr`: der EINE
+// Uhr-Schreiber des Spiels, eine Größe des Stands) — gefangen nur, wenn genau `augenblick.<zeile>` (`timeOfDay`) abweicht: die Mutante
+// ROT beim Namen. Exit 0 GRÜN bzw. gefangen, 1 sonst.
+// `--mutante weg` (w4-sitzung-reif): eine Probe legt ihren Weg wie tempo4 (`_stlWegeBuild` mit der Marke `probe:grundprobe`, die Natur
+// weicht ihm) und räumt ihn nie — gefangen nur, wenn das Rückspielen an Ort und Stelle genau ihn nennt (die Wege-Linse,
+// `wegeAbweichung`); mit `--tuer` spielt die Grundprobe danach wie die Sitzung den Grund durch die Tür zurück, und der Weg ist fort.
+async function grundProbe(o) {
+    const baum = path.resolve(o.baum || "."), port = Number(o.port || 4741);
+    const { statikServer, nullSeite } = require(path.join(baum, "scripts", "lib", "welt-boot.cjs"));
+    const server = statikServer();
+    await server.lausche(port);
+    const { browser, page } = await nullSeite({ frist: 600000 });
+    const ev = (code) => page.evaluate((c) => new Function("r", "T", "return (async () => { " + c + " })();")(window.anazhRealm, window.THREE), code);
+    try {
+        await server.zeige(page);
+        await page.evaluate(() => window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId));
+        // die Welt läuft an (100 Takte à 100 ms Spielzeit), wie vor der ersten mutierenden Probe der Sitzung
+        await ev("let t = performance.now(); for (let i = 1; i <= 100; i++) if ((r._gameLoopTick((t += 100)), i % 5 === 0)) await new Promise((f) => setTimeout(f, 0));");
+        // der Grund trägt einen eigenen Bauplan mit einem Teil OHNE opChain — geboren wie die Werke des Fachwerks (bank_sitzbank …)
+        // … und ein trauriges Tier (das Gefühls-Etikett, die Projektion, die das Speicher-Gesetz trägt — wie nach oekologie.K4#2)
+        await ev("if (r.state.creatureEmotions.length) r.state.creatureEmotions[0] = \"sad\";");
+        await ev("r.createBlueprint(\"grundprobe_alt\", \"Grundprobe alt\"); r.state.blueprints.grundprobe_alt.parts.push({ shape: \"box\", material: \"holz\", position: { x: 0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } });");
+        const g = await ev(GRUND_NIMM);
+        if (!g || typeof g.grund !== "string") throw new Error("kein Grund: " + JSON.stringify(g).slice(0, 300));
+        const tat = await ev(`const st = r.state, q = st.playerMesh.position.clone(), cs = r.constructor.LIFE_FIELD.cell;
+            const y = (dx) => r._terrainMacroSurfaceY(q.x + dx, q.z);
+            const edit = r.carveVoxel(q.x + 6, y(6) - 1, q.z, 2);
+            const bau = !!r.spawnArchitecture("stein_block", { x: q.x + 20, y: y(20), z: q.z }, { werk: true });
+            r.setCameraMode("third");
+            [st.yaw, st.pitch] = [st.yaw + 1.3, 0.2];
+            const ritt = r.mountArchitecture(r.spawnArchitecture("fahrzeug_gt", { x: q.x - 20, y: y(-20) + 0.5, z: q.z }, { silent: true })).ok;
+            // der Weg der Probe (Mutante weg): 6 m breit, 60 m lang neben dem Spieler — wie tempo4 und die Straße von fahr-proben
+            const weg = ${JSON.stringify(o.mutante || null)} === "weg" ? r._stlWegeBuild({ roads: [{ pts: [{ x: 0, z: 0 }, { x: 0, z: 60 }], w: 6 }] }, { x: q.x + 40, z: q.z - 30 }, "probe:grundprobe") : 0;
+            const wegFlaeche = weg ? (${wegeAbdruck})(r).flaechen.find((f) => !${JSON.stringify((g.wege && g.wege.flaechen) || [])}.includes(f)) || null : null;
+            r.setTimeOfDay(0.9, "regler");
+            for (let i = 0; i < 625 && !r._brandEntfachen(q.x + ((i % 25) - 12) * cs, q.z + (((i / 25) | 0) - 12) * cs); i++);
+            let t = performance.now();
+            for (let i = 1; i <= 30; i++) if ((r._gameLoopTick((t += 100)), i % 5 === 0)) await new Promise((f) => setTimeout(f, 0));
+            r._setWeather("rainy", "regler");
+            st.dayLengthMinutes = 1e9; // der Wetter-Zug von licht.K5#1 (licht-linsen wetterZug), am Deckel ohne sein finally
+            delete st.blueprints.grundprobe_alt;
+            const plan = r.createBlueprint("grundprobe_neu", "Grundprobe neu");
+            const erd = r._erdbauSetzen("grundprobe", [{ art: "platte", cx: q.x + 30, cz: q.z, phi: 0, ex: 3, ez: 3, y: y(30) }], false);
+            // der Bestand weicht ab: JEDES Tier fällt (wie das Rudel von oekologie.K4#2 — die Wiederkehr steht vor einer leeren Liste)
+            const tiere0 = st.creatures.length;
+            for (const c of st.creatures.slice()) r.removeCreature(c);
+            const tiere = tiere0 > 1 && st.creatures.length === 0 && st.creatureEmotions.length === 0;
+            window.__ortTakt = [];
+            const z = r.constructor.GRUND_TAFEL.find((z) => z[0] === ${JSON.stringify(o.mutante || null)});
+            if (z) z[2] = () => {};
+            if (${JSON.stringify(o.mutante || null)} === "uhr") r._uhrSetzen = () => false;
+            // die Mutanten des Stands: die Kette bringt eine Größe nicht zurück — Baupläne (das Laden), Werke (Abriss und Bau), Erdbau
+            const mut = ${JSON.stringify(o.mutante || null)};
+            if (mut === "bauplaene") r._deserializeBlueprint = () => null;
+            if (mut === "werk") (r._bauAusStand = () => false), (r.removeArchitecture = () => {});
+            if (mut === "wesen") r._restoreCreatureFromSnapshot = () => false;
+            if (mut === "gefuehl") { const S0 = r.spawnCreatures.bind(r); r.spawnCreatures = (...a) => { const x = S0(...a); r.state.creatureEmotions = r.state.creatureEmotions.map(() => "happy"); return x; }; }
+            if (mut === "erdbau") { const L = r.loadState.bind(r), E = st.worldMeta.erdbau; r.loadState = (s) => { const x = L(s); r.state.worldMeta.erdbau = E; return x; }; }
+            return { edit, bau, ritt, weg, wegFlaeche, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, tag: st.dayLengthMinutes, plan, erd, tiere, mutante: !!z || r._uhrSetzen.length === 0 || ["bauplaene", "werk", "erdbau", "wesen", "gefuehl", "weg"].includes(mut) };`);
+        const z = await ev(grundSpielen(g));
+        const soll = !o.mutante ? [] : { uhr: ["timeOfDay"], bauplaene: ["blueprints"], werk: ["architectures"], erdbau: ["worldMeta.erdbau"], wesen: ["creatures", "creatureEmotions"], gefuehl: ["creatureEmotions"], weg: ["wege +1 [x0,z0,x1,z1/Formen]"] }[o.mutante] || ["augenblick." + o.mutante];
+        const taten = tat.edit && tat.bau && tat.ritt && tat.feuer > 0 && tat.wetter === "rainy" && tat.tag === 1e9 && tat.plan && tat.erd && tat.tiere && (!o.mutante || tat.mutante) && (o.mutante !== "weg" || (tat.weg > 0 && !!tat.wegFlaeche));
+        // die Wege-Linse nennt den Weg beim Rechteck seiner Fläche (6 × 66 m, 40 m neben dem Spieler; die Tat nennt sie, wie die Karte sie
+        // trägt) — seine Marke nur, solange das Gedächtnis der Seite steht (ein anderes worldMeta beim Rückspielen vergisst `_stlWegeKeys`,
+        // WELT_GRENZE): gefangen ist er, wenn genau DIESE neue Fläche abweicht
+        const passt = (x) => (o.mutante === "weg" ? x.anders.length === 1 && new RegExp("^wege \\+1 \\[" + String(tat.wegFlaeche).replace(/[.]/g, "\\.") + "\\]( \\(probe:grundprobe\\))?$").test(x.anders[0])
+            : JSON.stringify(x.anders) === JSON.stringify(soll));
+        let z2 = null;
+        // DIE TÜR (`--tuer`): die Seite lädt neu wie in der Sitzung nach einer gefallenen Probe — der Grund durch `_weltBetreten` (abgelegt,
+        // aktiv), dann die Seite neu, dann das Rückspielen
+        if (o.tuer || o.welt) {
+            // `--welt <spec-Pfad>`: zuvor betritt die Seite eine andere Welt wie der Messort buehne (`importWorldBeside` mit reload)
+            if (o.welt) {
+                const j = JSON.parse(fs.readFileSync(path.join(baum, "spec", o.welt), "utf8"));
+                const nav = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 0 });
+                const x = await page.evaluate((j) => { const x = window.anazhRealm.importWorldBeside(j, { reload: true }); return x && x.ok ? { id: x.worldId } : { fehler: JSON.stringify(x).slice(0, 200) }; }, j);
+                if (x.fehler) throw new Error("die Welt " + o.welt + ": " + x.fehler);
+                await nav;
+                await page.evaluate(() => window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId));
+                await ev("let t = performance.now(); for (let i = 1; i <= 20; i++) if ((r._gameLoopTick((t += 100)), i % 5 === 0)) await new Promise((f) => setTimeout(f, 0));");
+            }
+            const tuer = await ev(GRUND_TUER(g));
+            if (!tuer || !tuer.ok) throw new Error("die Tür: " + JSON.stringify(tuer).slice(0, 300));
+            await page.reload({ waitUntil: "domcontentloaded" });
+            await page.evaluate(() => window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId));
+            await ev("let t = performance.now(); for (let i = 1; i <= 20; i++) if ((r._gameLoopTick((t += 100)), i % 5 === 0)) await new Promise((f) => setTimeout(f, 0));");
+            // nach der Tür spielt die Sitzung den Grund noch einmal (grundstellung): ohne Mutante und mit dem Weg steht danach jede Größe im Grund
+            if (!o.mutante || o.mutante === "weg") z2 = await ev(grundSpielen(g));
+        }
+        const gruen = taten && z.ok && passt(z) && (!z2 || (z2.ok && z2.anders.length === 0));
+        const wie = o.mutante ? "MUTANTE " + o.mutante + (gruen ? " ROT beim Namen" : " NICHT beim Namen gefangen") : gruen ? "GRÜN" : "ROT";
+        console.log("GRUNDPROBE " + wie +
+            " · Grund " + g.n + " Größen (" + g.ms + " ms) · Taten " + JSON.stringify(tat) + " · zurück in " + z.ms + " ms, neu " + JSON.stringify(z.neu) +
+            " · abweichend: " + (z.anders.join(" ") || "keine") + (z.ok ? "" : " · " + z.grund) + " · Soll " + (soll.join(" ") || "keine") +
+            (z2 ? " · nach der Tür abweichend: " + (z2.ok ? z2.anders.join(" ") || "keine" : z2.grund) : ""));
+        return gruen;
+    } finally {
+        await browser.close();
+        server.close();
+    }
+}
+// ───────────────────────────────── Der Strom ─────────────────────────────────
+// DER AUFNEHMER DER SITZUNG (29.10., der Schöpfer: „Eine komplette Fahrt durch jedes System max 30 min, inbegriffen ist dann auch
+// die Dauerlast"): über die GANZE Sitzung je präsentiertem Bild der Welt EINE Zeile — die Bild-Zeit (rAF zu rAF unter derselben
+// Schleife, nur gerenderte Bilder: `_gpuLeine.gerendert`, wie `werkbank lauf`), der Takt (der ganze rAF-Rückruf: Spiel-Takt samt
+// Ort-Takt), VRAM (`__vram`, der Abgriff), die GPU-Summe des Bilds, wenn der Regler sie neu las (`_gpuTsLast`, dieselbe Quelle
+// wie `lauf`), Befehle und Dreiecke (`renderer.info` — das Spiel setzt es je Bild zurück, `_loopRender`), Ort, Sicht, Sattel,
+// Regler, Tier-Halt, Drossel, Wetter und die Zelle, die eine Probe gerade misst. Der Haken sitzt an `renderer.setAnimationLoop`
+// der Seite: er sieht jedes Bild, das eine Schleife zeigt (lauf, haenger, eval, der Loop der Werkbank), nie die Takte von Hand
+// (umstellen, band, gpu-bank — sie zeigen kein Bild). Gezapft wird alle STROM_TAKT_MS und an jeder Proben-Grenze (dann trägt der
+// Block die Probe); eine neue Seite (Grundstellung, Welt-Tor) zieht ihn beim nächsten Zapfen neu ein. Ein Fehler des Hakens
+// stört nie das Spiel und steht gezählt im Strom (`fehler`). Spalten: STROM_SPALTEN; der Leser: stromLesen.
+const STROM_SPALTEN = ["t", "dt", "takt", "vram", "gpu", "befehle", "dreiecke", "x", "z", "sicht", "sattel", "voll", "halt", "last", "wetter", "zelle"];
+const STROM_TAKT_MS = 1000;
+const STROM_FRIST_MS = 10000;
+// in der Seite (werkbank /eval, r = die Welt): zieht den Haken ein (einmal je Seite und Renderer), setzt mit a.zelle die Zelle
+// der folgenden Bilder (null: keine) und gibt die Zeilen seit dem letzten Zapfen zurück
+function stromSeite(r, a) {
+    const st = r && r.state, rend = st && st.renderer;
+    if (!rend || typeof rend.setAnimationLoop !== "function") return { bereit: false, grund: "kein Renderer" };
+    let S = window.__punkteStrom;
+    const neu = !S;
+    if (!S)
+        S = window.__punkteStrom = { seite: Math.random().toString(36).slice(2, 10), ursprung: Math.round(performance.timeOrigin), zeilen: [],
+            namen: { wetter: [], zelle: [] }, zelle: -1, tv: null, gpuAm: null, verloren: 0, fehler: 0, letzterFehler: null, rend: null };
+    const nr = (liste, x) => {
+        let i = liste.indexOf(x);
+        if (i < 0) (i = liste.length), liste.push(x);
+        return i;
+    };
+    if (S.rend !== rend) {
+        S.rend = rend;
+        const roh = rend.setAnimationLoop;
+        const bild = (t, c0, g0) => {
+            const L = r._gpuLeine;
+            if (!L || !(L.gerendert > g0)) return;
+            const c1 = performance.now(), dt = S.tv == null ? -1 : t - S.tv;
+            S.tv = t;
+            let gpu = -1;
+            if (r._gpuTsAtMs !== S.gpuAm) {
+                S.gpuAm = r._gpuTsAtMs;
+                if (Number.isFinite(r._gpuTsLast)) gpu = r._gpuTsLast;
+            }
+            const v = window.__vram, i = rend.info && rend.info.render, p = st.playerMesh && st.playerMesh.position, z = S.zeilen;
+            if (z.length >= 120000) (z.splice(0, 20000), (S.verloren += 20000));
+            z.push([+t.toFixed(1), dt < 0 ? -1 : +dt.toFixed(2), +(c1 - c0).toFixed(2), v ? +((v.puffer + v.texturen) / 1048576).toFixed(1) : -1,
+                gpu >= 0 ? +gpu.toFixed(2) : -1, i ? i.drawCalls : -1, i ? Math.round(i.triangles) : -1, p ? +p.x.toFixed(1) : 0, p ? +p.z.toFixed(1) : 0,
+                st.cameraMode === "first" ? 1 : st.cameraMode === "third" ? 2 : 0, st.player && st.player.mountedArch ? 1 : 0, st.perfTargetMs >= 1000 ? 1 : 0,
+                Object.getPrototypeOf(r).__tiereGehalten ? 1 : 0, st.perfSense ? +st.perfSense.loadScale.toFixed(2) : -1, nr(S.namen.wetter, String(st.weather)), S.zelle]);
+        };
+        const huelle = (cb) =>
+            function (t, x) {
+                const c0 = performance.now(), L = r._gpuLeine, g0 = L ? L.gerendert : 0;
+                try {
+                    return cb.call(this, t, x);
+                } finally {
+                    try {
+                        bild(t, c0, g0);
+                    } catch (e) {
+                        S.fehler++;
+                        S.letzterFehler = String((e && e.message) || e).slice(0, 160);
+                    }
+                }
+            };
+        rend.setAnimationLoop = function (cb) {
+            S.tv = null;
+            return roh.call(this, typeof cb === "function" ? huelle(cb) : cb);
+        };
+        // eine Schleife, die vor dem Haken lief, fährt ab jetzt durch ihn
+        const a0 = rend._animation && rend._animation._animationLoop;
+        if (typeof a0 === "function") rend.setAnimationLoop(a0);
+    }
+    if (a && "zelle" in a) S.zelle = a.zelle == null ? -1 : nr(S.namen.zelle, String(a.zelle));
+    const zeilen = S.zeilen;
+    S.zeilen = [];
+    const lies = (f) => {
+        try {
+            return f();
+        } catch (_e) {
+            return null;
+        }
+    };
+    const m = performance.memory;
+    return {
+        bereit: true, neu, seite: S.seite, ursprung: S.ursprung, zeilen, namen: S.namen, verloren: S.verloren, fehler: S.fehler, letzterFehler: S.letzterFehler,
+        heap: m ? +(m.usedJSHeapSize / 1048576).toFixed(1) : null, skala: lies(() => r._szeneSkalaWirk()),
+        buehne: lies(() => st.creatures.filter((c) => c.userData && c.userData.buehne).length),
+        stempel: lies(() => (window.__stempelWache ? window.__stempelWache().ueberlauf : null)),
+        uhr: Number.isFinite(st.timeOfDay) ? +st.timeOfDay.toFixed(3) : null, chunks: st.voxelChunks ? st.voxelChunks.size : null,
+        // der Ort des Spielers und der gebaute Ring je Zapfen (30.10.: wo jede Probe stand und wie lange ihr Ring brauchte — auch ohne Bild)
+        ort: lies(() => [+st.playerMesh.position.x.toFixed(1), +st.playerMesh.position.z.toFixed(1)]), ring: lies(() => r._builtRingRadius()),
+        // was die Welt noch baut (band-urteil `einschwingOffen`: Foundry, Karten-Bake, Dorf, Streu, Chunks) — die Zeit einer Probe nach Ursache
+        offen: lies(() => (typeof window.__einschwingOffen === "function" ? Object.keys(window.__einschwingOffen(r)) : null)),
+    };
+}
+const stromCode = (a) => "return (" + stromSeite.toString() + ")(r, " + JSON.stringify(a || {}) + ");";
+// EIN Zapfen: die Zeilen seit dem letzten an den Strom (eine JSON-Zeile je Block, mit der Probe); Rückgabe { ok, n?, grund? } —
+// wirft nie (ein Zapfen, der scheitert, ist eine Lücke im Strom, nie ein Bruch der Probe)
+async function stromZapfen(w, datei, probe, a = {}) {
+    let e;
+    try {
+        const x = await rufFrist(w, "/eval", { code: stromCode(a) }, STROM_FRIST_MS);
+        e = x && x.ergebnis;
+        if (!e) throw new Error((x && typeof x.fehler === "string" && x.fehler) || "kein Ergebnis");
+    } catch (x) {
+        return { ok: false, grund: String((x && x.message) || x).split("\n")[0].slice(0, 200) };
+    }
+    if (!e.bereit) return { ok: false, grund: e.grund || "nicht bereit" };
+    fs.appendFileSync(datei, JSON.stringify({ probe, zeit: new Date().toISOString(), ...e }) + "\n");
+    return { ok: true, n: e.zeilen.length, seite: e.seite, fehler: e.fehler };
+}
+// EINE Marke im Strom (eine Probe nennt einen Stand der Welt beim Namen, z. B. den GC-Stand am Anfang der Dauer)
+function stromMarke(datei, probe, marke, wert) {
+    fs.appendFileSync(datei, JSON.stringify({ probe, zeit: new Date().toISOString(), marke, wert }) + "\n");
+}
+// DER LESER des Stroms: { bilder: [{ probe, seite, block, wand, …STROM_SPALTEN, uhr, skala, buehne, heap, stempelOk }], marken: [{ probe,
+// zeit, marke, wert, bild }], bloecke, seiten, fehler, verloren } — wand = die Wanduhr des Bilds (ms seit 1970), stempelOk: im Block lief
+// der Stempel-Pool nicht über, bild = die Zahl der Bilder vor der Marke
+function stromLesen(datei) {
+    const o = { bilder: [], marken: [], bloecke: 0, seiten: [], fehler: 0, verloren: 0 };
+    if (!fs.existsSync(datei)) return o;
+    const stempelVor = new Map();
+    for (const zeile of fs.readFileSync(datei, "utf8").split(/\r?\n/)) {
+        if (!zeile.trim()) continue;
+        let b;
+        try {
+            b = JSON.parse(zeile);
+        } catch (_e) {
+            continue;
+        }
+        if (b.marke) {
+            o.marken.push({ probe: b.probe, zeit: b.zeit, marke: b.marke, wert: b.wert, bild: o.bilder.length });
+            continue;
+        }
+        const block = o.bloecke++;
+        if (!o.seiten.includes(b.seite)) o.seiten.push(b.seite);
+        o.fehler = Math.max(o.fehler, b.fehler || 0);
+        o.verloren = Math.max(o.verloren, b.verloren || 0);
+        const sv = stempelVor.get(b.seite);
+        const stempelOk = b.stempel == null || sv == null || b.stempel === sv;
+        if (b.stempel != null) stempelVor.set(b.seite, b.stempel);
+        for (const z of b.zeilen || []) {
+            const f = { probe: b.probe, seite: b.seite, block, wand: b.ursprung + z[0], uhr: b.uhr, skala: b.skala, buehne: b.buehne, heap: b.heap, stempelOk };
+            STROM_SPALTEN.forEach((k, i) => (f[k] = z[i]));
+            f.wetter = (b.namen && b.namen.wetter[f.wetter]) || null;
+            f.zelle = f.zelle >= 0 ? (b.namen && b.namen.zelle[f.zelle]) || null : null;
+            o.bilder.push(f);
+        }
+    }
+    return o;
+}
+// der Kopf des Stroms für die Mess-Datei (m.sitzung.strom): die Dauerlast der ganzen Sitzung — Bilder, Bild-p95, Takt-p95, VRAM
+const p95Von = (a) => {
+    const s = a.filter(Number.isFinite).sort((x, y) => x - y);
+    return s.length ? s[Math.min(s.length - 1, Math.floor(0.95 * s.length))] : null;
+};
+function stromKopf(datei, zaehler) {
+    const s = stromLesen(datei);
+    const dt = s.bilder.filter((b) => b.dt >= 0);
+    return { datei: path.basename(datei), bilder: dt.length, frameP95: p95Von(dt.map((b) => b.dt)), taktP95: p95Von(dt.map((b) => b.takt)),
+        vramMax: s.bilder.length ? s.bilder.reduce((m, b) => Math.max(m, b.vram), -Infinity) : null, seiten: s.seiten.length, marken: s.marken.length,
+        fehler: s.fehler, verloren: s.verloren, ...zaehler };
+}
+
+// DIE REIHE DER SITZUNG (29.10., EINE Fahrt durch jedes System ≤ 30 min samt Dauerlast): zuerst `stellung: "anfang"`, dann jede
+// Probe, die die Welt lässt, dann `stellung: "ende"`, dann jede mutierende (`mutiert: true`) — die Dauer von anfang bis ende lebt
+// in EINER Seite ohne Neuladen; je in der Gruppe die Reihe der Liste
+const stellungVon = (g) => (g[0].probe && g[0].probe.stellung) || null;
+const mutiertVon = (g) => g.some((st) => !!(st.probe && st.probe.mutiert));
+// DER ORT EINER PROBE (30.10., Eichlauf a53152c2: 14 von 19 Proben fielen am ×3-Deckel, sie warteten im eigenen `/umstellen` auf den
+// Ring ihres Messorts — nach jeder Tür kalt): der erste Messort, an den ihr Befehl umstellt (`umstellen --ort X` der Werkbank, `/umstellen
+// { ort: "X" }` des Tors), aus dem Befehl selbst gelesen — nie eine zweite Liste; null: sie nennt keinen (Koordinaten, ein Ort aus einer
+// Variablen). In der Gruppe stehen die Proben eines Orts beieinander (die Reihe ihres ersten Auftritts), die ohne Ort zuletzt
+// (der vierte: der Plan eines Vegetations-Laufs, `[[Ort, Sicht, …], …]` als letztes Argument — sein erster Stand, w4-sitzung-reif)
+const ORT_MUSTER = [/umstellen\\?",\\?"--ort\\?",\\?"([a-z0-9_-]+)/, /umstellen\\?", \{ ort: \\?"([a-z0-9_-]+)/, /umstellen --ort ([a-z0-9_-]+)/,
+    / \[\["([a-z0-9_-]+)","(?:ego|third)",/];
+const probeOrt = (st) => {
+    const text = [].concat((st.probe && st.probe.befehl) || []).map(String).join(" ");
+    for (const re of ORT_MUSTER) {
+        const m = re.exec(text);
+        if (m) return m[1];
+    }
+    return null;
+};
+const nachOrt = (gs) => {
+    const orte = [...new Set(gs.map((g) => probeOrt(g[0])).filter(Boolean))];
+    const rang = (g) => (probeOrt(g[0]) ? orte.indexOf(probeOrt(g[0])) : orte.length);
+    return gs.map((g, i) => [g, i]).sort((a, b) => rang(a[0]) - rang(b[0]) || a[1] - b[1]).map(([g]) => g);
+};
+const sitzungsReihe = (gruppen) => [
+    ...gruppen.filter((g) => stellungVon(g) === "anfang"),
+    ...nachOrt(gruppen.filter((g) => !stellungVon(g) && !mutiertVon(g))),
+    ...gruppen.filter((g) => stellungVon(g) === "ende"),
+    ...nachOrt(gruppen.filter((g) => !stellungVon(g) && mutiertVon(g))),
+];
+// eine Probe, die abbrach (Deckel, Absturz, Start), ließ die Welt vielleicht mitten im Werk — danach die Grundstellung
+const brachAb = (es) => es.some((e) => /^(Deckel |Absturz|Start:)/.test(e.grund || ""));
+
 // FÄHRT DIE SITZUNG: gruppen (je Gruppe die Stationen EINER Probe, Zwillinge zusammen) der Reihe nach in EINER Welt;
-// ctx = { baum, koord, geraet, bash, gpuLauf, port, band, rohDir, welt?, stillS? }; melde(gruppe, ergebnisse, aus, zeit) je Gruppe.
-// Rückgabe der Kopf der Sitzung für die Mess-Datei: { start, port, warten, bootS, grundstellungS, proben, minuten, grund? }
-async function fahreSitzung(gruppen, ctx, melde) {
+// ctx = { baum, koord, geraet, bash, gpuLauf, port, band, rohDir, welt?, stillS?, stromTaktMs? }; melde(gruppe, ergebnisse, aus, zeit) je Gruppe.
+// Rückgabe der Kopf der Sitzung für die Mess-Datei: { start, port, warten, bootS, grundstellungS, proben, minuten, strom, grund? }
+// DIE REIHE (`sitzungsReihe`) und DAS ZURÜCKSETZEN (29.10.): die Grundstellung nur nach einer Probe mit `mutiert: true` oder nach einem
+// Abbruch (bis dahin vor JEDER Probe: die Dauer lebte nie länger als eine Probe); DER STROM (`stromSeite`): der Zapf-Takt über die
+// ganze Sitzung, ein Zapfen an jeder Proben-Grenze, die Probe kennt ihn als PUNKTE_SITZUNG_STROM (ihr Name PUNKTE_PROBE)
+async function fahreSitzung(gruppen0, ctx, melde) {
     const t0 = Date.now();
+    const gruppen = sitzungsReihe(gruppen0);
     const dir = path.join(ctx.rohDir, "sitzung");
     fs.mkdirSync(dir, { recursive: true });
-    const log = path.join(dir, "werkbank.log"), zeuge = path.join(dir, "zeuge.txt"), stop = path.join(dir, "stop");
-    for (const f of [stop, zeuge]) fs.rmSync(f, { force: true });
-    const kopf = { start: new Date(t0).toISOString(), port: ctx.port, warten: null, bootS: null, grundstellungS: [], proben: 0 };
+    const log = path.join(dir, "werkbank.log"), zeuge = path.join(dir, "zeuge.txt"), stop = path.join(dir, "stop"), strom = path.join(dir, "strom.ndjson");
+    const grund = path.join(dir, "grund.json");
+    for (const f of [stop, zeuge, strom, grund]) fs.rmSync(f, { force: true });
+    const kopf = { start: new Date(t0).toISOString(), port: ctx.port, warten: null, bootS: null, grundstellungS: [], proben: 0, freigaben: [] };
     const s = await sitzungStarten({ ...ctx, log, zeuge, stop });
     Object.assign(kopf, { warten: s.warten, bootS: s.bootS });
     const ohne = (grund, ungemessen) => ({ gruen: false, zahl: grund, exit: null, minuten: 0, grund, ...(ungemessen ? { ungemessen: true } : {}) });
@@ -743,17 +1291,118 @@ async function fahreSitzung(gruppen, ctx, melde) {
         kopf.grund = s.grund;
         for (const g of gruppen) await melde(g, g.map(() => ohne(s.grund, s.ungemessen)), null, new Date().toISOString());
         if (s.kind && s.kind.exitCode == null) baumTot(s.kind.pid);
+        await schlossLoesen(s.schloss);
         kopf.minuten = +((Date.now() - t0) / 60000).toFixed(2);
         return kopf;
     }
     console.log("  SITZUNG " + ctx.geraet + " · die Welt steht nach " + s.bootS + " s (Schloss nach " + s.warten + " min) · " + gruppen.length + " Proben · Welt :" + (ctx.port + 20000));
-    for (const [i, g] of gruppen.entries()) {
-        if (!tot && i > 0) {
-            const gs = await grundstellung(ctx.port + 20000, ctx.baum);
-            if (gs.ok) kopf.grundstellungS.push(gs.s);
-            else {
+    // DIE UHR DER FAHRT ab dem Schloss (der Boot zählt mit, das Warten nie): reißt sie FAHRT_MAX_S (ctx.fahrtMaxS nur im Selbsttest),
+    // endet die Sitzung — die laufende Probe fällt am Rest, jede folgende ist UNGEMESSEN beim Namen
+    const fahrtMaxS = ctx.fahrtMaxS || FAHRT_MAX_S;
+    let fahrt0 = Date.now() - (s.bootS || 0) * 1000;
+    const restS = () => fahrtMaxS - (Date.now() - fahrt0) / 1000;
+    kopf.offen = [];
+    kopf.orte = [];
+    kopf.wegeTueren = []; // je Grundstellung, die ein Weg seit dem Grund durch die Tür schickte: vor wem, welcher Weg, s
+    let aktOrt = null, ortNach = null;
+    // DER ZAPF-TAKT: nie zwei Zapfen der Sitzung zugleich; während der Grundstellung ruht er
+    const W = ctx.port + 20000, zz = { zapfen: 0, luecken: 0, letzteLuecke: null };
+    let aktuell = "(sitzung)", laeuft = null, ruht = false;
+    const zapf = (probe) => {
+        laeuft = (laeuft || Promise.resolve()).then(() => stromZapfen(W, strom, probe)).then((z) => {
+            if (z.ok) zz.zapfen++;
+            else (zz.luecken++, (zz.letzteLuecke = z.grund));
+        });
+        return laeuft;
+    };
+    let frei = true;
+    const takt = setInterval(() => {
+        if (ruht || !frei || tot) return;
+        frei = false;
+        zapf(aktuell).finally(() => (frei = true));
+    }, ctx.stromTaktMs || STROM_TAKT_MS);
+    await zapf(aktuell);
+    // DIE CI-WACHE (Heilung 30.10.): der Blick `ciWartet` läuft neben der Probe, nie an ihrer Grenze — die Grenze liest den letzten
+    // fertigen Blick seit der letzten Nahme des Schlosses und stößt den nächsten an (er läuft in der folgenden Probe); fehlt einer seit
+    // der Nahme (die erste Grenze, die nach einer Freigabe), wartet sie auf ihn, sonst nie
+    const ci = { seit: t0, fertig: null, laeuft: null, n: 0 };
+    const ciFrisch = () => !!ci.fertig && ci.fertig.t0 >= ci.seit;
+    const ciLos = () => {
+        if (!ci.laeuft) {
+            const t = Date.now();
+            ci.laeuft = ciWartet(ctx);
+            ci.laeuft.then((ja) => ((ci.fertig = { t0: t, ja }), (ci.laeuft = null), ci.n++));
+        }
+        return ci.laeuft;
+    };
+    const ciWartetJetzt = async () => {
+        while (!ciFrisch()) await ciLos();
+        const ja = ci.fertig.ja;
+        ciLos();
+        return ja;
+    };
+    let zuruecksetzen = false, abbruch = false, gerissen = null, grundDa = null;
+    for (const g of gruppen) {
+        // DAS SCHLOSS AN DER PROBEN-GRENZE: fiel es (gpu-lauf.sh endete), trägt die Sitzung nicht mehr; wartet ein CI-Job darauf, geht es
+        // an ihn und kommt danach wieder — die Welt bleibt warm, das Warten zählt nie in die Fahrt
+        if (!tot && s.schloss && s.schloss.kind.exitCode != null) tot = "das Schloss der Sitzung fiel (gpu-lauf.sh Exit " + s.schloss.kind.exitCode + ")";
+        if (tot && !kopf.grund) kopf.grund = "die Sitzung trägt nicht mehr vor " + schluessel(g[0]) + ": " + tot;
+        if (!tot && !gerissen && s.schloss && (await ciWartetJetzt())) {
+            const tf = Date.now();
+            ruht = true;
+            await schlossLoesen(s.schloss);
+            console.log("  SITZUNG das Schloss geht an den wartenden CI-Job (vor " + schluessel(g[0]) + ")");
+            s.schloss = await schlossNehmen({ ...ctx, stop }, kopf.freigaben.length + 1);
+            ruht = false;
+            ci.seit = Date.now(); // ein Blick von vor der Freigabe sah den CI-Job, dem das Schloss eben gehörte: er zählt nie mehr
+            const pause = Date.now() - tf;
+            fahrt0 += pause;
+            kopf.freigaben.push({ vor: schluessel(g[0]), s: +(pause / 1000).toFixed(1) });
+            if (!s.schloss.ok) (tot = s.schloss.grund), (kopf.grund = "die Sitzung trägt nicht mehr vor " + schluessel(g[0]) + ": " + tot);
+            else console.log("  SITZUNG das Schloss wieder da nach " + (pause / 1000).toFixed(1) + " s");
+        }
+        // DER GRUND der Welt nach der Reihe `anfang` (nie davor: anfang misst die frische Welt)
+        if (!tot && grundDa === null && stellungVon(g) !== "anfang") {
+            // fiel die letzte Probe von anfang (Deckel, Absturz), lief ihre Seiten-Funktion weiter: erst die Seite neu (ihre Arbeit endet),
+            // dann der Grund — nie ein Grund aus einer Seite, in der eine gefallene Probe noch arbeitet
+            if (abbruch) {
+                const n = await rufFrist(W, "/reload", {}, GRUNDSTELLUNG_S * 1000).catch((e) => ({ fehler: String((e && e.message) || e) }));
+                abbruch = false;
+                if (!n || n.neu !== true) tot = "die Seite nach dem Abbruch von anfang lädt nicht neu (/reload: " + JSON.stringify(n).slice(0, 200) + ")";
+            }
+        }
+        if (!tot && grundDa === null && stellungVon(g) !== "anfang") {
+            const gn = await grundNehmen(W, grund);
+            grundDa = gn.ok ? true : gn.grund;
+            console.log("  SITZUNG " + (gn.ok ? "der Grund der Welt: " + gn.n + " Größen in " + gn.s + " s" : gn.grund));
+        }
+        if (!gerissen && restS() <= 0) gerissen = "vor " + schluessel(g[0]);
+        if (gerissen) {
+            kopf.offen.push(...g.map(schluessel));
+            await melde(g, g.map(() => ohne("die Fahrt riss " + fahrtMaxS + " s (" + gerissen + ") — offen, UNGEMESSEN", true)), null, new Date().toISOString());
+            continue;
+        }
+        if (!tot && zuruecksetzen) {
+            ruht = true;
+            await zapf(aktuell);
+            const gs = grundDa === true ? await grundstellung(W, grund, { abbruch }) : { ok: false, grund: grundDa || "kein Grund vor " + schluessel(g[0]) };
+            ruht = false;
+            if (gs.ok) {
+                kopf.grundstellungS.push(gs.s);
+                if (gs.wege) kopf.wegeTueren.push({ vor: schluessel(g[0]), wege: gs.wege, s: gs.s });
+                (aktOrt = null), (ortNach = gs.tuer ? "der Tür" : "der Grundstellung"); // der Grund stellt den Spieler an seinen Ort zurück
+                console.log("  SITZUNG Grundstellung vor " + schluessel(g[0]) + ": " + gs.s + " s (im Spiel " + gs.ms + " ms" + (gs.tuer ? ", durch die Tür" + (gs.wege ? " — " + gs.wege : "") : "") + ")");
+            } else {
                 tot = "Grundstellung: " + gs.grund;
                 kopf.grund = "die Welt trägt nicht mehr vor " + schluessel(g[0]) + ": " + gs.grund;
+                console.log("  SITZUNG " + kopf.grund);
+            }
+        } else if (!tot) {
+            // ohne Grundstellung: das Fenster wie beim Start (eine Probe davor stellte es vielleicht anders) — und das Lebenszeichen der Welt
+            const f = await rufFrist(W, "/fenster", {}, 30000).catch((e) => ({ fehler: String((e && e.message) || e) }));
+            if (!f || !Array.isArray(f.fenster)) {
+                tot = "die Welt antwortet nicht (/fenster: " + JSON.stringify(f).slice(0, 200) + ")";
+                kopf.grund = "die Welt trägt nicht mehr vor " + schluessel(g[0]) + ": " + tot;
                 console.log("  SITZUNG " + kopf.grund);
             }
         }
@@ -761,10 +1410,30 @@ async function fahreSitzung(gruppen, ctx, melde) {
             await melde(g, g.map(() => ohne("die Welt der Sitzung trägt nicht mehr (" + tot + ") — ungemessen", true)), null, new Date().toISOString());
             continue;
         }
+        // DER ORT (30.10.): wechselt die Probe den Messort, stellt die Sitzung EINMAL um — das Warten auf den Ring dort liegt vor dem
+        // Deckel der Probe (er misst ihre Arbeit, nie den Ring) und steht je Ort im Kopf (`orte`: s, Takte, Chunks — Pflicht B, die
+        // Ankunft); die Proben des Orts danach finden ihn gebaut. Scheitert das Umstellen, stellt die Probe selbst um (beim Namen im Log)
+        const ort = probeOrt(g[0]);
+        if (ort && ort !== aktOrt) {
+            const tu = Date.now();
+            const u = await rufFrist(W, "/umstellen", { ort, sicht: "ego" }, 300000).catch((e) => ({ fehler: String((e && e.message) || e) }));
+            const us = +((Date.now() - tu) / 1000).toFixed(1);
+            if (u && !u.fehler) {
+                aktOrt = ort;
+                kopf.orte.push({ ort, vor: schluessel(g[0]), s: us, takte: u.takte, chunks: u.chunks, nach: ortNach });
+                console.log("  SITZUNG Ort " + ort + " vor " + schluessel(g[0]) + ": " + us + " s (" + u.takte + " Takte, " + u.chunks + " Chunks" + (ortNach ? ", nach " + ortNach : "") + ")");
+            } else console.log("  SITZUNG Ort " + ort + " vor " + schluessel(g[0]) + " steht nicht nach " + us + " s: " + JSON.stringify(u).slice(0, 200));
+            ortNach = null;
+        }
         const name = schluessel(g[0]).replace("#", "_");
         const aus = { aus: path.join(ctx.rohDir, name + ".json"), roh: path.join(ctx.rohDir, name + ".out") };
         const zeit = new Date().toISOString();
-        const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge } });
+        await zapf(aktuell);
+        aktuell = schluessel(g[0]);
+        const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), fahrtMaxS } });
+        if (es.some((e) => /^Deckel der Fahrt /.test(e.grund || ""))) (gerissen = "in " + aktuell), kopf.offen.push(...g.map(schluessel));
+        await zapf(aktuell);
+        aktuell = "(sitzung)";
         kopf.proben++;
         // DIE WELT ENDETE UNTER DER PROBE (w4-stationen-heil; Takt 23 GTX an 73bdf938: die Vorfahrt der OMEN nahm die Welt nach
         // 7,0 min — „VORFAHRT … verloren 7.0“ —, ferne.K1#2 lief gerade und stand als ROT „keine LUFT-Zeile … read ECONNRESET“ in der
@@ -772,7 +1441,7 @@ async function fahreSitzung(gruppen, ctx, melde) {
         // einem fremden Ende. Ist ihr Steuer-Port nach der Probe zu oder der Halter fort, ist jedes Nicht-GRÜN dieser Probe keine
         // Messung — ungemessen beim Grund, wie die Proben danach; ein GRÜN hielt seine Messung schon in der Hand.
         const weg = s.kind.exitCode != null ? "der Halter endete (Exit " + s.kind.exitCode + ")"
-            : (await portZu(ctx.port + 20000)) ? "die Werkbank :" + (ctx.port + 20000) + " nimmt keine Verbindung mehr an" : null;
+            : (await portZu(W)) ? "die Werkbank :" + W + " nimmt keine Verbindung mehr an" : null;
         if (weg) {
             tot = "sie endete während " + schluessel(g[0]) + ": " + weg;
             kopf.grund = "die Welt trägt nicht mehr nach " + schluessel(g[0]) + ": " + weg;
@@ -780,8 +1449,21 @@ async function fahreSitzung(gruppen, ctx, melde) {
         }
         const unter = (e) => (e.gruen || !weg ? e
             : { ...e, ungemessen: true, grund: "die Welt der Sitzung endete während der Probe (" + weg + ") — ungemessen", zahl: "die Welt der Sitzung endete während der Probe (" + weg + ") — ungemessen; die Probe sah: " + String(e.zahl).slice(0, 240) });
+        abbruch = brachAb(es);
+        zuruecksetzen = mutiertVon(g) || abbruch;
         await melde(g, es.map(unter), aus, zeit);
     }
+    clearInterval(takt);
+    if (ci.laeuft && ci.laeuft.kind && ci.laeuft.kind.exitCode == null) baumTot(ci.laeuft.kind.pid); // kein Blick überlebt die Sitzung
+    kopf.ciBlicke = ci.n;
+    await zapf(aktuell);
+    kopf.strom = stromKopf(strom, zz);
+    kopf.fahrtS = +((Date.now() - fahrt0) / 1000).toFixed(1);
+    if (gerissen) {
+        kopf.grund = "die Fahrt riss " + fahrtMaxS + " s " + gerissen + " — offen: " + kopf.offen.join(", ");
+        console.log("  SITZUNG " + kopf.grund);
+    } else delete kopf.offen;
+    console.log("  SITZUNG Fahrt " + kopf.fahrtS + " s (Soll ≤ " + fahrtMaxS + " s) · " + kopf.proben + " Proben · Grundstellung " + kopf.grundstellungS.length + "×");
     await sitzungStoppen(s, stop);
     kopf.minuten = +((Date.now() - t0) / 60000).toFixed(2);
     return kopf;
@@ -1464,6 +2146,9 @@ function gtxNutzen(s) {
 // eine rote Station ohne Heil-Versuch (der Zug nennt ihr Kriterium nicht) bleibt rot und wird nicht gemessen.
 // da(id, g): die JÜNGSTE Messung der Station auf dem Gerät über alle Köpfe (ihr Vorwissen), sonst null · genannt: Set der
 // Kriterien, die die Commits seit dem vorigen Kopf nennen · zeit(id): die Station urteilt in ms (ihr Merkmal `zeit`)
+// DIE PFLICHT (w4-sitzung-reif, 30.10.): eine Station, deren Staffel einen Eintrag von docs/PFLICHT-OFFEN.md trägt (ihre quelle nennt
+// „PFLICHT-OFFEN <X>“ — fahrzeug.K2#2, der Verkehr C), misst der Plan an jedem Zug wie einen Heil-Versuch, auch ohne stehende 1: die
+// Pflicht ist der EINE Scope (Betriebsgesetz 2), ihr Messen hängt nie an den Punkten
 function messPlan(stationen, da, genannt, zeit) {
     const plan = { radeon: [], gtx: [], uebersprungen: [] };
     for (const st of stationen) {
@@ -1471,7 +2156,8 @@ function messPlan(stationen, da, genannt, zeit) {
         if (!ge.length) continue;
         const id = schluessel(st), k = st.kriterium;
         const neu = ge.some((g) => !da(id, g));
-        const heil = genannt.has(k) || neu;
+        const pflicht = /\bPFLICHT-OFFEN [A-Z]\b/.test(st.quelle || "");
+        const heil = genannt.has(k) || neu || pflicht;
         // `beide`: die 1 hält nur auf jedem Gerät — gemessen wird wie eine Staffel 2 (ganz grün hält, ein Heil-Versuch misst)
         if (st.staffel === 1 && st.beide) {
             if (ge.every((g) => da(id, g) && da(id, g).gruen) || heil) for (const g of ge) plan[g].push(id);
@@ -1489,7 +2175,7 @@ function messPlan(stationen, da, genannt, zeit) {
         const s1 = stationen.find((x) => x.kriterium === k && x.staffel === 1);
         const s1gruen = s1 && geraeteVon(s1).some((g) => da(schluessel(s1), g) && da(schluessel(s1), g).gruen);
         const allesGruen = ge.every((g) => da(id, g) && da(id, g).gruen);
-        if ((s1gruen || genannt.has(k)) && (allesGruen || heil)) for (const g of ge) plan[g].push(id);
+        if ((s1gruen || genannt.has(k) || pflicht) && (allesGruen || heil)) for (const g of ge) plan[g].push(id);
         else plan.uebersprungen.push(id);
     }
     return plan;
@@ -1645,7 +2331,8 @@ async function selbsttest() {
         pruef(name, r.fehler.some((f) => re.test(f)), r.fehler.join(" | "));
     }
     {
-        const r = pruefeStationen([{ ...st0, staffel: 2, geraet: ["radeon", "gtx"], gpu: true, quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" }], karte);
+        const r = pruefeStationen([{ ...st0, staffel: 2, geraet: ["radeon", "gtx"], gpu: true, befehl: undefined, probe: { befehl: ["node", "-e", "0"], sek: 30 },
+            quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" }], karte);
         pruef("FORMAT-ROT Staffel 2 ohne Staffel 1", r.fehler.some((f) => /keine Staffel-1-Station/.test(f)), r.fehler.join(" | "));
         const d = pruefeStationen([st0, st0], karte);
         pruef("FORMAT-ROT doppelte Station", d.fehler.some((f) => /doppelt/.test(f)), d.fehler.join(" | "));
@@ -1654,11 +2341,34 @@ async function selbsttest() {
         const fl = pruefeFehlt([{ kriterium: "gelaende.K4", staffel: 2, befehl: null }, { kriterium: "gelaende.K4", staffel: 1, befehl: null, grund: "kein Werkzeug" }], karte, [st0]);
         pruef("FORMAT-ROT fehlt ohne Grund · fehlt zugleich fahrbar", fl.length === 2 && /grund fehlt/.test(fl[0]) && /zugleich fahrbare/.test(fl[1]), fl.join(" | "));
         // `beide`: eine Staffel 1, deren Text beide Geräte nennt, trägt es; nie an Staffel 2 oder an einem Gerät
-        const pb = { ...st0, kriterium: "profiband.K1", geraet: ["radeon", "gtx"], gpu: true, zeit: true, quelle: "1 = Frame p95 ≤ 33 ms (der Boden von PFLICHT E) in jeder Bewegungszelle an beiden Geräten" };
+        const pb = { ...st0, kriterium: "profiband.K1", geraet: ["radeon", "gtx"], gpu: true, zeit: true, befehl: undefined, probe: { befehl: ["node", "-e", "0"], sek: 30 },
+            quelle: "1 = Frame p95 ≤ 33 ms (der Boden von PFLICHT E) in jeder Bewegungszelle an beiden Geräten" };
         const bf = [pb, { ...pb, beide: true, geraet: "radeon" }, { ...st0, staffel: 2, beide: true, geraet: ["radeon", "gtx"], gpu: true, quelle: "2 = überall, dazu endet jeder Lauf in See oder Meer" }]
             .map((s) => pruefeStationen([s, ...(s.staffel === 2 ? [st0] : [])], karte).fehler.join(" | "));
         pruef("FORMAT-ROT die Staffel 1 nennt beide Geräte ohne beide · beide an einem Gerät · beide an Staffel 2",
             /nennt beide Geräte — beide: true/.test(bf[0]) && /beide nur als true/.test(bf[1]) && /beide nur als true/.test(bf[2]) && pruefeStationen([{ ...pb, beide: true }], karte).fehler.length === 0, bf.join(" || "));
+        // DIE FAHRT (29.10., eine Fahrt durch jedes System ≤ 30 min je Gerät): (a) ein befehl auf einer Karte, (b) eine 80-min-Station und
+        // ein Deckel über 45 s ohne ausnahme, (c) die Summe 1 801 s — jede Klasse ROT beim Namen, die Grenze selbst grün
+        const fa = (mut) => pruefeStationen([{ ...pb, beide: true, ...mut }], karte).fehler.join(" | ");
+        const fb = [fa({ befehl: ["node", "-e", "0"], probe: undefined, geraet: "gtx", beide: undefined }), fa({ probe: { befehl: ["node", "-e", "0"], sek: 4800, ausnahme: "achtzig Minuten eigener Boot" } }),
+            fa({ probe: { befehl: ["node", "-e", "0"], sek: 60 } }), fa({ probe: { befehl: ["node", "-e", "0"], sek: 45, ausnahme: "der Grund beim Namen" } }),
+            fa({ probe: { befehl: ["node", "-e", "0"], sek: 90, ausnahme: "der Grund beim Namen" } }), fa({ probe: { befehl: ["node", "-e", "0"] } })];
+        pruef("FAHRT-ROT (a) ein befehl auf gtx · (b) eine 80-min-Station, 60 s ohne ausnahme, eine ausnahme an 45 s — je beim Namen; 90 s mit ausnahme und die Vorgabe 45 s grün",
+            /befehl auf gtx — eine Station der Karte misst nur als Probe/.test(fb[0]) && /Deckel 4800 s über 90 s — nie, auch mit ausnahme/.test(fb[1]) &&
+            /Deckel 60 s über 45 s ohne ausnahme/.test(fb[2]) && /ausnahme an einem Deckel von 45 s/.test(fb[3]) && fb[4] === "" && fb[5] === "" && probeSek({ probe: {} }) === PROBE_DECKEL_S, fb.join(" || "));
+        const fp = (n, sek, ge = ["radeon", "gtx"], befehl = "p" + n) => ({ kriterium: "f.K" + n, staffel: 1, geraet: ge, gpu: true, probe: { befehl: ["node", befehl], sek } });
+        const grenze = Array.from({ length: 37 }, (_, i) => fp(i + 1, 45)).concat([fp(38, 15)]); // 37 × 45 + 15 + Boot 120 = 1800
+        const zw = [fp(90, 45, ["radeon", "gtx"], "zw"), { ...fp(90, 45, ["radeon", "gtx"], "zw"), staffel: 2 }]; // Zwillinge: EIN Lauf
+        const uf = [fahrtUrteil(grenze), fahrtUrteil([...grenze.slice(0, -1), fp(38, 16)]), fahrtUrteil([...grenze.slice(0, 36), ...zw, fp(38, 15)]),
+            fahrtUrteil([...grenze.slice(0, 35), fp(36, 90), fp(37, 60), fp(38, 15)]), fahrtUrteil([...grenze.slice(0, -1), fp(38, 16, ["radeon"])])];
+        pruef("FAHRT-ROT (c) Σ Deckel + Boot " + SITZUNG_BOOT_S + " s: 1 800 s grün, 1 801 s ROT je Karte mit den drei größten beim Namen, Zwillinge EIN Lauf, eine Karte allein",
+            uf[0].length === 0 && uf[1].length === 2 && /^radeon: die Fahrt 1801 s über 1800 s \(Σ Deckel 1681 s in 38 Läufen \+ Boot 120 s\) — die größten: f\.K1#1 45 s, f\.K2#1 45 s, f\.K3#1 45 s \(37 Läufe am Deckel 45 s\)$/.test(uf[1][0]) &&
+            /^gtx: die Fahrt 1801 s/.test(uf[1][1]) && uf[2].length === 0 && uf[3].length === 2 && /die größten: f\.K36#1 90 s, f\.K37#1 60 s, f\.K1#1 45 s/.test(uf[3][0]) &&
+            uf[4].length === 1 && /^radeon: /.test(uf[4][0]), JSON.stringify(uf));
+        const echtGross = ladeStationen().map((s) => (s.probe ? { ...s, probe: { ...s.probe, sek: 90, ausnahme: "der Selbsttest bläht jeden Deckel" } } : s));
+        const eg = pruefeStationen(echtGross, karte).fehler.filter((f) => /^(radeon|gtx): die Fahrt/.test(f));
+        pruef("FAHRT-ROT an der echten Liste: jeder Deckel auf 90 s gebläht reißt die Fahrt beider Karten (liste, run und buchen fallen dort)",
+            eg.length === 2 && eg.every((f) => /die größten: /.test(f)), eg.join(" | "));
     }
     // (3) Läufer: grün / rot / Absturz / Deckel / Urteil ungültig / GPU ohne Schloss / GPU über das Schloss
     const ctx = (n) => ({ baum: tmp, koord: KOORD, port: null, aus: path.join(tmp, n + ".json"), roh: path.join(tmp, n + ".out"), geraet: "radeon", bash: findeBash(), gpuLauf: null, deckelMinS: 0 });
@@ -2070,6 +2780,17 @@ async function selbsttest() {
         pruef("MESS-PLAN Staffel 1 mit beide: ganz grün hält auf beiden Geräten, halb rot ohne Heil-Versuch fällt",
             bp.radeon.join() === "e.K1#1" && bp.gtx.join() === "e.K1#1" && bp.uebersprungen.join() === "f.K1#1", JSON.stringify(bp));
     }
+    {
+        // DIE PFLICHT (w4-sitzung-reif): die Staffel 2 trägt PFLICHT-OFFEN C, ihre 1 ist rot und keiner nennt das Kriterium — der Plan misst
+        // sie trotzdem an jedem Zug auf beiden Geräten, auch nach einem frischen ROT; dieselbe Staffel ohne die Pflicht bleibt übersprungen
+        const pv = [V("p.K1#1", "radeon", false), V("p.K1#1", "gtx", false), V("p.K1#2", "radeon", false), V("p.K1#2", "gtx", false),
+            V("q.K1#1", "radeon", false), V("q.K1#1", "gtx", false), V("q.K1#2", "radeon", false), V("q.K1#2", "gtx", false)];
+        const pp = messPlan([P("p.K1", 1, ["radeon", "gtx"]), { ...P("p.K1", 2, ["radeon", "gtx"]), quelle: "2 = auch x, und der Verkehr der Stadt (PFLICHT-OFFEN C): y, beide Geräte" },
+            P("q.K1", 1, ["radeon", "gtx"]), { ...P("q.K1", 2, ["radeon", "gtx"]), quelle: "2 = auch x, beide Geräte" }],
+        (id, g) => pv.find((x) => x.id === id && x.geraet === g) || null, new Set(), () => false);
+        pruef("MESS-PLAN eine Staffel mit PFLICHT-OFFEN misst an jedem Zug auf beiden Geräten (auch ohne stehende 1, auch nach ROT); ohne die Pflicht übersprungen",
+            pp.radeon.join() === "p.K1#2" && pp.gtx.join() === "p.K1#2" && pp.uebersprungen.join() === "p.K1#1,q.K1#1,q.K1#2", JSON.stringify(pp));
+    }
     pruef("GEN unbekanntes Kriterium ist ROT", standPruefen({ kopf: "abcd1234", je: { "x.K1": {} } }, "abcd1234", new Set()).length === 1);
     // (7) DIE FARM: Scheiben (LPT, Zwillinge zusammen, Gewicht aus der jüngsten Messung), der Anbieter je Scheibe, die Vereinigung
     // der Teile (ersetzt, ungemessen, fehlende Scheibe beim Namen, fremder SHA wirft) und kein Schloss nur für headless
@@ -2132,15 +2853,27 @@ async function selbsttest() {
         const fe = (mut) => pruefeStationen([{ ...gp, ...mut }], karte).fehler.join(" | ");
         const f = [fe({ befehl: ["node", "-e", "0"] }), fe({ geraet: "headless", gpu: false }), fe({ probe: { befehl: ["node", "-e", "0"], sek: 5000 } }),
             fe({ probe: { befehl: ["bash", "-c", "raeum() { for p in $(netstat -ano); do :; done; }; node scripts/werkbank.cjs start --echt"] } }), fe({})];
-        pruef("SITZUNG-FORMAT genau eines von befehl und probe · probe nur an einer GPU-Station · Deckel ≤ " + PROBE_MAX_S + " s · die Feinde der Welt beim Namen",
-            /genau eines von befehl und probe/.test(f[0]) && /probe nur an einer GPU-Station/.test(f[1]) && /probe.sek nicht/.test(f[2]) &&
+        pruef("SITZUNG-FORMAT genau eines von befehl und probe · probe nur an einer GPU-Station · Deckel ≤ " + PROBE_AUSNAHME_S + " s · die Feinde der Welt beim Namen",
+            /genau eines von befehl und probe/.test(f[0]) && /probe nur an einer GPU-Station/.test(f[1]) && /Deckel 5000 s über 90 s/.test(f[2]) &&
             /greift die Welt der Sitzung an: netstat \(räumt Ports\), werkbank start\|stop/.test(f[3]) && f[4] === "", f.join(" || "));
+        const pb = (p) => fe({ probe: { befehl: ["node", "-e", "0"], sek: 30, ...p } });
+        const f2 = [pb({ mutiert: "ja" }), pb({ stellung: "mitte" }), pb({ ausnahme: "weil" }), pb({ ausnahme: "der Grund beim Namen", sek: 91 }), pb({ wache: 1 }),
+            pb({ mutiert: true, stellung: "ende", ausnahme: "der Grund beim Namen", sek: 90 })];
+        pruef("SITZUNG-FORMAT die Schlüssel der Fahrt: mutiert boolesch · stellung anfang|ende · ausnahme mit Grund und nie über " + PROBE_AUSNAHME_S + " s · nichts sonst",
+            /mutiert nicht boolesch/.test(f2[0]) && /stellung nicht anfang\|ende/.test(f2[1]) && /ausnahme ohne Grund/.test(f2[2]) && /Deckel 91 s über 90 s — nie, auch mit ausnahme/.test(f2[3]) &&
+            /probe trägt nur befehl, sek, mutiert, ausnahme, stellung/.test(f2[4]) && f2[5] === "", f2.join(" || "));
         const h = "hilfe";
         const alt = (st) => crypto.createHash("sha1").update(JSON.stringify({ k: st.kriterium, s: st.staffel, g: geraeteVon(st), b: st.befehl, e: st.env || {},
             gpu: !!st.gpu, u: String(st.urteil), p: st.pfad, q: st.quelle, h })).digest("hex").slice(0, 12);
         pruef("SITZUNG-ABDRUCK eine befehl-Station Byte für Byte wie vor der Sitzung, eine Probe trägt Befehl und Deckel",
             abdruck(st0, h) === alt(st0) && abdruck(gp, h) !== abdruck({ ...gp, probe: { ...gp.probe, sek: 31 } }, h) &&
             abdruck(gp, h) !== abdruck({ ...gp, probe: { ...gp.probe, befehl: ["node", "-e", "1"] } }, h), abdruck(st0, h) + " " + alt(st0));
+        const altP = (st) => crypto.createHash("sha1").update(JSON.stringify({ k: st.kriterium, s: st.staffel, g: geraeteVon(st), b: st.befehl, e: st.env || {},
+            gpu: !!st.gpu, u: String(st.urteil), p: st.pfad, q: st.quelle, h, pr: [st.probe.befehl, probeSek(st)] })).digest("hex").slice(0, 12);
+        pruef("SITZUNG-ABDRUCK eine Probe ohne mutiert und stellung Byte für Byte wie am Sitzungs-Stand; mutiert und stellung ändern ihn, die ausnahme nie",
+            abdruck(gp, h) === altP(gp) && abdruck({ ...gp, probe: { ...gp.probe, mutiert: true } }, h) !== abdruck(gp, h) &&
+            abdruck({ ...gp, probe: { ...gp.probe, stellung: "ende" } }, h) !== abdruck(gp, h) && abdruck({ ...gp, probe: { ...gp.probe, ausnahme: "der Grund beim Namen" } }, h) === abdruck(gp, h),
+            abdruck(gp, h) + " " + altP(gp));
         e = await fahreStation({ ...gp, urteil: lies }, ctx("probe-allein"));
         pruef("SITZUNG eine Probe fährt nie außerhalb der Sitzung", e.gruen === false && /nur in der Sitzung/.test(e.grund), JSON.stringify(e));
         const P = 41004 + (process.pid % 400) * 10;
@@ -2149,11 +2882,24 @@ async function selbsttest() {
         fs.writeFileSync(stub, [
             'const http = require("http"), fs = require("fs"); const [W, z, art] = process.argv.slice(2); const n = (x) => fs.appendFileSync(z, x + "\\n");',
             'n("start"); if (art === "kaputt") { console.log("WERKBANK-FEHLER stub"); process.exit(4); }',
+            'let seite = null; const neu = () => { const R = { info: { render: { drawCalls: 7, triangles: 900 } }, _animation: { _animationLoop: null }, setAnimationLoop(cb) { this._animation._animationLoop = cb || null; } };',
+            '  seite = { win: { __vram: { puffer: 1048576, texturen: 1048576 } }, R, welt: { state: { renderer: R, playerMesh: { position: { x: 1, z: 2 } }, cameraMode: "first",',
+            '  player: { mountedArch: null }, perfTargetMs: 1000, perfSense: { loadScale: 1 }, weather: "sunny", creatures: [], timeOfDay: 0.5 }, _gpuLeine: { gerendert: 0 } } }; }; neu();',
+            'setInterval(() => { const cb = seite.R._animation._animationLoop; if (cb) cb(performance.now()); }, 16);',
+            // der Weg einer Probe (art „weg“): die Grundstellung an Ort und Stelle nennt ihn, bis die Seite neu lud; „weg-bleibt“ trägt ihn
+            // auch durch die Tür (die Wege-Linse der Grundstellung, grundSpielen)
+            'let geladen = false; const weg = () => (art === "weg-bleibt" || (art === "weg" && !geladen) ? ["wege +1 [-312.4,-1060.2,-87.6,-1015.1/1] (probe:tempo4)"] : []);',
             'http.createServer((q, r) => { let d = ""; q.on("data", (c) => (d += c)); q.on("end", () => { const b = d ? JSON.parse(d) : {}; const s = (o) => r.end(JSON.stringify(o));',
-            '  if (q.url === "/eval") { if (/localStorage\\.clear/.test(b.code)) { n("grund"); return s({ ergebnis: { ls: 0, welten: 0 } }); }',
+            '  if (q.url === "/eval") { if (/_grundstellung\\(\\)/.test(b.code)) { n("nimm"); return s({ ergebnis: { grund: "{}", n: 3, ms: 1, welt: "w1", seite: [], wege: { flaechen: [], keys: [] } } }); }',
+            '    if (/_grundstellung\\("/.test(b.code)) { n("grund"); return s({ ergebnis: { ok: true, anders: (art === "anders" ? ["augenblick.brand"] : []).concat(weg()), neu: {}, ms: 1, welt: "w1" } }); }',
+            '    if (/__punkteStrom/.test(b.code)) return s({ ergebnis: new Function("r", "window", "performance", b.code)(seite.welt, seite.win, performance) });',
+            '    if (/_weltBetreten\\(/.test(b.code)) { n("tuer"); return s({ ergebnis: { ok: true, worldId: "w1" } }); }',
+            '    if (b.code === "loop an") { seite.R.setAnimationLoop(() => seite.welt._gpuLeine.gerendert++); return s({ ergebnis: 1 }); }',
+            '    if (b.code === "loop aus") { seite.R.setAnimationLoop(null); return s({ ergebnis: 0 }); }',
             '    if (b.code === "tod") { n("tod"); return r.end(JSON.stringify({ ergebnis: "tod" }), () => process.exit(3)); }',
             '    if (b.code === "mord") { n("mord"); process.exit(3); } return s({ ergebnis: "warm" }); }',
-            '  if (q.url === "/reload") { n("reload"); return s({ neu: true, ms: 1 }); } if (q.url === "/fenster") return s({ fenster: [1920, 1080] });',
+            '  if (q.url === "/reload") { n("reload"); neu(); geladen = true; return s({ neu: true, ms: 1 }); } if (q.url === "/fenster") return s({ fenster: [1920, 1080] });',
+            '  if (q.url === "/umstellen") { n("umstellen:" + b.ort); return s({ takte: 3, steht: true, chunks: 9 }); }',
             '  if (q.url === "/stop") { n("stop"); s({ stop: true }); return setTimeout(() => process.exit(0), 50); } s({ fehler: "unbekannt" }); }); })',
             '  .listen(Number(W), "127.0.0.1", () => { console.log("[linse-gpu] amd/stub-sitzung"); console.log("WERKBANK bereit: Steuer 127.0.0.1:" + W); });',
         ].join("\n"));
@@ -2168,46 +2914,142 @@ async function selbsttest() {
             '.end(JSON.stringify({ code: process.argv[2] }));', "{AUS}"];
         const warm = (j, l) => ({ gruen: !!j && j.welt === "warm" && j.log && /^\[linse-gpu\] amd\/stub-sitzung$/m.test(l.stdout), zahl: "welt " + (j && j.welt) });
         const S = (k, s, probe, urteil) => ({ ...gp, kriterium: k, staffel: s, probe, urteil });
-        const lauf = async (gruppen, art, gpuLauf) => {
+        const hookLog = path.join(tmp, "sitzung-hook.log");
+        fs.writeFileSync(hookLog, "2026-10-29 10:00:00 ende ci-probe 1/1 echt\n");
+        const lauf = async (gruppen, art, gpuLauf, fahrtMaxS) => {
             fs.rmSync(zaehler, { force: true });
             const rohDir = path.join(tmp, "roh-" + art);
-            const es = {};
+            const es = {}, reihe = [];
             const kopf = await fahreSitzung(gruppen, { koord: KOORD, geraet: "radeon", bash: findeBash(), gpuLauf, baum: tmp, port: P, band: [P, P + 20000, P + 19999],
-                rohDir, welt: art === "kein-start" ? undefined : welt(art), stillS: 20 },
-            (g, xs, aus, zeit) => g.forEach((st, i) => { es[schluessel(st)] = stationsEintrag(xs[i], { zeit, abdruck: abdruck(st, h), port: P, bahn: "sitzung", zwilling: i ? schluessel(g[0]) : null, modus: "session" }); }));
-            return { es, kopf, z: fs.existsSync(zaehler) ? fs.readFileSync(zaehler, "utf8").trim().split("\n") : [] };
+                rohDir, welt: art === "kein-start" ? undefined : welt(art), stillS: 20, stromTaktMs: 200, hookLog, ...(fahrtMaxS ? { fahrtMaxS } : {}) },
+            (g, xs, aus, zeit) => g.forEach((st, i) => { reihe.push(schluessel(st)); es[schluessel(st)] = stationsEintrag(xs[i], { zeit, abdruck: abdruck(st, h), port: P, bahn: "sitzung", zwilling: i ? schluessel(g[0]) : null, modus: "session" }); }));
+            return { es, kopf, reihe, rohDir, z: fs.existsSync(zaehler) ? fs.readFileSync(zaehler, "utf8").trim().split("\n") : [] };
         };
         const gl = findeBash() ? path.join(tmp, "sitzung-schloss.sh") : null;
         const glLog = path.join(tmp, "sitzung-schloss.log");
         if (gl) fs.writeFileSync(gl, '#!/bin/bash\nN="$1"; shift\necho "$N $GPU_LAUF_ART $GPU_LAUF_MAX_S" >> "' + glLog.split(path.sep).join("/") + '"\necho "gpu-lauf: Schloss $N (zeit) nach 0 s" >&2\n"$@"\n');
-        const g1 = [[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)], [S("b.K1", 1, { befehl: ["node", "-e", "setTimeout(() => {}, 60000)"], sek: 2 }, lies)],
+        if (gl) fs.copyFileSync(path.join(DIR, "werkzeug", "gpu-schloss.sh"), path.join(tmp, "gpu-schloss.sh"));
+        const g1 = [[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)], [S("b.K1", 1, { befehl: ["node", "-e", "console.log('SCHRITT /umstellen 41.3 s'); setTimeout(() => {}, 60000)"], sek: 2 }, lies)],
             [S("c.K1", 1, { befehl: ["node", "-e", "process.exit(1)"], sek: 30 }, (j, l) => ({ gruen: l.exit === 0, zahl: "exit " + l.exit }))],
             [S("d.K1", 1, { befehl: [...ruf, "return 2"], sek: 30 }, warm), S("d.K1", 2, { befehl: [...ruf, "return 2"], sek: 30 }, warm)]];
         const r1 = await lauf(g1, "gut", gl);
         const x = r1.es;
         const zeile = /^  (GRÜN|ROT ) (\S+) · .* · Exit \S+ · ([\d.]+) min( \(Zwilling von \S+\))?$/;
         const schloss = gl && fs.existsSync(glLog) ? fs.readFileSync(glLog, "utf8").trim().split("\n") : [];
-        pruef("SITZUNG EINE Welt: jede Probe darin (WERKBANK_PORT, das Log, der Zeuge der Welt), der Deckel der Probe, nach dem Fehler die nächste in DERSELBEN Welt, Zwillinge EIN Lauf",
-            r1.z.filter((l) => l === "start").length === 1 && x["a.K1#1"].gruen && /Deckel 2 s/.test(x["b.K1#1"].grund) && x["c.K1#1"].gruen === false && x["c.K1#1"].exit === 1 &&
+        pruef("SITZUNG EINE Welt: jede Probe darin (WERKBANK_PORT, das Log, der Zeuge der Welt), der Deckel der Probe beim Namen ihrer letzten Zeile, nach dem Fehler die nächste in DERSELBEN Welt, Zwillinge EIN Lauf",
+            r1.z.filter((l) => l === "start").length === 1 && x["a.K1#1"].gruen && /^Deckel 2 s gerissen — beendet, UNGEMESSEN \(zuletzt: SCHRITT \/umstellen 41\.3 s\)$/.test(x["b.K1#1"].grund) && x["b.K1#1"].ungemessen === true &&
+            x["c.K1#1"].gruen === false && x["c.K1#1"].exit === 1 &&
             x["d.K1#1"].gruen && x["d.K1#2"].gruen && x["d.K1#2"].zwilling === "d.K1#1" && x["a.K1#1"].gpu === "amd/stub-sitzung" && r1.kopf.proben === 4, JSON.stringify([r1.z, x]));
-        pruef("SITZUNG die Grundstellung vor jeder Probe außer der ersten (Spielstand weg, die Seite neu) — nie ein zweiter Start; am Ende stop",
-            r1.z.join(",") === "start,grund,reload,grund,reload,grund,reload,stop" && r1.kopf.grundstellungS.length === 3 && typeof r1.kopf.bootS === "number", JSON.stringify([r1.z, r1.kopf]));
+        pruef("SITZUNG der Grund nach der Reihe anfang, die Grundstellung nur nach einem Abbruch oder einer mutierenden Probe — nie vor jeder; nach dem Abbruch (b.K1 am Deckel) durch die Tür (die Seite neu: die Arbeit der gefallenen Probe endet in der Seite); nie ein zweiter Start; am Ende stop",
+            r1.z.join(",") === "start,nimm,tuer,reload,grund,stop" && r1.kopf.grundstellungS.length === 1 && typeof r1.kopf.bootS === "number", JSON.stringify([r1.z, r1.kopf]));
         pruef("SITZUNG das Schloss EINMAL für die ganze Sitzung (zeit, die Proben nehmen es nie)",
             !gl || (schloss.length === 1 && /^punkte-radeon-sitzung zeit \d+$/.test(schloss[0])), JSON.stringify(schloss));
         pruef("SITZUNG das Format von heute: je Station gruen, zahl, exit, minuten, zeit, abdruck, port, bahn und modus \"session\"; die Zeile liest zug.cjs",
             Object.values(x).every((e) => ["gruen", "zahl", "exit", "minuten", "zeit", "abdruck", "port", "bahn"].every((k) => k in e) && e.modus === "session" && e.bahn === "sitzung") &&
-            Object.entries(x).every(([id, e]) => zeile.test(stationsZeile(id, e)) && / · Sitzung · /.test(stationsZeile(id, e))), JSON.stringify(Object.entries(x).map(([id, e]) => stationsZeile(id, e))));
+            Object.entries(x).every(([id, e]) => (e.ungemessen ? /^  OFFEN \S+ · Deckel .* · Sitzung · ungemessen/ : zeile).test(stationsZeile(id, e)) && / · Sitzung · /.test(stationsZeile(id, e))),
+            JSON.stringify(Object.entries(x).map(([id, e]) => stationsZeile(id, e))));
+        // DIE REIHE und DER STROM: anfang, die Welt lassend, ende, mutierend — die Grundstellung nur nach der mutierenden; jede Probe kennt
+        // den Strom und ihren Namen, die Bilder ihres Loops stehen unter ihrem Namen, der Kopf trägt die Dauerlast
+        const umw = ["node", "-e", 'require("fs").writeFileSync(process.argv[1], JSON.stringify({ strom: process.env.PUNKTE_SITZUNG_STROM, probe: process.env.PUNKTE_PROBE }))', "{AUS}"];
+        const loop = ["node", "-e", 'const h = require("http"); const e = (c) => new Promise((f) => h.request({ host: "127.0.0.1", port: Number(process.env.WERKBANK_PORT), path: "/eval", method: "POST" }, ' +
+            '(r) => (r.resume(), r.on("end", f))).end(JSON.stringify({ code: c }))); (async () => { await e("loop an"); await new Promise((f) => setTimeout(f, 400)); await e("loop aus"); ' +
+            'require("fs").writeFileSync(process.argv[1], "{}"); })();', "{AUS}"];
+        const umwOk = (j) => ({ gruen: !!j && !!j.strom && fs.existsSync(j.strom) && !!j.probe, zahl: JSON.stringify(j) });
+        const da = (j) => ({ gruen: !!j, zahl: "da" });
+        const r5 = await lauf([[S("m.K1", 1, { befehl: loop, sek: 30, mutiert: true }, da)], [S("n.K1", 1, { befehl: umw, sek: 30 }, umwOk)],
+            [S("a.K1", 1, { befehl: loop, sek: 30, stellung: "anfang" }, da)], [S("e.K1", 1, { befehl: umw, sek: 30, stellung: "ende" }, umwOk)],
+            [S("o.K1", 1, { befehl: umw, sek: 30, mutiert: true }, umwOk)]], "reihe", null);
+        const sr = stromLesen(path.join(r5.rohDir, "sitzung", "strom.ndjson"));
+        const je = (p) => sr.bilder.filter((b) => b.probe === p).length;
+        pruef("SITZUNG die Reihe: anfang · was die Welt lässt · ende · was sie ändert; die Grundstellung nur nach der mutierenden (m vor o)",
+            r5.reihe.join(" ") === "a.K1#1 n.K1#1 e.K1#1 m.K1#1 o.K1#1" && r5.z.join(",") === "start,nimm,grund,stop" && Object.values(r5.es).every((e) => e.gruen), JSON.stringify([r5.reihe, r5.z, r5.es]));
+        pruef("SITZUNG DER STROM: der Haken über /eval in der Seite, jede Probe kennt ihn (PUNKTE_SITZUNG_STROM, PUNKTE_PROBE), die Bilder ihres Loops unter ihrem Namen, EINE Seite über die Grundstellung (kein Neuladen), der Kopf trägt die Dauerlast",
+            je("a.K1#1") >= 5 && je("m.K1#1") >= 5 && je("n.K1#1") === 0 && sr.seiten.length === 1 && sr.bilder.every((b) => b.vram === 2 && b.befehle === 7 && b.voll === 1) &&
+            r5.kopf.strom && r5.kopf.strom.bilder >= 8 && r5.kopf.strom.luecken === 0 && r5.kopf.strom.zapfen >= 10 && r5.kopf.strom.fehler === 0,
+            JSON.stringify({ a: je("a.K1#1"), m: je("m.K1#1"), seiten: sr.seiten.length, kopf: r5.kopf.strom }));
         const r2 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "tod"], sek: 30 }, (j) => ({ gruen: !!j && j.welt === "tod", zahl: "tod" }))], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "stirbt", null);
         pruef("SITZUNG eine Welt, die stirbt: die Sitzung startet nie neu, die übrigen Proben sind UNGEMESSEN beim Grund (nie ROT)",
             r2.z.filter((l) => l === "start").length === 1 && r2.es["b.K1#1"].ungemessen === true && /trägt nicht mehr/.test(r2.es["b.K1#1"].grund) && /trägt nicht mehr/.test(r2.kopf.grund), JSON.stringify([r2.z, r2.es, r2.kopf]));
         // DIE WELT ENDET UNTER DER PROBE (Takt 23 GTX an 73bdf938: die Vorfahrt der OMEN nahm sie nach 7,0 min, ferne.K1#2 stand als ROT
         // „read ECONNRESET“ in der Messung): der Ruf der Probe reißt ohne Antwort, die Probe endet nicht GRÜN — das ist keine Messung
-        const r5 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "mord"], sek: 30 }, (j, l) => ({ gruen: !!j && j.welt === "warm", zahl: "exit " + l.exit }))],
+        const r12 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "mord"], sek: 30 }, (j, l) => ({ gruen: !!j && j.welt === "warm", zahl: "exit " + l.exit }))],
             [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "mord", null);
         pruef("SITZUNG eine Welt, die UNTER der Probe endet (die Vorfahrt der OMEN): die Probe ist UNGEMESSEN beim Grund, nie ROT; die übrigen ebenso",
-            r5.z.join(",") === "start,mord" && r5.es["a.K1#1"].ungemessen === true && /endete während der Probe/.test(r5.es["a.K1#1"].grund) &&
-            /die Probe sah: exit [1-9]/.test(r5.es["a.K1#1"].zahl) && r5.es["b.K1#1"].ungemessen === true && /trägt nicht mehr/.test(r5.es["b.K1#1"].grund),
-            JSON.stringify([r5.z, r5.es, r5.kopf]));
+            r12.z.join(",") === "start,nimm,mord" && r12.es["a.K1#1"].ungemessen === true && /endete während der Probe/.test(r12.es["a.K1#1"].grund) &&
+            /die Probe sah: exit [1-9]/.test(r12.es["a.K1#1"].zahl) && r12.es["b.K1#1"].ungemessen === true && /trägt nicht mehr/.test(r12.es["b.K1#1"].grund),
+            JSON.stringify([r12.z, r12.es, r12.kopf]));
+        // DER WEG EINER PROBE (w4-sitzung-reif; tempo4 legt seinen Weg über die Wiese, `_standRueckspielen` lässt die Wege-Karte und die
+        // Natur, die er räumte, warm): nennt die Grundstellung an Ort und Stelle einen Weg seit dem Grund, geht sie durch die Tür (die
+        // Lade-Kette des Speicher-Gesetzes baut Karte und Natur aus dem Grund neu) — die nächste Probe misst im Grund; trägt die Welt ihn
+        // auch durch die Tür, sind die übrigen UNGEMESSEN beim Namen des Wegs
+        const r13 = await lauf([[S("m.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)]], "weg", null);
+        pruef("SITZUNG DER WEG EINER PROBE: die Grundstellung nennt ihn und geht durch die Tür, danach misst die nächste Probe im Grund (die Tür im Kopf beim Namen des Wegs)",
+            r13.z.join(",") === "start,nimm,grund,tuer,reload,grund,stop" && r13.es["m.K1#1"].gruen && r13.es["b.K1#1"].gruen &&
+            r13.kopf.wegeTueren.length === 1 && /^wege \+1 .*probe:tempo4/.test(r13.kopf.wegeTueren[0].wege), JSON.stringify([r13.z, r13.es, r13.kopf.wegeTueren]));
+        const r14 = await lauf([[S("m.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)]], "weg-bleibt", null);
+        pruef("SITZUNG MUTANTE ein Weg, der auch die Tür überlebt: die übrigen Proben UNGEMESSEN beim Namen des Wegs (nie ROT, nie still weiter)",
+            r14.z.join(",") === "start,nimm,grund,tuer,reload,grund,stop" && r14.es["m.K1#1"].gruen && r14.es["b.K1#1"].ungemessen === true &&
+            /abweichend vom Grund: wege \+1 .*probe:tempo4/.test(r14.es["b.K1#1"].grund), JSON.stringify([r14.z, r14.es]));
+        // DER ABBRUCH VON ANFANG: fällt die letzte Probe von anfang am Deckel, lädt die Seite neu, ehe der Grund genommen wird
+        const r10 = await lauf([[S("a.K1", 1, { befehl: ["node", "-e", "setTimeout(() => {}, 60000)"], sek: 2, stellung: "anfang" }, lies)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "gut", null);
+        pruef("SITZUNG DER ABBRUCH VON ANFANG: die Seite neu, ehe der Grund genommen wird (nie ein Grund aus einer Seite, in der eine gefallene Probe arbeitet)",
+            r10.z.join(",") === "start,reload,nimm,grund,stop" && r10.es["a.K1#1"].ungemessen === true && r10.es["b.K1#1"].gruen, JSON.stringify([r10.z, r10.es]));
+        // DER ORT: die Proben eines Messorts stehen beieinander (die Reihe ihres ersten Auftritts, ohne Ort zuletzt), die Sitzung stellt je
+        // Ort EINMAL um (vor dem Deckel der Probe, je Ort im Kopf), nach einer Grundstellung neu (der Grund stellt den Spieler zurück)
+        const mitOrt = (o) => [...ruf, "return 1", "umstellen --ort " + o];
+        const r11 = await lauf([[S("a.K1", 1, { befehl: mitOrt("wiese"), sek: 30 }, warm)], [S("b.K1", 1, { befehl: mitOrt("genesis"), sek: 30 }, warm)],
+            [S("c.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)], [S("d.K1", 1, { befehl: mitOrt("wiese"), sek: 30 }, warm)],
+            [S("m.K1", 1, { befehl: mitOrt("wiese"), sek: 30, mutiert: true }, warm)], [S("n.K1", 1, { befehl: mitOrt("wiese"), sek: 30, mutiert: true }, warm)]], "gut", null);
+        pruef("SITZUNG DER ORT: die Proben eines Messorts beieinander, EIN Umstellen je Ort vor dem Deckel der Probe, nach der Grundstellung neu, je Ort im Kopf",
+            r11.reihe.join(" ") === "a.K1#1 d.K1#1 b.K1#1 c.K1#1 m.K1#1 n.K1#1" &&
+            r11.z.join(",") === "start,nimm,umstellen:wiese,umstellen:genesis,umstellen:wiese,grund,umstellen:wiese,stop" &&
+            r11.kopf.orte.length === 4 && r11.kopf.orte[3].nach === "der Grundstellung" && Object.values(r11.es).every((e) => e.gruen),
+            JSON.stringify([r11.reihe, r11.z, r11.kopf.orte]));
+        // der Ort eines Vegetations-Laufs (w4-sitzung-reif): der erste Stand seines Plans — die Sitzung stellt ihn vor dem Deckel
+        const plan = (...p) => ({ probe: { befehl: ["node", "-e", "(async function vegetationLauf() {})()", "{AUS}", "{PORT}", JSON.stringify(p)] } });
+        const vo = [plan(["wiese", "third", 0.5, null, "wiese"]), plan(["genesis", "ego", 0.5, null, "wiese"], ["wiese", "ego", 0.3, null, "wiese"]), plan()].map(probeOrt);
+        pruef("SITZUNG DER ORT eines Vegetations-Laufs: der erste Stand seines Plans (wiese, genesis), ohne Plan keiner",
+            vo.join(",") === "wiese,genesis," && vo[2] === null, JSON.stringify(vo));
+        // DIE GRUNDSTELLUNG, DIE NICHT TRÄGT: weicht nach dem Rückspielen eine Größe vom Grund ab, sind die übrigen Proben UNGEMESSEN beim
+        // Namen der Größe (nie ROT, nie ein Neuladen)
+        const r7 = await lauf([[S("m.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)]], "anders", null);
+        pruef("SITZUNG eine Grundstellung, nach der eine Größe vom Grund abweicht: die übrigen Proben UNGEMESSEN beim Namen der Größe",
+            r7.es["m.K1#1"].gruen && r7.es["b.K1#1"].ungemessen === true && /abweichend vom Grund: augenblick\.brand/.test(r7.es["b.K1#1"].grund) && r7.z.join(",") === "start,nimm,grund,stop",
+            JSON.stringify([r7.z, r7.es]));
+        // DAS SCHLOSS ZWISCHEN DEN PROBEN: wartet ein CI-Job (die letzte Zeile von hook.log), geht das Schloss an der Proben-Grenze an ihn und kommt
+        // danach wieder — die Welt startet nie neu, das Warten zählt nie in die Fahrt
+        if (gl) {
+            fs.writeFileSync(glLog, "");
+            fs.appendFileSync(hookLog, "2026-10-29 10:00:05 start ci-probe 1/1 echt: wartet auf Schloss von 'punkte-radeon-sitzung'\n");
+            const r8 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "gut", gl);
+            fs.writeFileSync(hookLog, "2026-10-29 10:00:00 ende ci-probe 1/1 echt\n");
+            const sl = fs.readFileSync(glLog, "utf8").trim().split("\n");
+            pruef("SITZUNG DAS SCHLOSS ZWISCHEN DEN PROBEN: ein wartender CI-Job bekommt es an jeder Proben-Grenze, die Sitzung nimmt es neu, die Welt bleibt (ein Start)",
+                sl.length === 3 && r8.kopf.freigaben.length === 2 && r8.z.filter((l) => l === "start").length === 1 && r8.es["a.K1#1"].gruen && r8.es["b.K1#1"].gruen,
+                JSON.stringify([sl, r8.kopf.freigaben, r8.z]));
+            // DER LANGSAME BLICK (Heilung 30.10., Radeon 3ed96b3f: 69 von 69 Proben ungemessen, „read ECONNRESET“ am ersten /fenster):
+            // ci_wartet braucht hier 7 s (der Laptop 5,2 s, mit Waisen daneben 20 s) — als spawnSync stand der Läufer so lange, die Werkbank
+            // schloss den ruhenden Socket (keepAliveTimeout 5 s), der nächste Ruf nahm ihn: die Welt galt als tot. Der Blick läuft neben
+            // der Probe, jeder Ruf hat seine Verbindung: die Welt trägt über jede Grenze, beide Proben messen, keine Freigabe
+            const langsam = path.join(tmp, "langsam");
+            fs.mkdirSync(langsam, { recursive: true });
+            fs.copyFileSync(gl, path.join(langsam, "sitzung-schloss.sh"));
+            fs.writeFileSync(path.join(langsam, "gpu-schloss.sh"), "ci_wartet() { sleep 7; return 1; }\n");
+            const r9 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "gut",
+                path.join(langsam, "sitzung-schloss.sh"));
+            pruef("SITZUNG DER LANGSAME BLICK: ci_wartet 7 s hält den Läufer nie an — die Welt trägt über jede Proben-Grenze, beide Proben messen, keine Freigabe",
+                !!r9.es["a.K1#1"] && r9.es["a.K1#1"].gruen && !!r9.es["b.K1#1"] && r9.es["b.K1#1"].gruen && !r9.kopf.grund && r9.kopf.freigaben.length === 0 && r9.kopf.ciBlicke >= 1,
+                JSON.stringify([r9.es, r9.kopf.grund, r9.kopf.freigaben, r9.kopf.ciBlicke]));
+        }
+        // DIE WACHE DER FAHRT: reißt die Uhr der Fahrt (hier 8 s), fällt die laufende Probe am Rest (UNGEMESSEN beim Namen), jede folgende
+        // ist offen, die Sitzung endet und nennt sie; die Fahrt davor misst wie immer
+        const r6 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)], [S("b.K1", 1, { befehl: ["node", "-e", "setTimeout(() => {}, 60000)"], sek: 30 }, lies)],
+            [S("c.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm), S("c.K1", 2, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "fahrt", null, 8);
+        pruef("SITZUNG DIE WACHE DER FAHRT: die Probe am Rest der Fahrt UNGEMESSEN (Deckel der Fahrt), die folgenden offen beim Namen, die Sitzung endet und nennt sie",
+            r6.es["a.K1#1"].gruen && r6.es["b.K1#1"].ungemessen === true && /^Deckel der Fahrt 8 s gerissen nach \d+ s der Probe — beendet, UNGEMESSEN$/.test(r6.es["b.K1#1"].grund) &&
+            ["c.K1#1", "c.K1#2"].every((id) => r6.es[id].ungemessen === true && /^die Fahrt riss 8 s \(in b\.K1#1\) — offen, UNGEMESSEN$/.test(r6.es[id].grund)) &&
+            JSON.stringify(r6.kopf.offen) === JSON.stringify(["b.K1#1", "c.K1#1", "c.K1#2"]) && /^die Fahrt riss 8 s in b\.K1#1 — offen: b\.K1#1, c\.K1#1, c\.K1#2$/.test(r6.kopf.grund) &&
+            r6.kopf.fahrtS < 14 && r6.z.filter((l) => l === "start").length === 1 && r6.z[r6.z.length - 1] === "stop", JSON.stringify([r6.es, r6.kopf, r6.z]));
         const r3 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "kaputt", null);
         pruef("SITZUNG eine Welt, die nie steht, ist ROT beim Grund (die Station misst, ob das Spiel bootet)",
             r3.es["a.K1#1"].gruen === false && !r3.es["a.K1#1"].ungemessen && /startet nicht: die Werkbank startet nicht/.test(r3.es["a.K1#1"].grund), JSON.stringify(r3));
@@ -2217,6 +3059,76 @@ async function selbsttest() {
             const r4 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "kein-start", bl);
             pruef("SITZUNG ein blockiertes Schloss ist UNGEMESSEN beim Namen, die Welt startet nie", r4.es["a.K1#1"].ungemessen === true && /blockiert.*ci-echt/.test(r4.es["a.K1#1"].grund) && !r4.z.length, JSON.stringify(r4));
         }
+    }
+    // (10) DER HAKEN DES STROMS in einer gestellten Seite (stromSeite, wie die Werkbank ihn per /eval zieht): nur gerenderte Bilder
+    // (die Leine gespannt: kein Bild), die Bild-Zeit nur innerhalb EINER Schleife, die Zelle ab dem Zapfen, der sie setzt, ein Wurf des
+    // Hakens gezählt und nie in das Spiel geworfen, eine Schleife von vor dem Haken fährt durch ihn, der Zapfen leert; der Leser
+    // nennt Zelle, Wetter, Wanduhr, Marke und den Überlauf des Stempel-Pools
+    {
+        const welt = () => {
+            const uhrMs = { t: 0 };
+            const R = { info: { render: { drawCalls: 50, triangles: 1e5 } }, _animation: { _animationLoop: null }, setAnimationLoop(cb) { this._animation._animationLoop = cb || null; } };
+            const r = { state: { renderer: R, playerMesh: { position: { x: 3, z: 4 } }, cameraMode: "first", player: { mountedArch: null }, perfTargetMs: 1000,
+                perfSense: { loadScale: 1 }, weather: "sunny", creatures: [], timeOfDay: 0.5 }, _gpuLeine: { gerendert: 0 }, _gpuTsAtMs: 1, _gpuTsLast: 9.5,
+                _szeneSkalaWirk: () => 0.75 };
+            const win = { __vram: { puffer: 50 * 1048576, texturen: 60 * 1048576 }, __stempelWache: () => ({ ueberlauf: uhrMs.ueberlauf || 0 }) };
+            const perf = { now: () => uhrMs.t, timeOrigin: 1e12, memory: { usedJSHeapSize: 200 * 1048576 } };
+            const zapf = (a) => new Function("r", "window", "performance", stromCode(a))(r, win, perf);
+            const bild = (t, leine = false) => {
+                uhrMs.t = t;
+                const cb = R._animation._animationLoop;
+                if (cb) cb(t);
+            };
+            return { r, R, win, uhrMs, zapf, bild, spiel: (leine) => () => { if (!leine.an) r._gpuLeine.gerendert++; } };
+        };
+        const W1 = welt(), leine = { an: false };
+        const e0 = W1.zapf({});
+        W1.R.setAnimationLoop(W1.spiel(leine));
+        W1.bild(0);
+        W1.bild(16.7);
+        leine.an = true;
+        W1.bild(25);
+        leine.an = false;
+        W1.bild(33.4);
+        const e1 = W1.zapf({ zelle: "wiese-ego-steht" });
+        W1.bild(50.1);
+        W1.R.setAnimationLoop(null);
+        W1.R.setAnimationLoop(W1.spiel(leine));
+        W1.bild(1000);
+        W1.r._gpuTsAtMs = 2;
+        W1.bild(1016.7);
+        const e2 = W1.zapf({ zelle: null });
+        Object.defineProperty(W1.r.state, "playerMesh", { get() { throw new Error("kaputt"); }, configurable: true });
+        let warf = false;
+        try {
+            W1.bild(1033.4);
+        } catch (_e) {
+            warf = true;
+        }
+        const e3 = W1.zapf({});
+        const W2 = welt();
+        W2.R.setAnimationLoop(W2.spiel({ an: false }));
+        W2.zapf({});
+        W2.bild(5);
+        W2.bild(21.7);
+        const e4 = W2.zapf({});
+        const dt = (e) => e.zeilen.map((z) => z[1]).join(",");
+        pruef("STROM-HAKEN nur gerenderte Bilder, die Bild-Zeit je Schleife (neue Schleife: −1), die Zelle ab ihrem Zapfen, VRAM · Befehle · Dreiecke · Sicht · Regler je Bild",
+            e0.bereit && e0.neu && e0.zeilen.length === 0 && dt(e1) === "-1,16.7,16.7" && e1.zeilen.every((z) => z[15] === -1 && z[3] === 110 && z[5] === 50 && z[9] === 1 && z[11] === 1) &&
+            dt(e2) === "16.7,-1,16.7" && e2.zeilen.every((z) => e2.namen.zelle[z[15]] === "wiese-ego-steht") && e2.zeilen[0][4] === -1 && e2.zeilen[2][4] === 9.5 && !e2.neu,
+            JSON.stringify([e1.zeilen, e2.zeilen]));
+        pruef("STROM-HAKEN ein Wurf des Hakens stört das Spiel nie (gezählt im Strom), eine Schleife von vor dem Haken fährt durch ihn",
+            !warf && e3.fehler === 1 && /kaputt/.test(e3.letzterFehler) && e3.zeilen.length === 0 && W1.r._gpuLeine.gerendert === 7 && dt(e4) === "-1,16.7", JSON.stringify([warf, e3, e4.zeilen]));
+        const sd = path.join(tmp, "strom-lesen.ndjson");
+        const zeile = (probe, e, stempel) => fs.appendFileSync(sd, JSON.stringify({ probe, zeit: "z", ...e, stempel }) + "\n");
+        zeile("a.K1#1", e1, 0);
+        stromMarke(sd, "a.K1#1", "dauer-anfang", { heapMB: 1 });
+        zeile("b.K1#1", e2, 2);
+        const L = stromLesen(sd);
+        pruef("STROM-LESER je Bild Probe, Seite, Wanduhr, Zelle und Wetter beim Namen, die Marke an ihrer Stelle unter den Bildern, ein Block nach Pool-Überlauf ohne GPU-Gültigkeit",
+            L.bilder.length === 6 && L.bloecke === 2 && L.seiten.length === 1 && L.bilder[0].wand === 1e12 && L.bilder[3].zelle === "wiese-ego-steht" && L.bilder[0].zelle === null &&
+            L.bilder.every((b) => b.wetter === "sunny") && L.marken.length === 1 && L.marken[0].bild === 3 && L.bilder[0].stempelOk && !L.bilder[3].stempelOk,
+            JSON.stringify([L.bilder.map((b) => [b.probe, b.zelle, b.stempelOk]), L.marken]));
     }
     fs.rmSync(tmp, { recursive: true, force: true });
     const rot = fall.filter((f) => !f.ok);
@@ -2241,11 +3153,12 @@ if (require.main === module) {
         if (verb === "run") await run(o);
         else if (verb === "halter") await halter(o);
         else if (verb === "grundstellung") {
-            // in einer Probe: die Grundstellung der Welt der Sitzung (WERKBANK_PORT, der Spiel-Baum ist cwd)
-            const g = await grundstellung(Number(o.port || process.env.WERKBANK_PORT), path.resolve(o.baum || "."));
-            console.log(g.ok ? "GRUNDSTELLUNG " + g.s + " s" : "GRUNDSTELLUNG ROT: " + g.grund);
+            // in einer Probe: die Grundstellung der Welt der Sitzung (WERKBANK_PORT, der Grund PUNKTE_SITZUNG_GRUND)
+            const g = await grundstellung(Number(o.port || process.env.WERKBANK_PORT), o.grund || process.env.PUNKTE_SITZUNG_GRUND);
+            console.log(g.ok ? "GRUNDSTELLUNG " + g.s + " s (im Spiel " + g.ms + " ms, neu " + JSON.stringify(g.neu) + ")" : "GRUNDSTELLUNG ROT: " + g.grund);
             process.exitCode = g.ok ? 0 : 1;
         }
+        else if (verb === "grundprobe") process.exitCode = (await grundProbe(o)) ? 0 : 1;
         else if (verb === "scheiben") scheibenCli(o);
         else if (verb === "vereine") vereineCli(o);
         else if (verb === "buchen") buchenCli(o);
@@ -2279,4 +3192,6 @@ if (require.main === module) {
 }
 
 module.exports = { liesStand, maschinenKriterium, standPruefen, buchen, pruefeStationen, trifftPfad, toteGlobs, gpuZeuge, gpuWand, abdruck, fahreStation,
-    frischUrteil, stempelDateien, linsenVon, linsenAm, ladeGeprueft, ladeMessungen, spielRepo, voll, git, schluessel, geraeteVon, hilfeText };
+    frischUrteil, stempelDateien, linsenVon, linsenAm, ladeGeprueft, ladeMessungen, spielRepo, voll, git, schluessel, geraeteVon, hilfeText,
+    // DER STROM für die Probe der Sitzung (require(process.env.PUNKTE_MASCHINE)): EIN Zapfen, EINE Marke, EIN Leser, der Ruf mit Frist
+    stromZapfen, stromMarke, stromLesen, rufFrist, STROM_SPALTEN };

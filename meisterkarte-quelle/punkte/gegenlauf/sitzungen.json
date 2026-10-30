@@ -1,0 +1,105 @@
+{
+ "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
+ "geraet": "radeon",
+ "zweck": "Gegenlauf der Sitzung gegen Takt 19 (messung/b3f9ae95-radeon.json im Zweig koordination)",
+ "deckel": "artifacts/profiband/werkzeug/gpu-lauf.sh session-gegenlauf, GPU_LAUF_MAX_S 2600 (C2b 3300) je Teil, darum fÃ¼nf Welten statt einer",
+ "teile": [
+  {
+   "teil": "A",
+   "start": "2026-10-29T10:59:55.502Z",
+   "port": 7804,
+   "warten": 0.04,
+   "bootS": 11.1,
+   "grundstellungS": [
+    2.2,
+    1.6,
+    1.3,
+    2.7,
+    2.8,
+    2.9,
+    2.9,
+    2.4
+   ],
+   "proben": 9,
+   "minuten": 17.3,
+   "stationen": "gelaende.K3#1 wetter.K2#1 tiere.K3#2 tiere.K2#2 affekt.K1#2 mensch.K2#2 luftwasser.K5#2 mensch.K5#1 haar.K1#1",
+   "schlossWartenS": 155
+  },
+  {
+   "teil": "B",
+   "start": "2026-10-29T11:24:51.520Z",
+   "port": 7804,
+   "warten": 0.05,
+   "bootS": 9.1,
+   "grundstellungS": [
+    1.5,
+    1.6,
+    2,
+    2.3,
+    1.9,
+    1.9,
+    2.2,
+    2.4
+   ],
+   "proben": 9,
+   "minuten": 25.09,
+   "stationen": "licht.K2#1 licht.K2#2 ferne.K1#1 ferne.K2#1 ferne.K1#2 ferne.K2#2 ferne.K5#1 licht.K5#1 material.K3#1 material.K3#2 schatten.K1#1",
+   "schlossWartenS": 296
+  },
+  {
+   "teil": "C1",
+   "start": "2026-10-29T12:35:40.763Z",
+   "port": 7804,
+   "warten": 0.13,
+   "bootS": 14.3,
+   "grundstellungS": [
+    5,
+    2.8,
+    2,
+    8.8
+   ],
+   "proben": 5,
+   "grund": "die Welt trÃ¤gt nicht mehr vor fahrzeug.K3#2: der Spielstand fÃ¤llt nicht: {\"ms\":3,\"fehler\":\"Attempted to use detached Frame '741CD4149DA36A88BB8F88DBAE753ED9'.\",\"stapel\":[\"at CdpFrame.<anonymous> (C:\\\\Users\\\\micha\\\\AnazhRealm-profiband\\\\node_modules\\\\puppeteer-core\\\\lib\\\\cjs\\\\puppeteer\\\\util\\\\decorators.js:107:23)\",\"at CdpPage.evaluate (C:\\\\Users\\\\micha\\\\AnazhRealm-profib",
+   "minuten": 20.88,
+   "stationen": "tiere.K1#2 mensch.K1#1 oekologie.K4#2 vegetation.K2#1 fahrzeug.K3#1 (Welt brach danach: fahrzeug.K3#2 fahrzeug.K4#1 fahrzeug.K4#2 siedlung.K2#1 siedlung.K2#2 spielgang.K3#1 ungemessen)",
+   "schlossWartenS": 2520
+  },
+  {
+   "teil": "C2a",
+   "start": "2026-10-29T14:32:40.370Z",
+   "port": 7804,
+   "warten": 0.52,
+   "bootS": 40,
+   "grundstellungS": [
+    1.7,
+    1.5,
+    1.3,
+    1.5,
+    1.5
+   ],
+   "proben": 6,
+   "minuten": 29.58,
+   "stationen": "fahrzeug.K3#1 fahrzeug.K3#2 fahrzeug.K4#1 fahrzeug.K4#2 siedlung.K2#1 siedlung.K2#2 spielgang.K3#1",
+   "schlossWartenS": 5166
+  },
+  {
+   "teil": "C2b",
+   "start": "2026-10-29T15:32:02.230Z",
+   "port": 7804,
+   "warten": 0.03,
+   "bootS": 10.5,
+   "grundstellungS": [
+    1.8,
+    1.5,
+    1.2,
+    1.5,
+    1.6
+   ],
+   "proben": 6,
+   "minuten": 35.37,
+   "stationen": "mensch.K1#1 material.K3#2 fahrzeug.K3#1 leib.K1#1 leib.K1#2 halten.K2#1",
+   "schlossWartenS": 1477
+  }
+ ],
+ "minutenSumme": 128.22
+}
