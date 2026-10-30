@@ -233,9 +233,21 @@ async function bodenRollen(tor) {
 // 10 min; die Schüsse halten die Welt wie im Lauf (`kreis.halt`), die Sichtung ist dieselbe (Klassen-Maske tier ≥ 200 px am Maß
 // 1280×720, `imBlick`). Was der Raffer gröber macht, macht das Urteil strenger: die Prüfung je 250 ms Wanduhr liegt n-mal weiter in
 // der Spiel-Zeit (weniger Schuss-Gelegenheiten). Die Bild-Zeiten dieser Probe sind keine Kadenz (der Strom urteilt sie nicht).
+// DER GRUND DES RISSES BEIM NAMEN (w4-fehlt-acht; Radeon riss in jeder Fahrt am 90/99-s-Deckel): die Sichtung. Jedes Schuss-Paar sind
+// drei Aufnahmen des Ausgabe-Pfads (G, G2, O) zu je 33 Bildern bei 1280×720, und der Kreis schoss, solange ein ungesehenes Tier im
+// Blick stand — 28 und 21 Paare an 3ed96b3f (Radeon, eigener Boot), die Welt steht derweil. DER SCHNITT: die Sichtung zählt bis zur
+// Staffel (`STAFFEL` 3 Sichtungen je Sicht), danach schießt der Kreis nie mehr und wacht bis 600 Spiel-s über das Schlupfloch (`imBlick`
+// zählt jeden Takt der Prüfung weiter) — das Urteil (≥ 3, im Blick 0, 600 Spiel-s, die Sicht) fällt gleich; nur die Zahl der Sichtungen
+// über drei fällt weg. Der Anker `__kreis` legt den Kreis an die Seite: alle 10 s eine Zeile FORTSCHRITT (Spiel-s, Wanduhr, Schüsse,
+// Sichtungen; nie am Anfang `KREIS-`, die Zeile des Urteils) — reißt der Deckel, nennt die letzte, wo der Kreis stand.
 async function tierKreis(tor) {
     const n = 10;
-    const lauf = tor.quelle("scripts/werkbank.cjs", "lauf");
+    const STAFFEL = 3;
+    const lauf = tor.quelle("scripts/werkbank.cjs", "lauf", [
+        ['const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), schuesse: 0, imBlick: 0, max: 0 } : null;',
+            'const kreis = k.wandern === "kreis" ? { gier: st.yaw, gesehen: new Map(), schuesse: 0, imBlick: 0, max: 0 } : null;\n        window.__kreis = kreis;'],
+        ["if (!kand.some((q) => q.neu)) continue;", "if (!kand.some((q) => q.neu) || kreis.gesehen.size >= " + STAFFEL + ") continue;"],
+    ]);
     const page = await tor.seite();
     tor.karte();
     await page.evaluate((n) => {
@@ -264,10 +276,19 @@ async function tierKreis(tor) {
             const t = Date.now();
             let o = null;
             let f = "";
+            const zeile = setInterval(() => {
+                page.evaluate(() => {
+                    const k = window.__kreis;
+                    return k && k.z0 != null ? { spielS: Math.round(window.anazhRealm.state.spielZeit - k.z0), schuesse: k.schuesse, gesehen: k.gesehen.size, imBlick: k.imBlick } : null;
+                }).then((z) => z && console.log("FORTSCHRITT des Kreises " + sicht + " nach " + ((Date.now() - t) / 1000).toFixed(1) + " s Wanduhr: " + JSON.stringify(z)), () => {});
+            }, 10000);
             try {
                 o = await page.evaluate("(" + lauf + ")(" + JSON.stringify({ sek: 600, ein: 1, ruhe: 0, regler: "frei", tiere: "frei", wandern: "kreis", spur: false }) + ")");
             } catch (e) {
                 f = " FEHLER " + String((e && e.message) || e).split("\n")[0];
+            } finally {
+                clearInterval(zeile);
+                await page.evaluate(() => delete window.__kreis).catch(() => {});
             }
             const k = o && o.kreis;
             console.log("KREIS-" + sicht + " EXIT=" + (k ? 0 : 1) + " (" + ((Date.now() - t) / 1000).toFixed(1) + " s Wanduhr, Zeitraffer " + n + " Takte je Bild" + f + ") " + JSON.stringify(k || {}));
@@ -758,4 +779,193 @@ async function wasserGraben(tor) {
     fs.writeFileSync(tor.aus, JSON.stringify(erg, null, 1));
 }
 
-module.exports = { sitzungTor, torBefehl, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrRueck, fahrWegenetz, fahrVerkehr, wasserGraben };
+// ───────── DIE LINSE DER WERKBANK IN DER WELT DER SITZUNG (licht.K1#1 · licht.K3#1/#2, w4-fehlt-acht) ─────────
+// Der Befehl der Linse selbst (scripts/werkbank.cjs am SHA, Byte für Byte) gegen die Welt der Sitzung, ohne `--eigen`: sein Tor
+// (welt-boot `werkbankTor`) bootete eine eigene Welt — `werkbank start` OHNE `--echt`, headless im Fenster 640×360 — und stand darum
+// in SITZUNG_FEINDE. Die Probe stellt das Fenster der Station (`L.fenster`, wie das Tor es trug: die Messgröße bleibt die der
+// Station) und schaltet zwischen Linse und Werkbank DEN SPIEGEL (WERKBANK_PORT + 2, im Band der Sitzung): jeder Ruf geht Byte für
+// Byte durch, nur das Abwarten nicht — `/lauf` mit dem Einschwingen der Laub-Linse (`ein()`: 5 s Lauf, 8 s Einschwingen, Ruhe bis
+// 120 s; je Zeile bis zu sechsmal) ist DIE BERUHIGUNG beim Namen: die Bühne wie der Lauf (Mittag · Sonne · Sommer, `__buehne`), dann
+// Takt um Takt, bis die Welt steht (`__weltStehtNach`, A9 — die EINE Ruhe: Foundry, Chunks, Wald, Karten, Felder, Leiber). `L.vorher`:
+// der Messort der Linse (`umstellen --ort X`, die Sitzung stellt ihn VOR dem Deckel: punkte.cjs `probeOrt`); `L.seite`: Seiten-
+// Funktionen der Linse, mit Ankern gekürzt, für die Dauer der Probe an ihrem Namen (danach die der Linse zurück). Je Ruf, der Zeit
+// trägt, eine Zeile (RUF · BERUHIGUNG) mit seinen Sekunden: reißt der Deckel, nennt die letzte, wo.
+async function werkbankLinse(tor) {
+    const http = require("http");
+    const cp = require("child_process");
+    const L = JSON.parse(tor.arg[0]);
+    const S = tor.W + 2;
+    const t0 = Date.now();
+    const sek = (t) => ((Date.now() - t) / 1000).toFixed(1);
+    tor.karte();
+    if (L.vorher) {
+        const v = cp.spawnSync(process.execPath, ["scripts/werkbank.cjs", ...L.vorher, "--port", String(tor.W)], { encoding: "utf8", timeout: 600000 });
+        console.log("VORHER werkbank " + L.vorher.join(" ") + " EXIT=" + v.status + " · " + sek(t0) + " s");
+        if (v.status !== 0) throw new Error("der Messort der Linse steht nicht: " + String((v.stdout || "") + (v.stderr || "")).trim().split("\n").slice(-2).join(" | ").slice(0, 300));
+    }
+    let n = 0;
+    const ruhe = async (b) => {
+        const t = Date.now();
+        const e = (await tor.ruf("/eval", { code: "window.__buehne(); return await window.__weltStehtNach(null, " + L.ruheMax + ");" }, 600000)).ergebnis;
+        console.log("BERUHIGUNG " + ++n + " statt /lauf " + JSON.stringify(b) + ": die Welt steht nach " + e + " Takten, " + sek(t) + " s · " + sek(t0) + " s");
+        return { beruhigt: e };
+    };
+    const spiegel = http.createServer((q, a) => {
+        const teile = [];
+        q.on("data", (c) => teile.push(c));
+        q.on("end", () => {
+            const roh = Buffer.concat(teile);
+            let b = null;
+            try {
+                b = JSON.parse(roh.toString("utf8") || "{}");
+            } catch (_e) {
+                b = null;
+            }
+            if (q.url === "/lauf" && b && b.sek === 5 && b.ein === 8 && b.ruhe === 120)
+                return ruhe(b).then((j) => a.end(JSON.stringify(j)), (e) => a.end(JSON.stringify({ fehler: "BERUHIGUNG: " + e.message })));
+            const t = Date.now();
+            const was = b && (b.code ? String(b.code).slice(0, 48) + (/"uhren":\[/.test(b.code) ? " (" + (String(b.code).match(/"uhren":\[([^\]]*)\]/)[1].split(",").length) + " Uhren)" : "") : JSON.stringify(b).slice(0, 80));
+            const w = http.request({ host: "127.0.0.1", port: tor.W, path: q.url, method: q.method, headers: q.headers, agent: false }, (x) => {
+                a.writeHead(x.statusCode, x.headers);
+                x.pipe(a);
+                x.on("end", () => Date.now() - t >= 2000 && console.log("RUF " + q.url + " " + was + " · " + sek(t) + " s · " + sek(t0) + " s"));
+            });
+            w.on("error", (e) => a.end(JSON.stringify({ fehler: "SPIEGEL: " + e.message })));
+            w.end(roh);
+        });
+    });
+    await new Promise((ok, nein) => spiegel.once("error", nein).listen(S, "127.0.0.1", ok));
+    const namen = Object.keys(L.seite || {});
+    try {
+        await tor.ruf("/fenster", { w: L.fenster[0], h: L.fenster[1] });
+        if (namen.length) {
+            const code = namen.map((k) => "window.__linse_" + k + " = window." + k + "; window." + k + " = " + tor.quelle(...L.seite[k]) + ";").join("\n");
+            await tor.ruf("/eval", { code: code + " return 1;" });
+        }
+        const kind = cp.spawn(process.execPath, ["scripts/werkbank.cjs", ...L.args, "--port", String(S), "--datei", tor.aus], {
+            env: { ...process.env, WERKBANK_PORT: String(S) },
+            stdio: ["ignore", "pipe", "pipe"],
+        });
+        kind.stdout.on("data", (d) => process.stdout.write(d));
+        kind.stderr.on("data", (d) => process.stderr.write(d));
+        const code = await new Promise((ok) => kind.on("exit", (c) => ok(c == null ? 1 : c)));
+        console.log("LINSE werkbank " + L.args.join(" ") + " EXIT=" + code + " nach " + sek(t0) + " s in der Welt der Sitzung (" + n + " Beruhigungen, Fenster " + L.fenster.join("×") + ")");
+        process.exitCode = code;
+        // DER WEG GEGEN DIE LINSE (`L.pruefe`, in der Seite): kürzt die Probe einen Weg der Linse, misst sie ihn hier gegen den vollen —
+        // weicht er ab (`rot`), ist die Probe ROT beim Namen (Exit 1), nie still kurz
+        if (L.pruefe) {
+            const p = (await tor.ruf("/eval", { code: L.pruefe })).ergebnis;
+            console.log("WEG " + JSON.stringify(p));
+            if (!p || p.rot) (process.exitCode = 1), console.log("WEG ROT: " + (p ? p.rot : "keine Prüfung des Wegs"));
+        }
+    } finally {
+        if (namen.length) await tor.ruf("/eval", { code: namen.map((k) => "window." + k + " = window.__linse_" + k + "; delete window.__linse_" + k + ";").join(" ") + " return 1;" }).catch(() => {});
+        await tor.ruf("/fenster", { w: 1920, h: 1080 }).catch(() => {});
+        spiegel.close();
+    }
+}
+
+// ───────── lod.K3#1 — die Karte aus jeder Blick-Hebung (gate:foundry-impostor C6, w4-hebungsringe) in der Welt der Sitzung ─────────
+// Die Linse startete einen eigenen Browser (WebGL2, Null-Renderer-Welt, FIMP_PORT las niemand). Hier ihr Teil C in der Seite der
+// Sitzung: `installiereBacke` (die Bake-Bühne `__fimpBacke`, `__fimpKarte`), `weltRuht` (die EINE Ruhe vor Teil C) und `kleberProbe`,
+// mit drei Ankern auf C6 gekürzt — (1) Layout und (2) Kleber-Wand ein toter Block, C5 fällt, C6 Byte für Byte, der Probe-Renderer geht
+// wie in der Linse (`ren.dispose()`), vorher alles, was er für die Probe anlegte: die Bühne ruht sofort (`_karteBuehneRuhe`, die Ruhe
+// der Welt — sie kam erst nach 3 s Stille, die Bühne des Probe-Renderers hielt ihre Ziele: +28 MB VRAM nach dem GC, swiftshader), das
+// Array-Ziel des rgba8-Atlas samt Tiefe, die Texturen des Probe-Atlas (sonst trüge der VRAM-Abgriff ihre Bytes bis zum GC). Je
+// Format (bc, rgba8) ein frischer Probe-Renderer, ein Probe-Atlas; gedruckt wird mit dem Druck-Block der Linse selbst (zwischen
+// seinen Ankern), nie mit einem Zwilling des Formats. DIE RÜCKGABE (die Probe misst in der Welt, die sie danach lässt): `leihe`
+// (welt-boot) merkt und gibt zurück — den Karten-Atlas der Welt (Teil C setzt `_kartenAtlas` neu), Bühne und Rechner des Bakes
+// (sie gehörten danach dem Probe-Gerät), den Stoff-Cache (Teil C löscht die Karten-Stoffe), den Wind (C6 setzt ihn 0), die Grenzen
+// der Foundry (kein ruhender Welt-Körper fällt den zwei Probe-Körpern zum Opfer, die danach selbst fallen). Ohne Karte (kein
+// `[linse-gpu]`) druckt sie keine Zeile (das Urteil hielte die Ersatz-Zeile für Hardware), und bleibt VRAM nach dem GC über
+// 1 MB stehen, druckt sie keine C6-Zeile, sondern den Rest beim Namen (die Proben danach urteilen über VRAM).
+async function karteHebung(tor) {
+    const fs = require("fs");
+    const L = "scripts/diag-foundry-impostor.cjs";
+    const fn = (name, anker) => new Function("return (" + tor.quelle(L, name, anker) + ");")();
+    const kleber = fn("kleberProbe", [
+        ["const H0 = 8;", "if (0) { const H0 = 8;"],
+        ["const kr = [", "} const kr = ["],
+        ["rtO.dispose();", "rtO.dispose(); const buehne = r._karteBuehneSatz; if (buehne && buehne.rend === ren) (buehne.zuletzt = -Infinity), r._karteBuehneRuhe(); for (const t of [at.rt, at.map, at.nmap, at.lmap]) if (t && t.dispose) t.dispose(); return (ren.dispose(), out);"],
+    ]);
+    const text = fs.readFileSync(L, "utf8");
+    const [a, e] = ["const O = C.oben || { je: {} };", "die waagrecht gebackene Karte besteht von oben — die Linse ist blind`);"];
+    if (text.split(a).length !== 2 || text.split(e).length !== 2) throw new Error("ANKER des Druck-Blocks C6 nicht genau einmal in " + L);
+    const drucke = new Function("C", "F", "errs", text.slice(text.indexOf(a), text.indexOf(e) + e.length));
+    const page = await tor.seite();
+    const karte = tor.karte();
+    if (!karte) throw new Error("ohne Karte keine Zeile (die Ersatz-Zeile hielte das Urteil für Hardware)");
+    const cdp = await page.target().createCDPSession();
+    const vram = async () => {
+        await cdp.send("HeapProfiler.collectGarbage");
+        await page.evaluate(() => new Promise((ok) => setTimeout(ok, 200)));
+        await cdp.send("HeapProfiler.collectGarbage");
+        return page.evaluate(() => (window.__vram ? +((window.__vram.puffer + window.__vram.texturen) / 1048576).toFixed(1) : null));
+    };
+    const v0 = await vram();
+    await fn("installiereBacke")(page);
+    const ruhe = await fn("weltRuht")(page);
+    console.log("  RUHE VOR TEIL C: die Welt steht nach " + ruhe.takte + " Takten · mit einer wartenden Karte: " + ruhe.karte);
+    await page.evaluate(() => {
+        const A = r.constructor, st = r.state, w = st.windUniforms && st.windUniforms.uWindStrength;
+        const keys = [93, 94].map((v) => r._foundryKoerperKey("eiche", v, r._foundryServierStufe("eiche", 1), null));
+        window.__hebungZurueck = [
+            leihe(r, { _kartenAtlas: r._kartenAtlas, _karteBuehneSatz: r._karteBuehneSatz, _karteRechnerSatz: r._karteRechnerSatz }),
+            leihe(st, { _foliageMatCache: new Map(st._foliageMatCache || []), foundryCrossfade: st.foundryCrossfade }),
+            ...(w ? [leihe(w, { value: w.value })] : []),
+            leihe(A, { FOUNDRY_RUHE_BYTES: Infinity, FOUNDRY_CACHE_BYTES: Infinity, FOUNDRY_CACHE_CAP: Infinity }),
+        ];
+        window.__hebungKoerper = keys.map((k) => [k, r._foundryCacheGet(k)]);
+        window.__hebungRend = [st.renderer, st.renderer.setAnimationLoop];
+        return 1;
+    });
+    const Cs = [];
+    try {
+        for (const fmt of ["bc", "rgba8"]) {
+            const C = await kleber(page, fmt);
+            C.fremd = C.ohneFeature ? [] : await page.evaluate(() => [...((r._kartenAtlas && r._kartenAtlas.zellen) || new Map()).keys()].filter((k) => !k.startsWith("fimp:gateKarte|")));
+            Cs.push(C);
+        }
+    } finally {
+        await page.evaluate(() => {
+            for (const [k, alt] of window.__hebungKoerper || []) alt === undefined ? r._foundryCacheEvict(k) : r._foundryCacheSet(k, alt);
+            for (const z of (window.__hebungZurueck || []).reverse()) z();
+            delete window.__hebungZurueck;
+            delete window.__hebungKoerper;
+            return 1;
+        });
+    }
+    const rend = await page.evaluate(() => {
+        const [R, S] = window.__hebungRend;
+        delete window.__hebungRend;
+        return r.state.renderer === R && r.state.renderer.setAnimationLoop === S;
+    });
+    const v1 = await vram();
+    await cdp.detach().catch(() => {});
+    const rest = v0 != null && v1 != null ? +(v1 - v0).toFixed(1) : null;
+    console.log("  RÜCKGABE: der Renderer der Welt " + (rend ? "derselbe" : "ein ANDERER") + " · VRAM nach dem GC " + v0 + " → " + v1 + " MB (" + (rest >= 0 ? "+" : "") + rest + ")");
+    const errs = [];
+    if (ruhe.karte) errs.push("C: eine wartende Karte bricht die Ruhe nicht (`_weltSteht` true)");
+    if (!rend) errs.push("RÜCKGABE: der Renderer der Welt ist nach der Probe ein anderer");
+    if (!(rest != null && rest <= 1)) errs.push("RÜCKGABE: " + rest + " MB VRAM blieben nach dem GC in der Welt (Soll ≤ 1)");
+    const rueck = errs.length > (ruhe.karte ? 1 : 0);
+    for (const C of Cs) {
+        const F = `C[${C.fmt}]`;
+        if (C.ohneFeature) {
+            console.log("  [" + C.fmt + "] die Welt wählt auf dem Probe-Renderer rgba8 — ohne texture-compression-bc");
+            continue;
+        }
+        if (C.err) {
+            console.log("  Fehler [" + C.fmt + "]: " + C.err);
+            errs.push(`${F}: Karten-Probe brach ab — ${C.err}`);
+            continue;
+        }
+        if ((C.fremd || []).length) errs.push(`${F}: die Welt lieferte in den Probe-Atlas (${C.fremd.join(", ")}) — Teil C begann vor der Ruhe`);
+        if (!rueck) drucke(C, F, errs);
+    }
+    for (const x of errs) console.log("  ROT " + x);
+    fs.writeFileSync(tor.aus, JSON.stringify({ ruhe, C: Cs.map((C) => ({ fmt: C.fmt, ohneFeature: !!C.ohneFeature, err: C.err || null, fremd: C.fremd, oben: C.oben || null })), vram: [v0, v1], rend }, null, 1));
+    process.exitCode = errs.length ? 1 : 0;
+}
+
+module.exports = { sitzungTor, torBefehl, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrRueck, fahrWegenetz, fahrVerkehr, wasserGraben, werkbankLinse, karteHebung };

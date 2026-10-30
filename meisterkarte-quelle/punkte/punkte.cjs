@@ -641,8 +641,11 @@ async function baumSperre(repo, geraet) {
 // Größe, nie ROT. Verließ eine Probe die Welt (ein Tor), kehrt die Seite durch die Tür des Spiels zurück (`_weltBetreten`, dann
 // `/reload`: ein Welt-Wechsel ist ein Reload, Ring 8) und spielt den Grund danach. Bis dahin fuhr jede Station ihren eigenen Boot
 // (Takt 19: 282 min Schloss, 103 min Abbau-Schwanz). DER BOOT der Welt zählt in die Fahrt (fahrtUrteil): Radeon b3f9ae95 29.10.
-// stand die Welt nach 10,5 und 40 s — der Deckel 120 s; das Schloss hält der Halter die Fahrt lang samt Abbau (SITZUNG_MAX_S)
-const SITZUNG_BOOT_S = 120;
+// stand die Welt nach 10,5 und 40 s — der Deckel 120 s; das Schloss hält der Halter die Fahrt lang samt Abbau (SITZUNG_MAX_S).
+// DER DECKEL NACH SEINER MESSUNG (w4-fehlt-acht): jeder Boot einer Sitzung seither 5,8–8,5 s (Radeon, gegenlauf/eich1–6 a53152c2 …
+// 1f17e7d1, messung 3ed96b3f · 73bdf938 · 24a0f3ef; „SITZUNG bereit" ist die Werkbank, die Welt wächst danach am Ort der ersten Probe)
+// — 60 s, das Anderthalbfache des Größten je gemessenen (40 s); ein Boot darüber ist ROT beim Namen (der Halter)
+const SITZUNG_BOOT_S = 60;
 const SITZUNG_MAX_S = FAHRT_MAX_S + 600;
 const GRUNDSTELLUNG_S = 180;
 const STAND_DATEIEN = ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"];
@@ -1100,8 +1103,16 @@ function stromSeite(r, a) {
         if (i < 0) (i = liste.length), liste.push(x);
         return i;
     };
-    if (S.rend !== rend) {
+    // JE RENDERER EIN HAKEN, NIE AN EINER LOSEN LEINWAND (w4-fehlt-acht): eine Probe, die der Welt einen Probe-Renderer leiht (lod.K3#1,
+    // `__fimpBacke`: `r.state.renderer` je Bake-Schritt), hakte ihn ein, und der nächste Zapfen hakte den der Welt ein ZWEITES Mal — je
+    // Bild zwei Zeilen, die zweite mit dt 0 (das p95 der Dauerlast geschönt). Ein Renderer, dessen Leinwand nicht im Dokument hängt,
+    // zeichnet kein Bild des Spielers: der Zapfen liest weiter, hakt ihn nie ein
+    S.haken = S.haken || new WeakSet();
+    const lose = !!rend.domElement && rend.domElement.isConnected === false;
+    if (!lose && S.rend !== rend && S.haken.has(rend)) S.rend = rend;
+    if (!lose && S.rend !== rend) {
         S.rend = rend;
+        S.haken.add(rend);
         const roh = rend.setAnimationLoop;
         const bild = (t, c0, g0) => {
             const L = r._gpuLeine;
@@ -2357,13 +2368,17 @@ async function selbsttest() {
             /befehl auf gtx — eine Station der Karte misst nur als Probe/.test(fb[0]) && /Deckel 4800 s über 90 s — nie, auch mit ausnahme/.test(fb[1]) &&
             /Deckel 60 s über 45 s ohne ausnahme/.test(fb[2]) && /ausnahme an einem Deckel von 45 s/.test(fb[3]) && fb[4] === "" && fb[5] === "" && probeSek({ probe: {} }) === PROBE_DECKEL_S, fb.join(" || "));
         const fp = (n, sek, ge = ["radeon", "gtx"], befehl = "p" + n) => ({ kriterium: "f.K" + n, staffel: 1, geraet: ge, gpu: true, probe: { befehl: ["node", befehl], sek } });
-        const grenze = Array.from({ length: 37 }, (_, i) => fp(i + 1, 45)).concat([fp(38, 15)]); // 37 × 45 + 15 + Boot 120 = 1800
+        // die Grenze aus den Konstanten: n × 45 + der Rest + Boot = FAHRT_MAX_S (bis w4-fehlt-acht fest 37 × 45 + 15 + Boot 120)
+        const nG = Math.floor((FAHRT_MAX_S - SITZUNG_BOOT_S - 1) / PROBE_DECKEL_S), restG = FAHRT_MAX_S - SITZUNG_BOOT_S - nG * PROBE_DECKEL_S;
+        const grenze = Array.from({ length: nG }, (_, i) => fp(i + 1, PROBE_DECKEL_S)).concat([fp(nG + 1, restG)]);
         const zw = [fp(90, 45, ["radeon", "gtx"], "zw"), { ...fp(90, 45, ["radeon", "gtx"], "zw"), staffel: 2 }]; // Zwillinge: EIN Lauf
-        const uf = [fahrtUrteil(grenze), fahrtUrteil([...grenze.slice(0, -1), fp(38, 16)]), fahrtUrteil([...grenze.slice(0, 36), ...zw, fp(38, 15)]),
-            fahrtUrteil([...grenze.slice(0, 35), fp(36, 90), fp(37, 60), fp(38, 15)]), fahrtUrteil([...grenze.slice(0, -1), fp(38, 16, ["radeon"])])];
+        const uf = [fahrtUrteil(grenze), fahrtUrteil([...grenze.slice(0, -1), fp(nG + 1, restG + 1)]), fahrtUrteil([...grenze.slice(0, nG - 1), ...zw, fp(nG + 1, restG)]),
+            fahrtUrteil([...grenze.slice(0, nG - 2), fp(nG - 1, 90), fp(nG, 60), fp(nG + 1, restG)]), fahrtUrteil([...grenze.slice(0, -1), fp(nG + 1, restG + 1, ["radeon"])])];
+        const ueber = "radeon: die Fahrt " + (FAHRT_MAX_S + 1) + " s über " + FAHRT_MAX_S + " s (Σ Deckel " + (FAHRT_MAX_S - SITZUNG_BOOT_S + 1) + " s in " + (nG + 1) + " Läufen + Boot " + SITZUNG_BOOT_S +
+            " s) — die größten: f.K1#1 45 s, f.K2#1 45 s, f.K3#1 45 s (" + nG + " Läufe am Deckel 45 s)";
         pruef("FAHRT-ROT (c) Σ Deckel + Boot " + SITZUNG_BOOT_S + " s: 1 800 s grün, 1 801 s ROT je Karte mit den drei größten beim Namen, Zwillinge EIN Lauf, eine Karte allein",
-            uf[0].length === 0 && uf[1].length === 2 && /^radeon: die Fahrt 1801 s über 1800 s \(Σ Deckel 1681 s in 38 Läufen \+ Boot 120 s\) — die größten: f\.K1#1 45 s, f\.K2#1 45 s, f\.K3#1 45 s \(37 Läufe am Deckel 45 s\)$/.test(uf[1][0]) &&
-            /^gtx: die Fahrt 1801 s/.test(uf[1][1]) && uf[2].length === 0 && uf[3].length === 2 && /die größten: f\.K36#1 90 s, f\.K37#1 60 s, f\.K1#1 45 s/.test(uf[3][0]) &&
+            uf[0].length === 0 && uf[1].length === 2 && uf[1][0] === ueber &&
+            /^gtx: die Fahrt 1801 s/.test(uf[1][1]) && uf[2].length === 0 && uf[3].length === 2 && uf[3][0].includes("die größten: f.K" + (nG - 1) + "#1 90 s, f.K" + nG + "#1 60 s, f.K1#1 45 s") &&
             uf[4].length === 1 && /^radeon: /.test(uf[4][0]), JSON.stringify(uf));
         const echtGross = ladeStationen().map((s) => (s.probe ? { ...s, probe: { ...s.probe, sek: 90, ausnahme: "der Selbsttest bläht jeden Deckel" } } : s));
         const eg = pruefeStationen(echtGross, karte).fehler.filter((f) => /^(radeon|gtx): die Fahrt/.test(f));
