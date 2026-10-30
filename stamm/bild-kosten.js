@@ -1368,10 +1368,11 @@ class AnazhRealm_bild_kosten {
     // DAS AUSGABE-ZIEL DER SZENE IN 32 BIT (0910-1 B, Host-VRAM Runde 2): r184s Szenen-Pass legt `output` als rgba16float an
     // (8 Byte je Pixel, 15,8 MB bei 1080p). Sein Inhalt ist lineares HDR-Licht ≥ 0, und der Kanal a steht an jedem Ort auf 1
     // (der Ziel-Zensus, 07.10.): TRAA reicht `currentColor.a` nur durch (vendor/TRAANode.js clipAABB), kein Leser wertet ihn.
-    // rg11b10ufloat trägt dieselben drei Kanäle in 4 Byte (−7,9 MB) mit 6/6/5 Bit Mantisse — für das EINE Bild eines Frames.
-    // Auflösung und Geschichte bleiben rgba16float: dort summiert die zeitliche Auflösung über 32 Frames, und rg11b10 posterisierte
-    // die Wolken zu Höhenlinien (W7, alle drei in 11/11/10). Ohne das Geräte-Feature `rg11b10ufloat-renderable` bleibt `output`
-    // rgba16float — LAUT (WARN mit Grund und Zahl, und der Ziel-Zensus nennt das Format), nie still.
+    // rg11b10ufloat trägt dieselben drei Kanäle in 4 Byte (−7,9 MB) mit 6/6/5 Bit Mantisse — für das EINE Bild eines Frames, das
+    // jedes Fragment gedithert schreibt (`_ausgabeDither`). Auflösung und Geschichte bleiben rgba16float: dort summiert die zeitliche
+    // Auflösung über 32 Frames, und rg11b10 posterisierte die Wolken zu Höhenlinien (W7, alle drei in 11/11/10). Ohne das
+    // Geräte-Feature `rg11b10ufloat-renderable` bleibt `output` rgba16float — LAUT (WARN mit Grund und Zahl, und der Ziel-Zensus
+    // nennt das Format), nie still.
     _ausgabeFormat(szenePass) {
         const rend = this.state.renderer;
         const be = rend && rend.backend;
@@ -1400,19 +1401,45 @@ class AnazhRealm_bild_kosten {
         ziel.texture.type = THREE.UnsignedInt101111Type;
         ziel.texture.format = THREE.RGBFormat;
         this.state._ausgabeFormat = "rg11b10ufloat";
+        this.state._ausgabeVersatz = this._uniformHeimatTeilen({ v: THREE.TSL.uniform(0) }).v;
         this._ausgabeSonde(dev);
     }
 
+    // DIE DITHERUNG DES SZENEN-ZIELS (w4-ferne-blau): 6/6/5 Bit Mantisse teilen jede glatte Rampe — Wolke, Himmel, Dunst — in
+    // Stufen von 1/64 bzw. 1/32 ihres Werts (die Wolken-Decke am Kopf 715754fc in Höhenlinien je 1–2 Ausgabe-Stufen, Blau doppelt
+    // so grob), und weil das Gerät gegen null rundet, fällt der Fehler je Pixel in jedem Frame gleich: die zeitliche Auflösung
+    // mittelt ihn nie weg. Darum trägt jedes Fragment des Szenen-Passes vor dem Schreiben (u − Versatz) ulp seines Kanals, u aus
+    // dem Interleaved-Gradient-Rauschen der Stufen-Blende (`__phytoCore.lodDitherIGN`, quer gelesen, rotiert mit `uDitherT`).
+    // Der Versatz ist die Rundung des Geräts (`_ausgabeSonde`): gegen null 0, zum nächsten ½ — so ist jeder geschriebene Wert im
+    // Mittel das Licht selbst (E[⌊x/q + u⌋] = x/q), für JEDEN Leser des Ziels; über die 32 Frames der Geschichte liest die
+    // Auflösung es ohne Stufe. DIE EINE STELLE ist der Eintrag `output` des MRT des Szenen-Passes (`_ensurePostProcessing`): unter
+    // einem MRT schreibt r184 (`NodeMaterial.setup`) jeden Stoff über den MRT-Knoten ins Ziel — das `getOutput` im Kontext des
+    // Passes (w4-ferne-blau) erreichte nur die Stoffe mit eigenem `outputNode`: zwei Phasen änderten 2,4 % der Pixel statt des
+    // ganzen Bilds, die übrigen schrieben ohne Ausgleich, gegen null gerundet (heil-w4-ferne-blau, gate:ziel-zensus RUNDUNG: 0,024
+    // → 0,758). `farbe` ohne 11/11/10 unverändert. Bis w4-ferne-blau hob ein Ausgleich nach dem Lesen das Mittel (E[1/m] des
+    // Gesetzes, 0,56 % / 1,13 %) — nur in der Post-Kette, der Spiegel des Wassers las das Ziel ohne ihn.
+    _ausgabeDither(farbe) {
+        const versatz = this.state._ausgabeVersatz;
+        if (this.state._ausgabeFormat !== "rg11b10ufloat" || !versatz) return farbe;
+        const T = THREE.TSL;
+        const fc = T.screenCoordinate;
+        const u = T.fract(
+            T.float(52.9829189)
+                .mul(T.fract(fc.y.mul(0.06711056).add(fc.x.mul(0.00583715))))
+                .add(this._ensureLodUniforms().uDitherT)
+        );
+        const c = farbe.rgb.max(T.vec3(0));
+        const ulp = T.exp2(T.floor(T.log2(c.max(T.vec3(2 ** -14)))).sub(T.vec3(6, 6, 5)));
+        return T.vec4(c.add(ulp.mul(u.sub(versatz))).max(T.vec3(0)), farbe.a);
+    }
+
     // DIE RUNDUNG DES GERÄTS (0910-1 B): GTX 1060 und Radeon 890M runden beim Schreiben in 11/11/10 GEGEN NULL (Sonde: 1 + ¾ ulp
-    // → 1,0; W7 sah es auf der Radeon in der Geschichte). Je Kanal fehlt dann im Mittel ein halbes ulp — bei 6 Bit Mantisse
-    // 2⁻⁷ · E[1/m] = 0,56 %, beim Blau (5 Bit) 1,13 % (m die Mantisse, log-gleich verteilt: E[1/m] = 1/(2 ln 2) = 0,721): das
-    // Bild wurde 0,2–0,7 Luma-Stufen dunkler und gelber (gemessen OMEN, 16 Blicke, A/B gegen rgba16float). Die Sonde schreibt
-    // 1 + ¾ ulp in ein 1×1-Ziel und liest zurück; rundet das Gerät gegen null, hebt der Ausgleich jede Abtastung des
-    // Szenen-Bilds in der Post-Kette (`ausgabeAusgleich`) um dieses Mittel — rundet es zum nächsten, bleibt er 1.
+    // → 1,0; W7 sah es auf der Radeon in der Geschichte) — ohne Ditherung fehlte je Kanal im Mittel ein halbes ulp, das Bild
+    // wurde 0,2–0,7 Luma-Stufen dunkler und gelber (gemessen OMEN, 16 Blicke, A/B gegen rgba16float). Die Sonde schreibt 1 + ¾ ulp
+    // in ein 1×1-Ziel und liest zurück: rundet das Gerät gegen null, dithert das Ziel um u · ulp, rundet es zum nächsten, um
+    // (u − ½) · ulp (`_ausgabeVersatz`).
     _ausgabeSonde(dev) {
         const st = this.state;
-        if (!st._ausgabeAusgleich) st._ausgabeAusgleich = new THREE.Vector3(1, 1, 1);
-        const A = st._ausgabeAusgleich;
         const tex = dev.createTexture({
             label: "ausgabe-sonde",
             size: [1, 1],
@@ -1458,16 +1485,19 @@ class AnazhRealm_bild_kosten {
                 // R: Mantisse Bit 0–5 über 1 + ¾ ulp: 0 = gegen null, 1 = zum nächsten
                 const nullRund = (w & 0x3f) === 0;
                 st._ausgabeRundung = nullRund ? "gegen null" : "zum nächsten";
-                if (nullRund) A.set(1 + 0.721 / 128, 1 + 0.721 / 128, 1 + 0.721 / 64);
-                else A.set(1, 1, 1);
-                const faktor = A.toArray().map((x) => x.toFixed(4));
+                st._ausgabeVersatz.value = nullRund ? 0 : 0.5;
                 this.log(
-                    `AUSGABE: rg11b10ufloat, das Gerät rundet ${st._ausgabeRundung} — Ausgleich ${faktor.join("/")}`,
+                    `AUSGABE: rg11b10ufloat, das Gerät rundet ${st._ausgabeRundung} — die Ditherung trägt (u − ${st._ausgabeVersatz.value}) ulp`,
                     "INFO"
                 );
             })
             .catch((e) => {
-                this.log("AUSGABE: die Rundungs-Sonde fiel (" + ((e && e.message) || e) + ") — kein Ausgleich", "WARN");
+                this.log(
+                    "AUSGABE: die Rundungs-Sonde fiel (" +
+                        ((e && e.message) || e) +
+                        ") — die Ditherung nimmt gegen null an",
+                    "WARN"
+                );
             })
             .finally(() => {
                 tex.destroy();
@@ -1512,8 +1542,9 @@ class AnazhRealm_bild_kosten {
             // DER GLANZ DES BILDS (material.K4): ein zweites Ziel des Szenen-Passes (r8, MRT) trägt je Pixel, wie sehr seine
             // Fläche spiegelt (`_glanzKnoten`) — daran erkennt der EINE Spiegel-Pass (`_spiegelPass`) Glas, Lack, Metall und
             // Nässe wie das Wasser an seiner Zelle. r184 mischt nur `output` nach dem Stoff, das Glanz-Ziel schreibt ohne
-            // Mischung (MRTNode `_noBlending`): eine Scheibe trägt ihren Glanz ganz. 1,17 MB bei 1080p und Skala 0,75.
-            scenePass.setMRT(TSL.mrt({ output: TSL.output, glanz: this._glanzKnoten() }));
+            // Mischung (MRTNode `_noBlending`): eine Scheibe trägt ihren Glanz ganz. 1,17 MB bei 1080p und Skala 0,75. Der Eintrag
+            // `output` trägt die Ditherung des Ziels (`_ausgabeDither`): durch ihn schreibt jeder Stoff des Passes.
+            scenePass.setMRT(TSL.mrt({ output: this._ausgabeDither(TSL.output), glanz: this._glanzKnoten() }));
             const glanz = scenePass.getTexture("glanz");
             glanz.type = THREE.UnsignedByteType;
             glanz.format = THREE.RedFormat;
@@ -1539,7 +1570,7 @@ class AnazhRealm_bild_kosten {
             // Wolken zu Höhenlinien, die Radeon rundet beim Schreiben gegen null (Sonde 1,0117 → 1,0; über die Geschichte das
             // Mittel −2…−3 % Luma) und die Ruhe halbierte sich (Frame zu Frame 0,29 → 0,58 Luma auf Armlänge) — 6 bzw. 5
             // Mantissen-Bit tragen die zeitliche Auflösung nicht. Das Szenen-Bild EINES Frames trägt sie: es liegt seit 0910-1 B
-            // in rg11b10ufloat (`_ausgabeFormat`, −7,9 MB), die Rundung gleicht `_ausgabeSonde` aus. Seit K50 ist sie der
+            // in rg11b10ufloat (`_ausgabeFormat`, −7,9 MB), gedithert geschrieben (`_ausgabeDither`). Seit K50 ist sie der
             // zeitliche HOCHSKALIERER (`_zeitAufloesung`): die Szene in der Szenen-Skala, Geschichte und Resolve in der Ausgabe.
             // Fehlt TRAANode im THREE der Seite (eine Cache-Kopie des Bootstraps von vor der zeitlichen Auflösung), bricht
             // die Kette LAUT — nie still ohne Kantenglättung, Bloom und Grading weiter.
@@ -1585,9 +1616,6 @@ class AnazhRealm_bild_kosten {
                 godrayStrength: uniform(0),
                 godrayDensity: uniform(0.55),
                 godrayThreshold: uniform(0.8),
-                // DER AUSGLEICH DER AUSGABE-RUNDUNG (0910-1 B, `_ausgabeSonde`): je Kanal der Faktor, um den das Szenen-Bild
-                // in 11/11/10 im Mittel zu dunkel ankommt — derselbe Vektor, den die Sonde setzt (1 ohne Sonde).
-                ausgabeAusgleich: uniform(this.state._ausgabeAusgleich || new THREE.Vector3(1, 1, 1)),
                 // DIE NACH-SCHÄRFE DER HOCHSKALIERUNG (K50): `ZEIT_SCHAERFE × (1 − Szenen-Skala)`, gestellt in `_loopRender` — bei
                 // Skala 1 null (die Stufe kostet dann nichts).
                 nachSchaerfe: uniform(0),
@@ -1624,9 +1652,9 @@ class AnazhRealm_bild_kosten {
             // verschmieren (9-Tap-Gauss via screenUV-Offsets), additiv zurueck
             // -> Glanz/Gluehen an Wasser/Sonne/Highlights. `bright` sampelt den
             // Szene-Textur-Node an versetzter UV. Die MITTE ist zugleich das Bild selbst (`base`): EINE Abtastung
-            // trägt beide (vorher zwei an derselben Stelle — die Ausgabe-UV des Quads ist screenUV).
-            // Jede Abtastung des Szenen-Bilds trägt den Ausgleich der Ausgabe-Rundung (`_ausgabeSonde`; 1 auf rgba16float).
-            const bild = (uv) => sceneColor.sample(uv).rgb.mul(u.ausgabeAusgleich);
+            // trägt beide (vorher zwei an derselben Stelle — die Ausgabe-UV des Quads ist screenUV). Das Szenen-Bild ist im Mittel
+            // das Licht selbst: die Rundung des Ziels trägt die Ditherung beim Schreiben (`_ausgabeDither`).
+            const bild = (uv) => sceneColor.sample(uv).rgb;
             // DIE NACH-SCHÄRFE (K50): die zeitliche Hochskalierung rekonstruiert die Ausgabe aus einer kleineren Szene, ihr Bild ist
             // um eine Spur weicher (gemessen am Ausgabe-Pfad, Gradient der Kanten). Wie jeder Hochskalierer (FSR2 RCAS, TSR) schärft
             // die Kette NACH dem Resolve — nie in die Geschichte: die Mitte gegen ihre vier Nachbarn in Ausgabe-Pixeln, geklemmt auf
@@ -2488,6 +2516,8 @@ class AnazhRealm_bild_kosten {
             else if (this._schattenKameraIndex(kamera) >= 0) this._instanzWahlZurueck(S.wahlSchatten);
         } else if (k >= 0) this._instanzWahlPass("schatten", S);
         else if (kamera === this.state.camera) this._instanzWahlPass("haupt", S);
+        // die Wahl der GPU: die Arenen ihrer Senken legen die Aufträge dieses Passes, EIN Compute zählt sie (nach dem Takt)
+        if (!nach) this._instanzWahlGpu(kamera, S);
         // Die Sätze (Boden · Wasser · Bau · Streu) wählen ihren Abschnitt nach demselben Gesetz.
         this._chunkSatzPass(kamera, nach, k, S);
         // Die Nah-Wiese legt ihren Satz für das Auge dieses Passes (eine Kaskade sieht sie nie: sie wirft nicht).
@@ -3115,10 +3145,15 @@ class AnazhRealm_bild_kosten {
     // Instanz-Fassade aH0): der Zwilling (SHADOW_TWIN_LAYER) nur in den Kaskaden, die Stufe ohne Schatten nur im Hauptbild;
     // die Karte (die EINE Atlas-Gruppe, ihr Quad trägt aKarte) wirft nie und zeichnet im Hauptbild. Eine Gruppe, die in
     // beiden zeichnet, teilte ihre Puffer zwischen den Pässen eines Frames — sie zeichnet weiter jede Instanz.
+    // "gpu": JEDE Senke eines Gang-Satzes (`aGang`) — Haut, Kleid und Wurf der Bewohner, Fell, Glimmen, Rest und Wurf der
+    // Tiere — wählt auf der GPU (`_instanzWahlGpu`), in jedem Pass, der sie zieht: das Auge im Frustum, der Wurf je Kaskade
+    // mit seiner Licht-Kapsel. Sie betritt keine Gruppe der CPU-Wahl; die CPU-Wahl (`_instanzWahlPass`) trägt nur noch die
+    // Pflanzen-Stufen und die Karte (ihr Fenster der Blende liest aH0 · aKarte).
     _instanzWahlArt(leaf, castShadow, regional) {
         if (regional || !leaf || leaf.tuer) return null;
         const at = leaf.geom && leaf.geom.attributes;
         if (!at) return null;
+        if (at.aGang) return "gpu";
         if (leaf.atlasGruppe) return at.aKarte && !castShadow ? "haupt" : null;
         if (!at.aH0 || !at.aLodLevel || !(at.aLodLevel.array[0] >= 1)) return null;
         if (leaf.shadowTwin) return "schatten";
@@ -3209,6 +3244,154 @@ class AnazhRealm_bild_kosten {
         const hL = geo.attributes.aH0L.array[i]; // das Vorzeichen: der Halt der Stufe ohne Partner (sie zeichnet voll)
         const kL = Math.min(L.ref / Math.max(Math.abs(hL), 1e-3), 1);
         return AnazhRealm._blendeBehaelt(L.kanten, g.wahlStufe, dMin * kS, dMax * kS, dMin * kL, dMax * kL, hL < 0);
+    }
+
+    // DIE WAHL DER GPU (Rang 7 des Luft-Urteils 28.10., gebaut nach dem Spike gpu-wahl). Befund (Luft-Urteil, Stadt-Gipfel
+    // stadt-voll): der Hauptpass zog 1 368k Dreiecke, davon die Klasse bewohner 868k — Haut und Kleid jedes Bewohners im
+    // Nah-Kreis, auch hinter dem Blick —, jede Kaskade ihren Wurf ganz (je ~110k): die Senken des Gang-Satzes wählte keine
+    // Pass-Art (`_instanzWahlArt` kannte nur Pflanzen-Stufen und Karten). Jetzt wählt eine
+    // Arena, deren Senken die Art "gpu" tragen, im Haken jedes Passes, vor seinem Encoder (r184 reicht ihn bei `finishRender`
+    // ein, die Queue ordnet: Aufträge · Rechnung · Zug): sie legt die Aufträge dieser Kamera (`_wahlVor`: die Zahl jedes Zugs 0,
+    // seine erste Instanz der Abschnitt der Liste dieser Kamera), und EIN Compute je Kamera prüft jede ihrer Instanzen nach dem
+    // EINEN Gesetz der Pass-Wahl (`_passTrifft` als WGSL, `PASS_WAHL_WGSL`), schreibt die getroffenen verdichtet in die Liste
+    // und zählt die Zahl des Zugs atomar im Auftrags-Puffer der Arena; der Instanz-Knoten liest `matrizen[liste[instance_index]]`
+    // (`_senkenKnoten`). Ein Wurf ist der Bruch der Arena (`_arenaBruch`): jedes Glied zeichnet wieder über seinen Zeichner.
+    _instanzWahlGpu(kamera, S) {
+        const reg = AnazhRealm.__arenen;
+        if (!reg || !reg.size || AnazhRealm.__arenaBruch) return;
+        const rend = this.state.renderer;
+        try {
+            const arenen = [];
+            for (const a of reg.values()) {
+                if (!a._wahl || !kamera.layers.test(a.layers)) continue;
+                const zug = a._wahlVor(rend, kamera);
+                if (zug && zug.wahl.length) arenen.push(a, zug);
+            }
+            if (arenen.length) this._wahlRechnen(rend, S.lage, arenen);
+        } catch (e) {
+            this._arenaBruch(e);
+        }
+    }
+
+    // EIN COMPUTE JE KAMERA: die Lage (`_wahlLage`) und die Aufträge jeder Arena (`_wahlAuftraege`, je Arena ein Block nach der
+    // Ausrichtung der Speicher-Versätze) in je EINEM Puffer, je Arena eine Bindegruppe (Matrizen, Liste, Auftrags-Puffer —
+    // gemerkt, solange ihre Puffer stehen) und EIN Dispatch (x: die Instanzen zu 64, y: ihre Züge).
+    _wahlRechnen(rend, L, arenen) {
+        const be = rend.backend,
+            dev = be.device,
+            U = GPUBufferUsage;
+        let W = AnazhRealm.__wahlGpu;
+        if (!W || W.dev !== dev) {
+            const lay = dev.createBindGroupLayout({
+                label: "pass-wahl",
+                entries: ["uniform", "read-only-storage", "read-only-storage", "storage", "storage"].map((type, i) => ({
+                    binding: i,
+                    visibility: GPUShaderStage.COMPUTE,
+                    buffer: { type, hasDynamicOffset: i === 1 },
+                })),
+            });
+            const module = dev.createShaderModule({ label: "pass-wahl", code: AnazhRealm.PASS_WAHL_WGSL });
+            const layout = dev.createPipelineLayout({ bindGroupLayouts: [lay] });
+            const pipe = dev.createComputePipeline({
+                label: "pass-wahl",
+                layout,
+                compute: { module, entryPoint: "wahl" },
+            });
+            const lage = dev.createBuffer({ label: "pass-wahl-lage", size: 272, usage: U.UNIFORM | U.COPY_DST });
+            W = AnazhRealm.__wahlGpu = {
+                dev,
+                lay,
+                pipe,
+                lage,
+                lageF: new Float32Array(68),
+                puffer: null,
+                f: null,
+                u: null,
+            };
+        }
+        const al = dev.limits.minStorageBufferOffsetAlignment;
+        const off = [];
+        let bytes = 0;
+        for (let i = 1; i < arenen.length; i += 2) {
+            off.push(bytes);
+            bytes += Math.ceil(((arenen[i].wahl.length / 5) * 48) / al) * al;
+        }
+        if (!W.puffer || W.puffer.size < bytes) {
+            const size = Math.max(bytes, 2 * (W.puffer ? W.puffer.size : 0));
+            if (W.puffer) W.puffer.destroy();
+            W.puffer = dev.createBuffer({ label: "pass-wahl-auftraege", size, usage: U.STORAGE | U.COPY_DST });
+            W.f = new Float32Array(size / 4);
+            W.u = new Uint32Array(W.f.buffer);
+        }
+        const nMax = off.map((o, j) => AnazhRealm._wahlAuftraege(arenen[2 * j + 1].wahl, W.f, W.u, o / 4));
+        dev.queue.writeBuffer(W.lage, 0, AnazhRealm._wahlLage(L, W.lageF));
+        dev.queue.writeBuffer(W.puffer, 0, W.f.buffer, 0, bytes);
+        const enc = dev.createCommandEncoder({ label: "pass-wahl" });
+        const pass = enc.beginComputePass({ label: "pass-wahl" });
+        pass.setPipeline(W.pipe);
+        for (let j = 0; j < off.length; j++) {
+            const a = arenen[2 * j],
+                q = a.__instanzQuelle,
+                n = arenen[2 * j + 1].wahl.length / 5;
+            for (const x of [q.instanceMatrix, q.liste]) rend._attributes.update(x, 3); // r184 AttributeType.STORAGE
+            const puf = [W.lage, W.puffer, ...[q.instanceMatrix, q.liste, a._ind].map((x) => be.get(x).buffer)];
+            let bg = a.__wahlBG;
+            if (!bg || bg.n !== n || puf.some((p, k) => p !== bg.puf[k])) {
+                const entries = puf.map((buffer, i) => ({
+                    binding: i,
+                    resource: { buffer, size: i === 1 ? n * 48 : undefined },
+                }));
+                bg = a.__wahlBG = { n, puf, bg: dev.createBindGroup({ label: "pass-wahl", layout: W.lay, entries }) };
+            }
+            pass.setBindGroup(0, bg.bg, [off[j]]);
+            pass.dispatchWorkgroups(Math.ceil(nMax[j] / 64), n);
+        }
+        pass.end();
+        dev.queue.submit([enc.finish()]);
+    }
+
+    // Die Lage eines Passes für die GPU (das `Lage`-Gefüge von `PASS_WAHL_WGSL`, 68 Floats): je Ebene des Frustums Normale und
+    // Abstand des Auges (n·a + d — die Instanz rechnet relativ zum Auge, f32 trägt keine Kilometer auf Millimeter), das Auge,
+    // der Rand (Halt + Licht, je Meter Abstand der Rand der zeitlichen Auflösung + der Drehung); im Kaskaden-Pass die
+    // Licht-Kapsel: je Ebene der Scheibe (`fit.ebenen`) dasselbe, die Licht-Tiefe über dem Boden der Box (die dritte Zeile von
+    // `fit.basisInv` relativ zum Auge, minus `zb`), das Licht (w = 1: die Kapsel gilt) und ihr Saum (Saum der Scheibe, zweimal
+    // der Halt, der Licht-Rand) — die Größen von `_passTrifft`.
+    static _wahlLage(L, aus) {
+        const ax = L.ax,
+            ay = L.ay,
+            az = L.az;
+        const ebene = (P, o) => {
+            const n = P.normal;
+            aus.set([n.x, n.y, n.z, n.x * ax + n.y * ay + n.z * az + P.constant], o);
+        };
+        for (let p = 0; p < 6; p++) ebene(L.fr.planes[p], p * 4);
+        aus.set([ax, ay, az, 0, L.halt + L.licht, L.rand + L.dreh, 0, 0], 24);
+        const f = L.fit;
+        if (!f) return aus.fill(0, 32);
+        for (let p = 0; p < 6; p++) ebene(f.ebenen[p], 32 + p * 4);
+        const b = f.basisInv.elements,
+            d = L.dir;
+        aus.set([b[2], b[6], b[10], b[2] * ax + b[6] * ay + b[10] * az + b[14] - f.zb], 56);
+        aus.set([d.x, d.y, d.z, 1, f.saum + 2 * L.halt + L.licht, 0, 0, 0], 60);
+        return aus;
+    }
+
+    // Die Aufträge einer Arena ab dem Wort `o` (das `Auftrag`-Gefüge, 12 Worte): die Kugel der Gestalt (`_gangSatzHuelle`),
+    // erste Instanz · Zahl · Platz der Zahl im Auftrags-Puffer · Abschnitt der Liste, der Saum (die Gestalt des Gangs trägt
+    // keinen: ihre Kugel deckt jede Pose). `wahl` aus `_auftraege`: [Glied, erste Instanz, Zahl, Platz, Abschnitt] je Zug.
+    // Liefert die größte Zahl (die Breite des Dispatch).
+    static _wahlAuftraege(wahl, f, u, o) {
+        let nMax = 0;
+        for (let j = 0; j < wahl.length; j += 5, o += 12) {
+            const g = wahl[j].geometry;
+            if (!g.boundingSphere) g.computeBoundingSphere();
+            const s = g.boundingSphere;
+            f.set([s.center.x, s.center.y, s.center.z, s.radius], o);
+            u.set([wahl[j + 1], wahl[j + 2], wahl[j + 3], wahl[j + 4]], o + 4);
+            f.set([0, 0, 0, 0], o + 8);
+            nMax = Math.max(nMax, wahl[j + 2]);
+        }
+        return nMax;
     }
 
     // DIE KANTEN DES FENSTERS aus dem EINEN Blend-Gesetz (`gesetz` = `__phytoCore.lodCrossfadeMask`, die Quelle der Studio-
@@ -3594,5 +3777,46 @@ AnazhRealm.PASS_WAHL = Object.freeze({
     drehRand: (2 * Math.PI) / 180,
     lichtRandTexel: 32,
 });
+// DAS GESETZ DER PASS-WAHL AUF DER GPU (`_passTrifft` für die Kugel, h = 0; `_instanzWahlGpu`): je Instanz eines Auftrags
+// ihre Kugel (die Mitte der Gestalt durch die Instanz-Matrix, der Radius mal deren größte Streckung, dazu der Saum) gegen
+// jede Ebene des Frustums, relativ zum Auge, mit dem Rand der Lage; im Kaskaden-Pass dazu ihre LICHT-KAPSEL — die Kugel
+// entlang des Lichts, bis sie ganz unter der Box liegt — gegen jede Ebene der Scheibe: liegen beide Enden jenseits einer
+// Ebene, wirft sie dort nicht. Getroffen → ein Platz in der Liste ihres Abschnitts, die Zahl des Zugs atomar.
+AnazhRealm.PASS_WAHL_WGSL = `
+struct Lage {
+    ebenen: array<vec4f, 6>, auge: vec4f, rand: vec4f,
+    kapsel: array<vec4f, 6>, tiefe: vec4f, licht: vec4f, saum: vec4f
+}
+struct Auftrag { kugel: vec4f, platz: vec4u, saum: vec4f }
+@group(0) @binding(0) var<uniform> lage: Lage;
+@group(0) @binding(1) var<storage, read> auftraege: array<Auftrag>;
+@group(0) @binding(2) var<storage, read> matrizen: array<mat4x4f>;
+@group(0) @binding(3) var<storage, read_write> liste: array<u32>;
+@group(0) @binding(4) var<storage, read_write> args: array<atomic<u32>>;
+@compute @workgroup_size(64)
+fn wahl(@builtin(global_invocation_id) id: vec3u) {
+    let a = auftraege[id.y];
+    if (id.x >= a.platz.y) { return; }
+    let i = a.platz.x + id.x;
+    let m = matrizen[i];
+    let c = (m * vec4f(a.kugel.xyz, 1.0)).xyz - lage.auge.xyz;
+    let s2 = max(dot(m[0].xyz, m[0].xyz), max(dot(m[1].xyz, m[1].xyz), dot(m[2].xyz, m[2].xyz)));
+    let r = a.kugel.w * sqrt(s2) + a.saum.x;
+    let rr = r + lage.rand.x + lage.rand.y * length(c);
+    for (var p = 0u; p < 6u; p++) {
+        let e = lage.ebenen[p];
+        if (dot(e.xyz, c) + e.w < -rr) { return; }
+    }
+    if (lage.licht.w > 0.5) {
+        let ende = c + lage.licht.xyz * max(0.0, dot(lage.tiefe.xyz, c) + lage.tiefe.w + r);
+        let st = r + lage.saum.x;
+        for (var p = 0u; p < 6u; p++) {
+            let e = lage.kapsel[p];
+            if (dot(e.xyz, c) + e.w < -st && dot(e.xyz, ende) + e.w < -st) { return; }
+        }
+    }
+    liste[a.platz.w + atomicAdd(&args[a.platz.z], 1u)] = i;
+}
+`;
 // Die zwölf Kanten einer Frustum-Scheibe (Ecken 0–3 nah, 4–7 fern, CSMFrustum-Reihenfolge) als Index-Paare.
 AnazhRealm.KASKADEN_KANTEN = Object.freeze([0, 1, 1, 2, 2, 3, 3, 0, 4, 5, 5, 6, 6, 7, 7, 4, 0, 4, 1, 5, 2, 6, 3, 7]);

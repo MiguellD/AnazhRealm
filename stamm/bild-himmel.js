@@ -737,8 +737,8 @@ class AnazhRealm_bild_himmel {
         if (p < 0.75) return "autumn";
         return "winter";
     }
-    // Die EINE Saison-Tönungs-Uniform, lazy (TSL muss geladen sein): die Nah-Wiese (`_grassInstanceMat`), das
-    // Foundry-Laub/-Gras (`_foundryTreeMaterial`) und die Karte (Impostor-Stoff) lesen `uSeasonMul` als Albedo-
+    // Die EINE Saison-Tönungs-Uniform, lazy (TSL muss geladen sein): das
+    // Foundry-Laub/-Gras (`_foundryTreeMaterial`, die Nah-Wiese) und die Karte (Impostor-Stoff) lesen `uSeasonMul` als Albedo-
     // Multiplikator, `_tickSeason` fährt sie aus `state.seasonPhase` (kein Rebuild). Abgeleitet, nicht im Snapshot
     // (audit-strict-Whitelist).
     _ensureSeasonUniforms() {
@@ -1355,8 +1355,8 @@ class AnazhRealm_bild_himmel {
             betaR: T.uniform(new THREE.Vector3().fromArray(M.betaR)),
             HR: T.uniform(M.HR),
             HM: T.uniform(M.HM),
-            mieExt: T.uniform(M.mieExt),
-            mieSca: T.uniform(M.mieSca),
+            mieExt: T.uniform(new THREE.Vector3().fromArray(M.mieExt)),
+            mieSca: T.uniform(new THREE.Vector3().fromArray(M.mieSca)),
             g: T.uniform(M.g),
             ozon: T.uniform(new THREE.Vector3().fromArray(M.ozon)),
             albedo: T.uniform(new THREE.Vector3().fromArray(M.albedo)),
@@ -1464,6 +1464,10 @@ class AnazhRealm_bild_himmel {
             ).rgb;
             return select(amBoden(r, mu), vec3(0), t);
         };
+        // Ψ_ms in Zeilen LINEAR in der Höhe (Hillaire): die zweite Zeile liegt bei 3,2 km. Quadratisch (w = √(h/H), Zeilen bei 0,
+        // 0,10, 0,42, 0,94 km — w4-ferne-blau, Duv −0,001 am Horizont) löste die Grenzschicht des Dunsts auf und hob im dichten
+        // Dunst des Regens das Licht des Himmels: das Regenbild stieg über das der Sonne (werkbank licht --naesse, Radeon: Wiese
+        // 0,966 → 1,012, Dorf 0,951 → 1,050; gate:naesse:echt ROT) — heil-w4-ferne-blau.
         const mehrfach = (h, mus) =>
             texture(
                 rtMS.texture,
@@ -1826,8 +1830,8 @@ class AnazhRealm_bild_himmel {
             U.betaR.value.fromArray(M.betaR);
             U.HR.value = M.HR;
             U.HM.value = M.HM;
-            U.mieExt.value = M.mieExt;
-            U.mieSca.value = M.mieSca;
+            U.mieExt.value.fromArray(M.mieExt);
+            U.mieSca.value.fromArray(M.mieSca);
             U.g.value = M.g;
             U.ozon.value.fromArray(M.ozon);
             U.albedo.value.fromArray(M.albedo);
@@ -2375,10 +2379,11 @@ class AnazhRealm_bild_himmel {
     }
 
     // DAS SPEKTRUM DER LUFT (ferne-luft): die Extinktion je Kanal relativ zu β (550 nm, der Koschmieder-Anker) aus dem Medium
-    // der EINEN Atmosphäre — Rayleigh je Kanal (`ATMO_GESETZ.rayleighTiefe`, blau ~5× rot) über dem grauen Aerosol: blau
-    // verlischt zuerst, die Ferne nimmt den Farbton des Himmels an, der sie überstreut. Unter Wasser das Spektrum des
-    // Wasser-Gesetzes (`WASSER_GESETZ.wK`, rot verlischt zuerst). Bis ferne-luft löschte die Luft grau (EIN Skalar β), ihr
-    // Himmel streute je Kanal (Linse: `werkbank licht --luft`, Δβ blau−rot 0 gegen die Referenz in spec).
+    // der EINEN Atmosphäre — Rayleigh je Kanal (`ATMO_GESETZ.rayleighTiefe`, blau ~5× rot) und das Aerosol je Kanal nach
+    // Ångström (`ATMO_GESETZ.mieAngstroem`, blau 1,34 × grün, rot 0,76 ×): blau verlischt zuerst, mit der Weglänge wird die
+    // Luft vor dem Fernen blau. Unter Wasser das Spektrum des Wasser-Gesetzes (`WASSER_GESETZ.wK`, rot verlischt zuerst). Bis
+    // ferne-luft löschte die Luft grau (EIN Skalar β), bis w4-ferne-blau trug das Aerosol kein Spektrum (Spektrum
+    // 0,97/1/1,09 statt 0,74/1/1,40).
     _luftSpektrum(beta, unterWasser, out) {
         if (unterWasser) {
             const wK = (
@@ -2389,7 +2394,7 @@ class AnazhRealm_bild_himmel {
         }
         const M = this._atmoMedium(beta);
         const k = 1000 * beta;
-        return out.set((M.betaR[0] + M.mieExt) / k, (M.betaR[1] + M.mieExt) / k, (M.betaR[2] + M.mieExt) / k);
+        return out.set((M.betaR[0] + M.mieExt[0]) / k, (M.betaR[1] + M.mieExt[1]) / k, (M.betaR[2] + M.mieExt[2]) / k);
     }
 
     // Die Sichtweite (m) eines waagrechten Blicks in der Augenhöhe `y` (Kontrast fällt unter `LUFT.kontrast`):
@@ -2455,11 +2460,12 @@ class AnazhRealm_bild_himmel {
             const himmel = A.himmelFarbe(T.vec3(dir.x, T.max(dir.y, 0.0), dir.z).normalize());
             return T.select(U.unterWasser.greaterThan(0.5), U.farbe, himmel);
         });
-        st.scene.fogNode = T.vec4(
-            T.mix(T.output.rgb, farbe(T.cameraPosition, T.positionWorld), faktor(T.cameraPosition, T.positionWorld)),
-            T.output.a
-        );
-        st.luft = { U, faktor, farbe };
+        // DIE LUFT VOR DEM GEZEICHNETEN (w4-ferne-blau): EINE Mischung je Kanal für jeden Leser — die Stoffe der Szene
+        // (`scene.fogNode`, der Fern-Ring darunter), der Feld-Pass und sein Panorama (`imDunst`) und der Spiegel des Wassers;
+        // bis dahin setzte jeder Pass `mix(·, farbe, faktor)` selbst zusammen.
+        const mische = T.Fn(([rgb, auge, punkt]) => T.mix(rgb, farbe(auge, punkt), faktor(auge, punkt)));
+        st.scene.fogNode = T.vec4(mische(T.output.rgb, T.cameraPosition, T.positionWorld), T.output.a);
+        st.luft = { U, faktor, farbe, mische };
         return st.luft;
     }
 
@@ -3241,8 +3247,10 @@ AnazhRealm.ATMO_LUT = Object.freeze({
     schritte: Object.freeze({ durchlass: AnazhRealm._atmoKern().durchlassSchritte, mehrfach: 20, himmel: 32 }),
 });
 // DER BODEN DER ATMOSPHÄRE (D3): die gemessene Welt-Albedo (linear) — das Mittel aus Laub und Wald-Boden der Albedo-Tafel
-// (spec/farbe/albedo-tafel.json, ist.welt; `werkbank albedo --tafel`), nie ein Grau 0,3. Er trägt die Mehrfachstreuung und
-// die untere Hälfte der Umgebung; `diag-atmo-hillaire` hält ihn an der Tafel (±3 %).
+// (spec/farbe/albedo-tafel.json, ist.welt; `werkbank albedo --tafel`), nie ein Grau 0,3. Er trägt die Mehrfachstreuung UND die
+// untere Hälfte der EINEN Umgebung — den Boden, den jeder nahe Stoff spiegelt. w4-ferne-blau setzte das Mittel der Fern-Farbe
+// ±100 km (0,1130/0,1344/0,0646, G/B 2,1 statt 3,1): der graue Boden der Ferne stand in jeder nahen Spiegelung, der Film der
+// Tore las als Milch (gate:portal-membran H, Radeon: milchweiß 4,7 → 5,3 % > 5 %) — heil-w4-ferne-blau.
 AnazhRealm.ATMO_BODEN = Object.freeze([0.1003, 0.1385, 0.0449]);
 // Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
 AnazhRealm.KEY_BASE = 2.6;

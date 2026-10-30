@@ -311,18 +311,17 @@ hauptLauf(async () => {
     await server.lausche(PORT);
     const { browser, page } = await nullSeite({ frist: 120000 });
     await server.zeige(page, 30000);
+    // die Trittfläche nennt das Gesetzbuch: das Buch muss warm sein (der Foundry-Worker läuft auch headless); die Wiesen-
+    // Probe liest den gebauten Boden: das Chunk-Streaming baut den Ring um den Spieler (nur er — Wiese und Streu baut die Probe).
+    // Die Büschel einer Kachel stehen erst mit der Weite der gezeichneten Vorlagen (`nahWiese.reich`, ihr EINER Schreiber ist
+    // `_tickNahWiese`): der Takt läuft mit verstrichener Frist — er misst die Weite und baut keine Kachel.
     await page.evaluate(async () => {
         await window.__weltDa((r) => r.state && r.state.scene);
-    });
-    // die Trittfläche nennt das Gesetzbuch: das Buch muss warm sein (der Foundry-Worker läuft auch headless); die Wiesen-
-    // Probe liest den gebauten Boden: das Chunk-Streaming baut den Ring um den Spieler (nur er — Wiese und Streu baut die Probe)
-    await page.evaluate(async () => {
-        const warm = () => {
-            const f = r._foundry;
-            return f && f.recipes && f.recipes.feuerstelle && r.state.voxelChunks && r.state.voxelChunks.size > 20;
-        };
-        for (const weiter = window.__deckel("Buch und Ring", 4500); !warm() && weiter(); ) {
+        const warm = () =>
+            r._foundry?.recipes?.feuerstelle && r.state.voxelChunks?.size > 20 && r.state.nahWiese?.reich > 0;
+        for (const weiter = window.__deckel("Buch, Ring und Wiesen-Weite", 4500); !warm() && weiter(); ) {
             r._tickVoxelChunkStreaming(r.state.playerMesh.position);
+            r._tickNahWiese(performance.now() - 1);
             await sleep(20);
         }
     });

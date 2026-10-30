@@ -55,7 +55,6 @@ function ohneWurf(check, name, res, zeile) {
 // Initial-State-Probe: liefert `finalState` für die Basis-Checks + Ring 1 (Grok).
 async function gatherInitialFinalState(page) {
     return await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         // Deterministische Mechanik-Probe (statt des flaky Box-Inhalts am Lauf-Ende): grokRender schreibt
         // einen Prüfsatz, die Box muss ihn tragen; ein leerer/null-Satz blankt sie NICHT.
         let grokRenderProbe = null;
@@ -866,7 +865,6 @@ if (require.main === module) hauptLauf(async () => {
             await timed(BAND.checkBandV18224ScatterPromotion, ctx);
             await timed(BAND.checkBandWahrerAnblickSaeule1, ctx);
             await timed(BAND.checkBandWahrerAnblickFels, ctx);
-            await timed(BAND.checkBandWahrerAnblickGras, ctx);
             await timed(BAND.checkBandRauschGesetz, ctx);
             await timed(BAND.checkBandWahrerAnblickLaub, ctx);
             await timed(BAND.checkBandWahrerAnblickPfade, ctx);

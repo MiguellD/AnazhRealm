@@ -20,7 +20,7 @@ class AnazhRealm_speicher_welten {
             worldId: null,
             slug: "",
             creator: "local",
-            visibility: "private",
+            visibility: "privat",
             parentWorlds: [],
             bornAt: 0,
             // Terrain-Seed der Welt — die EINE Quelle der Welt-Geometrie (SimplexNoise(seed)). Neue Welten
@@ -596,7 +596,9 @@ class AnazhRealm_speicher_welten {
         const out = {
             name: bp.name,
             label: bp.label || bp.name,
-            parts: Array.isArray(bp.parts) ? JSON.parse(JSON.stringify(bp.parts)) : [],
+            parts: Array.isArray(bp.parts)
+                ? JSON.parse(JSON.stringify(bp.parts.map((p) => this._teilMigriert(p))))
+                : [],
             connections: Array.isArray(bp.connections) ? JSON.parse(JSON.stringify(bp.connections)) : [],
         };
         if (bp.role === "tool" && bp.toolMeta) {
@@ -686,6 +688,19 @@ class AnazhRealm_speicher_welten {
         return out;
     }
 
+    // DIE TEIL-MIGRATION (die EINE, beide Richtungen des Speicher-Gesetzes): ein Teil ohne Stoff → „stein“, ohne opChain → die
+    // Default-Kette. `_serializeBlueprint` schreibt, was `_deserializeBlueprint` herstellt — bis 30.10. migrierte nur das Laden, und
+    // ein Bauplan, der ohne opChain geboren war (bank_sitzbank, leiter_podestleiter, blume_blume, gras_gras), kam nach jedem
+    // Neuladen anders zurück: Radeon 30.10., die Grundstellung der Mess-Sitzung nach der Tür nannte `blueprints` abweichend
+    // (4 von 70 eigenen Bauplänen, je `parts` + opChain hand_knap)
+    _teilMigriert(p) {
+        if (!p || typeof p !== "object") return p;
+        const out = { ...p };
+        if (typeof out.material !== "string" || !this.state.materials[out.material]) out.material = "stein";
+        if (!Array.isArray(out.opChain) || out.opChain.length === 0) out.opChain = this._defaultPartOpChain();
+        return out;
+    }
+
     // Baut aus einem serialisierten Bauplan (Save / Welt-Tor / Mesh) den lebenden Eintrag: migriert
     // alte Parts (kein material → „stein", keine opChain → Default-Kette), sanitisiert Verbindungen,
     // portalMeta via _sanitizePortalMeta, prüft die Signatur strukturell. Liefert den Eintrag
@@ -695,17 +710,7 @@ class AnazhRealm_speicher_welten {
         // Welle 4 Phase 1+3 — Migration alter Parts: kein material → Default
         // „stein", keine opChain → Default-Kette. Sicheres Default, keine
         // Datenverluste.
-        const migratedParts = data.parts.map((p) => {
-            if (!p || typeof p !== "object") return p;
-            const out = { ...p };
-            if (typeof out.material !== "string" || !this.state.materials[out.material]) {
-                out.material = "stein";
-            }
-            if (!Array.isArray(out.opChain) || out.opChain.length === 0) {
-                out.opChain = this._defaultPartOpChain();
-            }
-            return out;
-        });
+        const migratedParts = data.parts.map((p) => this._teilMigriert(p));
         // Welle 5 A — connections sanitisieren beim Load.
         const validConnections = this.validateBlueprintConnections(data.connections || [], migratedParts.length);
         const restored = {

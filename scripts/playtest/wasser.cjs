@@ -15,7 +15,6 @@ async function checkBandHydrosphere({ page, check, errors, finalState }) {
     // Die Täler kommen aus dem Flussnetz des Gelände-Gesetzbuchs (gelaende-core), nicht aus einer nachträglichen
     // Stream-Power-Inzision je Kachel: kein `_computeErosion`, kein `state.erosion`, kein `erosionDelta` im Kern.
     const erosionTot = await safeEvaluate(page, () => {
-        if (!r || !r.state) return null;
         return {
             tot:
                 !("erosion" in r.state) &&
@@ -34,7 +33,6 @@ async function checkBandHydrosphere({ page, check, errors, finalState }) {
     // Daten, headless-prüfbar.
     // Die Hydrosphäre entsteht im Faden (Karte hydro-faden): h1 die der Weltgen, h2 ein zweiter Lauf des Fadens.
     const voxelV943bResults = await safeEvaluate(page, async () => {
-        if (!r || !r.state) return null;
         const out = {};
         const h1 = r.state.hydrosphere;
         await window.__weltDa(() => !r.state.voxelWorkerPending.size); // die Uhr misst die Rechnung, nie die Schlange davor
@@ -146,7 +144,6 @@ async function checkBandHydrosphere({ page, check, errors, finalState }) {
     // Fluss-Mündungen erreichen SICHTBAR ihr Wasser (Ribbon blendet auf `waterLevel` bzw. den
     // Ziel-See-Level), und der Spieler schwimmt im See wie im Meer — Quelle ist `_waterLevelAt`.
     const voxelV943c2 = await safeEvaluate(page, async () => {
-        if (!r || !r.state) return null;
         const out = {};
         out.hydroReady = !!(r.state.hydrosphere && r.state.hydrosphere.ready);
         if (!out.hydroReady) return out;
@@ -206,7 +203,6 @@ async function checkBandHydrosphere({ page, check, errors, finalState }) {
     // + in See-Senken → echte Rinnen mit Ufern + Becken. Zirkel-frei (der Faden hält den Carve aus seiner Rechnung); ohne
     // Hydrosphäre bit-identisch zum Feld ohne Carve.
     const voxelV943d = await safeEvaluate(page, async () => {
-        if (!r || !r.state) return null;
         const out = {};
         const hydro = r.state.hydrosphere;
         out.hydroReady = !!(hydro && hydro.ready);
@@ -347,7 +343,6 @@ async function checkBandHydrosphere({ page, check, errors, finalState }) {
     // aus dem Kanal (`_hydroDistAt` + `_waterFlowAt`); der Wasserfall der Region über `_hydroFor`. Die Mischung des Gesetzes macht daraus
     // Pegel — nah hörbar, 5 km fern stumm. Der Ring wird hier einmal ganz gefegt (der Takt fegt ohr.probenJeFrame).
     const voxelV943e = await safeEvaluate(page, async () => {
-        if (!r || !r.state) return null;
         const out = {};
         if (!r.state.symphony.enabled) {
             try {
@@ -425,7 +420,6 @@ async function checkBandHydrosphere({ page, check, errors, finalState }) {
 // Determinismus an einem streaming-aktiven Chunk.
 async function checkBandWelleC1WaterCells({ page, check }) {
     const res = await page.evaluate(async () => {
-        if (!r || !r.state) return { error: "no realm" };
         const out = {};
         // 1) Konstante CELL_STATE
         const STATE = r.constructor.CELL_STATE;
@@ -591,7 +585,6 @@ async function checkBandWelleC1WaterCells({ page, check }) {
 // über waterLevel werden als WATER erfasst.
 async function checkBandWelleC2WaterIsoSurface({ page, check }) {
     const res = await page.evaluate(() => {
-        if (!r || !r.state) return { error: "no realm" };
         const out = {};
         const STATE = r.constructor.CELL_STATE;
         // 1) State-Feld existiert (Map)
@@ -925,7 +918,6 @@ async function checkBandWellePerfHWaterIsoQueue({ page, check }) {
 // bleibt trocken, Worker↔Main bauen bit-identische Wasser-Cells (kein Architektur-Stempel).
 async function checkBandV17117FarWater({ page, check }) {
     const res = await page.evaluate(async () => {
-        if (!r || !r.state) return { error: "no realm" };
         const s = r.state;
         const h = s.hydrosphere;
         if (!h || !h.ready) return { error: "hydrosphere not ready" };
@@ -1045,7 +1037,6 @@ async function checkBandV17117FarWater({ page, check }) {
 // V11.0-d.1 (Pfeiler D — Wasser ↔ Kreaturen): die Kosten und Quellen des Wasser-Kontext-Helpers, der Boden-Cache des Tiers.
 async function checkBandWelleV11D1WaterContext({ page, check }) {
     const res = await page.evaluate(() => {
-        if (!r || !r.state) return { error: "no realm" };
         const THREE = window.THREE;
         const out = {};
 
@@ -1126,7 +1117,6 @@ async function checkBandWelleV11D1WaterContext({ page, check }) {
 // teleportieren, `updateCreatures(0.016)` ticken, Y prüfen.
 async function checkBandWelleV11D2WaterBias({ page, check }) {
     const res = await page.evaluate(async () => {
-        if (!r || !r.state) return { error: "no realm" };
         const out = {};
 
         // Empirisch — finde eine Wasser-Spalte im Spawn-Bereich.

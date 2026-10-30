@@ -9,7 +9,6 @@ const { safeEvaluate } = require("../playtest.cjs");
 // Radius (mit dem gebauten Ring) zu ihnen wächst. Spawn leicht → wächst.
 async function checkBandV18275FoliageGrowth({ page, check }) {
     const res = await page.evaluate(() => {
-        if (!r || !r.state) return { error: "no realm" };
         const out = {};
         // Headless (Null-Renderer): der Aktuator setzt foliageRadius sofort auf den Rand am Schirm (lod.K5, `_randSchirm`).
         out.headlessFull = !st.renderer || !st.renderer._isHeadlessNull || st.foliageRadius === r._randSchirm("laub");
@@ -250,7 +249,6 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
 // Stufe × Teil), Entsorgen und Neubau halten die Block-Tabelle dicht. Headless ist pixel-blind — hier die Struktur.
 async function checkBandNahStreu({ page, check }) {
     const res = await page.evaluate(async () => {
-        if (!r || !r.state) return { error: "no realm" };
         const out = {};
         // (3) Die Arten kommen aus dem Studio-Buch (warten, bis Buch + Render-Config stehen).
         let arten = null;

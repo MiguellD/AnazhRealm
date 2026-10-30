@@ -340,7 +340,6 @@ async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
     // Multi-Mesh-Groups aus bodyParts × Material (dieselbe Sprache wie Spieler-Seele + Architektur);
     // drei Built-in-Seelen sprite/wesen/geist, Tag-Profil emergent.
     const wave6hP2aResults = await safeEvaluate(page, () => {
-        if (!r || !st) return null;
         const out = {};
         const souls = AnazhRealm.CREATURE_SOULS;
         out.soulsFrozen = !!souls && Object.isFrozen(souls);
