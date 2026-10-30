@@ -70,3 +70,4 @@ z67-bisekt LANGSAMER abab 29a5f696 gegen c5fb8cbc: stadt 4+4 LANGSAMER
 takt21a-gtx gemessen punkte 98ef98bb gtx: 21 grün / 22 rot
 takt21b-gtx gemessen punkte 98ef98bb gtx: 46 grün / 40 rot
 z77-abab nicht-langsamer abab 715754fc gegen 98ef98bb: stadt 4+4 nicht-langsamer · w-ego 4+4 nicht-langsamer
+takt22-gtx gemessen punkte 715754fc gtx: 21 grün / 7 rot
