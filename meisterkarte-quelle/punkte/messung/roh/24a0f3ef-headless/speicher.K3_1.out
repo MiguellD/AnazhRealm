@@ -1,0 +1,17 @@
+$ C:\Program Files\nodejs\node.exe scripts/diag-persistence.cjs --weg
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] chinesisch L2: [{"feld":"tris","ist":7288,"soll":7250}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] japanisch L2: [{"feld":"tris","ist":9650,"soll":7250}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] japanisch L2: [{"feld":"tris","ist":7404,"soll":7250}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] japanisch L2: [{"feld":"tris","ist":7502,"soll":7250}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] chinesisch L2: [{"feld":"tris","ist":7458,"soll":7250}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] chinesisch L2: [{"feld":"tris","ist":7580,"soll":7250}]
+[welt-boot] KOSTEN (Richter gate:asset-contract): [budget] chinesisch L2: [{"feld":"tris","ist":9416,"soll":7250}]
+
+=== Persistenz-Härtung (Tab-Tod, Lade-Pfad, save-server, Weg) ===
+  ✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 2.9 kB, Platte 5.9 kB, am stärksten worldMeta.settlementCells 1.9 kB · gesamt roh 67.8 kB, Platte 135.6 kB · Leben worldJournal 46.9 kB, dslHistory 11.8 kB, dslAbilities 3.3 kB, knowledgeBase 2.8 kB, creatures 0.0 kB, dslPatternMemory 0.0 kB
+  ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 972.2 kB, Platte 1944.3 kB, am stärksten wegSpur 972.2 kB · gesamt roh 972.2 kB, Platte 1944.3 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worldJournal 0.0 kB
+  ✅ (D) jeder Stand des Speicher-Fadens ist die volle Serialisierung: gleich · gleich · gleich · gleich
+  ✅ (D) 1000 Edits, Soll ≤ 100 kB: ohne Leben Δ roh 42.9 kB, Platte 85.8 kB, am stärksten voxelEdits 42.8 kB · gesamt roh 45.9 kB, Platte 91.8 kB · Leben creatures 2.3 kB, dslHistory 0.6 kB, dslAbilities 0.1 kB, knowledgeBase 0.1 kB, dslPatternMemory 0.0 kB, worldJournal -0.1 kB
+
+4/4 Persistenz-Invarianten OK.
+✅ Die Welt überlebt Tod und korrupten Write — kein stiller Datenverlust.

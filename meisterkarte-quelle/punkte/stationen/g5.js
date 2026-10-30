@@ -2675,7 +2675,10 @@ const stationen = [
     // 0,8 · vmax 73,7 % (gemischte Bilder 8,3–33,3 ms) bzw. 75,3 % (`--gleich`, 60 fps) — der Sim-Schritt ist fest, die Welt
     // (Natur-Strom, Boden) kommt je Bild: 12 444 gegen 12 225 Takte, darum urteilen Radeon und GTX. Erwartet dort: Route ✅,
     // an ✅, Steckenbleiber 0 ✅, Tempo ❌ (~74 % gegen 80 %: drei Bäche quer — zwei Feldwege und eine Gasse von 4,−7 — und
-    // die Ecken der Dörfer, je ~210 Takte unter 0,8 · vmax).
+    // die Ecken der Dörfer, je ~210 Takte unter 0,8 · vmax). DIE KARTE (w4-proben-heil): bis dahin fuhr `--wegenetz` den
+    // Null-Renderer (diag-fahr-leben: nur `--rueckmeldung` zeichnete), kein `[linse-gpu]` stand im Lauf, und die Wand GPU wies jede
+    // Fahrt ab (98ef98bb bis 73bdf938 GTX; dort Route 2579 m, gefahren 2577 m, Steckenbleiber 0, Tempo 78,1 % — das Spiel-ROT stand
+    // hinter der Wand); in der Sitzung fährt die Probe in der Seite der Welt `--echt` (ihr Zeuge die Karte der Sitzung).
     // IN DER SITZUNG (29.10., proben-welt.cjs `fahrWegenetz`): die Seiten-Probe des Gates (`probeLeben`, `wegenetz`) in der warmen
     // Welt, der Dorf-Zug an wie das Gate vor dem Boot; die Route sind ~12 000 Sim-Schritte in den Bildern der Probe (die Welt kommt
     // je Bild) — die Ausnahme trägt sie. Kennt der Stand die Fahrt nicht, ROT beim Namen in Sekunden. Die Orte erwachen: mutiert.
@@ -2711,6 +2714,52 @@ const stationen = [
         pfad: ["vehicle-core.js", "fachwerk-core.js", "voxel-worker.js", "stamm/koerper-*.js", "stamm/siedlung-*.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "scripts/werkbank.cjs"],
         quelle: "1 = auf der festen 2-km-Route entlang Weg und Feldweg (Wiese → Wald → Dorf) 0 Steckenbleiber und ≥ 80 % der Takte über 0,8 × vmax, an einem Gerät",
     },
+
+    // ───────── fahrzeug.K2 Staffel 2 — der Verkehr der Stadt (PFLICHT-OFFEN C), dazu Hang, Furt, Ego und Third (w4-sitzung-reif) ─────────
+    // DIE BINDUNG (30.10., gelesen an der Karte src/g5.js, Bereich fahrzeug): C — „Wagen mit Bewohnern am Steuer auf den Trassen der
+    // Stadt“ — ist die Fahrt, die durchkommt, für die Wagen des Gesetzes: das AAAA von fahrzeug („ein Wagen aus dem Gesetz fährt auf dem
+    // Wegenetz …, ohne steckenzubleiben“) und der Name von K2 („das Wegenetz trägt das Rad“). Kein Kriterium der Karte nannte C; die
+    // Staffel 2 von K2 nannte Hang, Furt und die Sichten der Fahrt des Spielers — sie wurde um C strenger (R2: strenger, nie weicher).
+    // An die 2 OHNE die Erweiterung gebunden, buchte ein grüner Verkehr Hang, Furt und Sichten, die keiner maß. Die Station misst C
+    // (proben-welt `fahrVerkehr`, je Stunde 12 s Spielzeit, die Metropole gründet die Probe selbst) und nennt die Teile ohne Probe beim
+    // Namen: ROT, bis Hang, Furt und die Sichten eine Probe tragen — C selbst steht je Fahrt in der Zahl (`C GRÜN`/`C ROT`).
+    // Die Stadt erwacht, die Uhr springt: mutiert. DER DECKEL geschätzt (ungemessen auf der Karte): headless 2 × 40 s in 122 s samt Boot
+    // und Stadt (w3w-verkehr fcfd85d7); hier die Gründung ~20 s und 2 × 12 s Spielzeit zu ~25 ms je Bild — die GPU-Fahrt nennt die Zahl.
+    {
+        kriterium: "fahrzeug.K2", staffel: 2, geraet: ["radeon", "gtx"],
+        probe: {
+            befehl: PW.torBefehl(PW.fahrVerkehr, "12"),
+            sek: 55,
+            mutiert: true,
+            ausnahme: "die Metropole von stadt-voll (nH 300) gründet in der Probe, dann je Stunde (10 und 23 Uhr) 12 s Spielzeit im Takt des Spiels",
+        },
+        gpu: true, zeit: false, minuten: 3,
+        urteil: (j, lauf) => {
+            const t = String(lauf.stdout || "");
+            const m = jsonZeile(t, /^VERKEHR {/);
+            const je = [10, 23].map((h) => [h, (new RegExp("^\\s*(✅|❌) VK \\(PFLICHT-OFFEN C\\)[^\\n]*um " + h + " Uhr — (.*)$", "m").exec(t) || [])]);
+            const c = !!m && je.every(([, z]) => z[1] === "✅") && lauf.exit === 0;
+            const cText = !m ? "keine VERKEHR-Zeile (Exit " + lauf.exit + "): " + (t.trim().split("\n").filter((z) => /keine VERKEHR|PROBE-FEHLER/.test(z))[0] || "die Probe sprach nicht").slice(0, 200)
+                : je.map(([h, z]) => h + " Uhr " + (z[1] || "—") + " " + String(z[2] || "keine Zeile").slice(0, 160)).join(" · ");
+            // die übrigen Teile der Staffel 2: keine Probe misst sie (fahrWegenetz fährt EINE Sicht, die Route kennt keinen 25°-Hang)
+            const ohne = ["25°-Hang", "Furt", "Ego und Third"];
+            return {
+                gruen: c && ohne.length === 0,
+                zahl: "C " + (c ? "GRÜN" : "ROT") + ": der Verkehr der Stadt " + cText + " · ohne Probe: " + ohne.join(", ") + " — die 2 wartet auf sie",
+            };
+        },
+        proben: (() => {
+            const vk = (h, ok, w) => "  " + (ok ? "✅" : "❌") + " VK (PFLICHT-OFFEN C) der Verkehr der Stadt um " + h + " Uhr — " + w;
+            const zeile = 'VERKEHR {"10":{"wagen":20,"soll":20},"23":{"wagen":20,"soll":20}}';
+            return [
+                { name: "C grün an beiden Stunden, Hang, Furt und Sichten ohne Probe", stdout: [vk(10, true, "jeder fährt"), vk(23, true, "jeder fährt"), zeile].join("\n"), gruen: false },
+                { name: "ein Wagen steckt um 23 Uhr", stdout: [vk(10, true, "jeder fährt"), vk(23, false, "keiner steht die ganze Zeit: min 0 m (Wagen 7)"), zeile].join("\n"), gruen: false },
+                { name: "der Stand kennt den Verkehr nicht", stdout: "keine VERKEHR-Zeile: probeLeben kennt den Verkehr der Stadt nicht (gate:fahr-leben --verkehr fehlt am Stand)", gruen: false },
+            ];
+        })(),
+        pfad: ["vehicle-core.js", "fachwerk-core.js", "koerper-core.js", "stamm/koerper-*.js", "stamm/siedlung-*.js", "stamm/dirigent-takt.js", "scripts/diag-fahr-leben.cjs", "scripts/lib/fahr-proben.cjs", "spec/profiband/haushalt.json"],
+        quelle: "2 = auch 25°-Hang und Furt, Ego und Third, und der Verkehr der Stadt (PFLICHT-OFFEN C): um 10 und 23 Uhr fährt jeder Wagen des Gesetzes mit seinem Fahrer am Steuer, keiner steckt, keiner berührt Bewohner, Wagen oder Bau, beide Geräte",
+    },
 ];
 
 module.exports = stationen;
@@ -2722,7 +2771,8 @@ module.exports.fehlt = [
     // 1,69 min, ROT Kontrolle 7 699 ms; GTX 98ef98bb ROT 3,0 min)
     { kriterium: "tore.K5", staffel: 2, befehl: null, grund: "nicht als Probe der Sitzung gebaut: das Kriterium verlangt B als eigenen Browser-Prozess mit frischem Profil (das andere Gerät) neben A, und der Teil (T) samt WELT lebt inline im hauptLauf von scripts/diag-praegung-welt.cjs (686 Z., L S N G R B K T F U in EINEM Lauf mit eigener Welt A) — ohne Seiten-Funktion des Teils (T) im Spiel-Baum misst keine Probe A in der Welt der Sitzung; der eigene Boot je Station ist auf radeon|gtx gefallen (die Fahrt ≤ 30 min). Letzte Messung: Radeon b3f9ae95 ROT (Kontrolle 7 699 ms > 5 s), GTX 98ef98bb ROT" },
     { kriterium: "ultiversum.K4", staffel: 2, befehl: null, grund: "nicht gebaut (w3t-spielergesetz baute Staffel 1): ein Spieler-Gesetzbuch dockt über den Weg von studios.K5 an (ein neuntes Gesetzbuch mit PARAMS_BY_KIND und Bauer, `git diff stamm/` = 0), und der Weg ist selbst ungebaut — die Übergabe kennt eine Positivliste (`stamm/netz-portal.js`, koerper und kreatur), der Wirt kennt Arten beim Namen. Ein Gesetz aus dem Satz („wann immer …“) ist eine Welt-Regel (`_registerWorldRule`), kein Gesetzbuch" },
-    // fahrzeug.K2#2 (w3w-verkehr, 29.10.): die feste Route der 1 quert drei Bäche (Furten: zwei Feldwege und eine Gasse von 4,−7), aber
-    // keinen 25°-Hang, und die Probe fährt eine Sicht
-    { kriterium: "fahrzeug.K2", staffel: 2, befehl: null, grund: "nicht gebaut (w3w-verkehr baute den Verkehr der Stadt, PFLICHT-OFFEN C, und die 1 der Route): die feste Route über das Wegenetz (`_wegenetzRoute`, 2,6 km Wiese → Wald → Dorf) quert drei Bäche als Furt, führt aber über keinen 25°-Hang — das Wegenetz legt keinen Weg so steil (die Trassen des Plans fallen höchstens um `gefaelle`), ein Hang-Teil braucht eine eigene Strecke am Messort hang (−526/−853, 24,4°) mit Soll für Steckenbleiber und Tempo bergauf; die Seiten-Probe `fahrWegenetz` fährt EINE Sicht, Ego und Third getrennt misst keine" },
+    // fahrzeug.K2#2 ist seit w4-sitzung-reif eine Station (der Verkehr der Stadt, PFLICHT-OFFEN C); ihre übrigen Teile nennt sie selbst:
+    // die feste Route der 1 quert drei Bäche (Furten: zwei Feldwege und eine Gasse von 4,−7), aber keinen 25°-Hang — das Wegenetz legt
+    // keinen Weg so steil (die Trassen fallen höchstens um `gefaelle`), ein Hang-Teil braucht eine eigene Strecke am Messort hang
+    // (−526/−853, 24,4°); die Seiten-Probe `fahrWegenetz` fährt EINE Sicht, Ego und Third getrennt misst keine.
 ];

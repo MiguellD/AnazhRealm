@@ -73,3 +73,4 @@ z77-abab nicht-langsamer abab 715754fc gegen 98ef98bb: stadt 4+4 nicht-langsamer
 takt22-gtx gemessen punkte 715754fc gtx: 21 grün / 7 rot
 z78-abab LANGSAMER abab 73bdf938 gegen 715754fc: stadt 4+4 LANGSAMER · w-ego 2+2 nicht-langsamer
 takt23-gtx gemessen punkte 73bdf938 gtx: 0 grün / 11 rot
+z78-bisekt LANGSAMER abab 748ea96f gegen 715754fc: stadt 4+4 LANGSAMER

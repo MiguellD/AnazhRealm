@@ -541,10 +541,14 @@ function fahreGruppe(sts, ctx) {
                     (zeugeText ? "\n--- gpu-zeuge ---\n" + zeugeText : ""));
             }
             if (tot && !amSchloss) return offen("GPU-Schloss nie bekommen: gpu-lauf.sh schwieg " + stillS + " s beim Warten — beendet, ungemessen", code);
+            // der Deckel nennt, wobei er traf: die letzte Zeile der Ausgabe (vegetation.K5#1 hieß an 715754fc und 73bdf938 nur „Deckel 60 s
+            // überschritten“ — ihr erster Schuss stand nach 51 s, der zweite trug den Deckel); in der Sitzung ebenso die Wache
+            const zuletzt = String(out).split(/\r?\n/).map((l) => l.trim()).filter(Boolean).pop();
+            const wobei = zuletzt ? " (zuletzt: " + zuletzt.slice(0, 160) + ")" : "";
             // DIE WACHE DER FAHRT: in der Sitzung ist eine Probe am Deckel UNGEMESSEN beim Namen (sie misst nicht, was sie soll — nie ROT,
             // nie GRÜN); der Rest der Fahrt kappte sie: die Fahrt riss FAHRT_MAX_S
-            if (tot && sitz) return offen((fahrtKappt ? "Deckel der Fahrt " + (sitz.fahrtMaxS || FAHRT_MAX_S) + " s gerissen nach " + deckelS + " s der Probe" : "Deckel " + deckelS + " s gerissen") + " — beendet, UNGEMESSEN", code);
-            if (tot) return rot("Deckel " + (schloss ? deckelS + 120 : deckelS) + " s überschritten — beendet", code);
+            if (tot && sitz) return offen((fahrtKappt ? "Deckel der Fahrt " + (sitz.fahrtMaxS || FAHRT_MAX_S) + " s gerissen nach " + deckelS + " s der Probe" : "Deckel " + deckelS + " s gerissen") + " — beendet, UNGEMESSEN" + wobei, code);
+            if (tot) return rot("Deckel " + (schloss ? deckelS + 120 : deckelS) + " s überschritten — beendet" + wobei, code);
             if (sig) return rot("Absturz: Signal " + sig, code);
             const blockiert = (/^SCHLOSS BLOCKIERT .*$/m.exec(out) || [""])[0].trim();
             if (schloss && code === 75) return offen("GPU-Schloss blockiert (gpu-lauf.sh Exit 75" + (blockiert ? ": " + blockiert : "") + ") — ungemessen", code);
@@ -643,14 +647,38 @@ const SITZUNG_MAX_S = FAHRT_MAX_S + 600;
 const GRUNDSTELLUNG_S = 180;
 const STAND_DATEIEN = ["anazhRealmState.json", "anazhRealmState.json.bak", "anazhRealmPerf.json"];
 const GRUND_SEITE = ["__ortTakt", "__ortStell", "__ortSchritt", "__ortBahn", "__anazhAutoSettlement"];
+// DIE WEGE-LINSE DER GRUNDSTELLUNG (w4-sitzung-reif; der Weg von tempo4 lag nach der Grundstellung weiter über der Mess-Wiese):
+// `_stlWegeBuild` malt die Flächen eines Wegs in die Wege-Karte (`state.wegeKarte.siedlungen`), merkt seine Marke (`_stlWegeKeys`) und
+// räumt die Natur auf ihm (`_wegeRaeumen`); `_standRueckspielen` lässt Karte und Natur als Caches warm — der Weg einer Probe (tempo4,
+// die Straße von fahr-proben, ein erwachtes Dorf, die Stadt) blieb liegen, die Proben danach maßen neben ihm. Der Abdruck je Fläche
+// ihr Rechteck auf 0,1 m und die Zahl ihrer Formen, dazu die Marken; läuft in der Seite (r = die Welt).
+function wegeAbdruck(r) {
+    const wk = r && r.state && r.state.wegeKarte, k = r && r._stlWegeKeys;
+    const f = (b) => [b.x0, b.z0, b.x1, b.z1].map((v) => Math.round(v * 10) / 10).join(",") + "/" + (b.formen ? b.formen.length : 0);
+    return { flaechen: (wk ? wk.siedlungen : []).map(f).sort(), keys: k ? [...k].sort() : [] };
+}
+// die Abweichung vom Abdruck des Grunds beim Namen — „wege +n [Fläche] (neue Marken) −m [Fläche]“ — oder null; eine Marke, die fiel, ist
+// keine (die Weltgrenze vergisst das Gedächtnis der Seite, `WELT_GRENZE.gedaechtnis`), eine neue auch ohne Fläche schon (die Natur,
+// die ihr Weg räumte, kehrt an Ort und Stelle nicht zurück)
+function wegeAbweichung(soll, ist) {
+    const zahl = (L) => L.reduce((m, x) => m.set(x, (m.get(x) || 0) + 1), new Map());
+    const mehr = (A, B) => [...A.keys()].flatMap((x) => Array(Math.max(0, A.get(x) - (B.get(x) || 0))).fill(x));
+    const [S, I] = [zahl(soll.flaechen || []), zahl(ist.flaechen || [])];
+    const neu = mehr(I, S), fort = mehr(S, I), marken = (ist.keys || []).filter((x) => !(soll.keys || []).includes(x));
+    if (!neu.length && !fort.length && !marken.length) return null;
+    const liste = (L) => L.slice(0, 3).map((x) => "[" + x + "]").join(" ") + (L.length > 3 ? " …" : "");
+    return "wege" + (neu.length ? " +" + neu.length + " " + liste(neu) : "") + (marken.length ? " (" + marken.slice(0, 4).join(", ") + ")" : "") +
+        (fort.length ? " −" + fort.length + " " + liste(fort) : "");
+}
 const GRUND_NIMM =
     'if (typeof r._grundstellung !== "function") return { fehlt: true }; const t0 = performance.now(); const g = r._grundstellung(); ' +
     "return { grund: g.grund, n: Object.keys(g.abdruck).length, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta.worldId, " +
-    "seite: " + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window) };";
+    "seite: " + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window), wege: (" + wegeAbdruck + ")(r) };";
 const grundSpielen = (g) =>
     "for (const k of " + JSON.stringify(GRUND_SEITE) + ") if (!" + JSON.stringify(g.seite) + ".includes(k)) delete window[k]; " +
-    "const t0 = performance.now(); const z = r._grundstellung(" + JSON.stringify(g.grund) + "); return { ok: z.ok, grund: z.grund || null, " +
-    "anders: (z.anders || []).concat(" + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window && !" + JSON.stringify(g.seite) + ".includes(k)).map((k) => \"seite.\" + k)), " +
+    "const t0 = performance.now(); const z = r._grundstellung(" + JSON.stringify(g.grund) + "); " +
+    "const weg = " + (g.wege ? "(" + wegeAbweichung + ")(" + JSON.stringify(g.wege) + ", (" + wegeAbdruck + ")(r))" : "null") + "; return { ok: z.ok, grund: z.grund || null, " +
+    "anders: (z.anders || []).concat(" + JSON.stringify(GRUND_SEITE) + ".filter((k) => k in window && !" + JSON.stringify(g.seite) + ".includes(k)).map((k) => \"seite.\" + k), weg ? [weg] : []), " +
     "neu: z.neu || null, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta && r.state.worldMeta.worldId, wie: (" + grundWie + ")(r, " +
     JSON.stringify(g.grund) + ", z.anders || []) };";
 // WIE eine Größe vom Grund abweicht (Heilung 30.10.: „abweichend vom Grund: blueprints“ nannte nie den Täter): je Liste des Stands
@@ -701,6 +729,15 @@ function rufFrist(port, weg, nutzlast, ms) {
 const lebtPid = (pid) => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === "EPERM"; } };
 const warteMs = (ms) => new Promise((r) => setTimeout(r, ms));
 const httpDa = (port) => new Promise((r) => require("http").get("http://127.0.0.1:" + port + "/", (x) => (x.resume(), r(true))).on("error", () => r(false)));
+// ist der Port zu? EIN Verbindungs-Versuch: abgewiesen heißt, niemand lauscht; ein lauschender Port nimmt sofort an, auch wenn sein
+// Prozess gerade rechnet — eine Frist ohne Antwort heißt darum nie „zu“
+const portZu = (port, ms = 3000) => new Promise((r) => {
+    const s = require("net").connect({ host: "127.0.0.1", port });
+    const ende = (zu) => { s.destroy(); r(zu); };
+    s.setTimeout(ms, () => ende(false));
+    s.once("connect", () => ende(false));
+    s.once("error", () => ende(true));
+});
 
 // DER HALTER (`punkte.cjs halter --baum B --port P --log L --zeuge Z --stop F --eltern pid [--band p,p] [--welt stub.json]`): startet
 // die Welt, meldet „SITZUNG bereit“ und hält sie, bis die Stop-Datei liegt, der Läufer stirbt oder die Werkbank endet; dann stop,
@@ -893,7 +930,11 @@ async function grundNehmen(w, datei) {
 // verlassen, durch die Tür und `/reload` (Ring 8). Rückgabe { ok, s, ms, neu, tuer?, grund? } — ROT nennt die abweichenden Größen.
 // `o.abbruch` (Heilung 30.10.): die Probe davor fiel (Deckel, Absturz, Start) — ihre Seiten-Funktion lief weiter (Radeon 3ed96b3f:
 // licht.K5#1 am Deckel, der Wetter-Zug drehte Tag-Länge, Wetter und Bühne weiter) und verdarb den Stand. Dann geht die Grundstellung
-// IMMER durch die Tür: das Neuladen beendet jede Arbeit der gefallenen Probe in der Seite, ehe der Grund greift
+// IMMER durch die Tür: das Neuladen beendet jede Arbeit der gefallenen Probe in der Seite, ehe der Grund greift.
+// DER WEG SEIT DEM GRUND (w4-sitzung-reif, die Wege-Linse `wegeAbweichung`): nennt das Rückspielen an Ort und Stelle einen Weg, den die
+// Probe legte, geht die Grundstellung durch die Tür — die Lade-Kette des Speicher-Gesetzes baut Wege-Karte und Natur aus dem Grund
+// neu (an Ort und Stelle bleiben beide warm, `_standRueckspielen`); steht der Weg auch danach, ist die Welt ROT beim Namen des Wegs.
+// Rückgabe dann zusätzlich `wege` (der Weg, der durch die Tür ging)
 async function grundstellung(w, datei, o = {}) {
     const t0 = Date.now();
     try {
@@ -905,6 +946,8 @@ async function grundstellung(w, datei, o = {}) {
             return a.ergebnis;
         };
         let z = o.abbruch ? { ok: false, welt: null } : await spiel(), tuer = false;
+        const wege = z.ok ? (z.anders || []).find((a) => /^wege\b/.test(a)) || null : null;
+        if (wege) z = { ok: false, welt: null };
         if (!z.ok && z.welt !== g.welt) {
             const t = await rufFrist(w, "/eval", { code: GRUND_TUER(g) }, 60000);
             if (!t || !t.ergebnis || !t.ergebnis.ok) throw new Error("die Tür zurück in die Welt " + g.welt + ": " + JSON.stringify(t).slice(0, 300));
@@ -917,7 +960,7 @@ async function grundstellung(w, datei, o = {}) {
         // das Fenster wie beim Start der Welt (1920×1080): eine Probe davor stellte es vielleicht anders
         const f = await rufFrist(w, "/fenster", {}, 30000);
         if (!f || !Array.isArray(f.fenster)) throw new Error("/fenster: " + JSON.stringify(f).slice(0, 300));
-        return { ok: true, s: +((Date.now() - t0) / 1000).toFixed(1), ms: z.ms, neu: z.neu, ...(tuer ? { tuer } : {}) };
+        return { ok: true, s: +((Date.now() - t0) / 1000).toFixed(1), ms: z.ms, neu: z.neu, ...(tuer ? { tuer } : {}), ...(wege ? { wege } : {}) };
     } catch (e) {
         return { ok: false, s: +((Date.now() - t0) / 1000).toFixed(1), grund: String((e && e.message) || e).split("\n")[0] };
     }
@@ -930,6 +973,9 @@ async function grundstellung(w, datei, o = {}) {
 // danach keine Größe vom Grund abweicht. `--mutante <zeile>`: das Wort dieser Zeile der GRUND_TAFEL schweigt (`uhr`: der EINE
 // Uhr-Schreiber des Spiels, eine Größe des Stands) — gefangen nur, wenn genau `augenblick.<zeile>` (`timeOfDay`) abweicht: die Mutante
 // ROT beim Namen. Exit 0 GRÜN bzw. gefangen, 1 sonst.
+// `--mutante weg` (w4-sitzung-reif): eine Probe legt ihren Weg wie tempo4 (`_stlWegeBuild` mit der Marke `probe:grundprobe`, die Natur
+// weicht ihm) und räumt ihn nie — gefangen nur, wenn das Rückspielen an Ort und Stelle genau ihn nennt (die Wege-Linse,
+// `wegeAbweichung`); mit `--tuer` spielt die Grundprobe danach wie die Sitzung den Grund durch die Tür zurück, und der Weg ist fort.
 async function grundProbe(o) {
     const baum = path.resolve(o.baum || "."), port = Number(o.port || 4741);
     const { statikServer, nullSeite } = require(path.join(baum, "scripts", "lib", "welt-boot.cjs"));
@@ -955,6 +1001,9 @@ async function grundProbe(o) {
             r.setCameraMode("third");
             [st.yaw, st.pitch] = [st.yaw + 1.3, 0.2];
             const ritt = r.mountArchitecture(r.spawnArchitecture("fahrzeug_gt", { x: q.x - 20, y: y(-20) + 0.5, z: q.z }, { silent: true })).ok;
+            // der Weg der Probe (Mutante weg): 6 m breit, 60 m lang neben dem Spieler — wie tempo4 und die Straße von fahr-proben
+            const weg = ${JSON.stringify(o.mutante || null)} === "weg" ? r._stlWegeBuild({ roads: [{ pts: [{ x: 0, z: 0 }, { x: 0, z: 60 }], w: 6 }] }, { x: q.x + 40, z: q.z - 30 }, "probe:grundprobe") : 0;
+            const wegFlaeche = weg ? (${wegeAbdruck})(r).flaechen.find((f) => !${JSON.stringify((g.wege && g.wege.flaechen) || [])}.includes(f)) || null : null;
             r.setTimeOfDay(0.9, "regler");
             for (let i = 0; i < 625 && !r._brandEntfachen(q.x + ((i % 25) - 12) * cs, q.z + (((i / 25) | 0) - 12) * cs); i++);
             let t = performance.now();
@@ -979,10 +1028,16 @@ async function grundProbe(o) {
             if (mut === "wesen") r._restoreCreatureFromSnapshot = () => false;
             if (mut === "gefuehl") { const S0 = r.spawnCreatures.bind(r); r.spawnCreatures = (...a) => { const x = S0(...a); r.state.creatureEmotions = r.state.creatureEmotions.map(() => "happy"); return x; }; }
             if (mut === "erdbau") { const L = r.loadState.bind(r), E = st.worldMeta.erdbau; r.loadState = (s) => { const x = L(s); r.state.worldMeta.erdbau = E; return x; }; }
-            return { edit, bau, ritt, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, tag: st.dayLengthMinutes, plan, erd, tiere, mutante: !!z || r._uhrSetzen.length === 0 || ["bauplaene", "werk", "erdbau", "wesen", "gefuehl"].includes(mut) };`);
+            return { edit, bau, ritt, weg, wegFlaeche, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, tag: st.dayLengthMinutes, plan, erd, tiere, mutante: !!z || r._uhrSetzen.length === 0 || ["bauplaene", "werk", "erdbau", "wesen", "gefuehl", "weg"].includes(mut) };`);
         const z = await ev(grundSpielen(g));
-        const soll = !o.mutante ? [] : { uhr: ["timeOfDay"], bauplaene: ["blueprints"], werk: ["architectures"], erdbau: ["worldMeta.erdbau"], wesen: ["creatures", "creatureEmotions"], gefuehl: ["creatureEmotions"] }[o.mutante] || ["augenblick." + o.mutante];
-        const taten = tat.edit && tat.bau && tat.ritt && tat.feuer > 0 && tat.wetter === "rainy" && tat.tag === 1e9 && tat.plan && tat.erd && tat.tiere && (!o.mutante || tat.mutante);
+        const soll = !o.mutante ? [] : { uhr: ["timeOfDay"], bauplaene: ["blueprints"], werk: ["architectures"], erdbau: ["worldMeta.erdbau"], wesen: ["creatures", "creatureEmotions"], gefuehl: ["creatureEmotions"], weg: ["wege +1 [x0,z0,x1,z1/Formen]"] }[o.mutante] || ["augenblick." + o.mutante];
+        const taten = tat.edit && tat.bau && tat.ritt && tat.feuer > 0 && tat.wetter === "rainy" && tat.tag === 1e9 && tat.plan && tat.erd && tat.tiere && (!o.mutante || tat.mutante) && (o.mutante !== "weg" || (tat.weg > 0 && !!tat.wegFlaeche));
+        // die Wege-Linse nennt den Weg beim Rechteck seiner Fläche (6 × 66 m, 40 m neben dem Spieler; die Tat nennt sie, wie die Karte sie
+        // trägt) — seine Marke nur, solange das Gedächtnis der Seite steht (ein anderes worldMeta beim Rückspielen vergisst `_stlWegeKeys`,
+        // WELT_GRENZE): gefangen ist er, wenn genau DIESE neue Fläche abweicht
+        const passt = (x) => (o.mutante === "weg" ? x.anders.length === 1 && new RegExp("^wege \\+1 \\[" + String(tat.wegFlaeche).replace(/[.]/g, "\\.") + "\\]( \\(probe:grundprobe\\))?$").test(x.anders[0])
+            : JSON.stringify(x.anders) === JSON.stringify(soll));
+        let z2 = null;
         // DIE TÜR (`--tuer`): die Seite lädt neu wie in der Sitzung nach einer gefallenen Probe — der Grund durch `_weltBetreten` (abgelegt,
         // aktiv), dann die Seite neu, dann das Rückspielen
         if (o.tuer || o.welt) {
@@ -1001,12 +1056,15 @@ async function grundProbe(o) {
             await page.reload({ waitUntil: "domcontentloaded" });
             await page.evaluate(() => window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId));
             await ev("let t = performance.now(); for (let i = 1; i <= 20; i++) if ((r._gameLoopTick((t += 100)), i % 5 === 0)) await new Promise((f) => setTimeout(f, 0));");
+            // nach der Tür spielt die Sitzung den Grund noch einmal (grundstellung): ohne Mutante und mit dem Weg steht danach jede Größe im Grund
+            if (!o.mutante || o.mutante === "weg") z2 = await ev(grundSpielen(g));
         }
-        const gruen = taten && z.ok && JSON.stringify(z.anders) === JSON.stringify(soll);
+        const gruen = taten && z.ok && passt(z) && (!z2 || (z2.ok && z2.anders.length === 0));
         const wie = o.mutante ? "MUTANTE " + o.mutante + (gruen ? " ROT beim Namen" : " NICHT beim Namen gefangen") : gruen ? "GRÜN" : "ROT";
         console.log("GRUNDPROBE " + wie +
             " · Grund " + g.n + " Größen (" + g.ms + " ms) · Taten " + JSON.stringify(tat) + " · zurück in " + z.ms + " ms, neu " + JSON.stringify(z.neu) +
-            " · abweichend: " + (z.anders.join(" ") || "keine") + (z.ok ? "" : " · " + z.grund) + " · Soll " + (soll.join(" ") || "keine"));
+            " · abweichend: " + (z.anders.join(" ") || "keine") + (z.ok ? "" : " · " + z.grund) + " · Soll " + (soll.join(" ") || "keine") +
+            (z2 ? " · nach der Tür abweichend: " + (z2.ok ? z2.anders.join(" ") || "keine" : z2.grund) : ""));
         return gruen;
     } finally {
         await browser.close();
@@ -1185,7 +1243,9 @@ const mutiertVon = (g) => g.some((st) => !!(st.probe && st.probe.mutiert));
 // Ring ihres Messorts — nach jeder Tür kalt): der erste Messort, an den ihr Befehl umstellt (`umstellen --ort X` der Werkbank, `/umstellen
 // { ort: "X" }` des Tors), aus dem Befehl selbst gelesen — nie eine zweite Liste; null: sie nennt keinen (Koordinaten, ein Ort aus einer
 // Variablen). In der Gruppe stehen die Proben eines Orts beieinander (die Reihe ihres ersten Auftritts), die ohne Ort zuletzt
-const ORT_MUSTER = [/umstellen\\?",\\?"--ort\\?",\\?"([a-z0-9_-]+)/, /umstellen\\?", \{ ort: \\?"([a-z0-9_-]+)/, /umstellen --ort ([a-z0-9_-]+)/];
+// (der vierte: der Plan eines Vegetations-Laufs, `[[Ort, Sicht, …], …]` als letztes Argument — sein erster Stand, w4-sitzung-reif)
+const ORT_MUSTER = [/umstellen\\?",\\?"--ort\\?",\\?"([a-z0-9_-]+)/, /umstellen\\?", \{ ort: \\?"([a-z0-9_-]+)/, /umstellen --ort ([a-z0-9_-]+)/,
+    / \[\["([a-z0-9_-]+)","(?:ego|third)",/];
 const probeOrt = (st) => {
     const text = [].concat((st.probe && st.probe.befehl) || []).map(String).join(" ");
     for (const re of ORT_MUSTER) {
@@ -1243,6 +1303,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     const restS = () => fahrtMaxS - (Date.now() - fahrt0) / 1000;
     kopf.offen = [];
     kopf.orte = [];
+    kopf.wegeTueren = []; // je Grundstellung, die ein Weg seit dem Grund durch die Tür schickte: vor wem, welcher Weg, s
     let aktOrt = null, ortNach = null;
     // DER ZAPF-TAKT: nie zwei Zapfen der Sitzung zugleich; während der Grundstellung ruht er
     const W = ctx.port + 20000, zz = { zapfen: 0, luecken: 0, letzteLuecke: null };
@@ -1328,11 +1389,12 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             ruht = false;
             if (gs.ok) {
                 kopf.grundstellungS.push(gs.s);
+                if (gs.wege) kopf.wegeTueren.push({ vor: schluessel(g[0]), wege: gs.wege, s: gs.s });
                 (aktOrt = null), (ortNach = gs.tuer ? "der Tür" : "der Grundstellung"); // der Grund stellt den Spieler an seinen Ort zurück
-                console.log("  SITZUNG Grundstellung vor " + schluessel(g[0]) + ": " + gs.s + " s (im Spiel " + gs.ms + " ms" + (gs.tuer ? ", durch die Tür" : "") + ")");
+                console.log("  SITZUNG Grundstellung vor " + schluessel(g[0]) + ": " + gs.s + " s (im Spiel " + gs.ms + " ms" + (gs.tuer ? ", durch die Tür" + (gs.wege ? " — " + gs.wege : "") : "") + ")");
             } else {
-                tot = gs.grund;
-                kopf.grund = "die Welt trägt nicht mehr vor " + schluessel(g[0]) + ": " + tot;
+                tot = "Grundstellung: " + gs.grund;
+                kopf.grund = "die Welt trägt nicht mehr vor " + schluessel(g[0]) + ": " + gs.grund;
                 console.log("  SITZUNG " + kopf.grund);
             }
         } else if (!tot) {
@@ -1345,7 +1407,7 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             }
         }
         if (tot) {
-            await melde(g, g.map(() => ohne("die Welt der Sitzung trägt nicht mehr (Grundstellung: " + tot + ") — ungemessen", true)), null, new Date().toISOString());
+            await melde(g, g.map(() => ohne("die Welt der Sitzung trägt nicht mehr (" + tot + ") — ungemessen", true)), null, new Date().toISOString());
             continue;
         }
         // DER ORT (30.10.): wechselt die Probe den Messort, stellt die Sitzung EINMAL um — das Warten auf den Ring dort liegt vor dem
@@ -1373,9 +1435,23 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         await zapf(aktuell);
         aktuell = "(sitzung)";
         kopf.proben++;
+        // DIE WELT ENDETE UNTER DER PROBE (w4-stationen-heil; Takt 23 GTX an 73bdf938: die Vorfahrt der OMEN nahm die Welt nach
+        // 7,0 min — „VORFAHRT … verloren 7.0“ —, ferne.K1#2 lief gerade und stand als ROT „keine LUFT-Zeile … read ECONNRESET“ in der
+        // Messung): die Werkbank endet nie an einem Fehler des Spiels (eine tote Seite antwortet mit `fehler`), nur an `/stop` oder
+        // einem fremden Ende. Ist ihr Steuer-Port nach der Probe zu oder der Halter fort, ist jedes Nicht-GRÜN dieser Probe keine
+        // Messung — ungemessen beim Grund, wie die Proben danach; ein GRÜN hielt seine Messung schon in der Hand.
+        const weg = s.kind.exitCode != null ? "der Halter endete (Exit " + s.kind.exitCode + ")"
+            : (await portZu(W)) ? "die Werkbank :" + W + " nimmt keine Verbindung mehr an" : null;
+        if (weg) {
+            tot = "sie endete während " + schluessel(g[0]) + ": " + weg;
+            kopf.grund = "die Welt trägt nicht mehr nach " + schluessel(g[0]) + ": " + weg;
+            console.log("  SITZUNG " + kopf.grund);
+        }
+        const unter = (e) => (e.gruen || !weg ? e
+            : { ...e, ungemessen: true, grund: "die Welt der Sitzung endete während der Probe (" + weg + ") — ungemessen", zahl: "die Welt der Sitzung endete während der Probe (" + weg + ") — ungemessen; die Probe sah: " + String(e.zahl).slice(0, 240) });
         abbruch = brachAb(es);
         zuruecksetzen = mutiertVon(g) || abbruch;
-        await melde(g, es, aus, zeit);
+        await melde(g, es.map(unter), aus, zeit);
     }
     clearInterval(takt);
     if (ci.laeuft && ci.laeuft.kind && ci.laeuft.kind.exitCode == null) baumTot(ci.laeuft.kind.pid); // kein Blick überlebt die Sitzung
@@ -2070,6 +2146,9 @@ function gtxNutzen(s) {
 // eine rote Station ohne Heil-Versuch (der Zug nennt ihr Kriterium nicht) bleibt rot und wird nicht gemessen.
 // da(id, g): die JÜNGSTE Messung der Station auf dem Gerät über alle Köpfe (ihr Vorwissen), sonst null · genannt: Set der
 // Kriterien, die die Commits seit dem vorigen Kopf nennen · zeit(id): die Station urteilt in ms (ihr Merkmal `zeit`)
+// DIE PFLICHT (w4-sitzung-reif, 30.10.): eine Station, deren Staffel einen Eintrag von docs/PFLICHT-OFFEN.md trägt (ihre quelle nennt
+// „PFLICHT-OFFEN <X>“ — fahrzeug.K2#2, der Verkehr C), misst der Plan an jedem Zug wie einen Heil-Versuch, auch ohne stehende 1: die
+// Pflicht ist der EINE Scope (Betriebsgesetz 2), ihr Messen hängt nie an den Punkten
 function messPlan(stationen, da, genannt, zeit) {
     const plan = { radeon: [], gtx: [], uebersprungen: [] };
     for (const st of stationen) {
@@ -2077,7 +2156,8 @@ function messPlan(stationen, da, genannt, zeit) {
         if (!ge.length) continue;
         const id = schluessel(st), k = st.kriterium;
         const neu = ge.some((g) => !da(id, g));
-        const heil = genannt.has(k) || neu;
+        const pflicht = /\bPFLICHT-OFFEN [A-Z]\b/.test(st.quelle || "");
+        const heil = genannt.has(k) || neu || pflicht;
         // `beide`: die 1 hält nur auf jedem Gerät — gemessen wird wie eine Staffel 2 (ganz grün hält, ein Heil-Versuch misst)
         if (st.staffel === 1 && st.beide) {
             if (ge.every((g) => da(id, g) && da(id, g).gruen) || heil) for (const g of ge) plan[g].push(id);
@@ -2095,7 +2175,7 @@ function messPlan(stationen, da, genannt, zeit) {
         const s1 = stationen.find((x) => x.kriterium === k && x.staffel === 1);
         const s1gruen = s1 && geraeteVon(s1).some((g) => da(schluessel(s1), g) && da(schluessel(s1), g).gruen);
         const allesGruen = ge.every((g) => da(id, g) && da(id, g).gruen);
-        if ((s1gruen || genannt.has(k)) && (allesGruen || heil)) for (const g of ge) plan[g].push(id);
+        if ((s1gruen || genannt.has(k) || pflicht) && (allesGruen || heil)) for (const g of ge) plan[g].push(id);
         else plan.uebersprungen.push(id);
     }
     return plan;
@@ -2300,8 +2380,8 @@ async function selbsttest() {
     pruef("LÄUFER rot", e.gruen === false && /ROT: n 3/.test(e.grund), JSON.stringify(e));
     e = await fahreStation({ ...st0, befehl: ["node", "-e", "process.exit(3)"], urteil: lies }, ctx("absturz"));
     pruef("LÄUFER Absturz ohne Ausgabe", e.gruen === false && e.exit === 3 && /Urteil warf/.test(e.grund), JSON.stringify(e));
-    e = await fahreStation({ ...st0, minuten: 0.01, befehl: ["node", "-e", "setTimeout(()=>{}, 60000)"], urteil: () => ({ gruen: true, zahl: "still" }) }, ctx("deckel"));
-    pruef("LÄUFER Deckel", e.gruen === false && /Deckel/.test(e.grund), JSON.stringify(e));
+    e = await fahreStation({ ...st0, minuten: 0.01, befehl: ["node", "-e", "console.log('SCHRITT /umstellen 41.3 s'); setTimeout(()=>{}, 60000)"], urteil: () => ({ gruen: true, zahl: "still" }) }, ctx("deckel"));
+    pruef("LÄUFER Deckel, beim Namen der letzten Zeile", e.gruen === false && /Deckel .* \(zuletzt: SCHRITT \/umstellen 41\.3 s\)$/.test(e.grund), JSON.stringify(e));
     // ein Enkel erbt das Rohr und schläft 20 s (wie ein Herzschlag `( while sleep 300 … ) &` ohne Umleitung): die Station endet
     // mit ihrem Prozess (am alten Läufer: close nach 20,5 s, exit nach 0,46 s)
     e = await fahreStation({ ...st0, befehl: ["bash", "-c", "( sleep 20 ) & echo '{\"n\": 0}' > \"$1\"", "enkel", "{AUS}"], urteil: lies }, ctx("enkel"));
@@ -2700,6 +2780,17 @@ async function selbsttest() {
         pruef("MESS-PLAN Staffel 1 mit beide: ganz grün hält auf beiden Geräten, halb rot ohne Heil-Versuch fällt",
             bp.radeon.join() === "e.K1#1" && bp.gtx.join() === "e.K1#1" && bp.uebersprungen.join() === "f.K1#1", JSON.stringify(bp));
     }
+    {
+        // DIE PFLICHT (w4-sitzung-reif): die Staffel 2 trägt PFLICHT-OFFEN C, ihre 1 ist rot und keiner nennt das Kriterium — der Plan misst
+        // sie trotzdem an jedem Zug auf beiden Geräten, auch nach einem frischen ROT; dieselbe Staffel ohne die Pflicht bleibt übersprungen
+        const pv = [V("p.K1#1", "radeon", false), V("p.K1#1", "gtx", false), V("p.K1#2", "radeon", false), V("p.K1#2", "gtx", false),
+            V("q.K1#1", "radeon", false), V("q.K1#1", "gtx", false), V("q.K1#2", "radeon", false), V("q.K1#2", "gtx", false)];
+        const pp = messPlan([P("p.K1", 1, ["radeon", "gtx"]), { ...P("p.K1", 2, ["radeon", "gtx"]), quelle: "2 = auch x, und der Verkehr der Stadt (PFLICHT-OFFEN C): y, beide Geräte" },
+            P("q.K1", 1, ["radeon", "gtx"]), { ...P("q.K1", 2, ["radeon", "gtx"]), quelle: "2 = auch x, beide Geräte" }],
+        (id, g) => pv.find((x) => x.id === id && x.geraet === g) || null, new Set(), () => false);
+        pruef("MESS-PLAN eine Staffel mit PFLICHT-OFFEN misst an jedem Zug auf beiden Geräten (auch ohne stehende 1, auch nach ROT); ohne die Pflicht übersprungen",
+            pp.radeon.join() === "p.K1#2" && pp.gtx.join() === "p.K1#2" && pp.uebersprungen.join() === "p.K1#1,q.K1#1,q.K1#2", JSON.stringify(pp));
+    }
     pruef("GEN unbekanntes Kriterium ist ROT", standPruefen({ kopf: "abcd1234", je: { "x.K1": {} } }, "abcd1234", new Set()).length === 1);
     // (7) DIE FARM: Scheiben (LPT, Zwillinge zusammen, Gewicht aus der jüngsten Messung), der Anbieter je Scheibe, die Vereinigung
     // der Teile (ersetzt, ungemessen, fehlende Scheibe beim Namen, fremder SHA wirft) und kein Schloss nur für headless
@@ -2795,15 +2886,19 @@ async function selbsttest() {
             '  seite = { win: { __vram: { puffer: 1048576, texturen: 1048576 } }, R, welt: { state: { renderer: R, playerMesh: { position: { x: 1, z: 2 } }, cameraMode: "first",',
             '  player: { mountedArch: null }, perfTargetMs: 1000, perfSense: { loadScale: 1 }, weather: "sunny", creatures: [], timeOfDay: 0.5 }, _gpuLeine: { gerendert: 0 } } }; }; neu();',
             'setInterval(() => { const cb = seite.R._animation._animationLoop; if (cb) cb(performance.now()); }, 16);',
+            // der Weg einer Probe (art „weg“): die Grundstellung an Ort und Stelle nennt ihn, bis die Seite neu lud; „weg-bleibt“ trägt ihn
+            // auch durch die Tür (die Wege-Linse der Grundstellung, grundSpielen)
+            'let geladen = false; const weg = () => (art === "weg-bleibt" || (art === "weg" && !geladen) ? ["wege +1 [-312.4,-1060.2,-87.6,-1015.1/1] (probe:tempo4)"] : []);',
             'http.createServer((q, r) => { let d = ""; q.on("data", (c) => (d += c)); q.on("end", () => { const b = d ? JSON.parse(d) : {}; const s = (o) => r.end(JSON.stringify(o));',
-            '  if (q.url === "/eval") { if (/_grundstellung\\(\\)/.test(b.code)) { n("nimm"); return s({ ergebnis: { grund: "{}", n: 3, ms: 1, welt: "w1", seite: [] } }); }',
-            '    if (/_grundstellung\\("/.test(b.code)) { n("grund"); return s({ ergebnis: { ok: true, anders: art === "anders" ? ["augenblick.brand"] : [], neu: {}, ms: 1, welt: "w1" } }); }',
+            '  if (q.url === "/eval") { if (/_grundstellung\\(\\)/.test(b.code)) { n("nimm"); return s({ ergebnis: { grund: "{}", n: 3, ms: 1, welt: "w1", seite: [], wege: { flaechen: [], keys: [] } } }); }',
+            '    if (/_grundstellung\\("/.test(b.code)) { n("grund"); return s({ ergebnis: { ok: true, anders: (art === "anders" ? ["augenblick.brand"] : []).concat(weg()), neu: {}, ms: 1, welt: "w1" } }); }',
             '    if (/__punkteStrom/.test(b.code)) return s({ ergebnis: new Function("r", "window", "performance", b.code)(seite.welt, seite.win, performance) });',
             '    if (/_weltBetreten\\(/.test(b.code)) { n("tuer"); return s({ ergebnis: { ok: true, worldId: "w1" } }); }',
             '    if (b.code === "loop an") { seite.R.setAnimationLoop(() => seite.welt._gpuLeine.gerendert++); return s({ ergebnis: 1 }); }',
             '    if (b.code === "loop aus") { seite.R.setAnimationLoop(null); return s({ ergebnis: 0 }); }',
-            '    if (b.code === "tod") { n("tod"); return r.end(JSON.stringify({ ergebnis: "tod" }), () => process.exit(3)); } return s({ ergebnis: "warm" }); }',
-            '  if (q.url === "/reload") { n("reload"); neu(); return s({ neu: true, ms: 1 }); } if (q.url === "/fenster") return s({ fenster: [1920, 1080] });',
+            '    if (b.code === "tod") { n("tod"); return r.end(JSON.stringify({ ergebnis: "tod" }), () => process.exit(3)); }',
+            '    if (b.code === "mord") { n("mord"); process.exit(3); } return s({ ergebnis: "warm" }); }',
+            '  if (q.url === "/reload") { n("reload"); neu(); geladen = true; return s({ neu: true, ms: 1 }); } if (q.url === "/fenster") return s({ fenster: [1920, 1080] });',
             '  if (q.url === "/umstellen") { n("umstellen:" + b.ort); return s({ takte: 3, steht: true, chunks: 9 }); }',
             '  if (q.url === "/stop") { n("stop"); s({ stop: true }); return setTimeout(() => process.exit(0), 50); } s({ fehler: "unbekannt" }); }); })',
             '  .listen(Number(W), "127.0.0.1", () => { console.log("[linse-gpu] amd/stub-sitzung"); console.log("WERKBANK bereit: Steuer 127.0.0.1:" + W); });',
@@ -2834,15 +2929,15 @@ async function selbsttest() {
         const glLog = path.join(tmp, "sitzung-schloss.log");
         if (gl) fs.writeFileSync(gl, '#!/bin/bash\nN="$1"; shift\necho "$N $GPU_LAUF_ART $GPU_LAUF_MAX_S" >> "' + glLog.split(path.sep).join("/") + '"\necho "gpu-lauf: Schloss $N (zeit) nach 0 s" >&2\n"$@"\n');
         if (gl) fs.copyFileSync(path.join(DIR, "werkzeug", "gpu-schloss.sh"), path.join(tmp, "gpu-schloss.sh"));
-        const g1 = [[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)], [S("b.K1", 1, { befehl: ["node", "-e", "setTimeout(() => {}, 60000)"], sek: 2 }, lies)],
+        const g1 = [[S("a.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)], [S("b.K1", 1, { befehl: ["node", "-e", "console.log('SCHRITT /umstellen 41.3 s'); setTimeout(() => {}, 60000)"], sek: 2 }, lies)],
             [S("c.K1", 1, { befehl: ["node", "-e", "process.exit(1)"], sek: 30 }, (j, l) => ({ gruen: l.exit === 0, zahl: "exit " + l.exit }))],
             [S("d.K1", 1, { befehl: [...ruf, "return 2"], sek: 30 }, warm), S("d.K1", 2, { befehl: [...ruf, "return 2"], sek: 30 }, warm)]];
         const r1 = await lauf(g1, "gut", gl);
         const x = r1.es;
         const zeile = /^  (GRÜN|ROT ) (\S+) · .* · Exit \S+ · ([\d.]+) min( \(Zwilling von \S+\))?$/;
         const schloss = gl && fs.existsSync(glLog) ? fs.readFileSync(glLog, "utf8").trim().split("\n") : [];
-        pruef("SITZUNG EINE Welt: jede Probe darin (WERKBANK_PORT, das Log, der Zeuge der Welt), der Deckel der Probe, nach dem Fehler die nächste in DERSELBEN Welt, Zwillinge EIN Lauf",
-            r1.z.filter((l) => l === "start").length === 1 && x["a.K1#1"].gruen && /^Deckel 2 s gerissen — beendet, UNGEMESSEN$/.test(x["b.K1#1"].grund) && x["b.K1#1"].ungemessen === true &&
+        pruef("SITZUNG EINE Welt: jede Probe darin (WERKBANK_PORT, das Log, der Zeuge der Welt), der Deckel der Probe beim Namen ihrer letzten Zeile, nach dem Fehler die nächste in DERSELBEN Welt, Zwillinge EIN Lauf",
+            r1.z.filter((l) => l === "start").length === 1 && x["a.K1#1"].gruen && /^Deckel 2 s gerissen — beendet, UNGEMESSEN \(zuletzt: SCHRITT \/umstellen 41\.3 s\)$/.test(x["b.K1#1"].grund) && x["b.K1#1"].ungemessen === true &&
             x["c.K1#1"].gruen === false && x["c.K1#1"].exit === 1 &&
             x["d.K1#1"].gruen && x["d.K1#2"].gruen && x["d.K1#2"].zwilling === "d.K1#1" && x["a.K1#1"].gpu === "amd/stub-sitzung" && r1.kopf.proben === 4, JSON.stringify([r1.z, x]));
         pruef("SITZUNG der Grund nach der Reihe anfang, die Grundstellung nur nach einem Abbruch oder einer mutierenden Probe — nie vor jeder; nach dem Abbruch (b.K1 am Deckel) durch die Tür (die Seite neu: die Arbeit der gefallenen Probe endet in der Seite); nie ein zweiter Start; am Ende stop",
@@ -2875,6 +2970,26 @@ async function selbsttest() {
         const r2 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "tod"], sek: 30 }, (j) => ({ gruen: !!j && j.welt === "tod", zahl: "tod" }))], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "stirbt", null);
         pruef("SITZUNG eine Welt, die stirbt: die Sitzung startet nie neu, die übrigen Proben sind UNGEMESSEN beim Grund (nie ROT)",
             r2.z.filter((l) => l === "start").length === 1 && r2.es["b.K1#1"].ungemessen === true && /trägt nicht mehr/.test(r2.es["b.K1#1"].grund) && /trägt nicht mehr/.test(r2.kopf.grund), JSON.stringify([r2.z, r2.es, r2.kopf]));
+        // DIE WELT ENDET UNTER DER PROBE (Takt 23 GTX an 73bdf938: die Vorfahrt der OMEN nahm sie nach 7,0 min, ferne.K1#2 stand als ROT
+        // „read ECONNRESET“ in der Messung): der Ruf der Probe reißt ohne Antwort, die Probe endet nicht GRÜN — das ist keine Messung
+        const r12 = await lauf([[S("a.K1", 1, { befehl: [...ruf, "mord"], sek: 30 }, (j, l) => ({ gruen: !!j && j.welt === "warm", zahl: "exit " + l.exit }))],
+            [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "mord", null);
+        pruef("SITZUNG eine Welt, die UNTER der Probe endet (die Vorfahrt der OMEN): die Probe ist UNGEMESSEN beim Grund, nie ROT; die übrigen ebenso",
+            r12.z.join(",") === "start,nimm,mord" && r12.es["a.K1#1"].ungemessen === true && /endete während der Probe/.test(r12.es["a.K1#1"].grund) &&
+            /die Probe sah: exit [1-9]/.test(r12.es["a.K1#1"].zahl) && r12.es["b.K1#1"].ungemessen === true && /trägt nicht mehr/.test(r12.es["b.K1#1"].grund),
+            JSON.stringify([r12.z, r12.es, r12.kopf]));
+        // DER WEG EINER PROBE (w4-sitzung-reif; tempo4 legt seinen Weg über die Wiese, `_standRueckspielen` lässt die Wege-Karte und die
+        // Natur, die er räumte, warm): nennt die Grundstellung an Ort und Stelle einen Weg seit dem Grund, geht sie durch die Tür (die
+        // Lade-Kette des Speicher-Gesetzes baut Karte und Natur aus dem Grund neu) — die nächste Probe misst im Grund; trägt die Welt ihn
+        // auch durch die Tür, sind die übrigen UNGEMESSEN beim Namen des Wegs
+        const r13 = await lauf([[S("m.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)]], "weg", null);
+        pruef("SITZUNG DER WEG EINER PROBE: die Grundstellung nennt ihn und geht durch die Tür, danach misst die nächste Probe im Grund (die Tür im Kopf beim Namen des Wegs)",
+            r13.z.join(",") === "start,nimm,grund,tuer,reload,grund,stop" && r13.es["m.K1#1"].gruen && r13.es["b.K1#1"].gruen &&
+            r13.kopf.wegeTueren.length === 1 && /^wege \+1 .*probe:tempo4/.test(r13.kopf.wegeTueren[0].wege), JSON.stringify([r13.z, r13.es, r13.kopf.wegeTueren]));
+        const r14 = await lauf([[S("m.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)]], "weg-bleibt", null);
+        pruef("SITZUNG MUTANTE ein Weg, der auch die Tür überlebt: die übrigen Proben UNGEMESSEN beim Namen des Wegs (nie ROT, nie still weiter)",
+            r14.z.join(",") === "start,nimm,grund,tuer,reload,grund,stop" && r14.es["m.K1#1"].gruen && r14.es["b.K1#1"].ungemessen === true &&
+            /abweichend vom Grund: wege \+1 .*probe:tempo4/.test(r14.es["b.K1#1"].grund), JSON.stringify([r14.z, r14.es]));
         // DER ABBRUCH VON ANFANG: fällt die letzte Probe von anfang am Deckel, lädt die Seite neu, ehe der Grund genommen wird
         const r10 = await lauf([[S("a.K1", 1, { befehl: ["node", "-e", "setTimeout(() => {}, 60000)"], sek: 2, stellung: "anfang" }, lies)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30 }, warm)]], "gut", null);
         pruef("SITZUNG DER ABBRUCH VON ANFANG: die Seite neu, ehe der Grund genommen wird (nie ein Grund aus einer Seite, in der eine gefallene Probe arbeitet)",
@@ -2890,6 +3005,11 @@ async function selbsttest() {
             r11.z.join(",") === "start,nimm,umstellen:wiese,umstellen:genesis,umstellen:wiese,grund,umstellen:wiese,stop" &&
             r11.kopf.orte.length === 4 && r11.kopf.orte[3].nach === "der Grundstellung" && Object.values(r11.es).every((e) => e.gruen),
             JSON.stringify([r11.reihe, r11.z, r11.kopf.orte]));
+        // der Ort eines Vegetations-Laufs (w4-sitzung-reif): der erste Stand seines Plans — die Sitzung stellt ihn vor dem Deckel
+        const plan = (...p) => ({ probe: { befehl: ["node", "-e", "(async function vegetationLauf() {})()", "{AUS}", "{PORT}", JSON.stringify(p)] } });
+        const vo = [plan(["wiese", "third", 0.5, null, "wiese"]), plan(["genesis", "ego", 0.5, null, "wiese"], ["wiese", "ego", 0.3, null, "wiese"]), plan()].map(probeOrt);
+        pruef("SITZUNG DER ORT eines Vegetations-Laufs: der erste Stand seines Plans (wiese, genesis), ohne Plan keiner",
+            vo.join(",") === "wiese,genesis," && vo[2] === null, JSON.stringify(vo));
         // DIE GRUNDSTELLUNG, DIE NICHT TRÄGT: weicht nach dem Rückspielen eine Größe vom Grund ab, sind die übrigen Proben UNGEMESSEN beim
         // Namen der Größe (nie ROT, nie ein Neuladen)
         const r7 = await lauf([[S("m.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)], [S("b.K1", 1, { befehl: [...ruf, "return 1"], sek: 30, mutiert: true }, warm)]], "anders", null);

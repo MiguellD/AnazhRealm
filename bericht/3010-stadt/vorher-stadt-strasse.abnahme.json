@@ -1,0 +1,206 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.132",
+  "sha": "24a0f3eff6051ae954369fd774cce415d1f32dc5"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 105
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   640,
+   360
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0.0177,
+  "taeter": {
+   "Laub baum_kiefer": 0.0177
+  },
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.1198,
+   "taeter": {
+    "Laub grown_busch_hazel_v2": 0.0382,
+    "Laub baum_kiefer": 0.026,
+    "Laub baum_tanne": 0.0226,
+    "Rinde baum_tanne": 0.0226
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 52.21,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   551,
+   66.665,
+   379
+  ],
+  "blick": [
+   0.996,
+   -0.08934,
+   0
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1280,
+  "h": 720,
+  "mittel": 68,
+  "sigma": 35,
+  "schwarz": 0.0007,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 1.8 % (Laub baum_kiefer 1.8 %) · Ziel Blickziel im Bild frei 52.21 m · Luma 68 σ 35 schwarz 0.1 % weiß 0.0 % · Stand 18.546.132 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 10 Posen",
+ "wahl": {
+  "versucht": 10,
+  "gewaehlt": 9,
+  "kamera": [
+   551,
+   66.665,
+   379
+  ],
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     603,
+     63,
+     431
+    ],
+    "rot": [
+     "Vordergrund 47.0 % näher als 8 m (der halbe Ziel-Abstand): bauSatz 47.0 %",
+     "Ziel Blickziel verdeckt von bauSatz in 13.39 m"
+    ]
+   },
+   {
+    "k": 1,
+    "kamera": [
+     589.541,
+     63.993,
+     429.228
+    ],
+    "rot": [
+     "Sicht verdeckt 92.2 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): bauSatz 92.2 %",
+     "Vordergrund 100.0 % näher als 8 m (der halbe Ziel-Abstand): bauSatz 100.0 %",
+     "Ziel Blickziel verdeckt von bauSatz in 0.13 m"
+    ]
+   },
+   {
+    "k": 2,
+    "kamera": [
+     616.459,
+     63,
+     429.228
+    ],
+    "rot": [
+     "Vordergrund 44.1 % näher als 8 m (der halbe Ziel-Abstand): bauSatz 44.1 %",
+     "Ziel Blickziel verdeckt von Gelände in 33.56 m"
+    ]
+   },
+   {
+    "k": 3,
+    "kamera": [
+     577,
+     62.574,
+     424.033
+    ],
+    "rot": [
+     "Sicht verdeckt 75.5 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): bauSatz 65.3 %, Laub baum_kiefer 10.3 %",
+     "Vordergrund 83.9 % näher als 8 m (der halbe Ziel-Abstand): bauSatz 72.9 %, Laub baum_kiefer 10.9 %",
+     "Ziel Blickziel verdeckt von bauSatz in 0.37 m"
+    ]
+   },
+   {
+    "k": 4,
+    "kamera": [
+     629,
+     63.774,
+     424.033
+    ],
+    "rot": [
+     "Vordergrund 28.5 % näher als 8 m (der halbe Ziel-Abstand): bauSatz 28.5 %",
+     "Ziel Blickziel verdeckt von Gelände in 29.36 m"
+    ]
+   },
+   {
+    "k": 5,
+    "kamera": [
+     566.23,
+     58.857,
+     415.77
+    ],
+    "rot": [
+     "Vordergrund 100.0 % näher als 8 m (der halbe Ziel-Abstand): bauSatz 100.0 %",
+     "Ziel Blickziel verdeckt von bauSatz in 4.26 m"
+    ]
+   },
+   {
+    "k": 6,
+    "kamera": [
+     639.77,
+     65.458,
+     415.77
+    ],
+    "rot": [
+     "Ziel Blickziel verdeckt von bauSatz in 9.15 m"
+    ]
+   },
+   {
+    "k": 7,
+    "kamera": [
+     557.967,
+     60.409,
+     405
+    ],
+    "rot": [
+     "Vordergrund 54.7 % näher als 8 m (der halbe Ziel-Abstand): bauSatz 54.3 %, Mesh 0.4 %",
+     "Ziel Blickziel verdeckt von bauSatz in 6.06 m"
+    ]
+   },
+   {
+    "k": 8,
+    "kamera": [
+     648.033,
+     64.655,
+     405
+    ],
+    "rot": [
+     "Vordergrund 68.9 % näher als 8 m (der halbe Ziel-Abstand): bauSatz 68.9 %",
+     "Ziel Blickziel verdeckt von bauSatz in 2.76 m"
+    ]
+   },
+   {
+    "k": 9,
+    "kamera": [
+     551,
+     66.665,
+     379
+    ],
+    "rot": []
+   }
+  ]
+ }
+}

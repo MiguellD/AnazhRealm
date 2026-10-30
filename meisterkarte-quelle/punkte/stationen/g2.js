@@ -5,7 +5,6 @@
 // bleibt dadurch lauffähig (pruefeStationen verlangt je Eintrag ein argv).
 "use strict";
 const { jsonZeile } = require("../hilfe.cjs");
-const PW = require("./proben-welt.cjs"); // die Proben der Welt in der Sitzung (tiere.K5#1)
 const { seiteProbe } = require("./seite.cjs");
 
 // die Zeile „  ✅|❌ <probe> {…}" der Kreatur-Linse (diag-kreatur-takt.cjs, padEnd 9)
@@ -1223,6 +1222,13 @@ const zeilenVon = (lauf, marke) =>
 // `sollTafelUrteil`, K5) als Zeile „<NAME> {…}": `strich` (die Kohärenz des Strichs im Inneren der Maske) gegen das Band,
 // das die Linse aus der REF rechnet (spec/abnahme/ref-<id>.png), bei haar dazu die Albedo (die Zeile haar der Albedo-Tafel).
 // `vorher` stellt die Szene (bash-Zeilen), `schuesse` je Name die Argumente von `werkbank bild` (die Kamera aus `$K`).
+// DER FEHLER DES BILDS BEIM NAMEN (w4-stationen-heil): die Antwort der Werkbank liegt neben {AUS} („$B-<n>.txt“); scheitert ein
+// Bild, trägt die Zeile „BILD <n> FEHLER …“ ihren `fehler` in die Ausgabe, und der Schuss ist ROT — die Tafel-Zeile danach liest
+// sonst die eingecheckte Messung (mensch-kopf trägt eine vom 17.10.), und haar.K2#1 hieß zwei Tage nur „strich ungemessen“, wo
+// die Werkbank „Ziel Blickziel nicht im Bild“ und „keine Kopf-Haut am Gelenk head“ sagte.
+const bildFehler =
+    "fehl() { node -e 'const t = require(\"fs\").readFileSync(process.argv[1], \"utf8\"); let f = null; try { f = JSON.parse(t.slice(t.indexOf(\"{\"))).fehler; } catch (e) {} " +
+    "console.log(\"BILD \" + process.argv[2] + \" FEHLER \" + String(f || t.trim().split(\"\\n\").pop() || \"ohne Antwort\").replace(/\\s+/g, \" \").slice(0, 300))' \"$1\" \"$2\"; }";
 const sollUrteil = (id, name) =>
     "node -e 'const AU = require(\"./scripts/lib/abnahme-urteil.cjs\"); const u = AU.sollTafelUrteil(require(\"./spec/abnahme/soll-tafel.json\"), " +
     "AU.standLeser(process.cwd()).sollQuelle()); const z = u.zeilen.find((x) => x.id === \"" + id + "\"); console.log(\"" + name + " \" + " +
@@ -1243,9 +1249,10 @@ function sollKlasseStation(o) {
                 "trap 'git checkout spec/abnahme/soll-tafel.json' EXIT",
                 "node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1",
                 "erg() { node -e 'const t = require(\"fs\").readFileSync(0, \"utf8\"); console.log(JSON.stringify(JSON.parse(t.slice(t.indexOf(\"{\"))).ergebnis))'; }",
+                bildFehler,
                 ...o.vorher,
                 ...Object.entries(o.schuesse).flatMap(([n, a]) => [
-                    "node scripts/werkbank.cjs bild " + a + " --wahl 0 --klasse '" + o.klasse + "' --ist " + o.id + " --datei \"$B-" + n + ".png\" > \"$B-" + n + ".txt\" 2>&1; echo \"BILD " + n + " $?\"",
+                    "node scripts/werkbank.cjs bild " + a + " --wahl 0 --klasse '" + o.klasse + "' --ist " + o.id + " --datei \"$B-" + n + ".png\" > \"$B-" + n + ".txt\" 2>&1; e=$?; echo \"BILD " + n + " $e\"; [ $e = 0 ] || fehl \"$B-" + n + ".txt\" " + n,
                     sollUrteil(o.id, n.toUpperCase()),
                 ]),
             ].join("\n"),
@@ -1254,14 +1261,31 @@ function sollKlasseStation(o) {
         zeit: false,
         minuten: 15,
         urteil: (j, lauf) => {
-            const z = Object.keys(o.schuesse).map((n) => [n, jsonZeile(lauf.stdout, new RegExp("^" + n.toUpperCase() + " "))]);
+            const z = Object.keys(o.schuesse).map((n) => {
+                const bild = (new RegExp("^BILD " + n + " (\\d+)\\s*$", "m").exec(lauf.stdout) || [])[1];
+                const fehler = (new RegExp("^BILD " + n + " FEHLER (.*)$", "m").exec(lauf.stdout) || [])[1];
+                return [n, jsonZeile(lauf.stdout, new RegExp("^" + n.toUpperCase() + " ")), bild === "0", (fehler || "").trim() || (bild == null ? "ohne BILD-Zeile" : "Exit " + bild)];
+            });
             return {
-                gruen: z.every(([, x]) => x && x.urteil === "GRÜN"),
+                gruen: z.every(([, x, ok]) => ok && x && x.urteil === "GRÜN"),
                 zahl: z
-                    .map(([n, x]) => n + " " + (x ? x.urteil + " strich " + x.ist + " Soll [" + x.band + "]" + (x.grund ? " — " + x.grund : "") + (x.teile ? " · " + x.teile : "") : "ohne Zeile (Exit " + lauf.exit + ")"))
+                    .map(([n, x, ok, f]) =>
+                        n + " " + (!ok ? "ROT Bild: " + f : x ? x.urteil + " strich " + x.ist + " Soll [" + x.band + "]" + (x.grund ? " — " + x.grund : "") + (x.teile ? " · " + x.teile : "") : "ohne Zeile (Exit " + lauf.exit + ")"))
                     .join(" · "),
             };
         },
+        // die Ausgabe eines Laufs: beide Bilder und Tafel-Zeilen GRÜN; ein Bild, das scheitert, ist ROT, auch wenn die Tafel-Zeile
+        // danach eine eingecheckte grüne Messung liest
+        proben: (() => {
+            const tafel = (n, u, ist) => n.toUpperCase() + " " + JSON.stringify({ urteil: u, ist, band: [0.3, 0.6], grund: u === "GRÜN" ? null : "strich ungemessen", taeter: null, teile: null, stand: null });
+            const lauf = (fehlt) => Object.keys(o.schuesse).flatMap((n) => n === fehlt
+                ? ["BILD " + n + " 1", "BILD " + n + " FEHLER ABNAHME ROT [Ziel Blickziel nicht im Bild (ndc [0,0])]", tafel(n, "GRÜN", 0.45)]
+                : ["BILD " + n + " 0", tafel(n, "GRÜN", 0.45)]).join("\n");
+            return [
+                { name: "jedes Bild und jede Tafel-Zeile GRÜN", stdout: lauf(null), gruen: true },
+                { name: "ein Bild scheitert, die Tafel liest eine alte grüne Messung", stdout: lauf(Object.keys(o.schuesse)[0]), gruen: false },
+            ];
+        })(),
         pfad: [
             ...o.pfad,
             "stamm/bild-*.js",
@@ -1304,6 +1328,14 @@ const BEWOHNER_SITZUNG = { sek: 33, befehl: [
 // den Laubfall nicht — offen benannt im Zweig). Die Jahreszeit über das Wort des Spielers (`bild --saison`: die Phase springt auf
 // die Mitte der Jahreszeit — nie durch Warten); jedes Bild 1920 × 1080 aus dem Ausgabe-Pfad, `--wahl 0`. Die Zeile
 // „VEGETATION {…}“ trägt je Schuss das Rohe, die Urteile rechnen daraus.
+// DAS BLICKZIEL DER WIESE (w4-stationen-heil) ist, wo der Mittel-Strahl der Kamera des Spiels den GEZEICHNETEN Boden trifft
+// (`_bodenSichtAt`, Lehre 22; ohne Karte das Gesetz `_voxelSurfaceY`; trifft er keinen binnen 2 km, der Himmel 100 m voraus) —
+// bis dahin lag es 100 m voraus auf dem Strahl: die Third-Kamera blickt auf die Wiese hinab, der Punkt lag im Hang, und die
+// Abnahme nannte ihn „verdeckt von Gelände in 14,76 m“ (715754fc Radeon, 73bdf938 GTX), das Bild der Wiese entstand nie. Die
+// Pose bleibt die Kamera des Spiels (dieselbe Richtung, `posePasst`). DER STAND: umgestellt wird nur, wenn Ort oder Sicht
+// wechseln — ein Schuss am selben Stand (die Jahreszeiten der Krone, die Uhren der Wiese) steht an derselben Pose und zahlt das
+// Einschwingen des Orts (Mess-Wiese 41,3 s, Radeon 715754fc) einmal. Jeder Ruf an die Werkbank nennt seine Dauer (SCHRITT):
+// endet ein Lauf am Deckel, steht in der Roh-Ausgabe, welcher Schritt ihn trug.
 async function vegetationLauf() {
     const fs = require("fs");
     const path = require("path");
@@ -1313,18 +1345,27 @@ async function vegetationLauf() {
     const B = aus.replace(/\.json$/, "");
     const erg = { schuesse: [] };
     const ruf = async (weg, o) => {
+        const t0 = Date.now();
         const a = await werkbankRuf(W, weg, o);
+        console.log("SCHRITT " + weg + " " + ((Date.now() - t0) / 1000).toFixed(1) + " s");
         if (!a || a.fehler) throw new Error(weg + ": " + JSON.stringify(a).slice(0, 300));
         return a;
     };
-    const SPIEL = "const s = r.state; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = s.camera, d = new T.Vector3(); c.getWorldDirection(d); return [c.position.x, c.position.y, c.position.z, c.position.x + d.x * 100, c.position.y + d.y * 100, c.position.z + d.z * 100].map((v) => +v.toFixed(3));";
+    const SPIEL =
+        "const s = r.state; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = s.camera, d = new T.Vector3(); c.getWorldDirection(d); const p = c.position; " +
+        "const unter = (t) => { const x = p.x + d.x * t, z = p.z + d.z * t, b = r._bodenSichtAt(x, z), y = b == null ? r._voxelSurfaceY(x, z) : b; return y != null && p.y + d.y * t <= y; }; " +
+        "let a = 0, t = 0.5; while (t < 2000 && !unter(t)) { a = t; t += Math.max(0.25, t * 0.01); } " +
+        "if (t < 2000) { for (let k = 0; k < 24; k++) { const m = (a + t) / 2; if (unter(m)) t = m; else a = m; } } else t = 100; " +
+        "return [p.x, p.y, p.z, p.x + d.x * t, p.y + d.y * t, p.z + d.z * t].map((v) => +v.toFixed(3));";
     const KRONE = "const p = r.state.playerMesh.position; let e0 = null, d0 = Infinity; for (const e of r.state.architectures) { if (!e || !e.position || !/^(eiche|birke|buche)$/.test(r._foundryPresetForEntry(e) || \"\")) continue; const d = Math.hypot(e.position.x - p.x, e.position.z - p.z); if (d >= 15 && d <= 80 && d < d0) [e0, d0] = [e, d]; } if (!e0) return \"kein Laubbaum 15–80 m um den Spieler\"; const q = e0.position, x = q.x + ((p.x - q.x) / d0) * 14, z = q.z + ((p.z - q.z) / d0) * 14; return [x, r._voxelSurfaceY(x, z) + 1.7, z, q.x, q.y + 6, q.z].map((v) => +v.toFixed(3));";
     for (const z of fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8").split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
     try {
         await ruf("/fenster", { w: 1920, h: 1080 });
+        let stand = null;
         for (const [ort, sicht, uhr, saison, was] of JSON.parse(plan)) {
             const n = [ort, sicht, uhr, saison, was].join("-");
-            await ruf("/umstellen", { ort, sicht });
+            if (stand !== ort + "|" + sicht) await ruf("/umstellen", { ort, sicht });
+            stand = ort + "|" + sicht;
             const k = (await ruf("/eval", { code: was === "krone" ? KRONE : SPIEL })).ergebnis;
             if (!Array.isArray(k)) throw new Error(n + ": " + JSON.stringify(k));
             const [px, py, pz, lx, ly, lz] = k;
@@ -1398,11 +1439,35 @@ function wieseUrteil(s) {
 }
 // das Rohe der Zeile (stdout, so urteilt auch die Probe des Selbsttests) oder {AUS}
 const vegetationRoh = (j, lauf) => jsonZeile(lauf.stdout, /^VEGETATION /) || j;
-const wieseStation = (staffel, posen, sek, quelle, ausnahme) => ({
+// DER DECKEL EINES VEGETATIONS-LAUFS aus seinem Plan (w4-stationen-heil, in Sitzungsform w4-sitzung-reif) — die Arbeit, einmal (DIE
+// DECKEL der Fahrt: der gemessene Lauf, punkte.cjs): den Ort des ersten Stands stellt die Sitzung VOR dem Deckel (punkte.cjs `probeOrt`
+// liest ihn aus dem Plan), er schwingt dort warm ein; ein Stand am selben Ort (eine andere Sicht, der Teleport in den gebauten Ring)
+// 5 s, ein Stand an einem anderen Ort 15 s (der Ort der Sitzung: Mess-Wiese 9,2–13,6 s, Genesis 9,5–10,2 s, Radeon eich5/eich6), je
+// Schuss 10 s (die Krone im Sommer 10 s, Radeon 715754fc; die Wiese mit Ringen und Zähler ungemessen, ihr Bild ist das der Krone —
+// die SCHRITT-Zeilen der Fahrt messen sie). w4-stationen-heil rechnete doppelt und mit dem kalten Ort je Stand (41,3 s, eigener Boot):
+// 150/840/210/450 s — über dem Gesetz der Fahrt (≤ 45 s, mit Ausnahme ≤ 90 s). Ein Plan über 90 s ist keine Probe (vegetation.K1#2
+// steht in `fehlt`).
+const vegetationDeckel = (plan) => {
+    let s = 0;
+    plan.forEach((p, i) => {
+        if (i && p[0] !== plan[i - 1][0]) s += 15;
+        else if (!i || p[1] !== plan[i - 1][1]) s += 5;
+        s += 10;
+    });
+    return Math.ceil(s / 5) * 5;
+};
+// die Ausnahme eines Plans über 45 s beim Namen seiner Arbeit
+const vegetationProbe = (plan) => {
+    const sek = vegetationDeckel(plan);
+    const n = (was) => plan.filter((p) => p[4] === was).length;
+    return { sek, ...(sek > 45 ? { ausnahme: n("krone") + " Schüsse der Krone und " + n("wiese") + " der Wiese je 10 s an einem Stand — die Arbeit des Plans, nie das Einschwingen" } : {}),
+        befehl: ["node", "-e", "(" + knapp(vegetationLauf) + ")()", "{AUS}", "{PORT}", JSON.stringify(plan)] };
+};
+const wieseStation = (staffel, posen, quelle) => ({
     kriterium: "vegetation.K1",
     staffel,
     geraet: ["radeon", "gtx"],
-    probe: { sek, ...(ausnahme ? { ausnahme } : {}), befehl: ["node", "-e", "(" + knapp(vegetationLauf) + ")()", "{AUS}", "{PORT}", JSON.stringify(posen.map((p) => [...p, null, "wiese"]))] },
+    probe: vegetationProbe(posen.map((p) => [...p, null, "wiese"])),
     gpu: true,
     zeit: false,
     minuten: staffel === 1 ? 2 : 6,
@@ -1459,37 +1524,48 @@ function jahrUrteil(e, zeiten) {
     };
 }
 // die Schlupflöcher des Jahrs als Mutanten: ein Laubfall auf 0,15 und eine Wiese auf 0,3 ihres Sommers sind GRÜN; ein Winter, der
-// nur färbt (die Krone deckt 0,9), ein Frühling ohne Austrieb, eine Wiese, die im Winter steht, und ein Schuss an anderer Pose ROT
-function jahrProben(plan) {
+// nur färbt (die Krone deckt 0,9), ein Frühling ohne Austrieb, eine Wiese, die im Winter steht, und ein Schuss an anderer Pose ROT.
+// Die Zeile trägt den ganzen Lauf (`lauf`; die Zwillinge der Sitzung: Staffel 1 urteilt ihre Schüsse aus dem Lauf der Staffel 2), die
+// Mutanten treffen, was die Station urteilt (`eigen`); fällt der Lauf nach den Kronen von Sommer und Winter, hält, wer nur sie urteilt
+function jahrProben(lauf, eigen) {
     const px = { sommer: 40000, winter: 6000, fruehling: 30000 };
     const ring = (g) => ({ "nahWiese:L1:0:0": [0, 20000, 20000, 0, 0], bodenSatz: [0, g, g, 0, 0] });
     const lg = { sommer: 400, winter: 9000, fruehling: 2500 };
     const schuss = ([, , , z, was], o = {}) => ({ n: "wiese-ego-0.5-" + z + "-" + was, was, kamera: [0, 1.7, 0, 100, 1.7, 0], pose: { kamera: [0, 1.7, 0], blick: [1, 0, 0] }, leinwand: [1920, 1080], ok: true, pixel: px[z], baender: [0, 2, 5, 10, 20, 40], cos: [0.9, 0.5, 0.3, 0.15, 0.08], klassen: ring(lg[z]), ...((o[was] || {})[z] || {}) }); // prettier-ignore
-    const zeile = (o) => "VEGETATION " + JSON.stringify({ schuesse: plan.map((p) => schuss(p, o)) });
+    const zeile = (o, L = lauf, fehler) => "VEGETATION " + JSON.stringify({ schuesse: L.map((p) => schuss(p, o)), ...(fehler ? { fehler } : {}) });
     const mit = [
         { name: "Laub und Wiese fallen", o: {}, gruen: true },
         { name: "der Winter färbt nur", o: { krone: { winter: { pixel: 36000 } } }, gruen: false },
         { name: "die Wiese steht im Winter", o: { wiese: { winter: { klassen: ring(500) } } }, gruen: false },
         { name: "der Winter an anderer Pose", o: { krone: { winter: { kamera: [3, 1.7, 0, 103, 1.7, 0], pose: { kamera: [3, 1.7, 0], blick: [1, 0, 0] } } } }, gruen: false },
     ];
-    if (plan.some((p) => p[3] === "fruehling")) mit.push({ name: "kein Austrieb", o: { krone: { fruehling: { pixel: 5000 } } }, gruen: false });
-    return mit.filter((m) => plan.some((p) => p[4] === "wiese") || !m.o.wiese).map((m) => ({ name: m.name, stdout: zeile(m.o), gruen: m.gruen }));
+    if (eigen.some((p) => p[3] === "fruehling")) mit.push({ name: "kein Austrieb", o: { krone: { fruehling: { pixel: 5000 } } }, gruen: false });
+    const zwei = lauf.slice(0, 2), nurZwei = eigen.every((p) => zwei.includes(p));
+    return [
+        ...mit.filter((m) => eigen.some((p) => p[4] === "wiese") || !m.o.wiese).map((m) => ({ name: m.name, stdout: zeile(m.o), gruen: m.gruen })),
+        { name: "der Lauf fiel nach den Kronen von Sommer und Winter", stdout: zeile({}, zwei, "/bild: ABNAHME ROT [Ziel Blickziel nicht im Bild]"), gruen: nurZwei },
+    ];
 }
-const jahrStation = (staffel, plan, zeiten, sek, quelle, ausnahme) => ({
+// der Lauf des Jahrs: die Kronen in Sommer, Winter, Frühling, dann die Wiese — am EINEN Stand (Mess-Wiese, Ego, Mittag)
+const JAHR_LAUF = ["krone", "wiese"].flatMap((was) => ["sommer", "winter", "fruehling"].map((z) => ["wiese", "ego", 0.5, z, was]));
+// `lauf` der Plan der Probe (die Zwillinge fahren ihn EINMAL), `eigen` die Schüsse, die diese Station urteilt
+const jahrStation =(staffel, lauf, eigen, zeiten, quelle) => ({
     kriterium: "vegetation.K5",
     staffel,
     geraet: ["radeon", "gtx"],
-    probe: { sek, ...(ausnahme ? { ausnahme } : {}), befehl: ["node", "-e", "(" + knapp(vegetationLauf) + ")()", "{AUS}", "{PORT}", JSON.stringify(plan)] },
+    probe: vegetationProbe(lauf),
     gpu: true,
     zeit: false,
     minuten: staffel === 1 ? 2 : 6,
-    urteil: (j, lauf) => {
-        const e = vegetationRoh(j, lauf);
-        if (!e || e.fehler || !Array.isArray(e.schuesse) || e.schuesse.length !== plan.length)
-            return { gruen: false, zahl: "ohne alle Schüsse: " + ((e && e.fehler) || "kein VEGETATION (Exit " + lauf.exit + ")") };
-        return jahrUrteil(e, zeiten);
+    urteil: (j, l) => {
+        const e = vegetationRoh(j, l);
+        const da = e && Array.isArray(e.schuesse) ? e.schuesse.filter((s) => eigen.some((p) => p.join("-") === s.n)) : [];
+        if (!e || da.length !== eigen.length)
+            return { gruen: false, zahl: "ohne alle Schüsse: " + ((e && e.fehler) || "kein VEGETATION (Exit " + l.exit + ")") };
+        const u = jahrUrteil({ schuesse: da }, zeiten);
+        return e.fehler ? { gruen: u.gruen, zahl: u.zahl + " · der Lauf danach: " + String(e.fehler).slice(0, 160) } : u;
     },
-    proben: jahrProben(plan),
+    proben: jahrProben(lauf, eigen),
     pfad: VEGETATION_PFAD,
     quelle,
 });
@@ -1975,75 +2051,7 @@ const stationen = [
         ],
         quelle: "1 = Start-Dorf voll: Körper mit Menschen-Leib je Siedlung ÷ Σ leute = 1,0 ±0,05, ≥ 10 Menschen im Bild am Dorfplatz an einem Gerät",
     },
-    {
-        kriterium: "mensch.K1",
-        staffel: 2,
-        geraet: ["radeon", "gtx"],
-        // DIE STADT LEBT (Zweig w3u-stadt-leben): EINE Werkbank-Sitzung `--echt` (save-server und Werkbank wie M40) am Messort
-        // stadt-voll (spec/profiband/haushalt.json: „dorf 7 300" am Anker, die Metropole, der Spieler am Markt, Third). Darin die
-        // Linse `bewohner --ort stadt-voll` im Fenster (um 7 Uhr 600 Takte zu 1/60 s am echten Bewohner-Takt, dann Bewohner
-        // gesamt, im Nah-Ring der Feld-Grenze draußen und davon mit laufendem Gang), danach `haenger 20 --regler voll --tiere
-        // frei` im echten Loop: Frame p95 und CPU-Takt p95 gegen das Profi-Band (PFLICHT-OFFEN E: ≤ 33 ms, ≤ 5,8 ms — das ABAB an
-        // der GTX bleibt ein Lauf des Richter-Zugs, die Station hält das Band). Headless (Null-Renderer, 1920x1080, Laptop 29.10.,
-        // Zweig w3u-stadt-leben b361f456): 1 094 Bewohner, im Nah-Ring (19,8 m) 136–142 draußen, 40–50 mit laufendem Gang in 12
-        // Läufen (am Rand des Solls); vor dem Zweig 0 Bewohner (die Liste wartete auf die Hüllen der kalten Häuser). Mutanten ROT
-        // beim Namen (der Gang steht, der Nah-Ring leer). GPU: an der Station. Ports: save-server {PORT}, Werkbank {PORT}+20000.
-        // IN DER SITZUNG (29.10.): das Band in 10 s echtem Loop (≈ 600 Bilder, das Urteil verlangt ≥ 30) statt 20 s; die Stadt wächst
-        // am Messort (mutiert)
-        probe: { sek: 33, befehl: [
-            "bash",
-            "-c",
-            [
-                "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
-                "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
-                "grep -m1 '\\[linse-gpu\\]' \"$PUNKTE_SITZUNG_LOG\"",
-                "node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1",
-                "node scripts/werkbank.cjs umstellen --ort stadt-voll --sicht third > \"$B-umstellen.txt\" 2>&1",
-                "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben bewohner --ort stadt-voll",
-                "node scripts/werkbank.cjs haenger 10 --regler voll --tiere frei --json \"$B-haenger.json\" > \"$B-haenger.out\" 2>&1; echo \"HAENGER EXIT=$?\"",
-                "node -e 'try{const j=require(process.argv[1]);console.log(\"TAKT \"+JSON.stringify({frames:j.frames,frameMs:j.frameMs,taktMs:j.taktMs}))}catch(e){console.log(\"TAKT {}\")}' \"$B-haenger.json\"",
-            ].join("\n"),
-        ],  mutiert: true },
-        gpu: true,
-        zeit: true,
-        minuten: 20,
-        urteil: (j, lauf) => {
-            const t = String(lauf.stdout || "");
-            const ad = (/\[linse-gpu\][^\r\n]*/.exec(t) || [null])[0];
-            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
-            const z = probeZeile(t, "bewohner");
-            if (!z) return { gruen: false, zahl: "keine Zeile der Probe bewohner im Fenster (kennt sie --ort stadt-voll? Exit " + lauf.exit + ")" };
-            const v = z.voll;
-            if (z.fehler || !v) return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "keine volle Stadt") };
-            const k = jsonZeile(t, /^TAKT /) || {};
-            const [f95, c95] = [k.frameMs ? k.frameMs.p95 : null, k.taktMs ? k.taktMs.p95 : null];
-            const stadt = v.gesamt >= 200 && v.nahGang >= 40;
-            const band = k.frames >= 30 && f95 !== null && f95 <= 33 && c95 !== null && c95 <= 5.8;
-            return {
-                gruen: hw && stadt && band,
-                zahl:
-                    "Stadt " + v.gesamt + " Bewohner, im Nah-Ring (" + v.ring + " m) " + v.nah + " draußen, " + v.nahGang +
-                    " mit laufendem Gang (Soll ≥ 200, ≥ 40) · Frame p95 " + f95 + " ms (Soll ≤ 33), CPU-Takt p95 " + c95 +
-                    " ms (Soll ≤ 5,8) in " + k.frames + " Bildern · " + (ad || "Adapter ungenannt"),
-            };
-        },
-        pfad: [
-            "stamm/*.js",
-            "*-core.js",
-            "voxel-worker.js",
-            "foundry-bruecke.js",
-            "index.html",
-            "save-server.js",
-            "spec/profiband/haushalt.json",
-            "scripts/diag-kreatur-takt.cjs",
-            "scripts/werkbank.cjs",
-            "scripts/lib/kreatur-proben.cjs",
-            "scripts/lib/haenger-linse.cjs",
-            "scripts/lib/software-gpu.cjs",
-            "scripts/lib/welt-boot.cjs",
-        ],
-        quelle: "2 = Stadt ≥ 200 mit ≥ 40 nah animiert, ABAB an der GTX nicht schlechter",
-    },
+    // mensch.K1 Staffel 2 — die Stadt lebt: in `fehlt` (w4-sitzung-reif; die Probe riss in jeder GPU-Fahrt den Deckel)
     {
         kriterium: "vegetation.K4",
         staffel: 1,
@@ -2428,60 +2436,7 @@ const stationen = [
         quelle: "2 = dazu Fressen ≥ 60 s, der Kadaver lockt Fuchs oder Bär ≤ 120 s, Station Wolfsrevier im Bild beider Geräte",
     },
 
-    // ───────── tiere.K5 Staffel 1 — Begegnung im Bild (Zweig tier-sicht, `werkbank lauf --wandern kreis`) ─────────
-    // DIE WELT DER SITZUNG (punkte.cjs fahreSitzung) an der Mess-Wiese, 1280×720 (das Maß der Sichtung), der
-    // Bestand des Spiels (`--tiere frei`, das Bestands-Gesetz; keine Tiere der Bühne). Je Sicht (Ego, Third) `umstellen --ort
-    // wiese` und der Kreis der Werkbank (`lauf`, `wandern: kreis`): der Spieler GEHT 600 Spiel-s (Taste W, das Tempo des Spiels) eine Runde, der
-    // Blick dreht mit; eine Sichtung = ein Tier deckt ≥ 200 px der Klassen-Maske tier im Ausgabe-Bild (zwei Schüsse mit und ohne
-    // Tiere unter der EINEN Uhr, je Pixel das nächste Tier, dessen Körper-Kugel ihn deckt), jedes Tier zählt einmal. GRÜN: in
-    // BEIDEN Sichten ≥ 3 Sichtungen über ≥ 600 Spiel-s und kein Tier erschien im Blick (`imBlick` 0, das Schlupfloch). Die
-    // Mutante „Bestand 0" (keine Geburt, kein Tier) ist ROT mit 0 Sichtungen. Genesis fehlt der Station: der Ring der Tore
-    // liegt auf dem Kreis (R 11 m um den Start), der Gang ginge durch ein Tor — die Wiese trägt beide Sichten.
-    // Headless (swiftshader 320×180, die Schwelle auf 1280×720 normiert, 28.10., Zweig tier-sicht): main Ego 1 Sichtung (Hirsch
-    // 90 m), Third 3 (Hirsch 94/54/51 m), keines im Blick erschienen — ROT an Ego; mit oeko-k2-bestand (d9928c7e) Ego 3 (Bär 5 m,
-    // Wolf 19/31 m), Third 5, aber 3 bzw. 2 Tiere erschienen im Blick (die Verkörperung prüft nur den Anker der Gruppe auf „außer
-    // Blick", `_bestandLeiber` → `_kreaturWurf`) — ROT am Schlupfloch; Mutante „Bestand 0" 0 Sichtungen — ROT. Das Urteil fällt an
-    // Radeon oder GTX bei 1280×720.
-    // IN DER SITZUNG (29.10., proben-welt.cjs `tierKreis`): der Kreis im ZEITRAFFER der Schleife (10 Takte zu 0,1 s Spiel-Zeit je
-    // Bild) — 600 Spiel-s je Sicht sind das Kriterium, die Wanduhr nicht; bis 29.10. zwei mal zehn Minuten im eigenen Boot (Radeon
-    // b3f9ae95: 32,07 min Arbeit).
-    {
-        kriterium: "tiere.K5",
-        staffel: 1,
-        geraet: ["radeon", "gtx"],
-        probe: {
-            befehl: PW.torBefehl(PW.tierKreis),
-            sek: 33,
-            mutiert: false,
-            
-        },
-        gpu: true,
-        zeit: false,
-        minuten: 30,
-        urteil: (j, lauf) => {
-            const K = ["ego", "third"].map((s) => [s, jsonZeile(lauf.stdout, new RegExp("^KREIS-" + s + " "))]);
-            const fehlt = K.filter(([, k]) => !k || !Array.isArray(k.gesehen));
-            if (fehlt.length) return { gruen: false, zahl: "keine KREIS-Zeile in " + fehlt.map(([s]) => s).join(", ") + " (Exit " + lauf.exit + ")" };
-            const gut = (s, k) => k.gesehen.length >= 3 && k.imBlick === 0 && k.spielS >= 600 && k.sicht === { ego: "first", third: "third" }[s];
-            return {
-                gruen: K.every(([s, k]) => gut(s, k)),
-                zahl: K.map(([s, k]) => s + " (" + k.sicht + ") " + k.gesehen.length + " Sichtungen in " + k.spielS + " Spiel-s (" + k.gesehen.map((g) => g.join(" ")).join(" · ") +
-                    "), " + k.schuesse + " Schuss-Paare, Bestand bis " + k.max + ", im Blick erschienen " + k.imBlick).join(" | "),
-            };
-        },
-        pfad: [
-            ...KREATUR,
-            "stamm/bild-*.js",
-            "stamm/koerper-bewegung.js",
-            "stamm/dirigent-takt.js",
-            "save-server.js",
-            "scripts/werkbank.cjs",
-            "scripts/lib/ausgabe-aufnahme.cjs",
-            "scripts/lib/abnahme-urteil.cjs",
-            "scripts/lib/software-gpu.cjs",
-        ],
-        quelle: "1 = ≥ 3 Tier-Sichtungen im Ausgabe-Bild je 10 Spielminuten an einem Gerät",
-    },
+    // ───────── tiere.K5 Staffel 1 — Begegnung im Bild: in `fehlt` (w4-sitzung-reif; der Kreis riss in jeder GPU-Fahrt den Deckel) ─────────
 
     // ───────── affekt.K1 — die Wertung antwortet am Ort (affekt-k1-ort) ─────────
     {
@@ -3312,25 +3267,41 @@ const stationen = [
     gpu: true,
     zeit: false,
     minuten: 8,
+    // DIE FORM DER ZEILE seit mensch-begegnung 03da8f59 (27.10.): je Gang `imBild` = als Leib UND im Bild (das getrennte `nah`
+    // fiel), `beruehrt` = die Takte, in denen ein Bewohner draußen näher als zwei Kapseln stand (vorher die Liste der Berührten).
+    // Bis w4-stationen-heil las das Urteil die alte Form und warf („z.nah is not iterable“, b3f9ae95 bis 73bdf938 auf beiden
+    // Geräten); eine fremde Form ist ein Probe-Fehler beim Namen, nie ein Wurf.
     urteil: (j, lauf) => {
         const z = probeZeile(lauf.stdout, "begegnung");
         if (!z) return { gruen: false, zahl: "keine Zeile der Probe begegnung im Fenster (Exit " + lauf.exit + ")" };
-        if (z.fehler || !Array.isArray(z.zuS)) return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "ohne zuS") };
+        const fremd = ["zuS", "imBild", "dMin", "beruehrt"].filter((k) => !Array.isArray(z[k]) || z[k].length !== 4);
+        if (z.fehler || fremd.length) return { gruen: false, zahl: "Probe-Fehler: " + (z.fehler || "ohne je vier Gänge in " + fremd.join(", ")) };
         const d = z.dMin;
-        const kopf =
-            z.zuS.length === 4 && z.zuS.every((t) => t !== null && t <= 0.5) && z.amEreignis >= 30 &&
-            [...z.nah, ...z.imBild].every((x) => x === true);
-        const ohne = z.beruehrt.length === 0 && Math.min(...d) > 0.7;
+        const kopf = z.zuS.every((t) => t !== null && t <= 0.5) && z.amEreignis >= 30 && z.imBild.every((x) => x === true);
+        const ohne = z.beruehrt.every((n) => n === 0) && Math.min(...d) > 0.7;
         const erinnert = z.furcht > 0 && d[3] - d[1] >= 0.3 && Math.abs(d[2] - d[1]) <= 0.15;
         return {
             gruen: kopf && ohne && erinnert,
             zahl:
                 z.wer + ": Kopf-Zuwendung ab 3 m " + z.zuS.join(" / ") + " s (Vorbeigang ab " + z.amEreignis +
-                "°, im Bild " + z.imBild.join("/") + ") · Berührung " + z.beruehrt.length + ", kleinster Abstand " +
+                "°, als Leib im Bild " + z.imBild.join("/") + ") · Berührung " + z.beruehrt.join("/") + " Takte, kleinster Abstand " +
                 d.join(" / ") + " m (Radien 0,7) · ohne Erinnerung " + d[1] + ", Gegenprobe " + d[2] + ", nach der Gewalt " +
                 d[3] + " m (Furcht " + z.furcht + ")",
         };
     },
+    // die echte Zeile der GTX an 73bdf938 (GRÜN, wie die Probe selbst urteilt) und ihre Schlupflöcher; die alte Form ROT beim Namen
+    proben: (() => {
+        const echt = { wer: "gasthaus/gasthaus #419347", furcht: 1, zuS: [0.267, 0, 0, 0], amEreignis: 71, imBild: [true, true, true, true], dMin: [2, 1.239, 1.239, 1.897], beruehrt: [0, 0, 0, 0] };
+        const zeile = (o) => "  ✅ begegnung " + JSON.stringify({ ...echt, ...o });
+        return [
+            { name: "73bdf938 GTX", stdout: zeile({}), gruen: true },
+            { name: "eine Berührung im dritten Gang", stdout: zeile({ beruehrt: [0, 0, 2, 0] }), gruen: false },
+            { name: "der zweite Gang nicht als Leib im Bild", stdout: zeile({ imBild: [true, false, true, true] }), gruen: false },
+            { name: "der Vorbeigang schenkt die Zuwendung", stdout: zeile({ amEreignis: 12 }), gruen: false },
+            { name: "die Erinnerung lenkt nicht", stdout: zeile({ dMin: [2, 1.239, 1.239, 1.3] }), gruen: false },
+            { name: "die alte Form (nah getrennt, Berührte als Liste)", stdout: zeile({ nah: [true, true, true, true], beruehrt: [] }), gruen: false },
+        ];
+    })(),
     pfad: [
         "stamm/siedlung-*.js",
         "stamm/kreatur-*.js",
@@ -3419,6 +3390,12 @@ const stationen = [
             };
         };
         st.pfad = st.pfad.filter((p) => !p.startsWith("spec/abnahme/ref-"));
+        // die Proben der Soll-Klasse an der Spiel-Pose (die Zeile KAMERA wie an 73bdf938 GTX), dazu die Kamera hinter dem Gesicht ROT
+        const kamera = (vorn) => "KAMERA " + JSON.stringify({ leib: 0, vorn, abstand: 6.12, d: 6 }) + "\n";
+        st.proben = [
+            ...st.proben.map((p) => ({ ...p, stdout: kamera(true) + p.stdout })),
+            { name: "die Kamera hinter dem Gesicht", stdout: kamera(false) + st.proben[0].stdout, gruen: false },
+        ];
         return st;
     })(),
     // ───────── mensch.K4 Staffel 2 — die Menge: 50 Bewohner aus 50 Samen (Zweig w3v-leib-menge) ─────────
@@ -3550,23 +3527,16 @@ const stationen = [
     }),
     // ───────── vegetation.K1 — die Wiese bis zum Saum (Zweig w3w-wald): Staffel 1 EINE Pose (Mess-Wiese, Third, Mittag),
     // Staffel 2 Mess-Wiese UND Genesis × Ego UND Third × Uhr 0,5 und 0,3 (vegetationLauf, wieseUrteil) ─────────
-    wieseStation(1, [["wiese", "third", 0.5]], 10, "1 = eine Pose (Ort × Sicht × Uhr) grün in allen festen Ringen, im Budget"),
-    wieseStation(
-        2,
-        ["wiese", "genesis"].flatMap((o) => ["ego", "third"].flatMap((s) => [0.5, 0.3].map((u) => [o, s, u]))),
-        10,
-        "2 = Mess-Wiese UND Genesis, Ego UND Third, Uhr 0,5 und 0,3, beide Geräte"
-    ),
+    // (Staffel 2 — Mess-Wiese UND Genesis × Ego UND Third × Uhr 0,5 und 0,3 — steht in `fehlt`: acht Schüsse an zwei Orten sind
+    // 150 s Arbeit, über dem Gesetz der Fahrt)
+    wieseStation(1, [["wiese", "third", 0.5]], "1 = eine Pose (Ort × Sicht × Uhr) grün in allen festen Ringen, im Budget"),
     // ───────── vegetation.K5 — das Jahr als Gestalt (Zweig w3w-wald): Staffel 1 die Laub-Maske an EINER Pose im Sommer und Winter,
     // Staffel 2 dazu der Frühling und die Wiese an der Kamera des Spiels (Ego, Mittag) in allen drei (vegetationLauf, jahrUrteil) ─────────
-    jahrStation(1, ["sommer", "winter"].map((z) => ["wiese", "ego", 0.5, z, "krone"]), ["sommer", "winter"], 26, "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose"),
-    jahrStation(
-        2,
-        ["krone", "wiese"].flatMap((was) => ["sommer", "winter", "fruehling"].map((z) => ["wiese", "ego", 0.5, z, was])),
-        ["sommer", "winter", "fruehling"],
-        33,
-        "2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte"
-    ),
+    // DIE ARBEIT GETEILT (w4-sitzung-reif): beide Staffeln sind EIN Lauf (Zwillinge) — seine ersten Schüsse sind die Kronen von Sommer und
+    // Winter am Stand der Staffel 1; sie urteilt nur sie (der Rest des Laufs, auch sein Fehler, ist Sache der Staffel 2). Getrennt kosteten
+    // sie 25 s + 65 s der Fahrt, so 65 s
+    jahrStation(1, JAHR_LAUF, ["sommer", "winter"].map((z) => JAHR_LAUF.find((p) => p[3] === z && p[4] === "krone")), ["sommer", "winter"], "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose"),
+    jahrStation(2, JAHR_LAUF, JAHR_LAUF, ["sommer", "winter", "fruehling"], "2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte"),
 ];
 
 // Nicht als Station fassbar (heute): je Kriterium und Staffel der Grund beim Namen. Sie tragen keine Punkte der Maschine;
@@ -3585,6 +3555,30 @@ const fehlt = [
         staffel: 2,
         befehl: null,
         grund: "dieselbe fehlende REF real-mischwald wie Staffel 1, dazu fehlt das Gesetz der Strahlen: Volumen-Licht über die EINE Luft gibt es nicht (Strahl-Kontrast im Gegenlicht ungemessen)",
+    },
+    // vegetation.K1#2 (w4-sitzung-reif, 30.10.): die Staffel verlangt acht Schüsse an zwei Orten — die Arbeit ihres Plans (vegetationDeckel:
+    // Mess-Wiese Ego und Third warm 2 × 5 s, Genesis kalt 15 s und Third 5 s, je Wiesen-Schuss 15 s) ist 150 s, über dem Gesetz der Fahrt
+    {
+        kriterium: "vegetation.K1",
+        staffel: 2,
+        befehl: null,
+        grund: "nicht in der Fahrt (w4-sitzung-reif, 30.10.): Mess-Wiese UND Genesis × Ego UND Third × Uhr 0,5 und 0,3 sind acht Wiesen-Schüsse an vier Ständen — die Arbeit des Plans 110 s (je Schuss mit Ringen und Zähler 10 s, der Stand Genesis kalt 15 s, die übrigen Stände 5 s; vegetationDeckel), über dem Deckel der Fahrt (≤ 90 s mit Ausnahme). Teilbar wäre er nur in zwei Proben, die Station ist EINE; die Probe (vegetationLauf, wieseUrteil) misst heute Staffel 1",
+    },
+    // DIE ZAHL ERSETZT DIE SCHÄTZUNG (w4-sitzung-reif, 30.10.; punkte.cjs DIE DECKEL: „die GPU-Fahrt nennt, wer warm am Deckel fällt“):
+    // zwei Proben rissen in JEDER GPU-Fahrt ihren Deckel — am 90-s-Deckel des Gegenlaufs b3f9ae95 und an 99/100 s in den Eichläufen 1–6
+    // (gegenlauf/eich*.json, Radeon) —, ihre Arbeit liegt über dem Gesetz der Fahrt; ihre 66 s trugen nie eine Messung (und jeder Riss eine
+    // Tür samt neuem Ring). Sie trugen keinen Punkt.
+    {
+        kriterium: "tiere.K5",
+        staffel: 1,
+        befehl: null,
+        grund: "nicht in der Fahrt (w4-sitzung-reif, 30.10.): die Probe (proben-welt `tierKreis`, der Kreis 600 Spiel-s je Sicht Ego und Third im Zeitraffer der Schleife) riss in jeder GPU-Fahrt ihren Deckel — Gegenlauf b3f9ae95 Radeon am 90-s-Deckel, Eichlauf 1–6 (a53152c2 … 1f17e7d1) am Deckel 99/100 s — über dem Gesetz der Fahrt (≤ 90 s mit Ausnahme). Kürzen hieße die Spielzeit kürzen; die Staffel verlangt „je 10 Spielminuten“. Die Station (Befehl, Urteil) steht in w4-koord-sitzung bdc3c14a",
+    },
+    {
+        kriterium: "mensch.K1",
+        staffel: 2,
+        befehl: null,
+        grund: "nicht in der Fahrt (w4-sitzung-reif, 30.10.): die Probe (die Stadt am Messort stadt-voll, die Linse bewohner --ort stadt-voll, haenger 10 s; Zeit-Station) riss in jeder GPU-Fahrt ihren Deckel — Gegenlauf b3f9ae95 Radeon am 90-s-Deckel, Eichlauf 3–5 am Deckel 99/100 s, im Eichlauf 6 riss die Fahrt in ihr (der Ort stadt-voll allein 87,4–119,1 s vor dem Deckel) — über dem Gesetz der Fahrt (≤ 90 s mit Ausnahme). Die Station (Befehl, Urteil) steht in w4-koord-sitzung bdc3c14a",
     },
 ];
 // die Sprünge der Bewohner-Probe: seit z36 unter `wege`, davor oben (beide Köpfe bleiben buchbar)

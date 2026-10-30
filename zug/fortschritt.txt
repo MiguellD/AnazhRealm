@@ -956,3 +956,12 @@
 2026-10-30 06:32:26 takt23-gtx profiband.K5#1 ROT 33.5 · 28/28
 2026-10-30 06:35:31 z78-bisekt START 1 Zellen
 2026-10-30 07:00:33 z78-bisekt stadt VERLÄNGERN 25.0 · 1/1 (2+2)
+2026-10-30 07:25:41 z78-bisekt stadt(4+4) LANGSAMER 25.1 · verlängert (4+4)
+2026-10-30 07:25:54 takt24-gtx START 23 Stationen in 6 Läufen
+2026-10-30 07:31:01 takt24-gtx VORFAHRT mensch.K4#1,licht.K2#2,licht.K5#1,material.K2#1,material.K3#2,schatten.K1#2,lod.K1#1,lod.K5#1,lod.K2#1,material.K4#1,material.K5#1,studios.K4#1,fahrzeug.K3#1,siedlung.K4#2,leib.K1#2,spielgang.K3#1 verloren 1.0
+2026-10-30 07:31:08 takt24-gtx mensch.K4#1,licht.K2#2,licht.K5#1,material.K2#1,material.K3#2,schatten.K1#2,lod.K1#1,lod.K5#1,lod.K2#1,material.K4#1,material.K5#1,studios.K4#1,fahrzeug.K3#1,siedlung.K4#2,leib.K1#2,spielgang.K3#1 ROT/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN 5.1 · 16/23
+2026-10-30 07:41:17 takt24-gtx tiere.K5#1 OFFEN 10.1 · 17/23
+2026-10-30 07:51:28 takt24-gtx licht.K1#1 OFFEN 10.1 · 18/23
+2026-10-30 08:01:38 takt24-gtx licht.K3#1 OFFEN 10.1 · 19/23
+2026-10-30 08:22:13 takt24-gtx VORFAHRT profiband.K1#1,profiband.K2#1,profiband.K3#1 verloren 9.1
+2026-10-30 08:22:19 takt24-gtx profiband.K1#1,profiband.K2#1,profiband.K3#1 OFFEN/OFFEN/OFFEN 20.6 · 22/23

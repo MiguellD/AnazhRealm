@@ -1,5 +1,5 @@
 {
- "kopf": "73bdf938",
+ "kopf": "24a0f3ef",
  "je": {
   "affekt.K1": {
    "punkte": 2,
@@ -20,7 +20,7 @@
      "gruen": true,
      "zahl": "Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Tag third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht first GRÜN: fällen -0.12 -4.77 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.76 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "gehalten": true
     },
     {
@@ -29,7 +29,7 @@
      "gruen": true,
      "zahl": "Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Tag third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.78 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "gehalten": true
     }
    ]
@@ -44,23 +44,22 @@
      "gruen": true,
      "zahl": "Sonne echt 12/15 (10 Züge aus rule:emotion:hope, das Gesetz feuert 34×, Hoffnung 886.1 s über der Schwelle) · starr 3 (Front 3) · Gesetz pausiert 3 · Bauten 49/49/49",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +20)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +21)",
      "gehalten": true
     }
    ]
   },
   "affekt.K3": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: affekt.K3#1 headless: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +20)",
+   "beleg": "Maschine: 0 — offen: affekt.K3#1 headless: ROT: value > 0 echt 0.459 → 0.604 · gemischt 0.158 → 0.714 · stumm 0.000 → 0.000 · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 43 m südwestlich von dir, weil Zufall ≤ 0.63. (Gesetz Nr. 29 an 24a0f3ef",
    "stationen": [
     {
      "id": "affekt.K3#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +20)",
-     "ungemessen": true
+     "zahl": "value > 0 echt 0.459 → 0.604 · gemischt 0.158 → 0.714 · stumm 0.000 → 0.000 · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 43 m südwestlich von dir, weil Zufall ≤ 0.63. (Gesetz Nr. 29",
+     "sha": "24a0f3eff6051ae954369fd774cce415d1f32dc5",
+     "grund": "ROT: value > 0 echt 0.459 → 0.604 · gemischt 0.158 → 0.714 · stumm 0.000 → 0.000 · Stimme: Ein Gesetz des Nexus trägt Leben ins Feld an einer Stelle — 43 m südwestlich von dir, weil Zufall ≤ 0.63. (Gesetz Nr. 29"
     }
    ]
   },
@@ -74,7 +73,7 @@
      "gruen": true,
      "zahl": "30 Spielminuten, 56 Zeilen, 0 falsch, Abstand 30 s, offen -6.9 s, ohne Tat 0, Klassen {\"nexus\":58,\"rule:nexus\":469,\"llm\":3,\"rule:llm\":11,\"wunsch\":16,\"human\":2,\"fern\":156}",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +3)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +4)",
      "gehalten": true
     }
    ]
@@ -170,7 +169,7 @@
      "gruen": true,
      "zahl": "haus_italienisch am Hang 0.408 (Soll ≥ 0,15) · Erdbau 3 Splats (Platte, Grund, Vorplatz) · byte-gleich dem Dorf-Slot true · Vorplatz-Boden 1 (Erde 0,3 m unter, keine 0,3 m über der Platte) · Erde über der Diele 0/315",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-haus-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-haus-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
      "gehalten": true
     },
     {
@@ -179,7 +178,7 @@
      "gruen": true,
      "zahl": "haus_italienisch auf der Gasse: Grundriss-Punkte auf der Gasse 15 → 0 (von 25) · Erdbau byte-gleich dem Ein-Slot-Plan true · Fremd-Slots im Plan 1 · Gang in den Keller erreicht, Hub 0.20 m je Schritt (Soll ≤ 0,3)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/gelaende-kollision.js, stamm/koerper-bewegung.js +7)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/stamm.cjs, scripts/lib/welt-boot.cjs)",
      "gehalten": true
     }
    ]
@@ -291,7 +290,7 @@
   },
   "fahrzeug.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: fahrzeug.K2#1 radeon: ungemessen (R10) · fahrzeug.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/fahr-proben.cjs)",
+   "beleg": "Maschine: 0 — offen: fahrzeug.K2#1 radeon: ungemessen (R10) · fahrzeug.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/fahr-proben.cjs +2)",
    "stationen": [
     {
      "id": "fahrzeug.K2#1",
@@ -308,7 +307,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/fahr-proben.cjs)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/fahr-proben.cjs +2)",
      "ungemessen": true
     }
    ]
@@ -365,7 +364,7 @@
      "gruen": true,
      "zahl": "nach Ego → Third im Bild 3/3, Azimut 5.5/2.1/0.4°, Stufe ≤ 1.82 m · T4 Absteigen 0.31 m je Bild, Azimut nach 10 Bildern 0.7° · Hang 17.4°",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/fahr-proben.cjs, scripts/lib/licht-linsen.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +8)",
      "gehalten": true
     },
     {
@@ -407,7 +406,7 @@
      "gruen": true,
      "zahl": "Federung im Bild: Drift-Wank 8.609 gegen Glatt 0.542 mm, Stoß-Antwort Glatt/Hang 7.174/9.852 mm (Mutante 2.744/0.967) · Rumble Drift 1 gegen Glatt 0.004, Summen 0.603/0.512 (Mutante 0, 0.126) · Motor 66.7 Hz je 1000 Upm (klang-zensus F) · RM1–3 ✅✅✅",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs +23)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs +25)",
      "gehalten": true
     },
     {
@@ -416,7 +415,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/fahr-proben.cjs, scripts/lib/licht-linsen.cjs +3)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +9)",
      "ungemessen": true
     }
    ]
@@ -447,7 +446,7 @@
   },
   "feld.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 206 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gl | (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich · zug gleich an 715754fc headless — offen: feld.K2#2 headless: Linse seit der Messung geändert (R6: scripts/diag-mp-sync.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
+   "beleg": "Maschine: gehalten: 6 (e)-Proben GRÜN: (e) Leib: B's Ghost rechnet A's Schritte aus seinen Eingaben bit-gleich (je seq) — 206 geteilte Schritte, maxΔ 0 | (e) Peers: der Abdruck der Schreib-Akte (Edits, Bauten mit Kennung, Boden) byte-gleich auf A und B — edits gleich · bauten gleich · boden gl | (e) Reload: B trägt nach dem Neuladen denselben Abdruck — edits gleich · bauten gleich · boden gleich · zug gleich an 715754fc headless — offen: feld.K2#2 headless: ROT: Zug der Welt-Uhr gleich in 2 von 2 (e)-Zeilen (Exit 0) · OFFEN (f) Peers: Teil-Simulationen gleich — Wetter gleich · Leben 9/9 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen rei | OFFEN (f) Reload mitten im Sturm: Teil-Simulationen gleich — Wetter VERSCHIEDEN · Leben 0/9 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uh an 24a0f3ef",
    "stationen": [
     {
      "id": "feld.K2#1",
@@ -462,10 +461,9 @@
      "id": "feld.K2#2",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-mp-sync.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
-     "ungemessen": true
+     "zahl": "Zug der Welt-Uhr gleich in 2 von 2 (e)-Zeilen (Exit 0) · OFFEN (f) Peers: Teil-Simulationen gleich — Wetter gleich · Leben 9/9 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen rei | OFFEN (f) Reload mitten im Sturm: Teil-Simulationen gleich — Wetter VERSCHIEDEN · Leben 0/9 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uh",
+     "sha": "24a0f3eff6051ae954369fd774cce415d1f32dc5",
+     "grund": "ROT: Zug der Welt-Uhr gleich in 2 von 2 (e)-Zeilen (Exit 0) · OFFEN (f) Peers: Teil-Simulationen gleich — Wetter gleich · Leben 9/9 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uhr, Fraß, Entfachen rei | OFFEN (f) Reload mitten im Sturm: Teil-Simulationen gleich — Wetter VERSCHIEDEN · Leben 0/9 gleich · Brand, Pegel ungemessen — ungebaut: Wunsch der Welt, Tat-Uh"
     }
    ]
   },
@@ -488,7 +486,7 @@
      "gruen": true,
      "zahl": "Ruhe 60 s: wasser 0 · regen 0 · saison 0 · nachwuchs 0 · wuchs 0 · feld 0 · brand 0 · Taten 1395 · Feld: 2160 Zellen geschrieben, tote/Zellen nach den Wellen 0/540 · 0/540 · 0/540 · 0/540 · Brand: {\"zellen\":62,\"einheiten\":41.6,\"start\":true,\"mit\":0.903,\"koepfe\":18,\"gegen\":0.028,\"alle\":1.057,\"ohneWind\":0.041,\"lebVor\":0.839,\"glut\":0.68,\"licht\":true,\"regenS\":20,\"brennt\":0,\"lebNach\":0.526,\"asche\":49}",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
      "gehalten": true
     }
    ]
@@ -519,7 +517,7 @@
   },
   "ferne.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Koschmieder T/T_soll 0.88–1.07 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: ferne.K1#2 radeon: ROT: K1-2 ROT (16 Befunde) · Farbton 8 km 0.4109–28.85° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.174/6.981 (≥ 1,2) · fernes Weiß R/B 2.579 (≥ 1,3) · [linse-gpu] amd/rdna-3 an 73bdf938 · ferne.K1#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Koschmieder T/T_soll 0.88–1.07 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Koschmieder T/T_soll 0.86–1.08 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: ferne.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +4) · ferne.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +4)",
    "stationen": [
     {
      "id": "ferne.K1#1",
@@ -527,7 +525,7 @@
      "gruen": true,
      "zahl": "Koschmieder T/T_soll 0.88–1.07 bei 1/2/5/8 km, Uhr 0,5, 4 Azimute, K1-1 GRUEN, [linse-gpu] amd/rdna-3",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "gehalten": true
     },
     {
@@ -543,9 +541,10 @@
      "id": "ferne.K1#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "K1-2 ROT (16 Befunde) · Farbton 8 km 0.4109–28.85° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.174/6.981 (≥ 1,2) · fernes Weiß R/B 2.579 (≥ 1,3) · [linse-gpu] amd/rdna-3",
-     "sha": "73bdf9388f22f5c1789e0da5b0c63b6121b045c8",
-     "grund": "ROT: K1-2 ROT (16 Befunde) · Farbton 8 km 0.4109–28.85° (≤ 10°) · Sonnenseite Uhr 0,5/0,27 1.174/6.981 (≥ 1,2) · fernes Weiß R/B 2.579 (≥ 1,3) · [linse-gpu] amd/rdna-3"
+     "zahl": null,
+     "sha": null,
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +4)",
+     "ungemessen": true
     },
     {
      "id": "ferne.K1#2",
@@ -553,7 +552,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +4)",
      "ungemessen": true
     }
    ]
@@ -568,7 +567,7 @@
      "gruen": true,
      "zahl": "Restkontrast am Rand 0.9–1.2 % bei 18.3–23.1 km (≤ 2 %), 4 Azimute, K2-1 GRUEN, [linse-gpu] amd/rdna-3",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "gehalten": true
     },
     {
@@ -586,7 +585,7 @@
      "gruen": true,
      "zahl": "K2-2 GRUEN · Kanten-Linie Hügel 0/0/0/0.47°, Gipfel 0/0.47/0/0.47° (< 1°) · Boden 8/12 Befehle, 65.8k/120k Dreiecke · [linse-gpu] amd/rdna-3",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "gehalten": true
     },
     {
@@ -610,7 +609,7 @@
      "gruen": true,
      "zahl": "Sicht im Sturm 1493 m (Azimute 1457/1459/1493/1614, Soll 1 500 m ±15 %), [linse-gpu] amd/rdna-3",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "gehalten": true
     },
     {
@@ -700,7 +699,7 @@
      "gruen": true,
      "zahl": "spiegelTreue 0.7801 (wasserSatz 36243 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 122.9 σ 52.1 schwarz 0.0 % weiß 0.1 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "gehalten": true
     },
     {
@@ -709,7 +708,7 @@
      "gruen": true,
      "zahl": "spiegelTreue 0.7712 (wasserSatz 36180 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 123 σ 52.1 schwarz 0.0 % weiß 0.1 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "gehalten": true
     }
    ]
@@ -781,7 +780,7 @@
      "gruen": true,
      "zahl": "arm GRÜN strich 0.5135 Soll [0.4358,0.6538] · third GRÜN strich 0.5293 Soll [0.4358,0.6538]",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +7)",
      "gehalten": true
     },
     {
@@ -797,7 +796,7 @@
   },
   "haar.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/albedo-tafel.json, spec/farbe/tag-kurve.json +1) · haar.K2#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +8) · haar.K2#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
    "stationen": [
     {
      "id": "haar.K2#1",
@@ -805,7 +804,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/albedo-tafel.json, spec/farbe/tag-kurve.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +8)",
      "ungemessen": true
     },
     {
@@ -814,7 +813,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "ungemessen": true
     }
    ]
@@ -1040,16 +1039,15 @@
   },
   "ki.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: ki.K4#1 headless: Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4)",
+   "beleg": "Maschine: 0 — offen: ki.K4#1 headless: ROT: LLM-Regeln neu je Drittel 2/2/2, erneuert 9 · verfallen 6 · verdrängt 0 (Nexus 151 · 60 · 3); Gegenlauf: erneuert LLM δ+ 0.91 · δ− 0.00, verdrängt 0, Täter keine llm-Regel verdrängt an 24a0f3ef",
    "stationen": [
     {
      "id": "ki.K4#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-v1-pfad.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4)",
-     "ungemessen": true
+     "zahl": "LLM-Regeln neu je Drittel 2/2/2, erneuert 9 · verfallen 6 · verdrängt 0 (Nexus 151 · 60 · 3); Gegenlauf: erneuert LLM δ+ 0.91 · δ− 0.00, verdrängt 0, Täter keine llm-Regel verdrängt",
+     "sha": "24a0f3eff6051ae954369fd774cce415d1f32dc5",
+     "grund": "ROT: LLM-Regeln neu je Drittel 2/2/2, erneuert 9 · verfallen 6 · verdrängt 0 (Nexus 151 · 60 · 3); Gegenlauf: erneuert LLM δ+ 0.91 · δ− 0.00, verdrängt 0, Täter keine llm-Regel verdrängt"
     }
    ]
   },
@@ -1079,7 +1077,7 @@
   },
   "klang.K2": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: r 0.81 bei Lag 0 (n 119), Spitze 0.84 bei -0.5 s, CV Bild 0.27 / Ohr 0.55, 115.8 fps, Klang an an b3f9ae95 radeon · r 0.66 bei Lag 0 (n 119), Spitze 0.72 bei -1 s, CV Bild 0.30 / Ohr 0.55, 80.7 fps, Klang an an 715754fc gtx · gehalten: Ufer r 0.93 bei Lag 0 (n 269, Spitze 0.93 bei 0.5 s, CV Bild 0.31 / Ohr 0.41, stumm 0/267) · Regen r 1.00 bei Lag 0 (n 269, Spitze 1.00 bei -0.5 s, CV Bild 0.62 / Ohr 0.63, stumm 0/261) · Selbsttest (eingefroren) ROT an 715754fc headless",
+   "beleg": "Maschine: gehalten: r 0.81 bei Lag 0 (n 119), Spitze 0.84 bei -0.5 s, CV Bild 0.27 / Ohr 0.55, 115.8 fps, Klang an an b3f9ae95 radeon · gehalten: r 0.66 bei Lag 0 (n 119), Spitze 0.72 bei -1 s, CV Bild 0.30 / Ohr 0.55, 80.7 fps, Klang an an 715754fc gtx · gehalten: Ufer r 0.93 bei Lag 0 (n 269, Spitze 0.93 bei 0.5 s, CV Bild 0.31 / Ohr 0.41, stumm 0/267) · Regen r 1.00 bei Lag 0 (n 269, Spitze 1.00 bei -0.5 s, CV Bild 0.62 / Ohr 0.63, stumm 0/261) · Selbsttest (eingefroren) ROT an 715754fc headless",
    "stationen": [
     {
      "id": "klang.K2#1",
@@ -1096,7 +1094,8 @@
      "gruen": true,
      "zahl": "r 0.66 bei Lag 0 (n 119), Spitze 0.72 bei -1 s, CV Bild 0.30 / Ohr 0.55, 80.7 fps, Klang an",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/draw-zaehler.cjs +6)",
+     "gehalten": true
     },
     {
      "id": "klang.K2#2",
@@ -1141,9 +1140,10 @@
      "id": "klang.K4#1",
      "geraet": "gtx",
      "gruen": false,
-     "zahl": "gras 5552 Hz (n 33) · laub 5271 Hz (n 20) · quarz 3220 Hz (n 13) — kleinster Abstand 281 Hz",
-     "sha": "98ef98bb5eac304c23b97c2c8d1e6dd6ebb6ff7f",
-     "grund": "ROT: gras 5552 Hz (n 33) · laub 5271 Hz (n 20) · quarz 3220 Hz (n 13) — kleinster Abstand 281 Hz"
+     "zahl": null,
+     "sha": null,
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/draw-zaehler.cjs, scripts/lib/software-gpu.cjs)",
+     "ungemessen": true
     },
     {
      "id": "klang.K4#2",
@@ -1200,7 +1200,7 @@
   },
   "leib.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: schlechtester von 3 Läufen p95 ms ego/gehen 49.2 · third/gehen 45.5 · ego/wechsel 44.6 · third/wechsel 39.9 · Bild 16.7/16.9/16.8 ms an 715754fc radeon · gehalten: schlechtester von 3 Läufen p95 ms ego/gehen 45 · third/gehen 43.2 · ego/wechsel 27.7 · third/wechsel 24.8 · Bild 15/14.7/14.8 ms an b3f9ae95 gtx — offen: leib.K1#2 radeon: ROT: schlechtester von 3 Läufen p95 ms ego/gehen 56.4 · third/gehen 50.6 · ego/springen 45.1 · third/springen 36.9 · ego/einsteigen 64.8 · third/einsteigen 61.9 · ego/hieb 902.1 (fehlt 49) · third/hieb 1338.9 (fehlt 48) · Bild 16.6/19.8/16.5 ms an 73bdf938 · leib.K1#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: schlechtester von 3 Läufen p95 ms ego/gehen 49.2 · third/gehen 45.5 · ego/wechsel 44.6 · third/wechsel 39.9 · Bild 16.7/16.9/16.8 ms an 715754fc radeon · gehalten: schlechtester von 3 Läufen p95 ms ego/gehen 45 · third/gehen 43.2 · ego/wechsel 27.7 · third/wechsel 24.8 · Bild 15/14.7/14.8 ms an b3f9ae95 gtx — offen: leib.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +4) · leib.K1#2 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "leib.K1#1",
@@ -1208,7 +1208,7 @@
      "gruen": true,
      "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 49.2 · third/gehen 45.5 · ego/wechsel 44.6 · third/wechsel 39.9 · Bild 16.7/16.9/16.8 ms",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "gehalten": true
     },
     {
@@ -1224,9 +1224,10 @@
      "id": "leib.K1#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "schlechtester von 3 Läufen p95 ms ego/gehen 56.4 · third/gehen 50.6 · ego/springen 45.1 · third/springen 36.9 · ego/einsteigen 64.8 · third/einsteigen 61.9 · ego/hieb 902.1 (fehlt 49) · third/hieb 1338.9 (fehlt 48) · Bild 16.6/19.8/16.5 ms",
-     "sha": "73bdf9388f22f5c1789e0da5b0c63b6121b045c8",
-     "grund": "ROT: schlechtester von 3 Läufen p95 ms ego/gehen 56.4 · third/gehen 50.6 · ego/springen 45.1 · third/springen 36.9 · ego/einsteigen 64.8 · third/einsteigen 61.9 · ego/hieb 902.1 (fehlt 49) · third/hieb 1338.9 (fehlt 48) · Bild 16.6/19.8/16.5 ms"
+     "zahl": null,
+     "sha": null,
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +4)",
+     "ungemessen": true
     },
     {
      "id": "leib.K1#2",
@@ -1241,7 +1242,7 @@
   },
   "leib.K2": {
    "punkte": 2,
-   "beleg": "Maschine: hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.1 (n 200) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0 an 73bdf938 radeon · gehalten: hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.2 (n 201) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0 an b3f9ae95 gtx · Ego 0.323/2.846 → 0.179/2.156 → 0.504/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.504/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.1 (n 200) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0 an 73bdf938 radeon · gehalten: Ego 0.323/2.846 → 0.179/2.156 → 0.503/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.503/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.4 (n 200) · falllinie 1.2 (n 200) · treppe hang 1.2 (n 201) · treppe wiese 0.4 (n 200) cm p95 · Steckenbleiber 0 an 715754fc gtx",
+   "beleg": "Maschine: gehalten: hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.1 (n 200) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0 an 73bdf938 radeon · gehalten: hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.2 (n 201) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0 an b3f9ae95 gtx · gehalten: Ego 0.323/2.846 → 0.179/2.156 → 0.504/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.504/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.1 (n 200) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0 an 73bdf938 radeon · gehalten: Ego 0.323/2.846 → 0.179/2.156 → 0.503/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.503/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.4 (n 200) · falllinie 1.2 (n 200) · treppe hang 1.2 (n 201) · treppe wiese 0.4 (n 200) cm p95 · Steckenbleiber 0 an 715754fc gtx",
    "stationen": [
     {
      "id": "leib.K2#1",
@@ -1249,7 +1250,8 @@
      "gruen": true,
      "zahl": "hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.1 (n 200) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0",
      "sha": "73bdf9388f22f5c1789e0da5b0c63b6121b045c8",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-koerper-stand.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +8)",
+     "gehalten": true
     },
     {
      "id": "leib.K2#1",
@@ -1266,7 +1268,8 @@
      "gruen": true,
      "zahl": "Ego 0.323/2.846 → 0.179/2.156 → 0.504/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.504/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.1 (n 200) · treppe wiese 0.4 (n 201) cm p95 · Steckenbleiber 0",
      "sha": "73bdf9388f22f5c1789e0da5b0c63b6121b045c8",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-koerper-stand.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
+     "gehalten": true
     },
     {
      "id": "leib.K2#2",
@@ -1347,7 +1350,7 @@
   },
   "licht.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: licht.K1#1 radeon: ungemessen (R10) · licht.K1#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: licht.K1#1 radeon: ungemessen (R10) · licht.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +4)",
    "stationen": [
     {
      "id": "licht.K1#1",
@@ -1364,14 +1367,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +4)",
      "ungemessen": true
     }
    ]
   },
   "licht.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Verhältnis 5.067 (5–12,5), Schatten-Anteil 0.1974 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Verhältnis 5.012 (5–12,5), Schatten-Anteil 0.1995 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: licht.K2#2 radeon: ROT: Uhr 0.5 klar (Sonne 74.2°) 5.074, Schatten-Anteil 0.1971 · Uhr 0.27 klar (Sonne 7.2°) 0.887 UNGÜLTIG (A/B 0.790, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.027 UNGÜLTIG (A/B 0.821, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.642 · Uhr 0.27 Regen (Sonne 7.2°) 0.941 · Uhr 0.73 Regen (Sonne 6.7°) 1.059 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3 an 73bdf938 · licht.K2#2 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: Verhältnis 5.067 (5–12,5), Schatten-Anteil 0.1974 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Verhältnis 5.012 (5–12,5), Schatten-Anteil 0.1995 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: licht.K2#2 radeon: ROT: Uhr 0.5 klar (Sonne 74.2°) 5.034, Schatten-Anteil 0.1986 · Uhr 0.27 klar (Sonne 7.2°) 0.891 UNGÜLTIG (A/B 0.784, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.019 UNGÜLTIG (A/B 0.803, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.77 UNGÜLTIG (A/B 1.000, A/C 1.022, 1463 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.875 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3 an 24a0f3ef · licht.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +4)",
    "stationen": [
     {
      "id": "licht.K2#1",
@@ -1379,7 +1382,7 @@
      "gruen": true,
      "zahl": "Verhältnis 5.067 (5–12,5), Schatten-Anteil 0.1974 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] amd/rdna-3",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "gehalten": true
     },
     {
@@ -1395,9 +1398,9 @@
      "id": "licht.K2#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "Uhr 0.5 klar (Sonne 74.2°) 5.074, Schatten-Anteil 0.1971 · Uhr 0.27 klar (Sonne 7.2°) 0.887 UNGÜLTIG (A/B 0.790, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.027 UNGÜLTIG (A/B 0.821, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.642 · Uhr 0.27 Regen (Sonne 7.2°) 0.941 · Uhr 0.73 Regen (Sonne 6.7°) 1.059 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3",
-     "sha": "73bdf9388f22f5c1789e0da5b0c63b6121b045c8",
-     "grund": "ROT: Uhr 0.5 klar (Sonne 74.2°) 5.074, Schatten-Anteil 0.1971 · Uhr 0.27 klar (Sonne 7.2°) 0.887 UNGÜLTIG (A/B 0.790, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.027 UNGÜLTIG (A/B 0.821, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.642 · Uhr 0.27 Regen (Sonne 7.2°) 0.941 · Uhr 0.73 Regen (Sonne 6.7°) 1.059 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3"
+     "zahl": "Uhr 0.5 klar (Sonne 74.2°) 5.034, Schatten-Anteil 0.1986 · Uhr 0.27 klar (Sonne 7.2°) 0.891 UNGÜLTIG (A/B 0.784, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.019 UNGÜLTIG (A/B 0.803, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.77 UNGÜLTIG (A/B 1.000, A/C 1.022, 1463 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.875 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3",
+     "sha": "24a0f3eff6051ae954369fd774cce415d1f32dc5",
+     "grund": "ROT: Uhr 0.5 klar (Sonne 74.2°) 5.034, Schatten-Anteil 0.1986 · Uhr 0.27 klar (Sonne 7.2°) 0.891 UNGÜLTIG (A/B 0.784, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.019 UNGÜLTIG (A/B 0.803, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.77 UNGÜLTIG (A/B 1.000, A/C 1.022, 1463 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.875 · Uhr 0.73 Regen (Sonne 6.7°) 1 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] amd/rdna-3"
     },
     {
      "id": "licht.K2#2",
@@ -1405,7 +1408,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +4)",
      "ungemessen": true
     }
    ]
@@ -1454,7 +1457,7 @@
   },
   "licht.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: licht.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json) · licht.K5#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: licht.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6) · licht.K5#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "licht.K5#1",
@@ -1462,7 +1465,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "ungemessen": true
     },
     {
@@ -1472,13 +1475,37 @@
      "zahl": null,
      "sha": null,
      "grund": "Station seit der Messung geändert",
+     "ungemessen": true
+    }
+   ]
+  },
+  "lod.K1": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: lod.K1#1 radeon: ungemessen (R10) · lod.K1#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "lod.K1#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "lod.K1#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
      "ungemessen": true
     }
    ]
   },
   "lod.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: lod.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json) · lod.K2#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: lod.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6) · lod.K2#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "lod.K2#1",
@@ -1486,7 +1513,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "ungemessen": true
     },
     {
@@ -1500,9 +1527,33 @@
     }
    ]
   },
+  "lod.K3": {
+   "punkte": 0,
+   "beleg": "Maschine: 0 — offen: lod.K3#1 radeon: ungemessen (R10) · lod.K3#1 gtx: ungemessen (R10)",
+   "stationen": [
+    {
+     "id": "lod.K3#1",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    },
+    {
+     "id": "lod.K3#1",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
+    }
+   ]
+  },
   "lod.K5": {
    "punkte": 0,
-   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 715754fc headless — offen: lod.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json) · lod.K5#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: gehalten: 17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert an 715754fc headless — offen: lod.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6) · lod.K5#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "lod.K5#1",
@@ -1510,7 +1561,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "ungemessen": true
     },
     {
@@ -1528,7 +1579,7 @@
      "gruen": true,
      "zahl": "17 Läufe bei 30/60/144 fps, Puls und Regler ±10 % (loadScale 0–1): Abstände, Schwellen, Grenzen, Wahl und Ränder gleich, die Mutante (Regler-Term im Gesetz) wandert",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/playtest/dirigent.cjs)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/stamm.cjs, scripts/lib/welt-boot.cjs +1)",
      "gehalten": true
     }
    ]
@@ -1567,7 +1618,7 @@
      "gruen": true,
      "zahl": "Φ 0.967, Kohäsion 1 (min 1, Glied zu Glied ≤ 2.5 m) bei 100 Gliedern, 1 Züge je Glied und Takt durch verbandZug (Soll Φ ≥ 0,8, Kohäsion ≥ 0,9, 1 Zug)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +5)",
      "gehalten": true
     },
     {
@@ -1576,7 +1627,7 @@
      "gruen": true,
      "zahl": "Flucht nach 5.3 s, Abstand 30.2 → 95.7 m, 1 der Glieder mit, Verbund 1; Landung nach 27.3 s auf a:1298, Δ 0 m zum Scheitel 78.998 m, 1 auf der Krone (Soll + 40 m, 0,95, 0,9; ± 0,25 m, 0,99)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +3)",
      "gehalten": true
     }
    ]
@@ -1616,7 +1667,7 @@
   },
   "material.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25) · material.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +24) · material.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25) · material.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +24)",
+   "beleg": "Maschine: 0 — offen: material.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +26) · material.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25) · material.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +26) · material.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25)",
    "stationen": [
     {
      "id": "material.K1#1",
@@ -1624,7 +1675,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +26)",
      "ungemessen": true
     },
     {
@@ -1633,7 +1684,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +24)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25)",
      "ungemessen": true
     },
     {
@@ -1642,7 +1693,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +26)",
      "ungemessen": true
     },
     {
@@ -1651,14 +1702,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +24)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-albedo-tafel.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +25)",
      "ungemessen": true
     }
    ]
   },
   "material.K2": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json) · material.K2#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: material.K2#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6) · material.K2#1 gtx: Station seit der Messung geändert",
    "stationen": [
     {
      "id": "material.K2#1",
@@ -1666,7 +1717,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "ungemessen": true
     },
     {
@@ -1690,7 +1741,7 @@
      "gruen": true,
      "zahl": "Haus L0 0.1592 · L1/L0 0.992 · L2/L0 0.983 · Fels nur L0 (findling, basalt, sediment, zacken, geroell, kristalle), Welt-Y 0.2389 · Soll 0,95–1,05 · [linse-gpu] amd/rdna-3",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/albedo-tafel.json, spec/farbe/tag-kurve.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +7)",
      "gehalten": true
     },
     {
@@ -1724,7 +1775,7 @@
   },
   "material.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json) · material.K4#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: material.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6) · material.K4#1 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "material.K4#1",
@@ -1732,7 +1783,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "ungemessen": true
     },
     {
@@ -1748,7 +1799,7 @@
   },
   "material.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: material.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json) · material.K5#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: material.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6) · material.K5#1 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "material.K5#1",
@@ -1756,7 +1807,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "ungemessen": true
     },
     {
@@ -1772,7 +1823,7 @@
   },
   "mensch.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 30 Ego / 34 Third; Third-Bild 8 Uhr am Dorfplatz 30 Menschen im Bild, 20 gehend, 119.2 fps an 715754fc radeon — offen: mensch.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1) · mensch.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1)",
+   "beleg": "Maschine: gehalten: Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 30 Ego / 34 Third; Third-Bild 8 Uhr am Dorfplatz 30 Menschen im Bild, 20 gehend, 119.2 fps an 715754fc radeon — offen: mensch.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9) · mensch.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9)",
    "stationen": [
     {
      "id": "mensch.K1#1",
@@ -1780,7 +1831,7 @@
      "gruen": true,
      "zahl": "Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 30 Ego / 34 Third; Third-Bild 8 Uhr am Dorfplatz 30 Menschen im Bild, 20 gehend, 119.2 fps",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9)",
      "gehalten": true
     },
     {
@@ -1789,7 +1840,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9)",
      "ungemessen": true
     },
     {
@@ -1798,7 +1849,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9)",
      "ungemessen": true
     },
     {
@@ -1807,7 +1858,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9)",
      "ungemessen": true
     }
    ]
@@ -1831,7 +1882,7 @@
      "gruen": true,
      "zahl": "Soll-Orte alle 108/108 ≥ 0,9 (min 0.983), Wege je Tag 5–8 (außer 4–10: 0), Wiederkehr nach 1 h 0 von 1296 Lagen über ±2 m (max 1.261 m), Sprünge 0, Plan bit-gleich true",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9)",
      "gehalten": true
     },
     {
@@ -1871,7 +1922,7 @@
   },
   "mensch.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: mensch.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json) · mensch.K4#1 gtx: Station seit der Messung geändert · mensch.K4#2 headless: Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, spec/profiband/haushalt.json)",
+   "beleg": "Maschine: 0 — offen: mensch.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +7) · mensch.K4#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +5) · mensch.K4#2 headless: ROT: 50 Bewohner aus 50 Samen, 4 Typen · Gestalt-Distanz min 0.284 px (7:2:1/7:2:0; 16 Paare unter 1 px) · Höhe 1.703–1.951 m um 1.823 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 2.392 ms für 1094 → 0.109 ms je 50 · ROT gleich an 24a0f3ef",
    "stationen": [
     {
      "id": "mensch.K4#1",
@@ -1879,7 +1930,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +7)",
      "ungemessen": true
     },
     {
@@ -1888,23 +1939,22 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +5)",
      "ungemessen": true
     },
     {
      "id": "mensch.K4#2",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, spec/profiband/haushalt.json)",
-     "ungemessen": true
+     "zahl": "50 Bewohner aus 50 Samen, 4 Typen · Gestalt-Distanz min 0.284 px (7:2:1/7:2:0; 16 Paare unter 1 px) · Höhe 1.703–1.951 m um 1.823 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 2.392 ms für 1094 → 0.109 ms je 50 · ROT gleich",
+     "sha": "24a0f3eff6051ae954369fd774cce415d1f32dc5",
+     "grund": "ROT: 50 Bewohner aus 50 Samen, 4 Typen · Gestalt-Distanz min 0.284 px (7:2:1/7:2:0; 16 Paare unter 1 px) · Höhe 1.703–1.951 m um 1.823 · Gesicht 50 von 50 in MENSCH_SOLL · Leib/Wurf je Typ 1700/360 1700/360 1700/360 1700/360 (Zeilen 1700,360) · die 50: 132200 Dreiecke · Takt 2.392 ms für 1094 → 0.109 ms je 50 · ROT gleich"
     }
    ]
   },
   "mensch.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: mensch.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1) · mensch.K5#1 gtx: Station seit der Messung geändert",
+   "beleg": "Maschine: 0 — offen: mensch.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9) · mensch.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +7)",
    "stationen": [
     {
      "id": "mensch.K5#1",
@@ -1912,7 +1962,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9)",
      "ungemessen": true
     },
     {
@@ -1921,7 +1971,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Station seit der Messung geändert",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +7)",
      "ungemessen": true
     }
    ]
@@ -1952,7 +2002,7 @@
   },
   "oekologie.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 8 Saaten · Grundbestand min 5.46 · halbe Nahrung -0.313 [-0.576, -0.098] · 4016 Hungertode, 4016 die Ältesten · Takte an der Kappe 0 an 715754fc headless",
+   "beleg": "Maschine: gehalten: 8 Saaten · Grundbestand min 5.46 · halbe Nahrung -0.313 [-0.576, -0.098] · 4016 Hungertode, 4016 die Ältesten · Takte an der Kappe 0 an 715754fc headless — offen: oekologie.K2#2 headless: ROT: 8 Saaten · Kappe halbiert: 0 von 17280 Takten andere Tiere in 4 nahen Regionen, Leiber 20/10 bei Bestand 34.5 · halbe Nahrung senkt 8 von 8 Regionen (4 fern, Effekt -0.345 … -0.416) · Takt p95 11.1 ms an 24a0f3ef",
    "stationen": [
     {
      "id": "oekologie.K2#1",
@@ -1962,6 +2012,14 @@
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
      "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +7)",
      "gehalten": true
+    },
+    {
+     "id": "oekologie.K2#2",
+     "geraet": "headless",
+     "gruen": false,
+     "zahl": "8 Saaten · Kappe halbiert: 0 von 17280 Takten andere Tiere in 4 nahen Regionen, Leiber 20/10 bei Bestand 34.5 · halbe Nahrung senkt 8 von 8 Regionen (4 fern, Effekt -0.345 … -0.416) · Takt p95 11.1 ms",
+     "sha": "24a0f3eff6051ae954369fd774cce415d1f32dc5",
+     "grund": "ROT: 8 Saaten · Kappe halbiert: 0 von 17280 Takten andere Tiere in 4 nahen Regionen, Leiber 20/10 bei Bestand 34.5 · halbe Nahrung senkt 8 von 8 Regionen (4 fern, Effekt -0.345 … -0.416) · Takt p95 11.1 ms"
     }
    ]
   },
@@ -1991,7 +2049,7 @@
   },
   "oekologie.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 6 Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch 0 s · umstellt 17.4 s · Lücke beim ersten Biss 125° · Pirsch im Frieden / am leeren Anker 0 / 0 Takte (Soll ≤ 600 s Kreatur-Uhr, 0 / 0) an 715754fc headless — offen: oekologie.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1) · oekologie.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1)",
+   "beleg": "Maschine: gehalten: 6 Wölfe aus dem Wurf, der Spieler 45 m im Revier: Pirsch 0 s · umstellt 17.4 s · Lücke beim ersten Biss 125° · Pirsch im Frieden / am leeren Anker 0 / 0 Takte (Soll ≤ 600 s Kreatur-Uhr, 0 / 0) an 715754fc headless — offen: oekologie.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9) · oekologie.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9)",
    "stationen": [
     {
      "id": "oekologie.K4#1",
@@ -2008,7 +2066,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9)",
      "ungemessen": true
     },
     {
@@ -2017,7 +2075,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9)",
      "ungemessen": true
     }
    ]
@@ -2113,7 +2171,7 @@
      "gruen": true,
      "zahl": "5 Kisten ruhen nach 0.87 s, Zittern 0.00 cm (wach 0.00), Boden 0.002 m, Fugen -0.001/-0.000/0.001/0.001 m · GT 8.77 → 8.56 m/s, Fass 161.0° · Mutanten: Schwere 0 Boden 0.107 m, ohne Stoß 3.0°",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/diag-kollision-bild.cjs, scripts/lib/abnahme-urteil.cjs +7)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-fahr-leben.cjs, scripts/diag-kollision-bild.cjs, scripts/lib/abnahme-urteil.cjs +8)",
      "gehalten": true
     }
    ]
@@ -2168,7 +2226,7 @@
   },
   "pipeline.K4": {
    "punkte": 2,
-   "beleg": "Maschine: gehalten: 183 von 183 build-asset von der Platte (100.0 %), Bau-Ereignisse Werk 0 · Haupt-Faden 0, leer 0, verschluckt 0 an b3f9ae95 radeon · gehalten: 183 von 183 build-asset von der Platte (100.0 %), Bau-Ereignisse Werk 0 · Haupt-Faden 0, leer 0, verschluckt 0 an b3f9ae95 gtx · Zweit-Boot von der Platte blatt-atlas 1/1 0 ms · dorf-export 2/2 0 ms · karte 19/19 3 ms · Kern-Wechsel fachwerk: 43 Leser neu, fremd 0 , alt 0  an 73bdf938 radeon · gehalten: Zweit-Boot von der Platte blatt-atlas 1/1 0 ms · dorf-export 2/2 0 ms · karte 19/19 7 ms · Kern-Wechsel fachwerk: 43 Leser neu, fremd 0 , alt 0  an 715754fc gtx",
+   "beleg": "Maschine: gehalten: 183 von 183 build-asset von der Platte (100.0 %), Bau-Ereignisse Werk 0 · Haupt-Faden 0, leer 0, verschluckt 0 an b3f9ae95 radeon · gehalten: 183 von 183 build-asset von der Platte (100.0 %), Bau-Ereignisse Werk 0 · Haupt-Faden 0, leer 0, verschluckt 0 an b3f9ae95 gtx · gehalten: Zweit-Boot von der Platte blatt-atlas 1/1 0 ms · dorf-export 2/2 0 ms · karte 19/19 3 ms · Kern-Wechsel fachwerk: 43 Leser neu, fremd 0 , alt 0  an 73bdf938 radeon · gehalten: Zweit-Boot von der Platte blatt-atlas 1/1 0 ms · dorf-export 2/2 0 ms · karte 19/19 7 ms · Kern-Wechsel fachwerk: 43 Leser neu, fremd 0 , alt 0  an 715754fc gtx",
    "stationen": [
     {
      "id": "pipeline.K4#1",
@@ -2194,7 +2252,8 @@
      "gruen": true,
      "zahl": "Zweit-Boot von der Platte blatt-atlas 1/1 0 ms · dorf-export 2/2 0 ms · karte 19/19 3 ms · Kern-Wechsel fachwerk: 43 Leser neu, fremd 0 , alt 0 ",
      "sha": "73bdf9388f22f5c1789e0da5b0c63b6121b045c8",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/stamm.cjs, scripts/lib/welt-boot.cjs)",
+     "gehalten": true
     },
     {
      "id": "pipeline.K4#2",
@@ -2202,7 +2261,7 @@
      "gruen": true,
      "zahl": "Zweit-Boot von der Platte blatt-atlas 1/1 0 ms · dorf-export 2/2 0 ms · karte 19/19 7 ms · Kern-Wechsel fachwerk: 43 Leser neu, fremd 0 , alt 0 ",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Pfad seit der Messung geändert (R6: stamm/siedlung-ort.js, stamm/studio-bruecke.js, stamm/vegetation-baum.js)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/stamm.cjs, scripts/lib/welt-boot.cjs)",
      "gehalten": true
     }
    ]
@@ -2339,7 +2398,7 @@
   },
   "profiband.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: 4 von 4 Sitzungen ohne Frame > 100 ms (max 67.2 · 50.2 · 50.2 · 50 ms; Hänger 0/0/0/0) an b3f9ae95 radeon — offen: profiband.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +22) · profiband.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +22)",
+   "beleg": "Maschine: gehalten: 4 von 4 Sitzungen ohne Frame > 100 ms (max 67.2 · 50.2 · 50.2 · 50 ms; Hänger 0/0/0/0) an b3f9ae95 radeon — offen: profiband.K4#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +23) · profiband.K4#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +23)",
    "stationen": [
     {
      "id": "profiband.K4#1",
@@ -2347,7 +2406,7 @@
      "gruen": true,
      "zahl": "4 von 4 Sitzungen ohne Frame > 100 ms (max 67.2 · 50.2 · 50.2 · 50 ms; Hänger 0/0/0/0)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +23)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +24)",
      "gehalten": true
     },
     {
@@ -2356,7 +2415,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +22)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +23)",
      "ungemessen": true
     },
     {
@@ -2365,7 +2424,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +22)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +23)",
      "ungemessen": true
     },
     {
@@ -2374,14 +2433,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +22)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +23)",
      "ungemessen": true
     }
    ]
   },
   "profiband.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: ungemessen (R10) · profiband.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json +1) · profiband.K5#2 radeon: ungemessen (R10) · profiband.K5#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json +1)",
+   "beleg": "Maschine: 0 — offen: profiband.K5#1 radeon: ungemessen (R10) · profiband.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +7) · profiband.K5#2 radeon: ungemessen (R10) · profiband.K5#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +7)",
    "stationen": [
     {
      "id": "profiband.K5#1",
@@ -2398,7 +2457,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +7)",
      "ungemessen": true
     },
     {
@@ -2416,14 +2475,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +7)",
      "ungemessen": true
     }
    ]
   },
   "schatten.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Uhr 0.5 ego 2.3 cm (12 Kanten) · Uhr 0.5 third 2.3 cm (12 Kanten), [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Uhr 0.5 ego 2.3 cm (12 Kanten) · Uhr 0.5 third 2.4 cm (12 Kanten), [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: schatten.K1#2: kein Werkzeug (fehlt)",
+   "beleg": "Maschine: gehalten: Uhr 0.5 ego 2.3 cm (12 Kanten) · Uhr 0.5 third 2.3 cm (12 Kanten), [linse-gpu] amd/rdna-3 an 715754fc radeon · gehalten: Uhr 0.5 ego 2.3 cm (12 Kanten) · Uhr 0.5 third 2.4 cm (12 Kanten), [linse-gpu] nvidia/pascal an b3f9ae95 gtx — offen: schatten.K1#2 radeon: ROT: Uhr 0.5 ego 0.484 cm/m (44/44 Kanten, 1.4699999999999998 m, Fuß 1.8 cm) · Uhr 0.5 third 0.604 cm/m (44/44 Kanten, 1.4699999999999998 m, Fuß 2.1 cm) · Uhr 0.3 ego 0.803 cm/m (44/44 Kanten, 9.25 m, Fuß 1.5 cm) · Uhr 0.3 third 0.729 cm/m (44/44 Kanten, 9.25 m, Fuß 2.1 cm) · Kontakt-Kaskade k0 -5.19 ms, [linse-gpu] amd/rdna-3 an 24a0f3ef · schatten.K1#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "schatten.K1#1",
@@ -2431,7 +2490,7 @@
      "gruen": true,
      "zahl": "Uhr 0.5 ego 2.3 cm (12 Kanten) · Uhr 0.5 third 2.3 cm (12 Kanten), [linse-gpu] amd/rdna-3",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "gehalten": true
     },
     {
@@ -2442,6 +2501,23 @@
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
      "grund": "Station seit der Messung geändert",
      "gehalten": true
+    },
+    {
+     "id": "schatten.K1#2",
+     "geraet": "radeon",
+     "gruen": false,
+     "zahl": "Uhr 0.5 ego 0.484 cm/m (44/44 Kanten, 1.4699999999999998 m, Fuß 1.8 cm) · Uhr 0.5 third 0.604 cm/m (44/44 Kanten, 1.4699999999999998 m, Fuß 2.1 cm) · Uhr 0.3 ego 0.803 cm/m (44/44 Kanten, 9.25 m, Fuß 1.5 cm) · Uhr 0.3 third 0.729 cm/m (44/44 Kanten, 9.25 m, Fuß 2.1 cm) · Kontakt-Kaskade k0 -5.19 ms, [linse-gpu] amd/rdna-3",
+     "sha": "24a0f3eff6051ae954369fd774cce415d1f32dc5",
+     "grund": "ROT: Uhr 0.5 ego 0.484 cm/m (44/44 Kanten, 1.4699999999999998 m, Fuß 1.8 cm) · Uhr 0.5 third 0.604 cm/m (44/44 Kanten, 1.4699999999999998 m, Fuß 2.1 cm) · Uhr 0.3 ego 0.803 cm/m (44/44 Kanten, 9.25 m, Fuß 1.5 cm) · Uhr 0.3 third 0.729 cm/m (44/44 Kanten, 9.25 m, Fuß 2.1 cm) · Kontakt-Kaskade k0 -5.19 ms, [linse-gpu] amd/rdna-3"
+    },
+    {
+     "id": "schatten.K1#2",
+     "geraet": "gtx",
+     "gruen": false,
+     "zahl": null,
+     "sha": null,
+     "grund": "ungemessen (R10)",
+     "ungemessen": true
     }
    ]
   },
@@ -2488,7 +2564,7 @@
      "gruen": true,
      "zahl": "Z1 7/8 Saaten · Boot-Seed anazh-realm-seed: Stadt -2,-6 nH 35 1424 m vom Genesis-Ort · Mauer 21 Segmente/3 Türme, Pool 104 · Schuss vom acker 103 m vor der Mitte, 3.5 m höher · ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 103.23 m · Luma 60.1 σ 23.2 schwarz 0.0 % weiß 0.0 % ·",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-settlement.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-settlement.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs +7)",
      "gehalten": true
     },
     {
@@ -2546,7 +2622,7 @@
   },
   "siedlung.K4": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0 an 715754fc headless — offen: siedlung.K4#2 radeon: ROT: W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1744, Häuser 12 → 20/21, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ohne Abnahme (Exit 0) an 73bdf938 · siedlung.K4#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: gehalten: Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0 an 715754fc headless — offen: siedlung.K4#2 radeon: ROT: W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1744, Häuser 12 → 20/21, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ohne Abnahme (Exit 0) an 24a0f3ef · siedlung.K4#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "siedlung.K4#1",
@@ -2554,7 +2630,7 @@
      "gruen": true,
      "zahl": "Überdeckung je Slot 0.915, mit der Zahl der Welt 0.958 (ohne Erbe 0.194 · 0.298), Rolle/Bauart/Kleidung/Mauer 0 Brüche, Mutante 10; in der Welt 1320 dorf poncho · 1935 stadt mit Turm tshirt, Exit 0",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-settlement.cjs)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-settlement.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/stamm.cjs +1)",
      "gehalten": true
     },
     {
@@ -2562,7 +2638,7 @@
      "geraet": "radeon",
      "gruen": false,
      "zahl": "W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1744, Häuser 12 → 20/21, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ohne Abnahme (Exit 0)",
-     "sha": "73bdf9388f22f5c1789e0da5b0c63b6121b045c8",
+     "sha": "24a0f3eff6051ae954369fd774cce415d1f32dc5",
      "grund": "ROT: W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1744, Häuser 12 → 20/21, die alten 0.917 · Ring 9 neu, Median 22 m vom Haus / 59 m vom Ort · Schuss vom Hügel 210 m, 11.7 m höher · ohne Abnahme (Exit 0)"
     },
     {
@@ -2586,7 +2662,7 @@
      "gruen": true,
      "zahl": "nH 12 erstes Haus nach 69.6 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 133.8 ms (haus_fraenkisch, mesh in 23.6 m, Bau-Hash 88b58bbf)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +22)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +23)",
      "gehalten": true
     },
     {
@@ -2595,7 +2671,7 @@
      "gruen": true,
      "zahl": "nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +22)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +23)",
      "gehalten": true
     },
     {
@@ -2604,7 +2680,7 @@
      "gruen": true,
      "zahl": "nH 12 erstes Haus nach 69.6 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 133.8 ms (haus_fraenkisch, mesh in 23.6 m, Bau-Hash 88b58bbf)",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +22)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +23)",
      "gehalten": true
     },
     {
@@ -2613,7 +2689,7 @@
      "gruen": true,
      "zahl": "nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +22)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +23)",
      "gehalten": true
     }
    ]
@@ -2703,26 +2779,24 @@
    ]
   },
   "speicher.K3": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: speicher.K3#1 headless: Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +4) · speicher.K3#2 headless: Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +6)",
+   "punkte": 2,
+   "beleg": "Maschine: ✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 2.9 kB, Platte 5.9 kB, am stärksten worldMeta.settlementCells 1.9 kB · gesamt roh 67.8 kB, Platte 135.6 kB · Leben worldJournal 46.9 kB, dslHistory 11.8 kB, dslAbilities 3.3 kB, knowledgeBase 2.8 kB, creatures 0.0 kB, dslPatternMemory 0. | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 972.2 kB, Platte 1944.3 kB, am stärksten wegSpur 972.2 kB · gesamt roh 972.2 kB, Platte 1944.3 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worldJo an 24a0f3ef headless · ✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 2.9 kB, Platte 5.9 kB, am stärksten worldMeta.settlementCells 1.9 kB · gesamt roh 67.8 kB, Platte 135.6 kB · Leben worldJournal 46.9 kB, dslHistory 11.8 kB, dslAbilities 3.3 kB, knowledgeBase 2.8 kB, creatures 0.0 kB, dslPatternMemory 0. | ✅ (D) 1000 Edits, Soll ≤ 100 kB: ohne Leben Δ roh 42.9 kB, Platte 85.8 kB, am stärksten voxelEdits 42.8 kB · gesamt roh 45.9 kB, Platte 91.8 kB · Leben creatures 2.3 kB, dslHistory 0.6 kB, dslAbilities 0.1 kB, knowledgeBase 0.1 kB, dslPatternMemory 0.0 kB, worldJournal -0.1 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 972.2 kB, Platte 1944.3 kB, am stärksten wegSpur 972.2 kB · gesamt roh 972.2 kB, Platte 1944.3 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worldJo an 24a0f3ef headless",
    "stationen": [
     {
      "id": "speicher.K3#1",
      "geraet": "headless",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +4)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 2.9 kB, Platte 5.9 kB, am stärksten worldMeta.settlementCells 1.9 kB · gesamt roh 67.8 kB, Platte 135.6 kB · Leben worldJournal 46.9 kB, dslHistory 11.8 kB, dslAbilities 3.3 kB, knowledgeBase 2.8 kB, creatures 0.0 kB, dslPatternMemory 0. | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 972.2 kB, Platte 1944.3 kB, am stärksten wegSpur 972.2 kB · gesamt roh 972.2 kB, Platte 1944.3 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worldJo",
+     "sha": "24a0f3eff6051ae954369fd774cce415d1f32dc5",
+     "grund": null
     },
     {
      "id": "speicher.K3#2",
      "geraet": "headless",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +6)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "✅ (D) 5.1 km in 30 min ohne Edit, Soll ≤ 10 kB: ohne Leben Δ roh 2.9 kB, Platte 5.9 kB, am stärksten worldMeta.settlementCells 1.9 kB · gesamt roh 67.8 kB, Platte 135.6 kB · Leben worldJournal 46.9 kB, dslHistory 11.8 kB, dslAbilities 3.3 kB, knowledgeBase 2.8 kB, creatures 0.0 kB, dslPatternMemory 0. | ✅ (D) 1000 Edits, Soll ≤ 100 kB: ohne Leben Δ roh 42.9 kB, Platte 85.8 kB, am stärksten voxelEdits 42.8 kB · gesamt roh 45.9 kB, Platte 91.8 kB · Leben creatures 2.3 kB, dslHistory 0.6 kB, dslAbilities 0.1 kB, knowledgeBase 0.1 kB, dslPatternMemory 0.0 kB, worldJournal -0.1 kB | ✅ (D) SELBSTTEST: ein Weg-Zähler im Stand ist ROT an seinem Namen: ohne Leben Δ roh 972.2 kB, Platte 1944.3 kB, am stärksten wegSpur 972.2 kB · gesamt roh 972.2 kB, Platte 1944.3 kB · Leben dslPatternMemory 0.0 kB, knowledgeBase 0.0 kB, creatures 0.0 kB, dslAbilities 0.0 kB, dslHistory 0.0 kB, worldJo",
+     "sha": "24a0f3eff6051ae954369fd774cce415d1f32dc5",
+     "grund": null
     }
    ]
   },
@@ -2736,7 +2810,7 @@
      "gruen": true,
      "zahl": "✅ (K) Reload mit kaltem Buch: das Haus mit Zahlen-id kehrt zurück 66/66 | ✅ (K) Gegenprobe: das kalte Buch blockiert beim Restore den frischen Studio-Spawn 66/66 | ✅ (W) Werke auf der Lichtung nach dem Reload, Stände 66/66 | ✅ Dichte über den Reload: Linie 490 Löcher, 0 korrupt",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +20)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +22)",
      "gehalten": true
     },
     {
@@ -2769,7 +2843,7 @@
      "gruen": true,
      "zahl": "✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 59/59",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +20)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +22)",
      "gehalten": true
     },
     {
@@ -2778,7 +2852,7 @@
      "gruen": true,
      "zahl": "✅ (V) Korpus: 65 Stände 18.530.0 … 18.546.129 und 1 Kopf laden am Kopf — Bauten 330/330 · Gruben 198/198 · Inventar 183/183 · ganz 66/66 | ✅ (V) Versions-Stufe 18.546.129: ihr Stand steht im Korpus (bump-version.cjs)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +20)",
+     "grund": "Linse seit der Messung geändert (R6: package.json, scripts/diag-persistence.cjs, scripts/lib/abnahme-urteil.cjs +22)",
      "gehalten": true
     }
    ]
@@ -2817,7 +2891,7 @@
      "gruen": true,
      "zahl": "39 von 39 Klang-Ereignissen und Stimmen tragen ihre Zeile",
      "sha": "98ef98bb5eac304c23b97c2c8d1e6dd6ebb6ff7f",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-klang-zensus.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
      "gehalten": true
     }
    ]
@@ -2839,7 +2913,7 @@
   },
   "stoffe.K2": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: mit dem Wind 0.903 m/s (18 Köpfe) · gegen 0.028 m/s · Mutante ohne Wind bis 0.041 m/s · bis 41.6 Einheiten je Zelle an 715754fc headless — offen: stoffe.K2#2 headless: Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/bild-himmel.js, stamm/dirigent-ankunft.js +10)",
+   "beleg": "Maschine: gehalten: mit dem Wind 0.903 m/s (18 Köpfe) · gegen 0.028 m/s · Mutante ohne Wind bis 0.041 m/s · bis 41.6 Einheiten je Zelle an 715754fc headless — offen: stoffe.K2#2 headless: ROT: Halt: 3 Zellen brannten, die Front hielt 2× am nassen Gras (ohne die Feuchte des Orts brannten 7 nasse, sie hielt 4× am Wasser) · Fels 5× gehalten · Regen löscht nach 20 s (Mutante 300 s) · Asche 1 (voll undefined) → nach der Stufe Gras 0 · Kante Achse undefined, Linie undefined m (Mutante undefined, undefined) · Licht 3, Flammen undefined bis undefined m, Fahne 3 Ballen, Deckung undefined, Glut am Ohr 256 m² · 2000 brennende Zellen (450 der Welt): je Bild p95 0.6 ms (Leser 0.5), Schirm undefined ms, der Schritt bis 1 s hinter der Uhr an 24a0f3ef",
    "stationen": [
     {
      "id": "stoffe.K2#1",
@@ -2847,17 +2921,16 @@
      "gruen": true,
      "zahl": "mit dem Wind 0.903 m/s (18 Köpfe) · gegen 0.028 m/s · Mutante ohne Wind bis 0.041 m/s · bis 41.6 Einheiten je Zelle",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +7)",
      "gehalten": true
     },
     {
      "id": "stoffe.K2#2",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, stamm/bild-himmel.js, stamm/dirigent-ankunft.js +10)",
-     "ungemessen": true
+     "zahl": "Halt: 3 Zellen brannten, die Front hielt 2× am nassen Gras (ohne die Feuchte des Orts brannten 7 nasse, sie hielt 4× am Wasser) · Fels 5× gehalten · Regen löscht nach 20 s (Mutante 300 s) · Asche 1 (voll undefined) → nach der Stufe Gras 0 · Kante Achse undefined, Linie undefined m (Mutante undefined, undefined) · Licht 3, Flammen undefined bis undefined m, Fahne 3 Ballen, Deckung undefined, Glut am Ohr 256 m² · 2000 brennende Zellen (450 der Welt): je Bild p95 0.6 ms (Leser 0.5), Schirm undefined ms, der Schritt bis 1 s hinter der Uhr",
+     "sha": "24a0f3eff6051ae954369fd774cce415d1f32dc5",
+     "grund": "ROT: Halt: 3 Zellen brannten, die Front hielt 2× am nassen Gras (ohne die Feuchte des Orts brannten 7 nasse, sie hielt 4× am Wasser) · Fels 5× gehalten · Regen löscht nach 20 s (Mutante 300 s) · Asche 1 (voll undefined) → nach der Stufe Gras 0 · Kante Achse undefined, Linie undefined m (Mutante undefined, undefined) · Licht 3, Flammen undefined bis undefined m, Fahne 3 Ballen, Deckung undefined, Glut am Ohr 256 m² · 2000 brennende Zellen (450 der Welt): je Bild p95 0.6 ms (Leser 0.5), Schirm undefined ms, der Schritt bis 1 s hinter der Uhr"
     }
    ]
   },
@@ -2887,7 +2960,7 @@
   },
   "stoffe.K5": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Ufer -348/-662: nach 8766 h 138 von 138 Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) 0.837, im Offenen (16 Kacheln) 0.939, nass 1.257 × trocken · Mutante Feuchte gleich: offen r -0.528, nass 0.971 × trocken an 715754fc headless — offen: stoffe.K5#2 headless: Pfad seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/dirigent-ankunft.js, stamm/dirigent-regler.js +8)",
+   "beleg": "Maschine: gehalten: Ufer -348/-662: nach 8766 h 138 von 138 Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) 0.837, im Offenen (16 Kacheln) 0.939, nass 1.257 × trocken · Mutante Feuchte gleich: offen r -0.528, nass 0.971 × trocken an 715754fc headless — offen: stoffe.K5#2 headless: ROT: Halme 477 → Asche 6 → Gras 476 · Kräuter 23 → Asche 0 → Gras 0 → Busch 23 · Ernte (15): Nährstoff 1 → 0.7, Wuchs 0.748 → 0.698 · Asche 1.4, Leichnam 1.2 · Sämling fehlt an 24a0f3ef",
    "stationen": [
     {
      "id": "stoffe.K5#1",
@@ -2895,17 +2968,16 @@
      "gruen": true,
      "zahl": "Ufer -348/-662: nach 8766 h 138 von 138 Pflanzen wieder gezeichnet · r(Tempo, Feuchte × Licht) 0.837, im Offenen (16 Kacheln) 0.939, nass 1.257 × trocken · Mutante Feuchte gleich: offen r -0.528, nass 0.971 × trocken",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-stand-takt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
      "gehalten": true
     },
     {
      "id": "stoffe.K5#2",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: stamm/bild-himmel.js, stamm/dirigent-ankunft.js, stamm/dirigent-regler.js +8)",
-     "ungemessen": true
+     "zahl": "Halme 477 → Asche 6 → Gras 476 · Kräuter 23 → Asche 0 → Gras 0 → Busch 23 · Ernte (15): Nährstoff 1 → 0.7, Wuchs 0.748 → 0.698 · Asche 1.4, Leichnam 1.2 · Sämling fehlt",
+     "sha": "24a0f3eff6051ae954369fd774cce415d1f32dc5",
+     "grund": "ROT: Halme 477 → Asche 6 → Gras 476 · Kräuter 23 → Asche 0 → Gras 0 → Busch 23 · Ernte (15): Nährstoff 1 → 0.7, Wuchs 0.748 → 0.698 · Asche 1.4, Leichnam 1.2 · Sämling fehlt"
     }
    ]
   },
@@ -2919,7 +2991,7 @@
      "gruen": true,
      "zahl": "Frame p95 Median 42.1 ms (42.1 · 42 · 42.2) · CPU-Takt p95 26.1 · 25.2 · 24.7 ms · die Welt steht nach 9 · 8.9 · 8.9 s · Bauten sonst 0/0/0 · 3 von 3 gültig · TAKT: _loopVoxelStreaming › _runFrameScheduler x9 | TAKT: verteilt x4 · [linse-gpu] amd/rdna-3",
      "sha": "b3f9ae95d3bf1188285b135c757b074a12ee3f22",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +19)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +21)",
      "gehalten": true
     },
     {
@@ -2928,7 +3000,7 @@
      "gruen": true,
      "zahl": "Frame p95 Median 49.9 ms (41.7 · 49.9 · 49.9) · CPU-Takt p95 40.3 · 42.4 · 44.1 ms · die Welt steht nach 14.4 · 15.2 · 15.2 s · Bauten sonst 0/0/0 · 3 von 3 gültig · TAKT: _dispatchFrameJobs › run x11 | TAKT: _loopVoxelStreaming › _runFrameScheduler x6 | TAKT: verteilt x2 · [linse-gpu] nvidia/pascal",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/diaet-linse.cjs +19)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs +21)",
      "gehalten": true
     }
    ]
@@ -2992,31 +3064,29 @@
   },
   "studios.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: studios.K1#1 headless: Pfad seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, stamm/koerper-bewegung.js +3) · studios.K1#2 headless: Pfad seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, stamm/koerper-bewegung.js +3)",
+   "beleg": "Maschine: 0 — offen: studios.K1#1 headless: ROT: 0 von 3 Teilen mit Zeilen-Zahl (Exits 0/0/0) an 24a0f3ef · studios.K1#2 headless: ROT: 0 von 3 Teilen mit Zeilen-Zahl (Exits 0/0/0) an 24a0f3ef",
    "stationen": [
     {
      "id": "studios.K1#1",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, stamm/koerper-bewegung.js +3)",
-     "ungemessen": true
+     "zahl": "0 von 3 Teilen mit Zeilen-Zahl (Exits 0/0/0)",
+     "sha": "24a0f3eff6051ae954369fd774cce415d1f32dc5",
+     "grund": "ROT: 0 von 3 Teilen mit Zeilen-Zahl (Exits 0/0/0)"
     },
     {
      "id": "studios.K1#2",
      "geraet": "headless",
      "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Pfad seit der Messung geändert (R6: fachwerk-core.js, koerper-core.js, stamm/koerper-bewegung.js +3)",
-     "ungemessen": true
+     "zahl": "0 von 3 Teilen mit Zeilen-Zahl (Exits 0/0/0)",
+     "sha": "24a0f3eff6051ae954369fd774cce415d1f32dc5",
+     "grund": "ROT: 0 von 3 Teilen mit Zeilen-Zahl (Exits 0/0/0)"
     }
    ]
   },
   "studios.K2": {
    "punkte": 1,
-   "beleg": "Maschine: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 98ef98bb headless — offen: studios.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-studio-huelle.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4) · studios.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-studio-huelle.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4)",
+   "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 98ef98bb headless — offen: studios.K2#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-studio-huelle.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4) · studios.K2#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-studio-huelle.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +4)",
    "stationen": [
     {
      "id": "studios.K2#1",
@@ -3024,7 +3094,8 @@
      "gruen": true,
      "zahl": "Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z)",
      "sha": "98ef98bb5eac304c23b97c2c8d1e6dd6ebb6ff7f",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-studio-huelle.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
+     "gehalten": true
     },
     {
      "id": "studios.K2#2",
@@ -3048,7 +3119,7 @@
   },
   "studios.K3": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 715754fc headless — offen: studios.K3#2 radeon: ROT: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.080 ms), ohne garage L0 GPU 0.0748 ms↔Bank 2.825 (+1), schmiede L0 GPU 0.0289 ms↔Bank 0.2083, portale L0 GPU 0.5984 ms↔Bank 1.3 (+3), fachwerk L0 GPU 0.0729 ms↔Bank 0.225 (+3), koerperstudio L0 GPU 0.0462 ms↔Bank 0.5 (+3), tetrapoda L0 GPU 0.103 ms↔Bank 0.3167 (+1), terrain L0 GPU 0.0191 ms↔Bank 0.1167 (+2) an 73bdf938 · studios.K3#2 gtx: Linse seit der Messung geändert (R6: spec/profiband/haushalt.json)",
+   "beleg": "Maschine: gehalten: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 715754fc headless — offen: studios.K3#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/stamm.cjs, scripts/lib/welt-boot.cjs) · studios.K3#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/stamm.cjs, scripts/lib/welt-boot.cjs +1)",
    "stationen": [
     {
      "id": "studios.K3#1",
@@ -3063,9 +3134,10 @@
      "id": "studios.K3#2",
      "geraet": "radeon",
      "gruen": false,
-     "zahl": "Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.080 ms), ohne garage L0 GPU 0.0748 ms↔Bank 2.825 (+1), schmiede L0 GPU 0.0289 ms↔Bank 0.2083, portale L0 GPU 0.5984 ms↔Bank 1.3 (+3), fachwerk L0 GPU 0.0729 ms↔Bank 0.225 (+3), koerperstudio L0 GPU 0.0462 ms↔Bank 0.5 (+3), tetrapoda L0 GPU 0.103 ms↔Bank 0.3167 (+1), terrain L0 GPU 0.0191 ms↔Bank 0.1167 (+2)",
-     "sha": "73bdf9388f22f5c1789e0da5b0c63b6121b045c8",
-     "grund": "ROT: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.080 ms), ohne garage L0 GPU 0.0748 ms↔Bank 2.825 (+1), schmiede L0 GPU 0.0289 ms↔Bank 0.2083, portale L0 GPU 0.5984 ms↔Bank 1.3 (+3), fachwerk L0 GPU 0.0729 ms↔Bank 0.225 (+3), koerperstudio L0 GPU 0.0462 ms↔Bank 0.5 (+3), tetrapoda L0 GPU 0.103 ms↔Bank 0.3167 (+1), terrain L0 GPU 0.0191 ms↔Bank 0.1167 (+2)"
+     "zahl": null,
+     "sha": null,
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/stamm.cjs, scripts/lib/welt-boot.cjs)",
+     "ungemessen": true
     },
     {
      "id": "studios.K3#2",
@@ -3073,14 +3145,14 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: spec/profiband/haushalt.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/stamm.cjs, scripts/lib/welt-boot.cjs +1)",
      "ungemessen": true
     }
    ]
   },
   "studios.K4": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/albedo-tafel.json, spec/farbe/tag-kurve.json +1) · studios.K4#1 gtx: ungemessen (R10) · studios.K4#2 radeon: ungemessen (R10) · studios.K4#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: studios.K4#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +7) · studios.K4#1 gtx: ungemessen (R10) · studios.K4#2 radeon: ungemessen (R10) · studios.K4#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "studios.K4#1",
@@ -3088,7 +3160,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/albedo-tafel.json, spec/farbe/tag-kurve.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +7)",
      "ungemessen": true
     },
     {
@@ -3146,7 +3218,7 @@
   },
   "tiere.K1": {
    "punkte": 1,
-   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.257) an 715754fc headless — offen: tiere.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1) · tiere.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1)",
+   "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.257) an 715754fc headless — offen: tiere.K1#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9) · tiere.K1#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9)",
    "stationen": [
     {
      "id": "tiere.K1#1",
@@ -3163,7 +3235,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9)",
      "ungemessen": true
     },
     {
@@ -3172,7 +3244,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9)",
      "ungemessen": true
     }
    ]
@@ -3196,7 +3268,7 @@
      "gruen": true,
      "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 11.8 s, 3 fressen: tier:wolf 8845 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.31 m · Luma 75.5 σ 33.8 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9)",
      "gehalten": true
     },
     {
@@ -3205,7 +3277,7 @@
      "gruen": true,
      "zahl": "Fressen 110.7 s nach dem Riss bei 49 s, am Aas fuchs 20.2 s, baer 16.8 s · Wolfsrevier wald, Riss 13.6 s, 3 fressen: tier:wolf 12459 px in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.18 m · Luma 89.2 σ 39.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +9)",
      "gehalten": true
     }
    ]
@@ -3229,7 +3301,7 @@
      "gruen": true,
      "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2790/1193/5941/3990 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 83.8 σ 36.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/diag-tier-gang.cjs +10)",
      "gehalten": true
     },
     {
@@ -3238,7 +3310,7 @@
      "gruen": true,
      "zahl": "Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2783/1210/5942/4024 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 83.8 σ 36.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/kreatur-proben.cjs, scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json +1)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/diag-tier-gang.cjs +10)",
      "gehalten": true
     }
    ]
@@ -3253,7 +3325,7 @@
      "gruen": true,
      "zahl": "im Lebensraum 783/783 = 1 (Saat anazh-realm-seed, {\"deer\":538,\"wolf\":180,\"bear\":41,\"fox\":24}) · Gegenprobe 774/774 = 1 (Saat lebensraum-gegen)",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +7)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +8)",
      "gehalten": true
     },
     {
@@ -3262,14 +3334,14 @@
      "gruen": true,
      "zahl": "Budget deer ruhen 0.42/0.4 · deer nahrung 0.498/0.5 · deer ziehen 0.081/0.1 · bear ruhen 0.45/0.45 · bear nahrung 0.412/0.4 · bear ziehen 0.138/0.15 · fox ruhen 0.598/0.6 · fox nahrung 0/0 · fox ziehen 0.402/0.4 · wolf ruhen 0.613/0.6 · wolf nahrung 0/0 · wolf ziehen 0.387/0.4 · Trünke 4,4,4,4,4,4,4,4,4,4,4,4 (am Wasser 48, Durst aus 0) · Ruhe bewegt 2314/222163 · Bär am Fluss 32/32 Würfe, abseits 50/400",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +7)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +8)",
      "gehalten": true
     }
    ]
   },
   "tiere.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: tiere.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +21) · tiere.K5#1 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: tiere.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +24) · tiere.K5#1 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "tiere.K5#1",
@@ -3277,7 +3349,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +21)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-kreatur-leben.cjs, scripts/diag-kreatur-takt.cjs, scripts/lib/abnahme-urteil.cjs +24)",
      "ungemessen": true
     },
     {
@@ -3334,17 +3406,16 @@
    ]
   },
   "tore.K5": {
-   "punkte": 0,
-   "beleg": "Maschine: 0 — offen: tore.K5#1 headless: Linse seit der Messung geändert (R6: scripts/diag-praegung-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3) · tore.K5#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-praegung-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3) · tore.K5#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-praegung-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
+   "punkte": 1,
+   "beleg": "Maschine: Zeit 126 ms (A 428) · A=9c183437/12 B=9c183437/12 ohne=515787a7/12 · Profil A, B, Kontext-Probe: profile-CkpRSw · profile-N6KxcR · profile-CkpRSw an 24a0f3ef headless — offen: tore.K5#2 radeon: Linse seit der Messung geändert (R6: scripts/diag-praegung-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3) · tore.K5#2 gtx: Linse seit der Messung geändert (R6: scripts/diag-praegung-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
    "stationen": [
     {
      "id": "tore.K5#1",
      "geraet": "headless",
-     "gruen": false,
-     "zahl": null,
-     "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-praegung-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
-     "ungemessen": true
+     "gruen": true,
+     "zahl": "Zeit 126 ms (A 428) · A=9c183437/12 B=9c183437/12 ohne=515787a7/12 · Profil A, B, Kontext-Probe: profile-CkpRSw · profile-N6KxcR · profile-CkpRSw",
+     "sha": "24a0f3eff6051ae954369fd774cce415d1f32dc5",
+     "grund": null
     },
     {
      "id": "tore.K5#2",
@@ -3383,7 +3454,7 @@
   },
   "ultiversum.K3": {
    "punkte": 2,
-   "beleg": "Maschine: Welt 1041 B · Regel 335 B · Bauplan 428 B · signatur · code · gross 17850 B an 715754fc headless · ✅ FORK: Herkunfts-Kette (Autor und Code je Vorgänger), eigene Signatur, das Gesetz verände | ✅ BIBLIOTHEK offen lesbar: das Gesetz im Eintrag = das Gesetz der Welt an 98ef98bb headless",
+   "beleg": "Maschine: gehalten: Welt 1041 B · Regel 335 B · Bauplan 428 B · signatur · code · gross 17850 B an 715754fc headless · gehalten: ✅ FORK: Herkunfts-Kette (Autor und Code je Vorgänger), eigene Signatur, das Gesetz verände | ✅ BIBLIOTHEK offen lesbar: das Gesetz im Eintrag = das Gesetz der Welt an 98ef98bb headless",
    "stationen": [
     {
      "id": "ultiversum.K3#1",
@@ -3391,7 +3462,8 @@
      "gruen": true,
      "zahl": "Welt 1041 B · Regel 335 B · Bauplan 428 B · signatur · code · gross 17850 B",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-praegung-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
+     "gehalten": true
     },
     {
      "id": "ultiversum.K3#2",
@@ -3399,7 +3471,8 @@
      "gruen": true,
      "zahl": "✅ FORK: Herkunfts-Kette (Autor und Code je Vorgänger), eigene Signatur, das Gesetz verände | ✅ BIBLIOTHEK offen lesbar: das Gesetz im Eintrag = das Gesetz der Welt",
      "sha": "98ef98bb5eac304c23b97c2c8d1e6dd6ebb6ff7f",
-     "grund": null
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-praegung-welt.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
+     "gehalten": true
     }
    ]
   },
@@ -3413,7 +3486,7 @@
      "gruen": true,
      "zahl": "OK   (h) A schreibt ein neues Gesetz im Gespräch, B trägt es, beide würfeln gleich, es wirkt bei beiden — Hash d7ff724d neu true · bei B true · Wurf in 40 Scheiben gleich true · wirkt bei A true, bei B true · B erinnert  | OK   (h) Selbsttest: die Vorlage ist nicht neu, B mit taubem dsl-Kanal trägt das Gesetz nicht — Vorlage neu false · taub bei B false",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-mp-sync.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +2)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-mp-sync.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +3)",
      "gehalten": true
     }
    ]
@@ -3444,7 +3517,7 @@
   },
   "vegetation.K1": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json) · vegetation.K1#1 gtx: ungemessen (R10) · vegetation.K1#2 radeon: ungemessen (R10) · vegetation.K1#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: vegetation.K1#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6) · vegetation.K1#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +4) · vegetation.K1#2 radeon: ungemessen (R10) · vegetation.K1#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "vegetation.K1#1",
@@ -3452,7 +3525,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "ungemessen": true
     },
     {
@@ -3461,7 +3534,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +4)",
      "ungemessen": true
     },
     {
@@ -3494,7 +3567,7 @@
      "gruen": true,
      "zahl": "Kamm 456.5 über Rausch-Boden 0.001 (×456.5), Tal 64.2 — Kamm/Tal 7.11 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.6 % in 0–15 m, Δt 0.25 s",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "gehalten": true
     },
     {
@@ -3552,7 +3625,7 @@
   },
   "vegetation.K5": {
    "punkte": 0,
-   "beleg": "Maschine: 0 — offen: vegetation.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json) · vegetation.K5#1 gtx: ungemessen (R10) · vegetation.K5#2 radeon: ungemessen (R10) · vegetation.K5#2 gtx: ungemessen (R10)",
+   "beleg": "Maschine: 0 — offen: vegetation.K5#1 radeon: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6) · vegetation.K5#1 gtx: Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +4) · vegetation.K5#2 radeon: ungemessen (R10) · vegetation.K5#2 gtx: ungemessen (R10)",
    "stationen": [
     {
      "id": "vegetation.K5#1",
@@ -3560,7 +3633,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "ungemessen": true
     },
     {
@@ -3569,7 +3642,7 @@
      "gruen": false,
      "zahl": null,
      "sha": null,
-     "grund": "ungemessen (R10)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +4)",
      "ungemessen": true
     },
     {
@@ -3626,7 +3699,7 @@
      "gruen": true,
      "zahl": "Dorf porös draußen 0.553 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 5 (n 5949/13809), Wiese draußen 0.771",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "gehalten": true
     },
     {
@@ -3635,7 +3708,7 @@
      "gruen": true,
      "zahl": "Dorf porös draußen 0.552 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 5 (n 5949/13809), Wiese draußen 0.77",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/lib/licht-linsen.cjs, spec/farbe/tag-kurve.json, spec/farbe/tag-ref.json)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/lib/abnahme-urteil.cjs, scripts/lib/albedo-tafel.cjs, scripts/lib/licht-linsen.cjs +6)",
      "gehalten": true
     }
    ]
@@ -3650,7 +3723,7 @@
      "gruen": true,
      "zahl": "Bach +0.2 m nach 20 min Sturm (Spieler-Wort, Welt-Uhr im Takt), 1 Tafeln an den Faden · Regen-Feld gehalten +0 m · Exit 0",
      "sha": "715754fc0cff89917d8ee933ba23e208bfdd54fb",
-     "grund": "Linse seit der Messung geändert (R6: scripts/diag-wasser-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +5)",
+     "grund": "Linse seit der Messung geändert (R6: scripts/diag-wasser-leben.cjs, scripts/lib/abnahme-urteil.cjs, scripts/lib/ausgabe-aufnahme.cjs +6)",
      "gehalten": true
     }
    ]
@@ -3681,7 +3754,7 @@
   }
  },
  "rueckfall": [],
- "kopfVoll": "73bdf9388f22f5c1789e0da5b0c63b6121b045c8",
- "zeit": "2026-10-30T02:37:53.800Z",
- "vorher": "715754fc"
+ "kopfVoll": "24a0f3eff6051ae954369fd774cce415d1f32dc5",
+ "zeit": "2026-10-30T06:31:54.466Z",
+ "vorher": "73bdf938"
 }

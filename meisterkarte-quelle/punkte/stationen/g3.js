@@ -1250,19 +1250,22 @@ const stationen = [
     // Ego-Rig (`_loopCamera`) nach 8 s Gang auf der Bahn der Mess-Wiese, zum Waldhang der Tafel gedreht, ohne Blick-Wahl —, je
     // Bild die Klassen der Laub-Silhouette. Die schlechteste Teil-Klasse mit ≥ 5 000 px urteilt (darunter ist kante Rauschen
     // weniger Rand-Pixel), die Karte (fimp) steht in beiden Bildern, zweiton 0 (ein Dither senkt die Kohärenz ohne Gestalt).
-    // DIE FAHRT (Merge w4-koord-sitzung, 30.10.): der Rest der Fahrt, 24 s (Σ Deckel 1 656 + 24 + Boot 120 = 1 800 s) — in der
-    // Sitzung ungemessen (die Station kam mit Deckel 600 s aus koordination); die nächste GPU-Fahrt nennt, ob sie warm am Deckel reißt
+    // DIE FAHRT (Merge w4-koord-sitzung, 30.10.): die Station kam mit Deckel 600 s aus koordination (eigener Boot, `lauf 8 --ein 20`).
+    // IN DER SITZUNG (w4-sitzung-reif): die Probe gekürzt, nie ihr Urteil — den Ort Mess-Wiese stellt die Sitzung VOR dem Deckel (der Plan
+    // nennt ihn, `probeOrt`), die Tafel-Pose liegt 5 m neben ihm im gebauten Ring; der Gang schwingt 2 s statt 20 s ein (die 20 s trugen
+    // den kalten Ring des eigenen Boots — `--ein` misst nichts, es wartet), dann 8 s Gang auf der Bahn. Die Arbeit: Tafel-Bild ~6 s,
+    // Teleport in den Ring ~3 s, Gang 10 s, Spielgang-Bild ~6 s — der Deckel 30 s; die GPU-Fahrt nennt, ob er warm hält
     {
         kriterium: "lod.K1",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 24, befehl: befehlDer({
+        probe: { sek: 30, befehl: befehlDer({
             name: "lod.K1#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
                 { name: "tafel", args: ["bild", "-284", "+1.7", "-1042", "-269", "34", "-1036", "--ziel", "tanne", "--klasse", LAUB_KLASSE, "--datei", "@DIR@/tafel.png"] },
                 { name: "wiese", args: ["umstellen", "--ort", "wiese", "--sicht", "ego"], muss: true },
-                { name: "gang", args: ["lauf", "8", "--ein", "20", "--wandern", "bahn"] },
+                { name: "gang", args: ["lauf", "8", "--ein", "2", "--wandern", "bahn"] },
                 { name: "auge", args: ["eval", LAUB_AUGE], muss: true },
                 { name: "spielgang", args: ["bild", "@auge.0@", "@auge.1@", "@auge.2@", "@auge.3@", "@auge.4@", "@auge.5@", "--wahl", "0", "--klasse", LAUB_KLASSE, "--datei", "@DIR@/spielgang.png"] },
             ],
@@ -1531,7 +1534,7 @@ stationen.fehlt = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         befehl: null,
-        grund: "nicht als Probe der Sitzung gebaut (Merge w4-koord-sitzung, 30.10.): die Station fuhr `werkbank licht --tag --eigen` — eine eigene Welt (SITZUNG_FEINDE); auf radeon|gtx misst eine Station nur als Probe der EINEN Welt (die Fahrt ≤ 30 min). In der Sitzung liefe dieselbe Linse ohne --eigen über die Folge (`licht --tag --datei`), doch die Bahn (100 Grob- und ≥ 60 Fein-Uhren je Ort, Spawn und Mess-Wiese) brauchte im eigenen Boot 8,2 min (GTX takt23 73bdf938, ROT), und die Fahrt ist voll (Σ Deckel 1 680 s + Boot 120 s = 1 800 s mit lod.K1#1). Die Station (Befehl, Urteil) steht in koordination 32fe3ffc.",
+        grund: "nicht in der Fahrt (w4-sitzung-reif, 30.10.): die Station fuhr `werkbank licht --tag --eigen` — eine eigene Welt (SITZUNG_FEINDE). Ohne --eigen liefe dieselbe Linse in der Welt der Sitzung, doch ihre Arbeit passt in keinen Deckel: je Ort (Spawn, Mess-Wiese) die ganze Bahn — 100 Grob-Uhren (`TAG_UHREN` 0 … 0,99 in 0,01) und ≥ 60 Fein-Uhren (das Urteil verlangt sie) —, je Uhr der Leucht-Takt der Linse (20 × 50 ms), das Stehen der Welt und eine Aufnahme (`tagKurve`): ≥ 2 × 160 s, im eigenen Boot 8,2 min (GTX takt23 73bdf938, ROT). Kürzen hieße die Bahn kürzen — die Staffel verlangt sie ganz („über die ganze Bahn“); EINE Station teilt ihre Bahn nie über zwei Proben. Die Station (Befehl, Urteil) steht in koordination 32fe3ffc.",
         quelle: "1 = an einem Gerät in einer Sicht über die ganze Bahn im Soll",
     },
     {
@@ -1539,7 +1542,7 @@ stationen.fehlt = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         befehl: null,
-        grund: "nicht als Probe der Sitzung gebaut (Merge w4-koord-sitzung, 30.10.): `werkbank licht --laub fichte,tanne,ring --karte --uhr 0.5,0.27,0.05 --eigen` bootet eine eigene Welt (SITZUNG_FEINDE). In der Sitzung liefe die Linse ohne --eigen über die Folge, als Zwilling von licht.K3#2 (deren Lauf trägt diese neun Zeilen), doch die Fahrt ist voll (Σ Deckel 1 680 s + Boot 120 s = 1 800 s mit lod.K1#1). GTX takt23 73bdf938 im eigenen Boot: OFFEN nach 10,1 min. Die Station steht in koordination 32fe3ffc.",
+        grund: "nicht in der Fahrt (w4-sitzung-reif, 30.10.): `werkbank licht --laub fichte,tanne,ring --karte --uhr 0.5,0.27,0.05 --eigen` bootet eine eigene Welt (SITZUNG_FEINDE). Ohne --eigen in der Welt der Sitzung trägt die Linse je Zeile (Art × Uhr) ihr eigenes Einschwingen: bis zu sechs Pläne und je Stufen-Wechsel und Schuss ein `/lauf` 5 s mit `ein` 8 s und `ruhe` bis 120 s (scripts/werkbank.cjs `licht --laub`, `ein()`) — ≥ 5 × 13 s je Zeile, die neun Zeilen ≥ 585 s, über dem Deckel der Fahrt (≤ 90 s). Kürzen hieße das Einschwingen der Linse im Spiel-Baum kürzen (die Karte gegen ihre Gestalt verlangt die stehende Stufe); als Zwilling von licht.K3#2 läge sie in deren Lauf (33 Zeilen). GTX takt23 73bdf938 im eigenen Boot: OFFEN nach 10,1 min (das Schloss kam nie). Die Station steht in koordination 32fe3ffc.",
         quelle: "1 = Karte und Fern-Ring je Uhr 0,5/0,27/0,05 im Band 0,9–1,1 an einem Gerät",
     },
     {
@@ -1547,7 +1550,7 @@ stationen.fehlt = [
         staffel: 2,
         geraet: ["radeon", "gtx"],
         befehl: null,
-        grund: "nicht als Probe der Sitzung gebaut (Merge w4-koord-sitzung, 30.10.): `werkbank licht --laub` mit elf Wegen (fichte, tanne, ring, feld, feld0/90/180, panorama, spiegel, spiegel180, wasser) je Uhr 0,5/0,27/0,05 `--eigen` bootet eine eigene Welt (SITZUNG_FEINDE); in der Sitzung liefe sie ohne --eigen über die Folge am Messort dorf, doch die Fahrt ist voll (Σ Deckel 1 680 s + Boot 120 s = 1 800 s mit lod.K1#1). Ungemessen an Radeon und GTX (die Station schätzte 40 min im eigenen Boot). Die Station steht in koordination 32fe3ffc.",
+        grund: "nicht in der Fahrt (w4-sitzung-reif, 30.10.): `werkbank licht --laub` mit elf Wegen (fichte, tanne, ring, feld, feld0/90/180, panorama, spiegel, spiegel180, wasser) je Uhr 0,5/0,27/0,05 `--eigen` bootet eine eigene Welt (SITZUNG_FEINDE). Ohne --eigen am Messort dorf sind es 33 Zeilen, die Karten-Zeilen je ≥ 5 Einschwing-Läufe der Linse (`/lauf` 5 s, `ein` 8 s; licht.K3#1) — ≥ 35 min, über dem Deckel der Fahrt (≤ 90 s). Ungemessen an Radeon und GTX (die Station schätzte 40 min im eigenen Boot). Die Station steht in koordination 32fe3ffc.",
         quelle: "2 = auch Feld-Pass, Panorama und Wasser, beide Geräte",
     },
     {
@@ -1555,7 +1558,7 @@ stationen.fehlt = [
         staffel: 2,
         geraet: ["radeon", "gtx"],
         befehl: null,
-        grund: "nicht in der Fahrt (Merge w4-koord-sitzung, 30.10.): die Probe (fenster · umstellen wiese · zerlegen --nur k0, Frist 300 s · licht --kontakt --zuwachs --uhr 0.5,0.3 auf der Prüfbühne, Frist 540 s; Zeit-Station) kam mit Deckel 900 s — die Fahrt trägt höchstens 90 s mit ausnahme, schatten.K1#1 allein (EINE Uhr, ohne Zuwachs und Kosten) brauchte im Gegenlauf Radeon b3f9ae95 45,0 s; und die Fahrt ist voll (Σ Deckel 1 680 s + Boot 120 s = 1 800 s mit lod.K1#1). Ungemessen an Radeon und GTX. Die Station steht in koordination 32fe3ffc.",
+        grund: "nicht in der Fahrt (w4-sitzung-reif, 30.10.): die Probe (fenster · umstellen wiese · zerlegen --nur k0 · licht --kontakt --zuwachs --uhr 0.5,0.3 auf der Prüfbühne; Zeit-Station) kam mit Deckel 900 s und maß in der Sitzung an 24a0f3ef auf der Radeon 3,94 min (ROT: Zuwachs 0,48–0,80 cm/m gegen 0,9 ± 0,25, koordination messung/24a0f3ef-radeon.json), davon die Mess-Wiese kalt 40,3 s — warm ≥ 196 s, über dem Deckel der Fahrt (≤ 90 s). Teilbar ist sie nicht: Kosten (zerlegen k0, ABBA an der Wiese) und Kontakt je Uhr (die Bühne: Welt-Import, Neuladen) sind EINE Staffel; schatten.K1#1 (EINE Uhr, ohne Zuwachs und Kosten) braucht für sich 45,0 s (Gegenlauf Radeon b3f9ae95). Die Station steht in koordination 32fe3ffc.",
         quelle: "2 = Zuwachs ≈ 0,9 cm je m, Uhr 0,5 und 0,3, Kosten ≤ +0,3 ms an der GTX, beide Geräte",
     },
     {
@@ -1563,7 +1566,7 @@ stationen.fehlt = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         befehl: null,
-        grund: "nicht als Probe der Sitzung gebaut (Merge w4-koord-sitzung, 30.10.): gate:foundry-impostor C6 (`node scripts/diag-foundry-impostor.cjs`, die Hebungs-Ringe −20/0/40/80° je Schicht-Format bc und rgba8) startet einen eigenen Browser auf FIMP_PORT {PORT} — in der Sitzung trägt {PORT} den save-server der Welt; als Probe liefe die Linse neben der Welt auf {PORT}+20001 (wie die Garage in fahrzeug.K3#1), doch die Fahrt ist voll (Σ Deckel 1 680 s + Boot 120 s = 1 800 s mit lod.K1#1). Ungemessen an Radeon und GTX (Cloud swiftshader w4-hebungsringe 69d7d3f2: bc −20° 1,004/0,966 · 0° 1,064/0,894 · 40° 1,003/0,983 · 80° 0,97/0,97, waagrecht 80° 0,341/0,237). Die Station steht in koordination 32fe3ffc.",
+        grund: "nicht als Probe gebaut (w4-sitzung-reif, 30.10.): die Linse steht nicht am Kopf — gate:foundry-impostor C6 (die Hebungs-Ringe −20/0/40/80° je Schicht-Format bc und rgba8, die Zeile `C6 HEBUNG`) lebt im ungemergten Spiel-Zweig w4-hebungsringe (d58bfbbe); `scripts/diag-foundry-impostor.cjs` an main 24a0f3ef trägt kein C6, jede Messung am Kopf hieße „keine C6-Zeile“. Dazu startet die Linse einen eigenen Browser (WebGL2) auf FIMP_PORT {PORT}, wo in der Sitzung der save-server der Welt lauscht; steht C6 am Kopf, misst die Probe die Bake-Bühne (`__fimpBacke`) in der Welt der Sitzung. Ungemessen an Radeon und GTX (Cloud swiftshader w4-hebungsringe 69d7d3f2: bc −20° 1,004/0,966 · 0° 1,064/0,894 · 40° 1,003/0,983 · 80° 0,97/0,97, waagrecht 80° 0,341/0,237). Die Station steht in koordination 32fe3ffc.",
         quelle: "1 = Karten-Deckung ≥ 0,75 und IoU ≥ 0,65 bei −20/0/40/80° für Bäume an einem Gerät",
     },
     {
