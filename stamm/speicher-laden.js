@@ -1067,6 +1067,11 @@ class AnazhRealm_speicher_laden {
         if (neu.voxelWorker) neu.voxelWorkerPending = new Map();
         if (neu.workshop)
             Object.assign(neu.workshop, { studioOv: {}, selectedBlueprint: "baum_eiche", selectedRecipe: null });
+        // DIE WARTENDEN DES ERSTEN BILDS REISEN (`_weltbildKommt`): die Vorräte der Seite (Bibliothek, Ofen und Glieder, die
+        // Tor-Ziele) warten auf das erste Bild der SEITE — kam es in der alten Welt nicht mehr, ist es das der Ziel-Welt. Sonst
+        // warteten sie auf einen Zustand, den es nicht mehr gibt: nach einem Tausch vor dem ersten Bild stand der Ofen-Vorrat nie
+        // (`_ofenVorratSteht`, und ohne ihn gebiert `_kreaturenBereit` kein Tier), Radeon 30.10.
+        if (!alt._weltbildDa && alt._weltbildWarten) neu._weltbildWarten = alt._weltbildWarten;
         const bleibtFeld = (k) => S.felder.has(k) || G.wirt.includes(k);
         // DIE KARTEN DER WELT (Texturen und Ziele in ihren Gliedern: Spiegel, March, Wege, Kronen) verlassen die GPU, wenn kein
         // bleibendes Glied sie trägt (der Kehraus nimmt nur Puffer)
