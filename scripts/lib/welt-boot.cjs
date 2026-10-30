@@ -173,7 +173,7 @@ function png(u8, W, H) {
     cv.getContext("2d").putImageData(new ImageData(d, W, H), 0, 0);
     return cv.toDataURL("image/png");
 }
-// DIE UI RUHT (`await window.__ruht()`): jede endliche Animation, die läuft (die Schublade gleitet 0,32 s), meldet ihr Ende
+// DIE UI RUHT (`await window.__uiRuht()`): jede endliche Animation, die läuft (die Schublade gleitet 0,32 s), meldet ihr Ende
 // (`finished`) — ohne Frist und ohne Pause, das Ereignis urteilt, nie die Uhr.
 async function ruht(l) {
     while ((l = document.getAnimations().filter((a) => a.playState === "running" && a.effect.getComputedTiming().iterations !== Infinity)).length)
@@ -184,14 +184,18 @@ async function ruht(l) {
 // Prägungs-Probe traf in der Werkstatt-Liste das Tor daneben, CI-Lauf 40850577623).
 async function klickInRuhe(page, sel) {
     const el = await page.waitForSelector(sel, { visible: true });
-    await page.evaluate("__ruht()");
+    await page.evaluate("__uiRuht()");
     await el.click();
 }
 // ALLE BÜNDEL DER SZENE NEU (`window.__bundlesNeu()`): ein Bündel, das vor einer Sicht-Änderung aufnahm, zeichnet beim nächsten
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => r.state.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.__seitenTakt = ${seitenTakt}; window.__ruht = ${ruht}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
+// DIE WERKZEUGE JEDER SEITE (`WARTEN_SEITE`, vor ihrem ersten Skript): je Name EIN Werkzeug — der Schalter einer Linse trägt einen
+// eigenen Namen, wer eines überschreibt, ist ROT beim Namen (die Warte-Wand). 30.10.: das Werkzeug `__ruht` (die UI ruht) hieß wie
+// der Ruhe-Schalter der Mehrspieler-Pumpe — die Pumpe las die Funktion als „der Loop steht", keine Seite tickte, B rechnete A nie.
+const SEITEN_WERKZEUG = { __png: png, __bundlesNeu: bundlesNeu, sleep, __seitenTakt: seitenTakt, __uiRuht: ruht, __weltStehtNach: weltStehtNach, __gebautNach: gebautNach, __deckel: deckel, __weltDa: weltDa, __abdruck: abdruck, __stand: stand }; // prettier-ignore
+const WARTEN_SEITE = `${weltR} ${Object.entries(SEITEN_WERKZEUG).map(([n, f]) => `window.${n} = ${f};`).join(" ")}`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -1214,7 +1218,8 @@ async function zweiImMesh(browser, portEnv, signalEnv, raum, vor = async () => {
 
 // DIE WARTE-WAND der Linsen (gate:altlasten, K-WANDUHR): ROT eine Schleife, die selbst auf einen Bau wartet, eine Wanduhr-Frist
 // (`performance.now()`/`Date.now()` im Kopf oder als break/return/throw), ein geschluckter `__gebautNach`, ein Klick am Pixel
-// direkt aus `waitForSelector` (die Schublade gleitet noch — das EINE Klicken ist `klickInRuhe`); der REST
+// direkt aus `waitForSelector` (die Schublade gleitet noch — das EINE Klicken ist `klickInRuhe`), eine Zuweisung auf ein
+// Seiten-Werkzeug (`window.<Name aus SEITEN_WERKZEUG> = …`: der Schalter einer Linse trägt einen eigenen Namen); der REST
 // (spec/ci/frist-rest.json) schrumpft nur.
 const BAU = /^(instanced|mesh|instSlots|_hausHuelle)$/;
 const hat = (x, f) => {
@@ -1263,6 +1268,8 @@ function scanWarteWand(dateien, rest = Object.assign({}, ...Object.values(requir
                 if (s) fristen.add(s);
             } else if (gliedRuf(n, "click") && hat(n, (c) => gliedRuf(c, "waitForSelector")))
                 errs.push(`Warte-Wand: ${name}:${zeileVon(src, n.start)} klickt ohne klickInRuhe`);
+            else if (n.type === "AssignmentExpression" && n.left.object?.name === "window" && Object.hasOwn(SEITEN_WERKZEUG, n.left.property.name))
+                errs.push(`Warte-Wand: ${name}:${zeileVon(src, n.start)} überschreibt das Seiten-Werkzeug window.${n.left.property.name}`);
             else if (gliedRuf(n, "catch")) {
                 const w = n.callee.object;
                 const o = gliedRuf(w, "waitForFunction") && w.arguments[1];

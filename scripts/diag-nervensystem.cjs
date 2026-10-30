@@ -85,7 +85,7 @@ function seitenHelfer() {
     window.__bauWerk = (w) => bau([...new Set(gezeigt(w))].map((g) => ({ ...g.attributes, index: g.index.array })));
     window.__bauFoundry = async (...a) =>
         bau(((await r._foundryWorkerRequest(...a, null, false, 0)) || []).filter((m) => m.position));
-    window.__stand = (w) => JSON.stringify([w.id, w.position, w.rotationY, w.seed, w.studioOv]);
+    window.__werkStand = (w) => JSON.stringify([w.id, w.position, w.rotationY, w.seed, w.studioOv]);
 }
 
 hauptLauf(async () => {
@@ -210,7 +210,7 @@ hauptLauf(async () => {
                     lod.push({ d, ist: w._servedLod, tris, bau: window.__bauWerk(w) });
                 }
                 r.saveState();
-                const werk = { stand: window.__stand(w), id: w.id, seed: w.seed, ov: w.studioOv };
+                const werk = { stand: window.__werkStand(w), id: w.id, seed: w.seed, ov: w.studioOv };
                 return { steht, lod, werk, stelle: { x: w.position.x, z: w.position.z, r: 0.01 } };
             })
         );
@@ -224,7 +224,7 @@ hauptLauf(async () => {
                 fertig: () => w()._servedLod === 0 && w().instSlots.length,
                 takt,
             });
-            return { bau: window.__bauWerk(w()), stand: window.__stand(w()) };
+            return { bau: window.__bauWerk(w()), stand: window.__werkStand(w()) };
         }, e.werk.id);
         await sleep(1500); // der IDB-Put des Saves landet, bevor der Reload ihn abschneidet
         await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
