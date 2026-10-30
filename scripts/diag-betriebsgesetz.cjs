@@ -225,9 +225,10 @@ function zitatBefund(dokumente, welt) {
                 const wurzel = welt.pfade.has(kopf);
                 const nah = welt.pfade.has(path.posix.join(ordner, kopf));
                 // Einheit km/h und Platzhalter schweigen; eine DATEI unter fremder Wurzel (archiv/x.md) nicht — es sei denn,
-                // ihr Satz nennt den Zweig, der sie trägt (Aufträge und Berichte leben im Zweig `koordination`)
+                // ihr Satz nennt den Zweig, der sie trägt (Aufträge und Berichte leben im Zweig `koordination`): dann zitiert
+                // er DESSEN Baum, auch wenn hier ein Ordner gleichen Namens steht (die Bilder eines Auftrags, bericht/<zweig>/)
                 const lose = !ZITAT_DATEI_ENDUNG.test(p) || welt.namen.has(path.posix.basename(p));
-                if ((!wurzel && !nah && (lose || ZITAT_ZWEIG.test(satz(m.index)))) || ZITAT_PLATZHALTER.test(danach(m)))
+                if ((!wurzel && !nah && lose) || ZITAT_ZWEIG.test(satz(m.index)) || ZITAT_PLATZHALTER.test(danach(m)))
                     continue;
                 if ((wurzel && da(p)) || (nah && da(path.posix.join(ordner, p))) || welt.ignoriert(p)) continue;
                 if (!chronik(m.index))
