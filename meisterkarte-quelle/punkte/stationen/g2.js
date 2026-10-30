@@ -3465,18 +3465,21 @@ const stationen = [
     })(),
     // ───────── mensch.K4 Staffel 2 — die Menge: 50 Bewohner aus 50 Samen (Zweig w3v-leib-menge) ─────────
     // Headless (Null-Renderer, 1920×1080): die Linse `bewohner --ort stadt-voll` (die Metropole, der Spieler am Markt, 7 Uhr, 600
-    // Takte) liefert roh die 50 Nächsten draußen — je Bewohner [Same, Typ, Höhe, Breite, Tiefe, nah] (die Matrix seines
-    // Satzes: das eigene Genom über der Gestalt seines Typs, `_bewohnerGenome`), je Typ Dials, Maße der Vorlage in m und die
+    // Takte) liefert roh die 50 Nächsten draußen — je Bewohner [Same, Typ, Höhe, Breite, Tiefe, nah, Farben] (die Matrix seines
+    // Satzes: das eigene Genom über der Gestalt seines Typs, `_bewohnerGenome`; seine eigenen Farben — Haut, Haar, Tracht —, die
+    // Palette, die Leib, Satz und Feld zeigen, w4-bewohner-gestalt), je Typ Dials, Maße der Vorlage in m und die
     // Dreiecke seiner Senken (Leib · Wurf), die Bildpunkte je m am Rand der Nah-Wahl, die Kaskaden, den Takt; danach
     // misst die Anatomie-Linse (`messe`) die Gesichtsmaße jedes Typs, dazu die Zeilen 2 und 3 des Kerns (Zeile GESICHT). Grün: 50 aus 50 Samen; keine zwei gleich
-    // (die Gestalt-Distanz je Paar: gleicher Typ und gleiche Farben — dann der größte Unterschied der Maße in Bildpunkten — unter
-    // 1 px ist gleich); die Höhe ±8 % um ihre Mitte, ihre Spanne ≥ 8 %; jedes Gesichtsmaß in MENSCH_SOLL (die Breiten × der Breite
+    // (die Gestalt-Distanz je Paar: gleicher Typ und gleiche Farben — die eigenen des Bewohners, ohne sie die seines Typs — dann der
+    // größte Unterschied der Maße in Bildpunkten — unter 1 px ist gleich); die Höhe ±8 % um ihre Mitte, ihre Spanne ≥ 8 %; jedes Gesichtsmaß in MENSCH_SOLL (die Breiten × der Breite
     // des Bewohners); je Typ Leib ≤ Zeile 2, Wurf ≤ Zeile 3; die 50 ≤ 150k Dreiecke (im Auge der Leib jedes, der Wurf je
     // Kaskade; die Nah-Wahl trägt ihren Leib für sich); der Takt je 50 Bewohner ≤ 1 ms. Am Kopf des Zweigs (Cloud, 29.10.):
     // 50 aus 50 Samen, Höhe 1,703–1,951 m um 1,82, Gesicht 50 von 50, Leib/Wurf je Typ 1700/360, die 50: 132 200 Dreiecke,
     // 0,253 ms je 50 — ROT nur an „keine zwei gleich" (14 von 1 225 Paaren unter 1 px, je desselben Typs, min 0,284 px): die Farbe
-    // je Person verlangt den Knoten des Gang-Satzes (stoff-instanz `_gangSatzKnoten`). Mutanten ROT: zwei gleiche Samen
-    // (samen, gleich), die Zeile 2 halbiert (budget).
+    // je Person verlangt den Knoten des Gang-Satzes (stoff-instanz `_gangSatzKnoten`). Zweig w4-bewohner-gestalt (Cloud, 30.10.,
+    // headless): 8 Typen, die Farben je Kopf (die Ton-Tafel) — kein Paar gleichen Typs und gleicher Farben, 0 Paare unter 1 px
+    // (vorher 4 Typen, 17 Paare, min 0,284 px), die 50: 132 200 Dreiecke. Mutanten ROT: zwei gleiche Samen (samen, gleich), die
+    // Zeile 2 halbiert (budget).
     {
         kriterium: "mensch.K4",
         staffel: 2,
@@ -3502,8 +3505,9 @@ const stationen = [
             const r3 = (x) => Math.round(x * 1000) / 1000;
             const T = m.typ;
             // je Bewohner seine Maße (m) und sein Kleid: die Vorlage seines Typs × Breite · Höhe · Tiefe
-            const B = m.je.map(([seed, t, h, b, d, nah]) => ({ seed, t, nah, b, mass: [b * h, h, d * h].map((x, e) => x * T[t].mass[e]) }));
-            const farbe = (x) => ["skinTone", "hairColor", "topColor", "bottomColor", "shoeColor", "gender"].map((k) => T[x.t].dials[k]).join();
+            const B = m.je.map(([seed, t, h, b, d, nah, farben]) => ({ seed, t, nah, b, farben, mass: [b * h, h, d * h].map((x, e) => x * T[t].mass[e]) }));
+            // seine Farben: die eigenen (die Palette seines Samens, mensch.K4), sonst die seines Typs; das Geschlecht trägt der Typ
+            const farbe = (x) => ["skinTone", "hairColor", "topColor", "bottomColor", "shoeColor"].map((k) => (x.farben || T[x.t].dials)[k]).concat(T[x.t].dials.gender).join();
             let [min, paar, gleich] = [Infinity, null, 0];
             for (let i = 0; i < B.length; i++)
                 for (let k = i + 1; k < B.length; k++) {
