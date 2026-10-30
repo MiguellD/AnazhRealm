@@ -1013,3 +1013,4 @@
 2026-10-30 16:56:28 eich1-gtx eich-gtx.sh Exit0 6.3 · 1/1
 2026-10-30 16:56:42 z83-bisekt2 START 1 Zellen
 2026-10-30 17:03:48 z83-bisekt2 STORNO in w-ego
+2026-10-30 17:03:58 eich2-gtx START 1 Stationen
