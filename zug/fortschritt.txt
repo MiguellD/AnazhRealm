@@ -974,3 +974,4 @@
 2026-10-30 10:22:00 takt24c-gtx licht.K1#1 OFFEN 10.1 · 17/21
 2026-10-30 10:32:11 takt24c-gtx licht.K3#1 OFFEN 10.1 · 18/21
 2026-10-30 13:20:13 takt24c-gtx VORFAHRT profiband.K1#1,profiband.K2#1,profiband.K3#1 verloren 79.7
+2026-10-30 13:20:30 takt24c-gtx profiband.K1#1,profiband.K2#1,profiband.K3#1 ROT/ROT/ROT 168.2 · 21/21
