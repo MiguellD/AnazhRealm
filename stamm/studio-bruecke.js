@@ -1030,6 +1030,7 @@ class AnazhRealm_studio_bruecke {
         if (da) {
             if (wo != null && da.rang) this._foundryNaeher(da.rang, wo); // ohne Ort kein Rang (Lehre 17: null ist nie 0)
             this._streuWartetAuf(da);
+            this._foundryWaechterRuht(); // ruht der Loop, bekommt der Leser, was ein Takt am Wächter ließ
             return da;
         }
         if (!f.requested) f.requested = new Set();
@@ -1055,15 +1056,28 @@ class AnazhRealm_studio_bruecke {
     // Der Takt-Wächter: hält ein Request-Ergebnis zurück, bis der Loop-Tick es
     // freigibt (die Konversion des Aufrufers folgt als Microtask im selben Frame). `rang` = der Rang-Datensatz des Auftrags
     // (`_foundryRang`, derselbe wie in der Worker-Schlange): die Freigabe wählt mit der EINEN Wahl der Pumpe (`_foundryWahl`).
+    // ER HÄLT NUR FÜR EINEN LOOP, DER LÄUFT (`_foundryWaechterRuht`).
     _foundryIngestTakt(x, rang) {
         if (x == null) return Promise.resolve(x); // Miss/Timeout: sofort — nulls stauen nie
         const r = this.state.renderer;
         if (!r || r._isHeadlessNull) return Promise.resolve(x); // headless byte-schnell (Gates)
+        if (this._foundryWaechterRuht()) return Promise.resolve(x);
         const q = this._foundryIngestQueue || (this._foundryIngestQueue = []);
         this._foundryIngestMaxQ = Math.max(this._foundryIngestMaxQ || 0, q.length + 1); // Linse
         return new Promise((res) =>
             q.push({ frei: () => res(x), rang: this._foundryRang(rang), t: performance.now() })
         );
+    }
+    // DER WÄCHTER BEI RUHENDEM LOOP (lod.K5, `_loopRuht`): kein Takt gibt frei, und kein Bild, dessen Zeit die Freigabe schützt —
+    // er hält nichts. Eine Antwort geht durch wie headless, und was ein Takt, der lief, noch am Wächter ließ, geht beim nächsten
+    // Ankommen (`_foundryIngestTakt`) oder Fragen (`_foundryZug`) mit, der Reihe nach. Bis lod-stufen hielt er für einen Takt, der
+    // nie kam: die Stufen-Linse (koordination `bericht/2910-lod-k5/kanten.js`) stellte an der Mess-Wiese 0 von 14 Stufen, 13
+    // Antworten des Worker lagen am Wächter (swiftshader, 30.10.). true = der Loop ruht.
+    _foundryWaechterRuht() {
+        if (!this._loopRuht()) return false;
+        const q = this._foundryIngestQueue;
+        while (q && q.length) q.shift().frei();
+        return true;
     }
     // DIE EINE WAHL der Foundry (Worker-Schlange `_foundryPumpe`, Freigabe `_tickFoundryIngest`): nah zuerst nach dem EINEN
     // Rang (`_foundryAuftragD2`, vor dem ersten Weltbild der Blick zuerst), unter Gleichen FIFO, nie verhungert — wartet der
@@ -3161,12 +3175,14 @@ class AnazhRealm_studio_bruecke {
             emis = R.em,
             emisI = R.emI,
             klasseLook = R.look;
-        // Build-Zeit-Gate der Studio-Dither-Blende (Default an; Maske + CPU-Doppel-Mitgliedschaft schalten
-        // zusammen am foundryCrossfade-Flag). Das Flag steht im Key: ein Live-Toggle trifft nur NEU gebaute
-        // Gruppen; Material und Attribut-Stempel (`_foundryBuildGroup`) entstehen im selben Pass → konsistent. Der wiegende
-        // Stoff der Nah-Streu blendet nie (ihr Stufen-Wechsel ist die Armlänge, ihre Stempel tragen 0): sein Satz trägt
-        // keine Stempel (`STREU_SATZ_ATTR`).
-        const xfade = !!(this.state && this.state.foundryCrossfade === true) && wiegen !== true;
+        // Die Studio-Dither-Blende ist Gesetz des Stoffs, nie des Schalters (lod.K5): jeder Foundry-Stoff trägt die Maske,
+        // jeder Körper die Stempel (`_foundryBuildGroup`); zur Laufzeit schaltet sie `uLodMaskOn` (A/B), die
+        // CPU-Doppel-Mitgliedschaft `foundryCrossfade`. Bis lod-stufen las der Bau den Schalter: ein Körper, gebaut, während
+        // eine Linse ihn ausschaltete, trug Stoff ohne Maske und keine Stempel — der Cache hielt beides über die Linse hinaus
+        // (die Stufen-Linse: `_satzBlock(streuNah:stumpf…)` „Attribut aLodLevel fehlt", der Satz verlangt die Stempel immer).
+        // Der wiegende Stoff der Nah-Streu blendet nie (ihr Stufen-Wechsel ist die Armlänge, ihre Stempel tragen 0): sein Satz
+        // trägt keine Stempel (`STREU_SATZ_ATTR`).
+        const xfade = wiegen !== true;
         // DER SCHLÜSSEL IST DIE EINE MATERIAL-IDENTITÄT (phyto-core `budgetStoff`, W8): Art · Regler · SEITE · Gewebe ·
         // Glut · Fell-/Haut-Ton — dieselbe, mit der das Budget-Gesetz am Studio-Ausgang Stoffe zählt und faltet (die
         // Seite fehlte: ein beidseitiger Stoff teilte das Material eines einseitigen gleicher Regler, first-wins).

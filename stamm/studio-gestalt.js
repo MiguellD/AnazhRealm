@@ -55,7 +55,7 @@ class AnazhRealm_studio_gestalt {
     }
     // DIE EINE PIPE: die EINE Reply-Mesh → THREE-Konversion (Pflanzen-Gruppen-Bau UND Kreatur-Ofen rufen
     // sie); null bei kaputtem Eintrag. `stage` (optional) = { lod, preset } trägt die Stufen-/SSE-Stempel
-    // für die Dither-Blende, NUR unter dem foundryCrossfade-Gate; ohne `stage` Stempel 0 = ungemaskt.
+    // für die Dither-Blende (der Gruppen-Bau); ohne `stage` Stempel 0 = ungemaskt.
     // Liest GENAU die Attribute aus FOUNDRY_LESEN (die Konsum-Wand der Transport-Schale) — sonst nichts.
     _foundryBuildMesh(m, baum) {
         if (!m || !m.position || !m.position.array) return null;
@@ -94,16 +94,13 @@ class AnazhRealm_studio_gestalt {
         if (m.aDeckt && m.aDeckt.array) geo.setAttribute("aDeckt", new T.BufferAttribute(m.aDeckt.array, 1));
         if (m.index) geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(m.index, vcount), 1));
         if (!m.normal || !m.normal.array) geo.computeVertexNormals();
-        // Attribut-Wand: unter foundryCrossfade lesen die geteilten foundry-Materialien aH0/aH0L/aLodLevel —
-        // jeder Direkt-Konsument dieser Konversion (Kreatur-Ofen …) braucht sie, sonst warnt three je
+        // Attribut-Wand: die geteilten foundry-Materialien lesen aH0/aH0L/aLodLevel (die Maske ist Gesetz des Stoffs,
+        // `_foundryTreeMaterial`) — jeder Direkt-Konsument dieser Konversion (Kreatur-Ofen …) braucht sie, sonst warnt three je
         // RenderObject. Der Null-Stempel macht „0 = ungemaskt" physisch wahr (Bild gleich); der Gruppen-Bau
         // überschreibt mit echten Stufen-Werten.
-        if (this.state && this.state.foundryCrossfade === true) {
-            const _z = new Float32Array(vcount);
-            geo.setAttribute("aLodLevel", new T.BufferAttribute(_z, 1));
-            geo.setAttribute("aH0", new T.BufferAttribute(new Float32Array(vcount), 1));
-            geo.setAttribute("aH0L", new T.BufferAttribute(new Float32Array(vcount), 1));
-        }
+        geo.setAttribute("aLodLevel", new T.BufferAttribute(new Float32Array(vcount), 1));
+        geo.setAttribute("aH0", new T.BufferAttribute(new Float32Array(vcount), 1));
+        geo.setAttribute("aH0L", new T.BufferAttribute(new Float32Array(vcount), 1));
         // Die Haut-Hülle reist geskinnt: trägt der Eintrag skinIndex/skinWeight, wird er ein SkinnedMesh
         // (Bindung in _ofenAssembleAsset, wenn die Bones stehen). skinIndex Float32 → Uint16 (WebGPU-strikt).
         let mesh;
@@ -196,8 +193,9 @@ class AnazhRealm_studio_gestalt {
         // Masken-Stempel: das Höhen-Buch (_foundryCacheSet) hält sie über jede Cache-Räumung.
         if (group && group.children.length && stage && stage.preset && this._foundryPresetIsTree(stage.preset))
             group._hoehe = this._foundryGruppenHoehe(group, stage.preset);
-        if (group && group.children.length && this.state && this.state.foundryCrossfade === true) {
-            // Stufen-/SSE-Stempel (das Attribut-Vokabular der Studio-Blende): aLodLevel = 1 (L0) · 2 (L1) · 3 (die
+        if (group && group.children.length) {
+            // Stufen-/SSE-Stempel (das Attribut-Vokabular der Studio-Blende, Gesetz des Körpers wie die Maske seines Stoffs —
+            // nie des Schalters `foundryCrossfade`, lod.K5): aLodLevel = 1 (L0) · 2 (L1) · 3 (die
             // einzige Nah-Stufe einer Art ohne L0) · 0 (ungemaskt: Nicht-Baum-Kinds, wie das Studio-`vLod>0.5`-Gate);
             // aH0 = Welt-Sichthöhe der Gruppe (_foundryGruppenHoehe); aH0L = Blatt-Sichthöhe (Laub gekappt auf
             // LOD_DISTANCES.leafVisCap, Rinde aH0L == aH0). VOR der ersten Zeichnung stempeln (der Knoten-Bau liest
@@ -497,6 +495,11 @@ class AnazhRealm_studio_gestalt {
         // Rückgabe: die Zahl der Kandidaten (kalt oder vor dem Studio platziert) — die Stand-Wache des Culling-Takts hält
         // sich wach, solange einer wartet; ein Platzieren regt die Welt.
         if (!this._foundryEnabled()) return 0;
+        // DIE ANKUNFT BAUT IM TAKT (lod.K5, `_loopRuht`): ruht der Loop, platziert der Ruf der Ankunft (ohne `menge`) nichts — die
+        // ruhende Welt ändert sich nur, wo einer fragt; der Takt des Culls platziert, sobald einer geht (er ruft mit `menge`). Mit
+        // dem Wächter, der bei ruhendem Loop nichts mehr hält, setzte sonst jede Ankunft einen kalten Eintrag ins Bild einer
+        // ruhenden Linse — den eben geräumten Bau der Stufen-Linse in ihren Schuss ohne Exemplar.
+        if (!menge && this._loopRuht()) return 0;
         // Die Foundry wartet aufs Terrain: baute in DIESEM Frame ein Terrain-Chunk, konvergiert sie nicht
         // (terrain-first wie der scatterDeco-Job) — der Boot-/Streaming-Fill bleibt leicht.
         // Ohne Urteil (der Bau wartet) bleibt der Cull-Gang wach: 1 Wartender, bis die Terrain-zuerst-Regel den Scan trägt.

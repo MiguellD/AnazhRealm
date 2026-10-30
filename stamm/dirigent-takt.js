@@ -333,6 +333,16 @@ class AnazhRealm_dirigent_takt {
         this.state.renderer.setAnimationLoop(loop);
     }
 
+    // DER LOOP RUHT (lod.K5): kein Takt kommt — der Spiel-Loop hängt nicht am Renderer (`getAnimationLoop()` null: jede Bild-Linse
+    // ruht ihn, Lehre 17, die Werkbank zwischen ihren Befehlen; wer dann tickt, ruft `_gameLoopTick` selbst). Was nur ein Takt
+    // freigibt oder baut, wartet dann auf keinen: der Wächter der Foundry hält nichts (`_foundryWaechterRuht`), und die Ankunft
+    // eines Körpers platziert nichts von selbst (`_foundryRewarmColdTrees`) — die ruhende Welt ändert sich nur, wo einer fragt.
+    // Der Null-Renderer kennt keinen Loop: headless ruht er nie (der Wächter lässt dort ohnehin alles durch).
+    _loopRuht() {
+        const r = this.state.renderer;
+        return !!r && typeof r.getAnimationLoop === "function" && !r.getAnimationLoop();
+    }
+
     // ═══ DAS WORT „DIE WELT STEHT" (A9) ═══
     // Die Welt steht, wenn ihre Regungs-Stempel (`_weltRegt`: Welt · Bau · Boden-Karte) WELT_STEHT_TAKTE Takte unverändert
     // blieben, nichts mehr baut (`_weltOffen`: kein Foundry-Auftrag wartet, fliegt oder liegt unverteilt, kein Chunk ist
