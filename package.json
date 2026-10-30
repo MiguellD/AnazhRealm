@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.546.129",
+    "version": "18.546.130",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -143,7 +143,7 @@
         "gate:portal-gestalt": "node scripts/diag-portal-gestalt.cjs",
         "gate:place-policy": "node scripts/diag-place-policy.cjs --selftest",
         "gate:vehicle-drive": "node scripts/diag-vehicle-drive.cjs --selftest && node scripts/diag-vehicle-drive.cjs",
-        "gate:fahr-leben": "node scripts/diag-fahr-leben.cjs --selftest && node scripts/diag-fahr-leben.cjs",
+        "gate:fahr-leben": "node scripts/diag-fahr-leben.cjs --selftest && node scripts/diag-fahr-leben.cjs && node scripts/diag-fahr-leben.cjs --verkehr",
         "gate:garage-labor": "node scripts/diag-garage-labor.cjs --selftest && node scripts/diag-garage-labor.cjs",
         "gate:studio-vertrag": "node scripts/diag-studio-vertrag.cjs",
         "gate:studio-huelle": "node scripts/diag-studio-huelle.cjs --selftest && node scripts/diag-studio-huelle.cjs && node scripts/diag-studio-huelle.cjs --engine",

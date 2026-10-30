@@ -119,7 +119,7 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
     ~45 s), nur bei eingefrorener Welt; Richter je Commit bleiben die Beweis-Sonden.
 21. **Die Licht-Kette ist EINE Eichung:** Paletten-Hex = sRGB, Albedo linear (FARB-GESETZ: foundry-core, fachwerk · porta · vehicle ·
     schmiede); die Welt fügt nur den echten Himmel als EINE Umgebung hinzu, Fill · Rim · Back leben im Labor; Belichtung aus dem Licht
-    (Karte Mittelgrau +1 EV, Nacht-Deckel 1,0); Albedo `werkbank albedo` / `diag-albedo-tafel --labor` (Karte 0,180), Verhältnisse
+    (die Karte mittags auf Mittelgrau, die Stufen der Tag-Achse gegen die REF spec/farbe/tag-ref.json); Albedo `werkbank albedo` / `diag-albedo-tafel --labor` (Karte 0,180), Verhältnisse
     `werkbank licht` — nie das Auge. Heute trägt die Eichung den Mesh-Lichtweg; Feld/Panorama, Wasser und die Karten-Sonne rechnen eigen (W7).
 22. **Der sichtbare Boden ist das Mesh:** Surface-Nets auf 1,8 m trägt die Feinform nicht (±0,2 m); was AUF dem Boden steht, liest
     `_bodenSichtAt` (gebautes Mesh, je Ecke die oberste Fläche aus Eigner und Nachbarn), Körper stehen auf dem Gesetz; r184 rechnet den
