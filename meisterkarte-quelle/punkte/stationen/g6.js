@@ -1555,10 +1555,13 @@ const PB_PROBEN_DAUER = [
     ["Mutante der Aufnehmer warf", (d, s) => (s.fehler = 3), false],
     ["Mutante Software-Adapter", () => {}, false, "[linse-gpu] google/swiftshader"],
 ].map(([name, m, gruen, adapter]) => ({ name, stdout: k5Roh(m, adapter), gruen }));
-// die drei Proben (die Zwillinge teilen je EINE: gleiche Probe, ein Lauf); Ziel der Gruppe ≤ 90 s: glaette ~16 + gang ~60 + dauer ~14
-const PB_PROBE_GLAETTE = { sek: 45, stellung: "anfang", befehl: pbBefehl("glaette") };
+// die drei Proben (die Zwillinge teilen je EINE: gleiche Probe, ein Lauf); Ziel der Gruppe ≤ 90 s: glaette ~16 + gang ~60 + dauer ~14.
+// DIE DECKEL NACH IHRER MESSUNG (w4-fehlt-acht, Radeon eich3–6 4f098fa6 … 1f17e7d1 am selben Abdruck): glaette 27,6 · 27,0 · 27,0 · 28,8 s
+// → 29 s, dauer 36,0 · 22,8 · 29,4 · 30,6 s → 37 s (die Messung trägt Minuten auf zwei Stellen: 36,0 heißt bis 36,3 s; vorher je
+// 45 s); gang ungemessen (die Fahrt kam nie zu ihm) — 64 s
+const PB_PROBE_GLAETTE = { sek: 29, stellung: "anfang", befehl: pbBefehl("glaette") };
 const PB_PROBE_GANG = { sek: 64, mutiert: true, ausnahme: PB_AUSNAHME_GANG, befehl: pbBefehl("gang") };
-const PB_PROBE_DAUER = { sek: 45, stellung: "ende", befehl: pbBefehl("dauer") };
+const PB_PROBE_DAUER = { sek: 37, stellung: "ende", befehl: pbBefehl("dauer") };
 
 module.exports = [
     // ─────────────────────────────── Ankunft K2 · K3 (ankunft-aussen) ───────────────────────────────

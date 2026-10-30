@@ -4,6 +4,7 @@
 // Was sich nicht als Station fassen lässt, steht in `fehlt` (befehl: null, grund beim Namen) — die Liste der Stationen
 // bleibt dadurch lauffähig (pruefeStationen verlangt je Eintrag ein argv).
 "use strict";
+const PW = require("./proben-welt.cjs"); // die Proben der Welt in der Sitzung (tiere.K5#1)
 const { jsonZeile } = require("../hilfe.cjs");
 const { seiteProbe } = require("./seite.cjs");
 
@@ -2436,7 +2437,66 @@ const stationen = [
         quelle: "2 = dazu Fressen ≥ 60 s, der Kadaver lockt Fuchs oder Bär ≤ 120 s, Station Wolfsrevier im Bild beider Geräte",
     },
 
-    // ───────── tiere.K5 Staffel 1 — Begegnung im Bild: in `fehlt` (w4-sitzung-reif; der Kreis riss in jeder GPU-Fahrt den Deckel) ─────────
+    // ───────── tiere.K5 Staffel 1 — Begegnung im Bild (Zweig tier-sicht, `werkbank lauf --wandern kreis`) ─────────
+    // DIE WELT DER SITZUNG (punkte.cjs fahreSitzung) an der Mess-Wiese, 1280×720 (das Maß der Sichtung), der
+    // Bestand des Spiels (`--tiere frei`, das Bestands-Gesetz; keine Tiere der Bühne). Je Sicht (Ego, Third) `umstellen --ort
+    // wiese` und der Kreis der Werkbank (`lauf`, `wandern: kreis`): der Spieler GEHT 600 Spiel-s (Taste W, das Tempo des Spiels) eine Runde, der
+    // Blick dreht mit; eine Sichtung = ein Tier deckt ≥ 200 px der Klassen-Maske tier im Ausgabe-Bild (zwei Schüsse mit und ohne
+    // Tiere unter der EINEN Uhr, je Pixel das nächste Tier, dessen Körper-Kugel ihn deckt), jedes Tier zählt einmal. GRÜN: in
+    // BEIDEN Sichten ≥ 3 Sichtungen über ≥ 600 Spiel-s und kein Tier erschien im Blick (`imBlick` 0, das Schlupfloch). Die
+    // Mutante „Bestand 0" (keine Geburt, kein Tier) ist ROT mit 0 Sichtungen. Genesis fehlt der Station: der Ring der Tore
+    // liegt auf dem Kreis (R 11 m um den Start), der Gang ginge durch ein Tor — die Wiese trägt beide Sichten.
+    // Headless (swiftshader 320×180, die Schwelle auf 1280×720 normiert, 28.10., Zweig tier-sicht): main Ego 1 Sichtung (Hirsch
+    // 90 m), Third 3 (Hirsch 94/54/51 m), keines im Blick erschienen — ROT an Ego; mit oeko-k2-bestand (d9928c7e) Ego 3 (Bär 5 m,
+    // Wolf 19/31 m), Third 5, aber 3 bzw. 2 Tiere erschienen im Blick (die Verkörperung prüft nur den Anker der Gruppe auf „außer
+    // Blick", `_bestandLeiber` → `_kreaturWurf`) — ROT am Schlupfloch; Mutante „Bestand 0" 0 Sichtungen — ROT. Das Urteil fällt an
+    // Radeon oder GTX bei 1280×720.
+    // IN DER SITZUNG (29.10., proben-welt.cjs `tierKreis`): der Kreis im ZEITRAFFER der Schleife (10 Takte zu 0,1 s Spiel-Zeit je
+    // Bild) — 600 Spiel-s je Sicht sind das Kriterium, die Wanduhr nicht; bis 29.10. zwei mal zehn Minuten im eigenen Boot (Radeon
+    // b3f9ae95: 32,07 min Arbeit).
+    // DER RISS BEIM NAMEN (w4-fehlt-acht): in jeder GPU-Fahrt am Deckel (Radeon 90/99 s) — die Sichtung schoss je ungesehenem Tier im Blick
+    // ein Paar aus drei Aufnahmen zu 33 Bildern (1280×720). Jetzt schießt sie bis zur Staffel (3 je Sicht) und der Kreis wacht danach
+    // bis 600 Spiel-s über das Schlupfloch (proben-welt.cjs `tierKreis`, STAFFEL); je 10 s eine FORTSCHRITT-Zeile nennt am Deckel, wo er stand
+    // EIN Gerät (die Staffel: „an einem Gerät"; w4-fehlt-acht): die Radeon, die schnellere CPU (der Kreis rechnet 12 000 Takte; Bewohner-Takt
+    // Radeon 1,98 gegen GTX 3,25 ms, 715754fc). DER DECKEL DER ARBEIT (geschätzt, ungemessen in der Sitzung): 12 000 Takte zu 0,1 Spiel-s,
+    // ≤ 2 Bilder je Raffer-Bild unter der GPU-Leine, die Sichtung bis zur Staffel, Third am selben Ort — 55 s
+    {
+        kriterium: "tiere.K5",
+        staffel: 1,
+        geraet: "radeon",
+        probe: {
+            befehl: PW.torBefehl(PW.tierKreis),
+            sek: 55,
+            ausnahme: "1200 Spiel-s (je Sicht 600, „je 10 Spielminuten“) im Zeitraffer der Schleife, die Sichtung bis zur Staffel — die Arbeit, nie das Einschwingen",
+            mutiert: false,
+        },
+        gpu: true,
+        zeit: false,
+        minuten: 30,
+        urteil: (j, lauf) => {
+            const K = ["ego", "third"].map((s) => [s, jsonZeile(lauf.stdout, new RegExp("^KREIS-" + s + " "))]);
+            const fehlt = K.filter(([, k]) => !k || !Array.isArray(k.gesehen));
+            if (fehlt.length) return { gruen: false, zahl: "keine KREIS-Zeile in " + fehlt.map(([s]) => s).join(", ") + " (Exit " + lauf.exit + ")" };
+            const gut = (s, k) => k.gesehen.length >= 3 && k.imBlick === 0 && k.spielS >= 600 && k.sicht === { ego: "first", third: "third" }[s];
+            return {
+                gruen: K.every(([s, k]) => gut(s, k)),
+                zahl: K.map(([s, k]) => s + " (" + k.sicht + ") " + k.gesehen.length + " Sichtungen in " + k.spielS + " Spiel-s (" + k.gesehen.map((g) => g.join(" ")).join(" · ") +
+                    "), " + k.schuesse + " Schuss-Paare, Bestand bis " + k.max + ", im Blick erschienen " + k.imBlick).join(" | "),
+            };
+        },
+        pfad: [
+            ...KREATUR,
+            "stamm/bild-*.js",
+            "stamm/koerper-bewegung.js",
+            "stamm/dirigent-takt.js",
+            "save-server.js",
+            "scripts/werkbank.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/abnahme-urteil.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "1 = ≥ 3 Tier-Sichtungen im Ausgabe-Bild je 10 Spielminuten an einem Gerät",
+    },
 
     // ───────── affekt.K1 — die Wertung antwortet am Ort (affekt-k1-ort) ─────────
     {
@@ -2519,7 +2579,9 @@ const stationen = [
         staffel: 2,
         geraet: ["radeon", "gtx"],
         // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 43,2 s GRÜN am Deckel 45 — die GTX risse ihn): der Deckel steht in der Tafel der Fahrt (punkte.cjs DIE DECKEL)
-        probe: { sek: 33, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "wert", knapp(wertGang)], mutiert: true, },
+        // DER DECKEL NACH SEINER MESSUNG (w4-fehlt-acht): Radeon eich3–5 (4f098fa6, 00763f54) 3,0 · 3,0 · 2,4 s am selben Abdruck —
+        // 10 s, das Mindeste der Fahrt (vorher die Kappe 33 s)
+        probe: { sek: 10, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "wert", knapp(wertGang)], mutiert: true, },
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -2920,7 +2982,9 @@ const stationen = [
         kriterium: "oekologie.K4",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 33, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "rudel", knapp(rudelGefuehl)],  mutiert: true },
+        // DER DECKEL NACH SEINER MESSUNG (w4-fehlt-acht): Radeon eich3 · eich5 30,6 · 23,4 s am selben Abdruck — 31 s (vorher die
+        // Kappe 33 s)
+        probe: { sek: 31, befehl: ["node", "-e", "(" + knapp(wertLauf) + ")()", "{AUS}", "{PORT}", "rudel", knapp(rudelGefuehl)],  mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -3337,7 +3401,8 @@ const stationen = [
         staffel: 1,
         geraet: ["radeon", "gtx"],
         // IN DER SITZUNG (29.10.): EIN Teleport an die Wiese (der zweite fiel), EIN Schuss `bild --zeit` — Ziel 15 s
-        probe: { sek: 15, befehl: ["node", "-e", "(" + knapp(boeLauf) + ")()", "{AUS}", "{PORT}"] },
+        // DER DECKEL NACH SEINER MESSUNG (w4-fehlt-acht): Radeon eich3–6 10,2 · 10,2 · 10,2 · 13,2 s am selben Abdruck — 14 s
+        probe: { sek: 14, befehl: ["node", "-e", "(" + knapp(boeLauf) + ")()", "{AUS}", "{PORT}"] },
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -3562,23 +3627,17 @@ const fehlt = [
         kriterium: "vegetation.K1",
         staffel: 2,
         befehl: null,
-        grund: "nicht in der Fahrt (w4-sitzung-reif, 30.10.): Mess-Wiese UND Genesis × Ego UND Third × Uhr 0,5 und 0,3 sind acht Wiesen-Schüsse an vier Ständen — die Arbeit des Plans 110 s (je Schuss mit Ringen und Zähler 10 s, der Stand Genesis kalt 15 s, die übrigen Stände 5 s; vegetationDeckel), über dem Deckel der Fahrt (≤ 90 s mit Ausnahme). Teilbar wäre er nur in zwei Proben, die Station ist EINE; die Probe (vegetationLauf, wieseUrteil) misst heute Staffel 1",
+        grund: "nicht in der Fahrt (w4-fehlt-acht, 30.10.): DER TÄTER BEIM NAMEN — ein Wiesen-Schuss (`/bild` mit abstand und klasse, scripts/werkbank.cjs) trägt ≈ 18–29 s, die meiste Zeit in der CPU der Seite: der Abstands-Marsch (je 2×2-Block ein Strahl bis 200 m, ~20 Mio. Rufe `_bodenSichtAt`, 6–11 s), die Klassen-Maße der vier Teil-Klassen samt Spiegel-Partner (5–8 s, `wieseUrteil` liest sie nicht), acht Aufnahmen zu 33 Bildern (≈ 4–7 s GPU), je Schuss 20 × 50 ms am Licht-Pool — der Plan (acht Schüsse, vier Stände) ≈ 155–250 s, das Deckel-Modell rechnete 10 s je Schuss. Die Schnitte liegen im Spiel-Baum (der EINE Boden-Leser schneller, die Bild-Pässe der Maße einmal je Bild, der Pool zum Fixpunkt in `/bild`) — mit ihnen ≈ 85–145 s, über dem Deckel der Fahrt (≤ 90 s). DAS LINEAL: `ringe` liest die Werkbank nirgends, die Bänder stehen fest auf 0 · 2 · 5 · 10 · 14 (NAH_WIESE.radius) · 30 · 80 · 200 m — `wieseRinge` urteilt über 10–14 · 14–30 · 30–80 · 80–200 statt 10–20 · 20–40 (Staffel 1 ebenso, ihr 15-s-Deckel reißt am ersten echten Wiesen-Bild). Die Fahrt trägt sie nicht: jede Karte steht bei 1 800 von 1 800 s. Die Probe (vegetationLauf, wieseUrteil) misst heute Staffel 1",
     },
     // DIE ZAHL ERSETZT DIE SCHÄTZUNG (w4-sitzung-reif, 30.10.; punkte.cjs DIE DECKEL: „die GPU-Fahrt nennt, wer warm am Deckel fällt“):
     // zwei Proben rissen in JEDER GPU-Fahrt ihren Deckel — am 90-s-Deckel des Gegenlaufs b3f9ae95 und an 99/100 s in den Eichläufen 1–6
     // (gegenlauf/eich*.json, Radeon) —, ihre Arbeit liegt über dem Gesetz der Fahrt; ihre 66 s trugen nie eine Messung (und jeder Riss eine
     // Tür samt neuem Ring). Sie trugen keinen Punkt.
     {
-        kriterium: "tiere.K5",
-        staffel: 1,
-        befehl: null,
-        grund: "nicht in der Fahrt (w4-sitzung-reif, 30.10.): die Probe (proben-welt `tierKreis`, der Kreis 600 Spiel-s je Sicht Ego und Third im Zeitraffer der Schleife) riss in jeder GPU-Fahrt ihren Deckel — Gegenlauf b3f9ae95 Radeon am 90-s-Deckel, Eichlauf 1–6 (a53152c2 … 1f17e7d1) am Deckel 99/100 s — über dem Gesetz der Fahrt (≤ 90 s mit Ausnahme). Kürzen hieße die Spielzeit kürzen; die Staffel verlangt „je 10 Spielminuten“. Die Station (Befehl, Urteil) steht in w4-koord-sitzung bdc3c14a",
-    },
-    {
         kriterium: "mensch.K1",
         staffel: 2,
         befehl: null,
-        grund: "nicht in der Fahrt (w4-sitzung-reif, 30.10.): die Probe (die Stadt am Messort stadt-voll, die Linse bewohner --ort stadt-voll, haenger 10 s; Zeit-Station) riss in jeder GPU-Fahrt ihren Deckel — Gegenlauf b3f9ae95 Radeon am 90-s-Deckel, Eichlauf 3–5 am Deckel 99/100 s, im Eichlauf 6 riss die Fahrt in ihr (der Ort stadt-voll allein 87,4–119,1 s vor dem Deckel) — über dem Gesetz der Fahrt (≤ 90 s mit Ausnahme). Die Station (Befehl, Urteil) steht in w4-koord-sitzung bdc3c14a",
+        grund: "nicht in der Fahrt (w4-fehlt-acht, 30.10.): DIE TÄTER BEIM NAMEN — (i) das zweite `umstellen --ort stadt-voll --sicht third` der Probe geht erst an den Anlauf [400, 400] (scripts/werkbank.cjs `/umstellen`), 438 m vom Ursprung der Stadt: die Bewohner gehen (`_bewohnerFort`), zwei kalte Ringe, die Stadt bevölkert sich neu (≈ 35–60 s); (ii) nach dem Uhr-Sprung backt `uhrAuf` die Felder der Leiber unter dem Regler mit 4 statt 16 Fits je Wand-Sekunde (scripts/lib/kreatur-proben.cjs, der Takt über Budget) — die Linse `stadtTag` dauerte an Radeon und GTX gleich 61–68 s; dazu `haenger 10` (10 s Einschwingen, 10 s Fenster). Der Ort stadt-voll allein 87,4–119,1 s vor dem Deckel (eich3–6). DER SCHNITT: nur die Sicht statt des zweiten Umstellens, das Backen unter Regler voll — geschätzt 45–62 s je Probe. DAS URTEIL liest `z.voll`, die Linse liefert seit 8dd1227c `stadt.ring` (gesamt, ring, nah, nahGang): jede Messung hieß „Probe-Fehler: keine volle Stadt“ (715754fc, 98ef98bb, je Radeon und GTX: 1 089 Bewohner, 149–150 nah, 67–70 im Gang — im Soll). Die Fahrt trägt sie nicht: jede Karte steht nach den gemessenen Deckeln und den fünf Neuen bei 1 800 von 1 800 s. Die Station (Befehl, Urteil) steht in w4-koord-sitzung bdc3c14a",
     },
 ];
 // die Sprünge der Bewohner-Probe: seit z36 unter `wege`, davor oben (beide Köpfe bleiben buchbar)

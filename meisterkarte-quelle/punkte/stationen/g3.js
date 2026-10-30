@@ -13,6 +13,7 @@
 // neben der Liste, nicht in ihr: der Läufer nimmt jeden Eintrag mit `befehl: null` als „befehl ist kein argv“ und bräche sonst
 // den Lauf aller Gruppen ab.
 "use strict";
+const PW = require("./proben-welt.cjs"); // die Proben der Welt in der Sitzung (licht.K1#1, licht.K3 — `werkbankLinse`)
 
 // eslint-disable-next-line max-lines-per-function
 async function folge(plan) {
@@ -604,6 +605,79 @@ const luftDer = (j) => {
     return { rest: String(l.rest || ""), exit: l.exit, m: (j && j.dateien && j.dateien.luft) || null, ad, hw: !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad), fehler: j ? j.fehler : "keine Messung in {AUS}" };
 };
 
+// DIE LICHT-LINSEN IN DER SITZUNG (w4-fehlt-acht, proben-welt.cjs `werkbankLinse`): licht.K1#1 und licht.K3 fuhren `werkbank licht
+// --tag|--laub --eigen` — ein eigenes Tor (SITZUNG_FEINDE). Hier derselbe Befehl der Linse gegen die Welt der Sitzung durch den
+// Spiegel: das Abwarten ist die Beruhigung beim Namen, die Urteile sind die der Linse. Die Deckel sind die Arbeit, nie das Einschwingen:
+// TAG je Ort 100 Uhren und ≥ 60 Fein-Uhren, je Uhr EINE Aufnahme; LAUB 33 Zeilen, je Karten-Zeile zwei Teleporte, zwei Schüsse und die
+// Beruhigungen der Stufen — ungemessen an der Karte, die GPU-Fahrt nennt je Ruf die Sekunden.
+// DIE NACHT PER UHR-SPRUNG (TAG): je Uhr springt die Uhr (die Linse: `setTimeOfDay`), der Licht-Pool springt mit ihr zu seinem Fixpunkt
+// (Wahl- und Blend-Uhr zurück, EIN `_leuchtTakt` trägt die Stunde — die Linse wartete bis 20 × 50 ms), und die Aufnahme beruhigt beim
+// Namen: DAS BILD STEHT, sobald zwei Folge-Bilder der Geschichte (TRAA, die als Mittel anläuft) dasselbe Mittel der unteren Hälfte
+// tragen (≤ 0,2 %), höchstens die 32 der Linse (`__aufnahmeRuhig`, ihre Aufnahme am Anker der Warm-Bilder). DER WEG GEGEN DIE GESCHICHTE
+// (die Linse des Wegs): an Uhr 0 · 0,25 · 0,5 · 0,75 je Ort daneben die volle Aufnahme der Linse — weichen hell, Y, X oder R/B über
+// 0,5 Luma · 0,01 EV · 1 % ab, ist die Probe ROT beim Namen (Exit 1: das Urteil verlangt Exit 0), nie still kurz
+const TAG_RUHE = [
+    "for (let k = 0; k < nWarm; k++) frame();",
+    "window.__ruheBilder = 0;\n" +
+        "            for (let k = 0, m0 = null; k < nWarm; k++) {\n" +
+        "                frame();\n" +
+        "                if (nWarm < 2) continue;\n" +
+        "                const px0 = await rend.readRenderTargetPixelsAsync(rt, 0, 0, BW, BH);\n" +
+        "                const u0 = px0 instanceof Uint8Array ? px0 : new Uint8Array(px0.buffer || px0);\n" +
+        "                const z0 = u0.length > BW * 4 * BH ? Math.ceil((BW * 4) / 256) * 256 : BW * 4;\n" +
+        "                let s0 = 0, n0 = 0;\n" +
+        "                for (let y = BH >> 1; y < BH; y += 2) for (let x = 0; x < BW; x += 2, n0++) s0 += window.luma709(u0, y * z0 + x * 4);\n" +
+        "                const m = s0 / n0;\n" +
+        "                window.__ruheBilder = k + 1;\n" +
+        "                if (m0 !== null && Math.abs(m - m0) <= 0.002 * Math.max(m0, 1)) break;\n" +
+        "                m0 = m;\n" +
+        "            }",
+];
+const TAG_WEG = [
+    'const u8 = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;',
+    'const u8 = (await window.__aufnahmeRuhig(W, H, 1, { satz: "messung" })).u8;\n' +
+        "                const P = (window.__wegProbe = window.__wegProbe || { uhren: [0, 0.25, 0.5, 0.75], zeilen: [], bilder: [] });\n" +
+        "                P.bilder.push(window.__ruheBilder);\n" +
+        "                if (P.uhren.includes(u)) {\n" +
+        "                    const masse = (b) => { const q = [0, 0, 0, 0, 0]; let n = 0; for (let i = (H / 2) * W * 4; i < W * H * 4; i += 4, n++) { q[0] += luma709(b, i); for (let c = 0; c < 3; c++) q[c + 1] += lin[b[i + c]]; q[4] += vor(luma709([lin[b[i]], lin[b[i + 1]], lin[b[i + 2]]])); } return [q[0] / n, luma709(q.slice(1)) / n, q[4] / n, q[1] / Math.max(q[3], 1e-9)]; };\n" +
+        '                    P.zeilen.push([u, window.__ruheBilder, masse(u8), masse((await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8)]);\n' +
+        "                }",
+];
+// das Urteil des Wegs in der Seite (nach der Linse): je Zeile [Uhr, Bilder, kurz, voll] mit [hell, Y, X, R/B]
+const TAG_PRUEFE =
+    "const P = window.__wegProbe || { zeilen: [], bilder: [] }; delete window.__wegProbe;" +
+    " const ev = (a, b) => Math.abs(Math.log2(Math.max(a, 1e-9) / Math.max(b, 1e-9)));" +
+    " const d = P.zeilen.map(([u, n, k, v]) => ({ uhr: u, bilder: n, hell: +Math.abs(k[0] - v[0]).toFixed(2), Y: +ev(k[1], v[1]).toFixed(4), X: +ev(k[2], v[2]).toFixed(4), rb: +Math.abs(k[3] / v[3] - 1).toFixed(4) }));" +
+    " const rot = d.filter((x) => x.hell > 0.5 || x.Y > 0.01 || x.X > 0.01 || x.rb > 0.01).map((x) => 'Uhr ' + x.uhr + ' weicht ab: ' + JSON.stringify(x));" +
+    " const B = P.bilder; return { aufnahmen: B.length, bilder: B.length ? [Math.min(...B), +(B.reduce((a, b) => a + b, 0) / B.length).toFixed(1), Math.max(...B)] : null, gegen: d, rot: !d.length ? 'keine Zeile gegen die Geschichte' : rot.length ? rot.join(' | ') : null };";
+const TAG_LINSE = {
+    vorher: ["umstellen", "--ort", "genesis", "--sicht", "ego"],
+    args: ["licht", "--tag"],
+    fenster: [640, 360],
+    seite: {
+        __aufnahmeRuhig: ["scripts/lib/ausgabe-aufnahme.cjs", "ausgabeAufnahme", [TAG_RUHE]],
+        __tagKurve: ["scripts/lib/licht-linsen.cjs", "tagKurve", [["for (let i = 0, p; i < 20 && r._leuchtTakt; i++, await sleep(50)) {", "if (r._leuchtPool) r._leuchtPool.t = r._leuchtPool.uhr = -Infinity;\n                for (let i = 0, p; i < 20 && r._leuchtTakt; i++, await sleep(50)) {"], TAG_WEG]],
+    },
+    pruefe: TAG_PRUEFE,
+};
+// DER DECKEL DER ARBEIT (geschätzt, ungemessen an der Karte): zwei Orte × 100 Uhren und ≥ 60 Fein-Uhren, je Uhr der Sprung, der Himmel
+// und EINE Aufnahme bis das Bild steht (640×360, ~3–5 Bilder), je Ort vier volle gegen die Geschichte, die Mess-Wiese kalt (9–18 s,
+// Radeon eich3–6) — 40 s; die RUF-Zeilen je Kurve nennen die Sekunden je Uhr
+const TAG_PROBE = { sek: 40, befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify(TAG_LINSE)) };
+const LAUB_LINSE = {
+    vorher: ["umstellen", "--ort", "dorf", "--sicht", "ego"],
+    args: ["licht", "--laub", "ring,feld,feld0,feld90,feld180,panorama,spiegel,spiegel180,wasser,fichte,tanne", "--karte", "--uhr", "0.5,0.27,0.05"],
+    fenster: [640, 360],
+    ruheMax: 600,
+};
+// DER DECKEL DER ARBEIT (geschätzt, ungemessen an der Karte): 24 Wege des Lichts am Dorf (je ein Seiten-Ruf), drei Ringe, Fichte und Tanne
+// je Uhr an der Mess-Wiese (die Wiese kalt 9–18 s, Radeon eich3–6), je Karten-Zeile zwei Teleporte, zwei Schüsse 320×240 und vier
+// Beruhigungen — 60 s; je Beruhigung und teurem Ruf eine Zeile
+const LAUB_PROBE = {
+    sek: 60,
+    ausnahme: "33 Zeilen (11 Wege × Uhr 0,5/0,27/0,05), je Karten-Zeile zwei Teleporte, zwei Schüsse und die Beruhigung der Stufen — die Arbeit der Linse",
+    befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify(LAUB_LINSE)),
+};
 const stationen = [
     {
         kriterium: "licht.K2",
@@ -613,8 +687,9 @@ const stationen = [
         // `bericht/2110-messschuld2/kugel.js` über `werkbank eval` am Messort wiese, drei Schüsse aus dem Ausgabe-Pfad bei
         // 1920×1080: A ist die Welt, B die Kugeln ohne Schatten-Empfang, C die Sonne aus.
         // IN DER SITZUNG (29.10.): EIN Teleport an die Wiese, die Kugel-Bilanz (9 Schüsse) — Ziel 15 s
-        // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 11,4 s GRÜN): der Deckel steht in der Tafel der Fahrt (punkte.cjs DIE DECKEL)
-        probe: { sek: 11, befehl: befehlDer({
+        // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 11,4 s GRÜN): der Deckel steht in der Tafel der Fahrt (punkte.cjs DIE DECKEL).
+        // DER DECKEL NACH SEINER MESSUNG (w4-fehlt-acht): Radeon eich3–6 7,2 · 9,0 · 6,6 · 7,2 s am selben Abdruck — 10 s, das Mindeste
+        probe: { sek: 10, befehl: befehlDer({
             name: "licht.K2#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
@@ -1525,49 +1600,207 @@ const stationen = [
         pfad: [...BILD, "stamm/bau-*.js", "stamm/siedlung-*.js", "stamm/vegetation-*.js", "scripts/lib/welt-boot.cjs"],
         quelle: "1 = Glanz-Breite und -Spitze an der Kugel-Bühne für ≥ 3 Klassen im realen Band einer gemessenen BRDF-Referenz, an einem Gerät",
     },
-];
-
-// Was sich nicht als Station fassen lässt. Steht neben der Liste; der Läufer liest es nicht.
-stationen.fehlt = [
+    // ───────── licht.K1 · licht.K3 — die Tag-Achse und das Laub im Licht der Uhr (w3v-licht, w4-licht-baustein) ─────────
     {
         kriterium: "licht.K1",
         staffel: 1,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund: "nicht in der Fahrt (w4-sitzung-reif, 30.10.): die Station fuhr `werkbank licht --tag --eigen` — eine eigene Welt (SITZUNG_FEINDE). Ohne --eigen liefe dieselbe Linse in der Welt der Sitzung, doch ihre Arbeit passt in keinen Deckel: je Ort (Spawn, Mess-Wiese) die ganze Bahn — 100 Grob-Uhren (`TAG_UHREN` 0 … 0,99 in 0,01) und ≥ 60 Fein-Uhren (das Urteil verlangt sie) —, je Uhr der Leucht-Takt der Linse (20 × 50 ms), das Stehen der Welt und eine Aufnahme (`tagKurve`): ≥ 2 × 160 s, im eigenen Boot 8,2 min (GTX takt23 73bdf938, ROT). Kürzen hieße die Bahn kürzen — die Staffel verlangt sie ganz („über die ganze Bahn“); EINE Station teilt ihre Bahn nie über zwei Proben. Die Station (Befehl, Urteil) steht in koordination 32fe3ffc.",
+        // EIN Gerät (die Staffel: „an einem Gerät"; w4-fehlt-acht): die GTX — die Fahrt der Radeon trägt die Laub-Probe und tiere.K5#1
+        geraet: "gtx",
+        // werkbank licht --tag (licht-linsen.cjs `tagKurve` · `tagFeinUhren` · `tagKurveUrteil`, w3v-licht): Spawn (genesis) und
+        // Mess-Wiese in Ego, Uhr 0 … 0,99 in 0,01, um den Horizont (Sonne −18 … 15°) in 0,002 nachgetastet, mittags die 18-%-Karte
+        // im Ausgabe-Bild. Die Linse urteilt das ganze Soll (ANKER · SPRUNG · BUCKEL · GOLD · NACHT · REF gegen spec/farbe/tag-ref.json
+        // ± 0,3 Stufen · ASYNC · SCHREIBER); die Station rechnet die Zahlen der Staffel noch einmal aus der Messung selbst und verlangt
+        // die ganze Bahn (100 Grob-Zeilen, ≥ 60 Fein-Zeilen je Ort).
+        // IN DER SITZUNG (w4-fehlt-acht, proben-welt.cjs `werkbankLinse`): derselbe Befehl der Linse ohne `--eigen`, im Fenster der Station
+        // (640×360, das Tor trug es) — Genesis stellt die Sitzung VOR dem Deckel, die Mess-Wiese die Linse. DER SPRUNG DES LICHTS je Uhr:
+        // der Gang des Licht-Pools (Wahl und Blende, `_leuchtTakt`) springt mit der Uhr zu seinem Fixpunkt — die Linse wartete bis
+        // 20 × 50 ms, bis jeder Platz stand; der Anker in `tagKurve` setzt Wahl- und Blend-Uhr zurück, EIN Takt trägt die Stunde (dasselbe
+        // Licht, nur ohne Warten). Die Aufnahme bleibt die der Linse (die 32 Bilder der Geschichte, A8-n1). RUF-Zeilen je Kurve: am Deckel
+        // nennt die letzte die Sekunden je Uhr
+        probe: TAG_PROBE,
+        gpu: true,
+        zeit: false,
+        minuten: 15,
+        urteil: (j, lauf) => {
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(lauf.stdout) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const u = /^TAG-ACHSE (GRUEN|ROT)[^\r\n]*/m.exec(lauf.stdout);
+            if (!j || !u) return { gruen: false, zahl: "keine Messung oder keine TAG-ACHSE-Zeile (Exit " + lauf.exit + "): " + String(lauf.stderr || "").trim().slice(-200) };
+            let gruen = hw && u[1] === "GRUEN" && lauf.exit === 0;
+            const teile = [];
+            for (const ort of ["genesis", "wiese"]) {
+                const m = j[ort] || {};
+                const grob = m.zeilen || [];
+                const alle = grob.concat(m.fein || []).sort((a, b) => a.uhr - b.uhr);
+                const [mittag, nacht] = [0.5, 0].map((x) => alle.find((z) => z.uhr === x));
+                if (!mittag || !nacht || grob.length < 100 || alle.length - grob.length < 60) {
+                    gruen = false;
+                    teile.push(ort + ": Bahn " + grob.length + "/100 grob, " + (alle.length - grob.length) + " fein");
+                    continue;
+                }
+                const e = (z) => Math.log2(z.Y / mittag.Y);
+                const sprung = Math.max(...alle.slice(1).map((z, i) => Math.abs(e(z) - e(alle[i]))));
+                const buckel = Math.max(...alle.map(e));
+                // die Sonne 10° je Seite zwischen ihren Zeilen gelesen: EV gegen Mittag und R/B gegen Mittag
+                const gold = [alle.filter((z) => z.uhr < 0.5), alle.filter((z) => z.uhr > 0.5)].map((s) => {
+                    const i = s.findIndex((z, k) => k && (s[k - 1].sonne - 10) * (z.sonne - 10) <= 0);
+                    if (i < 1) return null;
+                    const [a, b] = [s[i - 1], s[i]];
+                    const t = (10 - a.sonne) / (b.sonne - a.sonne || 1);
+                    return [e(a) + (e(b) - e(a)) * t, (a.warm + (b.warm - a.warm) * t) / mittag.warm];
+                });
+                const ok =
+                    m.karte >= 110 && m.karte <= 130 && sprung <= 0.1 && buckel <= 0.15 &&
+                    gold.every((g) => g && g[0] >= -1 && g[0] <= -0.5 && g[1] >= 1.3) &&
+                    e(nacht) >= -5 && e(nacht) <= -3 && nacht.hell >= 22;
+                if (!ok) gruen = false;
+                teile.push(
+                    ort + ": Karte Luma " + m.karte + ", Sprung " + sprung.toFixed(3) + " EV, Buckel " + buckel.toFixed(2) + " EV, Sonne 10° " +
+                        gold.map((g) => (g ? g[0].toFixed(2) + " EV R/B ×" + g[1].toFixed(2) : "fehlt")).join(" | ") + ", Nacht " +
+                        e(nacht).toFixed(2) + " EV Luma " + nacht.hell
+                );
+            }
+            return { gruen, zahl: teile.join(" · ") + " · Linse " + u[0].slice(0, 200) + " · " + (ad || "Adapter ungenannt") };
+        },
+        pfad: [...BILD, "spec/farbe/tag-ref.json", "stamm/studio-bruecke.js", "stamm/vegetation-*.js", "gelaende-core.js", "stamm/gelaende-*.js"],
         quelle: "1 = an einem Gerät in einer Sicht über die ganze Bahn im Soll",
     },
     {
         kriterium: "licht.K3",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund: "nicht in der Fahrt (w4-sitzung-reif, 30.10.): `werkbank licht --laub fichte,tanne,ring --karte --uhr 0.5,0.27,0.05 --eigen` bootet eine eigene Welt (SITZUNG_FEINDE). Ohne --eigen in der Welt der Sitzung trägt die Linse je Zeile (Art × Uhr) ihr eigenes Einschwingen: bis zu sechs Pläne und je Stufen-Wechsel und Schuss ein `/lauf` 5 s mit `ein` 8 s und `ruhe` bis 120 s (scripts/werkbank.cjs `licht --laub`, `ein()`) — ≥ 5 × 13 s je Zeile, die neun Zeilen ≥ 585 s, über dem Deckel der Fahrt (≤ 90 s). Kürzen hieße das Einschwingen der Linse im Spiel-Baum kürzen (die Karte gegen ihre Gestalt verlangt die stehende Stufe); als Zwilling von licht.K3#2 läge sie in deren Lauf (33 Zeilen). GTX takt23 73bdf938 im eigenen Boot: OFFEN nach 10,1 min (das Schloss kam nie). Die Station steht in koordination 32fe3ffc.",
+        // die F6-Linse (werkbank licht --laub … --karte --uhr, licht-linsen.cjs `laubGegenlicht` + `laubLichtUrteil`): die Karte
+        // gegen ihre Gestalt (fichte, tanne, am Exemplar nächst der Mess-Wiese) und der Fern-Ring gegen den Boden-Satz an derselben
+        // Stelle (Messort dorf), dasselbe Auge, je Uhr 0,5/0,27/0,05. Das Soll der Staffel: jede Zeile Fernstufe/Gestalt 0,9–1,1
+        // (die Linse urteilt die Stunde gegen ihren Mittag; hier zählt jede Zeile selbst, der Mittag eingeschlossen).
+        // IN DER SITZUNG (w4-fehlt-acht): EIN Lauf mit Staffel 2 (Zwillinge, LAUB_PROBE) — sein Befehl trägt die neun Zeilen der Staffel 1
+        // (fichte, tanne, ring je Uhr), das Urteil liest nur sie
+        probe: LAUB_PROBE,
+        gpu: true,
+        zeit: false,
+        minuten: 20,
+        urteil: (j, lauf) => {
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(lauf.stdout) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const w = (j && j.welt) || {};
+            let gruen = hw;
+            const teile = [];
+            for (const art of ["fichte", "tanne", "ring"])
+                for (const uhr of ["0.5", "0.27", "0.05"]) {
+                    const z = w[art + "@" + uhr];
+                    const v = z && z.karte ? z.karte.verhaeltnis : null;
+                    if (!(v >= 0.9 && v <= 1.1)) gruen = false;
+                    teile.push(art + "@" + uhr + " " + (v != null ? v : (z && z.fehler) || "ungemessen"));
+                }
+            return { gruen, zahl: teile.join(" · ") + " · Soll 0,9–1,1 · " + (ad || "Adapter ungenannt") };
+        },
+        pfad: [...BILD, "phyto-core.js", "gelaende-core.js", "stamm/gelaende-*.js", "stamm/vegetation-*.js", "stamm/studio-bruecke.js"],
         quelle: "1 = Karte und Fern-Ring je Uhr 0,5/0,27/0,05 im Band 0,9–1,1 an einem Gerät",
     },
     {
         kriterium: "licht.K3",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund: "nicht in der Fahrt (w4-sitzung-reif, 30.10.): `werkbank licht --laub` mit elf Wegen (fichte, tanne, ring, feld, feld0/90/180, panorama, spiegel, spiegel180, wasser) je Uhr 0,5/0,27/0,05 `--eigen` bootet eine eigene Welt (SITZUNG_FEINDE). Ohne --eigen am Messort dorf sind es 33 Zeilen, die Karten-Zeilen je ≥ 5 Einschwing-Läufe der Linse (`/lauf` 5 s, `ein` 8 s; licht.K3#1) — ≥ 35 min, über dem Deckel der Fahrt (≤ 90 s). Ungemessen an Radeon und GTX (die Station schätzte 40 min im eigenen Boot). Die Station steht in koordination 32fe3ffc.",
+        // w4-licht-baustein: dieselbe F6-Linse (werkbank licht --laub … --karte --uhr, licht-linsen.cjs `laubGegenlicht`, `lichtWeg`,
+        // `laubLichtUrteil`) über die Fernstufen der Staffel 1 (die Karte fichte/tanne gegen ihre Gestalt, der Fern-Ring gegen den
+        // Boden-Satz) UND die Wege, die ihr Licht aus dem EINEN Baustein `_weltLicht` nehmen: die graue Fläche (18 %) im Licht der
+        // Welt-Stoffe gegen den Feld-March (waagrecht, senkrecht 0/90/180° neben der Sonne), das Panorama, den Spiegel (der Boden des
+        // Spiegel-Felds gegen die waagrechte Karte, zur Sonne und abgewandt) und den Wasser-Körper — je Uhr 0,5/0,27/0,05, ohne Luft
+        // und Schatten (Messort dorf). Das Soll der Staffel: jede Zeile Weg bzw. Fernstufe gegen die Welt 0,9–1,1; das Urteil fällt je
+        // Gerät, die Staffel gilt mit beiden. Die Mechanik (jeder Pass nimmt jedes Licht aus dem Baustein, drei Mutanten ROT beim
+        // Namen) urteilt der Playtest (`checkBandLichtBaustein`).
+        // IN DER SITZUNG (w4-fehlt-acht, proben-welt.cjs `werkbankLinse`): derselbe Befehl der Linse ohne `--eigen`, im Fenster der Station
+        // (640×360); jedes Einschwingen der Linse (`ein()`: `/lauf` 5 s, `ein` 8 s, Ruhe bis 120 s — je Karten-Zeile bis zu sechsmal) ist
+        // DIE BERUHIGUNG beim Namen (die Bühne, dann `__weltStehtNach`: die Welt steht). Die Reihe der Arten beginnt am Dorf (der Ring und
+        // die Wege des Lichts, sein Messort stellt die Sitzung VOR dem Deckel), Fichte und Tanne folgen an der Mess-Wiese — das Urteil liest
+        // jede Zeile beim Namen, die Reihe nie
+        probe: LAUB_PROBE,
+        gpu: true,
+        zeit: false,
+        minuten: 40,
+        urteil: (j, lauf) => {
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(lauf.stdout) || [null])[0];
+            const hw = !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad);
+            const w = (j && j.welt) || {};
+            let gruen = hw;
+            const teile = [];
+            for (const art of ["fichte", "tanne", "ring", "feld", "feld0", "feld90", "feld180", "panorama", "spiegel", "spiegel180", "wasser"])
+                for (const uhr of ["0.5", "0.27", "0.05"]) {
+                    const z = w[art + "@" + uhr];
+                    const v = z && z.karte ? z.karte.verhaeltnis : null;
+                    if (!(v >= 0.9 && v <= 1.1)) gruen = false;
+                    teile.push(art + "@" + uhr + " " + (v != null ? v : (z && z.fehler) || "ungemessen"));
+                }
+            return { gruen, zahl: teile.join(" · ") + " · Soll 0,9–1,1 · " + (ad || "Adapter ungenannt") };
+        },
+        pfad: [...BILD, "phyto-core.js", "gelaende-core.js", "stamm/gelaende-*.js", "stamm/vegetation-*.js", "stamm/studio-bruecke.js", "stamm/wasser-*.js"],
         quelle: "2 = auch Feld-Pass, Panorama und Wasser, beide Geräte",
     },
+    // ───────── lod.K3 — aus jeder Blick-Hebung (w4-hebungsringe) ─────────
+    // DIE HEBUNGS-RINGE (foundry-core impostor.hebungen −20/0/40/80, ringTeiler 2: der Ring 0° in voller Zelle, die übrigen in ¼
+    // der Zellfläche — die Atlas-Diät, phyto-core `karteRinge`): die Karte backt je Takt EINEN Ring, kippt zum Auge und wählt je
+    // Pixel den Ring der Hebung. gate:foundry-impostor C6 backt eine flache Krone über einem Stamm durch den ECHTEN Bake (gedreht
+    // −119°, Skala 1,5, abseits des Ursprungs) und misst je Hebung Deckung K/G und IoU gegen dieselbe Gestalt als Mesh, je
+    // Schicht-Format (bc mit WebGPU-BC, rgba8); Selbsttest: jeder Ring waagrecht gebacken. Cloud (swiftshader, w4-hebungsringe
+    // 69d7d3f2): bc −20° 1,004/0,966 · 0° 1,064/0,894 · 40° 1,003/0,983 · 80° 0,97/0,97, waagrecht 80° 0,341/0,237; dieselbe Probe
+    // an main 715754fc: 80° 0,064/0,064, 40° 0,294/0,272, −20° 0,493/0,432.
+    {
+        kriterium: "lod.K3",
+        staffel: 1,
+        // EIN Gerät (die Staffel: „an einem Gerät"; w4-fehlt-acht): die GTX — die Fahrt der Radeon trägt die Laub-Probe und tiere.K5#1
+        geraet: "gtx",
+        // IN DER SITZUNG (w4-fehlt-acht, proben-welt.cjs `karteHebung`): Teil C der Linse in der Seite der Welt, mit drei Ankern auf C6
+        // gekürzt (C6 Byte für Byte), je Format ein frischer Probe-Renderer und Probe-Atlas, gedruckt mit dem Block der Linse; die Welt
+        // bekommt Atlas, Bühne, Rechner, Stoffe, Wind und Foundry zurück (`leihe`), die Ziele des Probe-Renderers fallen vor ihm (die
+        // Bühne ruht sofort), der VRAM-Rest nach dem GC ≤ 1 MB, sonst keine Zeile (headless swiftshader: beide Zeilen, Rest +0 MB).
+        // FIMP_PORT las im Spiel-Baum niemand (die Linse lauschte auf Port 0). DER DECKEL DER ARBEIT (geschätzt): zwei Formate × (2 Bakes
+        // × 4 Ringe, 15 Renders 128²) und der Pipeline-Bau des frischen Geräts — 15 s
+        probe: { befehl: PW.torBefehl(PW.karteHebung), sek: 15, mutiert: false },
+        gpu: true,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            const t = String(lauf.stdout || "");
+            const ad = (/\[linse-gpu\][^\r\n]*/.exec(t) || ["[linse-gpu] ungenannt"])[0];
+            const hw = !/swiftshader|llvmpipe|lavapipe|software|subzero|ungenannt|kein /i.test(ad);
+            const je = [...t.matchAll(/C6 HEBUNG \[(\w+)\]: ([^|\r\n]*)\| waagrecht 80° ([\d.]+)\/([\d.]+)/g)].map(([, fmt, rest, sd, si]) => {
+                const w = {};
+                for (const m of rest.matchAll(/(-?\d+)° ([\d.]+)\/([\d.]+)/g)) w[m[1]] = [+m[2], +m[3]];
+                const ok = [-20, 0, 40, 80].every((p) => w[p] && w[p][0] >= 0.75 && w[p][1] >= 0.65) && +si < 0.65;
+                return { ok, text: fmt + " " + [-20, 0, 40, 80].map((p) => p + "° " + (w[p] ? w[p].join("/") : "—")).join(" · ") + " (waagrecht 80° " + sd + "/" + si + ")" };
+            });
+            if (!je.length) return { gruen: false, zahl: "keine C6-Zeile (Exit " + lauf.exit + ") · " + ad };
+            return { gruen: hw && je.every((x) => x.ok), zahl: "Deckung/IoU " + je.map((x) => x.text).join(" · ") + " (Soll ≥ 0,75/0,65) · " + ad };
+        },
+        proben: (() => {
+            const zeile = (fmt, w, s) => "  C6 HEBUNG [" + fmt + "]: " + w + " | waagrecht 80° " + s + " · Ringe -20,0,40,80 · Schicht 515200 B";
+            const ringe = "0° 1.064/0.894 · 40° 1.003/0.983 · 60° 0.882/0.745 · 80° 0.97/0.97 · -20° 1.004/0.966";
+            const waag = "0° 1.065/0.894 · 40° 0.294/0.272 · 60° 0.182/0.179 · 80° 0.064/0.064 · -20° 0.493/0.432";
+            const radeon = "[linse-gpu] webgl2/ANGLE (AMD, AMD Radeon(TM) 890M Graphics (0x0000150E) Direct3D11 vs_5_0 ps_5_0, D3D11)";
+            return [
+                { name: "eigener Lauf (swiftshader, Cloud)", stdout: "[linse-gpu] google/swiftshader\n" + zeile("bc", ringe, "0.341/0.237"), gruen: false },
+                { name: "dieselben Zahlen auf der Karte", stdout: radeon + "\n" + zeile("bc", ringe, "0.341/0.237") + "\n" + zeile("rgba8", ringe, "0.341/0.237"), gruen: true },
+                { name: "Mutante: die waagrechte Karte (main 715754fc, dieselbe Probe)", stdout: radeon + "\n" + zeile("bc", waag, "0.064/0.064"), gruen: false },
+                { name: "Mutante: der Selbsttest ist blind (waagrecht 80° besteht)", stdout: radeon + "\n" + zeile("bc", ringe, "0.97/0.97"), gruen: false },
+                { name: "ein Format reißt (rgba8 aus 80° 0,4)", stdout: radeon + "\n" + zeile("bc", ringe, "0.341/0.237") + "\n" + zeile("rgba8", ringe.replace("80° 0.97/0.97", "80° 0.4/0.38"), "0.341/0.237"), gruen: false },
+                { name: "keine C6-Zeile (die Linse vor lod.K3)", stdout: radeon + "\n✅ GRÜN — die Welt-Fernstufe liest die im Welt-Renderer gebackene Karte", gruen: false },
+            ];
+        })(),
+        // der Pfad der Probe dazu (w4-fehlt-acht): der Foundry-Cache der Probe-Körper (studio-*), der VRAM-Abgriff ihres Rests
+        pfad: [...BILD, "phyto-core.js", "foundry-bruecke.js", "stamm/siedlung-satz.js", "stamm/vegetation-baum.js", "scripts/diag-foundry-impostor.cjs", "stamm/studio-*.js", "scripts/lib/vram-abgriff.cjs"],
+        quelle: "1 = Karten-Deckung ≥ 0,75 und IoU ≥ 0,65 bei −20/0/40/80° für Bäume an einem Gerät",
+    },
+];
+
+// Was sich nicht als Station fassen lässt. Steht neben der Liste; der Läufer liest es nicht.
+stationen.fehlt = [
     {
         kriterium: "schatten.K1",
         staffel: 2,
         geraet: ["radeon", "gtx"],
         befehl: null,
-        grund: "nicht in der Fahrt (w4-sitzung-reif, 30.10.): die Probe (fenster · umstellen wiese · zerlegen --nur k0 · licht --kontakt --zuwachs --uhr 0.5,0.3 auf der Prüfbühne; Zeit-Station) kam mit Deckel 900 s und maß in der Sitzung an 24a0f3ef auf der Radeon 3,94 min (ROT: Zuwachs 0,48–0,80 cm/m gegen 0,9 ± 0,25, koordination messung/24a0f3ef-radeon.json), davon die Mess-Wiese kalt 40,3 s — warm ≥ 196 s, über dem Deckel der Fahrt (≤ 90 s). Teilbar ist sie nicht: Kosten (zerlegen k0, ABBA an der Wiese) und Kontakt je Uhr (die Bühne: Welt-Import, Neuladen) sind EINE Staffel; schatten.K1#1 (EINE Uhr, ohne Zuwachs und Kosten) braucht für sich 45,0 s (Gegenlauf Radeon b3f9ae95). Die Station steht in koordination 32fe3ffc.",
+        grund: "nicht in der Fahrt (w4-fehlt-acht, 30.10.): DER TÄTER BEIM NAMEN — `licht --kontakt` stellt je Uhr zweimal um (scripts/werkbank.cjs der CLI-Zweig: die Bühne, dann die Platte saat-s7-platte 461 m daneben), je Umstellen ein kalter Ring 4: an 24a0f3ef (Radeon, 3,94 min, ROT Zuwachs 0,48–0,80 cm/m gegen 0,9 ± 0,25) trugen fünf Ringe ≈ 170 s, 84 Aufnahmen bei 1920×1080 (je Schuss zwei, die erste verworfen) ≈ 52 s, zerlegen k0 ≈ 6 s. DER SCHNITT: Bühne und Platte EINMAL vor der Uhr-Schleife (die Uhr springt danach), die Mess-Wiese vor dem Deckel durch die Sitzung, L nur für die abgetasteten Pixel — geschätzt 72–91 s, mit EINER Aufnahme je Schuss (Byte-Beweis an beiden Geräten) 51–70 s. Kein Zwilling von schatten.K1#1: dessen Urteil liest den Exit des Kontakts, der Zuwachs beider Uhren trüge ihn. Die Fahrt trägt sie nicht: nach den gemessenen Deckeln (Boot 120 → 60 s, profiband.K4 45 → 29, K5 45 → 36, affekt.K1#2 33 → 10, oekologie.K4#2 33 → 31, vegetation.K2#1 15 → 14, licht.K2#1 11 → 10) und licht.K1#1 · licht.K3 · lod.K3#1 · tiere.K5#1 steht jede Karte bei 1 800 von 1 800 s. Die Station steht in koordination 32fe3ffc.",
         quelle: "2 = Zuwachs ≈ 0,9 cm je m, Uhr 0,5 und 0,3, Kosten ≤ +0,3 ms an der GTX, beide Geräte",
-    },
-    {
-        kriterium: "lod.K3",
-        staffel: 1,
-        geraet: ["radeon", "gtx"],
-        befehl: null,
-        grund: "nicht als Probe gebaut (w4-sitzung-reif, 30.10.): die Linse steht nicht am Kopf — gate:foundry-impostor C6 (die Hebungs-Ringe −20/0/40/80° je Schicht-Format bc und rgba8, die Zeile `C6 HEBUNG`) lebt im ungemergten Spiel-Zweig w4-hebungsringe (d58bfbbe); `scripts/diag-foundry-impostor.cjs` an main 24a0f3ef trägt kein C6, jede Messung am Kopf hieße „keine C6-Zeile“. Dazu startet die Linse einen eigenen Browser (WebGL2) auf FIMP_PORT {PORT}, wo in der Sitzung der save-server der Welt lauscht; steht C6 am Kopf, misst die Probe die Bake-Bühne (`__fimpBacke`) in der Welt der Sitzung. Ungemessen an Radeon und GTX (Cloud swiftshader w4-hebungsringe 69d7d3f2: bc −20° 1,004/0,966 · 0° 1,064/0,894 · 40° 1,003/0,983 · 80° 0,97/0,97, waagrecht 80° 0,341/0,237). Die Station steht in koordination 32fe3ffc.",
-        quelle: "1 = Karten-Deckung ≥ 0,75 und IoU ≥ 0,65 bei −20/0/40/80° für Bäume an einem Gerät",
     },
     {
         kriterium: "lod.K3",
