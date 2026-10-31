@@ -1079,6 +1079,11 @@ const stationen = [
         // An origin/main gibt es `--arm` noch nicht; die Station ist dort ROT („arm fehlt“).
         // IN DER SITZUNG (29.10.): nach jedem Ortswechsel EIN_TAKT (30 echte Takte, dann „die Welt steht“ wie `umstellen`) statt
         // `lauf <n> --ein <m>` — 156 s Einschwingen an der Wanduhr fielen (8+20, 10+30, 10+30, 3 × 4+12)
+        // OFFEN (w4-stationen-schnell-b; GTX b4bcf19c 63,7 s): zwei Orte in EINER Probe — der Boden an der Mess-Wiese (die Sitzung stellt
+        // sie), der Fels an der höchsten Formation bis 400 m um Genesis: die Probe zieht 1,1 km und zahlt den kalten Ring im Deckel (GTX
+        // Genesis kalt 18,6 s, ab040980), dazu den Gang an den Fels; sechs Klassen-Bilder 1920×1080 zu je vier Aufnahmen à 33 Bildern.
+        // Im Ring der Wiese trug lokal die höchste Formation 0,47 m (≤ 111 m) — der Fels der Staffel steht an Genesis. Den Weg je Fahrt
+        // nennt DER ORT IM DECKEL (punkte.cjs)
         probe: { sek: 33, befehl: befehlDer({
             name: "material.K2#1",
             texte: { FELS_ZIEL, EIN: EIN_TAKT },
@@ -1380,7 +1385,10 @@ const stationen = [
     // IN DER SITZUNG (w4-sitzung-reif): die Probe gekürzt, nie ihr Urteil — den Ort Mess-Wiese stellt die Sitzung VOR dem Deckel (der Plan
     // nennt ihn, `probeOrt`), die Tafel-Pose liegt 5 m neben ihm im gebauten Ring; der Gang schwingt 2 s statt 20 s ein (die 20 s trugen
     // den kalten Ring des eigenen Boots — `--ein` misst nichts, es wartet), dann 8 s Gang auf der Bahn. Die Arbeit: Tafel-Bild ~6 s,
-    // Teleport in den Ring ~3 s, Gang 10 s, Spielgang-Bild ~6 s — der Deckel 30 s; die GPU-Fahrt nennt, ob er warm hält
+    // Teleport in den Ring ~3 s, Gang 10 s, Spielgang-Bild ~6 s — der Deckel 30 s; die GPU-Fahrt nennt, ob er warm hält.
+    // OFFEN (w4-stationen-schnell-b; GTX b4bcf19c 49,4 s): jedes Klassen-Bild zahlt in 1920×1080 (die Leinwand der Soll-Tafel) Aufnahme,
+    // G, G2 und je Teil-Klasse des Laubs ein O zu je 33 Bildern — das Tafel-Bild mit Blick-Wahl eine Aufnahme mehr —, der Gang 10 s
+    // Wanduhr ist das Spielgang-Bild selbst (die Stufen im Gehen, nie in einer ruhenden Welt): kein Warten ohne Messung mehr darin
     {
         kriterium: "lod.K1",
         staffel: 1,
@@ -1680,7 +1688,10 @@ const stationen = [
         // der Gang des Licht-Pools (Wahl und Blende, `_leuchtTakt`) springt mit der Uhr zu seinem Fixpunkt — die Linse wartete bis
         // 20 × 50 ms, bis jeder Platz stand; der Anker in `tagKurve` setzt Wahl- und Blend-Uhr zurück, EIN Takt trägt die Stunde (dasselbe
         // Licht, nur ohne Warten). Die Aufnahme bleibt die der Linse (die 32 Bilder der Geschichte, A8-n1). RUF-Zeilen je Kurve: am Deckel
-        // nennt die letzte die Sekunden je Uhr
+        // nennt die letzte die Sekunden je Uhr.
+        // OFFEN (w4-stationen-schnell-b; GTX b4bcf19c 48,6 s): die Staffel liest zwei Orte — Genesis (die Sitzung stellt es), dann die
+        // Mess-Wiese kalt im Deckel (RUF /umstellen 13,2 s) — und je Ort 188 Uhren (100 grob, 88 fein): 376 Aufnahmen zu 2–5 Bildern
+        // (Mittel 4,2), 9,5–9,7 s je grobe Kurve, ~95 ms je Uhr. Der WEG gegen die volle Aufnahme ist an b4bcf19c selbst ROT (Y 0,0124 > 0,01)
         probe: TAG_PROBE,
         gpu: true,
         zeit: false,
@@ -1776,7 +1787,10 @@ const stationen = [
         // (640×360); jedes Einschwingen der Linse (`ein()`: `/lauf` 5 s, `ein` 8 s, Ruhe bis 120 s — je Karten-Zeile bis zu sechsmal) ist
         // DIE BERUHIGUNG beim Namen (die Bühne, dann `__weltStehtNach`: die Welt steht). Die Reihe der Arten beginnt am Dorf (der Ring und
         // die Wege des Lichts, sein Messort stellt die Sitzung VOR dem Deckel), Fichte und Tanne folgen an der Mess-Wiese — das Urteil liest
-        // jede Zeile beim Namen, die Reihe nie
+        // jede Zeile beim Namen, die Reihe nie.
+        // OFFEN (w4-stationen-schnell-b; GTX b4bcf19c 80,1 s, die RUF-Zeilen): am Dorf der Gang ans Auge des Rings 57 m im lebenden Dorf
+        // 14,1 s (die Welt steht erst, wenn seine Leute stehen) und 24 Wege des Lichts ~10 s, dann die Mess-Wiese für Fichte und Tanne kalt
+        // 33,7 s im Deckel, dort 20 Beruhigungen und die Schüsse ~15 s — zwei Orte in EINER Probe; DER ORT IM DECKEL nennt den Weg
         probe: LAUB_PROBE,
         gpu: true,
         zeit: false,
