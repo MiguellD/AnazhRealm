@@ -90,8 +90,10 @@ class AnazhRealm_studio_stoff {
         // trägt keine Stempel (`STREU_SATZ_ATTR`). Der Stoff des Menschen (`ton`) blendet nie: sein Guss steht auf dem Null-Stempel
         // (die Maske wäre die Identität), und ihre drei Stempel sprengten neben dem Ton den Deckel der Vertex-Puffer (WebGPU 8: Lage ·
         // Knochen · Gewichte · Normale · Farbe · Ton · aH0L · aLodLevel · aH0 = 9) — das Gerät sagte 8 Programme ab, Auge und
-        // Kleid zeichneten nie (mensch.K4, 30.10.); ohne Maske liest er 6 Puffer.
-        const xfade = wiegen !== true && ton !== true;
+        // Kleid zeichneten nie (mensch.K4, 30.10.); ohne Maske liest er 6 Puffer. Der STEIN-Stoff (`mp.stein`, w4-genesis-tore)
+        // blendet nie: ein Bau steht auf dem Null-Stempel, und sein Satz trägt statt der drei Stempel das uv seiner Lage im Verband
+        // (`BAU_STEIN_ATTR`: Lage · Normale · Farbe · Regler · Glut · uv = 6) — mit den Stempeln waren es 9, das Gerät sagte ab.
+        const xfade = wiegen !== true && ton !== true && !(mp && typeof mp.stein === "string");
         // DER SCHLÜSSEL IST DIE EINE MATERIAL-IDENTITÄT (phyto-core `budgetStoff`, W8): Art · Regler · SEITE · Gewebe ·
         // Glut · Fell-/Haut-Ton — dieselbe, mit der das Budget-Gesetz am Studio-Ausgang Stoffe zählt und faltet (die
         // Seite fehlte: ein beidseitiger Stoff teilte das Material eines einseitigen gleicher Regler, first-wins).
@@ -386,6 +388,21 @@ class AnazhRealm_studio_stoff {
             const [wf, wa] = webe;
             const wn = TSL.mx_noise_float(TSL.positionLocal.mul(wf)).mul(wa).add(1.0);
             mat.colorNode = TSL.vec4(vcol.mul(wn), 1.0);
+        } else if (R.ub) {
+            // DAS UNBELEUCHTETE IST LICHT (w4-genesis-tore): ein Stoff ohne Licht-Antwort im Labor (MeshBasic: das Filigran, der
+            // Bogen-Saum und die Licht-Scheibe der Tore) leuchtet in seiner Farbe (das Leucht-Gesetz oben, `leucht` 1) und wirft
+            // kein Licht zurück — schwarz, wie im Labor, wo kein Licht auf ihn wirkt. Bis hier zeichnete die Welt ihn matt
+            // beleuchtet (Rauheit 0,7): das glühende Filigran stand als olives Messing im Schatten.
+            mat.colorNode = TSL.vec4(0.0, 0.0, 0.0, 1.0);
+        } else if (mp && typeof mp.stein === "string") {
+            // DAS STEIN-GESETZ (porta STEIN_GESETZ, w4-genesis-tore): Fuge, Kante, Bruchton und Mikro-Relief aus der Lage im
+            // Verband (`_steinStoff`, das uv der Teile); die Zahlen liest der Stoff aus dem Gesetzbuch (fail-closed wie die Webung).
+            const G = AnazhRealm.Gesetz("porta:STEIN_GESETZ." + mp.stein);
+            if (!G || !(G.fuge > 0) || !(G.fase > 0) || !(G.ton >= 0) || !(G.fugeTon > 0))
+                throw this._stoffBruch("das Stein-Gesetz " + mp.stein + " fehlt in porta:STEIN_GESETZ");
+            const rauh = satz ? TSL.attribute("aRegler", "vec3").x : TSL.float(rough);
+            this._steinStoff(TSL, mat, vcol, G, TSL.smoothstep(0.3, 0.6, rauh));
+            mat.userData.stein = mp.stein; // der Bau-Satz trägt das uv seiner Ecken (`BAU_STEIN_ATTR`)
         } else {
             // Fels/Kristall/Blume/Laub: die Vertex-Farbe (Laub/Gras × uSeasonMul), die Regler (rough/metal/flat/
             // env) sind schon oben aus `mp` gesetzt → Kristall glaenzt facettiert, Fels bleibt matt.
@@ -507,6 +524,9 @@ class AnazhRealm_studio_stoff {
             satz === true ? (R.op < 1 ? "satz:durch" : "satz") : "",
             ton ? "aTon" : "", // die Farbe je Ecke nach der Palette des Leibs (`vcol`): ohne Blende teilte sie sonst einen Graphen
             jahr === true ? "jahr" : "",
+            // das Unbeleuchtete (schwarz, nur Leuchten) und der Stein (Fuge, Kante, Ton aus dem uv) bauen eigene Graphen
+            R.ub ? "ub" : "",
+            mp && typeof mp.stein === "string" && !R.ub ? "stein:" + mp.stein : "",
         ].join("|");
         this._graphTeilen(mat, _sig, [
             "colorNode",

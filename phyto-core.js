@@ -4385,6 +4385,9 @@
             cc: mp && typeof mp.clearcoat === "number" && mp.clearcoat > 0 ? mp.clearcoat : 0,
             ccr: mp && typeof mp.clearcoatRoughness === "number" ? mp.clearcoatRoughness : 0,
             op: mp && typeof mp.opacity === "number" && mp.opacity < 1 ? mp.opacity : 1,
+            // w4-genesis-tore: ein Stoff ohne Licht-Antwort im Labor (MeshBasic) — er leuchtet nur (`leucht`), die Albedo ist
+            // schwarz (die Brücke stempelt ihn, `unbeleuchtet`); jeder andere Stoff bleibt byte-alt
+            ub: !!(mp && mp.unbeleuchtet === true),
         };
     }
     // Der Stoff-Schlüssel — DIE EINE Material-Identität (der Wirt keyt seinen Material-Cache damit).
@@ -4407,6 +4410,10 @@
             // Klarlack und Durchsicht sind Teil der Identität (nur wo das Gesetzbuch sie trägt — sonst byte-alt)
             (R.cc > 0 ? "|cc:" + R.cc.toFixed(2) + "@" + R.ccr.toFixed(2) : "") +
             (R.op < 1 ? "|op:" + R.op.toFixed(2) : "") +
+            // w4-genesis-tore: das Unbeleuchtete und das Stein-Gesetz (Fuge, Kante, Ton aus dem uv) sind Teil der Identität (nur wo
+            // das Gesetzbuch sie trägt — sonst byte-alt)
+            (R.ub ? "|ub" : "") +
+            (mp && typeof mp.stein === "string" ? "|st:" + mp.stein : "") +
             // die Seh-Klasse gehört zur Identität: zwei Stoffe gleicher Regler und verschiedener Funktion (Klaue und
             // Pupille, beide 0,2 matt-schwarz) sind zwei Materialien — sonst trüge die Pupille die Klaue in den Stoff
             (budgetSeh(mp) ? "|v:" + mp.seh : "")

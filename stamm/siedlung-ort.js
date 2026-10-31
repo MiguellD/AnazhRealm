@@ -2204,7 +2204,16 @@ class AnazhRealm_siedlung_ort {
             const z = M.z + Math.sin(a) * R;
             const y = this.getTerrainHeightAt(x, z);
             if (!Number.isFinite(y)) return; // Terrain reift noch — nächster Tick
-            const entry = this.spawnArchitecture(namen[i], { x, y, z }, { seed: ((i + 1) * 7919) >>> 0 });
+            // DER RING BLICKT ZUR MITTE (w4-genesis-tore): die Öffnung jedes Tors (seine Vorlagen-+z, die Membran) steht zum
+            // Genesis-Ort — wer ankommt, sieht jedes Tor von vorn und geht radial hindurch, zur Vorschau dahinter
+            // (`_portalVorschauOrt`). Bis hier standen alle zehn mit Gier 0: das Tor im Ankunftsblick (−x) zeigte nur die
+            // Tiefe seiner Pfeiler, die Nachbarn standen 54° schräg.
+            const gier = Math.atan2(-Math.cos(a), -Math.sin(a));
+            const entry = this.spawnArchitecture(
+                namen[i],
+                { x, y, z },
+                { seed: ((i + 1) * 7919) >>> 0, rotationY: gier }
+            );
             if (entry) gebaut++;
         }
         if (gebaut > 0) {

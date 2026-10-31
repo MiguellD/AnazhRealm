@@ -1514,6 +1514,7 @@ class AnazhRealm_koerper_leib {
         if (mat.userData && mat.userData.__webe) out.mat.webe = mat.userData.__webe;
         // Die Seh-Klasse des Gesetzbuchs reist mit (das Budget-Gesetz faltet nur innerhalb EINER, `_ofenBudget`).
         if (mat.userData && mat.userData.__seh) out.mat.seh = mat.userData.__seh;
+        if (mat.userData && typeof mat.userData.__stein === "string") out.mat.stein = mat.userData.__stein; // w4-genesis-tore (Brücke)
         if (mat.userData && typeof mat.userData.__leucht === "number") out.mat.leucht = mat.userData.__leucht;
         if (mat.userData && typeof mat.userData.__licht === "string") out.mat.licht = mat.userData.__licht; // K11 (Brücke)
         if (mat.emissive && (mat.emissive.r || mat.emissive.g || mat.emissive.b)) {
@@ -1527,6 +1528,13 @@ class AnazhRealm_koerper_leib {
             out.mat.clearcoatRoughness = typeof mat.clearcoatRoughness === "number" ? mat.clearcoatRoughness : 0;
         }
         if (mat.transparent && typeof mat.opacity === "number" && mat.opacity < 1) out.mat.opacity = mat.opacity;
+        // das Unbeleuchtete ist Licht (w4-genesis-tore, wie die Brücke): ein MeshBasic leuchtet in seiner Farbe, schwarz, matt
+        if (mat.isMeshBasicMaterial && mat.visible !== false && out.kind === "unknown") {
+            out.mat.roughness = 1;
+            out.mat.metalness = 0;
+            out.mat.leucht = 1;
+            out.mat.unbeleuchtet = true;
+        }
         if (geo && geo.attributes) {
             for (const name in geo.attributes) {
                 const at = geo.attributes[name];

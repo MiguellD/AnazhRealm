@@ -863,7 +863,8 @@ class AnazhRealm_dirigent_ankunft {
     // der Bake, nie die L0), der Bau seine Grobstufe (die L2 und ihr Wurf): das erste Bild wartet auf keine feinere Stufe
     // als die billigste ganze. Danach gleitet der Faktor über ANKUNFT_GLEIT_BILDER gezeichnete Bilder auf 1
     // (`_ankunftGleit`, gezählt im Zeichen-Takt neben `uLodPerf`): jede Baum-Gestalt verfeinert durch ihr bestehendes Band
-    // (Lehre 26), der Bau nach seinen Grenzen mit Hysterese (K43/K64: das Ring-Tor in 11 m hält seine L2). Zwei Leser, EINE
+    // (Lehre 26), der Bau nach seinen Grenzen. Die Ferne ist kein Zustand der Hysterese (`_archStufeUrteil`, w4-genesis-tore):
+    // was sie setzte, wählt danach am Abstand — das Ring-Tor in 11 m trägt seine L1, nie die L2 der Ankunft. Zwei Leser, EINE
     // Zahl: die Wahrnehmungs-Distanz der Karten-Arten (`_lodPerceptionDistance`, CPU-Wahl UND Shader-Maske `uLodPerf`) und die
     // Grenzen der Bauten
     // (`_tickArchitectureLOD`, `_foundryLodForEntry`). Ohne Studio-Welt trägt keine Karte: 1.

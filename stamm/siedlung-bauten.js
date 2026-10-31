@@ -210,15 +210,24 @@ class AnazhRealm_siedlung_bauten {
         // „Karte" auf und blendete nach Distanz aus — ohne L1-Partner, der Baum stand halb ausgedithert.
         // DIE GRENZEN DES GESETZBUCHS (K43): nennt die Art ihre Stufen-Grenzen (B2c `ab`), wählt der Takt nach ihnen — in
         // der Ankunft aus der Ferne (`_ankunftsFerne`, B2) die Grobstufe
+        // DIE FERNE IST KEIN ZUSTAND (w4-genesis-tore): die Hysterese hält eine Stufe gegen das Zittern eines BEWEGTEN Auges —
+        // sie gilt nur für eine Stufe, die die Wahl am echten Abstand bestätigt hat (`_lodAmAbstand`). Was die Ankunft setzte
+        // (der Kalt-Schätzer `_foundryLodForEntry` und jede Wahl, solange die Ferne > 1 misst), wählt danach am Abstand ohne
+        // Zustand, bis die Stufe steht. Bis hier hielt das Band der Grobstufe (12 m ± 10 %) jedes Ring-Tor in 11 m auf der L2
+        // der Ankunft — für immer (Genesis Ego: 7 von 7 Studio-Toren L2, 20 px Umriss-Fehler; die Wahl am Abstand ist die L1).
+        // Dieselbe Klasse am Baum: was im Band seiner Schwelle stand, hielt die Karte der Ankunft.
+        const ferne = this._ankunftsFerne();
+        if (ferne > 1) entry._lodAmAbstand = false;
+        const zustand = entry._lodAmAbstand === true ? entry._lodLevel : undefined;
         const grenzen = treeLike ? null : this._archStufenGrenzen(entry);
         let newLOD = grenzen
             ? AnazhRealm._stufeNachGrenzen(
-                  dist * this._ankunftsFerne(),
-                  entry._lodLevel,
+                  dist * ferne,
+                  zustand,
                   grenzen,
                   Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1
               )
-            : this._chooseLODForDistance(dist, entry._bruecke ? undefined : entry._lodLevel, visH);
+            : this._chooseLODForDistance(dist, entry._bruecke ? undefined : zustand, visH);
         // Occlusion-Demotion: ein ferner 3D-Baum (LOD0/1) hinter dichter Kronen-Masse fällt auf LOD2.
         // `entry._occluded` trägt die Hysterese — transient, NICHT im Snapshot.
         if (occlOn && newLOD < 2 && dist > AnazhRealm.OCCLUSION.occDist) {
@@ -248,6 +257,8 @@ class AnazhRealm_siedlung_bauten {
         }
         // DER STUFEN-VORLAUF (`_stufenVorlaufWahl`): unter dem Ladeschirm trägt der Baum seiner Art die L1
         if (this._imStufenVorlauf(entry)) newLOD = 1;
+        // steht der Eintrag auf der Wahl am Abstand (ohne Ferne), ist seine Stufe ab jetzt ein Zustand der Hysterese
+        if (ferne <= 1 && newLOD === entry._lodLevel) entry._lodAmAbstand = true;
         if (newLOD === entry._lodLevel) {
             // Die Distanz-Wahl ist selbst die Karte: die Brücke ist keine mehr, die Karte blendet wie jede Fernstufe.
             if (entry._bruecke) {
