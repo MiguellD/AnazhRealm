@@ -1,7 +1,7 @@
 {
  "sha": "e0139769f464e8137f417ad0fc6f0af23cdddcc0",
  "geraet": "gtx",
- "zeit": "2026-10-31T02:40:04.740Z",
+ "zeit": "2026-10-31T02:44:45.579Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "profiband.K4#1": {
@@ -752,6 +752,43 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "halten.K5#1",
+   "modus": "session"
+  },
+  "halten.K1#2": {
+   "gruen": false,
+   "zahl": "vor: Treffer KE 74.7 J · p 5.97 · v 23.3 · Schaden 15.8 · edgeQ 1.000/Bild 0.998 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 78.9 J · p 6.76 · v 22.1 · Schaden 17.0 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE ? J · p ? · v ? · Schaden ? · edgeQ ?/Bild ? · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7° · ROT: schneide-traf",
+   "exit": 1,
+   "minuten": 0.18,
+   "grund": "ROT: vor: Treffer KE 74.7 J · p 5.97 · v 23.3 · Schaden 15.8 · edgeQ 1.000/Bild 0.998 · Werk 1.383 kg β 26.3° · Labor 1.383 kg β 26.3° | masse: Treffer KE 78.9 J · p 6.76 · v 22.1 · Schaden 17.0 · edgeQ 1.000/Bild 1.000 · Werk 1.646 kg β 26.3° · Labor 1.646 kg β 26.3° | schneide: Treffer KE ? J · p ? · v ? · Schaden ? · edgeQ ?/Bild ? · Werk 1.383 kg β 22.7° · Labor 1.383 kg β 22.7° · ROT: schneide-traf",
+   "gpu": "nvidia/pascal",
+   "s": 10.6,
+   "eich": {
+    "s": 10.6,
+    "sek": 10,
+    "gesetzS": 45
+   },
+   "zeit": "2026-10-31T02:42:50.412Z",
+   "abdruck": "575cd53bd367",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K5#1": {
+   "gruen": true,
+   "zahl": "Federung im Bild: Drift-Wank 8.609 gegen Glatt 0.54 mm, Stoß-Antwort Glatt/Hang 7.077/10.572 mm (Mutante 2.672/2.141) · Rumble Drift 1 gegen Glatt 0.004, Summen 0.599/0.536 (Mutante 0, 0.126) · Motor 66.7 Hz je 1000 Upm (klang-zensus F) · RM1–3 ✅✅✅",
+   "exit": 0,
+   "minuten": 0.38,
+   "gpu": "nvidia/pascal",
+   "s": 22.8,
+   "eich": {
+    "s": 22.8,
+    "sek": 15,
+    "gesetzS": 45
+   },
+   "zeit": "2026-10-31T02:43:01.925Z",
+   "abdruck": "1a113efa7936",
+   "port": 7804,
+   "bahn": "sitzung",
    "modus": "session"
   }
  },
@@ -1644,40 +1681,22 @@
    "zwilling": "leib.K4#1",
    "modus": "session"
   },
-  "halten.K1#2": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.678Z",
-   "abdruck": "575cd53bd367",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
-  "fahrzeug.K5#1": {
-   "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
-   "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.682Z",
-   "abdruck": "1a113efa7936",
-   "port": 7804,
-   "bahn": "sitzung",
-   "modus": "session"
-  },
   "tore.K3#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "EICH: 62.4 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (GRÜN: 30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koe)",
+   "exit": 0,
+   "minuten": 1.04,
+   "gpu": "nvidia/pascal",
+   "s": 62.4,
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.685Z",
+   "grund": "EICH: 62.4 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (GRÜN: 30/30 Ring-Welten × Teile byte-gleich vor dem Tor · drüben · daheim (skeleton Apertur, fluid Apertur, terrain Apertur, garage Apertur, portale Apertur, schmiede Apertur, fachwerk Apertur, klang E, koe)",
+   "eich": {
+    "s": 62.4,
+    "sek": 10,
+    "gesetzS": 45,
+    "urteil": "GRÜN"
+   },
+   "zeit": "2026-10-31T02:43:43.012Z",
    "abdruck": "f3dd900bd365",
    "port": 7804,
    "bahn": "sitzung",
@@ -1685,12 +1704,20 @@
   },
   "tore.K3#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
-   "exit": null,
-   "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "EICH: 62.4 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (GRÜN: leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim)",
+   "exit": 0,
+   "minuten": 1.04,
+   "gpu": "nvidia/pascal",
+   "s": 62.4,
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.685Z",
+   "grund": "EICH: 62.4 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (GRÜN: leib 10/10 · inventar 10/10 · wield 10/10 · reittier 10/10 · werk 10/10 Ziel-Seiten byte-gleich vor dem Tor · drüben · daheim)",
+   "eich": {
+    "s": 62.4,
+    "sek": 10,
+    "gesetzS": 45,
+    "urteil": "GRÜN"
+   },
+   "zeit": "2026-10-31T02:43:43.012Z",
    "abdruck": "dd6b3dbab075",
    "port": 7804,
    "bahn": "sitzung",
@@ -1699,12 +1726,12 @@
   },
   "fahrzeug.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.689Z",
+   "zeit": "2026-10-31T02:44:45.555Z",
    "abdruck": "cd6615e5a9f1",
    "port": 7804,
    "bahn": "sitzung",
@@ -1712,12 +1739,12 @@
   },
   "fahrzeug.K2#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.699Z",
+   "zeit": "2026-10-31T02:44:45.557Z",
    "abdruck": "1c7084fdd290",
    "port": 7804,
    "bahn": "sitzung",
@@ -1725,12 +1752,12 @@
   },
   "streaming.K4#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.705Z",
+   "zeit": "2026-10-31T02:44:45.561Z",
    "abdruck": "50a2e978b7c2",
    "port": 7804,
    "bahn": "sitzung",
@@ -1738,12 +1765,12 @@
   },
   "profiband.K1#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.714Z",
+   "zeit": "2026-10-31T02:44:45.564Z",
    "abdruck": "7cd1056c1cc0",
    "port": 7804,
    "bahn": "sitzung",
@@ -1751,12 +1778,12 @@
   },
   "profiband.K1#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.714Z",
+   "zeit": "2026-10-31T02:44:45.564Z",
    "abdruck": "cf562a45efb9",
    "port": 7804,
    "bahn": "sitzung",
@@ -1765,12 +1792,12 @@
   },
   "profiband.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.714Z",
+   "zeit": "2026-10-31T02:44:45.564Z",
    "abdruck": "9c1df53eb562",
    "port": 7804,
    "bahn": "sitzung",
@@ -1779,12 +1806,12 @@
   },
   "profiband.K2#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.714Z",
+   "zeit": "2026-10-31T02:44:45.564Z",
    "abdruck": "9a2d5d4c1ac7",
    "port": 7804,
    "bahn": "sitzung",
@@ -1793,12 +1820,12 @@
   },
   "profiband.K3#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.714Z",
+   "zeit": "2026-10-31T02:44:45.564Z",
    "abdruck": "e6ed9f20bb54",
    "port": 7804,
    "bahn": "sitzung",
@@ -1807,12 +1834,12 @@
   },
   "profiband.K3#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.714Z",
+   "zeit": "2026-10-31T02:44:45.564Z",
    "abdruck": "dc5d68e3fd86",
    "port": 7804,
    "bahn": "sitzung",
@@ -1821,12 +1848,12 @@
   },
   "klang.K4#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.720Z",
+   "zeit": "2026-10-31T02:44:45.569Z",
    "abdruck": "cac836c98bb9",
    "port": 7804,
    "bahn": "sitzung",
@@ -1834,12 +1861,12 @@
   },
   "klang.K4#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.720Z",
+   "zeit": "2026-10-31T02:44:45.569Z",
    "abdruck": "c2e728ea3fe6",
    "port": 7804,
    "bahn": "sitzung",
@@ -1848,12 +1875,12 @@
   },
   "klang.K5#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.726Z",
+   "zeit": "2026-10-31T02:44:45.571Z",
    "abdruck": "f778b3a4af51",
    "port": 7804,
    "bahn": "sitzung",
@@ -1861,12 +1888,12 @@
   },
   "speicher.K1#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.729Z",
+   "zeit": "2026-10-31T02:44:45.574Z",
    "abdruck": "c8362510f326",
    "port": 7804,
    "bahn": "sitzung",
@@ -1874,12 +1901,12 @@
   },
   "speicher.K1#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.729Z",
+   "zeit": "2026-10-31T02:44:45.574Z",
    "abdruck": "55171d38285a",
    "port": 7804,
    "bahn": "sitzung",
@@ -1888,12 +1915,12 @@
   },
   "speicher.K2#1": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.736Z",
+   "zeit": "2026-10-31T02:44:45.577Z",
    "abdruck": "6e528a0ce2ed",
    "port": 7804,
    "bahn": "sitzung",
@@ -1901,12 +1928,12 @@
   },
   "speicher.K2#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.736Z",
+   "zeit": "2026-10-31T02:44:45.577Z",
    "abdruck": "0f17387ebaed",
    "port": 7804,
    "bahn": "sitzung",
@@ -1915,12 +1942,12 @@
   },
   "speicher.K4#2": {
    "gruen": false,
-   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "zahl": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "exit": null,
    "minuten": 0,
-   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}) — ungemessen",
+   "grund": "die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}) — ungemessen",
    "ungemessen": true,
-   "zeit": "2026-10-31T02:40:04.740Z",
+   "zeit": "2026-10-31T02:44:45.579Z",
    "abdruck": "ac33134651c2",
    "port": 7804,
    "bahn": "sitzung",
@@ -1928,264 +1955,47 @@
   }
  },
  "sitzung": {
-  "start": "2026-10-31T02:10:12.883Z",
+  "start": "2026-10-31T02:42:22.565Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.3,
+  "bootS": 7.9,
   "grundstellungS": [
-   3.5,
-   2.2,
    0.1,
-   0.1,
-   0.1,
-   0.1,
-   9.5,
-   3.8,
-   2.5,
-   0.1,
-   3.7,
-   0.1,
-   1.9,
-   0.2,
-   0.1,
-   10.9,
-   4,
-   4.1,
-   4.1,
-   2.8,
-   4,
-   0.1,
-   4.8
+   5.2
   ],
-  "proben": 24,
+  "proben": 3,
   "freigaben": [],
   "orte": [
    {
-    "ort": "dorf",
-    "vor": "wetter.K2#1",
-    "s": 31.5,
-    "takte": 1132,
+    "ort": null,
+    "vor": "halten.K1#2",
+    "s": 18.6,
+    "takte": 582,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": "buehne",
-    "vor": "schatten.K1#1",
-    "s": 300,
-    "fehler": "/umstellen ohne Antwort binnen 300 s",
-    "nach": "der Tür"
-   },
-   {
     "ort": null,
-    "vor": "gelaende.K2#1",
-    "s": 13.9,
-    "takte": 584,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "physik.K2#2",
-    "s": 8.9,
-    "takte": 703,
+    "vor": "fahrzeug.K5#1",
+    "s": 0.8,
+    "takte": 70,
     "chunks": 81,
     "nach": "der Grundstellung"
    },
    {
     "ort": null,
-    "vor": "tiere.K1#2",
-    "s": 0.7,
-    "takte": 72,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K3#2",
-    "s": 7.7,
-    "takte": 750,
-    "chunks": 92,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "mensch.K1#1",
-    "s": 1,
-    "takte": 95,
-    "chunks": 92,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "vegetation.K4#1",
-    "s": 12.8,
+    "vor": "tore.K3#1",
+    "s": 13.1,
     "takte": 582,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K2#2",
-    "s": 12.6,
-    "takte": 582,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "luftwasser.K5#1",
-    "s": 12.2,
-    "takte": 582,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "mensch.K5#1",
-    "s": 1.2,
-    "takte": 81,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "studios.K2#2",
-    "s": 12.6,
-    "takte": 582,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "pipeline.K4#2",
-    "s": 1,
-    "takte": 37,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "bauen.K1#2",
-    "s": 14.1,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "studios.K4#1",
-    "s": 1,
-    "takte": 65,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "fahrzeug.K3#1",
-    "s": 1.1,
-    "takte": 85,
-    "chunks": 98,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "fahrzeug.K3#2",
-    "s": 16.7,
-    "takte": 578,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "siedlung.K2#1",
-    "s": 15.2,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "siedlung.K1#2",
-    "s": 16.3,
-    "takte": 580,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "siedlung.K5#1",
-    "s": 13.6,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "siedlung.K4#2",
-    "s": 13.9,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "leib.K2#1",
-    "s": 14,
-    "takte": 581,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "leib.K4#1",
-    "s": 4.8,
-    "fehler": "DIE WELT STEHT NICHT nach 402 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt deckWache 512/6528 (die Frist der Probe)",
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "halten.K5#1",
-    "s": 13.3,
-    "takte": 581,
     "chunks": 81,
     "nach": "der Tür"
    }
   ],
   "wegeTueren": [
    {
-    "vor": "schatten.K1#1",
-    "wege": "wege +2 [-784.3,-952.2,-631.7,-806.5/4] [-810.2,-986.5,-604,-776.9/95]",
-    "s": 3.5
-   },
-   {
-    "vor": "vegetation.K4#1",
-    "wege": "wege +3 [105.5,85.4,144.9,129.8/2] [18.2,10,145.6,135/28] [27.2,4.3,216.3,163.1/216]",
-    "s": 9.5
-   },
-   {
-    "vor": "studios.K2#2",
-    "wege": "wege +3 [105.5,85.4,144.9,129.8/2] [18.2,10,145.6,135/28] [27.2,4.3,216.3,163.1/216]",
-    "s": 3.7
-   },
-   {
-    "vor": "fahrzeug.K3#2",
-    "wege": "wege +1 [-98,-1265.9,28.1,-1018/1]",
-    "s": 10.9
-   },
-   {
-    "vor": "siedlung.K5#1",
-    "wege": "wege +3 [105.5,85.4,144.9,129.8/2] [18.2,10,145.6,135/28] [27.2,4.3,216.3,163.1/216]",
-    "s": 4.1
-   },
-   {
-    "vor": "siedlung.K4#2",
-    "wege": "wege +2 [-761.7,-1187,-539,-1136.7/3] [-791.9,-1205.8,-504.6,-1113.2/101]",
-    "s": 2.8
-   },
-   {
-    "vor": "leib.K2#1",
-    "wege": "wege +2 [152.6,531,647.4,926.8/211] [239.3,559.1,507,832.5/12]",
-    "s": 4
+    "vor": "tore.K3#1",
+    "wege": "wege +1 [-283.4,-1048.6,-205.4,-1042.6/1]",
+    "s": 5.2
    }
   ],
   "eich": {
@@ -2194,23 +2004,23 @@
    "ausnahmeS": 90,
    "fahrtMaxS": 1800
   },
-  "grund": "die Welt trägt nicht mehr vor halten.K1#2: abweichend vom Grund: playerLeben · wie {\"playerLeben\":\"{\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[]} → {\\\"hp\\\":1,\\\"ausdauer\\\":1,\\\"mana\\\":1,\\\"wunde\\\":0,\\\"nahrung\\\":[{\\\"quelle\\\":\\\"consume:_k5\\\",\\\"tags\"}",
-  "ciBlicke": 25,
+  "grund": "die Welt trägt nicht mehr vor fahrzeug.K2#1: abweichend vom Grund: tools materials · wie {\"tools\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"Konformanz-Feile\\\",\\\"opClass\\\":\\\"s\"],\"anders\":[]},\"materials\":{\"vorher\":0,\"nachher\":1,\"fehlt\":[],\"neu\":[\"{\\\"label\\\":\\\"<b>Konformanz-Glut</b>\\\",\\\"color\"],\"anders\":[]}}",
+  "ciBlicke": 4,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 45598,
-   "frameP95": 24.9,
-   "taktP95": 17.7,
-   "vramMax": 243.3,
-   "seiten": 23,
+   "bilder": 230,
+   "frameP95": 116.8,
+   "taktP95": 103.6,
+   "vramMax": 121.7,
+   "seiten": 2,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "zapfen": 1675,
-   "luecken": 16,
-   "letzteLuecke": "kein Renderer"
+   "zapfen": 124,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 1792.1,
-  "minuten": 29.91
+  "fahrtS": 142.5,
+  "minuten": 2.45
  }
 }
