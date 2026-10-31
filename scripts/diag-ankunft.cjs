@@ -146,8 +146,8 @@ function ladeschirmVerdict(m) {
         if (A.nahKarte !== 2) out.push(`ein naher Baum wünscht vor dem ersten Weltbild L${A.nahKarte} statt seiner Karte`);
         if (A.nahDanach === 2) out.push("nach dem ersten Weltbild verfeinert die Gestalt nie (der nahe Baum bleibt Karte)");
         if (A.zwilling.length) out.push(`der Kalt-Schätzer wählt anders als der Stufen-Takt: ${A.zwilling.slice(0, 3).join(", ")}`);
-        if (!A.haeltN) out.push("die Ferne: keine Probe");
-        else if (A.haelt.length) out.push(`die Ferne hält die Stufe: ${A.haelt.slice(0, 4)}`);
+        if (A.soll == null) out.push("die Ferne: keine Probe");
+        else if (A.wahl !== A.soll) out.push(`die Ferne hält die Stufe: das Tor in ${A.dB} m wählt L${A.wahl} statt L${A.soll}`);
     }
     // DER VORRAT HAT KEINEN LESER IM ERSTEN BILD: während er läuft, wartet das Bild auf nichts, was er bestellt, und
     // er bestellt keine Karte (die Karte bestellt ihr Leser, nah zuerst)
@@ -628,15 +628,8 @@ async function probe(arg) {
             // (5) alles steht
             fall("allesSteht", nichts, nichts);
             // (5b) DIE ANKUNFT AUS DER FERNE (B2): vor dem Bild die billigste ganze Stufe, danach Distanz und Grenzen wie der Takt
-            // (5c) DIE FERNE IST KEIN ZUSTAND (w4-genesis-tore): nach dem Bild gibt die Probe jedem Bau mit Grenzen die Grobstufe der
-            // Ankunft (L2, `_lodAmAbstand` false), stellt das Auge in das Band ihrer Hysterese (dort hält ein Zustand die L2) und fragt die
-            // EINE Wahl des Takts (`_archStufeUrteil`; Wechsel, Band und Verdeckung schweigen) — wünscht sie nicht die Wahl am Abstand,
-            // hält die Ferne (bis hier jedes Ring-Tor in 11 m auf L2; am Auge der Linse stand keiner im Band, die Probe sah es nicht)
-            const A = (m.ankunft = { n: 0, fein: [], zwilling: [], haelt: [], haeltN: 0 });
+            const A = (m.ankunft = { n: 0, fein: [], zwilling: [] });
             const [merkDa, R, auge] = [st._weltbildDa, st.architectureCullingRadius || 150, r._lodAuge()];
-            const still = [r._switchArchitectureLOD, r._updateFoundryLodBand, r._lodSlotOcclusionRefresh];
-            let wahl, g2;
-            Object.assign(r, { _switchArchitectureLOD: (e, l) => ((wahl = l), false), _updateFoundryLodBand() {}, _lodSlotOcclusionRefresh() {} });
             for (const da of [0, merkDa]) {
                 st._weltbildDa = da;
                 for (const e of st.architectures || []) {
@@ -647,23 +640,28 @@ async function probe(arg) {
                     const G = !e._lodSpecies && r._archStufenGrenzen(e);
                     if (!da && ++A.n && r._foundryServierStufe(pre, w) !== r._foundryServierStufe(pre, 2)) A.fein.push(`${pre} ${Math.round(d)} m L${w}`);
                     else if (da && G && w !== AnazhRealm._stufeNachGrenzen(d, undefined, G, e.scale > 0 ? e.scale : 1)) A.zwilling.push(`${pre} ${Math.round(d)} m L${w}`);
-                    else if (da && G && (g2 = G.grenzen.find((g) => g.stufe === 2))) {
-                        const s = e.scale > 0 ? e.scale : 1;
-                        const dB = g2.ab * s * (1 - (g2.h > 0 ? g2.h : G.h) / 2); // das Auge im Band der Grobstufe
-                        const soll = AnazhRealm._stufeNachGrenzen(dB, undefined, G, s);
-                        const merk = [e._lodLevel, e._lodAmAbstand, e.instanced, e.instFoundry];
-                        Object.assign(e, { _lodLevel: 2, _lodAmAbstand: false, instanced: true, instFoundry: true });
-                        wahl = 2;
-                        A.haeltN++;
-                        r._archStufeUrteil(e, { x: e.position.x + dB, z: e.position.z }, false, r._archStufeZaehler());
-                        if (wahl !== soll) A.haelt.push(`${pre} ${Math.round(dB)} m L${wahl}`);
-                        [e._lodLevel, e._lodAmAbstand, e.instanced, e.instFoundry] = merk;
-                    }
                 }
                 A[da ? "nahDanach" : "nahKarte"] = r._chooseLODForDistance(2, undefined, 20); // ein Baum von 20 m in 2 m
             }
             st._weltbildDa = merkDa;
-            [r._switchArchitectureLOD, r._updateFoundryLodBand, r._lodSlotOcclusionRefresh] = still;
+            // (5c) DIE FERNE IST KEIN ZUSTAND (w4-genesis-tore): ein Tor auf der Grobstufe der Ankunft (L2, `_lodAmAbstand` false), das Auge
+            // im Band ihrer Hysterese (Grenze × (1 − h/2) — dort hält ein Zustand die L2); die EINE Wahl des Takts (`_archStufeUrteil`,
+            // Wechsel, Band und Verdeckung schweigen) wünscht die Wahl am Abstand, sonst hält die Ferne (bis hier jedes Ring-Tor in 11 m auf
+            // L2). Das Tor baut die Probe selbst: am Auge der Linse stand mal keiner im Band, mal kein Bau in der Mesh-Zone.
+            const still = [r._switchArchitectureLOD, r._updateFoundryLodBand, r._lodSlotOcclusionRefresh];
+            const tor = { type: "tor_drachentor", position: { x: 0, y: 0, z: 0 }, scale: 1, instanced: true, instFoundry: true, _lodLevel: 2 };
+            const G = r._archStufenGrenzen(tor);
+            const g2 = G && G.grenzen.find((g) => g.stufe === 2);
+            if (g2) {
+                const dB = g2.ab * (1 - (g2.h > 0 ? g2.h : G.h) / 2);
+                Object.assign(r, { _switchArchitectureLOD: (e, l) => ((A.wahl = l), false), _updateFoundryLodBand() {}, _lodSlotOcclusionRefresh() {} });
+                Object.assign(A, { soll: AnazhRealm._stufeNachGrenzen(dB, undefined, G, 1), wahl: 2, dB: Math.round(dB * 10) / 10 });
+                try {
+                    r._archStufeUrteil(tor, { x: dB, z: 0 }, false, r._archStufeZaehler());
+                } finally {
+                    [r._switchArchitectureLOD, r._updateFoundryLodBand, r._lodSlotOcclusionRefresh] = still;
+                }
+            }
             // (6) eine Lücke ruht (dieselbe Lücke länger als WELTBILD_STILL_MS): der Ladeschirm weicht LAUT
             const ruht = () => {
                 st._weltbildLuecke = r._weltbildFehlt().join(" · ");
@@ -1726,7 +1724,7 @@ hauptLauf(async () => {
         // der ruhende Vorrat: keine Streu aufgeschoben, jede Phase „wartet auf das erste Bild"
         const vorratRuhe = { streu: { aufgeschoben: false, zellen: 0 }, PH: { wartet: "wartet auf das erste Bild", bestellt: "bestellt" }, phaseStart: "wartet auf das erste Bild", phaseVorBild: "wartet auf das erste Bild" };
         // die gesunde Ankunft aus der Ferne und der ruhende Vorrat (je Mutante ein Teil getauscht); ein Satz mit einem getauschten Teil
-        const ank = (x) => ({ n: 40, fein: [], zwilling: [], nahKarte: 2, nahDanach: 0, haelt: [], haeltN: 7, ...x });
+        const ank = (x) => ({ n: 40, fein: [], zwilling: [], nahKarte: 2, nahDanach: 0, soll: 1, wahl: 1, dB: 11.4, ...x });
         const vr = (x) => ({ ohneLeser: [], karten: 0, fehltNeu: [], ...vorratRuhe, ...x });
         const mitFall = (a, x) => ({ ...a, ...x });
         // ein Fall, der das Bild hält (Stand und Term), und einer, vor dem der Ladeschirm weicht
@@ -1804,7 +1802,8 @@ hauptLauf(async () => {
                     ["der nahe Baum vor dem Bild ohne Karte", { ankunft: ank({ nahKarte: 0 }) }, "ein naher Baum wünscht vor dem ersten Weltbild L0"],
                     ["die Gestalt verfeinert nie", { ankunft: ank({ nahDanach: 2 }) }, "nach dem ersten Weltbild verfeinert die Gestalt nie"],
                     ["der Kalt-Schätzer als Zwilling", { ankunft: ank({ zwilling: ["geisttor 11 m L0"] }) }, "der Kalt-Schätzer wählt anders als der Stufen-Takt: geisttor 11 m L0"],
-                    ["die Ferne hält das Ring-Tor", { ankunft: ank({ haelt: ["maurentor 11 m L2"] }) }, "die Ferne hält die Stufe: maurentor 11 m L2"],
+                    ["die Ferne hält das Ring-Tor", { ankunft: ank({ wahl: 2 }) }, "die Ferne hält die Stufe: das Tor in 11.4 m wählt L2 statt L1"],
+                    ["die Ferne ohne Probe", { ankunft: ank({ soll: undefined }) }, "die Ferne: keine Probe"],
                     ["ohne Ankunfts-Probe", { ankunft: undefined }, "die Ankunft aus der Ferne: keine Probe"],
                     ["die Köpfe ohne Bild-Rang der Bahn", { rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w0", "export-settlement": "w1", tor0: "w2", tor1: "w0", tor2: "w1", tor3: "w2" } } }, "der Kopf der Ankunft geht nicht in eine Bahn ohne Arbeit"],
                     ["ein Tor hinter dem Dorf-Export", { rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w1", "export-settlement": "w2", tor0: "w2", tor1: "w0", tor2: "w0", tor3: "w0" } } }, "tor0 stellen sich hinter einen Kopf der Ankunft"],
