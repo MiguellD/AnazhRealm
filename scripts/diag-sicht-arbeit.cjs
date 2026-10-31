@@ -742,7 +742,7 @@ function selbsttest() {
             /LEER: Instanz-Treue ohne beide Fälle/,
         ],
         [
-            "der Stufen-Wechsel leert seine Gruppe (CI 37612012391)",
+            "der Stufen-Wechsel leert seine Gruppe",
             (b) => {
                 b.instanzTreue.faelle.pop();
                 b.instanzTreue.leichen.push("Stufen-Wechsel f:weide|1|1:0#S 1→0 leerte die Gruppe");
