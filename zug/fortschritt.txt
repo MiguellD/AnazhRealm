@@ -1131,3 +1131,4 @@
 2026-10-31 17:40:54 takt32a-gtx START 23 Stationen in 1 Läufen
 2026-10-31 18:01:19 takt32a-gtx tiere.K1#2,tiere.K3#2,mensch.K1#1,oekologie.K4#2,vegetation.K1#1,licht.K2#2,licht.K5#1,material.K2#1,lod.K1#1,licht.K3#1,studios.K2#2,studios.K3#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,leib.K1#2,fahrzeug.K2#2,profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K3#1,klang.K2#1,speicher.K4#2 OFFEN/OFFEN/OFFEN/OFFEN/ROT/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/ROT/ROT/ROT/OFFEN/OFFEN 20.3 · 23/23
 2026-10-31 18:01:53 takt32b-gtx START 15 Stationen in 1 Läufen
+2026-10-31 18:12:04 takt32b-gtx mensch.K5#1,mensch.K4#1,haar.K2#1,vegetation.K5#2,material.K1#1,lod.K5#1,material.K4#1,bauen.K1#2,bauen.K5#2,spielgang.K3#1,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,profiband.K5#1,klang.K4#1 OFFEN/ROT/ROT/OFFEN/OFFEN/OFFEN/GRÜN/OFFEN/OFFEN/ROT/OFFEN/OFFEN/OFFEN/ROT/OFFEN 10.1 · 15/15
