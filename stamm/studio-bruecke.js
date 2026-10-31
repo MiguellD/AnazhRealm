@@ -2366,16 +2366,19 @@ class AnazhRealm_studio_bruecke {
 
     // Die WELT-PLATZIERUNGS-MATRIX eines Eintrags aus seiner Transform allein
     // (position mit −0.5-baseY wie _rebuildArchitectureMesh · rotationY · scale)
-    // — so kann eine DEDUP-Instanz platziert werden, OHNE ihr Mesh zu bauen.
-    _archWeltMatrix(entry) {
+    // — so kann eine DEDUP-Instanz platziert werden, OHNE ihr Mesh zu bauen. `out`: die Matrix, in die sie schreibt (der Satz
+    // des Bewegten folgt je Takt, `_archBewegteUrteilen` — ohne `out` eine neue).
+    _archWeltMatrix(entry, out) {
         const p = entry.position || { x: 0, y: 0, z: 0 };
         const baseY = Number.isFinite(p.y) ? p.y - 0.5 : 0;
         const s = Number.isFinite(entry.scale) ? entry.scale : 1;
-        const q = new THREE.Quaternion().setFromAxisAngle(
+        const q = (this._archWeltQ || (this._archWeltQ = new THREE.Quaternion())).setFromAxisAngle(
             this._archUp || (this._archUp = new THREE.Vector3(0, 1, 0)),
             entry.rotationY || 0
         );
-        return new THREE.Matrix4().compose(new THREE.Vector3(p.x || 0, baseY, p.z || 0), q, new THREE.Vector3(s, s, s));
+        const t = (this._archWeltT || (this._archWeltT = new THREE.Vector3())).set(p.x || 0, baseY, p.z || 0);
+        const k = (this._archWeltS || (this._archWeltS = new THREE.Vector3())).set(s, s, s);
+        return (out || new THREE.Matrix4()).compose(t, q, k);
     }
 
     // ═══ DIE ARCH-BAHN: Bau = BOX-SATZ ═══

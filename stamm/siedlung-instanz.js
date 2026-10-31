@@ -901,6 +901,7 @@ class AnazhRealm_siedlung_instanz {
         // Clamp-Kurzschluss in _switchArchitectureLOD liest sie, damit eine Ein-Stufen-Art (fels [0]) beim
         // Schwellen-Übertritt nicht neu alloziert. Transient (nicht im Snapshot).
         entry._servedLod = flat && flat.foundry && Number.isFinite(flat.lod) ? flat.lod : null;
+        this._kompositErbt(entry); // die Stufe wechselte: trägt sie seine Passagiere nicht (die Karte), verbergen sie sich
         // die Trittfläche der Ausstattung (einmal je Eintrag, idempotent) — der Studio-Platz hat das Buch
         if (entry.instFoundry) this._trittFlaecheSetzen(entry);
     }
@@ -1199,8 +1200,11 @@ class AnazhRealm_siedlung_instanz {
         // V12.0-perf.c.2 — instancierter Eintrag: Slots zurück in die Registry
         // (Matrix auf Null-Scale, Free-List). P3: keine Ammo-Kollision mehr freizugeben
         // (die Feld-Kollision lebt in `entry.blockerAABBs`, render-unabhängig).
+        // Ohne Bild trägt er keinen Passagier (`_kompositErbt`) — hier, nicht in `_archInstanceRemove`: der Stufen-Wechsel räumt
+        // und setzt im selben Ruf, sein Fahrer bliebe sonst ein Bild lang aus.
         if (entry.instanced) {
             this._archInstanceRemove(entry);
+            this._kompositErbt(entry);
             return;
         }
         if (!entry.mesh) return;
@@ -1208,6 +1212,7 @@ class AnazhRealm_siedlung_instanz {
         this._disposeSoulGroup(entry.mesh);
         entry.mesh = null;
         this._cullWecken(entry);
+        this._kompositErbt(entry);
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_siedlung_instanz]);
