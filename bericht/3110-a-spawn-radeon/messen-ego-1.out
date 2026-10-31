@@ -1,0 +1,6 @@
+gpu-lauf: Schloss a-spawn-ego nach 3 s
+ego: am Genesis-Ort nach 27 s (Gier -1.571, Arm 6 m)
+  boden-nah Blick 0°: nah 112960 px
+  laub Blick 0°: nah 248054 px
+ego-nah-0.5: boden-nah 0° · boden-nah-farbe 0° · laub 0° · laub-kante 0°
+ego: 61 s
