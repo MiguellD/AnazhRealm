@@ -6,7 +6,7 @@ const { wandEnde, argOpt, jsonLesen } = require("./lib/welt-boot.cjs");
 // umbenennen · nächste Welle erfinden) fällt nicht durch Vorsatz, sondern durch WÄNDE:
 //   1) SIEGEL-WORT-WAND: solange docs/PFLICHT-OFFEN.md Einträge trägt, ist ein
 //      HEAD-Commit mit fertig/RUND/vollendet/vollzogen/Schluss/SCOPE ZU rot.
-//   2) FROZEN-LISTEN-WAND: max 5 Einträge (A–E), wohlgeformt — Scope wächst nie still;
+//   2) FROZEN-LISTEN-WAND: max 5 Einträge (je ein Buchstabe; F seit 31.10., der freie Platz von D), wohlgeformt — Scope wächst nie still;
 //      dazu die LOGBUCH-WAND (kein „Stand-Stempel:", max 40 Zeilen).
 //   3) STAND-WAND: der CLAUDE.md-Stand bleibt ≤ 40 Zeilen (Chronik = git log, Lehre 15).
 //   4) ABSENZ-WAND: BETRIEBSGESETZ in CLAUDE.md + Pflicht-Output in champion.md — ein stilles Streichen ist rot.
@@ -23,7 +23,7 @@ const SIEGEL_CI = /\b(fertig|vollendet|vollzogen|schluss)\b|scope\s+zu/i;
 const SIEGEL_CS = /\bRUND\b/;
 
 function eintraege(text) {
-    return text.split("\n").filter((z) => /^[A-E]\)\s+\S/.test(z));
+    return text.split("\n").filter((z) => /^[A-Z]\)\s+\S/.test(z));
 }
 
 // 2b) LOGBUCH-WAND: die Frozen-Liste ist eine LISTE, kein Logbuch (Chronik = git log, Lehre 15).
