@@ -1,0 +1,80 @@
+messen ego exit 2
+messen third exit 0
+boden-nah (laiWirk): grün in 0 von 6 Zellen im Bild · nicht im Bild 0
+  ROT third-fern-0.3: laiWirk 0 · laiWirk 0 < 1.7 · Täter 10–14 m vor dem Auge: Lücke 1 (50844 von 50844 Pixeln Grund) → LAI 0, dort zeichnet kein Halm · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.3-boden-nah-0.png
+  ROT third-fern-0.5: laiWirk 0.003 · laiWirk 0.003 < 1.7 · Täter 10–14 m vor dem Auge: Lücke 1 (52674 von 52688 Pixeln Grund) → LAI 0, dort zeichnet streuSatz (93 % der Halme) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.5-boden-nah-0.png
+  ROT third-fern-0: laiWirk 0 · laiWirk 0 < 1.7 · Täter 10–14 m vor dem Auge: Lücke 1 (38207 von 38207 Pixeln Grund) → LAI 0, dort zeichnet kein Halm · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0-boden-nah-0.png
+  ROT third-nah-0.3: laiWirk 0 · laiWirk 0 < 1.7 · Täter 10–14 m vor dem Auge: Lücke 1 (50844 von 50844 Pixeln Grund) → LAI 0, dort zeichnet kein Halm · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.3-boden-nah-0.png
+  ROT third-nah-0.5: laiWirk 0.003 · laiWirk 0.003 < 1.7 · Täter 10–14 m vor dem Auge: Lücke 1 (52674 von 52688 Pixeln Grund) → LAI 0, dort zeichnet streuSatz (93 % der Halme) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.5-boden-nah-0.png
+  ROT third-nah-0: laiWirk 0 · laiWirk 0 < 1.7 · Täter 10–14 m vor dem Auge: Lücke 1 (38207 von 38207 Pixeln Grund) → LAI 0, dort zeichnet kein Halm · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0-boden-nah-0.png
+himmel-licht (lichtVerhaeltnis): grün in 2 von 6 Zellen im Bild · nicht im Bild 0
+  ROT third-fern-0.3: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+  ROT third-fern-0: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+  ROT third-nah-0.3: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+  ROT third-nah-0: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+laub (zweiton): grün in 6 von 6 Zellen im Bild · nicht im Bild 0
+laub-kante (kante): grün in 2 von 6 Zellen im Bild · nicht im Bild 0
+  ROT third-fern-0.3: kante 0.2508 · kante 0.2508 > 0.22 · Täter fimp:atlas:L2 (kante 0.3106 über 15556 Rand-Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.3-laub-0.png
+  ROT third-fern-0.5: kante 0.2316 · kante 0.2316 > 0.22 · Täter fimp:atlas:L2 (kante 0.2936 über 19160 Rand-Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.5-laub-0.png
+  ROT third-nah-0.3: kante 0.2508 · kante 0.2508 > 0.22 · Täter fimp:atlas:L2 (kante 0.3106 über 15556 Rand-Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.3-laub-0.png
+  ROT third-nah-0.5: kante 0.2316 · kante 0.2316 > 0.22 · Täter fimp:atlas:L2 (kante 0.2936 über 19160 Rand-Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.5-laub-0.png
+haus (albedoVerhaeltnis): grün in 0 von 6 Zellen im Bild · nicht im Bild 0
+  ROT third-fern-0.3: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.3-haus-0.png
+  ROT third-fern-0.5: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.5-haus-0.png
+  ROT third-fern-0: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0-haus-0.png
+  ROT third-nah-0.3: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.3-haus-0.png
+  ROT third-nah-0.5: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.5-haus-0.png
+  ROT third-nah-0: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0-haus-0.png
+wasser (spiegelTreue): grün in 0 von 0 Zellen im Bild · nicht im Bild 6
+  OHNE BILD third-fern-0.3: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-fern-0.5: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-fern-0: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-nah-0.3: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-nah-0.5: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-nah-0: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+tor-fern (milchweiss): grün in 6 von 6 Zellen im Bild · nicht im Bild 0
+tor-bunt (oeffnungBunt): grün in 0 von 6 Zellen im Bild · nicht im Bild 0
+  ROT third-fern-0.3: oeffnungBunt 12.6 · oeffnungBunt 12.6 < 20 · Täter portal-membran in L2 (C*ab 12.6 über 65713 Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.3-tor-fern-0.png
+  ROT third-fern-0.5: oeffnungBunt 12.99 · oeffnungBunt 12.99 < 20 · Täter portal-membran in L2 (C*ab 12.99 über 63215 Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.5-tor-fern-0.png
+  ROT third-fern-0: oeffnungBunt 2.64 · oeffnungBunt 2.64 < 20 · Täter portal-membran in L2 (C*ab 2.64 über 57425 Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0-tor-fern-0.png
+  ROT third-nah-0.3: oeffnungBunt 12.6 · oeffnungBunt 12.6 < 20 · Täter portal-membran in L2 (C*ab 12.6 über 65713 Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.3-tor-fern-0.png
+  ROT third-nah-0.5: oeffnungBunt 12.99 · oeffnungBunt 12.99 < 20 · Täter portal-membran in L2 (C*ab 12.99 über 63215 Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.5-tor-fern-0.png
+  ROT third-nah-0: oeffnungBunt 2.64 · oeffnungBunt 2.64 < 20 · Täter portal-membran in L2 (C*ab 2.64 über 57425 Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0-tor-fern-0.png
+tor-ziel (zielTreue): grün in 6 von 6 Zellen im Bild · nicht im Bild 0
+fels (albedo): grün in 0 von 0 Zellen im Bild · nicht im Bild 6
+  OHNE BILD third-fern-0.3: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-fern-0.5: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-fern-0: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-nah-0.3: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-nah-0.5: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-nah-0: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+mensch-kopf (gesicht): grün in 0 von 3 Zellen im Bild · nicht im Bild 3
+  OHNE BILD third-fern-0.3: der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m
+  OHNE BILD third-fern-0.5: der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m
+  OHNE BILD third-fern-0: der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m
+  ROT third-nah-0.3: gesicht 0.5 · gesicht 0.5 < 1 · Täter augeFrei 0.433 außerhalb [0.9, 1] · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.3-mensch-kopf-0.png
+  ROT third-nah-0.5: gesicht 0.5 · gesicht 0.5 < 1 · Täter augeFrei 0.223 außerhalb [0.9, 1] · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.5-mensch-kopf-0.png
+  ROT third-nah-0: gesicht 0.333 · gesicht 0.333 < 1 · Täter augeFrei 0.559 außerhalb [0.9, 1] · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0-mensch-kopf-0.png
+boden-nah-farbe (farbtonStreuung): grün in 0 von 6 Zellen im Bild · nicht im Bild 0
+  ROT third-fern-0.3: Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.3-boden-nah-0.png
+  ROT third-fern-0.5: Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.5-boden-nah-0.png
+  ROT third-fern-0: Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0-boden-nah-0.png
+  ROT third-nah-0.3: Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.3-boden-nah-0.png
+  ROT third-nah-0.5: Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.5-boden-nah-0.png
+  ROT third-nah-0: Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0-boden-nah-0.png
+fell (strich): grün in 0 von 3 Zellen im Bild · nicht im Bild 3
+  OHNE BILD third-fern-0.3: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-fern-0.5: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-fern-0: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  ROT third-nah-0.3: fehlt um 0.3 (zeichnet in derselben Kamera um 0.5) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.3-fell-0.png
+  ROT third-nah-0.5: Klasse fell: die Klasse zeigt keine inneren Pixel · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.5-fell-0.png
+  ROT third-nah-0: fehlt um 0 (zeichnet in derselben Kamera um 0.5) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0-fell-0.png
+haar (strich): grün in 0 von 3 Zellen im Bild · nicht im Bild 3
+  OHNE BILD third-fern-0.3: der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m
+  OHNE BILD third-fern-0.5: der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m
+  OHNE BILD third-fern-0: der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m
+  ROT third-nah-0.3: Klasse haar: die Klasse zeigt keine inneren Pixel · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.3-haar-0.png
+  ROT third-nah-0.5: Klasse haar: die Klasse zeigt keine inneren Pixel · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0.5-haar-0.png
+  ROT third-nah-0: Klasse haar: die Klasse zeigt keine inneren Pixel · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx2\zellen\third-0-haar-0.png
+A AM SPAWN: 22 von 63 Zellen im Bild GRÜN (K5)
+urteil exit 1

@@ -1,0 +1,1029 @@
+{
+ "zeilen": [
+  {
+   "id": "boden-nah",
+   "mass": "laiWirk",
+   "ausdruck": "^(nahWiese:.*|streuSatz|bodenSatz)$",
+   "zellen": [
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "ROT",
+     "ist": 0,
+     "band": [
+      1.7,
+      null
+     ],
+     "grund": "laiWirk 0 < 1.7",
+     "taeter": "10–14 m vor dem Auge: Lücke 1 (50844 von 50844 Pixeln Grund) → LAI 0, dort zeichnet kein Halm",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "ROT",
+     "ist": 0.003,
+     "band": [
+      1.7,
+      null
+     ],
+     "grund": "laiWirk 0.003 < 1.7",
+     "taeter": "10–14 m vor dem Auge: Lücke 1 (52674 von 52688 Pixeln Grund) → LAI 0, dort zeichnet streuSatz (93 % der Halme)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "ROT",
+     "ist": 0,
+     "band": [
+      1.7,
+      null
+     ],
+     "grund": "laiWirk 0 < 1.7",
+     "taeter": "10–14 m vor dem Auge: Lücke 1 (38207 von 38207 Pixeln Grund) → LAI 0, dort zeichnet kein Halm",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": 0,
+     "band": [
+      1.7,
+      null
+     ],
+     "grund": "laiWirk 0 < 1.7",
+     "taeter": "10–14 m vor dem Auge: Lücke 1 (50844 von 50844 Pixeln Grund) → LAI 0, dort zeichnet kein Halm",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "ROT",
+     "ist": 0.003,
+     "band": [
+      1.7,
+      null
+     ],
+     "grund": "laiWirk 0.003 < 1.7",
+     "taeter": "10–14 m vor dem Auge: Lücke 1 (52674 von 52688 Pixeln Grund) → LAI 0, dort zeichnet streuSatz (93 % der Halme)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": 0,
+     "band": [
+      1.7,
+      null
+     ],
+     "grund": "laiWirk 0 < 1.7",
+     "taeter": "10–14 m vor dem Auge: Lücke 1 (38207 von 38207 Pixeln Grund) → LAI 0, dort zeichnet kein Halm",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-boden-nah-0.png"
+    }
+   ]
+  },
+  {
+   "id": "himmel-licht",
+   "mass": "lichtVerhaeltnis",
+   "ausdruck": null,
+   "zellen": [
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": null,
+     "grund": "kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "GRÜN",
+     "ist": 5.636,
+     "band": [
+      5,
+      12.5
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": null,
+     "grund": "kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": null,
+     "grund": "kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "GRÜN",
+     "ist": 5.636,
+     "band": [
+      5,
+      12.5
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": null,
+     "grund": "kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)",
+     "taeter": null,
+     "bild": null
+    }
+   ]
+  },
+  {
+   "id": "laub",
+   "mass": "zweiton",
+   "ausdruck": "^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$",
+   "zellen": [
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "GRÜN",
+     "ist": 0,
+     "band": [
+      null,
+      0
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-laub-0.png"
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "GRÜN",
+     "ist": 0,
+     "band": [
+      null,
+      0
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-laub-0.png"
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "GRÜN",
+     "ist": 0,
+     "band": [
+      null,
+      0
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-laub-0.png"
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "GRÜN",
+     "ist": 0,
+     "band": [
+      null,
+      0
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-laub-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "GRÜN",
+     "ist": 0,
+     "band": [
+      null,
+      0
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-laub-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "GRÜN",
+     "ist": 0,
+     "band": [
+      null,
+      0
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-laub-0.png"
+    }
+   ]
+  },
+  {
+   "id": "laub-kante",
+   "mass": "kante",
+   "ausdruck": "^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$",
+   "zellen": [
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "ROT",
+     "ist": 0.2508,
+     "band": [
+      null,
+      0.22
+     ],
+     "grund": "kante 0.2508 > 0.22",
+     "taeter": "fimp:atlas:L2 (kante 0.3106 über 15556 Rand-Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-laub-0.png"
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "ROT",
+     "ist": 0.2316,
+     "band": [
+      null,
+      0.22
+     ],
+     "grund": "kante 0.2316 > 0.22",
+     "taeter": "fimp:atlas:L2 (kante 0.2936 über 19160 Rand-Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-laub-0.png"
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "GRÜN",
+     "ist": 0.2084,
+     "band": [
+      null,
+      0.22
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-laub-0.png"
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": 0.2508,
+     "band": [
+      null,
+      0.22
+     ],
+     "grund": "kante 0.2508 > 0.22",
+     "taeter": "fimp:atlas:L2 (kante 0.3106 über 15556 Rand-Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-laub-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "ROT",
+     "ist": 0.2316,
+     "band": [
+      null,
+      0.22
+     ],
+     "grund": "kante 0.2316 > 0.22",
+     "taeter": "fimp:atlas:L2 (kante 0.2936 über 19160 Rand-Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-laub-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "GRÜN",
+     "ist": 0.2084,
+     "band": [
+      null,
+      0.22
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-laub-0.png"
+    }
+   ]
+  },
+  {
+   "id": "haus",
+   "mass": "albedoVerhaeltnis",
+   "ausdruck": "^(bauSatz|f:alemannisch:L[01])$",
+   "zellen": [
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "ROT",
+     "ist": 0.9366,
+     "band": [
+      0.9,
+      1.1
+     ],
+     "grund": "albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b)",
+     "taeter": "Labor 0.1491 gegen Welt 0.1592 (haus)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-haus-0.png"
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "ROT",
+     "ist": 0.9366,
+     "band": [
+      0.9,
+      1.1
+     ],
+     "grund": "albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b)",
+     "taeter": "Labor 0.1491 gegen Welt 0.1592 (haus)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-haus-0.png"
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "ROT",
+     "ist": 0.9366,
+     "band": [
+      0.9,
+      1.1
+     ],
+     "grund": "albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b)",
+     "taeter": "Labor 0.1491 gegen Welt 0.1592 (haus)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-haus-0.png"
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": 0.9366,
+     "band": [
+      0.9,
+      1.1
+     ],
+     "grund": "albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b)",
+     "taeter": "Labor 0.1491 gegen Welt 0.1592 (haus)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-haus-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "ROT",
+     "ist": 0.9366,
+     "band": [
+      0.9,
+      1.1
+     ],
+     "grund": "albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b)",
+     "taeter": "Labor 0.1491 gegen Welt 0.1592 (haus)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-haus-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": 0.9366,
+     "band": [
+      0.9,
+      1.1
+     ],
+     "grund": "albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b)",
+     "taeter": "Labor 0.1491 gegen Welt 0.1592 (haus)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-haus-0.png"
+    }
+   ]
+  },
+  {
+   "id": "wasser",
+   "mass": "spiegelTreue",
+   "ausdruck": "^(wasserSatz|farWater|chunk-water-[a-z]+)$",
+   "zellen": [
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    }
+   ]
+  },
+  {
+   "id": "tor-fern",
+   "mass": "milchweiss",
+   "ausdruck": "^portal-membran$|^(?:f|fimp):(?:drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L(\\d)$",
+   "zellen": [
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "GRÜN",
+     "ist": 0.0027,
+     "band": [
+      null,
+      0.05
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "GRÜN",
+     "ist": 0.0024,
+     "band": [
+      null,
+      0.05
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "GRÜN",
+     "ist": 0.0066,
+     "band": [
+      null,
+      0.05
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "GRÜN",
+     "ist": 0.0027,
+     "band": [
+      null,
+      0.05
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "GRÜN",
+     "ist": 0.0024,
+     "band": [
+      null,
+      0.05
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "GRÜN",
+     "ist": 0.0066,
+     "band": [
+      null,
+      0.05
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-tor-fern-0.png"
+    }
+   ]
+  },
+  {
+   "id": "tor-bunt",
+   "mass": "oeffnungBunt",
+   "ausdruck": "^portal-membran$|^(?:f|fimp):(?:drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L(\\d)$",
+   "zellen": [
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "ROT",
+     "ist": 12.6,
+     "band": [
+      20,
+      null
+     ],
+     "grund": "oeffnungBunt 12.6 < 20",
+     "taeter": "portal-membran in L2 (C*ab 12.6 über 65713 Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "ROT",
+     "ist": 12.99,
+     "band": [
+      20,
+      null
+     ],
+     "grund": "oeffnungBunt 12.99 < 20",
+     "taeter": "portal-membran in L2 (C*ab 12.99 über 63215 Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "ROT",
+     "ist": 2.64,
+     "band": [
+      20,
+      null
+     ],
+     "grund": "oeffnungBunt 2.64 < 20",
+     "taeter": "portal-membran in L2 (C*ab 2.64 über 57425 Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": 12.6,
+     "band": [
+      20,
+      null
+     ],
+     "grund": "oeffnungBunt 12.6 < 20",
+     "taeter": "portal-membran in L2 (C*ab 12.6 über 65713 Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "ROT",
+     "ist": 12.99,
+     "band": [
+      20,
+      null
+     ],
+     "grund": "oeffnungBunt 12.99 < 20",
+     "taeter": "portal-membran in L2 (C*ab 12.99 über 63215 Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": 2.64,
+     "band": [
+      20,
+      null
+     ],
+     "grund": "oeffnungBunt 2.64 < 20",
+     "taeter": "portal-membran in L2 (C*ab 2.64 über 57425 Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-tor-fern-0.png"
+    }
+   ]
+  },
+  {
+   "id": "tor-ziel",
+   "mass": "zielTreue",
+   "ausdruck": "^portal-membran$|^(?:f|fimp):(?:drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L(\\d)$",
+   "zellen": [
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "GRÜN",
+     "ist": 0.682,
+     "band": [
+      0.5,
+      null
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "GRÜN",
+     "ist": 0.732,
+     "band": [
+      0.5,
+      null
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "GRÜN",
+     "ist": 0.814,
+     "band": [
+      0.5,
+      null
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "GRÜN",
+     "ist": 0.682,
+     "band": [
+      0.5,
+      null
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "GRÜN",
+     "ist": 0.732,
+     "band": [
+      0.5,
+      null
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "GRÜN",
+     "ist": 0.814,
+     "band": [
+      0.5,
+      null
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-tor-fern-0.png"
+    }
+   ]
+  },
+  {
+   "id": "fels",
+   "mass": "albedo",
+   "ausdruck": "^formationenSatz$",
+   "zellen": [
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    }
+   ]
+  },
+  {
+   "id": "mensch-kopf",
+   "mass": "gesicht",
+   "ausdruck": "^spieler:kopf/",
+   "zellen": [
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": 0.5,
+     "band": [
+      1,
+      1
+     ],
+     "grund": "gesicht 0.5 < 1",
+     "taeter": "augeFrei 0.433 außerhalb [0.9, 1]",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-mensch-kopf-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "ROT",
+     "ist": 0.5,
+     "band": [
+      1,
+      1
+     ],
+     "grund": "gesicht 0.5 < 1",
+     "taeter": "augeFrei 0.223 außerhalb [0.9, 1]",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-mensch-kopf-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": 0.333,
+     "band": [
+      1,
+      1
+     ],
+     "grund": "gesicht 0.333 < 1",
+     "taeter": "augeFrei 0.559 außerhalb [0.9, 1]",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-mensch-kopf-0.png"
+    }
+   ]
+  },
+  {
+   "id": "boden-nah-farbe",
+   "mass": "farbtonStreuung",
+   "ausdruck": "^(nahWiese:.*|streuSatz|bodenSatz)$",
+   "zellen": [
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      10.7,
+      null
+     ],
+     "grund": "Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      10.7,
+      null
+     ],
+     "grund": "Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      10.7,
+      null
+     ],
+     "grund": "Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      10.7,
+      null
+     ],
+     "grund": "Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      10.7,
+      null
+     ],
+     "grund": "Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      10.7,
+      null
+     ],
+     "grund": "Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-boden-nah-0.png"
+    }
+   ]
+  },
+  {
+   "id": "fell",
+   "mass": "strich",
+   "ausdruck": "^tier:wolf$",
+   "zellen": [
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": null,
+     "grund": "fehlt um 0.3 (zeichnet in derselben Kamera um 0.5)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-fell-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      0.4358,
+      0.6538
+     ],
+     "grund": "Klasse fell: die Klasse zeigt keine inneren Pixel",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-fell-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": null,
+     "grund": "fehlt um 0 (zeichnet in derselben Kamera um 0.5)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-fell-0.png"
+    }
+   ]
+  },
+  {
+   "id": "haar",
+   "mass": "strich",
+   "ausdruck": "^spieler:kopf/hair$",
+   "zellen": [
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      0.3554,
+      0.533
+     ],
+     "grund": "Klasse haar: die Klasse zeigt keine inneren Pixel",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.3-haar-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      0.3554,
+      0.533
+     ],
+     "grund": "Klasse haar: die Klasse zeigt keine inneren Pixel",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0.5-haar-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      0.3554,
+      0.533
+     ],
+     "grund": "Klasse haar: die Klasse zeigt keine inneren Pixel",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-haar-0.png"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,6 @@
+gpu-lauf: Schloss omen-a-spawn-ego nach 0 s
+ego: am Genesis-Ort nach 23 s (Gier -1.571, Arm 6 m)
+A-SPAWN BRUCH: Error: read ECONNRESET |     at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 36407 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )

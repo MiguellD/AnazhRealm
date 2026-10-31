@@ -1,0 +1,236 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.143",
+  "sha": "96133362a53f2b98aa92d02c3ad9cf88117918d9"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0,
+  "bildUhr": 12.5,
+  "tiereGehalten": true,
+  "weltTakte": 71
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "nvidia pascal",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 3,
+   "deckung": 0,
+   "taeter": {}
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 6,
+  "gestalt": [
+   "start_plattform 1"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   6,
+   93.83,
+   -0.6
+  ],
+  "blick": [
+   -0.98639,
+   -0.1644,
+   0.00002
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 33.6,
+  "sigma": 32.8,
+  "schwarz": 0.0191,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 6 m · Luma 33.6 σ 32.8 schwarz 1.9 % weiß 0.0 % · Stand 18.546.143 · Bühne summer sunny 0.00 Tiere gehalten · Gerät WebGPU nvidia pascal",
+ "klasse": {
+  "ausdruck": "^(nahWiese:.*|streuSatz|bodenSatz)$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0.000366,
+   "pixel": 758,
+   "max": 51
+  },
+  "misch": 66,
+  "toene": [
+   "bodenSatz=255/80/80",
+   "nahWiese:L2=80/255/80",
+   "streuSatz=80/120/255"
+  ],
+  "klassen": {
+   "bodenSatz": {
+    "objekte": 1,
+    "spiegelTreue": -0.3641,
+    "spiegelEbene": 90.608,
+    "sp": [
+     279,
+     0,
+     0,
+     257727.76,
+     257727.76,
+     -93844.63
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 1.89,
+    "pixel": 106891,
+    "luma": 14.96,
+    "kante": 0.2592,
+    "kr": 38324,
+    "strich": 0.6559,
+    "si": 6473,
+    "bloecke": 373,
+    "glatt": 0.9169,
+    "nyquist": 0.0569,
+    "beta": 1.6177
+   },
+   "nahWiese:L2": {
+    "objekte": 1,
+    "spiegelTreue": null,
+    "spiegelEbene": 90.923,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 7.92,
+    "pixel": 147,
+    "luma": 25.23,
+    "kante": 0.0986,
+    "kr": 48,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "streuSatz": {
+    "objekte": 4,
+    "spiegelTreue": null,
+    "spiegelEbene": 91.295,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 15.86,
+    "pixel": 132,
+    "luma": 51.36,
+    "kante": 0.2506,
+    "kr": 76,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "nyquist": null,
+    "beta": null
+   }
+  },
+  "abstand": {
+   "baender": [
+    0,
+    2,
+    5,
+    10,
+    14,
+    30,
+    80,
+    200
+   ],
+   "ring": 14,
+   "augeUeberBoden": 3.5,
+   "cos": [
+    null,
+    null,
+    0.3492,
+    0.2677,
+    0.1912,
+    0.0856,
+    0.0457
+   ],
+   "klassen": {
+    "bodenSatz": [
+     0,
+     0,
+     18653,
+     38207,
+     39229,
+     8995,
+     1184
+    ],
+    "streuSatz": [
+     0,
+     0,
+     0,
+     0,
+     102,
+     30,
+     0
+    ],
+    "nahWiese:L2": [
+     0,
+     0,
+     0,
+     0,
+     147,
+     0,
+     0
+    ]
+   },
+   "farbton": {
+    "kachel": 2,
+    "band": [
+     2,
+     5
+    ],
+    "belichtung": 1.2456,
+    "kacheln": []
+   }
+  },
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx2\\zellen\\third-0-boden-nah-0.maske.png"
+ }
+}
