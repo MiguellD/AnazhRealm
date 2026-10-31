@@ -16,11 +16,18 @@ const probeZeile = (stdout, probe) => jsonZeile(stdout, new RegExp("^\\s*(✅|�
 // erwacht im Takt der Welt, je Box des Körper-Satzes zwei Blicke aus dem Ausgabe-Pfad, je Haus Third, das Haus des Spielers über
 // die Werkstatt, See und Fluss der Mess-Wiese je Ego und Third), die Bilder neben {AUS} (<AUS>-grund-<i>-<j>-<art>-<v>.png), das
 // JSON nach {AUS} wie die Linse (HAUS_WELT_JSON). Bis 29.10. der eigene Boot der Linse (6–8 Soll-Minuten).
+// DER ORT (w4-ssa-C): der Genesis-Ort, wie im eigenen Boot der Linse — nur dort erwacht das Start-Dorf (`_startDorfFaellig`);
+// die Sitzung stellt vor dem Deckel um (probeOrt liest das `umstellen` unten), die Probe findet ihn warm. Bis dahin stand sie an der
+// Mess-Wiese, 1,1 km davon: die Phase start wartete ihren Deckel ab (1200 Gänge), W9 Waise noch einmal (1800), kein Haus des
+// Start-Dorfs stand im Bild — GTX b4bcf19c ≥ 90 s. DIE SCHÜSSE (w4-ssa-C): nur, was eine Zahl liest — je Box-Blick die Maske des
+// Bodens (ohne Büschel an der Box ist sie das Bild des Blicks: G und O wären dasselbe Bild, der Halm 0), Third nur mit Büscheln an
+// den Boxen, die Gegenprobe und je Wasser-Blick vier; das Innen-Bild (W10) misst siedlung.K1#2. 404 → 112 Aufnahmen (43 Häuser).
 async function vegetationK4Seite(H) {
     const D = H.quelle("scripts/diag-haus-welt.cjs", ["proben"]);
     const WA = require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL;
     await H.ruf("/fenster", { w: 640, h: 360 });
     await H.frist();
+    await H.ruf("/umstellen", { ort: "genesis", sicht: "ego" });
     await H.seite("await window.__weltStehtNach(() => { try { r._gameLoopTick(performance.now()); } catch (e) {} });\n" + WA + "\nreturn 1;");
     H.schritt("welt");
     const o = await H.seite("return await (" + D.proben + ")([\"grund\", \"bild\", \"start\"]);");
@@ -31,7 +38,6 @@ async function vegetationK4Seite(H) {
     };
     const w = (o && o.w9) || {};
     (w.haeuser || []).forEach((h, i) => {
-        if (h.png) bild(h, "grund-" + i + "-aussen");
         (h.koerper || []).forEach((b, j) => bild(b, "grund-" + i + "-" + j + "-" + b.art));
         if (h.third) bild(h.third, "grund-" + i + "-third");
     });
