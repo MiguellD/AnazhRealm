@@ -1182,7 +1182,8 @@ async function starte() {
             // Das Ziel einer Pose aus dem Leib (`--gesicht`, `--arm`) ist der Kopf oder die Fläche auf Armlänge, kein Werk hinter
             // einer Kuppe: sein Fuß (ausgabe-aufnahme `punkte`, ein Ziel 0,6–40 m über dem Boden) liegt unter dem Bild — 0,7 m vor
             // dem Gesicht 1,4 m tiefer, haar.K2#1 „Ziel Blickziel nicht im Bild (ndc [0,0])“ auf beiden Geräten —, `fuss: false`
-            const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel", punkte: k.punkte, ...(gpos ? { fuss: false } : {}) };
+            // `k.fuss === false` (die Zellen am Spawn): das Ziel ist der Anker des Blicks im Ring, kein Werk — sein Fuß ist kein Beweis
+            const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel", punkte: k.punkte, fuss: gpos ? false : k.fuss };
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
             let auf = null;
             let gewaehlt = null;
@@ -1853,8 +1854,7 @@ async function starte() {
                 }
                 if (req.url === "/gpu-bank")
                     return send(
-                        Object.assign(await page.evaluate(gpuBank, { n: +b.n || 12, runden: +b.runden || 3 }), {
-                        })
+                        await page.evaluate(gpuBank, { n: +b.n || 12, runden: +b.runden || 3 })
                     );
                 // DIE WACHEN der Mess-Folge (scripts/omen-messfolge.cjs, nach jedem Schritt): der Stempel-Pool, das Buch des
                 // Wetter-Spions seit `seit` und das des Welt-Akt-Spions seit `seitWelt`, der gestellte Ort (Aufstellung,
@@ -1975,14 +1975,7 @@ async function starte() {
                             if (wiese.befunde.length)
                                 throw new Error(`Messort ${ort.id} ist keine Wiese: ${wiese.befunde.join(" · ")}`);
                         }
-                        return send(
-                            Object.assign(
-                                { ort: ort.id, sicht, pose: pose ? pose.id : null, welt, spieler: stelle.spieler, wiese },
-                                o,
-                                {
-                                }
-                            )
-                        );
+                        return send(Object.assign({ ort: ort.id, sicht, pose: pose ? pose.id : null, welt, spieler: stelle.spieler, wiese }, o));
                     }
                     aktOrt = null;
                     aktSicht = null;
@@ -2026,10 +2019,28 @@ async function starte() {
                     }
                     // DAS BEGLEIT-JSON: die Abnahme des Bilds mit dem Stand des Arbeitsbaums (SHA, geändert ja/nein)
                     o.abnahme.stand.sha = gitStand();
-                    // DIE MESSUNG IN DIE SOLL-TAFEL (`--ist <id>[:L<n>|:wirkung]`)
+                    // DIE MESSUNG DER KLASSE: der Block, den `--ist <id>[:L<n>|:wirkung]` in die Soll-Tafel schreibt und die Zellen am Spawn
+                    // (`b.messung`, die Station zug/a-spawn.sh im Zweig koordination) je Zelle urteilen — ihr Bild beim Namen der Zelle
+                    const kl = o.klasse;
+                    const messung = (bild) => ({
+                        werkzeug: "bild",
+                        datum: new Date().toISOString(),
+                        stand: { ...o.abnahme.stand },
+                        geraet: { backend: o.abnahme.geraet.backend, adapter: o.abnahme.geraet.adapter },
+                        leinwand: [o.abnahme.bild.w, o.abnahme.bild.h],
+                        kamera: o.kamera,
+                        ausdruck: kl.ausdruck,
+                        schwelle: kl.schwelle,
+                        rauschen: kl.rauschen,
+                        misch: kl.misch,
+                        klassen: kl.klassen,
+                        abstand: kl.abstand,
+                        gesicht: kl.gesicht || null,
+                        bild,
+                    });
+                    if (b.messung && kl) o.messung = messung();
                     if (b.ist) {
-                        if (!o.klasse) throw new Error("--ist braucht --klasse (die Teilung des Bilds)");
-                        const kl = o.klasse;
+                        if (!kl) throw new Error("--ist braucht --klasse (die Teilung des Bilds)");
                         if (!Object.keys(kl.klassen).length)
                             throw new Error(`--ist ${b.ist}: die Klasse zeichnet kein Pixel im Bild — die Tafel bleibt, wie sie war`);
                         // DER ORT DES BILDS (abnahme-urteil `bildPfadFehler`): das Bild der Tafel liegt beim Namen des
@@ -2039,23 +2050,7 @@ async function starte() {
                         // Maß — das erste Ziel trägt den Schuss, jedes weitere nennt ihn (W1-n1, `sollIstSchreiben`)
                         const ziele = String(b.ist).split(",").filter(Boolean);
                         const ablage = sollAblage(ziele[0], ".png");
-                        const messung = () => ({
-                            werkzeug: "bild",
-                            datum: new Date().toISOString(),
-                            stand: { version: o.abnahme.stand.version, sha: o.abnahme.stand.sha },
-                            geraet: { backend: o.abnahme.geraet.backend, adapter: o.abnahme.geraet.adapter },
-                            leinwand: [o.abnahme.bild.w, o.abnahme.bild.h],
-                            kamera: o.kamera,
-                            ausdruck: kl.ausdruck,
-                            schwelle: kl.schwelle,
-                            rauschen: kl.rauschen,
-                            misch: kl.misch,
-                            klassen: kl.klassen,
-                            abstand: kl.abstand,
-                            gesicht: kl.gesicht || null,
-                            bild: path.relative(root, ablage).split(path.sep).join("/"),
-                        });
-                        o.ist = sollIstSchreiben(b.ist, messung());
+                        o.ist = sollIstSchreiben(b.ist, messung(path.relative(root, ablage).split(path.sep).join("/")));
                         if (ablage !== datei) {
                             fs.copyFileSync(datei, ablage);
                             fs.copyFileSync(kl.maske, sollAblage(ziele[0], ".maske.png"));
@@ -2920,21 +2915,22 @@ async function starte() {
                 }
                 if (req.url === "/licht") {
                     const o = await seite("__lichtBilanz");
-                    // DIE MESSUNG IN DIE SOLL-TAFEL (`licht --ist <id>`): E an der waagrechten Karte, alle Lichter und
-                    // nur die Umgebung (der Himmel)
-                    if (b.ist)
-                        o.ist = sollIstSchreiben(b.ist, {
-                            werkzeug: "licht",
-                            datum: new Date().toISOString(),
-                            stand: { sha: gitStand() },
-                            geraet: { adapter: await page.evaluate(() => __abnahmeMessen({}).geraet.adapter) },
-                            E_alle: o.alle && o.alle.oben ? o.alle.oben.E : null,
-                            E_umgebung: o.umgebung && o.umgebung.oben ? o.umgebung.oben.E : null,
-                            // die senkrechten Karten im Himmel allein (D3): zur Sonne und von ihr weg (`umgebungAzimut`)
-                            E_umgebung_zurSonne: o.umgebung && o.umgebung.zurSonne ? o.umgebung.zurSonne.E : null,
-                            E_umgebung_vonSonne: o.umgebung && o.umgebung.vonSonne ? o.umgebung.vonSonne.E : null,
-                            sonnenRichtung: o.sonnenRichtung,
-                        });
+                    // DIE MESSUNG IN DIE SOLL-TAFEL (`licht --ist <id>`, als Block der Zellen am Spawn mit `b.messung`): E an der waagrechten
+                    // Karte, alle Lichter und nur die Umgebung (der Himmel)
+                    const me = {
+                        werkzeug: "licht",
+                        datum: new Date().toISOString(),
+                        stand: { sha: gitStand() },
+                        geraet: { adapter: await page.evaluate(() => __abnahmeMessen({}).geraet.adapter) },
+                        E_alle: o.alle?.oben?.E,
+                        E_umgebung: o.umgebung?.oben?.E,
+                        // die senkrechten Karten im Himmel allein (D3): zur Sonne und von ihr weg (`umgebungAzimut`)
+                        E_umgebung_zurSonne: o.umgebung?.zurSonne?.E,
+                        E_umgebung_vonSonne: o.umgebung?.vonSonne?.E,
+                        sonnenRichtung: o.sonnenRichtung,
+                    };
+                    if (b.ist) o.ist = sollIstSchreiben(b.ist, me);
+                    if (b.messung) o.messung = me;
                     return send(o);
                 }
                 if (req.url === "/fernwald")

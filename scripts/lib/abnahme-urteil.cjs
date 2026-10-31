@@ -1004,7 +1004,9 @@ function aperturSchuesse(ma, q) {
     if (sv.budget && (!B || typeof B !== "object"))
         return { fehler: `das Budget ${sv.datei} ${sv.symbol}.${sv.budget} ist dort nicht definiert` };
     const nurWurf = (s) => !!(B && B[s] && B[s].nurWurf === true);
-    const soll = S.filter((s) => s >= (sv.ab || 0));
+    // DIE ZELLE AM SPAWN (`mass.zelle`, Pflicht A: Sicht × Abstand × Uhr an `_genesisMitte`, die Station zug/a-spawn.sh im Zweig
+    // koordination) urteilt über die Stufe, die ihr Schuss zeigt — die ganze Stufen-Kette trägt die Zeile
+    const soll = ma.zelle ? [] : S.filter((s) => s >= (sv.ab || 0));
     const namen = Object.keys(me).filter((k) => /^L\d$/.test(k));
     if (!namen.length) return { fehler: `${ma.name} ohne Schuss je Stufe (messung.L<n>)` };
     let anteil = 0;
@@ -1527,14 +1529,12 @@ function standLeser(root) {
             return null;
         }
     };
+    // die Version des Stamms (AnazhRealm.VERSION in seiner Versions-Datei): EIN Leser für Werkzeug, Kern-Stand und Urteil
+    const stammVersion = () =>
+        (/AnazhRealm\.VERSION = "([^"]+)"/.exec(fs.readFileSync(path.join(root, require("./stamm.cjs").versionsDatei(root)), "utf8")) || [])[1] || null;
     return {
         gitStand,
-        stammVersion: () => {
-            const m = /AnazhRealm\.VERSION = "([^"]+)"/.exec(
-                fs.readFileSync(path.join(root, require("./stamm.cjs").versionsDatei(root)), "utf8")
-            );
-            return m ? m[1] : null;
-        },
+        stammVersion,
         pruefsumme,
         // der Stand einer Messung, die viele Klassen trägt (die Albedo-Tafel, K63-n3): die Version und die Prüfsumme JEDES Kerns
         // (cores.manifest.json) und JEDER Stamm-Zone (K63-n4, der Stand über den Inhalt: die Liste der Stamm-Tags,
@@ -1544,8 +1544,7 @@ function standLeser(root) {
             const quellen = {};
             for (const c of m) for (const d of c.scripts) quellen[d] = pruefsumme(d);
             for (const d of require("./stamm.cjs").dateien(root)) quellen[d] = pruefsumme(d);
-            const v = /AnazhRealm\.VERSION = "([^"]+)"/.exec(fs.readFileSync(path.join(root, require("./stamm.cjs").versionsDatei(root)), "utf8"));
-            return { version: v ? v[1] : null, sha: gitStand(), quellen };
+            return { version: stammVersion(), sha: gitStand(), quellen };
         },
         // DIE QUELLE DES URTEILS (K63-n7, `sollTafelUrteil(tafel, q)`): Haushalt, Datei-Leser, Prüfsumme und die Symbole der Kerne
         // GELESEN — jeder Kern läuft in einer eigenen vm (wie diag-mensch-anatomie), sein Namensraum trägt das Symbol. EINE
@@ -1554,9 +1553,7 @@ function standLeser(root) {
             const kerne = {};
             const vm = require("vm");
             return {
-                version: (/AnazhRealm\.VERSION = "([^"]+)"/.exec(
-                    fs.readFileSync(path.join(root, require("./stamm.cjs").versionsDatei(root)), "utf8")
-                ) || [])[1],
+                version: stammVersion(),
                 pruefsumme,
                 haushalt: JSON.parse(fs.readFileSync(path.join(root, "spec", "profiband", "haushalt.json"), "utf8")),
                 lesen: (d) => (fs.existsSync(path.join(root, d)) ? fs.readFileSync(path.join(root, d), "utf8") : null),
@@ -2110,7 +2107,7 @@ function sollTafelSelbsttest(tafel, q) {
         kern: (d, s) =>
             d === "x.js" && s === "CFG" ? { lod: { stufen: [0, 1, 3], budget: { 1: {}, 3: { nurWurf: true } } } } : undefined,
     };
-    const mw = (messung) => MASS_RECHNER.milchweiss({ messung, rechnung: rcW }, qW);
+    const mw = (messung, zelle) => MASS_RECHNER.milchweiss({ messung, rechnung: rcW, zelle }, qW);
     const mwVoll = mw({ L1: apMe(1, [235, 235, 236]), L3: fernMe([200, 200, 200]) });
     if (!(mwVoll.ist === 1 && !mwVoll.offen && /portal-membran/.test(mwVoll.taeter || "")))
         v.push(`Maß milchweiss: zwei weiße Stufen lesen ${mwVoll.ist}${mwVoll.fehler ? " — " + mwVoll.fehler : ""}`);
@@ -2122,9 +2119,12 @@ function sollTafelSelbsttest(tafel, q) {
     const mwBlind = mw({ L1: apMe(1, [235, 235, 236]), L3: stufeMe([["himmel", 180]]) });
     if (!(mwBlind.fehler && /L3: der Schuss zeigt keine Apertur/.test(mwBlind.fehler)))
         v.push("Maß milchweiss: ein Fern-Schuss ohne Apertur nicht beim Namen");
-    const mwHalb = mw({ L1: apMe(1, [235, 235, 236]) });
+    const halb = { L1: apMe(1, [235, 235, 236]) },
+        mwHalb = mw(halb);
     if (!(mwHalb.offen && /L3 ohne Schuss/.test(mwHalb.offen)))
         v.push(`Maß milchweiss: die Stufe L3 ohne Schuss nicht beim Namen (${mwHalb.offen || mwHalb.fehler})`);
+    // DIE ZELLE AM SPAWN (`mass.zelle`) urteilt den Schuss ihrer Stufe allein
+    if (mw(halb, true).offen !== null) v.push("Maß milchweiss: die Zelle verlangt fremde Stufen");
     const mwFremd = mw({ L3: apMe(1, [235, 235, 236]) });
     if (!(mwFremd.fehler && /in Stufe L1/.test(mwFremd.fehler)))
         v.push("Maß milchweiss: ein Schuss L3 mit Toren in L1 nicht beim Namen");
