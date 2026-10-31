@@ -1,0 +1,19 @@
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:17804/index.html · der Puls steht seit 20.9 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 22.4 s
+[stall-akte] Puls 13×, zuletzt vor 20.9 s — complete · renderer bereit · weltbild da · frames 350 · welt 350 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 7024 106 % · GPU 15048 0 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 22:02 gpu 5/r 146 · 22:04 gpu 5/r 217 · 22:06 gpu 1/r 151 · 22:08 gpu 2/r 522 · 22:10 gpu 1/r 606 · 22:12 gpu 1/r 409 · 22:14 gpu 1/r 154 · 22:17 gpu 1/r 111 · 22:19 gpu 1/r 135 · 22:21 gpu 1/r 120 · 22:23 gpu 1/r 119 · 22:25 gpu 1/r 132 · 22:27 gpu 1/r 130 · 22:29 gpu 1/r 107 · 22:31 gpu 0/r 103 · 22:33 gpu 0/r 109 · 22:35 gpu 0/r 120 · 22:37 gpu 0/r 108 · 22:39 gpu 0/r 106
+[stall-akte] Stapel _kreaturHuellenKontakt :1456 < _kreaturWeg :1229 < updateCreatures :3500 < takt :260 < (anonym) :1785 < buehne :66 < kreaturProben :1685
+[stall-akte] Konsole log: [AnazhRealm V18.546.138] [INFO] State-Import (Lade Datei) initialisiert
+[stall-akte] Konsole log: [AnazhRealm V18.546.138] [INFO] Hauptschleife gestartet – Ultiversum pulsiert!
+[stall-akte] Konsole log: [AnazhRealm V18.546.138] [INFO] Grok: Hallo. Die Welt steht. Magst du dich umsehen?
+[stall-akte] Konsole log: [AnazhRealm V18.546.138] [INFO] Nervensystem: 75 neue Studio-Art(en) automatisch registriert.
+[stall-akte] Konsole log: [AnazhRealm V18.546.138] [INFO] Seele gewechselt: Mensch (human)
+[stall-akte] Konsole log: [AnazhRealm V18.546.138] [WARN] AUSGABE: rg11b10ufloat ist auf diesem Gerät nicht renderbar (Feature rg11b10ufloat-renderable fehlt) — das Szenen-Ziel bleibt rgba16float, +7,9 MB bei 1080p
+[stall-akte] Konsole log: [AnazhRealm V18.546.138] [INFO] Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.
+[stall-akte] Konsole log: [AnazhRealm V18.546.138] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — Cannot read properties of undefined (reading 'enabled')
+[stall-akte] Konsole log: [AnazhRealm V18.546.138] [WARN] FPS-Einbruch: 13 (zuvor ~32)
+[stall-akte] Konsole log: [AnazhRealm V18.546.138] [WARN] Der Rundblick steht nach 120 Takten ohne: 8 Bäume und Bauten wachsen · 336 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] Konsole log: [AnazhRealm V18.546.138] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.138] [INFO] Welt-Beziehung: Pfad
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in _kreaturHuellenKontakt :1456
