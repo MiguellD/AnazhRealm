@@ -34,8 +34,8 @@ fahrzeug.K3#2+K4 · siedlung.K2 · siedlung.K1#2.
 | vegetation.K5#2 | `/bild --abstand`: 20,8 Mio. Rufe `_bodenSichtAt` (≈ 1 µs) je Wiesen-Schuss — GTX Wiese 30 s, Krone 6–8 s | Marsch je Pose einmal (byte-gleich, 10,4 → 0,08 s) | ~115 → ~71 | nein |
 | studios.K2#2+K3#2 (D) | Schlaf 1,5 s je Studio, Polling 150 ms, Neuladen über neuen Tab | (Studio-Hülle am Ereignis — zurückgehalten, siehe DECKE) | ~134 → ~134 (mit der Serie ~118) | nein |
 
-Unter dem Gesetz (hergeleitet): 6 Läufe sicher (lod.K5#1, material.K3+K1, tiere.K2#2, siedlung.K2, bauen.K1#2, gelaende.K5#2), siedlung.K1#2
-an der Grenze; 8 Läufe darüber. Die GTX-Eich-Fahrt des Koordinators (90 s je Probe) misst jede Zahl und setzt jeden Deckel (⌈1,5 × s⌉).
+Unter dem Gesetz (hergeleitet): 6 Läufe sicher (lod.K5#1, material.K3+K1 als EIN Lauf, tiere.K2#2, siedlung.K2, bauen.K1#2,
+gelaende.K5#2), siedlung.K1#2 an der Grenze; 7 Läufe darüber (von 14 — material.K3 und K1 sind jetzt einer). Die GTX-Eich-Fahrt des Koordinators (90 s je Probe) misst jede Zahl und setzt jeden Deckel (⌈1,5 × s⌉).
 
 ## DECKE (gate:betriebsgesetz) — so ausgeglichen
 
@@ -77,4 +77,4 @@ Sonst blieben alle Deckel stehen; die Eichung setzt sie neu.
 ## Nächste Schritte
 
 1. Koordinator: GTX-Eich-Fahrt am Kopf mit beiden Zweigen (die Deckel aus den Zahlen), voller Playtest und GPU-Gates beim Merge.
-2. Die acht Läufe über dem Gesetz: je Lauf der benannte Rest in der Tabelle und in `stand/BERICHTE.md` (dort der Beleg je Posten).
+2. Die sieben Läufe über dem Gesetz: je Lauf der benannte Rest in der Tabelle und in `stand/BERICHTE.md` (dort der Beleg je Posten).
