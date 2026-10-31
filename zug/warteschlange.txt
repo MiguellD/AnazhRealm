@@ -263,3 +263,7 @@ z96-abab 3 abab A=8075fc036a9534b7ef772fc42dd4a19502c38aeb B=f1a654f175f05fd66c1
 eich12-gtx 1 station sha=3ef20f9f880252fbff6ea5263b573d19f5e20b19 lauf=eich-gtx.sh
 eich13-gtx 1 station sha=3ef20f9f880252fbff6ea5263b573d19f5e20b19 lauf=eich-gtx.sh
 z97-abab 3 abab A=f1a654f175f05fd66c1b3e08715101bdce10e21f B=3ef20f9f880252fbff6ea5263b573d19f5e20b19 zellen=w-ego
+eich12-gtx 0 storno
+eich13-gtx 0 storno
+z97-abab 0 storno
+takt27-gtx 1 punkte sha=3ef20f9f880252fbff6ea5263b573d19f5e20b19 geraet=gtx nur=physik.K2#2,tiere.K1#2,mensch.K1#1,oekologie.K4#2,mensch.K5#1,mensch.K4#1,haar.K1#1,haar.K2#1,vegetation.K1#1,vegetation.K5#1,vegetation.K5#2,licht.K5#1,material.K2#1,material.K1#1,lod.K1#1,lod.K5#1,lod.K2#1,material.K4#1,material.K5#1,licht.K3#1,lod.K3#1,studios.K2#2,studios.K3#2,bauen.K1#2,bauen.K5#2,studios.K4#1,fahrzeug.K3#1,siedlung.K1#2,siedlung.K4#2,fahrzeug.K5#1,spielgang.K3#1,fahrzeug.K2#1,fahrzeug.K2#2,ankunft.K2#1,ankunft.K3#1,profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K3#1,profiband.K5#1,klang.K2#1,klang.K4#1,speicher.K4#2
