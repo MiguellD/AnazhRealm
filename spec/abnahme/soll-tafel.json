@@ -2653,7 +2653,7 @@
                     "datei": "spec/farbe/albedo-tafel.json",
                     "zeile": "haar"
                 },
-                "werkzeug": "Station haar.K2#1 (werkbank bild --gesicht 0.7 und -4 --spieler --ist haar)"
+                "werkzeug": "Station haar.K2#1 (werkbank bild --gesicht 0.7 und -4 --spieler --klasse '^spieler:kopf/hair$' --ist haar)"
             },
             "quellen": ["koerper-core.js", "stamm/studio-bruecke.js", "stamm/studio-stoff.js", "stamm/koerper-leib.js"]
         }

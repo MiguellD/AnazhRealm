@@ -895,6 +895,9 @@ const foundryKanal = (() => {
             // haar · haut · glut · stoff), gestempelt vom Gesetzbuch (material.userData.__seh) — das Budget-Gesetz faltet
             // nur innerhalb EINER. Pflanzen tragen das Feld nie (ihre Replies bleiben byte-alt, gate:asset-contract).
             if (zweitKern && mat.userData && typeof mat.userData.__seh === "string") out.mat.seh = mat.userData.__seh;
+            // DAS STEIN-GESETZ reist mit (w4-genesis-tore, must-ignore): ein Stein-Rahmen (porta `__stein`) trägt den Namen seiner
+            // Zeile — die Welt webt Fuge, Kante und Ton aus dem uv seiner Teile (`_steinStoff`). Stoffe ohne das Feld bleiben byte-alt.
+            if (zweitKern && mat.userData && typeof mat.userData.__stein === "string") out.mat.stein = mat.userData.__stein;
             // DAS LEUCHT-GESETZ reist mit (Architektur-Welle 05.10., must-ignore): ein Stoff, der in seiner Vertex-Farbe
             // leuchtet (fachwerk `feuer`: Glut, Flamme, Herdfeuer), trägt die Stärke — die Welt webt emissiveNode = Farbe ×
             // leucht. Stoffe ohne das Feld (Pflanzen, jede andere Glut) bleiben byte-alt.
@@ -917,6 +920,16 @@ const foundryKanal = (() => {
             }
             if (zweitKern && mat.transparent && typeof mat.opacity === "number" && mat.opacity < 1)
                 out.mat.opacity = mat.opacity;
+            // DAS UNBELEUCHTETE IST LICHT (w4-genesis-tore, must-ignore): ein Zweit-Kern-Stoff ohne Licht-Antwort (MeshBasic — das
+            // Filigran, der Bogen-Saum und die Licht-Scheibe der Tore) zeigt im Labor seine Farbe, wie das Licht auch fällt: er IST
+            // Licht. Er reist als Leuchten seiner Farbe (`leucht` 1, die Farbe wird Vertex-Farbe) ohne Licht-Antwort (`unbeleuchtet`:
+            // die Albedo schwarz, matt) — vorher als matter, beleuchteter Stoff (Rauheit 0,7). Der Schatten-Stoff (kind schatten) bleibt.
+            if (zweitKern && mat.isMeshBasicMaterial && mat.visible !== false && out.kind === "unknown") {
+                out.mat.roughness = 1;
+                out.mat.metalness = 0;
+                out.mat.leucht = 1;
+                out.mat.unbeleuchtet = true;
+            }
         }
         const A = geo.attributes;
         // Alle vorhandenen Standard- + Wind-Attribute mitgeben (position/normal/color/uv +

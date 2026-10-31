@@ -99,7 +99,7 @@ function teile(meshes) {
             idx: m.index ? u32(m.index) : null,
         }));
 }
-const { luma709 } = require("./lib/abnahme-urteil.cjs");
+const { luma709, srgbLin } = require("./lib/abnahme-urteil.cjs");
 const Y = (c, i) => luma709(c, i * 3);
 const kreuz = (u, w) => [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
 function hoehe(T) {
@@ -553,11 +553,7 @@ function kroneUrteil(fall, T, flipFrei, partien) {
 // (F) DIE FRACHT — die GPU nachgerechnet: sRGB-Byte → linear je Texel, bilinear (clamp), alphaTest 0,5.
 const FRACHT_MIN_ZELLE = 8;
 const FRACHT_TOL = 0.03;
-const LIN8 = new Float64Array(256);
-for (let c = 0; c < 256; c++) {
-    const x = c / 255;
-    LIN8[c] = x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
-}
+const LIN8 = Float64Array.from({ length: 256 }, (_, c) => srgbLin(c)); // die EINE sRGB-Kurve (abnahme-urteil)
 // je Zelle: Deckung (Anteil der Proben über dem alphaTest) und die Luminanz des Lesers relativ zu Y(wert);
 // `teilen`: der Leser teilt das gefilterte rgb durch alpha (die Welt), sonst liest er es gerade (das Labor, blutend).
 function frachtStufe(m, wert, teilen) {
@@ -733,11 +729,6 @@ function kornReihe(mips, zBasis) {
 // aus dem Stamm gelesen), die Deckung λ. Ziel: Farb-Korn der Welt ≤ FARB_KORN_ANTEIL × Farb-Korn ohne Oktave.
 const FARB_KORN_ANTEIL = 0.5;
 function farbKornReihe(mips, zBasis) {
-    const lin = new Float64Array(256);
-    for (let i = 0; i < 256; i++) {
-        const v = i / 255;
-        lin[i] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-    }
     const stufe = (m, c, u, v) => {
         const W = m.width,
             H = m.height,
@@ -755,7 +746,7 @@ function farbKornReihe(mips, zBasis) {
                 dy = q >> 1;
             const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
             const o = (Math.min(H - 1, Math.max(0, y0 + dy)) * W + Math.min(W - 1, Math.max(0, x0 + dx))) * 4;
-            l += w * (0.2126 * lin[d[o]] + 0.7152 * lin[d[o + 1]] + 0.0722 * lin[d[o + 2]]);
+            l += w * (0.2126 * LIN8[d[o]] + 0.7152 * LIN8[d[o + 1]] + 0.0722 * LIN8[d[o + 2]]);
             a += (w * d[o + 3]) / 255;
         }
         return [l, a];

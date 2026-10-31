@@ -91,3 +91,14 @@ Werten der 9 Bau-Fälle), `normal` ≤ 3,1e-5, `uv` ≤ 1,22e-4, `matrixWorld` �
 ≤ 7,4e-6 (ein Hex kippt um 1/255). Danach: Node 22 und Node 24 grün, die Probe kippt 0 von 9
 Fällen (Ratsche `v4` = 0, `spec/asset-contract/plattform-ratsche.json`). Kein cv-Bump (die
 Naht ist dieselbe).
+
+**Re-Mint w4-genesis-tore (31.10.2026, das STEIN-GESETZ):** jedes Teil im Stoff des Rahmens (Quader, Stein-Band der
+Stufe 2, Stufen, Schlussstein, Monolith, Podest, Schutt) trägt seine Lage im Verband im `uv` — u = die Nummer des Steins
++ der Weg durch ihn (eine ganze Zahl ist eine Fuge), v = seine Länge in Metern (`STEIN_GESETZ`, `steinUV`, `kastenUV`,
+`ohneFuge`); Welt (`_steinStoff`) und Labor (`steinLabor`) lesen daraus Fuge, Kante und Bruchton. Byte-Akt 24 von 37
+Fällen (jeder Fall mit Rahmen-Teilen: kathedrale · maschine · geisttor · verkalkt · ruine · maurentor in L0/L1/L2 und
+die Prägung der kathedrale; geisttor-L2 trägt keinen), gemessen gegen origin/main `cd88897e` je Objekt und Attribut:
+NUR `uv` ändert sich (kathedrale-L0 28 333 Werte, L1 12 226, L2 3 243), `position`, `normal`, Index, `matrixWorld` und
+Stoff-Signatur sind byte-gleich, `objects`/`vertices` unverändert. drachentor (ohne Rahmen-Stoff), seine Prägung und
+jede NUR-WURF-Stufe 3 bleiben byte-gleich (13 Fälle). Kein cv-Bump: das uv reiste schon (Form und Naht dieselben),
+nur seine Bedeutung ist jetzt Gesetz.

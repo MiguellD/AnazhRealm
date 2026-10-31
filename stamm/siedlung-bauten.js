@@ -210,16 +210,25 @@ class AnazhRealm_siedlung_bauten {
         // Zustand blieb die Wahl im Band [thresh12 − hyst, thresh12] (22,6–26 m) auf 2, die Brücke löste sich als
         // „Karte" auf und blendete nach Distanz aus — ohne L1-Partner, der Baum stand halb ausgedithert.
         // DIE GRENZEN DES GESETZBUCHS (K43): nennt die Art ihre Stufen-Grenzen (B2c `ab`), wählt der Takt nach ihnen — auch
-        // unter dem Ladeschirm (das erste Bild trägt die Stufe, die der Bau nach ihm behält, ankunft.K2)
+        // unter dem Ladeschirm (das erste Bild trägt die Stufe, die der Bau nach ihm behält, ankunft.K2).
+        // DIE BESTÄTIGTE STUFE (w4-genesis-tore): die Hysterese hält eine Stufe gegen das Zittern eines BEWEGTEN Auges — sie gilt
+        // nur für eine Stufe, die die Wahl am Abstand selbst getragen hat (`_lodAmAbstand`). Was eine andere Hand setzte (der
+        // Kalt-Schätzer `_foundryLodForEntry`, der Stufen-Vorlauf, die Verdeckung), wählt am Abstand ohne Zustand, bis die Wahl
+        // die stehende Stufe trägt. Bis genesis-tore hielt das Band der Grobstufe (12 m ± 10 %) jedes Ring-Tor in 11 m auf der
+        // L2, die die Ankunft aus der Ferne setzte — für immer (Genesis Ego: 7 von 7 Studio-Toren L2, die Wahl am Abstand ist
+        // die L1); dieselbe Klasse am Baum. EINE Wahl (`amAbstand`) trägt beides: die Bestätigung und das Warten auf die
+        // Ziel-Stufe (`_stufeWartet` unten).
+        const zustand = entry._lodAmAbstand === true ? entry._lodLevel : undefined;
         const grenzen = treeLike ? null : this._archStufenGrenzen(entry);
-        let newLOD = grenzen
+        const amAbstand = grenzen
             ? AnazhRealm._stufeNachGrenzen(
                   dist,
-                  entry._lodLevel,
+                  zustand,
                   grenzen,
                   Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1
               )
-            : this._chooseLODForDistance(dist, entry._bruecke ? undefined : entry._lodLevel, visH);
+            : this._chooseLODForDistance(dist, entry._bruecke ? undefined : zustand, visH);
+        let newLOD = amAbstand;
         // Occlusion-Demotion: ein ferner 3D-Baum (LOD0/1) hinter dichter Kronen-Masse fällt auf LOD2.
         // `entry._occluded` trägt die Hysterese — transient, NICHT im Snapshot.
         if (occlOn && newLOD < 2 && dist > AnazhRealm.OCCLUSION.occDist) {
@@ -253,6 +262,10 @@ class AnazhRealm_siedlung_bauten {
         // lädt oder bäckt), oder dass sein Band-Partner lädt — das erste Weltbild steht erst, wenn kein Ding im Blick so wartet
         // (`_weltbildLuecken`, „bauten")
         entry._stufeWartet = false;
+        // DIE BESTÄTIGUNG: wählt eine andere Hand (Verdeckung, Vorlauf), ist die Stufe kein Zustand der Hysterese; trägt die Wahl am
+        // Abstand die stehende Stufe, ist sie es ab jetzt
+        if (newLOD !== amAbstand) entry._lodAmAbstand = false;
+        else if (newLOD === entry._lodLevel) entry._lodAmAbstand = true;
         if (newLOD === entry._lodLevel) {
             // Die Distanz-Wahl ist selbst die Karte: die Brücke ist keine mehr, die Karte blendet wie jede Fernstufe.
             if (entry._bruecke) {

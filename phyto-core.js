@@ -3486,6 +3486,28 @@
             ? { e: (P.leafSize / (2 * halfH)) * ch, nadel: P.conifer === true }
             : null;
     }
+    // DER SAUM JE HEBUNGS-RING (w4-laub-saum, 31.10.): der Saum der Art (`karteSaum`) im Bild JEDES Rings der Schicht
+    // (`karteRinge`) — seine Halbhöhe (`karteRingHalbe`, dieselbe Formel liest die Bühne) und seine Zelle (ch/τ) — und sein
+    // Kronen-Fuß: die Stufe-0-Zeile des tiefsten Laubs im Bild der Bühnen-Kamera aus der Hebung e (Zeile 0 oben),
+    // v = (y − halfH)·cos e − z·sin e über jede Peilung (|z| bis zum Radius R der Laub-Hülle). Bis dahin trug nur der waagrechte
+    // Ring den Saum, die gehobenen wählten die geglättete Hülle — und der Blick von unten liest den Ring −20°. Der Ring 0°
+    // ist der Saum von `karteSaum` mit dem Fuß (1 − minY / 2·halfH)·ch. `laub` { minY, R } im Maß des Rahmens (halfH, halfW);
+    // Rückgabe { nadel, ringe: [{ e, fuss }] } in der Reihe der Ringe, oder null (keine Krone). Leser: der Wirt
+    // (`_karteSaumVon` → die GPU-Ablage, `saumK`).
+    function karteSaumRinge(P, halfH, halfW, laub, ringe, ch) {
+        const s0 = karteSaum(P, halfH, ch);
+        if (!s0 || !laub || !Array.isArray(ringe)) return null;
+        return {
+            nadel: s0.nadel,
+            ringe: ringe.map((ring) => {
+                const e = (ring.hebung * Math.PI) / 180;
+                const hh = karteRingHalbe(WIND_ZAHLEN, halfH, halfW, e);
+                const chR = ch / ring.teiler;
+                const v = (laub.minY - halfH) * Math.cos(e) - laub.R * Math.abs(Math.sin(e));
+                return { e: karteSaum(P, hh, chR).e, fuss: ((hh - v) / (2 * hh)) * chR };
+            }),
+        };
+    }
     // Der Hash des Saums (u32 — die GPU-Ablage rechnet ihn bitgleich)
     function saumHash(ix, iy, s) {
         let h = Math.imul(ix, 0x27d4eb2d) ^ Math.imul(iy, 0x165667b1) ^ Math.imul(s, 0x9e3779b9);
@@ -4363,6 +4385,9 @@
             cc: mp && typeof mp.clearcoat === "number" && mp.clearcoat > 0 ? mp.clearcoat : 0,
             ccr: mp && typeof mp.clearcoatRoughness === "number" ? mp.clearcoatRoughness : 0,
             op: mp && typeof mp.opacity === "number" && mp.opacity < 1 ? mp.opacity : 1,
+            // w4-genesis-tore: ein Stoff ohne Licht-Antwort im Labor (MeshBasic) — er leuchtet nur (`leucht`), die Albedo ist
+            // schwarz (die Brücke stempelt ihn, `unbeleuchtet`); jeder andere Stoff bleibt byte-alt
+            ub: !!(mp && mp.unbeleuchtet === true),
         };
     }
     // Der Stoff-Schlüssel — DIE EINE Material-Identität (der Wirt keyt seinen Material-Cache damit).
@@ -4385,6 +4410,10 @@
             // Klarlack und Durchsicht sind Teil der Identität (nur wo das Gesetzbuch sie trägt — sonst byte-alt)
             (R.cc > 0 ? "|cc:" + R.cc.toFixed(2) + "@" + R.ccr.toFixed(2) : "") +
             (R.op < 1 ? "|op:" + R.op.toFixed(2) : "") +
+            // w4-genesis-tore: das Unbeleuchtete und das Stein-Gesetz (Fuge, Kante, Ton aus dem uv) sind Teil der Identität (nur wo
+            // das Gesetzbuch sie trägt — sonst byte-alt)
+            (R.ub ? "|ub" : "") +
+            (mp && typeof mp.stein === "string" ? "|st:" + mp.stein : "") +
             // die Seh-Klasse gehört zur Identität: zwei Stoffe gleicher Regler und verschiedener Funktion (Klaue und
             // Pupille, beide 0,2 matt-schwarz) sind zwei Materialien — sonst trüge die Pupille die Klaue in den Stoff
             (budgetSeh(mp) ? "|v:" + mp.seh : "")
@@ -5380,6 +5409,7 @@
         bc3Kodiere: bc3Kodiere, // die Fracht mit stetiger Alpha (der Blatt-Atlas, K20)
         bcDekodiere: bcDekodiere,
         karteSaum: karteSaum, // w4-laub-saum — der Saum der Art: Blattgröße in Stufe-0-Texeln, Laub oder Nadel
+        karteSaumRinge: karteSaumRinge, // w4-laub-saum — der Saum je Hebungs-Ring: Zelle und Kronen-Fuß im Bild jedes Rings
         karteSaumMuster: karteSaumMuster, // das Zell-Muster des Saums (die GPU-Ablage rechnet es bitgleich)
         bodenBand: bodenBand, // Waldboden 04.10. — das Trapez-Band des Boden-Gesetzes
         bodenGewicht: bodenGewicht, // Waldboden 04.10. — das Gewicht einer Boden-Art (Labor-Wald + Nah-Streu der Welt)

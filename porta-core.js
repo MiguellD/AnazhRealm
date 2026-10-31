@@ -258,6 +258,27 @@
     // pipeline.K3 (DAS STEIN-BAND): die Fuge zweier Steine (Fase 1,5 cm, Versatz ≤ 1 cm) liegt unter dem Szenen-Pixel der Stufe — die Kette der
     // Steine einer Ordnung ist dort EIN Band (`steinband`), seine Teilung folgt dem Sehnen-Fehler der Stufe wie jede Röhre.
     var TOR_DETAIL_2 = { sehneM: 0.05, laengsM: 3, umfangMin: 3, ringMin: 5, proben: 256, zylinder: 4, tuerFest: true, feinM: 0.0291, straehnen: 2, steinband: true, anteil: 0.15 };
+    // ═══ DAS STEIN-GESETZ (w4-genesis-tore): was der Stein des Rahmens dem Auge ist — in JEDER Stufe dasselbe ═══
+    // Befund (Genesis-Ring, die Ankunft): der Stein der Tore war EINE Farbe — ohne Fuge, ohne Kante, ohne Ton je Stein. Die Fase der
+    // L0 zeigt sich nur an freien Kanten (zwischen zwei Steinen liegt sie hinter der Stirn des Nachbarn), ab der Stufe 1 fällt sie
+    // (`feinM`), das Band der Stufe 2 trug keine Fuge mehr. Das Gesetz trägt den Stein als DATEN, jedes Rahmen-Teil seine Lage im
+    // Verband im `uv`: u = die Nummer des Steins im Verband + der Weg durch ihn (0 an seiner Anfangs-, 1 an seiner End-Fuge — eine
+    // ganze Zahl IST eine Fuge, `floor(u)` der Stein), v = seine Länge in Metern (die Fuge in Metern auf u). Dieselbe Zahl trägt
+    // der Quader der L0 und L1 und das Band der L2 an derselben Stelle: Fuge, Kante und Ton springen an keiner Stufe. Ein Teil
+    // ohne Fuge (Monolith, Podest, Schutt, die Stirn eines Bands) trägt u = Stein + ½ oder ¼. Die Leser rechnen dasselbe: die
+    // Welt (`_steinStoff`; der Bau-Satz trägt das uv der Stein-Stoffe, `BAU_STEIN_ATTR`) und das Labor (porta.js `steinLabor`).
+    //   fase     die Kante des Quaders (m): die Fase der L0 (`quadBlock`) und in jeder Stufe die Normale der Kante an der Fuge
+    //   fuge     die halbe Fuge (m): 8 mm — die Fuge des Quaderverbands im Fachwerk-Labor (texStein: 46 × 28 cm, Fuge 1,6 cm)
+    //   fugeTon  die Albedo der Fuge relativ zum Stein (der Mörtel im Schatten seiner Fasen)
+    //   ton      der Bruchton je Stein: ±12 % um die Farbe des Stoffs (texStein 0,88–1,12)
+    //   platteM  die Länge der Platten der Stufen (m), jede zweite Stufe um eine halbe Platte versetzt (der Läufer-Verband)
+    var STEIN_GESETZ = {
+        quader: { fase: 0.015, fuge: 0.008, fugeTon: 0.45, ton: 0.12, platteM: 0.9 },
+    };
+    var _stein = STEIN_GESETZ.quader;
+    // Die Nummern der Steine im Verband eines Tors: je Kette (Ordnung × Tiefe × Seite) 64, darüber die Stufen, der Schlussstein, die
+    // Monolithe, das Podest und der Schutt — jede Nummer < 4096 (das Byte-Raster der Attribute, 2^-12, trägt sie ganz).
+    var STEIN_NR = { kette: 64, stufe: 2560, schluss: 3008, mono: 3072, podest: 3200, schutt: 3264 };
     var _detail = TOR_DETAIL; // das Gesetz des laufenden Baus (buildInstance setzt es je Stufe, synchron)
     // Das FEINE der Stufe (`feinM`): ein Teil dieser Dicke (Röhre und Ring am Durchmesser, Fase, Stab und Beschlag an ihrer kleinsten Kante,
     // Scharnier und Juwel am Durchmesser — pipeline.K3: die Klasse ganz, vorher entkamen Kästen und Zylinder dem Gesetz) fällt — an seiner Stelle eine
@@ -382,7 +403,7 @@
         if (!_steinL0) {
             var sh = new THREE.Shape();
             sh.moveTo(0, 0); sh.lineTo(1, 0); sh.lineTo(1, 1); sh.lineTo(0, 1); sh.lineTo(0, 0);
-            _steinL0 = dreieckeVon(new THREE.ExtrudeGeometry(sh, { depth: 1, bevelEnabled: true, bevelThickness: 0.015, bevelSize: 0.015, bevelSegments: 1 }));
+            _steinL0 = dreieckeVon(new THREE.ExtrudeGeometry(sh, { depth: 1, bevelEnabled: true, bevelThickness: _stein.fase, bevelSize: _stein.fase, bevelSegments: 1 }));
         }
         return _steinL0;
     }
@@ -390,10 +411,13 @@
     // außen-Ende] in Reihe, null = der Stein fehlt — die Ruine) als EIN Band je ununterbrochenem Lauf: Vorder- und Rückseite, Laibung und Rücken,
     // zwei Stirnen; die Teilung behält eine Fuge nur, wo die Kette um mehr als den Sehnen-Fehler der Stufe vom Band abwiche. Dieselbe Tiefe wie
     // der ungefaste Stein (+3 cm, `quadBlock`), derselbe Stoff, dieselben Attribute (Lage, Normale, uv).
-    function steinBaender(gate, lauf, depth, mat, zO) {
-        var runs = [], cur = [];
+    // DIE LAGE IM VERBAND (STEIN_GESETZ): die Grenze e eines Laufs, der beim Stein s0 der Kette beginnt, trägt u = nr + s0 + e — dieselbe
+    // Zahl wie die Fuge der Quader an derselben Stelle (`steinUV`), v die mittlere Länge der Steine des Laufs; die Stirnen ein Viertel
+    // ihres Steins einwärts (keine Fuge auf der Stirn).
+    function steinBaender(gate, lauf, depth, mat, zO, nr) {
+        var runs = [], cur = [], ab = [];
         for (var i = 0; i <= lauf.length; i++) {
-            if (i < lauf.length && lauf[i]) cur.push(lauf[i]);
+            if (i < lauf.length && lauf[i]) { if (!cur.length) ab.push(i); cur.push(lauf[i]); }
             else if (cur.length) { runs.push(cur); cur = []; }
         }
         var eps = _detail.sehneM, hz = (depth + 0.03) / 2;
@@ -410,10 +434,12 @@
                 for (k = s0 + 1; ok && k < e; k++) if (abw(I[k], I[s0], I[e]) > eps || abw(O[k], O[s0], O[e]) > eps) ok = false;
                 if (!ok) { keep.push(e - 1); s0 = e - 1; }
             }
-            var pos = [], nrm = [], uv = [], idx = [];
-            var quad = function (A, B, C, Dd, n) {
+            var pos = [], nrm = [], uv = [], idx = [], u0 = nr + ab[r], Lu = 0;
+            for (k = 0; k < L.length; k++) Lu += (Math.hypot(I[k + 1].x - I[k].x, I[k + 1].y - I[k].y) + Math.hypot(O[k + 1].x - O[k].x, O[k + 1].y - O[k].y)) / 2;
+            Lu /= L.length;
+            var quad = function (A, B, C, Dd, n, U) {
                 var v0 = pos.length / 3, Q = [A, B, C, Dd];
-                for (var q = 0; q < 4; q++) { pos.push(Q[q][0], Q[q][1], Q[q][2]); nrm.push(n[0], n[1], n[2]); uv.push(0, 0); }
+                for (var q = 0; q < 4; q++) { pos.push(Q[q][0], Q[q][1], Q[q][2]); nrm.push(n[0], n[1], n[2]); uv.push(U[q], Lu); }
                 var ux = B[0] - A[0], uy = B[1] - A[1], uz = B[2] - A[2], wx = C[0] - A[0], wy = C[1] - A[1], wz = C[2] - A[2];
                 var cx = uy * wz - uz * wy, cy = uz * wx - ux * wz, cz = ux * wy - uy * wx;
                 idx.push.apply(idx, cx * n[0] + cy * n[1] + cz * n[2] > 0 ? [v0, v0 + 1, v0 + 2, v0, v0 + 2, v0 + 3] : [v0, v0 + 2, v0 + 1, v0, v0 + 3, v0 + 2]);
@@ -421,16 +447,16 @@
             var P3 = function (v, z) { return [v.x, v.y, z]; };
             var richt = function (a, b) { var dx = b.x - a.x, dy = b.y - a.y, l = Math.hypot(dx, dy) || 1; return [dx / l, dy / l, 0]; };
             for (k = 0; k < keep.length - 1; k++) {
-                var a = keep[k], b = keep[k + 1], zf = zO + hz, zb = zO - hz;
-                quad(P3(I[a], zf), P3(I[b], zf), P3(O[b], zf), P3(O[a], zf), [0, 0, 1]);
-                quad(P3(I[a], zb), P3(I[b], zb), P3(O[b], zb), P3(O[a], zb), [0, 0, -1]);
+                var a = keep[k], b = keep[k + 1], zf = zO + hz, zb = zO - hz, Ub = [u0 + a, u0 + b, u0 + b, u0 + a];
+                quad(P3(I[a], zf), P3(I[b], zf), P3(O[b], zf), P3(O[a], zf), [0, 0, 1], Ub);
+                quad(P3(I[a], zb), P3(I[b], zb), P3(O[b], zb), P3(O[a], zb), [0, 0, -1], Ub);
                 var mi = { x: (I[a].x + I[b].x) / 2, y: (I[a].y + I[b].y) / 2 }, mo = { x: (O[a].x + O[b].x) / 2, y: (O[a].y + O[b].y) / 2 };
-                quad(P3(I[a], zf), P3(I[b], zf), P3(I[b], zb), P3(I[a], zb), richt(mo, mi));
-                quad(P3(O[a], zf), P3(O[b], zf), P3(O[b], zb), P3(O[a], zb), richt(mi, mo));
+                quad(P3(I[a], zf), P3(I[b], zf), P3(I[b], zb), P3(I[a], zb), richt(mo, mi), Ub);
+                quad(P3(O[a], zf), P3(O[b], zf), P3(O[b], zb), P3(O[a], zb), richt(mi, mo), Ub);
             }
-            var n0 = keep[0], n1 = keep[keep.length - 1];
-            quad(P3(I[n0], zO + hz), P3(O[n0], zO + hz), P3(O[n0], zO - hz), P3(I[n0], zO - hz), richt(I[keep[1]], I[n0]));
-            quad(P3(I[n1], zO + hz), P3(O[n1], zO + hz), P3(O[n1], zO - hz), P3(I[n1], zO - hz), richt(I[keep[keep.length - 2]], I[n1]));
+            var n0 = keep[0], n1 = keep[keep.length - 1], s0u = u0 + n0 + 0.25, s1u = u0 + n1 - 0.25;
+            quad(P3(I[n0], zO + hz), P3(O[n0], zO + hz), P3(O[n0], zO - hz), P3(I[n0], zO - hz), richt(I[keep[1]], I[n0]), [s0u, s0u, s0u, s0u]);
+            quad(P3(I[n1], zO + hz), P3(O[n1], zO + hz), P3(O[n1], zO - hz), P3(I[n1], zO - hz), richt(I[keep[keep.length - 2]], I[n1]), [s1u, s1u, s1u, s1u]);
             var g = new THREE.BufferGeometry();
             g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
             g.setAttribute("normal", new THREE.Float32BufferAttribute(nrm, 3));
@@ -729,8 +755,62 @@
     function torusMesh(R,r,m,x,y,z){var l0=_buch?ringL0(R,r,8,20):0;if(fein(2*r))return buche(l0,new THREE.Group());var me=buche(l0,new THREE.Mesh(ringGeometrie(R,r,8,20),m));me.position.set(x,y,z);return me;}
     // prettier-ignore
     function barBetween(x0,y0,x1,y1,m,z,th){if(fein(th||0.04))return buche(12,new THREE.Group());var dx=x1-x0,dy=y1-y0,len=Math.hypot(dx,dy)||0.01;var b=new THREE.Mesh(new THREE.BoxGeometry(len,th||0.04,0.1),m);b.position.set((x0+x1)/2,(y0+y1)/2,z);b.rotation.z=Math.atan2(dy,dx);return buche(12,b);}
+    // ── DIE LAGE IM VERBAND (STEIN_GESETZ, w4-genesis-tore) ──
+    // Eine Fugen-Linie durch P0, P1, ihre Normale zur Seite `innen` (der Stein) — der vorzeichenbehaftete Abstand ist innen positiv.
+    function fugenLinie(P0, P1, innen) {
+        var dx = P1.x - P0.x, dy = P1.y - P0.y, l = Math.hypot(dx, dy) || 1, nx = -dy / l, ny = dx / l;
+        if ((innen.x - P0.x) * nx + (innen.y - P0.y) * ny < 0) { nx = -nx; ny = -ny; }
+        return { x: P0.x, y: P0.y, nx: nx, ny: ny };
+    }
+    // DER UV-ERZEUGER EINES QUADERS (r128 ExtrudeGeometry `UVGenerator`; die Ecken liegen in der Form um cx, cy): fu = { u0: die
+    // Nummer des Steins, a: die Ecken (Indizes in c) seiner Anfangs-Fuge, b: die seiner End-Fuge }. Der Weg durch den Stein ist
+    // t = a / (a + b) aus den Abständen zu beiden Fugen-Linien, geklemmt auf 0 … 1 (die Fase der L0 liegt jenseits der Linie und
+    // gehört zur Fuge). Eine Wand AUF einer Fuge (die Stoß-Fläche zum Nachbarn: jede Ecke im selben Abstand zu ihrer Linie) trägt
+    // die Mitte des Steins: sie liegt am Nachbarn und zeigt sich nur, wo er fehlt (die Ruine) — als Stein, nie als Mörtel.
+    function steinUV(c, cx, cy, fu) {
+        var A0 = c[fu.a[0]], A1 = c[fu.a[1]], B0 = c[fu.b[0]], B1 = c[fu.b[1]];
+        var LA = fugenLinie(A0, A1, { x: (B0.x + B1.x) / 2, y: (B0.y + B1.y) / 2 });
+        var LB = fugenLinie(B0, B1, { x: (A0.x + A1.x) / 2, y: (A0.y + A1.y) / 2 });
+        var Lu = (Math.hypot(B0.x - A0.x, B0.y - A0.y) + Math.hypot(B1.x - A1.x, B1.y - A1.y)) / 2;
+        var ab = function (V, i) {
+            var px = V[3 * i] + cx, py = V[3 * i + 1] + cy;
+            return [(px - LA.x) * LA.nx + (py - LA.y) * LA.ny, (px - LB.x) * LB.nx + (py - LB.y) * LB.ny];
+        };
+        var weg = function (s) { return fu.u0 + Math.max(0, Math.min(1, s[0] / Math.max(1e-6, s[0] + s[1]))); };
+        return {
+            generateTopUV: function (g, V, ia, ib, ic) {
+                return [ia, ib, ic].map(function (i) { return new THREE.Vector2(weg(ab(V, i)), Lu); });
+            },
+            generateSideWallUV: function (g, V, ia, ib, ic, id) {
+                var S = [ia, ib, ic, id].map(function (i) { return ab(V, i); });
+                var auf = function (k) { for (var j = 1; j < 4; j++) if (Math.abs(S[j][k] - S[0][k]) > 1e-4) return false; return true; };
+                return S.map(function (s) { return new THREE.Vector2(auf(0) || auf(1) ? fu.u0 + 0.5 : weg(s), Lu); });
+            },
+        };
+    }
+    // DIE LAGE EINES KASTENS IM VERBAND (Stufe, Schlussstein, Monolith, Podest, Schutt): u = u0 + x / L je Ecke (der Läufer längs x,
+    // eine Fuge je ganzem u), die Stirnen (Normale ±x) tragen ein Viertel ihres Steins einwärts — keine Fuge auf der Stirn. L = 0:
+    // ein Stein ohne Fuge, jede Ecke u0 (die Mitte, ½ im Aufrufer). v = die Länge des Steins in Metern.
+    function kastenUV(geo, u0, L, x0) {
+        var P = geo.attributes.position, N = geo.attributes.normal, uv = geo.attributes.uv;
+        for (var i = 0; i < P.count; i++) {
+            var u = u0;
+            if (L > 0) {
+                u = u0 + (P.getX(i) - x0) / L;
+                if (Math.abs(N.getX(i)) > 0.5) u += N.getX(i) > 0 ? -0.25 : 0.25;
+            }
+            uv.setXY(i, u, L > 0 ? L : 1);
+        }
+        return geo;
+    }
+    // Ein Teil ohne Fuge (Monolith-Röhre, Podest, Schutt): jede Ecke trägt die Mitte seines Steins.
+    function ohneFuge(geo, nr) {
+        var uv = geo.attributes.uv;
+        for (var i = 0; i < uv.count; i++) uv.setXY(i, nr + 0.5, 1);
+        return geo;
+    }
     // prettier-ignore
-    function quadBlock(c,depth,mat,zOff,jit){var cx=(c[0].x+c[1].x+c[2].x+c[3].x)/4,cy=(c[0].y+c[1].y+c[2].y+c[3].y)/4;var sh=new THREE.Shape();sh.moveTo(c[0].x-cx,c[0].y-cy);sh.lineTo(c[1].x-cx,c[1].y-cy);sh.lineTo(c[2].x-cx,c[2].y-cy);sh.lineTo(c[3].x-cx,c[3].y-cy);sh.lineTo(c[0].x-cx,c[0].y-cy);var bv=!fein(0.015),dz=bv?depth:depth+0.03;var g=new THREE.ExtrudeGeometry(sh,{depth:dz,bevelEnabled:bv,bevelThickness:0.015,bevelSize:0.015,bevelSegments:1});g.translate(0,0,-dz/2);var me=new THREE.Mesh(g,mat);me.position.set(cx,cy,zOff+jit);me.castShadow=me.receiveShadow=true;return buche(_buch?steinL0():0,me);}
+    function quadBlock(c,depth,mat,zOff,jit,fu){var cx=(c[0].x+c[1].x+c[2].x+c[3].x)/4,cy=(c[0].y+c[1].y+c[2].y+c[3].y)/4;var sh=new THREE.Shape();sh.moveTo(c[0].x-cx,c[0].y-cy);sh.lineTo(c[1].x-cx,c[1].y-cy);sh.lineTo(c[2].x-cx,c[2].y-cy);sh.lineTo(c[3].x-cx,c[3].y-cy);sh.lineTo(c[0].x-cx,c[0].y-cy);var bv=!fein(_stein.fase),dz=bv?depth:depth+0.03;var op={depth:dz,bevelEnabled:bv,bevelThickness:_stein.fase,bevelSize:_stein.fase,bevelSegments:1};if(fu)op.UVGenerator=steinUV(c,cx,cy,fu);var g=new THREE.ExtrudeGeometry(sh,op);g.translate(0,0,-dz/2);var me=new THREE.Mesh(g,mat);me.position.set(cx,cy,zOff+jit);me.castShadow=me.receiveShadow=true;return buche(_buch?steinL0():0,me);}
     // in-plane Normalen entlang Pfad (auswaerts vom Aperturzentrum)
     // prettier-ignore
     function normalsAlong(pts,refY){var N=pts.length,F=[];for(var i=0;i<N;i++){var a=pts[Math.max(0,i-1)],b=pts[Math.min(N-1,i+1)];var tx=b.x-a.x,ty=b.y-a.y,L=Math.hypot(tx,ty)||1;tx/=L;ty/=L;var nx=-ty,ny=tx;if((pts[i].x)*nx+(pts[i].y-refY)*ny<0){nx=-nx;ny=-ny;}F.push([nx,ny]);}return F;}
@@ -784,7 +864,9 @@
       // DIE SEH-KLASSE je Stoff (Integration W8, rein additiv — docs/studio-vertrag.md B2c): was der Stoff dem AUGE ist (phyto-core
       // BUDGET_GESETZ.seh); das Budget-Gesetz faltet nur innerhalb EINER. Der Rahmen ist Metall, sobald seine Metallizität ≥ 0,5,
       // sonst Stein (stoff); Bogen und Bänder sind Metall; die ungelitten Leucht-Linien (Spitze, Saum) und die Licht-Scheibe glühen.
-      fmat.userData.__seh=fmat.metalness>=0.5?"metall":"stoff";amat.userData.__seh="metall";bmatG.userData.__seh="metall";bmatB.userData.__seh="metall";laceMat.userData.__seh="glut";rimMat.userData.__seh="glut";
+      // DAS STEIN-GESETZ reist mit (w4-genesis-tore, must-ignore): ein Rahmen aus Stein (Seh-Klasse stoff) trägt den Namen seiner Zeile
+      // (`__stein`, STEIN_GESETZ) — die Welt webt Fuge, Kante und Ton aus dem uv seiner Teile (die Lage im Verband), das Labor dasselbe.
+      fmat.userData.__seh=fmat.metalness>=0.5?"metall":"stoff";amat.userData.__seh="metall";bmatG.userData.__seh="metall";bmatB.userData.__seh="metall";laceMat.userData.__seh="glut";rimMat.userData.__seh="glut";if(fmat.userData.__seh==="stoff")fmat.userData.__stein="quader";
 
       // ---- symmetrische Halbkante (Basis->Scheitel) + Normalen, einmal ----
       var nJ=7,j,half=[];
@@ -807,16 +889,16 @@
         var outOff=o*jambW, dep=frameDepth*(1+o*0.18), dens=(o===0?1:(o===1?0.7:0.5));
         var zoffs=(o===0)?[0]:[o*depthStep,-o*depthStep];                       // symmetrisch um z=0 → beidseitig durchgehbar
         for(var zi=0;zi<zoffs.length;zi++){var zO=zoffs[zi];
-          if(p.wMason>0.03){var rad=jambW*p.wMason,steinL=[],steinR=[],bandL=[],bandR=[],SB=!!_detail.steinband;   // SB: das Stein-Band der Stufe (der Würfel jedes Steins fällt wie gebaut — der Strom bleibt)
+          if(p.wMason>0.03){var rad=jambW*p.wMason,steinL=[],steinR=[],bandL=[],bandR=[],SB=!!_detail.steinband,nrL=(o*4+zi*2)*STEIN_NR.kette,nrR=nrL+STEIN_NR.kette;   // SB: das Stein-Band der Stufe (der Würfel jedes Steins fällt wie gebaut — der Strom bleibt)
             for(i=0;i<Nh-1;i++){
               var inA=new THREE.Vector3(sp[i].x+nrm[i][0]*outOff,sp[i].y+nrm[i][1]*outOff,0);
               var inB=new THREE.Vector3(sp[i+1].x+nrm[i+1][0]*outOff,sp[i+1].y+nrm[i+1][1]*outOff,0);
               var ouA=new THREE.Vector3(sp[i].x+nrm[i][0]*(outOff+rad),sp[i].y+nrm[i][1]*(outOff+rad),0);
               var ouB=new THREE.Vector3(sp[i+1].x+nrm[i+1][0]*(outOff+rad),sp[i+1].y+nrm[i+1][1]*(outOff+rad),0);
-              if(!(p.ruin>0&&rng()<p.ruin*0.4)){if(SB){rng();bandL.push([inA,inB,ouA,ouB]);}else{var qb=quadBlock([inA,inB,ouB,ouA],dep,fmat,zO,(rng()-0.5)*p.weather*0.02);gate.add(qb);steinL.push([inA,inB,ouB,ouA]);}}else if(SB)bandL.push(null);
-              if(!(p.ruin>0&&rng()<p.ruin*0.4)){var mA=inA.clone();mA.x*=-1;var mB=inB.clone();mB.x*=-1;var oA=ouA.clone();oA.x*=-1;var oB=ouB.clone();oB.x*=-1;if(SB){rng();bandR.push([mA,mB,oA,oB]);}else{var qm=quadBlock([mB,mA,oA,oB],dep,fmat,zO,(rng()-0.5)*p.weather*0.02);gate.add(qm);steinR.push([mB,mA,oA,oB]);}}else if(SB)bandR.push(null);
+              if(!(p.ruin>0&&rng()<p.ruin*0.4)){if(SB){rng();bandL.push([inA,inB,ouA,ouB]);}else{var qb=quadBlock([inA,inB,ouB,ouA],dep,fmat,zO,(rng()-0.5)*p.weather*0.02,{u0:nrL+i,a:[0,3],b:[1,2]});gate.add(qb);steinL.push([inA,inB,ouB,ouA]);}}else if(SB)bandL.push(null);
+              if(!(p.ruin>0&&rng()<p.ruin*0.4)){var mA=inA.clone();mA.x*=-1;var mB=inB.clone();mB.x*=-1;var oA=ouA.clone();oA.x*=-1;var oB=ouB.clone();oB.x*=-1;if(SB){rng();bandR.push([mA,mB,oA,oB]);}else{var qm=quadBlock([mB,mA,oA,oB],dep,fmat,zO,(rng()-0.5)*p.weather*0.02,{u0:nrR+i,a:[1,2],b:[0,3]});gate.add(qm);steinR.push([mB,mA,oA,oB]);}}else if(SB)bandR.push(null);
             }
-            if(SB){steinBaender(gate,bandL,dep,fmat,zO);steinBaender(gate,bandR,dep,fmat,zO);}
+            if(SB){steinBaender(gate,bandL,dep,fmat,zO,nrL);steinBaender(gate,bandR,dep,fmat,zO,nrR);}
             if(HU){hSteinKette(HU,steinL,zO,dep,fmat);hSteinKette(HU,steinR.reverse(),zO,dep,fmat);}
           }
           if(p.wBraid>0.03&&(o<2||orders<3)){
@@ -825,9 +907,9 @@
             var strands=function(cnt,rh,hd,ph0,mat){for(var c=0;c<cnt;c++){var ph=ph0+c*(Math.PI*2/cnt)+rng()*0.1;var faellt=c%(_detail.straehnen||1);if(faellt&&!_buch)continue;var pts=[];for(var q=0;q<Fb.length;q++){var s=q/(Fb.length-1),er=Math.min(s,1-s),ramp=Math.max(0,1-er/0.12),rE=rh*(1+0.7*ramp),ang=ph+hd*turns*2*Math.PI*s;var off=Math.cos(ang)*rE,zz=Math.sin(ang)*rE;pts.push(new THREE.Vector3(Fb[q].x+fn[q][0]*off,Fb[q].y+fn[q][1]*off-ramp*0.18,zoBr+zz));}if(faellt){buche(roehreL0(new THREE.CatmullRomCurve3(pts,false,'centripetal'),fib,240,6));continue;}var t=tubeMesh(pts,fib*(_detail.straehnen||1),mat,240,6,fib);t.castShadow=true;gate.add(t);}};
             var ns=Math.round(6*dens);strands(ns,rho*1.05,1,0,bmatG);strands(ns,rho*0.8,-1,Math.PI/6,bmatB);if(HU){var bSt=4,bK=[];for(var bj=0;bj<2*bSt+1;bj++)bK.push([]);for(var bq=0;bq<Fb.length;bq++){var bs=bq/(Fb.length-1),ber=Math.min(bs,1-bs),bramp=Math.max(0,1-ber/0.12),bp=new THREE.Vector3(Fb[bq].x,Fb[bq].y-bramp*0.18,0);for(var bj=0;bj<2*bSt+1;bj++){var b0=bj<bSt?bj*0.12/bSt:bj===bSt?0.12:0.88+(bj-bSt-1)*0.12/bSt,b1=bj<bSt?(bj+1)*0.12/bSt:bj===bSt?0.88:0.88+(bj-bSt)*0.12/bSt;if(bs>=b0-1e-9&&bs<=b1+1e-9)bK[bj].push(bp);}}for(var bj=0;bj<2*bSt+1;bj++){var bE0=bj<bSt?bj*0.12/bSt:bj===bSt?0.12:1-(0.88+(bj-bSt)*0.12/bSt);hKette(HU,bK[bj],rho*1.05*(1+0.7*Math.max(0,1-bE0/0.12))+fib,bmatG,zoBr);}}
           }
-          if(p.wMono>0.03){var oc2=offsetFull(outOff+jambW*0.5),mt=tubeMesh(oc2,jambW*0.5*p.wMono+0.01,fmat,170,12);mt.position.z=zO;hKette(HU,oc2,jambW*0.5*p.wMono+0.01,fmat,zO,mt.geometry);mt.castShadow=true;gate.add(mt);}
+          if(p.wMono>0.03){var oc2=offsetFull(outOff+jambW*0.5),mt=tubeMesh(oc2,jambW*0.5*p.wMono+0.01,fmat,170,12);if(mt.geometry)ohneFuge(mt.geometry,STEIN_NR.mono+o*2+zi);mt.position.z=zO;hKette(HU,oc2,jambW*0.5*p.wMono+0.01,fmat,zO,mt.geometry);mt.castShadow=true;gate.add(mt);}
           if(o===0&&p.wMason>0.03){var rad2=jambW*p.wMason,ay=springY+D.rise;                       // Schlussstein zentral (von beiden Seiten sichtbar)
-            var kb=new THREE.Mesh(new THREE.BoxGeometry(Math.max(0.12,M*0.28),rad2*1.25,dep*1.15),fmat);kb.position.set(0,ay+rad2*0.12,0);kb.castShadow=true;gate.add(kb);hUm(HU,kb,fmat);
+            var kbw=Math.max(0.12,M*0.28),kb=new THREE.Mesh(kastenUV(new THREE.BoxGeometry(kbw,rad2*1.25,dep*1.15),STEIN_NR.schluss,kbw,-kbw/2),fmat);kb.position.set(0,ay+rad2*0.12,0);kb.castShadow=true;gate.add(kb);hUm(HU,kb,fmat);
             var jw=buche(8,fein(rad2*0.68)?new THREE.Group():new THREE.Mesh(new THREE.OctahedronGeometry(rad2*0.34,0),amat));jw.position.set(0,ay+rad2*0.12,0);gate.add(jw);}
         }
       }
@@ -882,17 +964,17 @@
       // --- FUNDAMENT: parametrisches Vokabular (abgeleitet aus Strategie × Masse × Ruine) ---
       var fullW=2*(M+jambW*orders),baseDepth=frameDepth+0.6+depthStep*2*orders,baseZ=0;
       if(p.wMason*p.mass>0.05){var nStep=1+Math.round(p.wMason*2),sH=0.12+0.32*p.mass;          // 1) Stylobat: zurueckspringende Stufen
-        for(var st=0;st<nStep;st++){var sw=fullW+0.4+st*0.7,sd2=baseDepth+st*0.7;var me=new THREE.Mesh(new THREE.BoxGeometry(sw,sH,sd2),fmat);me.position.set(0,baseY-sH/2-st*sH,baseZ);me.castShadow=me.receiveShadow=true;gate.add(me);hUm(HU,me,fmat);}}
+        for(var st=0;st<nStep;st++){var sw=fullW+0.4+st*0.7,sd2=baseDepth+st*0.7;var me=new THREE.Mesh(kastenUV(new THREE.BoxGeometry(sw,sH,sd2),STEIN_NR.stufe+st*64+(st%2)*0.5,sw/Math.max(1,Math.round(sw/_stein.platteM)),-sw/2),fmat);me.position.set(0,baseY-sH/2-st*sH,baseZ);me.castShadow=me.receiveShadow=true;gate.add(me);hUm(HU,me,fmat);}}
       if(p.wBraid*p.mass>0.05){var nR=Math.round(lerp(3,7,p.wBraid)),jx=Math.abs(D.leftSpringX)+jambW*0.5;   // 2) Wurzeln am PFOSTENFUSS (außen), tauchen schräg in den Boden — nie in Öffnung/Sheet-Ebene
         for(var sdb=-1;sdb<=1;sdb+=2)for(var rr2=0;rr2<nR;rr2++){var spread=0.16+rr2*0.13,zr=(rr2-(nR-1)*0.5)*0.16;
           var pts=[new THREE.Vector3(sdb*jx,baseY+0.05,zr*0.5),new THREE.Vector3(sdb*(jx+spread*0.6),baseY-0.18,zr*0.9),new THREE.Vector3(sdb*(jx+spread),baseY-0.50-rr2*0.05,zr*1.3)];
           var tb=tubeMesh(pts,0.05+0.03*(1-rr2/nR),(rr2%2)?bmatB:bmatG,36,5);hKette(HU,pts,0.05+0.03*(1-rr2/nR),(rr2%2)?bmatB:bmatG,0,tb.geometry);tb.castShadow=true;gate.add(tb);}}
       if(p.wMono*p.mass>0.05){var pw=fullW+0.5,ph=0.2+0.3*p.mass;                                // 3) Tech-Podest mit Leuchtnaht
-        var pl=new THREE.Mesh(new THREE.BoxGeometry(pw,ph,baseDepth+0.3),fmat);pl.position.set(0,baseY-ph/2,baseZ);pl.castShadow=pl.receiveShadow=true;gate.add(pl);hUm(HU,pl,fmat);
+        var pl=new THREE.Mesh(ohneFuge(new THREE.BoxGeometry(pw,ph,baseDepth+0.3),STEIN_NR.podest),fmat);pl.position.set(0,baseY-ph/2,baseZ);pl.castShadow=pl.receiveShadow=true;gate.add(pl);hUm(HU,pl,fmat);
         var seam=buche(12,fein(0.03)?new THREE.Group():new THREE.Mesh(new THREE.BoxGeometry(pw*0.9,0.03,baseDepth*0.25),rimMat));seam.position.set(0,baseY-ph+0.05,baseZ+baseDepth*0.25);gate.add(seam);}
       if(p.glow>0.3||(p.wLace>0.4&&p.mass<0.4)){var rg=buche(_buch?ringL0(M+jambW*0.5+0.3,0.05+0.05*p.glow,10,48):0,new THREE.Mesh(ringGeometrie(M+jambW*0.5+0.3,0.05+0.05*p.glow,10,48),rimMat));rg.rotation.x=Math.PI/2;rg.position.set(0,baseY+0.02,baseZ);gate.add(rg);  // 4) Leuchtende Dais
         var disc=buche(40,new THREE.Mesh(new THREE.CircleGeometry(M+jambW*0.5,kreisTeilung(M+jambW*0.5)),new THREE.MeshBasicMaterial({color:new THREE.Color().setHSL(0.11,0.5,0.5).multiplyScalar(0.3+p.glow),transparent:true,opacity:0.2+0.4*p.glow,side:THREE.DoubleSide})));disc.material.userData.__seh="glut";disc.rotation.x=-Math.PI/2;disc.position.set(0,baseY+0.012,baseZ);gate.add(disc);}
-      if(p.ruin>0.2){var nRub=Math.round(p.ruin*8);for(var rbk=0;rbk<nRub;rbk++){var rsz=0.15+rng()*0.38;var rk=new THREE.Mesh(new THREE.BoxGeometry(rsz,rsz*0.7,rsz),fmat);rk.position.set((rng()-0.5)*fullW*1.3,baseY+rsz*0.3,baseZ+(rng()-0.5)*baseDepth*0.6);rk.rotation.set(rng()*1.5,rng()*3,rng()*1.5);rk.castShadow=true;gate.add(rk);hDrehKasten(HU,rk,rsz,rsz*0.7,rsz,fmat);}}  // 5) Schutt
+      if(p.ruin>0.2){var nRub=Math.round(p.ruin*8);for(var rbk=0;rbk<nRub;rbk++){var rsz=0.15+rng()*0.38;var rk=new THREE.Mesh(ohneFuge(new THREE.BoxGeometry(rsz,rsz*0.7,rsz),STEIN_NR.schutt+rbk),fmat);rk.position.set((rng()-0.5)*fullW*1.3,baseY+rsz*0.3,baseZ+(rng()-0.5)*baseDepth*0.6);rk.rotation.set(rng()*1.5,rng()*3,rng()*1.5);rk.castShadow=true;gate.add(rk);hDrehKasten(HU,rk,rsz,rsz*0.7,rsz,fmat);}}  // 5) Schutt
 
       // --- gluehende Apertur-Kante (Trichter) ---
       var rimPts=[];for(i=0;i<prof.pts.length;i++)rimPts.push(new THREE.Vector3(prof.pts[i][0],springY+prof.pts[i][1],0.0));gate.add(tubeMesh(rimPts,0.04,rimMat,170,8));
@@ -1260,6 +1342,8 @@
         TUER_GESETZ: TUER_GESETZ,
         TOR_HUELLE: TOR_HUELLE,
         GLUT_GESETZ: GLUT_GESETZ,
+        // DAS STEIN-GESETZ (w4-genesis-tore): Fuge, Kante und Ton des Rahmen-Steins — Welt (`_steinStoff`) und Labor lesen es
+        STEIN_GESETZ: STEIN_GESETZ,
         glutIntensity: glutIntensity,
         membranUniforms: membranUniforms,
         archProfile: archProfile,
