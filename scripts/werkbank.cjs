@@ -1428,11 +1428,14 @@ async function starte() {
                         if (!(saa > 0 && sbb > 0)) return { r: null, pixel: P, grund: "Bild oder Ziel ohne Struktur in der Öffnung" };
                         return { r: +(sab / Math.sqrt(saa * sbb)).toFixed(3), pixel: P, grund: null };
                     };
+                    // DIE MASSE, DIE DAS URTEIL LIEST (w4-proben-tempo2, 31.10.): `nurPixel` zählt je Klasse nur ihre Pixel — ein
+                    // Aufrufer, der nur sie liest (das Jahr der Vegetation, die Wiese, die Herde am Hang), trug je Schuss die ganzen Maße
+                    // (Zweiton, Milch, Kante, Spiegel, Mikro; Radeon 2134b209 1,1–3,6 s je Schuss, an den Kronen 4,7 von 20,5 s)
                     namen.forEach((n, j) => {
                         const m = new Uint8Array(W * H);
                         for (let p = 0; p < W * H; p++) m[p] = teil[p] === j + 1 ? 1 : 0;
                         const mb = /^portal-membran$/.test(n);
-                        const ms = __klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null, spiegel);
+                        const ms = k.nurPixel ? { pixel: m.filter(Boolean).length } : __klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null, spiegel);
                         if (mb && ms.pixel) ms.ziel = zielTreue(m);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
@@ -1644,7 +1647,7 @@ async function starte() {
                             mu8[i + 1] = g;
                             mu8[i + 2] = g + 40;
                         }
-                        mu8[i + 3] = 255;
+                        // das Alpha setzt `__png` deckend (welt-boot)
                     }
                     klasse = {
                         ausdruck: k.klasse,

@@ -177,9 +177,12 @@ async function stand() {
 }
 // DAS BILD ALS PNG: in jeder Seite `window.__png(u8, W, H)` — RGBA-Bytes W×H (ein Schuss, eine Maske) deckend als Daten-URL,
 // in Node `pngDatei(datei, url)` schreibt sie; bis dahin baute jede Bild-Linse ihre Leinwand und ihren Puffer selbst
+// (w4-proben-tempo2: die Bytes kopiert, das Alpha deckend gesetzt — dieselben Bytes wie die Abbildung je Byte, ohne 8 Mio. Rückrufe
+// je 1920×1080)
 function png(u8, W, H) {
     const cv = Object.assign(document.createElement("canvas"), { width: W, height: H });
-    const d = Uint8ClampedArray.from(u8.subarray(0, W * H * 4), (v, i) => (i % 4 === 3 ? 255 : v));
+    const d = new Uint8ClampedArray(u8.subarray(0, W * H * 4));
+    for (let i = 3; i < d.length; i += 4) d[i] = 255;
     cv.getContext("2d").putImageData(new ImageData(d, W, H), 0, 0);
     return cv.toDataURL("image/png");
 }
