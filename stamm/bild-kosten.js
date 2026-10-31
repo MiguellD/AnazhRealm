@@ -713,22 +713,8 @@ class AnazhRealm_bild_kosten {
     // Der WebGL2-Rückfall kennt keine Bundles, und sein `_completeCompile` ersetzt das Datenobjekt der Pipeline (vendor
     // 6:513930 über Backend.set 6:457928) — ein Setter am alten Objekt feuerte nie, die Schlange wüchse die ganze Sitzung:
     // dort zählt der wartende Draw nur (`wartetN`), er versucht es im nächsten Aufruf selbst.
-    // DIE NÄCHSTE BEREITE PIPELINE (w4-ankunft-5): ein Versprechen, das sich erfüllt, sobald eine Pipeline, auf die ein Bürger
-    // wartet, steht oder absagt — wer auf ein Programm der Erst-Zeichnung wartet (der frische Himmel, `_himmelFrisch`), wartet
-    // auf dieses Ereignis, nie auf die Uhr. null, wenn keine im Bau steht.
-    _erstBereit() {
-        const E = this._erstZeichnungStand();
-        if (!E.offen.size) return null;
-        if (!E.bereitWarten) E.bereitWarten = new Promise((f) => (E.bereitFrei = f));
-        return E.bereitWarten;
-    }
-    _erstBereitMelden() {
-        const E = this._erstZeichnung;
-        const f = E.bereitFrei;
-        E.bereitWarten = E.bereitFrei = null;
-        if (f) f();
-    }
-
+    // Steht eine offene Pipeline oder ist sie abgesagt, ist das DIE WENDE: ihre Bundles nehmen neu auf, und wer auf sie
+    // wartet (`_erstWende`), zeichnet neu.
     _erstWartet(be, pipe, bg) {
         const E = this._erstZeichnung;
         if (!pipe) {
@@ -747,13 +733,16 @@ class AnazhRealm_bild_kosten {
             let wert = h.pipeline;
             const warten = (bundles = new Set());
             E.offen.set(pipe, warten);
+            const wende = () => {
+                E.offen.delete(pipe);
+                for (const b of warten) b.needsUpdate = true;
+                if (E.wende) for (const ok of E.wende.splice(0)) ok();
+            };
             if (bau !== null) {
                 E.namen.set(pipe, bau.label);
                 bau.p.catch(() => {
                     E.abgesagt.add(pipe);
-                    E.offen.delete(pipe);
-                    for (const b of warten) b.needsUpdate = true;
-                    this._erstBereitMelden();
+                    wende();
                 });
             }
             Object.defineProperty(h, "pipeline", {
@@ -769,14 +758,24 @@ class AnazhRealm_bild_kosten {
                         configurable: true,
                         enumerable: true,
                     });
-                    E.offen.delete(pipe);
                     E.bereitN++;
-                    for (const b of warten) b.needsUpdate = true;
-                    this._erstBereitMelden();
+                    wende();
                 },
             });
         }
         if (bg !== null) bundles.add(bg);
+    }
+
+    // DIE WENDE DER ERST-ZEICHNUNG (das Ereignis jedes Wartenden, nie die Wanduhr): ein Versprechen, das sich erfüllt, sobald
+    // eine offene Pipeline (`offen`) steht oder abgesagt ist (`_erstWartet`). Ist keine offen, gibt es nichts zu erwarten:
+    // null — wer dann nicht zeichnete, bricht laut (`_bisGanz`). Der WebGL2-Rückfall führt keine Schlange: seine Wende ist das
+    // nächste Bild des Browsers, in dem r184 jede offene Übersetzung prüft (`KHR_parallel_shader_compile`).
+    _erstWende() {
+        const E = this._erstZeichnungStand();
+        const be = this.state.renderer && this.state.renderer.backend;
+        if (!be || be.isWebGPUBackend !== true) return new Promise((ok) => requestAnimationFrame(() => ok()));
+        if (!E.offen.size) return null;
+        return new Promise((ok) => (E.wende || (E.wende = [])).push(ok));
     }
 
     // HEADLESS-NULL-RENDERER (opt-in via window.__anazhHeadlessNullRenderer): No-op-Hülle ohne GPU —
