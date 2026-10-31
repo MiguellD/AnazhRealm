@@ -117,7 +117,7 @@ const server = statikServer();
                 o.senseIsScalar = typeof (st.perfSense && st.perfSense.renderCalls) === "number";
                 // der Regler-Eingang: renderLoadMs aus der EHRLICHEN Zahl (bounded + flach über
                 // die Session), während die vergiftete Kette (Lebenszeit × K) WEITER WÜCHSE
-                const K = (window.AnazhRealm || r.constructor).PERF_RENDER_CALL_MS;
+                const K = (window.AnazhRealm || AnazhRealm).PERF_RENDER_CALL_MS;
                 o.renderLoadMs = +(o.senseLate * K).toFixed(2);
                 o.renderLoadMsEarly = +(o.senseEarly * K).toFixed(2);
                 o.poisonedEarly = +(o.lifetimeEarly * K).toFixed(2);

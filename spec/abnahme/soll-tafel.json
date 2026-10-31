@@ -309,10 +309,10 @@
         },
         {
             "id": "himmel-licht",
-            "titel": "Himmel und Licht (Sonne gegen Himmel am Mittag)",
+            "titel": "Himmel und Licht (Sonne bzw. Mond gegen Himmel, je Uhr)",
             "wirkung": {
                 "anteil": 1,
-                "quelle": "jedes Pixel im Tageslicht",
+                "quelle": "jedes Pixel, bei Tag und bei Nacht",
                 "grund": "zu helle Schatten machen das ganze Bild flach"
             },
             "referenz": [
@@ -329,24 +329,61 @@
                 "eigenschaften": [
                     {
                         "groesse": "lichtVerhaeltnis",
+                        "uhr": 0.5,
+                        "sonne": 74.21,
                         "rechnung": {
-                            "art": "einsDurch",
-                            "von": [0.08, 0.2]
+                            "art": "klarerTag",
+                            "mittag": 74.21,
+                            "diffus": [0.08, 0.2]
                         },
                         "einheit": "E(Sonne + Himmel) / E(Himmel) an der waagrechten 18-%-Karte, Mittag klar",
                         "quelle": "Diffus-Anteil des klaren Himmels 0,08–0,2 (Liu & Jordan 1960, Solar Energy 4(3):1), das Verhältnis ist sein Kehrwert [gerechnet]; Frostbite PBR (Sonne 100 klx, Himmel 10–20 klx) liegt darin"
                     },
                     {
-                        "groesse": "schattenAnteil",
-                        "band": [0.08, 0.2],
-                        "einheit": "E(Himmel) / E(Sonne + Himmel) an der waagrechten 18-%-Karte, Mittag klar (der Schatten gegen die besonnte Fläche)",
-                        "quelle": "Diffus-Anteil des klaren Himmels 0,08–0,2 (Liu & Jordan 1960, Solar Energy 4(3):1)"
-                    },
-                    {
                         "groesse": "umgebungAzimut",
+                        "uhr": 0.5,
+                        "sonne": 74.21,
                         "band": [1.2, null],
                         "einheit": "E(Himmel) an der senkrechten 18-%-Karte zur Sonne / von der Sonne weg, Mittag klar",
                         "quelle": "der klare Himmel ist zur Sonne heller (Mie-Hof, Rayleigh-Phase): Hillaire 2020 (CGF 39(4)) mit dem Welt-Gesetz 1,33–1,67 (scripts/diag-atmo-hillaire.cjs, Spike D3 110c3f99); Plan D3 (koordination auftrag/durchbruch-1510.md) ≥ 1,2"
+                    },
+                    {
+                        "groesse": "lichtVerhaeltnis",
+                        "uhr": 0.3,
+                        "sonne": 17.96,
+                        "rechnung": {
+                            "art": "klarerTag",
+                            "mittag": 74.21,
+                            "diffus": [0.08, 0.2]
+                        },
+                        "einheit": "dasselbe, tiefe Sonne klar",
+                        "quelle": "Liu & Jordan 1960 (Solar Energy 4(3):1); Kasten & Young 1989 (Appl. Opt. 28(22):4735); Kasten 1996 (Solar Energy 56(3):239) [gerechnet]; darin IES RP-21 (J. IES 1984)"
+                    },
+                    {
+                        "groesse": "lichtVerhaeltnis",
+                        "uhr": 0,
+                        "sonne": -74.21,
+                        "rechnung": {
+                            "art": "mondNacht",
+                            "diffus": [0.08, 0.2],
+                            "himmelLx": [0.0006, 0.002],
+                            "mondLx": [0.1, 0.32]
+                        },
+                        "einheit": "dasselbe, Vollmond-Nacht klar",
+                        "quelle": "Liu & Jordan 1960; Nachthimmel US NPS Night Skies; Vollmond Kyba, Mohar & Posch 2017 (Astron. Geophys. 58(1):1.31) [gerechnet]"
+                    },
+                    {
+                        "groesse": "mondTon",
+                        "uhr": 0,
+                        "sonne": -74.21,
+                        "rechnung": {
+                            "art": "kelvinTon",
+                            "kelvin": [4100, 25000],
+                            "datei": "fachwerk-core.js",
+                            "symbol": "lichtFarbe"
+                        },
+                        "einheit": "B/R (linear) des Richtlichts, Vollmond-Nacht",
+                        "quelle": "Purkinje (ATMO_GESETZ.nacht.mond): Mondlicht 4 100 K, gesehen blau (Khan & Pattanaik 2004, J. Vis. 4(8):316), höchstens das Tageslicht der CIE 25 000 K (CIE 15:2004) [gerechnet]"
                     }
                 ]
             },
@@ -355,7 +392,7 @@
             },
             "mass": {
                 "name": "lichtVerhaeltnis",
-                "werkzeug": "werkbank licht --ist himmel-licht (die Licht-Bilanz an der Mess-Wiese)",
+                "werkzeug": "werkbank licht --uhr u --ist himmel-licht (die Licht-Bilanz an der Mess-Wiese)",
                 "messung": {
                     "werkzeug": "licht",
                     "datum": "2026-10-17T01:07:46.498Z",

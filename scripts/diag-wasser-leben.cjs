@@ -810,9 +810,9 @@ async function wasserDa(pg, bild) {
         (bild) =>
             r &&
             typeof r._gameLoopTick === "function" &&
-            r.state.hydrosphere &&
-            r.state.hydrosphere.ready &&
-            (!bild || r.state.rendererReady),
+            st.hydrosphere &&
+            st.hydrosphere.ready &&
+            (!bild || st.rendererReady),
         { timeout: 600000, polling: 250 },
         bild
     );

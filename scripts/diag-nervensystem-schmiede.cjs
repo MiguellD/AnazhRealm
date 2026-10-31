@@ -101,14 +101,14 @@ hauptLauf(async () => {
     const W = { bp: "klinge_langschwert", donor: "geraet_schwert", preset: "langschwert", entry: "klinge_spitzhacke", praefix: "klinge_", wahl: 2, name: "eine Klinge", art: "weapon", anzahl: 22, teile: 4, label: "Langschwert", place: { mode: "hand", dispatch: null } };
     const [eps, out] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
         const res = { b: {}, d: {}, h: {} };
-        const A = r.constructor;
+        const A = AnazhRealm;
         const f = r._ensureAssetFoundry();
         const weapon = Object.values(f.recipes).filter((x) => x && x.kind === "weapon");
         res.b.toolCount = weapon.filter((x) => x.fx && x.fx.tool).length;
         res.b.paramsWeapon = f.paramsByKind && Array.isArray(f.paramsByKind.weapon) ? f.paramsByKind.weapon.length : -1;
         // ===== D (dazu): die Werkzeug-Klasse dockt ueber donorTool (geraet_spitzhacke-Substanz), die Rollen =====
         try {
-            const B = r.state.blueprints || {};
+            const B = st.blueprints || {};
             const KS = A.KIND_SUBSTANCE || {};
             res.d.spitzAbsent = !B.geraet_spitzhacke;
             res.d.substanzSpitz = KS.geraet_spitzhacke && Array.isArray(KS.geraet_spitzhacke.parts) ? KS.geraet_spitzhacke.parts.length : 0;
@@ -132,9 +132,9 @@ hauptLauf(async () => {
                 };
             };
             // Welt-bereit (Spieler-Mesh baut parallel zum Foundry-Handshake).
-            await window.__weltDa(() => !(!r.state.playerMesh || !r.state.player));
-            const pm = r.state.playerMesh;
-            res.h.playerReady = !!(pm && r.state.player);
+            await window.__weltDa(() => !(!st.playerMesh || !st.player));
+            const pm = st.playerMesh;
+            res.h.playerReady = !!(pm && st.player);
             if (res.h.playerReady) {
                 // (1) INTERIM auf einem JUNGFRAEULICHEN Schluessel (klinge_degen — kein anderer
                 // Abschnitt fragte ihn an; langschwert|8|0 kollidiert mit der F-Anfrage):
@@ -173,7 +173,7 @@ hauptLauf(async () => {
                     hm.updateMatrixWorld(true);
                     const hmWs = hm.getWorldScale(new THREE.Vector3()).x;
                     res.h.scale = Number(hmWs.toFixed(4));
-                    res.h.scaleOk = hmWs > 0 && hmWs <= r.constructor.HELD_MESH.maxScale;
+                    res.h.scaleOk = hmWs > 0 && hmWs <= AnazhRealm.HELD_MESH.maxScale;
                     res.h.gripX = hm.userData.heldGripX;
                     res.h.axis = hm.userData.heldAxis;
                     res.h.rotZ = Number(hm.rotation.z.toFixed(4));
@@ -236,7 +236,7 @@ hauptLauf(async () => {
                     });
                     const refsBefore = src ? src._liveRefs : 0;
                     const queued = [];
-                    const protoQD = r.constructor.prototype._queueDispose;
+                    const protoQD = AnazhRealm.prototype._queueDispose;
                     r._queueDispose = function (obj) {
                         queued.push(obj);
                         return protoQD.call(this, obj);

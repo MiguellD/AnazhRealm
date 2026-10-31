@@ -28,7 +28,7 @@
 //   die Klasse zahnfleisch) → rot an zahn|headGroup (fehlt) und zahnfleisch|headGroup · (S3) korruptes Golden → rot.
 //   node scripts/diag-ofen-contract.cjs [--selftest]
 "use strict";
-const { selbsttestEnde, wandEnde, fadenScope, pruefer } = require("./lib/welt-boot.cjs");
+const { selbsttestEnde, wandEnde, fadenScope, pruefer, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const crypto = require("crypto");
 const fs = require("fs");
 const vm = require("vm");
@@ -331,23 +331,16 @@ function taeterRinde(sb) {
     // 4) Das Golden: einfrieren beim ersten Lauf, danach byte-exakt.
     if (!fs.existsSync(GOLDEN) || process.env.MINT_FORCE === "1") {
         fs.mkdirSync(GOLDEN_DIR, { recursive: true });
-        fs.writeFileSync(
-            GOLDEN,
-            JSON.stringify(
-                {
+        jsonSchreiben(GOLDEN, {
                     vertrag: "ofen",
                     minted: "foundry-core BAKERS_BY_KIND.kreatur/.koerper(kern, art, 1, lod, null) — sha256 je Stoff-Klasse × Gelenk, je Gelenk, je Beipack",
                     klassen: ist,
-                },
-                null,
-                1
-            ) + "\n"
-        );
+                }, 1, "\n");
         console.log(
             `  🧊 GOLDEN GEMINTET (${Object.keys(ist).length} Klassen) → ${path.relative(ROOT, GOLDEN)} — ab jetzt EINGEFROREN`
         );
     }
-    const golden = JSON.parse(fs.readFileSync(GOLDEN, "utf8")).klassen;
+    const golden = jsonLesen(GOLDEN).klassen;
     const diffs = vergleiche(golden, ist);
     check(`Golden byte-exakt (${Object.keys(golden).length} Klassen)`, diffs.length === 0, diffs[0] || "");
     for (let i = 1; i < Math.min(diffs.length, 40); i++) console.log(`      ↳ ${diffs[i]}`);

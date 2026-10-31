@@ -138,7 +138,7 @@ function seitenPumpe() {
 // (`rtcPeers`: über sie reisen Eingaben und Anker), `rechnet` dazu: ihr Ghost hat seinen Anker (`lockstep.seeded`). Der
 // Eintrag allein (`peers.has`) entsteht schon mit dem welcome, vor jeder Leitung. Was fehlt, steht beim Namen in `__marke`.
 function kenntMitGestalt(id, rechnet) {
-    const p2p = anazhRealm.state.p2p;
+    const p2p = st.p2p;
     const e = p2p.peers.get(id);
     const rtc = p2p.rtcPeers.get(id);
     window.__marke = !e
@@ -158,7 +158,6 @@ function kenntMitGestalt(id, rechnet) {
 // jedem Edit und (f) der Zug der Welt-Uhr — verglichen als JSON-Text, byte-gleich oder nicht; dazu (f) das Wetter (Wort, Übergang)
 // und das Leben je Zelle, die Stufe 2 noch verlangt
 function abdruck(bauten) {
-    const r = anazhRealm;
     const st = r.state;
     const edits = (st.worldMeta.voxelEdits || []).map((e) => [e.mode, e.r, e.x, e.y, e.z]);
     const B = (st.architectures || [])
@@ -184,7 +183,6 @@ function abdruck(bauten) {
 // ob es feuerte und seine Erzählung im Wissen steht, ob das Tagebuch das Gesetz eines Mitspielers erinnert (`_gesetzGeber`);
 // `vor`: die Hashes der Vorlagen (`GESETZ_VORLAGEN` über den EINEN Satz-Parser) und jedes Gesetzes, das die Welt schon trägt
 function gesetzSicht(H, k0) {
-    const r = anazhRealm;
     const R = r.state.worldRules;
     const g = R.find((x) => r._regelHash(x) === H) || (!H && R.filter((x) => x.source === "human").pop());
     const vorlagen = r.constructor.GESETZ_VORLAGEN.map((s) => r._regelAusSatz(s).program);
@@ -208,7 +206,6 @@ const gleichIn = (A, B) => (k) => JSON.stringify(A[k]) === JSON.stringify(B[k]);
 // (f) DER SPRUNG: A springt in den Zug vor dem nächsten Sturm am Ort, `ab` Züge voraus (die Front einen Zug davor ohne Sturm)
 // → [die Uhr nach dem Sprung, die Uhr im Sturm] in s
 function sturmSprung(ab) {
-    const r = anazhRealm;
     const [Z, p] = [r.constructor.WETTER_ZUG_SEK, r.state.playerMesh.position];
     const sturm = (k) => r._wetterAmOrt(p.x, p.z, k * Z) === "stormy";
     let k = Math.floor(r.state.spielZeit / Z) + ab;
@@ -259,7 +256,6 @@ const SCHUB_GESETZ = { reserve: 2, aufhol: 10, fixMs: 1000 / 60 }; // das Gesetz
 // Im Seiten-Kontext (der Loop läuft über die Pumpe, der Null-Renderer zeichnet nichts): die Probe hängt am Spiel-Takt
 // `p2pTick` und am Empfang `_p2pMsgPos`.
 function installiere(alteTuer) {
-    const r = anazhRealm;
     r.state.p2p.lockstepDebug = true; // die Spuren des Leibs (A je seq, der Ghost bei B) für (e)
     const mp = (window.__mp = {
         peerTakte: 0,
@@ -352,7 +348,7 @@ async function seite(browser, name, alteTuer) {
     const da = () =>
         !!r &&
         typeof r._gameLoopTick === "function" &&
-        !!r.state.playerMesh;
+        !!st.playerMesh;
     await waitFor(page, da, `Seite ${name} bereit`);
     await page.evaluate(installiere, alteTuer);
     return page;
@@ -361,7 +357,7 @@ async function seite(browser, name, alteTuer) {
 function bericht(p) {
     return p.evaluate(() => {
         const { peerTakte, ursprung, ursprungOhneOrt, ursprungBeispiel, inits } = __mp;
-        const p2p = anazhRealm.state.p2p;
+        const p2p = st.p2p;
         const t = document.getElementById("p2p-toggle");
         return {
             peerTakte,
@@ -432,8 +428,8 @@ hauptLauf(async () => {
         );
 
         // ── (b) TÜR: der nackte Aufruf, Server beim Aufbau aus ──
-        const vorTuer = await pageA.evaluate(() => anazhRealm.state.p2p.enabled === true);
-        await pageA.evaluate(() => anazhRealm.initP2PSync(null));
+        const vorTuer = await pageA.evaluate(() => st.p2p.enabled === true);
+        await pageA.evaluate(() => r.initP2PSync(null));
         await sleep(3000);
         signaling = await startProc("signaling-server.js", /lauscht/, {
             PORT: String(PORT),
@@ -443,7 +439,7 @@ hauptLauf(async () => {
         // kann mehr heilen; vorher eine Wanduhr-Schleife je 250 ms bis REJOIN_DECKEL_S, die zwölf Proben ohne Plan abwartete)
         const rejoinMs = await waitFor(
             pageA,
-            () => anazhRealm.state.p2p.connected || !anazhRealm.state.p2p.enabled,
+            () => st.p2p.connected || !st.p2p.enabled,
             "A: Rejoin oder keine Absicht"
         );
         const nachTuer = await bericht(pageA);
@@ -498,13 +494,13 @@ hauptLauf(async () => {
             `Inits ${kVor.inits}→${kAn.inits}→${kZwei.inits}, verbunden beim 2. Klick=${kZwei.connected}`
         );
         await pageA.evaluate(klick);
-        await waitFor(pageA, () => anazhRealm.state.p2p.connected === true, "A verbunden über den Knopf");
+        await waitFor(pageA, () => st.p2p.connected === true, "A verbunden über den Knopf");
         const kVerb = await bericht(pageA);
         check("Knopf an: A verbunden, Knopf „an“", kVerb.connected && kVerb.knopf === "true", `Inits ${kVerb.inits}`);
 
         // ── Seite B: der BOOT (die gemerkte Absicht aus p2pPersist) ──
         const pageB = await seite(browser, "B", false);
-        await waitFor(pageB, () => anazhRealm.state.p2p.connected === true, "B verbunden über den Boot");
+        await waitFor(pageB, () => st.p2p.connected === true, "B verbunden über den Boot");
         const idA = kVerb.peerId;
         const idB = (await bericht(pageB)).peerId;
         // DIE MARKE mit Täter: scheitert sie, nennt die Zeile, was der Seite fehlt (`__marke`), nie nur „Waiting failed"
@@ -522,7 +518,7 @@ hauptLauf(async () => {
         // am echten Broker: A's Vibe-Pass reist mit dem peerId-Stempel des Servers, B verifiziert die Signatur über ihn
         const vibeMs = await waitFor(
             pageB,
-            (id) => !!anazhRealm.state.p2p.peers.get(id)?.vibeVerified,
+            (id) => !!st.p2p.peers.get(id)?.vibeVerified,
             "B verifiziert A's Vibe-Pass",
             idA
         ).catch(() => -1);
@@ -533,11 +529,11 @@ hauptLauf(async () => {
         );
 
         // A steht: der Ladeschirm ist gefallen (erst dann gehören die Tasten dem Spieler), die Höhe ruhig.
-        await waitFor(pageA, () => !anazhRealm._ladeschirmSteht(), "A: Ladeschirm weg");
+        await waitFor(pageA, () => !r._ladeschirmSteht(), "A: Ladeschirm weg");
         await waitFor(
             pageA,
             () => {
-                const y = anazhRealm.state.playerMesh.position.y;
+                const y = st.playerMesh.position.y;
                 const prev = window.__mpY;
                 window.__mpY = y;
                 return prev !== undefined && Math.abs(y - prev) < 0.02;
@@ -553,14 +549,14 @@ hauptLauf(async () => {
             const vorLauf = await pageA.evaluate(() => {
                 if (document.activeElement?.blur) document.activeElement.blur();
                 window.__mpP = undefined;
-                const p = anazhRealm.state.playerMesh.position;
+                const p = st.playerMesh.position;
                 return { x: p.x, z: p.z };
             });
             // W bis zu seinem EREIGNIS (A steht LAUF_M vom Start), nie nach der Uhr: unter Last lief A in 1,6 s 0,77 m
             const halt = await halteBis(pageA, {
                 taste: "w",
                 ziel: (soll, s) => {
-                    const p = anazhRealm.state.playerMesh.position;
+                    const p = st.playerMesh.position;
                     return Math.hypot(p.x - s.x, p.z - s.z) >= soll;
                 },
                 args: [LAUF_M, vorLauf],
@@ -569,7 +565,7 @@ hauptLauf(async () => {
             await waitFor(
                 pageA,
                 () => {
-                    const p = anazhRealm.state.playerMesh.position;
+                    const p = st.playerMesh.position;
                     const prev = window.__mpP;
                     window.__mpP = { x: p.x, z: p.z };
                     return prev !== undefined && Math.hypot(p.x - prev.x, p.z - prev.z) < 0.005;
@@ -582,11 +578,11 @@ hauptLauf(async () => {
             const takteB = await pageB.evaluate(() => __mp.lsTakte);
             await waitFor(pageB, (n) => __mp.lsTakte >= n + 2, "B: zwei Ghost-Takte nach dem Stand von A", takteB);
             const wahrA = await pageA.evaluate(() => {
-                const p = anazhRealm.state.playerMesh.position;
+                const p = st.playerMesh.position;
                 return { x: p.x, z: p.z };
             });
             const sichtB = await pageB.evaluate((id) => {
-                const e = anazhRealm.state.p2p.peers.get(id);
+                const e = st.p2p.peers.get(id);
                 const p = e.mesh.position;
                 const ls = e.lockstep;
                 return {
@@ -613,7 +609,6 @@ hauptLauf(async () => {
         const stille = async (alt) => {
             await pageB.evaluate(
                 (id, alt) => {
-                    const r = anazhRealm;
                     const [weg, tick] = [r._p2pRemovePeer, r.p2pTick];
                     __mp.abschied = 0;
                     r._p2pRemovePeer = function (pid) {
@@ -634,12 +629,12 @@ hauptLauf(async () => {
             await sleep(STILLE_S * 1000);
             const anker = await pageA.evaluate(() => {
                 window.__pumpeSteht = false;
-                return (Math.floor(anazhRealm.state.p2p._lockstepSeq / 60) + 1) * 60;
+                return (Math.floor(st.p2p._lockstepSeq / 60) + 1) * 60;
             });
             await waitFor(
                 pageB,
                 (id, q) => {
-                    const p2p = anazhRealm.state.p2p;
+                    const p2p = st.p2p;
                     const ls = p2p.peers.get(id)?.lockstep || {};
                     return !p2p.rtcPeers.get(id)?.open || (ls.seeded && ls.doneSeq >= q);
                 },
@@ -659,9 +654,9 @@ hauptLauf(async () => {
         check("A lief über die Tastatur (> 1 m)", l0.lauf > 1, `${l0.lauf.toFixed(2)} m nach ${l0.haltMs} ms W`);
         // (e) der Leib aus seinen Eingaben: B's Ghost rechnet jeden Schritt von A bit-gleich nach (je seq, die Spuren des Laufs)
         const spurA = new Map(
-            (await pageA.evaluate(() => anazhRealm.state.p2p._lockstepTrace || [])).map((q) => [q.q, q])
+            (await pageA.evaluate(() => st.p2p._lockstepTrace || [])).map((q) => [q.q, q])
         );
-        const spurB = await pageB.evaluate((id) => anazhRealm.state.p2p.peers.get(id)?.lockstep?.trace || [], idA);
+        const spurB = await pageB.evaluate((id) => st.p2p.peers.get(id)?.lockstep?.trace || [], idA);
         const geteilt = spurB.filter((g) => g.q >= anker && spurA.has(g.q));
         const dMax = Math.max(
             0,
@@ -690,7 +685,7 @@ hauptLauf(async () => {
         // Ende und nie einen festen Verzug: der Ort allein war blind, der feste Verzug las einen Schub vor dem Fenster
         // als Täter.
         const lsGesetz = await pageB.evaluate(() => {
-            const K = anazhRealm.constructor;
+            const K = r.constructor;
             return { reserve: K.LOCKSTEP.jitterReserve, aufhol: K.LOCKSTEP.aufholJeSchritt, fixMs: K.FIXED_DT * 1000 };
         });
         // DER LANGE TAKT IN SCHRITTEN: der Ghost bei B verbraucht erst, wenn seit seinem letzten Takt ZUFLUSS_SOLL
@@ -700,7 +695,6 @@ hauptLauf(async () => {
         const langeTakte = (an, alteKappe) =>
             pageB.evaluate(
                 (an, soll, alteKappe, pid) => {
-                    const r = anazhRealm;
                     const mp = __mp;
                     const fenster = mp.langFenster || null; // das Fenster, das hier endet
                     mp.langFenster = null;
@@ -821,14 +815,14 @@ hauptLauf(async () => {
         // ── (f) DIE WELT-UHR: A springt 20 min Spielzeit in einen Sturm, erst in den Zug davor (er nimmt jeden
         // alten Wunsch der Welt); B folgt je Sprung seinem Ereignis, der Uhr von A — nie der Wanduhr ──
         const folgt = (z) =>
-            waitFor(pageB, (z) => anazhRealm.state.spielZeit >= z, "B trägt die Uhr von A", z).catch(() => {
+            waitFor(pageB, (z) => st.spielZeit >= z, "B trägt die Uhr von A", z).catch(() => {
                 throw new Error(
                     "(f) ROT: B trägt die Welt-Uhr von A nicht — Täter: die Uhr je Seite (pos.w, _weltUhrNimm)"
                 );
             });
         const [vorSturm, sturm] = await pageA.evaluate(sturmSprung, 10);
         await folgt(vorSturm);
-        await pageA.evaluate((z) => (anazhRealm.state.spielZeit = z), sturm);
+        await pageA.evaluate((z) => (st.spielZeit = z), sturm);
         await folgt(sturm);
         // (f) was Stufe 2 noch verlangt, gemessen und OFFEN, bis es gleich ist: Wetter (Wort, Übergang) und Leben je Zelle
         const weich = (wann, A, B) =>
@@ -861,9 +855,9 @@ hauptLauf(async () => {
             await pageA.keyboard.press("Enter");
             await sleep(300);
         };
-        const bautenVon = (p) => p.evaluate(() => (anazhRealm.state.architectures || []).map((e) => String(e.id)));
+        const bautenVon = (p) => p.evaluate(() => (st.architectures || []).map((e) => String(e.id)));
         // die drei Akte, bis B den Abdruck von A trägt (höchstens 8 s), dann der Nachlauf (eine zweite Anwendung landet danach)
-        const werke = () => (anazhRealm.state.architectures || []).filter((e) => e.werk).length;
+        const werke = () => (st.architectures || []).filter((e) => e.werk).length;
         const akte = async () => {
             const [vorA, nA, wB] = [
                 await bautenVon(pageA),
@@ -923,11 +917,11 @@ hauptLauf(async () => {
         weich("Peers", g.A, g.B);
 
         // ── (h) DAS GESETZ DES SPIELERS: A schreibt es im Gespräch, B trägt es, beide würfeln gleich, die Wirkung steht bei beiden ──
-        await pageB.evaluate(() => (anazhRealm.state.dsl.nextRuleId += 3)); // B's Nexus erprobte drei Regeln mehr
+        await pageB.evaluate(() => (st.dsl.nextRuleId += 3)); // B's Nexus erprobte drei Regeln mehr
         // die Seite trägt das Gesetz H (n = 0) oder es feuerte (n = 1) — oder die Welt-Uhr steht hinter der Scheibe `bis`
         const traegt = (H, n, bis) =>
-            anazhRealm.state.worldRules.some((x) => anazhRealm._regelHash(x) === H && x.fires >= n) ||
-            anazhRealm.state.spielZeit > bis * 3;
+            st.worldRules.some((x) => r._regelHash(x) === H && x.fires >= n) ||
+            st.spielZeit > bis * 3;
         const gesetz = async (satz, reist) => {
             const { vor } = await pageA.evaluate(gesetzSicht, "", 0);
             await sage(satz);
@@ -950,10 +944,10 @@ hauptLauf(async () => {
                 ` · wirkt bei A ${A.wirkt}, bei B ${B.wirkt} · B erinnert das Gesetz von A ${B.erinnert}`
         );
         // die Selbsttests: A sagt die Vorlage → nicht neu; B's dsl-Kanal taub → B ohne das Gesetz
-        const v = await gesetz(await pageA.evaluate(() => anazhRealm.constructor.GESETZ_VORLAGEN[0]), true);
-        await pageB.evaluate(() => ((window.__dsl = anazhRealm._p2pMsgDsl), (anazhRealm._p2pMsgDsl = () => {})));
+        const v = await gesetz(await pageA.evaluate(() => r.constructor.GESETZ_VORLAGEN[0]), true);
+        await pageB.evaluate(() => ((window.__dsl = r._p2pMsgDsl), (r._p2pMsgDsl = () => {})));
         const t = await gesetz("wann immer es zufällig passt, dann erzähle Der Kanal ist taub", false);
-        await pageB.evaluate(() => (anazhRealm._p2pMsgDsl = window.__dsl));
+        await pageB.evaluate(() => (r._p2pMsgDsl = window.__dsl));
         check(
             "(h) Selbsttest: die Vorlage ist nicht neu, B mit taubem dsl-Kanal trägt das Gesetz nicht",
             !v.neu && v.reist && t.neu && !t.reist,
@@ -980,11 +974,11 @@ hauptLauf(async () => {
         // (e) der Reload von B: sein Speicher (saveState, derselbe Schreiber wie die Sicherung), dann die Seite neu, bis ihre Welt
         // steht und den Bau trägt
         const netzB = await pageB.evaluate(() => Object.assign({}, window.__netz));
-        await pageB.evaluate(() => anazhRealm.saveState());
+        await pageB.evaluate(() => r.saveState());
         await pageB.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
         const steht = (ids) => {
-            const da = r && r.state.playerMesh && !r._ladeSperre && r.state.p2p.connected;
-            return !!da && ids.every((id) => (r.state.architectures || []).some((e) => String(e.id) === id));
+            const da = r && st.playerMesh && !r._ladeSperre && st.p2p.connected;
+            return !!da && ids.every((id) => (st.architectures || []).some((e) => String(e.id) === id));
         };
         let nachReload = false; // reißt der Rahmen (die Seite lädt sich beim Betreten der Welt selbst neu), fragt sie erneut
         for (let i = 0; i < 3 && !nachReload; i++)
@@ -1014,7 +1008,6 @@ hauptLauf(async () => {
         // wetterAt über 2000 Züge: blind in 10,6–12,2 %, mit 3 in keinem). B wird taub, BEVOR A springt (mp-leitung: sprang A
         // zuerst, erreichte unter Last ein pos.w von A die Seite B vor ihrem Eingriff — „zug gleich" in 1 von 3 Läufen auf 2 Kernen)
         await pageB.evaluate(() => {
-            const r = anazhRealm;
             r._weltUhrNimm = () => {};
             const echt = r._p2pMsgDsl;
             const schiebe = (n) =>
@@ -1054,7 +1047,7 @@ hauptLauf(async () => {
             fremd(n0).length === 0 && n0.A.dsl > 0,
             JSON.stringify(n0) + (fremd(n0).length ? " — Zustand: " + fremd(n0).join(", ") : "")
         );
-        await pageA.evaluate(() => anazhRealm.p2pSend({ type: "wetter", weather: "stormy" }));
+        await pageA.evaluate(() => r.p2pSend({ type: "wetter", weather: "stormy" }));
         const n1 = fremd(await netz());
         check(
             "(e) Selbsttest: eine Wetter-Nachricht von A macht das Netz-Log ROT",

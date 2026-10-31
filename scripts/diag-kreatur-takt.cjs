@@ -7,8 +7,7 @@
 //   --selftest  je Probe jeder alte Defekt als Täter (TAETER): er muss sie ROT machen, beim Namen genannt
 //   --teil=k/n  Teil k: die längste Probe (DAUER_S) zuerst in den leichtesten Teil, jede in GENAU einem
 "use strict";
-const { statikServer, CODE_OF_SEITE, werkbankRuf, teilAus, ROOT: root, hauptLauf, nullSeite, urteilEnde, argOpt: opt, weltTor } = require("./lib/welt-boot.cjs"); // prettier-ignore
-const fs = require("fs");
+const { statikServer, CODE_OF_SEITE, werkbankRuf, teilAus, ROOT: root, hauptLauf, nullSeite, urteilEnde, argOpt: opt, weltTor, jsonLesen } = require("./lib/welt-boot.cjs"); // prettier-ignore
 const path = require("path");
 const { KREATUR_PROBEN_SRC, PROBEN, TAETER, EIN_LAUF, urteil } = require("./lib/kreatur-proben.cjs");
 
@@ -21,9 +20,7 @@ const ORT = opt("--ort", null);
 const taeterVon = (p) => TAETER[ORT ? `${p}@${ORT}` : p];
 // DIE FESTE RAMPE der Prüfbühne (Station S2): jeder Lauf mit dem Querhang misst ihn dort ein zweites Mal, derselbe Täter
 const BUEHNE_DATEI = path.join(root, "spec", "pruefbuehne", "welt.json");
-const RAMPE = JSON.parse(
-    fs.readFileSync(path.join(root, "spec", "pruefbuehne", "stationen.json"), "utf8")
-).stationen.find((s) => s.id === "s2-hang30");
+const RAMPE = jsonLesen(path.join(root, "spec", "pruefbuehne", "stationen.json")).stationen.find((s) => s.id === "s2-hang30");
 if (!RAMPE || !Number.isFinite(RAMPE.winkel))
     throw new Error("die Rampe s2-hang30 fehlt in spec/pruefbuehne/stationen.json");
 // Sekunden je Probe samt Täter und fremder Welt, die Zeilen „Sekunden je Probe" ohne --teil (056330d8), unter 1 s zählt 1
@@ -90,7 +87,7 @@ async function headless(laeufe) {
         page.evaluate(() =>
             window.__weltStehtNach(() => {
                 try {
-                    window.anazhRealm._gameLoopTick(performance.now());
+                    r._gameLoopTick(performance.now());
                 } catch {}
             })
         );
@@ -98,7 +95,7 @@ async function headless(laeufe) {
         page.evaluate(
             (src, o) => {
                 const fn = (0, eval)("(" + src + ")");
-                return fn(window.anazhRealm, window.THREE, o);
+                return fn(r, window.THREE, o);
             },
             KREATUR_PROBEN_SRC,
             o
@@ -116,7 +113,7 @@ async function headless(laeufe) {
             await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
             await weltTor(page, json);
             await bereit();
-            const seed = await page.evaluate(() => window.anazhRealm.state.worldMeta.seed);
+            const seed = await page.evaluate(() => st.worldMeta.seed);
             if (seed !== json.worldMeta.seed) throw new Error(`${json.worldMeta.seed} ist nicht aktiv (Seed ${seed})`);
             await einschwingen();
         };
@@ -138,7 +135,7 @@ async function headless(laeufe) {
         };
         for (const [p, [feld, zusatz, welt]] of Object.entries(FREMD)) {
             if (!mit(p).length) continue;
-            const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
+            const json = jsonLesen(BUEHNE_DATEI);
             welt(json);
             await zeit(p, () => fremdeWelt(json));
             for (const [l, li] of mit(p)) {

@@ -489,7 +489,7 @@ const server = statikServer();
 
 // Die Proben im Seiten-Kontext.
 async function probe(K) {
-    const A = r.constructor;
+    const A = AnazhRealm;
     let [tMs, tN] = [performance.now(), 0];
     // DER ATEM (ek-schleife): je 10 Takte gibt der Takt den Haupt-Faden frei (`await takt()`), wie das Spiel je Bild —
     // Leerlauf (die Tod-Lage), Faden-Antworten und der Puls der Stall-Akte laufen dazwischen. Ohne ihn rechnete O3 (acht

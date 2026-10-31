@@ -9,7 +9,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const { runWithWorker, fingerprintMeshes, DATEN_KANAELE } = require("./lib/asset-worker-harness.cjs");
-const { hauptLauf } = require("./lib/welt-boot.cjs");
+const { hauptLauf, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.MINT_PORT || 4541);
 const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golden");
@@ -55,7 +55,7 @@ const fileFor = (c) => `${c.presetId}-s${c.seed}-L${c.lod}-${c.season}.json`;
 // render-config) neu einfrieren, jede Geometrie-Golden bleibt unberührt (ein neues Rezept im Buch ändert den Umschlag,
 // nicht die Bytes der Bäume). Das Manifest trägt die neuen Hashes der drei.
 async function nurDaten() {
-    const manifest = JSON.parse(fs.readFileSync(path.join(DIR, "manifest.json"), "utf8"));
+    const manifest = jsonLesen(path.join(DIR, "manifest.json"));
     await runWithWorker(PORT, async ({ getData }) => {
         const bookReply = await getData("get-book");
         for (const [field, key] of DATEN_KANAELE) {
@@ -66,7 +66,7 @@ async function nurDaten() {
             console.log(`  ${alt === json ? "=" : "✔ neu"} ${key}.json`);
         }
     });
-    fs.writeFileSync(path.join(DIR, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
+    jsonSchreiben(path.join(DIR, "manifest.json"), manifest, 2, "\n");
     process.exit(0);
 }
 
@@ -105,7 +105,7 @@ hauptLauf(async () => {
             console.log(`  ✔ ${f}  (${meshes.length} Meshes, ~${verts} Verts)`);
         }
     });
-    fs.writeFileSync(path.join(DIR, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
+    jsonSchreiben(path.join(DIR, "manifest.json"), manifest, 2, "\n");
     console.log(
         `✅ ${CASES.length} Goldens + 3 Daten-Kanäle + manifest.json gemünzt → ${path.relative(process.cwd(), DIR)}`
     );

@@ -41,7 +41,7 @@
 // Port über REGLER_WIRKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561; der Stamm des
 // Ofen-Kanals über REGLER_WIRKT_OFEN_PORT, Standard Port + 1.
 "use strict";
-const { statikServer, starteBrowser, ROOT, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT, hauptLauf, jsonLesen } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const { runWithWorker } = require("./lib/asset-worker-harness.cjs");
@@ -70,7 +70,7 @@ function vergleichTeil(jetzt, ratsche, ids, teil = TEIL) {
 function kernVonArt() {
     const vm = require("vm");
     const aus = {};
-    const manifest = JSON.parse(fs.readFileSync(path.join(ROOT, "cores.manifest.json"), "utf8"));
+    const manifest = jsonLesen(path.join(ROOT, "cores.manifest.json"));
     for (const c of manifest) {
         if (!c || typeof c.ns !== "string" || !c.ns) continue;
         const ctx = { console, Math, JSON, Date };
@@ -608,13 +608,13 @@ function vergleich(tot, ratsche) {
     return { neu, geheilt, ok: !neu.length && !geheilt.length };
     }
 function ratscheLesen() {
-    const r = JSON.parse(fs.readFileSync(RATSCHE_PFAD, "utf8"));
+    const r = jsonLesen(RATSCHE_PFAD);
     if (!r.reglerTot || typeof r.reglerTot.tot !== "object") throw new Error("ratsche.json ohne Block reglerTot.tot");
     if (!r.reglerBudget || typeof r.reglerBudget.bruch !== "object") throw new Error("ratsche.json ohne Block reglerBudget.bruch");
     return r.reglerTot;
 }
 function budgetRatscheLesen() {
-    return JSON.parse(fs.readFileSync(RATSCHE_PFAD, "utf8")).reglerBudget;
+    return jsonLesen(RATSCHE_PFAD).reglerBudget;
     }
 function bericht(zeilen) {
     const jeKern = {};

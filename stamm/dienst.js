@@ -432,10 +432,12 @@ class AnazhRealm_dienst {
         this._bruchMelden(`FADEN-UMGANGEN: ${was} im Haupt-Faden${wo} — ${rufer || "?"} (Lehre 14)`);
     }
     // DER LESER DES ZÄHLERS: die Bauten je Sync-Stelle und die laut gebrochenen beim Namen (`werkbank eval
-    // 'return r._syncBauten()'`, die Faden-Linse); `voll`: das Buch hält BRUCH_BUCH_MAX Meldungen, ein volles vergisst
+    // 'return r._syncBauten()'`, die Faden-Linse); `voll`: das Buch hält BRUCH_BUCH_MAX Meldungen, ein volles vergisst.
+    // Laut gebrochen zählt auch die zweite Uhr der Saat (w4-b-boden, „SAAT-UHR", `_tickSaat`): Arbeit neben ihrem EINEN Ort
+    // auf dem Pfad des Takts (Lehre 14) — bis w4-b-boden säte der Einbau des Bodens jeden Chunk bis zur Frist des Strom-Takts.
     _syncBauten() {
         const buch = [...(this._bruchBuch || [])];
-        const rot = buch.filter(([t]) => t.startsWith("FADEN-UMGANGEN"));
+        const rot = buch.filter(([t]) => t.startsWith("FADEN-UMGANGEN") || t.startsWith("SAAT-UHR"));
         return {
             stellen: Object.assign({}, this._syncBau),
             sonst: rot.reduce((n, [, e]) => n + e.n, 0),

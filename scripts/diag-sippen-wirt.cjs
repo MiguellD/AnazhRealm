@@ -28,7 +28,7 @@ hauptLauf(async () => {
     const out = await page.evaluate(async () => {
         const res = { items: [], fehler: [], selbst: {}, kinds: [] };
         await window.__weltDa();
-        const A = r.constructor;
+        const A = AnazhRealm;
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => { const rc = A._studioRenderConfig; return f && f.ready && f.recipes && f.recipeCount > 0 && rc && rc.lod && rc.lod.kindStages && rc.lod.budget; });
         const PC = globalThis.__phytoCore;

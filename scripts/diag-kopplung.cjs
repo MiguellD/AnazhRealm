@@ -24,7 +24,7 @@ hauptLauf(async () => {
         await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
         out = await page.evaluate(() => {
-            const AR = r.constructor;
+            const AR = AnazhRealm;
             const o = { fails: [], zahlen: {} };
             const fail = (msg) => o.fails.push(msg);
             const DT = 1 / 60;
@@ -72,7 +72,7 @@ hauptLauf(async () => {
                     moveDirection: new THREE.Vector3(),
                     architectures: [],
                     floatingIslands: null,
-                    materials: r.state.materials,
+                    materials: st.materials,
                 };
                 shim._mountedEntry = null;
                 shim._fieldDensityAt = (x, y, z) => densityAt(x, y, z);
@@ -320,11 +320,11 @@ hauptLauf(async () => {
                 if (!(Math.abs(far.x - far0.x) < 1e-9)) fail("F4: die Sphäre wirkt außerhalb ihres Radius");
                 // CPU-Seite: der Frame-Tick (`_loopRender`) speist uWindDir aus dem EINEN Wind (`_windAt`, Richtung
                 // `_windDirAt(t)`) und füllt über `_tickGrasBend` Slot 0 mit dem Spieler; tote Slots ruhen.
-                if (window.THREE && THREE.TSL && r.state.windUniforms) {
+                if (window.THREE && THREE.TSL && st.windUniforms) {
                     r._ensureWindCoupling(THREE.TSL);
-                    const wu = r.state.windUniforms;
-                    if (wu.uBend && wu.uWindDir && r.state.playerMesh) {
-                        const pp = r.state.playerMesh.position;
+                    const wu = st.windUniforms;
+                    if (wu.uBend && wu.uWindDir && st.playerMesh) {
+                        const pp = st.playerMesh.position;
                         const t = 1234.5;
                         wu.uBend[0].value.set(pp.x + 99, 0, 0, 0);
                         wu.uWindDir.value.set(0, 0);

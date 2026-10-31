@@ -49,7 +49,7 @@
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt, weltTor } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt, weltTor, jsonLesen } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -2044,14 +2044,14 @@ function selbsttest() {
         ["A seicht", (b) => (b.ansaug.aussteigen.tiefeWagen = 0.6), /A LEER: der Wagen stand beim Aussteigen in 0\.60/],
         ["A ohne Aussteigen", (b) => (b.ansaug.aussteigen = { fehler: "x" }), /A LEER: x/],
         [
-            "A der geparkte Wagen ist ein Damm (der Kopf c5e8fa44)",
+            "A der geparkte Wagen ist ein Damm",
             (b) => (b.ansaug.damm = { invalidierungen: 1, nass: true, caChunks: 15, tiefe: 0.14, wer: "AnazhRealm._stampArchitectureSolidCellsInto" }),
             /A: der geparkte Wagen in 0\.14 m Wasser ist ein Damm .*1 Invalidierungen, 15 Chunks wach, Rufer AnazhRealm\._stamp/,
         ],
         ["A ohne Neu-Stempel", (b) => delete b.ansaug.damm, /A LEER: der geparkte Wagen wurde nicht neu gestempelt/],
         ["K Kern", (b) => b.kern.push("K2 …"), /K: K2/],
         [
-            "D Stausee nach dem Reload weg (der Befund am Kopf e162430b)",
+            "D Stausee nach dem Reload weg",
             (b) => (b.damm.w2 = b.damm.w3 = 2070),
             /D: der Stausee des Damms #425 .* bildet sich nach dem Reload nicht neu — 2070 statt 2250/,
         ],
@@ -2068,13 +2068,13 @@ function selbsttest() {
         ],
         ["D Bild ohne Stau", (b) => (b.damm.w1 = 2100), /D: der Damm #425 hebt 51 Spalten, das gezeichnete Wasser staut 30 nasse Punkte/],
         [
-            "D Ort ohne Stau (die Furt −937/−1064 am Kopf a0d6a81b: die 1 715 Punkte der Basis waren die Deck-Zeile)",
+            "D Ort ohne Stau (die Furt −937/−1064)",
             // BÜHNE: Befund des Selbsttests (die Furt der alten Welt), kein gesetzter Ort
             (b) => Object.assign(b.damm, { x: -937, z: -1064, hub: 0 }),
             /D LEER: das Stau-Feld des Damms #425 \(-937\.00\/-1064\.00\) hebt 0 Spalten .*der Ort trägt keinen Stau/,
         ],
         [
-            "R Fehl-Wecker am Seerand (der Befund am Kopf f5b331ae)",
+            "R Fehl-Wecker am Seerand",
             (b) => ((b.rand.invalidierungen = 3), (b.rand.ca = 6), (b.rand.nass1 = 2637), (b.rand.bild1 = 685)),
             /R: das Dorf am Seerand weckt den Wasser-Automaten, ohne Wasser der Zellen zu verdrängen — 3 Invalidierungen, 6 Chunks/,
         ],
@@ -2092,7 +2092,7 @@ function selbsttest() {
             /R LEER: der Erdbau des Dorfs \(1 Orte\) reicht an keine nasse Spalte — .* 52\.4 m vom Seeufer, die Ort-Wahl rückte das Dorf 64 m/,
         ],
         [
-            "E Wunsch-Zahl der Kreaturen (Befund am Kopf f5b331ae)",
+            "E Wunsch-Zahl der Kreaturen",
             (b) => (b.setzen.faelle[0].chat = "> spawne kreaturen 1010 Kreaturen gespawnt (am Spieler)"),
             /E: Kreaturen an der Obergrenze \(3 frei\) .* der Satz sagt den Wunsch „10 Kreaturen gespawnt" bei 3 von 10/,
         ],
@@ -2117,7 +2117,7 @@ function selbsttest() {
         ["E Dorf meldet falsch", (b) => (b.setzen.dorf.haeuser = 2), /E: das Dorf im See meldet .* bei 2 stehenden/],
         ["E Dorf stumm", (b) => (b.setzen.dorf.echo = ""), /E LEER: das Dorf im See meldete/],
         [
-            "C Wunsch-Zahl (der Satz am Kopf e162430b, wie der Chat ihn zeigt)",
+            "C Wunsch-Zahl (der Satz, wie der Chat ihn zeigt)",
             (b) =>
                 (b.ergebnis.versuche[0].chat =
                     "> pflanz mir sechs birken6× Birke aus dem Studio vor dir gewachsen2 davon wuchsen nicht: im Wasser steht nichts, am Ufer schon."),
@@ -2188,7 +2188,7 @@ function selbsttest() {
             /K2 in 0\.61 m Wasser/,
         ],
         [
-            "der Wasserschlag sperrt die Räder nicht (der Kopf c5e8fa44)",
+            "der Wasserschlag sperrt die Räder nicht",
             (s) =>
                 s.replace(
                     "else if (!motor && dt > 0) Fr -= Math.min(G.handDecel, Math.abs(vL) / dt) * m * sgn;",
@@ -2197,7 +2197,7 @@ function selbsttest() {
             /K6 über der Ansaugung am 11°-Hang rollt er unter Vollgas 3 s später mit 1\.33 m\/s weiter/,
         ],
         [
-            "das Gas wirkt am stehenden Motor (der Kopf c5e8fa44: keine Ruhe unter Vollgas)",
+            "das Gas wirkt am stehenden Motor (keine Ruhe unter Vollgas)",
             (s) =>
                 s.replace(
                     "const thr = motor && e && e.throttle > 0 ? Math.min(1, e.throttle) : 0;",
@@ -2421,10 +2421,8 @@ async function lauf() {
                 await p2.evaluateOnNewDocument(() => (window.__anazhChunkIdb = true));
                 await server.zeige(p2, 120000);
                 // die Bühne, geboren wie im Spiel durch die Tür (`weltTor`): ihre Klamm S6 trägt den Stau (s. Kopf D)
-                const buehne = JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "welt.json"), "utf8"));
-                const S6 = JSON.parse(
-                    fs.readFileSync(path.join(root, "spec", "pruefbuehne", "stationen.json"), "utf8")
-                ).stationen.find((s) => s.id === "s6-klamm");
+                const buehne = jsonLesen(path.join(root, "spec", "pruefbuehne", "welt.json"));
+                const S6 = jsonLesen(path.join(root, "spec", "pruefbuehne", "stationen.json")).stationen.find((s) => s.id === "s6-klamm");
                 if (!S6) throw new Error("D: keine Station s6-klamm in spec/pruefbuehne/stationen.json");
                 await weltTor(p2, buehne);
                 const D = { takte: 1200, R: 40, fassen: 4 };

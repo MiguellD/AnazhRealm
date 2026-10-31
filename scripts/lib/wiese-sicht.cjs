@@ -12,7 +12,8 @@
 // `__wieseSicht(r, himmel)` legt den Satz, zählt und nennt je Senke ihr Soll (`__wieseErwartet`: die Büschel ihrer
 // Stufe im Blick der Linsen-Kamera); `__wieseZaehle(r, auge)` zählt nur (der Selbsttest verfälscht
 // eine gelegte Instanz und zählt neu): Senken, Büschel im Ring, Anzahl je Senke und die Ring-Wahrheit — jede gelegte
-// Instanz steht im Ring um das Auge (Radius + 2 m), sonst trüge die Senke eine fremde (veraltete) Matrix.
+// Instanz der Nähe steht im Ring um das Auge (Radius + 2 m; die Ferne legt ihre Kacheln jenseits), sonst trüge die Senke
+// eine fremde (veraltete) Matrix.
 //
 // EINE Quelle für gate:freie-slots und gate:asset-inventory: `page.evaluateOnNewDocument(installWieseSicht)`.
 function installWieseSicht() {
@@ -30,7 +31,7 @@ function installWieseSicht() {
         const R = r.constructor.NAH_WIESE.radius + 2;
         for (const a of nw.senken.values()) {
             o.je[a.name] = a.anzahl;
-            const m = a.mesh ? a.mesh.instanceMatrix.array : null;
+            const m = a.mesh && !/:Lf:/.test(a.name) ? a.mesh.instanceMatrix.array : null;
             for (let i = 0; m && auge && i < a.anzahl; i++)
                 if (Math.hypot(m[i * 16 + 12] - auge.x, m[i * 16 + 14] - auge.z) > R) o.ausserhalb++;
         }
@@ -78,7 +79,7 @@ function installWieseSicht() {
     };
     // DAS SOLL JE SENKE: wie viele Büschel der Sicht-Satz MINDESTENS legt — der Fuß des
     // Büschels im Frustum der Linsen-Kamera (die Sicht-Kugel des Büschels umschließt ihren Fuß: jeder solche Büschel
-    // trifft), das Rand-Band dünnt wie im Satz (Würfel-Ordnung gegen den Anteil), die Stufe nur, wo sie ohne Hysterese
+    // trifft) diesseits der Übergabe (`radius`; jenseits legt die Ferne, ihr Soll 0), die Stufe nur, wo sie ohne Hysterese
     // feststeht (≤ stufe1 sicher L1, > stufe1 + stufe1Rand sicher L2). Ein dünner Ring (der Waldboden unter der
     // Kronen-Karte) trägt Senken, deren Stufe im Blick keinen Büschel hat — leer ist dort richtig; leer bei Soll > 0 nie.
     window.__wieseErwartet = (r, kam, fr) => {
@@ -94,7 +95,7 @@ function installWieseSicht() {
         for (const k of nw.kacheln.values())
             for (const b of k.bueschel) {
                 const d = Math.hypot(b.x - ax, b.z - az);
-                if (b.ordnung >= Math.max(0, Math.min(1, (NW.radius - d) / NW.rand + 0.5))) continue;
+                if (d >= NW.radius) continue;
                 const stufe = d <= NW.stufe1 ? 1 : d > NW.stufe1 + NW.stufe1Rand ? 2 : 0;
                 if (!stufe || !fr.containsPoint(p.set(b.x, b.y, b.z))) continue;
                 const key = `${b.vorlage}:L${stufe}`;

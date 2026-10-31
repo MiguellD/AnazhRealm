@@ -95,6 +95,7 @@ function ladeschirmVerdict(m) {
     const rb = m.rundblick;
     if (!rb || !(rb.N > 0)) out.push("der Rundblick nach der Kontrolle: keine Probe (`RUNDBLICK_BILDER` fehlt im Stamm)");
     else if (!rb.spaet) out.push("der Rundblick ohne späten Baum (Vorbedingung)");
+    else if (rb.griff !== 40) out.push(`die Pflanz-Schlange setzt die ferne Eiche vor den späten Baum (Griff ${rb.griff} m, \`_tickPendingVegSpawns\`)`);
     else if (rb.loecher > 0) out.push(`der Rundblick nach der Kontrolle zählt ${rb.loecher} Löcher in ${rb.N} Takten — zuerst ${rb.erstes}`);
     // DIE TERM-DECKUNG: jeder Term von `WELTBILD_TERME` hat einen Fall, der den Ladeschirm hält; ein Fall nennt nur
     // Terme der Liste
@@ -462,11 +463,22 @@ async function probe(arg) {
             // Takten ganz herum; je Takt zählt das Tor die Löcher in seinem Blick, in der kleinsten Mesh-Zone seit der Kontrolle.
             // DER SPÄT GESÄTE BAUM (CI Gruppe 1 seit 4a5f5e2c, 6 von 13 Läufen: „1 Bäume werden gepflanzt" bei 195°, rundum erst ab
             // Takt 71–80): hinter den fernen Bäumen der Pflanz-Schlange wartet einer 40 m hinter dem Spieler — die Schlange setzt nah
-            // zuerst (Lehre 25, `_tickPendingVegSpawns`); als FIFO zählte der Rundblick ihn 57-mal
+            // zuerst (Lehre 25, `_tickPendingVegSpawns`); als FIFO zählte der Rundblick ihn 57-mal. Die Linse sät ihn selbst, eine
+            // Eiche (`baum_eiche`, der Träger des Katalogs): bis 31.10. kopierte sie den ersten Eintrag der Schlange, und war die im
+            // Boot schon leer (main b4bcf19: 1 von 3 Läufen headless), fehlte die Vorbedingung — mit ihr jede Probe des Rangs. Den
+            // Rang prüft EIN Griff, in jedem Boot gleich: eine ferne Eiche im Blick vor ihm, nah zuerst rundum nimmt den späten (FIFO
+            // und ein Blick-Rang nach dem Bild nähmen die ferne)
             const rb = (m.rundblick = { N: AnazhRealm.RUNDBLICK_BILDER, loecher: 0, erstes: null, rundumAb: null });
-            const [fern, pp] = [(st.pendingVegSpawns || [])[0], st.playerMesh.position];
-            const [x, z] = [pp.x - 40 * Math.sin(st.yaw), pp.z - 40 * Math.cos(st.yaw)];
-            if ((rb.spaet = !!fern)) st.pendingVegSpawns.push({ ...fern, position: { x, y: r._voxelSurfaceY(x, z) + 0.5, z } });
+            const [pp, Q] = [st.playerMesh.position, st.pendingVegSpawns || []];
+            const eiche = (s, x = pp.x - s * Math.sin(st.yaw), z = pp.z - s * Math.cos(st.yaw)) => ({ name: "baum_eiche", position: { x, y: r._voxelSurfaceY(x, z) + 0.5, z }, opts: { seed: s, silent: true } }); // prettier-ignore
+            st.pendingVegSpawns = [eiche(-300), eiche(40)];
+            r._naturSetzen = (n, p, o) => (rb.griff = o.seed);
+            try {
+                r._tickPendingVegSpawns(1);
+            } finally {
+                delete r._naturSetzen;
+                rb.spaet = (st.pendingVegSpawns = Q).push(eiche(40));
+            }
             r._weltbildSteht();
             for (let i = 1, yaw0 = st.yaw, Rmin = st.architectureCullingRadius; i <= rb.N && r._imErstenBlick; i++) {
                 st.yaw = yaw0 + (2 * Math.PI * i) / rb.N;
@@ -881,6 +893,9 @@ async function probe(arg) {
                 const [zV, zH] = [0, 1].map((i) => new Promise((f) => (ok[i] = f)));
                 const [RM, da, gier] = [AnazhRealm.SCATTER.regionM, st._weltbildDa, st.yaw], [rx, rz] = [Math.floor(pm.x / RM), Math.floor(pm.z / RM) - 1], key = `${rx},${rz}`;
                 const neu = () => (r._disposeScatterRegion(key), r._scatterRegion(rx, rz, pm));
+                // DIE REGION STEHT VOR DER PROBE: jeder echte Wurf (Asset, Karte, Höhe) ist geliefert — sonst hielt ein echtes Asset im
+                // Blick den zweiten Bau, und die Linse nannte die Zusage außer Blick (main 90878cc6 headless 2 von 3: „wartet auf ihr Asset")
+                for (const weiter = (neu(), window.__deckel("die Streu-Region vor der Probe", 300)); r._streuRegionWartet(key) && weiter(); ) await tick(1, 30); // prettier-ignore
                 const stumm = "_ladeTakt _tickVoxelChunkStreaming _tickScatterStreaming _tickPendingGrass _tickScatterRegrow _tickNahWiese _tickNahStreu".split(" ");
                 r._scatterSichtHoehe = function (layer, ...a) {
                     const [v, E] = [r._imErstenBlick(a[4].x, a[4].z, 12), r._ersterBlick()];
@@ -1775,7 +1790,7 @@ hauptLauf(async () => {
                     faelle: l2aFaelle,
                     terme: l2aTerme,
                     rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w1", "export-settlement": "w2", tor0: "w0", tor1: "w0", tor2: "w0", tor3: "w0" } },
-                    rundblick: { N: 240, loecher: 0, erstes: null, spaet: true },
+                    rundblick: { N: 240, loecher: 0, erstes: null, spaet: true, griff: 40 },
                     ankunft: ank(),
                     koepfe,
                     wald: { ferne: 169, steht: false, zusage: true, kam: true, rest: 128 },
@@ -1785,11 +1800,12 @@ hauptLauf(async () => {
                 [
                     ["ein Loch hinter dem Spieler hält das erste Bild", { faelle: mitFall(l2aFaelle, { baumHinten: { weg: false, stand: "1 Bäume und Bauten wachsen" } }) }, "mit einem Baum hinter dem Spieler ohne Gestalt hält der Ladeschirm"],
                     ["ein Loch im Blick weicht (B3d)", { faelle: mitFall(l2aFaelle, { karteOffen: weicht }) }, "mit der offenen Karte eines Baums im Blick weicht der Ladeschirm"],
-                    ["ein Loch im Rundblick nach N Takten (B3d)", { rundblick: { N: 240, loecher: 3, erstes: "Takt 120 (180°): 3 Bäume und Bauten wachsen", spaet: true } }, "der Rundblick nach der Kontrolle zählt 3 Löcher in 240 Takten"],
+                    ["ein Loch im Rundblick nach N Takten (B3d)", { rundblick: { N: 240, loecher: 3, erstes: "Takt 120 (180°): 3 Bäume und Bauten wachsen", spaet: true, griff: 40 } }, "der Rundblick nach der Kontrolle zählt 3 Löcher in 240 Takten"],
                     ["der Rang ohne Blick", { rang: { vorBild: "hinten,blick,vorrat", nachBild: "hinten,blick,vorrat" } }, "vor dem ersten Bild sendet die Pumpe „hinten,blick,vorrat\""],
                     ["der Blick-Schlüssel überlebt das Bild", { rang: { vorBild: "blick", nachBild: "hinten,blick" } }, "nach dem ersten Bild sendet die Pumpe „hinten,blick\""],
                     ["ohne Rundblick", { rundblick: { N: undefined, loecher: 0 } }, "der Rundblick nach der Kontrolle: keine Probe"],
                     ["ohne späten Baum", { rundblick: { N: 240 } }, "der Rundblick ohne späten Baum"],
+                    ["die Pflanz-Schlange als FIFO", { rundblick: { N: 240, spaet: 2, griff: -300 } }, "die Pflanz-Schlange setzt die ferne"],
                     ["der Vorrat stellt sich in der Ankunft vor die Leser (K30)", { vorrat: vr({ ohneLeser: ["Wagen gt|1|lod0", "Siedlungs-Probe"], vorBild: ["Wagen gt|1|lod0", "Siedlungs-Probe"], nachBild: 0, ende: true }) }, "vor dem ersten Weltbild bestellt der Vorrat 2 Aufträge ohne Leser des ersten Frames (Wagen gt|1|lod0, Siedlungs-Probe)"],
                     ["der Vorrat stirbt (er wartet ewig)", { vorrat: vr({ vorBild: [], nachBild: 0, ende: true }) }, "der Vorrat bestellt nie"],
                     ["der Vorrat endet nicht", { vorrat: vr({ vorBild: [], nachBild: 0, ende: false }) }, "der Vorrat endet nicht"],
@@ -2019,7 +2035,7 @@ hauptLauf(async () => {
                 .map(([k, z]) => `${k}: ${z.weg ? "weicht" : "bleibt"}${z.stand ? ` („${z.stand}")` : ""}${z.warn ? " + WARN" : ""}`)
                 .join(" · ") +
             (m.baumD != null ? ` · Baum ${m.baumD} m` : "") +
-            (m.rundblick ? ` · Rundblick ${m.rundblick.loecher} Löcher in ${m.rundblick.N} Takten, rundum ganz ab Takt ${m.rundblick.rundumAb}` : "") +
+            (m.rundblick ? ` · Rundblick ${m.rundblick.loecher} Löcher in ${m.rundblick.N} Takten, rundum ganz ab Takt ${m.rundblick.rundumAb}, Schlange ${m.rundblick.spaet}` : "") +
             (m.rang ? ` · Pumpe vor dem Bild „${m.rang.vorBild}", danach „${m.rang.nachBild}"` : "") +
             (m.wald ? ` · Wald-Zusage ${m.wald.kam ? `kam, ${m.wald.rest} von ${m.wald.ferne} fernen Zellen offen` : "kam nicht"}` : "") +
             (m.blick ? ` · Bild ${m.blick.geweckt}/${m.blick.vor2} · Takt ${m.takt.lief}` : "") +

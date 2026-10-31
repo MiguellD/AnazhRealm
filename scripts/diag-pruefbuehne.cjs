@@ -38,7 +38,7 @@
 // Port: PRUEFBUEHNE_PORT (Default 4394). Exit 1 bei einem Wurf auf der Bühne, einem gehaltenen Akt, einer blinden
 // Kontrolle, einem Page-Error oder einem roten Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, argOpt: opt, pngDatei, booteWelt, weltTor } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, argOpt: opt, pngDatei, booteWelt, weltTor, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 
@@ -48,9 +48,7 @@ const JSON_AUS = opt("--json", null);
 const EVOLUTIONEN = Math.max(1, Number(opt("--evolutionen", 60)) || 60);
 const PORT = Number(process.env.PRUEFBUEHNE_PORT) || 4394;
 const BUEHNE_DATEI = path.resolve(__dirname, "..", "spec", "pruefbuehne", "welt.json");
-const STATIONEN = JSON.parse(
-    fs.readFileSync(path.resolve(__dirname, "..", "spec", "pruefbuehne", "stationen.json"), "utf8")
-).stationen;
+const STATIONEN = jsonLesen(path.resolve(__dirname, "..", "spec", "pruefbuehne", "stationen.json")).stationen;
 const S4 = STATIONEN.find((st) => st.id === "s4-hindernisse");
 const S0 = STATIONEN.find((st) => st.id === "s0-atrium");
 const S4_SCHEIN = { bauplan: "pruef_mauer", dx: 0.5 }; // der Selbsttest: die Mauer rückt 0,5 m
@@ -267,7 +265,7 @@ async function s0Probe(page, station, schein) {
             };
             // der Mensch steht im Atrium am Rand des Genesis-Platzes (K52: die Scheibe liegt auf dem Grund der Station, der Ring
             // der Tore um sie): 2 m jenseits der Lichtung, zwischen zwei Toren (18°), der Blick des Schusses weg vom Ring
-            const A0 = r.constructor.GENESIS_PLATZ;
+            const A0 = AnazhRealm.GENESIS_PLATZ;
             const w0 = Math.PI / 10;
             const sx = st.x + (A0.ringR + A0.rand + 2) * Math.cos(w0);
             const sz = st.z + (A0.ringR + A0.rand + 2) * Math.sin(w0);
@@ -589,7 +587,7 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                     if (e?.position && d(e.position) <= R && !bestand.has(e))
                         fremd[e.type] = (fremd[e.type] || 0) + 1;
                 let streu = 0;
-                const SC = r.constructor.SCATTER;
+                const SC = AnazhRealm.SCATTER;
                 if (s.scatterRegions && SC)
                     for (const [key, reg] of s.scatterRegions) {
                         const [rx, rz] = key.split(",").map(Number);
@@ -790,7 +788,7 @@ const S0_GESTALT_INSTALL = () => {
         const fehlt = [];
         if (!r._archIsRendered(feuer)) fehlt.push("die Feuerstelle wächst");
         const ring = r._builtRingRadius();
-        const K = r.constructor;
+        const K = AnazhRealm;
         if (!(ring != null && ring >= K.RING_EXIST_FLOOR)) fehlt.push(`der Boden wächst (Ring ${ring} von ${K.RING_EXIST_FLOOR})`);
         return { fiel: null, fehlt };
     };
@@ -1032,7 +1030,7 @@ async function lichtLauf() {
         }, 1);
     });
     const url = `http://127.0.0.1:${PORT}/index.html?holz=${HOLZ}`;
-    const json = JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8"));
+    const json = jsonLesen(BUEHNE_DATEI);
     const ergebnis = {};
     const himmel = {}; // der Himmel folgt dem Sprung (oben `himmelProbe`): sauber und — im Selbsttest — der taube Maler
     let wache = null; // der Schein der Wache (Selbsttest): das Urteil über ein Werk, das ein benannter Rufer räumte
@@ -1081,7 +1079,7 @@ async function lichtLauf() {
                         if (!gestalt) {
                             window.__buehne();
                             // am Rand des Genesis-Platzes, zwischen zwei Toren (K52: die Scheibe liegt auf dem Grund der Station)
-                            const A0 = r.constructor.GENESIS_PLATZ;
+                            const A0 = AnazhRealm.GENESIS_PLATZ;
                             const w0 = Math.PI / 10;
                             const sx = st.x + (A0.ringR + A0.rand + 2) * Math.cos(w0);
                             const sz = st.z + (A0.ringR + A0.rand + 2) * Math.sin(w0);
@@ -1197,7 +1195,7 @@ async function lichtLauf() {
                         };
                     // der Schein der Kamera: die Stufen der 18-%-Karte 2 tiefer (`_belichtungStufen`, das EINE Glied der Kamera) —
                     // die Uhr unten wendet die Belichtung an (`_dayNightApplyBelichtung`)
-                    const AR = r.constructor;
+                    const AR = AnazhRealm;
                     const stufenAlt = AR._belichtungStufen;
                     if (schein === "kamera") AR._belichtungStufen = (h, q) => stufenAlt.call(AR, h, q) - 2;
                     // der Farb-Schein: der Platz des Feuers leuchtet wie bis K11b — in der Glut-Palette (sRGB → linear) und mit
@@ -1255,7 +1253,7 @@ async function lichtLauf() {
                         cam.lookAt(f.x, g + 0.2, f.z + 1e-4);
                         cam.updateMatrixWorld(true);
                         // die Plätze des Pools blenden in LICHT_POOL.blendeS ein: die Wand-Uhr läuft, ehe der Schuss misst
-                        await sleep(1000 * r.constructor.LICHT_POOL.blendeS + 100);
+                        await sleep(1000 * AnazhRealm.LICHT_POOL.blendeS + 100);
                         // der Satz „messung" (K32, scripts/lib/abnahme-urteil.cjs): der Schuss ist ein Mess-Frame der Nacht — sein
                         // Urteil liest den Kreis um das Feuer (kreis, ton) aus den Pixeln; die Belichtungs-Zeile des Beweis-Satzes
                         // (Tag-Bühne, abgesoffen ≤ 60 %) warf hier an der Mitternacht (schwarz 71,9 %, Kreis hell)
@@ -1647,7 +1645,7 @@ hauptLauf(async () => {
     if (SELBSTTEST) laeufe.push(["buehne", true]);
     for (const [welt, schein] of laeufe) {
         // jeder Bühnen-Lauf auf frischer Bühne, geboren wie im Spiel durch die Tür (der Schein-Lauf erbt nichts vom sauberen)
-        if (welt === "buehne") await weltTor(page, JSON.parse(fs.readFileSync(BUEHNE_DATEI, "utf8")));
+        if (welt === "buehne") await weltTor(page, jsonLesen(BUEHNE_DATEI));
         const b = await booteWelt(page);
         if (!b.ok) {
             console.log(`  ⛔ Welt ${welt}: Boot nicht bereit nach 120 s`);
@@ -1753,7 +1751,7 @@ hauptLauf(async () => {
             `  SELBSTTEST S0 (Feuer ohne Datum · Laterne ungelesen · Stoff und Bauer ohne Pool): ${selbst.s0Treffer ? "getroffen — " + s0Namen[0] : s.s0?.abbruch || "BLIND " + JSON.stringify(selbst.s0Rest)}`
         );
     }
-    if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ berichte, selbst }, null, 1));
+    if (JSON_AUS) jsonSchreiben(JSON_AUS, { berichte, selbst });
     let pass;
     if (SELBSTTEST) {
         pass = !rot && selbst && selbst.benannt.length > 0 && selbst.s4Treffer && selbst.s0Treffer;

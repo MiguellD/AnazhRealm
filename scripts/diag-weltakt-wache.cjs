@@ -272,7 +272,7 @@ async function probe(GESCHICKT) {
     aus.frei.nexus = await fenster(wege.nexus);
     // (K) jeder Op als KI an seiner Form: je Name der Form ein Wert aus der Welt; ein Id-Name probt jede Form, die die Welt
     // vergibt (der Bau: Zahl + String, die Kreatur: Platz + Id); der Ort liegt außerhalb der Genesis-Lichtung (keine Krone)
-    const K = r.constructor;
+    const K = AnazhRealm;
     await window.__weltDa(() => st.blueprints.haus_griechisch); // das Studio-Buch (spawn_temple liest es)
     const rolle = (x) => Object.keys(st.blueprints).find((k) => st.blueprints[k].role === x);
     const [sag, ich, teil, opClass] = [["say", "Probe"], st.playerMesh.position, { size: [1, 1, 1], material: "stein" }, [...K.TOOL_OP_CLASSES][0]];
@@ -313,7 +313,7 @@ async function probe(GESCHICKT) {
     window.__buehne();
     aus.ende = { uhr: st.weatherEffectTime };
     // (Q) das Urteil über jeden Op; die Programme des Nexus — (K) der Prompt der Welt-KI und die Orte und Bedingungen der DSL
-    aus.liste = Array.isArray(r.constructor.DSL_WELTAKTE) ? r.constructor.DSL_WELTAKTE.slice() : null;
+    aus.liste = Array.isArray(AnazhRealm.DSL_WELTAKTE) ? AnazhRealm.DSL_WELTAKTE.slice() : null;
     aus.ops = Object.keys(r.dslEffects);
     const gruppen = { Orte: Object.keys(r.dslPositions), Bedingungen: Object.keys(r.dslConditions) };
     aus.ki = { prompt: r.llmBuildSystemPrompt(), gruppen };
