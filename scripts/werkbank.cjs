@@ -1428,11 +1428,14 @@ async function starte() {
                         if (!(saa > 0 && sbb > 0)) return { r: null, pixel: P, grund: "Bild oder Ziel ohne Struktur in der Öffnung" };
                         return { r: +(sab / Math.sqrt(saa * sbb)).toFixed(3), pixel: P, grund: null };
                     };
+                    // DIE MASSE, DIE DAS URTEIL LIEST (w4-proben-tempo2, 31.10.): `nurPixel` zählt je Klasse nur ihre Pixel — ein
+                    // Aufrufer, der nur sie liest (das Jahr der Vegetation, die Wiese, die Herde am Hang), trug je Schuss die ganzen Maße
+                    // (Zweiton, Milch, Kante, Spiegel, Mikro; Radeon 2134b209 1,1–3,6 s je Schuss, an den Kronen 4,7 von 20,5 s)
                     namen.forEach((n, j) => {
                         const m = new Uint8Array(W * H);
                         for (let p = 0; p < W * H; p++) m[p] = teil[p] === j + 1 ? 1 : 0;
                         const mb = /^portal-membran$/.test(n);
-                        const ms = __klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null, spiegel);
+                        const ms = k.nurPixel ? { pixel: m.filter(Boolean).length } : __klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null, spiegel);
                         if (mb && ms.pixel) ms.ziel = zielTreue(m);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
@@ -1644,7 +1647,7 @@ async function starte() {
                             mu8[i + 1] = g;
                             mu8[i + 2] = g + 40;
                         }
-                        mu8[i + 3] = 255;
+                        // das Alpha setzt `__png` deckend (welt-boot)
                     }
                     klasse = {
                         ausdruck: k.klasse,
@@ -3392,7 +3395,11 @@ hauptLauf(async () => {
         // `--eigen` die Wand der Karte (gate:licht-weg:echt): die Welt als Kind, gestoppt nach der letzten Zeile
         const halt = await eigeneWelt();
         try {
-            for (const art of String(arten).split(",")) for (const uhr of uhren) {
+            // DER PLAN JE ART (w4-proben-tempo2, 31.10.): Exemplar und Auge einer Art hängen nie an der Uhr — jede Uhr nach der ersten ruft
+            // den Plan nur der Stunde wegen (sein Ruf stellt sie) und schwingt ein, wo der Spieler nach der Zeile davor steht — am Auge des
+            // Plans, die Schüsse stellen nur die Kamera (`auge`); bis dahin je Uhr der Gang zum Anker, der Plan samt seinem Einschwingen und
+            // der Gang zurück ans Auge
+            for (const art of String(arten).split(",")) { let plan = null; for (const uhr of uhren) {
                 const zeile = uhr == null ? art : `${art}@${uhr}`;
                 // DER LICHTWEG (Licht K3): `panorama`, `feld`, `spiegel` und `wasser` (eine Zahl stellt die Fläche senkrecht, Grad neben
                 // der Sonne) — die graue Fläche im Licht der Welt gegen das Licht des Wegs
@@ -3406,22 +3413,23 @@ hauptLauf(async () => {
                 if ((haus || boden) && !(welt[`haus@${uhren[0]}`] || welt[`ring@${uhren[0]}`])) await umstellen({ ort: "dorf" });
                 const spiel = `wechsel: ${Number(opt("--wechsel", 0)) || 0}, augeH: ${Number(opt("--auge", 1.7)) || 1.7}, hang: ${Number(opt("--hang", 0)) || 0}, uhr: ${uhr}, haus: ${haus}, boden: ${boden}`;
                 const c = `return await __laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
-                // am Anker stehen: welche Bäume eine nahe Stufe (eine Laub-Senke) tragen, folgt dem Spieler
-                await umstellen({ x: anker[0], z: anker[1] });
                 const ein = () => hat("karte") && rufe("/lauf", { sek: 5, ein: 8, ruhe: 120, regler: "voll" });
-                // die Stufen der Gestalten schwingen ein (nach dem Umstellen fehlt dem Plan der Karte die Laub-Senke)
-                let plan = null;
-                for (let i = 0; i < (hat("karte") ? 6 : 1) && !(plan && !plan.fehler); i++, await ein())
-                    plan = (await rufe("/eval", {
-                        // `--abstand m`: der Augen-Ort so weit vom Fuß (die Stufe folgt dem Spieler: nah L0, weiter L1)
-                        code: `const __o = { plan: true, anker: ${JSON.stringify(anker)}, abstand: ${Number(opt("--abstand", 8)) || 8}, ${spiel} }; ${c}`,
-                    })).ergebnis;
-                if (!plan || plan.fehler) {
-                    welt[zeile] = plan || { fehler: "kein Plan" };
-                    continue;
+                // `--abstand m`: der Augen-Ort so weit vom Fuß (die Stufe folgt dem Spieler: nah L0, weiter L1)
+                const planRuf = () => rufe("/eval", { code: `const __o = { plan: true, anker: ${JSON.stringify(anker)}, abstand: ${Number(opt("--abstand", 8)) || 8}, ${spiel} }; ${c}` });
+                if (plan) await planRuf(), await ein();
+                else {
+                    // am Anker stehen: welche Bäume eine nahe Stufe (eine Laub-Senke) tragen, folgt dem Spieler
+                    await umstellen({ x: anker[0], z: anker[1] });
+                    // die Stufen der Gestalten schwingen ein (nach dem Umstellen fehlt dem Plan der Karte die Laub-Senke)
+                    for (let i = 0; i < (hat("karte") ? 6 : 1) && !(plan && !plan.fehler); i++, await ein()) plan = (await planRuf()).ergebnis;
+                    if (!plan || plan.fehler) {
+                        welt[zeile] = plan || { fehler: "kein Plan" };
+                        plan = null;
+                        continue;
+                    }
+                    await umstellen({ x: plan.auge[0], z: plan.auge[1] });
+                    await ein();
                 }
-                await umstellen({ x: plan.auge[0], z: plan.auge[1] });
-                await ein();
                 // `--karte` (A7): dasselbe Auge, erst die Gestalt in ihrer Stufe, dann die Karte (Schwellen 0,3/0,6 m), danach zurück
                 // — auch der Boden: Boden-Satz und Fern-Ring aus dem fernen Auge der Naht (zwei Augen maßen den Blickwinkel mit, Licht K3)
                 const k = (n) => evalRuf(`const __o = { ziel: ${JSON.stringify(plan.ziel)}, auge: ${JSON.stringify(boden ? plan.fern : plan.auge)}, karte: ${n}, stufe: ${haus ? (n === 1 ? 0 : 2) : null}, ${spiel} }; ${c}`);
@@ -3443,10 +3451,10 @@ hauptLauf(async () => {
                     ? (await k(2)).ergebnis
                     : (await evalRuf(`const __o = { ziel: ${JSON.stringify(plan.ziel)}, oben: ${oben} }; ${c}`)).ergebnis;
                 if (hat("karte") && !boden) await stufen(null);
-                if (w && w.karte && opt("--ordner"))
-                    w.karte.png.forEach((p, i) => pngDatei(path.join(opt("--ordner"), `karte-${zeile}-${i ? "karte" : "gestalt"}.png`), p));
-                if (w && w.karte) delete w.karte.png;
                 const ordner = opt("--ordner");
+                if (w && w.karte && ordner)
+                    w.karte.png.forEach((p, i) => pngDatei(path.join(ordner, `karte-${zeile}-${i ? "karte" : "gestalt"}.png`), p));
+                if (w && w.karte) delete w.karte.png;
                 if (w && w.oben && w.oben.png) {
                     if (ordner)
                         pngDatei(path.join(ordner, `krone-${art}-oben.png`), w.oben.png);
@@ -3459,7 +3467,7 @@ hauptLauf(async () => {
                         delete w[k].png;
                     }
                 welt[zeile] = w;
-            }
+            } }
         } finally {
             if (halt) await halt();
         }
