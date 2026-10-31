@@ -266,10 +266,10 @@ function albedoSicht(opts) {
                 }
                 if (!zeigt()) x.verweigert = `das Exemplar zeigt seine Stufe ${n} nicht (30 s)`;
             }
-            // DIE UHR DER TAFEL (`uhr` 0..1, material.K3 Staffel 2): nach dem Takt der Bühne (Mittag) springt der Uhr-Schreiber
-            // auf das Wort des Spielers (wie `__laubGegenlicht`) — eine Stufe, deren Ton an einer Hand-Konstante hinge, bräche an der
-            // zweiten Uhr; Emission fällt in hell − dunkel heraus. Die Schüsse ticken nicht mehr.
-            if (Number.isFinite(opts.uhr)) (st.world && (st.world.timeOfDay = opts.uhr), r.setTimeOfDay(opts.uhr, "human"));
+            // DIE UHR DER TAFEL (`uhr` 0..1, material.K3 Staffel 2): nach den Takten steht die Bühne zu ihr (ihr Wort `uhr`, wie
+            // `__laubGegenlicht`; bis w4-himmel-uhr sprang der Uhr-Schreiber hinter der Bühne des Mittags) — eine Stufe, deren Ton an
+            // einer Hand-Konstante hinge, bräche an der zweiten Uhr; Emission fällt in hell − dunkel heraus. Die Schüsse ticken nicht mehr.
+            if (opts.uhr != null) window.__buehne({ uhr: opts.uhr });
         }
         const karte = new T.Mesh(
             new T.PlaneGeometry(2, 2),
@@ -697,13 +697,20 @@ function linsenZiel(W, H) {
     };
 }
 
-function lichtBilanz() {
+// DIE LICHT-BILANZ (`werkbank licht [--uhr u]`, die Zellen am Spawn): die 18-%-Karte 45 m über dem Boden am Spieler, waagrecht und
+// senkrecht zum Richtlicht hin und von ihm weg, je Variante (alle Lichter, nur die Umgebung, je Licht-Art mit der Umgebung) E =
+// π · Y(L) / 0,18. Die Bühne hält Wetter und Saison, die UHR kommt von der Zelle (`o.uhr`, ohne Wort Mittag — bis w4-himmel-uhr
+// stellte die Bilanz jede Zelle auf Mittag und maß um 0,3 und 0 die Mittags-Sonne); die Welt steht nie auf einer anderen Uhr. Das
+// Ergebnis nennt die Uhr und die Richtung der Sonne (nachts unter dem Horizont: dann trägt der Mond das Richtlicht, und die
+// senkrechten Karten blicken zu IHM).
+function lichtBilanz(o) {
     return (async () => {
+        o = o || {};
         const T = window.THREE;
         const sc = st.scene,
             rend = st.renderer;
         rend.setAnimationLoop(null);
-        if (window.__buehne) window.__buehne();
+        window.__buehne({ uhr: o.uhr });
         const pp = st.playerMesh.position;
         const gy = r._voxelSurfaceY(pp.x, pp.z);
         const dl = st.directionalLight;
@@ -764,7 +771,8 @@ function lichtBilanz() {
             return lauf();
         };
         const Y = luma709;
-        const out = { sonnenRichtung: [sd.x, sd.y, sd.z].map((v) => +v.toFixed(3)), lichter: {} };
+        const so = r._sonnenRichtung();
+        const out = { uhr: st.timeOfDay, sonnenRichtung: [so.x, so.y, so.z].map((v) => +v.toFixed(3)), lichter: {} };
         for (const [l, i] of lichtAlt)
             out.lichter[l.type] = {
                 intensitaet: +i.toFixed(3),
@@ -783,11 +791,13 @@ function lichtBilanz() {
                 for (const [l, i] of lichtAlt) l.intensity = typ == null || l.type === typ ? i : 0;
                 sc.environment = typ == null || typ === "env" ? envAlt : null;
                 out[vn] = {};
+                // vier gültige Stellen (w4-himmel-uhr): nachts liegt E bei 0,3, L bei 0,01 — feste Stellen trugen dort ±2 % (E) und
+                // ±10 % (L) und den Anteil jeder Licht-Art nur auf eine Stelle
                 for (const [ln, n] of Object.entries(lagen)) {
                     const L = await mess(n);
                     out[vn][ln] = {
-                        L: L.map((v) => +v.toFixed(3)).join("/"),
-                        E: +((Math.PI * Y(L)) / 0.18).toFixed(2),
+                        L: L.map((v) => +v.toPrecision(4)).join("/"),
+                        E: +((Math.PI * Y(L)) / 0.18).toPrecision(4),
                     };
                 }
             }
@@ -1404,9 +1414,8 @@ function laubGegenlicht(opts) {
         const sc = st.scene,
             rend = st.renderer;
         rend.setAnimationLoop(null);
-        if (window.__buehne) window.__buehne();
-        // DIE STUNDE (F6, `uhr` 0..1, 0,5 Mittag): die Bühne zu dieser Stunde, der Pfad des Spielers (sein Satz „nacht")
-        if (Number.isFinite(opts.uhr)) (st.world && (st.world.timeOfDay = opts.uhr), r.setTimeOfDay(opts.uhr, "human"));
+        // DIE STUNDE (F6, `uhr` 0..1, 0,5 Mittag): die Bühne zu dieser Stunde (ihr Wort `uhr`)
+        window.__buehne({ uhr: opts.uhr });
         const art = new RegExp("^f:" + (opts.art || "buche") + ":L");
         let abstand = opts.abstand || 8;
         let verdeckt = null;
@@ -1865,8 +1874,7 @@ function lichtWeg(opts) {
         const T = window.THREE, sc = st.scene, rend = st.renderer, cam = st.camera, fp = st.feldPass;
         const [, art, grad] = /^([a-z]+)(\d*)$/.exec(opts.weg), senkrecht = grad !== "" || art === "spiegel";
         rend.setAnimationLoop(null);
-        if (window.__buehne) window.__buehne();
-        if (Number.isFinite(opts.uhr)) (st.world && (st.world.timeOfDay = opts.uhr), r.setTimeOfDay(opts.uhr, "human"));
+        window.__buehne({ uhr: opts.uhr });
         await r._himmelFrisch();
         if (!fp) return { fehler: "kein Feld-Pass" };
         r._weltLichtTakt();
@@ -2666,8 +2674,7 @@ function kontaktSicht(o) {
         const st = r.state;
         const { renderer: rend, camera: cam, scene: sc, directionalLight: dl } = st;
         rend.setAnimationLoop(null);
-        window.__buehne({});
-        if (o.uhr !== 0.5) (r.setTimeOfDay(o.uhr, "human"), (r._himmelSprung = true), r._applyDayNightToScene());
+        window.__buehne({ uhr: o.uhr });
         const PU = st.postProcessingUniforms;
         const [bloom0, I0, fov0, kam0] = [PU.bloomStrength.value, dl.intensity, cam.fov, cam.matrix.clone()];
         // die Krone der Platte: ihre Blocker-Box (das Netz, auf dem der Spieler steht), nie die Spec

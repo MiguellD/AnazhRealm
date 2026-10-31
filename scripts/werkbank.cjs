@@ -19,7 +19,8 @@
 //   node scripts/werkbank.cjs albedo --tafel [--datei f.json] [--ordner d]  DIE WELT-SEITE DER ALBEDO-TAFEL (je Klasse ihr Exemplar,
 //                                                           jede Stufe zu jeder Uhr der Tafel; die Zählung je Mesh-Klasse fiel mit material-k3-stufen)
 //                                                           (spec/farbe/albedo-tafel.json, Eichung 0,180; Nachzug diag-albedo-tafel.cjs --nachziehen)
-//   node scripts/werkbank.cjs licht [--ist <id>]           DIE LICHT-BILANZ (18-%-Karte, je Licht; `--ist` in die Soll-Tafel)
+//   node scripts/werkbank.cjs licht [--uhr u] [--ist <id>]  DIE LICHT-BILANZ (18-%-Karte, je Licht, unter der Bühne zur Uhr u —
+//                                                           ohne Uhr Mittag; `--ist` in die Soll-Tafel, K5 urteilt sie mit dem Soll ihrer Uhr)
 //   node scripts/werkbank.cjs licht --luft [--ort genesis] [--eigen] [--wetter stormy [--zug]] | --selbsttest  DIE LUFT IM BILD
 //                                                           (Koschmieder je Kanal, Farbton, Sonnenseite, fernes Weiß; Rand und Kante an
 //                                                           Hügel und Gipfel; im Wetter die Sicht, mit --zug klar → Wort → klar je Sekunde)
@@ -1155,14 +1156,12 @@ async function starte() {
             cam.position.set(px, py, pz);
             cam.lookAt(lx, ly, lz + 1e-4);
             cam.updateMatrixWorld(true);
+            // `--uhr u` (0..1, 0,5 = Mittag): die Bühne mit Sonne und Sommer zu dieser Stunde — die Uhr ist ihr Wort (`__buehne`
+            // liest `k.uhr`, dieselbe EINE Uhr wie die Licht-Bilanz der Zelle; bis w4-himmel-uhr stand die Welt erst auf Mittag, dann
+            // sprang der Uhr-Schreiber); Himmel und Umgebung springen mit ihr, die Leuchtquellen (`_leuchtTakt`, bis jede gewählte
+            // Quelle eingeblendet ist) folgen ihr
             __buehne(k);
-            // `--uhr u` (0..1, 0,5 = Mittag): die Bühne mit Sonne und Sommer, aber zu dieser Stunde — Himmel, Umgebung und die
-            // Leuchtquellen (`_leuchtTakt`, eine Sekunde, bis jede gewählte Quelle eingeblendet ist) folgen ihr
             if (Number.isFinite(k.uhr)) {
-                const st = r.state;
-                if (st.world) st.world.timeOfDay = k.uhr;
-                // der Pfad des Spielers (sein Satz „nacht"): der Uhr-Schreiber springt, der Himmel folgt im selben Anwenden
-                r.setTimeOfDay(k.uhr, "human");
                 // DER POOL ZU SEINEM FIXPUNKT (w4-proben-tempo, 30.10.; bis dahin fest 20 × 50 ms je Schuss): jeder Platz hält eine
                 // gewählte Quelle mit Blende 1 oder ist frei mit Blende 0, jede Gewählte hat ihren Platz — danach ändert kein Takt
                 // mehr etwas (die Bild-Uhr steht unter der Bühne, die Wahl am stehenden Auge); höchstens dieselbe Sekunde wie zuvor
@@ -2913,19 +2912,31 @@ async function starte() {
                     return send({ tabelle, befunde, cpuMs, taeter, wetterHalt: roh.wetterHalt, datei });
                 }
                 if (req.url === "/licht") {
-                    const o = await seite("__lichtBilanz");
+                    // die Uhr der Zelle (`licht --uhr u`, die Zellen am Spawn mit `b.uhr`): die Bühne steht zu ihr, ohne Uhr Mittag
+                    const o = await seite("__lichtBilanz", { uhr: b.uhr });
                     // DIE MESSUNG IN DIE SOLL-TAFEL (`licht --ist <id>`, als Block der Zellen am Spawn mit `b.messung`): E an der waagrechten
-                    // Karte, alle Lichter und nur die Umgebung (der Himmel)
+                    // Karte, alle Lichter und nur die Umgebung (der Himmel), unter der Uhr der Bühne (K5 liest das Soll ihrer Uhr)
+                    const rgb = (v) => (v && v.oben && v.oben.L ? v.oben.L.split("/").map(Number) : null);
                     const me = {
                         werkzeug: "licht",
                         datum: new Date().toISOString(),
                         stand: { sha: gitStand() },
                         geraet: { adapter: await page.evaluate(() => __abnahmeMessen({}).geraet.adapter) },
+                        uhr: o.uhr,
                         E_alle: o.alle?.oben?.E,
                         E_umgebung: o.umgebung?.oben?.E,
-                        // die senkrechten Karten im Himmel allein (D3): zur Sonne und von ihr weg (`umgebungAzimut`)
+                        // die senkrechten Karten im Himmel allein (D3): zum Körper des Richtlichts und von ihm weg (`umgebungAzimut`)
                         E_umgebung_zurSonne: o.umgebung?.zurSonne?.E,
                         E_umgebung_vonSonne: o.umgebung?.vonSonne?.E,
+                        // je Licht-Art die waagrechte Karte mit der Umgebung (die Variante trägt sie, `scene.environmentNode`): der Täter
+                        // der Nacht beim Namen — Mond, Ersatz-Ambient, Hemi
+                        E_richt: o.DirectionalLight?.oben?.E,
+                        E_ambient: o.AmbientLight?.oben?.E,
+                        E_hemi: o.HemisphereLight?.oben?.E,
+                        // die Farbe an der waagrechten Karte (linear): das Richtlicht mit der Umgebung und die Umgebung allein (`mondTon`)
+                        L_richt: rgb(o.DirectionalLight),
+                        L_umgebung: rgb(o.umgebung),
+                        // die Sonne (nachts unter dem Horizont: dann trägt der Mond das Richtlicht)
                         sonnenRichtung: o.sonnenRichtung,
                     };
                     if (b.ist) o.ist = sollIstSchreiben(b.ist, me);
@@ -3477,7 +3488,7 @@ hauptLauf(async () => {
         dateiAb({ welt });
         console.log(JSON.stringify({ welt, zeilen: u.zeilen }, null, 1));
         urteilEnde("LAUB-LICHT", u);
-    } else if (cmd === "licht") o = await rufe("/licht", { ist: opt("--ist") });
+    } else if (cmd === "licht") o = await rufe("/licht", { ist: opt("--ist"), uhr: opt("--uhr") === undefined ? undefined : Number(opt("--uhr")) });
     else if (cmd === "fernwald") o = await rufe("/fernwald", { blicke: opt("--blicke"), w: opt("--w"), h: opt("--h") });
     else if (cmd === "fluss") o = await rufe("/fluss", {});
     else if (cmd === "puffer" && hat("gang")) {

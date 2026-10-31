@@ -120,12 +120,12 @@ function werkzeug() {
     const r = anazhRealm;
     const st = r.state;
     const W = {};
-    // Ein Frame des echten Loops (Bühne fest, Tiere halten); die Szene (klang.K1 Staffel 2): Wetter und Uhr als Wort des
-    // Spielers (R9), je Takt über die Bühne.
+    // Ein Frame des echten Loops (Bühne fest, Tiere halten); die Szene (klang.K1 Staffel 2): Wetter und Uhr als Wort der Bühne
+    // (R9), je Takt (die Uhr der Szene ist ihr Wort, `__buehne` liest `uhr` — bis w4-himmel-uhr stand die Welt je Takt erst auf
+    // Mittag, dann sprang der Regler zurück in die Nacht und die Umgebung malte sich zweimal).
     W.takt = () => {
         try {
             __buehne(W.szene);
-            if (W.szene?.uhr != null) r.setTimeOfDay(W.szene.uhr, "regler");
             r._gameLoopTick(performance.now());
         } catch {}
     };
