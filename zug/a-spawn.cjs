@@ -9,10 +9,11 @@
 //   Sicht   die Kamera des Spiels (`_loopCamera`, Neigung 0): Ego im Auge, Third am Arm (`cameraThirdDistance`). Der Blick neigt
 //           sich nie zum Boden — die Plattform (13 × 13 m, 2,4 m unter dem Auge) füllte ab 10° Neigung über 25 % des Bilds näher
 //           als der halbe Ziel-Abstand, die Abnahme K32 nähme kein solches Bild.
-//   Abstand DIE WAHL zur ersten Uhr: acht Blicke je 45° ab der Ankunft (0, +45, −45, +90 …), je Blick EIN Schuss aller Ausdrücke
-//           (nur Pixel) und der Median der Tiefe je Teil-Klasse (`__letzteTeilung` × `__letzteSpiegel` des Schusses) — nah ist der
-//           erste Blick, der die Klasse näher als 30 m zeigt, fern der erste, der sie dahinter zeigt — je auf ≥ 0,1 % des Bilds;
-//           die Tiere stehen (`__tiereHalten`). Der Blick hält für jede Uhr.
+//   Abstand DIE WAHL zur ersten Uhr, je Ausdruck in seiner eigenen Teilung: acht Blicke je 45° ab der Ankunft (0, +45, −45, +90 …),
+//           der Schuss der Zelle im Blick der Ankunft zuerst, dann je Blick ein Schuss nur der Pixel, und je Pixel der Klasse seine
+//           Tiefe (`__letzteTeilung` × `__letzteSpiegel` des Schusses) — nah ist der erste Blick, der die Klasse näher als 30 m
+//           zeigt, fern der erste, der sie dahinter zeigt, je auf ≥ 0,1 % des Bilds; die Tiere stehen (`__tiereHalten`).
+//           Der Blick hält für jede Uhr.
 //   Uhr     die Bühne hält sie (`bild --uhr`): Mittag 0,5, tiefe Sonne 0,3, Nacht 0.
 // Je Zelle und Ausdruck der Tafel EIN Bild aus dem Ausgabe-Pfad (`/bild` mit der Teilung der Klasse, `messung`: der Block, den
 // `--ist` in die Tafel schriebe); Zeilen desselben Ausdrucks teilen den Schuss. Der Kopf: Ego zeigt ihn nie (`_applyEgoSicht`),
@@ -69,7 +70,8 @@ function zellenUrteil(tafel, zellen) {
         const eigen = (o) => Object.fromEntries(Object.entries(o || {}).filter(([n]) => re.test(n)));
         const sieht = (c) => {
             const r = c.klassen[k.id] || {};
-            return !!r.messung && (r.messung.werkzeug !== "bild" || px(r.messung, re) > 0);
+            // im Bild wie in der Wahl: ab einem Tausendstel des Bilds (verstreute Splitter einer Teilung zählen nicht)
+            return !!r.messung && (r.messung.werkzeug !== "bild" || px(r.messung, re) >= IM_BILD * r.messung.leinwand[0] * r.messung.leinwand[1]);
         };
         const zelle = (c) => {
             const r = c.klassen[k.id] || { fehlt: "ungemessen" };
@@ -80,7 +82,7 @@ function zellenUrteil(tafel, zellen) {
                     z,
                     um.length
                         ? { grund: `fehlt um ${c.uhr} (zeichnet in derselben Kamera um ${um.join(", ")})${r.weg ? ": " + r.weg : ""}` }
-                        : { urteil: "nicht im Bild", grund: r.weg || `kein Pixel von /${a}/` }
+                        : { urteil: "nicht im Bild", grund: r.weg || `${px(r.messung, re)} Pixel von /${a}/ (< ${IM_BILD * 100} % des Bilds)` }
                 );
             if (!r.messung) return z;
             let me = albedo ? undefined : r.messung;
@@ -180,17 +182,19 @@ function selbsttest() {
     return v;
 }
 
-// DER MEDIAN DER TIEFE je Teil-Klasse des letzten Schusses (in der Seite): die Teilung des Schusses (`__letzteTeilung`, je Pixel
-// 1 + Index des Namens) über der Tiefe seines Szenen-Passes (`__letzteSpiegel`, dieselbe Pose) — ohne Tiefe (Himmel) unendlich fern
-const TIEFE_JE_KLASSE = `const { teil, namen, W, H } = window.__letzteTeilung, S = window.__letzteSpiegel;
-    const iv = new T.Matrix4().fromArray(S.ivp), auge = new T.Vector3().fromArray(S.auge), d = namen.map(() => []);
+// DIE PIXEL JE BAND je Teil-Klasse des letzten Schusses (in der Seite): die Teilung des Schusses (`__letzteTeilung`, je Pixel 1 +
+// Index des Namens) über der Tiefe seines Szenen-Passes (`__letzteSpiegel`, dieselbe Pose), jedes fünfte Pixel gezählt × 5 — [nah, fern]
+// je Name, die Grenze NAH_M bis zum Auge; ohne Tiefe (Himmel) fern. Je Pixel, nie je Klasse: der Fels-Turm in 16,5 m und der in
+// 38 m sind EINE Klasse (`formationenSatz`), ihr Median lag jenseits 30 m und der nahe Turm fiel aus dem Band
+const BAENDER_JE_KLASSE = `const { teil, namen, W, H } = window.__letzteTeilung, S = window.__letzteSpiegel;
+    const iv = new T.Matrix4().fromArray(S.ivp), auge = new T.Vector3().fromArray(S.auge), d = namen.map(() => [0, 0]);
     for (let p = 0; p < W * H; p += 5) {
         const c = teil[p];
         if (!c) continue;
         const i = Math.floor(((Math.floor(p / W) + 0.5) * S.th) / H) * S.tw + Math.floor((((p % W) + 0.5) * S.tw) / W), z = S.tiefe[i];
-        d[c - 1].push(z < 0.99999 ? new T.Vector3((2 * (i % S.tw) + 1) / S.tw - 1, 1 - (2 * Math.floor(i / S.tw) + 1) / S.th, z).applyMatrix4(iv).distanceTo(auge) : 1e9);
+        d[c - 1][z < 0.99999 && new T.Vector3((2 * (i % S.tw) + 1) / S.tw - 1, 1 - (2 * Math.floor(i / S.tw) + 1) / S.th, z).applyMatrix4(iv).distanceTo(auge) < ${NAH_M} ? 0 : 1] += 5;
     }
-    return Object.fromEntries(namen.map((n, j) => [n, d[j].length ? Math.round(d[j].sort((a, b) => a - b)[d[j].length >> 1]) : null]));`;
+    return Object.fromEntries(namen.map((n, j) => [n, d[j]]));`;
 
 async function messen() {
     const { werkbankRuf } = require(path.join(BAUM, "scripts", "lib", "welt-boot.cjs"));
@@ -211,6 +215,7 @@ async function messen() {
     const kopf = (a) => /spieler:kopf\//.test(a || "");
     const uhren = String(arg("uhr", "0.5,0.3,0")).split(",").map(Number);
     const blicke = [0, 1, 7, 2, 6, 3, 5, 4].slice(0, +arg("blicke", 8));
+    const abstaende = String(arg("abstand", "nah,fern")).split(",");
     for (const sicht of String(arg("sicht", "ego,third")).split(",")) {
         const t0 = Date.now();
         const u = await rufe("/umstellen", { ort: "genesis", sicht });
@@ -241,24 +246,42 @@ async function messen() {
                 ? { messung: frisch(o.messung), bild, gier: k * 45, abnahme: o.abnahme, ms: o.gesamtMs }
                 : { fehlt: String(o.fehler || JSON.stringify(o).slice(0, 300)), bild };
         };
-        // DIE WAHL zur ersten Uhr: je Ausdruck (ohne Kopf und Licht) und Abstand der erste Blick, der ihn im Band zeigt
-        const wahl = new Map();
-        for (const k of blicke) {
-            const offen = [...gruppen.keys()].filter((a) => a && !kopf(a)).flatMap((a) => ["nah", "fern"].filter((b) => !wahl.has(`${a}|${b}`)).map((b) => [a, b]));
-            if (!offen.length) break;
-            const o = await schuss([...new Set(offen.map((x) => `(?:${x[0]})`))].join("|"), k, uhren[0], `wahl-${k * 45}`, { nurPixel: true });
-            const d = o.messung ? await evalRuf(TIEFE_JE_KLASSE) : {};
-            const neu = [];
-            const genug = o.messung ? IM_BILD * o.messung.leinwand[0] * o.messung.leinwand[1] : Infinity;
-            for (const [a, b] of offen) {
-                const n = Object.entries(o.messung ? o.messung.klassen : {}).reduce((s, [nm, x]) => s + (new RegExp(a).test(nm) && d[nm] != null && (b === "nah" ? d[nm] < NAH_M : d[nm] >= NAH_M) ? x.pixel : 0), 0);
-                if (n >= genug) wahl.set(`${a}|${b}`, k), neu.push(`${b} ${a.slice(0, 40)} ${n} px`);
-            }
-            console.log(`  Blick ${k * 45}°: ${o.messung ? `${Object.keys(d).length} Teil-Klassen — ${neu.length ? neu.join(" · ") : "nichts Neues"}` : o.fehlt}`);
-        }
+        // der Schuss einer Zelle: je Ausdruck × Blick × Uhr EINMAL (nah und fern teilen ihn, wenn die Wahl denselben Blick nennt)
         const geschossen = new Map();
+        const voll = async (a, ks, k, uhr) => {
+            const s = `${a}|${k}|${uhr}`;
+            if (!geschossen.has(s))
+                geschossen.set(
+                    s,
+                    await schuss(a, k, uhr, `${uhr}-${ks[0].id}-${k * 45}`, {
+                        nurPixel: ks.every((x) => /^albedo/.test(x.mass.name)),
+                        abstand: ks.some((x) => /--abstand/.test(x.mass.werkzeug || "")),
+                    })
+                );
+            return geschossen.get(s);
+        };
+        // DIE WAHL zur ersten Uhr, JE AUSDRUCK in seiner eigenen Teilung (ein Schuss aller Ausdrücke teilte anders: der Ausdruck des
+        // Hauses ruft den Bau-Satz beim Namen, `bauSatz` nahm dem Fels 10 754 seiner Pixel — Radeon 31.10., 63 statt 10 817): der Schuss
+        // der Zelle im Blick der Ankunft zählt als erster Blick, jeder weitere (nur Pixel) nur für ein Band, das noch fehlt
+        const wahl = new Map();
+        for (const [a, ks] of gruppen) {
+            if (!a || kopf(a)) continue;
+            for (const k of blicke) {
+                const offen = abstaende.filter((b) => !wahl.has(`${a}|${b}`));
+                if (!offen.length) break;
+                const o = k ? await schuss(a, k, uhren[0], `wahl-${ks[0].id}-${k * 45}`, { nurPixel: true }) : await voll(a, ks, 0, uhren[0]);
+                const d = o.messung ? await evalRuf(BAENDER_JE_KLASSE) : {};
+                const genug = o.messung ? IM_BILD * o.messung.leinwand[0] * o.messung.leinwand[1] : Infinity;
+                const neu = [];
+                for (const b of offen) {
+                    const n = Object.values(d).reduce((s, x) => s + x[b === "nah" ? 0 : 1], 0);
+                    if (n >= genug) wahl.set(`${a}|${b}`, k), neu.push(`${b} ${n} px`);
+                }
+                console.log(`  ${ks[0].id} Blick ${k * 45}°: ${o.messung ? neu.join(" · ") || "nichts im Band" : o.fehlt.slice(0, 160)}`);
+            }
+        }
         let licht = null;
-        for (const abstand of String(arg("abstand", "nah,fern")).split(","))
+        for (const abstand of abstaende)
             for (const uhr of uhren) {
                 const zelle = `${sicht}-${abstand}-${uhr}`,
                     datei = path.join(ordner, zelle + ".json");
@@ -275,19 +298,10 @@ async function messen() {
                         r = { weg: sicht === "ego" ? "Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)" : `der Kopf steht in Third am Arm des Spiels (${arm} m), nie jenseits ${NAH_M} m` };
                     else {
                         const k = kopf(a) ? 0 : wahl.get(`${a}|${abstand}`);
-                        if (k == null) r = { weg: `kein Blick der Wahl (${blicke.length} je 45°) zeigt sie ${abstand === "nah" ? "näher als" : "jenseits"} ${NAH_M} m auf ≥ ${IM_BILD * 100} % des Bilds` };
-                        else {
-                            const s = `${a}|${k}|${uhr}`;
-                            if (!geschossen.has(s))
-                                geschossen.set(
-                                    s,
-                                    await schuss(a, k, uhr, `${uhr}-${ks[0].id}-${k * 45}`, {
-                                        nurPixel: ks.every((x) => /^albedo/.test(x.mass.name)),
-                                        abstand: ks.some((x) => /--abstand/.test(x.mass.werkzeug || "")),
-                                    })
-                                );
-                            r = geschossen.get(s);
-                        }
+                        r =
+                            k == null
+                                ? { weg: `kein Blick der Wahl (${blicke.length} je 45°) zeigt sie ${abstand === "nah" ? "näher als" : "jenseits"} ${NAH_M} m auf ≥ ${IM_BILD * 100} % des Bilds` }
+                                : await voll(a, ks, k, uhr);
                     }
                     for (const x of ks) klassen[x.id] = r;
                     // je Ausdruck geschrieben: ein Lauf, den sein Deckel bricht, hinterlässt jede gemessene Klasse

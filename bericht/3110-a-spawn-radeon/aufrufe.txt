@@ -1,0 +1,4 @@
+Aufruf 1 (^(laub|laub-kante|boden-nah|boden-nah-farbe)$): 100 s Wanduhr
+Aufruf 2 (^(tor-fern|tor-bunt|tor-ziel|himmel-licht|haus)$): 107 s Wanduhr
+Aufruf 3 (^(wasser|fels|mensch-kopf|fell|haar)$): 170 s Wanduhr
+Aufruf 3b (wasser|fels|mensch-kopf|fell|haar, Bänder je Pixel): 172 s Wanduhr
