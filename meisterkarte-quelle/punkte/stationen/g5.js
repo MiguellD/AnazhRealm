@@ -464,6 +464,12 @@ function latenzSchlechtester(j, ids, n, soll = 50) {
 // DIE LATENZ DER VERBEN UND DER HIT-STOP IN EINEM LAUF (leib.K1#2 und halten.K2#1, Zwillinge, 29.10.): die Haken des Spiels, die
 // Linse über gehen, springen, einsteigen, hieb in Ego und Third, das Lesen der Haken — bis dahin fuhr jede Station ihre drei Boots
 // (halten.K2#1 hieb allein, 30 Proben je Reihe); einsteigen und hieb lassen Wagen und Treffer in der Welt (mutiert)
+// OFFEN (w4-stationen-schnell-b; GTX b4bcf19c 79 s, Bild 14,9 ms): 120 Proben, je Probe Leib-Dynamik in präsentierten Bildern — der
+// Abstand zweier Proben (Radeon eeaff9d6, `t0` je Probe): gehen 0,45 s, springen 0,68 s, einsteigen 0,21 / 0,72 s, hieb 0,80 / 0,96 s
+// (Ego / Third). Nach dem Zurücksetzen an den Start läuft der Leib mit seiner Geschwindigkeit nach (der Sprungbogen, der Schwung bis
+// zu seinem Ende), dann 8 ruhige Bilder; weniger Proben schönten das p95 (aus 15 ist es das Maximum). Der Hebel liegt in `latenzAn`
+// (scripts/lib/haenger-linse.cjs `L.bereit`: mit der Lage auch Geschwindigkeit, Luft und Gleiten des Leibs zurück) — ungebaut, ohne Karte
+// unprüfbar
 const LATENZ_HALT_SITZUNG = sitzung(33,
     ...latenzLaeufe(
         "boot",

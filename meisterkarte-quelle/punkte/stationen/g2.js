@@ -2234,7 +2234,11 @@ const stationen = [
     // derselbe Aufsetz-Punkt wie gate:tier-gang), jede Gattung im Bild (`--klasse '^tier:'`). Ports: save-server {PORT},
     // tier-gang {PORT}+10000, Werkbank {PORT}+20000, Kreatur-Linse {PORT}+30000.
     // IN DER SITZUNG (29.10.): gate:tier-gang und der Querhang sind Mechanik in je eigener Null-Welt (headless, ohne Karte) — sie
-    // laufen NEBEN der Bühne der Sitzung (zugleich, ihre Zeilen danach), nie vor ihr; die Bühne räumt die Tiere (mutiert)
+    // laufen NEBEN der Bühne der Sitzung (zugleich, ihre Zeilen danach), nie vor ihr; die Bühne räumt die Tiere (mutiert).
+    // OFFEN (w4-stationen-schnell-b; GTX b4bcf19c 47,5 s): die Probe dauert so lange wie gate:tier-gang (lokal allein 37,6 s, neben dem
+    // Querhang 49,4 s; der Querhang 27,4 s, davon 17 s seine Null-Welt, die Prüfbühne kommt als fremde Welt durch die Tür). Im tier-gang
+    // trägt das Körper-Studio (der menschliche Gang, kein Teil von tiere.K3) 10,5 s: ein Schalter `--tiere` maß lokal 40,8 / 39,8 → 27,3 s
+    // bei byte-gleichen 90 Tier-Zeilen — ungebaut, die Wachstums-Wand von scripts/ verlangt seine ~47 Atome gestrichen
     {
         kriterium: "tiere.K3",
         staffel: 2,

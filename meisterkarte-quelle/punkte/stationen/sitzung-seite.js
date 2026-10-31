@@ -358,6 +358,10 @@ async function probeAnkunft(H) {
     return j;
 }
 
+// OFFEN (w4-stationen-schnell-b; GTX b4bcf19c 46,7 s): die vier Ladungen sind das Maß — t(Kontrolle) kalt 12,14 s, warm 9,12 · 8,60 s,
+// der Kern-Wechsel ~9 s (Pflicht-OFFEN B, die Ankunft des Spiels); darum herum ~8 s Probe: zwei Schüsse der Kontrolle zu je zwei Aufnahmen
+// (die erste wärmt die Programme), die Ruhe der Foundry kalt 3,1 s, die Atemzüge der Kontrolle zu 200 ms (`LEIB_WEG`). Ein Fenster kleiner
+// als 1920×1080 kürzte die Ladungen selbst (ein Bild weniger Pixel bis zur Kontrolle) — weicher, nie
 const ANKUNFT_PROBE = probeBefehl(probeAnkunft, 90);
 const ANKUNFT_AUSNAHME =
     "vier Stationen in EINER Probe (ankunft.K2#1, ankunft.K3#1, pipeline.K4#1, pipeline.K4#2): vier Ladungen der Seite — kalt mit leerer " +
