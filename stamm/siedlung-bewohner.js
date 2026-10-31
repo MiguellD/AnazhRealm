@@ -413,18 +413,28 @@ class AnazhRealm_siedlung_bewohner {
                           : beruf === "hof"
                             ? null
                             : (yield* ringStand(g, "w", tx, tz, ux, uz)) || heim; // die Station, sonst sein Stand vor der Tür
+                // DIE EINE GESTALT DES BEWOHNERS (Lehre 25): der Satz trägt ab seiner Geburt jedes Feld, das ein Takt je an ihm
+                // schreibt (ungesetzt `undefined`, wie ein fehlendes) — so teilen alle Sätze EINE versteckte Klasse, und jeder Zugriff
+                // der Schleifen des Takts liest an fester Stelle. Bis hier trug der Satz 11 Felder, die übrigen ~60 schrieb der Takt in
+                // der Reihe seiner Geschichte nach (an stadt-voll 19 Gestalten unter 1 096 Sätzen, ein Nachtrag über
+                // `Object.assign` kippt ihn ins Wörterbuch): `_tickBewohner` trug 0,68 ms Selbst-Zeit je Bild, die Hälfte davon
+                // Zugriffe wie `b.leib` und `b.d2`. Ein Literal (kein Spread: der trüge die Felder wieder einzeln nach); die Zeilen:
+                // wer er ist · der Leib (`_bewohnerGenome`, `_bewohnerGeburt`) · der Takt der Köpfe und sein Raster
+                // (`_tickBewohner`, `_bewohnerRasterLage`) · der Tag (`_bewohnerZiel`, `_bewohnerAnkunft`) · der Gang (`_bewohnerWeg`,
+                // `_bewohnerGehen`, `_bewohnerSchritt`, `_gaitTick`) · am Steuer (`_verkehrAnlegen`).
+                const u = undefined;
+                // prettier-ignore
                 liste.push({
-                    heim: sl.seed >>> 0,
-                    rolle,
-                    beruf,
-                    same,
-                    orte: { tuer, vor, heim, platz, werk, besuch: null },
-                    seed: `${plan.seed >>> 0}:${si}:${k}`, // sein Genom, seine Gestalt und seine Maße (`_bewohnerGenome`)
-                    atem: g.axis("atem") * 10,
-                    leib: null,
-                    uhr: 0,
-                    takt: 0,
-                    frist: null,
+                    heim: sl.seed >>> 0, rolle, beruf, same, orte: { tuer, vor, heim, platz, werk, besuch: null },
+                    seed: `${plan.seed >>> 0}:${si}:${k}`, atem: g.axis("atem") * 10, leib: null, uhr: 0, takt: 0, frist: null,
+                    genom: u, gestalt: u, groesse: u, breite: u, tiefe: u, farben: u, tonZeilen: u, beinL: u, tempo: u, satzOrt: u,
+                    nr: u, ruht: u, rk: u, uhrAb: u, animDt: u, d2: u, kreis: u, nah: u, lageNeu: u, ankunft: u, x: u, z: u,
+                    blick: u, begegnet: u, kopfY: u,
+                    ziel: u, akt: u, drinnenSoll: u, drinnen: u, da: u, hinaus: u, stand: u, tagVon: u, tagAb: u, zielUhr: u,
+                    drehen: u, platz: u,
+                    weg: u, wi: u, linie: u, tag: u, wegRest: u, wegRestAb: u, gegangen: u, gehDt: u, gehTakt: u, rueck: u,
+                    tempoTag: u, tempoJetzt: u, vx: u, vz: u, grundX: u, grundZ: u, grundH: u, _gait: u, _gaitW: u, walkPhase: u,
+                    wagen: u, amSteuer: u,
                 });
                 besuche.push([g, T, werk]);
             }
@@ -815,7 +825,8 @@ class AnazhRealm_siedlung_bewohner {
         // die Schwelle des Laufs `_kreaturLaufTakt`), geht man um ihn wie um einen Stehenden (`weg` leer, `_bewohnerUm`)
         const sa = this._spielerLageAlt;
         const SP =
-            this._bewohnerSpieler || (this._bewohnerSpieler = { leib: pm, voraus: {}, wi: 0, same: -1, spieler: true });
+            this._bewohnerSpieler ||
+            (this._bewohnerSpieler = { leib: pm, voraus: {}, wi: 0, same: -1, spieler: true, vx: 0, vz: 0, rueck: 0, weg: null, zug: null }); // prettier-ignore
         [SP.leib, SP.vx, SP.vz, SP.rueck] = [pm, sa ? sa.vx : 0, sa ? sa.vz : 0, Infinity];
         [SP.voraus.x, SP.voraus.z] = [p.x + SP.vx * BW.ausweichS, p.z + SP.vz * BW.ausweichS];
         const spV = Math.hypot(SP.vx, SP.vz);

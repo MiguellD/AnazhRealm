@@ -1340,6 +1340,7 @@ class AnazhRealm_siedlung_verkehr {
                     drinnen: false,
                     wagen: W,
                     kR: W.hw * Math.SQRT2 + AnazhRealm.PLAYER_WALL_RADIUS + 0.05,
+                    rk: undefined, // seine Zelle (`_bewohnerRasterLage`): die Gestalt steht ab der Geburt (Lehre 25)
                 })));
             const mitte = W.bug - W.hl;
             const ab = Math.max(0, W.hl - W.hw);
