@@ -1,0 +1,6 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u; K=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte'); A=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\studios.K4_1.json'); export WERKBANK_PORT=$((7804+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" 7804
+[linse-gpu] nvidia/pascal
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
