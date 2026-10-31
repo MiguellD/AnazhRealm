@@ -4,7 +4,7 @@ Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md. Dieser Zettel ist der Stand der
 Pflicht-OFFEN: A, B, C, E und F (F gesetzt 31.10., der Prüfplatz; Plan `bericht/pruefplatz/plan.md`, Briefe `bericht/pruefplatz/briefe/`).
 
 ## Stand
-- **Meisterkarte:** gebucht **160/330** (buche-schleife am Kopf b4bcf19c). Die Takte z111–z114 brachten 0 grün: sie messen nur offene
+- **Meisterkarte:** gebucht **161/330** am Kopf b895650c (23:24, takt-z115a: 1 grün / 7 rot; Artifact VHRbqeZ6yA9CzqtHYWxmVp neu veröffentlicht). Die buche-schleife läuft am Kopf b895650c mit 161. Die Takte z111–z114 brachten 0 grün: sie messen nur offene
   Kriterien, und Stationen ≥ 90 s reißen jeden Deckel. Punkte kommen erst, wenn echte Arbeit landet (unten die Zweige).
 - **main = 808464ca** (V18.546.150, z114: w4-laub-karte, A laub-kante). Davor f0dab43d (z113: Pflicht F in main) und 8809ec6d (z112).
 - **z115 fährt** (ohne LLM, `w3/kette-z115.sh`, Liste `w3/z115.zweige`, Ausgang `/tmp/claude/fahre-z115.log`):
@@ -32,6 +32,8 @@ Pflicht-OFFEN: A, B, C, E und F (F gesetzt 31.10., der Prüfplatz; Plan `bericht
 - **z117 wartet auf die Landung von z116** (`w3/kette-z117.sh`): w4-b-code-heim 2cc4cc17 (B, Cloud w4-b-code auf main b895650c):
   der Stamm übersetzt beim Streamen, die KI lädt nach dem ersten Bild — V8 im Haupt-Faden vor dem Bild 1259 → 223 ms. Atlas und
   stamm:lint am Merge grün. z115 ist um 22:58 gelandet (main b895650c, bewohner-wache); z110-abab nicht-langsamer.
+- **Cloud geliefert (STILL in w3/abgabe.log):** w4-genesis-ort-gesetz d393de29 (F: die Posen-Linse an der Orts-Wand, die fern-Station am Fels
+  des Plans) — wartet auf w4-studios-heim im main (Welle b).
 - **koordination ad55c327:** w4-stationen-schnell-b-koord a0ff6bd4 ist gemergt (fünf Stationen ohne kalten Ring, die Linse DER ORT IM
   DECKEL). Selbsttest 122/122 ohne (3c), die Fahrt-Wand hält an gtx und radeon. Die Stationen a (über 90 s) stehen noch aus.
 - **OMEN:** takt-z114a/-b und z114-abab sind eingereiht; nach jeder Landung reiht takt-nach.sh den Takt am neuen main ein.
