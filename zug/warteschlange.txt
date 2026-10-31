@@ -308,3 +308,4 @@ takt-z110b-gtx 1 punkte sha=90878cc61494378c8994488059a3578ed2bdef80 geraet=gtx 
 takt-z109ra-gtx 0 storno
 takt-z109rb-gtx 0 storno
 z111-abab 3 abab A=90878cc61494378c8994488059a3578ed2bdef80 B=cdb2703d106a5e26e8f7f95aa4d982824d39ff2e zellen=stadt,w-ego
+takt-z111a-gtx 1 punkte sha=cdb2703d106a5e26e8f7f95aa4d982824d39ff2e geraet=gtx nur=mensch.K1#1,material.K1#1,lod.K5#1,studios.K2#2,studios.K3#2,bauen.K1#2,studios.K4#1,siedlung.K1#2,fahrzeug.K2#2,profiband.K1#1,profiband.K2#1,profiband.K3#1
