@@ -1,0 +1,212 @@
+$ C:\Program Files\nodejs\node.exe -e const windSeite = async function windSeite(o) {
+    const r = window.anazhRealm, st = r.state, rend = st.renderer, A = window.BaseAudioContext.prototype, C = Object.getPrototypeOf(r);
+    const [bq, gn, kreatur, sicht, wetter, wUhr] = [A.createBiquadFilter, A.createGain, C.__tiereGehalten ? null : C.updateCreatures, st.cameraMode, st.weather, st.weatherEffectTime];
+    const paare = [], bilder = [], ohr = [];
+    let letzter = null, mess = false, n = 0, takt = null, gezeichnet = 0, gelesen = 0, loop = 0;
+    // DIE BILD-UHR LÄUFT: `umstellen` (der Ort dieser Probe, und jede Probe mit Ort davor) hält sie mit der Bühne auf 12,5 s (ein
+    // Getter auf `_bildZeit`, ausgabe-aufnahme `uhrHalten`) — die Böe stand in Bild und Ohr still (Radeon 379e5f56: `_bildZeit`
+    // 12,5 → 12,5 über 21 s, Böe 1,024 → 1,024, der Pegel des Gesetzes −32,16 dB fest, CV Ohr 0,09, r 0,18). Für die Messung fällt der
+    // Halt, danach hält die Bühne wieder
+    const uhrHalt = Object.getOwnPropertyDescriptor(r, "_bildZeit");
+    const buehne = !!(uhrHalt && uhrHalt.get && uhrHalt.get.__buehne);
+    const eigen = Object.prototype.hasOwnProperty.call(r, "_loopRender"), render = r._loopRender;
+    r._loopRender = function () {
+        gezeichnet++;
+        return render.apply(this, arguments);
+    };
+    A.createBiquadFilter = function () {
+        return (letzter = bq.apply(this, arguments));
+    };
+    A.createGain = function () {
+        const g = gn.apply(this, arguments);
+        if (letzter) paare.push({ filter: letzter, gain: g });
+        letzter = null;
+        return g;
+    };
+    const warte = (ms) => new Promise((f) => setTimeout(f, ms));
+    try {
+        if (st.symphony.enabled) r.disposeSymphony();
+        window.__tiereHalten();
+        window.__wetterSetzen("sunny");
+        if (st.cameraMode !== "first") r.setCameraMode("first");
+        // DER SPIELER STEHT, WO `umstellen` IHN LIESS (windLauf, vor dem Deckel von der Sitzung eingeschwungen) — nur der Blick wird
+        // gehalten. Bis 30.10. setzte die Probe ihn je Takt 1,8 m über den Boden (der Fuß gehört 0,5 m darüber, die Fall-Geschwindigkeit
+        // blieb), und die Fege-Takte schliefen unter ihm nie (Radeon 379e5f56: „DIE WELT STEHT NICHT nach 2188 Takten … Fege-Takt archLod
+        // 256/1297“, GTX 3ed95dcf dasselbe) — keine Wind-Zeile in keiner Sitzung
+        const stell = () => ([st.yaw, st.pitch] = [o.gier, -0.12]);
+        stell();
+        await window.__weltStehtNach(async () => (stell(), await window.__seitenTakt()));
+        if (buehne) (delete r._bildZeit, (r._bildZeit = uhrHalt.get()));
+        r.initSymphony();
+        const s = st.symphony;
+        if (s.ctx.state !== "running") await s.ctx.resume();
+        const can = rend.domElement, W = 480, H = 270, y0 = Math.floor(H * 0.55), w = W - 8, h = H - 4 - y0;
+        const c2 = new OffscreenCanvas(W, H).getContext("2d", { willReadFrequently: true });
+        rend.setAnimationLoop((t) => {
+            r._gameLoopTick(t);
+            loop++;
+            if (!mess || gezeichnet === gelesen) return;
+            gelesen = gezeichnet;
+            if (++n % 3) return;
+            c2.drawImage(can, 0, 0, W, H);
+            const d = c2.getImageData(4, y0, w, h).data, lum = [];
+            for (let y = 0; y < h; y += 2) for (let x = 0; x < w; x += 2) {
+                const i = (y * w + x) * 4;
+                lum.push(0.2126 * d[i] + 0.7152 * d[i + 1] + 0.0722 * d[i + 2]);
+            }
+            bilder.push({ t: performance.now(), lum: Float32Array.from(lum) });
+        });
+        let wind = null;
+        for (let i = 0; i < 200 && !wind; i++) {
+            wind = paare.filter((p) => p.filter.type === "bandpass" && p.filter.frequency.value < 1500 && p.filter.context === s.ctx).pop() || null;
+            if (!wind) await warte(50);
+        }
+        const stand = { ctx: s.ctx.state, enabled: s.enabled, um: !!s.umwelt, paare: paare.length, steht: !!r._weltSteht() };
+        const zensus = s.umwelt.graph.zensus().filter((v) => v.an).map((v) => [v.name, +v.db.toFixed(1)]);
+        if (!wind) return { stand, wahl: { fehler: "keine Wind-Stimme", zensus } };
+        const an = s.ctx.createAnalyser();
+        an.fftSize = 2048;
+        wind.gain.connect(an);
+        const td = new Float32Array(an.fftSize);
+        takt = setInterval(() => {
+            an.getFloatTimeDomainData(td);
+            let q = 0;
+            for (let i = 0; i < td.length; i++) q += td[i] * td[i];
+            ohr.push([performance.now(), Math.sqrt(q / td.length)]);
+        }, 50);
+        const [tA, nA] = [performance.now(), loop];
+        mess = true;
+        await warte(o.sek * 1000);
+        mess = false;
+        clearInterval(takt);
+        const fps = +((loop - nA) / ((performance.now() - tA) / 1000)).toFixed(1);
+        if (bilder.length < 2 || ohr.length < 2) return { stand, wahl: { hz: wind.filter.frequency.value, zensus }, fpsVor: fps, bilder: bilder.length };
+        const t0 = Math.max(bilder[0].t, ohr[0][0]), t1 = Math.min(bilder[bilder.length - 1].t, ohr[ohr.length - 1][0]);
+        const nF = Math.max(0, Math.floor((t1 - t0) / o.fen));
+        const [bew, bewN, lau, lauN] = [0, 0, 0, 0].map(() => new Array(nF).fill(0));
+        for (let i = 1; i < bilder.length; i++) {
+            const [a, b] = [bilder[i - 1], bilder[i]], dt = b.t - a.t, f = Math.floor((b.t - t0) / o.fen);
+            if (dt <= 0 || f < 0 || f >= nF) continue;
+            let q = 0;
+            for (let k = 0; k < b.lum.length; k++) q += Math.abs(b.lum[k] - a.lum[k]);
+            bew[f] += q / b.lum.length / (dt / 50);
+            bewN[f]++;
+        }
+        for (const [t, v] of ohr) {
+            const f = Math.floor((t - t0) / o.fen);
+            if (f >= 0 && f < nF) (lau[f] += v), lauN[f]++;
+        }
+        const [B, Q] = [[], []];
+        for (let f = 0; f < nF; f++) if (bewN[f] && lauN[f]) B.push(+(bew[f] / bewN[f]).toFixed(4)), Q.push(+(lau[f] / lauN[f]).toFixed(6));
+        return { stand, wahl: { hz: wind.filter.frequency.value, kandidaten: paare.length, zensus }, fpsVor: fps, bilder: bilder.length, ohrProben: ohr.length, B, A: Q };
+    } finally {
+        mess = false;
+        clearInterval(takt);
+        rend.setAnimationLoop(null);
+        if (eigen) r._loopRender = render;
+        else delete r._loopRender;
+        if (buehne) Object.defineProperty(r, "_bildZeit", uhrHalt);
+        [A.createBiquadFilter, A.createGain] = [bq, gn];
+        if (st.symphony.enabled) r.disposeSymphony();
+        if (kreatur) (C.updateCreatures = kreatur), delete C.__tiereGehalten;
+        try {
+            if (st.weather !== wetter) window.__wetterSetzen(wetter);
+        } finally {
+            st.weatherEffectTime = wUhr;
+        }
+        if (st.cameraMode !== sicht) r.setCameraMode(sicht);
+    }
+};
+(async function sitzungLauf(lauf) {
+    const fs = require("fs");
+    const path = require("path");
+    const http = require("http");
+    const [aus, koord] = process.argv.slice(1);
+    const port = Number(process.env.WERKBANK_PORT);
+    const ruf = (weg, nutz, ms = 60000) =>
+        new Promise((ja, nein) => {
+            const q = http.request({ host: "127.0.0.1", port, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
+                let d = "";
+                a.on("data", (c) => (d += c));
+                a.on("end", () => {
+                    try {
+                        ja(JSON.parse(d));
+                    } catch (_e) {
+                        ja({ fehler: weg + " ohne JSON: " + d.slice(0, 200) });
+                    }
+                });
+            });
+            q.setTimeout(ms, () => q.destroy(new Error(weg + " ohne Antwort binnen " + Math.round(ms / 1000) + " s")));
+            q.on("error", nein);
+            q.end(JSON.stringify(nutz || {}));
+        });
+    const seite = async (fn, args = [], ms = 60000) => {
+        const a = await ruf("/eval", { code: "return await (" + fn + ")(..." + JSON.stringify(args) + ");" }, ms);
+        if (!a || a.fehler)
+            throw new Error(String(fn).slice(0, 48).replace(/\s+/g, " ") + " … — " + ((a && a.fehler) || "keine Antwort") + (a && a.stapel ? " @ " + a.stapel.join(" ← ") : ""));
+        return a.ergebnis;
+    };
+    const reload = async () => {
+        const a = await ruf("/reload", {}, 120000);
+        if (!a || a.neu !== true) throw new Error("/reload: " + JSON.stringify(a).slice(0, 200));
+        return a.ms;
+    };
+    const skript = (datei, name) => {
+        const t = fs.readFileSync(datei, "utf8").replace(/\r\n/g, "\n");
+        const i = t.search(new RegExp("^(async )?function " + name + "\\(", "m"));
+        const e = i < 0 ? -1 : t.indexOf("\n}\n", i);
+        if (e < 0) throw new Error(datei + " trägt keine Funktion " + name + " (die Linse am SHA)");
+        return t.slice(i, e + 2);
+    };
+    const warte = (ms) => new Promise((f) => setTimeout(f, ms));
+    const t0 = Date.now();
+    let j = {}, code = 0;
+    try {
+        const z = (/\[linse-gpu\][^\r\n]*/.exec(fs.readFileSync(String(process.env.PUNKTE_SITZUNG_LOG), "utf8")) || [null])[0];
+        if (z) console.log(z);
+        j = (await lauf({ seite, reload, ruf, skript, aus, koord, warte, path, linse: z })) || {};
+    } catch (e) {
+        j = { fehler: String((e && e.message) || e) };
+        console.log("PROBE ROT: " + j.fehler);
+        code = 1;
+    }
+    j.sek = +((Date.now() - t0) / 1000).toFixed(1);
+    fs.writeFileSync(aus, JSON.stringify(j, null, 1));
+    console.log("PROBE " + j.sek + " s");
+    process.exit(code);
+})(async function windLauf(h) {
+    const BAND = require(h.path.resolve("scripts/lib/band-urteil.cjs"));
+    const ort = BAND.ladeSpec("wiese").ort;
+    const fen = 200;
+    // DER ORT der Probe: die Mess-Wiese über `umstellen` der Werkbank (Ring gebaut, die Welt steht, Ego) — die Sitzung liest ihn aus diesem
+    // Befehl (punkte.cjs probeOrt) und stellt vor dem Deckel um; hier steht die Welt dann schon
+    const u = await h.ruf("/umstellen", { ort: "wiese", sicht: "ego" }, 300000);
+    if (!u || u.fehler) throw new Error("umstellen wiese: " + JSON.stringify(u).slice(0, 300));
+    const w = await h.seite(windSeite, [{ gier: BAND.ortGier(ort), sek: 21, fen }], 90000);
+    const [B, A] = [w.B || [], w.A || []];
+    const pear = (x, y) => {
+        const n = Math.min(x.length, y.length);
+        const mx = x.slice(0, n).reduce((a, b) => a + b, 0) / n, my = y.slice(0, n).reduce((a, b) => a + b, 0) / n;
+        let sxy = 0, sxx = 0, syy = 0;
+        for (let i = 0; i < n; i++) (sxy += (x[i] - mx) * (y[i] - my)), (sxx += (x[i] - mx) ** 2), (syy += (y[i] - my) ** 2);
+        return { r: sxy / Math.sqrt(sxx * syy), n, cvX: Math.sqrt(sxx / n) / mx, cvY: Math.sqrt(syy / n) / my };
+    };
+    const lags = [];
+    const M = Math.round(3000 / fen);
+    if (B.length > 2 * M)
+        for (let L = -M; L <= M; L++) {
+            const x = L >= 0 ? B.slice(L) : B.slice(0, B.length + L);
+            const y = L >= 0 ? A.slice(0, A.length - L) : A.slice(-L);
+            lags.push({ lagS: +((L * fen) / 1000).toFixed(2), ...pear(x, y) });
+        }
+    const r0 = lags.find((l) => l.lagS === 0);
+    const best = lags.length ? lags.reduce((a, b) => (b.r > a.r ? b : a)) : undefined;
+    const zeile = { stand: w.stand, wahl: w.wahl, fpsVor: w.fpsVor, bilder: w.bilder, fenster: B.length, r0, best };
+    console.log(JSON.stringify(zeile));
+    return { ...zeile, fen, ohrProben: w.ohrProben, lags, reiheBild: B, reiheOhr: A };
+}); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\ec989990-gtx\klang.K2_1.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
+[linse-gpu] nvidia/pascal
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
