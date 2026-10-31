@@ -7040,14 +7040,16 @@ function __feldWert(F, vox, x, y, z) {
 // `V.schritt` der Anteil, um den das Feld hinter dem freien Abstand zurückbleibt (jede Stufe halb so schwer wie die vorige) —
 // 1 frei, 0 ganz verdeckt; `V.staerke` skaliert. Zwei Strahlen, gemittelt: der Gradient (die Falte, die Mund-Linie, der Winkel
 // des Auges) und der zum Himmel gekippte (`V.oben`: Gradient + oben × die Hoch-Achse) — was über der Fläche hängt, der
-// Brauen-Bogen über der Höhle, die Nase über der Oberlippe, nimmt ihr das Licht von oben
+// Brauen-Bogen über der Höhle, die Nase über der Oberlippe, nimmt ihr das Licht von oben. JE KANAL (w4-mensch-gesicht,
+// `V.kanal`): die Falte nimmt jedem Kanal seinen Anteil — die Haut streut Rot unter der Fläche in sie hinein —, der Überhang
+// wirft Schatten und nimmt alle ganz; Rückgabe [R, G, B]
 function __feldVerdeckung(F, vox, x, y, z, V) {
     const e = 0.5 * vox;
     let gx = __feldWert(F, vox, x + e, y, z) - __feldWert(F, vox, x - e, y, z),
         gy = __feldWert(F, vox, x, y + e, z) - __feldWert(F, vox, x, y - e, z),
         gz = __feldWert(F, vox, x, y, z + e) - __feldWert(F, vox, x, y, z - e);
     const L = Math.hypot(gx, gy, gz);
-    if (!(L > 1e-12)) return 1;
+    if (!(L > 1e-12)) return [1, 1, 1];
     // das Feld der Ellipsoide wächst nicht mit 1 je Einheit: frei ist, was mit seinem Gradienten |∇f| wächst — entlang eines
     // Strahls um seinen Anteil c am Gradienten
     const g = L / (2 * e);
@@ -7070,7 +7072,8 @@ function __feldVerdeckung(F, vox, x, y, z, V) {
     };
     const uL = Math.hypot(gx, gy + V.oben, gz);
     const oben = uL > 1e-6 ? strahl(gx / uL, (gy + V.oben) / uL, gz / uL) : 0;
-    return Math.max(0, 1 - (V.staerke * (strahl(gx, gy, gz) + oben)) / 2);
+    const falte = strahl(gx, gy, gz);
+    return V.kanal.map((k) => Math.max(0, 1 - (V.staerke * (k * falte + oben)) / 2));
 }
 
 // Das glatte SDF-Feld der Primitive (polynomiales smin, Verrundung ~blend) auf einem Raster der Weite vox.
@@ -8407,13 +8410,19 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // Gesicht keinen Millimeter (Lehre 19: was die Karte des Labors trägt, trägt kartenlos der Vertex). Je Ecke tastet das Feld,
         // aus dem die Haut wuchs (`Fk`), entlang seines Gradienten (`__feldVerdeckung`); über `frei` trägt die Ecke ihren Ton genau.
         // Vorher lag der Sims der Oberlippe unter der Nase im vollen Licht der Mittags-Sonne, heller als die Wange im Schatten der
-        // Braue: auf 6 m las der Mund ΔL* −2,2 statt dunkler (KOPF_SOLL lippeL ≤ −4).
+        // Braue: auf 6 m las der Mund ΔL* −2,2 statt dunkler (KOPF_SOLL lippeL ≤ −4). JE KANAL (`kanal`, w4-mensch-gesicht): die
+        // Haut streut Rot unter der Fläche am weitesten, die Falte nimmt jedem Kanal nur seinen Anteil, der Überhang (die Nase über
+        // der Oberlippe) alle ganz — vorher nahm die Falte alle ganz: die Mund-Linie trug Ecken (0, 0, 0) und las im richtig
+        // belichteten Bild grau (0,7 m lippeA 3,36 < 4).
         const VD = KH.verdeckung;
+        const VK = VD && VD.kanal;
         if (!VD || !(VD.schritt > 0) || !(VD.stufen >= 1) || !(VD.staerke >= 0) || !(VD.frei > 0) || !(VD.oben >= 0))
             throw new Error("MENSCH-HAUT: kopfHaut.verdeckung fehlt (fail-closed)");
+        if (!Array.isArray(VK) || VK.length !== 3 || !VK.every((k) => k >= 0 && k <= 1))
+            throw new Error("MENSCH-HAUT: kopfHaut.verdeckung.kanal fehlt (fail-closed)");
         for (let i = 0; i < pa.count; i++) {
             const ao = __feldVerdeckung(Fk, KH.vox, pa.getX(i), pa.getY(i), pa.getZ(i), VD);
-            if (ao < VD.frei) for (let c = 0; c < 3; c++) col[i * 3 + c] *= ao;
+            for (let c = 0; c < 3; c++) if (ao[c] < VD.frei) col[i * 3 + c] *= ao[c];
         }
         geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
         geo.setAttribute("aTon", new THREE.BufferAttribute(ton, 1));

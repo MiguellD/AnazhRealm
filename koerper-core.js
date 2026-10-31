@@ -795,7 +795,12 @@
     //     Haut selbst verdeckt, empfängt weniger Licht (mensch.K4: die Falte unter der Nase, die Mund-Linie, der Winkel des Auges;
     //     das Feld der Haut entlang seines Gradienten und, um `oben` zur Hoch-Achse gekippt, unter dem, was über ihr hängt —
     //     der Brauen-Bogen über der Höhle, die Nase über der Oberlippe —, je in `stufen` Schritten von `schritt`, im Mittel der
-    //     beiden Strahlen × `staerke` (2: jeder Strahl ganz), über `frei` der Ton genau) · handHaut: Raster und
+    //     beiden Strahlen × `staerke` (2: jeder Strahl ganz), über `frei` der Ton genau; `kanal` = der Anteil der FALTE (der
+    //     Gradient-Strahl) je Kanal R·G·B: die Haut streut das Licht unter ihrer Fläche in die Falte, Rot am weitesten (Jensen
+    //     2001, Haut: mittlere freie Weglänge R 3,67 · G 1,37 · B 0,68 mm; Anteil = Weglänge G / Weglänge des Kanals, höchstens 1)
+    //     — die Falte wird dunkel und rot, nie schwarz; der Überhang (der Strahl nach oben: die Nase über der Oberlippe) wirft
+    //     Schatten und nimmt alle Kanäle ganz. Bis w4-mensch-gesicht nahm die Falte alle Kanäle ganz: die Mund-Linie trug Ecken
+    //     (0, 0, 0), im Bild las nur der Saum des Lichts, grau — Rot und Dunkel des Munds tauschten gegeneinander) · handHaut: Raster und
     //     Verrundung im Körper-Raum (1 Einheit ≈ 0,29 m: 3,5 mm, 6 mm; die Welt bewegt die Finger nicht).
     //   K57 (KOPF_SOLL): kopf.mass 0,72 → 0,75 (8,05 → 7,6 Köpfe) · auge.abstand 0,7 → 0,8 (die Lücke eine Augenbreite) ·
     //     auge.zurueck = der Augapfel tiefer in der Höhle (er stand 0,056 kH vor der Haut) · schaedel.hoch = die Kalotte
@@ -841,7 +846,8 @@
             mundTiefer: 0.035 }),
         rumpf: Object.freeze({ brustkorb: 0.52, nacken: 0.7 }),
         kopfHaut: Object.freeze({ vox: 0.026, blend: 0.055, mundSpalt: 0.45, hoehleSaum: 0.8, brauSaum: Object.freeze([0.05, 0.008]),
-            brauBogen: 0.04, verdeckung: Object.freeze({ schritt: 0.05, stufen: 4, staerke: 2, frei: 0.97, oben: 1 }) }),
+            brauBogen: 0.04, verdeckung: Object.freeze({ schritt: 0.05, stufen: 4, staerke: 2, frei: 0.97, oben: 1,
+                kanal: Object.freeze([0.373, 1, 1]) }) }),
         handHaut: Object.freeze({ vox: 0.012, blend: 0.02 }),
     });
     // DAS SOLL in Zahlen (gate:mensch-anatomie, normiert auf die Körperhöhe Hk; Bänder um den erwachsenen Mann):
