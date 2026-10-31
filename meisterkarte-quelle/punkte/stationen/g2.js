@@ -1308,7 +1308,7 @@ function sollKlasseStation(o) {
 // --proben bewohner` (das Start-Dorf wächst, bis jeder Bewohner seinen Leib trägt; der Tag über 24 Spielstunden) und `platz-8.js` (Third
 // am Dorfplatz, Uhr 8) mit dem Bild aus dem Ausgabe-Pfad. Die Probe des Spiels trägt ihre Spielstunden fest (headless 446 s, DAUER_S
 // der Linse) — über dem Deckel der Sitzung, bis sie im Spiel-Baum kürzt
-const BEWOHNER_SITZUNG = { sek: 40, befehl: [
+const BEWOHNER_SITZUNG = { sek: 33, befehl: [
     "bash",
     "-c",
     [
