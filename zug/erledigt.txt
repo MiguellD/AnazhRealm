@@ -131,3 +131,4 @@ z103-abab nicht-langsamer abab cd88897e gegen 5e9a3bcc: stadt 4+4 nicht-langsame
 b-kalt-cd88 Exit0 station ankunft-kalt.sh an cd88897e
 b-kalt-c4c9 Exit0 station ankunft-kalt.sh an c4c9baa2
 b-kalt-1a71 Exit0 station ankunft-kalt.sh an 1a71c07b
+a-spawn-gtx Exit0 station a-spawn.sh an 96133362
