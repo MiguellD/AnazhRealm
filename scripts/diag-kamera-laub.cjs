@@ -16,7 +16,7 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde, weltTor } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde, weltTor, jsonLesen } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -153,7 +153,7 @@ const NINJA_WP = [
 ];
 const NINJA_RAND = 0.3; // Lab-Maß (der Runner R10)
 const WIESE = require("./lib/welt-orte.cjs").messort("wiese"); // der EINE Leser des Haushalts
-const HANG = JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "stationen.json"), "utf8")).stationen.find(
+const HANG = jsonLesen(path.join(root, "spec", "pruefbuehne", "stationen.json")).stationen.find(
     (o) => o.id === "s2-hang30"
 );
 
@@ -1196,7 +1196,7 @@ hauptLauf(async () => {
         const fdir = path.join(root, "spec", "abnahme");
         const abnahmeBrueche = AU.abnahmeSelbsttest(fdir);
         check("K4 Selbst-Test: die Abnahme-Zeile nennt jeden eingeschmuggelten Fall und jede Fixture beim Namen", abnahmeBrueche.length === 0, abnahmeBrueche.join(" · "));
-        for (const f of JSON.parse(fs.readFileSync(path.join(fdir, "faelle.json"), "utf8")).faelle)
+        for (const f of jsonLesen(path.join(fdir, "faelle.json")).faelle)
             console.log(`   Fixture ${f.name}: ${AU.abnahmeUrteil(AU.fixtureMessung(f, fdir), AU.SCHWELLEN).zeile}`);
         // K5 — DIE SOLL-TAFEL (K63, spec/abnahme/soll-tafel.json, AAAA Schritt 0): je sichtbarer Klasse das Soll (eigen,
         // gerechnet oder GELESEN — KOPF_SOLL aus dem Kern, die Toleranz der Albedo-Tafel), das Budget je LOD-Stufe aus dem
@@ -1204,7 +1204,7 @@ hauptLauf(async () => {
         // Albedo-Tafel). Die Wand: kein Bruch der Tafel (ein Ist von Hand, ein Verweis ohne Ziel oder ohne Leser, ein gerechnetes
         // Band ohne Rechnung, eine Messung über ihrem Rauschen, eine Haushalt-Klasse fehlt), Teilung und Maße geeicht, jeder
         // eingeschmuggelte Bruch fällt beim Namen; ein ROTES Maß ist der Auftrag der nächsten AAAA-Karte, nie ein Bruch der Wand.
-        const sollTafel = JSON.parse(fs.readFileSync(path.join(fdir, "soll-tafel.json"), "utf8"));
+        const sollTafel = jsonLesen(path.join(fdir, "soll-tafel.json"));
         // die Quelle des Urteils (abnahme-urteil `sollQuelle`): dieselbe, mit der der Schreiber der Tafel jede Messung prüft
         const sollQ = AU.standLeser(root).sollQuelle();
         const sollBrueche = AU.sollTafelSelbsttest(sollTafel, sollQ);
@@ -1266,7 +1266,7 @@ hauptLauf(async () => {
         }
         // die Prüfbühne, geboren wie im Spiel durch die Tür (`weltTor`)
         const tH = Date.now();
-        await bereit(adresse, JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "welt.json"), "utf8")));
+        await bereit(adresse, jsonLesen(path.join(root, "spec", "pruefbuehne", "welt.json")));
         await page.evaluate(leibInstall, { R: LEIB_R });
         leib.hang = await page.evaluate(leibHang, { hang: HANG, n: LEIB_HANG_N });
         zeiten.hang = Date.now() - tH;
