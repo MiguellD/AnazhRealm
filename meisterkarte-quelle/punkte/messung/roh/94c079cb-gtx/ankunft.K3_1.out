@@ -309,7 +309,7 @@ H.fahre(async function probeAnkunft(H) {
     return j;
 }); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\94c079cb-gtx\ankunft.K2_1.json 10
 @@PUNKTE@@ FRIST 4 s der Probe gerissen — die Kontrolle des Kalt-Boots an der Frist
-@@ 2.1 s · kalt: t(Kontrolle) —
+@@ 2.5 s · kalt: t(Kontrolle) —
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
