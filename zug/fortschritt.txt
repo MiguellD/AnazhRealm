@@ -1101,3 +1101,4 @@
 2026-10-31 10:58:02 z102-abab stadt VERLÄNGERN 16.0 · 1/2 (2+2)
 2026-10-31 11:10:46 z102-abab w-ego VERLÄNGERN 12.7 · 2/2 (2+2)
 2026-10-31 11:26:47 z102-abab stadt(4+4) nicht-langsamer 15.9 · verlängert (4+4)
+2026-10-31 11:39:05 z102-abab w-ego(4+4) LANGSAMER 12.2 · verlängert (4+4)
