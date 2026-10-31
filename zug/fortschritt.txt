@@ -1068,3 +1068,4 @@
 2026-10-31 04:04:07 z94-abab stadt VERLÄNGERN 16.1 · 1/2 (2+2)
 2026-10-31 04:16:31 z94-abab w-ego VERLÄNGERN 12.3 · 2/2 (2+2)
 2026-10-31 04:32:46 z94-abab stadt(4+4) LANGSAMER 16.1 · verlängert (4+4)
+2026-10-31 04:45:10 z94-abab w-ego(4+4) nicht-langsamer 12.3 · verlängert (4+4)
