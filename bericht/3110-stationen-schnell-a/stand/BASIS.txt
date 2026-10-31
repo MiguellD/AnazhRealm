@@ -1,0 +1,9 @@
+Basis je Patch (git diff --binary <Basis> des Arbeitsbaums, committet + offen; anwenden: git -C <Baum@Basis> apply <patch>), Stand 23:11 UTC:
+spiel-A.patch  Basis 8809ec6de94eb07c370e1a465a76ca085fb5c129  (Spiel-Repo, Zweig w4-ssa-A @ 6270ce73)
+spiel-B.patch  Basis 8809ec6de94eb07c370e1a465a76ca085fb5c129  (Spiel-Repo, Zweig w4-ssa-B @ 8809ec6d)
+spiel-C.patch  Basis f0dab43d611dfdcd194d753e4471495de8a71b15  (Spiel-Repo, Zweig w4-ssa-C @ 20bf56ae)
+spiel-E.patch  Basis f0dab43d611dfdcd194d753e4471495de8a71b15  (Spiel-Repo, Zweig w4-ssa-E @ e0c77304)
+koord-A.patch  Basis 359ce394  (Koord-Baum, Zweig w4-ssa-A-koord @ be599ad4)
+koord-B.patch  Basis 359ce394  (Koord-Baum, Zweig w4-ssa-B-koord @ 359ce394)
+koord-C.patch  Basis 359ce394  (Koord-Baum, Zweig w4-ssa-C-koord @ 9cdbd7fe)
+koord-E.patch  Basis 359ce394  (Koord-Baum, Zweig w4-ssa-E-koord @ e0470ae7)

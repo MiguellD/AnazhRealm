@@ -1,0 +1,310 @@
+diff --git a/meisterkarte-quelle/punkte/stationen/g3.js b/meisterkarte-quelle/punkte/stationen/g3.js
+index aa306e6a..d250818b 100644
+--- a/meisterkarte-quelle/punkte/stationen/g3.js
++++ b/meisterkarte-quelle/punkte/stationen/g3.js
+@@ -14,6 +14,7 @@
+ // den Lauf aller Gruppen ab.
+ "use strict";
+ const PW = require("./proben-welt.cjs"); // die Proben der Welt in der Sitzung (licht.K1#1, licht.K3 — `werkbankLinse`)
++const { probeBefehl } = require("./sitzung-seite.js"); // die Albedo-Tafel beider Seiten (material.K1, material.K3): Welt und Labor im Browser der Sitzung
+ 
+ // eslint-disable-next-line max-lines-per-function
+ async function folge(plan) {
+@@ -166,81 +167,118 @@ const EIN_TAKT =
+     "const takt = async () => { try { window.__buehne(); r._gameLoopTick(performance.now()); } catch (_e) {} await new Promise((x) => setTimeout(x, 16)); }; " +
+     "for (let i = 0; i < 30; i++) await takt(); await window.__weltStehtNach(takt); return 1;";
+ 
+-// DIE ALBEDO-TAFEL BEIDER SEITEN ECHT (material.K1) als Probe der Sitzung: die Welt-Seite wie diag-albedo-tafel neuMessen in der
+-// EINEN warmen Welt der Sitzung auf der echten GPU (WERKBANK_PORT, am Ort der gespeicherten Messung, die Welt steht —
+-// `__weltStehtNach` statt 10 s Wanduhr —, `albedo --tafel`), NEBENHER die Labor-Seite `diag-albedo-tafel.cjs --labor --echt` je
+-// Studio (die Studio-Seiten in ihrem Browser, Port WERKBANK_PORT+2; ihr Log neben der Ausgabe). Gerechnet wird je Zeile der Tafel
+-// am SHA: Welt/Labor und beide Seiten im realen Band ihrer Klasse (`plan.baender`, fest in der Station mit Quelle — der Baum
+-// trägt kein Band, und eine Zeile ohne Band hier ist ROT); dazu die Eichung beider Seiten gegen die Karte der Tafel. Nach {AUS}:
+-// `{ adapter, welt: { echt, geraet, eichung }, labor: { echt, geraet, eichung }, zeilen: [{ id, L, W, v, band, quelle, inBand }],
+-// eichung: { soll, rand, welt, labor }, fehler, sek }`. Exit 1 nur, wenn eine Seite nichts misst; das Urteil fällt die Station.
+-// Bis 29.10. startete die Probe ihre eigene Welt (save-server + Werkbank, 10 s Ruhe) und danach das Labor (ea07267e Radeon 5,37 min).
++// DIE ALBEDO-TAFEL IN DER SITZUNG (w4-stationen-schnell-a, 31.10.; material.K1#1 · K1#2 · K3#1 · K3#2 — Zwillinge, EIN Lauf): die
++// Welt-Seite der Tafel EINMAL für beide Kriterien — `/albedo` der Werkbank am Ort ihrer Messung (Genesis, `gemessen.welt.ort` der
++// Tafel: jede Zeile zu jeder Uhr — K3 liest Haus, Birke und Fichte in ihren Stufen, K1 die Zeilen der Klassen und die Karte) und die
++// Stufen der Art rock; NEBEN der Welt das Labor: die Linse diag-albedo-tafel `messeLabor` als Bibliothek im Browser der Sitzung, jedes
++// Studio eine Seite derselben Herkunft (der save-server der Sitzung) in EINEM eigenen Fenster (ein eigener Kontext — die Welt bleibt
++// sichtbar und zeichnet; ein Tab dahinter zeichnete nie). Gerechnet wird je Zeile der Tafel am SHA: Welt/Labor und beide Seiten im
++// realen Band ihrer Klasse (`H.seite.BAENDER`, fest in der Station mit Quelle — der Baum trägt kein Band, und eine Zeile ohne Band hier
++// ist ROT); dazu die Eichung beider Seiten gegen die Karte der Tafel. Nach {AUS}: der Folge-Teil für K3 (`schritte` ort · welt · fels,
++// `dateien.welt`) und der Tafel-Teil für K1 (`welt`, `labor`, `zeilen`, `eichung`); `fehler` nur, wenn die Welt-Seite nicht misst — ein
++// Bruch des Labors steht in `laborFehler` (K1 urteilt das Labor selbst: ohne es „echt NEIN“), nie in der Welt-Messung von K3. Bis
++// 31.10. maß K3 die Tafel in seiner Folge (`umstellen 0 0`, drei Werkbank-Prozesse) und K1 sie ein zweites Mal, das Labor dazu in
++// einem eigenen Browser mit eigenem Statik-Server (GTX b4bcf19c: beide Läufe ≥ 90 s; ea07267e Radeon 5,37 min). DAS TEMPO in den
++// Linsen des Spiels (w4-stationen-schnell-a): die Tafel taktet im Takt der Werkbank und seinem Bild (bis dahin 50 ms Schlaf je Takt,
++// rund 680 Takte: 34 s), liest ihre Halb-Floats in einer Schleife (Node 46 → 6 ms je Pass, rund 385 Pässe), wertet in einer Liste aus
++// (491 → 214 ms je Zeile) und schießt die Karte der Eichung nur im Gang, der sie liest (20 von 21 Karten las keiner).
+ // eslint-disable-next-line max-lines-per-function
+-async function albedoTafelEcht(plan) {
+-    const fs = require("fs");
+-    const path = require("path");
+-    const cp = require("child_process");
+-    const [AUS] = process.argv.slice(1);
+-    const DIR = AUS + ".d";
+-    fs.mkdirSync(DIR, { recursive: true });
+-    const P = String(process.env.WERKBANK_PORT);
+-    const WB = path.join("scripts", "werkbank.cjs");
++async function probeAlbedo(H) {
++    const { fs, path } = H;
+     const t0 = Date.now();
+-    const aus = { plan: plan.name, adapter: null, welt: null, labor: null, zeilen: [], eichung: null, fehler: null };
+-    const wb = (args, ms) =>
+-        cp.spawnSync(process.execPath, [WB, ...args, "--port", P], { encoding: "utf8", timeout: ms || 900000, maxBuffer: 1 << 28 });
+-    const rest = (r) => String((r.stdout || "") + (r.stderr || "")).slice(-300);
+-    // das Labor nebenher: sein Browser trägt nur die Studio-Seiten, seine Ausgabe geht in eine Datei (kein Rohr, das voll läuft)
+-    const ld = path.join(DIR, "labor.json");
+-    const llog = path.join(DIR, "labor.log");
+-    const lk = cp.spawn(process.execPath, [path.join("scripts", "diag-albedo-tafel.cjs"), "--labor", "--echt", "--datei", ld], {
+-        env: { ...process.env, ALBEDO_PORT: String(Number(P) + 2) },
+-        stdio: ["ignore", fs.openSync(llog, "w"), fs.openSync(llog, "a")],
++    const DIR = H.AUS + ".d";
++    fs.mkdirSync(DIR, { recursive: true });
++    const duenn = (o) => (o == null ? null : JSON.parse(JSON.stringify(o, (_k, v) => (typeof v === "string" && v.length > 4096 ? undefined : v))));
++    const log = process.env.PUNKTE_SITZUNG_LOG;
++    const j = (H.teil = {
++        plan: "material.K1+K3",
++        adapter: (/\[linse-gpu\][^\r\n]*/.exec(log && fs.existsSync(log) ? fs.readFileSync(log, "utf8") : "") || [null])[0],
++        schritte: {},
++        dateien: {},
++        welt: null,
++        labor: null,
++        zeilen: [],
++        eichung: null,
++        fehler: null,
+     });
+-    const labor = new Promise((ok) => {
+-        lk.on("exit", (c) => ok(c));
+-        lk.on("error", (e) => ok("Start: " + e.message));
++    const t = JSON.parse(fs.readFileSync(path.join("spec", "farbe", "albedo-tafel.json"), "utf8"));
++    // DAS LABOR NEBEN DER WELT: das Fenster des Labors im Browser der Sitzung, die Seiten der Studios vom save-server der Sitzung
++    const labor = (async () => {
++        const { browser } = await H.verbinde();
++        const kontext = await browser.createBrowserContext();
++        H.beimAbbau(() => kontext.close().catch(() => null));
++        const { CODE_OF_SEITE } = require(path.resolve("scripts/lib/welt-boot.cjs"));
++        const derSitzung = {
++            newPage: async () => {
++                const p = await kontext.newPage();
++                await p.setViewport({ width: 1280, height: 800, deviceScaleFactor: 1 });
++                await p.evaluateOnNewDocument(CODE_OF_SEITE);
++                return p;
++            },
++            close: async () => {},
++        };
++        const server = {
++            lausche: async () => server,
++            zeige: (seite, frist, rest = "index.html", warte = "domcontentloaded") =>
++                seite.goto("http://localhost:" + H.S + "/" + rest, { waitUntil: warte, timeout: frist }),
++            close: () => {},
++        };
++        const L = H.linse("scripts/diag-albedo-tafel.cjs", ["messeLabor"], { stumm: { statikServer: () => server, starteBrowser: async () => derSitzung } });
++        const AT = require(path.resolve("scripts/lib/albedo-tafel.cjs"));
++        try {
++            const m = await L.messeLabor({ echt: true, nur: null, tafel: AT.ladeTafel() });
++            H.zeile("Labor " + Object.keys(m.labor).length + " Zeilen · " + m.geraet);
++            return Object.assign(m, { datum: new Date().toISOString(), echt: true });
++        } finally {
++            await kontext.close().catch(() => null);
++        }
++    })().catch((e) => {
++        j.laborFehler = "Labor: " + String((e && e.message) || e).split("\n")[0].slice(0, 300);
++        H.zeile(j.laborFehler);
++        return null;
+     });
+-    let t = null, Wm = null, Lm = null;
++    // DIE WELT: an den Ort der Tafel, die Tafel, die Stufen der Art rock
++    let Wm = null;
++    const schritt = (name, o, exit) => (j.schritte[name] = { exit, json: duenn(o), rest: String((o && (o.tabelle || o.fehler)) || "").slice(-1500) });
+     try {
+-        t = JSON.parse(fs.readFileSync(path.join("spec", "farbe", "albedo-tafel.json"), "utf8"));
+-        aus.adapter = (/\[linse-gpu\][^\r\n]*/.exec(fs.readFileSync(String(process.env.PUNKTE_SITZUNG_LOG), "utf8")) || [null])[0];
+         const gw = (t.gemessen && t.gemessen.welt) || {};
+-        const um = wb(gw.ort ? ["umstellen", "--ort", gw.ort] : ["umstellen", ...(gw.spieler || [0, 0]).map(String)]);
+-        if (um.status !== 0) throw new Error("umstellen: Exit " + um.status + " " + rest(um));
+-        const ruhe = wb(["eval", "return await window.__weltStehtNach()"], 300000);
+-        if (ruhe.status !== 0) throw new Error("die Welt steht nicht: Exit " + ruhe.status + " " + rest(ruhe));
++        if (gw.ort !== "genesis") throw new Error("die Tafel misst ihre Welt-Seite an " + JSON.stringify(gw.ort || gw.spieler) + ", die Probe steht an genesis");
++        const um = await H.wb("/umstellen", { ort: "genesis", sicht: "ego" }, 300000);
++        schritt("ort", um, um && !um.fehler ? 0 : 1);
++        if (!um || um.fehler) throw new Error("umstellen: " + String((um && um.fehler) || "keine Antwort").slice(0, 300));
++        H.zeile("ort · " + um.takte + " Takte");
+         const wd = path.join(DIR, "welt.json");
+-        const al = wb(["albedo", "--tafel", "--datei", wd, "--ordner", path.join(DIR, "albw")]);
+-        if (!fs.existsSync(wd)) throw new Error("albedo --tafel ohne Messung: Exit " + al.status + " " + rest(al));
+-        Wm = JSON.parse(fs.readFileSync(wd, "utf8"));
+-        // die echte Welt nennt ihren Adapter in der Messung (werkbank geraetInfo), nicht als [linse-gpu]-Zeile
+-        aus.adapter = aus.adapter || (Wm.geraet ? "[echt] " + (typeof Wm.geraet === "string" ? Wm.geraet : JSON.stringify(Wm.geraet)) : null);
++        const al = await H.wb("/albedo", { datei: wd, ordner: path.join(DIR, "albw") }, 900000);
++        schritt("welt", al, al && al.urteil === "GRUEN" ? 0 : 1);
++        if (fs.existsSync(wd)) Wm = JSON.parse(fs.readFileSync(wd, "utf8"));
++        j.dateien.welt = duenn(Wm);
++        H.zeile("welt · " + (Wm ? Object.keys(Wm.welt || {}).length + " Zeilen, Karte " + Wm.eichung : "ohne Messung"));
++        const fe = await H.wb("/eval", { code: H.seite.FELS }, 60000);
++        schritt("fels", fe, fe && !fe.fehler ? 0 : 1);
++        if (!Wm) throw new Error("albedo --tafel ohne Messung: " + j.schritte.welt.rest.slice(-300));
+     } catch (e) {
+-        aus.fehler = "Welt: " + String((e && e.message) || e);
++        j.fehler = "Welt: " + String((e && e.message) || e).split("\n")[0].slice(0, 400);
+     }
+-    const lc = await labor;
+-    if (fs.existsSync(ld)) Lm = JSON.parse(fs.readFileSync(ld, "utf8"));
+-    else if (!aus.fehler) aus.fehler = "Labor ohne Messung: Exit " + lc + " " + fs.readFileSync(llog, "utf8").slice(-300);
++    const Lm = await labor;
+     if (Wm && Lm) {
+-        const W = Wm.welt || {}, L = Lm.labor || {};
+-        aus.welt = { echt: Wm.echt === true, geraet: Wm.geraet || null, eichung: Wm.eichung };
+-        aus.labor = { echt: Lm.echt === true, geraet: Lm.geraet || null, eichung: (Lm.eichung && Lm.eichung.labor) || {}, fehler: Lm.fehler || [] };
++        const W = Wm.welt || {}, Lz = Lm.labor || {};
++        j.welt = { echt: Wm.echt === true, geraet: Wm.geraet || null, eichung: Wm.eichung };
++        j.labor = { echt: Lm.echt === true, geraet: Lm.geraet || null, eichung: (Lm.eichung && Lm.eichung.labor) || {}, fehler: Lm.fehler || [] };
+         const k = t.karte || {};
+         const ok = (y) => typeof y === "number" && Math.abs(y - k.albedo) <= k.eichRand;
+-        aus.eichung = {
++        j.eichung = {
+             soll: k.albedo,
+             rand: k.eichRand,
+             welt: Wm.eichung,
+-            labor: aus.labor.eichung,
+-            gruen: ok(Wm.eichung) && Object.keys(aus.labor.eichung).length > 0 && Object.values(aus.labor.eichung).every(ok),
++            labor: j.labor.eichung,
++            gruen: ok(Wm.eichung) && Object.keys(j.labor.eichung).length > 0 && Object.values(j.labor.eichung).every(ok),
+         };
+         for (const z of t.zeilen) {
+-            const l = L[z.id] && L[z.id].Y, y = W[z.id] && W[z.id].Y;
+-            const e = plan.baender[z.id] || null;
++            const l = Lz[z.id] && Lz[z.id].Y, y = W[z.id] && W[z.id].Y;
++            const e = H.seite.BAENDER[z.id] || null;
+             const b = e && e.slice(0, 2);
+             const bandOk = !!e;
+-            aus.zeilen.push({
++            j.zeilen.push({
+                 id: z.id,
+                 L: l > 0 ? l : null,
+                 W: y > 0 ? y : null,
+@@ -252,11 +290,10 @@ async function albedoTafelEcht(plan) {
+             });
+         }
+     }
+-    aus.sek = +((Date.now() - t0) / 1000).toFixed(1);
+-    fs.writeFileSync(AUS, JSON.stringify(aus, null, 1));
+-    console.log(aus.adapter || "[linse-gpu] ungenannt");
+-    console.log(aus.fehler ? "ALBEDO-TAFEL ROT: " + aus.fehler : "ALBEDO-TAFEL " + aus.zeilen.length + " Zeilen beider Seiten");
+-    process.exit(aus.fehler ? 1 : 0);
++    j.sek = +((Date.now() - t0) / 1000).toFixed(1);
++    console.log(j.adapter || "[linse-gpu] ungenannt");
++    console.log(j.fehler ? "ALBEDO-TAFEL ROT: " + j.fehler : "ALBEDO-TAFEL " + j.zeilen.length + " Zeilen beider Seiten" + (j.laborFehler ? " — " + j.laborFehler : ""));
++    return j;
+ }
+ // DAS REALE BAND je Zeile der Tafel (lineare Albedo-Luminanz, bei Metallen F0): Fels, Rinde und Laub wörtlich aus dem aaaa der
+ // Karte (src/g3.js material), die Dielektrika aus Frostbite (die Referenz der Karte unter „beste“), die Metalle aus dem Band der
+@@ -276,14 +313,12 @@ const BAENDER = {
+     tor: [0.25, 0.95, "Buntmetall (gegenstand-stoff BAND buntmetall; PBR-Tafeln: Messing/Bronze F0 ~0,8)"],
+     klinge: [0.3, 0.95, "blankes Metall (gegenstand-stoff BAND blank; PBR-Tafeln: Eisen F0 0,56)"],
+ };
+-const ALBEDO_TAFEL_ECHT = [
+-    "node",
+-    "-e",
+-    "(" + albedoTafelEcht.toString() + ")(" + JSON.stringify({ name: "material.K1", baender: BAENDER }) + ")",
+-    "{AUS}",
+-];
+-// EINE Probe für beide Staffeln (Zwillinge): die Welt-Seite in der Sitzung, das Labor nebenher in seinem Browser
+-const ALBEDO_PROBE = { sek: 10, befehl: ALBEDO_TAFEL_ECHT };
++// die Stufen der Art rock (`_foundryKindStages`): zeigt die Welt den Fels nur in L0, ist die Fels-Hälfte von material.K3 erfüllt (M43)
++const FELS_STUFEN =
++    'const f = r._foundry, o = {}; for (const [k, v] of Object.entries((f && f.recipes) || {})) if (v && v.kind === "rock") o[k] = r._foundryKindStages(k); return o;';
++// EINE Probe für vier Stationen (material.K1#1 · K1#2 · K3#1 · K3#2, Zwillinge): die Welt-Seite der Tafel in der Sitzung, das Labor
++// daneben im Browser der Sitzung
++const ALBEDO_SITZUNG = probeBefehl(probeAlbedo, 10, { BAENDER: JSON.stringify(BAENDER), FELS: JSON.stringify(FELS_STUFEN) });
+ const ALBEDO_PFAD = [
+     ...BILD,
+     "*-core.js",
+@@ -587,6 +622,11 @@ function laubKanteProben() {
+ // Genesis die Band-Linse (Klasse boden im Haushalt). Bis dahin fuhren die drei ersten `licht --luft` je für sich (als Zwillinge EIN
+ // Lauf) und ferne.K2#2 dieselbe Luft ein zweites Mal vor ihrem Band. Das Urteil je Station liest die LUFT-Zeile im Rest des Schritts
+ // luft, die Messung in dateien.luft, den Adapter der Sitzung.
++// DAS TEMPO (w4-stationen-schnell-a, 31.10., in den Linsen des Spiels): der Marsch der Luft (8 100 Strahlen je Sicht gegen das
++// Gelände-Gesetz) geht je Strahl einmal (die Nachsicht mit Blende 1/4 marschierte denselben Blick ein zweites Mal; Genesis, Uhr 0,5:
++// 18,2 → 10,4 Mio. Rufe des Gesetzes); das Band schwingt im Takt der Werkbank und seinem Bild statt 50 ms Schlaf je Takt ein, und ein
++// ruhender Dorf-Plan (`_dorfTaktLebt` false am Messort genesis) hält es nicht mehr bis zum Deckel 240 s offen (Radeon a03b7b06:
++// „dorfWaechst 0/18“, 4 007 Takte) — Befehl und Urteile unberührt.
+ const FERNE_SITZUNG = {
+     sek: 10,
+     befehl: befehlDer({
+@@ -598,26 +638,6 @@ const FERNE_SITZUNG = {
+         ],
+     }),
+ };
+-// DIE ALBEDO-TAFEL IN DER SITZUNG (29.10.): material.K3#1 und material.K3#2 lesen EINEN Lauf (Zwillinge) — `albedo --tafel` misst
+-// jede Zeile der Tafel (Haus L0/L1/L2, Birke, Fichte, Fels, …) zu jeder ihrer Uhren (0,5 und 0,27), je Stufen-Zeile ein eigener Gang;
+-// dazu die Stufen der Art rock. Bis dahin fuhr jede Staffel dieselbe Tafel für sich, nach 10 s Ruhe an der Wanduhr.
+-const MATERIAL_K3_SITZUNG = {
+-    sek: 10,
+-    befehl: befehlDer({
+-        name: "material.K3",
+-        schritte: [
+-            { name: "ort", args: ["umstellen", "0", "0"], muss: true },
+-            { name: "welt", args: ["albedo", "--tafel", "--datei", "@DIR@/welt.json", "--ordner", "@DIR@/albw"], datei: "@DIR@/welt.json" },
+-            {
+-                name: "fels",
+-                args: [
+-                    "eval",
+-                    "const f = r._foundry, o = {}; for (const [k, v] of Object.entries((f && f.recipes) || {})) if (v && v.kind === \"rock\") o[k] = r._foundryKindStages(k); return o;",
+-                ],
+-            },
+-        ],
+-    }),
+-};
+ // die Luft des Laufs: die LUFT-Zeile (Rest des Schritts luft), die Messung, der Adapter der Sitzung
+ const luftDer = (j) => {
+     const l = (j && j.schritte && j.schritte.luft) || {};
+@@ -1137,13 +1157,13 @@ const stationen = [
+         staffel: 1,
+         geraet: ["radeon", "gtx"],
+         // Messschuld M43 (Beleg am Kopf 3528f2d0): die Welt-Seite der Albedo-Tafel `werkbank albedo --tafel` am Ort der Tafel-Messung,
+-        // genau so wie diag-albedo-tafel neuMessen (umstellen 0 0, 10 s, albedo --tafel --datei). Gemessen wird der Stoff unter weißem
++        // genau so wie diag-albedo-tafel neuMessen (`umstellen --ort` des Orts der Tafel, albedo --tafel --datei). Gemessen wird der Stoff unter weißem
+         // Umgebungslicht π, nicht das belichtete Bild. Für das Haus wird der Ton jeder Stufe gegen L0 gerechnet (`stufeVon`); für den Fels
+         // werden die Stufen der Art rock abgefragt (`_foundryKindStages`): ist es nur [0], zeigt die Welt den Fels nur in L0, und die
+         // Fels-Hälfte ist erfüllt (M43).
+-        // IN DER SITZUNG (29.10.): EIN Lauf für beide Staffeln (MATERIAL_K3_SITZUNG, Zwillinge) — `albedo --tafel` misst ohnehin jede
+-        // Zeile der Tafel zu jeder ihrer Uhren; die 10 s Ruhe an der Wanduhr fielen (`umstellen` endet, wenn die Welt steht)
+-        probe: { ...MATERIAL_K3_SITZUNG },
++        // IN DER SITZUNG (31.10.): EIN Lauf für beide Staffeln und material.K1 (ALBEDO_SITZUNG, Zwillinge) — die Tafel misst ohnehin jede
++        // Zeile zu jeder ihrer Uhren, am Ort ihrer Messung (Genesis, `gemessen.welt.ort`: bis 31.10. `umstellen 0 0` neben dem Ort)
++        probe: { ...ALBEDO_SITZUNG },
+         env: envDer,
+         gpu: true,
+         zeit: false,
+@@ -1197,8 +1217,8 @@ const stationen = [
+         // in ihrer Stufe; der Fels zeigt nur L0 (wie #1). Die Haus-Stufen des Glas-Stils (hochhaus, volle_moderne) hält offline
+         // gate:haus-fern S8 über 64 Häuser. Cloud (swiftshader, 27.10.): Birke L1 0,994 Karte 0,986, Fichte L1 1,017 Karte 0,998 —
+         // das Haus L0/L1 zeichnet dort kein Pixel (der Satz der Stufe), die Radeon maß #1 L1/L0 0,992, L2/L0 0,986.
+-        // IN DER SITZUNG (29.10.): derselbe Lauf wie material.K3#1 (MATERIAL_K3_SITZUNG, Zwillinge)
+-        probe: { ...MATERIAL_K3_SITZUNG },
++        // IN DER SITZUNG (31.10.): derselbe Lauf wie material.K3#1 (ALBEDO_SITZUNG, Zwillinge)
++        probe: { ...ALBEDO_SITZUNG },
+         env: envDer,
+         gpu: true,
+         zeit: false,
+@@ -1254,7 +1274,7 @@ const stationen = [
+         // material-lack (Zug 5) hob Haut Labor/Welt 0,857 → 0,997 und Tiefschwarz ins Band, gemessen nur am Zweig-Kopf. Die Station
+         // misst beide Seiten echt am SHA: jede Zeile Welt/Labor 0,9–1,1 und beidseits im realen Band ihrer Klasse (BAENDER), die
+         // Seiten auf der Karte (nie ein Ersatz-Renderer).
+-        probe: { ...ALBEDO_PROBE, mutiert: false },
++        probe: { ...ALBEDO_SITZUNG }, // derselbe Lauf wie material.K3#1 (Zwillinge)
+         env: envDer,
+         gpu: true,
+         zeit: false,
+@@ -1284,7 +1304,7 @@ const stationen = [
+         staffel: 2,
+         geraet: ["radeon", "gtx"],
+         // dieselbe Messung; dazu liest die 18-%-Karte auf beiden Seiten 0,180 (± eichRand der Tafel), je Gerät
+-        probe: { ...ALBEDO_PROBE, mutiert: false },
++        probe: { ...ALBEDO_SITZUNG }, // derselbe Lauf wie material.K3#1 (Zwillinge)
+         env: envDer,
+         gpu: true,
+         zeit: false,
