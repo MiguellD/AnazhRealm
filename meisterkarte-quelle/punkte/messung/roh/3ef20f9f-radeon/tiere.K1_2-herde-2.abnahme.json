@@ -1,0 +1,168 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.141",
+  "sha": "3ef20f9f880252fbff6ea5263b573d19f5e20b19"
+ },
+ "buehne": {
+  "saison": "summer",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 0
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 8,
+   "deckung": 0.059,
+   "taeter": {
+    "Gelände": 0.0486,
+    "Laub baum_kiefer": 0.0104
+   }
+  }
+ },
+ "ziel": {
+  "name": "Herde",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 43.31,
+  "gestalt": [],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -222.67,
+   98.23,
+   112.78
+  ],
+  "blick": [
+   -0.32814,
+   -0.02748,
+   -0.94423
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 57.4,
+  "sigma": 30.3,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Herde im Bild frei 43.31 m · Luma 57.4 σ 30.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.141 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen",
+ "wahl": {
+  "versucht": 1,
+  "gewaehlt": 0,
+  "kamera": [
+   -222.67,
+   98.23,
+   112.78
+  ],
+  "posen": [
+   {
+    "k": 0,
+    "kamera": [
+     -222.67,
+     98.23,
+     112.78
+    ],
+    "rot": []
+   }
+  ]
+ },
+ "klasse": {
+  "ausdruck": "^tier",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 1,
+  "toene": [
+   "tier-satz=255/80/80",
+   "tier:wesen=80/255/80"
+  ],
+  "klassen": {
+   "tier-satz": {
+    "objekte": 4,
+    "spiegelTreue": null,
+    "spiegelEbene": 96.166,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 21.61,
+    "pixel": 153,
+    "luma": 46.7,
+    "kante": 0.1626,
+    "kr": 80,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "nyquist": null,
+    "beta": null
+   },
+   "tier:wesen": {
+    "objekte": 55,
+    "spiegelTreue": null,
+    "spiegelEbene": 97.203,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0,
+    "weiss": 0,
+    "wt": 0,
+    "wtZiel": null,
+    "bunt": 22.27,
+    "pixel": 542,
+    "luma": 50.28,
+    "kante": 0.3501,
+    "kr": 263,
+    "strich": null,
+    "si": 0,
+    "bloecke": 0,
+    "glatt": null,
+    "nyquist": null,
+    "beta": null
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\koordination\\meisterkarte-quelle\\punkte\\messung\\roh\\3ef20f9f-radeon\\tiere.K1_2-herde-2.maske.png"
+ }
+}

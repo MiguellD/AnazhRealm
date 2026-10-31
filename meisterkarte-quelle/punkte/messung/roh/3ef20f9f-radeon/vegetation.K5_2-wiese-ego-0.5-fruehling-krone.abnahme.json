@@ -1,0 +1,151 @@
+{
+ "satz": "beweis",
+ "stand": {
+  "version": "18.546.141",
+  "sha": "3ef20f9f880252fbff6ea5263b573d19f5e20b19"
+ },
+ "buehne": {
+  "saison": "spring",
+  "wetter": "sunny",
+  "uhr": 0.5,
+  "bildUhr": 12.5,
+  "tiereGehalten": false,
+  "weltTakte": 243
+ },
+ "geraet": {
+  "backend": "WebGPU",
+  "adapter": "amd rdna-3",
+  "leinwand": [
+   1920,
+   1080
+  ]
+ },
+ "sicht": {
+  "radius": 2,
+  "deckung": 0,
+  "taeter": {},
+  "vordergrund": {
+   "radius": 7.33,
+   "deckung": 0.0382,
+   "taeter": {
+    "Laub baum_tanne": 0.0382
+   }
+  }
+ },
+ "ziel": {
+  "name": "Blickziel",
+  "imBild": true,
+  "ndc": [
+   0,
+   0
+  ],
+  "frei": true,
+  "vor": null,
+  "vorAbstand": null,
+  "abstand": 14.67,
+  "gestalt": [
+   "baum_birke 74"
+  ],
+  "gezeichnet": true
+ },
+ "pose": {
+  "kamera": [
+   -278.624,
+   28.97,
+   -1054.505
+  ],
+  "blick": [
+   0.18673,
+   0.29847,
+   -0.93597
+  ]
+ },
+ "seitenfehler": 0,
+ "bild": {
+  "w": 1920,
+  "h": 1080,
+  "mittel": 84.2,
+  "sigma": 46.2,
+  "schwarz": 0,
+  "weiss": 0
+ },
+ "ok": true,
+ "zeile": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.67 m · Luma 84.2 σ 46.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.141 · Bühne spring sunny 0.50 · Gerät WebGPU amd rdna-3",
+ "klasse": {
+  "ausdruck": "^f:(eiche|birke|buche):L[01]$",
+  "schwelle": 18,
+  "rauschen": {
+   "anteil": 0,
+   "pixel": 0,
+   "max": 0
+  },
+  "misch": 0,
+  "toene": [
+   "f:birke:L0=255/80/80",
+   "f:birke:L1=80/255/80",
+   "f:eiche:L0=80/120/255",
+   "f:eiche:L1=255/220/60"
+  ],
+  "klassen": {
+   "f:birke:L1": {
+    "objekte": 6,
+    "spiegelTreue": null,
+    "spiegelEbene": 32.334,
+    "sp": [
+     6,
+     0,
+     0,
+     36.94,
+     36.94,
+     -28.03
+    ],
+    "zweiton": 0,
+    "weiss": 0.0001,
+    "wt": 2,
+    "wtZiel": null,
+    "bunt": 39.44,
+    "pixel": 24188,
+    "luma": 88.61,
+    "kante": 0.4696,
+    "kr": 2279,
+    "strich": 0.3955,
+    "si": 9349,
+    "bloecke": 254,
+    "glatt": 0.2598,
+    "nyquist": 0.0777,
+    "beta": 2.8305
+   },
+   "f:eiche:L1": {
+    "objekte": 6,
+    "spiegelTreue": null,
+    "spiegelEbene": 34.837,
+    "sp": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "zweiton": 0.0007,
+    "weiss": 0.0018,
+    "wt": 230,
+    "wtZiel": null,
+    "bunt": 33.4,
+    "pixel": 125558,
+    "luma": 61.21,
+    "kante": 0.2943,
+    "kr": 8298,
+    "strich": 0.3986,
+    "si": 47557,
+    "bloecke": 1326,
+    "glatt": 0.4729,
+    "nyquist": 0.1068,
+    "beta": 2.59
+   }
+  },
+  "abstand": null,
+  "gesicht": null,
+  "maske": "C:\\Users\\micha\\AnazhRealm-profiband\\.claude\\worktrees\\koordination\\meisterkarte-quelle\\punkte\\messung\\roh\\3ef20f9f-radeon\\vegetation.K5_2-wiese-ego-0.5-fruehling-krone.maske.png"
+ }
+}

@@ -1,0 +1,140 @@
+$ C:\Program Files\nodejs\node.exe -e const taktFahrt = async function taktFahrt(quelle, m, namen, o) {
+    const r = window.anazhRealm, st = r.state, rend = st.renderer;
+    const taktSeite = new Function("return (" + quelle + ")")();
+    const warte = (ms) => new Promise((f) => setTimeout(f, ms));
+    const taste = (k, typ) => window.dispatchEvent(new KeyboardEvent(typ, { key: k, code: "Key" + k.toUpperCase(), bubbles: true }));
+    const T = () => window.__klangTakt;
+    const halte = async (k, ziel, ms) => {
+        taste(k, "keydown");
+        const t0 = performance.now();
+        try {
+            while (!ziel() && performance.now() - t0 < ms) await warte(16);
+        } finally {
+            taste(k, "keyup");
+        }
+        return ziel();
+    };
+    const phase = async (name, n, pendeln) => {
+        T().start(name);
+        for (let i = 0; i < n; i++) {
+            await halte(pendeln && Math.floor(i / 2) % 2 ? "s" : "w", () => T().bilder.length >= 60 * (i + 1), 10000);
+            if (!pendeln) (taste("a", "keydown"), await warte(70), taste("a", "keyup"));
+        }
+        return T().urteil(o.soll);
+    };
+    try {
+        if (st.symphony.enabled) r.disposeSymphony();
+        rend.setAnimationLoop((t) => r._gameLoopTick(t));
+        const seite = taktSeite(m, true, namen);
+        if (!(await halte("w", () => T().weg >= 3, 20000))) throw new Error("der Spieler geht nicht: W 20 s ohne 3 m");
+        await phase("ein", 2);
+        const a = T().audio();
+        const ph = {};
+        ph.gehen = await phase("gehen", o.n);
+        const p = st.playerMesh.position;
+        p.set(m.x, r._voxelSurfaceY(m.x, m.z) + 1.8, m.z);
+        const e = (window.__klangGT = r.spawnArchitecture("fahrzeug_gt", { x: p.x + 3, y: r.getTerrainHeightAt(p.x + 3, p.z) + 0.5, z: p.z }, { silent: true, precise: true }));
+        await window.__gebautNach(e);
+        r.mountArchitecture(e);
+        ph.fahrt = await phase("fahrt", o.n, true);
+        ph.fahrt.sattel = !!st.symphony.fahrt;
+        r.dismountArchitecture();
+        r.setTimeOfDay(0, "regler");
+        ph.nacht = await phase("nacht", o.n);
+        const b = T().audio();
+        const aus = a && b && b.gleich ? { n: b.n - a.n, still: +(b.still - a.still).toFixed(3), s: +(b.s - a.s).toFixed(1) } : null;
+        return { seite, phasen: ph, aussetzer: aus };
+    } finally {
+        for (const k of ["w", "s", "a"]) taste(k, "keyup");
+        rend.setAnimationLoop(null);
+        if (window.__klangGT && st.player && st.player.mountedArch != null) r.dismountArchitecture();
+        if (window.__klangGT) r.removeArchitecture(window.__klangGT, { still: true });
+        window.__klangGT = null;
+        if (st.symphony.enabled) r.disposeSymphony();
+    }
+};
+(async function sitzungLauf(lauf) {
+    const fs = require("fs");
+    const path = require("path");
+    const http = require("http");
+    const [aus, koord] = process.argv.slice(1);
+    const port = Number(process.env.WERKBANK_PORT);
+    const ruf = (weg, nutz, ms = 60000) =>
+        new Promise((ja, nein) => {
+            const q = http.request({ host: "127.0.0.1", port, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
+                let d = "";
+                a.on("data", (c) => (d += c));
+                a.on("end", () => {
+                    try {
+                        ja(JSON.parse(d));
+                    } catch (_e) {
+                        ja({ fehler: weg + " ohne JSON: " + d.slice(0, 200) });
+                    }
+                });
+            });
+            q.setTimeout(ms, () => q.destroy(new Error(weg + " ohne Antwort binnen " + Math.round(ms / 1000) + " s")));
+            q.on("error", nein);
+            q.end(JSON.stringify(nutz || {}));
+        });
+    const seite = async (fn, args = [], ms = 60000) => {
+        const a = await ruf("/eval", { code: "return await (" + fn + ")(..." + JSON.stringify(args) + ");" }, ms);
+        if (!a || a.fehler)
+            throw new Error(String(fn).slice(0, 48).replace(/\s+/g, " ") + " … — " + ((a && a.fehler) || "keine Antwort") + (a && a.stapel ? " @ " + a.stapel.join(" ← ") : ""));
+        return a.ergebnis;
+    };
+    const reload = async () => {
+        const a = await ruf("/reload", {}, 120000);
+        if (!a || a.neu !== true) throw new Error("/reload: " + JSON.stringify(a).slice(0, 200));
+        return a.ms;
+    };
+    const skript = (datei, name) => {
+        const t = fs.readFileSync(datei, "utf8").replace(/\r\n/g, "\n");
+        const i = t.search(new RegExp("^(async )?function " + name + "\\(", "m"));
+        const e = i < 0 ? -1 : t.indexOf("\n}\n", i);
+        if (e < 0) throw new Error(datei + " trägt keine Funktion " + name + " (die Linse am SHA)");
+        return t.slice(i, e + 2);
+    };
+    const warte = (ms) => new Promise((f) => setTimeout(f, ms));
+    const t0 = Date.now();
+    let j = {}, code = 0;
+    try {
+        const z = (/\[linse-gpu\][^\r\n]*/.exec(fs.readFileSync(String(process.env.PUNKTE_SITZUNG_LOG), "utf8")) || [null])[0];
+        if (z) console.log(z);
+        j = (await lauf({ seite, reload, ruf, skript, aus, koord, warte, path, linse: z })) || {};
+    } catch (e) {
+        j = { fehler: String((e && e.message) || e) };
+        console.log("PROBE ROT: " + j.fehler);
+        code = 1;
+    }
+    j.sek = +((Date.now() - t0) / 1000).toFixed(1);
+    fs.writeFileSync(aus, JSON.stringify(j, null, 1));
+    console.log("PROBE " + j.sek + " s");
+    process.exit(code);
+})(async function taktLauf(h) {
+    const D = "scripts/diag-klang-zensus.cjs";
+    const text = require("fs").readFileSync(D, "utf8");
+    const soll = Number((/const TAKT_SOLL_MS = ([\d.]+);/.exec(text) || [])[1]);
+    const teile = (/const TAKT_TEILE = (\[[^\]]*\]);/.exec(text) || [])[1];
+    if (!(soll > 0) || !teile) throw new Error(D + " trägt TAKT_SOLL_MS oder TAKT_TEILE nicht");
+    const M = require(h.path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+    const j = await h.seite(taktFahrt, [h.skript(D, "taktSeite"), M, new Function("return " + teile)(), { soll, n: 10 }], 150000);
+    console.log("Klang-Takt:", JSON.stringify(j.seite));
+    const rot = (j.rot = []);
+    for (const [name, z] of Object.entries(j.phasen)) {
+        console.log("── " + name + ": Klang-ms je Bild p95 " + z.p95 + " · max " + z.max + " (" + z.bilder + " Bilder, " + z.weg + " m) · trägt " + (z.traeger.join(" · ") || "—"));
+        if (!(z.bilder >= 300 && z.weg >= 10)) rot.push("T " + name + ": " + z.bilder + " Bilder, " + z.weg + " m — keine Bewegung gemessen");
+        else if (!(z.p95 <= soll)) rot.push("T " + name + ": Klang-ms je Bild p95 " + z.p95 + " > " + soll + " (max " + z.max + "; trägt " + z.traeger.join(" · ") + ")");
+    }
+    const a = j.aussetzer;
+    console.log("── Aussetzer am Ausgang: " + (a ? a.n + " in " + a.s + " s Wiedergabe (" + a.still + " s still)" : "ungezählt"));
+    if (!a) rot.push("T aussetzer: ungezählt — kein playbackStats am Kontext, oder er wechselte");
+    else if (a.n) rot.push("T aussetzer: " + a.n + " in " + a.s + " s Wiedergabe");
+    if (!j.phasen.fahrt.sattel) rot.push("T fahrt: die Stimme der Fahrt klang nicht (nicht im Sattel)");
+    for (const t of rot) console.log("   " + t);
+    return j;
+}); C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination\meisterkarte-quelle\punkte\messung\roh\3ef20f9f-radeon\klang.K5_2.json C:\Users\micha\AnazhRealm-profiband\.claude\worktrees\koordination
+[linse-gpu] amd/rdna-3
+
+--- gpu-zeuge ---
+[linse-gpu] amd/rdna-3
+[linse-gpu] amd/rdna-3
