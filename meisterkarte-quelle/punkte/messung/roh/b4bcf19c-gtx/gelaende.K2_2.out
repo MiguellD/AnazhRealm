@@ -1,0 +1,312 @@
+$ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
+    const fs = require("fs");
+    const path = require("path");
+    const http = require("http");
+    const W = Number(process.env.WERKBANK_PORT);
+    const tor = { W, aus: process.argv[1], arg: process.argv.slice(2), browser: null, page: null };
+    // EIN Ruf (POST JSON, mit Frist); eine Antwort { fehler: "…" } der Werkbank wirft beim Namen
+    tor.ruf = (weg, nutzlast, ms = 120000) =>
+        new Promise((ok, nein) => {
+            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
+                let d = "";
+                a.on("data", (c) => (d += c));
+                a.on("end", () => {
+                    let j = null;
+                    try {
+                        j = JSON.parse(d);
+                    } catch (_e) {
+                        return nein(new Error(weg + ": keine JSON-Antwort: " + d.slice(0, 200)));
+                    }
+                    if (j && typeof j.fehler === "string") return nein(new Error(weg + ": " + j.fehler.slice(0, 300)));
+                    ok(j);
+                });
+            });
+            q.on("error", nein);
+            q.setTimeout(ms, () => q.destroy(new Error(weg + ": Frist " + ms + " ms")));
+            q.end(JSON.stringify(nutzlast || {}));
+        });
+    // die Karte der Welt: die Adapter-Zeile im Log ihrer Werkbank (der Zeuge der Wand GPU steht schon in der Sitzung)
+    tor.karte = () => {
+        const f = process.env.PUNKTE_SITZUNG_LOG;
+        const t = f && fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "";
+        const z = (/^\[linse-gpu\] .*$/m.exec(t) || [null])[0];
+        console.log(z || "KEINE KARTE: das Log der Sitzung nennt keinen [linse-gpu]");
+        return z;
+    };
+    tor.seite = async () => {
+        if (tor.page) return tor.page;
+        const s = await tor.ruf("/status", {}, 30000);
+        const profil = s && s.boot && s.boot.profil;
+        if (!profil) throw new Error("/status nennt kein Profil der Werkbank");
+        const [port, weg] = fs.readFileSync(path.join(profil, "DevToolsActivePort"), "utf8").split(/\r?\n/);
+        const puppeteer = require(path.resolve("node_modules/puppeteer"));
+        tor.browser = await puppeteer.connect({
+            browserWSEndpoint: "ws://127.0.0.1:" + port + weg,
+            defaultViewport: null,
+            protocolTimeout: 900000,
+        });
+        for (const p of await tor.browser.pages())
+            if (await p.evaluate(() => !!(window.anazhRealm && window.anazhRealm.state)).catch(() => false)) return (tor.page = p);
+        throw new Error("im Browser der Werkbank steht keine Seite mit der Welt");
+    };
+    const baum = (datei) => {
+        const text = fs.readFileSync(datei, "utf8");
+        const acorn = require(path.resolve("node_modules/acorn"));
+        const o = { ecmaVersion: "latest", sourceType: "script", allowHashBang: true, allowReturnOutsideFunction: true };
+        return { text, ast: acorn.parse(text, o) };
+    };
+    const ankern = (src, wo, anker) => {
+        for (const [a, b] of anker) {
+            const n = src.split(a).length - 1;
+            if (n !== 1) throw new Error("ANKER " + (n ? n + "-mal" : "fehlt") + " in " + wo + ": " + a.slice(0, 90));
+            src = src.replace(a, () => b);
+        }
+        return src;
+    };
+    // die Deklaration `name` auf oberster Ebene (eine Funktion: ihr Text; const: ihr Wert), jeder Anker [alt, neu] genau einmal ersetzt
+    tor.quelle = (datei, name, anker = []) => {
+        const { text, ast } = baum(datei);
+        for (const n of ast.body) {
+            if (n.type === "FunctionDeclaration" && n.id && n.id.name === name) return ankern(text.slice(n.start, n.end), datei + " " + name, anker);
+            if (n.type === "VariableDeclaration")
+                for (const d of n.declarations)
+                    if (d.id.type === "Identifier" && d.id.name === name && d.init) return ankern(text.slice(d.init.start, d.init.end), datei + " " + name, anker);
+        }
+        throw new Error(datei + ": keine Deklaration " + name + " auf oberster Ebene");
+    };
+    // die Deklarationen `namen` (Anweisungen der obersten Ebene) in der Reihe der Quelle — eine rechnet mit der vorigen
+    tor.dekl = (datei, namen) => {
+        const { text, ast } = baum(datei);
+        const da = new Set();
+        const teile = [];
+        for (const n of ast.body) {
+            const wer = n.type === "FunctionDeclaration" && n.id ? [n.id.name] : n.type === "VariableDeclaration" ? n.declarations.map((d) => d.id.name) : [];
+            if (wer.some((w) => namen.includes(w))) (teile.push(text.slice(n.start, n.end)), wer.forEach((w) => da.add(w)));
+        }
+        const fehlt = namen.filter((x) => !da.has(x));
+        if (fehlt.length) throw new Error(datei + ": keine Deklaration " + fehlt.join(", "));
+        return teile.join("\n");
+    };
+    tor.ende = async () => {
+        if (tor.browser) await tor.browser.disconnect().catch(() => {});
+    };
+    return tor;
+})();
+(async function wasserGraben(tor) {
+    const fs = require("fs");
+    const path = require("path");
+    const KOORD = tor.arg[0];
+    const B = tor.aus.replace(/\.json$/, "");
+    const { WASSER_INSTALL } = require(path.resolve("scripts/lib/wasser-linse.cjs"));
+    const zielen = fs.readFileSync(path.join(KOORD, "bericht", "2210-messschuld-6cfce", "skripte", "zielen.js"), "utf8");
+    const page = await tor.seite();
+    tor.karte();
+    const cdp = await page.target().createCDPSession();
+    const warte = (ms) => new Promise((ok) => setTimeout(ok, ms));
+    const erg = { third: null, ego: null, damm: null, ferne: null };
+    await page.evaluate(WASSER_INSTALL);
+    await page.evaluate(zielen);
+    const [mx, my] = await page.evaluate(() => [Math.round(innerWidth / 2), Math.round(innerHeight / 2)]);
+    const klick = async () => {
+        for (const type of ["mousePressed", "mouseReleased"]) await cdp.send("Input.dispatchMouseEvent", { type, x: mx, y: my, button: "left", clickCount: 1 });
+    };
+    // die Ufer-Punkte am Fluss nächst Genesis (die Saaten der Bahn: je ein Punkt des Laufs, nie im See)
+    const SAATEN = [11, 23, 37, 51, 73];
+    const punkte = await page.evaluate((saaten) => {
+        const r = window.anazhRealm;
+        const g = typeof r._genesisMitte === "function" ? r._genesisMitte() : r.state.playerMesh.position;
+        const fn = window.__wasserFlussNah(r, g.x, g.z);
+        if (!fn.p) return { fehler: "kein Fluss nächst Genesis" };
+        const rv = fn.fluesse.find((f) => f.points.includes(fn.p));
+        const k0 = rv.points.indexOf(fn.p);
+        return saaten.map((s, i) => {
+            let x = (s * 2654435761) >>> 0;
+            x ^= x >>> 13;
+            let k = k0 + (i - 2) * 9 + ((x % 5) - 2);
+            if (k < 1) k = 1 + (1 - k) + 40;
+            if (k > rv.points.length - 2) k = rv.points.length - 2 - (k - rv.points.length) - 40;
+            k = Math.max(1, Math.min(rv.points.length - 2, k));
+            const a = rv.points[k];
+            return { saat: s, k, a: { x: a.x, z: a.z }, seite: x & 1 ? 1 : -1 };
+        });
+    }, SAATEN);
+    if (punkte.fehler) throw new Error(punkte.fehler);
+    const graben = async (P, abstand, sicht) => {
+        const g = await page.evaluate(
+            async (P, abstand, sicht) => {
+                const r = window.anazhRealm;
+                const st = r.state;
+                const { p: q, vor: b } = window.__wasserFlussNah(r, P.a.x, P.a.z);
+                const nl = Math.hypot(q.x - b.x, q.z - b.z) || 1;
+                const nx = (-(q.z - b.z) / nl) * P.seite;
+                const nz = ((q.x - b.x) / nl) * P.seite;
+                const krone = window.__wasserKroneVon(r, q);
+                const px = q.x + nx * (krone + abstand);
+                const pz = q.z + nz * (krone + abstand);
+                const stellen = (w) => {
+                    const c = Math.cos((w * Math.PI) / 180);
+                    const s = Math.sin((w * Math.PI) / 180);
+                    const sx = px + (nx * c - nz * s) * 2.2;
+                    const sz = pz + (nx * s + nz * c) * 2.2;
+                    st.playerMesh.position.set(sx, r._voxelSurfaceY(sx, sz) + 1.8, sz);
+                    if (st._fixedSimPos) st._fixedSimPos.copy(st.playerMesh.position);
+                    return [+sx.toFixed(2), +sz.toFixed(2)];
+                };
+                let spieler = stellen(0);
+                if (st.cameraMode !== sicht) r.setCameraMode(sicht);
+                // DIE WELT STEHT am Graben: das EINE Einschwingen (`__weltStehtNach` hält den Regler, solange sie schwingt — ein atmender
+                // Regler weckt die Takte ohne Ende), sein Deckel beim Namen. Bis 30.10. eine eigene Schleife ohne gehaltenen Regler und
+                // mit stiller 30-s-Frist: auch nach 2 m Weg 119–151 Takte (Radeon 379e5f56)
+                const takte = await window.__weltStehtNach();
+                window.__gp = { px, pz };
+                const ziel = () => window.__zielen({ x: px, y: r._voxelSurfaceY(px, pz), z: pz });
+                await ziel();
+                const o = { px: +px.toFixed(2), pz: +pz.toFixed(2), krone: +krone.toFixed(2), sicht, takte };
+                if (sicht !== "first") return Object.assign(o, { spieler });
+                const stand = [];
+                for (const w of [0, 15, -15, 30, -30, 45, -45, 60, -60, 90, -90]) {
+                    if (w) (spieler = stellen(w)), await ziel();
+                    const rot = window.__abnahmeUrteil(window.__abnahmeMessen({})).rot.filter((u) => !u.feld.startsWith("bild."));
+                    const bau = r._pickArchitectureAtCrosshair();
+                    if (bau && bau.entry) rot.push({ grund: "Bauwerk am Fadenkreuz " + (bau.entry.type || bau.entry.id) });
+                    if (r._ernteZiel()) rot.push({ grund: "Blüte am Fadenkreuz" });
+                    stand.push({ w, rot: rot.map((u) => u.grund) });
+                    if (!rot.length) break;
+                }
+                if (stand[stand.length - 1].rot.length && stand.length > 1) (spieler = stellen(0)), await ziel();
+                return Object.assign(o, { spieler, stand });
+            },
+            P,
+            abstand,
+            sicht
+        );
+        // der Zeiger gefangen wie beim Spieler, ehe die Spur auf den Klick wartet (sein Klick ist kein Graben-Klick)
+        if (!(await page.evaluate(() => window.anazhRealm.state.isPointerLocked))) (await page.bringToFront(), await klick(), await warte(400));
+        // je präsentiertem Bild die gezeichneten Wasser-Flächen über ±4,5 m (je Netz die oberste, wie wasser-linse `wasserGraben`)
+        await page.evaluate(() => {
+            const r = window.anazhRealm;
+            const span = r._voxelChunkConfig(0).span;
+            const G = window.__gp;
+            const flaechen = (x, z) => {
+                const ys = [];
+                for (let dz = -1; dz <= 1; dz++)
+                    for (let dx = -1; dx <= 1; dx++) {
+                        const n = r._wasserNetz(Math.floor(x / span) + dx, Math.floor(z / span) + dz);
+                        const y = n ? r.constructor._wasserNetzHoehe(n, x, z) : null;
+                        if (y !== null) ys.push(y);
+                    }
+                return ys.sort((p, q) => p - q).filter((y, j, l) => !j || y - l[j - 1] > 0.1);
+            };
+            const messen = () => {
+                const m = { nass: 0, doppelt: 0, ueber: 0, ueberM: 0 };
+                for (let gz = -4.5; gz <= 4.5; gz += 0.5)
+                    for (let gx = -4.5; gx <= 4.5; gx += 0.5) {
+                        const x = G.px + gx;
+                        const z = G.pz + gz;
+                        const g = r._bodenSichtAt(x, z) ?? r._voxelSurfaceY(x, z);
+                        const ys = flaechen(x, z).filter((y) => y > g + 0.1);
+                        if (!ys.length) continue;
+                        const atlas = r._atlasWaterLevelAt(x, z, g);
+                        const Sp = atlas > -Infinity ? atlas : r._hydroSpiegelQuer(x, z);
+                        const top = ys[ys.length - 1];
+                        m.nass++;
+                        if (ys.length > 1) m.doppelt++;
+                        if (top > Sp + 0.1) (m.ueber++, (m.ueberM = Math.max(m.ueberM, +(top - Sp).toFixed(2))));
+                    }
+                return m;
+            };
+            window.__gSpur = [];
+            window.__gT0 = null;
+            window.__gVor = messen();
+            window.addEventListener("mousedown", () => window.__gT0 == null && (window.__gT0 = performance.now()), { once: true, capture: true });
+            // DAS ENDE DER SPUR ist ein Ereignis (`__gFertig`: das letzte Bild vor 3 s nach dem Klick), nie eine Uhr danach
+            window.__gFertig = new Promise((fertig) => {
+                const f = () => {
+                    if (window.__gT0 != null && performance.now() - window.__gT0 < 3000) (window.__gSpur.push([+(performance.now() - window.__gT0).toFixed(1), messen()]), requestAnimationFrame(f));
+                    else if (window.__gT0 == null) requestAnimationFrame(f);
+                    else fertig(window.__gSpur.length);
+                };
+                requestAnimationFrame(f);
+            });
+        });
+        await klick();
+        await warte(2000);
+        g.bild = [];
+        const frei = !g.stand || !g.stand[g.stand.length - 1].rot.length;
+        if (frei)
+            try {
+                const url = await page.evaluate(async () => {
+                    const { u8 } = await window.__ausgabeAufnahme(960, 540);
+                    return window.__png(u8, 960, 540);
+                });
+                fs.writeFileSync(B + "-" + (sicht === "first" ? "ego" : "third") + "-s" + P.saat + "-a" + abstand + "-2s.png", Buffer.from(url.split(",")[1], "base64"));
+                g.bild.push("2s");
+            } catch (e) {
+                g.bildFehler = String((e && e.message) || e).split("\n")[0].slice(0, 200);
+            }
+        // die Spur endet 3 s nach dem Klick: auf ihr Ende warten (bis 30.10. 1,2 s Uhr nach dem Bild, das selbst Zeit trug); die
+        // Frist 4 s fängt nur einen Klick, den kein mousedown erreichte — dann bleibt die Spur leer, ROT beim Namen (`leer`)
+        await Promise.race([page.evaluate(() => window.__gFertig), warte(4000)]);
+        const sp = await page.evaluate(() => ({ spur: window.__gSpur, vor: window.__gVor, verb: window.anazhRealm.state.player._mausVerb }));
+        const end = sp.spur.length ? sp.spur[sp.spur.length - 1][1].nass : 0;
+        const voll = sp.spur.find((x) => x[1].nass >= 0.9 * end && end > sp.vor.nass);
+        const z = Object.assign({ saat: P.saat, abstand }, g, {
+            verb: sp.verb,
+            bilder: sp.spur.length,
+            nassVor: sp.vor.nass,
+            nassEnde: end,
+            gefuelltMs: voll ? voll[0] : null,
+            doppeltMax: Math.max(0, ...sp.spur.map((x) => x[1].doppelt)),
+            ueberMax: Math.max(0, ...sp.spur.map((x) => x[1].ueber)),
+            ueberMaxM: Math.max(0, ...sp.spur.map((x) => x[1].ueberM)),
+        });
+        console.log("  GRABEN " + JSON.stringify({ sicht, saat: z.saat, abstand, verb: z.verb, bild: z.bild.join("+"), nassVor: z.nassVor, nassEnde: z.nassEnde, gefuelltMs: z.gefuelltMs, doppeltMax: z.doppeltMax, ueberMax: z.ueberMax, bilder: z.bilder }));
+        return z;
+    };
+    const t0 = Date.now();
+    const sichtVor = await page.evaluate(() => (window.__loop(true), window.anazhRealm.state.cameraMode));
+    // der Zeiger EINMAL vorab gefangen, ehe ein Fadenkreuz auf einem Graben-Punkt liegt
+    await page.bringToFront();
+    if (!(await page.evaluate(() => window.anazhRealm.state.isPointerLocked))) (await klick(), await warte(400));
+    try {
+        for (const [teil, sicht, idx] of [["third", "third", [0, 2]], ["ego", "first", [1]]]) {
+            const liste = [];
+            try {
+                for (const i of idx) for (const abstand of [1, 3]) liste.push(await graben(punkte[i], abstand, sicht));
+                erg[teil] = { graeben: liste };
+            } catch (e) {
+                erg[teil] = { graeben: liste, fehler: String((e && e.message) || e).split("\n")[0] };
+                console.log("  " + teil + " FEHLER " + erg[teil].fehler);
+            }
+        }
+    } finally {
+        await page.evaluate((s) => (window.__loop(false), window.anazhRealm.setCameraMode(s), 1), sichtVor);
+    }
+    console.log("  (a) " + ((Date.now() - t0) / 1000).toFixed(1) + " s");
+    // (d) die Ferne, dann (b) der Damm: das Wort des Spielers „sonnig“, trocken (wie die Wand), der Fluss der Mess-Wiese
+    const t1 = Date.now();
+    await page.evaluate(() => (r._setWeather("sunny", "human"), r._naesseTakt(1e6), 1));
+    const fluss = await page.evaluate(async () => (await window.__wasserOrte({})).fluss);
+    for (const [teil, ferne] of [["ferne", true], ["damm", false]])
+        try {
+            erg[teil] = await page.evaluate((f, ferne) => window.__wasserDamm({ fluss: f, ferne }), fluss, ferne);
+        } catch (e) {
+            erg[teil] = { fehler: String((e && e.message) || e).split("\n")[0] };
+        }
+    console.log("  (b)(d) " + ((Date.now() - t1) / 1000).toFixed(1) + " s · Damm " + JSON.stringify(erg.damm) + " · Ferne " + JSON.stringify(erg.ferne));
+    await cdp.detach().catch(() => {});
+    fs.writeFileSync(tor.aus, JSON.stringify(erg, null, 1));
+})(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\gelaende.K2_1.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
+[linse-gpu] nvidia/pascal
+  GRABEN {"sicht":"third","saat":11,"abstand":1,"verb":"abbau","bild":"2s","nassVor":139,"nassEnde":139,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"bilder":303}
+  GRABEN {"sicht":"third","saat":11,"abstand":3,"verb":"graben","bild":"2s","nassVor":55,"nassEnde":55,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"bilder":325}
+  GRABEN {"sicht":"third","saat":37,"abstand":1,"verb":"graben","bild":"2s","nassVor":105,"nassEnde":105,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"bilder":300}
+  GRABEN {"sicht":"third","saat":37,"abstand":3,"verb":"graben","bild":"2s","nassVor":38,"nassEnde":38,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"bilder":276}
+  GRABEN {"sicht":"first","saat":23,"abstand":1,"verb":"pfluecken","bild":"2s","nassVor":112,"nassEnde":112,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"bilder":266}
+  GRABEN {"sicht":"first","saat":23,"abstand":3,"verb":"graben","bild":"2s","nassVor":41,"nassEnde":41,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"bilder":303}
+  (a) 47.9 s
+  (b)(d) 15.6 s · Damm {"krone":27.79,"saeulen":21,"stromauf":[{"d":6,"wasser":24.88,"ueberlauf":24.3,"fluss":24.88},{"d":12,"wasser":24.98,"ueberlauf":24.38,"fluss":24.97}],"stromab":[{"d":6,"wasser":24.63,"fluss":24.63},{"d":12,"wasser":24.48,"fluss":24.48}]} · Ferne {"fehler":"Cannot read properties of undefined (reading 'length')"}
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal

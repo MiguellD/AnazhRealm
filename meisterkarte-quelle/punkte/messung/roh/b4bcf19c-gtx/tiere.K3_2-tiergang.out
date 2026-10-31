@@ -77,3 +77,25 @@
   ✅ mensch Spitze 6.75 m/s · Bein 0.835 m · Stand 0.19 · Schlupf 0.016 · Kadenz 3.09 Schritte/s (2.19 m je Schritt) · Töne 8 / Soll 7.7 · Becken Hub 0.111 L / Tiefe 0.154 L · Lock-Löser 0 in 71 Stand-Takten
   ✅ Schwere 1,62 m/s² · Takt Mensch 1.0000 × Gesetz · Becken-Zeile g 1.62 · Literal-Zwillinge 0
 [linse-gpu] nvidia/pascal
+  ✅ studio geduckt 4.58 E/s · Bein 2.74 E · Stand 0.63 · Schlupf 0.017 · Kadenz 3 Schritte/s · Becken Hub 0.041 L (Soll ≤ 0.07) · Täter gangGesetz (tetrapoda gangSchritt/gangFuss)
+  ✅ studio gehen 10.45 E/s · Bein 2.74 E · Stand 0.37 · Schlupf 0.027 · Kadenz 2.96 Schritte/s · Becken Hub 0.107 L (Soll ≤ 0.12) · Täter gangGesetz (tetrapoda gangSchritt/gangFuss)
+  ✅ studio sprint 17.91 E/s · Bein 2.74 E · Stand 0.25 · Schlupf 0.023 · Kadenz 3.39 Schritte/s · Becken Hub 0.116 L (Soll ≤ 0.12) · Täter gangGesetz (tetrapoda gangSchritt/gangFuss)
+  ✅ Gangart Labor wolf v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.65 · Welt − Labor 0.00 Zyklus · Satz − Labor 0.00 Zyklus
+  ✅ Gangart Labor wolf v̂ 0.74 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.65 · Welt − Labor 0.01 Zyklus · Satz − Labor 0.00 Zyklus
+  ✅ Gangart Labor wolf v̂ 1.2 · trab [0 0.5 0.5 1] · Tastgrad 0.5 · Welt − Labor 0.00 Zyklus · Satz − Labor 0.01 Zyklus
+  ✅ Gangart Labor wolf v̂ 3.5 · galopp [0 0.15 0.6 0.45] · Tastgrad 0.32 · Welt − Labor 0.03 Zyklus · Satz − Labor 0.01 Zyklus
+  ✅ Gangart Labor fox v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.64 · Welt − Labor 0.00 Zyklus · Satz − Labor 0.01 Zyklus
+  ✅ Gangart Labor fox v̂ 0.74 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.65 · Welt − Labor 0.00 Zyklus · Satz − Labor 0.01 Zyklus
+  ✅ Gangart Labor fox v̂ 1.2 · trab [0 0.5 0.5 1] · Tastgrad 0.5 · Welt − Labor 0.00 Zyklus · Satz − Labor 0.01 Zyklus
+  ✅ Gangart Labor fox v̂ 3.5 · galopp [0 0.15 0.6 0.45] · Tastgrad 0.3 · Welt − Labor 0.03 Zyklus · Satz − Labor 0.02 Zyklus
+  ✅ Gangart Labor bear v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.65 · Welt − Labor 0.00 Zyklus · Satz − Labor 0.00 Zyklus
+  ✅ Gangart Labor bear v̂ 0.74 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.66 · Welt − Labor 0.01 Zyklus · Satz − Labor 0.00 Zyklus
+  ✅ Gangart Labor bear v̂ 1.2 · trab [0 0.5 0.5 1] · Tastgrad 0.5 · Welt − Labor 0.02 Zyklus · Satz − Labor 0.01 Zyklus
+  ✅ Gangart Labor bear v̂ 3.5 · galopp [0 0.15 0.6 0.45] · Tastgrad 0.3 · Welt − Labor 0.03 Zyklus · Satz − Labor 0.01 Zyklus
+  ✅ Gangart Labor deer v̂ 0.3 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.66 · Welt − Labor 0.01 Zyklus · Satz − Labor 0.01 Zyklus
+  ✅ Gangart Labor deer v̂ 0.74 · schritt-lateral [0 0.5 0.25 0.75] · Tastgrad 0.65 · Welt − Labor 0.00 Zyklus · Satz − Labor 0.01 Zyklus
+  ✅ Gangart Labor deer v̂ 1.2 · trab [0 0.5 0.5 0] · Tastgrad 0.5 · Welt − Labor 0.01 Zyklus · Satz − Labor 0.00 Zyklus
+  ✅ Gangart Labor deer v̂ 3.5 · galopp [0 0.15 0.6 0.45] · Tastgrad 0.29 · Welt − Labor 0.03 Zyklus · Satz − Labor 0.01 Zyklus
+
+✅ GRÜN — jede Gattung setzt ihre Pfoten (Schlupf ≤ 0.05) in Schritt, Trab und Galopp; der Mensch geht und läuft nach demselben Gesetz (Kadenz ≥ 1.5, Töne ± 15 %), in der Welt und im Körper-Studio.
+TIER-GANG EXIT=0

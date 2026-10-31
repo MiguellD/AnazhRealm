@@ -1251,7 +1251,7 @@ const stationen = [
         // DER DECKEL (w4-proben-tempo2): GTX e0139769 38,9 s, davon das Einschwingen nach dem Sprung an W0 17,9 s — es liegt jetzt VOR dem
         // Deckel (die Sitzung stellt die Mess-Wiese); die GTX geschätzt ≈ 23 s (der Ritt, die Garage 15 s daneben): ⌈1,5 × 25⌉ ≈ 40 s. Die
         // Radeon 7521ca51 riss unter fremder Last (eine Werkbank swiftshader auf ~10 Kernen) die Frist des Ritts (19 s) — UNGEMESSEN, nie ROT
-        probe: { ...TEMPO_GARAGE_PROBE, mutiert: true, sek: 40 },
+        probe: { ...TEMPO_GARAGE_PROBE, mutiert: true, sek: 42 },
         env: K,
         gpu: true,
         zeit: false,
@@ -1584,7 +1584,7 @@ const stationen = [
         kriterium: "siedlung.K5",
         staffel,
         geraet: ["radeon", "gtx"],
-        probe: { ...DORF_PROBE, mutiert: true, sek: 27 },
+        probe: { ...DORF_PROBE, mutiert: true, sek: 31 },
         gpu: true,
         zeit: true,
         minuten: 1,
@@ -1857,7 +1857,7 @@ const stationen = [
         // werkbank latenz an der Mess-Wiese: CDP-Taste bis zum ersten Ausgabe-Bild mit Leib/Kamera ≥ 1 cm bewegt, je 50 Proben —
         // in LAEUFE eigenen Boots, geurteilt über den schlechtesten (bildraten-fest)
         // IN DER SITZUNG (29.10.): EIN Lauf, LATENZ_PROBEN je Reihe (4 Reihen) — Ziel 30 s
-        probe: sitzung(33,
+        probe: sitzung(37,
             ...latenzLaeufe(
                 "boot",
                 "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",

@@ -232,8 +232,13 @@ H.fahre(async function probeVerben(H) {
     offen = false;
     await L.bauWeg(page, "ende");
     return j;
-}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\bauen.K5_2.json 10
-@@PUNKTE@@ FRIST 4 s der Probe gerissen — Fall werkstatt · Ego · Haus und die folgenden ausgelassen
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\bauen.K5_2.json 90
+  ✅ werkstatt · Ego · Haus × betreten · 19 s
+  ✅ werkstatt · Third · Tor × portal · 20.4 s
+  ✅ ki · Ego · Wagen × drive · 23.6 s
+  ✅ ki · Third · Leiter × klettern · 26.2 s
+  ✅ geteilt · Ego · Bank × sitzen · 28.5 s
+  ✅ geteilt · Third · Brücke × betreten · 37.2 s
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

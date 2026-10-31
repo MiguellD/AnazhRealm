@@ -471,26 +471,26 @@ H.fahre(async function probeStartDorf(H) {
                 `innen ${h.innen} ÷ außen ${h.aussen} = ${h.quote}${h.fehler ? " · " + h.fehler : ""}${h.bildFehlt ? " · " + h.bildFehlt : ""}`
         );
     return j;
-}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\siedlung.K1_2.json 33
-@@PUNKTE@@ FRIST 27 s der Probe gerissen — 18 von 18 Häusern an der Frist ausgelassen
-  haus_gotisch · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\siedlung.K1_2.json 90
+@@PUNKTE@@ FRIST 84 s der Probe gerissen — 16 von 18 Häusern an der Frist ausgelassen
+  haus_gotisch · Gang Hub 0.20 m · innen 0.00837220969603989 ÷ außen 0.0365409047446641 = 0.229
+  haus_alpenchalet · Gang Hub 0.20 m · innen 0.009383168256566637 ÷ außen 0.04141625724785561 = 0.227
+  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
+  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
+  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
+  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
+  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
+  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
+  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
+  haus_alpenchalet · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
+  haus_alpenchalet · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
   haus_alpenchalet · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
   haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
   haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
   haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_schwarzwald · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
-  haus_schwarzwald · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe
-  haus_alpenchalet · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe
-  haus_alpenchalet · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe
-  haus_alpenchalet · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe
-  haus_schwarzwald · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe
-  haus_schwarzwald · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe
-  haus_schwarzwald · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe
-  haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe
-  haus_alpenchalet · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe
-  haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe
+  haus_skandinavisch · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
+  haus_alpenchalet · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
+  haus_skandinavisch · Gang Hub 0.20 m · innen undefined ÷ außen undefined = undefined · Frist der Probe
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
