@@ -1,0 +1,135 @@
+$ C:\Program Files\nodejs\node.exe -e (async function wertLauf() {
+const fs = require("fs");
+const path = require("path");
+const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+const [aus, port, art, szene] = process.argv.slice(1);
+const W = Number(port) + 20000;
+const erg = { art, laeufe: [] };
+const ruf = async (o) => {
+const a = await werkbankRuf(W, "/eval", { code: "return (" + szene + ")(r, T, " + JSON.stringify({ x: M.x, z: M.z, ...o }) + ");" });
+if (!a || a.ergebnis === undefined) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
+console.log((art === "wert" ? "WERT-GANG " : "RUDEL-GEFUEHL ") + JSON.stringify(a.ergebnis));
+erg.laeufe.push(a.ergebnis);
+return a.ergebnis;
+};
+const tor = { log: fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8"), bereit: werkbankRuf(W, "/umstellen", { ort: "wiese" }).then((a) => { if (!a || a.fehler) throw new Error("umstellen --ort wiese: " + JSON.stringify(a).slice(0, 200)); }), stop: () => {} };
+try {
+await tor.bereit;
+for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+if (art === "wert") for (const [uhr, sicht] of [[0.5, "first"], [0.92, "third"]]) await ruf({ uhr, sicht });
+else
+for (const sicht of ["first"]) {
+const a = await ruf({ sicht });
+await ruf({ sicht, gegen: true, dauer: a.dauer, opfer: a.opfer });
+}
+} catch (e) {
+erg.fehler = String((e && e.message) || e).split("\n")[0].slice(0, 400);
+console.log("FEHLER " + erg.fehler);
+} finally {
+tor.stop();
+}
+fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+})() C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\affekt.K1_2.json 7804 wert function wertGang(r, T, o) {
+const st = r.state;
+const K = window.__klangCore;
+const pm = st.playerMesh.position;
+const cam = st.camera;
+const y = (x, z) => r._voxelSurfaceY(x, z);
+if (st.renderer && st.renderer.setAnimationLoop) st.renderer.setAnimationLoop(null);
+const takt = (n) => {
+for (let i = 0; i < n; i++) r._gameLoopTick((window.__gangUhr = (window.__gangUhr || 1e6) + 1000 / 60));
+};
+if (!window.__wertGang) {
+window.__wertGang = 1;
+r._loopNexusUpdate = () => {};
+st.worldRules = [];
+st.perfRegulator = false;
+window.__buehne();
+st.weatherEffectTime = 0;
+r._setWeather("sunny", "regler");
+r.initSymphony();
+}
+r.setGameMode("frieden");
+r.setTimeOfDay(o.uhr, "regler");
+r.setCameraMode(o.sicht);
+const um = st.symphony.umwelt;
+const baum = (a) => /baum/.test(a._lodSpecies || a.type) && r._istNatur(a);
+const ab = (a) => Math.hypot(a.position.x - o.x, a.position.z - o.z);
+const B = st.architectures.filter(baum).sort((a, b) => ab(a) - ab(b))[0];
+if (!B) return { fehler: "kein Baum nahe der Wiese" };
+const ziel = { x: B.position.x, y: y(B.position.x, B.position.z) + 1, z: B.position.z };
+const stand = { x: ziel.x + 2.2, z: ziel.z };
+const halte = (n) => {
+for (let i = 0; i < n; i++) (pm.set(stand.x, y(stand.x, stand.z) + 1.8, stand.z), takt(1));
+};
+halte(30);
+const stimme = () => (Number.isFinite(K.umweltMischung(r._umweltLage()).vogel.db) ? "vogel" : "grille");
+const singt = () => {
+for (let w = 0; w < 24 && !Number.isFinite(K.umweltMischung(r._umweltLage())[stimme()].db); w++) (st.spielZeit += 5), halte(4);
+};
+const tat = () => {
+const e = st.taten && st.taten[st.taten.length - 1];
+return e ? { op: e.op, delta: +e.delta.toFixed(4), ertrag: +e.ertrag.toFixed(4) } : {};
+};
+const antwort = () => {
+const alt = um.lage;
+um.letzteMischung = -Infinity;
+let takte = 0;
+let a = null;
+let vor = null;
+for (; takte < 120 && !a; takte++) {
+halte(1);
+if (um.lage !== alt && !vor) vor = um.mix;
+const v = stimme();
+const z = um.graph.zensus().find((x) => x.name === v);
+if (vor && um.mix !== vor && um.folge !== 2 && z && Number.isFinite(z.db) && Math.abs(z.db - um.mix[v].db) < 0.3)
+a = { stimme: v, db: +(z.db - K.umweltMischung({ ...um.lage, antwort: null })[v].db).toFixed(2) };
+}
+pm.x += 32;
+const l = r._umweltLage();
+pm.x -= 32;
+const v = stimme();
+const nachbar = +(K.umweltMischung(l)[v].db - K.umweltMischung({ ...l, antwort: null })[v].db).toFixed(2) || 0;
+return { ...(a || { stimme: v, db: null }), s: +(takte / 60).toFixed(3), nachbar };
+};
+const pause = () => ((st.spielZeit += 30), halte(4), singt());
+const aus = { uhr: o.uhr, sicht: st.cameraMode, sonne: +r._sonnenRichtung().y.toFixed(2), baum: [+ziel.x.toFixed(1), +ziel.z.toFixed(1)] };
+pause();
+let hiebe = 0;
+for (let i = 0; i < 64 && st.architectures.includes(B); i++) {
+const g = y(stand.x, stand.z);
+pm.set(stand.x, g + 1.8, stand.z);
+cam.position.set(stand.x, g + 1.6, stand.z);
+cam.lookAt(ziel.x, ziel.y, ziel.z);
+cam.updateMatrixWorld(true);
+if ((r._pickArchitectureAtCrosshair() || {}).entry === B) (r.tryMouseBreak(), hiebe++);
+else takt(1);
+}
+if (st.architectures.includes(B)) return { ...aus, fehler: "der Baum fällt nicht (" + hiebe + " Hiebe)" };
+aus.faellen = { hiebe, ...tat(), ...antwort() };
+pause();
+st.maxCreatures = Math.max(st.maxCreatures || 0, st.creatures.length + 2);
+const c = r.spawnCreatureAt(stand.x + 2.5, y(stand.x + 2.5, stand.z + 1), stand.z + 1, "happy", "wesen");
+if (!c) return { ...aus, fehler: "kein Wesen" };
+r.damageCreature(c, 9999, { source: "player", fromPos: { x: pm.x, y: pm.y, z: pm.z } });
+aus.toeten = { ...tat(), ...antwort() };
+pause();
+r.processChatCommand("pflege das land");
+aus.pflegen = { ...tat(), ...antwort() };
+st.spielZeit += 1800;
+halte(4);
+singt();
+r.processChatCommand("pflege das land");
+aus.ruhe = { ...tat(), ...antwort() };
+st.spielZeit += 1800;
+halte(30);
+return aus;
+}
+[linse-gpu] nvidia/pascal
+WERT-GANG {"uhr":0.5,"sicht":"first","sonne":0.96,"baum":[-279.3,-1053.5],"faellen":{"hiebe":8,"op":"faellen","delta":-0.12,"ertrag":-0.12,"stimme":"vogel","db":-4.79,"s":0.05,"nachbar":0},"toeten":{"op":"toeten","delta":-0.03,"ertrag":-0.03,"stimme":"vogel","db":-1.2,"s":0.05,"nachbar":0},"pflegen":{"op":"deposit_life","delta":0.25,"ertrag":0.25,"stimme":"vogel","db":9,"s":0.05,"nachbar":0},"ruhe":{"op":"deposit_life","delta":0.2463,"ertrag":0.25,"stimme":"vogel","db":9,"s":0.05,"nachbar":0}}
+WERT-GANG {"uhr":0.92,"sicht":"third","sonne":-0.83,"baum":[-282.8,-1034],"faellen":{"hiebe":8,"op":"faellen","delta":-0.12,"ertrag":-0.12,"stimme":"grille","db":-4.79,"s":0.05,"nachbar":0},"toeten":{"op":"toeten","delta":-0.03,"ertrag":-0.03,"stimme":"grille","db":-1.2,"s":0.05,"nachbar":0},"pflegen":{"op":"deposit_life","delta":0.25,"ertrag":0.25,"stimme":"grille","db":9,"s":0.05,"nachbar":0},"ruhe":{"op":"deposit_life","delta":0.2463,"ertrag":0.25,"stimme":"grille","db":9,"s":0.067,"nachbar":0}}
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal

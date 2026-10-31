@@ -228,6 +228,10 @@ $ C:/Program Files/Git/bin/bash.exe -c set -u; node -e "$1" "$3" "$5" && exec no
   setz-5 · Exit 0
   kugel-5 · Exit 0
   los-5 · Exit 0
+  himmel · Exit 0
+[linse-gpu] nvidia/pascal
+FOLGE licht.K2#2: 21 Schritte
 
 --- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
 [linse-gpu] nvidia/pascal

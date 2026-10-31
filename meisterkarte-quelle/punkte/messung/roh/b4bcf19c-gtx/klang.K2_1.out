@@ -206,6 +206,8 @@ $ C:\Program Files\nodejs\node.exe -e const windSeite = async function windSeite
     return { ...zeile, fen, ohrProben: w.ohrProben, lags, reiheBild: B, reiheOhr: A };
 }); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\klang.K2_1.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
 [linse-gpu] nvidia/pascal
+{"stand":{"ctx":"running","enabled":true,"um":true,"paare":16,"steht":true},"wahl":{"hz":232.36697387695312,"kandidaten":96,"zensus":[["wind",-31.9]]},"fpsVor":77.2,"bilder":348,"fenster":104,"r0":{"lagS":0,"r":0.8315982402964418,"n":104,"cvX":0.19735494134208237,"cvY":0.6076439354188693},"best":{"lagS":-0.4,"r":0.8488272892785875,"n":102,"cvX":0.19798490522885415,"cvY":0.6122034591851733}}
+PROBE 23.3 s
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

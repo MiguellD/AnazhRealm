@@ -12,7 +12,7 @@ teil SPIEL1 $W eval 'const L = window.__hs; return { gesetzt: L.n, dauerMs: [Mat
 node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\leib.K1_2.json" "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\leib.K1_2.json.lauf1.json"
 @@PUNKTE@@ HAKEN1
 {
- "ms": 1,
+ "ms": 2,
  "ergebnis": 1
 }
 @@PUNKTE@@ EXIT 0
