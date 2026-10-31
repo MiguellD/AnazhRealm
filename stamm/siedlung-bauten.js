@@ -1556,7 +1556,8 @@ class AnazhRealm_siedlung_bauten {
     // einer am 05.10. gemessenen Start-Kapazität (Boden 229 376 Vertices · 1 310 720 Indizes = 15,5 MB, `CHUNK_SATZ`), „damit
     // eine typische Sitzung nie wächst": der Boden der Stufen-Kette (K51) trug am 31.10. an der Mess-Wiese 61 836 Vertices und
     // Abschnitte bis 135 168 Indizes (Halter-Tafel, swiftshader 1920×1080) — 11 MB ohne Bild, bis die Ruhe-Frist (600 Render-
-    // Takte, `_chunkSatzVerdichten`) ihn schrumpfte; jede Messung davor trug sie mit.
+    // Takte, `_chunkSatzVerdichten`) ihn schrumpfte; jede Messung davor trug sie mit. Geboren am Inhalt (je frischer Boot):
+    // Wiese Ego 119,4 → 106,4 MB · Third 121,4 → 110,2 · Genesis Ego 132,1 → 117,1 · Third 136,9 → 121,7, die Texturen gleich.
     _chunkSatz(art) {
         const st = this.state;
         if (!st.chunkSaetze) st.chunkSaetze = new Map();
