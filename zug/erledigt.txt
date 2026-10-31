@@ -121,3 +121,4 @@ takt27c-gtx gemessen punkte 94c079cb gtx: 12 grün / 21 rot
 takt28a-gtx gemessen punkte ec989990 gtx: 1 grün / 5 rot
 takt28b-gtx gemessen punkte ec989990 gtx: 2 grün / 9 rot
 b-kalt-94c0 Exit0 station ankunft-kalt.sh an 94c079cb
+b-kalt-ec98 Exit0 station ankunft-kalt.sh an ec989990
