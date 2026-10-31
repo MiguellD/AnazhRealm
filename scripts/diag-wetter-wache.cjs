@@ -137,7 +137,7 @@ function probe(o) {
     // WETTER_ZUG_SEK (Ereignis-Takte), die Folge ist das Wort nach jedem Takt
     const wm = st.worldMeta || (st.worldMeta = {});
     const pm = st.playerMesh.position;
-    const [saat0, pn, x0, y0, uhr0, Z] = [wm.seed, performance.now, pm.x, pm.z, st.spielZeit, r.constructor.WETTER_ZUG_SEK];
+    const [saat0, pn, x0, y0, uhr0, Z] = [wm.seed, performance.now, pm.x, pm.z, st.spielZeit, AnazhRealm.WETTER_ZUG_SEK];
     const P = globalThis.__phytoCore;
     const zug = (saat, d) => {
         const g = P.windGrund(saat);

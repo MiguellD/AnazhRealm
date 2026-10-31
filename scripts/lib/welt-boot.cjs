@@ -428,7 +428,7 @@ function pulsSeite() {
         }
     // der Stoff-Name je Pipeline am Backend der Welt (r184 createRenderPipeline(renderObject)), sobald es steht
     const stoffHaken = () => {
-        const be = r?.state?.renderer?.backend;
+        const be = st?.renderer?.backend;
         if (!be || be.__weltPulsHaken || typeof be.createRenderPipeline !== "function") return;
         be.__weltPulsHaken = true;
         const crp = be.createRenderPipeline;
@@ -1166,9 +1166,8 @@ function booteWelt(page, name = "der Boot der Welt") {
                 } catch {
                     /* der Boot reift */
                 }
-                const s = r.state;
-                if (s?.voxelChunks?.size > 4 && s.voxelWorkerReady && s.voxelWorkerWorldgenSynced)
-                    return { ok: true, ms: Math.round(performance.now() - start), seed: s.worldMeta.seed };
+                if (st?.voxelChunks?.size > 4 && st.voxelWorkerReady && st.voxelWorkerWorldgenSynced)
+                    return { ok: true, ms: Math.round(performance.now() - start), seed: st.worldMeta.seed };
             }
             await sleep(16);
         }

@@ -150,7 +150,7 @@ async function renderLuma() {
     try {
         await server.zeige(page, 120000, "index.html", "networkidle0");
         await page.waitForFunction(
-            () => r && r.state && r.state.rendererReady,
+            () => r && st && st.rendererReady,
             { timeout: 120000 }
         );
         // deterministisch settlen + auf einen Land-Augenhöhen-Spot stellen, ein paar Frames.

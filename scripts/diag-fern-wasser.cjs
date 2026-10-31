@@ -33,14 +33,13 @@ async function runOnce(browser, noFoundry) {
         }
     });
     const out = await page.evaluate(() => {
-        const s = r.state;
         const o = {};
-        const F = r.constructor.FAR_WATER;
+        const F = AnazhRealm.FAR_WATER;
         const span = r._voxelChunkConfig(0).span;
         const ringR = r._voxelChunkConfig().ringRadius;
         const step = span / 4;
         r._ensureFarWaterSheet();
-        const m = s.farWater;
+        const m = st.farWater;
         o.built = !!(m && m.mesh);
         o.quads = m ? m.quads : 0;
         o.builtMs = m ? m.builtMs : null;
@@ -143,24 +142,24 @@ async function runOnce(browser, noFoundry) {
         o.coverage = wetCells ? +(covered / wetCells).toFixed(3) : 1;
         o.uncovered = uncovered;
         // (6) Re-Anker beim Crossing (der Budget-Guard darf den TEST nicht gaten)
-        const pm = s.playerMesh.position;
+        const pm = st.playerMesh.position;
         const oldAX = m.anchorX;
         const sx = pm.x;
-        s._frameOverBudget = false;
+        st._frameOverBudget = false;
         pm.x += 200;
         r._ensureFarWaterSheet();
-        o.reanchored = s.farWater && Math.abs(s.farWater.anchorX - oldAX) > 100;
+        o.reanchored = st.farWater && Math.abs(st.farWater.anchorX - oldAX) > 100;
         pm.x = sx;
-        s._frameOverBudget = false;
+        st._frameOverBudget = false;
         r._ensureFarWaterSheet();
         // (7) der Toggle räumt sauber
-        if (!s.atmosphere) s.atmosphere = {};
-        s.atmosphere.farWater = false;
+        if (!st.atmosphere) st.atmosphere = {};
+        st.atmosphere.farWater = false;
         r._ensureFarWaterSheet();
-        o.toggleOffDisposed = s.farWater === null;
-        delete s.atmosphere.farWater;
+        o.toggleOffDisposed = st.farWater === null;
+        delete st.atmosphere.farWater;
         r._ensureFarWaterSheet();
-        o.toggleOnRebuilt = !!(s.farWater && s.farWater.mesh);
+        o.toggleOnRebuilt = !!(st.farWater && st.farWater.mesh);
         return o;
     });
     console.log(`\n===== FERN-WASSER — LINSE (V18.381) — Regime: ${noFoundry ? "ALT (foundry aus)" : "PRODUKTION (foundry an)"} =====\n`);

@@ -137,7 +137,7 @@ function taeter(inj) {
     if (inj === "fuge") {
         // die Auflage liest die Fuge nicht (vor K24-N1): keine Box ist gedeckt
         r._blockerFugen = (boxes) => (boxes || []).forEach((x) => (x.gedeckt = false));
-        for (const e of r.state.architectures || []) r._blockerFugen(e.blockerAABBs);
+        for (const e of st.architectures || []) r._blockerFugen(e.blockerAABBs);
     }
     // rand: der Stand-Leser liest nur die Karte des Eigners (vor K07); wiese: Nah-Wiese und Nah-Streu lesen im Rand-Streifen
     // nichts (vor K21)
@@ -189,9 +189,9 @@ function taeter(inj) {
         };
     // nexus (K8): der Takt des Nexus wirft nach der Wanduhr in die Mess-Welt (vor k8-hang fragte er die Gate-Treue nicht)
     // sprung (K9): der Abdruck ist das feste Tempo der Seele (vor leib-k2-sprung) — Masse und Kraft ziehen nichts
-    if (inj === "sprung") r._sprungAbdruck = () => r.state.jumpPower;
+    if (inj === "sprung") r._sprungAbdruck = () => st.jumpPower;
     if (inj === "nexus") {
-        r.state.nexusEvolutionInterval = 5;
+        st.nexusEvolutionInterval = 5;
         r.evolveNexus = function (t) {
             this._dorfTaktLebt = () => true;
             P.evolveNexus.call(this, t);
@@ -210,12 +210,10 @@ const server = statikServer({ root: ROOT });
 const K7_UMFANG = Object.freeze({ bueschel: 1000, pflanzen: 500 });
 
 async function proben(mitWiese, umfang) {
-    const s = r.state;
     const T = window.THREE;
-    const A = r.constructor;
     const o = {};
-    const pm = s.playerMesh;
-    const p = s.player;
+    const pm = st.playerMesh;
+    const p = st.player;
     const takt = () => {
         try {
             r._gameLoopTick(performance.now());
@@ -228,9 +226,9 @@ async function proben(mitWiese, umfang) {
     const span = r._voxelChunkConfig(0).span;
     const karte = (x, z) => window.__eignerKarte(r, x, z);
     // die Kapsel ruhen lassen (Fuß-Tempo 0) und n feste Sim-Schritte gehen
-    const savedVel = s.playerVel;
+    const savedVel = st.playerVel;
     let vy = 0;
-    s.playerVel = {
+    st.playerVel = {
         x: () => 0,
         y: () => vy,
         z: () => 0,
@@ -258,11 +256,11 @@ async function proben(mitWiese, umfang) {
     // ── K1 MENSCH AUF DEM TRÄGER (Start-Plattform) ──
     {
         kapsel(30);
-        o.k1 = { struktur: s._kapselStruktur === true, traeger: s._kapselTraegerY };
+        o.k1 = { struktur: st._kapselStruktur === true, traeger: st._kapselTraegerY };
         // Bezug: die Becken-Höhe der Pose selbst (im Stand ohne Gang-Wippen `_baseHipY` — der Rig-Bezug, den
         // `_animateHumanoidRig` vor jeder IK setzt); was darunter liegt, hat die Fuß-IK gesenkt
-        const air = s.isInAir;
-        s.isInAir = false;
+        const air = st.isInAir;
+        st.isInAir = false;
         ikRuhe();
         animiere(2);
         const hRef = rig._baseHipY;
@@ -271,16 +269,16 @@ async function proben(mitWiese, umfang) {
         o.k1.beckenCm = Math.round((rig.hips.position.y - hRef) * wpl() * 1000) / 10;
         // im Sprung: die Kapsel steigt, das Becken bleibt
         vy = 4.5;
-        s._fieldVy = 4.5;
+        st._fieldVy = 4.5;
         kapsel(6);
-        o.k1.sprungLuft = s.isInAir === true;
+        o.k1.sprungLuft = st.isInAir === true;
         ikRuhe();
         animiere(4);
         o.k1.sprungBeckenCm = Math.round((rig.hips.position.y - hRef) * wpl() * 1000) / 10;
         vy = 0;
-        s._fieldVy = 0;
+        st._fieldVy = 0;
         kapsel(90);
-        s.isInAir = air;
+        st.isInAir = air;
     }
     // ── K2 MENSCH IN DER HÖHLE ── (die Spalte unter ≥ 3 m Fels mit ≥ 3 m Luft, die nächste um den Spieler, in die der Leib
     // passt — die EINE Orts-Suche `__weltOrt`). K16 (das Flussnetz-Gelände): seine Höhlen sind Gänge, oft schmaler als ein Leib — an der ersten Tasche
@@ -298,23 +296,23 @@ async function proben(mitWiese, umfang) {
     const hoehle = ort && { x: ort.x, z: ort.z, top: ort.dach, boden: ort.grund };
     o.hoehle = hoehle;
     if (hoehle) {
-        pm.position.set(hoehle.x, hoehle.boden + A.PLAYER_FOOT_OFFSET + 0.05, hoehle.z);
+        pm.position.set(hoehle.x, hoehle.boden + AnazhRealm.PLAYER_FOOT_OFFSET + 0.05, hoehle.z);
         vy = 0;
-        s._fieldVy = 0;
+        st._fieldVy = 0;
         kapsel(40);
         ikRuhe();
         animiere(6);
         const ik = pm.userData._gaitIK;
         o.k2 = {
-            kapselFussY: pm.position.y - A.PLAYER_FOOT_OFFSET,
+            kapselFussY: pm.position.y - AnazhRealm.PLAYER_FOOT_OFFSET,
             probe: ik ? Math.min(ik.probeL.g, ik.probeR.g) : null,
         };
         o.k2.abstandCm = Number.isFinite(o.k2.probe)
             ? Math.round(Math.abs(o.k2.probe - o.k2.kapselFussY) * 1000) / 10
             : null;
         // ── K3 TIER IN DER HÖHLE ──
-        const saveMax = s.maxCreatures;
-        s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 3);
+        const saveMax = st.maxCreatures;
+        st.maxCreatures = Math.max(saveMax || 0, st.creatures.length + 3);
         const w = r.spawnCreatureAt(hoehle.x + 1.5, hoehle.boden + 0.3, hoehle.z, "happy", "wolf", {
             precise: true,
             bodySize: 1,
@@ -333,11 +331,11 @@ async function proben(mitWiese, umfang) {
             o.k3.abstandM = Number.isFinite(bodenW) ? Math.round(Math.abs(o.k3.tierY - bodenW) * 100) / 100 : null;
             r.removeCreature(w);
         }
-        s.maxCreatures = saveMax;
+        st.maxCreatures = saveMax;
     }
     pm.position.set(start.x, start.y, start.z);
     vy = 0;
-    s._fieldVy = 0;
+    st._fieldVy = 0;
     kapsel(30);
     // ── K4 TIER AM HANG: die Hang-Stelle (12–30°, die Karte geschlossen im 2-m-Umkreis) mit dem größten Abstand Gesetz ↔
     // Karte im Band der Leben-Prüfung (15–60 cm); dazu eine ebene trockene Stelle (≤ 3°, über dem Wasser) für die Tod-Lage ──
@@ -362,13 +360,13 @@ async function proben(mitWiese, umfang) {
         eben = null;
         if (ox || oz) {
             // einschwingen am Ort (der echte Spiel-Takt mit der echten Bewegung)
-            const vel = s.playerVel;
-            s.playerVel = savedVel;
+            const vel = st.playerVel;
+            st.playerVel = savedVel;
             pm.position.set(start.x + ox, r._voxelSurfaceY(start.x + ox, start.z + oz) + 2, start.z + oz);
             mitte = { x: start.x + ox, z: start.z + oz };
             savedVel.setValue(0, 0, 0);
             await window.__weltStehtNach(takt); // die Welt steht (das EINE Einschwingen, welt-boot)
-            s.playerVel = vel;
+            st.playerVel = vel;
         }
         for (let dx = -60; dx <= 60; dx += 2)
             for (let dz = -60; dz <= 60; dz += 2) {
@@ -395,8 +393,8 @@ async function proben(mitWiese, umfang) {
     o.hang = hang;
     o.eben = eben;
     if (hang) {
-        const saveMax = s.maxCreatures;
-        s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 3);
+        const saveMax = st.maxCreatures;
+        st.maxCreatures = Math.max(saveMax || 0, st.creatures.length + 3);
         pm.position.set(hang.x + 6, r._voxelSurfaceY(hang.x + 6, hang.z + 6) + 1.7, hang.z + 6); // nah genug für die Voll-Gestalt und die Hang-Proben
         const c = r.spawnCreatureAt(hang.x, hang.gesetz + 0.3, hang.z, "happy", "wesen", {
             precise: true,
@@ -438,7 +436,7 @@ async function proben(mitWiese, umfang) {
             let traeger = null;
             // der Täter beim Namen: die Box-Oberkante eines Werks, auf der die Lage nach dem größten Sprung steht (sonst Boden)
             const traegerBox = (x, z, y) => {
-                for (const e of s.architectures || []) {
+                for (const e of st.architectures || []) {
                     const bx = e && e.blockerAABBs;
                     if (!bx || !e.position || Math.abs(e.position.x - x) > 12 || Math.abs(e.position.z - z) > 12)
                         continue;
@@ -480,14 +478,14 @@ async function proben(mitWiese, umfang) {
             // (`_stepCharacterStructures`) noch die Auflage des Tiers (`_kreaturAuflage`). Geprüft wird jedes Werk mit
             // achsparallelen Boxen im Umkreis 60 m um den Start.
             {
-                const R = A.PLAYER_WALL_RADIUS;
-                const SNAP = A.PLAYER_GROUND_SNAP;
+                const R = AnazhRealm.PLAYER_WALL_RADIUS;
+                const SNAP = AnazhRealm.PLAYER_GROUND_SNAP;
                 let fugen = 0;
                 let traegt = 0;
                 const taeter = [];
                 const saveNah = c.userData._huellenNah;
                 const cp = c.position.clone();
-                for (const e of s.architectures || []) {
+                for (const e of st.architectures || []) {
                     const bx = e && e.blockerAABBs;
                     if (!bx || !e.position || bx.some((b) => b.obb)) continue;
                     if (Math.hypot(e.position.x - start.x, e.position.z - start.z) > 60) continue;
@@ -527,7 +525,7 @@ async function proben(mitWiese, umfang) {
                         c.userData._huellenNah = {
                             x: c.position.x,
                             z: c.position.z,
-                            t: s.creatureAnimationTime,
+                            t: st.creatureAnimationTime,
                             liste: [nurA],
                         };
                         const tier = r._kreaturAuflage(c, 0);
@@ -575,7 +573,7 @@ async function proben(mitWiese, umfang) {
             r.damageCreature(c, 1e6, {});
             const dy = c.userData.dying;
             if (dy) {
-                const nKipp = Math.ceil((dy.dauer + A.TOD_LAGE.vorlaufSec + 0.05) / 0.02);
+                const nKipp = Math.ceil((dy.dauer + AnazhRealm.TOD_LAGE.vorlaufSec + 0.05) / 0.02);
                 let wegMin = Infinity;
                 let wegMax = -Infinity;
                 for (let k = 0; k < nKipp; k++) {
@@ -600,7 +598,7 @@ async function proben(mitWiese, umfang) {
             } else o.k5 = { fehler: "kein Sterben" };
             if (c.parent) r.removeCreature(c); // ein Wesen oder ein Gefallener (state.leichname)
         }
-        s.maxCreatures = saveMax;
+        st.maxCreatures = saveMax;
     }
     // ── K6 TIER AM CHUNK-RAND (K07, der Fuß steht in der Standphase): am unteren Rand jedes Chunks (je Achse ein halber
     // Zellen-Schritt) zeichnet das Mesh des NACHBARN, die Karte des Eigners ist dort leer. Die Streifen-Stelle (0,45 m im
@@ -618,7 +616,7 @@ async function proben(mitWiese, umfang) {
         // 0,25 m trennt das von der Auflösung der Karte). Nicht gezählt: Punkte unter einem Überhang und Raster-Zellen über
         // einer Kante (eine Ecke unter steiler Fläche oder > 0,6 m Höhen-Spanne der fünf Säulen auf 0,45 m, steiler als 53°: dort
         // mittelt jede Karte Schichten und Knicke — eine Frage ihrer Auflösung, nicht des Rand-Streifens)
-        const hR = r._voxelChunkConfig(0).step / A.BODEN_KARTE_TEILUNG;
+        const hR = r._voxelChunkConfig(0).step / AnazhRealm.BODEN_KARTE_TEILUNG;
         const verwickelt = (x, z, g) => {
             const x0 = Math.floor(x / hR) * hR;
             const z0 = Math.floor(z / hR) * hR;
@@ -668,7 +666,7 @@ async function proben(mitWiese, umfang) {
                                 [0, -1],
                                 [-1, -1],
                             ].map(([a, b]) => {
-                                const e = s.voxelChunks.get(`${Math.floor(x / span) + a},${Math.floor(z / span) + b}`);
+                                const e = st.voxelChunks.get(`${Math.floor(x / span) + a},${Math.floor(z / span) + b}`);
                                 return e ? `L${e.lod || 0}${e.surfMap ? "" : " ohne Karte"}` : "fehlt";
                             });
                         }
@@ -677,7 +675,7 @@ async function proben(mitWiese, umfang) {
     }
     pm.position.set(start.x, start.y, start.z);
     kapsel(30);
-    s.playerVel = savedVel;
+    st.playerVel = savedVel;
     // ── K7 WIESE UND STREU AM CHUNK-RAND: Nah-Wiese und Nah-Streu lesen Fuß, Hang und Grün über den EINEN Leser
     // (`_bodenSichtAt`) — vorher nur die Karte des Eigners, im Rand-Streifen fiel kaum ein Büschel (ein Gitter kahler Linien in
     // der Wiese, Dichte 0,11 gegen 1,31 je m²). An der Mess-Wiese (der Messort des Haushalts, dicht) die Kacheln im Umkreis 120 m, deren Chunks
@@ -689,8 +687,8 @@ async function proben(mitWiese, umfang) {
         const [X, Z] = window.__messWiese;
         const setz = () => {
             pm.position.set(X, r.getTerrainHeightAt(X, Z) + 2, Z);
-            s._fixedSimPos = null;
-            if (s.playerVel) s.playerVel.setValue(0, 0, 0); // er hängt still über dem Ort: das Auge ruht, die Welt kann stehen
+            st._fixedSimPos = null;
+            if (st.playerVel) st.playerVel.setValue(0, 0, 0); // er hängt still über dem Ort: das Auge ruht, die Welt kann stehen
         };
         // Ruhe heißt: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`), und der Wald der Mesh-Zone steht — die
         // Antwort des Weltbilds (`_weltbildLuecken`, Terme `pflanzung` und `streu`). Seit K69 pflanzt die Schlange des Walds im
@@ -715,7 +713,7 @@ async function proben(mitWiese, umfang) {
             let stufe = -1;
             for (let cz = Math.floor(z0 / C.span) - 1; cz <= Math.floor(z1 / C.span); cz++)
                 for (let cx = Math.floor(x0 / C.span) - 1; cx <= Math.floor(x1 / C.span); cx++) {
-                    const e = s.voxelChunks.get(`${cx},${cz}`);
+                    const e = st.voxelChunks.get(`${cx},${cz}`);
                     if (!e) return -1;
                     if (stufe < 0) stufe = e.lod || 0;
                     else if ((e.lod || 0) !== stufe) return -1;
@@ -753,8 +751,8 @@ async function proben(mitWiese, umfang) {
                 sigma: Math.round(sigma * 1000) / 1000,
             };
         };
-        const NW = A.NAH_WIESE;
-        const NS = A.NAH_STREU;
+        const NW = AnazhRealm.NAH_WIESE;
+        const NS = AnazhRealm.NAH_STREU;
         const arten = r._nahStreuArten();
         // der Umkreis wächst in 20-m-Schritten (höchstens 240 m), bis die Probe ihren Umfang trägt (K55-2: an der Mess-Wiese
         // −278/−1038 trug der Umkreis 120 m 866 Büschel und 70 Pflanzen neben dem Streifen, die Aue ist offener als der alte Hang)
@@ -777,9 +775,8 @@ async function proben(mitWiese, umfang) {
 
 // ── K8 (Kopf der Datei) ──
 async function rollen(n) {
-    const s = r.state;
     const T = window.THREE;
-    const pm = s.playerMesh;
+    const pm = st.playerMesh;
     const gez = (x, z) => window.__gezeichnet(r, x, z);
     // die Uhr des Takts: je Takt ein Bild (16,7 ms) — der Gang schreitet gleich, wie schnell die Seite auch rechnet
     let uhr = performance.now();
@@ -851,15 +848,15 @@ async function rollen(n) {
         if (!Number.isFinite(X)) continue;
         const setz = (x = X, z = Z) => {
             pm.position.set(x, r._voxelSurfaceY(x, z) + 0.6, z);
-            s._fixedSimPos = null;
-            if (s.playerVel) s.playerVel.setValue(0, 0, 0);
+            st._fixedSimPos = null;
+            if (st.playerVel) st.playerVel.setValue(0, 0, 0);
         };
         await window.__weltStehtNach(() => (setz(), takt()));
         const R = (o[ort] = {
             x: X,
             z: Z,
             neig: ort === "hang" ? hang.neigung : 0,
-            ring: [s._activeRingRadius, s.chunkRingRadius],
+            ring: [st._activeRingRadius, st.chunkRingRadius],
         });
         // die Feinform: das Mesh gegen das Gesetz an n Zufalls-Punkten 3–30 m um den Ort
         const fein = [];
@@ -880,10 +877,10 @@ async function rollen(n) {
         // Einschwingen (der Geomorph folgt dem Auge)
         const streu = [];
         const streuJetzt = () => {
-            for (const reg of s.scatterRegions ? s.scatterRegions.values() : [])
+            for (const reg of st.scatterRegions ? st.scatterRegions.values() : [])
                 for (const c of (reg && reg.cells) || []) {
                     const ref = c.slots && c.slots[0];
-                    const g = ref && s.archInstanceGroups.get(ref.key);
+                    const g = ref && st.archInstanceGroups.get(ref.key);
                     if (!g || !g.mesh) continue;
                     v.setFromMatrixPosition(g.mesh.getMatrixAt(ref.slot, M), M);
                     const b = Math.hypot(v.x - c.x, v.z - c.z) < 0.05 ? gez(c.x, c.z) : null;
@@ -905,26 +902,26 @@ async function rollen(n) {
             setz(x, z);
             for (let k = 0; k < 30; k++) takt(); // der Leib steht am neuen Ort, bevor er geht (kein Lock der Bahn davor)
             let [i, k, x0, z0, h0, stecken] = [0, 0, x, z, 0, 0];
-            const vor = () => (P.x - x0) * Math.sin(s.yaw) + (P.z - z0) * Math.cos(s.yaw);
-            [s.yaw, s.keys.w] = [wege[0][0], true];
+            const vor = () => (P.x - x0) * Math.sin(st.yaw) + (P.z - z0) * Math.cos(st.yaw);
+            [st.yaw, st.keys.w] = [wege[0][0], true];
             const a = gehen((a) => {
                 if (++k % 30 === 0) [stecken, h0] = [stecken + (vor() - h0 < 0.15), vor()];
                 if (vor() >= wege[i % wege.length][1])
-                    [i, k, x0, z0, h0, s.yaw] = [i + 1, 0, P.x, P.z, 0, wege[(i + 1) % wege.length][0]];
+                    [i, k, x0, z0, h0, st.yaw] = [i + 1, 0, P.x, P.z, 0, wege[(i + 1) % wege.length][0]];
                 pm.updateMatrixWorld(true);
                 const ik = pm.userData._gaitIK;
                 for (const [j, l] of ik ? [ik.lockL, ik.lockR].entries() : [])
                     if (l.on && zaehlt(l) && (v.y = fuss(j)) !== null) a.push(v.y);
             });
-            s.keys.w = false;
+            st.keys.w = false;
             return { ...mass(a), stecken: stecken + (a.length < n) };
         };
         R.fuss = bahn([auf - Math.PI / 2, auf + Math.PI / 2].map((y) => [y, 25]));
         // der Huf: je Größen-Band ein Reh an seiner Obergrenze 4 m neben dem Spieler, frei im Gang (die Beine im Stand:
         // Hub 0 ihres Ziels); netId und Kreatur-Uhr fest — Größe und Weg hängen nie an der Fauna vor ihm
-        const [max, seq] = [s.maxCreatures, s._creatureNetSeq];
-        for (const [k, band] of r.constructor._verhaltenGesetz().groessen.entries()) {
-            [s.maxCreatures, s._creatureNetSeq, s.creatureAnimationTime] = [s.creatures.length + 3, 9e5 + k, 1000];
+        const [max, seq] = [st.maxCreatures, st._creatureNetSeq];
+        for (const [k, band] of AnazhRealm._verhaltenGesetz().groessen.entries()) {
+            [st.maxCreatures, st._creatureNetSeq, st.creatureAnimationTime] = [st.creatures.length + 3, 9e5 + k, 1000];
             const reh = r.spawnCreatureAt(
                 P.x + 4,
                 r._voxelSurfaceY(P.x + 4, P.z + 3) + 0.5,
@@ -935,7 +932,7 @@ async function rollen(n) {
                     bodySize: band.max,
                 }
             );
-            [s.maxCreatures, s._creatureNetSeq] = [max, seq];
+            [st.maxCreatures, st._creatureNetSeq] = [max, seq];
             const tb = reh && reh.userData._tierBaum;
             if (!tb) continue;
             const huf = sohle(reh, [tb.teile.flP, tb.teile.frP, tb.teile.hlP, tb.teile.hrP]);
@@ -961,7 +958,7 @@ async function rollen(n) {
             // je Takt die Blätter des Rads (`lf.rad` des Flats seiner Stufe, Slot i ↔ Blatt i): je Nabe der tiefste Vertex;
             // in der Luft (`_fahr.luft`) und im Stand (ein Rad auf einem Stein) zählt kein Boden-Kontakt
             const tief = (ref) => {
-                const g = s.archInstanceGroups.get(ref.key);
+                const g = st.archInstanceGroups.get(ref.key);
                 const pa = g.geom.attributes.position;
                 g.mesh.getMatrixAt(ref.slot, M);
                 let t = null;
@@ -971,7 +968,7 @@ async function rollen(n) {
                 }
                 return t;
             };
-            s.keys.w = true;
+            st.keys.w = true;
             R.rad = mass(
                 gehen((a) => {
                     const lod = Number.isFinite(e._servedLod) ? e._servedLod : e._lodLevel;
@@ -989,7 +986,7 @@ async function rollen(n) {
                     }
                 })
             );
-            s.keys.w = false;
+            st.keys.w = false;
             streuJetzt();
             r.dismountArchitecture();
             r.removeArchitecture(e);
@@ -997,7 +994,7 @@ async function rollen(n) {
         R.falllinie = bahn([auf, auf + Math.PI].map((y) => [y, 6]));
         // die Treppe: zehn Stufen (Auftritt 0,3 m, Breite 1,4 m) und ein Podest 1,6 m, bergauf längs der Falllinie ab dem Ort;
         // gezählt wird ein Fuß über ihrem Grundriss (quer ± 0,7 m, längs 0 … 4,6 m)
-        if (!s.blueprints.messtreppe && r.createBlueprint("messtreppe"))
+        if (!st.blueprints.messtreppe && r.createBlueprint("messtreppe"))
             for (let i = 0; i <= 10; i++) {
                 const [top, tief] = [0.17 * Math.min(i + 1, 10), i < 10 ? 0.3 : 1.6];
                 r.addPartToBlueprint("messtreppe", {
@@ -1036,20 +1033,20 @@ async function rollen(n) {
         // gehalten, bis der Leib landet — der Hub der Kapsel, der gezeichneten Hüfte und des Auges und die Weite vom Abdruck bis
         // zur Landung, je Leib: der heutige, die Masse ×1,25 (`_leibMasse`), die Kraft ×1,25 (`_sprungKraft`)
         if (ort !== "wiese") continue;
-        const y = () => (pm.updateMatrixWorld(true), [P.y, rig.legL.hip.getWorldPosition(v).y, s.camera.position.y]);
+        const y = () => (pm.updateMatrixWorld(true), [P.y, rig.legL.hip.getWorldPosition(v).y, st.camera.position.y]);
         const sprung = (fm, fk, j = { hub: [0, 0, 0] }) => {
             const L = Object.getPrototypeOf(r);
             [r._leibMasse, r._sprungKraft] = [(k) => fm * L._leibMasse.call(r, k), () => fk * L._sprungKraft.call(r)];
             setz();
-            [s.keys.w, s.keys.shift, s.yaw] = [true, true, 0];
+            [st.keys.w, st.keys.shift, st.yaw] = [true, true, 0];
             for (let k = 0; k < 120; k++) takt();
             const [y0, x0, z0] = [y(), P.x, P.z];
-            s.keys[" "] = true;
-            for (let k = 0; k < 300 && (!k || s.isJumping); k++, s.keys[" "] = false) {
+            st.keys[" "] = true;
+            for (let k = 0; k < 300 && (!k || st.isJumping); k++, st.keys[" "] = false) {
                 takt();
                 y().forEach((h, i) => (j.hub[i] = Math.max(j.hub[i], h - y0[i])));
             }
-            [s.keys.w, s.keys.shift, j.weite] = [false, false, Math.hypot(P.x - x0, P.z - z0)];
+            [st.keys.w, st.keys.shift, j.weite] = [false, false, Math.hypot(P.x - x0, P.z - z0)];
             delete r._leibMasse;
             delete r._sprungKraft;
             return j;

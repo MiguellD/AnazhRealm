@@ -28,11 +28,10 @@ hauptLauf(async () => {
     const out = await page.evaluate(async () => {
         const res = { items: [], fehler: [], selbst: {}, kinds: [] };
         await window.__weltDa();
-        const A = r.constructor;
         const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => { const rc = A._studioRenderConfig; return f && f.ready && f.recipes && f.recipeCount > 0 && rc && rc.lod && rc.lod.kindStages && rc.lod.budget; });
+        await window.__weltDa(() => { const rc = AnazhRealm._studioRenderConfig; return f && f.ready && f.recipes && f.recipeCount > 0 && rc && rc.lod && rc.lod.kindStages && rc.lod.budget; });
         const PC = globalThis.__phytoCore;
-        const L = A._studioRenderConfig.lod;
+        const L = AnazhRealm._studioRenderConfig.lod;
         res.kinds = Object.keys(L.budget).filter((k) => k !== "gestalten");
         const tris = (geo) => (geo.index ? geo.index.count / 3 : geo.attributes.position.count / 3);
         const ofenArten = { kreatur: true, koerper: true };
@@ -78,8 +77,8 @@ hauptLauf(async () => {
 
         // ===== O: der Ofen — Gesetz gegen die Meshes des gegossenen Körpers =====
         const ofenMessen = (bauen) => {
-            const altMemo = A._tierOfenMemo;
-            A._tierOfenMemo = new Map(); // frischer Guss, das Welt-Memo bleibt unberührt
+            const altMemo = AnazhRealm._tierOfenMemo;
+            AnazhRealm._tierOfenMemo = new Map(); // frischer Guss, das Welt-Memo bleibt unberührt
             const orig = r._ofenAssembleAsset;
             let gefangen = null;
             r._ofenAssembleAsset = function (meshes) {
@@ -91,7 +90,7 @@ hauptLauf(async () => {
                 asm = bauen();
             } finally {
                 r._ofenAssembleAsset = orig;
-                A._tierOfenMemo = altMemo;
+                AnazhRealm._tierOfenMemo = altMemo;
             }
             if (!asm || !asm.root || !gefangen) return { fehler: "kein Guss" };
             let wd = 0,
@@ -164,13 +163,13 @@ hauptLauf(async () => {
                 }
             }
         }
-        const sb = A._ofenStarrBinden;
+        const sb = AnazhRealm._ofenStarrBinden;
         try {
-            A._ofenStarrBinden = function () {};
+            AnazhRealm._ofenStarrBinden = function () {};
             const m = ofenMessen(() => r._ofenKreaturTemplate("wolf", null, 0));
             res.selbst.s2 = m;
         } finally {
-            A._ofenStarrBinden = sb;
+            AnazhRealm._ofenStarrBinden = sb;
         }
         return res;
     });

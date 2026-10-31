@@ -24,7 +24,6 @@ hauptLauf(async () => {
         await server.zeige(page, 120000, "index.html", "networkidle0");
         await warteAufWelt(page, 120000);
         out = await page.evaluate(() => {
-            const AR = r.constructor;
             const o = { fails: [], zahlen: {} };
             const fail = (msg) => o.fails.push(msg);
             const DT = 1 / 60;
@@ -72,7 +71,7 @@ hauptLauf(async () => {
                     moveDirection: new THREE.Vector3(),
                     architectures: [],
                     floatingIslands: null,
-                    materials: r.state.materials,
+                    materials: st.materials,
                 };
                 shim._mountedEntry = null;
                 shim._fieldDensityAt = (x, y, z) => densityAt(x, y, z);
@@ -127,13 +126,13 @@ hauptLauf(async () => {
                 if (!(wRes.x < 8.01)) fail(`F2a: der Klip ließ die Wand durch (x=${wRes.x.toFixed(2)} ≥ 8)`);
                 // Selbst-Test F2a: die Klip-Schleife des Kontakt-Lösers auf 0 Ebenen (SLIDE_CLIP_PLANES, `_wandGleiten`) → der
                 // Fortschritt MUSS kollabieren.
-                const k0 = AR.SLIDE_CLIP_PLANES;
-                AR.SLIDE_CLIP_PLANES = 0;
+                const k0 = AnazhRealm.SLIDE_CLIP_PLANES;
+                AnazhRealm.SLIDE_CLIP_PLANES = 0;
                 let stopped;
                 try {
                     stopped = runWallWindow(mkWallShim());
                 } finally {
-                    AR.SLIDE_CLIP_PLANES = k0;
+                    AnazhRealm.SLIDE_CLIP_PLANES = k0;
                 }
                 const deadRatio = fRes.proj > 0 ? stopped.proj / fRes.proj : NaN;
                 o.zahlen.klipTot = { wand: stopped.proj, ratio: deadRatio };
@@ -158,8 +157,8 @@ hauptLauf(async () => {
                     fail(`F2b: Steilhang-Rutsch nur ${sp.x.toFixed(3)} m in 120 Ticks (soll > 0,3 m bergab)`);
                 if (!(sp.y < 0.4)) fail(`F2b: der Rutsch folgte der Fläche nicht abwärts (y=${sp.y.toFixed(2)})`);
                 // Selbst-Test F2b: die Hang-Grenze auf −1 (hang.maxSlopeY über `_bewegungsBlock`) → der Körper MUSS haften.
-                const B0 = AR._bewegungsBlock;
-                AR._bewegungsBlock = function (k, f) {
+                const B0 = AnazhRealm._bewegungsBlock;
+                AnazhRealm._bewegungsBlock = function (k, f) {
                     const b = B0.call(this, k, f);
                     return k === "hang" ? Object.assign({}, b, { maxSlopeY: -1 }) : b;
                 };
@@ -167,7 +166,7 @@ hauptLauf(async () => {
                 try {
                     runTicks(stuck, 120, {}, 0);
                 } finally {
-                    AR._bewegungsBlock = B0;
+                    AnazhRealm._bewegungsBlock = B0;
                 }
                 o.zahlen.steilhangTot = stuck.state.playerMesh.position.x;
                 if (!(Math.abs(stuck.state.playerMesh.position.x) < 0.05))
@@ -264,7 +263,7 @@ hauptLauf(async () => {
                 [st.weather, st.weatherTransition, st.hydroSurfaceUniforms] = ["stormy", null, { wind: { value: 0 } }];
                 const g = new THREE.Group().add(new THREE.Object3D());
                 g.position.copy(P);
-                const { vc } = AR._fahrSchrittGesetz();
+                const { vc } = AnazhRealm._fahrSchrittGesetz();
                 const T = { x: P.x, y: 9, z: P.z };
                 const leser = {
                     gras: () => (r._loopRender(), st.windUniforms.uWindStrength.value),
@@ -320,11 +319,11 @@ hauptLauf(async () => {
                 if (!(Math.abs(far.x - far0.x) < 1e-9)) fail("F4: die Sphäre wirkt außerhalb ihres Radius");
                 // CPU-Seite: der Frame-Tick (`_loopRender`) speist uWindDir aus dem EINEN Wind (`_windAt`, Richtung
                 // `_windDirAt(t)`) und füllt über `_tickGrasBend` Slot 0 mit dem Spieler; tote Slots ruhen.
-                if (window.THREE && THREE.TSL && r.state.windUniforms) {
+                if (window.THREE && THREE.TSL && st.windUniforms) {
                     r._ensureWindCoupling(THREE.TSL);
-                    const wu = r.state.windUniforms;
-                    if (wu.uBend && wu.uWindDir && r.state.playerMesh) {
-                        const pp = r.state.playerMesh.position;
+                    const wu = st.windUniforms;
+                    if (wu.uBend && wu.uWindDir && st.playerMesh) {
+                        const pp = st.playerMesh.position;
                         const t = 1234.5;
                         wu.uBend[0].value.set(pp.x + 99, 0, 0, 0);
                         wu.uWindDir.value.set(0, 0);

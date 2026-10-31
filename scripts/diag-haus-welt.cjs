@@ -2300,7 +2300,7 @@ hauptLauf(async () => {
             await page.evaluate(() =>
                 window.__weltStehtNach(() => {
                     try {
-                        window.anazhRealm._gameLoopTick(performance.now());
+                        r._gameLoopTick(performance.now());
                     } catch {}
                 })
             );

@@ -465,7 +465,6 @@ if (process.argv.includes("--selftest")) {
 const server = statikServer();
 
 async function probe() {
-    const AR = r.constructor;
     const P = Object.getPrototypeOf(r);
     // DAS ORAKEL: der Brennglas-Takt von main V18.536 — die Schleife über den ganzen Bestand, je Ziel dasselbe Wärme-Gesetz
     // (`_brennWaerme`, stoffe.K1)
@@ -505,7 +504,7 @@ async function probe() {
                 `Die Sonne entzündete durch „${name(quelle)}" „${name(t)}"${d != null ? ` (${Math.round(d)} m von dir)` : ""}.`
             );
             if (r.journalAppend)
-                r.journalAppend("loss", AR._datum`Die Sonne entzündete durch „${name(quelle)}" „${name(t)}".`, {
+                r.journalAppend("loss", AnazhRealm._datum`Die Sonne entzündete durch „${name(quelle)}" „${name(t)}".`, {
                     type: t.type,
                     linse: quelle.type,
                 });
@@ -610,8 +609,8 @@ async function probe() {
     // gestrecktes Brennbares, dessen Position 3,9 m daneben in der NACHBAR-Zelle steht — sein Körper trägt den Brennpunkt, sein
     // Platz (Position ± Blocker-Reichweite) liegt außerhalb der halben Frage: nur die volle Reichweite findet ihn. Die Art sucht
     // die Wand unter den brennbaren (Probe-Spawn, die Blocker-Reichweite unter 1,6 m — eine Eiche trägt 10 m Krone als Blocker)
-    const ZELLE = AR.BLOCKER_ZELLE;
-    const RW = AR.FOCUSING_HEAT_RANGE_M;
+    const ZELLE = AnazhRealm.BLOCKER_ZELLE;
+    const RW = AnazhRealm.FOCUSING_HEAT_RANGE_M;
     aus.fern = { gesetzt: false, versucht: 0 };
     const fx = Math.floor((ox + 60) / ZELLE) * ZELLE + 5.9,
         fz = oz + 4;
@@ -777,7 +776,7 @@ async function probe() {
         const sonne = st.weather === "sunny" ? r._sonnenRichtung() : null;
         const gl = archs.filter((e) => e && e.affordances && e.affordances.focusing && e.position);
         const scheint = !!(sonne && sonne.y > 0 && gl.some((fa) => r._brennpunkte(fa, sonne).length));
-        const R = AR.FOCUSING_HEAT_RANGE_M + AR.BLOCKER_ZELLE;
+        const R = AnazhRealm.FOCUSING_HEAT_RANGE_M + AnazhRealm.BLOCKER_ZELLE;
         let betroffen = 0;
         for (const e of archs) {
             if (!e) continue;
@@ -943,7 +942,7 @@ async function probe() {
     for (let i = 0; i < 300; i++) {
         const x = ox - 260 + rng() * 460,
             z = oz - 80 + rng() * 160;
-        const weite = i % 2 ? 24 : AR.BOOST_RESONANCE_RADIUS;
+        const weite = i % 2 ? 24 : AnazhRealm.BOOST_RESONANCE_RADIUS;
         const R2 = weite * weite;
         const nah = (e) => e && e.position && (e.position.x - x) ** 2 + (e.position.z - z) ** 2 <= R2;
         const alt = st.architectures.filter(nah);
@@ -1025,7 +1024,7 @@ async function probe() {
     // (N) DIE NÄHE: die Takte, die nur den Spieler treffen — Strahlen (mit dem Relais der Masten), Balancieren, Heben und die
     // nächste Affordanz (der Portal-Takt je Frame) — urteilen wie die Schleife über ihr Verzeichnis (das ORAKEL, der Takt von main
     // 9fb869a5 im Wortlaut) und kosten die NÄHE: eine ferne Menge derselben Namen (Strahler, Masten, …) ändert ihre Zeit nicht.
-    aus.naehe = window.__naeheProbe(r, st, AR, P, setze, stelle, ox - 700, oz);
+    aus.naehe = window.__naeheProbe(r, st, AnazhRealm, P, setze, stelle, ox - 700, oz);
     aus.bestand = st.architectures.length;
     return aus;
 }

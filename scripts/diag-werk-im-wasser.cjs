@@ -1517,12 +1517,11 @@ async function probe(A) {
                 // der Nexus-Deckel ruht, solange R misst: über dem Deckel fällt der fernste autonome Bau (`_capNexusStructures`),
                 // und das Haus am Seerand ist der fernste, weil der Spieler landein am Rand des Plans steht — R prüft das
                 // Wasser, nicht den Deckel
-                const Klasse = AnazhRealm;
-                const deckel = Klasse.MAX_NEXUS_STRUCTURES;
+                const deckel = AnazhRealm.MAX_NEXUS_STRUCTURES;
                 const autos = () => st.architectures.filter((e) => e?.autonomous).length;
                 const autosVor = autos();
                 const erdbauVor = new Set(Object.keys(st.worldMeta?.erdbau || {}));
-                Klasse.MAX_NEXUS_STRUCTURES = Infinity;
+                AnazhRealm.MAX_NEXUS_STRUCTURES = Infinity;
                 try {
                     zensus.quelle = "Nexus-Dorf";
                     res = await r.spawnSettlement({
@@ -1545,7 +1544,7 @@ async function probe(A) {
                     await neuBauen();
                 } finally {
                     r._invalidateWaterCapsAround = invAlt;
-                    Klasse.MAX_NEXUS_STRUCTURES = deckel;
+                    AnazhRealm.MAX_NEXUS_STRUCTURES = deckel;
                 }
                 const autosNach = autos();
                 const nach = zaehlen();

@@ -459,8 +459,7 @@ function buehne() {
             const bSchatten = await replay(fremderStoff);
             rend._renderScene = zaehlUm(spielSzene);
             // (d)(e)(f)(g) DIE STAND-WAND: Prüfungen, Voll-Refreshs, Gänge und Uploads je Render-Abschnitt — der Zähler der Diät-Linse.
-            const A = r.constructor;
-            const schreibRoh = A._diaetGeteiltSchreiben;
+            const schreibRoh = AnazhRealm._diaetGeteiltSchreiben;
             const Z = window.__diaetZaehler();
             const gezaehlt = async (fn) => {
                 const z = Z.an();
@@ -477,13 +476,13 @@ function buehne() {
                 gruppe.isBundleGroup = false;
                 blick(1);
                 const sammle = new Map();
-                const pruefRoh = A._diaetRefresh;
-                A._diaetRefresh = function (obs, ro, frame, altNR) {
+                const pruefRoh = AnazhRealm._diaetRefresh;
+                AnazhRealm._diaetRefresh = function (obs, ro, frame, altNR) {
                     if (!ro.material.isShadowPassMaterial && karten.includes(ro.object))
                         sammle.set(ro.getNodeBuilderState(), ro.getBindings().filter((g) => g.bindings[0]?.groupNode?.shared === true).map((g) => g.id));
                     return pruefRoh(obs, ro, frame, altNR);
                 };
-                await schuss().finally(() => (A._diaetRefresh = pruefRoh));
+                await schuss().finally(() => (AnazhRealm._diaetRefresh = pruefRoh));
                 const jeProgramm = [...sammle.values()];
                 const alle = new Set();
                 for (const ids of jeProgramm) for (const id of ids) alle.add(id);
@@ -524,12 +523,12 @@ function buehne() {
                     laub.instanceMatrix.needsUpdate = true;
                 };
                 const mitDiaet = async (fn) => {
-                    const alt = A._diaetRefresh;
-                    if (fn) A._diaetRefresh = fn;
+                    const alt = AnazhRealm._diaetRefresh;
+                    if (fn) AnazhRealm._diaetRefresh = fn;
                     try {
                         return await schuss();
                     } finally {
-                        A._diaetRefresh = alt;
+                        AnazhRealm._diaetRefresh = alt;
                     }
                 };
                 const bild = {};
@@ -542,10 +541,10 @@ function buehne() {
                     const diaetBild = await mitDiaet(null);
                     const wahr = await mitDiaet(immer);
                     // der Täter: der Melder schweigt
-                    const regt = A._regt;
-                    A._regt = () => 0;
+                    const regt = AnazhRealm._regt;
+                    AnazhRealm._regt = () => 0;
                     aendere();
-                    const taeterBild = await mitDiaet(null).finally(() => (A._regt = regt));
+                    const taeterBild = await mitDiaet(null).finally(() => (AnazhRealm._regt = regt));
                     const wahr2 = await mitDiaet(immer);
                     bild[bundle ? "replay" : "direkt"] = { diaet: gleich(diaetBild, wahr), taeter: gleich(taeterBild, wahr2) };
                 }
@@ -593,15 +592,15 @@ function buehne() {
                 // Der Täter (Kontrolle): derselbe Gang mit stehendem `info.calls` — sein Stempel ist nur die Render-Id.
                 const taeterGang = (rr, ro, rid) => schreibRoh(Object.create(rr, { info: { value: { calls: rid } } }), ro, rid);
                 const mit2 = async (refresh, gang) => {
-                    const altR = A._diaetRefresh,
-                        altG = A._diaetGeteiltSchreiben;
-                    if (refresh) A._diaetRefresh = refresh;
-                    if (gang) A._diaetGeteiltSchreiben = gang;
+                    const altR = AnazhRealm._diaetRefresh,
+                        altG = AnazhRealm._diaetGeteiltSchreiben;
+                    if (refresh) AnazhRealm._diaetRefresh = refresh;
+                    if (gang) AnazhRealm._diaetGeteiltSchreiben = gang;
                     try {
                         return await schuss(szene2);
                     } finally {
-                        A._diaetRefresh = altR;
-                        A._diaetGeteiltSchreiben = altG;
+                        AnazhRealm._diaetRefresh = altR;
+                        AnazhRealm._diaetGeteiltSchreiben = altG;
                     }
                 };
                 const verschachtelt = {};
@@ -641,10 +640,10 @@ function buehne() {
                     m.frustumCulled = false;
                     return m;
                 };
-                const sA = lage(A._instanzMesh(sGeo, sStoff, 3), 0);
-                const sB = lage(A._instanzMesh(sGeo, sStoff, 3), 6);
-                A._instanzZahl(sA, 3);
-                A._instanzZahl(sB, 3);
+                const sA = lage(AnazhRealm._instanzMesh(sGeo, sStoff, 3), 0);
+                const sB = lage(AnazhRealm._instanzMesh(sGeo, sStoff, 3), 6);
+                AnazhRealm._instanzZahl(sA, 3);
+                AnazhRealm._instanzZahl(sB, 3);
                 const refA = lage(new T.InstancedMesh(sGeo, sStoff, 3), 0);
                 const refB = lage(new T.InstancedMesh(sGeo, sStoff, 3), 6);
                 const zustand = (o) => {
@@ -760,12 +759,12 @@ function buehne() {
             await window.__weltDa((r) => {
                 return !!(r?.state?.rendererReady && r.state._weltbildDa && r.state.renderer?.backend);
             });
-            r.state.renderer.setAnimationLoop(null);
-            const be = r.state.renderer.backend;
+            st.renderer.setAnimationLoop(null);
+            const be = st.renderer.backend;
             return {
                 ok: true,
                 ms: Math.round(performance.now() - t0),
-                wahrheit: !!r.state.renderer.__anazhBundleWahrheit,
+                wahrheit: !!st.renderer.__anazhBundleWahrheit,
                 webgpu: be.isWebGPUBackend === true,
             };
         });

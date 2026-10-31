@@ -141,7 +141,7 @@ async function fensterSchritt(o) {
         const befund = (s) =>
             s.fremd.join(" | ") || (s.wacheNeu ? `GPU-Wache +${s.wacheNeu}: ${s.wacheKoepfe.slice(-2).join(" | ")}` : "");
         const fenster = (w, h, dsf) => () => page.setViewport({ width: w, height: h, deviceScaleFactor: dsf });
-        const pixelRatio = (v) => () => page.evaluate((x) => r.state.renderer.setPixelRatio(x), v);
+        const pixelRatio = (v) => () => page.evaluate((x) => st.renderer.setPixelRatio(x), v);
         const erg = {};
         const SCHRITTE = [
             ["E1", "704×396 DPR 1", fenster(704, 396, 1), null],
@@ -171,7 +171,7 @@ async function fensterSchritt(o) {
                     .join("/")}`
         );
         // ES: der Selbsttest am echten Frame — ohne den Wächter fällt der Pixel-Ratio-Schritt beim Namen (der letzte Schritt)
-        await page.evaluate(() => (r.constructor._diaetVorTextur = () => false));
+        await page.evaluate(() => (AnazhRealm._diaetVorTextur = () => false));
         const es = await schritt("ES", "setPixelRatio(1.25) ohne Wächter", pixelRatio(1.25), 1.25, true);
         const faellt = (s) => [...s.fremd, ...s.wacheKoepfe].some((k) => GROESSEN_ZIELE.test(k));
         check(

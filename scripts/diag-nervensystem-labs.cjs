@@ -80,10 +80,9 @@ hauptLauf(async () => {
         // (must-ignore am Chokepoint — kein Auto-Bauplan neben dem Werk-Ziel einer Art, jeder wäre ein Träger-Zwilling —
         // prüft gate:nervensystem S am Stammbaum für JEDE Art.)
         // EINE Quelle: die Dial-Karten wohnen in den Gesetzbüchern, der Stamm reicht dieselben Objekte durch (kein Zwilling).
-        const A = AnazhRealm;
         res.b.dialEins =
-            A.KOERPER_DIAL_MAP === window.__koerperCore.DIAL_MAP &&
-            A.TETRAPODA_DIAL_MAP === window.__tetrapodaCore.DIAL_MAP;
+            AnazhRealm.KOERPER_DIAL_MAP === window.__koerperCore.DIAL_MAP &&
+            AnazhRealm.TETRAPODA_DIAL_MAP === window.__tetrapodaCore.DIAL_MAP;
         // ===== K: DER EINE AUDIO-KONSUMENT (Lofi liest das Studio-Tempo) =====
         try {
             const emo = st.player.emotions;

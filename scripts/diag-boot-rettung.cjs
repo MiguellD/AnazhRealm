@@ -89,7 +89,7 @@ async function bereit(page) {
                 return {
                     ok: true,
                     ms: Math.round(performance.now() - t0),
-                    welt: r.state.worldMeta.worldId,
+                    welt: st.worldMeta.worldId,
                     zeiger: r.activeWorldGet(),
                     marken: (snap.match(/MARK-[A-Z0-9]+/g) || []).filter((x, i, a) => a.indexOf(x) === i),
                     index: r.worldsIndexLoad().map((e) => e.worldId),

@@ -696,12 +696,12 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async (laufzeitMs) => {
         const res = {};
-        await window.__weltDa(() => !(!r || !r.state));
+        await window.__weltDa(() => !(!r || !st));
         // Settle wie diag-blick: Chunks-Plateau (großzügig — swiftshader ist zäh).
         let stable = 0,
             last = -1;
         for (const weiter = window.__deckel("der Ring", 600); weiter(); ) {
-            const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
+            const sz = st.voxelChunks ? st.voxelChunks.size : 0;
             if (sz === last) stable++;
             else {
                 stable = 0;
@@ -710,7 +710,7 @@ hauptLauf(async () => {
             if (sz > 20 && stable > 10) break;
             await sleep(500);
         }
-        const rend = r.state.renderer;
+        const rend = st.renderer;
         if (!rend) return { fatal: "kein Renderer" };
         res.rendererArt = rend.isWebGPURenderer ? "webgpu" : rend.isWebGLRenderer ? "webgl" : "?";
         res.headlessNull = !!rend._isHeadlessNull;
@@ -719,7 +719,7 @@ hauptLauf(async () => {
         res.grenzenUnter = await navigator.gpu.requestAdapter({ featureLevel: "compatibility" }).then((a) => Object.keys(Object.getPrototypeOf(a.limits)).filter((k) => /PerShaderStage$/.test(k) && rend.backend.device.limits[k] < a.limits[k]).map((k) => `${k} ${rend.backend.device.limits[k]} < ${a.limits[k]}`)); // prettier-ignore
         // ~15 s echte Laufzeit: der rAF-Loop läuft; falls die Frames stocken
         // (headless-Drossel), treiben wir den Loop von Hand (wie diag-blick).
-        const frGet = () => r.state.flightRecorder || null;
+        const frGet = () => st.flightRecorder || null;
         const framesVor = frGet() ? frGet().frames : 0;
         const tEnde = performance.now() + laufzeitMs;
         while (performance.now() < tEnde) {
@@ -772,7 +772,7 @@ hauptLauf(async () => {
             memoryApi: !!performance?.memory,
         };
         // (3) Pipelines: der Boot-Warm-Compile ERZEUGT welche — Konsum-Beweis.
-        const sns = r.state.perfSense || {};
+        const sns = st.perfSense || {};
         res.pipes = {
             pipesN: fr.pipesN,
             total: sns.pipesTotal,

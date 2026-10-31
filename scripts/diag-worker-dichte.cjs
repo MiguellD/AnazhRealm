@@ -64,11 +64,10 @@ const server = statikServer({ root, keinCache: true, wandle: kernWandle });
 async function probe(page, welt, mitAbdruck, zwilling = false) {
     return page.evaluate(
         async (welt, mitAbdruck, punkte, messorte, N_TURM, zwilling) => {
-            const s = st;
             r._gameLoopTick = () => {}; // die Welt steht still: kein Stream, kein Takt zwischen Main und Worker
             const out = {
                 welt,
-                seed: s.worldMeta.seed,
+                seed: st.worldMeta.seed,
                 orte: [],
                 gitter: 0,
                 worte: 0,
@@ -77,13 +76,13 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                 befunde: [],
             };
             const hex = window.__sha;
-            const warteAck = (nachricht) => r._voxelFadenAuftrag(s.voxelWorker, nachricht);
+            const warteAck = (nachricht) => r._voxelFadenAuftrag(st.voxelWorker, nachricht);
             const stand = () => r._voxelWorkerSyncState({ op: "state-set" });
             // Die Orte: Standard = die Messorte des Haushalts + ein Fluss-Chunk; Bühne = ihre Stationen.
             const orte = [];
             if (welt === "standard") {
                 orte.push(...messorte);
-                const h = s.hydrosphere;
+                const h = st.hydrosphere;
                 const fl =
                     h && Array.isArray(h.rivers) ? h.rivers.find((f) => f && f.points && f.points.length > 4) : null;
                 if (fl) {
@@ -93,7 +92,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
             } else {
                 for (const st of welt.stationen || []) orte.push({ id: st.id, x: st.x, z: st.z });
             }
-            const base = s.terrainBaseHeight || 0;
+            const base = st.terrainBaseHeight || 0;
             const vergleiche = async (ort, lod, tag) => {
                 const cfg = r._voxelChunkConfig(lod);
                 const cx = Math.floor(ort.x / cfg.span);
@@ -106,7 +105,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                 const dZ = cfg.dim + 3;
                 const key = `linse-dichte|${cx},${cz},${lod}|${tag}`;
                 const main = r._voxelEditedDensityGrid(key, ox, oy, oz, dX, dY, dZ, cfg.step);
-                s.voxelBaseDensityCache.delete(key);
+                st.voxelBaseDensityCache.delete(key);
                 const worker = await r._voxelWorkerComputeDensity(ox, oy, oz, dX, dY, dZ, cfg.step);
                 const z = { ort: ort.id, lod, tag, cx, cz, n: main.length, abweichend: 0, maxDiff: 0, erste: null };
                 out.gitter++;
@@ -148,8 +147,8 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                 return z;
             };
             // (1) ohne Edits
-            const editsVorher = s.worldMeta.voxelEdits;
-            s.worldMeta.voxelEdits = [];
+            const editsVorher = st.worldMeta.voxelEdits;
+            st.worldMeta.voxelEdits = [];
             await stand();
             for (const ort of orte) {
                 const zeilen = [];
@@ -177,8 +176,8 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                             hoch,
                             r._terrainMacroSurfaceY(ox + (a * cfg.span) / 4, oz + (b * cfg.span) / 4)
                         );
-                const tischAlt = s.waterLevel;
-                s.waterLevel = hoch + 20;
+                const tischAlt = st.waterLevel;
+                st.waterLevel = hoch + 20;
                 await stand();
                 const saat = new Uint8Array(4 * cfg.dim).fill(1);
                 const key = `linse-saat|${cx},${cz}`;
@@ -192,7 +191,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                     cfg.dim + 3,
                     cfg.step
                 );
-                s.voxelBaseDensityCache.delete(key);
+                st.voxelBaseDensityCache.delete(key);
                 const mainZellen = (sa) => {
                     r._flutSaat = () => sa;
                     try {
@@ -225,7 +224,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                         saatWirkt: diff(mit, await workerZellen(null)),
                     };
                 } finally {
-                    s.waterLevel = tischAlt;
+                    st.waterLevel = tischAlt;
                     await stand();
                 }
                 if (out.flutSaat.mainWirkt) break;
@@ -253,7 +252,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
             // Wache des Fern-Rings (`_fernRingDeckWache`, 640 Probe-Ecken) weckt genau die Ecken in der Reichweite; jenseits ändert
             // sich keine Fläche. `zwilling` (Selbsttest): die alte Reichweite r + 4 m — FERN-RING MUSS beim Namen rot werden.
             const o0 = orte[0];
-            s.worldMeta.voxelEdits = [];
+            st.worldMeta.voxelEdits = [];
             await stand();
             const G = globalThis.__gelaendeCore;
             const [R, tx, tz] = [3.5, o0.x + 0.37, o0.z + 0.61];
@@ -270,7 +269,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                 krone = r._voxelSurfaceY(tx, tz);
             }
             r._addVoxelEdit(tx + 6, y0, tz - 2, 2.5, "carve");
-            const alle = s.worldMeta.voxelEdits;
+            const alle = st.worldMeta.voxelEdits;
             const fr = {
                 zoneVerts: 640,
                 teilung: { randV: new Uint8Array(640).fill(1) },
@@ -293,7 +292,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                 );
             if (jenseits) out.befunde.push(`REICHWEITE (editReich): ${jenseits} Flächen ändern sich jenseits von ihr`);
             // (3) DIE EDIT-WAHRHEIT (K23: 300 Edits, Karte = Liste) misst `--kern`.
-            s.worldMeta.voxelEdits = editsVorher;
+            st.worldMeta.voxelEdits = editsVorher;
             await stand();
             // Der Abdruck der Makro-Höhe für den Byte-Beweis: die Punkte des Kerns (`abdruckFeld`), die Höhe der Welt.
             const makroSha = async () =>
@@ -350,15 +349,15 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                 // DREI WELT-SAATEN: der Boot-Seed und zwei frische Saaten in der Form `w-<12>-<6>` — je Saat die
                 // chirurgische Regenesis (die Ströme; das Netz des Gesetzbuchs ist je Saat gemerkt), dann der Abdruck.
                 if (welt === "standard") {
-                    out.shaSaaten = { [s.worldMeta.seed]: out.shaMakro };
+                    out.shaSaaten = { [st.worldMeta.seed]: out.shaMakro };
                     out.shaLeserSaaten = {};
-                    const seedAlt = s.worldMeta.seed;
-                    const macroAlt = s.worldMeta.macro;
+                    const seedAlt = st.worldMeta.seed;
+                    const macroAlt = st.worldMeta.macro;
                     const regenesis = (saat, macro) => {
-                        s.worldMeta.seed = saat;
+                        st.worldMeta.seed = saat;
                         r._voxelNoise = null;
-                        if (macro !== undefined) s.worldMeta.macro = macro;
-                        else delete s.worldMeta.macro;
+                        if (macro !== undefined) st.worldMeta.macro = macro;
+                        else delete st.worldMeta.macro;
                     };
                     for (const saat of ["w-sweepalpha0001-aaaaaa", "w-sweepbeta00002-bbbbbb"]) {
                         regenesis(saat, undefined);
@@ -378,7 +377,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
             if (r._getVoxelWorker()) {
                 const N = 48;
                 const pts = new Float32Array(N * N * 2);
-                const pm = s.playerMesh ? s.playerMesh.position : { x: 0, z: 0 };
+                const pm = st.playerMesh ? st.playerMesh.position : { x: 0, z: 0 };
                 for (let i = 0; i < N; i++)
                     for (let j = 0; j < N; j++) {
                         pts[(i * N + j) * 2] = pm.x + (i - N / 2) * 173.3;
@@ -476,9 +475,8 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
 const STROM_SOLL = "pending · volle Stände 0 · Dichte true · Brüche 0 · Reihe sofort";
 async function strom(page, urform) {
     return page.evaluate(async (urform) => {
-        const s = st;
-        const [w, ack, gen, p] = [s.voxelWorker, s.voxelWorkerReady, s.voxelWorkerStateGen, s.lastPlayerVoxelChunk];
-        s.voxelWorkerReady = false;
+        const [w, ack, gen, p] = [st.voxelWorker, st.voxelWorkerReady, st.voxelWorkerStateGen, st.lastPlayerVoxelChunk];
+        st.voxelWorkerReady = false;
         if (urform)
             r._voxelWorkerSyncState(),
                 (r._voxelFadenAuftrag = async (...x) => (await 0, AnazhRealm.prototype._voxelFadenAuftrag.apply(r, x)));
@@ -489,12 +487,12 @@ async function strom(page, urform) {
             Worker.prototype.postMessage.apply(w, arguments);
         };
         const d = r._voxelWorkerComputeDensity(0, 0, 0, 2, 2, 2, 1.8);
-        s.voxelWorkerReady = ack;
+        st.voxelWorkerReady = ack;
         delete w.postMessage;
         delete r._voxelFadenAuftrag;
         const da = (await d).length > 0; // der Auftrag reist hinter dem init, der hängende Ack hält ihn nie
         const bruch = [...(r._bruchBuch || new Map()).keys()].filter((t) => t.startsWith("FADEN-UMGANGEN")).length;
-        return `${a === "pending" ? a : "Stufe 3"} · volle Stände ${s.voxelWorkerStateGen - gen} · Dichte ${da} · Brüche ${bruch} · Reihe ${reihe}`;
+        return `${a === "pending" ? a : "Stufe 3"} · volle Stände ${st.voxelWorkerStateGen - gen} · Dichte ${da} · Brüche ${bruch} · Reihe ${reihe}`;
     }, urform);
 }
 
@@ -1471,10 +1469,9 @@ async function gebaut(page) {
     }
     const { alle, stoerung } = await page.evaluate(
         async (saaten, selbst) => {
-            const s = st;
             await window
                 .__gebautNach("noch: !(s.hydrosphere && s.hydrosphere.ready)", {
-                    fertig: () => !!(s.hydrosphere && s.hydrosphere.ready),
+                    fertig: () => !!(st.hydrosphere && st.hydrosphere.ready),
                     takt: async () => {
                     try {
                         r._gameLoopTick(performance.now());
@@ -1487,7 +1484,7 @@ async function gebaut(page) {
                 });
             r._gameLoopTick = () => {}; // die Welt steht still
             const G = window.__gelaendeCore;
-            const wl = s.waterLevel;
+            const wl = st.waterLevel;
             const S = 30,
                 n = 67,
                 x0 = -990;
@@ -1539,19 +1536,19 @@ async function gebaut(page) {
                 });
             // die Hydrosphäre aus dem Faden (`gesetz`: ein anderes Gesetz für den Selbsttest), in den Main gelegt
             const ausDemFaden = async (gesetz) => {
-                const auftrag = (msg) => r._voxelFadenAuftrag(s.voxelWorker, msg);
+                const auftrag = (msg) => r._voxelFadenAuftrag(st.voxelWorker, msg);
                 await auftrag({ type: "state-update", delta: { hydroGesetz: gesetz || AnazhRealm.HYDROSPHERE } });
-                s.hydrosphere = (await auftrag({ type: "hydro", key: "heim", origin: null })).region;
+                st.hydrosphere = (await auftrag({ type: "hydro", key: "heim", origin: null })).region;
             };
-            const bootSaat = s.worldMeta.seed;
-            const bootMacro = s.worldMeta.macro;
+            const bootSaat = st.worldMeta.seed;
+            const bootMacro = st.worldMeta.macro;
             // die chirurgische Regenesis der Abdruck-Probe (die Ströme; das Netz des Gesetzbuchs ist je Saat gemerkt), dazu die
             // Hydrosphäre der Saat aus dem Faden (ihre Kacheln fallen; der Weg der Weltgen)
             const regenesis = async (saat, macro) => {
-                s.worldMeta.seed = saat;
+                st.worldMeta.seed = saat;
                 r._voxelNoise = null;
-                if (macro !== undefined) s.worldMeta.macro = macro;
-                else delete s.worldMeta.macro;
+                if (macro !== undefined) st.worldMeta.macro = macro;
+                else delete st.worldMeta.macro;
                 await r._worldgenComputeAndBuildHydrosphere();
             };
             const out = [];
@@ -1559,10 +1556,10 @@ async function gebaut(page) {
                 if (saat !== bootSaat) await regenesis(saat, undefined);
                 const Hm = raster((x, z) => r._terrainMacroSurfaceY(x, z, true));
                 const voll = boden(Hm);
-                const h = s.hydrosphere;
-                s.hydrosphere = null;
+                const h = st.hydrosphere;
+                st.hydrosphere = null;
                 const ohne = boden(Hm);
-                s.hydrosphere = h;
+                st.hydrosphere = h;
                 out.push({
                     seed: saat,
                     hydro: !!(h && h.ready),
@@ -1574,7 +1571,7 @@ async function gebaut(page) {
                     makro: kurz(G.statistik(Hm, n, S, wl, [], 0)),
                 });
             }
-            if (s.worldMeta.seed !== bootSaat) await regenesis(bootSaat, bootMacro);
+            if (st.worldMeta.seed !== bootSaat) await regenesis(bootSaat, bootMacro);
             let stoerung = null;
             if (selbst) {
                 // die Störung: die Bett-Tiefe des alten Gesetzes (der Kanal als Graben unter der Aue: ohne `kanalTiefe`)

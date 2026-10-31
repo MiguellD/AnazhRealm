@@ -244,7 +244,7 @@ hauptLauf(async () => {
             // AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist gefallen — die
             // EMERGENZ wird an einem Test-Blueprint aus der Substanz-Tabelle bewiesen
             // (parts+connections JSON-geklont, registriert, danach aufgeraeumt).
-            const KS = r.constructor.KIND_SUBSTANCE || {};
+            const KS = AnazhRealm.KIND_SUBSTANCE || {};
             const sub = KS.fahrzeug_wagen;
             res.prof.wagenAbsent = !(r.state.blueprints && r.state.blueprints.fahrzeug_wagen);
             res.prof.substanzParts = sub && Array.isArray(sub.parts) ? sub.parts.length : 0;
@@ -324,7 +324,7 @@ hauptLauf(async () => {
                 try {
                     const fzg = r._fahrzeugGesetzFor(entry);
                     const drv = fzg && fzg.drive;
-                    const hip = r.constructor.SITZ_HIP_OFFSET;
+                    const hip = AnazhRealm.SITZ_HIP_OFFSET;
                     const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
                     const kernSitz =
                         drv && drv.sitz && Number.isFinite(drv.sitz.y)

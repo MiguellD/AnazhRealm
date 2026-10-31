@@ -272,10 +272,9 @@ async function probe(GESCHICKT) {
     aus.frei.nexus = await fenster(wege.nexus);
     // (K) jeder Op als KI an seiner Form: je Name der Form ein Wert aus der Welt; ein Id-Name probt jede Form, die die Welt
     // vergibt (der Bau: Zahl + String, die Kreatur: Platz + Id); der Ort liegt außerhalb der Genesis-Lichtung (keine Krone)
-    const K = r.constructor;
     await window.__weltDa(() => st.blueprints.haus_griechisch); // das Studio-Buch (spawn_temple liest es)
     const rolle = (x) => Object.keys(st.blueprints).find((k) => st.blueprints[k].role === x);
-    const [sag, ich, teil, opClass] = [["say", "Probe"], st.playerMesh.position, { size: [1, 1, 1], material: "stein" }, [...K.TOOL_OP_CLASSES][0]];
+    const [sag, ich, teil, opClass] = [["say", "Probe"], st.playerMesh.position, { size: [1, 1, 1], material: "stein" }, [...AnazhRealm.TOOL_OP_CLASSES][0]];
     // die Zahl-Id trägt jeder Bau aus Programm, Feld und Worldgen, die String-Id das Werk des Spielers (`_newArchId`)
     const bau = (art, id = r._newArchId()) => art === "number" ? st.architectures.filter((a) => a && typeof a.id === art).pop().id
         : (r.dslRun(["spawn_blueprint", "stein_block", ["far_player", 30, 40], 8, id], { source: "human" }), id);
@@ -288,8 +287,8 @@ async function probe(GESCHICKT) {
         archId: op === "remove_architecture" ? ["number", "string"].map((a) => bau(a)) : undefined, indexOrId: [0, st.creatures[0].userData.netId],
         positionNode: ["far_player", 40, 60], x: ich.x, y: ich.y - 1, z: ich.z + 3, count: 1, seed: 4711, radius: 1.5, t: 0.4, gier: 0,
         color: "#88aaff", emotion: "happy", kind: "kiefer", what: "baum", height: 30, size: 8, durationSeconds: 30, scale: 1.2, label: "Probe",
-        worldId: Object.keys(K.WORLD_REGISTRY)[0], slot: "tool", mode: "pfad", taskName: "wait", amount: 1, armorName: rolle("armor"), toolName: Object.keys(st.tools)[0],
-        tagBonus: { lebendig: 0.2 }, tags: ["lebendig"], opClass, opName: K.OP_NAME_BY_CLASS[opClass], type: op === "apply_connection" ? "nail" : "tree",
+        worldId: Object.keys(AnazhRealm.WORLD_REGISTRY)[0], slot: "tool", mode: "pfad", taskName: "wait", amount: 1, armorName: rolle("armor"), toolName: Object.keys(st.tools)[0],
+        tagBonus: { lebendig: 0.2 }, tags: ["lebendig"], opClass, opName: AnazhRealm.OP_NAME_BY_CLASS[opClass], type: op === "apply_connection" ? "nail" : "tree",
         parts: [{ shape: "box", ...teil }, { shape: "box", ...teil, material: "holz" }], bodyParts: [{ shape: "sphere", ...teil }],
         partA: 0, partB: 1, partIndex: 0, depth: 2, ratio: 0.6, rootSeedArg: 1, factor: 1.1, source: "probe", target: "creatures", visible: true,
         text: "Probe", message: "Probe", axis: "joy", seconds: 0.1, times: 2, condition: ["weather_is", "sunny"], condNode: ["weather_is", "sunny"],
@@ -309,11 +308,11 @@ async function probe(GESCHICKT) {
     }
     // eine Liste von Op-Namen oder eine Tafel je Op (DSL_WERTE: ihre Schlüssel) — jeder Name muss leben
     const namen = (x) => (x[Symbol.iterator] ? [...x] : Object.keys(x));
-    aus.listen = Object.fromEntries(Object.getOwnPropertyNames(K).filter((x) => /_OPS$|^DSL_/.test(x)).map((n) => [n, namen(K[n])]));
+    aus.listen = Object.fromEntries(Object.getOwnPropertyNames(AnazhRealm).filter((x) => /_OPS$|^DSL_/.test(x)).map((n) => [n, namen(AnazhRealm[n])]));
     window.__buehne();
     aus.ende = { uhr: st.weatherEffectTime };
     // (Q) das Urteil über jeden Op; die Programme des Nexus — (K) der Prompt der Welt-KI und die Orte und Bedingungen der DSL
-    aus.liste = Array.isArray(r.constructor.DSL_WELTAKTE) ? r.constructor.DSL_WELTAKTE.slice() : null;
+    aus.liste = Array.isArray(AnazhRealm.DSL_WELTAKTE) ? AnazhRealm.DSL_WELTAKTE.slice() : null;
     aus.ops = Object.keys(r.dslEffects);
     const gruppen = { Orte: Object.keys(r.dslPositions), Bedingungen: Object.keys(r.dslConditions) };
     aus.ki = { prompt: r.llmBuildSystemPrompt(), gruppen };

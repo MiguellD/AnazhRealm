@@ -12,7 +12,6 @@ const SKRIPTE = path.join(__dirname, "..");
 // GPU-Flake; der LOOK des Wankens ist headless nicht prüfbar.
 async function checkBandOmegaWerkstattSpiegel({ page, check }) {
     const res = await page.evaluate(() => {
-        const C = AnazhRealm;
         const mats = st.materials || {};
         let dense = mats.eisen ? "eisen" : null,
             light = mats.holz ? "holz" : null;
@@ -35,7 +34,7 @@ async function checkBandOmegaWerkstattSpiegel({ page, check }) {
         const lineHas = (v, re) => v.lines.some((l) => re.test(l.text));
         const o = {};
         // ── Ω-W2 physik-wahre Optimierung (die Tat verschiebt die GERECHNETE Größe) ──
-        const h = C.AXIS_ACTION_HINTS || {};
+        const h = AnazhRealm.AXIS_ACTION_HINTS || {};
         o.w2Verbs =
             /Basis|Standfläche/.test(h.stability || "") &&
             /Lastpfad/.test(h.loadSound || "") &&

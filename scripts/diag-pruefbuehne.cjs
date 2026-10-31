@@ -267,7 +267,7 @@ async function s0Probe(page, station, schein) {
             };
             // der Mensch steht im Atrium am Rand des Genesis-Platzes (K52: die Scheibe liegt auf dem Grund der Station, der Ring
             // der Tore um sie): 2 m jenseits der Lichtung, zwischen zwei Toren (18°), der Blick des Schusses weg vom Ring
-            const A0 = r.constructor.GENESIS_PLATZ;
+            const A0 = AnazhRealm.GENESIS_PLATZ;
             const w0 = Math.PI / 10;
             const sx = st.x + (A0.ringR + A0.rand + 2) * Math.cos(w0);
             const sz = st.z + (A0.ringR + A0.rand + 2) * Math.sin(w0);
@@ -469,7 +469,6 @@ function zeigeS4(rep, schein) {
 async function probe(page, welt, wuerfe, evolutionen, schein) {
     return page.evaluate(
         async (welt, wuerfe, evolutionen, schein) => {
-            const s = st;
             const out = { welt, wuerfe: [], akt: null, nexus: null, zensus: null, befunde: [] };
             const takt = async (ms) => {
                 for (let i = 0; i * 16 < ms; i++) {
@@ -491,22 +490,22 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                         fertig: () => !!(!(still < 4)),
                         takt: async () => {
                         await takt(1000);
-                        const m = (s.architectures || []).length + (s.creatures || []).length;
+                        const m = (st.architectures || []).length + (st.creatures || []).length;
                         still = m === n ? still + 1 : 0;
                         n = m;
                         },
                         max: 800,
                     });
             }
-            const wm = () => s.worldMeta || {};
+            const wm = () => st.worldMeta || {};
             // Die Welt-Substanz als Mengen (Identität, nie Länge): der Hort-Deckel des Nexus (MAX_NEXUS_STRUCTURES) lässt
             // für jeden neuen Bau den fernsten verblassen — eine Länge sähe den Wurf dann nicht.
             const substanz = () => ({
-                bauten: new Set(s.architectures || []),
-                tiere: new Set(s.creatures || []),
-                inseln: new Set(s.floatingIslands || []),
-                ufos: new Set(s.ufos || []),
-                pflanzSchlange: new Set(s.pendingVegSpawns || []),
+                bauten: new Set(st.architectures || []),
+                tiere: new Set(st.creatures || []),
+                inseln: new Set(st.floatingIslands || []),
+                ufos: new Set(st.ufos || []),
+                pflanzSchlange: new Set(st.pendingVegSpawns || []),
                 dorfZellen: new Set(Object.keys(wm().settlementCells || {})),
                 edits: new Set(wm().voxelEdits || []),
             });
@@ -550,23 +549,23 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
             };
             if (schein) r._wildnisTraegt = () => true; // der Selbsttest: das Prädikat trägt zum Schein überall
             const basis = Object.fromEntries(Object.entries(substanz()).map(([k, v]) => [k, v.size]));
-            const bestand = new Set(s.architectures || []); // der Bestand der Welt und, nach (2), das Gesetzte
+            const bestand = new Set(st.architectures || []); // der Bestand der Welt und, nach (2), das Gesetzte
             // (1) DIE WÜRFE des Feldes
             for (const prog of wuerfe)
                 for (const quelle of ["nexus", "rule:nexus"]) out.wuerfe.push(await lauf(prog, quelle));
             // (2) DER AKT: der Mensch setzt überall
             out.akt = await lauf(["spawn_blueprint", "baum_eiche", ["near_player", 25]], "human");
             if (schein) return Object.assign(out, { basis, erbgut: r._erbgut().terme.map((t) => t.art) });
-            for (const e of s.architectures || []) bestand.add(e);
+            for (const e of st.architectures || []) bestand.add(e);
             // (3) DER NEXUS-TAKT, getrieben (im Spiel eine Evolution alle 24 s)
             {
                 const vor = substanz();
                 const zaehl = {};
                 let laeufe = 0;
                 for (let i = 0; i < evolutionen; i++) {
-                    s.nexusWirk = 1e9; // die Wirk-Kraft hält den Takt nicht an
+                    st.nexusWirk = 1e9; // die Wirk-Kraft hält den Takt nicht an
                     const evo = r.generateEvolution(); // der Takt selbst ruht headless (Gate-Treue)
-                    s.nexusEvolutionQueue.push(evo);
+                    st.nexusEvolutionQueue.push(evo);
                     const kopf = evo && Array.isArray(evo.program) ? String(evo.program[0]) : "?";
                     const innen = JSON.stringify(evo?.program || []).match(/"spawn_[a-z_]+"/g) || [];
                     for (const w of innen) zaehl[w.replace(/"/g, "")] = (zaehl[w.replace(/"/g, "")] || 0) + 1;
@@ -585,30 +584,30 @@ async function probe(page, welt, wuerfe, evolutionen, schein) {
                 const R = 300;
                 const d = (p) => Math.hypot(p.x - M.x, p.z - M.z);
                 const fremd = {};
-                for (const e of s.architectures || [])
+                for (const e of st.architectures || [])
                     if (e?.position && d(e.position) <= R && !bestand.has(e))
                         fremd[e.type] = (fremd[e.type] || 0) + 1;
                 let streu = 0;
-                const SC = r.constructor.SCATTER;
-                if (s.scatterRegions && SC)
-                    for (const [key, reg] of s.scatterRegions) {
+                const SC = AnazhRealm.SCATTER;
+                if (st.scatterRegions && SC)
+                    for (const [key, reg] of st.scatterRegions) {
                         const [rx, rz] = key.split(",").map(Number);
                         const c = { x: (rx + 0.5) * SC.regionM, z: (rz + 0.5) * SC.regionM };
                         if (d(c) <= R + SC.regionM * 0.71) streu += reg?.instanceCount || 0;
                     }
                 let nahStreu = 0;
-                if (s.nahStreu?.kacheln)
-                    for (const k of s.nahStreu.kacheln.values()) nahStreu += (k.items || []).length;
-                const h = s.hydrosphere;
+                if (st.nahStreu?.kacheln)
+                    for (const k of st.nahStreu.kacheln.values()) nahStreu += (k.items || []).length;
+                const h = st.hydrosphere;
                 out.zensus = {
                     R,
                     fremdeBauten: fremd,
                     streuZellen: streu,
                     nahStreu,
-                    tiere: (s.creatures || []).filter((c) => c?.position && d(c.position) <= R).length,
-                    inseln: (s.floatingIslands || []).length,
+                    tiere: (st.creatures || []).filter((c) => c?.position && d(c.position) <= R).length,
+                    inseln: (st.floatingIslands || []).length,
                     dorfZellen: Object.keys(wm().settlementCells || {}).length,
-                    pflanzSchlange: (s.pendingVegSpawns || []).length,
+                    pflanzSchlange: (st.pendingVegSpawns || []).length,
                     // jeder Fluss, den kein Term der Bühne trägt (der Bach der Klamm S6 ist ihr Gesetz, kein Wurf)
                     fluesse: h && Array.isArray(h.rivers) ? h.rivers.filter((rv) => !rv.term).length : null,
                 };
@@ -892,14 +891,13 @@ const S0_HIMMEL_TOL = 0.03; // relativ, plus 0,005 absolut: die Umgebung nach de
 async function himmelProbe(page, taub) {
     return page.evaluate(
         async (taub, tol) => {
-            const s = st;
             const out = { himmel: [], befunde: [] };
             const uhr = (t) => {
                 if (r.setTimeOfDay(t, "human") !== true) throw new Error("S0: die Uhr nimmt den Spieler nicht (" + t + ")");
             };
             const lum = (e) => 0.2126 * e[0] + 0.7152 * e[1] + 0.0722 * e[2];
             r._setWeather("sunny", "human");
-            s.weatherTransition = null;
+            st.weatherTransition = null;
             uhr(0.3);
             if (!(await r._himmelFrisch())) {
                 out.befunde.push("S0 Himmel: keine Lesung der Umgebung (`_himmelFrisch`) — die Probe ist blind");
@@ -907,10 +905,10 @@ async function himmelProbe(page, taub) {
             }
             for (const t of [0.5, 0]) {
                 if (taub) r._ensureSkyEnvironment = () => true; // der taube Maler
-                const nr0 = s._skyEnvLeseNr || 0;
+                const nr0 = st._skyEnvLeseNr || 0;
                 uhr(t);
-                const gemalt = (s._skyEnvLeseNr || 0) !== nr0; // der Sprung malt die Umgebung der neuen Stunde
-                await s._skyEnvLesung;
+                const gemalt = (st._skyEnvLeseNr || 0) !== nr0; // der Sprung malt die Umgebung der neuen Stunde
+                await st._skyEnvLesung;
                 delete r._ensureSkyEnvironment;
                 const env = r._himmelsIrradianz();
                 const sprung = env ? Math.PI * lum(env.oben) : 0;
@@ -1081,7 +1079,7 @@ async function lichtLauf() {
                         if (!gestalt) {
                             window.__buehne();
                             // am Rand des Genesis-Platzes, zwischen zwei Toren (K52: die Scheibe liegt auf dem Grund der Station)
-                            const A0 = r.constructor.GENESIS_PLATZ;
+                            const A0 = AnazhRealm.GENESIS_PLATZ;
                             const w0 = Math.PI / 10;
                             const sx = st.x + (A0.ringR + A0.rand + 2) * Math.cos(w0);
                             const sz = st.z + (A0.ringR + A0.rand + 2) * Math.sin(w0);
@@ -1171,14 +1169,13 @@ async function lichtLauf() {
         for (const schein of schuesse) {
             ergebnis[schein || "sauber"] = await phase(schein ? "Schuss " + schein : "Schuss", () =>
                 page.evaluate(async (schein, nahM, palette) => {
-                    const s = st;
                     const T = window.THREE;
-                    const rend = s.renderer;
+                    const rend = st.renderer;
                     // der Pfad des Spielers: der Himmel folgt dem Sprung, frisch gemalt (die Umgebung der Nacht trägt ihr Licht) —
                     // ohne Schutz: fehlt ein Glied, wirft der Schuss beim Namen
                     const uhr = async (t) => {
                         if (r.setTimeOfDay(t, "human") !== true) throw new Error("S0 Schuss: die Uhr nimmt den Spieler nicht (" + t + ")");
-                        await s._skyEnvLesung;
+                        await st._skyEnvLesung;
                         await r._himmelFrisch();
                         r._applyDayNightToScene();
                     };
@@ -1197,9 +1194,8 @@ async function lichtLauf() {
                         };
                     // der Schein der Kamera: die Stufen der 18-%-Karte 2 tiefer (`_belichtungStufen`, das EINE Glied der Kamera) —
                     // die Uhr unten wendet die Belichtung an (`_dayNightApplyBelichtung`)
-                    const AR = r.constructor;
-                    const stufenAlt = AR._belichtungStufen;
-                    if (schein === "kamera") AR._belichtungStufen = (h, q) => stufenAlt.call(AR, h, q) - 2;
+                    const stufenAlt = AnazhRealm._belichtungStufen;
+                    if (schein === "kamera") AnazhRealm._belichtungStufen = (h, q) => stufenAlt.call(AnazhRealm, h, q) - 2;
                     // der Farb-Schein: der Platz des Feuers leuchtet wie bis K11b — in der Glut-Palette (sRGB → linear) und mit
                     // der Nacht-Stärke von damals (nacht 12 statt des Datums) — die Farbe des Stoffs statt der Farbtemperatur
                     // der Tag-Schein: das Auge des Tages — die Post-Kette ohne das Auge der Nacht (`nightFactor` 0, volle
@@ -1227,7 +1223,7 @@ async function lichtLauf() {
                     const FC = window.__fachwerkCore;
                     const flAlt = FC.lichtFlackern;
                     FC.lichtFlackern = () => 0; // die Flamme steht still (der Schuss misst das Gesetz, nicht den Atem)
-                    const cam = s.camera;
+                    const cam = st.camera;
                     let auf = null;
                     let himmelL = null;
                     let sternL = null;
@@ -1242,7 +1238,7 @@ async function lichtLauf() {
                     const roh = objs.get;
                     objs.get = function (...a) {
                         const ro = roh.apply(this, a);
-                        if (ro && ro.material === s.voxelChunkMaterial) {
+                        if (ro && ro.material === st.voxelChunkMaterial) {
                             const st = ro.getNodeBuilderState();
                             if (st?.fragmentShader) bodenWgsl.set(st.fragmentShader, (bodenWgsl.get(st.fragmentShader) || 0) + 1);
                         }
@@ -1255,7 +1251,7 @@ async function lichtLauf() {
                         cam.lookAt(f.x, g + 0.2, f.z + 1e-4);
                         cam.updateMatrixWorld(true);
                         // die Plätze des Pools blenden in LICHT_POOL.blendeS ein: die Wand-Uhr läuft, ehe der Schuss misst
-                        await sleep(1000 * r.constructor.LICHT_POOL.blendeS + 100);
+                        await sleep(1000 * AnazhRealm.LICHT_POOL.blendeS + 100);
                         // der Satz „messung" (K32, scripts/lib/abnahme-urteil.cjs): der Schuss ist ein Mess-Frame der Nacht — sein
                         // Urteil liest den Kreis um das Feuer (kreis, ton) aus den Pixeln; die Belichtungs-Zeile des Beweis-Satzes
                         // (Tag-Bühne, abgesoffen ≤ 60 %) warf hier an der Mitternacht (schwarz 71,9 %, Kreis hell)
@@ -1267,7 +1263,7 @@ async function lichtLauf() {
                         // das Licht des Himmels im Schuss (der Täter der Nacht beim Namen): die Bestrahlung der Umgebung von oben
                         // und das Sternen-Licht der EINEN Atmosphäre (Zenit-Leuchtdichte, Welt-Einheiten) bei der Sonne des Schusses
                         const env = r._himmelsIrradianz();
-                        const sonneY = r._dayNightSunDirection(r._sonnenWinkel(s.timeOfDay)).y;
+                        const sonneY = r._dayNightSunDirection(r._sonnenWinkel(st.timeOfDay)).y;
                         himmelL = env ? +(Math.PI * luma709(env.oben)).toFixed(4) : null;
                         sternL = +luma709(r._atmoSternenLicht(sonneY)).toFixed(4);
                     } finally {
@@ -1280,7 +1276,7 @@ async function lichtLauf() {
                         objs.get = roh;
                         if (nahLos) nahZahl = nahLos();
                         if (schein === "kamera") {
-                            AR._belichtungStufen = stufenAlt;
+                            AnazhRealm._belichtungStufen = stufenAlt;
                             r._applyDayNightToScene();
                         }
                     }
@@ -1357,7 +1353,7 @@ async function lichtLauf() {
                         lichtFarbe: eigen ? eigen.farbe.map((c) => +(c / Math.max(...eigen.farbe)).toFixed(3)) : null,
                         kelvin: FC.LICHT_GESETZ.feuer.kelvin == null ? null : FC.LICHT_GESETZ.feuer.kelvin,
                         belichtung: +rend.toneMappingExposure.toFixed(3),
-                        nacht: s.postProcessingUniforms ? +s.postProcessingUniforms.nightFactor.value.toFixed(3) : null,
+                        nacht: st.postProcessingUniforms ? +st.postProcessingUniforms.nightFactor.value.toFixed(3) : null,
                         pool: pool.map((p) => ({ q: p.quelle, I: +p.staerke.toFixed(2), d: +Math.hypot(p.x - f.x, p.z - f.z).toFixed(1) })),
                         feuer: [feuer.type, ...[f.x, g, f.z].map((x) => +x.toFixed(2))],
                         dc: auf.info && auf.info.drawCalls,
@@ -1381,13 +1377,12 @@ async function lichtLauf() {
     // 5 m zurück — die Figur im Licht des Pools; dazu das Feuer aus 6 m (K11b: der Lichtkreis und sein Saum)
     if (BILD && ergebnis.sauber && !ergebnis.sauber.fehler) {
         const pngs = await page.evaluate(async (nahM) => {
-            const s = st;
             const f = window.__s0Feuer.position;
             const g = (x, z) => r._voxelSurfaceY(x, z);
             const wolf = r.spawnCreatureAt(f.x, g(f.x, f.z - 2.3) + 0.5, f.z - 2.3, "calm", "wolf", { precise: true, bodySize: 1 });
             if (window.__tiereHalten) window.__tiereHalten();
-            s.playerMesh.position.set(f.x + 2.3, g(f.x + 2.3, f.z) + 1, f.z);
-            const cam = s.camera;
+            st.playerMesh.position.set(f.x + 2.3, g(f.x + 2.3, f.z) + 1, f.z);
+            const cam = st.camera;
             window.__buehne();
             r.setTimeOfDay(0, "human"); // der Pfad des Spielers: der Himmel folgt dem Sprung
             cam.position.set(f.x - 3.6, g(f.x, f.z) + 1.8, f.z - 3.8);
@@ -1397,7 +1392,7 @@ async function lichtLauf() {
             let auf = null;
             // die Figuren im Licht des Pools zeichnen mit (der Feuerkreis allein läse sie nicht)
             const nahLos = nahM
-                ? window.__s0Nah(new window.THREE.Vector3(f.x, g(f.x, f.z), f.z), nahM, [wolf, s.playerMesh].filter(Boolean))
+                ? window.__s0Nah(new window.THREE.Vector3(f.x, g(f.x, f.z), f.z), nahM, [wolf, st.playerMesh].filter(Boolean))
                 : null;
             try {
                 for (let i = 0; i < 2; i++) {
@@ -1604,11 +1599,10 @@ hauptLauf(async () => {
         // DER STOFF-ZENSUS: jeder direkt beleuchtete Stoff der Szene (Standard, Physical, Lambert, Phong, Toon — Basic
         // trägt in r184 nur das indirekte Licht) trägt den Licht-Pool (`userData.lichtPool`, `_leuchtStoff`) oder ist Quelle
         window.__stoffZensus = () => {
-            const s = st;
             const gesehen = new Set();
             const ohne = new Map();
             let lit = 0;
-            s.scene.traverse((o) => {
+            st.scene.traverse((o) => {
                 if (!o.isMesh) return;
                 for (const m of Array.isArray(o.material) ? o.material : [o.material]) {
                     if (!m || gesehen.has(m)) continue;

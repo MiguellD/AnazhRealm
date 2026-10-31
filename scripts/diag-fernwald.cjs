@@ -49,8 +49,8 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async () => {
         const res = {};
-        const r = await window.__weltDa((r) => r.state.blueprints);
-        const AR = r.constructor;
+        await window.__weltDa((r) => r.state.blueprints);
+        const AR = AnazhRealm;
         const st = r.state;
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && AR._studioRenderConfig && AR._studioRenderConfig.lod);

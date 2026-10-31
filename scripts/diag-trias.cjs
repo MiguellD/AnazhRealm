@@ -155,23 +155,23 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async () => {
         const res = { errors: [] };
-        const r = await window.__weltDa();
+        await window.__weltDa();
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.alemannisch);
 
-        const pm = r.state.playerMesh;
+        const pm = st.playerMesh;
         // Das Auge reist mit: jede Stufen-Frage misst vom Auge der Maske (`_lodAuge`, die Kamera) — wie die Ego-
         // Kamera des Spiels sitzt es über dem Spieler (ohne Spiel-Takt folgt die Kamera dem Teleport sonst nicht).
         const tp = (x, z) => {
             pm.position.set(x, r.getTerrainHeightAt(x, z) + 2, z);
-            r.state.camera.position.set(x, pm.position.y + 1.6, z);
+            st.camera.position.set(x, pm.position.y + 1.6, z);
         };
         async function pumpRender(nTicks) {
             for (let i = 0; i < nTicks; i++) {
-                r.state._frameOverBudget = false;
+                st._frameOverBudget = false;
                 try {
                     r.tickArchitectureCulling();
-                    r._tickArchitectureLOD(8, r.state.playerMesh.position); // das Auge = der Proben-Ort
+                    r._tickArchitectureLOD(8, st.playerMesh.position); // das Auge = der Proben-Ort
                 } catch (e) {
                     res.errors.push("render: " + e.message);
                     break;
@@ -181,7 +181,7 @@ hauptLauf(async () => {
         }
         function hausStats() {
             const s = { lods: {}, tris: 0, instanced: 0, entries: 0, lodLevelFinite: 0 };
-            for (const e of r.state.architectures) {
+            for (const e of st.architectures) {
                 if (!e || typeof e.type !== "string" || e.type.indexOf("haus_") !== 0) continue;
                 s.entries++;
                 if (Number.isFinite(e._lodLevel)) s.lodLevelFinite++;
@@ -191,7 +191,7 @@ hauptLauf(async () => {
                 const lod = m ? m[2] : "?";
                 s.lods[lod] = (s.lods[lod] || 0) + 1;
                 for (const { key } of e.instSlots) {
-                    const g = r.state.archInstanceGroups.get(key);
+                    const g = st.archInstanceGroups.get(key);
                     if (g && g.geom)
                         s.tris += g.geom.index ? g.geom.index.count / 3 : g.geom.attributes.position.count / 3;
                 }
@@ -201,14 +201,14 @@ hauptLauf(async () => {
         }
         function ghostAndBand() {
             const o = { ghost: 0, band: 0, hausGroups: 0 };
-            if (r.state.archInstanceGroups)
-                for (const [key, g] of r.state.archInstanceGroups) {
+            if (st.archInstanceGroups)
+                for (const [key, g] of st.archInstanceGroups) {
                     if (!g || !g.geom) continue;
                     const tris = g.geom.index ? g.geom.index.count / 3 : g.geom.attributes.position.count / 3;
                     o.ghost += Math.max(0, (g.mesh ? g.mesh.count : 0) - (g.liveCount || 0)) * tris;
                     if (key.indexOf("haus_") === 0) o.hausGroups++;
                 }
-            for (const e of r.state.architectures) if (e && e.instSlotsBand) o.band++;
+            for (const e of st.architectures) if (e && e.instSlotsBand) o.band++;
             o.ghost = Math.round(o.ghost);
             return o;
         }
@@ -224,14 +224,14 @@ hauptLauf(async () => {
         tp(anchor.x, anchor.z);
         res.placed = (await r._spawnSettlementFromExport(await r._ortWahl(plan, anchor), anchor)).placed;
         // DER KALT-STEMPEL (vor dem ersten Tick): jeder kalte Foundry-Eintrag im Radius trägt seine Distanz-Stufe von Geburt an
-        const kalt = r.state.architectures.filter(
+        const kalt = st.architectures.filter(
             (e) => e && typeof e.type === "string" && e.type.indexOf("haus_") === 0 && !e.instanced && !e.mesh &&
-                Math.hypot(e.position.x - pm.position.x, e.position.z - pm.position.z) <= r.state.architectureCullingRadius
+                Math.hypot(e.position.x - pm.position.x, e.position.z - pm.position.z) <= st.architectureCullingRadius
         );
         res.kaltStempel = kalt.length > 0 && kalt.every((e) => Number.isFinite(e._lodLevel) && e._lodLevel === r._foundryLodForEntry(e));
 
         // (2) An die 3 naechsten Haeuser herantreten -> sie bauen NAH (schwere Stufe).
-        const haeuser = r.state.architectures.filter(
+        const haeuser = st.architectures.filter(
             (e) => e && typeof e.type === "string" && e.type.indexOf("haus_") === 0
         );
         const near3 = haeuser
@@ -325,44 +325,44 @@ hauptLauf(async () => {
         // (6) W-A3.1 — das Klon-Erbe am EINEN Chokepoint.
         const cloneName = "trias_probe_klon";
         const cloneName2 = "trias_probe_klon2";
-        delete r.state.blueprints[cloneName];
-        delete r.state.blueprints[cloneName2];
+        delete st.blueprints[cloneName];
+        delete st.blueprints[cloneName2];
         const ok1 = r.cloneBlueprint("welt_portal", cloneName);
-        const c1 = r.state.blueprints[cloneName];
-        res.kloneGestalt = !!(ok1 && c1 && c1.studioGestalt === (r.state.blueprints.welt_portal || {}).studioGestalt);
+        const c1 = st.blueprints[cloneName];
+        res.kloneGestalt = !!(ok1 && c1 && c1.studioGestalt === (st.blueprints.welt_portal || {}).studioGestalt);
         // AUSLÖSCHUNGS-WELLE: der Alt-Donor tor_basis ist gefallen — die Klon-
         // Sichtbarkeits-Regel wird an einem SYNTHETISCHEN donorOnly-Blueprint bewiesen
         // (registrieren → klonen → aufraeumen; kein vakuoeses skip mehr).
-        delete r.state.blueprints._t_donor;
-        r.state.blueprints._t_donor = {
+        delete st.blueprints._t_donor;
+        st.blueprints._t_donor = {
             name: "_t_donor",
             donorOnly: true,
             parts: [{ shape: "box", material: "stein", position: { x: 0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } }],
         };
         const ok2 = r.cloneBlueprint("_t_donor", cloneName2);
-        const c2 = r.state.blueprints[cloneName2];
-        res.kloneSichtbar = !!(ok2 && c2 && c2.donorOnly !== true && r.state.blueprints._t_donor.donorOnly === true);
-        delete r.state.blueprints._t_donor;
-        delete r.state.blueprints[cloneName];
-        delete r.state.blueprints[cloneName2];
+        const c2 = st.blueprints[cloneName2];
+        res.kloneSichtbar = !!(ok2 && c2 && c2.donorOnly !== true && st.blueprints._t_donor.donorOnly === true);
+        delete st.blueprints._t_donor;
+        delete st.blueprints[cloneName];
+        delete st.blueprints[cloneName2];
         // ERFINDER-WELLE — DIE KLON-IDENTITAET eines Auto-Blueprints (der Schoepfer-Befund
         // „ich klone einen reiterbogen, und er wird zum alten schwert"): jeder Auto-
         // Blueprint traegt seine Rezept-Identitaet als DATEN (`studioGestalt`), der Klon
         // erbt sie, und der EINE Resolver loest den Klon aufs REZEPT — nie auf die
         // Donor-Substanz. Gemessen an einem echten klinge_-Auto-Blueprint des LIVE-Buchs.
-        const autoBp = Object.keys(r.state.blueprints).find(
-            (n) => r.state.blueprints[n] && r.state.blueprints[n]._foundryAutoSpecies && /^klinge_/.test(n)
+        const autoBp = Object.keys(st.blueprints).find(
+            (n) => st.blueprints[n] && st.blueprints[n]._foundryAutoSpecies && /^klinge_/.test(n)
         );
         res.autoBpName = autoBp || null;
         if (autoBp) {
-            const recId = r.state.blueprints[autoBp]._foundryAutoSpecies;
-            res.autoGestaltStamp = r.state.blueprints[autoBp].studioGestalt === recId;
+            const recId = st.blueprints[autoBp]._foundryAutoSpecies;
+            res.autoGestaltStamp = st.blueprints[autoBp].studioGestalt === recId;
             const cloneName3 = "trias_probe_bogen_klon";
-            delete r.state.blueprints[cloneName3];
+            delete st.blueprints[cloneName3];
             const ok3 = r.cloneBlueprint(autoBp, cloneName3);
             const resolved = ok3 ? r._foundryPresetForEntry({ type: cloneName3 }) : null;
             res.kloneRezept = !!(ok3 && resolved === recId);
-            delete r.state.blueprints[cloneName3];
+            delete st.blueprints[cloneName3];
         } else {
             res.autoGestaltStamp = false;
             res.kloneRezept = false;
@@ -379,7 +379,7 @@ hauptLauf(async () => {
         res.warmCacheMB = Math.round(((f2.cacheBytes || 0) / 1048576) * 10) / 10;
         res.warmCacheSize = f2.cache.size;
         const savedC = { cache: f2.cache, bytes: f2.cacheBytes, req: f2.requested, lru: f2.lruEvicted };
-        const BYTES = r.constructor.FOUNDRY_CACHE_BYTES;
+        const BYTES = AnazhRealm.FOUNDRY_CACHE_BYTES;
         const mkFake = (mb, lebt) => ({
             _liveRefs: lebt ? 1 : 0,
             children: [
@@ -403,13 +403,13 @@ hauptLauf(async () => {
         f2.cacheBytes = 0;
         for (let i = 0; i < 80; i++) r._foundryCacheSet("ruhe8|" + i, mkFake(8));
         res.ruheSize = f2.cache.size;
-        res.ruheSoll = r.constructor.FOUNDRY_RUHE_BYTES / (8 << 20);
+        res.ruheSoll = AnazhRealm.FOUNDRY_RUHE_BYTES / (8 << 20);
         f2.cache = new Map();
         f2.cacheBytes = 0;
         f2.requested = new Set();
         // der Deckel trägt einen ganzen Boot (FOUNDRY_CACHE_CAP, 512) — die Zweitwand wird mit Deckel + 44
         // leichten Einträgen bewiesen, gelesen aus der EINEN Konstante.
-        res.cap = r.constructor.FOUNDRY_CACHE_CAP;
+        res.cap = AnazhRealm.FOUNDRY_CACHE_CAP;
         for (let i = 0; i < res.cap + 44; i++) r._foundryCacheSet("leicht|" + i, mkFake(0.001));
         res.lightSize = f2.cache.size;
         f2.cache = savedC.cache;

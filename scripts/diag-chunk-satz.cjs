@@ -1225,7 +1225,6 @@ const { errs, check } = pruefer();
             // SHADOW_TWIN_LAYER, eine Kaskade zeichnet seine Zelle. Selbsttest: derselbe Satz ohne die Marke `nurWurf` zeichnet
             // im Hauptbild — die Wand nennt ihn.
             const wurfProbe = (marke) => {
-                const A = AnazhRealm;
                 const art = "bauWurf|probe" + (marke ? "" : "-alt") + "|S";
                 if (!s.satzStoffe) s.satzStoffe = new Map();
                 s.satzStoffe.set(art, {
@@ -1233,7 +1232,7 @@ const { errs, check } = pruefer();
                     mat: new T.MeshBasicMaterial(),
                     wurf: true,
                     nurWurf: marke,
-                    attr: A.BAU_WURF_ATTR,
+                    attr: AnazhRealm.BAU_WURF_ATTR,
                 });
                 const g = new T.BoxGeometry(4, 4, 4);
                 const n = g.attributes.position.count;
@@ -1244,7 +1243,7 @@ const { errs, check } = pruefer();
                 s.camera.getWorldDirection(vor);
                 const p = s.camera.position.clone().addScaledVector(vor, 12);
                 const im = new T.Matrix4().makeTranslation(p.x, p.y, p.z).toArray();
-                r._chunkSatzEin(art, "probe#wurf", r._satzBlock(g, im, null, 1, A.BAU_WURF_ATTR, "probe"), "0,0");
+                r._chunkSatzEin(art, "probe#wurf", r._satzBlock(g, im, null, 1, AnazhRealm.BAU_WURF_ATTR, "probe"), "0,0");
                 const satz = s.chunkSaetze.get(art);
                 r._tickChunkSatz();
                 r._passSicht(s.camera, false);
@@ -1257,7 +1256,7 @@ const { errs, check } = pruefer();
                 const kaskade = satz.geom.drawRange.count;
                 r._chunkSatzPass(c, true, -1, S);
                 r._passSicht(s.camera, true);
-                const o = { haupt, kaskade, schicht: satz.mesh.layers.mask, soll: 1 << A.SHADOW_TWIN_LAYER };
+                const o = { haupt, kaskade, schicht: satz.mesh.layers.mask, soll: 1 << AnazhRealm.SHADOW_TWIN_LAYER };
                 r._chunkSatzAus(art, "probe#wurf");
                 return o;
             };
@@ -1270,7 +1269,6 @@ const { errs, check } = pruefer();
         // neuen Netzes am selben Auge, auf einem 2-m-Raster im Chunk. Selbsttest: derselbe Gang zurück ohne das Stufen-Gewicht
         // (die Ring-Kette K51 morphte nur die Naht) springt.
         out.sprung = await page.evaluate(async () => {
-            const s = st;
             const S = r._voxelChunkConfig(0).span;
             const karte = (e, key) => {
                 const g = e.mesh.geometry;
@@ -1306,9 +1304,9 @@ const { errs, check } = pruefer();
                 // alle acht.
                 const folge = { neubau: 0, morphs: 0, leer: 0 };
                 const F0 = r._finalizeVoxelChunkBuild,
-                    FS = (s._morphFolge ||= new Map());
+                    FS = (st._morphFolge ||= new Map());
                 const lodVon = new Map();
-                for (const [key, e] of s.voxelChunks) if (e && !e.empty && e.mesh) lodVon.set(key, e.lod || 0);
+                for (const [key, e] of st.voxelChunks) if (e && !e.empty && e.mesh) lodVon.set(key, e.lod || 0);
                 let ctx = null;
                 r._finalizeVoxelChunkBuild = function (cx, cz, lod, ...rest) {
                     const key = cx + "," + cz;
@@ -1327,7 +1325,7 @@ const { errs, check } = pruefer();
                     }
                 };
                 FS.set = function (k, v) {
-                    const nb = ctx && s.voxelChunks.get(k);
+                    const nb = ctx && st.voxelChunks.get(k);
                     if (nb && !nb.empty && nb.mesh) {
                         folge.morphs++;
                         const nl = nb.lod || 0;
@@ -1336,12 +1334,12 @@ const { errs, check } = pruefer();
                     return Map.prototype.set.call(this, k, v);
                 };
                 try {
-                    const p = { x: s.stufeAuge.x, y: 0, z: s.stufeAuge.z };
+                    const p = { x: st.stufeAuge.x, y: 0, z: st.stufeAuge.z };
                     for (let i = 0; i < n; i++) {
                         p.x += dx;
                         r._stufeAugeTakt(p);
                         const vor = new Map();
-                        for (const [key, e] of s.voxelChunks) {
+                        for (const [key, e] of st.voxelChunks) {
                             if (!e || e.empty || !e.mesh) continue;
                             const [cx, cz] = key.split(",").map(Number);
                             const soll = r._voxelChunkLodFor(cx, cz, p.x, p.z, e.lod || 0);
@@ -1353,13 +1351,13 @@ const { errs, check } = pruefer();
                             await sleep(15);
                             let fertig = true;
                             for (const [key, v] of vor) {
-                                const e = s.voxelChunks.get(key);
+                                const e = st.voxelChunks.get(key);
                                 if (!e || (e.lod || 0) !== v.soll) fertig = false;
                             }
                             if (fertig) break;
                         }
                         for (const [key, v] of vor) {
-                            const e = s.voxelChunks.get(key);
+                            const e = st.voxelChunks.get(key);
                             if (!e || !e.mesh || (e.lod || 0) !== v.soll) {
                                 offen++;
                                 continue;

@@ -56,7 +56,7 @@ const KERN = require("../cores.manifest.json").find((k) => k.id === OPT("--kern-
 const server = statikServer({ wandle: (p, roh) => (KERN?.scripts.includes(p.slice(1)) ? roh + "//" : roh) });
 // (Seite) trägt die gehaltene Taste den Leib um `m`? Der Weg in einem Atem von 200 ms, waagrecht — der Fall zählt nicht.
 async function LEIB_WEG(m) {
-    const p = () => r?.state.playerMesh?.position;
+    const p = () => st.playerMesh?.position;
     const a = p() && p().clone();
     await window.sleep(200);
     return !!a && Math.hypot(p().x - a.x, p().z - a.z) >= m;
@@ -168,7 +168,7 @@ function KALT_PROBE() {
     setInterval(() => {
         const o = { t: Math.round(performance.now()) };
         A.marken.push(performance.mark("anazh-kalt").startTime);
-        if (r && r.state) {
+        if (r && st) {
             if (!A.buchDa && r._foundry && r._foundry.ready && r._foundry.recipes) A.buchDa = o.t;
             try {
                 const L = r._weltbildLuecken();
@@ -178,7 +178,6 @@ function KALT_PROBE() {
                 o.fehlt = ["Probe warf: " + e.message];
             }
             // der Ring (der Boden um den Spieler bis zu seinem Ziel) und das erste gezeichnete Lade-Bild
-            const st = r.state;
             o.ring = [st._activeRingRadius, st.chunkRingRadius];
             o.bilder = r._gpuLeine ? r._gpuLeine.gerendert : 0;
             const f = r._foundry;

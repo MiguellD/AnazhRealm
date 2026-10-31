@@ -82,8 +82,7 @@ const bildZieleGut = (z) => !Object.keys(z).length;
 
 function probe(selbsttest) {
     const T = window.THREE;
-    const A = r.constructor;
-    const K = A.SCHATTEN_KASKADE;
+    const K = AnazhRealm.SCHATTEN_KASKADE;
     const cam = st.camera;
     const csm = st.csmNode;
     const aus = { selbsttest };
@@ -280,10 +279,9 @@ function probe(selbsttest) {
     // bis zum ganzen Rand).
     const k8 = (art) => {
         const res = { art, grenze: [], budget: [], faelle: [], loecher: 0, namen: [], geprueft: 0, neu: [] };
-        const C = r.constructor;
-        const PW0 = C.PASS_WAHL;
+        const PW0 = AnazhRealm.PASS_WAHL;
         const P = Object.getPrototypeOf(r);
-        C.PASS_WAHL = Object.freeze(Object.assign({}, PW0, { saumM: Object.freeze([0, 0]) }));
+        AnazhRealm.PASS_WAHL = Object.freeze(Object.assign({}, PW0, { saumM: Object.freeze([0, 0]) }));
         if (art === "untreu")
             r._passLageHaelt = function (a, s, an) {
                 if (s[84] === 0 && s[27] === 1) return true;
@@ -445,7 +443,7 @@ function probe(selbsttest) {
             nachTakt();
             res.neu = csm.lights.map((_l, k) => gen(k) !== gH[k]);
         } finally {
-            C.PASS_WAHL = PW0;
+            AnazhRealm.PASS_WAHL = PW0;
             delete r._passLageHaelt;
             delete r._wahlHaelt;
             delete r._passTrifft;
@@ -520,7 +518,7 @@ function probe(selbsttest) {
     aus.k1Abend = empfaenger();
     // K5 — die längste Kante der Referenz-Scheibe trägt die Karte
     {
-        const far = A.PERF_SHADOW_RANGE_MAX * A.SCHATTEN_FERN_FAKTOR;
+        const far = AnazhRealm.PERF_SHADOW_RANGE_MAX * AnazhRealm.SCHATTEN_FERN_FAKTOR;
         const br = [];
         csm.customSplitsCallback(csm.cascades, cam.near, far, br);
         const halb = Math.tan(T.MathUtils.degToRad(cam.fov) / 2) * K.bezugAspekt;
@@ -870,7 +868,7 @@ function probe(selbsttest) {
     // gegen das Soll, beim Namen. `alt` = die alte Regel (jede Instanz in jedem Pass). ──
     const w8 = (alt) => {
         const lu = r._ensureLodUniforms();
-        const D = r.constructor.LOD_DISTANCES;
+        const D = AnazhRealm.LOD_DISTANCES;
         const set = r._instanzWahlGruppen();
         const res = {
             falsch: [],
@@ -935,7 +933,7 @@ function probe(selbsttest) {
             const ist = g.mesh.visible ? gezeichnet(g) : "";
             const s = soll.slice().sort().join(",");
             if (ist !== s)
-                res.falsch.push(`${name}: ${r.constructor._instanzKlasse(g.key)} zeichnet [${ist}] statt [${s}]`);
+                res.falsch.push(`${name}: ${AnazhRealm._instanzKlasse(g.key)} zeichnet [${ist}] statt [${s}]`);
             return ist;
         };
         const danach = () => {
@@ -1254,7 +1252,7 @@ function probe(selbsttest) {
     // Knoten trägt ein eigenes Wurf-Feld neben der Ebene (sonst schriebe ein Werfer an ihr vorbei). Jeder zeichnende Knoten
     // der Szene: gesehen ⇔ wirft. ──
     {
-        const E = 1 << r.constructor.SHADOW_TWIN_LAYER;
+        const E = 1 << AnazhRealm.SHADOW_TWIN_LAYER;
         const kams = st.csmNode && st.csmNode.lights ? st.csmNode.lights.map((l) => l.shadow.camera) : [];
         const urteil = (maske) => {
             const fremd = [],
@@ -1464,7 +1462,7 @@ function probe(selbsttest) {
                     break;
                 }
             }
-            const R = r.constructor.ARCH_REGION_M;
+            const R = AnazhRealm.ARCH_REGION_M;
             const pm = st.playerMesh.position;
             const rx0 = Math.round(pm.x / R) - 1,
                 rz0 = Math.round(pm.z / R) - 1;

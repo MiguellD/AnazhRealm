@@ -258,7 +258,6 @@ async function checkBandOmegaPhi1CoM({ page, check }) {
 // Flake.
 async function checkBandOmegaPhysisSaeuleI_II({ page, check }) {
     const res = await page.evaluate(() => {
-        const C = AnazhRealm;
         const mats = st.materials || {};
         let dense = mats.eisen ? "eisen" : null,
             light = mats.holz ? "holz" : null;
@@ -318,8 +317,8 @@ async function checkBandOmegaPhysisSaeuleI_II({ page, check }) {
         o.rollableWheels = r._blueprintProductVector(veh).rollable > 0;
         o.rollableTrunkZero = r._rollableFraction(P([pt(0, 0, 0, 0.5, 5, 0.5, dense, "cylinder")])) === 0; // vertikaler Stamm rollt nicht
         // ── Ω-L2 die Physik in den Rollen-Signaturen + das WAHRHEITS-BAND ──
-        const sigV = C.ROLE_SIGNATURES.vehicle,
-            sigA = C.ROLE_SIGNATURES.architecture;
+        const sigV = AnazhRealm.ROLE_SIGNATURES.vehicle,
+            sigA = AnazhRealm.ROLE_SIGNATURES.architecture;
         o.l2VehicleReadsPhysik = sigV.stability > 0 && sigV.rollable > 0;
         o.l2ArchReadsPhysik = sigA.stability > 0 && sigA.loadSound > 0;
         const topHeavyVeh = P(
@@ -338,10 +337,10 @@ async function checkBandOmegaPhysisSaeuleI_II({ page, check }) {
             r.computeBlueprintRole(st.blueprints.reittier_holzross) === "vehicle";
         // ── Ω-L3 Geltungsbereich-Markierung ──
         o.l3Marks =
-            C.AXIS_CLASS &&
-            C.AXIS_CLASS.stability === "physik" &&
-            C.AXIS_CLASS.magieleitung === "konvention" &&
-            C.AXIS_CLASS.spread === "form";
+            AnazhRealm.AXIS_CLASS &&
+            AnazhRealm.AXIS_CLASS.stability === "physik" &&
+            AnazhRealm.AXIS_CLASS.magieleitung === "konvention" &&
+            AnazhRealm.AXIS_CLASS.spread === "form";
         // ── Ω-W1 der Warum-Chip zitiert gerechnete Physik (KONSUM-Beweis) ──
         const why = r._blueprintRoleWhy(st.blueprints.reittier_holzross || veh);
         o.w1ConsumesPhysik = !!(why && Array.isArray(why.beitraege) && why.beitraege.some((b) => b.cls === "physik"));

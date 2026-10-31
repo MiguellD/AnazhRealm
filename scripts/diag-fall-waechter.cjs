@@ -489,7 +489,6 @@ const server = statikServer();
 
 // Die Proben im Seiten-Kontext.
 async function probe(K) {
-    const A = r.constructor;
     let [tMs, tN] = [performance.now(), 0];
     // DER ATEM (ek-schleife): je 10 Takte gibt der Takt den Haupt-Faden frei (`await takt()`), wie das Spiel je Bild —
     // Leerlauf (die Tod-Lage), Faden-Antworten und der Puls der Stall-Akte laufen dazwischen. Ohne ihn rechnete O3 (acht
@@ -751,7 +750,7 @@ async function probe(K) {
             await amOrt(hs, 40);
             // DER SPIELER AM ORT DES RUFS: die Wolf-Proben rufen ihre Tiere neben ihn (`spawnCreatureAt`) — er steht, wo der
             // Wagen stand.
-            setze(hs.x, hoehleGrund + A.PLAYER_FOOT_OFFSET + 0.05, hs.z);
+            setze(hs.x, hoehleGrund + AnazhRealm.PLAYER_FOOT_OFFSET + 0.05, hs.z);
         }
     }
     // DIE KANTE DES FELS an (x, z) ab der Höhe y: im Fels aufwärts, sonst abwärts, in 2-cm-Schritten, höchstens 3 m
@@ -787,12 +786,12 @@ async function probe(K) {
     };
     // EIN WOLF bei (x, y, z) unter dem Steuer-Schritt `schritt`: `leben(w, s)` fährt ihn auf der Spur `s` und liefert, was die
     // Probe über die Spur hinaus trägt (`zu` am Namen des Leibs); danach geht er (ein Wesen oder ein Gefallener, state.leichname)
-    const steuerRoh = A._steuerGesetz;
+    const steuerRoh = AnazhRealm._steuerGesetz;
     const kappe = st.maxCreatures;
     const wolf = async (x, z, y, schritt, leben) => {
-        const steht = Object.create(steuerRoh.call(A));
+        const steht = Object.create(steuerRoh.call(AnazhRealm));
         steht.steuerSchritt = schritt;
-        [A._steuerGesetz, st.maxCreatures] = [() => steht, st.creatures.length + 2];
+        [AnazhRealm._steuerGesetz, st.maxCreatures] = [() => steht, st.creatures.length + 2];
         try {
             const w = r.spawnCreatureAt(x, y, z, "calm", "wolf", { precise: true, bodySize: 1 });
             if (!w) return { fehler: "der Wolf ließ sich nicht rufen" };
@@ -802,13 +801,13 @@ async function probe(K) {
                 koerper: `Tier wolf#${w.userData.id ?? w.id}${zu}`,
                 ort: ort(p.x, p.z),
                 ...s.ende(p.x, p.y, p.z, y),
-                band: A.STAND_SICHT_BAND,
+                band: AnazhRealm.STAND_SICHT_BAND,
                 ...mehr,
             };
             if (st.creatures.includes(w) || (st.leichname || []).includes(w)) r.removeCreature(w);
             return out;
         } finally {
-            [A._steuerGesetz, st.maxCreatures] = [steuerRoh, kappe];
+            [AnazhRealm._steuerGesetz, st.maxCreatures] = [steuerRoh, kappe];
         }
     };
     // Ein Wolf an der Wand: er steht (sein Steuer-Schritt hält ihn), dann gleitet er gestoßen 1,5 s auf die nächste
@@ -833,7 +832,7 @@ async function probe(K) {
                 hoch: stirnAn(w, w.rotation.y || 0),
                 start: stirnStart,
                 hl,
-                deckel: 2 * hl * Math.tan(A.GANG_DECKEL_RAD),
+                deckel: 2 * hl * Math.tan(AnazhRealm.GANG_DECKEL_RAD),
             };
             return {
                 zu: wand ? ` (${lauf ? "läuft" : "gestoßen"} an die Wand ${wand.d.toFixed(1)} m)` : "",
@@ -896,19 +895,19 @@ async function probe(K) {
     await inHoehle("O3 Spieler in der Höhle", async () => {
         absteigen();
         const pm = st.playerMesh.position;
-        setze(hs.x, hoehleGrund + A.PLAYER_FOOT_OFFSET + 0.05, hs.z);
+        setze(hs.x, hoehleGrund + AnazhRealm.PLAYER_FOOT_OFFSET + 0.05, hs.z);
         st.yaw = Math.PI; // nach −z, in die Halle
         const s = spur();
         for (let i = 0; i < 180; i++) {
             tasten(i < 150);
             await takt();
-            s.schritt(pm.x, pm.y - A.PLAYER_FOOT_OFFSET, pm.z);
+            s.schritt(pm.x, pm.y - AnazhRealm.PLAYER_FOOT_OFFSET, pm.z);
         }
         tasten(false);
         return {
             koerper: "Spieler",
             ort: ort(pm.x, pm.z),
-            ...s.ende(pm.x, pm.y - A.PLAYER_FOOT_OFFSET, pm.z, hoehleGrund),
+            ...s.ende(pm.x, pm.y - AnazhRealm.PLAYER_FOOT_OFFSET, pm.z, hoehleGrund),
             ruhe: true,
         };
     });

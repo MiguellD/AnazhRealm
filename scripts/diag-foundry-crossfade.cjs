@@ -314,9 +314,8 @@ async function runPartB() {
         const res = { samples: [], err: null };
         // ── Boot + Foundry abwarten ──
         await window.__weltDa();
-        const A = r.constructor;
         res.flagDefault = st.foundryCrossfade === true; // W5.4 — Maske+Band DEFAULT AN
-        const D = A.LOD_DISTANCES; // K2: die Laufzeit-Marke der EINEN Distanz-Quelle (Bänder aus dem Kern, Schwellen aus dem Gesetz)
+        const D = AnazhRealm.LOD_DISTANCES; // K2: die Laufzeit-Marke der EINEN Distanz-Quelle (Bänder aus dem Kern, Schwellen aus dem Gesetz)
         res.lodLive = D ? [D.thresh01, D.thresh12, D.fade, D.fade0] : null;
         const lodRef0 = st.lodRef > 0 ? st.lodRef : D.lodRef;
         res.lodGesetz = [r._wechselAbstand("tree", 1, lodRef0), r._wechselAbstand("tree", 2, lodRef0)];
@@ -368,7 +367,7 @@ async function runPartB() {
         // von Stufe und Band), die Kamera 24 m näher an ihren ersten Reihen (die Schicht füllt ihr Maß von z = 0 an; sie
         // stehen 64–86 m vor dem Spieler, über der Karte ohne Partner). Stufen und Partner wärmen VOR der Baseline (die
         // Schleife backt, was die Geburt bestellt; eine kalte L1 serviert still die Karte); die Messung räumt die Region.
-        const SC = A.SCATTER;
+        const SC = AnazhRealm.SCATTER;
         const [srx, srz] = [Math.floor(px / SC.regionM), Math.floor(pz / SC.regionM)];
         const streuOrte = Array.from({ length: 12 }, (_, i) => srz * SC.regionM + 64 + 2 * i);
         const streuGeburt = (z, ohneHalt) => {
@@ -377,12 +376,12 @@ async function runPartB() {
             st.camera.updateMatrixWorld(true);
             r._lodAuge = function () {
                 const p = this.state.playerMesh.position;
-                return new window.THREE.Vector3(p.x, p.y + A.EGO_AUGE_M, p.z);
+                return new window.THREE.Vector3(p.x, p.y + AnazhRealm.EGO_AUGE_M, p.z);
             };
             // der Selbsttest: kein Slot trägt den Halt (der Stand vor F1 a — die Zelle ohne Partner dithert ins Nichts)
             if (ohneHalt)
                 r._scatterInstanceAdd = function (bp, x, y, z2, yaw, s, tint, rk, flat) {
-                    return A.prototype._scatterInstanceAdd.call(this, bp, x, y, z2, yaw, s, tint, rk, flat, false);
+                    return AnazhRealm.prototype._scatterInstanceAdd.call(this, bp, x, y, z2, yaw, s, tint, rk, flat, false);
                 };
             try {
                 r._disposeScatterRegion(`${srx},${srz}`);
@@ -468,7 +467,7 @@ async function runPartB() {
                 stufen,
                 gezeigt,
                 karte,
-                satzArt: !!(rec && A.BAU_SATZ[rec.kind]),
+                satzArt: !!(rec && AnazhRealm.BAU_SATZ[rec.kind]),
                 ort: { x: ox, y: oy, z: oz },
             });
             if (oE) r.removeArchitecture(oE);
@@ -478,7 +477,7 @@ async function runPartB() {
         res.pendingAtSweep = f.pending ? f.pending.size : -1;
 
         // ════ AB HIER SYNCHRON (ein Block, kein await → keine Interleaves) ════
-        const cfg = A.LOD_DISTANCES;
+        const cfg = AnazhRealm.LOD_DISTANCES;
         const M = cfg.hysteresis;
         const visH = r._lodTreeVisHeight(entry);
         const capL = cfg.leafVisCap;
@@ -573,7 +572,7 @@ async function runPartB() {
             // Der Schatten-Zwilling (SHADOW_TWIN_LAYER) zählt nicht: die Kamera sieht ihn nie.
             const stempelVon = (ref) => {
                 const g = st.archInstanceGroups && st.archInstanceGroups.get(ref.key);
-                if (!g || !g.mesh || g.mesh.layers.mask === 1 << A.SHADOW_TWIN_LAYER) return null;
+                if (!g || !g.mesh || g.mesh.layers.mask === 1 << AnazhRealm.SHADOW_TWIN_LAYER) return null;
                 const a = g.mesh.geometry && g.mesh.geometry.attributes;
                 if (a && a.aKarte && a.aKarte.isInstancedBufferAttribute) {
                     const h = Math.abs(a.aKarte.array[ref.slot * 4 + 3]);
@@ -758,7 +757,7 @@ async function runPartB() {
                             if (Array.isArray(list))
                                 for (const ref of list) {
                                     const g = st.archInstanceGroups && st.archInstanceGroups.get(ref.key);
-                                    if (!g || !g.mesh || g.shadowTwin || g.mesh.layers.mask === 1 << A.SHADOW_TWIN_LAYER) continue;
+                                    if (!g || !g.mesh || g.shadowTwin || g.mesh.layers.mask === 1 << AnazhRealm.SHADOW_TWIN_LAYER) continue;
                                     const spAlt = stempelVon(ref);
                                     if (spAlt) dazu(alt, spAlt);
                                     const sp = g.satz ? satzStempel(g, ref, o) : spAlt;
@@ -788,7 +787,7 @@ async function runPartB() {
                     if (gegen === "satz") r._bauSatzMarke = function () {};
                     if (gegen === "partner") {
                         r._foundryFlattenFor = function (e, p, lod) {
-                            return p === op.preset && lod === 1 ? null : A.prototype._foundryFlattenFor.call(this, e, p, lod);
+                            return p === op.preset && lod === 1 ? null : AnazhRealm.prototype._foundryFlattenFor.call(this, e, p, lod);
                         };
                         r._lodSlotVoll = function (e, band, bl = e._lodBandLevel) {
                             const karte = e._occluded === true || e._bruecke === true;
@@ -853,7 +852,7 @@ async function runPartB() {
                         for (const s of list) {
                             const g = st.archInstanceGroups && st.archInstanceGroups.get(s.key);
                             if (!g || !g.mesh) continue;
-                            const zwilling = !!(g.shadowTwin || g.mesh.layers.mask === 1 << A.SHADOW_TWIN_LAYER);
+                            const zwilling = !!(g.shadowTwin || g.mesh.layers.mask === 1 << AnazhRealm.SHADOW_TWIN_LAYER);
                             const a = g.mesh.geometry.attributes;
                             const i = s.slot;
                             const m = g.mesh.instanceMatrix.array;
@@ -919,7 +918,7 @@ async function runPartB() {
                     const o = { proben: 0, geister: 0, loecher: 0, schatten: 0, mitZwilling: 0, beispiel: null };
                     if (art.karteLaedt)
                         r._foundryFlattenFor = function (e, p, lod) {
-                            return e === entry && lod === 2 ? null : A.prototype._foundryFlattenFor.call(this, e, p, lod);
+                            return e === entry && lod === 2 ? null : AnazhRealm.prototype._foundryFlattenFor.call(this, e, p, lod);
                         };
                     // ohne Halt: VOLL kennt nur die Karte des Verdeckten und der Brücke (der Stand vor K36) — kein Stempel hält
                     if (art.ohneHalt)
@@ -930,8 +929,8 @@ async function runPartB() {
                     // der Zwilling ohne Halt: sein Stempel trägt das VOLL nie (die gezeichnete Stufe hält, ihr Wurf blendet)
                     if (art.zwillingOhneHalt)
                         r._lodSlotStamp = function (g, slot, scale, voll, leaf) {
-                            const tw = !!(g && (g.shadowTwin || (g.mesh && g.mesh.layers.mask === 1 << A.SHADOW_TWIN_LAYER)));
-                            return A.prototype._lodSlotStamp.call(this, g, slot, scale, tw ? false : voll, leaf);
+                            const tw = !!(g && (g.shadowTwin || (g.mesh && g.mesh.layers.mask === 1 << AnazhRealm.SHADOW_TWIN_LAYER)));
+                            return AnazhRealm.prototype._lodSlotStamp.call(this, g, slot, scale, tw ? false : voll, leaf);
                         };
                     try {
                         for (const dnZiel of [6, 10, 14, 19, 22, 24, 27, 31, 40, 27, 24, 22, 14, 6]) {
@@ -1008,7 +1007,7 @@ async function runPartB() {
                             const p = this.state.playerMesh.position;
                             return new T3.Vector3(p.x, p.y + 1.6, p.z);
                         };
-                    const key = `${Math.floor(px / A.SCATTER.regionM)},${Math.floor(pz / A.SCATTER.regionM)}`;
+                    const key = `${Math.floor(px / AnazhRealm.SCATTER.regionM)},${Math.floor(pz / AnazhRealm.SCATTER.regionM)}`;
                     try {
                         // (i) ungesetzt: die Kamera, wie geboren, 200 m neben dem Spieler; der Spieler am Baum → L0
                         r._lodAugeR = null;
@@ -1038,9 +1037,9 @@ async function runPartB() {
                                 o.geburtFalsch++;
                                 if (o.beispiel.length < 4) o.beispiel.push({ name: "Geburt", ist: +dist.toFixed(2), soll: +soll.toFixed(2) });
                             }
-                            return A.prototype._scatterMaterializeCell.call(this, region, layer, salt, cx, cz, cm, tf, dist, ...rest);
+                            return AnazhRealm.prototype._scatterMaterializeCell.call(this, region, layer, salt, cx, cz, cm, tf, dist, ...rest);
                         };
-                        r._scatterRegion(Math.floor(px / A.SCATTER.regionM), Math.floor(pz / A.SCATTER.regionM), st.playerMesh.position);
+                        r._scatterRegion(Math.floor(px / AnazhRealm.SCATTER.regionM), Math.floor(pz / AnazhRealm.SCATTER.regionM), st.playerMesh.position);
                     } catch (e) {
                         o.err = String((e && e.message) || e);
                     } finally {
@@ -1156,7 +1155,7 @@ async function runPartB() {
     const attrWand = await page.evaluate(() => {
         let geprueft = 0,
             verstoesse = 0;
-        r.state.scene.traverse((o) => {
+        st.scene.traverse((o) => {
             if (!o.geometry || !o.material) return;
             const mats = Array.isArray(o.material) ? o.material : [o.material];
             for (const m of mats) {
@@ -1199,11 +1198,11 @@ async function runPartB() {
         slots = mkSlots();
         o.reMintInFrist = r._archGruppenMints - mintsVor;
         r._archLeerReapT = 0;
-        r._tickArchGruppenReaper(performance.now() + 2 * (r.constructor.ARCH_LEER_GNADE_MS || 10000));
+        r._tickArchGruppenReaper(performance.now() + 2 * (AnazhRealm.ARCH_LEER_GNADE_MS || 10000));
         o.lebtNachReaper = st.archInstanceGroups.has(keyB);
         r._scatterFreeSlots(slots);
         const g2 = st.archInstanceGroups.get(keyB);
-        if (g2) g2._leerSeit = performance.now() - 2 * (r.constructor.ARCH_LEER_GNADE_MS || 10000);
+        if (g2) g2._leerSeit = performance.now() - 2 * (AnazhRealm.ARCH_LEER_GNADE_MS || 10000);
         r._archLeerReapT = 0;
         r._tickArchGruppenReaper(performance.now());
         o.reaperRaeumt = !st.archInstanceGroups.has(keyB);
@@ -1283,7 +1282,7 @@ async function runPartB() {
         r._foundryMats = mats;
         // DER SPIEGEL DER BLENDE (W5.4): die Masken-Uniformen tragen je Bild das EINE CPU-Band (LOD_DISTANCES) — eine Änderung
         // des Bands steht nach dem nächsten Bild (`_loopRender`) in der Maske, vorher nicht (die Gegenprobe im selben Lauf).
-        const D = r.constructor.LOD_DISTANCES;
+        const D = AnazhRealm.LOD_DISTANCES;
         const u = st.lodUniforms;
         const band = () => [u.uLodD0, u.uLodD1, u.uLodFade, u.uLodFade0].map((x) => x.value).join() === [D.thresh01, D.thresh12, D.fade, D.fade0].join();
         const d0 = D.thresh01;

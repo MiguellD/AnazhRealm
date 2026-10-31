@@ -338,12 +338,12 @@ async function betreten(page, welt) {
                 id = acc.id;
             }
             // K8: eine Welt des Genesis-Rings betritt der Spieler über ihr Tor, jede andere über die Bibliothek
-            const tor = (window.__tor = r.state.architectures.find(
-                (e) => /^welt_/.test(e.type) && r.state.blueprints[e.type].portalMeta.world === `worlds/${id}/index.html`
+            const tor = (window.__tor = st.architectures.find(
+                (e) => /^welt_/.test(e.type) && st.blueprints[e.type].portalMeta.world === `worlds/${id}/index.html`
             ));
             const ob = tor ? { ok: true, blueprint: tor.type } : r.obtainPortalForWorld(id);
             if (!ob.ok) return { fehler: "obtainPortalForWorld: " + ob.reason };
-            const meta = r.state.blueprints[ob.blueprint].portalMeta;
+            const meta = st.blueprints[ob.blueprint].portalMeta;
             // Zähler: was die Welt der Heimat schickt (Quelle = das Portal-iframe) und wie oft die Heimat enter sendet
             // (eine delegierende Zähl-Hülle, nach der Messung entfernt).
             const k = (window.__k = { readys: 0, enters: 0, geladen: 0 });
@@ -373,8 +373,8 @@ async function betreten(page, welt) {
             // vor dem Tor: 4 m entlang seiner Normalen, der Blick hindurch
             const ry = tor.rotationY || 0;
             const [x, z] = [tor.position.x + 4 * Math.sin(ry), tor.position.z + 4 * Math.cos(ry)];
-            r.state.playerMesh.position.set(x, r.getTerrainHeightAt(x, z) + 1, z);
-            r.state.yaw = ry + Math.PI;
+            st.playerMesh.position.set(x, r.getTerrainHeightAt(x, z) + 1, z);
+            st.yaw = ry + Math.PI;
             return { ok: true, weg: r._torGesetzFor(tor) ? "Apertur" : "E" };
         },
         welt,
@@ -439,7 +439,7 @@ function seitenHelfer() {
     window.__konformanz = {
         // Die Wirkung in der Heimat: die Journal-Ereignisse der Welt.
         journal() {
-            const e = r.state.worldJournal?.entries || [];
+            const e = st.worldJournal?.entries || [];
             return e.filter((x) => x.type === "portal").length;
         },
         zaehler() {
@@ -743,7 +743,7 @@ async function lauf(welten, taeter) {
         });
         await s.zeige(page, 60000);
         await page.waitForFunction(
-            () => r?.state?.blueprints && anazhRealm._gameLoopTick,
+            () => st?.blueprints && anazhRealm._gameLoopTick,
             { timeout: 120000, polling: 200 }
         );
         // Der Vibe-Pass steht (ed25519, asynchron im Boot); dann das Mitgebrachte in den Zustand der Heimat.
@@ -761,7 +761,7 @@ async function lauf(welten, taeter) {
             st.player.equipped.offhand = "laterne_dorf";
             for (const n of ["stein_block", "stein_block", "trank_lebenssaft"]) r.addToInventory(n);
             st.hotbar[2] = "stein_block";
-            r._ensureWorkshopState().studioOv[r.constructor.KOERPER_HOST_RECIPE] = { height: 1.12, hairColor: "kupfer" };
+            r._ensureWorkshopState().studioOv[AnazhRealm.KOERPER_HOST_RECIPE] = { height: 1.12, hairColor: "kupfer" };
         }, MITGEBRACHT);
         await page.evaluate(seitenHelfer);
         if (!taeter && welten.some((w) => w.id === "garage")) await werkHolen(page);

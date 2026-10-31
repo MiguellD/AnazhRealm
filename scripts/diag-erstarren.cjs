@@ -41,9 +41,8 @@ const { errs, check } = pruefer();
         await warteAufWelt(page, 120000);
 
         out = await page.evaluate(async () => {
-            const s = r.state;
             const res = {};
-            if (!s.playerMesh) return { error: "kein Spieler" };
+            if (!st.playerMesh) return { error: "kein Spieler" };
 
             // ── Settle: die Welt plateau-pumpen ──
             {
@@ -90,7 +89,7 @@ const { errs, check } = pruefer();
             };
 
             // ── (a)+(b) DER WANDER-LAUF: W gehalten, 60-fps-Sim, Kreis-Kurs ──
-            s.keys = { w: true };
+            st.keys = { w: true };
             const N = 2400; // 40 s Sim-Zeit ≈ 160 m Weg
             const STALL_MS = 250;
             let t = performance.now();
@@ -99,7 +98,7 @@ const { errs, check } = pruefer();
             let selbstTestTick = -1,
                 selbstTestGesehen = false;
             for (let i = 0; i < N; i++) {
-                if (i % 600 === 599) s.yaw = (s.yaw || 0) + Math.PI / 2; // Kreis-Kurs: bleibt in der Welt
+                if (i % 600 === 599) st.yaw = (st.yaw || 0) + Math.PI / 2; // Kreis-Kurs: bleibt in der Welt
                 t += 33.4;
                 for (const k of Object.keys(acc)) acc[k] = 0;
                 const w0 = performance.now();
@@ -154,7 +153,7 @@ const { errs, check } = pruefer();
             };
 
             // ── (c) DIE MEMBRAN-RECOMPILE-WAND ──
-            const p = s.playerMesh.position;
+            const p = st.playerMesh.position;
             const heim = { x: p.x, y: p.y, z: p.z };
             const entry = r.spawnArchitecture("welt_portal", { x: p.x + 10, y: p.y, z: p.z }, { precise: true });
             res.torSpawned = !!entry;
@@ -190,7 +189,7 @@ const { errs, check } = pruefer();
                     fernSchlaf: schlaeft,
                     wachZurueck: !!(recZurueck && recZurueck.mesh && recZurueck.mesh.visible === true),
                     ausGraph,
-                    imGraph: !!(recZurueck && recZurueck.mesh && recZurueck.mesh.parent === s.scene),
+                    imGraph: !!(recZurueck && recZurueck.mesh && recZurueck.mesh.parent === st.scene),
                     bautenNachZyklus: membranBauten,
                     keinRecompile: membranBauten === vorher,
                 };

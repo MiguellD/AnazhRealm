@@ -916,15 +916,14 @@ async function checkBandWellePerfHWaterIsoQueue({ page, check }) {
 // bleibt trocken, Worker↔Main bauen bit-identische Wasser-Cells (kein Architektur-Stempel).
 async function checkBandV17117FarWater({ page, check }) {
     const res = await page.evaluate(async () => {
-        const s = st;
-        const h = s.hydrosphere;
+        const h = st.hydrosphere;
         if (!h || !h.ready) return { error: "hydrosphere not ready" };
         const out = {};
         const cfg = r._voxelChunkConfig(0);
         const span = cfg.span;
-        const base = s.terrainBaseHeight || 0;
+        const base = st.terrainBaseHeight || 0;
         const oy = base - cfg.floorDrop;
-        const WL = typeof s.waterLevel === "number" ? s.waterLevel : 0;
+        const WL = typeof st.waterLevel === "number" ? st.waterLevel : 0;
         const WATER = AnazhRealm.CELL_STATE.WATER;
         const regHalf = (h.dim * h.cell) / 2; // ±1024
         // Der Ozean-Chunk liegt am Meer-Ort des Gesetzes (`__wasserOrt`: jenseits des Kontinents); der Land-Chunk jenseits der Heimat über Chunk-Indizes

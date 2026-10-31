@@ -54,13 +54,13 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async () => {
         const res = {};
-        const r = await window.__weltDa();
+        await window.__weltDa();
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready);
         // Scatter-Regionen um den Spieler bauen lassen (der Streaming-Tick baut 1/Frame), bis die Streu STEHT (die EINE
         // Antwort `_streuWartet`): die Fern-Baum-Karte bestellt ihr Leser — eine Region wartet auf sie und baut nach
         // der Lieferung neu; erst dann trägt sie ihre Fern-Zellen.
-        const pm = r.state.playerMesh.position;
+        const pm = st.playerMesh.position;
         // DER TAKT DER STREU ist beides, was sie liest: die Schlange des Walds (`_tickWaldPlan`, K69 — die Gestalt jedes
         // Foundry-Baums wartet auf den Plan seines Orts, wie im Spiel der Job `waldPlan` vor `scatterDeco`) und der Streamer.
         // Ohne die Schlange stand keine Nah-Zelle einer zwei-stufigen Art (D ROT, K69-2 N2: kandidat 35,8 m, lodVor undefined).
@@ -70,7 +70,7 @@ hauptLauf(async () => {
         };
         let cells = 0;
         const zellen = () => {
-            const map = r.state.scatterRegions;
+            const map = st.scatterRegions;
             cells = 0;
             if (map) for (const reg of map.values()) cells += reg.cells ? reg.cells.length : 0;
             return cells;
@@ -83,7 +83,7 @@ hauptLauf(async () => {
         // ── P: die Promotion erreicht eine Zelle jenseits der Region-Grenze (nah 0,85·pr in der Nachbar-Region), die ferne
         // (1,7·pr) nie; Streuen und Räumen schweigen, der Sprung nach Region 950 lässt den echten Ring stehen.
         {
-            const SC = r.constructor.SCATTER, regM = SC.regionM, pr = SC.promoteM, K = 950, map = r.state.scatterRegions;
+            const SC = AnazhRealm.SCATTER, regM = SC.regionM, pr = SC.promoteM, K = 950, map = st.scatterRegions;
             const ecke = (d) => (K + 1) * regM + pr * d, zelle = (d) => ({ x: ecke(d), z: ecke(d), slots: [], promotable: true, layer: "tree" });
             const nah = zelle(0.3), weit = zelle(0.9), key = K + 1 + "," + (K + 1), gesehen = [];
             map.set(key, { regX: K + 1, regZ: K + 1, cells: [nah, weit] });
@@ -100,7 +100,7 @@ hauptLauf(async () => {
         // Zelle wählen, die der B2-Guard des Ticks WANDERN LÄSST — Zellen mit
         // region-PRIVATEN Slots (`@regX,regZ`, nicht `@s:`-Super-Region) gehören
         // BY DESIGN dem Region-Lifecycle (JEDE Stufe der Boden-Schichten trägt den Region-Key).
-        const map = r.state.scatterRegions;
+        const map = st.scatterRegions;
         const b2Privat = (c) =>
             Array.isArray(c.slots) &&
             c.slots.some((s) => {
@@ -260,7 +260,7 @@ hauptLauf(async () => {
                 // Tick muss die ganze Region demoten, bevor sie leer ist. Gewartet wird auf Zelle UND Hülle.
                 const huelleLeer = () =>
                     privKeysVor.every((k) => {
-                        const g = r.state.archInstanceGroups && r.state.archInstanceGroups.get(k);
+                        const g = st.archInstanceGroups && st.archInstanceGroups.get(k);
                         return !g || (g.liveCount | 0) === 0;
                     });
                 const fern2 = () => dz2.lod === 2 && huelleLeer();
@@ -271,20 +271,20 @@ hauptLauf(async () => {
                     Array.isArray(dz2.slots) &&
                     dz2.slots.length > 0 &&
                     dz2.slots.every((s) => {
-                        if (s.key === r.constructor.IMPOSTOR_ATLAS_GRUPPE) return true;
+                        if (s.key === AnazhRealm.IMPOSTOR_ATLAS_GRUPPE) return true;
                         const at = s.key.indexOf("@");
                         return at >= 0 && (s.key.startsWith("@s:", at));
                     });
                 // die private Hülle: ge-reapt (weg) oder restlos leer
                 dblk.huelleWeg = privKeysVor.every((k) => {
-                    const g = r.state.archInstanceGroups && r.state.archInstanceGroups.get(k);
+                    const g = st.archInstanceGroups && st.archInstanceGroups.get(k);
                     return !g || (g.liveCount | 0) === 0;
                 });
                 // Die Gruppe ist dicht (`_archGroupFree` verdichtet): kein gezeichneter Slot einer
                 // privaten Gruppe trägt eine Null-Skala (der freie Slot, der die Kugel verzerrte).
                 let ursprungsHazard = 0;
-                if (r.state.archInstanceGroups) {
-                    for (const [k, g] of r.state.archInstanceGroups) {
+                if (st.archInstanceGroups) {
+                    for (const [k, g] of st.archInstanceGroups) {
                         if (!privat(k) || !g.mesh || !g.mesh.instanceMatrix) continue;
                         const arr = g.mesh.instanceMatrix.array;
                         for (let sl = 0; sl < g.mesh.count; sl++) {
@@ -307,7 +307,7 @@ hauptLauf(async () => {
         // die Empty-Dispose muss BEIDE Welten restlos räumen (Slot-Bilanz dicht).
         const fern = {};
         try {
-            const AR = r.constructor; // die Klasse (Statics) — window trägt nur die Instanz
+            const AR = AnazhRealm; // die Klasse (Statics) — window trägt nur die Instanz
             const S0 = AR.SCATTER_FERN_SUPERREGION;
             fern.s0 = S0;
             // Unit: die EINE Key-Funktion — fern+Region → Super-Region; nicht-fern/null/gemappt unberührt.
@@ -327,7 +327,7 @@ hauptLauf(async () => {
                 try { bS = r._archRegionBundleFor("s:9001,9001"); } finally { AR.SCATTER_FERN_SUPERREGION = S0; }
                 const b1 = r._archRegionBundleFor("9001,9001"), rad = (b) => b && b.userData.cullSphere && b.userData.cullSphere.radius;
                 fern.kugel = Math.abs(rad(bS) - (M * 3 * Math.SQRT1_2 + 140)) < 1e-6 && Math.abs(rad(b1) - (M * Math.SQRT1_2 + 140)) < 1e-6;
-                for (const k of ["s:9001,9001", "9001,9001"]) { const bg = r.state._regionBundles.get(k); r.state._regionBundles.delete(k); if (bg && bg.parent) bg.parent.remove(bg); }
+                for (const k of ["s:9001,9001", "9001,9001"]) { const bg = st._regionBundles.get(k); st._regionBundles.delete(k); if (bg && bg.parent) bg.parent.remove(bg); }
             }
             // Die Fern-Flats über die ECHTE Pipe ziehen (die Geometrie lädt async): die Gras-Fernstufe (Geometrie — sie
             // trägt die Super-Region-Diät) und die strauch-Karte (W6: EINE globale Atlas-Gruppe, gleich welche Region).
@@ -348,10 +348,10 @@ hauptLauf(async () => {
                 // DIE KARTEN-DIÄT: 16 strauch-Karten in 16 Regionen → genau EINE Gruppe (die Atlas-Gruppe), Bilanz dicht.
                 const G = AR.IMPOSTOR_ATLAS_GRUPPE;
                 const lebend = () => {
-                    const g = r.state.archInstanceGroups.get(G);
+                    const g = st.archInstanceGroups.get(G);
                     return g ? g.liveCount | 0 : 0;
                 };
-                const vorK = new Set(r.state.archInstanceGroups.keys()),
+                const vorK = new Set(st.archInstanceGroups.keys()),
                     lebendVor = lebend();
                 const alleK = [];
                 for (let gx = 0; gx < 4; gx++)
@@ -369,7 +369,7 @@ hauptLauf(async () => {
                         );
                         if (sl) alleK.push(sl);
                     }
-                const neuK = [...r.state.archInstanceGroups.keys()].filter((k) => !vorK.has(k) && /(^|#)fimp:/.test(k));
+                const neuK = [...st.archInstanceGroups.keys()].filter((k) => !vorK.has(k) && /(^|#)fimp:/.test(k));
                 const slotKeys = new Set(alleK.flat().map((x) => x.key));
                 fern.karten = {
                     instanzen: lebend() - lebendVor,
@@ -380,7 +380,7 @@ hauptLauf(async () => {
                 // ── K: die Karten in der Wahl (W7) — Linsen-Kameras über den 16 Karten (die Fixtur liegt fern jeder Welt-Karte).
                 {
                     const T = window.THREE;
-                    const g = r.state.archInstanceGroups.get(G);
+                    const g = st.archInstanceGroups.get(G);
                     const S = r._kaskadenSchmier();
                     const fixtur = new Set(alleK.flat());
                     const blick = (x, y, z, lx, ly, lz, fov = 30, aspekt = 1) => {
@@ -440,7 +440,7 @@ hauptLauf(async () => {
                 const PROBE = "fscatter:diaetprobe:0:2";
                 const zaehle = () => {
                     let w = 0;
-                    for (const k of r.state.archInstanceGroups.keys()) if (k.startsWith(PROBE + "#") && k.includes("@")) w++;
+                    for (const k of st.archInstanceGroups.keys()) if (k.startsWith(PROBE + "#") && k.includes("@")) w++;
                     return { w };
                 };
                 const welt = (S) => {

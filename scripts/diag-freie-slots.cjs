@@ -57,7 +57,7 @@ async function welt() {
     await server.zeige(page, 60000);
     const out = await page.evaluate(async (selbst) => {
         const o = {};
-        const r = await window.__weltDa();
+        await window.__weltDa();
         const st = r.state;
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
         await window.__weltDa(() => !!(!(f && !f.ready)));
@@ -68,7 +68,7 @@ async function welt() {
         // ── A: DER ABSCHIED JEDER SENKE (W6) — jede Senke, die `_instanzMesh` ab hier baut, wird verfolgt; `_instanzAbschied`
         // stempelt sie. Eine Senke, die den Graphen ohne Abschied verlässt, hinterlässt ihre Instanz-Puffer in r184s Register
         // (`buf:verwaist`); ein Abschied einer Senke, die noch im Graphen steht, zerstört einen gezeichneten Speicher-Puffer.
-        const R = r.constructor;
+        const R = AnazhRealm;
         const geboren = new Set();
         const bau = R._instanzMesh;
         R._instanzMesh = function (...a) {

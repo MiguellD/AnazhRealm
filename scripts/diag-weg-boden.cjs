@@ -23,11 +23,10 @@ const server = statikServer();
 
 function probe(stoerung) {
     const T = window.THREE;
-    const A = r.constructor;
     // Ein trockener Probe-Ort nahe dem Spieler (die Wasser-Wand würde Formen verwerfen), auf dem der Kern der Straße
     // (x −24 … −2, |dz| < 1,2) ohne Weg Wiese trägt: die Büschel der Nah-Wiese im Streifen (−1 = eine Kachel ohne Boden).
     const pm = st.playerMesh.position;
-    const KW = A.NAH_WIESE.kachel;
+    const KW = AnazhRealm.NAH_WIESE.kachel;
     const wiese = (p) => {
         let n = 0;
         for (let tx = Math.floor((p.x - 24) / KW); tx <= Math.floor((p.x - 2) / KW); tx++) {
@@ -58,8 +57,8 @@ function probe(stoerung) {
             fern = { x: fx, z: fz };
     }
     const wieseOhne = wiese(o);
-    const randAlt = A.WEGE_KARTE;
-    if (stoerung === "hart") A.WEGE_KARTE = Object.freeze(Object.assign({}, randAlt, { randM: 0.001 }));
+    const randAlt = AnazhRealm.WEGE_KARTE;
+    if (stoerung === "hart") AnazhRealm.WEGE_KARTE = Object.freeze(Object.assign({}, randAlt, { randM: 0.001 }));
     const plan = {
         roads: [{ pts: [{ x: -25, z: 0 }, { x: 0, z: 0 }, { x: 25, z: 2 }], w: 4 }],
         feldwege: [{ pts: [{ x: 0, z: 0 }, { x: 0, z: -25 }], w: 2 }],
@@ -150,7 +149,7 @@ function probe(stoerung) {
                 for (const [k, c] of [...wk.kronen])
                     if (Math.abs(c[0] - stufe.mitteX) - c[2] > hk || Math.abs(c[1] - stufe.mitteZ) - c[2] > hk) {
                         wk.kronen.delete(k);
-                        wk.kronenZellen.get(A._kronenZelle(c[0], c[1])).delete(k);
+                        wk.kronenZellen.get(AnazhRealm._kronenZelle(c[0], c[1])).delete(k);
                     }
             return umzug.call(this, stufe, war);
         };
@@ -172,7 +171,7 @@ function probe(stoerung) {
     }
     out.bestandUngleich = ungleich;
     r._kronenStreuWeg("a:probe-bestand");
-    A.WEGE_KARTE = randAlt;
+    AnazhRealm.WEGE_KARTE = randAlt;
     r._stlWegeDispose();
     return out;
 }
@@ -180,7 +179,6 @@ function probe(stoerung) {
 // 8 TRITT — eine Feuerstelle (Bauplan `glutbrunnen`, Gestalt fachwerk `feuerstelle`) nahe dem Spieler; die Karte trägt
 // sonst nichts (kein Weg, keine Krone: der Fall, in dem der Takt früh zurückkehrt).
 function trittProbe(stoerung) {
-    const A = r.constructor;
     const pm = st.playerMesh.position;
     let o = null;
     for (let k = 0; k < 64 && !o; k++) {
@@ -208,8 +206,8 @@ function trittProbe(stoerung) {
     const eigenStreu = !vorStreu;
     if (eigenWiese) st.nahWiese = { kacheln: new Map(), senken: new Map(), vorlagen: new Map(), neu: true, offen: 0 };
     if (eigenStreu) st.nahStreu = { senken: new Map(), kacheln: new Map() };
-    const KW = A.NAH_WIESE.kachel;
-    const KS = A.NAH_STREU.kachel;
+    const KW = AnazhRealm.NAH_WIESE.kachel;
+    const KS = AnazhRealm.NAH_STREU.kachel;
     const kw = `${Math.floor(o.x / KW)},${Math.floor(o.z / KW)}`;
     const ks = `${Math.floor(o.x / KS)},${Math.floor(o.z / KS)}`;
     const gesaet = new Set();
@@ -318,9 +316,9 @@ hauptLauf(async () => {
     await page.evaluate(async () => {
         await window.__weltDa((r) => r.state && r.state.scene);
         const warm = () =>
-            r._foundry?.recipes?.feuerstelle && r.state.voxelChunks?.size > 20 && r.state.nahWiese?.reich > 0;
+            r._foundry?.recipes?.feuerstelle && st.voxelChunks?.size > 20 && st.nahWiese?.reich > 0;
         for (const weiter = window.__deckel("Buch, Ring und Wiesen-Weite", 4500); !warm() && weiter(); ) {
-            r._tickVoxelChunkStreaming(r.state.playerMesh.position);
+            r._tickVoxelChunkStreaming(st.playerMesh.position);
             r._tickNahWiese(performance.now() - 1);
             await sleep(20);
         }

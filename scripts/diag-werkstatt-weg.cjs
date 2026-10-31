@@ -1136,7 +1136,7 @@ function wegHelfer(arg) {
             // die oberste Fläche, die einen Fuß trägt (ungedeckt, `_blockerFugen` — gedreht in ihrem Rahmen): das Deck der Brücke, das
             // Podest der Leiter. Bis 27.10. filterte die Probe an der Welt-AABB: schräg gedreht war der Bügel über dem Podest breiter
             // als der Stab, und die KI-Leiter (Drehung 1,0 rad) hieß unersteigbar.
-            const oben = () => Math.max(...e.blockerAABBs.filter((b) => !b.gedeckt).map((b) => b.topY)) + r.constructor.PLAYER_FOOT_OFFSET;
+            const oben = () => Math.max(...e.blockerAABBs.filter((b) => !b.gedeckt).map((b) => b.topY)) + AnazhRealm.PLAYER_FOOT_OFFSET;
             if ((lauf.haus = /^haus_/.test(e.type))) {
                 // die Tür-Zeile des Werks (die Hülle bringt sie): 8 m vor der Tür, wo sie zu ist, bis 1,5 m hinter die Schwelle
                 const t = (await window.__gebautNach("die Hülle des Hauses", { fertig: () => !!e._hausHuelle }), e.tuer);
@@ -1159,7 +1159,7 @@ function wegHelfer(arg) {
             // die Tür beim Eintritt: der Flügel der Stufe 0 (der Winkel des Tür-Takts) oder die Stufe 1, die sie in der Bau-Pose
             // offen bäckt (Third: das Auge der Stufen ist die Kamera hinter dem Spieler, K36 — das Haus bleibt bis zur Schwelle in
             // Stufe 1, ihr Flügel erscheint offen und dreht nie); `rec` hält nur der Tür-Takt (die Tür-Zeile reiste)
-            if (lauf.drin() && lauf.offen == null) lauf.offen = !!rec && (!f || rec._fluegelWinkel > r.constructor._tuerOffenRad() / 2);
+            if (lauf.drin() && lauf.offen == null) lauf.offen = !!rec && (!f || rec._fluegelWinkel > AnazhRealm._tuerOffenRad() / 2);
             if (f) {
                 const m = st.archInstanceGroups.get(f.key).mesh.getMatrixAt(f.slot, new THREE.Matrix4()).elements;
                 const x = Math.atan2(m[8], m[0]);

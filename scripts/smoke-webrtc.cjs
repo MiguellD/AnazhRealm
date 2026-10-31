@@ -111,7 +111,7 @@ hauptLauf(async () => {
         // übers Mesh), das Journal einer Seite trägt den Text (`journal`), der Shim-WebSocket einer Seite steht offen (`kanal`)
         const beide = (fn, ...a) => Promise.all([pageA, pageB].map((p) => p.evaluate(fn, ...a)));
         const sende = (p, data) =>
-            p.evaluate((data) => window.anazhRealm._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data }), data); // prettier-ignore
+            p.evaluate((data) => r._portalNetReceive({ __anazhNet: true, kind: "ws-send", channel: 1, data }), data); // prettier-ignore
         const journal = (p, text, was) =>
             waitFor(p, (t) => (window.anazhRealm.state.worldJournal.entries || []).some((e) => String(e.text || "").includes(t)), was, text); // prettier-ignore
         const kanal = (p, wer) =>
@@ -134,7 +134,7 @@ hauptLauf(async () => {
         const MARK_Z = -88.25;
         await pageA.evaluate(
             (x, z) => {
-                window.anazhRealm.p2pSend({ type: "pos", x, y: 9, z, yaw: 0.25 });
+                r.p2pSend({ type: "pos", x, y: 9, z, yaw: 0.25 });
             },
             MARK_X,
             MARK_Z
@@ -154,7 +154,7 @@ hauptLauf(async () => {
         // Gegenrichtung: B sendet, A muss es sehen.
         const MARK_X2 = -54.0;
         await pageB.evaluate((x) => {
-            window.anazhRealm.p2pSend({ type: "pos", x, y: 4, z: 71.5, yaw: 1.5 });
+            r.p2pSend({ type: "pos", x, y: 4, z: 71.5, yaw: 1.5 });
         }, MARK_X2);
         await waitFor(
             pageA,
@@ -170,14 +170,13 @@ hauptLauf(async () => {
         // Multi-User-Bau-Sync — A baut eine Struktur, B sieht sie; A baut sie
         // ab, B's Kopie verschwindet. Beweis über das echte Mesh.
         const archId = await pageA.evaluate(() => {
-            const r = window.anazhRealm;
             r.setGameMode && r.setGameMode("schöpfer"); // Bau-Gates frei
             // das Phantom ist ein Object3D wie im Spiel: das Setzen zieht das nächste (`_bauPhantomNeu`) und entsorgt
             // das alte über `_disposeSoulGroup`
             const phantom = new window.THREE.Group();
             // BÜHNE: ein Phantom-Objekt ohne Boden (Entsorgungs-Mechanik)
             phantom.position.set(44, 6, -44);
-            r.state.buildMode = {
+            st.buildMode = {
                 active: true,
                 blueprintName: "stein_block",
                 phantomMesh: phantom,
@@ -185,7 +184,7 @@ hauptLauf(async () => {
             };
             r.confirmBuild();
             r._clearBuildMode();
-            const arches = r.state.architectures;
+            const arches = st.architectures;
             return arches.length ? arches[arches.length - 1].id : null;
         });
         check("A: Struktur gebaut + geteilte archId vergeben", typeof archId === "string", String(archId));
@@ -198,7 +197,7 @@ hauptLauf(async () => {
         check("Bau platzieren synchronisiert peer-to-peer", true);
         // A baut die Struktur ab → B's Kopie muss verschwinden.
         await pageA.evaluate((id) => {
-            window.anazhRealm.dslRun(["remove_architecture", id], { source: "human" });
+            r.dslRun(["remove_architecture", id], { source: "human" });
         }, archId);
         await waitFor(
             pageB,
@@ -216,8 +215,8 @@ hauptLauf(async () => {
         const CRZ = -33.0;
         await pageA.evaluate(
             (x, z) => {
-                window.anazhRealm.spawnCreatureAt(x, 8, z, "happy");
-                window.anazhRealm._p2pBroadcastCreatures();
+                r.spawnCreatureAt(x, 8, z, "happy");
+                r._p2pBroadcastCreatures();
             },
             CRX,
             CRZ
@@ -244,7 +243,6 @@ hauptLauf(async () => {
         // beweisen (SpeechSynthesis selbst ist im Headless nicht prüfbar).
         await pageB.evaluate(() => {
             window.__companionSayRx = null;
-            const r = window.anazhRealm;
             const orig = r._p2pHandleCompanionSay.bind(r);
             r._p2pHandleCompanionSay = (pid, msg) => {
                 window.__companionSayRx = { pid, text: msg && msg.text, voice: msg && msg.voice };
@@ -252,8 +250,8 @@ hauptLauf(async () => {
             };
         });
         await pageA.evaluate(() => {
-            window.anazhRealm.state.grok.companionVoice = "Aria";
-            window.anazhRealm.grokRender("Ich träume mit dir.");
+            st.grok.companionVoice = "Aria";
+            r.grokRender("Ich träume mit dir.");
         });
         await waitFor(
             pageB,
@@ -269,10 +267,9 @@ hauptLauf(async () => {
         // im CI kein API-Key); B (ohne eigenes LLM) routet eine Chat-Anfrage
         // peer-to-peer über A. Der Mesh-Round-Trip ist der echte Beweis.
         await pageA.evaluate(() => {
-            const r = window.anazhRealm;
             r._p2pVoiceCapable = () => true; // im Test: A „hat" ein LLM
             r.llmCall = async () => ({ say: "Antwort aus A's Stimme", program: null });
-            r.state.p2p.voiceShared = true;
+            st.p2p.voiceShared = true;
             r._p2pBroadcastSoul(); // voiceShared an B verteilen
         });
         await waitFor(
@@ -283,7 +280,6 @@ hauptLauf(async () => {
         const voiceReply = await pageB.evaluate(
             () =>
                 new Promise((resolve) => {
-                    const r = window.anazhRealm;
                     const res = r._p2pRequestSharedVoice("hallo welt", (text) => {
                         if (/Geteilte Stimme:/.test(text)) resolve(text);
                     });
@@ -300,17 +296,15 @@ hauptLauf(async () => {
         // Welt-Snapshot über das Mesh. A wird Host, B Guest;
         // B holt A's Welt in Stücken über den DataChannel (kein WS-Relay).
         const worldIdA = await pageA.evaluate(() => {
-            const r = window.anazhRealm;
-            r.state.p2p.role = "host";
-            r.state.worldMeta.role = "host";
+            st.p2p.role = "host";
+            st.worldMeta.role = "host";
             r._p2pBroadcastSoul(); // worldRole=host an B verteilen
-            return r.state.worldMeta.worldId;
+            return st.worldMeta.worldId;
         });
         await pageB.evaluate(() => {
-            const r = window.anazhRealm;
-            r.state.p2p.role = "guest";
-            r.state.worldMeta.role = "guest";
-            r.state.p2p._testNoReload = true; // im Test nicht neu laden
+            st.p2p.role = "guest";
+            st.worldMeta.role = "guest";
+            st.p2p._testNoReload = true; // im Test nicht neu laden
         });
         // B muss A's Welt-Rolle (host) über den soul-Kanal erfahren.
         await waitFor(
@@ -319,7 +313,7 @@ hauptLauf(async () => {
             "B kennt A als Host"
         );
         // B fordert den Welt-Resync an.
-        const resync = await pageB.evaluate(() => window.anazhRealm._p2pRequestWorldResync());
+        const resync = await pageB.evaluate(() => r._p2pRequestWorldResync());
         check("B: Welt-Resync angefordert", resync && resync.ok === true, JSON.stringify(resync));
         // B übernimmt A's Welt durch die Tür (`_weltBetreten`): sie liegt unter A's worldId im Speicher, der Aktiv-Zeiger
         // zeigt auf sie (der Reload ist im Test angehalten — die Seite lädt sie nie in sich).
@@ -332,7 +326,7 @@ hauptLauf(async () => {
             worldIdA
         );
         check("B übernahm A's Welt-Snapshot peer-to-peer (chunked)", true);
-        const snapLenB = await pageB.evaluate(() => window.anazhRealm.state.p2p._lastReceivedSnapshotLen);
+        const snapLenB = await pageB.evaluate(() => st.p2p._lastReceivedSnapshotLen);
         check(
             "B reassemblierte den vollständigen Snapshot",
             typeof snapLenB === "number" && snapLenB > 100,
@@ -345,7 +339,7 @@ hauptLauf(async () => {
         // Eintrag — die Welt reiste über das Mesh, ohne Repo, ohne GitHub.
         fs.rmSync(W16_DIR, { recursive: true, force: true });
         const w16Vendor = await pageA.evaluate(async (id) => {
-            return window.anazhRealm.vendorWorldBundle({
+            return r.vendorWorldBundle({
                 worldId: id,
                 label: "Mesh-Test-Welt",
                 desc: "über das Mesh gereist",
@@ -363,7 +357,7 @@ hauptLauf(async () => {
             JSON.stringify(w16Vendor)
         );
         const bHasBefore = await pageB.evaluate(
-            (id) => !!(window.anazhRealm.state.customWorlds && window.anazhRealm.state.customWorlds[id]),
+            (id) => !!(st.customWorlds && st.customWorlds[id]),
             W16_ID
         );
         check("W16: B hat die Welt vor dem Mesh-Transfer nicht", bHasBefore === false);
@@ -383,7 +377,7 @@ hauptLauf(async () => {
         );
         const w16Cat = await pageB.evaluate(
             (pid, wid) => {
-                const peer = window.anazhRealm.state.p2p.peers.get(pid);
+                const peer = st.p2p.peers.get(pid);
                 const e = peer && peer.catalog && peer.catalog.find((w) => w.id === wid);
                 return e ? { id: e.id, label: e.label, hash: e.hash, multiplayer: e.multiplayer } : null;
             },
@@ -401,9 +395,9 @@ hauptLauf(async () => {
         // Katalog (der Phase-2-Spieler-Pfad, kein blankes Text-Feld mehr).
         const w16Req = await pageB.evaluate(
             (pid, wid) => {
-                const peer = window.anazhRealm.state.p2p.peers.get(pid);
+                const peer = st.p2p.peers.get(pid);
                 const e = peer.catalog.find((w) => w.id === wid);
-                return window.anazhRealm.requestWorldBundleFromPeer(e.id, pid);
+                return r.requestWorldBundleFromPeer(e.id, pid);
             },
             peerIdA,
             W16_ID
@@ -421,7 +415,7 @@ hauptLauf(async () => {
         );
         check("W16: A's Welt reiste peer-to-peer in B's Bibliothek (trust:sandboxed)", true);
         const w16Entry = await pageB.evaluate((id) => {
-            const e = window.anazhRealm.state.customWorlds[id];
+            const e = st.customWorlds[id];
             return {
                 label: e && e.label,
                 vendored: e && e.vendored,
@@ -479,12 +473,11 @@ hauptLauf(async () => {
         // und lädt die Mesh-Gruppe ein; B bekommt die Einladung + folgt ihr
         // ins SELBE Multiplayer-Portal (die B2-Sub-Raum-Eingrenzung verbindet).
         const w17cWorldA = await pageA.evaluate(() => {
-            const r = window.anazhRealm;
             const obt = r.obtainPortalForWorld("skeleton");
             if (!obt.ok) return null;
             // Die Skelett-Welt ist nicht von Haus aus multiplayer — fürs Test
             // setzen, dass A's Portal ein Multiplayer-Tor ist.
-            r.state.blueprints["portal_skeleton"].portalMeta.multiplayer = true;
+            st.blueprints["portal_skeleton"].portalMeta.multiplayer = true;
             r.enterPortal({ type: "portal_skeleton", affordances: { isPortal: true } });
             return r._portalOverlay ? r._portalOverlay.world : null;
         });
@@ -501,8 +494,8 @@ hauptLauf(async () => {
         check("W17 C: B bekommt die Gruppen-Portal-Einladung peer-to-peer", true);
         // B folgt der Einladung → betritt dasselbe Multiplayer-Portal.
         const w17cJoin = await pageB.evaluate(() => {
-            const res = window.anazhRealm.joinPortalInvite();
-            const po = window.anazhRealm._portalOverlay;
+            const res = r.joinPortalInvite();
+            const po = r._portalOverlay;
             return { ok: res.ok, world: po ? po.world : null, multiplayer: po ? po.multiplayer : null };
         });
         check(
@@ -522,7 +515,7 @@ hauptLauf(async () => {
         fs.writeFileSync(path.join(W17JS_DIR, "index.html"), W17JS_WORLD_HTML, "utf8");
         const JSCOMPUTE_PATH = `worlds/${W17JS_ID}/index.html`;
         // A's peerId — B routet seinen Verkehr gezielt an den Compute-Host.
-        const aPeerId = await pageA.evaluate(() => window.anazhRealm.state.p2p.peerId);
+        const aPeerId = await pageA.evaluate(() => st.p2p.peerId);
         // A: Compute-Host. _buildPortalOverlay baut ein zweites, verborgenes
         // iframe (den Server-Kontext) mit `?anazh-server=1`. B: Gast — sein Compute-Host ist A.
         const rechner = ([world, rolle]) =>
@@ -532,14 +525,14 @@ hauptLauf(async () => {
         check(
             "W17 JS-Compute: A ist Compute-Host (Server-Kontext-iframe gebaut)",
             await pageA.evaluate(() => {
-                const po = window.anazhRealm._portalOverlay;
+                const po = r._portalOverlay;
                 return !!po && po.serverMode === "js-compute" && po.computeRole === "host" && !!po.serverIframe;
             })
         );
         check(
             "W17 JS-Compute: B ist Gast (Host = A, kein eigener Server-Kontext)",
             await pageB.evaluate((host) => {
-                const po = window.anazhRealm._portalOverlay;
+                const po = r._portalOverlay;
                 return !!po && po.computeRole === "guest" && po.hostPeerId === host && !po.serverIframe;
             }, aPeerId)
         );
@@ -573,7 +566,7 @@ hauptLauf(async () => {
         // an) und annonciert ihn als subworld-state an die Gäste. B (Gast)
         // muss die Mitgift {total:12} gecacht haben, BEVOR A geht.
         await pageA.evaluate(() => {
-            window.anazhRealm._portalSrvSend({ __anazhNet: true, kind: "srv-state-req" });
+            r._portalSrvSend({ __anazhNet: true, kind: "srv-state-req" });
         });
         await waitFor(
             pageB,
@@ -592,7 +585,7 @@ hauptLauf(async () => {
         // A (der Compute-Host) verlässt das Mesh; B erkennt es, wählt sich aus
         // der Roster zum Nachfolger, baut den Server-Kontext und injiziert die
         // Mitgift (srv-state-restore VOR den Verbindungs-Replays).
-        await pageB.evaluate((host) => window.anazhRealm._p2pRemovePeer(host), aPeerId);
+        await pageB.evaluate((host) => r._p2pRemovePeer(host), aPeerId);
         await waitFor(
             pageB,
             () => {

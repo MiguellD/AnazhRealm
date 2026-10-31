@@ -747,7 +747,6 @@ async function vorratAmDorf(messort, alt) {
 // Läuft im Browser (page.evaluate) — selbstgenügsam.
 function feldWurfImOrt(anker, defekt) {
     const res = { sperrt: [], grundriss: [], weg: [], fehl: [], werk: { arten: [], weicht: [] } };
-    const A = AnazhRealm;
     // die Arten des Felds (`_vegetationSampleSpawn`), wie die Linse sie kennt — die Welt trägt sie als EINE Liste
     const LISTE = [
         "baum_eiche",
@@ -762,14 +761,14 @@ function feldWurfImOrt(anker, defekt) {
         "glutbrunnen",
     ];
     res.arten = LISTE.length;
-    res.quelle = Array.isArray(A.FELD_WURF) && A.FELD_WURF.join() === LISTE.join();
+    res.quelle = Array.isArray(AnazhRealm.FELD_WURF) && AnazhRealm.FELD_WURF.join() === LISTE.join();
     if (defekt === "bau")
         r._weichtDemBau = function (e) {
             return this._istNatur(e);
         };
     if (defekt === "art")
         r._weichtDemBau = function (e) {
-            return this._istNatur(e) || (!!e && A.FELD_WURF.includes(e.type));
+            return this._istNatur(e) || (!!e && AnazhRealm.FELD_WURF.includes(e.type));
         };
     // die Marke trägt der EINE Wurf-Pfad des Felds (`_enqueueVegetationSpawn`): seine Optionen, am Setzen abgegriffen
     let feldOpts = null;
@@ -2662,14 +2661,13 @@ hauptLauf(async () => {
                     // DIE LATERNE NEBEN DER FAHRBAHN:
                     // je Laterne der Zelle der Abstand zum Rand jedes Wegs der EINEN Wege-Karte (die Segmente der Straßen und Feldwege,
                     // `_wegeFormAbstand`; der Tritt einer Ausstattung ist ein Segment ohne Länge und zählt nicht) — Soll: der Tritt des Rezepts
-                    const AR = AnazhRealm;
-                    const GZ = AR.GRUNDRISS_ZELLE;
+                    const GZ = AnazhRealm.GRUNDRISS_ZELLE;
                     res.laterneWegSoll = globalThis.__fachwerkCore.PRESETS.laterne.fx.tritt.r;
                     let lwegMin = Infinity;
                     for (const { position: q } of masten)
                         for (let a = -1; a <= 1; a++)
                             for (let b = -1; b <= 1; b++) {
-                                const zk = AR._grundrissSchluessel(Math.floor(q.x / GZ) + a, Math.floor(q.z / GZ) + b);
+                                const zk = AnazhRealm._grundrissSchluessel(Math.floor(q.x / GZ) + a, Math.floor(q.z / GZ) + b);
                                 for (const bb of r._grundrissStand().wege.get(zk) || [])
                                     for (const f of bb.formen)
                                         if (
@@ -2677,7 +2675,7 @@ hauptLauf(async () => {
                                             f.kanal >= 0 &&
                                             Math.hypot(f.bx - f.ax, f.bz - f.az) > 0.01
                                         )
-                                            lwegMin = Math.min(lwegMin, AR._wegeFormAbstand(f, q.x, q.z));
+                                            lwegMin = Math.min(lwegMin, AnazhRealm._wegeFormAbstand(f, q.x, q.z));
                             }
                     res.laterneWeg = Number.isFinite(lwegMin) ? Math.round(lwegMin * 100) / 100 : null;
                     // DIE STUFE VOR DER TÜR IST WEG: je Haus der Punkt 0,8 m
@@ -2697,11 +2695,11 @@ hauptLauf(async () => {
                     const inGasse = (x, z) => {
                         const l = r
                             ._grundrissStand()
-                            .wege.get(AR._grundrissSchluessel(Math.floor(x / GZ), Math.floor(z / GZ)));
+                            .wege.get(AnazhRealm._grundrissSchluessel(Math.floor(x / GZ), Math.floor(z / GZ)));
                         if (l)
                             for (const b of l)
                                 for (const f of b.formen)
-                                    if (f.typ !== "kasten" && f.kanal >= 0 && AR._wegeFormAbstand(f, x, z) < 0)
+                                    if (f.typ !== "kasten" && f.kanal >= 0 && AnazhRealm._wegeFormAbstand(f, x, z) < 0)
                                         return true;
                         return false;
                     };

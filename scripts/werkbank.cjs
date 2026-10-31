@@ -258,8 +258,6 @@ function boeSelbsttest() {
 
 function lauf(k) {
     return (async () => {
-        const r = anazhRealm;
-        const st = r.state;
         const rend = st.renderer;
         // DIE BÜHNE: Mittag · Sonne · Sommer, oder das Wort des Spielers (`--wetter stormy`) und n Tiere frei im Ring
         // (`--tiere 50`) — Profiband K1 „Sturm"
@@ -639,8 +637,7 @@ function lauf(k) {
 // am VSync ein und misst nur bei tiefer Schlange die GPU.
 function gpuBank(k) {
     return (async () => {
-        const r = anazhRealm;
-        const rend = r.state.renderer;
+        const rend = st.renderer;
         rend.setAnimationLoop(null);
         __buehne();
         // DIE EINE BANK-RUNDE (scripts/lib/zerlege-linse.cjs) — dieselbe Messung, die `zerlegen` je Schalter fährt.
@@ -712,8 +709,6 @@ function tierZahl() {
 // dann `eingeschwungen: false`, und die Ratsche verweigert den Nachzug.
 function bandEinschwingen(k) {
     return (async () => {
-        const r = anazhRealm;
-        const st = r.state;
         const RUHIG = k.ruhig || 30;
         // DIE VOLLE WELT: der Regler misst hier Takte mit 50 ms Pause (65 ms je Frame) und drosselte auf loadScale 0 —
         // je nach Vorgeschichte stand die Messung auf einer anderen Welt (Streu-Stufen, Laub-Radius). Die Decke geht hoch
@@ -761,7 +756,6 @@ function bandEinschwingen(k) {
 // (die Tiere wandern, der Takt rechnet weiter) — die Werkbank nimmt je Klasse × Pass das Maximum (`zensusMax`).
 function bandProben(k) {
     return (async () => {
-        const r = anazhRealm;
         const proben = [];
         for (let i = 0; i < (k.n || 6); i++) {
             if (i)
@@ -771,7 +765,7 @@ function bandProben(k) {
                 }
             __buehne();
             try {
-                if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
+                if (st.fernRing) r._tickFeldPass(st.fernRing);
             } catch {}
             proben.push(await __drawZensus({ alle: true }));
         }
@@ -940,7 +934,6 @@ async function starte() {
     const umstellen = (x, z, o) =>
         page.evaluate(
             async (x, z, o) => {
-                const r = anazhRealm;
                 // DER ANKER des Orts (haushalt.json `anker`): die Stamm-Methode nennt, wo der Ort in DIESER Welt steht —
                 // steht er mehr als 1 m neben dem Spieler-Platz der Spec, bricht die Aufstellung laut ab (sonst urteilte
                 // die Messung über einen leeren Rand).
@@ -971,23 +964,23 @@ async function starte() {
                         );
                 window.__ortStell = stell
                     ? () => {
-                          for (const [k, v] of Object.entries(stell)) for (const f of FELD[k]) r.state[f] = v;
+                          for (const [k, v] of Object.entries(stell)) for (const f of FELD[k]) st[f] = v;
                       }
                     : null;
                 window.__ortSchritt = () => {
                     if (window.__ortStell) __ortStell();
-                    const pm = r.state.playerMesh.position;
+                    const pm = st.playerMesh.position;
                     for (const m of window.__ortTakt) r[m](pm);
                 };
                 if (window.__ortStell) __ortStell();
                 if (o && Number.isFinite(o.gier)) {
-                    r.state.yaw = o.gier;
-                    r.state.pitch = 0;
+                    st.yaw = o.gier;
+                    st.pitch = 0;
                 }
                 // DER ANLAUF (haushalt.json `anlauf`): dort steht der Spieler zuerst und schwingt ein — er gründet die Stadt, der Zug baut
                 // kein Haus auf ihm, eine Stadt erwacht erst, wenn er naht —, dann steht er am Ort: am Boden oder auf dem Dach (`dach`, m)
                 const a = (o && o.anlauf) || [x, z];
-                r.state.playerMesh.position.set(a[0], r._voxelSurfaceY(a[0], a[1]) + 1.8, a[1]);
+                st.playerMesh.position.set(a[0], r._voxelSurfaceY(a[0], a[1]) + 1.8, a[1]);
                 // DIE GRÜNDUNG (haushalt.json `gruendung`, die Stadt): der Spieler sagt sein Wort am Anlauf mit dem Blick des Orts, wie im
                 // Spiel (Chat) — die Siedlung steht danach am Anker der Spec (±1 m, sonst laut: die Ort-Wahl wanderte mit der Welt); eine Welt,
                 // die sie trägt, gründet nicht neu. Die Bahn des Orts (`bahn`, die Hauptgasse) liegt Meter für Meter auf ihrem Weg (`_aufWeg`).
@@ -995,7 +988,7 @@ async function starte() {
                 window.__ortBahn = (o && o.bahn) || null;
                 if (g) {
                     const same = g.wort.split(" ")[1];
-                    const zellen = () => Object.values(r.state.worldMeta.settlementCells || {});
+                    const zellen = () => Object.values(st.worldMeta.settlementCells || {});
                     const steht = () =>
                         zellen().find((c) => String(c.seed) === same && Math.hypot(c.x - g.anker[0], c.z - g.anker[1]) <= 1);
                     if (!steht()) {
@@ -1044,11 +1037,11 @@ async function starte() {
                             if (!r._aufWeg(x, z, 0)) throw new Error(`Messort ${o.ort}: die Bahn verlässt die Gasse bei ${x.toFixed(1)} ${z.toFixed(1)}`);
                         }
                     if (o && o.anlauf) {
-                        r.state.playerMesh.position.set(x, o.dach ? o.dach + AnazhRealm.PLAYER_FOOT_OFFSET : r._voxelSurfaceY(x, z) + 1.8, z);
+                        st.playerMesh.position.set(x, o.dach ? o.dach + AnazhRealm.PLAYER_FOOT_OFFSET : r._voxelSurfaceY(x, z) + 1.8, z);
                         takte += await __weltStehtNach(takt);
                         // der Träger der Kapsel (`_stepCharacter`): steht der Spieler auf dem Bau in der Höhe des Dachs?
-                        if (o.dach && !(r.state._kapselStruktur && Math.abs(r.state._kapselTraegerY - o.dach) < 0.5))
-                            throw new Error(`Messort ${o.ort}: kein Dach bei ${o.dach} m (Träger ${r.state._kapselTraegerY})`);
+                        if (o.dach && !(st._kapselStruktur && Math.abs(st._kapselTraegerY - o.dach) < 0.5))
+                            throw new Error(`Messort ${o.ort}: kein Dach bei ${o.dach} m (Träger ${st._kapselTraegerY})`);
                     }
                 } finally {
                     st.perfTargetMs = decke;
@@ -1065,8 +1058,8 @@ async function starte() {
                 return {
                     takte,
                     steht: r._weltSteht(),
-                    chunks: r.state.voxelChunks ? r.state.voxelChunks.size : 0,
-                    gier: +r.state.yaw.toFixed(4),
+                    chunks: st.voxelChunks ? st.voxelChunks.size : 0,
+                    gier: +st.yaw.toFixed(4),
                     dorfZug: window.__anazhAutoSettlement !== false,
                     ortTakt: window.__ortTakt,
                     dorfSchwebt,
@@ -1079,8 +1072,7 @@ async function starte() {
 
     const bild = (k) =>
         page.evaluate(async (k) => {
-            const r = anazhRealm;
-            const rend = r.state.renderer;
+            const rend = st.renderer;
             const boden = (x, z, v) =>
                 typeof v === "string" && v[0] === "+" ? r._voxelSurfaceY(x, z) + Number(v.slice(1)) : Number(v);
             // DAS GESICHT (`--gesicht <m>`): die Kamera steht <m> vor dem Kopf des Spielers (sein Kopf-Gelenk, 8 cm darüber
@@ -1088,7 +1080,7 @@ async function starte() {
             let gpos = null;
             if (k.gesicht != null) {
                 const T = THREE;
-                const pm = r.state.playerMesh;
+                const pm = st.playerMesh;
                 let kopf = null;
                 pm.updateMatrixWorld(true);
                 pm.traverse((o) => {
@@ -1112,14 +1104,14 @@ async function starte() {
                 return tiefe[i] < 0.99999 ? P.applyMatrix4(new T.Matrix4().fromArray(ivp)) : null;
             };
             if (k.arm != null) {
-                if (r.state.cameraMode !== "first" || !k.klasse) throw new Error("--arm: Ego (--sicht ego) und --klasse");
+                if (st.cameraMode !== "first" || !k.klasse) throw new Error("--arm: Ego (--sicht ego) und --klasse");
                 for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100);
-                const a = r.state.camera.position.clone();
+                const a = st.camera.position.clone();
                 const tiefe = async () => (await __ausgabeAufnahme(64, 36, 1, { satz: "messung", tiefe: true }), await __spiegelDaten());
                 const re = new RegExp(k.klasse),
                     aus = [],
                     S = await tiefe();
-                r.state.scene.traverse((o) => o.visible === true && o.isMesh && re.test(r._taeterKlasse(o)) && aus.push(o));
+                st.scene.traverse((o) => o.visible === true && o.isMesh && re.test(r._taeterKlasse(o)) && aus.push(o));
                 aus.forEach((o) => (o.visible = false));
                 bundlesNeu();
                 const O = await tiefe();
@@ -1149,7 +1141,7 @@ async function starte() {
             // die Kamera VOR der Bühne: die Bühne setzt Tag und Nacht neu, und das Licht des Auges steht an der Kamera
             // (`_dayNightApplyAugenLicht`, seine Stärke aus dem Himmel am Auge) — danach gesetzt, stand es an der Kamera des
             // letzten Schusses (das Auge in der Höhle schwarz, Helligkeit 0, das Licht lag draußen unter dem Himmel)
-            const cam = r.state.camera,
+            const cam = st.camera,
                 fov0 = cam.fov; // `--fov v`: das Blickfeld (vertikal) dieses Schusses, danach wieder das des Spiels
             if (k.fov) (cam.fov = Number(k.fov)), cam.updateProjectionMatrix();
             cam.position.set(px, py, pz);
@@ -1159,7 +1151,6 @@ async function starte() {
             // `--uhr u` (0..1, 0,5 = Mittag): die Bühne mit Sonne und Sommer, aber zu dieser Stunde — Himmel, Umgebung und die
             // Leuchtquellen (`_leuchtTakt`, eine Sekunde, bis jede gewählte Quelle eingeblendet ist) folgen ihr
             if (Number.isFinite(k.uhr)) {
-                const st = r.state;
                 if (st.world) st.world.timeOfDay = k.uhr;
                 // der Pfad des Spielers (sein Satz „nacht"): der Uhr-Schreiber springt, der Himmel folgt im selben Anwenden
                 r.setTimeOfDay(k.uhr, "human");
@@ -1176,7 +1167,7 @@ async function starte() {
                     await sleep(50);
                 }
             }
-            if (r.state.playerMesh) r.state.playerMesh.visible = !!k.spieler;
+            if (st.playerMesh) st.playerMesh.visible = !!k.spieler;
             // DAS ZIEL des Bilds ist der Blick-Punkt: die Aufnahme prüft, ob es im Bild und frei ist, und die Blick-Wahl
             // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42; `--wahl 0` schießt nur die genannte Pose).
             // Das Ziel einer Pose aus dem Leib (`--gesicht`, `--arm`) ist der Kopf oder die Fläche auf Armlänge, kein Werk hinter
@@ -1191,7 +1182,7 @@ async function starte() {
             // und jeder Schuss beginnt seine Geschichte neu — ein zweiter wäre dasselbe Bild (material.K2: sechs Armlängen)
             for (const w of wahl > 0 ? [wahl, 0] : [0]) {
                 try {
-                    if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
+                    if (st.fernRing) r._tickFeldPass(st.fernRing);
                 } catch {}
                 r._schattenAlleNeu();
                 auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: w });
@@ -1258,10 +1249,10 @@ async function starte() {
                 // (`_chunkSatzAus`), und kehrt über den EINEN Weg zurück (`_bauSatzMarke` → `_tickBauSatz`); ein Nur-Wurf-Satz
                 // zeichnet nie ins Bild und bleibt, wie er ist.
                 const bauSaetze = new Map();
-                for (const [art, s] of r.state.chunkSaetze || [])
+                for (const [art, s] of st.chunkSaetze || [])
                     if (s.mesh && s.mesh.userData && s.mesh.userData.bauSatz && !s.spec.nurWurf)
                         bauSaetze.set(s.mesh, { art, s });
-                r.state.scene.traverse((o) => {
+                st.scene.traverse((o) => {
                     if (!zeichnet(o)) return;
                     const bs = bauSaetze.get(o);
                     if (bs) {
@@ -1337,7 +1328,7 @@ async function starte() {
                         const T = THREE;
                         if (typeof r._torZielDaten !== "function")
                             return { r: null, pixel: 0, grund: "die Welt hält kein Ziel-Panorama (kein Studio-Export)" };
-                        const cam = r.state.camera;
+                        const cam = st.camera;
                         cam.updateMatrixWorld(true);
                         const recs = [];
                         for (const rec of r._portalMembranes ? r._portalMembranes.values() : []) {
@@ -1547,7 +1538,7 @@ async function starte() {
                     if (k.abstand) {
                         const T = THREE;
                         // die Bänder: der Ring der Nah-Wiese (ihr Radius in DIESER Welt) ist eine Kante
-                        const ring = r.constructor.NAH_WIESE ? r.constructor.NAH_WIESE.radius : null;
+                        const ring = AnazhRealm.NAH_WIESE ? AnazhRealm.NAH_WIESE.radius : null;
                         const baender = [...new Set([0, 2, 5, 10, ring, 30, 80, 200].filter((x) => x != null))].sort(
                             (a, b2) => a - b2
                         );
@@ -1619,7 +1610,7 @@ async function starte() {
                             augeUeberBoden: +(pos.y - (r._bodenSichtAt(pos.x, pos.z) || 0)).toFixed(2),
                             cos: cosS.map((s, b) => (cosN[b] ? +(s / cosN[b]).toFixed(4) : null)),
                             klassen: zahl,
-                            farbton: { kachel: 2, band: [2, 5], belichtung: +r.state.renderer.toneMappingExposure.toFixed(4) },
+                            farbton: { kachel: 2, band: [2, 5], belichtung: +st.renderer.toneMappingExposure.toFixed(4) },
                         };
                         abstand.farbton.kacheln = [...ftK].map(([kk, a]) => [kk, a[0], +a[1].toFixed(3), +a[2].toFixed(3), a[3]]);
                     }
@@ -1684,7 +1675,7 @@ async function starte() {
                     T0 = U.T,
                     S = await __spiegelDaten(),
                     nah = new Uint8Array(W * H),
-                    B = r.constructor.WIND_BOE;
+                    B = AnazhRealm.WIND_BOE;
                 for (let p = 0; p < W * H; p++) {
                     const P = mitte(S, Math.floor(((Math.floor(p / W) + 0.5) * S.th) / H) * S.tw + Math.floor((((p % W) + 0.5) * S.tw) / W));
                     nah[p] = P && P.distanceTo(cam.position) <= k.nahM ? 1 : 0;
@@ -1863,8 +1854,6 @@ async function starte() {
                 if (req.url === "/wache") {
                     const w = await page.evaluate(
                         (a) => {
-                            const r = anazhRealm;
-                            const st = r.state;
                             const pm = st.playerMesh.position;
                             const db = st.renderer.getDrawingBufferSize(new THREE.Vector2());
                             return {
@@ -1879,7 +1868,7 @@ async function starte() {
                                 },
                                 fenster: { innen: [window.innerWidth, window.innerHeight], puffer: [db.x, db.y] },
                                 tiere: __tierZahl(),
-                                version: r.constructor.VERSION,
+                                version: AnazhRealm.VERSION,
                             };
                         },
                         { seit: Number(b.seit) || 0, seitWelt: Number(b.seitWelt) || 0 }
@@ -1898,7 +1887,6 @@ async function starte() {
                 }
                 if (req.url === "/status") {
                     const s = await page.evaluate(() => {
-                        const st = anazhRealm.state;
                         const p = st.playerMesh.position;
                         return {
                             spieler: [p.x, p.y, p.z].map((v) => +v.toFixed(1)),
@@ -2087,16 +2075,15 @@ async function starte() {
                     if (!src) return send({ fehler: `Methode ${b.name} nicht gefunden` });
                     const o = await page.evaluate(
                         (name, src, terrain) => {
-                            const r = anazhRealm;
                             const fn = (0, eval)(src);
                             Object.getPrototypeOf(r)[name] = fn;
                             const aus = { getauscht: name };
                             if (terrain) {
-                                const alt = r.state.voxelChunkMaterial;
-                                r.state.voxelChunkMaterial = null;
+                                const alt = st.voxelChunkMaterial;
+                                st.voxelChunkMaterial = null;
                                 const neu = r._getVoxelChunkMaterial();
                                 let n = 0;
-                                r.state.scene.traverse((m) => {
+                                st.scene.traverse((m) => {
                                     if (m.material === alt) {
                                         m.material = neu;
                                         n++;
@@ -2120,8 +2107,6 @@ async function starte() {
                     // DAS QUADRAT DER LINSE ist das 5 × 5 der Chunks um den Chunk des SPIELERS (die Linse wählt ihre Orte um
                     // ihn): jeder steht im Boden-Satz oder ist leer. `_builtRingRadius` misst um `lastPlayerVoxelChunk` — in
                     const welt = await page.evaluate(async () => {
-                        const r = anazhRealm;
-                        const st = r.state;
                         const t0 = performance.now();
                         const quadrat = () => {
                             const satz = st.chunkSaetze && st.chunkSaetze.get("boden");
@@ -2154,7 +2139,7 @@ async function starte() {
                                 !k.job &&
                                 a.x === (Math.floor(p.x / span) + 0.5) * span &&
                                 a.z === (Math.floor(p.z / span) + 0.5) * span &&
-                                a.groesse === span * (2 * ring + 1 + r.constructor.FERN_KRONE_NAH.rand)
+                                a.groesse === span * (2 * ring + 1 + AnazhRealm.FERN_KRONE_NAH.rand)
                             );
                         };
                         const zustand = (gestanden) => {
@@ -2196,8 +2181,6 @@ async function starte() {
                     // (r184 `_textures`), sonst zeichnet der Boden im Spiel ein altes Bild. Vor dem Textur-Wächter der Diät
                     // hielt die GPU 20 Takte lang die alte.
                     const upload = await page.evaluate(async () => {
-                        const r = anazhRealm;
-                        const st = r.state;
                         const rend = st.renderer;
                         const texe = [];
                         if (st.fernKroneNah) texe.push(st.fernKroneNah.tex);
@@ -2544,20 +2527,19 @@ async function starte() {
                     return send(await gangLauf(page, pufferStand, b));
                 if (req.url === "/zaehlen") {
                     const o = await page.evaluate(async (k) => {
-                        const r = anazhRealm;
                         __buehne();
                         if (k.px != null) {
                             const boden = (x, z, v) =>
                                 typeof v === "string" && v[0] === "+"
                                     ? r._voxelSurfaceY(x, z) + Number(v.slice(1))
                                     : Number(v);
-                            const cam = r.state.camera;
+                            const cam = st.camera;
                             cam.position.set(+k.px, boden(+k.px, +k.pz, k.py), +k.pz);
                             cam.lookAt(+k.lx, boden(+k.lx, +k.lz, k.ly), +k.lz + 1e-4);
                             cam.updateMatrixWorld(true);
                         }
                         try {
-                            if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
+                            if (st.fernRing) r._tickFeldPass(st.fernRing);
                         } catch {}
                         return __drawZensus({ top: 16, alle: !!k.alle });
                     }, b);

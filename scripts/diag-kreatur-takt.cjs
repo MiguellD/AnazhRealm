@@ -91,7 +91,7 @@ async function headless(laeufe) {
         page.evaluate(() =>
             window.__weltStehtNach(() => {
                 try {
-                    window.anazhRealm._gameLoopTick(performance.now());
+                    r._gameLoopTick(performance.now());
                 } catch {}
             })
         );
@@ -99,7 +99,7 @@ async function headless(laeufe) {
         page.evaluate(
             (src, o) => {
                 const fn = (0, eval)("(" + src + ")");
-                return fn(window.anazhRealm, window.THREE, o);
+                return fn(r, window.THREE, o);
             },
             KREATUR_PROBEN_SRC,
             o
@@ -117,7 +117,7 @@ async function headless(laeufe) {
             await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
             await weltTor(page, json);
             await bereit();
-            const seed = await page.evaluate(() => window.anazhRealm.state.worldMeta.seed);
+            const seed = await page.evaluate(() => st.worldMeta.seed);
             if (seed !== json.worldMeta.seed) throw new Error(`${json.worldMeta.seed} ist nicht aktiv (Seed ${seed})`);
             await einschwingen();
         };

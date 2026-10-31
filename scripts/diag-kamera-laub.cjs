@@ -365,7 +365,7 @@ function leibInstall(cfg) {
     L.fuss = (x, z, gier, pitch) => {
         r.setCameraMode("third");
         const y = r.getTerrainHeightAt(x, z);
-        st.playerMesh.position.set(x, y + r.constructor.PLAYER_FOOT_OFFSET + 0.02, z);
+        st.playerMesh.position.set(x, y + AnazhRealm.PLAYER_FOOT_OFFSET + 0.02, z);
         st._kapselTraegerY = y;
         st._kapselStruktur = false;
         st.yaw = gier;
@@ -463,7 +463,7 @@ async function leibWiese(arg) {
         // unter der GPU-Leine (29.10.: 4 Bilder in 4 400 Takten, Ferne 43,5, seit lod.K5 das Haus des Gangs auf L2 ohne Flügel,
         // der Schmuggel blind; das Abwarten riss an der Frist der Seite, 900 s). Ab hier wählt der Stamm jede Stufe am Abstand
         // (`_ankunftsFerne` 1): die Häuser der Wiese und der Gang (K4) messen die angekommene Welt.
-        if (r._weltOffen().ankunft) st._ankunftGleit = r.constructor.ANKUNFT_GLEIT_BILDER;
+        if (r._weltOffen().ankunft) st._ankunftGleit = AnazhRealm.ANKUNFT_GLEIT_BILDER;
         out.haeuser = [];
         for (const [typ, dx, dz] of [
             ["haus_alemannisch", 16, 6],
@@ -539,7 +539,7 @@ async function leibWiese(arg) {
             const v = L.vor(je.haus[0].b, 0, 0.8);
             L.fuss(v.x, v.z, v.gier + Math.PI, 0);
             out.w1Bau = L.ruft(() => r._pickArchitectureAtCrosshair(), r, "_durchsichtSteht");
-            out.w2Kern = L.ruft(() => L.ruhig(1), r.constructor, "_bewegungsBlock", (n) => n === "kamera");
+            out.w2Kern = L.ruft(() => L.ruhig(1), AnazhRealm, "_bewegungsBlock", (n) => n === "kamera");
         }
         const T3 = window.THREE;
         const senke = [...(st.nahStreu ? st.nahStreu.senken.values() : [])].find((a) => a.ernte && a.anzahl > 0);
@@ -572,7 +572,7 @@ async function leibWiese(arg) {
                 const x = cx + Math.sin(th) * rad;
                 const z = cz + Math.cos(th) * rad;
                 const y = r.getTerrainHeightAt(x, z);
-                st.playerMesh.position.set(x, y + r.constructor.PLAYER_FOOT_OFFSET + 0.02, z);
+                st.playerMesh.position.set(x, y + AnazhRealm.PLAYER_FOOT_OFFSET + 0.02, z);
                 st._kapselTraegerY = y;
                 st.yaw = th + Math.PI / 2;
                 st.pitch = 0.2;

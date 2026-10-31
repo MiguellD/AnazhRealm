@@ -27,14 +27,14 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async () => {
         const res = { r: {}, s: {}, d: {}, w: {} };
-        const r = await window.__weltDa();
+        await window.__weltDa();
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.wolf && !f._vorrat);
         if (!(f && f.ready && f.recipes && f.recipes.wolf)) return { fatal: "wolf-Rezept kam nie" };
 
         // Leere Bühne + genug Kapazität.
-        for (const c of r.state.creatures.slice()) r.removeCreature(c);
-        r.state.maxCreatures = 12;
+        for (const c of st.creatures.slice()) r.removeCreature(c);
+        st.maxCreatures = 12;
         const fpGroup = window.__abdruck; // der EINE Abdruck (welt-boot)
         const setUe = (size) => {
             r._studioUebergabeEmpfang({ type: "uebergabe", kind: "kreatur", preset: "wolf", seed: 0, ov: { size } });

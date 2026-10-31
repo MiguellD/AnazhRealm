@@ -53,8 +53,8 @@ hauptLauf(async () => {
         };
 
         // ── Warm-Anker: Boot → f.ready → mensch-Rezept ──
-        const r = await window.__weltDa();
-        const A = r.constructor;
+        await window.__weltDa();
+        const A = AnazhRealm;
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.mensch && !f._vorrat);
         if (!(f && f.ready && f.recipes && f.recipes.mensch)) return { fatal: "mensch-Rezept kam nie" };
@@ -63,28 +63,28 @@ hauptLauf(async () => {
         const porzellanLin = lin(kc.SKIN_TONES.porzellan.hex >>> 0);
 
         // Minimales P2P-Bett (kein echtes Netz — der Empfangs-Chokepoint direkt).
-        r.state.p2p = r.state.p2p || {};
-        r.state.p2p.enabled = true;
-        r.state.p2p.peerId = "self";
-        r.state.p2p.peers = new Map();
+        st.p2p = st.p2p || {};
+        st.p2p.enabled = true;
+        st.p2p.peerId = "self";
+        st.p2p.peers = new Map();
 
         // Der eigene Avatar existiert (playerMesh) — Fingerabdruck VOR jedem Peer.
         try {
             r.applyPlayerSoul("human");
         } catch {}
-        res.e.eigenVorher = fpGroup(r.state.playerMesh);
+        res.e.eigenVorher = fpGroup(st.playerMesh);
 
         const peerMesh = (pid) => {
-            const ent = r.state.p2p.peers.get(pid);
+            const ent = st.p2p.peers.get(pid);
             return ent && ent.mesh;
         };
 
         // ── (S) DEFAULT-PEER: soul human OHNE uebergabe ⇒ Default-Gestalt ──
-        r._p2pMsgSoul({ peerId: "D", soulName: "human" }, r.state.p2p);
+        r._p2pMsgSoul({ peerId: "D", soulName: "human" }, st.p2p);
         const cD = colorsOf(peerMesh("D"));
         res.s.defaultBuilt = cD.size > 0;
         // der lokale Default (kein Übergabe-State) — dieselbe Gestalt wie der Default-Peer.
-        const cLocal = colorsOf(r.state.playerMesh);
+        const cLocal = colorsOf(st.playerMesh);
         res.s.defaultGleichtLokal = [...cD].some((x) => cLocal.has(x)) && cD.size === cLocal.size;
 
         // ── (N) ÜBERGABE-PEER: fremde Gestalt reist im soul-Payload ──
@@ -94,13 +94,13 @@ hauptLauf(async () => {
                 soulName: "human",
                 uebergabe: { koerper: { height: 1.0, skinTone: "porzellan", topColor: "blue", hairColor: "black" } },
             },
-            r.state.p2p
+            st.p2p
         );
         const cA = colorsOf(peerMesh("A"));
         res.n.built = cA.size > 0;
         res.n.traegtFremdHaut = cA.has(porzellanLin);
         res.n.verschiedenVomDefault = [...cA].some((x) => !cD.has(x)) || cA.size !== cD.size;
-        res.n.entryUebergabe = !!(r.state.p2p.peers.get("A") && r.state.p2p.peers.get("A").uebergabe);
+        res.n.entryUebergabe = !!(st.p2p.peers.get("A") && st.p2p.peers.get("A").uebergabe);
 
         // ── (W) WÄNDE: kaputte Payloads fallen am SELBEN Validator ──
         // (a) falsches kind (die Broadcast-Form trägt nur koerper — ein kreatur-Feld
@@ -111,12 +111,12 @@ hauptLauf(async () => {
                 soulName: "human",
                 uebergabe: { koerper: { height: NaN, skinTone: "erfunden_xyz" } },
             },
-            r.state.p2p
+            st.p2p
         );
         const cW = colorsOf(peerMesh("W"));
         res.w.faelltAufDefault = [...cW].every((x) => cD.has(x)) && cW.size === cD.size;
         res.w.keineFremdHaut = !cW.has(porzellanLin);
-        res.w.entryLeer = !(r.state.p2p.peers.get("W") && r.state.p2p.peers.get("W").uebergabe);
+        res.w.entryLeer = !(st.p2p.peers.get("W") && st.p2p.peers.get("W").uebergabe);
         // (c) Riesen-String > Taille-Cap ⇒ Validator null ⇒ Default.
         const riese = "x".repeat((A.TAILLE_UNKNOWN_FIELD_MAX || 8192) + 100);
         r._p2pMsgSoul(
@@ -125,10 +125,10 @@ hauptLauf(async () => {
                 soulName: "human",
                 uebergabe: { koerper: { height: 1, topColor: riese } },
             },
-            r.state.p2p
+            st.p2p
         );
         res.w.rieseEntryLeerOderGeclampt = (() => {
-            const u = r.state.p2p.peers.get("R") && r.state.p2p.peers.get("R").uebergabe;
+            const u = st.p2p.peers.get("R") && st.p2p.peers.get("R").uebergabe;
             // Der Riesen-String fällt (Taille-Cap, nicht in CLOTH_COLORS + FORM-Wand) ⇒ die Prägung trägt NIE den Riesen.
             return !u || u.topColor !== riese;
         })();
@@ -143,7 +143,7 @@ hauptLauf(async () => {
                 soulName: "human",
                 uebergabe: { koerper: { height: 1.0, skinTone: "sand", topColor: "grey" } },
             },
-            r.state.p2p
+            st.p2p
         );
         const keysNach = memo ? [...memo.keys()].filter((k) => k.indexOf("mensch|") === 0) : [];
         res.m.distinkteKeys = new Set(keysNach).size >= 3; // Default + porzellan + sand
@@ -155,24 +155,24 @@ hauptLauf(async () => {
         res.m.keysNach = keysNach.length;
 
         // ── (E) DER EIGENE AVATAR bleibt byte-identisch (kein transienter Leck) ──
-        res.e.eigenNachher = fpGroup(r.state.playerMesh);
+        res.e.eigenNachher = fpGroup(st.playerMesh);
         res.e.activeLeer = r._activePeerUebergabe === undefined || r._activePeerUebergabe === null;
         // Erneuter EIGENER Guss nach all den Peer-Güssen ⇒ Default (die eigene Übergabe ist leer).
         try {
             r.applyPlayerSoul("human");
         } catch {}
-        const cLocalNach = colorsOf(r.state.playerMesh);
+        const cLocalNach = colorsOf(st.playerMesh);
         res.e.eigenKeineFremdHaut = !cLocalNach.has(porzellanLin);
 
         // ── (K) DIE NAHT AM VERHALTEN: der Broadcast trägt nur koerper (ohne den Samen), der Peer führt vor der eigenen
         // Prägung, der Empfang klemmt durch DENSELBEN Prüfer ──
         const pr = r._ensureWorkshopState().studioOv,
             pr0 = JSON.stringify(pr),
-            p2pAn = r.state.p2p.enabled,
+            p2pAn = st.p2p.enabled,
             sent = [],
             echtV = r._studioWerkPruefen;
         r.p2pSend = (m) => sent.push(m);
-        r.state.p2p.enabled = true;
+        st.p2p.enabled = true;
         pr.mensch = { height: 1.1, __gestalt: 3 };
         pr.wolf = { size: 3 };
         r._p2pBroadcastSoul();
@@ -183,14 +183,14 @@ hauptLauf(async () => {
         r._activePeerUebergabe = null;
         res.k.eigen = r._koerperStudioDials().height === 1.1;
         r._ensureWorkshopState().studioOv = JSON.parse(pr0);
-        r.state.p2p.enabled = p2pAn;
+        st.p2p.enabled = p2pAn;
         let validiert = 0;
         r._studioWerkPruefen = function (art, ...x) {
             if (art === "koerper") validiert++;
             return echtV.call(this, art, ...x);
         };
         try {
-            r._p2pMsgSoul({ peerId: "K", soulName: "human", uebergabe: { koerper: { height: 1 } } }, r.state.p2p);
+            r._p2pMsgSoul({ peerId: "K", soulName: "human", uebergabe: { koerper: { height: 1 } } }, st.p2p);
         } catch {}
         delete r._studioWerkPruefen;
         res.k.einValidator = validiert > 0;

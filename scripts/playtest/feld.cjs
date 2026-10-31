@@ -317,12 +317,11 @@ async function checkBandV1730EmotionFromBeing({ page, check }) {
 // TTL, Frame-Budget, Dedup, Cap+Eviction, keine Same-Tick-Kaskade, deterministische Regel-RNG.
 async function checkBandV1733WorldRules({ page, check }) {
     const res = await page.evaluate(() => {
-        const K = AnazhRealm;
         const out = {};
         const now = () => performance.now() / 1000;
 
         // --- Verdrahtung ---
-        out.cfgWired = !!K.WORLD_RULES && K.WORLD_RULES.cap === 64 && typeof K.WORLD_RULES.minEverySec === "number";
+        out.cfgWired = !!AnazhRealm.WORLD_RULES && AnazhRealm.WORLD_RULES.cap === 64 && typeof AnazhRealm.WORLD_RULES.minEverySec === "number";
         out.registryArray = Array.isArray(st.worldRules);
         out.tickWired = window.__consumes(r, "_gameLoopTick", r, "_tickWorldRules", [performance.now()]); // der Takt ruft sie
 
@@ -370,7 +369,7 @@ async function checkBandV1733WorldRules({ page, check }) {
 
         // --- (6) Budget kappt Effekte/Frame ---
         st.worldRules.length = 0;
-        const N = K.WORLD_RULES.budgetPerFrame + 3; // mehr eligible als Budget
+        const N = AnazhRealm.WORLD_RULES.budgetPerFrame + 3; // mehr eligible als Budget
         for (let i = 0; i < N; i++) {
             // distinct cond (Dedup-frei) + immer true (rng < 1+ε); everySec klein
             r.dslRun(["rule", ["random_chance", 1 + i * 0.0001], ["weather", "rainy"], { everySec: 0.5 }], {
@@ -381,7 +380,7 @@ async function checkBandV1733WorldRules({ page, check }) {
         const tB = now();
         r._tickWorldRules(tB);
         const firedCount = st.worldRules.filter((x) => x.lastFired === tB).length;
-        out.budgetCaps = firedCount === K.WORLD_RULES.budgetPerFrame;
+        out.budgetCaps = firedCount === AnazhRealm.WORLD_RULES.budgetPerFrame;
         out.firedCount = firedCount;
 
         // --- (7) Dedup: dieselbe Regel zweimal → ein Eintrag ---
@@ -394,12 +393,12 @@ async function checkBandV1733WorldRules({ page, check }) {
         st.worldRules.length = 0;
         // eine Mensch-Regel zuerst (aelteste — darf NICHT verdraengt werden)
         r.dslRun(["rule", ["emotion_above", "joy", 0.99], ["weather", "rainy"], { everySec: 99 }], { source: "human" });
-        for (let i = 0; i < K.WORLD_RULES.cap + 5; i++) {
+        for (let i = 0; i < AnazhRealm.WORLD_RULES.cap + 5; i++) {
             r.dslRun(["rule", ["random_chance", 1 + i * 0.0001], ["weather", "sunny"], { everySec: 99 }], {
                 source: "nexus",
             });
         }
-        out.capHolds = st.worldRules.length <= K.WORLD_RULES.cap;
+        out.capHolds = st.worldRules.length <= AnazhRealm.WORLD_RULES.cap;
         out.humanSurvives = st.worldRules.some((x) => x.source === "human");
 
         // --- (9) Re-Entrancy: ein Regel-Effekt, der eine Regel registriert,
@@ -612,10 +611,9 @@ async function checkBandV1734FieldRules({ page, check }) {
 // Überlebenden. generateEvolution mischt Regel + Geste; dslMutate hält die Regel-Form.
 async function checkBandV1735NexusEvolvesRules({ page, check }) {
     const res = await page.evaluate(() => {
-        const K = AnazhRealm;
         const out = {};
         const now = () => performance.now() / 1000;
-        const cfg = K.WORLD_RULES;
+        const cfg = AnazhRealm.WORLD_RULES;
         const rng = r.dslCtx({ seed: 777 }).rng; // deterministischer LCG fuer die Komposition
 
         // --- (A) dslComposeRule: gueltige Regel-Struktur ---

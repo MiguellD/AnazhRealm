@@ -29,7 +29,7 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async (selftest) => {
         const res = { a: {}, b: {}, c: {}, e: {}, st: {} };
-        const r = await window.__weltDa();
+        await window.__weltDa();
         // Worker + Rezeptbuch abwarten (get-recipes folgt dem ready-Handshake).
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.eiche);
@@ -47,7 +47,7 @@ hauptLauf(async () => {
                 fx: {},
             };
             r._foundryAutoRegisterSpecies(f.recipes);
-            const bpA = r.state.blueprints.baum_testahorn;
+            const bpA = st.blueprints.baum_testahorn;
             res.a.identitaet =
                 !!bpA &&
                 bpA._grownSpecies === "baum_testahorn" &&
@@ -82,7 +82,7 @@ hauptLauf(async () => {
                 fx: { place: { mode: "none" } },
             };
             r._foundryAutoRegisterSpecies(f.recipes);
-            res.c.katalog = !!(r.state.blueprints && r.state.blueprints.baum_testnone);
+            res.c.katalog = !!(st.blueprints && st.blueprints.baum_testnone);
             const pc = r._placePolicyFor(f.recipes.testnone);
             res.c.mode = pc.mode;
             res.c.dispatch = r._placeDispatch(pc, { id: "testnone" });

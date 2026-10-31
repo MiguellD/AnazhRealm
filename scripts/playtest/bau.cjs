@@ -323,20 +323,19 @@ async function checkBandV1767WorkshopDomainEmergent({ page, check }) {
 // Verjüngung + Hohlkehle). Physik-Garant: Tempel steht, 1:7-Säulen knicken nicht, Balance gerechnet.
 async function checkBandOmegaGrammatik({ page, check }) {
     const res = await page.evaluate(() => {
-        const C = AnazhRealm;
         const o = {};
         // ── Ω-B1/B4 der klassische Tempel — AUSLÖSCHUNGS-WELLE: der temple-Blueprint + der
         // _classicalTempleVariant-Seed-Roller sind gefallen; die LEBENDE Grammatik-Maschine
         // (_buildClassicalTemple + CLASSICAL_ORDERS) bleibt und wird DIREKT geprobt.
         const temple = { parts: r._buildClassicalTemple("dorisch") };
         o.templeOk = !!(temple && Array.isArray(temple.parts) && temple.parts.length > 80);
-        const fluteSet = [C.CLASSICAL_ORDERS.dorisch.flutes, C.CLASSICAL_ORDERS.ionisch.flutes];
+        const fluteSet = [AnazhRealm.CLASSICAL_ORDERS.dorisch.flutes, AnazhRealm.CLASSICAL_ORDERS.ionisch.flutes];
         const shafts = temple.parts.filter((p) => p.shape === "flutedColumn");
         o.doricShafts = shafts.length > 10 && shafts.every((p) => p.size.z < p.size.x && fluteSet.includes(p.flutes));
         o.pediment =
             temple.parts.filter((p) => p.shape === "box" && p.rotation && Math.abs(p.rotation.z) > 0.05).length === 2;
         o.tympanon = temple.parts.filter((p) => p.shape === "gableTriangle").length === 2; // geschlossener Giebel
-        o.orders = !!(C.CLASSICAL_ORDERS && C.CLASSICAL_ORDERS.dorisch && C.CLASSICAL_ORDERS.ionisch);
+        o.orders = !!(AnazhRealm.CLASSICAL_ORDERS && AnazhRealm.CLASSICAL_ORDERS.dorisch && AnazhRealm.CLASSICAL_ORDERS.ionisch);
         // Ω-B4 GENERATIV: N Ordnungen×Parameter → N verschiedene Tempel, ALLE physik-garant.
         // (Der _classicalTempleVariant-Seed-Roller fiel; die Grammatik selbst — Ordnung ×
         // columnsFront — spannt den Varianten-Raum, jede Ausprägung bleibt physik-garant.)
@@ -400,7 +399,7 @@ async function checkBandOmegaGrammatik({ page, check }) {
         o.swordOk = !!(sword && Array.isArray(sword.parts));
         const blades = o.swordOk ? sword.parts.filter((p) => p.shape === "bladeProfile") : [];
         o.realBlade = blades.length === 1 && blades[0].tipWidth < 1 && typeof blades[0].fuller === "number"; // distale Verjüngung + Hohlkehle
-        o.oakeshott = !!(C.OAKESHOTT_TYPES && C.OAKESHOTT_TYPES.XII && C.OAKESHOTT_TYPES.XV);
+        o.oakeshott = !!(AnazhRealm.OAKESHOTT_TYPES && AnazhRealm.OAKESHOTT_TYPES.XII && AnazhRealm.OAKESHOTT_TYPES.XV);
         o.swordImplement = o.swordOk && r._isGraspableBladeForm(sword) === true; // gestreckt + spitz → Klinge
         try {
             const bg = r._makePartGeometry({

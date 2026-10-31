@@ -207,7 +207,7 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
     const [UX, UZ] = see.ufer;
     const [SX, SZ] = see.mitte;
     const hh = (x, z) => r._voxelSurfaceY(x, z);
-    const setz = (x, z, y = hh(x, z)) => pm.position.set(x, y + r.constructor.PLAYER_FOOT_OFFSET, z);
+    const setz = (x, z, y = hh(x, z)) => pm.position.set(x, y + AnazhRealm.PLAYER_FOOT_OFFSET, z);
     await window.__weltStehtNach(() => (setz(UX, UZ), (st._fixedSimPos = null), r._gameLoopTick(performance.now())));
     window.__buehne();
     st.autoSeason = false;
@@ -271,7 +271,7 @@ async function tafelProbe(STOFFE, WIRKUNGEN, sabotage) {
                     const w = r.spawnCreatureAt(x, y, z, "calm", "wolf", { precise: true, bodySize: 1 });
                     w.position.y = y;
                     w.userData._stossV = { x: 3 * ux, z: 3 * ux - 3 };
-                    for (let i = 0; i < 3000 && w.userData._stossV; i++) r._kreaturStossSchritt(r.constructor.FIXED_DT);
+                    for (let i = 0; i < 3000 && w.userData._stossV; i++) r._kreaturStossSchritt(AnazhRealm.FIXED_DT);
                     r.removeCreature(w);
                     return Math.hypot(w.position.x - x, w.position.z - z);
                 }),
