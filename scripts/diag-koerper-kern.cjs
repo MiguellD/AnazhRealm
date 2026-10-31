@@ -171,7 +171,6 @@ function runVergleich(labMorphFn, labPropFn, labLandmarksFn) {
     return { diffs, values, points };
 }
 
-// ────────────────────────────────────────────────────────────────────────────
 // DIE WACHE (PFLICHT-OFFEN A, der Prüfplatz: mensch-kopf und haar zu jeder Uhr). Das EINE Rollen-Gesetz des Tags
 // (TAGES_GESETZ.rollen, tagesPlan) trägt die Tag-Wache `waechter` und die Nacht-Wache `nachtwaechter` (um versatzH versetzt):
 // über 1 000 Samen-Paare (die Streu ±streuH) steht zu JEDER Stunde (je 0,05 h) eine an ihrem Wache-Punkt — Werk und Platz
@@ -186,10 +185,11 @@ const wacheLeer = (P, b = "nachtwaechter", a = "waechter", W = {}) => {
     return n;
 };
 
+// ────────────────────────────────────────────────────────────────────────────
 const selftest = process.argv.includes("--selftest");
 
 if (selftest) {
-    // Drei injizierte Abweichungen — jede MUSS die Linse zuenden.
+    // Vier injizierte Abweichungen (Morph, Proportionen, Landmarken, die Wache ohne Versatz) — jede MUSS die Linse zuenden.
     let fails = 0;
     const morphMut = (p) => { const M = core.labMorph(p); const q = M.shell.quad; M.shell.quad = (b) => { const s = q(b); s.x += 1e-9; return s; }; return M; };
     const propMut = () => { const o = core.labProportionen(); o.acromionY += 1e-9; return o; };
