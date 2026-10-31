@@ -1491,7 +1491,7 @@ function stromMarke(datei, probe, marke, wert) {
 // zeit, marke, wert, bild }], bloecke, seiten, fehler, verloren } — wand = die Wanduhr des Bilds (ms seit 1970), stempelOk: im Block lief
 // der Stempel-Pool nicht über, bild = die Zahl der Bilder vor der Marke
 function stromLesen(datei) {
-    const o = { bilder: [], marken: [], bloecke: 0, seiten: [], fehler: 0, verloren: 0 };
+    const o = { bilder: [], marken: [], bloecke: 0, seiten: [], fehler: 0, verloren: 0, orte: [] };
     if (!fs.existsSync(datei)) return o;
     const stempelVor = new Map();
     for (const zeile of fs.readFileSync(datei, "utf8").split(/\r?\n/)) {
@@ -1507,6 +1507,7 @@ function stromLesen(datei) {
             continue;
         }
         const block = o.bloecke++;
+        if (Array.isArray(b.ort)) o.orte.push({ probe: b.probe, block, ort: b.ort, ring: b.ring });
         if (!o.seiten.includes(b.seite)) o.seiten.push(b.seite);
         o.fehler = Math.max(o.fehler, b.fehler || 0);
         o.verloren = Math.max(o.verloren, b.verloren || 0);
@@ -1528,12 +1529,33 @@ const p95Von = (a) => {
     const s = a.filter(Number.isFinite).sort((x, y) => x - y);
     return s.length ? s[Math.min(s.length - 1, Math.floor(0.95 * s.length))] : null;
 };
+// DER ORT IM DECKEL (w4-stationen-schnell-b; GTX b4bcf19c: licht.K5#1 69 s, mensch.K5#1 50,5 s, gelaende.K2 64,1 s — jede zog im eigenen
+// Deckel an einen Ort, den die Sitzung nicht stellte, und zahlte seinen kalten Ring, 11–28 s je Ankunft an der GTX): je Probe der
+// weiteste Weg des Spielers (`ort` jedes Zapfens) ab dem Ort, an dem die Sitzung sie begann (der letzte Zapfen vor ihrem ersten) —
+// über ORT_IM_DECKEL_M (weiter als der Ring um den Spieler reicht) beim Namen, mit dem kleinsten gebauten Ring in ihr (`ring` < dem
+// des Anfangs: der Ring fiel und wuchs neu). Rückgabe [{ probe, m, ringVor, ringMin }], die weitesten zuerst
+const ORT_IM_DECKEL_M = 250;
+function ortImDeckel(orte, grenzeM = ORT_IM_DECKEL_M) {
+    const je = new Map();
+    let vor = null;
+    for (const z of orte || []) {
+        if (z.probe !== (vor && vor.probe) && !je.has(z.probe)) je.set(z.probe, { probe: z.probe, von: vor ? vor.ort : z.ort, ringVor: vor ? vor.ring : z.ring, m: 0, ringMin: z.ring });
+        const e = je.get(z.probe);
+        if (e && (z.probe !== "(sitzung)")) {
+            e.m = Math.max(e.m, Math.hypot(z.ort[0] - e.von[0], z.ort[1] - e.von[1]));
+            if (Number.isFinite(z.ring)) e.ringMin = Number.isFinite(e.ringMin) ? Math.min(e.ringMin, z.ring) : z.ring;
+        }
+        vor = z;
+    }
+    return [...je.values()].filter((e) => e.probe !== "(sitzung)" && e.m > grenzeM).map((e) => ({ probe: e.probe, m: Math.round(e.m), ringVor: e.ringVor, ringMin: e.ringMin }))
+        .sort((a, b) => b.m - a.m);
+}
 function stromKopf(datei, zaehler) {
     const s = stromLesen(datei);
     const dt = s.bilder.filter((b) => b.dt >= 0);
     return { datei: path.basename(datei), bilder: dt.length, frameP95: p95Von(dt.map((b) => b.dt)), taktP95: p95Von(dt.map((b) => b.takt)),
         vramMax: s.bilder.length ? s.bilder.reduce((m, b) => Math.max(m, b.vram), -Infinity) : null, seiten: s.seiten.length, marken: s.marken.length,
-        fehler: s.fehler, verloren: s.verloren, ...zaehler };
+        fehler: s.fehler, verloren: s.verloren, ortImDeckel: ortImDeckel(s.orte), ...zaehler };
 }
 
 // DIE REIHE DER SITZUNG (29.10., EINE Fahrt durch jedes System ≤ 30 min samt Dauerlast): zuerst `stellung: "anfang"`, dann jede
@@ -1605,13 +1627,15 @@ const EICH_FAKTOR = 1.5, DECKEL_MIN_S = 10;
 function eichTafel(stationen, m, geraet, hilfe = hilfeText()) {
     const reihe = sitzungsReihe(gruppiere(stationen.filter((st) => st.probe && geraeteVon(st).includes(geraet))));
     const zahl = (st) => [m && m.je, m && m.ungemessen].map((x) => x && x[schluessel(st)]).find((e) => e && e.eich && e.abdruck === abdruck(st, hilfe));
+    // der Ort im Deckel der letzten Sitzung (stromKopf `ortImDeckel`): wie weit der Lauf im eigenen Deckel zog — der Täter beim Namen
+    const ort = new Map(((m && m.sitzung && m.sitzung.strom && m.sitzung.strom.ortImDeckel) || []).map((e) => [e.probe, e.m]));
     const zeilen = reihe.map((g) => {
         const e = zahl(g[0]), z = e ? e.eich : null, sek = probeSek(g[0]), gesetzS = gesetzVon(g[0]);
         const aus = z && !z.gerissen ? Math.max(DECKEL_MIN_S, Math.ceil(EICH_FAKTOR * z.s)) : null;
         const neu = aus != null && aus <= gesetzS ? aus : null;
         const urteil = !z ? "ohne Zahl" : z.gerissen ? "≥ " + PROBE_AUSNAHME_S + " s — schneller machen" : neu == null ? "über dem Gesetz " + gesetzS + " s — schneller machen"
             : neu === sek ? "trägt" : neu > sek ? "Deckel zu knapp" : "Deckel zu weit";
-        return { ids: g.map(schluessel), sek, s: z ? z.s : null, gerissen: !!(z && z.gerissen), neu, gesetzS, urteil };
+        return { ids: g.map(schluessel), sek, s: z ? z.s : null, gerissen: !!(z && z.gerissen), neu, gesetzS, urteil, ortM: ort.get(schluessel(g[0])) || null };
     });
     return { zeilen, heute: zeilen.reduce((a, z) => a + z.sek, 0), ausZahlen: zeilen.reduce((a, z) => a + (z.neu != null ? z.neu : z.sek), 0),
         budget: FAHRT_MAX_S - SITZUNG_BOOT_S, geeicht: zeilen.filter((z) => z.s != null).length };
@@ -1623,7 +1647,8 @@ function eichtafelCli(o) {
     const m = fs.existsSync(d) ? JSON.parse(fs.readFileSync(d, "utf8")) : null;
     const t = eichTafel(ladeGeprueft().stationen, m && m.sha === sha ? m : null, o.geraet);
     for (const z of t.zeilen)
-        console.log("  " + z.ids.join("+") + " · Deckel " + z.sek + " s · " + (z.s == null ? "—" : (z.gerissen ? "≥ " + PROBE_AUSNAHME_S : z.s) + " s") + (z.neu != null ? " → " + z.neu + " s" : "") + " · " + z.urteil);
+        console.log("  " + z.ids.join("+") + " · Deckel " + z.sek + " s · " + (z.s == null ? "—" : (z.gerissen ? "≥ " + PROBE_AUSNAHME_S : z.s) + " s") + (z.neu != null ? " → " + z.neu + " s" : "") + " · " + z.urteil +
+            (z.ortM ? " · Ort im Deckel " + z.ortM + " m" : ""));
     console.log("EICHTAFEL " + o.geraet + " am " + sha.slice(0, 8) + ": " + t.geeicht + " von " + t.zeilen.length + " Läufen geeicht · Σ Deckel heute " + t.heute + " s → aus den Zahlen " +
         t.ausZahlen + " s (Budget " + t.budget + " s = Fahrt " + FAHRT_MAX_S + " − Boot " + SITZUNG_BOOT_S + ")");
 }
@@ -1882,6 +1907,9 @@ async function fahreSitzung(gruppen0, ctx, melde) {
     kopf.ciBlicke = ci.n;
     await zapf(aktuell);
     kopf.strom = stromKopf(strom, zz);
+    if (kopf.strom.ortImDeckel.length)
+        console.log("  SITZUNG DER ORT IM DECKEL (die Probe zog weiter als " + ORT_IM_DECKEL_M + " m von dem Ort, an dem die Sitzung sie begann — ihr Deckel trug den Ring): " +
+            kopf.strom.ortImDeckel.map((e) => e.probe + " " + e.m + " m (Ring " + e.ringVor + " → " + e.ringMin + ")").join(", "));
     kopf.fahrtS = +((Date.now() - fahrt0) / 1000).toFixed(1);
     if (gerissen) {
         kopf.grund = "die Fahrt riss " + fahrtMaxS + " s " + gerissen + " — offen: " + kopf.offen.join(", ");
@@ -3781,6 +3809,20 @@ async function selbsttest(o = {}) {
             L.bilder.length === 6 && L.bloecke === 2 && L.seiten.length === 1 && L.bilder[0].wand === 1e12 && L.bilder[3].zelle === "wiese-ego-steht" && L.bilder[0].zelle === null &&
             L.bilder.every((b) => b.wetter === "sunny") && L.marken.length === 1 && L.marken[0].bild === 3 && L.bilder[0].stempelOk && !L.bilder[3].stempelOk,
             JSON.stringify([L.bilder.map((b) => [b.probe, b.zelle, b.stempelOk]), L.marken]));
+        // DER ORT IM DECKEL (ortImDeckel): die Probe, die 1 200 m zog und deren Ring fiel, beim Namen; die, die 34 m ging, und die Sitzung
+        // selbst (ihre Grundstellung, ihr Umstellen) nie — die Zapfen der Seite (`ort`, `ring`), wie stromSeite sie schreibt
+        const od = path.join(tmp, "strom-ort.ndjson");
+        const block = (probe, ort, ring) => fs.appendFileSync(od, JSON.stringify({ probe, zeit: "z", seite: "s", ursprung: 0, zeilen: [], namen: { wetter: [], zelle: [] }, ort, ring }) + "\n");
+        block("(sitzung)", [0, 0], 4);
+        block("a.K1#1", [0, 0], 4);
+        block("a.K1#1", [1200, 0], 0);
+        block("a.K1#1", [1200, 0], 3);
+        block("(sitzung)", [-280, -1046], 4);
+        block("b.K1#1", [-250, -1030], 4);
+        block("(sitzung)", [5000, 0], 1);
+        const OD = stromKopf(od, {}).ortImDeckel;
+        pruef("ORT IM DECKEL die Probe, die weiter als ihr Ring zog, beim Namen samt Ring; die nahe und die Sitzung selbst nie",
+            OD.length === 1 && OD[0].probe === "a.K1#1" && OD[0].m === 1200 && OD[0].ringVor === 4 && OD[0].ringMin === 0, JSON.stringify(OD));
     }
     fs.rmSync(tmp, { recursive: true, force: true });
     const rot = fall.filter((f) => !f.ok);

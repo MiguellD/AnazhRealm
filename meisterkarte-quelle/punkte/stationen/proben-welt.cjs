@@ -752,6 +752,22 @@ async function wasserGraben(tor) {
         console.log("  GRABEN " + JSON.stringify({ sicht, saat: z.saat, abstand, verb: z.verb, bild: z.bild.join("+"), nassVor: z.nassVor, nassEnde: z.nassEnde, gefuelltMs: z.gefuelltMs, doppeltMax: z.doppeltMax, ueberMax: z.ueberMax, bilder: z.bilder }));
         return z;
     };
+    // (d) die Ferne, dann (b) der Damm ZUERST (w4-stationen-schnell-b; GTX b4bcf19c 64,1 s): ihr Fluss ist der der Mess-Wiese (90 m von
+    // ihr, der Spieler 40 bzw. 150 m neben dem Damm) — die Sitzung stellt die Wiese VOR dem Deckel (`probeOrt` liest den Ruf unten).
+    // Bis dahin lief (a) zuerst am Graben-Fluss (~1,6 km fern jedes Messorts) und die Probe zahlte zwei kalte Ankünfte im Deckel: dort
+    // hin und zum Damm zurück; jetzt EINE. Die Orte bleiben getrennt (1,6 km): der Damm hebt nie das Wasser eines Grabens. (a) folgt im
+    // trockenen Sonnenlicht, das (b)(d) als Wort des Spielers setzt
+    await tor.ruf("/umstellen", { ort: "wiese", sicht: "ego" }, 300000);
+    const t1 = Date.now();
+    await page.evaluate(() => (r._setWeather("sunny", "human"), r._naesseTakt(1e6), 1));
+    const fluss = await page.evaluate(async () => (await window.__wasserOrte({})).fluss);
+    for (const [teil, ferne] of [["ferne", true], ["damm", false]])
+        try {
+            erg[teil] = await page.evaluate((f, ferne) => window.__wasserDamm({ fluss: f, ferne }), fluss, ferne);
+        } catch (e) {
+            erg[teil] = { fehler: String((e && e.message) || e).split("\n")[0] };
+        }
+    console.log("  (b)(d) " + ((Date.now() - t1) / 1000).toFixed(1) + " s · Damm " + JSON.stringify(erg.damm) + " · Ferne " + JSON.stringify(erg.ferne));
     const t0 = Date.now();
     const sichtVor = await page.evaluate(() => (window.__loop(true), window.anazhRealm.state.cameraMode));
     // der Zeiger EINMAL vorab gefangen, ehe ein Fadenkreuz auf einem Graben-Punkt liegt
@@ -772,17 +788,6 @@ async function wasserGraben(tor) {
         await page.evaluate((s) => (window.__loop(false), window.anazhRealm.setCameraMode(s), 1), sichtVor);
     }
     console.log("  (a) " + ((Date.now() - t0) / 1000).toFixed(1) + " s");
-    // (d) die Ferne, dann (b) der Damm: das Wort des Spielers „sonnig“, trocken (wie die Wand), der Fluss der Mess-Wiese
-    const t1 = Date.now();
-    await page.evaluate(() => (r._setWeather("sunny", "human"), r._naesseTakt(1e6), 1));
-    const fluss = await page.evaluate(async () => (await window.__wasserOrte({})).fluss);
-    for (const [teil, ferne] of [["ferne", true], ["damm", false]])
-        try {
-            erg[teil] = await page.evaluate((f, ferne) => window.__wasserDamm({ fluss: f, ferne }), fluss, ferne);
-        } catch (e) {
-            erg[teil] = { fehler: String((e && e.message) || e).split("\n")[0] };
-        }
-    console.log("  (b)(d) " + ((Date.now() - t1) / 1000).toFixed(1) + " s · Damm " + JSON.stringify(erg.damm) + " · Ferne " + JSON.stringify(erg.ferne));
     await cdp.detach().catch(() => {});
     fs.writeFileSync(tor.aus, JSON.stringify(erg, null, 1));
 }

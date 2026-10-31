@@ -261,8 +261,8 @@ function herdePulk(r, T, o) {
     };
 }
 // Der Lauf (im Spiel-Baum, cwd): EINE Werkbank headless an der Weiche (die Karte; `[linse-gpu]` nennt sie), Port {PORT}+20000
-// (die Seite eins darunter); darin (a)–(d) der Probe herde (`diag-kreatur-takt --werkbank`), dann die Serie: der Schirm
-// 1280×720, `herdeSzene`, je Schuss `bild --klasse ^tier --ziel Herde --punkte … --wahl 14` (die Blick-Wahl EINES Rings: Abstand
+// (die Seite eins darunter); darin (a)–(d) der Probe herde (`diag-kreatur-takt --werkbank`), dann die Serie im Schirm der Sitzung,
+// `herdeSzene`, je Schuss `bild --klasse ^tier --ziel Herde --punkte … --wahl 14` (die Blick-Wahl EINES Rings: Abstand
 // und Augenhöhe des Ego bleiben, nur der Azimut dreht, bis JEDES Glied frei steht — die Mitte einer Herde zwischen Stämmen sagt
 // nichts über ihre Glieder) mit `herdePulk` an der Pose des Schusses, drei Schüsse je 0,5 s Spielzeit; der Beobachter bleibt an
 // der Pose, die die Wahl ihm gab. Bilder und Abnahmen neben {AUS}, das Ergebnis in {AUS}. Die beiden
@@ -292,7 +292,9 @@ async function herdeHang() {
         });
         process.stdout.write(p.stdout || "");
         process.stderr.write(p.stderr || "");
-        await werkbankRuf(W, "/fenster", { w: 1280, h: 720 });
+        // DER SCHIRM DER SITZUNG (w4-stationen-schnell-b): jeder Schuss `bild --klasse` stellt die Leinwand der Soll-Tafel (1920×1080) und
+        // danach das Fenster zurück — der Schirm 1280×720 davor kostete je Schuss zwei Fenster-Wechsel und wirkte nirgends (die Szene
+        // tickt ohne Bild, der Pulk liest die Teilung des Schusses, 16:9 bleibt das Frustum des Wurfs)
         erg.szene = await ruf(szene, { phase: "start" });
         let auge = null;
         for (let i = 0; i < 3 && !erg.szene.fehler; i++) {
@@ -730,7 +732,12 @@ function rudelGefuehl(r, T, o) {
     let k = 0;
     let umstelltK = null;
     const ende = o.gegen ? Math.round(o.dauer * 60) : 36000;
+    // DAS URTEIL STEHT FEST (w4-stationen-schnell-b; GTX b4bcf19c 64,2 s, lokal 50,8 s: der Wurf gab EINEN Wolf, Lauf und Gegenlauf gingen
+    // je 36 000 Takte ins Leere): das Umstellen verlangt ≥ 3 Jäger aus `woelfe` (die Liste des Wurfs wächst nie, ein sterbendes Glied
+    // jagt nie mehr) — tragen weniger als 3 Glieder noch Leben, kann es in keinem Takt mehr eintreten, `umstelltS` bleibt null und die
+    // Staffel ROT. Der Lauf endet dort (dauer = seine Takte), der Gegenlauf geht dieselbe Zeit; ein GRÜNER Weg ändert sich um keinen Takt
     for (; k < ende && !(umstelltK !== null && k >= umstelltK + 1200); k++) {
+        if (!o.gegen && umstelltK === null && woelfe.filter((c) => !c.userData.dying).length < 3) break;
         steh();
         takt();
         const R = jaeger();
@@ -3649,13 +3656,18 @@ const stationen = [
     // Abstand des vierten Gangs um ≥ 0,3 m gegen den zweiten, die Gegenprobe ohne Erinnerung (der dritte) bleibt auf 0,15 m bei
     // ihm. Ports: save-server {PORT}, Werkbank {PORT}+20000.
     // IN DER SITZUNG (29.10.): die Probe begegnung des Spiels (das Start-Dorf wächst, vier Gänge zu 1,4 m/s, je Takt ein Bild) —
-    // das Dorf und das geschlagene Wesen bleiben (mutiert)
+    // das Dorf und das geschlagene Wesen bleiben (mutiert).
+    // DER ORT (w4-stationen-schnell-b; GTX b4bcf19c 50,5 s): das Start-Dorf steht um `_genesisMitte` (`_autoSettlementStartInfo`, fällig nur
+    // im Nah-Radius des Genesis-Orts, `_startDorfFaellig`) — der Befehl nannte keinen Messort, die Probe lief nach einer Grundstellung an
+    // der Mess-Wiese und zog 1,1 km zum Platz des Dorfs: den kalten Ring trug ihr Deckel (GTX: Genesis kalt 18,6 s, ab040980). Jetzt
+    // nennt sie Genesis, die Sitzung stellt es VOR dem Deckel (`probeOrt`); dasselbe Dorf aus dem Samen der Welt, derselbe Gang
     probe: { sek: 10, befehl: [
         "bash",
         "-c",
         [
             "A=$(printf %s '{AUS}' | tr '\\\\' /); B=\"${A%.json}\"",
             "S=$(( {PORT} )); W=$(( {PORT} + 20000 )); export WERKBANK_PORT=$W",
+            "timeout 300 node scripts/werkbank.cjs umstellen --ort genesis --sicht ego > /dev/null 2>&1",
             "node scripts/diag-kreatur-takt.cjs --werkbank $W --proben begegnung",
         ].join("\n"),
     ],  mutiert: true },
