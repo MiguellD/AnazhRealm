@@ -45,8 +45,9 @@ class AnazhRealm_stoff_material {
     // (dieselbe Rechnung wie `_wieseOrdnung`: die Lage auf 1/256 m, PCG, die oberen 24 Bit), der Anteil a = (radius/d)^dichte
     // × (1 − Saum vor `bis`) (`_wieseAnteil`). Steht o unter a, steht das Büschel ganz; darüber, im Band bis a · (1 + `rand`),
     // sinkt es in den Boden (das Büschel × v um seinen Fuß) statt zu springen — an der Übergabe (a = 1) steht jedes. Sein Fuß
-    // trägt die Fläche der Nachbarn: die Mitte jedes Halms (`aCenter`, um den Fuß des Büschels) und die Ecken auf dem Boden
-    // (um diese Mitte) wachsen waagrecht um f = (d/radius)^(dichte/2) bis `breitMax`; Höhe und Neigung der Halme bleiben.
+    // trägt die Fläche der Nachbarn: die Mitte jedes Halms (`aCenter`, um den Fuß des Büschels) rückt waagrecht um
+    // f = (d/radius)^(dichte/2) bis `breitMax` nach außen, die Ecken auf dem Boden (um diese Mitte) um √f — Höhe und Neigung der
+    // Halme bleiben (mit dem vollen f am Fuß lasen die L2-Halme ab 25 m im Third als flache Fächer, Radeon 31.10.).
     // Diesseits der Übergabe (d < radius) legt der Sicht-Satz dasselbe Büschel als Nah-Wiese — hier steht es nicht. EIN Knoten
     // für jede Vorlage (EIN Programm); der Wind schwingt mit dem Büschel (× v).
     _halmFerne(mat) {
@@ -85,7 +86,7 @@ class AnazhRealm_stoff_material {
                 .min(F.breitMax);
             const c = T.attribute("aCenter", "vec3");
             const rel = T.positionLocal.sub(c);
-            const fuss = T.mix(T.float(1), f, T.step(T.positionGeometry.y, 1e-4));
+            const fuss = T.mix(T.float(1), f.sqrt(), T.step(T.positionGeometry.y, 1e-4));
             const sk = this._foundryWorldScaleMatrix("gras").elements[0];
             const sway = this._windSwayOffset(T, { ampX: 1.5, hoehe: T.positionGeometry.y.mul(sk) });
             this._halmFerneKnoten = T.vec3(

@@ -433,12 +433,13 @@ class AnazhRealm_daten {
     // Zelle, derselbe Wurf, die Studio-Stufe L2) weiter bis `bis`: die Dichte fällt mit dem Abstand d stetig — ein Büschel
     // steht, solange seine Ordnung o unter (radius/d)^`dichte` liegt (die Fläche einer flachen Wiese am Schirm fällt mit d³, die
     // Büschel je Pixel fallen mit ihr — Lehre 25, nie die Fläche der Welt; gemessen 31.10. an der Mess-Wiese Third, Radeon:
-    // Exponent 2 → 288k Dreiecke der Ferne, 3 → 103k, 4 das Soll des Haushalts), im Band `rand` (relativ)
-    // sinkt es in den Boden statt zu springen —, und jedes stehende Büschel trägt die Fläche seiner Nachbarn: sein Fuß (die
-    // Mitten seiner Halme und ihre Breite) wächst um (d/radius)^(dichte/2), höchstens `breitMax`; Höhe und Neigung der Halme
-    // bleiben. Vor `bis` sinkt die Ferne über `saum` in den Boden, dessen Wiesen-Grund dieselbe Farbe trägt. `kachel` =
-    // die Kachel der Ferne (vier Kacheln der Nähe), `vorlauf` = so weit näher, als sie gebaut ist, trägt eine Kachel der
-    // Ferne ihre Büschel schon.
+    // Exponent 2 → 288k Dreiecke der Ferne, 3 → 103k, 4 → 45k), im Band `rand` (relativ) sinkt es in den Boden statt zu
+    // springen —, und jedes stehende Büschel trägt die Fläche seiner Nachbarn: die Mitten seiner Halme rücken um
+    // (d/radius)^(dichte/2) nach außen, höchstens `breitMax`, ihre Füße werden um die Wurzel davon breiter; Höhe und Neigung
+    // der Halme bleiben. Vor `bis` sinkt die Ferne über `saum` in den Boden, dessen Wiesen-Grund dieselbe Farbe trägt — `bis` liegt
+    // diesseits der Nah-Grenze des Wirts (`ANALOG_NAH_M`, 64 m): jenseits ist das Gras nach dem Studio der Boden (foundry-core
+    // `fernform` „boden"). `kachel` = die Kachel der Ferne (vier Kacheln der Nähe), `vorlauf` = so weit näher, als sie gebaut
+    // ist, trägt eine Kachel der Ferne ihre Büschel schon.
     static get NAH_WIESE() {
         return this._einmal(
             "NAH_WIESE",
