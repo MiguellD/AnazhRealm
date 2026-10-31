@@ -782,6 +782,15 @@ const verkehrVerdict = (m) =>
     [
         [m.enden >= 1 && m.wenden === m.enden, `Wenden ${m.wenden} an ${m.enden} Enden`],
         [!m.stufen.length, `Stufen der Spuren ${JSON.stringify(m.stufen)}`],
+        // DAS NETZ IN SEINER RICHTUNG (w4-verkehr-c2): kein Abbieger verboten durch den Plan (eine Sperre an der Sehne, die Stufe
+        // des Bodens — wo nur der Wendekreis keinen Bogen trägt, ist es Gesetz), jede Strecke in beiden Richtungen im stark
+        // zusammenhängenden Teil, kein Irrweg
+        [
+            !m.netz.verboten.some((v) => !/ (kein Bogen|spur)$/.test(v)),
+            `verbotene Abbieger ${m.netz.verboten.filter((v) => !/ (kein Bogen|spur)$/.test(v)).join(", ")}`,
+        ],
+        [!m.netz.ausNetz, `Strecken außer dem Netz in seiner Richtung ${m.netz.ausNetz}`],
+        [!m.netz.irrweg, `Irrweg ${m.netz.irrweg}× (kein Abbieger trägt das Ziel)`],
         [
             m.soll >= VERKEHR.wagen && m.wagen === m.soll && !m.ohneNacht,
             `Wagen ${m.wagen} von ${m.soll} (Soll ≥ ${VERKEHR.wagen}; ohne Platz ${m.ohnePlatz}, ohne Fahrer ${m.ohneFahrer}, ohne Nachtfahrer ${m.ohneNacht})`,
@@ -789,7 +798,10 @@ const verkehrVerdict = (m) =>
         [m.fahrend === m.wagen, `fahrend ${m.fahrend} von ${m.wagen}`],
         [!m.steuerlos, `ohne Bewohner am Steuer ${m.steuerlos}×`],
         [!m.ziele.ohne.length, `ohne Ziel erreicht: Wagen ${m.ziele.ohne.join(", ")} (${m.ziele.erreicht} Ankünfte)`],
-        [m.ziele.laengsteS <= VERKEHR.fristS, `Fahrt ${m.ziele.laengsteS} s > ${VERKEHR.fristS} s (Wagen ${m.ziele.wer})`],
+        [
+            m.ziele.laengsteS <= VERKEHR.fristS,
+            `Fahrt ${m.ziele.laengsteS} s > ${VERKEHR.fristS} s (Wagen ${m.ziele.wer})`,
+        ],
         [
             m.fahrbahn.anteil <= VERKEHR.fahrbahn,
             `Bewohner auf der Fahrbahn ${m.fahrbahn.auf}/${m.fahrbahn.geh} Schritte (Soll ≤ ${VERKEHR.fahrbahn})`,
@@ -797,8 +809,9 @@ const verkehrVerdict = (m) =>
         [!m.fest.length, `steckt: ${JSON.stringify(m.fest)}`],
         [!m.beruehrt.leib, `berührt Bewohner ${m.beruehrt.leib}× ${JSON.stringify(m.beruehrt.orte)}`],
         [!m.beruehrt.wagen, `Wagen in Wagen ${m.beruehrt.wagen}× ${JSON.stringify(m.beruehrt.wagenOrte)}`],
+        [!m.beruehrt.bau, `Wagen im Bau ${m.beruehrt.bau}× ${JSON.stringify(m.beruehrt.bauOrte)}`],
         [!m.ohneSchluessel, `ohne Schlüssel in der Kreuzung ${m.ohneSchluessel}×`],
-        [!m.stoss.bau && !m.stoss.wagen, `Stoß ${JSON.stringify(m.stoss)}`],
+        [!m.stoss.bau && !m.stoss.wagen && !m.stoss.leib, `Stoß ${JSON.stringify(m.stoss)}`],
         [
             m.querMax <= 1.5,
             `neben der Spur (außer im Ort, den er allein hält) ${m.querMax} m ${JSON.stringify(m.querOrt)}`,
@@ -806,8 +819,15 @@ const verkehrVerdict = (m) =>
         [m.msJeSchritt <= 1, `Sim-Takt ${m.msJeSchritt} ms`],
         // DAS EINE STUFEN-GESETZ (Komposit erbt, Bewegte prüfen; die Probe `stufe` in fahr-proben)
         [m.stufe.nah >= 20, `kein Wagen im 3D-Raum (${m.stufe.nah})`],
-        [!m.stufe.ohneBild, `Wagen ohne Bild mit gezeichnetem Fahrer ${m.stufe.ohneBild}× ${JSON.stringify(m.stufe.ohneBildOrte)}`],
-        [!m.stufe.veraltet, `bewegter Eintrag mit veralteter Stufe ${m.stufe.veraltet}× ${JSON.stringify(m.stufe.veraltetOrte)}`],
+        [
+            !m.stufe.ohneBild,
+            `Wagen ohne Bild mit gezeichnetem Fahrer ${m.stufe.ohneBild}× ${JSON.stringify(m.stufe.ohneBildOrte)}`,
+        ],
+        [!m.stufe.ohneFahrer, `Wagen im Bild ohne gezeichneten Fahrer ${m.stufe.ohneFahrer}× ${JSON.stringify(m.stufe.ohneFahrerOrte)}`], // prettier-ignore
+        [
+            !m.stufe.veraltet,
+            `bewegter Eintrag mit veralteter Stufe ${m.stufe.veraltet}× ${JSON.stringify(m.stufe.veraltetOrte)}`,
+        ],
     ].flatMap(([ok, t]) => (ok ? [] : [t]));
 
 // ════ F — DIE FAHR-BAHN, eigenes Boot: der Wagen, den die Welt hinstellt, steht auf fahrbarem Grund, kommt rückwärts
@@ -2330,10 +2350,16 @@ hauptLauf(async () => {
             // VK: ein gesunder Lauf ohne Täter, jeder Bruch beim Namen
             const g = {
                 ...{ soll: 20, wagen: 20, ohnePlatz: 0, ohneFahrer: 0, ohneNacht: 0, fahrend: 20, wenden: 4, enden: 4 },
-                ...{ stufen: [], fest: [], beruehrt: { leib: 0, wagen: 0 }, ohneSchluessel: 0 },
-                ...{ stoss: { wagen: 0, bau: 0 }, querMax: 0.35, msJeSchritt: 0.82, sek: 600, steuerlos: 0 },
-                ...{ ziele: { erreicht: 160, ohne: [], laengsteS: 120 }, fahrbahn: { geh: 9e4, auf: 1500, anteil: 0.017 } },
-                stufe: { nah: 99 },
+                ...{ stufen: [], fest: [], beruehrt: { leib: 0, wagen: 0, bau: 0 }, ohneSchluessel: 0 },
+                ...{ stoss: { wagen: 0, bau: 0, leib: 0 }, querMax: 0.35, msJeSchritt: 0.82, sek: 600, steuerlos: 0 },
+                ...{
+                    ziele: { erreicht: 160, ohne: [], laengsteS: 120 },
+                    fahrbahn: { geh: 9e4, auf: 1500, anteil: 0.017 },
+                },
+                ...{
+                    stufe: { nah: 99 },
+                    netz: { verboten: ["k0 0>3 kein Bogen", "k0 2>1 kein Bogen"], ausNetz: 0, irrweg: 0 },
+                },
             };
             const brueche = [
                 [{ wenden: 3 }, /Wenden 3/],
@@ -2354,15 +2380,34 @@ hauptLauf(async () => {
                 [{ stufe: { nah: 3 } }, /kein Wagen im 3D-Raum \(3/],
                 [{ stufe: { nah: 99, ohneBild: 7 } }, /ohne Bild mit gezeichnetem Fahrer 7/],
                 [{ stufe: { nah: 99, veraltet: 2 } }, /veralteter Stufe 2/],
+                [{ stufe: { nah: 99, ohneFahrer: 5 } }, /Wagen im Bild ohne gezeichneten Fahrer 5/],
+                [{ beruehrt: { leib: 0, wagen: 0, bau: 3 } }, /Wagen im Bau 3/],
+                [{ stoss: { wagen: 0, bau: 0, leib: 1 } }, /Stoß/],
+                [
+                    { netz: { verboten: ["k0 0>1 laterne@842,435"], ausNetz: 0, irrweg: 0 } },
+                    /verbotene Abbieger k0 0>1 laterne/,
+                ],
+                [{ netz: { verboten: [], ausNetz: 2, irrweg: 0 } }, /außer dem Netz in seiner Richtung 2/],
+                [
+                    { netz: { verboten: ["k0 0>3 kein Bogen", "k0 1>2 stufe@835,433"], ausNetz: 0, irrweg: 0 } },
+                    /verbotene Abbieger k0 1>2 stufe@835,433$/,
+                ],
+                [{ netz: { verboten: [], ausNetz: 0, irrweg: 4 } }, /Irrweg 4/],
             ].filter(([an, soll]) => !((v) => v.length === 1 && soll.test(v[0]))(verkehrVerdict({ ...g, ...an })));
-            // ALT ROT, NEU GRÜN an EINEM Täter (w4-verkehr-c, 10 Uhr, 10 min): bis hier fuhr kein Wagen zu einem Ziel (der Same
-            // wählte je Kreuzung, keine Ankunft) und die Menge ging zu 14,43 % ihrer Schritte auf der Fahrbahn (Laterne und Ecke der
-            // Kreuzung warfen den Gehweg auf die Spur, um die stehenden Wagen ging sie durch ihre Bahn; nachher 3,1–3,8 %) — beide
-            // beim Namen; neu GRÜN
-            const alt = verkehrVerdict({ ...g, ziele: { erreicht: 0, ohne: [0, 1, 2], laengsteS: 0 }, fahrbahn: { geh: 1213104, auf: 175091, anteil: 0.1443 } }); // prettier-ignore
-            const altRot = alt.length === 2 && /ohne Ziel erreicht/.test(alt[0]) && /Fahrbahn 175091/.test(alt[1]);
+            // ALT ROT, NEU GRÜN an EINEM Täter (w4-verkehr-c2 am Merge 826271b3, 10 Uhr, 10 min): an der einzigen Kreuzung der
+            // Metropole standen zwei Laternen 6,6 und 6,8 m von der Mitte im Bogen jedes Abbiegers — das Gesetz verbot 7 von 12,
+            // in die Strecke der Wende w10 führte keiner, 10 von 20 Wagen pendelten ohne Ziel zwischen zwei Wenden (12 Ankünfte,
+            // Fahrt 752 s), Wagen in Wagen 15× vor der einen Wende — alle beim Namen; neu GRÜN
+            const verbotenAlt = ["k0 0>1 laterne@842,435", "k0 0>3 laterne@842,435", "k0 1>2 laterne@831,442", "k0 1>3 laterne@842,435", "k0 2>1 laterne@831,442", "k0 2>3 laterne@831,442", "k0 3>0 laterne@842,435"]; // prettier-ignore
+            const alt = verkehrVerdict({ ...g, netz: { verboten: verbotenAlt, ausNetz: 0, irrweg: 0 }, ziele: { erreicht: 12, ohne: [0, 1, 3, 5, 6, 7, 10, 12, 13, 14], laengsteS: 752, wer: 0 }, beruehrt: { leib: 0, wagen: 15, bau: 0 } }); // prettier-ignore
+            const altRot =
+                alt.length === 4 &&
+                /verbotene Abbieger k0 0>1 laterne/.test(alt[0]) &&
+                /ohne Ziel erreicht: Wagen 0, 1, 3/.test(alt[1]) &&
+                /Fahrt 752 s/.test(alt[2]) &&
+                /Wagen in Wagen 15/.test(alt[3]);
             check(
-                "Selbst-Test VK: der Verkehr nennt jeden Bruch beim Namen (alt ROT an Ziel und Fahrbahn, neu GRÜN)",
+                "Selbst-Test VK: der Verkehr nennt jeden Bruch beim Namen (alt ROT an Laterne, Ziel, Fahrt und Wagen, neu GRÜN)",
                 !verkehrVerdict(g).length && !brueche.length && altRot,
                 JSON.stringify(brueche) + (altRot ? "" : " alt: " + alt.join(" · "))
             );

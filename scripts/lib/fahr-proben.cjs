@@ -730,13 +730,73 @@ async function probeLeben(expected) {
                 querOrt: null,
                 takte: 0,
                 ms: 0,
-                ...{ steuerlos: 0, fahrt: 0, fahrtWer: null, geh: 0, fahrbahn: 0 },
+                ...{ steuerlos: 0, fahrt: 0, fahrtWer: null, geh: 0, fahrbahn: 0, bau: 0, bauOrte: [] },
             };
+            // DAS NETZ IN SEINER RICHTUNG (`VK.folge`): jeder verbotene Abbieger einer Kreuzung samt dem Täter — die Sperre des Plans
+            // (fachwerk `planSperren`), die der Sehne von Spur zu Spur am nächsten liegt, oder die Stufe des Bodens (`zahl.stufen`)
+            // —, und jede Strecke, die das Netz in seiner Richtung nicht trägt (außer dem stark zusammenhängenden Teil)
+            const FC = globalThis.__fachwerkCore;
+            const sperren = FC.planSperren(S.plan, S.ox, S.oz, 0);
+            const sperrArt = [].concat(
+                (S.plan.slots || []).filter((sl) => sl.obb).map(() => "haus"),
+                (S.plan.staende || []).map(() => "stand"),
+                (S.plan.brunnen || []).map(() => "brunnen"),
+                (S.plan.laternen || []).filter((l) => !l.wand).map(() => "laterne"),
+                (S.plan.trees || []).map(() => "baum")
+            );
+            // das Netz des Gesetzes ohne jede Sperre (dieselben Kreuzungen, nur die Wege): was dort schon verboten ist, trägt der
+            // Wendekreis nicht („kein Bogen“); was erst die Sperren verbieten, nennt die Sperre am Weg ohne Sperre
+            const N0 = FC.verkehrsNetz({ roads: S.plan.roads, feldwege: S.plan.feldwege }, S.ox, S.oz);
+            const verboten = [];
+            VK.kp.forEach((K, ki) =>
+                (K.verboten || []).forEach((wort) => {
+                    const [a, b] = wort.split(">").map((x) => VK.strecken[+x]);
+                    if (!a.fahrbar || !b.fahrbar) return;
+                    const [p, q] = [
+                        (a.b === ki ? a.spur[0] : a.spur[1]).slice(-1)[0],
+                        (b.a === ki ? b.spur[0] : b.spur[1])[0],
+                    ];
+                    // eine Sperre ist der Täter nur, wo sie der Sehne näher liegt als ein halber Wagen samt Abbiege-Rand und Meter;
+                    // sonst trägt der Wendekreis keinen Bogen durch die Kreuzung (das Gesetz, kein Bruch des Plans)
+                    const sf = VK.zahl.stufen.find((x) => x.wo === `k${ki} ${wort}`);
+                    const W0 = N0.kreuzungen[ki] && (N0.kreuzungen[ki].wege || {})[wort];
+                    let wer = sf
+                        ? `stufe@${Math.round(sf.x)},${Math.round(sf.z)}`
+                        : !p || !q
+                          ? "spur"
+                          : W0
+                            ? "?"
+                            : "kein Bogen";
+                    const weg = W0 && p && q ? [p, ...W0, q] : [];
+                    for (let i = 1, best = Infinity; !sf && i < weg.length; i++)
+                        for (let t = 0; t <= 1; t += 0.1)
+                            sperren.forEach((o, j) => {
+                                const [x, z] = [weg[i - 1].x + (weg[i].x - weg[i - 1].x) * t, weg[i - 1].z + (weg[i].z - weg[i - 1].z) * t]; // prettier-ignore
+                                const [c, s, dx, dz] = [Math.cos(o.phi), Math.sin(o.phi), x - o.cx, z - o.cz];
+                                const d = Math.hypot(Math.max(0, Math.abs(dx * c - dz * s) - o.ex), Math.max(0, Math.abs(dx * s + dz * c) - o.ez)); // prettier-ignore
+                                if (d < best)
+                                    [best, wer] = [d, `${sperrArt[j]}@${Math.round(o.cx)},${Math.round(o.cz)}`];
+                            });
+                    verboten.push(`k${ki} ${wort} ${wer}`);
+                })
+            );
+            const ausNetz = VK.strecken.filter(
+                (s, si) => s.fahrbar && !(VK.folge[2 * si].length && VK.folge[2 * si + 1].length)
+            );
             r._verkehrSchritt = function (dt) {
                 const t0 = performance.now();
                 P._verkehrSchritt.call(this, dt);
                 [m.ms, m.takte] = [m.ms + performance.now() - t0, m.takte + 1];
             };
+            // DER BILD-TAKT DES VERKEHRS (die Wahl und der Leib am Steuer, `_tickVerkehr`; der Wagen im Gedränge, `_verkehrImRaster`):
+            // seine Millisekunden je Bild — der Teil des Verkehrs am CPU-Takt des Profi-Bands neben dem Sim-Schritt
+            [m.bildMs, m.bilder] = [0, 0];
+            for (const n of ["_tickVerkehr", "_verkehrImRaster"])
+                r[n] = function (...a) {
+                    const t0 = performance.now();
+                    P[n].apply(this, a);
+                    m.bildMs += performance.now() - t0;
+                };
             const ziele0 = new Map(VK.wagen.map((W) => [W, W.ziele]));
             const stoss0 = { ...VK.zahl.stoss };
             const ort2 = (L) => [Math.round(L.x), Math.round(L.z)];
@@ -746,7 +806,7 @@ async function probeLeben(expected) {
             // als jede Stufe: 9), obwohl die Stufe des Gesetzes gedockt bereitliegt (kein Laden, ein altes Urteil) — „bewegter
             // Eintrag mit veralteter Stufe" [Nr., Probe, m, Stufe, Soll]; der Bewegte urteilt im Takt seines Schritts, jede Probe
             // gilt. `nah`: Proben diesseits der Karten-Grenze (thresh12 − Hysterese); ohne sie misst die Probe nichts.
-            const [LD, SK] = [A.LOD_DISTANCES, { nah: 0, ohneBild: 0, ohneBildOrte: [], veraltet: 0, veraltetOrte: [] }];
+            const [LD, SK] = [A.LOD_DISTANCES, { nah: 0, ohneBild: 0, ohneBildOrte: [], ohneFahrer: 0, ohneFahrerOrte: [], veraltet: 0, veraltetOrte: [] }]; // prettier-ignore
             for (let k = 0; k < Math.round(o.sek * 60); k++, i++) {
                 frame(i);
                 if (i % 8 === 7) await window.sleep();
@@ -768,8 +828,16 @@ async function probeLeben(expected) {
                     const [e, d] = [W.entry, Math.hypot(L[n].x - a.x, L[n].z - a.z)];
                     const sv = r._archIsRendered(e) ? e._servedLod : 9;
                     SK.nah += d < LD.thresh12 - LD.hysteresis;
-                    if (W.b.amSteuer && W.b.leib.visible && !(sv < 2)) SK.ohneBild++ < 4 && SK.ohneBildOrte.push([W.nr, k, d | 0, sv]);
-                    const soll = r._chooseLODForDistance(d, sv < 9 ? e._lodLevel : undefined, r._lodTreeVisHeight(e) || 0);
+                    if (W.b.amSteuer && W.b.leib.visible && !(sv < 2))
+                        SK.ohneBild++ < 4 && SK.ohneBildOrte.push([W.nr, k, d | 0, sv]);
+                    // „Wagen im Bild ohne gezeichneten Fahrer": eine 3D-Stufe trägt den Wagen, sein Leib am Steuer zeigt sich nicht
+                    if (W.b.amSteuer && sv < 2 && !W.b.leib.visible)
+                        SK.ohneFahrer++ < 4 && SK.ohneFahrerOrte.push([W.nr, k, d | 0, sv]);
+                    const soll = r._chooseLODForDistance(
+                        d,
+                        sv < 9 ? e._lodLevel : undefined,
+                        r._lodTreeVisHeight(e) || 0
+                    );
                     const im = sv < 9 || Math.hypot(L[n].x - sp.x, L[n].z - sp.z) <= st.architectureCullingRadius;
                     if (im && soll < sv && r._foundryStufeBereit(e, r._foundryPresetForEntry(e), soll))
                         SK.veraltet++ < 4 && SK.veraltetOrte.push([W.nr, k, d | 0, sv, soll]);
@@ -794,6 +862,29 @@ async function probeLeben(expected) {
                                     b.weg ? "geht" : "steht",
                                 ]);
                         }
+                    // der Spieler zu Fuß ist ein Leib wie jeder Bewohner
+                    if (st.player.mountedArch == null && drin(L[n], sp.x, sp.z))
+                        m.leib++ < 6 && m.leibOrte.push(["spieler|" + W.nr, k, ...ort2(L[n]), W.grund, "spieler"]);
+                    // DER BAU (jeder Wagen, nah wie fern — die Hülle des Fahr-Schritts fährt nur bis `huelleM` vom Spieler): das
+                    // Rechteck seiner Hülle an seiner Lage gegen die Boxen der Bauwerke im EINEN Struktur-Löser
+                    // (`_stepCharacterStructures`, dieselbe Probe wie der Fahr-Schritt, an einer Kopie der Lage); tiefer als 0,05 m
+                    // ist eine Berührung — Haus, Laterne, Stand, Brunnen, der Wagen am Platz
+                    const hk = e._fahr && Number.isFinite(e._fahr.y) ? r._fahrHuelle(e) : null;
+                    if (hk) {
+                        const ry = e._rideYaw || 0;
+                        Object.assign(hk, { fX: Math.sin(ry), fZ: Math.cos(ry), qX: Math.cos(ry), qZ: -Math.sin(ry) });
+                        [hk.unten, hk.oben, hk.schub.length, hk.schubQuelle.length] = [e._fahr.y + hk.stufe, e._fahr.y + hk.dach, 0, 0]; // prettier-ignore
+                        r._stepCharacterStructures({ x: e.position.x, z: e.position.z }, 0, 0, 0, hk);
+                        hk.schubQuelle.forEach((q, j) => {
+                            // der fahrende Wagen trägt sein Rechteck (oben, `schnitt`): seine Boxen ziehen erst nach (`boxFernM`)
+                            if (q && q._verkehrWagen && q._verkehrWagen.zustand === "faehrt") return;
+                            if (!(Math.hypot(hk.schub[2 * j], hk.schub[2 * j + 1]) > 0.05)) return;
+                            m.bau++;
+                            if (m.bauOrte.length < 6)
+                                m.bauOrte.push([W.nr, k, ...ort2(L[n]), (q && q.type) || "insel"]);
+                        });
+                        hk.schub.length = hk.schubQuelle.length = 0;
+                    }
                     for (let j = n + 1; j < fahrend.length; j++)
                         if (schnitt(L[n], L[j])) {
                             m.wagen++;
@@ -808,7 +899,7 @@ async function probeLeben(expected) {
                         }
                 }
             }
-            delete r._verkehrSchritt;
+            for (const n of ["_verkehrSchritt", "_tickVerkehr", "_verkehrImRaster"]) delete r[n];
             // der Täter der längsten Fahrt beim Namen: sein Grund, sein Ort, wer vor ihm steht (Wagen oder Leib)
             const W = m.fahrtWer;
             const wer = W && [W.nr, W.grund, ...ort2(lage(W)), W.vorne ? W.vorne.O.nr : W.wer && W.wer.seed];
@@ -825,11 +916,13 @@ async function probeLeben(expected) {
                 stufen: VK.zahl.stufen.slice(0, 6),
                 fest: VK.wagen.filter((W) => W.festOrt).map((W) => ({ ...W.festOrt, nr: W.nr })),
                 stoss: Object.fromEntries(Object.entries(VK.zahl.stoss).map(([k, v]) => [k, v - stoss0[k]])),
-                beruehrt: { leib: m.leib, wagen: m.wagen, orte: m.leibOrte, wagenOrte: m.wagenOrte },
+                beruehrt: { leib: m.leib, wagen: m.wagen, bau: m.bau, orte: m.leibOrte, wagenOrte: m.wagenOrte, bauOrte: m.bauOrte }, // prettier-ignore
+                netz: { verboten, ausNetz: ausNetz.length, irrweg: VK.zahl.irrweg },
                 ohneSchluessel: m.ohne,
                 querMax: +m.quer.toFixed(2),
                 querOrt: m.querOrt,
                 msJeSchritt: +(m.ms / Math.max(1, m.takte)).toFixed(3),
+                msJeBild: +(m.bildMs / Math.max(1, Math.round(o.sek * 60))).toFixed(3),
                 stufe: SK,
                 sek: o.sek,
                 steuerlos: m.steuerlos,
