@@ -586,9 +586,11 @@ class AnazhRealm_vegetation_streu {
     // DAS URTEIL EINES WURFS (der Wurf `i` der Schicht `layer`): seine Zelle (er steht) · null (er wartet: die Region schiebt sich
     // auf, `_streuZelleWartet`, sein Platz bleibt) · false (er fällt). Was der Zustand der Welt urteilt, urteilt der Haupt-Faden:
     // die promotete Zelle dieser Schicht (ihre realen Bäume), die Tat, die den Baum der Zelle nahm (`_tatSperrt`, speicher.K3),
-    // das exakte Wasser-Verdikt (`_landAt`) und die EINE Natur-Wand (`_naturWand`, mit Art und Größe — ihre Krone: im Grundriss
-    // eines Hauses, über der Genesis-Lichtung, im Wagen und am Wasser wird sie nie Streu) — die Wand VOR dem Warten: ein Wurf, der
-    // fällt, hält keinen Platz.
+    // das exakte Wasser-Verdikt (`_landAt`) — dann setzt die Zelle durch die EINE Natur-Wand (`_naturSetzen`, mit Art und Größe —
+    // ihre Krone: im Grundriss eines Hauses, über der Genesis-Lichtung, im Wagen und am Wasser wird sie nie Streu). Die Wand urteilt
+    // VOR dem Warten: erst ihr `setzen` fragt die Höhe und baut die Instanz — ein Wurf, den die Wand nimmt, zählt keinen Wartenden
+    // und hält keinen Platz. Am Chokepoint vorbei (das Urteil `_naturWand` beim Aufrufer) urteilten die Selbsttests der Wand
+    // (gate:haus-welt „streuwand", „promotion") blind: ihre Zeile fehlte.
     _streuWurf(region, layer, layerSalt, darts, i, regX, regZ, auge) {
         const [cellX, cellZ, h, lebendig, moisture] = [
             darts[i],
@@ -602,58 +604,60 @@ class AnazhRealm_vegetation_streu {
         if (layer.promotable && this._tatSperrt(tf.x, tf.z)) return false;
         if (!this._landAt(tf.x, tf.z, 0.4)) return false;
         const species = this._scatterSpeciesForLayer(layer.kind, lebendig, moisture, h);
-        if (this._naturWand(species, tf, tf)) return false;
         const variantIndex = h % AnazhRealm.VARIANTS_PER_SPECIES;
-        // V18.387 — Baum-Schichten (nicht Fels/Kiesel) reichen die Sichthöhe
-        // durch → die Erst-LOD-Wahl nutzt die Wahrnehmungs-Distanz.
-        // Ab hier wartet die Zelle am Ort tf: ihr Ort ist der Rang jeder Zusage, auf die sie wartet (`_wartetAuf`).
-        [this._wartendOrt, this._wartendN] = [tf, this._zusagenN | 0];
         const warten0 = region._wartenN | 0;
-        const visH = this._scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, tf);
-        if (visH === null) {
-            // die Höhen-Stufe des Foundry-Baums lädt: die Region wartet wie auf ein ladendes Asset
-            this._streuZelleWartet(region);
-            return null;
-        }
-        const distAuge = Math.hypot(tf.x - auge.x, tf.z - auge.z); // die Stufen-Distanz: vom Auge (K36)
-        const lod = this._chooseLODForDistance(distAuge, undefined, visH);
-        // Trägt die Foundry die Baum-Art, serviert der Scatter IHR Asset (fern = Studio-Billboard, nah =
-        // Studio-Geometrie) — nie ein paralleles Grammatik-Baum-System (Doppel-Bake + Look-Bruch nah/fern).
-        // Foundry-gegated; headless (Foundry aus) bleibt Grammatik.
-        const rec = this._scatterMaterializeCell(
-            region,
-            layer,
-            layerSalt,
-            cellX,
-            cellZ,
-            layer.cellM,
-            tf,
-            distAuge,
-            species,
-            variantIndex,
-            visH,
-            lod,
-            regX,
-            regZ,
-            false
-        );
-        if (!rec) return (region._wartenN | 0) > warten0 ? null : false;
-        // Lookup nur für die promotable (Baum-)Schicht — die Promotion liest ihn; ihre Krone streut Laub.
-        if (layer.promotable) {
-            this._scatterRegisterCell(tf.x, tf.z, layer.name, species, variantIndex);
-            // Der Kronen-Radius: der des Wald-Generators für die Art (× Skala), sonst aus der Sichthöhe.
-            const kc = AnazhRealm.FOREST.crown[species];
-            const kr = kc ? kc * tf.scale : Number.isFinite(visH) ? visH * AnazhRealm.LAUB_STREU.kroneJeHoehe : 0;
-            // der Scheitel: der Fuß der Zelle + ihre Sichthöhe — der Schwarm landet auf ihm (`_kronenOben`)
-            this._kronenStreuNeu(
-                `s:${layer.name}:${cellX},${cellZ}`,
-                tf.x,
-                tf.z,
-                kr,
-                visH > 0 ? rec.fuss.y + visH : NaN
+        const rec = this._naturSetzen(species, tf, tf, () => {
+            // V18.387 — Baum-Schichten (nicht Fels/Kiesel) reichen die Sichthöhe
+            // durch → die Erst-LOD-Wahl nutzt die Wahrnehmungs-Distanz.
+            // Ab hier wartet die Zelle am Ort tf: ihr Ort ist der Rang jeder Zusage, auf die sie wartet (`_wartetAuf`).
+            [this._wartendOrt, this._wartendN] = [tf, this._zusagenN | 0];
+            const visH = this._scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, tf);
+            if (visH === null) {
+                // die Höhen-Stufe des Foundry-Baums lädt: die Region wartet wie auf ein ladendes Asset
+                this._streuZelleWartet(region);
+                return null;
+            }
+            const distAuge = Math.hypot(tf.x - auge.x, tf.z - auge.z); // die Stufen-Distanz: vom Auge (K36)
+            const lod = this._chooseLODForDistance(distAuge, undefined, visH);
+            // Trägt die Foundry die Baum-Art, serviert der Scatter IHR Asset (fern = Studio-Billboard, nah =
+            // Studio-Geometrie) — nie ein paralleles Grammatik-Baum-System (Doppel-Bake + Look-Bruch nah/fern).
+            // Foundry-gegated; headless (Foundry aus) bleibt Grammatik.
+            const zelle = this._scatterMaterializeCell(
+                region,
+                layer,
+                layerSalt,
+                cellX,
+                cellZ,
+                layer.cellM,
+                tf,
+                distAuge,
+                species,
+                variantIndex,
+                visH,
+                lod,
+                regX,
+                regZ,
+                false
             );
-        }
-        return rec;
+            // Lookup nur für die promotable (Baum-)Schicht — die Promotion liest ihn; ihre Krone streut Laub.
+            if (zelle && layer.promotable) {
+                this._scatterRegisterCell(tf.x, tf.z, layer.name, species, variantIndex);
+                // Der Kronen-Radius: der des Wald-Generators für die Art (× Skala), sonst aus der Sichthöhe.
+                const kc = AnazhRealm.FOREST.crown[species];
+                const kr = kc ? kc * tf.scale : Number.isFinite(visH) ? visH * AnazhRealm.LAUB_STREU.kroneJeHoehe : 0;
+                // der Scheitel: der Fuß der Zelle + ihre Sichthöhe — der Schwarm landet auf ihm (`_kronenOben`)
+                this._kronenStreuNeu(
+                    `s:${layer.name}:${cellX},${cellZ}`,
+                    tf.x,
+                    tf.z,
+                    kr,
+                    visH > 0 ? zelle.fuss.y + visH : NaN
+                );
+            }
+            return zelle;
+        });
+        // ohne Zelle: die Wand nahm ihn oder sein Bau ist ungemappt (er fällt) — er wartet nur, wenn sein Bau einen Wartenden zählte
+        return rec || ((region._wartenN | 0) > warten0 ? null : false);
     }
 
     // DIE REGION STEHT (ihr Pass ist durch): ihre Zellen in der Reihe der Plätze (Schicht, Wurf — wie der One-Shot), ihre Zahl je
