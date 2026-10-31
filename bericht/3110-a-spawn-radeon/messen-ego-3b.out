@@ -1,0 +1,24 @@
+gpu-lauf: Schloss a-spawn-ego nach 2 s
+ego: am Genesis-Ort nach 24 s (Gier -1.571, Arm 6 m)
+  wasser Blick 0°: nichts im Band
+  wasser Blick 45°: nichts im Band
+  wasser Blick 315°: ABNAHME ROT [Ziel Blickziel verdeckt von bauSatz in 6.81 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 9 m · Luma 78.4 σ 33.8 schwarz 0.0 % weiß 0
+  wasser Blick 90°: nichts im Band
+  wasser Blick 270°: nichts im Band
+  wasser Blick 135°: nichts im Band
+  wasser Blick 225°: nichts im Band
+  wasser Blick 180°: nichts im Band
+  fels Blick 0°: nichts im Band
+  fels Blick 45°: nichts im Band
+  fels Blick 315°: ABNAHME ROT [Ziel Blickziel verdeckt von bauSatz in 6.81 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 9 m · Luma 76.3 σ 34.9 schwarz 0.0 % weiß 0
+  fels Blick 90°: nichts im Band
+  fels Blick 270°: nichts im Band
+  fels Blick 135°: nichts im Band
+  fels Blick 225°: nichts im Band
+  fels Blick 180°: nichts im Band
+  fell Blick 0°: nichts im Band
+  fell Blick 45°: nichts im Band
+  fell Blick 315°: ABNAHME ROT [Ziel Blickziel verdeckt von bauSatz in 6.81 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 9 m · Luma 76.3 σ 34.9 schwarz 0.0 % weiß 0
+  fell Blick 90°: nichts im Band
+  fell Blick 270°: nichts im Band
+GPU-LAUF ÜBER 120 s — beendet samt Prozessbaum (Deckel GPU_LAUF_MAX_S)

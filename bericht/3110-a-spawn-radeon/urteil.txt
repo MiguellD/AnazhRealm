@@ -1,0 +1,27 @@
+boden-nah (laiWirk): grün in 0 von 1 Zellen im Bild · nicht im Bild 0
+  ROT ego-nah-0.5: laiWirk 0 · laiWirk 0 < 1.7 · Täter 5–10 m vor dem Auge: Lücke 1 (67819 von 67819 Pixeln Grund) → LAI 0, dort zeichnet kein Halm · zellen/ego-0.5-boden-nah-0.png
+himmel-licht (lichtVerhaeltnis): grün in 1 von 1 Zellen im Bild · nicht im Bild 0
+laub (zweiton): grün in 1 von 1 Zellen im Bild · nicht im Bild 0
+laub-kante (kante): grün in 0 von 1 Zellen im Bild · nicht im Bild 0
+  ROT ego-nah-0.5: kante 0.2963 · kante 0.2963 > 0.22 · Täter f:fichte:L1 (kante 0.3391 über 9800 Rand-Pixel) · zellen/ego-0.5-laub-0.png
+haus (albedoVerhaeltnis): grün in 0 von 1 Zellen im Bild · nicht im Bild 0
+  ROT ego-nah-0.5: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · zellen/ego-0.5-haus-0.png
+wasser (spiegelTreue): grün in 0 von 0 Zellen im Bild · nicht im Bild 1
+  OHNE BILD ego-nah-0.5: 0 Pixel von /^(wasserSatz|farWater|chunk-water-[a-z]+)$/ (< 0.1 % des Bilds) · zellen/ego-0.5-wasser-90.png
+tor-fern (milchweiss): grün in 0 von 1 Zellen im Bild · nicht im Bild 0
+  ROT ego-nah-0.5: milchweiss 0.1074 · milchweiss 0.1074 > 0.05 · Täter portal-membran in L2 (3329 von 31008 Pixeln weiß) · zellen/ego-0.5-tor-fern-0.png
+tor-bunt (oeffnungBunt): grün in 0 von 1 Zellen im Bild · nicht im Bild 0
+  ROT ego-nah-0.5: oeffnungBunt 8.88 · oeffnungBunt 8.88 < 20 · Täter portal-membran in L2 (C*ab 8.88 über 31008 Pixel) · zellen/ego-0.5-tor-fern-0.png
+tor-ziel (zielTreue): grün in 1 von 1 Zellen im Bild · nicht im Bild 0
+fels (albedo): grün in 0 von 0 Zellen im Bild · nicht im Bild 1
+  OHNE BILD ego-nah-0.5: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+mensch-kopf (gesicht): grün in 0 von 0 Zellen im Bild · nicht im Bild 1
+  OHNE BILD ego-nah-0.5: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+boden-nah-farbe (farbtonStreuung): grün in 0 von 1 Zellen im Bild · nicht im Bild 0
+  ROT ego-nah-0.5: Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m · zellen/ego-0.5-boden-nah-0.png
+fell (strich): grün in 0 von 0 Zellen im Bild · nicht im Bild 1
+  OHNE BILD ego-nah-0.5: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+haar (strich): grün in 0 von 0 Zellen im Bild · nicht im Bild 1
+  OHNE BILD ego-nah-0.5: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+A AM SPAWN: 3 von 9 Zellen im Bild GRÜN (K5)
+urteil exit 1

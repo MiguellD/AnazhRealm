@@ -1,0 +1,180 @@
+boden-nah (laiWirk): grün in 0 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.3: ungemessen
+  ROT ego-fern-0.5: ungemessen
+  ROT ego-fern-0: ungemessen
+  ROT ego-nah-0.3: ungemessen
+  ROT ego-nah-0.5: ungemessen
+  ROT ego-nah-0: ungemessen
+  ROT third-fern-0.3: ungemessen
+  ROT third-fern-0.5: ungemessen
+  ROT third-fern-0: ungemessen
+  ROT third-nah-0.3: ungemessen
+  ROT third-nah-0.5: ungemessen
+  ROT third-nah-0: ungemessen
+himmel-licht (lichtVerhaeltnis): grün in 4 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.3: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+  ROT ego-fern-0: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+  ROT ego-nah-0.3: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+  ROT ego-nah-0: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+  ROT third-fern-0.3: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+  ROT third-fern-0: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+  ROT third-nah-0.3: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+  ROT third-nah-0: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+laub (zweiton): grün in 0 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.3: ungemessen
+  ROT ego-fern-0.5: ungemessen
+  ROT ego-fern-0: ungemessen
+  ROT ego-nah-0.3: ungemessen
+  ROT ego-nah-0.5: ungemessen
+  ROT ego-nah-0: ungemessen
+  ROT third-fern-0.3: ungemessen
+  ROT third-fern-0.5: ungemessen
+  ROT third-fern-0: ungemessen
+  ROT third-nah-0.3: ungemessen
+  ROT third-nah-0.5: ungemessen
+  ROT third-nah-0: ungemessen
+laub-kante (kante): grün in 0 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.3: ungemessen
+  ROT ego-fern-0.5: ungemessen
+  ROT ego-fern-0: ungemessen
+  ROT ego-nah-0.3: ungemessen
+  ROT ego-nah-0.5: ungemessen
+  ROT ego-nah-0: ungemessen
+  ROT third-fern-0.3: ungemessen
+  ROT third-fern-0.5: ungemessen
+  ROT third-fern-0: ungemessen
+  ROT third-nah-0.3: ungemessen
+  ROT third-nah-0.5: ungemessen
+  ROT third-nah-0: ungemessen
+haus (albedoVerhaeltnis): grün in 0 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.3: ungemessen
+  ROT ego-fern-0.5: ungemessen
+  ROT ego-fern-0: ungemessen
+  ROT ego-nah-0.3: ungemessen
+  ROT ego-nah-0.5: ungemessen
+  ROT ego-nah-0: ungemessen
+  ROT third-fern-0.3: ungemessen
+  ROT third-fern-0.5: ungemessen
+  ROT third-fern-0: ungemessen
+  ROT third-nah-0.3: ungemessen
+  ROT third-nah-0.5: ungemessen
+  ROT third-nah-0: ungemessen
+wasser (spiegelTreue): grün in 0 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.3: ungemessen
+  ROT ego-fern-0.5: ungemessen
+  ROT ego-fern-0: ungemessen
+  ROT ego-nah-0.3: ungemessen
+  ROT ego-nah-0.5: ungemessen
+  ROT ego-nah-0: ungemessen
+  ROT third-fern-0.3: ungemessen
+  ROT third-fern-0.5: ungemessen
+  ROT third-fern-0: ungemessen
+  ROT third-nah-0.3: ungemessen
+  ROT third-nah-0.5: ungemessen
+  ROT third-nah-0: ungemessen
+tor-fern (milchweiss): grün in 0 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.3: ungemessen
+  ROT ego-fern-0.5: ungemessen
+  ROT ego-fern-0: ungemessen
+  ROT ego-nah-0.3: ungemessen
+  ROT ego-nah-0.5: ungemessen
+  ROT ego-nah-0: ungemessen
+  ROT third-fern-0.3: ungemessen
+  ROT third-fern-0.5: ungemessen
+  ROT third-fern-0: ungemessen
+  ROT third-nah-0.3: ungemessen
+  ROT third-nah-0.5: ungemessen
+  ROT third-nah-0: ungemessen
+tor-bunt (oeffnungBunt): grün in 0 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.3: ungemessen
+  ROT ego-fern-0.5: ungemessen
+  ROT ego-fern-0: ungemessen
+  ROT ego-nah-0.3: ungemessen
+  ROT ego-nah-0.5: ungemessen
+  ROT ego-nah-0: ungemessen
+  ROT third-fern-0.3: ungemessen
+  ROT third-fern-0.5: ungemessen
+  ROT third-fern-0: ungemessen
+  ROT third-nah-0.3: ungemessen
+  ROT third-nah-0.5: ungemessen
+  ROT third-nah-0: ungemessen
+tor-ziel (zielTreue): grün in 0 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.3: ungemessen
+  ROT ego-fern-0.5: ungemessen
+  ROT ego-fern-0: ungemessen
+  ROT ego-nah-0.3: ungemessen
+  ROT ego-nah-0.5: ungemessen
+  ROT ego-nah-0: ungemessen
+  ROT third-fern-0.3: ungemessen
+  ROT third-fern-0.5: ungemessen
+  ROT third-fern-0: ungemessen
+  ROT third-nah-0.3: ungemessen
+  ROT third-nah-0.5: ungemessen
+  ROT third-nah-0: ungemessen
+fels (albedo): grün in 0 von 0 Zellen im Bild · nicht im Bild 12
+  OHNE BILD ego-fern-0.3: kein Blick der Wahl (2 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-fern-0.5: kein Blick der Wahl (2 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-fern-0: kein Blick der Wahl (2 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-nah-0.3: kein Blick der Wahl (2 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-nah-0.5: kein Blick der Wahl (2 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-nah-0: kein Blick der Wahl (2 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-fern-0.3: kein Blick der Wahl (2 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-fern-0.5: kein Blick der Wahl (2 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-fern-0: kein Blick der Wahl (2 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-nah-0.3: kein Blick der Wahl (2 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-nah-0.5: kein Blick der Wahl (2 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-nah-0: kein Blick der Wahl (2 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+mensch-kopf (gesicht): grün in 0 von 3 Zellen im Bild · nicht im Bild 9
+  OHNE BILD ego-fern-0.3: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+  OHNE BILD ego-fern-0.5: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+  OHNE BILD ego-fern-0: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+  OHNE BILD ego-nah-0.3: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+  OHNE BILD ego-nah-0.5: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+  OHNE BILD ego-nah-0: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+  OHNE BILD third-fern-0.3: der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m
+  OHNE BILD third-fern-0.5: der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m
+  OHNE BILD third-fern-0: der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m
+  ROT third-nah-0.3: gesicht 0.333 · gesicht 0.333 < 1 · Täter augeFrei 0.799 außerhalb [0.9, 1] · zellen/third-0.3-mensch-kopf-0.png
+  ROT third-nah-0.5: gesicht 0.667 · gesicht 0.667 < 1 · Täter lippeA 2.87 außerhalb [4, 14] · zellen/third-0.5-mensch-kopf-0.png
+  ROT third-nah-0: gesicht 0.333 · gesicht 0.333 < 1 · Täter augeFrei 0.352 außerhalb [0.9, 1] · zellen/third-0-mensch-kopf-0.png
+boden-nah-farbe (farbtonStreuung): grün in 0 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.3: ungemessen
+  ROT ego-fern-0.5: ungemessen
+  ROT ego-fern-0: ungemessen
+  ROT ego-nah-0.3: ungemessen
+  ROT ego-nah-0.5: ungemessen
+  ROT ego-nah-0: ungemessen
+  ROT third-fern-0.3: ungemessen
+  ROT third-fern-0.5: ungemessen
+  ROT third-fern-0: ungemessen
+  ROT third-nah-0.3: ungemessen
+  ROT third-nah-0.5: ungemessen
+  ROT third-nah-0: ungemessen
+fell (strich): grün in 0 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.3: ungemessen
+  ROT ego-fern-0.5: ungemessen
+  ROT ego-fern-0: ungemessen
+  ROT ego-nah-0.3: ungemessen
+  ROT ego-nah-0.5: ungemessen
+  ROT ego-nah-0: ungemessen
+  ROT third-fern-0.3: ungemessen
+  ROT third-fern-0.5: ungemessen
+  ROT third-fern-0: ungemessen
+  ROT third-nah-0.3: ungemessen
+  ROT third-nah-0.5: ungemessen
+  ROT third-nah-0: ungemessen
+haar (strich): grün in 0 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.3: ungemessen
+  ROT ego-fern-0.5: ungemessen
+  ROT ego-fern-0: ungemessen
+  ROT ego-nah-0.3: ungemessen
+  ROT ego-nah-0.5: ungemessen
+  ROT ego-nah-0: ungemessen
+  ROT third-fern-0.3: ungemessen
+  ROT third-fern-0.5: ungemessen
+  ROT third-fern-0: ungemessen
+  ROT third-nah-0.3: ungemessen
+  ROT third-nah-0.5: ungemessen
+  ROT third-nah-0: ungemessen
+A AM SPAWN: 4 von 147 Zellen im Bild GRÜN (K5)
+urteil exit 1
