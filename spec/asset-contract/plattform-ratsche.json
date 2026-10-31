@@ -39,9 +39,9 @@
         },
         "v4": {
             "kern": "porta-core.js",
-            "faelle": 30,
+            "faelle": 42,
             "kippt": {},
-            "soll": "0 - erreicht: porta-core ausRaster am Ausgang (S1, Re-Mint mit Grund: Node 22 rot 16/16); K43 die Stufe 1 je Ordnung dazu (16 -> 23 Faelle, keiner kippt); K64 die Stufe 2 je Ordnung dazu (23 -> 30 Faelle, keiner kippt)"
+            "soll": "0 - erreicht: porta-core ausRaster am Ausgang (S1, Re-Mint mit Grund: Node 22 rot 16/16); K43 die Stufe 1 je Ordnung dazu (16 -> 23 Faelle, keiner kippt); K64 die Stufe 2 je Ordnung dazu (23 -> 30 Faelle, keiner kippt); w4-tore-teile die drei Motiv-Tore lyra, vitruv, tiertor je Stufe dazu (30 -> 42 Faelle, keiner kippt)"
         },
         "v5": {
             "kern": "schmiede-core.js",

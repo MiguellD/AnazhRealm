@@ -28,23 +28,19 @@ const { studioKern, pruefer, ROOT: root } = require("./lib/welt-boot.cjs");
 const { errs, check, wandEnde } = pruefer();
 const PC = studioKern("porta-core.js", "__portaCore");
 
-// ── Die eingefrorenen Fälle: Ordnungen × Seeds × LODs (+ ov-Override-Kanal) ──
-const ORDNUNGEN = ["drachentor", "kathedrale", "maschine", "geisttor", "verkalkt", "ruine", "maurentor"];
-const SEEDS = [7, 12345];
-const LODS = [0]; // kindStages.gate = [0, 1, 2, 3] — die feine Stufe je Seed; die Stufe 1 und die NUR-WURF-Stufe 3 tragen je Ordnung EINEN Fall (unten)
-const CASES = [];
-for (const g of ORDNUNGEN) for (const s of SEEDS) for (const l of LODS) CASES.push({ rezeptId: g, seed: s, lod: l });
+// ── Die eingefrorenen Fälle: je Tor des Kerns die feine Stufe je Seed (die Seed-Invarianz) und die Stufen 1, 2 und 3 (+ der
+//    ov-Override-Kanal) — der Vergleich geht über den Schlüssel des Falls, eine neue Ordnung trägt ihre Fälle erst gemintet ──
+// die NUR-WURF-Stufe 3 (1110-9: die Hüllen-Liste des Tors als EIN Gitter im Schatten-Stoff); die STUFE 1 (K43, Kosten ins Asset:
+// derselbe Bau unter TOR_DETAIL_1, die Flügel fest); die STUFE 2 (K64: derselbe Bau unter TOR_DETAIL_2 — das Feine unter einem
+// Szenen-Pixel fällt, das Geflecht trägt jeden zweiten Strang mit der Deckung aller); DIE MOTIV-TORE lyra · vitruv · tiertor
+// (w4-tore-teile, Vertrags-Akt: Re-Mint nur der drei, die 37 Fälle der sieben blieben byte-gleich)
+const ORDNUNGEN = Object.keys(PC.PRESETS);
 // ov-Kanal (Parameter-Override) — friert auch die Merge-Semantik ein.
-CASES.push({ rezeptId: "drachentor", seed: 7, lod: 0, ov: { mass: 0.95 } });
-CASES.push({ rezeptId: "kathedrale", seed: 7, lod: 0, ov: { orders: 2, glow: 0.9 } });
-// die NUR-WURF-Stufe 3 (1110-9: die Hüllen-Liste des Tors als EIN Gitter im Schatten-Stoff) — additiv, je Ordnung EIN Fall
-for (const g of ORDNUNGEN) CASES.push({ rezeptId: g, seed: 7, lod: 3 });
-// die STUFE 1 (K43, Kosten ins Asset: derselbe Bau unter TOR_DETAIL_1, die Flügel fest) — additiv, je Ordnung EIN Fall; die 23
-// Fälle davor blieben byte-gleich
-for (const g of ORDNUNGEN) CASES.push({ rezeptId: g, seed: 7, lod: 1 });
-// die STUFE 2 (K64, Kosten ins Asset: derselbe Bau unter TOR_DETAIL_2 — das Feine unter einem Szenen-Pixel fällt, das Geflecht
-// trägt jeden zweiten Strang mit der Deckung aller) — additiv, je Ordnung EIN Fall; die 30 Fälle davor blieben byte-gleich
-for (const g of ORDNUNGEN) CASES.push({ rezeptId: g, seed: 7, lod: 2 });
+const CASES = [
+    { rezeptId: "drachentor", seed: 7, lod: 0, ov: { mass: 0.95 } },
+    { rezeptId: "kathedrale", seed: 7, lod: 0, ov: { orders: 2, glow: 0.9 } },
+];
+for (const g of ORDNUNGEN) for (const [s, l] of [[7, 0], [12345, 0], [7, 1], [7, 2], [7, 3]]) CASES.push({ rezeptId: g, seed: s, lod: l });
 
 function buildCase(c) {
     return PC.buildInstance(c.rezeptId, c.seed, c.lod, c.ov || undefined);

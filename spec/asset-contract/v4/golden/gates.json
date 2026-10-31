@@ -186,6 +186,81 @@
       "objects": 145,
       "vertices": 5160,
       "sha256": "01c803bcc634b649661cdecf37721cd0dabe38b29b73a98966fad1114f3535c2"
+    },
+    "lyra-s7-L0": {
+      "objects": 39,
+      "vertices": 2350,
+      "sha256": "bf7b911952662953f81d437e10d8061970f1a84e0c92c36e1e06e1ba55fdc505"
+    },
+    "lyra-s12345-L0": {
+      "objects": 39,
+      "vertices": 2350,
+      "sha256": "bf7b911952662953f81d437e10d8061970f1a84e0c92c36e1e06e1ba55fdc505"
+    },
+    "lyra-s7-L1": {
+      "objects": 39,
+      "vertices": 1344,
+      "sha256": "5a2402846f7399acbc40c0e6c422145ffcda00728b9774b0a9ee6ef4d7167016"
+    },
+    "lyra-s7-L2": {
+      "objects": 16,
+      "vertices": 412,
+      "sha256": "d0a56451721e661fb3943cc6545819f4d16b6f3a5bee52f7c22b5d6d0a4b9376"
+    },
+    "lyra-s7-L3": {
+      "objects": 1,
+      "vertices": 672,
+      "sha256": "f1102d29c40bc2e7720263fcee752e115b1e5fe3653d4c011aba77be98ce4e0b"
+    },
+    "vitruv-s7-L0": {
+      "objects": 54,
+      "vertices": 2149,
+      "sha256": "94f1c1e2e36c0283d7069c0d51144750ba85189de5c821cbe39f7a0017972146"
+    },
+    "vitruv-s12345-L0": {
+      "objects": 54,
+      "vertices": 2149,
+      "sha256": "94f1c1e2e36c0283d7069c0d51144750ba85189de5c821cbe39f7a0017972146"
+    },
+    "vitruv-s7-L1": {
+      "objects": 35,
+      "vertices": 1002,
+      "sha256": "452203b58df5c42414577250ee21ee512296524472e0f5afa82f69dd2ef4eb16"
+    },
+    "vitruv-s7-L2": {
+      "objects": 16,
+      "vertices": 432,
+      "sha256": "0d85dba47452031fbc43b7bd44c7561041920e725747ba3d51be59ca2e6da177"
+    },
+    "vitruv-s7-L3": {
+      "objects": 1,
+      "vertices": 868,
+      "sha256": "f1651a5c8d89f5263c47059ad0df87b7fdd645608d3f8e84dc47347f5852f98a"
+    },
+    "tiertor-s7-L0": {
+      "objects": 50,
+      "vertices": 3143,
+      "sha256": "6e51080b3e41770019282288bea40112422a2660287529f9d569f02a24feb70f"
+    },
+    "tiertor-s12345-L0": {
+      "objects": 50,
+      "vertices": 3143,
+      "sha256": "6e51080b3e41770019282288bea40112422a2660287529f9d569f02a24feb70f"
+    },
+    "tiertor-s7-L1": {
+      "objects": 50,
+      "vertices": 1667,
+      "sha256": "14c6788c9110e1f3df8371334566a7e46dcbcc0dc37bb81a2636de2d8fa3585d"
+    },
+    "tiertor-s7-L2": {
+      "objects": 29,
+      "vertices": 561,
+      "sha256": "c78631cb7d0bd1bfbc5cbe9152a0870f44eadc77f083f468ede60462dd478471"
+    },
+    "tiertor-s7-L3": {
+      "objects": 1,
+      "vertices": 1548,
+      "sha256": "d69ae55682f57024fda70d3a52d6bedcf40c7184baf9ada7d5ab95743315436b"
     }
   }
 }
