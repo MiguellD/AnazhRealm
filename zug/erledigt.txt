@@ -145,3 +145,4 @@ takt-z111b-gtx gemessen punkte cdb2703d gtx: 0 grün / 9 rot
 takt-z112a-gtx gemessen punkte 8809ec6d gtx: 0 grün / 6 rot
 takt-z112b-gtx gemessen punkte 8809ec6d gtx: 0 grün / 8 rot
 takt-z113a-gtx gemessen punkte f0dab43d gtx: 0 grün / 6 rot
+z110-abab nicht-langsamer abab 90878cc6 gegen c5ee9059: w-ego 4+4 nicht-langsamer · stadt 4+4 nicht-langsamer
