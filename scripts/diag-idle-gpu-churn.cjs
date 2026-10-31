@@ -76,10 +76,7 @@ hauptLauf(async () => {
             const t0 = performance.now();
             while (!S.done && performance.now() - t0 < 4000) {
                 if (r && !S.stubbed && r.state?.renderer) {
-                    window.__origRender = r.state.renderer.render.bind(r.state.renderer);
-                    r.state.renderer.render = function () {};
-                    if (typeof r.state.renderer.renderAsync === "function") r.state.renderer.renderAsync = () => Promise.resolve();
-                    r.state.postProcessingFailed = true;
+                    __bildRuht();
                     // P0 (Bühnen-Ordnung) — die Bühne für diese Linse VOR-latchen: sie misst
                     // Steady-State-Idle-Churn, nicht die Boot-Ordnung. Ohne Latch könnte das Bühnen-
                     // Prädikat mitten im 16-Frame-Mess-Fenster schließen → Fern-Deko (Planeten/Sterne)

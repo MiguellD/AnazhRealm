@@ -156,10 +156,7 @@ function spalt(px, py, pz, tris) {
         let stubbed = false;
         for (const weiter = window.__deckel("der Ring 4", 15000); weiter(); ) {
             if (r && !stubbed && r.state && r.state.renderer) {
-                r.state.renderer.render = function () {};
-                if (typeof r.state.renderer.renderAsync === "function")
-                    r.state.renderer.renderAsync = () => Promise.resolve();
-                r.state.postProcessingFailed = true;
+                __bildRuht();
                 // den Ring auf 4 ZWINGEN + SYNC bauen (Worker null), damit die volle
                 // 81-Chunk-Welt schnell steht UND LOD1 (ring 3-4) erscheint → die Cross-LOD-Naht
                 // wird messbar (sonst hält der Kapazitäts-Ramp die Welt bei Ring 2 = alle LOD0).

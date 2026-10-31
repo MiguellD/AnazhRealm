@@ -739,21 +739,7 @@ async function probe() {
     aus.decke.beruehrt = beruehrt(p0.x, p0.y + 0.55, p0.z, p0.x, p0.y + 5.05, p0.z);
     // (Q) der Konsum am Ruf: der Strahl fragt das Netz, der Tier-Leib die Plätze (Spion am Ruf); die alten Schleifen bleiben tot
     const P = Object.getPrototypeOf(r);
-    const ruft = (fn, nach, args) => {
-        const echt = r[nach];
-        let n = 0;
-        r[nach] = function (...x) {
-            n++;
-            return echt.apply(this, x);
-        };
-        try {
-            r[fn](...args);
-        } catch {
-            /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
-        }
-        delete r[nach];
-        return n > 0;
-    };
+    const ruft = (fn, nach, args) => __ruft(() => r[fn](...args), r, nach) > 0;
     const yq = r.getTerrainHeightAt(ox, oz) + 2;
     if (tier) tier.userData._huellenNah = null;
     aus.quelle = {

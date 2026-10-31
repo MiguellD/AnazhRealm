@@ -411,11 +411,7 @@ async function probe(A) {
     const faden = st.voxelWorker;
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
-    if (st.renderer) {
-        st.renderer.render = function () {};
-        if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
-    }
-    st.postProcessingFailed = true;
+    __bildRuht();
     const MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7];
     let tMs = performance.now();
     let nFrame = 0;
@@ -1614,24 +1610,7 @@ async function probe(A) {
         if (!A.nur)
             try {
                 r.spawnArchitecture = spawnAlt;
-                const ruft = (o, m, lief, args) => {
-                    const eigen = Object.prototype.hasOwnProperty.call(r, lief);
-                    const alt = r[lief];
-                    let n = 0;
-                    r[lief] = function () {
-                        n++;
-                        return alt.apply(this, arguments);
-                    };
-                    try {
-                        o[m](...args);
-                    } catch {
-                        /* ein Wurf NACH dem Ruf entwertet den Konsum nicht */
-                    } finally {
-                        if (eigen) r[lief] = alt;
-                        else delete r[lief];
-                    }
-                    return n > 0;
-                };
+                const ruft = (o, m, lief, args) => __ruft(() => o[m](...args), r, lief) > 0;
                 const X = st.playerMesh.position.x,
                     Z = st.playerMesh.position.z,
                     Y = r._voxelSurfaceY(X, Z);
@@ -1708,11 +1687,7 @@ async function probe(A) {
 // ±A.R m um den Damm) ohne Damm, mit Damm, nach dem Reload; die Invalidierungen des Automaten beim Abbau. ──
 async function dammProbe(A) {
     await window.__weltDa((w) => w.state.hydrosphere && w.state.hydrosphere.ready);
-    if (st.renderer) {
-        st.renderer.render = function () {};
-        if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
-    }
-    st.postProcessingFailed = true;
+    __bildRuht();
     const MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7];
     let tMs = performance.now();
     let nFrame = 0;

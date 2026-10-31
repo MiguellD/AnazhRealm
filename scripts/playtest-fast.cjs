@@ -59,15 +59,7 @@ function check(name, ok) {
         // ── KURZER PLATEAU-WARMUP (render-gestubbt, chirurgisch wie playtest.cjs) ──
         await page.evaluate(async () => {
             if (!r || typeof r._gameLoopTick !== "function") return;
-            if (st.renderer) {
-                window.__origRender = st.renderer.render.bind(st.renderer);
-                st.renderer.render = function () {};
-                if (typeof st.renderer.renderAsync === "function")
-                    st.renderer.renderAsync = function () {
-                        return Promise.resolve();
-                    };
-            }
-            st.postProcessingFailed = true;
+            __bildRuht();
             const start = performance.now();
             const TARGET = 4; // schneller Warmup: ein paar Chunks genügen für die Kern-Gesundheit
             const MIN_MS = 3000;

@@ -15,24 +15,7 @@ async function probeLeben(expected) {
     const A = P.constructor; // die Klasse der Welt (Gesetze und Konstanten)
     const DT = 1 / 60;
     // KONSUM am Zähl-Spion: der Versorger o[k] zählt, während lauf() den Leser einmal ruft (ein Wurf danach entwertet ihn nicht)
-    const ruft = (lauf, o, k) => {
-        const eigen = Object.prototype.hasOwnProperty.call(o, k);
-        const f0 = o[k];
-        let n = 0;
-        o[k] = function (...a) {
-            n++;
-            return f0.apply(this, a);
-        };
-        try {
-            lauf();
-        } catch {
-            /* der Ruf zählt */
-        } finally {
-            if (eigen) o[k] = f0;
-            else delete o[k];
-        }
-        return n > 0;
-    };
+    const ruft = (lauf, o, k) => __ruft(lauf, o, k) > 0;
     // Frame-Zeiten (ms): Frames ohne (8,3), mit einem (16,7 · 20 · 11,1) und mit zwei Sim-Schritten (25 · 33,3).
     const MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7];
     let tMs = performance.now();

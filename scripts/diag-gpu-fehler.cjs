@@ -35,6 +35,10 @@ async function probe() {
         primitive: { topology: "triangle-list" },
     });
     const tex = dev.createTexture({ size: [4, 4], format: "rgba8unorm", usage: GPUTextureUsage.RENDER_ATTACHMENT });
+    // DIE LEINWAND DER PAUSE (welt-boot `leinwandSeite`): der volle Lauf zeichnet in die Leinwand und hält ihren Pass über eine
+    // Schleife von 7 s offen — die Akte (Stillstand 3 s) hält die Seite darin an, der Submit fällt als Folge der Pause
+    const leinwand = document.querySelector("canvas").getContext("webgpu");
+    leinwand.configure({ device: dev, format: "rgba8unorm" });
     const vb0 = dev.createBuffer({ size: 36, usage: GPUBufferUsage.VERTEX });
     const vb1 = dev.createBuffer({ size: 12, usage: GPUBufferUsage.VERTEX });
     const ib = dev.createBuffer({ size: 12, usage: GPUBufferUsage.INDEX });
@@ -42,7 +46,7 @@ async function probe() {
         const enc = dev.createCommandEncoder({ label: "probe_encoder" });
         const pass = enc.beginRenderPass({
             label: beide ? "probe_pass_voll" : "probe_pass_luecke",
-            colorAttachments: [{ view: tex.createView(), loadOp: "clear", storeOp: "store" }],
+            colorAttachments: [{ view: (beide ? leinwand.getCurrentTexture() : tex).createView(), loadOp: "clear", storeOp: "store" }],
         });
         pass.setPipeline(pipe);
         pass.setVertexBuffer(0, vb0);
@@ -50,15 +54,17 @@ async function probe() {
         pass.setIndexBuffer(ib, "uint32");
         pass.drawIndexed(3);
         pass.end();
+        if (beide) __leinwandSchleife(7000);
         dev.queue.submit([enc.finish()]);
     };
     lauf(false);
     const nachLuecke = F.draws.length;
+    await sleep(500); // die Meldung des Lochs kommt an, bevor die Pause den vollen Lauf hält (in ihr verfiele sie)
     lauf(true);
     const nachVoll = F.draws.length;
     await dev.queue.onSubmittedWorkDone();
     await sleep(300);
-    return { nachLuecke, nachVoll, draw: F.draws[0] || null, device: F.device.slice(0, 2) };
+    return { nachLuecke, nachVoll, draw: F.draws[0] || null, device: F.device.slice(0, 2), folgen: window.__weltPausenFolgen, zerstoert: F.device.filter((d) => /^Destroyed/.test(d.msg)).length };
 }
 
 // DER GEGENDRUCK: das Gerät `name` reicht laufend ein und gibt jeden Submit `spaet` ms spät ab (< 0: nie)
@@ -78,9 +84,10 @@ hauptLauf(async () => {
         process.exit(0);
     }
     console.log("=== SELBST-TEST: die GPU-Fehler-Linse nennt den Draw ohne Vertex-Slot beim Namen ===");
-    const server = statikServer({ seiten: { "/": "<!doctype html><title>gpu-fehler</title>" } });
+    const seite = "<canvas></canvas><script>__leinwandSchleife=(ms)=>{for(const e=performance.now()+ms;performance.now()<e;);}</script>";
+    const server = statikServer({ seiten: { "/": seite } });
     await server.lausche(0);
-    const browser = await starteBrowser({ art: "linse" });
+    const browser = await starteBrowser({ art: "linse", stallMs: 3000 });
     const page = await browser.newPage();
     await page.evaluateOnNewDocument(GPU_FEHLER_INSTALL);
     await server.zeige(page, undefined, "");
@@ -118,6 +125,7 @@ hauptLauf(async () => {
             d
         );
         check("der Draw mit beiden Slots bleibt still", out.nachVoll === 1, `Einträge ${out.nachVoll}`);
+        check("die Leinwand der Pause: der Submit fällt als ihre Folge, das Gerät hört keinen Bruch", out.folgen?.length === 1 && !out.zerstoert, JSON.stringify(out.folgen)); // prettier-ignore
         check(
             "die Device-Meldung (uncapturederror) kommt an, mit dem Pass",
             out.device.length >= 1 && /vertex buffer|slot/i.test(out.device[0].msg),

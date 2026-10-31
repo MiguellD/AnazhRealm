@@ -108,9 +108,7 @@ hauptLauf(async () => {
             const dev = rend.backend && rend.backend.device;
             if (dev && dev.lost)
                 dev.lost.then((i) => console.log("[N] WebGPU-Geraet verloren: " + i.reason + " · " + i.message));
-            rend.render = function () {};
-            if (typeof rend.renderAsync === "function") rend.renderAsync = () => Promise.resolve();
-            r.state.postProcessingFailed = true;
+            __bildRuht();
             await window.__weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
             // der Karten-Takt bäckt erst mit dem Renderer (`_tickKarteWelt`: rendererReady) — kam das Buch vor `renderer.init()`, war S vakuös
             await window.__weltDa(() => !(!r.state.rendererReady));

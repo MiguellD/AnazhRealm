@@ -118,13 +118,7 @@ function probe(stoerung) {
     out.fernWeg = fern ? +r._wegeFeldAt(o.x + fern.x + 15, o.z + fern.z).toFixed(3) : -1;
     // 4 KONSUM: das Chunk-Material liest die Karte, die Wiese das Pfad-Feld
     // am Ruf: der frische Chunk-Stoff mischt die Wege-Farbe (nur mit wegeKarte), sie liest die EINE Karte
-    const ruft = (f, k) => {
-        const alt = r[k], eigen = Object.prototype.hasOwnProperty.call(r, k);
-        let n = 0;
-        r[k] = function (...a) { n++; return alt.apply(this, a); };
-        try { f(); } catch { /* ein Wurf nach dem Ruf entwertet den Konsum nicht */ } finally { if (eigen) r[k] = alt; else delete r[k]; }
-        return n > 0;
-    };
+    const ruft = (f, k) => __ruft(f, r, k) > 0;
     const stoffAlt = st.voxelChunkMaterial;
     st.voxelChunkMaterial = null;
     const pbr = (wegeKarte) => () => r._buildPbrNodeMaterial({ vertexColors: true, wegeKarte, felsImVertex: true, himmelsSicht: true, geomorph: true });

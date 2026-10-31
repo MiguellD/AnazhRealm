@@ -1794,24 +1794,7 @@ hauptLauf(async () => {
         const ovB = eB ? r._artifactStudioOv(eB) : null;
         res.ovKeysSplit = !!(ovA && ovB && r._studioOvHash(ovA) !== r._studioOvHash(ovB));
         // der Spion am Ruf: lieferer[name] zählt (und delegiert), solange wer.methode(...args) läuft — die Zahl der Rufe
-        const ruft = (wer, methode, lieferer, name, args) => {
-            const eigen = Object.prototype.hasOwnProperty.call(lieferer, name);
-            const echt = lieferer[name];
-            let n = 0;
-            lieferer[name] = function (...x) {
-                n++;
-                return echt.apply(this, x);
-            };
-            try {
-                wer[methode](...args);
-            } catch {
-                /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
-            } finally {
-                if (eigen) lieferer[name] = echt;
-                else delete lieferer[name];
-            }
-            return n;
-        };
+        const ruft = (wer, methode, lieferer, name, args) => __ruft(() => wer[methode](...args), lieferer, name);
         // DER ERLEBNIS-HEBEL (Schicht-Vollendung): die Hof-Bäume und Marktstände des Plans stehen, die Zäune laufen über den
         // Zaun-Pool, die Äcker in die Wege-Karte; ohne die Schichten hebt er keins davon (die Zähne). Die Probe räumt ihre Bauten.
         const erlebnis = (p, key) => {

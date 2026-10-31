@@ -246,19 +246,7 @@ async function s0Probe(page, station, schein) {
             }
             if (schein) delete P._scheinRueckfall;
             // das EINE Punktlicht-Gesetz am Ruf: der Pool-Term rechnet jeden Platz über _punktLichtBrdf (Spion am Ruf)
-            const echtB = r._punktLichtBrdf;
-            let brdf = 0;
-            r._punktLichtBrdf = function (...x) {
-                brdf++;
-                return echtB.apply(this, x);
-            };
-            try {
-                r._lichtPoolTerm(THREE.TSL, r._ensureAtmoUniforms(), null);
-            } catch {
-                /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
-            }
-            delete r._punktLichtBrdf;
-            out.poolRuftBrdf = brdf > 0;
+            out.poolRuftBrdf = __ruft(() => r._lichtPoolTerm(THREE.TSL, r._ensureAtmoUniforms(), null), r, "_punktLichtBrdf") > 0;
             r._setWeather("sunny", "human");
             s.weatherTransition = null;
             // die Uhr springt über den Pfad des Spielers (sein Satz, `setTimeOfDay`): EIN Anwenden des Tags, kein Nachmalen

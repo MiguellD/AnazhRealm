@@ -186,8 +186,37 @@ function png(u8, W, H) {
 // ALLE BÜNDEL DER SZENE NEU (`window.__bundlesNeu()`): ein Bündel, das vor einer Sicht-Änderung aufnahm, zeichnet beim nächsten
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => r.state.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
+// DER BILD-RENDERER RUHT (`window.__bildRuht()`, jede Probe, die die Welt ohne Bild taktet): render und renderAsync leer, die
+// Post-Kette aus, der echte render in `__origRender` — EINMAL hier statt eines Stummels je Linse (werk-im-wasser, wasser-linse,
+// chunk-seam, idle-gpu-churn, analog-nah, playtest-fast)
+// DER SPION AM RUF (`window.__ruft(lauf, o, k)`): wie oft `o[k]` gerufen wird, während `lauf()` läuft — der Konsum-Beweis
+// jeder Linse (ein Wurf nach dem Ruf entwertet ihn nicht; ein eigenes Glied von `o` kehrt zurück), EINMAL hier statt eines
+// Spions je Linse (ankunft, settlement, werkstatt-weg, blocker-netz, pruefbuehne, weg-boden, werk-im-wasser, fahr-proben,
+// kampf-gefuehl)
+const ruft = (lauf, o, k) => {
+    const [eigen, echt] = [Object.prototype.hasOwnProperty.call(o, k), o[k]];
+    let n = 0;
+    o[k] = function () {
+        n++;
+        return echt.apply(this, arguments);
+    };
+    try {
+        lauf();
+    } catch {
+        // ein Wurf nach dem Ruf entwertet den Konsum nicht
+    } finally {
+        if (eigen) o[k] = echt;
+        else delete o[k];
+    }
+    return n;
+};
+const bildRuht = () => {
+    const R = st.renderer;
+    if (R) [window.__origRender, R.render, R.renderAsync] = [R.render.bind(R), () => {}, R.renderAsync && (async () => {})];
+    st.postProcessingFailed = true;
+};
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
+const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.__bildRuht = ${bildRuht}; window.__ruft = ${ruft}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
@@ -469,6 +498,48 @@ function pulsSeite() {
     setInterval(() => sende("puls", phase()), 1000);
 }
 
+// DIE LEINWAND DER PAUSE (stadt-heil, CI 41156109280 „voll 14/18": welt-boot ROT „Destroyed texture [Texture (unlabeled
+// 1280x720 px, TextureFormat::RGBA8Unorm)] used in a submit … CommandEncoder "renderContext_3"" in 2 von 2 Versuchen, die
+// Linse selbst GRÜN): eine Pause des Debuggers — die Akte fragt so nach dem Stapel, ein `debugger;` hält ebenso — dreht die
+// Nachrichten-Schleife der Seite verschachtelt, und Chrome schließt am Ende jeder Aufgabe darin das Bild jeder WebGPU-Leinwand
+// ab: ihre aktuelle Textur fällt mitten im Frame. Hielt ein Befehls-Puffer da einen Pass in sie (r184: der Ausgabe-Pass der
+// Post-Kette ist offen, während der Szenen-Pass in ihm zeichnet — fast der ganze Frame), verwirft die GPU seinen Submit:
+// ein Bruch, den die PAUSE schlug, nie die Welt (Probe 31.10., swiftshader: Pause im offenen Leinwand-Pass 2 von 2 gemeldet,
+// ohne Pause 0 von 2; die Kamera-Leib-Linse mit einem 12-s-Upload im Szenen-Pass: dieselbe Zeile, welt-boot ROT). Die Seite
+// kennt je Leinwand ihre aktuelle Textur; die Pause (`__weltPause`, aus dem Pausen-Hörer der Akte) erklärt sie für gefallen.
+// Der erste Hörer jedes Geräts nimmt je gefallener Textur genau EINE Meldung „Destroyed texture" ihrer Form (Größe, Format,
+// ohne Namen) als Folge der Pause (`pause` in der Akte) — jede andere Meldung geht an die Hörer der Welt wie zuvor.
+function leinwandSeite() {
+    const A = window.GPUAdapter?.prototype,
+        C = window.GPUCanvasContext?.prototype;
+    if (window.top !== window || !A || !C) return;
+    const [je, gefallen, folgen] = [new Map(), [], (window.__weltPausenFolgen = [])];
+    const gct = C.getCurrentTexture;
+    C.getCurrentTexture = function () {
+        const t = gct.apply(this, arguments);
+        // die Leinwand gilt dem laufenden Skript: endet es, legt Chrome ihr Bild ohnehin vor — eine Pause danach nimmt nichts
+        if (!je.size) queueMicrotask(() => je.clear());
+        je.set(this, `destroyed texture [texture (unlabeled ${t.width}x${t.height} px, textureformat::${t.format}`);
+        return t;
+    };
+    const rd = A.requestDevice;
+    A.requestDevice = async function () {
+        const d = await rd.apply(this, arguments);
+        d.addEventListener("uncapturederror", (e) => {
+            const m = String(e.error?.message);
+            const i = gefallen.indexOf(m.toLowerCase().split(")]")[0]);
+            if (i < 0) return;
+            gefallen.splice(i, 1);
+            e.stopImmediatePropagation();
+            e.preventDefault();
+            folgen.push(m);
+            window.__weltPuls(`pause\t${m.replace(/\s+/g, " ")}`);
+        });
+        return d;
+    };
+    window.__weltPause = () => (gefallen.push(...je.values()), je.clear());
+}
+
 // die Seite merkt, ob sie die GPU nimmt (Gerät, Renderer, Pipeline, Draw — nie die Adapter-Frage)
 function zeichnetHaken() {
     const merke = (f) =>
@@ -565,15 +636,18 @@ async function akteAnlegen(page, b) {
     try {
         const s = (A.s = await page.createCDPSession());
         s.on("Runtime.bindingCalled", (e) => e.name === "__weltPuls" && puls(A, e.payload));
-        // jede Pause wird gelöst — die eigene (der Stapel) und jede fremde (ein `debugger;`), nie bleibt eine Seite stehen
-        s.on("Debugger.paused", (e) => {
+        // jede Pause wird gelöst — die eigene (der Stapel) und jede fremde (ein `debugger;`), nie bleibt eine Seite stehen;
+        // vorher erfährt die Seite von ihr: das Bild ihrer Leinwand fällt in ihr (`leinwandSeite`)
+        s.on("Debugger.paused", async (e) => {
             if (A.warte) A.warte(e);
             else if (A.gemeldet) console.log(`[stall-akte] Seite #${A.id}: der Stapel kam spät — ${stapelText(e)}`);
+            await s.send("Runtime.evaluate", { expression: "window.__weltPause?.()" }).catch(() => {});
             s.send("Debugger.resume").catch(() => {});
         });
         await s.send("Runtime.enable");
         await s.send("Runtime.addBinding", { name: "__weltPuls" });
         await page.evaluateOnNewDocument(pulsSeite);
+        if (b.stapel) await page.evaluateOnNewDocument(leinwandSeite);
         if (b.stapel) (await s.send("Debugger.enable"), (A.dbg = true));
     } catch (e) {
         if (!page.isClosed()) console.log(`[stall-akte] Seite #${A.id} ohne Puls: ${e?.message || e}`);
@@ -602,6 +676,7 @@ function puls(A, payload) {
     const i = String(payload).indexOf("\t");
     const art = String(payload).slice(0, i);
     const text = String(payload).slice(i + 1);
+    if (art === "pause") return console.log(`[stall-akte] Seite #${A.id}: die Leinwand fiel in der Pause — ${text}`);
     if (art !== "puls") return ring(A.stempel, `${new Date().toISOString().slice(11, 23)} ${text}`, 12);
     if (A.gemeldet && A.puls && Date.now() - A.puls.an >= A.b.stallMs)
         console.log(

@@ -759,22 +759,7 @@ async function k1Ende(browser, K) {
 
             // ── KONSUM am Zähl-Spion (Lehre 6): der Versorger o[k] zählt, während lauf() den Leser einmal ruft; die
             // Absenzen (kein attackSpeed, kein Direkt-Schaden, die Sim liest nie den Hit-Stop) halten die Wand bis D3d ──
-            const ruft = (window.__ruft = (lauf, k) => {
-                const eigen = Object.prototype.hasOwnProperty.call(r, k),
-                    f0 = r[k];
-                let n = 0;
-                r[k] = function (...a) {
-                    n++;
-                    return f0.apply(this, a);
-                };
-                try {
-                    lauf();
-                } finally {
-                    if (eigen) r[k] = f0;
-                    else delete r[k];
-                }
-                return n > 0;
-            });
+            const ruft = (lauf, k) => __ruft(lauf, r, k) > 0;
             o.checks.ruftSelbst = !ruft(() => r._hitStopFactor(0), "_playerSwingDauer"); // ein Leser ohne Ruf bleibt stumm
             const absenzKlick = window.__fehlt(r._playerAttackCreature, /attackSpeed|damageCreature/);
             const absenzDauer = window.__fehlt(r._beginPlayerSwing, /attackSpeed/);

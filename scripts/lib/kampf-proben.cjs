@@ -755,7 +755,7 @@ async function WELLE_L(ort) {
         }
         // (G1)(G3) KONSUM am Zähl-Spion (Lehre 6): der Klingen-Sweep liest die EINE Vorwärts-Richtung (_blickVorn) und fragt das
         // EINE Grob-Tor (_trefferErreichbar), der Pfeil auch, und das Tor liest den kreatur-Leib (_kreaturLeib)
-        const ruft = window.__ruft; // der Zähl-Spion des Kampf-Gefühls (diag-kampf-gefuehl, vor WELLE_L in derselben Seite)
+        const ruft = (lauf, k) => __ruft(lauf, r, k) > 0; // der EINE Spion am Ruf (welt-boot `__ruft`)
         const konsum = {};
         {
             const c = hirsch, // kein neues Wesen: jeder Spawn verschöbe die netId und so die Leiber der späteren Proben

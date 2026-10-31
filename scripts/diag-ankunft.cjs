@@ -398,24 +398,7 @@ async function probe(arg) {
     const taste = (ziel, typ, key, code = key, mehr) => ziel.dispatchEvent(new KeyboardEvent(typ, { key, code, bubbles: true, ...mehr }));
     const fokus = (a = document.activeElement) => (a ? a.id || a.tagName : null);
     // der Spion am Ruf: lieferer[name] zählt (und delegiert), solange wer.methode(...args) läuft — true = gerufen
-    const ruft = (wer, methode, lieferer, name, args) => {
-        const eigen = Object.prototype.hasOwnProperty.call(lieferer, name);
-        const echt = lieferer[name];
-        let n = 0;
-        lieferer[name] = function (...x) {
-            n++;
-            return echt.apply(this, x);
-        };
-        try {
-            wer[methode](...args);
-        } catch {
-            /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
-        } finally {
-            if (eigen) lieferer[name] = echt;
-            else delete lieferer[name];
-        }
-        return n > 0;
-    };
+    const ruft = (wer, methode, lieferer, name, args) => __ruft(() => wer[methode](...args), lieferer, name) > 0;
     const zeilen = () => Array.from(document.querySelectorAll("#chat-output > div")).map((d) => d.textContent);
     const buch = await r._foundryAwaitBook(45000);
     await tick(30, 30);
