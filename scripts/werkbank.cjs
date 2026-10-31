@@ -19,7 +19,7 @@
 //   node scripts/werkbank.cjs albedo --tafel [--datei f.json] [--ordner d]  DIE WELT-SEITE DER ALBEDO-TAFEL (je Klasse ihr Exemplar,
 //                                                           jede Stufe zu jeder Uhr der Tafel; die Zählung je Mesh-Klasse fiel mit material-k3-stufen)
 //                                                           (spec/farbe/albedo-tafel.json, Eichung 0,180; Nachzug diag-albedo-tafel.cjs --nachziehen)
-//   node scripts/werkbank.cjs licht [--ist <id>]           DIE LICHT-BILANZ (18-%-Karte, je Licht; `--ist` in die Soll-Tafel)
+//   node scripts/werkbank.cjs licht [--ist <id>] [--uhr u] DIE LICHT-BILANZ (18-%-Karte, je Licht, zur Uhr der Bühne; `--ist` in die Soll-Tafel)
 //   node scripts/werkbank.cjs licht --luft [--ort genesis] [--eigen] [--wetter stormy [--zug]] | --selbsttest  DIE LUFT IM BILD
 //                                                           (Koschmieder je Kanal, Farbton, Sonnenseite, fernes Weiß; Rand und Kante an
 //                                                           Hügel und Gipfel; im Wetter die Sicht, mit --zug klar → Wort → klar je Sekunde)
@@ -273,7 +273,7 @@ function lauf(k) {
         const wetterVor = { wetter: st.weather, uhr: st.weatherEffectTime, seq: __wetterBuch().seq };
         // Die Tiere halten still (Vergleichbarkeit) — außer `--tiere frei` oder n: der Halte-Griff setzt x/z je Takt zurück,
         // die Tier-KI sucht dann jeden Takt neu (Feld-Raycasts), das kostet CPU, die das Spiel so nie zahlt.
-        if (k.tiere === "halten") __tiereHalten();
+        if (k.tiere === "halten") __halten();
         const decke = st.perfTargetMs;
         if (k.regler === "voll") st.perfTargetMs = 1000;
         st.playerMesh.visible = true;
@@ -1157,25 +1157,7 @@ async function starte() {
             cam.updateMatrixWorld(true);
             __buehne(k);
             // `--uhr u` (0..1, 0,5 = Mittag): die Bühne mit Sonne und Sommer, aber zu dieser Stunde — Himmel, Umgebung und die
-            // Leuchtquellen (`_leuchtTakt`, eine Sekunde, bis jede gewählte Quelle eingeblendet ist) folgen ihr
-            if (Number.isFinite(k.uhr)) {
-                const st = r.state;
-                if (st.world) st.world.timeOfDay = k.uhr;
-                // der Pfad des Spielers (sein Satz „nacht"): der Uhr-Schreiber springt, der Himmel folgt im selben Anwenden
-                r.setTimeOfDay(k.uhr, "human");
-                // DER POOL ZU SEINEM FIXPUNKT (w4-proben-tempo, 30.10.; bis dahin fest 20 × 50 ms je Schuss): jeder Platz hält eine
-                // gewählte Quelle mit Blende 1 oder ist frei mit Blende 0, jede Gewählte hat ihren Platz — danach ändert kein Takt
-                // mehr etwas (die Bild-Uhr steht unter der Bühne, die Wahl am stehenden Auge); höchstens dieselbe Sekunde wie zuvor
-                const fest = (P) =>
-                    !!P &&
-                    P.halter.every((h, j) => (h ? P.blende[j] === 1 && P.wahl.some((w) => w.id === h.id) : P.blende[j] === 0)) &&
-                    (!P.halter.includes(null) || P.wahl.every((w) => P.halter.some((h) => h && h.id === w.id)));
-                for (let i = 0; i < 20; i++) {
-                    r._leuchtTakt();
-                    if (fest(r._leuchtPool)) break;
-                    await sleep(50);
-                }
-            }
+            // Leuchtquellen (der Pool zu seinem Fixpunkt) folgen ihr (`__buehne` `o.uhr`)
             if (r.state.playerMesh) r.state.playerMesh.visible = !!k.spieler;
             // DAS ZIEL des Bilds ist der Blick-Punkt: die Aufnahme prüft, ob es im Bild und frei ist, und die Blick-Wahl
             // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42; `--wahl 0` schießt nur die genannte Pose).
@@ -2913,7 +2895,7 @@ async function starte() {
                     return send({ tabelle, befunde, cpuMs, taeter, wetterHalt: roh.wetterHalt, datei });
                 }
                 if (req.url === "/licht") {
-                    const o = await seite("__lichtBilanz");
+                    const o = await seite("__lichtBilanz", { uhr: b.uhr == null ? null : +b.uhr });
                     // DIE MESSUNG IN DIE SOLL-TAFEL (`licht --ist <id>`, als Block der Zellen am Spawn mit `b.messung`): E an der waagrechten
                     // Karte, alle Lichter und nur die Umgebung (der Himmel)
                     const me = {
@@ -3477,7 +3459,7 @@ hauptLauf(async () => {
         dateiAb({ welt });
         console.log(JSON.stringify({ welt, zeilen: u.zeilen }, null, 1));
         urteilEnde("LAUB-LICHT", u);
-    } else if (cmd === "licht") o = await rufe("/licht", { ist: opt("--ist") });
+    } else if (cmd === "licht") o = await rufe("/licht", { ist: opt("--ist"), uhr: opt("--uhr") });
     else if (cmd === "fernwald") o = await rufe("/fernwald", { blicke: opt("--blicke"), w: opt("--w"), h: opt("--h") });
     else if (cmd === "fluss") o = await rufe("/fluss", {});
     else if (cmd === "puffer" && hat("gang")) {

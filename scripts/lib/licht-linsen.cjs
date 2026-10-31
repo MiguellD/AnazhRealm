@@ -193,7 +193,7 @@ function albedoSicht(opts) {
                     }
                     if (c) {
                         await ticke(gesetzt ? 120 : 0, () => false);
-                        if (window.__tiereHalten) window.__tiereHalten();
+                        window.__halten?.();
                         pos = new T.Vector3(c.position.x, c.position.y, c.position.z);
                         kreatur = c;
                     }
@@ -697,13 +697,13 @@ function linsenZiel(W, H) {
     };
 }
 
-function lichtBilanz() {
+function lichtBilanz(o) {
     return (async () => {
         const T = window.THREE;
         const sc = st.scene,
             rend = st.renderer;
         rend.setAnimationLoop(null);
-        if (window.__buehne) window.__buehne();
+        if (window.__buehne) window.__buehne(o);
         const pp = st.playerMesh.position;
         const gy = r._voxelSurfaceY(pp.x, pp.z);
         const dl = st.directionalLight;

@@ -1385,7 +1385,7 @@ async function lichtLauf() {
             const f = window.__s0Feuer.position;
             const g = (x, z) => r._voxelSurfaceY(x, z);
             const wolf = r.spawnCreatureAt(f.x, g(f.x, f.z - 2.3) + 0.5, f.z - 2.3, "calm", "wolf", { precise: true, bodySize: 1 });
-            if (window.__tiereHalten) window.__tiereHalten();
+            window.__halten?.();
             s.playerMesh.position.set(f.x + 2.3, g(f.x + 2.3, f.z) + 1, f.z);
             const cam = s.camera;
             window.__buehne();

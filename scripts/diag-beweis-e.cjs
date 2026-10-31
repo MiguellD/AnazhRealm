@@ -417,7 +417,7 @@ hauptLauf(async () => {
             }
         } else out.objekte.haus = { fehlt: "kein haus_-Bauplan im Buch" };
         // Ab hier halten die Tiere still (Blick-Wahl und Schuss sehen dieselbe Szene).
-        window.__tiereHalten();
+        window.__halten();
         // Einschwingen + DIE SICHTBARKEITS-LÜCKE messen (Tier ohne Mesh, Pass unsichtbar).
         const zeit = [];
         let lueckeTakte = 0,

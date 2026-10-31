@@ -213,7 +213,7 @@ async function welt() {
         const offen = () => r._weltOffen().foundry; // die Foundry, wie sie das Wort „die Welt steht" zählt (A9)
         const takte = await window.__weltStehtNach(takt); // die Welt steht (das EINE Einschwingen, welt-boot)
         window.__buehne();
-        window.__tiereHalten();
+        window.__halten();
         // DIE VÖGEL HALTEN STILL: Lied und Bahn je Revier folgen der Welt-Uhr (`_vogelTakt` liest `spielZeit`, der Schwarm ebenso),
         // nie dem Schirm, und ihr Pool zählt jeden Sänger im Hör-Kreis, im Bild oder nicht — die Uhr lief durch die Reihe: am 30.10.
         // (tore-k5-tuer-neu, zwei Läufe) sang im kleinen Fenster einer mehr, Klasse vogel 688 > 608–648 Dreiecke, VERKEHRT ohne ein

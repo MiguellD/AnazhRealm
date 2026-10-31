@@ -349,6 +349,18 @@ function buehne(o) {
     const s = r.setSeason(o?.saison || "sommer");
     if (st.world) st.world.timeOfDay = 0.5;
     st.timeOfDay = 0.5;
+    // DIE UHR DER BÜHNE: Mittag, oder die Stunde ihres Worts (`o.uhr`: werkbank `bild --uhr`, die Licht-Bilanz `licht --uhr`) über den
+    // Pfad des Spielers (sein Satz „nacht": der Uhr-Schreiber springt, der Himmel folgt im selben Anwenden) — bis 31.10. erzwang
+    // die Bühne für `__lichtBilanz` den Mittag (die Zellen am Spawn zu 0,3 und 0 ohne Licht)
+    // … und der Pool der Leuchtquellen zu seinem Fixpunkt (bis 31.10. wartete `bild` ihn ab, bis zu 20 × 50 ms je Schuss): jede
+    // Gewählte hält ihren Platz mit Blende 1, jede Abgewählte fällt mit 0 — danach ändert kein Takt mehr etwas (die Bild-Uhr steht,
+    // die Wahl am stehenden Auge)
+    if (Number.isFinite(o?.uhr)) {
+        r.setTimeOfDay(o.uhr, "human");
+        for (let i = 0, P; i < 3; i++)
+            if ((r._leuchtTakt(), (P = r._leuchtPool)))
+                P.halter.forEach((h, j) => (P.blende[j] = h && P.wahl.some((w) => w.id === h.id) ? 1 : 0));
+    }
     // Wetter und Saison: das Wort des Spielers (`o`, werkbank `bild --wetter --saison`), sonst Sonne und Sommer — über den
     // EINEN Schreiber, dann eingefroren (`__wetterSetzen`), der Regen zur Bild-Uhr; ein falsches Wort bricht laut
     if (!s || window.__wetterSetzen(w) !== w) throw new Error(`DIE BÜHNE: das Wort gilt nicht ${JSON.stringify(o)}`);
@@ -469,27 +481,49 @@ function membranOhneFilm(an) {
     return { n, ohneZiel };
 }
 
-// DIE TIERE HALTEN STILL: zwischen Blick-Wahl und Schuss liegen hunderte Takte, in denen Tiere wandern
-// (ein Tier liefe in die Kamera). Nach jedem Kreatur-Tick fallen x/z auf den Stand davor zurück; Animation, Haut, Boden-Höhe
-// und LOD laufen weiter; die Vögel fliegen (sie folgen der Welt-Uhr, die Klang-Linse hört ihren Flug). Die Marke trägt die Hülle,
-// nie der Prototyp: er trägt nie Stand (`_weltAbschied` bricht beim Namen) — bis 30.10. lag `__tiereGehalten` auf ihm, und jeder
-// Tausch am Ort nach einem gehaltenen Lauf (`werkbank` vom Messort wiese zum Messort buehne) brach an dieser Marke.
-function tiereHalten() {
-    const P = Object.getPrototypeOf(r);
-    if (P.updateCreatures.__gehalten) return;
-    const org = P.updateCreatures;
-    P.updateCreatures = Object.assign(
-        function (delta) {
-            const fest = (this.state.creatures || []).map((c) => [c, c.position.x, c.position.z]);
-            const o = org.call(this, delta);
-            for (const [c, x, z] of fest) {
-                c.position.x = x;
-                c.position.z = z;
-            }
-            return o;
-        },
-        { __gehalten: true }
-    );
+// DER HALTER (mess, Gebot 10): EINE Stelle hält, was sich zwischen zwei Schüssen bewegt — je Quelle ein Schalter
+// (`window.__halteQuellen`; `window.__offen` lässt eine laufen, so misst die Rausch-Linse Δ je Quelle und nennt den Täter beim Namen).
+//   Im Schuss (`__ausgabeAufnahme`): `spiegel` — der Spiegel-Pass (Wasser, Glanz) rechnet nur im ersten gezählten Frame; seine
+//     Ruhe-Regel (500 ms und 24 Bilder, der Stand von Feld und Licht) rechnete ihn in jedem Schuss zu einer anderen Frame-Zahl
+//     neu: Radeon, S2 (Genesis, Blick 0), je Uhr vier Paare — Third bis 0,20 / 0,54 / 0,58 % der Pixel über der Schwelle (Uhr
+//     0,5 / 0,3 / 0), Ego bis 0,015 %; gehalten 0 in 24 von 24 Paaren (die GTX-Tafel a-spawn-gtx3: 0,23–0,57 % in jeder
+//     Third-Zelle) · `zitter` — TAAU-Zitter, Geschichte und Dither beginnen je Schuss von vorn · `uhr` — die Bild-Uhr der Bühne
+//     (Wind, Wolken, Wasser, Membran, Brunnen, Fell).
+//   Zwischen den Schüssen (`__halten(quellen)`, die Takte von Blick-Wahl und Einschwingen; ohne Wort nur `tiere`): `tiere` — x/z
+//     nach jedem Kreatur-Takt zurück (Animation, Haut, Boden und LOD laufen weiter, die Vögel fliegen) · `bewohner` und `wagen` —
+//     ihr Takt ruht · `leib` — Atem und Kontrapost des Spielers stehen in der Pose ihres Halts.
+// Die Marke trägt die Hülle, nie der Prototyp: er trägt nie Stand (`_weltAbschied` bricht beim Namen) — bis 30.10. lag
+// `__tiereGehalten` auf ihm, und jeder Tausch am Ort nach einem gehaltenen Lauf brach an dieser Marke. Offen rechnet der
+// Spiegel in jedem Frame des Schusses neu (die Rausch-Linse der Station zug/a-spawn.cjs misst so seinen Lauf).
+function halten(quellen) {
+    const P = Object.getPrototypeOf(r),
+        H = (window.__gehalten ||= new Set()),
+        zu = (q) => H.has(q) && !window.__offen?.has(q),
+        huelle = (m, f) => P[m].__gehalten || (P[m] = Object.assign(f(P[m]), { __gehalten: true }));
+    for (const q of quellen || ["tiere"]) H.add(q);
+    huelle("updateCreatures", (g) =>
+        function (d) {
+            const v = zu("tiere") ? this.state.creatures.map((c) => [c.position, c.position.x, c.position.z]) : [];
+            g.call(this, d);
+            for (const [p, x, z] of v) (p.x = x), (p.z = z);
+        });
+    huelle("_tickBewohner", (g) =>
+        function (d) {
+            zu("bewohner") || g.call(this, d);
+        });
+    huelle("_tickVerkehr", (g) =>
+        function () {
+            zu("wagen") || g.call(this);
+        });
+    huelle("animatePlayerSoul", (g) =>
+        function (t) {
+            g.call(this, zu("leib") ? (H.t ??= t) : (H.t = t));
+        });
+    // im Schuss rechnet der Pass gehalten nur über den Sprung des ersten gezählten Frames (`_traaR.neu` → `L.an` 0), offen in jedem
+    huelle("_spiegelPassWach", (g) =>
+        function (L) {
+            return window.__imSchuss ? !zu("spiegel") : g.call(this, L);
+        });
 }
 
 // DIE RUHE DER ERST-ZEICHNUNG (`_configureRenderer`) — die EINE Regel jeder Linse, die ein angekommenes Bild
@@ -636,6 +670,7 @@ function abnahmeMessen(opt) {
     const db =
         rend && typeof rend.getDrawingBufferSize === "function" ? rend.getDrawingBufferSize(new T.Vector2()) : null;
     const dir = cam.getWorldDirection(new T.Vector3());
+    const werk = (id) => (st.architectures || []).find((q) => q && q.id === id);
     return {
         satz: o.satz || "beweis",
         stand: { version: AnazhRealm.VERSION || null, sha: o.sha || null },
@@ -644,7 +679,7 @@ function abnahmeMessen(opt) {
             wetter: st.weather || null,
             uhr: Number.isFinite(st.timeOfDay) ? +st.timeOfDay.toFixed(3) : null,
             bildUhr: window.__buehneUhr ? window.__buehneUhr.T : null, // die Bild-Uhr (A9), ohne Bühne frei
-            tiereGehalten: !!Object.getPrototypeOf(r).updateCreatures.__gehalten,
+            tiereGehalten: !!window.__gehalten?.has("tiere"),
         },
         geraet: {
             backend: !be ? null : be.isWebGPUBackend ? "WebGPU" : be.isWebGLBackend ? "WebGL" : null,
@@ -658,14 +693,10 @@ function abnahmeMessen(opt) {
         // DIE GESTALT DES ZIELS: jedes Werk am Ziel (`ohne`) muss gezeichnet sein (`_archIsRendered`) — sonst ist das Ziel nicht im Bild
         ziel: nd.ziel
             ? Object.assign(nd.ziel, {
-                  gestalt: ohne.map((id) => {
-                      const e = (st.architectures || []).find((q) => q && q.id === id);
-                      return e ? `${e.type} ${id}${r._archIsRendered(e) ? "" : " UNGEZEICHNET"}` : `${id} fehlt`;
-                  }),
-                  gezeichnet: ohne.every((id) => {
-                      const e = (st.architectures || []).find((q) => q && q.id === id);
-                      return !!e && r._archIsRendered(e);
-                  }),
+                  gestalt: ohne.map((id, _i, _a, e = werk(id)) =>
+                      e ? `${e.type} ${id}${r._archIsRendered(e) ? "" : " UNGEZEICHNET"}` : `${id} fehlt`
+                  ),
+                  gezeichnet: ohne.every((id, _i, _a, e = werk(id)) => !!e && r._archIsRendered(e)),
               })
             : null,
         pose: {
@@ -793,7 +824,9 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // beginnt Folge, Geschichte und Dither-Phase von vorn (A8-n1; bis dahin nur mit `opt.fest`, K63-n1): die Geschichte
             // hält je Frame 95 % (TRAANode), die Frames vor dem Schuss tragen nichts hinein — zwei Schüsse derselben Szene
             // sind dasselbe Bild.
-            {
+            // DER HALTER (`__halten`): der Spiegel-Pass steht in den gezählten Frames, offen (`__offen` zitter) läuft die Folge weiter
+            window.__halten(["spiegel"]);
+            if (!window.__offen?.has("zitter")) {
                 const tn = st.traaNode;
                 if (tn) {
                     tn._jitterIndex = 0;
@@ -804,10 +837,11 @@ function ausgabeAufnahme(W, H, warm, opt) {
                 if (st._traaR) st._traaR.neu = true;
                 const lu = st.lodUniforms;
                 if (lu && lu.uDitherT) lu.uDitherT.value = 0;
-                // der Versatz des Laubs beginnt mit der Geschichte (A3b, `_zeitAufloesung`); die Schatten-Karten: der Takt rendert
-                // eine Kaskade nur, wenn sie fällig ist — die Karte des ersten Frames sah die Szene vor der Erst-Zeichnung (A8-n1)
-                r._schattenAlleNeu();
             }
+            // der Versatz des Laubs beginnt mit der Geschichte (A3b, `_zeitAufloesung`); die Schatten-Karten: der Takt rendert
+            // eine Kaskade nur, wenn sie fällig ist — die Karte des ersten Frames sah die Szene vor der Erst-Zeichnung (A8-n1)
+            r._schattenAlleNeu();
+            window.__imSchuss = 1;
             // DIE TIEFE ALLEIN (`opt.tiefe`: der Arm von `werkbank bild --arm` sucht in ihr die Klasse): die Tiefe trägt keine
             // Geschichte — EIN Bild nach dem Neubeginn der Folge, mit dem Versatz jedes Neubeginns (zwei Tiefen unterscheiden
             // sich nur, wo die Szene sich unterscheidet; `__spiegelDaten` liest den Szenen-Pass dieses Bilds), ohne die 32 Bilder
@@ -850,28 +884,17 @@ function ausgabeAufnahme(W, H, warm, opt) {
                 for (let x = 0; x < W; x++) {
                     const x0 = Math.floor((x * BW) / W);
                     const x1 = Math.max(x0 + 1, Math.floor(((x + 1) * BW) / W));
-                    let s0 = 0,
-                        s1 = 0,
-                        s2 = 0,
-                        s3 = 0;
-                    for (let yy = y0; yy < y1; yy++)
-                        for (let xx = x0; xx < x1; xx++) {
-                            const i = (yy * BW + xx) * 4;
-                            s0 += voll[i];
-                            s1 += voll[i + 1];
-                            s2 += voll[i + 2];
-                            s3 += voll[i + 3];
-                        }
                     const n = (y1 - y0) * (x1 - x0);
-                    const o = (y * W + x) * 4;
-                    u8[o] = Math.round(s0 / n);
-                    u8[o + 1] = Math.round(s1 / n);
-                    u8[o + 2] = Math.round(s2 / n);
-                    u8[o + 3] = Math.round(s3 / n);
+                    for (let c = 0; c < 4; c++) {
+                        let s = 0;
+                        for (let yy = y0; yy < y1; yy++) for (let xx = x0; xx < x1; xx++) s += voll[(yy * BW + xx) * 4 + c];
+                        u8[(y * W + x) * 4 + c] = Math.round(s / n);
+                    }
                 }
             }
             return { u8, info, ms, abnahme: abnahme(u8, W, H) };
         } finally {
+            window.__imSchuss = 0;
             rend.setOutputRenderTarget(prevOut);
             rend.setRenderTarget(prevZiel);
             if (rt.dispose) rt.dispose();
@@ -900,7 +923,7 @@ function wetterUrteil(w) {
     if (!fest(w.uhrNachher)) taeter.push(`die Uhr des Auto-Zugs taut (${w.uhrNachher})`);
     if (fest(w.uhrVorher) && w.nachher !== w.vorher && !taeter.length)
         taeter.push(`${w.vorher} → ${w.nachher} ohne gebuchten Schreiber (der Spion ist blind)`);
-    return Object.assign({}, w, { urteil: taeter.length ? "ROT" : "GRUEN", taeter, verweigert });
+    return { ...w, urteil: taeter.length ? "ROT" : "GRUEN", taeter, verweigert };
 }
 
 // DER SELBSTTEST DES URTEILS (rein): jeder Täter fällt rot und steht beim Namen, Verweigerung und Bühne bleiben grün.
@@ -909,49 +932,53 @@ function wetterSelbsttest() {
     const fest = { vorher: "sunny", nachher: "sunny", uhrVorher: -1e9, uhrNachher: -1e9 };
     const nex = { art: "schreiber", von: "sunny", zu: "rainy", quelle: "nexus", stapel: "weather ← dslEval ← dslRun" };
     const faelle = [
-        ["ruhig", Object.assign({ buch: [] }, fest), "GRUEN", null],
-        ["nexus", Object.assign({}, fest, { nachher: "rainy", buch: [nex] }), "ROT", "nexus"],
+        ["ruhig", { buch: [], ...fest }, "GRUEN", null],
+        ["nexus", { ...fest, nachher: "rainy", buch: [nex] }, "ROT", "nexus"],
         [
             "hin und zurück",
-            Object.assign({}, fest, { buch: [nex, Object.assign({}, nex, { von: "rainy", zu: "sunny" })] }),
+            { ...fest, buch: [nex, { ...nex, von: "rainy", zu: "sunny" }] },
             "ROT",
             "nexus",
         ],
         [
             "roh",
-            Object.assign({}, fest, {
+            {
+                ...fest,
                 nachher: "rainy",
                 buch: [{ art: "roh", von: "sunny", zu: "rainy", quelle: null, stapel: "_loopFoo" }],
-            }),
+            },
             "ROT",
             "ROH",
         ],
         [
             "alter Stand",
-            Object.assign({}, fest, {
+            {
+                ...fest,
                 nachher: "rainy",
                 buch: [
-                    Object.assign({}, nex, { quelle: "?", stapel: "weather ← dslEval ← dslRun ← _loopNexusUpdate" }),
+                    { ...nex, quelle: "?", stapel: "weather ← dslEval ← dslRun ← _loopNexusUpdate" },
                 ],
-            }),
+            },
             "ROT",
             "_loopNexusUpdate",
         ],
-        ["taut", Object.assign({ buch: [] }, fest, { uhrNachher: 17.6 }), "ROT", "taut"],
-        ["blind", Object.assign({ buch: [] }, fest, { nachher: "rainy" }), "ROT", "blind"],
+        ["taut", { buch: [], ...fest, uhrNachher: 17.6 }, "ROT", "taut"],
+        ["blind", { buch: [], ...fest, nachher: "rainy" }, "ROT", "blind"],
         [
             "bühne",
-            Object.assign({}, fest, {
+            {
+                ...fest,
                 buch: [{ art: "schreiber", von: "rainy", zu: "sunny", quelle: "buehne", stapel: "x" }],
-            }),
+            },
             "GRUEN",
             null,
         ],
         [
             "verweigert",
-            Object.assign({}, fest, {
+            {
+                ...fest,
                 buch: [{ art: "verweigert", von: "sunny", zu: "rainy", quelle: "emotion:sorrow", stapel: "y" }],
-            }),
+            },
             "GRUEN",
             null,
         ],
@@ -1095,29 +1122,24 @@ function himmelSelbsttest() {
         { name: "Nexus-Gesetz Uhr", wo: "uhr", quelle: "rule:nexus", stapel: "_tickWorldRules" },
         { name: "Nexus-Gesetz Regen", wo: "wetter", quelle: "rule:nexus", stapel: "_tickWorldRules" },
     ];
-    const gesetz = (o) =>
-        Object.assign(
-            {
-                phase: "gesetz",
-                takt,
-                uhr: { buch: [nein("uhr", "rule:nexus", 0.17)], gang, start: 0.5, ende: 0.5 + 1000 * s },
-                wetter: { buch: [nein("wetter", "rule:nexus", "rainy")], wort: "sunny", ende: "sunny" },
-                taeter: taeterG,
-            },
-            o
-        );
-    const frei = (buch, o) =>
-        Object.assign(
-            {
-                phase: "frei",
-                takt,
-                zugSek: 120,
-                uhr: { buch: [nein("uhr", "rule:nexus", 0.17)], gang, start: 0.5, ende: 0.5 + 1000 * s },
-                wetter: { buch, wort: null, ende: "rainy", freiAb: 5 },
-                taeter: taeterG,
-            },
-            o
-        );
+    const basis = {
+        takt,
+        uhr: { buch: [nein("uhr", "rule:nexus", 0.17)], gang, start: 0.5, ende: 0.5 + 1000 * s },
+        taeter: taeterG,
+    };
+    const gesetz = (o) => ({
+        ...basis,
+        phase: "gesetz",
+        wetter: { buch: [nein("wetter", "rule:nexus", "rainy")], wort: "sunny", ende: "sunny" },
+        ...o,
+    });
+    const frei = (buch, o) => ({
+        ...basis,
+        phase: "frei",
+        zugSek: 120,
+        wetter: { buch, wort: null, ende: "rainy", freiAb: 5 },
+        ...o,
+    });
     const wunsch = {
         art: "gewuenscht",
         von: "sunny",
@@ -1193,12 +1215,12 @@ function himmelSelbsttest() {
         [
             "die Uhr springt",
             gesetz({
-                uhr: { buch: [], gang: Object.assign({}, gang, { max: 0.2 }), start: 0.5, ende: 0.5 + 1000 * s },
+                uhr: { buch: [], gang: { ...gang, max: 0.2 }, start: 0.5, ende: 0.5 + 1000 * s },
             }),
             "ROT",
             "springt",
         ],
-        ["der Gang lahmt", gesetz({ takt: Object.assign({}, takt, { tagMin: 8 }) }), "ROT", "Gesetz der Tag-Länge"],
+        ["der Gang lahmt", gesetz({ takt: { ...takt, tagMin: 8 } }), "ROT", "Gesetz der Tag-Länge"],
         [
             "blinde Uhr",
             gesetz({ uhr: { buch: [nein("uhr", "rule:nexus", 0.17)], gang, start: 0.5, ende: 0.17 } }),
@@ -1232,7 +1254,7 @@ function himmelSelbsttest() {
         ["frei ruhig", frei([wunsch, zug(130, 2, "sunny", "rainy")]), "GRUEN", null],
         [
             "frei: die Welt schreibt selbst",
-            frei([wunsch, Object.assign({}, wunsch, { art: "schreiber", seq: 2 }), zug(130, 3, "rainy", "rainy")]),
+            frei([wunsch, { ...wunsch, art: "schreiber", seq: 2 }, zug(130, 3, "rainy", "rainy")]),
             "ROT",
             "statt dem Wetter-Zug",
         ],
@@ -1315,7 +1337,7 @@ function weltaktUrteil(b) {
             taeter.push(`${e.op} durch ${e.quelle} unter dem Halt (${e.stapel})`);
         }
     }
-    return Object.assign({}, b, { urteil: taeter.length ? "ROT" : "GRUEN", taeter, verweigert });
+    return { ...b, urteil: taeter.length ? "ROT" : "GRUEN", taeter, verweigert };
 }
 
 // DER SELBSTTEST DES URTEILS (rein): jeder durchgelaufene Akt fällt rot beim Namen, Blindheit und fehlender Spion fallen rot,
@@ -1330,13 +1352,13 @@ function weltaktSelbsttest() {
     };
     const halt = { art: "verweigert", op: "creatures_size_mul", quelle: "nexus" };
     const buch = (eintraege, o) =>
-        Object.assign({ seq: eintraege.length, gehalten: true, blind: false, buch: eintraege }, o);
+        ({ seq: eintraege.length, gehalten: true, blind: false, buch: eintraege, ...o });
     const faelle = [
         ["ruhig", buch([]), "GRUEN", null],
         ["nexus-dorf", buch([dorf]), "ROT", "spawn_village durch nexus"],
         [
             "gehalten und durch",
-            buch([halt, Object.assign({}, dorf, { op: "spawn_creature" })]),
+            buch([halt, { ...dorf, op: "spawn_creature" }]),
             "ROT",
             "spawn_creature",
         ],
@@ -1384,7 +1406,7 @@ module.exports = {
         require("./welt-boot.cjs").WARTEN_SEITE +
         `window.__weltStehtWarten = ${weltStehtWarten.toString()};` +
         `window.__buehne = ${buehne.toString()};` +
-        `window.__tiereHalten = ${tiereHalten.toString()};` +
+        `window.__halten = ${halten}; window.__halteQuellen = "spiegel zitter uhr tiere bewohner wagen leib".split(" ");` +
         `window.__membranOhneFilm = ${membranOhneFilm.toString()};` +
         `(${saisonFest.toString()})();`,
 };
