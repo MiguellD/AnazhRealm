@@ -707,6 +707,18 @@ const LAUB_PROBE_1 = {
     mutiert: true,
     befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify({ ...LAUB_LINSE, args: ["licht", "--laub", "ring,fichte,tanne", "--karte", "--uhr", "0.5,0.27,0.05"] })),
 };
+// DER WETTER-ZUG IN DER SITZUNG (licht.K5#1, w4-stationen-schnell-b; GTX b4bcf19c 69 s, am Gesetz 45 s gerissen): derselbe Befehl der
+// Linse (`licht --luft --wetter rainy --zug`, `wetterZug` in licht-linsen.cjs) durch den Spiegel der Licht-Linsen. Zwei Täter beim Namen:
+// (1) DER ORT: die Linse stellt selbst nach Genesis um — ihr Befehl nannte keinen Messort (`probeOrt` null), die Probe lief am Ende der
+// Sitzung und zahlte den kalten Ring in ihrem Deckel; `vorher` nennt ihn, die Sitzung stellt Genesis VOR dem Deckel. (2) DIE LEINWAND:
+// `__ausgabeAufnahme(160, 90)` rendert jede ihrer 33 Bilder (32 der Geschichte + 1) in der vollen Leinwand und mittelt erst danach
+// auf 160×90 — im Fenster der Sitzung (1920×1080) je Spiel-Sekunde 33 Bilder zu 2,07 Mio. Pixeln, 125-mal. Im Fenster der Licht-Linsen
+// (640×360, wie TAG und LAUB) ein Neuntel der Pixel; das Urteil liest die Summe der linearen Leuchtdichte eines Box-Mittels je Sekunde
+// und den Sprung zwischen zwei Sekunden derselben Leinwand — dasselbe Maß, dieselbe Reihe, dieselben Wörter
+const ZUG_PROBE = {
+    sek: 33,
+    befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify({ vorher: ["umstellen", "--ort", "genesis", "--sicht", "ego"], args: ["licht", "--luft", "--wetter", "rainy", "--zug"], fenster: [640, 360] })),
+};
 const stationen = [
     {
         kriterium: "licht.K2",
@@ -1030,9 +1042,9 @@ const stationen = [
         // moduliert sie), bis das Wort steht; die Uhr steht auf Mittag; je Sekunde die Leuchtdichte des Ausgabe-Bilds (linear). Das Urteil: der größte Sprung |log2 Y_k/Y_k−1| je
         // Sekunde ≤ 0,1 EV/s, und beide Wörter standen am Ende ihrer Phase (sonst misst die Reihe keinen Übergang)
         // IN DER SITZUNG (29.10.): die Welt-Uhr läuft im echten Takt ohne Wanduhr (10 Takte je Spiel-Sekunde, je Sekunde ein Bild
-        // 160×90) — der Zug selbst trägt ~125 Spiel-s (klar 5 s, je Wort ≥ 60 s); das Wort setzt die Phase am Ende zurück auf klar
-        probe: { sek: 33, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--wetter", "rainy", "--zug", "--datei", "{AUS}"], },
-        env: { MSYS2_ARG_CONV_EXCL: "*" },
+        // 160×90) — der Zug selbst trägt ~125 Spiel-s (klar 5 s, je Wort ≥ 60 s); das Wort setzt die Phase am Ende zurück auf klar.
+        // SCHNELL (w4-stationen-schnell-b, ZUG_PROBE): Genesis VOR dem Deckel, die Aufnahmen im Fenster der Licht-Linsen
+        probe: ZUG_PROBE,
         gpu: true,
         zeit: false,
         minuten: 8,
