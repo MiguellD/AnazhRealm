@@ -287,3 +287,4 @@ takt31-gtx 1 punkte sha=cd88897ec24349d848564108127d7bd81475b7ef geraet=gtx nur=
 b-kalt-cd88 2 station sha=cd88897ec24349d848564108127d7bd81475b7ef lauf=ankunft-kalt.sh
 b-kalt-c4c9 2 station sha=c4c9baa2ca70fbc0bb5ffab30deaeb6a76636f6e lauf=ankunft-kalt.sh
 b-kalt-1a71 2 station sha=1a71c07b0cde48a0d983e549353f1eea66871ff3 lauf=ankunft-kalt.sh
+a-spawn-gtx 2 station sha=96133362a53f2b98aa92d02c3ad9cf88117918d9 lauf=a-spawn.sh
