@@ -1,0 +1,20 @@
+$ C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\cdb2703d-gtx\mensch.K4_1.json' | tr '\\' /); B="${A%.json}"
+S=$(( 7804 )); W=$(( 7804 + 20000 )); export WERKBANK_PORT=$W
+trap 'git checkout spec/abnahme/soll-tafel.json' EXIT
+node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1
+erg() { node -e 'const t = require("fs").readFileSync(0, "utf8"); console.log(JSON.stringify(JSON.parse(t.slice(t.indexOf("{"))).ergebnis))'; }
+fehl() { node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); let f = null; try { f = JSON.parse(t.slice(t.indexOf("{"))).fehler; } catch (e) {} console.log("BILD " + process.argv[2] + " FEHLER " + String(f || t.trim().split("\n").pop() || "ohne Antwort").replace(/\s+/g, " ").slice(0, 300))' "$1" "$2"; }
+node scripts/werkbank.cjs umstellen --ort wiese --sicht third > "$B-umstellen.txt" 2>&1
+K=$(node scripts/werkbank.cjs eval 'const s = r.state, pm = s.playerMesh, y0 = pm.rotation.y; s.yaw = y0 + Math.PI; for (let i = 0; i < 30; i++) { window.__buehne(); r._gameLoopTick(performance.now()); await sleep(30); } let k = null; pm.traverse((o) => { if (!k && o.name === "head") k = o; }); const h = k.getWorldPosition(new T.Vector3()), fw = new T.Vector3(0, 0, 1).applyQuaternion(pm.getWorldQuaternion(new T.Quaternion())), c = s.camera.position; return { leib: +Math.abs(Math.atan2(Math.sin(pm.rotation.y - y0), Math.cos(pm.rotation.y - y0))).toFixed(3), vorn: (c.x - h.x) * fw.x + (c.z - h.z) * fw.z > 0, abstand: +h.distanceTo(c).toFixed(2), d: s.cameraThirdDistance };' | erg); echo "KAMERA $K"
+node scripts/werkbank.cjs bild 0 0 0 0 0 0 --gesicht "$(node -e 'console.log(JSON.parse(process.argv[1]).d)' "$K")" --spieler --wahl 0 --klasse '^spieler:kopf/' --ist mensch-kopf --datei "$B-third.png" > "$B-third.txt" 2>&1; e=$?; echo "BILD third $e"; [ $e = 0 ] || fehl "$B-third.txt" third
+node -e 'const AU = require("./scripts/lib/abnahme-urteil.cjs"); const u = AU.sollTafelUrteil(require("./spec/abnahme/soll-tafel.json"), AU.standLeser(process.cwd()).sollQuelle()); const z = u.zeilen.find((x) => x.id === "mensch-kopf"); console.log("THIRD " + JSON.stringify({ urteil: z.urteil, ist: z.ist, band: z.band, grund: z.grund, taeter: z.taeter, teile: z.teile, stand: z.stand }))'
+KAMERA {"leib":0,"vorn":true,"abstand":6.11,"d":6}
+BILD third 0
+THIRD {"urteil":"ROT","ist":0.333,"band":[1,1],"grund":"gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück","taeter":"augeFrei 0.14 außerhalb [0.9, 1]","teile":"augeFrei 0.14 [0.9, 1] · lippeL -3.11 [-14, -4] · lippeA 0.09 [4, 14] · hoehleL 0.62 [-12, 0] · hoehleA -1.49 [-2, 6] · haarDeckung 1 [0.9, 1]","stand":"2026-10-31 cdb2703d nvidia pascal"}
+
+--- stderr ---
+tr: warning: an unescaped backslash at end of string is not portable
+Updated 1 path from the index
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
