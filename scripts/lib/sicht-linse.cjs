@@ -319,7 +319,7 @@ function sichtLinse(cfg) {
         return a;
     };
     // DAS BILD eines Satzes: die Zähler des Spiels (Stand, Verdichten) und daneben die Belege (Bereiche mit Hülle, Anker, die
-    // offene Ordnung, Geometrie und Kapazität, der Überhang `ueberSeit`, den das Spiel selbst misst)
+    // offene Ordnung, die Kapazität, der Überhang `ueberSeit`, den das Spiel selbst misst)
     const satzBild = (s, vor) => {
         const stand = s.stand || 0;
         const bloecke = new Map();
@@ -332,7 +332,6 @@ function sichtLinse(cfg) {
             verdichtet: s.verdichtet || 0,
             anker: s.anker,
             schmutzig: !!s.schmutzig,
-            geom: s.geom,
             vKap: s.vKap,
             iKap: s.iKap,
             ueber: s.ueberSeit >= 0,
@@ -564,12 +563,13 @@ function sichtLinse(cfg) {
 }
 
 // DER INHALT EINES SATZES zwischen zwei Bildern (rein): die Belege beim Namen, nie die Zähler des Spiels.
-// `vor`/`jetzt` je { stand, verdichtet, anker, schmutzig, geom, vKap, iKap, ueber, bloecke: Map(Schlüssel → { b, h }) } —
+// `vor`/`jetzt` je { stand, verdichtet, anker, schmutzig, vKap, iKap, ueber, bloecke: Map(Schlüssel → { b, h }) } —
 // `b` der Bereich (Identität), `h` seine Hülle und die seiner Zellen als Zahlen. `offen` = die Ordnung, die ein Ein-/Austritt
 // davor offen ließ. Grund `aenderung`: ein Bereich kam, ging oder wurde neu gebaut, der Anker zog um, eine Hülle änderte sich
 // (der Stand bewegte sich mit ihr). Grund `folge`: die offene Ordnung lief (der Satz ist nicht mehr schmutzig) — oder das
-// Verdichten tauschte die Geometrie, nachdem das Spiel den Überhang maß (`ueber`). Ein Stand ohne einen dieser Belege heißt
-// `ohne.stand`, ein Verdichten-Zähler ohne Tausch oder ohne Überhang `ohne.verdichtet` — Satz-Arbeit OHNE Ursache.
+// Verdichten senkte die Kapazität, nachdem das Spiel den Überhang maß (`ueber`; seit stadt-takt2 bleibt die Geometrie, nur ihre
+// Puffer schrumpfen). Ein Stand ohne einen dieser Belege heißt `ohne.stand`, ein Verdichten-Zähler ohne gesunkene Kapazität oder
+// ohne Überhang `ohne.verdichtet` — Satz-Arbeit OHNE Ursache.
 function sichtSatzInhalt(vor, jetzt, offen) {
     const e = {
         grund: null,
@@ -615,7 +615,7 @@ function sichtSatzInhalt(vor, jetzt, offen) {
     e.offen = !!jetzt.schmutzig && (e.bereiche > 0 || !!offen);
     const dV = (jetzt.verdichtet || 0) - (vor.verdichtet || 0);
     if (dV > 0) {
-        if (vor.ueber && jetzt.geom !== vor.geom) e.verdichtet = dV;
+        if (vor.ueber && (jetzt.vKap < vor.vKap || jetzt.iKap < vor.iKap)) e.verdichtet = dV;
         else e.ohne.verdichtet = dV;
     }
     const aenderung = e.bereiche > 0 || e.anker || e.huelle > 0;
