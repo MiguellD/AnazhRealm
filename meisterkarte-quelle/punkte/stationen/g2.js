@@ -1785,6 +1785,115 @@ const TRACHT_ROH = {
     ms: 25065,
 };
 const trachtRoh = (aendern) => "[linse-gpu] google/swiftshader\nTRACHT " + JSON.stringify(aendern(JSON.parse(JSON.stringify(TRACHT_ROH))));
+// affekt.K5 #1 (w4-stationen-b-koord): DIE MUSIK AM ABGRIFF. Eine Welt am Null-Renderer (Mechanik: der Abgriff ist ein
+// OfflineAudioContext, kein Pixel), die Lofi-Schicht des Spiels (`_buildLofiLayer`) auf ihm, der Akkord der Stufe 0 über den
+// echten Leser (`_lofiPlayChord`), 3 s; je Tonklasse die Goertzel-Leistung über fünf Oktaven ab LOFI_BASE_FREQ/2 (das Chroma, normiert).
+// Die Mutation ist die VALENZ von `auraAt.emotion` am Spieler — Freude, Hoffnung, Frieden (+2,2) gegen Trauer, Chaos (−1,6) — auf
+// beiden Wegen, die auraAt mischt: global (`state.player.emotions`) und als Feld (der Abdruck der Zelle am Spieler, wie
+// `_depositEmotion` ihn hält); je Weg die Valenz, die auraAt dort liest (die Kontrolle: sonst wäre die Probe blind), der
+// Chroma-Abstand plus ↔ minus und das Rauschen plus ↔ plus. Spike am main 94c079cb (Cloud): global plus ↔ minus Abstand 0,49 (die
+// Hoffnung hebt den zweiten Ton des Akkords, `majorLean`), das Feld mit derselben Valenz am Spieler 0 — die Musik liest
+// `state.player.emotions` (stamm/klang.js `_lofiPlayChord`), nie auraAt.
+async function affektK5Lauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const [aus, port] = process.argv.slice(1);
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const browser = await WB.starteBrowser({ art: "null", headless: true, frist: 300000 });
+    const page = await browser.newPage();
+    await WB.nullRenderer(page);
+    let out = {};
+    let code = 2;
+    try {
+        await server.zeige(page, 120000, "index.html");
+        await page.waitForFunction(() => window.r && typeof r._gameLoopTick === "function" && r._foundry && r._foundry.recipes, { timeout: 300000, polling: 250 });
+        out = await page.evaluate(async () => {
+            const [sy, pm, A] = [st.symphony, st.playerMesh.position, r.constructor];
+            const leer = Object.fromEntries(A.EMOTION_AXES.map((a) => [a, 0]));
+            const setze = (weg, e) => {
+                st.player.emotions = Object.assign({}, leer, weg === "global" ? e : {});
+                st.emotionField = new Map(weg === "feld" ? [[r._lifeCellKey(pm.x, pm.z), { axes: Object.assign({}, e), t: st.spielZeit }]] : []);
+            };
+            const abgriff = async (weg, e) => {
+                const [vor, emo0, ef0] = [{ ...sy }, st.player.emotions, st.emotionField];
+                const ctx = new OfflineAudioContext(1, 48000 * 3, 48000);
+                let valenz = null;
+                try {
+                    Object.assign(sy, { ctx, masterGain: ctx.destination, enabled: true });
+                    sy.lofi = r._buildLofiLayer(ctx, ctx.destination);
+                    setze(weg, e);
+                    valenz = r._emotionState(r.auraAt(pm.x, pm.z).emotion).valence;
+                    r._lofiPlayChord(r._lofiChordFromDegree(0), 0.02);
+                } finally {
+                    Object.assign(sy, vor);
+                    [st.player.emotions, st.emotionField] = [emo0, ef0];
+                }
+                const d = (await ctx.startRendering()).getChannelData(0).subarray(24000);
+                const g = (f) => {
+                    const c = 2 * Math.cos((2 * Math.PI * f) / 48000);
+                    let [a, b] = [0, 0];
+                    for (const x of d) [a, b] = [x + c * a - b, a];
+                    return a * a + b * b - c * a * b;
+                };
+                const roh = Array.from({ length: 12 }, (_, k) => [0, 1, 2, 3, 4].reduce((s, o) => s + g((A.LOFI_BASE_FREQ / 2) * Math.pow(2, o + k / 12)), 0));
+                const sum = roh.reduce((s, x) => s + x, 0) || 1;
+                return { valenz: +valenz.toFixed(2), chroma: roh.map((x) => +(x / sum).toFixed(4)) };
+            };
+            const L1 = (a, b) => +a.reduce((s, x, i) => s + Math.abs(x - b[i]), 0).toFixed(4);
+            const [PLUS, MINUS] = [{ joy: 1, hope: 1, peace: 1 }, { sorrow: 1, chaos: 1 }];
+            const J = {};
+            for (const weg of ["global", "feld"]) {
+                const [p, m, p2] = [await abgriff(weg, PLUS), await abgriff(weg, MINUS), await abgriff(weg, PLUS)];
+                J[weg] = { valenz: [p.valenz, m.valenz], d: L1(p.chroma, m.chroma), rauschen: L1(p.chroma, p2.chroma), plus: p.chroma, minus: m.chroma };
+            }
+            return J;
+        });
+        console.log("AFFEKT_K5 " + JSON.stringify(out));
+        code = 0;
+    } catch (e) {
+        out.fehler = String((e && e.message) || e).split("\n")[0];
+        console.log("AFFEKT_K5 FEHLER " + out.fehler);
+    } finally {
+        fs.writeFileSync(aus, JSON.stringify(out, null, 1));
+        await browser.close().catch(() => {});
+        process.exit(code);
+    }
+}
+// das Urteil über die Zeile `AFFEKT_K5 {global, feld}`: je Weg erreicht die Mutation auraAt (Valenz plus ≥ 1, minus ≤ −1) und
+// ändert das Chroma am Abgriff (Abstand ≥ 0,1 und ≥ 10 × Rauschen) — der Weg „feld" ist das Kriterium (die Musik liest das Feld)
+function affektK5Urteil(lauf) {
+    const t = String(lauf.stdout || "");
+    const fehler = (/^AFFEKT_K5 FEHLER (.*)$/m.exec(t) || [])[1];
+    const J = jsonZeile(t, /^AFFEKT_K5 \{/);
+    if (!J || !J.global || !J.feld) return { gruen: false, zahl: "keine AFFEKT_K5-Zeile" + (fehler ? " — " + fehler : "") + " (Exit " + lauf.exit + ")" };
+    const rot = [];
+    const weg = (n) => {
+        const w = J[n];
+        const erreicht = w.valenz[0] >= 1 && w.valenz[1] <= -1;
+        const folgt = w.d >= 0.1 && w.d >= 10 * w.rauschen;
+        if (!erreicht) rot.push(n + ": die Mutation erreicht auraAt nicht (Valenz " + w.valenz.join(" ↔ ") + ") — die Probe ist blind");
+        else if (!folgt) rot.push(n + ": die Musik folgt nicht (Chroma-Abstand " + w.d + ", Rauschen " + w.rauschen + ")");
+        return n + " Valenz " + w.valenz.join(" ↔ ") + " → Chroma-Abstand " + w.d + " (Rauschen " + w.rauschen + ")";
+    };
+    const z = ["feld", "global"].map(weg);
+    return { gruen: !rot.length && lauf.exit === 0, zahl: z.join(" · ") + (rot.length ? " · ROT: " + rot.join("; ") : "") + " · Exit " + lauf.exit };
+}
+const AFFEKT_K5_PROBEN = (() => {
+    const c0 = [0.4141, 0, 0, 0, 0, 0.4326, 0, 0.1532, 0, 0, 0, 0];
+    const c1 = [0.4684, 0, 0, 0, 0, 0.1894, 0.1711, 0.171, 0, 0, 0, 0];
+    const w = (d, o = {}) => Object.assign({ valenz: [2.2, -1.6], d, rauschen: 0, plus: d ? c1 : c0, minus: c0 }, o);
+    const z = (J) => "AFFEKT_K5 " + JSON.stringify(J);
+    return [
+        { name: "das Feld am Spieler führt den Akkord (global wie Feld)", stdout: z({ global: w(0.4866), feld: w(0.4866) }), gruen: true },
+        { name: "main 94c079cb: die Musik liest state.player.emotions, das Feld nie", stdout: z({ global: w(0.4866), feld: w(0) }), gruen: false },
+        { name: "die Feld-Mutation erreicht auraAt nicht (die Probe ist blind)", stdout: z({ global: w(0.4866), feld: w(0, { valenz: [0, 0] }) }), gruen: false },
+        { name: "der Abstand ist Rauschen", stdout: z({ global: w(0.4866), feld: w(0.3, { rauschen: 0.2 }) }), gruen: false },
+        { name: "nur das Feld, die globale Stimmung schweigt", stdout: z({ global: w(0), feld: w(0.4866) }), gruen: false },
+        { name: "die Welt bootet nicht", stdout: "AFFEKT_K5 FEHLER Waiting failed: 300000ms exceeded", gruen: false },
+    ];
+})();
 
 const stationen = [
     {
@@ -2888,6 +2997,25 @@ const stationen = [
         pfad: ["stamm/feld-dsl.js", "stamm/feld-nexus.js", "stamm/feld-leben.js", "stamm/feld-sprache.js", "stamm/dirigent-takt.js",
             "stamm/speicher-laden.js", "scripts/werkbank.cjs", "scripts/lib/welt-boot.cjs", "scripts/lib/welt-orte.cjs"],
         quelle: "1 = Selektion gemessen: der Anteil der Regeln mit value > 0 steigt vom ersten zum letzten Drittel UND schlägt den Gegenlauf mit gemischtem δ",
+    },
+
+    // ───────── affekt.K5 — die Musik liest das Feld (w4-stationen-b-koord) ─────────
+    // Die Probe `affektK5Lauf` (oben): der Lofi-Akkord am Abgriff unter der Valenz-Mutation von auraAt.emotion am Spieler, global und
+    // als Feld; headless (Mechanik am OfflineAudioContext — die Staffel 1 verlangt EIN Gerät). An main 94c079cb ROT: das Feld schweigt
+    // (Abstand 0, global 0,486); am Spiel-Zweig w4-stationen-b a2f3ec2c GRÜN (die Musik liest die emotion-Achse aus `_lofiWorldField`,
+    // auraAt am Spieler: Feld 0,486, global 0,486; Playtest „Alle Invarianten OK").
+    {
+        kriterium: "affekt.K5",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + knapp(affektK5Lauf) + ")()", "{AUS}", "{PORT}"],
+        gpu: false,
+        zeit: false,
+        minuten: 2,
+        urteil: (j, lauf) => affektK5Urteil(lauf),
+        proben: AFFEKT_K5_PROBEN,
+        pfad: ["stamm/klang.js", "klang-core.js", "stamm/feld-leben.js", "stamm/feld-sprache.js", "stamm/studio-bruecke.js", "scripts/lib/welt-boot.cjs"],
+        quelle: "1 = ein Leser: Tonart/Modus folgt der Valenz von `auraAt.emotion` am Spieler (die Mutation der Achse ändert die Spektral-Merkmale am Abgriff)",
     },
 
     // ───────── oekologie.K2 / K1 / K5 — Zweig oeko-bestand-k2 (tetrapoda BESTAND_GESETZ, UMWEG_GESETZ) ─────────

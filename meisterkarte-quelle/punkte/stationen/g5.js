@@ -5,7 +5,7 @@
 "use strict";
 const { jsonBlock, jsonZeile } = require("../hilfe.cjs");
 const PW = require("./proben-welt.cjs"); // die Proben der Welt in der Sitzung (fahrzeug.K5#1, fahrzeug.K2#1)
-const { seiteProbe } = require("./seite.cjs");
+const { seiteProbe, knapp } = require("./seite.cjs");
 
 // DIE PROBE IN DER SITZUNG (punkte.cjs fahreSitzung, 29.10.): die Welt steht schon — save-server {PORT}, `werkbank start --echt`
 // auf {PORT}+20000 (WERKBANK_PORT), eine Linse neben ihr auf {PORT}+20001. `boot` holt eine FRISCHE Welt: die erste ist es schon
@@ -1059,6 +1059,164 @@ async function probeStartDorf(H) {
 }
 const START_DORF_PROBE = probeBefehl(probeStartDorf, 60, { INNEN: startDorfInnen });
 
+// leib.K3 #1 (w4-stationen-b-koord): UFER → SCHWIMMEN → TAUCHEN im echten Takt (`_gameLoopTick`, Null-Renderer — Lage und Kamera sind
+// Mechanik, das Unterwasser-Bild ist Staffel 2). Der See nächst der Mess-Wiese aus der Welt (wasser-linse `__wasserOrte`, heute
+// 1816/−6168), die Welt ans Ostufer gestreamt wie gate:wasser-leben; je Sicht (Ego, Third) der Gang vom Ufer nach Westen: 30 Bilder
+// Stand, W bis der Leib schwimmt (`playerUnderwater`), W bis 2,5 m Wasser unter dem Leib stehen, Shift + W 240 Bilder (unter Wasser
+// ist Sprint die Tauch-Geste, `_verbTafelSammeln`), 120 Bilder Auftrieb; die Bilder im Muster der Leib-Linse (8,3–33,3 ms). Je Bild
+// Leib und Kamera; der RUCK (wie diag-kamera-laub: die Lage gegen die Linie ihrer Nachbarn in der Zeit) ist das Maß des Sprungs —
+// ein Schnappen um d zeigt sich als Ruck d/2. Im selben Lauf die MUTANTE: Ego mit 0,3 m Schnappen im 30. Bild des Tauchens; sieht die
+// Probe sie nicht, ist sie blind (ROT). Spike am main 94c079cb (Cloud, Null-Renderer): Ego schwimmt ab Bild 442, taucht bis 1,95 m
+// unter den Spiegel, Leib-Ruck max 0,016 m, Kamera-Ruck max 0,020 m.
+async function leibK3Lauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const [aus, port] = process.argv.slice(1);
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const { WASSER_INSTALL } = require(path.resolve("scripts/lib/wasser-linse.cjs"));
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const browser = await WB.starteBrowser({ art: "null", headless: true, frist: 600000 });
+    const page = await browser.newPage();
+    await WB.nullRenderer(page);
+    const out = { laeufe: {} };
+    let code = 2;
+    const gang = async (see, sicht, mut) => {
+        const A = r.constructor;
+        const pm = st.playerMesh;
+        const setze = (x, y, z) => {
+            pm.position.set(x, y, z);
+            if (st._fixedSimPos) st._fixedSimPos.copy(pm.position);
+            [st._fixedPrevPos, st._fieldVy, st.isInAir, st._fieldWasGrounded, st.playerUnderwater, st.playerEyesUnderwater] = [null, 0, false, false, false, false];
+            st.playerVel.setValue(0, 0, 0);
+        };
+        const [x0, mz] = see.ufer;
+        r.setCameraMode(sicht);
+        setze(x0, r._voxelSurfaceY(x0, mz) + A.PLAYER_FOOT_OFFSET + 0.05, mz);
+        st.yaw = -Math.PI / 2;
+        const MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7];
+        const B = [];
+        let tMs = performance.now();
+        let nr = 0;
+        const bild = (keys, phase) => {
+            st.keys = Object.assign({}, keys);
+            tMs += MUSTER[nr++ % MUSTER.length];
+            r._gameLoopTick(tMs);
+            if (mut && phase === "tauchen" && B.filter((b) => b[1] === "tauchen").length === 30) {
+                pm.position.y -= mut;
+                if (st._fixedSimPos) st._fixedSimPos.y -= mut;
+            }
+            const c = st.camera.position;
+            B.push([tMs, phase, pm.position.x, pm.position.y, pm.position.z, c.x, c.y, c.z, st.playerUnderwater ? 1 : 0, st.playerEyesUnderwater ? 1 : 0, st._fieldWasGrounded ? 1 : 0]);
+        };
+        for (let i = 0; i < 30; i++) bild({}, "stand");
+        for (let i = 0; i < 2400 && !(st.playerUnderwater && !st._fieldWasGrounded); i++) bild({ w: true }, "ufer");
+        const tief = () => see.level - r._voxelSurfaceY(pm.position.x, pm.position.z) >= 2.5;
+        for (let i = 0; i < 900 && (i < 60 || !tief()); i++) bild({ w: true }, "schwimmen");
+        for (let i = 0; i < 240; i++) bild({ w: true, shift: true }, "tauchen");
+        for (let i = 0; i < 120; i++) bild({}, "auftrieb");
+        st.keys = {};
+        return B;
+    };
+    // je Phase die Lage, über alle Bilder nach dem Stand der Ruck von Leib und Kamera (max, wo, p95)
+    const auswerten = (B) => {
+        const R = (x, n = 3) => +x.toFixed(n);
+        const m = { bilder: B.length, phasen: {} };
+        for (const ph of ["ufer", "schwimmen", "tauchen", "auftrieb"]) {
+            const b = B.filter((x) => x[1] === ph);
+            m.phasen[ph] = { n: b.length, unter: b.filter((x) => x[8]).length, augen: b.filter((x) => x[9]).length, geerdet: b.filter((x) => x[10]).length };
+        }
+        const sw = B.filter((x) => x[1] === "schwimmen").map((x) => x[3]).sort((a, b) => a - b);
+        const linie = sw.length ? sw[sw.length >> 1] : null;
+        const ta = B.filter((x) => x[1] === "tauchen").map((x) => x[3]);
+        m.tiefe = linie === null || !ta.length ? null : R(linie - Math.min(...ta), 2);
+        const ruck = (i0) => {
+            const r = [];
+            for (let k = 1; k < B.length - 1; k++) {
+                const [u, w, z] = [B[k - 1], B[k], B[k + 1]];
+                if (u[1] === "stand") continue;
+                const f = (w[0] - u[0]) / (z[0] - u[0]);
+                r.push([Math.hypot(...[0, 1, 2].map((i) => w[i0 + i] - u[i0 + i] - (z[i0 + i] - u[i0 + i]) * f)), w[1] + " " + k]);
+            }
+            const s = r.map((x) => x[0]).sort((a, b) => a - b);
+            const top = r.reduce((a, x) => (x[0] > a[0] ? x : a), [0, "—"]);
+            return { max: R(top[0]), wo: top[1], p95: R(s[Math.floor(0.95 * (s.length - 1))] || 0, 4) };
+        };
+        m.ruckLeib = ruck(2);
+        m.ruckKamera = ruck(5);
+        return m;
+    };
+    try {
+        await server.zeige(page, 120000, "index.html");
+        await page.waitForFunction(() => window.r && typeof r._gameLoopTick === "function" && r.state.hydrosphere && r.state.hydrosphere.ready, { timeout: 300000, polling: 250 });
+        await page.evaluate(WASSER_INSTALL);
+        await page.evaluate(() => (r._setWeather("sunny", "human"), r._naesseTakt(1e6)));
+        const orte = await page.evaluate(() => window.__wasserOrte({}));
+        if (!orte.see) throw new Error("kein See nächst der Mess-Wiese (__wasserOrte)");
+        await page.evaluate((u) => window.__wasserStrom(u, 0.6), orte.see.ufer);
+        out.see = [orte.see.x, orte.see.z, +orte.see.level.toFixed(2)];
+        console.log("LEIB_K3 see " + JSON.stringify(out.see));
+        for (const [name, sicht, mut] of [["ego", "first", 0], ["third", "third", 0], ["mutante", "first", 0.3]]) {
+            out.laeufe[name] = auswerten(await page.evaluate(gang, orte.see, sicht, mut));
+            console.log("LEIB_K3 " + name + " " + JSON.stringify(out.laeufe[name]));
+        }
+        code = 0;
+    } catch (e) {
+        out.fehler = String((e && e.message) || e).split("\n")[0];
+        console.log("LEIB_K3 FEHLER " + out.fehler);
+    } finally {
+        fs.writeFileSync(aus, JSON.stringify(out, null, 1));
+        await browser.close().catch(() => {});
+        process.exit(code);
+    }
+}
+// die Wand des Sprungs: ein Ruck über 3 cm (ein Schnappen ab 6 cm) — der Spike trug 1,6–2,0 cm am Ufer, ≤ 0,5 cm in Wasser
+const LEIB_K3_RUCK_M = 0.03;
+// das Urteil über die Zeilen `LEIB_K3 ego|third|mutante {…}` (das Lage-Gesetz der Staffel und die Wand), nie über ein ok-Flag
+function leibK3Urteil(lauf) {
+    const t = String(lauf.stdout || "");
+    const fehler = (/^LEIB_K3 FEHLER (.*)$/m.exec(t) || [])[1];
+    const L = Object.fromEntries(["ego", "third", "mutante"].map((n) => [n, jsonZeile(t, new RegExp("^LEIB_K3 " + n + " \\{"))]));
+    const fehlt = Object.keys(L).filter((n) => !L[n] || !L[n].phasen || !L[n].ruckLeib || !L[n].ruckKamera);
+    if (fehlt.length) return { gruen: false, zahl: "keine LEIB_K3-Zeile für " + fehlt.join(", ") + (fehler ? " — " + fehler : "") + " (Exit " + lauf.exit + ")" };
+    const rot = [];
+    const zeile = (n) => {
+        const m = L[n];
+        const p = m.phasen;
+        const lage = [
+            [p.ufer.geerdet >= 30, "Ufer geerdet " + p.ufer.geerdet],
+            [p.schwimmen.n >= 60 && p.schwimmen.unter === p.schwimmen.n && p.schwimmen.geerdet === 0, "Schwimmen " + p.schwimmen.unter + "/" + p.schwimmen.n + " (geerdet " + p.schwimmen.geerdet + ")"],
+            [p.tauchen.augen >= 60 && m.tiefe >= 1, "Tauchen Augen unter " + p.tauchen.augen + ", " + m.tiefe + " m unter der Schwimm-Linie"],
+        ];
+        for (const [ok, was] of lage) if (!ok) rot.push(n + " " + was);
+        if (!(m.ruckLeib.max <= LEIB_K3_RUCK_M)) rot.push(n + " Leib springt " + m.ruckLeib.max + " m (" + m.ruckLeib.wo + ")");
+        if (!(m.ruckKamera.max <= LEIB_K3_RUCK_M)) rot.push(n + " Kamera springt " + m.ruckKamera.max + " m (" + m.ruckKamera.wo + ")");
+        return n + ": schwimmt " + p.schwimmen.unter + "/" + p.schwimmen.n + ", taucht " + m.tiefe + " m (Augen unter " + p.tauchen.augen + ") · Ruck Leib " + m.ruckLeib.max + " / Kamera " + m.ruckKamera.max + " m (p95 " + m.ruckLeib.p95 + " / " + m.ruckKamera.p95 + ")";
+    };
+    const z = ["ego", "third"].map(zeile);
+    const sieht = L.mutante.ruckLeib.max > LEIB_K3_RUCK_M;
+    if (!sieht) rot.push("die Mutante (0,3 m Schnappen) bleibt unter der Wand — die Probe ist blind");
+    return {
+        gruen: !rot.length && lauf.exit === 0,
+        zahl: z.join(" · ") + " · Mutante Ruck " + L.mutante.ruckLeib.max + " m " + (sieht ? "erkannt" : "UNERKANNT") + (rot.length ? " · ROT: " + rot.join(", ") : "") + " · Exit " + lauf.exit,
+    };
+}
+const LEIB_K3_PROBEN = (() => {
+    const lauf = (o = {}) => Object.assign({ bilder: 1100, phasen: { ufer: { n: 470, unter: 60, augen: 0, geerdet: 400 }, schwimmen: { n: 200, unter: 200, augen: 0, geerdet: 0 }, tauchen: { n: 240, unter: 240, augen: 190, geerdet: 0 },
+        auftrieb: { n: 120, unter: 120, augen: 100, geerdet: 0 } }, tiefe: 2.1, ruckLeib: { max: 0.016, wo: "ufer 40", p95: 0.003 }, ruckKamera: { max: 0.02, wo: "ufer 40", p95: 0.0011 } }, o);
+    const z = (ego, third, mutante) => ['LEIB_K3 see [1816,-6168,0.93]', "LEIB_K3 ego " + JSON.stringify(ego), "LEIB_K3 third " + JSON.stringify(third), "LEIB_K3 mutante " + JSON.stringify(mutante)].join("\n");
+    const mut = lauf({ ruckLeib: { max: 0.15, wo: "tauchen 700", p95: 0.003 }, ruckKamera: { max: 0.15, wo: "tauchen 701", p95: 0.0012 } });
+    return [
+        { name: "Ufer → Schwimmen → Tauchen ohne Sprung, Ego und Third, die Mutante erkannt", stdout: z(lauf(), lauf(), mut), gruen: true },
+        { name: "die Mutante bleibt unter der Wand (die Probe ist blind)", stdout: z(lauf(), lauf(), lauf()), gruen: false },
+        { name: "die Kamera in Third schnappt beim Eintauchen um 24 cm", stdout: z(lauf(), lauf({ ruckKamera: { max: 0.12, wo: "schwimmen 480", p95: 0.002 } }), mut), gruen: false },
+        { name: "kein Tauchgang (Shift hebt nicht unter den Spiegel)", stdout: z(lauf({ phasen: { ...lauf().phasen, tauchen: { n: 240, unter: 240, augen: 0, geerdet: 0 } }, tiefe: 0.1 }), lauf(), mut), gruen: false },
+        { name: "der Leib geht am Grund statt zu schwimmen", stdout: z(lauf({ phasen: { ...lauf().phasen, schwimmen: { n: 200, unter: 40, augen: 0, geerdet: 160 } } }), lauf(), mut), gruen: false },
+        { name: "Third fehlt in der Ausgabe", stdout: ['LEIB_K3 ego ' + JSON.stringify(lauf()), "LEIB_K3 mutante " + JSON.stringify(mut)].join("\n"), gruen: false },
+        { name: "die Welt trägt keinen See", stdout: "LEIB_K3 FEHLER kein See nächst der Mess-Wiese (__wasserOrte)", gruen: false },
+    ];
+})();
+
 const stationen = [
     // ───────── fahrzeug.K3 — die Kamera atmet das Tempo ─────────
     {
@@ -1991,6 +2149,34 @@ const stationen = [
         pfad: PAD,
         quelle: staffel === 1 ? "1 = Gehen, Kamera und Fahren analog über den Achs-Wert (Lenkwinkel stetig)" : "2 = jedes Verb, Rumble aus dem Zustand, Belegung frei",
     })),
+
+    // ───────── leib.K3 — Ufer → Schwimmen → Tauchen ohne Sprung (w4-stationen-b-koord) ─────────
+    // Die Probe `leibK3Lauf` (oben): Lage und Kamera je Bild im echten Takt am See nächst der Mess-Wiese, Ego und Third, die Mutante
+    // im selben Lauf. Headless: Lage und Kamera sind Mechanik (die Staffel 1 verlangt EIN Gerät; das Unterwasser-Bild und die Höhle
+    // mit Licht-Abfall sind Staffel 2, beide Geräte — ohne Station).
+    {
+        kriterium: "leib.K3",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + knapp(leibK3Lauf) + ")()", "{AUS}", "{PORT}"],
+        gpu: false,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => leibK3Urteil(lauf),
+        proben: LEIB_K3_PROBEN,
+        pfad: [
+            "stamm/koerper-*.js",
+            "stamm/wasser-*.js",
+            "stamm/dirigent-*.js",
+            "stamm/gelaende-*.js",
+            "koerper-core.js",
+            "gelaende-core.js",
+            "voxel-worker.js",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/wasser-linse.cjs",
+        ],
+        quelle: "1 = Ufer → Schwimmen → Tauchen ohne Sprung (Lage, Kamera) an einem Gerät",
+    },
 
     // ───────── halten.K1 — der Treffer aus dem Gesetz ─────────
     {
