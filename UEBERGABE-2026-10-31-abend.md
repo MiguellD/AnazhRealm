@@ -24,6 +24,11 @@ Pflicht-OFFEN: A, B, C, E und F (F gesetzt 31.10., der Prüfplatz; Plan `bericht
   w4-ankunft-5, w4-mess-platz und w4-gras-l2 e47e5242 (A, Cloud). Das Bild von gras-l2 habe ich auf der Radeon angesehen, Wiese Ego
   und Third main↔Zweig (`w3/gras-l2-bild-out/`): die Kante bei 15 m fällt, die Wiese reicht bis an die Bäume. Die Ferne ist etwas
   fleckig, und die Dreiecke steigen; das ABAB nach der Landung urteilt E.
+  Dazu kamen (22:55):
+  - w4-gehege 8bda6d1b (Cloud): drei Wölfe als Term des Bestands, der Kern additiv. Er ist noch nicht im Bild; das Gehege hängt der
+    Wirt in Welle d ein.
+  - **w4-e-vram-heim 6c0a7878** (E): w4-e-vram 57134448 auf ankunft-5. Die Cloud maß Wiese Ego 120,5 → 108,1 MB, das Band ist 118.
+    Ich habe ihn auf ankunft-5 gestapelt, weil sich beide an diag-chunk-satz stießen; es gilt e-vram, der Selbsttest ist grün.
 - **koordination ad55c327:** w4-stationen-schnell-b-koord a0ff6bd4 ist gemergt (fünf Stationen ohne kalten Ring, die Linse DER ORT IM
   DECKEL). Selbsttest 122/122 ohne (3c), die Fahrt-Wand hält an gtx und radeon. Die Stationen a (über 90 s) stehen noch aus.
 - **OMEN:** takt-z114a/-b und z114-abab sind eingereiht; nach jeder Landung reiht takt-nach.sh den Takt am neuen main ein.
