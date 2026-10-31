@@ -25,7 +25,8 @@
 // MINT_FORCE=1, ein benannter Vertrags-Akt im Commit).
 //   --selftest: (S1) ein verschobenes Gelenk (wolf L0 earL +1 cm, Skelett und Ohr-Haut) → rot genau an
 //   gelenk|earL und den Klassen am Gelenk earL · (S2) eine falsche Stoff-Zuordnung (wolf L0: der Zahn am Kopf trägt
-//   die Klasse zahnfleisch) → rot an zahn|headGroup (fehlt) und zahnfleisch|headGroup · (S3) korruptes Golden → rot.
+//   die Klasse zahnfleisch) → rot an zahn|headGroup (fehlt) und zahnfleisch|headGroup · (S3) korruptes Golden → rot · (S5/S6) die
+//   Mengen-Stufe ohne das Gesetz des Gesichts, der Kollaps ohne seinen Schutz → der Guss bricht beim Namen (w4-mensch-kopf).
 //   node scripts/diag-ofen-contract.cjs [--selftest]
 "use strict";
 const { selbsttestEnde, wandEnde, fadenScope, pruefer } = require("./lib/welt-boot.cjs");
@@ -308,6 +309,17 @@ function taeterRinde(sb) {
             s4.gebrochen > 0 && s4.gpu > 0 && !!s4.sha && s4.sha.startsWith(RINDE_SHA),
             `${s4.ms} ms`
         );
+        // S5/S6 — DAS GESICHT DER MENGE (w4-mensch-kopf, foundry-core `__mengenLeib`): ohne das Gesetz des Gesichts oder ohne seinen
+        // Schutz im Kollaps bricht der Guss der Mengen-Stufe beim Namen
+        for (const [n, weg, muster] of [
+            ["S5 ohne Gesetz des Gesichts", (o, r = o.__mengenLeib) => (o.__mengenLeib = (...a) => r(...a.slice(0, 8), null)), /kein Gesicht/], // prettier-ignore
+            ["S6 Kollaps ohne Schutz des Gesichts", (o, r = o.__huelleKollaps) => (o.__huelleKollaps = (g, z, zo) => r(g, z, zo, null)), /trägt \w+ nicht/], // prettier-ignore
+        ]) {
+            const o = ladeOfen();
+            weg(o);
+            const f = (() => { try { o.BAKERS_BY_KIND.koerper(o.__koerperCore, "mensch", SAME, 2, null); } catch (e) { return e.message; } })(); // prettier-ignore
+            check(`${n}: Mengen-Stufe bricht beim Namen`, muster.test(f), f);
+        }
         selbsttestEnde(errs, "ein verschobenes Gelenk und eine falsche Stoff-Zuordnung werden rot beim Namen.");
         process.exit(0);
     }

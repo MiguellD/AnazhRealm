@@ -131,9 +131,7 @@ function fernwaldLinse(opts) {
                     for (let y = by; y < by + 8; y++)
                         for (let x = bx; x < bx + 8; x++) {
                             const i = (y * W + x) * 4;
-                            const d =
-                                Math.abs(a[i] - o[i]) + Math.abs(a[i + 1] - o[i + 1]) + Math.abs(a[i + 2] - o[i + 2]);
-                            if (d < 12) continue; // die Kronen-Fläche: nur, was der Fernwald ändert
+                            if (pixelAbstand(a, o, i) < 12) continue; // die Kronen-Fläche: nur, was der Fernwald ändert
                             const l = lum(a, i);
                             sl += Math.abs(
                                 4 * l - lum(a, i - 4) - lum(a, i + 4) - lum(a, i - W * 4) - lum(a, i + W * 4)

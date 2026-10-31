@@ -2236,7 +2236,7 @@ function luftTiefe(o) {
             // je Spalte die erste Zeile, die die Luft ändert (8 Bit, auch über der Kompression): das Ende der gezeichneten Welt
             const oben = {};
             for (const x in gesetzOben)
-                for (let y = 0, i = +x * 4; y < H && !(x in oben); y++, i += W * 4) if (Math.abs(L0[i] - S[i]) + Math.abs(L0[i + 1] - S[i + 1]) + Math.abs(L0[i + 2] - S[i + 2]) > 4) oben[x] = y;
+                for (let y = 0, i = +x * 4; y < H && !(x in oben); y++, i += W * 4) if (pixelAbstand(L0, S, i) > 4) oben[x] = y;
             const kante = Object.fromEntries(Object.keys(oben).filter((x) => gesetzOben[x] < oben[x] - 1).map((x) => [x, oben[x]]));
             const kl = kantenLinie(Yd, W, H, kante, R.kontrast, 8);
             const hfov = (2 * Math.atan(Math.tan((cam.fov * Math.PI) / 360) * cam.aspect) * 180) / Math.PI;

@@ -18,9 +18,8 @@ const ladeWelt = () => fadenScope(["worlds/terrain/lib/three-r128.min.js", "koer
 
 // Der Mensch aus dem Gesetz (THREE-Fabrik wie der Bäcker; die Hornhaut ist im Bäcker keine Fläche) — mit den Start-Dials oder
 // den Dials eines Bewohner-Typs (mensch.K4: die Probe der Menge, `kreatur-proben`).
-function baue(sb, verzerre, dials) {
+function baue(sb, verzerre, dials, K = sb.__koerperCore) {
     const T = sb.THREE;
-    const K = sb.__koerperCore;
     const mats = {};
     const mat = (k) => mats[k] || (mats[k] = Object.assign(new T.MeshBasicMaterial(), { userData: { __klasse: k } }));
     const F = {
@@ -243,28 +242,11 @@ function messeKopf(sb, eingriff) {
         const zMed = zs.length ? zs[zs.length >> 1] : NaN;
         vorstand = Math.max(vorstand, (sz.b - zMed) / bkH);
     }
-    // das freie Auge: je Punkt der Iris-Vorderseite ein Strahl nach vorn (+z) gegen die Dreiecke der Kopf-Haut
-    const idx = hautK.geometry.index ? hautK.geometry.index.array : null;
-    const tri = [];
-    for (let t = 0; t < (idx ? idx.length : hp.length) / 3; t++)
-        tri.push(
-            idx ? [hp[idx[3 * t]], hp[idx[3 * t + 1]], hp[idx[3 * t + 2]]] : [hp[3 * t], hp[3 * t + 1], hp[3 * t + 2]]
-        );
-    const trifft = (o) => {
-        for (const [a, b, c] of tri) {
-            const e1 = [b[0] - a[0], b[1] - a[1]],
-                e2 = [c[0] - a[0], c[1] - a[1]];
-            const det = e1[0] * e2[1] - e1[1] * e2[0];
-            if (Math.abs(det) < 1e-12) continue;
-            const px = o[0] - a[0],
-                py = o[1] - a[1];
-            const u = (px * e2[1] - py * e2[0]) / det,
-                w = (e1[0] * py - e1[1] * px) / det;
-            if (u < 0 || w < 0 || u + w > 1) continue;
-            if (a[2] + u * (b[2] - a[2]) + w * (c[2] - a[2]) > o[2]) return true;
-        }
-        return false;
-    };
+    // das freie Auge: an jedem Punkt der Iris-Vorderseite zeigt die Karte des Gesichts das Auge (foundry-core `__gesichtGesetz`
+    // `zug`: der Strahl von vorn trifft Augapfel oder Iris vor Lid und Kopf-Haut, deren Fläche im Feld der Nah-Stufe) — w4-mensch-kopf,
+    // vorher ein eigener Strahl gegen die Dreiecke der Kopf-Haut
+    const G = sb.__gesichtGesetz(kern, baue(sb, null, null, kern).B, (k) => Object.assign(new T.MeshBasicMaterial(), { userData: { __klasse: k } }), () => [0, 0, 0], 0, 0, kern.START_PARAMS); // prettier-ignore
+    const kopfInv = welt("head").clone().invert();
     let irisN = 0,
         irisFrei = 0;
     for (const n of ms.filter((n) => kl(n) === "iris")) {
@@ -273,7 +255,8 @@ function messeKopf(sb, eingriff) {
         for (const p of ip) {
             if (p[2] <= zc) continue;
             irisN++;
-            if (!trifft(p)) irisFrei++;
+            const h = new T.Vector3(...p).applyMatrix4(kopfInv);
+            if (/^(sklera|iris)$/.test(G.zug(h.x, h.y))) irisFrei++;
         }
     }
     // das Haar als Volumen: die Kopf-Haut über der Haarlinie im Ton des Haars (koerper `menschTon`: die Kappe)

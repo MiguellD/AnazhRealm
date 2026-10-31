@@ -417,4 +417,3 @@ function main() {
 }
 
 if (require.main === module) process.exit(main());
-module.exports = { mergeText, basisText, benenne, plane, rehome, weiter, formAn };

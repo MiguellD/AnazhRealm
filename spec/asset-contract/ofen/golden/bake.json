@@ -1882,9 +1882,9 @@
   },
   "mensch-L2|leib|mensch": {
    "meshes": 1,
-   "verts": 951,
+   "verts": 1051,
    "tris": 1700,
-   "sha256": "9e9d6e21eccdf7631aa52944ab1b90a1d16467a8c371707bf4a26c55597e32ab"
+   "sha256": "01c184d1cc51b70d44a9493fca3ee2770888d193beea45a04d5b7b014e3b9c60"
   },
   "mensch-L2|gelenk|mensch": {
    "sha256": "bb95e2730d1cdaf22c266a3abd6c293dd5a259ec39a98c2144136da26b7cff85"

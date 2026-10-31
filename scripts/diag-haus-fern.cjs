@@ -465,7 +465,7 @@ const f3 = (x) => (x == null ? "—" : (+x).toFixed(3));
 //    — zwei Samen derselben Kultur liegen schon in der L0 bis 0,074 auseinander (holzhuette), eine Stufe darf zwei solche
 //    Schritte.
 const GLUT = FC.lichtFarbe(FC.LICHT_GESETZ.fenster.kelvin).map((c) => c * FC.LICHT_GESETZ.fenster.zeit.nacht);
-const { luma709: luma } = require("./lib/abnahme-urteil.cjs"); // die EINE Luma der Linsen
+const { luma709: luma, pixelAbstand } = require("./lib/abnahme-urteil.cjs"); // die EINE Luma und Pixel-Differenz der Linsen
 const GLAS_R = 0.05;
 const stoffFlaechen = (g) => dreiecke(g, false, true);
 // ein Fenster: je Pixel die Mischung von vorn → Summen (Tag-Farbe, Glut) über das Rechteck
@@ -567,8 +567,7 @@ function glasJeStufe(g, fenster) {
         s = tag[0] + tag[1] + tag[2] || 1;
     return { tag: luma(tag), nacht: luma(sum.nacht.map((x) => x / n)), farbe: tag.map((x) => x / s) };
 }
-const glasAbstand = (a, b) =>
-    Math.abs(a.farbe[0] - b.farbe[0]) + Math.abs(a.farbe[1] - b.farbe[1]) + Math.abs(a.farbe[2] - b.farbe[2]);
+const glasAbstand = (a, b) => pixelAbstand(a.farbe, b.farbe, 0);
 function glasUrteil(G, f) {
     const g0 = G[0];
     for (const s of [1, 2]) {

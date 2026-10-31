@@ -6071,9 +6071,16 @@ function __stoffErbtHaut(hg, sg) {
 // DIE NAHT (mensch.K4, rein additiv: `zone` je Fläche): eine Kante zwischen Flächen zweier Zonen ist Naht — eine Ecke auf ihr
 // kollabiert nur entlang ihrer Naht (auf den Nachbarn der Naht), eine Ecke an drei Zonen steht fest, und die Naht trägt ihre
 // Ebenen-Quadrik quer zur Fläche (sie bleibt, wo die Farbe geschnitten wurde). Die Zone der Flächen reist mit (`userData.zone`).
-function __huelleKollaps(geo, ziel, zone) {
+// DER SCHUTZ DES GESICHTS (w4-mensch-kopf, `schutz` { ab, anteil }): die Quadrik misst Geometrie — ein Zug des Gesichts ist ein Ton
+// auf flacher Haut, sein Kollaps kostet sie nichts (die Augen des Leibs der Menge fielen vor jedem Haar der Kappe). Jede
+// Komponente einer Zone ab `ab` (verbunden über Kanten derselben Zone) hält darum mindestens `anteil` ihrer Fläche: ein Kollaps,
+// der sie darunter drückt, fällt aus.
+function __huelleKollaps(geo, ziel, zone, schutz) {
     const pa = geo.attributes.position;
     const n = pa.count;
+    // die Länge eines Vektors: unter dem Schutz (der Leib der Menge mit Gesicht) IEEE-exakt — seine feine Teilung trägt Fast-Gleichstände
+    // der Kosten, ±1 ULP eines `hypot` kippte ihre Reihenfolge (Plattform-Probe ofen); jeder andere Aufrufer wie zuvor
+    const laenge = schutz ? (x, y, z) => Math.sqrt(x * x + y * y + z * z) : Math.hypot;
     const I0 = geo.index && geo.index.array;
     if (!I0 || I0.length / 3 <= ziel) return geo;
     const P = new Float64Array(n * 3);
@@ -6104,7 +6111,7 @@ function __huelleKollaps(geo, ziel, zone) {
         let nx = uy * vz - uz * vy,
             ny = uz * vx - ux * vz,
             nz = ux * vy - uy * vx;
-        const L = Math.hypot(nx, ny, nz);
+        const L = laenge(nx, ny, nz);
         if (L > 1e-20) {
             nx /= L;
             ny /= L;
@@ -6165,7 +6172,7 @@ function __huelleKollaps(geo, ziel, zone) {
                 let nx = ey * fz - ez * fy,
                     ny = ez * fx - ex * fz,
                     nz = ex * fy - ey * fx;
-                const L = Math.hypot(nx, ny, nz);
+                const L = laenge(nx, ny, nz);
                 if (!(L > 1e-20)) continue;
                 [nx, ny, nz] = [nx / L, ny / L, nz / L];
                 const d = -(nx * P[a * 3] + ny * P[a * 3 + 1] + nz * P[a * 3 + 2]);
@@ -6261,6 +6268,51 @@ function __huelleKollaps(geo, ziel, zone) {
             vz = P[e[2] * 3 + 2] - P[e[0] * 3 + 2];
         return [uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx];
     };
+    // DER SCHUTZ DES GESICHTS: die Komponenten der geschützten Zonen (Union-Find über Kanten derselben Zone) und ihre Fläche
+    let komp = null,
+        kFl = null,
+        kMin = null;
+    const flaecheVon = (f, ersetze, durch) => {
+        const c = normale(f, ersetze, durch);
+        return Math.sqrt(c[0] * c[0] + c[1] * c[1] + c[2] * c[2]) / 2;
+    };
+    if (zone && schutz) {
+        komp = new Int32Array(mAll).fill(-1);
+        const vater = [];
+        const wurzel = (i) => {
+            while (vater[i] !== i) i = vater[i] = vater[vater[i]];
+            return i;
+        };
+        const fs = [];
+        for (let f = 0; f < mAll; f++)
+            if (zone[f] >= schutz.ab) {
+                komp[f] = vater.length;
+                vater.push(vater.length);
+                fs.push(f);
+            }
+        const kante = new Map();
+        for (const f of fs)
+            for (let k = 0; k < 3; k++) {
+                const a = F[f * 3 + k],
+                    b = F[f * 3 + ((k + 1) % 3)];
+                const key = a < b ? a * n + b : b * n + a;
+                const g = kante.get(key);
+                if (g === undefined) kante.set(key, f);
+                else if (zone[g] === zone[f]) {
+                    const [ra, rb] = [wurzel(komp[f]), wurzel(komp[g])];
+                    if (ra !== rb) vater[ra] = rb;
+                }
+            }
+        const nr = new Map();
+        for (const f of fs) {
+            const r = wurzel(komp[f]);
+            if (!nr.has(r)) nr.set(r, nr.size);
+            komp[f] = nr.get(r);
+        }
+        kFl = new Float64Array(nr.size);
+        for (const f of fs) kFl[komp[f]] += flaecheVon(f, -1, -1);
+        kMin = kFl.map((a) => a * schutz.anteil);
+    }
     while (m > ziel && hc.length) {
         const [u, v, s] = nehmen();
         if (weg[u] || weg[v] || s !== ver[u] + ver[v] * 4294967296) continue;
@@ -6281,14 +6333,27 @@ function __huelleKollaps(geo, ziel, zone) {
             if (!lebt[f] || F[f * 3] === v || F[f * 3 + 1] === v || F[f * 3 + 2] === v) continue;
             const a = normale(f, -1, -1),
                 b = normale(f, u, v);
-            const la = Math.hypot(a[0], a[1], a[2]),
-                lb = Math.hypot(b[0], b[1], b[2]);
+            const la = laenge(a[0], a[1], a[2]),
+                lb = laenge(b[0], b[1], b[2]);
             if (!(lb > 1e-12 * (la + 1e-30)) || (a[0] * b[0] + a[1] * b[1] + a[2] * b[2]) / (la * lb) < 0.2) {
                 gut = false;
                 break;
             }
         }
         if (!gut) continue;
+        // der Schutz des Gesichts: keine geschützte Komponente fällt unter ihren Anteil
+        if (komp) {
+            const delta = new Map();
+            for (const f of vf[u]) {
+                if (!lebt[f] || komp[f] < 0) continue;
+                const stirbt = F[f * 3] === v || F[f * 3 + 1] === v || F[f * 3 + 2] === v;
+                delta.set(komp[f], (delta.get(komp[f]) || 0) + (stirbt ? 0 : flaecheVon(f, u, v)) - flaecheVon(f, -1, -1));
+            }
+            let halt = false;
+            for (const [c, d] of delta) if (d < 0 && kFl[c] + d < kMin[c]) halt = true;
+            if (halt) continue;
+            for (const [c, d] of delta) kFl[c] += d;
+        }
         for (const f of vf[u]) {
             if (!lebt[f]) continue;
             if (F[f * 3] === v || F[f * 3 + 1] === v || F[f * 3 + 2] === v) {
@@ -6357,11 +6422,267 @@ var MENSCH_MENGE = Object.freeze({
     rauheit: 0.74,
     klassen: Object.freeze(["skin", "lips", "shorts", "joint", "haarKappe"]),
 });
+// DAS GESETZ DES GESICHTS (w4-mensch-kopf, Lehre 19 — was die Karte trägt, trägt kartenlos der Vertex): EINE Regel im Kopf-Raum
+// (lokal am Gelenk head) aus den Primitiven des Gesetzbuchs (koerper bauMensch), die jede Stufe liest, die das Gesicht trägt — die
+// Kopf-Haut der Nah-Stufe je Ecke, der Leib der Menge je Ecke und an jeder Kante seiner Zonen (`__mengenLeib`). `ton(x, y, z)` ist
+// der Ton der Kopf-Haut (das nächste Primitiv aus Haut, Lippe und Haar-Kappe nach normiertem Abstand |Mi·p|/r − 1, die Höhle im
+// Saum ihrer Kugel, die Braue in der Ellipse um ihre Haare, die Mund-Linie auf der Lippe zwischen den Lippen-Mitten); `zug(x, y)`
+// ist die KARTE des Gesichts: was die Nah-Stufe von vorn (+z) an (x, y) zeigt — das Auge in der Lidspalte (der erste Treffer des
+// Strahls unter den Ellipsoiden der Augen-Gruppe: Lid, Sklera, Iris mit der Pupille) oder der Ton der Kopf-Haut auf ihrer Fläche.
+// Bis w4-mensch-kopf lebte die Regel nur in der Kopf-Haut; der Leib der Menge färbte nach einem Zwilling (Lippe und Höhle, ohne
+// Braue, Mund-Linie und Auge) und trug nach dem Kollaps 2 Lippen-Ecken: die Bewohner im Satz hatten auf jeder Distanz kein Gesicht.
+function __gesichtGesetz(kern, B, matFuer, lin, skinCol, hairCol, dials) {
+    const kopf = B.parts.head;
+    const KH = kern.MENSCH_GESTALT.kopfHaut;
+    const augen = [B.augen.eyeL, B.augen.eyeR].filter(Boolean);
+    const unterAuge = (n) => {
+        for (let c = n; c; c = c.parent) if (augen.includes(c)) return true;
+        return false;
+    };
+    // DAS HAAR ALS VOLUMEN (K57): die Kappe der Frisur (koerper haarKappe) trägt über der Haarlinie den Haar-Ton
+    const kappen = kern.haarKappe(dials).map((k) => {
+        const m = new THREE.Mesh(new THREE.SphereGeometry(k.r, 8, 6), matFuer("haarKappe"));
+        m.position.set(k.c[0], k.c[1], k.c[2]);
+        m.scale.set(k.sc[0], k.sc[1], k.sc[2]);
+        kopf.add(m);
+        return m;
+    });
+    kopf.updateMatrixWorld(true);
+    const prims = __tierPrims(kopf, kopf, (n) => !unterAuge(n), KH.vox, KH.blend, () => null, ["skin", "lips", "haarKappe"], true);
+    // DIE HÖHLE IST HAUT (A4, KOPF_SOLL hoehleL/hoehleA im BILD): ihr Ton (koerper kopfToene) stand auf einer eigenen Kugel
+    // HINTER der Kopf-Haut — das Bild zeigte um das Auge den Wangen-Ton. Die Höhlen-Kugeln (Klasse socket, die Ohrmuschel
+    // eingeschlossen) formen nichts mehr und werden nicht gegossen: sie sind die Ton-Zone der Haut (hoehleSaum, unten).
+    const hoehlen = __tierPrims(kopf, kopf, (n) => !unterAuge(n), KH.vox, KH.blend, () => null, ["socket"], true);
+    if (hoehlen.length < 2) throw new Error("MENSCH-HAUT: die Höhlen-Kugeln (Klasse socket) fehlen (fail-closed)");
+    for (const h of hoehlen) h.node.userData.__nichtGiessen = true;
+    for (const m of kappen) kopf.remove(m);
+    // die gemalten Falten (Nasolabial-Stäbe, Philtrum: Klasse shadow) stünden als Stäbe auf der glatten Haut — sie fallen
+    kopf.traverse((n) => {
+        if (n.isMesh && n.material.userData.__klasse === "shadow" && !unterAuge(n)) n.userData.__nichtGiessen = true;
+    });
+    if (prims.length < 2) throw new Error("MENSCH-HAUT: der Kopf trägt keine Haut-Primitive");
+    // je Primitiv seine Farbe (linear wie das Material)
+    const farbeVon = new Map();
+    for (const p of prims.concat(hoehlen)) {
+        const c = p.node.material.color;
+        farbeVon.set(p, [c.r, c.g, c.b]);
+    }
+    // die Mund-Linie liegt zwischen den Lippen-Mitten (Kopf-Raum), ihre Breite ist ein Bruchteil der Lippen-Höhe
+    const oL = B.augen.upperLipRef,
+        uL = B.augen.lowerLipRef;
+    const mundY = (oL.position.y + uL.position.y) / 2,
+        mundH = Math.abs(oL.position.y - uL.position.y);
+    // DER SAUM DER HÖHLE (A4, koerper MENSCH_GESTALT.kopfHaut.hoehleSaum): die Höhlen-Kugel liegt unter Braue und Wange — die
+    // Haut trägt ihren Ton, so weit sie innerhalb hoehleSaum Halbachsen über ihrem Rand liegt (der Ring um das Auge, die
+    // Muschel des Ohrs); die Lippe bleibt Lippe. Ohne Saum keine Höhle (fail-closed).
+    if (!(KH.hoehleSaum >= 0)) throw new Error("MENSCH-HAUT: kopfHaut.hoehleSaum fehlt (fail-closed)");
+    // DER BRAUEN-BOGEN (mensch.K4): die Höhle beginnt unter ihm — so weit um die Braue (Kopf-Raum) trägt die Haut keinen Ton
+    // der Höhle (die Haut des Bogens zwischen Brauen-Haar und Lid-Falte)
+    if (!(KH.brauBogen >= 0)) throw new Error("MENSCH-HAUT: kopfHaut.brauBogen fehlt (fail-closed)");
+    // DIE BRAUE IST EIN TON DER HAUT (mensch.K4 Staffel 1, das Gesicht auf 6 m): unter den Brauen-Haaren (die Gruppen
+    // browL/browR des Baums) trägt die Haut den Ton der Braue (koerper `brauTon`: das Haar über der Haut) — die Ellipse um
+    // ihre Haare im Kopf-Raum, um `brauSaum` [seitlich, Höhe] weiter (die Braue reicht über die Lidspalte hinaus); von fern
+    // liest die Braue als Fläche, nie als fünf Striche unter einem Bildpunkt. Die Haare bleiben (nah).
+    const BS = KH.brauSaum;
+    if (!(Array.isArray(BS) && BS[0] >= 0 && BS[1] >= 0)) throw new Error("MENSCH-HAUT: kopfHaut.brauSaum fehlt (fail-closed)");
+    const brauLin = lin(kern.brauTon(skinCol, hairCol));
+    const kopfInv = new THREE.Matrix4().copy(kopf.matrixWorld).invert();
+    const brauen = [B.augen.browL, B.augen.browR].filter(Boolean).map((g) => {
+        const bb = new THREE.Box3();
+        const v = new THREE.Vector3();
+        g.traverse((n) => {
+            if (!n.isMesh) return;
+            const p = n.geometry.attributes.position;
+            const M = new THREE.Matrix4().multiplyMatrices(kopfInv, n.matrixWorld);
+            for (let k = 0; k < p.count; k++) bb.expandByPoint(v.fromBufferAttribute(p, k).applyMatrix4(M));
+        });
+        const c = bb.getCenter(new THREE.Vector3()),
+            h = bb.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+        return { c, hx: h.x + BS[0], hy: h.y + BS[1], z0: bb.min.z - 3 * BS[1] };
+    });
+    if (brauen.length < 2) throw new Error("MENSCH-HAUT: die Brauen (browL/browR) fehlen (fail-closed)");
+    // die Ellipse der Brauen, um m (Kopf-Raum) in jeder Richtung weiter: m = 0 die Braue, m = brauBogen ihr Bogen
+    const imBrau = (x, y, z, m) => brauen.some((b) => z > b.z0 - m && ((x - b.c.x) / (b.hx + m)) ** 2 + ((y - b.c.y) / (b.hy + m)) ** 2 < 1);
+    const ML = kern.KOPF_TON && kern.KOPF_TON.mundLinie;
+    if (!Array.isArray(ML) || ML.length !== 3) throw new Error("MENSCH-HAUT: KOPF_TON.mundLinie fehlt (fail-closed)");
+    // DAS AUGE VON VORN: je Ellipsoid der Augen-Gruppen (Augapfel, Iris, Pupille, Lider) seine Kugel im Kopf-Raum
+    const ellipsoide = [];
+    for (const eye of augen)
+        eye.traverse((n) => {
+            if (!n.isMesh || !n.geometry || !n.geometry.parameters || !(n.geometry.parameters.radius > 0)) return;
+            const kl = n.material && n.material.userData ? n.material.userData.__klasse : null;
+            const art = kl === "eye" ? "sklera" : kl === "iris" || kl === "pupil" ? "iris" : kl === "skin" ? "lid" : null;
+            if (!art) return;
+            const M = new THREE.Matrix4().multiplyMatrices(kopfInv, n.matrixWorld);
+            ellipsoide.push({ art, kl, r: n.geometry.parameters.radius, Mi: Float64Array.from(new THREE.Matrix4().copy(M).invert().elements) });
+        });
+    if (!ellipsoide.some((e) => e.art === "sklera") || !ellipsoide.some((e) => e.art === "iris"))
+        throw new Error("MENSCH-HAUT: die Augen-Gruppen tragen keinen Augapfel oder keine Iris (fail-closed)");
+    // der Strahl von vorn durch (x, y): die Vorderseite jedes Ellipsoids, der vorderste Treffer gewinnt → { e, z } oder null
+    const strahl = (x, y) => {
+        let best = null,
+            bz = -Infinity;
+        for (const e of ellipsoide) {
+            const m = e.Mi;
+            const qx = m[0] * x + m[4] * y + m[12],
+                qy = m[1] * x + m[5] * y + m[13],
+                qz = m[2] * x + m[6] * y + m[14];
+            const a = m[8] * m[8] + m[9] * m[9] + m[10] * m[10],
+                b = qx * m[8] + qy * m[9] + qz * m[10],
+                c = qx * qx + qy * qy + qz * qz - e.r * e.r;
+            const disk = b * b - a * c;
+            if (disk < 0) continue;
+            const t = (-b + Math.sqrt(disk)) / a;
+            if (t > bz) [bz, best] = [t, e];
+        }
+        return best ? { e: best, z: bz } : null;
+    };
+    // DAS FELD DES GESICHTS (Kopf-Raum): die Box über Augen, Höhlen, Lippen und Brauen — davor teilt der Leib der Menge fein
+    const box = new THREE.Box3();
+    const um = (c, r) => box.expandByPoint(new THREE.Vector3(c[0] - r, c[1] - r, c[2] - r)).expandByPoint(new THREE.Vector3(c[0] + r, c[1] + r, c[2] + r));
+    // die Reichweite eines Primitivs ohne Verrundung und Raster (`__tierPrims` ext), die Höhle mit ihrem Saum
+    const halb = (p) => p.ext - KH.blend - 2 * KH.vox;
+    for (const p of hoehlen) um(p.c, halb(p) * (1 + KH.hoehleSaum));
+    for (const p of prims.filter((q) => q.node.material.userData.__klasse === "lips")) um(p.c, halb(p));
+    for (const b of brauen) um([b.c.x, b.c.y, b.c.z], Math.max(b.hx, b.hy) + KH.brauBogen);
+    // DAS FELD DER KOPF-HAUT (der SDF-Guss der Nah-Stufe, `__tierFeld`): einmal, bei der ersten Frage
+    let Fk = null;
+    const feld = () => Fk || (Fk = __tierFeld(prims, KH.vox, KH.blend));
+    const self = {
+        box,
+        feld,
+        prims,
+        hoehlen,
+        farbeVon,
+        brauLin,
+        ML,
+        // DER TON EINES PUNKTS DER KOPF-HAUT → { best (das Primitiv), kl (seine Klasse: skin · lips · haarKappe · socket), braue, spalt }
+        ton(x, y, z) {
+            let best = prims[0],
+                bd = Infinity,
+                hoehle = null,
+                hd = Infinity;
+            for (const p of prims) {
+                const m = p.Mi;
+                const qx = m[0] * x + m[4] * y + m[8] * z + m[12],
+                    qy = m[1] * x + m[5] * y + m[9] * z + m[13],
+                    qz = m[2] * x + m[6] * y + m[10] * z + m[14];
+                const d = Math.sqrt(qx * qx + qy * qy + qz * qz) / p.r - 1;
+                if (d < bd) {
+                    bd = d;
+                    best = p;
+                }
+            }
+            for (const p of hoehlen) {
+                const m = p.Mi;
+                const qx = m[0] * x + m[4] * y + m[8] * z + m[12],
+                    qy = m[1] * x + m[5] * y + m[9] * z + m[13],
+                    qz = m[2] * x + m[6] * y + m[10] * z + m[14];
+                const d = Math.sqrt(qx * qx + qy * qy + qz * qz) / p.r - 1;
+                if (d < hd) {
+                    hd = d;
+                    hoehle = p;
+                }
+            }
+            if (hd < KH.hoehleSaum && best.node.material.userData.__klasse !== "lips" && !imBrau(x, y, z, KH.brauBogen)) best = hoehle;
+            const kl = best.node.material.userData.__klasse;
+            // die Braue: nicht auf Lippe und Kappe; die Mund-Linie: auf der Lippe, in der Höhe zwischen den Lippen-Mitten — die
+            // dunkle rote Innenlippe (koerper KOPF_TON.mundLinie, je Kanal ein Anteil der Lippe)
+            const braue = kl !== "lips" && kl !== "haarKappe" && imBrau(x, y, z, 0);
+            return { best, kl, braue, spalt: !braue && kl === "lips" && Math.abs(y - mundY) < KH.mundSpalt * mundH };
+        },
+        // DIE KARTE DES GESICHTS (Lehre 19 — was die Karte trägt, trägt kartenlos der Vertex): der Zug, den die Nah-Stufe von vorn an
+        // (x, y) zeigt → "sklera" | "iris" | "lippe" | "mund" | "hoehle" | "braue" | null (Haut, Haar, ein Lid). Der Strahl von vorn
+        // trifft zuerst das Auge (`strahl`, die Ellipsoide der Augen-Gruppe) oder die Kopf-Haut — ihre Fläche im Feld der Nah-Stufe
+        // (`feld`: von vorn je Schritt 0,9 des Feldwerts, der außen ein gedeckelter Abstand ist, mindestens KH.vox / 4, dann halbiert),
+        // dort ihr Ton nach `ton`. Eine Grobstufe fragt die Karte an ihrem (x, y): ihre Hülle liegt neben der feinen (der Leib der Menge
+        // um bis zu 1 cm vor ihr), der Zug nicht.
+        zug(x, y) {
+            const F = feld();
+            const s = strahl(x, y);
+            const zOben = F.lo[2] + (F.nz - 1) * KH.vox;
+            let z = null;
+            for (let a = zOben, b = __feldWert(F, KH.vox, x, y, a); a > F.lo[2]; ) {
+                const a2 = a - Math.max(0.9 * b, KH.vox / 4),
+                    b2 = __feldWert(F, KH.vox, x, y, a2);
+                if (b2 <= 0 && b > 0) {
+                    let [hi, lo] = [a, a2];
+                    for (let k = 0; k < 6; k++) {
+                        const m = (hi + lo) / 2;
+                        if (__feldWert(F, KH.vox, x, y, m) > 0) hi = m;
+                        else lo = m;
+                    }
+                    z = (hi + lo) / 2;
+                    break;
+                }
+                [a, b] = [a2, b2];
+            }
+            if (s && (z === null || s.z >= z)) return s.e.art === "lid" ? null : s.e.art;
+            if (z === null) return null;
+            const t = this.ton(x, y, z);
+            if (t.braue) return "braue";
+            if (t.kl === "lips") return t.spalt ? "mund" : "lippe";
+            return t.kl === "socket" ? "hoehle" : null;
+        },
+        // DIE KARTE ALS RASTER (über der Box des Gesichts samt `rand`, Schritt `schritt`, Kopf-Raum): einmal gerechnet, danach liest
+        // `karteZug(x, y)` den nächsten Punkt — die Grobstufe fragt sie an jeder Ecke und jeder Kante ihres Gesichts
+        karte(schritt, rand) {
+            if (this._karte && this._karte.schritt === schritt && this._karte.rand === rand) return this._karte;
+            const [x0, y0] = [box.min.x - rand, box.min.y - rand];
+            const [nx, ny] = [Math.ceil((box.max.x - box.min.x + 2 * rand) / schritt) + 1, Math.ceil((box.max.y - box.min.y + 2 * rand) / schritt) + 1];
+            const zug = new Uint8Array(nx * ny);
+            const namen = [null, "sklera", "iris", "lippe", "mund", "hoehle", "braue"];
+            for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) zug[j * nx + i] = namen.indexOf(this.zug(x0 + i * schritt, y0 + j * schritt));
+            return (this._karte = { schritt, rand, x0, y0, nx, ny, zug, namen });
+        },
+        karteZug(x, y) {
+            const K = this._karte;
+            const i = Math.round((x - K.x0) / K.schritt),
+                j = Math.round((y - K.y0) / K.schritt);
+            return i < 0 || j < 0 || i >= K.nx || j >= K.ny ? null : K.namen[K.zug[j * K.nx + i]];
+        },
+        // die Fläche der Augen von vorn je Art (Kopf-Raum², ein Raster von `schritt`): sklera · iris · pupille — der Anteil der
+        // Pupille mischt die Iris der Grobstufen (`irisMisch`)
+        augenFlaeche(schritt) {
+            const f = { sklera: 0, iris: 0, pupille: 0 };
+            for (const eye of ellipsoide.filter((e) => e.art === "sklera")) {
+                const m = new THREE.Matrix4().fromArray(Array.from(eye.Mi)).invert();
+                const c = new THREE.Vector3().setFromMatrixPosition(m);
+                const e = m.elements;
+                const R = eye.r * Math.sqrt(Math.max(e[0] * e[0] + e[1] * e[1] + e[2] * e[2], e[4] * e[4] + e[5] * e[5] + e[6] * e[6]));
+                for (let y = c.y - R; y <= c.y + R; y += schritt)
+                    for (let x = c.x - R; x <= c.x + R; x += schritt) {
+                        const s = strahl(x, y);
+                        if (!s || s.e.art === "lid") continue;
+                        f[s.e.kl === "eye" ? "sklera" : s.e.kl === "pupil" ? "pupille" : "iris"] += schritt * schritt;
+                    }
+            }
+            return f;
+        },
+    };
+    return self;
+}
+
 // Die Zonen des Leibs je Primitiv: 0 = die Haut, 1 = das Haar, 2 + i = die Kleid-Zone i (koerper `kleidZonen`, die erste
 // Zone, die sein Teil nennt, gewinnt: das Hemd liegt über dem Bund der Hose). Sein Teil ist der benannte Knoten (`B.parts`),
 // unter einer Gruppe, die eine Zone nennt (der Schuh: das Gelenk ankle), ihr Name; ein unbenanntes Füll-Teil trägt den Teil
-// des nächsten benannten (wie der Stoff aus der Haut).
-function __mengenLeib(kern, B, dials, matFuer, gelenkVon, skinJoints, fern, ziel) {
+// des nächsten benannten (wie der Stoff aus der Haut). DAS GESICHT (w4-mensch-kopf): mit dem Gesetz des Gesichts `gesicht`
+// (`__gesichtGesetz`, die Stufe 2 — der Wurf der Stufe 3 trägt keins) zerfällt die Haut am Kopf in die Zonen des Gesichts
+// (MENGEN_GESICHT, ab K = 2 + Kleid-Zonen): die Dreiecke vor dem Gesicht teilen sich bis `fein` (`__teileFein`), jede Ecke fragt
+// das Gesetz im Kopf-Raum, jede Kante zwischen zwei Zonen sucht ihre Grenze auf dem Gesetz (Halbierung) — die Grenzen sind Nähte,
+// der Kollaps hält sie (`__huelleKollaps`): das Gesicht kostet seine Nähte, der Leib trägt den Rest der Zeile.
+var MENGEN_GESICHT = Object.freeze({
+    zonen: Object.freeze(["hoehle", "braue", "lippe", "mund", "sklera", "iris"]),
+    grob: 0.04,
+    fein: 0.012,
+    karte: 0.004,
+    rand: 0.04,
+    halbieren: 8,
+    anteil: 0.85,
+    zuege: Object.freeze({ sklera: "auge", iris: "auge", lippe: "mund", mund: "mund", braue: "braue", hoehle: "hoehle" }),
+    traegt: 0.5,
+});
+function __mengenLeib(kern, B, dials, matFuer, gelenkVon, skinJoints, fern, ziel, gesicht) {
     const MM = MENSCH_MENGE;
     const vox = fern ? MM.voxFern : MM.vox;
     const kopf = B.parts.head;
@@ -6374,8 +6695,6 @@ function __mengenLeib(kern, B, dials, matFuer, gelenkVon, skinJoints, fern, ziel
     });
     B.character.updateMatrixWorld(true);
     const prims = __tierPrims(B.character, B.character, () => true, vox, MM.blend, gelenkVon, MM.klassen, true);
-    // die Höhlen der Augen (Klasse socket) formen nichts: sie sind ein Ton der Haut wie in der Kopf-Haut der Nah-Stufe
-    const hoehlen = __tierPrims(B.character, B.character, () => true, vox, MM.blend, gelenkVon, ["socket"], true);
     for (const m of kappen) kopf.remove(m);
     const zonen = kern.kleidZonen(dials) || [];
     const teilVon = new Map();
@@ -6409,11 +6728,46 @@ function __mengenLeib(kern, B, dials, matFuer, gelenkVon, skinJoints, fern, ziel
         }
     }
     const F = __tierFeld(prims, vox, MM.blend);
-    const roh = __huelleAusFeld(kern, F.f, F.nx, F.ny, F.nz, F.lo, vox, 0, 0, null, null, 0, undefined, true);
+    let roh = __huelleAusFeld(kern, F.f, F.nx, F.ny, F.nz, F.lo, vox, 0, 0, null, null, 0, undefined, true);
     if (!roh) throw new Error("MENGEN-LEIB: der Guss lieferte keine Fläche (fail-closed)");
     // je Ecke der Abstand zu jeder Zone (die Schranke zuerst: ein Primitiv, dessen |v − c| − Reichweite über dem Minimum seiner
     // Zone liegt, erreicht es nie), geschnitten, mit der Naht kollabiert
     const K = 2 + zonen.length;
+    // DAS GESICHT (w4-mensch-kopf): vor dem Gesicht teilt die Hülle fein, die Haut am Kopf fragt das Gesetz im Kopf-Raum
+    // (`gesicht.zuKopf`: Charakter → Kopf in der Spreiz-Pose) — die Zone K + j heißt MENGEN_GESICHT.zonen[j]
+    let gz = null;
+    if (gesicht) {
+        const MG = MENGEN_GESICHT;
+        const G = gesicht.G;
+        const e = gesicht.zuKopf;
+        const kopfRaum = (x, y, z) => [e[0] * x + e[4] * y + e[8] * z + e[12], e[1] * x + e[5] * y + e[9] * z + e[13], e[2] * x + e[6] * y + e[10] * z + e[14]];
+        const b = G.box;
+        const imFeld = (h) =>
+            h[0] > b.min.x - MG.rand && h[0] < b.max.x + MG.rand && h[1] > b.min.y - MG.rand && h[1] < b.max.y + MG.rand && h[2] > b.min.z - MG.rand;
+        G.karte(MG.karte, MG.rand);
+        gz = (x, y, z) => {
+            const h = kopfRaum(x, y, z);
+            if (!imFeld(h)) return 0;
+            const zug = G.karteZug(h[0], h[1]);
+            return zug ? K + MG.zonen.indexOf(zug) : 0;
+        };
+        // die Teilung: im Feld jede Kante über `grob`, darunter bis `fein` nur, wo eine Grenze des Gesichts über sie läuft (die
+        // Zone an ihren Enden oder ihrer Mitte verschieden) — die Ecken sammeln sich an den Zügen, nicht auf der Wange
+        const lage = (P, i) => kopfRaum(P[i * 3], P[i * 3 + 1], P[i * 3 + 2]);
+        const zonen = []; // die Zone je Ecke (eine Ecke wandert nie)
+        const zoneVon = (P, i) => (zonen[i] !== undefined ? zonen[i] : (zonen[i] = gz(P[i * 3], P[i * 3 + 1], P[i * 3 + 2])));
+        const neu = __teileFein(roh, (P, i) => imFeld(lage(P, i)), (P, a, c) => {
+            const [u, v] = [lage(P, a), lage(P, c)];
+            const [dx, dy, dz] = [u[0] - v[0], u[1] - v[1], u[2] - v[2]];
+            const l = Math.sqrt(dx * dx + dy * dy + dz * dz);
+            if (l <= MG.fein) return false;
+            if (l > MG.grob) return true;
+            const za = zoneVon(P, a);
+            return za !== zoneVon(P, c) || za !== gz((P[a * 3] + P[c * 3]) / 2, (P[a * 3 + 1] + P[c * 3 + 1]) / 2, (P[a * 3 + 2] + P[c * 3 + 2]) / 2);
+        });
+        roh.dispose();
+        roh = neu;
+    }
     const pa = roh.attributes.position.array;
     const D = new Float32Array((pa.length / 3) * K).fill(Infinity);
     for (let i = 0; i < pa.length / 3; i++) {
@@ -6428,12 +6782,41 @@ function __mengenLeib(kern, B, dials, matFuer, gelenkVon, skinJoints, fern, ziel
             if (d < D[o]) D[o] = d;
         }
     }
-    const S = __farbSchnitt(roh, D, K);
+    const S = __farbSchnitt(roh, D, K, gz);
     roh.dispose();
-    const geo = __huelleKollaps(S.geo, ziel, S.zone);
+    const geo = __huelleKollaps(S.geo, ziel, S.zone, gesicht ? { ab: K, anteil: MENGEN_GESICHT.anteil } : null);
     if (geo.index.count / 3 > ziel) throw new Error(`MENGEN-LEIB: die Zeile ${ziel} hält nicht (${geo.index.count / 3}, fail-closed)`);
     const zone = geo === S.geo ? S.zone : geo.userData.zone;
     if (geo !== S.geo) S.geo.dispose();
+    // DAS GESICHT ÜBERLEBT DIE STUFE (w4-mensch-kopf, fail-closed): je Zug, den der Betrachter liest (MENGEN_GESICHT.zuege: Auge, Mund,
+    // Braue, Höhle), die Fläche von vorn im Kopf-Raum, die die Stufe mit diesem Zug dort trägt, wo die Karte ihn zeigt — DECKUNG (gegen
+    // die Fläche des Zugs in der Karte) und TREUE (gegen die Fläche der Stufe), je ≥ MENGEN_GESICHT.traegt, sonst bricht der Guss beim
+    // Namen; der Guss der Stufe 2 bricht, wenn die Prüfung fehlt (`bakeMenschInstance`).
+    let traegt = false;
+    if (gesicht) {
+        const MG = MENGEN_GESICHT;
+        const [G, e, kt] = [gesicht.G, gesicht.zuKopf, gesicht.G.karte(MENGEN_GESICHT.karte, MENGEN_GESICHT.rand)];
+        const z = {};
+        const zug = (n) => z[MG.zuege[n]] || (z[MG.zuege[n]] = { soll: 0, flaeche: 0, treffer: 0 });
+        for (const k of kt.zug) if (k) zug(kt.namen[k]).soll += kt.schritt * kt.schritt;
+        const [P, I] = [geo.attributes.position.array, geo.index.array];
+        const kr = (i) => [0, 1].map((a) => e[a] * P[i * 3] + e[4 + a] * P[i * 3 + 1] + e[8 + a] * P[i * 3 + 2] + e[12 + a]);
+        for (let t = 0; t < I.length / 3; t++) {
+            if (zone[t] < K) continue;
+            const n = MG.zonen[zone[t] - K];
+            const [a, b, c] = [0, 1, 2].map((k) => kr(I[t * 3 + k]));
+            const f = ((b[0] - a[0]) * (c[1] - a[1]) - (c[0] - a[0]) * (b[1] - a[1])) / 2;
+            if (!(f > 0)) continue;
+            zug(n).flaeche += f;
+            if (MG.zuege[G.karteZug((a[0] + b[0] + c[0]) / 3, (a[1] + b[1] + c[1]) / 3)] === MG.zuege[n]) zug(n).treffer += f;
+        }
+        for (const [n, x] of Object.entries(z)) {
+            const [d, t] = [Math.min(1, x.treffer / x.soll), x.flaeche ? x.treffer / x.flaeche : 0];
+            if (!(d >= MG.traegt && t >= MG.traegt))
+                throw new Error(`MENGEN-LEIB: das Gesicht trägt ${n} nicht (Deckung ${d.toFixed(2)}, Treue ${t.toFixed(2)} < ${MG.traegt}) — fail-closed`);
+        }
+        traegt = true;
+    }
     // die Gewichte an den Ecken, die bleiben (Tier-Regel: der Abstand zur Oberfläche der Primitive)
     const H = F.hi[1] - F.lo[1];
     const { zentren, kandidaten } = __primGewichte(prims, H, MM.blend, vox, F.lo, F.hi);
@@ -6444,12 +6827,63 @@ function __mengenLeib(kern, B, dials, matFuer, gelenkVon, skinJoints, fern, ziel
     const { sIdx, sWgt } = __hautGewichte(ecken, zentren, skinJoints, eW * eW, kandidaten);
     geo.setAttribute("skinIndex", new THREE.BufferAttribute(sIdx, 4));
     geo.setAttribute("skinWeight", new THREE.BufferAttribute(sWgt, 4));
-    geo.setAttribute("aSpreiz", geo.attributes.position.clone()); // die Töne der Haut fragen den Ort der Spreiz-Pose
     const mesh = new THREE.Mesh(geo, matFuer("leib"));
     mesh.userData.__skinned = true;
     mesh.userData.__huelle = true;
     B.character.add(mesh);
-    return { mesh, prims, hoehlen, zonen, zone };
+    return { mesh, zonen, zone, K, traegt };
+}
+
+// DIE FEINE TEILUNG (w4-mensch-kopf, das Gesicht des Leibs der Menge): jede Kante, deren Ecke im Feld liegt (`imFeld(P, i)`) und die
+// `teilen(P, a, b)` nennt, teilt sich in ihrer Mitte (EIN Punkt je Kante, beide Nachbarn teilen ihn: die Hülle bleibt dicht), jedes
+// Dreieck nach seinen geteilten Kanten (eine → 2, zwei → 3, drei → 4, der Umlauf bleibt) — Runde um Runde, bis keine solche Kante
+// bleibt. Die Form bleibt die der Hülle (die Mitte liegt auf ihrer Kante); die Töne des Gesichts gewinnen Raum, und der Kollaps nimmt
+// danach, was keine Naht trägt.
+function __teileFein(geo, imFeld, teilen) {
+    const P = Array.from(geo.attributes.position.array);
+    let I = Array.from(geo.index.array);
+    for (let runde = 0; runde < 8; runde++) {
+        const n = P.length / 3;
+        const feld = new Uint8Array(n);
+        for (let i = 0; i < n; i++) feld[i] = imFeld(P, i) ? 1 : 0;
+        const mitte = new Map();
+        const urteil = new Map(); // je Kante EIN Urteil der Runde
+        const teile = (a, b) => {
+            if (!(feld[a] || feld[b])) return -1;
+            const key = a < b ? a * n + b : b * n + a;
+            let ja = urteil.get(key);
+            if (ja === undefined) urteil.set(key, (ja = teilen(P, a, b)));
+            if (!ja) return -1;
+            let m = mitte.get(key);
+            if (m === undefined) {
+                m = P.length / 3;
+                P.push((P[a * 3] + P[b * 3]) / 2, (P[a * 3 + 1] + P[b * 3 + 1]) / 2, (P[a * 3 + 2] + P[b * 3 + 2]) / 2);
+                mitte.set(key, m);
+            }
+            return m;
+        };
+        const neu = [];
+        for (let t = 0; t < I.length; t += 3) {
+            const [a, b, c] = [I[t], I[t + 1], I[t + 2]];
+            const [ab, bc, ca] = [teile(a, b), teile(b, c), teile(c, a)];
+            const k = (ab >= 0) + (bc >= 0) + (ca >= 0);
+            if (k === 0) neu.push(a, b, c);
+            else if (k === 3) neu.push(a, ab, ca, ab, b, bc, ca, bc, c, ab, bc, ca);
+            else if (k === 1) {
+                if (ab >= 0) neu.push(a, ab, c, ab, b, c);
+                else if (bc >= 0) neu.push(b, bc, a, bc, c, a);
+                else neu.push(c, ca, b, ca, a, b);
+            } else if (ca < 0) neu.push(ab, b, bc, a, ab, bc, a, bc, c);
+            else if (ab < 0) neu.push(bc, c, ca, b, bc, ca, b, ca, a);
+            else neu.push(ca, a, ab, c, ca, ab, c, ab, b);
+        }
+        if (!mitte.size) break;
+        I = neu;
+    }
+    const ng = new THREE.BufferGeometry();
+    ng.setAttribute("position", new THREE.BufferAttribute(new Float32Array(P), 3));
+    ng.setIndex(new THREE.BufferAttribute(Uint32Array.from(I), 1));
+    return ng;
 }
 
 // DIE FARBE IM STOFF (mensch.K4, die Kleid-Grenze): je Ecke der Abstand zu jeder Zone (das Minimum über ihre Primitive, am Ort
@@ -6457,12 +6891,28 @@ function __mengenLeib(kern, B, dials, matFuer, gelenkVon, skinJoints, fern, ziel
 // gleich sind (linear auf der Kante: der Punkt jeder Kante entsteht EINMAL, beide Nachbarn teilen ihn), über drei Zonen am
 // Schwerpunkt — die Grenze läuft quer durch die Dreiecke, nie entlang ihrer Ecken (vorher die Treppe). Geschnitten wird die
 // feine Hülle in der Spreiz-Pose; jede Fläche trägt ihre Zone, die Punkte der Grenze sind die Naht (`__huelleKollaps` mit Zone).
-function __farbSchnitt(geo, D, K) {
+// DAS GESICHT (w4-mensch-kopf, `gz`: der Ort → 0 oder die Zone K + j des Gesetzes): jede Ecke der Haut fragt es, und eine Kante, an
+// der eine Zone des Gesichts endet, findet ihre Grenze auf dem Gesetz selbst (MENGEN_GESICHT.halbieren Halbierungen) — die Zonen des
+// Gesichts haben keinen Abstand, sie sind Töne der Haut.
+function __farbSchnitt(geo, D, K, gz) {
     const n = geo.attributes.position.count;
     const ia = geo.index.array;
     const zone = new Uint8Array(n);
     for (let i = 0; i < n; i++) for (let k = 1; k < K; k++) if (D[i * K + k] < D[i * K + zone[i]]) zone[i] = k;
     const pa = geo.attributes.position.array;
+    if (gz) for (let i = 0; i < n; i++) if (zone[i] === 0) zone[i] = gz(pa[i * 3], pa[i * 3 + 1], pa[i * 3 + 2]);
+    // die Grenze einer Zone des Gesichts auf der Kante (p, q): wo das Gesetz die Zone von p verlässt
+    const gesichtT = (p, q) => {
+        let lo = 0,
+            hi = 1;
+        for (let s = 0; s < MENGEN_GESICHT.halbieren; s++) {
+            const m = (lo + hi) / 2;
+            const z = gz(pa[p * 3] + (pa[q * 3] - pa[p * 3]) * m, pa[p * 3 + 1] + (pa[q * 3 + 1] - pa[p * 3 + 1]) * m, pa[p * 3 + 2] + (pa[q * 3 + 2] - pa[p * 3 + 2]) * m);
+            if (z === zone[p]) lo = m;
+            else hi = m;
+        }
+        return (lo + hi) / 2;
+    };
     const aus = [];
     // eine Ecke aus gewichteten Quell-Ecken [[v, w], …] (die Lage linear)
     const lege = (teile) => {
@@ -6482,9 +6932,23 @@ function __farbSchnitt(geo, D, K) {
         const key = p * n + q;
         if (!punkte.has(key)) {
             const [zp, zq] = [zone[p], zone[q]];
-            const fp = D[p * K + zp] - D[p * K + zq],
-                fq = D[q * K + zp] - D[q * K + zq];
-            let t = fp / (fp - fq);
+            let t;
+            if (zp >= K || zq >= K) {
+                // eine Zone des Gesichts: gegen die Haut oder eine andere Zone des Gesichts die Grenze des Gesetzes, gegen Haar oder
+                // Kleid der Abstand (dort zählt das Gesicht als Haut)
+                const leib = (z) => z >= 1 && z < K;
+                if (!leib(zp) && !leib(zq)) t = gesichtT(p, q);
+                else {
+                    const [a, c] = [zp >= K ? 0 : zp, zq >= K ? 0 : zq];
+                    const fa = D[p * K + a] - D[p * K + c],
+                        fc = D[q * K + a] - D[q * K + c];
+                    t = fa / (fa - fc);
+                }
+            } else {
+                const fp = D[p * K + zp] - D[p * K + zq],
+                    fq = D[q * K + zp] - D[q * K + zq];
+                t = fp / (fp - fq);
+            }
             t = t > 0.02 ? (t < 0.98 ? t : 0.98) : 0.02; // auch NaN: die Ecke nie selbst
             punkte.set(key, lege([[p, 1 - t], [q, t]]));
         }
@@ -6558,46 +7022,23 @@ function __naehteTeilen(geo, fz) {
     return { geo: ng, zone: Uint8Array.from(vz) };
 }
 
-// DIE FARBEN DES LEIBS (nach der Rück-Pose): die Naht teilt sich (`__naehteTeilen`), jede Ecke trägt die Farbe ihrer Zone
-// (linear wie der Stoff); die Haut ihre Töne — die Lippe, wo das nächste Haut-Primitiv eine Lippe ist, die Höhle im Saum der
-// Höhlen-Kugel (koerper MENSCH_GESTALT.kopfHaut.hoehleSaum, dieselbe Regel wie die Kopf-Haut der Nah-Stufe).
+// DIE FARBEN DES LEIBS (nach der Rück-Pose): die Naht teilt sich (`__naehteTeilen`), jede Ecke trägt die Farbe ihrer Zone (linear
+// wie der Stoff) und ihren Ton (mensch.K4, koerper `menschTon` — der Satz der Menge färbt jede Ecke nach der Palette ihres Bewohners):
+// 0 die Haut, 1 das Haar, 2 + i die Kleid-Zone i, K + j die Zone j des Gesichts (MENGEN_GESICHT; `toene.gesicht` je Zone { c, t } aus
+// dem Gesetz des Gesichts, wie die Kopf-Haut der Nah-Stufe sie trägt). Bis w4-mensch-kopf fragte die Haut nach dem Kollaps einen
+// Zwilling dieses Gesetzes (die Lippe am nächsten Primitiv, die Höhle im Saum): von 130 Dreiecken des Kopfs trugen 2 Ecken die Lippe.
 function __mengenFarben(kern, L, toene) {
-    const saum = kern.MENSCH_GESTALT.kopfHaut.hoehleSaum;
-    if (!(saum >= 0)) throw new Error("MENGEN-LEIB: kopfHaut.hoehleSaum fehlt (fail-closed)");
     const S = __naehteTeilen(L.mesh.geometry, L.zone);
     const g = S.geo;
-    const sp = g.attributes.aSpreiz.array;
-    const col = new Float32Array((sp.length / 3) * 3);
-    // je Ecke ihr Ton (mensch.K4, koerper `menschTon`): die Zone 0 Haut, Lippe oder Höhle, 1 das Haar, 2 + i die Kleid-Zone i —
-    // der Satz der Menge färbt jede Ecke nach der Palette ihres Bewohners
-    const ton = new Float32Array(sp.length / 3);
-    const normiert = (p, x, y, z) => {
-        const m = p.Mi;
-        const qx = m[0] * x + m[4] * y + m[8] * z + m[12],
-            qy = m[1] * x + m[5] * y + m[9] * z + m[13],
-            qz = m[2] * x + m[6] * y + m[10] * z + m[14];
-        return Math.sqrt(qx * qx + qy * qy + qz * qz) / p.r - 1;
-    };
-    for (let i = 0; i < sp.length / 3; i++) {
+    const n = g.attributes.position.count;
+    const col = new Float32Array(n * 3);
+    const ton = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
         const z = S.zone[i];
-        let c = toene.zonen[z];
-        let t = z === 1 ? kern.menschTon("hair") : z >= 2 ? kern.menschTon(null, z - 2) : kern.menschTon("skin");
-        if (z === 0) {
-            const [x, y, w] = [sp[i * 3], sp[i * 3 + 1], sp[i * 3 + 2]];
-            let best = null,
-                bd = Infinity;
-            for (const p of L.prims) {
-                if (p.zone !== 0) continue;
-                const d = __tierAbstand(p, x, y, w);
-                if (d < bd) [bd, best] = [d, p];
-            }
-            if (best && best.node.material.userData.__klasse === "lips") [c, t] = [toene.lippe, kern.menschTon("lips")];
-            else if (L.hoehlen.some((h) => normiert(h, x, y, w) < saum)) [c, t] = [toene.hoehle, kern.menschTon("socket")];
-        }
-        col.set(c, i * 3);
-        ton[i] = t;
+        const f = z >= L.K ? toene.gesicht[MENGEN_GESICHT.zonen[z - L.K]] : null;
+        col.set(f ? f.c : toene.zonen[z], i * 3);
+        ton[i] = f ? f.t : z === 1 ? kern.menschTon("hair") : z >= 2 ? kern.menschTon(null, z - 2) : kern.menschTon("skin");
     }
-    g.deleteAttribute("aSpreiz");
     g.setAttribute("color", new THREE.BufferAttribute(col, 3));
     g.setAttribute("aTon", new THREE.BufferAttribute(ton, 1));
     L.mesh.geometry.dispose();
@@ -7846,6 +8287,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         throw new Error("MENSCH-GUSS: koerper-Kern ohne menschTon/brauTon — die Farbe folgt dem Samen (fail-closed)");
     const tonStempel = (geo, t) => geo.setAttribute("aTon", new THREE.BufferAttribute(new Float32Array(geo.attributes.position.count).fill(t), 1));
     let mengenLeib = null;
+    let gesichtMenge = null; // das Gesetz des Gesichts der Stufe 2 (w4-mensch-kopf)
     if (typeof kern.surfaceNets === "function" && typeof kern.kleidZonen === "function") {
         B.character.updateMatrixWorld(true);
         const invChar = new THREE.Matrix4().copy(B.character.matrixWorld).invert();
@@ -8005,7 +8447,17 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         const sohlen = new Map(); // Hülle einer Zone mit Sohle → ihre Quellen (Gelände H5)
         // DER LEIB DER MENGE (mensch.K4): EINE Hülle; seine Sohle ist die Unterkante der Füße, beschuht oder bloß (Gelände H5)
         if (menge) {
-            mengenLeib = __mengenLeib(kern, B, dials, matFuer, animAhnH, skinJoints, fern, zeilenZiel);
+            // DAS GESICHT DER MENGE (w4-mensch-kopf): die Stufe 2 trägt es nach dem Gesetz des Gesichts (`__gesichtGesetz`, im Kopf-Raum
+            // der Spreiz-Pose — sie rührt den Kopf nicht); der Wurf der Stufe 3 wird nie gesehen und trägt keins
+            if (!fern) {
+                B.character.updateMatrixWorld(true);
+                gesichtMenge = {
+                    G: __gesichtGesetz(kern, B, matFuer, lin, skinCol, hairCol, dials),
+                    zuKopf: Float64Array.from(new THREE.Matrix4().copy(B.parts.head.matrixWorld).invert().multiply(B.character.matrixWorld).elements),
+                };
+            }
+            mengenLeib = __mengenLeib(kern, B, dials, matFuer, animAhnH, skinJoints, fern, zeilenZiel, gesichtMenge);
+            if (!fern && !mengenLeib.traegt) throw new Error("MENGEN-LEIB: die Stufe 2 trägt kein Gesicht (fail-closed)");
             gebauteHuellen.push(mengenLeib.mesh);
             const fuss = [];
             for (const an of ["ankle1", "ankle-1"])
@@ -8189,11 +8641,30 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         }
         // der Leib der Menge in der Ruhe-Pose: seine Farben (`__mengenFarben`); jedes Primitiv war nur seine Quelle
         if (mengenLeib) {
-            const KT0 = kern.kopfToene(skinCol);
+            // die Töne des Gesichts: Lippe und Höhle (koerper kopfToene), die Mund-Linie (KOPF_TON.mundLinie je Kanal der Lippe), die
+            // Braue (`brauTon`), die Sklera und die Iris mit ihrer Pupille nach der Fläche, die beide von vorn zeigen (das Mittel, das
+            // ein Bildpunkt über ihnen trägt) — fest wie das Auge der Nah-Stufe
+            const G = gesichtMenge && gesichtMenge.G;
+            let gesicht = null;
+            if (G) {
+                const KT0 = kern.kopfToene(skinCol);
+                const fl = G.augenFlaeche(MENGEN_GESICHT.fein / 8);
+                const [iris, pupille] = [lin(KL.iris.c), lin(KL.pupil.c)];
+                const ip = fl.iris + fl.pupille;
+                if (!(fl.sklera > 0 && fl.iris > 0)) throw new Error("MENGEN-LEIB: das Auge zeigt von vorn keine Sklera oder Iris (fail-closed)");
+                const ton = (k) => kern.menschTon(k);
+                gesicht = {
+                    hoehle: { c: lin(KT0.socket), t: ton("socket") },
+                    braue: { c: G.brauLin, t: ton("braue") },
+                    lippe: { c: lin(KT0.lips), t: ton("lips") },
+                    mund: { c: lin(KT0.lips).map((x, c) => x * G.ML[c]), t: ton("lips") },
+                    sklera: { c: lin(KL.eye.c), t: ton("eye") },
+                    iris: { c: iris.map((x, c) => (x * fl.iris + pupille[c] * fl.pupille) / ip), t: ton("iris") },
+                };
+            }
             const toene = {
                 zonen: [lin(skinCol), lin(hairCol)].concat(mengenLeib.zonen.map((z) => lin(z.hex))),
-                lippe: lin(KT0.lips),
-                hoehle: lin(KT0.socket),
+                gesicht,
             };
             __mengenFarben(kern, mengenLeib, toene);
             B.character.traverse((n) => {
@@ -8213,13 +8684,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             throw new Error("MENSCH-HAUT: Hüllen-Maschine, MENSCH_GESTALT oder Kopf fehlt (fail-closed)");
         const kopf = B.parts.head;
         const KH = kern.MENSCH_GESTALT.kopfHaut;
-        const augen = [B.augen.eyeL, B.augen.eyeR].filter(Boolean);
-        const unterAuge = (n) => {
-            for (let c = n; c; c = c.parent) if (augen.includes(c)) return true;
-            return false;
-        };
         B.character.updateMatrixWorld(true);
-        // DAS HAAR ALS VOLUMEN (K57): die Kappe der Frisur (koerper haarKappe) gießt mit — über der Haarlinie der Haar-Ton
         // die Lider gehören zum Auge: das Augen-Raster (die Bake-Fabrik kennt nur die Klasse skin)
         const AR = kern.MENSCH_GESTALT.augeRaster;
         for (const n of ["lidTL", "lidBL", "lidTR", "lidBR"]) {
@@ -8289,121 +8754,27 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 l.geometry.setAttribute("color", new THREE.BufferAttribute(col, 3));
             }
         }
-        const kappen = kern.haarKappe(dials).map((k) => {
-            const m = new THREE.Mesh(new THREE.SphereGeometry(k.r, 8, 6), matFuer("haarKappe"));
-            m.position.set(k.c[0], k.c[1], k.c[2]);
-            m.scale.set(k.sc[0], k.sc[1], k.sc[2]);
-            kopf.add(m);
-            return m;
-        });
-        kopf.updateMatrixWorld(true);
-        const prims = __tierPrims(kopf, kopf, (n) => !unterAuge(n), KH.vox, KH.blend, () => null, ["skin", "lips", "haarKappe"], true);
-        // DIE HÖHLE IST HAUT (A4, KOPF_SOLL hoehleL/hoehleA im BILD): ihr Ton (koerper kopfToene) stand auf einer eigenen Kugel
-        // HINTER der Kopf-Haut — das Bild zeigte um das Auge den Wangen-Ton. Die Höhlen-Kugeln (Klasse socket, die Ohrmuschel
-        // eingeschlossen) formen nichts mehr und werden nicht gegossen: sie sind die Ton-Zone der Haut (hoehleSaum, unten).
-        const hoehlen = __tierPrims(kopf, kopf, (n) => !unterAuge(n), KH.vox, KH.blend, () => null, ["socket"], true);
-        if (hoehlen.length < 2) throw new Error("MENSCH-HAUT: die Höhlen-Kugeln (Klasse socket) fehlen (fail-closed)");
-        for (const h of hoehlen) h.node.userData.__nichtGiessen = true;
-        for (const m of kappen) kopf.remove(m);
-        // die gemalten Falten (Nasolabial-Stäbe, Philtrum: Klasse shadow) stünden als Stäbe auf der glatten Haut — sie fallen
-        kopf.traverse((n) => {
-            if (n.isMesh && n.material.userData.__klasse === "shadow" && !unterAuge(n)) n.userData.__nichtGiessen = true;
-        });
-        if (prims.length < 2) throw new Error("MENSCH-HAUT: der Kopf trägt keine Haut-Primitive");
-        const Fk = __tierFeld(prims, KH.vox, KH.blend);
+        // DAS GESETZ DES GESICHTS (`__gesichtGesetz`): die Primitive der Kopf-Haut, ihre Töne und das Auge von vorn — dieselbe
+        // Regel, die der Leib der Menge liest
+        const G = __gesichtGesetz(kern, B, matFuer, lin, skinCol, hairCol, dials);
+        const Fk = G.feld();
         const geo = __huelleAusFeld(kern, Fk.f, Fk.nx, Fk.ny, Fk.nz, Fk.lo, KH.vox, 0, 0, null, null, 0);
         if (!geo) throw new Error("MENSCH-HAUT: die Kopf-Haut lieferte keine Fläche");
-        // je Vertex die Farbe des nächsten Primitivs (normierter Abstand |Mi·p|/r − 1), linear wie das Material
-        const farbeVon = new Map();
-        for (const p of prims.concat(hoehlen)) {
-            const c = p.node.material.color;
-            farbeVon.set(p, [c.r, c.g, c.b]);
-        }
-        // die Mund-Linie liegt zwischen den Lippen-Mitten (Kopf-Raum), ihre Breite ist ein Bruchteil der Lippen-Höhe
-        const oL = B.augen.upperLipRef,
-            uL = B.augen.lowerLipRef;
-        const mundY = (oL.position.y + uL.position.y) / 2,
-            mundH = Math.abs(oL.position.y - uL.position.y);
-        // DER SAUM DER HÖHLE (A4, koerper MENSCH_GESTALT.kopfHaut.hoehleSaum): die Höhlen-Kugel liegt unter Braue und Wange — die
-        // Haut trägt ihren Ton, so weit sie innerhalb hoehleSaum Halbachsen über ihrem Rand liegt (der Ring um das Auge, die
-        // Muschel des Ohrs); die Lippe bleibt Lippe. Ohne Saum keine Höhle (fail-closed).
-        if (!(KH.hoehleSaum >= 0)) throw new Error("MENSCH-HAUT: kopfHaut.hoehleSaum fehlt (fail-closed)");
-        // DER BRAUEN-BOGEN (mensch.K4): die Höhle beginnt unter ihm — so weit um die Braue (Kopf-Raum) trägt die Haut keinen Ton
-        // der Höhle (die Haut des Bogens zwischen Brauen-Haar und Lid-Falte)
-        if (!(KH.brauBogen >= 0)) throw new Error("MENSCH-HAUT: kopfHaut.brauBogen fehlt (fail-closed)");
-        // DIE BRAUE IST EIN TON DER HAUT (mensch.K4 Staffel 1, das Gesicht auf 6 m): unter den Brauen-Haaren (die Gruppen
-        // browL/browR des Baums) trägt die Haut den Ton der Braue (koerper `brauTon`: das Haar über der Haut) — die Ellipse um
-        // ihre Haare im Kopf-Raum, um `brauSaum` [seitlich, Höhe] weiter (die Braue reicht über die Lidspalte hinaus); von fern
-        // liest die Braue als Fläche, nie als fünf Striche unter einem Bildpunkt. Die Haare bleiben (nah).
-        const BS = KH.brauSaum;
-        if (!(Array.isArray(BS) && BS[0] >= 0 && BS[1] >= 0)) throw new Error("MENSCH-HAUT: kopfHaut.brauSaum fehlt (fail-closed)");
-        const brauLin = lin(kern.brauTon(skinCol, hairCol));
-        const kopfInv = new THREE.Matrix4().copy(kopf.matrixWorld).invert();
-        const brauen = [B.augen.browL, B.augen.browR].filter(Boolean).map((g) => {
-            const bb = new THREE.Box3();
-            const v = new THREE.Vector3();
-            g.traverse((n) => {
-                if (!n.isMesh) return;
-                const p = n.geometry.attributes.position;
-                const M = new THREE.Matrix4().multiplyMatrices(kopfInv, n.matrixWorld);
-                for (let k = 0; k < p.count; k++) bb.expandByPoint(v.fromBufferAttribute(p, k).applyMatrix4(M));
-            });
-            const c = bb.getCenter(new THREE.Vector3()),
-                h = bb.getSize(new THREE.Vector3()).multiplyScalar(0.5);
-            return { c, hx: h.x + BS[0], hy: h.y + BS[1], z0: bb.min.z - 3 * BS[1] };
-        });
-        if (brauen.length < 2) throw new Error("MENSCH-HAUT: die Brauen (browL/browR) fehlen (fail-closed)");
-        // die Ellipse der Brauen, um m (Kopf-Raum) in jeder Richtung weiter: m = 0 die Braue, m = brauBogen ihr Bogen
-        const imBrau = (x, y, z, m) => brauen.some((b) => z > b.z0 - m && ((x - b.c.x) / (b.hx + m)) ** 2 + ((y - b.c.y) / (b.hy + m)) ** 2 < 1);
-        const ML = kern.KOPF_TON && kern.KOPF_TON.mundLinie;
-        if (!Array.isArray(ML) || ML.length !== 3) throw new Error("MENSCH-HAUT: KOPF_TON.mundLinie fehlt (fail-closed)");
         const pa = geo.attributes.position;
         const col = new Float32Array(pa.count * 3);
-        // je Ecke ihr Ton (mensch.K4, koerper `menschTon`): Haut, Lippe (die Mund-Linie eingeschlossen), Höhle, Braue, Haar-Kappe
+        // je Ecke ihr Ton (mensch.K4, koerper `menschTon`): Haut, Lippe (die Mund-Linie eingeschlossen), Höhle, Braue, Haar-Kappe —
+        // je Vertex die Farbe des nächsten Primitivs (normierter Abstand, `G.ton`), linear wie das Material
         const ton = new Float32Array(pa.count);
         for (let i = 0; i < pa.count; i++) {
-            const x = pa.getX(i),
-                y = pa.getY(i),
-                z = pa.getZ(i);
-            let best = prims[0],
-                bd = Infinity,
-                hoehle = null,
-                hd = Infinity;
-            for (const p of prims) {
-                const m = p.Mi;
-                const qx = m[0] * x + m[4] * y + m[8] * z + m[12],
-                    qy = m[1] * x + m[5] * y + m[9] * z + m[13],
-                    qz = m[2] * x + m[6] * y + m[10] * z + m[14];
-                const d = Math.sqrt(qx * qx + qy * qy + qz * qz) / p.r - 1;
-                if (d < bd) {
-                    bd = d;
-                    best = p;
-                }
-            }
-            for (const p of hoehlen) {
-                const m = p.Mi;
-                const qx = m[0] * x + m[4] * y + m[8] * z + m[12],
-                    qy = m[1] * x + m[5] * y + m[9] * z + m[13],
-                    qz = m[2] * x + m[6] * y + m[10] * z + m[14];
-                const d = Math.sqrt(qx * qx + qy * qy + qz * qz) / p.r - 1;
-                if (d < hd) {
-                    hd = d;
-                    hoehle = p;
-                }
-            }
-            if (hd < KH.hoehleSaum && best.node.material.userData.__klasse !== "lips" && !imBrau(x, y, z, KH.brauBogen)) best = hoehle;
-            const kl = best.node.material.userData.__klasse;
-            if (kl !== "lips" && kl !== "haarKappe" && imBrau(x, y, z, 0)) {
-                col.set(brauLin, i * 3);
+            const t = G.ton(pa.getX(i), pa.getY(i), pa.getZ(i));
+            if (t.braue) {
+                col.set(G.brauLin, i * 3);
                 ton[i] = kern.menschTon("braue");
                 continue;
             }
-            // die Mund-Linie: auf der Lippe, in der Höhe zwischen den Lippen-Mitten — die dunkle rote Innenlippe (koerper
-            // KOPF_TON.mundLinie, je Kanal ein Anteil der Lippe)
-            const fb = farbeVon.get(best);
-            const spalt = kl === "lips" && Math.abs(y - mundY) < KH.mundSpalt * mundH;
-            col.set(spalt ? fb.map((x, c) => x * ML[c]) : fb, i * 3);
-            ton[i] = kern.menschTon(kl);
+            const fb = G.farbeVon.get(t.best);
+            col.set(t.spalt ? fb.map((x, c) => x * G.ML[c]) : fb, i * 3);
+            ton[i] = kern.menschTon(t.kl);
         }
         // DIE VERDECKUNG DER KOPF-HAUT (mensch.K4 Staffel 1, koerper MENSCH_GESTALT.kopfHaut.verdeckung): was die Haut selbst
         // verdeckt — die Falte unter der Nase, die Mund-Linie, der Winkel des Auges —, empfängt weniger Licht; die Kaskade wirft im

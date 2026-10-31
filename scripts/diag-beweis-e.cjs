@@ -101,8 +101,7 @@ const SICHT_FN = async (a) => {
         setze(true);
         let n = 0;
         for (let i = 0; i < an.length; i += 4)
-            if (Math.abs(an[i] - aus[i]) + Math.abs(an[i + 1] - aus[i + 1]) + Math.abs(an[i + 2] - aus[i + 2]) > 24)
-                n++;
+            if (pixelAbstand(an, aus, i) > 24) n++;
         if (!best || n > best.n) best = { w, n };
     }
     rend.setAnimationLoop(r._gameLoopTick);

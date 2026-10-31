@@ -89,6 +89,15 @@ NUR die 64 Mensch-Schlüssel (L0 26 · L1 20 · L2 9 · L3 9, mit den Gelenken v
 gleich bis auf den Leib der Mengen-Stufe (L2 952 → 951); alle übrigen 446 Klassen byte-gleich (jedes Tier, beide Mensch-Beipacks),
 510 → 510 Klassen.
 
+Vertrags-Akt w4-mensch-kopf (31.10.2026, das Gesicht überlebt jede Stufe — der Leib der Menge trägt die Karte des Gesichts): das
+Gesetz des Gesichts (`__gesichtGesetz`: der Ton der Kopf-Haut je Punkt und die Karte, was die Nah-Stufe von vorn zeigt) ist EINE
+Regel; die Kopf-Haut der Nah-Stufe liest sie byte-gleich, der Leib der Menge (Stufe 2) teilt sein Gesicht fein (`__teileFein`),
+schneidet Höhle · Braue · Lippe · Mund · Sklera · Iris als Zonen auf der Karte (`__farbSchnitt`, Grenzen halbiert) und kollabiert sie
+als Nähte mit dem Schutz ihrer Fläche (`__huelleKollaps` `schutz`, je Komponente ≥ 0,85, Längen IEEE-exakt); der Guss bricht, wenn ein
+Zug unter Deckung oder Treue 0,5 fällt (Auge 0,87/1 · Mund 0,73/1 · Braue 0,79/1 · Höhle 0,71/0,77). Der Zwilling der Mengen-Farben
+(Lippe und Höhle nach dem Kollaps) fiel. Neu geprägt NUR `mensch-L2|leib|mensch` (Ecken 951 → 1 051, Dreiecke 1 700 → 1 700, der Kopf
+130 → 278); alle übrigen 509 Klassen byte-gleich, 510 → 510 Klassen.
+
 ## Invarianten des Gates
 
 - **Determinismus:** ein frischer Ofen (neuer vm-Kontext) gießt jede Klasse byte-gleich.

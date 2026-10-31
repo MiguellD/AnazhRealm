@@ -1541,7 +1541,8 @@ async function starte() {
                             }));
                         const haarK = namen.map((n, j) => (/^spieler:kopf\/hair$/.test(n) ? j + 1 : 0)).filter(Boolean);
                         if (!nm) throw new Error("--gesicht: keine Kopf-Haut am Gelenk head");
-                        gesicht = __gesichtMasse(u8, teil, W, H, proben, haarK);
+                        // WO DAS AUGE ZEIGT (abnahme-urteil `gesichtMasse` zeigt): die Szene und die Szene ohne das Auge, die Schwelle
+                        gesicht = __gesichtMasse(u8, teil, W, H, proben, haarK, [G, Os[namen.indexOf("spieler:kopf/auge")], schwelle]);
                     }
                     let abstand = null;
                     if (k.abstand) {

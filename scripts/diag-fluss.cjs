@@ -569,7 +569,7 @@ function urteilWelt(d) {
         `Kontrolle ${s.kontrolle.posts} Aufträge · nach dem Wechsel ${s.posts} Aufträge, ${s.neueSchluessel} neue Schlüssel ` +
             `(Auskunft: entfernt ${s.kontrolle.removes}→${s.removes}, Instanzen ${s.inst0}→${s.inst1})`
     );
-    const dreh = Math.abs(s.mul1[0] - s.mul0[0]) + Math.abs(s.mul1[1] - s.mul0[1]) + Math.abs(s.mul1[2] - s.mul0[2]);
+    const dreh = require("./lib/abnahme-urteil.cjs").pixelAbstand(s.mul1, s.mul0, 0);
     pruef(
         "W2b die Farbe dreht und das Laub fällt (Sommer → Herbst): uSeasonMul, uLaubPraesenz, Laub über aCenter",
         dreh > 0.3 && s.name === "autumn" && s.praesenz[1] < s.praesenz[0] && s.laub > 0,

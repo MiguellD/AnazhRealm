@@ -372,6 +372,9 @@ const cielab = (c) => {
 // Die Schwelle hält das GEMESSENE Rauschen: je Aufruf zwei gleiche Schüsse G und G2 (`bildRauschen`), die Tafel bricht über
 // RAUSCHEN_MAX.
 const RAUSCHEN_MAX = 0.002;
+// DIE PIXEL-DIFFERENZ zweier Bilder an Byte i (RGBA): die Summe der Kanal-Beträge (0–765) — Teilung, Rauschen und das freie Auge
+// lesen sie (in der Seite global `pixelAbstand`)
+const pixelAbstand = (A, B, i) => Math.abs(A[i] - B[i]) + Math.abs(A[i + 1] - B[i + 1]) + Math.abs(A[i + 2] - B[i + 2]);
 function klassenTeilung(G, Os, W, H, schwelle) {
     const t = schwelle == null ? 18 : schwelle;
     const teil = new Uint8Array(W * H);
@@ -382,8 +385,7 @@ function klassenTeilung(G, Os, W, H, schwelle) {
             bestD = t,
             n = 0;
         for (let k = 0; k < Os.length; k++) {
-            const O = Os[k];
-            const d = Math.abs(G[i] - O[i]) + Math.abs(G[i + 1] - O[i + 1]) + Math.abs(G[i + 2] - O[i + 2]);
+            const d = pixelAbstand(G, Os[k], i);
             if (d > t) {
                 n++;
                 if (d > bestD) {
@@ -405,7 +407,7 @@ function bildRauschen(A, B, W, H, schwelle) {
         max = 0;
     for (let p = 0; p < W * H; p++) {
         const i = p * 4;
-        const d = Math.abs(A[i] - B[i]) + Math.abs(A[i + 1] - B[i + 1]) + Math.abs(A[i + 2] - B[i + 2]);
+        const d = pixelAbstand(A, B, i);
         if (d > t) n++;
         if (d > max) max = d;
     }
@@ -763,10 +765,17 @@ function klassenMasse(F, m, W, H, aussen, ohne, spiegel) {
 //                ihre Ränder) · hoehleL/A dasselbe für die Augenhöhle
 //   haarDeckung  Anteil der vorderen Kalotten-Proben (über der Haarlinie KOPF_SOLL haarLinie), die als Haar lesen: dort zeigt
 //                die Teilung eine Strähne (`haarK`), oder die Haut zeigt einen Ton näher am Haar als an der Wange
-function gesichtMasse(F, teil, W, H, proben, haarK) {
+// DAS FREIE AUGE IST EINE FRAGE DER DECKUNG, NICHT DER MEHRHEIT (w4-mensch-kopf, `zeigt` = [Szene, Szene ohne das Auge, Schwelle]):
+// eine Iris-Probe ist frei, wenn das Verbergen des Auges ihr Pixel über der Schwelle ändert — verdeckt sie ein Lid oder die Haut,
+// ändert ihr Fehlen dort nichts. Die Teilung gibt ein Misch-Pixel der stärksten Änderung; unter der zeitlichen Auflösung ist jedes
+// Pixel einer Iris auf 6 m (1,3 Bildpunkte) gemischt, und das Verbergen der Kopf-Haut legt den Grund hinter dem Kopf frei — die Haut
+// gewann, die freie Iris zählte als verdeckt (swiftshader mit TRAA 0,75, Prüfbühne: augeFrei 0,472). Die Farben (Lippe, Höhle,
+// Wange) lesen weiter die Mehrheit: ihr Pixel soll den Zug zeigen, nicht nur berühren. Ohne `zeigt` urteilt die Mehrheit.
+function gesichtMasse(F, teil, W, H, proben, haarK, zeigt) {
     const lab = cielab;
     const px = (x, y) => y * W + x;
     const sicht = (p) => teil[px(p.x, p.y)] === p.k;
+    const frei = (p) => (zeigt && zeigt[1] ? pixelAbstand(zeigt[0], zeigt[1], px(p.x, p.y) * 4) > zeigt[2] : sicht(p));
     const farbMittel = (liste) => {
         const seen = new Set(),
             c = [0, 0, 0];
@@ -781,7 +790,7 @@ function gesichtMasse(F, teil, W, H, proben, haarK) {
     const von = (z, f) => proben.filter((p) => p.z === z && (!f || f(p)));
     const r = (x, d) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(d));
     const irisV = von("iris", (p) => p.vorn);
-    const irisS = irisV.filter(sicht);
+    const irisS = irisV.filter((p) => frei(p));
     const mittelY = (l) => (l.length ? l.reduce((a, p) => a + p.y, 0) / l.length : null);
     const yAuge = mittelY(irisV),
         lippeS = von("lippe", sicht),
@@ -2161,6 +2170,10 @@ function sollTafelSelbsttest(tafel, q) {
     );
     if (!(ge.ist === 0.5 && /augeFrei 0\.45/.test(ge.taeter || "")))
         v.push(`Maß gesicht: halb im Band liest ${ge.ist}, Täter ${ge.taeter}`);
+    // DAS FREIE AUGE (w4-mensch-kopf, `gesichtMasse` zeigt): eine Iris-Probe auf einem Misch-Pixel, das die Teilung der Haut gibt — das
+    // Auge ändert es um 40 (frei, 1) oder nicht (ein Lid deckt sie, 0)
+    const auge = (d) => gesichtMasse([120, 120, 120], [2], 1, 1, [{ z: "iris", x: 0, y: 0, k: 1, vorn: true }], [], [[120, 120, 120], [120 + d, 120, 120], 18]).augeFrei; // prettier-ignore
+    if (auge(40) !== 1 || auge(0) !== 0) v.push("Maß gesicht: das freie Auge im Misch-Pixel");
     if (!Number.isFinite(Math.log((0 + MASS_AUFLOESUNG.zweiton) / (0 + MASS_AUFLOESUNG.zweiton))))
         v.push("Auflösung: ein Rand 0 ist unendlich");
     const faelle = [
@@ -2444,6 +2457,7 @@ module.exports = {
     linSrgb,
     luma709,
     cielab,
+    pixelAbstand,
     ABNAHME_INSTALL:
         `window.__abnahmeUrteil = (m) => (${abnahmeUrteil.toString()})(m, ${JSON.stringify(SCHWELLEN)});` +
         `window.srgbLin = ${srgbLin};` +
@@ -2451,6 +2465,7 @@ module.exports = {
         `window.luma709 = ${luma709};` +
         `window.cielab = ${cielab};` +
         `window.__bildMasse = ${bildMasse.toString()};` +
+        `window.pixelAbstand = ${pixelAbstand};` +
         `window.__klassenTeilung = ${klassenTeilung.toString()};` +
         `window.__bildRauschen = ${bildRauschen.toString()};` +
         `window.spiegelPearson = ${spiegelPearson.toString()};` +
