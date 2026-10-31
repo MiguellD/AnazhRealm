@@ -1523,7 +1523,7 @@ class AnazhRealm_netz_p2p {
                 const _peerBs = this._creatureBodySize(e.id);
                 mesh.scale.setScalar(_peerBs);
                 mesh.position.set(ex, ey, ez);
-                // die Kopie trägt kein Feld (kein Ziegel): ihr Nah-Kreis ist das Gesetz KREATUR_NAH_MESH (`_tickTierSatz`)
+                // die Kopie trägt kein Feld (kein Ziegel): ihr Nah-Kreis ist das Feld des Stufen-Gesetzes (`_kreaturNah`)
                 mesh.userData._kopie = true;
                 if (this.state.scene) this.state.scene.add(mesh);
                 rc = { mesh, peerId };
@@ -1549,7 +1549,6 @@ class AnazhRealm_netz_p2p {
         if (!remote.size) return;
         const k = Math.min(1, (dt || 0.016) * 12); // sanftes Nachziehen
         const TAU = Math.PI * 2;
-        const pm = this.state.playerMesh && this.state.playerMesh.position;
         for (const rc of remote.values()) {
             const m = rc.mesh;
             if (!m) continue;
@@ -1557,12 +1556,10 @@ class AnazhRealm_netz_p2p {
                 z0 = m.position.z;
             m.position.x += ((rc.tx || 0) - m.position.x) * k;
             m.position.z += ((rc.tz || 0) - m.position.z) * k;
-            // DIE SICHT DER KOPIE (die EINE Wahl jedes Leibs im Bild, _leibSicht): die Stufe nach dem Abstand am EINEN
-            // Schalter der Gelenk-Gestalt (`_gelenkStufe`), lebend wie gefallen — vorher trug jede Kopie in jeder Ferne die
-            // volle Gestalt (Tod-Zensus: der Leichnam des Mitspielers lag auf 40 m als Gestalt, nie als Grobstufe).
-            const ddx = pm ? m.position.x - pm.x : 0,
-                ddz = pm ? m.position.z - pm.z : 0;
-            const fern = this._leibSicht(m, ddx * ddx + ddz * ddz, this.isInFrustum(m));
+            // DIE SICHT DER KOPIE (die EINE Wahl jedes Leibs im Bild, _leibSicht): die Stufe nach dem Abstand vom Auge der Stufen
+            // am EINEN Schalter der Gelenk-Gestalt (`_gelenkStufe`), lebend wie gefallen — vorher trug jede Kopie in jeder Ferne
+            // die volle Gestalt (Tod-Zensus: der Leichnam des Mitspielers lag auf 40 m als Gestalt, nie als Grobstufe).
+            const fern = this._leibSicht(m, this.isInFrustum(m));
             // DER LEICHNAM liegt still: die Kopie dreht auf die Lage des Senders nach (rc.tq) — kein Atem, kein Gang
             if (rc.tq) {
                 if (m.userData._satz) this._tierSatzAus(m);
@@ -2339,15 +2336,13 @@ class AnazhRealm_netz_p2p {
         // playerMesh-Origin (entry.y direkt — wie der lokale Soul-Group).
         const yOff = entry.meshKind === "placeholder" ? -1 : 0;
         let posY = entry.y + yOff;
-        // Der FERNE Leib trägt seine gelenkige Grobstufe (der EINE Stufen-Schalter `_gelenkStufe`, Grenze aus der Kern-Zeile);
+        // Der FERNE Leib trägt seine gelenkige Grobstufe (der EINE Stufen-Schalter `_gelenkStufe` am Auge der Stufen);
         // dahinter ruht auch der Rig-Tick. Jede Gelenk-Gestalt (Mensch, Tier-Leib der Seele) trägt `_gelenk`.
         let fernAktiv = false;
         const gl = mesh.userData && mesh.userData._gelenk;
         if (gl) {
-            const pp = this.state.playerMesh && this.state.playerMesh.position;
-            fernAktiv = pp
-                ? this._gelenkStufe(mesh, (entry.x - pp.x) * (entry.x - pp.x) + (entry.z - pp.z) * (entry.z - pp.z))
-                : gl.istFern;
+            const pp = this._lodAuge();
+            fernAktiv = pp ? this._gelenkStufe(mesh, (entry.x - pp.x) ** 2 + (entry.z - pp.z) ** 2) : gl.istFern;
         }
         if (entry.meshKind === "soul-custom") {
             // Peer-Custom-Seelen erben die emergente Bewegung: Rollen aus den per soul gereisten bodyParts,

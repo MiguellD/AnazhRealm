@@ -882,6 +882,8 @@ const FORBIDDEN = [
     { token: "wrap3", fiel: "S3 kreatur — beide Stufen unter EINEM Wrap (_gelenkGestalt)" },
     { token: "TIER_FERN_DIST_SQ", fiel: "S3 kreatur — die Grenze ist lod.budget.kreatur[1].ab (_gelenk.abM)" },
     { token: "TIER_FERN_HYST", fiel: "S3 kreatur — die Hysterese ist lod.budget.kreatur.hyst (_gelenk.hyst)" },
+    { token: "KREATUR_NAH_MESH", fiel: "stufen-gesetz — das Feld der Leiber (_feldGrenzen)" },
+    { token: "_bewohnerFeldGrenze", fiel: "stufen-gesetz — das Feld der Leiber (_feldGrenzen)" },
     { token: "MENSCH_FERN_DIST_SQ", fiel: "S3 kreatur — die Grenze ist lod.budget.koerper[1].ab (_gelenk.abM)" },
     {
         token: "_tierFernFolgt",

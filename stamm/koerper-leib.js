@@ -359,6 +359,7 @@ class AnazhRealm_koerper_leib {
             nah: klon,
             fern,
             meshes,
+            art: kind,
             abM: s1.ab,
             hyst: z0.hyst,
             zwilling: z0.zeile.schatten === 1,
@@ -369,19 +370,19 @@ class AnazhRealm_koerper_leib {
         };
     }
 
-    // DER EINE STUFEN-SCHALTER der Gelenk-Gestalt (Tier, Mensch, Peer, Werkstatt): jenseits `ab` × Größe trägt die
-    // Grobstufe das Bild, diesseits die feine — und die Grobstufe wirft als ihr Zwilling auf SHADOW_TWIN_LAYER (die
-    // Haupt-Kamera sieht sie nie, die Kaskaden immer). Hysterese ±`hyst` (fern erst jenseits (1+h)·Grenze, zurück erst
-    // innerhalb (1−h)·Grenze); geschaltet werden nur `visible` und die Ebenen, nur beim Wechsel. Jenseits ruht jeder Gang
+    // DER EINE STUFEN-SCHALTER der Gelenk-Gestalt (Tier, Mensch, Peer, Werkstatt): jenseits ihrer Grenze aus dem Stufen-Gesetz
+    // (`_gelenkGrenzen`: der Haushalt `ab` ihrer Kern-Zeile × Größe) trägt die Grobstufe das Bild, diesseits die feine — und die
+    // Grobstufe wirft als ihr Zwilling auf SHADOW_TWIN_LAYER (die Haupt-Kamera sieht sie nie, die Kaskaden immer). Die EINE Wahl
+    // (`_stufeNachGrenzen`, Hysterese ±`hyst`) am Abstand `distSq` vom Auge der Stufen (`_lodAuge`, der Rufer misst ihn);
+    // geschaltet werden nur `visible` und die Ebenen, nur beim Wechsel. Jenseits ruht jeder Gang
     // (updateCreatures, der Peer-Tick, die Sicht-Kopie) außer dem eines laufenden Tiers (`_kreaturLaeuft`, Welle LF) —
     // der Wechsel nach fern stellt die Gestalt in ihre Ruhe (`_gelenkRuhe`), denn beide Stufen tragen dieselben Knochen;
     // eine Gestalt mit fester Haltung (`haltungFest`: der Gefallene, Welle LF kampf) bleibt in ihr. Rückgabe: fern?
     _gelenkStufe(gruppe, distSq) {
         const g = gruppe.userData._gelenk;
         const s = gruppe.scale.x || 1;
-        const grenzSq = g.abM * g.abM * s * s;
-        const h = g.hyst;
-        const fern = !(distSq < grenzSq * (g.istFern ? (1 - h) * (1 - h) : (1 + h) * (1 + h)));
+        const fern =
+            AnazhRealm._stufeNachGrenzen(Math.sqrt(distSq), g.istFern ? 1 : 0, this._gelenkGrenzen(g), s) === 1;
         if (fern !== g.istFern) {
             g.istFern = fern;
             g.nah.visible = !fern;
