@@ -4,7 +4,9 @@
 //   (a) STAPEL — eine Aufnahme mit Schatten-Render verfolgt jeden aufgenommenen Draw (`_renderScene` stapelt den Zeiger).
 //   (b) OVERRIDE — kein Bundle wird unter einem overrideMaterial gesammelt.
 //   (c) BILD — der Replay einer Aufnahme an Blick X zeichnet Blick Y wie der direkte Pfad (≥ 0,999), auch mit fremdem
-//       alphaTest am geteilten Schatten-Stoff; Kontrollen: ohne Chokepoint und mit Schatten-Bundle < 0,98, X ≠ Y (< 0,9).
+//       alphaTest am geteilten Schatten-Stoff und mit einer Kiste, die zwischen X und Y rückt; ein Bundle auch im Schatten-Render
+//       zeichnet mit dem Schatten-Stoff je Stoff wie der direkte Pfad (w4-e-buendel); Kontrollen: ohne Chokepoint (die gerückte
+//       Kiste) und mit r184s geteiltem Schatten-Stoff < 0,98, X ≠ Y (< 0,9).
 //   (d) TEILEN — Programme gleicher Quellen tragen EINE geteilte Gruppe.
 //   (e) STAND — je Pfad vier Frames ohne Änderung: kein Voll-Refresh (auch nicht für einen Ausschnitt je Pass, K71), kein
 //       Upload, kein zweiter Gang je Render-Abschnitt (Render-Id + `info.calls`); EINMAL: eine Attribut-Änderung frischt je
@@ -15,6 +17,10 @@
 //   (h) SENKE — zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand, bild-gleich mit r184s InstancedMesh.
 //   (i) SCHLÜSSEL (B-K1) — jedes Hauptpass-Render-Objekt der Welt trägt nach der Erst-Zeichnung den Schlüssel seines Baus.
 //   (j) WURF (B-K1, Lehre 26) — Hauptpass und Wurf verwerfen gleich; ohne Ausschnitt wirft ein Werfer ohne Farb-Graph.
+//   (k) PASS (w4-e-buendel, `_passBuendel`) — eine Bühne mit der Marke der Welt-Szene: im Stand zeichnet sie direkt nur das Glied,
+//       dessen Programm den Pass bricht (Hauptbild 1, Schatten 0), ihr Bild gleicht dem direkten Pfad (≥ 0,999), nach jeder
+//       Änderung (Attribut · Ausschnitt · Wurf · Instanzen · Stoff) ebenso; Kontrolle: ein Stand ohne den Ausschnitt < 0,98; der
+//       Brecher bricht in keiner Aufnahme, die Ruf-Tiefe des Renderers steht.
 //   LAUF — kein Spiel-Bild und kein Kehraus-Puffer während der Bühne (der Loop ruht).
 //   node scripts/diag-kamera-treue.cjs [--selftest]   (--selftest: das Urteil über grün und je einen injizierten Täter)
 "use strict";
@@ -55,6 +61,15 @@ function urteil(z) {
         v.push(`BILD: ohne den Chokepoint zeichnet der Replay Y zu ${b.ohneStapel} gleich (Soll < ${BLIND_GRENZE}) — die Stapel-Probe ist blind`);
     if (!(b.schattenBundle < BLIND_GRENZE))
         v.push(`BILD: ein Schatten-Bundle mit fremdem Stoff zeichnet Y zu ${b.schattenBundle} gleich (Soll < ${BLIND_GRENZE}) — die Override-Probe ist blind`);
+    if (!(b.ruecke >= BILD_SOLL)) v.push(`BILD: die gerückte Kiste ${b.ruecke} (Soll ≥ ${BILD_SOLL}) — ein Bürger behält seine Lage`);
+    // (k) DAS PASS-BÜNDEL: im Stand direkt nur der Brecher, das Bild wie der direkte Pfad, jede Änderung erreicht das nächste Bild
+    const p = z.pass || {};
+    if (!(p.replays > 0)) v.push("PASS: kein Bündel abgespielt — blind");
+    if (p.direkt !== 1) v.push(`PASS: ${p.direkt} Glieder direkt im Stand (Soll 1: der Brecher)`);
+    for (const [k, w] of Object.entries({ bild: p.bild, ...p.aenderung }))
+        if (!(w >= BILD_SOLL)) v.push(`PASS ${k}: ${w} gleich mit dem direkten Pfad (Soll ≥ ${BILD_SOLL}) — still alt`);
+    if (!(p.stumm < BLIND_GRENZE)) v.push(`PASS: ohne Ausschnitt im Stand ${p.stumm} (Soll < ${BLIND_GRENZE}) — blind`);
+    if (p.bruch?.urteil !== true || p.bruch.melder || p.bruch.tiefe) v.push(`PASS: der Brecher ${JSON.stringify(p.bruch)} — im Lauf, ein Bruch in der Aufnahme oder die Ruf-Tiefe daneben`);
     if (!(b.xGegenY < BLICK_GRENZE)) v.push(`BILD: Blick X und Blick Y sind zu ${b.xGegenY} gleich (Soll < ${BLICK_GRENZE}) — die Bühne ist blind`);
     // DIE SENKE (1410-1): EIN Knoten-Zustand je Signatur auch für Instanz-Senken, und sie zeichnet wie r184s InstancedMesh.
     const sk = z.senke || {};
@@ -128,7 +143,15 @@ function selbsttest() {
     const gruen = {
         lauf: { spielBilder: 0, kehraus: 0 },
         aufnahme: { gezeichnet: 13, verfolgt: 13, schattenRenders: 1, unterOverride: 0 },
-        bild: { replay: 1, fremd: 1, ohneStapel: 0.62, schattenBundle: 0.91, xGegenY: 0.31 },
+        bild: { replay: 1, fremd: 1, ruecke: 1, ohneStapel: 0.62, schattenBundle: 0.91, xGegenY: 0.31 },
+        pass: {
+            replays: 3,
+            direkt: 1,
+            bild: 1,
+            aenderung: { attribut: 1, ausschnitt: 1, wurf: 1, instanzen: 1, stoff: 1 },
+            stumm: 0.71,
+            bruch: { urteil: true, melder: 0, tiefe: 0 },
+        },
         senke: { geteilt: true, kontrolle: true, bild: 1, blind: 0.95 },
         schluessel: { geprueft: 69, veraltet: {}, kontrolle: true },
         wurf: { leer: { verwirft: false }, werfer: [{ name: "wurf:voll", farbe: false }, { name: "wurf:schnitt", aus: true, haupt: true, wurf: true }] },
@@ -152,6 +175,13 @@ function selbsttest() {
         { name: "Stapel-Probe blind", z: mit("bild", { ohneStapel: 1 }), muss: /die Stapel-Probe ist blind/ },
         { name: "Override-Probe blind", z: mit("bild", { schattenBundle: 1 }), muss: /die Override-Probe ist blind/ },
         { name: "Bühne blind", z: mit("bild", { xGegenY: 0.99 }), muss: /die Bühne ist blind/ },
+        { name: "Bürger behält seine Lage", z: mit("bild", { ruecke: 0.96 }), muss: /gerückte Kiste 0.96/ },
+        { name: "Pass-Bündel blind", z: mit("pass", { replays: 0 }), muss: /PASS: kein Bündel/ },
+        { name: "ruhiges Glied direkt", z: mit("pass", { direkt: 4 }), muss: /PASS: 4 Glieder direkt/ },
+        { name: "Brecher im Lauf", z: mit("pass", { direkt: 0 }), muss: /PASS: 0 Glieder direkt/ },
+        { name: "Ausschnitt still alt", z: mit("pass.aenderung", { ausschnitt: 0.93 }), muss: /PASS ausschnitt: 0.93/ },
+        { name: "Pass-Probe blind", z: mit("pass", { stumm: 1 }), muss: /PASS: ohne Ausschnitt im Stand 1/ },
+        { name: "Bruch in der Aufnahme", z: mit("pass.bruch", { melder: 2 }), muss: /PASS: der Brecher .*"melder":2/ },
         { name: "Refresh je Frame ohne Änderung", z: mit("stand.direkt.zahl", { voll: 2 }), muss: /STAND direkt: 2 Voll-Refreshs/ },
         {
             name: "Ausschnitt je Pass frischt auf (K71)",
@@ -250,31 +280,42 @@ function buehne() {
         };
         const schattenAlt = rend.shadowMap.enabled;
         rend.shadowMap.enabled = true;
+        const diaet = (m) => r._materialObserverDiaet(m);
+        // EIN Glied der Bühne (wirft · empfängt, nie vom Frustum verworfen), EIN werfendes Richtungslicht je Szene, EIN Boden-Stoff
+        const leg = (o, wirft = true, empfaengt = true) =>
+            Object.assign(o, { castShadow: wirft, receiveShadow: empfaengt, frustumCulled: false });
+        const lichtIn = (sc) => {
+            const l = new T.DirectionalLight(0xffffff, 3);
+            l.position.set(6, 12, 4);
+            l.castShadow = true;
+            l.shadow.mapSize.set(256, 256);
+            Object.assign(l.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 0.5, far: 50 });
+            l.shadow.camera.updateProjectionMatrix();
+            sc.add(l, l.target, new T.AmbientLight(0xffffff, 0.35));
+        };
+        const bodenIn = (g) => {
+            const b = leg(
+                new T.Mesh(
+                    new T.PlaneGeometry(30, 30),
+                    diaet(
+                        new T.MeshStandardNodeMaterial({
+                            colorNode: TSL.mix(TSL.color(0x2a6a2a), TSL.color(0xc8b080), TSL.positionWorld.x.div(30).add(0.5).clamp()),
+                        })
+                    )
+                ),
+                false
+            );
+            b.rotation.x = -Math.PI / 2;
+            g.add(b);
+            return b;
+        };
         const szene = new T.Scene();
-        const licht = new T.DirectionalLight(0xffffff, 3);
-        licht.position.set(6, 12, 4);
-        licht.castShadow = true;
-        licht.shadow.mapSize.set(256, 256);
-        Object.assign(licht.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 0.5, far: 50 });
-        licht.shadow.camera.updateProjectionMatrix();
-        szene.add(licht, licht.target, new T.AmbientLight(0xffffff, 0.35));
+        lichtIn(szene);
         const gruppe = new T.BundleGroup();
         gruppe.name = "kamera-treue:BUEHNE";
         gruppe.matrixAutoUpdate = false;
         szene.add(gruppe);
-        const diaet = (m) => r._materialObserverDiaet(m);
-        const boden = new T.Mesh(
-            new T.PlaneGeometry(30, 30),
-            diaet(
-                new T.MeshStandardNodeMaterial({
-                    colorNode: TSL.mix(TSL.color(0x2a6a2a), TSL.color(0xc8b080), TSL.positionWorld.x.div(30).add(0.5).clamp()),
-                })
-            )
-        );
-        boden.rotation.x = -Math.PI / 2;
-        boden.receiveShadow = true;
-        boden.frustumCulled = false;
-        gruppe.add(boden);
+        const boden = bodenIn(gruppe);
         const farben = [0x2f8f2f, 0x3f7f1f, 0x1f9f4f, 0x4f8f2f, 0x2f6f3f, 0x5f9f1f, 0x1f7f2f, 0x3f9f3f];
         const karten = [];
         for (let i = 0; i < farben.length; i++) {
@@ -284,10 +325,7 @@ function buehne() {
             const k = new T.Mesh(new T.PlaneGeometry(2.4, 3), diaet(m));
             k.position.set(-8 + i * 2.1, 1.6, -3 + (i % 3) * 2.5);
             k.rotation.y = 0.4 * i;
-            k.castShadow = true;
-            k.receiveShadow = true;
-            k.frustumCulled = false;
-            gruppe.add(k);
+            gruppe.add(leg(k));
             karten.push(k);
         }
         // Das LAUB: eine ausgeschnittene Instanz-Gruppe wie die Streu der Welt — eine Instanz-Mutation refresht ihren
@@ -305,10 +343,7 @@ function buehne() {
             }
             laub.instanceMatrix.needsUpdate = true;
         }
-        laub.castShadow = true;
-        laub.receiveShadow = true;
-        laub.frustumCulled = false;
-        gruppe.add(laub);
+        gruppe.add(leg(laub));
         const kisten = [];
         for (let i = 0; i < 3; i++) {
             const kiste = new T.Mesh(new T.BoxGeometry(1.5, 1.5 + i, 1.5), diaet(new T.MeshStandardNodeMaterial({ color: 0x8a6a4a + i * 0x101010 })));
@@ -317,10 +352,7 @@ function buehne() {
             // die erste Kiste ist STATISCH (rückt über updateMatrix)
             kiste.matrixAutoUpdate = i > 0;
             kiste.updateMatrix();
-            kiste.castShadow = true;
-            kiste.receiveShadow = true;
-            kiste.frustumCulled = false;
-            gruppe.add(kiste);
+            gruppe.add(leg(kiste));
         }
         // DER SATZ: ein Diät-Objekt, dessen Ausschnitt (drawRange) je Pass wechselt wie ein Chunk-Satz der Welt
         // (`_chunkSatzPass`: das Hauptbild zeichnet seinen Abschnitt, die Kaskade ihren). Der Ausschnitt ist ein Draw-Parameter
@@ -328,10 +360,7 @@ function buehne() {
         const satz = new T.Mesh(new T.BoxGeometry(2, 1, 2), diaet(new T.MeshStandardNodeMaterial({ color: 0x6a8aaa })));
         satz.name = "SATZ";
         satz.position.set(-4, 0.5, 6);
-        satz.castShadow = true;
-        satz.receiveShadow = true;
-        satz.frustumCulled = false;
-        gruppe.add(satz);
+        gruppe.add(leg(satz));
         // je Pass sein Abschnitt, danach wieder der des Hauptbilds (der Schatten-Render läuft mitten im Hauptbild)
         szene.onBeforeRender = (_rr, _sc, cam) => satz.geometry.setDrawRange(0, cam === kam ? Infinity : 18);
         szene.onAfterRender = () => satz.geometry.setDrawRange(0, Infinity);
@@ -451,12 +480,39 @@ function buehne() {
             // (c) der Replay bei Y, dann derselbe mit fremdem Schatten-Stoff.
             const bReplay = await replay(null);
             const bFremd = await replay(fremderStoff);
-            // Lauf-Kontrolle 1: ohne den Chokepoint (Vendor-_renderScene, Zähler darüber).
+            // DER BÜRGER NACH DEM SCHATTEN: eine Kiste rückt und wächst zwischen X und Y. Die Kamera liegt in geteilten Gruppen (jeder
+            // verfolgte Bürger lädt sie), die Lage je Bürger nur in SEINEM Refresh — mit dem Chokepoint zeichnet der Replay sie wie
+            // der direkte Pfad; Lauf-Kontrolle 1: ohne ihn (Vendor-_renderScene) refresht der Replay die Bürger nach dem
+            // verschachtelten Schatten-Render nie.
+            const ruecke = (an) => {
+                kisten[1].position.x += an ? 3 : -3;
+                kisten[1].scale.setScalar(an ? 2.5 : 1);
+            };
+            gruppe.isBundleGroup = false;
+            ruecke(true);
+            blick(-1);
+            await schuss();
+            const wahrYR = await schuss();
+            ruecke(false);
+            const bRuecke = await replay(() => ruecke(true));
+            ruecke(false);
             rend._renderScene = zaehlUm(protoSzene);
-            const bOhne = await replay(null);
-            // Lauf-Kontrolle 2: nur der Stapel (Bundles auch im Schatten-Render) mit fremdem Schatten-Stoff.
+            const bOhne = await replay(() => ruecke(true));
+            ruecke(false);
+            // DER SCHATTEN-STOFF JE STOFF (w4-e-buendel): Bundles auch im Schatten-Render (nur der Stapel) mit fremdem Zustand am
+            // geteilten Schatten-Stoff — mit dem Schatten-Stoff je Stoff (`renderObject`, `_configureRenderer`) zeichnet der Replay
+            // wie der direkte Pfad; Lauf-Kontrolle 2: mit r184s geteiltem (Vendor-renderObject) nicht. Die Render-Objekte des
+            // geteilten Stoffs bauen vorher (die Erst-Zeichnung baut je Render-Aufruf eins — ein offener Bau nähme neu auf).
             rend._renderScene = zaehlUm(nurStapel);
-            const bSchatten = await replay(fremderStoff);
+            const objektSpiel = rend.renderObject;
+            rend.renderObject = Object.getPrototypeOf(rend).renderObject;
+            let bSchatten;
+            try {
+                for (let i = 0; i < 24; i++) await schuss();
+                bSchatten = await replay(fremderStoff);
+            } finally {
+                rend.renderObject = objektSpiel;
+            }
             rend._renderScene = zaehlUm(spielSzene);
             // (d)(e)(f)(g) DIE STAND-WAND: Prüfungen, Voll-Refreshs, Gänge und Uploads je Render-Abschnitt — der Zähler der Diät-Linse.
             const A = AnazhRealm;
@@ -553,43 +609,19 @@ function buehne() {
                 // (g) VERSCHACHTELT: im Schatten-Render wirft nur ein Werfer ohne Diät (die Vendor-Bahn stellt die Kamera-Knoten);
                 // ein Diät-Stoff ohne Schatten zeichnet zuerst (renderOrder −1), dann startet der Diät-Boden den Schatten.
                 const szene2 = new T.Scene();
-                const licht2 = new T.DirectionalLight(0xffffff, 3);
-                licht2.position.set(6, 12, 4);
-                licht2.castShadow = true;
-                licht2.shadow.mapSize.set(256, 256);
-                Object.assign(licht2.shadow.camera, { left: -14, right: 14, top: 14, bottom: -14, near: 0.5, far: 50 });
-                licht2.shadow.camera.updateProjectionMatrix();
-                szene2.add(licht2, licht2.target, new T.AmbientLight(0xffffff, 0.35));
+                lichtIn(szene2);
                 const gruppe2 = new T.BundleGroup();
                 gruppe2.name = "kamera-treue:VERSCHACHTELT";
                 szene2.add(gruppe2);
                 const stein = new T.Mesh(new T.BoxGeometry(2, 2, 2), diaet(new T.MeshStandardNodeMaterial({ color: 0x8080c0 })));
                 stein.position.set(-6, 1, 3);
                 stein.renderOrder = -1;
-                stein.castShadow = false;
-                stein.receiveShadow = false;
-                stein.frustumCulled = false;
-                gruppe2.add(stein);
-                const boden2 = new T.Mesh(
-                    new T.PlaneGeometry(30, 30),
-                    diaet(
-                        new T.MeshStandardNodeMaterial({
-                            colorNode: TSL.mix(TSL.color(0x2a6a2a), TSL.color(0xc8b080), TSL.positionWorld.x.div(30).add(0.5).clamp()),
-                        })
-                    )
-                );
-                boden2.rotation.x = -Math.PI / 2;
-                boden2.receiveShadow = true;
-                boden2.castShadow = false;
-                boden2.frustumCulled = false;
-                gruppe2.add(boden2);
+                gruppe2.add(leg(stein, false, false));
+                bodenIn(gruppe2);
                 const werfer = new T.Mesh(new T.BoxGeometry(2, 4, 2), new T.MeshStandardNodeMaterial({ color: 0x8a6a4a }));
                 werfer.position.set(3, 2, 0);
                 werfer.renderOrder = 1;
-                werfer.castShadow = true;
-                werfer.receiveShadow = false;
-                werfer.frustumCulled = false;
-                gruppe2.add(werfer);
+                gruppe2.add(leg(werfer, true, false));
                 // Der Täter (Kontrolle): derselbe Gang mit stehendem `info.calls` — sein Stempel ist nur die Render-Id.
                 const taeterGang = (rr, ro, rid) => schreibRoh(Object.create(rr, { info: { value: { calls: rid } } }), ro, rid);
                 const mit2 = async (refresh, gang) => {
@@ -636,10 +668,7 @@ function buehne() {
                     }
                     m.instanceMatrix.needsUpdate = true;
                     m.instanceColor.needsUpdate = true;
-                    m.castShadow = true;
-                    m.receiveShadow = true;
-                    m.frustumCulled = false;
-                    return m;
+                    return leg(m);
                 };
                 const sA = lage(A._instanzMesh(sGeo, sStoff, 3), 0);
                 const sB = lage(A._instanzMesh(sGeo, sStoff, 3), 6);
@@ -711,18 +740,92 @@ function buehne() {
                     wurf.werfer.push({ name, aus: alphaTest > 0, haupt: verwirft(frag(name, false)), wurf: verwirft(frag(name, true)), farbe: frag(name, true) !== leer });
                 for (const m of probe) m.dispose();
             }
+            // (k) DAS PASS-BÜNDEL (w4-e-buendel, `_passBuendel`): dieselbe Bühne, die Gruppe als Gruppe und die Szene mit der Marke der
+            // Welt-Szene (`passBuendel`), dazu ein Glied, dessen Programm den Pass bricht (r184 `viewportDepthTexture`). Im Stand
+            // zeichnet sie direkt nur den Brecher; ihr Bild gleicht dem direkten Pfad (die Marke aus); ein Zeichen-Stand, der den
+            // Ausschnitt nicht liest (der Täter), spielt den halben Boden still alt (Kontrolle); nach jeder Änderung, die r184 im
+            // Replay nie frisch liest (Attribut · Ausschnitt · Wurf · Instanzen · Stoff), gleicht das nächste Bild dem direkten
+            // Pfad; der Brecher bricht in keiner Aufnahme, die Ruf-Tiefe des Renderers steht.
+            const pass = { aenderung: {} };
+            {
+                const brecher = leg(
+                    new T.Mesh(new T.PlaneGeometry(3, 2), new T.MeshBasicNodeMaterial({ colorNode: TSL.vec4(TSL.vec3(TSL.viewportDepthTexture().x), 1) })),
+                    false,
+                    false
+                );
+                brecher.position.set(0, 1, 6);
+                szene.add(brecher);
+                gruppe.isBundleGroup = false;
+                const marke = (an) => (szene.userData.passBuendel = an);
+                const wahr = async () => {
+                    marke(false);
+                    await schuss();
+                    const w = await schuss();
+                    marke(true);
+                    return w;
+                };
+                const melder = () => [...r._bruchBuch.keys()].filter((k) => /PASS-BÜNDEL: ein Pass-Bruch/.test(k)).length;
+                const vor = [melder(), rend._callDepth];
+                marke(true);
+                blick(1);
+                for (let i = 0; i < 6; i++) await schuss();
+                const Z2 = window.__diaetZaehler();
+                const c = Z2.an();
+                await schuss();
+                Z2.zurueck();
+                delete c.passGrund["#pass"];
+                pass.direkt = Object.values(c.passGrund).reduce((a, n) => a + n, 0);
+                Object.assign(pass, { replays: c.n.replayBuerger || 0, bild: gleich(await schuss(), await wahr()) });
+                const standRoh = A._passStand;
+                A._passStand = (it, zf, i) => {
+                    if (it.object !== boden) return standRoh(it, zf, i);
+                    const dr = it.geometry.drawRange,
+                        alt = [dr.start, dr.count];
+                    [dr.start, dr.count] = [0, Infinity];
+                    try {
+                        return standRoh(it, zf, i);
+                    } finally {
+                        [dr.start, dr.count] = alt;
+                    }
+                };
+                try {
+                    boden.geometry.setDrawRange(0, 3);
+                    const b = await schuss();
+                    A._passStand = standRoh;
+                    pass.stumm = gleich(b, await wahr());
+                } finally {
+                    A._passStand = standRoh;
+                    boden.geometry.setDrawRange(0, Infinity);
+                }
+                for (const [name, fn] of [
+                    ["attribut", (a = kisten[2].geometry.attributes.position) => (a.array.forEach((x, i) => (a.array[i] = x * 1.8)), (a.needsUpdate = true))],
+                    ["ausschnitt", () => boden.geometry.setDrawRange(0, 3)],
+                    ["wurf", () => (karten[1].castShadow = false)],
+                    ["instanzen", () => (laub.count = 3)],
+                    ["stoff", () => ((karten[2].material.alphaTest = 0.2), (karten[2].material.needsUpdate = true))],
+                ]) {
+                    for (let i = 0; i < 3; i++) await schuss();
+                    fn();
+                    pass.aenderung[name] = gleich(await schuss(), await wahr());
+                }
+                pass.bruch = { urteil: A._passBruch(brecher.material, false) === true, melder: melder() - vor[0], tiefe: rend._callDepth - vor[1] };
+                marke(false);
+                szene.remove(brecher);
+            }
             return {
                 wurf,
                 schluessel,
                 senke,
                 stand,
                 aufnahme,
+                pass,
                 stoffe: stoffe.size,
                 lauf: { spielBilder, kehraus: (st._gpuKehrausN || 0) - kehrausVor },
                 bild: {
                     replay: gleich(bReplay, wahrY),
                     fremd: gleich(bFremd, wahrY),
-                    ohneStapel: gleich(bOhne, wahrY),
+                    ruecke: gleich(bRuecke, wahrYR),
+                    ohneStapel: gleich(bOhne, wahrYR),
                     schattenBundle: gleich(bSchatten, wahrY),
                     xGegenY: gleich(wahrX, wahrY),
                 },
@@ -794,7 +897,8 @@ function buehne() {
         v,
         `LAUF: ${out.lauf.spielBilder} Spiel-Bilder, ${out.lauf.kehraus} Kehraus-Puffer in der Bühne; die Aufnahme verfolgt ${out.aufnahme.verfolgt} von ${out.aufnahme.gezeichnet} Draws trotz Schatten-Render, ` +
             `kein Bundle unter dem Override-Stoff; der Replay zeichnet Blick Y wie der direkte Pfad (${out.bild.replay}, mit fremdem ` +
-            `Schatten-Stoff ${out.bild.fremd}); ohne den Chokepoint ${out.bild.ohneStapel}, ein Schatten-Bundle ${out.bild.schattenBundle}. ` +
+            `Schatten-Stoff ${out.bild.fremd}, mit gerückter Kiste ${out.bild.ruecke}); ohne den Chokepoint ${out.bild.ohneStapel}; ein Bundle im Schatten-Render mit r184s geteiltem Schatten-Stoff ${out.bild.schattenBundle}. ` +
+            `PASS ${JSON.stringify(out.pass)}. ` +
             `SCHLÜSSEL · WURF halten. ` +
             `SENKE: zwei Senken EINES Stoffs zeichnen aus EINEM Knoten-Zustand (zwei r184-InstancedMesh: zwei), bild-gleich mit r184s InstancedMesh (${out.senke.bild}; ohne die Senke ${out.senke.blind}). ` +
             `STAND: ${out.stand.teilen.programme} Karten-Programme tragen ${out.stand.teilen.gruppen} geteilte Gruppe(n); je Render ${out.stand.direkt.zahl.pruef} Prüfungen, 0 Voll-Refreshs (auch der SATZ mit Ausschnitt je Pass), 0 Uploads, 0 wiederholte Gänge (direkt und Replay); eine Attribut-Änderung frischt ${out.stand.direkt.einmal.erst}× auf und im Frame danach 0×; nach einer Änderung im Stand zeichnet die Diät ${out.stand.aenderung.direkt.diaet}/${out.stand.aenderung.replay.diaet} wie der volle Refresh (gemuteter Melder ${out.stand.aenderung.direkt.taeter}/${out.stand.aenderung.replay.taeter}); ` +

@@ -1,6 +1,10 @@
 // diaet-linse.cjs — DIE DIÄT-LINSE: was Diät und Bundles je gerendertem Frame im echten Loop arbeiten (Prüfungen, Gänge,
 // Uploads, Renders; netto je Bereich). Urteil im Stand: kein Gang zweimal, jeder Voll-Refresh trägt eine Änderung, keine Prüfung
 // ohne Meldung; immer: keine Regung ohne Meldung, kein zeichnendes Render-Objekt ohne Attribute.
+// DAS PASS-BÜNDEL (w4-e-buendel, `_passBuendel`): je direktem Glied eines Passes der Welt sein Grund mit der Täter-Klasse — der
+// Stamm zählt sie (`_passBuendelZensus`: abfrage · zug · unruhig · bruch · neu · einzeln, `#pass` die Pässe), solange die Linse
+// zählt; im Stand ist ein UNRUHIGES Glied der Täter: sein Zeichen-Stand wechselt ohne Änderung, sein Lauf nähme je Bild neu auf
+// (gemessen headless an Genesis Third vor dem Schnitt 61,5 direkte Draws je Bild).
 //   Seite:     window.__diaetLauf({ frames: 90, modus: "ruhe"|"drehen"|"gehen", grad: 1, tiere: "halten"|"frei" })
 //   Werkbank:  node scripts/werkbank.cjs diaet [frames] [--modus ruhe] [--tiere halten] | diaet --selbsttest
 
@@ -249,10 +253,11 @@ function diaetZaehler() {
         wirkt();
         return roh.ubs.apply(this, a);
     });
+    // DIE GRÜNDE DES PASS-BÜNDELS: der Stamm zählt je direktem Glied der Welt Grund und Klasse, solange die Linse zählt
     return {
-        an: () => (c = { n: {}, ms: {}, grund: {}, ohne: {}, ohneM: {}, regungO: {}, tot: {}, schattenPfad: {}, besuche: new Map(), rids: new Set() }),
-        aus: () => (c = null),
-        zurueck: () => zurueck.forEach((z) => z()),
+        an: () => (c = { n: {}, ms: {}, grund: {}, ohne: {}, ohneM: {}, regungO: {}, tot: {}, schattenPfad: {}, besuche: new Map(), rids: new Set(), passGrund: (r._passBuendelZensus = {}) }),
+        aus: () => (c = r._passBuendelZensus = null),
+        zurueck: () => zurueck.forEach((z) => z(), (r._passBuendelZensus = null)),
     };
 }
 function diaetLauf(opts) {
@@ -316,6 +321,9 @@ function diaetLauf(opts) {
         };
         const zahl = mittel("n");
         zahl.renders = Math.round((frames.reduce((a, f) => a + f.rids.size, 0) / F) * 10) / 10;
+        // je Grund und Klasse die direkten Glieder des Pass-Bündels
+        const pg = mittel("passGrund");
+        delete pg["#pass"];
         const top = (m, n) =>
             Object.entries(m)
                 .sort((a, b) => b[1] - a[1])
@@ -333,6 +341,7 @@ function diaetLauf(opts) {
             ohneMeldung: top(mittel("ohneM"), 8),
             regungOhne: top(mittel("regungO"), 8),
             geloescht: top(mittel("tot"), 8),
+            passGrund: top(pg, 16),
         };
     })();
 }
@@ -357,6 +366,10 @@ function diaetUrteil(e) {
             );
         if (z.ohneMeldung > 0.5) v.push(`RUHE: ${z.ohneMeldung} Prüfungen ohne Meldung je Frame (${e.ohneMeldung.join(" · ")}) — die Diät fragt`);
     }
+    // DAS PASS-BÜNDEL: im Stand ist ein unruhiges Glied der Täter
+    const unruhig = (e.passGrund || []).filter((s) => s.startsWith("unruhig "));
+    if (e.modus === "ruhe" && unruhig.length)
+        v.push(`PASS-BÜNDEL: unruhig im Stand (${unruhig.join(" · ")}) — der Zeichen-Stand wechselt ohne Änderung`);
     if (z.geloescht > 0.5) v.push(`ATTRIBUTE GELÖSCHT: ${z.geloescht} je Frame (${e.geloescht}) — zeichnet, prüft voll`);
     if (z.regungOhne > 0) v.push(`REGUNG OHNE MELDUNG: ${e.regungOhne.join(" · ")} — das Bild trüge die alte Lage`);
     return v;
@@ -378,6 +391,7 @@ function selbsttest() {
         ["Prüfung ohne Meldung", Object.assign({}, gruen, { zahl: { pruef: 85, ohneMeldung: 85 }, ohneMeldung: ["Ring: 12"] }), /RUHE: 85 Prüfungen ohne Meldung je Frame \(Ring: 12\)/],
         ["gelöschte Attribute", Object.assign({}, gruen, { zahl: { pruef: 85, geloescht: 5 }, geloescht: "bauSatz" }), /GELÖSCHT: 5 .*bauSatz/],
         ["statische Regung ohne Meldung", Object.assign({}, gruen, { zahl: { pruef: 85, regungOhne: 1 }, regungOhne: ["haus Lage: 1"] }), /REGUNG OHNE MELDUNG: haus Lage/],
+        ["Pass-Bündel unruhig im Stand", Object.assign({}, gruen, { passGrund: ["zug arena: 3", "unruhig bauSatz: 2"] }), /PASS-BÜNDEL: unruhig im Stand \(unruhig bauSatz: 2\)/],
     ];
     require("./welt-boot.cjs").taeterFaelle(faelle.map(([name, z, muss]) => ({ name, z, muss })), diaetUrteil, { fehler });
     // Drehen und Gehen dürfen Arbeit tragen (die Änderung) — das Urteil fällt dort nie über Wiederholung.

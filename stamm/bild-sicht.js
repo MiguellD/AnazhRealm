@@ -46,6 +46,8 @@ class AnazhRealm_bild_sicht {
         // je Render EINMAL, ausgelöst vom ersten Leser, der zeichnet (wie r184s Viewport-Tiefe)
         knoten.updateBeforeType = "render";
         knoten.updateBefore = (frame) => this._tiefenAbbild(frame, abbild);
+        // er bricht den Pass seines Lesers: nie in einem Lauf des Pass-Bündels (`_passBruch`)
+        knoten.__passBruch = true;
         this._szeneTiefeKnoten = knoten;
         this._szeneTiefeWert = knoten.x;
         return this._szeneTiefeWert;

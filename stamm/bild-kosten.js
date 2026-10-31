@@ -199,7 +199,9 @@ class AnazhRealm_bild_kosten {
         //     mit dem alphaTest eines vollen Werfers reproduzierbar 0,817 gegen 0,902), eine Neuaufnahme je Frame stellte
         //     90 % her. Ein Render mit overrideMaterial sammelt keine Bundles: `_projectObject` liest eine BundleGroup als
         //     Gruppe, solange `backend.beginBundle` fehlt. gate:vendor-anker pinnt beide Stellen und fährt den Block am
-        //     Schein-Renderer, gate:kamera-treue an einer Bühne am echten WebGPU mit Schatten.
+        //     Schein-Renderer, gate:kamera-treue an einer Bühne am echten WebGPU mit Schatten. Die Glieder einer Kaskade
+        //     bündelt seit w4-e-buendel das Pass-Bündel (`_passBuendel`, über die Liste des Passes, je Glied der Schatten-Stoff
+        //     SEINES Stoffs, `renderObject` unten) — nie eine BundleGroup der Szene: ihre Werfer-Wahl schaltet je Kaskade.
         if (typeof renderer._renderScene !== "function" || !renderer.backend)
             this.log("BUNDLE-WAHRHEIT: r184-Renderer._renderScene nicht gefunden (Vendor-Drift)", "ERROR");
         else if (!renderer.__anazhBundleWahrheit) {
@@ -271,6 +273,11 @@ class AnazhRealm_bild_kosten {
                         d.currentPass.executeBundles(d.renderBundles);
                         d.renderBundles = [];
                         d.currentSets = { attributes: {}, bindingGroups: [], pipeline: null, index: null };
+                        // die Pipeline des Passes fällt mit: r184 merkt sie je Pass-Encoder (`pipelineUtils._activePipelines`) und
+                        // ließe `setPipeline` aus — ein Lauf des Pass-Bündels führt MITTEN im Pass aus, der nächste direkte Draw
+                        // derselben Pipeline zog ohne sie („No pipeline set", der Befehlspuffer ungültig, das Bild fiel aus)
+                        const pu = this.backend.pipelineUtils;
+                        if (pu && pu._activePipelines) pu._activePipelines.delete(d.currentPass);
                     }
                     return aus;
                 };
@@ -341,8 +348,26 @@ class AnazhRealm_bild_kosten {
                 );
             else if (!be.__anazhVerdeckung) {
                 const bruchRoh = be.copyFramebufferToTexture;
+                const welt = this;
                 be.copyFramebufferToTexture = function (textur, kontext, rechteck) {
                     const d = this.get(kontext);
+                    // DER BRUCH IN EINER AUFNAHME (Pass-Bündel): steht am Kontext der Bündel-Encoder (er kennt kein `end`), bräche
+                    // r184 den Pass an ihm — der Wurf ließe die Ruf-Tiefe stehen, jeder Render-Kontext baute die Welt neu. Laut
+                    // beim Namen, und der Bruch geschieht am echten Pass (die Aufnahme schreibt danach weiter): ein Leser, dessen
+                    // Programm den Pass bricht, gehört in keinen Lauf (`_passBruch`).
+                    if (d && d.currentPass && typeof d.currentPass.end !== "function" && d._currentPass) {
+                        welt._bruchMelden(
+                            "PASS-BÜNDEL: ein Pass-Bruch (copyFramebufferToTexture) mitten in einer Aufnahme — ein Programm, das den Pass bricht, lag in einem Lauf (`_passBruch`)"
+                        );
+                        const buendel = d.currentPass;
+                        d.currentPass = d._currentPass;
+                        try {
+                            return be.copyFramebufferToTexture.call(this, textur, kontext, rechteck);
+                        } finally {
+                            d._currentPass = d.currentPass;
+                            d.currentPass = buendel;
+                        }
+                    }
                     if (d && d.currentPass && d.occlusionQuerySet !== undefined) {
                         if (offen(d)) {
                             d.currentPass.endOcclusionQuery();
@@ -376,19 +401,52 @@ class AnazhRealm_bild_kosten {
                 be.__anazhVerdeckung = true;
             }
         }
-        // DER SCHATTEN-STOFF JE OBJEKT: r184 setzt in `renderObject` je Objekt `alphaTest` (und Seite, Knoten) des
-        // Originals auf den EINEN geteilten Schatten-Stoff; der Material-Setter zählt bei jedem Wechsel über 0 die
-        // Version hoch. Ausgeschnittene Blätter und volle Stämme wechseln sich ab → die Version sprang je Objekt, jeder
-        // Schatten-Bürger rechnete je Kaskade und Frame seinen ganzen Material-Schlüssel neu (getCacheKey ·
-        // getMaterialCacheKey) und prüfte seine Pipeline neu (gemessen 04.10., echte GPU, Mess-Wiese, Schattenpass
-        // direkt: 342 ms Schlüssel-Rechnung in 8 s, die Schatten-Pässe 1330 → 585 ms). Der Schatten-Stoff trägt jetzt je
-        // Objekt die Version des Original-Materials: ein Bürger prüft seinen Schlüssel genau dann, wenn SEIN Material
-        // sich änderte (auch dessen eigener alphaTest-Wechsel), der geteilte Setter zählt nichts mehr.
+        // DER SCHATTEN-STOFF JE STOFF (w4-e-buendel; bis hier trug der EINE geteilte nur je Objekt die Version): r184 setzt in
+        // `renderObject` je Objekt `alphaTest` · `alphaMap` · Seite · Knoten des Originals auf den EINEN geteilten Schatten-Stoff
+        // je Licht und lässt alphaTest · alphaMap danach stehen. Ein Replay liest den Stoff seiner Bürger außerhalb davon —
+        // gegen den Zustand des zuletzt direkt gezeichneten Werfers (gemessen 04.10.: das ausgeschnittene Laub warf voll,
+        // 0,817 gleich). Jetzt zeichnet jeder Stoff in jeder Kaskade mit SEINEM Schatten-Stoff, gebaut wie r184s (`ShadowNode`:
+        // Farbe, Name, Mischung, ohne Nebel) und für die Dauer des Rufs der Override der Szene: alphaTest und alphaMap sind die
+        // seines Originals, im direkten Draw wie im Replay des Pass-Bündels (`_passBuendel`). Der Schlüssel des Programms liest
+        // weder Namen noch Identität (r184 `getMaterialCacheKey`): gleich gebaute Schatten-Stoffe teilen ihr Programm. Er trägt
+        // die Version seines Originals (ein Bürger prüft seinen Schlüssel genau dann, wenn SEIN Material sich änderte — mit dem
+        // springenden Setter des geteilten gemessen 04.10. 342 ms Schlüssel-Rechnung in 8 s, die Schatten-Pässe 1330 → 585 ms),
+        // alphaTest springt die Version nie, und er fällt mit seinem Original (`dispose`: seine Render-Objekte lösen sich).
         if (typeof renderer.renderObject !== "function")
             this.log("SCHATTEN-STOFF: r184-Renderer.renderObject nicht gefunden (Vendor-Drift)", "ERROR");
         else if (!renderer.__anazhSchattenStoff) {
             const objektRoh = renderer.renderObject;
-            const still = new WeakSet();
+            const jeStoff = new WeakMap(); // Original → { geteilt: [Schatten-Stoff je Licht], stoffe: [der eigene je Licht] }
+            const still = (s) =>
+                Object.defineProperty(s, "alphaTest", {
+                    configurable: true,
+                    get() {
+                        return this._alphaTest;
+                    },
+                    set(v) {
+                        this._alphaTest = v;
+                    },
+                });
+            const eigener = (sm, m) => {
+                let je = jeStoff.get(m);
+                if (je === undefined) {
+                    jeStoff.set(m, (je = { geteilt: [], stoffe: [] }));
+                    m.addEventListener("dispose", () => this._schattenStoffAbschied(je));
+                }
+                const i = je.geteilt.indexOf(sm);
+                if (i >= 0) return je.stoffe[i];
+                const s = new sm.constructor();
+                s.colorNode = sm.colorNode;
+                s.isShadowPassMaterial = true;
+                s.name = sm.name;
+                s.blending = sm.blending;
+                s.fog = sm.fog;
+                s._anazhSchattenVon = m; // der Stoff, dessen Wurf er trägt (der Schlüssel des Programms liest kein `_`-Feld)
+                still(s);
+                je.geteilt.push(sm);
+                je.stoffe.push(s);
+                return s;
+            };
             renderer.renderObject = function (
                 object,
                 scene,
@@ -402,24 +460,32 @@ class AnazhRealm_bild_kosten {
             ) {
                 const sm = scene ? scene.overrideMaterial : null;
                 if (sm && sm.isShadowPassMaterial === true && material && material.allowOverride === true) {
-                    if (!still.has(sm)) {
-                        Object.defineProperty(sm, "alphaTest", {
-                            configurable: true,
-                            get() {
-                                return this._alphaTest;
-                            },
-                            set(v) {
-                                this._alphaTest = v;
-                            },
-                        });
-                        still.add(sm);
+                    const s = eigener(sm, material);
+                    s.version = material.version;
+                    scene.overrideMaterial = s;
+                    try {
+                        return objektRoh.call(
+                            this,
+                            object,
+                            scene,
+                            camera,
+                            geometry,
+                            material,
+                            group,
+                            lightsNode,
+                            clip,
+                            passId
+                        );
+                    } finally {
+                        scene.overrideMaterial = sm;
                     }
-                    sm.version = material.version;
                 }
                 return objektRoh.call(this, object, scene, camera, geometry, material, group, lightsNode, clip, passId);
             };
             renderer.__anazhSchattenStoff = true;
         }
+        // DAS PASS-BÜNDEL (w4-e-buendel): die ruhigen Glieder jedes Passes der Welt-Szene zeichnen aus Bündeln (`_passBuendel`)
+        this._passBuendelHaken(renderer);
         // DER WURF OHNE FARBE (B-K1): ein Werfer ohne Ausschnitt wirft ohne seinen Farb-Graphen (die Hülle um _getShadowNodes)
         this._wurfOhneFarbe(renderer);
         // DIE ERST-ZEICHNUNG (Welle K — die Hänger-Klasse „ein Frame trägt synchron eine schwere Arbeit"; r184 gelesen):
@@ -532,8 +598,13 @@ class AnazhRealm_bild_kosten {
                 const buehne = !!B && scene === B.szene;
                 // DIE BÜHNEN (Werkstatt-Vorschau, Ich-, Hof-, Feed-Bühne: `_buehneRender` → `_buehneJetzt`) zeichnen wie die
                 // Welt — bis 30.10. eigene Renderer, deren erster Render jede Pipeline synchron baute (Tab: 5 054 ms ohne Bild)
+                // DAS URTEIL DES PASS-BÜNDELS (`_passBruchMerke`): bricht das gebaute Programm des Glieds den Pass? — am Stoff, den
+                // die Liste trägt (im Schatten das Original seines Schatten-Stoffs); in jeder Szene, die das Pass-Bündel trägt
+                const ur =
+                    material.isShadowPassMaterial === true ? material._anazhSchattenVon || object.material : material;
                 if (scene !== welt.state.scene && !buehne && scene !== welt._buehneJetzt) {
-                    zeichne(this, ro, aufnahme, false);
+                    if (zeichne(this, ro, aufnahme, false) && scene.userData.passBuendel === true)
+                        AnazhRealm._passBruchMerke(ur, ro, N, material.isShadowPassMaterial === true);
                     return;
                 }
                 // DIE DIÄT IST DAS GESETZ JEDES WELT-STOFFS (E1, Lehre 25): r184s Beobachter frischt jedes Knoten-Material in
@@ -557,7 +628,8 @@ class AnazhRealm_bild_kosten {
                 if (pass !== undefined && pass.has(k)) {
                     // der Neubau eines Objekts, das in diesem Pass schon zeichnete: wie der Vendor, im Frame
                     if (ungebaut) E.neubauN++;
-                    zeichne(this, ro, aufnahme, false);
+                    if (zeichne(this, ro, aufnahme, false))
+                        AnazhRealm._passBruchMerke(ur, ro, N, material.isShadowPassMaterial === true);
                     return;
                 }
                 let bau = -1;
@@ -577,6 +649,8 @@ class AnazhRealm_bild_kosten {
                     bau = performance.now();
                 }
                 const gezeichnet = zeichne(this, ro, aufnahme, true, vorbau);
+                if (gezeichnet && !buehne)
+                    AnazhRealm._passBruchMerke(ur, ro, N, material.isShadowPassMaterial === true);
                 if (bau >= 0) {
                     const ms = performance.now() - bau;
                     E.aufrufMs += ms;

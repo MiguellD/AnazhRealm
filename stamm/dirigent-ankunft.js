@@ -295,6 +295,8 @@ class AnazhRealm_dirigent_ankunft {
         this.state.selfAwareness.components.push("renderer");
 
         const scene = new THREE.Scene();
+        // DAS PASS-BÜNDEL (Lehre 23, `_passBuendel`): die Welt-Szene zeichnet ihre ruhigen Glieder in jedem Pass aus Bündeln
+        scene.userData.passBuendel = true;
         this.state.scene = scene;
         this.log("Szene initialisiert", "INFO");
         this.state.selfAwareness.components.push("scene");

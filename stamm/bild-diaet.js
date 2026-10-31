@@ -1,5 +1,5 @@
 class AnazhRealm_bild_diaet {
-    // ===== ATLAS · Bild/diaet — Die Diät · das Register der Regung (Melder · Stand · Tor) · Gang · Objekt-Gang · Stoff je Render-Objekt =====
+    // ===== ATLAS · Bild/diaet — Die Diät · das Register der Regung (Melder · Stand · Tor) · Gang · Objekt-Gang · Stoff je Render-Objekt · das Pass-Bündel =====
     // DER MELDER DER VERSIONEN: jede Version läuft durch EINEN Setter in three.core (`set needsUpdate(t){!0===t&&this.version++}` an
     // BufferAttribute und InterleavedBuffer; Index und Instanz-Puffer sind BufferAttribute) — er meldet die Regung mit.
     // Ein Glied der Klasse (kein Außen-Satz): die Zone Bild/diaet lädt so vor dem Boot (`_bootAnazhRealm` am Ende der Ankunft).
@@ -39,10 +39,383 @@ class AnazhRealm_bild_diaet {
             O.updateMatrix.__anazhRegung = true;
         }
     }
+
+    // DAS PASS-BÜNDEL (w4-e-buendel, Lehre 23) — der EINE Ort, an dem r184 jedes lose Glied eines Passes zeichnet
+    // (`_renderObjects`, für die opake und die durchsichtige Liste jedes Renders der Welt-Szene: Hauptbild, jede Kaskade, jeder
+    // Spiegel). Bis hier zeichnete dort JEDES Glied direkt — je Bild und Pass `renderObject` · `_renderObjectDirect` ·
+    // `_objects.get` · Pipeline-Prüfung · `backend.draw` (gemessen headless an Genesis Third, Holz voll: 61,5 direkte Draws je
+    // Bild, je Draw ~77 µs, davon trägt ein Bündel nur die Diät-Prüfung weiter), und in den Kaskaden auch jede Region (unter
+    // dem Override-Stoff ist ein Region-Bündel eine Gruppe). Jetzt bilden aufeinander folgende RUHIGE Glieder einen LAUF in
+    // der Folge des Passes (die Zeichen-Reihe bleibt, `_zeichenFolge`): EINMAL aufgenommen, je Bild nur abgespielt; was sich
+    // bewegt, zeichnet weiter direkt. Ein Bündel trägt nur, was sein Replay refresht (Uniforms über die Diät) — darum hält je
+    // Lauf der ZEICHEN-STAND jedes Glieds (`_passStand`: Stoff und Version, Pipeline-Felder, Geometrie, Attribut- und Index-
+    // Versionen, Ausschnitt, Instanzen, Gruppe, castShadow) und die Folge der Glieder (Objekt · Stoff · Geometrie · Gruppe ·
+    // Clipping): weicht eines ab — Änderung, Stufe, Blende, castShadow, Sicht —, nimmt der Lauf in DIESEM Bild neu auf, nie
+    // still alt; das geänderte Glied zeichnet danach `ruheTakte` Bilder direkt (die Kosten folgen der Bewegung). Die Lage, das
+    // Atmen und die Knochen sind Uniforms: sie trägt der Replay. Im Schatten-Pass zeichnet jedes Glied mit dem Schatten-Stoff
+    // SEINES Stoffs (`renderObject`, `_configureRenderer`) — der geteilte Override-Stoff trüge im Replay den Zustand des
+    // zuletzt direkt gezeichneten Werfers. Nie im Bündel: ein Glied mit eigenem Zug je Draw (`onBeforeRender` — die Arena
+    // schreibt dort den Zug ihres Passes), eine Verdeckungs-Abfrage, ein Programm, das den Pass bricht; ein Render unter einem anderen
+    // Override-Stoff zeichnet ganz direkt. Die Wand: gate:kamera-treue (PASS), die Linse: `werkbank diaet` (direkt je Grund).
+    _passBuendelHaken(renderer) {
+        if (renderer._isHeadlessNull || !renderer.backend || renderer.backend.isWebGPUBackend !== true) return;
+        if (
+            typeof renderer._renderObjects !== "function" ||
+            typeof renderer._renderBundles !== "function" ||
+            typeof renderer.backend.beginBundle !== "function"
+        )
+            return this.log(
+                "PASS-BÜNDEL: r184-Renderer._renderObjects/_renderBundles nicht gefunden (Vendor-Drift)",
+                "ERROR"
+            );
+        if (renderer.__anazhPassBuendel) return;
+        const welt = this;
+        const roh = renderer._renderObjects;
+        // die echte Aufnahme des Backends: unter einem Override-Stoff verbirgt die Bundle-Wahrheit (`_renderScene`) sie für die
+        // Projektion — der Lauf nimmt mit ihr auf
+        const beginEcht = renderer.backend.beginBundle;
+        renderer._renderObjects = function (liste, kamera, szene, lichter, passId) {
+            if (
+                this._currentRenderBundle !== null ||
+                passId != null ||
+                liste.length < AnazhRealm.PASS_BUENDEL.minLauf ||
+                !szene ||
+                szene.userData.passBuendel !== true
+            )
+                return roh.call(this, liste, kamera, szene, lichter, passId);
+            // welche Liste: die opake oder die durchsichtige der Render-Liste dieses Renders (r184 hält EINE je Szene und Kamera)
+            const RL = this._renderLists.get(szene, kamera);
+            const durch = liste === RL.transparent;
+            if (!durch && liste !== RL.opaque) return roh.call(this, liste, kamera, szene, lichter, passId);
+            return welt._passBuendel(this, roh, beginEcht, liste, durch, kamera, szene, lichter);
+        };
+        renderer.__anazhPassBuendel = true;
+    }
+
+    // Ein Pass (EINE Liste des Renders: r184 hält je Szene und Kamera eine Render-Liste, ihre Felder leben über die Bilder):
+    // Läufe ruhiger Glieder ins Bündel, der Rest direkt, in der Folge der Liste. Ein durchsichtiger Lauf nimmt über den
+    // durchsichtigen Zweig auf (`_renderTransparents` ohne Doppel-Pass: das Item trägt die Seite, die r184 ihm gerade gab).
+    _passBuendel(rend, roh, beginEcht, liste, durch, kamera, szene, lichter) {
+        const sm = szene.overrideMaterial;
+        if (sm !== null && sm.isShadowPassMaterial !== true) return roh.call(rend, liste, kamera, szene, lichter);
+        const je = this._passBuendelJe || (this._passBuendelJe = new WeakMap());
+        let P = je.get(liste);
+        if (P === undefined)
+            je.set(
+                liste,
+                (P = { takt: 0, gen: 0, fp0: NaN, fp1: NaN, fp2: NaN, unruh: new WeakMap(), laeufe: [], seg: [] })
+            );
+        const takt = ++P.takt;
+        // DER STAND DES PASSES: der Lichter-Satz und die Umgebung der Szene (r184 `_nodes.getCacheKey`, je Render-Aufruf gemerkt)
+        // und der Kontext-Knoten des Renderers stehen im dynamischen Schlüssel jedes Render-Objekts — wechselt einer, nimmt jeder
+        // Lauf neu auf; dazu das Neu der Linsen (`_buendelNeu`)
+        const fp0 = rend._nodes.getCacheKey(szene, lichter),
+            fp1 = rend.contextNode.id,
+            fp2 = rend.contextNode.version + 1e6 * (this._passBuendelGen | 0);
+        if (fp0 !== P.fp0 || fp1 !== P.fp1 || fp2 !== P.fp2) {
+            P.fp0 = fp0;
+            P.fp1 = fp1;
+            P.fp2 = fp2;
+            P.gen++;
+        }
+        const Z = this._passBuendelZensus || null;
+        const PB = AnazhRealm.PASS_BUENDEL;
+        const n = liste.length;
+        let i = 0,
+            lauf = 0;
+        while (i < n) {
+            let j = i;
+            while (j < n && AnazhRealm._passGrund(liste[j], P.unruh, takt, sm) === 0) j++;
+            if (j - i >= PB.minLauf) {
+                this._passLauf(rend, beginEcht, P, lauf++, liste, durch, i, j, kamera, szene, lichter, takt);
+                i = j;
+                continue;
+            }
+            // direkt: die ruhigen Glieder vor einem Bruch, die keinen Lauf füllen, und das Glied, das bricht
+            const k = j < n ? j + 1 : j;
+            const seg = P.seg;
+            seg.length = 0;
+            for (let q = i; q < k; q++) {
+                seg.push(liste[q]);
+                if (Z !== null) {
+                    const g = AnazhRealm._passGrund(liste[q], P.unruh, takt, sm);
+                    const name = (g === 0 ? "einzeln" : PB.gruende[g]) + " " + this._taeterKlasse(liste[q].object);
+                    Z[name] = (Z[name] || 0) + 1;
+                }
+            }
+            roh.call(rend, seg, kamera, szene, lichter);
+            i = k;
+        }
+        P.laeufe.length = Math.max(lauf, Math.min(P.laeufe.length, lauf + PB.vorrat));
+        if (Z !== null) Z["#pass"] = (Z["#pass"] || 0) + 1;
+    }
+
+    // EIN LAUF [a, b) der Liste: der Stand jedes Glieds gegen den der Aufnahme; gleich → r184 spielt das Bündel ab, sonst
+    // nimmt es neu auf (die Version des Lauf-Bündels). Ausgeführt wird es sofort an seinem Platz (die Bündel-Reihenfolge,
+    // `_renderBundles`): die Glieder davor und danach zeichnen direkt, wie die Liste es verlangt.
+    _passLauf(rend, beginEcht, P, r, liste, durch, a, b, kamera, szene, lichter, takt) {
+        let L = P.laeufe[r];
+        if (L === undefined) {
+            const bg = new THREE.BundleGroup();
+            bg.name = "passBuendel";
+            bg.userData.passBuendel = true;
+            L = P.laeufe[r] = {
+                bg,
+                glieder: [],
+                ids: [],
+                stand: [],
+                neu: [],
+                offs: [],
+                offsNeu: [],
+                gen: -1,
+                einzeln: null,
+            };
+            const leer = [];
+            L.einzeln = [
+                {
+                    bundleGroup: bg,
+                    camera: kamera,
+                    renderList: durch
+                        ? { opaque: leer, transparent: L.glieder, transparentDoublePass: leer }
+                        : { opaque: L.glieder, transparent: leer, transparentDoublePass: leer },
+                },
+            ];
+        }
+        const m = b - a,
+            ids = L.ids,
+            neu = L.neu,
+            offsNeu = L.offsNeu;
+        let gleich = L.gen === P.gen && L.glieder.length === m;
+        let z = 0;
+        for (let q = 0; q < m; q++) {
+            const it = liste[a + q];
+            const w = q * 5;
+            if (
+                gleich &&
+                (ids[w] !== it.object ||
+                    ids[w + 1] !== it.material ||
+                    ids[w + 2] !== it.geometry ||
+                    ids[w + 3] !== it.group ||
+                    ids[w + 4] !== it.clippingContext)
+            )
+                gleich = false;
+            offsNeu[q] = z;
+            z = AnazhRealm._passStand(it, neu, z);
+        }
+        neu.length = z;
+        offsNeu.length = m;
+        let anders = !gleich;
+        if (gleich) {
+            const alt = L.stand;
+            if (alt.length !== z) anders = true;
+            else
+                for (let x = 0; x < z; x++)
+                    if (alt[x] !== neu[x]) {
+                        anders = true;
+                        break;
+                    }
+            // DAS GEÄNDERTE GLIED beim Namen: dieselbe Folge, ein anderer Stand — es zeichnet `ruheTakte` Bilder direkt
+            if (anders)
+                for (let q = 0; q < m; q++) {
+                    const s0 = L.offs[q],
+                        s1 = q + 1 < m ? L.offs[q + 1] : alt.length,
+                        n0 = offsNeu[q],
+                        n1 = q + 1 < m ? offsNeu[q + 1] : z;
+                    let w = s1 - s0 !== n1 - n0;
+                    for (let x = 0; !w && x < n1 - n0; x++) if (alt[s0 + x] !== neu[n0 + x]) w = true;
+                    if (w) P.unruh.set(liste[a + q].object, takt);
+                }
+        }
+        // die Glieder JEDES Bilds: r184 legt seine Render-Items je Platz der Liste ab und füllt sie je Bild neu — eine Aufnahme
+        // (auch die, die r184 selbst verlangt: die Erst-Zeichnung markiert ein Bündel ohne fertigen Bürger) liest die von jetzt
+        const G = L.glieder;
+        G.length = 0;
+        for (let q = a; q < b; q++) G.push(liste[q]);
+        if (anders) {
+            for (let q = 0; q < m; q++) {
+                const it = liste[a + q],
+                    w = q * 5;
+                ids[w] = it.object;
+                ids[w + 1] = it.material;
+                ids[w + 2] = it.geometry;
+                ids[w + 3] = it.group;
+                ids[w + 4] = it.clippingContext;
+            }
+            ids.length = m * 5;
+            L.neu = L.stand;
+            L.stand = neu;
+            L.offsNeu = L.offs;
+            L.offs = offsNeu;
+            L.gen = P.gen;
+            L.bg.needsUpdate = true;
+        }
+        // eine offene Verdeckungs-Abfrage endet vor dem Bündel: seine Draws zählten sonst in ihr, und die Aufnahme schlösse sie am
+        // Bündel-Encoder (der keine kennt) — dasselbe Muster wie der Bruch des Passes (`copyFramebufferToTexture`)
+        const be = rend.backend;
+        const d = be.get(rend._currentRenderContext);
+        if (d.currentPass && d.occlusionQuerySet !== undefined) {
+            const o = d.lastOcclusionObject;
+            if (o && o.occlusionTest === true) {
+                d.currentPass.endOcclusionQuery();
+                d.occlusionQueryIndex++;
+            }
+            d.lastOcclusionObject = null;
+        }
+        L.einzeln[0].camera = kamera;
+        const vor = be.beginBundle;
+        if (vor !== beginEcht) be.beginBundle = beginEcht;
+        try {
+            rend._renderBundles(L.einzeln, szene, lichter);
+        } finally {
+            if (vor !== beginEcht) be.beginBundle = vor;
+        }
+    }
+
+    // DER ABSCHIED DER SCHATTEN-STOFFE eines Stoffs (je Original und Licht frisch, `renderObject` in `_configureRenderer`): sie
+    // fallen mit ihrem Original, und mit ihnen die Render-Objekte ihrer Würfe (r184 löst sie am `dispose` ihres Stoffs)
+    _schattenStoffAbschied(je) {
+        for (const s of je.stoffe) s.dispose();
+        je.geteilt.length = 0;
+        je.stoffe.length = 0;
+    }
+
+    // DAS NEU ALLER BÜNDEL (der Draw-Zähler der Linsen zählt am direkten Draw, `__bundlesNeu`): jedes Bündel der Szene und jeder
+    // Lauf jedes Passes nimmt im nächsten Render neu auf
+    _buendelNeu() {
+        this.state.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
+        this._passBuendelGen = (this._passBuendelGen | 0) + 1;
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_bild_diaet]);
 
 // ===== ATLAS · Bild/diaet — Außen-Konstanten =====
+// DAS PASS-BÜNDEL (`_passBuendel`): der kürzeste Lauf, die Ruhe eines geänderten Glieds (Bilder seines Passes), wie viele
+// ungenutzte Lauf-Bündel ein Pass hält (ein Lauf, der kurz bricht, nimmt danach in sein altes Bündel auf), die Gründe eines
+// direkten Glieds (die Linse zählt sie, `werkbank diaet`).
+AnazhRealm.PASS_BUENDEL = Object.freeze({
+    minLauf: 1,
+    ruheTakte: 120,
+    vorrat: 4,
+    gruende: Object.freeze(["", "abfrage", "zug", "unruhig", "bruch", "neu"]),
+});
+// Warum ein Glied direkt zeichnet: 0 bündelfähig · 1 Verdeckungs-Abfrage · 2 eigener Zug je Draw (`onBeforeRender`/`After`, im
+// Schatten-Pass `onBeforeShadow`/`After` — r184 ruft sie im Replay nie) · 3 unruhig (sein Stand wechselte in den letzten
+// `ruheTakte` Bildern seines Passes) · 4 sein Programm bricht den Pass (`_passBruch`) · 5 sein Programm ist noch nicht gesehen
+// (die erste Zeichnung ist direkt, sie fällt das Urteil).
+AnazhRealm._passGrund = function (it, unruh, takt, sm) {
+    const o = it.object;
+    if (o.occlusionTest === true) return 1;
+    const O = THREE.Object3D.prototype;
+    // DIE FESTE ARENA trägt ihr Bündel-Gesetz selbst: in der Aufnahme legt ihr Zug Plätze (`_arenaZug`), ihr Takt füllt sie je
+    // Bild aus der Wahl von jetzt, ihr Neu steht im Zeichen-Stand (`_aufN`); die lose zieht je Pass im `onBeforeRender`
+    if (o.isGeometrieArena === true) {
+        if (o._fest !== true || o._wahl === true) return 2;
+    } else if (o.onBeforeRender !== O.onBeforeRender || o.onAfterRender !== O.onAfterRender) return 2;
+    if (sm !== null && (o.onBeforeShadow !== O.onBeforeShadow || o.onAfterShadow !== O.onAfterShadow)) return 2;
+    const b = AnazhRealm._passBruch(it.material, sm !== null);
+    if (b === undefined) return 5;
+    if (b === true) return 4;
+    const u = unruh.get(o);
+    return u !== undefined && takt - u <= AnazhRealm.PASS_BUENDEL.ruheTakte ? 3 : 0;
+};
+// DER PASS-BRUCH IM PROGRAMM: ein Vorher-Knoten, der mitten im Pass dessen Ziel kopiert (das Tiefen-Abbild `_tiefenAbbild` der
+// Leser der Szenen-Tiefe, r184s Viewport-Texturen: `copyFramebufferToTexture` beendet den Pass und beginnt ihn neu), zieht
+// in jedem Render, in dem sein Leser zeichnet — im Bündel stünde dort der Bündel-Encoder (gemessen headless: „currentPass.end
+// is not a function", die Post-Kette brach, r184s Ruf-Tiefe blieb stehen und jeder Render-Kontext baute die Welt neu), und
+// die Tiefe trüge die Glieder seines Laufs vor ihm nicht. Das Urteil fällt am GEBAUTEN Programm (die Knoten, die r184 vor dem
+// Zeichnen stellt, auch die erst im Bau entstandenen), EINMAL je Stoff und Version, getrennt für Hauptbild und Kaskade:
+// `_passBruchMerke` nach jeder Zeichnung (die Erst-Zeichnung, `_configureRenderer`), `_passBruch` liest es (undefined: noch nie
+// gezeichnet).
+AnazhRealm._passBruch = function (m, schatten) {
+    const C = AnazhRealm.__passBruchJe;
+    const e = C === undefined ? undefined : C.get(m);
+    if (e === undefined || e.v !== m.version) return undefined;
+    return schatten ? e.s : e.h;
+};
+AnazhRealm._passBruchMerke = function (m, ro, N, schatten) {
+    const C = AnazhRealm.__passBruchJe || (AnazhRealm.__passBruchJe = new WeakMap());
+    let e = C.get(m);
+    if (e === undefined || e.v !== m.version) C.set(m, (e = { v: m.version, h: undefined, s: undefined }));
+    if ((schatten ? e.s : e.h) !== undefined) return;
+    const nbs = ro._nodeBuilderState || N.get(ro).nodeBuilderState;
+    if (!nbs) return;
+    let b = false;
+    for (const n of nbs.updateBeforeNodes)
+        if (n.isOutputTextureNode === true || n.__passBruch === true) {
+            b = true;
+            break;
+        }
+    if (schatten) e.s = b;
+    else e.h = b;
+};
+// Die Nummer eines Halters ohne eigene Id (der verschränkte Puffer): EINE Folge je Seite.
+AnazhRealm._passNr = function (x) {
+    const N = AnazhRealm.__passNr || (AnazhRealm.__passNr = { n: 0, je: new WeakMap() });
+    let v = N.je.get(x);
+    if (v === undefined) N.je.set(x, (v = ++N.n));
+    return v;
+};
+// DER ZEICHEN-STAND eines Glieds (ab `i` in `z`, Rückgabe das Ende): was r184 im Replay NIE frisch liest — die Pipeline (Stoff,
+// Version, Seite, Durchsicht, Tiefe, Farbe, Mischung), die Geometrie mit jedem Attribut, Index und Auftrag (Id und Version: ein
+// Upload geschieht nur in der Aufnahme), der Ausschnitt, die Instanzen (Zahl und Puffer, eine Senke über ihren Zeichner), die
+// Gruppe und der Wurf.
+AnazhRealm._passStand = function (it, z, i) {
+    const o = it.object,
+        m = it.material,
+        g = it.geometry,
+        gr = it.group;
+    z[i++] = o.castShadow === true ? 1 : 0;
+    z[i++] = o.receiveShadow === true ? 1 : 0;
+    z[i++] = m.version;
+    z[i++] = m.side;
+    z[i++] = m.transparent === true ? 1 : 0;
+    z[i++] = m.depthWrite === true ? 1 : 0;
+    z[i++] = m.depthTest === true ? 1 : 0;
+    z[i++] = m.colorWrite === true ? 1 : 0;
+    z[i++] = m.blending;
+    const dr = g.drawRange;
+    z[i++] = dr.start;
+    z[i++] = dr.count;
+    const ix = g.index;
+    if (ix !== null) {
+        z[i++] = ix.id;
+        z[i++] = ix.version;
+        z[i++] = ix.count;
+    } else z[i++] = -1;
+    z[i++] = o.count === undefined ? -1 : o.count;
+    z[i++] = g.isInstancedBufferGeometry === true ? g.instanceCount : -1;
+    const q = o.isInstanzZeichner === true && o.__instanzQuelle ? o.__instanzQuelle : o;
+    const im = q.instanceMatrix,
+        ic = q.instanceColor;
+    z[i++] = im ? im.id : -1;
+    z[i++] = im ? im.version : -1;
+    z[i++] = ic ? ic.id : -1;
+    z[i++] = ic ? ic.version : -1;
+    z[i++] = q !== o && q.count !== undefined ? q.count : -1;
+    const at = g.attributes;
+    for (const k in at) {
+        const x = at[k];
+        if (x.isInterleavedBufferAttribute === true) {
+            z[i++] = AnazhRealm._passNr(x.data);
+            z[i++] = x.data.version;
+        } else {
+            z[i++] = x.id;
+            z[i++] = x.version;
+        }
+    }
+    const ind = g.indirect;
+    if (ind) {
+        z[i++] = ind.id;
+        z[i++] = ind.version;
+    }
+    if (o.isGeometrieArena === true) z[i++] = o._aufN | 0;
+    if (gr !== null) {
+        z[i++] = gr.start;
+        z[i++] = gr.count;
+    } else z[i++] = -1;
+    return i;
+};
+
 // DIE EINE DIÄT-PRÜFUNG (needsRefresh) für jeden Beobachter eines Diät-Objekts — Hauptpass (der Material-
 // Beobachter aus _materialObserverDiaet) UND Schattenpass (der Beobachter des r184-Schatten-Materials, s.
 // _configureRenderer; dort zählt die Diät des ORIGINAL-Materials am Objekt). `obs` = der Beobachter, `altNR`

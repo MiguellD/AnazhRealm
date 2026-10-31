@@ -1234,6 +1234,9 @@ class AnazhRealm_stoff_instanz {
             // Das Bündel nimmt neu auf — sofort und im nächsten Takt (`_arenaTakt`, auch wenn die Arena dabei fällt): r184 merkt
             // sich am Ende einer Aufnahme die Version des Bündels, ein Wechsel MITTEN in ihr ginge sonst unter.
             _neuAuf() {
+                // der Stand der Aufnahme: das Pass-Bündel liest ihn (`_passStand`) — eine feste Arena zieht in jedem Pass,
+                // der sie aufnahm, aus ihren Plätzen, und ihr Neu gilt jeder dieser Aufnahmen
+                this._aufN = (this._aufN | 0) + 1;
                 const b = this.__buendel;
                 if (!b) return;
                 b.needsUpdate = true;

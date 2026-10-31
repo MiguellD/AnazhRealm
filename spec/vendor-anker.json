@@ -47,7 +47,7 @@
         ]
     },
     {
-        "warum": "DER SCHATTEN-STOFF JE OBJEKT: renderObject setzt je Objekt alphaTest des Originals auf den EINEN geteilten Schatten-Stoff, der Setter zählt bei jedem Wechsel über 0 die Version; jede Version prüft je Bürger den Schlüssel und die Pipeline — _configureRenderer trägt je Objekt die Version des Original-Materials in den Stoff.",
+        "warum": "DER SCHATTEN-STOFF JE STOFF (w4-e-buendel; vorher je Objekt nur die Version): renderObject setzt je Objekt alphaTest · alphaMap · Seite · Knoten des Originals auf den Override-Stoff der Szene; _configureRenderer setzt für die Dauer des Rufs den Schatten-Stoff des Originals als Override (gebaut wie r184s geteilter), der Setter zählt bei jedem Wechsel über 0 die Version — der eigene Stoff trägt die Version seines Originals, alphaTest springt sie nie.",
         "anker": [
             {
                 "file": "vendor/three.core.min.js",
@@ -77,6 +77,18 @@
             {
                 "sub": "this._currentRenderObjectFunction=this._renderObjectFunction||this.renderObject",
                 "organ": "Schatten-Stoff je Objekt (renderObject am Renderer gelesen)"
+            },
+            {
+                "sub": "p&&(t.overrideMaterial.colorNode=l,t.overrideMaterial.depthNode=d,t.overrideMaterial.positionNode=c,t.overrideMaterial.side=h)",
+                "organ": "Schatten-Stoff je Stoff (renderObject stellt die Knoten am Override der Szene zurück, den der Ruf trug)"
+            },
+            {
+                "sub": "t.colorNode=Cn(0,0,0,1),t.isShadowPassMaterial=!0,t.name=\"ShadowMaterial\",t.blending=re,t.fog=!1",
+                "organ": "Schatten-Stoff je Stoff (der Bau des geteilten, den der eigene nachbaut)"
+            },
+            {
+                "sub": "if(/^(is[A-Z]|_)|^(visible|version|uuid|name|opacity|userData)$/.test(e))continue;",
+                "organ": "Schatten-Stoff je Stoff (der Programm-Schlüssel liest weder Namen noch `_`-Felder: gleich gebaute Stoffe teilen ihr Programm)"
             }
         ]
     },
@@ -1177,6 +1189,51 @@
             {
                 "sub": "getNode(e){if(e.isQuadMesh)return ES;let t=wS.get(e);",
                 "organ": "_wurfEbene (EIN Lichter-Knoten je Szene, auch im Schatten-Pass: jedes Licht liegt auf der Wurf-Ebene)"
+            }
+        ]
+    },
+    {
+        "warum": "DAS PASS-BÜNDEL (w4-e-buendel, `_passBuendel`): die Läufe ruhiger Glieder jedes Passes der Welt-Szene zeichnen aus Bündeln — am EINEN Ort, an dem r184 die Glieder einer Liste zeichnet; ein Bündel trägt nur, was sein Replay refresht (Uniforms), darum der Zeichen-Stand je Glied; ein Bündel mitten im Pass löscht dessen Zustand (auch die gemerkte Pipeline); ein Programm, das den Pass bricht, liegt in keinem Lauf.",
+        "anker": [
+            {
+                "sub": "_renderObjects(e,t,r,s,i=null){for(let n=0,a=e.length;n<a;n++){const{object:a,geometry:o,material:u,group:l,clippingContext:d}=e[n];this._currentRenderObjectFunction(a,r,t,o,u,l,s,d,i)}}",
+                "organ": "_passBuendelHaken (die Liste, ihre Glieder und die Folge der Argumente)"
+            },
+            {
+                "sub": "this._renderObjects(t,r,s,i,\"backSide\");for(const{material:e}of t)e.side=St;this._renderObjects(e,r,s,i);",
+                "organ": "_passBuendelHaken (die durchsichtige Liste ohne Pass-Kennung, die Rückseite mit)"
+            },
+            {
+                "sub": "const N=this._renderLists.get(e,t);if(N.begin(),this._projectObject(e,t,0,N,g.clippingContext)",
+                "organ": "_passBuendelHaken (EINE Render-Liste je Szene und Kamera, ihre Felder leben über die Bilder)"
+            },
+            {
+                "sub": "getNextRenderItem(e,t,r,s,i,n,a){let o=this.renderItems[this.renderItemsIndex];",
+                "organ": "_passLauf (die Items je Platz der Liste, je Bild neu gefüllt: die Glieder jedes Bilds)"
+            },
+            {
+                "sub": "this._nodes.needsRefresh(r)&&(this._nodes.updateBefore(r),this._nodes.updateForRender(r),this._bindings.updateForRender(r),this._nodes.updateAfter(r))}}this.backend.addBundle(a,o)",
+                "organ": "_passStand (der Replay frischt Knoten und Bindungen, nie Geometrie, Pipeline oder Draw-Parameter)"
+            },
+            {
+                "sub": "_renderBundles(e,t,r){for(const s of e)this._renderBundle(s,t,r)}",
+                "organ": "_passLauf (ein Lauf führt über die Bündel-Reihenfolge aus)"
+            },
+            {
+                "sub": "setPipeline(e,t){this._activePipelines.get(e)!==t&&(e.setPipeline(t),this._activePipelines.set(e,t))}",
+                "organ": "Bündel-Reihenfolge (die Pipeline je Pass-Encoder fällt mit executeBundles)"
+            },
+            {
+                "sub": "beginBundle(e){const t=this.get(e);t._currentPass=t.currentPass,t._currentSets=t.currentSets,",
+                "organ": "Pass-Bruch in einer Aufnahme (der echte Pass steht in `_currentPass`)"
+            },
+            {
+                "sub": "this.isOutputTextureNode=!0,this.updateBeforeType=ri.RENDER",
+                "organ": "_passBruchMerke (r184s Viewport-Texturen kopieren den Pass im Vorher-Knoten)"
+            },
+            {
+                "sub": "getCacheKey(e,t){bS[0]=e,bS[1]=t;const r=this.renderer.info.calls,s=this.callHashCache.get(bS)||{};if(s.callId!==r){",
+                "organ": "_passBuendel (der Stand des Passes: Lichter und Umgebung, je Render-Aufruf gemerkt)"
             }
         ]
     }

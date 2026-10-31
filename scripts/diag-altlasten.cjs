@@ -1502,6 +1502,10 @@ const ENTSORGUNG_BESITZER = {
         arten: ["material"],
         grund: "Membran- und Nebel-Stoff je Tor (die Geometrie gehört dem Memo je Gestalt)",
     },
+    _schattenStoffAbschied: {
+        arten: ["material"],
+        grund: "die Schatten-Stoffe eines Stoffs (je Original und Licht frisch, `renderObject`) fallen mit ihrem Original",
+    },
 };
 // Die Entsorgungen des Stamms beim Namen: [{ methode, art: "geometry" | "material", zeile, text }].
 function entsorgungen(srcRoh) {
