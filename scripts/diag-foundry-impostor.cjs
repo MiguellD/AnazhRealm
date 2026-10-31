@@ -1,9 +1,9 @@
 // diag-foundry-impostor.cjs — W6 DER EINE KARTEN-ATLAS + S2 DIE KARTE BACKT IN DER WELT: die Welt-Fernstufe liest EINEN
 // Karten-Atlas (eine Array-Textur, eine Schicht je Karte, EIN Material, EINE Gruppe); die Karte backt der Welt-Renderer
-// aus der L1-Gestalt (`_karteWeltBacken`); Studio-Bäcker-Kanal, Welt-RTT-Nachbau, GL-Bake-iframe und Canvas-Atlas je Karte
+// aus der Höhen-Stufe der Art (`_karteStufe`, `_karteWeltBacken`); Studio-Bäcker-Kanal, Welt-RTT-Nachbau, GL-Bake-iframe und Canvas-Atlas je Karte
 // sind GESCHNITTEN. Zwei Teile:
 //   A (Null-Renderer, HART): die MECHANIK — `_foundryEnsureImpostorRecord` legt eine Atlas-Zelle mit Rahmen an (aus
-//     der L1-Geometrie; headless bäckt nie jemand); Eiche + Fichte teilen Quad, Material und EINE Karten-Gruppe, die
+//     der Gestalt der Karte; headless bäckt nie jemand); Eiche + Fichte teilen Quad, Material und EINE Karten-Gruppe, die
 //     Schicht und der Rahmen reisen je Instanz (aKarte) über beide Slot-Chokepoints; das Bake-iframe und die gefallenen
 //     Methoden wacht gate:constitution (G3).
 //   C (echter Renderer — CI: WebGL2 auf swiftshader, lokal WebGPU auf der Karte; HART): das LAYOUT — eine Probe-Gestalt (links oben eine Tafel) backt durch den ECHTEN Bake
@@ -12,7 +12,8 @@
 //     in die Lücke). C5: der Atlas wächst in SEINEN Texturen über den EINEN Abschied (`_texturAbschied`), die Vorlage des
 //     Programms bindet die lebende (Selbsttest: das alte Wachsen). C6 (lod.K3): die Karte einer flachen Krone, gedreht und
 //     skaliert, aus jeder Blick-Hebung −20/0/40/80° gegen ihre Gestalt (Deckung, IoU; Selbsttest: jeder Ring waagrecht
-//     gebacken). Teil C beginnt erst, wenn die Welt steht (`weltRuht`, die EINE Ruhe); eine fremde Zelle im Probe-Atlas
+//     gebacken). C7 (w4-laub-karte): die Tiefe je Texel — vor einer Tafel steht die Karte in der Tiefe ihrer Gestalt
+//     (Pixel-Tiefen-Versatz; Selbsttest: ohne die Tiefe dahinter). Teil C beginnt erst, wenn die Welt steht (`weltRuht`, die EINE Ruhe); eine fremde Zelle im Probe-Atlas
 //     ist ROT beim Namen.
 //   node scripts/diag-foundry-impostor.cjs
 const { statikServer, starteBrowser, hauptLauf, wandEnde } = require("./lib/welt-boot.cjs");
@@ -30,7 +31,7 @@ async function bootPage(browser, nullRenderer) {
 }
 
 // DIE PROBE-GESTALTEN (Teil C): Dreiecke in Ansichts-Koordinaten (u, v ∈ 0..1, v = 0 Unterkante) im Rahmen 4 × 8 der
-// Probe, eine Tafel, eine Säule — und der ECHTE Bake: die Gestalt steht als L1 im Foundry-Cache, `_karteWeltBacken`
+// Probe, eine Tafel, eine Säule — und der ECHTE Bake: die Gestalt steht als Stufe der Karte (`_karteStufe`) im Foundry-Cache, `_karteWeltBacken`
 // zeichnet sie auf dem Probe-Renderer in ihre Schicht. Zwei Anker setzen den Rahmen (impostorFrame: halfH = 0,51 · maxY,
 // halfW = 1,04 · maxR). Eine bestehende Zelle statt des Schlüssels backt neu.
 async function installiereBacke(page) {
@@ -60,6 +61,39 @@ async function installiereBacke(page) {
                 st.renderer = vor;
             }
         };
+        // DIE PROBE: ein frischer Renderer (W × H) und ein frischer Atlas im Format `fmt` — null, wo die Welt auf ihm kein BC fährt
+        window.__fimpProbe = async (W, H, fmt) => {
+            const ren = new T.WebGPURenderer({ antialias: false });
+            await ren.init();
+            ren.setSize(W, H, false);
+            if (fmt === "bc" && window.__fimpFormat(ren) !== "bc") return null;
+            r._kartenAtlas = undefined;
+            const at = r._impostorAtlas();
+            at.fmt = fmt;
+            return { ren, at };
+        };
+        // der Karten-Stoff, frisch gebaut — ohne die Nah-Ausblendung des Crossfades, die jede Probe maskierte
+        window.__fimpStoff = () => {
+            const prevCf = st.foundryCrossfade;
+            st.foundryCrossfade = false;
+            if (st._foliageMatCache)
+                for (const [k, m] of st._foliageMatCache) if (m.userData?.impostorBillboard) st._foliageMatCache.delete(k);
+            if (r._kartenAtlas) r._kartenAtlas.mat = null;
+            try {
+                return r._impostorAtlasMaterial();
+            } finally {
+                st.foundryCrossfade = prevCf;
+            }
+        };
+        // die Probe-Gestalt aus Teilen (je Teil ohne Index, EINE Positions-Liste)
+        window.__fimpTeile = (...teile) =>
+            new T.BufferGeometry().setAttribute("position", new T.Float32BufferAttribute(teile.flatMap((g) => [...g.toNonIndexed().attributes.position.array]), 3));
+        // EIN Bild der Probe: die Objekte unter Umgebungslicht in `rt`, zurückgelesen (RGBA, Zeile 0 unten)
+        window.__fimpBild = async (ren, rt, cam, ...o) => {
+            ren.setRenderTarget(rt);
+            await ren.renderAsync(new T.Scene().add(...o, new T.AmbientLight(0xffffff, 3)), cam);
+            return ren.readRenderTargetPixelsAsync(rt, 0, 0, rt.width, rt.height);
+        };
         // die Karte einer Zelle als EINE Instanz in der Lage M (Skala s) über die echten Chokepoints (Belegen, Stempel)
         window.__fimpKarte = (z, mat, M, s) => {
             const lf = r._impostorLeaf(z, new T.Matrix4(), 8);
@@ -79,7 +113,8 @@ async function installiereBacke(page) {
                     const anker = new T.BufferGeometry().setAttribute("position", new T.Float32BufferAttribute([0, Y, 0, R, 0, 0, R, 0, 0], 3));
                     const g = new T.Group();
                     g.add(new T.Mesh(geo, mat), new T.Mesh(anker, mat));
-                    r._foundryCacheSet(r._foundryKoerperKey(z.preset, z.variant, r._foundryServierStufe(z.preset, 1), z.ov), g);
+                    // die Probe-Gestalt liegt unter der Stufe, aus der die Karte backt (`_karteStufe`)
+                    r._foundryCacheSet(r._foundryKoerperKey(z.preset, z.variant, r._karteStufe(z.preset), z.ov), g);
                 }
                 const q = r._impostorBakeQueue || [];
                 if (q.includes(z.key)) q.splice(q.indexOf(z.key), 1);
@@ -100,7 +135,7 @@ async function installiereBacke(page) {
 }
 
 // Wartet, bis der Foundry-Worker ready ist + zwei Atlas-Zellen stehen (Eiche, Fichte — der Rahmen kommt headless aus
-// der L1-Geometrie, die async lädt), baut ihre Karten-Flats und streut drei Instanzen in die Welt-Gruppen.
+// der Gestalt der Karte, die async lädt), baut ihre Karten-Flats und streut drei Instanzen in die Welt-Gruppen.
 async function driveImpostor(page) {
     return await page.evaluate(async () => {
         const out = { ready: false, rec: null, err: null };
@@ -112,7 +147,7 @@ async function driveImpostor(page) {
                 out.err = "Worker nicht ready";
                 return out;
             }
-            // Die Zellen treiben: erst lädt die L1-Geometrie (null), dann steht die Zelle mit Rahmen.
+            // Die Zellen treiben: erst lädt die Gestalt der Karte (null), dann steht die Zelle mit Rahmen.
             let rec = null,
                 rec2 = null,
                 flat1 = null,
@@ -161,6 +196,7 @@ async function driveImpostor(page) {
                 const g = st.archInstanceGroups.get(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE);
                 const ak = g && g.mesh.geometry.attributes.aKarte; // (Schicht, Halbbreite, Höhe, ±Sichthöhe) je Slot
                 const slot = (i) => (ak ? Array.from(ak.array.slice(i * 4, i * 4 + 4)) : [NaN, NaN, NaN, NaN]);
+                const sl = [sE[0].slot, sF[0].slot, entry.instSlots[0].slot];
                 // die WebGPU-Grenze: höchstens 8 Vertex-Puffer je Pipeline —
                 // gezählt im schlimmsten Fall: ab 1024 Instanzen reist auch instanceMatrix als Vertex-Puffer (r184)
                 const geo = g && g.mesh.geometry;
@@ -169,13 +205,13 @@ async function driveImpostor(page) {
                     neu,
                     karten,
                     // die Slots, die DIESE Probe belegt hat (die Welt kann die Gruppe schon füllen)
-                    zellen: [sE[0].slot, sF[0].slot, entry.instSlots[0].slot].map((i) => slot(i)[0]),
-                    rahmen: [sE[0].slot, sF[0].slot, entry.instSlots[0].slot].flatMap((i) => slot(i).slice(1, 3)),
+                    zellen: sl.map((i) => slot(i)[0]),
+                    rahmen: sl.flatMap((i) => slot(i).slice(1, 3)),
                     slotGruppen: [sE[0].key, sF[0].key, entry.instSlots[0].key],
                     erwartet: [l1.zelle, l2.zelle, l1.zelle],
                     erwartetRahmen: [...l1.rahmen, ...l2.rahmen, ...l1.rahmen],
                     // die Sichthöhe je Slot = Höhe der Höhen-Stufe × Instanz-Skala (dieselbe Zahl wie der aH0-Stempel)
-                    sicht: [sE[0].slot, sF[0].slot, entry.instSlots[0].slot].map((i) => slot(i)[3]),
+                    sicht: sl.map((i) => slot(i)[3]),
                     erwartetSicht: [l1.sicht * 1.1, l2.sicht * 0.9, l1.sicht * 1.2],
                     // VOLL je Slot (das Vorzeichen): die Streu-Slots frei, die frisch gesetzte Primär-Stufe hält, bis ihre
                     // Band-Pflege urteilt (K36, `_lodSlotVoll`)
@@ -193,14 +229,15 @@ async function driveImpostor(page) {
             const atS = r._impostorAtlas();
             const strich = (m) => {
                 const p = new Set();
-                // jeder Knoten EINMAL (der Graph teilt seine Zelle über die Ringe: `traverse` ginge jeden Pfad)
-                const geh = (n, s) => n && !s.has(n) && (s.add(n), n.isTextureNode && n.referenceNode && [atS.mapNode, atS.nmapNode].includes(n.getBase()) && p.add(n), [...n.getChildren()].forEach((c) => geh(c, s)));
-                for (const w of [m.colorNode, m.normalNode]) geh(w, new Set());
+                // jeder Knoten EINMAL (der Graph teilt seine Zelle über die Ringe: `traverse` ginge jeden Pfad); die Tiefe je
+                // Texel (w4-laub-karte) liest BC aus ihrer Schicht, rgba8 aus der Normale — auch sie mit stetigen Gradienten
+                const geh = (n, s) => n && !s.has(n) && (s.add(n), n.isTextureNode && n.referenceNode && [atS.mapNode, atS.nmapNode, atS.tmapNode].includes(n.getBase()) && p.add(n), [...n.getChildren()].forEach((c) => geh(c, s)));
+                for (const w of [m.colorNode, m.normalNode, m.depthNode, m.receivedShadowPositionNode]) geh(w, new Set());
                 const g = (b) => [...p].filter((n) => n.gradNode && n.getBase() === b).length;
                 // springend: die Ableitung kommt aus der eigenen (springenden) Stichproben-Koordinate statt aus der stetigen
                 const quelle = (d) => (d.isVarNode ? d.node : d).aNode; // dFdx reist in r184 als VarNode um den MathNode
                 const springend = [...p].filter((n) => n.gradNode?.some((d) => quelle(d) && quelle(d).id === n.uvNode.id)).length;
-                return { gradMap: g(atS.mapNode), gradNmap: g(atS.nmapNode), ohne: [...p].filter((n) => !n.gradNode && !n.levelNode).length, springend };
+                return { gradMap: g(atS.mapNode), gradNmap: g(atS.nmapNode), gradTmap: g(atS.tmapNode), ohne: [...p].filter((n) => !n.gradNode && !n.levelNode).length, springend };
             };
             out.strich = strich(r._impostorAtlasMaterial());
             const uS = THREE.TSL.uv();
@@ -245,29 +282,18 @@ async function kleberProbe(page, fmtWunsch) {
         const out = { err: null };
         try {
             const T = THREE;
-            const ren = new T.WebGPURenderer({ antialias: false });
-            await ren.init();
+            const W = 192,
+                H = 128;
+            // Ein frischer Atlas im Format des Probe-Renderers (die Seite fährt den Null-Renderer).
+            // BEIDE Format-Stufen desselben Pfads: BC (Adapter-Feature) und rgba8/rg8 (DataArrayTexture, GPU-Mips)
+            const pr = await window.__fimpProbe(W, H, fmtWunsch);
+            if (!pr) return { fmt: "bc", ohneFeature: true };
+            const { ren, at } = pr;
             // die Regeln der Welt an der Klasse (die Seite fährt den Null-Renderer, der sie nie anlegt): Abschied und Register
             r._texturAbschied(ren);
             r._renderObjektRegister(ren);
-            const W = 192,
-                H = 128;
-            ren.setSize(W, H, false);
-            // Ein frischer Atlas im Format des Probe-Renderers (die Seite fährt den Null-Renderer).
-            // BEIDE Format-Stufen desselben Pfads: BC (Adapter-Feature) und rgba8/rg8 (DataArrayTexture, GPU-Mips)
-            if (fmtWunsch === "bc" && window.__fimpFormat(ren) !== "bc")
-                return { fmt: "bc", ohneFeature: true };
             out.fmt = fmtWunsch;
-            r._kartenAtlas = undefined;
-            const at = r._impostorAtlas();
-            at.fmt = out.fmt;
-            const prevCf = st.foundryCrossfade;
-            st.foundryCrossfade = false; // die Nah-Ausblendung des Crossfades maskiert die Probe sonst
-            if (st._foliageMatCache)
-                for (const [k, m] of st._foliageMatCache)
-                    if (m.userData?.impostorBillboard) st._foliageMatCache.delete(k);
-            const mat = r._impostorAtlasMaterial();
-            st.foundryCrossfade = prevCf;
+            const mat = window.__fimpStoff();
             out.billboard = !!mat?.userData?.impostorBillboard;
             if (!out.billboard) {
                 out.err = "Impostor-TSL-Wiring: der Stoff trägt keinen Karten-Marker (impostorBillboard)";
@@ -378,7 +404,7 @@ async function kleberProbe(page, fmtWunsch) {
             // der Probe-Atlas trägt nur die Probe-Karten: jede fremde Zelle ist eine Lieferung der Welt, die ihn nebenher füllte
             out.fremd = [...at.zellen.keys()].filter((k) => !k.startsWith("fimp:gateKarte|"));
             // das Layout zählt nach der Befreiung (der Monster-Slot deckt vorher auch die linke Box)
-            out.layout = { lo: nachher.lo, ro: nachher.ro, lu: nachher.lu, ru: nachher.ru, zeilen: nachher.zeilen };
+            out.layout = nachher;
             out.box = { x0, x1, yOben, yUnten };
             out.lebtPx = nachher.links;
             out.totPx = nachher.rechts;
@@ -386,8 +412,7 @@ async function kleberProbe(page, fmtWunsch) {
             // über einem Stamm durch den ECHTEN Bake, abseits des Ursprungs, gedreht und skaliert (r184 rechnet den positionNode VOR
             // der Instanz-Matrix — eine Karte, die mit ihrer Instanz dreht, stünde von vorn als Strich), aus jeder Hebung gegen
             // dieselbe Gestalt als Mesh (Deckung K/G, IoU; 180 m, 6°). Selbsttest: jeder Ring waagrecht gebacken (die Karte bis lod.K3).
-            const kr = [new T.CylinderGeometry(3.6, 3.6, 1.2, 48).translate(0, 6.6, 0), new T.CylinderGeometry(0.3, 0.3, 6, 12).translate(0, 3, 0)];
-            const gO = new T.BufferGeometry().setAttribute("position", new T.Float32BufferAttribute(kr.flatMap((g) => [...g.toNonIndexed().attributes.position.array]), 3));
+            const gO = window.__fimpTeile(new T.CylinderGeometry(3.6, 3.6, 1.2, 48).translate(0, 6.6, 0), new T.CylinderGeometry(0.3, 0.3, 6, 12).translate(0, 3, 0));
             const echt = at.ringe;
             const zO = await window.__fimpBacke(ren, at, "fimp:gateKarte|3", 93, gO);
             at.ringe = Object.assign({}, echt, { ringe: echt.ringe.map((x) => Object.assign({}, x, { hebung: 0 })) });
@@ -395,11 +420,12 @@ async function kleberProbe(page, fmtWunsch) {
             const lage = new T.Matrix4().compose(new T.Vector3(30, 0, -10), new T.Quaternion().setFromAxisAngle(new T.Vector3(0, 1, 0), (-119 * Math.PI) / 180), new T.Vector3(1.5, 1.5, 1.5));
             const camO = new T.PerspectiveCamera(6, 1, 1, 600),
                 rtO = new T.RenderTarget(128, 128);
-            const deckt = async (o, phi) => {
+            // gedeckt = gezeichnet und nicht rot (die Tafel der Tiefe)
+            const deckt = async (phi, ...o) => {
                 camO.position.set(30, 6 + 180 * Math.sin((phi * Math.PI) / 180), 180 * Math.cos((phi * Math.PI) / 180) - 10);
-                camO.lookAt(30, 6, -10), camO.updateMatrixWorld(true), ren.setRenderTarget(rtO);
-                await ren.renderAsync(new T.Scene().add(o, new T.AmbientLight(0xffffff, 3)), camO);
-                return (await ren.readRenderTargetPixelsAsync(rtO, 0, 0, 128, 128)).filter((v, i) => i % 4 === 3).map((a) => +(a > 0));
+                camO.lookAt(30, 6, -10), camO.updateMatrixWorld(true);
+                const q = await window.__fimpBild(ren, rtO, camO, ...o);
+                return Array.from({ length: q.length / 4 }, (_, i) => +(q[i * 4 + 3] > 0 && !(q[i * 4] > 200 && q[i * 4 + 1] < 60)));
             };
             const iou = (k, g) => ((n) => (k.forEach((b, i) => ((n[0] += b), (n[1] += g[i]), (n[2] += b & g[i]))), { deckung: +(n[0] / Math.max(1, n[1])).toFixed(3), iou: +(n[2] / Math.max(1, n[0] + n[1] - n[2])).toFixed(3) }))([0, 0, 0]);
             if (st.windUniforms) st.windUniforms.uWindStrength.value = 0; // der Wind ruht (wie C2)
@@ -408,8 +434,24 @@ async function kleberProbe(page, fmtWunsch) {
             const [mO, mS] = [zO, zS].map((zz) => window.__fimpKarte(zz, mat, lage, 1.5));
             out.oben = { hebungen: echt.ringe.map((x) => x.hebung), schichtB: r._impostorCensus().schichtB, je: {} };
             for (const phi of [-20, 0, 40, 60, 80]) {
-                const g = await deckt(mG, phi);
-                out.oben.je[phi] = { karte: iou(await deckt(mO, phi), g), selbst: iou(await deckt(mS, phi), g) };
+                const g = await deckt(phi, mG);
+                out.oben.je[phi] = { karte: iou(await deckt(phi, mO), g), selbst: iou(await deckt(phi, mS), g) };
+            }
+            // (C7) DIE TIEFE JE TEXEL (w4-laub-karte, phyto-core `karteTiefe`): aus 0° vor einer Tafel 1,5 m vor der Achse steht die
+            // Krone der Gestalt (5,4 m tief) davor, der Stamm dahinter — die Karte im Pixel-Tiefen-Versatz wie sie (depthNode).
+            // SELBSTTEST: ihr Stoff ohne die Tiefe (`karteTiefeVersatz` = 0) steht auf ihrer Ebene, hinter der Tafel.
+            const wand = new T.Mesh(new T.PlaneGeometry(40, 40), new T.MeshBasicMaterial({ color: 0xff0000 }));
+            wand.position.set(30, 6, -8.5);
+            const davor = async (o) => (await deckt(0, o, wand)).reduce((s, b) => s + b, 0);
+            const pc = globalThis.__phytoCore,
+                versatz = pc.karteTiefeVersatz;
+            out.tiefe = { gestalt: await davor(mG), karte: await davor(mO) };
+            try {
+                pc.karteTiefeVersatz = (A) => A.k(0);
+                out.tiefe.selbst = await davor(window.__fimpKarte(zO, window.__fimpStoff(), lage, 1.5));
+            } finally {
+                pc.karteTiefeVersatz = versatz;
+                window.__fimpStoff();
             }
             rtO.dispose();
             // (3) C5 DAS WACHSEN (`_texturAbschied`): je Name EINE GPU-Textur in neuer Form, die alte fällt (WebGPU und WebGL2), dasselbe
@@ -427,7 +469,7 @@ async function kleberProbe(page, fmtWunsch) {
             };
             const gpu = (t) => ren.backend.get(t).texture || ren.backend.get(t).textureGPU;
             try {
-                const alt = [at.map, at.nmap, at.lmap].map(gpu);
+                const alt = r._karteTexturen(at).map(gpu);
                 const vorR = st.renderer;
                 st.renderer = ren;
                 try {
@@ -445,10 +487,12 @@ async function kleberProbe(page, fmtWunsch) {
                 );
                 const form = (t) => `${t.name}:${t.image.depth}/${gpu(t).depthOrArrayLayers || t.image.depth}`;
                 const v = vorlagen();
+                // je Format die Schicht-Texturen der Ablage (`_karteTexturen`): BC trägt die Tiefe je Texel als vierte
+                const soll = r._karteTexturen(at).length;
                 out.wachsen = [
-                    leben.length === 3 && leben.every((t) => form(t).endsWith(`:${at.cap}/${at.cap}`))
+                    leben.length === soll && leben.every((t) => form(t).endsWith(`:${at.cap}/${at.cap}`))
                         ? ""
-                        : `bei der GPU ${leben.map(form).join(", ")} statt Albedo, Normale und Sonnen-Sicht in ${at.cap} Schichten`,
+                        : `bei der GPU ${leben.map(form).join(", ")} statt ${soll} Schicht-Texturen (_karteTexturen) in ${at.cap} Schichten`,
                     alt.every((g) => weg.has(g) || ren.backend.gl?.isTexture(g) === false) ? "" : "alte GPU-Form lebt",
                     ["lo", "ro", "lu", "ru"].every((k) => q[k] === nachher[k]) ? "" : "Bild anders nach dem Wachsen",
                     v.length >= 2 ? "" : "keine Vorlage gelesen — die Wand ist blind",
@@ -486,23 +530,12 @@ async function vergroessertProbe(page, fmtWunsch) {
         const out = { err: null, fmt: fmtWunsch };
         try {
             const T = THREE;
-            const ren = new T.WebGPURenderer({ antialias: false });
-            await ren.init();
             const W = 128,
                 H = 128;
-            ren.setSize(W, H, false);
-            if (fmtWunsch === "bc" && window.__fimpFormat(ren) !== "bc")
-                return { fmt: "bc", ohneFeature: true };
-            r._kartenAtlas = undefined;
-            const at = r._impostorAtlas();
-            at.fmt = fmtWunsch;
-            const prevCf = st.foundryCrossfade;
-            st.foundryCrossfade = false;
-            if (st._foliageMatCache)
-                for (const [k, m] of st._foliageMatCache)
-                    if (m.userData?.impostorBillboard) st._foliageMatCache.delete(k);
-            const mat = r._impostorAtlasMaterial();
-            st.foundryCrossfade = prevCf;
+            const pr = await window.__fimpProbe(W, H, fmtWunsch);
+            if (!pr) return { fmt: "bc", ohneFeature: true };
+            const { ren, at } = pr;
+            const mat = window.__fimpStoff();
             if (!mat?.userData?.impostorBillboard) return { err: "kein Billboard-Stoff" };
             // die Kante: deckend, wo u + v > 1 (Ansichts-Koordinaten) — im Welt-Quad (8 × 8 m) die Diagonale x + y = 4; `stufe`
             // malt sie in Stufen von stufe × 2·stufe Texeln (der Selbsttest)
@@ -524,26 +557,17 @@ async function vergroessertProbe(page, fmtWunsch) {
             out.pxJeTexel = +(8 / at.ch / ((2 * d * Math.tan(Math.PI / 6)) / H)).toFixed(2);
             const treppe = async (stufe, name) => {
                 const z = await window.__fimpBacke(ren, at, "fimp:gateKante|" + name, stufe ? 94 : 93, kante(stufe));
-                const mesh = window.__fimpKarte(z, mat, new T.Matrix4(), 1);
-                const szene = new T.Scene();
-                szene.add(mesh);
-                szene.add(new T.AmbientLight(0xffffff, 3));
                 const rt = new T.RenderTarget(W, H);
-                ren.setRenderTarget(rt);
                 // der Wind ruht: die Probe misst die Karte, nie den Ausschlag des Augenblicks (die Treppe streute 0,248-0,372)
                 if (st.windUniforms) st.windUniforms.uWindStrength.value = 0;
-                await ren.renderAsync(szene, cam);
-                const buf = await ren.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
+                const buf = await window.__fimpBild(ren, rt, cam, window.__fimpKarte(z, mat, new T.Matrix4(), 1));
                 let gleich = 0,
                     zeilen = 0,
                     vor = null;
                 for (let y = 0; y < H; y++) {
-                    let bx = -1;
-                    for (let x = 0; x < W; x++)
-                        if (buf[(y * W + x) * 4 + 3] > 0) {
-                            bx = x;
-                            break;
-                        }
+                    // die Kanten-Spalte der Zeile: der erste gedeckte Pixel
+                    let bx = 0;
+                    while (bx < W && !(buf[(y * W + bx) * 4 + 3] > 0)) bx++;
                     if (bx > 2 && bx < W - 3) {
                         if (vor !== null) {
                             zeilen++;
@@ -618,11 +642,8 @@ async function windProbe(page) {
         const out = { err: null, mess: [] };
         try {
             const T = THREE;
-            const ren = new T.WebGPURenderer({ antialias: false });
-            await ren.init();
-            const W = 256,
-                H = 256;
-            ren.setSize(W, H, false);
+            const W = 256;
+            const { ren } = await window.__fimpProbe(W, W, "rgba8");
             r._windUniformsEnsure();
             const wu = r._ensureWindCoupling(T.TSL);
             const anker = new T.Vector3(30, 0, -10);
@@ -632,28 +653,14 @@ async function windProbe(page) {
             cam.up.set(0, 0, -1);
             cam.lookAt(anker.x, 0, anker.z);
             cam.updateMatrixWorld(true);
+            const rt = new T.RenderTarget(W, W);
+            // der Schwerpunkt des Säulen-Bilds, Pixel → Welt (Bild-x = Welt +x, Bild-y (unten → oben) = Welt −z)
             const schwerpunkt = async (mesh) => {
-                const szene = new T.Scene();
-                szene.add(mesh);
-                const rt = new T.RenderTarget(W, H);
-                ren.setRenderTarget(rt);
-                await ren.renderAsync(szene, cam);
-                const buf = await ren.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
-                rt.dispose();
-                let n = 0,
-                    sx = 0,
-                    sy = 0;
-                for (let y = 0; y < H; y++)
-                    for (let x = 0; x < W; x++)
-                        if (buf[(y * W + x) * 4 + 3] > 0) {
-                            n++;
-                            sx += x;
-                            sy += y;
-                        }
-                if (!n) return null;
-                // Pixel → Welt (Bild-x = Welt +x, Bild-y (unten → oben) = Welt −z)
-                const px = (2 * halb) / W;
-                return { x: (sx / n + 0.5) * px - halb, z: -((sy / n + 0.5) * px - halb), n };
+                const buf = await window.__fimpBild(ren, rt, cam, mesh);
+                let [n, sx, sy] = [0, 0, 0];
+                for (let p = 0; p < W * W; p++) if (buf[p * 4 + 3] > 0) n++, (sx += p % W), (sy += (p / W) | 0);
+                const w = (v) => (v / n + 0.5) * ((2 * halb) / W) - halb;
+                return n ? { x: w(sx), z: -w(sy) } : null;
             };
             const baue = (phi, s, wind, stoff) => {
                 const g = new T.CylinderGeometry(0.3, 0.3, 10, 8, 20);
@@ -682,17 +689,8 @@ async function windProbe(page) {
             for (const f of faelle) {
                 const ruhe = await schwerpunkt(baue(f.phi, f.s, false, f.stoff));
                 const sturm = await schwerpunkt(baue(f.phi, f.s, true, f.stoff));
-                if (!ruhe || !sturm) {
-                    out.mess.push({ phi: f.phi, s: f.s, stoff: f.stoff, dx: 0, dz: 0 });
-                    continue;
-                }
-                out.mess.push({
-                    phi: f.phi,
-                    s: f.s,
-                    stoff: f.stoff,
-                    dx: +(sturm.x - ruhe.x).toFixed(3),
-                    dz: +(sturm.z - ruhe.z).toFixed(3),
-                });
+                const d = (k) => (ruhe && sturm ? +(sturm[k] - ruhe[k]).toFixed(3) : 0);
+                out.mess.push({ ...f, dx: d("x"), dz: d("z") });
             }
             ren.dispose();
         } catch (e) {
@@ -724,22 +722,22 @@ hauptLauf(async () => {
     console.log(`  Gruppen (Streu ×2 Arten + gesetzt): ${JSON.stringify(A.gruppen)}`);
     if (A.err) console.log(`  Fehler: ${A.err}`);
 
+    // je Befund der Mechanik: fehlt er, die erste Zeile, sonst jedes falsche Merkmal beim Namen
+    const merkmale = (o, fehlt, je) =>
+        errs.push(...(o ? Object.keys(je).filter((k) => !o[k]) : [null]).map((k) => "A: " + (k ? je[k] : fehlt)));
     if (!A.ready) errs.push("A: der Worker wurde nicht ready");
-    if (!A.rec) errs.push("A: keine Atlas-Zelle entstanden (die LOD1-Geometrie lud nicht?)");
-    else {
-        if (!A.rec.imAtlas) errs.push("A: die Zelle steht nicht im EINEN Atlas (_impostorAtlas().zellen)");
-        if (!A.rec.hasFrame) errs.push("A: die Zelle hat keinen Rahmen");
-        if (!A.rec.keineSaison) errs.push("A: der Zell-Schlüssel trägt eine Saison");
-    }
-    if (!A.atlas) errs.push("A: keine Karten-Flats (Eiche + Fichte) entstanden");
-    else {
-        if (!A.atlas.quadGeteilt) errs.push("A: zwei Arten tragen verschiedene Quads (je Karte eine Geometrie)");
-        if (!A.atlas.materialGeteilt)
-            errs.push("A: zwei Arten tragen verschiedene Materialien (je Karte ein Programm)");
-        if (!A.atlas.billboard) errs.push("A: das Atlas-TSL-Wiring kam nicht zustande (kein Billboard-Marker)");
-        if (!A.atlas.schichtenVerschieden) errs.push("A: zwei Arten teilen dieselbe Atlas-Schicht");
-        if (!A.atlas.texturen) errs.push("A: der Atlas trägt keine Array-Texturen für seine Zellen");
-    }
+    merkmale(A.rec, "keine Atlas-Zelle entstanden (die Gestalt lud nicht?)", {
+        imAtlas: "die Zelle steht nicht im EINEN Atlas (_impostorAtlas().zellen)",
+        hasFrame: "die Zelle hat keinen Rahmen",
+        keineSaison: "der Zell-Schlüssel trägt eine Saison",
+    });
+    merkmale(A.atlas, "keine Karten-Flats (Eiche + Fichte) entstanden", {
+        quadGeteilt: "zwei Arten tragen verschiedene Quads (je Karte eine Geometrie)",
+        materialGeteilt: "zwei Arten tragen verschiedene Materialien (je Karte ein Programm)",
+        billboard: "das Atlas-TSL-Wiring kam nicht zustande (kein Billboard-Marker)",
+        schichtenVerschieden: "zwei Arten teilen dieselbe Atlas-Schicht",
+        texturen: "der Atlas trägt keine Array-Texturen für seine Zellen",
+    });
     if (A.gruppen) {
         const G = A.gruppen;
         if (G.karten.length !== 1)
@@ -767,14 +765,17 @@ hauptLauf(async () => {
     if (A.strich) {
         const s = A.strich;
         console.log(`  Strich-Wand am Graphen: ${JSON.stringify(s)} · Selbsttest ${JSON.stringify(A.strichSelbst)}`);
-        if (!(s.gradMap === 2 && s.gradNmap === 1 && s.ohne === 0 && s.springend === 0))
+        // die Albedo je Ansicht (2), die Normale der nächsten (1) und die Tiefe je Ansicht (2, w4-laub-karte: der Pixel-Tiefen-Versatz;
+        // BC in ihrer Schicht, rgba8 in der Normale) mit Gradienten der stetigen Koordinate
+        if (!(s.gradMap === 2 && s.gradNmap + s.gradTmap === 3 && s.ohne === 0 && s.springend === 0))
             errs.push(
-                `A: Strich-Wand — die Albedo je Ansicht, die Normale der nächsten mit Gradienten der stetigen Koordinate (2/1), keine Stichprobe ohne (${JSON.stringify(s)})`
+                `A: Strich-Wand — die Albedo je Ansicht, die Normale der nächsten und die Tiefe je Ansicht mit Gradienten der stetigen Koordinate (2/1+2), keine Stichprobe ohne (${JSON.stringify(s)})`
             );
-        if (!(A.strichSelbst && A.strichSelbst.ohne === 1 && A.strichSelbst.springend === 1))
+        if (!(A.strichSelbst?.ohne === 1 && A.strichSelbst.springend === 1))
             errs.push("A-SELBSTTEST: ein Atlas-Stoff ohne Gradienten oder mit springender Ableitung bleibt ungesehen");
     } else if (A.ready) errs.push("A: die Strich-Proben liefen nicht");
 
+    const OHNE_BC = "  (die Welt wählt auf dem Probe-Renderer rgba8 — WebGL2 bzw. ohne texture-compression-bc; die BC-Stufe misst die Werkbank)";
     console.log(`\n  RUHE VOR TEIL C: die Welt steht nach ${ruhe.takte} Takten · mit einer wartenden Karte: ${ruhe.karte}`);
     if (ruhe.karte) errs.push("C: eine wartende Karte bricht die Ruhe nicht (`_weltSteht` true)");
     for (const C of Cs) {
@@ -783,21 +784,12 @@ hauptLauf(async () => {
             `\n=== TEIL C [${C.fmt}] — DIE KARTEN-WAND (Layout + befreite Slots zeichnen NICHTS, echter Renderer) ===`
         );
         if (C.ohneFeature) {
-            console.log(
-                "  (die Welt wählt auf dem Probe-Renderer rgba8 — WebGL2 bzw. ohne texture-compression-bc; die BC-Stufe misst die Blick-Sonde)"
-            );
+            console.log(OHNE_BC);
             continue;
         }
-        console.log(`  geschrieben: ${C.geschrieben} · Wiring: ${C.billboard}`);
-        console.log(`  Eichung der Lese-Richtung: ${JSON.stringify(C.eichung)}`);
-        console.log(
-            `  LAYOUT (Karte: links oben opak) — Quadranten px: lo ${C.layout && C.layout.lo} · ro ${C.layout && C.layout.ro}` +
-                ` · lu ${C.layout && C.layout.lu} · ru ${C.layout && C.layout.ru}`
-        );
-        if (C.layout) console.log(`  Schirm-Box ${JSON.stringify(C.box)} · Zeilen ${JSON.stringify(C.layout.zeilen)}`);
-        console.log(`  Selbsttest Monster-Slot (Skala 1000) Pixel: ${C.monsterPx} (Linse MUSS Müll sehen)`);
-        console.log(`  Free-Chokepoint verdichtet (count 1, der Lebende zog in Slot 0): ${C.umzug}`);
-        console.log(`  nach _archGroupFree — lebender Slot: ${C.lebtPx} px · befreiter Slot: ${C.totPx} px`);
+        console.log(`  geschrieben ${C.geschrieben} · Wiring ${C.billboard} · Eichung der Lese-Richtung ${JSON.stringify(C.eichung)}`);
+        console.log(`  LAYOUT (Karte: links oben opak) — Quadranten px und Zeilen ${JSON.stringify(C.layout)} · Schirm-Box ${JSON.stringify(C.box)}`);
+        console.log(`  Selbsttest Monster-Slot (Skala 1000, MUSS fluten) ${C.monsterPx} px · verdichtet (count 1, der Lebende in Slot 0) ${C.umzug} · nach _archGroupFree lebend ${C.lebtPx} px, befreit ${C.totPx} px`);
         if (C.err) {
             console.log(`  Fehler: ${C.err}`);
             errs.push(`${F}: Karten-Probe brach ab — ${C.err}`);
@@ -831,8 +823,14 @@ hauptLauf(async () => {
         const hb = (p, w) => `${p}° ${w.deckung}/${w.iou}`;
         console.log(`  C6 HEBUNG [${C.fmt}]: ${Object.entries(O.je).map(([p, w]) => hb(p, w.karte)).join(" · ")} | waagrecht ${O.je[80] ? hb(80, O.je[80].selbst) : "—"} · Ringe ${O.hebungen} · Schicht ${O.schichtB} B`);
         for (const p of [-20, 0, 40, 80])
-            if (!(O.je[p] && O.je[p].karte.deckung >= 0.75 && O.je[p].karte.iou >= 0.65)) errs.push(`${F} C6: aus ${p}° ${JSON.stringify(O.je[p] && O.je[p].karte)} (Soll Deckung ≥ 0,75, IoU ≥ 0,65)`);
-        if (!(O.je[80] && O.je[80].selbst.iou < 0.65)) errs.push(`${F} C6-SELBSTTEST: die waagrecht gebackene Karte besteht von oben — die Linse ist blind`);
+            if (!(O.je[p]?.karte.deckung >= 0.75 && O.je[p].karte.iou >= 0.65)) errs.push(`${F} C6: aus ${p}° ${JSON.stringify(O.je[p] && O.je[p].karte)} (Soll Deckung ≥ 0,75, IoU ≥ 0,65)`);
+        if (!(O.je[80]?.selbst.iou < 0.65)) errs.push(`${F} C6-SELBSTTEST: die waagrecht gebackene Karte besteht von oben — die Linse ist blind`);
+        // C7 DIE TIEFE: vor der Tafel steht die Karte wie ihre Gestalt (≥ 0,6), ohne die Tiefe nicht (< 0,2)
+        const Ti = C.tiefe || {},
+            teil = (n) => +(n / Math.max(1, Ti.gestalt)).toFixed(3);
+        console.log(`  C7 TIEFE [${C.fmt}]: vor der Tafel Gestalt ${Ti.gestalt} px (Soll ≥ 80) · Karte ${teil(Ti.karte)} (Soll ≥ 0,6) · ohne Tiefe ${teil(Ti.selbst)} (MUSS < 0,2)`);
+        if (!(Ti.gestalt >= 80 && teil(Ti.selbst) < 0.2)) errs.push(`${F} C7-SELBSTTEST: die Gestalt steht nicht vor der Tafel oder die Karte ohne Tiefe nicht dahinter — die Linse ist blind`);
+        else if (!(teil(Ti.karte) >= 0.6)) errs.push(`${F} C7: die Karte steht hinter der Tafel — sie liest die Tiefe ihrer Gestalt nicht (depthNode)`);
     }
     {
         console.log("\n=== TEIL C4 — DER WIND WEHT IN DER WELT (eine Säule im Sturm, drei Drehungen, zwei Skalen) ===");
@@ -870,7 +868,7 @@ hauptLauf(async () => {
             `\n=== TEIL ${F} — DIE VERGRÖSSERTE KARTE (Treppe der Kanten-Kontur, ein Texel ~${C2.pxJeTexel} px) ===`
         );
         if (C2.ohneFeature) {
-            console.log("  (die Welt wählt auf dem Probe-Renderer rgba8 — WebGL2 bzw. ohne texture-compression-bc; die BC-Stufe misst die Werkbank)");
+            console.log(OHNE_BC);
             continue;
         }
         if (C2.err) {
@@ -879,8 +877,7 @@ hauptLauf(async () => {
         }
         const k = C2.kante || {},
             s = C2.selbst || {};
-        console.log(`  glatte Kante: Treppe ${k.treppe} über ${k.zeilen} Zeilen (Soll ≤ 0,35)`);
-        console.log(`  Selbsttest 8-Texel-Stufen: Treppe ${s.treppe} über ${s.zeilen} Zeilen (MUSS > 0,6)`);
+        console.log(`  glatte Kante: Treppe ${k.treppe} über ${k.zeilen} Zeilen (Soll ≤ 0,35) · Selbsttest 8-Texel-Stufen: Treppe ${s.treppe} über ${s.zeilen} Zeilen (MUSS > 0,6)`);
         if (!(k.zeilen >= 40))
             errs.push(`${F}: die Kante liegt nicht im Bild (${k.zeilen} Zeilen) — die Probe ist blind`);
         else if (!(k.treppe <= 0.35))
@@ -890,7 +887,6 @@ hauptLauf(async () => {
         if (!(s.zeilen >= 40 && s.treppe > 0.6))
             errs.push(`${F}-SELBSTTEST: die 8-Texel-Stufen stehen nicht treppig (${s.treppe}) — die Linse ist blind`);
     }
-
     server.close();
-    wandEnde(errs, "die Welt-Fernstufe liest die im Welt-Renderer gebackene Karte über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum, befreite Slots zeichnen nichts (die Gruppe verdichtet), jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich); Bäcker-Kanal, RTT-Nachbau, Bake-iframe und Canvas-Atlas je Karte sind geschnitten.");
+    wandEnde(errs, "die Welt-Fernstufe liest die im Welt-Renderer gebackene Karte über EINEN Karten-Atlas (eine Gruppe, ein Material, Schicht + Rahmen je Instanz), die Karte steht richtig herum und in der Tiefe ihrer Gestalt, befreite Slots zeichnen nichts (die Gruppe verdichtet), jede Atlas-Stichprobe trägt die Gradienten der stetigen Koordinate (kein Stamm-Strich).");
 });
