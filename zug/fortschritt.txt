@@ -1090,3 +1090,4 @@
 2026-10-31 08:58:27 b-kalt-94c0 ankunft-kalt.sh Exit0 5.0 · 1/1
 2026-10-31 08:58:48 b-kalt-ec98 START 1 Stationen
 2026-10-31 09:03:46 b-kalt-ec98 ankunft-kalt.sh Exit0 5.0 · 1/1
+2026-10-31 09:04:04 z100c-abab START 2 Zellen
