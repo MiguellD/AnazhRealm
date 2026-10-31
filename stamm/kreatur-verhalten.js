@@ -433,6 +433,7 @@ class AnazhRealm_kreatur_verhalten {
         for (const k of L) {
             const K = k.userData.kadaver;
             if (!K || !(K.fleisch > 0)) continue;
+            if (this.state.gehege && this._gehegeVon(k) !== this._gehegeVon(creature)) continue; // nie durch den Rand
             const dx = k.position.x - cx,
                 dz = k.position.z - cz;
             if (dx * dx + dz * dz > R * R) continue;
@@ -487,9 +488,11 @@ class AnazhRealm_kreatur_verhalten {
     // die Masse des Jägers — die EINE Masse des Leibs (`_leibMasse`, kg: Volumen der Gestalt × Dichte des Kerns), die
     // auch der Stoß liest (Welle LF: der Wolf, 64 kg, jagt Hirsch und Fuchs, nie den Bären, 335 kg). Der Spieler trägt keine
     // Gattung und kein Temperament: ihn wiegt allein die Masse seines Leibs (der Wolf jagt den Menschen, der Fuchs nie).
+    // DIE GEMEINSCHAFT (w4-gehege): Jäger und Beute teilen ihr Gehege (`_gehegeVon`) — nie jagt einer durch den Rand.
     _kreaturIstBeute(jaeger, o) {
         if (!o || o === jaeger || !o.position || !o.userData) return false;
         if (o !== this.state.playerMesh && this._creatureTemperament(o) === "wild") return false;
+        if (this.state.gehege && this._gehegeVon(jaeger) !== this._gehegeVon(o)) return false;
         return this._leibMasse(o) <= AnazhRealm._verhaltenGesetz().jagd.beuteMasse * this._leibMasse(jaeger);
     }
 
@@ -1067,7 +1070,7 @@ class AnazhRealm_kreatur_verhalten {
         const teil = (k) => T[k] || (T[k] = { leib: {} });
         for (let i = 0; i < cr.length; i++) {
             const c = cr[i];
-            if (!c || !c.position || !c.userData) continue;
+            if (!c || !c.position || !c.userData || c.userData._gehegeZahl) continue; // ein ruhendes Gehege (Takt 0)
             this._leibTeil(c, teil(n++));
         }
         const pm = st.playerMesh;
@@ -1184,7 +1187,7 @@ class AnazhRealm_kreatur_verhalten {
         const grob = a.reich + (Number.isFinite(rm) ? Math.max(rm, AnazhRealm.PLAYER_WALL_RADIUS) : Infinity);
         for (let j = 0; j < cr.length; j++) {
             const o = cr[j];
-            if (o === c || !o || !o.position || !o.userData) continue;
+            if (o === c || !o || !o.position || !o.userData || o.userData._gehegeZahl) continue;
             if (Math.abs(o.position.x - a.x) > grob || Math.abs(o.position.z - a.z) > grob) continue;
             this._leibPaar(a, this._leibTeil(o, b), i + j, nah);
         }
@@ -1406,6 +1409,8 @@ class AnazhRealm_kreatur_verhalten {
                 p.z -= wh.nz * ein;
             }
         }
+        // DER RAND DES GEHEGES (w4-gehege, tetrapoda gehegeRand): das Tier eines Geheges steht mit jeder Achse seines Leibs
+        if (ud && ud._bestand && ud._bestand.gehege) this._gehegeRandKontakt(creature, L, ud._bestand.gehege);
         const arches = this.state.architectures;
         if (!arches || !arches.length) return;
         const t = this.state.creatureAnimationTime;
@@ -3247,6 +3252,11 @@ class AnazhRealm_kreatur_verhalten {
             // Kadenz, nie die Entscheidung (Q11): derselbe Schritt, dieselbe Zeit, der Kontakt hält über den Teil-Schritt (`_kreaturWeg`).
             const dt = this._kreaturTaktDt(creature, aiFrame + i, delta);
             if (dt === null) continue;
+            // DAS GEHEGE RUHT ALS ZAHL (w4-gehege, Takt 0): von seinem Leib nur die Sicht (Stufe, Fell) — kein Schritt
+            if (this._gehegeRuht(creature, auge)) {
+                this._leibSicht(creature, creature.userData._gehegeImBild, auge, zeilen);
+                continue;
+            }
             // DAS TEMPO IN m/s (Q3): die Tempo-Einheit des Verhaltens aus dem Gang-Gesetz (tetrapoda tempoEinheit,
             // tempo·√(g·L) an der Hüft-Höhe L — ein großes Tier läuft schneller, ein kleines kürzer), darauf der Charakter
             // (computeCreatureStats.speed / 7, geklemmt [0.6, 1.6], gecacht pro Soul×bodySize) und die Freude
@@ -3713,7 +3723,10 @@ _stammZonen(AnazhRealm, [AnazhRealm_kreatur_verhalten]);
 AnazhRealm._verhaltenGesetz = function () {
     if (AnazhRealm._verhaltenGesetzMemo) return AnazhRealm._verhaltenGesetzMemo;
     try {
-        const v = AnazhRealm.Gesetz("tetrapoda:VERHALTEN", null);
+        const [v, haltung] = [
+            AnazhRealm.Gesetz("tetrapoda:VERHALTEN", null),
+            AnazhRealm.Gesetz("tetrapoda:MOTION", null),
+        ];
         if (
             v &&
             v.jagd &&
@@ -3751,6 +3764,11 @@ AnazhRealm._verhaltenGesetz = function () {
             Number.isFinite(v.freude.hopBasisM) &&
             Array.isArray(v.groessen) &&
             v.groessen.length >= 2 &&
+            // die Bänder der Größe steigen, je Stimmung alle = [min, max], und jedes Aktions-Profil nennt nur Felder der Haltung
+            // (MOTION) — DIE EINE Wand über dem Buch (bis w4-gehege eine zweite Linse, gate:kreatur-leben, über denselben Block)
+            v.groessen.every((g, i) => !i || g.bis > v.groessen[i - 1].bis) &&
+            Object.entries(v.stimmung).every(([n, z]) => n === "schwellen" || z.alle[0] <= z.alle[1]) &&
+            Object.values(v.aktionen).every((a) => Object.keys(a.profil || {}).every((f) => f in haltung.idle)) &&
             v.separation &&
             Number.isFinite(v.separation.raumKugel) &&
             v.aufgaben &&

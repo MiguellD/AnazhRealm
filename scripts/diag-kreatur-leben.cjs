@@ -1,13 +1,31 @@
 #!/usr/bin/env node
-// gate:kreatur-leben — DIE LEBENS-LINSE: als Skript die Seele im Kern; als Stück der Seiten-Funktion der Kreatur-Proben
-// (`BUEHNEN` an ihrer Marke) Furcht, Lebensraum, Tages-Budget, die Kaskade samt dem Bestand und Folgen am ECHTEN Takt (gate:kreatur-takt).
+// DIE LEBENS-LINSE: als Stück der Seiten-Funktion der Kreatur-Proben (`BUEHNEN` an ihrer Marke) Furcht, Lebensraum,
+// Tages-Budget, die Kaskade samt dem Bestand, Folgen und das Gehege am ECHTEN Takt (gate:kreatur-takt). Die Seele im Kern (je
+// Stimmung alle = [min, max], die Aktions-Profile auf Feldern der Haltung, die Größen-Bänder) prüfte bis w4-gehege dieses Skript
+// als gate:kreatur-leben — seither die EINE Wand über dem Buch, der Leser `_verhaltenGesetz` beim Boot (fail-closed).
 "use strict";
 
 // ── furcht (Ökologie K3, tetrapoda FURCHT_GESETZ): (A) je Ort und Rolle ein Tier allein — geschlagen, gefüttert, gebunden,
 // zur Kontrolle, der Bär vor ruhiger, zorniger, friedlicher Aura — über den Speicherstand, dann geht der Spieler bis 8 m
 // heran und steht 15 s: der Median des Abstands. (B) ein Rudel um einen Riss: sein Aufenthalt in dessen Zelle über 90 s,
 // gegen den Gegenlauf ohne Feld-Furcht ──
-async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil) {
+async function lebenBuehnen(
+    buehne,
+    taeter,
+    decke,
+    r,
+    s,
+    A,
+    pm,
+    frei,
+    land,
+    tier,
+    ruhig,
+    ruhigSpieler,
+    takt,
+    quantil,
+    kamera
+) {
     const dt = 1 / 60;
     const boden = (x, z) => r.getTerrainHeightAt(x, z) + 0.5;
     await buehne("furcht", async (restore) => {
@@ -745,9 +763,40 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
             fensterRaum: A._verhaltenGesetz().herde.fensterRaum,
         });
     });
+    // ── gehege (w4-gehege, tetrapoda GEHEGE_GESETZ): das Wolfs-Gehege des Prüfplatzes über den Haken des Plans (`_gehegeSetzen`; der
+    // Zoo 200,3/−173,5 — r 265 auf 319,1° vom Genesis-Ort —, das Gehege 16 × 12 m 5–17 m nördlich seiner Mitte, das Lager 7 m
+    // nördlich): der Spieler naht aus 100 m (das Gehege wird fällig, seine Leiber entstehen fern), steht 600 s an S8 (2 m südlich
+    // der Mitte, Blick ins Gehege; das Rudel kommt dem Gast an den Rand entgegen) und geht 100 m zurück — je Bild jeder Leib im
+    // Rand, je Bild dieselben drei (keine Geburt, kein Tod, kein Riss), und fort keine Schritte der Gehege-Leiber (sie ruhen als
+    // Zahl). Den wilden Bestand mit und ohne Gehege (byte-gleich), S2 (kein Leib, keine Kappe) und Wegsehen und Neuladen
+    // (dieselben Tiere) maß die Abgabe w4-gehege ──
+    await buehne("gehege", async () => {
+        const T = { "gehege-rand": "_gehegeRandKontakt", "gehege-takt": "_gehegeRuht" }[taeter];
+        if (T) decke(T, () => () => false);
+        const [x, y, GG, z] = [200.3, -173.5, A._gehegeGesetz(), { aus: 0, bilder: 0, schritte: 0 }];
+        s.faunaLifecycle = { lastTick: 0 }; // die Marke der Bühne reist als Verweis — der Takt des Lebens beginnt hier
+        const Z = r._gehegeSetzen([{ gattung: "wolf", n: 3, lager: [x, y + 7], rand: [[x - 8, y + 5], [x + 8, y + 5], [x + 8, y + 17], [x - 8, y + 17]] }])[0]; // prettier-ignore
+        const ort = (dz) => (pm.set(x, r.getTerrainHeightAt(x, y - dz) + 1.2, y - dz), kamera(0, 1));
+        decke("_kreaturWeg", (alt) => function (c, ...w) {
+            z.schritte += !!(c.userData._bestand || {}).gehege && pm.z < y - 50;
+            return alt.call(this, c, ...w);
+        }); // prettier-ignore
+        ort(100);
+        for (let k = 0; k < 18300; k++) {
+            if (k % 300 === 0) ((s.spielZeit += 10), r.tickFaunaLifecycle(), ort(k < 18000 ? 2 : 100));
+            takt(1 / 30);
+            for (const { leib } of r._gehegeTiereVon(Z)) if (leib) (z.bilder++, (z.aus += !GG.drin(Z.rand, leib.position.x, leib.position.z))); // prettier-ignore
+        }
+        r._gehegeSetzen([]);
+        return z;
+    });
 }
 // das Soll der Lebens-Proben (`soll(bedingung, grund)` aus dem Urteil der Kreatur-Proben)
 function lebenUrteil(name, z, soll) {
+    if (name === "gehege") {
+        soll(z.bilder === 54900 && !z.aus, `Ausbruch: ${z.aus} von ${z.bilder} Leib-Bildern (Soll 0 von 54 900)`);
+        soll(!z.schritte, `das Gehege ruht nicht jenseits 60 m: ${z.schritte} Schritte`);
+    }
     if (name === "kaskade") {
         soll(
             z.kappe === 0,
@@ -899,9 +948,13 @@ function lebenUrteil(name, z, soll) {
 }
 const lebenQuelle = lebenBuehnen.toString();
 module.exports = {
-    BUEHNEN: `await (${lebenQuelle})(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil);`,
-    PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen"],
+    BUEHNEN: `await (${lebenQuelle})(buehne, taeter, decke, r, s, A, pm, frei, land, tier, ruhig, ruhigSpieler, takt, quantil, kamera);`,
+    PROBEN: ["furcht", "lebensraum", "tagesbudget", "kaskade", "folgen", "gehege"],
     TAETER: {
+        gehege: [
+            ["gehege-rand", /Ausbruch: [1-9]/],
+            ["gehege-takt", /ruht nicht jenseits 60 m: [1-9]/],
+        ],
         tagesbudget: [
             ["durst", /kein Tier trinkt aus Durst/],
             ["tagesbudget-ruhe", /verfehlt das Ethogramm \(\w+ ruhen\)/],
@@ -941,45 +994,3 @@ module.exports = {
     },
     urteil: lebenUrteil,
 };
-if (require.main !== module) return;
-const path = require("path");
-const root = path.resolve(__dirname, "..");
-
-const { pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
-const { errs, check } = pruefer();
-
-// ── Kern laden (Namensraum-Muster: self/globalThis) ──
-global.self = global;
-require(path.join(root, "tetrapoda-core.js"));
-const core = global.__tetrapodaCore;
-
-const V = (core && core.VERHALTEN) || null;
-
-// ── die Seele in sich: die Aktionen jeder Stimmung prüft gate:studio-vertrag (§B6+), hier der Takt alle=[min,max] ──
-if (V) {
-    check(
-        "je Stimmung alle=[min,max] (min ≤ max)",
-        Object.entries(V.stimmung).every(([k, z]) => k === "schwellen" || (z.alle && z.alle[0] <= z.alle[1]))
-    );
-    // die Felder der Haltung sind die des Kerns (MOTION, je Stimmung dieselben) — keine Abschrift
-    const bekannt = new Set(Object.keys(core.MOTION.idle));
-    const fremd = [];
-    for (const name in V.aktionen) {
-        const p = V.aktionen[name].profil;
-        if (!p) continue;
-        for (const k in p) if (!bekannt.has(k)) fremd.push(name + ":" + k);
-    }
-    check("Aktions-Profile nutzen nur bekannte MOTION-Felder", fremd.length === 0, fremd.join(","));
-    // (die Blöcke des Buchs prüft der EINE Leser _verhaltenGesetz beim Boot, die Rezepte der Umschlag: gate:studio-vertrag)
-    // Die Größen-Bänder sind lückenlos aufsteigend (die letzte Zeile fängt den Rest).
-    const gr = Array.isArray(V.groessen) ? V.groessen : [];
-    let grOk = gr.length >= 2;
-    for (let i = 1; i < gr.length; i++) if (!(gr[i].bis > gr[i - 1].bis)) grOk = false;
-    check("groessen-Bänder strikt aufsteigend (bis-Schwellen)", grOk);
-}
-
-urteilEnde(
-    errs.length,
-    `\n❌ ROT — ${errs.length} Verletzung(en).`,
-    "\n✅ GRÜN — DIE KREATUR-SEELE IST GESCHLOSSEN: jedes Aktions-Profil zeigt auf ein Feld der Haltung."
-);

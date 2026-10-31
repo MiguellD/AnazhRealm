@@ -2036,7 +2036,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             // STAT_FROM_TAGS wuchs um 3 Kombat-Stats (knockback,
             // attackSpeed, defense). V18.196 Mana-Symmetrie fügt manaMax hinzu.
             // Die feste Satz-Assertion wandert mit.
-            "Welle 6.D: STAT_FROM_TAGS hat 12 Stats (8 Basis + Kampf-Trio + V18.196 manaMax)",
+            "Welle 6.D: STAT_FROM_TAGS hat 12 Stats (8 Basis + Kampf-Trio + manaMax)",
             wave6dResults.statKeys ===
                 "attackSpeed,damage,defense,heatResist,hpMax,jumpPower,knockback,magicResist,manaMax,precision,speed,staminaMax"
         );
@@ -2076,7 +2076,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         check("Welle 6.D: HP-Ordnung Bär > Wolf > Fuchs (Skelett-Größe)", wave6dResults.hpOrderBaerWolfFuchs);
         check("Welle 6.D: Tempo-Ordnung Fuchs > Wolf > Bär (invers zur Masse)", wave6dResults.speedOrderFuchsWolfBaer);
         check(
-            "Welle 6.D: Wolf mehr Mana als Mensch (holz-magieleitung emergent, V18.196 lebend)",
+            "Welle 6.D: Wolf mehr Mana als Mensch (holz-magieleitung emergent, lebend)",
             wave6dResults.wolfHasMoreManaThanHuman
         );
         check(
@@ -2094,10 +2094,10 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             wave6dResults.statePlayerHasHpAndStamina
         );
         check("Welle 6.D: das Selbst-Spec-Sheet (#ich-stage-spec) im DOM", wave6dResults.statsContainerInDom);
-        check("Welle 6.D: das Spec-Sheet rendert ohne Crash (V18.61 Ich-F)", wave6dResults.renderOk);
+        check("Welle 6.D: das Spec-Sheet rendert ohne Crash (Ich-F)", wave6dResults.renderOk);
         if (wave6dResults.renderOk) {
             check(
-                "Welle 6.D: das Spec-Sheet trägt Werte-Balken (HP + Stats + Natur, V18.44/.57)",
+                "Welle 6.D: das Spec-Sheet trägt Werte-Balken (HP + Stats + Natur)",
                 wave6dResults.statRowsCount >= 6
             );
             check("Welle 6.D: das Spec-Sheet trägt Spalten-Köpfe (Werte/Natur)", wave6dResults.hasTagLine);
@@ -2147,7 +2147,7 @@ async function checkBandPhasenBF({ page, check }) {
                 t("baer", 0.7) === "sanft"
             );
         })();
-        // KONSUM: der Treffer liest das Temperament (die Flucht-Dauer je fleeMul beweist gate:kreatur-leben am Verhalten);
+        // KONSUM: der Treffer liest das Temperament (die Flucht-Dauer je fleeMul beweist gate:kreatur-takt am Verhalten);
         // sanft/scheu haben strike 0.
         const pp4 = st.playerMesh.position;
         const c4 = r.spawnCreatureAt(pp4.x + 200, pp4.y, pp4.z + 200, "happy", "baer", { precise: true, bodySize: 1 });

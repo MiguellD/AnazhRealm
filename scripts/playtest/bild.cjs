@@ -162,7 +162,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         );
         check("Welle 6.G3.a: set_time_of_day in NON_BROADCASTABLE_OPS", wave6g3Results.setTimeOfDayInBlacklist);
         check(
-            "Welle 6.G3.a: DirectionalLight folgt timeOfDay (Mittag=Sonne oben/hell, Mitternacht=Mond oben/gedämpft+kühl, V18.377)",
+            "Welle 6.G3.a: DirectionalLight folgt timeOfDay (Mittag=Sonne oben/hell, Mitternacht=Mond oben/gedämpft+kühl)",
             wave6g3Results.lightPosFollowsTimeOfDay
         );
 
@@ -1143,7 +1143,7 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
     // ### updateCreatures-Politur (Off-Screen-Sparsamkeit + Distanz-LOD) ###
     const v849Results = await safeEvaluate(page, () => {
         const out = {};
-        // Die Herde (Kern verbandZug, persönlicher Raum je Leib) beweist gate:kreatur-leben am Verhalten (herde, abstand).
+        // Die Herde (Kern verbandZug, persönlicher Raum je Leib) beweist gate:kreatur-takt am Verhalten (herde, abstand).
         // Funktional: viele Kreaturen, mehrere Ticks → kein Crash, Bewegung erhalten, Positionen endlich.
         // maxCreatures temporär heben + Guard-Zähler: am Cap fügt spawnCreatureAt nichts hinzu und der
         // `while (length < 60)`-Loop dreht ewig; danach sauber abräumen (kein Leck in Folge-Bänder).
