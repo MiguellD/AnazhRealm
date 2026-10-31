@@ -12,7 +12,7 @@ const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cj
 const { schluessel } = require("./ci-schluessel.cjs");
 const { kopfUrteil } = require("./ci-kopf.cjs");
 const { messe } = require("./ci-zeiten.cjs");
-const { taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
+const { taeterFaelle, selbsttestEnde, wandEnde, jsonLesen } = require("./lib/welt-boot.cjs");
 
 const root = path.resolve(__dirname, "..");
 const DATEI = ".github/workflows/check.yml";
@@ -930,7 +930,7 @@ function selbsttestKopf(urteile = kopfUrteil) {
     });
     // [Name, Fall, Soll: „ja"/„nein" (voll) · „warte" · „rot" · ein Prüfer am Urteil]
     const faelle = [
-        ["derselbe Kopf grün auf integ-probe (d2e06032)", fall("push", [gruen(1)]), "nein"],
+        ["derselbe Kopf grün auf integ-probe", fall("push", [gruen(1)]), "nein"],
         ["kein anderer Lauf", fall("push", []), "ja"],
         ["nur der eigene Lauf", fall("push", [gruen(9)]), "ja"],
         ["auf Abruf läuft sie immer", fall("workflow_dispatch", [gruen(1)]), "ja"],
@@ -1027,7 +1027,7 @@ function selbsttest() {
             /\(E\) FRIST: „B auf der Karte" trägt keine timeout-minutes/,
         ],
         [
-            "echt über dem Job-Deckel (b9d99b9e: 150 min)",
+            "echt über dem Job-Deckel (150 min)",
             (d) => (echtDazu(d)["timeout-minutes"] = 150),
             /\(E\) DECKEL: „echt" timeout-minutes 150/,
         ],
@@ -1492,7 +1492,7 @@ async function selbsttestLauf() {
 
 function hauptlauf() {
     const doc = yaml.load(fs.readFileSync(path.join(root, DATEI), "utf8"));
-    const skripte = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts || {};
+    const skripte = jsonLesen(path.join(root, "package.json")).scripts || {};
     const v = urteil(doc);
     v.push(...klassenUrteil(doc, skripte));
     const alleWorkflows = workflowsLesen();
@@ -1502,7 +1502,7 @@ function hauptlauf() {
     v.push(...playtestUrteil(alleWorkflows, skripte));
     const zeitenDatei = path.join(root, ZEITEN);
     const w = fs.existsSync(zeitenDatei)
-        ? waage(doc, JSON.parse(fs.readFileSync(zeitenDatei, "utf8")))
+        ? waage(doc, jsonLesen(zeitenDatei))
         : { v: [`(T) ZEITEN: ${ZEITEN} fehlt — die Waage hat keine Zeiten`], zeilen: [] };
     v.push(...w.v);
     const jeKlasse = g.zahl.jeKlasse;

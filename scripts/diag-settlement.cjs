@@ -13,7 +13,7 @@ const {
     pruefer,
     wandEnde,
     selbsttestEnde,
-    studioKern,
+    studioKern, jsonLesen, jsonSchreiben,
 } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -1303,10 +1303,10 @@ hauptLauf(async () => {
                     groesse: plans[key].groesse,
                 };
             }
-            fs.writeFileSync(goldenFile, JSON.stringify(golden, null, 4) + "\n");
+            jsonSchreiben(goldenFile, golden, 4, "\n");
             console.log(`  🧊 Golden GEMINTET (${goldenFile}) — ab jetzt EINGEFROREN.`);
         }
-        const golden = JSON.parse(fs.readFileSync(goldenFile, "utf8"));
+        const golden = jsonLesen(goldenFile);
         for (const dp of FIXTURES) {
             const key = JSON.stringify(dp);
             check(
@@ -2992,9 +2992,7 @@ hauptLauf(async () => {
                 : { err: "kein Ort" };
         return { outO, gtO };
     };
-    const MESSORT_DORF = JSON.parse(
-        fs.readFileSync(path.join(root, "spec", "profiband", "haushalt.json"), "utf8")
-    ).messorte.find((o) => o.id === "dorf").spieler;
+    const MESSORT_DORF = jsonLesen(path.join(root, "spec", "profiband", "haushalt.json")).messorte.find((o) => o.id === "dorf").spieler;
     const O = await messeOrt("akt", null);
     const OA = await messeOrt("auto", MESSORT_DORF);
     const K5 = [];

@@ -13,9 +13,8 @@
 //
 //   node scripts/diag-taille.cjs
 
-const { starteBrowser, startProc, eigenePorte } = require("./lib/welt-boot.cjs");
+const { starteBrowser, startProc, eigenePorte, jsonLesen } = require("./lib/welt-boot.cjs");
 const path = require("path");
-const fs = require("fs");
 
 // Der Port des eigenen save-servers: TAILLE_PORT, sonst ein freier des Systems (welt-boot `eigenePorte`) — auf 4312 fände die
 // Seite den Spiel-Server des Schöpfers und prüfte dessen Dateien.
@@ -45,7 +44,7 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
     try {
         await page.goto(SERVER_URL, { waitUntil: "domcontentloaded", timeout: 30000 });
         await page.evaluate(async () => {
-            await window.__weltDa(() => !(!r || !r.state || !r.state.blueprints));
+            await window.__weltDa(() => !(!st || !st.blueprints));
         });
 
         const result = await page.evaluate(
@@ -92,8 +91,8 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
                     };
                     localStorage.setItem(r.worldStorageKey("taille-rt1-src"), JSON.stringify(srcSave));
                     const res = r.importRecipesFromWorld("taille-rt1-src");
-                    const bp = r.state.blueprints["rt1_bp"];
-                    const mat = r.state.materials["rt1_mat"];
+                    const bp = st.blueprints["rt1_bp"];
+                    const mat = st.materials["rt1_mat"];
                     M.rt1_import = {
                         ok: !!(res && res.ok),
                         bpUnknownSurvives: !!(bp && bp.xZukunft && bp.xZukunft.a === 1),
@@ -101,8 +100,8 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
                         matForeignTagSurvives: !!(mat && mat.tags && mat.tags["x:fremd"] === 0.7),
                     };
                     localStorage.removeItem(r.worldStorageKey("taille-rt1-src"));
-                    delete r.state.blueprints["rt1_bp"];
-                    delete r.state.materials["rt1_mat"];
+                    delete st.blueprints["rt1_bp"];
+                    delete st.materials["rt1_mat"];
                 }
 
                 // RT2 — Snapshot-Zwilling: serialize/deserialize.
@@ -159,20 +158,20 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
                     }
                     M.rt4_p2p = {
                         stampKeepsUnknown:
-                            obj.xZukunft && obj.xZukunft.e === 5 && obj.pv === r.constructor.PROTO_VERSION,
+                            obj.xZukunft && obj.xZukunft.e === 5 && obj.pv === AnazhRealm.PROTO_VERSION,
                         channelPassesOriginal: !!fang[0] && !!fang[0].xZukunft && fang[0].xZukunft.e === 5 && fang[0].peerId === "peer-t",
                     };
                 }
 
                 // Riss 2 — die GOTT-MAUER-Baseline: härte=10⁶ ungeklemmt am Abbau-Leser?
                 {
-                    r.state.materials["rt_gott"] = {
+                    st.materials["rt_gott"] = {
                         name: "rt_gott",
                         label: "Gott-Stoff",
                         builtIn: false,
-                        tags: { ...r.constructor.MATERIAL_TAG_DEFAULTS, härte: 1e6, dichte: 1e6 },
+                        tags: { ...AnazhRealm.MATERIAL_TAG_DEFAULTS, härte: 1e6, dichte: 1e6 },
                     };
-                    r.state.blueprints["rt_gott_mauer"] = {
+                    st.blueprints["rt_gott_mauer"] = {
                         name: "rt_gott_mauer",
                         label: "Gott-Mauer",
                         builtIn: false,
@@ -187,8 +186,8 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
                         yieldMult: fit.yieldMult,
                         unbreakable: fit.fit < 0.001,
                     };
-                    delete r.state.blueprints["rt_gott_mauer"];
-                    delete r.state.materials["rt_gott"];
+                    delete st.blueprints["rt_gott_mauer"];
+                    delete st.materials["rt_gott"];
                 }
 
                 return out;
@@ -201,8 +200,8 @@ const GOLDEN_TIME = 1700000000000; // feste Zeit für alle nicht-signierten Zeit
         // eingefrorenen Artefakte LESEN + die Signaturen als "valid" verifizieren.
         if (!result.error) {
             const golden = {
-                blueprint: JSON.parse(fs.readFileSync(path.join(GOLDEN_DIR, "blueprint-signed.json"), "utf8")),
-                manifest: JSON.parse(fs.readFileSync(path.join(GOLDEN_DIR, "world-manifest.json"), "utf8")),
+                blueprint: jsonLesen(path.join(GOLDEN_DIR, "blueprint-signed.json")),
+                manifest: jsonLesen(path.join(GOLDEN_DIR, "world-manifest.json")),
             };
             const conf = await page.evaluate(async (g) => {
                 const out = {};

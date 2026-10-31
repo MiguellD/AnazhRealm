@@ -13,7 +13,7 @@ const fs = require("fs");
 const path = require("path");
 const { runWithWorker, fingerprintMeshes, DATEN_KANAELE, ersteAbweichung } = require("./lib/asset-worker-harness.cjs");
 const { probeWand } = require("./lib/plattform-probe.cjs");
-const { hauptLauf, wandEnde } = require("./lib/welt-boot.cjs");
+const { hauptLauf, wandEnde, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const {
     dek,
     bildDeckung,
@@ -426,7 +426,7 @@ hauptLauf(async () => {
     const sehProben = [];
     let gestaltWand = null;
     const tafelSchreiben = process.argv.includes("--tafel");
-    const tafel = fs.existsSync(TAFEL_BILD) ? JSON.parse(fs.readFileSync(TAFEL_BILD, "utf8")) : null;
+    const tafel = fs.existsSync(TAFEL_BILD) ? jsonLesen(TAFEL_BILD) : null;
     const lagenMess = [];
     const quotePaare = {};
     const bildMess = {};
@@ -551,7 +551,7 @@ hauptLauf(async () => {
         };
         for (const f of files) {
             const c = parseName(f);
-            const gold = JSON.parse(fs.readFileSync(path.join(DIR, f), "utf8"));
+            const gold = jsonLesen(path.join(DIR, f));
             const a = await build(c);
             const rec = {
                 cv: a.cv,
@@ -771,20 +771,13 @@ hauptLauf(async () => {
                 L1: m.L1.map(r8),
             };
         }
-        fs.writeFileSync(
-            TAFEL_BILD,
-            JSON.stringify(
-                {
+        jsonSchreiben(TAFEL_BILD, {
                     zweck: "DIE BILD-TAFEL (S3 pflanzen, Wand D in gate:asset-contract; Gegenprüfung R1): je Baum-Art × Same (Sommer) das Bild seiner L0 und L1 je Blick-Hebung 0°/30°/60° von unten (Mittel der acht Azimute der kronen-linse; Krone mit der Atlas-Alpha und Rinde über dem Boden der Vorlage, ohne Schatten-Teil; Raster-Kante px = L0-Höhe / 300 in Vorlagen-Einheiten, Fläche in Vorlagen-Einheiten²) — aus dem Ist des Stands " + TAFEL_STAND + " (zuerst V18.536; K20: die Bäume tragen ihr Welt-Maß). Je Art hält das Mittel über die Gestalten je Stufe und Hebung 0,92–1,08 davon, jede Gestalt 0,85–1,15 (die Karte misst seit S2 die Welt: werkbank licht --laub --karte).",
                     quelle: "node scripts/diag-asset-contract.cjs --tafel (" + TAFEL_STAND + ")",
                     band: BILD_BAND,
                     gestaltBand: GESTALT_BAND,
                     faelle,
-                },
-                null,
-                4
-            ) + "\n"
-        );
+                }, 4, "\n");
         console.log(`Bild-Tafel geschrieben: ${Object.keys(faelle).length} Fälle → ${path.relative(process.cwd(), TAFEL_BILD)}`);
         process.exit(0);
     }

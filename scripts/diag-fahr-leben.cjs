@@ -1892,12 +1892,12 @@ hauptLauf(async () => {
         check("Selbst-Test S0: gesunde Stationen == 0 Täter", stationVerdict(gutS).length === 0);
         for (const [name, bruch, soll] of [
             [
-                "Hangfuß: 1,19 m unter den Rädern, 66 Schritte (Leben-Schau 07.10.: 1,16 m)",
+                "Hangfuß: 1,19 m unter den Rädern, 66 Schritte",
                 { hangfuss: { ziel: true, kontakte: 1, unterMax: 1.19, unterN: 66, schubMax: 0.1, weg: 21 } },
                 "hangfuss-unter",
             ],
             [
-                "Hangfuß: der Glutbrunnen versetzt den Wagen 1,33 m in EINEM Schritt (Leben-Schau: 0,97 m)",
+                "Hangfuß: der Glutbrunnen versetzt den Wagen 1,33 m in EINEM Schritt",
                 { hangfuss: { ziel: true, kontakte: 1, unterMax: 0.0, unterN: 0, schubMax: 1.33, weg: 21 } },
                 "hangfuss-schub",
             ],
@@ -1918,17 +1918,17 @@ hauptLauf(async () => {
             ],
             ["Spalt ohne Spalt (vakuös)", { spalt: { rand: 32.4, grund: 31, vor: 8, yMin: 18 } }, "spalt vakuös"],
             [
-                "Fels: 10,41 → 0,16 m/s in EINEM Frame, kein Rückprall (Leben-Schau 07.10.)",
+                "Fels: 10,41 → 0,16 m/s in EINEM Frame, kein Rückprall",
                 { stossFels: { ...gutS.stossFels, vVor: 10.41, vNach: 0.16, vMinNach: 0.16 } },
                 "stoss-fels: kein Rückprall",
             ],
             [
-                "geparkter GT: 11,28 → 0,00 m/s, er bewegt sich nicht (Leben-Schau 07.10.)",
+                "geparkter GT: 11,28 → 0,00 m/s, er bewegt sich nicht",
                 { stossWagen: { ...gutS.stossWagen, vVor: 11.28, vNach: 0, vMinNach: 0, zielWeg: 0 } },
                 "stoss-wagen: der geparkte GT bewegt sich",
             ],
             [
-                "Bär: 9,27 → 0,17 m/s, der Bär bewegt sich nicht (Leben-Schau 07.10.)",
+                "Bär: 9,27 → 0,17 m/s, der Bär bewegt sich nicht",
                 { stossBaer: { ...gutS.stossBaer, vVor: 9.27, vNach: 0.17, vMinNach: 0.17, zielWeg: 0 } },
                 "stoss-baer: der Bär bewegt sich",
             ],
@@ -1938,7 +1938,7 @@ hauptLauf(async () => {
                 "stoss-fels: kein Stoß-Ereignis",
             ],
             [
-                "der Bär gleitet fort und wird je Schritt neu gestoßen (gate:fahr-leben 07.10.: 7,92 → 1,71 m/s)",
+                "der Bär gleitet fort und wird je Schritt neu gestoßen",
                 {
                     stossBaer: {
                         kontakt: 40,
@@ -1964,7 +1964,7 @@ hauptLauf(async () => {
                 "spieler-wagen",
             ],
             [
-                "der Wagen steht je nach Bildrate anders (Gegenprüfung 0710-5: 0,06 m nach 200 Schritten)",
+                "der Wagen steht je nach Bildrate anders",
                 { lockstep: { abw: 0.06, baerAbw: 0, ruhe: true, gleicherStart: true } },
                 "lockstep",
             ],
@@ -1979,7 +1979,7 @@ hauptLauf(async () => {
                 "lockstep start",
             ],
             [
-                "der Reiter ragt aus dem GT, schwebt über dem Sitz und schaut mit der Maus (Gegenprüfung 0710-4 Klasse 4)",
+                "der Reiter ragt aus dem GT, schwebt über dem Sitz und schaut mit der Maus",
                 {
                     reiter: [
                         {
@@ -1996,7 +1996,7 @@ hauptLauf(async () => {
                 "reiter fahrzeug_gt",
             ],
             [
-                "die Füße des Reiters hängen unter dem Wagen (Gegenprüfung 0710-4, das Auge)",
+                "die Füße des Reiters hängen unter dem Wagen",
                 {
                     reiter: [
                         {
@@ -2017,17 +2017,17 @@ hauptLauf(async () => {
                 "reiter fahrzeug_gt",
             ],
             [
-                "die Höhe des gestoßenen Schwimmers hängt an der Bildrate (Gegenprüfung 0710-5-Nachschnitt)",
+                "die Höhe des gestoßenen Schwimmers hängt an der Bildrate",
                 { lockSchwimmer: { abw: 0, abwY: 0.31 } },
                 "lockstep schwimmer",
             ],
             [
-                "der gestoßene Schwimmer sinkt auf den Grund (Gegenprüfung 0710-5-Nachschnitt)",
+                "der gestoßene Schwimmer sinkt auf den Grund",
                 { schwimmer: { vorher: -0.1, tiefste: -1.6, gleitet: 20, tiefe: 2 } },
                 "schwimmer:",
             ],
             [
-                "der Bär steht je nach Bildrate anders, der Wagen gleich (Gegenprüfung 0710-5: 1,39 m)",
+                "der Bär steht je nach Bildrate anders, der Wagen gleich",
                 { lockstep: { abw: 0, baerAbw: 1.39, ruhe: true, gleicherStart: true } },
                 "lockstep",
             ],
@@ -2051,7 +2051,7 @@ hauptLauf(async () => {
             ["Welt weicht 0,4 m vom Labor ab", { labor: { schritte: 180, maxM: 0.4, bei: 50 } }, "labor≠welt"],
             ["7,95 m Höhen-Sprung in einem Schritt (F-D6)", { klippe: { sprung: 7.95, luft: 40 } }, "klippe-sprung"],
             [
-                "im Flug abgestiegen: der Wagen hängt 2,4 m in der Luft (Gegenprüfung 07.10.)",
+                "im Flug abgestiegen: der Wagen hängt 2,4 m in der Luft",
                 { absteigen: { imFlug: true, hoehe: 2.4, ueberBoden: 2.4, sprung: 0 } },
                 "absteigen-luft",
             ],
@@ -2078,20 +2078,20 @@ hauptLauf(async () => {
             ],
             ["die Räder lenken nicht (F-D8)", { raeder: { ...gutS.raeder, lenk: 0 } }, "raeder lenken nicht"],
             [
-                "der Bremssattel rollt mit dem Rad (Gegenprüfung 07.10.)",
+                "der Bremssattel rollt mit dem Rad",
                 { raeder: { ...gutS.raeder, stehRolle: 3.1 } },
                 "raeder Sattel rollt",
             ],
             ["kein Sattel an der Nabe", { raeder: { ...gutS.raeder, stehend: 0 } }, "raeder ohne Sattel"],
             ["ein Bär schiebt den stehenden Wagen 0,5 m", { huelleSchub: { weg: 0.5 } }, "huelle-schub"],
             [
-                "ein Kasten schiebt die Hülle 0,5 m in den Hang (Befund 07.10.)",
+                "ein Kasten schiebt die Hülle 0,5 m in den Hang",
                 { huelleHang: { schub: 0.8, eindringen: 0.5 } },
                 "huelle-hang Schub",
             ],
             ["der Kasten schiebt nicht (vakuös)", { huelleHang: { schub: 0, eindringen: 0 } }, "huelle-hang vakuös"],
             [
-                "ein alter Kern: fahrSatz und rittEbene still null (Gegenprüfung 07.10.)",
+                "ein alter Kern: fahrSatz und rittEbene still null",
                 { pflicht: { satz: "null", ebene: "null" } },
                 "pflicht still",
             ],

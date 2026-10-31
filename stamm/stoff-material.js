@@ -39,6 +39,72 @@ class AnazhRealm_stoff_material {
         return mat;
     }
 
+    // DER HALM DER FERNE (w4-gras-saum, `NAH_WIESE.fern`): derselbe Halm-Stoff (das Studio-Gras L2 der Nah-Wiese), sein
+    // Positions-Knoten trägt das Gesetz der Ferne je Instanz — d der Abstand ihres Fußes (der Ursprung der Instanz über die
+    // Naht `_weltNaht`) zum Auge der Wiese (`_halmFerneAuge`, das der Sicht-Satz für denselben Pass legt), o ihre Ordnung
+    // (dieselbe Rechnung wie `_wieseOrdnung`: die Lage auf 1/256 m, PCG, die oberen 24 Bit), der Anteil a = (radius/d)^dichte
+    // × (1 − Saum vor `bis`) (`_wieseAnteil`). Steht o unter a, steht das Büschel ganz; darüber, im Band bis a · (1 + `rand`),
+    // sinkt es in den Boden (das Büschel × v um seinen Fuß) statt zu springen — an der Übergabe (a = 1) steht jedes. Sein Fuß
+    // trägt die Fläche der Nachbarn: die Mitte jedes Halms (`aCenter`, um den Fuß des Büschels) rückt waagrecht um
+    // f = (d/radius)^(dichte/2) bis `breitMax` nach außen, die Ecken auf dem Boden (um diese Mitte) um √f — Höhe und Neigung der
+    // Halme bleiben (mit dem vollen f am Fuß lasen die L2-Halme ab 25 m im Third als flache Fächer, Radeon 31.10.).
+    // Diesseits der Übergabe (d < radius) legt der Sicht-Satz dasselbe Büschel als Nah-Wiese — hier steht es nicht. EIN Knoten
+    // für jede Vorlage (EIN Programm); der Wind schwingt mit dem Büschel (× v).
+    _halmFerne(mat) {
+        const da = this._halmFerneStoffe && this._halmFerneStoffe.get(mat);
+        if (da) return da;
+        const T = THREE.TSL;
+        if (!this._halmFerneKnoten) {
+            const NW = AnazhRealm.NAH_WIESE;
+            const F = NW.fern;
+            this._halmFerneAuge = T.uniform(new THREE.Vector3());
+            const ank = this._weltNaht(T).anker;
+            const d = ank.xz.sub(this._halmFerneAuge.xz).length();
+            const q = (v) => T.floor(v.mul(256).add(0.5)).add(8388608).toUint();
+            const pcg = (u) => {
+                const s = u.mul(747796405).add(2891336453);
+                const w = s.shiftRight(s.shiftRight(28).add(4)).bitXor(s).mul(277803737);
+                return w.shiftRight(22).bitXor(w);
+            };
+            const o = pcg(q(ank.x).bitXor(pcg(q(ank.z))))
+                .shiftRight(8)
+                .toFloat()
+                .mul(1 / 16777216);
+            const anteil = T.min(T.float(1), T.float(NW.radius).div(d.max(1e-3)).pow(F.dichte)).mul(
+                T.float(1).sub(T.smoothstep(F.bis - F.saum, F.bis, d))
+            );
+            const v = anteil
+                .mul(1 + F.rand)
+                .sub(o)
+                .div(anteil.mul(F.rand).max(1e-6))
+                .clamp(0, 1)
+                .mul(T.step(NW.radius, d));
+            const f = d
+                .div(NW.radius)
+                .max(1)
+                .pow(F.dichte / 2)
+                .min(F.breitMax);
+            const c = T.attribute("aCenter", "vec3");
+            const rel = T.positionLocal.sub(c);
+            const fuss = T.mix(T.float(1), f.sqrt(), T.step(T.positionGeometry.y, 1e-4));
+            const sk = this._foundryWorldScaleMatrix("gras").elements[0];
+            const sway = this._windSwayOffset(T, { ampX: 1.5, hoehe: T.positionGeometry.y.mul(sk) });
+            this._halmFerneKnoten = T.vec3(
+                c.x.mul(f).add(rel.x.mul(fuss)),
+                c.y.add(rel.y),
+                c.z.mul(f).add(rel.z.mul(fuss))
+            )
+                .mul(v)
+                .add(sway.mul(v));
+            this._halmFerneStoffe = new Map();
+        }
+        // der Klon trägt die Stoff-Werte des Halms (Zahlen; `userData` als Kopie, `_stoffWert` liest sie am Stoff)
+        const m = mat.clone();
+        m.positionNode = this._halmFerneKnoten;
+        this._halmFerneStoffe.set(mat, m);
+        return m;
+    }
+
     // DIE KANONISCHE WIND-SWAY-GRÖSSE — jeder Wind-Leser LIEST sie;
     // Charakter als Parameter: `ampX` (Gras 1.5), `windScale` (Wipfel-Dämpfen, fehlt → 1).
     // phase = uWindTime·1.7 + dot(worldXZ, uWindDir)·0.35; hf = max(positionLocal.y, 0);

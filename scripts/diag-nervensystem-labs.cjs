@@ -80,13 +80,13 @@ hauptLauf(async () => {
         // (must-ignore am Chokepoint — kein Auto-Bauplan neben dem Werk-Ziel einer Art, jeder wäre ein Träger-Zwilling —
         // prüft gate:nervensystem S am Stammbaum für JEDE Art.)
         // EINE Quelle: die Dial-Karten wohnen in den Gesetzbüchern, der Stamm reicht dieselben Objekte durch (kein Zwilling).
-        const A = r.constructor;
+        const A = AnazhRealm;
         res.b.dialEins =
             A.KOERPER_DIAL_MAP === window.__koerperCore.DIAL_MAP &&
             A.TETRAPODA_DIAL_MAP === window.__tetrapodaCore.DIAL_MAP;
         // ===== K: DER EINE AUDIO-KONSUMENT (Lofi liest das Studio-Tempo) =====
         try {
-            const emo = r.state.player.emotions;
+            const emo = st.player.emotions;
             const s0 = emo.sorrow;
             emo.sorrow = 0;
             res.k.studio = r._klangStudioPreset() ? r._klangStudioPreset().bpm : null;
@@ -171,7 +171,7 @@ hauptLauf(async () => {
             res.d.dials = dials
                 ? { height: dials.height, mass: dials.mass, tone: dials.tone, gender: dials.gender }
                 : null;
-            const pmStamp = r.state.playerMesh && r.state.playerMesh.userData._koerperDials;
+            const pmStamp = st.playerMesh && st.playerMesh.userData._koerperDials;
             res.d.playerStamped = !!pmStamp;
             res.d.playerBuild = pmStamp ? pmStamp.build : null; // Studio mass 0.35 (Host-Konstante war 0.52)
             // KONSUM als ZAHL: height-Dial 1.15 -> Rig-Hoehe x1.15 (Boundingbox).
@@ -200,7 +200,7 @@ hauptLauf(async () => {
             r._disposeSoulGroup(g2);
             f.recipes.mensch = prevRec;
             // A2 KREATUR (wesen <-> tetrapoda deer): der Studio-Guss lebt + ist tag-neutral.
-            const frozen = r.constructor.CREATURE_SOULS.wesen.bodyParts;
+            const frozen = AnazhRealm.CREATURE_SOULS.wesen.bodyParts;
             const eff = r._tetrapodaSoulParts("wesen");
             res.d.wesenDocked = !!eff && eff.length === frozen.length;
             res.d.wesenTagNeutral =
@@ -241,7 +241,7 @@ hauptLauf(async () => {
         try {
             res.x = {};
             // (X1/NULL) wolf ↔ tetrapoda-wolf: der Guss dockt, Dials wirken, Tags BYTE-GLEICH
-            const frozenG = r.constructor.CREATURE_SOULS.wolf.bodyParts;
+            const frozenG = AnazhRealm.CREATURE_SOULS.wolf.bodyParts;
             const effG = r._tetrapodaSoulParts("wolf");
             res.x.glutDocked = !!effG && effG.length === frozenG.length;
             res.x.glutDialsWirken = !!effG && JSON.stringify(effG) !== JSON.stringify(frozenG);
@@ -264,7 +264,7 @@ hauptLauf(async () => {
             // (X2/HERZ) DER MENSCH-KÖRPER aus dem Landmark-Guss: koerper_human ist
             // body-shaped + Rolle soul; das Landmark-GESETZ wohnt im koerper-core
             // (der Stamm-Delegat und der Kern liefern DENSELBEN Guss — eine Quelle).
-            const wb = r.state.blueprints.koerper_human;
+            const wb = st.blueprints.koerper_human;
             res.x.waechterParts = wb && wb.parts ? wb.parts.length : 0;
             res.x.waechterBody = !!wb && r._isBodyShaped(wb) === true;
             res.x.waechterRole = wb ? r.computeBlueprintRole(wb) : null;
@@ -290,7 +290,7 @@ hauptLauf(async () => {
             // (X3) DAS HOLZROSS aus dem Skelett-Guss: Skelett-Partzahl, Antrieb, Rolle,
             // Sitz + Tags WERT-GLEICH zur gemünzten Alt-Identität (sortiert — die
             // Schluessel-REIHENFOLGE wandert mit der Part-Reihenfolge, die WERTE nie).
-            const hb = r.state.blueprints.reittier_holzross;
+            const hb = st.blueprints.reittier_holzross;
             const tagSorted = (ps) => {
                 const t = r.computeCompoundTags({ parts: ps });
                 return JSON.stringify(
@@ -380,7 +380,7 @@ hauptLauf(async () => {
             delete r._koerperMotionProfile;
             // VERHALTEN: der Schritt-Takt des Avatars trägt die Emotion als Kadenz (sorrow = das Studio-freq-Verhältnis, neutral 1).
             const gt = r._gaitTick,
-                pl = r.state.player,
+                pl = st.player,
                 em0 = pl.emotions;
             const emoF = (emo) => {
                 let fk = null;
@@ -426,9 +426,9 @@ hauptLauf(async () => {
             );
             res.o.klangFalse = r._workshopStudioPreviewFrom("lofi", 1, 0, null) === false;
             const before = r._lofiChordDurationMs();
-            r.state.klangPreset = "blues";
+            st.klangPreset = "blues";
             const after = r._lofiChordDurationMs();
-            r.state.klangPreset = null;
+            st.klangPreset = null;
             res.o.klangWahl = { before: Math.round(before), after: Math.round(after), wirkt: before !== after };
             // Die neuen Tier-Seelen bauen durch den EINEN Guss (Hof/Welt-Roster).
             res.o.tiere = ["wolf", "fuchs", "baer"].every((n) => {

@@ -920,7 +920,7 @@ function buehne(nFrames, nachtLicht) {
                 const st = r.state;
                 return !!(st?.rendererReady && st.renderer?.backend && st.postProcessing && st.camera);
             });
-            return { ok: true, ms: Math.round(performance.now() - t0), webgpu: r.state.renderer.backend.isWebGPUBackend === true };
+            return { ok: true, ms: Math.round(performance.now() - t0), webgpu: st.renderer.backend.isWebGPUBackend === true };
         });
         if (!bereit.webgpu)
             throw new Error("kein WebGPU-Backend — die Leinwand-Tiefe lebt nur dort, die Wand wäre blind");
@@ -933,8 +933,8 @@ function buehne(nFrames, nachtLicht) {
         await page.setViewport({ width: 321, height: 241 });
         await page.evaluate(async () => {
             for (let i = 0; i < 6; i++) {
-                if (r.state.renderer._nodes?.nodeFrame)
-                    r.state.renderer._nodes.nodeFrame.update();
+                if (st.renderer._nodes?.nodeFrame)
+                    st.renderer._nodes.nodeFrame.update();
                 r._loopRender();
                 await sleep(50);
             }

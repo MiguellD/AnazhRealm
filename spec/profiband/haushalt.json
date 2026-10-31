@@ -401,7 +401,7 @@
             "id": "boden",
             "titel": "Boden (Boden-Satz · Wasser-Satz · Fern-Ring · Fern-Wasser)",
             "befehle": 12,
-            "dreiecke": 120000,
+            "dreiecke": 64000,
             "regeln": [
                 {
                     "muster": "^(bodenSatz|wasserSatz|voxelChunk|fern-ring|farWater|chunk-water-[a-z]+)$"
@@ -474,6 +474,17 @@
             "regeln": [
                 {
                     "muster": "^nahWiese:L[12]$"
+                }
+            ]
+        },
+        {
+            "id": "nahWieseFern",
+            "titel": "Nah-Wiese, die Ferne (dieselben Büschel jenseits der Übergabe, w4-gras-saum; aus Reserve und Boden)",
+            "befehle": 2,
+            "dreiecke": 60000,
+            "regeln": [
+                {
+                    "muster": "^nahWiese:Lf$"
                 }
             ]
         },
@@ -661,8 +672,8 @@
         {
             "id": "reserve",
             "titel": "Reserve",
-            "befehle": 3,
-            "dreiecke": 4000,
+            "befehle": 1,
+            "dreiecke": 0,
             "regeln": []
         }
     ],

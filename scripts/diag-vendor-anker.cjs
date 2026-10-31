@@ -21,7 +21,7 @@
 // Selbst-Test: --selftest beweist, dass ein manipulierter Anker feuert.
 // ============================================================================
 "use strict";
-const { wandEnde } = require("./lib/welt-boot.cjs");
+const { wandEnde, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -50,7 +50,7 @@ const PINS = [
 // (spec/vendor-anker.json, 223 Anker in 54 Gruppen; bis w3w-verkehr ein Literal dieses Skripts). DIE DATEI DER ANKER: ohne
 // `file` der WebGPU-Vendor (in ihm leben fast alle Organe), jede andere steht beim Anker.
 const ANKER_DATEI = PINS[0].file;
-const ANKER = JSON.parse(fs.readFileSync(path.join(root, "spec", "vendor-anker.json"), "utf8")).flatMap((g) => g.anker);
+const ANKER = jsonLesen(path.join(root, "spec", "vendor-anker.json")).flatMap((g) => g.anker);
 
 // DIE DIÄT-PRÜFUNG (wer voll frischt): die Diät-Funktionen aus dem Stamm laden (vom ersten
 // `AnazhRealm._diaet… = function` bis zum Ende von `_diaetRefresh`) und gegen Schein-Programme fahren — r184-
@@ -451,14 +451,14 @@ function main() {
     // danach Pflicht-Gleichheit — ein Vendor-Bump ändert die Lock-Datei
     // BEWUSST (im Diff sichtbar = der Vertrags-Akt).
     const lockPfad = path.join(root, "vendor", "anker.lock.json");
-    let lock = fs.existsSync(lockPfad) ? JSON.parse(fs.readFileSync(lockPfad, "utf8")) : null;
+    let lock = fs.existsSync(lockPfad) ? jsonLesen(lockPfad) : null;
     const ist = {};
     for (const p of PINS) {
         const buf = les(p.file);
         ist[p.file] = { bytes: buf.length, fnv: fnv(buf) };
     }
     if (!lock) {
-        fs.writeFileSync(lockPfad, JSON.stringify(ist, null, 4) + "\n");
+        jsonSchreiben(lockPfad, ist, 4, "\n");
         console.log("  ℹ anker.lock.json GEMINTET (erster Lauf) — ab jetzt ist jeder Vendor-Bump ein bewusster Akt.");
         lock = ist;
     }

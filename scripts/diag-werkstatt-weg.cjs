@@ -20,7 +20,7 @@
 //   --bild fährt NUR L-BILD (Bauen K1 Staffel 2) auf swiftshader, --echt dasselbe auf der Karte.
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, halteBis, pruefer, hauptLauf, nullRenderer, starteBrowser, buehne, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, halteBis, pruefer, hauptLauf, nullRenderer, starteBrowser, buehne, wandEnde, selbsttestEnde, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -685,7 +685,7 @@ async function probe(argW) {
                 });
                 m.reicht = +Math.sqrt(q).toFixed(2);
                 m.reichtSpender = +r._blueprintFootprintRadius(NAME).toFixed(2);
-                m.mindest = +(m.reicht + r.constructor.STRUCTURE_PLAYER_CLEAR_MARGIN).toFixed(2);
+                m.mindest = +(m.reicht + AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN).toFixed(2);
             }
             // Die Naht zum Mitspieler: das Programm, das der Sender schickt.
             st.p2p = { ...p2pAlt || {}, enabled: true };
@@ -1136,7 +1136,7 @@ function wegHelfer(arg) {
             // die oberste Fläche, die einen Fuß trägt (ungedeckt, `_blockerFugen` — gedreht in ihrem Rahmen): das Deck der Brücke, das
             // Podest der Leiter. Bis 27.10. filterte die Probe an der Welt-AABB: schräg gedreht war der Bügel über dem Podest breiter
             // als der Stab, und die KI-Leiter (Drehung 1,0 rad) hieß unersteigbar.
-            const oben = () => Math.max(...e.blockerAABBs.filter((b) => !b.gedeckt).map((b) => b.topY)) + r.constructor.PLAYER_FOOT_OFFSET;
+            const oben = () => Math.max(...e.blockerAABBs.filter((b) => !b.gedeckt).map((b) => b.topY)) + AnazhRealm.PLAYER_FOOT_OFFSET;
             if ((lauf.haus = /^haus_/.test(e.type))) {
                 // die Tür-Zeile des Werks (die Hülle bringt sie): 8 m vor der Tür, wo sie zu ist, bis 1,5 m hinter die Schwelle
                 const t = (await window.__gebautNach("die Hülle des Hauses", { fertig: () => !!e._hausHuelle }), e.tuer);
@@ -1159,7 +1159,7 @@ function wegHelfer(arg) {
             // die Tür beim Eintritt: der Flügel der Stufe 0 (der Winkel des Tür-Takts) oder die Stufe 1, die sie in der Bau-Pose
             // offen bäckt (Third: das Auge der Stufen ist die Kamera hinter dem Spieler, K36 — das Haus bleibt bis zur Schwelle in
             // Stufe 1, ihr Flügel erscheint offen und dreht nie); `rec` hält nur der Tür-Takt (die Tür-Zeile reiste)
-            if (lauf.drin() && lauf.offen == null) lauf.offen = !!rec && (!f || rec._fluegelWinkel > r.constructor._tuerOffenRad() / 2);
+            if (lauf.drin() && lauf.offen == null) lauf.offen = !!rec && (!f || rec._fluegelWinkel > AnazhRealm._tuerOffenRad() / 2);
             if (f) {
                 const m = st.archInstanceGroups.get(f.key).mesh.getMatrixAt(f.slot, new THREE.Matrix4()).elements;
                 const x = Math.atan2(m[8], m[0]);
@@ -1644,7 +1644,7 @@ hauptLauf(async () => {
         return { browser, page };
     };
     // die Rohdatei (der Bild-Weg schreibt sie je Weg)
-    const roh = (m) => (fs.mkdirSync(path.join(__dirname, "../artifacts/werkstatt-weg"), { recursive: true }), fs.writeFileSync(path.join(__dirname, "../artifacts/werkstatt-weg/weg.json"), JSON.stringify(m, null, 1)));
+    const roh = (m) => (fs.mkdirSync(path.join(__dirname, "../artifacts/werkstatt-weg"), { recursive: true }), jsonSchreiben(path.join(__dirname, "../artifacts/werkstatt-weg/weg.json"), m));
     if (BILD) {
         // je Weg ein frischer Browser (ein leeres Profil: Platte und Foundry kalt), die Welt steht unter der Bühne (Mittag ·
         // Sonne · Sommer) — dann die Läufe; swiftshader (ohne --echt) zeichnet mit dem Holz der CPU-Raster-Linsen (Lehre 26)
