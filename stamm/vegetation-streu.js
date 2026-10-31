@@ -1614,24 +1614,26 @@ class AnazhRealm_vegetation_streu {
     // jenseits der EINEN Nah-Grenze (ANALOG_NAH_M) — der Mensch der Menge (`_menge`), sobald sein Leib am Schirm unter
     // LOD_SCHIRM.leib.mengePx Bildpunkte fällt (mensch.K3: der Morgengang trägt das ganze Dorf), im Ruhe-Sichtfeld wie jede Stufe
     // (Tempo und Fernglas legen keine um). Die EINE Wahl liest sie (`_stufeNachGrenzen`), vom EINEN Auge (`_lodAuge`); je Schirm
-    // einmal gerechnet. Ohne Zeichenpuffer (der Null-Renderer) trägt die Menge bis zur Nah-Grenze.
-    _gelenkGrenzen(g) {
-        const z = this._schirm().hoehe;
+    // einmal gerechnet. Ohne Zeichenpuffer (der Null-Renderer) trägt die Menge bis zur Nah-Grenze. `zeilen` = der Schirm des Takts
+    // (wer je Leib fragt, liest ihn EINMAL je Takt, `_schirm`).
+    _gelenkGrenzen(g, zeilen) {
+        const z = zeilen !== undefined ? zeilen : this._schirm().hoehe;
         if (g.grenzen && g.grenzenZeilen === z) return g.grenzen;
         const ab = AnazhRealm._wechselGesetz(g.art, 1, 1, z, g.abM);
         return Object.assign(g, { grenzenZeilen: z, grenzen: { erste: 0, grenzen: [{ stufe: 1, ab, h: g.hyst }] } })
             .grenzen;
     }
     // die Grenze der Grobstufe eines Leibs in Metern (Gesetz × Größe) — der Takt seines Gangs liest sie (`_creatureAnimDiv`)
-    _gelenkAb(gruppe) {
-        return this._gelenkGrenzen(gruppe.userData._gelenk).grenzen[0].ab * (gruppe.scale.x || 1);
+    _gelenkAb(gruppe, zeilen) {
+        return this._gelenkGrenzen(gruppe.userData._gelenk, zeilen).grenzen[0].ab * (gruppe.scale.x || 1);
     }
-    // die Grenzen des Felds je Art (`menge`: der Mensch der Menge, sonst jedes Tier) → { erste, grenzen, ein, aus }
+    // die Grenzen des Felds je Art (`menge`: der Mensch der Menge, sonst jedes Tier) → { erste, grenzen, ein, aus } — je Art EIN
+    // Objekt je Zeichenpuffer (die Epoche des Felds: die gemerkte Wahl, `_stufeGemerkt`, hält, solange es dasselbe ist)
     _feldGrenzen(menge) {
         const z = this._schirm().hoehe;
-        const memo = this._feldMemo || (this._feldMemo = new Map());
-        const k = (menge ? -1 : 1) * (z + 1);
-        if (memo.has(k)) return memo.get(k);
+        const F = this._feldG || (this._feldG = [null, null]);
+        const alt = F[menge ? 1 : 0];
+        if (alt && alt.z === z) return alt;
         const L = AnazhRealm.LOD_SCHIRM.leib;
         const N =
             menge && z > 0
@@ -1639,9 +1641,13 @@ class AnazhRealm_vegetation_streu {
                 : AnazhRealm.ANALOG_NAH_M;
         const hm = Math.min(L.feldHystM, menge ? L.mengeHystM : Infinity);
         const ab = AnazhRealm._wechselGesetz(menge ? "menge" : "tier", 3, 1, z, N + hm / 2);
-        const G = { erste: 0, grenzen: [{ stufe: 3, ab, h: hm / (2 * N + hm) }], ein: N, aus: N + hm };
-        memo.set(k, G);
-        return G;
+        return (F[menge ? 1 : 0] = {
+            erste: 0,
+            grenzen: [{ stufe: 3, ab, h: hm / (2 * N + hm) }],
+            ein: N,
+            aus: N + hm,
+            z,
+        });
     }
     // Trägt das Feld am Auge (Stufe 3)? `menge` = die Art des Felds (`_feldGrenzen`), `nah` = er steht diesseits (die Hysterese hält
     // ihn bis `aus`) — die EINE Nah-Grenze für Tier, Mensch und die Fernform der Streu (`_streuFernBahn`).
@@ -1664,9 +1670,16 @@ class AnazhRealm_vegetation_streu {
     // DIE BEDEUTUNG EINES LEIBS (das Stufen-Gesetz: wer den knappen Haushalt der Leiber trägt — die Nah-Wahl der Bewohner, der
     // Tier-Satz, die Fahrer, je `nahLeiber`): seine Größe am Schirm (Größe × Brennweite / Abstand vom Auge, Bildpunkte) mal seine
     // Bewegung (1 + Tempo / LOD_SCHIRM.bewegungMS: wer geht, verliert im Satz die Phasen seines Gangs, wer steht, nichts).
+    // Die Brennweite trägt sie je Zeichenpuffer (`_bedeutungF`), nie je Leib.
     _bedeutung(groesse, d, tempo) {
-        const f = AnazhRealm._brennweite(this._schirm().hoehe);
-        return ((groesse * f) / Math.max(d, 0.5)) * (1 + Math.abs(tempo || 0) / AnazhRealm.LOD_SCHIRM.bewegungMS);
+        const z = this._schirm().hoehe;
+        const B = this._bedeutungF || (this._bedeutungF = { z: NaN, f: 0, v: 0 });
+        if (B.z !== z) {
+            B.z = z;
+            B.f = AnazhRealm._brennweite(z);
+            B.v = AnazhRealm.LOD_SCHIRM.bewegungMS;
+        }
+        return ((groesse * B.f) / Math.max(d, 0.5)) * (1 + Math.abs(tempo || 0) / B.v);
     }
 
     // DIE SCHWELLEN DER BAUM-STUFEN aus dem Gesetz: die Wahrnehmungs-Distanz misst in Bäumen der Referenz-Höhe lodRef, die Schwelle
