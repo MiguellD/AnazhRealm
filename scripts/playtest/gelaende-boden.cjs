@@ -649,7 +649,7 @@ async function checkBandVoxelTerrainCore({ page, check, errors, finalState }) {
         );
         check("Voxel V9.22: jeder Voxel-Chunk bekommt einen Gras-Eintrag", voxelP2bResults.voxelGrassBuilt);
         check(
-            "Voxel V9.22 (V18.492): die Wiese ist Boden-Funktion — Gras-Zellen verbucht, 0 Halme, Parallax-Halme im Terrain-Albedo",
+            "Voxel V9.22: die Wiese ist Boden-Funktion — Gras-Zellen verbucht, 0 Halme, Parallax-Halme im Terrain-Albedo",
             voxelP2bResults.voxelGrassIsSurface
         );
         check(
@@ -1673,7 +1673,7 @@ async function checkBandWahrerAnblickPfade({ page, check }) {
     check("Ω-OPSIS S2-Pfad (A2) Pfad-Feld ist 0 fern jeden Flusses", res.farIsZero === true);
     check("Ω-OPSIS S2-Pfad (A3) Pfad-Feld ∈ [0,1] (gebunden)", res.pathBounded === true);
     check(
-        `Ω-OPSIS S2-Pfad (B2, V18.492) das Pfad-Feld zieht die Boden-Farbe zur gepackten Erde (${res.pfadErde})`,
+        `Ω-OPSIS S2-Pfad (B2) das Pfad-Feld zieht die Boden-Farbe zur gepackten Erde (${res.pfadErde})`,
         res.attachReadsPath === true
     );
     check(

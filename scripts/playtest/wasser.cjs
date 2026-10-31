@@ -818,7 +818,7 @@ async function checkBandWelleC2WaterIsoSurface({ page, check }) {
         );
         if (typeof res.surfaceMaxLErr === "number") {
             check(
-                "V18.25/.92: Wasser-KÖRPER (flach + aDepth≥1 Zelle) sitzt auf L + klettert nicht über L (Zell-Sheet, Ruhe; Gefälle-Glättung ausgenommen)",
+                "Wasser-KÖRPER (flach + aDepth≥1 Zelle) sitzt auf L + klettert nicht über L (Zell-Sheet, Ruhe; Gefälle-Glättung ausgenommen)",
                 res.surfaceMaxLErr <= 0.5 && res.surfaceMaxAboveL <= 0.5,
                 `maxErr(Körper,flach)=${res.surfaceMaxLErr}, maxÜberL(flach)=${res.surfaceMaxAboveL}`
             );
@@ -899,7 +899,7 @@ async function checkBandWellePerfHWaterIsoQueue({ page, check }) {
         return;
     }
     check(
-        "V18.530-Integration: die Wasser-Schlange baut erst die LÜCKE (ein fernerer Chunk ohne Sheet vor der Auffrischung eines näheren)",
+        "Integration: die Wasser-Schlange baut erst die LÜCKE (ein fernerer Chunk ohne Sheet vor der Auffrischung eines näheren)",
         res.lueckeZuerst === true,
         String(res.lueckeZuerst)
     );

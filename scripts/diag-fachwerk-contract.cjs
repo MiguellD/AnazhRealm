@@ -39,7 +39,7 @@
 //   node scripts/diag-fachwerk-contract.cjs
 const path = require("path");
 const { fingerabdruck, goldenSelbsttest, fallSchluessel: caseKey, goldenWand, kernProbe } = require("./lib/plattform-probe.cjs");
-const { studioKern, pruefer, ROOT: root } = require("./lib/welt-boot.cjs");
+const { studioKern, pruefer, taeterFaelle, abwandlung, ROOT: root } = require("./lib/welt-boot.cjs");
 const fingerprint = (g) => fingerabdruck(g, false, true); // die v3–v5-Form samt Fernform der NUR-WURF-Stufe
 
 // die Goldens der Häuser und der AUSSTATTUNG (Feuerstelle · Marktstand · Brunnen — dasselbe Gesetzbuch, eigene Goldens)
@@ -47,6 +47,10 @@ const golden = (n) => path.join(root, "spec/asset-contract/v6/golden", n + ".jso
 
 const { errs, check, wandEnde } = pruefer();
 const FC = studioKern("fachwerk-core.js", "__fachwerkCore");
+
+// DIE LEUCHTDICHTE der Vertex-Farbe i × Stoff-Farbe mc (Rec. 709; `f` liest den Kanal — die Welt roh, der Selbsttest als sRGB):
+// die Albedo der Häuser (flächengewichtet) und der Ausstattung (je Stoff) lesen sie EINMAL
+const luma = (C, i, mc, f = (x) => x) => 0.2126 * f(C[i * 3]) * mc.r + 0.7152 * f(C[i * 3 + 1]) * mc.g + 0.0722 * f(C[i * 3 + 2]) * mc.b;
 
 // Wegwerf-Bau sauber entsorgen (194 Häuser in einem Node-Prozess).
 function disposeGroup(g) {
@@ -60,14 +64,15 @@ function disposeGroup(g) {
 const KULTUREN = Object.keys(FC.PRESETS).filter((k) => FC.PRESETS[k].kind === "haus"); // alle 32 Kultur-Archetypen
 // Die Ausstattung: jedes Rezept × jede Gestalt der Welt (Samen 1..V) × jede Stufe, dazu ein ov-Fall.
 const AUS = Object.keys(FC.PRESETS).filter((k) => FC.PRESETS[k].kind === "ausstattung");
-const AUS_LODS = FC.PORTAL_RENDER_CONFIG.lod.kindStages.ausstattung || [];
+const LOD_CFG = FC.PORTAL_RENDER_CONFIG.lod; // die Stufen-Tafel des Gesetzbuchs
+const AUS_LODS = LOD_CFG.kindStages.ausstattung || [];
 const AUS_CASES = [];
 for (const k of AUS)
-    for (let s = 1; s <= FC.PORTAL_RENDER_CONFIG.lod.budget.gestalten[k]; s++)
+    for (let s = 1; s <= LOD_CFG.budget.gestalten[k]; s++)
         for (const l of AUS_LODS) AUS_CASES.push({ rezeptId: k, seed: s, lod: l });
 AUS_CASES.push({ rezeptId: "feuerstelle", seed: 1, lod: 0, ov: { fuelle: 0.2 } });
 const SEEDS = [7, 12345];
-const LODS = FC.PORTAL_RENDER_CONFIG.lod.kindStages.haus; // [0, 1, 2, 3] — die B2-Stufen-Wahrheit (3 = NUR-WURF)
+const LODS = LOD_CFG.kindStages.haus; // [0, 1, 2, 3] — die B2-Stufen-Wahrheit (3 = NUR-WURF)
 const CASES = [];
 for (const k of KULTUREN) for (const s of SEEDS) for (const l of LODS) CASES.push({ rezeptId: k, seed: s, lod: l });
 // ov-Kanal (Parameter-Override) — friert auch die Merge-Semantik ein.
@@ -77,6 +82,12 @@ CASES.push({ rezeptId: "hochhaus", seed: 7, lod: 2, ov: { W: 12 } });
 function buildCase(c) {
     return FC.buildInstance(c.rezeptId, c.seed, c.lod, c.ov || undefined);
 }
+// der Abdruck (sha256) eines Wegwerf-Baus, danach entsorgt
+const shaVon = (g) => {
+    const f = fingerprint(g);
+    disposeGroup(g);
+    return f.sha256;
+};
 
 // ── DIE SHELL-KOMPOSITION (Split-Paritäts-Referenz): derselbe Bau aus den
 //    Kern-PRIMITIVEN, wörtlich wie das Lab (promoteBauen · LOD-Sonde) — mit
@@ -87,30 +98,9 @@ function shellPfad(name, seed, stufe) {
     // ≡ hausParams-Basis: B4-Defaults + terrain:0, dann die Kultur-Felder (applyKultur → readParams).
     const p = { terrain: 0, seed: seed };
     for (const row of FC.PARAMS_BY_KIND.haus) p[row.id] = row.def;
-    p.W = kp.W;
-    p.D = kp.D;
-    p.pitchDeg = kp.pitchDeg;
-    p.storeys = kp.storeys;
-    p.hip = kp.hip;
-    p.roofCurve = kp.roofCurve;
-    for (const b of [
-        "treppgiebel",
-        "kuppel",
-        "portikus",
-        "arkade",
-        "turm",
-        "zinnen",
-        "veranda",
-        "vorkragung",
-        "pilotis",
-        "terrasse",
-    ])
+    // die Kultur-Felder in der Reihe der Kultur-Ableitung (die Reihe der Schlüssel von p bleibt die des Lab-Pfads)
+    for (const b of ["W", "D", "pitchDeg", "storeys", "hip", "roofCurve", "treppgiebel", "kuppel", "portikus", "arkade", "turm", "zinnen", "veranda", "vorkragung", "pilotis", "terrasse", "brace", "stil", "dachTyp", "bogenTyp", "grundriss"])
         p[b] = kp[b];
-    p.brace = kp.brace;
-    p.stil = kp.stil;
-    p.dachTyp = kp.dachTyp;
-    p.bogenTyp = kp.bogenTyp;
-    p.grundriss = kp.grundriss;
     if (kp.col) p.col = Object.assign({}, kp.col);
     p.place = { mode: "site", siteTag: "haus" }; // der fx-Daten-Passagier reist im Vertrags-Pfad mit — hier identisch
     FC.materials();
@@ -313,9 +303,7 @@ function bogenUrteil(BG, B, steine, zwickelMaxV) {
         let schlimm = 0;
         for (const a of t.lai) {
             if (a[1] < 0.02) continue; // das Lager auf dem Kämpfer ist keine Stoßfuge
-            const q = t.ruecken
-                .slice()
-                .sort((x, y) => Math.hypot(x[0] - a[0], x[1] - a[1]) - Math.hypot(y[0] - a[0], y[1] - a[1]))[0];
+            const q = fuge(t, a);
             if (!q) continue;
             const fx = q[0] - a[0];
             const fy = q[1] - a[1];
@@ -492,10 +480,55 @@ function bogenLinse() {
     );
 }
 
+// ── DIE POSEN-LINSE (Pflicht A · F, der Prüfplatz): das Gesetz der Stationen (fachwerk `genesisPose`) an jeder Pose des Plans
+//    (`genesisLayout` → `ortPlan`, die EINE Quelle der Posen) auf dem Grund der Standard-Welt samt Erdbau — rein in node, im Wirt,
+//    wie index.html ihn lädt (stamm `ladeKlasse`: die Kerne, dann der Stamm). Dazu hält sie, was der Kern nicht sieht: das Auge des
+//    Plans ist die Kamera des Wirts (KAM_FOV_GRAD, EGO_AUGE_M, PLAYER_FOOT_OFFSET, der Arm der Third aus dem Konstruktor), die
+//    Bänder seiner Tor-Stufen die von porta. Der Plan ist der der Welt (ihre Kerne aus dem Wirt), sein Plan-Hash steht in der
+//    Zeile der Posen — das Labor ?ort=genesis nennt denselben. Leer bricht sie ROT. Leser: der Koordinator vor dem Landen von
+//    ort-wirt. SELBST-TEST: genesisLayout wirft laut, fehlt eine Welt oder hat eine keinen Slot; eine Kamera im Gürtel, eine
+//    Sichtlinie über Feld-Wurf, eine fern-Station in 25 m — je ROT beim Namen.   node scripts/diag-fachwerk-contract.cjs --posen
+function posenLinse() {
+    const { AnazhRealm: A, ctx: W } = require("./lib/stamm.cjs").ladeKlasse(root);
+    const [r, G, T] = [require("vm").runInContext("new AnazhRealm()", W).state, FC.GENESIS_ORT, W.__portaCore.PORTAL_RENDER_CONFIG.lod.budget.gate];
+    const r6 = (a) => JSON.stringify(a.map((v) => Math.round(v * 1e6) / 1e6));
+    const ist = [A.KAM_FOV_GRAD, A.EGO_AUGE_M, A.PLAYER_FOOT_OFFSET, r.cameraThirdDistance, r.cameraThirdHeight, T[1].ab * (1 + T.hyst), T[2].ab * (1 - T.hyst), T[2].ab * (1 + T.hyst)];
+    const soll = [G.auge.fovGrad, G.auge.augeM, G.auge.fussM, G.auge.armM, G.auge.armHochM].concat(G.torStufe[1], G.torStufe[2][0]);
+    check("POSEN: das Auge des Plans ist die Kamera des Wirts, seine Tor-Stufen die von porta", r6(ist) === r6(soll), r6(ist));
+    const welten = G.tafel.map((t) => t.welt);
+    const wirft = (w) => {
+        try {
+            FC.genesisLayout(1, w);
+        } catch (e) {
+            return /Slot|fehlt/.test(e.message);
+        }
+    };
+    const GK = W.__gelaendeCore;
+    const L = GK.lageGrund(GK.LAGE_GRUND.seed, W.SimplexNoise);
+    const plan = W.__fachwerkCore.ortPlan(W.__fachwerkCore.genesisLayout(FC.genesisSaat(GK.LAGE_GRUND.seed), welten), { x: 0, z: 0 }, GK.ortCtx(L));
+    const Lb = Object.assign({}, L, { erdbau: GK.erdbauNormal(plan.erdbau) });
+    const boden = { hoeheAt: (x, z) => GK.hoehe(Lb, x, z, true) };
+    const mit = (n, wert) => abwandlung(plan.stationen.find((q) => q.name === n))("", wert);
+    const fehler = taeterFaelle(
+        [
+            { name: "eine Kamera im Gürtel", z: mit("S1", { ego: { x: -32.6, z: 28.1 } }), muss: /^KAMERA im Gürtel/ },
+            { name: "eine Sichtlinie über Feld-Wurf", z: mit("S1", { blick: { x: -81, z: 70 }, ziele: [{ art: "haus", x: -81, z: 70, band: "fern" }] }), muss: /^SICHTLINIE über Feld-Wurf/ },
+            { name: "eine fern-Station in 25 m", z: mit("S7f", { ego: { x: -70, z: 70 } }), muss: /^ABSTAND fels fern in 25\.0 m/ },
+        ],
+        (s) => FC.genesisPose(plan, s, false, boden).befunde
+    );
+    check("POSEN SELBST-TEST: die gepflanzten Täter je ROT beim Namen, genesisLayout wirft laut (eine Welt fehlt · eine ohne Slot)", !fehler.length && wirft(welten.slice(1)) && wirft(welten.concat(["schwarm"])), fehler.join(" · "));
+    const P = FC.genesisPosen(plan, boden);
+    console.log(P.text.replace(/^/gm, "  "));
+    check(`POSEN: jede Station hält ihre Pose (${P.posen.length - P.fehl.length}/${P.posen.length}, Plan-Hash ${FC.ortHash(plan)}; leer ist ROT)`, P.posen.length > 0 && !P.fehl.length, P.fehl.map((u) => u.text).join(" | "));
+}
+
 (async function main() {
-    if (process.argv.includes("--bogen")) {
-        console.log("=== BOGEN-VERBAND (K66) — fachwerk-core bogenRahmen ===");
-        bogenLinse();
+    // EINE Teil-Linse allein (`--bogen` · `--posen`)
+    const teil = process.argv.includes("--bogen") ? bogenLinse : process.argv.includes("--posen") ? posenLinse : null;
+    if (teil) {
+        console.log(`=== ${teil.name} (fachwerk-core) ===`);
+        teil();
         console.log(errs.length ? `\n❌ ROT — ${errs.length}` : "\n✅ GRÜN");
         process.exit(errs.length ? 1 : 0);
     }
@@ -503,10 +536,10 @@ function bogenLinse() {
     check("fachwerk-core geladen (__fachwerkCore + buildInstance)", !!FC && typeof FC.buildInstance === "function");
     check(
         "alle 32 Kulturen im Rezept-Namensraum (PRESETS)",
-        KULTUREN.length === 32 && KULTUREN.every((k) => /^[a-z0-9_-]+$/.test(k) && FC.PRESETS[k].kind === "haus")
+        KULTUREN.length === 32 && KULTUREN.every((k) => /^[a-z0-9_-]+$/.test(k))
     );
     check(
-        "kindStages.haus == [0,1,2,3] (B2 — die erste Mehr-Stufen-Domäne außerhalb der Bäume; 3 = NUR-WURF, S3 haus)",
+        "kindStages.haus == [0,1,2,3] (3 = NUR-WURF)",
         JSON.stringify(LODS) === "[0,1,2,3]"
     );
 
@@ -531,7 +564,7 @@ function bogenLinse() {
     // 1b) KOLLISION == OPTIK IN JEDER FERNE: jede Stufe trägt die Solids der Stufe 0 byte-gleich — die Welt
     //     kollidiert nie mit einer Stufen-Bounding-Box (die L1-Box des Hof-Hauses lag 8,2 m vor seinen Solids, die Tür war
     //     von vorn unerreichbar). Selbsttest: eine Stufe mit ihrer Bounding-Box statt der Solids muss rot werden.
-    const NUR_WURF = (l) => !!(FC.PORTAL_RENDER_CONFIG.lod.budget.haus[l] && FC.PORTAL_RENDER_CONFIG.lod.budget.haus[l].nurWurf);
+    const NUR_WURF = (l) => !!(LOD_CFG.budget.haus[l] || {}).nurWurf;
     const huellenBruch = (H) => {
         const bruch = [];
         for (const k of KULTUREN)
@@ -550,7 +583,8 @@ function bogenLinse() {
         return bruch;
     };
     const hb = huellenBruch(huellen);
-    check("Hülle des Gesetzbuchs: jede gezeigte Stufe trägt die Solids der Stufe 0 byte-gleich, in der EINEN Hüllen-Form (rolle fest; 32 Kulturen × 2 Samen)", hb.length === 0, hb.slice(0, 4).join(" "));
+    // in der EINEN Hüllen-Form (rolle fest), 32 Kulturen × 2 Samen
+    check("Hülle des Gesetzbuchs: jede gezeigte Stufe trägt die Solids der Stufe 0 byte-gleich", hb.length === 0, hb.slice(0, 4).join(" "));
     {
         const korrupt = Object.assign({}, huellen);
         korrupt["alemannisch-s7-L1"] = [-4, 0, -5, 4, 9, 5]; // die Stufen-Bounding-Box statt der Solids
@@ -572,34 +606,26 @@ function bogenLinse() {
         { rezeptId: "hochhaus", seed: 7, lod: 2 },
         { rezeptId: "marokkanisch", seed: 7, lod: 2 },
         { rezeptId: "chinesisch", seed: 7, lod: 3 },
-    ]) {
-        const g2 = buildCase(c);
-        if (fingerprint(g2).sha256 !== actual[caseKey(c)].sha256) determin = false;
-        disposeGroup(g2);
-    }
+    ])
+        if (shaVon(buildCase(c)) !== actual[caseKey(c)].sha256) determin = false;
     check("Determinismus: Stichproben-Fälle (alle 4 Stufen) bauen doppelt byte-gleich", determin);
 
     // 3) SEED-GETRIEBEN (cv:6-Semantik — s. Kopf): der Fachwerk-Bau variiert mit dem Samen.
     check(
-        "Seed-GETRIEBEN: alemannisch seed 7 != seed 12345 (L0 — Fenstertakt/Verband/Gauben aus P.seed)",
+        "Seed-GETRIEBEN: alemannisch seed 7 != seed 12345 (L0: Fenstertakt, Verband, Gauben)",
         actual["alemannisch-s7-L0"].sha256 !== actual["alemannisch-s12345-L0"].sha256
     );
     check(
-        "Seed-GETRIEBEN: tudor seed 7 != seed 12345 (L1 — zusätzlich FENSTER-SCHLAF)",
+        "Seed-GETRIEBEN: tudor seed 7 != seed 12345 (L1: der Fenster-Schlaf)",
         actual["tudor-s7-L1"].sha256 !== actual["tudor-s12345-L1"].sha256
     );
 
     // 4) Die Stufen sind ECHT verschieden (keine kollabierte Mehr-Stufen-Deklaration).
     let stufenEcht = true;
-    for (const k of ["alemannisch", "hanseatisch", "japanisch"]) {
-        if (
-            actual[`${k}-s7-L0`].sha256 === actual[`${k}-s7-L1`].sha256 ||
-            actual[`${k}-s7-L1`].sha256 === actual[`${k}-s7-L2`].sha256 ||
-            actual[`${k}-s7-L2`].sha256 === actual[`${k}-s7-L3`].sha256
-        )
-            stufenEcht = false;
-    }
-    check("Stufen-Wahrheit: L0 != L1 != L2 != L3 je Stichproben-Kultur (Voll · Hülle · Destillat · Fernkörper)", stufenEcht);
+    for (const k of ["alemannisch", "hanseatisch", "japanisch"])
+        for (const l of [0, 1, 2]) if (actual[`${k}-s7-L${l}`].sha256 === actual[`${k}-s7-L${l + 1}`].sha256) stufenEcht = false;
+    // Voll · Hülle · Destillat · Fernkörper
+    check("Stufen-Wahrheit: L0 != L1 != L2 != L3 je Stichproben-Kultur", stufenEcht);
 
     // 5) ov-Kanal wirkt (Override ändert die Geometrie wirklich — kein Passagier).
     check(
@@ -612,28 +638,21 @@ function bogenLinse() {
     );
 
     // 6) lod-Klemme: die Wahl faltet auf die deklarierten Stufen (Flatten-Semantik).
-    const l9 = buildCase({ rezeptId: "alemannisch", seed: 7, lod: 9 });
-    const f9 = fingerprint(l9);
-    disposeGroup(l9);
-    const lm = buildCase({ rezeptId: "alemannisch", seed: 7, lod: -1 });
-    const fm = fingerprint(lm);
-    disposeGroup(lm);
-    check("lod-Klemme: buildInstance(…, lod 9) == Stufe 3 (größte deklarierte ≤ Wahl — die Anzeige-Klammer ist die des Wirts)", f9.sha256 === actual["alemannisch-s7-L3"].sha256);
-    check("lod-Klemme: buildInstance(…, lod −1) == Stufe 0 (fail-closed auf die kleinste)", fm.sha256 === actual["alemannisch-s7-L0"].sha256);
+    const f9 = shaVon(buildCase({ rezeptId: "alemannisch", seed: 7, lod: 9 }));
+    const fm = shaVon(buildCase({ rezeptId: "alemannisch", seed: 7, lod: -1 }));
+    // die größte deklarierte Stufe ≤ der Wahl — die Anzeige-Klammer ist die des Wirts
+    check("lod-Klemme: buildInstance(…, lod 9) == Stufe 3", f9 === actual["alemannisch-s7-L3"].sha256);
+    check("lod-Klemme: buildInstance(…, lod −1) == Stufe 0", fm === actual["alemannisch-s7-L0"].sha256); // fail-closed auf die kleinste
 
     // 7) SPLIT-PARITÄT: der Vertrags-Pfad == der Lab-Pfad (Kern-Primitive, frische Kultur-Ableitung).
     const PARITY = ["alemannisch", "hochhaus", "hanseatisch", "japanisch", "marokkanisch", "holzhuette"];
     let parity = 0;
     let parityN = 0;
-    for (const k of PARITY) {
+    for (const k of PARITY)
         for (const L of LODS) {
             parityN++;
-            const g = shellPfad(k, 7, L);
-            const fp = fingerprint(g);
-            disposeGroup(g);
-            if (fp.sha256 === actual[`${k}-s7-L${L}`].sha256) parity++;
+            if (shaVon(shellPfad(k, 7, L)) === actual[`${k}-s7-L${L}`].sha256) parity++;
         }
-    }
     check(
         `Split-Parität: buildInstance == Shell-Komposition der Kern-Primitive (${parity}/${parityN} Rezept×Stufe)`,
         parity === parityN
@@ -691,12 +710,7 @@ function bogenLinse() {
                         vz = P[p2 + 2] - P[p0 + 2];
                     const ar = 0.5 * Math.hypot(uy * vz - uz * vy, uz * vx - ux * vz, ux * vy - uy * vx);
                     let l = 0;
-                    for (const v of q)
-                        l +=
-                            (0.2126 * farbe(C[v * 3]) * mc.r +
-                                0.7152 * farbe(C[v * 3 + 1]) * mc.g +
-                                0.0722 * farbe(C[v * 3 + 2]) * mc.b) /
-                            3;
+                    for (const v of q) l += luma(C, v, mc, farbe) / 3;
                     a += ar;
                     y += ar * l;
                 }
@@ -744,7 +758,7 @@ function bogenLinse() {
         );
         const bruchRoh = urteil(vorher);
         check(
-            `SELBST-TEST: roh gelesene Farbe (der Bake vor dem FARB-GESETZ) wird rot (${bruchRoh.length} Brüche)`,
+            `SELBST-TEST: roh gelesene Farbe wird rot (${bruchRoh.length} Brüche)`,
             bruchRoh.length > 0,
             bruchRoh.length > 0 ? "" : "die Linse misst nichts"
         );
@@ -757,7 +771,7 @@ function bogenLinse() {
     //     V8 rundet sin/cos auf Linux und Windows verschieden — das Raster macht die Bytes gleich), Determinismus, Goldens.
     console.log("\n=== DIE AUSSTATTUNG — Feuerstelle · Marktstand · Brunnen · Laterne · Wandlaterne (dasselbe Gesetzbuch) ===");
     check(
-        `fünf Ausstattungs-Rezepte (kind ausstattung) mit Stufen [0,1,3] (3 = NUR-WURF) und Gestalten (${AUS.join(", ")})`,
+        `fünf Ausstattungs-Rezepte mit Stufen [0,1,3] und Gestalten (${AUS.join(", ")})`,
         AUS.length === 5 && JSON.stringify(AUS_LODS) === "[0,1,3]" && AUS_CASES.length >= 25
     );
     // DIE LATERNE: der Leib und das Licht EINER Quelle — das Rezept trägt das Datum LICHT_GESETZ.laterne, und der
@@ -796,7 +810,7 @@ function bogenLinse() {
         ausIst[caseKey(c)] = fingerprint(g);
         const bb = new THREE.Box3().setFromObject(g);
         huelle[caseKey(c)] = bb;
-        const nurWurf = !!(FC.PORTAL_RENDER_CONFIG.lod.budget.ausstattung[c.lod] || {}).nurWurf;
+        const nurWurf = !!(LOD_CFG.budget.ausstattung[c.lod] || {}).nurWurf;
         // die Wandlaterne (K66-2, siteTag wand) hängt: ihr Anschluss ist die Platte in der Wand-Ebene x = armM, nie der Boden
         const anDerWand = FC.PRESETS[c.rezeptId].fx.place.siteTag === "wand";
         if (
@@ -815,8 +829,7 @@ function bogenLinse() {
             if (col && seh !== "glas" && !nurWurf) {
                 const mc = o.material.color;
                 let s = 0;
-                for (let i = 0; i < col.count; i++)
-                    s += 0.2126 * col.array[i * 3] * mc.r + 0.7152 * col.array[i * 3 + 1] * mc.g + 0.0722 * col.array[i * 3 + 2] * mc.b;
+                for (let i = 0; i < col.count; i++) s += luma(col.array, i, mc);
                 const Y = s / col.count;
                 const k = `${c.rezeptId}:${seh}`;
                 albedo[k] = Math.max(albedo[k] || 0, Y);
@@ -847,7 +860,7 @@ function bogenLinse() {
         deckung = true,
         deckBeispiel = "";
     for (const k of AUS)
-        for (let s = 1; s <= FC.PORTAL_RENDER_CONFIG.lod.budget.gestalten[k]; s++) {
+        for (let s = 1; s <= LOD_CFG.budget.gestalten[k]; s++) {
             const a = `${k}-s${s}-L0`,
                 b = `${k}-s${s}-L1`;
             if (ausIst[a].sha256 === ausIst[b].sha256) stufenAus = false;
@@ -865,13 +878,14 @@ function bogenLinse() {
                 deckBeispiel = deckBeispiel || `${k} s${s}: L0↔L1 Hülle ${d.toFixed(3)} m`;
             }
         }
-    check("Stufen-Wahrheit: L0 != L1 je Rezept × Gestalt (nah fein · mittel grob)", stufenAus);
-    check("Deckungsgleich: die L1-Hülle liegt auf der L0-Hülle (± 8 cm — kein Sprung beim Stufen-Wechsel)", deckung, deckBeispiel);
+    check("Stufen-Wahrheit: L0 != L1 je Rezept × Gestalt", stufenAus); // nah fein · mittel grob
+    check("Deckungsgleich: die L1-Hülle liegt auf der L0-Hülle (± 8 cm)", deckung, deckBeispiel); // kein Sprung beim Stufen-Wechsel
     check(
-        "Boden-Anschluss: jedes Stück taucht unter y = 0 (Steine, Pfosten, Kranz im Boden — kein Schweben am Hang), die Wandlaterne trägt ihre Platte in der Wand (x = armM)",
+        // Steine, Pfosten, Kranz im Boden — kein Schweben am Hang
+        "Boden-Anschluss: jedes Stück taucht unter y = 0, die Wandlaterne trägt ihre Platte in der Wand (x = armM)",
         bodenOk
     );
-    check("Die Glut leuchtet und wirft nie (emissive ⇒ Seh-Klasse glut, castShadow false; die Feuerstelle trägt sie)", glutOk && glutDa);
+    check("Die Glut leuchtet und wirft nie (emissive ⇒ Seh-Klasse glut, castShadow false)", glutOk && glutDa); // die Feuerstelle trägt sie
     check(
         `Albedo im Band (kartenlos, je Stoff: Stoff 0,08–0,45 · Glut ≤ 0,30) — ${Object.entries(albedo)
             .map(([k, v]) => k + " " + v.toFixed(2))
@@ -880,18 +894,12 @@ function bogenLinse() {
         albedoBeispiel
     );
     check("Plattformgleich: jede Zahl auf dem Raster 2^-12 (Normalen 2^-14), kein −0", rasterOk, rasterBeispiel);
-    {
-        const g1 = buildCase(AUS_CASES[0]),
-            g2 = buildCase(AUS_CASES[0]);
-        check("Determinismus: die Ausstattung baut doppelt byte-gleich", fingerprint(g1).sha256 === fingerprint(g2).sha256);
-        disposeGroup(g1);
-        disposeGroup(g2);
-    }
+    check("Determinismus: die Ausstattung baut doppelt byte-gleich", shaVon(buildCase(AUS_CASES[0])) === shaVon(buildCase(AUS_CASES[0])));
     check(
-        "ov-Kanal der Ausstattung: fuelle 0,2 baut eine andere Feuerstelle (weniger Scheite, kleinere Flamme)",
+        "ov-Kanal der Ausstattung: fuelle 0,2 baut eine andere Feuerstelle", // weniger Scheite, kleinere Flamme
         ausIst["feuerstelle-s1-L0"].sha256 !== ausIst["feuerstelle-s1-L0-ov_fuelle"].sha256
     );
-    goldenWand(golden("ausstattung"), 6, ausIst, check, AUS_CASES.length, "buildInstance(ausstattung, seed, lod, ov?) — sha256 je Fall (Architektur-Welle 05.10.)");
+    goldenWand(golden("ausstattung"), 6, ausIst, check, AUS_CASES.length, "buildInstance(ausstattung, seed, lod, ov?) — sha256 je Fall");
 
     // 11) PLATTFORM-PROBE (S1 Wände, scripts/lib/plattform-probe.cjs): jeder Probe-Fall baut noch einmal, während die
     //     Transzendenten von Math um ±1 ULP verschoben rechnen. Math.pow kippt kein Byte (die gemessene Klasse, V8 12.4
@@ -905,5 +913,8 @@ function bogenLinse() {
     // 12) DER BOGEN IM VERBAND
     bogenLinse();
 
-    wandEnde(errs, "der Haus-Asset-Vertrag steht: buildInstance ist deterministisch + SEED-GETRIEBEN (cv:6), die vier deklarierten Stufen (3 = NUR-WURF) bauen echt verschieden, der ov-Kanal wirkt, die lod-Klemme hält, die Split-Parität buildInstance==Lab-Komposition steht je Rezept×Stufe, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
+    // 13) DIE POSEN DES GENESIS-ORTS
+    posenLinse();
+
+    wandEnde(errs, "der Haus-Asset-Vertrag steht (cv:6) — jede Prüfung oben.");
 })();

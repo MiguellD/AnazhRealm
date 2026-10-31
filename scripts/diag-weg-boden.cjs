@@ -352,7 +352,7 @@ hauptLauf(async () => {
     await browser.close();
     server.close();
 
-    console.log("=== DIE WEG-KANTEN-PROBE (V18.530) — der Weg ist Boden ===");
+    console.log("=== DIE WEG-KANTEN-PROBE — der Weg ist Boden ===");
     if (S.fehler) console.log("  " + S.fehler);
     else {
         console.log(`  Pool: ${S.flacheStreifen} flache Boden-Streifen · ${S.zaeune} Zaun-Streifen`);

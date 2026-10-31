@@ -521,7 +521,7 @@ hauptLauf(async () => {
         process.exit(0);
     }
     console.log("⛔ GPU-PIPELINE-CHURN IM STEADY-STATE — eine Operation kompiliert pro Frame/Regen neu.");
-    console.log("   Das ist die V18.322-Fehlerklasse (ein per-Drift wechselndes scene.environment ODER eine andere");
+    console.log("   Das ist die Fehlerklasse (ein per-Drift wechselndes scene.environment ODER eine andere");
     console.log("   pro-Frame neu allokierte Render-Ressource). Heile sie identitäts-stabil + rate-gedeckelt,");
     console.log("   NICHT durch Wegdrosseln des Symptoms. (CLAUDE.md: Rendering · scene.environment IDENTITÄTS-STABIL.)");
     process.exit(2);

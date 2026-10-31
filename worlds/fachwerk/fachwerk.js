@@ -172,7 +172,7 @@ function ausstattungAm(id, x, z, ry){
 // Fail-closed: weicht das Labor-Layout vom Export ab, wirft der Ort (das Studio zeigte sonst ein anderes Dorf als die Welt).
 const GK=window.__gelaendeCore;
 const WELT=(()=>{ const u=new URLSearchParams(location.search), o=(u.get('ort')||'').split(',').map(Number);
-  return {seed:u.get('welt')||GK.LAGE_GRUND.seed, ort:(o.length===2&&o.every(Number.isFinite))?{x:o[0],z:o[1]}:null, L:null}; })();
+  return {seed:u.get('welt')||GK.LAGE_GRUND.seed, ort:(o.length===2&&o.every(Number.isFinite))?{x:o[0],z:o[1]}:null, L:null, genesis:u.get('ort')==='genesis'}; })();
 // DIE TRASSE AUF DEM WELTGRUND (siedlung.K3): das Höhen-Raster um den Ort (fachwerk trasseRahmen, gelaende-core hoehenRaster) — das
 // Labor-Layout und der Export lesen DASSELBE Raster wie die Welt am Ort ihrer Zelle: die Gassen folgen dem Hang.
 function trasseAufWelt(dp){
@@ -211,6 +211,7 @@ function bodenFall(kind0, solid0){
     const cx=s.th!=null? s.tx : (s.min[0]+s.max[0])/2, cz=s.th!=null? s.tz : (s.min[2]+s.max[2])/2, y=dorfBodenY(cx,cz);
     s.min=[s.min[0],s.min[1]+y,s.min[2]]; s.max=[s.max[0],s.max[1]+y,s.max[2]]; } }
 function buildDorf(dp){
+  genesisAn=false;
   if(houseGroup){ houseGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(houseGroup); houseGroup=null; haus=null; }
   if(dorfGroup){ dorfGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(dorfGroup); }
   tintM(DEFCOL);
@@ -545,6 +546,70 @@ function buildDorf(dp){
   console.log('DORF:',plan.region,plan.groesse,plan.kernel,'ab',plan.jahr,'+'+plan.spanne+'J ·',nVoll,'voll +',nProxy,'im Strom (Hülle/Destillat) ·',prims,'Prims · Graph V='+lay.graph.nV,'E='+lay.graph.nE,'Zyklen='+lay.graph.zyklen,(lay.mauer?'· MAUER R'+lay.mauer.R.toFixed(0)+' Tore:'+lay.mauer.gates.length:''),'· R='+R2.toFixed(0)+'m');
 }
 function frameDorf(){ orb.r=Math.min(90,(dorf?dorf.R:30)*2.0+12); orb.ty=6; applyOrbit(); }
+// ═══ DER GENESIS-ORT (Labor = Welt, Pflicht F) — derselbe Weg wie jedes Dorf: genesisLayout → ortPlan (Plan v2) auf dem Weltgrund ═══
+// `?ort=genesis` oder das Wort „genesis": der Plan der Welt-Saat mit den Welten seiner Slot-Tafel an M (0/0, sonst ?ort ist kein
+// Ort), der Boden samt Erdbau (gelaende-core hoehe über der Lage), je Fläche ihr Belag, die Ausstattung und das Bootshaus aus diesem
+// Gesetzbuch (buildInstance), Tore, Bäume, Fels, Tiere und Wache als Marken, die Stationen in ihrem Urteil (genesisPosen).
+// Der Plan-Hash (FC.ortHash) steht in der Zeile unten und in window.__genesisOrt — die Linse nennt denselben (Studio = Welt).
+let genesisAn=false;
+function buildGenesis(){
+  if(houseGroup){ houseGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(houseGroup); houseGroup=null; haus=null; }
+  if(dorfGroup){ dorfGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(dorfGroup); }
+  dorf=null; dorfB=[]; dorfChunks={}; dorfCellars=[]; doorList.length=0; solids=[]; genesisAn=true;
+  dorfGroup=new THREE.Group(); if(typeof ground!=='undefined') ground.visible=false;
+  const L=WELT.L||(WELT.L=GK.lageGrund(WELT.seed, window.SimplexNoise)), M0=WELT.ort||{x:0,z:0};
+  const v2=FC.ortPlan(FC.genesisLayout(FC.genesisSaat(WELT.seed), FC.GENESIS_ORT.tafel.map(t=>t.welt)), M0, GK.ortCtx(L));
+  const Lb=Object.assign({},L,{erdbau:GK.erdbauNormal(v2.erdbau)}), y0=v2.platz.y, H=(x,z)=>GK.hoehe(Lb,M0.x+x,M0.z+z,true)-y0;
+  // DER BODEN: ein Gitter über die Zonen (ohne das Viertel), je Ecke die Höhe samt Erdbau und die Farbe ihrer Zone
+  const FARBE={weg:0x8a7f6c, gras:0x5f7d3a, feld:0x2f4a24, grundriss:0x8c8c8c, gehege:0x7a6a4a, graben:0x4a4033, wasser:0x3a4a52, ort:0x9a8f78};
+  const hu=v2.zonen.filter(q=>q.art!=='ort'&&!/^feldweg/.test(q.name)).reduce((b,q)=>[Math.min(b[0],q.huelle[0]),Math.min(b[1],q.huelle[1]),Math.max(b[2],q.huelle[2]),Math.max(b[3],q.huelle[3])],[Infinity,Infinity,-Infinity,-Infinity]);
+  const d=2.5, nx=Math.ceil((hu[2]-hu[0])/d), nz=Math.ceil((hu[3]-hu[1])/d), pos=new Float32Array((nx+1)*(nz+1)*3), col=new Float32Array(pos.length), idx=[], c3=new THREE.Color();
+  for(let j=0;j<=nz;j++) for(let i=0;i<=nx;i++){ const o=(j*(nx+1)+i)*3, x=hu[0]+i*d, z=hu[1]+j*d, q=FC.genesisZone(v2,x,z);
+    pos[o]=x; pos[o+1]=H(x,z); pos[o+2]=z; c3.setHex(q?(q.art==='flaeche'?FARBE[q.belag]:FARBE[q.art]):0x4a5238); col[o]=c3.r; col[o+1]=c3.g; col[o+2]=c3.b; }
+  for(let j=0;j<nz;j++) for(let i=0;i<nx;i++){ const a=j*(nx+1)+i, b=a+1, c=a+nx+1, e=c+1; idx.push(a,c,b, b,c,e); }
+  const bg=new THREE.BufferGeometry(); bg.setAttribute('position',new THREE.BufferAttribute(pos,3)); bg.setAttribute('color',new THREE.BufferAttribute(col,3)); bg.setIndex(idx); bg.computeVertexNormals();
+  const gnd=new THREE.Mesh(bg,new THREE.MeshLambertMaterial({vertexColors:true})); gnd.receiveShadow=true; dorfGroup.add(gnd);
+  // DAS WASSER des Teichs auf seinem Spiegel (die Ellipse des Beckens)
+  const tw=new THREE.Mesh(new THREE.CircleGeometry(1,48),new THREE.MeshLambertMaterial({color:0x3f6e8c, transparent:true, opacity:0.85}));
+  tw.rotation.x=-Math.PI/2; tw.scale.set(v2.becken.a,v2.becken.b,1); tw.position.set(v2.becken.cx,v2.becken.spiegel-y0,v2.becken.cz); dorfGroup.add(tw);
+  // DIE WERKE aus dem Gesetzbuch: Laterne, Bank, Brunnen, das Bootshaus — dieselbe buildInstance wie der Foundry-Worker der Welt
+  const werk=(id,q,gier)=>{ const V=(FC.AUSSTATTUNG[id]&&FC.AUSSTATTUNG[id].gestalten)||(FC.WERKE[id]&&FC.WERKE[id].gestalten)||1, g=FC.buildInstance(id,1+((q.seed>>>0)%V),0);
+    g.position.set(q.x,q.y-y0,q.z); g.rotation.y=gier||0; g.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; } }); dorfGroup.add(g); };
+  for(const q of v2.ausstattung) werk(q.art==='bank'?'sitzbank':q.art,q,q.gier);
+  for(const h of v2.haeuser){ const g=FC.buildInstance(h.kultur,h.seed,1); g.position.set(h.x,h.y-y0,h.z); g.rotation.y=h.phi; dorfGroup.add(g); }
+  // DIE MARKEN: Tor (Pfeiler und Sturz, die Öffnung zur Mitte), Vorschau, Baum je Art, Fels, Tiere, Wache
+  const box=(w,h,t,c,x,y,z,ry)=>{ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,t),new THREE.MeshLambertMaterial({color:c})); m.position.set(x,y,z); m.rotation.y=ry||0; m.castShadow=true; dorfGroup.add(m); return m; };
+  for(const t of v2.tore){ const g=new THREE.Group(); g.position.set(t.x,t.y-y0,t.z); g.rotation.y=t.gier;
+    [-1.55,1.55].forEach(px=>{ const p=new THREE.Mesh(new THREE.BoxGeometry(0.5,4.2,0.6),M.stein||M.holz); p.position.set(px,2.1,0); g.add(p); });
+    const s=new THREE.Mesh(new THREE.BoxGeometry(3.6,0.5,0.6),M.stein||M.holz); s.position.set(0,4.45,0); g.add(s); dorfGroup.add(g);
+    if(t.vorschau) box(2,1.2,2,0xc89b3c,t.vorschau.x,t.vorschau.y-y0+0.6,t.vorschau.z,t.vorschau.blick); }
+  const NADEL={fichte:1,tanne:1};
+  for(const b of v2.baeume){ const y=H(b.x,b.z), m=new THREE.Mesh(NADEL[b.art]?new THREE.ConeGeometry(2.6,11,8):new THREE.SphereGeometry(4.6,10,8),new THREE.MeshLambertMaterial({color:NADEL[b.art]?0x2c4a2a:0x4f6f2f}));
+    m.position.set(b.x,y+(NADEL[b.art]?5.5:6.4),b.z); m.castShadow=true; dorfGroup.add(m); }
+  for(const f of v2.formationen) box(2*f.ex,f.hoch,2*f.ez,0x7d7a74,f.x,H(f.x,f.z)+f.hoch/2,f.z,f.gier);
+  for(const g of v2.gehege) for(const r of g.ruhe) box(1.1,0.75,0.4,0x6b6259,r.x,g.y-y0+0.38,r.z);
+  box(0.5,1.8,0.3,0x2b4d7a,v2.wache.x,v2.wache.y-y0+0.9,v2.wache.z,v2.wache.gier);
+  // DIE STATIONEN IN IHREM URTEIL (fachwerk genesisPosen, das Gesetz der Stationen — dieselbe Rechnung wie die Posen-Linse): je Pose
+  // die Kamera als Kugel mit dem Strahl zu ihrem Blick, grün wer hält, rot wer bricht (die Zeile der Pose in der Konsole)
+  const P=FC.genesisPosen(v2,{hoeheAt:(x,z)=>GK.hoehe(Lb,x,z,true)});
+  const strahl=(a,b,c)=>{ const g=new THREE.BufferGeometry().setFromPoints([a,b]); dorfGroup.add(new THREE.Line(g,new THREE.LineBasicMaterial({color:c}))); };
+  P.posen.forEach(u=>{ const c=u.befunde.length?0xe04040:0x58d068, a=new THREE.Vector3(u.x,u.y-y0,u.z);
+    const m=new THREE.Mesh(new THREE.SphereGeometry(0.6,10,8),new THREE.MeshBasicMaterial({color:c})); m.position.copy(a); dorfGroup.add(m);
+    strahl(a,new THREE.Vector3(u.blick.x,H(u.blick.x,u.blick.z)+1,u.blick.z),c); });
+  console.log('GENESIS-POSEN:\n'+P.text);
+  scene.add(dorfGroup);
+  sun.shadow.camera.left=-160; sun.shadow.camera.right=160; sun.shadow.camera.top=160; sun.shadow.camera.bottom=-160; sun.shadow.camera.far=500; sun.shadow.camera.updateProjectionMatrix();
+  scene.fog.near=700; scene.fog.far=1800;
+  const hash=FC.ortHash(v2);
+  window.__genesisOrt={v2, hash, saat:FC.genesisSaat(WELT.seed), welt:WELT.seed};
+  const chd=document.getElementById('chronik')||(()=>{ const d2=document.createElement('div'); d2.id='chronik';
+    d2.style.cssText='position:fixed;left:12px;bottom:10px;padding:7px 12px;background:rgba(12,15,20,.82);border:1px solid #2a3442;border-radius:8px;color:#dce6f5;font:12px ui-sans-serif;z-index:30;pointer-events:none';
+    document.body.appendChild(d2); return d2; })();
+  chd.textContent='Genesis-Ort · Welt '+WELT.seed+' · '+v2.tore.length+' Tore · Posen '+(P.posen.length-P.fehl.length)+'/'+P.posen.length+' · '+v2.erdbau.length+' Erdbau · Plan-Hash '+hash;
+  chd.style.display='block';
+  console.log('GENESIS:', 'Plan-Hash', hash, 'Kern', v2.hoehen.kern, 'Terrasse', v2.hoehen.terrasse, 'Spiegel', v2.hoehen.spiegel, v2.erdbau.length, 'Erdbau');
+}
+function frameGenesis(){ orb.r=320; orb.el=0.62; orb.az=0.55; orb.tx=20; orb.ty=0; orb.tz=-10; applyOrbit(); }
 // ════════════ META-GESETZ ════════════ wohnt im Kern (U6c, __fachwerkCore.metaParams) — eine Quelle für Browser + Sweep
 // Aus Zeit · Klima · Personen · Wohlstand emergiert die ganze Form — nach der Ordnung der Stil-Epochen.
 const metaParams=FC.metaParams;
@@ -623,6 +688,7 @@ let solids=[], doorList=[];        // Kollision + Türen (von Closures referenzi
 let explode=0;
 
 function buildHouse(params){
+  genesisAn=false;
   if(dorfGroup){ dorfGroup.traverse(o=>{if(o.geometry)o.geometry.dispose();}); scene.remove(dorfGroup); dorfGroup=null; dorf=null; dorfCellars=[];
     if(promoPend){ promoPend.st.g.traverse(o=>{ if(o.geometry)o.geometry.dispose(); }); promoPend=null; }
     sun.shadow.camera.left=-26;sun.shadow.camera.right=26;sun.shadow.camera.top=26;sun.shadow.camera.bottom=-26;sun.shadow.camera.updateProjectionMatrix(); scene.fog.near=55; scene.fog.far=150; tintM(DEFCOL); if($('pK'))applyKultur($('pK').value,SEED); }
@@ -870,7 +936,7 @@ let drag=false,px=0,py=0; const cv=renderer.domElement;
 cv.addEventListener('pointerdown',e=>{if(mode!=='orbit')return;drag=true;px=e.clientX;py=e.clientY;});
 addEventListener('pointerup',()=>drag=false);
 addEventListener('pointermove',e=>{if(mode!=='orbit'||!drag)return;orb.az-=(e.clientX-px)*0.008;orb.el+=(e.clientY-py)*0.008;orb.el=Math.max(-0.2,Math.min(1.45,orb.el));px=e.clientX;py=e.clientY;applyOrbit();});
-cv.addEventListener('wheel',e=>{if(mode!=='orbit')return;e.preventDefault();orb.r*=(1+Math.sign(e.deltaY)*0.08);orb.r=Math.max(6,Math.min(90,orb.r));applyOrbit();},{passive:false});
+cv.addEventListener('wheel',e=>{if(mode!=='orbit')return;e.preventDefault();orb.r*=(1+Math.sign(e.deltaY)*0.08);orb.r=Math.max(6,Math.min(genesisAn?600:90,orb.r));applyOrbit();},{passive:false});
 
 // ── Begehung (Ego) ──
 const player={pos:new THREE.Vector3(0,0,0),vy:0,onGround:false,groundY:0};
@@ -988,7 +1054,7 @@ if(dorf&&dorfB){ lodTick(performance.now());
 renderer.render(scene,camera);requestAnimationFrame(frame);}
 
 // ── Start ──
-setZeit($('pZeit').value); applyKultur($('pK').value, SEED); buildHouse(readParams()); frameHouse(); wahlMerken(); kostenLeiste.neu(); requestAnimationFrame(frame);
+setZeit($('pZeit').value); applyKultur($('pK').value, SEED); if(WELT.genesis){ buildGenesis(); frameGenesis(); } else { buildHouse(readParams()); frameHouse(); } wahlMerken(); kostenLeiste.neu(); requestAnimationFrame(frame);
 addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);});
 
 /* ==================== DIE BRÜCKE ZUR HEIMAT (die Hülle, K41) ==================== */
@@ -1023,9 +1089,12 @@ addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updat
             return { THREE: THREE, renderer: renderer, scene: scene, kamera: camera };
         },
         label: "Fachwerkhaus — parametrisch, begehbar",
-        dsl: FC.KULTNAMES.concat(["dorf", "haus"]),
+        dsl: FC.KULTNAMES.concat(["dorf", "haus", "genesis"]),
         wort: function (w) {
-            if (w === "dorf") setCheck("pDorf", true);
+            if (w === "genesis") {
+                buildGenesis();
+                frameGenesis();
+            } else if (w === "dorf") setCheck("pDorf", true);
             else if (w === "haus") setCheck("pDorf", false);
             else setSelect("pK", w);
         },
