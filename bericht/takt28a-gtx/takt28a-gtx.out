@@ -1,0 +1,47 @@
+Punkte-Maschine: 17 Station(en) in 15 Läufen auf gtx am ec989990 · Sitzung 15 Proben in EINER Welt (Deckel Σ 9 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  SITZUNG gtx · die Welt steht nach 6.3 s (Schloss nach 0.02 min) · 15 Proben · Welt :27804
+  OFFEN profiband.K4#1 · Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG der Grund der Welt: 83 Größen in 0.2 s
+  SITZUNG Grundstellung vor vegetation.K1#1: 0.1 s (im Spiel 39.2 ms)
+  SITZUNG Ort wiese vor vegetation.K1#1: 18.6 s (581 Takte, 81 Chunks, nach der Grundstellung)
+  ROT  vegetation.K1#1 · wiese-third-0.5--wiese: LAI 2–5 2.40 · 5–10 1.47 · 10–14 1.14 · 14–30 0.06 · 30–80 0.00 · 80–200 0.00 (Saum springt > 15 %), Farbton 2–5 m 13.24°, nahWiese 4 Befehle / 63716 Dreiecke · Sitzung · Exit 0 · 0.54 min
+  GRÜN vegetation.K5#1 · Krone sommer 193189 px · winter 21708 px → Winter 0.112 × Sommer · Sitzung · Exit 0 · 0.23 min
+  OFFEN licht.K2#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: kugel-5 · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor material.K2#1: 7.5 s (im Spiel 1601.7 ms, durch die Tür)
+  SITZUNG Ort wiese vor material.K2#1: 15.3 s (580 Takte, 81 Chunks, nach der Tür)
+  OFFEN material.K2#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: fels-weit · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor spielgang.K3#1: 8.1 s (im Spiel 2002.7 ms, durch die Tür)
+  SITZUNG Ort wiese vor spielgang.K3#1: 17.5 s (549 Takte, 81 Chunks, nach der Tür)
+  ROT  spielgang.K3#1 · HUD deckt 3.93 % (1920×1080, im Spiel) · INP HUD 104 ms (50) · Menü 240 ms (20) · Sitzung · Exit 0 · 0.3 min
+  SITZUNG Ort dorf vor licht.K3#2: 23.6 s (1367 Takte, 81 Chunks)
+  SITZUNG licht.K3#2 ließ die Welt verändert und trägt kein mutiert: orte +-3,-3 · wege +3 [-748.3,-821.3,-615.9,-784.1/28] [-805.3,-801.4,-689.5,-574/6] [-833.8,-834.7,-648.1,-574.2/76] (-3,-3, netz:-3,-3, netz:-3,-3|-4,-4) — die Grundstellung folgt
+  OFFEN licht.K3#2 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 1 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 1 Takten, 0.0 s · 3.0 s) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor licht.K5#1: 10.9 s (im Spiel 1700.2 ms, durch die Tür)
+  SITZUNG die Welt vor licht.K5#1: 16.4 s (583 Takte, 81 Chunks, nach der Tür)
+  OFFEN licht.K5#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor material.K1#1: 7.2 s (im Spiel 1800.1 ms, durch die Tür)
+  SITZUNG die Welt vor material.K1#1: 14.8 s (635 Takte, 81 Chunks, nach der Tür)
+  SITZUNG material.K1#1 ließ die Welt verändert und trägt kein mutiert: werke +1 (−0) — die Grundstellung folgt
+  OFFEN material.K1#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor licht.K3#1: 6.9 s (im Spiel 2071.4 ms, durch die Tür)
+  SITZUNG Ort dorf vor licht.K3#1: 20.9 s (615 Takte, 81 Chunks, nach der Tür)
+  OFFEN licht.K3#1 · Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 13 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 66 Takten, 0.7 s · 44.6 s) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor mensch.K1#1: 10.1 s (im Spiel 1953 ms, durch die Tür)
+  SITZUNG die Welt vor mensch.K1#1: 16.6 s (584 Takte, 81 Chunks, nach der Tür)
+  OFFEN mensch.K1#1 · Deckel 40 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor studios.K4#1: 8.9 s (im Spiel 2129.7 ms, durch die Tür)
+  SITZUNG die Welt vor studios.K4#1: 17.7 s (636 Takte, 81 Chunks, nach der Tür)
+  OFFEN studios.K4#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor siedlung.K1#2: 6.5 s (im Spiel 1832.7 ms, durch die Tür)
+  SITZUNG die Welt vor siedlung.K1#2: 16 s (635 Takte, 81 Chunks, nach der Tür)
+  OFFEN siedlung.K1#2 · Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 7 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist d) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor fahrzeug.K2#2: 7.3 s (im Spiel 1501.6 ms, durch die Tür)
+  SITZUNG die Welt vor fahrzeug.K2#2: 14.1 s (583 Takte, 81 Chunks, nach der Tür)
+  OFFEN fahrzeug.K2#2 · Deckel 55 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor profiband.K1#1: 10.1 s (im Spiel 1574.5 ms, durch die Tür)
+  SITZUNG die Welt vor profiband.K1#1: 14.2 s (585 Takte, 81 Chunks, nach der Tür)
+  ROT  profiband.K1#1 · Bild-p95 ≤ 33: wiese-ego-geht 25.1 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 25.1 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 56.2 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 58 s trug den Schritt nicht) | stadt-ego-geht: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 58 s trug den Schritt nicht) · Sitzung · Exit 0 · 0.94 min
+  ROT  profiband.K2#1 · Belegung p95 ≤ 5.8: wiese-ego-steht 8.81 · wiese-third-steht ? · genesis-ego-steht 74.89 · genesis-third-steht 14.75 · Gang 56.2 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 8.81 > 5.8 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 74.89 > 5.8 | genesis-third-steht Belegung p95 14.75 > 5.8 · Sitzung · Exit 0 · 0.94 min (Zwilling von profiband.K1#1)
+  ROT  profiband.K3#1 · Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 99 · 286k · 125 MB · 15.75 ms | wiese-third ? | genesis-ego 120 · 311k · 116.8 MB · 12.03 ms | genesis-third 146 · 389k · 122.2 MB · 11.98 ms | dorf-ego ? | dorf-third ? · Gang 56.2 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: Band ROT streu haupt: 7 befehle über der Ratsche 4 (Täter: streuSatz, f:blume:L2) · baum k1: 12 befehle über der Ratsche 5 (Täter: f:tanne:L1, f:eiche:L1, f:tanne:L0) · , gpu-bank 15.75 ms > 12, nicht eingeschwungen | Band wiese-third: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band genesis-ego: Band ROT streu haupt: 6 befehle über der Ratsche 2 (Täter: streuSatz, fscatter:geroell:L0, fscatter:blume:L2) · streu haupt: 13502 dreiecke über der Ratsche 1670 (Täter:, gpu-bank 12.03 ms > 12, nicht eingeschwungen | Band genesis-third: Band ROT fscatter:geroell:L0: L0 bis 70 m im Hauptbild (Wand 64 m) — Der stille L0-Rückfall (b13): jenseits 64 m wohnt die Streu als Platz im Welt-March (V18.526, Streu- | Band dorf-ego: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 58 s trug den Schritt nicht) · Sitzung · Exit 0 · 0.94 min (Zwilling von profiband.K1#1)
+  SITZUNG Fahrt 767.5 s (Soll ≤ 1800 s) · 15 Proben · Grundstellung 11×
+→ meisterkarte-quelle\punkte\messung\ec989990-gtx.json
