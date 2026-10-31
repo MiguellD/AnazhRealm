@@ -198,12 +198,17 @@ async function kreaturProben(r, T, opts) {
         if (s.player.emotions)
             Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 }, e);
     };
+    // DIE KAMERA DER BÜHNE ist ihr Rig: der Blick aus dem Kopf des Spielers SETZT das Auge der Stufen (`_lodAugeGesetzt`, K36 —
+    // wie das Rig je Bild), es reist mit dem Spieler bis zur nächsten Kamera. Ohne Setzung band erst die nächste Lesung den
+    // Spieler, nach seinem Sprung: am Querhang stand das Auge 81 m von ihm am alten Ort, und jede Probe danach erbte es
+    // (tiersatz: 43 von 50 Tieren jenseits der Feld-Grenze als Leib, der Satz leer). Ihr Inverses trägt die Kamera selbst
+    // (three `Camera.updateMatrixWorld`).
     const kamera = (blickX, blickZ, blickY = 0) => {
         const cam = s.camera;
         cam.position.set(pm.x, pm.y + 1.6, pm.z);
         cam.lookAt(pm.x + blickX, pm.y + 1.6 + blickY, pm.z + blickZ);
         cam.updateMatrixWorld(true);
-        if (cam.matrixWorldInverse) cam.matrixWorldInverse.copy(cam.matrixWorld).invert();
+        r._lodAugeGesetzt();
         r._loopFrustumCulling();
     };
     const imBlick = (x, y, z) => {
@@ -2706,7 +2711,7 @@ async function kreaturProben(r, T, opts) {
             cam.position.copy(auge);
             cam.lookAt(pc.x, pm.y + 0.6, pc.z);
             cam.updateMatrixWorld(true);
-            if (cam.matrixWorldInverse) cam.matrixWorldInverse.copy(cam.matrixWorld).invert();
+            r._lodAugeGesetzt(); // der Schuss setzt das Auge der Stufen wie die Kamera der Bühne (`kamera`)
             return zaehlt.filter((b) => {
                 const [x, y, z] = [b.position.x, b.position.y + 0.4, b.position.z];
                 const d = auge.distanceTo({ x, y, z });
