@@ -319,3 +319,4 @@ takt-z113a-gtx 1 punkte sha=f0dab43d611dfdcd194d753e4471495de8a71b15 geraet=gtx 
 takt-z113b-gtx 1 punkte sha=f0dab43d611dfdcd194d753e4471495de8a71b15 geraet=gtx nur=mensch.K5#1,haar.K2#1,material.K1#1,lod.K5#1,bauen.K1#2,spielgang.K3#1,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,klang.K4#1
 takt-z113a-gtx 0 storno
 takt-z113b-gtx 0 storno
+z114-abab 3 abab A=f0dab43d611dfdcd194d753e4471495de8a71b15 B=808464cab1d7998c1378ff2de415a2288db87053 zellen=w-ego,stadt
