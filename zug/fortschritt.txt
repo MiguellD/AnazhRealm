@@ -1081,3 +1081,4 @@
 2026-10-31 06:51:55 z98-abab stadt VERLÄNGERN 16.4 · 1/1 (2+2)
 2026-10-31 07:08:43 z98-abab stadt(4+4) nicht-langsamer 16.7 · verlängert (4+4)
 2026-10-31 07:54:53 takt27c-gtx START 15 Stationen in 1 Läufen
+2026-10-31 08:05:04 takt27c-gtx mensch.K1#1,mensch.K5#1,studios.K2#2,studios.K3#2,bauen.K1#2,bauen.K5#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,fahrzeug.K2#1,fahrzeug.K2#2,ankunft.K2#1,ankunft.K3#1,klang.K4#1,speicher.K4#2 OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN 10.1 · 15/15
