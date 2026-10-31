@@ -54,16 +54,17 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async () => {
         const res = {};
-        const r = await window.__weltDa();
+        const r = await window.__weltDa(),
+            st = r.state;
         const AR = r.constructor;
         // Foundry warm ziehen (Produktions-Boot) + den WALD bauen (Scatter-Zellen).
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready);
-        const pm = r.state.playerMesh.position;
+        const pm = st.playerMesh.position;
         let cells = 0;
         for (const weiter = window.__deckel("die Streu-Zellen", 1500); weiter(); ) {
             r._tickScatterStreaming(pm);
-            const map = r.state.scatterRegions;
+            const map = st.scatterRegions;
             cells = 0;
             if (map) for (const reg of map.values()) cells += reg.cells ? reg.cells.length : 0;
             if (cells > 40) break;
@@ -82,8 +83,8 @@ hauptLauf(async () => {
                 size: { x: 0.8, y: 0.8, z: 0.8 },
                 position: { x: (i % 3) - 1, y: 0.4 + Math.floor(i / 3), z: 0 },
             }));
-            r.state.blueprints[name] = { name, label: name, builtIn: false, instanced: true, parts };
-            return r.state.blueprints[name];
+            st.blueprints[name] = { name, label: name, builtIn: false, instanced: true, parts };
+            return st.blueprints[name];
         };
 
         // Zähler UNSERER Fixturen (streaming-fest: nur die Gruppen des Fixtur-Bauplans): Gruppen (w) und
@@ -91,8 +92,8 @@ hauptLauf(async () => {
         const zaehle = (regTag) => {
             let w = 0;
             const fam = new Set();
-            if (r.state.archInstanceGroups)
-                for (const [k, g] of r.state.archInstanceGroups)
+            if (st.archInstanceGroups)
+                for (const [k, g] of st.archInstanceGroups)
                     if (k.includes(regTag)) {
                         w++;
                         if (g && g.mesh && g.mesh.material) fam.add(g.mesh.material);
@@ -183,13 +184,13 @@ hauptLauf(async () => {
             const flat = neu.probeFlat;
             const e0 = neu.entries[0];
             const les = (slotRef) => {
-                const g = r.state.archInstanceGroups.get(slotRef.key);
+                const g = st.archInstanceGroups.get(slotRef.key);
                 const c = r._archTmpTintColor.clone().set(0xffffff);
                 g.mesh.getColorAt(slotRef.slot, c);
                 return { c, kind: g.kind || "inst" };
             };
             const erwarte = (part) => r._archTmpTintColor.clone().set(0xffffff).setHex(r._archPartTintColor(part));
-            const bp = r.state.blueprints["rd_fixture_neu"];
+            const bp = st.blueprints["rd_fixture_neu"];
             const p0 = les(e0.instSlots[0]);
             const p1 = les(e0.instSlots[1]);
             const soll0 = erwarte(bp.parts[0]);
@@ -236,7 +237,7 @@ hauptLauf(async () => {
                 erdeMat.userData.useInstanceTint
             );
             const gotErde = les(eT.instSlots[0]).c;
-            const sollErde = erwarte(r.state.blueprints["rd_naht"].parts[0]).multiply(
+            const sollErde = erwarte(st.blueprints["rd_naht"].parts[0]).multiply(
                 r._archTmpTintColor.clone().setRGB(0.5, 0.6, 0.7)
             );
             farbe.erdeProdukt = nah(gotErde, sollErde);
@@ -274,10 +275,10 @@ hauptLauf(async () => {
             res.nahtScatter = zaehl("_archSlotColor", () => (sl = r._scatterInstanceAdd("rd_fixture_neu", 953 * R + 70, 0, 949 * R + 70, 0, 1, null, "953,949", neu.probeFlat))) === neu.probeFlat.leaves.length;
             if (sl) r._scatterFreeSlots(sl);
             mkBp("rd_merge", "stein", [0x8a5a2b, 0x8a5a2b]);
-            res.mergeGeteilt = zaehl("_sharedFoliageMaterial", () => r._mergeBlueprintByMaterial(r.state.blueprints.rd_merge)) > 0;
+            res.mergeGeteilt = zaehl("_sharedFoliageMaterial", () => r._mergeBlueprintByMaterial(st.blueprints.rd_merge)) > 0;
             mkBp("rd_block", "stein", [0xcc3322]);
-            r.state.blueprints.rd_block.parts.push({ shape: "box", material: "stein", color: 0xcc3322, animate: "water_wave", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } });
-            const geteilt = r._archLeafMaterial(r.state.blueprints.rd_block.parts[0]);
+            st.blueprints.rd_block.parts.push({ shape: "box", material: "stein", color: 0xcc3322, animate: "water_wave", size: { x: 1, y: 1, z: 1 }, position: { x: 0, y: 0, z: 0 } });
+            const geteilt = r._archLeafMaterial(st.blueprints.rd_block.parts[0]);
             let weg = 0;
             const h = () => weg++;
             geteilt.addEventListener("dispose", h);
@@ -291,12 +292,12 @@ hauptLauf(async () => {
         // Jedes leaf.tint-Material MUSS aus dem EINEN _foliageMatCache stammen
         // (Map Signatur→Material ⇒ je Tag-Signatur GENAU EIN Material, per Konstruktion).
         try {
-            const cacheMats = new Set(r.state._foliageMatCache ? [...r.state._foliageMatCache.values()] : []);
+            const cacheMats = new Set(st._foliageMatCache ? [...st._foliageMatCache.values()] : []);
             let leafTintLeaves = 0;
             let fremde = 0;
             const mats = new Set();
-            if (r.state.archFlattenCache)
-                for (const resF of r.state.archFlattenCache.values()) {
+            if (st.archFlattenCache)
+                for (const resF of st.archFlattenCache.values()) {
                     if (!resF || !Array.isArray(resF.leaves)) continue;
                     for (const l of resF.leaves) {
                         if (!l || l.tint === undefined || !l.mat) continue;
@@ -310,7 +311,7 @@ hauptLauf(async () => {
                 mats: mats.size,
                 fremde,
                 cacheMats: cacheMats.size,
-                wrappers: r.state.archInstanceGroups ? r.state.archInstanceGroups.size : 0,
+                wrappers: st.archInstanceGroups ? st.archInstanceGroups.size : 0,
             };
         } catch (e) {
             res.welt = { err: String((e && e.message) || e) };
@@ -319,8 +320,8 @@ hauptLauf(async () => {
         // Aufräumen: Hebel auf Produktion, Fixturen fallen (kein Debris im Baum).
         AR.ARCH_LEAF_MAT_SHARED = true;
         for (const n of ["rd_fixture_alt", "rd_fixture_neu", "rd_naht", "rd_glut_a", "rd_glut_b", "rd_merge", "rd_block"]) {
-            delete r.state.blueprints[n];
-            if (r.state.archFlattenCache) r.state.archFlattenCache.delete(n);
+            delete st.blueprints[n];
+            if (st.archFlattenCache) st.archFlattenCache.delete(n);
         }
         return res;
     });

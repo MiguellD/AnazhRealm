@@ -19,7 +19,16 @@ class AnazhRealm_studio_stoff {
     // Stoff-Wert (`_stoffWert`). Weichen die belegten Plätze ab, fehlt der Signatur eine Eingabe des Baus: das bricht laut beim
     // Namen, nie still mit fremdem Graphen. Leser: der Studio-Stoff (`_foundryTreeMaterial`) und der Werk-Stoff
     // (`_buildPbrNodeMaterial`, material.K5).
+    // EIN PROGRAMM JE SIGNATUR (ankunft-4): r184 schlüsselt das Programm außer nach den Knoten nach der NULL jeder aufzählbaren
+    // Zahl des Stoffs (`RenderObject.getMaterialCacheKey`: „0" oder „1") — Metall, Rauheit und die Stärken von Leuchten und
+    // Umgebung (`STOFF_REFERENZ_ZAHLEN`) liest der Text aber als Referenz auf den Stoff (`materialMetalness` …), nie als Zahl:
+    // zwei Tor-Stoffe einer Signatur mit Metall 0 und 0,3 bauten zwei Programme mit demselben Text (Radeon kalt vor dem Bild:
+    // drei Stoffe in Welt und Karten-Bühne, 4 Bauten). Diese Zahlen schlüsseln nicht mehr (nicht aufzählbar); Wert, Lesen,
+    // Schreiben und der Beobachter (er liest sie beim Namen) bleiben.
     _graphTeilen(mat, sig, plaetze) {
+        for (const k of AnazhRealm.STOFF_REFERENZ_ZAHLEN)
+            if (Object.prototype.propertyIsEnumerable.call(mat, k))
+                Object.defineProperty(mat, k, { value: mat[k], writable: true, enumerable: false, configurable: true });
         const G = this._geteilteGraphen || (this._geteilteGraphen = new Map());
         const g = G.get(sig);
         if (!g) return void G.set(sig, Object.fromEntries(plaetze.map((p) => [p, mat[p] || null])));
@@ -233,6 +242,7 @@ class AnazhRealm_studio_stoff {
                 mat.colorNode = TSL.vec4(atl.rgb.mul(laubFarbe), atl.a);
                 mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
                 mat.transparent = false;
+                mat.userData.liestUv = true; // der Atlas liest die Ecken (`_foundryBuildMesh`: nur dann trägt die Gestalt uv)
             } else {
                 // Nur headless (kein document): kein Stoff zeichnet — mit document liefert der Atlas oder bricht.
                 mat.colorNode = TSL.vec4(laubFarbe, 1.0);
@@ -246,6 +256,7 @@ class AnazhRealm_studio_stoff {
             const atl = this._blattAtlasProbe(TSL);
             const deckt = TSL.attribute("aDeckt", "float");
             mat.colorNode = TSL.vec4(TSL.vec3(0.0), atl ? TSL.max(deckt, atl.a) : deckt);
+            mat.userData.liestUv = true; // der Atlas liest die Ecken (`_foundryBuildMesh`)
             mat.alphaTest = 0.5;
             mat.transparent = false;
         } else if (klasseLook) {
@@ -556,3 +567,8 @@ class AnazhRealm_studio_stoff {
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_studio_stoff]);
+
+// ===== ATLAS · Studio/stoff — Außen-Konstanten =====
+// Die Zahlen eines Knoten-Stoffs, die r184 als Referenz liest (`materialMetalness`, `materialRoughness`, das Leuchten und die
+// Umgebung je Stoff) — ihr Text hängt nie an ihrer Null, darum schlüsseln sie kein Programm (`_graphTeilen`).
+AnazhRealm.STOFF_REFERENZ_ZAHLEN = Object.freeze(["metalness", "roughness", "emissiveIntensity", "envMapIntensity"]);

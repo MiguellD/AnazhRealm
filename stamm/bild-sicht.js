@@ -48,7 +48,55 @@ class AnazhRealm_bild_sicht {
         knoten.updateBefore = (frame) => this._tiefenAbbild(frame, abbild);
         this._szeneTiefeKnoten = knoten;
         this._szeneTiefeWert = knoten.x;
+        if (rend.backend.device) this._tiefenAbbildBau(rend.backend.device); // vor `init()` baut es der erste Zug
         return this._szeneTiefeWert;
+    }
+
+    // DAS PROGRAMM DES TIEFEN-ABBILDS (w4-ankunft-5): es entsteht asynchron, sobald sein erster Leser baut (`_szeneTiefe`) — der
+    // Leser selbst baut seinen Knoten-Graph und wartet auf seine eigene, größere Pipeline, das Abbild steht lange davor. Bis
+    // w4-ankunft-5 baute der erste Zug es synchron (Radeon kalt: der GPU-Prozess 29–62 ms vor dem Bild ohne ein Bild). Die
+    // Absage meldet der EINE Melder am Gerät (`_erstAbsageWache`); ohne Programm zeichnet kein Abbild, und das erste Weltbild
+    // wartet (Term „ausgabe") — der Deckel nennt es laut.
+    _tiefenAbbildBau(dev) {
+        if (this._tiefenAbbildGpu) return this._tiefenAbbildGpu;
+        const modul = dev.createShaderModule({
+            label: "szene:tiefenabbild",
+            code:
+                "@group(0) @binding(0) var tiefe: texture_depth_2d;\n" +
+                "@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {\n" +
+                "    let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));\n" +
+                "    return vec4f(p * vec2f(2.0, -2.0) + vec2f(-1.0, 1.0), 0.0, 1.0);\n" +
+                "}\n" +
+                "@fragment fn fs(@builtin(position) p: vec4f) -> @location(0) vec4f {\n" +
+                "    let q = vec2i(textureDimensions(tiefe)) - vec2i(1, 1);\n" +
+                "    let b = vec2i(i32(p.x) * 2, i32(p.y));\n" +
+                "    var d = 0.0;\n" +
+                "    for (var i = 0; i < 2; i++) { d = max(d, textureLoad(tiefe, min(b + vec2i(i, 0), q), 0)); }\n" +
+                "    return vec4f(d, 0.0, 0.0, 1.0);\n" +
+                "}\n",
+        });
+        // die 1×1-Attrappe der Szenen-Tiefe: r184 kopiert im Pass-Bruch in sie, die Kopie wird zum Abbild-Pass
+        const bruch = new THREE.DepthTexture(1, 1);
+        bruch.name = "szene:tiefenabbild:bruch";
+        const A = (this._tiefenAbbildGpu = {
+            pipe: null,
+            attrappe: bruch,
+            rechteck: new THREE.Vector4(0, 0, 1, 1),
+            quelle: null,
+            ziel: null,
+        });
+        dev.createRenderPipelineAsync({
+            label: "szene:tiefenabbild",
+            layout: "auto",
+            vertex: { module: modul, entryPoint: "vs" },
+            fragment: { module: modul, entryPoint: "fs", targets: [{ format: "r32float" }] },
+            primitive: { topology: "triangle-list" },
+        }).then(
+            (p) => (A.pipe = p),
+            () => {} // die Absage steht beim Namen im Log (`_erstAbsageWache`), das Bild wartet laut
+        );
+        if (this._erstZeichnung) this._erstZeichnung.bau = null; // das Versprechen gehört keinem Zug der Erst-Zeichnung
+        return A;
     }
 
     // DER ZUG DES TIEFEN-ABBILDS: im Hauptbild (Post-Kette oder Direktpfad — die Szene mit der Spiel-Kamera) bricht r184s
@@ -75,40 +123,14 @@ class AnazhRealm_bild_sicht {
         }
         rend._textures.updateTexture(abbild);
         const ziel = be.get(abbild).texture;
-        let A = this._tiefenAbbildGpu;
-        if (!A) {
-            const modul = be.device.createShaderModule({
-                label: "szene:tiefenabbild",
-                code:
-                    "@group(0) @binding(0) var tiefe: texture_depth_2d;\n" +
-                    "@vertex fn vs(@builtin(vertex_index) i: u32) -> @builtin(position) vec4f {\n" +
-                    "    let p = vec2f(f32((i << 1u) & 2u), f32(i & 2u));\n" +
-                    "    return vec4f(p * vec2f(2.0, -2.0) + vec2f(-1.0, 1.0), 0.0, 1.0);\n" +
-                    "}\n" +
-                    "@fragment fn fs(@builtin(position) p: vec4f) -> @location(0) vec4f {\n" +
-                    "    let q = vec2i(textureDimensions(tiefe)) - vec2i(1, 1);\n" +
-                    "    let b = vec2i(i32(p.x) * 2, i32(p.y));\n" +
-                    "    var d = 0.0;\n" +
-                    "    for (var i = 0; i < 2; i++) { d = max(d, textureLoad(tiefe, min(b + vec2i(i, 0), q), 0)); }\n" +
-                    "    return vec4f(d, 0.0, 0.0, 1.0);\n" +
-                    "}\n",
-            });
-            // die 1×1-Attrappe der Szenen-Tiefe: r184 kopiert im Pass-Bruch in sie, die Kopie wird zum Abbild-Pass
-            const bruch = new THREE.DepthTexture(1, 1);
-            bruch.name = "szene:tiefenabbild:bruch";
-            A = this._tiefenAbbildGpu = {
-                pipe: be.device.createRenderPipeline({
-                    label: "szene:tiefenabbild",
-                    layout: "auto",
-                    vertex: { module: modul, entryPoint: "vs" },
-                    fragment: { module: modul, entryPoint: "fs", targets: [{ format: "r32float" }] },
-                    primitive: { topology: "triangle-list" },
-                }),
-                attrappe: bruch,
-                rechteck: new THREE.Vector4(0, 0, 1, 1),
-                quelle: null,
-                ziel: null,
-            };
+        // das Programm steht asynchron (`_tiefenAbbildBau`, ab dem Bau des ersten Lesers): bis dahin zeichnet kein Abbild, und
+        // das Bild hält die Ankunft (`ausgabeWartet`, Term „ausgabe")
+        const A = this._tiefenAbbildGpu || this._tiefenAbbildBau(be.device);
+        if (!A.pipe) {
+            const E = this._erstZeichnungStand();
+            E.bildWartet++;
+            E.ausgabeWartet++;
+            return;
         }
         if (A.quelle !== quelle || A.ziel !== ziel) {
             A.gruppe = be.device.createBindGroup({
@@ -2314,15 +2336,23 @@ class AnazhRealm_bild_sicht {
             const P = AnazhRealm.FELD_PASS;
             const PN = AnazhRealm.FELD_PANO;
             const n = PN.az * PN.elev;
-            device.pushErrorScope("validation");
+            // die Pipeline baut ASYNCHRON (wie jeder Einmal-Pass, `_einmalPass`): synchron hielt sie den Haupt-Faden des
+            // GPU-Prozesses unter dem Ladeschirm 127–160 ms (Radeon kalt, Spur 31.10.); ihr Bruch bricht laut wie zuvor die
+            // Validierung (eine Absage ist kein Fehler-Scope)
             if (!this._feldPanoPipe || this._feldPanoPipeDev !== device) {
                 const mod = device.createShaderModule({ code: this._feldPanoWgsl() });
-                this._feldPanoPipe = device.createComputePipeline({
-                    layout: "auto",
-                    compute: { module: mod, entryPoint: "main" },
-                });
+                try {
+                    this._feldPanoPipe = await device.createComputePipelineAsync({
+                        layout: "auto",
+                        compute: { module: mod, entryPoint: "main" },
+                    });
+                } catch (e) {
+                    this.log("Feld-Panorama: WGSL-Validierung scheiterte — " + ((e && e.message) || e), "ERROR");
+                    return null;
+                }
                 this._feldPanoPipeDev = device;
             }
+            device.pushErrorScope("validation");
             const pipe = this._feldPanoPipe;
             const uni = new Float32Array(16);
             uni[0] = fp.anchorX;
@@ -2518,12 +2548,12 @@ class AnazhRealm_bild_sicht {
     // DIE HIMMELS-SONDE des Lichts der Welt: je Texel die Richtung der Equirekt-Lage (`_umgebungRichtung`, wie die Umgebung
     // selbst) und dort die PMREM-Lesung der Rauheit 1 — dieselbe Abtastung, mit der r184 jedem MeshStandard das Umgebungs-Licht
     // gibt. Gezeichnet je neuer Umgebung (`_ensureSkyEnvironment`, ihr Ziel behält seine Identität), 512 Texel; vor der ersten
-    // Umgebung schwarz wie jeder Stoff.
+    // Umgebung schwarz wie jeder Stoff. Ein Einmal-Pass (`_atmoZeichne`): → true, wenn er ganz zeichnete.
     _weltLichtHimmel() {
         const st = this.state;
         const WL = this._weltLicht();
         const quelle = st._skyEnvRT && st._skyEnvRT.texture;
-        if (!quelle || !st.atmoLut) return;
+        if (!quelle || !st.atmoLut) return false;
         if (!WL.pass) {
             const TSL = THREE.TSL;
             WL.pass = AnazhRealm._schirmDreieck(
@@ -2535,8 +2565,9 @@ class AnazhRealm_bild_sicht {
             this._bruchMelden(
                 "LICHT: die Umgebung wechselte ihr Ziel — die Himmels-Sonde liest das erste (`_skyEnvRT` hält es)"
             );
-        this._atmoZeichne(WL.pass, WL.himmel);
+        if (!this._atmoZeichne(WL.pass, WL.himmel)) return false;
         WL.stand++;
+        return true;
     }
 
     // Der EINE Schreiber der Lichter: je Bild (`_loopRender`, neben der Bild-Uhr) und je Anwendung des Tags

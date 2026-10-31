@@ -399,9 +399,7 @@ class AnazhRealm_dirigent_takt {
                                           ? `Leute offen ${o.leute}`
                                           : o.huellen
                                             ? `Hüllen offen ${o.huellen}`
-                                            : o.ankunft
-                                              ? `Ankunft gleitet ${o.ankunft}`
-                                              : null;
+                                            : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -491,11 +489,6 @@ class AnazhRealm_dirigent_takt {
         // DIE HÜLLEN DER ANKUNFT (w4-ankunft-2, `_tickHuellenNach`): die Bäume, deren Hülle vor dem ersten Bild wartete, bis jeder
         // sie fühlt — bis dahin stößt kein Leib an ihnen
         o.huellen = this._huellenNach ? this._huellenNach.size : 0;
-        // DIE ANKUNFT GLEITET (`_ankunftsFerne`, B2): bis ihr letztes Bild gezeichnet ist, misst jede Stufen-Wahl weiter, als das
-        // Auge steht — die Bilder, die ihr fehlen (tiere.K1: im Schuss der Werkbank stand sie bei 62 von 90, der Mammut 13,9 m
-        // vor dem Auge trug die Karte)
-        const gleit = st._ankunftGleit;
-        o.ankunft = gleit >= 0 && gleit < AnazhRealm.ANKUNFT_GLEIT_BILDER ? AnazhRealm.ANKUNFT_GLEIT_BILDER - gleit : 0;
         o.bau = st.bauSatzRaten ? st.bauSatzRaten.size : 0; // ein Bau-Bereich, der in Raten eintritt, steht noch nicht
         // (der Fahrer am Steuer ist nicht offen: sein Leib gehört dem Wagen, kein Feld trägt ihn (`_verkehrEinsteigen`) — bis hier
         // zählte er für immer, die Welt einer Stadt mit Verkehr stand nie: z78, GTX, Messort stadt „offen leiber 4–6")
@@ -585,11 +578,17 @@ class AnazhRealm_dirigent_takt {
     // bevor das Bild steht — und sobald am Anfang des Takts keine Lücke mehr fehlt: der Takt trägt dann das ganze Spiel vor
     // dem Bild, nach dem `_ankunftsBild` urteilt (eine Lücke, die erst im Takt schließt, zeichnet der nächste). Radeon kalt
     // zeichnete jeder Lade-Takt (3,3 s Render bis zum Bild, K602/p2.cpuprofile), die Erst-Zeichnung trug davon ~1,6 s.
+    // DIE AUSGABE ALLEIN (w4-ankunft-5): fehlt dem Bild nur, was im letzten Bild auf das Programm der Ausgabe wartete (Term
+    // „ausgabe"), und ist seitdem eine erwartete Pipeline bereit (`bereitN` der Erst-Zeichnung), ist das Bild fällig — es wartet
+    // nie den Abstand der Lade-Bilder ab.
     _ladeBildFaellig(L) {
         if (!this._ladeTakt()) return true;
         const jetzt = performance.now();
-        if (jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS || this._weltbildLuecken().length === 0) {
+        const E = this._erstZeichnung;
+        const lu = jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS ? null : this._weltbildLuecken();
+        if (!lu || !lu.length || (lu.length === 1 && lu[0].term === "ausgabe" && E && E.bereitN !== L.bereitN)) {
             L.ladeBild = jetzt;
+            L.bereitN = E ? E.bereitN : 0;
             return true;
         }
         L.ladeAus = (L.ladeAus || 0) + 1;
@@ -1434,7 +1433,7 @@ class AnazhRealm_dirigent_takt {
         setze(this._weltRegung | 0, true);
         setze(this._waldPlanRegung | 0, true); // die Schlange des Walds (K69): ihre Zellen tragen die Gestalt jedes wartenden Baums
         setze(st._foliageDensityScale); // der EINE Regler: Wahrnehmungs-Faktor der Stufen-Wahl und Verdeckungs-Schwelle
-        setze(this._ankunftsFerne()); // die Ankunft aus der Ferne (B2): das erste Bild und jedes Bild ihres Gleitens
+        setze(!!st._weltbildDa); // das erste Bild: der Stufen-Vorlauf und der Blick der Ankunft enden mit ihm
         setze(st.lodRef);
         setze(st.chunkRingRadius);
         setze(st._activeRingRadius); // der Boot-Ring wächst bis zum Ziel (`_voxelChunkConfig`)
@@ -1641,8 +1640,6 @@ class AnazhRealm_dirigent_takt {
         // zeitliche Auflösung in der Kette steht (state.traaNode, _ensurePostProcessing): das zeitliche Mittel ist die
         // glatte Blende (statisch wäre das Mittel das Muster). Ohne TRAA (Holz kienspan) bleibt es statisch —
         // rotierendes Dither ohne zeitliche Auflösung wäre kriechendes Rauschen (Studio-Gesetz phytogenesis FIX v32).
-        // die Ankunft aus der Ferne gleitet je gezeichnetem Bild (`_ankunftsFerne`, B2) — vor dem Spiegel nach `uLodPerf`
-        if (this.state._ankunftGleit < AnazhRealm.ANKUNFT_GLEIT_BILDER) this.state._ankunftGleit++;
         if (this.state.lodUniforms) {
             const _lu = this.state.lodUniforms;
             if (_lu.uDitherT && this.state.traaNode) _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
@@ -1654,7 +1651,6 @@ class AnazhRealm_dirigent_takt {
                     Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;
             if (_lu.uLodMaskOn) _lu.uLodMaskOn.value = this.state.lodMaskOn === false ? 0 : 1;
             if (_lu.uLodAuge && this.state.camera) _lu.uLodAuge.value.copy(this._lodAuge());
-            if (_lu.uLodPerf) _lu.uLodPerf.value = this._ankunftsFerne();
             // W5.4 (Schritt 3) — die Band-Zahlen spiegeln LIVE die EINE Quelle LOD_DISTANCES
             // (der Studio-Ingest mutiert sie → die Foundry-Maske folgt ohne Material-Rebuild).
             const _D = AnazhRealm.LOD_DISTANCES;
@@ -1731,6 +1727,14 @@ class AnazhRealm_dirigent_takt {
         // das Mikro-Detail der Stoffe gilt dem Pixel des Schirms (`schirmJeSzene`, w4-wiese-nah): die Skala des Szenen-Passes,
         // der Direktpfad zeichnet in der Ausgabe
         this._ensureAtmoUniforms().schirmJeSzene.value = direkt || !sp ? 1 : sp.getResolutionScale();
+        // DIE PROGRAMME DES BILDS (w4-ankunft-5): jede Zeichnung, die in diesem Bild ohne ihr Programm blieb (Knoten-Bau
+        // verschoben, Pipeline im Bau), zählt `bildWartet` — das erste Weltbild merkt die Zahl (`buch.imBild`, `_weltbildSteht`); davon die
+        // AUSGABE (`ausgabeWartet`): die Pipelines der Post-Kette und des Tiefen-Abbilds entstehen unter dem Ladeschirm asynchron
+        // (`_renderObjectDirect`, `_tiefenAbbildBau`), und der Ladeschirm steht, bis sie in einem Bild zeichneten (Term „ausgabe").
+        // Bis w4-ankunft-5 baute der GPU-Prozess beide Quads synchron (Radeon kalt: TRAA.resolve 210–415 ms, die Ausgabe 193–441
+        // ms vor dem Bild ohne ein Bild).
+        const ez = this._erstZeichnungStand();
+        ez.bildWartet = ez.ausgabeWartet = 0;
         if (!direkt) {
             this._leinwandWeg(false);
             try {
@@ -1741,6 +1745,7 @@ class AnazhRealm_dirigent_takt {
                 // liest in DIESEM Bild den Himmel allein, der Pass danach rechnet den neuen (D10)
                 const L = this.state.spiegelLeser;
                 if (L && this.state._traaR && this.state._traaR.sprung) L.an.value = 0;
+                this._ausgabeLauf = true;
                 pp.render();
             } catch (err) {
                 // r184 baut Post-Kette und Szenen-Pass erst im ersten render() (PostProcessing.render → _update): ein
@@ -1751,6 +1756,8 @@ class AnazhRealm_dirigent_takt {
                     "die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt",
                     err
                 );
+            } finally {
+                this._ausgabeLauf = false;
             }
         }
         if (direkt) {

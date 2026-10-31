@@ -36,6 +36,7 @@ class AnazhRealm_stoff_material {
         mat.colorNode = T.vec4(mat.colorNode.rgb.mul(PC.halmAder(A, uv.x, fw)), mat.colorNode.a);
         mat.aoNode = PC.halmNarbe(A, uv.y, T.float(1.0)).himmel;
         mat.userData.halm = true;
+        mat.userData.liestUv = true; // der Halm liest seine Ecken (`_foundryBuildMesh`: nur dann trägt die Gestalt uv)
         return mat;
     }
 
@@ -532,15 +533,31 @@ class AnazhRealm_stoff_material {
             MASKEN.some((k) => knoten(m[k]) !== null);
         const OHNE = {};
         const paare = new WeakMap();
+        // EIN WURF-PROGRAMM ÜBER ALLE KASKADEN (w4-ankunft-5): r184 gibt jedem Licht seinen eigenen Schatten-Stoff mit eigenem
+        // Farb-Knoten (`vec4(0, 0, 0, 1)` je Kaskade, `getShadowMaterial`) — der Knoten-Bau desselben Werfers schlüsselte so je
+        // Kaskade ein Programm desselben Texts (Radeon kalt vor dem Bild: drei Kaskaden × vier Formen, 12 Bauten eines Texts).
+        // Der Werfer ohne Ausschnitt trägt in jeder Kaskade DENSELBEN Farb-Knoten; r184 stellt danach den des Lichts zurück.
+        const farbe = THREE.TSL.vec4(0, 0, 0, 1);
+        // EIN WURF-PROGRAMM JE GRAPH (w4-ankunft-5): für den Werfer MIT Ausschnitt baut r184 die Wurf-Knoten je Stoff neu
+        // (vec4(0, colorNode.a), die Maske als Fn) — Stoffe, die ihren Graphen teilen (`_graphTeilen`), bauten so je Stoff ein
+        // Programm desselben Texts (Radeon kalt vor dem Bild: die Teile des Wagens 5 Bauten, die Sätze 3). Ohne Karte (`map`
+        // liest r184 am Stoff) gelten die Wurf-Knoten des ersten Stoffs mit denselben Knoten für jeden.
+        const schnitte = new Map();
         renderer._getShadowNodes = function (m) {
-            if (schneidet(m)) return knotenRoh.call(this, m);
+            if (schneidet(m)) {
+                if (m.map) return knotenRoh.call(this, m);
+                const quellen = [m.castShadowNode, m.colorNode, m.maskShadowNode || m.maskNode, m.depthNode];
+                const s = quellen.concat(m.castShadowPositionNode || m.positionNode).map((n) => (knoten(n) ? n.id : "-")).join(); // prettier-ignore
+                if (!schnitte.has(s)) schnitte.set(s, knotenRoh.call(this, m));
+                return schnitte.get(s);
+            }
             const lage = knoten(m.castShadowPositionNode) || knoten(m.positionNode);
             const tiefe = knoten(m.depthNode);
             let je = paare.get(lage || OHNE);
             if (je === undefined) paare.set(lage || OHNE, (je = new WeakMap()));
             let k = je.get(tiefe || OHNE);
             if (k === undefined)
-                je.set(tiefe || OHNE, (k = { version: 0, colorNode: null, depthNode: tiefe, positionNode: lage }));
+                je.set(tiefe || OHNE, (k = { version: 0, colorNode: farbe, depthNode: tiefe, positionNode: lage }));
             return k;
         };
         renderer.__anazhWurfOhneFarbe = true;
@@ -1638,8 +1655,11 @@ class AnazhRealm_stoff_material {
             return mat;
         }
         this._naesseImStoff(mat, himmel);
-        // EIN KNOTEN JE GRAPH UND DATUM: das Leuchten haengt an der Basis, der Himmels-Sicht und dem Licht-Datum des Stoffs
-        // (`mp.licht`, fachwerk LICHT_GESETZ) — ohne Datum glueht der Stoff nur im Pool
+        // EIN KNOTEN JE GRAPH: das Leuchten haengt an der Basis, der Himmels-Sicht und daran, ob der Stoff ein Licht-Datum traegt
+        // (`mp.licht`, fachwerk LICHT_GESETZ) — ohne Datum glueht der Stoff nur im Pool. WELCHES Datum, ist sein Stoff-Wert
+        // (`stoffWerte.licht`, die Stelle im Gesetz): der Knoten traegt die Glut jedes Datums und waehlt die seine (w4-ankunft-5 —
+        // bis dahin je Datum ein Knoten: Laterne und Fenster bauten vor dem Bild zwei Programme desselben Texts, Radeon kalt
+        // 70–75 ms je Bau)
         const ohne = this._leuchtOhne || (this._leuchtOhne = {});
         const jeBasis = this._leuchtKnoten || (this._leuchtKnoten = new WeakMap());
         const basis = mat.emissiveNode || ohne;
@@ -1648,16 +1668,23 @@ class AnazhRealm_stoff_material {
         if (!jeHimmel.has(himmel || ohne)) jeHimmel.set(himmel || ohne, {});
         const knoten = jeHimmel.get(himmel || ohne);
         const licht = mp && mp.licht ? String(mp.licht) : "";
-        if (!knoten[licht]) {
+        const daten = Object.keys(atmo.lichtGlut);
+        if (licht) {
+            if (!daten.includes(licht))
+                throw new Error(`_leuchtStoff: das Licht-Datum „${licht}“ fehlt im Leuchtquellen-Gesetz`);
+            (mat.userData.stoffWerte || (mat.userData.stoffWerte = {})).licht = daten.indexOf(licht);
+        }
+        const art = licht ? "datum" : "";
+        if (!knoten[art]) {
             let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
             if (licht) {
-                const glut = atmo.lichtGlut[licht];
-                if (!glut) throw new Error(`_leuchtStoff: das Licht-Datum „${licht}“ fehlt im Leuchtquellen-Gesetz`);
-                em = em.add(glut);
+                const wahl = this._stoffWert(Te, "userData.stoffWerte.licht");
+                for (let i = 0; i < daten.length; i++)
+                    em = em.add(wahl.equal(i).select(atmo.lichtGlut[daten[i]], Te.vec3(0)));
             }
-            knoten[licht] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
+            knoten[art] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
         }
-        mat.emissiveNode = knoten[licht];
+        mat.emissiveNode = knoten[art];
         mat.userData.lichtPool = true;
         return mat;
     }
@@ -2215,6 +2242,9 @@ class AnazhRealm_stoff_material {
         const kipp = m.neigung.mul(k).sub(gD.div(gl.max(1e-6)).mul(kante));
         mat.normalNode = T.cameraViewMatrix.transformDirection(T.normalize(n.add(kipp)));
         this._mikroStoff(T, mat, m.hoehe.mul(k));
+        // der Stein liest seine Ecken (`_foundryBuildMesh`: nur dann trägt die Gestalt uv, und ihr Bau-Satz packt es,
+        // `BAU_STEIN_ATTR`) — ohne die Marke fiel das uv jedes Stein-Rahmens, und der Satz brach („Attribut uv fehlt")
+        mat.userData.liestUv = true;
     }
 
     // ── DER EINE SUBSTANZ-CHARAKTER-KERN ──
@@ -2658,9 +2688,6 @@ class AnazhRealm_stoff_material {
             // dem höchsten Werfer): dort lagen nahe Bäume 145 m „weit", jenseits jeder Stufe, und die Maske
             // verwarf ihre Schatten-Fragmente alle.
             uLodAuge: _T.uniform(new THREE.Vector3()),
-            // DER STRECK der Wahrnehmungs-Distanz (die Ankunft aus der Ferne `_ankunftsFerne`, je Frame gespiegelt; kein Regler,
-            // lod.K5): jede Maske misst die Auge-Distanz × uLodPerf — dieselbe Distanz, nach der die CPU die Stufen legt.
-            uLodPerf: _T.uniform(1),
             // DAS ZIEL DER DURCHSICHT (xyz) und ihr Radius (w), dazu das Auge, für das es gilt (`uKamAuge`: die
             // Stellung der Spieler-Kamera, nie die Kamera einer Sonde): `_kamZielSetzen` aus `_loopCamera`,
             // gelesen von `_kameraDurchsichtNode` (der Sicht-Strahl vom Auge zum Ziel).
@@ -2852,16 +2879,7 @@ class AnazhRealm_stoff_material {
             const _lu = this._ensureLodUniforms();
             if (!T || !_lu)
                 throw this._blendeBruch(!T ? "TSL fehlt" : "der LOD-Uniform-Satz fehlt (_ensureLodUniforms)");
-            const _fehlt = [
-                "uLodRef",
-                "uLodMaskOn",
-                "uDitherT",
-                "uLodD0",
-                "uLodD1",
-                "uLodFade",
-                "uLodFade0",
-                "uLodPerf",
-            ]
+            const _fehlt = ["uLodRef", "uLodMaskOn", "uDitherT", "uLodD0", "uLodD1", "uLodFade", "uLodFade0"]
                 .filter((k) => !_lu[k])
                 .concat(
                     ["float", "fract", "screenCoordinate", "step", "mix"].filter((k) => !T[k]).map((k) => "TSL." + k)
@@ -2886,7 +2904,7 @@ class AnazhRealm_stoff_material {
                 // Instanz-Attribut (verdeckt-demotierte Bäume blenden VOLL; Default 0 = altes Verhalten).
                 const _dist = opts.distNode;
                 if (!_dist) throw this._blendeBruch("die Karte reicht keine Distanz (opts.distNode)");
-                let _vCD = _dist.mul(_lu.uLodPerf); // derselbe Streck wie die CPU (`_lodPerceptionDistance`)
+                let _vCD = _dist; // dieselbe Distanz wie die CPU (`_lodPerceptionDistance`)
                 if (opts.visHeightNode) {
                     // × min(uLodRef/Sichthöhe, 1) AUF die gestreckte Distanz — bis 04.10. ersetzte dieser Zweig sie
                     // durch die rohe: unter Last (Perf ×1,3) blendete die L1 nach der gestreckten Distanz aus, das
@@ -2909,10 +2927,10 @@ class AnazhRealm_stoff_material {
             const _aLod = T.attribute("aLodLevel", "float");
             const _aH0 = T.attribute("aH0", "float");
             const _aH0L = T.attribute("aH0L", "float");
-            // × uLodPerf: dieselbe Wahrnehmungs-Distanz, nach der die CPU die Stufen legt (`_lodPerceptionDistance`) — vom Auge zum
+            // dieselbe Wahrnehmungs-Distanz, nach der die CPU die Stufen legt (`_lodPerceptionDistance`) — vom Auge zum
             // URSPRUNG der Instanz (`_instanzMitteNode`), wie das Studio und die CPU, nie zum Fragment.
             const _mitte = this._instanzMitteNode(T);
-            const _cd = T.length(T.vec2(_auge.x.sub(_mitte.x), _auge.z.sub(_mitte.y))).mul(_lu.uLodPerf);
+            const _cd = T.length(T.vec2(_auge.x.sub(_mitte.x), _auge.z.sub(_mitte.y)));
             const _lk = _lu.uLodRef.div(_aH0.max(T.float(1e-3))).min(T.float(1.0));
             // |aH0L|: das Vorzeichen trägt den HALT (`_lodSlotStamp`), der Betrag die Blatt-Sichthöhe
             const _lkL = _lu.uLodRef.div(_aH0L.abs().max(T.float(1e-3))).min(T.float(1.0));
@@ -3086,7 +3104,7 @@ class AnazhRealm_stoff_material {
                     const _cam = _lu.uLodAuge; // das AUGE, nie die Pass-Kamera (Schattenpass = Kaskaden-Kamera)
                     // xz-Distanz Auge → URSPRUNG der Instanz (`_instanzMitteNode`, Studio `_iw`), nie zum Vertex
                     const _mitte = this._instanzMitteNode(_Tl);
-                    const _cd = _Tl.length(_Tl.vec2(_cam.x.sub(_mitte.x), _cam.z.sub(_mitte.y))).mul(_lu.uLodPerf);
+                    const _cd = _Tl.length(_Tl.vec2(_cam.x.sub(_mitte.x), _cam.z.sub(_mitte.y)));
                     const _ref = _lu.uLodRef;
                     const _lk = _ref.div(_aH0.max(_Tl.float(1e-3))).min(_Tl.float(1.0));
                     const _lkL = _ref.div(_aH0L.abs().max(_Tl.float(1e-3))).min(_Tl.float(1.0)); // |aH0L|: Vorzeichen = Halt

@@ -1457,6 +1457,9 @@ class AnazhRealm_werkstatt_vorschau {
     // auf Pipeline oder Bau (dasselbe Maß wie die Karten-Bühne) — eine Bühne, die nur auf Anforderung zeichnet (die
     // Werkstatt), zeichnet bis dahin weiter. r184s render() ist SYNCHRON: ein Render-Fehler der Bühne bricht hier laut
     // beim Namen (`wer`), und ihr Takt steht.
+    // Ein Renderer ohne Leinwand der Bühne (Atmosphäre, Horizont-Karte, Licht-Sonde, Karten-Bühne) zeichnet in das laufende
+    // Ziel des Welt-Renderers als EINMAL-PASS (`_einmalPass`). → `ganz` (jede Bühne): kein Bürger wartete auf Pipeline oder
+    // Bau — wer ein Ergebnis braucht, zeichnet sonst im nächsten Takt neu.
     _buehneRender(renderer, scene, camera, wer) {
         const lu = this.state.lodUniforms;
         const an = lu && lu.uLodMaskOn ? lu.uLodMaskOn.value : null;
@@ -1464,8 +1467,9 @@ class AnazhRealm_werkstatt_vorschau {
         const B = renderer.buehne;
         const R = B ? this.state.renderer : renderer;
         let vor = null;
+        let ganz = true;
         try {
-            if (!B) renderer.render(scene, camera);
+            if (!B) ganz = this._einmalPass(() => renderer.render(scene, camera))[0];
             else {
                 vor = [R.getCanvasTarget(), R.getRenderTarget(), R.getActiveCubeFace(), R.getActiveMipmapLevel()];
                 vor.push(
@@ -1503,7 +1507,7 @@ class AnazhRealm_werkstatt_vorschau {
                 R.outputColorSpace = THREE.LinearSRGBColorSpace;
                 this._buehneJetzt = B.quad;
                 R.render(B.quad, B.quad.children[0].userData.kamera);
-                B.ganz = E.wartetN + E.verschoben === offen;
+                ganz = B.ganz = E.wartetN + E.verschoben === offen;
                 B.bilder++;
                 (this._buehnenBild || (this._buehnenBild = new Set())).add(scene).add(B.quad);
             }
@@ -1522,6 +1526,46 @@ class AnazhRealm_werkstatt_vorschau {
                 R.outputColorSpace = vor[10];
             }
             if (an !== null) lu.uLodMaskOn.value = an;
+        }
+        return ganz;
+    }
+
+    // DER EINMAL-PASS (Atmosphäre, Horizont-Karte, Licht-Sonde, PMREM der Umgebung, Karten-Bühne): `fn` zeichnet einmal in ein
+    // Ziel, und jede Pipeline, die er dabei braucht, baut ASYNCHRON (die Erst-Zeichnung liest `_buehneEinmal`) — nie im
+    // Haupt-Faden des GPU-Prozesses. Bis hierher baute er synchron: der GPU-Prozess übersetzte die Mehrfach-Streuung der
+    // Atmosphäre 1 596 ms, die Himmels-Sicht 587, die Bestrahlung 440 in seinem Haupt-Faden (Radeon kalt, Spur 31.10.) — so
+    // lange kam kein Takt, der Haupt-Faden der Seite stand vor dem ersten Weltbild 2,2–2,7 s leer. → [ganz, was `fn` gab]:
+    // ganz, wenn kein Bürger auf Pipeline oder Bau wartete; sonst gilt das Ziel nicht, und wer es braucht, zeichnet im nächsten
+    // Takt neu.
+    _einmalPass(fn) {
+        const E = this._erstZeichnungStand(),
+            offen = E.wartetN + E.verschoben,
+            vor = this._buehneEinmal;
+        this._buehneEinmal = true;
+        try {
+            const wert = fn();
+            return [E.wartetN + E.verschoben === offen, wert];
+        } finally {
+            this._buehneEinmal = vor;
+        }
+    }
+
+    // BIS DAS EINMAL-ZIEL GANZ IST (ein Versprechen — der EINE Weg jedes Lesers, der ein Einmal-Ziel JETZT braucht, ohne Takt
+    // der Welt dazwischen): `versuch()` zeichnet seine Einmal-Pässe und gibt true, wenn jeder ganz zeichnete; false heißt, eine
+    // Pipeline baut — dann wartet es auf die Wende der Erst-Zeichnung (`_erstWende`) und versucht neu, nie nach der Wanduhr.
+    // Baut keine mehr und zeichnet der Versuch weiter nicht (die Pipeline abgesagt), bricht `wer` laut beim Namen
+    // (`_bruchMelden`) und das Versprechen gibt false — nie ein ewiges Warten, nie ein stilles leeres Ziel. Jeder andere Wert
+    // des Versuchs endet sofort mit ihm.
+    async _bisGanz(versuch, wer) {
+        for (;;) {
+            const v = versuch();
+            if (v !== false) return v;
+            const wende = this._erstWende();
+            if (!wende) {
+                this._bruchMelden(`${wer}: der Einmal-Pass zeichnet nicht, und keine Pipeline baut (abgesagt)`);
+                return false;
+            }
+            await wende;
         }
     }
 
