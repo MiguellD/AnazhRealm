@@ -117,8 +117,6 @@ function quellenAbgriff() {
 
 // DER SEITEN-WERKZEUGKASTEN (in die Spiel-Seite): Orte finden, umstellen, messen.
 function werkzeug() {
-    const r = anazhRealm;
-    const st = r.state;
     const W = {};
     // Ein Frame des echten Loops (Bühne fest, Tiere halten); die Szene (klang.K1 Staffel 2): Wetter und Uhr als Wort des
     // Spielers (R9), je Takt über die Bühne.
@@ -181,7 +179,7 @@ function werkzeug() {
         // Seeufer: der trockene Punkt vor dem nächsten SEE des Gesetzes (die Senken des Flussnetzes, ≥ 16 Zellen, über dem
         // Meer) in den Kacheln bis zum zweiten Ring, die Zelle nächst der Wiese.
         let best;
-        const kachel = r.constructor.HYDROSPHERE.regionSize;
+        const kachel = AnazhRealm.HYDROSPHERE.regionSize;
         let seeZelle, wfN;
         for (let rx = -2; rx <= 2; rx++)
             for (let rz = -2; rz <= 2; rz++) {
@@ -373,7 +371,7 @@ function werkzeug() {
     W.zeilen = () => (st._untertitel ? st._untertitel.zeilen : 0);
     W.luecken = (K = __klangCore) =>
         [["stimme", K.UMWELT.stimmen], ["ruf", K.UMWELT.tier.rufProMin], ["substanz", K.SUBSTANZ]].flatMap(([a, t]) =>
-            Object.keys(t).filter((n) => !r.constructor.UNTERTITEL[a][n]).map((n) => a + ":" + n)
+            Object.keys(t).filter((n) => !AnazhRealm.UNTERTITEL[a][n]).map((n) => a + ":" + n)
         );
     // Die EREIGNIS-KLÄNGE der Welt, je einmal ausgelöst über ihre echten Wege: welche Quellen entstehen, wer baut sie,
     // wer verbindet direkt an den Ausgang (am Master vorbei), und wie viele Samples rechnet der Haupt-Thread dafür?
@@ -589,9 +587,7 @@ const BAND = {
 async function messeOrt(page, name, ort, stubs) {
     return page.evaluate(
         async (name, ort, stubs) => {
-            const r = anazhRealm;
             const W = __klangW;
-            const st = r.state;
             const P = Object.getPrototypeOf(r);
             const alt = { _untertitelZeile: stubs?.ohneZeile && P._untertitelZeile };
             if (alt._untertitelZeile) P._untertitelZeile = () => false; // der Selbst-Test: die Zeile schweigt, der Ton spielt
@@ -604,10 +600,10 @@ async function messeOrt(page, name, ort, stubs) {
                 // der Leib weg: das Revier-Gesetz trägt kein Revier — oder er steht (Selbst-Test S12): die Bahn des Gesetzes
                 // auf der Uhr dieses Takts; die Vogel-Karte neu — der Phantom-Vogel (Selbst-Test) singt in der Lage am Ohr
                 // ohne einen Leib
-                [alt.vogel, alt.lage] = [r.constructor._vogelGesetzMemo, P._umweltLage];
+                [alt.vogel, alt.lage] = [AnazhRealm._vogelGesetzMemo, P._umweltLage];
                 const T = st.spielZeit;
                 const mut = stubs.stehend ? { bahn: (w, a, _t, ...x) => alt.vogel.bahn(w, a, T, ...x) } : { revier: () => false };
-                [r.constructor._vogelGesetzMemo, r._vogelKarte] = [{ ...alt.vogel, ...mut }, null];
+                [AnazhRealm._vogelGesetzMemo, r._vogelKarte] = [{ ...alt.vogel, ...mut }, null];
                 if (stubs.phantom)
                     P._umweltLage = function () {
                         return Object.assign(alt.lage.call(this), { voegel: [{ d: 20 }] });
@@ -663,13 +659,13 @@ async function messeOrt(page, name, ort, stubs) {
                 const baeume = W.bestand(p.x, p.z, 15);
                 // (Ü) die gespielten Stimmen, deren Satz in keiner stehenden Zeile steht
                 const ut = document.getElementById("untertitel").textContent;
-                const ohneZeile = (zensus ? zensus.stimmen : []).filter((v) => v.an && !ut.includes(r.constructor.UNTERTITEL.stimme[v.name])).map((v) => v.name);
+                const ohneZeile = (zensus ? zensus.stimmen : []).filter((v) => v.an && !ut.includes(AnazhRealm.UNTERTITEL.stimme[v.name])).map((v) => v.name);
                 return { name, ort, um, laufend, zensus, baeume, hauptSynthese: syn1 - syn0, ohneZeile };
             } finally {
                 st.keys.w = st.keys.s = W.szene = false;
                 if (alt.luft) P._temperaturAt = alt.luft;
                 if (alt.lage)
-                    [r.constructor._vogelGesetzMemo, r._vogelKarte, P._umweltLage] = [alt.vogel, null, alt.lage];
+                    [AnazhRealm._vogelGesetzMemo, r._vogelKarte, P._umweltLage] = [alt.vogel, null, alt.lage];
                 for (const k of ["_koerperWasser", "_untertitelZeile"]) if (alt[k]) P[k] = alt[k];
                 if (alt.graph) {
                     um0.graph.stopAlle();
@@ -737,8 +733,6 @@ async function imOffline(page, lage, wand) {
 // DIE KOSTEN je Klang-Takt: Welt-Abfragen zählen (nur innerhalb symphonyTick), vor und nach der Injektion.
 async function kosten(page, stubs) {
     return page.evaluate(async (stubs) => {
-        const r = anazhRealm;
-        const st = r.state;
         const P = Object.getPrototypeOf(r);
         const zaehl = { boden: 0, wasser: 0, stroemung: 0, fluss: 0, segmente: 0, bauten: 0 };
         const wer = {};
@@ -1041,8 +1035,6 @@ const TAKT_TEILE = [
     "_playSchrittOneShot",
 ];
 function taktSeite(m, echt, namen) {
-    const r = anazhRealm;
-    const st = r.state;
     const P = Object.getPrototypeOf(r);
     const T = (window.__klangTakt = { phase: "", bilder: [], weg: 0, m });
     let tiefe = 0;
@@ -1154,8 +1146,7 @@ async function takt(page, erg) {
     ph.gehen = await taktPhase(page, "gehen", 20, false, MINUTEN * 24);
     // zurück in die Mitte der Lichtung, der GT daneben, aufsitzen
     await page.evaluate(async () => {
-        const r = anazhRealm,
-            p = r.state.playerMesh.position,
+        const p = st.playerMesh.position,
             m = __klangTakt.m;
         p.set(m.x, r._voxelSurfaceY(m.x, m.z) + 1.8, m.z);
         r.mountArchitecture((window.__klangGT = await __klangW.wagen(p.x + 3, p.z)));
@@ -1163,7 +1154,6 @@ async function takt(page, erg) {
     ph.fahrt = await taktPhase(page, "fahrt", 20, true, MINUTEN * 18);
     ph.fahrt.sattel = await page.evaluate(() => !!(anazhRealm.state.symphony.fahrt || new Map()).size);
     await page.evaluate(() => {
-        const r = anazhRealm;
         r.dismountArchitecture();
         r.setTimeOfDay(0, "regler");
     });
@@ -1214,7 +1204,7 @@ async function takt(page, erg) {
 // falschem Vorzeichen.
 async function koerperSeite(m, mut) {
     const [r, K] = [anazhRealm, __klangCore];
-    const [s, A, P, amOhr] = [r.state, r.constructor, Object.getPrototypeOf(r), K.fahrtAmOhr];
+    const [s, A, P, amOhr] = [r.state, AnazhRealm, Object.getPrototypeOf(r), K.fahrtAmOhr];
     const [sy, pm, gas, F] = [
         s.symphony,
         s.playerMesh,
@@ -1447,7 +1437,7 @@ const GESEHEN_SOLL = 0.6;
 async function gesehenSeite(m) {
     const r = anazhRealm;
     const st = r.state;
-    const adv = r.constructor.Gesetz("terrain:WASSER_GESETZ").wellen.adv;
+    const adv = AnazhRealm.Gesetz("terrain:WASSER_GESETZ").wellen.adv;
     requestAnimationFrame(__klangW.spiel);
     let h = null;
     await __weltDa((w) => (w._ensureHydroTilesAround(m.x, m.z, 200), (h = w._hydroFor(m.x, m.z)) && h.ready));

@@ -894,7 +894,9 @@ class AnazhRealm_vegetation_baum {
     // `merk` (optional, der Eintrag `_foundryGestaltFor`): bekommt Karte, Eimer-Schlüssel, Eimer und Schlüssel der Antwort — der
     // Eintrag trägt ihren ORT in diesem EINEN Gedächtnis (nie ihren Wert), solange derselbe Eimer in derselben Karte liegt
     // (`_ortSameKarte`), und liest die Antwort dort, ohne den Schlüssel aus fünf Zahlen neu zu bauen.
+    // Ohne Solitär wählt der Ort nichts (`_ortWaehlt`): der Same bleibt — vor Schlüssel und Gedächtnis (w4-b-streu).
     _ortGestaltSame(x, z, T, seed, preset, merk) {
+        if (!AnazhRealm._ortWaehlt(preset)) return seed >>> 0;
         const seedInt = this._forestSeedInt();
         const karte = this._ortSameKarte();
         const B = AnazhRealm.ORT_SAME_EIMER;
@@ -916,7 +918,7 @@ class AnazhRealm_vegetation_baum {
             // wer warten kann (die Streu-Scheibe), wartet benannt auf die Zellen des Kastens um den Ort (`_waldPlanZusage`)
             if (!this._waldPlanSteht(x, z)) {
                 wartet = true;
-                if (this._streuSammler) this._streuWartetAuf(this._waldPlanZusage(x, z));
+                if (this._zusagenSammler) this._wartetAuf(this._waldPlanZusage(x, z));
                 return false;
             }
             return this._forestStehtFrei(x, z, T, (gx, gz) => this._forestCellDarts(gx, gz, seedInt));
@@ -1242,6 +1244,11 @@ class AnazhRealm_vegetation_baum {
                     const bxp = bgx * bushStep + (hrnd() - 0.5) * 4.0; // Studio-Jitter ±2 m
                     const bzp = bgz * bushStep + (hrnd() - 0.5) * 4.0;
                     if (bxp < ox || bxp >= ox + span || bzp < oz || bzp >= oz + span) continue;
+                    // DER WURF ZUERST (w4-b-streu, Lehre 25 — die billigen Filter zuerst): die Chance des Strauchs (unten) ist
+                    // höchstens 0,42 (Licht-Glocke, Hang und Pfad je ≤ 1) — ein Wurf darüber fällt ohne die sechs Spalten-Proben
+                    // des Punkts (Boden, Land, Feuchte, Licht, Hang, Pfad). Derselbe dritte Wurf des Punkts, dieselbe Reihe danach.
+                    const wurf = hrnd();
+                    if (wurf >= 0.42) continue;
                     const bsy = this._voxelSurfaceY(bxp, bzp);
                     if (bsy === null || !Number.isFinite(bsy)) continue;
                     if (!this._landAt(bxp, bzp, 0.1)) continue;
@@ -1252,7 +1259,7 @@ class AnazhRealm_vegetation_baum {
                     const trail = this._pfadFeldAt(bxp, bzp, bsy);
                     const dL = L - 0.4;
                     const pShrub = Math.exp(-(dL * dL) / (2 * 0.16 * 0.16)) * (1 - rk) * 0.42 * (1 - trail * 0.92);
-                    if (hrnd() >= pShrub) continue;
+                    if (wurf >= pShrub) continue;
                     // Busch-Spawn-Name ist ein GEWACHSENER Bauplan: busch_hazel ist eine Grammatik-Spezies, kein Built-in
                     // — der Bauplan entsteht über den Richter (`_growTreeBlueprintForSpawn`, region-gecacht), der Render
                     // kommt aus der Foundry (busch_hazel→strauch). Ohne gewachsenen Key fällt der Punkt (kein Phantom).
@@ -1670,8 +1677,8 @@ class AnazhRealm_vegetation_baum {
     }
 
     // DIE EINE WAND „Natur weicht dem Bau" (Welle L, Q5/Q15, Entscheid D3): JEDE Quelle der Natur setzt durch sie — Wald,
-    // Unterholz, Totholz und Fels-Streu (`_enqueueVegetationSpawn`), der Hof-Baum, die Streu-Zelle jeder Schicht
-    // (`_scatterPass`), ihre Promotion zum echten Baum (`_promoteScatterCell`), die Nah-Streu (`_nahStreuKachel`) und der
+    // Unterholz, Totholz und Fels-Streu (`_enqueueVegetationSpawn`), der Hof-Baum, die Streu-Zelle jeder Schicht (`_streuWurf`
+    // fragt ihr Urteil `_naturWand`, bevor sie wartet), ihre Promotion zum echten Baum (`_promoteScatterCell`), die Nah-Streu (`_nahStreuKachel`) und der
     // Hain der KI (`spawn_tree`, `spawn_studio`). Liegt der Ort in einem Grundriss (`_imGrundriss`: ein Haus, die Lichtung
     // der Genesis-Plattform — dort mit der Krone des Wurfs, `_naturKrone`), fällt der Wurf (null); sonst baut `setzen` (eine
     // Quelle mit eigenem Bau: Instanz-Slots, Kachel-Pflanze) bzw. der Architektur-Eintrag `name`. Was vor dem Bau stand,
@@ -2497,7 +2504,31 @@ class AnazhRealm_vegetation_baum {
             if (l) l.push(entry);
             else K.eimer.set(b, [entry]);
         };
+        // DER EINTRAG SCHLÄFT AUF SEINER ZUSAGE (w4-b-streu, `_schlafen`): nannte sein Bau oder sein Ziegel, worauf er wartet (der
+        // Zug seiner Stufe, ihre Höhe, die Karte, das Buch, der Plan des Walds), fragt ihn kein Takt, bis sie kam oder sein Wunsch
+        // sich verschob (`_bereitStand(auge, true)`); schlafen Bau und Ziegel, verlässt er die Wache (`K.schlaefer`) — kein Gang
+        // zählt ihn, seine Zusage holt ihn zurück (`_cullWecken`), ein neuer Stand des Wunschs jeden. Bis w4-b-streu fragte ihn jeder
+        // Stand neu — und der Stand wechselte mit jeder Lieferung (headless kalt bis zum Bild 26 766 Platz-Fragen, der Gang
+        // 6,3–7,4 s); der Ziegel fragte je Takt („lädt noch — der nächste Tick fragt wieder").
+        const wunsch = this._foundryEnabled() ? this._bereitStand(this._lodAuge(), true) : -1;
+        const Z = this._cullZusagen || (this._cullZusagen = new Map());
+        const zurueck = (e) => this._cullWecken(e);
+        if (K.wunsch !== wunsch) {
+            K.wunsch = wunsch;
+            for (const e of K.schlaefer) this._cullWecken(e);
+        }
+        const ziegelRuht = (e) =>
+            ohneFeld ||
+            !!e._ziegelSlot ||
+            !!e._ziegelGebacken ||
+            !!this._archKartenPreset(e) ||
+            this._schlaeft(e._ziegelSchlaf, wunsch);
         for (const entry of K.wach) {
+            if (this._schlaeft(entry, wunsch) && ziegelRuht(entry)) {
+                K.wach.delete(entry);
+                K.schlaefer.add(entry);
+                continue;
+            }
             const dx = entry.position.x - playerPos.x;
             const dz = entry.position.z - playerPos.z;
             const distSq = dx * dx + dz * dz;
@@ -2623,6 +2654,7 @@ class AnazhRealm_vegetation_baum {
             // bestellt hat, wartet auf das Ereignis, das ihn ändert — kein Peek, kein zweiter Bau-Ruf je Takt
             const stand = fAn ? this._bereitStand(this._lodAuge()) : -1;
             for (const entry of nahOffen) {
+                if (this._schlaeft(entry, wunsch)) continue; // er schläft auf seiner Zusage (oben)
                 const fPre = fAn ? this._foundryPresetForEntry(entry) : null;
                 if (fPre && entry._platzNein === stand) continue;
                 let nein = false;
@@ -2651,7 +2683,7 @@ class AnazhRealm_vegetation_baum {
                         continue;
                     }
                 }
-                this._rebuildArchitectureMesh(entry);
+                this._zusagenVon(entry.position, () => this._rebuildArchitectureMesh(entry), Z);
                 if (this._archIsRendered(entry)) {
                     entry._nahWartet = null;
                     if (built++ >= budget) hand = false;
@@ -2661,16 +2693,23 @@ class AnazhRealm_vegetation_baum {
                 } else {
                     entry._nahWartet = { a: fA, t: jetztN };
                     if (nein) entry._platzNein = stand; // nicht bereit und bestellt: er schläft bis zum nächsten Stand
+                    if (fPre) this._schlafen(entry, Z, wunsch, zurueck);
                 }
             }
             nahOffen.length = 0;
         }
         // DIE EINE ZIEGEL-SCHLANGE (nah wie fern), nach Distanz: der Bake-Takt geht an den nächsten Bau. In der
         // Mesh-Zone trägt ein frischer Slot nur, solange das Mesh nicht steht.
+        // Der Ziegel schläft auf seiner Zusage (oben) an seinem eigenen Schläfer (`_ziegelSchlaf`): Bau und Ziegel eines Eintrags
+        // warten auf verschiedene Stufen.
         if (ziegelOffen.length) {
             ziegelOffen.sort((a, b) => a._ziegelD2 - b._ziegelD2);
             for (const entry of ziegelOffen) {
-                if (this._archZiegelFern(entry)) regung++; // selbst-getaktet (Bake-Garantie)
+                const zs = entry._ziegelSchlaf || (entry._ziegelSchlaf = {});
+                if (this._schlaeft(zs, wunsch)) continue;
+                if (this._zusagenVon(entry.position, () => this._archZiegelFern(entry), Z))
+                    regung++; // selbst-getaktet (Bake-Garantie)
+                else this._schlafen(zs, Z, wunsch, () => zurueck(entry));
                 if (entry._ziegelNah && entry._ziegelSlot)
                     this._weltFeldAktiv(entry._ziegelSlot, !this._archIsRendered(entry));
             }
@@ -2702,6 +2741,8 @@ class AnazhRealm_vegetation_baum {
             wach: new Set(liste),
             eimer: new Map(),
             autos: new Set(liste.filter((e) => e.autonomous)),
+            schlaefer: new Set(), // die auf ihrer Zusage schlafen (`tickArchitectureCulling`), am Stand ihres Wunschs (`wunsch`)
+            wunsch: undefined,
             odo: 0,
             ab: 0,
             px: null,
@@ -2715,11 +2756,13 @@ class AnazhRealm_vegetation_baum {
     // `_blockerBewegt`, die Instanz-Naht (`_archInstanceAdd`, `_archInstanceRemove`) und das Mesh (`_rebuildArchitectureMesh`,
     // `_cullArchitectureMesh`).
     _cullWecken(entry, art) {
-        // sein Urteil liest Lage, Typ und Stufe: die gemerkte Bereitschaft (`_bereitStand`) gilt nicht mehr
-        if (entry) entry._platzNein = entry._dockNein = undefined;
+        // sein Urteil liest Lage, Typ und Stufe: die gemerkte Bereitschaft (`_bereitStand`) und sein Schlaf (`_schlafen`) gelten
+        // nicht mehr
+        if (entry) entry._platzNein = entry._dockNein = entry._schlaf = entry._ziegelSchlaf = undefined;
         const K = this._cullWacheStand;
         if (!K || K.liste !== this.state.architectures || !entry || (entry._cullEimer === -1 && art !== "ein")) return;
         entry._cullEimer = art === "weg" ? -1 : undefined;
+        K.schlaefer.delete(entry);
         if (art === "weg") [K.wach.delete(entry), K.autos.delete(entry)];
         else [K.wach.add(entry), entry.autonomous && K.autos.add(entry)];
     }
