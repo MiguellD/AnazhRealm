@@ -1665,51 +1665,108 @@ class AnazhRealm_koerper_leib {
     _tonZeileFrei(z) {
         if (z > 0 && this.state.tonTafel) this.state.tonTafelFrei.push(z);
     }
-    // DER KAHLE KOPF (haar.K2: die Klasse haar am Spieler): das Haar ist die Kappe UND ihre Strähnen (K57, koerper HAAR_KAPPE ·
-    // haarStreu) — die Kappe gießt der Ofen in die Kopf-Haut, ihre Ecken tragen den Ton des Haars (`aTon`, koerper `menschTon`) und
-    // seine Farbe. Verbirgt eine Linse die Strähnen des Spielers (`aus`: was sie verbirgt), tragen die Ecken der Kappe die Farbe der
-    // Haut ihres Kopfs; jeder Ruf stellt zuerst zurück, was der vorige färbte (ohne Strähnen in `aus`: nur zurück). Rückgabe die Zahl
-    // der gefärbten Ecken. Bis hier zeigte das Bild ohne Haar (die Teilung der Werkbank, `bild --klasse spieler:kopf/hair`) die Kappe
-    // im Ton ihrer Strähnen — getrennt wurden nur Strähnen-Ränder, die Klasse zeigte keine inneren Pixel (haar.K2#1 an 3ed95dcf, GTX)
+    // DER KAHLE KOPF (haar.K2: die Klasse haar am Leib jedes Menschen): das Haar ist die Kappe UND ihre Strähnen (K57, koerper
+    // HAAR_KAPPE · haarStreu) — die Kappe gießt der Ofen in die Kopf-Haut, ihre Ecken tragen den Ton des Haars (`aTon`, koerper
+    // `menschTon`) und seine Farbe. Verbirgt eine Linse die Strähnen eines Leibs (`aus`: was sie verbirgt; der Leib nach
+    // `_menschLeib`: der Spieler, jeder Bewohner), tragen die Ecken seiner Kappe den Ton und die Farbe der Haut seines Kopfs (der
+    // Ton führt die Palette des Bewohners, `_tonFaktor`: die Kappe liest die Haut aus seiner Zeile der Ton-Tafel); jeder Ruf stellt
+    // zuerst zurück, was der vorige färbte (ohne Strähnen in `aus`: nur zurück). Rückgabe die Zahl der gefärbten Ecken. Bis hier
+    // zeigte das Bild ohne Haar (die Teilung der Werkbank, `bild --klasse spieler:kopf/hair`) die Kappe im Ton ihrer Strähnen —
+    // getrennt wurden nur Strähnen-Ränder, die Klasse zeigte keine inneren Pixel (haar.K2#1 an 3ed95dcf, GTX); bis w4-bewohner-wache
+    // nur am Spieler.
     _kopfKahl(aus) {
-        const pm = this.state.playerMesh;
-        for (const [c, alt] of this._kahlStand || []) {
-            for (const [i, x, y, z] of alt) c.setXYZ(i, x, y, z);
-            c.needsUpdate = true;
+        for (const [a, alt] of this._kahlStand || []) {
+            for (const [i, ...w] of alt) {
+                if (w.length === 1) a.setX(i, w[0]);
+                else a.setXYZ(i, w[0], w[1], w[2]);
+            }
+            a.needsUpdate = true;
         }
         this._kahlStand = [];
         const haar = (o) =>
             !!o &&
             ((o.userData && o.userData.__klasse) ||
                 (o.material && o.material.userData && o.material.userData.__klasse)) === "hair";
-        const vomSpieler = (o) => {
-            for (let p = o; p; p = p.parent) if (p === pm) return true;
-            return false;
-        };
         const KC = typeof window !== "undefined" && window.__koerperCore;
-        if (!pm || !KC || !(aus || []).some((o) => haar(o) && vomSpieler(o))) return 0;
+        const leiber = new Set((aus || []).filter(haar).map((o) => this._leibWurzel(o)));
+        for (const L of leiber) if (!this._menschLeib(L)) leiber.delete(L);
+        if (!KC || !leiber.size) return 0;
         const [tH, tS] = [KC.menschTon("haarKappe"), KC.menschTon("skin")];
         let n = 0;
-        pm.traverse((o) => {
-            const a = o.isMesh && !haar(o) && o.geometry && o.geometry.attributes;
-            const [t, c] = a ? [a.aTon, a.color] : [];
-            if (!t || !c) return;
-            const m = [0, 0, 0, 0];
-            for (let i = 0; i < t.count; i++)
-                if (Math.round(t.getX(i)) === tS)
-                    ((m[0] += c.getX(i)), (m[1] += c.getY(i)), (m[2] += c.getZ(i)), m[3]++);
-            if (!m[3]) return;
-            const alt = [];
-            for (let i = 0; i < t.count; i++)
-                if (Math.round(t.getX(i)) === tH)
-                    (alt.push([i, c.getX(i), c.getY(i), c.getZ(i)]),
-                        c.setXYZ(i, m[0] / m[3], m[1] / m[3], m[2] / m[3]));
-            if (!alt.length) return;
-            this._kahlStand.push([c, alt]);
-            c.needsUpdate = true;
-            n += alt.length;
-        });
+        for (const L of leiber)
+            L.traverse((o) => {
+                const a = o.isMesh && !haar(o) && o.geometry && o.geometry.attributes;
+                const [t, c] = a ? [a.aTon, a.color] : [];
+                if (!t || !c) return;
+                const m = [0, 0, 0, 0];
+                for (let i = 0; i < t.count; i++)
+                    if (Math.round(t.getX(i)) === tS)
+                        ((m[0] += c.getX(i)), (m[1] += c.getY(i)), (m[2] += c.getZ(i)), m[3]++);
+                if (!m[3]) return;
+                const [altC, altT] = [[], []];
+                for (let i = 0; i < t.count; i++)
+                    if (Math.round(t.getX(i)) === tH) {
+                        altC.push([i, c.getX(i), c.getY(i), c.getZ(i)]);
+                        altT.push([i, t.getX(i)]);
+                        c.setXYZ(i, m[0] / m[3], m[1] / m[3], m[2] / m[3]);
+                        t.setX(i, tS);
+                    }
+                if (!altC.length) return;
+                this._kahlStand.push([c, altC], [t, altT]);
+                c.needsUpdate = t.needsUpdate = true;
+                n += altC.length;
+            });
         return n;
+    }
+    // DER LEIB EINES MENSCHEN (die Kopf-Klasse, PFLICHT-OFFEN A: mensch-kopf und haar an jedem Menschen): die Wurzel eines Leibs
+    // (`_leibWurzel`: sein Knoten unter der Szene) heißt nach dem, der er ist — der Spieler `spieler`, jeder Bewohner `bewohner`
+    // (der Mensch der Menge, `_bewohnerGeburt`: sein Leib trägt den Baum der Glieder wie ein Tier, `_tierBaum`, und ist doch keines);
+    // sonst null. Leser: die Täter-Klasse (`_taeterKlasse`: der EINE Name jeder Kosten-Linse), die Teilung (`_kopfKlasse`), der
+    // kahle Kopf (`_kopfKahl`). Bis w4-bewohner-wache hieß jeder Bewohner-Leib `tier:?` — 14 von 14 Teilen am Start-Dorf, jede
+    // Kosten-Linse buchte ihn als Tier.
+    _menschLeib(top) {
+        if (!top) return null;
+        if (top === this.state.playerMesh) return "spieler";
+        const u = top.userData;
+        return u && u._menge === true && top.name === "bewohner" ? "bewohner" : null;
+    }
+    _leibWurzel(o) {
+        let top = o;
+        while (top.parent && top.parent !== this.state.scene) top = top.parent;
+        return top;
+    }
+    // DIE KOPF-KLASSE (mensch-kopf, haar): die Teilung jedes Leibs eines Menschen (`_menschLeib`) in seine Stoffe nach EINEM
+    // Gesetz — ein Teil, dessen Haut-Gewichte zu `KOPF_TEILUNG.anteil` an den Gelenken des Kopfs hängen (`KOPF_TEILUNG.gelenk`:
+    // head, Augen, Lider) oder der unter dem Kopf-Knoten sitzt (die Strähnen), heißt `<leib>:kopf/<Stoff>`, der Rest
+    // `<leib>:leib/<Stoff>` (Stoff = `__klasse` des Teils, ohne sie `auge` am Iris-Gelenk, sonst `stoff`). Liefert [grob, fein]:
+    // grob die Täter-Klasse (`_taeterKlasse`), fein der Name des Teils — was kein Leib eines Menschen ist, trägt beide gleich (der
+    // Satz der Menge bleibt `bewohner-satz`). Leser: die Teilung der Werkbank (`bild --klasse`: wählt der Ausdruck den Leib, ist er
+    // EINE Klasse, sonst zeigt er seine Teile) und ihr Gesicht (die Kopf-Haut des nächsten gewählten Leibs). Bis w4-bewohner-wache
+    // teilte die Werkbank selbst und nur den Spieler (nur unter `--gesicht`): kein Bewohner trug `bewohner:kopf/…`.
+    _kopfKlasse(o) {
+        const grob = this._taeterKlasse(o);
+        if (!o.geometry || this._menschLeib(this._leibWurzel(o)) !== grob) return [grob, grob];
+        const K = AnazhRealm.KOPF_TEILUNG;
+        const auge = !!(o.isSkinnedMesh && o.skeleton && o.skeleton.bones.some((b) => K.iris.test(b.name)));
+        const stoff = (o.userData && o.userData.__klasse) || (auge ? "auge" : "stoff");
+        return [grob, `${grob}:${this._kopfAnteil(o) >= K.anteil ? "kopf" : "leib"}/${stoff}`];
+    }
+    // Der Anteil eines Teils am Kopf: 1 unter dem Kopf-Knoten, sonst seine Haut-Gewichte an den Gelenken des Kopfs über alle.
+    _kopfAnteil(o) {
+        for (let p = o; p; p = p.parent) if (p.name === "head") return 1;
+        const K = AnazhRealm.KOPF_TEILUNG;
+        const a = o.geometry.attributes.skinIndex;
+        const w = o.geometry.attributes.skinWeight;
+        if (!a || !w || !o.skeleton) return 0;
+        const amKopf = o.skeleton.bones.map((b) => K.gelenk.test(b.name));
+        let [kz, n] = [0, 0];
+        for (let i = 0; i < a.count; i++)
+            for (let c = 0; c < 4; c++) {
+                const wt = w.getComponent(i, c);
+                n += wt;
+                if (amKopf[a.getComponent(i, c)]) kz += wt;
+            }
+        return n ? kz / n : 0;
     }
     // DAS VERHÄLTNIS DER PALETTEN je Ecke (der Stoff liest es im Vertex-Takt): die Palette des Leibs (Zeile x) zu der seiner
     // Gestalt (Zeile y) am Ton der Ecke (`aTon`). `zeilen` (vec2-Knoten, optional): die Zeilen je Instanz (der Satz der Menge);
@@ -3428,6 +3485,14 @@ AnazhRealm._landungGesetz = function () {
 // Menschen aus dem Ofen; carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
 // (dichteLeib 1000 über eine Kapsel aus der Hüft-Höhe — der Hirsch wog 436 kg, der Bär 255 —, dichteWagen 150).
 AnazhRealm.LEIB_KLASSEN = Object.freeze(["fell", "haut"]); // die Material-Klassen der geschlossenen Haut eines Leibs
+// DIE KOPF-KLASSE (`_kopfKlasse`, mensch-kopf und haar): gelenk = die Gelenke des Kopfs (Kopf, Augen, Iris, Lider des Rigs) ·
+// iris = das Gelenk, an dem ein Teil ohne Stoff-Klasse das Auge ist · anteil = ab diesem Anteil seiner Haut-Gewichte an ihnen
+// gehört ein Teil zum Kopf — die Werte der Teilung, die bis w4-bewohner-wache in der Werkbank stand (haar.K2)
+AnazhRealm.KOPF_TEILUNG = Object.freeze({
+    gelenk: /^(head|eye[LR]|iris[LR]|lid[TB][LR])$/,
+    iris: /^iris[LR]$/,
+    anteil: 0.3,
+});
 // DIE TON-TAFEL (mensch.K4, `_tonTafel`): so viele Paletten trägt sie — je Siedlung eine je Gestalt und je Kopf (die Metropole
 // am Messort stadt-voll 1 094 Köpfe), Zeile 0 die Eins; die Tafel lädt je Siedlung einmal
 AnazhRealm.TON_TAFEL = Object.freeze({ zeilen: 4096 });

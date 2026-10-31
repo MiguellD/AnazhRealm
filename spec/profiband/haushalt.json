@@ -565,12 +565,15 @@
         },
         {
             "id": "bewohner",
-            "titel": "Bewohner (die Menschen der Siedlungen: je Gestalt ein Instanz-Satz `bewohner-satz` Haut · Rest aus der Mengen-Stufe koerper L2 (1 695 Dreiecke), der Wurf aus der NUR-WURF-Stufe L3 (736); die Befehle hängen nie an der Kopfzahl — 16 am Start-Dorf −4,−4, haupt 8 · k0 4 · k1 4; gemessen Radeon 22.10.: 242k → 72k Dreiecke, Ego und Third)",
+            "titel": "Bewohner (die Menschen der Siedlungen: je Gestalt ein Instanz-Satz `bewohner-satz` Haut · Rest aus der Mengen-Stufe koerper L2 (1 695 Dreiecke), der Wurf aus der NUR-WURF-Stufe L3 (736); die Befehle hängen nie an der Kopfzahl — 16 am Start-Dorf −4,−4, haupt 8 · k0 4 · k1 4; gemessen Radeon 22.10.: 242k → 72k Dreiecke, Ego und Third; der Leib der Nah-Wahl `bewohner`)",
             "befehle": 16,
             "dreiecke": 80000,
             "regeln": [
                 {
                     "muster": "^bewohner-satz$"
+                },
+                {
+                    "muster": "^bewohner$"
                 }
             ]
         },

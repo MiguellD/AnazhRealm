@@ -1275,7 +1275,8 @@ class AnazhRealm_dirigent_regler {
     //     ohne lebende Instanz heißt `leer:<klasse>` — die leere Hülle in der Gnadenfrist des Leer-Chokepoints
     //     (`_archGroupLeerDispose`); sie zeichnet nie (count 0, unsichtbar — `_archGroupFree`), zeichnet sie doch, ist
     //     sie ein toter Draw und die Band-Linse nennt ihn (Haushalt 0, `gate:freie-slots`);
-    //   - ein Tier `tier:<seele>`, der Spieler `spieler`;
+    //   - der Leib eines Menschen nach dem, der er ist (`_menschLeib`: der Spieler `spieler`, jeder Bewohner `bewohner` — vor
+    //     dem Tier: sein Leib trägt den Baum der Glieder, bis w4-bewohner-wache hieß er `tier:?`), ein Tier `tier:<seele>`;
     //   - sonst der Name des obersten Szenen-Knotens, dann des gezeichneten Objekts (`_taeterName`); unter einer Region
     //     ist der Täter ihr Kind, nie die Region (im Schatten-Pass zeichnen die Kinder direkt);
     //   - ohne jeden Namen `UNBENANNT:<type>` — ein Linsen-Fehler, den der Erzeuger heilt, indem er sein Objekt benennt.
@@ -1286,8 +1287,9 @@ class AnazhRealm_dirigent_regler {
         let top = obj;
         while (top.parent && top.parent !== scene) top = top.parent;
         const u = top.userData || {};
+        const leib = this._menschLeib(top);
+        if (leib) return leib;
         if (u._tierBaum) return "tier:" + (u.soul || "?");
-        if (top === this.state.playerMesh) return "spieler";
         let traeger = top;
         if (top.isBundleGroup === true || u.regionKey !== undefined) {
             traeger = obj;
