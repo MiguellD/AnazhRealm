@@ -66,21 +66,11 @@
 //
 //   node scripts/diag-mp-sync.cjs [--selftest]
 "use strict";
-const {
-    starteBrowser,
-    nullRenderer,
-    halteBis,
-    startProc,
-    eigenePorte,
-    sleep,
-    waitFor,
-    hauptLauf,
-} = require("./lib/welt-boot.cjs");
+const { starteBrowser, nullRenderer, halteBis, startProc, eigenePorte, sleep, waitFor, hauptLauf, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 // die eigenen Ports: MP_SYNC_PORT und MP_SYNC_SIGNAL_PORT, sonst freie des Systems (welt-boot `eigenePorte`) — nie 4312/4313, die Server des Schöpfers
 let PORT, SIGNAL_PORT, PAGE_URL, SIGNALING_URL;
 const ROOM = "mp-sync-raum";
-const SELBSTTEST = process.argv.includes("--selftest");
 const REJOIN_DECKEL_S = 31;
 const ABSTAND_M = 0.3;
 // Der Lauf von A: W hält, bis A LAUF_M vom Start steht (das Urteil verlangt > 1 m), höchstens LAUF_FRIST_MS — nie eine feste Uhr.

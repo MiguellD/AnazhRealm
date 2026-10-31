@@ -34,7 +34,7 @@
 //   node scripts/diag-brennglas-takt.cjs [--selftest]   (npm run gate:brennglas-takt)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 
 // DIE QUELL-WAND (AST, wie die Box-Wand in diag-blocker-netz): je Methode die Namen, die am BESTAND hängen (`this.state.architectures`,
@@ -325,7 +325,7 @@ function quellWand(quelle) {
     return befunde.filter((b) => !frei(b));
 }
 
-if (process.argv.includes("--selftest")) {
+if (SELBSTTEST) {
     console.log("=== BRENNGLAS-TAKT — Selbsttest der Quell-Wand (ohne Browser) ===");
     const v = [];
     const stamm = quellWand(stammLib.text(root));

@@ -22,11 +22,10 @@
 // fester Schirm) → K rot.
 //   node scripts/diag-schirm-monotonie.cjs [--selftest]       (npm run gate:schirm-monotonie)
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, sleep, nullSeite, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, sleep, nullSeite, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
-const SELBST = process.argv.includes("--selftest");
 // groß → klein; die Reihe läuft gespiegelt zurück (groß → klein → groß), jede kleinere Größe zwischen zwei Klammern
 const GROESSEN = [
     [1280, 720],
@@ -343,7 +342,7 @@ async function welt() {
         return n > 0;
     });
     let selbst = null;
-    if (SELBST) {
+    if (SELBSTTEST) {
         selbst = {};
         // (a) ein VERKEHRTES Gesetz: die Probe-Gruppe liest `_schirm()` und zeichnet mehr Instanzen, je kleiner der Schirm
         await page.evaluate(() => {
@@ -440,7 +439,7 @@ hauptLauf(async () => {
     check("M Befehle und Dreiecke fallen oder halten von groß nach klein (Spannen, beide Klammern)", monotonieBefunde(w.messung));
     for (const d of driftBefunde(w.messung)) console.log(`      (Drift, ohne Schirm) ${d}`);
 
-    if (SELBST) {
+    if (SELBSTTEST) {
         console.log("=== SELBSTTEST ===");
         const sa = monotonieBefunde(w.selbst.verkehrt);
         check(

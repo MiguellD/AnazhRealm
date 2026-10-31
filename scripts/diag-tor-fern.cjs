@@ -35,14 +35,7 @@ const SOLL = { fernTeile: 24, wurfIou: 0.85, wurfMedian: 0.92, innenP95: 0.1 };
 
 // ── DER EINE LESER DES STAMMS: `AnazhRealm._huelleVon` aus der Quelle (die Fernform liest, was er liest) ──
 const STAMM = stammLib.text(root);
-// die Methode am NAMEN (gate:apparat Klinge 3): Rumpf und Parameter liest die Probe aus dem Kopf, nie eine eigene Liste
-function methodeAus(src, name) {
-    const i = stammLib.kopf(src, name);
-    if (i < 0) throw new Error("im Stamm nicht gefunden: " + name);
-    const p = src.indexOf("(", i);
-    const args = src.slice(p + 1, src.indexOf(")", p));
-    return { args, rumpf: stammLib.rumpf(src, name).slice(1, -1) }; // der EINE Rumpf-Schneider (scripts/lib/stamm.cjs)
-}
+// die Methode am NAMEN (gate:apparat Klinge 3): Rumpf und Parameter liest der EINE Leser `methodeAm` (scripts/lib/stamm.cjs)
 const KEIL_TYP = (() => {
     const m = stammLib.treffer(STAMM, null, /AnazhRealm\.HUELLE_KEIL_TYP = Object\.freeze\((\{[^}]*\})\)/);
     return m ? Function("return " + m[1])() : {};
@@ -56,7 +49,7 @@ function leser(rumpf) {
     };
     return Function("AnazhRealm", "return function _huelleVon(" + HUELLE.args + ") {" + rumpf + "};")(stub);
 }
-const HUELLE = methodeAus(STAMM, "_huelleVon");
+const HUELLE = stammLib.methodeAm(STAMM, "_huelleVon");
 const RUMPF = HUELLE.rumpf;
 const huelleVon = leser(RUMPF);
 
@@ -283,7 +276,7 @@ const FERN = {
 FERN.rest = FERN.klasse - FERN.fest;
 const STUFE_NACH_GRENZEN = Function(
     "return function _stufeNachGrenzen(d, cur, G, s) {" +
-        methodeAus(STAMM, "_stufeNachGrenzen").rumpf +
+        stammLib.methodeAm(STAMM, "_stufeNachGrenzen").rumpf +
         "};"
 )();
 const WIRT = (() => {

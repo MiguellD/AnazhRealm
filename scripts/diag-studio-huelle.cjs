@@ -158,7 +158,7 @@ function panoramaStempel(id, lies) {
     for (const rel of rels) {
         const t = lies(rel);
         if (t == null) return null;
-        h.update(`${rel}\n${crypto.createHash("sha256").update(t.replace(/\?v=[\w.-]+/g, "")).digest("hex")}\n`);
+        h.update(`${rel}\n${stammLib.sha(t.replace(/\?v=[\w.-]+/g, ""))}\n`);
     }
     return h.digest("hex");
 }

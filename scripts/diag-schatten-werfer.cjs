@@ -63,9 +63,8 @@
 //       wird rot
 //
 //   node scripts/diag-schatten-werfer.cjs [--selftest]
-const { statikServer, warteAufWelt, nullSeite, pruefer, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, pruefer, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
-const SELBSTTEST = process.argv.includes("--selftest");
 const server = statikServer();
 
 // Z2 — die Bildziele je Leser über den EINEN Absenz-Helfer (kommentarfrei): die Szenen-Tiefe zieht NUR `_szeneTiefe`, kein

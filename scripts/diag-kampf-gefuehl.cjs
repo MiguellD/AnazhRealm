@@ -556,7 +556,7 @@ function bogenK4Taeter(K) {
 // Wunde, Gnade, Lebens-Spur, Seele, Trauer und Journal; Inventar und Bindung überstehen den Tod, der Abdruck nach dem Reload
 // gleicht dem vor dem Speichern je Teil, das Alter des Fuchses eingeschlossen (das erste Bild der Wiederkehr zählt keinen Takt
 // des Lebens nach). Der Abdruck ist kanonisches JSON (K5_ABDRUCK, feste Reihe), sein Hash die Zahl.
-const hash = (o) => require("crypto").createHash("sha256").update(JSON.stringify(o)).digest("hex").slice(0, 12);
+const hash = (o) => stammLib.sha(JSON.stringify(o)).slice(0, 12);
 const f1 = (v) => (v === null || v === undefined ? "–" : Number(v).toFixed(2));
 // DER BERICHT einer Probe: JSON, Zahlen auf Tausendstel; `keys` (Leerzeichen-Liste) wählt die Größen
 const json = (o) => JSON.stringify(o, (k, x) => (typeof x === "number" ? +x.toFixed(3) : x));

@@ -28,7 +28,7 @@
 //   die Klasse zahnfleisch) → rot an zahn|headGroup (fehlt) und zahnfleisch|headGroup · (S3) korruptes Golden → rot.
 //   node scripts/diag-ofen-contract.cjs [--selftest]
 "use strict";
-const { selbsttestEnde, wandEnde, fadenScope, pruefer, ausDatei, SELBSTTEST, path, fs, crypto, vm } = require("./lib/welt-boot.cjs");
+const { selbsttestEnde, wandEnde, fadenScope, pruefer, ausDatei, SELBSTTEST, path, fs, crypto, vm, stammLib } = require("./lib/welt-boot.cjs");
 const { probeWand, objektAbdruck } = require("./lib/plattform-probe.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
@@ -93,24 +93,18 @@ function fingerabdruck(g, fall) {
     if (sk) {
         for (const j of sk.joints)
             klassen[`${fall}|gelenk|${j.name}`] = {
-                sha256: crypto
-                    .createHash("sha256")
-                    .update(JSON.stringify([j.parent, j.pos, j.quat, j.scale]))
-                    .digest("hex"),
+                sha256: stammLib.sha(JSON.stringify([j.parent, j.pos, j.quat, j.scale])),
             };
         const rest = Object.assign({}, sk);
         delete rest.joints;
         klassen[`${fall}|beipack`] = {
-            sha256: crypto
-                .createHash("sha256")
-                .update(
-                    JSON.stringify(
-                        Object.keys(rest)
-                            .sort()
-                            .map((x) => [x, rest[x]])
-                    )
+            sha256: stammLib.sha(
+                JSON.stringify(
+                    Object.keys(rest)
+                        .sort()
+                        .map((x) => [x, rest[x]])
                 )
-                .digest("hex"),
+            ),
         };
     }
     return klassen;
@@ -232,7 +226,7 @@ function ofenStart(eingriff) {
     } finally {
         for (const T in echt) sb[T] = echt[T];
     }
-    const sha = bild ? crypto.createHash("sha256").update(Buffer.from(bild.buffer)).digest("hex") : null;
+    const sha = bild ? stammLib.sha(Buffer.from(bild.buffer)) : null;
     return {
         gebrochen: zaehl.gebrochen,
         gpu: gpu.filter(Boolean).length,

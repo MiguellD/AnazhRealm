@@ -20,7 +20,7 @@
 //   node scripts/diag-wetter-wache.cjs [--selftest]   (npm run gate:wetter-wache; Port WETTER_WACHE_PORT, HIMMEL_MIN)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, selbsttestEnde, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const {
     AUSGABE_INSTALL,
     wetterUrteil,
@@ -36,7 +36,7 @@ const SCHRITT_SEK = 0.25;
 // Der Takt des Wesens im Schöpfer-Modus (Spiel-Sekunden): sechs Vorschläge je Fenster, zwei je Takt des Wetter-Zugs.
 const WESEN_SEK = 60;
 
-if (process.argv.includes("--selftest")) {
+if (SELBSTTEST) {
     console.log("=== WETTER-WACHE — Selbsttest der Urteile (ohne Browser) ===");
     const v = wetterSelbsttest()
         .map((x) => "wetter: " + x)

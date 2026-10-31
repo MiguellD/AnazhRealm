@@ -23,7 +23,7 @@
 //              Karte und ein Karten-Name ohne Glied; der Weg: `node scripts/stamm-umzug.cjs --nach-karte`.
 //   Dazu SYNTAX je Datei (V8, wie `node --check`).
 "use strict";
-const { ausDatei, path, fs, stammLib, vm } = require("./lib/welt-boot.cjs");
+const { ausDatei, path, fs, stammLib, vm, SELBSTTEST } = require("./lib/welt-boot.cjs");
 /* global process, console, __dirname */
 const acorn = require("acorn");
 
@@ -461,7 +461,7 @@ function selbsttest() {
 
 // ── Aufruf ───────────────────────────────────────────────────────────────────────────────────────────────────────
 const argv = process.argv.slice(2);
-if (argv.includes("--selftest")) {
+if (SELBSTTEST) {
     console.log("=== ATLAS-RATSCHE — Selbsttest (je Regel ein Fixture, das ROT wird) ===");
     const rot = selbsttest();
     console.log(rot ? `❌ ${rot} Fall/Fälle feuern nicht` : "✅ die Ratsche feuert an jeder Regel");

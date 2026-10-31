@@ -47,7 +47,7 @@ const PINS = [
 // (spec/vendor-anker.json, 223 Anker in 54 Gruppen; bis w3w-verkehr ein Literal dieses Skripts). DIE DATEI DER ANKER: ohne
 // `file` der WebGPU-Vendor (in ihm leben fast alle Organe), jede andere steht beim Anker.
 const ANKER_DATEI = PINS[0].file;
-const ANKER = JSON.parse(fs.readFileSync(path.join(root, "spec", "vendor-anker.json"), "utf8")).flatMap((g) => g.anker);
+const ANKER = ausDatei(path.join(root, "spec", "vendor-anker.json"), true).flatMap((g) => g.anker);
 
 // DIE DIÄT-PRÜFUNG (wer voll frischt): die Diät-Funktionen aus dem Stamm laden (vom ersten
 // `AnazhRealm._diaet… = function` bis zum Ende von `_diaetRefresh`) und gegen Schein-Programme fahren — r184-

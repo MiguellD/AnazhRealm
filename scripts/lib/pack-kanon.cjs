@@ -14,14 +14,11 @@
 // verlustfrei, nicht nur „gleicher String rein/raus".
 "use strict";
 
-const { statikServer, nullSeite, ausDatei, path, fs, crypto } = require("./welt-boot.cjs");
+const { statikServer, nullSeite, ausDatei, path, fs, stammLib } = require("./welt-boot.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 
 
-function sha256Hex(buf) {
-    return crypto.createHash("sha256").update(buf).digest("hex");
-}
 
 // ---------------------------------------------------------------------------
 // Kommentar-Stripper (die Falle: der Code darf das Wort im KOMMENTAR tragen,
@@ -39,7 +36,7 @@ function computeStamp(root) {
     const lese = (rel) => ausDatei(path.join(root || ROOT, rel));
     const quellen = (k) => ["scripts", "lib", "bruecke"].flatMap((f) => [].concat(k[f] || [])).map(lese);
     return JSON.parse(lese("cores.manifest.json"))
-        .map((k) => (k.id || k.ns) + ":" + sha256Hex(Buffer.from(quellen(k).join("\n"), "utf8")).slice(0, 16))
+        .map((k) => (k.id || k.ns) + ":" + stammLib.sha(Buffer.from(quellen(k).join("\n"), "utf8")).slice(0, 16))
         .join(",");
 }
 
@@ -118,7 +115,7 @@ function comparePackToReply(pack, ser) {
             if (pa.type !== sa.type) diffs.push(`${tag} Mesh${i}.${k}: type ${pa.type} vs ${sa.type}`);
             const buf = Buffer.from(pa.b64 || "", "base64");
             if (buf.length !== sa.bytes) diffs.push(`${tag} Mesh${i}.${k}: Byte-Länge ${buf.length} vs ${sa.bytes}`);
-            else if (sha256Hex(buf) !== sa.sha256)
+            else if (stammLib.sha(buf) !== sa.sha256)
                 diffs.push(`${tag} Mesh${i}.${k}: sha256-Divergenz (Bytes verfälscht)`);
         }
         const pIdx = pm.index || null;
@@ -129,7 +126,7 @@ function comparePackToReply(pack, ser) {
             if (pIdx.type !== sIdx.type) diffs.push(`${tag} Mesh${i}.index: type ${pIdx.type} vs ${sIdx.type}`);
             if (buf.length !== sIdx.bytes)
                 diffs.push(`${tag} Mesh${i}.index: Byte-Länge ${buf.length} vs ${sIdx.bytes}`);
-            else if (sha256Hex(buf) !== sIdx.sha256) diffs.push(`${tag} Mesh${i}.index: sha256-Divergenz`);
+            else if (stammLib.sha(buf) !== sIdx.sha256) diffs.push(`${tag} Mesh${i}.index: sha256-Divergenz`);
         }
     }
     return diffs;
@@ -246,7 +243,6 @@ async function installPackSerializer(page) {
 
 module.exports = {
     ROOT,
-    sha256Hex,
     stripComments,
     computeStamp,
     readManifest,

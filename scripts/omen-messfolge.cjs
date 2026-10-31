@@ -1518,7 +1518,7 @@ function streuungCli() {
 // (je Block das erste Band nach dem Eingriff verworfen) — je Schalter Δ gegen die Grund-Nachbarn, Rauschband, Erst-Zeichnung;
 // ROT, wenn der Null-Schalter außerhalb des Rauschbands liegt (die Methode misst den Eingriff mit), Takt oder Bänder fehlen.
 function schalterCli() {
-    const datei = argv[argv.indexOf("--schalter") + 1];
+    const datei = opt("--schalter");
     const { bloecke } = ausDatei(datei, true);
     const u = schalterUrteil(bloecke.filter(Boolean));
     console.log(`\n=== DAS SCHALTER-URTEIL: ${bloecke.length} Blöcke, Grund σ ${u.sigma} ms, Erst-Zeichnung der Grund-Blöcke ${u.erstGrund} ms ===`);
@@ -1542,7 +1542,7 @@ function schalterCli() {
 // Befunde seiner Wachen und die Band-Linse (jede Rot-Zeile, die die Basis-Seite A nicht trägt). Exit 1, sobald einer steht.
 function urteilCli() {
     const lies = (d) => ausDatei(path.resolve(d), true);
-    const j = lies(argv[argv.indexOf("--urteil") + 1]);
+    const j = lies(opt("--urteil"));
     const bd = opt("--basis", null);
     const basis = bd ? bandMessungAus(lies(bd)) : null;
     const wachen = (j.befunde || []).filter((b) => !/^(BAND|BAND-LINSE|BASIS|ORT band|RAHMEN-ZIEL band)\b/.test(b));

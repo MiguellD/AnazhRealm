@@ -37,7 +37,7 @@
 // Port: WASSER_LEBEN_PORT (Standard 4623).
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, pngDatei, argOpt, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, pngDatei, argOpt, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { quellTeileVereinen, QUELL_KACHELN, WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
 const { tslLecks } = require("./lib/shader-kosten.cjs");
 
@@ -781,7 +781,7 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-if (process.argv.includes("--selftest")) selbsttest();
+if (SELBSTTEST) selbsttest();
 else lauf();
 
 // DIE TEILE DER QUELL-PROBE: so viele Seiten nebeneinander (WASSER_QUELL_TEILE, Vorgabe 3 — am Läufer vier Kerne, die

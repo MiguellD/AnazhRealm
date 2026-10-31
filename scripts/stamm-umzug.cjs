@@ -1,5 +1,5 @@
 "use strict";
-const { ausDatei, path, fs, argOpt } = require("./lib/welt-boot.cjs");
+const { ausDatei, path, fs, argOpt, SELBSTTEST } = require("./lib/welt-boot.cjs");
 /* global process, console, __dirname */
 // scripts/stamm-umzug.cjs — der Umzug des Stamms NACH DOMÄNE. Die Karte spec/stamm/modul-karte.json ordnet jedes Glied der
 // Klasse und jede Außen-Anweisung einem Modul[/teil] zu; `ordne` (scripts/lib/stamm.cjs) stellt den virtuellen Stamm danach,
@@ -471,7 +471,7 @@ function selbsttest() {
 
 // ── CLI ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
 function main() {
-    if (argv.includes("--selftest")) return selbsttest() ? 1 : 0;
+    if (SELBSTTEST) return selbsttest() ? 1 : 0;
     if (argv.includes("--nach-karte")) return nachKarte(ROOT, argv.includes("--trocken"));
     if (argv.includes("--richter")) return richter(ROOT, argv.includes("--trocken"));
     if (argv.includes("--beweis")) {

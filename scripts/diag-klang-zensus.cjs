@@ -29,14 +29,7 @@
 //   (KLANG_WURZEL=<baum> misst einen anderen Arbeitsbaum unter derselben Linse)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const {
-    statikServer,
-    starteBrowser,
-    warteAufWelt,
-    nullRenderer,
-    halteBis,
-    argOpt,
-    ROOT: root, path, fs, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, halteBis, argOpt, ROOT: root, path, fs, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const MESS = require("./lib/welt-orte.cjs").messort("wiese"); // der Messort aus spec/profiband/haushalt.json
 
@@ -45,7 +38,6 @@ const MESS = require("./lib/welt-orte.cjs").messort("wiese"); // der Messort aus
 const UEBER = process.env.KLANG_WURZEL ? path.resolve(process.env.KLANG_WURZEL) : null;
 const PORT = Number(process.env.KLANG_ZENSUS_PORT) || 7452;
 const argv = process.argv.slice(2);
-const SELBST = argv.includes("--selftest");
 const TAKT = argv.includes("--takt");
 const ECHT = TAKT && argv.includes("--echt"); // der Zensus misst im Null-Renderer
 const GESEHEN = argv.includes("--gesehen");
@@ -1181,7 +1173,7 @@ async function takt(page, erg) {
     }
     if (!ph.fahrt.sattel) rot.push("T fahrt: nicht im Sattel");
     let feuert = true;
-    if (SELBST) {
+    if (SELBSTTEST) {
         await page.evaluate(() => __klangTakt.taeter());
         const s0 = await audio();
         await page.evaluate(() => __klangTakt.stotterer());
@@ -1591,7 +1583,7 @@ async function gesehen(page, erg) {
     erg.gesehen = await gesehenGang(page, ["stormy", "cloudy"]);
     const rot = Object.keys(erg.gesehen).filter((n) => !erg.gesehen[n].gruen);
     let feuert = true;
-    if (SELBST) {
+    if (SELBSTTEST) {
         await page.evaluate(() => __gesehen.taeter());
         erg.selbst = await gesehenGang(page, ["rainy"]);
         feuert = !erg.selbst.ufer.gruen && !erg.selbst.regen.gruen;
@@ -1683,7 +1675,7 @@ async function zensus(page, browser, ergebnis) {
     Object.assign(ergebnis, { orte, daten, offline, kosten: kostenErg, lab, ereig, rot });
 
     let selbstOk = true;
-    if (SELBST) {
+    if (SELBSTTEST) {
         console.log("\n── SELBST-TEST");
         const fehl = [];
         // der Täter ist benannt, wenn ein Befund der Liste sein Muster trägt — sonst steht er in `fehl`

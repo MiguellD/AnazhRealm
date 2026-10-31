@@ -23,7 +23,7 @@
 // Port: ALBEDO_PORT (Standard 4587). `--echt` fährt die echte GPU (scripts/lib/software-gpu.cjs echteWebGpuArgs), sonst
 // die Weiche des EINEN Start-Rezepts (linsenWebGpuArgs: lokal der Hardware-Adapter, in der CI swiftshader).
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, sleep, argOpt: opt, pngDatei, selbsttestEnde, ausDatei, path, fs } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep, argOpt: opt, pngDatei, selbsttestEnde, ausDatei, path, fs, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const AT = require("./lib/albedo-tafel.cjs");
 const { kartenEichung } = require("./lib/licht-linsen.cjs");
 // der Code-Abdruck einer Datei des Baums und der Stand einer Messung (abnahme-urteil `standLeser`, derselbe wie Werkzeug und
@@ -566,7 +566,7 @@ async function neuMessen(t, ids) {
 }
 
 async function main() {
-    if (argv.includes("--selftest")) return selbsttest();
+    if (SELBSTTEST) return selbsttest();
     if (argv.includes("--laub")) return laborLaub();
     const t = AT.ladeTafel();
     const schema = AT.tafelPruefen(t);

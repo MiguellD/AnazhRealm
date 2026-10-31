@@ -30,7 +30,7 @@
 // Namen genannt.
 //   node scripts/diag-freie-slots.cjs [--selftest]          (npm run gate:freie-slots)
 "use strict";
-const { statikServer, hauptLauf, nullSeite, wandEnde, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, wandEnde, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { installWieseSicht } = require("./lib/wiese-sicht.cjs");
 
 
@@ -392,7 +392,7 @@ async function welt() {
             o.selbst = st_;
         }
         return o;
-    }, process.argv.includes("--selftest"));
+    }, SELBSTTEST);
     await browser.close();
     server.close();
     return { out };
@@ -405,7 +405,7 @@ hauptLauf(async () => {
     console.log("=== Q — die Quelle (kommentar-frei) ===");
     console.log(q.length ? q.map((x) => "  ❌ " + x).join("\n") : "  ✅ count schreibt nur _instanzZahl · keine Free-Liste · kein `_lebt`");
     for (const x of q) fails.push("Q: " + x);
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         const schmuggel = quellBefunde((t) =>
             stammLib.ersetze(t, null, /\n {4}static _instanzZahl\(/, "\n    _schmuggel(g) {\n        g.mesh.count = 7;\n        mesh.count = 0;\n    }\n    static _instanzZahl(")
         );
@@ -442,7 +442,7 @@ hauptLauf(async () => {
         fails.push(
             `die Nah-Wiese stand in nur ${wieseOrte} Umzügen auf Wiese (Soll ≥ ${WIESE_ORTE}) — W misst zu wenig`
         );
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         const s = out.selbst || {};
         console.log(
             `  ${s.freiGenannt ? "✅" : "❌"} SELBSTTEST G: der eingeschmuggelte freie Slot wird genannt · ${s.leerGenannt ? "✅" : "❌"} die sichtbare leere Hülle wird genannt · ${s.tauschGenannt ? "✅" : "❌"} die vertauschte Matrix wird genannt`

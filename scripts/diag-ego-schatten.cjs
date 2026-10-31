@@ -137,19 +137,17 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-if (process.argv.includes("--selftest")) {
+const { statikServer, starteBrowser, laufUhr, path, fs, SELBSTTEST, argOpt } = require("./lib/welt-boot.cjs");
+
+if (SELBSTTEST) {
     console.log("=== EGO-SCHATTEN — Selbsttest (ohne Browser) ===");
     selbsttest();
     process.exit(0);
 }
 
-const { statikServer, starteBrowser, laufUhr, path, fs } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
-const BILDER = (() => {
-    const i = process.argv.indexOf("--bilder");
-    return i > 0 ? path.resolve(process.argv[i + 1]) : null;
-})();
+const BILDER = argOpt("--bilder") && path.resolve(argOpt("--bilder"));
 const server = statikServer();
 
 // DIE BÜHNE (Seiten-Kontext): der echte Renderer, der echte Leib, die echte Regel; eigene Szene, Zeit fest.

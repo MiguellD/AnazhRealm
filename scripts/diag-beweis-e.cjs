@@ -17,14 +17,10 @@
 // Lücke ist das Tier UNSICHTBAR. swiftshader-Zeiten sind keine GPU-Zeiten; die
 // Draw-Call-/Dreiecks-Zahlen sind hardware-unabhängig.
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, pngDatei, path, fs } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, pngDatei, path, fs, argOpt: argOf } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const { WELT_ORTE_INSTALL } = require("./lib/welt-orte.cjs");
 
-const argOf = (k, d) => {
-    const i = process.argv.indexOf(k);
-    return i > 0 ? process.argv[i + 1] : d;
-};
 const TAG = argOf("--tag", "head");
 const OUT = path.resolve(argOf("--out", path.join(root, "artifacts", "beweis-e")));
 const KLASSEN = argOf("--klassen", "kreatur,baum,haus,wiese").split(",");

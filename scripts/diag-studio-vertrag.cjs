@@ -20,7 +20,7 @@ const { ausDatei, path, fs, stammLib, vm } = require("./lib/welt-boot.cjs");
 // Eine neue Domäne (vehicle-core/porta-core) trägt sich in CORES ein und wird
 // automatisch mitvalidiert (§5 Andock-Sequenz Schritt 5).
 //   node scripts/diag-studio-vertrag.cjs
-const { kanalImVm, ersteAbweichung, DATEN_KANAELE } = require("./lib/asset-worker-harness.cjs");
+const { kanalImVm, ersteAbweichung, DATEN_KANAELE, absorber } = require("./lib/asset-worker-harness.cjs");
 
 const root = path.resolve(__dirname, "..");
 
@@ -46,14 +46,6 @@ const { errs, check, wandEnde } = require("./lib/welt-boot.cjs").pruefer();
 
 // Ein absorbierender Proxy: frisst jeden Konstruktor/jede Methode der
 // Top-Level-Ausführung (THREE etc.) — nur die DATEN-Blöcke interessieren.
-function absorber() {
-    const a = new Proxy(function () {}, {
-        get: () => a,
-        apply: () => a,
-        construct: () => a,
-    });
-    return a;
-}
 
 // Alle Kerne in EINEM Kontext wie im Main-Thread — die Seh-Klassen (BUDGET_GESETZ.seh, S3) und die Linse EIN WERT lesen sie.
 const KERNE = (() => {

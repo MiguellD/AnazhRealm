@@ -39,17 +39,16 @@
 // die Platte trug, ist ROT beim Namen, ebenso ein Leser, der noch von der Platte kommt (`wechselUrteil`; --selftest füttert
 // es mit Bruch-Daten).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei, path, fs, os } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei, path, fs, os, SELBSTTEST, argOpt } = require("./lib/welt-boot.cjs");
 const HL = require("./lib/haenger-linse.cjs");
 
 const PORT = Number(process.env.BOOT_STAGE_PORT || 4406);
 const ARGV = process.argv.slice(2);
-const OPT = (k) => ARGV.includes(k) && ARGV[ARGV.indexOf(k) + 1];
 // Das Soll der Ankunft (docs/PFLICHT-OFFEN.md B, roadmap §0.v1 Schritt 1): kalt bis Kontrolle ≤ 5 s.
 // Die Kontrolle von außen (ankunft K1): die Taste trägt den Leib ≥ 0,1 m; nach 1500 Atemzügen ohne Weg hat er sie nie.
 // Das ganze Bild (ankunft K2 Staffel 1): ≤ 2 % der Pixel weichen gegen dieselbe Pose nach 60 s Ruhe um mehr als ein Achtel ab.
 const [ANKUNFT_SOLL_MS, KONTROLLE_M, KONTROLLE_DRUECKE, RUHE_MS, LUECKE_SOLL] = [5000, 0.1, 1500, 60000, 0.02];
-const KERN = require("../cores.manifest.json").find((k) => k.id === OPT("--kern-wechsel"));
+const KERN = require("../cores.manifest.json").find((k) => k.id === argOpt("--kern-wechsel"));
 const server = statikServer({ wandle: (p, roh) => (KERN?.scripts.includes(p.slice(1)) ? roh + "//" : roh) });
 // (Seite) trägt die gehaltene Taste den Leib um `m`? Der Weg in einem Atem von 200 ms, waagrecht — der Fall zählt nicht.
 async function LEIB_WEG(m) {
@@ -199,7 +198,7 @@ async function kaltLauf() {
     // DIE ZWEIT-ZEILE (1310-16): `--profil <ordner>` hält das Profil (die Foundry-Platte, der HTTP-Cache) über den Lauf hinaus —
     // der erste Lauf in einem neuen Ordner ist kalt, jeder weitere ein Zweit-Boot; ohne die Option ein leeres Wegwerf-Profil.
     // Mit ihr wartet die Zeile auf die Ruhe der Foundry: der Erst-Boot füllt die Platte ganz, der Zweit-Boot zählt jede Lieferung.
-    const profilBenannt = OPT("--profil");
+    const profilBenannt = argOpt("--profil");
     const zweit = !!(profilBenannt && fs.existsSync(profilBenannt));
     const profil = profilBenannt ? path.resolve(profilBenannt) : fs.mkdtempSync(path.join(os.tmpdir(), "kalt-zeile-"));
     fs.mkdirSync(profil, { recursive: true });
@@ -215,7 +214,7 @@ async function kaltLauf() {
     await page.evaluateOnNewDocument(KALT_PROBE);
     // DIE MUTANTE (`--mutante eigenmeldung`, das Schlupfloch von ankunft K1): die Eigenmeldung steht ab dem Erwachen — die
     // Kontrolle von außen folgt ihr nie; `--mutante bild`: der erste Schuss endet nach 20 m, die Welt dahinter fehlt (ROT)
-    const MUT = OPT("--mutante");
+    const MUT = argOpt("--mutante");
     if (MUT === "eigenmeldung")
         await page.evaluateOnNewDocument(() =>
             window.__weltDa().then((r) => (r.state._weltbildDa = performance.now()))
@@ -230,7 +229,7 @@ async function kaltLauf() {
     });
     const t0 = Date.now();
     // `--holz <profil>`: das Holz der Seite (`?holz=`), sonst wählt sie selbst (swiftshader → kienspan)
-    await server.zeige(page, 120000, OPT("--holz") ? `index.html?holz=${OPT("--holz")}` : "index.html");
+    await server.zeige(page, 120000, argOpt("--holz") ? `index.html?holz=${argOpt("--holz")}` : "index.html");
     // DIE KONTROLLE VON AUSSEN (ankunft K1–K3, nie die Eigenmeldung `_weltbildDa`): der Spieler hält W über das Protokoll des
     // Browsers; je Atem schickt er den Druck neu (Autorepeat — der Ladeschirm hält jede Taste, die erste nach ihm gilt), bis
     // die Taste den Leib um ≥ KONTROLLE_M trägt: t ist die Prozess-Uhr ab Navigation, als der Weg gesehen wurde.
@@ -245,7 +244,7 @@ async function kaltLauf() {
     // (scripts/lib/ausgabe-aufnahme.cjs) und derselbe nach RUHE_MS Ruhe (der Loop läuft), daneben `<datei>-ruhe.png`; dazu der
     // offene Bedarf im Bild in dem Moment (`_weltbildLuecken`, im Blick)
     const offen = tK ? await page.evaluate(() => r._weltbildFehlt()) : [];
-    const bildDatei = OPT("--bild");
+    const bildDatei = argOpt("--bild");
     let bild = null;
     if (tK && bildDatei) {
         const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
@@ -318,12 +317,12 @@ async function kaltLauf() {
         klassen: KALT_KLASSEN,
         familie: KALT_PFLANZEN,
     };
-    if (OPT("--spur") && spur)
-        fs.writeFileSync(OPT("--spur"), JSON.stringify({ spur: { profil: spur.profil, marken: spur.marken }, seite }));
+    if (argOpt("--spur") && spur)
+        fs.writeFileSync(argOpt("--spur"), JSON.stringify({ spur: { profil: spur.profil, marken: spur.marken }, seite }));
     out.halter = HL.ankunftsHalter(spur, seite);
     [out.kosten, out.vorBild] = [out.halter.kosten, out.halter.vorBild];
     delete out.marken;
-    const json = OPT("--json");
+    const json = argOpt("--json");
     if (json) fs.writeFileSync(json, JSON.stringify(out, null, 1));
     // je Sekunde: der Stand am Ende der Sekunde (die letzte Probe) und die blockierten ms des Haupt-Threads
     const S = Math.ceil((tK || out.weltbildDa) / 1000);
@@ -397,14 +396,13 @@ async function kaltLauf() {
 
 hauptLauf(async () => {
     if (ARGV.includes("--kalt")) return kaltLauf();
-    if (OPT("--spur-lesen")) {
-        const { spur, seite } = JSON.parse(fs.readFileSync(OPT("--spur-lesen")));
+    if (argOpt("--spur-lesen")) {
+        const { spur, seite } = JSON.parse(fs.readFileSync(argOpt("--spur-lesen")));
         return console.log(HL.ankunftsHalterTafel(HL.ankunftsHalter(spur, seite)));
     }
-    const SELFTEST = ARGV.includes("--selftest");
     await server.lausche(PORT);
     const { browser, page } = await nullSeite({ frist: 300000 });
-    if (SELFTEST) await page.evaluateOnNewDocument(SCHLUCK);
+    if (SELBSTTEST) await page.evaluateOnNewDocument(SCHLUCK);
     await server.zeige(page, 120000, "index.html", "networkidle0");
     // das erste Weltbild (der Null-Renderer setzt es beim Renderer-Bau; eine Zeit trägt nur die Kalt-Zeile, von außen)
     await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa));
@@ -469,8 +467,8 @@ hauptLauf(async () => {
             // (W4.3, der Wachhund eines hängenden Bakes, fiel mit S2: die Karte backt synchron im Takt)
         }
         return o;
-    }, SELFTEST);
-    if (SELFTEST) out.liefer = lieferUrteil(await page.evaluate(RUHE));
+    }, SELBSTTEST);
+    if (SELBSTTEST) out.liefer = lieferUrteil(await page.evaluate(RUHE));
     await browser.close();
     server.close();
     console.log(
@@ -490,7 +488,7 @@ hauptLauf(async () => {
         [T.biblio && T.impost, `BIBLIOTHEK warm (${T.biblio}) · IMPOSTOREN idle (${T.impost})`],
         [!!out.stage, "die BÜHNE wurde erreicht (das Prädikat schloss)"],
     ];
-    if (SELFTEST)
+    if (SELBSTTEST)
         checks.push(
             [
                 s.buehneOhneKarte === false && s.buehneMitKarte,
@@ -504,7 +502,7 @@ hauptLauf(async () => {
         );
     // das Urteil des Kern-Wechsels an Bruch-Daten: gesund GRÜN, ein fremder Neubau (e) und ein alter Leser (d) ROT
     const W = (e, d) => wechselUrteil([[0, "e", "platte", "phyto"], [0, "d", "platte", "fachwerk"]], [[0, "e", e, "phyto"], [0, "d", d, "fachwerk"]], "fachwerk").gruen; // prettier-ignore
-    if (SELFTEST) checks.push([W("platte", "werk") && !W("werk", "werk") && !W("platte", "platte"), "SELBST-TEST: der Kern-Wechsel urteilt (fremder Neubau, alter Leser ROT)"]); // prettier-ignore
+    if (SELBSTTEST) checks.push([W("platte", "werk") && !W("werk", "werk") && !W("platte", "platte"), "SELBST-TEST: der Kern-Wechsel urteilt (fremder Neubau, alter Leser ROT)"]); // prettier-ignore
     const fails = checks.filter(([pass, name]) => (console.log(`  ${pass ? "✅" : "❌"} ${name}`), !pass)).length;
     console.log(`\n${checks.length - fails}/${checks.length} Bühnen-Invarianten OK.`);
     urteilEnde(fails, "⛔ Die volle Bühne steht nicht (oder die Linse ist stumpf) — Kriterium 2 ist nicht abnehmbar.", `✅ „Volle Bühne" ist ein Prädikat — Kriterium 2 ist messbar.`);

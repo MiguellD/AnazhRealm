@@ -42,10 +42,8 @@
 //                                      „ersetzen" MUSS rot werden: die Seite erwacht in A) — beide beim Namen
 // Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt, ausDatei, path, fs, stammLib, weltTor, waitFor } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt, ausDatei, path, fs, stammLib, weltTor, waitFor, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
-const argv = process.argv.slice(2);
-const SELBSTTEST = argv.includes("--selftest");
 const JSON_AUS = opt("--json", null);
 const PORT = Number(process.env.WELTGRENZE_PORT) || 4401;
 const root = path.resolve(opt("--wurzel", path.resolve(__dirname, "..")));

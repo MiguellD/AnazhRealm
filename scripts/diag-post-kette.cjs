@@ -37,7 +37,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, fs } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, fs, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const SK = require("./lib/shader-kosten.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 
@@ -450,7 +450,7 @@ function selbsttest() {
     selbsttestEnde(fehler, "die Shader-Kosten-Linse zählt richtig, jeder injizierte Täter fällt rot und wird beim Namen genannt.");
 }
 
-if (process.argv.includes("--selftest")) {
+if (SELBSTTEST) {
     console.log("=== POST-KETTE — Selbsttest (ohne Browser) ===");
     selbsttest();
     process.exit(0);

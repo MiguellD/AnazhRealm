@@ -26,7 +26,7 @@
 //   node scripts/diag-blocker-netz.cjs [--selftest]   (npm run gate:blocker-netz)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 
 // DIE BOX-WAND (AST, acorn — Kommentare und Zeichenketten fallen mit dem Parser): jeder Schreiber der Blocker-Boxen beim Namen.
@@ -111,7 +111,7 @@ function boxWand(quelle) {
     return { befunde, zuweisungen };
 }
 
-if (process.argv.includes("--selftest")) {
+if (SELBSTTEST) {
     console.log("=== BLOCKER-NETZ — Selbsttest der Box-Wand (ohne Browser) ===");
     const v = [];
     const stamm = boxWand(stammLib.text(root));

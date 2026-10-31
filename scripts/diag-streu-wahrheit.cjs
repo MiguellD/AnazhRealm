@@ -45,6 +45,7 @@ function codecAus(phytoSrc) {
 }
 // linear → sRGB nach IEC 61966-2-1: die Referenz der Linse (abnahme-urteil linSrgb), unabhängig vom Codec.
 const { linSrgb } = require("./lib/abnahme-urteil.cjs");
+const { absorber } = require("./lib/asset-worker-harness.cjs");
 const srgbSoll = (v) => Math.round(linSrgb(v) * 255);
 function kartenFarbe(core) {
     const fehler = [];
@@ -91,10 +92,6 @@ function kartenSaum(core, presets, ic) {
 
 // Ein absorbierender Proxy: frisst jeden THREE-Aufruf der Top-Level-Ausführung des Kerns — nur die Daten zählen
 // (dieselbe Lade-Art wie gate:studio-vertrag).
-function absorber() {
-    const a = new Proxy(function () {}, { get: () => a, apply: () => a, construct: () => a });
-    return a;
-}
 // Die Daten des Pflanzen-Kerns (phyto-core + foundry-core, wie cores.manifest.json sie lädt): PRESETS und
 // PORTAL_RENDER_CONFIG. null, wenn der Kern nicht lädt.
 function kernDaten(phytoSrc, kernSrc) {

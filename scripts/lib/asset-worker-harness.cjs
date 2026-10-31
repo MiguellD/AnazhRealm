@@ -7,9 +7,10 @@
 //
 // mint-asset-goldens.cjs (schreibt die eingefrorenen Goldens) UND diag-asset-contract.cjs (das
 // Dauer-Gate) LESEN diese eine Datei — kein zweiter Boot-Pfad, der driften kann.
-const { statikServer, starteBrowser, ausDatei, path, crypto } = require("./welt-boot.cjs");
+const { statikServer, starteBrowser, ausDatei, path, crypto, stammLib } = require("./welt-boot.cjs");
 const { installiereDrift, FUNKTIONEN } = require("./plattform-probe.cjs");
 const { rasterDreieck } = require("./kronen-linse.cjs");
+const { luma709, linSrgb } = require("./abnahme-urteil.cjs");
 
 const ROOT = path.resolve(__dirname, "..", "..");
 
@@ -113,8 +114,7 @@ function bauBild(teile, rahmen) {
         const licht = 0.25 + 0.75 * Math.abs((nv[0] * Lv[0] + nv[1] * Lv[1] + nv[2] * Lv[2]) / Math.hypot(...nv));
         const alb = [0, 1, 2].map((k) => (t.farbe ? [I[f], I[f + 1], I[f + 2]].reduce((s, v) => s + t.farbe[v * t.fs + k], 0) / 3 : t.grund[k]));
         const lin = neutral(alb.map((x, k) => K * (x * (licht + (t.glutK || 0)) + (t.leucht ? t.leucht[k] : 0))));
-        const Yl = Math.min(1, Math.max(0, 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]));
-        const wert = 1 + Math.round(254 * (Yl <= 0.0031308 ? 12.92 * Yl : 1.055 * Math.pow(Yl, 1 / 2.4) - 0.055));
+        const wert = 1 + Math.round(254 * linSrgb(Math.min(1, Math.max(0, luma709(lin)))));
         rasterDreieck(X[0], Y[0], X[1], Y[1], X[2], Y[2], { nu: N, nv: N }, (i, l0, l1, l2) => {
           const z = l0 * Z[0] + l1 * Z[1] + l2 * Z[2];
           if (z > tiefe[i]) [tiefe[i], bild[i]] = [z, wert];
@@ -132,7 +132,7 @@ function bauBild(teile, rahmen) {
   return { rahmen, bilder, abstand };
 }
 // das Bild in der Seite samt seinem Raster (die Brücken-Seite hier, der Ofen der Werkstatt in gate:regler-wirkt)
-const BAU_BILD_QUELLE = `(() => { const rasterDreieck = ${rasterDreieck}; return ${bauBild}; })()`;
+const BAU_BILD_QUELLE = `(() => { const rasterDreieck = ${rasterDreieck}, luma709 = ${luma709}, linSrgb = ${linSrgb}; return ${bauBild}; })()`;
 // Die Teile eines Brücken-Baus für das Bild: was das Auge sieht (der Wurf-Teil „schatten" und der Beipack nicht).
 function bauTeile(meshes) {
   return (meshes || [])
@@ -292,54 +292,48 @@ function pageHtml() {
   // \`bild\` (DARF, je Eintrag null | { basis: Schlüssel } | { gegen: Schlüssel }): das Bild des Baus (\`bauBild\`) — die Basis
   // legt Rahmen und Bild unter ihrem Schlüssel ab (eine eigene, frühere Liste), der Rand misst seinen Abstand im Rahmen der Basis.
   const bilder = new Map();
-  window.__kostenListe = async (liste, mitAbdruck, mitTeilen, bild) => {
+  // DER POOL JEDER LISTE: die Brücke baut Stufe um Stufe der Liste (mit ov, dem Regler-Kanal der Werkstatt), \`lies(r, i)\`
+  // macht aus dem Bau den Eintrag (bis studios.K1 trugen Kosten- und Hash-Liste je ein eigenes Gerüst)
+  const jeBau = async (liste, lies) => {
     poolMehr(POOL_N);
     const out = new Array(liste.length);
     let next = 0;
     await Promise.all(pool.map(async (frag) => {
       while (next < liste.length) {
         const i = next++;
-        const r = await frag(Object.assign({ type: "build-asset" }, liste[i]));
-        const k = window.__phytoCore.budgetSippen(r.meshes || []);
-        // der Beipack der Fernform (S3 haus, N5): die NUR-WURF-Stufe trägt ihre Hülle als __fern (die Fern-Wand prüft sie)
-        const fern = (r.meshes || []).find((m) => m && m.kind === "__fern");
-        out[i] = { tris: k.tris, draws: k.draws, budget: r.budget || null, budgetBruch: r.budgetBruch || null, fern: fern ? fern.huelle : null };
-        if (mitTeilen)
-          out[i].teile = (r.meshes || [])
-            .filter((m) => m && m.position && m.position.array)
-            .map((m) => ({ kind: m.kind, mat: m.mat ? { seh: m.mat.seh, opacity: m.mat.opacity } : null, tris: window.__phytoCore.budgetSippen([m]).tris }));
-        if (mitAbdruck && mitAbdruck[i]) {
-          const a = await bauAbdruck(r.meshes || []);
-          out[i].abdruck = a.teile > 0 ? a.hash : null;
-          out[i].bau = a;
-        }
-        const bi = bild && bild[i];
-        if (bi && bi.basis) bilder.set(bi.basis, bauBild(bauTeile(r.meshes)));
-        else if (bi && bilder.get(bi.gegen) && bilder.get(bi.gegen).rahmen) {
-          const B = bilder.get(bi.gegen);
-          out[i].bild = B.abstand(B.bilder, bauBild(bauTeile(r.meshes), B.rahmen).bilder);
-        }
+        out[i] = await lies(await frag(Object.assign({ type: "build-asset" }, liste[i])), i);
       }
     }));
     return out;
   };
+  window.__kostenListe = (liste, mitAbdruck, mitTeilen, bild) =>
+    jeBau(liste, async (r, i) => {
+      const k = window.__phytoCore.budgetSippen(r.meshes || []);
+      // der Beipack der Fernform (S3 haus, N5): die NUR-WURF-Stufe trägt ihre Hülle als __fern (die Fern-Wand prüft sie)
+      const fern = (r.meshes || []).find((m) => m && m.kind === "__fern");
+      const o = { tris: k.tris, draws: k.draws, budget: r.budget || null, budgetBruch: r.budgetBruch || null, fern: fern ? fern.huelle : null };
+      if (mitTeilen)
+        o.teile = (r.meshes || [])
+          .filter((m) => m && m.position && m.position.array)
+          .map((m) => ({ kind: m.kind, mat: m.mat ? { seh: m.mat.seh, opacity: m.mat.opacity } : null, tris: window.__phytoCore.budgetSippen([m]).tris }));
+      if (mitAbdruck && mitAbdruck[i]) {
+        const a = await bauAbdruck(r.meshes || []);
+        o.abdruck = a.teile > 0 ? a.hash : null;
+        o.bau = a;
+      }
+      const bi = bild && bild[i];
+      if (bi && bi.basis) bilder.set(bi.basis, bauBild(bauTeile(r.meshes)));
+      else if (bi && bilder.get(bi.gegen) && bilder.get(bi.gegen).rahmen) {
+        const B = bilder.get(bi.gegen);
+        o.bild = B.abstand(B.bilder, bauBild(bauTeile(r.meshes), B.rahmen).bilder);
+      }
+      return o;
+    });
   // DER BAU-HASH VIELER STUFEN (W1 d, gate:regler-wirkt): jede Stufe über die echte Brücke gebaut (mit ov, dem
   // Regler-Kanal der Werkstatt), je Stufe der EINE Bau-Fingerabdruck (\`bauAbdruck\`) — kein Puffer-Transport.
-  window.__bauHashListe = async (liste) => {
-    poolMehr(POOL_N);
-    const out = new Array(liste.length);
-    let next = 0;
-    await Promise.all(pool.map(async (frag) => {
-      while (next < liste.length) {
-        const i = next++;
-        const r = await frag(Object.assign({ type: "build-asset" }, liste[i]));
-        out[i] = await bauAbdruck(r.meshes || []);
-        // Der Budget-Bruch der Antwort (Studio-Vertrag B2c) reist mit: ein Regler-Wert, der die Stufe über ihre Zeile treibt.
-        out[i].budgetBruch = r.budgetBruch ? JSON.stringify(r.budgetBruch).slice(0, 200) : null;
-      }
-    }));
-    return out;
-  };
+  // Der Budget-Bruch der Antwort (Studio-Vertrag B2c) reist mit: ein Regler-Wert, der die Stufe über ihre Zeile treibt.
+  window.__bauHashListe = (liste) =>
+    jeBau(liste, async (r) => Object.assign(await bauAbdruck(r.meshes || []), { budgetBruch: r.budgetBruch ? JSON.stringify(r.budgetBruch).slice(0, 200) : null }));
 })();
 </script></body>`;
 }
@@ -426,7 +420,7 @@ function istBeipack(m) {
 function fingerprintMeshes(meshes) {
     const sha = (b64) => {
         const buf = Buffer.from(b64, "base64");
-        return { bytes: buf.length, sha256: crypto.createHash("sha256").update(buf).digest("hex") };
+        return { bytes: buf.length, sha256: stammLib.sha(buf) };
     };
     return (meshes || []).filter((m) => !istBeipack(m)).map((m) => {
         const out = { kind: m.kind, mat: m.mat, attrs: {} };
@@ -450,16 +444,18 @@ const DATEN_KANAELE = [
 // Brücke zuletzt) laufen in EINEM Node-vm, und DERSELBE Kanal (`foundryKanal`) antwortet je Frage — der Umschlag (get-book,
 // gate:studio-vertrag U) und jeder Bau (build-asset, gate:studio-uebergabe), ~0,6 s statt eines Browser-Boots. Die Leinwand
 // des Blatt-Atlas (OffscreenCanvas) schluckt ein Absorber. `quellen`: { "<datei>": "<quelltext>" } ersetzt eine Datei.
+// DER ABSORBER: ein Wert, der jeden Zugriff, Ruf und Bau schluckt (als Zahl 0) — THREE und die Leinwand eines Kerns, der im vm
+// ohne Grafik lädt (die Brücke hier, die Kerne der Vertrags- und der Streu-Linse; bis studios.K1 trug jede ihren eigenen)
+function absorber() {
+    const a = new Proxy(function () {}, {
+        get: (_t, k) => (k === Symbol.toPrimitive ? () => 0 : a),
+        apply: () => a,
+        construct: () => a,
+    });
+    return a;
+}
 function kanalImVm(quellen = {}) {
     const vm = require("vm");
-    const absorber = () => {
-        const a = new Proxy(function () {}, {
-            get: (_t, k) => (k === Symbol.toPrimitive ? () => 0 : a),
-            apply: () => a,
-            construct: () => a,
-        });
-        return a;
-    };
     const posts = [];
     const ctx = vm.createContext({
         console: { log() {}, warn() {}, error() {} },
@@ -512,6 +508,7 @@ module.exports = {
     fingerprintMeshes,
     DATEN_KANAELE,
     kanalImVm,
+    absorber,
     bauAbdruck,
     bauBild,
     BAU_BILD_QUELLE,

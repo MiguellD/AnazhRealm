@@ -1,11 +1,9 @@
 "use strict";
-const { ausDatei } = require("../lib/welt-boot.cjs");
+const { ausDatei, fs, path } = require("../lib/welt-boot.cjs");
 // scripts/playtest/netz.cjs — der Richter von Netz (spec/stamm/modul-karte.json): Einladung · WebRTC-Mesh · Lockstep · Stimme · Welt-Bündel · Vibe-Pass · Signaturen · Regionen · Pins und Hallen · Bann · Portal-Eintritt · Ko-Präsenz · Dwelling · Portal-Server.
 // 10 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const fs = require("fs");
-const path = require("path");
 const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 

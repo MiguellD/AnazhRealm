@@ -22,7 +22,7 @@
 //   node scripts/diag-raum-tags.cjs [--selftest]   (npm run gate:raum-tags)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 
 // DIE QUELL-WAND: der Aufrufbaum von `_raumTagsRechnen` (über `this.<methode>(`), seine Eingänge und seine Tabellen.
@@ -149,7 +149,7 @@ function quellWand(quelle) {
     return { befunde, baum: [...baum], tabellen: [...tabellen] };
 }
 
-if (process.argv.includes("--selftest")) {
+if (SELBSTTEST) {
     console.log("=== RAUM-TAGS — Selbsttest der Quell-Wand (ohne Browser) ===");
     const v = [];
     const stammQ = stammLib.text(root);

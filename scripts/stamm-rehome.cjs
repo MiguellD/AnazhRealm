@@ -1,5 +1,5 @@
 "use strict";
-const { ausDatei, path, fs, os } = require("./lib/welt-boot.cjs");
+const { ausDatei, path, fs, os, argOpt, SELBSTTEST } = require("./lib/welt-boot.cjs");
 /* global process, console, __dirname */
 // scripts/stamm-rehome.cjs — trägt einen Zweig über den Stamm-Schnitt (Stamm-Zerlegung).
 //
@@ -389,7 +389,7 @@ function selbsttest() {
 // ── CLI ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 function main() {
     const argv = process.argv.slice(2);
-    if (argv.includes("--selftest")) return selbsttest() ? 1 : 0;
+    if (SELBSTTEST) return selbsttest() ? 1 : 0;
     if (argv.includes("--weiter")) {
         const r = weiter(ROOT);
         console.log(
@@ -397,7 +397,7 @@ function main() {
         );
         return r.commit ? 0 : 1;
     }
-    const auf = argv.includes("--auf") ? argv[argv.indexOf("--auf") + 1] : "origin/main";
+    const auf = argOpt("--auf", "origin/main");
     const r = rehome(ROOT, auf, { trocken: argv.includes("--trocken"), immer: argv.includes("--immer") });
     if (!r.noetig) return (console.log(`Re-Home: nicht nötig — ${r.info}`), 0);
     console.log(

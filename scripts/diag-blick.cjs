@@ -6,13 +6,10 @@
 //   Ergebnis: PNG(s) in DIR (Default scratch/blick-*.png) + Exit 0 wenn der Schuss
 //   SUBSTANZ trägt (nicht leer/uniform — sonst Exit 1 mit Diagnose).
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf, path, fs } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, path, fs, argOpt } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
-const argOut = (() => {
-    const i = process.argv.indexOf("--out");
-    return i > 0 ? process.argv[i + 1] : root;
-})();
+const argOut = argOpt("--out", root);
 const W = 640,
     H = 360;
 const server = statikServer();
@@ -97,8 +94,8 @@ hauptLauf(async () => {
             res.schuesse.haupt = await schuss("haupt");
             return res;
         },
-        process.env.BLICK_ZEIT || (process.argv.includes("--zeit") ? process.argv[process.argv.indexOf("--zeit") + 1] : ""),
-        process.argv.includes("--blick") ? process.argv[process.argv.indexOf("--blick") + 1] : "wald"
+        process.env.BLICK_ZEIT || argOpt("--zeit", ""),
+        argOpt("--blick", "wald")
     );
 
     await browser.close();

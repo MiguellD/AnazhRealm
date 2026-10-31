@@ -210,13 +210,14 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-if (process.argv.includes("--selftest")) {
+const { statikServer, warteAufWelt, nullSeite, pngDatei, SELBSTTEST } = require("./lib/welt-boot.cjs");
+
+if (SELBSTTEST) {
     console.log("=== KOLLISION = BILD — Selbsttest (ohne Browser) ===");
     selbsttest();
     process.exit(0);
 }
 
-const { statikServer, warteAufWelt, nullSeite, pngDatei } = require("./lib/welt-boot.cjs");
 const { messort } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOLLISION_BILD_PORT) || 4631;

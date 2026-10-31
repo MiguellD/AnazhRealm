@@ -26,10 +26,8 @@
 //                                                    nur-idb und idb-frischer MÜSSEN rot werden, beim Namen
 // Port: BOOT_RETTUNG_PORT (Default 4402). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf, sleep, argOpt: opt, path, fs } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, sleep, argOpt: opt, path, fs, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
-const argv = process.argv.slice(2);
-const SELBSTTEST = argv.includes("--selftest");
 const JSON_AUS = opt("--json", null);
 const PORT = Number(process.env.BOOT_RETTUNG_PORT) || 4402;
 const root = path.resolve(opt("--wurzel", path.resolve(__dirname, "..")));

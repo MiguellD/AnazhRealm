@@ -25,7 +25,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, uferStellen, taeterFaelle, selbsttestEnde, wandEnde, laufUhr } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, uferStellen, taeterFaelle, selbsttestEnde, wandEnde, laufUhr, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
 
@@ -111,7 +111,7 @@ function selbsttest() {
     return fehler;
 }
 
-if (process.argv.includes("--selftest")) {
+if (SELBSTTEST) {
     console.log("=== ZIEL-ZENSUS — Selbsttest (ohne Browser) ===");
     selbsttestEnde(selbsttest(), "das Urteil nennt jeden gebauten Täter beim Namen, der saubere Lauf bleibt grün.");
     process.exit(0);

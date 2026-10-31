@@ -44,7 +44,7 @@
 // Port über REGLER_WIRKT_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4561; der Stamm des
 // Ofen-Kanals über REGLER_WIRKT_OFEN_PORT, Standard Port + 1.
 "use strict";
-const { statikServer, starteBrowser, ROOT, hauptLauf, ausDatei, SELBSTTEST, path, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT, hauptLauf, ausDatei, SELBSTTEST, path, stammLib, fadenScope } = require("./lib/welt-boot.cjs");
 const { runWithWorker, bauBild, bauAbdruck, BAU_BILD_QUELLE } = require("./lib/asset-worker-harness.cjs");
 // DIE BILD-SCHWELLE (studios.K1, das Schlupfloch „0,1 mm am Hash"): ein Regler wirkt, wo sein Rand das Bild des Baus
 // (`bauBild`, die Vorschau-Pose) an mindestens 1 % der Gestalt-Pixel um mehr als 18 Luma bewegt — ein Hash allein zählt nie.
@@ -75,7 +75,6 @@ function vergleichTeil(jetzt, ratsche, ids, teil = TEIL) {
 // GESETZ-WERT erklärt (B4 `uniform: true`, die Brücke reicht das Feld nicht durch) — ihr Kanal ist der Leser der Welt;
 // `ids`: je Art jede Zeile (eine Art mit Leser misst sie alle dort: ein Wert kann Bau UND Leser speisen, porta realm).
 function kernVonArt() {
-    const vm = require("vm");
     const aus = {};
     const [gesetz, ids] = [{}, {}];
     Object.defineProperty(aus, "gesetz", { value: gesetz });
@@ -83,12 +82,7 @@ function kernVonArt() {
     const manifest = ausDatei("cores.manifest.json", true);
     for (const c of manifest) {
         if (!c || typeof c.ns !== "string" || !c.ns) continue;
-        const ctx = { console, Math, JSON, Date };
-        ctx.self = ctx;
-        ctx.globalThis = ctx;
-        vm.createContext(ctx);
-        for (const s of c.scripts) vm.runInContext(ausDatei(s), ctx, { filename: s });
-        const pbk = (ctx[c.ns] && ctx[c.ns].PARAMS_BY_KIND) || {};
+        const pbk = fadenScope(c.scripts)[c.ns]?.PARAMS_BY_KIND || {};
         for (const art of Object.keys(pbk)) if (!(art in aus)) [aus[art], ids[art]] = [c.id, pbk[art].map((d) => d.id)];
         for (const art of Object.keys(pbk)) for (const d of pbk[art]) if (d.uniform === true) (gesetz[art] ||= []).push(d.id);
     }
@@ -626,21 +620,11 @@ const quoteUeber = (st) =>
 // das Paar aus den Bauten der Stufen-Probe (erste Stufe, NUR-WURF-Stufe; die volle Regler-Hülle jeder Art): die Regel wirft
 // nie von der teureren Stufe. Die Zeile der NUR-WURF-Stufe ist das Rezept-Maß (gate:asset-contract), am Regler-Rand
 // richtet die Regel — die Probe nennt jede Stelle, an der die Stufe selbst wirft, mit ihren Kosten.
-// Die Methode am NAMEN (gate:apparat Klinge 3), ihre Parameter liest die Probe aus dem Kopf — nie eine eigene Liste.
-function statischeMethode(src, name) {
-    const i = stammLib.kopf(src, name);
-    if (i < 0) throw new Error("im Stamm nicht gefunden: " + name);
-    const p = src.indexOf("(", i);
-    const args = src.slice(p + 1, src.indexOf(")", p));
-    const rumpf = stammLib.rumpf(src, name).slice(1, -1); // der EINE Rumpf-Schneider (scripts/lib/stamm.cjs)
-    return { rumpf, fn: new Function(args, rumpf) };
-}
+// Die Methode am NAMEN (gate:apparat Klinge 3): Parameter und Rumpf liest der EINE Leser `methodeAm` (scripts/lib/stamm.cjs).
 function stammRegel() {
     const s = stammLib.text(ROOT);
-    return {
-        teilWirft: statischeMethode(s, "_teilWirft").fn,
-        vonBilligerer: statischeMethode(s, "_wurfVonBilligerer").fn,
-    };
+    const fn = (name) => ((m) => new Function(m.args, m.rumpf))(stammLib.methodeAm(s, name));
+    return { teilWirft: fn("_teilWirft"), vonBilligerer: fn("_wurfVonBilligerer") };
 }
 function budgetVonArt(rc, art) {
     const L = rc?.lod || {};

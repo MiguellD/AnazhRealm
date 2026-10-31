@@ -6,7 +6,7 @@
 //   node scripts/diag-gpu-fehler.cjs --selftest
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, hauptLauf, sleep, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep, selbsttestEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
 const { GPU_FEHLER_INSTALL, GPU_ABGABE } = require("./lib/gpu-fehler.cjs");
 
 const { errs, check } = require("./lib/welt-boot.cjs").pruefer();
@@ -71,7 +71,7 @@ async function gegendruck([name, spaet]) {
 }
 
 hauptLauf(async () => {
-    if (!process.argv.includes("--selftest")) {
+    if (!SELBSTTEST) {
         console.log(
             "Gebrauch: node scripts/diag-gpu-fehler.cjs --selftest (die Linse selbst fährt in der Werkbank: gpu-fehler)"
         );
