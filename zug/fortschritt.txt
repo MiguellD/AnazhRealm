@@ -1093,3 +1093,4 @@
 2026-10-31 09:04:04 z100c-abab START 2 Zellen
 2026-10-31 09:20:14 z100c-abab stadt VERLÄNGERN 16.1 · 1/2 (2+2)
 2026-10-31 09:32:24 z100c-abab w-ego VERLÄNGERN 12.1 · 2/2 (2+2)
+2026-10-31 09:48:33 z100c-abab stadt(4+4) nicht-langsamer 16.1 · verlängert (4+4)
