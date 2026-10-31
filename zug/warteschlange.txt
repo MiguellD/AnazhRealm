@@ -310,3 +310,4 @@ takt-z109rb-gtx 0 storno
 z111-abab 3 abab A=90878cc61494378c8994488059a3578ed2bdef80 B=cdb2703d106a5e26e8f7f95aa4d982824d39ff2e zellen=stadt,w-ego
 takt-z111a-gtx 1 punkte sha=cdb2703d106a5e26e8f7f95aa4d982824d39ff2e geraet=gtx nur=mensch.K1#1,material.K1#1,lod.K5#1,studios.K2#2,studios.K3#2,bauen.K1#2,studios.K4#1,siedlung.K1#2,fahrzeug.K2#2,profiband.K1#1,profiband.K2#1,profiband.K3#1
 takt-z111b-gtx 1 punkte sha=cdb2703d106a5e26e8f7f95aa4d982824d39ff2e geraet=gtx nur=tiere.K1#2,tiere.K3#2,oekologie.K4#2,mensch.K5#1,mensch.K4#1,haar.K2#1,vegetation.K1#1,licht.K2#2,licht.K5#1,material.K2#1,lod.K1#1,licht.K3#1,bauen.K5#2,siedlung.K4#2,spielgang.K3#1,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,profiband.K4#1,profiband.K5#1,klang.K4#1,speicher.K4#2
+takt-z110a-gtx 0 storno
