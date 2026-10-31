@@ -38,6 +38,15 @@ Pflicht-OFFEN: A, B, C, E und F (F gesetzt 31.10., der Prüfplatz; Plan `bericht
   DECKEL). Selbsttest 122/122 ohne (3c), die Fahrt-Wand hält an gtx und radeon. Die Stationen a (über 90 s) stehen noch aus.
 - **OMEN:** takt-z114a/-b und z114-abab sind eingereiht; nach jeder Landung reiht takt-nach.sh den Takt am neuen main ein.
 
+## z116 FAHRT ROT (23:47) — zuerst triagieren
+- Kandidat 831e885c (V18.546.152, alle 5 Zweige drin) fiel in der vollen Batterie, Lauf 41246392600 (integ-probe, Versuch 2):
+  - voll 7/18 Fluss-Wand (der Foundry-Kanal kostet den Haupt-Thread nur den Gruppen-Bau): Verdacht ankunft-5 oder e-vram-heim;
+  - voll 8/18 Albedo nah gegen fern (EINE Boden-Farbe je Ort): Verdacht gras-l2 (die Ferne der Wiese) oder mess-platz (die Bühne);
+  - voll 18/18 WebGL2-Rückfall (ohne WebGPU-Adapter bootet die Welt auf GL).
+- `zug.sh teile 831e885c… halbiert` ist der Weg der Probe-Bisektion. Jedes ROT zuerst mit dem GPU-Auge triagieren (rot-triage.cjs):
+  Täter oder wackelnde Linse? main bleibt b895650c.
+- z117 fährt w4-b-code-heim allein am main b895650c (`w3/kette-z117.out`).
+
 ## Cloud — 17 Sitzungen liefen um 22:17
 Alle bekamen um 22:18 die Anweisung: Stand sofort als „WIP <zweig>: … [skip ci]“ pushen, danach je Schritt, abgabereif als „Abgabe …“.
 Jeder WIP-Commit nennt im Rumpf, was offen ist. **Einsammeln:** `git ls-remote origin 'refs/heads/w4-*'`, dann je Zweig `git log -3`.
