@@ -483,19 +483,11 @@ const LATENZ_HALT_SITZUNG = sitzung(33,
         "teil SPIEL{N} $W eval '" + HIT_LESEN + "'"
     )
 );
-// DIE FAHRT IN EINEM LAUF (fahrzeug.K3#2, fahrzeug.K4#1, fahrzeug.K4#2, Zwillinge, 29.10.): gate:fahr-leben (T4, T5; eigene Null-Welt auf
-// {PORT}+20001) läuft NEBEN der Welt der Sitzung; darin der Ritt (tempo4.js auf dem Weg der Probe, WELT — w4-heil-fahrzeug 30.10.),
-// die Grundstellung, der Blick am Steilhang (blick.js, BLICK); die Zeilen der Linse danach (FAHR). Bis dahin fuhr jede der drei
-// Stationen die Linse und ihren Boot für sich.
-const FAHR_SITZUNG = sitzung(33,
-    '( env FAHR_LEBEN_PORT=$LP node scripts/diag-fahr-leben.cjs; echo "@@PUNKTE@@ EXIT $?" ) > "$L/fahr.out" 2>&1 &',
-    "boot",
-    'teil WELT $W eval "$(cat "$K/bericht/3010-heil-fahrzeug/tempo4.js")"',
-    "boot",
-    'teil BLICK $W eval "$(cat "$K/bericht/2010-buendel-abab/blick.js")"',
-    "wait",
-    'echo "@@PUNKTE@@ FAHR"; cat "$L/fahr.out"'
-);
+// DIE FAHRT IN EINEM LAUF (fahrzeug.K3#2, fahrzeug.K4#1, fahrzeug.K4#2, Zwillinge, 29.10.): der Ritt (tempo4.js auf dem Weg der Probe,
+// WELT — w4-heil-fahrzeug 30.10.), T5, der Blick am Steilhang (blick.js, BLICK) und T4 von gate:fahr-leben (FAHR) — alle in der EINEN
+// Welt der Sitzung (proben-welt.cjs `fahrWelt`; bis w4-ssa-E lief die Linse ganz in einer eigenen Null-Welt daneben, und `wait` hielt
+// die Probe an ihr fest: GTX ≥ 90 s). Bis 29.10. fuhr jede der drei Stationen die Linse und ihren Boot für sich.
+const FAHR_SITZUNG = { befehl: PW.torBefehl(PW.fahrWelt, "1cf3af98d5d09a6fc3133debf068e158d50a1401", "b94fa5dd03dd4d249cefef435955dbf233102710"), sek: 33 };
 // ───────────────────────── DIE PROBEN DER STADT IN DER SITZUNG (29.10., stationen/sitzung-seite.js) ─────────────────────────
 // Das Gesetz des Schöpfers: eine Fahrt durch jedes System ≤ 30 min samt Dauerlast — keine dieser Stationen bootet mehr eine Welt.
 const { probeBefehl } = require("./sitzung-seite.js");
