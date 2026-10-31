@@ -1495,12 +1495,11 @@ class AnazhRealm_siedlung_bewohner {
     // kürzeren, dessen beide Beine frei sind: die Laterne an der Gasse, der Baum am Platz kosten einen Schritt zur Seite, nie
     // den Weg über das Netz (Steintal auf der Trasse: 22 m gerade, über das Netz ≥ 45 m — der Gang heim riss an der Wende zur
     // Arbeit). null: es trägt das Netz.
-    _bewohnerGerade(von, ziel) {
+    _bewohnerGerade(von, ziel, frei = null, m = AnazhRealm.PLAYER_WALL_RADIUS + AnazhRealm.BEWOHNER.spurM) {
         const wand = this._bewohnerWand(von, ziel);
         if (!wand) return [ziel];
         const l = Math.hypot(ziel.x - von.x, ziel.z - von.z);
         const [dx, dz] = [(ziel.x - von.x) / l, (ziel.z - von.z) / l];
-        const m = AnazhRealm.PLAYER_WALL_RADIUS + AnazhRealm.BEWOHNER.spurM;
         let [lo, hi, t, n] = [Infinity, -Infinity, 0, 0];
         for (const b of wand.blockerAABBs)
             for (const [x, z] of [
@@ -1517,6 +1516,7 @@ class AnazhRealm_siedlung_bewohner {
         for (const s of [hi + m, lo - m]) {
             const p = { x: von.x + dx * t - dz * s, z: von.z + dz * t + dx * s };
             const lp = Math.hypot(p.x - von.x, p.z - von.z) + Math.hypot(ziel.x - p.x, ziel.z - p.z);
+            if (frei && !frei(p)) continue;
             if (!(best && best.l <= lp) && !this._bewohnerWand(von, p) && !this._bewohnerWand(p, ziel))
                 best = { l: lp, p };
         }
@@ -1529,8 +1529,9 @@ class AnazhRealm_siedlung_bewohner {
     // erreichbaren Knoten, den kürzesten Weg über freie Kanten (je Start-Knoten EIN Baum, gemerkt), vom Knoten des Ziels frei
     // zum Ziel. Jedes Gemerkte gilt für den Stand der Wache (`_blockerWacheMelden`): wechselt eine Hülle, fällt es. Die Spur
     // neben der Mitte (`spurM`) geht nur, wo jedes ihrer Beine frei ist (`_bewohnerWand`) — sonst geht er die Mitte der
-    // Gasse, deren Kanten frei sind. Kein Weg: laut, und null (er bleibt, `_bewohnerWeg`).
-    _bewohnerStrecke(S, von, ziel, spur) {
+    // Gasse, deren Kanten frei sind — auf der Trasse den Gehweg seiner Seite (`seite`), erst wo auch der nicht trägt, ihre Mitte.
+    // Kein Weg: laut, und null (er bleibt, `_bewohnerWeg`).
+    _bewohnerStrecke(S, von, ziel, spur, seite = Math.sign(spur)) {
         const stand = S.wache.stand;
         if (von._wegeStand !== stand) {
             von._wegeStand = stand;
@@ -1543,6 +1544,9 @@ class AnazhRealm_siedlung_bewohner {
                 Math.hypot(ziel.x - von.x, ziel.z - von.z) < AnazhRealm.BEWOHNER.direktM
                     ? this._bewohnerGerade(von, ziel)
                     : null;
+            // die Gerade quert die Fahrbahn, nie geht sie längs (`_verkehrQuert`) — sonst trägt das Netz mit seinem Gehweg
+            if (direkt && S.verkehr && !direkt.every((q, i) => this._verkehrQuert(S, i ? direkt[i - 1] : von, q)))
+                direkt = null;
             (von._direkt || (von._direkt = new Map())).set(ziel, direkt);
         }
         if (direkt) return direkt.slice();
@@ -1578,7 +1582,10 @@ class AnazhRealm_siedlung_bewohner {
         // Metropole stand, ihr Halter wartete auf einen Gehenden zwischen den Wagen).
         const BW = AnazhRealm.BEWOHNER;
         const breit = S.verkehr && S.verkehr.wagen.length ? globalThis.__fachwerkCore.VERKEHR_GESETZ.breiteM : Infinity;
-        const geh = Math.sign(spur) * BW.gehwegM + (spur / BW.spurM) * BW.gehwegBreiteM;
+        const geh = seite * BW.gehwegM + (spur / BW.spurM) * BW.gehwegBreiteM;
+        // DIE FAHRBAHN TRÄGT DEN FUSS NIE (das EINE Gesetz der Straße, `_verkehrAufSpur` ohne Rand: kein Punkt seines Wegs, an dem
+        // seine Kapsel die Bahn eines Wagens berührt)
+        const fuss = (p) => !this._verkehrAufSpur(S, p.x, p.z, 0);
         const alt = [];
         const pts = kette.map((k, i) => {
             const q = N.knoten[k];
@@ -1586,26 +1593,76 @@ class AnazhRealm_siedlung_bewohner {
             const q1 = N.knoten[kette[Math.min(kette.length - 1, i + 1)]];
             const l = Math.hypot(q1.x - q0.x, q1.z - q0.z) || 1;
             const p = { x: q.x - ((q1.z - q0.z) / l) * spur, z: q.z + ((q1.x - q0.x) / l) * spur };
-            if (!spur || !(q.w >= breit)) return p;
-            // die Normalen beider Beine (ein Ende: die des einen), ihre Summe n: der Rand um die Ecke liegt um 2·geh / |n|² · n
+            if (!seite || !(q.w >= breit)) return p;
+            // die Normalen beider Beine (ein Ende: die des einen), ihre Summe n: der Rand um die Ecke liegt um 2·geh / |n|² · n —
+            // steht er dort in einer Wand (die Laterne am Bordstein, auf seiner Linie) oder in der Bahn eines Wagens (die Ecke in
+            // der Kreuzung, wo die Abbieger fahren; die Spur, die einem Stand auswich), gilt der nächste Ort längs n je Viertelmeter
+            // (hinaus zuerst, höchstens `gehwegM`), der beides nicht ist — sonst der nächste ohne Wand. Bis hier stand der Rand der
+            // Kreuzung am Markt in der Laterne #410: kein Bein trug ihn, die Menge ging auf ihrer Spur 0,7 m neben der Mitte.
             const [l0, l1] = [Math.hypot(q.x - q0.x, q.z - q0.z), Math.hypot(q1.x - q.x, q1.z - q.z)];
             const n0 = l0 > 1e-6 ? [(q0.z - q.z) / l0, (q.x - q0.x) / l0] : null;
             const n1 = l1 > 1e-6 ? [(q.z - q1.z) / l1, (q1.x - q.x) / l1] : n0;
             if (!n1) return p;
             const n = [(n0 || n1)[0] + n1[0], (n0 || n1)[1] + n1[1]];
             const f = (2 * geh) / Math.max(1, n[0] * n[0] + n[1] * n[1]);
-            alt[i] = p; // trägt der Rand dort nicht (die Laterne, der Baum am Rand), geht er in seiner Spur
-            return { x: q.x + n[0] * f, z: q.z + n[1] * f };
+            const df = (Math.sign(geh) * 0.25) / (Math.hypot(n[0], n[1]) || 1);
+            alt[i] = p; // trägt der Rand dort nicht (die Laterne, der Baum am Rand), geht er um sie — sonst in seiner Spur
+            const ort = (k) => {
+                const s = k & 1 ? (k + 1) >> 1 : -(k >> 1); // 0, +1, −1, +2, …: hinaus zuerst
+                return { x: q.x + n[0] * (f + s * df), z: q.z + n[1] * (f + s * df) };
+            };
+            // die billige Probe zuerst (Lehre 25): die Fahrbahn, dann die Wand
+            for (let k = 0; k <= 8 * BW.gehwegM; k++) {
+                const c = ort(k);
+                if (fuss(c) && !this._bewohnerWand(c, c)) return c;
+            }
+            for (let k = 0; k <= 8 * BW.gehwegM; k++) {
+                const c = ort(k);
+                if (!this._bewohnerWand(c, c)) return c;
+            }
+            return ort(0);
         });
         if (ausA) (pts.unshift(ausA), alt.unshift(undefined));
         if (ausE) pts.push(ausE);
         pts.push(ziel);
-        if (spur)
+        if (seite)
             for (let i = 0; i < pts.length; i++) {
-                if (!this._bewohnerWand(i ? pts[i - 1] : von, pts[i])) continue;
+                const a = i ? pts[i - 1] : von;
+                if (!this._bewohnerWand(a, pts[i])) continue;
+                // DIE WAND AM BEIN (die Laterne, die Wandlaterne, der Stand am Bordstein, die Ecke am Stand): wo Wagen fahren, geht
+                // er um sie neben der Fahrbahn (`_bewohnerGerade`: der Seitenpunkt neben ihren Boxen, Kapsel und `umRandM`), sonst
+                // knapp an ihr vorbei — erst wo beides nicht trägt, in seiner Spur; ohne Spur-Punkt am Bein geht der Weg die Mitte der
+                // Gassen und den Gehweg der Trassen, erst wo auch der nicht trägt, ganz in der Mitte. Bis hier fiel er an jeder Laterne
+                // auf der Linie (13 von 33 der Metropole, 2,75–3,5 m von der Mitte) in seine Spur, 0,8 m neben die Mitte der Trasse,
+                // und am ersten Bein vom Stand jeder Weg auf die Mitte der Trasse — zwischen die Wagen.
+                const m = AnazhRealm.PLAYER_WALL_RADIUS + BW.umRandM;
+                const um =
+                    breit < Infinity &&
+                    (this._bewohnerGerade(a, pts[i], fuss, m) || this._bewohnerGerade(a, pts[i], null, m));
+                if (um && um.length === 2) {
+                    pts.splice(i, 0, um[0]);
+                    alt.splice(i, 0, undefined);
+                    continue;
+                }
                 const r = alt[i] ? i : i && alt[i - 1] ? i - 1 : -1;
-                if (r < 0) return this._bewohnerStrecke(S, von, ziel, 0);
+                if (r < 0) return this._bewohnerStrecke(S, von, ziel, 0, spur ? seite : 0);
                 [pts[r], alt[r], i] = [alt[r], undefined, r - 1];
+            }
+        // DER WEG BETRITT DIE FAHRBAHN NUR, UM SIE ZU QUEREN: jeder Punkt zwischen Anfang und Ziel, an dem seine Kapsel die Bahn
+        // eines Wagens berührt (der Knoten einer Gasse in der Trasse, die Ecke, wo zwei Wege sich im Winkel kreuzen, der Rand in
+        // der Kreuzung), fällt, wo sein Vorgänger den Nachfolger frei erreicht — die Fahrbahn quert er dann in einem Bein. Bis hier
+        // ging die Menge auf diesen Punkten längs der Fahrbahn: das Zickzack an der Kreuzung südwestlich des Markts (Kehre auf
+        // 818,9/466,9, 0,9 m neben der Spur).
+        // Eine Folge solcher Punkte fällt ganz, wo das Bein vom Punkt vor ihr zum ersten danach die Fahrbahn höchstens auf der
+        // doppelten Breite ihrer Bahnen (`_verkehrQuert`) trägt — es quert sie, nie geht es längs.
+        if (S.verkehr)
+            for (let i = 0; i < pts.length - 1; i++) {
+                if (fuss(pts[i])) continue;
+                let j = i;
+                while (j < pts.length - 1 && !fuss(pts[j])) j++;
+                const a = i ? pts[i - 1] : von;
+                if (this._verkehrQuert(S, a, pts[j]) && !this._bewohnerWand(a, pts[j])) pts.splice(i, j - i);
+                else i = j;
             }
         return pts;
     }
@@ -1756,7 +1813,26 @@ class AnazhRealm_siedlung_bewohner {
         b.tempoTag = Math.max(b.tempo / 2, Math.min(b.tempo * (1 + BW.aufholen), soll));
         const dtW = (dt * b.tempoTag) / b.tempo;
         const [weg0, rest0] = [b.weg, b.wegRest];
-        const lenk = b.drinnen || !(dt > 0) ? null : this._bewohnerAusweichen(S, b, dtW);
+        let lenk = b.drinnen || !(dt > 0) ? null : this._bewohnerAusweichen(S, b, dtW);
+        // DER VORRANG DER FAHRBAHN (PFLICHT-OFFEN C, das EINE Gesetz der Straße): wer neben ihr steht und mit dem Schritt der Frist
+        // (`lenkS`, sein Tempo oder das seines Wegs) in sie träte, wartet am Rand, solange ein Wagen den Punkt vor seinem Bug
+        // beansprucht (`_verkehrVorrang`) — wer schon auf ihr geht, geht hinüber, und der Wagen hält vor ihm. Bis hier nahm der
+        // Strom der Menge jede Lücke: die Halter der Kreuzung am Markt warteten auf Querende, 18 Wagen standen dahinter, in 150 s
+        // erreichte keiner sein Ziel.
+        if (S.verkehr && b.weg && !b.drinnen && dt > 0) {
+            const T = Math.max(dtW, AnazhRealm.BEWOHNER.lenkS);
+            const e = lenk ? null : this._bewohnerLinie(b, x0, z0);
+            const l = e ? Math.hypot(e.x - x0, e.z - z0) : 0;
+            const [vx, vz] = lenk ? [lenk.vx, lenk.vz] : l > 1e-6 ? [((e.x - x0) / l) * b.tempo, ((e.z - z0) / l) * b.tempo] : [0, 0]; // prettier-ignore
+            const [nx, nz] = [x0 + vx * T, z0 + vz * T];
+            if (
+                (vx || vz) &&
+                !this._verkehrAufSpur(S, x0, z0, 0) &&
+                this._verkehrAufSpur(S, nx, nz, 0) &&
+                this._verkehrVorrang(S, nx, nz)
+            )
+                lenk = { vx: 0, vz: 0 };
+        }
         const bewegt = this._bewohnerSchritt(b, dtW, lenk);
         b.vx = (g.position.x - x0) / dt;
         b.vz = (g.position.z - z0) / dt;
@@ -1871,7 +1947,7 @@ class AnazhRealm_siedlung_bewohner {
         // UM DEN STEHENDEN: steht einer auf dem Bein zum nächsten Punkt (vor ihm, näher als zwei Kapseln), geht der Weg über
         // einen Punkt neben ihm — auf der Seite des Beins, sonst der anderen —, dessen Beine keine Wand schneiden und an dem
         // kein Leib steht (`_bewohnerUm`)
-        const um = this._bewohnerUm(b, p, q, nb, K, !q._um);
+        const um = this._bewohnerUm(S, b, p, q, nb, K, !q._um);
         if (um === true) return this._bewohnerAusweichen(S, b, dt);
         // PLATZ MACHEN: führt kein Umweg an ihm vorbei (die Laterne, die Hauswand), tritt der Stehende zur Seite (`_bewohnerPlatz`;
         // der Spieler und der ruhende Wagen nie — um sie tastet das Ausweichen)
@@ -1961,6 +2037,13 @@ class AnazhRealm_siedlung_bewohner {
         const wahl = [];
         const n = BW.ausweichRichtungen;
         const a0 = Math.atan2(wz, wx);
+        // DIE FAHRBAHN (`_verkehrAufSpur`): wer auf dem Gehweg geht (er und der Punkt, auf den er geht, neben ihr), weicht nicht in
+        // sie aus, solange ein anderer Schritt trägt — die Strafe `fahrbahnStrafe` für den, der binnen der Frist in ihr endet. Bis
+        // hier wich die Menge am Markt der Metropole in die Bahn der Wagen: 57 % ihrer Schritte auf der Fahrbahn.
+        const fahr =
+            S.verkehr && !this._verkehrAufSpur(S, p.x, p.z, 0) && !this._verkehrAufSpur(S, e.x, e.z, 0)
+                ? Math.max(dt, BW.lenkS)
+                : 0;
         for (const f of [1, 0.5])
             for (let i = 0; i < n; i++) {
                 const a = a0 + (i * 2 * Math.PI) / n;
@@ -1973,7 +2056,8 @@ class AnazhRealm_siedlung_bewohner {
                     (2 * Math.hypot(cx - wx, cz - wz)) / v +
                     (0.75 * Math.hypot(cx - bvx, cz - bvz)) / v +
                     2.5 / (0.1 + Math.min(t, H) / H) +
-                    0.75 * Math.max(0, links);
+                    0.75 * Math.max(0, links) +
+                    (fahr && this._verkehrAufSpur(S, p.x + cx * fahr, p.z + cz * fahr, 0) ? BW.fahrbahnStrafe : 0);
                 wahl.push({ st, vx: cx, vz: cz });
             }
         // das beste Tempo, dessen Schritt und dessen Bein von dort zum nächsten Punkt des Wegs keine Wand schneiden
@@ -1993,7 +2077,7 @@ class AnazhRealm_siedlung_bewohner {
     // frei von jeder Wand sind und an dem kein Leib näher als `K` steht, tritt als nächster Punkt in den Weg (`_um`; der Rest
     // des Wegs neu gezählt; ist q selbst ein Umweg, keinen zweiten). Liefert true, wenn er einen fand, den Stehenden, wenn
     // nicht, sonst false.
-    _bewohnerUm(b, p, q, nb, K, setzen) {
+    _bewohnerUm(S, b, p, q, nb, K, setzen) {
         const hl = Math.hypot(q.x - p.x, q.z - p.z);
         const [hx, hz] = [(q.x - p.x) / hl, (q.z - p.z) / hl];
         const steht = nb
@@ -2008,8 +2092,11 @@ class AnazhRealm_siedlung_bewohner {
         // um den ruhenden Wagen (`kR`: seine Breite samt Kapsel, `_verkehrImRaster`) so weit wie um seinen Radius
         const D = (steht.o.kR || K) + AnazhRealm.BEWOHNER.umRandM;
         const o = steht.o.leib.position;
+        // wer auf dem Gehweg geht (er und sein nächster Punkt neben der Fahrbahn, `_verkehrAufSpur`), geht nie über sie um ihn
+        const fahr = S.verkehr && !this._verkehrAufSpur(S, p.x, p.z, 0) && !this._verkehrAufSpur(S, q.x, q.z, 0);
         for (const seite of steht.quer > 0 ? [-1, 1] : [1, -1]) {
             const d = { x: o.x - hz * seite * D, z: o.z + hx * seite * D, _um: true };
+            if (fahr && this._verkehrAufSpur(S, d.x, d.z, 0)) continue;
             if (nb.some((n) => Math.hypot(n.leib.position.x - d.x, n.leib.position.z - d.z) < (n.kR || K))) continue;
             if (this._bewohnerWand(p, d) || this._bewohnerWand(d, q)) continue;
             b.weg.splice(b.wi, 0, d);
@@ -2039,6 +2126,7 @@ class AnazhRealm_siedlung_bewohner {
                 const P = { x: g.x + Math.cos((i * Math.PI) / 6) * r, z: g.z + Math.sin((i * Math.PI) / 6) * r };
                 const pkt = { minX: P.x, maxX: P.x, minZ: P.z, maxZ: P.z };
                 if (bein.some((c, k) => k && this._streckeBoxAbstand2(pkt, bein[k - 1].x, bein[k - 1].z, c.x, c.z) < (kF + 0.1) ** 2)) continue; // prettier-ignore
+                if (S.verkehr && this._verkehrAufSpur(S, P.x, P.z, 0)) continue; // beiseite heißt: aus der Fahrbahn, nie in sie
                 if (this._bewohnerNaechster(S, o, P.x, P.z) < K) continue;
                 if (this._bewohnerWand(P, P, true) || this._bewohnerWand(g, P)) continue;
                 Object.assign(o, {
@@ -2575,7 +2663,9 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // passt zwischen beide (`_bewohnerStandPruefen`) · umRandM = so weit über zwei Kapseln geht er am Stehenden vorbei
 // (`_bewohnerUm`) · linieM = so weit voraus auf seinem Bein liegt der Punkt, auf den zurückgeht, wer auswich
 // (`_bewohnerLinie`) · lenkS = so lange hält er seine Wahl höchstens, solange ihn keiner erreichen kann (`_bewohnerAusweichen`,
-// die Frist) · fernS = so oft (Sekunden) geht der Takt über jeden Ruhenden (`_bewohnerRuhig`). DIE BEGEGNUNG (mensch.K5): begegnungM = so nah tritt der Spieler heran, bis der Bewohner ihm den Kopf
+// die Frist) · fahrbahnStrafe = so viel kostet in der Wahl des Ausweichens der Schritt vom Gehweg in die Fahrbahn
+// (`_verkehrAufSpur`: er weicht in sie nur, wo kein anderer trägt) · fernS = so oft (Sekunden) geht der Takt über jeden Ruhenden
+// (`_bewohnerRuhig`). DIE BEGEGNUNG (mensch.K5): begegnungM = so nah tritt der Spieler heran, bis der Bewohner ihm den Kopf
 // zuwendet (zurück jenseits + nahHystM) · kopfMaxRad = so weit dreht der Kopf über dem Rumpf (die Halswirbelsäule ~70°),
 // rumpfMaxRad = so weit der Rumpf über dem Becken (~25°), jenseits wendet sich, wer steht, mit dem Leib · kopfRadS = so schnell dreht der Kopf (Blickwendungen des Kopfs 200–300°/s,
 // Zangemeister & Stark 1982) · spielerRaumM = der persönliche Raum über zwei Kapseln, den er dem Spieler lässt (Hall 1966:
@@ -2631,6 +2721,7 @@ AnazhRealm.BEWOHNER = Object.freeze({
     umRandM: 0.15,
     linieM: 2,
     lenkS: 0.1,
+    fahrbahnStrafe: 3,
     fernS: 0.25,
     sohleM: 0.008,
     begegnungM: 3,

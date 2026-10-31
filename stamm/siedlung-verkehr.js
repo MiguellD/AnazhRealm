@@ -341,22 +341,60 @@ class AnazhRealm_siedlung_verkehr {
         return VK;
     }
 
-    // LIEGT (x, z) IN DER SPUR EINES WAGENS? Näher als ein halber Wagen samt Kapsel und `spurRandM` an einer Spur, der Bahn oder
-    // dem Ring einer Wende (das Raster der Spuren, `VK.spurRaster`). Leser: der Stand der Bewohner (`_bewohnerStandPruefen`).
-    _verkehrAufSpur(S, x, z) {
+    // LIEGT (x, z) IN DER SPUR EINES WAGENS? Näher als ein halber Wagen samt Kapsel und `rand` an einer Spur, einem Abbieger, der
+    // Bahn oder dem Ring einer Wende (das Raster der Spuren, `VK.spurRaster`) — DIE FAHRBAHN, das EINE Gesetz, nach dem Fuß und
+    // Wagen die Straße teilen. Leser: der Stand der Bewohner (`_bewohnerStandPruefen`, `spurRandM` Raum), und mit `rand` 0 jeder
+    // Ort, den ein Gehender wählt — der Punkt seines Wegs (`_bewohnerStrecke`), der Punkt um einen Stehenden (`_bewohnerUm`), der
+    // Platz, auf den er tritt (`_bewohnerPlatz`), der Schritt, mit dem er ausweicht (`_bewohnerAusweichen`).
+    _verkehrAufSpur(S, x, z, rand = AnazhRealm.VERKEHR.spurRandM) {
         const VK = S.verkehr;
         const M = AnazhRealm.BEWOHNER.rasterM;
         const l = VK && VK.spurRaster && VK.spurRaster.get(Math.floor(x / M) * 2097152 + Math.floor(z / M));
         if (!l) return false;
-        const r =
-            globalThis.__fachwerkCore.VERKEHR_GESETZ.halbM +
-            AnazhRealm.PLAYER_WALL_RADIUS +
-            AnazhRealm.VERKEHR.spurRandM;
+        const r = globalThis.__fachwerkCore.VERKEHR_GESETZ.halbM + AnazhRealm.PLAYER_WALL_RADIUS + rand;
         for (let i = 0; i < l.length; i += 4) {
             const [ax, az, bx, bz] = [l[i], l[i + 1], l[i + 2], l[i + 3]];
             const [dx, dz] = [bx - ax, bz - az];
             const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
             if ((x - ax - dx * t) ** 2 + (z - az - dz * t) ** 2 < r * r) return true;
+        }
+        return false;
+    }
+
+    // QUERT DAS BEIN a → b DIE FAHRBAHN, STATT LÄNGS IHR ZU GEHEN? Die Kapsel liegt auf ihm höchstens `querBreiten` Breiten der
+    // Fahrbahn (zwei Spuren samt halbem Wagen und Kapsel) in der Bahn eines Wagens (`_verkehrAufSpur` ohne Rand, je halben Meter):
+    // gerade hinüber oder schräg bis 30°. Leser: der Weg der Bewohner (`_bewohnerStrecke`).
+    _verkehrQuert(S, a, b) {
+        const VG = globalThis.__fachwerkCore.VERKEHR_GESETZ;
+        const L = Math.hypot(b.x - a.x, b.z - a.z);
+        const n = Math.max(1, Math.ceil(L / 0.5));
+        const max = AnazhRealm.VERKEHR.querBreiten * 2 * (VG.spurM + VG.halbM + AnazhRealm.PLAYER_WALL_RADIUS);
+        let drin = 0;
+        for (let k = 0; k <= n; k++) {
+            const t = k / n;
+            if (this._verkehrAufSpur(S, a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t, 0) && (drin += L / n) > max)
+                return false;
+        }
+        return true;
+    }
+
+    // DER VORRANG DER FAHRBAHN: beansprucht ein Wagen der Stadt (er fährt oder hält auf der Fahrt) den Punkt (x, z)? Er liegt vor
+    // seinem Bug, höchstens `vorrangM` voraus, und quer in seiner Bahn (der halbe Wagen, Kapsel, `seitM` und ein Meter für die
+    // Kurve). Leser: der Gang der Bewohner (`_bewohnerGehen`: wer neben der Fahrbahn in sie tritt, wartet am Rand).
+    _verkehrVorrang(S, x, z) {
+        const V = AnazhRealm.VERKEHR;
+        for (const W of S.verkehr.wagen) {
+            const e = W.entry;
+            if (W.zustand !== "faehrt" || !e) continue;
+            const [fx, fz] = [Math.sin(e._rideYaw || 0), Math.cos(e._rideYaw || 0)];
+            const [dx, dz] = [x - e.position.x, z - e.position.z];
+            const vor = dx * fx + dz * fz - W.hl;
+            if (
+                vor > 0 &&
+                vor < V.vorrangM &&
+                Math.abs(dx * fz - dz * fx) < W.hw + AnazhRealm.PLAYER_WALL_RADIUS + V.seitM + 1
+            )
+                return true;
         }
         return false;
     }
@@ -1395,7 +1433,9 @@ AnazhRealm._verkehrEcken = Object.freeze([
 // Wand: die Kante einer Erdbau-Platte) · ruheMs = darunter (ohne Gas) ruht ein Wagen: keine Hülle, keine Boxen, kein neues
 // Bild · spurRandM = so viel Raum hält ein Stand über
 // den halben Wagen und die Kapsel hinaus von jeder Spur (der Seitenraum `seitM` und das Ausscheren in der engsten Kurve,
-// (parkL/2)²/(2·kurveR) = 0,66 m: kein Stand liegt in der Bahn, vor der ein Wagen hält) · bodenM = das Raster des gemerkten Bodens der Spur (`_verkehrBoden`), bodenRandM = so weit neben jedem Stück der Spur backt er ihn vorab (`_verkehrBodenBacken`), backMs = so lange backt er ihn je Bild (`_verkehrBodenPumpe`) · kurveM = so weit mittelt die Linie seines Fahrers (`_fahrerLinie`; seine Spuren, Bögen und Kreise sind Gesetz — über die ±8 m des Wegenetzes schrumpfte der Kreis der Wende von 6,5 auf 5 m, der Knick am Ende der Strecke schnitt 2 m in die Gegenspur)
+// (parkL/2)²/(2·kurveR) = 0,66 m: kein Stand liegt in der Bahn, vor der ein Wagen hält) · querBreiten = so viele Breiten der
+// Fahrbahn trägt ein Bein des Fußes in ihr, das sie quert (`_verkehrQuert`; mehr geht längs) · vorrangM = so weit vor seinem
+// Bug beansprucht ein Wagen die Fahrbahn: wer dort in sie treten will, wartet am Rand (`_verkehrVorrang`) · bodenM = das Raster des gemerkten Bodens der Spur (`_verkehrBoden`), bodenRandM = so weit neben jedem Stück der Spur backt er ihn vorab (`_verkehrBodenBacken`), backMs = so lange backt er ihn je Bild (`_verkehrBodenPumpe`) · kurveM = so weit mittelt die Linie seines Fahrers (`_fahrerLinie`; seine Spuren, Bögen und Kreise sind Gesetz — über die ±8 m des Wegenetzes schrumpfte der Kreis der Wende von 6,5 auf 5 m, der Knick am Ende der Strecke schnitt 2 m in die Gegenspur)
 // · radFeinM = so nah federt jedes Rad einzeln auf seinem Boden ·
 // standM = der Stand des Fahrers neben der Tür seines Wagens · einsteigM = so nah an ihm steigt er ein · tempoMs = das
 // Tempo der Stadt (30 km/h) · folgeM = so weit sieht der Fahrer voraus (Wagen, Leiber) · abstandM = so weit hält er hinter
@@ -1426,6 +1466,8 @@ AnazhRealm.VERKEHR = Object.freeze({
     boxFernM: 2,
     engeRandM: 5,
     spurRandM: 1,
+    querBreiten: 2,
+    vorrangM: 8,
     bodenM: 0.5,
     bodenRandM: 1.5,
     kurveM: 4,
