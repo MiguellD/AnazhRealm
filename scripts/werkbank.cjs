@@ -3297,12 +3297,14 @@ hauptLauf(async () => {
                 await umstellen({ ort, sicht: "ego" });
                 const lauf = (o) => evalRuf(`return await (${LL.naesseSicht.toString()})(${JSON.stringify(o)});`);
                 let dach;
+                // DIE STÄNDE DES DORFS: am Ort wählt der Spieler das Haus (das nächste mit Hülle und Tür, seine Schwelle) und den
+                // nächsten Dach-Bau, dann tritt er an den Dach-Bau (der Dach-Pool trägt die Dächer um ihn) und an die Schwelle. Bis
+                // 30.10. kehrte er dazwischen an den Ort zurück, nur um das Haus zu wählen — ein Umstellen mehr, dasselbe Haus
                 if (ort === "dorf") {
+                    const s = (await lauf({ ort, haus: true })).ergebnis.schwelle;
                     const z = (await lauf({ ort, dach: "ziel" })).ergebnis.ziel;
                     if (z) await umstellen({ x: z[0] + 3, z: z[1] + 3 });
                     dach = z ? (await lauf({ ort, dach: "pruefen" })).ergebnis : { n: 0, trocken: 0 };
-                    await umstellen({ ort, sicht: "ego" });
-                    const s = (await lauf({ ort, haus: true })).ergebnis.schwelle;
                     await umstellen({ x: s[0], z: s[2] });
                 }
                 const a = await lauf({ ort, png: !!opt("--bilder") });
