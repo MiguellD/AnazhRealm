@@ -52,6 +52,21 @@ proben-tempo hat geliefert (Koord-Seite gemergt, Spiel-Seite siehe oben).
 - **Wagen-LOD (Daten für wagen-stufe):** Von den 10 nächsten Wagen fuhren 4 ohne Bild (instanced/mesh leer, `_verkehrBild` zeichnet nichts,
   Fahrer-Leib sichtbar), 6 ab 34 m auf `_servedLod` 2 mit `_lodHalt`. Dazu ein weißer, halb durchsichtiger Block in der Platzmitte.
 
+## Neustart nach dem Konto-Wechsel (ZUERST)
+Die Ketten `w3/kette-z95…z98.sh`, der CI-Wächter und die Wache liefen als Hintergrund-Prozesse der alten Sitzung. Mit ihr enden sie.
+Ein Zug, der mitten in der CI stirbt, lässt main unberührt (der Kandidat liegt nur auf integ-probe). Darum:
+1. Was gelandet ist: `git ls-remote origin refs/heads/main` und `tail -n 3 /tmp/claude/fahre-z9*.log` (GELANDET / FAHRT ROT / abgebrochen).
+2. Die noch nicht gelandeten Zweige EINEN Zug nach dem anderen fahren:
+   `bash /tmp/claude/w3/zug-sammler4.sh z<N> 25 <zweige…>`. Reihenfolge: w4-stadt-takt → w4-fall-wackler + w4-menue-inp →
+   w4-schatten-haken → w4-wagen-stufe (nur mit grünem Puls, die Decke!).
+3. Nach jeder Landung die Nachwache: `bash /tmp/claude/w3/zeile.sh "z<N>-abab 3 abab A=<main vorher> B=<main nachher> zellen=stadt,w-ego"`.
+   Nach der Landung von schatten-haken zwei Eich-Fahrten am neuen main: `… "eich<N>-gtx 1 station sha=<main> lauf=eich-gtx.sh"`.
+4. Wache und CI-Wächter neu: `WACHE_STILL="*" node /tmp/claude/w3/wache-w4.cjs <main8>` und `node /tmp/claude/w3/ci-waechter.cjs`
+   (je im Hintergrund).
+5. Die OMEN arbeitet ihre Warteschlange selbst ab (Dienst, ohne LLM): z93-abab lief um 03:00, danach eich10/eich11 (Rest an e0139769)
+   und die Nachwachen.
+6. Die Cloud-Sitzungen gehören dem alten Konto und laufen auf dessen Budget weiter (97 % am 31.10. 03:00).
+
 ## Nächste Schritte
 1. Lieferungen der champions holen (wagen-stufe, fall-wackler, schatten-haken): Koord-Seiten über `w3/merge-koord.sh`, Spiel-Seiten in
    den nächsten Zug (`w3/zug-sammler4.sh <id> <min> <zweige…>`).
