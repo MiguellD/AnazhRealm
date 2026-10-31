@@ -42,7 +42,13 @@ class AnazhRealm_siedlung_satz {
                 art,
                 wurf
                     ? { name: "bauWurf", mat: leaf.mat, wurf: true, nurWurf: true, attr: AnazhRealm.BAU_WURF_ATTR }
-                    : { name, mat: satzMat, wurf: !!castShadow }
+                    : {
+                          name,
+                          mat: satzMat,
+                          wurf: !!castShadow,
+                          // der Stein-Stoff liest seine Lage im Verband aus dem uv (`_steinStoff`): sein Satz trägt es mit
+                          attr: satzMat.userData.stein ? AnazhRealm.BAU_STEIN_ATTR : undefined,
+                      }
             );
         return art;
     }
@@ -232,7 +238,7 @@ class AnazhRealm_siedlung_satz {
         }
         const sts = this.state.satzStoffe ? this.state.satzStoffe.get(g.satz) : null;
         const attr = (sts && sts.attr) || AnazhRealm.BAU_SATZ_ATTR;
-        const regler = attr === AnazhRealm.BAU_SATZ_ATTR ? AnazhRealm._satzRegler(g.mesh.material) : null;
+        const regler = attr !== AnazhRealm.BAU_WURF_ATTR ? AnazhRealm._satzRegler(g.mesh.material) : null;
         const im = g.mesh.instanceMatrix.array;
         const ic = g.mesh.instanceColor ? g.mesh.instanceColor.array : null;
         let lauf = -1,
@@ -338,7 +344,7 @@ class AnazhRealm_siedlung_satz {
             n = r.n;
         const sts = this.state.satzStoffe ? this.state.satzStoffe.get(g.satz) : null;
         const attr = (sts && sts.attr) || AnazhRealm.BAU_SATZ_ATTR;
-        const regler = attr === AnazhRealm.BAU_SATZ_ATTR ? AnazhRealm._satzRegler(g.mesh.material) : null;
+        const regler = attr !== AnazhRealm.BAU_WURF_ATTR ? AnazhRealm._satzRegler(g.mesh.material) : null;
         const im = g.mesh.instanceMatrix.array;
         const ic = g.mesh.instanceColor ? g.mesh.instanceColor.array : null;
         let gelegt = 0;
@@ -387,7 +393,7 @@ class AnazhRealm_siedlung_satz {
             g.liveCount | 0,
             attr,
             g.key,
-            attr === AnazhRealm.BAU_SATZ_ATTR ? AnazhRealm._satzRegler(g.mesh.material) : null
+            attr !== AnazhRealm.BAU_WURF_ATTR ? AnazhRealm._satzRegler(g.mesh.material) : null
         );
     }
 
@@ -1130,6 +1136,15 @@ AnazhRealm.BAU_SATZ_ATTR = Object.freeze([
     Object.freeze(["aH0L", 1]),
     Object.freeze(["aRegler", 3, "snorm8"]),
     Object.freeze(["aGlut", 3, "half"]),
+]);
+// Die Attribute eines Stein-Satz-Bereichs (w4-genesis-tore): Lage · Normale · Farbe · Regler · Glut und das uv der Ecken — die Lage
+// im Verband des Stein-Gesetzes (porta STEIN_GESETZ, `_steinStoff`: u = Stein + Weg, v = seine Länge). Die drei Stempel der Blende
+// fehlen: ein Bau steht auf dem Null-Stempel, der Stein-Stoff blendet nie (`_foundryTreeMaterial`) — mit ihnen trüge der Satz 9
+// Vertex-Puffer (WebGPU 8, das Gerät sagte das Programm ab). Das uv in 32 Bit: die Nummer des Steins reicht bis 4096, die Fuge liest
+// ihren Bruchteil (16 Bit trügen dort 4 Einheiten). Jede Bau-Satz-Form außer dem Wurf trägt die Regler je Ecke.
+AnazhRealm.BAU_STEIN_ATTR = Object.freeze([
+    ...AnazhRealm.BAU_SATZ_ATTR.filter(([n]) => n !== "aLodLevel" && n !== "aH0" && n !== "aH0L"),
+    Object.freeze(["uv", 2]),
 ]);
 // Die Attribute eines Wurf-Satz-Bereichs (`bauWurf`, S3): was der EINE Schatten-Stoff liest — Welt-Lage, die Atlas-Lage
 // (uv; die Stufe 3 trägt 0), die Deckung (aDeckt 1) und die Stufen-Stempel der Dither-Blende (Haus 0 = ungemaskt).
