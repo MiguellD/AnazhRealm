@@ -193,7 +193,7 @@ function albedoSicht(opts) {
                     }
                     if (c) {
                         await ticke(gesetzt ? 120 : 0, () => false);
-                        if (window.__tiereHalten) window.__tiereHalten();
+                        window.__halten?.();
                         pos = new T.Vector3(c.position.x, c.position.y, c.position.z);
                         kreatur = c;
                     }

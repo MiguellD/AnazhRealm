@@ -273,7 +273,7 @@ function lauf(k) {
         const wetterVor = { wetter: st.weather, uhr: st.weatherEffectTime, seq: __wetterBuch().seq };
         // Die Tiere halten still (Vergleichbarkeit) — außer `--tiere frei` oder n: der Halte-Griff setzt x/z je Takt zurück,
         // die Tier-KI sucht dann jeden Takt neu (Feld-Raycasts), das kostet CPU, die das Spiel so nie zahlt.
-        if (k.tiere === "halten") __tiereHalten();
+        if (k.tiere === "halten") __halten();
         const decke = st.perfTargetMs;
         if (k.regler === "voll") st.perfTargetMs = 1000;
         st.playerMesh.visible = true;
@@ -1151,23 +1151,9 @@ async function starte() {
             cam.updateMatrixWorld(true);
             // `--uhr u` (0..1, 0,5 = Mittag): die Bühne mit Sonne und Sommer zu dieser Stunde — die Uhr ist ihr Wort (`__buehne`
             // liest `k.uhr`, dieselbe EINE Uhr wie die Licht-Bilanz der Zelle; bis w4-himmel-uhr stand die Welt erst auf Mittag, dann
-            // sprang der Uhr-Schreiber); Himmel und Umgebung springen mit ihr, die Leuchtquellen (`_leuchtTakt`, bis jede gewählte
-            // Quelle eingeblendet ist) folgen ihr
+            // sprang der Uhr-Schreiber); Himmel und Umgebung springen mit ihr, die Leuchtquellen folgen ihr (der Pool zu seinem
+            // Fixpunkt in der Bühne)
             __buehne(k);
-            if (Number.isFinite(k.uhr)) {
-                // DER POOL ZU SEINEM FIXPUNKT (w4-proben-tempo, 30.10.; bis dahin fest 20 × 50 ms je Schuss): jeder Platz hält eine
-                // gewählte Quelle mit Blende 1 oder ist frei mit Blende 0, jede Gewählte hat ihren Platz — danach ändert kein Takt
-                // mehr etwas (die Bild-Uhr steht unter der Bühne, die Wahl am stehenden Auge); höchstens dieselbe Sekunde wie zuvor
-                const fest = (P) =>
-                    !!P &&
-                    P.halter.every((h, j) => (h ? P.blende[j] === 1 && P.wahl.some((w) => w.id === h.id) : P.blende[j] === 0)) &&
-                    (!P.halter.includes(null) || P.wahl.every((w) => P.halter.some((h) => h && h.id === w.id)));
-                for (let i = 0; i < 20; i++) {
-                    r._leuchtTakt();
-                    if (fest(r._leuchtPool)) break;
-                    await sleep(50);
-                }
-            }
             if (r.state.playerMesh) r.state.playerMesh.visible = !!k.spieler;
             // DAS ZIEL des Bilds ist der Blick-Punkt: die Aufnahme prüft, ob es im Bild und frei ist, und die Blick-Wahl
             // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42; `--wahl 0` schießt nur die genannte Pose).

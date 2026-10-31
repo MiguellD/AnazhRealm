@@ -1599,7 +1599,7 @@ async function zensus(page, browser, ergebnis) {
     await page.evaluate(AUSGABE_INSTALL);
     // Symphonie an, die Musik ruht (die Linse misst die WELT), die Tiere halten still.
     await page.evaluate(() => {
-        __tiereHalten();
+        __halten();
         Object.getPrototypeOf(r)._lofiTick = function () {};
         r.initSymphony();
         document.getElementById("untertitel-toggle").click(); // die Untertitel über das Spieler-Wort (Ü)

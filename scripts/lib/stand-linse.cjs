@@ -317,7 +317,7 @@ function standLauf(k) {
         const rend = st.renderer;
         const P = Object.getPrototypeOf(r);
         window.__buehne();
-        if (k.tiere !== "frei" && window.__tiereHalten) window.__tiereHalten();
+        if (k.tiere !== "frei") window.__halten?.();
         const decke = st.perfTargetMs;
         if (k.regler === "voll") st.perfTargetMs = 1000;
         const L = window.__standLinseAn();
