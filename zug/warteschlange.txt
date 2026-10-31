@@ -276,3 +276,4 @@ takt28a-gtx 1 punkte sha=ec989990fe86c70b1ac00f06fa657f1a5a33afd7 geraet=gtx nur
 takt28b-gtx 1 punkte sha=ec989990fe86c70b1ac00f06fa657f1a5a33afd7 geraet=gtx nur=oekologie.K4#2,mensch.K5#1,mensch.K4#1,haar.K2#1,lod.K1#1,lod.K5#1,material.K4#1,studios.K2#2,studios.K3#2,bauen.K1#2,bauen.K5#2,fahrzeug.K3#1,siedlung.K4#2,leib.K1#2,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,profiband.K5#1,klang.K2#1,klang.K4#1,speicher.K4#2
 z100c-abab 3 abab A=94c079cb714239d8f146ac3185295b0b220d8602 B=ec989990fe86c70b1ac00f06fa657f1a5a33afd7 zellen=stadt,w-ego
 b-kalt-94c0 2 station sha=94c079cb714239d8f146ac3185295b0b220d8602 lauf=ankunft-kalt.sh
+b-kalt-ec98 2 station sha=ec989990fe86c70b1ac00f06fa657f1a5a33afd7 lauf=ankunft-kalt.sh
