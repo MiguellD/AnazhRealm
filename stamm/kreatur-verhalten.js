@@ -882,17 +882,33 @@ class AnazhRealm_kreatur_verhalten {
     // erreichen kann (das Grob-Tor des Treffers, _trefferErreichbar), bevor die Gestalt selbst richtet. Gemessen über die
     // Treffer-Glieder als räumliche Spanne vom Fuß-Ursprung (sie deckt jede Lage des Leibs), vier Gattungen × acht Größen
     // im Spiel-Takt: Wolf 1,86 · Bär 2,00 · Hirsch 2,01 · Fuchs 2,21 L (die Rute) gegen 2,6 L (gate:kampf-gefuehl T12).
+    // EINMAL JE WECHSEL (Lehre 25): gerechnet wird er, wenn L oder die Gier wechselt (`_kreaturLeibRechnen`, sein Stand am Leib
+    // `userData._leib`), jeder Ruf dazwischen liest ihn — vorher rechnete jeder Ruf (Linse: gate:kreatur-takt leibtakt).
     _kreaturLeib(creature, L, out) {
         const l = L > 0 ? L : this._kreaturHueftL(creature);
+        const m = creature.userData._leib;
+        const s = m && m.L === l && m.gier === creature.rotation.y ? m : this._kreaturLeibRechnen(creature, l);
         const o = out || {};
         o.L = l;
-        o.radius = Math.max(0.12, 0.3 * l);
-        o.halb = 0.8 * l;
-        o.hoehe = Math.max(0.5, 1.8 * l);
-        o.reichweite = o.halb + o.hoehe;
-        o.fx = Math.sin(creature.rotation.y);
-        o.fz = Math.cos(creature.rotation.y);
+        o.radius = s.radius;
+        o.halb = s.halb;
+        o.hoehe = s.hoehe;
+        o.reichweite = s.reichweite;
+        o.fx = s.fx;
+        o.fz = s.fz;
         return o;
+    }
+    _kreaturLeibRechnen(creature, l) {
+        const m = creature.userData._leib || (creature.userData._leib = {});
+        m.L = l;
+        m.gier = creature.rotation.y;
+        m.radius = Math.max(0.12, 0.3 * l);
+        m.halb = 0.8 * l;
+        m.hoehe = Math.max(0.5, 1.8 * l);
+        m.reichweite = m.halb + m.hoehe;
+        m.fx = Math.sin(m.gier);
+        m.fz = Math.cos(m.gier);
+        return m;
     }
 
     // DER STOFF EINES LEIBS (physik K1): ein Tier ist Fleisch (das Gewebe aus tetrapoda, unter dem Fell), der Mensch Leib
@@ -1217,7 +1233,14 @@ class AnazhRealm_kreatur_verhalten {
         const leib = this._kreaturLeib(c, L, this._kreaturWegLeib || (this._kreaturWegLeib = {}));
         const T = AnazhRealm.LEIB_TEIL;
         const weg = Math.hypot(v.x, v.z) * dt;
-        const teile = Math.max(1, Math.ceil(weg / Math.max(T.minM, T.radius * leib.radius)));
+        // DIE SCHRANKE hält die Schleife, nie den Weg (wie FIXED_MAX_STEPS die Zeit): über `max` Teil-Schritten wird der
+        // Teil-Schritt länger; ein Weg ohne Maß (nicht endlich) ist ein Bruch — laut, der Leib steht
+        if (!Number.isFinite(weg)) {
+            this._bruchMelden(`LEIB: ein Weg ohne Maß (${c.userData.soul}) — er steht`);
+            [v.x, v.z] = [0, 0];
+            return v;
+        }
+        const teile = Math.min(T.max, Math.max(1, Math.ceil(weg / Math.max(T.minM, T.radius * leib.radius))));
         const h = dt / teile;
         for (let k = 0; k < teile; k++) {
             const x0 = c.position.x;
@@ -2959,10 +2982,7 @@ class AnazhRealm_kreatur_verhalten {
     // liest, liest sie frisch (`_kreaturTrefferGlieder`, `_leibMatrix`: Biss, Treffer, Tod); wer erwacht, zieht den ganzen
     // Leib nach, bevor das Feld ihn liest. DIE RUHE GILT JEDEM LEIB AUSSER BLICK (w4-takt-z80): der Fliehende, der Jäger, der
     // Schwimmer und der liegende Gefallene ruhen im Bild (`_kreaturRuht` → "bild": kein Matrix-Gang, kein Feld), ihr Schritt
-    // geht jeden Frame — den groben Takt trägt nur der stille Lebende. Bis w4-takt-z80 ruhten Lauf und Leichnam nie: seit dem
-    // Bestand je Region (oekologie.K2#2) reißt das Gesetz alle 10 s ein fern gezeichnetes Rotwild hinter dem Blick der
-    // Mess-Wiese, sechs Leichname und die fliehende Herde gingen den Matrix-Gang je Frame (OMEN w-ego, z83-bisekt5: CPU-Takt
-    // p95 4,70 → 5,40 ms). Linse: gate:kreatur-kosten (G).
+    // geht jeden Frame — den groben Takt trägt nur der stille Lebende. Linse: gate:kreatur-kosten (G).
     _tickKreaturRuhe(delta, playerPos) {
         const R = AnazhRealm.KREATUR_RUHE;
         const st = this.state;
@@ -3867,8 +3887,9 @@ AnazhRealm._jagdGesetz = function () {
 };
 // die Gänge des EINEN Leib-Lösers je Sim-Schritt (`_leibKontakte`): eine Klemme in der dichten Schar löst sich in wenigen
 AnazhRealm.LEIB_GAENGE = 8;
-// der Teil-Schritt des EINEN Wegs jedes Tiers (`_kreaturWeg`, Gang und Stoß): höchstens `radius` Leib-Radien, mindestens `minM` m
-AnazhRealm.LEIB_TEIL = Object.freeze({ radius: 0.5, minM: 0.02 });
+// der Teil-Schritt des EINEN Wegs jedes Tiers (`_kreaturWeg`, Gang und Stoß): höchstens `radius` Leib-Radien, mindestens `minM` m,
+// höchstens `max` je Schritt (darüber trägt jeder Teil-Schritt mehr; ein Weg ohne Maß bricht laut in `_kreaturWeg`)
+AnazhRealm.LEIB_TEIL = Object.freeze({ radius: 0.5, minM: 0.02, max: 128 });
 // DER BISS ALS STOSS (0710-4): der Anteil der Jäger-Masse hinter dem Biss (tetrapoda BISS.masseAnteil) und das Tempo
 // des Ansprungs (VERHALTEN.aktionen.pounce.tempo, in der Tempo-Einheit des Steuer-Gesetzes). DER BISS IST DER ANSPRUNG
 // (Welle LF kampf, Posten 5): seine Geste ist die Aktion pounce — ihre Dauer und ihr Tempo sind die Reichweite des Mauls
