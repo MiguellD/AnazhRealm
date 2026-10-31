@@ -662,7 +662,7 @@ function bogenLinse() {
         const HOLZ = new Set(["holz", "stamm", "blockholz", "lattung", "boden"]);
         const KALK = new Set(["putz", "gefach", "lehm"]);
         const decke = (r) => (HOLZ.has(r) ? 0.25 : KALK.has(r) ? 0.85 : 0.45);
-        const roh = (c) => (c <= 0.0031308 ? c * 12.92 : 1.055 * Math.pow(c, 1 / 2.4) - 0.055);
+        const roh = require("./lib/abnahme-urteil.cjs").linSrgb; // die EINE sRGB-Kurve
         // je Haus: { gesamt, rollen: { rolle: Y } } — `farbe` liest die Vertex-Farbe (die Welt) oder ihr Roh-Zwilling
         const albedoHaus = (g, farbe) => {
             const proRolle = {};
