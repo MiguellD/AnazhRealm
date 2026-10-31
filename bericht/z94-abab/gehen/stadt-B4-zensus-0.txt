@@ -1,0 +1,76 @@
+{
+ "ms": 3,
+ "ergebnis": {
+  "gesamt": 7,
+  "arten": {
+   "deer": 3,
+   "wolf": 4
+  },
+  "zustand": {
+   "-": 4,
+   "fressen": 3
+  },
+  "jaeger": 0,
+  "wuerfeAb2": 2,
+  "tiereInWuerfen": 7,
+  "gruppen": [
+   {
+    "wurf": "deer@517.1,249.3",
+    "n": 3,
+    "mitte": [
+     514.6,
+     275.6
+    ],
+    "spanneM": 1.7,
+    "spielerM": 171.7
+   },
+   {
+    "wurf": "wolf@373.6,14.2",
+    "n": 4,
+    "mitte": [
+     374.2,
+     16.7
+    ],
+    "spanneM": 1.3,
+    "spielerM": 465.9
+   }
+  ],
+  "verbandFeld": true,
+  "verbaendeAb2": 2,
+  "verbaende": [
+   {
+    "vb": "c1",
+    "n": 3,
+    "art": {
+     "deer": 3
+    },
+    "leitLebt": false,
+    "mitte": [
+     514.6,
+     275.6
+    ],
+    "spanneM": 1.7,
+    "spielerM": 171.7
+   },
+   {
+    "vb": "c7",
+    "n": 4,
+    "art": {
+     "wolf": 4
+    },
+    "leitLebt": false,
+    "mitte": [
+     374.2,
+     16.7
+    ],
+    "spanneM": 1.3,
+    "spielerM": 465.9
+   }
+  ],
+  "verbaendeMap": 2,
+  "spieler": [
+   609.1,
+   419
+  ]
+ }
+}
