@@ -1,0 +1,164 @@
+messen ego exit 0
+messen third exit 0
+boden-nah (laiWirk): grün in 0 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.3: Klasse boden-nah: die Teilung hält ihr Rauschen nicht: 0.005258 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.3-boden-nah-45.png
+  ROT ego-fern-0.5: Klasse boden-nah: die Teilung hält ihr Rauschen nicht: 0.002932 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.5-boden-nah-45.png
+  ROT ego-fern-0: Klasse boden-nah: die Teilung hält ihr Rauschen nicht: 0.00496 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0-boden-nah-45.png
+  ROT ego-nah-0.3: laiWirk 0 · laiWirk 0 < 1.7 · Täter 5–10 m vor dem Auge: Lücke 1 (101188 von 101188 Pixeln Grund) → LAI 0, dort zeichnet kein Halm · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.3-boden-nah-0.png
+  ROT ego-nah-0.5: laiWirk 0 · laiWirk 0 < 1.7 · Täter 5–10 m vor dem Auge: Lücke 1 (98191 von 98191 Pixeln Grund) → LAI 0, dort zeichnet kein Halm · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.5-boden-nah-0.png
+  ROT ego-nah-0: laiWirk 0 · laiWirk 0 < 1.7 · Täter 5–10 m vor dem Auge: Lücke 1 (100452 von 100452 Pixeln Grund) → LAI 0, dort zeichnet kein Halm · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0-boden-nah-0.png
+  ROT third-fern-0.3: Klasse boden-nah: die Teilung hält ihr Rauschen nicht: 0.005633 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-boden-nah-0.png
+  ROT third-fern-0.5: Klasse boden-nah: die Teilung hält ihr Rauschen nicht: 0.002332 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-boden-nah-0.png
+  ROT third-fern-0: Klasse boden-nah: die Teilung hält ihr Rauschen nicht: 0.005727 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-boden-nah-0.png
+  ROT third-nah-0.3: Klasse boden-nah: die Teilung hält ihr Rauschen nicht: 0.005633 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-boden-nah-0.png
+  ROT third-nah-0.5: Klasse boden-nah: die Teilung hält ihr Rauschen nicht: 0.002332 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-boden-nah-0.png
+  ROT third-nah-0: Klasse boden-nah: die Teilung hält ihr Rauschen nicht: 0.005727 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-boden-nah-0.png
+himmel-licht (lichtVerhaeltnis): grün in 4 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.3: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+  ROT ego-fern-0: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+  ROT ego-nah-0.3: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+  ROT ego-nah-0: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+  ROT third-fern-0.3: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+  ROT third-fern-0: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+  ROT third-nah-0.3: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+  ROT third-nah-0: kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)
+laub (zweiton): grün in 4 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.3: zweiton 0.0003 · zweiton 0.0003 > 0 · Täter f:fichte:L1 (zweiton 0.0005 über 137225 Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.3-laub-0.png
+  ROT ego-nah-0.3: zweiton 0.0003 · zweiton 0.0003 > 0 · Täter f:fichte:L1 (zweiton 0.0005 über 137225 Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.3-laub-0.png
+  ROT third-fern-0.3: Klasse laub: die Teilung hält ihr Rauschen nicht: 0.005521 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-laub-0.png
+  ROT third-fern-0.5: Klasse laub: die Teilung hält ihr Rauschen nicht: 0.00236 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-laub-0.png
+  ROT third-fern-0: Klasse laub: die Teilung hält ihr Rauschen nicht: 0.0055 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-laub-0.png
+  ROT third-nah-0.3: Klasse laub: die Teilung hält ihr Rauschen nicht: 0.005521 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-laub-0.png
+  ROT third-nah-0.5: Klasse laub: die Teilung hält ihr Rauschen nicht: 0.00236 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-laub-0.png
+  ROT third-nah-0: Klasse laub: die Teilung hält ihr Rauschen nicht: 0.0055 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-laub-0.png
+laub-kante (kante): grün in 0 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.3: kante 0.3468 · kante 0.3468 > 0.22 · Täter f:fichte:L1 (kante 0.4151 über 10944 Rand-Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.3-laub-0.png
+  ROT ego-fern-0.5: kante 0.3261 · kante 0.3261 > 0.22 · Täter f:fichte:L1 (kante 0.3769 über 12461 Rand-Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.5-laub-0.png
+  ROT ego-fern-0: kante 0.2776 · kante 0.2776 > 0.22 · Täter f:fichte:L1 (kante 0.3597 über 12883 Rand-Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0-laub-0.png
+  ROT ego-nah-0.3: kante 0.3468 · kante 0.3468 > 0.22 · Täter f:fichte:L1 (kante 0.4151 über 10944 Rand-Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.3-laub-0.png
+  ROT ego-nah-0.5: kante 0.3261 · kante 0.3261 > 0.22 · Täter f:fichte:L1 (kante 0.3769 über 12461 Rand-Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.5-laub-0.png
+  ROT ego-nah-0: kante 0.2776 · kante 0.2776 > 0.22 · Täter f:fichte:L1 (kante 0.3597 über 12883 Rand-Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0-laub-0.png
+  ROT third-fern-0.3: Klasse laub-kante: die Teilung hält ihr Rauschen nicht: 0.005521 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-laub-0.png
+  ROT third-fern-0.5: Klasse laub-kante: die Teilung hält ihr Rauschen nicht: 0.00236 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-laub-0.png
+  ROT third-fern-0: Klasse laub-kante: die Teilung hält ihr Rauschen nicht: 0.0055 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-laub-0.png
+  ROT third-nah-0.3: Klasse laub-kante: die Teilung hält ihr Rauschen nicht: 0.005521 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-laub-0.png
+  ROT third-nah-0.5: Klasse laub-kante: die Teilung hält ihr Rauschen nicht: 0.00236 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-laub-0.png
+  ROT third-nah-0: Klasse laub-kante: die Teilung hält ihr Rauschen nicht: 0.0055 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-laub-0.png
+haus (albedoVerhaeltnis): grün in 0 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.3: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.3-haus-0.png
+  ROT ego-fern-0.5: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.5-haus-0.png
+  ROT ego-fern-0: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0-haus-0.png
+  ROT ego-nah-0.3: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.3-haus-0.png
+  ROT ego-nah-0.5: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.5-haus-0.png
+  ROT ego-nah-0: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0-haus-0.png
+  ROT third-fern-0.3: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-haus-0.png
+  ROT third-fern-0.5: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-haus-0.png
+  ROT third-fern-0: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-haus-0.png
+  ROT third-nah-0.3: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-haus-0.png
+  ROT third-nah-0.5: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-haus-0.png
+  ROT third-nah-0: albedoVerhaeltnis 0.9366 · albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b) · Täter Labor 0.1491 gegen Welt 0.1592 (haus) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-haus-0.png
+wasser (spiegelTreue): grün in 0 von 0 Zellen im Bild · nicht im Bild 12
+  OHNE BILD ego-fern-0.3: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-fern-0.5: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-fern-0: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-nah-0.3: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-nah-0.5: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-nah-0: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-fern-0.3: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-fern-0.5: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-fern-0: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-nah-0.3: 0 Pixel von /^(wasserSatz|farWater|chunk-water-[a-z]+)$/ (< 0.1 % des Bilds) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-wasser-90.png
+  OHNE BILD third-nah-0.5: 0 Pixel von /^(wasserSatz|farWater|chunk-water-[a-z]+)$/ (< 0.1 % des Bilds) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-wasser-90.png
+  OHNE BILD third-nah-0: 0 Pixel von /^(wasserSatz|farWater|chunk-water-[a-z]+)$/ (< 0.1 % des Bilds) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-wasser-90.png
+tor-fern (milchweiss): grün in 6 von 12 Zellen im Bild · nicht im Bild 0
+  ROT third-fern-0.3: Klasse tor-fern: L2: die Teilung hält ihr Rauschen nicht: 0.005448 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-tor-fern-0.png
+  ROT third-fern-0.5: Klasse tor-fern: L2: die Teilung hält ihr Rauschen nicht: 0.00263 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-tor-fern-0.png
+  ROT third-fern-0: Klasse tor-fern: L2: die Teilung hält ihr Rauschen nicht: 0.005575 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-tor-fern-0.png
+  ROT third-nah-0.3: Klasse tor-fern: L2: die Teilung hält ihr Rauschen nicht: 0.005448 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-tor-fern-0.png
+  ROT third-nah-0.5: Klasse tor-fern: L2: die Teilung hält ihr Rauschen nicht: 0.00263 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-tor-fern-0.png
+  ROT third-nah-0: Klasse tor-fern: L2: die Teilung hält ihr Rauschen nicht: 0.005575 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-tor-fern-0.png
+tor-bunt (oeffnungBunt): grün in 2 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.5: oeffnungBunt 18.64 · oeffnungBunt 18.64 < 20 · Täter portal-membran in L1 (C*ab 18.64 über 243983 Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.5-tor-fern-0.png
+  ROT ego-fern-0: oeffnungBunt 10.61 · oeffnungBunt 10.61 < 20 · Täter portal-membran in L1 (C*ab 10.61 über 232902 Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0-tor-fern-0.png
+  ROT ego-nah-0.5: oeffnungBunt 18.64 · oeffnungBunt 18.64 < 20 · Täter portal-membran in L1 (C*ab 18.64 über 243983 Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.5-tor-fern-0.png
+  ROT ego-nah-0: oeffnungBunt 10.61 · oeffnungBunt 10.61 < 20 · Täter portal-membran in L1 (C*ab 10.61 über 232902 Pixel) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0-tor-fern-0.png
+  ROT third-fern-0.3: Klasse tor-bunt: L2: die Teilung hält ihr Rauschen nicht: 0.005448 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-tor-fern-0.png
+  ROT third-fern-0.5: Klasse tor-bunt: L2: die Teilung hält ihr Rauschen nicht: 0.00263 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-tor-fern-0.png
+  ROT third-fern-0: Klasse tor-bunt: L2: die Teilung hält ihr Rauschen nicht: 0.005575 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-tor-fern-0.png
+  ROT third-nah-0.3: Klasse tor-bunt: L2: die Teilung hält ihr Rauschen nicht: 0.005448 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-tor-fern-0.png
+  ROT third-nah-0.5: Klasse tor-bunt: L2: die Teilung hält ihr Rauschen nicht: 0.00263 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-tor-fern-0.png
+  ROT third-nah-0: Klasse tor-bunt: L2: die Teilung hält ihr Rauschen nicht: 0.005575 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-tor-fern-0.png
+tor-ziel (zielTreue): grün in 6 von 12 Zellen im Bild · nicht im Bild 0
+  ROT third-fern-0.3: Klasse tor-ziel: L2: die Teilung hält ihr Rauschen nicht: 0.005448 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-tor-fern-0.png
+  ROT third-fern-0.5: Klasse tor-ziel: L2: die Teilung hält ihr Rauschen nicht: 0.00263 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-tor-fern-0.png
+  ROT third-fern-0: Klasse tor-ziel: L2: die Teilung hält ihr Rauschen nicht: 0.005575 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-tor-fern-0.png
+  ROT third-nah-0.3: Klasse tor-ziel: L2: die Teilung hält ihr Rauschen nicht: 0.005448 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-tor-fern-0.png
+  ROT third-nah-0.5: Klasse tor-ziel: L2: die Teilung hält ihr Rauschen nicht: 0.00263 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-tor-fern-0.png
+  ROT third-nah-0: Klasse tor-ziel: L2: die Teilung hält ihr Rauschen nicht: 0.005575 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-tor-fern-0.png
+fels (albedo): grün in 0 von 0 Zellen im Bild · nicht im Bild 12
+  OHNE BILD ego-fern-0.3: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-fern-0.5: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-fern-0: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-nah-0.3: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-nah-0.5: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-nah-0: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-fern-0.3: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-fern-0.5: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-fern-0: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-nah-0.3: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-nah-0.5: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-nah-0: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+mensch-kopf (gesicht): grün in 0 von 3 Zellen im Bild · nicht im Bild 9
+  OHNE BILD ego-fern-0.3: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+  OHNE BILD ego-fern-0.5: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+  OHNE BILD ego-fern-0: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+  OHNE BILD ego-nah-0.3: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+  OHNE BILD ego-nah-0.5: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+  OHNE BILD ego-nah-0: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+  OHNE BILD third-fern-0.3: der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m
+  OHNE BILD third-fern-0.5: der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m
+  OHNE BILD third-fern-0: der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m
+  ROT third-nah-0.3: gesicht 0.333 · gesicht 0.333 < 1 · Täter augeFrei 0.285 außerhalb [0.9, 1] · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-mensch-kopf-0.png
+  ROT third-nah-0.5: gesicht 0.667 · gesicht 0.667 < 1 · Täter augeFrei 0.073 außerhalb [0.9, 1] · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-mensch-kopf-0.png
+  ROT third-nah-0: gesicht 0.333 · gesicht 0.333 < 1 · Täter augeFrei 0.156 außerhalb [0.9, 1] · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-mensch-kopf-0.png
+boden-nah-farbe (farbtonStreuung): grün in 0 von 12 Zellen im Bild · nicht im Bild 0
+  ROT ego-fern-0.3: Klasse boden-nah-farbe: die Teilung hält ihr Rauschen nicht: 0.005258 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.3-boden-nah-45.png
+  ROT ego-fern-0.5: Klasse boden-nah-farbe: die Teilung hält ihr Rauschen nicht: 0.002932 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.5-boden-nah-45.png
+  ROT ego-fern-0: Klasse boden-nah-farbe: die Teilung hält ihr Rauschen nicht: 0.00496 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0-boden-nah-45.png
+  ROT ego-nah-0.3: Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.3-boden-nah-0.png
+  ROT ego-nah-0.5: Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0.5-boden-nah-0.png
+  ROT ego-nah-0: Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\ego-0-boden-nah-0.png
+  ROT third-fern-0.3: Klasse boden-nah-farbe: die Teilung hält ihr Rauschen nicht: 0.005633 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-boden-nah-0.png
+  ROT third-fern-0.5: Klasse boden-nah-farbe: die Teilung hält ihr Rauschen nicht: 0.002332 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-boden-nah-0.png
+  ROT third-fern-0: Klasse boden-nah-farbe: die Teilung hält ihr Rauschen nicht: 0.005727 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-boden-nah-0.png
+  ROT third-nah-0.3: Klasse boden-nah-farbe: die Teilung hält ihr Rauschen nicht: 0.005633 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-boden-nah-0.png
+  ROT third-nah-0.5: Klasse boden-nah-farbe: die Teilung hält ihr Rauschen nicht: 0.002332 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-boden-nah-0.png
+  ROT third-nah-0: Klasse boden-nah-farbe: die Teilung hält ihr Rauschen nicht: 0.005727 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002) · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-boden-nah-0.png
+fell (strich): grün in 0 von 0 Zellen im Bild · nicht im Bild 12
+  OHNE BILD ego-fern-0.3: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-fern-0.5: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-fern-0: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-nah-0.3: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-nah-0.5: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD ego-nah-0: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-fern-0.3: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-fern-0.5: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-fern-0: kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-nah-0.3: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-nah-0.5: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+  OHNE BILD third-nah-0: kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds
+haar (strich): grün in 0 von 3 Zellen im Bild · nicht im Bild 9
+  OHNE BILD ego-fern-0.3: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+  OHNE BILD ego-fern-0.5: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+  OHNE BILD ego-fern-0: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+  OHNE BILD ego-nah-0.3: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+  OHNE BILD ego-nah-0.5: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+  OHNE BILD ego-nah-0: Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)
+  OHNE BILD third-fern-0.3: der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m
+  OHNE BILD third-fern-0.5: der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m
+  OHNE BILD third-fern-0: der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m
+  ROT third-nah-0.3: Klasse haar: die Klasse zeigt keine inneren Pixel · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.3-haar-0.png
+  ROT third-nah-0.5: Klasse haar: die Klasse zeigt keine inneren Pixel · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0.5-haar-0.png
+  ROT third-nah-0: Klasse haar: die Klasse zeigt keine inneren Pixel · C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\a-spawn-gtx3\zellen\third-0-haar-0.png
+A AM SPAWN: 22 von 114 Zellen im Bild GRÜN (K5)
+urteil exit 1

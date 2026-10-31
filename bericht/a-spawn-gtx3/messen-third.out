@@ -1,0 +1,40 @@
+gpu-lauf: Schloss omen-a-spawn-third nach 0 s
+third: am Genesis-Ort nach 28 s (Gier -1.571, Arm 6 m)
+  boden-nah Blick 0°: nah 149395 px · fern 13400 px
+  laub Blick 0°: nah 87145 px · fern 365840 px
+  haus Blick 0°: nah 392735 px · fern 3585 px
+  wasser Blick 0°: nichts im Band
+  wasser Blick 45°: nichts im Band
+  wasser Blick 315°: nichts im Band
+  wasser Blick 90°: nah 5565 px
+  wasser Blick 270°: nichts im Band
+  wasser Blick 135°: nichts im Band
+  wasser Blick 225°: nichts im Band
+  wasser Blick 180°: nichts im Band
+  tor-fern Blick 0°: nah 488075 px · fern 3325 px
+  fels Blick 0°: nichts im Band
+  fels Blick 45°: nichts im Band
+  fels Blick 315°: nichts im Band
+  fels Blick 90°: nichts im Band
+  fels Blick 270°: nichts im Band
+  fels Blick 135°: nichts im Band
+  fels Blick 225°: nichts im Band
+  fels Blick 180°: nichts im Band
+  fell Blick 0°: nichts im Band
+  fell Blick 45°: nichts im Band
+  fell Blick 315°: nichts im Band
+  fell Blick 90°: nichts im Band
+  fell Blick 270°: nichts im Band
+  fell Blick 135°: nichts im Band
+  fell Blick 225°: nichts im Band
+  fell Blick 180°: nichts im Band
+third-nah-0.5: boden-nah 0° · boden-nah-farbe 0° · himmel-licht Licht · laub 0° · laub-kante 0° · haus 0° · wasser 90° · tor-fern 0° · tor-bunt 0° · tor-ziel 0° · fels nicht im Bild · mensch-kopf 0° · fell nicht im Bild · haar 0°
+third-nah-0.3: boden-nah 0° · boden-nah-farbe 0° · himmel-licht FEHLT · laub 0° · laub-kante 0° · haus 0° · wasser 90° · tor-fern 0° · tor-bunt 0° · tor-ziel 0° · fels nicht im Bild · mensch-kopf 0° · fell nicht im Bild · haar 0°
+third-nah-0: boden-nah 0° · boden-nah-farbe 0° · himmel-licht FEHLT · laub 0° · laub-kante 0° · haus 0° · wasser 90° · tor-fern 0° · tor-bunt 0° · tor-ziel 0° · fels nicht im Bild · mensch-kopf 0° · fell nicht im Bild · haar 0°
+third-fern-0.5: boden-nah 0° · boden-nah-farbe 0° · himmel-licht Licht · laub 0° · laub-kante 0° · haus 0° · wasser nicht im Bild · tor-fern 0° · tor-bunt 0° · tor-ziel 0° · fels nicht im Bild · mensch-kopf nicht im Bild · fell nicht im Bild · haar nicht im Bild
+third-fern-0.3: boden-nah 0° · boden-nah-farbe 0° · himmel-licht FEHLT · laub 0° · laub-kante 0° · haus 0° · wasser nicht im Bild · tor-fern 0° · tor-bunt 0° · tor-ziel 0° · fels nicht im Bild · mensch-kopf nicht im Bild · fell nicht im Bild · haar nicht im Bild
+third-fern-0: boden-nah 0° · boden-nah-farbe 0° · himmel-licht FEHLT · laub 0° · laub-kante 0° · haus 0° · wasser nicht im Bild · tor-fern 0° · tor-bunt 0° · tor-ziel 0° · fels nicht im Bild · mensch-kopf nicht im Bild · fell nicht im Bild · haar nicht im Bild
+third: 266 s
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 38687 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )

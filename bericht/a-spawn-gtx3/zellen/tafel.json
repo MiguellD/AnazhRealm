@@ -1,0 +1,1932 @@
+{
+ "zeilen": [
+  {
+   "id": "boden-nah",
+   "mass": "laiWirk",
+   "ausdruck": "^(nahWiese:.*|streuSatz|bodenSatz)$",
+   "zellen": [
+    {
+     "zelle": "ego-fern-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      1.7,
+      null
+     ],
+     "grund": "Klasse boden-nah: die Teilung hält ihr Rauschen nicht: 0.005258 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.3-boden-nah-45.png"
+    },
+    {
+     "zelle": "ego-fern-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      1.7,
+      null
+     ],
+     "grund": "Klasse boden-nah: die Teilung hält ihr Rauschen nicht: 0.002932 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.5-boden-nah-45.png"
+    },
+    {
+     "zelle": "ego-fern-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      1.7,
+      null
+     ],
+     "grund": "Klasse boden-nah: die Teilung hält ihr Rauschen nicht: 0.00496 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0-boden-nah-45.png"
+    },
+    {
+     "zelle": "ego-nah-0.3",
+     "urteil": "ROT",
+     "ist": 0,
+     "band": [
+      1.7,
+      null
+     ],
+     "grund": "laiWirk 0 < 1.7",
+     "taeter": "5–10 m vor dem Auge: Lücke 1 (101188 von 101188 Pixeln Grund) → LAI 0, dort zeichnet kein Halm",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.3-boden-nah-0.png"
+    },
+    {
+     "zelle": "ego-nah-0.5",
+     "urteil": "ROT",
+     "ist": 0,
+     "band": [
+      1.7,
+      null
+     ],
+     "grund": "laiWirk 0 < 1.7",
+     "taeter": "5–10 m vor dem Auge: Lücke 1 (98191 von 98191 Pixeln Grund) → LAI 0, dort zeichnet kein Halm",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.5-boden-nah-0.png"
+    },
+    {
+     "zelle": "ego-nah-0",
+     "urteil": "ROT",
+     "ist": 0,
+     "band": [
+      1.7,
+      null
+     ],
+     "grund": "laiWirk 0 < 1.7",
+     "taeter": "5–10 m vor dem Auge: Lücke 1 (100452 von 100452 Pixeln Grund) → LAI 0, dort zeichnet kein Halm",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      1.7,
+      null
+     ],
+     "grund": "Klasse boden-nah: die Teilung hält ihr Rauschen nicht: 0.005633 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      1.7,
+      null
+     ],
+     "grund": "Klasse boden-nah: die Teilung hält ihr Rauschen nicht: 0.002332 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      1.7,
+      null
+     ],
+     "grund": "Klasse boden-nah: die Teilung hält ihr Rauschen nicht: 0.005727 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      1.7,
+      null
+     ],
+     "grund": "Klasse boden-nah: die Teilung hält ihr Rauschen nicht: 0.005633 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      1.7,
+      null
+     ],
+     "grund": "Klasse boden-nah: die Teilung hält ihr Rauschen nicht: 0.002332 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      1.7,
+      null
+     ],
+     "grund": "Klasse boden-nah: die Teilung hält ihr Rauschen nicht: 0.005727 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-boden-nah-0.png"
+    }
+   ]
+  },
+  {
+   "id": "himmel-licht",
+   "mass": "lichtVerhaeltnis",
+   "ausdruck": null,
+   "zellen": [
+    {
+     "zelle": "ego-fern-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": null,
+     "grund": "kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-fern-0.5",
+     "urteil": "GRÜN",
+     "ist": 5.636,
+     "band": [
+      5,
+      12.5
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-fern-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": null,
+     "grund": "kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-nah-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": null,
+     "grund": "kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-nah-0.5",
+     "urteil": "GRÜN",
+     "ist": 5.636,
+     "band": [
+      5,
+      12.5
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-nah-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": null,
+     "grund": "kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": null,
+     "grund": "kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "GRÜN",
+     "ist": 5.636,
+     "band": [
+      5,
+      12.5
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": null,
+     "grund": "kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": null,
+     "grund": "kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "GRÜN",
+     "ist": 5.636,
+     "band": [
+      5,
+      12.5
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": null,
+     "grund": "kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)",
+     "taeter": null,
+     "bild": null
+    }
+   ]
+  },
+  {
+   "id": "laub",
+   "mass": "zweiton",
+   "ausdruck": "^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$",
+   "zellen": [
+    {
+     "zelle": "ego-fern-0.3",
+     "urteil": "ROT",
+     "ist": 0.0003,
+     "band": [
+      null,
+      0
+     ],
+     "grund": "zweiton 0.0003 > 0",
+     "taeter": "f:fichte:L1 (zweiton 0.0005 über 137225 Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.3-laub-0.png"
+    },
+    {
+     "zelle": "ego-fern-0.5",
+     "urteil": "GRÜN",
+     "ist": 0,
+     "band": [
+      null,
+      0
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.5-laub-0.png"
+    },
+    {
+     "zelle": "ego-fern-0",
+     "urteil": "GRÜN",
+     "ist": 0,
+     "band": [
+      null,
+      0
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0-laub-0.png"
+    },
+    {
+     "zelle": "ego-nah-0.3",
+     "urteil": "ROT",
+     "ist": 0.0003,
+     "band": [
+      null,
+      0
+     ],
+     "grund": "zweiton 0.0003 > 0",
+     "taeter": "f:fichte:L1 (zweiton 0.0005 über 137225 Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.3-laub-0.png"
+    },
+    {
+     "zelle": "ego-nah-0.5",
+     "urteil": "GRÜN",
+     "ist": 0,
+     "band": [
+      null,
+      0
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.5-laub-0.png"
+    },
+    {
+     "zelle": "ego-nah-0",
+     "urteil": "GRÜN",
+     "ist": 0,
+     "band": [
+      null,
+      0
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0-laub-0.png"
+    },
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      null,
+      0
+     ],
+     "grund": "Klasse laub: die Teilung hält ihr Rauschen nicht: 0.005521 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-laub-0.png"
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      null,
+      0
+     ],
+     "grund": "Klasse laub: die Teilung hält ihr Rauschen nicht: 0.00236 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-laub-0.png"
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      null,
+      0
+     ],
+     "grund": "Klasse laub: die Teilung hält ihr Rauschen nicht: 0.0055 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-laub-0.png"
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      null,
+      0
+     ],
+     "grund": "Klasse laub: die Teilung hält ihr Rauschen nicht: 0.005521 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-laub-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      null,
+      0
+     ],
+     "grund": "Klasse laub: die Teilung hält ihr Rauschen nicht: 0.00236 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-laub-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      null,
+      0
+     ],
+     "grund": "Klasse laub: die Teilung hält ihr Rauschen nicht: 0.0055 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-laub-0.png"
+    }
+   ]
+  },
+  {
+   "id": "laub-kante",
+   "mass": "kante",
+   "ausdruck": "^(f:(tanne|fichte|eiche|birke|buche|kiefer|weide|strauch|mammut)[a-z_]*:L[0-2]|fimp:[a-z_]+:L[0-2]|kronendach)$",
+   "zellen": [
+    {
+     "zelle": "ego-fern-0.3",
+     "urteil": "ROT",
+     "ist": 0.3468,
+     "band": [
+      null,
+      0.22
+     ],
+     "grund": "kante 0.3468 > 0.22",
+     "taeter": "f:fichte:L1 (kante 0.4151 über 10944 Rand-Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.3-laub-0.png"
+    },
+    {
+     "zelle": "ego-fern-0.5",
+     "urteil": "ROT",
+     "ist": 0.3261,
+     "band": [
+      null,
+      0.22
+     ],
+     "grund": "kante 0.3261 > 0.22",
+     "taeter": "f:fichte:L1 (kante 0.3769 über 12461 Rand-Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.5-laub-0.png"
+    },
+    {
+     "zelle": "ego-fern-0",
+     "urteil": "ROT",
+     "ist": 0.2776,
+     "band": [
+      null,
+      0.22
+     ],
+     "grund": "kante 0.2776 > 0.22",
+     "taeter": "f:fichte:L1 (kante 0.3597 über 12883 Rand-Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0-laub-0.png"
+    },
+    {
+     "zelle": "ego-nah-0.3",
+     "urteil": "ROT",
+     "ist": 0.3468,
+     "band": [
+      null,
+      0.22
+     ],
+     "grund": "kante 0.3468 > 0.22",
+     "taeter": "f:fichte:L1 (kante 0.4151 über 10944 Rand-Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.3-laub-0.png"
+    },
+    {
+     "zelle": "ego-nah-0.5",
+     "urteil": "ROT",
+     "ist": 0.3261,
+     "band": [
+      null,
+      0.22
+     ],
+     "grund": "kante 0.3261 > 0.22",
+     "taeter": "f:fichte:L1 (kante 0.3769 über 12461 Rand-Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.5-laub-0.png"
+    },
+    {
+     "zelle": "ego-nah-0",
+     "urteil": "ROT",
+     "ist": 0.2776,
+     "band": [
+      null,
+      0.22
+     ],
+     "grund": "kante 0.2776 > 0.22",
+     "taeter": "f:fichte:L1 (kante 0.3597 über 12883 Rand-Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0-laub-0.png"
+    },
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      null,
+      0.22
+     ],
+     "grund": "Klasse laub-kante: die Teilung hält ihr Rauschen nicht: 0.005521 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-laub-0.png"
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      null,
+      0.22
+     ],
+     "grund": "Klasse laub-kante: die Teilung hält ihr Rauschen nicht: 0.00236 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-laub-0.png"
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      null,
+      0.22
+     ],
+     "grund": "Klasse laub-kante: die Teilung hält ihr Rauschen nicht: 0.0055 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-laub-0.png"
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      null,
+      0.22
+     ],
+     "grund": "Klasse laub-kante: die Teilung hält ihr Rauschen nicht: 0.005521 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-laub-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      null,
+      0.22
+     ],
+     "grund": "Klasse laub-kante: die Teilung hält ihr Rauschen nicht: 0.00236 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-laub-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      null,
+      0.22
+     ],
+     "grund": "Klasse laub-kante: die Teilung hält ihr Rauschen nicht: 0.0055 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-laub-0.png"
+    }
+   ]
+  },
+  {
+   "id": "haus",
+   "mass": "albedoVerhaeltnis",
+   "ausdruck": "^(bauSatz|f:alemannisch:L[01])$",
+   "zellen": [
+    {
+     "zelle": "ego-fern-0.3",
+     "urteil": "ROT",
+     "ist": 0.9366,
+     "band": [
+      0.9,
+      1.1
+     ],
+     "grund": "albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b)",
+     "taeter": "Labor 0.1491 gegen Welt 0.1592 (haus)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.3-haus-0.png"
+    },
+    {
+     "zelle": "ego-fern-0.5",
+     "urteil": "ROT",
+     "ist": 0.9366,
+     "band": [
+      0.9,
+      1.1
+     ],
+     "grund": "albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b)",
+     "taeter": "Labor 0.1491 gegen Welt 0.1592 (haus)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.5-haus-0.png"
+    },
+    {
+     "zelle": "ego-fern-0",
+     "urteil": "ROT",
+     "ist": 0.9366,
+     "band": [
+      0.9,
+      1.1
+     ],
+     "grund": "albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b)",
+     "taeter": "Labor 0.1491 gegen Welt 0.1592 (haus)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0-haus-0.png"
+    },
+    {
+     "zelle": "ego-nah-0.3",
+     "urteil": "ROT",
+     "ist": 0.9366,
+     "band": [
+      0.9,
+      1.1
+     ],
+     "grund": "albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b)",
+     "taeter": "Labor 0.1491 gegen Welt 0.1592 (haus)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.3-haus-0.png"
+    },
+    {
+     "zelle": "ego-nah-0.5",
+     "urteil": "ROT",
+     "ist": 0.9366,
+     "band": [
+      0.9,
+      1.1
+     ],
+     "grund": "albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b)",
+     "taeter": "Labor 0.1491 gegen Welt 0.1592 (haus)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.5-haus-0.png"
+    },
+    {
+     "zelle": "ego-nah-0",
+     "urteil": "ROT",
+     "ist": 0.9366,
+     "band": [
+      0.9,
+      1.1
+     ],
+     "grund": "albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b)",
+     "taeter": "Labor 0.1491 gegen Welt 0.1592 (haus)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0-haus-0.png"
+    },
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "ROT",
+     "ist": 0.9366,
+     "band": [
+      0.9,
+      1.1
+     ],
+     "grund": "albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b)",
+     "taeter": "Labor 0.1491 gegen Welt 0.1592 (haus)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-haus-0.png"
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "ROT",
+     "ist": 0.9366,
+     "band": [
+      0.9,
+      1.1
+     ],
+     "grund": "albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b)",
+     "taeter": "Labor 0.1491 gegen Welt 0.1592 (haus)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-haus-0.png"
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "ROT",
+     "ist": 0.9366,
+     "band": [
+      0.9,
+      1.1
+     ],
+     "grund": "albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b)",
+     "taeter": "Labor 0.1491 gegen Welt 0.1592 (haus)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-haus-0.png"
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": 0.9366,
+     "band": [
+      0.9,
+      1.1
+     ],
+     "grund": "albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b)",
+     "taeter": "Labor 0.1491 gegen Welt 0.1592 (haus)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-haus-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "ROT",
+     "ist": 0.9366,
+     "band": [
+      0.9,
+      1.1
+     ],
+     "grund": "albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b)",
+     "taeter": "Labor 0.1491 gegen Welt 0.1592 (haus)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-haus-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": 0.9366,
+     "band": [
+      0.9,
+      1.1
+     ],
+     "grund": "albedoVerhaeltnis 0.9366 — veraltet seit 1dcb844f: fachwerk-core.js geändert (c:99ea7197a2e80342 → c:5aba79c47e67092b)",
+     "taeter": "Labor 0.1491 gegen Welt 0.1592 (haus)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-haus-0.png"
+    }
+   ]
+  },
+  {
+   "id": "wasser",
+   "mass": "spiegelTreue",
+   "ausdruck": "^(wasserSatz|farWater|chunk-water-[a-z]+)$",
+   "zellen": [
+    {
+     "zelle": "ego-fern-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-fern-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-fern-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-nah-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-nah-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-nah-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "0 Pixel von /^(wasserSatz|farWater|chunk-water-[a-z]+)$/ (< 0.1 % des Bilds)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-wasser-90.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "0 Pixel von /^(wasserSatz|farWater|chunk-water-[a-z]+)$/ (< 0.1 % des Bilds)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-wasser-90.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "0 Pixel von /^(wasserSatz|farWater|chunk-water-[a-z]+)$/ (< 0.1 % des Bilds)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-wasser-90.png"
+    }
+   ]
+  },
+  {
+   "id": "tor-fern",
+   "mass": "milchweiss",
+   "ausdruck": "^portal-membran$|^(?:f|fimp):(?:drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L(\\d)$",
+   "zellen": [
+    {
+     "zelle": "ego-fern-0.3",
+     "urteil": "GRÜN",
+     "ist": 0.0066,
+     "band": [
+      null,
+      0.05
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.3-tor-fern-0.png"
+    },
+    {
+     "zelle": "ego-fern-0.5",
+     "urteil": "GRÜN",
+     "ist": 0.0106,
+     "band": [
+      null,
+      0.05
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.5-tor-fern-0.png"
+    },
+    {
+     "zelle": "ego-fern-0",
+     "urteil": "GRÜN",
+     "ist": 0.0154,
+     "band": [
+      null,
+      0.05
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0-tor-fern-0.png"
+    },
+    {
+     "zelle": "ego-nah-0.3",
+     "urteil": "GRÜN",
+     "ist": 0.0066,
+     "band": [
+      null,
+      0.05
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.3-tor-fern-0.png"
+    },
+    {
+     "zelle": "ego-nah-0.5",
+     "urteil": "GRÜN",
+     "ist": 0.0106,
+     "band": [
+      null,
+      0.05
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.5-tor-fern-0.png"
+    },
+    {
+     "zelle": "ego-nah-0",
+     "urteil": "GRÜN",
+     "ist": 0.0154,
+     "band": [
+      null,
+      0.05
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      null,
+      0.05
+     ],
+     "grund": "Klasse tor-fern: L2: die Teilung hält ihr Rauschen nicht: 0.005448 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      null,
+      0.05
+     ],
+     "grund": "Klasse tor-fern: L2: die Teilung hält ihr Rauschen nicht: 0.00263 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      null,
+      0.05
+     ],
+     "grund": "Klasse tor-fern: L2: die Teilung hält ihr Rauschen nicht: 0.005575 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      null,
+      0.05
+     ],
+     "grund": "Klasse tor-fern: L2: die Teilung hält ihr Rauschen nicht: 0.005448 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      null,
+      0.05
+     ],
+     "grund": "Klasse tor-fern: L2: die Teilung hält ihr Rauschen nicht: 0.00263 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      null,
+      0.05
+     ],
+     "grund": "Klasse tor-fern: L2: die Teilung hält ihr Rauschen nicht: 0.005575 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-tor-fern-0.png"
+    }
+   ]
+  },
+  {
+   "id": "tor-bunt",
+   "mass": "oeffnungBunt",
+   "ausdruck": "^portal-membran$|^(?:f|fimp):(?:drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L(\\d)$",
+   "zellen": [
+    {
+     "zelle": "ego-fern-0.3",
+     "urteil": "GRÜN",
+     "ist": 20.03,
+     "band": [
+      20,
+      null
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.3-tor-fern-0.png"
+    },
+    {
+     "zelle": "ego-fern-0.5",
+     "urteil": "ROT",
+     "ist": 18.64,
+     "band": [
+      20,
+      null
+     ],
+     "grund": "oeffnungBunt 18.64 < 20",
+     "taeter": "portal-membran in L1 (C*ab 18.64 über 243983 Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.5-tor-fern-0.png"
+    },
+    {
+     "zelle": "ego-fern-0",
+     "urteil": "ROT",
+     "ist": 10.61,
+     "band": [
+      20,
+      null
+     ],
+     "grund": "oeffnungBunt 10.61 < 20",
+     "taeter": "portal-membran in L1 (C*ab 10.61 über 232902 Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0-tor-fern-0.png"
+    },
+    {
+     "zelle": "ego-nah-0.3",
+     "urteil": "GRÜN",
+     "ist": 20.03,
+     "band": [
+      20,
+      null
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.3-tor-fern-0.png"
+    },
+    {
+     "zelle": "ego-nah-0.5",
+     "urteil": "ROT",
+     "ist": 18.64,
+     "band": [
+      20,
+      null
+     ],
+     "grund": "oeffnungBunt 18.64 < 20",
+     "taeter": "portal-membran in L1 (C*ab 18.64 über 243983 Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.5-tor-fern-0.png"
+    },
+    {
+     "zelle": "ego-nah-0",
+     "urteil": "ROT",
+     "ist": 10.61,
+     "band": [
+      20,
+      null
+     ],
+     "grund": "oeffnungBunt 10.61 < 20",
+     "taeter": "portal-membran in L1 (C*ab 10.61 über 232902 Pixel)",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      20,
+      null
+     ],
+     "grund": "Klasse tor-bunt: L2: die Teilung hält ihr Rauschen nicht: 0.005448 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      20,
+      null
+     ],
+     "grund": "Klasse tor-bunt: L2: die Teilung hält ihr Rauschen nicht: 0.00263 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      20,
+      null
+     ],
+     "grund": "Klasse tor-bunt: L2: die Teilung hält ihr Rauschen nicht: 0.005575 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      20,
+      null
+     ],
+     "grund": "Klasse tor-bunt: L2: die Teilung hält ihr Rauschen nicht: 0.005448 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      20,
+      null
+     ],
+     "grund": "Klasse tor-bunt: L2: die Teilung hält ihr Rauschen nicht: 0.00263 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      20,
+      null
+     ],
+     "grund": "Klasse tor-bunt: L2: die Teilung hält ihr Rauschen nicht: 0.005575 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-tor-fern-0.png"
+    }
+   ]
+  },
+  {
+   "id": "tor-ziel",
+   "mass": "zielTreue",
+   "ausdruck": "^portal-membran$|^(?:f|fimp):(?:drachentor|maurentor|verkalkt|maschine|ruine|geisttor|kathedrale):L(\\d)$",
+   "zellen": [
+    {
+     "zelle": "ego-fern-0.3",
+     "urteil": "GRÜN",
+     "ist": 0.53,
+     "band": [
+      0.5,
+      null
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.3-tor-fern-0.png"
+    },
+    {
+     "zelle": "ego-fern-0.5",
+     "urteil": "GRÜN",
+     "ist": 0.533,
+     "band": [
+      0.5,
+      null
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.5-tor-fern-0.png"
+    },
+    {
+     "zelle": "ego-fern-0",
+     "urteil": "GRÜN",
+     "ist": 0.539,
+     "band": [
+      0.5,
+      null
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0-tor-fern-0.png"
+    },
+    {
+     "zelle": "ego-nah-0.3",
+     "urteil": "GRÜN",
+     "ist": 0.53,
+     "band": [
+      0.5,
+      null
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.3-tor-fern-0.png"
+    },
+    {
+     "zelle": "ego-nah-0.5",
+     "urteil": "GRÜN",
+     "ist": 0.533,
+     "band": [
+      0.5,
+      null
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.5-tor-fern-0.png"
+    },
+    {
+     "zelle": "ego-nah-0",
+     "urteil": "GRÜN",
+     "ist": 0.539,
+     "band": [
+      0.5,
+      null
+     ],
+     "grund": null,
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      0.5,
+      null
+     ],
+     "grund": "Klasse tor-ziel: L2: die Teilung hält ihr Rauschen nicht: 0.005448 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      0.5,
+      null
+     ],
+     "grund": "Klasse tor-ziel: L2: die Teilung hält ihr Rauschen nicht: 0.00263 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      0.5,
+      null
+     ],
+     "grund": "Klasse tor-ziel: L2: die Teilung hält ihr Rauschen nicht: 0.005575 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      0.5,
+      null
+     ],
+     "grund": "Klasse tor-ziel: L2: die Teilung hält ihr Rauschen nicht: 0.005448 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      0.5,
+      null
+     ],
+     "grund": "Klasse tor-ziel: L2: die Teilung hält ihr Rauschen nicht: 0.00263 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-tor-fern-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      0.5,
+      null
+     ],
+     "grund": "Klasse tor-ziel: L2: die Teilung hält ihr Rauschen nicht: 0.005575 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-tor-fern-0.png"
+    }
+   ]
+  },
+  {
+   "id": "fels",
+   "mass": "albedo",
+   "ausdruck": "^formationenSatz$",
+   "zellen": [
+    {
+     "zelle": "ego-fern-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-fern-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-fern-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-nah-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-nah-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-nah-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    }
+   ]
+  },
+  {
+   "id": "mensch-kopf",
+   "mass": "gesicht",
+   "ausdruck": "^spieler:kopf/",
+   "zellen": [
+    {
+     "zelle": "ego-fern-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-fern-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-fern-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-nah-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-nah-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-nah-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": 0.333,
+     "band": [
+      1,
+      1
+     ],
+     "grund": "gesicht 0.333 < 1",
+     "taeter": "augeFrei 0.285 außerhalb [0.9, 1]",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-mensch-kopf-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "ROT",
+     "ist": 0.667,
+     "band": [
+      1,
+      1
+     ],
+     "grund": "gesicht 0.667 < 1",
+     "taeter": "augeFrei 0.073 außerhalb [0.9, 1]",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-mensch-kopf-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": 0.333,
+     "band": [
+      1,
+      1
+     ],
+     "grund": "gesicht 0.333 < 1",
+     "taeter": "augeFrei 0.156 außerhalb [0.9, 1]",
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-mensch-kopf-0.png"
+    }
+   ]
+  },
+  {
+   "id": "boden-nah-farbe",
+   "mass": "farbtonStreuung",
+   "ausdruck": "^(nahWiese:.*|streuSatz|bodenSatz)$",
+   "zellen": [
+    {
+     "zelle": "ego-fern-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      10.7,
+      null
+     ],
+     "grund": "Klasse boden-nah-farbe: die Teilung hält ihr Rauschen nicht: 0.005258 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.3-boden-nah-45.png"
+    },
+    {
+     "zelle": "ego-fern-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      10.7,
+      null
+     ],
+     "grund": "Klasse boden-nah-farbe: die Teilung hält ihr Rauschen nicht: 0.002932 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.5-boden-nah-45.png"
+    },
+    {
+     "zelle": "ego-fern-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      10.7,
+      null
+     ],
+     "grund": "Klasse boden-nah-farbe: die Teilung hält ihr Rauschen nicht: 0.00496 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0-boden-nah-45.png"
+    },
+    {
+     "zelle": "ego-nah-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      10.7,
+      null
+     ],
+     "grund": "Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.3-boden-nah-0.png"
+    },
+    {
+     "zelle": "ego-nah-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      10.7,
+      null
+     ],
+     "grund": "Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0.5-boden-nah-0.png"
+    },
+    {
+     "zelle": "ego-nah-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      10.7,
+      null
+     ],
+     "grund": "Klasse boden-nah-farbe: keine Kachel mit ≥ 400 Proben in 2,5 m",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\ego-0-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      10.7,
+      null
+     ],
+     "grund": "Klasse boden-nah-farbe: die Teilung hält ihr Rauschen nicht: 0.005633 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      10.7,
+      null
+     ],
+     "grund": "Klasse boden-nah-farbe: die Teilung hält ihr Rauschen nicht: 0.002332 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      10.7,
+      null
+     ],
+     "grund": "Klasse boden-nah-farbe: die Teilung hält ihr Rauschen nicht: 0.005727 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      10.7,
+      null
+     ],
+     "grund": "Klasse boden-nah-farbe: die Teilung hält ihr Rauschen nicht: 0.005633 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      10.7,
+      null
+     ],
+     "grund": "Klasse boden-nah-farbe: die Teilung hält ihr Rauschen nicht: 0.002332 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-boden-nah-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      10.7,
+      null
+     ],
+     "grund": "Klasse boden-nah-farbe: die Teilung hält ihr Rauschen nicht: 0.005727 der Pixel zweier gleicher Schüsse über der Schwelle 18 (Wand 0.002)",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-boden-nah-0.png"
+    }
+   ]
+  },
+  {
+   "id": "fell",
+   "mass": "strich",
+   "ausdruck": "^tier:wolf$",
+   "zellen": [
+    {
+     "zelle": "ego-fern-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-fern-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-fern-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-nah-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-nah-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-nah-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie jenseits 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "kein Blick der Wahl (8 je 45°) zeigt sie näher als 30 m auf ≥ 0.1 % des Bilds",
+     "taeter": null,
+     "bild": null
+    }
+   ]
+  },
+  {
+   "id": "haar",
+   "mass": "strich",
+   "ausdruck": "^spieler:kopf/hair$",
+   "zellen": [
+    {
+     "zelle": "ego-fern-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-fern-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-fern-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-nah-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-nah-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "ego-nah-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0.3",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0.5",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-fern-0",
+     "urteil": "nicht im Bild",
+     "ist": null,
+     "band": null,
+     "grund": "der Kopf steht in Third am Arm des Spiels (6 m), nie jenseits 30 m",
+     "taeter": null,
+     "bild": null
+    },
+    {
+     "zelle": "third-nah-0.3",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      0.3554,
+      0.533
+     ],
+     "grund": "Klasse haar: die Klasse zeigt keine inneren Pixel",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.3-haar-0.png"
+    },
+    {
+     "zelle": "third-nah-0.5",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      0.3554,
+      0.533
+     ],
+     "grund": "Klasse haar: die Klasse zeigt keine inneren Pixel",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0.5-haar-0.png"
+    },
+    {
+     "zelle": "third-nah-0",
+     "urteil": "ROT",
+     "ist": null,
+     "band": [
+      0.3554,
+      0.533
+     ],
+     "grund": "Klasse haar: die Klasse zeigt keine inneren Pixel",
+     "taeter": null,
+     "bild": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\a-spawn-gtx3\\zellen\\third-0-haar-0.png"
+    }
+   ]
+  }
+ ]
+}
