@@ -697,14 +697,32 @@ class AnazhRealm_bild_himmel {
         return st._skyEnvLesung;
     }
 
-    // DER HIMMEL DER STUNDE AUF DER CPU (ein Versprechen): die Umgebung frisch aus den Quellen, die jetzt gelten, und ihre
-    // Lesung abgewartet — true, sobald `_himmelsIrradianz` sie trägt. Der Null-Renderer malt keinen Himmel (die Tafeln leben
-    // auf der GPU, Lehre 16): dort false, und wer den Himmel messen will, misst mit dem echten Renderer.
-    _himmelFrisch() {
+    // DER HIMMEL DER STUNDE AUF DER CPU (ein Versprechen): die Tafeln der Atmosphäre und die Umgebung frisch aus den Quellen,
+    // die jetzt gelten, und ihre Lesungen abgewartet — true, sobald `_himmelsBestrahlung` und `_himmelsIrradianz` sie tragen.
+    // Jeder Pass des Himmels ist ein Einmal-Pass (`_einmalPass`): steht seine Pipeline noch nicht, zeichnet er nicht — das
+    // Versprechen wartet auf ihre Wende und zeichnet neu (`_bisGanz`: die Anwendung des Tags zeichnet die Tafeln, dann die
+    // Umgebung über ihnen), es gibt nie eine leere Umgebung als frisch zurück. Bis hier gab es nach dem ersten Versuch false:
+    // die S0-Probe der Prüfbühne war blind (z104 echt, Radeon). Der Null-Renderer malt keinen Himmel (die Tafeln leben auf der
+    // GPU, Lehre 16): dort false, und wer den Himmel messen will, misst mit dem echten Renderer.
+    async _himmelFrisch() {
         const st = this.state;
-        if (!st.renderer || st.renderer._isHeadlessNull) return Promise.resolve(false);
-        if (!this._ensureSkyEnvironment(true) || !st._skyEnvLesung) return Promise.resolve(false);
-        return st._skyEnvLesung;
+        if (!st.renderer || st.renderer._isHeadlessNull) return false;
+        for (;;) {
+            let anker = false;
+            const ganz = await this._bisGanz(() => {
+                if (st._skyEnvFailed) return null; // die Umgebung scheiterte laut (`_ensureSkyEnvironment`)
+                this._applyDayNightToScene();
+                const A = st.atmoLut;
+                anker = !!A && A.anker == null;
+                return !!(A && A.ganz) && this._ensureSkyEnvironment(true);
+            }, "DER HIMMEL DER STUNDE");
+            if (ganz !== true) return false;
+            if ((await st.atmoLut.tafelLesung) === false || (await st._skyEnvLesung) !== true) return false;
+            // gezeichnet war die Tafel des Ankers (die klare Luft am Boden, `_atmoTakt`): erst ihre Lesung legt ihn, danach
+            // zeichnet die Anwendung des Tags die Luft, die jetzt gilt
+            if (!anker) return true;
+            if (st.atmoLut.anker == null) return false;
+        }
     }
 
     // Halb-Float (IEEE 754 binary16) → Zahl.
@@ -1892,21 +1910,24 @@ class AnazhRealm_bild_himmel {
                 A.himmelSchluessel = null;
             }
         }
+        // die Bestrahlungs-Tafel je Medium und je 100 m Höhe des Auges (sie hängt nicht an der Sonne: jede Stunde liest sie)
+        const tafel = `${A.mediumBeta}:${Math.round(h * 10)}`;
         if (A.tafelnFrisch) {
             if (A.himmelSchluessel !== schluessel && this._atmoZeichne(A.qSV, A.rtSV)) {
                 A.himmelSchluessel = schluessel;
                 A.himmelVersion++;
             }
-            // die Bestrahlungs-Tafel je Medium und je 100 m Höhe des Auges (sie hängt nicht an der Sonne: jede Stunde liest sie)
-            const tafel = `${A.mediumBeta}:${Math.round(h * 10)}`;
             if (A.tafelSchluessel !== tafel && this._atmoZeichne(A.qBS, A.rtBS)) {
                 A.tafelSchluessel = tafel;
                 // bis die neue Tafel zurückkommt, liest kein Leser die Luft von vorher (die Belichtung schreibt dann nicht, sie
                 // hält)
                 A.tafel = null;
-                this._himmelsTafelLesen();
+                A.tafelLesung = this._himmelsTafelLesen();
             }
         }
+        // GANZ ist die Atmosphäre, wenn jede Tafel der jetzigen Sonne, des Mediums und des Auges gezeichnet ist (ihre Lesung:
+        // `tafelLesung`) — wer den Himmel jetzt braucht, wartet darauf (`_himmelFrisch`)
+        A.ganz = A.tafelnFrisch && A.himmelSchluessel === schluessel && A.tafelSchluessel === tafel;
         this._horizontKarteTakt();
         return A;
     }

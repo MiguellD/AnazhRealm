@@ -1550,6 +1550,25 @@ class AnazhRealm_werkstatt_vorschau {
         }
     }
 
+    // BIS DAS EINMAL-ZIEL GANZ IST (ein Versprechen — der EINE Weg jedes Lesers, der ein Einmal-Ziel JETZT braucht, ohne Takt
+    // der Welt dazwischen): `versuch()` zeichnet seine Einmal-Pässe und gibt true, wenn jeder ganz zeichnete; false heißt, eine
+    // Pipeline baut — dann wartet es auf die Wende der Erst-Zeichnung (`_erstWende`) und versucht neu, nie nach der Wanduhr.
+    // Baut keine mehr und zeichnet der Versuch weiter nicht (die Pipeline abgesagt), bricht `wer` laut beim Namen
+    // (`_bruchMelden`) und das Versprechen gibt false — nie ein ewiges Warten, nie ein stilles leeres Ziel. Jeder andere Wert
+    // des Versuchs endet sofort mit ihm.
+    async _bisGanz(versuch, wer) {
+        for (;;) {
+            const v = versuch();
+            if (v !== false) return v;
+            const wende = this._erstWende();
+            if (!wende) {
+                this._bruchMelden(`${wer}: der Einmal-Pass zeichnet nicht, und keine Pipeline baut (abgesagt)`);
+                return false;
+            }
+            await wende;
+        }
+    }
+
     // Maus-Listener der Preview-Canvas, Drag-Pfade in Priorität: (1) Gizmo-Handle → Manipulator (kein
     // Orbit) · (2) Mittelmaus/Shift+Links → Pan in der Kamera-Ebene · (3) leerer Links-Klick → Orbit,
     // kurzer Klick → Selection · (4) Wheel → Zoom-zum-Cursor. Wheel mit stopPropagation (sonst scrollt
