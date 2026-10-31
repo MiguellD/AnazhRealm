@@ -839,8 +839,7 @@ function laborLaubGegenlicht(o) {
                     const da = px[i + 3] > 0;
                     img.data[q] = da ? enc(px[i]) : 255;
                     img.data[q + 1] = da ? enc(px[i + 1]) : 0;
-                    img.data[q + 2] = da ? enc(px[i + 2]) : 255;
-                    img.data[q + 3] = 255;
+                    img.data[q + 2] = da ? enc(px[i + 2]) : 255; // das Alpha setzt `__png` deckend (welt-boot)
                 }
             return window.__png(img.data, W, H);
         };
@@ -881,7 +880,6 @@ const LABOR_INSTALL =
     `window.__laborKarte = ${laborKarte.toString()};`;
 
 module.exports = {
-    TAFEL_PFAD,
     PFLICHT_GRUPPEN,
     STUDIOS,
     ladeTafel,

@@ -137,7 +137,7 @@ function geraeteHoerer() {
 // GPU), `drehe()` (63° Gier), `leib` (der Welt-Leib, dessen Index der Täter T2 weitet), `leibWechsel()` (zeichnet ihn).
 function pruefRaum(echt) {
     const T = window.THREE;
-    const rend = r.state.renderer;
+    const rend = st.renderer;
     const F = (window.__frostWand = { echt });
     // DAS EINE WARTEN AUF EINE BÜHNE (Werkstatt-Vorschau, Ich-, Hof-, Feed-Bühne), bis ihr Renderer `bis(Zeichnungen)` trägt:
     // der Deckel zählt einen Gang nur, wenn ihr Renderer bereit ist und ihr Gerät die eingereichte Arbeit abgegeben hat
@@ -166,16 +166,16 @@ function pruefRaum(echt) {
     };
     r.setCameraMode("third");
     // der Leib von JETZT: der Seelenwechsel (S1, `applyPlayerSoul`) ersetzt den Spieler-Leib, T2 weitet nie den alten
-    Object.defineProperty(F, "leib", { get: () => r.state.playerMesh });
+    Object.defineProperty(F, "leib", { get: () => st.playerMesh });
     if (echt) {
-        F.wurzel = r.state.scene;
+        F.wurzel = st.scene;
         // der Leib steht GANZ im Bild, bevor die Probe weiterwechselt (das Ereignis, nie die Uhr)
         F.leibWechsel = async () => {
             for (let fehlt = 1, weiter = window.__deckel("der Leib im Bild", 100); fehlt && weiter(); ) {
                 await F.zeichne(1);
                 fehlt = 0;
-                r.state.playerMesh.traverseVisible(
-                    (o) => (fehlt += o.isMesh && r.state.camera.layers.test(o.layers) && !r._erstZeichnung.gezeichnet.get(o))
+                st.playerMesh.traverseVisible(
+                    (o) => (fehlt += o.isMesh && st.camera.layers.test(o.layers) && !r._erstZeichnung.gezeichnet.get(o))
                 );
             }
         };
@@ -185,11 +185,11 @@ function pruefRaum(echt) {
             await sleep(600); // ein Bild steht mindestens 600 ms
             for (const weiter = window.__deckel("ein Bild", 2400); info.calls - a < n && weiter(); ) await sleep(50);
         };
-        F.drehe = () => (r.state.yaw += 1.1);
+        F.drehe = () => (st.yaw += 1.1);
         F.mittag = () => {
-            r.state.timeOfDay = 0.5;
-            if (r.state.world) r.state.world.timeOfDay = 0.5;
-            r.state.pitch = -0.18;
+            st.timeOfDay = 0.5;
+            if (st.world) st.world.timeOfDay = 0.5;
+            st.pitch = -0.18;
         };
         return { weg: "spielpfad" };
     }
@@ -306,13 +306,13 @@ hauptLauf(async () => {
                     break;
                 await sleep(300);
             }
-            const rend = r && r.state && r.state.renderer;
+            const rend = r && st && st.renderer;
             return {
-                bereit: !!(r && r.state.rendererReady),
+                bereit: !!(r && st.rendererReady),
                 webgpu: !!(rend && rend.backend && rend.backend.isWebGPUBackend === true),
-                chunks: r && r.state.voxelChunks ? r.state.voxelChunks.size : -1,
-                weltbild: r && r.state._weltbildDa ? `${(r.state._weltbildDa / 1000).toFixed(1)} s` : "fehlt",
-                warm: !!(r && r.state._leibWarm),
+                chunks: r && st.voxelChunks ? st.voxelChunks.size : -1,
+                weltbild: r && st._weltbildDa ? `${(st._weltbildDa / 1000).toFixed(1)} s` : "fehlt",
+                warm: !!(r && st._leibWarm),
             };
         },
         { minChunks: ECHT ? 25 : 9, echt: ECHT }
@@ -332,7 +332,7 @@ hauptLauf(async () => {
 
     const zeichne = (n) => page.evaluate((n) => window.__frostWand.zeichne(n), n);
     const clip = await page.evaluate(() => {
-        const b = r.state.renderer.domElement.getBoundingClientRect();
+        const b = st.renderer.domElement.getBoundingClientRect();
         return { x: b.x + b.width * 0.2, y: b.y + b.height * 0.22, width: b.width * 0.6, height: b.height * 0.5 };
     });
     const schuss = async (datei) => {
@@ -433,7 +433,7 @@ hauptLauf(async () => {
     };
     const lageSeite = () =>
         page.evaluate(() => {
-            const be = r.state.renderer.backend;
+            const be = st.renderer.backend;
             const kaputt = [];
             let n = 0,
                 mensch = 0;
@@ -505,10 +505,10 @@ hauptLauf(async () => {
         page.evaluate(async (wer) => {
             const holen = () =>
                 wer === "ich"
-                    ? r.state.ichStage
+                    ? st.ichStage
                     : wer === "hof"
-                      ? r.state.hofStage
-                      : r.state.workshop && r.state.workshop.preview;
+                      ? st.hofStage
+                      : st.workshop && st.workshop.preview;
             await window.__frostWand.buehne("die Bühne", holen, (n) => n >= 2);
             const s = holen();
             let meshes = 0;
@@ -526,7 +526,7 @@ hauptLauf(async () => {
     await schritt("werkstatt-eiche", async () => {
         const wahl = await page.evaluate(() => {
             r.toggleDrawer("werkstatt");
-            if (r.state.blueprints && r.state.blueprints.baum_eiche)
+            if (st.blueprints && st.blueprints.baum_eiche)
                 return r.selectBlueprintForEdit("baum_eiche") ? "baum_eiche" : null;
             return null;
         });
@@ -556,7 +556,7 @@ hauptLauf(async () => {
     // Entsorgungs-Schlange legt (echt streamt die Welt nebenher), und leert die Schlange wie `_loopRender`.
     await page.evaluate((echt) => {
         const F = window.__frostWand;
-        const dev = r.state.renderer.backend.device;
+        const dev = st.renderer.backend.device;
         const welt = new Map();
         const pfad = (o) => {
             const t = [];
@@ -569,13 +569,13 @@ hauptLauf(async () => {
                 const ms = Array.isArray(o.material) ? o.material : o.material ? [o.material] : [];
                 for (const m of ms) if (!welt.has(m)) welt.set(m, `Stoff ${m.name || m.type} an ${pfad(o)}`);
             });
-        sammle(r.state.scene);
-        if (F.wurzel !== r.state.scene) sammle(F.wurzel);
+        sammle(st.scene);
+        if (F.wurzel !== st.scene) sammle(F.wurzel);
         const E = (window.__frostEntsorgung = { phase: null, je: {}, welt: welt.size });
         // echt ruht der Spiel-Takt für die Entsorgungs-Proben (Lehre 17: sonst baut die laufende Welt nebenher neu); die Welt-GPU zeichnet über
         // `_loopRender` (Bild + Kehraus + die Entsorgungs-Schlange), die Bühnen zeichnen in ihrem eigenen Takt weiter.
         if (echt) {
-            r.state.renderer.setAnimationLoop(null);
+            st.renderer.setAnimationLoop(null);
             F.zeichneTakt = F.zeichne;
             F.zeichne = async (n) => {
                 for (let i = 0; i < n; i++) {
@@ -619,13 +619,13 @@ hauptLauf(async () => {
         // zeichnet, verlässt die GPU — und mit ihr r184s Speicher-Buchung je Attribut) und die Entsorgungs-Schlange. Echt
         // zeichnet `_loopRender` selbst; die Kehraus-Uhr wird zurückgesetzt, damit er in diesem Frame läuft.
         E.leeren = async () => {
-            r.state._gpuKehrausT = 0;
+            st._gpuKehrausT = 0;
             if (echt) return F.zeichne(8);
             const marke = r._gpuKehrausMarke();
             await F.zeichne(1);
             r._gpuKehraus(marke, performance.now());
-            const s = Array.from(r.state.pendingDisposals);
-            r.state.pendingDisposals.clear();
+            const s = Array.from(st.pendingDisposals);
+            st.pendingDisposals.clear();
             await dev.queue.onSubmittedWorkDone();
             for (const o of s)
                 try {
@@ -674,15 +674,15 @@ hauptLauf(async () => {
             const peer = { peerId: "frost-peer" };
             const durchgang = async () => {
                 r.toggleInventoryOverlay(true);
-                for (const s of Object.keys(r.constructor.TETRAPODA_SOUL_MAP).flatMap((a) => [a, "human"])) {
+                for (const s of Object.keys(AnazhRealm.TETRAPODA_SOUL_MAP).flatMap((a) => [a, "human"])) {
                     await wechsle(
-                        () => r.state.ichStage,
+                        () => st.ichStage,
                         () => r.applyPlayerSoul(s === "human" ? s : "koerper_" + s)
                     );
-                    peer.soulName = r.state.player.soul;
-                    peer.bodyParts = (r.state.customSouls[peer.soulName] || {}).bodyParts;
+                    peer.soulName = st.player.soul;
+                    peer.bodyParts = (st.customSouls[peer.soulName] || {}).bodyParts;
                     E.im("seelen", () => r._p2pApplyPeerSoul(peer));
-                    leiber[s] = { ich: leib(r.state.ichStage.pivot), peer: leib(peer.mesh) };
+                    leiber[s] = { ich: leib(st.ichStage.pivot), peer: leib(peer.mesh) };
                     await F.leibWechsel();
                 }
                 r.toggleInventoryOverlay(false);
@@ -690,7 +690,7 @@ hauptLauf(async () => {
                 for (let k = 0; k < 2; k++)
                     for (const s of ["wolf", "fuchs", "baer", "wesen"])
                         await wechsle(
-                            () => r.state.hofStage,
+                            () => st.hofStage,
                             () => r._hofStageShow(s)
                         );
                 r.closeAllDrawers();
@@ -699,7 +699,7 @@ hauptLauf(async () => {
             };
             await durchgang();
             // das EINE Gerät (die Bühnen zeichnen auf ihm): Bauten vor und nach der Ruhe, dann der gemessene Durchgang
-            const dev = r.state.renderer.backend.device;
+            const dev = st.renderer.backend.device;
             const vor = E.bau(dev);
             await F.zeichne(echt ? 8 : 2);
             const ruhe = E.bau(dev);
@@ -710,9 +710,9 @@ hauptLauf(async () => {
             const neubau = { module: d("module"), pipelines: d("pipelines") };
             const neu = (dev.__frostNamen || []).slice(n0, n0 + 6);
             const zwillinge = (codes) => codes.length - new Set(codes.map((c) => c.replace(/NodeBuffer_\d+/g, ""))).size;
-            const programmZwillinge = zwillinge([...r.state.renderer._pipelines.programs.vertex.keys()]);
+            const programmZwillinge = zwillinge([...st.renderer._pipelines.programs.vertex.keys()]);
             const zwillingSelbst = zwillinge(["NodeBuffer_1", "NodeBuffer_2", "x"]);
-            r.state.scene.remove(peer.mesh);
+            st.scene.remove(peer.mesh);
             E.im("seelen", () => r._disposeSoulGroup(peer.mesh)); // der Abschied des Mitspielers
             // der Selbsttest des Urteils: die leere Bühne und der Block-Zwilling aus den Bauplan-Teilen der Wolf-Seele
             const zw = r._buildFromBlueprint({ name: "frost-zwilling", parts: r._getSoulDef("bp_koerper_wolf").bodyParts });
@@ -808,7 +808,7 @@ hauptLauf(async () => {
     // `_queueDispose` zählt), danach nennt die Linse jeden Satz, der doch verdichtete.
     const fenster = (auf) =>
         page.evaluate((auf) => {
-            const S = [...(r.state.chunkSaetze || new Map()).values()];
+            const S = [...(st.chunkSaetze || new Map()).values()];
             if (!auf) delete r._chunkSatzVerdichten;
             else
                 [window.__frostFenster, r._chunkSatzVerdichten] = [
@@ -841,7 +841,7 @@ hauptLauf(async () => {
         const stoffe = new Set();
         const O = (window.__frostOfen = { id, dial, basis: basis[dial], stoffe });
         O.mess = () => {
-            const m = r.state.renderer.info.memory; // die Werkstatt zeichnet auf der Welt-GPU (die Welt ruht in der Probe)
+            const m = st.renderer.info.memory; // die Werkstatt zeichnet auf der Welt-GPU (die Welt ruht in der Probe)
             let hoerer = 0;
             for (const s of stoffe) hoerer += s._listeners && s._listeners.dispose ? s._listeners.dispose.length : 0;
             const MB = +(((m.attributesSize || 0) + (m.indexAttributesSize || 0)) / 1048576).toFixed(2);
@@ -940,7 +940,7 @@ hauptLauf(async () => {
             spitze = Math.max(spitze, AnazhRealm._tierOfenMemo.size);
         }
         for (const m of leiber) {
-            r.state.scene.remove(m);
+            st.scene.remove(m);
             E.im("peers", () => r._disposeSoulGroup(m));
         }
         await E.leeren();
@@ -973,7 +973,7 @@ hauptLauf(async () => {
         delete r._queueDispose;
         if (F.zeichneTakt) {
             F.zeichne = F.zeichneTakt;
-            r.state.renderer.setAnimationLoop(r._gameLoopTick);
+            st.renderer.setAnimationLoop(r._gameLoopTick);
         }
     });
 
@@ -1038,7 +1038,7 @@ hauptLauf(async () => {
         m.name = "frost-taeter-bereich";
         m.frustumCulled = false;
         if (F.echt) {
-            const cam = r.state.camera;
+            const cam = st.camera;
             m.position.copy(new T.Vector3(0, 0, -2).applyQuaternion(cam.quaternion).add(cam.position));
         }
         F.wurzel.add(m);
@@ -1055,7 +1055,7 @@ hauptLauf(async () => {
     // T3 — die Puffer-Wache beißt: 3 × Uint16 (6 Bytes) auf einen eigenen Puffer der Welt-GPU
     const t3 = await page.evaluate(() => {
         const W = window.__frostHoer.puffer,
-            dev = r.state.renderer.backend.device;
+            dev = st.renderer.backend.device;
         const buf = dev.createBuffer({ label: "frost-taeter-puffer", size: 8, usage: GPUBufferUsage.COPY_DST });
         try {
             dev.queue.writeBuffer(buf, 0, new Uint16Array(3));
@@ -1073,7 +1073,7 @@ hauptLauf(async () => {
     );
     selbsttest("T2 (der geweitete Mensch-Index)"); // jede Meldung der Seite ab hier ist der Täter der Wand, kein Fehler der Welt
     const t2 = await page.evaluate(() => {
-        const be = r.state.renderer.backend;
+        const be = st.renderer.backend;
         let ziel = null;
         window.__frostWand.leib.traverse((o) => {
             const g = o.geometry;

@@ -477,7 +477,11 @@ class AnazhRealm_stoff_instanz {
                 () => T.instanceIndex
             )
         );
-        const gang = new SenkenPuffer("gang", "vec2", 2, "arenaGang").toReadOnly().element(index);
+        // DER GANG JE INSTANZ (`_gangSatzKnoten`, der Ton `_gangSatz`): vec4 wie das Attribut jedes Satzes (`_gangSatz`, G = 4).
+        // Befund 31.10. (Radeon, stadt-voll Third, Blick-Sonde w3/blick-stadt): der Puffer las `array<vec2f>`, der Mensch trug
+        // seit mensch.K4 vec4 — jede zweite Instanz las die Zeilen ihrer Palette als Phase und Gewicht (Gewicht ≫ 1: der Stand
+        // über den Gang hinaus gestreckt, Riesen im Nah-Kreis), die andere den Gang einer fremden Instanz
+        const gang = new SenkenPuffer("gang", "vec4", 4, "arenaGang").toReadOnly().element(index);
         const matrix = new SenkenPuffer("instanceMatrix", "mat4", 16, "instanzMatrix").toReadOnly().element(index);
         // DIE ART-GRÖSSEN DES WINDS IN DER ARENA (G1): je Instanz ein vec4 im Speicher-Puffer, nie ein Vertex-Puffer — die
         // Arena belegt genau die Vertex-Puffer ihres Zeichners (r184 bindet je gelesenes Attribut einen; WebGPU trägt höchstens
@@ -504,9 +508,9 @@ class AnazhRealm_stoff_instanz {
             // der Gang je Instanz (`_gangSatzKnoten`): in der Wahl am Index aus dem Speicher-Puffer der Arena, sonst das Attribut
             gang: T.nodeObject(
                 new WahlWert(
-                    "vec2",
+                    "vec4",
                     () => gang,
-                    () => T.attribute("aGang", "vec2")
+                    () => T.attribute("aGang", "vec4")
                 )
             ),
             instanz: new SenkenInstanz(),

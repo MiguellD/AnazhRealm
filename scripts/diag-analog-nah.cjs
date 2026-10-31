@@ -96,24 +96,24 @@ hauptLauf(async () => {
     const res = await page.evaluate(
         async (k) => {
             await window.__weltDa((r) => r.state);
-            if (!r || !r.state.renderer || r.state.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
+            if (!r || !st.renderer || st.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
             // der Loop ruht die ganze Probe
-            r.state.renderer.setAnimationLoop(null);
-            r.state.renderer.setAnimationLoop = () => {};
+            st.renderer.setAnimationLoop(null);
+            st.renderer.setAnimationLoop = () => {};
             // Der Takt rendert NICHT (unter swiftshader kostet ein Voll-Render mit Studio-Meshes Sekunden — wie in
             // diag-beweis-e): der Zensus liest die CPU-Wahrheit, welcher Satz zeichnet; der Analog-Pfad bleibt offen,
             // denn der Renderer ist echt (kein Null-Renderer), nur sein Zeichnen ruht.
-            const rend = r.state.renderer;
+            const rend = st.renderer;
             // Geräteverlust laut ins Log (Grund + Meldung), nie still.
             const dev = rend.backend && rend.backend.device;
             if (dev && dev.lost)
                 dev.lost.then((i) => console.log("[N] WebGPU-Geraet verloren: " + i.reason + " · " + i.message));
             rend.render = function () {};
             if (typeof rend.renderAsync === "function") rend.renderAsync = () => Promise.resolve();
-            r.state.postProcessingFailed = true;
+            st.postProcessingFailed = true;
             await window.__weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
             // der Karten-Takt bäckt erst mit dem Renderer (`_tickKarteWelt`: rendererReady) — kam das Buch vor `renderer.init()`, war S vakuös
-            await window.__weltDa(() => !(!r.state.rendererReady));
+            await window.__weltDa(() => !(!st.rendererReady));
             // nach init(): fiel der r184-Renderer ohne Adapter auf WebGL2, steht das hier (kein stilles Grün)
             const backend = r._gpuComputeFaehig() ? "WebGPU" : "WebGL2-Rückfall (der Feld-Pass zeichnet nicht)";
             // S am Ruf; der Selbsttest fährt einen Takt ohne Bäcker und eine Schlange in Ankunfts-Folge
@@ -121,7 +121,7 @@ hauptLauf(async () => {
                 const wo = [], q = r._impostorBakeQueue;
                 let bake = 0;
                 r._tickImpostorBake = () => (bake++, 0);
-                try { sched.call(r, r.state.playerMesh.position); } finally { delete r._tickImpostorBake; }
+                try { sched.call(r, st.playerMesh.position); } finally { delete r._tickImpostorBake; }
                 // S2: die Welt-Karte bäckt im Rang ihres nächsten Wartenden (`_bedarfD2`), nie in Ankunfts-Folge (der erste Takt an
                 // freier Leine: der Takt der Linse zeichnet nicht, die Queue löst die Bilder vor dem Stopp erst mit der nächsten
                 // Abgabe) — und die Leine fragt die Karte, nie den Ring (lod.K3): gespannt nach dem ersten Takt backt nur die
@@ -130,7 +130,7 @@ hauptLauf(async () => {
                 const stub = { _foundryEnabled: () => true, _ensureAssetFoundry: () => ({ ready: true }), _impostorAtlasTexturen: () => true, _karteWeltBacken: (a, z) => (wo.push(z.key), null), _gpuLeineStraff: () => wo.length > 1 };
                 Object.assign(r, stub, { _impostorBakeQueue: ["fern", "nah"] });
                 try { tick.call(r, at); at.offen = { z: at.zellen.get("fern") }; tick.call(r, at); delete at.offen; tick.call(r, at); } finally { for (const k in stub) delete r[k]; r._impostorBakeQueue = q; }
-                return { S1: bake > 0, S2: wo.join() === "nah,fern,fern", bereit: !!r.state.rendererReady, leine: r._gpuLeineStraff(), imFlug: (r._gpuLeine || {}).imFlug, wo: wo.join(",") }; // prettier-ignore
+                return { S1: bake > 0, S2: wo.join() === "nah,fern,fern", bereit: !!st.rendererReady, leine: r._gpuLeineStraff(), imFlug: (r._gpuLeine || {}).imFlug, wo: wo.join(",") }; // prettier-ignore
             };
             const S = sProbe(r._runFrameScheduler, r._tickKarteWelt);
             const sBruch = k.selbst && sProbe(() => 0, function (at) { for (const n of r._impostorBakeQueue) r._karteWeltBacken(at, at.zellen.get(n)); });
@@ -138,7 +138,7 @@ hauptLauf(async () => {
                 taktFehler1 = null;
             const tick = async () => {
                 try {
-                    if (r.state.world) r.state.world.timeOfDay = 0.5;
+                    if (st.world) st.world.timeOfDay = 0.5;
                     r._gameLoopTick(performance.now());
                 } catch (e) {
                     taktFehlerN++;
@@ -146,7 +146,7 @@ hauptLauf(async () => {
                 }
                 await sleep(20);
             };
-            const setze = (x, z) => r.state.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
+            const setze = (x, z) => st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
             const hart = () => {
                 const z = r._analogZensus();
                 return z ? z.nah.filter((a) => !a.schwindet || a.haengt) : null;
@@ -157,7 +157,7 @@ hauptLauf(async () => {
             if (k.selbst) {
                 // DER ERZWUNGENE SATZ: ein Kapsel-Satz ohne Träger, 20 m vor dem Spieler — die Linse muss ihn nennen.
                 const T = window.THREE;
-                const pm = r.state.playerMesh.position;
+                const pm = st.playerMesh.position;
                 const M = new T.Matrix4().makeTranslation(pm.x + 20, pm.y - 1.8, pm.z);
                 const h = r._weltKapselSpawn("selbsttest:nah20", M, () => ({
                     a: new T.Vector3(0, 0, 0),
@@ -260,7 +260,7 @@ hauptLauf(async () => {
                 vor = -1;
             for (let t = 0; t < 400 && stabil < 20; t++) {
                 await tick();
-                const n = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
+                const n = st.voxelChunks ? st.voxelChunks.size : 0;
                 stabil = n === vor ? stabil + 1 : 0;
                 vor = n;
             }

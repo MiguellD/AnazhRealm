@@ -1830,6 +1830,7 @@ class AnazhRealm_vegetation_wiese {
         const hb = Math.floor((z1 + R) / C);
         let n = 0;
         for (let gx = ga; gx <= gb; gx++) for (let gz = ha; gz <= hb; gz++) if (memo.delete(gx + "," + gz)) n++;
+        if (n) this._forestDartFall = (this._forestDartFall | 0) + 1; // kein stehender Kasten gilt mehr (`_waldPlanSteht`)
         const steht = this._forestStehtMemo;
         if (steht)
             for (let gx = ga - 2; gx <= gb + 2; gx++)
@@ -1911,7 +1912,10 @@ class AnazhRealm_vegetation_wiese {
             out.vorlaeufig = true;
             return out;
         }
-        if (memo.size > 8192) memo.clear(); // bounded — die Front ist lokal, ein Clear kostet nur Re-Compute
+        if (memo.size > 8192) {
+            memo.clear(); // bounded — die Front ist lokal, ein Clear kostet nur Re-Compute
+            this._forestDartFall = (this._forestDartFall | 0) + 1;
+        }
         memo.set(memoKey, out);
         return out;
     }
@@ -1925,6 +1929,9 @@ class AnazhRealm_vegetation_wiese {
     // Hülle, die Streu, die Promotion, die Karte). Die Frage merkt ihre fehlenden Zellen je Zelle des Orts: jede weitere
     // kostet einen Blick, bis die letzte steht. Fiel eine bestellte Zelle aus der Schlange (ein neuer Stand, ein Erdbau),
     // bestellt die Frage neu.
+    // DER STEHENDE KASTEN BLEIBT STEHEN (w4-ankunft-2): stand der Kasten einer Zelle, steht er, bis eine Zelle aus dem Gedächtnis
+    // fällt (`_forestDartFall`: ein Erdbau, die Schranke) oder ein neues Gedächtnis kommt — bis dahin fragte jede Gestalt seine
+    // 169 Zellen neu (swiftshader kalt bis zum Bild 0,6–0,9 s).
     _waldPlanSteht(x, z) {
         const memo = this._forestDartMemo;
         if (!memo) return false;
@@ -1932,6 +1939,8 @@ class AnazhRealm_vegetation_wiese {
         const gx = Math.floor(x / C);
         const gz = Math.floor(z / C);
         const bk = gx + "," + gz;
+        const V = this._waldPlanVoll;
+        if (V && V.memo === memo && V.fall === (this._forestDartFall | 0) && V.kaesten.has(bk)) return true;
         if (!this._waldWarten || this._waldWarten.size > 4096) this._waldWarten = new Map();
         const Q = this._waldPlanSchlange || (this._waldPlanSchlange = new Map());
         let fehlt = this._waldWarten.get(bk);
@@ -1950,7 +1959,13 @@ class AnazhRealm_vegetation_wiese {
         }
         const R = AnazhRealm.WALD_PLAN.reich;
         fehlt = [];
-        if (this._waldPlanKasten(gx - R, gz - R, gx + R, gz + R, fehlt)) return true;
+        if (this._waldPlanKasten(gx - R, gz - R, gx + R, gz + R, fehlt)) {
+            let W = this._waldPlanVoll;
+            if (!W || W.memo !== memo || W.fall !== (this._forestDartFall | 0) || W.kaesten.size > 16384)
+                W = this._waldPlanVoll = { memo, fall: this._forestDartFall | 0, kaesten: new Set() };
+            W.kaesten.add(bk);
+            return true;
+        }
         this._waldWarten.set(bk, fehlt);
         return false;
     }
@@ -2150,7 +2165,10 @@ class AnazhRealm_vegetation_wiese {
         const Q = this._waldPlanSchlange;
         let n = 0;
         if (r && this._forestDartMemo === memo && (this._erdbauStand | 0) === erd) {
-            if (memo.size + zellen.length / 2 > 8192) memo.clear(); // bounded wie `_forestCellDarts`
+            if (memo.size + zellen.length / 2 > 8192) {
+                memo.clear(); // bounded wie `_forestCellDarts`
+                this._forestDartFall = (this._forestDartFall | 0) + 1;
+            }
             const alle = this._waldDartsEntpacken(r, zellen.length / 2);
             for (let i = 0; i < alle.length; i++) {
                 const k = zellen[i * 2] + "," + zellen[i * 2 + 1];

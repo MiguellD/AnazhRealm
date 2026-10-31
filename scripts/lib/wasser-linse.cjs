@@ -777,31 +777,33 @@ function __wasserFlussNah(r, x, z) {
 }
 
 // DER STROM AN EINEN ORT (Seite, EIN Weg für jede Probe der Wand): der Spieler `hoehe` über dem Boden an `ort`, die Welt
-// streamt synchron um ihn (Worker ausgehängt — wie der Playtest), bis die Chunk-Zahl steht. Der Bild-Renderer ruht dabei.
+// streamt synchron um ihn (Worker ausgehängt — wie der Playtest), bis die Chunk-Zahl steht. Der Bild-Renderer ruht DABEI und
+// nur dabei: der Strom LEIHT ihn (`leihe`, die EINE Leihe der Seite) samt Weiche, Faden und Sync-Stelle und gibt alles zurück,
+// auch wenn er bricht. Bis 31.10. blieb `renderer.render` für immer stumm und die Post-Kette aus — in der EINEN Welt der Sitzung
+// (gelaende.K2 `__wasserDamm`, die Grundstellung ohne Neuladen) zeichnete danach kein Bild mehr: jede Aufnahme las ein Ziel, in
+// das nie ein Frame zeichnete (tiere.K1#2 und tiere.K3#2 „Cannot read properties of undefined (reading 'format')“, GTX e0139769
+// und 94c079cb), und kein Bau stand (physik.K2#2 „DER BAU STEHT NICHT: haus_alemannisch“).
 async function wasserStrom(ort, hoehe) {
-    if (st.renderer) {
-        st.renderer.render = function () {};
-        if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
+    const zurueck = [leihe(st, { postProcessingFailed: true }), leihe(st.renderer, { render() {} })];
+    try {
+        st.playerMesh.position.set(ort[0], r._voxelSurfaceY(ort[0], ort[1]) + hoehe, ort[1]);
+        if (st._fixedSimPos) st._fixedSimPos.copy(st.playerMesh.position);
+        // die Kacheln des Rings kommen aus dem Faden, ehe er aushängt (der Haupt-Faden rechnet sie nie); dann hängt der Faden
+        // aus: der Ring baut an der Test-Naht (`SYNC_STELLEN`, streaming.K4)
+        await window.__weltDa(() => !r._ensureHydroTilesAround(ort[0], ort[1], 2048));
+        zurueck.push(leihe(st, { voxelWorker: null }), leihe(r, { _syncStelle: "naht" }));
+        for (let last = -1, still = 0, weiter = window.__deckel("der Ring am Wasser", 9000); weiter(); await sleep(0)) {
+            try {
+                r._gameLoopTick(performance.now());
+            } catch {}
+            const n = st.voxelChunks ? st.voxelChunks.size : 0;
+            still = n === last ? still + 1 : 0;
+            last = n;
+            if (n >= 9 && still > 30 && !r._weltOffen().chunks) break;
+        }
+    } finally {
+        for (const z of zurueck.reverse()) z();
     }
-    st.postProcessingFailed = true;
-    st.playerMesh.position.set(ort[0], r._voxelSurfaceY(ort[0], ort[1]) + hoehe, ort[1]);
-    if (st._fixedSimPos) st._fixedSimPos.copy(st.playerMesh.position);
-    // die Kacheln des Rings kommen aus dem Faden, ehe er aushängt (der Haupt-Faden rechnet sie nie)
-    await window.__weltDa(() => !r._ensureHydroTilesAround(ort[0], ort[1], 2048));
-    const worker = st.voxelWorker;
-    st.voxelWorker = null;
-    r._syncStelle = "naht"; // der Faden hängt aus: der Ring baut an der Test-Naht (`SYNC_STELLEN`, streaming.K4)
-    for (let last = -1, still = 0, weiter = window.__deckel("der Ring am Wasser", 9000); weiter(); await sleep(0)) {
-        try {
-            r._gameLoopTick(performance.now());
-        } catch {}
-        const n = st.voxelChunks ? st.voxelChunks.size : 0;
-        still = n === last ? still + 1 : 0;
-        last = n;
-        if (n >= 9 && still > 30 && !r._weltOffen().chunks) break;
-    }
-    st.voxelWorker = worker;
-    r._syncStelle = null;
 }
 
 // ── F3: DER GRABEN AM FLUSS ── Je ein Graben 1 m und 3 m jenseits der Krone (`__wasserKroneVon`, je eine Bank)

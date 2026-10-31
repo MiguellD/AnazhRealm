@@ -1540,15 +1540,27 @@ class AnazhRealm_kreatur_leben {
     // `_populateBlockerAABBs`) über (x, z) zwischen dem Grund `g` und `bis` (die Stufe des Körpers) — sonst g. Der billige Beweis
     // zuerst (Lehre 25): ohne Trittfläche in der Welt (`_trittDa`) fragt kein Körper das Blocker-Netz. Leser: jeder Körper
     // (`_koerperBodenUnter`) und die Strecke des Gehenden (`_bewohnerWand`).
+    // KEIN KÖRPER STECKT IN DER TRITTFLÄCHE (material.K4), wie keiner im Fels (die Säule trägt, `_koerperBodenUnter`): liegt der
+    // Grund IN ihr (ihre Sohle darunter), trägt ihre Oberkante, über jede Stufe; gestapelt (der Quarz-Kern auf der Scheibe) die
+    // oberste, in die der Grund so gelangt. Bis dahin stand ein Wagen, gesetzt auf die Genesis-Plattform, 0,85 m in ihr.
     _trittUeber(x, z, g, bis) {
         if (!this._trittDa) return g;
         const kand = this._trittKand || (this._trittKand = []);
         kand.length = 0;
         this._blockerNahe(x, z, 0, 0, kand);
         let top = g;
-        for (const e of kand)
-            for (const box of e.blockerAABBs || [])
-                if (box.tritt && box.topY > top && box.topY <= bis && this._boxAbstand2(box, x, z) <= 0) top = box.topY;
+        for (let hob = true; hob;) {
+            hob = false;
+            for (const e of kand)
+                for (const box of e.blockerAABBs || [])
+                    if (
+                        box.tritt &&
+                        box.topY > top &&
+                        (box.topY <= bis || box.botY <= top) &&
+                        this._boxAbstand2(box, x, z) <= 0
+                    )
+                        ((top = box.topY), (hob = true));
+        }
         return top;
     }
 

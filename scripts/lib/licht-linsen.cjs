@@ -53,13 +53,13 @@ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
         const o = i * 4;
         // Die Zeilen des Ziels laufen von unten nach oben (WebGL) bzw. oben nach unten (WebGPU) — das Bild ist nur
         // Augenschein, die Zahlen hängen nicht an der Zeilen-Ordnung.
+        // das Alpha setzt `__png` deckend (welt-boot)
         if (!(hell[o + 3] > deckung)) {
-            img.data.set([255, 0, 255, 255], o);
+            img.data.set([255, 0, 255], o);
             continue;
         }
         for (let c = 0; c < 3; c++)
             img.data[o + c] = Math.round(255 * linSrgb(Math.min(1, Math.max(0, hell[o + c] - dunkel[o + c]))));
-        img.data[o + 3] = 255;
     }
     return {
         name,
@@ -202,7 +202,7 @@ function albedoSicht(opts) {
                     const [x, zz] = [pp.x + 4, pp.z - 4];
                     const g = r._buildHumanGroup(Object.assign({}, window.__koerperCore.START_PARAMS, ex.wahl));
                     g.name = "mensch";
-                    g.position.set(x, r._voxelSurfaceY(x, zz) + r.constructor.PLAYER_FOOT_OFFSET, zz);
+                    g.position.set(x, r._voxelSurfaceY(x, zz) + AnazhRealm.PLAYER_FOOT_OFFSET, zz);
                     sc.add(g);
                     gesetzt = true;
                     await ticke(20, () => false);
@@ -213,7 +213,7 @@ function albedoSicht(opts) {
                     // EINER festen Stelle (`stelle`, Welt-x/z), nie an einer Suche um den Spieler. Dort steht das Wald-Gesetz (`_forestCellDarts` →
                     // `_forestDartSteht` → `_wildnisTraegt`): ≥ `baeume` stehende Bäume binnen `r` m, keiner näher als `frei` m.
                     const W0 = ex.wald,
-                        C = r.constructor.FOREST.cell,
+                        C = AnazhRealm.FOREST.cell,
                         seedInt = r._forestSeedInt(),
                         [x, zz] = ex.stelle,
                         memo = new Map();
@@ -244,7 +244,7 @@ function albedoSicht(opts) {
             for (const x of nahe) {
                 const e = x.eintrag,
                     n = x.zeile.welt.exemplar.stufe,
-                    D = r.constructor.LOD_DISTANCES;
+                    D = AnazhRealm.LOD_DISTANCES;
                 const zeigt = () => {
                     for (const g of (st.archInstanceGroups && st.archInstanceGroups.values()) || [])
                         if (g && g.slotEntry && g.mesh && (r._taeterKlasse(g.mesh) || "").endsWith(":L" + n))
@@ -666,7 +666,7 @@ function albedoSicht(opts) {
 // (`window.__bundlesNeu`, welt-boot)
 function linsenZiel(W, H) {
     const T = window.THREE,
-        { renderer: rend, scene: sc } = r.state,
+        { renderer: rend, scene: sc } = st,
         rt = new T.RenderTarget(W, H, { depthBuffer: true, samples: 0, type: T.HalfFloatType });
     const zeichne = (cam) => {
         if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
@@ -693,7 +693,7 @@ function linsenZiel(W, H) {
         ruhe: (cam, wer) => window.__erstRuhe(() => (r._schattenAlleNeu(), zeichne(cam)), {}, wer),
         // die Linse misst ohne Luft (die Extinktion der Szene ruht während der Schüsse); zurück gibt der Rückgabe-Ruf
         kamera: (cam, p = cam.position.clone(), q = cam.quaternion.clone()) => () => (cam.position.copy(p), cam.quaternion.copy(q)),
-        ohneLuft: (U = ((r.state.luft || {}).U || {}).beta, alt = U && U.value) => (U && (U.value = 0), () => U && (U.value = alt)),
+        ohneLuft: (U = ((st.luft || {}).U || {}).beta, alt = U && U.value) => (U && (U.value = 0), () => U && (U.value = alt)),
     };
 }
 
@@ -1541,7 +1541,7 @@ function laubGegenlicht(opts) {
         auge.y = r._voxelSurfaceY(auge.x, auge.z) + (opts.augeH || 1.7);
         // `l1`: die Schwelle der Karte, unter der das Exemplar im Auge seine L1 VOLL zeigt (der Schuss der Gestalt) — jenseits
         // der Hysterese UND der Blende (sonst stünde die L1 halb in der Karten-Blende, die die CPU nicht zeichnet)
-        const D = r.constructor.LOD_DISTANCES;
+        const D = AnazhRealm.LOD_DISTANCES;
         const l1 = +(Math.max(r._lodPerceptionDistance(abstand, hoehe), opts.haus ? abstand : 0) + Math.max(D.hysteresis, D.fade || 0) + 1).toFixed(1);
         // DAS FERNE AUGE (der Boden): 400 m vor S, der flachste Blick von oben (≥ 1°) — dort zeichnet der Fern-Ring S (Schuss 2)
         let fern = null;
@@ -1623,8 +1623,8 @@ function laubGegenlicht(opts) {
                         img.data[o + 1] = 0;
                         img.data[o + 2] = 255;
                     }
-                    img.data[o + 3] = 255;
                 }
+            // das Alpha setzt `__png` deckend (welt-boot)
             return { Yp, Cp, png: window.__png(img.data, W, H) };
         };
         try {
@@ -1919,7 +1919,7 @@ function lichtWeg(opts) {
                 // DER SPIEGEL: über einer Wasser-Fläche (Feld-Zellen Art 1) 30 m voraus eine graue Wand (18 %, ihre Fläche 45° neben
                 // der Sonne: Sonne und Himmel, kein Glanz der Karte im Rücken des Auges), das Auge 2 m darüber blickt 25° hinab (Öffnung 20°) — jeder gespiegelte Strahl verlässt den Schirm, das
                 // Feld des Spiegel-Passes trägt ihn. Die Welt: dieselbe Karte senkrecht, mit derselben Normale, aus demselben Auge.
-                const S = r._spiegelFeld(), L = r._spiegelLeser(), K = r.constructor.SPIEGEL, n = S.n, alt = [S.daten.slice(), S.stoff.slice(), S.hoechste.slice(), S.mitte, S.hMax];
+                const S = r._spiegelFeld(), L = r._spiegelLeser(), K = AnazhRealm.SPIEGEL, n = S.n, alt = [S.daten.slice(), S.stoff.slice(), S.hoechste.slice(), S.mitte, S.hMax];
                 const H = see.position.y - S.bezug, fov = cam.fov;
                 const I0 = Math.floor(o.x / K.texel) - n / 2, J0 = Math.floor(o.z / K.texel) - n / 2, w = (k, k0, a) => (k0 + ((((k - k0) % n) + n) % n) + 0.5) * K.texel - a;
                 S.hoechste.fill(-30000);
@@ -1957,7 +1957,7 @@ function lichtWeg(opts) {
                 const h = r._weltKapselSpawn("lichtweg:" + opts.weg, m, () => [{ box: true, c: new T.Vector3(), h: senkrecht ? new T.Vector3(0.5, 20, 20) : new T.Vector3(20, 0.5, 20), farbe: { r: 0.18, g: 0.18, b: 0.18 } }]);
                 weg = await lies(fp.march, senkrecht ? nh.clone().negate() : unten).finally(() => r._weltFeldFrei(h));
             } else {
-                const mit = await lies(see, unten), R = r.constructor._wasserKoerper(r.constructor.Gesetz("terrain:WASSER_GESETZ"));
+                const mit = await lies(see, unten), R = AnazhRealm._wasserKoerper(AnazhRealm.Gesetz("terrain:WASSER_GESETZ"));
                 WL.forEach((u) => (u.value = u.value.clone ? u.value.setScalar(0) : 0));
                 const ohne = await lies(see, unten);
                 weg = mit.map((v, c) => ((v - ohne[c]) / R[c]) * 0.18);
@@ -2383,7 +2383,7 @@ function luftTiefeUrteil(m, R) {
 // Leuchtdichte des Ausgabe-Bilds (linear, Rec. 709), das Wort und der Stand des Übergangs.
 function wetterZug(o) {
     return (async () => {
-        const dt = r.constructor.TAKT_DECKEL_S;
+        const dt = AnazhRealm.TAKT_DECKEL_S;
         const [T0, tag, reihe] = [performance.now(), st.dayLengthMinutes, []];
         let k = 0;
         st.renderer.setAnimationLoop(null);
@@ -2506,7 +2506,7 @@ function naesseSicht(o) {
         // Umkreis 24 m am Dach-Pool an seiner Mitte (am Boden)
         if (o.dach) {
             const U = r._ensureAtmoUniforms();
-            const arten = (r.constructor.NAESSE || {}).dachArten || [];
+            const arten = (AnazhRealm.NAESSE || {}).dachArten || [];
             const ab = (a) => Math.hypot(a.position.x - p.x, a.position.z - p.z);
             const bauten = st.architectures.filter((a) => {
                 const pr = !a._hausHuelle && a.position && r._foundryPresetForEntry(a);
@@ -2607,9 +2607,9 @@ function naesseSicht(o) {
         };
         const med = (l) => (l.length ? +l.sort((a, b) => a - b)[l.length >> 1].toFixed(3) : null);
         const A = { k: (n) => n, mul: (x, y) => x * y, sub: (x, y) => x - y, mix: (x, y, w) => x + (y - x) * w };
-        const dicht = typeof r.constructor._naesseGesetz === "function" ? r.constructor._naesseGesetz(A, 0.4, 0.3, 1, 1) : null;
+        const dicht = typeof AnazhRealm._naesseGesetz === "function" ? AnazhRealm._naesseGesetz(A, 0.4, 0.3, 1, 1) : null;
         // der Glanz: die GGX-Spitze 1/α² (α = Rauheit²) des porösen Bodens (Rauheit 0,8) nass gegen trocken
-        const poroes = typeof r.constructor._naesseGesetz === "function" ? r.constructor._naesseGesetz(A, 0.4, 0.8, 0, 1) : null;
+        const poroes = typeof AnazhRealm._naesseGesetz === "function" ? AnazhRealm._naesseGesetz(A, 0.4, 0.8, 0, 1) : null;
         return {
             ort: o.ort,
             haus: e && e.type,

@@ -1528,6 +1528,13 @@ class AnazhRealm_dienst {
         return false;
     }
 
+    // EIN BEWEGTER WECKT DEN TAKT, DESSEN URTEIL ER ÄNDERT (das EINE Stufen-Gesetz: Bewegte prüfen, `_archBewegteUrteilen`): die
+    // Wache kennt Stempel und Anker, nie die Lage eines Eintrags, der nach dem Eintritt wandert — sein nächster Gang geht.
+    _standWecken(name) {
+        const t = this._standWache && this._standWache.takte.get(name);
+        if (t) [t.leer, t.offen] = [0, false];
+    }
+
     // Der Gang ist gegangen: `besucht` Einheiten, `gewirkt` = er änderte die Welt (er geht noch einmal; ein Bau-Takt weckt
     // den anderen), `offen` = er wartet auf etwas (hält sich selbst wach; "felder": nur auf die Bake-Uhr, ein Asset oder das
     // Buch — ihn wecken ihr Wecker und der Stempel). Beides beginnt seine Runde neu.

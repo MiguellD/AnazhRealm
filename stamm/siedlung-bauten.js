@@ -141,140 +141,193 @@ class AnazhRealm_siedlung_bauten {
         if (this._ankunftsFerne() > 1) maxSwitchesPerFrame = Math.max(maxSwitchesPerFrame, AnazhRealm.ANKUNFT_TAKT.bau);
         this._buendelAnkerPruefen(pm); // DIE REIHE NACH ABSTAND (1310-9): neu nur beim Anker-Wechsel
         const archs = this.state.architectures;
+        // V18.389 (SUBSYSTEM 3) — Occlusion-Demotion aktiv? Headless (Null-Renderer) → AUS
+        // (gate-treu: das Gate sieht die reine Distanz-LOD, unperturbiert). Bei aktiv das
+        // Kronen-Gitter throttled neu bauen (einmal je Gang eingehängt).
+        const st = this.state;
+        const occlOn = st.useOcclusionDemotion !== false && !(st.renderer && st.renderer._isHeadlessNull);
+        // DIE BEWEGTEN (das EINE Stufen-Gesetz: Bewegte prüfen) urteilen vor der Wache — ihre Kosten tragen sie selbst
+        const bewegt = this._archBewegteUrteilen(pm, occlOn);
         // DIE STAND-WACHE: ging die Stufen-Wahl eine volle Runde über alle Einträge, ohne zu wechseln und ohne dass einer
         // wartete, und regt sich nichts (Ort, Bau-Menge, Ankunft, Regler), wählt sie dieselben Stufen — kein Gang. Ohne
         // Eintrag ist die Runde 0 und gegangen: auch die leere Wahl geht durch die Wache, nie an ihr vorbei.
         const n = Array.isArray(archs) ? archs.length : 0;
-        if (this._standRuht("archLod", n, { pos: pm, rand: AnazhRealm.STAND_RAND_M }, "bau")) return 0;
-        let regung = 0;
-        let offen = 0;
+        if (this._standRuht("archLod", n, { pos: pm, rand: AnazhRealm.STAND_RAND_M }, "bau")) return bewegt;
         // Rolling cursor: jeder Tick walkt nur einen Slice des Arrays. Bei
         // grossen Welten (10k+ Architekturen) bleibt der Tick bounded. Den
         // Cursor speichern wir an state — er reist nicht im Snapshot.
         if (!Number.isFinite(this._archLODCursor)) this._archLODCursor = 0;
-        // V18.389 (SUBSYSTEM 3) — Occlusion-Demotion aktiv? Headless (Null-Renderer) → AUS
-        // (gate-treu: das Gate sieht die reine Distanz-LOD, unperturbiert). Bei aktiv das
-        // Kronen-Gitter throttled neu bauen (einmal je Tick eingehängt).
-        const st = this.state;
-        const occlOn = st.useOcclusionDemotion !== false && !(st.renderer && st.renderer._isHeadlessNull);
         if (occlOn) this._maybeRebuildOcclusionGrid();
-        let switches = 0;
+        const z = this._archStufeZaehler();
         const sliceLen = Math.min(archs.length, 256); // wieviele Einträge pro Frame ANSCHAUEN
         // Der Cursor rückt um die BESUCHTEN Einträge vor: endete die Scheibe am Wechsel-Budget, ging der Rest der Scheibe
         // bis 05.10. eine ganze Runde leer aus (gate:fernwald D: nach 18 m Weg stand der Baum am Radius 40 Takte ohne
         // seinen Zonen-Stempel).
         let besucht = 0;
-        for (let i = 0; i < sliceLen && switches < maxSwitchesPerFrame; i++) {
+        for (let i = 0; i < sliceLen && bewegt + z.switches < maxSwitchesPerFrame; i++) {
             besucht = i + 1;
-            const idx = (this._archLODCursor + i) % archs.length;
-            const entry = archs[idx];
-            if (!entry || !entry.instanced) continue;
-            // Auch platzierte Studio-Architektur (instFoundry) tickt LOD — sonst behält ein Haus im Cull-Radius
-            // seine Bau-Stufe für immer (~75k Tris/Haus auch bei 120 m). Eligibility ist daten-getrieben; die
-            // Stufen je Art bleiben kindStages in _foundryFlattenFor (kein kind-Literal).
-            const treeLike = !!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex);
-            if (!treeLike && entry.instFoundry !== true) continue;
-            const dx = entry.position.x - pm.x;
-            const dz = entry.position.z - pm.z;
-            const dist = Math.sqrt(dx * dx + dz * dz);
-            // V18.387 — Baum-Einträge reichen ihre Sichthöhe durch → Wahrnehmungs-
-            // Distanz-LOD (größere Bäume schalten später, unter Last alle früher).
-            const visH = this._lodTreeVisHeight(entry);
-            if (visH === null) {
-                offen++;
-                continue; // die Höhen-Stufe lädt: der Baum hält Stufe und Band
-            }
-            // Die BRÜCKE trägt keinen Hysterese-Zustand: ihre Stufe 2 ist die gedockte Karte, nicht die Wahl. Mit ihr als
-            // Zustand blieb die Wahl im Band [thresh12 − hyst, thresh12] (22,6–26 m) auf 2, die Brücke löste sich als
-            // „Karte" auf und blendete nach Distanz aus — ohne L1-Partner, der Baum stand halb ausgedithert.
-            // DIE GRENZEN DES GESETZBUCHS (K43): nennt die Art ihre Stufen-Grenzen (B2c `ab`), wählt der Takt nach ihnen — in
-            // der Ankunft aus der Ferne (`_ankunftsFerne`, B2) die Grobstufe
-            const grenzen = treeLike ? null : this._archStufenGrenzen(entry);
-            let newLOD = grenzen
-                ? AnazhRealm._stufeNachGrenzen(
-                      dist * this._ankunftsFerne(),
-                      entry._lodLevel,
-                      grenzen,
-                      Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1
-                  )
-                : this._chooseLODForDistance(dist, entry._bruecke ? undefined : entry._lodLevel, visH);
-            // Occlusion-Demotion: ein ferner 3D-Baum (LOD0/1) hinter dichter Kronen-Masse fällt auf LOD2.
-            // `entry._occluded` trägt die Hysterese — transient, NICHT im Snapshot.
-            if (occlOn && newLOD < 2 && dist > AnazhRealm.OCCLUSION.occDist) {
-                const occ = this._occlusionOccludes(
-                    pm.x,
-                    pm.z,
-                    entry.position.x,
-                    entry.position.z,
-                    dist,
-                    entry._occluded === true
-                );
-                // AUSLÖSCHUNGS-WELLE (Feld B, vOcc) — ein Occlusion-WECHSEL ohne Stufen-
-                // Switch (fern-verdeckt ↔ fern-frei auf L2) zieht die Verdeckungs-Slots (Vorzeichen von aKarte.w) nach
-                // (das Studio-vOcc: die Karte des verdeckt-demotierten Baums blendet VOLL).
-                if (entry._occluded !== occ) {
-                    entry._occluded = occ;
-                    this._lodSlotOcclusionRefresh(entry);
-                    regung++;
-                } else {
-                    entry._occluded = occ;
-                }
-                if (occ) newLOD = 2;
-            } else if (entry._occluded) {
-                entry._occluded = false;
-                this._lodSlotOcclusionRefresh(entry);
-                regung++;
-            }
-            // DER STUFEN-VORLAUF (`_stufenVorlaufWahl`): unter dem Ladeschirm trägt der Baum seiner Art die L1
-            if (this._imStufenVorlauf(entry)) newLOD = 1;
-            if (newLOD === entry._lodLevel) {
-                // Die Distanz-Wahl ist selbst die Karte: die Brücke ist keine mehr, die Karte blendet wie jede Fernstufe.
-                if (entry._bruecke) {
-                    entry._bruecke = false;
-                    this._lodSlotOcclusionRefresh(entry);
-                    regung++;
-                }
-                // Band-Pflege ohne Primär-Wechsel: der Eintrag wandert durchs Dither-Crossfade-Band, die
-                // Doppel-Mitgliedschaft folgt der Partner-Wahl. Band-Add/-Remove zählt aufs selbe Spike-Budget.
-                // Flag-Wand zuerst (foundryCrossfade aus → billiger Tick).
-                if (st.foundryCrossfade === true && this._updateFoundryLodBand(entry, dist)) switches++;
-                if (entry._lodHaltWartet === true) offen++; // der Partner lädt: die Stufe hält, die Wahl bleibt wach
-                continue;
-            }
-            // LOD-Switch — re-allocate
-            const vorher = entry._lodLevel;
-            const success = this._switchArchitectureLOD(entry, newLOD, dist);
-            if (success) switches++;
-            else if (entry._lodLevel !== vorher)
-                regung++; // nur die Distanz-Autorität gestempelt (Stufen-Klammer)
-            else if (entry._lodLevel !== newLOD) {
-                // die Stufe lädt (oder bäckt): der Eintrag wartet — und seine stehende Stufe hält VOLL, wo ihr Partner
-                // fehlt (die L1 jenseits des Bands vor der ungebackenen Karte war sonst ganz verworfen: ein Loch)
-                offen++;
-                if (st.foundryCrossfade === true && this._updateFoundryLodBand(entry, dist)) regung++;
-            }
+            const entry = archs[(this._archLODCursor + i) % archs.length];
+            if (entry) this._archStufeUrteil(entry, pm, occlOn, z);
         }
         this._archLODCursor = (this._archLODCursor + besucht) % archs.length;
         // Mit Verdeckung schläft die Wahl nur auf einem Gitter, das den jetzigen Bau-Stand trägt (sonst hielte sie ein
         // Urteil über eine Krone, die es nicht mehr gibt) — bis zum nächsten gedrosselten Neubau bleibt sie wach.
         const gitterAlt = occlOn && this._occlGridRegung !== (this._weltRegung | 0);
-        this._standMeldet("archLod", besucht, switches + regung > 0, offen > 0 || gitterAlt);
-        return switches;
+        this._standMeldet("archLod", besucht, z.switches + z.regung > 0, z.offen > 0 || gitterAlt);
+        return bewegt + z.switches;
+    }
+
+    // Der Zähler eines Gangs der Stufen-Wahl (Wechsel · Regung · Offene), je Gang genullt — EIN Objekt, keine Last je Bild.
+    _archStufeZaehler() {
+        const z = this._archStufeZ || (this._archStufeZ = { switches: 0, regung: 0, offen: 0 });
+        z.switches = z.regung = z.offen = 0;
+        return z;
+    }
+
+    // DAS URTEIL DER STUFE EINES EINTRAGS am Auge `pm` (die EINE Wahl, die der rollende Gang und die Bewegten fragen): Distanz,
+    // Sichthöhe, Grenzen des Gesetzbuchs oder Hysterese der Bäume, Verdeckung, Vorlauf, Band-Pflege, Wechsel. `z` zählt
+    // Wechsel, Regung und Offene (die Stufe lädt, der Partner lädt, die Höhe lädt).
+    _archStufeUrteil(entry, pm, occlOn, z) {
+        if (!entry.instanced) return;
+        const st = this.state;
+        // Auch platzierte Studio-Architektur (instFoundry) tickt LOD — sonst behält ein Haus im Cull-Radius
+        // seine Bau-Stufe für immer (~75k Tris/Haus auch bei 120 m). Eligibility ist daten-getrieben; die
+        // Stufen je Art bleiben kindStages in _foundryFlattenFor (kein kind-Literal).
+        const treeLike = !!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex);
+        if (!treeLike && entry.instFoundry !== true) return;
+        const dx = entry.position.x - pm.x;
+        const dz = entry.position.z - pm.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        // V18.387 — Baum-Einträge reichen ihre Sichthöhe durch → Wahrnehmungs-
+        // Distanz-LOD (größere Bäume schalten später, unter Last alle früher).
+        const visH = this._lodTreeVisHeight(entry);
+        if (visH === null) {
+            z.offen++;
+            return; // die Höhen-Stufe lädt: der Baum hält Stufe und Band
+        }
+        // Die BRÜCKE trägt keinen Hysterese-Zustand: ihre Stufe 2 ist die gedockte Karte, nicht die Wahl. Mit ihr als
+        // Zustand blieb die Wahl im Band [thresh12 − hyst, thresh12] (22,6–26 m) auf 2, die Brücke löste sich als
+        // „Karte" auf und blendete nach Distanz aus — ohne L1-Partner, der Baum stand halb ausgedithert.
+        // DIE GRENZEN DES GESETZBUCHS (K43): nennt die Art ihre Stufen-Grenzen (B2c `ab`), wählt der Takt nach ihnen — in
+        // der Ankunft aus der Ferne (`_ankunftsFerne`, B2) die Grobstufe
+        const grenzen = treeLike ? null : this._archStufenGrenzen(entry);
+        let newLOD = grenzen
+            ? AnazhRealm._stufeNachGrenzen(
+                  dist * this._ankunftsFerne(),
+                  entry._lodLevel,
+                  grenzen,
+                  Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1
+              )
+            : this._chooseLODForDistance(dist, entry._bruecke ? undefined : entry._lodLevel, visH);
+        // Occlusion-Demotion: ein ferner 3D-Baum (LOD0/1) hinter dichter Kronen-Masse fällt auf LOD2.
+        // `entry._occluded` trägt die Hysterese — transient, NICHT im Snapshot.
+        if (occlOn && newLOD < 2 && dist > AnazhRealm.OCCLUSION.occDist) {
+            const occ = this._occlusionOccludes(
+                pm.x,
+                pm.z,
+                entry.position.x,
+                entry.position.z,
+                dist,
+                entry._occluded === true
+            );
+            // AUSLÖSCHUNGS-WELLE (Feld B, vOcc) — ein Occlusion-WECHSEL ohne Stufen-
+            // Switch (fern-verdeckt ↔ fern-frei auf L2) zieht die Verdeckungs-Slots (Vorzeichen von aKarte.w) nach
+            // (das Studio-vOcc: die Karte des verdeckt-demotierten Baums blendet VOLL).
+            if (entry._occluded !== occ) {
+                entry._occluded = occ;
+                this._lodSlotOcclusionRefresh(entry);
+                z.regung++;
+            } else {
+                entry._occluded = occ;
+            }
+            if (occ) newLOD = 2;
+        } else if (entry._occluded) {
+            entry._occluded = false;
+            this._lodSlotOcclusionRefresh(entry);
+            z.regung++;
+        }
+        // DER STUFEN-VORLAUF (`_stufenVorlaufWahl`): unter dem Ladeschirm trägt der Baum seiner Art die L1
+        if (this._imStufenVorlauf(entry)) newLOD = 1;
+        if (newLOD === entry._lodLevel) {
+            // Die Distanz-Wahl ist selbst die Karte: die Brücke ist keine mehr, die Karte blendet wie jede Fernstufe.
+            if (entry._bruecke) {
+                entry._bruecke = false;
+                this._lodSlotOcclusionRefresh(entry);
+                z.regung++;
+            }
+            // Band-Pflege ohne Primär-Wechsel: der Eintrag wandert durchs Dither-Crossfade-Band, die
+            // Doppel-Mitgliedschaft folgt der Partner-Wahl. Band-Add/-Remove zählt aufs selbe Spike-Budget.
+            // Flag-Wand zuerst (foundryCrossfade aus → billiger Tick).
+            if (st.foundryCrossfade === true && this._updateFoundryLodBand(entry, dist)) z.switches++;
+            if (entry._lodHaltWartet === true) z.offen++; // der Partner lädt: die Stufe hält, die Wahl bleibt wach
+            return;
+        }
+        // LOD-Switch — re-allocate
+        const vorher = entry._lodLevel;
+        const success = this._switchArchitectureLOD(entry, newLOD, dist);
+        if (success) z.switches++;
+        else if (entry._lodLevel !== vorher)
+            z.regung++; // nur die Distanz-Autorität gestempelt (Stufen-Klammer)
+        else if (entry._lodLevel !== newLOD) {
+            // die Stufe lädt (oder bäckt): der Eintrag wartet — und seine stehende Stufe hält VOLL, wo ihr Partner
+            // fehlt (die L1 jenseits des Bands vor der ungebackenen Karte war sonst ganz verworfen: ein Loch)
+            z.offen++;
+            if (st.foundryCrossfade === true && this._updateFoundryLodBand(entry, dist)) z.regung++;
+        }
+    }
+
+    // DIE BEWEGTEN (das EINE Stufen-Gesetz für jede Familie: Komposit erbt, Bewegte prüfen). Die Bau-Takte (Stufen-Wahl, Cull)
+    // und ihre Stand-Wache sind für Stehendes gebaut: die Wache weckt nur Auge, Spieler, Stempel und Bau-Regung, der Cursor
+    // kommt nach einer Runde über den Bestand. Ein Eintrag, dessen Lage nach dem Eintritt wandert (`_blockerBewegt`: der Wagen
+    // des Verkehrs, das gerittene Werk, der gestoßene Wagen, `_archBewegt`), urteilt darum in dem Takt nach seinem Schritt
+    // selbst — seine Stufe (`_archStufeUrteil`, dieselbe Wahl), seine Fernform (der Satz im Welt-March folgt seiner Lage,
+    // `_weltFeldMatrix`) und sein Bild: steht es nicht, wie der Radius des Culls es will (ohne Bild im Radius, gezeichnet
+    // dahinter), weckt er den Cull (`_standWecken`), der ihn setzt oder räumt. Wer wartet (die Stufe lädt), urteilt im
+    // nächsten Takt wieder, auch wenn er hält. Die Kosten tragen die Bewegten, nie die Menge (Gebot 7); ihre Wechsel wecken
+    // keinen Gang über den Bestand. Bis hier schliefen im Stand beide Bau-Takte jedes Bild (Blick-Sonde 31.10., Radeon,
+    // stadt-voll Third: 808 von 808 Bildern): ein Wagen fuhr als Karte 16,7 s bis 11 m an den Spieler, ein anderer ohne Bild bis
+    // 1,8 m, und sein Satz stand weiß, wo er gebacken wurde — 181 m hinter ihm. Rückgabe: die Wechsel dieses Takts.
+    _archBewegteUrteilen(pm, occlOn) {
+        const B = this._archBewegte;
+        if (!B || !B.size) return 0;
+        const z = this._archStufeZaehler();
+        const M = this._archBewegtM || (this._archBewegtM = new THREE.Matrix4());
+        const sp = this.state.playerMesh && this.state.playerMesh.position;
+        const R = this.state.architectureCullingRadius;
+        let cull = false;
+        for (const entry of B) {
+            const offen = z.offen;
+            if (entry._ziegelSlot) this._weltFeldMatrix(entry._ziegelSlot, this._archWeltMatrix(entry, M));
+            this._archStufeUrteil(entry, pm, occlOn, z);
+            if (z.offen === offen) B.delete(entry);
+            const d2 = sp ? (entry.position.x - sp.x) ** 2 + (entry.position.z - sp.z) ** 2 : NaN;
+            if (!cull && d2 >= 0 && this._archIsRendered(entry) !== d2 <= R * R && !this._archKartenPreset(entry))
+                cull = true;
+        }
+        if (cull) this._standWecken("archCull");
+        return z.switches;
+    }
+
+    // Ein Eintrag wanderte (die Naht `_blockerBewegt`): er urteilt seine Stufe und seine Fernform im nächsten Takt der
+    // Stufen-Wahl (`_archBewegteUrteilen`).
+    _archBewegt(entry) {
+        (this._archBewegte || (this._archBewegte = new Set())).add(entry);
     }
 
     // Instanced Architektur auf andere LOD-Stufe: _archInstanceRemove → entry.type auf den neuen
     // LOD-Key → _archInstanceAdd. blockerAABBs bleiben (LOD ist reine Render-Schicht).
     _switchArchitectureLOD(entry, newLOD, dist) {
         if (!entry) return false;
-        // Platzierte Studio-Architektur (instFoundry) wechselt über den EINEN Foundry-Zweig unten; der
-        // Grammatik-Zweig (grown_..._lodN) bleibt den Wald-Varianten (_lodSpecies + _lodVariantIndex).
+        // Studio-Architektur wechselt über den EINEN Foundry-Zweig unten; der Grammatik-Zweig (grown_..._lodN) bleibt den
+        // Wald-Varianten (_lodSpecies + _lodVariantIndex).
         const treeLike = !!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex);
-        if (!treeLike && entry.instFoundry !== true) return false;
-        // Foundry-LOD: kennt die Foundry die Art, ist sie die EINE Quelle — auch für einen KALTEN Baum ohne
-        // instFoundry: ihre Stufe servieren ODER den aktuellen Zustand halten, NIE Grammatik (sonst erweckt
+        // Foundry-LOD: kennt die Foundry die Art, ist sie die EINE Quelle — für JEDEN Eintrag ihrer Art, platziert oder KALT:
+        // ihre Stufe servieren ODER den aktuellen Zustand halten, NIE Grammatik (sonst erweckt
         // der Switch einen gewachsenen Nachbau). Die Distanz-Wahl newLOD führt; kein entry.type-Wechsel —
         // das Studio-LOD lebt im leafKey (`f:preset|gestalt|lod`). Grammatik nur bei Foundry aus oder
-        // unbekannter Art.
+        // unbekannter Art. Die Zulassung liest die Art, nie die Geschichte (lod.K5): bis lod-stufen ließ der Wechsel einen Bau
+        // nur mit `instFoundry` zu — der Marke einer früheren Platzierung —, ein kalt gesetztes Haus, Tor oder Fahrzeug stellte
+        // er nie (die Stufen-Linse an der Mess-Wiese: Haus, Haus, Wagen „Stufe nicht gestellt").
         if (this._foundryEnabled()) {
             const preset = this._foundryPresetForEntry(entry);
             if (preset) {
@@ -1267,6 +1320,23 @@ class AnazhRealm_siedlung_bauten {
 
     _archIsRendered(entry) {
         return !!(entry && (entry.mesh || entry.instanced));
+    }
+
+    // DAS KOMPOSIT ERBT (das EINE Stufen-Gesetz): trägt der Eintrag seine Passagiere (`_passagiere`, die Leiber, die er trägt —
+    // der Fahrer am Steuer)? Nur gezeichnet (Instanz oder Mesh) und in einer Stufe unter 2 — Stufe 2 ist die Fernstufe jeder
+    // Art (die Karte der Karten-Dinge, die Grobstufe der übrigen), in ihr sitzt kein Leib; ohne Bild (die Stufe lädt, der Satz
+    // trägt) auch nicht. Leser: die Nah-Wahl der Fahrer (`_tickVerkehr`) und die Naht der Stufe (`_kompositErbt`).
+    _archTraegt(entry) {
+        return this._archIsRendered(entry) && !(entry._servedLod >= 2);
+    }
+
+    // Die Naht der gezeichneten Stufe (Instanz und Mesh, hinein und heraus): trägt der Eintrag seine Passagiere nicht mehr,
+    // verbergen sie sich im selben Takt — zeigen tut sie wieder, wer sie setzt (der Takt des Verkehrs setzt den Leib in den
+    // Sitz). Bis hier zeigte sich der Fahrer im Kreis `leibM` neben jedem Wagen: über der Karte und über dem Wagen, der noch
+    // lud (der fliegende Fahrer, Schöpfer-Fund 30.10.).
+    _kompositErbt(entry) {
+        if (!entry._passagiere || !entry._passagiere.size || this._archTraegt(entry)) return;
+        for (const g of entry._passagiere) g.visible = false;
     }
 
     // SCHATTEN-DISTANZ in den LOD-Stufen: der Schatten-Pass ist ein zweiter Voll-Render, ferne Bäume

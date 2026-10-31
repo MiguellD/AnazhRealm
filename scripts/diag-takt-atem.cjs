@@ -24,7 +24,7 @@
 //   node scripts/diag-takt-atem.cjs [--selftest]   (npm run gate:takt-atem)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, abwandlung } = require("./lib/welt-boot.cjs");
 
 const SOLL = { dichte: 0.1, stand: 0.1, lage: 0.1 };
 
@@ -82,13 +82,7 @@ function selbsttest() {
     };
     const fehler = [];
     if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
-    const mit = (pfad, wert) => {
-        const z = JSON.parse(JSON.stringify(gruen));
-        let o = z;
-        for (const k of pfad ? pfad.split(".") : []) o = o[k];
-        Object.assign(o, wert);
-        return z;
-    };
+    const mit = abwandlung(gruen);
     const faelle = [
         {
             name: "Dichte ohne Wand (V18.538)",

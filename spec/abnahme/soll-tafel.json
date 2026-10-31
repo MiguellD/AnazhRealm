@@ -211,6 +211,7 @@
                         "stamm/stoff-gang.js": "c:0000000000000000",
                         "stamm/studio-bruecke.js": "c:0000000000000000",
                         "stamm/studio-gestalt.js": "c:0000000000000000",
+                        "stamm/studio-stoff.js": "c:0000000000000000",
                         "stamm/bau-vorlagen.js": "c:0000000000000000",
                         "stamm/bau-buch.js": "c:0000000000000000",
                         "stamm/bau-teile.js": "c:0000000000000000",
@@ -267,6 +268,7 @@
                 "stamm/stoff-gang.js",
                 "stamm/studio-bruecke.js",
                 "stamm/studio-gestalt.js",
+                "stamm/studio-stoff.js",
                 "stamm/bau-vorlagen.js",
                 "stamm/bau-buch.js",
                 "stamm/bau-teile.js",
@@ -575,6 +577,7 @@
                         "stamm/stoff-gang.js": "c:0000000000000000",
                         "stamm/studio-bruecke.js": "c:0000000000000000",
                         "stamm/studio-gestalt.js": "c:0000000000000000",
+                        "stamm/studio-stoff.js": "c:0000000000000000",
                         "stamm/siedlung-ort.js": "c:0000000000000000",
                         "stamm/siedlung-bauten.js": "c:0000000000000000",
                         "stamm/siedlung-bewohner.js": "c:0000000000000000",
@@ -605,6 +608,7 @@
                 "stamm/stoff-gang.js",
                 "stamm/studio-bruecke.js",
                 "stamm/studio-gestalt.js",
+                "stamm/studio-stoff.js",
                 "stamm/siedlung-ort.js",
                 "stamm/siedlung-bauten.js",
                 "stamm/siedlung-bewohner.js",
@@ -784,6 +788,7 @@
                         "stamm/stoff-gang.js": "c:0000000000000000",
                         "stamm/studio-bruecke.js": "c:0000000000000000",
                         "stamm/studio-gestalt.js": "c:0000000000000000",
+                        "stamm/studio-stoff.js": "c:0000000000000000",
                         "stamm/siedlung-ort.js": "c:0000000000000000",
                         "stamm/siedlung-bauten.js": "c:0000000000000000",
                         "stamm/siedlung-bewohner.js": "c:0000000000000000",
@@ -814,6 +819,7 @@
                 "stamm/stoff-gang.js",
                 "stamm/studio-bruecke.js",
                 "stamm/studio-gestalt.js",
+                "stamm/studio-stoff.js",
                 "stamm/siedlung-ort.js",
                 "stamm/siedlung-bauten.js",
                 "stamm/siedlung-bewohner.js",
@@ -1352,6 +1358,7 @@
                             "stamm/stoff-karte.js": "c:0000000000000000",
                             "stamm/stoff-gang.js": "c:0000000000000000",
                             "stamm/studio-bruecke.js": "c:0000000000000000",
+                            "stamm/studio-stoff.js": "c:0000000000000000",
                             "stamm/siedlung-ort.js": "c:0000000000000000",
                             "stamm/siedlung-bauten.js": "c:0000000000000000",
                             "stamm/siedlung-satz.js": "c:0000000000000000",
@@ -1439,6 +1446,7 @@
                             "stamm/stoff-karte.js": "c:0000000000000000",
                             "stamm/stoff-gang.js": "c:0000000000000000",
                             "stamm/studio-bruecke.js": "c:0000000000000000",
+                            "stamm/studio-stoff.js": "c:0000000000000000",
                             "stamm/siedlung-ort.js": "c:0000000000000000",
                             "stamm/siedlung-bauten.js": "c:0000000000000000",
                             "stamm/siedlung-satz.js": "c:0000000000000000",
@@ -1687,6 +1695,7 @@
                             "stamm/stoff-karte.js": "c:0000000000000000",
                             "stamm/stoff-gang.js": "c:0000000000000000",
                             "stamm/studio-bruecke.js": "c:0000000000000000",
+                            "stamm/studio-stoff.js": "c:0000000000000000",
                             "stamm/siedlung-ort.js": "c:0000000000000000",
                             "stamm/siedlung-bauten.js": "c:0000000000000000",
                             "stamm/siedlung-satz.js": "c:0000000000000000",
@@ -1722,6 +1731,7 @@
                 "stamm/stoff-karte.js",
                 "stamm/stoff-gang.js",
                 "stamm/studio-bruecke.js",
+                "stamm/studio-stoff.js",
                 "stamm/siedlung-ort.js",
                 "stamm/siedlung-bauten.js",
                 "stamm/siedlung-satz.js",
@@ -1810,6 +1820,7 @@
                 "stamm/stoff-karte.js",
                 "stamm/stoff-gang.js",
                 "stamm/studio-bruecke.js",
+                "stamm/studio-stoff.js",
                 "stamm/siedlung-ort.js",
                 "stamm/siedlung-bauten.js",
                 "stamm/siedlung-satz.js",
@@ -1898,6 +1909,7 @@
                 "stamm/stoff-karte.js",
                 "stamm/stoff-gang.js",
                 "stamm/studio-bruecke.js",
+                "stamm/studio-stoff.js",
                 "stamm/siedlung-ort.js",
                 "stamm/siedlung-bauten.js",
                 "stamm/siedlung-satz.js",
@@ -2467,6 +2479,7 @@
                         "stamm/stoff-gang.js": "c:0000000000000000",
                         "stamm/studio-bruecke.js": "c:0000000000000000",
                         "stamm/studio-gestalt.js": "c:0000000000000000",
+                        "stamm/studio-stoff.js": "c:0000000000000000",
                         "stamm/bau-vorlagen.js": "c:0000000000000000",
                         "stamm/bau-buch.js": "c:0000000000000000",
                         "stamm/bau-teile.js": "c:0000000000000000",
@@ -2523,6 +2536,7 @@
                 "stamm/stoff-gang.js",
                 "stamm/studio-bruecke.js",
                 "stamm/studio-gestalt.js",
+                "stamm/studio-stoff.js",
                 "stamm/bau-vorlagen.js",
                 "stamm/bau-buch.js",
                 "stamm/bau-teile.js",
@@ -2595,7 +2609,7 @@
                 "name": "strich",
                 "werkzeug": "Station haar.K1#1 (werkbank bild --klasse '^tier:wolf$' --ist fell, 0,7 m und 4 m)"
             },
-            "quellen": ["tetrapoda-core.js", "foundry-core.js", "stamm/studio-bruecke.js"]
+            "quellen": ["tetrapoda-core.js", "foundry-core.js", "stamm/studio-bruecke.js", "stamm/studio-stoff.js"]
         },
         {
             "id": "haar",
@@ -2641,7 +2655,7 @@
                 },
                 "werkzeug": "Station haar.K2#1 (werkbank bild --gesicht 0.7 und -4 --spieler --ist haar)"
             },
-            "quellen": ["koerper-core.js", "stamm/studio-bruecke.js", "stamm/koerper-leib.js"]
+            "quellen": ["koerper-core.js", "stamm/studio-bruecke.js", "stamm/studio-stoff.js", "stamm/koerper-leib.js"]
         }
     ]
 }

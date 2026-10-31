@@ -200,14 +200,14 @@ if (require.main === module) hauptLauf(async () => {
                 x: h.originX + ((q % h.dim) + 0.5) * h.cell,
                 z: h.originZ + (((q / h.dim) | 0) + 0.5) * h.cell,
             });
+            // die benannten Senken des Gesetzes im 64-m-Raster um den Ursprung, nächste zuerst (der See und die Höhle)
+            const senken = () =>
+                G.benannteSeen(L, -12000, -12000, 64, 375)
+                    .map((k) => ({ x: -12000 + (k % 375) * 64, z: -12000 + ((k / 375) | 0) * 64 }))
+                    .sort((a, b) => a.x * a.x + a.z * a.z - (b.x * b.x + b.z * b.z));
             let ort = null;
             if (art === "see") {
-                const step = 64;
-                const n = 375;
-                const kand = G.benannteSeen(L, -12000, -12000, step, n)
-                    .map((k) => ({ x: -12000 + (k % n) * step, z: -12000 + ((k / n) | 0) * step }))
-                    .sort((a, b) => a.x * a.x + a.z * a.z - (b.x * b.x + b.z * b.z));
-                for (const k of kand) {
+                for (const k of senken()) {
                     await kachel(k.x, k.z);
                     const h = r._hydroFor(k.x, k.z);
                     const lake = h && h.lakes.find((l) => l.level > wl + 2 && l.cells && l.cells.length >= 16);
@@ -232,11 +232,7 @@ if (require.main === module) hauptLauf(async () => {
                             for (const ez of [-S / 2, S / 2]) d += r._terrainDensityAt(cx + ex, cy + ey, cz + ez);
                     return d > 0;
                 };
-                const step = 64;
-                const n = 375;
-                const kand = G.benannteSeen(L, -12000, -12000, step, n)
-                    .map((k) => ({ x: -12000 + (k % n) * step, z: -12000 + ((k / n) | 0) * step }))
-                    .sort((a, b) => a.x * a.x + a.z * a.z - (b.x * b.x + b.z * b.z));
+                const kand = senken();
                 const geprueft = new Set();
                 for (const k of kand.slice(0, 6)) {
                     if (ort) break;

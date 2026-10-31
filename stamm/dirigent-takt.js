@@ -336,6 +336,16 @@ class AnazhRealm_dirigent_takt {
         this.state.renderer.setAnimationLoop(loop);
     }
 
+    // DER LOOP RUHT (lod.K5): kein Takt kommt — der Spiel-Loop hängt nicht am Renderer (`getAnimationLoop()` null: jede Bild-Linse
+    // ruht ihn, Lehre 17, die Werkbank zwischen ihren Befehlen; wer dann tickt, ruft `_gameLoopTick` selbst). Was nur ein Takt
+    // freigibt oder baut, wartet dann auf keinen: der Wächter der Foundry hält nichts (`_foundryWaechterRuht`), und die Ankunft
+    // eines Körpers platziert nichts von selbst (`_foundryRewarmColdTrees`) — die ruhende Welt ändert sich nur, wo einer fragt.
+    // Der Null-Renderer kennt keinen Loop: headless ruht er nie (der Wächter lässt dort ohnehin alles durch).
+    _loopRuht() {
+        const r = this.state.renderer;
+        return !!r && typeof r.getAnimationLoop === "function" && !r.getAnimationLoop();
+    }
+
     // ═══ DAS WORT „DIE WELT STEHT" (A9) ═══
     // Die Welt steht, wenn ihre Regungs-Stempel (`_weltRegt`: Welt · Bau · Boden-Karte) WELT_STEHT_TAKTE Takte unverändert
     // blieben, nichts mehr baut (`_weltOffen`: kein Foundry-Auftrag wartet, fliegt oder liegt unverteilt, kein Chunk ist
@@ -385,9 +395,13 @@ class AnazhRealm_dirigent_takt {
                                       ? `Dorf offen ${o.dorf}`
                                       : o.leib
                                         ? "Leib offen"
-                                        : o.ankunft
-                                          ? `Ankunft gleitet ${o.ankunft}`
-                                          : null;
+                                        : o.leute
+                                          ? `Leute offen ${o.leute}`
+                                          : o.huellen
+                                            ? `Hüllen offen ${o.huellen}`
+                                            : o.ankunft
+                                              ? `Ankunft gleitet ${o.ankunft}`
+                                              : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -429,6 +443,7 @@ class AnazhRealm_dirigent_takt {
                 ankunft: 0,
                 stau: 0,
                 horizont: 0,
+                huellen: 0,
             }); // je Takt, ohne Müll
         o.foundry = f
             ? (f.pending ? f.pending.size : 0) +
@@ -473,6 +488,9 @@ class AnazhRealm_dirigent_takt {
         // Vorlagen im Memo liegen (`_deferredAvatarSoul` → `applyPlayerSoul`) — bis dahin ist der Spieler der leere Anker, und
         // die Welt steht nicht (mensch.K1 Radeon: die Probe hielt den Anker, die Stadt lag 735 m vom Spieler)
         o.leib = st._deferredAvatarSoul ? 1 : 0;
+        // DIE HÜLLEN DER ANKUNFT (w4-ankunft-2, `_tickHuellenNach`): die Bäume, deren Hülle vor dem ersten Bild wartete, bis jeder
+        // sie fühlt — bis dahin stößt kein Leib an ihnen
+        o.huellen = this._huellenNach ? this._huellenNach.size : 0;
         // DIE ANKUNFT GLEITET (`_ankunftsFerne`, B2): bis ihr letztes Bild gezeichnet ist, misst jede Stufen-Wahl weiter, als das
         // Auge steht — die Bilder, die ihr fehlen (tiere.K1: im Schuss der Werkbank stand sie bei 62 von 90, der Mammut 13,9 m
         // vor dem Auge trug die Karte)
@@ -486,6 +504,23 @@ class AnazhRealm_dirigent_takt {
             for (const S of this._bewohnerSiedlungen.values())
                 for (const b of S.liste || [])
                     if (b.leib && !b.drinnen && !b.amSteuer && !b.leib.userData._kzVersuch) o.leiber++;
+        // DIE LEUTE IM WERK (w4-linsen-b; mensch.K5#1, mensch.K1#1/K2#2 an 3ed95dcf GTX: „DER BAU STEHT NICHT: begegnung: die Leiber nach
+        // 306 Takten — die Welt hat nichts mehr offen"): seit bewohner-takt rechnet das Werk der Liste (`listeWerk`: `_bewohnerListe`,
+        // dann `_bewohnerStandPruefen`) mit Bild je Takt `BEWOHNER.listeMs` — an der Karte geht die Liste des Start-Dorfs über Hunderte
+        // Takte, und die Welt nannte sich ruhig, während ihre Leute noch entstanden: jeder Deckel zählte die Takte als still und brach,
+        // `_weltSteht` gab ein Bild ohne die Leute frei. Offen ist je Siedlung im Nah-Ring (dort geht ihr Werk, `_tickBewohner`) ihr
+        // Werk samt seinem Rest (`listeRest`: Personen, Besuche, Stände, die es noch stellt) und je Kopf, wer noch geboren wird
+        // (`leib` null; `false` heißt: ohne Leib) oder noch ankommt (`ankunft`)
+        o.leute = 0;
+        if (this._bewohnerSiedlungen && st.renderer && !st.renderer._isHeadlessNull && st.playerMesh) {
+            const p = st.playerMesh.position;
+            const nah = AnazhRealm.AUTO_SETTLEMENT.nearM;
+            for (const S of this._bewohnerSiedlungen.values()) {
+                if (S.listeWerk && (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2 <= nah * nah)
+                    o.leute += 1 + Math.max(0, S.listeRest | 0);
+                for (const b of S.liste || []) if (b.leib == null || b.ankunft) o.leute++;
+            }
+        }
         return o;
     }
     _weltSteht() {
@@ -1460,6 +1495,7 @@ class AnazhRealm_dirigent_takt {
         this._dispatchFrameJobs(this._buildDeferrableJobs(playerPos), B);
         // die fixen, NICHT budget-gegateten Ticks (UNGATED Welt-Substanz + billige Ticks)
         this._tickPendingVegSpawns(4);
+        this._tickHuellenNach(); // nach dem ersten Bild: die Hüllen der Bäume, die vor ihm warteten (nah zuerst)
         const auge = this._lodAuge(); // das EINE Auge der Stufen (Maske und Wahl messen vom selben Ort)
         this._tickArchitectureLOD(5, auge);
         // DER KARTEN-TAKT (S2: die Karte backt im Welt-Renderer, `_tickKarteWelt`; lazy beim ersten L2-Bedarf

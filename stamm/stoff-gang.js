@@ -60,14 +60,15 @@ class AnazhRealm_stoff_gang {
         tex.needsUpdate = true;
         const knoten = AnazhRealm._gangSatzKnoten(tex, N, B);
         // DER TON JE ECKE (mensch.K4): tragen die Quellen ihn (der Mensch, koerper `menschTon`), färbt jede Instanz ihre Ecken nach
-        // ihrer Palette — die Zeilen der Ton-Tafel [Leib, Gestalt] reisen je Instanz in `aGang.zw` (`_gangSatzInstanz`)
+        // ihrer Palette — die Zeilen der Ton-Tafel [Leib, Gestalt] reisen je Instanz in `aGang.zw` (`_gangSatzInstanz`), gelesen am
+        // Index des Gangs (`_senkenKnoten().gang`: in der Wahl der GPU der Eintrag ihrer Liste, nie der Index des Zugs)
         const ton = spec.quellen.every((q) => !!q.m.geometry.attributes.aTon);
         satz.ton = ton;
         const TSL = T.TSL;
         const tonFarbe = ton
             ? TSL.vec4(
                   TSL.varying(
-                      TSL.attribute("color", "vec3").mul(this._tonFaktor(TSL, TSL.attribute("aGang", "vec4").zw)),
+                      TSL.attribute("color", "vec3").mul(this._tonFaktor(TSL, AnazhRealm._senkenKnoten().gang.zw)),
                       "vTonFarbe"
                   ),
                   1
@@ -158,7 +159,9 @@ class AnazhRealm_stoff_gang {
             if (!ton)
                 for (const nm of ["aLodLevel", "aH0", "aH0L"])
                     geo.setAttribute(nm, new T.BufferAttribute(new Float32Array(n), 1));
-            const G = ton ? 4 : 2; // je Instanz Band + Phase und Gewicht (und die Zeilen ihrer Palette)
+            // je Instanz Band + Phase, Gewicht und die Zeilen ihrer Palette (ohne Ton die Eins) — EIN Maß für jeden Satz, wie der
+            // Speicher-Puffer der Wahl es liest (`_senkenKnoten().gang`, vec4)
+            const G = 4;
             geo.setAttribute("aGang", new T.InstancedBufferAttribute(new Float32Array(spec.cap * G), G));
             geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(Uint32Array.from(I), n), 1));
             geo.computeBoundingSphere();
@@ -231,8 +234,7 @@ class AnazhRealm_stoff_gang {
         m.setMatrixAt(i, m4);
         const a = m.geometry.attributes.aGang;
         const x = band + phase - Math.floor(phase);
-        if (a.itemSize === 4) a.setXYZW(i, x, w, zeilen ? zeilen[0] : 0, zeilen ? zeilen[1] : 0);
-        else a.setXY(i, x, w);
+        a.setXYZW(i, x, w, zeilen ? zeilen[0] : 0, zeilen ? zeilen[1] : 0);
     }
     // DIE ZAHL EINER SENKE DES SATZES (dicht, [0, n) lebt): `_instanzZahl`, und was sich schrieb, lädt neu
     static _gangSatzZahl(m, n) {

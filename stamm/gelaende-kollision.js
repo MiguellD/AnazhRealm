@@ -723,6 +723,7 @@ class AnazhRealm_gelaende_kollision {
             N.beweger.delete(entry);
         } else if (entry._blockerGen === N.gen) N.beweger.add(entry);
         this._cullWecken(entry); // der Cull fragt ihn je Gang (`tickArchitectureCulling`)
+        this._archBewegt(entry); // Stufe und Fernform urteilen im nächsten Takt der Stufen-Wahl (`_archBewegteUrteilen`)
     }
 
     // Die Zellen eines Eintrags aus der Hülle seiner Boxen (die alten vorher gelöst; außerhalb des Bestands keine).

@@ -1,6 +1,6 @@
 {
     "name": "anazhrealm",
-    "version": "18.546.137",
+    "version": "18.546.143",
     "private": true,
     "description": "AnazhRealm – 3D-Browser-Sandbox-Ultiversum",
     "engines": {
@@ -169,9 +169,9 @@
         "gate:analog-nah": "node scripts/diag-analog-nah.cjs --selftest && node scripts/diag-analog-nah.cjs",
         "gate:weltbild-frost": "node scripts/diag-weltbild-frost.cjs",
         "gate:weltbild-frost:echt": "node scripts/diag-weltbild-frost.cjs --echt",
-        "gate:tag-achse:echt": "node scripts/werkbank.cjs licht --tag --kurz --eigen --port 4492",
-        "gate:licht-weg:echt": "node scripts/werkbank.cjs licht --laub feld,feld0,feld90,feld180,panorama,wasser --uhr 0.5,0.27,0.05 --eigen --port 4497",
-        "gate:naesse:echt": "node scripts/werkbank.cjs licht --naesse --eigen --port 4499",
+        "gate:tag-achse:echt": "node scripts/werkbank.cjs licht --tag --kurz --eigen --port 4692",
+        "gate:licht-weg:echt": "node scripts/werkbank.cjs licht --laub feld,feld0,feld90,feld180,panorama,wasser --uhr 0.5,0.27,0.05 --eigen --port 4697",
+        "gate:naesse:echt": "node scripts/werkbank.cjs licht --naesse --eigen --port 4699",
         "beweis:e": "node scripts/diag-beweis-e.cjs --tag aaa8 --proto-min 90"
     },
     "devDependencies": {
