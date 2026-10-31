@@ -2848,8 +2848,8 @@ class AnazhRealm_gelaende_boden {
     // im Eimer bleibt die des Samens, und das Inverse des Knuth-Faktors gibt den Samen zurück. Synchron am Spawn aus dem
     // Kern (der Bestand pflanzt vor dem Buch). Eine Art ohne Solitär behält ihren Samen; `stehtFrei` fragt den Ort nur dann.
     _foundryGestaltSame(seed, preset, stehtFrei) {
+        if (!AnazhRealm._ortWaehlt(preset)) return seed >>> 0;
         const T = AnazhRealm._studioGestaltenKern(preset);
-        if (!(T >= 2) || AnazhRealm._solitaerVon(preset, T - 1) !== T) return seed >>> 0;
         const h = Math.imul(seed >>> 0 || 0, 2654435761) >>> 0;
         const lage = h / 4294967296;
         const eimer = stehtFrei() ? T - 1 : Math.floor(lage * (T - 1));

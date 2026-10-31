@@ -1549,6 +1549,7 @@ class AnazhRealm_netz_p2p {
         if (!remote.size) return;
         const k = Math.min(1, (dt || 0.016) * 12); // sanftes Nachziehen
         const TAU = Math.PI * 2;
+        const auge = this._lodAuge(); // das Auge der Stufen, EINMAL je Takt
         for (const rc of remote.values()) {
             const m = rc.mesh;
             if (!m) continue;
@@ -1559,7 +1560,7 @@ class AnazhRealm_netz_p2p {
             // DIE SICHT DER KOPIE (die EINE Wahl jedes Leibs im Bild, _leibSicht): die Stufe nach dem Abstand vom Auge der Stufen
             // am EINEN Schalter der Gelenk-Gestalt (`_gelenkStufe`), lebend wie gefallen — vorher trug jede Kopie in jeder Ferne
             // die volle Gestalt (Tod-Zensus: der Leichnam des Mitspielers lag auf 40 m als Gestalt, nie als Grobstufe).
-            const fern = this._leibSicht(m, this.isInFrustum(m));
+            const fern = this._leibSicht(m, this.isInFrustum(m), auge);
             // DER LEICHNAM liegt still: die Kopie dreht auf die Lage des Senders nach (rc.tq) — kein Atem, kein Gang
             if (rc.tq) {
                 if (m.userData._satz) this._tierSatzAus(m);
@@ -2342,7 +2343,7 @@ class AnazhRealm_netz_p2p {
         const gl = mesh.userData && mesh.userData._gelenk;
         if (gl) {
             const pp = this._lodAuge();
-            fernAktiv = pp ? this._gelenkStufe(mesh, (entry.x - pp.x) ** 2 + (entry.z - pp.z) ** 2) : gl.istFern;
+            fernAktiv = pp ? this._gelenkStufe(mesh, pp, entry) : gl.istFern;
         }
         if (entry.meshKind === "soul-custom") {
             // Peer-Custom-Seelen erben die emergente Bewegung: Rollen aus den per soul gereisten bodyParts,

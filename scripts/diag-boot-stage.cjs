@@ -40,7 +40,7 @@
 // die Platte trug, ist ROT beim Namen, ebenso ein Leser, der noch von der Platte kommt (`wechselUrteil`; --selftest füttert
 // es mit Bruch-Daten).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei, argOpt: OPT } = require("./lib/welt-boot.cjs");
 const HL = require("./lib/haenger-linse.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -48,7 +48,6 @@ const os = require("os");
 
 const PORT = Number(process.env.BOOT_STAGE_PORT || 4406);
 const ARGV = process.argv.slice(2);
-const OPT = (k) => ARGV.includes(k) && ARGV[ARGV.indexOf(k) + 1];
 // Das Soll der Ankunft (docs/PFLICHT-OFFEN.md B, roadmap §0.v1 Schritt 1): kalt bis Kontrolle ≤ 5 s.
 // Die Kontrolle von außen (ankunft K1): die Taste trägt den Leib ≥ 0,1 m; nach 1500 Atemzügen ohne Weg hat er sie nie.
 // Das ganze Bild (ankunft K2 Staffel 1): ≤ 2 % der Pixel weichen gegen dieselbe Pose nach 60 s Ruhe um mehr als ein Achtel ab.
@@ -136,6 +135,13 @@ function wechselUrteil(vor, nach, kern) {
         zeile: `KERN-WECHSEL ${kern}: ${neu.size} Leser neu · fremd ${fremd.length} ${fremd.slice(0, 6)} · alt ${alt.length} ${alt.slice(0, 6)}`,
     };
 }
+// DIE HALTER-ZEILEN (der Kalt-Lauf und `--spur-lesen`): die Tafel, die Spur — wie viele Proben unter „(Knoten verloren)" zählen,
+// ein verlorener ProfileChunk steht laut (`profilLesen`, über 5 % sind die Halter ROT ohne Namen) — und DIE HALTER-LINSE
+// (Hänger-Familie, Selbsttest `werkbank takt --selbsttest`): ROT beim Namen jeder Funktion, die vor dem ersten Bild den
+// Haupt-Faden ≥ ANKUNFT_HALT_MS hält (blind ohne Marken ist sie ROT)
+const halterZeilen = (a) =>
+    `${HL.ankunftsHalterTafel(a)}\n  die Spur: ${a.verlust?.satz || "ohne Proben"}\n` +
+    `  ${a.befunde.length ? "❌" : "✅"} DIE HALTER vor dem ersten Bild: ${a.befunde.slice(0, 6).join(" · ") || "keiner"}`;
 
 // ── DIE KALT-ZEILE (`--kalt`): die Probe je 200 ms in der Seite, ab dem ersten Skript ──
 // Die Haupt-Thread-Zeit je Sekunde der schweren Ankunfts-Arbeiter liest die Spur (`ankunftsHalter`, Klassen über die Namen der
@@ -371,13 +377,8 @@ async function kaltLauf() {
                 kl.map(([k, ms]) => `${k} ${Math.round(ms)}`).join(" · ") +
                 ")"
         );
-    console.log(HL.ankunftsHalterTafel(out.halter));
-    // DIE HALTER-LINSE (Hänger-Familie, Selbsttest `werkbank takt --selbsttest`): ROT beim Namen jeder Funktion, die vor dem
-    // ersten Bild den Haupt-Faden ≥ ANKUNFT_HALT_MS hält (blind ohne Marken ist sie ROT)
+    console.log(halterZeilen(out.halter));
     const halter = out.halter.befunde;
-    console.log(
-        `  ${halter.length ? "❌" : "✅"} DIE HALTER vor dem ersten Bild: ${halter.slice(0, 6).join(" · ") || "keiner"}`
-    );
     // DIE PROGRAMM-ZEILE (B, w4-ankunft-5): das Buch der Programme der Erst-Zeichnung (`_programmGebaut`) — die Knoten-Bauten
     // vor dem Bild mit ihren ms auf dem Haupt-Faden und ihre Texte, ROT je Text, der mehr als einmal baute (EIN Programm je
     // Text, beim Namen mit dem Schlüssel-Teil, der die Bauten trennte); den synchronen Bau des GPU-Prozesses nennt die Halter-Zeile
@@ -411,7 +412,7 @@ hauptLauf(async () => {
     if (ARGV.includes("--kalt")) return kaltLauf();
     if (OPT("--spur-lesen")) {
         const { spur, seite } = JSON.parse(fs.readFileSync(OPT("--spur-lesen")));
-        return console.log(HL.ankunftsHalterTafel(HL.ankunftsHalter(spur, seite)));
+        return console.log(halterZeilen(HL.ankunftsHalter(spur, seite)));
     }
     const SELFTEST = ARGV.includes("--selftest");
     await server.lausche(PORT);

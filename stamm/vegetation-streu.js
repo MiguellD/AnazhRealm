@@ -383,8 +383,8 @@ class AnazhRealm_vegetation_streu {
     // Scatter-Generator einer Region: Cell-Raster gegen die gebackenen Felder, Deko-Instanzen in die
     // HISM-Gruppen; deterministisch (pcg2d), bounded durch perRegionCap; Cells im promoteRadius und
     // promotete Cells übersprungen. Mit `deadlineMs` in Zeit-Scheiben: Fortsetzung in `region._cont`
-    // (Phase, Zeiger + Snapshot der Bau-Eingänge). Jeder Wurf ist positions-gehasht, nur emitted<cap ist
-    // ordnungs-gekoppelt → cz-major/cx-minor bewahrt ⇒ byte-gleich zum One-Shot (gate:scatter-slice).
+    // (Phase, Zeiger + Snapshot der Bau-Eingänge). Jeder Wurf ist positions-gehasht, nur die Plätze bis zum Cap sind
+    // ordnungs-gekoppelt (`_scatterPass`) → cz-major/cx-minor bewahrt ⇒ byte-gleich zum One-Shot (gate:scatter-slice).
     _scatterRegion(regX, regZ, playerPos, deadlineMs) {
         if (typeof THREE === "undefined" || !this.state.scene) return null;
         const map = this._ensureScatterRegionMap();
@@ -410,6 +410,13 @@ class AnazhRealm_vegetation_streu {
             // _disposeScatterRegion liest IHN (nicht das Live-Flag) → ein Laufzeit-
             // Toggle bleibt sauber (alte Regionen entsorgen sich nach ihrer Bauweise).
             regional: this.state.useRegionFoliageCull !== false,
+            // DIE PLÄTZE je Schicht (`_scatterPass`), die Würfe, solange ein Platz wartet, der Ort, für den sie fielen, und die
+            // Runden, die sie nach ihrem Wecker weiterbaute (`_streuRegionWeiter`)
+            _schicht: [],
+            _darts: null,
+            _px: playerPos ? playerPos.x : 0,
+            _pz: playerPos ? playerPos.z : 0,
+            _weiter: 0,
         };
         if (Number.isFinite(deadlineMs)) {
             // Scheiben-Modus: der SNAPSHOT der bau-zeitlichen Eingänge — die Fortsetzung
@@ -418,12 +425,11 @@ class AnazhRealm_vegetation_streu {
             region._cont = {
                 darts: null, // die Würfe jeder Schicht (`_streuFadenSchicken`)
                 flug: false,
-                layerIdx: 0,
-                i: 0,
-                emitted: 0,
+                layerIdx: 0, // Wurf-Zeiger und Plätze trägt die Schicht (`region._schicht`, `_scatterPass`)
+                wieder: false,
                 hit: false,
-                px: playerPos ? playerPos.x : 0,
-                pz: playerPos ? playerPos.z : 0,
+                px: region._px,
+                pz: region._pz,
                 fdScale: this._effectiveFoliageDensity(),
             };
         }
@@ -434,28 +440,30 @@ class AnazhRealm_vegetation_streu {
     // Die Bau-Arbeit (One-Shot UND Scheiben-Fortsetzung, EIN Chokepoint): die Würfe (Faden oder One-Shot) →
     // Schicht-Pässe. Bei erschöpfter Deadline zurück mit stehendem `region._cont`; der nächste Aufruf
     // (finish-first im Streaming-Tick) setzt exakt fort.
-    // DIE REGION SAMMELT IHRE ZUSAGEN (K60-2): solange ihre Scheibe läuft, ist sie der Wartende (`_streuSammler`) — jede
-    // Zusage, auf die eine ihrer Zellen wartet (Zug, Buch, Karte, Wald-Plan: `_streuWartetAuf`), landet in ihrer Karte mit dem
-    // Rang ihres nächsten wartenden Lesers (die Zelle, `_streuZelleOrt`); vollendet und aufgeschoben spannt sie ihren Wecker
+    // DIE REGION SAMMELT IHRE ZUSAGEN (K60-2): solange ihre Scheibe läuft, ist sie der Wartende (`_zusagenSammler`) — jede
+    // Zusage, auf die eine ihrer Zellen wartet (Zug, Buch, Karte, Wald-Plan: `_wartetAuf`), landet in ihrer Karte mit dem
+    // Rang ihres nächsten wartenden Lesers (die Zelle, `_wartendOrt`); vollendet und aufgeschoben spannt sie ihren Wecker
     // (`_streuWeckerSpannen`).
     _scatterRegionWork(region, regX, regZ, key, deadlineMs, playerPos) {
         this._weltRegt(); // jede Scheibe setzt Streu-Zellen: die Stand-Wache weckt die Fege-Takte
-        const [vorher, ort] = [this._streuSammler, this._streuZelleOrt];
-        this._streuSammler = region._zusagen || (region._zusagen = new Map());
-        this._streuZelleOrt = null;
+        const [vorher, ort] = [this._zusagenSammler, this._wartendOrt];
+        this._zusagenSammler = region._zusagen || (region._zusagen = new Map());
+        this._wartendOrt = null;
         try {
             const r = this._scatterRegionScheibe(region, regX, regZ, key, deadlineMs, playerPos);
             if (!region._cont && region._deferredFoundry) this._streuWeckerSpannen(region);
             return r;
         } finally {
-            [this._streuSammler, this._streuZelleOrt] = [vorher, ort];
+            [this._zusagenSammler, this._wartendOrt] = [vorher, ort];
         }
     }
     // Eine Zelle der Scheibe wartet, die Region schiebt sich auf: wartet die Zelle IM BILD der Ankunft (`_rangImBild`) ohne
-    // benannte Zusage (die Wahrheit des Walds, ein Gesetz ohne Zug), hält die Region das Bild (`_bildLuecke`).
+    // benannte Zusage (die Wahrheit des Walds, ein Gesetz ohne Zug), hält die Region das Bild (`_bildLuecke`). `_wartenN` zählt
+    // die Wartenden — ihr Wurf hält seinen Platz (`_streuWurf`).
     _streuZelleWartet(region) {
         region._deferredFoundry = true;
-        if ((this._streuZusagen | 0) === this._streuZelleN && this._rangImBild(this._streuZelleOrt || 0))
+        region._wartenN = (region._wartenN | 0) + 1;
+        if ((this._zusagenN | 0) === this._wartendN && this._rangImBild(this._wartendOrt || 0))
             region._bildLuecke = true;
     }
 
@@ -467,6 +475,7 @@ class AnazhRealm_vegetation_streu {
     // was außer Blick wartet, hält weder den Wecker noch das Bild (`_bildWartet`); der Neubau hängt es wieder an (der Zug steht
     // in `f.zuege`, die Karte in ihrer Zelle), und nach dem Bild liegt jede Zusage im Bild. Bis B-Blick wartete jede Region der
     // Ankunft auf die Züge außer Blick (GTX kalt buche L1 in 66 m, blume L0 in 329 m: gesendet erst 14,4–15,1 s, p3/n1910/kette).
+    // Der Schlaf ist der EINE des Wartenden (`_schlafen`, w4-b-streu); geweckt baut sie weiter (`_streuRegionWeiter`), nie neu.
     _streuWeckerSpannen(region) {
         const zusagen = region._zusagen;
         region._zusagen = null;
@@ -474,20 +483,24 @@ class AnazhRealm_vegetation_streu {
         const alle = zusagen ? [...zusagen] : [];
         const bild = alle.filter(([, rang]) => this._rangImBild(rang));
         region._bildWartet = bild.length > 0 || !!region._bildLuecke;
-        const warten = bild.length ? bild : alle;
-        if (!warten.length) {
-            region._geweckt = true;
-            return;
-        }
-        let offen = warten.length;
+        const warten = (bild.length ? bild : alle).map(([z]) => z);
         const kam = () => {
-            if (--offen > 0) return;
             region._geweckt = true;
             this._scatterRefillPending = true;
         };
-        for (const [z] of warten) z.then(kam, kam);
+        if (!this._schlafen(region, warten, null, kam)) region._geweckt = true;
     }
 
+    // ═══ DIE REGION BAUT WEITER (w4-b-streu, Lehre 25) ═══
+    // Je Schicht trägt die Region ihre PLÄTZE (`region._schicht[li].plaetze`, in der Reihe der Würfe): ein Wurf, der steht,
+    // trägt seine Zelle; ein Wurf, der wartet (sein Asset, seine Karte, seine Höhe, die Gestalt seines Orts), hält seinen Platz
+    // ohne Zelle — das Cap zählt Plätze, und der Pass endet am Cap. Weckt der Wecker die Region (`_streuWeckerSpannen`), wertet
+    // sie nur ihre Wartenden neu und geht weiter, wo ein Gefallener Platz machte (`_streuRegionWeiter`): keine Lieferung wirft
+    // sie weg. Ist jede Zusage gekommen, trägt sie dieselben Zellen wie der One-Shot bei bereiten Assets — die ersten Cap Würfe,
+    // die stehen — und kein Asset eines Wurfs jenseits des Caps wurde bestellt. Bis w4-b-streu nahm die wartende Zelle keinen
+    // Platz: der Pass wertete jeden Wurf der Region und bestellte sein Asset (headless kalt bis zum ersten Bild 34 506 Würfe in
+    // 55 Pässen, davon 30 961 wartend), und jede Lieferung, die eine aufgeschobene Region weckte, warf sie weg und streute sie
+    // ganz neu (Streu 5,2–8,3 s Haupt-Faden bis zum Bild).
     _scatterRegionScheibe(region, regX, regZ, key, deadlineMs, playerPos) {
         const cont = region._cont || null;
         if (cont && !cont.darts) this._streuFadenSchicken(region, cont);
@@ -500,42 +513,37 @@ class AnazhRealm_vegetation_streu {
                       leser: this._streuLeser(),
                   })
               );
-        // die Strata über drei Pässe (Canopy · Understory · Fels), je Pass die Würfe seiner Schicht und sein Cap
+        region._darts = darts;
+        // die Strata über drei Pässe (Canopy · Understory · Fels), je Pass die Würfe seiner Schicht und ihre Plätze
         const layers = AnazhRealm.SCATTER.layers;
         for (let li = cont ? cont.layerIdx : 0; li < layers.length; li++) {
-            const layer = layers[li];
             if (cont) cont.layerIdx = li;
-            const n = this._scatterPass(region, layer, darts[li], regX, regZ, playerPos, cont, deadlineMs);
+            this._scatterPass(region, li, darts[li], regX, regZ, playerPos, cont, deadlineMs);
             if (cont && cont.hit) {
                 cont.hit = false;
-                return region; // Scheibe voll — cont trägt Wurf-Zeiger und emitted exakt
-            }
-            region.byLayer[layer.name] = n;
-            region.instanceCount += n;
-            if (cont) {
-                cont.i = 0;
-                cont.emitted = 0; // die nächste Schicht beginnt frisch
+                return region; // Scheibe voll — die Schicht trägt Wurf-Zeiger und Plätze exakt
             }
         }
         region._cont = null; // vollendet
+        this._streuRegionSteht(region);
         return region;
     }
 
-    // V18.225 — EIN Scatter-Pass für eine Schicht (Plan §13 5-Strata). Walkt das
-    // schicht-eigene Zell-Raster, gated gegen die gebackenen Felder, schreibt
-    // Deko-Instanzen in die GETEILTEN HISM-Gruppen. Deterministisch (pcg2d).
-    _scatterPass(region, layer, darts, regX, regZ, playerPos, cont, deadlineMs) {
+    // V18.225 — EIN Scatter-Pass für eine Schicht (Plan §13 5-Strata). Walkt das schicht-eigene Zell-Raster, gated gegen die
+    // gebackenen Felder, schreibt Deko-Instanzen in die GETEILTEN HISM-Gruppen. Deterministisch (pcg2d). Die Schicht `li` trägt
+    // ihren Wurf-Zeiger `i`, ihre Plätze und den Zeiger `w` der Wartenden (die Runde nach dem Wecker, `cont.wieder`).
+    _scatterPass(region, li, darts, regX, regZ, playerPos, cont, deadlineMs) {
         const SC = AnazhRealm.SCATTER;
+        const layer = SC.layers[li];
+        const S = region._schicht[li] || (region._schicht[li] = { i: 0, w: 0, plaetze: [] });
         // Die Streu-Zelle ist ein Wurf des Feldes: trägt die Wildnis die Region nicht, entsteht keine (und keine Promotion).
-        if (!this._wildnisTraegt((regX + 0.5) * SC.regionM, (regZ + 0.5) * SC.regionM)) return 0;
-        const cellM = layer.cellM;
+        if (!this._wildnisTraegt((regX + 0.5) * SC.regionM, (regZ + 0.5) * SC.regionM)) return;
         // im Scheiben-Modus der SNAPSHOT (cont.px/pz), nie die Live-Position — derselbe Ort, für den die Würfe fielen
         const px = cont ? cont.px : playerPos ? playerPos.x : 0;
         const pz = cont ? cont.pz : playerPos ? playerPos.z : 0;
         // DAS AUGE DER STUFEN (K36): der Ring streamt um den Spieler (seine Distanz-Gates in den Würfen), die Stufe der Geburt
         // und ihr Band-Partner messen vom Auge der Maske (`_lodAuge`) wie der Takt (`_tickScatterLod`).
         const auge = this._lodAuge() || { x: px, z: pz };
-        const N = AnazhRealm.VARIANTS_PER_SPECIES;
         let layerSalt = 0;
         for (let i = 0; i < layer.name.length; i++) layerSalt = (layerSalt * 131 + layer.name.charCodeAt(i)) >>> 0;
         // Der Dichte-Faktor lichtet die Wahrscheinlichkeit (in den Würfen) UND das Pro-Region-Cap — sonst blieben
@@ -543,73 +551,96 @@ class AnazhRealm_vegetation_streu {
         const fdScale = cont && cont.fdScale != null ? cont.fdScale : this._effectiveFoliageDensity();
         const cap = Math.max(1, Math.round(layer.cap * fdScale));
         const W = globalThis.__phytoCore.STREU_WURF;
-        let emitted = cont ? cont.emitted : 0;
-        const _dlOn = cont && Number.isFinite(deadlineMs);
-        let _dlCheck = 0;
-        for (let i = cont ? cont.i : 0; i < darts.length && emitted < cap; i += W) {
-            // Scheiben-Schnitt VOR der Arbeit des Wurfs (alle 8 Würfe): die Fortsetzung beginnt exakt bei ihm ⇒ emitted<cap
-            // zählt byte-identisch zum One-Shot (gate:scatter-slice)
-            if (_dlOn && (++_dlCheck & 7) === 0 && performance.now() > deadlineMs) {
-                cont.i = i;
-                cont.emitted = emitted;
-                cont.hit = true;
-                return emitted;
+        // Scheiben-Schnitt VOR der Arbeit des Wurfs (alle 8 Würfe): die Fortsetzung beginnt exakt bei ihm ⇒ die Plätze zählen
+        // byte-identisch zum One-Shot (gate:scatter-slice)
+        const dlOn = !!cont && Number.isFinite(deadlineMs);
+        let dl = 0;
+        const voll = () => dlOn && (++dl & 7) === 0 && performance.now() > deadlineMs && (cont.hit = true);
+        // DIE WARTENDEN ZUERST (die Runde nach dem Wecker): steht der Wurf jetzt, trägt sein Platz die Zelle; fällt er, macht er
+        // Platz — der Pass unten geht weiter
+        if (cont && cont.wieder)
+            while (S.w < S.plaetze.length) {
+                if (voll()) return;
+                const p = S.plaetze[S.w];
+                if (p.cell) {
+                    S.w++;
+                    continue;
+                }
+                const r = this._streuWurf(region, layer, layerSalt, darts, p.i, regX, regZ, auge);
+                if (r === false) S.plaetze.splice(S.w, 1);
+                else {
+                    if (r) region.cells.push((p.cell = r));
+                    S.w++;
+                }
             }
-            const [cellX, cellZ, h, lebendig, moisture] = [
-                darts[i],
-                darts[i + 1],
-                darts[i + 6],
-                darts[i + 7],
-                darts[i + 8],
-            ];
-            const tf = { x: darts[i + 2], z: darts[i + 3], yaw: darts[i + 4], scale: darts[i + 5] };
-            // was der Zustand der Welt urteilt, urteilt der Haupt-Faden: die promotete Zelle dieser Schicht (ihre realen
-            // Bäume), die Tat, die den Baum der Zelle nahm (`_tatSperrt`, speicher.K3), das exakte Wasser-Verdikt (`_landAt`)
-            if (this._scatterIsCellPromoted(tf.x, tf.z, layer.name)) continue;
-            if (layer.promotable && this._tatSperrt(tf.x, tf.z)) continue;
-            if (!this._landAt(tf.x, tf.z, 0.4)) continue;
-            const species = this._scatterSpeciesForLayer(layer.kind, lebendig, moisture, h);
-            const variantIndex = h % N;
+        // DER PASS BIS ZUM CAP: jeder Wurf, der steht oder wartet, nimmt seinen Platz
+        for (; S.i < darts.length && S.plaetze.length < cap; S.i += W) {
+            if (voll()) return;
+            const r = this._streuWurf(region, layer, layerSalt, darts, S.i, regX, regZ, auge);
+            if (r === false) continue;
+            S.plaetze.push({ i: S.i, cell: r || null });
+            if (r) region.cells.push(r);
+        }
+    }
+
+    // DAS URTEIL EINES WURFS (der Wurf `i` der Schicht `layer`): seine Zelle (er steht) · null (er wartet: die Region schiebt sich
+    // auf, `_streuZelleWartet`, sein Platz bleibt) · false (er fällt). Was der Zustand der Welt urteilt, urteilt der Haupt-Faden:
+    // die promotete Zelle dieser Schicht (ihre realen Bäume), die Tat, die den Baum der Zelle nahm (`_tatSperrt`, speicher.K3),
+    // das exakte Wasser-Verdikt (`_landAt`) — dann setzt die Zelle durch die EINE Natur-Wand (`_naturSetzen`, mit Art und Größe —
+    // ihre Krone: im Grundriss eines Hauses, über der Genesis-Lichtung, im Wagen und am Wasser wird sie nie Streu). Die Wand urteilt
+    // VOR dem Warten: erst ihr `setzen` fragt die Höhe und baut die Instanz — ein Wurf, den die Wand nimmt, zählt keinen Wartenden
+    // und hält keinen Platz. Am Chokepoint vorbei (das Urteil `_naturWand` beim Aufrufer) urteilten die Selbsttests der Wand
+    // (gate:haus-welt „streuwand", „promotion") blind: ihre Zeile fehlte.
+    _streuWurf(region, layer, layerSalt, darts, i, regX, regZ, auge) {
+        const [cellX, cellZ, h, lebendig, moisture] = [
+            darts[i],
+            darts[i + 1],
+            darts[i + 6],
+            darts[i + 7],
+            darts[i + 8],
+        ];
+        const tf = { x: darts[i + 2], z: darts[i + 3], yaw: darts[i + 4], scale: darts[i + 5] };
+        if (this._scatterIsCellPromoted(tf.x, tf.z, layer.name)) return false;
+        if (layer.promotable && this._tatSperrt(tf.x, tf.z)) return false;
+        if (!this._landAt(tf.x, tf.z, 0.4)) return false;
+        const species = this._scatterSpeciesForLayer(layer.kind, lebendig, moisture, h);
+        const variantIndex = h % AnazhRealm.VARIANTS_PER_SPECIES;
+        const warten0 = region._wartenN | 0;
+        const rec = this._naturSetzen(species, tf, tf, () => {
             // V18.387 — Baum-Schichten (nicht Fels/Kiesel) reichen die Sichthöhe
             // durch → die Erst-LOD-Wahl nutzt die Wahrnehmungs-Distanz.
-            // Ab hier wartet die Zelle am Ort tf: ihr Ort ist der Rang jeder Zusage, auf die sie wartet (`_streuWartetAuf`).
-            [this._streuZelleOrt, this._streuZelleN] = [tf, this._streuZusagen | 0];
+            // Ab hier wartet die Zelle am Ort tf: ihr Ort ist der Rang jeder Zusage, auf die sie wartet (`_wartetAuf`).
+            [this._wartendOrt, this._wartendN] = [tf, this._zusagenN | 0];
             const visH = this._scatterSichtHoehe(layer, species, cellX, cellZ, variantIndex, tf);
             if (visH === null) {
                 // die Höhen-Stufe des Foundry-Baums lädt: die Region wartet wie auf ein ladendes Asset
                 this._streuZelleWartet(region);
-                continue;
+                return null;
             }
             const distAuge = Math.hypot(tf.x - auge.x, tf.z - auge.z); // die Stufen-Distanz: vom Auge (K36)
             const lod = this._chooseLODForDistance(distAuge, undefined, visH);
             // Trägt die Foundry die Baum-Art, serviert der Scatter IHR Asset (fern = Studio-Billboard, nah =
             // Studio-Geometrie) — nie ein paralleles Grammatik-Baum-System (Doppel-Bake + Look-Bruch nah/fern).
-            // Foundry-gegated; headless (Foundry aus) bleibt Grammatik. Die Zelle setzt durch die EINE Natur-Wand
-            // (`_naturSetzen`, mit Art und Größe — ihre Krone): im Grundriss eines Hauses und über der Genesis-Lichtung
-            // wird sie nie Streu.
-            const rec = this._naturSetzen(species, tf, tf, () =>
-                this._scatterMaterializeCell(
-                    region,
-                    layer,
-                    layerSalt,
-                    cellX,
-                    cellZ,
-                    cellM,
-                    tf,
-                    distAuge,
-                    species,
-                    variantIndex,
-                    visH,
-                    lod,
-                    regX,
-                    regZ,
-                    false
-                )
+            // Foundry-gegated; headless (Foundry aus) bleibt Grammatik.
+            const zelle = this._scatterMaterializeCell(
+                region,
+                layer,
+                layerSalt,
+                cellX,
+                cellZ,
+                layer.cellM,
+                tf,
+                distAuge,
+                species,
+                variantIndex,
+                visH,
+                lod,
+                regX,
+                regZ,
+                false
             );
-            if (!rec) continue;
-            region.cells.push(rec);
             // Lookup nur für die promotable (Baum-)Schicht — die Promotion liest ihn; ihre Krone streut Laub.
-            if (layer.promotable) {
+            if (zelle && layer.promotable) {
                 this._scatterRegisterCell(tf.x, tf.z, layer.name, species, variantIndex);
                 // Der Kronen-Radius: der des Wald-Generators für die Art (× Skala), sonst aus der Sichthöhe.
                 const kc = AnazhRealm.FOREST.crown[species];
@@ -620,12 +651,57 @@ class AnazhRealm_vegetation_streu {
                     tf.x,
                     tf.z,
                     kr,
-                    visH > 0 ? rec.fuss.y + visH : NaN
+                    visH > 0 ? zelle.fuss.y + visH : NaN
                 );
             }
-            emitted++;
+            return zelle;
+        });
+        // ohne Zelle: die Wand nahm ihn oder sein Bau ist ungemappt (er fällt) — er wartet nur, wenn sein Bau einen Wartenden zählte
+        return rec || ((region._wartenN | 0) > warten0 ? null : false);
+    }
+
+    // DIE REGION STEHT (ihr Pass ist durch): ihre Zellen in der Reihe der Plätze (Schicht, Wurf — wie der One-Shot), ihre Zahl je
+    // Schicht; wartet kein Platz, gehen die Würfe (ein Neubau holt sie im Faden neu).
+    _streuRegionSteht(region) {
+        const layers = AnazhRealm.SCATTER.layers;
+        const cells = [];
+        let wartet = false;
+        region.instanceCount = 0;
+        for (let li = 0; li < layers.length; li++) {
+            const S = region._schicht[li];
+            let n = 0;
+            for (const p of S ? S.plaetze : []) {
+                if (!p.cell) wartet = true;
+                else (cells.push(p.cell), n++);
+            }
+            region.byLayer[layers[li].name] = n;
+            region.instanceCount += n;
         }
-        return emitted;
+        region.cells = cells;
+        if (!wartet) region._darts = null;
+    }
+
+    // GEWECKT BAUT DIE REGION WEITER (`_streuWeckerSpannen` → der Refill in `_tickScatterStreaming`): die Runde wertet ihre
+    // Wartenden neu und geht weiter, wo einer Platz machte — in Scheiben wie ihr erster Pass, an den Würfen und dem Ort, für den
+    // sie fielen. Ohne Würfe wartet kein Platz: sie steht.
+    _streuRegionWeiter(region) {
+        region._weiter = (region._weiter | 0) + 1;
+        region._deferredFoundry = false;
+        region._bildLuecke = false;
+        region._bildWartet = undefined;
+        region._geweckt = false;
+        if (region._cont || !region._darts) return;
+        for (const S of region._schicht) if (S) S.w = 0;
+        region._cont = {
+            darts: region._darts,
+            flug: false,
+            layerIdx: 0,
+            wieder: true,
+            hit: false,
+            px: region._px,
+            pz: region._pz,
+            fdScale: region.builtDensity,
+        };
     }
 
     // Der rohe Same einer Streu-Zelle (Γ5: aus Zelle + Varianten-Index, nie Zufall) — die Klon-Linse (gate:fluss) misst
@@ -769,6 +845,8 @@ class AnazhRealm_vegetation_streu {
     // Instanz-Slots (Foundry-Flat oder Grammatik, inkl. Band-Partner + Tint) auf der gewünschten Stufe
     // → Zellen-Datensatz oder null (deferriert/ungemappt). Leser: Region-Bau + _tickScatterLod.
     // ctxNoDefer: der LOD-Tick markiert die Region NICHT als deferriert (alte Stufe bleibt, Retry).
+    // `fuss`: der Fuß, den die Zelle schon trägt (der LOD-Tick: er rückt mit jeder Karte ihres Chunks nach, `_streuFussNeu`) —
+    // bis w4-b-streu fragte jeder Stufen-Zug den gezeichneten Boden neu (headless kalt bis zum Bild 0,75 s `_streuFuss`).
     _scatterMaterializeCell(
         region,
         layer,
@@ -784,11 +862,11 @@ class AnazhRealm_vegetation_streu {
         lod,
         regX,
         regZ,
-        ctxNoDefer
+        ctxNoDefer,
+        fuss = this._streuFuss(tf.x, tf.z)
     ) {
         let bpName = null,
             foundryFlat = null;
-        const fuss = this._streuFuss(tf.x, tf.z);
         // EINE Quelle je Streu-Art: kennt die lebende Foundry die Art (Baum, Fels, Kiesel, Blume, Strauch),
         // kommt das ECHTE Studio-Asset — oder solange es lädt, bei Bäumen das Studio-Billboard (LOD2).
         // Ist beides nicht bereit: DEFERRIEREN, NIE Grammatik als Lückenbüßer. Nur eine wirklich
@@ -1046,6 +1124,13 @@ class AnazhRealm_vegetation_streu {
         let regung = 0;
         let offen = 0;
         let partner = 0;
+        // DIE ZELLE SCHLÄFT AUF IHRER ZUSAGE (w4-b-streu, `_schlafen`): lädt ihre Höhe, ihre Wunsch-Stufe oder ihr Band-Partner,
+        // nennt die Frage die Zusage (`_zusagenVon`) — die Zelle schläft auf ihr, bis sie kam (sie weckt die Wahl) oder ihr Wunsch
+        // sich verschob (`_bereitStand(auge, true)`), und hält die Wahl nicht wach. Bis w4-b-streu materialisierte die Wahl jede
+        // wartende Zelle in jeder Runde neu (headless kalt bis zum Bild 2,6–3,1 s, davon das Materialisieren 2,1 s).
+        const wunsch = this._bereitStand(playerPos, true);
+        const wecke = () => this._standWecken("streuLod");
+        const Z = this._streuLodZusagen || (this._streuLodZusagen = new Map());
         const cur = this._scatterLodCursor;
         let scanned = 0;
         let realloc = 0;
@@ -1064,6 +1149,7 @@ class AnazhRealm_vegetation_streu {
             const cell = cells[cur.c++];
             scanned++;
             if (!cell || !cell.slots || !cell.bpName) continue; // promoted/freigegeben
+            if (this._schlaeft(cell, wunsch)) continue;
             const layer = this._scatterLayerByName.get(cell.layer);
             if (!layer) continue;
             // Zellen mit region-privaten Slots (@regX,regZ) dürfen zurück in die Fern-Stufe wandern (der
@@ -1085,9 +1171,13 @@ class AnazhRealm_vegetation_streu {
             const dist = Math.sqrt(dx * dx + dz * dz);
             if (dist > SC.outerM + 96) continue; // jenseits räumt der Region-Ring selbst
             const tf = this._scatterCellTransform(cell.cellX, cell.cellZ, cell.cellM, layer.scaleBase, layer.scaleVar);
-            const visH = this._scatterSichtHoehe(layer, cell.species, cell.cellX, cell.cellZ, cell.variantIndex, tf);
+            const visH = this._zusagenVon(
+                tf,
+                () => this._scatterSichtHoehe(layer, cell.species, cell.cellX, cell.cellZ, cell.variantIndex, tf),
+                Z
+            );
             if (visH === null) {
-                offen++;
+                if (!this._schlafen(cell, Z, wunsch, wecke)) offen++;
                 continue; // die Höhen-Stufe lädt: die Zelle hält ihre Stufe
             }
             const newLod = this._chooseLODForDistance(dist, cell.lod, visH);
@@ -1106,10 +1196,16 @@ class AnazhRealm_vegetation_streu {
             const warten = !bahnWechsel && cell.wartet === true && newLod === cell.lod && this._weltMarchGezeichnet();
             // DAS BAND DER STREU (K36): wandert die Zelle durchs Band, folgt ihr Partner dem Auge wie bei der Architektur;
             // hält sie, weil ihr Partner lud, tauscht sie, sobald er steht — die Zelle materialisiert neu (Partner + Halt).
-            const bandWechsel =
-                !warten && !bahnWechsel && newLod === cell.lod && this._streuBandWechsel(cell, dist, visH, tf);
-            if (!bandWechsel && cell.halt === "wartet") offen += partner = 1; // der Partner lädt: die Wahl bleibt wach
-            if (newLod === cell.lod && !warten && !bahnWechsel && !bandWechsel) continue;
+            const bandWechsel = this._zusagenVon(
+                tf,
+                () => !warten && !bahnWechsel && newLod === cell.lod && this._streuBandWechsel(cell, dist, visH, tf),
+                Z
+            );
+            const ruhig = newLod === cell.lod && !warten && !bahnWechsel && !bandWechsel;
+            // der Partner lädt: die Zelle schläft auf ihm — ohne Zusage bleibt die Wahl wach
+            if (!bandWechsel && cell.halt === "wartet" && !(ruhig && this._schlafen(cell, Z, wunsch, wecke)))
+                offen += partner = 1;
+            if (ruhig) continue;
             // DIESELBE GESTALT auf der neuen Stufe (die EINE Stufen-Klammer: Fels [0], Blume [0,2], Strauch [1,2]; Grammatik
             // ohne eigene Stufe; diesseits der Nah-Grenze auch der Fern-Wunsch) → nur den Wunsch quittieren: kein
             // Materialisieren, kein Duplikat-Slot.
@@ -1133,25 +1229,32 @@ class AnazhRealm_vegetation_streu {
             const regZ = parseInt(key.slice(comma + 1), 10);
             // ZUERST materialisieren (deferred-sicher): kommt null (Asset lädt),
             // bleibt die alte Stufe unangetastet stehen.
-            const rec = this._scatterMaterializeCell(
-                region,
-                layer,
-                layerSalt,
-                cell.cellX,
-                cell.cellZ,
-                cell.cellM,
+            const rec = this._zusagenVon(
                 tf,
-                dist,
-                cell.species,
-                cell.variantIndex,
-                visH,
-                newLod,
-                regX,
-                regZ,
-                true
+                () =>
+                    this._scatterMaterializeCell(
+                        region,
+                        layer,
+                        layerSalt,
+                        cell.cellX,
+                        cell.cellZ,
+                        cell.cellM,
+                        tf,
+                        dist,
+                        cell.species,
+                        cell.variantIndex,
+                        visH,
+                        newLod,
+                        regX,
+                        regZ,
+                        true,
+                        cell.fuss || undefined
+                    ),
+                Z
             );
             if (!rec || (warten && rec.wartet)) {
-                offen++; // das Asset lädt — oder der Satz steht weiter nicht: die Zelle wartet, kein Zug
+                // das Asset lädt — oder der Satz steht weiter nicht: die Zelle wartet, kein Zug
+                if (!this._schlafen(cell, Z, wunsch, wecke)) offen++;
                 continue;
             }
             regung++;
@@ -1206,7 +1309,7 @@ class AnazhRealm_vegetation_streu {
         this._weltRegt(); // die Streu-Menge regt sich
         // W3.3c — DISPOSE-STORNO: eine offene Fortsetzung stirbt MIT der Region (sonst
         // schriebe die nächste Scheibe Slots in entsorgte HISM-Gruppen — der zweite
-        // Fehlermodus neben emitted<cap; `gate:scatter-slice` prüft ihn mit Absturz-Probe).
+        // Fehlermodus neben den Plätzen bis zum Cap; `gate:scatter-slice` prüft ihn mit Absturz-Probe).
         region._cont = null;
         // Regional gebaute Region: ihre Gruppen (Key @regX,regZ) GANZ entsorgen (geom/mat geteilt, bleiben) —
         // nie per-Slot-Free, das Null-Skalieren bläht die Bounding-Sphere zum Ursprung.
@@ -1479,17 +1582,15 @@ class AnazhRealm_vegetation_streu {
                 this._disposeScatterRegion(rk);
             }
         }
-        // Refill: hat die Foundry seit dem letzten Mal geliefert (`_scatterRefillPending`, gesetzt in
-        // _foundryRewarmColdTrees), die Regionen mit deferrierten Fern-Bäumen neu streamen. Einmal je
-        // Liefer-Batch; Schritt (1) baut sie über die nächsten Ticks.
+        // Refill: hat der Wecker eine aufgeschobene Region geweckt (`_scatterRefillPending`, jede ihrer Zusagen kam), baut sie
+        // weiter (`_streuRegionWeiter`: ihre Wartenden, dann der Pass bis zum Cap) — die Fortsetzung oben trägt sie über die
+        // nächsten Ticks. Bis w4-b-streu warf der Refill sie weg, und Schritt (1) streute sie ganz neu.
         if (this._scatterRefillPending) {
             this._scatterRefillPending = false;
-            for (const rk of Array.from(map.keys())) {
-                const region = map.get(rk);
+            for (const region of map.values()) {
                 if (!region || !region._deferredFoundry || !region._geweckt) continue;
-                if (Math.abs(region.regX - pRegX) <= disposeR && Math.abs(region.regZ - pRegZ) <= disposeR) {
-                    this._disposeScatterRegion(rk); // Schritt (1) im nächsten Tick baut sie mit dem Studio-Asset neu
-                }
+                if (Math.abs(region.regX - pRegX) <= disposeR && Math.abs(region.regZ - pRegZ) <= disposeR)
+                    this._streuRegionWeiter(region);
             }
         }
         // (3) Touch→Real: Scatter-Cells im promoteRadius zu echten Bäumen
@@ -1615,24 +1716,26 @@ class AnazhRealm_vegetation_streu {
     // jenseits der EINEN Nah-Grenze (ANALOG_NAH_M) — der Mensch der Menge (`_menge`), sobald sein Leib am Schirm unter
     // LOD_SCHIRM.leib.mengePx Bildpunkte fällt (mensch.K3: der Morgengang trägt das ganze Dorf), im Ruhe-Sichtfeld wie jede Stufe
     // (Tempo und Fernglas legen keine um). Die EINE Wahl liest sie (`_stufeNachGrenzen`), vom EINEN Auge (`_lodAuge`); je Schirm
-    // einmal gerechnet. Ohne Zeichenpuffer (der Null-Renderer) trägt die Menge bis zur Nah-Grenze.
-    _gelenkGrenzen(g) {
-        const z = this._schirm().hoehe;
+    // einmal gerechnet. Ohne Zeichenpuffer (der Null-Renderer) trägt die Menge bis zur Nah-Grenze. `zeilen` = der Schirm des Takts
+    // (wer je Leib fragt, liest ihn EINMAL je Takt, `_schirm`).
+    _gelenkGrenzen(g, zeilen) {
+        const z = zeilen !== undefined ? zeilen : this._schirm().hoehe;
         if (g.grenzen && g.grenzenZeilen === z) return g.grenzen;
         const ab = AnazhRealm._wechselGesetz(g.art, 1, 1, z, g.abM);
         return Object.assign(g, { grenzenZeilen: z, grenzen: { erste: 0, grenzen: [{ stufe: 1, ab, h: g.hyst }] } })
             .grenzen;
     }
     // die Grenze der Grobstufe eines Leibs in Metern (Gesetz × Größe) — der Takt seines Gangs liest sie (`_creatureAnimDiv`)
-    _gelenkAb(gruppe) {
-        return this._gelenkGrenzen(gruppe.userData._gelenk).grenzen[0].ab * (gruppe.scale.x || 1);
+    _gelenkAb(gruppe, zeilen) {
+        return this._gelenkGrenzen(gruppe.userData._gelenk, zeilen).grenzen[0].ab * (gruppe.scale.x || 1);
     }
-    // die Grenzen des Felds je Art (`menge`: der Mensch der Menge, sonst jedes Tier) → { erste, grenzen, ein, aus }
+    // die Grenzen des Felds je Art (`menge`: der Mensch der Menge, sonst jedes Tier) → { erste, grenzen, ein, aus } — je Art EIN
+    // Objekt je Zeichenpuffer (die Epoche des Felds: die gemerkte Wahl, `_stufeGemerkt`, hält, solange es dasselbe ist)
     _feldGrenzen(menge) {
         const z = this._schirm().hoehe;
-        const memo = this._feldMemo || (this._feldMemo = new Map());
-        const k = (menge ? -1 : 1) * (z + 1);
-        if (memo.has(k)) return memo.get(k);
+        const F = this._feldG || (this._feldG = [null, null]);
+        const alt = F[menge ? 1 : 0];
+        if (alt && alt.z === z) return alt;
         const L = AnazhRealm.LOD_SCHIRM.leib;
         const N =
             menge && z > 0
@@ -1640,9 +1743,13 @@ class AnazhRealm_vegetation_streu {
                 : AnazhRealm.ANALOG_NAH_M;
         const hm = Math.min(L.feldHystM, menge ? L.mengeHystM : Infinity);
         const ab = AnazhRealm._wechselGesetz(menge ? "menge" : "tier", 3, 1, z, N + hm / 2);
-        const G = { erste: 0, grenzen: [{ stufe: 3, ab, h: hm / (2 * N + hm) }], ein: N, aus: N + hm };
-        memo.set(k, G);
-        return G;
+        return (F[menge ? 1 : 0] = {
+            erste: 0,
+            grenzen: [{ stufe: 3, ab, h: hm / (2 * N + hm) }],
+            ein: N,
+            aus: N + hm,
+            z,
+        });
     }
     // Trägt das Feld am Auge (Stufe 3)? `menge` = die Art des Felds (`_feldGrenzen`), `nah` = er steht diesseits (die Hysterese hält
     // ihn bis `aus`) — die EINE Nah-Grenze für Tier, Mensch und die Fernform der Streu (`_streuFernBahn`).
@@ -1665,9 +1772,16 @@ class AnazhRealm_vegetation_streu {
     // DIE BEDEUTUNG EINES LEIBS (das Stufen-Gesetz: wer den knappen Haushalt der Leiber trägt — die Nah-Wahl der Bewohner, der
     // Tier-Satz, die Fahrer, je `nahLeiber`): seine Größe am Schirm (Größe × Brennweite / Abstand vom Auge, Bildpunkte) mal seine
     // Bewegung (1 + Tempo / LOD_SCHIRM.bewegungMS: wer geht, verliert im Satz die Phasen seines Gangs, wer steht, nichts).
+    // Die Brennweite trägt sie je Zeichenpuffer (`_bedeutungF`), nie je Leib.
     _bedeutung(groesse, d, tempo) {
-        const f = AnazhRealm._brennweite(this._schirm().hoehe);
-        return ((groesse * f) / Math.max(d, 0.5)) * (1 + Math.abs(tempo || 0) / AnazhRealm.LOD_SCHIRM.bewegungMS);
+        const z = this._schirm().hoehe;
+        const B = this._bedeutungF || (this._bedeutungF = { z: NaN, f: 0, v: 0 });
+        if (B.z !== z) {
+            B.z = z;
+            B.f = AnazhRealm._brennweite(z);
+            B.v = AnazhRealm.LOD_SCHIRM.bewegungMS;
+        }
+        return ((groesse * B.f) / Math.max(d, 0.5)) * (1 + Math.abs(tempo || 0) / B.v);
     }
 
     // DIE SCHWELLEN DER BAUM-STUFEN aus dem Gesetz: die Wahrnehmungs-Distanz misst in Bäumen der Referenz-Höhe lodRef, die Schwelle

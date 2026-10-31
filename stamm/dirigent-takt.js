@@ -1136,7 +1136,10 @@ class AnazhRealm_dirigent_takt {
         // Der Nexus atmet mit der Last: Basis-Intervall 24 s; ist der Frame über Budget (`_frameOverBudget`,
         // derselbe Zeit-Zustand wie Laub-/Ring-Regler), streckt es sich ×2 (gedeckelt) — still, nie tot.
         // Auch die Registrierung wartet auf die Bühne; nexusLastEvolution ist der Boot-Stempel → kein Burst.
-        if (this.nexus && this._buehneSteht()) {
+        // SEINE GEBURT TRIFFT DAS MEMO (K60, w4-b-streu): er wirft erst, wenn die Kreaturen bereit sind (`_kreaturenBereit`:
+        // das erste Weltbild und der Ofen-Vorrat) — sein `spawn_creature` goss sonst die Gattung im Haupt-Faden, sobald die
+        // Bühne vor dem Bild stand (swiftshader kalt 5,5 s unter dem Ladeschirm, `_ofenKreaturTemplate`).
+        if (this.nexus && this._buehneSteht() && this._kreaturenBereit()) {
             const evoInterval = this.state.nexusEvolutionInterval * (this.state._frameOverBudget ? 2.0 : 1.0);
             if (currentTime - this.state.nexusLastEvolution >= evoInterval) {
                 this.evolveNexus(currentTime);
@@ -1409,22 +1412,26 @@ class AnazhRealm_dirigent_takt {
         ];
     }
 
-    // Der EINE Stempel der Wache: wächst, sobald eine ortsfreie Eingabe der Fege-Takte sich ändert.
+    // Der EINE Stempel der Wache: wächst, sobald eine ortsfreie Eingabe der Fege-Takte sich ändert. Daneben der Stempel des
+    // WUNSCHS (`W.wunsch`, w4-b-streu): dieselbe Liste ohne die Lieferungen (`lief`: die Welt-Regung, die Schlange des Walds, die
+    // Ankunft des Studios) — wer auf seine Zusagen schläft (`_schlafen`), den wecken sie selbst.
     _standStempel() {
         const st = this.state;
-        const W = this._standWache || (this._standWache = { stempel: 0, v: [], takte: new Map() });
+        const W = this._standWache || (this._standWache = { stempel: 0, wunsch: 0, v: [], takte: new Map() });
         const v = W.v;
         let i = 0,
-            neu = false;
-        const setze = (x) => {
+            neu = false,
+            wunsch = false;
+        const setze = (x, lief) => {
             if (!Object.is(v[i], x)) {
                 v[i] = x;
                 neu = true;
+                wunsch = wunsch || !lief;
             }
             i++;
         };
-        setze(this._weltRegung | 0);
-        setze(this._waldPlanRegung | 0); // die Schlange des Walds (K69): ihre Zellen tragen die Gestalt jedes wartenden Baums
+        setze(this._weltRegung | 0, true);
+        setze(this._waldPlanRegung | 0, true); // die Schlange des Walds (K69): ihre Zellen tragen die Gestalt jedes wartenden Baums
         setze(st._foliageDensityScale); // der EINE Regler: Wahrnehmungs-Faktor der Stufen-Wahl und Verdeckungs-Schwelle
         setze(!!st._weltbildDa); // das erste Bild: der Stufen-Vorlauf und der Blick der Ankunft enden mit ihm
         setze(st.lodRef);
@@ -1432,7 +1439,7 @@ class AnazhRealm_dirigent_takt {
         setze(st._activeRingRadius); // der Boot-Ring wächst bis zum Ziel (`_voxelChunkConfig`)
         setze(st.architectureCullingRadius);
         const f = this._foundry;
-        setze(f ? f.ankunft | 0 : -1);
+        setze(f ? f.ankunft | 0 : -1, true);
         // was die Takte ortsfrei vom Studio lesen, liest der Stempel selbst (kein Schreiber kann den Weckruf vergessen): die
         // Antwort des Studios, das Buch (Rezepte, Vorlagen), die Wahrnehmung (Stufen-Klammer, Budget, Sichtweite) und die
         // LOD-Distanzen, die `_foundryIngestRenderConfig` (oder wer auch immer) in die EINE LOD-Quelle schreibt
@@ -1451,7 +1458,13 @@ class AnazhRealm_dirigent_takt {
         setze(st.useOcclusionDemotion !== false);
         setze(st.voxelTerrainActive === true);
         if (neu) W.stempel++;
+        if (wunsch) W.wunsch = (W.wunsch | 0) + 1;
         return W.stempel;
+    }
+    // Der Stempel des Wunschs (`_standStempel` ohne die Lieferungen): ihn liest der Stand des Wunschs (`_bereitStand(auge, true)`).
+    _standStempelWunsch() {
+        this._standStempel();
+        return this._standWache.wunsch | 0;
     }
 
     // Der Stempel der BODEN-Takte: der Ring liest Chunk-Menge, Ring-Regler und Spieler-Zelle, der Saum Chunk-Menge,
