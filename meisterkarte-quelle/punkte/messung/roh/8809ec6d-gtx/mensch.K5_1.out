@@ -1,0 +1,9 @@
+$ C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\8809ec6d-gtx\mensch.K5_1.json' | tr '\\' /); B="${A%.json}"
+S=$(( 7804 )); W=$(( 7804 + 20000 )); export WERKBANK_PORT=$W
+node scripts/diag-kreatur-takt.cjs --werkbank $W --proben begegnung
+
+--- stderr ---
+tr: warning: an unescaped backslash at end of string is not portable
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
