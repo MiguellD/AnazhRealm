@@ -172,6 +172,20 @@ function runVergleich(labMorphFn, labPropFn, labLandmarksFn) {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// DIE WACHE (PFLICHT-OFFEN A, der Prüfplatz: mensch-kopf und haar zu jeder Uhr). Das EINE Rollen-Gesetz des Tags
+// (TAGES_GESETZ.rollen, tagesPlan) trägt die Tag-Wache `waechter` und die Nacht-Wache `nachtwaechter` (um versatzH versetzt):
+// über 1 000 Samen-Paare (die Streu ±streuH) steht zu JEDER Stunde (je 0,05 h) eine an ihrem Wache-Punkt — Werk und Platz
+// sind der Punkt, wie der Wirt sie setzt; `wacheLeer` zählt die Proben ohne sie (der Byte-Beweis w4-bewohner-wache: zu 12 h,
+// 7,2 h und 0 h je 1 000 von 1 000 an ihrem Werk). Bis w4-bewohner-wache schlief um 0 h jeder Bewohner drinnen (`h ≥ ruhe`):
+// die Nacht-Zellen von mensch-kopf und haar standen ohne Bild (am alten Kern 217 459 von 480 000 Proben ohne Wache). Leser:
+// der Wirt (`_bewohnerSoll` → tagesPlan). Täter (Selbsttest): die Nacht-Wache ohne Versatz.
+const wacheLeer = (P, b = "nachtwaechter", a = "waechter", W = {}) => {
+    let n = 0;
+    for (let s = 0; s < 2000; s += 2)
+        for (let h = 0; h < 24; h += 0.05) n += P(s, a, 0, W, h, W, {}).ort !== W && P(s + 1, b, 0, W, h, W, {}).ort !== W;
+    return n;
+};
+
 const selftest = process.argv.includes("--selftest");
 
 if (selftest) {
@@ -183,14 +197,16 @@ if (selftest) {
     const t1 = runVergleich(morphMut, core.labProportionen, core.labLandmarks);
     const t2 = runVergleich(core.labMorph, propMut, core.labLandmarks);
     const t3 = runVergleich(core.labMorph, core.labProportionen, lmMut);
-    if (t1.diffs === 0) { console.log("⛔ Selbsttest: Morph-Injektion NICHT erkannt"); fails++; }
-    if (t2.diffs === 0) { console.log("⛔ Selbsttest: Proportionen-Injektion NICHT erkannt"); fails++; }
-    if (t3.diffs === 0) { console.log("⛔ Selbsttest: Landmarken-Injektion NICHT erkannt"); fails++; }
-    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle drei injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer).`);
+    // die Wache ohne Versatz (der Täter) fällt ROT, das Gesetz hält
+    const w = wacheLeer(core.tagesPlan, "waechter");
+    for (const [x, n] of [[t1.diffs, "Morph"], [t2.diffs, "Proportionen"], [t3.diffs, "Landmarken"], [w && !wacheLeer(core.tagesPlan), "Wache"]])
+        if (!x) {
+            console.log(`⛔ Selbsttest: ${n}-Injektion NICHT erkannt`);
+            fails++;
+        }
+    urteilEnde(fails, "❌ ROT — die Linse ist blind.", `✅ Selbsttest: alle vier injizierten Abweichungen erkannt (${t1.diffs}/${t2.diffs}/${t3.diffs} Treffer).`);
 }
 
 const r = runVergleich(core.labMorph, core.labProportionen, core.labLandmarks);
-if (r.points < 500) { console.error(`❌ ROT — Gitter zu klein: ${r.points} Punkte (< 500).`); process.exit(1); }
-if (r.diffs > 0) { console.error(`❌ ROT — ${r.diffs} Abweichung(en) alt↔neu (auf ${r.values} Werten).`); process.exit(1); }
-console.log(`✅ DER MENSCH IST EINER — Dial-Gitter ${r.points} Punkte, ${r.values} Werte alt==neu exakt (0 Abweichungen); Proportionen + Landmarken-Urteil identisch.`);
-process.exit(0);
+const leer = wacheLeer(core.tagesPlan);
+urteilEnde(r.points < 500 || r.diffs || leer, `❌ ROT — Gitter ${r.points} Punkte, ${r.diffs} Abweichungen alt↔neu, ${leer} Proben ohne Wache`, `✅ DER MENSCH IST EINER — Dial-Gitter ${r.points} Punkte, ${r.values} Werte alt==neu exakt (0 Abweichungen); Proportionen + Landmarken-Urteil identisch; DIE WACHE STEHT zu jeder Stunde.`);
