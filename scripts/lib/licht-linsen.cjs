@@ -53,13 +53,13 @@ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
         const o = i * 4;
         // Die Zeilen des Ziels laufen von unten nach oben (WebGL) bzw. oben nach unten (WebGPU) — das Bild ist nur
         // Augenschein, die Zahlen hängen nicht an der Zeilen-Ordnung.
+        // das Alpha setzt `__png` deckend (welt-boot)
         if (!(hell[o + 3] > deckung)) {
-            img.data.set([255, 0, 255, 255], o);
+            img.data.set([255, 0, 255], o);
             continue;
         }
         for (let c = 0; c < 3; c++)
             img.data[o + c] = Math.round(255 * linSrgb(Math.min(1, Math.max(0, hell[o + c] - dunkel[o + c]))));
-        img.data[o + 3] = 255;
     }
     return {
         name,
@@ -1623,8 +1623,8 @@ function laubGegenlicht(opts) {
                         img.data[o + 1] = 0;
                         img.data[o + 2] = 255;
                     }
-                    img.data[o + 3] = 255;
                 }
+            // das Alpha setzt `__png` deckend (welt-boot)
             return { Yp, Cp, png: window.__png(img.data, W, H) };
         };
         try {
