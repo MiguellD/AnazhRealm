@@ -2343,6 +2343,37 @@ async function kreaturProben(r, T, opts) {
         return z;
     });
 
+    // ── leibtakt (Lehre 25): DER LEIB JE BILD UND DIE SCHRANKE DES WEGS — drei Leiber Seite an Seite unter Last (0,1 s je Bild,
+    // sechs Sim-Schritte): je Leib und Bild zählt die Linse die Rechnungen seines Leibs (`_kreaturLeibRechnen`, Schranke 2: L
+    // und Gier wechseln je Bild höchstens einmal) samt dem Rufer über ihr; dann trägt EIN Sim-Schritt einen Stoß von 10⁴ m/s —
+    // höchstens LEIB_TEIL.max Teil-Schritte, und ein Stoß ohne Maß (∞) bricht laut (`_bruchMelden`), der Leib steht. Die Ruhe
+    // der Läufer und Gefallenen hält gate:kreatur-kosten (G7).
+    await buehne("leibtakt", async (restore) => {
+        if (taeter === "leibtakt-jeruf")
+            decke("_kreaturLeib", () => (c, L, o) => Object.assign(o || {}, r._kreaturLeibRechnen(c, L || r._kreaturHueftL(c))));
+        const T = A.LEIB_TEIL;
+        if (taeter === "leibtakt-schranke") (restore.push(() => (A.LEIB_TEIL = T)), (A.LEIB_TEIL = { ...T, max: 1 / 0 }));
+        const [leiber, je, z] = [[0, 2, 4].map((dx) => tier(land(dx, 12), "wesen")), new Map(), { wer: {}, bruch: [] }];
+        decke("_kreaturLeibRechnen", (f) => (c, l) => {
+            je.set(c, (je.get(c) || 0) + 1);
+            const w = je.get(c) === 3 && /at (?:\S+\.)?(\w+) /.exec(new Error().stack.split("\n")[3]);
+            if (w) z.wer[w[1]] = (z.wer[w[1]] || 0) + 1;
+            return f.call(r, c, l);
+        });
+        decke("_bruchMelden", (f) => (t) => (/^LEIB: ein Weg/.test(t) ? z.bruch.push(t) : f.call(r, t)));
+        for (let k = 0; k < 20; k++) {
+            je.clear();
+            for (let i = 0; i < 6; i++) (r._kreaturStossSchritt(A.FIXED_DT), r._leibKontakte());
+            r.updateCreatures(0.1);
+            z.leibMax = Math.max(z.leibMax || 0, ...je.values());
+        }
+        const [c, p] = [leiber[0], leiber[0].position.clone()];
+        z.teile = 0;
+        decke("_kreaturHuellenKontakt", (f) => (q, L, ...a) => ((z.teile += q === c && L > 0), f.call(r, q, L, ...a)));
+        for (const x of [1e4, 1 / 0]) (c.userData._stossV = { x, z: 0 }), r._kreaturStossSchritt(A.FIXED_DT);
+        return Object.assign(z, { max: A.LEIB_TEIL.max, m: Math.round(c.position.distanceTo(p)), bruch: z.bruch.length });
+    });
+
     // ═══ DAS START-DORF der Bewohner-Proben (bewohner · begegnung): der Takt des Spiels, das Warten unter Deckel, die Uhr auf
     // ihrer Stunde, die stehende Welt — und das Dorf am Genesis-Ort, das der Wirt baut (`__anazhAutoSettlement`) ═══
     const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z); // der Abstand in der Ebene
@@ -3237,6 +3268,7 @@ const PROBEN = [
     "ferngang",
     "gestalt",
     "todlage",
+    "leibtakt",
     "tiersatz",
 ];
 // DIE DORF-PROBEN (`startDorf`): ihr Start-Dorf bleibt in der Welt der Seite — sie laufen nach allen anderen, auch nach den
@@ -3603,6 +3635,11 @@ function urteil(name, z) {
             `der Takt zerlegt die Gestalt einer kalten Gattung: ${K.zerlegt}× zerlegt, Satz ${K.satz}, ${K.ruf} kalte Rufe (Soll 0× · true · > 0)`
         );
     }
+    if (name === "leibtakt") {
+        soll(z.leibMax <= 2, `der Leib je Bild ${z.leibMax}× gerechnet (Schranke 2, über ihr ${JSON.stringify(z.wer)})`);
+        soll(z.teile <= z.max, `der Weg ohne Schranke: ${z.teile} Teil-Schritte in einem Schritt (Schranke ${z.max})`);
+        soll(z.bruch && z.m != null, `ein Weg ohne Maß bricht nicht laut (Bruch ${z.bruch}, der Leib ${z.m} m)`);
+    }
     if (name === "todlage") {
         soll(z.imTod === 0, `der Tod rechnet seine Lage im Takt: ${z.imTod} Karten-Lesungen (Soll 0)`);
         soll(
@@ -3787,6 +3824,10 @@ const TAETER = {
         ["gestalt-takt", /der Takt zerlegt die Gestalt einer kalten Gattung: [1-9]/],
     ],
     todlage: [["todlage-takt", /der Tod rechnet seine Lage im Takt: [1-9]/]],
+    leibtakt: [
+        ["leibtakt-jeruf", /der Leib je Bild \d{2,}× gerechnet/],
+        ["leibtakt-schranke", /der Weg ohne Schranke: \d{3,} Teil-Schritte/],
+    ],
     tiersatz: [
         ["tiersatz-kopf", /hängen an der Kopfzahl/],
         ["tiersatz-blick", /Satz außer Blick/],

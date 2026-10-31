@@ -48,6 +48,7 @@ const DAUER_S = {
     ferngang: 1,
     gestalt: 1,
     todlage: 1,
+    leibtakt: 1,
     bewohner: 660,
     begegnung: 10,
     tiersatz: 7,
