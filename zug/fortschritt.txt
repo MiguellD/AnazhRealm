@@ -1369,3 +1369,4 @@
 2026-11-01 00:13:54 z112-abab START 2 Zellen
 2026-11-01 00:26:08 z112-abab w-ego VERLÄNGERN 12.2 · 1/2 (2+2)
 2026-11-01 00:42:16 z112-abab stadt VERLÄNGERN 16.1 · 2/2 (2+2)
+2026-11-01 00:55:06 z112-abab w-ego(4+4) nicht-langsamer 12.7 · verlängert (4+4)
