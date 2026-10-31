@@ -45,16 +45,16 @@ hauptLauf(async () => {
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.geisttor && f.recipes.kathedrale);
         // DIE DYNAMISCHE WAHRHEIT aus dem lebenden Zustand: jeder handgeschriebene Portal-Bauplan mit studioGestalt (die
         // Auto-Klone des Register-Chokepoints tragen sie auch — ihre Wahrheit prüft gate:rezept-katalog).
-        res.liveSet = Object.keys(r.state.blueprints || {})
+        res.liveSet = Object.keys(st.blueprints || {})
             .filter((n) => {
-                const bp = r.state.blueprints[n] || {};
+                const bp = st.blueprints[n] || {};
                 return typeof bp.studioGestalt === "string" && !bp._foundryAutoSpecies && bp.role === "portal";
             })
             .sort();
-        res.gestalt = Object.fromEntries(res.liveSet.map((n) => [n, r.state.blueprints[n].studioGestalt]));
+        res.gestalt = Object.fromEntries(res.liveSet.map((n) => [n, st.blueprints[n].studioGestalt]));
         // (A) jede Gestalt steht im LIVE-Buch; jeder Träger trägt sein Ziel (portalMeta.world).
         for (const [name, gestalt] of Object.entries(res.gestalt)) {
-            const bp = r.state.blueprints[name];
+            const bp = st.blueprints[name];
             res.a[name] = {
                 inBook: !!(f && f.recipes && Object.prototype.hasOwnProperty.call(f.recipes, gestalt)),
                 kind: f && f.recipes && f.recipes[gestalt] ? f.recipes[gestalt].kind : null,
@@ -108,9 +108,9 @@ hauptLauf(async () => {
     // ===== EVAL 2: (C) End-to-End-Spawn + (D) Funktion =====
     const outCD = await page.evaluate(async () => {
         const res = { c: {}, d: {} };
-        const bp = r.state.blueprints.welt_terrain;
+        const bp = st.blueprints.welt_terrain;
         res.d.metaBefore = JSON.stringify(bp.portalMeta);
-        const pm = r.state.playerMesh.position;
+        const pm = st.playerMesh.position;
         const sx = pm.x + 6; // im Nah-Band des Tors (porta lod.budget.gate: Stufe 0 bis 9,5 m) — nur sie trägt die Flügel
         const sz = pm.z;
         const sy = r.getTerrainHeightAt(sx, sz) + 0.5;
@@ -136,11 +136,11 @@ hauptLauf(async () => {
         res.c.zuege = new Set((entry.instSlots || []).filter((s) => !/#S$/.test(String(s.key))).map((s) => s.key)).size;
         // W8 — die Budget-Zeile des Tors (LIVE-Buch nach dem Zweit-Kern-Merge) und die Flügel-Slots, die
         // `_tickTorFluegel` dreht (Slots, deren Instanz-Gruppe ein Scharnier trägt).
-        const _rc = r.constructor._studioRenderConfig;
+        const _rc = AnazhRealm._studioRenderConfig;
         const _gz = _rc && _rc.lod && _rc.lod.budget && _rc.lod.budget.gate ? _rc.lod.budget.gate[0] : null;
         res.c.drawBudget = _gz ? _gz.draws : null;
         res.c.fluegelSlots = (entry.instSlots || []).filter((s) => {
-            const g = r.state.archInstanceGroups && r.state.archInstanceGroups.get(s.key);
+            const g = st.archInstanceGroups && st.archInstanceGroups.get(s.key);
             return !!(g && g.tuer);
         }).length;
         res.c.allSlotsFoundry =
@@ -148,16 +148,16 @@ hauptLauf(async () => {
         res.c.meshNull = entry.mesh === null || entry.mesh === undefined;
         // KEIN Doppel-Bild: keine LEBENDE welt_terrain-Gruppe ausserhalb des f:-Namensraums.
         res.c.partGroupsAlive = 0;
-        if (r.state.archInstanceGroups) {
-            for (const [key, g] of r.state.archInstanceGroups) {
+        if (st.archInstanceGroups) {
+            for (const [key, g] of st.archInstanceGroups) {
                 if (String(key).indexOf("welt_terrain#") === 0 && String(key).indexOf("#f:") < 0) {
                     if ((g.liveCount || 0) > 0 || (g.mesh && g.mesh.count > 0)) res.c.partGroupsAlive++;
                 }
             }
         }
         // (D) FUNKTION intakt.
-        res.d.metaAfter = JSON.stringify(r.state.blueprints.welt_terrain.portalMeta);
-        res.d.role = r.state.blueprints.welt_terrain.role;
+        res.d.metaAfter = JSON.stringify(st.blueprints.welt_terrain.portalMeta);
+        res.d.role = st.blueprints.welt_terrain.role;
         res.d.affPortal = !!(entry.affordances && entry.affordances.isPortal === true);
         res.d.blockerCount = Array.isArray(entry.blockerAABBs) ? entry.blockerAABBs.length : 0;
         // Blocker relativ zur Entry-Position (fuer die Regime-Paritaet in EVAL 4).
@@ -211,7 +211,7 @@ hauptLauf(async () => {
     const outE = await page.evaluate(async (GESTALT) => {
         const out = {};
         for (const [name, gestalt] of Object.entries(GESTALT)) {
-            const bp = r.state.blueprints[name];
+            const bp = st.blueprints[name];
             // Alt-BBox aus den Parts (position +- size/2 — die Part-Bau-Huelle, scale 1).
             let mnx = 1e9,
                 mxx = -1e9,
@@ -278,7 +278,7 @@ hauptLauf(async () => {
         window.__anazhGateNoFoundry = true;
         try {
             res.resolver = r._foundryPresetForEntry({ type: "welt_terrain" });
-            const pm = r.state.playerMesh.position;
+            const pm = st.playerMesh.position;
             const sx = pm.x + 24;
             const sz = pm.z + 6;
             const sy = r.getTerrainHeightAt(sx, sz) + 0.5;

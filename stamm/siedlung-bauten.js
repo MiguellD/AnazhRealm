@@ -318,15 +318,16 @@ class AnazhRealm_siedlung_bauten {
     // LOD-Key → _archInstanceAdd. blockerAABBs bleiben (LOD ist reine Render-Schicht).
     _switchArchitectureLOD(entry, newLOD, dist) {
         if (!entry) return false;
-        // Platzierte Studio-Architektur (instFoundry) wechselt über den EINEN Foundry-Zweig unten; der
-        // Grammatik-Zweig (grown_..._lodN) bleibt den Wald-Varianten (_lodSpecies + _lodVariantIndex).
+        // Studio-Architektur wechselt über den EINEN Foundry-Zweig unten; der Grammatik-Zweig (grown_..._lodN) bleibt den
+        // Wald-Varianten (_lodSpecies + _lodVariantIndex).
         const treeLike = !!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex);
-        if (!treeLike && entry.instFoundry !== true) return false;
-        // Foundry-LOD: kennt die Foundry die Art, ist sie die EINE Quelle — auch für einen KALTEN Baum ohne
-        // instFoundry: ihre Stufe servieren ODER den aktuellen Zustand halten, NIE Grammatik (sonst erweckt
+        // Foundry-LOD: kennt die Foundry die Art, ist sie die EINE Quelle — für JEDEN Eintrag ihrer Art, platziert oder KALT:
+        // ihre Stufe servieren ODER den aktuellen Zustand halten, NIE Grammatik (sonst erweckt
         // der Switch einen gewachsenen Nachbau). Die Distanz-Wahl newLOD führt; kein entry.type-Wechsel —
         // das Studio-LOD lebt im leafKey (`f:preset|gestalt|lod`). Grammatik nur bei Foundry aus oder
-        // unbekannter Art.
+        // unbekannter Art. Die Zulassung liest die Art, nie die Geschichte (lod.K5): bis lod-stufen ließ der Wechsel einen Bau
+        // nur mit `instFoundry` zu — der Marke einer früheren Platzierung —, ein kalt gesetztes Haus, Tor oder Fahrzeug stellte
+        // er nie (die Stufen-Linse an der Mess-Wiese: Haus, Haus, Wagen „Stufe nicht gestellt").
         if (this._foundryEnabled()) {
             const preset = this._foundryPresetForEntry(entry);
             if (preset) {
