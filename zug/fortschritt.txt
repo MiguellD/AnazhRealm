@@ -1083,3 +1083,9 @@
 2026-10-31 07:54:53 takt27c-gtx START 15 Stationen in 1 Läufen
 2026-10-31 08:05:04 takt27c-gtx mensch.K1#1,mensch.K5#1,studios.K2#2,studios.K3#2,bauen.K1#2,bauen.K5#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,fahrzeug.K2#1,fahrzeug.K2#2,ankunft.K2#1,ankunft.K3#1,klang.K4#1,speicher.K4#2 OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN 10.1 · 15/15
 2026-10-31 08:22:12 takt28a-gtx START 17 Stationen in 1 Läufen
+2026-10-31 08:37:29 takt28a-gtx mensch.K1#1,vegetation.K1#1,vegetation.K5#1,licht.K2#2,licht.K5#1,material.K2#1,material.K1#1,licht.K3#1,licht.K3#2,studios.K4#1,siedlung.K1#2,spielgang.K3#1,fahrzeug.K2#2,profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K3#1 OFFEN/ROT/GRÜN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/ROT/OFFEN/OFFEN/ROT/ROT/ROT 15.1 · 17/17
+2026-10-31 08:37:53 takt28b-gtx START 21 Stationen in 1 Läufen
+2026-10-31 08:53:05 takt28b-gtx oekologie.K4#2,mensch.K5#1,mensch.K4#1,haar.K2#1,lod.K1#1,lod.K5#1,material.K4#1,studios.K2#2,studios.K3#2,bauen.K1#2,bauen.K5#2,fahrzeug.K3#1,siedlung.K4#2,leib.K1#2,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,profiband.K5#1,klang.K2#1,klang.K4#1,speicher.K4#2 OFFEN/OFFEN/ROT/ROT/OFFEN/OFFEN/ROT/OFFEN/OFFEN/OFFEN/OFFEN/GRÜN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/ROT/OFFEN/OFFEN/OFFEN 15.1 · 21/21
+2026-10-31 08:53:29 b-kalt-94c0 START 1 Stationen
+2026-10-31 08:58:27 b-kalt-94c0 ankunft-kalt.sh Exit0 5.0 · 1/1
+2026-10-31 08:58:48 b-kalt-ec98 START 1 Stationen
