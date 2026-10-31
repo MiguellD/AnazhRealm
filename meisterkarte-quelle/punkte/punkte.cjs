@@ -33,7 +33,8 @@
 //        nur; jede Probe-Station in der ERSTEN Zeile: die Sitzung ist ein Lauf) — der Messplatz der OMEN fährt je Zeile ein
 //        `run --nur`, nie einen Zwilling zweimal, nie eine zweite Welt
 //   node punkte.cjs grundstellung   (in einer Probe der Sitzung) der Grund der Sitzung (PUNKTE_SITZUNG_GRUND) kehrt in die Welt an
-//        WERKBANK_PORT zurück, ohne Neuladen (`_grundstellung` des Spiels); ROT nennt die Größen, die vom Grund abweichen
+//        WERKBANK_PORT zurück, ohne Neuladen (`_grundstellung` des Spiels), samt der Zeichenkette der Seite (zeichnerKette); ROT nennt
+//        die Größen, die vom Grund abweichen
 //   node punkte.cjs grundprobe --baum <Spiel-Baum> [--mutante <zeile>] [--port P]   (Null-Renderer) die Grundstellung der Sitzung
 //        an einer Welt des Baums: Grund → graben, bauen, Ritt, Uhr, Brand, Regen, Ort-Takt → zurück, keine Größe weicht ab; die
 //        Mutante (ein Wort der GRUND_TAFEL schweigt) ist ROT beim Namen
@@ -80,6 +81,8 @@
 // KEIN URTEIL IST KEIN ROT (w4-sitzung-urteil, keinUrteil in fahreGruppe — die EINE Stelle, an der Stations-Ergebnisse entstehen): ein
 // Lauf, dessen Urteils-Zeile fehlt, dessen Linse vor ihr abstürzt oder dessen eigene Frist reißt, ist UNGEMESSEN beim Namen (der Grund
 // wörtlich in m.ungemessen), nie ein frisches ROT — die Ratsche hält gegen ihn; ein echtes ROT (die Linse misst, das Maß reißt) bleibt.
+// Ebenso eine Probe der Sitzung, die die Zeichenkette der Seite verändert ließ (w4-grund-zeichner, zeichnerKette in fahreSitzung): ein
+// Werkzeug-Bruch beim Namen der Größe, auch über ihr eigenes GRÜN — die Grundstellung danach gibt der Seite zurück, was sie lieh.
 // ZWEI WÄNDE (24.10., Prüfung der Buchung 61 → 80): (PFAD) jeder `pfad`-Glob trifft am Mess-SHA und am Kopf mindestens eine
 // Datei, sonst ist die Station ROT — ein toter Glob macht R6 blind (die KAMPF-Liste nannte einen Schmiede-Kern, den es nicht gab);
 // (GPU) eine GPU-Station zählt nur, wenn ihr Lauf beweist, dass eine Linse auf der Karte zeichnete: ein Adapter eines Herstellers
@@ -702,6 +705,8 @@ async function baumSperre(repo, geraet) {
 //   die GRUND_TAFEL des Spiels: Ritt (aussteigen), Sicht, Blick, Nässe und Wetter-Übergang, die Zellen des Brands;
 //   GRUND_SEITE (hier): die Globalen der Werkbank an der Seite (`umstellen`: Ort-Takt, Stellgrößen, Bahn, Dorf-Zug) — was beim Grund
 //     fehlte, fällt —, das Fenster 1920×1080 (`/fenster`);
+//   die ZEICHENKETTE der Seite (hier, zeichnerKette): Renderer und seine Zeichen-Methoden, Post-Kette, `postProcessingFailed`, Gerät,
+//     Faden und Sync-Stelle — vor und nach JEDER Probe gelesen; wer sie verändert ließ, ist ein Werkzeug-Bruch beim Namen;
 //   nie zurück: die Welt-Uhr (`spielZeit`, monoton, feld.K2#2), die Würfe des Gesetzes (sie folgen dem Ort, speicher.K3), die Caches.
 // Weicht nach dem Rückspielen eine Größe vom Grund ab, trägt die Welt nicht mehr: die übrigen Proben sind ungemessen beim Namen der
 // Größe, nie ROT. Verließ eine Probe die Welt (ein Tor), kehrt die Seite durch die Tür des Spiels zurück (`_weltBetreten`, dann
@@ -746,6 +751,142 @@ function wegeAbweichung(soll, ist) {
     return "wege" + (neu.length ? " +" + neu.length + " " + liste(neu) : "") + (marken.length ? " (" + marken.slice(0, 4).join(", ") + ")" : "") +
         (fort.length ? " −" + fort.length + " " + liste(fort) : "");
 }
+// DIE ZEICHENKETTE DER SEITE (w4-grund-zeichner; champion bild-klasse 31.10.: der Strom der Wasser-Wand, `wasserStrom` in
+// scripts/lib/wasser-linse.cjs, schaltete seit 18.10. `renderer.render` stumm und `postProcessingFailed` an und gab beides nie zurück —
+// seit die Sitzung zwischen den Proben nicht neu lädt, erbte jede Bild-Probe nach gelaende.K2#1 den toten Renderer: tiere.K1#2 „reading
+// 'format'“, tiere.K3#2 „tier-Pixel 0/0/0/0“, ein gebuchter Punkt fiel als Rückfall, und keine Probe nannte den Täter). Der Abdruck je
+// Glied der Kette, die das Bild der Seite zeichnet: der Renderer (Klasse, Leinwand im Dokument, jede EIGENE Funktion über einer geerbten —
+// ein Fremdkörper; der Haken des Stroms trägt `__punkteHaken` und zählt nie), die Post-Kette (da, ihre Fremdkörper), die Weiche
+// `postProcessingFailed`, das Gerät (`_deviceLost`: ohne es zeichnet kein Bild), dazu, was der Strom der Welt lieh: der Faden
+// (`voxelWorker`) und die Sync-Stelle (`_syncStelle`). Je Seite merkt sie sich die Glieder selbst (`window.__punkteZeichner`, beim
+// ersten Ruf in einer Seite, die dem Soll gleicht): Renderer, Post-Kette, Faden und JEDE eigene Funktion samt Haken — ein Tausch in
+// derselben Seite weicht ab, auch unter gleichem Namen (der Null-Renderer trägt seine Methoden selbst). Ein Glied, das erst später
+// entsteht (die Post-Kette mit dem ersten Bild, `_ensurePostProcessing`), ist nie eine Abweichung, eines, das fällt, immer. Mit `soll`
+// (ein Abdruck): die Abweichungen beim Namen (`zeichner.<Glied>`, je Fremdkörper `zeichner.renderer.<Methode>`) und je Größe WIE (wie
+// `grundWie`); mit `heilen` gibt die Seite zurück, was verliehen blieb (wie `leihe`): ein Fremdkörper fällt — die Welt ruft wieder ihren
+// Prototyp —, ein getauschtes Glied kehrt aus dem Gedächtnis der Seite, Weiche und Sync-Stelle stehen auf dem Soll; das Gerät heilt
+// nie (nur die Tür). Läuft in der Seite (r = die Welt): { abdruck, anders, wie, bleibt } — ohne `soll` nur { abdruck } — oder { fehler }
+function zeichnerKette(r, soll, heilen) {
+    const st = r && r.state;
+    if (!st) return { fehler: "keine Welt in der Seite" };
+    const kurz = (f) => String(f).replace(/\s+/g, " ").slice(0, 60);
+    // die eigenen Funktionen eines Glieds: über einer geerbten, ohne den Haken des Stroms (der Abdruck), oder alle (das Gedächtnis)
+    const eigene = (o, alle) => {
+        const m = {};
+        if (!o || (typeof o !== "object" && typeof o !== "function")) return m;
+        for (const k of Object.getOwnPropertyNames(o)) {
+            const d = Object.getOwnPropertyDescriptor(o, k);
+            if (!d || typeof d.value !== "function") continue;
+            if (alle) {
+                m[k] = d;
+                continue;
+            }
+            if (d.value.__punkteHaken) continue;
+            let p = Object.getPrototypeOf(o), e;
+            while (p && !(e = Object.getOwnPropertyDescriptor(p, k))) p = Object.getPrototypeOf(p);
+            if (e && typeof e.value === "function" && e.value !== d.value) m[k] = d;
+        }
+        return m;
+    };
+    const fremd = (o) => Object.fromEntries(Object.entries(eigene(o, false)).map(([k, d]) => [k, kurz(d.value)]));
+    const abdruck = () => {
+        const R = st.renderer, P = st.postProcessing;
+        return {
+            renderer: R ? { klasse: (R.constructor && R.constructor.name) || "?", lose: !!R.domElement && R.domElement.isConnected === false, fremd: fremd(R) } : null,
+            post: P ? { fremd: fremd(P) } : null,
+            postProcessingFailed: st.postProcessingFailed === true,
+            geraet: st._deviceLost === true,
+            faden: !!st.voxelWorker,
+            syncStelle: r._syncStelle == null ? null : String(r._syncStelle),
+        };
+    };
+    const merke = () => ({ renderer: st.renderer || null, post: st.postProcessing || null, faden: st.voxelWorker || null,
+        eigen: { renderer: eigene(st.renderer, true), post: eigene(st.postProcessing, true) } });
+    const Z = window.__punkteZeichner || null;
+    if (!soll) {
+        if (!Z) window.__punkteZeichner = merke();
+        else {
+            // was erst jetzt entstand (ein Glied, der Haken des Stroms an ihm), trägt das Gedächtnis ab jetzt
+            if (!Z.renderer && st.renderer) (Z.renderer = st.renderer), (Z.eigen.renderer = eigene(st.renderer, true));
+            if (!Z.post && st.postProcessing) (Z.post = st.postProcessing), (Z.eigen.post = eigene(st.postProcessing, true));
+            if (!Z.faden && st.voxelWorker) Z.faden = st.voxelWorker;
+            for (const [g, o] of [["renderer", Z.renderer], ["post", Z.post]])
+                for (const [k, d] of Object.entries(eigene(o, true))) if (d.value.__punkteHaken) Z.eigen[g][k] = d;
+        }
+        return { abdruck: abdruck() };
+    }
+    const vergleich = () => {
+        const ist = abdruck(), anders = [], wie = {};
+        const nenne = (k, w) => {
+            if ("zeichner." + k in wie) return;
+            anders.push("zeichner." + k);
+            wie["zeichner." + k] = w;
+        };
+        const sr = soll.renderer, ir = ist.renderer;
+        const name = (x) => (x ? x.klasse + (x.lose ? " (Leinwand lose)" : "") : "keiner");
+        if (sr && (!ir || sr.klasse !== ir.klasse || sr.lose !== ir.lose)) nenne("renderer", name(sr) + " → " + name(ir));
+        else if (Z && Z.renderer && st.renderer !== Z.renderer) nenne("renderer", "getauscht (" + name(ir) + ")");
+        if (soll.post && !ist.post) nenne("postKette", "fort");
+        else if (Z && Z.post && st.postProcessing !== Z.post) nenne("postKette", st.postProcessing ? "getauscht" : "fort");
+        // je Glied: ein Fremdkörper beim Namen (über das Soll), in derselben Seite jeder Tausch und jede gefallene eigene Funktion
+        const glied = (g, s, i, o, ze) => {
+            for (const k of Object.keys((i && i.fremd) || {}).sort()) if (!(s && s.fremd && k in s.fremd)) nenne(g + "." + k, "eigen: " + i.fremd[k]);
+            for (const k of Object.keys(ze || {}).sort()) {
+                const d = Object.getOwnPropertyDescriptor(o, k);
+                if (!d) nenne(g + "." + k, "fehlt");
+                else if (d.value !== ze[k].value && !(d.value && d.value.__punkteHaken)) nenne(g + "." + k, "getauscht: " + kurz(d.value));
+            }
+        };
+        glied("renderer", sr, ir, st.renderer, Z && st.renderer && st.renderer === Z.renderer ? Z.eigen.renderer : null);
+        glied("postKette", soll.post, ist.post, st.postProcessing, Z && st.postProcessing && st.postProcessing === Z.post ? Z.eigen.post : null);
+        for (const [k, a, b] of [["postProcessingFailed", soll.postProcessingFailed, ist.postProcessingFailed], ["geraet", soll.geraet, ist.geraet],
+            ["syncStelle", soll.syncStelle, ist.syncStelle]])
+            if (a !== b) nenne(k, String(a) + " → " + String(b));
+        if (soll.faden && !ist.faden) nenne("faden", "da → keiner");
+        return { ist, anders, wie };
+    };
+    const vor = vergleich();
+    if (heilen && vor.anders.length) {
+        if (Z && Z.renderer && st.renderer !== Z.renderer) st.renderer = Z.renderer;
+        if (Z && Z.post && st.postProcessing !== Z.post) st.postProcessing = Z.post;
+        // je Glied: ein Fremdkörper fällt (ohne Gedächtnis nur, was das Soll nicht trägt), ein getauschtes oder gefallenes Glied kehrt aus dem
+        // Gedächtnis; der Haken des Stroms bleibt
+        const zurueck = (o, s, ze) => {
+            if (!o) return;
+            const erbt = eigene(o, false);
+            for (const [k, d] of Object.entries(eigene(o, true))) {
+                if (d.value.__punkteHaken) continue;
+                if (ze && ze[k]) {
+                    if (ze[k].value !== d.value) Object.defineProperty(o, k, ze[k]);
+                } else if (k in erbt && (ze || !(s && s.fremd && k in s.fremd))) delete o[k];
+            }
+            if (ze) for (const [k, d] of Object.entries(ze)) if (!Object.getOwnPropertyDescriptor(o, k)) Object.defineProperty(o, k, d);
+        };
+        zurueck(st.renderer, soll.renderer, Z && st.renderer === Z.renderer ? Z.eigen.renderer : null);
+        zurueck(st.postProcessing, soll.post, Z && st.postProcessing && st.postProcessing === Z.post ? Z.eigen.post : null);
+        if ((st.postProcessingFailed === true) !== soll.postProcessingFailed) st.postProcessingFailed = soll.postProcessingFailed;
+        if (soll.faden && !st.voxelWorker && Z && Z.faden) st.voxelWorker = Z.faden;
+        if ((r._syncStelle == null ? null : String(r._syncStelle)) !== soll.syncStelle) r._syncStelle = soll.syncStelle;
+    }
+    const nach = heilen && vor.anders.length ? vergleich() : vor;
+    // das Gedächtnis einer neuen Seite nur aus einer, die dem Soll gleicht
+    if (!Z && !nach.anders.length) window.__punkteZeichner = merke();
+    return { abdruck: nach.ist, anders: vor.anders, wie: vor.wie, bleibt: nach.anders };
+}
+const zeichnerCode = (soll, heilen) => "return (" + zeichnerKette + ")(r, " + JSON.stringify(soll || null) + ", " + !!heilen + ");";
+// EIN Ruf der Zeichenkette an die Welt `w` (zeichnerKette): ihr Ergebnis oder { fehler } beim Grund — wirft nie
+async function zeichnerRuf(w, soll, heilen) {
+    try {
+        const a = await rufFrist(w, "/eval", { code: zeichnerCode(soll, heilen) }, 30000);
+        const e = a && a.ergebnis;
+        if (!e || typeof e !== "object") return { fehler: String((a && a.fehler) || "kein Ergebnis: " + JSON.stringify(a)).slice(0, 300) };
+        return e;
+    } catch (e) {
+        return { fehler: String((e && e.message) || e).split("\n")[0] };
+    }
+}
+// der Werkzeug-Bruch einer Probe beim Namen jeder Größe, die sie an der Zeichenkette verändert ließ
+const zeichnerBruch = (z) => "Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (" + z.anders.map((k) => k + " " + z.wie[k]).join(" · ") + ")";
 const GRUND_NIMM =
     'if (typeof r._grundstellung !== "function") return { fehlt: true }; const t0 = performance.now(); const g = r._grundstellung(); ' +
     "return { grund: g.grund, n: Object.keys(g.abdruck).length, ms: +(performance.now() - t0).toFixed(1), welt: r.state.worldMeta.worldId, " +
@@ -1011,8 +1152,8 @@ async function sitzungStoppen(s, stop) {
     await schlossLoesen(s.schloss);
     return ende;
 }
-// DER GRUND der Welt (`_grundstellung` des Spiels) in die Datei `datei` (die Grundstellung der Sitzung und jeder Probe liest sie):
-// Rückgabe { ok, n (Größen), s, grund? }
+// DER GRUND der Welt (`_grundstellung` des Spiels) in die Datei `datei` (die Grundstellung der Sitzung und jeder Probe liest sie),
+// daneben die Zeichenkette der Seite (`zeichner`, zeichnerKette): Rückgabe { ok, n (Größen), s, grund? }
 async function grundNehmen(w, datei) {
     const t0 = Date.now();
     try {
@@ -1020,6 +1161,9 @@ async function grundNehmen(w, datei) {
         const e = a && a.ergebnis;
         if (e && e.fehlt) throw new Error("der Kopf trägt `_grundstellung` nicht (Karte w4-grundstellung)");
         if (!e || typeof e.grund !== "string") throw new Error("kein Grund: " + JSON.stringify(a).slice(0, 300));
+        const z = await zeichnerRuf(w, null);
+        if (z.fehler || !z.abdruck) throw new Error("die Zeichenkette der Seite: " + (z.fehler || JSON.stringify(z).slice(0, 200)));
+        e.zeichner = z.abdruck;
         fs.writeFileSync(datei, JSON.stringify(e));
         return { ok: true, n: e.n, s: +((Date.now() - t0) / 1000).toFixed(1) };
     } catch (e) {
@@ -1035,6 +1179,9 @@ async function grundNehmen(w, datei) {
 // Probe legte, geht die Grundstellung durch die Tür — die Lade-Kette des Speicher-Gesetzes baut Wege-Karte und Natur aus dem Grund
 // neu (an Ort und Stelle bleiben beide warm, `_standRueckspielen`); steht der Weg auch danach, ist die Welt ROT beim Namen des Wegs.
 // Rückgabe dann zusätzlich `wege` (der Weg, der durch die Tür ging)
+// DIE ZEICHENKETTE ZURÜCK (w4-grund-zeichner, zeichnerKette): nach dem Stand gibt die Seite zurück, was eine Probe ihr an der Kette
+// verliehen ließ (`kette`: die Größen, die an Ort und Stelle zurückkehrten); was so nie zurückkehrt (das Gerät, ein Glied ohne
+// Gedächtnis der Seite), geht durch die Tür (`ketteTuer`) — steht es auch danach, ist die Welt ROT beim Namen der Größe
 async function grundstellung(w, datei, o = {}) {
     const t0 = Date.now();
     try {
@@ -1045,22 +1192,34 @@ async function grundstellung(w, datei, o = {}) {
             if (!a || !a.ergebnis) throw new Error("/eval: " + JSON.stringify(a).slice(0, 300));
             return a.ergebnis;
         };
+        const kette = async () => {
+            if (!g.zeichner) return null;
+            const k = await zeichnerRuf(w, g.zeichner, true);
+            if (k.fehler || !Array.isArray(k.bleibt)) throw new Error("die Zeichenkette der Seite: " + (k.fehler || JSON.stringify(k).slice(0, 200)));
+            return k;
+        };
         let z = o.abbruch ? { ok: false, welt: null } : await spiel(), tuer = false;
         const wege = z.ok ? (z.anders || []).find((a) => /^wege\b/.test(a)) || null : null;
-        if (wege) z = { ok: false, welt: null };
+        const k1 = z.ok && !wege ? await kette() : null;
+        const ketteTuer = k1 && k1.bleibt.length ? k1.bleibt : null;
+        if (wege || ketteTuer) z = { ok: false, welt: null };
         if (!z.ok && z.welt !== g.welt) {
             const t = await rufFrist(w, "/eval", { code: GRUND_TUER(g) }, 60000);
             if (!t || !t.ergebnis || !t.ergebnis.ok) throw new Error("die Tür zurück in die Welt " + g.welt + ": " + JSON.stringify(t).slice(0, 300));
             const n = await rufFrist(w, "/reload", {}, GRUNDSTELLUNG_S * 1000);
             if (!n || n.neu !== true) throw new Error("/reload: " + JSON.stringify(n).slice(0, 300));
             (z = await spiel()), (tuer = true);
+            const k2 = z.ok ? await kette() : null;
+            if (k2 && k2.bleibt.length)
+                (z.anders = (z.anders || []).concat(k2.bleibt)), (z.wie = { ...(z.wie || {}), ...Object.fromEntries(k2.bleibt.map((k) => [k, k2.wie[k] || "?"])) });
         }
         if (!z.ok) throw new Error(z.grund || "das Rückspielen scheitert");
         if (z.anders.length) throw new Error("abweichend vom Grund: " + z.anders.join(" ") + (z.wie ? " · wie " + JSON.stringify(z.wie).slice(0, 600) : ""));
         // das Fenster wie beim Start der Welt (1920×1080): eine Probe davor stellte es vielleicht anders
         const f = await rufFrist(w, "/fenster", {}, 30000);
         if (!f || !Array.isArray(f.fenster)) throw new Error("/fenster: " + JSON.stringify(f).slice(0, 300));
-        return { ok: true, s: +((Date.now() - t0) / 1000).toFixed(1), ms: z.ms, neu: z.neu, ...(tuer ? { tuer } : {}), ...(wege ? { wege } : {}) };
+        return { ok: true, s: +((Date.now() - t0) / 1000).toFixed(1), ms: z.ms, neu: z.neu, ...(tuer ? { tuer } : {}), ...(wege ? { wege } : {}),
+            ...(k1 && k1.anders.length && !ketteTuer ? { kette: k1.anders } : {}), ...(ketteTuer ? { ketteTuer } : {}) };
     } catch (e) {
         return { ok: false, s: +((Date.now() - t0) / 1000).toFixed(1), grund: String((e && e.message) || e).split("\n")[0] };
     }
@@ -1076,6 +1235,10 @@ async function grundstellung(w, datei, o = {}) {
 // `--mutante weg` (w4-sitzung-reif): eine Probe legt ihren Weg wie tempo4 (`_stlWegeBuild` mit der Marke `probe:grundprobe`, die Natur
 // weicht ihm) und räumt ihn nie — gefangen nur, wenn das Rückspielen an Ort und Stelle genau ihn nennt (die Wege-Linse,
 // `wegeAbweichung`); mit `--tuer` spielt die Grundprobe danach wie die Sitzung den Grund durch die Tür zurück, und der Weg ist fort.
+// DIE ZEICHENKETTE (w4-grund-zeichner, zeichnerKette): der Grund trägt sie wie in der Sitzung (grundNehmen), nach dem Rückspielen gibt die
+// Seite sie zurück (grundstellung) — keine Tat des Spiels darf sie berühren (sonst ROT beim Namen der Größe); `--mutante zeichner`: eine
+// Probe bricht sie wie der alte Strom der Wasser-Wand, der mitten im Ring warf (Renderer stumm, Post-Kette aus, ohne Faden, an der
+// Sync-Stelle „naht“) — gefangen nur, wenn genau diese fünf Größen abweichen und an Ort und Stelle zurückkehren.
 async function grundProbe(o) {
     const baum = path.resolve(o.baum || "."), port = Number(o.port || 4741);
     const { statikServer, nullSeite } = require(path.join(baum, "scripts", "lib", "welt-boot.cjs"));
@@ -1094,6 +1257,9 @@ async function grundProbe(o) {
         await ev("r.createBlueprint(\"grundprobe_alt\", \"Grundprobe alt\"); r.state.blueprints.grundprobe_alt.parts.push({ shape: \"box\", material: \"holz\", position: { x: 0, y: 0.5, z: 0 }, size: { x: 1, y: 1, z: 1 } });");
         const g = await ev(GRUND_NIMM);
         if (!g || typeof g.grund !== "string") throw new Error("kein Grund: " + JSON.stringify(g).slice(0, 300));
+        const zg = await ev(zeichnerCode(null));
+        if (!zg || !zg.abdruck) throw new Error("die Zeichenkette der Seite: " + JSON.stringify(zg).slice(0, 300));
+        g.zeichner = zg.abdruck;
         const tat = await ev(`const st = r.state, q = st.playerMesh.position.clone(), cs = r.constructor.LIFE_FIELD.cell;
             const y = (dx) => r._terrainMacroSurfaceY(q.x + dx, q.z);
             const edit = r.carveVoxel(q.x + 6, y(6) - 1, q.z, 2);
@@ -1131,9 +1297,24 @@ async function grundProbe(o) {
             if (mut === "wesen") r._restoreCreatureFromSnapshot = () => false;
             if (mut === "gefuehl") { const S0 = r.spawnCreatures.bind(r); r.spawnCreatures = (...a) => { const x = S0(...a); r.state.creatureEmotions = r.state.creatureEmotions.map(() => "happy"); return x; }; }
             if (mut === "erdbau") { const L = r.loadState.bind(r), E = st.worldMeta.erdbau; r.loadState = (s) => { const x = L(s); r.state.worldMeta.erdbau = E; return x; }; }
-            return { edit, bau, ritt, hand, weg, wegFlaeche, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, tag: st.dayLengthMinutes, plan, erd, tiere, mutante: !!z || r._uhrSetzen.length === 0 || ["bauplaene", "werk", "erdbau", "wesen", "gefuehl", "weg"].includes(mut) };`);
+            // die Mutante der Zeichenkette: der alte Strom der Wasser-Wand (wasserStrom bis 31.10.), der im Ring warf — nichts kehrt zurück
+            if (mut === "zeichner") {
+                st.renderer.render = function () {};
+                if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
+                st.postProcessingFailed = true;
+                st.voxelWorker = null;
+                r._syncStelle = "naht";
+            }
+            return { edit, bau, ritt, hand, weg, wegFlaeche, uhr: st.timeOfDay, feuer: st.brandFeld ? st.brandFeld.size : 0, wetter: st.weather, tag: st.dayLengthMinutes, plan, erd, tiere, mutante: !!z || r._uhrSetzen.length === 0 || ["bauplaene", "werk", "erdbau", "wesen", "gefuehl", "weg", "zeichner"].includes(mut) };`);
         const z = await ev(grundSpielen(g));
-        const soll = !o.mutante ? [] : { uhr: ["timeOfDay"], bauplaene: ["blueprints"], werk: ["architectures"], erdbau: ["worldMeta.erdbau"], wesen: ["creatures", "creatureEmotions"], gefuehl: ["creatureEmotions"], weg: ["wege +1 [x0,z0,x1,z1/Formen]"] }[o.mutante] || ["augenblick." + o.mutante];
+        // die Zeichenkette zurück wie in der Sitzung (grundstellung): je abweichende Größe beim Namen, dann, was bleibt
+        const zk = await ev(zeichnerCode(g.zeichner, true));
+        // die Mutante bricht, was der Grund heil trug (der Null-Renderer zeichnet nie über die Post-Kette: seine Weiche steht schon im Grund)
+        const gz = g.zeichner;
+        const zSoll = o.mutante !== "zeichner" ? [] : ["zeichner.renderer.render", "zeichner.renderer.renderAsync"].concat(gz.postProcessingFailed ? [] : ["zeichner.postProcessingFailed"],
+            gz.syncStelle === "naht" ? [] : ["zeichner.syncStelle"], gz.faden ? ["zeichner.faden"] : []);
+        const zOk = !!zk && Array.isArray(zk.anders) && [...zk.anders].sort().join(" ") === [...zSoll].sort().join(" ") && zk.bleibt.length === 0;
+        const soll = !o.mutante ? [] : { uhr: ["timeOfDay"], bauplaene: ["blueprints"], werk: ["architectures"], erdbau: ["worldMeta.erdbau"], wesen: ["creatures", "creatureEmotions"], gefuehl: ["creatureEmotions"], weg: ["wege +1 [x0,z0,x1,z1/Formen]"], zeichner: [] }[o.mutante] || ["augenblick." + o.mutante];
         const taten = tat.edit && tat.bau && tat.ritt && tat.hand && tat.feuer > 0 && tat.wetter === "rainy" && tat.tag === 1e9 && tat.plan && tat.erd && tat.tiere && (!o.mutante || tat.mutante) && (o.mutante !== "weg" || (tat.weg > 0 && !!tat.wegFlaeche));
         // die Wege-Linse nennt den Weg beim Rechteck seiner Fläche (6 × 66 m, 40 m neben dem Spieler; die Tat nennt sie, wie die Karte sie
         // trägt) — seine Marke nur, solange das Gedächtnis der Seite steht (ein anderes worldMeta beim Rückspielen vergisst `_stlWegeKeys`,
@@ -1160,13 +1341,20 @@ async function grundProbe(o) {
             await page.evaluate(() => window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId));
             await ev("let t = performance.now(); for (let i = 1; i <= 20; i++) if ((r._gameLoopTick((t += 100)), i % 5 === 0)) await new Promise((f) => setTimeout(f, 0));");
             // nach der Tür spielt die Sitzung den Grund noch einmal (grundstellung): ohne Mutante und mit dem Weg steht danach jede Größe im Grund
-            if (!o.mutante || o.mutante === "weg") z2 = await ev(grundSpielen(g));
+            if (!o.mutante || o.mutante === "weg" || o.mutante === "zeichner") {
+                z2 = await ev(grundSpielen(g));
+                const zk2 = await ev(zeichnerCode(g.zeichner, true));
+                if (!zk2 || !Array.isArray(zk2.anders)) z2.anders.push("zeichner: " + JSON.stringify(zk2).slice(0, 120));
+                else z2.anders.push(...zk2.anders);
+            }
         }
-        const gruen = taten && z.ok && passt(z) && (!z2 || (z2.ok && z2.anders.length === 0));
+        const gruen = taten && z.ok && passt(z) && zOk && (!z2 || (z2.ok && z2.anders.length === 0));
         const wie = o.mutante ? "MUTANTE " + o.mutante + (gruen ? " ROT beim Namen" : " NICHT beim Namen gefangen") : gruen ? "GRÜN" : "ROT";
         console.log("GRUNDPROBE " + wie +
             " · Grund " + g.n + " Größen (" + g.ms + " ms) · Taten " + JSON.stringify(tat) + " · zurück in " + z.ms + " ms, neu " + JSON.stringify(z.neu) +
             " · abweichend: " + (z.anders.join(" ") || "keine") + (z.ok ? "" : " · " + z.grund) + " · Soll " + (soll.join(" ") || "keine") +
+            " · Zeichenkette (" + (g.zeichner.renderer ? g.zeichner.renderer.klasse : "kein Renderer") + "): abweichend " + (zk && zk.anders ? zk.anders.join(" ") || "keine" : JSON.stringify(zk)) +
+            (zk && zk.anders && zk.anders.length ? " — wie " + JSON.stringify(zk.wie) + " · danach " + (zk.bleibt.join(" ") || "im Grund") : "") + " · Soll " + (zSoll.join(" ") || "keine") +
             (z2 ? " · nach der Tür abweichend: " + (z2.ok ? z2.anders.join(" ") || "keine" : z2.grund) : ""));
         return gruen;
     } finally {
@@ -1245,10 +1433,13 @@ function stromSeite(r, a) {
                     }
                 }
             };
-        rend.setAnimationLoop = function (cb) {
+        // der Haken trägt seine Marke: die Zeichenkette der Seite (zeichnerKette) zählt ihn nie als Fremdkörper
+        const haken = function (cb) {
             S.tv = null;
             return roh.call(this, typeof cb === "function" ? huelle(cb) : cb);
         };
+        haken.__punkteHaken = true;
+        rend.setAnimationLoop = haken;
         // eine Schleife, die vor dem Haken lief, fährt ab jetzt durch ihn
         const a0 = rend._animation && rend._animation._animationLoop;
         if (typeof a0 === "function") rend.setAnimationLoop(a0);
@@ -1568,8 +1759,13 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             if (gs.ok) {
                 kopf.grundstellungS.push(gs.s);
                 if (gs.wege) kopf.wegeTueren.push({ vor: schluessel(g[0]), wege: gs.wege, s: gs.s });
+                // die Zeichenkette, die der Täter verändert ließ: zurück an Ort und Stelle oder durch die Tür (im Kopf bei ihm)
+                const taeter = (kopf.zeichner || []).filter((x) => !x.zurueck).pop();
+                if (taeter && (gs.kette || gs.ketteTuer)) taeter.zurueck = { vor: schluessel(g[0]), wie: gs.ketteTuer ? "durch die Tür" : "an Ort und Stelle", s: gs.s };
                 (aktOrt = null), (ortNach = gs.tuer ? "der Tür" : "der Grundstellung"); // der Grund stellt den Spieler an seinen Ort zurück
-                console.log("  SITZUNG Grundstellung vor " + schluessel(g[0]) + ": " + gs.s + " s (im Spiel " + gs.ms + " ms" + (gs.tuer ? ", durch die Tür" + (gs.wege ? " — " + gs.wege : "") : "") + ")");
+                console.log("  SITZUNG Grundstellung vor " + schluessel(g[0]) + ": " + gs.s + " s (im Spiel " + gs.ms + " ms" +
+                    (gs.tuer ? ", durch die Tür" + (gs.wege ? " — " + gs.wege : "") + (gs.ketteTuer ? " — " + gs.ketteTuer.join(" ") : "") : "") + ")" +
+                    (gs.kette ? " · die Zeichenkette zurück: " + gs.kette.join(" ") : ""));
             } else {
                 tot = "Grundstellung: " + gs.grund;
                 kopf.grund = "die Welt trägt nicht mehr vor " + schluessel(g[0]) + ": " + gs.grund;
@@ -1626,6 +1822,14 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         // DER BAU VOR DER PROBE (bauAbdruck): an jeder Probe ohne `mutiert`, sobald der Grund steht
         const lies = () => rufFrist(W, "/eval", { code: BAU_LIES }, 30000).then((a) => (a && a.ergebnis && typeof a.ergebnis === "object" ? a.ergebnis : null)).catch(() => null);
         const bauVor = !mutiertVon(g) && grundDa === true ? await lies() : null;
+        // DIE ZEICHENKETTE VOR DER PROBE (zeichnerKette): an JEDER Probe — anfang, die Welt lassend, ende, mutierend; keine darf die Kette
+        // der Seite verändert lassen. Nicht lesbar: beim Namen im Log und im Kopf (`zeichnerBlind`), nie still
+        const zVor = await zeichnerRuf(W, null);
+        const blind = (wann, z) => {
+            (kopf.zeichnerBlind = kopf.zeichnerBlind || []).push({ probe: schluessel(g[0]), wann, fehler: z.fehler });
+            console.log("  SITZUNG die Zeichenkette " + wann + " " + schluessel(g[0]) + " nicht lesbar: " + z.fehler);
+        };
+        if (zVor.fehler) blind("vor", zVor);
         const zeit = new Date().toISOString();
         aktuell = schluessel(g[0]);
         const es = await fahreGruppe(g, { ...ctx, ...aus, sitzung: { log, zeuge, strom, grund, probe: aktuell, restS: restS(), fahrtMaxS, eich: !!ctx.eich } });
@@ -1655,9 +1859,23 @@ async function fahreSitzung(gruppen0, ctx, melde) {
             (kopf.unerklaert = kopf.unerklaert || []).push({ probe: schluessel(g[0]), wie: unerklaert });
             console.log("  SITZUNG " + schluessel(g[0]) + " ließ die Welt verändert und trägt kein mutiert: " + unerklaert + " — die Grundstellung folgt");
         }
-        zuruecksetzen = mutiertVon(g) || abbruch || !!unerklaert;
+        // DIE PROBE LIESS DIE ZEICHENKETTE VERÄNDERT (w4-grund-zeichner, zeichnerKette; der alte Strom der Wasser-Wand in gelaende.K2#1,
+        // tiere.K3#2 zahlte): DIESE Probe beim Namen — ihr Urteil ist keines (ein Werkzeug-Bruch beim Namen der Größe, nie ein stilles GRÜN,
+        // nie ein ROT des Kriteriums), im Kopf `zeichner`; die Grundstellung folgt und gibt der Seite zurück, was die Probe ihr lieh —
+        // nie wandert der Schaden in die nächste Probe
+        const zNach = !weg && zVor.abdruck ? await zeichnerRuf(W, zVor.abdruck) : null;
+        if (zNach && (zNach.fehler || !Array.isArray(zNach.anders))) blind("nach", { fehler: zNach.fehler || JSON.stringify(zNach).slice(0, 200) });
+        const bruch = zNach && Array.isArray(zNach.anders) && zNach.anders.length ? zeichnerBruch(zNach) : null;
+        if (bruch) {
+            (kopf.zeichner = kopf.zeichner || []).push({ probe: schluessel(g[0]), anders: zNach.anders, wie: zNach.wie });
+            console.log("  SITZUNG " + schluessel(g[0]) + " ließ die Zeichenkette verändert: " + zNach.anders.join(" ") + " — kein Urteil (Werkzeug-Bruch), die Grundstellung folgt");
+        }
+        const werkzeug = (e) => (!bruch ? e : e.ungemessen ? { ...e, grund: e.grund + " · " + bruch, zahl: e.zahl + " · " + bruch }
+            : { ...e, gruen: false, ungemessen: true, grund: bruch + " — kein Urteil, UNGEMESSEN (die Probe sah: " + String(e.zahl).slice(0, 240) + ")",
+                zahl: bruch + " — kein Urteil, UNGEMESSEN (die Probe sah: " + String(e.zahl).slice(0, 240) + ")" });
+        zuruecksetzen = mutiertVon(g) || abbruch || !!unerklaert || !!bruch;
         // die Eich-Fahrt urteilt erst nach Abbruch und Grundstellung (sie lesen den Grund der Probe, wie er fiel): je Probe ihre Zahl
-        await melde(g, es.map(unter).map((e, i) => (ctx.eich ? eichEintrag(g[i], e) : e)), aus, zeit);
+        await melde(g, es.map(unter).map(werkzeug).map((e, i) => (ctx.eich ? eichEintrag(g[i], e) : e)), aus, zeit);
     }
     clearInterval(takt);
     if (ci.laeuft && ci.laeuft.kind && ci.laeuft.kind.exitCode == null) baumTot(ci.laeuft.kind.pid); // kein Blick überlebt die Sitzung
@@ -3175,15 +3393,25 @@ async function selbsttest(o = {}) {
         fs.writeFileSync(stub, [
             'const http = require("http"), fs = require("fs"); const [W, z, art] = process.argv.slice(2); const n = (x) => fs.appendFileSync(z, x + "\\n");',
             'n("start"); if (art === "kaputt") { console.log("WERKBANK-FEHLER stub"); process.exit(4); }',
-            'let seite = null; const neu = () => { const R = { info: { render: { drawCalls: 7, triangles: 900 } }, _animation: { _animationLoop: null }, setAnimationLoop(cb) { this._animation._animationLoop = cb || null; } };',
-            '  seite = { win: { __vram: { puffer: 1048576, texturen: 1048576 } }, R, welt: { state: { renderer: R, playerMesh: { position: { x: 1, z: 2 } }, cameraMode: "first",',
-            '  player: { mountedArch: null }, perfTargetMs: 1000, perfSense: { loadScale: 1 }, weather: "sunny", creatures: [], timeOfDay: 0.5 }, _gpuLeine: { gerendert: 0 } } }; }; neu();',
+            // DIE SEITE wie die des Spiels: der Renderer und die Post-Kette tragen ihre Zeichen-Methoden am Prototyp, die Welt zeichnet über
+            // `_loopRender` (ohne Gerät nie; die Post-Kette, mit `postProcessingFailed` der Renderer direkt) in das Ziel des Renderers
+            'let seite = null; class Rd { constructor() { this.info = { render: { drawCalls: 7, triangles: 900 } }; this._animation = { _animationLoop: null }; this.domElement = { isConnected: true }; this.ziel = 0; }',
+            '  setAnimationLoop(cb) { this._animation._animationLoop = cb || null; } render() { this.ziel++; } renderAsync() { return Promise.resolve(this.render()); } }',
+            'class Pk { constructor(R) { this.R = R; } render() { this.R.ziel++; } }',
+            'class Welt { _loopRender() { const st = this.state; if (st._deviceLost) return; if (st.postProcessing && !st.postProcessingFailed) st.postProcessing.render(); else st.renderer.render(); } }',
+            'const neu = () => { const R = new Rd();',
+            '  seite = { win: { __vram: { puffer: 1048576, texturen: 1048576 } }, R, welt: Object.assign(new Welt(), { state: { renderer: R, postProcessing: new Pk(R), postProcessingFailed: false, voxelWorker: {},',
+            '  _deviceLost: false, perfRegulator: true, playerMesh: { position: { x: 1, z: 2 } }, cameraMode: "first",',
+            '  player: { mountedArch: null }, perfTargetMs: 1000, perfSense: { loadScale: 1 }, weather: "sunny", creatures: [], timeOfDay: 0.5 }, _gpuLeine: { gerendert: 0 } }) }; }; neu();',
             'setInterval(() => { const cb = seite.R._animation._animationLoop; if (cb) cb(performance.now()); }, 16);',
             // der Weg einer Probe (art „weg“): die Grundstellung an Ort und Stelle nennt ihn, bis die Seite neu lud; „weg-bleibt“ trägt ihn
             // auch durch die Tür (die Wege-Linse der Grundstellung, grundSpielen)
             'let geladen = false; const weg = () => (art === "weg-bleibt" || (art === "weg" && !geladen) ? ["wege +1 [-312.4,-1060.2,-87.6,-1015.1/1] (probe:tempo4)"] : []);',
             'http.createServer((q, r) => { let d = ""; q.on("data", (c) => (d += c)); q.on("end", () => { const b = d ? JSON.parse(d) : {}; const s = (o) => r.end(JSON.stringify(o));',
-            '  if (q.url === "/eval") { if (/_grundstellung\\(\\)/.test(b.code)) { n("nimm"); return s({ ergebnis: { grund: "{}", n: 3, ms: 1, welt: "w1", seite: [], wege: { flaechen: [], keys: [] } } }); }',
+            // eine Probe greift in die Seite („seite: <code>“, r = die Welt), die Zeichenkette der Sitzung läuft in ihr — beide wie /eval der Werkbank
+            '  const inSeite = (c) => { try { return s({ ergebnis: new Function("r", "window", c)(seite.welt, seite.win) }); } catch (e) { return s({ fehler: String(e && e.message) }); } };',
+            '  if (q.url === "/eval") { if (/^seite: /.test(b.code)) return inSeite(b.code.slice(7)); if (/__punkteZeichner/.test(b.code)) return inSeite(b.code);',
+            '    if (/_grundstellung\\(\\)/.test(b.code)) { n("nimm"); return s({ ergebnis: { grund: "{}", n: 3, ms: 1, welt: "w1", seite: [], wege: { flaechen: [], keys: [] } } }); }',
             '    if (/_grundstellung\\("/.test(b.code)) { n("grund"); return s({ ergebnis: { ok: true, anders: (art === "anders" ? ["augenblick.brand"] : []).concat(weg()), neu: {}, ms: 1, welt: "w1" } }); }',
             '    if (/__punkteStrom/.test(b.code)) return s({ ergebnis: new Function("r", "window", "performance", b.code)(seite.welt, seite.win, performance) });',
             '    if (/_weltBetreten\\(/.test(b.code)) { n("tuer"); return s({ ergebnis: { ok: true, worldId: "w1" } }); }',
@@ -3392,6 +3620,54 @@ async function selbsttest(o = {}) {
         pruef("SITZUNG eine Grundstellung, nach der eine Größe vom Grund abweicht: die übrigen Proben UNGEMESSEN beim Namen der Größe",
             r7.es["m.K1#1"].gruen && r7.es["b.K1#1"].ungemessen === true && /abweichend vom Grund: augenblick\.brand/.test(r7.es["b.K1#1"].grund) && r7.z.join(",") === "start,nimm,warm,grund,stop",
             JSON.stringify([r7.z, r7.es]));
+        // DIE ZEICHENKETTE DER SEITE (w4-grund-zeichner; champion bild-klasse 31.10.: der alte `wasserStrom` ließ `renderer.render` stumm und
+        // `postProcessingFailed` an — gelaende.K2#1 blieb ungenannt, tiere.K3#2 fiel als Rückfall „tier-Pixel 0/0/0/0“): eine Probe bricht die
+        // Kette wie er, ohne `mutiert` (ihr folgte keine Grundstellung) und mit (wie gelaende.K2#1: die Grundstellung danach spielte nur den
+        // Stand) — die nächste Probe zeichnet ein Bild über den Weg der Welt (`_loopRender`); eine Probe verliert das Gerät (an Ort und Stelle
+        // heilt es nie: die Tür); eine Probe leiht `render` und gibt es per Zuweisung zurück (wie draw-zaehler), der Haken des Stroms hängt
+        const BRICH = 'seite: const s = r.state; s.renderer.render = function () {}; if (typeof s.renderer.renderAsync === "function") s.renderer.renderAsync = () => Promise.resolve(); s.postProcessingFailed = true; return "warm";';
+        const BILD = "seite: const z = r.state.renderer.ziel; r._loopRender(); return { gezeichnet: r.state.renderer.ziel > z };";
+        const GERAET = 'seite: r.state._deviceLost = true; return "warm";';
+        const ZAEHLT = 'seite: const R = r.state.renderer, roh = R.render; R.render = function (...a) { return roh.apply(this, a); }; r._loopRender(); R.render = roh; return "warm";';
+        const bildDa = (j) => ({ gruen: !!j && !!j.welt && j.welt.gezeichnet === true, zahl: "gezeichnet " + (j && j.welt && j.welt.gezeichnet) });
+        const r17 = await lauf([[S("z.K1", 1, { befehl: [...ruf, ZAEHLT], sek: 30 }, warm)], [S("g.K2", 1, { befehl: [...ruf, BRICH], sek: 30 }, warm)],
+            [S("t.K1", 2, { befehl: [...ruf, BILD], sek: 30 }, bildDa)], [S("g.K3", 1, { befehl: [...ruf, BRICH], sek: 30, mutiert: true }, warm)],
+            [S("t.K3", 2, { befehl: [...ruf, BILD], sek: 30, mutiert: true }, bildDa)], [S("v.K1", 1, { befehl: [...ruf, GERAET], sek: 30, mutiert: true }, warm)],
+            [S("t.K4", 2, { befehl: [...ruf, BILD], sek: 30, mutiert: true }, bildDa)]], "zeichner", null);
+        const zx = r17.es;
+        pruef("SITZUNG DIE ZEICHENKETTE: eine Probe überschreibt renderer.render und setzt postProcessingFailed — die Sitzung nennt SIE beim Namen (kein Urteil: Werkzeug-Bruch mit der Größe, nie GRÜN, nie ROT des Kriteriums), die Grundstellung stellt die Kette zurück, die nächste Probe zeichnet — ohne und mit mutiert",
+            ["g.K2#1", "g.K3#1"].every((id) => !!zx[id] && zx[id].ungemessen === true && zx[id].gruen === false &&
+                /^Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert \(zeichner\.renderer\.render eigen: function \(\) \{\} · zeichner\.renderer\.renderAsync eigen: .* · zeichner\.postProcessingFailed false → true\) — kein Urteil, UNGEMESSEN/.test(zx[id].grund)) &&
+            ["t.K1#2", "t.K3#2"].every((id) => !!zx[id] && zx[id].gruen === true) && (r17.kopf.zeichner || []).map((x) => x.probe).join(",") === "g.K2#1,g.K3#1,v.K1#1",
+            JSON.stringify([r17.z, zx, r17.kopf.zeichner]));
+        pruef("SITZUNG DIE ZEICHENKETTE durch die Tür: verliert eine Probe das Gerät, heilt die Grundstellung es an Ort und Stelle nie — die Seite neu, die nächste Probe zeichnet; eine Leihe, die per Zuweisung zurückgab, und der Haken des Stroms sind nie ein Bruch",
+            !!zx["v.K1#1"] && zx["v.K1#1"].ungemessen === true && /zeichner\.geraet false → true/.test(zx["v.K1#1"].grund) && !!zx["t.K4#2"] && zx["t.K4#2"].gruen === true &&
+            !!zx["z.K1#1"] && zx["z.K1#1"].gruen === true && !zx["z.K1#1"].ungemessen &&
+            r17.z.join(",") === "start,nimm,warm,grund,warm,grund,warm,grund,warm,grund,tuer,reload,grund,warm,stop", JSON.stringify([r17.z, zx]));
+        // DAS GEDÄCHTNIS DER SEITE (zeichnerKette ohne Sitzung): der Null-Renderer trägt seine Methoden selbst (kein Prototyp, `_makeHeadlessRenderer`)
+        // — ein Tausch unter gleichem Namen weicht ab und kehrt zurück, ebenso Faden und Sync-Stelle; der Haken des Stroms, nach dem Gedächtnis
+        // gesetzt, bleibt und weicht nie ab; eine Post-Kette, die erst mit dem ersten Bild entsteht, ist keine Abweichung
+        {
+            const kette = (win) => new Function("window", "return " + zeichnerKette.toString())(win);
+            const win = {}, Z = kette(win), echt = () => "echt", schleife = () => {}, faden = { faden: 1 };
+            const welt = { state: { renderer: { render: echt, setAnimationLoop: schleife, domElement: { isConnected: true } }, postProcessing: null,
+                postProcessingFailed: true, voxelWorker: faden, _deviceLost: false } };
+            const soll = Z(welt, null).abdruck;
+            const haken = function () {};
+            haken.__punkteHaken = true;
+            welt.state.renderer.setAnimationLoop = haken;
+            welt.state.postProcessing = { render() {} };
+            const still = Z(welt, soll);
+            welt.state.renderer.render = function () {};
+            welt.state.voxelWorker = null;
+            welt._syncStelle = "naht";
+            const bruch = Z(welt, soll), heil = Z(welt, soll, true), danach = Z(welt, soll);
+            pruef("ZEICHENKETTE DAS GEDÄCHTNIS DER SEITE: der Tausch einer eigenen Methode (Null-Renderer) weicht ab und kehrt zurück, Faden und Sync-Stelle ebenso; der Haken des Stroms und eine spät gebaute Post-Kette sind nie eine Abweichung",
+                still.anders.length === 0 && bruch.anders.join(" ") === "zeichner.renderer.render zeichner.syncStelle zeichner.faden" &&
+                bruch.wie["zeichner.renderer.render"] === "getauscht: function () {}" && heil.bleibt.length === 0 && danach.anders.length === 0 &&
+                welt.state.renderer.render === echt && welt.state.renderer.setAnimationLoop === haken && welt.state.voxelWorker === faden && welt._syncStelle === null,
+                JSON.stringify([still, bruch, heil, danach]));
+        }
         // DAS SCHLOSS ZWISCHEN DEN PROBEN: wartet ein CI-Job (die letzte Zeile von hook.log), geht das Schloss an der Proben-Grenze an ihn und kommt
         // danach wieder — die Welt startet nie neu, das Warten zählt nie in die Fahrt
         if (gl) {
@@ -3532,7 +3808,8 @@ if (require.main === module) {
         else if (verb === "grundstellung") {
             // in einer Probe: die Grundstellung der Welt der Sitzung (WERKBANK_PORT, der Grund PUNKTE_SITZUNG_GRUND)
             const g = await grundstellung(Number(o.port || process.env.WERKBANK_PORT), o.grund || process.env.PUNKTE_SITZUNG_GRUND);
-            console.log(g.ok ? "GRUNDSTELLUNG " + g.s + " s (im Spiel " + g.ms + " ms, neu " + JSON.stringify(g.neu) + ")" : "GRUNDSTELLUNG ROT: " + g.grund);
+            console.log(g.ok ? "GRUNDSTELLUNG " + g.s + " s (im Spiel " + g.ms + " ms, neu " + JSON.stringify(g.neu) + ")" +
+                (g.kette ? " · die Zeichenkette zurück: " + g.kette.join(" ") : g.ketteTuer ? " · die Zeichenkette durch die Tür: " + g.ketteTuer.join(" ") : "") : "GRUNDSTELLUNG ROT: " + g.grund);
             process.exitCode = g.ok ? 0 : 1;
         }
         else if (verb === "grundprobe") process.exitCode = (await grundProbe(o)) ? 0 : 1;
