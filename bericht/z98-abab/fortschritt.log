@@ -1,0 +1,20 @@
+06:35:34 SERIE START A=3ef20f9f8[0] B=94c079cb7[0] Instrument=3ef20f9f8 ZELLEN=stadt
+06:35:42 stadt-A1 start FP=aa26efbad174f8d1 71 57 gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+06:39:10 stadt-A1 ende gpu[80, 923 MHz, 3802 MHz, P2, 0x0000000000000001] steht: fps 69.8 F95 19 C95 10.4 k0 0.24 | 1: fps 34.1 F95 50.1 C95 46.7 k0 0.11 | 
+06:39:44 stadt-B1 start FP=b8af663b7ab16281 71 57 gpu[72, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+06:43:14 stadt-B1 ende gpu[78, 822 MHz, 2999 MHz, P3, 0x0000000000000001] steht: fps 67.5 F95 25 C95 11 k0 0.24 | 1: fps 31.7 F95 58.3 C95 50.9 k0 0.12 | 
+06:43:47 stadt-A2 start FP=aa26efbad174f8d1 71 57 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+06:47:22 stadt-A2 ende gpu[77, 430 MHz, 405 MHz, P8, 0x0000000000000001] steht: fps 68.7 F95 24.9 C95 10.4 k0 0.24 | 1: fps 34.1 F95 50.1 C95 46.8 k0 0.11 | 
+06:47:56 stadt-B2 start FP=b8af663b7ab16281 71 57 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+06:51:27 stadt-B2 ende gpu[78, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 66.6 F95 25 C95 11.9 k0 0.25 | 1: fps 34.2 F95 58.3 C95 47.6 k0 0.11 | 
+06:51:52 SERIE ENDE A-status[0] B-status[0]
+06:52:01 SERIE START A=3ef20f9f8[0] B=94c079cb7[0] Instrument=3ef20f9f8 ZELLEN=stadt
+06:52:10 stadt-A3 start FP=aa26efbad174f8d1 71 57 gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+06:55:40 stadt-A3 ende gpu[78, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 67.7 F95 25 C95 11 k0 0.24 | 1: fps 34.6 F95 58.3 C95 50.3 k0 0.11 | 
+06:56:15 stadt-B3 start FP=b8af663b7ab16281 71 57 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+06:59:51 stadt-B3 ende gpu[78, 822 MHz, 2999 MHz, P3, 0x0000000000000001] steht: fps 67.4 F95 25 C95 11 k0 0.24 | 1: fps 31.3 F95 66.6 C95 56 k0 0.11 | 
+07:00:27 stadt-A4 start FP=aa26efbad174f8d1 71 57 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+07:04:07 stadt-A4 ende gpu[77, 240 MHz, 405 MHz, P8, 0x0000000000000001] steht: fps 68.1 F95 24.9 C95 10.7 k0 0.24 | 1: fps 34 F95 50.1 C95 48.3 k0 0.11 | 
+07:04:41 stadt-B4 start FP=b8af663b7ab16281 71 57 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+07:08:14 stadt-B4 ende gpu[77, 240 MHz, 405 MHz, P8, 0x0000000000000001] steht: fps 67.8 F95 25 C95 10.9 k0 0.24 | 1: fps 33.5 F95 58.2 C95 48.5 k0 0.11 | 
+07:08:40 SERIE ENDE A-status[0] B-status[0]
