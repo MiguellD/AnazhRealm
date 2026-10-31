@@ -1249,6 +1249,8 @@
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
         PARAMS_BY_KIND: { gate: PARAMS },
+        // B8 — der Stammbaum (studios.K5): wie das Buch sich und seine Arten nennt (der Wirt leitet den EINEN Baum ab)
+        STAMMBAUM: { studio: "Porta", arten: { gate: "Tore" } },
         SLIDERS: SLIDERS,
         pk: pk,
         gateParams: gateParams,

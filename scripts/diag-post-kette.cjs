@@ -485,17 +485,7 @@ function saumProbe(ort) {
         };
         const gruppe = new T.Group();
         gruppe.name = "post-kette:SAUM";
-        const wg = new T.PlaneGeometry(24, 24, 4, 4);
-        wg.rotateX(Math.PI / 2);
-        const nV = wg.attributes.position.count;
-        wg.setAttribute("aFlow", new T.BufferAttribute(new Float32Array(nV * 2), 2));
-        wg.setAttribute("aShore", new T.BufferAttribute(new Float32Array(nV).fill(1), 1));
-        wg.setAttribute("aWave", new T.BufferAttribute(new Float32Array(nV), 1));
-        const wasser = new T.Mesh(wg, r._ensureHydroSurfaceMaterial());
-        wasser.position.set(x0, y0 - 3, z0 - 14);
-        const grund = new T.Mesh(new T.PlaneGeometry(24, 24), new T.MeshBasicNodeMaterial({ color: 0xffffff }));
-        grund.rotation.x = -Math.PI / 2;
-        grund.position.set(x0, y0 - 3.3, z0 - 14);
+        const [wasser, grund] = window.__postWasser; // das Wasser und der Grund der Bühne (`buehne`), an ihrem Ort
         const pfahl = new T.Mesh(new T.BoxGeometry(0.5, 4, 0.5), new T.MeshBasicNodeMaterial({ color: 0x000000 }));
         pfahl.position.set(x0 + 2.5, y0 - 3, z0 - 9);
         pfahl.rotation.z = 0.35;
@@ -616,6 +606,7 @@ function buehne(nFrames, nachtLicht) {
         const grund = new T.Mesh(new T.PlaneGeometry(24, 24), stoff(0xffffff));
         grund.rotation.x = -Math.PI / 2;
         grund.position.set(x0, y0 - 3.3, z0 - 14);
+        window.__postWasser = [wasser, grund]; // der Saum (`saumProbe`) misst an DEMSELBEN Wasser über demselben Grund
         for (const m of [nah, fern, wasser, grund]) {
             m.frustumCulled = false;
             gruppe.add(m);
@@ -838,12 +829,22 @@ function buehne(nFrames, nachtLicht) {
                 rauschenPct: diff(mit1, mit2),
             };
             // (h) DAS DUNKEL: eine flache, unbeleuchtete Fläche ohne Luft füllt das Bild (die Bühne verborgen, Godrays aus),
-            // zweimal mit demselben belichteten Licht — Belichtung 1 mit 0,05, Belichtung 4 mit 0,0125 —, gemessen im Ausgabe-Pfad
+            // zweimal mit demselben belichteten Licht — Belichtung 1 mit 0,05, Belichtung 4 mit 0,0125 —, gemessen im Ausgabe-Pfad.
+            // DIE KAMERA SIEHT NUR DIE FLÄCHE (ihre Proben-Schicht, wie diag-hitch-telemetrie): die Probe misst die Kette an EINEM
+            // Licht — jedes Welt-Pixel im Bild ist beleuchtet und wächst mit der Belichtung. Die Kamera der Bühne steht genau über der
+            // Achse der Genesis-Scheibe (der Spawn) und blickt genau waagrecht: die Mitte ihres Deckels liegt in der Ebene der Kamera
+            // (w = 0), und swiftshader (die CI) rastert den Fächer mit falscher Tiefe (1,4–2 m statt 4,9–6,5 m) VOR die Fläche, unten
+            // ein Keil der Scheibe (1 cm Versatz längs des Blicks, 0,06° Neigung oder die Radeon: kein Keil). Am main zeichnete ihn der
+            // Rausch-Bump schwarz (ohne den Bump auch dort beleuchtet) — Luma 32,4 / 32,4 —, seit material.K5 beleuchtet: 33,4 / 35,0;
+            // die Fläche allein 33,0 / 33,0.
+            const SCHICHT = 31;
             const flach = new T.Mesh(new T.PlaneGeometry(60, 40), new T.MeshBasicNodeMaterial({ color: 0xffffff }));
             flach.material.fog = false;
             flach.frustumCulled = false;
+            flach.layers.set(SCHICHT);
             flach.position.set(x0, y0, z0 - 2);
             st.scene.add(flach);
+            const maskeVor = cam.layers.mask;
             const kVor = rend.toneMappingExposure;
             const nachtU = st.postProcessingUniforms && st.postProcessingUniforms.nightFactor;
             const nachtVor = nachtU ? nachtU.value : null;
@@ -862,12 +863,14 @@ function buehne(nFrames, nachtLicht) {
                 return { luma: +(s / (u8.length / 4)).toFixed(1), k: rend.toneMappingExposure, nacht: nachtU ? nachtU.value : null };
             };
             try {
+                cam.layers.set(SCHICHT);
                 const a = await dunkel(1, 0.05);
                 const b = await dunkel(4, 0.0125);
                 // die Nacht (D3-2): das Licht des Bodens im Mondlicht unter dem Schnitt der Tag-Kurve, nightFactor 1
                 const n = await dunkel(1, nachtLicht, true);
                 aus.dunkel = { k1: a.k, luma1: a.luma, k4: b.k, luma4: b.luma, nachtFaktor: n.nacht, lumaNacht: n.luma };
             } finally {
+                cam.layers.mask = maskeVor;
                 if (nachtU) nachtU.value = nachtVor;
                 rend.toneMappingExposure = kVor;
                 st.scene.remove(flach);

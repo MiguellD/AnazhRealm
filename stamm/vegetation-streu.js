@@ -1093,15 +1093,14 @@ class AnazhRealm_vegetation_streu {
             const newLod = this._chooseLODForDistance(dist, cell.lod, visH);
             // DIE NAH-GRENZE wechselt die Bahn auch ohne Stufen-Wechsel — dieselbe Grenze wie der Zellen-Chokepoint
             // (`_streuFernBahn`, ANALOG_NAH_M): eine Fernform-Zelle (Gesetz-Platz oder Boden), die näher kommt, tauscht
-            // auf ihr Studio-Mesh; eine Mesh-Zelle, die sich entfernt, zieht erst 8 m hinter der Grenze in ihre Fernform
-            // (Totband gegen Flattern). Sonst blieb der Kapsel-Satz einer Fern-Zelle stehen, wenn der Spieler auf sie zuging.
+            // auf ihr Studio-Mesh; eine Mesh-Zelle, die sich entfernt, zieht erst jenseits des Felds der Tiere in ihre Fernform
+            // (die Hysterese des Stufen-Gesetzes, `_feldTraegt` — dieselbe Grenze wie jedes Tier). Sonst blieb der Kapsel-Satz einer Fern-Zelle stehen, wenn der Spieler auf sie zuging.
             const istFern = cell.form === "gesetz" || cell.form === "boden";
             const fernArt =
                 layer.kind !== "tree" && newLod >= 2 && newLod === cell.lod && this._foundryEnabled()
                     ? this._foundryPresetFor(cell.species)
                     : null;
-            const bahnWechsel =
-                !!fernArt && istFern !== !!this._streuFernBahn(fernArt, newLod, istFern ? dist : dist - 8);
+            const bahnWechsel = !!fernArt && istFern !== !!this._streuFernBahn(fernArt, newLod, dist, !istFern);
             // Eine WARTENDE Gesetz-Zelle (ihr Satz stand beim Bau nicht: Fit-Takt, Kapsel-Liste) wiederholt den Spawn,
             // solange ihr Fern-Wunsch jenseits der Grenze gilt — slot-frei, nur wo ein echter Renderer den Welt-March zeichnet.
             const warten = !bahnWechsel && cell.wartet === true && newLod === cell.lod && this._weltMarchGezeichnet();
@@ -1610,17 +1609,84 @@ class AnazhRealm_vegetation_streu {
         return AnazhRealm._wechselGesetz(kind, stufe, groesse, this._schirm().hoehe);
     }
 
+    // DIE GRENZEN DER LEIBER (das EINE Stufen-Gesetz für Mensch und Tier): die Grobstufe der Gelenk-Gestalt (Stufe 1) ab dem
+    // Haushalt der Zeile ihres Ofens (`ab`, `hyst` — `_gelenkGestalt`), das Feld (Stufe 3: die Glieder-Kapseln im Welt-March)
+    // jenseits der EINEN Nah-Grenze (ANALOG_NAH_M) — der Mensch der Menge (`_menge`), sobald sein Leib am Schirm unter
+    // LOD_SCHIRM.leib.mengePx Bildpunkte fällt (mensch.K3: der Morgengang trägt das ganze Dorf), im Ruhe-Sichtfeld wie jede Stufe
+    // (Tempo und Fernglas legen keine um). Die EINE Wahl liest sie (`_stufeNachGrenzen`), vom EINEN Auge (`_lodAuge`); je Schirm
+    // einmal gerechnet. Ohne Zeichenpuffer (der Null-Renderer) trägt die Menge bis zur Nah-Grenze.
+    _gelenkGrenzen(g) {
+        const z = this._schirm().hoehe;
+        if (g.grenzen && g.grenzenZeilen === z) return g.grenzen;
+        const ab = AnazhRealm._wechselGesetz(g.art, 1, 1, z, g.abM);
+        return Object.assign(g, { grenzenZeilen: z, grenzen: { erste: 0, grenzen: [{ stufe: 1, ab, h: g.hyst }] } })
+            .grenzen;
+    }
+    // die Grenze der Grobstufe eines Leibs in Metern (Gesetz × Größe) — der Takt seines Gangs liest sie (`_creatureAnimDiv`)
+    _gelenkAb(gruppe) {
+        return this._gelenkGrenzen(gruppe.userData._gelenk).grenzen[0].ab * (gruppe.scale.x || 1);
+    }
+    // die Grenzen des Felds je Art (`menge`: der Mensch der Menge, sonst jedes Tier) → { erste, grenzen, ein, aus }
+    _feldGrenzen(menge) {
+        const z = this._schirm().hoehe;
+        const memo = this._feldMemo || (this._feldMemo = new Map());
+        const k = (menge ? -1 : 1) * (z + 1);
+        if (memo.has(k)) return memo.get(k);
+        const L = AnazhRealm.LOD_SCHIRM.leib;
+        const N =
+            menge && z > 0
+                ? Math.min(AnazhRealm.ANALOG_NAH_M, (L.mengeKoerperM * AnazhRealm._brennweite(z)) / L.mengePx)
+                : AnazhRealm.ANALOG_NAH_M;
+        const hm = Math.min(L.feldHystM, menge ? L.mengeHystM : Infinity);
+        const ab = AnazhRealm._wechselGesetz(menge ? "menge" : "tier", 3, 1, z, N + hm / 2);
+        const G = { erste: 0, grenzen: [{ stufe: 3, ab, h: hm / (2 * N + hm) }], ein: N, aus: N + hm };
+        memo.set(k, G);
+        return G;
+    }
+    // Trägt das Feld am Auge (Stufe 3)? `menge` = die Art des Felds (`_feldGrenzen`), `nah` = er steht diesseits (die Hysterese hält
+    // ihn bis `aus`) — die EINE Nah-Grenze für Tier, Mensch und die Fernform der Streu (`_streuFernBahn`).
+    _feldTraegt(menge, d, nah) {
+        return AnazhRealm._stufeNachGrenzen(d, nah ? 0 : 3, this._feldGrenzen(menge), 1) === 3;
+    }
+    // DIE GRENZE EINER NAH-ART (die Armlänge der Nah-Streu, die feine Stufe der Nah-Wiese): ihr Haushalt `ab` m um das Auge, ihr
+    // Austritt `rand` m dahinter — als Grenze der EINEN Wahl (`_stufeNachGrenzen`: hinein ab `ab`, hinaus jenseits `ab + rand`).
+    // Rückgabe: liegt `d` diesseits (die feine Stufe), `war` = sie lag diesseits.
+    _nahStufe(ab, rand, d, war) {
+        const M = this._nahStufeG || (this._nahStufeG = new Map());
+        let G = M.get(ab * 1e3 + rand);
+        if (!G)
+            M.set(
+                ab * 1e3 + rand,
+                (G = { erste: 0, grenzen: [{ stufe: 1, ab: ab + rand / 2, h: rand / (2 * ab + rand) }] })
+            );
+        return AnazhRealm._stufeNachGrenzen(d, war ? 0 : 1, G, 1) === 0;
+    }
+    // DIE BEDEUTUNG EINES LEIBS (das Stufen-Gesetz: wer den knappen Haushalt der Leiber trägt — die Nah-Wahl der Bewohner, der
+    // Tier-Satz, die Fahrer, je `nahLeiber`): seine Größe am Schirm (Größe × Brennweite / Abstand vom Auge, Bildpunkte) mal seine
+    // Bewegung (1 + Tempo / LOD_SCHIRM.bewegungMS: wer geht, verliert im Satz die Phasen seines Gangs, wer steht, nichts).
+    _bedeutung(groesse, d, tempo) {
+        const f = AnazhRealm._brennweite(this._schirm().hoehe);
+        return ((groesse * f) / Math.max(d, 0.5)) * (1 + Math.abs(tempo || 0) / AnazhRealm.LOD_SCHIRM.bewegungMS);
+    }
+
     // DIE SCHWELLEN DER BAUM-STUFEN aus dem Gesetz: die Wahrnehmungs-Distanz misst in Bäumen der Referenz-Höhe lodRef, die Schwelle
     // der Stufe k ist ihr Abstand für einen solchen Baum. Geschrieben je Takt nach dem Schirm (`_schirmMessen`), nur wenn er
-    // wechselt (Kosten an Änderung); die CPU-Wahl, ihr Band, der Stand-Stempel und die Masken (uLodD0/uLodD1) lesen sie.
+    // wechselt (Kosten an Änderung); die CPU-Wahl, ihr Band, der Stand-Stempel und die Masken (uLodD0/uLodD1) lesen sie. Dazu die
+    // Grenzen der EINEN Wahl (`_stufeNachGrenzen`, `_baumGrenzen`): die Hysterese des Buchs steht in Metern der Wahrnehmungs-Distanz
+    // (M, die Membership der Maske), je Grenze ihr Anteil M / Schwelle.
     _stufenSchirm() {
         const D = AnazhRealm.LOD_DISTANCES;
         const ref = this.state && this.state.lodRef > 0 ? this.state.lodRef : D.lodRef;
         const h = this._schirm().hoehe;
-        if (h === this._stufenSchirmH && ref === this._stufenSchirmRef) return;
-        [this._stufenSchirmH, this._stufenSchirmRef] = [h, ref];
+        const M = D.hysteresis;
+        if (h === this._stufenSchirmH && ref === this._stufenSchirmRef && M === this._stufenSchirmM) return;
+        [this._stufenSchirmH, this._stufenSchirmRef, this._stufenSchirmM] = [h, ref, M];
         D.thresh01 = this._wechselAbstand("tree", 1, ref);
         D.thresh12 = this._wechselAbstand("tree", 2, ref);
+        this._baumGrenzen = {
+            erste: 0,
+            grenzen: [D.thresh01, D.thresh12].map((ab, i) => ({ stufe: i + 1, ab, h: M / ab })),
+        };
     }
 
     // Sichthöhe eines Baum-Eintrags = y-Ausdehnung des LOD0-Bauplans × entry.scale. Gecacht je
@@ -1736,45 +1802,17 @@ class AnazhRealm_vegetation_streu {
         }
     }
 
+    // DIE STUFE DER KARTEN-ARTEN (Baum, Strauch, Streu, Wagen) — die EINE Wahl (`_stufeNachGrenzen`) über den Schwellen der Maske:
+    // MIT Sichthöhe auf der Wahrnehmungs-Distanz (die Maske misst dieselbe, V18.387), ohne roh. Ohne Zustand (Spawn) die Schwelle
+    // selbst; liegt die Distanz jenseits ZWEIER Schwellen, springt die Wahl durch (Teleport, rollender Streu-Tick — ein Schritt je
+    // Aufruf ließ region-private Fern-Streu für immer auf L0 stehen, 04.10.: 1121 Blumen/Geröll in 85–384 m).
     _chooseLODForDistance(distance, currentLOD, visHeight) {
-        const cfg = AnazhRealm.LOD_DISTANCES;
-        if (!cfg) return 0;
+        if (!AnazhRealm.LOD_DISTANCES) return 0;
         this._stufenSchirm();
-        // V18.387 — MIT visHeight läuft die rohe Distanz durch die Wahrnehmungs-
-        // Distanz (Screen-Space-Error + Perf-Regler); OHNE (nicht-Baum-Architektur)
-        // bleibt der rohe Pfad BYTE-IDENTISCH.
         const d =
             Number.isFinite(visHeight) && visHeight > 0 ? this._lodPerceptionDistance(distance, visHeight) : distance;
-        const t01 = cfg.thresh01;
-        const t12 = cfg.thresh12;
-        const h = cfg.hysteresis;
-        // Ohne Hysterese-Zustand: einfache Stufenfunktion (Spawn/erstes Setup).
-        if (!Number.isFinite(currentLOD)) {
-            if (d > t12) return 2;
-            if (d > t01) return 1;
-            return 0;
-        }
-        const cur = Math.max(0, Math.min(2, currentLOD | 0));
-        // Hysterese: wir wechseln NUR, wenn die Distanz die nächste Schwelle
-        // PLUS hysteresis überschreitet, oder die vorige MINUS hysteresis
-        // unterschreitet.
-        // Jede Schwelle trägt ihre eigene Hysterese; liegt die Distanz jenseits ZWEIER Schwellen, springt die Wahl
-        // durch (Teleport, rollender Streu-Tick): ein Schritt je Aufruf liess region-private Fern-Streu, die nur in
-        // die Fern-Stufe zurückwandern darf, für immer auf L0 stehen (04.10.: 1121 Blumen/Geröll in 85–384 m).
-        if (cur === 0) {
-            if (d > t12 + h) return 2;
-            if (d > t01 + h) return 1;
-            return 0;
-        }
-        if (cur === 1) {
-            if (d > t12 + h) return 2;
-            if (d < t01 - h) return 0;
-            return 1;
-        }
-        // cur === 2
-        if (d < t01 - h) return 0;
-        if (d < t12 - h) return 1;
-        return 2;
+        const cur = Number.isFinite(currentLOD) ? Math.max(0, Math.min(2, currentLOD | 0)) : undefined;
+        return AnazhRealm._stufeNachGrenzen(d, cur, this._baumGrenzen, 1);
     }
 
     // Die EINE Varianten-Wahl (ohne Geometrie-Bau): regionSeed → eine von VARIANTS_PER_SPECIES
@@ -2469,11 +2507,16 @@ AnazhRealm.LOD_DISTANCES = (() => {
 // in Metern bei Welt-Skala 1; der Wagen trägt keine Zeile, er wechselt an der Maske des Baums (die Limousine trägt dort
 // 0,02 px). `px` = die Bildpunkte, die ein Wechsel tragen darf (das Soll, Nanite:
 // < 1 Pixel). `zeilen` = der Schirm des Solls (1920 × 1080). `hyst` = die Hysterese der gebauten Arten ohne eigene im Buch
-// (`_stufeNachGrenzen`: hinein ab (1 + h)·d, zurück unter (1 − h)·d).
+// (`_stufeNachGrenzen`: hinein ab (1 + h)·d, zurück unter (1 − h)·d). `leib` = der Haushalt des Felds der Leiber (`_feldGrenzen`):
+// das Feld trägt jenseits der Nah-Grenze, zurück erst `feldHystM` diesseits; der Mensch der Menge, sobald sein Leib
+// (`mengeKoerperM` hoch) unter `mengePx` Bildpunkte fällt, zurück `mengeHystM` diesseits. `bewegungMS` = das Tempo, bei dem die
+// Bedeutung eines Leibs sich verdoppelt (`_bedeutung`: der Gang des Menschen, 1,4 m/s).
 AnazhRealm.LOD_SCHIRM = Object.freeze({
     px: 1,
     zeilen: 1080,
     hyst: 0.1,
+    leib: Object.freeze({ feldHystM: 10, mengeKoerperM: 1.8, mengePx: 64, mengeHystM: 4 }),
+    bewegungMS: 1.4,
     fehler: Object.freeze({
         tree: Object.freeze({ 1: 0.0376, 2: 0.0578 }), // die Weide (ihre Krone doppelt so breit wie hoch), L1 und Karte
         haus: Object.freeze({ 1: 0.0238, 2: 0.1152 }), // modern · alemannisch
@@ -2488,15 +2531,21 @@ AnazhRealm.LOD_SCHIRM = Object.freeze({
 // stehen in Metern des Buchs, eine gestauchte Schwelle schöbe das L0/L1- über das L1/Karte-Band. Wo die Stufe das Soll trägt,
 // wechselt sie dort (näher, billiger; ein kleinerer Schirm zieht den Pixel-Term heran); wo nicht, hält der Haushalt, und der
 // Fehler am Wechsel steht über dem Soll (die Station nennt ihn). `zeilen` 0 = noch kein Zeichenpuffer: der Schirm des Solls.
-// null = die Art trägt die Stufe nicht.
-AnazhRealm._wechselGesetz = function (kind, stufe, groesse, zeilen) {
+// null = die Art trägt die Stufe nicht. DIE LEIBER (Mensch, Tier: ihr Buch ist die Zeile ihres Ofens, `_leibGrenzen`) reichen ihren
+// Haushalt `haushalt` selbst; ohne gemessenen Fehler (die Tafel trägt für Leiber keine Zeile) hält er allein.
+AnazhRealm._wechselGesetz = function (kind, stufe, groesse, zeilen, haushalt) {
     const S = AnazhRealm.LOD_SCHIRM;
     const e = S.fehler[kind] ? S.fehler[kind][stufe] : undefined;
-    const h = AnazhRealm._wechselHaushalt(kind, stufe);
-    if (!(e > 0) || !(h > 0)) return null;
-    const z = zeilen > 0 ? zeilen : S.zeilen;
-    const f = z / (2 * Math.tan((AnazhRealm.KAM_FOV_GRAD * Math.PI) / 360));
-    return Math.min((e * f) / S.px, h) * groesse;
+    const h = haushalt > 0 ? haushalt : AnazhRealm._wechselHaushalt(kind, stufe);
+    if (!(e > 0 || haushalt > 0) || !(h > 0)) return null;
+    return Math.min(e > 0 ? (e * AnazhRealm._brennweite(zeilen)) / S.px : Infinity, h) * groesse;
+};
+// DIE BRENNWEITE DES SCHIRMS in Bildpunkten (je Meter Größe in 1 m Abstand): die Höhe des Zeichenpuffers `zeilen` im
+// Ruhe-Sichtfeld KAM_FOV_GRAD, ohne Zeichenpuffer (0) der Schirm des Solls — jede Grenze des Stufen-Gesetzes liest sie.
+AnazhRealm._brennweite = function (zeilen) {
+    return (
+        (zeilen > 0 ? zeilen : AnazhRealm.LOD_SCHIRM.zeilen) / (2 * Math.tan((AnazhRealm.KAM_FOV_GRAD * Math.PI) / 360))
+    );
 };
 // DER HAUSHALT DES WECHSELS aus dem Buch (live `_studioRenderConfig`, vor dem Umschlag foundry-core): die Grenze `ab` der
 // Budget-Zeile, wo die Art sie nennt (das Tor, B2c), sonst die Distanzen d0 (Stufe 1) und d1 (Stufe 2) des Labors — der Baum

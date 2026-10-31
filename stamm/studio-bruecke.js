@@ -67,6 +67,8 @@ class AnazhRealm_studio_bruecke {
                 v: "?v=" + AnazhRealm.VERSION,
                 base: typeof window !== "undefined" && window.location ? window.location.href : "",
                 lesen: AnazhRealm.FOUNDRY_LESEN,
+                // die Typen, deren Ecken das Jahr trägt (SAISON_GESETZ `typ`): nur deren Teile behalten aCenter · aType
+                jahr: Object.values(AnazhRealm._saisonGesetz().typ),
                 format: AnazhRealm.FOUNDRY_PLATTE_FORMAT,
                 platte: f.platte,
                 wirt: karte
@@ -106,14 +108,7 @@ class AnazhRealm_studio_bruecke {
                 if (!m || typeof m !== "object") return;
                 if (m.type === "ready" && m.world === "terrain") {
                     f.ready = true; // der Stand-Stempel liest die Antwort selbst (`_standStempel`)
-                    // EIN Umschlag: das komplette Studio-Buch (Rezepte + B4-Tabellen + Welt-Palette + Wahrnehmung)
-                    // ist mit der Geburt gefragt, DANN die Assets vorwärmen. Der Vorrat wartet ohne Frist auf das
-                    // Buch (`f.buchDa`): fällt die Anfrage, bricht sie LAUT beim Namen (K22).
-                    this._foundryPrefetchLibrary();
-                    // DIE EINE PIPE: die Gattungs-Templates off-thread vorwärmen —
-                    // Welt-Spawns treffen dann nur noch das Memo (Clone, kein Freeze). Er wartet auf das erste
-                    // Bild (K60) wie der Vorrat der Bibliothek; ein Bruch seines Gusses meldet sich laut.
-                    this._ofenPrefetchKreaturen().catch((e) => this._stoffBruch("der Ofen-Vorrat", e));
+                    this._foundryVorraete();
                 } else if (m.type === "book") {
                     // das Buch geht in die Welt, sobald der Wirt steht (nach dem Spielstand, `_foundryWirtSteht`)
                     if (f.wirt) this._foundryIngestBook(m);
@@ -126,6 +121,22 @@ class AnazhRealm_studio_bruecke {
             this._stoffBruch("die Foundry bootet nicht", _e);
         }
         return f;
+    }
+    // DIE VORRÄTE DER SEITE (EIN Starter): der Vorrat der Bibliothek — EIN Umschlag, das komplette Studio-Buch (Rezepte, B4-Tabellen,
+    // Welt-Palette, Wahrnehmung) ist mit der Geburt gefragt, DANN wärmen die Assets vor; er wartet ohne Frist auf das Buch
+    // (`f.buchDa`), fällt die Anfrage, bricht sie LAUT beim Namen (K22) — und DIE EINE PIPE des Ofens: die Gattungs-Vorlagen
+    // off-thread, Welt-Spawns treffen dann nur das Memo (Clone, kein Freeze), ein Bruch seines Gusses meldet sich laut. Beide warten
+    // auf das erste Bild (K60). Gerufen, sobald der Faden steht (`ready`), und vom Tausch am Ort, der sie nach dem ersten Bild der
+    // alten Welt traf (`_weltAmOrt`): sein Abschied lässt jeden Wartenden an Foundry und Fäden verfallen, auch ihre Aufträge im Flug —
+    // die Bibliothek hing bei „bestellt", der Ofen stand nie, kein Tier wurde mehr geboren (Radeon 30.10., 48 im Flug). Was steht,
+    // steht: die Bibliothek mit ihrem Stempel (`f._warmCritical`), der Ofen mit `_ofenVorratSteht`. Ihr Merker `f._vorrat` taugt
+    // nicht dazu — false heißt auch „steht noch nicht an": las der Starter ihn, lief die Bibliothek in keinem Boot (kein Wagen auf
+    // der Platte, kein Dorf-Export für den Zweit-Boot, gate:fluss W8 und W3). Jeder Vorrat fragt nur, was Cache und Memo nicht tragen.
+    _foundryVorraete() {
+        const f = this._foundry;
+        if (!f || !f.ready) return;
+        if (!f._warmCritical) this._foundryPrefetchLibrary();
+        if (!this._ofenVorratSteht) this._ofenPrefetchKreaturen().catch((e) => this._stoffBruch("der Ofen-Vorrat", e));
     }
     // Die Antwort eines Studio-Fadens löst ihren Auftrag ein: Körper (asset), Siedlung (settlement), Slot (slot), die Frage
     // der Karte an die Platte (karte; sie backt seit S2 im Welt-Renderer, `_karteWeltBacken`) — EINE pending-Map, die reqIds
@@ -244,7 +255,8 @@ class AnazhRealm_studio_bruecke {
     // must-ignore: fehlt ein Teilfeld, bleibt dieser Teil byte-alt.
     _foundryIngestBook(m) {
         if (!m || typeof m !== "object") return;
-        this._foundryIngestRecipes(m.book, m.paramsByKind, m.kindPolicy);
+        if (this._foundry) this._foundry.buchRoh = m; // jeder Welt-Wechsel am Ort trägt es neu in die Welt (`_weltAbschied`)
+        this._foundryIngestRecipes(m.book, m.paramsByKind, m.kindPolicy, m.stammbaum);
         this._foundryIngestWorldParams(m.worldParams);
         this._foundryIngestRenderConfig(m.renderConfig);
         this._foundryIngestSiedlung(m.siedlung);
@@ -324,10 +336,14 @@ class AnazhRealm_studio_bruecke {
             AnazhRealm._siedlungGesetzMemo = s;
         }
     }
-    _foundryIngestRecipes(book, paramsByKind, kindPolicy) {
+    _foundryIngestRecipes(book, paramsByKind, kindPolicy, stammbaum) {
         const f = this._foundry;
         if (!f || !book || typeof book !== "object") return;
         f.recipes = book;
+        // B8 — die Tafeln des Stammbaums (je Kern Studio, Bereiche, Rezepte, Datei; die Zwillinge der Brücke): der EINE Baum
+        // (`_stammbaum`) leitet aus ihnen ab. Ein Umschlag ohne Feld (eine Alt-Brücke) trägt keinen — jedes Rezept hängt dann
+        // ohne Eltern, und die Linse nennt es.
+        f.stammbaum = stammbaum && typeof stammbaum === "object" ? stammbaum : null;
         // B4-Regler-Tabellen der Kerne je kind (id/lab/min/max/step/def/law/grp): die Werkstatt rendert ihre
         // Slider daraus. must-ignore: Alt-Brücke ohne Feld → {} (keine Studio-Regler).
         f.paramsByKind = paramsByKind && typeof paramsByKind === "object" ? paramsByKind : {};
@@ -565,7 +581,7 @@ class AnazhRealm_studio_bruecke {
             basis: !!c.bruecke,
             urls: ["scripts", "lib", "bruecke"].flatMap((feld) => liste(feld, [c])),
         }));
-        schale({ lesen: b.lesen, format: b.format, platte: b.platte, kerne, wirt: b.wirt || [] });
+        schale({ lesen: b.lesen, jahr: b.jahr, format: b.format, platte: b.platte, kerne, wirt: b.wirt || [] });
         W.__PHYTO_FOUNDRY_WORKER = true;
         W.__anazhCores = manifest; // die Brücke liest die ns-Kerne generisch (vor den importScripts)
         W.importScripts(...liste("lib").concat(liste("scripts"), liste("bruecke"))); // die Brücke startet sich selbst
@@ -583,7 +599,9 @@ class AnazhRealm_studio_bruecke {
     //                 geänderter Kern baut nur seine Leser neu (bis 28.10. leerte jeder Kern-Edit die ganze Platte). Weicht
     //                 `__stamp` (alle Kern-SHA) ab, fegt das Öffnen die Schlüssel, deren SHA kein Kern mehr trägt. Der
     //                 Haupt-Thread fasst die Platte nie an (Store `anazhFoundryAssets/assets`).
-    //   KONSUM-WAND   nur die Attribute, die `_foundryBuildMesh` liest (FOUNDRY_LESEN), reisen und liegen auf Platte.
+    //   KONSUM-WAND   nur die Attribute, die `_foundryBuildMesh` liest (FOUNDRY_LESEN), reisen und liegen auf Platte; die
+    //                 Jahres-Ecken aCenter · aType nur an einem Teil, dessen aType einen Typ des Jahrs trägt (`cfg.jahr`,
+    //                 SAISON_GESETZ `typ`: Laub, Blüte) — Rinde, Nadel und Halm stehen im Jahr, sie tragen nichts davon.
     //   VERENGUNG     Index Uint32 → Uint16, wo das Teil ≤ 65 536 Vertices trägt.
     //   TRANSFER      jede Asset-/Karten-/Pixel-Antwort reist zero-copy (die Puffer sind frisch je Antwort).
     //   SAISON-NAGEL  jeder Körper und jede Karte erreicht das Studio als Sommer (das Jahr färbt der Host).
@@ -599,6 +617,11 @@ class AnazhRealm_studio_bruecke {
     static _foundrySchale(cfg) {
         const W = globalThis; // der Worker-Scope (self)
         const LESEN = new Set(cfg.lesen);
+        if (!Array.isArray(cfg.jahr) || !cfg.jahr.length)
+            throw new Error(
+                "STOFF: die Transport-Schale kennt die Typen des Jahrs nicht (cfg.jahr, SAISON_GESETZ typ)"
+            );
+        const JAHR = new Set(cfg.jahr);
         const roh = W.postMessage.bind(W);
         const schreibAuftrag = new Map(); // reqId (der Atlas: "blatt-atlas") → die Lieferung des Studio-Baus, der gerade läuft
         // DIE PLATTE HÄLT KEINEN FADEN. Die Studio-Fäden (Werk und Helfer, `_foundryHelfer`) teilen EINE IndexedDB. Ein
@@ -763,6 +786,14 @@ class AnazhRealm_studio_bruecke {
                 for (const k of Object.keys(m)) {
                     const a = m[k];
                     if (a && a.array && ArrayBuffer.isView(a.array) && !LESEN.has(k)) delete m[k];
+                }
+                // die Jahres-Ecken: nur, wo eine Ecke einen Typ des Jahrs trägt — sonst reisen sie nie (die Nadel-Krone)
+                const typ = m.aType && m.aCenter && m.aCenter.array ? m.aType.array : null;
+                let jahr = false;
+                for (let i = 0; typ && i < typ.length && !jahr; i++) jahr = JAHR.has(typ[i]);
+                if (!jahr) {
+                    delete m.aCenter;
+                    delete m.aType;
                 }
                 if (m.index instanceof Uint32Array && m.position && m.position.array.length / 3 <= 65536)
                     m.index = Uint16Array.from(m.index);
@@ -1026,6 +1057,7 @@ class AnazhRealm_studio_bruecke {
         if (da) {
             if (wo != null && da.rang) this._foundryNaeher(da.rang, wo); // ohne Ort kein Rang (Lehre 17: null ist nie 0)
             this._streuWartetAuf(da);
+            this._foundryWaechterRuht(); // ruht der Loop, bekommt der Leser, was ein Takt am Wächter ließ
             return da;
         }
         if (!f.requested) f.requested = new Set();
@@ -1051,15 +1083,28 @@ class AnazhRealm_studio_bruecke {
     // Der Takt-Wächter: hält ein Request-Ergebnis zurück, bis der Loop-Tick es
     // freigibt (die Konversion des Aufrufers folgt als Microtask im selben Frame). `rang` = der Rang-Datensatz des Auftrags
     // (`_foundryRang`, derselbe wie in der Worker-Schlange): die Freigabe wählt mit der EINEN Wahl der Pumpe (`_foundryWahl`).
+    // ER HÄLT NUR FÜR EINEN LOOP, DER LÄUFT (`_foundryWaechterRuht`).
     _foundryIngestTakt(x, rang) {
         if (x == null) return Promise.resolve(x); // Miss/Timeout: sofort — nulls stauen nie
         const r = this.state.renderer;
         if (!r || r._isHeadlessNull) return Promise.resolve(x); // headless byte-schnell (Gates)
+        if (this._foundryWaechterRuht()) return Promise.resolve(x);
         const q = this._foundryIngestQueue || (this._foundryIngestQueue = []);
         this._foundryIngestMaxQ = Math.max(this._foundryIngestMaxQ || 0, q.length + 1); // Linse
         return new Promise((res) =>
             q.push({ frei: () => res(x), rang: this._foundryRang(rang), t: performance.now() })
         );
+    }
+    // DER WÄCHTER BEI RUHENDEM LOOP (lod.K5, `_loopRuht`): kein Takt gibt frei, und kein Bild, dessen Zeit die Freigabe schützt —
+    // er hält nichts. Eine Antwort geht durch wie headless, und was ein Takt, der lief, noch am Wächter ließ, geht beim nächsten
+    // Ankommen (`_foundryIngestTakt`) oder Fragen (`_foundryZug`) mit, der Reihe nach. Bis lod-stufen hielt er für einen Takt, der
+    // nie kam: die Stufen-Linse (koordination `bericht/2910-lod-k5/kanten.js`) stellte an der Mess-Wiese 0 von 14 Stufen, 13
+    // Antworten des Worker lagen am Wächter (swiftshader, 30.10.). true = der Loop ruht.
+    _foundryWaechterRuht() {
+        if (!this._loopRuht()) return false;
+        const q = this._foundryIngestQueue;
+        while (q && q.length) q.shift().frei();
+        return true;
     }
     // DIE EINE WAHL der Foundry (Worker-Schlange `_foundryPumpe`, Freigabe `_tickFoundryIngest`): nah zuerst nach dem EINEN
     // Rang (`_foundryAuftragD2`, vor dem ersten Weltbild der Blick zuerst), unter Gleichen FIFO, nie verhungert — wartet der
@@ -1331,67 +1376,7 @@ class AnazhRealm_studio_bruecke {
     // Die Foundry-Art einer Grammatik-Spezies (Bäume, Sträucher …): ihre Fernstufe ist die Karte, die die Welt aus der L1
     // derselben Art bäckt (`_karteWeltBacken`).
     _foundryPresetFor(species) {
-        const map = {
-            // Baeume
-            baum_eiche: "eiche",
-            baum_fichte: "fichte",
-            baum_tanne: "tanne",
-            baum_birke: "birke",
-            baum_weide: "weide",
-            baum_mammut: "mammut",
-            baum_kiefer: "fichte",
-            // Wald-Nischen (_forestCellDarts) auf Vorlagen-Arten: baum_erle → weide. Buche und Karst-Baum sind seit 04.10.
-            // eigene Studio-Arten (die Aliase auf Mammut und belaubte Eiche fielen), die Mammut-Nische des Wald-Generators
-            // heißt baum_mammut. Stehendes Totholz hat in der Welt keinen Erzeuger (der Alias baum_totholz → eiche fiel
-            // 05.10. mit der Grammatik-Art); die Studio-Art totholz pflanzt der Labor-Wald.
-            baum_erle: "weide",
-            baum_buche: "buche",
-            baum_karst: "karst",
-            // Restliche Wald-Nischen (`_scatterSpeciesForLayer`) auf die nächste Studio-Art: Zypresse (schlanke
-            // Konifere) → tanne, Palme (Einzelstamm mit Krone) → weide.
-            baum_zypresse: "tanne",
-            baum_palme: "weide",
-            // Fels: ALLE 6 Vorlagen-Stein-Rezepte (emitRock), nach Charakter verteilt — vorher
-            // fielen sediment/zacken/geroell durch (nur findling/basalt genutzt = Rueckzug).
-            // findling = runder Findling:
-            noiserock: "findling",
-            findling: "findling",
-            // basalt = Saeulen:
-            stein_block: "basalt",
-            stein: "basalt",
-            // sediment = Schichtfels (geschichtet):
-            fels: "sediment",
-            fels_var: "sediment",
-            schichtfels: "sediment",
-            sediment: "sediment",
-            // zacken = Felszacken (schroffe Tuerme/Boegen):
-            felsturm: "zacken",
-            felszacken: "zacken",
-            felsbogen: "zacken",
-            zacken: "zacken",
-            // geroell = Geroellhalde (Schutt/Talus/Kiesel):
-            geroell: "geroell",
-            talus: "geroell",
-            felsbrocken: "geroell",
-            kiesel: "geroell",
-            // Kristall (emitCrystals)
-            kristall_geode: "kristalle",
-            geode: "kristalle",
-            kristall: "kristalle",
-            kristalle: "kristalle",
-            kristall_var: "kristalle",
-            // Blume (emitFlower) + Strauch — die Bodenflora der Streu-Regionen (blume_gross); die Arten-Namen des gefallenen
-            // Klein-Vegetations-Zwillings (Tulpe · Klee · Mohn) fielen mit ihm (Waldboden 04.10.).
-            blume_gross: "blume",
-            blume: "blume",
-            // Straeucher -> Vorlagen-strauch (LOD haelt die Perf: lod2 ~16k Verts; die Distanz-
-            // LOD-Wahl gibt dem fernen Busch die leichte Stufe, instanziert).
-            busch_hazel: "strauch",
-            busch: "strauch",
-            // Das Kraut-Stratum feuchter Senken (`_scatterSpeciesForLayer` moisture>0.55) ist der Studio-Farn (Waldboden
-            // 04.10., integriert 05.10.): der Alias auf den Strauch fiel wie Buche, Karst-Baum und Totholz.
-            farn_busch: "farn",
-        };
+        const map = AnazhRealm.STREU_NAMEN;
         if (map[species]) return map[species];
         // Generische Regel hinter der Tabelle: `baum_<preset>`/`<preset>` mit Preset im LIVE-Rezeptbuch
         // (`f.recipes`) löst ohne Tabellen-Edit auf; die Tabelle trägt nur historische Namen (baum_kiefer …).
@@ -1413,6 +1398,253 @@ class AnazhRealm_studio_bruecke {
         }
         return null;
     }
+    // DER STAMMBAUM (Studio-Vertrag B8, studios.K5): der EINE Katalog der Teile, aus den Gesetzbüchern abgeleitet, nie von Hand
+    // gepflegt — Studio → Bereich → Teil. Je Kern seine Tafel aus dem Umschlag (`f.stammbaum`: der Name des Studios, je Art der
+    // Name ihres Bereichs, die Vertrags-Datei, die Rezepte in der Reihe des Buchs), je Rezept ein Teil samt seinem ZIEL, dem
+    // Werk-Ziel, das ihn in die Welt legt. Die Regel des Ziels steht NUR hier, der Wort-Katalog der KI (`_studioWortKatalog`) und
+    // die Werkstatt-Bibliothek (`_workshopRenderBlueprintList`) lesen sie: eine Art mit Präfix über ihr Präfix (ein Tor-Wort fällt
+    // nie auf das welt_-Portal derselben Gestalt — ein echtes Tor mit Trigger, kein Bauwerk), eine Art mit Werk-Verb (KIND_POLICY
+    // `werk`: die Gattung, der Körper, der Klang) als ihr eigenes Werk-Ziel, sonst der Bauplan, der ihre Gestalt trägt (die
+    // Ausstattung: feuerstelle → glutbrunnen), sonst der erste Bauplan ihrer Studio-Art (`_foundryPresetForEntry`: der Fels). Die
+    // sichtbaren Baupläne ohne Rezept hängen, woher sie kommen: die eigenen des Spielers in der Werkstatt, die Tore in die Welten
+    // im Ultiversum (`portalMeta` aus `WORLD_REGISTRY`), die übrigen des Wirts nach ihrer Rolle — ohne Gestalt aus einem Buch sind
+    // sie die WAISEN. Je Knoten die Quelle (`datei` · `anker`; die Zeile löst gate:nervensystem S) und je Teil sein Leser
+    // (`konsum`): `werk` (der Bauplan des Ziels) · `wesen` · `praegung` · `streu` (die Nah-Streu, ein Name der Streu
+    // `STREU_NAMEN`) · `welt` (das Platz-Gesetz führt in den Wald- oder Siedlungs-Kanal); null ist ein toter Knoten. Ein
+    // Zwilling steht beim Namen: ein Rezept unter einer schon vergebenen id (die Brücke nimmt es nicht) oder ein zweiter
+    // eingebauter Träger einer Gestalt neben ihrem Ziel. Gemerkt je Buch, Tafel und dem Stand, den der Baum liest.
+    // { wurzeln: [Studio → Bereich → Teil], teile, teilVon: Rezept → Teil, zielVon: Ziel → Teil, befund }
+    _stammbaum() {
+        const bps = this.state.blueprints || {};
+        const f = this._foundry;
+        const recipes = f && f.recipes ? f.recipes : {};
+        const tafel = (f && f.stammbaum) || null;
+        // DER STAND des Merkers: je Bauplan sein Name und jedes Feld, das seinen Platz im Baum setzt — nie ihre Zahl (bis 30.10.
+        // lieferte ein Tausch bei gleicher Zahl, ein Werk fällt und ein anderes kommt, den alten Baum, und die Bibliothek brach
+        // an der Zeile des neuen; die Teil-Edits zählen nicht, der Baum liest keine Teile). Flach in der Reihe des Speichers und
+        // Feld für Feld verglichen: ein Treffer liest nur (je Wort des Prompts einer; ein Stand als String mit sortierten Namen
+        // kostete 115 µs je Treffer und hob das Prompt von 4,4 auf 19,6 ms), sortiert wird nur beim Neubau
+        const stand = [];
+        for (const n of Object.keys(bps)) {
+            const b = bps[n] || {};
+            const welt = b.portalMeta ? "@" + b.portalMeta.world : null;
+            stand.push(
+                n,
+                b.label,
+                b.role,
+                b.builtIn,
+                b.donorOnly,
+                welt,
+                b.studioGestalt,
+                b._formClass,
+                b._foundryAutoSpecies
+            );
+        }
+        const cfg = AnazhRealm._studioRenderConfig || null;
+        const alt = this._stammbaumMerker;
+        if (
+            alt &&
+            alt.recipes === recipes &&
+            alt.tafel === tafel &&
+            alt.cfg === cfg &&
+            alt.stand.length === stand.length &&
+            alt.stand.every((v, i) => v === stand[i])
+        )
+            return alt;
+        const namen = Object.keys(bps).sort();
+        const KP = AnazhRealm.KIND_POLICY;
+        const istTor = (n) => !bps[n] || bps[n].role === "portal";
+        const sichtbar = (n) => !!(n && bps[n] && this._katalogSichtbar(n, bps[n]));
+        const nachArt = {};
+        for (const n of namen) {
+            if (istTor(n) || bps[n]._foundryAutoSpecies) continue;
+            const pr = this._foundryPresetForEntry({ type: n });
+            if (pr && !nachArt[pr]) nachArt[pr] = n;
+        }
+        // die Leser der Welt ohne Bauplan: die Nah-Streu (ihre Boden-Arten) und die Namen der Streu
+        const streu = new Set(Object.values(AnazhRealm.STREU_NAMEN));
+        for (const a of (cfg && this._nahStreuArten()) || []) streu.add(a.id);
+        const gross = (w) => w.charAt(0).toUpperCase() + w.slice(1);
+        const teile = [];
+        const teilVon = new Map();
+        const zielVon = new Map();
+        const teil = (id, kern, datei) => {
+            const rec = recipes[id];
+            const pol = KP[rec.kind];
+            const werk = (pol && pol.werk) || null;
+            let ziel = null;
+            if (pol && pol.prefix) ziel = bps[pol.prefix + id] ? pol.prefix + id : null;
+            else if (werk) ziel = id;
+            else
+                ziel =
+                    namen.find((n) => !istTor(n) && bps[n].studioGestalt === id && !bps[n]._foundryAutoSpecies) ||
+                    nachArt[id] ||
+                    null;
+            const kanal = this._placeDispatch(this._placePolicyFor(rec));
+            const t = {
+                id: "rezept:" + id,
+                ebene: "teil",
+                rezept: id,
+                art: rec.kind,
+                kern,
+                lab: (sichtbar(ziel) && bps[ziel].label) || rec.lab || gross(id),
+                ziel,
+                werk,
+                sichtbar: sichtbar(ziel),
+                konsum:
+                    werk ||
+                    (ziel
+                        ? "werk"
+                        : streu.has(id)
+                          ? "streu"
+                          : kanal === "forest" || kanal === "settlement"
+                            ? "welt"
+                            : null),
+                quelle: { datei, anker: id },
+            };
+            teile.push(t);
+            teilVon.set(id, t);
+            if (ziel && !zielVon.has(ziel)) zielVon.set(ziel, t);
+            return t;
+        };
+        // je Kern ein Studio, je Art ein Bereich — in der Reihe des Buchs; ein Rezept ohne Kern-Tafel hängt unter einer
+        // namenlosen Wurzel (ein Teil ohne Eltern, die Linse nennt es)
+        const wurzeln = [];
+        const studio = (kern, lab, datei, arten) => {
+            const s = {
+                id: "kern:" + kern,
+                ebene: "studio",
+                kern,
+                lab,
+                quelle: { datei, anker: "STAMMBAUM" },
+                kinder: [],
+            };
+            const je = new Map();
+            s.bereich = (art) => {
+                if (!je.has(art)) {
+                    const b = {
+                        id: "art:" + kern + ":" + art,
+                        ebene: "bereich",
+                        art,
+                        kern,
+                        lab: arten && typeof arten[art] === "string" ? arten[art] : null,
+                        quelle: { datei, anker: "STAMMBAUM.arten." + art },
+                        kinder: [],
+                    };
+                    je.set(art, b);
+                    s.kinder.push(b);
+                }
+                return je.get(art);
+            };
+            wurzeln.push(s);
+            return s;
+        };
+        const getafelt = new Set();
+        for (const k of (tafel && tafel.kerne) || []) {
+            const s = studio(k.kern, k.studio || null, k.datei || null, k.arten);
+            for (const id of k.rezepte || [])
+                if (recipes[id] && !getafelt.has(id)) {
+                    getafelt.add(id);
+                    s.bereich(recipes[id].kind).kinder.push(teil(id, k.kern, k.datei || null));
+                }
+        }
+        const ohneTafel = Object.keys(recipes).filter((id) => !getafelt.has(id) && recipes[id] && recipes[id].kind);
+        if (ohneTafel.length) {
+            const s = studio("?", null, null, null);
+            for (const id of ohneTafel) s.bereich(recipes[id].kind).kinder.push(teil(id, null, null));
+        }
+        // die sichtbaren Baupläne, die kein Rezept trägt: die eigenen (Werkstatt), die Tore in die Welten (Ultiversum),
+        // die des Wirts (nach Rolle); ein eingebauter Träger einer Gestalt neben ihrem Ziel ist ein Zwilling
+        const zwillinge = ((tafel && tafel.zwillinge) || []).map((z) => ({
+            art: "rezept",
+            name: z.id,
+            text: `das Rezept „${z.id}" steht in ${z.traeger} und ${z.kern}`,
+        }));
+        const werkstatt = { id: "werkstatt", ebene: "studio", lab: "Werkstatt", quelle: null, kinder: [] };
+        const ultiversum = { id: "ultiversum", ebene: "studio", lab: "Ultiversum", quelle: null, kinder: [] };
+        const wirt = { id: "wirt", ebene: "studio", lab: "Ohne Gesetzbuch", quelle: null, kinder: [] };
+        const ast = (w, id, lab) => {
+            let b = w.kinder.find((x) => x.id === id);
+            if (!b) w.kinder.push((b = { id, ebene: "bereich", lab, quelle: null, kinder: [] }));
+            return b;
+        };
+        for (const n of namen) {
+            const bp = bps[n];
+            if (!sichtbar(n) || zielVon.has(n)) continue;
+            const gestalt = this._foundryPresetForEntry({ type: n });
+            const t = {
+                id: "bauplan:" + n,
+                ebene: "teil",
+                rezept: null,
+                lab: bp.label || n,
+                ziel: n,
+                werk: null,
+                sichtbar: true,
+                konsum: "werk",
+                gestalt: gestalt && teilVon.has(gestalt) ? gestalt : null,
+                quelle: { datei: null, anker: n },
+            };
+            if (bp.role === "portal" && bp.portalMeta) {
+                t.welt = bp.portalMeta.world || null;
+                ast(ultiversum, "ultiversum:tore", "Tore in die Welten").kinder.push(t);
+            } else if (!bp.builtIn && !bp._foundryAutoSpecies) {
+                t.eigen = true;
+                ast(werkstatt, "werkstatt:eigen", "Eigene Werke").kinder.push(t);
+            } else {
+                // die deklarierte Rolle (Daten), nie die errechnete: `_displayRole` baut für die emergente Rolle Gestalt
+                // (`_makePartGeometry`) — der Baum liegt auf dem Prompt-Pfad der KI
+                const rolle = bp.role || AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
+                t.waise = !t.gestalt;
+                ast(wirt, "wirt:" + rolle, AnazhRealm.BLUEPRINT_ROLE_LABELS[rolle] || rolle).kinder.push(t);
+                if (t.gestalt)
+                    zwillinge.push({
+                        art: "traeger",
+                        name: n,
+                        text: `„${n}" trägt die Gestalt „${t.gestalt}" neben ihrem Ziel „${teilVon.get(t.gestalt).ziel}"`,
+                    });
+            }
+            teile.push(t);
+            zielVon.set(n, t);
+        }
+        if (werkstatt.kinder.length) wurzeln.unshift(werkstatt);
+        if (ultiversum.kinder.length) wurzeln.push(ultiversum);
+        if (wirt.kinder.length) wurzeln.push(wirt);
+        // DER BEFUND (die Zahlen der Linse): Teile · mit Gesetz-Quelle (ihr Werk baut ein Buch) · ohne Eltern (ein Rezept ohne
+        // Kern-Tafel, ein namenloses Studio oder ein namenloser Bereich, ein Werk des Wirts ohne Buch) · Zwillinge · tot (kein
+        // Leser) · ohne Griff (kein Ziel, die Bibliothek legt es nicht in die Welt)
+        const ohneEltern = [];
+        for (const w of wurzeln)
+            for (const b of w.kinder)
+                for (const t of b.kinder)
+                    if (t.waise)
+                        ohneEltern.push({ name: t.ziel, text: `„${t.ziel}" (${b.lab}) trägt kein Gesetzbuch` });
+                    else if (t.rezept && (!w.lab || !b.lab))
+                        ohneEltern.push({
+                            name: t.rezept,
+                            text: `das Rezept „${t.rezept}" hängt ohne ${!w.lab ? "Studio" : "Bereich"} (Art ${t.art}, Kern ${t.kern || "?"})`,
+                        });
+        const befund = {
+            teile: teile.length,
+            mitQuelle: teile.filter((t) => t.rezept || t.gestalt).length,
+            ohneEltern,
+            zwillinge,
+            tot: teile.filter((t) => !t.konsum).map((t) => t.rezept || t.ziel),
+            ohneGriff: teile.filter((t) => !t.ziel).map((t) => t.rezept),
+        };
+        this._stammbaumMerker = {
+            recipes,
+            tafel,
+            cfg,
+            stand,
+            wurzeln,
+            teile,
+            teilVon,
+            zielVon,
+            befund,
+        };
+        return this._stammbaumMerker;
+    }
+
     // DER WORT-KATALOG (Welle L Folge, L-Wortschatz): ein Wort des Co-Schöpfers („eiche", „birken", „fachwerkhaus",
     // „häuser", „wagen") löst über den EINEN Rezept-Katalog auf — die Studio-Arten des Buchs, ihre Bauplan-Träger, das
     // Art-Gesetz (`KIND_POLICY`) und die Studios (`WORLD_REGISTRY`) —, nie über eine Hand-Liste (die Brücke STUDIO_WORT
@@ -1448,20 +1680,20 @@ class AnazhRealm_studio_bruecke {
     //   (3) die Art-Wörter des Art-Gesetzes: der Präfix-Stamm („baum", „haus", „fahrzeug") und der Stamm des Spenders,
     //       der kein eigener Bauplan ist („fahrzeug_wagen" → „wagen") → das erste Werk der Art;
     //   (4) die Studio-Namen, deren Kompositum-Kopf ein Art-Wort ist („Fachwerkhaus" → das erste Haus).
-    // Der Träger eines Rezepts: eine Art MIT Präfix nur über ihr Präfix — ein Tor-Wort fällt nie auf das welt_-Portal
-    // derselben Gestalt (ein echtes Tor mit Trigger, kein Bauwerk); sonst der Bauplan, der seine Gestalt trägt (die
-    // Ausstattung: feuerstelle → glutbrunnen), sonst der erste Bauplan seiner Studio-Art (`_foundryPresetForEntry`: der
-    // Fels). Eine Art mit Werk-Verb (KIND_POLICY `werk`: die Gattung, der Körper, der Klang) hat keinen Bauplan — ihr Rezept
-    // ist sein eigenes Werk-Ziel (KI K2: vorher war „Wolf", „Lofi", „Mensch" kein Wort der Welt). Gemerkt je Buch und
-    // Bauplan-Zahl. { stufen: [Map Wort → Werk-Ziel] ×4, artVon: Werk-Ziel → Art, woerter }.
+    // Der Träger eines Rezepts ist das Ziel seines Teils im EINEN Stammbaum (`_stammbaum`, die Regel steht dort): Satz → Wort →
+    // Knoten → Ziel → Stempel; ein zweiter Katalog entsteht nicht. Eine Art mit Werk-Verb (die Gattung, der Körper, der Klang)
+    // hat keinen Bauplan — ihr Rezept ist sein eigenes Werk-Ziel (KI K2: vorher war „Wolf", „Lofi", „Mensch" kein Wort der
+    // Welt). Gemerkt je Stammbaum, Buch und Bauplan-Zahl. { stufen: [Map Wort → Werk-Ziel] ×4, artVon: Werk-Ziel → Art, woerter }.
     _studioWortKatalog() {
         const bps = this.state.blueprints || {};
         const f = this._foundry;
         const recipes = f && f.recipes ? f.recipes : {};
         const ids = Object.keys(recipes);
-        const namen = Object.keys(bps).sort();
+        // der Stand der Baupläne (Namen, Rolle, Name im Katalog) ist der des Baums: ein neuer Baum, ein neuer Katalog
+        const baum = this._stammbaum();
         const alt = this._wortKatalogMerker;
-        if (alt && alt.recipes === recipes && alt.nRez === ids.length && alt.nBp === namen.length) return alt;
+        if (alt && alt.baum === baum && alt.recipes === recipes && alt.nRez === ids.length) return alt;
+        const namen = Object.keys(bps).sort();
         const KP = AnazhRealm.KIND_POLICY;
         const falte = AnazhRealm._wortFalten;
         const kopf = (label) =>
@@ -1472,28 +1704,14 @@ class AnazhRealm_studio_bruecke {
                 .map(falte);
         const istTor = (n) => !bps[n] || bps[n].role === "portal";
         const label = (t) => (bps[t] ? bps[t].label : recipes[t] && recipes[t].lab);
-        const nachArt = {};
-        for (const n of namen) {
-            if (istTor(n) || bps[n]._foundryAutoSpecies) continue;
-            const pr = this._foundryPresetForEntry({ type: n });
-            if (pr && !nachArt[pr]) nachArt[pr] = n;
-        }
+        // der Träger je Rezept ist das Ziel seines Teils im EINEN Stammbaum (`_stammbaum` trägt die Regel)
         const traeger = {};
         const artVon = {};
         for (const id of ids) {
-            const rec = recipes[id];
-            const pol = rec && KP[rec.kind];
-            let t = null;
-            if (pol && pol.prefix) t = bps[pol.prefix + id] ? pol.prefix + id : null;
-            else if (pol && pol.werk) t = id;
-            else if (rec)
-                t =
-                    namen.find((n) => !istTor(n) && bps[n].studioGestalt === id && !bps[n]._foundryAutoSpecies) ||
-                    nachArt[id] ||
-                    null;
+            const t = baum.teilVon.has(id) ? baum.teilVon.get(id).ziel : null;
             if (!t) continue;
             traeger[id] = t;
-            if (!artVon[t]) artVon[t] = rec.kind;
+            if (!artVon[t]) artVon[t] = recipes[id].kind;
         }
         const stufen = [new Map(), new Map(), new Map(), new Map()];
         const setze = (s, wort, ziel) => {
@@ -1559,7 +1777,7 @@ class AnazhRealm_studio_bruecke {
                     if (w.length > art.length && w.endsWith(art)) studioPaare.push([w, ziel]);
         eindeutig(3, studioPaare);
         const woerter = [...nennWoerter, ...werkWoerter];
-        this._wortKatalogMerker = { recipes, nRez: ids.length, nBp: namen.length, stufen, artVon, woerter };
+        this._wortKatalogMerker = { baum, recipes, nRez: ids.length, stufen, artVon, woerter };
         return this._wortKatalogMerker;
     }
 
@@ -1591,24 +1809,12 @@ class AnazhRealm_studio_bruecke {
     // — der Prompt nennt sie, die Antwort-Form der Welt-KI (`_kiAntwortSchema`) erlaubt GENAU sie, je Art mit ihren Reglern.
     _studioWortGruppen() {
         const K = this._studioWortKatalog();
-        const GRUPPE = {
-            tree: "Bäume",
-            rock: "Stein",
-            haus: "Häuser",
-            gate: "Tore",
-            vehicle: "Fahrzeuge",
-            ausstattung: "Ausstattung",
-            weapon: "Klingen",
-            flower: "Blumen",
-            grass: "Gras",
-            kreatur: "Tiere",
-            koerper: "Gestalt des Spielers",
-            klang: "Musik der Welt",
-        };
-        // eine Art, deren Wirts-Zeile ihr Gesetzbuch bringt (B7, `_kindPolicyVereinen`), heißt, wie das Buch sie nennt —
-        // ohne sie fiel jedes Wort einer neuen Art still aus dem Prompt (studios.K5: die KI kannte das neunte Buch nie)
-        const KP = AnazhRealm.KIND_POLICY;
-        for (const a of Object.keys(KP)) if (KP[a].kern && !GRUPPE[a]) GRUPPE[a] = KP[a].substanz.label;
+        // die Gruppen sind die Bereiche des EINEN Stammbaums (`_stammbaum`): je Art der Name, den ihr Gesetzbuch ihr gibt (B8) —
+        // der Wirt nennt keine Art, auch das neunte Buch steht unter seinem eigenen Namen im Prompt (studios.K5; bis 30.10.
+        // trug der Wirt hier eine Hand-Liste von zwölf Arten-Namen neben den Büchern)
+        const GRUPPE = {};
+        for (const w of this._stammbaum().wurzeln)
+            for (const b of w.kinder) if (b.art && b.lab && !GRUPPE[b.art]) GRUPPE[b.art] = b.lab;
         const gruppen = {};
         for (const [w, nennung] of K.woerter) {
             const ziel = this._studioBlueprintForWord(w);
@@ -1764,15 +1970,28 @@ class AnazhRealm_studio_bruecke {
     }
     // Eine NUR-WURF-Stufe (B2 Stufe 3, S3 haus: `nurWurf`) wird nie gezeigt — sie wirft für die Art (B2c `schatten`) und
     // trägt die Fernform. Die Klammer überspringt sie: kein Distanz-Wunsch serviert sie als Anzeige.
+    // GEMERKT JE BUCH (Lehre 25, w4-ankunft): die Klammer ist eine reine Funktion von Rezept-Tafel und Wahrnehmung — beide
+    // wechseln nur als neues Objekt (Ingest), also gilt das Gedächtnis je (Rezepte, Render-Config). Unter dem Ladeschirm
+    // fragte jede Höhe jedes wartenden Baums je Takt die Tafel neu (headless kalt 35–65 s: 2,0 von 4,2 s `_foundryBaumHoehe`).
     _foundryDeclaredStage(preset, wish) {
+        const f = this._foundry;
+        const rez = f ? f.recipes : null;
+        const cfg = AnazhRealm._studioRenderConfig;
+        let K = this._stufenKlammer;
+        if (!K || K.rez !== rez || K.cfg !== cfg) K = this._stufenKlammer = { rez, cfg, je: new Map() };
+        let je = K.je.get(preset);
+        if (!je) K.je.set(preset, (je = new Map()));
+        const hat = je.get(wish);
+        if (hat !== undefined) return hat;
         const st = this._foundryKindStages(preset);
-        if (!st) return wish;
-        let sv = null;
-        for (let i = 0; i < st.length; i++) {
+        let sv = st ? null : wish;
+        for (let i = 0; st && i < st.length; i++) {
             if (this._foundryNurWurf(preset, st[i])) continue;
             if (sv === null || st[i] <= wish) sv = st[i];
         }
-        return sv === null ? AnazhRealm._kernPflichtBruch("phyto:lod.kindStages (" + preset + ": nur nurWurf)") : sv;
+        if (sv === null) return AnazhRealm._kernPflichtBruch("phyto:lod.kindStages (" + preset + ": nur nurWurf)");
+        je.set(wish, sv);
+        return sv;
     }
     // Die NUR-WURF-Stufe einer Art mit Fernform "huelle" — sie trägt die Liste (`__fern`). Fehlt sie, bricht die Art.
     _foundryFernStufe(preset) {
@@ -1918,9 +2137,10 @@ class AnazhRealm_studio_bruecke {
     // (gesetz · boden) gilt mit Fern-Wunsch erst ab `ANALOG_NAH_M` — diesseits trägt ihr Studio-Mesh (die Stufen-Klammer
     // serviert die Art, Fels sein L0, die Blume ihre L2, Gras seine Stufe). null = die Mesh-Bahn, auch für "karte" (Baum, Strauch).
     // Leser: der Zellen-Chokepoint (`_scatterMaterializeCell`), der Bahnwechsel des LOD-Ticks und die Gestalt-Gleichheit
-    // — EINE Grenze für Tier, Bau und Streu, kein zweites Maß (W1 las bis 05.10. Welt-d1 + Hysterese, 29,4 m).
-    _streuFernBahn(preset, lod, dist) {
-        if (!(lod >= 2) || !(dist >= AnazhRealm.ANALOG_NAH_M)) return null;
+    // — EINE Grenze für Tier, Bau und Streu, kein zweites Maß: das Feld des Stufen-Gesetzes (`_feldTraegt`, `nah` = die Zelle
+    // trägt ihr Mesh, die Hysterese hält sie bis zum Austritt; W1 las bis 05.10. Welt-d1 + Hysterese, 29,4 m).
+    _streuFernBahn(preset, lod, dist, nah) {
+        if (!(lod >= 2) || !this._feldTraegt(false, dist, !!nah)) return null;
         const fern = this._foundryFernForm(preset);
         return fern === "karte" ? null : fern;
     }
@@ -2161,16 +2381,19 @@ class AnazhRealm_studio_bruecke {
 
     // Die WELT-PLATZIERUNGS-MATRIX eines Eintrags aus seiner Transform allein
     // (position mit −0.5-baseY wie _rebuildArchitectureMesh · rotationY · scale)
-    // — so kann eine DEDUP-Instanz platziert werden, OHNE ihr Mesh zu bauen.
-    _archWeltMatrix(entry) {
+    // — so kann eine DEDUP-Instanz platziert werden, OHNE ihr Mesh zu bauen. `out`: die Matrix, in die sie schreibt (der Satz
+    // des Bewegten folgt je Takt, `_archBewegteUrteilen` — ohne `out` eine neue).
+    _archWeltMatrix(entry, out) {
         const p = entry.position || { x: 0, y: 0, z: 0 };
         const baseY = Number.isFinite(p.y) ? p.y - 0.5 : 0;
         const s = Number.isFinite(entry.scale) ? entry.scale : 1;
-        const q = new THREE.Quaternion().setFromAxisAngle(
+        const q = (this._archWeltQ || (this._archWeltQ = new THREE.Quaternion())).setFromAxisAngle(
             this._archUp || (this._archUp = new THREE.Vector3(0, 1, 0)),
             entry.rotationY || 0
         );
-        return new THREE.Matrix4().compose(new THREE.Vector3(p.x || 0, baseY, p.z || 0), q, new THREE.Vector3(s, s, s));
+        const t = (this._archWeltT || (this._archWeltT = new THREE.Vector3())).set(p.x || 0, baseY, p.z || 0);
+        const k = (this._archWeltS || (this._archWeltS = new THREE.Vector3())).set(s, s, s);
+        return (out || new THREE.Matrix4()).compose(t, q, k);
     }
 
     // ═══ DIE ARCH-BAHN: Bau = BOX-SATZ ═══
@@ -2552,6 +2775,7 @@ class AnazhRealm_studio_bruecke {
                 // colorNode) — ein Stück nur aus Positionen fiel im Fit auf das Material-Weiß (gemessen 04.10. an
                 // der Mess-Wiese: alle Glieder von Fuchs, Reh und Bär 255,255,255 — die weiße Wurst am Boden).
                 const ca = o.geometry.attributes.color || null;
+                const ta = o.geometry.attributes.aTon || null; // der Ton je Ecke reist mit (mensch.K4, `_gliedKapselFit`)
                 const proBone = new Map();
                 for (let i = 0; i < pa.count; i++) {
                     const b = si.getX(i);
@@ -2565,6 +2789,7 @@ class AnazhRealm_studio_bruecke {
                     if (!bone || !inv) continue;
                     const arr = new Float32Array(liste.length * 3);
                     const farr = ca ? new Float32Array(liste.length * 3) : null;
+                    const tarr = ta ? new Float32Array(liste.length) : null;
                     for (let n = 0; n < liste.length; n++) {
                         arr[n * 3] = pa.getX(liste[n]);
                         arr[n * 3 + 1] = pa.getY(liste[n]);
@@ -2574,9 +2799,11 @@ class AnazhRealm_studio_bruecke {
                             farr[n * 3 + 1] = ca.getY(liste[n]);
                             farr[n * 3 + 2] = ca.getZ(liste[n]);
                         }
+                        if (tarr) tarr[n] = ta.getX(liste[n]);
                     }
                     const attribute = { position: new THREE.BufferAttribute(arr, 3) };
                     if (farr) attribute.color = new THREE.BufferAttribute(farr, 3);
+                    if (tarr) attribute.aTon = new THREE.BufferAttribute(tarr, 1);
                     const stueck = {
                         geometry: { attributes: attribute },
                         material: o.material,
@@ -2694,6 +2921,9 @@ class AnazhRealm_studio_bruecke {
                 for (const gl of glieder) this._weltFeldFrei(gl.handle);
                 return null; // Erschöpfung: ganz oder gar nicht — kein halber Wolf
             }
+            // DIE FARBE DES BEWOHNERS FERN (mensch.K4): die Kapsel ist die seiner Gestalt, ihre Farbe die seine (`_tonFeldFarbe`)
+            const zeilen = cr.userData.__tonZeilen;
+            if (zeilen) this._weltFeldFarbe(handle, this._tonFeldFarbe(this._gliedKapseln.get(key), zeilen));
             glieder.push({ teil: a, name: nm.name, handle });
         }
         return glieder.length ? glieder : null;
@@ -2906,10 +3136,15 @@ class AnazhRealm_studio_bruecke {
             fg = 0,
             fb = 0,
             fw = 0;
+        // DIE TÖNE DER FARBE (mensch.K4): trägt jedes Teil den Ton je Ecke (der Mensch, koerper `menschTon`), steht je Ton sein
+        // Anteil am Mittel — ein Bewohner färbt sein Glied fern mit seiner Palette (`_tonFeldFarbe`), wie nah seine Ecken
+        const mitTon = meshes.every((o) => !!o.geometry.attributes.aTon);
+        const toene = mitTon ? new Map() : null;
         for (const o of meshes) {
             mL.multiplyMatrices(wurzelInv, o.matrixWorld);
             const pos = o.geometry.attributes.position;
             const col = o.geometry.attributes.color || null;
+            const ton = mitTon ? o.geometry.attributes.aTon : null;
             const mc = !col && o.material && o.material.color ? o.material.color : null;
             const schritt = pos.count > 4000 ? Math.ceil(pos.count / 4000) : 1;
             bbT.makeEmpty();
@@ -2917,20 +3152,25 @@ class AnazhRealm_studio_bruecke {
                 tg = 0,
                 tb = 0,
                 tn = 0;
+            const jeTon = ton ? new Map() : null;
             for (let i = 0; i < pos.count; i += schritt) {
                 v.fromBufferAttribute(pos, i).applyMatrix4(mL);
                 bb.expandByPoint(v);
                 bbT.expandByPoint(v);
-                if (col) {
-                    tr += col.getX(i);
-                    tg += col.getY(i);
-                    tb += col.getZ(i);
-                    tn++;
-                } else if (mc) {
-                    tr += mc.r;
-                    tg += mc.g;
-                    tb += mc.b;
-                    tn++;
+                let cr, cg, cb;
+                if (col) [cr, cg, cb] = [col.getX(i), col.getY(i), col.getZ(i)];
+                else if (mc) [cr, cg, cb] = [mc.r, mc.g, mc.b];
+                else continue;
+                tr += cr;
+                tg += cg;
+                tb += cb;
+                tn++;
+                if (jeTon) {
+                    const t = Math.round(ton.getX(i));
+                    const s = jeTon.get(t) || jeTon.set(t, [0, 0, 0]).get(t);
+                    s[0] += cr;
+                    s[1] += cg;
+                    s[2] += cb;
                 }
             }
             if (!tn || bbT.isEmpty()) continue;
@@ -2940,6 +3180,11 @@ class AnazhRealm_studio_bruecke {
             fg += (tg / tn) * flaeche;
             fb += (tb / tn) * flaeche;
             fw += flaeche;
+            if (jeTon)
+                for (const [t, s] of jeTon) {
+                    const z = toene.get(t) || toene.set(t, [0, 0, 0]).get(t);
+                    for (let k = 0; k < 3; k++) z[k] += (s[k] / tn) * flaeche;
+                }
         }
         if (bb.isEmpty()) return null;
         const c = bb.getCenter(new THREE.Vector3());
@@ -2954,510 +3199,13 @@ class AnazhRealm_studio_bruecke {
         a[ax] -= lang;
         const b = c.clone();
         b[ax] += lang;
-        return { a, b, r, farbe: fw > 0 ? { r: fr / fw, g: fg / fw, b: fb / fw } : null };
-    }
-
-    // Das per-Ziegel-March-Material ist GEFALLEN (DER EINE WELT-MARCH): der
-    // Feld-Pass marcht ALLE Felder aus Atlas+Liste in EINEM Draw — ein
-    // Material je Ziegel wäre der Zwilling, den wir abgeschafft haben.
-
-    // DER STOFF-WERT (1310-18): ein Wert, der je Stoff variiert, reist als Verweis auf den Stoff des ZEICHNENDEN OBJEKTS
-    // (`material.<pfad>`, je Objekt in dessen Bindegruppe geschrieben), nie als Konstante im Graphen — Stoffe gleicher
-    // Signatur teilen so EIN Programm. Der Verweis geht über das Objekt, nicht über den zeichnenden Stoff: der r184-
-    // Schattenpass zeichnet mit seinem EIGENEN Stoff (die Knoten des Werfers hängen darin, Lehre 26), das Objekt trägt den
-    // Werfer-Stoff in jedem Pass. Der Wert steht beim Bau fest — die Observer-Diät sieht keine spätere Änderung.
-    _stoffWert(TSL, pfad, typ) {
-        return TSL.reference("material." + pfad, typ || "float");
-    }
-
-    // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über
-    // der Wurzel in Metern aus dem Satz-Attribut `aWiege` (`_satzBlock`), also für jede Studio-Skala derselbe Stoff.
-    // `mp.satzRegler` (true): der EINE Satz-Stoff des Bau-Satzes (`_satzStoff`, K43-2) — Rauheit, Metall und Deckkraft liest er
-    // je Ecke aus `aRegler`, das Emissiv × Glut-Stärke aus `aGlut` (`_satzBlock`); `mp` trägt diese Regler dann nicht.
-    // `krone` (true, optional; K68-N1): das Klingen-Laub gehört zu einer Krone (Baum, Strauch: foundry-core `emitTreeRezept`
-    // legt die Normale der Krone darüber), auch ohne `baum` — der wiegende Stoff der Nah-Streu erbt sie vom Stoff der Art
-    // (`userData.krone`); die Karte (foliageTex) ist immer Krone.
-    _foundryTreeMaterial(kind, mp, wiegen, baum, krone) {
-        const satz = !!(mp && mp.satzRegler === true);
-        if (!this._foundryMats) this._foundryMats = {};
-        const T = THREE;
-        const TSL = T.TSL;
-        // Material-Regler: reist `mp` mit (roughness/metalness/flatShading/env/side/Glut), baut AnazhRealm EXAKT
-        // dieses Material; ohne `mp` die Baum-Defaults — die Zahlen und die Look-Familie (FELL_LOOK/HAUT_LOOK/HAAR_LOOK,
-        // der Ton-Anker mp.color steht im Key) liest der Wirt aus DERSELBEN Quelle wie der Schlüssel (phyto-core
-        // `budgetRegler`); Laub/Gras sind immer beidseitig.
-        const R = globalThis.__phytoCore.budgetRegler(kind, mp);
-        const isBark = R.rinde;
-        const rough = R.r,
-            metal = R.mt,
-            flat = R.fl,
-            env = R.env,
-            sideDouble = R.doppelt,
-            emis = R.em,
-            emisI = R.emI,
-            klasseLook = R.look;
-        // Build-Zeit-Gate der Studio-Dither-Blende (Default an; Maske + CPU-Doppel-Mitgliedschaft schalten
-        // zusammen am foundryCrossfade-Flag). Das Flag steht im Key: ein Live-Toggle trifft nur NEU gebaute
-        // Gruppen; Material und Attribut-Stempel (`_foundryBuildGroup`) entstehen im selben Pass → konsistent. Der wiegende
-        // Stoff der Nah-Streu blendet nie (ihr Stufen-Wechsel ist die Armlänge, ihre Stempel tragen 0): sein Satz trägt
-        // keine Stempel (`STREU_SATZ_ATTR`).
-        const xfade = !!(this.state && this.state.foundryCrossfade === true) && wiegen !== true;
-        // DER SCHLÜSSEL IST DIE EINE MATERIAL-IDENTITÄT (phyto-core `budgetStoff`, W8): Art · Regler · SEITE · Gewebe ·
-        // Glut · Fell-/Haut-Ton — dieselbe, mit der das Budget-Gesetz am Studio-Ausgang Stoffe zählt und faltet (die
-        // Seite fehlte: ein beidseitiger Stoff teilte das Material eines einseitigen gleicher Regler, first-wins).
-        // Dazu die Wirts-Zustände, die kein Studio-Stoff sind: die Dither-Blende und das Wiegen der Nah-Streu.
-        // DIE KRONE (K68-N1): Karte immer, Klinge am Baum und Strauch — sie lichtet flip-frei (`_laubStoffNormale`)
-        const _krone = kind === "foliageTex" || (kind === "foliage" && (!!baum || krone === true));
-        const key =
-            globalThis.__phytoCore.budgetStoff(kind, mp) +
-            (xfade ? "|xf" : "") +
-            (wiegen === true ? "|wiegt" : "") +
-            (baum ? "|wind:" + baum.ht.toFixed(2) + "/" + baum.delta.toFixed(4) + "/" + baum.an : "") +
-            (satz === true ? "|satz" : "") +
-            (_krone ? "|krone" : "");
-        if (this._foundryMats[key]) return this._foundryMats[key];
-        let mat;
-        // HAUT-VOLLENDUNG (19.07.): die Lab-Haut trägt CLEARCOAT (matSkin
-        // 0.12/0.6) — skin/haut minten als Physical-Material (der Standard
-        // trägt keinen Lack); die Zahlen kommen NUR aus dem Kern-Gesetz.
-        const _hautL =
-            (kind === "skin" || kind === "haut") && typeof globalThis !== "undefined" && globalThis.__koerperCore
-                ? globalThis.__koerperCore.HAUT_LOOK
-                : null;
-        // DER KLARLACK (W5 Gegenstände): die Haut des Körperstudios (HAUT_LOOK) ODER der Stoff selbst (Fahrzeug-Lack,
-        // Klingen-Stahl — `budgetRegler` cc/ccr aus dem Gesetzbuch); ohne Klarlack der Standard. Gemessen (Integration W5,
-        // echte GPU, Ausgabe-Pfad, Gesicht auf 0,75 m): die Haut hebt sich im Median 41,3 -> 42,9 (+4 %, zwei gleiche
-        // Schüsse 0,2 auseinander); er trägt nur die Menschen-Haut (skin/haut — kein Tier-Stoff), keinen Befehl mehr.
-        const ccSoll =
-            _hautL && Number.isFinite(_hautL.clearcoat)
-                ? {
-                      cc: _hautL.clearcoat,
-                      ccr: Number.isFinite(_hautL.clearcoatRoughness) ? _hautL.clearcoatRoughness : 0.5,
-                  }
-                : R.cc > 0
-                  ? { cc: R.cc, ccr: R.ccr }
-                  : null;
-        // Die Physical-Klasse lebt in der Node-Bibliothek des Renderers (r184 — die Bootstrap-Brücke reicht sie nicht als
-        // THREE-Symbol: die Probe `typeof T.MeshPhysicalNodeMaterial` fiel IMMER auf den Standard, die Haut trug nie ihren
-        // Klarlack). Der Null-Renderer zeichnet nichts und trägt keine Bibliothek — gefragt wird die Bibliothek selbst, nie
-        // die Flagge (eine Linse lüftet `_isHeadlessNull` am Null-Renderer, gate:leistungs-vertrag: die Lieferung brach).
-        const rendM = this.state && this.state.renderer;
-        const MatK =
-            ccSoll && rendM && rendM.library
-                ? rendM.library.getMaterialNodeClass("MeshPhysicalMaterial")
-                : T.MeshStandardNodeMaterial;
-        mat = new MatK({
-            roughness: rough,
-            metalness: metal,
-            flatShading: flat,
-            side: sideDouble ? T.DoubleSide : T.FrontSide,
-        });
-        if (MatK !== T.MeshStandardNodeMaterial) {
-            mat.clearcoat = ccSoll.cc;
-            mat.clearcoatRoughness = ccSoll.ccr;
-        }
-        // DIE DURCHSICHT (W5): ein durchsichtiger Stoff (Scheibe, Fenster, Glimm-Scheibe) zeichnet transparent mit der
-        // Deckkraft seines Gesetzbuchs; einen Schatten wirft er nicht (`_foundryBuildMesh`: das Licht geht durch ihn). Er
-        // SCHREIBT SEINE TIEFE (material.K4): der Spiegel-Pass liest die Scheibe aus der Tiefe des Bilds (Lage und Normale,
-        // `_spiegelPass`) — ohne sie stand dort der Raum dahinter, und das Fenster spiegelte, was hinter ihm liegt. Was hinter
-        // ihm liegt, zeichnet vor ihm (Opakes zuerst, Durchsichtiges von hinten) und bleibt sichtbar. Eine dünne Scheibe
-        // zeichnet beide Seiten in EINEM Zug: r184 zieht einen doppelseitig-transparenten Stoff sonst zweimal (Rück-, dann
-        // Vorderseite) — gemessen +1 Befehl je Wagen über den Budget-Deckel vehicle draws 12.
-        if (R.op < 1) {
-            mat.transparent = true;
-            mat.opacity = R.op;
-            mat.forceSinglePass = true;
-        }
-        if (env !== 1) mat.envMapIntensity = env;
-        if (emis) {
-            mat.emissive = new T.Color(emis[0], emis[1], emis[2]);
-            mat.emissiveIntensity = emisI;
-        }
-        // Tint-Kontinuität L0/L1↔L2: das Studio tintet NUR das Laub, multiplikativ, aus dem Positions-Hash
-        // (foundry-core.js) — gleich über alle Stufen, sonst springt die Kronenfarbe beim Stufen-Wechsel. Das
-        // Flag lässt `_scatterInstanceAdd` denselben Tint auf die 3D-Krone legen; Rinde bleibt untintet. Nur
-        // das Flag, NIE attribute("instanceColor") — der native InstanceNode-Auto-Multiply trägt ihn.
-        if (kind === "foliage" || kind === "foliageTex") mat.userData.useInstanceTint = true;
-        if (_krone) mat.userData.krone = true;
-        // DIE WERTE JE STOFF (1310-18): was nur diesen Stoff unterscheidet (das Leucht-Maß, der Ton-Anker der Strähnen-Achse),
-        // liest der Graph als Stoff-Wert (`_stoffWert`), nie als eingefaltete Konstante — sonst trüge jeder Stoff seinen
-        // eigenen Graphen und r184 baute je Stoff ein Programm.
-        const _tonA = mp && Array.isArray(mp.color) && mp.color.length === 3 ? mp.color : null;
-        mat.userData.stoffWerte = {
-            leucht: mp && typeof mp.leucht === "number" && mp.leucht > 0 ? mp.leucht : 0,
-            tonL: _tonA ? Math.max(1e-4, 0.2126 * _tonA[0] + 0.7152 * _tonA[1] + 0.0722 * _tonA[2]) : 1,
+        return {
+            a,
+            b,
+            r,
+            farbe: fw > 0 ? { r: fr / fw, g: fg / fw, b: fb / fw } : null,
+            toene: toene && fw > 0 ? [...toene].map(([t, s]) => [t, s[0] / fw, s[1] / fw, s[2] / fw]) : null,
         };
-        // Vorlagen-Farben leben als VERTEX-COLORS: auf WebGPU/NodeMaterial MUSS colorNode = attribute("color")
-        // sie lesen — `vertexColors:true` wirkt hier NICHT (sonst weißes Laub, schwarze Koniferen).
-        // `_foundryBuildGroup` garantiert das color-Attribut.
-        const vcol = TSL.attribute("color", "vec3");
-        // DAS LEUCHT-GESETZ (Architektur-Welle 05.10.): ein Stoff, dessen Gesetzbuch `leucht` stempelt (fachwerk
-        // `feuer`: Glut, Flamme, Herdfeuer), leuchtet in seiner Vertex-Farbe × leucht — heiße Mitte, kühler Rand,
-        // gelbe Flammen-Wurzel, rote Spitze — statt einer Farbe für jede Fläche (das Labor webt dasselbe in r128).
-        if (mp && typeof mp.leucht === "number" && mp.leucht > 0)
-            mat.emissiveNode = vcol.mul(this._stoffWert(TSL, "userData.stoffWerte.leucht"));
-        // DIE SAISON IST EINE FARBE (V18.527): Laub und Gras sind Golden-Sommer gebacken — ihre Albedo × uSeasonMul
-        // (das Studio-Gesetz: der Laub-Shader multipliziert mix(1, uSeasonMul, vSeasW), vSeasW = 1 auf Laub und
-        // Blüte). Rinde, Fels, Kristall bleiben ungetönt.
-        const _suF =
-            kind === "foliage" || kind === "foliageTex" || kind === "grass" ? this._ensureSeasonUniforms() : null;
-        const laubFarbe0 = _suF && _suF.uSeasonMul ? vcol.mul(_suF.uSeasonMul) : vcol;
-        // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): die gesehene Fläche nach unten gewandt → die hellere,
-        // mattere Unterseite (`_laubUnterseite`, K68-N1: die Fläche, nie die Licht-Normale). Laub und Blüte, nie Gras.
-        const laubFarbe =
-            kind === "foliage" || kind === "foliageTex" ? this._laubUnterseite(TSL, laubFarbe0) : laubFarbe0;
-        // DIE NORMALE DER KRONE (K68-N1): die Studio-Krone (foundry-core `emitTreeRezept`: jede Karte, jede Klinge und Nadel
-        // eines Baums und Strauchs) trägt die Normale der Krone und lichtet flip-frei (`_laubStoffNormale`). Die Karte
-        // (foliageTex) ist immer Krone; das Klingen-Laub (foliage) ist es am Baum und Strauch (`_krone`: die Wind-Daten der
-        // Art oder der Stoff, von dem die Nah-Streu erbt) — Farn, Blüte, Schilf und Gestrüpp tragen ihre eigene Fläche, deren
-        // Wicklung frei ist: sie lesen die Seite (r184 faceDirection), sonst läge jeder zweite Wedel im Dunkel.
-        if (_krone) this._laubStoffNormale(TSL, mat);
-        if (isBark) {
-            // KEIN Normal-Override auf Vegetations-Stämmen: r184-NodeMaterial-Tangenten (UV-Derivate) kippen auf
-            // gestreckten Tube-UVs die Normale → der Stamm liest schwarz. Die Rinde lebt über Albedo (Studio-
-            // Vertex-Farben) + Roughness 0.93. Ihr Spiegel der Studio-Rinden-Normale (`_foundryBarkNormalTexture`) hatte
-            // keinen Leser und fiel mit K60-2; die Normale lebt im Studio (foundry-core `makeBarkNormal`).
-            mat.colorNode = TSL.vec4(vcol, 1.0);
-        } else if (kind === "foliageTex") {
-            // Blatt-Atlas: Alpha schneidet die Blattform aus (kein solides Quad), RGB × Vertex-Farbe (die
-            // Vorlagen-Blattfarbe faerbt den Atlas). Es ist DER EINE Atlas, auf den die Studio-Karten routen
-            // (phyto-core `bakeLeafAtlasBild`): Zelle 0 Baum-Zweig (`BLATT_ATLAS_BREIT`), 1 Weiden-Zweig (Trauer-Strähne,
-            // `BLATT_ATLAS_WEIDE`), 2 Großblatt-Zweig (Strauch, `BLATT_ATLAS_GROSS`), 3 Nadel-Zweiglein (`BLATT_ATLAS_NADEL`) — dieselbe Textur wie
-            // der Grammatik-Pfad (`_ensureFoliageClusterAtlas`), keine zweite.
-            const atl = this._blattAtlasProbe(TSL);
-            if (atl) {
-                // Die Blattform schneidet die ALPHA von colorNode aus, nie `opacityNode`: der r184-Schattenpass
-                // liest colorNode.a · map.a · maskShadowNode (`Renderer._getShadowNodes`), opacityNode nie — die
-                // Nadel-Karten warfen volle Rechtecke. Die Atlas-Farbe: der EINE Leser (`_blattAtlasProbe`); die Deckung
-                // trägt den Versatz des Laubs (A3, `_laubVersatz`), Bild und Schatten schneiden an der Zahl des Stoffs.
-                mat.colorNode = TSL.vec4(atl.rgb.mul(laubFarbe), atl.a);
-                mat.alphaTest = mp && typeof mp.alphaTest === "number" && mp.alphaTest > 0 ? mp.alphaTest : 0.5;
-                mat.transparent = false;
-            } else {
-                // Nur headless (kein document): kein Stoff zeichnet — mit document liefert der Atlas oder bricht.
-                mat.colorNode = TSL.vec4(laubFarbe, 1.0);
-            }
-        } else if (kind === "schatten") {
-            // DER SCHATTEN-STOFF (S3, das EINE Wurf-Gesetz E1): der Schatten-Teil einer Stufe zeichnet nur in den Kaskaden
-            // (SHADOW_TWIN_LAYER) — seine Alpha ist max(aDeckt, Atlas-Alpha): das Gerüst deckt ganz (aDeckt 1), die Karte
-            // schneidet ihre Blattform aus dem EINEN Atlas (aDeckt 0). Die Alpha lebt in colorNode, nie in opacityNode:
-            // der r184-Schattenpass liest colorNode.a · map.a · maskShadowNode (Lehre 26). EIN Programm für jeden
-            // statischen Wurf (Baum-Teil, die Haus-Stufe 3 mit aDeckt 1).
-            const atl = this._blattAtlasProbe(TSL);
-            const deckt = TSL.attribute("aDeckt", "float");
-            mat.colorNode = TSL.vec4(TSL.vec3(0.0), atl ? TSL.max(deckt, atl.a) : deckt);
-            mat.alphaTest = 0.5;
-            mat.transparent = false;
-        } else if (klasseLook) {
-            // Haut + Fell: Shader-Gesetze der Labs (koerperstudio matSkin: SSS-Fresnel-Saum · tetrapoda matFur:
-            // Fell-Rim + Gold-Sheen + Spitzen-Rim/-Spec) reisen als DATEN (FELL_LOOK/HAUT_LOOK/HAAR_LOOK, Kern-
-            // Zahlen = die EINZIGE Quelle) und werden hier als emissive-Additive gewoben (wie das Lab-GLSL).
-            // Strähnen-Achse: der Bäcker trägt sie als Farbverlauf (__streuGeo: Wurzel = Ton×0.12); die Luminanz-
-            // Ratio zum Ton-Anker (mp.color) gewinnt vStrandY zurück. Ohne Kern-LOOK/TSL-Symbole: byte-alt.
-            mat.colorNode = TSL.vec4(vcol, 1.0);
-            try {
-                const tkC = typeof globalThis !== "undefined" ? globalThis.__tetrapodaCore : null;
-                const kkC = typeof globalThis !== "undefined" ? globalThis.__koerperCore : null;
-                const schale = kind === "fellSchale";
-                const strand = kind === "hair" || kind.indexOf("straehne") === 0 || schale;
-                const L =
-                    kind === "skin" || kind === "haut"
-                        ? kkC && kkC.HAUT_LOOK
-                        : kind === "hair"
-                          ? kkC && kkC.HAAR_LOOK
-                          : kind === "fell"
-                            ? tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.koerper
-                            : tkC && tkC.FELL_LOOK && tkC.FELL_LOOK.straehne;
-                if (L) {
-                    const ndv = TSL.normalView.normalize().dot(TSL.positionViewDirection).clamp(-1.0, 1.0);
-                    const rim = TSL.float(1.0).sub(ndv.abs()).clamp(0.0, 1.0);
-                    let add = null;
-                    const term = (farbe, knoten) => {
-                        const t = TSL.vec3(farbe[0], farbe[1], farbe[2]).mul(knoten);
-                        add = add ? add.add(t) : t;
-                    };
-                    if (strand) {
-                        // der Ton-Anker (seine Luminanz) ist ein Stoff-Wert: jeder Fell-/Haar-Ton zeichnet im Programm seiner Art
-                        const tonL = _tonA ? this._stoffWert(TSL, "userData.stoffWerte.tonL") : null;
-                        const wA = Number.isFinite(L.wurzelAnker) ? L.wurzelAnker : 0.12;
-                        // DAS SCHALEN-FELL (V18.497): die Schale t (aSchale.x) IST die Strähnen-Achse. Die Haar-
-                        // Maske liest die Wurzel (aWurzel, Bind-Raum — sie läuft mit jeder Pose mit): das Raster
-                        // folgt der Gesetz-Dichte (aSchale.z = √Median Strähnen je Fläche), je Zelle eine Locke
-                        // mit gewürfeltem Zentrum, deren Radius mit der lokalen Dichte (aSchale.y) wächst und zur
-                        // Spitze zuläuft; sie endet bei 55–100 % der Fell-Länge. Die inneren zwei Schalen decken
-                        // (Unterwolle), wo das Gesetz Fell trägt. Farbe Wurzel → Spitze = Ton × FELL_SCHALE.
-                        const aS = schale ? TSL.attribute("aSchale", "vec3") : null;
-                        if (schale) {
-                            // Die Zahlen des Rasters sind DATEN des Gesetzbuchs (tetrapoda FELL_SCHALE, K45) — das Labor
-                            // liest dieselben (worlds/tetrapoda, GLSL); fehlen sie, bricht der Stoff laut (_stoffBruch).
-                            const FS = tkC.FELL_SCHALE;
-                            const t = aS.x;
-                            const p = TSL.attribute("aWurzel", "vec3").mul(aS.z);
-                            const zelle = TSL.floor(p);
-                            const hA = FS.hashA,
-                                hB = FS.hashB;
-                            const h1 = TSL.fract(TSL.sin(zelle.dot(TSL.vec3(hA[0], hA[1], hA[2]))).mul(hA[3]));
-                            const h2 = TSL.fract(TSL.sin(zelle.dot(TSL.vec3(hB[0], hB[1], hB[2]))).mul(hB[3]));
-                            const mitte = TSL.vec3(h1, h2, TSL.fract(h1.add(h2).mul(FS.hashC)))
-                                .sub(0.5)
-                                .mul(FS.mitte);
-                            // der Strich: die Locke längs des Kamms (Lage − Wurzel quer zur Normale) gestreckt, flächentreu
-                            const q = TSL.fract(p).sub(0.5).sub(mitte);
-                            const kv = TSL.positionGeometry.sub(TSL.attribute("aWurzel", "vec3"));
-                            const kq = kv.sub(TSL.normalGeometry.mul(kv.dot(TSL.normalGeometry)));
-                            const ql = q.dot(kq.div(kq.length().max(1e-6)));
-                            const dist = q.dot(q).sub(ql.mul(ql)).mul(FS.strich).add(ql.mul(ql).div(FS.strich)).sqrt();
-                            const radius = aS.y
-                                .sqrt()
-                                .mul(FS.radius)
-                                .mul(TSL.float(1.0).sub(t.mul(FS.zulauf)));
-                            const haar = TSL.step(dist, radius).mul(TSL.step(t, h1.mul(FS.endeSpanne).add(FS.ende)));
-                            const wolle = TSL.step(t, FS.wolle).mul(TSL.step(FS.wolleAb, aS.y));
-                            // Der Ausschnitt lebt in colorNode.a wie jeder Ausschnitt (Lehre 26: der r184-Schattenpass liest
-                            // colorNode.a, nie opacityNode) — kein Stoff schneidet über opacityNode, auch keiner, der heute
-                            // nicht wirft. Die Kopf-Schalen (K28) tragen dasselbe Raster: Leib und Kopf EIN Stoff.
-                            mat.alphaTest = 0.5;
-                            mat.colorNode = TSL.vec4(
-                                vcol.mul(TSL.mix(TSL.float(FS.wurzel), TSL.float(FS.spitze), t)),
-                                TSL.max(haar, wolle)
-                            );
-                        }
-                        const sT = schale
-                            ? aS.x
-                            : tonL !== null
-                              ? vcol
-                                    .dot(TSL.vec3(0.2126, 0.7152, 0.0722))
-                                    .div(tonL)
-                                    .sub(wA)
-                                    .div(Math.max(1e-3, 1 - wA))
-                                    .clamp(0.0, 1.0)
-                              : TSL.float(1.0);
-                        if (Number.isFinite(L.tipRimPow) && Array.isArray(L.tipRimFarbe))
-                            term(L.tipRimFarbe, rim.pow(L.tipRimPow).mul(sT));
-                        if (Number.isFinite(L.specPow) && Array.isArray(L.specFarbe))
-                            term(L.specFarbe, ndv.max(0.0).pow(L.specPow).mul(sT).mul(L.specAmt));
-                    } else {
-                        if (Number.isFinite(L.sssPow) && Array.isArray(L.sssFarbe))
-                            term(L.sssFarbe, rim.pow(L.sssPow).mul(L.sssAmt));
-                        if (Number.isFinite(L.rimPow) && Array.isArray(L.rimFarbe))
-                            term(L.rimFarbe, rim.pow(L.rimPow).mul(L.rimAmt));
-                        if (Number.isFinite(L.sheenPow) && Array.isArray(L.sheenFarbe))
-                            term(L.sheenFarbe, ndv.max(0.0).pow(L.sheenPow).mul(L.sheenAmt));
-                        // microFur-Sparkle (matFur: hash-Raster, Schwelle, Rim³): das Bäcker-Merge trägt kein garantiertes
-                        // uv — das Raster des Bind-Raums (positionGeometry × dichte) ersetzt es; es klebt an der
-                        // geskinnten Haut (V18.497), statt über die bewegten Beine zu schwimmen.
-                        const mf = L.microFur;
-                        if (mf && Array.isArray(mf.farbe)) {
-                            const cell = TSL.floor(TSL.positionGeometry.xz.mul(mf.dichte));
-                            const hsh = TSL.fract(TSL.sin(cell.dot(TSL.vec2(12.9898, 78.233))).mul(43758.5453));
-                            term(mf.farbe, rim.pow(3.0).mul(TSL.step(mf.schwelle, hsh)).mul(mf.amt));
-                        }
-                    }
-                    if (add) mat.emissiveNode = add;
-                    // Wrap-Licht des Lab-Fells: ·(0.5 + 0.5·max(NdotV,0)) NACH allen Additiven — die matFur-Ordnung
-                    // (outputNode multipliziert den fertigen Output inkl. emissive-Terme).
-                    if (Number.isFinite(L.wrap)) {
-                        const w = ndv
-                            .max(0.0)
-                            .mul(L.wrap)
-                            .add(1.0 - L.wrap);
-                        mat.outputNode = TSL.vec4(TSL.output.rgb.mul(w), TSL.output.a);
-                    }
-                    // Atem-Noise-Displacement der Labs (matFur/matSkin: snoise(pos·freq + t·k)·amp; hier mx_noise, gleiche
-                    // Rausch-Klasse) auf fell und skin. Die Tier-Haut (fell) ist seit V18.497 geskinnt: r184
-                    // setupPosition fährt das Skinning VOR dem positionNode (Vendor gelesen) — sie atmet gebogen.
-                    // Die haut-Hülle des Menschen bleibt still.
-                    const at = L.atem;
-                    if (at && (kind === "fell" || kind === "skin")) {
-                        mat.positionNode = TSL.positionLocal.add(
-                            TSL.normalLocal.mul(
-                                TSL.mx_noise_float(TSL.positionLocal.mul(at.freq).add(TSL.time.mul(at.t))).mul(at.amp)
-                            )
-                        );
-                    }
-                }
-            } catch (_eL) {
-                throw this._stoffBruch("die Look-Addition (Haut · Fell · Haar)", _eL);
-            }
-        } else if (mp && mp.webe) {
-            // Stoff-Webung (Studio-getCloth): feine Mikro-Struktur moduliert die Stoff-Farbe (Strick grob, Denim/
-            // Baumwolle fein, Leder/Gummi glatt-marmoriert) — additiv, nur wenn die Gesetz-Zeile Webung trägt. Frequenz und
-            // Tiefe sind die EINE Webungs-Tafel des Kerns (koerper-core WEBE, das Labor liest dieselbe), fail-closed (K2).
-            const webe = AnazhRealm.Gesetz("koerper:WEBE." + mp.webe);
-            if (!Array.isArray(webe)) throw this._stoffBruch("die Webung " + mp.webe + " fehlt in koerper:WEBE");
-            const [wf, wa] = webe;
-            const wn = TSL.mx_noise_float(TSL.positionLocal.mul(wf)).mul(wa).add(1.0);
-            mat.colorNode = TSL.vec4(vcol.mul(wn), 1.0);
-        } else {
-            // Fels/Kristall/Blume/Laub: die Vertex-Farbe (Laub/Gras × uSeasonMul), die Regler (rough/metal/flat/
-            // env) sind schon oben aus `mp` gesetzt → Kristall glaenzt facettiert, Fels bleibt matt.
-            mat.colorNode = TSL.vec4(laubFarbe, 1.0);
-        }
-        // DIE REGLER JE ECKE (K43-2, der EINE Satz-Stoff): Rauheit · Metall · Deckkraft aus `aRegler`, das Emissiv × Glut-Stärke
-        // aus `aGlut` — vor der Blende (sie multipliziert die Deckung) und vor dem Leucht-Gesetz (es addiert den Licht-Pool
-        // auf das Emissiv; ein Stoff des Leucht-Gesetzes `leucht` behält sein Emissiv aus der Farbe).
-        if (satz === true) {
-            const rg = TSL.attribute("aRegler", "vec3");
-            mat.roughnessNode = rg.x;
-            mat.metalnessNode = rg.y;
-            // die Deckkraft lebt in colorNode.a wie jeder Ausschnitt (Lehre 26: nie opacityNode), die Marke 0,5 trägt nichts bei
-            if (R.op < 1) {
-                mat.opacity = 1;
-                mat.colorNode = TSL.vec4(mat.colorNode.rgb, mat.colorNode.a.mul(rg.z));
-            }
-            if (!(mp && typeof mp.leucht === "number" && mp.leucht > 0))
-                mat.emissiveNode = TSL.attribute("aGlut", "vec3");
-            mat.userData = mat.userData || {};
-            mat.userData.satzSchluessel = key;
-        }
-        // DIE WIESE IST EIN DACH (licht.K1): ihr Licht trägt die Normale des Dachs — oben, zu einem Zehntel die gesehene Klinge —
-        // und die Rauheit des Dachs (1: die Klingen streuen um es, kein Spiegel einer Fläche). Mit der Klinge allein lichtete der
-        // doppelseitige Halm wie eine Wand: der Sonne zugewandt hob die Nah-Wiese die Stunde 0,33 über den Mittag (Mess-Wiese Ego,
-        // swiftshader: +0,37 EV, ohne die Nah-Wiese −1,19 EV), die Sonne 10° stand morgens 1,6 und abends 0,5 EV über ihm; das Dach
-        // mit der Rauheit der Klinge (0,7) spiegelte die Abendsonne (+0,32 EV). Hinter dem Satz-Regler: er gilt jeder Wiese.
-        if (kind === "grass") {
-            mat.normalNode = TSL.normalize(
-                TSL.mix(
-                    TSL.normalViewGeometry.mul(TSL.faceDirection),
-                    TSL.cameraViewMatrix.transformDirection(TSL.vec3(0, 1, 0)),
-                    0.9
-                )
-            );
-            mat.roughnessNode = TSL.float(1);
-        }
-        // DAS MIKRO-RELIEF DER FACETTE (material.K2, `_mikroGestalt`): der facettierte Studio-Stein (Fels, Kristall: kind
-        // „unknown" mit flatShading) kippt seine Facetten in den Oktaven am Schirm, gewogen mit seiner Rauheit (glatt ≤ 0,3 nichts,
-        // matt ≥ 0,6 ganz) — im Satz die Rauheit je Ecke, sonst die des Stoffs
-        if (flat && kind === "unknown") {
-            const rauh = satz ? TSL.attribute("aRegler", "vec3").x : TSL.float(rough);
-            this._mikroGestalt(TSL, mat, true, TSL.smoothstep(0.3, 0.6, rauh));
-        }
-        // Studio-Dither-Blende auf den Foundry-3D-Stufen: Fade-out L0 + Fade-in L1 (Laub überlappend, Rinde
-        // exakte Partition); die Maske faltet in die Alpha (TSL statt discard, alphaTest cullt). Formeln = die
-        // EINE Quelle `__phytoCore.lodCrossfadeMask` (via `_lodCrossfadeMaskNode`); xfade aus = Material
-        // unverändert. Die Klassen-Look-Familie (Kreatur/Mensch, aLodLevel=0 → Maske = Identität) bleibt
-        // maskenfrei — sonst nur tote Attribut-Reads + Warnungen auf ungestempelten Geometrien.
-        if (xfade && !klasseLook) {
-            const _keepX = this._lodCrossfadeMaskNode(TSL, {
-                foliage: kind === "foliage" || kind === "foliageTex" || kind === "grass",
-            });
-            {
-                // DER KANAL der Maske: der r184-Schattenpass liest colorNode.a, nie opacityNode — nur eine Maske in der
-                // Farbe gilt auch dort. Die Instanz-Wahl liest Marke und Kanal (`_instanzFensterGilt`): ein Fenster
-                // ohne die Maske des Passes schnitte ein Loch.
-                let kanal = null;
-                if (mat.opacityNode) {
-                    mat.opacityNode = mat.opacityNode.mul(_keepX);
-                    kanal = "deckung";
-                } else if (mat.colorNode && mat.colorNode.rgb !== undefined && mat.colorNode.a !== undefined) {
-                    mat.colorNode = TSL.vec4(mat.colorNode.rgb, mat.colorNode.a.mul(_keepX));
-                    kanal = "farbe";
-                } else
-                    throw this._blendeBruch(
-                        `der Stoff „${kind}" trägt keinen Kanal für die Maske (Deckung oder Farbe mit Alpha)`
-                    );
-                // die Schwelle trennt die Maske (0 | 1), nie die Deckkraft des Stoffs: eine Scheibe (Deckkraft 0,42 < 0,5)
-                // fiel bis K11 ganz unter die Schwelle — kein Fenster, keine Wagen-Scheibe zeichnete, das Fenster-Licht
-                // der Nacht (`_leuchtStoff`) blieb unsichtbar
-                // (der Satz-Stoff liest die Deckkraft je Ecke: seine Schwelle liegt unter jeder Deckkraft eines Stoffs, 1/255)
-                if (!(mat.alphaTest > 0)) mat.alphaTest = satz === true && R.op < 1 ? 1 / 255 : 0.5 * R.op;
-                mat.userData = mat.userData || {};
-                mat.userData.foundryCrossfade = true;
-                mat.userData.foundryCrossfadeKanal = kanal;
-            }
-        }
-        // DIE DURCHSICHT: jeder Pflanzen-Stoff (Rinde · Stiel · Laub · Blatt-Karte; nie Gras, nie die Klassen-Look-Familie
-        // der Kreaturen und Menschen) wird zwischen Auge und Spieler und in der Nah-Kugel um das Auge durchsichtig
-        // (`_kameraDurchsichtNode` seiner Art: der wiegende Stoff der Nah-Streu ist Boden, sonst Rinde oder Laub) — im
-        // maskNode, den nur der Bild-Pass liest; der Schatten-Pass liest seinen eigenen maskShadowNode (immer behalten).
-        if (!klasseLook && (isBark || kind === "foliage" || kind === "foliageTex")) {
-            const _durch = this._kameraDurchsichtNode(TSL, wiegen === true ? "boden" : isBark ? "rinde" : "laub");
-            mat.maskNode = _durch;
-            mat.maskShadowNode = TSL.bool(true);
-        }
-        // Die Nah-Wiese wiegt (V18.508): das Studio-Gras liest dieselbe Böen-Welle wie die Streu
-        // (`_windSwayOffset`, Gleichtakt) mit der Halm-Höhe in Metern (Vorlage × Studio-Skala `gras`), und
-        // der Spieler biegt die Halme (uBend). Gemessen W7 (WGSL der Senke): r184 rechnet den Versatz VOR der
-        // Instanzierung — Phase und Biegung lesen den Vorlagen-Raum, der Versatz dreht und skaliert mit der Instanz.
-        if (kind === "grass") {
-            if (!this.state.windUniforms && typeof this._grassInstanceMat === "function") this._grassInstanceMat();
-            const _sk = this._foundryWorldScaleMatrix("gras").elements[0];
-            const _sway = this._windSwayOffset(TSL, { ampX: 1.5, hoehe: TSL.positionGeometry.y.mul(_sk) });
-            mat.positionNode = TSL.positionLocal.add(_sway);
-        } else if (wiegen === true) {
-            // DIE NAH-STREU WIEGT (Integration 05.10.): die weichen Boden-Arten (Farn · Schilf · Gestrüpp · Blume)
-            // lesen dieselbe Böen-Welle wie Gras und Baum aus der EINEN Quelle (`_windSwayOffset`: uWindTime ·
-            // uWindDir · Böe · uBend) mit der Höhe über der Wurzel in Metern (Vorlage × Welt-Skala der Pflanze — der
-            // Satz trägt sie je Vertex als `aWiege`, seine Positionen liegen in Welt-Lage: Phase und Biegung lesen die
-            // Welt, der Versatz liegt in Welt-Richtung). Jeder Teil einer Pflanze trägt denselben Versatz — Rute und
-            // Laub, Stiel und Blüte bleiben verbunden; der Charakter (ampX 1,2) ist der des gefallenen
-            // Klein-Vegetations-Zwillings.
-            if (!this.state.windUniforms) this._grassInstanceMat();
-            const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.attribute("aWiege", "float") });
-            mat.positionNode = TSL.positionLocal.add(_sway);
-        }
-        // EIN GRAPH JE SIGNATUR (1310-18): r184 schlüsselt ein Programm nach der IDENTITÄT seiner Knoten (der Knoten-Schlüssel
-        // endet in `customCacheKey` = Knoten-id) — frisch gebaute Knoten hießen ein Programm je Stoff (1310-17: 43 Foundry-Stoffe,
-        // 43 Bauten). Die Signatur nennt jede Eingabe, an der der Bau oben verzweigt (Art · Rinde · Look-Klasse · Leucht · Gewebe
-        // · Ton-Anker der Strähne · Blende · Wiegen); der erste Stoff einer Signatur legt ihre Knoten ab, jeder weitere zeichnet
-        // mit DENSELBEN Knoten — die Werte je Stoff liest der Graph als Stoff-Wert, die Regler (Rauheit, Metall, Leuchtfarbe,
-        // Deckkraft, Schwelle) liest r184 als Stoff-Referenz. Weichen die belegten Knoten-Plätze ab, fehlt der Signatur eine
-        // Eingabe: das bricht laut beim Namen, nie still mit fremdem Graphen. Der Satz-Stoff (K43-2) ist eine Eingabe: er liest
-        // Rauheit und Metall je Ecke (`aRegler`), das Emissiv aus `aGlut` und, durchsichtig, die Deckkraft in colorNode.a.
-        const _plaetze = [
-            "colorNode",
-            "emissiveNode",
-            "opacityNode",
-            "outputNode",
-            "positionNode",
-            "maskNode",
-            "maskShadowNode",
-            "roughnessNode",
-            "metalnessNode",
-        ];
-        const _sig = [
-            kind,
-            isBark ? "rinde" : "",
-            klasseLook ? "look" : "",
-            mat.userData.stoffWerte.leucht > 0 ? "leucht" : "",
-            mp && mp.webe && !isBark && !klasseLook && kind !== "foliageTex" && kind !== "schatten"
-                ? "webe:" + mp.webe
-                : "",
-            _tonA && klasseLook ? "ton" : "",
-            xfade ? "xf" : "",
-            wiegen === true ? "wiegt" : "",
-            satz === true ? (R.op < 1 ? "satz:durch" : "satz") : "",
-        ].join("|");
-        if (!this._foundryGraphen) this._foundryGraphen = new Map();
-        const _graph = this._foundryGraphen.get(_sig);
-        if (!_graph) {
-            const g = {};
-            for (const p of _plaetze) g[p] = mat[p] || null;
-            this._foundryGraphen.set(_sig, g);
-        } else {
-            const ab = _plaetze.filter((p) => !mat[p] !== !_graph[p]);
-            if (ab.length)
-                throw this._stoffBruch(
-                    `der geteilte Graph „${_sig}"`,
-                    new Error(
-                        "die Signatur verfehlt eine Eingabe des Baus — abweichende Knoten-Plätze: " + ab.join(" · ")
-                    )
-                );
-            for (const p of _plaetze) mat[p] = _graph[p];
-        }
-        mat.userData.foundrySignatur = _sig;
-        mat.userData.foundryKind = kind; // die Art vor dem Leuchten: die Nässe liest ihre Poren (`_naesseImStoff`)
-        // das Leuchtquellen-Gesetz: der Licht-Pool und der Zeitplan des Gesetzbuchs (`mp.licht`) im Leuchten (K11)
-        this._leuchtStoff(mat, mp);
-        mat.userData.foundryMp = mp || null; // die Regler reisen mit: die Nah-Streu baut denselben Stoff wiegend
-        // Kein stiller Rückfall: ein Stoff, der nicht baut, wirft laut (bis K11 fing ein Fang jeden Fehler und baute einen
-        // Standard-Stoff ohne Knoten — ohne Pool, ohne Maske, ohne Wind).
-        this._foundryMats[key] = mat;
-        // der Wurf-Teil (kind "schatten") trägt denselben Wind wie das Bild seiner Stufe; der Wurf eines Baus steht (an 0)
-        if (xfade && !wiegen && (isBark || kind === "foliage" || kind === "foliageTex" || kind === "schatten"))
-            this._baumWindStoff(mat, kind, baum);
-        if (kind === "foliage" || kind === "foliageTex") this._laubLichtStoff(mat, kind === "foliageTex");
-        return mat;
     }
     // DAS WURF-RECHT EINES GELIEFERTEN TEILS (der EINE Leser: `_foundryBuildMesh`; gate:regler-wirkt liest ihn aus der
     // Quelle). Die Fell-Schalen werfen keinen Schatten (die Haut darunter wirft ihn — sechs Schalen wären sechs Ränder).
@@ -3596,6 +3344,70 @@ AnazhRealm.KIND_POLICY = Object.freeze({
     klang: Object.freeze({ werk: "praegung" }),
 });
 AnazhRealm.KNUTH_INVERS = 244002641;
+// DIE NAMEN DER STREU (`_foundryPresetFor`, die Tabelle vor der generischen Regel): die Spezies, unter denen Wald, Streu und
+// Scatter der Welt ein Studio-Rezept setzen (historische Namen, Nischen, Fels- und Kristall-Formen) → das Rezept, das ihre Gestalt
+// baut. Der Stammbaum (`_stammbaum`) liest sie als Leser der Streu: ein Rezept, auf das ein Name zeigt, konsumiert die Welt.
+AnazhRealm.STREU_NAMEN = Object.freeze({
+    // Baeume
+    baum_eiche: "eiche",
+    baum_fichte: "fichte",
+    baum_tanne: "tanne",
+    baum_birke: "birke",
+    baum_weide: "weide",
+    baum_mammut: "mammut",
+    baum_kiefer: "fichte",
+    // Wald-Nischen (_forestCellDarts) auf Vorlagen-Arten: baum_erle → weide. Buche und Karst-Baum sind seit 04.10.
+    // eigene Studio-Arten (die Aliase auf Mammut und belaubte Eiche fielen), die Mammut-Nische des Wald-Generators
+    // heißt baum_mammut. Stehendes Totholz hat in der Welt keinen Erzeuger (der Alias baum_totholz → eiche fiel
+    // 05.10. mit der Grammatik-Art); die Studio-Art totholz pflanzt der Labor-Wald.
+    baum_erle: "weide",
+    baum_buche: "buche",
+    baum_karst: "karst",
+    // Restliche Wald-Nischen (`_scatterSpeciesForLayer`) auf die nächste Studio-Art: Zypresse (schlanke
+    // Konifere) → tanne, Palme (Einzelstamm mit Krone) → weide.
+    baum_zypresse: "tanne",
+    baum_palme: "weide",
+    // Fels: ALLE 6 Vorlagen-Stein-Rezepte (emitRock), nach Charakter verteilt — vorher
+    // fielen sediment/zacken/geroell durch (nur findling/basalt genutzt = Rueckzug).
+    // findling = runder Findling:
+    noiserock: "findling",
+    findling: "findling",
+    // basalt = Saeulen:
+    stein_block: "basalt",
+    stein: "basalt",
+    // sediment = Schichtfels (geschichtet):
+    fels: "sediment",
+    fels_var: "sediment",
+    schichtfels: "sediment",
+    sediment: "sediment",
+    // zacken = Felszacken (schroffe Tuerme/Boegen):
+    felsturm: "zacken",
+    felszacken: "zacken",
+    felsbogen: "zacken",
+    zacken: "zacken",
+    // geroell = Geroellhalde (Schutt/Talus/Kiesel):
+    geroell: "geroell",
+    talus: "geroell",
+    felsbrocken: "geroell",
+    kiesel: "geroell",
+    // Kristall (emitCrystals)
+    kristall_geode: "kristalle",
+    geode: "kristalle",
+    kristall: "kristalle",
+    kristalle: "kristalle",
+    kristall_var: "kristalle",
+    // Blume (emitFlower) + Strauch — die Bodenflora der Streu-Regionen (blume_gross); die Arten-Namen des gefallenen
+    // Klein-Vegetations-Zwillings (Tulpe · Klee · Mohn) fielen mit ihm (Waldboden 04.10.).
+    blume_gross: "blume",
+    blume: "blume",
+    // Straeucher -> Vorlagen-strauch (LOD haelt die Perf: lod2 ~16k Verts; die Distanz-
+    // LOD-Wahl gibt dem fernen Busch die leichte Stufe, instanziert).
+    busch_hazel: "strauch",
+    busch: "strauch",
+    // Das Kraut-Stratum feuchter Senken (`_scatterSpeciesForLayer` moisture>0.55) ist der Studio-Farn (Waldboden
+    // 04.10., integriert 05.10.): der Alias auf den Strauch fiel wie Buche, Karst-Baum und Totholz.
+    farn_busch: "farn",
+});
 // Die Faltung eines Worts für den Wort-Katalog (`_studioWortKatalog`): klein, Umlaute ausgeschrieben, ß → ss, Leer- und
 // Bindestriche → „_" (die Form der Bauplan-Namen und Rezept-ids).
 AnazhRealm._wortFalten = function (wort) {
@@ -3615,7 +3427,9 @@ AnazhRealm._wortFalten = function (wort) {
 // DIE KONSUM-WAND des Foundry-Kanals (V18.511): GENAU die Vertex-Attribute, die `_foundryBuildMesh` liest — die
 // Transport-Schale (`_foundrySchale`) streicht im Worker jedes andere VOR Kopie, Platte und Transfer (aWind · aCenter ·
 // aType reisten 32 % der Bytes ohne Leser). Ein neuer Leser in `_foundryBuildMesh` = ein Name hier (gate:fluss prüft
-// beide Seiten gegeneinander).
+// beide Seiten gegeneinander). DIE JAHRES-ECKEN aCenter · aType (vegetation.K5): die Mitte jedes Blatts und sein Typ — das
+// Laub fällt im Winter auf seine Mitte (`_jahrLage`); sie reisen nur an Teilen mit Laub oder Blüte (die Schale streicht sie
+// an jedem anderen, `cfg.jahr`), aWind bleibt ohne Leser.
 AnazhRealm.FOUNDRY_LESEN = [
     "position",
     "normal",
@@ -3624,13 +3438,17 @@ AnazhRealm.FOUNDRY_LESEN = [
     "aWurzel",
     "aSchale",
     "aDeckt",
+    "aTon",
     "skinIndex",
     "skinWeight",
+    "aCenter",
+    "aType",
 ];
 // Das Transport-Format der Platte (reist als `|f<n>` im Stempel): 2 = Konsum-Wand + Uint16-Index (V18.511); 3 =
-// saisonfreie Körper-Schlüssel `<preset>|<gestalt>|<lod>[|ov:…]`, Karten `karte|…` mit `{ payload }` (V18.527). Ein
-// geändertes Format leert den Asset-Cache von selbst (wie ein Studio-Edit) — die alte Saison-Platte fällt einmal.
-AnazhRealm.FOUNDRY_PLATTE_FORMAT = 3;
+// saisonfreie Körper-Schlüssel `<preset>|<gestalt>|<lod>[|ov:…]`, Karten `karte|…` mit `{ payload }` (V18.527); 4 = die
+// Jahres-Ecken aCenter · aType reisen an Laub und Blüte (vegetation.K5 — ein Körper der Platte 3 trüge sie nie, sein Laub
+// stünde still im Winter). Ein geändertes Format leert den Asset-Cache von selbst (wie ein Studio-Edit).
+AnazhRealm.FOUNDRY_PLATTE_FORMAT = 4;
 AnazhRealm.INGEST_RATE_PER_S = 180; // Ziel-Freigaben je echter Sekunde (= 60 fps × 3 → healthy-fps byte-alt)
 AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-Deckel; bei 8 fps = 64/s statt 8/s)
 // Der Horizont-Saum (m): über so viele Meter vor `SCATTER.outerM` liegen die Ränder der Karten-Dinge, je Eintrag aus

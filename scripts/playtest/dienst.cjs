@@ -24,9 +24,9 @@ async function checkBandW3UiPuls({ page, check }) {
         out.dedup = r._uiPulseQueued === true && r._uiDirtyRooms.size === 1;
         // (4) MIGRATION am Ruf: die Mechanik-Pfade des Hofs (Auftrag · Ausrüstung · Schaden · Abschied) melden den Puls, an
         // einem eigenen Probe-Tier fern der Welt-Tiere.
-        const cap = r.state.maxCreatures;
-        const pm = r.state.playerMesh.position;
-        r.state.maxCreatures = r.state.creatures.length + 16;
+        const cap = st.maxCreatures;
+        const pm = st.playerMesh.position;
+        st.maxCreatures = st.creatures.length + 16;
         const c = r.spawnCreatureAt(pm.x + 240, pm.y, pm.z + 240, "happy", "wesen");
         const puls = (m, a) => !!c && window.__consumes(r, m, r, "_uiDirty", a);
         out.hofPfade = [
@@ -35,16 +35,13 @@ async function checkBandW3UiPuls({ page, check }) {
             puls("damageCreature", [c, 0.01]),
             puls("removeCreature", [c]),
         ];
-        r.state.maxCreatures = cap;
+        st.maxCreatures = cap;
         // (6) der ON-OPEN-Render im Hof-Hook am Ruf (so darf die Insel isOpen-skippen); die Bühne ruht für die Probe.
-        const eigenS = Object.prototype.hasOwnProperty.call(r, "_hofEnsureStage");
-        const altS = r._hofEnsureStage;
-        r._hofEnsureStage = () => null;
+        const zurueck = leihe(r, { _hofEnsureStage: () => null });
         try {
             out.hofOnOpen = window.__consumes(r, "_hofHandleDrawerChange", r, "_renderCreatureListUI", ["kreaturen"]);
         } finally {
-            if (eigenS) r._hofEnsureStage = altS;
-            else delete r._hofEnsureStage;
+            zurueck();
         }
         out.hofSkipsWhenClosed = !!reg.hof.isOpen && typeof reg.hof.isOpen === "function";
         return out;
@@ -88,9 +85,9 @@ async function checkBandFeldStellvertreter({ page, check }) {
     const mitBudget = (a) => Object.assign(a, { budgetPano: budget(a.wgslPano), budgetMarch: budget(a.wgslMarch) });
     const probe = function probe(modus) {
         const T = window.THREE;
-        const W = r.constructor.WELT_MARCH;
-        if (r.state.feldPass) r._feldPassDispose();
-        r.state.weltMarch = null;
+        const W = AnazhRealm.WELT_MARCH;
+        if (st.feldPass) r._feldPassDispose();
+        st.weltMarch = null;
         const wm = r._weltMarchEnsure();
         if (modus === "ohneNachzug") {
             // S2: die Freigabe ohne Nachzug (die Obergrenze bleibt der Hochwasser-Stand)
@@ -134,7 +131,7 @@ async function checkBandFeldStellvertreter({ page, check }) {
         window.__anazhFernRing = true;
         let fp = null;
         try {
-            fp = r._feldPassEnsure(r.state.fernRing || { anchorX: null, anchorZ: null });
+            fp = r._feldPassEnsure(st.fernRing || { anchorX: null, anchorZ: null });
         } finally {
             if (hookAlt === undefined) delete window.__anazhFernRing;
             else window.__anazhFernRing = hookAlt;
@@ -144,7 +141,7 @@ async function checkBandFeldStellvertreter({ page, check }) {
         // T1: der Takt (Anker gleich → kein Anstrich; sichtbar → Kamera-Uniforms + Instanzen)
         fp.mesh.visible = true;
         fp.march.visible = true;
-        const cam = r.state.camera;
+        const cam = st.camera;
         // BÜHNE: die Kamera vor dem gestellten Stellvertreter (Anordnung, nicht das Gelände)
         cam.position.set(12, 30, -40);
         cam.lookAt(0, 0, 0);

@@ -86,7 +86,7 @@ const BILD = process.argv.includes("--bild");
 //   tierbau: W10: der Bau räumt den Wurf des Felds nicht, am Deckel der Tiere
 //   wand:
 //   grundkeller: W9: der Erdbau kennt keinen Keller
-//   grundbueschel: W9: der Kreis des Büschels ohne die Matrix der Vorlage
+//   grundbueschel: W9: der Kreis des Büschels ohne seine Skala (die Weite der Vorlage gilt je Skala 1)
 //   abbau: W9: der Abbau lässt den Grund liegen
 //   grundplan: W9: der Grund wartet auf die Hülle
 //   vorplatz: W9 SLOT: das gesetzte Haus legt seinen Plan ohne Vorplatz

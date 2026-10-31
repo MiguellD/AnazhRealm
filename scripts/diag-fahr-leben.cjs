@@ -802,6 +802,10 @@ const verkehrVerdict = (m) =>
             `neben der Spur (außer im Ort, den er allein hält) ${m.querMax} m ${JSON.stringify(m.querOrt)}`,
         ],
         [m.msJeSchritt <= 1, `Sim-Takt ${m.msJeSchritt} ms`],
+        // DAS EINE STUFEN-GESETZ (Komposit erbt, Bewegte prüfen; die Probe `stufe` in fahr-proben)
+        [m.stufe.nah >= 20, `kein Wagen im 3D-Raum (${m.stufe.nah})`],
+        [!m.stufe.ohneBild, `Wagen ohne Bild mit gezeichnetem Fahrer ${m.stufe.ohneBild}× ${JSON.stringify(m.stufe.ohneBildOrte)}`],
+        [!m.stufe.veraltet, `bewegter Eintrag mit veralteter Stufe ${m.stufe.veraltet}× ${JSON.stringify(m.stufe.veraltetOrte)}`],
     ].flatMap(([ok, t]) => (ok ? [] : [t]));
 
 // ════ F — DIE FAHR-BAHN, eigenes Boot: der Wagen, den die Welt hinstellt, steht auf fahrbarem Grund, kommt rückwärts
@@ -2337,6 +2341,7 @@ hauptLauf(async () => {
                 },
                 ...{ weg: { min: 26, median: 123 }, fest: [], beruehrt: { leib: 0, wagen: 0 }, ohneSchluessel: 0 },
                 ...{ stoss: { wagen: 0, bau: 0 }, querMax: 0.35, msJeSchritt: 0.82, sek: 40 },
+                stufe: { nah: 99 },
             };
             const brueche = [
                 [{ wenden: 3 }, /Wenden 3/],
@@ -2353,6 +2358,9 @@ hauptLauf(async () => {
                 [{ stoss: { wagen: 0, bau: 5 } }, /Stoß/],
                 [{ querMax: 2.3 }, /Spur/],
                 [{ msJeSchritt: 2.4 }, /Takt 2.4/],
+                [{ stufe: { nah: 3 } }, /kein Wagen im 3D-Raum \(3/],
+                [{ stufe: { nah: 99, ohneBild: 7 } }, /ohne Bild mit gezeichnetem Fahrer 7/],
+                [{ stufe: { nah: 99, veraltet: 2 } }, /veralteter Stufe 2/],
             ].filter(([an, soll]) => !((v) => v.length === 1 && soll.test(v[0]))(verkehrVerdict({ ...g, ...an })));
             check(
                 "Selbst-Test VK: der Verkehr nennt jeden Bruch beim Namen",
@@ -2401,15 +2409,18 @@ hauptLauf(async () => {
     if (schalter("--kern")) process.exit(errs.length ? 1 : 0); // Station K allein
 
     await server.lausche(PORT);
-    // `--rueckmeldung` allein zeichnet auf der Karte (GPU-Station fahrzeug.K5; welt-boot nennt den Adapter, `[linse-gpu]`)
+    // `--rueckmeldung` und `--wegenetz` zeichnen auf der Karte (die GPU-Stationen fahrzeug.K5 und fahrzeug.K2: die Welt kommt je
+    // Bild, wie im Spiel; welt-boot nennt den Adapter, `[linse-gpu]`) — bis w4-proben-heil fuhr das Wegenetz den Null-Renderer, und die
+    // Wand GPU der Punkte-Maschine wies jede Fahrt ab („keine Linse nennt eine Karte“, 98ef98bb bis 73bdf938 GTX)
     const rm = schalter("--rueckmeldung");
+    const karte = rm || schalter("--wegenetz");
     const browser = await starteBrowser({
-        art: rm ? "linse" : "null",
+        art: karte ? "linse" : "null",
         frist: 1800000,
         zusatz: ["--autoplay-policy=no-user-gesture-required"],
     });
     const page = await browser.newPage();
-    if (!rm) await nullRenderer(page);
+    if (!karte) await nullRenderer(page);
     if (schalter("--wegenetz")) await page.evaluateOnNewDocument(() => (window.__anazhAutoSettlement = true)); // die Orte erwachen
     await server.zeige(page, 30000);
     // der Messort der Mess-Wiese (spec/profiband/haushalt.json `messorte`, S1 W1f) — derselbe Leser wie gate:vehicle-drive B-e

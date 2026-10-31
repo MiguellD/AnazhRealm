@@ -34,8 +34,7 @@ const UMZUG = "node scripts/stamm-umzug.cjs --nach-karte";
 // ── die Teile eines Baums: je Datei Text, Zeilen und Marker (mit Zeile) ──────────────────────────────────────────
 const zeileAn = (text, at) => text.slice(0, at).split("\n").length;
 function lies(root) {
-    return stammLib.dateien(root).map((p) => {
-        const text = ausDatei(path.join(root, p));
+    return stammLib.teileVon(root).map(({ pfad: p, text }) => {
         const marker = stammLib.marker(text).map((m) => ({
             id: m.schluessel,
             name: m.schluessel,

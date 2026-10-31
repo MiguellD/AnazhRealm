@@ -14,36 +14,27 @@
 //   (c) SELBSTTEST IM FRAME — je Klasse ein eingeschmuggelter Täter nach jedem `_loopRender` (`__zielSchmuggel`): jeder
 //       fällt beim Namen rot, nach dem Abbau steht kein Name des Selbsttests mehr im Zensus. Dazu ein eigenes
 //       64-bit-Ziel, das sich für die Dauer als Szenen-Ziel ausweist (`__zielAusgabe`): AUSGABE-FORMAT nennt es beim Namen.
-//   (r) DIE RUNDUNG DES AUSGABE-ZIELS. Quelle (Absenz): das Szenen-Bild wird in der Post-Kette höchstens EINMAL
-//       abgetastet. Echter Frame: die Sonde lief, ihr Faktor passt zur Rundung des Geräts (gegen null: 1 + 2⁻⁷ · 1/(2 ln 2),
-//       Blau 1 + 2⁻⁶ · 1/(2 ln 2); zum nächsten: 1), die Post-Kette liest DENSELBEN Vektor und VERBRAUCHT ihn (×2 hebt das
-//       Mittel des Ausgabe-Bilds, zurückgestellt steht es bit-gleich wieder — drei Bilder EINES Frames, W9).
+//   (r) DIE RUNDUNG DES AUSGABE-ZIELS (w4-ferne-blau): das Szenen-Ziel in 11/11/10 schreibt gedithert (`_ausgabeDither`). Echter
+//       Frame: die Sonde lief, der Versatz der Ditherung passt zur Rundung des Geräts (gegen null 0, zum nächsten ½); drei
+//       Frames unter der Bühne (der Szenen-Pass rendert einmal je Knoten-Frame): dieselbe Phase zweimal ist bit-gleich (die
+//       Welt steht), die zweite Phase ändert das Ausgabe-Bild Pixel für Pixel (das Ziel trägt sie) und lässt sein Mittel
+//       stehen (sie hebt nichts). Bis w4-ferne-blau hob ein Ausgleich das Mittel nach dem Lesen (W9).
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`): das Urteil an gebauten Läufen — sauber grün, je Klasse ein
 // Täter beim Namen.
 //   node scripts/diag-ziel-zensus.cjs [--selftest]   (npm run gate:ziel-zensus)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, uferStellen, taeterFaelle, selbsttestEnde, wandEnde, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, uferStellen, taeterFaelle, selbsttestEnde, wandEnde, laufUhr } = require("./lib/welt-boot.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
 
 const N_FRAMES = 8;
 // Der Schatten der Bühne: das Pixel unter der Kiste ist um mindestens so viel dunkler (Luma, 0–255) als das freie Licht.
 const SCHATTEN_MIN = 12;
-// Der Ausgleich eines Geräts, das gegen null rundet (`_ausgabeSonde`): im Mittel fehlt je Kanal ein halbes ulp.
-const AUSGLEICH_NULL = [1 + 0.721 / 128, 1 + 0.721 / 128, 1 + 0.721 / 64];
-// So weit muss der Ausgleich ×2 das Mittel des Ausgabe-Bilds heben (Luma-Stufen), sonst liest die Post-Kette ihn nicht.
-const VERBRAUCH_MIN = 3;
-
-// (r) DIE QUELL-WAND DER RUNDUNG (rein, Node, Absenz): keine zweite Abtastung des Szenen-Bilds umgeht den Ausgleich. Dass
-// `bild` ihn trägt, das Uniform den Vektor der Sonde liest und die Sonde lief, misst die Rundungs-Probe am Bild. Über den EINEN
-// Helfer (stammLib.fehlt: Kommentare fallen, der Täter mit Zeile); `w` wandelt den Stamm (der Vor-Stand des Selbsttests).
-function rundungQuelle(w) {
-    return stammLib.fehlt("_ensurePostProcessing", /sceneColor\.sample\([\s\S]*sceneColor\.sample\(/, w)
-        ? []
-        : [`das Szenen-Bild wird mehrfach abgetastet (${stammLib.fehlt.wo}) — nur EINMAL in \`bild\`, jede andere Abtastung umgeht den Ausgleich`];
-}
+// Die Ditherung im Ausgabe-Bild: zwei Phasen ändern mindestens diesen Anteil der Pixel und das Mittel höchstens um so viele
+// Luma-Stufen; dieselbe Phase zweimal ändert höchstens `ruhe` (am Bach bewegt sich die Welt um 0,1 %).
+const DITHER = { anders: 0.05, mittel: 0.2, ruhe: 0.01 };
 
 // Das Urteil der Wand über einen Lauf (rein).
 function urteil(z) {
@@ -61,27 +52,16 @@ function urteil(z) {
         if (!(k.dunkler >= SCHATTEN_MIN))
             v.push(`KARTE: unter der Kiste ist es nur ${k.dunkler} dunkler als daneben (Soll ≥ ${SCHATTEN_MIN}) — der Schatten fällt nicht`);
     }
-    for (const x of z.rundungQuelle || []) v.push("RUNDUNG (Quelle): " + x);
     const rd = z.rundung || {};
-    if (!rd.gelaufen) v.push("RUNDUNG: die Probe lief nicht (die Wand ist blind für den Ausgleich)");
+    if (!rd.gelaufen) v.push("RUNDUNG: die Probe lief nicht (die Wand ist blind für die Ditherung)");
     else if (rd.format === "rg11b10ufloat") {
         if (!rd.rundung) v.push("RUNDUNG: die Sonde lief nicht — das Gerät schreibt 11/11/10, und keiner weiß, wie es rundet");
-        else {
-            const soll = rd.rundung === "gegen null" ? AUSGLEICH_NULL : [1, 1, 1];
-            if (!rd.faktor?.every((x, i) => Math.abs(x - soll[i]) < 1e-4))
-                v.push(
-                    `RUNDUNG: der Ausgleich ${JSON.stringify(rd.faktor)} passt nicht zur Rundung „${rd.rundung}“ ` +
-                        `(Soll ${soll.map((x) => x.toFixed(5)).join("/")})`
-                );
-        }
-        if (!rd.gleich) v.push("RUNDUNG: die Post-Kette liest einen anderen Vektor als den, den die Sonde setzt");
-        if (!(rd.verbrauch >= VERBRAUCH_MIN))
-            v.push(
-                `RUNDUNG: der Ausgleich ×2 hebt das Mittel des Ausgabe-Bilds nur um ${rd.verbrauch} Stufen (Soll ≥ ${VERBRAUCH_MIN}) ` +
-                    "— die Post-Kette liest ihn nicht"
-            );
-        if (!rd.einFrame) v.push("RUNDUNG: die drei Bilder liegen nicht in EINEM Frame (der Rückweg misst die Welt statt des Ausgleichs)");
-        else if (rd.zurueck !== 0) v.push(`RUNDUNG: zurückgestellt bleibt das Bild um ${rd.zurueck} Stufen verschoben`);
+        else if (rd.versatz !== (rd.rundung === "gegen null" ? 0 : 0.5))
+            v.push(`RUNDUNG: die Ditherung trägt den Versatz ${rd.versatz}, das Gerät rundet „${rd.rundung}“`);
+        if (!(rd.ruhe <= DITHER.ruhe)) v.push(`RUNDUNG: dieselbe Phase ändert ${rd.ruhe} der Pixel — die Welt steht nicht, der Vergleich misst sie statt der Ditherung`);
+        else if (!(rd.anders >= DITHER.anders))
+            v.push(`RUNDUNG: zwei Phasen der Ditherung ändern ${rd.anders} der Pixel (Soll ≥ ${DITHER.anders}) — das Ziel trägt sie nicht`);
+        else if (!(Math.abs(rd.mittel) <= DITHER.mittel)) v.push(`RUNDUNG: die Ditherung verschiebt das Mittel um ${rd.mittel} Stufen`);
     }
     for (const f of z.gpuFehler || []) v.push("GPU: " + f);
     const s = z.selbst || [];
@@ -100,17 +80,7 @@ function selbsttest() {
         gpuFehler: [],
         selbst: [{ muss: "OHNE LESER", ok: true }],
         rest: [],
-        rundungQuelle: [],
-        rundung: {
-            gelaufen: true,
-            format: "rg11b10ufloat",
-            rundung: "gegen null",
-            faktor: AUSGLEICH_NULL.slice(),
-            gleich: true,
-            einFrame: true,
-            verbrauch: 24,
-            zurueck: 0,
-        },
+        rundung: { gelaufen: true, format: "rg11b10ufloat", rundung: "gegen null", versatz: 0, ruhe: 0, anders: 0.4, mittel: 0.02 },
     };
     if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
     const mit = (f) => {
@@ -130,33 +100,14 @@ function selbsttest() {
         { name: "Schmuggel blind", z: mit((z) => (z.selbst = [{ muss: "TEILBAR", ok: false }])), muss: /blind für TEILBAR/ },
         { name: "Schmuggel bleibt", z: mit((z) => (z.rest = ["zensus-selbsttest:bloom"])), muss: /noch im Zensus/ },
         { name: "Sonde lief nicht", z: mit((z) => (z.rundung.rundung = null)), muss: /die Sonde lief nicht/ },
-        { name: "Ausgleich verloren", z: mit((z) => (z.rundung.faktor = [1, 1, 1])), muss: /passt nicht zur Rundung „gegen null“/ },
-        {
-            name: "Ausgleich auf einem Gerät, das zum nächsten rundet",
-            z: mit((z) => (z.rundung.rundung = "zum nächsten")),
-            muss: /passt nicht zur Rundung „zum nächsten“/,
-        },
-        { name: "anderer Vektor", z: mit((z) => (z.rundung.gleich = false)), muss: /liest einen anderen Vektor/ },
-        { name: "Ausgleich nicht verbraucht", z: mit((z) => (z.rundung.verbrauch = 0)), muss: /die Post-Kette liest ihn nicht/ },
-        { name: "Rückweg verschoben", z: mit((z) => (z.rundung.zurueck = -1.77)), muss: /um -1.77 Stufen verschoben/ },
-        { name: "Rückweg über zwei Frames", z: mit((z) => (z.rundung.einFrame = false)), muss: /nicht in EINEM Frame/ },
+        { name: "halber Versatz beim Runden gegen null", z: mit((z) => (z.rundung.versatz = 0.5)), muss: /Versatz 0.5, das Gerät rundet „gegen null“/ },
+        { name: "kein Versatz beim Runden zum nächsten", z: mit((z) => (z.rundung.rundung = "zum nächsten")), muss: /rundet „zum nächsten“/ },
+        { name: "Ditherung erreicht das Ziel nicht", z: mit((z) => (z.rundung.anders = 0)), muss: /das Ziel trägt sie nicht/ },
+        { name: "Ditherung hebt das Mittel", z: mit((z) => (z.rundung.mittel = 1.5)), muss: /verschiebt das Mittel um 1.5/ },
+        { name: "die Welt steht nicht", z: mit((z) => (z.rundung.ruhe = 0.3)), muss: /die Welt steht nicht/ },
         { name: "Rundungs-Probe blind", z: mit((z) => (z.rundung = {})), muss: /RUNDUNG: die Probe lief nicht/ },
-        { name: "Quelle ohne Ausgleich", z: mit((z) => (z.rundungQuelle = ["x"])), muss: /RUNDUNG \(Quelle\): x/ },
     ];
     taeterFaelle(faelle, urteil, { fehler });
-    // die Quell-Wand am Stamm: grün; eine zweite Abtastung → rot
-    const q0 = rundungQuelle();
-    if (q0.length) fehler.push("Quell-Wand der Rundung am Stamm rot: " + q0.join(" · "));
-    console.log(`  ${q0.length ? "❌" : "✅"} Quell-Wand der Rundung am Stamm → ${q0.join(" · ") || "grün"}`);
-    const quellFaelle = [
-        {
-            name: "zweite Abtastung am Ausgleich vorbei",
-            // eine Mutation, die den Stamm nicht trifft, wirft (stammLib.ersetze: vakuös)
-            z: (t) => stammLib.ersetze(t, "_ensurePostProcessing", "const roh = bild(screenUV);", "const roh = bild(screenUV);\nconst roh2 = sceneColor.sample(screenUV);"),
-            muss: /mehrfach abgetastet/,
-        },
-    ];
-    taeterFaelle(quellFaelle, rundungQuelle, { fehler });
     return fehler;
 }
 
@@ -262,42 +213,45 @@ function karteOhneFarbe() {
 function rundungProbe() {
     return (async () => {
         const rend = st.renderer,
-            A = st._ausgabeAusgleich;
-        const U = st.postProcessingUniforms && st.postProcessingUniforms.ausgabeAusgleich;
-        const aus = { gelaufen: true, format: st._ausgabeFormat || null, rundung: st._ausgabeRundung || null, faktor: A && A.toArray(), gleich: !!(A && U && U.value === A) };
-        if (!A) return Object.assign(aus, { einFrame: true, verbrauch: 0, zurueck: 0 });
-        // DREI BILDER EINES FRAMES (W9): vorher, Ausgleich ×2 und zurück zeichnet die Post-Kette über EINEN Szenen-Pass (r184 rendert
-        // PassNode und TRAANode einmal je Knoten-Frame; der Block ist synchron, kein rAF schaltet ihn).
+            lu = r._ensureLodUniforms();
+        const V = st._ausgabeVersatz;
+        const aus = { gelaufen: true, format: st._ausgabeFormat || null, rundung: st._ausgabeRundung || null, versatz: V ? V.value : null };
+        // DREI FRAMES UNTER DER BÜHNE: der Szenen-Pass rendert einmal je Knoten-Frame (r184 PassNode), darum schaltet jeder Frame
+        // ihn selbst; die Bühne hält die Welt (die Bild-Uhr steht, Holz kienspan ohne Versatz) — nur das Rauschen wechselt.
         window.__buehne();
-        await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung" }); // die Erst-Ruhe und die Geschichte der zeitlichen Auflösung
+        await window.__ausgabeAufnahme(64, 48, 1, { satz: "messung" }); // die Erst-Ruhe
         const db = rend.getDrawingBufferSize(new window.THREE.Vector2()),
             [W, H] = [Math.round(db.x), Math.round(db.y)];
-        const ziele = [1, 2, 1].map((k) => [k, new window.THREE.RenderTarget(W, H, { depthBuffer: true, samples: 0 })]);
-        const [alt, vorOut, vorZiel, nf] = [A.clone(), rend.getOutputRenderTarget(), rend.getRenderTarget(), rend._nodes.nodeFrame];
-        const m = [];
+        const [phase, vorOut, vorZiel, nf] = [lu.uDitherT.value, rend.getOutputRenderTarget(), rend.getRenderTarget(), rend._nodes.nodeFrame];
+        const b = [];
         try {
-            const f0 = (nf.update(), nf.frameId);
-            for (const [k, rt] of ziele) {
-                A.copy(alt).multiplyScalar(k);
+            for (const t of [0, 0, 0.5]) {
+                const rt = new window.THREE.RenderTarget(W, H, { depthBuffer: true, samples: 0 });
+                lu.uDitherT.value = t;
+                nf.update();
                 rend.setOutputRenderTarget(rt);
                 r._loopRender(); // zur Bild-Uhr (A9)
-            }
-            aus.einFrame = nf.frameId === f0;
-            for (const [, rt] of ziele) {
+                rend.setOutputRenderTarget(vorOut);
                 const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H);
-                const u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
-                const zeile = u8.length > W * 4 * H ? Math.ceil((W * 4) / 256) * 256 : W * 4; // WebGPU richtet Zeilen auf 256 Byte aus
-                let s = 0;
-                for (let i = 0, o = 0; i < W * H; i++, o = Math.floor(i / W) * zeile + (i % W) * 4) s += luma709(u8, o);
-                m.push(s / (W * H));
+                b.push(px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px));
+                rt.dispose();
             }
         } finally {
-            A.copy(alt);
+            lu.uDitherT.value = phase;
             rend.setOutputRenderTarget(vorOut);
             rend.setRenderTarget(vorZiel);
-            for (const [, rt] of ziele) rt.dispose();
         }
-        return Object.assign(aus, { mittel: +m[0].toFixed(1), verbrauch: +(m[1] - m[0]).toFixed(2), zurueck: +(m[2] - m[0]).toFixed(2) });
+        const zeile = b[0].length > W * 4 * H ? Math.ceil((W * 4) / 256) * 256 : W * 4; // WebGPU richtet Zeilen auf 256 Byte aus
+        const vergleich = (p, q) => {
+            let [n, d] = [0, 0];
+            for (let i = 0, o = 0; i < W * H; i++, o = Math.floor(i / W) * zeile + (i % W) * 4) {
+                if (p[o] !== q[o] || p[o + 1] !== q[o + 1] || p[o + 2] !== q[o + 2]) n++;
+                d += luma709(q, o) - luma709(p, o); // die EINE Luma aus abnahme-urteil (AUSGABE_INSTALL)
+            }
+            return [+(n / (W * H)).toFixed(3), +(d / (W * H)).toFixed(3)];
+        };
+        const [anders, mittel] = vergleich(b[1], b[2]);
+        return Object.assign(aus, { ruhe: vergleich(b[0], b[1])[0], anders, mittel });
     })();
 }
 
@@ -309,8 +263,7 @@ function rundungProbe() {
     await page.setViewport({ width: 320, height: 240 });
     await page.evaluateOnNewDocument(FALTE_INSTALL);
     await page.evaluateOnNewDocument(vramAbgriff);
-    const T0 = Date.now();
-    const log = (z) => console.log(`  [${Math.round((Date.now() - T0) / 1000)} s] ${z}`);
+    const log = laufUhr();
     let out = {};
     try {
         await server.zeige(page, 60000, "index.html?holz=kienspan");
@@ -339,15 +292,7 @@ function rundungProbe() {
                 window.__gpuFehlerZ.push(String(e.error?.message || e.message || e).slice(0, 240))
             );
         });
-        const zensus = async () => {
-            const z = await page.evaluate((k) => window.__zielZensus(k), { n: N_FRAMES });
-            if (!z || z.fehler) return { z, u: ZZ.zielUrteil(z, []) };
-            const ids = z.ziele
-                .filter((x) => !x.leinwand && !x.tiefe && x.kopierbar && /^(r|rg|rgba|bgra)(8|16|32)/.test(x.format))
-                .map((x) => x.id);
-            const lesen = await page.evaluate((k) => window.__zielLesen(k), { ids });
-            return { z, u: ZZ.zielUrteil(z, lesen) };
-        };
+        const zensus = () => ZZ.zensusDer(page, N_FRAMES); // der EINE Zensus der Seite (die Werkbank `ziele` liest ihn ebenso)
         // (c) der Schmuggel zuerst: jeder Täter beim Namen, danach restlos fort
         const s = await page.evaluate(() => window.__zielSchmuggel(true));
         if (!s || s.fehler) throw new Error("Schmuggel: " + (s?.fehler || "keine Antwort"));
@@ -392,8 +337,7 @@ function rundungProbe() {
         // (b) die Karte ohne Farbe
         out.karte = await page.evaluate(karteOhneFarbe);
         log(`Karte ohne Farbe: ${JSON.stringify(out.karte)}`);
-        // (r) die Rundung des Ausgabe-Ziels: Quelle und echter Frame
-        out.rundungQuelle = rundungQuelle();
+        // (r) die Rundung des Ausgabe-Ziels am echten Frame
         out.rundung = await page.evaluate(rundungProbe);
         log(`Rundung: ${JSON.stringify(out.rundung)}`);
         out.gpuFehler = await page.evaluate(() => window.__gpuFehlerZ.slice(0, 5));
@@ -408,7 +352,7 @@ function rundungProbe() {
         `kein Ziel ohne Leser, keine Klasse fällt; die Schatten-Karte zeichnet ohne Farbe (${out.karte.schattenPaesse} Pässe, ` +
             `0 Farb-Anhänge, Schatten ${out.karte.dunkler} dunkler); ` +
             `${out.selbst.length} eingeschmuggelte Täter beim Namen und restlos fort; die Ausgabe ` +
-            `${out.rundung.format} rundet ${out.rundung.rundung || "-"}, der Ausgleich ${JSON.stringify(out.rundung.faktor)} wirkt ` +
-            `(×2 hebt das Mittel um ${out.rundung.verbrauch} Stufen).`
+            `${out.rundung.format} rundet ${out.rundung.rundung || "-"}, die Ditherung (Versatz ${out.rundung.versatz}) ändert ` +
+            `${out.rundung.anders} der Pixel bei Mittel ${out.rundung.mittel} Stufen.`
     );
 })();

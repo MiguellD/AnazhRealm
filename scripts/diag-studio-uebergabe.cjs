@@ -254,7 +254,7 @@ async function kanalPruefen() {
     );
 
     console.log("\n=== SELBSTTEST — ein Sonderweg ist ROT ===");
-    const teile = stammLib.dateien(ROOT).map((p) => ({ pfad: p, text: ausDatei(p) }));
+    const teile = stammLib.teileVon(ROOT);
     const kopf = /\n {4}_studioUebergabeEmpfang\([^)]*\) \{/;
     const np = teile.find((t) => kopf.test(t.text));
     let stRot = false;

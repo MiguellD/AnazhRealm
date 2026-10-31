@@ -17,7 +17,7 @@
 // Der Boot selbst (die Schale vorn, Laden und Stempel je Kern allein aus dem Manifest, keine Labor-Datei) ist ein LAUF:
 //   gate:pack-contract `bootLauf` (B3a; vorher S3 · S7a · S7e · W4 · W5, S7f fiel mit pipeline.K4 Stufe 2 an ihn)
 // WELT-SONDE (Null-Renderer, echter Studio-Worker, Platte an): W1 Gestalten je Art = Budget, 0 Karten-Art-L2,
-//   0 LRU-Räumungen im Boot · W2 ein Saison-Wechsel baut 0 · W3 der Zweit-Boot nimmt nach der Liefer-Marke des Spiels die Körper
+//   0 LRU-Räumungen im Boot · W2 ein Saison-Wechsel baut 0, färbt und lässt das Laub fallen · W3 der Zweit-Boot nimmt nach der Liefer-Marke des Spiels die Körper
 //   ≥ 95 %, den Blatt-Atlas und den Dorf-Export ganz von der Platte · W6 DIE WERK-FÄDEN:
 //   auf 16 Kernen wird jeder Werk-Faden bereit und baut, jeder Auftrag reist in seiner Bahn (`w<k>_`, `_foundryBahn`) ·
 //   W7 FOUNDRY_LESEN ist genau, was `_foundryBuildMesh` liest, und im Boot reist nichts außerhalb der Wand · W8 der
@@ -198,6 +198,7 @@ async function verhalten(schaleSrc) {
                 const neu = (format, platte, b) => {
                     const cfg = {
                         lesen: ["position", "normal", "color", "uv"],
+                        jahr: [1, 3],
                         format,
                         platte,
                         kerne: [{ id: "basis", ns: null, basis: true, urls: [o + "/kern.js"] }].concat(
@@ -323,7 +324,8 @@ async function verhalten(schaleSrc) {
 // DIE WELT-SONDE (Chromium, Null-Renderer, der ECHTE Studio-Worker hinter der echten Schale): die Spiel-Welt bootet,
 // streamt und kommt zur Ruhe; jeder Körper-Auftrag an den Foundry-Worker und jede Antwort wird gezählt.
 // W1 GESTALTEN: jede Natur-Art bestellt nur Samen 1..V ihres Budgets, Karten-Records je Art = V.
-// W2 SAISON: ein Wechsel auf Herbst baut nichts (0 Aufträge, 0 entfernte Instanzen), die Uniform uSeasonMul dreht.
+// W2 SAISON: ein Wechsel auf Herbst baut nichts (0 Aufträge, 0 entfernte Instanzen), die Uniform uSeasonMul dreht, und das
+// Laub fällt (vegetation.K5): uLaubPraesenz sinkt, die Laub-Körper tragen den Jahres-Stoff über ihren Jahres-Ecken.
 const WELT_HAKEN = () => {
     window.__anazhHeadlessNullRenderer = true;
     // W6: eine Maschine mit 16 Kernen — die Werk-Fäden folgen den Kernen (`_foundryHelfer`), der CI-Läufer hat 4
@@ -440,12 +442,12 @@ const WELT_MESSEN = async () => {
     }
     boot.werk = { kerne: navigator.hardwareConcurrency, bahnen };
     if (window.__flussNurBoot) return { boot };
-    // W7 DIE WAND IST DER LESER: ein Mesh mit jedem Wand-Namen und den toten aWind · aCenter · aType zählt, was
+    // W7 DIE WAND IST DER LESER: ein Mesh mit jedem Wand-Namen und dem toten aWind zählt, was
     // `_foundryBuildMesh` liest — die Menge muss FOUNDRY_LESEN sein, und was im Boot reist, steht in der Wand
     const lesen = r.constructor.FOUNDRY_LESEN,
         gelesen = new Set(),
         pm = { kind: "bark" };
-    for (const k of lesen.concat(["aWind", "aCenter", "aType"])) {
+    for (const k of lesen.concat(["aWind"])) {
         const a = new Float32Array(k === "position" ? 9 : 12);
         pm[k] = { get array() { return gelesen.add(k), a; } }; // prettier-ignore
     }
@@ -472,6 +474,8 @@ const WELT_MESSEN = async () => {
     removes = 0;
     const su = r._ensureSeasonUniforms();
     const mul0 = [su.uSeasonMul.value.r, su.uSeasonMul.value.g, su.uSeasonMul.value.b];
+    const pr = () => su.uLaubPraesenz?.value.x;
+    const praesenz = [pr()];
     const n0 = fl.posts.length;
     const inst0 = instanziert();
     const schluessel0 = new Set(f.cache.keys());
@@ -479,6 +483,11 @@ const WELT_MESSEN = async () => {
     await pump(150);
     r._archInstanceRemove = origRemove;
     const mul1 = [su.uSeasonMul.value.r, su.uSeasonMul.value.g, su.uSeasonMul.value.b];
+    // DAS LAUB FÄLLT (vegetation.K5): die Präsenz sinkt, und die Laub-Körper der Welt zeichnen den Stoff des Jahrs über ihren
+    // Jahres-Ecken (aCenter · aType, `_jahrEcken`) — die Konsum-Leser beim Namen: `_tickSeason`, `_jahrLage`, die Konsum-Wand
+    praesenz.push(pr());
+    let laub = 0;
+    for (const g of f.cache.values()) for (const c of g?.children || []) laub += !!(c.material?.userData?.jahr && c.geometry.attributes.aCenter); // prettier-ignore
     return {
         G,
         T,
@@ -497,6 +506,8 @@ const WELT_MESSEN = async () => {
             mul0,
             mul1,
             name: r.state.season,
+            praesenz,
+            laub,
         },
     };
 };
@@ -557,9 +568,9 @@ function urteilWelt(d) {
     );
     const dreh = Math.abs(s.mul1[0] - s.mul0[0]) + Math.abs(s.mul1[1] - s.mul0[1]) + Math.abs(s.mul1[2] - s.mul0[2]);
     pruef(
-        "W2b die Farbe dreht: uSeasonMul ändert sich (Sommer → Herbst), der Name folgt",
-        dreh > 0.3 && s.name === "autumn",
-        `(${s.mul0.map((v) => v.toFixed(2)).join(",")}) → (${s.mul1.map((v) => v.toFixed(2)).join(",")}) · ${s.name}`
+        "W2b die Farbe dreht und das Laub fällt (Sommer → Herbst): uSeasonMul, uLaubPraesenz, Laub über aCenter",
+        dreh > 0.3 && s.name === "autumn" && s.praesenz[1] < s.praesenz[0] && s.laub > 0,
+        `${s.mul0} → ${s.mul1} · ${s.name} · Präsenz ${s.praesenz} · ${s.laub} Laub-Körper`
     );
     const wk = d.boot && d.boot.werk;
     const bahnen = (wk && wk.bahnen) || [];
@@ -651,7 +662,7 @@ hauptLauf(async () => {
         check("Selbst-Test 2: Haupt-Thread öffnet den Asset-Store → S2b rot", t2 && !t2[1]);
         // die Klon-Linse an einem gebrochenen Stamm: die Datei mit dem Anker trägt den Bruch, die Klasse lädt ihn
         const gebrochen = (alt, neu) => {
-            const teile = stammLib.dateien(root).map((p) => ({ pfad: p, text: ausDatei(p) }));
+            const teile = stammLib.teileVon(root);
             const t = teile.find((x) => x.text.includes(alt));
             if (t) t.text = t.text.replace(alt, neu);
             else check(`Selbst-Test-Anker steht im Stamm: ${alt.slice(0, 70)}`, false);
@@ -714,6 +725,8 @@ hauptLauf(async () => {
                 mul0: [1, 1, 1],
                 mul1: [2.2, 0.9, 0.9],
                 name: "autumn",
+                praesenz: [1, 0.55],
+                laub: 12,
             },
         };
         const rot = (d, w) => urteilWelt(d).find((g) => g[0].startsWith(w))[1] === false;
@@ -730,6 +743,7 @@ hauptLauf(async () => {
             ["10z: ein Helfer bleibt Antworten schuldig", werk(bahn(1, true, 100, 90)), "W6"],
             ["10b: Saison-Wechsel mit 131 Aufträgen / 131 neuen Schlüsseln", mit("saison", { posts: 131, neueSchluessel: 131 }), "W2a"], // prettier-ignore
             ["10e: unruhige Welt (Kontroll-Fenster bestellt — die Sonde misst nicht sauber)", mit("saison", { kontrolle: { posts: 7, removes: 0 } }), "W2a"], // prettier-ignore
+            ["10k: das Laub steht im Herbst (die Präsenz bleibt 1)", mit("saison", { praesenz: [1, 1] }), "W2b"],
             ["10c: Eiche bestellt 16 Samen", mit("samen", { eiche: [...Array(16).keys()].map((i) => i + 1) }), "W1a"],
             ["10d: 16 Eichen-Karten", mit("karten", { eiche: 16 }), "W1b"],
             ["10f: 56 Baum-L2-Aufträge im Boot", mit("boot", { kartenArtL2: 56 }), "W1c"],
@@ -737,7 +751,7 @@ hauptLauf(async () => {
             ["10h: der Zweit-Boot baut 170 Körper neu (Saison im Schlüssel, Kern-SHA eines Fremden)", zweit("koerper", { platte: 17, werk: 170 }), "W3"], // prettier-ignore
             ["10i: der Zweit-Boot malt den Blatt-Atlas neu", zweit("blatt-atlas", { werk: 1 }), "W3"],
             ["1: ein Wand-Name ohne Leser (aWind)", mit("wand", { lesen: ["position", "color", "aWind"] }), "W7"],
-            ["1b: im Boot reist ein Attribut ohne Leser (aCenter)", mit("wand", { reist: ["position", "aCenter"] }), "W7"],
+            ["1b: im Boot reist ein Attribut ohne Leser (aWind)", mit("wand", { reist: ["position", "aWind"] }), "W7"],
             ["22: der Vorrat schickt den Fahrzeug-Körper zum Haupt-Thread", mit("vorrat", { kalt: ["gt"] }), "W8"],
         ])
             check(`Selbst-Test ${name} → ${w} rot`, rot(d, w));

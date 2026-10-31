@@ -89,6 +89,57 @@ function ptTri2(px, py, pz, T) {
         ez = apz - (abz * v + acz * w);
     return ex * ex + ey * ey + ez * ez;
 }
+// DIE NAHT-GLIEDER — EINMAL wie `ptTri2`, die Seite trägt jedes unter seinem Namen (bis dahin rechnete jede Messung sie selbst,
+// A/B und D die Chunks und die naht-nahen Dreiecke, D und E die Ebenen der Nachbarn):
+//   chunkKarte(mehr)                       die Chunks mit Fläche: cx, cz, lod, pos, idx und was `mehr(g, lod, pos)` beiträgt
+//   nachbarn(cx, cz, span, dirs)           je Richtung der Schlüssel des Nachbarn und die Grenz-Ebene (axis 0 = x, 2 = z)
+//   nahDreiecke(B, axis, plane, bnd, aus)  B's Dreiecke mit einer Ecke ≤ bnd von der Ebene, je Dreieck seine 9 Koordinaten
+//   spalt(px, py, pz, tris)                der Abstand des Punkts zur Fläche dieser Dreiecke (Punkt→Dreieck)
+function chunkKarte(mehr) {
+    const karte = new Map();
+    for (const [key, e] of st.voxelChunks) {
+        const g = e && !e.empty && e.mesh && e.mesh.geometry;
+        const pos = g && g.attributes.position;
+        if (!pos || pos.count === 0) continue;
+        const [cx, cz] = key.split(",").map(Number);
+        const lod = Number.isFinite(e.lod) ? e.lod : 0;
+        karte.set(key, { cx, cz, lod, pos, idx: g.index ? g.index.array : null, ...mehr(g, lod, pos) });
+    }
+    return karte;
+}
+function nachbarn(
+    cx,
+    cz,
+    span,
+    dirs = [
+        [1, 0],
+        [-1, 0],
+        [0, 1],
+        [0, -1],
+    ]
+) {
+    return dirs.map(([dx, dz]) => ({
+        key: `${cx + dx},${cz + dz}`,
+        axis: dx !== 0 ? 0 : 2,
+        plane: dx === 1 ? (cx + 1) * span : dx === -1 ? cx * span : dz === 1 ? (cz + 1) * span : cz * span,
+    }));
+}
+function nahDreiecke(B, axis, plane, bnd, aus = []) {
+    const nah = (i) => Math.abs((axis === 0 ? B.pos.getX(i) : B.pos.getZ(i)) - plane) <= bnd;
+    for (let t = 0; t < B.idx.length; t += 3) {
+        const ecken = [B.idx[t], B.idx[t + 1], B.idx[t + 2]];
+        if (ecken.some(nah)) aus.push(ecken.flatMap((i) => [B.pos.getX(i), B.pos.getY(i), B.pos.getZ(i)]));
+    }
+    return aus;
+}
+function spalt(px, py, pz, tris) {
+    let bd = Infinity;
+    for (const T of tris) {
+        const d2 = ptTri2(px, py, pz, T);
+        if (d2 < bd) bd = d2;
+    }
+    return Math.sqrt(bd);
+}
 (async () => {
     await server.lausche(0);
     const { browser, page } = await nullSeite();
@@ -98,33 +149,33 @@ function ptTri2(px, py, pz, T) {
         if (/\[ERROR\] STOFF:/.test(m.text())) stoffBrueche.push(m.text());
     });
     await server.zeige(page, 30000);
-    await page.evaluate(`window.ptTri2 = ${ptTri2};`);
+    for (const f of [ptTri2, chunkKarte, nachbarn, nahDreiecke, spalt]) await page.evaluate(`window.${f.name} = ${f};`);
 
     // --- Warmup: Render stubben, Loop pumpen bis der Ring voll ist, dann SETTLEN ---
     await page.evaluate(async () => {
         let stubbed = false;
         for (const weiter = window.__deckel("der Ring 4", 15000); weiter(); ) {
-            if (r && !stubbed && r.state && r.state.renderer) {
-                r.state.renderer.render = function () {};
-                if (typeof r.state.renderer.renderAsync === "function")
-                    r.state.renderer.renderAsync = () => Promise.resolve();
-                r.state.postProcessingFailed = true;
+            if (r && !stubbed && st && st.renderer) {
+                st.renderer.render = function () {};
+                if (typeof st.renderer.renderAsync === "function")
+                    st.renderer.renderAsync = () => Promise.resolve();
+                st.postProcessingFailed = true;
                 // den Ring auf 4 ZWINGEN + SYNC bauen (Worker null), damit die volle
                 // 81-Chunk-Welt schnell steht UND LOD1 (ring 3-4) erscheint → die Cross-LOD-Naht
                 // wird messbar (sonst hält der Kapazitäts-Ramp die Welt bei Ring 2 = alle LOD0).
-                r.state.voxelWorker = null;
-                r.state.chunkRingRadius = 4;
-                r.state._activeRingRadius = 4;
+                st.voxelWorker = null;
+                st.chunkRingRadius = 4;
+                st._activeRingRadius = 4;
                 stubbed = true;
             }
             if (r && typeof r._gameLoopTick === "function") {
-                if (r.state) r.state._activeRingRadius = 4; // gegen den Ramp halten
+                if (st) st._activeRingRadius = 4; // gegen den Ramp halten
                 try {
                     r._gameLoopTick(performance.now());
                 } catch {}
                 // bis Ring 4 (81 Chunks) streamen, damit LOD1 (Band 1, ring 3-8) erscheint
                 // → die CROSS-LOD-Naht (B/D) wird messbar (bei 26 Chunks = nur Ring 2 = alle LOD0).
-                if (r.state && r.state.playerMesh && r.state.voxelChunks && r.state.voxelChunks.size >= 80) break;
+                if (st && st.playerMesh && st.voxelChunks && st.voxelChunks.size >= 80) break;
             }
             await sleep(4);
         }
@@ -143,28 +194,17 @@ function ptTri2(px, py, pz, T) {
 
     // ===== MESSUNG A + B — die RÄUMLICHE Naht (gleiche LOD vs Cross-LOD) =====
     const spatial = await page.evaluate(async () => {
-        const s = r.state;
         const span = r._voxelChunkConfig(0).span;
 
-        // Terrain-Chunks sammeln. Pro Chunk: cx,cz,lod,step,
-        // pos (BufferAttribute), idx (Index-Array — die Geometrie IST indiziert, :18296), vset
+        // Terrain-Chunks sammeln (`chunkKarte`, idx: die Geometrie IST indiziert). Pro Chunk dazu step und vset
         // (quantisierte Vertex-Menge für die exakte „geteilte Vertices?"-Frage, §1.2-These).
         const QV = 0.03; // Quantisierung für „derselbe Vertex" (float32-Determinismus → <QV)
-        const chunks = new Map();
-        for (const [key, entry] of s.voxelChunks) {
-            if (!entry || entry.empty || !entry.mesh || !entry.mesh.geometry) continue;
-            const geom = entry.mesh.geometry;
-            const pos = geom.attributes.position;
-            if (!pos || pos.count === 0) continue;
-            const [cx, cz] = key.split(",").map(Number);
-            const lod = Number.isFinite(entry.lod) ? entry.lod : 0;
-            const step = r._voxelChunkConfig(lod).step;
-            const idx = geom.index ? geom.index.array : null;
+        const q = (val) => Math.round(val / QV);
+        const chunks = chunkKarte((g, lod, pos) => {
             const vset = new Set();
-            const q = (val) => Math.round(val / QV);
             for (let v = 0; v < pos.count; v++) vset.add(q(pos.getX(v)) + "," + q(pos.getY(v)) + "," + q(pos.getZ(v)));
-            chunks.set(key, { cx, cz, lod, step, pos, idx, vset });
-        }
+            return { step: r._voxelChunkConfig(lod).step, vset };
+        });
 
         // Das dispositive Maß: EXAKT-geteilte Vertices, GEBINNT nach Abstand zur Naht-Ebene.
         // Die ÜBERLAPP-Zellen sitzen NAHE der Ebene + sollten koinzidente
@@ -175,54 +215,36 @@ function ptTri2(px, py, pz, T) {
         // Plus: der Rest-Spalt der naht-NÄCHSTEN, NICHT-geteilten Vertices (3D-Nächster zu B's
         // naht-nahen Vertices — robust, weil auf der Linie beide Seiten Vertices haben).
         const BINS = [0.4, 0.9, 1.8, 3.7]; // Abstand-zur-Ebene-Grenzen (m)
-        const mkBins = () => BINS.map(() => ({ n: 0, shared: 0 }));
-        const cls = {
-            same: { pairs: 0, bins: mkBins(), gapN: 0, onSurf: 0, gap1: 0, occl: 0, gapMax: 0, worst: null },
-            cross: { pairs: 0, bins: mkBins(), gapN: 0, onSurf: 0, gap1: 0, occl: 0, gapMax: 0, worst: null },
-        };
-        const q = (val) => Math.round(val / QV);
+        const klasse = () => ({
+            pairs: 0,
+            bins: BINS.map(() => ({ n: 0, shared: 0 })),
+            gapN: 0,
+            onSurf: 0,
+            gap1: 0,
+            occl: 0,
+            gapMax: 0,
+            worst: null,
+        });
+        const cls = { same: klasse(), cross: klasse() };
 
         for (const [, A] of chunks) {
-            for (const [dcx, dcz] of [
+            for (const { key, axis, plane } of nachbarn(A.cx, A.cz, span, [
                 [1, 0],
                 [0, 1],
-            ]) {
-                const B = chunks.get(`${A.cx + dcx},${A.cz + dcz}`);
+            ])) {
+                const B = chunks.get(key);
                 if (!B) continue;
                 const same = A.lod === B.lod;
                 const k = same ? cls.same : cls.cross;
                 k.pairs++;
-                const axis = dcx === 1 ? 0 : 2; // 0=x-Ebene, 2=z-Ebene
-                const plane = dcx === 1 ? (A.cx + 1) * span : (A.cz + 1) * span;
                 const maxStep = Math.max(A.step, B.step);
 
-                // B's naht-nahe DREIECKE (alle 3 Vertices < maxStep·1.2 von der Ebene) — der
+                // B's naht-nahe DREIECKE (eine Ecke < maxStep·1.2 von der Ebene) — der
                 // Rest-Spalt der ungeteilten d0-Vertices ist die Distanz zur B-OBERFLÄCHE
                 // (Punkt→Dreieck), NICHT zum nächsten B-Vertex: ein A-Vertex 1 m vom nächsten
                 // B-Vertex kann EXAKT auf B's Dreiecks-Fläche liegen (= kein Riss, nur anderes
                 // Sampling). Punkt→Dreieck ist das EINZIG ehrliche Naht-Maß (Ericson RTCD).
-                const bTris = [];
-                if (B.idx) {
-                    const bnd = maxStep * 1.2;
-                    const near = (i) => Math.abs((axis === 0 ? B.pos.getX(i) : B.pos.getZ(i)) - plane) <= bnd;
-                    for (let t = 0; t < B.idx.length; t += 3) {
-                        const i0 = B.idx[t],
-                            i1 = B.idx[t + 1],
-                            i2 = B.idx[t + 2];
-                        if (!near(i0) && !near(i1) && !near(i2)) continue;
-                        bTris.push([
-                            B.pos.getX(i0),
-                            B.pos.getY(i0),
-                            B.pos.getZ(i0),
-                            B.pos.getX(i1),
-                            B.pos.getY(i1),
-                            B.pos.getZ(i1),
-                            B.pos.getX(i2),
-                            B.pos.getY(i2),
-                            B.pos.getZ(i2),
-                        ]);
-                    }
-                }
+                const bTris = B.idx ? nahDreiecke(B, axis, plane, maxStep * 1.2) : [];
 
                 for (let v = 0; v < A.pos.count; v++) {
                     const ax = A.pos.getX(v),
@@ -242,12 +264,7 @@ function ptTri2(px, py, pz, T) {
                     // Geometrie dominiert): onSurf (<0.3 m = liegt AUF B's Fläche, kein Riss) · gap (>1 m),
                     // davon okkludiert (ay < Oberfläche−2 = unterirdisch, NICHT sichtbar).
                     if (bi === 0 && !isShared && bTris.length) {
-                        let bestD = Infinity;
-                        for (const T of bTris) {
-                            const d2t = ptTri2(ax, ay, az, T);
-                            if (d2t < bestD) bestD = d2t;
-                        }
-                        const d3 = Math.sqrt(bestD);
+                        const d3 = spalt(ax, ay, az, bTris);
                         k.gapN++;
                         if (d3 < 0.3) k.onSurf++;
                         else if (d3 > 1.0) {
@@ -290,7 +307,7 @@ function ptTri2(px, py, pz, T) {
     // Nachher (gemorpht): die Naht-Vertices sind
     // koinzident mit den groben → die T-junction ist zu.
     const morph = await page.evaluate(async () => {
-        const s = r.state;
+        const s = st;
         const span = r._voxelChunkConfig(0).span;
         // STALE-TEST: den Geomorph für ALLE Chunks FRISCH gegen die JETZT gestreamten Nachbar-
         // Meshes rechnen (falls ein Nachbar nach dem Finalize-Morph re-meshte = stale Target).
@@ -299,32 +316,7 @@ function ptTri2(px, py, pz, T) {
             const [cx, cz] = key.split(",").map(Number);
             r._applyCrossLodGeomorph(cx, cz);
         }
-        const chunks = new Map();
-        for (const [key, entry] of s.voxelChunks) {
-            if (!entry || entry.empty || !entry.mesh || !entry.mesh.geometry) continue;
-            const g = entry.mesh.geometry;
-            const pos = g.attributes.position;
-            if (!pos || pos.count === 0) continue;
-            const [cx, cz] = key.split(",").map(Number);
-            const lod = Number.isFinite(entry.lod) ? entry.lod : 0;
-            chunks.set(key, {
-                cx,
-                cz,
-                lod,
-                pos,
-                idx: g.index ? g.index.array : null,
-                tgt: g.attributes.aMorphTarget,
-                w: g.attributes.aMorphWeight,
-            });
-        }
-        const surfGap = (px, py, pz, tris) => {
-            let bd = Infinity;
-            for (let t = 0; t < tris.length; t += 9) {
-                const d2 = ptTri2(px, py, pz, tris.slice(t, t + 9));
-                if (d2 < bd) bd = d2;
-            }
-            return Math.sqrt(bd);
-        };
+        const chunks = chunkKarte((g) => ({ tgt: g.attributes.aMorphTarget, w: g.attributes.aMorphWeight }));
         let crossPairs = 0,
             morphedVerts = 0,
             onSurfRaw = 0,
@@ -343,41 +335,12 @@ function ptTri2(px, py, pz, T) {
             // Korner-Vertex, der zum +x-Nachbarn gemorpht wurde, fälschlich mit dem +z-Nachbarn).
             const tris = [];
             let hasCoarse = false;
-            for (const [dx, dz] of [
-                [1, 0],
-                [-1, 0],
-                [0, 1],
-                [0, -1],
-            ]) {
-                const B = chunks.get(`${A.cx + dx},${A.cz + dz}`);
+            for (const { key, axis, plane } of nachbarn(A.cx, A.cz, span)) {
+                const B = chunks.get(key);
                 if (!B || B.lod <= A.lod || !B.idx) continue;
                 hasCoarse = true;
                 crossPairs++;
-                const axis = dx !== 0 ? 0 : 2;
-                const plane =
-                    dx === 1 ? (A.cx + 1) * span : dx === -1 ? A.cx * span : dz === 1 ? (A.cz + 1) * span : A.cz * span;
-                const bnd = r._voxelChunkConfig(B.lod).step * 1.5;
-                for (let t = 0; t < B.idx.length; t += 3) {
-                    const i0 = B.idx[t],
-                        i1 = B.idx[t + 1],
-                        i2 = B.idx[t + 2];
-                    const a0 = axis === 0 ? B.pos.getX(i0) : B.pos.getZ(i0);
-                    const a1 = axis === 0 ? B.pos.getX(i1) : B.pos.getZ(i1);
-                    const a2 = axis === 0 ? B.pos.getX(i2) : B.pos.getZ(i2);
-                    if (Math.abs(a0 - plane) > bnd && Math.abs(a1 - plane) > bnd && Math.abs(a2 - plane) > bnd)
-                        continue;
-                    tris.push(
-                        B.pos.getX(i0),
-                        B.pos.getY(i0),
-                        B.pos.getZ(i0),
-                        B.pos.getX(i1),
-                        B.pos.getY(i1),
-                        B.pos.getZ(i1),
-                        B.pos.getX(i2),
-                        B.pos.getY(i2),
-                        B.pos.getZ(i2)
-                    );
-                }
+                nahDreiecke(B, axis, plane, r._voxelChunkConfig(B.lod).step * 1.5, tris);
             }
             if (!hasCoarse || !tris.length || !A.tgt || !A.w) continue;
             let anyMorph = false;
@@ -397,9 +360,9 @@ function ptTri2(px, py, pz, T) {
                 const mx = px + (tx - px) * w,
                     my = py + (ty - py) * w,
                     mz = pz + (tz - pz) * w;
-                const rawGap = surfGap(px, py, pz, tris);
-                const tgtGap = surfGap(tx, ty, tz, tris); // Target→grobe Fläche (soll ~0, wenn der Morph korrekt ist)
-                const morphGap = surfGap(mx, my, mz, tris);
+                const rawGap = spalt(px, py, pz, tris);
+                const tgtGap = spalt(tx, ty, tz, tris); // Target→grobe Fläche (soll ~0, wenn der Morph korrekt ist)
+                const morphGap = spalt(mx, my, mz, tris);
                 sumRawGap += rawGap;
                 sumTgtGap += tgtGap;
                 sumMorphGap += morphGap;
@@ -434,7 +397,7 @@ function ptTri2(px, py, pz, T) {
 
     // ===== MESSUNG E — A1: Morph-Cap + STITCH-BAND (sichtbare Spalten gedeckt?) =====
     const stitch = await page.evaluate(() => {
-        const s = r.state;
+        const s = st;
         const span = r._voxelChunkConfig(0).span;
         let bandMeshes = 0,
             bandQuads = 0;
@@ -456,22 +419,10 @@ function ptTri2(px, py, pz, T) {
             const myLod = Number.isFinite(entry.lod) ? entry.lod : 0;
             const fineStep = r._voxelChunkConfig(myLod).step;
             const flat = fineStep * 0.7;
-            const planes = [];
-            for (const [dx, dz] of [
-                [1, 0],
-                [-1, 0],
-                [0, 1],
-                [0, -1],
-            ]) {
-                const nb = s.voxelChunks.get(`${cx + dx},${cz + dz}`);
-                if (!nb || nb.empty || !nb.mesh) continue;
-                const nbLod = Number.isFinite(nb.lod) ? nb.lod : 0;
-                if (nbLod <= myLod) continue;
-                planes.push({
-                    axis: dx !== 0 ? 0 : 2,
-                    plane: dx === 1 ? (cx + 1) * span : dx === -1 ? cx * span : dz === 1 ? (cz + 1) * span : cz * span,
-                });
-            }
+            const planes = nachbarn(cx, cz, span).filter(({ key }) => {
+                const nb = s.voxelChunks.get(key);
+                return nb && !nb.empty && nb.mesh && (Number.isFinite(nb.lod) ? nb.lod : 0) > myLod;
+            });
             if (!planes.length) continue;
             const g = entry.mesh.geometry;
             const pos = g.attributes.position,
@@ -514,7 +465,7 @@ function ptTri2(px, py, pz, T) {
 
     // ===== MESSUNG C — die ZEITLICHE Naht (async-Fenster beim Carve) =====
     const temporal = await page.evaluate(async () => {
-        const s = r.state;
+        const s = st;
         const span = r._voxelChunkConfig(0).span;
 
         // Spieler-Chunk + ein gleich-LODiger Grenz-Nachbar (pcx+1,pcz) — beide LOD0 (r0/r1),

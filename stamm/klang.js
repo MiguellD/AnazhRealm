@@ -890,7 +890,7 @@ class AnazhRealm_klang {
     // wandert meist schrittweise (Sprünge lösen sich), der letzte Ton löst
     // auf. Liefert [{freq, start, dur, idx, vel}] — seed-deterministisch.
     _lofiMelodyNotes(degree, durSec) {
-        const emotions = (this.state.player && this.state.player.emotions) || {};
+        const emotions = this._lofiWorldField().emotion || this.state.player.emotions;
         const joy = Math.max(0, Math.min(1, emotions.joy || 0));
         const peace = Math.max(0, Math.min(1, emotions.peace || 0));
         const STEPS = 8;
@@ -1204,7 +1204,7 @@ class AnazhRealm_klang {
         const stepDur = durSec / STEPS;
         const now = t0 != null ? t0 : s.ctx.currentTime;
         const pat = this._lofiGroovePattern(); // ZENSUS-REST V18.488 — das Genre wählt
-        const emotions = (this.state.player && this.state.player.emotions) || {};
+        const emotions = this._lofiWorldField().emotion || this.state.player.emotions;
         const peace = Math.max(0, Math.min(1, emotions.peace || 0));
         const swing = this._grooveSwing(); // ZENSUS 17.07. — das Genre führt den Shuffle
         for (let step = 0; step < STEPS; step++) {
@@ -1234,7 +1234,7 @@ class AnazhRealm_klang {
                 bar = ((bar - 1) % ft) + 1;
                 lofi.formTakt = bar; // die Abschnitts-Uhr (Linse/HUD lesbar)
             }
-            const emotions = (this.state.player && this.state.player.emotions) || {};
+            const emotions = this._lofiWorldField().emotion || this.state.player.emotions;
             const inDev = (Number(emotions.sorrow) || 0) > 0.6;
             try {
                 const r = kc.progressionDeg(studio.harmony, bar, () => this._lofiRandom(), inDev);
@@ -1243,7 +1243,7 @@ class AnazhRealm_klang {
         }
         const table = AnazhRealm.LOFI_HARMONY;
         const transitions = table[((degree % table.length) + table.length) % table.length] || table[0];
-        const emotions = (this.state.player && this.state.player.emotions) || {};
+        const emotions = this._lofiWorldField().emotion || this.state.player.emotions;
         const bright = Math.max(0, Math.min(1, (emotions.joy || 0) * 0.5 + (emotions.hope || 0) * 0.5));
         const dark = Math.max(0, Math.min(1, emotions.sorrow || 0));
         // Zweiter, schwächerer Bias: das Welt-Affinitäts-Feld am Spieler (magieleitung/lebendig → hell,
@@ -1391,7 +1391,7 @@ class AnazhRealm_klang {
                 : this._klangGenreAusKern(AnazhRealm.KLANG_HOST_RECIPE).bpm;
         const beatMs = 60000 / bpm;
         const base = beatMs * AnazhRealm.LOFI_CHORD_BEATS;
-        const emotions = (this.state.player && this.state.player.emotions) || {};
+        const emotions = this._lofiWorldField().emotion || this.state.player.emotions;
         const sorrow = Math.max(0, Math.min(1, emotions.sorrow || 0));
         return base * (1 + sorrow * 0.5);
     }
@@ -1490,7 +1490,7 @@ class AnazhRealm_klang {
         const ctx = s.ctx;
         const now = t0 != null ? t0 : ctx.currentTime;
         const durSec = this._lofiChordDurationMs() / 1000;
-        const emotions = (this.state.player && this.state.player.emotions) || {};
+        const emotions = this._lofiWorldField().emotion || this.state.player.emotions;
         const majorLean = (emotions.hope || 0) > 0.6;
         const freqs = this._lofiChordFreqs(offsets, majorLean);
         // Stimmen-Zahl wächst mit der Stimmung: joy + awe > 0.8 oder eine resonante Struktur in der Nähe
@@ -1613,8 +1613,13 @@ class AnazhRealm_klang {
 
     // Welt-Affinitäts-Feld (worldFieldAt) am Spieler: lebendig/dichte/glut/magieleitung färben das
     // Timbre, nicht die Noten. Ohne playerMesh/worldFieldAt → neutrales Feld (0.5).
+    // DIE STIMMUNG AM OHR (affekt.K5): `emotion` ist die emotion-Achse DESSELBEN Felds — `auraAt` mischt die globale Stimmung
+    // und den Abdruck des Orts (`_emotionOverlayAt`); Akkord, Stufe, Melodie, Groove und Tempo lesen sie hier (ein Feld ohne
+    // die Achse, der Stub einer Probe, liest die globale). Bis dahin lasen sie `state.player.emotions` am Feld vorbei: der
+    // Abdruck einer Tat am Ort blieb stumm.
     _lofiWorldField() {
-        const neutral = { lebendig: 0.5, dichte: 0.5, glut: 0.5, magieleitung: 0.5 };
+        const stimmung = (this.state.player && this.state.player.emotions) || {};
+        const neutral = { lebendig: 0.5, dichte: 0.5, glut: 0.5, magieleitung: 0.5, emotion: stimmung };
         const pm = this.state.playerMesh;
         if (!pm || !pm.position || typeof this.auraAt !== "function") return neutral;
         const f = this.auraAt(pm.position.x, pm.position.z); // §5 (V17.25): via auraAt (living Lese-API)
@@ -1625,6 +1630,7 @@ class AnazhRealm_klang {
             dichte: c(f.dichte),
             glut: c(f.glut),
             magieleitung: c(f.magieleitung),
+            emotion: f.emotion || stimmung,
         };
     }
 

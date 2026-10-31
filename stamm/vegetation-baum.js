@@ -891,19 +891,18 @@ class AnazhRealm_vegetation_baum {
     // Stand des Wald-Gesetzes (`_forestDartStand`: Same, Buch, Hydrosphäre) und dem der Grundrisse am Ort — das Gedächtnis
     // liegt in Eimern von `ORT_SAME_EIMER` m, ein Grundriss fällt nur in den Eimern seiner Reichweite (`_grundrissFaellt`).
     // Vor dem Worldgen wartet die Gestalt (null, nie gemerkt) — für jeden Leser gleich.
-    _ortGestaltSame(x, z, T, seed, preset) {
+    // `merk` (optional, der Eintrag `_foundryGestaltFor`): bekommt Karte, Eimer-Schlüssel, Eimer und Schlüssel der Antwort — der
+    // Eintrag trägt ihren ORT in diesem EINEN Gedächtnis (nie ihren Wert), solange derselbe Eimer in derselben Karte liegt
+    // (`_ortSameKarte`), und liest die Antwort dort, ohne den Schlüssel aus fünf Zahlen neu zu bauen.
+    _ortGestaltSame(x, z, T, seed, preset, merk) {
         const seedInt = this._forestSeedInt();
-        const stand = this._forestDartStand(seedInt);
-        if (this._ortSameStand !== stand || !this._ortSame || this._ortSameN > 16384) {
-            this._ortSame = new Map();
-            this._ortSameN = 0;
-            this._ortSameStand = stand;
-        }
+        const karte = this._ortSameKarte();
         const B = AnazhRealm.ORT_SAME_EIMER;
         const ek = Math.floor(x / B) + "," + Math.floor(z / B);
-        let eimer = this._ortSame.get(ek);
+        let eimer = karte.get(ek);
         const k = x + "," + z + "," + T + "," + seed + "," + preset;
         const hat = eimer ? eimer.get(k) : undefined;
+        if (merk) [merk.karte, merk.ek, merk.eimer, merk.k] = [karte, ek, eimer, k];
         if (hat !== undefined) return hat;
         let wartet = false;
         const same = this._foundryGestaltSame(seed, preset, () => {
@@ -926,7 +925,21 @@ class AnazhRealm_vegetation_baum {
         if (!eimer) this._ortSame.set(ek, (eimer = new Map()));
         eimer.set(k, same);
         this._ortSameN = (this._ortSameN | 0) + 1;
+        // räumte die Frage die Karte (ein Grundriss, der Stand des Walds), liegt dieser Eimer nicht mehr in ihr: der Eintrag
+        // fragt beim nächsten Ruf neu
+        if (merk) [merk.karte, merk.eimer] = [this._ortSame, eimer];
         return same;
+    }
+    // DIE KARTE DER GESTALT DES ORTS am Stand des Walds (`_forestDartStand`): ein neuer Stand (oder ein übervolles Gedächtnis)
+    // legt eine neue an — ihre Identität ist ihr Stand für jeden, der eine Antwort am Eintrag trägt (`_foundryGestaltFor`).
+    _ortSameKarte() {
+        const stand = this._forestDartStand(this._forestSeedInt());
+        if (this._ortSameStand !== stand || !this._ortSame || this._ortSameN > 16384) {
+            this._ortSame = new Map();
+            this._ortSameN = 0;
+            this._ortSameStand = stand;
+        }
+        return this._ortSame;
     }
 
     // Steht der geborene Dart `d` der Zelle (gx, gz)? Kronen-Schüchternheit: er steht, wenn KEIN besserer Dart (prio,
@@ -939,6 +952,10 @@ class AnazhRealm_vegetation_baum {
     // neue an), nur über der Wahrheit des Gesetzes (`_forestGesetzWahr`; vorläufige Darts merken nichts). Bis K60 fragte jede
     // Gestalt des Orts (`_forestStehtFrei`) jeden Nachbarn neu, und jede neue Fläche eines Grundrisses warf das Gedächtnis der
     // Gestalt (`_ortGestaltSame`): Radeon kalt bis zum ersten Bild 3 220 Freistand-Fragen an 251 Orten, das Urteil 1,5 s.
+    // DIE NAHEN ZUERST (w4-ankunft-2): die Nachbar-Zellen gehen in der Reihe ihres Abstands (`FOREST_URTEIL_REIHE`: die eigene,
+    // dann Ring 1, dann Ring 2) — ein Verlierer fällt fast immer an einem Nachbarn in der eigenen Zelle oder im Ring 1, in der
+    // Raster-Reihe las er bis dahin im Mittel 12 Zellen. Das Urteil ist eine Existenz-Frage, seine Antwort hängt an keiner Reihe
+    // (swiftshader kalt bis zum Bild: `_forestDartSteht` 1,3–1,9 s, der Halter der Gestalt des Orts).
     _forestDartSteht(d, gx, gz, cellDarts) {
         const memo = this._forestGesetzWahr() ? this._forestStehtMemo || (this._forestStehtMemo = new WeakMap()) : null;
         const hat = memo ? memo.get(d) : undefined;
@@ -947,31 +964,30 @@ class AnazhRealm_vegetation_baum {
         const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
         const tooClose = core && typeof core.forestTooClose === "function" ? core.forestTooClose : null;
         const prioWins = core && core.forestPrioWins;
+        const R = AnazhRealm.FOREST_URTEIL_REIHE;
         let steht = true;
-        nachbarn: for (let ax = -2; ax <= 2; ax++) {
-            for (let az = -2; az <= 2; az++) {
-                const nb = cellDarts(gx + ax, gz + az);
-                for (let k = 0; k < nb.length; k++) {
-                    const o = nb[k];
-                    if (o === d) continue; // sich selbst (eigene Zelle) überspringen
-                    const dx = d.x - o.x;
-                    const dz = d.z - o.z;
-                    // Distance: shared forestTooClose; Host residual = prio-max (nicht Lab sequential reject).
-                    const conflict = tooClose
-                        ? tooClose(dx, dz, d.T, o.T, F.pack)
-                        : (() => {
-                              const md = F.pack * (d.T + o.T);
-                              return dx * dx + dz * dz < md * md;
-                          })();
-                    if (!conflict) continue; // kein Konflikt
-                    // Konflikt: „besser" = forestPrioWins (prio, Tiebreak x dann z).
-                    const better = prioWins
-                        ? prioWins(o, d)
-                        : o.prio > d.prio || (o.prio === d.prio && (o.x > d.x || (o.x === d.x && o.z > d.z)));
-                    if (better) {
-                        steht = false;
-                        break nachbarn;
-                    }
+        nachbarn: for (let q = 0; q < R.length; q += 2) {
+            const nb = cellDarts(gx + R[q], gz + R[q + 1]);
+            for (let k = 0; k < nb.length; k++) {
+                const o = nb[k];
+                if (o === d) continue; // sich selbst (eigene Zelle) überspringen
+                const dx = d.x - o.x;
+                const dz = d.z - o.z;
+                // Distance: shared forestTooClose; Host residual = prio-max (nicht Lab sequential reject).
+                const conflict = tooClose
+                    ? tooClose(dx, dz, d.T, o.T, F.pack)
+                    : (() => {
+                          const md = F.pack * (d.T + o.T);
+                          return dx * dx + dz * dz < md * md;
+                      })();
+                if (!conflict) continue; // kein Konflikt
+                // Konflikt: „besser" = forestPrioWins (prio, Tiebreak x dann z).
+                const better = prioWins
+                    ? prioWins(o, d)
+                    : o.prio > d.prio || (o.prio === d.prio && (o.x > d.x || (o.x === d.x && o.z > d.z)));
+                if (better) {
+                    steht = false;
+                    break nachbarn;
                 }
             }
         }
@@ -991,6 +1007,11 @@ class AnazhRealm_vegetation_baum {
     // Walds — gemerkt am Dart-Gedächtnis dieses Stands (`_forestDartMemo`, nur über der Wahrheit des Gesetzes); Wildnis und
     // Wand fragt jede Antwort neu (wenige Nachbarn, je eine Gitter-Frage). Eine neue Fläche eines Grundrisses (je Haus des
     // Dorfs) fragt so nur die Wand, nie wieder 81 Zellen.
+    // DIE FRAGE LIEST IHREN KASTEN EINMAL (w4-ankunft-2): die Zellen der Antwort und die ihrer Urteile (±6 um den Ort) holt sie
+    // je Zelle einmal (`_forestKastenLeser`), und eine Zelle, deren Kasten weiter liegt als der Freistand-Abstand mit ihrer
+    // größten Krone (`_forestKroneMax`), liest sie nicht — kein Dart von ihr trägt die Antwort (jeder Dart liegt in seiner Zelle,
+    // phyto-core `planForestCell`). Dieselbe Antwort; bis hierher las jede Frage 81 Zellen und jedes Urteil seine 25 neu
+    // (swiftshader kalt bis zum Bild `_forestStehtFrei` 2,4–3,1 s, `_forestCellDarts` 0,7–0,9 s).
     _forestStehtFrei(x, z, T, cellDarts) {
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
         const FS = core && core.FREISTAND;
@@ -1010,9 +1031,17 @@ class AnazhRealm_vegetation_baum {
             const CELL = AnazhRealm.FOREST.cell;
             const gx = Math.floor(x / CELL);
             const gz = Math.floor(z / CELL);
+            const zelle = this._forestKastenLeser(cellDarts);
             for (let ax = -4; ax <= 4; ax++) {
+                const x0 = (gx + ax) * CELL;
+                const bx = x < x0 ? x0 - x : x > x0 + CELL ? x - x0 - CELL : 0;
                 for (let az = -4; az <= 4; az++) {
-                    const nb = cellDarts(gx + ax, gz + az);
+                    const nb = zelle(gx + ax, gz + az);
+                    if (!nb.length) continue;
+                    const z0 = (gz + az) * CELL;
+                    const bz = z < z0 ? z0 - z : z > z0 + CELL ? z - z0 - CELL : 0;
+                    const rand = FS.abstand * (T + this._forestKroneMax(nb));
+                    if (bx * bx + bz * bz >= rand * rand) continue;
                     for (let k = 0; k < nb.length; k++) {
                         const o = nb[k];
                         const r = FS.abstand * (T + o.T);
@@ -1020,7 +1049,7 @@ class AnazhRealm_vegetation_baum {
                         const dz = o.z - z;
                         const d2 = dx * dx + dz * dz;
                         if (d2 < 1e-6 || d2 >= r * r) continue;
-                        if (this._forestDartSteht(o, gx + ax, gz + az, cellDarts)) nah.push(o);
+                        if (this._forestDartSteht(o, gx + ax, gz + az, zelle)) nah.push(o);
                     }
                 }
             }
@@ -1034,6 +1063,43 @@ class AnazhRealm_vegetation_baum {
             if (!this._ortWand(o.sp, { x: o.x, y: o.surfaceY + 0.5, z: o.z }, { scale: o.s })) return false;
         }
         return true;
+    }
+    // Der Leser der Zellen für die Fragen des Freistands (der Freistand ±4, das Urteil jedes Nachbarn ±2): jedes Feld, das das
+    // Dart-Gedächtnis trägt, merkt er unter der Zahl seiner Zelle (`_grundrissSchluessel`), solange dasselbe Gedächtnis ohne
+    // Fall steht (`_forestDartFall`) — die nächste Frage nebenan liest ihre Zellen ohne Namen aus Text; ein vorläufiges Feld
+    // oder eines, das das Gedächtnis nicht trägt, holt er jedes Mal neu bei `cellDarts`.
+    _forestKastenLeser(cellDarts) {
+        const memo = this._forestDartMemo;
+        const fall = this._forestDartFall | 0;
+        let K = this._forestKasten;
+        if (!K || K.memo !== memo || K.fall !== fall || K.felder.size > 16384)
+            K = this._forestKasten = { memo, fall, felder: new Map() };
+        return (cx, cz) => {
+            const k = AnazhRealm._grundrissSchluessel(cx, cz);
+            let a = K.felder.get(k);
+            if (a !== undefined) return a;
+            a = cellDarts(cx, cz);
+            if (memo && this._forestDartMemo === memo && memo.get(cx + "," + cz) === a) K.felder.set(k, a);
+            return a;
+        };
+    }
+    // Die größte Krone der Darts einer Zelle (T in m) — gemerkt am Feld der Zelle, solange es im Dart-Gedächtnis lebt (die Darts
+    // eines Felds wechseln nie; ein vorläufiges Feld zählt jedes Mal). Eine Krone ohne Maß hält die Zelle in Reichweite (∞).
+    _forestKroneMax(nb) {
+        const M = nb.vorlaeufig ? null : this._forestKroneMemo || (this._forestKroneMemo = new WeakMap());
+        let t = M ? M.get(nb) : undefined;
+        if (t !== undefined) return t;
+        t = 0;
+        for (let k = 0; k < nb.length; k++) {
+            const T = nb[k].T;
+            if (!Number.isFinite(T)) {
+                t = Infinity;
+                break;
+            }
+            if (T > t) t = T;
+        }
+        if (M) M.set(nb, t);
+        return t;
     }
 
     _forestPlantChunk(cx, cz) {
@@ -2553,20 +2619,23 @@ class AnazhRealm_vegetation_baum {
             let versuche = 0,
                 bauZu = false,
                 hand = null; // über Budget: EIN Takt-Garantie-Blick je Tick, er deckt Versuche bis zum ersten Bau
+            // DER STAND DER BEREITSCHAFT (`_bereitStand`): ein Studio-Eintrag, der zu diesem Stand nicht platz-bereit war und
+            // bestellt hat, wartet auf das Ereignis, das ihn ändert — kein Peek, kein zweiter Bau-Ruf je Takt
+            const stand = fAn ? this._bereitStand(this._lodAuge()) : -1;
             for (const entry of nahOffen) {
                 const fPre = fAn ? this._foundryPresetForEntry(entry) : null;
-                if (
-                    fPre &&
-                    this._kappeOffen(uhr() - jetztN, AnazhRealm.ARCH_PLATZ_MS) &&
-                    this._foundryPlatzBereit(entry, fPre)
-                ) {
-                    this._rebuildArchitectureMesh(entry);
-                    if (this._archIsRendered(entry)) {
-                        entry._nahWartet = null;
-                        if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, false);
-                        regung++;
-                        continue;
-                    }
+                if (fPre && entry._platzNein === stand) continue;
+                let nein = false;
+                if (fPre && this._kappeOffen(uhr() - jetztN, AnazhRealm.ARCH_PLATZ_MS)) {
+                    if (this._foundryPlatzBereit(entry, fPre)) {
+                        this._rebuildArchitectureMesh(entry);
+                        if (this._archIsRendered(entry)) {
+                            entry._nahWartet = null;
+                            if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, false);
+                            regung++;
+                            continue;
+                        }
+                    } else nein = true;
                 }
                 if (bauZu) continue;
                 const w = entry._nahWartet;
@@ -2589,7 +2658,10 @@ class AnazhRealm_vegetation_baum {
                     if (entry._ziegelSlot) this._weltFeldAktiv(entry._ziegelSlot, false);
                     if (entry.mesh) entry.mesh.visible = true;
                     regung++;
-                } else entry._nahWartet = { a: fA, t: jetztN };
+                } else {
+                    entry._nahWartet = { a: fA, t: jetztN };
+                    if (nein) entry._platzNein = stand; // nicht bereit und bestellt: er schläft bis zum nächsten Stand
+                }
             }
             nahOffen.length = 0;
         }
@@ -2643,6 +2715,8 @@ class AnazhRealm_vegetation_baum {
     // `_blockerBewegt`, die Instanz-Naht (`_archInstanceAdd`, `_archInstanceRemove`) und das Mesh (`_rebuildArchitectureMesh`,
     // `_cullArchitectureMesh`).
     _cullWecken(entry, art) {
+        // sein Urteil liest Lage, Typ und Stufe: die gemerkte Bereitschaft (`_bereitStand`) gilt nicht mehr
+        if (entry) entry._platzNein = entry._dockNein = undefined;
         const K = this._cullWacheStand;
         if (!K || K.liste !== this.state.architectures || !entry || (entry._cullEimer === -1 && art !== "ein")) return;
         entry._cullEimer = art === "weg" ? -1 : undefined;
@@ -2855,6 +2929,14 @@ AnazhRealm.ARCH_PLATZ_MS = 4;
 // Rand (`_archKartenHorizont`) und räumt sie erst so weit dahinter — ein Spieler, der am Horizont-Rand pendelt, lässt
 // keine Karte flattern.
 AnazhRealm.KARTEN_HORIZONT_TOTBAND_M = 16;
+// DIE REIHE DES URTEILS (`_forestDartSteht`, w4-ankunft-2): die Versätze der ±2 Nachbar-Zellen als Paare (dx, dz), nach
+// Abstand — die eigene Zelle, Ring 1, Ring 2; 25 Zellen wie die Raster-Reihe, nur nah zuerst.
+AnazhRealm.FOREST_URTEIL_REIHE = Object.freeze(
+    [-2, -1, 0, 1, 2]
+        .flatMap((a) => [-2, -1, 0, 1, 2].map((b) => [a, b]))
+        .sort((p, q) => Math.max(Math.abs(p[0]), Math.abs(p[1])) - Math.max(Math.abs(q[0]), Math.abs(q[1])))
+        .flat()
+);
 AnazhRealm.ORT_SAME_REICH = 5 * AnazhRealm.FOREST.cell + AnazhRealm.KRONE_MAX_M;
 AnazhRealm.STAND_RAND_FERN_M = 1;
 // Der Eimer der Cull-Wache (m Spieler-Weg): ein Eintrag schläft nur, wenn sein Urteil mindestens einen Eimer weit steht.

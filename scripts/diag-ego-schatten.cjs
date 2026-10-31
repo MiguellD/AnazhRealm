@@ -108,7 +108,7 @@ function urteilJeStufe(lauf) {
 }
 
 function selbsttest() {
-    const { taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+    const { taeterFaelle, selbsttestEnde, abwandlung } = require("./lib/welt-boot.cjs");
     const gut = (x) => Object.assign({ ego: { wurf: 1500, leibPx: 0, leibAufNull: 0 }, iou: 1, geraet: true, zwilling: true, zurueck: true }, x); // prettier-ignore
     // je Gegenprobe die Messung ihrer Klasse (die Täter-Regel fällt beim Namen)
     const taeter = { "LEIB WIRFT NICHT": { ego: { wurf: 0, leibPx: 0, leibAufNull: 0 } }, AUGE: { ego: { wurf: 1500, leibPx: 40, leibAufNull: 8 } }, "GERÄT": { geraet: 4 }, ZWILLING: { zwilling: 5 } }; // prettier-ignore
@@ -116,13 +116,7 @@ function selbsttest() {
     const gruen = { grob: stufe(1), fein: stufe(0) };
     const fehler = [];
     if (urteilJeStufe(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteilJeStufe(gruen).join(" · "));
-    const mit = (pfad, wert) => {
-        const z = JSON.parse(JSON.stringify(gruen));
-        let o = z;
-        for (const k of pfad ? pfad.split(".") : []) o = o[k];
-        Object.assign(o, wert);
-        return z;
-    };
+    const mit = abwandlung(gruen);
     // prettier-ignore
     const faelle = [
         { name: "main (der Wurf geht mit der Haut)", z: mit("fein.kopf.ego", { wurf: 0 }), muss: /LEIB WIRFT NICHT: in der Ego-Sicht 0 px/ },

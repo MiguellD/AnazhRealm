@@ -231,12 +231,8 @@ async function fahreForm(browser, form, schein) {
         if (schein) {
             // der Schein: Boot 1 nennt den Befund
         } else if (form === "mehrere" && b1.ok) {
-            const nav = page
-                .waitForNavigation({ waitUntil: "domcontentloaded", timeout: 60000 })
-                .then(() => true)
-                .catch(() => false);
+            // der Wechsel am Ort (`_weltWechsel`): die Welt-Warte (`bereit`) wartet auf sein Erwachen
             await page.evaluate(() => r.switchToWorld("welt-w1", { reload: true })).catch(() => {});
-            await nav;
             const b2 = await bereit(page);
             rep.boots.push(b2);
             if (b2.welt !== "welt-w1" || !b2.marken.includes("MARK-W1"))

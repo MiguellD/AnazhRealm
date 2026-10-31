@@ -8,7 +8,8 @@
 //                   Wasserlinie, auch ohne Gestalt-Baum; ein Mitspieler lehnt sich ins Wasser.
 //   B (Q7-Bild)     das Wasser-Material zerfällt mit der Wasser-Uhr nicht (kein weißes Zebra), der ruhige Fluss schäumt
 //                   nicht, der Sturm-Regen zeichnet Schlieren; das Rauschen rechnet ohne sin (B6); unter Wasser kennt das
-//                   Licht Tag und Nacht, der Tauchgang färbt den Himmel nicht.
+//                   Licht Tag und Nacht, der Tauchgang färbt den Himmel nicht; das Wasser-Programm liest keine Variable,
+//                   die nur ein Zweig rechnet (B7, das TSL-Leck).
 //   U (Q7-Gestalt)  die Ufer-Farbe quer zum Fluss springt nie, Worker und Main färben gleich; der Schilf-Bezug springt nie (U3).
 //   K10 · K11 · W2  die Decke über trockenen Höhlen (Spieler, Kamera, Tier, Wagen lesen dort kein Wasser); der Wagen watet,
 //                   das Boot treibt ohne Nicken mit dem Grund, auch im Rand-Streifen des Sees.
@@ -38,6 +39,7 @@
 "use strict";
 const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, pngDatei, argOpt, stammLib } = require("./lib/welt-boot.cjs");
 const { quellTeileVereinen, QUELL_KACHELN, WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
+const { tslLecks } = require("./lib/shader-kosten.cjs");
 
 const SCHWELLE = {
     steigend: 0, // Anteil der 2-m-Schritte, deren Lauf-Fläche > 5 cm steigt
@@ -335,6 +337,10 @@ function urteil(b) {
                 if (!(a.ruhig.hellAnteil <= S.hellRuhig)) rot("B1 SCHAUM", a.ruhig);
                 if (!(a.schnelle.hellAnteil >= S.schaumSchnelle)) rot("B1 LEER", a.schnelle);
             }
+            // B7 DAS TSL-LECK (scripts/lib/shader-kosten.cjs `tslLecks`): das Wasser-Programm liest keine Variable, die nur
+            // ein Zweig rechnet; BLIND: kein Programm des Bogens gelesen
+            if (!(g.fragmente > 0)) rot("B7 BLIND", g.fragmente);
+            else if (g.lecks.length) rot("B7 TSL-LECK", g.lecks);
         }
     }
     // G — DER GRABEN AM FLUSS (F3): EINE Fläche (G1), nie > 10 cm über dem Spiegel (G2), in Ruhe auf ihm (G3), die Ruhe binnen
@@ -543,6 +549,8 @@ function selbsttest() {
             uhr3600: { ruhig: { kantenDichte: 1 }, schnelle: { kantenDichte: 21 } },
             kantenVerhaeltnis: 1.05,
             sturmVerhaeltnis: 1.8,
+            fragmente: 1,
+            lecks: [],
         },
     };
     gut.ueberall = [1, 2, 3, 4, 5].map((i) => ({ ort: [i * 900, i * 700], ...gut.mutation }));
@@ -674,6 +682,10 @@ function selbsttest() {
         ["B3 STURM", (b) => (b.bild.sturmVerhaeltnis = 1)],
         ["B2 ZEBRA:", (b) => (b.bild.uhr3600.ruhig.kantenDichte = 63.4)],
         ["B LEER", (b) => (b.bild.uhr60.schnelle.pixel = 0)],
+        // B7 an w4-licht-baustein e09ca48e: `_horizontSicht` baute den Wasser-Punkt erst in ihrem Zweig — 10 Lecks, u. a.
+        // nodeVar349, gesetzt in `if ( ( nodeVar171 > 0.0 ) )`
+        ["B7 TSL-LECK", (b) => (b.bild.lecks = [{ name: "nodeVar349" }])],
+        ["B7 BLIND", (b) => (b.bild.fragmente = 0)],
         // F3 an der Basis 25f53923: 720 Punkte über dem Spiegel bis 0,76 m, in Ruhe 397 daneben, Ruhe nach 620 Takten
         ["G2 ÜBER DEM SPIEGEL", (b) => Object.assign(b.graben.graeben[0], { ueber: 720, ueberM: 0.76 })],
         ["G3 ZWEITE FLÄCHE", (b) => Object.assign(b.graben.graeben[1], { abseits: 397, abseitsM: 0.79 })],
@@ -844,6 +856,9 @@ async function lauf() {
         if (BILD) {
             const ordner = argOpt("--bilder", null);
             befund.bild = await page.evaluate((png) => window.__wasserBild({ png }), !!ordner);
+            // B7: der Befund trägt die Zahl der gelesenen Programme und ihre Lecks, nie das WGSL
+            const fr = befund.bild.fragmente || [];
+            Object.assign(befund.bild, { fragmente: fr.length, lecks: fr.flatMap(tslLecks) });
             befund.regen = await page.evaluate(() => window.__wasserRegen({}));
             befund.licht = await page.evaluate(() => window.__wasserLicht({}));
             befund.ferne = await page.evaluate(

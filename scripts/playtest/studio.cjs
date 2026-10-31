@@ -111,24 +111,17 @@ async function checkBandStoffSignatur({ page, check }) {
 async function checkBandV18493CoSchoepferStudio({ page, check }) {
     const res = await page.evaluate(async () => {
         const out = {};
-        const archs = r.state.architectures;
+        const archs = st.architectures;
         const vorherAll = archs.length;
         try {
-            out.eiche = r._studioBlueprintForWord("eiche");
             out.eichen = r._studioBlueprintForWord("Eichen");
             out.fels = r._studioBlueprintForWord("fels");
             out.unbekannt = r._studioBlueprintForWord("quasselstrippe");
-            const f = r._foundry;
-            const treeIds =
-                f && f.recipes
-                    ? Object.keys(f.recipes).filter((k) => f.recipes[k] && f.recipes[k].kind === "tree")
-                    : [];
-            out.treeIds = treeIds.length;
-            out.alleBaeumeLoesen = treeIds.every((id) => !!r._studioBlueprintForWord(id));
+            // (dass JEDES Teil mit Ziel sein Wort trägt — jede Baum-Art und jede andere —, prüft gate:nervensystem S am Stammbaum)
             // Ein sicher trockener Fleck nahe dem Spieler (der Test soll nie am Zufall des Sees hängen) — 50 m vor der
             // Genesis-Mitte: ihre Lichtung ist ein Grundriss der Natur-Wand, dort wächst keine Eiche, deren Krone über die
             // Scheibe reicht (Integration Welle L, Entscheid D3; die Eiche reicht mit Hain-Streuung bis ~36 m).
-            const p = r.state.playerMesh.position;
+            const p = st.playerMesh.position;
             const gM = r._genesisMitte();
             let spot = null;
             for (let i = 0; i < 64 && !spot; i++) {
@@ -162,7 +155,7 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
             // near_water liefert einen trockenen Ufer-Ort am Wasser — oder, ohne Wasser im Umkreis, KEINEN
             // (die Engstelle `dslEvalPos` wirft benannt), nie still den Spieler-Ort. Ob es Wasser gibt, sagt ein EIGENES
             // 4-m-Raster über den Kreis (nicht die Such-Funktion des Spiels); der Rand-Gürtel 150–166 m gilt beides.
-            const pm0 = r.state.playerMesh.position;
+            const pm0 = st.playerMesh.position;
             let nassNah = false,
                 nassFern = false;
             const nassPunkte = [];
@@ -193,7 +186,7 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
             out.nearWaterBefund = { nassNah, nassFern, nw, nwFehler };
             out.nearWaterTrocken = nw ? r._landAt(nw.x, nw.z, 0.3) : benannt;
             out.promptWoerter = /Bäume: /.test(r.llmBuildSystemPrompt()); // jedes Verb mit Form: gate:weltakt-wache (K)
-            out.ruleVerbot = r.constructor.RULE_FORBIDDEN_EFFECT_OPS.has("spawn_studio");
+            out.ruleVerbot = AnazhRealm.RULE_FORBIDDEN_EFFECT_OPS.has("spawn_studio");
             // Die Anthropic-Anfrage folgt der aktuellen Generation: 5er-Modelle mit effort +
             // fallbacks + Beta-Header, Haiku 4.5 schlicht (es kennt beides nicht).
             const an = r.llmProviderDefs().anthropic;
@@ -225,13 +218,9 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
     const R = res || {};
     check("Co-Schöpfer: Band lief ohne Fehler", !R.err, R.err);
     check(
-        "Co-Schöpfer: der Wort-Auflöser liest die lebenden Tabellen (eiche/Eichen → baum_eiche, fels → Bauplan, Unsinn → null)",
-        R.eiche === "baum_eiche" && R.eichen === "baum_eiche" && !!R.fels && R.unbekannt === null,
-        `eiche=${R.eiche} eichen=${R.eichen} fels=${R.fels} unbekannt=${R.unbekannt}`
-    );
-    check(
-        `Co-Schöpfer: JEDE Baum-Art des Rezeptbuchs ist ein sagbares Wort (${R.treeIds} Arten)`,
-        R.alleBaeumeLoesen === true && R.treeIds > 0
+        "Co-Schöpfer: der Wort-Auflöser liest die lebenden Tabellen (Eichen → baum_eiche, fels → Bauplan, Unsinn → null)",
+        R.eichen === "baum_eiche" && !!R.fels && R.unbekannt === null,
+        `eichen=${R.eichen} fels=${R.fels} unbekannt=${R.unbekannt}`
     );
     check(
         "Co-Schöpfer: spawn_studio pflanzt 5 Eichen — geerdet (Oberfläche+0.5), trocken, am EINEN Chokepoint",
@@ -270,7 +259,7 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
         await window.__weltDa();
         await window
             .__gebautNach("25 Chunks um den Spieler", {
-                fertig: () => (r.state.voxelChunks ? r.state.voxelChunks.size : 0) >= 25,
+                fertig: () => (st.voxelChunks ? st.voxelChunks.size : 0) >= 25,
                 takt: async () => {
                     try {
                         r._gameLoopTick(performance.now());
@@ -283,10 +272,10 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
         await window.__weltDa(() => !f || f.ready);
         // dichten Wald streamen.
         for (let it = 0; it < 300; it++) {
-            r.state._frameOverBudget = false;
+            st._frameOverBudget = false;
             try {
                 r._gameLoopTick && r._gameLoopTick(performance.now());
-                const pp = r.state.playerMesh && r.state.playerMesh.position;
+                const pp = st.playerMesh && st.playerMesh.position;
                 if (pp) r._tickScatterStreaming(pp);
             } catch {}
             await sleep(6);
@@ -304,8 +293,8 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
         const snap = () => ({ built: (f._geomBuiltCount || 0), disposed: (f._geomDisposedCount || 0), cache: f.cache ? f.cache.size : 0 });
         // DER CHURN: Cache-Deckel auf 32 (die Welt hält gerade weit mehr) und je Zyklus alle 16 Gestalten von sechs
         // '*'-Arten flach anfordern (96 Schlüssel, Stufe 0) — die LRU muss räumen, jeder Zyklus baut die geräumten neu.
-        const CAP0 = r.constructor.FOUNDRY_CACHE_CAP;
-        r.constructor.FOUNDRY_CACHE_CAP = 32;
+        const CAP0 = AnazhRealm.FOUNDRY_CACHE_CAP;
+        AnazhRealm.FOUNDRY_CACHE_CAP = 32;
         // Der Anstoß: der Vorrat hat alle Gestalten schon warm (kein Neubau, keine Räumung) — EINE Räumung über die EINE
         // Naht, dann baut die erste Ankunft neu und der Deckel räumt die LRU auf 32 (der Churn läuft ab Zyklus 1).
         r._foundryCacheEvict(r._foundryKoerperKey("findling", 1, 0));
@@ -322,10 +311,10 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
                     r._foundryFlattenFor({ seed: s, position: { x: 0, y: 0, z: 0 } }, sp, 0);
                 }
             }
-            for (let it = 0; it < 400; it++) { r.state._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); } catch {} if (f.pending.size === 0 && !(f.warte && f.warte.length) && it > 30) break; await sleep(6); }
+            for (let it = 0; it < 400; it++) { st._frameOverBudget = false; try { r._gameLoopTick && r._gameLoopTick(performance.now()); } catch {} if (f.pending.size === 0 && !(f.warte && f.warte.length) && it > 30) break; await sleep(6); }
             cycles.push(snap());
         }
-        r.constructor.FOUNDRY_CACHE_CAP = CAP0;
+        AnazhRealm.FOUNDRY_CACHE_CAP = CAP0;
         return { maxRefsAtDispose, disposeCalls, cycles, capacity: 32 };
     });
     const fails = [];
@@ -346,31 +335,18 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
 // V1 das Kristall-Kleid — eingefaltet aus gate:v1-resolve: `_foundryPresetForEntry` löst die Formations-VARIANTEN
 // (kristall_var${N}/fels_var${N}) auf ein Studio-Rezept auf; die Ausstattung (glutbrunnen · marktstand_dorf ·
 // brunnen_dorf · laterne_dorf) löst über ihre studioGestalt-Zeile auf das Gesetzbuch der Architektur; das Glut-Genom
-// ist gefallen, sein Umzug trägt alte Welten auf glutbrunnen; ein Tor-Wort ohne tor_-Klon fällt nie auf das
-// welt_-Portal derselben Gestalt; V2 der Werkstatt-Rezept-Regler erkennt die Repräsentanten.
+// ist gefallen, sein Umzug trägt alte Welten auf glutbrunnen (die Wörter der Ausstattung und die Tor-Regel trägt der Stammbaum,
+// gate:nervensystem S); V2 der Werkstatt-Rezept-Regler erkennt die Repräsentanten.
 async function checkBandKristallKleid({ page, check }) {
     const out = await safeEvaluate(page, async () => {
         // die Ausstattung löst über das LIVE-Buch auf (studioGestalt): warten, bis das Gesetzbuch der Architektur da ist
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => !!(f && f.ready && f.recipes && f.recipes.feuerstelle));
-        const bp = r.state.blueprints || {};
+        const bp = st.blueprints || {};
         const res = {};
         for (const t of ["kristall_var0", "kristall_var7", "fels_var0", "fels_var5", "fels_var7", "glut_var0", "glutbrunnen", "marktstand_dorf", "brunnen_dorf", "laterne_dorf", "kristall_geode", "felsturm", "stein_block"])
             res[t] = { exists: !!bp[t], preset: r._foundryPresetForEntry({ type: t }) };
-        res._umzug = r.constructor.BAUPLAN_UMZUG ? r.constructor.BAUPLAN_UMZUG.glut_var3 : null;
-        const wort = (w) => r._studioBlueprintForWord(w);
-        res._wort = [wort("feuerstelle"), wort("marktstand"), wort("brunnen"), wort("laterne")].join("/");
-        const portal = Object.keys(bp).find((n) => bp[n] && bp[n].role === "portal" && typeof bp[n].studioGestalt === "string");
-        if (portal) {
-            const g = bp[portal].studioGestalt;
-            const klon = bp["tor_" + g];
-            delete bp["tor_" + g];
-            try {
-                res._torWort = { gestalt: g, portal, ziel: wort(g) };
-            } finally {
-                if (klon) bp["tor_" + g] = klon;
-            }
-        }
+        res._umzug = AnazhRealm.BAUPLAN_UMZUG ? AnazhRealm.BAUPLAN_UMZUG.glut_var3 : null;
         res._kind = [r._workshopRecipeKind(bp["fels_var0"]), r._workshopRecipeKind(bp["kristall_var0"])].join("/");
         return res;
     });
@@ -382,8 +358,6 @@ async function checkBandKristallKleid({ page, check }) {
     if ((o.glut_var0 || {}).exists !== false) fails.push("glut_var0 lebt (das Glut-Genom ist gefallen)");
     if (o._umzug !== "glutbrunnen") fails.push(`Umzug glut_var3 → ${o._umzug}`);
     check("V1 Kristall-Kleid: jede Fels/Kristall-Variante trägt ihr Studio-Rezept, die Ausstattung ihr Gesetzbuch, das Glut-Genom zieht auf glutbrunnen", fails.length === 0, fails.join(" · "));
-    const t = o._torWort;
-    check("V1 Wort: feuerstelle/marktstand/brunnen/laterne lösen auf die Ausstattung, ein Tor-Wort ohne tor_-Klon nie auf das welt_-Portal", o._wort === "glutbrunnen/marktstand_dorf/brunnen_dorf/laterne_dorf" && !!t && t.ziel !== t.portal && !/^welt_/.test(String(t.ziel)), `${o._wort} · ${t ? `${t.gestalt} → ${t.ziel}` : "kein Portal mit Gestalt"}`);
     check("V2 Werkstatt: der Rezept-Regler erkennt die Repräsentanten (fels_var0 rock, kristall_var0 crystal)", o._kind === "rock/crystal", o._kind);
 }
 
@@ -395,7 +369,7 @@ async function checkBandKeinZweiterBaumbaecker({ page, check }) {
         await window.__weltDa();
         await window
             .__gebautNach("25 Chunks um den Spieler", {
-                fertig: () => (r.state.voxelChunks ? r.state.voxelChunks.size : 0) >= 25,
+                fertig: () => (st.voxelChunks ? st.voxelChunks.size : 0) >= 25,
                 takt: async () => {
                     try {
                         r._gameLoopTick(performance.now());
@@ -410,10 +384,10 @@ async function checkBandKeinZweiterBaumbaecker({ page, check }) {
         o.foundryReady = !!(f && f.ready);
         // Kräftig ticken → der Scatter streamt Regionen um den Spieler; Studio-Assets kommen an.
         for (let it = 0; it < 350; it++) {
-            r.state._frameOverBudget = false;
+            st._frameOverBudget = false;
             try {
                 r._gameLoopTick && r._gameLoopTick(performance.now());
-                const pp = r.state.playerMesh && r.state.playerMesh.position;
+                const pp = st.playerMesh && st.playerMesh.position;
                 if (pp) r._tickScatterStreaming(pp);
             } catch {}
             await sleep(10);
@@ -421,7 +395,7 @@ async function checkBandKeinZweiterBaumbaecker({ page, check }) {
         // Instanz-Gruppen enumerieren: Schlüssel = Bauplan-Name#leaf[@region].
         const groups = [];
         const eat = (map) => { if (!map) return; for (const [k, g] of map) { let c = 0; if (g && g.mesh && Number.isFinite(g.mesh.count)) c = g.mesh.count; else if (g && Number.isFinite(g.count)) c = g.count; groups.push({ key: String(k), count: c }); } };
-        eat(r.state.archInstanceGroups);
+        eat(st.archInstanceGroups);
         // Klassifizieren: die FOUNDRY-Herkunft lebt im LEAF-Key (nach `#`): `f:`/`fimp:` = Foundry-Geometrie/
         // -Impostor (auch für die PLATZIERTE Architektur, deren Gruppen-NAME die Art `baum_tanne` trägt, aber
         // deren Leaf `f:tanne|…` ist). `fscatter:` im Namen = Foundry-Scatter. Ein GRAMMATIK-Baum hat einen
@@ -438,7 +412,7 @@ async function checkBandKeinZweiterBaumbaecker({ page, check }) {
         const presets = new Set();
         for (const k of o.foundryScatterKeys) { const m = k.match(/^fscatter:([a-z]+)/); if (m) presets.add(m[1]); }
         // W6: die Karten (L2) zeichnen in der EINEN Atlas-Gruppe — die Art eines lebenden Slots nennt seine Schicht.
-        const ag = r.state.archInstanceGroups && r.state.archInstanceGroups.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE);
+        const ag = st.archInstanceGroups && st.archInstanceGroups.get(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE);
         const ak = ag && ag.mesh && ag.mesh.geometry.attributes.aKarte; // (Schicht, Halbbreite, Höhe, verdeckt)
         if (ak && r._kartenAtlas) {
             const artVon = new Map();

@@ -78,7 +78,7 @@ hauptLauf(async () => {
     await server.zeige(page, 60000);
     const res = await page.evaluate(async () => {
         await window.__weltDa((r) => r.state);
-        if (!r || !r.state.renderer || r.state.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
+        if (!r || !st.renderer || st.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
         await window.__weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
         // Eine Ausnahme im Spiel-Takt wird gezählt und beim Namen genannt, nie geschluckt: sie bricht den Takt dort
         // ab, wo sie fliegt — jeder Bau dahinter in der Liste bleibt ungebaut (das sah die Linse sonst als „AM null").
@@ -87,7 +87,7 @@ hauptLauf(async () => {
         const tick = async (n) => {
             for (let i = 0; i < n; i++) {
                 try {
-                    if (r.state.world) r.state.world.timeOfDay = 0.5;
+                    if (st.world) st.world.timeOfDay = 0.5;
                     r._gameLoopTick(performance.now());
                 } catch (e) {
                     taktFehlerN++;
@@ -101,10 +101,10 @@ hauptLauf(async () => {
             }
         };
         const [X, Z] = window.__messWiese;
-        r.state.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
+        st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
         await tick(80);
-        const pm = r.state.playerMesh.position;
-        const hausName = Object.keys(r.state.blueprints || {})
+        const pm = st.playerMesh.position;
+        const hausName = Object.keys(st.blueprints || {})
             .filter((n) => n.startsWith("haus_"))
             .sort()[0];
         const setze = (name, d) => {
@@ -128,14 +128,14 @@ hauptLauf(async () => {
         const B = setze("baum_eiche", 10);
         const Hh = setze(hausName, 26);
         // FERN: jenseits der Mesh-Zone (Cull-Radius) ist das Feld die Gestalt des Hauses, die Karte die der Eiche.
-        const fernD = Math.round((r.state.architectureCullingRadius || 130) + 40);
+        const fernD = Math.round((st.architectureCullingRadius || 130) + 40);
         const BF = setze("baum_eiche", fernD);
         const HF = setze(hausName, fernD + 16);
         const eb = B.e,
             eh = Hh.e;
         const ebF = BF.e,
             ehF = HF.e;
-        const idx = { baum: r.state.architectures.indexOf(eb), haus: r.state.architectures.indexOf(eh) };
+        const idx = { baum: st.architectures.indexOf(eb), haus: st.architectures.indexOf(eh) };
         // Sichtbar = das Mesh steht ODER der Feld-Slot trägt (AAA nah: das Feld überbrückt nur, bis das Mesh steht).
         const sichtbar = (e) => !!(e && (r._archIsRendered(e) || e._ziegelSlot));
         // Die ferne Eiche ist ihre Karte (die Stufe 2 steht als Instanz); ein Feld-Satz an ihr ist der Täter von C.
@@ -205,13 +205,13 @@ hauptLauf(async () => {
         let foundryN = 0,
             ausgebrannt = 0,
             mitSlot = 0;
-        for (const a of r.state.architectures) {
+        for (const a of st.architectures) {
             if (!r._archFoundryPreset || !r._archFoundryPreset(a)) continue;
             foundryN++;
             if (a._ziegelSlot) mitSlot++;
             else if (a._ziegelGebacken) ausgebrannt++;
         }
-        const wm = r.state.weltMarch;
+        const wm = st.weltMarch;
         // Der Zustand je gesetztem Bau (die Linse nennt den Täter, nicht nur „Takt null").
         const zustand = (e) =>
             e
@@ -247,7 +247,7 @@ hauptLauf(async () => {
         return {
             hausName,
             idx,
-            n: r.state.architectures.length,
+            n: st.architectures.length,
             slotB,
             slotH,
             karteBF,
@@ -281,7 +281,7 @@ hauptLauf(async () => {
             },
             felderFrei: wm ? wm.freiFelder.length : null,
             felderVoll: !!r._weltFelderVollWarn,
-            radius: Math.round(r.state.architectureCullingRadius || 0),
+            radius: Math.round(st.architectureCullingRadius || 0),
         };
     });
     if (!res || res.fatal) {

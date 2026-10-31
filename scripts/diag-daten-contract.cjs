@@ -29,9 +29,9 @@ const CORES = [
     { file: "tetrapoda-core.js", ns: "__tetrapodaCore", kind: "kreatur", feld: "motion", minRezepte: 4 },
 ];
 
-const { pruefer, wandEnde, selbsttestEnde, ausDatei, SELBSTTEST, fs, crypto, vm } = require("./lib/welt-boot.cjs");
+const { pruefer, wandEnde, selbsttestEnde, ausDatei, SELBSTTEST, fs, vm } = require("./lib/welt-boot.cjs");
 const { errs, check } = pruefer();
-const sha = (s) => crypto.createHash("sha256").update(s).digest("hex");
+const { sha } = require("./lib/stamm.cjs");
 
 // Frischer vm-Kontext je Ladung (Determinismus-Beweis über zwei unabhängige Läufe). Der Kontext liest das Math des
 // Gates (dieselben Funktionen) — so erreicht die Plattform-Probe den Kern.

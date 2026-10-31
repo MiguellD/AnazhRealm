@@ -10,8 +10,8 @@ class AnazhRealm_koerper_leib {
     _rollHumanoidGenome(seed) {
         const g = this._rollGenome(String(seed == null ? "h0" : seed), "humanoid");
         const core = typeof window !== "undefined" && window.__koerperCore;
-        if (!core || !core.SKIN_TONES || !core.HAIR_COLORS || !core.CLOTH_COLORS)
-            return AnazhRealm._kernPflichtBruch("koerper:SKIN_TONES/HAIR_COLORS/CLOTH_COLORS");
+        if (!core || !core.SKIN_TONES || !core.HAIR_COLORS || !core.CLOTH_COLORS || !core.HAAR_KAPPE)
+            return AnazhRealm._kernPflichtBruch("koerper:SKIN_TONES/HAIR_COLORS/CLOTH_COLORS/HAAR_KAPPE");
         const natur = Object.keys(core.HAIR_COLORS).filter((k) => {
             const c = core.HAIR_COLORS[k].base >>> 0;
             const r = (c >> 16) & 255,
@@ -44,6 +44,13 @@ class AnazhRealm_koerper_leib {
             topColor: g.pick("top", Object.keys(core.CLOTH_COLORS)),
             bottomColor: g.pick("bottom", Object.keys(core.CLOTH_COLORS)),
             shoeColor: g.pick("schuh", Object.keys(core.CLOTH_COLORS)),
+            // DIE GESTALT ÜBER DIE FARBE HINAUS (mensch.K4): der Schnitt des Haars (die Stile mit Volumen, koerper HAAR_KAPPE),
+            // seine Länge und Fülle, das Alter (das Gesicht altert, die Haltung mit ihm) — die Gestalten einer Siedlung lesen
+            // sie (`_bewohnerGestalten`), ihre Bewohner wählen nach ihnen (`_bewohnerGenome`)
+            schnitt: g.pick("schnitt", Object.keys(core.HAAR_KAPPE)),
+            haarLaenge: g.range("haarLaenge", 0.7, 1.4),
+            haarFuelle: g.range("haarFuelle", 0.8, 1.3),
+            alter: g.range("alter", 0.05, 0.5),
         };
     }
     // Genom→Dial-Brücke: der EINE Bau-Pfad ist bauMensch(dials); die Brücke invertiert die
@@ -352,6 +359,7 @@ class AnazhRealm_koerper_leib {
             nah: klon,
             fern,
             meshes,
+            art: kind,
             abM: s1.ab,
             hyst: z0.hyst,
             zwilling: z0.zeile.schatten === 1,
@@ -362,19 +370,19 @@ class AnazhRealm_koerper_leib {
         };
     }
 
-    // DER EINE STUFEN-SCHALTER der Gelenk-Gestalt (Tier, Mensch, Peer, Werkstatt): jenseits `ab` × Größe trägt die
-    // Grobstufe das Bild, diesseits die feine — und die Grobstufe wirft als ihr Zwilling auf SHADOW_TWIN_LAYER (die
-    // Haupt-Kamera sieht sie nie, die Kaskaden immer). Hysterese ±`hyst` (fern erst jenseits (1+h)·Grenze, zurück erst
-    // innerhalb (1−h)·Grenze); geschaltet werden nur `visible` und die Ebenen, nur beim Wechsel. Jenseits ruht jeder Gang
+    // DER EINE STUFEN-SCHALTER der Gelenk-Gestalt (Tier, Mensch, Peer, Werkstatt): jenseits ihrer Grenze aus dem Stufen-Gesetz
+    // (`_gelenkGrenzen`: der Haushalt `ab` ihrer Kern-Zeile × Größe) trägt die Grobstufe das Bild, diesseits die feine — und die
+    // Grobstufe wirft als ihr Zwilling auf SHADOW_TWIN_LAYER (die Haupt-Kamera sieht sie nie, die Kaskaden immer). Die EINE Wahl
+    // (`_stufeNachGrenzen`, Hysterese ±`hyst`) am Abstand `distSq` vom Auge der Stufen (`_lodAuge`, der Rufer misst ihn);
+    // geschaltet werden nur `visible` und die Ebenen, nur beim Wechsel. Jenseits ruht jeder Gang
     // (updateCreatures, der Peer-Tick, die Sicht-Kopie) außer dem eines laufenden Tiers (`_kreaturLaeuft`, Welle LF) —
     // der Wechsel nach fern stellt die Gestalt in ihre Ruhe (`_gelenkRuhe`), denn beide Stufen tragen dieselben Knochen;
     // eine Gestalt mit fester Haltung (`haltungFest`: der Gefallene, Welle LF kampf) bleibt in ihr. Rückgabe: fern?
     _gelenkStufe(gruppe, distSq) {
         const g = gruppe.userData._gelenk;
         const s = gruppe.scale.x || 1;
-        const grenzSq = g.abM * g.abM * s * s;
-        const h = g.hyst;
-        const fern = !(distSq < grenzSq * (g.istFern ? (1 - h) * (1 - h) : (1 + h) * (1 + h)));
+        const fern =
+            AnazhRealm._stufeNachGrenzen(Math.sqrt(distSq), g.istFern ? 1 : 0, this._gelenkGrenzen(g), s) === 1;
         if (fern !== g.istFern) {
             g.istFern = fern;
             g.nah.visible = !fern;
@@ -1579,6 +1587,149 @@ class AnazhRealm_koerper_leib {
             }
         }
         return f;
+    }
+
+    // DIE TON-TAFEL (mensch.K4) — die EINE Ablage der Paletten, aus denen jeder Mensch seine Farben liest: je Zeile eine
+    // Palette (koerper `menschPalette`, linear, je Ton ein Texel), Zeile 0 die Eins (ein Leib ohne eigene Palette: der Spieler,
+    // jeder Mitspieler — sein Guss trägt seine Farben). Die Bewohner einer Siedlung belegen je Gestalt und je Kopf eine Zeile
+    // (`_tonZeile`, in EINEM Zug je Siedlung: die Tafel lädt einmal hoch), die Siedlung gibt sie mit ihren Leibern zurück
+    // (`_tonZeileFrei`). Leser: der Stoff jedes Menschen (`_tonFaktor`: Leib und Satz der Menge) und das Feld (`_tonFeldFarbe`).
+    // Die Tafel gehört der Seite (WELT_GRENZE.seite: ein bleibendes Programm liest sie), ihre Belegung der Welt: nach dem Wechsel am
+    // Ort beginnt die neue Welt mit leeren Zeilen über derselben Karte — sonst gab der Abschied die Karte frei, die der Stoff des
+    // Spielers weiter las („Destroyed texture ton-tafel used in a submit“, z86).
+    _tonTafel() {
+        const st = this.state;
+        if (st.tonTafel) {
+            if (!st.tonTafelFrei) [st.tonTafelFrei, st.tonTafelZeilen] = [[], 1];
+            return st.tonTafel;
+        }
+        const kc = window.__koerperCore;
+        if (!kc || !kc.MENSCH_TON) return AnazhRealm._kernPflichtBruch("koerper:MENSCH_TON");
+        const T = THREE;
+        const tex = new T.DataTexture(
+            new Float32Array(kc.MENSCH_TON.length * AnazhRealm.TON_TAFEL.zeilen * 4).fill(1),
+            kc.MENSCH_TON.length,
+            AnazhRealm.TON_TAFEL.zeilen,
+            T.RGBAFormat,
+            T.FloatType
+        );
+        tex.name = "ton-tafel";
+        tex.minFilter = tex.magFilter = T.NearestFilter;
+        tex.generateMipmaps = false;
+        tex.needsUpdate = true;
+        st.tonTafel = tex;
+        st.tonTafelFrei = [];
+        st.tonTafelZeilen = 1; // die nächste nie belegte Zeile (0 ist die Eins)
+        return tex;
+    }
+    // Eine Zeile der Tafel für eine Palette (`menschPalette`); die Tafel lädt im nächsten Bild. Eine volle Tafel bricht LAUT
+    // (0: der Leib zeigt die Farben seiner Gestalt — die Linse der Menge nennt jedes Paar).
+    _tonZeile(palette) {
+        const tex = this._tonTafel();
+        const st = this.state;
+        const z = st.tonTafelFrei.length
+            ? st.tonTafelFrei.pop()
+            : st.tonTafelZeilen < AnazhRealm.TON_TAFEL.zeilen
+              ? st.tonTafelZeilen++
+              : 0;
+        if (!z) {
+            this._bruchMelden(
+                `TON-TAFEL: alle ${AnazhRealm.TON_TAFEL.zeilen} Zeilen belegt — ein Mensch ohne seine Farben`
+            );
+            return 0;
+        }
+        const D = tex.image.data;
+        const n = tex.image.width;
+        for (let t = 0; t < n; t++) D.set([palette[t * 3], palette[t * 3 + 1], palette[t * 3 + 2], 1], (z * n + t) * 4);
+        tex.needsUpdate = true;
+        return z;
+    }
+    _tonZeileFrei(z) {
+        if (z > 0 && this.state.tonTafel) this.state.tonTafelFrei.push(z);
+    }
+    // DER KAHLE KOPF (haar.K2: die Klasse haar am Spieler): das Haar ist die Kappe UND ihre Strähnen (K57, koerper HAAR_KAPPE ·
+    // haarStreu) — die Kappe gießt der Ofen in die Kopf-Haut, ihre Ecken tragen den Ton des Haars (`aTon`, koerper `menschTon`) und
+    // seine Farbe. Verbirgt eine Linse die Strähnen des Spielers (`aus`: was sie verbirgt), tragen die Ecken der Kappe die Farbe der
+    // Haut ihres Kopfs; jeder Ruf stellt zuerst zurück, was der vorige färbte (ohne Strähnen in `aus`: nur zurück). Rückgabe die Zahl
+    // der gefärbten Ecken. Bis hier zeigte das Bild ohne Haar (die Teilung der Werkbank, `bild --klasse spieler:kopf/hair`) die Kappe
+    // im Ton ihrer Strähnen — getrennt wurden nur Strähnen-Ränder, die Klasse zeigte keine inneren Pixel (haar.K2#1 an 3ed95dcf, GTX)
+    _kopfKahl(aus) {
+        const pm = this.state.playerMesh;
+        for (const [c, alt] of this._kahlStand || []) {
+            for (const [i, x, y, z] of alt) c.setXYZ(i, x, y, z);
+            c.needsUpdate = true;
+        }
+        this._kahlStand = [];
+        const haar = (o) =>
+            !!o &&
+            ((o.userData && o.userData.__klasse) ||
+                (o.material && o.material.userData && o.material.userData.__klasse)) === "hair";
+        const vomSpieler = (o) => {
+            for (let p = o; p; p = p.parent) if (p === pm) return true;
+            return false;
+        };
+        const KC = typeof window !== "undefined" && window.__koerperCore;
+        if (!pm || !KC || !(aus || []).some((o) => haar(o) && vomSpieler(o))) return 0;
+        const [tH, tS] = [KC.menschTon("haarKappe"), KC.menschTon("skin")];
+        let n = 0;
+        pm.traverse((o) => {
+            const a = o.isMesh && !haar(o) && o.geometry && o.geometry.attributes;
+            const [t, c] = a ? [a.aTon, a.color] : [];
+            if (!t || !c) return;
+            const m = [0, 0, 0, 0];
+            for (let i = 0; i < t.count; i++)
+                if (Math.round(t.getX(i)) === tS)
+                    ((m[0] += c.getX(i)), (m[1] += c.getY(i)), (m[2] += c.getZ(i)), m[3]++);
+            if (!m[3]) return;
+            const alt = [];
+            for (let i = 0; i < t.count; i++)
+                if (Math.round(t.getX(i)) === tH)
+                    (alt.push([i, c.getX(i), c.getY(i), c.getZ(i)]),
+                        c.setXYZ(i, m[0] / m[3], m[1] / m[3], m[2] / m[3]));
+            if (!alt.length) return;
+            this._kahlStand.push([c, alt]);
+            c.needsUpdate = true;
+            n += alt.length;
+        });
+        return n;
+    }
+    // DAS VERHÄLTNIS DER PALETTEN je Ecke (der Stoff liest es im Vertex-Takt): die Palette des Leibs (Zeile x) zu der seiner
+    // Gestalt (Zeile y) am Ton der Ecke (`aTon`). `zeilen` (vec2-Knoten, optional): die Zeilen je Instanz (der Satz der Menge);
+    // ohne sie die des zeichnenden Objekts (`userData.__ton`, `_tonLeibZeilen`).
+    _tonFaktor(TSL, zeilen) {
+        const tafel = this._tonTafel();
+        const z = zeilen || this._tonLeibZeilen(TSL);
+        const ton = TSL.int(TSL.attribute("aTon", "float").add(0.5));
+        const lies = (zeile) => TSL.textureLoad(tafel, TSL.ivec2(ton, TSL.int(zeile)), TSL.int(0)).rgb;
+        return lies(z.x).div(lies(z.y).max(1e-4));
+    }
+    // Die Zeilen des zeichnenden Objekts (je Objekt in seiner Bindegruppe, Takt object): [Leib, Gestalt], ohne Palette [0, 0]
+    _tonLeibZeilen(TSL) {
+        if (this._tonLeibKnoten) return this._tonLeibKnoten;
+        const v = new THREE.Vector2();
+        this._tonLeibKnoten = TSL.uniform(v).onObjectUpdate(({ object }) => {
+            const t = object && object.userData ? object.userData.__ton : null;
+            return v.set(t ? t[0] : 0, t ? t[1] : 0);
+        });
+        return this._tonLeibKnoten;
+    }
+    // DIE FARBE EINES GLIEDS IM FELD (mensch.K4): die Töne seiner Kapsel (`_gliedKapselFit`: je Ton sein Anteil an der Farbe
+    // der Gestalt) je Ton mit dem Verhältnis der Paletten [Leib, Gestalt] — der Bewohner trägt fern dieselben Farben wie nah.
+    // Liefert die Farbe (linear) oder null.
+    _tonFeldFarbe(kapsel, zeilen) {
+        if (!kapsel || !kapsel.toene || !zeilen || !(zeilen[0] > 0)) return null;
+        const tex = this._tonTafel();
+        const D = tex.image.data;
+        const n = tex.image.width;
+        const c = [0, 0, 0];
+        for (const [t, r, g, b] of kapsel.toene) {
+            const p = (zeilen[0] * n + t) * 4,
+                q = (zeilen[1] * n + t) * 4;
+            c[0] += (r * D[p]) / Math.max(1e-4, D[q]);
+            c[1] += (g * D[p + 1]) / Math.max(1e-4, D[q + 1]);
+            c[2] += (b * D[p + 2]) / Math.max(1e-4, D[q + 2]);
+        }
+        return { r: c[0], g: c[1], b: c[2] };
     }
 
     // DER EINE KEY-MÜNZER des Mensch-Ofens (18.07.): Guss und Prefetch münzen
@@ -3259,6 +3410,9 @@ AnazhRealm._landungGesetz = function () {
 // Menschen aus dem Ofen; carPhys des Wagens). Bis 0710-4 hielt STOSS zwei Studio-Größen
 // (dichteLeib 1000 über eine Kapsel aus der Hüft-Höhe — der Hirsch wog 436 kg, der Bär 255 —, dichteWagen 150).
 AnazhRealm.LEIB_KLASSEN = Object.freeze(["fell", "haut"]); // die Material-Klassen der geschlossenen Haut eines Leibs
+// DIE TON-TAFEL (mensch.K4, `_tonTafel`): so viele Paletten trägt sie — je Siedlung eine je Gestalt und je Kopf (die Metropole
+// am Messort stadt-voll 1 094 Köpfe), Zeile 0 die Eins; die Tafel lädt je Siedlung einmal
+AnazhRealm.TON_TAFEL = Object.freeze({ zeilen: 4096 });
 // Das Volumen einer GESCHLOSSENEN Fläche (m³ im Rahmen ihrer Geometrie) über den Divergenz-Satz, Σ a · (b × c) / 6 je
 // Dreieck — und ob sie geschlossen ist (jede Kante gerade oft: die glatte Vereinigung der Haut teilt manche Kante mit vier
 // Dreiecken, dicht ist sie trotzdem). Eine offene Fläche (Mähne, Strähnen) hat kein Volumen.

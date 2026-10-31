@@ -233,6 +233,12 @@ var SAISON_GESETZ = {
     bau: 0x4f7a30,       // die Toenung, mit der ein Koerper gebacken ist (Sommer, setSeasonColors("summer"))
     mulMin: 0.25, mulMax: 4.0,
     kartenGewicht: 0.8,  // die Karte folgt der Saison zu 80 % (Impostor-Shader mix(1, uSeasonMul, 0.8))
+    // vegetation.K5 (30.10., additiv) — DIE PRAESENZ DES JAHRS: `pr` zieht jedes Blatt (aType typ.laub), `bl` jede Bluete
+    // (typ.bluete) auf seine Mitte (injectWind: transformed = mix(aCenter, transformed, pres)), Labor UND Welt (`_jahrLage`);
+    // alles andere (Rinde 0, Nadel 2, Halm 4) steht. Die Karte hebt ihre Alpha-Schwelle um (1 - pr) * karteSchwelle (der
+    // Studio-Impostor, die Welt-Karte) — die gebackene Karte ist Sommer (volle Krone).
+    typ: { laub: 1, bluete: 3 },
+    karteSchwelle: 0.5,
 };
 
 var __terrainCore = { HIMMEL_GESETZ: HIMMEL_GESETZ, WASSER_GESETZ: WASSER_GESETZ, REGEN_GESETZ: REGEN_GESETZ, BERG_GESETZ: BERG_GESETZ, BERG_VIS: BERG_VIS, INSEL_GESETZ: INSEL_GESETZ, INSEL_VIS: INSEL_VIS, WALD_GESETZ: WALD_GESETZ, WALD_VIS: WALD_VIS, KACHEL_GESETZ: KACHEL_GESETZ, KACHEL_VIS: KACHEL_VIS, SAISON_GESETZ: SAISON_GESETZ };
@@ -247,7 +253,13 @@ var ATMO_GESETZ = {
     erdeM: 6360e3, randM: 6460e3,  // Radius des Bodens / des Rands der Atmosphaere
     rayleighH: 8000,               // Skalenhoehe der Rayleigh-Dichte (m)
     rayleighTiefe: [0.044, 0.1, 0.23], // optische Tiefe Meereshoehe/Zenit je Kanal (Bucholtz 1995): blau streut ~5x rot
-    mieG: 0.8,                     // Henyey-Greenstein-Asymmetrie des Aerosols
+    wellenNm: [680, 550, 440],     // die Wellenlaenge je Kanal (rot/gruen/blau), an der Rayleigh-Tiefe und Aerosol gelten
+    // DAS AEROSOL GEMESSEN (w4-ferne-blau): Henyey-Greenstein-Asymmetrie g und Angstroem-Exponent alpha des kontinentalen
+    // Dunsts (AERONET, Dubovik et al. 2002, J. Atmos. Sci. 59:590; Tomsk g 0,72 -> 0,60 ueber 340-1020 nm; Europa im Sommer
+    // alpha 1,2-1,4) — bis dahin g 0,8 (die Vorgabe von Bruneton 2017) und ein graues Aerosol (alpha 0): die Ferne trug kein
+    // Blau mit der Weglaenge, die Sonnenseite 1,17
+    mieG: 0.7,                     // Henyey-Greenstein-Asymmetrie des Aerosols bei 550 nm
+    mieAngstroem: 1.3,             // beta_Aerosol(lambda) = beta_550 * (lambda / 550 nm)^-alpha, der Anker bleibt Koschmieder bei 550 nm
     mieAlbedo: 0.9,                // Einfach-Streualbedo des Aerosols (Streuung / Extinktion)
     ozon: { mitteM: 25000, halbM: 15000, absorption: [0.65e-6, 1.881e-6, 0.085e-6] }, // Zelt-Profil, Absorption je m am Gipfel (R/G/B)
     // DIE LUFT (V18.530): beobachtbare Sichtweiten — ein klarer Sommertag traegt Gelaende-Silhouetten 20 km weit, Starkregen
@@ -265,8 +277,9 @@ var ATMO_GESETZ = {
 __terrainCore.ATMO_GESETZ = ATMO_GESETZ;
 // DIE RECHNUNG des Gesetzes (rein, THREE-frei; Einheiten km und 1/km wie Hillaire) — die Welt (`_atmoSonne`, die Tafeln) und
 // das Labor (phytogenesis `atmosphere`) rufen DIESELBEN Funktionen. medium: das Medium bei der Extinktion der Luft
-// betaLuft (1/m; das Aerosol ist ihr Anteil ueber dem Rayleigh) und dem Boden albedo. durchlass: rgb von der Hoehe h (km
-// ueber dem Bezug) laengs cos Zenit mu bis zum Rand, N Schritte; trifft der Strahl den Boden, ist es der Erdschatten (0).
+// betaLuft (1/m bei 550 nm; das Aerosol ist ihr Anteil ueber dem Rayleigh, je Kanal nach Angstroem: mieExt/mieSca sind
+// rgb) und dem Boden albedo. durchlass: rgb von der Hoehe h (km ueber dem Bezug) laengs cos Zenit mu bis zum Rand, N
+// Schritte; trifft der Strahl den Boden, ist es der Erdschatten (0).
 // sonne: e = sin(Hoehe); col = Farbton (unter dem Horizont zum Mond), lum = hellster Kanal — col*lum IST der Durchlass.
 var ATMO_RECHNUNG = {
     betaKlar: function (G) {
@@ -276,14 +289,19 @@ var ATMO_RECHNUNG = {
         var HR = G.rayleighH / 1000;
         var mie = Math.max(0, betaLuft - G.luft.betaRayleigh) * 1000;
         var t = G.rayleighTiefe;
+        var ext = G.wellenNm.map(function (l) {
+            return mie * Math.pow(l / 550, -G.mieAngstroem);
+        });
         return {
             RG: G.erdeM / 1000,
             RT: G.randM / 1000,
             HR: HR,
             betaR: [t[0] / HR, t[1] / HR, t[2] / HR],
             HM: G.luft.skalenHoeheM / 1000,
-            mieExt: mie,
-            mieSca: mie * G.mieAlbedo,
+            mieExt: ext,
+            mieSca: ext.map(function (e) {
+                return e * G.mieAlbedo;
+            }),
             g: G.mieG,
             ozon: G.ozon.absorption.map(function (x) {
                 return x * 1000;
@@ -309,11 +327,11 @@ var ATMO_RECHNUNG = {
             var t = (s + 0.5) * dt;
             var hi = Math.max(0, Math.sqrt(t * t + 2 * r * mu * t + r * r) - M.RG);
             var dR = Math.exp(-hi / M.HR);
-            var dM = Math.exp(-hi / M.HM) * M.mieExt;
+            var dM = Math.exp(-hi / M.HM);
             var dO = Math.max(0, 1 - Math.abs(hi - M.ozonMitte) / M.ozonHalb);
-            t0 += (M.betaR[0] * dR + dM + M.ozon[0] * dO) * dt;
-            t1 += (M.betaR[1] * dR + dM + M.ozon[1] * dO) * dt;
-            t2 += (M.betaR[2] * dR + dM + M.ozon[2] * dO) * dt;
+            t0 += (M.betaR[0] * dR + M.mieExt[0] * dM + M.ozon[0] * dO) * dt;
+            t1 += (M.betaR[1] * dR + M.mieExt[1] * dM + M.ozon[1] * dO) * dt;
+            t2 += (M.betaR[2] * dR + M.mieExt[2] * dM + M.ozon[2] * dO) * dt;
         }
         out[0] = Math.exp(-t0);
         out[1] = Math.exp(-t1);
@@ -518,9 +536,14 @@ const PORTAL_RENDER_CONFIG = {
             // gestreckter Grannen (4 × 1), die aus 2–5 m als helle V-Zeichen über der Narbe standen; 8 → 4 Dreiecke je Rispe
             // (L1 798/990 → 702/858 an den zwei Vorlagen) — die Dreiecke tragen die Narbe, die das Bodenlicht der stehenden
             // Kronen dichter wirft (`_bodenLichtFeld`).
+            // DIE ÄHRE AUS DEM GRAS-GESETZ (w4-wiese-nah, HALM_GESETZ.aehre): `aehre` ist der Kosten-Regler der Stufe — Ährchen
+            // je Ähre (je ein Dreieck an der Spindel) und die Segmente des Stängels. L1 6 Ährchen bei 2 Stängel-Segmenten kostet
+            // je Ähre 10 Dreiecke wie Stängel 3 + Rispe 2 × 2 zuvor (702/858 an den zwei Vorlagen, byte-gleich in der Zahl);
+            // L2 2 Ährchen am geraden Stängel wie die 1 × 1-Rispe. Die Breite des Ährchens ist die des Gesetzes, nie ein
+            // Stufen-Faktor (die 3,2- und 2,65-fache Granne las aus 1 m als Papier-Viereck, aus Third als Fähnchen).
             grass: {
-                1: { tris: 1000, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 2, breite: 3.2 } },
-                2: { tris: 130, draws: 1, schatten: false, rispe: { grannen: 1, segmente: 1, breite: 2.65 } },
+                1: { tris: 1000, draws: 1, schatten: false, aehre: { aehrchen: 6, staengel: 2 } },
+                2: { tris: 130, draws: 1, schatten: false, aehre: { aehrchen: 2, staengel: 1 } },
                 fernform: "boden",
             },
             flower: {
@@ -719,7 +742,10 @@ const PORTAL_RENDER_CONFIG = {
     // 8-Winkel-Impostors als DATEN — Blickwinkel + Zell-Maße. Studio-Bäcker (bakeImpostorAtlas)
     // UND AnazhRealms RTT-Bäcker lesen DIESELBEN Zahlen; wer die Fern-Karten-Auflösung ändert,
     // ändert sie HIER, nirgends sonst.
-    impostor: { views: 8, cellW: 128, cellH: 256 },
+    // DIE HEBUNGS-RINGE (lod.K3, additiv): die Blick-Hebungen der Welt-Karte in Grad, aufsteigend — je Hebung ein Ring
+    // der `views` Peilungen in derselben Schicht; der Ring 0° in voller Zelle, jeder andere in 1/ringTeiler je Achse
+    // (DIE ATLAS-DIÄT: ¼ der Zellfläche, ringTeiler Ansichten je Zeile). Der Studio-Bäcker liest nur den Ring 0°.
+    impostor: { views: 8, cellW: 128, cellH: 256, hebungen: [-20, 0, 40, 80], ringTeiler: 2 },
 };
 
 // DIE HALM-BIEGUNG des Labors (Gras, Blumen-Stiel): der Halm kippt starr um seinen Fuß. Der Baum liest sie nicht mehr
@@ -798,19 +824,20 @@ function injectWind(mat, foliage, isGrass, baum, krone) {
             "#include <common>\nattribute vec3 aWind;\nattribute vec3 aCenter;\nattribute float aType;\nattribute float aLodLevel;\nattribute float aH0;\nattribute float aH0L;\nuniform float uTime,uWindStrength,uGust,uLeafPresence,uBloom,uLodRef;\nuniform vec3 uWindDir;\nvarying float vLod;\nvarying float vLodD;\nvarying float vLodDL;" +
                 (baum ? "\nattribute vec2 aWindB;\nuniform vec3 uWindBaum;" : "") +
                 (foliage
-                    ? "\nvarying float vSeasW;\nvarying vec3 vTintI;" + (isGrass ? "\nattribute vec3 aTintI;" : "")
+                    ? "\nvarying float vSeasW;\nvarying vec3 vTintI;" +
+                      (isGrass ? "\nattribute vec3 aTintI;\nvarying vec2 vHalmUv;" : "")
                     : "")
         ); // FIX v27: vTintI = Per-Instanz-Farbvarianz. FIX v30: aH0L = BLATT-Sichthoehe (bei grossen Baeumen gekappt) -> Laub-LOD folgt der ABSOLUTEN Distanz, Skelett-LOD weiter der Baumgroesse. Ein 30cm-Blatt ist bei 80m unsichtbar klein, egal wie gross sein Baum ist.
         sh.vertexShader = sh.vertexShader.replace(
             "#include <begin_vertex>",
             "#include <begin_vertex>\nfloat wT=aType;\n" +
-                (foliage ? "vSeasW=(wT==1.0||wT==3.0)?1.0:0.0;\n" : "") +
-                "float pres=(wT==1.0)?uLeafPresence:(wT==3.0?uBloom:1.0);\ntransformed=mix(aCenter,transformed,clamp(pres,0.0,1.0));\nfloat _sw=aWind.x,_ph=aWind.y,_om=aWind.z;\n" +
+                (foliage ? "vSeasW=(wT==" + SAISON_GESETZ.typ.laub.toFixed(1) + "||wT==" + SAISON_GESETZ.typ.bluete.toFixed(1) + ")?1.0:0.0;\n" : "") +
+                "float pres=(wT==" + SAISON_GESETZ.typ.laub.toFixed(1) + ")?uLeafPresence:(wT==" + SAISON_GESETZ.typ.bluete.toFixed(1) + "?uBloom:1.0);\ntransformed=mix(aCenter,transformed,clamp(pres,0.0,1.0));\nfloat _sw=aWind.x,_ph=aWind.y,_om=aWind.z;\n" +
                 "#ifdef USE_INSTANCING\n vec2 _iw=instanceMatrix[3].xz;\n#else\n vec2 _iw=vec2(0.0);\n#endif\n" +
                 "vLod=aLodLevel;\n#ifdef USE_INSTANCING\n float _isy=length(instanceMatrix[1].xyz); float _cd=length(cameraPosition.xz-_iw); float _lk=(aH0>0.001)?min(uLodRef/(aH0*_isy),1.0):1.0; vLodD=_cd*_lk; float _lkL=(aH0L>0.001)?min(uLodRef/(aH0L*_isy),1.0):1.0; vLodDL=_cd*_lkL;\n#else\n vLodD=length(cameraPosition.xz-_iw); vLodDL=vLodD;\n#endif\n" +
                 (foliage
                     ? isGrass
-                        ? "vTintI=aTintI;\n"
+                        ? "vTintI=aTintI;\nvHalmUv=uv;\n"
                         : "#ifdef USE_INSTANCING\n{float _th=fract(sin(dot(_iw,vec2(127.1,311.7)))*43758.5453);float _th2=fract(sin(dot(_iw,vec2(269.5,183.3)))*43758.5453);float _lu=(_th-0.5)*0.22,_hu=(_th2-0.5)*0.18;vTintI=vec3(_lu+_hu*0.6,_lu,_lu-_hu*0.6);}\n#else\n vTintI=vec3(0.0);\n#endif\n"
                     : "") /* FIX v27: Baum-Tint aus hash(Weltposition) — identisch fuer L0/L1 UND das Billboard (gleicher Hash im Impostor-Shader) -> die Kronenfarbe eines Baums bleibt ueber alle LOD-Stufen konstant; kompaktierungssicher; Studio (non-instanced) exakt neutral */ +
                 (baum ? baumWindGlsl(foliage) : halmBiegung(foliage)) +
@@ -854,26 +881,56 @@ function injectWind(mat, foliage, isGrass, baum, krone) {
                 "#include <color_fragment>",
                 "#include <color_fragment>\ndiffuseColor.rgb*=mix(vec3(1.0),uSeasonMul,vSeasW);\ndiffuseColor.rgb*=clamp(vec3(1.0)+vTintI,0.0,2.0);"
             ); // SAISON OHNE REBUILD + FIX v27: Per-Instanz-Tint (Baum: Positions-Hash; Gras: Licht x Feuchte x Jitter) -> kein Teppich-/Klon-Look mehr
-            if (isGrass)
-                sh.fragmentShader = sh.fragmentShader.replace(
-                    "gl_FragColor = vec4( outgoingLight, diffuseColor.a );",
-                    "gl_FragColor = vec4( outgoingLight, diffuseColor.a );\nfloat _ndv=abs(dot(normalize(vNormal),normalize(vViewPosition)));\ngl_FragColor.rgb+=diffuseColor.rgb*pow(1.0-_ndv,2.5)*0.55;\ngl_FragColor.rgb+=vec3(0.09,0.15,0.04)*pow(1.0-_ndv,4.0)*0.5;"
-                );
             // DAS LAUB-LICHT (K19, phyto-core `laubDurchlass`): jedes direkte Licht trägt nach der Physik des Stoffs den
             // Durchlass des Blatts — die Rückseite eines besonnten Blatts leuchtet mit Albedo × tau × max(−N·L, 0) und der
             // Vorwärts-Keule; Licht-Farbe und Schatten aus der Licht-Kette (directLight.color), dieselbe Lambert-Normierung
             // wie RE_Direct_Physical. Derselbe Term ist der Laub-Stoff der Welt; die Fresnel-Aufhellung des Laubs ist gefallen.
-            else {
-                const LL = self.__phytoCore.LAUB_LICHT;
-                const term = self.__phytoCore.laubDurchlass(self.__phytoCore.WIND_GLSL, "_nl", "_vl", "_nadel");
-                sh.fragmentShader = sh.fragmentShader.replace(
-                    "#include <lights_physical_pars_fragment>",
-                    "#include <lights_physical_pars_fragment>\nvoid RE_Direct_Laub( const in IncidentLight directLight, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n RE_Direct_Physical( directLight, geometry, material, reflectedLight );\n float _nl = dot( geometry.normal, directLight.direction );\n float _vl = -dot( geometry.viewDir, directLight.direction );\n#ifdef USE_UV\n float _nadel = step( " +
-                        LL.nadelAbU.toFixed(4) +
-                        ", vUv.x );\n#else\n float _nadel = 0.0;\n#endif\n vec3 _irr = directLight.color * " +
-                        term +
-                        ";\n#ifndef PHYSICALLY_CORRECT_LIGHTS\n _irr *= PI;\n#endif\n reflectedLight.directDiffuse += _irr * RECIPROCAL_PI * material.diffuseColor;\n}\n#undef RE_Direct\n#define RE_Direct RE_Direct_Laub"
-                );
+            // DER HALM (w4-wiese-nah, HALM_GESETZ) liest dasselbe Laub-Licht (der Halm ist ein dünnes Blatt, nie eine Nadel) und
+            // dazu je Pixel seinen Querschnitt, seine Adern und seine Narbe aus vHalmUv — dieselben Terme wie der Welt-Stoff
+            // (`_halmStoff`), hier über der GLSL-Algebra; der Fresnel-Saum des Grases (rim 2,5/4,0) ist gefallen.
+            const PC = self.__phytoCore,
+                G = PC.WIND_GLSL,
+                LL = PC.LAUB_LICHT;
+            const term = PC.laubDurchlass(G, "_nl", "_vl", "_nadel");
+            sh.fragmentShader = sh.fragmentShader.replace(
+                "#include <lights_physical_pars_fragment>",
+                "#include <lights_physical_pars_fragment>\n" +
+                    (isGrass ? "varying vec2 vHalmUv;\n" : "") +
+                    "void RE_Direct_Laub( const in IncidentLight directLight0, const in GeometricContext geometry, const in PhysicalMaterial material, inout ReflectedLight reflectedLight ) {\n IncidentLight directLight = directLight0;\n" +
+                    (isGrass
+                        ? " vec3 _oben = normalize( ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz );\n directLight.color *= " +
+                          PC.halmNarbe(G, "vHalmUv.y", "dot( directLight.direction, _oben )").direkt +
+                          ";\n"
+                        : "") +
+                    " RE_Direct_Physical( directLight, geometry, material, reflectedLight );\n float _nl = dot( geometry.normal, directLight.direction );\n float _vl = -dot( geometry.viewDir, directLight.direction );\n" +
+                    (isGrass
+                        ? " float _nadel = 0.0;\n"
+                        : "#ifdef USE_UV\n float _nadel = step( " +
+                          LL.nadelAbU.toFixed(4) +
+                          ", vUv.x );\n#else\n float _nadel = 0.0;\n#endif\n") +
+                    " vec3 _irr = directLight.color * " +
+                    term +
+                    ";\n#ifndef PHYSICALLY_CORRECT_LIGHTS\n _irr *= PI;\n#endif\n reflectedLight.directDiffuse += _irr * RECIPROCAL_PI * material.diffuseColor;\n}\n#undef RE_Direct\n#define RE_Direct RE_Direct_Laub"
+            );
+            if (isGrass) {
+                sh.fragmentShader = sh.fragmentShader
+                    .replace("void main() {", "void main() {\n float _hfw = fwidth( vHalmUv.x );")
+                    .replace(
+                        "#include <color_fragment>",
+                        "#include <color_fragment>\ndiffuseColor.rgb *= " + PC.halmAder(G, "vHalmUv.x", "_hfw") + ";"
+                    )
+                    .replace(
+                        "#include <normal_fragment_maps>",
+                        "#include <normal_fragment_maps>\n{ vec3 _n0 = normalize( vNormal ); vec3 _q = cross( normalize( ( viewMatrix * vec4( 0.0, 1.0, 0.0, 0.0 ) ).xyz ), _n0 ); float _ql = length( _q ); vec3 _t = _q / max( _ql, 1e-4 ) * smoothstep( 0.02, 0.12, _ql ); normal = normalize( _n0 - _t * " +
+                            PC.halmQuer(G, "vHalmUv.x", "_hfw") +
+                            " ) * faceDirection; }"
+                    )
+                    .replace(
+                        "#include <aomap_fragment>",
+                        "#include <aomap_fragment>\n{ float _hh = " +
+                            PC.halmNarbe(G, "vHalmUv.y", "1.0").himmel +
+                            "; reflectedLight.indirectDiffuse *= _hh; reflectedLight.indirectSpecular *= _hh; }"
+                    );
             }
             // DIE BLATT-UNTERSEITE (phyto-core BLATT_UNTERSEITE, 05.10.): die gesehene FLÄCHE nach unten gewandt (K68-N1: die
             // Fläche aus den Ableitungen, zum Auge gewandt — nie die Licht-Normale, die an der Krone die Krone ist) → heller
@@ -902,7 +959,7 @@ function injectWind(mat, foliage, isGrass, baum, krone) {
     mat.customProgramCacheKey = function () {
         return (
             "wind_" +
-            (foliage ? (isGrass ? "grass_v8tint" : "fol_v10seite" + (krone ? "_krone" : "")) : "bark") +
+            (foliage ? (isGrass ? "grass_halm" : "fol_v10seite" + (krone ? "_krone" : "")) : "bark") +
             "_v9overlap"
         );
     };
@@ -1055,17 +1112,18 @@ function buildMaterials() {
         true,
         true
     ); // FIX v31: MULTI-BLATT-KARTEN — ein Quad traegt ~6 GEMALTE Blaetter aus _leafAtlas (map wird nach dem Malen gesetzt). map haelt den WERT um sein Mittel `wert` (bakeLeafAtlasBild; color = 1/wert teilt ihn heraus), die Artfarbe kommt wie ueberall aus vertexColors -> Saison/Tint-Pipeline unveraendert. 28 Dreiecke je Blatt werden 2 je ~6 Blaetter (Faktor ~14 im Mittelfeld).
+    // DER HALM (HALM_GESETZ, w4-wiese-nah): die Cuticula als Rauheit, der Himmel ganz — die Tiefe der Narbe verdeckt ihn
+    // (`halmNarbe`, uv.y); bis dahin trug jeder Halm 18 % des Himmels, die Spitze im Licht wie der Fuß im Grund.
     grassMat = injectWind(
         new THREE.MeshStandardMaterial({
             vertexColors: true,
-            roughness: 0.7,
+            roughness: self.__phytoCore.HALM_GESETZ.rauheit,
             metalness: 0,
             side: THREE.DoubleSide,
-            envMapIntensity: 0.18,
         }),
         true,
         true
-    ); // GEMESSEN: weniger IBL -> Boden-Schatten am Gras sichtbar (vorher 0.4 = ausgewaschen)
+    );
     stemMat = injectWind(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.7, metalness: 0 }), false);
     // DER SCHATTEN-STOFF (S3, 09.10.): der Schatten-Teil der Baum-L1 (`teil: "schatten"`, aDeckt) wirft nur in der Welt (der
     // Wirt zeichnet ihn mit EINEM Schatten-Stoff in den Kaskaden) — im Labor ist er unsichtbar, die Stufe wirft dort selbst.
@@ -2975,18 +3033,28 @@ function groundCover(L, m, rk, td) {
 }
 // DIE GRASNARBE (K70, Soll-Tafel boden-nah: eine Wiese zeigt aus Augenhöhe ihren Grund erst unter dem Fuß, Grasland-LAI
 // 1,71): die Deckung ist die Blatt-Fläche je Boden-Fläche, und die Stufe trägt sie, nicht die Dreiecks-Zahl. Der Halm
-// WURZELT im Boden (bis K70 begann er eine Segment-Länge darüber: L1/L2 ein Drittel des Halms Luft am Grund), er ist
-// LINEAL wie ein Grasblatt — parallele Ränder, die Spitze erst im letzten Drittel (Breite 1 − 0,86·f³, Fläche 0,76 statt
-// 0,57 des Rechtecks bei denselben Dreiecken) —, und die Fernstufe L2 ist ein gerader Halm (ein Segment, 2 Dreiecke) in
-// 2,4-facher Zahl: L2 trägt 59 % der L1-Fläche je Büschel statt 38 %.
+// WURZELT im Boden (bis K70 begann er eine Segment-Länge darüber: L1/L2 ein Drittel des Halms Luft am Grund), und die
+// Fernstufe L2 ist ein gerader Halm (ein Segment) in 2,4-facher Zahl: L2 trägt 59 % der L1-Fläche je Büschel statt 38 %.
+// DER HALM IST EIN GESETZ (w4-wiese-nah, phyto-core HALM_GESETZ): LINEAL und SPITZ — parallele Ränder, die Breite
+// 1 − f^spitze (bis dahin 1 − 0,86·f³: die Spitze stand 14 % breit, auf Armlänge ein schräger Messer-Schnitt; die L2 hält ihre
+// Fläche, wMul 6,5 → 7,4) —, der Querschnitt gekielt und die Adern im Stoff (uv.x zählt quer in Adern, die Mittel-Rippe bei 0),
+// die Narbe über jeder Ecke (uv.y: die Blatt-Fläche des Büschels über ihrer Höhe je Fläche seiner Raster-Zelle, das Licht in
+// der Tiefe liest der Stoff, `halmNarbe`), und die Ähre wächst aus demselben Gesetz (unten).
 function emitGrass(P) {
     const geos = [];
+    const HG = self.__phytoCore.HALM_GESETZ;
     const lf = __lod === 0 ? 1 : __lod === 1 ? 0.92 : 0.333;
     const N = Math.max(3, Math.round(lerp(50, 150, P.density) * lf));
     const baseCol = vegFarbe(seasonTint).multiplyScalar(0.6),
         tipCol = vegFarbe(seasonAccent).multiplyScalar(GRAS_SPITZE_HELL);
     const seedCol = vegFarbe(P.seedTan || 0xc8b27a);
     const SH = P.seedHead || 0;
+    // Die Stufe der Ähre: Ährchen je Ähre und Segmente des Stängels aus ihrer Budget-Zeile (`lod.budget.grass[stufe].aehre`),
+    // die Labor-Stufe L0 die volle Zahl des Gesetzes. Die Welt-Skala des Grases trägt die Adern in Metern.
+    const ZA = __lod === 0 ? { aehrchen: HG.aehre.aehrchen, staengel: 7 } : PORTAL_RENDER_CONFIG.lod.budget.grass[__lod].aehre;
+    if (!(ZA && Number.isInteger(ZA.aehrchen) && ZA.aehrchen >= 1 && ZA.aehrchen <= HG.aehre.aehrchen && Number.isInteger(ZA.staengel) && ZA.staengel >= 1 && ZA.staengel <= 7))
+        throw new Error("[phyto] lod.budget.grass[" + __lod + "].aehre fehlt (aehrchen 1.." + HG.aehre.aehrchen + ", staengel 1..7)");
+    const S = PORTAL_RENDER_CONFIG.placement.scale.gras;
     // DIE WIESEN-FARBE je Halm (W1): eigener Strom, fünf Würfe je Halm, gezogen vor jeder Zeile
     const WH = WIESEN_FARBE.halm,
         farbStrom = mulberry32(((Math.floor(SEED) ^ 0x3c6e) + 7) >>> 0),
@@ -3002,15 +3070,17 @@ function emitGrass(P) {
             rr = Math.sqrt(i / N) * P.clump;
         const bx = Math.cos(a) * rr,
             bz = Math.sin(a) * rr;
-        const isCulm = SH > 0 && rnd() < SH * 0.5; // Teil der Halme -> Rispenstaengel
-        const wMul = __lod === 0 ? 1 : __lod === 1 ? 3.0 : 6.5;
+        const isCulm = SH > 0 && rnd() < SH * 0.5; // Teil der Halme -> Aehrenstaengel
+        const wMul = __lod === 0 ? 1 : __lod === 1 ? 3.0 : 7.4;
         const L = P.bladeLen * (isCulm ? rrange(1.25, 1.6) : rrange(0.6, 1.15)),
             w = P.bladeW * wMul * (isCulm ? 0.5 : 0.74) * rrange(0.8, 1.1);
         const lean = rrange(0.1, 0.4),
             la = rnd() * 6.28,
             bendDir = [Math.cos(la), 0, Math.sin(la)],
             droop = isCulm ? P.droop * 0.45 : P.droop;
-        const K = __lod === 0 ? (isCulm ? 7 : 10) : __lod === 1 ? 3 : 1,
+        // die Adern des Halms an seinem Fuß (quer, `aderM` in der Welt-Skala) — u läuft von −nv/2 bis +nv/2
+        const nv = (w * S) / HG.aderM;
+        const K = isCulm ? ZA.staengel : __lod === 0 ? 10 : __lod === 1 ? 3 : 1,
             positions = [],
             idx = [],
             uvs = [],
@@ -3031,19 +3101,25 @@ function emitGrass(P) {
                 p = vadd(p, vscl(dir, L / K));
             }
             tip = p.slice();
-            const halfW = w * (1 - f * f * f * 0.86) * 0.5,
+            const halfW = w * (1 - Math.pow(f, HG.spitze)) * 0.5,
                 rt = vnorm(vcross(dir, [0, 1, 0]));
-            const cl = vadd(p, vscl(rt, -halfW)),
-                cr = vadd(p, vscl(rt, halfW));
-            positions.push(cl[0], cl[1], cl[2], cr[0], cr[1], cr[2]);
-            uvs.push(0, f, 1, f);
+            // die Spitze ist EINE Ecke (die Breite 0): die Mittel-Rippe (u = 0) läuft in sie, das letzte Segment ist ein Dreieck
+            if (s < K) {
+                const cl = vadd(p, vscl(rt, -halfW)),
+                    cr = vadd(p, vscl(rt, halfW));
+                positions.push(cl[0], cl[1], cl[2], cr[0], cr[1], cr[2]);
+                uvs.push(-nv / 2, 0, nv / 2, 0); // uv.y: die Narbe, nach dem Büschel (unten)
+            } else {
+                positions.push(p[0], p[1], p[2]);
+                uvs.push(0, 0);
+            }
             const c = baseCol.clone().lerp(tipCol, f);
             c.r *= hl * (1 + ton);
             c.g *= hl;
             c.b *= hl * (1 - ton * 1.2);
             const sf = f < 0.55 ? 0 : ((f - 0.55) / 0.45) * ((f - 0.55) / 0.45) * (3 - (2 * (f - 0.55)) / 0.45);
             c.lerp(stroh, Math.min(1, Math.max(trk * (0.4 + 0.6 * f), spz * sf)));
-            for (let q = 0; q < 2; q++) {
+            for (let q = 0; q < (s < K ? 2 : 1); q++) {
                 const sw = Math.pow(f, 1.4) * P.windGain;
                 sway.push(sw, la * 1.3 + i, 1.1 + 0.5 * (1 - f));
                 ctr.push(bx, 0, bz);
@@ -3056,7 +3132,8 @@ function emitGrass(P) {
                 b0 = s * 2 + 1,
                 a1 = s * 2 + 2,
                 b1 = s * 2 + 3;
-            idx.push(a0, b0, a1, b0, b1, a1);
+            if (s < K - 1) idx.push(a0, b0, a1, b0, b1, a1);
+            else idx.push(a0, b0, a1);
         }
         const g = new THREE.BufferGeometry();
         g.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
@@ -3069,26 +3146,43 @@ function emitGrass(P) {
         g.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
         geos.push(g);
         if (isCulm) {
-            // Rispe: feine nickende Grannen an der Spitze. DIE RISPE IST GESTUFT (S3 08.10., Lehre 19): bis dahin war sie in
-            // jeder Stufe gleich fein (L1 7 Grannen × 3 Segmente = 42 Dreiecke je Rispe, 49/54 % der L1 an den zwei
-            // Nah-Wiesen-Vorlagen) — die Stufe war an der Gestalt abgelesen, nicht aus dem Band. Jetzt liest jede gelieferte
-            // Stufe ihre Rispe aus ihrer Budget-Zeile (`lod.budget.grass[stufe].rispe`: Grannen, Segmente, Breite); die
-            // Labor-Stufe L0 (keine gelieferte Stufe) bleibt 11 × 3 in voller Breite. STROM-ERHALT: jede Granne der vollen
-            // Zahl `NawVoll` (das Individuum: 11/7/4) zieht ihre Würfe (Winkel, Länge), auch die nicht gezeichnete — das
-            // Individuum, seine Halme und jede folgende Rispe bleiben byte-gleich, nur die Rispe fällt.
-            // DIE GRANNE IST EINE KURVE (S3 08.10., Gegenprüfung): ihre Biegung wird in voller Auflösung integriert (AKV = 3
-            // Segmente, die Kurve der Labor-Stufe), jede Stufe TASTET DIESELBE Kurve mit ihren `segmente` ab (Punkte auf der
-            // Kurve, die Richtung der Sehne). Bis dahin integrierte eine Stufe mit weniger Segmenten die Biegung neu — mit 2
-            // Segmenten nickte die Granne kaum (Biegung −0,30/−0,73 statt −0,30/−0,58/−0,87) und knickte zur V-Form: an 3 m
-            // las die Rispe als Möwe statt als Federbusch. Mit `segmente` 3 ist der Bau byte-gleich zum alten (L0, 17 Samen).
-            const AKV = 3,
+            // DIE ÄHRE WÄCHST AUS DEM GRAS-GESETZ (w4-wiese-nah, HALM_GESETZ.aehre): der Stängel geht über seine Spitze als
+            // SPINDEL weiter — dieselbe Biegung (f^1,8 · Nicken, nun über f = 1 hinaus), in AKV Schritten integriert, jede Stufe
+            // liest dieselbe Kurve —, und an ihr sitzen die ÄHRCHEN wechselständig in zwei Zeilen (je zweites um `drehung` um die
+            // Spindel gedreht: die Ähre ist nie eben), jedes um `winkel` von der Spindel abgespreizt und so lang, dass sie sich
+            // decken. Die Stufe zeichnet `aehrchen` von ihnen (Budget-Zeile); sie werden länger, je weniger es sind, ihre Breite
+            // bleibt die des Gesetzes (die volle Zahl): die Ähre behält ihren Umriss, nie ein breites Fähnchen. Bis dahin trug der
+            // Stängel eine „Rispe": 1 Granne × 2 Segmente in 3,2-facher Breite (L1), aus 1 m ein oranges Papier-Viereck, aus
+            // Third ein gelbes Fähnchen. STROM-ERHALT: die Würfe der Grannen (`NawVoll` × Winkel und Länge) sind gezogen wie
+            // zuvor — jedes Individuum, seine Halme und jede folgende Ähre bleiben dieselben; die Länge der Ähre ist die der
+            // ersten Granne, die übrigen Würfe tönen die Ährchen.
+            const AE = HG.aehre,
+                AKV = 3,
                 NawVoll = __lod === 0 ? 11 : __lod === 1 ? 7 : 4,
-                _rz = __lod === 0 ? { grannen: 11, segmente: 3, breite: 1 } : PORTAL_RENDER_CONFIG.lod.budget.grass[__lod].rispe;
-            if (!(_rz && Number.isInteger(_rz.grannen) && _rz.grannen >= 1 && _rz.grannen <= NawVoll && Number.isInteger(_rz.segmente) && _rz.segmente >= 1 && _rz.segmente <= AKV && _rz.breite > 0))
-                throw new Error("[phyto] lod.budget.grass[" + __lod + "].rispe fehlt (grannen 1.." + NawVoll + ", segmente 1.." + AKV + ", breite > 0)");
-            const Naw = _rz.grannen,
-                AK = _rz.segmente,
-                breit = _rz.breite,
+                wurf = [];
+            for (let k = 0; k < NawVoll; k++) wurf.push(rnd(), rrange(0.14, 0.28));
+            // die Ährchen der Stufe decken die Spindel von ihrem Fuß bis zu ihrem Ende (das letzte endet dort, in jeder Stufe)
+            const awl = L * wurf[1],
+                n = ZA.aehrchen,
+                laeng = awl * Math.min(1, AE.laenge / n),
+                breit = (awl / AE.aehrchen) * AE.laenge * AE.breite;
+            // Die Spindel: AKV Schritte über f = 1 hinaus, dasselbe Gesetz wie der Stängel (Punkte sp, Richtungen sd)
+            let ad = dir.slice();
+            const sp = [tip.slice()],
+                sd = [];
+            for (let s2 = 1; s2 <= AKV; s2++) {
+                const ddS = Math.pow(1 + (awl / L) * (s2 / AKV), 1.8) * droop;
+                ad = vnorm(vadd(ad, vscl(bendDir, ddS * 0.12)));
+                ad = vnorm(vadd(ad, [0, -ddS * 0.1, 0]));
+                sd.push(ad);
+                sp.push(vadd(sp[s2 - 1], vscl(ad, awl / AKV)));
+            }
+            const spindel = (t) => {
+                const x = Math.min(AKV - 1e-6, t * AKV),
+                    j = Math.floor(x);
+                return [vadd(sp[j], vscl(vsub(sp[j + 1], sp[j]), x - j)), sd[j]];
+            };
+            const seite0 = vnorm(vcross(dir, [0, 1, 0])),
                 pg = [],
                 pi = [],
                 pc = [],
@@ -3096,51 +3190,29 @@ function emitGrass(P) {
                 pct = [],
                 pty = [],
                 pu = [];
-            let vb = 0;
             const swT = P.windGain * 1.15;
-            for (let k = 0; k < NawVoll; k++) {
-                const aa = (k / Naw) * 6.2831 + rnd() * 0.5,
-                    awl = L * rrange(0.14, 0.28);
-                if (k >= Naw) continue; // Strom-Erhalt: die Würfe sind gezogen, die Granne zeichnet nicht
-                // Die Kurve der Granne: AKV Segmente (Punkte kp, Richtung je Segment kd).
-                let ad = vnorm([Math.cos(aa) * 0.3, 0.96, Math.sin(aa) * 0.3]);
-                const kp = [tip.slice()],
-                    kd = [];
-                for (let s2 = 0; s2 < AKV; s2++) {
-                    ad = vnorm(vadd(ad, [0, -0.3 - (s2 / AKV) * 0.85, 0]));
-                    kd.push(ad);
-                    kp.push(vadd(kp[s2], vscl(ad, awl / AKV)));
-                }
-                // Ein Punkt der Kurve beim Parameter u (0..AKV): ganzzahlig der Kurven-Punkt selbst, sonst auf seinem Segment.
-                const kpu = (u) => {
-                    const i = Math.floor(u),
-                        t = u - i;
-                    return t === 0 ? kp[i] : vadd(kp[i], vscl(vsub(kp[i + 1], kp[i]), t));
-                };
-                // Die Stufe tastet ab: Segment s2 von u0 = s2·AKV/AK bis u1 = (s2 + 1)·AKV/AK, seine Richtung die Sehne
-                // (bei AK = AKV die Kurven-Richtung selbst — byte-gleich zum alten Bau).
-                for (let s2 = 0; s2 < AK; s2++) {
-                    const f2 = s2 / AK,
-                        ap = kpu((s2 * AKV) / AK),
-                        np = kpu(((s2 + 1) * AKV) / AK),
-                        sd = AK === AKV ? kd[s2] : vnorm(vsub(np, ap)),
-                        hw = 0.016 * breit * (1 - f2 * 0.7),
-                        rt2 = vnorm(vcross(sd, [0, 1, 0]));
-                    const c0 = vadd(ap, vscl(rt2, -hw)),
-                        c1 = vadd(ap, vscl(rt2, hw)),
-                        c2 = vadd(np, vscl(rt2, hw * 0.5)),
-                        c3 = vadd(np, vscl(rt2, -hw * 0.5));
-                    pg.push(c0[0], c0[1], c0[2], c1[0], c1[1], c1[2], c2[0], c2[1], c2[2], c3[0], c3[1], c3[2]);
-                    pi.push(vb, vb + 1, vb + 2, vb, vb + 2, vb + 3);
-                    pu.push(0, f2, 1, f2, 1, f2 + 0.5, 0, f2 + 0.5);
-                    for (let q = 0; q < 4; q++) {
-                        const cc = seedCol.clone().multiplyScalar(0.85 + 0.3 * f2);
-                        pc.push(cc.r, cc.g, cc.b);
-                        pw.push(swT, la * 1.3 + i, 1.0);
-                        pct.push(tip[0], tip[1], tip[2]);
-                        pty.push(4);
-                    }
-                    vb += 4;
+            for (let e = 0; e < n; e++) {
+                const t = n > 1 ? (e * (1 - laeng / awl)) / (n - 1) : 0,
+                    [B, T] = spindel(t),
+                    s = e % 2 ? -1 : 1;
+                const Sv = vscl(vrot(seite0, T, s * AE.drehung), s),
+                    Ax = vnorm(vadd(vscl(T, Math.cos(AE.winkel)), vscl(Sv, Math.sin(AE.winkel))));
+                const Q = vnorm(vsub(Sv, vscl(Ax, vdot(Sv, Ax)))),
+                    E = vadd(B, vscl(Ax, laeng)),
+                    W = vadd(vadd(B, vscl(Ax, laeng * 0.42)), vscl(Q, breit));
+                // die Wicklung so, dass die Breiten-Richtung des Stoffs (Y × n) nach außen zeigt: u wächst zum Rand des Ährchens
+                const nn = vcross(vsub(W, B), vsub(E, B)),
+                    aussen = vdot(vcross([0, 1, 0], nn), Q) >= 0,
+                    v0 = pg.length / 3;
+                pg.push(B[0], B[1], B[2], W[0], W[1], W[2], E[0], E[1], E[2]);
+                pi.push(v0, aussen ? v0 + 1 : v0 + 2, aussen ? v0 + 2 : v0 + 1);
+                pu.push(0, 0, (breit * S) / HG.aderM, 0, 0, 0);
+                const cc = seedCol.clone().multiplyScalar((0.85 + 0.3 * t) * (0.92 + 0.16 * wurf[(2 + e) % wurf.length]));
+                for (let q = 0; q < 3; q++) {
+                    pc.push(cc.r, cc.g, cc.b);
+                    pw.push(swT, la * 1.3 + i, 1.0);
+                    pct.push(tip[0], tip[1], tip[2]);
+                    pty.push(4);
                 }
             }
             const gp = new THREE.BufferGeometry();
@@ -3155,8 +3227,48 @@ function emitGrass(P) {
             geos.push(gp);
         }
     }
+    __halmNarbe(geos, S / PORTAL_RENDER_CONFIG.understory.grassStep);
     addMerged(geos, grassMat);
     return { height: P.bladeLen * 1.2 };
+}
+
+// DIE NARBE DES BÜSCHELS (HALM_GESETZ, uv.y je Ecke): die einseitige Blatt-Fläche des Büschels ÜBER der Höhe der Ecke je Fläche
+// seiner Raster-Zelle (die Wiese pflanzt je Zelle einen Büschel, `understory.grassStep`; `k` = Welt-Skala / Raster, die Vorlage
+// in Zell-Kanten) — 0 an der höchsten Ähre, am Fuß der Blatt-Flächen-Index des Büschels. Das Licht in ihrer Tiefe rechnet der
+// Stoff des Halms (`halmNarbe`: Monsi & Saeki, Campbell). Jedes Dreieck zählt mit seinem Schwerpunkt.
+function __halmNarbe(geos, k) {
+    const dreiecke = [];
+    for (const g of geos) {
+        const p = g.attributes.position.array,
+            I = g.index.array;
+        for (let t = 0; t < I.length; t += 3) {
+            const a = I[t] * 3,
+                b = I[t + 1] * 3,
+                c = I[t + 2] * 3;
+            const n = vcross([p[b] - p[a], p[b + 1] - p[a + 1], p[b + 2] - p[a + 2]], [p[c] - p[a], p[c + 1] - p[a + 1], p[c + 2] - p[a + 2]]);
+            dreiecke.push([(p[a + 1] + p[b + 1] + p[c + 1]) / 3, 0.5 * Math.hypot(n[0], n[1], n[2])]);
+        }
+    }
+    dreiecke.sort((x, y) => y[0] - x[0]);
+    const hoehen = dreiecke.map((d) => d[0]),
+        ueber = [0];
+    for (const d of dreiecke) ueber.push(ueber[ueber.length - 1] + d[1] * k * k);
+    for (const g of geos) {
+        const p = g.attributes.position.array,
+            uv = g.attributes.uv.array;
+        for (let v = 0; v < p.length / 3; v++) {
+            // die Zahl der Dreiecke über der Ecke (die Höhen fallen): binäre Suche
+            let lo = 0,
+                hi = hoehen.length;
+            while (lo < hi) {
+                const m = (lo + hi) >> 1;
+                if (hoehen[m] > p[v * 3 + 1]) lo = m + 1;
+                else hi = m;
+            }
+            uv[v * 2 + 1] = ueber[lo];
+        }
+        g.attributes.uv.needsUpdate = true;
+    }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -5040,6 +5152,24 @@ function setSeasonColors(s) {
     }
 }
 
+// B8 — DER STAMMBAUM (Studio-Vertrag B8, studios.K5, rein additiv): wie das Buch sich und seine Arten nennt. Die Brücke
+// reicht die Tafel je Kern im Umschlag (`stammbaum`), der Wirt leitet daraus den EINEN Baum Studio → Bereich → Teil ab
+// (`_stammbaum`) — die Werkstatt-Bibliothek und der Wort-Katalog der KI lesen ihn, kein Wirt nennt eine Art beim Namen.
+var STAMMBAUM = {
+    studio: "Phytogenesis & Lithos",
+    arten: {
+        tree: "Bäume",
+        shrub: "Sträucher",
+        flower: "Blumen",
+        grass: "Gras",
+        rock: "Stein",
+        fern: "Farne",
+        reed: "Schilf",
+        brush: "Gestrüpp",
+        deadwood: "Stämme und Stümpfe",
+    },
+};
+
 // ERFINDER-WELLE (Katalysator §2 B4, „regelbar, alle Assets") — DIE REGLER-TABELLEN DER
 // PFLANZEN-DOMAENEN: die ov-Reise existiert in buildInstance seit je (Object.assign(P, ov)
 // NACH deriveParams*), diese Tabellen machen sie SICHTBAR (die Werkstatt rendert ihre
@@ -5190,9 +5320,12 @@ function __tierMergeGeos(geos, fuell) {
     // DIE BINDUNG REIST MIT (S3): ein geskinnter Eimer (die gelenkige Grobstufe: Haut + starr gebundene Teile, Gewicht 1)
     // verschmilzt mit seinen Gewichten — jeder Teil zeigt auf dieselbe Bone-Ordnung.
     const mitHaut = geos.every((g) => g.attributes.skinIndex && g.attributes.skinWeight);
+    // DER TON REIST MIT (mensch.K4): trägt jeder Teil des Eimers seinen Ton je Ecke (koerper `menschTon`), trägt ihn die Hülle
+    const mitTon = geos.every((g) => g.attributes.aTon);
     const pos = new Float32Array(nv * 3);
     const nor = new Float32Array(nv * 3);
     const col = mitFarbe ? new Float32Array(nv * 3) : null;
+    const ton = mitTon ? new Float32Array(nv) : null;
     const sIx = mitHaut ? new Float32Array(nv * 4) : null;
     const sGw = mitHaut ? new Float32Array(nv * 4) : null;
     const idx = new Uint32Array(ni);
@@ -5204,6 +5337,7 @@ function __tierMergeGeos(geos, fuell) {
         const c = g.attributes.position.count;
         if (col && g.attributes.color) col.set(g.attributes.color.array, vo * 3);
         else if (col) for (let i = 0; i < c; i++) col.set(fuell, (vo + i) * 3);
+        if (ton) ton.set(g.attributes.aTon.array, vo);
         if (mitHaut) {
             sIx.set(g.attributes.skinIndex.array, vo * 4);
             sGw.set(g.attributes.skinWeight.array, vo * 4);
@@ -5222,6 +5356,7 @@ function __tierMergeGeos(geos, fuell) {
     out.setAttribute("position", new THREE.BufferAttribute(pos, 3));
     out.setAttribute("normal", new THREE.BufferAttribute(nor, 3));
     if (col) out.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    if (ton) out.setAttribute("aTon", new THREE.BufferAttribute(ton, 1));
     if (mitHaut) {
         out.setAttribute("skinIndex", new THREE.BufferAttribute(sIx, 4));
         out.setAttribute("skinWeight", new THREE.BufferAttribute(sGw, 4));
@@ -6433,6 +6568,9 @@ function __mengenFarben(kern, L, toene) {
     const g = S.geo;
     const sp = g.attributes.aSpreiz.array;
     const col = new Float32Array((sp.length / 3) * 3);
+    // je Ecke ihr Ton (mensch.K4, koerper `menschTon`): die Zone 0 Haut, Lippe oder Höhle, 1 das Haar, 2 + i die Kleid-Zone i —
+    // der Satz der Menge färbt jede Ecke nach der Palette ihres Bewohners
+    const ton = new Float32Array(sp.length / 3);
     const normiert = (p, x, y, z) => {
         const m = p.Mi;
         const qx = m[0] * x + m[4] * y + m[8] * z + m[12],
@@ -6443,6 +6581,7 @@ function __mengenFarben(kern, L, toene) {
     for (let i = 0; i < sp.length / 3; i++) {
         const z = S.zone[i];
         let c = toene.zonen[z];
+        let t = z === 1 ? kern.menschTon("hair") : z >= 2 ? kern.menschTon(null, z - 2) : kern.menschTon("skin");
         if (z === 0) {
             const [x, y, w] = [sp[i * 3], sp[i * 3 + 1], sp[i * 3 + 2]];
             let best = null,
@@ -6452,13 +6591,15 @@ function __mengenFarben(kern, L, toene) {
                 const d = __tierAbstand(p, x, y, w);
                 if (d < bd) [bd, best] = [d, p];
             }
-            if (best && best.node.material.userData.__klasse === "lips") c = toene.lippe;
-            else if (L.hoehlen.some((h) => normiert(h, x, y, w) < saum)) c = toene.hoehle;
+            if (best && best.node.material.userData.__klasse === "lips") [c, t] = [toene.lippe, kern.menschTon("lips")];
+            else if (L.hoehlen.some((h) => normiert(h, x, y, w) < saum)) [c, t] = [toene.hoehle, kern.menschTon("socket")];
         }
         col.set(c, i * 3);
+        ton[i] = t;
     }
     g.deleteAttribute("aSpreiz");
     g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+    g.setAttribute("aTon", new THREE.BufferAttribute(ton, 1));
     L.mesh.geometry.dispose();
     L.mesh.geometry = g;
 }
@@ -6873,6 +7014,66 @@ function __tierPrims(baum, ref, nimm, vox, blend, gelenkVon, klassen, zylinder) 
     });
     prims.sort((a, b) => b.ext - a.ext);
     return prims;
+}
+
+// DAS FELD AN EINEM PUNKT (trilinear; außerhalb des Rasters frei, der Deckel von `__tierFeld`): F = { f, nx, ny, nz, lo }
+function __feldWert(F, vox, x, y, z) {
+    const gx = (x - F.lo[0]) / vox,
+        gy = (y - F.lo[1]) / vox,
+        gz = (z - F.lo[2]) / vox;
+    const i = Math.floor(gx),
+        j = Math.floor(gy),
+        k = Math.floor(gz);
+    if (i < 0 || j < 0 || k < 0 || i >= F.nx - 1 || j >= F.ny - 1 || k >= F.nz - 1) return 8 * vox;
+    const fx = gx - i,
+        fy = gy - j,
+        fz = gz - k;
+    const at = (a, b, c) => F.f[a + F.nx * (b + F.ny * c)];
+    const l = (a, b, t) => a + (b - a) * t;
+    return l(
+        l(l(at(i, j, k), at(i + 1, j, k), fx), l(at(i, j + 1, k), at(i + 1, j + 1, k), fx), fy),
+        l(l(at(i, j, k + 1), at(i + 1, j, k + 1), fx), l(at(i, j + 1, k + 1), at(i + 1, j + 1, k + 1), fx), fy),
+        fz
+    );
+}
+// DIE VERDECKUNG EINES PUNKTS DER FLÄCHE aus ihrem Abstandsfeld (mensch.K4): entlang eines Strahls in `V.stufen` Schritten
+// `V.schritt` der Anteil, um den das Feld hinter dem freien Abstand zurückbleibt (jede Stufe halb so schwer wie die vorige) —
+// 1 frei, 0 ganz verdeckt; `V.staerke` skaliert. Zwei Strahlen, gemittelt: der Gradient (die Falte, die Mund-Linie, der Winkel
+// des Auges) und der zum Himmel gekippte (`V.oben`: Gradient + oben × die Hoch-Achse) — was über der Fläche hängt, der
+// Brauen-Bogen über der Höhle, die Nase über der Oberlippe, nimmt ihr das Licht von oben. JE KANAL (w4-mensch-gesicht,
+// `V.kanal`): die Falte nimmt jedem Kanal seinen Anteil — die Haut streut Rot unter der Fläche in sie hinein —, der Überhang
+// wirft Schatten und nimmt alle ganz; Rückgabe [R, G, B]
+function __feldVerdeckung(F, vox, x, y, z, V) {
+    const e = 0.5 * vox;
+    let gx = __feldWert(F, vox, x + e, y, z) - __feldWert(F, vox, x - e, y, z),
+        gy = __feldWert(F, vox, x, y + e, z) - __feldWert(F, vox, x, y - e, z),
+        gz = __feldWert(F, vox, x, y, z + e) - __feldWert(F, vox, x, y, z - e);
+    const L = Math.hypot(gx, gy, gz);
+    if (!(L > 1e-12)) return [1, 1, 1];
+    // das Feld der Ellipsoide wächst nicht mit 1 je Einheit: frei ist, was mit seinem Gradienten |∇f| wächst — entlang eines
+    // Strahls um seinen Anteil c am Gradienten
+    const g = L / (2 * e);
+    gx /= L;
+    gy /= L;
+    gz /= L;
+    const d0 = __feldWert(F, vox, x, y, z);
+    const strahl = (rx, ry, rz) => {
+        const c = rx * gx + ry * gy + rz * gz;
+        if (!(c > 0.2)) return 0;
+        let occ = 0,
+            ws = 0;
+        for (let s = 1, w = 0.5; s <= V.stufen; s++, w *= 0.5) {
+            const h = s * V.schritt;
+            const d = __feldWert(F, vox, x + rx * h, y + ry * h, z + rz * h) - d0;
+            occ += w * Math.min(1, Math.max(0, (g * h * c - d) / (g * h * c)));
+            ws += w;
+        }
+        return occ / ws;
+    };
+    const uL = Math.hypot(gx, gy + V.oben, gz);
+    const oben = uL > 1e-6 ? strahl(gx / uL, (gy + V.oben) / uL, gz / uL) : 0;
+    const falte = strahl(gx, gy, gz);
+    return V.kanal.map((k) => Math.max(0, 1 - (V.staerke * (k * falte + oben)) / 2));
 }
 
 // Das glatte SDF-Feld der Primitive (polynomiales smin, Verrundung ~blend) auf einem Raster der Weite vox.
@@ -7639,6 +7840,11 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
     if (!(zeilenZiel > 0)) throw new Error("MENSCH-GUSS: die Budget-Zeile der Stufe fehlt (koerper-core budget)");
     if (menge && !(typeof kern.surfaceNets === "function" && typeof kern.kleidZonen === "function" && typeof kern.kopfToene === "function"))
         throw new Error("MENGEN-LEIB: Hüllen-Maschine oder Kleid-Zonen fehlen (fail-closed)");
+    // DER TON JE ECKE (mensch.K4): jede Fläche des Menschen trägt den Eintrag der Palette, aus dem ihre Farbe kommt — ohne Gesetz
+    // kein Mensch (fail-closed)
+    if (typeof kern.menschTon !== "function" || typeof kern.brauTon !== "function")
+        throw new Error("MENSCH-GUSS: koerper-Kern ohne menschTon/brauTon — die Farbe folgt dem Samen (fail-closed)");
+    const tonStempel = (geo, t) => geo.setAttribute("aTon", new THREE.BufferAttribute(new Float32Array(geo.attributes.position.count).fill(t), 1));
     let mengenLeib = null;
     if (typeof kern.surfaceNets === "function" && typeof kern.kleidZonen === "function") {
         B.character.updateMatrixWorld(true);
@@ -7806,8 +8012,10 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 if (B.parts[an]) B.parts[an].traverse((n) => n.isMesh && MENSCH_MENGE.klassen.includes(n.material.userData.__klasse) && fuss.push(n));
             sohlen.set(mengenLeib.mesh, fuss);
         }
-        // 2) DIE KLEID-ZONEN (das Gesetz sagt WAS, die Maschine baut die Hülle):
+        // 2) DIE KLEID-ZONEN (das Gesetz sagt WAS, die Maschine baut die Hülle) — jede trägt den Ton ihres Platzes (mensch.K4):
+        let zi = -1;
         for (const z of menge ? [] : kern.kleidZonen(dials) || []) {
+            zi++;
             const km = "stoff_" + (z.hex >>> 0).toString(16);
             // STOFF-CHARAKTER (V18.464): rough je Schnitt aus der Gesetz-Zeile
             // (Lab getCloth verbatim) + Webungs-Art als must-ignore-Marker.
@@ -7820,6 +8028,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                 // um das halbe Raster-Mehr weiter draußen, damit ihr Umriss den der feinen trägt (gate:kreatur-kosten DECKUNG)
                 const aus = __stoffAusHaut(hautHuelle.geometry, hautTeile, z.teile || [], z.dicke + (fein ? 0.5 * 0.05 * (voxMul - 1) : 0));
                 if (aus) {
+                    tonStempel(aus.geo, kern.menschTon(null, zi));
                     const stoff = new THREE.Mesh(aus.geo, matFuer(km));
                     stoff.userData.__skinned = true;
                     stoff.userData.__huelle = true;
@@ -7849,6 +8058,7 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             }
             const stoff = backeHuelle(pts, zen, km, 0.06 * voxMul, 1.5, 0.38, z.abstand);
             if (stoff) {
+                tonStempel(stoff.geometry, kern.menschTon(null, zi));
                 if (z.sohle) sohlen.set(stoff, quellen);
                 lebtInHuelle(quellen);
                 stoffHuellen.push(stoff);
@@ -8019,6 +8229,66 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             lid.geometry = new THREE.SphereGeometry(alt.parameters.radius, AR.w, AR.h);
             alt.dispose();
         }
+        // DAS LID BESCHATTET DEN AUGAPFEL (mensch.K4 Staffel 1, koerper MENSCH_GESTALT.auge.schatten): je Ecke von Sklera und
+        // Iris der senkrechte Abstand zur Fläche jedes Lids ihres Auges (Augen-Raum; unter dem Lid negativ) — darunter `tief`
+        // ihres Tons, im Saum weich auf ihn. Vorher stand der Augapfel unter dem Lid weiß wie in der Lidspalte: auf 6 m las das
+        // Auge als weißer Fleck mit Punkt, und wo das Lid ihn deckt, gehörte das Pixel dem Lid.
+        const AS = kern.MENSCH_GESTALT.auge.schatten;
+        if (!AS || !(AS.saum > 0) || !(AS.tief >= 0)) throw new Error("MENSCH-HAUT: auge.schatten fehlt (fail-closed)");
+        const LR = kern.MENSCH_GESTALT.auge.lidRand;
+        if (!LR || !(LR.saum > 0) || !(LR.tief >= 0)) throw new Error("MENSCH-HAUT: auge.lidRand fehlt (fail-closed)");
+        for (const [eye, oben, unten] of [
+            [B.augen.eyeL, B.parts.lidTL, B.parts.lidBL],
+            [B.augen.eyeR, B.parts.lidTR, B.parts.lidBR],
+        ]) {
+            const lider = [oben, unten].map((l) => {
+                const r = l.geometry.parameters.radius;
+                return { l, c: l.position, a: r * l.scale.x, b: r * l.scale.y, cz: r * l.scale.z, s: l === oben ? -1 : 1 };
+            });
+            const v = new THREE.Vector3();
+            for (const m of eye.children) {
+                const kl = m.isMesh && m.material && m.material.userData ? m.material.userData.__klasse : null;
+                if (kl !== "eye" && kl !== "iris") continue;
+                const pa = m.geometry.attributes.position;
+                const c0 = lin(KL[kl].c);
+                const col = new Float32Array(pa.count * 3);
+                m.updateMatrix();
+                for (let i = 0; i < pa.count; i++) {
+                    v.fromBufferAttribute(pa, i).applyMatrix4(m.matrix);
+                    let f = 1;
+                    for (const L of lider) {
+                        const q = 1 - ((v.x - L.c.x) / L.a) ** 2 - ((v.z - L.c.z) / L.cz) ** 2;
+                        if (q <= 0) continue;
+                        // die Fläche des Lids über (unter) der Ecke: Abstand > 0 in der Lidspalte
+                        const d = L.s * (v.y - (L.c.y + L.s * L.b * Math.sqrt(q)));
+                        const t = Math.min(1, Math.max(0, d / AS.saum));
+                        f = Math.min(f, AS.tief + (1 - AS.tief) * t * t * (3 - 2 * t));
+                    }
+                    col.set([c0[0] * f, c0[1] * f, c0[2] * f], i * 3);
+                }
+                m.geometry.setAttribute("color", new THREE.BufferAttribute(col, 3));
+            }
+            // DER RAND DES LIDS (koerper auge.lidRand): wo die Haut des Lids den Augapfel berührt (die Wimpern-Linie, die Falte
+            // zwischen Lid und Auge), trägt sie `tief` ihres Tons, im Saum (Abstand zur Fläche des Augapfels, Augen-Raum) weich
+            // auf ihn
+            const ball = eye.children.find((m) => m.isMesh && m.material.userData.__klasse === "eye");
+            const rb = ball.geometry.parameters.radius,
+                bs = ball.scale;
+            const hautC = lin(KL.skin.c);
+            for (const l of [oben, unten]) {
+                l.updateMatrix();
+                const pa = l.geometry.attributes.position;
+                const col = new Float32Array(pa.count * 3);
+                for (let i = 0; i < pa.count; i++) {
+                    v.fromBufferAttribute(pa, i).applyMatrix4(l.matrix);
+                    const d = (Math.hypot(v.x / (rb * bs.x), v.y / (rb * bs.y), v.z / (rb * bs.z)) - 1) * rb;
+                    const t = Math.min(1, Math.max(0, d / LR.saum));
+                    const f = LR.tief + (1 - LR.tief) * t * t * (3 - 2 * t);
+                    col.set([hautC[0] * f, hautC[1] * f, hautC[2] * f], i * 3);
+                }
+                l.geometry.setAttribute("color", new THREE.BufferAttribute(col, 3));
+            }
+        }
         const kappen = kern.haarKappe(dials).map((k) => {
             const m = new THREE.Mesh(new THREE.SphereGeometry(k.r, 8, 6), matFuer("haarKappe"));
             m.position.set(k.c[0], k.c[1], k.c[2]);
@@ -8058,8 +8328,39 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
         // Haut trägt ihren Ton, so weit sie innerhalb hoehleSaum Halbachsen über ihrem Rand liegt (der Ring um das Auge, die
         // Muschel des Ohrs); die Lippe bleibt Lippe. Ohne Saum keine Höhle (fail-closed).
         if (!(KH.hoehleSaum >= 0)) throw new Error("MENSCH-HAUT: kopfHaut.hoehleSaum fehlt (fail-closed)");
+        // DER BRAUEN-BOGEN (mensch.K4): die Höhle beginnt unter ihm — so weit um die Braue (Kopf-Raum) trägt die Haut keinen Ton
+        // der Höhle (die Haut des Bogens zwischen Brauen-Haar und Lid-Falte)
+        if (!(KH.brauBogen >= 0)) throw new Error("MENSCH-HAUT: kopfHaut.brauBogen fehlt (fail-closed)");
+        // DIE BRAUE IST EIN TON DER HAUT (mensch.K4 Staffel 1, das Gesicht auf 6 m): unter den Brauen-Haaren (die Gruppen
+        // browL/browR des Baums) trägt die Haut den Ton der Braue (koerper `brauTon`: das Haar über der Haut) — die Ellipse um
+        // ihre Haare im Kopf-Raum, um `brauSaum` [seitlich, Höhe] weiter (die Braue reicht über die Lidspalte hinaus); von fern
+        // liest die Braue als Fläche, nie als fünf Striche unter einem Bildpunkt. Die Haare bleiben (nah).
+        const BS = KH.brauSaum;
+        if (!(Array.isArray(BS) && BS[0] >= 0 && BS[1] >= 0)) throw new Error("MENSCH-HAUT: kopfHaut.brauSaum fehlt (fail-closed)");
+        const brauLin = lin(kern.brauTon(skinCol, hairCol));
+        const kopfInv = new THREE.Matrix4().copy(kopf.matrixWorld).invert();
+        const brauen = [B.augen.browL, B.augen.browR].filter(Boolean).map((g) => {
+            const bb = new THREE.Box3();
+            const v = new THREE.Vector3();
+            g.traverse((n) => {
+                if (!n.isMesh) return;
+                const p = n.geometry.attributes.position;
+                const M = new THREE.Matrix4().multiplyMatrices(kopfInv, n.matrixWorld);
+                for (let k = 0; k < p.count; k++) bb.expandByPoint(v.fromBufferAttribute(p, k).applyMatrix4(M));
+            });
+            const c = bb.getCenter(new THREE.Vector3()),
+                h = bb.getSize(new THREE.Vector3()).multiplyScalar(0.5);
+            return { c, hx: h.x + BS[0], hy: h.y + BS[1], z0: bb.min.z - 3 * BS[1] };
+        });
+        if (brauen.length < 2) throw new Error("MENSCH-HAUT: die Brauen (browL/browR) fehlen (fail-closed)");
+        // die Ellipse der Brauen, um m (Kopf-Raum) in jeder Richtung weiter: m = 0 die Braue, m = brauBogen ihr Bogen
+        const imBrau = (x, y, z, m) => brauen.some((b) => z > b.z0 - m && ((x - b.c.x) / (b.hx + m)) ** 2 + ((y - b.c.y) / (b.hy + m)) ** 2 < 1);
+        const ML = kern.KOPF_TON && kern.KOPF_TON.mundLinie;
+        if (!Array.isArray(ML) || ML.length !== 3) throw new Error("MENSCH-HAUT: KOPF_TON.mundLinie fehlt (fail-closed)");
         const pa = geo.attributes.position;
         const col = new Float32Array(pa.count * 3);
+        // je Ecke ihr Ton (mensch.K4, koerper `menschTon`): Haut, Lippe (die Mund-Linie eingeschlossen), Höhle, Braue, Haar-Kappe
+        const ton = new Float32Array(pa.count);
         for (let i = 0; i < pa.count; i++) {
             const x = pa.getX(i),
                 y = pa.getY(i),
@@ -8090,13 +8391,41 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
                     hoehle = p;
                 }
             }
-            if (hd < KH.hoehleSaum && best.node.material.userData.__klasse !== "lips") best = hoehle;
-            // die Mund-Linie: auf der Lippe, in der Höhe zwischen den Lippen-Mitten (dunkel, ein Viertel der Lippe)
+            if (hd < KH.hoehleSaum && best.node.material.userData.__klasse !== "lips" && !imBrau(x, y, z, KH.brauBogen)) best = hoehle;
+            const kl = best.node.material.userData.__klasse;
+            if (kl !== "lips" && kl !== "haarKappe" && imBrau(x, y, z, 0)) {
+                col.set(brauLin, i * 3);
+                ton[i] = kern.menschTon("braue");
+                continue;
+            }
+            // die Mund-Linie: auf der Lippe, in der Höhe zwischen den Lippen-Mitten — die dunkle rote Innenlippe (koerper
+            // KOPF_TON.mundLinie, je Kanal ein Anteil der Lippe)
             const fb = farbeVon.get(best);
-            const spalt = best.node.material.userData.__klasse === "lips" && Math.abs(y - mundY) < KH.mundSpalt * mundH;
-            col.set(spalt ? [fb[0] * 0.25, fb[1] * 0.2, fb[2] * 0.2] : fb, i * 3);
+            const spalt = kl === "lips" && Math.abs(y - mundY) < KH.mundSpalt * mundH;
+            col.set(spalt ? fb.map((x, c) => x * ML[c]) : fb, i * 3);
+            ton[i] = kern.menschTon(kl);
+        }
+        // DIE VERDECKUNG DER KOPF-HAUT (mensch.K4 Staffel 1, koerper MENSCH_GESTALT.kopfHaut.verdeckung): was die Haut selbst
+        // verdeckt — die Falte unter der Nase, die Mund-Linie, der Winkel des Auges —, empfängt weniger Licht; die Kaskade wirft im
+        // Gesicht keinen Millimeter (Lehre 19: was die Karte des Labors trägt, trägt kartenlos der Vertex). Je Ecke tastet das Feld,
+        // aus dem die Haut wuchs (`Fk`), entlang seines Gradienten (`__feldVerdeckung`); über `frei` trägt die Ecke ihren Ton genau.
+        // Vorher lag der Sims der Oberlippe unter der Nase im vollen Licht der Mittags-Sonne, heller als die Wange im Schatten der
+        // Braue: auf 6 m las der Mund ΔL* −2,2 statt dunkler (KOPF_SOLL lippeL ≤ −4). JE KANAL (`kanal`, w4-mensch-gesicht): die
+        // Haut streut Rot unter der Fläche am weitesten, die Falte nimmt jedem Kanal nur seinen Anteil, der Überhang (die Nase über
+        // der Oberlippe) alle ganz — vorher nahm die Falte alle ganz: die Mund-Linie trug Ecken (0, 0, 0) und las im richtig
+        // belichteten Bild grau (0,7 m lippeA 3,36 < 4).
+        const VD = KH.verdeckung;
+        const VK = VD && VD.kanal;
+        if (!VD || !(VD.schritt > 0) || !(VD.stufen >= 1) || !(VD.staerke >= 0) || !(VD.frei > 0) || !(VD.oben >= 0))
+            throw new Error("MENSCH-HAUT: kopfHaut.verdeckung fehlt (fail-closed)");
+        if (!Array.isArray(VK) || VK.length !== 3 || !VK.every((k) => k >= 0 && k <= 1))
+            throw new Error("MENSCH-HAUT: kopfHaut.verdeckung.kanal fehlt (fail-closed)");
+        for (let i = 0; i < pa.count; i++) {
+            const ao = __feldVerdeckung(Fk, KH.vox, pa.getX(i), pa.getY(i), pa.getZ(i), VD);
+            for (let c = 0; c < 3; c++) if (ao[c] < VD.frei) col[i * 3 + c] *= ao[c];
         }
         geo.setAttribute("color", new THREE.BufferAttribute(col, 3));
+        geo.setAttribute("aTon", new THREE.BufferAttribute(ton, 1));
         const kopfHaut = new THREE.Mesh(geo, matFuer("haut")); // Kopf-lokal gebacken (Identität)
         kopfHaut.userData.__huelle = true;
         kopf.add(kopfHaut);
@@ -8150,6 +8479,17 @@ function bakeMenschInstance(kern, presetId, seed, lod, ov) {
             const geo = __streuGeo(row, seedH, tonH);
             if (geo) wirt.add(new THREE.Mesh(geo, matFuer("hair")));
         }
+    }
+    // DER TON JEDES ÜBRIGEN TEILS (mensch.K4): was keinen Ton je Ecke trägt (Kopf-Haut, Kleid-Zonen und der Leib der Menge
+    // tragen ihn), trägt den Ton seiner Stoff-Klasse (koerper `menschTon`) — die Haare der Brauen den der Braue
+    {
+        const brauHaar = new Set();
+        for (const g of [B.augen.browL, B.augen.browR]) if (g) g.traverse((n) => brauHaar.add(n));
+        B.character.traverse((n) => {
+            if (!n.isMesh || !n.geometry || n.geometry.attributes.aTon) return;
+            const kl = n.material && n.material.userData ? n.material.userData.__klasse : null;
+            tonStempel(n.geometry, brauHaar.has(n) ? kern.menschTon("braue") : kern.menschTon(kl));
+        });
     }
     const namen = [
         "torso",

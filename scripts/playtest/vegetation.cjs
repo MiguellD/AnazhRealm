@@ -9,7 +9,6 @@ const { safeEvaluate } = require("../playtest.cjs");
 // Radius (mit dem gebauten Ring) zu ihnen wächst. Spawn leicht → wächst.
 async function checkBandV18275FoliageGrowth({ page, check }) {
     const res = await page.evaluate(() => {
-        if (!r || !r.state) return { error: "no realm" };
         const out = {};
         // Headless (Null-Renderer): der Aktuator setzt foliageRadius sofort auf den Rand am Schirm (lod.K5, `_randSchirm`).
         out.headlessFull = !st.renderer || !st.renderer._isHeadlessNull || st.foliageRadius === r._randSchirm("laub");
@@ -24,7 +23,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
         // (1) kleiner Radius → ein ferner Chunk ist NICHT in-radius, der Spieler-Chunk schon. Klein = der Start-Radius des
         // Boots (`PERF_FOLIAGE_RADIUS_MIN`); 30 m lagen unter der halben Chunk-Diagonale (30,5 m), und am
         // Chunk-Eck (die Genesis-Plattform steht seit K16 auf dem Ursprung) fiel der eigene Chunk heraus.
-        st.foliageRadius = r.constructor.PERF_FOLIAGE_RADIUS_MIN;
+        st.foliageRadius = AnazhRealm.PERF_FOLIAGE_RADIUS_MIN;
         out.farDeferred = r._foliageChunkInRadius(pcx + 6, pcz + 6) === false;
         out.nearIncluded = r._foliageChunkInRadius(pcx, pcz) === true;
         // (2) Radius wächst → derselbe ferne Chunk wird in-radius (die Welt wächst nach außen).
@@ -69,7 +68,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
         // Der Regler-Pfad lebt nur foundry-aus → lokaler Hook (sichern + WIEDERHERSTELLEN); die echte
         // Region wird erst NACH dem Restore neu gebaut, im ambienten Regime.
         try {
-            const SCcfg = (window.AnazhRealm || r.constructor).SCATTER;
+            const SCcfg = (window.AnazhRealm || AnazhRealm).SCATTER;
             if (SCcfg && Number.isFinite(SCcfg.regionM)) {
                 const frx = Math.floor(ppD.x / SCcfg.regionM),
                     frz = Math.floor(ppD.z / SCcfg.regionM);
@@ -141,7 +140,7 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
         }
         try {
             const ppT = st.playerMesh && st.playerMesh.position ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
-            const SCt = (window.AnazhRealm || r.constructor).SCATTER;
+            const SCt = (window.AnazhRealm || AnazhRealm).SCATTER;
             if (SCt && Number.isFinite(SCt.regionM) && st.scatterRegions) {
                 // Den Region-SET ISOLIEREN (Snapshot/ersetzen/restoren), damit MEINE Test-Region
                 // die einzige Kandidatin ist (sonst dünnt _tickFoliageThin die NÄCHSTE im Warmup-Set).
@@ -250,7 +249,6 @@ async function checkBandV18275FoliageGrowth({ page, check }) {
 // Stufe × Teil), Entsorgen und Neubau halten die Block-Tabelle dicht. Headless ist pixel-blind — hier die Struktur.
 async function checkBandNahStreu({ page, check }) {
     const res = await page.evaluate(async () => {
-        if (!r || !r.state) return { error: "no realm" };
         const out = {};
         // (3) Die Arten kommen aus dem Studio-Buch (warten, bis Buch + Render-Config stehen).
         let arten = null;
@@ -266,8 +264,8 @@ async function checkBandNahStreu({ page, check }) {
             arten.every((a) => buch && buch[a.id] && buch[a.id].kind === a.kind && a.zeile.ring === "nah");
         if (!arten) return out;
         // (4) Eine Kachel mit Pflanzen nahe dem Spieler (die Chunks stehen), zweimal gesetzt = dieselbe Streu.
-        const NS = r.constructor.NAH_STREU;
-        const pp = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, z: 0 };
+        const NS = AnazhRealm.NAH_STREU;
+        const pp = st.playerMesh ? st.playerMesh.position : { x: 0, z: 0 };
         let kachel = null;
         for (let ring = 0; ring <= 6 && !kachel; ring++) {
             for (let dz = -ring; dz <= ring && !kachel; dz++) {
@@ -289,13 +287,13 @@ async function checkBandNahStreu({ page, check }) {
             zweit.items.every((it, i) => it.id === kachel.satz.items[i].id && it.x === kachel.satz.items[i].x);
         out.idsEindeutig = new Set(kachel.satz.items.map((it) => it.id)).size === kachel.satz.items.length;
         // (5) Der Takt baut den Ring: bis eine Senke Instanzen trägt (die Studio-Teile reisen asynchron).
-        const cam = r.state.camera;
+        const cam = st.camera;
         const camVor = cam.position.clone();
         cam.position.set(pp.x, pp.y + 1.6, pp.z);
         let senken = null;
         for (let i = 0; i < 900; i++) {
             r._tickNahStreu();
-            const ns = r.state.nahStreu;
+            const ns = st.nahStreu;
             if (ns && [...ns.senken.values()].some((a) => a.anzahl > 0) && ns.offen === 0) {
                 senken = ns.senken;
                 break;
@@ -303,7 +301,7 @@ async function checkBandNahStreu({ page, check }) {
             await sleep(100);
         }
         out.ringGebaut = !!senken;
-        out.offen = r.state.nahStreu ? r.state.nahStreu.offen : null;
+        out.offen = st.nahStreu ? st.nahStreu.offen : null;
         if (!senken) {
             cam.position.copy(camVor);
             return out;
@@ -330,7 +328,7 @@ async function checkBandNahStreu({ page, check }) {
         for (const [preset, e] of jeArt) {
             (e.weich ? out.wind.wiegend : out.wind.stehend).push(preset);
             for (const a of e.senken) {
-                const satz = r.state.chunkSaetze ? r.state.chunkSaetze.get(a.satz) : null;
+                const satz = st.chunkSaetze ? st.chunkSaetze.get(a.satz) : null;
                 const wiege = !!(satz && satz.geom.attributes.aWiege);
                 const knoten = e.weich
                     ? !!a.mat.positionNode && a.mat.positionNode !== baumK.ast && a.mat.positionNode !== baumK.laub
@@ -363,7 +361,9 @@ async function checkBandNahStreu({ page, check }) {
                 return sway.call(this, T, o);
             };
             try {
-                r._foundryTreeMaterial(u.foundryKind, u.foundryMp, true, null, u.krone === true);
+                r._foundryTreeMaterial(u.foundryKind, u.foundryMp, true, null, u.krone === true, {
+                    jahr: u.jahr === true,
+                });
             } catch {
                 /* der Ruf vor dem Wurf zählt */
             } finally {
@@ -373,19 +373,18 @@ async function checkBandNahStreu({ page, check }) {
         }
         out.windQuelle =
             !!hoehe && typeof hoehe.getAttributeName === "function" && hoehe.getAttributeName() === "aWiege";
-        const ns = r.state.nahStreu;
+        const ns = st.nahStreu;
         // (6) DER STREU-SATZ (W7): die Draw-Einheit ist der STOFF — kein Nah-Streu-Objekt zeichnet selbst, je Stoff EIN
         // Satz in der Szene (der stehende Stoff wirft, der wiegende nie — 1310-11), jede Senke ist ein Studio-Teil (leafKey f:…)
         // ohne Mesh, ihre Blöcke treu (Σ n = Anzahl, je Block Identitäten und Matrizen), jeder Block mit Pflanzen ein Bereich im
         // Satz ihres Stoffs.
         let selbst = 0;
-        r.state.scene.traverse((o) => {
+        st.scene.traverse((o) => {
             if (o.isMesh && ((o.userData && o.userData.inventar === "streu-klein") || /^streuNah:/.test(o.name || "")))
                 selbst++;
         });
         const stoffSaetze = new Map();
-        for (const [art, satz] of r.state.chunkSaetze || [])
-            if (satz.spec.userData.streuSatz) stoffSaetze.set(art, satz);
+        for (const [art, satz] of st.chunkSaetze || []) if (satz.spec.userData.streuSatz) stoffSaetze.set(art, satz);
         const stoffe = new Set([...ns.senken.values()].map((a) => a.mat.uuid));
         const stehtJe = new Map([...ns.senken.values()].map((a) => [a.satz, !a.wiegt]));
         out.jeStoffEinSatz =
@@ -394,7 +393,7 @@ async function checkBandNahStreu({ page, check }) {
             new Set([...stoffSaetze.values()].map((x) => x.spec.mat.uuid)).size === stoffSaetze.size &&
             stoffSaetze.size <= stoffe.size &&
             [...stoffSaetze].every(
-                ([art, x]) => x.mesh.parent === r.state.scene && x.mesh.castShadow === (stehtJe.get(art) === true)
+                ([art, x]) => x.mesh.parent === st.scene && x.mesh.castShadow === (stehtJe.get(art) === true)
             );
         out.studioTeile = [...ns.senken.values()].every(
             (a) => a.mesh === undefined && typeof a.leafKey === "string" && a.leafKey.startsWith("f:")
@@ -479,7 +478,7 @@ async function checkBandV18133Forage({ page, check }) {
         // Behavioral (wenn die Nah-Streu steht — sonst unmessbar=bestanden): die erste Pflanze einer
         // erntbaren Senke pflücken.
         let pick = null;
-        const ns = r.state.nahStreu;
+        const ns = st.nahStreu;
         if (ns)
             for (const a of ns.senken.values()) {
                 if (!a.ernte || a.anzahl === 0) continue;
@@ -494,14 +493,14 @@ async function checkBandV18133Forage({ page, check }) {
             const a = ns.senken.get(pick.senke);
             const countMat = () => {
                 let n = 0;
-                for (const sl of r.state.player.inventory || []) if (sl && sl.material === a.ernte) n += sl.count || 0;
+                for (const sl of st.player.inventory || []) if (sl && sl.material === a.ernte) n += sl.count || 0;
                 return n;
             };
             const before = countMat();
             const vorher = r._streuNahBereich(pick.senke, pick.key); // der Block der Kachel in der Senke
             const nVor = vorher.n;
             const zahlVor = a.anzahl;
-            const satz = r.state.chunkSaetze.get(vorher.satz);
+            const satz = st.chunkSaetze.get(vorher.satz);
             const vertsVor = satz.bloecke.has(vorher.bereich) ? satz.bloecke.get(vorher.bereich).vAnzahl : 0;
             const ok1 = r._harvestScatterPick(pick);
             out.harvested = ok1 && countMat() - before === 1;
@@ -517,7 +516,7 @@ async function checkBandV18133Forage({ page, check }) {
                 a.anzahl === zahlVor - 1 &&
                 vertsVor - vertsNach === a.geo.attributes.position.count;
             // DIE TAT BLEIBT (feld.K4): die Ernte steht als Tat im worldMeta (sie reist mit jedem Save) und senkt lebendig am Ort
-            const L = r.state.worldMeta.taten;
+            const L = st.worldMeta.taten;
             const i = L.findIndex((x) => x.kachel === pick.key && x.id === pick.id);
             out.tatBleibt = i >= 0 && r.auraAt(L[i].x, L[i].z).lebendig < r.worldFieldAt(L[i].x, L[i].z).lebendig;
             // Aufraeumen: die Tat zuruecknehmen (kein Band-Crosstalk) + die Kachel neu (die Pflanze kehrt zurück)
@@ -545,7 +544,7 @@ async function checkBandV18133Forage({ page, check }) {
 // dominiert stein. Alte 2-arg-Aufrufer ohne y bleiben bit-identisch.
 async function checkBandV18197GammaMStrata({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
 
         // (S3) MIGRATION-TOLERANZ: 2-arg Aufruf gibt das alte Verhalten
@@ -610,7 +609,7 @@ async function checkBandV18197GammaMStrata({ page, check }) {
 // die Γ-M-Triade (Strata horizontal + Lichen Patina + Iron-Bands vertikal).
 async function checkBandV18200GammaMIronBands({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
 
         // (I2) Determinismus: zweimal gleicher (x,z) → gleicher Wert
@@ -759,7 +758,7 @@ async function checkBandV18205Gamma7Grammatik({ page, check }) {
         const fakeBp = { parts: sample, _grownSpecies: "baum_eiche" };
         // baum_eiche statisch geschnitten; gegen einen GEWACHSENEN Baum prüfen.
         const __g6Key = r._growTreeBlueprintForSpawn && r._growTreeBlueprintForSpawn("baum_eiche", "g6");
-        const treeBp = __g6Key && r.state.blueprints[__g6Key];
+        const treeBp = __g6Key && st.blueprints[__g6Key];
         if (treeBp) {
             const fakeTags = r.computeCompoundTags(fakeBp);
             const treeTags = r.computeCompoundTags(treeBp);
@@ -857,12 +856,12 @@ async function checkBandV18211SkeletonGrammar({ page, check }) {
         // parts-Arrays mehr (Plan-§2.5-konform: f(seed) ist das Erbgut).
         // Spawne einen grown_-Bauplan + prüfe das Snapshot-Feld.
         const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "v211-snapshot-test");
-        if (grownKey && r.state.blueprints[grownKey]) {
+        if (grownKey && st.blueprints[grownKey]) {
             // der Snapshot persistiert NUR architektur-REFERENZIERTE grown-Baupläne
             // (die Foliage-Masse re-wächst f(seed), §2.5); eine Sentinel-Architektur hält den Test-
             // Bauplan, sonst filtert ihn der Snapshot KORREKT heraus → das ist die neue Wahrheit.
-            r.state.architectures = r.state.architectures || [];
-            r.state.architectures.push({ id: "v211-snap-arch", type: grownKey, position: { x: 0, y: 0, z: 0 } });
+            st.architectures = st.architectures || [];
+            st.architectures.push({ id: "v211-snap-arch", type: grownKey, position: { x: 0, y: 0, z: 0 } });
             // Snapshot bauen und das grownBlueprints-Feld prüfen.
             const snap = r.buildStateSnapshot();
             const gb = snap && snap.grownBlueprints && snap.grownBlueprints[grownKey];
@@ -871,7 +870,7 @@ async function checkBandV18211SkeletonGrammar({ page, check }) {
             // Snapshot-Größe (rough estimate): sollte einen kompakten grown-
             // Eintrag tragen (< 500 Bytes vs alte ~7.5 KB mit parts).
             out.snapshotGrownEntrySmall = gb ? JSON.stringify(gb).length < 500 : false;
-            r.state.architectures = r.state.architectures.filter((a) => a.id !== "v211-snap-arch");
+            st.architectures = st.architectures.filter((a) => a.id !== "v211-snap-arch");
         }
 
         return out;
@@ -899,7 +898,7 @@ async function checkBandV18211SkeletonGrammar({ page, check }) {
 // Ω-C Canopy-Shell (als ABWESENHEIT geprüft).
 async function checkBandV18212GigantRestsubschritte({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
 
         // ─── Ω-K2 BAUM-FÜSSE ───
@@ -941,9 +940,9 @@ async function checkBandV18212GigantRestsubschritte({ page, check }) {
         }
 
         // Behavioral: einen grown_-Bauplan ernten → result hat .provenance.
-        if (r.state && r.state.architectures) {
+        if (st && st.architectures) {
             const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "h-test-seed");
-            if (grownKey && r.state.blueprints[grownKey]) {
+            if (grownKey && st.blueprints[grownKey]) {
                 // Spawn an Test-Position + harvest sofort.
                 try {
                     const spawn = r.spawnArchitecture(grownKey, { x: 1234, y: 50, z: 5678 }, { silent: true });
@@ -970,7 +969,7 @@ async function checkBandV18212GigantRestsubschritte({ page, check }) {
         // Foundry-Wald + Fern-Ring (das Kronendach der Arten) tragen die Ferne; das Band prüft die ABWESENHEIT von Konstante
         // und State (die Methoden bewacht gate:altlasten).
         out.cConstGone = !A.CANOPY_SHELL;
-        out.cStateGone = r.state.canopyShell === undefined && r.state.canopyShellMaterial === undefined;
+        out.cStateGone = st.canopyShell === undefined && st.canopyShellMaterial === undefined;
 
         return out;
     });
@@ -1002,7 +1001,7 @@ async function checkBandV18212GigantRestsubschritte({ page, check }) {
 // Welt-Erzeuger mehr, gezeichnet hatte sie nur die litter-Streu als belaubte Alias-Eiche.
 async function checkBandV18215AtemberaubenderWald({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
 
         // ─── (W2) baum_totholz ist aus SPECIES_TREE_PARAMS + dem Foundry-Alias GEFALLEN (die Stamm-Grammatik fiel K24) ─
@@ -1015,7 +1014,7 @@ async function checkBandV18215AtemberaubenderWald({ page, check }) {
 
         // ─── (W5) Behavioral: Spezies-Distinktion in computeCompoundTags ─
         // Bauplan-Stichprobe: rohen parts vs _isGrown+species → Tag-Delta.
-        if (r.state.worldMeta) r.state.worldMeta.genVersion = 8;
+        if (st.worldMeta) st.worldMeta.genVersion = 8;
         const origLast = r._lastTreeSkeleton;
         try {
             // Tanne-Parts (ohne _isGrown-Flag)
@@ -1040,7 +1039,7 @@ async function checkBandV18215AtemberaubenderWald({ page, check }) {
 
         // ─── (W9) W1: baum_totholz ist aus TREE_NAMES + candidates GEFALLEN ───
         // Totholz zeichnete nur die Streu (belaubte Alias-Eiche); die Grammatik-Art fiel 05.10. mit.
-        out.candidatesIncludeTotholz = (r.constructor.FELD_WURF || []).includes("baum_totholz");
+        out.candidatesIncludeTotholz = (AnazhRealm.FELD_WURF || []).includes("baum_totholz");
 
         return out;
     });
@@ -1061,7 +1060,7 @@ async function checkBandV18215AtemberaubenderWald({ page, check }) {
 // prüfen Substanz (Grammar + Params + Variation) + Pipeline (candidates + Sub-Spawn-Pfad).
 async function checkBandV18216KarstUndUnderstory({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
 
         // ─── (A) KARST: die Studio-Art karst (_phytoArt, K24) + Params + Variation ───────
@@ -1084,7 +1083,7 @@ async function checkBandV18216KarstUndUnderstory({ page, check }) {
         out.grammarHasBlume = artKind("blume_gross") === "flower";
 
         // ─── (C) Wachstum produziert valide Bauplane für die 4 Neuen ─
-        if (r.state.worldMeta) r.state.worldMeta.genVersion = 9;
+        if (st.worldMeta) st.worldMeta.genVersion = 9;
         const origLast = r._lastTreeSkeleton;
         try {
             // KARST: ≥30 parts (drei Ast-Ebenen + foliage)
@@ -1126,8 +1125,8 @@ async function checkBandV18216KarstUndUnderstory({ page, check }) {
         try {
             const karstKey = r._growTreeBlueprintForSpawn("baum_karst", "v216-karst-spawn-1");
             out.karstSpawnable = !!karstKey;
-            if (karstKey && r.state.blueprints[karstKey]) {
-                const bp = r.state.blueprints[karstKey];
+            if (karstKey && st.blueprints[karstKey]) {
+                const bp = st.blueprints[karstKey];
                 out.karstBpIsGrown = bp._isGrown === true && bp._grownSpecies === "baum_karst";
             }
             const hazelKey = r._growTreeBlueprintForSpawn("busch_hazel", "v216-hazel-spawn-1");
@@ -1176,7 +1175,7 @@ async function checkBandV18216KarstUndUnderstory({ page, check }) {
 // Sprung); zwei Peers mit gleichem worldSeed bauen den IDENTISCHEN Pool.
 async function checkBandV18217VariantenPool({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
 
         // ─── (B) Behavioral: Fresh-Welt hat Pool ──────────────────────
@@ -1185,9 +1184,9 @@ async function checkBandV18217VariantenPool({ page, check }) {
         if (out.freshHasPool) {
             // K24: die Zeile einer Art entsteht beim ersten Wuchs (_variantSeedsFor) — jede Pflanze des Gesetzbuchs,
             // nie ein Fels; im TEMPORÄREN Meta-Kontext, der Welt-Stand bleibt unberührt.
-            const savedFresh = r.state.worldMeta;
+            const savedFresh = st.worldMeta;
             try {
-                r.state.worldMeta = newMeta;
+                st.worldMeta = newMeta;
                 const ARTEN = [
                     "baum_eiche",
                     "baum_tanne",
@@ -1210,20 +1209,20 @@ async function checkBandV18217VariantenPool({ page, check }) {
                             newMeta.variantSeed[sp].length === A.VARIANTS_PER_SPECIES
                     ) && r._variantSeedsFor("stein_block") === null;
             } finally {
-                r.state.worldMeta = savedFresh;
+                st.worldMeta = savedFresh;
             }
         }
 
         // ─── (C) Determinismus: 2 Pools mit gleichem Seed sind identisch ─
         const sampleSeed = "test-determinism-v18217-seed-xyz";
         const poolFor = (seed) => {
-            const savedP = r.state.worldMeta;
+            const savedP = st.worldMeta;
             try {
-                r.state.worldMeta = { seed, variantSeed: {} };
+                st.worldMeta = { seed, variantSeed: {} };
                 for (const sp of ["baum_eiche", "baum_tanne", "busch_hazel"]) r._variantSeedsFor(sp);
-                return r.state.worldMeta.variantSeed;
+                return st.worldMeta.variantSeed;
             } finally {
-                r.state.worldMeta = savedP;
+                st.worldMeta = savedP;
             }
         };
         const pool1 = poolFor(sampleSeed);
@@ -1249,7 +1248,7 @@ async function checkBandV18217VariantenPool({ page, check }) {
             pool1[specCheck][0] !== pool3[specCheck][0];
 
         // ─── (D) Cache-Key: regionSeeds, die auf gleichen Index hashen, geben gleichen Bauplan ─
-        if (r.state.worldMeta) {
+        if (st.worldMeta) {
             // Lazy-Init des Pools im laufenden state (falls nicht da)
             r._variantSeedsFor("baum_eiche");
             // Zwei verschiedene regionSeeds, deterministische variantIndex
@@ -1259,9 +1258,9 @@ async function checkBandV18217VariantenPool({ page, check }) {
             // Pattern grown_<species>_v<idx>
             out.keyHasVariantForm = !!(k1 && /^grown_baum_eiche_v\d+$/.test(k1));
             // der Bauplan des Keys
-            const bp = k1 && r.state.blueprints[k1];
+            const bp = k1 && st.blueprints[k1];
             // bp._grownSeed ist der variantSeed-String (NICHT der regionSeed)
-            const pool = r.state.worldMeta && r.state.worldMeta.variantSeed;
+            const pool = st.worldMeta && st.worldMeta.variantSeed;
             if (bp && pool && Array.isArray(pool["baum_eiche"])) {
                 const expected = pool["baum_eiche"][bp._variantIndex];
                 out.bpGrownSeedIsVariantSeed = bp._grownSeed === expected;
@@ -1270,40 +1269,40 @@ async function checkBandV18217VariantenPool({ page, check }) {
 
         // ─── (E) der Stand und variantSeed (speicher.K3, w4-heil-speicher): die Zeile der Saat-Formel reist nie, eine eigene
         // ganz; aus dem Stand rechnet der Leser `_variantSeedsFor` den Pool bit-identisch zur Live-Welt ───────────────
-        const wm0 = r.state.worldMeta;
+        const wm0 = st.worldMeta;
         wm0.variantSeed.eigen = ["a"];
         const wmSnap = r.buildStateSnapshot().worldMeta; // der Stand trägt ein eigenes variantSeed (die Stand-Tafel)
         delete wm0.variantSeed.eigen;
         out.snapshotCarriesPool = !wmSnap.variantSeed.baum_eiche && String(wmSnap.variantSeed.eigen) === "a";
         try {
-            r.state.worldMeta = wmSnap;
+            st.worldMeta = wmSnap;
             out.snapshotPoolMatchesLive = String(r._variantSeedsFor("baum_eiche")) === String(wm0.variantSeed.baum_eiche);
         } finally {
-            r.state.worldMeta = wm0;
+            st.worldMeta = wm0;
         }
 
         // ─── (F) Migration: Pool ohne Eintrag wird lazy ergänzt ───
         // In einem TEMPORÄREN Meta-Kontext testen und den Welt-Stand restlos wiederherstellen — ein
         // mutierter Pool vergiftet die Folge-Bands (LOD-Baupläne brächen die Seed-Identität).
-        const savedMeta = r.state.worldMeta ? { ...r.state.worldMeta } : null;
+        const savedMeta = st.worldMeta ? { ...st.worldMeta } : null;
         try {
             const oldStyleMeta = { seed: "old-world-seed-1", genVersion: 5 };
-            r.state.worldMeta = { ...r.state.worldMeta, ...oldStyleMeta };
-            delete r.state.worldMeta.variantSeed;
+            st.worldMeta = { ...st.worldMeta, ...oldStyleMeta };
+            delete st.worldMeta.variantSeed;
             const migrated = r._variantSeedsFor("baum_tanne");
             out.migrationFillsPool = !!(
                 Array.isArray(migrated) &&
                 migrated.length === A.VARIANTS_PER_SPECIES &&
-                r.state.worldMeta.variantSeed.baum_tanne === migrated
+                st.worldMeta.variantSeed.baum_tanne === migrated
             );
         } finally {
             // Welt-Identität wiederherstellen — kein State-Leck in Folge-Bands.
-            if (savedMeta) r.state.worldMeta = savedMeta;
+            if (savedMeta) st.worldMeta = savedMeta;
         }
 
         // ─── (G) Größe (Snapshot-Tragbarkeit) ────────────────────────
-        if (r.state.worldMeta && r.state.worldMeta.variantSeed) {
-            const json = JSON.stringify(r.state.worldMeta.variantSeed);
+        if (st.worldMeta && st.worldMeta.variantSeed) {
+            const json = JSON.stringify(st.worldMeta.variantSeed);
             out.poolJsonSize = json.length;
             // 16 Varianten × 11 Spezies × ~30 Bytes/Seed ≈ ~5-7 KB; sicherheits-
             // halber bis 30 KB akzeptieren (256-KB-Snapshot-Cap nicht gefährdet)
@@ -1347,7 +1346,7 @@ async function checkBandV18217VariantenPool({ page, check }) {
 // + Distanz-Chooser mit Hysterese.
 async function checkBandV18218LODStufen({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
 
         // ─── (B) Distanz-Chooser ───
@@ -1378,7 +1377,7 @@ async function checkBandV18218LODStufen({ page, check }) {
         {
             const B = A._studioRenderConfig && A._studioRenderConfig.lod && A._studioRenderConfig.lod.budget;
             const map = r._ensureScatterRegionMap();
-            const pm = r.state.playerMesh && r.state.playerMesh.position;
+            const pm = st.playerMesh && st.playerMesh.position;
             if (B && B.rock && pm && r._foundryEnabled()) {
                 const felsFern = (reg) =>
                     (reg && Array.isArray(reg.cells) ? reg.cells : []).filter(
@@ -1429,15 +1428,15 @@ async function checkBandV18218LODStufen({ page, check }) {
                 out.key0Form = /^grown_baum_eiche_v\d+$/.test(keys[0]);
                 out.key1Form = /^grown_baum_eiche_v\d+_lod1$/.test(keys[1]);
                 out.key2Form = /^grown_baum_eiche_v\d+_lod2$/.test(keys[2]);
-                if (r.state.blueprints[keys[1]] && r.state.blueprints[keys[2]]) {
-                    out.bp1HasLodLevel = r.state.blueprints[keys[1]]._lodLevel === 1;
-                    out.bp2HasLodLevel = r.state.blueprints[keys[2]]._lodLevel === 2;
+                if (st.blueprints[keys[1]] && st.blueprints[keys[2]]) {
+                    out.bp1HasLodLevel = st.blueprints[keys[1]]._lodLevel === 1;
+                    out.bp2HasLodLevel = st.blueprints[keys[2]]._lodLevel === 2;
                     out.lodsShareVariantIndex =
-                        r.state.blueprints[keys[1]]._variantIndex === r.state.blueprints[keys[0]]._variantIndex &&
-                        r.state.blueprints[keys[2]]._variantIndex === r.state.blueprints[keys[0]]._variantIndex;
+                        st.blueprints[keys[1]]._variantIndex === st.blueprints[keys[0]]._variantIndex &&
+                        st.blueprints[keys[2]]._variantIndex === st.blueprints[keys[0]]._variantIndex;
                     out.lodsShareSeed =
-                        r.state.blueprints[keys[1]]._grownSeed === r.state.blueprints[keys[0]]._grownSeed &&
-                        r.state.blueprints[keys[2]]._grownSeed === r.state.blueprints[keys[0]]._grownSeed;
+                        st.blueprints[keys[1]]._grownSeed === st.blueprints[keys[0]]._grownSeed &&
+                        st.blueprints[keys[2]]._grownSeed === st.blueprints[keys[0]]._grownSeed;
                 }
             }
         });
@@ -1470,9 +1469,9 @@ async function checkBandV18218LODStufen({ page, check }) {
             window.__withNoFoundry(() => {
                 const keys = r._buildVariantLODs("baum_eiche", 1);
                 if (keys && keys[0] && keys[1] && keys[2]) {
-                    const bp0 = r.state.blueprints[keys[0]];
-                    const bp1 = r.state.blueprints[keys[1]];
-                    const bp2 = r.state.blueprints[keys[2]];
+                    const bp0 = st.blueprints[keys[0]];
+                    const bp1 = st.blueprints[keys[1]];
+                    const bp2 = st.blueprints[keys[2]];
                     if (bp0 && bp1 && bp2) {
                         const t0 = r.computeCompoundTags(bp0);
                         const t1 = r.computeCompoundTags(bp1);
@@ -1544,7 +1543,7 @@ async function checkBandV18219bisVollendung({ page, check }) {
         // Studio-Pfad die Stufe OHNE Typ-Wechsel (by design) → lokaler Hook.
         window.__withNoFoundry(() => {
             const grownKey = r._growTreeBlueprintForSpawn("baum_eiche", "v218-lod-spawn-test");
-            if (grownKey && r.state.scene) {
+            if (grownKey && st.scene) {
                 const e = r.spawnArchitecture(
                     grownKey,
                     // BÜHNE: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
@@ -1573,28 +1572,28 @@ async function checkBandV18219bisVollendung({ page, check }) {
         const look = r._scatterLookupCell(300, 400, "tree");
         out.lookupSpecies = look && look.species === "baum_birke";
         out.lookupVariantIndex = look && look.variantIndex === 7;
-        const initial = r.state.scatterCounters && r.state.scatterCounters.tree;
+        const initial = st.scatterCounters && st.scatterCounters.tree;
         r._scatterIncrementCounter("tree");
-        out.counterIncrements = r.state.scatterCounters.tree === (initial | 0) + 1;
+        out.counterIncrements = st.scatterCounters.tree === (initial | 0) + 1;
         out.counterNotAtCap = r._scatterCounterAtCap("tree") === false;
 
         // ─── V18.222 CANOPY CHUNK-STREAMING ──────────────────────────
         out.canopyTickInLoop = window.__consumes(r, "_gameLoopTick", r, "_tickCanopyStreaming", [performance.now()]);
-        const savedFlag = r.state.atmosphere && r.state.atmosphere.canopyStreaming;
+        const savedFlag = st.atmosphere && st.atmosphere.canopyStreaming;
         try {
-            r.state.atmosphere.canopyStreaming = true;
+            st.atmosphere.canopyStreaming = true;
             const mesh = r._canopyEnsureChunk(2, 3);
             out.canopyMeshBuilt = !!(mesh && mesh.geometry && mesh.material);
             if (mesh) {
                 out.canopyMeshHasColor = !!mesh.geometry.attributes.color;
                 out.canopyMeshHasUserdata = mesh.userData && mesh.userData.kind === "canopyChunk";
-                out.canopyMeshInMap = !!(r.state.canopyChunks && r.state.canopyChunks.has("2,3"));
+                out.canopyMeshInMap = !!(st.canopyChunks && st.canopyChunks.has("2,3"));
             }
             const disposed = r._canopyDisposeChunkByKey("2,3");
             out.canopyDisposed = disposed === true;
-            out.canopyMeshGoneFromMap = !!(r.state.canopyChunks && !r.state.canopyChunks.has("2,3"));
+            out.canopyMeshGoneFromMap = !!(st.canopyChunks && !st.canopyChunks.has("2,3"));
         } finally {
-            if (r.state.atmosphere) r.state.atmosphere.canopyStreaming = savedFlag;
+            if (st.atmosphere) st.atmosphere.canopyStreaming = savedFlag;
         }
 
         return out;
@@ -1633,7 +1632,7 @@ async function checkBandV18219bisVollendung({ page, check }) {
 // identische Geometrie (kein Sprung), bit-genauer Determinismus.
 async function checkBandV18224ScatterPromotion({ page, check }) {
     const res = await safeEvaluate(page, () => {
-        const A = r.constructor;
+        const A = AnazhRealm;
         const out = {};
 
         // KONSUM: der nächste Takt des Loops (Dispatcher-Takt Nr. 4: der Deko-Boden greift) ruft das Streu-Streaming
@@ -1653,13 +1652,13 @@ async function checkBandV18224ScatterPromotion({ page, check }) {
 
         // ─── (C) Scatter erzeugt ECHTE InstancedMesh-Instanzen ────────
         // Player an eine bekannte Position teleportieren, eine Region generieren.
-        if (r.state.scene) {
+        if (st.scene) {
             // Sicherstellen: Pool + Bake bereit
             r._variantSeedsFor("baum_eiche");
             // die Dichte-Messung an der SPIELER-Region (vegetiert,
             // worldgen-habitabel) statt einer fernen leeren → die echte Plan-§13-
             // Dichte (≥hunderte/Chunk via 5 Strata) ist messbar.
-            const ppm = r.state.playerMesh.position;
+            const ppm = st.playerMesh.position;
             // Spieler-Region (habitabel → moderate lebendig → die Caps greifen);
             // der innerM-Skip lässt nur die 64m um den Spieler frei, der Rest der
             // 256m-Region streut → die echte Dichte ist messbar.
@@ -1677,8 +1676,8 @@ async function checkBandV18224ScatterPromotion({ page, check }) {
             out.perChunkActual = out.regionInstanceCount / ((SC.regionM / chunkSpan) * (SC.regionM / chunkSpan));
             // Wenigstens EINE Gruppe hat count > 0 (echte sichtbare Instanzen)
             let liveInstances = 0;
-            if (r.state.archInstanceGroups) {
-                for (const g of r.state.archInstanceGroups.values()) {
+            if (st.archInstanceGroups) {
+                for (const g of st.archInstanceGroups.values()) {
                     if (g.mesh && g.mesh.count > 0) liveInstances += g.mesh.count;
                 }
             }
@@ -1717,7 +1716,7 @@ async function checkBandV18224ScatterPromotion({ page, check }) {
         // ─── (E) Ω-H PROMOTION (Touch→Real, kein visueller Sprung) ───
         // Foundry-ON überspringt der Scatter die Baum-Schichten (kein promotable Cell) → die Grammatik-
         // Promotion prüft unter LOKALEM Hook; die Test-Region wird danach entsorgt.
-        if (r.state.scene) {
+        if (st.scene) {
             window.__withNoFoundry(() => {
                 // Eine frische Scatter-Cell bauen + promovieren
                 // BÜHNE: Ferne ohne Welt — dort steht kein Gelände, nur der Abstand zählt
@@ -1731,12 +1730,12 @@ async function checkBandV18224ScatterPromotion({ page, check }) {
                     // Understory/Streu sind nie promotable)
                     const cell = region.cells.find((c) => c.promotable && c.slots && c.slots.length > 0);
                     if (cell) {
-                        const archBefore = r.state.architectures.length;
+                        const archBefore = st.architectures.length;
                         const promotedSpecies = cell.species;
                         const promotedVariant = cell.variantIndex;
                         const entry = r._promoteScatterCell(cell);
                         out.promoteReturnsEntry = !!entry;
-                        out.archCountIncreased = r.state.architectures.length === archBefore + 1;
+                        out.archCountIncreased = st.architectures.length === archBefore + 1;
                         if (entry) {
                             // Der echte Eintrag trägt die Provenienz (Welt-Genese-Cell)
                             out.entryHasProvenance =
@@ -1848,7 +1847,7 @@ async function checkBandWahrerAnblickFels({ page, check }) {
         if (geom && typeof geom.dispose === "function") geom.dispose();
 
         // (C) stein_block gewachsen + Kiesel/Felsbrocken-Baupläne
-        const bp = r.state.blueprints;
+        const bp = st.blueprints;
         out.steinIsRock = !!(bp && bp.stein_block && bp.stein_block.parts[0].shape === "noiserock");
         out.kieselIsRock = !!(bp && bp.kiesel && bp.kiesel.parts.every((p) => p.shape === "noiserock"));
         // computeCompoundTags von stein_block trägt dichte (noiserock = box → dicht)
@@ -1895,7 +1894,7 @@ async function checkBandWahrerAnblickLaub({ page, check }) {
             taperProven = false;
         try {
             const keys = window.__withNoFoundry(() => r._buildVariantLODs("baum_eiche", 0));
-            const bp = keys && r.state.blueprints[keys[0]];
+            const bp = keys && st.blueprints[keys[0]];
             const skel = bp && bp._skeleton;
             if (skel) {
                 const tube = r._buildTreeTubeGeometry(skel);
@@ -1940,7 +1939,7 @@ async function checkBandWahrerAnblickLaub({ page, check }) {
 // Region, und der Stoff des Walds (unter der Streu-Scheibe rechnet der Haupt-Faden keinen Dart, die Region wartet auf den Voxel-Faden).
 async function checkBandScatterScheibe({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        const A = window.AnazhRealm || r.constructor;
+        const A = window.AnazhRealm || AnazhRealm;
         const SC = A.SCATTER;
         const o = {};
         const pos = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };

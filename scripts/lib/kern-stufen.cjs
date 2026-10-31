@@ -177,4 +177,4 @@ async function epsilonDraht(server, port, W, check, probe) {
     return [eps, out, kern];
 }
 
-module.exports = { epsilonDraht, kernRaeume, seitenStufen, stufenAbweichung, geklemmteStufe, epsilonSeite, epsilonUrteil, selbsttest };
+module.exports = { epsilonDraht, geklemmteStufe, selbsttest };

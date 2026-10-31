@@ -37,7 +37,6 @@ const { statikServer, ROOT: root, hauptLauf, nullSeite, selbsttestEnde, wandEnde
 const BOX_MUT = new Set(["push", "pop", "shift", "unshift", "splice", "sort", "reverse", "fill", "copyWithin"]);
 const BOX_ELEMENT = new Set(["find", "filter", "slice", "at", "concat", "findLast"]);
 function boxWand(quelle) {
-    const lauf = (n, f) => (f(n), stammLib.kinder(n, (c) => lauf(c, f)));
     const name = (m) =>
         m.computed ? (m.property.type === "Literal" ? String(m.property.value) : null) : m.property.name;
     const befunde = [];
@@ -60,7 +59,7 @@ function boxWand(quelle) {
             return false;
         };
         for (let d = 0; d < 2; d++)
-            lauf(body, (n) => {
+            stammLib.wandere(body, (n) => {
                 if (n.type === "VariableDeclarator" && n.id.type === "Identifier" && istBox(n.init))
                     gebunden.add(n.id.name);
                 if (n.type === "ForOfStatement" && istBox(n.right) && n.left.type === "VariableDeclaration") {
@@ -75,7 +74,7 @@ function boxWand(quelle) {
                 art,
                 text: quelle.slice(n.start, Math.min(n.end, n.start + 80)).replace(/\s+/g, " "),
             });
-        lauf(body, (n) => {
+        stammLib.wandere(body, (n) => {
             if (n.type === "AssignmentExpression" && n.left.type === "MemberExpression") {
                 if (name(n.left) === "blockerAABBs") {
                     zuweisungen++;
@@ -279,14 +278,8 @@ async function probe() {
             source: "human",
         });
     r.dslRun(["spawn_temple", ["near_player", 30]], { source: "human" });
-    // die Strahlen einer Runde: Zufall mit festem Samen, rund um die Boxen des Orts
-    let s = 0x6e7a;
-    const rng = () => {
-        s = (s + 0x6d2b79f5) | 0;
-        let x = Math.imul(s ^ (s >>> 15), 1 | s);
-        x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
-        return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
-    };
+    // die Strahlen einer Runde: Zufall mit festem Samen (der Vorlagen-RNG, phyto-core), rund um die Boxen des Orts
+    const rng = window.__phytoCore.mulberry32(0x6e7a);
     const ortsBoxen = () => {
         const out = [];
         for (const e of st.architectures)
@@ -380,7 +373,7 @@ async function probe() {
         for (let a = 0; a < arches.length; a++) {
             const e = arches[a];
             if (!e || !e.blockerAABBs || !e.position) continue;
-            if (riddenId !== null && riddenId !== undefined && e.id === riddenId) continue;
+            if (riddenId != null && e.id === riddenId) continue;
             const cullR = 60 + (e._blockerReach || 0);
             if (Math.abs(e.position.x - pos.x) > cullR || Math.abs(e.position.z - pos.z) > cullR) continue;
             if (huelle && huelle.eigen === e.id) continue;

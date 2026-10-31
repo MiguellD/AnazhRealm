@@ -8,7 +8,8 @@
 // betritt, und nennt jedes Feld von A, das B danach trägt, beim Namen. Die Gegenprüfung Runde 3 fand zwei Wege, auf denen
 // der Speicher eine Mischung trägt oder eine Welt verliert: eine Welt ohne worldId lag roh auf dem Platz von A, und der
 // Boot vergab vor dem Lesen des Platzes eine neue Id (beide Welten fort); und zwischen `location.reload()` und dem Tod der
-// Seite schrieb jeder saveState die lebende Seite unter den Namen von B oder setzte den Aktiv-Zeiger auf A zurück.
+// Seite schrieb jeder saveState die lebende Seite unter den Namen von B oder setzte den Aktiv-Zeiger auf A zurück. Seit tore-k5-tuer
+// tauscht jede Tür am Ort (`_weltWechsel`): die Seite lädt nie neu, ihr ganzer Zustand nach dem Tausch ist B allein.
 //
 //   laden               `loadState(B)` in der lebenden Seite (der Engpass jedes Ladens: Boot, „lade zustand")
 //   ersetzen[-ohne-id|-ohne-meta]   das Welt-Tor „Ersetzen" (`_weltTorImportReplace`)
@@ -21,27 +22,27 @@
 //                       die Formen ohne worldId, ohne worldMeta, korrupt, nur IndexedDB fährt gate:boot-rettung)
 // Dazu je Tür: A trägt nach dem letzten Autosave noch MARKER-A-SPAET (Fortschritt) — die Tür sichert A vor der Sperre.
 // Und statisch (Absenz): eine ganze Welt schreibt in den Speicher nur saveState (die lebende) und `_weltAblegen` (die EINE
-// Ablage), `location.reload` steht nur in `_weltWechselNeuLaden` — jeder andere Schreiber fällt beim Namen.
+// Ablage), `location.reload` steht nur im lauten Rückfall des Wechsels `_weltWechsel` — jeder andere Schreiber fällt beim Namen.
 //
 // Welt A ist die frisch gebootete Standard-Welt (gespeichert), in die die Linse ein Zeichen pflanzt: das Erbgut der
 // Prüfbühne (spec/pruefbuehne/welt.json), einen Makro-Anker, ein Edit, Dorf-Zellen, die Stempel von Ring, Vorschau und
 // Saat, Rolle, Bann-Liste, Adresse, Region, Rechte, Modus, Sichtbarkeit, ein Feld, das dieser Build nicht kennt, die
 // Gedächtnisse der Seite (Anker, Ring, Vorschau, Dorf-Zug) und ein Tier. Welt B ist eine Wildnis-Welt ohne all das, mit
-// MARKER-B im Wissen (je Weg auch ohne worldId oder ohne worldMeta). Jede Tür bekommt das RELOAD-FENSTER des Spiels: der
-// Server liefert die neue Seite 1,5 s später, ein Edit-Save steht vor der Tür an, danach ein saveState und ein Edit-Save.
+// MARKER-B im Wissen (je Weg auch ohne worldId oder ohne worldMeta). Jede Tür bekommt das FENSTER DES WECHSELS: ein Edit-Save
+// steht vor der Tür an, danach — die alte Welt lebt noch — sofort ein saveState, nach 300 ms einer und ein Edit-Save.
 // Geprüft werden: das worldMeta der Seite, die Leser (`_erbgut`, der Worker-Spiegel), die Gedächtnisse,
 // der Snapshot der Seite, der Speicher-Eintrag von B (byte-gleich mit der abgelegten Datei, wenn die neue Seite startet),
-// der Aktiv-Zeiger, MARKER-B in der erwachten Welt und A unter seiner Id (ohne MARKER-B, im Index). Ein Weg, der in der
-// Seite bleibt, bekommt den nächsten Schritt des Spiels (Autosave, Reload).
+// der Aktiv-Zeiger, MARKER-B in der erwachten Welt und A unter seiner Id (ohne MARKER-B, im Index) — am Ort (der volle Snapshot
+// der Seite, die nie neu lud) und in der nächsten Sitzung (Autosave, Reload).
 //
 //   node scripts/diag-weltgrenze.cjs [--json datei] [--wurzel dir] [--wege laden,ersetzen,...]
 //                                      (`--wurzel` = der Baum eines anderen Stands: vorher ↔ nachher)
 //   node scripts/diag-weltgrenze.cjs --selftest   zusätzlich zwei Scheine: der alte Spread am Lade-Engpass (der Weg
 //                                      „laden" MUSS rot werden) und saveState ohne die Sperre des Welt-Wechsels (der Weg
-//                                      „ersetzen" MUSS rot werden) — beide beim Namen
+//                                      „ersetzen" MUSS rot werden: die Seite erwacht in A) — beide beim Namen
 // Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt, ausDatei, path, fs, stammLib, weltTor } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt, ausDatei, path, fs, stammLib, weltTor, waitFor } = require("./lib/welt-boot.cjs");
 
 const argv = process.argv.slice(2);
 const SELBSTTEST = argv.includes("--selftest");
@@ -62,21 +63,12 @@ const ALLE_WEGE = [
     "geburt",
     "reload",
 ];
-// Das Reload-Fenster: so lange liefert der Server die neue Seite später (die alte lebt, ihre Timer feuern).
-const FENSTER_MS = 1500;
-let verzoegerung = 0;
 const WEGE = opt("--wege", ALLE_WEGE.join(","))
     .split(",")
     .filter((w) => ALLE_WEGE.includes(w));
 const BUEHNE = ausDatei(path.resolve(__dirname, "..", "spec", "pruefbuehne", "welt.json"), true);
 
-// die Tür der Seite: `verzoegerung` hält /index.html zurück (das Fenster, in dem die alte Seite noch schreibt)
-const server = statikServer({
-    root,
-    keinCache: true,
-    wandle: (p, data) =>
-        verzoegerung && p === "/index.html" ? new Promise((r) => setTimeout(() => r(data), verzoegerung)) : data,
-});
+const server = statikServer({ root, keinCache: true });
 
 // Beim Start JEDER Seite, vor dem Spiel: der Aktiv-Zeiger und sein Speicher-Eintrag (was die alte Seite hinterließ).
 function startFang() {
@@ -159,22 +151,23 @@ function seitenPruefer() {
             if (!s) return [`A: unter ${aId} liegt keine Welt mehr`];
             const out = [];
             const roh = JSON.stringify(s);
-            const id = s.worldMeta && s.worldMeta.worldId;
+            const id = s.worldMeta?.worldId;
             if (id !== aId) out.push(`A: der Platz von A trägt die Welt ${id === undefined ? "ohne worldId" : id}`);
             if (roh.includes("MARKER-B")) out.push("A: der Platz von A trägt B (MARKER-B)");
-            if (!r.worldsIndexLoad().some((e) => e && e.worldId === aId)) out.push("A: fehlt im Index der Welten");
+            if (!r.worldsIndexLoad().some((e) => e?.worldId === aId)) out.push("A: fehlt im Index der Welten");
             if (spaet && !roh.includes("MARKER-A-SPAET"))
                 out.push(
                     "A: der Fortschritt seit dem letzten Autosave fehlt (MARKER-A-SPAET) — A wurde vor der Sperre nicht gesichert"
                 );
             return out;
         },
-        // DAS RELOAD-FENSTER des Spiels: vor der Tür steht ein Edit-Save an (Edit direkt vor dem Ersetzen), nach ihr ein
-        // saveState (Loop-Autosave) und ein Edit-Save (Dorf-Rückruf, Settlement-Export).
+        // DAS FENSTER DES WECHSELS: vor der Tür steht ein Edit-Save an (Edit direkt vor dem Ersetzen), nach ihr — die alte Welt
+        // lebt noch — ein saveState (Loop-Autosave), nach 300 ms einer und ein Edit-Save (Dorf-Rückruf, Settlement-Export).
         fensterVor() {
             r._scheduleEditSave();
         },
         fensterNach() {
+            r.saveState();
             setTimeout(() => {
                 try {
                     r.saveState();
@@ -186,7 +179,7 @@ function seitenPruefer() {
         },
         // Welt A trägt ihr Zeichen: jedes welt-eigene Feld, die Gedächtnisse der Seite und ein Tier.
         pflanzeA(buehneErbgut) {
-            const wm = r.state.worldMeta;
+            const wm = st.worldMeta;
             Object.assign(wm, A_STUFEN, {
                 erbgut: Object.assign({ herkunft: T }, buehneErbgut),
                 // das Altfeld eines Spielstands von vor K16 (der Ein-Massiv-Anker fiel) — es reist nie in Welt B
@@ -219,7 +212,12 @@ function seitenPruefer() {
             // der Plan v2 je Ort (K10, `_ortWahl`): Saat und Anker sind sein Schlüssel, seine Höhen und sein Erdbau sind A —
             // eine Welt B mit demselben Samen am selben Anker läse sonst A's Gelände
             r._ortPlaene = new Map([[T, { herkunft: T }]]);
-            const pm = r.state.playerMesh;
+            // DIE OFFENE ARBEIT DER SEITE: eine ungebackene Karte (ihr Atlas gehört keiner Welt) und ihr Platz in der Back-Schlange
+            // reisen mit der Seite — fiel die Schlange mit der Welt, backte die Karte nie (die GT-Vorschau der Prüfbühne wartete nach
+            // dem Wechsel ewig, „Fege-Takt archCull wartet", tore-k5-tuer-neu)
+            r._impostorAtlas().zellen.set(T, {});
+            r._impostorBakeQueue = [T];
+            const pm = st.playerMesh;
             const x = pm ? pm.position.x + 6 : 6;
             const z = pm ? pm.position.z + 6 : 6;
             // DIE LICHT-GEDÄCHTNISSE über ihre echten Schreiber: das wache Tor (`_tickPortalLicht`) und der Licht-Pool,
@@ -234,19 +232,19 @@ function seitenPruefer() {
             r._ensureAtmoUniforms();
             r._leuchtTakt();
             const tier = r.spawnCreatureAt(x, r.getTerrainHeightAt(x, z) + 1, z, "happy", null, { precise: true });
-            if (tier && tier.userData) tier.userData.name = T;
+            if (tier?.userData) tier.userData.name = T;
             const licht = [
-                r._portalLeuchte && r._portalLeuchte.herkunft === T ? null : "_portalLeuchte",
-                r._leuchtPool && r._leuchtPool.halter.some((h) => h && h.herkunft === T) ? null : "_leuchtPool",
+                r._portalLeuchte?.herkunft === T ? null : "_portalLeuchte",
+                r._leuchtPool?.halter.some((h) => h?.herkunft === T) ? null : "_leuchtPool",
             ].filter(Boolean);
             return { erbgut: r._erbgut().terme.map((t) => t.art), tier: !!tier, lichtBlind: licht };
         },
         // Die lebende Seite in Welt B: jedes Feld von A beim Namen. `ganz` = auch der volle Snapshot der Seite (nach einem
-        // Reload; in der Seite trägt das Leben der alten Welt nur der Reload fort, die Türen laden neu).
+        // Wechsel: am Ort trägt die Seite nach dem Tausch B allein, in der nächsten Sitzung der Speicher).
         befundeLive(erlaubt, ganz) {
             const ok = new Set(erlaubt || []);
             const out = [];
-            const wm = r.state.worldMeta || {};
+            const wm = st.worldMeta || {};
             for (const p of pfade(wm, "worldMeta")) if (!ok.has(p)) out.push(p);
             for (const k of Object.keys(A_STUFEN)) {
                 const pfad = `worldMeta.${k}`;
@@ -258,19 +256,20 @@ function seitenPruefer() {
                 out.push(`Leser _erbgut() [${e.terme.map((t) => t.art).join(", ")}]`);
             const ws = r._voxelWorkerSnapshotState();
             for (const p of pfade(ws, "Worker-Spiegel")) out.push(p);
-            if (!(ws.erbgut && ws.erbgut.wildnis === 1)) out.push("Worker-Spiegel.erbgut (keine Wildnis)");
+            if (ws.erbgut?.wildnis !== 1) out.push("Worker-Spiegel.erbgut (keine Wildnis)");
             const ged = {
                 _genesisRingFertig: r._genesisRingFertig === true,
-                _portalPreviewFertig: !!(r._portalPreviewFertig && r._portalPreviewFertig.fachwerk),
-                _autoSettlementRejected: !!(r._autoSettlementRejected && r._autoSettlementRejected.has(T)),
+                _portalPreviewFertig: !!r._portalPreviewFertig?.fachwerk,
+                _autoSettlementRejected: !!r._autoSettlementRejected?.has(T),
                 _autoSettlementStartHopeless: r._autoSettlementStartHopeless === true,
-                _autoSettlementQueue: !!(r._autoSettlementQueue && r._autoSettlementQueue.cellKey === T),
-                _stlWegeKeys: !!(r._stlWegeKeys && r._stlWegeKeys.has(T)),
-                _ortPlaene: !!(r._ortPlaene && r._ortPlaene.has(T)),
-                _portalLeuchte: !!(r._portalLeuchte && r._portalLeuchte.herkunft === T),
-                _leuchtPool: !!(r._leuchtPool && r._leuchtPool.halter.some((h) => h && h.herkunft === T)),
+                _autoSettlementQueue: r._autoSettlementQueue?.cellKey === T,
+                _stlWegeKeys: !!r._stlWegeKeys?.has(T),
+                _ortPlaene: !!r._ortPlaene?.has(T),
+                _portalLeuchte: r._portalLeuchte?.herkunft === T,
+                _leuchtPool: !!r._leuchtPool?.halter.some((h) => h?.herkunft === T),
             };
             for (const k of Object.keys(ged)) if (ged[k]) out.push(`Gedächtnis this.${k}`);
+            if (r._kartenAtlas?.zellen.has(T) && !r._impostorBakeQueue?.includes(T)) out.push("Seite: Karte ohne Back-Schlange");
             if (ganz) {
                 const snap = r.buildStateSnapshot();
                 for (const p of pfade(snap, "Snapshot", 3)) if (!ok.has(p.replace(/^Snapshot\./, ""))) out.push(p);
@@ -301,15 +300,15 @@ function seitenPruefer() {
 async function bereit(page, weltId) {
     return page.evaluate(async (weltId) => {
         const t0 = performance.now();
-        await window.__weltDa((w) => w.state && w.state.worldMeta);
-        const welt = r.state.worldMeta.worldId;
+        await window.__weltDa((w) => w.state?.worldMeta);
+        const welt = st.worldMeta.worldId;
         return { ok: !weltId || welt === weltId, ms: Math.round(performance.now() - t0), welt };
     }, weltId || null);
 }
 
 // DIE ABSENZ (statisch, im Stamm des Baums, über den EINEN Helfer stammLib.fehlt): eine ganze Welt schreibt nur `_weltAblegen`
-// (die EINE Ablage) und `_speicherVerlassen` (die verlassene) auf ihren Platz, `location.reload` steht nur im Welt-Wechsel
-// `_weltWechselNeuLaden`. Jeder andere Ort fällt mit Datei und Zeile (fehlt.wo); die Engstellen sind Glieder am AST.
+// (die EINE Ablage) und `_speicherVerlassen` (die verlassene) auf ihren Platz, `location.reload` steht nur im lauten Rückfall
+// des Welt-Wechsels `_weltWechsel`. Jeder andere Ort fällt mit Datei und Zeile (fehlt.wo); die Engstellen sind Glieder am AST.
 function absenz() {
     const out = [];
     const pruefe = (re, ausser, was) => stammLib.fehlt({ ausser }, re) || out.push(`${was}: ${stammLib.fehlt.wo}`);
@@ -318,15 +317,16 @@ function absenz() {
         ["_weltAblegen", "_speicherVerlassen"],
         "Welt-Schreiber neben der EINEN Ablage"
     );
-    pruefe(/location\.reload\(\)/, ["_weltWechselNeuLaden"], "Reload neben dem Welt-Wechsel");
+    pruefe(/location\.reload\(\)/, ["_weltWechsel"], "Reload neben dem Welt-Wechsel");
     return out;
 }
 
 const TUEREN = new Set(["ersetzen", "weltpull", "portal", "einladung", "geburt"]);
 
 // Ein Weg in einem frischen Browser-Kontext (eigener Speicher): A booten und speichern, B bauen, A zeichnen, den Weg gehen
-// (eine Tür im Reload-Fenster), B prüfen und A. `schein`: "spread" (der alte Spread am Lade-Engpass) · "sperre" (saveState
-// ohne die Sperre des Welt-Wechsels).
+// (eine Tür im Fenster des Wechsels), B prüfen und A. `schein`: "spread" (der alte Spread am Lade-Engpass) · "sperre" (saveState
+// ohne die Sperre des Welt-Wechsels) · "stand" (der Prototyp trägt Stand: der Griff des Prüfbühnen-Zensus bis 30.10., `P[n]`
+// weckte den Getter `dslPositions` mit dem Prototyp als this — der Abschied bricht den Tausch beim Namen, die Tür sagt es).
 async function fahreWeg(browser, weg, schein) {
     const ctx = await browser.createBrowserContext();
     const page = await ctx.newPage();
@@ -345,7 +345,6 @@ async function fahreWeg(browser, weg, schein) {
     const t0 = Date.now();
     const lege = async (fn, ...a) => (await page.evaluate(fn, ...a)) || [];
     try {
-        verzoegerung = 0;
         await server.zeige(page, 60000);
         const a = await bereit(page, null);
         rep.boot.push(a.ms);
@@ -353,7 +352,7 @@ async function fahreWeg(browser, weg, schein) {
         // A ist gespeichert (sein Platz besteht), bevor sie ihr Zeichen trägt
         const aId = await page.evaluate(() => {
             r.saveState();
-            return r.state.worldMeta.worldId;
+            return st.worldMeta.worldId;
         });
         const B = await page.evaluate((f) => window.__grenze.bauB("grenze-b", f), form);
         rep.pflanzung = await page.evaluate((e) => window.__grenze.pflanzeA(e), BUEHNE.worldMeta.erbgut);
@@ -362,23 +361,23 @@ async function fahreWeg(browser, weg, schein) {
             rep.befunde.push(`die Pflanzung ist blind: this.${k} trägt das Zeichen von A nicht`);
         // A's Fortschritt nach dem letzten Autosave: er muss die Tür überleben (auf A's Platz)
         await page.evaluate(() => {
-            r.state.knowledgeBase = (r.state.knowledgeBase || []).concat(["MARKER-A-SPAET"]);
+            st.knowledgeBase = (st.knowledgeBase || []).concat(["MARKER-A-SPAET"]);
         });
         if (schein === "spread") {
             // DER ALTE SPREAD ZUM SCHEIN: nach jedem Laden mischt sich das worldMeta der alten Welt darunter.
             await page.evaluate(() => {
                 const roh = r.loadState.bind(r);
                 r.loadState = (s) => {
-                    const alt = r.state.worldMeta;
+                    const alt = st.worldMeta;
                     const e = roh(s);
-                    r.state.worldMeta = { ...alt, ...r.state.worldMeta };
+                    st.worldMeta = { ...alt, ...st.worldMeta };
                     r._erbgutCache = null;
                     return e;
                 };
             });
         }
         if (schein === "sperre") {
-            // SAVESTATE OHNE DIE SPERRE ZUM SCHEIN: im Reload-Fenster schreibt die Seite wieder.
+            // SAVESTATE OHNE DIE SPERRE ZUM SCHEIN: im Fenster des Wechsels schreibt die alte Welt wieder.
             await page.evaluate(() => {
                 const roh = r.saveState.bind(r);
                 r.saveState = () => {
@@ -392,18 +391,10 @@ async function fahreWeg(browser, weg, schein) {
                 };
             });
         }
-        verzoegerung = tuer || weg === "ersetzen-quota" ? FENSTER_MS : 0;
-        const nav =
-            tuer || weg === "ersetzen-quota"
-                ? page
-                      .waitForNavigation({
-                          waitUntil: "domcontentloaded",
-                          // die gescheiterte Ablage lädt nicht: das Fenster plus der Boot der neuen Seite reicht als Frist
-                          timeout: FENSTER_MS + (weg === "ersetzen-quota" ? 2500 : 6000),
-                      })
-                      .then(() => true)
-                      .catch(() => false)
-                : Promise.resolve(false);
+        if (schein === "stand") await page.evaluate(() => void (window.__alteSeite = Object.getPrototypeOf(r).dslPositions));
+        // DIE SEITE LÄDT NIE NEU (der Wechsel am Ort): jede Navigation nach dem Boot von A ist ein Befund
+        let navigationen = 0;
+        page.on("framenavigated", (f) => f === page.mainFrame() && navigationen++);
         const lauf = await page
             .evaluate(
                 async (weg, basis, B, aId) => {
@@ -426,18 +417,18 @@ async function fahreWeg(browser, weg, schein) {
                             };
                         }
                         g.fensterVor();
-                        r.state.pendingImport = { parsed: B, fileName: "grenze-b.json" };
+                        st.pendingImport = { parsed: B, fileName: "grenze-b.json" };
                         r._weltTorImportReplace();
                         const out = ablage(r.activeWorldGet());
                         const chat = document.getElementById("chat-output");
                         out.chat = chat ? chat.textContent.slice(-400) : "";
-                        out.liveWelt = r.state.worldMeta.worldId;
+                        out.liveWelt = st.worldMeta.worldId;
                         g.fensterNach();
                         return out;
                     }
                     if (basis === "weltpull") {
                         g.fensterVor();
-                        r.state.p2p.pendingWorldSnapshot = true;
+                        st.p2p.pendingWorldSnapshot = true;
                         r._p2pApplyWorldSnapshot("grenze-host", B);
                         const out = ablage(r.activeWorldGet());
                         g.fensterNach();
@@ -502,7 +493,7 @@ async function fahreWeg(browser, weg, schein) {
                     }
                     if (basis === "reload") {
                         const id =
-                            B.worldMeta && B.worldMeta.worldId ? B.worldMeta.worldId : "grenze-platz-" + Date.now();
+                            B.worldMeta?.worldId || "grenze-platz-" + Date.now();
                         localStorage.setItem(r.worldStorageKey(id), JSON.stringify(B));
                         r.worldsIndexUpsert({
                             worldId: id,
@@ -519,62 +510,69 @@ async function fahreWeg(browser, weg, schein) {
                 B,
                 aId
             )
-            .catch((e) => ({ abbruch: String(e && e.message ? e.message : e) }));
-        rep.navigiert = await nav;
-        // B liegt im Speicher: die Seite betritt sie durch die Tür (`weltTor`, der Reload des Spiels), nie über den Zeiger von Hand
-        if (basis === "reload" && lauf && lauf.ziel) rep.navigiert = !!(await weltTor(page, lauf.ziel, 60000));
+            .catch((e) => ({ abbruch: String(e?.message || e) }));
+        // B liegt im Speicher: die Seite betritt sie durch die Tür (`weltTor`, der Wechsel am Ort), nie über den Zeiger von Hand.
+        // Zum Schein „stand" bricht der Tausch beim Namen und die Seite lädt neu (der laute Rückfall): erst wenn die neue Seite
+        // erwacht ist, schließt der Kontext — ein Schließen in die Navigation hing bis zur Frist des Browsers.
+        if (basis === "reload" && lauf?.ziel)
+            await weltTor(page, lauf.ziel).catch(async (e) => {
+                if (schein !== "stand") throw e;
+                rep.befunde.push(e.message);
+                await waitFor(page, () => !window.__alteSeite && window.anazhRealm?._gameLoopTick, "der Rückfall");
+            });
+        if (schein === "stand") return rep;
         if ((basis === "portal" || basis === "einladung") && gemeldet) Object.assign(lauf, gemeldet);
-        if (lauf && lauf.inSeite) for (const f of lauf.inSeite) rep.befunde.push(`in der Seite: ${f}`);
+        if (lauf?.inSeite) for (const f of lauf.inSeite) rep.befunde.push(`in der Seite: ${f}`);
         if (basis === "laden") return rep;
+        // der Tausch ist durch — oder er brach laut, und die Seite lud neu (`navigationen`)
+        await page.evaluate(() => r.erwacht).catch(() => {});
+        rep.navigiert = navigationen > 0;
         if (weg === "ersetzen-quota") {
-            // KEIN RELOAD OHNE GELUNGENE ABLAGE: die Seite bleibt in A, und sie sagt es.
-            if (rep.navigiert) rep.befunde.push("Reload ohne gelungene Ablage — der alte Stand lädt still");
-            else {
-                const z = await page.evaluate(() => ({
-                    zeiger: r.activeWorldGet(),
-                    welt: r.state.worldMeta.worldId,
-                }));
-                if (z.zeiger !== aId)
-                    rep.befunde.push(`der Aktiv-Zeiger zeigt nach der gescheiterten Ablage auf ${z.zeiger}`);
-                if (z.welt !== aId)
-                    rep.befunde.push(`die Seite trägt nach der gescheiterten Ablage die Welt ${z.welt}`);
-                if (!/fehlgeschlagen/.test(lauf.chat || ""))
-                    rep.befunde.push("die gescheiterte Ablage blieb still (kein Satz im Chat)");
-                rep.befunde.push(...(await lege((id) => window.__grenze.befundeA(id, true), aId)));
-            }
+            // KEIN WECHSEL OHNE GELUNGENE ABLAGE: die Seite bleibt in A, und sie sagt es.
+            if (rep.navigiert) rep.befunde.push("die Seite lud ohne gelungene Ablage neu — der alte Stand lädt still");
+            const z = await page.evaluate(() => ({
+                zeiger: r.activeWorldGet(),
+                welt: st.worldMeta.worldId,
+            }));
+            if (z.zeiger !== aId) rep.befunde.push(`der Aktiv-Zeiger zeigt nach der gescheiterten Ablage auf ${z.zeiger}`);
+            if (z.welt !== aId) rep.befunde.push(`die Seite trägt nach der gescheiterten Ablage die Welt ${z.welt}`);
+            if (!/fehlgeschlagen/.test(lauf.chat || "")) rep.befunde.push("die gescheiterte Ablage blieb still (kein Satz im Chat)");
+            rep.befunde.push(...(await lege((id) => window.__grenze.befundeA(id, true), aId)));
             return rep;
         }
-        const ziel = lauf && lauf.ziel;
+        const ziel = lauf?.ziel;
         if (!ziel) throw new Error(`der Weg nannte keine Ziel-Welt (${JSON.stringify(lauf).slice(0, 160)})`);
         if (basis === "geburt") {
             // DIE POSITIV-LISTE DER GEBURT: die Wahl des Schöpfers reist in die neue Welt (Sichtbarkeit, Schöpfer).
             rep.erlaubt = ["worldMeta.visibility", "worldMeta.creator"];
         }
-        if (!rep.navigiert) {
-            if (tuer && basis !== "portal" && basis !== "einladung") {
-                // in der Seite geblieben: der nächste Schritt des Spiels — der Autosave schreibt, was die Seite trägt
-                await page.evaluate(() => r.saveState()).catch(() => {});
+        if (tuer) {
+            // AM ORT: die Seite, die nie neu lud, trägt B allein — ihr voller Snapshot, ihre Leser, ihre Gedächtnisse
+            if (rep.navigiert) rep.befunde.push("die Tür lud die Seite neu — der Wechsel am Ort brach");
+            const z = await bereit(page, ziel); // der Tausch ist durch (`erwacht`): keine eigene Boot-Zeit
+            if (!z.ok) rep.befunde.push(`die Seite erwachte in ${z.welt} statt in der Ziel-Welt ${ziel} (am Ort)`);
+            else {
+                if (basis !== "geburt" && !(await page.evaluate(() => window.__grenze.markerB())))
+                    rep.befunde.push("am Ort: MARKER-B fehlt — B lebt nicht");
                 rep.befunde.push(
-                    ...(await lege((id, ok) => window.__grenze.befundeSpeicher(id, ok), ziel, rep.erlaubt)).map(
-                        (f) => `nach dem Autosave: ${f}`
-                    )
+                    ...(await lege((ok) => window.__grenze.befundeLive(ok, true), rep.erlaubt)).map((f) => `am Ort: ${f}`)
                 );
             }
-            // der Rufer lädt neu (die Einladung, der Boot) — oder die nächste Sitzung
-            await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
+            // der nächste Schritt des Spiels — der Autosave schreibt, was die Seite trägt
+            await page.evaluate(() => r.saveState()).catch(() => {});
+            rep.befunde.push(
+                ...(await lege((id, ok) => window.__grenze.befundeSpeicher(id, ok), ziel, rep.erlaubt)).map(
+                    (f) => `nach dem Autosave: ${f}`
+                )
+            );
         }
-        verzoegerung = 0;
+        // die nächste Sitzung: B liegt unter dem Zeiger, A unter seiner Id
+        await page.reload({ waitUntil: "domcontentloaded", timeout: 60000 });
         const b = await bereit(page, ziel);
         rep.boot.push(b.ms);
         const start = await page.evaluate(() => window.__grenzeStart);
-        if (tuer) {
-            if (start.id !== ziel)
-                rep.befunde.push(`nach dem Reload-Fenster zeigt der Aktiv-Zeiger auf ${start.id} statt auf ${ziel}`);
-            else if (start.json !== lauf.abgelegt)
-                rep.befunde.push(
-                    `der Platz von B trägt nach dem Reload-Fenster ${start.json ? start.json.length : 0} Bytes statt der abgelegten ${lauf.abgelegt ? lauf.abgelegt.length : 0} (die Seite schrieb in ihn)`
-                );
-        }
+        if (tuer && start.id !== ziel)
+            rep.befunde.push(`nach dem Wechsel zeigt der Aktiv-Zeiger auf ${start.id} statt auf ${ziel}`);
         rep.befunde.push(
             ...(await lege((id, sp) => window.__grenze.befundeA(id, sp), aId, tuer)).map((f) => `nach dem Reload: ${f}`)
         );
@@ -595,9 +593,8 @@ async function fahreWeg(browser, weg, schein) {
             );
         }
     } catch (e) {
-        rep.befunde.push(`ABBRUCH: ${e && e.message ? e.message : e}`);
+        rep.befunde.push(`ABBRUCH: ${e?.message || e}`);
     } finally {
-        verzoegerung = 0;
         rep.ms = Date.now() - t0;
         rep.befunde = Array.from(new Set(rep.befunde));
         await ctx.close();
@@ -616,7 +613,7 @@ hauptLauf(async () => {
     const abs = absenz();
     if (abs.length) rot = true;
     console.log(
-        `  ${abs.length ? "⛔" : "✓"} absenz             ${abs.length ? abs.length + " Befunde" : "ein Schreiber je Rolle (saveState, _weltAblegen), ein Reload (_weltWechselNeuLaden)"}`
+        `  ${abs.length ? "⛔" : "✓"} absenz             ${abs.length ? abs.length + " Befunde" : "ein Schreiber je Rolle (saveState, _weltAblegen), ein Reload (der Rückfall in _weltWechsel)"}`
     );
     for (const f of abs) console.log(`      ⛔ ${f}`);
     for (const weg of WEGE) {
@@ -629,8 +626,10 @@ hauptLauf(async () => {
             : weg === "laden"
               ? "blieb in der Seite"
               : weg === "ersetzen-quota"
-                ? "kein Reload"
-                : "neu geladen";
+                ? "kein Wechsel"
+                : TUEREN.has(weg.split("-")[0])
+                  ? "am Ort"
+                  : "neu geladen";
         console.log(
             `  ${gruen ? "✓" : "⛔"} ${weg.padEnd(18)} ${art} · Boot ${rep.boot.join(" + ")} ms · ${(rep.ms / 1000).toFixed(1)} s${rep.erlaubt.length ? ` · Positiv-Liste ${rep.erlaubt.map((p) => p.split(".")[1]).join(", ")}` : ""} · ${gruen ? "0 Befunde" : rep.befunde.length + " Befunde"}`
         );
@@ -640,9 +639,11 @@ hauptLauf(async () => {
     if (SELBSTTEST) {
         const spread = await fahreWeg(browser, "laden", "spread");
         const sperre = await fahreWeg(browser, "ersetzen", "sperre");
+        const stand = await fahreWeg(browser, "reload", "stand");
         const namen = spread.befunde.filter((f) => f.startsWith("in der Seite: worldMeta."));
-        const fenster = sperre.befunde.filter((f) => /Reload-Fenster|erwachte in/.test(f));
-        selbst = { spread: namen, sperre: fenster, befunde: { spread: spread.befunde, sperre: sperre.befunde } };
+        const fenster = sperre.befunde.filter((f) => /zeigt der Aktiv-Zeiger|erwachte in/.test(f));
+        const proto = stand.befunde.filter((f) => /_dslPositionsCache/.test(f));
+        selbst = { spread: namen, sperre: fenster, stand: proto, befunde: { spread: spread.befunde, sperre: sperre.befunde } };
         console.log(
             `\n  SELBSTTEST 1 (der alte Spread am Lade-Engpass zum Schein): ${namen.length} Felder von A beim Namen — ${namen
                 .map((f) => f.replace("in der Seite: ", ""))
@@ -652,13 +653,14 @@ hauptLauf(async () => {
         console.log(
             `  SELBSTTEST 2 (saveState ohne die Sperre des Welt-Wechsels zum Schein): ${fenster.length} Befunde — ${fenster.join(" · ")}`
         );
+        console.log(`  SELBSTTEST 3 (der Prototyp trägt Stand zum Schein): ${proto[0] || "BLIND"}`);
     }
     if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ root, absenz: abs, berichte, selbst }, null, 1));
     let pass;
     if (SELBSTTEST) {
-        pass = !rot && selbst && selbst.spread.length > 0 && selbst.sperre.length > 0;
+        pass = !rot && selbst && selbst.spread.length > 0 && selbst.sperre.length > 0 && selbst.stand.length > 0;
         console.log(
-            `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf keinem Weg trägt B ein Feld von A oder geht eine Welt verloren — und beide Scheine fallen rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "ein Schein blieb unentdeckt (die Linse ist blind)")}`
+            `\n${pass ? "✅" : "⛔"} SELBSTTEST ${pass ? "GRÜN: auf keinem Weg trägt B ein Feld von A oder geht eine Welt verloren — und alle drei Scheine fallen rot beim Namen" : "ROT: " + (rot ? "der saubere Lauf ist schon rot" : "ein Schein blieb unentdeckt (die Linse ist blind)")}`
         );
     } else {
         pass = !rot;

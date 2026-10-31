@@ -41,8 +41,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
   Fachwerk-Studios auf dem Gelände-Kern (`_ortPlaene`), jeder Wurf des Felds weicht ihm (`FELD_WURF`, `_weichtDemBau`). Heute hält die
   Instanz-Wand (`_naturWand`) Bauten frei, die Schicht (Halm, Nah-Wiese) noch nicht.
 - GESTALT < 64 m Studio-Mesh + LOD-Kette, EIN Auge der Stufen (`_lodAuge`), jede Karte eine Schicht des EINEN Atlas, ihre Mips
-  deckungstreu mit dem Saum der Art (phyto-core `karteSaum`: die Zelle aus der Blattgröße in `treeParams`, Laub-Lappen, Nadel-Grate;
-  die GPU-Ablage `KARTE_RECHNER_WGSL` rechnet dasselbe Gesetz, `_karteSaumVon`), fern Glieder-Kapseln · jede Senke zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade,
+  deckungstreu mit dem Saum der Art in JEDEM Hebungs-Ring (phyto-core `karteSaum`/`karteSaumRinge`: die Zelle aus der Blattgröße in
+  `treeParams`, Laub-Lappen, Nadel-Grate, der Kronen-Fuß im Bild des Rings; die GPU-Ablage `KARTE_RECHNER_WGSL` rechnet dasselbe Gesetz,
+  `_karteSaumVon`), fern Glieder-Kapseln · jede Senke zeichnet über ihren Zeichner (`_instanzZeichner`: count 1 über einer InstancedBufferGeometry-Fassade,
   Matrizen im Storage-Puffer) · Baum = Studio-Karte bis 384 m, EINE Ableitung aus `treeParams` (gen ≥ 5), der gefühlte Baum ihr Skelett
   (`skelettDerGestalt`), EIN Wind-Term über die Naht `_weltNaht`, Blende je Instanz, laut (`_blendeBruch`) · Haus und Tor fern NUR-WURF,
   das Fenster Glas in jeder Stufe, der Tor-Hinterflügel eine Instanz (`_foundryFluegelInstanz`).
@@ -145,7 +146,8 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 26. **Der Schatten liest, was das Auge sieht:** der r184-Schattenpass (Kaskaden-Kamera) liest nur colorNode.a · map.a · maskShadowNode,
     nie opacityNode — LOD-Masken vom Auge (`uLodAuge`), Ausschnitte in colorNode.a (`gate:foundry-crossfade`); Bundles nach jedem
     castShadow-Wechsel neu. Ein normalNode liest nie `normalWorld` (EINE Variable je Programm), sondern `normalWorldGeometry` ×
-    `faceDirection`. CPU-Raster-Linsen fahren `?holz=kienspan` (swiftshader kompiliert synchron, 42–292 s je Pipeline); `_gameLoopTick`
+    `faceDirection`; r184 schreibt einen Knoten, wo er ZUERST gebaut wird — was ein Baustein nur in `If` liest, baut der Aufrufer
+    vor dem Zweig (`toVar`), sonst liest jeder Leser danach die ungerechnete Variable (B7 in `gate:wasser-leben:bild`). CPU-Raster-Linsen fahren `?holz=kienspan` (swiftshader kompiliert synchron, 42–292 s je Pipeline); `_gameLoopTick`
     rendert selbst, darum trägt jeder benannte Linsen-Aufruf höchstens EINEN kalten Programm-Schlüssel (`gpu-lens`); Wände urteilen in
     Bau-Ereignissen, nie in Wanduhr-Sekunden. castShadow IST die Wurf-Ebene (`_wurfEbene`, K72): die Kaskade sieht nur Werfer und
     Lichter, r184 projiziert keinen Nicht-Werfer.

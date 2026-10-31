@@ -637,8 +637,9 @@ class AnazhRealm_bild_sicht {
         if (this._spiegelUmgebungK) return this._spiegelUmgebungK;
         const T = THREE.TSL;
         const L = this._spiegelLeser();
-        // EIN Knoten des Himmels für jeden Stoff (wie r184s Umgebung): er frischt seine PMREM-Stufen einmal je Render
-        const himmel = T.pmremTexture(quelle);
+        // EIN Knoten des Himmels für jeden Stoff (wie r184s Umgebung): er frischt seine PMREM-Stufen einmal je Render; die
+        // Umgebung trägt den Himmel je Einheit des Lichts, das Licht jetzt reist in der geteilten Gruppe (`_umgebungLicht`)
+        const himmel = T.pmremTexture(quelle).mul(this._umgebungLicht());
         const [a, b] = AnazhRealm.SPIEGEL.glanzRauheit;
         const N = Object.getPrototypeOf(THREE.InstanceNode);
         class SpiegelUmgebung extends N {
@@ -1043,7 +1044,7 @@ class AnazhRealm_bild_sicht {
                                 const wasserTraf = kroneTraf.not().and(abs(art.sub(1.0)).lessThan(0.5));
                                 aus.assign(
                                     vec4(
-                                        mix(strahl, luft.farbe(P, q), luft.faktor(P, q)),
+                                        luft.mische(strahl, P, q),
                                         float(1)
                                             .sub(smoothstep(0.42, 0.5, max(abs(rq.x), abs(rq.y))))
                                             .mul(select(wasserTraf, float(0.0), float(1.0)))
@@ -1757,7 +1758,8 @@ class AnazhRealm_bild_sicht {
                 "    let r1 = textureLoad(liste, vec2<i32>(bx + 3, ty), 0);\n" +
                 "    let r2 = textureLoad(liste, vec2<i32>(bx + 4, ty), 0);\n" +
                 "    let lm = lm4.xyz;\n" +
-                "    let lg = textureLoad(liste, vec2<i32>(bx + 6, ty), 0).xyz;\n" +
+                "    let lg4 = textureLoad(liste, vec2<i32>(bx + 6, ty), 0);\n" +
+                "    let lg = lg4.xyz;\n" + // .w: die eigene Farbe des Eintrags + 1 (`_weltFeldFarbe`, mensch.K4), 0 = die seines Satzes
                 "    let c4 = vec4<f32>(camPos, 1.0);\n" +
                 "    let oL = vec3<f32>(dot(r0, c4), dot(r1, c4), dot(r2, c4));\n" +
                 "    let dL = vec3<f32>(dot(r0.xyz, dir), dot(r1.xyz, dir), dot(r2.xyz, dir));\n" +
@@ -1931,6 +1933,8 @@ class AnazhRealm_bild_sicht {
                 "                    gvK = gradKeil(pL, pA.xyz, pB.xyz, pB.w);\n" +
                 "                    ci = u32(-pA.w - 1.0);\n" +
                 "                }\n" +
+                "                // die eigene Farbe des Eintrags (mensch.K4: der Bewohner in der Kapsel seiner Gestalt)\n" +
+                "                if (lg4.w > 0.5) { ci = u32(lg4.w - 0.5); }\n" +
                 "                if (dot(gvK, gvK) < 1e-10) {\n" +
                 "                    bestN = -dir;\n" +
                 "                } else {\n" +
@@ -2022,7 +2026,7 @@ class AnazhRealm_bild_sicht {
             const punkt = U.camPos.add(dirN.mul(t));
             return TSL.Fn(() => {
                 TSL.Discard(t.lessThan(0.25)); // 0-Sentinel: kein Treffer bzw. Himmel
-                return TSL.vec4(TSL.mix(ruf.rgb, luft.farbe(U.camPos, punkt), luft.faktor(U.camPos, punkt)), 1.0);
+                return TSL.vec4(luft.mische(ruf.rgb, U.camPos, punkt), 1.0);
             })();
         };
         // DER MARCH-DRAW: Stellvertreter-Boxen (Rückseiten — eine Hülle um die Kamera deckt den ganzen Blick), EIN Draw
@@ -2494,10 +2498,12 @@ class AnazhRealm_bild_sicht {
         });
         himmel.texture.name = "welt-licht-himmel";
         const sonde = TSL.texture(himmel.texture);
+        // die Sonde liest die Umgebung je Einheit des Lichts — das Licht jetzt wie jeder Stoff (`_umgebungLicht`)
+        const licht = this._umgebungLicht();
         const fn = TSL.Fn(([n]) => {
             const direkt = U.l0c.mul(TSL.max(TSL.dot(n, U.l0d), 0.0));
             const hemi = TSL.mix(U.hemiUnten, U.hemiOben, n.y.mul(0.5).add(0.5));
-            const umgebung = sonde.sample(TSL.equirectUV(n)).level(0).rgb.mul(U.ei);
+            const umgebung = sonde.sample(TSL.equirectUV(n)).level(0).rgb.mul(U.ei).mul(licht);
             return direkt
                 .add(U.ambientFarbe)
                 .add(hemi)
@@ -2520,17 +2526,11 @@ class AnazhRealm_bild_sicht {
         if (!quelle || !st.atmoLut) return;
         if (!WL.pass) {
             const TSL = THREE.TSL;
-            const m = new THREE.MeshBasicNodeMaterial();
-            m.name = "welt-licht-himmel";
-            m.fragmentNode = TSL.vec4(TSL.pmremTexture(quelle, this._umgebungRichtung(TSL.uv()), TSL.float(1)).rgb, 1);
-            m.depthTest = false;
-            m.depthWrite = false;
-            m.toneMapped = false;
-            m.fog = false;
-            const q = st.atmoLut.qEq;
-            WL.pass = new THREE.Mesh(q.geometry, m);
-            WL.pass.frustumCulled = false;
-            WL.pass.userData = { kamera: q.userData.kamera, quelle };
+            WL.pass = AnazhRealm._schirmDreieck(
+                () => TSL.vec4(TSL.pmremTexture(quelle, this._umgebungRichtung(TSL.uv()), TSL.float(1)).rgb, 1),
+                "welt-licht-himmel"
+            );
+            WL.pass.userData.quelle = quelle;
         } else if (WL.pass.userData.quelle !== quelle)
             this._bruchMelden(
                 "LICHT: die Umgebung wechselte ihr Ziel — die Himmels-Sonde liest das erste (`_skyEnvRT` hält es)"
@@ -2571,9 +2571,10 @@ class AnazhRealm_bild_sicht {
     }
 
     // DIE HIMMELS-IRRADIANZ auf der CPU (E/π) für zwei Normalen (oben · waagrecht) aus der Umgebung der EINEN Atmosphäre, wie die
-    // CPU sie zurückgelesen hat (`_skyEnvData`, linear, Zeile 0 = Nadir): je Texel L · max(n·ω, 0) dω, die waagrechte Normale
-    // gemittelt über vier Azimute. Neu gerechnet nur, wenn eine neue Lesung kam. Leser: die Luft unter Wasser und die Linsen der
-    // Umgebung; die Belichtung liest den Himmel des Orts synchron (`_himmelsBestrahlung`), die Flächen das Licht der Welt.
+    // CPU sie zurückgelesen hat (`_skyEnvData`, linear je Einheit des Lichts, Zeile 0 = Nadir): je Texel L · max(n·ω, 0) dω, die
+    // waagrechte Normale gemittelt über vier Azimute, × das Licht jetzt (E0 · Tönung, wie `_umgebungLicht`). Das Integral neu
+    // nur, wenn eine neue Lesung kam. Leser: die Luft unter Wasser und die Linsen der Umgebung; die Belichtung liest den Himmel
+    // des Orts synchron (`_himmelsBestrahlung`), die Flächen das Licht der Welt.
     _himmelsIrradianz() {
         const st = this.state;
         const d = st._skyEnvData;
@@ -2582,9 +2583,17 @@ class AnazhRealm_bild_sicht {
         const env = scene && scene.environment;
         const ei = scene && Number.isFinite(scene.environmentIntensity) ? scene.environmentIntensity : 1;
         if (!d || !A || !env) return null;
-        const stempel = (st._skyEnvVersion || 0) + ":" + ei;
+        const t = A.U.toenung.value;
+        const L = A.U.licht.value;
+        const stempel = (st._skyEnvVersion || 0) + ":" + ei + ":" + L + ":" + t.x + ":" + t.y + ":" + t.z;
         if (this._himmelsIrrStempel === stempel && this._himmelsIrr) return this._himmelsIrr;
         this._himmelsIrrStempel = stempel;
+        const J = this._himmelsIrrJe;
+        const k = [t.x, t.y, t.z].map((x) => (ei * L * x) / Math.PI);
+        if (J && J.version === st._skyEnvVersion) {
+            this._himmelsIrr = { mitte: J.mitte.map((x, c) => x * k[c]), oben: J.oben.map((x, c) => x * k[c]) };
+            return this._himmelsIrr;
+        }
         const W = A.rtEq.width;
         const H = A.rtEq.height;
         const oben = [0, 0, 0],
@@ -2608,8 +2617,8 @@ class AnazhRealm_bild_sicht {
                 }
             }
         }
-        const k = ei / Math.PI;
-        this._himmelsIrr = { mitte: mitte.map((x) => x * k), oben: oben.map((x) => x * k) };
+        this._himmelsIrrJe = { version: st._skyEnvVersion, mitte, oben };
+        this._himmelsIrr = { mitte: mitte.map((x, c) => x * k[c]), oben: oben.map((x, c) => x * k[c]) };
         return this._himmelsIrr;
     }
 

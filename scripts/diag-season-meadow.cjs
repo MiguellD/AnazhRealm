@@ -1,12 +1,13 @@
 #!/usr/bin/env node
-// diag-season-meadow.cjs — DIE SAISON IST EINE FARBE. Jeder Foundry-Körper und jede Karte ist Golden-Sommer
-// gebacken (die Transport-Schale nagelt season "summer"); das Jahr trägt die EINE Uniform `uSeasonMul` nach dem
-// Studio-Gesetz. Diese Linse beweist (Node, die geladene Klasse — D3c: am Lauf, nie am Quelltext; das Studio-Orakel F1a
+// diag-season-meadow.cjs — DIE FARBE DES JAHRS. Jeder Foundry-Körper und jede Karte ist Golden-Sommer
+// gebacken (die Transport-Schale nagelt season "summer"); das Jahr färbt über die EINE Uniform `uSeasonMul` nach dem
+// Studio-Gesetz (seine Gestalt — das Laub fällt, `uLaubPraesenz` über den Jahres-Ecken — prüft gate:fluss W2b am echten
+// Laub der Welt). Diese Linse beweist (Node, die geladene Klasse — D3c: am Lauf, nie am Quelltext; das Studio-Orakel F1a
 // stand am Text der Shell und fiel):
 //   F0  EINE QUELLE: der Stamm liest das SAISON_GESETZ des Kerns (foundry-core, `__terrainCore`), eine Kern-Stützstelle
 //       ändert die Welt;
 //   F1  `_saisonMul(phase)`: Sommer-Mitte exakt ×1, Herbst und Winter deutlich verschieden;
-//   F2  keine Paletten-Literale in der Shell, keine dritte Palette im Stamm (`_seasonTint` fort);
+//   F2  keine Paletten-Literale in der Shell (die dritte Palette im Stamm, `_seasonTint`, bewacht gate:fluss S5b);
 //   F3  `_tickSeason` fährt die Uniform aus `_saisonMul` (kein Neubau).
 //   node scripts/diag-season-meadow.cjs [--selftest]          (npm run gate:season-meadow)
 "use strict";
@@ -47,7 +48,6 @@ function pruefe(o) {
         stammLib.fehlt(null, /0x6a9a3e|0xb0702a|0x6e6650/, { datei: SHELL, wandel: o.shell }),
         stammLib.fehlt.wo
     );
-    pruef("F2b keine dritte Palette im Stamm (_seasonTint fort, keine Keyframe-Tabelle)", stammLib.fehlt(null, /_seasonTint\b/), stammLib.fehlt.wo);
     const w = Object.create(A.prototype);
     w.state = { seasonPhase: 0.625, autoSeason: false };
     const u = { uSeasonMul: { value: { r: 1, g: 1, b: 1 } } };

@@ -629,10 +629,15 @@ class AnazhRealm_bau_buch {
     // ANGEZEIGTE Rolle: ein deklarierter Override (roleManual = Spieler-Intent, oder built-in-Saat-Rolle)
     // gilt; sonst die EMERGENTE (computeBlueprintRole) — sonst zeigte ein rollenloser Bauplan (bp.role
     // undefined) den „Bauwerk"-Default statt seiner wahren Rolle.
+    // Während EINES Baus des Rezeptbuchs (`_rollenMemo`, renderRecipeBook) rechnet jede Rolle einmal: Sicht, Art, Such-Text,
+    // Zeile und Warum-Chip fragten sie je Bauplan fünfmal (Tab, erstes Öffnen: 551 Rollen für 109 Rezepte, 79 ms).
     _displayRole(bp) {
         if (!bp) return AnazhRealm.DEFAULT_BLUEPRINT_ROLE;
         if ((bp.roleManual || bp.builtIn) && bp.role) return bp.role;
-        return this.computeBlueprintRole(bp);
+        const m = this._rollenMemo;
+        if (!m) return this.computeBlueprintRole(bp);
+        if (!m.has(bp)) m.set(bp, this.computeBlueprintRole(bp));
+        return m.get(bp);
     }
     // Aktivierte Tags je Part (Form × Material): Werte 0..3 = FORM_TAG_ACTIVATION × MATERIAL_TAG (0..1).
     // Unbekannte Shape (z. B. "blueprint") oder fehlendes Material → leeres Objekt.
@@ -1355,8 +1360,12 @@ class AnazhRealm_bau_buch {
 
     // PRODUKT-VEKTOR: Material-Tags (10) ⊕ räumliche Signatur als numerische Achsen. KONJUNKTIVE Geometrie
     // (Körper = Symmetrie UND Vertikalität UND Glieder) kommt als 0/1-Achse aus den Prädikaten — eine
-    // lineare Summe bräche die Konjunktion (ein flaches symmetrisches Dorf läse als Körper).
+    // lineare Summe bräche die Konjunktion (ein flaches symmetrisches Dorf läse als Körper). Während EINES Baus des
+    // Rezeptbuchs (`_vektorMemo`, renderRecipeBook) rechnet jeder Vektor einmal: Rolle und Warum-Chip fragten ihn je Bauplan
+    // zweimal (Tab, erstes Öffnen, Radeon: 65 von 152 Stichproben des Tab-Hörers lagen hier).
     _blueprintProductVector(bp) {
+        const m = this._vektorMemo;
+        if (m && m.has(bp)) return m.get(bp);
         const v = Object.assign({}, this.computeCompoundTags(bp) || {});
         // Material-Tags auf [0..1] normieren (÷ PRODUCT_VECTOR_TAG_NORM): roh liegen sie in [0..3], die
         // Form-Achsen in [0..1] → dichte überstimmte die Form, das Spektrum sättigte. So bestimmen die
@@ -1423,6 +1432,7 @@ class AnazhRealm_bau_buch {
         const physLoad = this._loadPath(bp);
         v.loadSound = physLoad.intact ? 1 : Math.max(0, 1 - physLoad.floatingFrac); // Ω-Φ5: Lastpfad zum Boden intakt
         v.rollable = this._rollableFraction(bp); // Ω-Φ2/L2: rollt am Boden (nicht „rund")
+        if (m) m.set(bp, v);
         return v;
     }
 

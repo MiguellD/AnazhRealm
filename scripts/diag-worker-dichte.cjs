@@ -61,7 +61,7 @@ const server = statikServer({ root, keinCache: true, wandle: kernWandle });
 async function probe(page, welt, mitAbdruck, zwilling = false) {
     return page.evaluate(
         async (welt, mitAbdruck, punkte, messorte, N_TURM, zwilling) => {
-            const s = r.state;
+            const s = st;
             r._gameLoopTick = () => {}; // die Welt steht still: kein Stream, kein Takt zwischen Main und Worker
             const out = {
                 welt,
@@ -390,7 +390,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
                             w[k] = r._terrainMacroSurfaceY(pts[k * 2], pts[k * 2 + 1], detail, aus);
                             sch[k] = Math.max(
                                 aus.schutt > 0 ? aus.schutt : 0,
-                                aus.wand > 0 ? 1 / r.constructor.TERRAIN_GEOLOGY.schutt : 0
+                                aus.wand > 0 ? 1 / AnazhRealm.TERRAIN_GEOLOGY.schutt : 0
                             );
                         }
                     } else {
@@ -424,7 +424,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
             if (r._getVoxelWorker() && r._forestGesetzWahr()) {
                 const wa = (out.wald = { zellen: 0, darts: 0, abweichend: 0, erste: null });
                 const seedInt = r._forestSeedInt();
-                const C = r.constructor.FOREST.cell;
+                const C = AnazhRealm.FOREST.cell;
                 for (const ort of orte) {
                     const zellen = [];
                     for (let i = -4; i <= 4; i++)
@@ -473,7 +473,7 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
 const STROM_SOLL = "pending · volle Stände 0 · Dichte true · Brüche 0 · Reihe sofort";
 async function strom(page, urform) {
     return page.evaluate(async (urform) => {
-        const s = r.state;
+        const s = st;
         const [w, ack, gen, p] = [s.voxelWorker, s.voxelWorkerReady, s.voxelWorkerStateGen, s.lastPlayerVoxelChunk];
         s.voxelWorkerReady = false;
         if (urform)
@@ -572,7 +572,7 @@ const KERN_HILFE = `self.__kern = {
 async function kernPlan(page, M, N) {
     return page.evaluate(
         async (MX, MZ, N) => {
-            const zufall = ((z) => (w) => (z() * 2 - 1) * w)(wasserZufall(0x2545f491));
+            const zufall = ((z) => (w) => (z() * 2 - 1) * w)(window.__phytoCore.mulberry32(0x2545f491));
             const { fluss: kanal, see } = await window.__wasserOrte({ mess: [MX, MZ] });
             const hoehle = ((h) => h && { x: h.x, y: h.grund + 1.5, z: h.z })(window.__weltOrt("hoehle", { mitte: [MX, MZ], schritt: 24 }));
             if (!kanal || !see || !hoehle) return { fehler: "keinen Kanal, See oder keine Höhle nahe der Mess-Wiese" };
@@ -1127,8 +1127,7 @@ async function studioProbe(page) {
         // wird die aktive Welt — über ihr öffnet sich das Studio.
         const b0 = await booteWelt(page);
         if (!b0.ok) throw new Error("die Welt vor der fremden Welt erwachte nicht");
-        const nav0 = page.waitForNavigation(LADEN);
-        await page.evaluate(() => {
+        await page.evaluate(async () => {
             const G = window.__gelaendeCore;
             const snap = r._weltAusPlan({ art: G.PLAN_ART, v: G.PLAN_VERSION, saat: "studio-probe-fremd", regler: {} });
             snap.terrainBaseHeight = 7;
@@ -1143,9 +1142,9 @@ async function studioProbe(page) {
                 krone: 6,
                 boeschung: 40,
             });
-            setTimeout(() => r._weltBetreten(snap), 0);
+            r._weltBetreten(snap);
+            await r.erwacht; // der Welt-Wechsel am Ort (`_weltWechsel`)
         });
-        await nav0;
         await server.zeige(page, 60000, "index.html?studio=gelaende");
         const b = await booteWelt(page);
         if (!b.ok) throw new Error("die Welt unter dem Studio erwachte nicht in 120 s");
@@ -1311,14 +1310,13 @@ async function studioProbe(page) {
             console.log(`    Preset ${p.id.padEnd(14)} ${p.fehlt ? "kein Knopf" : ziele}${z}`);
         }
         befunde.push(...presetBefunde(presets));
-        // DIE WELT-TÜR: ohne Studio, die Datei durch das Welt-Tor („Ersetzen") — die Welt erwacht neu (Reload).
+        // DIE WELT-TÜR: ohne Studio, die Datei durch das Welt-Tor („Ersetzen") — die Welt tauscht am Ort (`_weltWechsel`).
         await server.zeige(page, 60000);
         const b2 = await booteWelt(page);
         if (!b2.ok) throw new Error("die Welt vor dem Import erwachte nicht");
-        const nav = page.waitForNavigation(LADEN);
         const tor = await page.evaluate((text) => {
             r._openWeltTorDialog(JSON.parse(text), { name: "gelaende-plan.json" });
-            const p = r.state.pendingImport;
+            const p = st.pendingImport;
             const ok = !!(p && p.parsed && p.parsed.worldMeta);
             r._weltTorImportReplace();
             return { ok, erbgut: ok ? p.parsed.worldMeta.erbgut : null };
@@ -1327,10 +1325,9 @@ async function studioProbe(page) {
             befunde.push("die Welt-Tür liest den Plan nicht (das Welt-Tor macht aus ihm keine Welt)");
             throw new Error("Tür");
         }
-        await nav;
         const b3 = await booteWelt(page);
         if (!b3.ok) throw new Error("die Welt aus dem Plan erwachte nicht");
-        console.log(`  Import: Welt-Tor „Ersetzen" → Reload → Boot ${b3.ms} ms (Seed ${b3.seed})`);
+        console.log(`  Import: Welt-Tor „Ersetzen" → Wechsel am Ort → Boot ${b3.ms} ms (Seed ${b3.seed})`);
         const welt = await weltMessen(page);
         out.welt = welt;
         const gleich = welt.makroSha === studio.zustand.makroSha;
@@ -1348,8 +1345,8 @@ async function studioProbe(page) {
         const schneeVergleich = (n, schritt, x0, karte) => {
             const L = r._gelaende();
             const lum = (c) => 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2];
-            const lS = lum(r.constructor.BODEN_FARBE.schnee);
-            const PG = r.constructor.Gesetz("terrain:PORTAL_GROUND", null);
+            const lS = lum(AnazhRealm.BODEN_FARBE.schnee);
+            const PG = AnazhRealm.Gesetz("terrain:PORTAL_GROUND", null);
             const out = [0, 0, 0];
             let welt = 0;
             let karteOhneWelt = 0;
@@ -1471,7 +1468,7 @@ async function gebaut(page) {
     }
     const { alle, stoerung } = await page.evaluate(
         async (saaten, selbst) => {
-            const s = r.state;
+            const s = st;
             await window
                 .__gebautNach("noch: !(s.hydrosphere && s.hydrosphere.ready)", {
                     fertig: () => !!(s.hydrosphere && s.hydrosphere.ready),
@@ -1540,7 +1537,7 @@ async function gebaut(page) {
             // die Hydrosphäre aus dem Faden (`gesetz`: ein anderes Gesetz für den Selbsttest), in den Main gelegt
             const ausDemFaden = async (gesetz) => {
                 const auftrag = (msg) => r._voxelFadenAuftrag(s.voxelWorker, msg);
-                await auftrag({ type: "state-update", delta: { hydroGesetz: gesetz || r.constructor.HYDROSPHERE } });
+                await auftrag({ type: "state-update", delta: { hydroGesetz: gesetz || AnazhRealm.HYDROSPHERE } });
                 s.hydrosphere = (await auftrag({ type: "hydro", key: "heim", origin: null })).region;
             };
             const bootSaat = s.worldMeta.seed;
@@ -1578,7 +1575,7 @@ async function gebaut(page) {
             let stoerung = null;
             if (selbst) {
                 // die Störung: die Bett-Tiefe des alten Gesetzes (der Kanal als Graben unter der Aue: ohne `kanalTiefe`)
-                await ausDemFaden({ ...r.constructor.HYDROSPHERE, kanalTiefe: Infinity });
+                await ausDemFaden({ ...AnazhRealm.HYDROSPHERE, kanalTiefe: Infinity });
                 const Hm = raster((x, z) => r._terrainMacroSurfaceY(x, z, true));
                 const gestoert = boden(Hm);
                 await ausDemFaden(null);
@@ -1904,13 +1901,13 @@ async function faden(page, url) {
     const takt = (n, dx = 960, dz = 0) =>
         page.evaluate(async (n, dx, dz) => {
             await window.__weltDa(() => r && typeof r._gameLoopTick === "function");
-            const p = r.state.playerMesh.position;
+            const p = st.playerMesh.position;
             if (!n)
                 for (const weiter = window.__deckel("die Welt steht", 4000); weiter(); ) {
-                    if (r.state.voxelChunks && r.state.voxelChunks.size > 20 && r.state.voxelWorkerReady) break;
+                    if (st.voxelChunks && st.voxelChunks.size > 20 && st.voxelWorkerReady) break;
                     await window.__seitenTakt();
                 }
-            r.state.pitch = -Math.PI / 2; // der Blick senkrecht nach unten: ein Bau-Klick setzt den Block unter den Spieler
+            st.pitch = -Math.PI / 2; // der Blick senkrecht nach unten: ein Bau-Klick setzt den Block unter den Spieler
             for (let k = 0, t; k < n; k++) {
                 await window.__seitenTakt();
                 p.x += dx / n;
@@ -1938,17 +1935,17 @@ async function faden(page, url) {
             const t0 = performance.now();
             (function injizierteHydro() {
                 const o = { x: 9 * 2048 - 1024, z: -1024 };
-                r.state.hydroTiles.set(
+                st.hydroTiles.set(
                     "9,0",
                     G.hydrosphaere(r._gelaende(), AnazhRealm.HYDROSPHERE, (x, z) => r._voxelSurfaceY(x, z), o)
                 );
             })();
             (function injiziertesStauFeld() {
                 r._stauRechnet = true; // Werke und Feld lesen das Gesetz ohne Stau (der Selbsttest ist das Ende der Seite)
-                r.state.waterStau = G.stauFelder(r._gelaende(), r._stauWorkClusters(), AnazhRealm.CA_STAU, 1.8, (x, z) => r._voxelSurfaceY(x, z), null, [], 0).felder;
+                st.waterStau = G.stauFelder(r._gelaende(), r._stauWorkClusters(), AnazhRealm.CA_STAU, 1.8, (x, z) => r._voxelSurfaceY(x, z), null, [], 0).felder;
             })();
             (function injizierterFussabdruck() {
-                const p = r.state.lastPlayerVoxelChunk;
+                const p = st.lastPlayerVoxelChunk;
                 r._rebuildVoxelChunk(p.cx, p.cz, null, { forceSync: "injiziert" });
             })();
             (function injizierterGuss() {
@@ -2097,17 +2094,17 @@ hauptLauf(async () => {
             const stationen = JSON.parse(
                 liesText(path.resolve(path.dirname(BUEHNE_DATEI), "stationen.json"))
             ).stationen;
-            // Geboren wie im Spiel: importWorldBeside (Welt-Tor), dann der Welt-Wechsel des Spiels (`_weltWechselNeuLaden`:
-            // Zeiger, Sperre, Reload) — ein Speichern der alten Seite bis zu ihrem Tod setzte den Zeiger sonst zurück
-            const nav = page.waitForNavigation(LADEN);
+            // Geboren wie im Spiel aus einer frischen Standard-Welt (der Selbsttest verfälschte den Kern des Fadens, und der Faden
+            // bleibt der Seite): importWorldBeside (Welt-Tor), dann der Welt-Wechsel des Spiels (`_weltWechsel`: Zeiger, Sperre,
+            // Tausch am Ort) — ein Speichern der alten Welt im Wechsel setzte den Zeiger sonst zurück
+            await frischBoot(page, url);
             const id = await page.evaluate((json) => {
                 const res = r.importWorldBeside(json);
                 if (!res.ok) return null;
-                setTimeout(() => r._weltWechselNeuLaden(res.worldId));
+                r._weltWechsel(res.worldId);
                 return res.worldId;
             }, json);
             if (!id) throw new Error("die Bühne ließ sich nicht importieren");
-            await nav;
             weltArg = { stationen };
         }
         const b = await booteWelt(page);

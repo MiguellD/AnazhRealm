@@ -151,9 +151,8 @@ class AnazhRealm {
             // device.queue.onSubmittedWorkDone() — resolved genau, wenn die GPU alle Submits durch hat.
             pendingDisposals: new Set(),
             // Wind-Uniforms (uWindTime/uWindStrength): EIN geteilter Slot für den TSL-positionNode-Wind
-            // (_grassInstanceMat + Streu); _loopRender schreibt sie pro Frame (Stärke aus dem Wetter).
+            // (Gras, Streu, Baum: `_windUniformsEnsure`); _loopRender schreibt sie pro Frame (Stärke aus dem Wetter).
             windUniforms: null,
-            _grassMat: null,
             floatingIslands: [],
             minHeight: 0,
             maxHeight: 0,
@@ -401,6 +400,8 @@ class AnazhRealm {
             // Streaming-Pumps; der Density-Cache darüber bleibt nur für den Determinismus-Test.
             voxelMeshCache: null, // Map<"cx,cz,lod", {empty, positions, normals, indices, colors, waterCells, lod}>
             voxelMeshPending: null, // Set<"cx,cz,lod">
+            // die vorläufigen Säulen (`_saeuleVorlaeufig`): Map<"saeule:<n>", { x, z, rr, krone, offen, geom }>, n zählt
+            saeulenVorlaeufig: null,
             voxelMeshGenAtRequest: null, // Map<"cx,cz,lod", Stand (`_voxelStand`)> für Stale-Filter
             tmpVec1: null,
             tmpVec2: null,
@@ -595,7 +596,7 @@ class AnazhRealm {
                 meshActive: false,
                 // Welt-Snapshot über das Mesh: worldXfers puffert eingehende Stücke (xferId → {from, total, parts,
                 // received}); nur Stücke vom pendingPullFrom-Peer werden angenommen. _testNoReload unterdrückt den
-                // Reload nach dem Resync im Playtest.
+                // Welt-Wechsel nach dem Resync im Playtest.
                 worldXfers: new Map(),
                 pendingPullFrom: null,
                 _lastXferProgress: null,
@@ -924,6 +925,8 @@ class AnazhRealm {
                 if (!Array.isArray(p.opChain)) p.opChain = this._defaultPartOpChain();
             }
         }
+        // die Glieder des Zustands bei der Geburt: was init an ihnen neu setzt, ist die Seite (`_seite`, init)
+        this._zustandGeburt = { ...this.state };
     }
     // Die Setzung des Auges (`_lodAuge`): die Kamera steht jetzt für den Spieler, wo er jetzt steht.
     _lodAugeGesetzt(c) {
@@ -1822,7 +1825,7 @@ function _stammZonen(Ziel, zonen) {
 // gelesen. Bei Version-Bumps nur HIER editieren + parallel zu
 // `package.json`/`index.html` mitziehen (Doku-Disziplin).
 // V18.491.88 — vehicle LEHREN Host-Leser/Chat (Spiegel porta-messen); iframe-Crossfade = Redesign later.
-AnazhRealm.VERSION = "18.546.132";
+AnazhRealm.VERSION = "18.546.145";
 // Die Terme des ersten Weltbilds (`_weltbildLuecken`, K60): je Leser des ersten Frames ein Name — gate:ankunft L2a stellt je
 // Term einen Fall her, ein Term ohne Fall ist ROT.
 AnazhRealm.WELTBILD_TERME = Object.freeze([

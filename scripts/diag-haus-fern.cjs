@@ -443,7 +443,7 @@ const f3 = (x) => (x == null ? "—" : (+x).toFixed(3));
 //    — zwei Samen derselben Kultur liegen schon in der L0 bis 0,074 auseinander (holzhuette), eine Stufe darf zwei solche
 //    Schritte.
 const GLUT = FC.lichtFarbe(FC.LICHT_GESETZ.fenster.kelvin).map((c) => c * FC.LICHT_GESETZ.fenster.zeit.nacht);
-const luma = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+const { luma709: luma } = require("./lib/abnahme-urteil.cjs"); // die EINE Luma der Linsen
 const GLAS_R = 0.05;
 const stoffFlaechen = (g) => dreiecke(g, false, true);
 // ein Fenster: je Pixel die Mischung von vorn → Summen (Tag-Farbe, Glut) über das Rechteck

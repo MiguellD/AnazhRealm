@@ -2117,6 +2117,13 @@
         const halfW = Math.max(halfH * 0.5, (maxRadial || 0) * 1.04);
         return { totalH: totalH, maxR: maxRadial || 0, halfH: halfH, halfW: halfW };
     }
+    // DIE HALBE BILD-HÖHE EINES HEBUNGS-RINGS (lod.K3): der Zylinder des Rahmens (Halbbreite hW, halbe Höhe hH um die Mitte
+    // der Stammachse) aus der Hebung e (rad) gesehen — hH·cos e + hW·|sin e|; bei e = 0 die halbe Rahmen-Höhe. EINE Formel
+    // über einer Algebra (WIND_ZAHLEN: die Bake-Kamera des Wirts, die TSL-Algebra: die gekippte Karte und ihr Ring im Stoff).
+    function karteRingHalbe(A, hH, hW, e) {
+        const s = A.sin(e);
+        return A.add(A.mul(hH, A.sin(A.add(e, A.k(Math.PI / 2)))), A.mul(hW, A.max(s, A.mul(s, A.k(-1)))));
+    }
     // Der radiale Vertex-Scan dazu (max x²+z² über ein xyz-Positions-Array, akkumulierend) —
     // die rotations-invariante Kronen-Spanne; rein, THREE-frei (nimmt attr.array).
     function scanRadialXZ(positions, prevMaxSq) {
@@ -3444,6 +3451,27 @@
         return k <= KARTEN_GESETZ.glaetteBis ? KARTEN_GESETZ.glaette : 1;
     }
 
+    // DIE HEBUNGS-RINGE EINER SCHICHT (lod.K3, die Atlas-Diät): die Blick-Hebungen des Rezepts (foundry-core
+    // PORTAL_RENDER_CONFIG.impostor.hebungen, Grad, aufsteigend, die 0° genau einmal) liegen als Bänder untereinander — der
+    // Ring 0° in voller Zelle (cw × ch, eine Ansicht je Zeile), jeder andere in 1/teiler je Achse (bei 2 ¼ der Zellfläche,
+    // zwei Ansichten je Zeile). Die Ansicht a des Rings i liegt bei x = (a mod t)·cw/t, y = y_i + ⌊a/t⌋·ch/t. Rückgabe
+    // { ringe: [{ hebung, teiler, y, h }], hoehe, zelle: [Breite, Höhe] der kleinsten Ansicht } — null bei Maß-Bruch.
+    function karteRinge(V, cw, ch, hebungen, teiler) {
+        const hb = Array.isArray(hebungen) && hebungen.length ? hebungen : [0];
+        const t = teiler == null ? 1 : teiler;
+        if (!(Number.isInteger(t) && t >= 1 && V % t === 0 && cw % t === 0 && ch % t === 0)) return null;
+        if (hb.filter((e) => e === 0).length !== 1) return null;
+        if (hb.some((e, i) => !(e > -90 && e < 90) || (i > 0 && !(e > hb[i - 1])))) return null;
+        const ringe = [];
+        let y = 0;
+        for (const e of hb) {
+            const ti = e === 0 ? 1 : t;
+            ringe.push({ hebung: e, teiler: ti, y: y, h: (V / ti) * (ch / ti) });
+            y += (V / ti) * (ch / ti);
+        }
+        return { ringe: ringe, hoehe: y, zelle: hb.length > 1 ? [cw / t, ch / t] : [cw, ch] };
+    }
+
     // DER SAUM DER KARTE (w4-laub-saum, lod.K1): die Stufe wählte ihre deckenden Texel nach der GEGLÄTTETEN Deckung — der
     // Umriss lief als Höhenlinie einer verwischten Krone, eine Hülle statt eines Saums (laub-kante: fimp:atlas:L2 0,2635 > 0,22,
     // die Gestalten 0,16–0,19; gerastert liegt die Kohärenz des Karten-Umrisses 17–24 % über der ihrer eigenen L1). Über dem
@@ -3457,6 +3485,28 @@
         return P && P.leafSize > 0 && halfH > 0
             ? { e: (P.leafSize / (2 * halfH)) * ch, nadel: P.conifer === true }
             : null;
+    }
+    // DER SAUM JE HEBUNGS-RING (w4-laub-saum, 31.10.): der Saum der Art (`karteSaum`) im Bild JEDES Rings der Schicht
+    // (`karteRinge`) — seine Halbhöhe (`karteRingHalbe`, dieselbe Formel liest die Bühne) und seine Zelle (ch/τ) — und sein
+    // Kronen-Fuß: die Stufe-0-Zeile des tiefsten Laubs im Bild der Bühnen-Kamera aus der Hebung e (Zeile 0 oben),
+    // v = (y − halfH)·cos e − z·sin e über jede Peilung (|z| bis zum Radius R der Laub-Hülle). Bis dahin trug nur der waagrechte
+    // Ring den Saum, die gehobenen wählten die geglättete Hülle — und der Blick von unten liest den Ring −20°. Der Ring 0°
+    // ist der Saum von `karteSaum` mit dem Fuß (1 − minY / 2·halfH)·ch. `laub` { minY, R } im Maß des Rahmens (halfH, halfW);
+    // Rückgabe { nadel, ringe: [{ e, fuss }] } in der Reihe der Ringe, oder null (keine Krone). Leser: der Wirt
+    // (`_karteSaumVon` → die GPU-Ablage, `saumK`).
+    function karteSaumRinge(P, halfH, halfW, laub, ringe, ch) {
+        const s0 = karteSaum(P, halfH, ch);
+        if (!s0 || !laub || !Array.isArray(ringe)) return null;
+        return {
+            nadel: s0.nadel,
+            ringe: ringe.map((ring) => {
+                const e = (ring.hebung * Math.PI) / 180;
+                const hh = karteRingHalbe(WIND_ZAHLEN, halfH, halfW, e);
+                const chR = ch / ring.teiler;
+                const v = (laub.minY - halfH) * Math.cos(e) - laub.R * Math.abs(Math.sin(e));
+                return { e: karteSaum(P, hh, chR).e, fuss: ((hh - v) / (2 * hh)) * chR };
+            }),
+        };
     }
     // Der Hash des Saums (u32 — die GPU-Ablage rechnet ihn bitgleich)
     function saumHash(ix, iy, s) {
@@ -3490,11 +3540,15 @@
     // Die Maße EINER Schicht je Format — Host (Array-Textur, Offsets) und Schale (Kodierung) rechnen damit:
     //   "bc"    Albedo BC1 (8 B je 4×4) mit voller Mip-Kette · Normale BC5 (16 B je 4×4) auf 1/normalTeiler
     //   "rgba8" Albedo rgba8 Stufe 0 · Normale rg8 Stufe 0 (die GPU zieht die Mips; ohne BC-Feature)
-    function karteMasse(cw, ch, V, nt, fmt) {
+    // `R` (karteRinge): die Schicht trägt die Hebungs-Ringe — ihre Höhe ist die der Bänder, die Mip-Kette endet an der
+    // kleinsten Ansicht; ohne R die eine waagrechte Reihe (V Ansichten in voller Zelle).
+    function karteMasse(cw, ch, V, nt, fmt, R) {
         const w = cw | 0,
-            h = (ch | 0) * (V | 0),
+            h = R ? R.hoehe : (ch | 0) * (V | 0),
             nw = Math.max(1, (cw / nt) | 0),
-            nh = Math.max(1, ((ch * V) / nt) | 0);
+            nh = Math.max(1, (h / nt) | 0);
+        const zb = R ? R.zelle[0] : cw,
+            zh = R ? R.zelle[1] : ch;
         const bc = fmt === "bc";
         const ebene = (bw, bh, n, bytesJe) => {
             const out = [];
@@ -3508,11 +3562,11 @@
             }
             return { stufen: out, bytes: off };
         };
-        const a = ebene(w, h, bc ? karteMipZahl(cw, ch) : 1, bc ? 8 : 4);
-        const n = ebene(nw, nh, bc ? karteMipZahl(nw, (ch / nt) | 0) : 1, bc ? 16 : 2);
+        const a = ebene(w, h, bc ? karteMipZahl(zb, zh) : 1, bc ? 8 : 4);
+        const n = ebene(nw, nh, bc ? karteMipZahl((zb / nt) | 0, (zh / nt) | 0) : 1, bc ? 16 : 2);
         // die Sonnen-Sicht (A7; F6 zweifach: der Zenit und der 45°-Kranz): rg8, eine Stufe, in jedem Format
         const lw = Math.max(1, (cw / KARTEN_GESETZ.lichtTeiler) | 0),
-            lh = Math.max(1, ((ch * V) / KARTEN_GESETZ.lichtTeiler) | 0);
+            lh = Math.max(1, (h / KARTEN_GESETZ.lichtTeiler) | 0);
         return {
             fmt: bc ? "bc" : "rgba8",
             w: w,
@@ -4310,10 +4364,18 @@
         return {
             k: k,
             rinde: rinde,
-            r: mp && typeof mp.roughness === "number" ? mp.roughness : rinde ? 0.93 : k === "grass" ? 0.7 : 0.62,
+            // der Halm: die Cuticula des HALM_GESETZ; den Himmel trägt er ganz, die Narbe verdeckt ihn in der Tiefe
+            r:
+                mp && typeof mp.roughness === "number"
+                    ? mp.roughness
+                    : rinde
+                      ? 0.93
+                      : k === "grass"
+                        ? HALM_GESETZ.rauheit
+                        : 0.62,
             mt: mp && typeof mp.metalness === "number" ? mp.metalness : 0,
             fl: mp ? !!mp.flatShading : false,
-            env: mp && typeof mp.envMapIntensity === "number" ? mp.envMapIntensity : k === "grass" ? 0.18 : 1,
+            env: mp && typeof mp.envMapIntensity === "number" ? mp.envMapIntensity : 1,
             doppelt: _budgetDoppelt(k) || !!(mp && mp.side === 2),
             em: em,
             emI: em && typeof mp.emissiveIntensity === "number" ? mp.emissiveIntensity : em ? 1 : 0,
@@ -5042,6 +5104,93 @@
         return A.mul(A.mul(tau, hinten), keule);
     }
 
+    // DAS HALM-GESETZ (w4-wiese-nah): der Grashalm ist EIN Gesetz aus Querschnitt, Länge, Krümmung und Stoff. Die Gestalt baut
+    // foundry-core `emitGrass` (Länge, Krümmung, die lineale Spitze, die Ähre, die Narbe über jeder Ecke), den Stoff lesen Welt-
+    // Stoff, Labor-Shader und Linse über DIESELBEN Terme (Algebra wie `laubDurchlass`). Der Halm trägt seine Stoff-Koordinaten im
+    // uv: x quer in ADERN (die Mittel-Rippe bei 0, die Ränder bei ± Breite / aderM), y die NARBE über der Ecke (Λ: Blatt-Fläche
+    // der Narbe über ihrer Höhe je Boden-Fläche). Das Durchscheinen ist das Laub-Licht (tauLaub: PROSPECT-D, der dünne Halm
+    // lässt durch, was er spiegelt — Jacquemoud & Baret 1990, Monokotyle N 1,2–1,5).
+    //   kiel/rund  DER QUERSCHNITT gekielt: je Hälfte um `kiel` gegen die Blatt-Ebene (Knaulgras und Rispengras gekielt, der
+    //              Glatthafer flach-rinnig — Conert 2000, Pareys Gräserbuch: 15–30°), der Kiel um `rund` Adern gerundet
+    //   aderM      der Abstand der tragenden Rippen über den Leitbündeln (Pooideae, C3: Leitbündel 0,2–0,5 mm, die Rippen der
+    //              Oberseite über jedem zweiten — Metcalfe 1960, Anatomy of the Monocotyledons I; Christin et al. 2013, PNAS
+    //              110:1381); `ader` hellt die Albedo über der Ader (mittelfrei), `rippe` die Steigung der Rippe, `mitte` die
+    //              hellere Mittel-Rippe über `mitteBreite` Adern
+    //   spitze     die Breite 1 − f^spitze längs des Halms (lineal, spitz im letzten Fünftel)
+    //   narbe      DAS LICHT IN DER NARBE (Monsi & Saeki 1953: I/I0 = exp(−K·Λ), Gras-Bestände K 0,3–0,5): die direkte Quelle
+    //              nach dem Ellipsoid-Gesetz der Blatt-Winkel K(θ) = √(x² + tan²θ) / (x + 1,774 (x + 1,182)^−0,733) (Campbell 1986,
+    //              Agric. For. Meteorol. 36:317), die aufrechte Narbe x 0,7 (K 0,39 senkrecht, 0,50 bei 30°); das Himmels-Licht
+    //              mit kHimmel = dem Integral desselben Gesetzes über den bedeckten Himmel (0,70 bei Λ 2)
+    //   rauheit    die Cuticula (GGX, α = rauheit²): die Glanz-Keule des Blatts σ 0,2–0,5 (Bousquet et al. 2005, Remote Sens.
+    //              Environ. 98:201) → 0,45–0,71; die Umgebung trägt der Himmel ganz, die Tiefe der Narbe verdeckt ihn
+    //   aehre      DIE ÄHRE: Ährchen wechselständig an der Spindel (zweizeilig, Lolium · Elymus), `aehrchen` die volle Zahl
+    //              (die gelieferten Stufen lesen ihre Budget-Zeile), `winkel` gegen die Spindel, `laenge` je Abstand (sie decken
+    //              sich), `breite` je Länge (lanzettlich 7–20 × 3–7 mm), `drehung` um die Spindel je zweitem Ährchen
+    //   dach       DIE WIESE ALS DACH (licht.K1, w3v-licht): trägt der Pixel einen Halm oder mehr (Schirm-Meter je Pixel ab
+    //              `px[1]`, die Halm-Breite der Natur 3–6 mm), lichtet die Narbe als Dach — die Normale zu `oben` nach oben, die
+    //              Rauheit 1 (die Klingen streuen um sie, kein Spiegel einer Fläche); bis `px[0]` (drei Pixel je Halm: Armlänge,
+    //              1080p und 75° bis 0,7 m) trägt der Halm seinen Querschnitt und seine Cuticula. Der Übergang folgt dem Pixel des
+    //              Schirms, nie dem Abstand; ab 2,1 m (der nächste Boden des Ego-Bilds steht in 2,2 m) lichtet die Wiese als Dach.
+    var HALM_GESETZ = Object.freeze({
+        kiel: 0.35,
+        rund: 0.6,
+        aderM: 0.0007,
+        ader: 0.08,
+        rippe: 0.25,
+        mitte: 0.15,
+        mitteBreite: 0.6,
+        spitze: 4,
+        narbe: Object.freeze({ x: 0.7, kHimmel: 0.7 }),
+        rauheit: 0.55,
+        aehre: Object.freeze({ aehrchen: 16, winkel: 0.42, laenge: 1.7, breite: 0.38, drehung: 0.35 }),
+        dach: Object.freeze({ px: Object.freeze([0.001, 0.003]), oben: 0.9 }),
+    });
+    // Der Pixel als Filter einer Welle mit ν Perioden je Ader: exp(−π² (ν·fw)² / 2) — die Gauss-Glättung des Pixels (fw: der
+    // Pixel in Adern, `fwidth` des Lesers). Eine Welle unter zwei Pixeln trägt nichts mehr: kein Flimmern in der Ferne.
+    function halmFilter(A, fw, nu) {
+        const x = A.mul(fw, A.k(nu));
+        return A.pow(A.k(Math.E), A.mul(A.mul(x, x), A.k((-Math.PI * Math.PI) / 2)));
+    }
+    // DER QUERSCHNITT über einer Algebra: die Steigung des Halms quer zur Mittel-Rippe bei u (Adern) — der Kiel (V, um `rund`
+    // Adern gerundet, nie schärfer als der Pixel) und die Rippen der Adern (gefiltert). Der Leser kippt die Normale um sie gegen
+    // die Breiten-Richtung t (u wächst längs t): n = normalize(n₀ − s · t).
+    function halmQuer(A, u, fw) {
+        const H = HALM_GESETZ;
+        const r = A.max(A.k(H.rund), fw);
+        const kiel = A.mul(A.mul(A.k(Math.tan(H.kiel)), u), A.pow(A.add(A.mul(u, u), A.mul(r, r)), A.k(-0.5)));
+        const rippe = A.mul(A.mul(A.k(-H.rippe), A.sin(A.mul(u, A.k(2 * Math.PI)))), halmFilter(A, fw, 1));
+        return A.add(kiel, rippe);
+    }
+    // DIE ADER im Stoff: der Faktor auf die Albedo bei u (Adern) — über der Ader heller, dazwischen dunkler (mittelfrei,
+    // gefiltert), die Mittel-Rippe heller; ihre Linie wird mit dem Pixel breiter und blasser (flächentreu).
+    function halmAder(A, u, fw) {
+        const H = HALM_GESETZ;
+        const ader = A.mul(
+            A.mul(A.k(H.ader), A.sin(A.add(A.mul(u, A.k(2 * Math.PI)), A.k(Math.PI / 2)))),
+            halmFilter(A, fw, 1)
+        );
+        const s = A.max(A.k(H.mitteBreite), fw);
+        const ss = A.pow(A.mul(s, s), A.k(-1));
+        const mitte = A.mul(
+            A.mul(A.k(H.mitte * H.mitteBreite), A.pow(s, A.k(-1))),
+            A.pow(A.k(Math.E), A.mul(A.mul(A.mul(u, u), ss), A.k(-0.5)))
+        );
+        return A.add(A.k(1), A.add(ader, mitte));
+    }
+    // DIE NARBE über einer Algebra: das Licht in der Tiefe λ der Narbe — `direkt` für eine Quelle unter cos θ zum Zenit, `himmel`
+    // für das Himmels-Licht (Rückgabe die Faktoren auf das Licht; der Leser setzt direkt in seine Licht-Kette, himmel in die
+    // Verdeckung des indirekten Lichts). Dieselbe Narbe liest der Boden unter der Nah-Wiese.
+    function halmNarbe(A, lambda, cosT) {
+        const N = HALM_GESETZ.narbe;
+        const c = A.max(cosT, A.k(0.05));
+        const tan2 = A.add(A.pow(A.mul(c, c), A.k(-1)), A.k(-1));
+        const kb = A.mul(A.k(1 / (N.x + 1.774 * Math.pow(N.x + 1.182, -0.733))), A.sqrt(A.add(A.k(N.x * N.x), tan2)));
+        return {
+            direkt: A.pow(A.k(Math.E), A.mul(A.mul(kb, lambda), A.k(-1))),
+            himmel: A.pow(A.k(Math.E), A.mul(lambda, A.k(-N.kHimmel))),
+        };
+    }
+
     // DIE STREU EINER REGION (B-Streu): ihre Felder (Steilheit · Feuchte · lebendig je Texel, Float32 wie jeder Bake) und die
     // Würfe ihrer Zellen — je Schicht in Zeilen-Reihe (cz-major, cx-minor) jede Zelle, die Abstand, Steilheit und den Dichte-Wurf
     // trägt, als STREU_WURF Zahlen [cellX, cellZ, x, z, yaw, scale, hash, lebendig, feuchte]. EINE Regel für den Haupt-Faden
@@ -5168,6 +5317,7 @@
         buildTubeGesetz: buildTubeGesetz,
         STUFEN_BILD_PX: STUFEN_BILD_PX, // die Bild-Höhe eines Baums an der Nahkante seiner Stufe (S3; foundry-core: das Gerüst der L1 ohne Krone)
         impostorFrame: impostorFrame,
+        karteRingHalbe: karteRingHalbe, // lod.K3 — die halbe Bild-Höhe eines Hebungs-Rings über einer Algebra
         scanRadialXZ: scanRadialXZ,
         forestCellRng: forestCellRng,
         FOREST_STAND: FOREST_STAND,
@@ -5245,12 +5395,14 @@
         lodCrossfadeMask: lodCrossfadeMask, // W5.3 — die EINE Studio-Dither-Blenden-Quelle (FIX v37)
         KARTEN_GESETZ: KARTEN_GESETZ, // W6 — der Karten-Atlas: Schwelle · Normal-Teiler · kleinste Mip-Seite
         karteMasse: karteMasse,
+        karteRinge: karteRinge, // lod.K3 — die Hebungs-Ringe der Schicht (die Atlas-Diät)
         karteGlaetteGaenge: karteGlaetteGaenge,
         impostorMips: impostorMips,
         bc1Kodiere: bc1Kodiere,
         bc3Kodiere: bc3Kodiere, // die Fracht mit stetiger Alpha (der Blatt-Atlas, K20)
         bcDekodiere: bcDekodiere,
         karteSaum: karteSaum, // w4-laub-saum — der Saum der Art: Blattgröße in Stufe-0-Texeln, Laub oder Nadel
+        karteSaumRinge: karteSaumRinge, // w4-laub-saum — der Saum je Hebungs-Ring: Zelle und Kronen-Fuß im Bild jedes Rings
         karteSaumMuster: karteSaumMuster, // das Zell-Muster des Saums (die GPU-Ablage rechnet es bitgleich)
         bodenBand: bodenBand, // Waldboden 04.10. — das Trapez-Band des Boden-Gesetzes
         bodenGewicht: bodenGewicht, // Waldboden 04.10. — das Gewicht einer Boden-Art (Labor-Wald + Nah-Streu der Welt)
@@ -5279,5 +5431,9 @@
         WIND_GLSL: WIND_GLSL, // K19 — die GLSL-Algebra des Terms (Labor)
         LAUB_LICHT: LAUB_LICHT, // K19 — Durchlass des Blatts (tau = T/R je Laub/Nadel) und die Vorwärts-Keule
         laubDurchlass: laubDurchlass, // K19 — DER EINE Laub-Licht-Term über einer Algebra (Welt-Stoff, Labor-Shader, Linse)
+        HALM_GESETZ: HALM_GESETZ, // w4-wiese-nah — der Halm: Querschnitt, Adern, Spitze, Narbe, Cuticula, Ähre
+        halmQuer: halmQuer, // die Steigung des Querschnitts (Kiel + Rippen) über einer Algebra
+        halmAder: halmAder, // der Faktor der Adern und der Mittel-Rippe auf die Albedo über einer Algebra
+        halmNarbe: halmNarbe, // das Licht in der Narbe (direkt · Himmel) über einer Algebra — Halm und Boden darunter
     };
 })(typeof self !== "undefined" ? self : typeof globalThis !== "undefined" ? globalThis : this);

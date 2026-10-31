@@ -19,6 +19,8 @@ class AnazhRealm_dirigent_takt {
             const delta = Math.min(wandDelta, AnazhRealm.TAKT_DECKEL_S);
             lastTime = t;
             const currentTime = t / 1000;
+            // DER WELT-WECHSEL AM ORT (`_weltWechsel`): die alte Welt geht, die neue kommt an — bis sie steht, taktet keine
+            if (this._weltTausch) return;
 
             // W12 — ist ein Portal offen, friert die Heimat-Welt ein: der
             // Loop kehrt VOR Physik/Ticks/Render um. lastTime wurde gerade
@@ -330,7 +332,18 @@ class AnazhRealm_dirigent_takt {
         // Loop-Funktion exponieren, damit Tests (playtest.cjs) einen Frame SYNCHRON treiben können statt
         // auf das headless gedrosselte rAF zu warten; der Loop selbst läuft weiter über setAnimationLoop.
         this._gameLoopTick = loop;
+        this._takt = loop; // er bleibt der Seite: der Welt-Wechsel am Ort legt ihn neu aus (`_weltAbschied`)
         this.state.renderer.setAnimationLoop(loop);
+    }
+
+    // DER LOOP RUHT (lod.K5): kein Takt kommt — der Spiel-Loop hängt nicht am Renderer (`getAnimationLoop()` null: jede Bild-Linse
+    // ruht ihn, Lehre 17, die Werkbank zwischen ihren Befehlen; wer dann tickt, ruft `_gameLoopTick` selbst). Was nur ein Takt
+    // freigibt oder baut, wartet dann auf keinen: der Wächter der Foundry hält nichts (`_foundryWaechterRuht`), und die Ankunft
+    // eines Körpers platziert nichts von selbst (`_foundryRewarmColdTrees`) — die ruhende Welt ändert sich nur, wo einer fragt.
+    // Der Null-Renderer kennt keinen Loop: headless ruht er nie (der Wächter lässt dort ohnehin alles durch).
+    _loopRuht() {
+        const r = this.state.renderer;
+        return !!r && typeof r.getAnimationLoop === "function" && !r.getAnimationLoop();
     }
 
     // ═══ DAS WORT „DIE WELT STEHT" (A9) ═══
@@ -382,9 +395,13 @@ class AnazhRealm_dirigent_takt {
                                       ? `Dorf offen ${o.dorf}`
                                       : o.leib
                                         ? "Leib offen"
-                                        : o.ankunft
-                                          ? `Ankunft gleitet ${o.ankunft}`
-                                          : null;
+                                        : o.leute
+                                          ? `Leute offen ${o.leute}`
+                                          : o.huellen
+                                            ? `Hüllen offen ${o.huellen}`
+                                            : o.ankunft
+                                              ? `Ankunft gleitet ${o.ankunft}`
+                                              : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -426,6 +443,7 @@ class AnazhRealm_dirigent_takt {
                 ankunft: 0,
                 stau: 0,
                 horizont: 0,
+                huellen: 0,
             }); // je Takt, ohne Müll
         o.foundry = f
             ? (f.pending ? f.pending.size : 0) +
@@ -470,16 +488,39 @@ class AnazhRealm_dirigent_takt {
         // Vorlagen im Memo liegen (`_deferredAvatarSoul` → `applyPlayerSoul`) — bis dahin ist der Spieler der leere Anker, und
         // die Welt steht nicht (mensch.K1 Radeon: die Probe hielt den Anker, die Stadt lag 735 m vom Spieler)
         o.leib = st._deferredAvatarSoul ? 1 : 0;
+        // DIE HÜLLEN DER ANKUNFT (w4-ankunft-2, `_tickHuellenNach`): die Bäume, deren Hülle vor dem ersten Bild wartete, bis jeder
+        // sie fühlt — bis dahin stößt kein Leib an ihnen
+        o.huellen = this._huellenNach ? this._huellenNach.size : 0;
         // DIE ANKUNFT GLEITET (`_ankunftsFerne`, B2): bis ihr letztes Bild gezeichnet ist, misst jede Stufen-Wahl weiter, als das
         // Auge steht — die Bilder, die ihr fehlen (tiere.K1: im Schuss der Werkbank stand sie bei 62 von 90, der Mammut 13,9 m
         // vor dem Auge trug die Karte)
         const gleit = st._ankunftGleit;
         o.ankunft = gleit >= 0 && gleit < AnazhRealm.ANKUNFT_GLEIT_BILDER ? AnazhRealm.ANKUNFT_GLEIT_BILDER - gleit : 0;
         o.bau = st.bauSatzRaten ? st.bauSatzRaten.size : 0; // ein Bau-Bereich, der in Raten eintritt, steht noch nicht
+        // (der Fahrer am Steuer ist nicht offen: sein Leib gehört dem Wagen, kein Feld trägt ihn (`_verkehrEinsteigen`) — bis hier
+        // zählte er für immer, die Welt einer Stadt mit Verkehr stand nie: z78, GTX, Messort stadt „offen leiber 4–6")
         o.leiber = 0;
         if (this._bewohnerSiedlungen && st.renderer && !st.renderer._isHeadlessNull)
             for (const S of this._bewohnerSiedlungen.values())
-                for (const b of S.liste || []) if (b.leib && !b.drinnen && !b.leib.userData._kzVersuch) o.leiber++;
+                for (const b of S.liste || [])
+                    if (b.leib && !b.drinnen && !b.amSteuer && !b.leib.userData._kzVersuch) o.leiber++;
+        // DIE LEUTE IM WERK (w4-linsen-b; mensch.K5#1, mensch.K1#1/K2#2 an 3ed95dcf GTX: „DER BAU STEHT NICHT: begegnung: die Leiber nach
+        // 306 Takten — die Welt hat nichts mehr offen"): seit bewohner-takt rechnet das Werk der Liste (`listeWerk`: `_bewohnerListe`,
+        // dann `_bewohnerStandPruefen`) mit Bild je Takt `BEWOHNER.listeMs` — an der Karte geht die Liste des Start-Dorfs über Hunderte
+        // Takte, und die Welt nannte sich ruhig, während ihre Leute noch entstanden: jeder Deckel zählte die Takte als still und brach,
+        // `_weltSteht` gab ein Bild ohne die Leute frei. Offen ist je Siedlung im Nah-Ring (dort geht ihr Werk, `_tickBewohner`) ihr
+        // Werk samt seinem Rest (`listeRest`: Personen, Besuche, Stände, die es noch stellt) und je Kopf, wer noch geboren wird
+        // (`leib` null; `false` heißt: ohne Leib) oder noch ankommt (`ankunft`)
+        o.leute = 0;
+        if (this._bewohnerSiedlungen && st.renderer && !st.renderer._isHeadlessNull && st.playerMesh) {
+            const p = st.playerMesh.position;
+            const nah = AnazhRealm.AUTO_SETTLEMENT.nearM;
+            for (const S of this._bewohnerSiedlungen.values()) {
+                if (S.listeWerk && (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2 <= nah * nah)
+                    o.leute += 1 + Math.max(0, S.listeRest | 0);
+                for (const b of S.liste || []) if (b.leib == null || b.ankunft) o.leute++;
+            }
+        }
         return o;
     }
     _weltSteht() {
@@ -555,8 +596,9 @@ class AnazhRealm_dirigent_takt {
         return false;
     }
     // Gespannt: GPU_FRAMES_IM_FLUG Arbeiten unterwegs. Jede GPU-Arbeit des Takts fragt dieselbe Zahl — das Bild und die
-    // Karte (S2b: die Karte backte neben der Leine; swiftshader, Mess-Wiese, 20 Karten: in 15 s 3 Bilder, 17 Bakes bei
-    // gespannter Leine — die Probe des Hauptbilds sah in der CI kein Bild).
+    // Karte, diese bei ihrem Beginn (`_tickKarteWelt`: ihre Hebungs-Ringe folgen ohne neue Frage) (S2b: die Karte backte neben
+    // der Leine; swiftshader, Mess-Wiese, 20 Karten: in 15 s 3 Bilder, 17 Bakes bei gespannter Leine — die Probe des
+    // Hauptbilds sah in der CI kein Bild).
     _gpuLeineStraff() {
         const L = this._gpuLeine;
         return !!L && L.imFlug >= AnazhRealm.GPU_FRAMES_IM_FLUG && !!this._gpuLeineQueue();
@@ -1453,6 +1495,7 @@ class AnazhRealm_dirigent_takt {
         this._dispatchFrameJobs(this._buildDeferrableJobs(playerPos), B);
         // die fixen, NICHT budget-gegateten Ticks (UNGATED Welt-Substanz + billige Ticks)
         this._tickPendingVegSpawns(4);
+        this._tickHuellenNach(); // nach dem ersten Bild: die Hüllen der Bäume, die vor ihm warteten (nah zuerst)
         const auge = this._lodAuge(); // das EINE Auge der Stufen (Maske und Wahl messen vom selben Ort)
         this._tickArchitectureLOD(5, auge);
         // DER KARTEN-TAKT (S2: die Karte backt im Welt-Renderer, `_tickKarteWelt`; lazy beim ersten L2-Bedarf
@@ -1672,6 +1715,9 @@ class AnazhRealm_dirigent_takt {
             ppu.nachSchaerfe.value = this.state.traaNode ? AnazhRealm.ZEIT_SCHAERFE * (1 - this._szeneSkalaWirk()) : 0;
         // DIE WEICHE: Post-Kette oder Direktpfad — und mit ihr Leinwand-Tiefe und Rahmen-Ziel (`_leinwandWeg`, der EINE Weg).
         let direkt = !pp || this.state.postProcessingFailed === true;
+        // das Mikro-Detail der Stoffe gilt dem Pixel des Schirms (`schirmJeSzene`, w4-wiese-nah): die Skala des Szenen-Passes,
+        // der Direktpfad zeichnet in der Ausgabe
+        this._ensureAtmoUniforms().schirmJeSzene.value = direkt || !sp ? 1 : sp.getResolutionScale();
         if (!direkt) {
             this._leinwandWeg(false);
             try {

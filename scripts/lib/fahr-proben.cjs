@@ -71,7 +71,7 @@ async function probeLeben(expected) {
     // nicht als in der Luft.
     const inDerLuft = () => {
         const pl = st.player;
-        const me = pl && pl.mountedArch !== null && pl.mountedArch !== undefined ? r._mountedEntry : null;
+        const me = pl && pl.mountedArch != null ? r._mountedEntry : null;
         if (!me || !me.position) return !!st.isInAir;
         const fz = me._fahr;
         if (st.isInAir && !(fz && fz.luft)) return true;
@@ -699,7 +699,7 @@ async function probeLeben(expected) {
             r._uhrSetzen(stunde / 24, "regler");
             const bereit = () =>
                 S.liste && S.liste.every((b) => b.leib) && S.verkehr && S.verkehr.wagen.every((W) => W.b.amSteuer);
-            for (const weiter = window.__deckel("verkehr: die Stadt steht", 4000); weiter() && !bereit(); i++) {
+            for (const weiter = window.__deckel("verkehr: die Stadt steht", 8000); weiter() && !bereit(); i++) {
                 frame(i);
                 if (i % 8 === 7) await window.sleep();
             }
@@ -739,13 +739,29 @@ async function probeLeben(expected) {
             const weg0 = new Map(VK.wagen.map((W) => [W, W.weg]));
             const stoss0 = { ...VK.zahl.stoss };
             const ort2 = (L) => [Math.round(L.x), Math.round(L.z)];
+            // DAS EINE STUFEN-GESETZ (Komposit erbt, Bewegte prüfen) je fahrendem Wagen am Auge der Stufen (`_lodAuge`): zeigt sich
+            // sein Fahrer, trägt ihn eine 3D-Stufe (gezeichnet, nie Stufe 2) — „Wagen ohne Bild mit gezeichnetem Fahrer"; gröber,
+            // als das Gesetz ihm dort zuweist (`_chooseLODForDistance` mit seiner Hysterese, ohne Bild im Radius des Culls gröber
+            // als jede Stufe: 9), obwohl die Stufe des Gesetzes gedockt bereitliegt (kein Laden, ein altes Urteil) — „bewegter
+            // Eintrag mit veralteter Stufe" [Nr., Probe, m, Stufe, Soll]; der Bewegte urteilt im Takt seines Schritts, jede Probe
+            // gilt. `nah`: Proben diesseits der Karten-Grenze (thresh12 − Hysterese); ohne sie misst die Probe nichts.
+            const [LD, SK] = [A.LOD_DISTANCES, { nah: 0, ohneBild: 0, ohneBildOrte: [], veraltet: 0, veraltetOrte: [] }];
             for (let k = 0; k < Math.round(o.sek * 60); k++, i++) {
                 frame(i);
                 if (i % 8 === 7) await window.sleep();
                 if (k % 4) continue;
                 const fahrend = VK.wagen.filter((W) => W.zustand === "faehrt" && W.entry);
                 const L = fahrend.map(lage);
+                const [a, sp] = [r._lodAuge(), st.playerMesh.position];
                 for (const [n, W] of fahrend.entries()) {
+                    const [e, d] = [W.entry, Math.hypot(L[n].x - a.x, L[n].z - a.z)];
+                    const sv = r._archIsRendered(e) ? e._servedLod : 9;
+                    SK.nah += d < LD.thresh12 - LD.hysteresis;
+                    if (W.b.amSteuer && W.b.leib.visible && !(sv < 2)) SK.ohneBild++ < 4 && SK.ohneBildOrte.push([W.nr, k, d | 0, sv]);
+                    const soll = r._chooseLODForDistance(d, sv < 9 ? e._lodLevel : undefined, r._lodTreeVisHeight(e) || 0);
+                    const im = sv < 9 || Math.hypot(L[n].x - sp.x, L[n].z - sp.z) <= st.architectureCullingRadius;
+                    if (im && soll < sv && r._foundryStufeBereit(e, r._foundryPresetForEntry(e), soll))
+                        SK.veraltet++ < 4 && SK.veraltetOrte.push([W.nr, k, d | 0, sv, soll]);
                     for (const Z of VK.zonen)
                         if (
                             Z.art === "kreuzung" &&
@@ -825,6 +841,7 @@ async function probeLeben(expected) {
                 querMax: +m.quer.toFixed(2),
                 querOrt: m.querOrt,
                 msJeSchritt: +(m.ms / Math.max(1, m.takte)).toFixed(3),
+                stufe: SK,
                 sek: o.sek,
             };
         }

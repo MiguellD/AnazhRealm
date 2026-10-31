@@ -1636,6 +1636,7 @@ class AnazhRealm_dirigent_regler {
             const fam = new Map();
             let gesamt = 0;
             const zaehle = (a, name) => {
+                if (a && a.isInterleavedBufferAttribute) a = a.data; // ein verschränkter Puffer zählt einmal, nie je Sicht
                 if (!a || !a.array || gesehen.has(a)) return;
                 gesehen.add(a);
                 const b = a.array.byteLength || 0;

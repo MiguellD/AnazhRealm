@@ -114,6 +114,7 @@ const FORBIDDEN = [
     { token: "GRASS_POOL_CAP", fiel: "V18.492" },
     { token: "GRASS_MAX_BLADES", fiel: "V18.492" },
     { token: "_grassStudioGeometry", fiel: "V18.492 — die Studio-Halm-Geometrie" },
+    { token: "_grassInstanceMat", fiel: "w4-wiese-nah — der Halm-Stoff ist `_halmStoff`, das Gesetz HALM_GESETZ" },
     { token: "_tickGrassStage", fiel: "V18.492 — der Stufen-Tick lief ins Leere" },
     { token: "GRASS_TUFT_BLADES", fiel: "N7.4 — die Wiese ist Boden-Funktion" },
     { token: "voxelChunkGrassDensity", fiel: "N7.4" },
@@ -878,6 +879,8 @@ const FORBIDDEN = [
     { token: "wrap3", fiel: "S3 kreatur — beide Stufen unter EINEM Wrap (_gelenkGestalt)" },
     { token: "TIER_FERN_DIST_SQ", fiel: "S3 kreatur — die Grenze ist lod.budget.kreatur[1].ab (_gelenk.abM)" },
     { token: "TIER_FERN_HYST", fiel: "S3 kreatur — die Hysterese ist lod.budget.kreatur.hyst (_gelenk.hyst)" },
+    { token: "KREATUR_NAH_MESH", fiel: "stufen-gesetz — das Feld der Leiber (_feldGrenzen)" },
+    { token: "_bewohnerFeldGrenze", fiel: "stufen-gesetz — das Feld der Leiber (_feldGrenzen)" },
     { token: "MENSCH_FERN_DIST_SQ", fiel: "S3 kreatur — die Grenze ist lod.budget.koerper[1].ab (_gelenk.abM)" },
     {
         token: "_tierFernFolgt",
@@ -1699,7 +1702,7 @@ function scanKartenWand(srcRoh) {
 // trugen neben dem Präsenz-Muster ein Absenz-Glied über den Rumpf EINER Methode — das Absenz-Urteil bleibt, hier je Methode.
 const METHODEN_OHNE = [
     ["_tickCreatureDrink", ["PING_FREQ"]], // die Stimme des Tiers, kein Sinus-Ping
-    ["_grassInstanceMat", ["gust"]], // die Böe lebt im EINEN Wind-Versatz
+    ["_halmStoff", ["gust", 'attribute("instanceColor"']], // die Böe lebt im EINEN Wind-Versatz, die Tönung nativ
     ["_applyVegetationResponse", ["uWindTime"]], // EIN Wind-Term
     ["_foundryTreeMaterial", ['attribute("instanceColor"']], // der Stoff liest die Instanz-Tönung nativ
     ["_bodenFarbeAt", ["SNOW_PROM", "_cont0"]], // der Schnee liest die Prominenz des Gelände-Kerns
@@ -3614,8 +3617,8 @@ function main() {
             const schmuggel = [
                 [
                     "in",
-                    "const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));",
-                    'const _hatMx = "mx_noise_float" in TSL; const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));',
+                    "mat.aoNode = PC.halmNarbe(A, uv.y, T.float(1.0)).himmel;",
+                    'const _hatF = "float" in T; mat.aoNode = PC.halmNarbe(A, uv.y, T.float(1.0)).himmel;',
                     /^Ausstattungs-Wenn$/,
                 ],
                 [
@@ -3638,8 +3641,8 @@ function main() {
                 ],
                 [
                     "Stoff-Bauer gefragt",
-                    "albedo = albedo.mul(this._ensureSeasonUniforms().uSeasonMul);",
-                    "const _su = this._ensureSeasonUniforms(); if (_su) albedo = albedo.mul(_su.uSeasonMul);",
+                    "_suK.uSeasonMul,",
+                    "_suK ? _suK.uSeasonMul : _Ta.vec3(1.0, 1.0, 1.0),",
                     /^Null-Knoten$/,
                 ],
                 [

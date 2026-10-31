@@ -86,7 +86,7 @@ function sichtLinse(cfg) {
     // dieses Passes.
     const lichtBeiPass = {};
     const lichtJetzt = () => {
-        const dl = r.state.directionalLight;
+        const dl = st.directionalLight;
         if (!dl || !dl.target) return null;
         const x = dl.position.x - dl.target.position.x,
             y = dl.position.y - dl.target.position.y,
@@ -112,9 +112,9 @@ function sichtLinse(cfg) {
     const schuld = new Set();
     const schuldSaat = () => {
         schuld.clear();
-        const ss = r.state.chunkSaetze;
+        const ss = st.chunkSaetze;
         if (!ss) return;
-        const V = (r.constructor.CHUNK_SATZ_ABSCHNITT || {}).verschnitt || 0;
+        const V = (AnazhRealm.CHUNK_SATZ_ABSCHNITT || {}).verschnitt || 0;
         for (const s of ss.values()) {
             const fam = familie(s);
             let belegt = 0;
@@ -128,7 +128,7 @@ function sichtLinse(cfg) {
     // der Pass, in dem gerade geprüft wird (haupt · k<i> · anders) — die Prüfungen je Pass
     let pass = "?";
     const passName = (kam) => {
-        if (kam === r.state.camera) return "haupt";
+        if (kam === st.camera) return "haupt";
         const k = r._schattenKameraIndex(kam);
         return k >= 0 ? "k" + k : "anders";
     };
@@ -282,7 +282,7 @@ function sichtLinse(cfg) {
     // die Index-Bytes je Satz-Familie (boden · wasser · bauSatz · streuSatz · formationenSatz), kumulativ
     const bytesJe = () => {
         const o = {};
-        const ss = r.state.chunkSaetze;
+        const ss = st.chunkSaetze;
         if (ss)
             for (const s of ss.values()) {
                 const fam = String(s.art).split("|")[0];
@@ -366,7 +366,7 @@ function sichtLinse(cfg) {
     // `erstes` (an()): jedes Bild ist der Bezug; danach je Satz der Inhalt gegen sein Bild davor
     const inhalt = (erstes) => {
         const o = { inhalt: {}, ohne: {} };
-        const ss = r.state.chunkSaetze;
+        const ss = st.chunkSaetze;
         const da = new Set();
         if (ss)
             for (const s of ss.values()) {
@@ -417,7 +417,7 @@ function sichtLinse(cfg) {
     let kameraAnker = null;
     let kameraOffen = 0;
     const kameraBewegt = () => {
-        const c = r.state.camera;
+        const c = st.camera;
         if (!c) return 0;
         // Welt-Matrix (16) und Projektion ohne den Versatz der zeitlichen Auflösung (Elemente 8 und 9 — TRAA)
         const e = Array.from(c.matrixWorld.elements).concat(
@@ -427,7 +427,7 @@ function sichtLinse(cfg) {
             kameraAnker = e;
             return 0;
         }
-        const PW = r.constructor.PASS_WAHL || {};
+        const PW = AnazhRealm.PASS_WAHL || {};
         if (!window.__sichtKameraBewegt(kameraAnker, e, PW.haltM, PW.drehRand)) return 0;
         kameraAnker = e;
         return 1;
@@ -439,7 +439,7 @@ function sichtLinse(cfg) {
     let blendeAnker = null;
     let blendeOffen = 0;
     const blendeDreht = () => {
-        const lu = r.state.lodUniforms;
+        const lu = st.lodUniforms;
         const n = (u) => (u && typeof u.value === "number" ? u.value : null);
         const auge = lu && lu.uLodAuge && lu.uLodAuge.value;
         const jetzt = lu
@@ -455,13 +455,13 @@ function sichtLinse(cfg) {
             blendeAnker = jetzt;
             return 0;
         }
-        const PW = r.constructor.PASS_WAHL || {};
+        const PW = AnazhRealm.PASS_WAHL || {};
         if (!window.__sichtBlendeBewegt(blendeAnker, jetzt, PW.haltM)) return 0;
         blendeAnker = jetzt;
         return 1;
     };
     const lichtDreht = () => {
-        const dl = r.state.directionalLight;
+        const dl = st.directionalLight;
         if (!dl || !dl.target) return 0;
         const x = dl.position.x - dl.target.position.x,
             y = dl.position.y - dl.target.position.y,
@@ -536,8 +536,8 @@ function sichtLinse(cfg) {
             blendeOffen = blendeDreht() || blendeOffen;
             o.blende = blendeOffen;
             if (o.paesse > 0) blendeOffen = 0;
-            o.tag = r.state.timeOfDay;
-            o.stufe = r.state._sonne && r.state._sonne.stufe > 0 ? r.state._sonne.stufe : null;
+            o.tag = st.timeOfDay;
+            o.stufe = st._sonne && st._sonne.stufe > 0 ? st._sonne.stufe : null;
             // der Licht-Rand der Kaskaden mit Box (`PASS_WAHL.lichtRandTexel`): trägt ihn jede gerade gehaltene Lage?
             o.mitBox = false;
             o.lichtRand = 0;
@@ -548,7 +548,7 @@ function sichtLinse(cfg) {
                         o.mitBox = true;
                         if (!(a.sig[85] > 0)) rand = false;
                     }
-                if (o.mitBox && rand) o.lichtRand = r.constructor.PASS_WAHL.lichtRandTexel || 0;
+                if (o.mitBox && rand) o.lichtRand = AnazhRealm.PASS_WAHL.lichtRandTexel || 0;
             }
             z = neu();
             return o;

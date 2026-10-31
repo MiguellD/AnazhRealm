@@ -974,7 +974,7 @@ async function probe(A) {
                             +p.tiefe.toFixed(2),
                         ]),
                 };
-                if (st.player.mountedArch !== null && st.player.mountedArch !== undefined) r.dismountArchitecture();
+                if (st.player.mountedArch != null) r.dismountArchitecture();
                 // der geparkte Wagen im Wasser ist kein Damm: die Chunks um ihn entstehen neu (wie beim Wieder-Strömen), der
                 // Zell-Stempel läuft — verdrängt er Wasser, weckt er den Automaten?
                 const invA = { n: 0 };
@@ -1457,7 +1457,7 @@ async function probe(A) {
                                 continue;
                             if (r._nassAt(hx + i, hz + j)) nass++;
                             const b = r._wasserBildAt(hx + i, hz + j);
-                            if (b !== null && b !== undefined && Number.isFinite(b)) bild++;
+                            if (b != null && Number.isFinite(b)) bild++;
                         }
                     return { nass, bild };
                 };

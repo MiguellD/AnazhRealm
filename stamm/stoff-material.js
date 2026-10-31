@@ -1,81 +1,41 @@
 class AnazhRealm_stoff_material {
     // ===== ATLAS · Stoff/material — Uniform-Heimat · PBR-Knoten · Substanz-Antwort · Gras-Stoff und Wind · Stoff-Regler =====
-    // Geteiltes Gras-Material für InstancedMesh (tausende Halme, EIN Draw-Call). Der Wind liest die
-    // WELT-Position aus der instanceMatrix → Nachbarhalme wiegen phasenversetzt (Wind-Wellen);
-    // Geometrie auf der Wurzel zentriert → die Wurzel bleibt fix, die Spitze wiegt.
-    _grassInstanceMat() {
-        if (typeof THREE === "undefined") return null;
-        if (this.state._grassMat) return this.state._grassMat;
-        const TSL = THREE.TSL;
-        // Natives MeshStandardNodeMaterial (rau, nicht-metallisch): die WebGPU-Lighting-Pipeline rechnet Licht +
-        // Schatten selbst und liest den EINEN Himmel (scene.environment) diffus — r184-Lambert las ihn nie, der
-        // Halm im Schatten trug nur sein Gegenlicht-Leuchten. Wind-Displacement als TSL-positionNode.
-        const { uniform, vec3, float, max, positionLocal, positionWorld } = TSL;
-        const wu = this._windUniformsEnsure();
-        // Die Höhen-Referenz des Farb-Gradients ist ein UNIFORM (GRASS_BLADE_H; die
-        // Studio-Halm-Geometrie, die eine eigene Höhe mitbrachte, fiel mit dem Halm-Mesh).
-        if (!wu.uBladeH) wu.uBladeH = uniform(AnazhRealm.GRASS_BLADE_H);
-        // UNIFORM-HEIMAT: der geteilte Wind-Satz reist als EIN renderGroup-Buffer.
-        this._uniformHeimatTeilen(wu);
-        const mat = new THREE.MeshStandardNodeMaterial({
-            color: 0x5fa743,
-            side: THREE.DoubleSide,
-            roughness: 1,
-            metalness: 0,
-        });
-
-        // Wind-positionNode aus der EINEN Quelle `_windSwayOffset`; das Gras liest volle Amplitude
-        // (ampX 1.5, kein windScale). Die Höhengewichtung steckt in der Geometrie
-        // (geo.translate(0, 0.425, 0) zentriert auf die Wurzel). KEIN onBeforeCompile.
-        const sway = this._windSwayOffset(TSL, { ampX: 1.5 });
-        mat.positionNode = positionLocal.add(sway);
-
-        // Gras-Albedo-Variation (render-only): (a) Spitzen-Gradient (Wurzel dunkler/kühler → Spitze
-        // heller) + (b) per-Clump-Noise über die Welt-Position (~1,6 m Wellenlänge). `colorNode` ist auf
-        // lit NodeMaterial die DIFFUSE Albedo — Licht, Wind, Tag-Nacht bleiben aktiv. Kein
-        // attribute()-Lookup (sonst Schwärze-Klasse), kein Geometrie-Eingriff. try/catch → flach-grün.
-        {
-            {
-                const hfN = TSL.clamp(positionLocal.y.div(wu.uBladeH), float(0.0), float(1.0));
-                // Die Wurzel liest das geteilte MEADOW_GREEN (= der Wiesen-Boden-Tint) → der Halm wächst ohne
-                // Farb-Bruch aus dem Boden; die Spitze bleibt sattes Grün, nicht gelb.
-                const _mg = AnazhRealm.MEADOW_GREEN;
-                const baseCol = vec3(_mg[0], _mg[1], _mg[2]);
-                // Spitze = der Sommer-Grasakzent des Studios (GRAS_SPITZE, dieselbe Spitze wie die Boden-Wiese).
-                const _sp = AnazhRealm.GRAS_SPITZE;
-                const tipCol = vec3(_sp[0], _sp[1], _sp[2]);
-                let albedo = TSL.mix(baseCol, tipCol, hfN);
-                const bn = TSL.mx_noise_float(positionWorld.mul(float(0.8)));
-                albedo = albedo.mul(float(1.0).add(bn.mul(float(0.18))));
-                albedo = albedo.add(vec3(0.1, 0.05, -0.05).mul(max(bn, float(0.0))));
-                // Boden-Bezug: die Streu setzt `instanceColor` je Halm aus lebendig+feuchte (Multiplikator ~1).
-                // Three.js multipliziert colorNode selbst mit `instanceColor` (setupDiffuseColor) — nie zusätzlich
-                // `attribute("instanceColor")` lesen (Doppel-Multiply; die geteilte Geometrie trägt es nicht).
-                // Gegenlicht-Translucency: wrap = pow(max(dot(viewDir, -sunDir), 0), k) → Halme leuchten nur im
-                // Gegenlicht golden-grün, höhen-gewichtet, rein additiv.
-                {
-                    const viewDir = TSL.normalize(positionWorld.sub(TSL.cameraPosition));
-                    const sunBack = TSL.normalize(wu.uSunDir).mul(float(-1.0));
-                    const wrap = TSL.pow(max(TSL.dot(viewDir, sunBack), float(0.0)), float(3.0));
-                    const glow = vec3(0.45, 0.5, 0.2).mul(wrap).mul(hfN).mul(float(0.9));
-                    albedo = albedo.add(glow);
-                }
-                // Rispen-Spitzen (aSeed=1) tragen den strohigen Samenkopf-Ton (seedTan 0xc8b27a, sRGB→linear).
-                // aSeed lebt auf der GETEILTEN Tuff-Geometrie (Halm 0, Granne 1) → das Attribut ist immer da.
-                {
-                    const aSeed = TSL.attribute("aSeed", "float");
-                    albedo = TSL.mix(albedo, vec3(0.46, 0.38, 0.18), aSeed);
-                }
-                // Die Wiese folgt der Saison: Albedo × die EINE Saison-Tönung `uSeasonMul` (aus seasonPhase in
-                // `_tickSeason`); Licht/Wind/Translucency bleiben aktiv.
-                albedo = albedo.mul(this._ensureSeasonUniforms().uSeasonMul);
-                mat.colorNode = TSL.vec4(albedo, float(1.0));
-            }
-        }
-
-        mat.userData.poren = AnazhRealm.NAESSE.poren.grass; // der Halm trägt Wachs (die Nässe, `_naesseImStoff`)
-        this._leuchtStoff(mat, null); // das Leuchtquellen-Gesetz (K11): der Halm am Feuer trägt sein Licht
-        this.state._grassMat = mat;
+    // DER HALM-STOFF (w4-wiese-nah, phyto-core HALM_GESETZ): jedes Studio-Gras (die Nah-Wiese, ein gesetztes Gras) liest sein
+    // Gesetz je Pixel aus seinen Stoff-Koordinaten — uv.x quer in Adern (die Mittel-Rippe bei 0), uv.y die Narbe über der Ecke
+    // (foundry-core `emitGrass`):
+    //   die NORMALE des Querschnitts: die Geometrie-Normale (Lehre 26: `normalWorldGeometry` × Seite, nie `normalWorld`), um den
+    //   Kiel und die Rippen gegen die Breiten-Richtung t = Y × n gekippt (`halmQuer`; u wächst längs t, die Vorlage legt es so
+    //   an) — der Pixel (`fwidth` von u) rundet den Kiel und filtert die Rippen: auf Armlänge Detail je Pixel, fern das Mittel,
+    //   kein Flimmern; ein liegender Halm (n nahe Y) trägt keine Breiten-Richtung und bleibt eben;
+    //   die ALBEDO × die Adern und die hellere Mittel-Rippe (`halmAder`, mittelfrei, gefiltert);
+    //   die NARBE: das Himmels-Licht × exp(−kHimmel · Λ) als Verdeckung — das direkte Licht dämpft das Laub-Licht des Halms
+    //   (`_laubLichtStoff` mit der Narbe: Lambert, Glanz und Durchlass der Quelle × exp(−K(θ) · Λ));
+    //   das DACH (licht.K1, w3v-licht; `HALM_GESETZ.dach`): trägt der Pixel des Schirms mehrere Halme, lichtet die Wiese als Dach —
+    //   die Normale zu 0,9 oben, die Rauheit 1 (der doppelseitige Halm lichtete sonst wie eine Wand: die Stunde 0,33 über dem
+    //   Mittag, +0,37 EV); auf Armlänge trägt der Halm seinen Querschnitt und die Cuticula der Stoff-Zeile (Satz: `aRegler`).
+    // Bis dahin war der Halm ein flaches Band in seiner Vertex-Farbe (die Normale über die Breite gleich), kein Durchscheinen,
+    // kein Schatten am Fuß, 18 % des Himmels; der Zwilling `_grassInstanceMat` (eigener Verlauf, eigenes Gegenlicht-Leuchten)
+    // zeichnete nichts mehr und fiel. Das Dach stand bis dahin als zweite Normale hinter dem Halm (`_foundryTreeMaterial`).
+    _halmStoff(T, mat) {
+        const PC = globalThis.__phytoCore;
+        const H = PC.HALM_GESETZ;
+        const A = AnazhRealm._windTsl(T);
+        const uv = T.uv();
+        const fw = T.fwidth(uv.x).mul(this._ensureAtmoUniforms().schirmJeSzene);
+        const nGeo = T.normalize(T.normalWorldGeometry);
+        const quer = T.cross(T.vec3(0.0, 1.0, 0.0), nGeo);
+        const ql = quer.length();
+        const t = quer.div(ql.max(1e-4)).mul(T.smoothstep(0.02, 0.12, ql));
+        const n = T.normalize(nGeo.sub(t.mul(PC.halmQuer(A, uv.x, fw)))).mul(T.faceDirection);
+        // der Pixel des Schirms in Metern quer über den Halm: fw Adern × aderM
+        const dach = T.smoothstep(H.dach.px[0], H.dach.px[1], fw.mul(H.aderM));
+        mat.normalNode = T.cameraViewMatrix.transformDirection(
+            T.normalize(T.mix(n, T.vec3(0.0, 1.0, 0.0), dach.mul(H.dach.oben)))
+        );
+        mat.roughnessNode = T.mix(mat.roughnessNode || T.float(mat.roughness), T.float(1.0), dach);
+        mat.colorNode = T.vec4(mat.colorNode.rgb.mul(PC.halmAder(A, uv.x, fw)), mat.colorNode.a);
+        mat.aoNode = PC.halmNarbe(A, uv.y, T.float(1.0)).himmel;
+        mat.userData.halm = true;
         return mat;
     }
 
@@ -595,6 +555,11 @@ class AnazhRealm_stoff_material {
             ),
             lichtErsatz: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
             lichtKern: Array.from({ length: AnazhRealm.LICHT_POOL.plaetze }, () => TSL.uniform(0)),
+            // DER SCHIRM-PIXEL JE SZENEN-PIXEL (w4-wiese-nah, `_szeneSkalaWirk`): unter dem zeitlichen Hochskalierer rendert die
+            // Szene in 0,75 × Ausgabe, ihr `fwidth` und ihr `screenSize` messen den Pixel der SZENE — das Mikro-Detail der Stoffe
+            // (`_mikroRelief`, `_halmStoff`, das Schutt-Korn) gilt dem Pixel des SCHIRMS: die Geschichte löst welt-feste Oktaven
+            // über den Zitter auf (der Mip-Versatz log2(Szene/Ausgabe) jedes Hochskalierers). EIN Schreiber: `_loopRender`.
+            schirmJeSzene: TSL.uniform(1).setName("schirmJeSzene"),
             // DIE NÄSSE DER WELT (wetter.K2, EIN Schreiber `_naesseTakt`) und der Dach-Pool ihrer Himmels-Sicht (`_dachTakt`)
             naesse: TSL.uniform(0),
             dachLage: Array.from({ length: AnazhRealm.NAESSE.dachPlaetze }, () =>
@@ -673,8 +638,9 @@ class AnazhRealm_stoff_material {
     // Gestalt, und am streifenden Blick der Ferne am stärksten — die Karte der Fichte stand in der Dämmerung 8,3 ×, nachts
     // 4,8 × so hell wie ihre Gestalt (Radeon, Mess-Wiese; `werkbank licht --laub --karte --uhr`). Lehre 21: Fill und Rim
     // leben im Labor.
-    // Gewicht 0 = kein Knoten (der Stoff behält den Ausgang des Vendors).
-    _applySubstanceResponse(mat, profile = {}) {
+    // Gewicht 0 = kein Knoten (der Stoff behält den Ausgang des Vendors). `werte` (der Werk-Stoff, `_substanceCharacter`): das
+    // Mikro-Gewicht reist als Stoff-Wert, nie als Konstante.
+    _applySubstanceResponse(mat, profile = {}, werte) {
         if (!mat) return;
         try {
             const _T = THREE.TSL;
@@ -685,6 +651,9 @@ class AnazhRealm_stoff_material {
             // (J2) Mikro-Tiefe/Kavitäts-AO — die tiefe-Antenne (das Terrain trägt
             // seine eigene reichere triplanar-Schicht im colorNode → Gewicht 0).
             if (_p("micro") > 0) {
+                const _mikro = werte
+                    ? ((werte.mikro = _p("micro")), this._stoffWert(_T, "userData.stoffWerte.mikro"))
+                    : _p("micro");
                 const _o = _T.output; // die FERTIGE lit-Farbe (post-lighting)
                 const _wp = _T.positionWorld;
                 const _ra = this._rauschAtlas();
@@ -693,16 +662,14 @@ class AnazhRealm_stoff_material {
                 const _det = _n1.mul(0.7).add(_n2.mul(0.3));
                 // microStrength ist ein UNIFORM (der Settings-Regler lebt), profil-gewichtet. `_au.r5StructureBoost`
                 // ist in `_ensureAtmoUniforms` GARANTIERT vorhanden → kein Fallback-Branch.
-                const _micro = (_au.microStrength || _T.float(cfg.microStrength)).mul(
-                    _au.r5StructureBoost.mul(_p("micro"))
-                );
+                const _micro = (_au.microStrength || _T.float(cfg.microStrength)).mul(_au.r5StructureBoost.mul(_mikro));
                 let _shade = _T.float(1.0).add(_det.mul(_micro));
                 // Kavitäts-AO (wie Terrain V15.2): Welt-Raum-Krümmung aus den
                 // Fragment-Derivaten → Kontakt-Schatten in Kanten/Mulden.
                 const _curv = _T.fwidth(_T.normalWorld).length().div(_T.fwidth(_wp).length().add(0.0001));
                 // J4-DEBUG: aoScale (default 1) schaltet die Kavitäts-AO ab (=0).
                 const _aoStr = (_au.aoScale ? _T.float(cfg.aoStrength).mul(_au.aoScale) : _T.float(cfg.aoStrength)).mul(
-                    _p("micro")
+                    _mikro
                 );
                 const _ao = _T.float(1.0).sub(_curv.mul(_aoStr).clamp(0.0, cfg.aoCap));
                 mat.outputNode = _T.vec4(_o.xyz.mul(_shade.mul(_ao)), _o.w);
@@ -765,6 +732,7 @@ class AnazhRealm_stoff_material {
         }
         if (!opts.transparent && typeof this._applySubstanceResponse === "function") {
             let albedoNode = null;
+            let werte = null; // die Werte je Stoff des Werk-Stoffs (der flache Zweig unten)
             try {
                 const _Ta = THREE.TSL;
                 if (opts.vertexColors === true) {
@@ -851,7 +819,12 @@ class AnazhRealm_stoff_material {
                                         _at.nmapNode = _Ta.texture(_at.nmap);
                                         _at.lmapNode = _Ta.texture(_at.lmap);
                                     }
-                                    const _V = _Ta.float(_at.V);
+                                    const _V = _Ta.float(_at.V); // die Peilungen je Ring
+                                    // DIE HEBUNGS-RINGE (lod.K3): die Tafel der Schicht (phyto-core `karteRinge`, aufsteigend) — je
+                                    // Ring Hebung, Teiler und erste Zeile; die Schicht misst cw × _Hs Texel
+                                    const _rg = _at.ringe.ringe;
+                                    const _Hs = _at.masse.h;
+                                    const _alg = AnazhRealm._windTsl(_Ta); // die Algebra der Gesetze (`karteRingHalbe`)
                                     const _uv = _Ta.attribute("uv", "vec2");
                                     const _ecke = _uv.x.mul(_Ta.float(2.0)).sub(_Ta.float(1.0)); // die Ecke ±1
                                     // (Schicht, Halbbreite, Höhe, ±Sichthöhe)
@@ -876,9 +849,18 @@ class AnazhRealm_stoff_material {
                                     // darum durch EINEN Leser, der die Null als +0 reicht.
                                     const _peil = (y, x) => _Ta.atan(_Ta.select(y.equal(0.0), _Ta.float(0.0), y), x);
                                     const _aRot = _Ta.varying(_peil(_m0.z.negate(), _m0.x), "vKarteDreh");
-                                    // ── exakte Anker-Peilung im Fragment: posW = Anker + right·k
-                                    //    (right ⟂ look) ⇒ ang(look) = atan2(−h) + atan2(k, d),
-                                    //    d = √(|h|²−k²) — kein Varying-Emissions-Risiko, exakt. ──
+                                    // ── DIE HEBUNG DES AUGES (lod.K3, Vertex): φ über der Mitte der Karte (Anker + halbe Rahmen-Höhe ×
+                                    //    Instanz-Skala, die EINE Naht `_weltNaht`) — je Instanz fest; der Vertex kippt die Karte zum
+                                    //    Auge, das Fragment wählt mit ihr den Ring. ──
+                                    const _hHv = _rahmen.y.mul(0.5);
+                                    const _phiV = _Ta.atan(
+                                        _Ta.cameraPosition.y.sub(_naht.anker.y).sub(_hHv.mul(_sV)),
+                                        _Ta.cameraPosition.xz.sub(_naht.anker.xz).length().max(1e-4)
+                                    );
+                                    const _phiF = _Ta.varying(_phiV, "vKarteHebung");
+                                    // ── exakte Anker-Peilung im Fragment: posW = Anker + right·k + Hub der gekippten Karte entlang
+                                    //    look (right ⟂ look) ⇒ ang(look) = atan2(−h) + atan2(k, d'), d' = √(|h|²−k²) — kein
+                                    //    Varying-Emissions-Risiko, exakt; d' trägt den Hub (`_dAchse` zieht ihn ab). ──
                                     const _k = _ecke.mul(_rahmen.x).mul(_sInst);
                                     const _hx = _Ta.positionWorld.x.sub(_Ta.cameraPosition.x);
                                     const _hz = _Ta.positionWorld.z.sub(_Ta.cameraPosition.z);
@@ -894,27 +876,89 @@ class AnazhRealm_stoff_material {
                                     const _v0 = _Ta.floor(_fV);
                                     const _fb = _Ta.fract(_fV);
                                     const _v1 = _Ta.mod(_v0.add(_Ta.float(1.0)), _V);
+                                    // ── DER RING DER HEBUNG (lod.K3): φ steht im Bruch-Index rF der Ringe (stückweise linear über
+                                    //    ihre Hebungen, außerhalb geklemmt) — je Pixel EIN Ring ⌊rF + Rauschen⌋ (`_ditherIGN`,
+                                    //    zeitlich: die Kante löst TAAU), so viele Abtastungen wie mit einem Ring. Hebung, Teiler und
+                                    //    erste Zeile des Rings liest EINE Tafel (`_at.ringTafel`, aus `karteRinge`). ──
+                                    const _eR = _rg.map((r) => (r.hebung * Math.PI) / 180);
+                                    let _rF = _Ta.float(0.0);
+                                    for (let i = 0; i + 1 < _rg.length; i++)
+                                        _rF = _rF.add(
+                                            _phiF
+                                                .sub(_eR[i])
+                                                .div(_eR[i + 1] - _eR[i])
+                                                .clamp(0.0, 1.0)
+                                        );
+                                    if (!_at.ringTafel)
+                                        _at.ringTafel = _Ta.uniformArray(
+                                            _rg.map((r, i) => new THREE.Vector4(_eR[i], r.teiler, r.y, 0)),
+                                            "vec4"
+                                        );
+                                    const _ring = _at.ringTafel.element(
+                                        _rF
+                                            .add(this._ditherIGN(_Ta, 1))
+                                            .floor()
+                                            .min(_rg.length - 1)
+                                            .toInt()
+                                    );
+                                    const _eW = _ring.x;
+                                    const _tW = _ring.y;
+                                    const _bw = _Ta.float(_at.cw).div(_tW),
+                                        _bh = _Ta.float(_at.ch).div(_tW); // die Zelle des Rings in Texeln
+                                    // ── DIE GEKIPPTE KARTE IM RING: ein Punkt b der Karte (Höhe ±_hPhi um ihre Mitte) liegt im Bild des
+                                    //    Rings e bei b / cos(φ − e) — der Strahl des Auges durch die Ebene des Rings; die halbe
+                                    //    Bild-Höhe ist die des Rahmen-Zylinders (`karteRingHalbe`, dieselbe Formel liest die Bühne).
+                                    //    Außerhalb seines Bilds ist der Ring leer. ──
+                                    const _hPhi = globalThis.__phytoCore.karteRingHalbe(_alg, _hHv, _rahmen.x, _phiF);
+                                    const _hE = globalThis.__phytoCore.karteRingHalbe(_alg, _hHv, _rahmen.x, _eW);
+                                    const _bK = _uv.y.mul(2.0).sub(1.0).mul(_hPhi);
+                                    const _mR = _hPhi.div(_hE.mul(_Ta.cos(_phiF.sub(_eW)).max(1e-3))); // dv / d(uv.y)
+                                    const _vC = _uv.y.mul(2.0).sub(1.0).mul(_mR).mul(0.5).add(0.5);
+                                    const _imRing = _Ta.step(0.0, _vC).mul(_Ta.step(_vC, 1.0));
                                     // Die Ansichten liegen Kante an Kante: die Unterkante (Stammfuß) der Ansicht v+1 grenzt an die
-                                    // Oberkante der Ansicht v. Die Klemme hält den Filter in SEINER Ansicht: einen halben Texel der
-                                    // gröberen gemischten Stufe Abstand (≈ 1 fwidth der Ansichts-Höhe), vergrößert mindestens einen
-                                    // halben Texel der Stufe 0 (ein fwidth ist dort kleiner als der bilineare Fußabdruck).
-                                    const _halb = _Ta.max(_Ta.fwidth(_uv.y), _Ta.float(0.5 / _at.ch)).clamp(0.0, 0.25);
-                                    const _vIn = _uv.y.clamp(_halb, _Ta.float(1.0).sub(_halb));
-                                    // Die Schicht liegt, wie der Welt-Renderer sie zeichnet (S2): die Zeile 0 oben (die Ansicht v in
-                                    // der Zelle v von oben, ihr Wipfel zuerst) — die Zellen-Höhe läuft gespiegelt.
+                                    // Oberkante der Ansicht v, im Ring in ¼ der Zellfläche auch die rechte Kante an die linke. Die
+                                    // Klemme hält den Filter in SEINER Ansicht: einen halben Texel der gröberen gemischten Stufe
+                                    // Abstand (≈ 1 fwidth der Ansichts-Höhe), vergrößert mindestens einen halben Texel der Stufe 0 (ein
+                                    // fwidth ist dort kleiner als der bilineare Fußabdruck).
+                                    const _halb = _Ta
+                                        .max(_Ta.fwidth(_uv.y).mul(_mR), _Ta.float(0.5).div(_bh))
+                                        .clamp(0.0, 0.25);
+                                    const _vIn = _vC.clamp(_halb, _Ta.float(1.0).sub(_halb));
+                                    const _halbU = _Ta.max(_Ta.fwidth(_uv.x), _Ta.float(0.5).div(_bw)).clamp(0.0, 0.25);
+                                    const _uIn = _Ta.select(
+                                        _tW.greaterThan(1.5),
+                                        _uv.x.clamp(_halbU, _Ta.float(1.0).sub(_halbU)),
+                                        _uv.x
+                                    );
+                                    // Die Schicht liegt, wie der Welt-Renderer sie zeichnet (S2): die Zeile 0 oben (die Ansicht im
+                                    // Ring von oben, ihr Wipfel zuerst) — die Zellen-Höhe läuft gespiegelt. Die Zelle der Peilung a:
+                                    // τ Ansichten je Zeile ab der ersten Zeile des Rings (phyto-core `karteRinge`).
                                     const _vZ = _Ta.float(1.0).sub(_vIn);
-                                    const _uvA = _Ta.vec2(_uv.x, _vZ.add(_v0).div(_V));
-                                    const _uvB = _Ta.vec2(_uv.x, _vZ.add(_v1).div(_V));
+                                    const _yW = _ring.z;
+                                    const _zelle = (a) => {
+                                        const x0 = _Ta.mod(a, _tW).mul(_bw);
+                                        const y0 = _yW.add(_Ta.floor(a.div(_tW)).mul(_bh));
+                                        const uv = _Ta.vec2(
+                                            x0.add(_uIn.mul(_bw)).div(_at.cw),
+                                            y0.add(_vZ.mul(_bh)).div(_Hs)
+                                        );
+                                        return { x0, y0, uv };
+                                    };
+                                    const _zA = _zelle(_v0),
+                                        _zB = _zelle(_v1);
+                                    const _uvA = _zA.uv;
+                                    const _uvB = _zB.uv;
                                     // DER STAMM-STRICH (Echt-GPU 05.10., Höhen-Sonde): die Anker-Peilung ist für das ganze Quad
                                     // dieselbe; steht sie GENAU auf einer Ansichts-Grenze, kippt ihr Rundungs-Rauschen einzelne Pixel
                                     // auf die Nachbar-Ansicht (v0 springt um 1 bzw. 7). Die Hardware-Ableitung des 2×2-Blocks las den
                                     // Sprung als Gradienten über die halbe Textur, griff die gröbste Stufe, und deren Filter zog den
                                     // Stammfuß der Nachbar-Ansicht als senkrechten Strich über die Krone (30–40 px über der L1-Spitze,
                                     // jede Peilung auf einer Ansicht). Die Gradienten kommen aus der STETIGEN Koordinate (die
-                                    // Ansichts-Höhe ohne Sprung) — alle vier Stichproben, Albedo und Normale (gate:foundry-impostor D).
-                                    const _uvStetig = _Ta.vec2(_uv.x, _uv.y.div(_V));
-                                    const _gX = _uvStetig.dFdx();
-                                    const _gY = _uvStetig.dFdy();
+                                    // Quad-Koordinate ohne Sprung, auf die Zelle des Rings skaliert) — alle vier Stichproben, Albedo
+                                    // und Normale (gate:foundry-impostor D).
+                                    const _skZ = _Ta.vec2(_bw.div(_at.cw), _mR.mul(_bh).div(_Hs).negate());
+                                    const _gX = _uv.dFdx().mul(_skZ);
+                                    const _gY = _uv.dFdy().mul(_skZ);
                                     const _probeA = (tex, uv) =>
                                         tex
                                             .sample(this._laubVersatz(_Ta, uv, _gX, _gY))
@@ -926,18 +970,16 @@ class AnazhRealm_stoff_material {
                                     // jede Krone in Texel-Treppen — Blöcke von 3–10 px mit rechteckigen Löchern zwischen 30 und 60 m
                                     // (Werkbank, Radeon: Texel bis 3,3 px). Die geglättete Deckung trägt die Kante zwischen den
                                     // Texeln; unter einem Pixel je Texel bleibt die deckungstreue Mip-Wahl allein (Gewicht `_kubW`).
-                                    const _kubX = _Ta.float(_at.cw),
-                                        _kubY = _Ta.float(_at.ch);
-                                    const _gpX = _Ta.vec2(_gX.x.mul(_kubX), _gX.y.mul(_V).mul(_kubY)).length();
-                                    const _gpY = _Ta.vec2(_gY.x.mul(_kubX), _gY.y.mul(_V).mul(_kubY)).length();
+                                    const _gpX = _Ta.vec2(_gX.x.mul(_at.cw), _gX.y.mul(_Hs)).length();
+                                    const _gpY = _Ta.vec2(_gY.x.mul(_at.cw), _gY.y.mul(_Hs)).length();
                                     const _kubW = _Ta
                                         .float(1.0)
                                         .div(_gpX.max(_gpY).max(_Ta.float(1e-4)))
                                         .sub(_Ta.float(1.0))
                                         .clamp(0.0, 1.0);
-                                    const _kubisch = (tex, vAns) => {
-                                        const cx = _uv.x.mul(_kubX).sub(_Ta.float(0.5));
-                                        const cy = _vZ.mul(_kubY).sub(_Ta.float(0.5));
+                                    const _kubisch = (tex, z) => {
+                                        const cx = _uIn.mul(_bw).sub(_Ta.float(0.5));
+                                        const cy = _vZ.mul(_bh).sub(_Ta.float(0.5));
                                         const ix = _Ta.floor(cx),
                                             iy = _Ta.floor(cy);
                                         const fx = cx.sub(ix),
@@ -961,11 +1003,12 @@ class AnazhRealm_stoff_material {
                                         };
                                         const wx = gew(fx),
                                             wy = gew(fy);
-                                        // in der eigenen Ansicht: die Abgriffe bleiben einen Texel vor ihrer Kante
-                                        const ziel = (hx, hy) => {
-                                            const y = iy.add(hy).clamp(_Ta.float(1.0), _kubY.sub(1.0));
-                                            return _Ta.vec2(ix.add(hx).div(_kubX), y.div(_kubY).add(vAns).div(_V));
-                                        };
+                                        // in der eigenen Zelle: die Abgriffe bleiben einen Texel vor ihrer Kante
+                                        const ziel = (hx, hy) =>
+                                            _Ta.vec2(
+                                                z.x0.add(ix.add(hx).clamp(_Ta.float(1.0), _bw.sub(1.0))).div(_at.cw),
+                                                z.y0.add(iy.add(hy).clamp(_Ta.float(1.0), _bh.sub(1.0))).div(_Hs)
+                                            );
                                         const lies = (hx, hy) =>
                                             tex.sample(ziel(hx, hy)).depth(_schicht).level(_Ta.float(0.0));
                                         return lies(wx.h0, wy.h0)
@@ -979,13 +1022,11 @@ class AnazhRealm_stoff_material {
                                                     .mul(wy.g1)
                                             );
                                     };
-                                    const _liesA = (tex, uv, vAns) =>
-                                        _Ta.mix(_probeA(tex, uv), _kubisch(tex, vAns), _kubW);
-                                    const _samp = _Ta.mix(
-                                        _liesA(_at.mapNode, _uvA, _v0),
-                                        _liesA(_at.mapNode, _uvB, _v1),
-                                        _fb
-                                    );
+                                    const _liesA = (tex, z) => _Ta.mix(_probeA(tex, z.uv), _kubisch(tex, z), _kubW);
+                                    // vormultipliziert: außerhalb des Bilds seines Rings ist die Karte leer (0 = durchsichtig)
+                                    const _samp = _Ta
+                                        .mix(_liesA(_at.mapNode, _zA), _liesA(_at.mapNode, _zB), _fb)
+                                        .mul(_imRing);
                                     // die Deckung an der Codec-Schwelle (alphaTest unten); ihre Probe trägt den Versatz des Laubs
                                     // (`_probeA` über `_laubVersatz`, A3) wie jede Karte der Klasse
                                     _alpha = _samp.a;
@@ -1001,9 +1042,9 @@ class AnazhRealm_stoff_material {
                                         // des gesetzten Waldes lebt auf der CPU (`_archKartenHorizont`).
                                         const _keepFin = this._lodCrossfadeMaskNode(_Ta, {
                                             impostor: true,
-                                            // die Distanz zur ACHSE der Instanz (der Anker, `_dA`), wie das Studio-
-                                            // Billboard (`vCD` aus `instanceMatrix[3]`), nie zum Fragment des Quads
-                                            distNode: _dA,
+                                            // die Distanz zur ACHSE der Instanz (der Anker, `_dA` ohne den Hub der gekippten
+                                            // Karte), wie das Studio-Billboard (`vCD` aus `instanceMatrix[3]`), nie zum Fragment
+                                            distNode: _dA.sub(_sInst.mul(_bK).mul(_Ta.sin(_phiF))),
                                             visHeightNode: _karte.w.abs(),
                                             occlNode: _karte.w
                                                 .lessThan(_Ta.float(0.0))
@@ -1033,6 +1074,21 @@ class AnazhRealm_stoff_material {
                                     );
                                     albedoNode = _albK;
                                     mat.alphaTest = globalThis.__phytoCore.KARTEN_GESETZ.schwelle; // die Codec-Schwelle
+                                    // DAS JAHR DER KARTE (vegetation.K5, der Studio-Impostor): sie ist Sommer gebacken (die volle
+                                    // Krone, `_karteBuehne`), ihre Schwelle hebt sich um Δ = (1 − Laub-Präsenz) × SAISON_GESETZ
+                                    // .karteSchwelle — im Winter steht nur, was dicht deckt; die Nadel-Art (`_karteNadel`, je
+                                    // Programm-Bau gelesen: die Reihe wächst mit dem Atlas) fällt nie. Δ geht von der Deckung ab,
+                                    // nie in einen Schwellen-Knoten (K68-N1): r184 verwirft a ≤ alphaTest, a − Δ ≤ s heißt a ≤ s + Δ,
+                                    // und die Zahl des Stoffs regiert den Schnitt — der Klon des Phantoms (`_ghostMaterialFor`: Zahl
+                                    // × Deckkraft) trägt das Jahr mit, opak setzt r184 die Alpha nach dem Test auf 1. Bis zur Heilung
+                                    // trug die Karte `alphaTestNode` mit der Zahl als Konstante (gate:werkstatt-weg L-Werkstatt ROT).
+                                    _alpha = _alpha.sub(
+                                        _Ta.Fn(() => {
+                                            const nadel = this._karteNadel(_Ta).element(_schicht.toInt());
+                                            const p = _Ta.mix(_suK.uLaubPraesenz.x, _Ta.float(1), nadel).clamp(0, 1);
+                                            return _Ta.float(1).sub(p).mul(AnazhRealm._saisonGesetz().karteSchwelle);
+                                        })()
+                                    );
                                     // ── Normal-Atlas (rg, z = √(1−x²−y²)) → Billboard-Rahmen → per-Fragment-Licht ──
                                     // Das rgba8-Ziel trägt die Normale vormultipliziert mit der Deckung (z) — kein Saum der
                                     // Leer-Normale an der Silhouette; BC5 trägt das Mittel der deckenden Texel (leer = die Normale der
@@ -1065,9 +1121,12 @@ class AnazhRealm_stoff_material {
                                     // waagrechten Ansicht — rechts, oben, zum Bäcker —, und so steht sie in der Welt, aus welcher
                                     // Höhe das Auge auch blickt. Der Rahmen, der seit A7 zum Auge kippte, glich die halbe Normale
                                     // (z ≥ 0) und das gefallene Licht-Band aus; mit der ganzen Normale hob er die Fichte mittags
-                                    // auf 1,28 × ihrer Gestalt (waagrecht 1,19, die Sicht des Zenits 0,97).
-                                    const _look3 = _Ta.vec3(_sinA, _Ta.float(0.0), _cosA);
-                                    const _up3 = _Ta.vec3(_Ta.float(0.0), _Ta.float(1.0), _Ta.float(0.0));
+                                    // auf 1,28 × ihrer Gestalt (waagrecht 1,19, die Sicht des Zenits 0,97). Im Ring der Hebung e
+                                    // (lod.K3) ist es der Rahmen seiner Bake-Kamera: oben und zum Bäcker um e gekippt.
+                                    const _cE = _Ta.cos(_eW),
+                                        _sE = _Ta.sin(_eW);
+                                    const _look3 = _Ta.vec3(_cE.mul(_sinA), _sE, _cE.mul(_cosA));
+                                    const _up3 = _Ta.vec3(_sE.negate().mul(_sinA), _cE, _sE.negate().mul(_cosA));
                                     const _right3 = _Ta.vec3(_cosA, _Ta.float(0.0), _sinA.negate());
                                     const _nW = _Ta.normalize(
                                         _right3.mul(_nO.x).add(_up3.mul(_nO.y)).add(_look3.mul(_nO.z))
@@ -1105,13 +1164,12 @@ class AnazhRealm_stoff_material {
                                     // ── CAMERA-FACING (Vertex) im VORLAGEN-Raum: der positionNode läuft VOR der Instanz-Matrix
                                     //    (r184, WGSL gelesen), die Matrix dreht, skaliert und schiebt das Quad danach. Also blickt die
                                     //    Karte in der Vorlage auf das Auge, wie die Instanz es sieht: Auge im Objekt-Raum minus Anker
-                                    //    (Spalte 3), zurückgedreht mit der transponierten 3×3 (Mᵀ·d = s·Rᵀ·d, die Richtung genügt).
-                                    //    Das Einheits-Quad steht von y=0 bis y=1; Halbbreite und Höhe sind Vorlagen-Maß, die Skala
-                                    //    trägt die Matrix. ──
+                                    //    (Spalte 3), zurück in die Vorlage (die EINE Naht `_weltNaht.vorlage`). Das Einheits-Quad
+                                    //    steht von y=0 bis y=1; Halbbreite und Höhe sind Vorlagen-Maß, die Skala trägt die Matrix.
+                                    //    DIE GEKIPPTE KARTE (lod.K3): sie kippt um ihre Rechte zum Auge (up = (−sin φ·look, cos φ)),
+                                    //    ihre Mitte bleibt auf der Achse in halber Höhe, ihre halbe Höhe ist die des Rahmen-Zylinders
+                                    //    aus φ (`karteRingHalbe`) — bei φ = 0 steht sie wie das waagrechte Quad von 0 bis zur Höhe. ──
                                     const _axis = _Ta.positionLocal;
-                                    const _axisY = _axis.y.add(
-                                        _Ta.positionGeometry.y.mul(_rahmen.y.sub(_Ta.float(1.0)))
-                                    );
                                     const _dAuge = _naht.vorlage(_Ta.cameraPosition.sub(_naht.anker));
                                     const _lkX = _dAuge.x;
                                     const _lkZ = _dAuge.z;
@@ -1120,6 +1178,12 @@ class AnazhRealm_stoff_material {
                                     const _lz = _lkZ.div(_ll);
                                     // right = cross(up, look) = (look.z, 0, −look.x)
                                     const _off = _ecke.mul(_rahmen.x);
+                                    const _cPhi = _Ta.cos(_phiV),
+                                        _sPhi = _Ta.sin(_phiV);
+                                    const _bV = _Ta.positionGeometry.y
+                                        .mul(2.0)
+                                        .sub(1.0)
+                                        .mul(globalThis.__phytoCore.karteRingHalbe(_alg, _hHv, _rahmen.x, _phiV));
                                     // DER WIND DER KARTE (K19): derselbe Wind-Term wie Rinde und Laub der nahen Stufen (phyto-core
                                     // `windAusschlag`, das Stamm-Glied: ζ = uv.y, die Kronenspitze pendelt ζ²) — die Last aus der
                                     // Wind-Zeile des Wetters, die Böe aus WIND_BOE, die Richtung uWindDir, H = Rahmen-Höhe × Instanz-Skala,
@@ -1127,7 +1191,7 @@ class AnazhRealm_stoff_material {
                                     // ihre Art nur als Atlas-Schicht). Bis K19 pendelte die Karte 0,22 m in jedem Wetter. Die Phase liest
                                     // den Welt-Anker der Instanz, der Ausschlag (Welt-Meter in Windrichtung) geht über die EINE Naht
                                     // (`_weltNaht.vorlage`) in die Vorlage zurück — sonst drehte und skalierte ihn die Matrix mit dem Baum.
-                                    if (!this.state.windUniforms) this._grassInstanceMat();
+                                    this._windUniformsEnsure();
                                     const _wu = this._ensureWindCoupling(_Ta);
                                     const _WB = AnazhRealm.WIND_BOE;
                                     const _Hk = _rahmen.y.mul(_sV).max(0.5);
@@ -1160,9 +1224,9 @@ class AnazhRealm_stoff_material {
                                     );
                                     const _swayT = _naht.vorlage(_swayW);
                                     mat.positionNode = _Ta.vec3(
-                                        _axis.x.add(_lz.mul(_off)).add(_swayT.x),
-                                        _axisY.add(_swayT.y),
-                                        _axis.z.add(_lx.negate().mul(_off)).add(_swayT.z)
+                                        _axis.x.add(_lz.mul(_off)).sub(_sPhi.mul(_lx).mul(_bV)).add(_swayT.x),
+                                        _hHv.add(_cPhi.mul(_bV)).add(_swayT.y),
+                                        _axis.z.add(_lx.negate().mul(_off)).sub(_sPhi.mul(_lz).mul(_bV)).add(_swayT.z)
                                     );
                                     mat.userData = mat.userData || {};
                                     mat.userData.impostorBillboard = true; // Linsen-Marker (diag-impostor)
@@ -1230,26 +1294,37 @@ class AnazhRealm_stoff_material {
                     if (mat.colorNode) mat.vertexColors = false;
                 } else if (isFlatStructure) {
                     // Flach-Farb-Werke (Tempel · Schwert · Rüstung · Esse · …) fließen durch den EINEN Substanz-
-                    // Charakter-Kern (Korn · Kavität · Ton · Verwitterung · Moos · Counter-Shading · Roughness · Bump),
-                    // instanz-stabil (positionLocal), tag-getrieben, LOD-gegated.
-                    const _c = new THREE.Color(opts.color);
-                    const _r = this._substanceCharacter(_Ta, _Ta.vec3(_c.r, _c.g, _c.b), {
+                    // Charakter-Kern (Korn · Kavität · Ton · Verwitterung · Moos · Counter-Shading · Roughness),
+                    // instanz-stabil (positionLocal), tag-getrieben, LOD-gegated. DIE WERTE JE STOFF (material.K5): die Farbe
+                    // liest r184 aus dem Stoff (`materialColor` — auch die Wahl-Tönung der Werkstatt-Vorschau, die bis dahin auf
+                    // keinem flachen Teil stand), die Maße seiner Zeile der Kern als Stoff-Wert (`werte`) — Werke gleicher
+                    // Gestalt teilen EIN Programm (`_graphTeilen` unten). Bis dahin trug jede Farbe und jede Zeile ihre
+                    // Konstanten im Graphen: die Glanz-Bühne (Eisen, Bronze, Quarz, Stahl) übersetzte vier Programme.
+                    werte = mat.userData.stoffWerte = {};
+                    const _r = this._substanceCharacter(_Ta, _Ta.materialColor, {
                         pos: _Ta.positionLocal,
                         worldPos: _Ta.positionWorld,
                         tags: opts.tags || {},
                         metal: params.metalness || 0,
                         roughBase: _Ta.materialRoughness,
-                        bump: true,
+                        werte,
                     });
                     albedoNode = _r.albedo;
                     mat.colorNode = _Ta.vec4(_r.albedo, _Ta.float(1.0));
                     if (_r.roughNode) mat.roughnessNode = _r.roughNode;
-                    if (_r.normalNode) mat.normalNode = _r.normalNode;
                 }
             } catch (_e) {
                 throw this._stoffBruch("der PBR-Stoff (Albedo-Quelle)", _e);
             }
-            this._applySubstanceResponse(mat, responseProfile);
+            this._applySubstanceResponse(mat, responseProfile, werte);
+            // DER WERK-STOFF zeichnet mit dem Graphen seiner Gestalt (die Folge seiner Stoff-Werte); Leuchten und Nässe
+            // (`_leuchtStoff`) hängen an diesen Knoten und teilen sich mit ihnen
+            if (werte)
+                this._graphTeilen(mat, "werk:" + Object.keys(werte).join(","), [
+                    "colorNode",
+                    "roughnessNode",
+                    "outputNode",
+                ]);
         }
         // Geflattete Shading-Normale (2.5D-Lichtung) NUR für Terrain (vertexColors ohne pflanzenStoff).
         // Vegetation (pflanzenStoff) behält ihre echte Normale — nach oben gerichtete Laub-Karten wären mittags
@@ -1881,8 +1956,11 @@ class AnazhRealm_stoff_material {
         const P = AnazhRealm.RAUSCH_GESETZ.P;
         // die Zelle des Rauschens ist eine HALBE Periode (Perlin ist 0 auf jedem Gitterpunkt, seine Energie liegt bei ½ Zyklus je
         // Zelle): bis mk2-mikro trug die Zelle die ganze Periode, die feinste Oktave lag eine Oktave unter dem Nyquist (offline,
-        // dasselbe Rauschen des Kerns, TAAU-Box 4×4: nyquist 0,04 statt 0,14 — die Boden-Station GTX 0,13 < 0,15)
-        const L = T.log2(T.fwidth(wp).length().mul(B.mikroPx).max(B.mikroMinM).mul(0.5)).negate();
+        // dasselbe Rauschen des Kerns, TAAU-Box 4×4: nyquist 0,04 statt 0,14 — die Boden-Station GTX 0,13 < 0,15). Die Oktaven
+        // folgen dem Pixel des SCHIRMS (`schirmJeSzene`): bis w4-wiese-nah dem der Szene, unter dem Hochskalierer 0,42 Oktaven
+        // zu grob (offline, der Messweg mit Zitter, Resolve und Nach-Schärfe: nyquist 0,132 → 0,169, β 1,30 → 0,82; Radeon 0,147)
+        const px = T.fwidth(wp).length().mul(this._ensureAtmoUniforms().schirmJeSzene);
+        const L = T.log2(px.mul(B.mikroPx).max(B.mikroMinM).mul(0.5)).negate();
         const fr = T.fract(L);
         const L0 = L.sub(fr);
         // die Höhe je Oktave fällt mit `mikroHoehe` zur gröberen (0,75: Amplitude ∝ f^0,42, das Spektrum β ≈ 1,2 — die Energie
@@ -1955,14 +2033,27 @@ class AnazhRealm_stoff_material {
 
     // ── DER EINE SUBSTANZ-CHARAKTER-KERN ──
     // Terrain · Vegetation · Flach-Werke lesen alle diese Quelle (Korn · Kavität · Ton · Verwitterung ·
-    // Moos · Counter-Shading · Roughness · Bump, LOD-gegated); der Domänen-Unterschied reist als Parameter
-    // (`pos`-Skala · tags · metal · mossDrive · bark · bump). Render-only, tag-neutral; Fehler → der
-    // unveränderte Albedo. Gibt { albedo, roughNode|null, normalNode|null }.
+    // Moos · Counter-Shading · Roughness, LOD-gegated); der Domänen-Unterschied reist als Parameter
+    // (`pos`-Skala · tags · metal · mossDrive · bark). Render-only, tag-neutral; Fehler → der
+    // unveränderte Albedo. Gibt { albedo, roughNode|null }.
+    // KEIN BUMP AUS DEM RAUSCHEN (material.K5): r184s `bumpMap` ist ein Textur-Bump — er wertet die Höhe an der um dFdx/dFdy
+    // verschobenen Koordinate JEDER Textur in ihr neu aus. Das Rauschen liest seine Ecken ganzzahlig (`textureLoad`,
+    // `_rauschAtlas`): wo die Albedo die Probe schon trug (Stein, Quarz, Holz), las der Bump dieselben Knoten — Höhen-Differenz 0,
+    // die Kugel mit und ohne ihn byte-gleich (640 × 360, 0 Pixel); wo erst er sie baute (die Schichtung des Metalls), stand
+    // `dpdx(vec2<i32>)` im Programm — ungültiges WGSL, Eisen, Bronze und Stahl zeichneten seit ihrer Metall-Zeile (w3w-glanz)
+    // gar nicht, und die Glanz-Bühne wartete auf die abgesagte Pipeline (swiftshader 126 s, GTX über den Deckel 60 s). Das
+    // Mikro-Relief einer Fläche ist EIN Gesetz (`_mikroRelief`).
+    // DIE WERTE JE STOFF (`opts.werte`, material.K5): was nur diesen Stoff unterscheidet (die Maße aus Härte, Dichte, Lebendig
+    // und Metall), legt der Kern in `werte` ab und liest es als Stoff-Wert (`_stoffWert`), nie als eingefaltete Konstante —
+    // Stoffe gleicher Gestalt teilen so EIN Programm (`_graphTeilen`). Jede Weiche des Baus legt ihre Werte oder lässt sie: die
+    // Folge der Namen IST die Gestalt. Ohne `werte` steht jeder Wert als Zahl im Graphen (Boden, Fels, Rinde: je EIN Stoff).
     _substanceCharacter(_T, baseAlbedo, opts = {}) {
-        const out = { albedo: baseAlbedo, roughNode: null, normalNode: null };
+        const out = { albedo: baseAlbedo, roughNode: null };
         try {
             const _ra = this._rauschAtlas();
             const f = (v) => _T.float(v);
+            const W = (name, v) =>
+                opts.werte ? ((opts.werte[name] = v), this._stoffWert(_T, "userData.stoffWerte." + name)) : f(v);
             const asNode = (v, d) => (v == null ? f(d) : v && v.mul ? v : f(v));
             const pos = opts.pos || _T.positionLocal;
             const wp = opts.worldPos || _T.positionWorld;
@@ -1970,24 +2061,16 @@ class AnazhRealm_stoff_material {
             const ht = Math.max(0, Math.min(1, Number(t["härte"]) || 0.4));
             const di = Math.max(0, Math.min(1, (Number(t.dichte) || 0) / 3));
             const metal = Math.max(0, Math.min(1, Number(opts.metal) || 0));
-            // Objekt-lokal (Default): Strata-Y · Verwitterung-unten · Counter-Shading · Bump lesen object-lokales
+            // Objekt-lokal (Default): Strata-Y · Verwitterung-unten · Counter-Shading lesen object-lokales
             // y ∈ [−1..1]. Terrain hat kein object-y → `objectLocal:false` schaltet sie ab; Korn · Ton · Kavität ·
             // Moos tragen weiter.
             const objLocal = opts.objectLocal !== false;
-            // LOD-Fade: feines Korn + Bump verblassen mit der Distanz (Perf, kein Aliasing), Ton-/Moos-Zonen
-            // bleiben. Schwellen aus der EINEN Quelle `TERRAIN_BUMP` (lodNear/lodFar/fineNear/fineFar).
+            // LOD-Fade: feines Korn verblasst mit der Distanz (Perf, kein Aliasing), Ton-/Moos-Zonen bleiben. Schwellen aus der
+            // EINEN Quelle `TERRAIN_BUMP` (fineNear/fineFar).
             const _BD = AnazhRealm.TERRAIN_BUMP;
-            let fineFade = f(1.0);
-            let bumpFade = f(1.0);
-            {
-                const dist = wp.sub(_T.cameraPosition).length();
-                fineFade = f(1.0)
-                    .sub(_T.smoothstep(f(_BD.fineNear), f(_BD.fineFar), dist))
-                    .clamp(0, 1);
-                bumpFade = f(1.0)
-                    .sub(_T.smoothstep(f(_BD.lodNear), f(_BD.lodFar), dist))
-                    .clamp(0, 1);
-            }
+            const fineFade = f(1.0)
+                .sub(_T.smoothstep(f(_BD.fineNear), f(_BD.fineFar), wp.sub(_T.cameraPosition).length()))
+                .clamp(0, 1);
             let albedo = baseAlbedo;
             // (1) KORN — Mehr-Oktav-Noise. Metall: anisotrop längs y (geschmiedeter Schliff);
             //     Rinde: Längs-Faser (bark); sonst körnig. `pos` trägt die Domänen-Skala.
@@ -1997,15 +2080,16 @@ class AnazhRealm_stoff_material {
             // wird STARK längs der Wachstumsachse (y) gestreckt → lange vertikale Furchen statt
             // isotropem Rauschen; fein um den Stamm (x/z hoch). So WEISS das Holz seine Richtung.
             if (opts.bark) gPos = _T.vec3(pos.x.mul(13 + ht * 11), pos.y.mul(0.42), pos.z.mul(13 + ht * 11));
-            else if (metal > 0.5)
-                gPos = _T.vec3(pos.x.mul(grainF * 2.6), pos.y.mul(grainF * 0.4), pos.z.mul(grainF * 2.6));
-            else gPos = pos.mul(f(grainF));
+            else if (metal > 0.5) {
+                const quer = W("kornQuer", grainF * 2.6);
+                gPos = _T.vec3(pos.x.mul(quer), pos.y.mul(W("kornLaengs", grainF * 0.4)), pos.z.mul(quer));
+            } else gPos = pos.mul(W("korn", grainF));
             const mottle = _ra.raum(gPos);
             const broad = _ra.raum(pos.mul(f(0.85)));
             // RINDE — die Risse FOLGEN der Faser (vertikale Furchen/Platten), kein isotroper Krater.
             const crN = opts.bark
                 ? _ra.raum(_T.vec3(pos.x.mul(19 + ht * 12), pos.y.mul(0.7), pos.z.mul(19 + ht * 12)))
-                : _ra.raum(pos.mul(f(6.5 + ht * 9)));
+                : _ra.raum(pos.mul(W("riss", 6.5 + ht * 9)));
             const cavity = _T.pow(f(1.0).sub(crN.mul(crN)), f(2.4));
             // Härte → kantiger Bruch: harte, nicht-hölzerne, nicht-metallene Materialien (Fels · Stein · Kristall)
             // brechen per ridged noise (Grate + Bruch-Linien) + stärkere Schichtung; weich bleibt weich, Metall
@@ -2013,17 +2097,15 @@ class AnazhRealm_stoff_material {
             // `opts.hardDrive` (Terrain reicht `rockW` → steiniger Boden bricht karstig, Wiese bleibt weich).
             const hardBase = ht * ht * (1.0 - metal) * (opts.bark ? 0.0 : 1.0);
             const hardDriveOk = (1.0 - metal) * (opts.bark ? 0.0 : 1.0);
-            let hardF = f(hardBase);
+            let hardF = W("haerte", hardBase);
             if (opts.hardDrive != null)
-                hardF = f(hardBase)
-                    .add(asNode(opts.hardDrive, 0).mul(f(hardDriveOk)))
-                    .clamp(0.0, 1.0);
+                hardF = hardF.add(asNode(opts.hardDrive, 0).mul(f(hardDriveOk))).clamp(0.0, 1.0);
             // Ein Term mit dem Gewicht 0 rechnet kein Rauschen: der Bruch nur, wo Härte ihn trägt (die Rinde nie), die
-            // Schichtung nur object-lokal oder für den Bump (das Terrain las sie × 0 — 1 von 26 Boden-Rauschen).
+            // Schichtung nur, wo sie zählt (object-lokal, nie am Metall; das Terrain las sie × 0 — 1 von 26 Boden-Rauschen).
             const bruch = hardBase > 0 || (opts.hardDrive != null && hardDriveOk > 0);
             const ridge = bruch
                 ? f(1.0)
-                      .sub(_ra.raum(pos.mul(f(3.0 + ht * 6.0))).abs())
+                      .sub(_ra.raum(pos.mul(W("grat", 3.0 + ht * 6.0))).abs())
                       .sub(f(0.5))
                       .mul(f(2.0)) // [-1..1] scharfe Grate/Täler
                 : null;
@@ -2035,22 +2117,23 @@ class AnazhRealm_stoff_material {
             const cavityAmpJs = (0.08 + ht * 0.16) * (opts.bark ? 2.2 : 1.0);
             const strataAmpJs = (1.0 - metal) * (0.07 + di * 0.17) * (opts.bark ? 0.4 : 1.0) * (objLocal ? 1 : 0);
             const strata =
-                strataAmpJs > 0 || opts.bump
+                strataAmpJs > 0
                     ? _ra.raum(_T.vec3(pos.x.mul(0.5), pos.y.mul(opts.bark ? 1.2 : 3.4), pos.z.mul(0.5)))
                     : null;
             let mod = f(1.0).add(
                 mottle
                     .mul(fineFade)
-                    .mul(f(mottleAmp))
+                    .mul(W("fleck", mottleAmp))
                     .mul(f(1.0).sub(hardF.mul(f(0.5))))
             ); // weiches Korn weicht dem Bruch
             if (ridge) mod = mod.add(ridge.mul(fineFade).mul(hardF.mul(f(0.3)))); // angulärer Bruch — skaliert mit hardF
-            mod = mod.add(broad.mul(f(broadAmp)));
-            if (strataAmpJs > 0) mod = mod.add(strata.mul(f(strataAmpJs)).mul(f(1.0).add(hardF.mul(f(1.8))))); // Schichtung ∝ Härte
+            mod = mod.add(broad.mul(W("flaeche", broadAmp)));
+            if (strataAmpJs > 0)
+                mod = mod.add(strata.mul(W("schicht", strataAmpJs)).mul(f(1.0).add(hardF.mul(f(1.8))))); // Schichtung ∝ Härte
             mod = mod.sub(
                 cavity
                     .mul(fineFade)
-                    .mul(f(cavityAmpJs))
+                    .mul(W("mulde", cavityAmpJs))
                     .mul(f(1.0).add(hardF.mul(f(1.3))))
             ); // Risse ∝ Härte
             albedo = albedo.mul(mod.clamp(0.5, 1.5));
@@ -2086,7 +2169,7 @@ class AnazhRealm_stoff_material {
             // (4) MOOS/FLECHTEN — DIE EINE Quelle. Treiber als Param: Werke = lebendig-Tag,
             //     Terrain = Feucht/Grün-Knoten, Rinde = klein. Geometrie (Patch × flach × tief) geteilt.
             const lebTag = Math.max(0, Math.min(1, (Number(t.lebendig) || 0) / 3));
-            const mossDrive = asNode(opts.mossDrive, opts.bark ? 0.12 : lebTag);
+            const mossDrive = opts.mossDrive != null || opts.bark ? asNode(opts.mossDrive, 0.12) : W("moos", lebTag);
             const flatN = asNode(opts.flatness, 1.0);
             const mossPatch = _ra
                 .raum(wp.mul(f(0.55)))
@@ -2128,17 +2211,6 @@ class AnazhRealm_stoff_material {
                     .add(mossW.mul(f(0.22)));
                 if (opts.wetDrive != null) _rN = _rN.sub(asNode(opts.wetDrive, 0).mul(f(0.4)));
                 out.roughNode = _rN.clamp(0.05, 1.0);
-            }
-            // (7) MIKRO-RELIEF (Bump) — der transformative Hebel für FLACHE Low-Poly-Facetten:
-            //     die Höhe perturbiert die Normale → die Fläche fängt Licht als echte Mikro-Struktur.
-            //     LOD-gegated (fern aus). Nur wo angefragt (Werke; Terrain/Rinde haben echtes Relief).
-            if (opts.bump) {
-                const h = mottle
-                    .mul(f(0.5))
-                    .add(crN.mul(f(0.5)))
-                    .add(strata.mul(f(0.35)));
-                const scale = bumpFade.mul(f((0.6 + ht * 0.8) * (metal > 0.5 ? 0.6 : 1.0)));
-                out.normalNode = _T.bumpMap(h, scale);
             }
         } catch (_e) {
             throw this._stoffBruch("der Substanz-Charakter", _e);
@@ -2187,7 +2259,10 @@ class AnazhRealm_stoff_material {
             const _camD = wp.sub(_T.cameraPosition).length();
             const _nahB = _T.float(1).sub(_T.smoothstep(FF.fern[0], FF.fern[1], _camD));
             const _nahF = _T.float(1).sub(_T.smoothstep(FF.fugeFern[0], FF.fugeFern[1], _camD));
-            const _pxM = _camD.mul(2).div(_T.cameraProjectionMatrix.element(1).y.mul(_T.screenSize.y));
+            const _pxM = _camD
+                .mul(2)
+                .div(_T.cameraProjectionMatrix.element(1).y.mul(_T.screenSize.y))
+                .mul(this._ensureAtmoUniforms().schirmJeSzene);
             const _kornSicht = _T.smoothstep(1.5, 4, _T.float(FS.gesetz.geroell.korn).div(_pxM));
             const _gate = _rockW.add(_screeW).mul(_gRock);
             // DIE FELS-FUNKTION (K17-3): das Gesetz rechnet in EINER WGSL-Funktion (`felsFein`), ihre Wiederholungen als Schleifen
@@ -2315,6 +2390,10 @@ class AnazhRealm_stoff_material {
                 // Wo die Nah-Wiese steht (Radius NAH_WIESE.radius), tragen IHRE Halme das Gras; der Boden darunter ist
                 // ihr ruhigerer Wurzelgrund (das Relief zu 40 % über dem Halm-Mittel im Schatten, × 0,7) — das volle
                 // Relief erst zu ihrem Rand hin (die acht Schichten lasen sich auf Armlänge als Höhenlinien, Linse 05.10.).
+                // w4-wiese-nah legte hier den Grund UNTER die Narbe (flach der Fuß-Ton, Sonne und Himmel × `halmNarbe`) im ganzen
+                // Band der Nah-Wiese um das Auge, auch wo sie keinen Büschel zeichnet: am Feuer der Prüfbühne stand kein Halm,
+                // und der Boden ohne Feuer fiel nachts auf Luma 6,1 (Soll ≥ 22), das Feuer auf ihm auf 25,4° (Soll 28–45°,
+                // gate:pruefbuehne-licht S0, Radeon) — heil-w4-wiese-nah: der Grund folgt dem Band, nie dem Bestand, darum fiel er.
                 const _nwR = AnazhRealm.NAH_WIESE.radius;
                 const _relief = _T
                     .smoothstep(_T.float(_nwR * 0.5), _T.float(_nwR), _camD)
@@ -2565,6 +2644,18 @@ class AnazhRealm_stoff_material {
         return e;
     }
 
+    // DAS RAUSCHEN DER BLENDE: Interleaved-Gradient-Noise, BYTE-GENAU __phytoCore.lodDitherIGN (52.9829189 · 0.06711056 ·
+    // 0.00583715; foundry-core.js Z.212), zeitlich über uDitherT — EIN Knoten-Bauer für die Durchsicht, das Laub-Band und den
+    // Ring der Karte (lod.K3). `versatz` n schiebt das Raster um n · 5,588 px (die Ring-Wahl, unkorreliert mit der Blende).
+    _ditherIGN(T, versatz) {
+        const fc = versatz ? T.screenCoordinate.add(T.vec2(versatz * 5.588238)) : T.screenCoordinate;
+        return T.fract(
+            T.float(52.9829189)
+                .mul(T.fract(fc.x.mul(0.06711056).add(fc.y.mul(0.00583715))))
+                .add(this._ensureLodUniforms().uDitherT)
+        );
+    }
+
     // Studio-Dither-Blende als TSL-Knoten = `__phytoCore.lodCrossfadeMask` symbolisch — jede Formel MUSS
     // ihr entsprechen (Linse `gate:foundry-crossfade`); Zahlen aus uLodD0/uLodD1/uLodFade/uLodFade0 +
     // `_ensureLodUniforms`. opts.impostor → fin-Einblendung (lod=2) aus opts.distNode × Wahrnehmungs-k;
@@ -2695,13 +2786,7 @@ class AnazhRealm_stoff_material {
         };
         const n = a === "rinde" ? lu.uKamNah.y : a === "boden" ? lu.uKamNah.z : lu.uKamNah.x;
         const w = AnazhRealm._durchsichtGewicht(A, T.positionWorld, lu.uKamAuge, lu.uKamZiel.xyz, lu.uKamZiel.w, n);
-        const fc = T.screenCoordinate;
-        const dh = T.fract(
-            T.float(52.9829189)
-                .mul(T.fract(fc.x.mul(0.06711056).add(fc.y.mul(0.00583715))))
-                .add(lu.uDitherT)
-        );
-        knoten[a] = w.greaterThan(dh);
+        knoten[a] = w.greaterThan(this._ditherIGN(T, 0));
         return knoten[a];
     }
 
@@ -2823,13 +2908,7 @@ class AnazhRealm_stoff_material {
                     const _vLodDL = _cd.mul(_lkL); // Blatt-SSE (absolut-nah)
                     // golden-ratio Screen-Space-Dither (phytogenesis Fragment): wandert mit uDitherT →
                     // über ~6-8 Frames glättet die zeitliche Streuung den Übergang (TAA-Idee).
-                    const _fc = _Tl.screenCoordinate;
-                    const _dh = _Tl.fract(
-                        _Tl
-                            .float(52.9829189)
-                            .mul(_Tl.fract(_fc.x.mul(0.06711056).add(_fc.y.mul(0.00583715))))
-                            .add(_lu.uDitherT)
-                    );
+                    const _dh = this._ditherIGN(_Tl, 0);
                     // Übergangs-Rampen: _f0 = L0→L1-Band (Blatt-Distanz), _f1 = L1→L2/Impostor-Band
                     // (Skelett-Distanz). Laub = ÜBERLAPPENDE Rampen (phytogenesis FIX v37): die Karte
                     // weicht erst in der oberen Bandhälfte (2f−1) → Deckung bleibt ≥ Maximum, kein Loch. Die Schwellen und
@@ -3098,9 +3177,8 @@ AnazhRealm.AERIAL = Object.freeze({
     aoStrength: 0.38,
     aoCap: 0.18,
 });
-// GRASS_BLADE_H = die lokale Referenz-Halm-Höhe (Material-Gradient-Normalizer des Wind-
-// Materials, uBladeH-Fallback). V18.492: GRASS_MAX_BLADES/GRASS_POOL_CAP sind mit dem
-// Halm-Mesh-Pool gefallen (die Wiese ist Boden-Funktion, 21.07.).
+// GRASS_BLADE_H = die lokale Referenz-Halm-Höhe (die Brennstoff-Tiefe der Wiese im Brand-Gesetz, `bau-vorlagen`).
+// V18.492: GRASS_MAX_BLADES/GRASS_POOL_CAP sind mit dem Halm-Mesh-Pool gefallen (die Wiese ist Boden-Funktion, 21.07.).
 AnazhRealm.GRASS_BLADE_H = 0.42;
 // DIE DURCHSICHT DER KAMERA (`_durchsichtGewicht`): zwischen Auge und Ziel (`_kamZielSetzen`) wird eine Pflanze um den
 // Sicht-Strahl bis zum Radius durchsichtig und über den Saum ausgedithert, quer zum Strahl wie vor der Ebene des Ziels (m)

@@ -14,14 +14,14 @@ const SKRIPTE = path.join(__dirname, "..");
 async function checkBandV1731EmotionDrivesWorld({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        if (r.state.emotionField) r.state.emotionField.clear(); // V17.32 — der Tint misst die GLOBALE Stimmung, kein Ort-Abdruck
+        if (st.emotionField) st.emotionField.clear(); // V17.32 — der Tint misst die GLOBALE Stimmung, kein Ort-Abdruck
         // behavioral: joy faerbt den Welt-Tint warm — DURCH die Feld-Achse (aura.emotion)
-        const e = r.state.player.emotions;
+        const e = st.player.emotions;
         const saved = Object.assign({}, e);
         // Default `auraTintStrength` ist 0 (Slider hebt ihn) → die KONSUM-Probe forciert 1 (deterministisch),
         // um zu beweisen, dass die Feld-Emotion-Achse den Tint färbt, wenn aktiviert.
-        const _origAuraK1731 = r.state.atmosphere && r.state.atmosphere.auraTintStrength;
-        if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
+        const _origAuraK1731 = st.atmosphere && st.atmosphere.auraTintStrength;
+        if (st.atmosphere) st.atmosphere.auraTintStrength = 1;
         for (const k of Object.keys(e)) e[k] = 0;
         const cold = r._dayNightComputeTint();
         for (const k of Object.keys(e)) e[k] = 0;
@@ -31,7 +31,7 @@ async function checkBandV1731EmotionDrivesWorld({ page, check }) {
         out.coldR = cold.skyColor.r;
         out.warmR = warm.skyColor.r;
         for (const k of Object.keys(e)) e[k] = saved[k] || 0; // restore
-        if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = _origAuraK1731; // restore Default (0)
+        if (st.atmosphere) st.atmosphere.auraTintStrength = _origAuraK1731; // restore Default (0)
         return out;
     });
     check(
@@ -41,9 +41,7 @@ async function checkBandV1731EmotionDrivesWorld({ page, check }) {
     );
 }
 
-async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWelle6G3Lebendigkeit({ page, check }) {
     // ### Welle 6.G3 — Welt-Lebendigkeit ###
     // (a) Tag-Nacht-Zyklus, (b) sanfter Wetter-Übergang —
     // Konstanten, Methoden, Persistenz, DSL-Op, UI-DOM.
@@ -53,7 +51,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }
 
         // --- a) Tag-Nacht-Zyklus
         // Der Test liest den Default aus der EINEN Konstante statt einer zweiten Zahl.
-        out.dayLengthDefault = r.state.dayLengthMinutes === AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES;
+        out.dayLengthDefault = st.dayLengthMinutes === AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES;
         // das Licht der EINEN Atmosphäre über die Uhr (klare Luft; der Morgen um 0,32 steigt und knickt nicht)
         const klar = r._atmoRechnung().betaKlar(r._atmoGesetz());
         r._luftBeta = () => klar;
@@ -68,30 +66,30 @@ async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }
 
         // setTimeOfDay setzt korrekt
         r.setTimeOfDay(0.25, "human");
-        out.setTimeOfDayWorks = Math.abs(r.state.timeOfDay - 0.25) < 0.001;
+        out.setTimeOfDayWorks = Math.abs(st.timeOfDay - 0.25) < 0.001;
         out.timeLabel0_25Hours = r._timeOfDayLabel(0.25).includes("06:");
 
         // tickDayNight schreitet voran
         r.setTimeOfDay(0.4, "human");
-        const beforeT = r.state.timeOfDay;
-        r.state._lastDayNightTick = 0;
+        const beforeT = st.timeOfDay;
+        st._lastDayNightTick = 0;
         r.tickDayNight(0.5); // 0.5 s delta, dayLength=60min=3600s → +0.00014
-        out.tickAdvances = r.state.timeOfDay > beforeT;
+        out.tickAdvances = st.timeOfDay > beforeT;
         // setDayLength clamped
         r.setDayLength(5);
-        out.setDayLength5 = r.state.dayLengthMinutes === 5;
+        out.setDayLength5 = st.dayLengthMinutes === 5;
         r.setDayLength(999); // > max 60
-        out.setDayLengthClampedMax = r.state.dayLengthMinutes === 60;
+        out.setDayLengthClampedMax = st.dayLengthMinutes === 60;
         r.setDayLength(0); // < min 1
-        out.setDayLengthClampedMin = r.state.dayLengthMinutes === 1;
+        out.setDayLengthClampedMin = st.dayLengthMinutes === 1;
         r.setDayLength(AnazhRealm.DAY_LENGTH_DEFAULT_MINUTES); // zurück
 
         // DSL-Op set_time_of_day — die Uhr gehört dem Spieler: sein Satz stellt sie, der Nexus nie
         r.dslRun(["set_time_of_day", 0.7], { source: "human" });
-        out.dslSetTimeOfDay = Math.abs(r.state.timeOfDay - 0.7) < 0.001;
+        out.dslSetTimeOfDay = Math.abs(st.timeOfDay - 0.7) < 0.001;
         const nexusUhr = r.dslRun(["set_time_of_day", 0.1], { source: "nexus" });
         out.dslNexusUhrGehalten =
-            Math.abs(r.state.timeOfDay - 0.7) < 0.001 && nexusUhr.log.some((e) => e.event === "uhr_gehalten");
+            Math.abs(st.timeOfDay - 0.7) < 0.001 && nexusUhr.log.some((e) => e.event === "uhr_gehalten");
         // NON_BROADCASTABLE
         out.setTimeOfDayInBlacklist = AnazhRealm.NON_BROADCASTABLE_OPS.has("set_time_of_day");
 
@@ -99,10 +97,10 @@ async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }
         // hell, warm), nachts der MOND gegenüber der Sonne — AUCH über dem Horizont, gedämpft + kühl
         // (ein Licht von unten wüsche die Nacht aus).
         r.setTimeOfDay(0.5, "human"); // Mittag
-        const noonY = r.state.directionalLight.position.y;
-        const noonInt = r.state.directionalLight.intensity;
+        const noonY = st.directionalLight.position.y;
+        const noonInt = st.directionalLight.intensity;
         r.setTimeOfDay(0, "human"); // Mitternacht
-        const dlN = r.state.directionalLight;
+        const dlN = st.directionalLight;
         const midnightY = dlN.position.y;
         const midnightCool = dlN.color.b > dlN.color.r; // Mondlicht ist kühl (b > r)
         out.lightPosFollowsTimeOfDay = noonY > 0 && midnightY > 0 && dlN.intensity < noonInt && midnightCool;
@@ -115,25 +113,25 @@ async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }
         });
 
         // Setze sunny als Ausgangspunkt
-        r.state.weather = "sunny";
-        r.state.weatherTransition = null;
+        st.weather = "sunny";
+        st.weatherTransition = null;
         // der Satz des Spielers blendet vom Wetter davor über
         r.dslRun(["weather", "rainy"], { source: "human" });
-        out.weatherTransitionFromSunny = r.state.weatherTransition && r.state.weatherTransition.from === "sunny";
+        out.weatherTransitionFromSunny = st.weatherTransition && st.weatherTransition.from === "sunny";
         // requestWeatherTransition(rainy) wenn schon rainy → no-op (gleiches to)
         const okSameTarget = r.requestWeatherTransition("rainy");
         out.transitionSameTargetNoop = okSameTarget === true;
         // tickWeatherTransition setzt progress voran
-        r.state.weatherTransition.startedAt -= 0.1; // 100 ms der Welt-Uhr
+        st.weatherTransition.startedAt -= 0.1; // 100 ms der Welt-Uhr
         r.tickWeatherTransition(0);
-        out.transitionProgressAdvanced = r.state.weatherTransition && r.state.weatherTransition.progress > 0;
+        out.transitionProgressAdvanced = st.weatherTransition && st.weatherTransition.progress > 0;
         // Bei progress=1 wird die transition geclearet. Offset > Cap (120 s), damit die Probe deterministisch
         // ist — die Emotion-Modulation streckt die Default-Dauer auf bis zu ~86 s.
-        if (r.state.weatherTransition) {
-            r.state.weatherTransition.startedAt -= 200; // 200 s > 120-s-Cap
+        if (st.weatherTransition) {
+            st.weatherTransition.startedAt -= 200; // 200 s > 120-s-Cap
         }
         r.tickWeatherTransition(0);
-        out.transitionClearedOnComplete = r.state.weatherTransition === null;
+        out.transitionClearedOnComplete = st.weatherTransition === null;
 
         // --- c) den Fauna-Lifecycle (Geburt, Hungertod des Ältesten, Trauer, Journal) misst gate:kreatur-takt kaskade
 
@@ -249,27 +247,27 @@ async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }
         // --- Vision 4: Sky-Tint moduliert mit awe
         // Setze awe=0, lese sky-Color; setze awe=1, vergleiche.
         r.setTimeOfDay(0.5, "human"); // Mittag
-        r.state.player.emotions.awe = 0;
-        r.state.player.emotions.joy = 0;
-        r.state.player.emotions.sorrow = 0;
-        r.state.weather = "sunny";
-        r.state.weatherTransition = null;
+        st.player.emotions.awe = 0;
+        st.player.emotions.joy = 0;
+        st.player.emotions.sorrow = 0;
+        st.weather = "sunny";
+        st.weatherTransition = null;
         // der Tint liest jetzt die RÄUMLICHE emotion-Achse (`aura.emotion`,
         // global + lokaler Abdruck). Diese Probe misst die GLOBALE Emotion→Tint-
         // Kopplung isoliert → das emotionField clearen (sonst blenden Orts-Abdrücke
         // aus früheren _feelAction-Bands rein).
-        if (r.state.emotionField) r.state.emotionField.clear();
+        if (st.emotionField) st.emotionField.clear();
         // Der Look-Default `auraTintStrength` macht den Feld/Emotion-Tint subtil → Margen-Tests würden
         // flaky. Die Proben prüfen den MECHANISMUS bei VOLLER Stärke (1.0: große, deterministische Marge);
         // zurückgesetzt am Block-Ende (vor Vision 6).
-        const _origAuraKg3 = r.state.atmosphere && r.state.atmosphere.auraTintStrength;
-        if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
+        const _origAuraKg3 = st.atmosphere && st.atmosphere.auraTintStrength;
+        if (st.atmosphere) st.atmosphere.auraTintStrength = 1;
         r._applyDayNightToScene();
         // Doku-Sync: skyboxMaterial ist jetzt MeshBasicNodeMaterial,
         // Uniforms leben in state.skyboxUniforms (uniform-Knoten mit .value).
-        const skyU = r.state.skyboxUniforms.himmelTint;
+        const skyU = st.skyboxUniforms.himmelTint;
         const skyAtAweZero = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
-        r.state.player.emotions.awe = 1.0;
+        st.player.emotions.awe = 1.0;
         r._applyDayNightToScene();
         const skyAtAweHigh = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
         // Bei awe=1 sollte b (Blau-Anteil) sichtbar höher sein
@@ -281,58 +279,58 @@ async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }
         // `_dayNightComputeTint()` (der Himmel des Studios: sorrow grayt ~40 %), nicht am live `himmelTint`
         // (der skyTint-Blend verdünnt auf ~3 % → flaky). Gleicher Ort, emotionField leer → nur sorrow zählt.
         const satG3 = (c) => Math.max(c.r, c.g, c.b) - Math.min(c.r, c.g, c.b);
-        r.state.player.emotions.awe = 0;
-        r.state.player.emotions.sorrow = 0;
+        st.player.emotions.awe = 0;
+        st.player.emotions.sorrow = 0;
         const satG3Zero = satG3(r._dayNightComputeTint().skyColor);
-        r.state.player.emotions.sorrow = 1.0;
+        st.player.emotions.sorrow = 1.0;
         const satG3High = satG3(r._dayNightComputeTint().skyColor);
         out.sorrowReducesSaturation = satG3High < satG3Zero;
         // Reset
-        r.state.player.emotions.sorrow = 0;
+        st.player.emotions.sorrow = 0;
         r._applyDayNightToScene();
 
         // --- Vision 6: Wetter-Dauer skaliert mit Emotion
         // peace=1 → Dauer > Default. chaos=1 → Dauer < Default.
-        r.state.player.emotions.peace = 0;
-        r.state.player.emotions.chaos = 0;
-        r.state.weather = "sunny";
-        r.state.weatherTransition = null;
+        st.player.emotions.peace = 0;
+        st.player.emotions.chaos = 0;
+        st.weather = "sunny";
+        st.weatherTransition = null;
         r.requestWeatherTransition("rainy"); // Default-Dauer (sollte ~45000)
-        const defaultDur = r.state.weatherTransition && r.state.weatherTransition.duration;
-        r.state.weatherTransition = null;
-        r.state.weather = "sunny";
-        r.state.player.emotions.peace = 1.0;
+        const defaultDur = st.weatherTransition && st.weatherTransition.duration;
+        st.weatherTransition = null;
+        st.weather = "sunny";
+        st.player.emotions.peace = 1.0;
         r.requestWeatherTransition("rainy");
-        const peaceDur = r.state.weatherTransition && r.state.weatherTransition.duration;
-        r.state.weatherTransition = null;
-        r.state.weather = "sunny";
-        r.state.player.emotions.peace = 0;
-        r.state.player.emotions.chaos = 1.0;
+        const peaceDur = st.weatherTransition && st.weatherTransition.duration;
+        st.weatherTransition = null;
+        st.weather = "sunny";
+        st.player.emotions.peace = 0;
+        st.player.emotions.chaos = 1.0;
         r.requestWeatherTransition("rainy");
-        const chaosDur = r.state.weatherTransition && r.state.weatherTransition.duration;
-        r.state.weatherTransition = null;
-        r.state.weather = "sunny";
-        r.state.player.emotions.chaos = 0;
+        const chaosDur = st.weatherTransition && st.weatherTransition.duration;
+        st.weatherTransition = null;
+        st.weather = "sunny";
+        st.player.emotions.chaos = 0;
         out.peaceSlowsWeather = peaceDur > defaultDur * 1.2;
         out.chaosSpeedsWeather = chaosDur < defaultDur * 0.7;
 
         // BÜHNE: zurück an den Ursprung der Testzelle
-        r.state.playerMesh.position.x = 0;
+        st.playerMesh.position.x = 0;
 
         // --- Vision 9: Sonne + Mond folgen der Tageszeit (Sternfeld, Mittags-Grenze und Unendlich prüft Himmel-Tag)
-        if (r.state.sunMesh && r.state.moonMesh) {
+        if (st.sunMesh && st.moonMesh) {
             // Die Orbit-HÖHE lebt im skyOffset (Welt-Position = camera + skyOffset, pro Frame gesetzt in
             // `_followCelestialBodies`; dieser Test ruft kein _loopRender) → skyOffset.y (= sin(angle)·380)
             // ist das kamera-unabhängige Maß für über/unter dem Horizont.
             const offY = (m) => (m.userData && m.userData.skyOffset ? m.userData.skyOffset.y : m.position.y);
             r.setTimeOfDay(0.5, "human"); // Mittag
             r._applyDayNightToScene();
-            const sunYNoon = offY(r.state.sunMesh);
-            const moonYNoon = offY(r.state.moonMesh);
+            const sunYNoon = offY(st.sunMesh);
+            const moonYNoon = offY(st.moonMesh);
             r.setTimeOfDay(0, "human"); // Mitternacht
             r._applyDayNightToScene();
-            const sunYMidnight = offY(r.state.sunMesh);
-            const moonYMidnight = offY(r.state.moonMesh);
+            const sunYMidnight = offY(st.sunMesh);
+            const moonYMidnight = offY(st.moonMesh);
             // Mittag: Sonne oben, Mond unten. Mitternacht: umgekehrt.
             out.sunHighAtNoon = sunYNoon > 100;
             out.moonLowAtNoon = moonYNoon < -100;
@@ -348,7 +346,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }
         r.worldFieldAt = function () {
             return { lebendig: 0.1, dichte: 0.1, glut: 0.1, magieleitung: 0.9 };
         };
-        r.state.player.emotions.awe = 0;
+        st.player.emotions.awe = 0;
         r._applyDayNightToScene();
         const skyMagieField = { r: skyU.value.r, g: skyU.value.g, b: skyU.value.b };
         r.worldFieldAt = function () {
@@ -359,7 +357,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }
         // Magie-Region sollte mehr Blau haben als dichte-Region
         out.magieFieldRaisesBlue = skyMagieField.b > skyDichteField.b + 0.02;
         // Reset (auch den Aura-Tint-Default vom Block-Anfang)
-        if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = _origAuraKg3;
+        if (st.atmosphere) st.atmosphere.auraTintStrength = _origAuraKg3;
         r.worldFieldAt = origWFA;
         r._applyDayNightToScene();
 
@@ -406,9 +404,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check, errors, finalState }
     }
 }
 
-async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWelle6G4Atmosphere({ page, check }) {
     // ### 6.G4.a — Welt unter wandernder Sonne (Hemisphere + Licht-Material + Fog) ###
     // Tiefe statt homogenem Licht: Hemisphere-Light (Sky-Tint oben, Erd-Tint unten) + licht-reaktives
     // Material + atmosphärischer Fog.
@@ -427,12 +423,12 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
         // Nachthimmel-Boden (Mittag 0, Mitternacht > 0). Dazu die Belichtung aus dem Licht (licht.K1): mittags und nachts
         // steht das Gesetz der Kamera aus dem Licht des Orts (`_belichtungAusLicht`, die Stufen der Sonnenhöhe gegen den Anker).
         // Die Belichtung liest die Lichter ihrer Anwendung (S7), nie die zurückgelesene Umgebung.
-        const gesetz = () => [r.state.renderer.toneMappingExposure, r._belichtungAusLicht(r._sonnenRichtung().y)];
+        const gesetz = () => [st.renderer.toneMappingExposure, r._belichtungAusLicht(r._sonnenRichtung().y)];
         r.setTimeOfDay(0.5, "human");
-        const intensityNoon = r.state.hemiLight.intensity;
+        const intensityNoon = st.hemiLight.intensity;
         const mittag = gesetz();
         r.setTimeOfDay(0, "human");
-        const intensityNight = r.state.hemiLight.intensity;
+        const intensityNight = st.hemiLight.intensity;
         const nacht = gesetz();
         out.hemiNurNachtboden = intensityNoon < 0.01 && intensityNight > 0.05;
         out.belichtungAusLicht = [mittag, nacht].every(([k, soll]) => Math.abs(k / soll - 1) < 1e-6);
@@ -444,8 +440,8 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
         r.setTimeOfDay(0.5, "human");
         const origWFA = r.worldFieldAt;
         const origAuraAt = r.auraAt;
-        const savedAuraStrength = r.state.atmosphere ? r.state.atmosphere.auraTintStrength : undefined;
-        if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = 1;
+        const savedAuraStrength = st.atmosphere ? st.atmosphere.auraTintStrength : undefined;
+        if (st.atmosphere) st.atmosphere.auraTintStrength = 1;
         r.worldFieldAt = function () {
             return { lebendig: 0.9, dichte: 0.05, glut: 0.05, magieleitung: 0.05 };
         };
@@ -457,27 +453,27 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
         // sRGB→linear) → verglichen wird die sRGB-Display-Form via `convertLinearToSRGB()`; die Schwelle
         // meint die wahrgenommene Helligkeit.
         const tmpColor = new window.THREE.Color();
-        tmpColor.copy(r.state.hemiLight.groundColor).convertLinearToSRGB();
+        tmpColor.copy(st.hemiLight.groundColor).convertLinearToSRGB();
         const groundLebendigG = tmpColor.g;
         r.worldFieldAt = function () {
             return { lebendig: 0.05, dichte: 0.05, glut: 0.9, magieleitung: 0.05 };
         };
         r._applyDayNightToScene();
-        tmpColor.copy(r.state.hemiLight.groundColor).convertLinearToSRGB();
+        tmpColor.copy(st.hemiLight.groundColor).convertLinearToSRGB();
         const groundGlutR = tmpColor.r;
         // lebendig erhöht Grün, glut erhöht Rot
         out.groundColorFollowsLebendig = groundLebendigG > 0.3;
         out.groundColorFollowsGlut = groundGlutR > 0.5;
         r.worldFieldAt = origWFA;
         r.auraAt = origAuraAt;
-        if (r.state.atmosphere) r.state.atmosphere.auraTintStrength = savedAuraStrength;
+        if (st.atmosphere) st.atmosphere.auraTintStrength = savedAuraStrength;
         r._applyDayNightToScene();
 
         // 4. Architektur-Material ist licht-reaktiv (Toon/PBR) — geprüft am KLASSISCHEN Bau-Pfad
         // (_buildFromBlueprint): stein_block ist Studio-bekannt und stünde foundry-ON als f:-Instanz ohne
         // entry.mesh → lokaler Hook; der Spawn wird IMMER entfernt (auch mesh-los — kein Test-Leck).
         let hasToonMaterial = false;
-        if (r.state.blueprints.stein_block) {
+        if (st.blueprints.stein_block) {
             window.__withNoFoundry(() => {
                 const arch = r.spawnArchitecture("stein_block", { x: 0, y: 10, z: 0 }, { silent: true });
                 if (arch && arch.mesh) {
@@ -531,44 +527,40 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
     const v828Results = await safeEvaluate(page, () => {
         const out = {};
 
-        // --- Phase D: Wind + Wolken + Wasser ---
-        // Wind lebt jetzt im Instanced-Gras-Material.
-        const wm1 = r._grassInstanceMat ? r._grassInstanceMat() : null;
-        const wm2 = r._grassInstanceMat ? r._grassInstanceMat() : null;
-        out.windMatCached = !!(wm1 && wm1 === wm2); // geteilt
+        // --- Phase D: Wolken + Wasser ---
         // Wolken-Cover (der Uniform-Knoten in state.skyboxUniforms) folgt weather (liest state.skyboxUniforms). weatherTransition leeren: eine aktive
         // Warmup-Transition überstimmt state.weather in `_weatherBlendedValue` (beide Lesungen gleich).
-        r.state.weatherTransition = null;
-        r.state.weather = "rainy";
+        st.weatherTransition = null;
+        st.weather = "rainy";
         r._applyDayNightToScene();
-        const cloudRainy = r.state.skyboxUniforms.cloudCover.value;
-        r.state.weatherTransition = null;
-        r.state.weather = "sunny";
+        const cloudRainy = st.skyboxUniforms.cloudCover.value;
+        st.weatherTransition = null;
+        st.weather = "sunny";
         r._applyDayNightToScene();
-        const cloudSunny = r.state.skyboxUniforms.cloudCover.value;
+        const cloudSunny = st.skyboxUniforms.cloudCover.value;
         out.cloudsFollowWeather = cloudRainy > cloudSunny;
         // ===== WELLE J3 — die Himmelskörper folgen der KAMERA, nicht dem Ursprung =====
         // KONSUM: nach fernem Kamera-Teleport steht die Sonne nahe der Kamera (in Himmelsrichtung),
         // nicht um den Welt-Ursprung.
         out.sunFollowsCamera = false;
         out.sunNotAtOrigin = false;
-        if (r.state.sunMesh && r.state.camera) {
+        if (st.sunMesh && st.camera) {
             r._updateCelestialBodies(Math.PI * 0.3, 1.0); // setzt skyOffset
-            const camOrig = r.state.camera.position.clone();
+            const camOrig = st.camera.position.clone();
             // BÜHNE: ein ferner Spieler für den Himmels-Folger (nur der Abstand zählt)
-            r.state.camera.position.set(2000, 50, 2000); // ferner Spieler
+            st.camera.position.set(2000, 50, 2000); // ferner Spieler
             r._followCelestialBodies();
-            const sun = r.state.sunMesh;
+            const sun = st.sunMesh;
             const off = sun.userData && sun.userData.skyOffset ? sun.userData.skyOffset : null;
             if (off) {
-                const dCam = sun.position.distanceTo(r.state.camera.position);
+                const dCam = sun.position.distanceTo(st.camera.position);
                 const dOrig = sun.position.length();
                 // Sonne ~|skyOffset| von der Kamera entfernt (in Himmelsrichtung)…
                 out.sunFollowsCamera = Math.abs(dCam - off.length()) < 1.0;
                 // …und WEIT vom Ursprung (sie orbitiert nicht mehr um (0,0,0)).
                 out.sunNotAtOrigin = dOrig > 1500;
             }
-            r.state.camera.position.copy(camOrig);
+            st.camera.position.copy(camOrig);
             r._followCelestialBodies();
         }
         // Der Terrain-colorNode (triplanar + Wiese + Aerial) baut OHNE Stoff-Bruch — der Zeuge zählt jede Meldung
@@ -591,7 +583,7 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
         // up-gebackenes Normal-Attribut wäre die Akne-Regression.
         out.terrainNormalsReal = (() => {
             try {
-                for (const entry of r.state.voxelChunks.values()) {
+                for (const entry of st.voxelChunks.values()) {
                     const g = entry && entry.mesh && entry.mesh.geometry;
                     const n = g && g.attributes && g.attributes.normal;
                     if (!n || n.count < 64) continue;
@@ -640,41 +632,38 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
         // Pfad ist gestrichen.
 
         // --- Atmosphäre-Persistenz --- (der Nebel-Regler ist fort, die Mikro-Struktur trägt den Beweis)
-        const microAlt = r.state.atmosphere ? r.state.atmosphere.microStrength : undefined;
+        const microAlt = st.atmosphere ? st.atmosphere.microStrength : undefined;
         r.setMicroStrength(0.15);
         const snap = r.buildStateSnapshot();
         out.atmospherePersisted = !!(snap && snap.atmosphere && Math.abs(snap.atmosphere.microStrength - 0.15) < 0.01);
-        r.setMicroStrength(microAlt == null ? r.constructor.AERIAL.microStrength : microAlt);
+        r.setMicroStrength(microAlt == null ? AnazhRealm.AERIAL.microStrength : microAlt);
         // J4-Regler — KONSUM: setCavityAO/setEdgeSharp pushen live ins Uniform +
         // persistieren in state.atmosphere (so liest der Slider den Wert ab).
         r._ensureAtmoUniforms();
         const aoRet = r.setCavityAO(0.3);
         out.cavityAOSetter =
             aoRet === 0.3 &&
-            r.state.atmosphere.cavityAO === 0.3 &&
-            r.state.atmoUniforms &&
-            Math.abs(r.state.atmoUniforms.aoScale.value - 0.3) < 1e-6;
+            st.atmosphere.cavityAO === 0.3 &&
+            st.atmoUniforms &&
+            Math.abs(st.atmoUniforms.aoScale.value - 0.3) < 1e-6;
         const esRet = r.setEdgeSharp(0);
-        out.edgeSharpSetter = esRet === 0 && r.state.atmosphere.kantenSchaerfe === 0;
+        out.edgeSharpSetter = esRet === 0 && st.atmosphere.kantenSchaerfe === 0;
         const txRet = r.setSurfaceTexture(0);
         out.surfTexSetter =
             txRet === 0 &&
-            r.state.atmosphere.triplanar === 0 &&
-            r.state.atmoUniforms &&
-            r.state.atmoUniforms.triplanarScale.value === 0;
+            st.atmosphere.triplanar === 0 &&
+            st.atmoUniforms &&
+            st.atmoUniforms.triplanarScale.value === 0;
         const cvRet = r.setColorVariation(0);
         out.colorVarSetter =
-            cvRet === 0 &&
-            r.state.atmosphere.colorVar === 0 &&
-            r.state.atmoUniforms &&
-            r.state.atmoUniforms.tintScale.value === 0;
+            cvRet === 0 && st.atmosphere.colorVar === 0 && st.atmoUniforms && st.atmoUniforms.tintScale.value === 0;
         // B3: setTerrainFlatten/Slider/Uniform sind GESCHNITTEN (gebacken);
         // die Wahrheit lebt als statische Konstante (Worker-Mirror-Vertrag).
         out.terrainFlattenSetter =
             typeof r.setTerrainFlatten === "undefined" &&
             Number.isFinite(AnazhRealm.TERRAIN_NORMAL_FLATTEN) &&
-            !!(r.state.atmoUniforms && r.state.atmoUniforms.terrainFlatten) &&
-            Math.abs(r.state.atmoUniforms.terrainFlatten.value - AnazhRealm.TERRAIN_NORMAL_FLATTEN) < 1e-6 &&
+            !!(st.atmoUniforms && st.atmoUniforms.terrainFlatten) &&
+            Math.abs(st.atmoUniforms.terrainFlatten.value - AnazhRealm.TERRAIN_NORMAL_FLATTEN) < 1e-6 &&
             !document.getElementById("slider-flatten");
         out.sliderHeadroom = r.setCavityAO(1.5) === 1.5 && r.setSurfaceTexture(1.5) === 1.5;
         // Werte wiederherstellen, die der j4SlidersPersist-Test unten erwartet
@@ -698,7 +687,6 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
     });
 
     if (v828Results && !v828Results.error) {
-        check("D: _grassInstanceMat ist geteilt/gecached (eine Kompilierung)", v828Results.windMatCached);
         check("D: Wolken-Cover folgt weather (rainy > sunny)", v828Results.cloudsFollowWeather);
         check(
             "V17.J3: die Sonne folgt der Kamera (|Pos−Kamera| ≈ skyOffset, nicht origin-orbit)",
@@ -776,8 +764,8 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
         // der im 3rd warf, liegt weiter auf SHADOW_TWIN_LAYER (der Wurf-Ebene, K72 — die Kaskaden werfen ihn); 3rd gibt jede
         // Maske genau zurück; `visible` wechselt nie.
         {
-            const pm = r.state.playerMesh;
-            const E = r.constructor.SHADOW_TWIN_LAYER;
+            const pm = st.playerMesh;
+            const E = AnazhRealm.SHADOW_TWIN_LAYER;
             const knoten = [];
             const sammle = (o) => {
                 if (o.userData && o.userData._gehalten) return;
@@ -787,7 +775,7 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
             const kopf = pm && pm.userData && pm.userData.parts && pm.userData.parts.head;
             if (kopf) sammle(kopf);
             for (const ch of (pm && pm.children) || []) if (ch.userData && ch.userData._creatureSkin) sammle(ch);
-            const vorher = r.state.cameraMode;
+            const vorher = st.cameraMode;
             r.setCameraMode("third");
             const dritt = knoten.map((o) => o.layers.mask);
             const sicht = knoten.map((o) => o.visible);
@@ -806,20 +794,20 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
             out.egoEbene = { knoten: knoten.length, leib, ego, zurueck };
         }
 
-        // --- Instanced-Gras: `state.voxelChunkGrass` (der Bau verbucht je Chunk), `_grassInstanceMat` ist geteilt
-        out.chunkGrassMap = !!r.state.voxelChunkGrass && r.state.voxelChunkGrass instanceof Map;
+        // --- Instanced-Gras: `state.voxelChunkGrass` (der Bau verbucht je Chunk), der Halm-Stoff ist geteilt
+        out.chunkGrassMap = !!st.voxelChunkGrass && st.voxelChunkGrass instanceof Map;
         // die Wiese ist Boden-
         // Funktion — Gras-Zellen sind verbucht (null = bewusst halm-los), 0 InstancedMesh.
         let grassInstances = 0,
             grassCells = 0;
-        if (r.state.voxelChunkGrass) {
-            for (const v of r.state.voxelChunkGrass.values()) {
+        if (st.voxelChunkGrass) {
+            for (const v of st.voxelChunkGrass.values()) {
                 grassCells++;
                 if (v && v.isInstancedMesh) grassInstances++;
             }
         }
         out.grassCellsBookedHalmFree = grassCells > 0 && grassInstances === 0;
-        out.grassMatShared = r._grassInstanceMat() === r._grassInstanceMat();
+        out.grassMatShared = r._foundryTreeMaterial("grass", null) === r._foundryTreeMaterial("grass", null);
 
         // DIE BODEN-KARTE ist der GERENDERTE Boden: an 256 Punkten des Spieler-Chunks trifft `_bodenSichtAt`
         // (der EINE Leser, K21) die Mesh-Oberfläche (Strahl von oben, beide Seiten — die Surface-Nets-Wicklung zeigt
@@ -827,8 +815,8 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
         // NAH-WIESE: die Büschel einer Kachel sind Γ5-stabil und stehen auf der Karte.
         {
             const cfg = r._voxelChunkConfig(0);
-            const lpc = r.state.lastPlayerVoxelChunk;
-            const e = lpc && r.state.voxelChunks && r.state.voxelChunks.get(lpc.cx + "," + lpc.cz);
+            const lpc = st.lastPlayerVoxelChunk;
+            const e = lpc && st.voxelChunks && st.voxelChunks.get(lpc.cx + "," + lpc.cz);
             let geo = e && e.mesh && e.mesh.geometry;
             if (geo && !(geo.attributes.position.array && geo.attributes.position.array.length)) geo = null;
             const karte = [];
@@ -857,8 +845,8 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
                 `${Math.round(100 * anteil(karte))} % ≤ 5 cm · Gesetz Median ${(100 * (median(gesetz) || 0)).toFixed(1)} cm, ` +
                 `${Math.round(100 * anteil(gesetz))} % ≤ 5 cm`;
             // Die büschel-reichste Kachel im 7×7-Umkreis des Spielers (die Spawn-Kachel selbst kann Fels sein).
-            const NW = r.constructor.NAH_WIESE;
-            const pp = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, z: 0 };
+            const NW = AnazhRealm.NAH_WIESE;
+            const pp = st.playerMesh ? st.playerMesh.position : { x: 0, z: 0 };
             const t0x = Math.floor(pp.x / NW.kachel);
             const t0z = Math.floor(pp.z / NW.kachel);
             let tx = t0x;
@@ -886,17 +874,15 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
 
         // --- Genesis-Plattform ---
         // Nach dem ersten Spawn sollte eine start_plattform-Architektur da sein
-        out.genesisArchExists = !!(
-            r.state.architectures && r.state.architectures.some((a) => a && a.type === "start_plattform")
-        );
+        out.genesisArchExists = !!(st.architectures && st.architectures.some((a) => a && a.type === "start_plattform"));
         // Idempotenz: zweiter Aufruf erzeugt KEINE zweite Plattform
-        const before = r.state.architectures.filter((a) => a && a.type === "start_plattform").length;
+        const before = st.architectures.filter((a) => a && a.type === "start_plattform").length;
         r._ensureGenesisPlatform();
-        const after = r.state.architectures.filter((a) => a && a.type === "start_plattform").length;
+        const after = st.architectures.filter((a) => a && a.type === "start_plattform").length;
         out.genesisIdempotent = before === after;
 
         // --- Adaptives Wasser ---
-        out.waterAdaptive = typeof r.state.waterLevel === "number" && Number.isFinite(r.state.waterLevel);
+        out.waterAdaptive = Number.isFinite(st.waterLevel);
 
         return out;
     });
@@ -953,7 +939,7 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
         // Die Bühne ist die leere Säule ohne Sattel (wie die Killplane in koerper.cjs) — der geerbte Ort urteilt nie
         // mit.
         {
-            const s = r.state,
+            const s = st,
                 pm = s.playerMesh,
                 pos = pm.position.clone(),
                 sta = s.player.stamina,
@@ -975,7 +961,7 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
                 s.playerVel.setValue(0, 0, 0);
                 Object.assign(s.verbTafel, { sprint: false, sprung: false }, k); // die Leib-Felder der Verb-Tafel (leib.K5)
                 s.player.stamina = 100;
-                r._stepCharacter(r.constructor.FIXED_DT, 0);
+                r._stepCharacter(AnazhRealm.FIXED_DT, 0);
                 return s._fieldVy;
             };
             try {
@@ -1005,25 +991,25 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
 
             // Phoenix/Drache sind Compound-Seelen: die EINE Schwimm-Lehne (SOUL_SWIM_LEAN) wirkt über
             // animatePlayerSoul. Echter Pfad: Seele wechseln, underwater setzen, rotation.x lesen.
-            const savedSoulSwim = r.state.player.soul;
-            const savedUw = r.state.playerUnderwater;
-            const L = r.constructor.SOUL_SWIM_LEAN;
+            const savedSoulSwim = st.player.soul;
+            const savedUw = st.playerUnderwater;
+            const L = AnazhRealm.SOUL_SWIM_LEAN;
             const swimProbe = (soulName) => {
                 r.applyPlayerSoul(soulName);
-                r.state.playerUnderwater = true;
-                r.state.player.animationLastTick = -Infinity;
+                st.playerUnderwater = true;
+                st.player.animationLastTick = -Infinity;
                 r.animatePlayerSoul(20.0);
-                const lean = r.state.playerMesh.rotation.x;
-                r.state.playerUnderwater = false;
+                const lean = st.playerMesh.rotation.x;
+                st.playerUnderwater = false;
                 r.animatePlayerSoul(20.1);
-                const reset = r.state.playerMesh.rotation.x;
+                const reset = st.playerMesh.rotation.x;
                 return (Math.abs(lean - L.idle) < 1e-6 || Math.abs(lean - L.moving) < 1e-6) && Math.abs(reset) < 1e-9;
             };
             // ALTLASTEN-NULL: die Compound-Schwimm-Lehne an den TIER-Körpern
             // (dieselbe EINE SOUL_SWIM_LEAN-Quelle für jede Compound-Seele).
             out.phoenixSwimLean = swimProbe("wolf");
             out.dragonSwimLean = swimProbe("baer");
-            r.state.playerUnderwater = savedUw;
+            st.playerUnderwater = savedUw;
             r.applyPlayerSoul(savedSoulSwim);
         }
 
@@ -1051,9 +1037,7 @@ async function checkBandWelle6G4Atmosphere({ page, check, errors, finalState }) 
     }
 }
 
-async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandV8LatePolishAnd6XContinued({ page, check }) {
     // ### Regler: Sicht-Ring + Cel-Stufen + Fog ###
     const v840Results = await safeEvaluate(
         page,
@@ -1083,7 +1067,7 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
 
     // ### Shadow-Bias gegen Shadow-Acne auf flachen Flächen (der Wetter-Blend V8.46 lebt in koerper-seele D5a) ###
     const v847 = await safeEvaluate(page, () => {
-        const sh = r.state.directionalLight && r.state.directionalLight.shadow;
+        const sh = st.directionalLight && st.directionalLight.shadow;
         return { shadowAntiAcne: !!sh && sh.normalBias > 0 && sh.bias < 0 && sh.mapSize.width >= 2048 };
     });
     check("Shadow-Bias gesetzt (gegen Acne-Linien auf flachen Flächen)", !!v847 && v847.shadowAntiAcne === true);
@@ -1093,14 +1077,12 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
         const out = {};
         // Shadow-Frustum folgt dem Spieler: Light-Target = Spieler-xz.
         out.targetInScene =
-            !!r.state.directionalLight &&
-            !!r.state.directionalLight.target &&
-            r.state.directionalLight.target.parent === r.state.scene;
-        const pm = r.state.playerMesh;
+            !!st.directionalLight && !!st.directionalLight.target && st.directionalLight.target.parent === st.scene;
+        const pm = st.playerMesh;
         if (pm) {
             const ox = pm.position.x;
             const oz = pm.position.z;
-            const oTod = r.state.timeOfDay;
+            const oTod = st.timeOfDay;
             // deterministische schräge Sonne: der Light-Space-Snap
             // zeigt sich nur bei NICHT-achsparalleler Sonne (bei Zenit/Achse
             // deckt er sich mit dem alten Welt-Snap). t=0.3 ≈ tiefe Morgensonne.
@@ -1109,7 +1091,7 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
             pm.position.x = 123.5;
             pm.position.z = -77.25;
             r._applyDayNightToScene();
-            const tgt = r.state.directionalLight.target.position;
+            const tgt = st.directionalLight.target.position;
             // Texel-Snap-Toleranz: das Shadow-Target FOLGT dem Spieler, auf das
             // Texel-Grid gerundet (~0.29 m bei 600 m / 2048). Der V17.111-Light-
             // Space-Snap rundet in der Ebene ⟂ sunDir → Versatz ≤ ~1 Texel < 0.5.
@@ -1132,7 +1114,7 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
             pm.position.x = 123.5 + 0.05;
             pm.position.z = -77.25 + 0.05;
             r._applyDayNightToScene();
-            const tgt2 = r.state.directionalLight.target.position;
+            const tgt2 = st.directionalLight.target.position;
             const dX = tgt2.x - tgtX1;
             const dY = tgt2.y - tgtY1;
             const dZ = tgt2.z - tgtZ1;
@@ -1165,15 +1147,15 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
         // Funktional: viele Kreaturen, mehrere Ticks → kein Crash, Bewegung erhalten, Positionen endlich.
         // maxCreatures temporär heben + Guard-Zähler: am Cap fügt spawnCreatureAt nichts hinzu und der
         // `while (length < 60)`-Loop dreht ewig; danach sauber abräumen (kein Leck in Folge-Bänder).
-        const _saveMax849 = r.state.maxCreatures;
-        const _baseN849 = r.state.creatures.length;
-        r.state.maxCreatures = 70;
+        const _saveMax849 = st.maxCreatures;
+        const _baseN849 = st.creatures.length;
+        st.maxCreatures = 70;
         let _g849 = 0;
-        while (r.state.creatures.length < 60 && _g849++ < 120) {
-            const p = r.state.playerMesh.position;
+        while (st.creatures.length < 60 && _g849++ < 120) {
+            const p = st.playerMesh.position;
             r.spawnCreatureAt(p.x + (Math.random() - 0.5) * 50, p.y, p.z + (Math.random() - 0.5) * 50, "happy");
         }
-        const before = r.state.creatures.map((c) => c.position.x + c.position.y + c.position.z);
+        const before = st.creatures.map((c) => c.position.x + c.position.y + c.position.z);
         let crashed = false;
         try {
             for (let k = 0; k < 8; k++) r.updateCreatures(0.05);
@@ -1182,20 +1164,20 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
             out.err = String(e && e.message);
         }
         out.noCrash = !crashed;
-        const after = r.state.creatures.map((c) => c.position.x + c.position.y + c.position.z);
+        const after = st.creatures.map((c) => c.position.x + c.position.y + c.position.z);
         let moved = 0;
         for (let k = 0; k < before.length; k++) {
             if (Math.abs(before[k] - after[k]) > 0.001) moved++;
         }
         out.creaturesMoved = before.length > 0 && moved > before.length * 0.5;
-        out.allFinite = r.state.creatures.every(
+        out.allFinite = st.creatures.every(
             (c) => Number.isFinite(c.position.x) && Number.isFinite(c.position.y) && Number.isFinite(c.position.z)
         );
         // sauber abräumen: die Test-Kreaturen entfernen + den Cap restaurieren (kein Leck).
-        while (r.state.creatures.length > _baseN849) {
-            r.removeCreature(r.state.creatures[r.state.creatures.length - 1]);
+        while (st.creatures.length > _baseN849) {
+            r.removeCreature(st.creatures[st.creatures.length - 1]);
         }
-        r.state.maxCreatures = _saveMax849;
+        st.maxCreatures = _saveMax849;
         return out;
     });
 
@@ -1217,13 +1199,13 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
 
         // --- B3: tickStatsHud aktualisiert HP-Text + Bar-Width
         // Fix: HP/Stamina liegen auf state.player.*, nicht state.*
-        r.state.player.hp = 50;
-        r.state.player.hpMax = 100;
-        r.state.player.stamina = 75;
-        r.state.player.staminaMax = 100;
+        st.player.hp = 50;
+        st.player.hpMax = 100;
+        st.player.stamina = 75;
+        st.player.staminaMax = 100;
         // Force-Update durch Reset des Throttles
-        delete r.state._statsHudLastTick;
-        delete r.state._statsHudTooltipLastTick;
+        delete st._statsHudLastTick;
+        delete st._statsHudTooltipLastTick;
         r.tickStatsHud(performance.now() / 1000);
         const hpText = document.getElementById("stats-hud-hp-text");
         out.hpTextShowsRatio = !!hpText && /50\/100/.test(hpText.textContent);
@@ -1241,9 +1223,9 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
         out.tooltipHasPrecision = !!tooltip && /Präzision/.test(tooltip.innerHTML);
 
         // --- D2: state-Felder + UI-Slider existieren
-        out.masterVolDefault = r.state.symphony.masterVolume === 1.0;
-        out.pingVolDefault = r.state.symphony.creaturePingVolume === 1.0;
-        out.ringRadiusDefault = r.state.chunkRingRadius === 4;
+        out.masterVolDefault = st.symphony.masterVolume === 1.0;
+        out.pingVolDefault = st.symphony.creaturePingVolume === 1.0;
+        out.ringRadiusDefault = st.chunkRingRadius === 4;
         out.slidersSectionExists = !!document.getElementById("sliders-section");
 
         // --- D2: Master-Slider ändert state + Persistenz
@@ -1251,7 +1233,7 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
         if (ms) {
             ms.value = "50";
             ms.dispatchEvent(new Event("input"));
-            out.masterSliderUpdates = Math.abs(r.state.symphony.masterVolume - 0.5) < 0.01;
+            out.masterSliderUpdates = Math.abs(st.symphony.masterVolume - 0.5) < 0.01;
             out.masterSliderPersists =
                 typeof localStorage !== "undefined" &&
                 Math.abs(parseFloat(localStorage.getItem("anazh.audio.masterVol")) - 0.5) < 0.01;
@@ -1265,7 +1247,7 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
         if (ps) {
             ps.value = "0";
             ps.dispatchEvent(new Event("input"));
-            out.pingsSliderUpdates = r.state.symphony.creaturePingVolume === 0;
+            out.pingsSliderUpdates = st.symphony.creaturePingVolume === 0;
             ps.value = "100";
             ps.dispatchEvent(new Event("input"));
         }
@@ -1275,7 +1257,7 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
         if (rs) {
             rs.value = "3";
             rs.dispatchEvent(new Event("input"));
-            out.ringSliderUpdates = r.state.chunkRingRadius === 3;
+            out.ringSliderUpdates = st.chunkRingRadius === 3;
             const rsv = document.getElementById("slider-ring-val");
             out.ringValueDisplaysCorrectly = !!rsv && rsv.textContent === "7×7";
             rs.value = "2";
@@ -1293,30 +1275,30 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
 
         // Test: Bauplan ohne opChain → leere counts
         const tn = "audit_v816_test";
-        if (r.state.blueprints[tn]) delete r.state.blueprints[tn];
+        if (st.blueprints[tn]) delete st.blueprints[tn];
         r.createBlueprint(tn, "V816-Test");
         r.addPartToBlueprint(tn, {
             shape: "sphere",
             material: "stein",
             size: { x: 0.5, y: 0.5, z: 0.5 },
         });
-        const c0 = r.computeBlueprintDomainCounts(r.state.blueprints[tn]);
+        const c0 = r.computeBlueprintDomainCounts(st.blueprints[tn]);
         out.emptyChainNoDomain = Object.keys(c0).length === 0;
 
         // Schmiede-Hammer (domain:"forging") → counts.forging = 1; der Starter-Hammer hat domain:null.
         // schmiede-hammer in den Besitz legen (frieden-Modus: keine Stamina) und Material auf eisen setzen —
         // opClass=plastic ist mit stein inkompatibel (MATERIAL_OP_COMPATIBILITY).
-        r.state.player.tools = Array.isArray(r.state.player.tools) ? r.state.player.tools : [];
-        if (!r.state.player.tools.includes("schmiede-hammer")) {
-            r.state.player.tools.push("schmiede-hammer");
+        st.player.tools = Array.isArray(st.player.tools) ? st.player.tools : [];
+        if (!st.player.tools.includes("schmiede-hammer")) {
+            st.player.tools.push("schmiede-hammer");
         }
-        r.state.blueprints[tn].parts[0].material = "eisen";
+        st.blueprints[tn].parts[0].material = "eisen";
         r.applyOpToPart(tn, 0, "schmiede-hammer");
-        const c1 = r.computeBlueprintDomainCounts(r.state.blueprints[tn]);
+        const c1 = r.computeBlueprintDomainCounts(st.blueprints[tn]);
         out.afterForgingHasDomain = (c1.forging || 0) === 1;
 
         // Cleanup
-        delete r.state.blueprints[tn];
+        delete st.blueprints[tn];
 
         // UI-Rendering: Stats-Panel hat workshop-domain-row +
         // workshop-synergy-row + workshop-growth-row Elemente nach
@@ -1347,7 +1329,7 @@ async function checkBandV8LatePolishAnd6XContinued({ page, check, errors, finalS
         out.domainBarsAppearAfterOp = !!growthText2 && /Mehrheit|forging/.test(growthText2.textContent);
 
         // Cleanup
-        delete r.state.blueprints[tn2];
+        delete st.blueprints[tn2];
         r._workshopRenderStatsPanel && r._workshopRenderStatsPanel();
 
         return out;
@@ -1425,8 +1407,8 @@ async function checkBandV18164WarumLicht({ page, check }) {
         }
         out.hintGefunden = !!hinted;
         if (hinted) {
-            const cfg = r.constructor.QUALITY_ROLE_FIT;
-            const sigs = r.constructor.ROLE_SIGNATURES;
+            const cfg = AnazhRealm.QUALITY_ROLE_FIT;
+            const sigs = AnazhRealm.ROLE_SIGNATURES;
             const v = r._blueprintProductVector(probe);
             const v2 = { ...v, [hinted.axis]: Math.min(1, (v[hinted.axis] || 0) + hinted.need + 1e-6) };
             const score = (role, vec) => r._blueprintResonance(vec, sigs[role]) / ((cfg.refs && cfg.refs[role]) || 3);
@@ -1482,17 +1464,17 @@ async function checkBandV18164WarumLicht({ page, check }) {
         const snap = r.buildStateSnapshot();
         out.persistenz = !!snap.atmosphere && Number.isFinite(snap.atmosphere.microStrength);
         // …und der Restore setzt sie in die Welt (Stand UND Uniform); danach der alte Stand zurück
-        const a0 = { ...r.state.atmosphere };
+        const a0 = { ...st.atmosphere };
         r._loadStateRestoreSoulAndAtmosphere({ atmosphere: { microStrength: 0.21 } });
-        out.restoreLiest = r.state.atmosphere.microStrength === 0.21 && au.microStrength.value === 0.21;
-        r.setMicroStrength(a0.microStrength ?? r.constructor.AERIAL.microStrength);
+        out.restoreLiest = st.atmosphere.microStrength === 0.21 && au.microStrength.value === 0.21;
+        r.setMicroStrength(a0.microStrength ?? AnazhRealm.AERIAL.microStrength);
 
         // (6) §6.5 → V18.530: KEIN LADE-NEBEL — die Luft liest keine Ring-Front (Ungebautes deckt der Fern-Ring als
         // Loch-Deckel); im warmen Test-Ring ist der Spieler-Chunk gebaut.
         out.ladeNebelKonsum = window.__fehlt(r._dayNightApplyHemiUndLuft, /_builtRingRadius|foliageRadius/);
         const bk = r._builtRingRadius();
         out.builtRing = Number.isInteger(bk) && bk >= 0;
-        out.fogDeckel = !r.state.scene.fog;
+        out.fogDeckel = !st.scene.fog;
         return out;
     });
     check(
@@ -1529,7 +1511,7 @@ async function checkBandWahrerAnblickAtmoBusch({ page, check }) {
             // Chokepoint null und `buschParts === 0` passierte vakuös; der lokale Hook
             // hält den Reichtums-Beweis (≥8 Parts aus der Skeleton-Grammatik) am Leben.
             const keys = window.__withNoFoundry(() => r._buildVariantLODs("busch_hazel", 0));
-            const bp = keys && r.state.blueprints[keys[0]];
+            const bp = keys && st.blueprints[keys[0]];
             buschParts = bp && Array.isArray(bp.parts) ? bp.parts.length : 0;
         } catch {
             /* gen < 7 → Grammatik-Struktur trägt den Beweis */
@@ -1539,7 +1521,7 @@ async function checkBandWahrerAnblickAtmoBusch({ page, check }) {
 
         // (V) die Luft koppelt ans Wetter: EINE Extinktion aus dem Wetter-Feld (fog- + rain-Kanal),
         // gemessen am Konsum — Regen trübt die Sicht, Sturm mehr; die Luft-Uniforms tragen sie.
-        const WF = r.constructor.WEATHER_FIELD;
+        const WF = AnazhRealm.WEATHER_FIELD;
         out.hazeNearWeather =
             r._luftBeta(WF.sunny) < r._luftBeta(WF.rainy) && r._luftBeta(WF.rainy) < r._luftBeta(WF.stormy);
 
@@ -1566,17 +1548,17 @@ async function checkBandWetterVektor({ page, check }) {
     const out = await safeEvaluate(page, async () => {
         await window.__weltDa();
         // Keine laufende Transition — die Wort-Vorgabe führt.
-        r.state.weatherTransition = null;
+        st.weatherTransition = null;
         const sunny = r._weatherFieldFor("sunny");
         const rainy = r._weatherFieldFor("rainy");
         const stormy = r._weatherFieldFor("stormy");
         // Transition-Monotonie: fog steigt von sunny (.15) → stormy (.70) mit progress.
         const fogRamp = [];
         for (const p of [0, 0.25, 0.5, 0.75, 1.0]) {
-            r.state.weatherTransition = { from: "sunny", to: "stormy", progress: p };
+            st.weatherTransition = { from: "sunny", to: "stormy", progress: p };
             fogRamp.push(r._weatherFieldFor("sunny").fog);
         }
-        r.state.weatherTransition = null;
+        st.weatherTransition = null;
         return { sunny, rainy, stormy, fogRamp };
     });
     const fails = [];
@@ -1622,9 +1604,9 @@ async function checkBandWetterVektor({ page, check }) {
 async function checkBandLookPhysik({ page, check }) {
     const { kartenEichung } = require(path.join(SKRIPTE, "lib", "licht-linsen.cjs"));
     const boot = await safeEvaluate(page, () => {
-        const K = r.constructor;
+        const K = AnazhRealm;
         const T = window.THREE || {};
-        const rend = r.state && r.state.renderer;
+        const rend = st && st.renderer;
         return {
             meadow: K.MEADOW_GREEN,
             tints: K.WEATHER_TINTS,
@@ -1713,7 +1695,7 @@ async function checkBandHimmelTag({ page, check }) {
             for (let i = 0; i < mags.count; i++) {
                 const v = Math.max(0, Math.min(1, g - mags.getX(i) + 0.5));
                 if (v > 0.001) n++;
-                if (i === mags.count - r.constructor.HIMMEL.wandelsterne.length && v > 0.5) venus = true;
+                if (i === mags.count - AnazhRealm.HIMMEL.wandelsterne.length && v > 0.5) venus = true;
             }
             return { n, venus, grenze: +g.toFixed(2) };
         };
@@ -1732,7 +1714,7 @@ async function checkBandHimmelTag({ page, check }) {
         out.mondNacht = +st.moonMesh.material.opacity.toFixed(3);
         out.einDurchgang = !!(sf && sf.material.forceSinglePass === true);
         // 7 UNENDLICH: der Clip-z jedes Himmelskörpers ist der EINE Unendlich-Knoten (z = w, Tiefe 1,0)
-        const unendlich = r.constructor._unendlichKnoten;
+        const unendlich = AnazhRealm._unendlichKnoten;
         out.vorn = [];
         for (const [name, o] of [
             ["himmel", st.skybox],
@@ -1799,7 +1781,7 @@ async function checkBandHimmelTag({ page, check }) {
 // S1/S2 der alte Schreiber und das Gesetz vor 1410-3 fallen.
 async function checkBandSchattenTakt({ page, check }) {
     const a = await safeEvaluate(page, () => {
-        const T = r.constructor.SCHATTEN_TAKT;
+        const T = AnazhRealm.SCHATTEN_TAKT;
         const echt = {
             csm: st.csmNode,
             dl: st.directionalLight,

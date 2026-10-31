@@ -3675,6 +3675,8 @@
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
         PARAMS_BY_KIND: { vehicle: PARAMS },
+        // B8 — der Stammbaum (studios.K5): wie das Buch sich und seine Arten nennt (der Wirt leitet den EINEN Baum ab)
+        STAMMBAUM: { studio: "Garage", arten: { vehicle: "Fahrzeuge" } },
         LEHREN: LEHREN,
         CULTURES: CULTURES,
         DEFAULT_P: DEFAULT_P,

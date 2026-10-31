@@ -53,7 +53,7 @@
 //   node scripts/werkbank.cjs gpu-bank [n] [--runden r]      DIE GPU-BANK: GPU-Zeit je Frame, n Frames ohne rAF
 //   node scripts/werkbank.cjs zerlegen [--runden r] [--n frames] [--nur a,b] [--json datei] [--bilder [ordner]]
 //                                                           [--selbsttest [--last iter]] DIE GPU-ZERLEGUNG je Verbraucher, ABBA (scripts/lib/zerlege-linse.cjs)
-//   node scripts/werkbank.cjs ziele [--n frames] [--json datei] [--selbsttest]
+//   node scripts/werkbank.cjs ziele [--n frames] [--json datei]
 //                                                           DER ZIEL-ZENSUS: jede GPU-Textur mit Erzeuger, Schreibern, Lesern (scripts/lib/ziel-zensus.cjs)
 //   node scripts/werkbank.cjs shader [--nur <regex>] [--top n] [--ordner d]
 //                                                           [--stoff boden [--gegen alt.wgsl] [--datei neu.wgsl] [--rauschprobe]] | shader --selbsttest
@@ -894,28 +894,37 @@ async function starte() {
     // Ratsche dieses Orts × Geräts × Sicht.
     let aktSicht = null;
     // DIE WELT DES ORTS (Toggle-Ort, haushalt.json `welt`): die Prüfbühne ist eine geborene Welt — sie betritt die
-    // Seite wie im Spiel durch DIE TÜR (`importWorldBeside` mit `reload`: Sperre, Zeiger, Neuladen). Steht die Seite schon in ihr
+    // Seite wie im Spiel durch DIE TÜR (`importWorldBeside` mit `reload`: Sperre, Zeiger, Wechsel am Ort). Steht die Seite schon in ihr
     // (derselbe slug), bleibt sie; ein Import, der nicht greift, oder eine Seite, die danach in einer anderen Welt steht, bricht laut.
     const weltDesOrts = async (ort) => {
         const json = ausDatei(path.join("spec", ort.welt), true);
         const slug = json.worldMeta && json.worldMeta.slug;
         if (!slug) throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} trägt keinen worldMeta.slug`);
-        const steht = () =>
-            page.evaluate((s) => {
-                const m = anazhRealm.state.worldMeta;
-                return !!(m && m.slug === s);
-            }, slug);
+        const steht = () => page.evaluate((s) => st.worldMeta?.slug === s, slug);
         if (await steht()) return { slug, neu: false };
-        const nav = page.waitForNavigation({ waitUntil: "domcontentloaded", timeout: 0 });
+        // DIE ANKUNFT WIE IM SPIEL: die Ziel-Welt kommt mit laufendem Takt an (der Neuladen bootete die Seite mit ihm bis
+        // `loopAus`), bis ihr Genesis-Ort steht — erst ihr Takt am Ankunfts-Ort baut ihn (`_tickGenesisOrt`: das Tor-Rund nur
+        // am Genesis-Ort); mit ruhendem Takt stand die Prüfbühne ohne ihn (7 statt 21 Werke, die Nah-Deckung der Aufnahme fand
+        // keine Instanz-Gruppe)
         const res = await page.evaluate((j) => {
             const x = anazhRealm.importWorldBeside(j, { reload: true });
-            return x && x.ok ? { id: x.worldId } : { fehler: JSON.stringify(x).slice(0, 200) };
+            return x && x.ok ? (__loop(1), { id: x.worldId }) : { fehler: JSON.stringify(x).slice(0, 200) };
         }, json);
         if (res.fehler)
             throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} ließ sich nicht importieren (${res.fehler})`);
-        await lade(nav);
+        // DER HAKEN DES START-ORTS (w4-proben-tempo, 30.10.): `start --ort <ohne Dorf-Zug>` legt `__anazhAutoSettlement = false` vor JEDE
+        // Ladung — in der Ziel-Welt lebte der Dorf-Takt darum nie, und mit ihm nie ihr Genesis-Ort (`_dorfTaktLebt` in `_tickGenesisOrt`,
+        // stamm/siedlung-ort.js:2776): die Ankunft wartete ohne Frist (die Sitzung bootet seit 30.10. mit `--ort wiese`; schatten.K1#1 GTX
+        // 379e5f56 ≥ 90 s „zuletzt: fenster“, swiftshader 28 min ohne Ring). Die Ankunft hebt ihn wie im Spiel, bis der Ring steht; den
+        // Zug des Orts stellt danach `umstellen` (die Bühne: dorfZug false)
+        await lade(
+            page.evaluate(() => {
+                delete window.__anazhAutoSettlement;
+                return __weltDa(() => st.worldMeta.genesisPortalRing);
+            })
+        );
         await loopAus();
-        if (!(await steht())) throw new Error(`Messort ${ort.id}: nach dem Neuladen steht die Seite nicht in ${slug}`);
+        if (!(await steht())) throw new Error(`Messort ${ort.id}: nach dem Wechsel steht die Seite nicht in ${slug}`);
         return { slug, neu: true, id: res.id };
     };
     // Der Adapter-Text des Geräts (WebGPU `adapterInfo`: Hersteller · Architektur · Beschreibung) — EIN Leser für Albedo und Band.
@@ -1000,17 +1009,20 @@ async function starte() {
                 // in Bau-Ereignissen, nie an der Wanduhr. Der Ort schwingt unter REGLER VOLL ein (die Bedingung der Messung, E): der Ring
                 // steht an seinem Ziel, gehalten wie `stell.ring`, nie nach der Last der Nachbarn auf der geteilten GPU (A9, Mess-Wiese:
                 // Ring 2 statt 4, boden-nah 2,391 statt 1,814 — die nahen Kronen fehlten)
-                const ziel = stell && stell.ring ? stell.ring : Math.min(12, r.state.chunkRingRadius || 4);
-                const decke = r.state.perfTargetMs;
-                r.state.perfTargetMs = 1000;
+                const ziel = stell && stell.ring ? stell.ring : Math.min(12, st.chunkRingRadius || 4);
+                const decke = st.perfTargetMs;
+                st.perfTargetMs = 1000;
+                // DER TAKT DES ORTS geht im Schritt der Seite (`__seitenTakt`: ein Bild, dann der Takt) — bis 30.10. schlief er 50 ms je Takt:
+                // an der Radeon (Mess-Sitzung, Ort wiese) waren 27–30 s von 40–48 s Ring-Zeit dieser Schlaf (537–607 Takte × 50 ms), nicht
+                // das Streaming; die Ankunft des Spielers geht im Bild-Takt
                 const takt = async () => {
-                    if (r.state._activeRingRadius < ziel) r.state._activeRingRadius = ziel;
+                    if (st._activeRingRadius < ziel) st._activeRingRadius = ziel;
                     try {
                         __buehne();
                         __ortSchritt();
                         r._gameLoopTick(performance.now());
                     } catch {}
-                    await sleep(50);
+                    await new Promise((ok) => requestAnimationFrame(ok));
                 };
                 let takte;
                 try {
@@ -1036,7 +1048,7 @@ async function starte() {
                             throw new Error(`Messort ${o.ort}: kein Dach bei ${o.dach} m (Träger ${r.state._kapselTraegerY})`);
                     }
                 } finally {
-                    r.state.perfTargetMs = decke;
+                    st.perfTargetMs = decke;
                 }
                 // ein Dorf, das vor dem Ort losging (ein Ort ohne Dorf-Zug, der Zug lief im Boot): sein Plan schwebt — Wege und
                 // Platz stehen, der Wald weicht, das Dorf wächst nie. Beim Namen (die Folge startet mit `start --ort`).
@@ -1100,7 +1112,7 @@ async function starte() {
                 if (r.state.cameraMode !== "first" || !k.klasse) throw new Error("--arm: Ego (--sicht ego) und --klasse");
                 for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100);
                 const a = r.state.camera.position.clone();
-                const tiefe = async () => (await __ausgabeAufnahme(64, 36, 1, { satz: "messung" }), await __spiegelDaten());
+                const tiefe = async () => (await __ausgabeAufnahme(64, 36, 1, { satz: "messung", tiefe: true }), await __spiegelDaten());
                 const re = new RegExp(k.klasse),
                     aus = [],
                     S = await tiefe();
@@ -1148,26 +1160,39 @@ async function starte() {
                 if (st.world) st.world.timeOfDay = k.uhr;
                 // der Pfad des Spielers (sein Satz „nacht"): der Uhr-Schreiber springt, der Himmel folgt im selben Anwenden
                 r.setTimeOfDay(k.uhr, "human");
+                // DER POOL ZU SEINEM FIXPUNKT (w4-proben-tempo, 30.10.; bis dahin fest 20 × 50 ms je Schuss): jeder Platz hält eine
+                // gewählte Quelle mit Blende 1 oder ist frei mit Blende 0, jede Gewählte hat ihren Platz — danach ändert kein Takt
+                // mehr etwas (die Bild-Uhr steht unter der Bühne, die Wahl am stehenden Auge); höchstens dieselbe Sekunde wie zuvor
+                const fest = (P) =>
+                    !!P &&
+                    P.halter.every((h, j) => (h ? P.blende[j] === 1 && P.wahl.some((w) => w.id === h.id) : P.blende[j] === 0)) &&
+                    (!P.halter.includes(null) || P.wahl.every((w) => P.halter.some((h) => h && h.id === w.id)));
                 for (let i = 0; i < 20; i++) {
                     r._leuchtTakt();
+                    if (fest(r._leuchtPool)) break;
                     await sleep(50);
                 }
             }
             if (r.state.playerMesh) r.state.playerMesh.visible = !!k.spieler;
             // DAS ZIEL des Bilds ist der Blick-Punkt: die Aufnahme prüft, ob es im Bild und frei ist, und die Blick-Wahl
-            // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42; `--wahl 0` schießt nur die genannte Pose)
-            const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel", punkte: k.punkte };
+            // sucht bis zu `wahl` Posen um den Ort (Standard drei Runden, 42; `--wahl 0` schießt nur die genannte Pose).
+            // Das Ziel einer Pose aus dem Leib (`--gesicht`, `--arm`) ist der Kopf oder die Fläche auf Armlänge, kein Werk hinter
+            // einer Kuppe: sein Fuß (ausgabe-aufnahme `punkte`, ein Ziel 0,6–40 m über dem Boden) liegt unter dem Bild — 0,7 m vor
+            // dem Gesicht 1,4 m tiefer, haar.K2#1 „Ziel Blickziel nicht im Bild (ndc [0,0])“ auf beiden Geräten —, `fuss: false`
+            const ziel = { x: lx, y: ly, z: lz, name: k.ziel || "Blickziel", punkte: k.punkte, ...(gpos ? { fuss: false } : {}) };
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
             let auf = null;
             let gewaehlt = null;
-            for (let i = 0; i < 2; i++) {
+            // die Blick-Wahl im ersten Schuss, der zweite steht an ihrer Pose; das Bild trägt die Wahl des ersten. Ohne Wahl
+            // (`--wahl 0`) ist der erste Schuss schon das Bild: er wartet, bis die Welt an der Pose steht (`__weltStehtWarten`),
+            // und jeder Schuss beginnt seine Geschichte neu — ein zweiter wäre dasselbe Bild (material.K2: sechs Armlängen)
+            for (const w of wahl > 0 ? [wahl, 0] : [0]) {
                 try {
                     if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
                 } catch {}
                 r._schattenAlleNeu();
-                // die Blick-Wahl im ersten Schuss, der zweite steht an ihrer Pose; das Bild trägt die Wahl des ersten
-                auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: i === 0 ? wahl : 0 });
-                if (i === 0) gewaehlt = auf.abnahme.wahl || null;
+                auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: w });
+                if (w) gewaehlt = auf.abnahme.wahl || null;
             }
             if (gewaehlt) {
                 auf.abnahme.wahl = gewaehlt;
@@ -1258,16 +1283,19 @@ async function starte() {
                 const wurf = new Map(alle.map((o) => (o.bereich ? o.mesh : o)).map((o) => [o, o.castShadow]));
                 const verbirg = (o) => (o.bereich ? r._chunkSatzAus(o.art, o.key) : (o.visible = false));
                 const zeig = (o) => (o.bereich ? r._bauSatzMarke(o.key, o.art) : (o.visible = true));
-                const ruhen = ["_tickNahWiese", "_ruheImBild"].map((m) => [m, Object.prototype.hasOwnProperty.call(r, m), r[m]]);
+                const ruhen = ["_tickNahWiese", "_ruheImBild"].map((m) => [m, Object.hasOwn(r, m), r[m]]);
                 for (const [m] of ruhen) r[m] = () => 0;
+                // verbirgt der Schuss die Strähnen des Spielers, ist sein Kopf kahl: die Kappe gehört zum Haar (`_kopfKahl`, haar.K2)
                 const schuss = async (aus) => {
                     for (const o of aus) verbirg(o);
+                    r._kopfKahl(aus);
                     bundlesNeu();
                     try {
                         r._schattenAlleNeu();
                         return (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
                     } finally {
                         for (const o of aus) zeig(o);
+                        r._kopfKahl([]);
                         r._tickBauSatz(Infinity);
                         bundlesNeu();
                     }
@@ -1397,26 +1425,30 @@ async function starte() {
                         if (!(saa > 0 && sbb > 0)) return { r: null, pixel: P, grund: "Bild oder Ziel ohne Struktur in der Öffnung" };
                         return { r: +(sab / Math.sqrt(saa * sbb)).toFixed(3), pixel: P, grund: null };
                     };
+                    // DIE MASSE, DIE DAS URTEIL LIEST (w4-proben-tempo2, 31.10.): `nurPixel` zählt je Klasse nur ihre Pixel — ein
+                    // Aufrufer, der nur sie liest (das Jahr der Vegetation, die Wiese, die Herde am Hang), trug je Schuss die ganzen Maße
+                    // (Zweiton, Milch, Kante, Spiegel, Mikro; Radeon 2134b209 1,1–3,6 s je Schuss, an den Kronen 4,7 von 20,5 s)
                     namen.forEach((n, j) => {
                         const m = new Uint8Array(W * H);
                         for (let p = 0; p < W * H; p++) m[p] = teil[p] === j + 1 ? 1 : 0;
                         const mb = /^portal-membran$/.test(n);
-                        const ms = __klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null, spiegel);
+                        const ms = k.nurPixel ? { pixel: m.filter(Boolean).length } : __klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null, spiegel);
                         if (mb && ms.pixel) ms.ziel = zielTreue(m);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
                     // DIE PROBEN DES GESICHTS (`--gesicht`): je Vertex des Kopfs sein Zug (Iris am Gelenk, auf der
-                    // Kopf-Haut der Ton des Ofens, koerper `kopfToene`), projiziert auf den Schirm; `__gesichtMasse` liest das BILD dort,
-                    // wo die Teilung den Teil des Vertex zeigt (abnahme-urteil). Die Töne kommen aus dem Leib selbst (der häufigste
-                    // Vertex-Ton der Kopf-Haut ist die Haut, der der Strähnen das Haar), nie von Hand.
+                    // Kopf-Haut der Ton seiner Ecke, `aTon` — koerper `menschTon`: Haut, Lippe, Höhle, Haar-Kappe), projiziert auf den
+                    // Schirm; `__gesichtMasse` liest das BILD dort, wo die Teilung den Teil des Vertex zeigt (abnahme-urteil). Die Töne
+                    // kommen aus dem Leib selbst, nie von Hand — bis mensch.K4 aus der Farbe der Ecke, die die Verdeckung der Haut dunkelt.
+                    // Die Maße gehören der Klasse, die die Kopf-Haut wählt (mensch-kopf `^spieler:kopf/`); wählt sie sie nicht (haar
+                    // `^spieler:kopf/hair$`), ist `--gesicht` nur die Pose — bis dahin warf jeder Haar-Schuss „keine Kopf-Haut am Gelenk
+                    // head“ (haar.K2#1 third, beide Geräte).
                     let gesicht = null;
-                    if (k.gesicht != null) {
+                    if (k.gesicht != null && ["spieler:kopf/haut", "spieler:kopf/skin"].some((n) => re.test(n))) {
                         const T = THREE;
                         const K = window.__koerperCore;
-                        if (!K || typeof K.kopfToene !== "function" || !K.KOPF_SOLL)
-                            throw new Error("--gesicht: koerper-core ohne kopfToene/KOPF_SOLL in der Seite");
-                        const lin = (hx) => [(hx >> 16) & 255, (hx >> 8) & 255, hx & 255].map(srgbLin);
-                        const hexAus = (c) => c.reduce((h, x) => h * 256 + Math.max(0, Math.min(255, Math.round(linSrgb(x) * 255))), 0);
+                        if (!K || typeof K.menschTon !== "function" || !K.KOPF_SOLL)
+                            throw new Error("--gesicht: koerper-core ohne menschTon/KOPF_SOLL in der Seite");
                         const knochen = (o, i) => {
                             const si = o.geometry.attributes.skinIndex,
                                 sw = o.geometry.attributes.skinWeight;
@@ -1432,40 +1464,12 @@ async function starte() {
                             }
                             return best;
                         };
-                        const modus = (liste) => {
-                            const z = new Map();
-                            for (const c of liste) {
-                                const key = c.map((x) => x.toFixed(3)).join(",");
-                                z.set(key, (z.get(key) || 0) + 1);
-                            }
-                            const best = [...z.entries()].sort((a, b) => b[1] - a[1])[0];
-                            return best ? best[0].split(",").map(Number) : null;
-                        };
-                        const farbe = (o, i) => {
-                            const ca = o.geometry.attributes.color;
-                            return ca
-                                ? [ca.getX(i), ca.getY(i), ca.getZ(i)]
-                                : [o.material.color.r, o.material.color.g, o.material.color.b];
-                        };
-                        const hautVs = [],
-                            haarVs = [];
-                        for (const [n, os] of teile) {
-                            if (!/^spieler:kopf\//.test(n)) continue;
-                            for (const o of os) {
-                                const pa = o.geometry.attributes.position;
-                                for (let i = 0; i < pa.count; i++) {
-                                    if (/\/hair$/.test(n)) haarVs.push(farbe(o, i));
-                                    else if (/\/(haut|skin)$/.test(n) && knochen(o, i) === "head")
-                                        hautVs.push(farbe(o, i));
-                                }
-                            }
-                        }
-                        const hautLin = modus(hautVs),
-                            haarLin = modus(haarVs);
-                        if (!hautLin) throw new Error("--gesicht: keine Kopf-Haut am Gelenk head");
-                        const KT = K.kopfToene(hexAus(hautLin));
-                        const toene = { haut: hautLin, lippe: lin(KT.lips), hoehle: lin(KT.socket) };
-                        if (haarLin) toene.kappe = haarLin;
+                        const ZUG = new Map([
+                            [K.menschTon("skin"), "haut"],
+                            [K.menschTon("lips"), "lippe"],
+                            [K.menschTon("socket"), "hoehle"],
+                            [K.menschTon("haarKappe"), "kappe"],
+                        ]);
                         const v = new T.Vector3();
                         const roh = [];
                         let minY = Infinity,
@@ -1485,15 +1489,9 @@ async function starte() {
                                         z = "iris";
                                         seite = kn;
                                     } else if (kn === "head" && /\/(haut|skin)$/.test(n)) {
-                                        const c = farbe(o, i);
-                                        let bd = 1e-4;
-                                        for (const [t, tc] of Object.entries(toene)) {
-                                            const d = (c[0] - tc[0]) ** 2 + (c[1] - tc[1]) ** 2 + (c[2] - tc[2]) ** 2;
-                                            if (d < bd) {
-                                                bd = d;
-                                                z = t;
-                                            }
-                                        }
+                                        const ta = o.geometry.attributes.aTon;
+                                        if (!ta) throw new Error(`--gesicht: ${n} trägt keinen Ton je Ecke (aTon, koerper menschTon)`);
+                                        z = ZUG.get(Math.round(ta.getX(i))) || null;
                                     }
                                     if (!z) continue;
                                     o.getVertexPosition(i, v);
@@ -1539,10 +1537,8 @@ async function starte() {
                                 kalotte: p.z !== "iris" && p.w.y > yHaar,
                             }));
                         const haarK = namen.map((n, j) => (/^spieler:kopf\/hair$/.test(n) ? j + 1 : 0)).filter(Boolean);
+                        if (!nm) throw new Error("--gesicht: keine Kopf-Haut am Gelenk head");
                         gesicht = __gesichtMasse(u8, teil, W, H, proben, haarK);
-                        gesicht.toene = Object.fromEntries(
-                            Object.entries(toene).map(([t, c]) => [t, hexAus(c).toString(16).padStart(6, "0")])
-                        );
                     }
                     let abstand = null;
                     if (k.abstand) {
@@ -1648,7 +1644,7 @@ async function starte() {
                             mu8[i + 1] = g;
                             mu8[i + 2] = g + 40;
                         }
-                        mu8[i + 3] = 255;
+                        // das Alpha setzt `__png` deckend (welt-boot)
                     }
                     klasse = {
                         ausdruck: k.klasse,
@@ -2210,7 +2206,7 @@ async function starte() {
                         // DIE BILDER: ein Takt zeichnet nur, wenn die GPU-Leine frei ist (`_gpuLeineFrei`) — im Software-Holz
                         // zeichneten drei Takte hintereinander kein Bild (die Probe war blind). Gezählt wird `_loopRender`.
                         let gezeichnet = 0;
-                        const eigen = Object.prototype.hasOwnProperty.call(r, "_loopRender");
+                        const eigen = Object.hasOwn(r, "_loopRender");
                         const altRender = r._loopRender;
                         r._loopRender = function (...a) {
                             gezeichnet++;
@@ -2707,75 +2703,16 @@ async function starte() {
                         datei,
                     });
                 }
-                // DER ZIEL-ZENSUS (scripts/lib/ziel-zensus.cjs): n Frames der Bank-Runde, jede Textur mit Erzeuger, Schreibern
-                // und Lesern je Pass, der Inhalt der Farb-Texturen zurück → das Urteil über die Täter-Klassen. `selbsttest`
-                // schmuggelt je Klasse einen Täter ein (jeder muss beim Namen rot fallen) und baut ihn danach restlos ab (kein
-                // Name des Selbsttests bleibt im Zensus).
+                // DER ZIEL-ZENSUS (scripts/lib/ziel-zensus.cjs `zensusDer`, EIN Leser mit gate:ziel-zensus): n Frames der Bank-Runde,
+                // jede Textur mit Erzeuger, Schreibern und Lesern je Pass, der Inhalt der Farb-Texturen zurück → das Urteil über die
+                // Täter-Klassen. Den Schmuggel (je Klasse ein Täter, beim Namen rot, danach restlos fort) trägt die EINE Wand
+                // gate:ziel-zensus — bis 31.10. stand hier sein Zwilling mit 5 der 6 Täter, den kein Befehl rief.
                 if (req.url === "/ziele") {
-                    const n = Number(b.n) || 12;
-                    const zensus = async () => {
-                        const z = await seite("__zielZensus", { n });
-                        if (!z || z.fehler) return { z, u: ZZ.zielUrteil(z, []) };
-                        const ids = z.ziele
-                            .filter(
-                                (x) =>
-                                    !x.leinwand &&
-                                    !x.tiefe &&
-                                    x.kopierbar &&
-                                    /^(r|rg|rgba|bgra)(8|16|32)/.test(x.format)
-                            )
-                            .map((x) => x.id);
-                        const lesen = await seite("__zielLesen", { ids });
-                        return { z, lesen, u: ZZ.zielUrteil(z, lesen) };
-                    };
-                    let selbst = null;
-                    if (b.selbsttest) {
-                        const s = await seite("__zielSchmuggel", true);
-                        if (!s || s.fehler)
-                            return send({ fehler: "Schmuggel: " + ((s && s.fehler) || "keine Antwort") });
-                        let mit;
-                        try {
-                            mit = await zensus();
-                        } finally {
-                            await seite("__zielSchmuggel", false);
-                        }
-                        const soll = [
-                            /OHNE LESER: zensus-selbsttest:ohne-leser/,
-                            /VOLLE AUFLÖSUNG: zensus-selbsttest:bloom/,
-                            /TEILBAR: zensus-selbsttest:paar-a und zensus-selbsttest:paar-b/,
-                            /DOPPELTE TIEFE: zensus-selbsttest:tiefe-kopie .* ist eine Kopie von depth,/,
-                            /FORMAT: zensus-selbsttest:f32 /,
-                        ];
-                        selbst = soll.map((m) => ({ muss: m.source, ok: mit.u.rot.some((x) => m.test(x)) }));
-                    }
-                    const { z, lesen, u } = await zensus();
+                    const { z, lesen, u } = await ZZ.zensusDer(page, Number(b.n) || 12);
                     if (!z || z.fehler) return send({ fehler: (z && z.fehler) || "keine Antwort", rot: u.rot });
-                    const rest = selbst
-                        ? u.zeilen.filter((x) => /zensus-selbsttest/.test(x.name)).map((x) => x.name)
-                        : [];
-                    const selbstOk = selbst ? selbst.every((x) => x.ok) && !rest.length : null;
                     const datei = zeitAblage(b.json, "ziele", "json");
-                    jsonAb(datei, { zensus: z, lesen, urteil: u, selbst, rest });
-                    return send({
-                        ok: selbst ? selbstOk : u.rot.length === 0,
-                        tabelle: ZZ.zielTabelle(u, z),
-                        rot: u.rot,
-                        selbst: selbst
-                            ? (selbstOk ? "SELBSTTEST GRÜN" : "SELBSTTEST ROT") +
-                              ` — ${selbst.filter((x) => x.ok).length} von ${selbst.length} Tätern beim Namen` +
-                              (selbst.some((x) => !x.ok)
-                                  ? "; blind für: " +
-                                    selbst
-                                        .filter((x) => !x.ok)
-                                        .map((x) => x.muss)
-                                        .join(" · ")
-                                  : "") +
-                              (rest.length
-                                  ? "; nach dem Abbau noch im Zensus: " + rest.join(", ")
-                                  : "; danach restlos fort")
-                            : null,
-                        datei,
-                    });
+                    jsonAb(datei, { zensus: z, lesen, urteil: u });
+                    return send({ ok: u.rot.length === 0, tabelle: ZZ.zielTabelle(u, z), rot: u.rot, datei });
                 }
                 // DIE GPU-ZERLEGUNG (scripts/lib/zerlege-linse.cjs): Inventur (ein Zähl-Frame + Pass-Baum + Frame-Anatomie) →
                 // Schalter aus dem echten Weg → ABBA je Schalter mit der Bank-Runde → Beleg je Schalter → Tabelle.
@@ -3319,12 +3256,14 @@ hauptLauf(async () => {
                 await umstellen({ ort, sicht: "ego" });
                 const lauf = (o) => evalRuf(`return await (${LL.naesseSicht.toString()})(${JSON.stringify(o)});`);
                 let dach;
+                // DIE STÄNDE DES DORFS: am Ort wählt der Spieler das Haus (das nächste mit Hülle und Tür, seine Schwelle) und den
+                // nächsten Dach-Bau, dann tritt er an den Dach-Bau (der Dach-Pool trägt die Dächer um ihn) und an die Schwelle. Bis
+                // 30.10. kehrte er dazwischen an den Ort zurück, nur um das Haus zu wählen — ein Umstellen mehr, dasselbe Haus
                 if (ort === "dorf") {
+                    const s = (await lauf({ ort, haus: true })).ergebnis.schwelle;
                     const z = (await lauf({ ort, dach: "ziel" })).ergebnis.ziel;
                     if (z) await umstellen({ x: z[0] + 3, z: z[1] + 3 });
                     dach = z ? (await lauf({ ort, dach: "pruefen" })).ergebnis : { n: 0, trocken: 0 };
-                    await umstellen({ ort, sicht: "ego" });
-                    const s = (await lauf({ ort, haus: true })).ergebnis.schwelle;
                     await umstellen({ x: s[0], z: s[2] });
                 }
                 const a = await lauf({ ort, png: !!opt("--bilder") });
@@ -3352,7 +3291,7 @@ hauptLauf(async () => {
         if (SELBST) process.exit(0);
         const halt = await eigeneWelt();
         const seite = async (f, o) =>
-            ergebnis(await evalRuf(`const kantenLinie = ${LL.kantenLinie}; return await (${f})(${JSON.stringify(o)});`));
+            ergebnis(await evalRuf(`const kantenLinie = ${LL.kantenLinie}, luftBetaRef = ${LL.luftBetaRef}; return await (${f})(${JSON.stringify(o)});`));
         const wort = opt("--wetter");
         const zug = wort && argv.includes("--zug");
         const mittag = { ...ref, uhren: [0.5] };
@@ -3453,7 +3392,11 @@ hauptLauf(async () => {
         // `--eigen` die Wand der Karte (gate:licht-weg:echt): die Welt als Kind, gestoppt nach der letzten Zeile
         const halt = await eigeneWelt();
         try {
-            for (const art of String(arten).split(",")) for (const uhr of uhren) {
+            // DER PLAN JE ART (w4-proben-tempo2, 31.10.): Exemplar und Auge einer Art hängen nie an der Uhr — jede Uhr nach der ersten ruft
+            // den Plan nur der Stunde wegen (sein Ruf stellt sie) und schwingt ein, wo der Spieler nach der Zeile davor steht — am Auge des
+            // Plans, die Schüsse stellen nur die Kamera (`auge`); bis dahin je Uhr der Gang zum Anker, der Plan samt seinem Einschwingen und
+            // der Gang zurück ans Auge
+            for (const art of String(arten).split(",")) { let plan = null; for (const uhr of uhren) {
                 const zeile = uhr == null ? art : `${art}@${uhr}`;
                 // DER LICHTWEG (Licht K3): `panorama`, `feld`, `spiegel` und `wasser` (eine Zahl stellt die Fläche senkrecht, Grad neben
                 // der Sonne) — die graue Fläche im Licht der Welt gegen das Licht des Wegs
@@ -3467,22 +3410,23 @@ hauptLauf(async () => {
                 if ((haus || boden) && !(welt[`haus@${uhren[0]}`] || welt[`ring@${uhren[0]}`])) await umstellen({ ort: "dorf" });
                 const spiel = `wechsel: ${Number(opt("--wechsel", 0)) || 0}, augeH: ${Number(opt("--auge", 1.7)) || 1.7}, hang: ${Number(opt("--hang", 0)) || 0}, uhr: ${uhr}, haus: ${haus}, boden: ${boden}`;
                 const c = `return await __laubGegenlicht(Object.assign({ art: ${JSON.stringify(art)} }, __o));`;
-                // am Anker stehen: welche Bäume eine nahe Stufe (eine Laub-Senke) tragen, folgt dem Spieler
-                await umstellen({ x: anker[0], z: anker[1] });
                 const ein = () => hat("karte") && rufe("/lauf", { sek: 5, ein: 8, ruhe: 120, regler: "voll" });
-                // die Stufen der Gestalten schwingen ein (nach dem Umstellen fehlt dem Plan der Karte die Laub-Senke)
-                let plan = null;
-                for (let i = 0; i < (hat("karte") ? 6 : 1) && !(plan && !plan.fehler); i++, await ein())
-                    plan = (await rufe("/eval", {
-                        // `--abstand m`: der Augen-Ort so weit vom Fuß (die Stufe folgt dem Spieler: nah L0, weiter L1)
-                        code: `const __o = { plan: true, anker: ${JSON.stringify(anker)}, abstand: ${Number(opt("--abstand", 8)) || 8}, ${spiel} }; ${c}`,
-                    })).ergebnis;
-                if (!plan || plan.fehler) {
-                    welt[zeile] = plan || { fehler: "kein Plan" };
-                    continue;
+                // `--abstand m`: der Augen-Ort so weit vom Fuß (die Stufe folgt dem Spieler: nah L0, weiter L1)
+                const planRuf = () => rufe("/eval", { code: `const __o = { plan: true, anker: ${JSON.stringify(anker)}, abstand: ${Number(opt("--abstand", 8)) || 8}, ${spiel} }; ${c}` });
+                if (plan) await planRuf(), await ein();
+                else {
+                    // am Anker stehen: welche Bäume eine nahe Stufe (eine Laub-Senke) tragen, folgt dem Spieler
+                    await umstellen({ x: anker[0], z: anker[1] });
+                    // die Stufen der Gestalten schwingen ein (nach dem Umstellen fehlt dem Plan der Karte die Laub-Senke)
+                    for (let i = 0; i < (hat("karte") ? 6 : 1) && !(plan && !plan.fehler); i++, await ein()) plan = (await planRuf()).ergebnis;
+                    if (!plan || plan.fehler) {
+                        welt[zeile] = plan || { fehler: "kein Plan" };
+                        plan = null;
+                        continue;
+                    }
+                    await umstellen({ x: plan.auge[0], z: plan.auge[1] });
+                    await ein();
                 }
-                await umstellen({ x: plan.auge[0], z: plan.auge[1] });
-                await ein();
                 // `--karte` (A7): dasselbe Auge, erst die Gestalt in ihrer Stufe, dann die Karte (Schwellen 0,3/0,6 m), danach zurück
                 // — auch der Boden: Boden-Satz und Fern-Ring aus dem fernen Auge der Naht (zwei Augen maßen den Blickwinkel mit, Licht K3)
                 const k = (n) => evalRuf(`const __o = { ziel: ${JSON.stringify(plan.ziel)}, auge: ${JSON.stringify(boden ? plan.fern : plan.auge)}, karte: ${n}, stufe: ${haus ? (n === 1 ? 0 : 2) : null}, ${spiel} }; ${c}`);
@@ -3504,10 +3448,10 @@ hauptLauf(async () => {
                     ? (await k(2)).ergebnis
                     : (await evalRuf(`const __o = { ziel: ${JSON.stringify(plan.ziel)}, oben: ${oben} }; ${c}`)).ergebnis;
                 if (hat("karte") && !boden) await stufen(null);
-                if (w && w.karte && opt("--ordner"))
-                    w.karte.png.forEach((p, i) => pngDatei(path.join(opt("--ordner"), `karte-${zeile}-${i ? "karte" : "gestalt"}.png`), p));
-                if (w && w.karte) delete w.karte.png;
                 const ordner = opt("--ordner");
+                if (w && w.karte && ordner)
+                    w.karte.png.forEach((p, i) => pngDatei(path.join(ordner, `karte-${zeile}-${i ? "karte" : "gestalt"}.png`), p));
+                if (w && w.karte) delete w.karte.png;
                 if (w && w.oben && w.oben.png) {
                     if (ordner)
                         pngDatei(path.join(ordner, `krone-${art}-oben.png`), w.oben.png);
@@ -3520,7 +3464,7 @@ hauptLauf(async () => {
                         delete w[k].png;
                     }
                 welt[zeile] = w;
-            }
+            } }
         } finally {
             if (halt) await halt();
         }
@@ -3711,7 +3655,7 @@ hauptLauf(async () => {
         const spitze = cmd === "takt";
         if (SELBST) {
             const f = HL.selbsttest();
-            selbsttestEnde(f, "die Hänger-Linse nennt Takt-Last, Neben-Last, Collector, GPU-Warten nach synchronen Pipelines und den Auftrag des GPU-Prozesses beim Namen, die Takt-Marken legen die Stichproben der Spur auf die Takte; die Takt-Spitze nennt eine 3-ms-Last je 10. Takt allein beim Namen und ist ohne Last GRÜN, in Fahrt ein computeVertexNormals im Takt beim Namen und einen stehenden Wagen");
+            selbsttestEnde(f, "die Hänger-Linse nennt Takt-Last, Neben-Last, Collector, GPU-Warten nach synchronen Pipelines und den Auftrag des GPU-Prozesses beim Namen, die Takt-Marken legen die Stichproben der Spur auf die Takte; die Takt-Spitze nennt eine 3-ms-Last je 10. Takt allein beim Namen und ist ohne Last GRÜN, in Fahrt ein computeVertexNormals im Takt beim Namen und einen stehenden Wagen; die Halter der Ankunft nennen jede Aufgabe ≥ 50 ms vor dem ersten Bild mit Funktion und Datei:Zeile, nie eine danach, und sind blind ROT");
             process.exit(0);
         }
         // `--auswerten <x.roh.json>`: ein gesicherter Lauf neu geurteilt (nur Node — eine andere Schwelle, eine neue Linse)
@@ -3765,8 +3709,8 @@ hauptLauf(async () => {
         process.exit(gut ? 0 : 1);
     }
     else if (cmd === "ziele") {
-        o = await rufe("/ziele", { n: opt("--n"), json: opt("--json"), selbsttest: SELBST });
-        if (o && o.tabelle) endeMit(o.tabelle + (o.selbst ? "\n\n" + o.selbst : "") + "\n" + o.datei, o.ok);
+        o = await rufe("/ziele", { n: opt("--n"), json: opt("--json") });
+        if (o && o.tabelle) endeMit(o.tabelle + "\n" + o.datei, o.ok);
         endeMit(o);
     } else if (cmd === "zerlegen") {
         const bi = argv.indexOf("--bilder");

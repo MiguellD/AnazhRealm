@@ -6509,6 +6509,10 @@
     }
     var KIND_POLICY = {};
     for (var _wp in WERKE) KIND_POLICY[WERKE[_wp].kind] = { prefix: WERKE[_wp].kind + "_", substanz: werkSubstanz(_wp) };
+    // B8 — DER STAMMBAUM (studios.K5, rein additiv): wie das Buch sich und seine Arten nennt — die Werke des Zimmermanns
+    // heißen, wie ihre Zeile sie nennt (`WERKE[..].art`). Der Wirt leitet daraus den EINEN Baum Studio → Bereich → Teil ab.
+    var STAMMBAUM = { studio: "Fachwerk", arten: { haus: "Häuser", ausstattung: "Ausstattung" } };
+    for (var _wb in WERKE) STAMMBAUM.arten[WERKE[_wb].kind] = WERKE[_wb].art;
     // Die Wahl einer Gestalt, die nur der Bau kennt (der Strom zieht sie zwischen den Waren): der Marktstand nennt sein Fass
     // (`userData.fass` = [x, z] oder fehlt) — die Stufe 3 liest sie aus der L1 derselben Gestalt (dieselbe Funktion,
     // derselbe Strom), nie aus einem zweiten Würfel.
@@ -8480,6 +8484,8 @@
         buildInstance: buildInstance,
         // B7 — die Wirts-Zeilen der Werke (Bank, Leiter): Bauplan-Namensraum und Substanz in den Maßen der Gestalt
         KIND_POLICY: KIND_POLICY,
+        // B8 — der Stammbaum (studios.K5): wie das Buch sich und seine Arten nennt (der Wirt leitet den EINEN Baum ab)
+        STAMMBAUM: STAMMBAUM,
         WERKE: WERKE,
         // DIE AUSSTATTUNG (Feuerstelle · Marktstand · Brunnen) — das Labor-Dorf baut seine Brunnen und Stände hierüber
         AUSSTATTUNG: AUSSTATTUNG,

@@ -12,10 +12,10 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
     // `carveVoxel` nimmt eine Säule aus dem Dichte-Feld (gelaende-core `editForm`: Radius r, halbe Höhe r).
     const voxelP3Results = await safeEvaluate(page, () => {
         const out = {};
-        if (r.state.worldMeta) {
-            const base = r.state.terrainBaseHeight || 0;
+        if (st.worldMeta) {
+            const base = st.terrainBaseHeight || 0;
             // Der Schnitt ist die Säule r im Fels: ihr Kern und 0,5 m innerhalb ihres Rands Luft, 0,5 m außerhalb Fels.
-            r.state.worldMeta.voxelEdits = [];
+            st.worldMeta.voxelEdits = [];
             r.carveVoxel(0, base - 33, 0, 12);
             out.carveSubtracts =
                 r._terrainDensityAt(0, base - 33, 0) < 0 &&
@@ -24,11 +24,11 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
             // Die Edits über Save und Reload (der Turm): gate:fall-waechter B; kein Edit fällt still: gate:worker-dichte (3).
             // Chat-Befehl `voxel carve` fügt einen Edit hinzu.
             // voxelTerrainActive ist permanent — kein Setup nötig.
-            r.state.worldMeta.voxelEdits = [];
+            st.worldMeta.voxelEdits = [];
             r.processChatCommand("voxel carve");
-            out.chatCarveAddsEdit = r.state.worldMeta.voxelEdits.length === 1;
+            out.chatCarveAddsEdit = st.worldMeta.voxelEdits.length === 1;
             // sauber zurücklassen.
-            r.state.worldMeta.voxelEdits = [];
+            st.worldMeta.voxelEdits = [];
             r.saveState();
         }
         return out;
@@ -49,25 +49,25 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         // Den Test-Voxel-Ring SYNC auffüllen, damit der Edit Chunks zum Markieren findet: ein Tick-Loop
         // ohne Event-Loop-Yield bekommt keine Worker-Antwort (Ring bliebe leer, Flake). Darum Worker AUS
         // → 3×3-Ring um den Spieler-Chunk sync bauen → Worker zurück.
-        const pm = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+        const pm = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
         r._drainDirtyVoxelChunks();
         {
             const span940 = r._voxelChunkConfig(0).span;
             const pcx = Math.floor(pm.x / span940);
             const pcz = Math.floor(pm.z / span940);
-            const savedW = r.state.voxelWorker;
-            r.state.voxelWorker = null;
+            const savedW = st.voxelWorker;
+            st.voxelWorker = null;
             for (let dx = -1; dx <= 1; dx++) {
                 for (let dz = -1; dz <= 1; dz++) {
-                    if (!r.state.voxelChunks || !r.state.voxelChunks.has(`${pcx + dx},${pcz + dz}`)) {
+                    if (!st.voxelChunks || !st.voxelChunks.has(`${pcx + dx},${pcz + dz}`)) {
                         r._ensureVoxelChunkAt(pcx + dx, pcz + dz, 0);
                     }
                 }
             }
-            r.state.voxelWorker = savedW;
+            st.voxelWorker = savedW;
         }
         r._drainDirtyVoxelChunks();
-        if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
+        if (!st.voxelChunks || st.voxelChunks.size === 0) {
             out.skip = true;
             return out;
         }
@@ -78,9 +78,9 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         const cy = (Number.isFinite(carveSurf) ? carveSurf : pm.y) - 1.5;
         // Ein Carve in der Nähe des Spielers markiert Chunks dirty
         // statt sie sofort zu rebuilden (V9.40-c-Verhalten).
-        const dirtyBefore = r.state.dirtyVoxelChunks ? r.state.dirtyVoxelChunks.size : 0;
+        const dirtyBefore = st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0;
         const carveRet = r.carveVoxel(pm.x, cy, pm.z, 3.5);
-        out.editMarksDirty = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.size > dirtyBefore);
+        out.editMarksDirty = !!(st.dirtyVoxelChunks && st.dirtyVoxelChunks.size > dirtyBefore);
         // bei Rot zeigt die Invariante den
         // ECHTEN Lauf-Zustand (Position/Surface/Edit-Annahme), statt zu raten.
         out.telemetry = JSON.stringify({
@@ -89,26 +89,26 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
             cy: +cy.toFixed(1),
             carveRet,
             dirtyBefore,
-            dirtyAfter: r.state.dirtyVoxelChunks ? r.state.dirtyVoxelChunks.size : -1,
-            chunks: r.state.voxelChunks ? r.state.voxelChunks.size : -1,
+            dirtyAfter: st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : -1,
+            chunks: st.voxelChunks ? st.voxelChunks.size : -1,
             // offset-FREIE Chunk-Formel (der alte +150-Offset war die
             // Heightfield-Ära und log in der Telemetrie).
             playerChunkBuilt: !!(
-                r.state.voxelChunks && r.state.voxelChunks.get(`${Math.floor(pm.x / 43.2)},${Math.floor(pm.z / 43.2)}`)
+                st.voxelChunks && st.voxelChunks.get(`${Math.floor(pm.x / 43.2)},${Math.floor(pm.z / 43.2)}`)
             ),
         });
         // _drainDirtyVoxelChunks räumt das Set leer + rebuildet.
-        const dirtyMid = r.state.dirtyVoxelChunks.size;
+        const dirtyMid = st.dirtyVoxelChunks.size;
         const built = r._drainDirtyVoxelChunks();
         out.drainRebuilt = built > 0;
-        out.drainEmptiesSet = r.state.dirtyVoxelChunks.size === 0;
+        out.drainEmptiesSet = st.dirtyVoxelChunks.size === 0;
         out.drainReturnedCount = built === dirtyMid;
         // Der Tick baut je Frame höchstens EINEN Chunk ein, nah zuerst, und keinen synchron (K69-2: die Aufträge der
         // nächsten gehen an den Worker voraus; ohne Worker baut er einen je Frame synchron). Ein frischer Frame: der
         // Einbau-Merker des Edits (`_bodenEinbau`, der Frame-Planer setzt ihn je Frame zurück) gilt nicht.
-        r.state._frameOverBudget = false;
+        st._frameOverBudget = false;
         r.carveVoxel(pm.x, cy, pm.z, 3.5);
-        const dirtyPostEdit = r.state.dirtyVoxelChunks.size;
+        const dirtyPostEdit = st.dirtyVoxelChunks.size;
         if (dirtyPostEdit > 1) {
             const worker = r._voxelFadenTraegt();
             st._bodenEinbau = null;
@@ -137,10 +137,10 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         // Disposal räumt dirty-Marker mit.
         r._drainDirtyVoxelChunks();
         r.carveVoxel(pm.x, cy, pm.z, 3.5);
-        const dirtyKey = [...r.state.dirtyVoxelChunks][0];
+        const dirtyKey = [...st.dirtyVoxelChunks][0];
         if (dirtyKey) {
             r._disposeVoxelChunk(dirtyKey);
-            out.disposeClearsDirty = !r.state.dirtyVoxelChunks.has(dirtyKey);
+            out.disposeClearsDirty = !st.dirtyVoxelChunks.has(dirtyKey);
         } else {
             out.disposeClearsDirty = true;
         }
@@ -180,21 +180,21 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         // Dieses Band prüft die SYNC-Bau-Mechanik (dispose-before-build, Fail-Retry-Counter, OOM-give-up)
         // des lebenden Stufe-3-Fallbacks. Worker für die Dauer des Tests aus → `_acquireVoxelChunkBuild`
         // nimmt direkt Stufe 3 (sync); Restore am Ende.
-        const _savedWorker = r.state.voxelWorker;
-        r.state.voxelWorker = null;
+        const _savedWorker = st.voxelWorker;
+        st.voxelWorker = null;
         // Ring auffüllen.
-        const pm = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 0, z: 0 };
+        const pm = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
         r._drainDirtyVoxelChunks();
         for (let s = 0; s < 30; s++) r._tickVoxelChunkStreaming(pm);
-        if (!r.state.voxelChunks || r.state.voxelChunks.size === 0) {
+        if (!st.voxelChunks || st.voxelChunks.size === 0) {
             out.skip = true;
             return out;
         }
         // Dispose-Before-Build: stuben den Code-Pfad indem wir
         // einen Chunk-Key wählen, der existiert + rebuild rufen
         // + prüfen dass die alte Mesh-Identität weg ist.
-        const someKey = [...r.state.voxelChunks.keys()].find((k) => {
-            const e = r.state.voxelChunks.get(k);
+        const someKey = [...st.voxelChunks.keys()].find((k) => {
+            const e = st.voxelChunks.get(k);
             return e && e.mesh;
         });
         if (!someKey) {
@@ -204,9 +204,9 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         const [cxStr, czStr] = someKey.split(",");
         const cx = parseInt(cxStr, 10);
         const cz = parseInt(czStr, 10);
-        const oldMesh = r.state.voxelChunks.get(someKey).mesh;
+        const oldMesh = st.voxelChunks.get(someKey).mesh;
         const ok = r._rebuildVoxelChunk(cx, cz);
-        const newEntry = r.state.voxelChunks.get(someKey);
+        const newEntry = st.voxelChunks.get(someKey);
         out.rebuildOk = ok === true;
         // Bei Erfolg: neuer Mesh ist nicht der alte (Identität gewechselt).
         out.meshIdentityChanged = !!(newEntry && newEntry.mesh && newEntry.mesh !== oldMesh);
@@ -215,20 +215,20 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         r._buildVoxelChunkData = () => null;
         // 1. Versuch: fail → dirty bleibt, attempts=1
         r._rebuildVoxelChunk(cx, cz);
-        const attempts1 = r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.get(someKey);
+        const attempts1 = st.voxelRebuildAttempts && st.voxelRebuildAttempts.get(someKey);
         out.retryCounter1 = attempts1 === 1;
-        out.dirtyAfterFail = !!(r.state.dirtyVoxelChunks && r.state.dirtyVoxelChunks.has(someKey));
+        out.dirtyAfterFail = !!(st.dirtyVoxelChunks && st.dirtyVoxelChunks.has(someKey));
         // 2. Versuch: fail → attempts=2
         r._rebuildVoxelChunk(cx, cz);
-        out.retryCounter2 = (r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.get(someKey)) === 2;
+        out.retryCounter2 = (st.voxelRebuildAttempts && st.voxelRebuildAttempts.get(someKey)) === 2;
         // 3. Versuch: fail → empty markiert, counter weg
         r._rebuildVoxelChunk(cx, cz);
-        const finalEntry = r.state.voxelChunks.get(someKey);
+        const finalEntry = st.voxelChunks.get(someKey);
         out.giveUpAsEmpty = !!(finalEntry && finalEntry.empty === true);
-        out.counterClearedAfterGiveUp = !(r.state.voxelRebuildAttempts && r.state.voxelRebuildAttempts.has(someKey));
+        out.counterClearedAfterGiveUp = !(st.voxelRebuildAttempts && st.voxelRebuildAttempts.has(someKey));
         // Restore.
         r._buildVoxelChunkData = origBuild;
-        r.state.voxelWorker = _savedWorker; // V17.118 — den Worker wieder engagieren
+        st.voxelWorker = _savedWorker; // V17.118 — den Worker wieder engagieren
         r._drainDirtyVoxelChunks();
         return out;
     });
@@ -262,12 +262,12 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
     // trägt einen Retry-Counter wie der Re-Mesh-Pfad — beide Bau-Pfade konsistent.
     const voxelV940eResults = await safeEvaluate(page, () => {
         const out = {};
-        const base = r.state.terrainBaseHeight || 0;
+        const base = st.terrainBaseHeight || 0;
         // (1) Edit-Y-Bound: weit-außerhalb-Edit wird verworfen.
-        const editsBefore = r.state.worldMeta.voxelEdits ? r.state.worldMeta.voxelEdits.length : 0;
+        const editsBefore = st.worldMeta.voxelEdits ? st.worldMeta.voxelEdits.length : 0;
         const farUpResult = r._addVoxelEdit(0, base + 10000, 0, 3, "carve");
         out.farEditRejected = farUpResult === false;
-        out.farEditNotStored = (r.state.worldMeta.voxelEdits ? r.state.worldMeta.voxelEdits.length : 0) === editsBefore;
+        out.farEditNotStored = (st.worldMeta.voxelEdits ? st.worldMeta.voxelEdits.length : 0) === editsBefore;
         const farDownResult = r._addVoxelEdit(0, base - 10000, 0, 3, "carve");
         out.farDownRejected = farDownResult === false;
         // Normaler Edit innerhalb Band bleibt erhalten.
@@ -278,14 +278,14 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         const nearEdgeResult = r._addVoxelEdit(0, base + 86, 0, 3, "carve");
         out.nearEdgeAccepted = nearEdgeResult === true;
         // Räumen.
-        r.state.worldMeta.voxelEdits = [];
+        st.worldMeta.voxelEdits = [];
 
         // (2) _disposeVoxelChunk räumt voxelRebuildAttempts.
-        if (!r.state.voxelRebuildAttempts) r.state.voxelRebuildAttempts = new Map();
-        r.state.voxelRebuildAttempts.set("99,99", 2);
-        r.state.voxelChunks.set("99,99", { empty: true });
+        if (!st.voxelRebuildAttempts) st.voxelRebuildAttempts = new Map();
+        st.voxelRebuildAttempts.set("99,99", 2);
+        st.voxelChunks.set("99,99", { empty: true });
         r._disposeVoxelChunk("99,99");
-        out.disposeClearsAttempts = !r.state.voxelRebuildAttempts.has("99,99");
+        out.disposeClearsAttempts = !st.voxelRebuildAttempts.has("99,99");
 
         // (3) _ensureVoxelChunkAt Retry-Pfad: Build-Fail (bare null) → Retry-Counter steigt; nach < 3
         // Fails KEIN empty-Eintrag (Retry pending), nach 3 ein empty + Counter geräumt. Der Fail wird
@@ -293,17 +293,17 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         const fakeKey = "0,-999"; // weit weg, ungebraucht
         const _savedAcquire = r._acquireVoxelChunkBuild;
         r._acquireVoxelChunkBuild = () => null; // Build-Fail erzwingen (bare null)
-        r.state.voxelChunks.delete(fakeKey);
-        if (r.state.voxelRebuildAttempts) r.state.voxelRebuildAttempts.delete(fakeKey);
+        st.voxelChunks.delete(fakeKey);
+        if (st.voxelRebuildAttempts) st.voxelRebuildAttempts.delete(fakeKey);
         r._ensureVoxelChunkAt(0, -999);
-        out.streamFail1NoEntry = !r.state.voxelChunks.has(fakeKey);
-        out.streamAttempt1 = r.state.voxelRebuildAttempts.get(fakeKey) === 1;
+        out.streamFail1NoEntry = !st.voxelChunks.has(fakeKey);
+        out.streamAttempt1 = st.voxelRebuildAttempts.get(fakeKey) === 1;
         r._ensureVoxelChunkAt(0, -999);
-        out.streamAttempt2 = r.state.voxelRebuildAttempts.get(fakeKey) === 2;
+        out.streamAttempt2 = st.voxelRebuildAttempts.get(fakeKey) === 2;
         r._ensureVoxelChunkAt(0, -999);
-        const finalE = r.state.voxelChunks.get(fakeKey);
+        const finalE = st.voxelChunks.get(fakeKey);
         out.streamGiveUpAsEmpty = !!(finalE && finalE.empty === true);
-        out.streamCounterClearedAfterGiveUp = !r.state.voxelRebuildAttempts.has(fakeKey);
+        out.streamCounterClearedAfterGiveUp = !st.voxelRebuildAttempts.has(fakeKey);
         // Restore + Cleanup.
         r._acquireVoxelChunkBuild = _savedAcquire;
         r._disposeVoxelChunk(fakeKey);
@@ -343,26 +343,25 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
     // ### Voxel-Terrain-Bogen Phase 3b — Aufschütten ### (die Säule des Füll-Edits über die Maus und den Reload: gate:fall-waechter B)
     const voxelP3bResults = await safeEvaluate(page, () => {
         const out = {};
-        if (r.state.worldMeta) {
-            const base = r.state.terrainBaseHeight || 0;
+        if (st.worldMeta) {
+            const base = st.terrainBaseHeight || 0;
             // Backward-Compat: ein mode-loser Alt-Edit gilt als carve.
-            r.state.worldMeta.voxelEdits = [];
+            st.worldMeta.voxelEdits = [];
             const dPre = r._terrainDensityAt(120, base - 33, 120);
             // BÜHNE: Edit-Daten einer Einheits-Probe — gelesen wird der Edit, nicht der Ort
-            r.state.worldMeta.voxelEdits = [{ x: 120, y: base - 33, z: 120, r: 12 }];
+            st.worldMeta.voxelEdits = [{ x: 120, y: base - 33, z: 120, r: 12 }];
             out.modelessIsCarve = r._terrainDensityAt(120, base - 33, 120) < dPre;
             // Chat-Befehl `voxel fill` fügt einen fill-Edit hinzu.
             // frieden — damit das V9.17-Füll-Gate frei ist.
             // voxelTerrainActive ist permanent — kein Setup nötig.
             const p3bMode = r.getGameMode();
             r.setGameMode("frieden");
-            r.state.worldMeta.voxelEdits = [];
+            st.worldMeta.voxelEdits = [];
             r.processChatCommand("voxel fill");
-            out.chatFillAddsEdit =
-                r.state.worldMeta.voxelEdits.length === 1 && r.state.worldMeta.voxelEdits[0].mode === "fill";
+            out.chatFillAddsEdit = st.worldMeta.voxelEdits.length === 1 && st.worldMeta.voxelEdits[0].mode === "fill";
             r.setGameMode(p3bMode);
             // sauber zurücklassen.
-            r.state.worldMeta.voxelEdits = [];
+            st.worldMeta.voxelEdits = [];
             r.saveState();
         }
         return out;
@@ -377,39 +376,39 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
     // Im pfad-Modus kostet das Aufschütten Material; in frieden +
     // schöpfer ist es frei (das Spielmodi-Muster).
     const voxelP3cResults = await safeEvaluate(page, () => {
-        if (!r || !r.state || !r.state.player) return null;
+        if (!r || !st || !st.player) return null;
         const out = {};
-        const invBackup = JSON.parse(JSON.stringify(r.state.player.inventory || []));
+        const invBackup = JSON.parse(JSON.stringify(st.player.inventory || []));
         const modeBackup = r.getGameMode();
-        const wm = r.state.worldMeta;
+        const wm = st.worldMeta;
         const matTotal = () => {
             let t = 0;
-            for (const s of r.state.player.inventory) {
+            for (const s of st.player.inventory) {
                 if (s && s.kind === "material") t += s.count || 0;
             }
             return t;
         };
         // _consumeAnyMaterial: genug → true + reduziert.
-        r.state.player.inventory = new Array(27).fill(null);
+        st.player.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 10);
         out.consumeEnough = r._consumeAnyMaterial(4) === true && matTotal() === 6;
         // zu wenig → false + unverändert.
-        r.state.player.inventory = new Array(27).fill(null);
+        st.player.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 2);
         out.consumeTooLittle = r._consumeAnyMaterial(4) === false && matTotal() === 2;
         // Gate in frieden → frei, kein Verbrauch.
         r.setGameMode("frieden");
-        r.state.player.inventory = new Array(27).fill(null);
+        st.player.inventory = new Array(27).fill(null);
         const gF = r._voxelFillGate();
         out.gateFriedenFree = gF.ok === true && gF.free === true;
         // Gate in pfad mit Material → ok + verbraucht.
         r.setGameMode("pfad");
-        r.state.player.inventory = new Array(27).fill(null);
+        st.player.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 10);
         const gP = r._voxelFillGate();
         out.gatePfadConsumes = gP.ok === true && gP.free === false && matTotal() === 6;
         // Gate in pfad ohne Material → abgelehnt.
-        r.state.player.inventory = new Array(27).fill(null);
+        st.player.inventory = new Array(27).fill(null);
         out.gatePfadDeniesEmpty = r._voxelFillGate().ok === false;
         // Chat `voxel fill` in pfad ohne Material → kein Edit.
         // voxelTerrainActive ist permanent — kein Setup nötig.
@@ -423,7 +422,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         out.chatFillWorksWithMat = wm.voxelEdits.length === 1;
         // sauber zurücklassen.
         wm.voxelEdits = [];
-        r.state.player.inventory = invBackup;
+        st.player.inventory = invBackup;
         r.setGameMode(modeBackup);
         r.saveState();
         return out;
@@ -459,14 +458,14 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         // nicht über den Runtime-State (frühere Tests schalten evtl. auf pfad).
         const fresh = r._buildEmptyWorldSnapshot({ slug: "test-fresh" }, false);
         out.defaultModeFrieden = fresh && fresh.worldMeta && fresh.worldMeta.gameMode === "frieden";
-        out.canonicalDefaultIsFrieden = r.constructor.GAME_MODES[0] === "frieden";
-        out.worldMetaHasGameMode = typeof r.state.worldMeta.gameMode === "string";
+        out.canonicalDefaultIsFrieden = AnazhRealm.GAME_MODES[0] === "frieden";
+        out.worldMetaHasGameMode = typeof st.worldMeta.gameMode === "string";
 
         // Übergänge: setGameMode auf jeden der drei Modi.
         r.setGameMode("pfad");
-        out.setPfadWorks = r.getGameMode() === "pfad" && r.state.worldMeta.gameMode === "pfad";
+        out.setPfadWorks = r.getGameMode() === "pfad" && st.worldMeta.gameMode === "pfad";
         r.setGameMode("schöpfer");
-        out.setSchoepferWorks = r.getGameMode() === "schöpfer" && r.state.worldMeta.gameMode === "schöpfer";
+        out.setSchoepferWorks = r.getGameMode() === "schöpfer" && st.worldMeta.gameMode === "schöpfer";
         r.setGameMode("frieden");
         out.setFriedenWorks = r.getGameMode() === "frieden";
         // Ungültiger Wert → frieden-Fallback.
@@ -475,55 +474,53 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
 
         // damagePlayer-Gate: frieden + schöpfer → return false,
         // pfad → return true (existing path).
-        const hpBefore = r.state.player.hp;
+        const hpBefore = st.player.hp;
         r.setGameMode("frieden");
         const damageInFrieden = r.damagePlayer(50, "test");
-        out.friedenBlocksDamage = damageInFrieden === false && r.state.player.hp === hpBefore;
+        out.friedenBlocksDamage = damageInFrieden === false && st.player.hp === hpBefore;
 
         r.setGameMode("schöpfer");
         const damageInSchoepfer = r.damagePlayer(50, "test");
-        out.schoepferBlocksDamage = damageInSchoepfer === false && r.state.player.hp === hpBefore;
+        out.schoepferBlocksDamage = damageInSchoepfer === false && st.player.hp === hpBefore;
 
         // pfad → Schaden wirkt
         r.setGameMode("pfad");
         // Aus möglicher Respawn-Gnade rausnehmen (test-cleanup)
-        r.state.player.respawnGraceUntil = -Infinity;
-        r.state.player.hp = 100;
+        st.player.respawnGraceUntil = -Infinity;
+        st.player.hp = 100;
         const damageInPfad = r.damagePlayer(30, "test");
-        out.pfadAcceptsDamage = damageInPfad === true && r.state.player.hp < 100;
+        out.pfadAcceptsDamage = damageInPfad === true && st.player.hp < 100;
 
         // Stamina-Gate: applyOpToPart kostet nur in pfad.
         // Setup: ein eigener Bauplan mit holz-Material.
-        r.state.blueprints["mode-test-bp"] = {
+        st.blueprints["mode-test-bp"] = {
             name: "mode-test-bp",
             label: "Mode-Test",
             builtIn: false,
-            parts: [
-                __teil("box", "holz", 0, 0, 0, 1, 1, 1),
-            ],
+            parts: [__teil("box", "holz", 0, 0, 0, 1, 1, 1)],
         };
         // Stamina voll setzen
-        r.state.player.stamina = 100;
+        st.player.stamina = 100;
 
         r.setGameMode("frieden");
         const opResultFrieden = r.applyOpToPart("mode-test-bp", 0, "hände");
-        out.friedenSkipsStamina = opResultFrieden.ok === true && r.state.player.stamina === 100;
+        out.friedenSkipsStamina = opResultFrieden.ok === true && st.player.stamina === 100;
 
-        r.state.player.stamina = 100;
+        st.player.stamina = 100;
         r.setGameMode("schöpfer");
         const opResultSchoepfer = r.applyOpToPart("mode-test-bp", 0, "hände");
-        out.schoepferSkipsStamina = opResultSchoepfer.ok === true && r.state.player.stamina === 100;
+        out.schoepferSkipsStamina = opResultSchoepfer.ok === true && st.player.stamina === 100;
 
-        r.state.player.stamina = 100;
+        st.player.stamina = 100;
         r.setGameMode("pfad");
         const opResultPfad = r.applyOpToPart("mode-test-bp", 0, "hände");
         // die Kosten skalieren mit dem Werkzeug-cap (nicht
         // mehr fix 10); dieser Test prüft das Modus-GATE (pfad
         // konsumiert), die genaue Skalierung prüft der V8.39-Block.
-        out.pfadChargesStamina = opResultPfad.ok === true && r.state.player.stamina < 100;
+        out.pfadChargesStamina = opResultPfad.ok === true && st.player.stamina < 100;
 
         // Cleanup
-        delete r.state.blueprints["mode-test-bp"];
+        delete st.blueprints["mode-test-bp"];
         r.setGameMode("frieden");
 
         // DSL-Op set_mode
@@ -533,7 +530,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
 
         // set_mode ist in NON_BROADCASTABLE_OPS
         out.setModeNonBroadcastable =
-            r.constructor.NON_BROADCASTABLE_OPS && r.constructor.NON_BROADCASTABLE_OPS.has("set_mode");
+            AnazhRealm.NON_BROADCASTABLE_OPS && AnazhRealm.NON_BROADCASTABLE_OPS.has("set_mode");
 
         // Chat-Pattern: 'setze modus pfad' → set_mode-Programm
         const built = r.parseChatToDsl("setze modus pfad");
@@ -610,10 +607,10 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
     const wave6c1Results = await safeEvaluate(page, () => {
         const out = {};
         // Datenmodell
-        out.hasInventoryArray = Array.isArray(r.state.player && r.state.player.inventory);
-        out.inventorySize = r.state.player.inventory.length;
-        out.inventoryHas27Slots = r.state.player.inventory.length === 27;
-        out.initiallyEmpty = r.state.player.inventory.every((s) => s === null);
+        out.hasInventoryArray = Array.isArray(st.player && st.player.inventory);
+        out.inventorySize = st.player.inventory.length;
+        out.inventoryHas27Slots = st.player.inventory.length === 27;
+        out.initiallyEmpty = st.player.inventory.every((s) => s === null);
 
         // Methoden
 
@@ -621,29 +618,29 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         const okAdd = r.addToInventory("baum_eiche", 3);
         out.addedToInventory = okAdd === true;
         out.slot0HasBaum =
-            r.state.player.inventory[0] &&
-            r.state.player.inventory[0].blueprintName === "baum_eiche" &&
-            r.state.player.inventory[0].count === 3;
+            st.player.inventory[0] &&
+            st.player.inventory[0].blueprintName === "baum_eiche" &&
+            st.player.inventory[0].count === 3;
         // Zweiter Add desselben Bauplans: count kumuliert
         r.addToInventory("baum_eiche", 2);
-        out.stacksCount = r.state.player.inventory[0] && r.state.player.inventory[0].count === 5;
+        out.stacksCount = st.player.inventory[0] && st.player.inventory[0].count === 5;
         // Unbekannter Bauplan → false
         out.addRejectsUnknown = r.addToInventory("fictional_bp", 1) === false;
 
         // removeFromInventory: 5 → 3
         r.removeFromInventory(0, 2);
-        out.removeWorks = r.state.player.inventory[0].count === 3;
+        out.removeWorks = st.player.inventory[0].count === 3;
         // Komplett entfernen → null
         r.removeFromInventory(0, 99);
-        out.fullRemoveClearsSlot = r.state.player.inventory[0] === null;
+        out.fullRemoveClearsSlot = st.player.inventory[0] === null;
 
         // DSL-Op add_to_inventory (damm — lebendes builtIn; der Name ist mechanik-egal)
         r.dslRun(["add_to_inventory", "damm", 1], { source: "test" });
-        out.dslOpWorks = r.state.player.inventory.some((s) => s && s.blueprintName === "damm");
+        out.dslOpWorks = st.player.inventory.some((s) => s && s.blueprintName === "damm");
 
         // NON_BROADCASTABLE
         out.addToInventoryNonBroadcastable =
-            r.constructor.NON_BROADCASTABLE_OPS && r.constructor.NON_BROADCASTABLE_OPS.has("add_to_inventory");
+            AnazhRealm.NON_BROADCASTABLE_OPS && AnazhRealm.NON_BROADCASTABLE_OPS.has("add_to_inventory");
 
         // describeProgram-Eintrag
         const d = r.describeProgram(["add_to_inventory", "baum_eiche", 5]);
@@ -666,8 +663,8 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         // Tag-Magic-Test: kristall_geode (quarz, magieleitung 0.85)
         // sollte die magie-Klasse bekommen. baum_eiche (laub,
         // lebendig 1.0) → lebendig-Klasse.
-        r.state.player.inventory[0] = { blueprintName: "kristall_geode", count: 1 };
-        r.state.player.inventory[1] = { blueprintName: "baum_eiche", count: 1 };
+        st.player.inventory[0] = { blueprintName: "kristall_geode", count: 1 };
+        st.player.inventory[1] = { blueprintName: "baum_eiche", count: 1 };
         r.renderInventoryUI();
         const slot0 = document.querySelector('#inventory-grid [data-inv-slot="0"]');
         const slot1 = document.querySelector('#inventory-grid [data-inv-slot="1"]');
@@ -681,16 +678,16 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
 
         // Click → selectInventorySlot setzt inventorySelected
         r.selectInventorySlot(0);
-        out.selectionWorks = r.state.inventorySelected === "kristall_geode";
+        out.selectionWorks = st.inventorySelected === "kristall_geode";
         // Zweiter Klick auf gleichen → toggelt aus
         r.selectInventorySlot(0);
-        out.selectionTogglesOff = r.state.inventorySelected === null;
+        out.selectionTogglesOff = st.inventorySelected === null;
         r.selectInventorySlot(0);
 
         // tryAssignFromInventoryToHotbar legt in Hotbar ab
         const assignOk = r.tryAssignFromInventoryToHotbar(3);
-        out.assignWorks = assignOk === true && r.state.hotbar[3] === "kristall_geode";
-        out.assignClearsSelection = r.state.inventorySelected === null;
+        out.assignWorks = assignOk === true && st.hotbar[3] === "kristall_geode";
+        out.assignClearsSelection = st.inventorySelected === null;
 
         // Ich-Bogen — das Selbst-Porträt (Werkstatt-/Hof-Muster auf das Selbst): EIN _selfProfile-Vektor,
         // das geteilte Spec-Sheet (WERTE führen | NATUR), die Bühne, die 6-Achsen-EMOTION (live), die REISE,
@@ -816,13 +813,13 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         // Toggle close
         r.toggleInventoryOverlay(false);
         out.toggleCloseHides = overlay.hasAttribute("hidden");
-        out.toggleCloseClearsSelected = r.state.inventorySelected === null;
+        out.toggleCloseClearsSelected = st.inventorySelected === null;
 
         // Test-Cleanup: Hotbar + Inventar zurück auf Defaults,
         // damit nachfolgende Tests (Ring 6.5 Default-Hotbar etc.)
         // nicht von Test-Verschmutzung verletzt werden.
-        r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
-        r.state.player.inventory = new Array(27).fill(null);
+        st.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
+        st.player.inventory = new Array(27).fill(null);
         r._renderHotbarDOM();
         r.renderInventoryUI();
 
@@ -936,11 +933,11 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         // craftFromRecipe: ein gehaltenes Gerät (hold) fertigen → in die Hand.
         // Schöpfer-Modus = frei (kein Material/Station-Gate) → deterministisch.
         // getGameMode liest state.worldMeta.gameMode (die kanonische Quelle).
-        const prevMode = r.state.worldMeta && r.state.worldMeta.gameMode;
-        if (r.state.worldMeta) r.state.worldMeta.gameMode = "schöpfer";
+        const prevMode = st.worldMeta && st.worldMeta.gameMode;
+        if (st.worldMeta) st.worldMeta.gameMode = "schöpfer";
         let holdName = null;
-        for (const name of Object.keys(r.state.blueprints || {})) {
-            const bp = r.state.blueprints[name];
+        for (const name of Object.keys(st.blueprints || {})) {
+            const bp = st.blueprints[name];
             if (bp && Array.isArray(bp.parts) && bp.parts.length && r._blueprintUseKind(bp) === "hold") {
                 holdName = name;
                 break;
@@ -950,9 +947,9 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         if (holdName) {
             const res = r.craftFromRecipe(holdName);
             out.craftOk = !!(res && res.ok);
-            out.craftEquipsHeld = !!(r.state.player.equipped && r.state.player.equipped.held === holdName);
+            out.craftEquipsHeld = !!(st.player.equipped && st.player.equipped.held === holdName);
         }
-        if (r.state.worldMeta) r.state.worldMeta.gameMode = prevMode;
+        if (st.worldMeta) st.worldMeta.gameMode = prevMode;
         r.equipHeld(null);
         r.toggleInventoryOverlay(false);
         return out;
@@ -974,10 +971,10 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         const out = {};
 
         // Setup: zwei Bauplan-Einträge im Inventar, leerer Hotbar.
-        r.state.player.inventory = new Array(27).fill(null);
-        r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
-        r.state.player.inventory[1] = { blueprintName: "kristall_geode", count: 1 };
-        r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
+        st.player.inventory = new Array(27).fill(null);
+        st.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
+        st.player.inventory[1] = { blueprintName: "kristall_geode", count: 1 };
+        st.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
 
         // Fake-Event-Object für drop-Handler.
         const mkEvent = () => ({
@@ -986,106 +983,106 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         });
 
         // (1) inv → inv: Slot 0 ↔ Slot 5 tauschen.
-        r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
+        st.drag = { kind: "inv", index: 0, name: "baum_eiche" };
         r._onSlotDrop(mkEvent(), "inv", 5);
         out.invToInvSwap =
-            r.state.player.inventory[0] === null &&
-            r.state.player.inventory[5] &&
-            r.state.player.inventory[5].blueprintName === "baum_eiche";
+            st.player.inventory[0] === null &&
+            st.player.inventory[5] &&
+            st.player.inventory[5].blueprintName === "baum_eiche";
 
         // Reset
-        r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
-        r.state.player.inventory[5] = null;
+        st.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
+        st.player.inventory[5] = null;
 
         // (2) inv → hot mit leerem Hot + Inv-count=1: echter Slot-Move — Inv-Slot wird null, Hot = name.
-        r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
+        st.drag = { kind: "inv", index: 0, name: "baum_eiche" };
         r._onSlotDrop(mkEvent(), "hot", 3);
-        out.invToHotPlaces = r.state.hotbar[3] === "baum_eiche";
-        out.invToHotEmptiesInvSlot = r.state.player.inventory[0] === null;
+        out.invToHotPlaces = st.hotbar[3] === "baum_eiche";
+        out.invToHotEmptiesInvSlot = st.player.inventory[0] === null;
 
         // (2b) inv → hot mit leerem Hot + Inv-count=5: Slot wird
         // KOMPLETT null (egal count). Stack wird konsumiert.
-        r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 5 };
-        r.state.hotbar[4] = null;
-        r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
+        st.player.inventory[0] = { blueprintName: "baum_eiche", count: 5 };
+        st.hotbar[4] = null;
+        st.drag = { kind: "inv", index: 0, name: "baum_eiche" };
         r._onSlotDrop(mkEvent(), "hot", 4);
-        out.invToHotEmptiesIgnoresCount = r.state.hotbar[4] === "baum_eiche" && r.state.player.inventory[0] === null;
+        out.invToHotEmptiesIgnoresCount = st.hotbar[4] === "baum_eiche" && st.player.inventory[0] === null;
 
         // (2c) inv → hot mit gleichem Bauplan in Hot: Inv-Slot
         // wird TROTZDEM leer (Schöpfer-Wunsch: konsequenter Move,
         // Bauplan ist aus Inv weg, in Hot war er schon).
-        r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 3 };
-        r.state.hotbar[4] = "baum_eiche";
-        r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
+        st.player.inventory[0] = { blueprintName: "baum_eiche", count: 3 };
+        st.hotbar[4] = "baum_eiche";
+        st.drag = { kind: "inv", index: 0, name: "baum_eiche" };
         r._onSlotDrop(mkEvent(), "hot", 4);
-        out.invToHotSameNameStillEmpties = r.state.hotbar[4] === "baum_eiche" && r.state.player.inventory[0] === null;
+        out.invToHotSameNameStillEmpties = st.hotbar[4] === "baum_eiche" && st.player.inventory[0] === null;
 
         // (2d) inv → hot mit anderem Bauplan: Swap.
-        r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
-        r.state.hotbar[4] = "stein_block";
-        r.state.drag = { kind: "inv", index: 0, name: "baum_eiche" };
+        st.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
+        st.hotbar[4] = "stein_block";
+        st.drag = { kind: "inv", index: 0, name: "baum_eiche" };
         r._onSlotDrop(mkEvent(), "hot", 4);
         out.invToHotSwap =
-            r.state.hotbar[4] === "baum_eiche" &&
-            r.state.player.inventory[0] &&
-            r.state.player.inventory[0].blueprintName === "stein_block" &&
-            r.state.player.inventory[0].count === 1;
+            st.hotbar[4] === "baum_eiche" &&
+            st.player.inventory[0] &&
+            st.player.inventory[0].blueprintName === "stein_block" &&
+            st.player.inventory[0].count === 1;
 
         // Reset
-        r.state.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
-        r.state.hotbar[3] = null;
-        r.state.hotbar[4] = null;
+        st.player.inventory[0] = { blueprintName: "baum_eiche", count: 1 };
+        st.hotbar[3] = null;
+        st.hotbar[4] = null;
 
         // (3) hot → hot: Slot 0 (stein_block) ↔ Slot 1 (waterfall).
-        r.state.drag = { kind: "hot", index: 0, name: "stein_block" };
+        st.drag = { kind: "hot", index: 0, name: "stein_block" };
         r._onSlotDrop(mkEvent(), "hot", 1);
-        out.hotToHotSwap = r.state.hotbar[0] === "waterfall" && r.state.hotbar[1] === "stein_block";
+        out.hotToHotSwap = st.hotbar[0] === "waterfall" && st.hotbar[1] === "stein_block";
 
         // Reset
-        r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
+        st.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
 
         // (4) hot → inv mit leerem Ziel-Slot: ECHTES MOVE (nur Hotbar räumen ließe den Bauplan
         // verschwinden). Erwartung: Hot null, Inv-Slot 10 = {waterfall, count: 1}.
-        r.state.player.inventory[10] = null;
-        r.state.drag = { kind: "hot", index: 1, name: "waterfall" };
+        st.player.inventory[10] = null;
+        st.drag = { kind: "hot", index: 1, name: "waterfall" };
         r._onSlotDrop(mkEvent(), "inv", 10);
-        out.hotToInvClearsHotbar = r.state.hotbar[1] === null;
+        out.hotToInvClearsHotbar = st.hotbar[1] === null;
         out.hotToInvFillsInvSlot =
-            r.state.player.inventory[10] &&
-            r.state.player.inventory[10].blueprintName === "waterfall" &&
-            r.state.player.inventory[10].count === 1;
+            st.player.inventory[10] &&
+            st.player.inventory[10].blueprintName === "waterfall" &&
+            st.player.inventory[10].count === 1;
 
         // (4b) hot → inv mit gleichem Bauplan im Ziel: Stack
         // (count += 1, Hot wird null).
-        r.state.hotbar[1] = "waterfall"; // Hot wieder befüllen
-        r.state.player.inventory[10] = { blueprintName: "waterfall", count: 3 };
-        r.state.drag = { kind: "hot", index: 1, name: "waterfall" };
+        st.hotbar[1] = "waterfall"; // Hot wieder befüllen
+        st.player.inventory[10] = { blueprintName: "waterfall", count: 3 };
+        st.drag = { kind: "hot", index: 1, name: "waterfall" };
         r._onSlotDrop(mkEvent(), "inv", 10);
         out.hotToInvStacksSameBp =
-            r.state.hotbar[1] === null && r.state.player.inventory[10] && r.state.player.inventory[10].count === 4;
+            st.hotbar[1] === null && st.player.inventory[10] && st.player.inventory[10].count === 4;
 
         // (4c) hot → inv mit anderem Bauplan im Ziel: no-op.
-        r.state.hotbar[1] = "stein_block";
-        r.state.player.inventory[10] = { blueprintName: "waterfall", count: 2 };
-        r.state.drag = { kind: "hot", index: 1, name: "stein_block" };
+        st.hotbar[1] = "stein_block";
+        st.player.inventory[10] = { blueprintName: "waterfall", count: 2 };
+        st.drag = { kind: "hot", index: 1, name: "stein_block" };
         r._onSlotDrop(mkEvent(), "inv", 10);
         out.hotToInvOtherBpNoOp =
-            r.state.hotbar[1] === "stein_block" &&
-            r.state.player.inventory[10] &&
-            r.state.player.inventory[10].blueprintName === "waterfall" &&
-            r.state.player.inventory[10].count === 2;
+            st.hotbar[1] === "stein_block" &&
+            st.player.inventory[10] &&
+            st.player.inventory[10].blueprintName === "waterfall" &&
+            st.player.inventory[10].count === 2;
 
         // Cleanup für (5)
-        r.state.player.inventory[10] = null;
+        st.player.inventory[10] = null;
 
         // (5) src === target: no-op (state unverändert).
-        const before = JSON.stringify(r.state.hotbar);
-        r.state.drag = { kind: "hot", index: 0, name: "stein_block" };
+        const before = JSON.stringify(st.hotbar);
+        st.drag = { kind: "hot", index: 0, name: "stein_block" };
         r._onSlotDrop(mkEvent(), "hot", 0);
-        out.sameSlotNoOp = JSON.stringify(r.state.hotbar) === before;
+        out.sameSlotNoOp = JSON.stringify(st.hotbar) === before;
 
         // (6) drag wird nach drop genullt.
-        out.dragClearedAfterDrop = r.state.drag === null;
+        out.dragClearedAfterDrop = st.drag === null;
 
         // (7) DOM: gefüllte Inventar-Slots sind draggable.
         r.toggleInventoryOverlay(true);
@@ -1104,8 +1101,8 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         out.hotEmptyNotDraggable = hSlot3 && hSlot3.draggable === false;
 
         // Cleanup
-        r.state.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
-        r.state.player.inventory = new Array(27).fill(null);
+        st.hotbar = ["stein_block", "waterfall", "damm", null, null, null, null, null, null];
+        st.player.inventory = new Array(27).fill(null);
         r.toggleInventoryOverlay(false);
         r._renderHotbarDOM();
         r.renderInventoryUI();
@@ -1152,9 +1149,9 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         const out = {};
         // Setup: Inventar zu, keys ggf. setzen (Spieler hält W).
         r.toggleInventoryOverlay(false);
-        if (!r.state.keys) r.state.keys = {};
-        r.state.keys.w = true;
-        r.state.keys.a = true;
+        if (!st.keys) st.keys = {};
+        st.keys.w = true;
+        st.keys.a = true;
 
         // Inventar öffnen → exitPointerLock wird gerufen (headless per Stub gezählt); dazu crash-frei +
         // state.inventoryOpen true.
@@ -1184,20 +1181,20 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
 
         r.toggleInventoryOverlay(true);
         out.exitLockCalledOnOpen = exitCalled >= 1;
-        out.overlayOpenAfterToggle = r.state.inventoryOpen === true;
+        out.overlayOpenAfterToggle = st.inventoryOpen === true;
         // WASD bleibt aktiv (Minecraft-Konvention) — Schöpfer-Wunsch.
-        out.wKeyStillActiveAfterOpen = r.state.keys.w === true;
-        out.aKeyStillActiveAfterOpen = r.state.keys.a === true;
+        out.wKeyStillActiveAfterOpen = st.keys.w === true;
+        out.aKeyStillActiveAfterOpen = st.keys.a === true;
 
         // Esc bei offenem Inventar → toggle close: direkter Aufruf statt synthetischem Keydown (headless
         // flaky); toggleInventoryOverlay(false) darf den Pointer-Lock nicht erneut setzen.
         r.toggleInventoryOverlay(false);
-        out.closeWorksWithoutReLock = r.state.inventoryOpen === false;
+        out.closeWorksWithoutReLock = st.inventoryOpen === false;
 
         // Cleanup
         document.exitPointerLock = origExit;
-        r.state.keys.w = false;
-        r.state.keys.a = false;
+        st.keys.w = false;
+        st.keys.a = false;
 
         return out;
     });
@@ -1225,7 +1222,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
 async function checkBandWelleC3CellularReaction({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const STATE = r.constructor.CELL_STATE;
+        const STATE = AnazhRealm.CELL_STATE;
         // Test-Isolation: das Band misst den Damm-STEMPEL-Revert (spawn → SOLID → remove → exakter
         // Revert). Der Scatter streut Bäume in den Spieler-Ring; landet einer im Damm-Footprint, stempelt
         // sein Holz die Wasser-Cells → Schein-Diff. Der Scatter ist unbeteiligt → sein Takt ruht (G1: ohne Schalter).
@@ -1237,11 +1234,11 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
         const cfgWater = r._voxelChunkConfig(0); // Wasser-Cells immer LOD 0
         // span ist LOD-invariant (43.2 m), darf aus dem Default gelesen werden.
         const span = r._voxelChunkConfig().span;
-        const base = r.state.terrainBaseHeight || 0;
+        const base = st.terrainBaseHeight || 0;
         // Test-Architektur: Damm auf einem FLACHEN Trocken-Spot (Voxel-Surface nah an der Makro-Surface,
         // vy < m+3) — hohe ranges-Cusps machten die Cell über macroY Worldgen-solid und der
         // removeRestores-Check bräche fälschlich; ein fester Spot läge evtl. im Gebirge.
-        const wlDam = r.state.waterLevel;
+        const wlDam = st.waterLevel;
         let testCx = 2;
         let testCz = 2;
         let macroY = r._terrainMacroSurfaceY(testCx * span + span / 2, testCz * span + span / 2, false);
@@ -1264,11 +1261,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
                     }
                     // Der Spot muss Wasser tragen UND schon gestreamt sein (in voxelChunks), sonst kann der
                     // Stempel-Chunk nicht gebaut/gelesen werden → unmessbar.
-                    if (
-                        r._voxelChunkHasAnyWater(scx, scz) &&
-                        r.state.voxelChunks &&
-                        r.state.voxelChunks.has(scx + "," + scz)
-                    ) {
+                    if (r._voxelChunkHasAnyWater(scx, scz) && st.voxelChunks && st.voxelChunks.has(scx + "," + scz)) {
                         testCx = scx;
                         testCz = scz;
                         macroY = m;
@@ -1280,7 +1273,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
         }
         out.damSpotHasWater = damSpotHasWater;
         const damPos = { x: testCx * span + span / 2, y: 10, z: testCz * span + span / 2 };
-        damPos.y = Math.max(macroY + 2, r.state.waterLevel + 4);
+        damPos.y = Math.max(macroY + 2, st.waterLevel + 4);
         // Die Pre-Dam-waterCells vollständig kopieren: ein Einzel-Zell-Check ist roughness-anfällig (die
         // 3D-Roughness ±12 m kann die Damm-Höhe übersteigen → terrain-SOLID ist vom Stempel nicht
         // unterscheidbar). Der Voll-Array-Vergleich (remove restauriert EXAKT) ist terrain-unabhängig.
@@ -1289,12 +1282,12 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
         // state.architectures liegen, ohne dass sein Holz-Stempel schon in den waterCells steckt — der
         // Force-Drain unten stempelte ihn erst NACH dem Snapshot (Geister-Diff). Derselbe 3×3-Force-Drain
         // VOR der Baseline → beide Seiten sehen denselben Architektur-Satz, nur der Damm unterscheidet.
-        if (!r.state.dirtyVoxelChunks) r.state.dirtyVoxelChunks = new Set();
+        if (!st.dirtyVoxelChunks) st.dirtyVoxelChunks = new Set();
         for (let dz = -1; dz <= 1; dz++) {
-            for (let dx = -1; dx <= 1; dx++) r.state.dirtyVoxelChunks.add(`${testCx + dx},${testCz + dz}`);
+            for (let dx = -1; dx <= 1; dx++) st.dirtyVoxelChunks.add(`${testCx + dx},${testCz + dz}`);
         }
-        for (let d = 0; d < 8 && r.state.dirtyVoxelChunks.size > 0; d++) r._drainDirtyVoxelChunks();
-        const preDamEntry0 = r.state.voxelChunks && r.state.voxelChunks.get(preDamChunkKey);
+        for (let d = 0; d < 8 && st.dirtyVoxelChunks.size > 0; d++) r._drainDirtyVoxelChunks();
+        const preDamEntry0 = st.voxelChunks && st.voxelChunks.get(preDamChunkKey);
         const preDamCells = preDamEntry0 && preDamEntry0.waterCells ? Uint8Array.from(preDamEntry0.waterCells) : null;
         const damEntry = r.spawnArchitecture("damm", damPos, { silent: false });
         out.damSpawnSucceeded = !!damEntry;
@@ -1309,7 +1302,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
         r._drainDirtyVoxelChunks();
         // 3) Im Chunk im Damm-Footprint: Cells im Damm-Stempel-Bereich sind SOLID
         const damChunkKey = `${testCx},${testCz}`;
-        const damChunkEntry = r.state.voxelChunks && r.state.voxelChunks.get(damChunkKey);
+        const damChunkEntry = st.voxelChunks && st.voxelChunks.get(damChunkKey);
         out.damChunkExists = !!(damChunkEntry && damChunkEntry.waterCells);
         if (damChunkEntry && damChunkEntry.waterCells) {
             const cells = damChunkEntry.waterCells;
@@ -1333,14 +1326,14 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
             // beim Band-Eintritt variiert je Lauf → den GELESENEN Chunk (`damChunkKey`) + 3×3-Umfeld EXPLIZIT
             // dirty markieren und drainen, bis das Set leer ist: die Stempel-Cell wird garantiert neu
             // klassifiziert.
-            if (!r.state.dirtyVoxelChunks) r.state.dirtyVoxelChunks = new Set();
+            if (!st.dirtyVoxelChunks) st.dirtyVoxelChunks = new Set();
             for (let dz = -1; dz <= 1; dz++) {
                 for (let dx = -1; dx <= 1; dx++) {
-                    r.state.dirtyVoxelChunks.add(`${testCx + dx},${testCz + dz}`);
+                    st.dirtyVoxelChunks.add(`${testCx + dx},${testCz + dz}`);
                 }
             }
-            for (let d = 0; d < 8 && r.state.dirtyVoxelChunks.size > 0; d++) r._drainDirtyVoxelChunks();
-            const afterRemoveEntry = r.state.voxelChunks && r.state.voxelChunks.get(damChunkKey);
+            for (let d = 0; d < 8 && st.dirtyVoxelChunks.size > 0; d++) r._drainDirtyVoxelChunks();
+            const afterRemoveEntry = st.voxelChunks && st.voxelChunks.get(damChunkKey);
             if (
                 preDamCells &&
                 afterRemoveEntry &&
@@ -1360,7 +1353,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
         // 5) Voxel-Carve unter waterLevel → Cells werden water
         // Suche einen Trockenland-Hochland-Spot mit macroY > wl + 6 (genug
         // Distanz dass r=12-Carve unter wl reicht)
-        const wl = r.state.waterLevel;
+        const wl = st.waterLevel;
         let carveX = null;
         let carveZ = null;
         for (let cx = -4; cx <= 4 && carveX === null; cx++) {
@@ -1400,7 +1393,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
             const carveCx = Math.floor(carveX / span);
             const carveCz = Math.floor(carveZ / span);
             const carveChunkKey = `${carveCx},${carveCz}`;
-            const carveChunkEntry = r.state.voxelChunks && r.state.voxelChunks.get(carveChunkKey);
+            const carveChunkEntry = st.voxelChunks && st.voxelChunks.get(carveChunkKey);
             // Default „trocken“: ohne Wasser-Cell-Feld (Chunk ungestreamt oder ohne Wasser-Körper) keine
             // Phantom-Pfütze. Nur eine WATER-Cell an der Carve-Stelle wäre Phantom-Füllung (→ false).
             out.carveStaysDry = true;
@@ -1426,8 +1419,8 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
                 }
             }
             // Cleanup
-            if (r.state.worldMeta && Array.isArray(r.state.worldMeta.voxelEdits)) {
-                r.state.worldMeta.voxelEdits.pop();
+            if (st.worldMeta && Array.isArray(st.worldMeta.voxelEdits)) {
+                st.worldMeta.voxelEdits.pop();
             }
         }
         // T1 zeitliche Kohärenz (bau-faden, Lehre 14): der Edit baut keinen Chunk-Stoff im Haupt-Faden — sein Fußabdruck
@@ -1441,7 +1434,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
                 t1My = null;
             // den gestreamten Chunk am nächsten zum Ursprung (interior → 8 Skirt-Nachbarn da)
             let bestD = Infinity;
-            for (const [key, e] of r.state.voxelChunks) {
+            for (const [key, e] of st.voxelChunks) {
                 if (!e || e.empty || !e.mesh || !e.mesh.geometry) continue;
                 const [kx, kz] = key.split(",").map(Number);
                 const mx = kx * span + span / 2,
@@ -1459,7 +1452,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
             if (t1Cx !== null) {
                 const mx = t1Cx * span + span / 2,
                     mz = t1Cz * span + span / 2;
-                if (r.state.dirtyVoxelChunks) r.state.dirtyVoxelChunks.clear();
+                if (st.dirtyVoxelChunks) st.dirtyVoxelChunks.clear();
                 const bau = r._buildVoxelChunkData;
                 let sync = 0;
                 r._buildVoxelChunkData = (...a) => (sync++, bau.apply(r, a));
@@ -1469,12 +1462,11 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
                     delete r._buildVoxelChunkData;
                 }
                 const fuss = r._bodenSichtAt(mx, mz) - t1My;
-                const faden = r.state.dirtyVoxelChunks.has(`${t1Cx},${t1Cz}`);
+                const faden = st.dirtyVoxelChunks.has(`${t1Cx},${t1Cz}`);
                 out.t1FootprintSync = `${sync} Sync-Bauten · die Karte ${fuss.toFixed(2)} m · im Faden ${faden}`;
                 out.t1Faden = !sync && fuss < -2 && faden;
                 // Cleanup: den Test-Edit zurücknehmen + die Skirt drainen
-                if (r.state.worldMeta && Array.isArray(r.state.worldMeta.voxelEdits))
-                    r.state.worldMeta.voxelEdits.pop();
+                if (st.worldMeta && Array.isArray(st.worldMeta.voxelEdits)) st.worldMeta.voxelEdits.pop();
                 r._drainDirtyVoxelChunks();
             }
         }
@@ -1495,8 +1487,8 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
         }
         let t2HasAttrs = false,
             t2ChunksWithMorph = 0;
-        if (r.state.voxelChunks) {
-            for (const [, e] of r.state.voxelChunks) {
+        if (st.voxelChunks) {
+            for (const [, e] of st.voxelChunks) {
                 if (!e || e.empty || !e.mesh || !e.mesh.geometry) continue;
                 const g = e.mesh.geometry;
                 if (g.attributes.aMorphTarget && g.attributes.aMorphWeight) t2HasAttrs = true;
@@ -1506,11 +1498,11 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
         out.t2HasMorphAttrs = t2HasAttrs;
         out.t2ChunksWithMorph = t2ChunksWithMorph;
 
-        out.t3DcConstants = Number.isFinite(r.constructor.DC_LAMBDA) && Number.isFinite(r.constructor.DC_SHARP_MOVE2);
+        out.t3DcConstants = Number.isFinite(AnazhRealm.DC_LAMBDA) && Number.isFinite(AnazhRealm.DC_SHARP_MOVE2);
 
         // T4 Wasser-Automat: `_tickWaterCA` ist die reine Fluss-Funktion (Level pro Zelle). Behavioral:
         // ERHALTUNG (Σ Wasser konstant) + FLUSS (ein Blob fällt). Voller Beweis: `diag-water-flow-ca.cjs`.
-        const SOLID = r.constructor.CELL_STATE.SOLID;
+        const SOLID = AnazhRealm.CELL_STATE.SOLID;
         const d = 4,
             dy = 10;
         const cells = new Uint8Array(d * d * dy); // AIR=0 default
@@ -1627,27 +1619,26 @@ async function checkBandWellePerf3cPhase2Async({ page, check }) {
         // Warten bis das ack durchgelaufen ist — das ack des state-set bumpt
         // voxelWorkerReady auch erneut.
         await sleep(50);
-        out.workerStateGen = r.state.voxelWorkerStateGen;
-        out.workerSynced = r.state.voxelWorkerWorldgenSynced;
+        out.workerStateGen = st.voxelWorkerStateGen;
+        out.workerSynced = st.voxelWorkerWorldgenSynced;
         // 5) voxelEdit notify (K23, die Generation je Chunk): ein Edit über den Spielpfad ändert den Stand SEINES Chunks,
         // nicht den eines fernen, und aus dem Density-Cache fällt nur seine Nachbarschaft.
         const span5 = r._voxelChunkConfig().span;
         const ecx = Math.floor(1000 / span5);
         const standNahVor = r._voxelStand(ecx, ecx);
         const standFernVor = r._voxelStand(ecx + 10, ecx + 10);
-        if (!r.state.voxelDensityCache) r.state.voxelDensityCache = new Map();
-        r.state.voxelDensityCache.set(`${ecx},${ecx},0`, new Float32Array(1));
-        r.state.voxelDensityCache.set(`${ecx + 10},${ecx + 10},0`, new Float32Array(1));
-        const editsVor5 = r.state.worldMeta.voxelEdits;
-        r.state.worldMeta.voxelEdits = (editsVor5 || []).slice();
+        if (!st.voxelDensityCache) st.voxelDensityCache = new Map();
+        st.voxelDensityCache.set(`${ecx},${ecx},0`, new Float32Array(1));
+        st.voxelDensityCache.set(`${ecx + 10},${ecx + 10},0`, new Float32Array(1));
+        const editsVor5 = st.worldMeta.voxelEdits;
+        st.worldMeta.voxelEdits = (editsVor5 || []).slice();
         r.carveVoxel(1000, r._terrainMacroSurfaceY(1000, 1000), 1000, 3);
         out.editBumpedStateGen =
             r._voxelStand(ecx, ecx) !== standNahVor && r._voxelStand(ecx + 10, ecx + 10) === standFernVor;
         out.editClearedCache =
-            !r.state.voxelDensityCache.has(`${ecx},${ecx},0`) &&
-            r.state.voxelDensityCache.has(`${ecx + 10},${ecx + 10},0`);
-        r.state.voxelDensityCache.delete(`${ecx + 10},${ecx + 10},0`);
-        r.state.worldMeta.voxelEdits = editsVor5 || [];
+            !st.voxelDensityCache.has(`${ecx},${ecx},0`) && st.voxelDensityCache.has(`${ecx + 10},${ecx + 10},0`);
+        st.voxelDensityCache.delete(`${ecx + 10},${ecx + 10},0`);
+        st.worldMeta.voxelEdits = editsVor5 || [];
         r._voxelWorkerSyncState({ op: "state-set" });
         return out;
     });
@@ -1684,7 +1675,7 @@ async function checkBandWellePerf3cPhase3FullMesh({ page, check }) {
         }
         r._voxelWorkerSyncWorldgenState();
         await sleep(80);
-        out.workerSynced = r.state.voxelWorkerWorldgenSynced;
+        out.workerSynced = st.voxelWorkerWorldgenSynced;
         // Sync-Build via _buildVoxelChunkData (kontrollierter Pfad, ohne
         // preDensityOverride → Sync-Sampling).
         const cx = 0;
@@ -1880,15 +1871,15 @@ async function checkBandV17118WorkerEngaged({ page, check }) {
     const res = await page.evaluate(() => {
         return {
             // Behavioral: der Worker ist nach dem Warmup gebootstrappt + getrusted.
-            workerSpawned: !!r.state.voxelWorker,
-            worldgenSynced: !!r.state.voxelWorkerWorldgenSynced,
+            workerSpawned: !!st.voxelWorker,
+            worldgenSynced: !!st.voxelWorkerWorldgenSynced,
             // Laufzeit: der Neubau des Spieler-Chunks baut nie synchron (K69-2: der Neubau jedes Chunks geht über den
             // Worker, die Flut-Saat reist mit dem Auftrag). Gegenprobe: forceSync (die Test-Naht) baut synchron — der
             // Zähler sieht ihn.
             spielerNeubau: (() => {
-                const pm = r.state.playerMesh && r.state.playerMesh.position;
+                const pm = st.playerMesh && st.playerMesh.position;
                 const span = r._voxelChunkConfig().span;
-                const ch = r.state.voxelChunks;
+                const ch = st.voxelChunks;
                 if (!pm || !ch) return null;
                 const kx = [Math.floor(pm.x / span), Math.floor((pm.x + span / 2) / span)];
                 const kz = [Math.floor(pm.z / span), Math.floor((pm.z + span / 2) / span)];
@@ -1933,11 +1924,11 @@ async function checkBandV17118WorkerEngaged({ page, check }) {
 // A6 Körper-Kollision (Decken-Sprung-Klemme + Kamera-Clip; die Rettung aus dem Fill hebt den Turm, gate:fall-waechter B).
 async function checkBandPhaseAFundament({ page, check }) {
     const res = await page.evaluate(() => {
-        if (!r || !r.state || !r.state.voxelChunks) return { error: "no realm" };
+        if (!r || !st || !st.voxelChunks) return { error: "no realm" };
         const out = {};
         // ── A1 · Stitch-Band: deterministisch frisch morphen (Band-Reihenfolge egal),
         // dann zählen + die WebGPU-Attribut-Vollständigkeit prüfen (V10.0-g.1-Wand).
-        for (const [key, entry] of r.state.voxelChunks) {
+        for (const [key, entry] of st.voxelChunks) {
             if (!entry || entry.empty || !entry.mesh) continue;
             const [cx, cz] = key.split(",").map(Number);
             r._applyCrossLodGeomorph(cx, cz);
@@ -1945,7 +1936,7 @@ async function checkBandPhaseAFundament({ page, check }) {
         let bands = 0,
             bandAttrsOk = true,
             cappedTotal = 0;
-        for (const [, entry] of r.state.voxelChunks) {
+        for (const [, entry] of st.voxelChunks) {
             if (!entry || !entry.lodStitchMesh) continue;
             bands++;
             const g = entry.lodStitchMesh.geometry;
@@ -1962,10 +1953,10 @@ async function checkBandPhaseAFundament({ page, check }) {
         // (der Ganz-Chunk-Rebuild ist deterministisch → der „Reset" ist unsichtbar).
         {
             const { span } = r._voxelChunkConfig();
-            const pm = r.state.playerMesh.position;
+            const pm = st.playerMesh.position;
             const cx = Math.floor(pm.x / span) + 1,
                 cz = Math.floor(pm.z / span);
-            const entry = r.state.voxelChunks.get(`${cx},${cz}`);
+            const entry = st.voxelChunks.get(`${cx},${cz}`);
             if (entry && entry.mesh) {
                 const Q = (v) => Math.round(v * 1000);
                 const snap = (geom) => {
@@ -1981,7 +1972,7 @@ async function checkBandPhaseAFundament({ page, check }) {
                 if (typeof surf === "number") {
                     r.carveVoxel(ex, surf - 0.5, ez, 1.5);
                     r._drainDirtyVoxelChunks();
-                    const after = snap(r.state.voxelChunks.get(`${cx},${cz}`).mesh.geometry);
+                    const after = snap(st.voxelChunks.get(`${cx},${cz}`).mesh.geometry);
                     const zelle = r._voxelChunkConfig(entry.lod).step * Math.sqrt(3); // ein Vertex mittelt seine Zelle
                     const rInf = globalThis.__gelaendeCore.editReich({ r: 1.5 }) + zelle; // die Reichweite des Gesetzes
                     let changedOutside = 0,
@@ -1999,8 +1990,8 @@ async function checkBandPhaseAFundament({ page, check }) {
         // ── B2 · Horizont-Mantel geschnitten (die Ferne tragen Fern-Ring und Feld-Pass, die Luft dunstet sie;
         // kein Mantel). Das Band prüft die ABWESENHEIT von Konstante und State (die Methoden bewacht gate:altlasten).
         out.b2 = {
-            constGone: !r.constructor.HORIZON_MANTLE,
-            stateGone: r.state.horizonMantle === undefined && r.state.mantleHoleUniforms === undefined,
+            constGone: !AnazhRealm.HORIZON_MANTLE,
+            stateGone: st.horizonMantle === undefined && st.mantleHoleUniforms === undefined,
         };
         // Infinity überlebt die evaluate-JSON-Serialisierung NICHT (→ null) —
         // als String-Sentinel "inf" transportieren (freier Himmel = kein Treffer).
@@ -2057,13 +2048,13 @@ async function checkBandCarveWorker({ page, check }) {
         // den Build-Aufruf bespitzeln → die forceSync-ENTSCHEIDUNG ablesen
         const o = {};
         let lastForceSync = null;
-        const eigen = Object.prototype.hasOwnProperty.call(r, "_acquireVoxelChunkBuild");
-        const vorher = r._acquireVoxelChunkBuild;
-        const orig = vorher.bind(r);
-        r._acquireVoxelChunkBuild = function (a, b, c, opts) {
-            lastForceSync = !!(opts && opts.forceSync);
-            return orig(a, b, c, opts);
-        };
+        const orig = r._acquireVoxelChunkBuild.bind(r);
+        const zurueck = leihe(r, {
+            _acquireVoxelChunkBuild(a, b, c, opts) {
+                lastForceSync = !!(opts && opts.forceSync);
+                return orig(a, b, c, opts);
+            },
+        });
         try {
             for (const [k, ueber, opts] of [["gesund", false, undefined], ["ueber", true, undefined], ["force", true, { forceSync: true }]]) {
                 st._frameOverBudget = ueber;
@@ -2072,8 +2063,7 @@ async function checkBandCarveWorker({ page, check }) {
                 o[k] = lastForceSync;
             }
         } finally {
-            if (eigen) r._acquireVoxelChunkBuild = vorher;
-            else delete r._acquireVoxelChunkBuild;
+            zurueck();
             st._frameOverBudget = false;
         }
         return o;

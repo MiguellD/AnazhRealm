@@ -198,12 +198,17 @@ async function kreaturProben(r, T, opts) {
         if (s.player.emotions)
             Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 }, e);
     };
+    // DIE KAMERA DER BÜHNE ist ihr Rig: der Blick aus dem Kopf des Spielers SETZT das Auge der Stufen (`_lodAugeGesetzt`, K36 —
+    // wie das Rig je Bild), es reist mit dem Spieler bis zur nächsten Kamera. Ohne Setzung band erst die nächste Lesung den
+    // Spieler, nach seinem Sprung: am Querhang stand das Auge 81 m von ihm am alten Ort, und jede Probe danach erbte es
+    // (tiersatz: 43 von 50 Tieren jenseits der Feld-Grenze als Leib, der Satz leer). Ihr Inverses trägt die Kamera selbst
+    // (three `Camera.updateMatrixWorld`).
     const kamera = (blickX, blickZ, blickY = 0) => {
         const cam = s.camera;
         cam.position.set(pm.x, pm.y + 1.6, pm.z);
         cam.lookAt(pm.x + blickX, pm.y + 1.6 + blickY, pm.z + blickZ);
         cam.updateMatrixWorld(true);
-        if (cam.matrixWorldInverse) cam.matrixWorldInverse.copy(cam.matrixWorld).invert();
+        r._lodAugeGesetzt();
         r._loopFrustumCulling();
     };
     const imBlick = (x, y, z) => {
@@ -762,7 +767,7 @@ async function kreaturProben(r, T, opts) {
 
     // ── jagd: an drei Orten ein Rudel und sechs Kitze im Nah-Kreis des Spielers, je 180 s am ECHTEN Takt samt dem
     // Lebenszyklus in der Spiel-Zeit (`tickFaunaLifecycle`, wie im Spiel; der Prüfer von Zug 29 sah dort 14 Risse ohne Jäger):
-    // der Lauf der Wölfe folgt der Peilung, nie den Achsen; jeder Tod durch Jagd im Nah-Kreis (KREATUR_NAH_MESH.ein) hat
+    // der Lauf der Wölfe folgt der Peilung, nie den Achsen; jeder Tod durch Jagd im Nah-Kreis (ANALOG_NAH_M, das Feld) hat
     // einen Jäger, dessen Maul den Leib erreicht (`_kreaturBissSpalt` ≤ `_kreaturBissReich`: nah als Körper, oekologie.K2);
     // dann geht der Spieler fort, und jedes Opfer, das ein Riss im Nah-Kreis nannte (`_kreaturRiss`), ist gefallen — je Riss
     // EINES (der Übergang ändert nie den Bestand) ──
@@ -780,7 +785,7 @@ async function kreaturProben(r, T, opts) {
                 for (const c of s.creatures.slice())
                     if (c.userData._faelltNach) r._creatureNaturalDeath(c, c.userData._faelltNach, false);
             });
-        const nah = (c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < A.KREATUR_NAH_MESH.ein;
+        const nah = (c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < A.ANALOG_NAH_M;
         const R = { nah: 0, mitJaeger: 0, risse: 0, gefallen: 0 };
         // ein Riss: der Lebenszyklus nennt ein Opfer, das noch kein Riss nannte (die offenen Risse fragt er mit ihrem Opfer)
         const genannt = new Set();
@@ -1236,8 +1241,8 @@ async function kreaturProben(r, T, opts) {
                     }
             );
         const namen = new Set(BENANNT);
-        for (const n of Object.getOwnPropertyNames(A.prototype))
-            if (/creature|kreatur|fauna|^_?tier|Tier/i.test(n) && typeof A.prototype[n] === "function") namen.add(n);
+        for (const n of Object.getOwnPropertyNames(A.prototype)) // der Deskriptor, nie A.prototype[n] (ein Getter legte seinen Speicher auf den Prototyp)
+            if (/creature|kreatur|fauna|^_?tier|Tier/i.test(n) && typeof Object.getOwnPropertyDescriptor(A.prototype, n).value === "function") namen.add(n); // prettier-ignore
         const fehlt = [];
         const treffer = [];
         for (const n of namen) {
@@ -1337,14 +1342,8 @@ async function kreaturProben(r, T, opts) {
                         return { x: pm.x + 3, z: pm.z + 1 };
                     }
             );
-        // (a) DER WÜRFEL: ein fester Strom (mulberry32) über den Kompositions-Pool des Nexus.
-        let sd = 0x9e3779b9;
-        const rng = () => {
-            sd = (sd + 0x6d2b79f5) | 0;
-            let t = Math.imul(sd ^ (sd >>> 15), 1 | sd);
-            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
+        // (a) DER WÜRFEL: ein fester Strom (der Vorlagen-RNG mulberry32, phyto-core) über den Kompositions-Pool des Nexus.
+        const rng = window.__phytoCore.mulberry32(0x9e3779b9);
         const flach = (n, out) => {
             if (Array.isArray(n)) {
                 if (typeof n[0] === "string") out.push(n[0]);
@@ -2351,6 +2350,9 @@ async function kreaturProben(r, T, opts) {
 
     // ═══ DAS START-DORF der Bewohner-Proben (bewohner · begegnung): der Takt des Spiels, das Warten unter Deckel, die Uhr auf
     // ihrer Stunde, die stehende Welt — und das Dorf am Genesis-Ort, das der Wirt baut (`__anazhAutoSettlement`) ═══
+    const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z); // der Abstand in der Ebene
+    const wer = (b) => `${b.rolle}/${b.beruf} #${b.heim}`; // der Bewohner beim Namen
+    const angekommen = (S) => () => !!S.liste && S.liste.every((b) => b.leib && !b.ankunft); // jeder trägt seinen Leib, kam an
     // der Takt des Spiels — bis die Siedlung steht (`offen` nicht mehr)
     const tick = () => {
         try {
@@ -2362,14 +2364,20 @@ async function kreaturProben(r, T, opts) {
     const bisDa = async (name, offen, max) => {
         for (const weiter = window.__deckel(name, max); weiter() && offen(); await sleep(16)) tick();
     };
-    // DIE UHR AUF DER STUNDE h, nie an der Uhr des Boots: erst der Takt sieht ihren Sprung (`_bewohnerAnkunft`), bis jeder
-    // steht (`da`); das Warten rückte sie, also beginnt der Tag danach genau auf h — seine Prüfpunkte treffen in jedem Lauf
-    // dieselben Wenden
+    // DIE UHR AUF DER STUNDE h, nie an der Uhr des Boots: ihr Sprung stellt jeden dorthin, wo sein Tag ihn um h sieht
+    // (`_bewohnerAnkunft`, je Takt `ankunftJeTakt`) — gewiss über die Gegen-Stunde h + 12 (stünde die Uhr näher als `sprungH` an
+    // h, spränge sie nie), im Takt der Bewohner OHNE ZEIT (`_tickBewohner(0)`): die Uhr steht auf h, keiner geht, ehe der
+    // Letzte ankam (`da`), und die Prüfpunkte des Tags treffen in jedem Lauf dieselben Wenden; mit Bild backt danach der Takt
+    // des Spiels die Felder der Leiber, und die Uhr springt noch einmal. Bis heil-wackler trug der Takt an der Wanduhr die
+    // Ankunft (10 von 10 Starts in anderer Lage, #809070 und #724672 berührten sich um 12,50 Uhr; CI 40967599389, 40970312506),
+    // und kam die Uhr des Boots unter Last bis auf sprungH an 12,5, sprang sie nicht: der Tag begann mit 11,5–13,8 s Takt der
+    // Bewohner, #724672 steckte um 12,62 Uhr (1 von 6 Läufen)
     const uhrAuf = async (h, wo, da, max) => {
-        r._uhrSetzen(h / 24, "regler");
-        r._tickBewohner(0);
-        await bisDa(wo, () => !da(), max);
-        r._uhrSetzen(h / 24, "regler");
+        for (const backen of [true, false]) {
+            for (const t of [h + 12, h]) r._uhrSetzen((t % 24) / 24, "regler"), r._tickBewohner(0);
+            for (const weiter = window.__deckel(wo, max, false); weiter() && !da(); ) r._tickBewohner(0);
+            if (backen) await bisDa(wo, () => r._weltOffen().leiber > 0, max);
+        }
     };
     // DER TAG BEGINNT IN DER STEHENDEN WELT (welt-boot `__weltStehtNach`, der Takt des Spiels): er rechnet synchron, ohne
     // Loop — seine Welt ist, was bis zu seinem Anfang um den Ort wuchs; wüchsen Wald oder Streu noch (die Streu im Faden
@@ -2378,7 +2386,7 @@ async function kreaturProben(r, T, opts) {
         window.__weltStehtNach(tick, 600).catch((f) => {
             throw new Error(`${wo}: ${f.message}`);
         });
-    // die Siedlung des Start-Dorfs (`_bewohnerMelden`: sein Plan v2 und sein Ursprung) oder null
+    // die Siedlung des Start-Dorfs (`_bewohnerMelden`: sein Plan v2 und sein Ursprung) — ohne sie bricht die Probe beim Namen
     const startDorf = async (restore) => {
         const [W, wm] = [window, s.worldMeta];
         dorf.hier = true;
@@ -2399,7 +2407,9 @@ async function kreaturProben(r, T, opts) {
             r._tickAutoSettlement(pm);
             await sleep(0);
         }
-        return (r._bewohnerSiedlungen || new Map()).get("start") || null;
+        const S = (r._bewohnerSiedlungen || new Map()).get("start");
+        if (!S) throw new Error("das Start-Dorf entstand nicht (kein Dorf-Zug am Genesis-Ort)");
+        return S;
     };
     // ── bewohner (mensch.K1–K3): das Start-Dorf wächst, bis jeder Bewohner seinen Leib trägt (je Haus `leuteVon`), am
     // Dorfplatz die Menschen im Blick; DER TAG mit der Uhr des Spiels: Soll-Orte, Schmiede, Sprung-Wand, Wege, Wiederkehr.
@@ -2409,7 +2419,6 @@ async function kreaturProben(r, T, opts) {
         // zurück, im Tag an seiner Messung, nach ihm je ein Fenster mit eigenem Messer (`sicht`: das Urteil je Täter)
         const [hat, sicht] = [(t) => [].concat(taeter).includes(t), {}];
         const FC = globalThis.__fachwerkCore;
-        const ab = (a, b) => Math.hypot(a.x - b.x, a.z - b.z);
         const q3 = (v) => Math.round(v * 1000) / 1000;
         const [DT, tagS] = [0.1, (s.dayLengthMinutes || A.DAY_LENGTH_DEFAULT_MINUTES) * 60];
         const takte = Math.round((0.1 / 24) * tagS * 10);
@@ -2472,7 +2481,7 @@ async function kreaturProben(r, T, opts) {
                         wSpur
                             .set(b, { x, z, innen: innen0, ziel: b.ziel, n: new Set(), gesamt: 0, ax: x, az: z })
                             .get(b);
-                    const d = Math.hypot(x - sp.x, z - sp.z);
+                    const d = ab(b.leib.position, sp);
                     sp.gesamt += d;
                     if (d > 2 && Math.min(ab(sp, pm), ab(b.leib.position, pm)) < nahR) WG.sprungN++;
                     kandW.length = 0;
@@ -2514,14 +2523,14 @@ async function kreaturProben(r, T, opts) {
                     else if (minute - sp.seit >= 5 && !sp.steckt) stecken.push(wann(b));
                     // die Berührung: ein anderer Leib draußen näher als zwei Kapseln
                     const nah =
-                        !b.drinnen && draus.some((q) => q !== b.leib.position && Math.hypot(q.x - x, q.z - z) < 2 * RW);
+                        !b.drinnen && draus.some((q) => q !== b.leib.position && ab(q, b.leib.position) < 2 * RW);
                     if (nah && !sp.nah) beruehr.push(wann(b));
                     Object.assign(sp, { x, z, innen, nah, steckt: !da && minute - sp.seit >= 5 });
                 }
             };
             // die Zahl: die Wand je Bau, die Tür, die Wege und die Strecke je Leib, Steckenbleiber, Berührung (je die ersten vier)
             const zahl = () => {
-                const je = liste.map((b) => ({ wer: `${b.rolle}/${b.beruf} #${b.heim}`, ...wSpur.get(b) }));
+                const je = liste.map((b) => ({ wer: wer(b), ...wSpur.get(b) }));
                 const vier = (n, l) => ({ [n + "N"]: l.length, [n]: l.slice(0, 4) });
                 return {
                     wandN: [...WG.wand.values()].reduce((a, n) => a + n, 0),
@@ -2559,15 +2568,16 @@ async function kreaturProben(r, T, opts) {
             M.messen(dt, performance.now() - t0);
         };
         // DER NAH-RING (mensch.K1 Staffel 2), ein Messer wie `wegeMesser`: Bewohner gesamt, im Nah-Ring (draußen, näher
-        // als die Feld-Grenze `_bewohnerFeldGrenze().ein`: dort trägt ihn der Satz) und davon mit laufendem Gang (die Phase
+        // als die Feld-Grenze der Menge `_feldGrenzen(true).ein`: dort trägt ihn der Satz) und davon mit laufendem Gang (die Phase
         // lief in den letzten 10 Takten über 0,2 rad) — gezählt unter der Decke des Täters
         // DIE MENGE (mensch.K4 Staffel 2) im selben Messer, roh — das Urteil fällt in der Station: die 50 Nächsten draußen, je
-        // Bewohner [Same, Typ, Höhe, Breite, Tiefe, nah] (die Matrix seines Satzes), je Typ seine Dials, Farben, die Maße seiner
-        // Vorlage in m (in der Ruhe × die Skala seines Rigs) und die Dreiecke seiner Senken (leib, wurf), der Schirm (Bildpunkte
-        // je m am Rand der Nah-Wahl), der Takt `_tickBewohner` (Mittel, p95 in ms)
+        // Bewohner [Same, Typ, Höhe, Breite, Tiefe, nah, Farben] (die Matrix seines Satzes und seine eigenen Farben — Haut, Haar,
+        // Tracht: die Palette, die Leib, Satz und Feld zeigen), je Typ seine Dials (die Form: Geschlecht, Bau, Schnitt, Alter), die
+        // Maße seiner Vorlage in m (in der Ruhe × die Skala seines Rigs) und die Dreiecke seiner Senken (leib, wurf), der Schirm
+        // (Bildpunkte je m am Rand der Nah-Wahl), der Takt `_tickBewohner` (Mittel, p95 in ms)
         const ringMesser = (liste, ph = new Map(), k = 0, ms = []) => ({
             messen: (dt, t) => (ms.push(t), ++k === 591 && liste.forEach((b) => ph.set(b, b.walkPhase))),
-            zahl: (N = r._bewohnerFeldGrenze().ein) => {
+            zahl: (N = r._feldGrenzen(true).ein) => {
                 const nah = liste.filter((b) => !b.drinnen && ab(b.leib.position, pm) < N);
                 const gang = nah.filter((b) => Math.abs(wrap(b.walkPhase - ph.get(b))) > 0.2).length;
                 return { gesamt: liste.filter((b) => b.leib).length, ring: q3(N), nah: nah.length, nahGang: gang };
@@ -2577,11 +2587,16 @@ async function kreaturProben(r, T, opts) {
                 const f = M[0].leib.userData._tierBaum.wrap.scale.x;
                 ms.sort((a, b) => a - b);
                 return {
-                    je: M.map((b) => [b.seed, b.gestalt, b.groesse, b.breite, b.tiefe, !!b.nah]),
+                    je: M.map((b) => [b.seed, b.gestalt, b.groesse, b.breite, b.tiefe, !!b.nah, b.farben]),
                     typ: S.gestalten.map((G) => ({
                         dials: G.dK,
                         mass: new T.Box3().setFromObject(r._ofenMenschTemplate(G.dK, G.f.skin, G.f.hair, 2).root).getSize(new T.Vector3()).multiplyScalar(f).toArray(), // prettier-ignore
-                        dreiecke: ["leib", "wurf"].map((k) => G.satz[k].geometry.index.count / 3),
+                        // die Dreiecke der Senken; eine Gestalt ohne Satz (kein Kopf trug sie bis jetzt) zählt die ihrer Stufen
+                        dreiecke: [2, 3].map((lod, i) => {
+                            let n = 0;
+                            (G.satz ? G.satz[i ? "wurf" : "leib"] : r._ofenMenschTemplate(G.dK, G.f.skin, G.f.hair, lod).root).traverse((m) => m.isMesh && (n += m.geometry.index.count / 3)); // prettier-ignore
+                            return n;
+                        }),
                     })),
                     pxM: r._schirm().pxJeM / A.BEWOHNER.nahM,
                     kaskaden: A.SCHATTEN_KASKADE.texelM.length,
@@ -2613,13 +2628,13 @@ async function kreaturProben(r, T, opts) {
             if (!S || !amPlatz(S.ox, S.oz, S.plan.platz))
                 return { fehler: `keine Stadt mit freiem Rand am Platz („dorf ${seed} ${nH}" bei ${x}/${z})` };
             if (voll) pm.set(S.ox, r.getTerrainHeightAt(S.ox, S.oz) + A.PLAYER_FOOT_OFFSET, S.oz);
-            const da = () => S.liste && S.liste.every((b) => b.leib && !b.ankunft) && r._weltOffen().leiber === 0;
+            const da = angekommen(S);
             await bisDa(`bewohner: ${ort}`, () => !da(), 4 * nH);
             await stehtUm(`bewohner: ${ort}`);
             const T = voll
                 ? [
                       ["bewohner-voll-starr", "_gaitTick", (alt) => (g, h, v, d, q) => alt.call(r, g, h, 0, 0, q)],
-                      ["bewohner-voll-leer", "_bewohnerFeldGrenze", () => () => ({ ein: 0, aus: 0 })],
+                      ["bewohner-voll-leer", "_feldGrenzen", () => () => ({ erste: 3, grenzen: [] })],
                   ]
                 : [
                       ["bewohner-stadt-rempeln", "_bewohnerAusweichen"],
@@ -2648,7 +2663,6 @@ async function kreaturProben(r, T, opts) {
             );
         if (opts && opts.ort) return { stadt: await stadtTag(opts.ort), sicht: taeter ? sicht : undefined };
         const S = await startDorf(restore);
-        if (!S) return { fehler: "das Start-Dorf entstand nicht (kein Dorf-Zug am Genesis-Ort)" };
         const plan = S.plan;
         const hausE = s.architectures.filter(
             (e) => e && e.tuer && plan.slots.some((sl) => e.seed >>> 0 === sl.seed >>> 0)
@@ -2689,7 +2703,6 @@ async function kreaturProben(r, T, opts) {
         const alsLeibStart = L.filter((b) => b.visible).length;
         L.forEach((b, i) => (b.visible = sah[i]));
         for (const b of fort) s.scene.add(b);
-        const wer = (b) => `${b.rolle}/${b.beruf} #${b.heim}`;
         const cam = s.camera;
         const gezeichnet = (b) => b.visible || b.userData._satz === true || r._kzBesitztFeld(b);
         const blickZaehlen = (sicht, zaehlt) => {
@@ -2698,7 +2711,7 @@ async function kreaturProben(r, T, opts) {
             cam.position.copy(auge);
             cam.lookAt(pc.x, pm.y + 0.6, pc.z);
             cam.updateMatrixWorld(true);
-            if (cam.matrixWorldInverse) cam.matrixWorldInverse.copy(cam.matrixWorld).invert();
+            r._lodAugeGesetzt(); // der Schuss setzt das Auge der Stufen wie die Kamera der Bühne (`kamera`)
             return zaehlt.filter((b) => {
                 const [x, y, z] = [b.position.x, b.position.y + 0.4, b.position.z];
                 const d = auge.distanceTo({ x, y, z });
@@ -2719,10 +2732,13 @@ async function kreaturProben(r, T, opts) {
         // Feierabends, des Wachens und der Arbeit — dort, wo die Menge im Strom geht
         const alleDa = () => liste.every((b) => b.leib && !b.ankunft);
         await uhrAuf(12.5, "bewohner: der Tag", alleDa);
+        // Täter (Selbsttest): der Tag beginnt mit Geschichte — die Bewohner gehen 12 s auf der Uhr von 12,5, ohne Sprung
+        if (hat("bewohner-uhr")) for (let k = 0; k < 120; k++) r._tickBewohner(DT);
         const SD = wegeMesser(liste);
         const treffer = new Map();
         const vorher = new Map();
-        const z = { alsLeib: alsLeibStart, schmiede10: null, schmiede2: null };
+        // DER TAG BEGINNT MIT DEM SPRUNG (`uhrAuf`): der Takt der Bewohner lief seit ihm 0 s (`taktUhr`)
+        const z = { alsLeib: alsLeibStart, schmiede10: null, schmiede2: null, tagTakt: q3(S.taktUhr) };
         let blick10 = [[], []];
         let planGleich = !!planFn;
         const stationen = liste.filter((b) => b.rolle === "schmiede" && b.orte.werk).map((b) => b.orte.werk);
@@ -2940,15 +2956,14 @@ async function kreaturProben(r, T, opts) {
     // (`damageCreature`, Quelle Spieler), dann der vierte Gang.
     // Täter (Selbsttest, EIN Lauf): der starre Kopf · wer steht, macht keinen Platz · der Zeuge vergisst.
     await buehne("begegnung", async (restore) => {
-        const [dt, ab, tag0] = [1 / 60, (a, b) => Math.hypot(a.x - b.x, a.z - b.z), s.timeOfDay];
+        const [dt, tag0] = [1 / 60, s.timeOfDay];
         const S = await startDorf(restore);
-        if (!S) return { fehler: "das Start-Dorf entstand nicht (kein Dorf-Zug am Genesis-Ort)" };
         const stell = (x, z) => pm.set(x, r.getTerrainHeightAt(x, z) + A.PLAYER_FOOT_OFFSET, z);
         stell(S.ox + S.plan.platz.cx, S.oz + S.plan.platz.cz);
         restore.push(() => r._uhrSetzen(tag0, "regler"));
         r._setWeather("sunny", "regler");
-        const da = () => !!S.liste && S.liste.every((b) => b.leib && !b.ankunft);
-        await bisDa("begegnung: die Leiber", () => !da() || r._weltOffen().leiber > 0);
+        const da = angekommen(S);
+        await bisDa("begegnung: die Leiber", () => !da());
         await uhrAuf(10, "begegnung: 10 Uhr", da);
         await stehtUm("begegnung: das Start-Dorf");
         const schritt = () => [takt(dt), r._tickBewohner(dt)];
@@ -3003,7 +3018,7 @@ async function kreaturProben(r, T, opts) {
             G.push(gang(0));
             const je = (k) => G.map((x) => x[k]);
             return {
-                ...{ wer: `${b.rolle}/${b.beruf} #${b.heim}`, furcht, zuS: je("zuS"), amEreignis: G[0].amEreignis },
+                ...{ wer: wer(b), furcht, zuS: je("zuS"), amEreignis: G[0].amEreignis },
                 ...{ imBild: je("imBild"), dMin: je("dMin"), beruehrt: je("beruehrt") },
             };
         };
@@ -3081,7 +3096,7 @@ async function kreaturProben(r, T, opts) {
                 const w = ((saat + i) * 2.39996) % TAU,
                     d = rMin + (rMax - rMin) * (((saat + i) * 0.618034) % 1);
                 const o = land(Math.cos(w) * d, Math.sin(w) * d);
-                if (Math.hypot(o.x - P0.x, o.z - P0.z) < rMin - 1) continue;
+                if (ab(o, P0) < rMin - 1) continue;
                 tier(o, seelen[s.creatures.length % 4], 1);
                 k++;
             }
@@ -3316,6 +3331,7 @@ function urteil(name, z) {
         // DER TAG (mensch.K2): das Gesetz der Uhr, bit-gleich je Same, jeder trifft seine Soll-Orte, springt nie nah, und wer
         // nach 1 h Abwesenheit zurückkommt, findet jeden auf ±2 m dort, wo ihn sah, wer blieb
         soll(z.planGleich, "kein Tagesplan, bit-gleich je Same");
+        soll(z.tagTakt === 0, `der Tag beginnt mit Geschichte: ${z.tagTakt} s Takt der Bewohner vor ihm`);
         soll(
             z.trefferMin >= 0.9,
             `Soll-Orte über 24 Spielstunden: min ${z.trefferMin} (Soll ≥ 0,9; ${z.unterN} darunter: ${z.unter.join(" · ")})`
@@ -3787,6 +3803,7 @@ const TAETER = {
         ["bewohner-menge", /Leiber als Leib gezeichnet/],
         ["bewohner-plan6", /Soll-Orte über 24 Spielstunden/],
         ["bewohner-sprung", /Sprung im Nahbereich/],
+        ["bewohner-uhr", /der Tag beginnt mit Geschichte/],
         ["bewohner-gleiten", /der Satz gleitet/],
         ["bewohner-nord", /der Blick der Stehenden/],
         ["bewohner-daheim", /ohne Platz/],

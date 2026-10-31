@@ -157,5 +157,3 @@ if (require.main === module) {
         process.exit(code);
     })();
 }
-
-module.exports = { terminatorUrteil, TERMINATOR_SONNEN };

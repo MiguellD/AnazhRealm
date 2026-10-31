@@ -45,9 +45,13 @@
 //      des Bodens, den Halme decken, ≥ TEPPICH_MIN. Konsum-Leser: die Nah-Wiese (`_nahWieseSenken`) und der Studio-Wald (grassT).
 //      DIE GRASNARBE (K70, Soll-Tafel boden-nah laiWirk ≥ 1,7): die Schwellen tragen die geschlossene Narbe, und der Halm
 //      WURZELT — die tiefste Ecke der Vorlage liegt am Boden (≤ FUSS_MAX der Büschel-Höhe).
+//  (Q) DER HALM (w4-wiese-nah, HALM_GESETZ): je gelieferte Gras-Stufe die Quer-Koordinate in Adern, die Spitze als EINE Ecke,
+//      die Narbe als Blatt-Fläche des Büschels im Band der Grasländer, die Ährchen der Ähre (schlank); dazu der Pixel als
+//      Filter (Rippe und Ader auf Armlänge ≥ 90 %, fern < 1 %). Vorher (main 715754fc): 0 Fußzeilen in Adern, Narbe 1 (die
+//      Längs-Koordinate), Ähre Breite ÷ Länge 0,29–0,35 (das Papier-Fähnchen); nachher 101/121 · 1,86/2,51 · 0,042.
 // SELBSTTEST: jede Probe MUSS an einer kranken Kopie der gemessenen Puffer feuern (gipsweiße Birke, Ringel-Stamm,
 // Klingen-Strauch, einfarbige Blüte, Blatt ×3, Strauch-Blatt ×½, Nadel ×3, Klingen-L1, Leser entfernt, BC1 gerade gelesen,
-// Atlas-Leser ohne ÷ alpha) — die Linse
+// Atlas-Leser ohne ÷ alpha, Narbe × 2, Quer 0…1, Spitze gestutzt, Fähnchen-Ähre, Filter aus) — die Linse
 // ist nie vakuös.
 //
 //   npm run gate:pflanzen-nah            (PFLANZEN_PORT, Vorgabe 4548)
@@ -89,11 +93,13 @@ function teile(meshes) {
             uv: m.attrs.uv ? f32(m.attrs.uv.b64) : null,
             nor: m.attrs.normal ? f32(m.attrs.normal.b64) : null,
             cen: m.attrs.aCenter ? f32(m.attrs.aCenter.b64) : null,
+            wind: m.attrs.aWind ? f32(m.attrs.aWind.b64) : null,
             idx: m.index ? u32(m.index) : null,
         }));
 }
-const { luma709 } = require("./lib/abnahme-urteil.cjs");
+const { luma709, srgbLin } = require("./lib/abnahme-urteil.cjs");
 const Y = (c, i) => luma709(c, i * 3);
+const kreuz = (u, w) => [u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]];
 function hoehe(T) {
     let hi = 0;
     for (const t of T) for (let i = 1; i < t.pos.length; i += 3) hi = Math.max(hi, t.pos[i]);
@@ -323,8 +329,9 @@ const TEPPICH_NEIGUNG = 20;
 // vorher L1 0,425/0,504 · L2 0,322/0,415, K56 L1 0,901/0,954 · L2 0,586/0,702, K70 L1 0,996/0,999 · L2 0,959/0,980
 const TEPPICH_MIN = { 1: 0.97, 2: 0.9 };
 const FUSS_MAX = 0.01;
-// Der Fuß der Halme: je Halm-Fußzeile (uv.v = 0, grün — die Rispe beginnt ebenfalls bei v = 0, aber gelb an der Spitze) ihre
-// Höhe über der Grundebene der Vorlage (der Ofen setzt die tiefste Ecke auf 0); das 90. Perzentil in Teilen der Büschel-Höhe.
+// Der Fuß der Halme: je Halm-Fußzeile (ihr Wind-Hub 0, aWind.x — die Ähre wiegt mit ihrer Spitze; grün) ihre Höhe über der
+// Grundebene der Vorlage (der Ofen setzt die tiefste Ecke auf 0); das 90. Perzentil in Teilen der Büschel-Höhe.
+const halmFuss = (t, k) => t.wind && t.col && t.wind[k * 3] === 0 && t.col[k * 3 + 1] > t.col[k * 3];
 function teppichFuss(T) {
     let hi = -Infinity,
         lo = Infinity;
@@ -335,7 +342,7 @@ function teppichFuss(T) {
             const y = t.pos[k * 3 + 1];
             hi = Math.max(hi, y);
             lo = Math.min(lo, y);
-            if (t.uv && t.col && t.uv[k * 2 + 1] === 0 && t.col[k * 3 + 1] > t.col[k * 3]) fuss.push(y);
+            if (halmFuss(t, k)) fuss.push(y);
         }
     }
     if (!fuss.length || !(hi > lo)) return Infinity;
@@ -354,14 +361,7 @@ function teppichDeckung(T, step, skala, neigung = TEPPICH_NEIGUNG) {
         pv = [0, 0, 0];
     for (let gj = Math.ceil(-3 / step); gj * step <= 3; gj++)
         for (let gi = Math.ceil(-3 / step); gi * step <= 3; gi++) {
-            let hs = ((gi * 73856093) ^ (gj * 19349663) ^ 0x6a09e667) >>> 0 || 1;
-            const w = () => {
-                hs = (hs + 0x6d2b79f5) >>> 0;
-                let t = hs;
-                t = Math.imul(t ^ (t >>> 15), t | 1);
-                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-            };
+            const w = PC.mulberry32(((gi * 73856093) ^ (gj * 19349663) ^ 0x6a09e667) >>> 0 || 1);
             const cx = gi * step + (w() - 0.5) * 0.68,
                 cz = gj * step + (w() - 0.5) * 0.68,
                 s = skala * (0.7 + w() * 0.7),
@@ -413,6 +413,51 @@ function teppichUrteil(fall, T, lod, step, skala) {
     if (!(fuss <= FUSS_MAX))
         v.push(`${fall}: der Halm schwebt — sein Fuß steht ${(100 * fuss).toFixed(1)} % der Büschel-Höhe über dem Boden`);
     return { v, m: { teppich: d, fuss } };
+}
+// (Q) DER HALM (w4-wiese-nah, phyto-core HALM_GESETZ) an den gelieferten Puffern je Gras-Stufe und Gestalt: am Fuß zählt
+// uv.x die Adern der Breite (Breite × Welt-Skala ÷ aderM = 2|u| ± 1 %), jeder Halm endet in EINER Ecke (u 0), uv.y (die
+// Narbe) ist am Fuß die Blatt-Fläche des Büschels je Raster-Zelle (± 1 %) im Band der Grasländer (LAI 0,5–4: 1,71 ± 1,19,
+// Asner, Scurlock & Hicke 2003, Global Ecol. Biogeogr. 12:191), jede Ähre trägt die Ährchen ihrer Budget-Zeile, schlank
+// (Breite ÷ Länge ≤ 0,08; das Papier-Fähnchen der Rispe 0,25). Konsum-Leser: der Halm-Stoff der Welt (`_halmStoff`,
+// Laub-Licht mit Narbe) und der Labor-Shader (foundry-core injectWind).
+function halmUrteil(fall, t, rc, lod, S) {
+    const { pos: p, uv, cen: c, idx: I } = t, n = rc.lod.budget.grass[lod].aehre.aehrchen, ae = new Map(); // prettier-ignore
+    const d = (a, b) => [0, 1, 2].map((x) => p[b * 3 + x] - p[a * 3 + x]);
+    let quer = 0, fuesse = 0, spitzen = 0, A = 0; // prettier-ignore
+    for (let k = 0; k < uv.length / 2; k++)
+        if (!c[k * 3 + 1]) {
+            // der Halm hängt am Fuß seines Büschels (aCenter.y 0): die Fußzeile trägt den Wind-Hub 0, die Spitze u 0
+            spitzen += !uv[k * 2];
+            if (t.wind[k * 3] || !(uv[k * 2] < 0)) continue;
+            fuesse++;
+            quer += Math.abs((Math.hypot(...d(k, k + 1)) * S) / PC.HALM_GESETZ.aderM / uv[k * 2 + 2] / 2 - 1) > 0.01;
+        }
+    for (let i = 0; i < I.length; i += 3) {
+        const [b, x, y] = I.slice(i, i + 3), fl = Math.hypot(...kreuz(d(b, x), d(b, y))) / 2, a = c.slice(b * 3, b * 3 + 3); // prettier-ignore
+        A += fl;
+        if (!a[1]) continue;
+        // je Anker (die Spitze des Stängels): Ährchen, Breite (die Höhe über der Achse), Länge (die fernste Spitze)
+        const e = uv[x * 2] > 0 ? y : x, z = ae.get(a.join()) || [0, 0, 0]; // prettier-ignore
+        ae.set(a.join(), [z[0] + 1, Math.max(z[1], (2 * fl) / Math.hypot(...d(b, e))), Math.max(z[2], Math.hypot(...p.slice(e * 3, e * 3 + 3).map((q, j) => q - a[j])))]); // prettier-ignore
+    }
+    const lam = A * (S / rc.understory.grassStep) ** 2, fuss = Math.max(...uv.filter((_, i) => i % 2)), aeh = [...ae.values()]; // prettier-ignore
+    return [
+        (!fuesse || quer || spitzen !== fuesse) && `${quer} von ${fuesse} Halmen zählen am Fuß nicht ihre Adern, ${spitzen} Spitzen-Ecken`,
+        !(Math.abs(fuss / lam - 1) <= 0.01 && fuss >= 0.5 && fuss <= 4) && `Narbe am Fuß ${fuss.toFixed(3)} ≠ Blatt-Fläche ${lam.toFixed(3)} je Zelle`,
+        (!aeh.length || aeh.some(([m, w, l]) => m !== n || w / l > 0.08)) && `${aeh.length} Ähren nicht je ${n} schlanke Ährchen`,
+    ].filter(Boolean).map((x) => `${fall}: ${x}`); // prettier-ignore
+}
+// DER PIXEL ALS FILTER (phyto-core halmFilter): die Welle quer über eine Ader (u 20–21, wo der Kiel flach ist) trägt auf
+// Armlänge (0,1 Adern je Pixel) ≥ 90 % ihrer Höhe, fern (1,5) < 1 % — Detail je Pixel, nie Flimmern. Die Konstanten des
+// Gesetzes gegen die Literatur (Kiel 20,1° in 15–30°, Rippen 0,7 mm in 0,5–1, Rauheit 0,55 in 0,45–0,71, K 0,385 und 0,50 in
+// 0,3–0,55, K des Himmels 0,70 in 0,6–0,8) rechnet der Rumpf von w4-wiese-nah; das Bild auf Armlänge urteilt die GPU.
+function halmPixelUrteil(quer = PC.halmQuer) {
+    const Z = PC.WIND_ZAHLEN, H = PC.HALM_GESETZ; // prettier-ignore
+    const welle = (f, fw, amp) => ((y) => (Math.max(...y) - Math.min(...y)) / 2 / amp)([...Array(41).keys()].map((i) => f(Z, 20 + i / 40, fw))); // prettier-ignore
+    return [[quer, H.rippe, "Rippe"], [PC.halmAder, H.ader, "Ader"]].flatMap(([f, amp, n]) => [
+        welle(f, 0.1, amp) < 0.9 && `${n} auf Armlänge ${welle(f, 0.1, amp).toFixed(3)} < 0,9 ihrer Welle`,
+        welle(f, 1.5, amp) > 0.01 && `${n} fern ${welle(f, 1.5, amp).toFixed(3)} > 0,01 (Flimmern)`,
+    ]).filter(Boolean); // prettier-ignore
 }
 // (V) DIE NORMALE DER KRONE — gelichtet, wie die Leser lesen (flipFrei), aus 8 Peilungen (Höhe 0,25) über der nahen Hälfte.
 const KRONE_WEG_MAX = 0.05;
@@ -483,7 +528,7 @@ function kroneUrteil(fall, T, flipFrei, partien) {
                 nah++;
                 const e1 = [P[b] - P[a], P[b + 1] - P[a + 1], P[b + 2] - P[a + 2]],
                     e2 = [P[d] - P[a], P[d + 1] - P[a + 1], P[d + 2] - P[a + 2]];
-                const fl = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]];
+                const fl = kreuz(e1, e2);
                 const vorn = fl[0] * e[0] + fl[1] * e[1] + fl[2] * e[2] > 0;
                 const n = [0, 1, 2].map((j) => N[a + j] + N[b + j] + N[d + j]);
                 const sg = flipFrei || vorn ? 1 : -1;
@@ -506,11 +551,7 @@ function kroneUrteil(fall, T, flipFrei, partien) {
 // (F) DIE FRACHT — die GPU nachgerechnet: sRGB-Byte → linear je Texel, bilinear (clamp), alphaTest 0,5.
 const FRACHT_MIN_ZELLE = 8;
 const FRACHT_TOL = 0.03;
-const LIN8 = new Float64Array(256);
-for (let c = 0; c < 256; c++) {
-    const x = c / 255;
-    LIN8[c] = x <= 0.04045 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4);
-}
+const LIN8 = Float64Array.from({ length: 256 }, (_, c) => srgbLin(c)); // die EINE sRGB-Kurve (abnahme-urteil)
 // je Zelle: Deckung (Anteil der Proben über dem alphaTest) und die Luminanz des Lesers relativ zu Y(wert);
 // `teilen`: der Leser teilt das gefilterte rgb durch alpha (die Welt), sonst liest er es gerade (das Labor, blutend).
 function frachtStufe(m, wert, teilen) {
@@ -518,7 +559,7 @@ function frachtStufe(m, wert, teilen) {
         H = m.height,
         d = m.data,
         Z = W / 4;
-    const yw = 0.2126 * wert[0] + 0.7152 * wert[1] + 0.0722 * wert[2];
+    const yw = luma709(wert);
     const n = Math.min(512, Z * 2);
     const zellen = [];
     for (let c = 0; c < 4; c++) {
@@ -686,11 +727,6 @@ function kornReihe(mips, zBasis) {
 // aus dem Stamm gelesen), die Deckung λ. Ziel: Farb-Korn der Welt ≤ FARB_KORN_ANTEIL × Farb-Korn ohne Oktave.
 const FARB_KORN_ANTEIL = 0.5;
 function farbKornReihe(mips, zBasis) {
-    const lin = new Float64Array(256);
-    for (let i = 0; i < 256; i++) {
-        const v = i / 255;
-        lin[i] = v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-    }
     const stufe = (m, c, u, v) => {
         const W = m.width,
             H = m.height,
@@ -708,7 +744,7 @@ function farbKornReihe(mips, zBasis) {
                 dy = q >> 1;
             const w = (dx ? fx : 1 - fx) * (dy ? fy : 1 - fy);
             const o = (Math.min(H - 1, Math.max(0, y0 + dy)) * W + Math.min(W - 1, Math.max(0, x0 + dx))) * 4;
-            l += w * (0.2126 * lin[d[o]] + 0.7152 * lin[d[o + 1]] + 0.0722 * lin[d[o + 2]]);
+            l += w * (0.2126 * LIN8[d[o]] + 0.7152 * LIN8[d[o + 1]] + 0.0722 * LIN8[d[o + 2]]);
             a += (w * d[o + 3]) / 255;
         }
         return [l, a];
@@ -823,13 +859,7 @@ function kornUrteil(reihen, lambdaKrone, deckungLabor) {
 const HOEHE_SPANNE = { buche: [30, 45], fichte: [30, 50], eiche: [15, 35], birke: [15, 25] };
 const HD_BESTAND = [40, 100];
 function altbestandGroesse() {
-    let a = 0x2545f491;
-    const rng = () => {
-        a = (a + 0x6d2b79f5) | 0;
-        let t = Math.imul(a ^ (a >>> 15), 1 | a);
-        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    };
+    const rng = PC.mulberry32(0x2545f491);
     const s = [];
     for (let i = 0; i < 4000; i++) s.push(PC.forestTreeSize(rng, i / 4000));
     s.sort((x, y) => x - y);
@@ -1111,7 +1141,10 @@ hauptLauf(async () => {
             u.v.push(...b.v);
             Object.assign(u.m, b.m);
         } else if (kind === "flower") u = bluetenUrteil(k, f.T);
-        else if (kind === "grass") u = teppichUrteil(k, f.T, f.lod, rc.understory.grassStep, skala(f.presetId));
+        else if (kind === "grass") {
+            u = teppichUrteil(k, f.T, f.lod, rc.understory.grassStep, skala(f.presetId));
+            u.v.push(...halmUrteil(k, f.T.find((x) => x.kind === "grass"), rc, f.lod, skala(f.presetId)));
+        }
         if (kind === "tree" || kind === "shrub") {
             const kv = kroneUrteil(k, f.T, true, partienDerKrone(f, buch[f.presetId], skala(f.presetId)));
             u.v.push(...kv.v);
@@ -1136,6 +1169,10 @@ hauptLauf(async () => {
         );
     }
     console.log("Pflanzen-Nahbild (gelieferte Puffer, Welt-Gestalt):\n" + zeilen.join("\n"));
+    // (Q) der Pixel als Filter des Halms
+    const hp = halmPixelUrteil();
+    fails.push(...hp);
+    console.log("Halm-Filter (Rippe · Ader, Armlänge ↔ fern): " + (hp.join(" · ") || "Detail je Pixel"));
     // (F) die Fracht je Format gegen das Labor, und der EINE Leser in der Quelle.
     const fracht = frachtReihen(bild);
     fails.push(...frachtUrteil(fracht));
@@ -1368,27 +1405,38 @@ hauptLauf(async () => {
         ]);
         // (T) die Fußzeile jedes zweiten Halms um ein Zehntel der Büschel-Höhe angehoben (das Bild vor K70: der Fuß eine
         // Segment-Länge über dem Grund, je Halm nach seiner Länge — der Ofen setzt nur den tiefsten auf 0)
-        let hiG = 0,
-            n = 0;
-        for (const t of gras1.T) for (let i = 1; i < t.pos.length; i += 3) hiG = Math.max(hiG, t.pos[i]);
+        const hiG = hoehe(gras1.T);
+        let n = 0;
         const hoch = gras1.T.map((t) => {
             const p = Float32Array.from(t.pos);
-            if (t.uv && t.col)
-                for (let k = 0; k < p.length / 3; k++)
-                    if (t.uv[k * 2 + 1] === 0 && t.col[k * 3 + 1] > t.col[k * 3] && Math.floor(n++ / 2) % 2)
-                        p[k * 3 + 1] += hiG * 0.1;
+            for (let k = 0; k < p.length / 3; k++) if (halmFuss(t, k) && Math.floor(n++ / 2) % 2) p[k * 3 + 1] += hiG * 0.1;
             return Object.assign({}, t, { pos: p });
         });
         st.push([
             "Halm schwebt (+0,1)",
             teppichUrteil("schwebt", hoch, 1, rc.understory.grassStep, skala("gras")).v.some((x) => /schwebt/.test(x)),
         ]);
+        // (Q) der Halm an kranken Kopien — die Narbe × 2, die alte Quer-Koordinate 0…1, die gestutzte Spitze, die Ährchen × 8
+        // breit (das Fähnchen) — und die Rippe ohne Filter
+        const g = gras1.T.find((x) => x.kind === "grass");
+        const q = (fn) => {
+            const k = { ...g, uv: g.uv.slice(), pos: g.pos.slice() };
+            fn(k.uv, k.pos);
+            return halmUrteil("krank", k, rc, 1, skala("gras")).length > 0;
+        };
+        st.push(
+            ["Narbe × 2", q((uv) => uv.forEach((x, i) => i % 2 && (uv[i] = 2 * x)))],
+            ["Quer 0…1", q((uv) => uv.forEach((x, i) => i % 2 || (uv[i] = x < 0 ? 0 : 1)))],
+            ["Spitze gestutzt", q((uv) => uv.forEach((x, i) => i % 2 || x || (uv[i] = 1e-3)))],
+            ["Fähnchen-Ähre", q((uv, P) => g.idx.forEach((j, i) => g.cen[j * 3 + 1] && uv[j * 2] > 0 && [0, 1, 2].forEach((x) => (P[j * 3 + x] += 7 * (P[j * 3 + x] - P[g.idx[i - (i % 3)] * 3 + x])))))], // prettier-ignore
+            ["Filter aus", halmPixelUrteil((Z, u) => PC.halmQuer(Z, u, 0)).length > 0]
+        );
     } else st.push(["Gras-Fall fehlt", false]);
     console.log("Selbsttest: " + st.map(([n, ok]) => `${n} ${ok ? "✅" : "❌"}`).join(" · "));
     if (st.some(([, ok]) => !ok)) fails.push("Selbsttest der Pflanzen-Linse feuert nicht");
 
     console.log(
-        "=== PFLANZEN-NAHBILD — Rinde · Gitter · Strauch · Blüte · Blatt- und Nadel-Maß · L1-Krone · Fracht · Wind · Teppich ==="
+        "=== PFLANZEN-NAHBILD — Rinde · Gitter · Strauch · Blüte · Blatt- und Nadel-Maß · L1-Krone · Fracht · Wind · Teppich · Halm ==="
     );
     wandEnde(fails, `${Object.keys(roh).length} Fälle.`);
 });

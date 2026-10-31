@@ -11,23 +11,23 @@ const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 async function checkBandV1774UseByRole({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const p = r.state.player;
-        const blu = r.state.blueprints;
+        const p = st.player;
+        const blu = st.blueprints;
 
         // Snapshot — am Ende restauriert.
         const savedMode = r.getGameMode();
         const savedEquip = p && p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : { held: null, armor: null };
         const savedSoul = (p && p.soul) || "mensch";
-        const savedHotbar = r.state.hotbar.slice(0, 9);
+        const savedHotbar = st.hotbar.slice(0, 9);
         r.setGameMode("schöpfer");
         // falls eine frühere Band (V1772) den Avatar verkörpert + den customSoul gelassen hat:
         // sauberer Start, damit der „noch nicht verkörpert"-Listen-Test ehrlich ist.
-        if (r.state.customSouls) delete r.state.customSouls["bp_koerper_human"];
+        if (st.customSouls) delete st.customSouls["bp_koerper_human"];
 
         // geraet_spitzhacke fiel; Test-Blueprint aus der Werkzeug-Substanz
         // (KIND_SUBSTANCE, deterministisch, am Ende geräumt). Das Label trägt „Spitzhacke",
         // damit die Rezeptbuch-Sichtbarkeits-Probe (5) dieselbe Wahrheit liest.
-        const KS74 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        const KS74 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
         if (blu._t_v1774) delete blu._t_v1774;
         blu._t_v1774 = {
             name: "_t_v1774",
@@ -37,7 +37,7 @@ async function checkBandV1774UseByRole({ page, check }) {
         // koerper_human ist ALT_DOPPEL/donorOnly und fehlt in der primären Select-Sicht → der generische
         // „Bauplan-Avatar gelistet + verkörperbar“-Pfad misst an einem eigenen role:soul-Bauplan
         // (dieselben Parts).
-        if (r.state.customSouls) delete r.state.customSouls["bp__t_avatar74"];
+        if (st.customSouls) delete st.customSouls["bp__t_avatar74"];
         if (blu._t_avatar74) delete blu._t_avatar74;
         blu._t_avatar74 = {
             name: "_t_avatar74",
@@ -63,7 +63,7 @@ async function checkBandV1774UseByRole({ page, check }) {
         r._clearBuildMode();
         r.setHotbarSlot(0, "_t_v1774");
         r.selectHotbarSlot(0);
-        const bm = r.state.buildMode;
+        const bm = st.buildMode;
         out.deviceToHand = p.equipped.held === "_t_v1774" && bm.active === false && !bm.phantomMesh;
 
         // (3) HOTBAR-TOGGLE — schon gehaltenen Slot re-auswählen → ablegen (Faust)
@@ -95,9 +95,7 @@ async function checkBandV1774UseByRole({ page, check }) {
             );
         const emb = r.embodyBlueprint("_t_avatar74");
         out.avatarEmbodied =
-            emb.ok === true &&
-            p.soul === "bp__t_avatar74" &&
-            !!(r.state.customSouls && r.state.customSouls["bp__t_avatar74"]);
+            emb.ok === true && p.soul === "bp__t_avatar74" && !!(st.customSouls && st.customSouls["bp__t_avatar74"]);
         r._refreshSoulSelect();
         const soulSel2 = document.getElementById("player-soul-select");
         out.noDuplicate =
@@ -108,7 +106,7 @@ async function checkBandV1774UseByRole({ page, check }) {
         // Motion-Resonanz: (a) die Bewegungs-Rollen EMERGIEREN für den Bauplan-Avatar (Bein + Flügel aus
         // Form × Lage × Spiegelung), (b) der verkörperte CUSTOM-Avatar BEWEGT sich beim Gehen — Konsum am
         // echten Treiber animatePlayerSoul (ein früher Return ließ ihn statisch).
-        const wRoles = (r.computeMotionRoles(r.state.blueprints.koerper_human.parts) || []).filter(Boolean);
+        const wRoles = (r.computeMotionRoles(st.blueprints.koerper_human.parts) || []).filter(Boolean);
         // Flat-Formel: Platte = mid/min (nicht max/min) → dünne Wächter-Seiten-Zylinder lesen als ARME.
         // Die fluegel-Emergenz prüft ein LITERAL-Paar Spiegel-Planes (computeMotionRoles ist pur).
         const wingParts = [
@@ -130,31 +128,31 @@ async function checkBandV1774UseByRole({ page, check }) {
             wRoles.some((x) => x.role === "bein") &&
             wRoles.some((x) => x.role === "arm" || x.role === "fluegel") &&
             (r.computeMotionRoles(wingParts) || []).filter(Boolean).filter((x) => x.role === "fluegel").length === 2;
-        if (r.state.playerVel) {
-            r.state.playerVel.setValue(3, 0, 0);
+        if (st.playerVel) {
+            st.playerVel.setValue(3, 0, 0);
         }
-        r.state.player.animationLastTick = -Infinity;
+        st.player.animationLastTick = -Infinity;
         r.animatePlayerSoul(10.0);
-        const mSnap1 = r.state.playerMesh.children.map((c) => c.rotation.x.toFixed(4)).join(",");
+        const mSnap1 = st.playerMesh.children.map((c) => c.rotation.x.toFixed(4)).join(",");
         r.animatePlayerSoul(10.6);
-        const mSnap2 = r.state.playerMesh.children.map((c) => c.rotation.x.toFixed(4)).join(",");
+        const mSnap2 = st.playerMesh.children.map((c) => c.rotation.x.toFixed(4)).join(",");
         out.customAvatarAnimates = mSnap1 !== mSnap2;
-        if (r.state.playerVel) {
-            r.state.playerVel.setValue(0, 0, 0);
-            r.state._fieldVy = 0;
+        if (st.playerVel) {
+            st.playerVel.setValue(0, 0, 0);
+            st._fieldVy = 0;
         }
 
         // restore — kein dangling Held/Soul/Hotbar/customSoul/Phantom für die nächsten Bands
         r.setGameMode(savedMode);
         r._clearBuildMode();
-        if (r.state.customSouls) {
-            delete r.state.customSouls["bp_koerper_human"];
-            delete r.state.customSouls["bp__t_avatar74"];
+        if (st.customSouls) {
+            delete st.customSouls["bp_koerper_human"];
+            delete st.customSouls["bp__t_avatar74"];
         }
         r.applyPlayerSoul(savedSoul);
         if (p) p.equipped = savedEquip;
         r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
-        for (let i = 0; i < 9; i++) r.state.hotbar[i] = savedHotbar[i] || null;
+        for (let i = 0; i < 9; i++) st.hotbar[i] = savedHotbar[i] || null;
         delete blu._t_v1774; // Test-Blueprints aufräumen
         delete blu._t_avatar74;
         r._renderHotbarDOM();
@@ -207,20 +205,20 @@ async function checkBandV1774UseByRole({ page, check }) {
 async function checkBandV1776WorkshopPrecision({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const p = r.state.player;
-        const pm = r.state.playerMesh;
+        const p = st.player;
+        const pm = st.playerMesh;
         const px = pm ? pm.position.x : 0,
             py = pm ? pm.position.y : 0,
             pz = pm ? pm.position.z : 0;
 
         // (1) Substanz-Präzision: die dichte+harte Esse hält feinere Toleranzen als eine weiche Werkstatt
-        const esseP = r._workshopStationPrecision(r.state.blueprints["esse"]);
-        r.state.blueprints["wp_soft"] = {
+        const esseP = r._workshopStationPrecision(st.blueprints["esse"]);
+        st.blueprints["wp_soft"] = {
             name: "wp_soft",
             label: "soft",
             parts: [__teil("box", "leder", 0, 0, 0, 1, 1, 1)],
         };
-        const softP = r._workshopStationPrecision(r.state.blueprints["wp_soft"]);
+        const softP = r._workshopStationPrecision(st.blueprints["wp_soft"]);
         out.esseP = esseP;
         out.softP = softP;
         out.substancePrecision = esseP > 0.8 && softP < esseP;
@@ -229,14 +227,14 @@ async function checkBandV1776WorkshopPrecision({ page, check }) {
         //     die falsche Domäne (alchemy) → 0 (nur die EIGENE Domäne zählt). Synthetischer Eintrag (leicht).
         out.noStationZero = r._nearbyWorkshopStationPrecision("forging", { x: px, y: py, z: pz }) === 0;
         const esseEntry = { type: "esse", position: { x: px + 2, y: py, z: pz }, id: "wp_test_esse" };
-        r.state.architectures.push(esseEntry);
+        st.architectures.push(esseEntry);
         const nearPrec = r._nearbyWorkshopStationPrecision("forging", { x: px, y: py, z: pz });
         out.stationBoosts = nearPrec > 0.8 && Math.abs(nearPrec - esseP) < 1e-6;
         out.wrongDomainZero = r._nearbyWorkshopStationPrecision("alchemy", { x: px, y: py, z: pz }) === 0;
 
         // (3) KONSUM — applyOpToPart: ein forging-Werkzeug (schmiede-hammer, cap 0.75) NAH der Esse hebt
         //     den gepushten opChain-Cap über den Werkzeug-Cap (auf die Esse-Substanz, >0.8).
-        r.state.blueprints["wp_work"] = {
+        st.blueprints["wp_work"] = {
             name: "wp_work",
             label: "work",
             parts: [__teil("box", "eisen", 0, 0, 0, 1, 1, 1)],
@@ -246,16 +244,16 @@ async function checkBandV1776WorkshopPrecision({ page, check }) {
         const savedMode = r.getGameMode();
         r.setGameMode("schöpfer"); // keine Stamina-Reibung im Test
         const opR = r.applyOpToPart("wp_work", 0, "schmiede-hammer");
-        const chain = r.state.blueprints["wp_work"].parts[0].opChain || [];
+        const chain = st.blueprints["wp_work"].parts[0].opChain || [];
         const lastCap = chain.length ? chain[chain.length - 1].cap : 0;
         out.konsum = opR.ok === true && lastCap > 0.8 && lastCap >= esseP - 1e-6;
 
         // restore
         r.setGameMode(savedMode);
-        const ai = r.state.architectures.indexOf(esseEntry);
-        if (ai >= 0) r.state.architectures.splice(ai, 1);
-        delete r.state.blueprints["wp_soft"];
-        delete r.state.blueprints["wp_work"];
+        const ai = st.architectures.indexOf(esseEntry);
+        if (ai >= 0) st.architectures.splice(ai, 1);
+        delete st.blueprints["wp_soft"];
+        delete st.blueprints["wp_work"];
         return out;
     });
     check(
@@ -280,8 +278,8 @@ async function checkBandV1776WorkshopPrecision({ page, check }) {
 async function checkBandV1777SteigerungVisible({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const esse = r.state.blueprints["esse"];
-        const meister = r.state.blueprints["esse_meister"];
+        const esse = st.blueprints["esse"];
+        const meister = st.blueprints["esse_meister"];
         out.meisterExists = !!meister && meister.role === "workshop-station";
         out.meisterForging = meister ? r._computeWorkshopDomain(meister) === "forging" : false;
         const esseP = r._workshopStationPrecision(esse);
@@ -290,13 +288,13 @@ async function checkBandV1777SteigerungVisible({ page, check }) {
         out.meisterP = Math.round(meisterP * 1e4) / 1e4;
         out.steigerung = meisterP > esseP && esseP > 0.85; // die Meister-Esse ist besser, beide präzise
         // die Spanne sichtbar: eine weiche Werkstatt (leder) fertigt deutlich gröber als die Eisen-Esse
-        r.state.blueprints["_softws"] = {
+        st.blueprints["_softws"] = {
             name: "_softws",
             parts: esse.parts.map((p) => ({ ...p, material: "leder" })),
         };
-        const softP = r._workshopStationPrecision(r.state.blueprints["_softws"]);
+        const softP = r._workshopStationPrecision(st.blueprints["_softws"]);
         out.rangeVisible = softP < meisterP - 0.1;
-        delete r.state.blueprints["_softws"];
+        delete st.blueprints["_softws"];
         // KONSUM — der Spec-Sheet-Body rendert die Werkstatt-Präzision (sichtbar/lernbar)
         const panel = document.createElement("div");
         r._specRenderBody(panel, meister);
@@ -330,7 +328,7 @@ async function checkBandV1789WorkshopReadout({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
         const prevMode = r.getGameMode();
-        const blu = r.state.blueprints;
+        const blu = st.blueprints;
         const mkBlade = (name, mat) => {
             delete blu[name];
             blu[name] = {
@@ -392,7 +390,7 @@ async function checkBandV1789WorkshopReadout({ page, check }) {
         // Waffen-Klon aus der KIND_SUBSTANCE-Schwert-Zeile: Ausrüstungs-Rolle MIT Werte-Zeile (architecture
         // hat bewusst keine), nicht-builtIn → Undo/Redo rendert. Quelle registrieren, klonen (materialisiert
         // die emergente Rolle), Quelle räumen.
-        const KS89 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        const KS89 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
         if (blu._t_ab_src) delete blu._t_ab_src;
         blu._t_ab_src = { name: "_t_ab_src", parts: JSON.parse(JSON.stringify(KS89.geraet_schwert.parts)) };
         r.cloneBlueprint("_t_ab_src", "_ab_clone");
@@ -410,9 +408,9 @@ async function checkBandV1789WorkshopReadout({ page, check }) {
         // restore
         for (const n of ["_ab_eisen", "_ab_holz", "_ab_long", "_ab_armor"]) delete blu[n];
         if (blu["_ab_clone"]) r.deleteBlueprint("_ab_clone");
-        if (r.state.blueprintEditHistory) {
+        if (st.blueprintEditHistory) {
             for (const n of ["_ab_eisen", "_ab_holz", "_ab_long", "_ab_armor", "_ab_clone"])
-                delete r.state.blueprintEditHistory[n];
+                delete st.blueprintEditHistory[n];
         }
         r.selectBlueprintForEdit("stein_block");
         r.setGameMode(prevMode);
@@ -478,31 +476,31 @@ async function checkBandV1790Recalibration({ page, check }) {
         const ab3 = r._blueprintAbilityStats(blade("eisen", 3));
         out.sizeNeutralReadout = Math.abs(dmg(ab3) - dmg(ab1)) <= 0.02 * dmg(ab1) + 0.1;
         out.sizeVals = `1×=${dmg(ab1).toFixed(1)}/T${tempo(ab1).toFixed(2)} 3×=${dmg(ab3).toFixed(1)}/T${tempo(ab3).toFixed(2)}`;
-        const blu = r.state.blueprints;
+        const blu = st.blueprints;
         const eqDmg = (bp) => {
             blu._rceq = bp;
             bp.name = "_rceq";
-            r.state.player.equipped = { held: "_rceq" };
+            st.player.equipped = { held: "_rceq" };
             const d = r.computePlayerStats().stats.damage;
             delete blu._rceq;
             return d;
         };
         const eq1 = eqDmg(blade("eisen", 1));
         const eq3 = eqDmg(blade("eisen", 3));
-        r.state.player.equipped = {};
+        st.player.equipped = {};
         out.sizeNeutralEquip = Math.abs(eq3 - eq1) <= 0.02 * Math.abs(eq1) + 0.1;
         out.equipVals = `equip 1×=${eq1.toFixed(1)} 3×=${eq3.toFixed(1)}`;
         // attackSpeed bleibt POSITIV (kein negativer Cooldown trotz schwerem Gerät)
         blu._rcheavy = blade("eisen", 3);
         blu._rcheavy.name = "_rcheavy";
-        r.state.player.equipped = { held: "_rcheavy" };
+        st.player.equipped = { held: "_rcheavy" };
         out.attackSpeedPositive = r.computePlayerStats().stats.attackSpeed > 0;
-        r.state.player.equipped = {};
+        st.player.equipped = {};
         delete blu._rcheavy;
 
         // (4) FACETTE 4 — ROLLE scharf: Pickel→Werkzeug (Holzstiel), Schwert→Waffe (Metall-Klinge).
         // die Blueprints fielen; die Substanz-Zeilen (KIND_SUBSTANCE) tragen die Probe.
-        const KS90 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        const KS90 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
         out.spitzhackeTool = r.computeBlueprintRole({ parts: KS90.geraet_spitzhacke.parts }) === "tool";
         out.schwertWeapon = r.computeBlueprintRole({ parts: KS90.geraet_schwert.parts }) === "weapon";
         // ein lebendiger Körper bleibt soul, ein dichter Klotz bleibt architecture (kein Regress durch livingBody)
@@ -510,21 +508,21 @@ async function checkBandV1790Recalibration({ page, check }) {
 
         // (5) die platzierte Drehbank erscheint in 32 m im Prozess-Menü (frieden/pfad).
         r.setGameMode("frieden");
-        r.state.architectures = (r.state.architectures || []).filter((a) => a && a.type !== "drehbank");
-        const pm = r.state.playerMesh && r.state.playerMesh.position;
+        st.architectures = (st.architectures || []).filter((a) => a && a.type !== "drehbank");
+        const pm = st.playerMesh && st.playerMesh.position;
         let near = [],
             far = [];
         if (pm) {
             r.spawnArchitecture("drehbank", { x: pm.x + 20, y: pm.y, z: pm.z }); // 20 m — in der neuen Reichweite
             near = r._workshopProcessesForMenu();
-            r.state.architectures = r.state.architectures.filter((a) => a && a.type !== "drehbank");
+            st.architectures = st.architectures.filter((a) => a && a.type !== "drehbank");
             r.spawnArchitecture("drehbank", { x: pm.x + 45, y: pm.y, z: pm.z }); // 45 m — zu weit
             far = r._workshopProcessesForMenu();
-            r.state.architectures = r.state.architectures.filter((a) => a && a.type !== "drehbank");
+            st.architectures = st.architectures.filter((a) => a && a.type !== "drehbank");
         }
         out.drehbankNearAppears = near.some((p) => p.stationName === "drehbank");
         out.drehbankFarHidden = !far.some((p) => p.stationName === "drehbank");
-        out.proximityM = r.constructor.WORKSHOP_PROXIMITY_M;
+        out.proximityM = AnazhRealm.WORKSHOP_PROXIMITY_M;
 
         // (6) Undo/Redo wohnen in der Top-Leiste als .workshop-action-btn; ihr
         // disabled-Zustand ist gestylt (ausgegraut), die Station-Karten der Palette sind abgehoben.
@@ -596,13 +594,13 @@ async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
     const wave6a6Results = await safeEvaluate(page, () => {
         const out = {};
         // Statische Konstante
-        out.hasStaminaCost = r.constructor._aktionAusdauer() === 5;
+        out.hasStaminaCost = AnazhRealm._aktionAusdauer() === 5;
 
         // Setup: pfad-Modus für Stamina-Tests, frische Stamina.
         const oldMode = r.getGameMode();
         r.setGameMode("pfad");
-        r.state.player.stamina = 100;
-        r.state.player.respawnGraceUntil = -Infinity;
+        st.player.stamina = 100;
+        st.player.respawnGraceUntil = -Infinity;
 
         // Stamina-Gate: pfad mit voller Stamina → ok, cost 5
         const gateOk = r._mouseActionStaminaGate();
@@ -610,35 +608,35 @@ async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
 
         // Stamina verbrauchen: pfad zieht 5 ab
         r._consumeMouseStamina();
-        out.pfadConsumesFive = r.state.player.stamina === 95;
+        out.pfadConsumesFive = st.player.stamina === 95;
 
         // Stamina unter Kosten → verweigert
-        r.state.player.stamina = 2;
+        st.player.stamina = 2;
         const gateBlocked = r._mouseActionStaminaGate();
         out.pfadGateBlocksLow = gateBlocked.ok === false && gateBlocked.have === 2;
 
         // frieden + schöpfer: kein Stamina-Verbrauch
         r.setGameMode("frieden");
-        r.state.player.stamina = 50;
+        st.player.stamina = 50;
         r._consumeMouseStamina();
-        out.friedenSkipsStamina = r.state.player.stamina === 50;
+        out.friedenSkipsStamina = st.player.stamina === 50;
 
         r.setGameMode("schöpfer");
-        r.state.player.stamina = 50;
+        st.player.stamina = 50;
         r._consumeMouseStamina();
-        out.schoepferSkipsStamina = r.state.player.stamina === 50;
+        out.schoepferSkipsStamina = st.player.stamina === 50;
 
         // frieden gate immer ok
-        r.state.player.stamina = 0;
+        st.player.stamina = 0;
         r.setGameMode("frieden");
         out.friedenGateOkAtZero = r._mouseActionStaminaGate().ok === true;
 
         // removeArchitecture: synthetisches Setup ohne Mesh/Body
         const fakeEntry = { id: 99999, type: "test_arch", position: { x: 0, y: 0, z: 0 }, mesh: null };
-        r.state.architectures.push(fakeEntry);
-        const archCountBefore = r.state.architectures.length;
+        st.architectures.push(fakeEntry);
+        const archCountBefore = st.architectures.length;
         const removed = r.removeArchitecture(fakeEntry);
-        out.removeArchitectureWorks = removed === true && r.state.architectures.length === archCountBefore - 1;
+        out.removeArchitectureWorks = removed === true && st.architectures.length === archCountBefore - 1;
 
         // removeArchitecture mit nicht-existentem Entry → false
         out.removeArchitectureRejectsGhost = r.removeArchitecture({ id: -1, type: "x" }) === false;
@@ -646,7 +644,7 @@ async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
         // tryMousePlace ohne aktiven Bau-Modus läuft in den Voxel-Fill-Pfad (Gegenstück zum LMB-Graben,
         // immer erreichbar) → nur crash-frei + boolean (true = Fill, false = Raycast trifft nichts).
         r.setGameMode("frieden");
-        r.state.buildMode.active = false;
+        st.buildMode.active = false;
         const placeResult = r.tryMousePlace();
         out.placeReturnsBoolean = placeResult === true || placeResult === false;
 
@@ -690,26 +688,26 @@ async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
     const wave6a6V2Results = await safeEvaluate(page, () => {
         const out = {};
         // Threshold-Konstante existiert
-        const thr = r.constructor.WORLD_EFFECT_THRESHOLDS;
+        const thr = AnazhRealm.WORLD_EFFECT_THRESHOLDS;
         out.thresholdReadable = thr && typeof thr.resonance_mild === "number" && thr.resonance_mild > 0;
 
         // Symphony aktivieren (Headless: autoplay-policy=no-user-gesture-required)
         r.initSymphony();
-        const ctxOk = r.state.symphony && r.state.symphony.enabled && r.state.symphony.ctx;
+        const ctxOk = st.symphony && st.symphony.enabled && st.symphony.ctx;
         out.symphonyReady = !!ctxOk;
         if (!ctxOk) return out;
 
         // kristall_geode: resoniert ≈ 2.7 (Built-in)
-        const geodeTags = r.computeCompoundTags(r.state.blueprints.kristall_geode);
+        const geodeTags = r.computeCompoundTags(st.blueprints.kristall_geode);
         out.geodeIsResonant = (geodeTags.resoniert || 0) >= thr.resonance_mild;
         // stein_block: resoniert ≈ 0
-        const stoneTags = r.computeCompoundTags(r.state.blueprints.stein_block);
+        const stoneTags = r.computeCompoundTags(st.blueprints.stein_block);
         out.stoneIsNotResonant = (stoneTags.resoniert || 0) < thr.resonance_mild;
 
         // Spy auf createOscillator
-        const ctx = r.state.symphony.ctx;
+        const ctx = st.symphony.ctx;
         const orig = ctx.createOscillator.bind(ctx);
-        const p = r.state.playerMesh ? r.state.playerMesh.position : { x: 0, y: 50, z: 0 };
+        const p = st.playerMesh ? st.playerMesh.position : { x: 0, y: 50, z: 0 };
 
         // Test A: Geode-Abbau → mind. 1 Oszillator
         const geode = r.spawnArchitecture("kristall_geode", { x: p.x, y: p.y, z: p.z + 6 });
@@ -732,7 +730,7 @@ async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
         out.stoneRemovalIsSilent = counterB === 0;
 
         // Test C: Symphony aus → kein Ping selbst bei resonanter Struktur
-        r.state.symphony.enabled = false;
+        st.symphony.enabled = false;
         const geode2 = r.spawnArchitecture("kristall_geode", { x: p.x - 4, y: p.y, z: p.z - 4 });
         let counterC = 0;
         ctx.createOscillator = function () {
@@ -741,7 +739,7 @@ async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
         };
         r.removeArchitecture(geode2);
         out.disabledSymphonyStaysSilent = counterC === 0;
-        r.state.symphony.enabled = true;
+        st.symphony.enabled = true;
 
         ctx.createOscillator = orig;
         return out;
@@ -824,44 +822,43 @@ async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
         const out = {};
         // Statische Konstanten
         out.hasDefaults =
-            r.constructor.DEFAULT_KEYBINDINGS &&
-            typeof r.constructor.DEFAULT_KEYBINDINGS === "object" &&
-            Object.isFrozen(r.constructor.DEFAULT_KEYBINDINGS);
+            AnazhRealm.DEFAULT_KEYBINDINGS &&
+            typeof AnazhRealm.DEFAULT_KEYBINDINGS === "object" &&
+            Object.isFrozen(AnazhRealm.DEFAULT_KEYBINDINGS);
         // 11 Aktionen (6 Original + 5 Drawer/Camera-Shortcuts; UI-Putz: drawerWelt entfiel).
-        out.hasActions =
-            Array.isArray(r.constructor.KEYBINDING_ACTIONS) && r.constructor.KEYBINDING_ACTIONS.length === 13; // V18.109 E8: + swapHands, L3: + chat
-        out.hasLabels = r.constructor.KEYBINDING_LABELS && Object.isFrozen(r.constructor.KEYBINDING_LABELS);
+        out.hasActions = Array.isArray(AnazhRealm.KEYBINDING_ACTIONS) && AnazhRealm.KEYBINDING_ACTIONS.length === 13; // V18.109 E8: + swapHands, L3: + chat
+        out.hasLabels = AnazhRealm.KEYBINDING_LABELS && Object.isFrozen(AnazhRealm.KEYBINDING_LABELS);
         const expectedActions = ["break", "place", "confirmBuild", "inventory", "cancelBuild", "jump"];
-        out.actionsCorrect = expectedActions.every((a) => r.constructor.KEYBINDING_ACTIONS.includes(a));
+        out.actionsCorrect = expectedActions.every((a) => AnazhRealm.KEYBINDING_ACTIONS.includes(a));
         // Defaults sind Minecraft-Konvention
-        out.defaultBreakIsMouse0 = r.constructor.DEFAULT_KEYBINDINGS.break === "Mouse0";
-        out.defaultPlaceIsMouse2 = r.constructor.DEFAULT_KEYBINDINGS.place === "Mouse2";
-        out.defaultConfirmBuildIsKeyF = r.constructor.DEFAULT_KEYBINDINGS.confirmBuild === "KeyF";
-        out.defaultInventoryIsTab = r.constructor.DEFAULT_KEYBINDINGS.inventory === "Tab";
+        out.defaultBreakIsMouse0 = AnazhRealm.DEFAULT_KEYBINDINGS.break === "Mouse0";
+        out.defaultPlaceIsMouse2 = AnazhRealm.DEFAULT_KEYBINDINGS.place === "Mouse2";
+        out.defaultConfirmBuildIsKeyF = AnazhRealm.DEFAULT_KEYBINDINGS.confirmBuild === "KeyF";
+        out.defaultInventoryIsTab = AnazhRealm.DEFAULT_KEYBINDINGS.inventory === "Tab";
 
         // State init
-        out.hasKeybindingsState = r.state.keybindings && typeof r.state.keybindings === "object";
-        out.keybindRebindInitNull = r.state.keybindRebind === null;
+        out.hasKeybindingsState = st.keybindings && typeof st.keybindings === "object";
+        out.keybindRebindInitNull = st.keybindRebind === null;
 
         // setKeybinding ändert state
-        const before = r.state.keybindings.confirmBuild;
+        const before = st.keybindings.confirmBuild;
         const setOk = r.setKeybinding("confirmBuild", "KeyG");
-        out.setKeybindingWorks = setOk === true && r.state.keybindings.confirmBuild === "KeyG";
+        out.setKeybindingWorks = setOk === true && st.keybindings.confirmBuild === "KeyG";
 
         // setKeybinding-Konflikt = Swap: bind „place" auf das gerade
         // gesetzte „KeyG" → confirmBuild bekommt das alte „Mouse2"
         // (das war place's Default).
-        const oldPlace = r.state.keybindings.place;
+        const oldPlace = st.keybindings.place;
         r.setKeybinding("place", "KeyG");
-        out.swapHappened = r.state.keybindings.place === "KeyG" && r.state.keybindings.confirmBuild === oldPlace;
+        out.swapHappened = st.keybindings.place === "KeyG" && st.keybindings.confirmBuild === oldPlace;
 
         // Reset auf Defaults
         r.resetKeybindings();
         out.resetRestoresDefaults =
-            r.state.keybindings.break === "Mouse0" &&
-            r.state.keybindings.place === "Mouse2" &&
-            r.state.keybindings.confirmBuild === "KeyF" &&
-            r.state.keybindings.confirmBuild === before; // before war auch der Default
+            st.keybindings.break === "Mouse0" &&
+            st.keybindings.place === "Mouse2" &&
+            st.keybindings.confirmBuild === "KeyF" &&
+            st.keybindings.confirmBuild === before; // before war auch der Default
 
         // setKeybinding-Validierung: unbekannte Aktion → false
         out.setRejectsUnknownAction = r.setKeybinding("ficto", "KeyZ") === false;
@@ -883,18 +880,18 @@ async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
 
         // beginKeybindRebind setzt state, cancel räumt auf
         r.beginKeybindRebind("break");
-        out.rebindActive = r.state.keybindRebind && r.state.keybindRebind.action === "break";
+        out.rebindActive = st.keybindRebind && st.keybindRebind.action === "break";
         r.cancelKeybindRebind();
-        out.rebindCancelClears = r.state.keybindRebind === null;
+        out.rebindCancelClears = st.keybindRebind === null;
 
         // _completeKeybindRebind ändert die Bindung
         r.beginKeybindRebind("jump");
         r._completeKeybindRebind("KeyJ");
-        out.completeBindsCode = r.state.keybindings.jump === "KeyJ";
+        out.completeBindsCode = st.keybindings.jump === "KeyJ";
         // Escape im Rebind-Modus → Abbruch (Binding bleibt)
         r.beginKeybindRebind("jump");
         r._completeKeybindRebind("Escape");
-        out.escCancelsRebind = r.state.keybindRebind === null && r.state.keybindings.jump === "KeyJ";
+        out.escCancelsRebind = st.keybindRebind === null && st.keybindings.jump === "KeyJ";
 
         // _formatBindingCode pretty-print
         out.formatMouse0 = r._formatBindingCode("Mouse0") === "Linke Maustaste";
@@ -913,7 +910,7 @@ async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
 
         // Reset für nachfolgende Tests
         r.resetKeybindings();
-        r.state.keybindRebind = null;
+        st.keybindRebind = null;
 
         return out;
     });
@@ -975,7 +972,7 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
         // deckungsgleich zum _buildFromBlueprint-Render).
         const __fkKeyMerged = r._growTreeBlueprintForSpawn("baum_kiefer", "flat-fixture") || "baum_kiefer";
         const __fkKey = "__flat_fixture_nm";
-        r.state.blueprints[__fkKey] = { ...r.state.blueprints[__fkKeyMerged], _isMerged: false, _skeleton: null };
+        st.blueprints[__fkKey] = { ...st.blueprints[__fkKeyMerged], _isMerged: false, _skeleton: null };
         const flatKiefer = r._archFlattenBlueprint(__fkKey);
         out.kieferInstanceable = flatKiefer.instanceable;
         out.kieferLeaves = flatKiefer.leaves.length;
@@ -990,7 +987,7 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
         out.cacheStable = r._archFlattenBlueprint(__fkKey) === flatKiefer;
 
         // --- Matrix-Bit-Gleichheit: klassische Group vs Instancing-Matrix ---
-        const bp = r.state.blueprints[__fkKey];
+        const bp = st.blueprints[__fkKey];
         // BÜHNE: Eintrag einer Einheits-Probe, kein gesetzter Ort
         const entry = { position: { x: 100, y: 50, z: -30 }, scale: 1.5 };
         const group = r._buildFromBlueprint(bp);
@@ -1027,11 +1024,11 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
         // --- Cutover: instancbarer Spawn geht in die Registry ---
         // UNIT-RICHTER: Prüf-Gegenstand ist die GRAMMATIK-Instancing-Registry (`baum_kiefer#0`-Gruppe +
         // Slot/Cull/Pick); foundry-ON setzt derselbe Spawn Studio-Instanzen (f:-Gruppen) → __withNoFoundry.
-        if (r.state.playerMesh) {
+        if (st.playerMesh) {
             window.__withNoFoundry(() => {
-                const pp = r.state.playerMesh.position;
-                const origRadius = r.state.architectureCullingRadius;
-                r.state.architectureCullingRadius = 500; // in Reichweite → sofort gebaut
+                const pp = st.playerMesh.position;
+                const origRadius = st.architectureCullingRadius;
+                st.architectureCullingRadius = 500; // in Reichweite → sofort gebaut
                 const e = r.spawnArchitecture(
                     "baum_kiefer",
                     { x: pp.x + 5, y: pp.y, z: pp.z + 5 },
@@ -1047,18 +1044,18 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
                 // die platzierte Architektur ist global (`baum_kiefer#0`, die Regions-Achse @p: fiel;
                 // ein Studio-Leaf keyt nach seiner Studio-Geometrie): eine baum_kiefer#0-Gruppe.
                 out.cutoverGroupExists = !!(
-                    r.state.archInstanceGroups &&
-                    [...r.state.archInstanceGroups.keys()].some((k) => k.indexOf("baum_kiefer#0") === 0)
+                    st.archInstanceGroups &&
+                    [...st.archInstanceGroups.keys()].some((k) => k.indexOf("baum_kiefer#0") === 0)
                 );
                 // Cull → instanced-Render weg, Daten-Eintrag bleibt.
                 if (e) {
                     r._cullArchitectureMesh(e);
                     out.cutoverCulledInstanced = e.instanced === false && !e.instSlots;
                     // Daten-Eintrag bleibt in der Liste (Culling ≠ Remove).
-                    out.cutoverEntryStillListed = r.state.architectures.indexOf(e) >= 0;
+                    out.cutoverEntryStillListed = st.architectures.indexOf(e) >= 0;
                     r.removeArchitecture(e); // sauber raus aus der Test-Welt
                 }
-                r.state.architectureCullingRadius = origRadius;
+                st.architectureCullingRadius = origRadius;
 
                 // Nicht-instancbarer Bauplan (waterfall) bleibt klassisch (entry.mesh).
                 const wf = r.spawnArchitecture(
@@ -1072,7 +1069,7 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
                 // --- Funktions-Faden: instancierten Baum per Crosshair-Raycast
                 //     picken (Spieler-LMB-Harvest muss instancierte Bäume treffen,
                 //     via instanceId → slotEntry). ---
-                if (r.state.camera) {
+                if (st.camera) {
                     const tcx = pp.x + 6;
                     const tcz = pp.z + 6;
                     const pe = r.spawnArchitecture(
@@ -1080,7 +1077,7 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
                         { x: tcx, y: pp.y, z: tcz },
                         { seed: 9191, silent: true }
                     );
-                    const cam = r.state.camera;
+                    const cam = st.camera;
                     const savedPos = cam.position.clone();
                     const savedQuat = cam.quaternion.clone();
                     cam.position.set(tcx, pp.y + 1.2, tcz - 6);
@@ -1089,12 +1086,12 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
                     // Last-Robustheit: ohne Render-Frame zwischen Spawn und Pick sind die InstancedMesh-Welt-Matrizen
                     // stale (Raycaster verwirft sie), und ein akkumulierter NACHBAR in der 6-m-Sichtlinie trifft zuerst.
                     // Darum Szene-Matrizen aktualisieren + Blocker räumen → der finale Pick prüft genau pe's Instanz.
-                    if (r.state.scene) r.state.scene.updateMatrixWorld(true);
+                    if (st.scene) st.scene.updateMatrixWorld(true);
                     for (let g = 0; g < 10; g++) {
                         const pk = r._pickArchitectureAtCrosshair();
                         if (!pk || pk.entry === pe) break;
                         r.removeArchitecture(pk.entry); // Nachbar aus der Sichtlinie
-                        if (r.state.scene) r.state.scene.updateMatrixWorld(true);
+                        if (st.scene) st.scene.updateMatrixWorld(true);
                     }
                     const pick = r._pickArchitectureAtCrosshair();
                     out.instancedPickHits = !!(pick && pick.entry === pe);
@@ -1179,27 +1176,27 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
 
         // --- A2: confirmBuild blockt bei phantomOnGround=false im pfad
         r.setGameMode("pfad");
-        r.state.player.inventory = new Array(27).fill(null);
+        st.player.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 200);
         r._clearBuildMode();
         r.setHotbarSlot(0, "stein_block");
         r.selectHotbarSlot(0);
         window.__setzOrt("stein_block");
-        if (r.state.buildMode) r.state.buildMode.phantomOnGround = false;
-        const archBeforeBlock = r.state.architectures.length;
-        const stoneBeforeBlock = r.state.player.inventory[0].count;
+        if (st.buildMode) st.buildMode.phantomOnGround = false;
+        const archBeforeBlock = st.architectures.length;
+        const stoneBeforeBlock = st.player.inventory[0].count;
         const blocked = r.confirmBuild();
-        const stoneAfterBlock = r.state.player.inventory[0] ? r.state.player.inventory[0].count : 0;
+        const stoneAfterBlock = st.player.inventory[0] ? st.player.inventory[0].count : 0;
         out.pfadBlocksUnstable = blocked === false;
-        out.pfadBlocksNoArch = r.state.architectures.length === archBeforeBlock;
+        out.pfadBlocksNoArch = st.architectures.length === archBeforeBlock;
         out.pfadBlocksNoMaterialLoss = stoneBeforeBlock === stoneAfterBlock;
 
         // schöpfer-Modus: gleiches Setup, instabil → trotzdem baut
         r.setGameMode("schöpfer");
-        if (r.state.buildMode) r.state.buildMode.phantomOnGround = false;
-        const archBeforeS = r.state.architectures.length;
+        if (st.buildMode) st.buildMode.phantomOnGround = false;
+        const archBeforeS = st.architectures.length;
         const builtS = r.confirmBuild();
-        out.schoepferBypassesUnstable = builtS === true && r.state.architectures.length > archBeforeS;
+        out.schoepferBypassesUnstable = builtS === true && st.architectures.length > archBeforeS;
 
         r._clearBuildMode();
         r.setGameMode("frieden");
@@ -1210,7 +1207,7 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
         const bpCreated = r.createBlueprint("audit_armor_test", "Audit-Test");
         out._a3aCreated = bpCreated === true;
         if (bpCreated) {
-            const bpRef = r.state.blueprints["audit_armor_test"];
+            const bpRef = st.blueprints["audit_armor_test"];
             bpRef.role = "tool"; // emergent gesetzt, kein Manual
             bpRef.roleManual = false;
             const wsA3 = r._ensureWorkshopState();
@@ -1224,7 +1221,7 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
             // ⚒ Station · ✨ Emergent): Rüstung/Konsumabel fixt der PROZESS.
             out.markListShowsEmergentRole =
                 !!rowA3 && out._a3aLabelCount === 3 && /⚒ Station/.test(rowA3.textContent || "");
-            delete r.state.blueprints["audit_armor_test"];
+            delete st.blueprints["audit_armor_test"];
             wsA3.selectedBlueprint = savedSelA3;
         } else {
             out.markListShowsEmergentRole = false;
@@ -1250,7 +1247,7 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
             out._a3bContainerText = container ? container.textContent.slice(0, 200) : null;
             out.statsShowsArmorRow = !!container && /⛨|audit_armor_real/.test(container.textContent || "");
             r.equipArmor(null);
-            delete r.state.blueprints["audit_armor_real"];
+            delete st.blueprints["audit_armor_real"];
             r._ichRenderSpecSheet();
         } else {
             out.statsShowsArmorRow = false;
@@ -1265,10 +1262,10 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
         } catch {
             /* ignore */
         }
-        if (r.state.hotbar && r.state.hotbar.length === 9) {
+        if (st.hotbar && st.hotbar.length === 9) {
             const gurt = r._startGurt() || [];
             for (let i = 0; i < 9; i++) {
-                r.state.hotbar[i] = i < gurt.length ? gurt[i] : null;
+                st.hotbar[i] = i < gurt.length ? gurt[i] : null;
             }
         }
         r._clearBuildMode();
@@ -1333,17 +1330,17 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
         // Aber Chat-Pfade existieren weiter (smoke: spawn_village ist noch da)
 
         // Logik-Test: simuliere Wheel-Deltas, hotbar-Slot ändert sich
-        if (r.state.buildMode) r.state.buildMode.slotIndex = 0;
+        if (st.buildMode) st.buildMode.slotIndex = 0;
         r.selectHotbarSlot(0);
-        const before = r.state.buildMode.slotIndex;
+        const before = st.buildMode.slotIndex;
         // Ein Wheel-Delta nach unten → nächster Slot
         r.selectHotbarSlot((before + 1) % 9);
-        out.hotbarCyclesForward = r.state.buildMode.slotIndex === 1;
+        out.hotbarCyclesForward = st.buildMode.slotIndex === 1;
         // Rückwärts (wrap)
         r.selectHotbarSlot((1 - 1 + 9) % 9);
-        out.hotbarCyclesBackward = r.state.buildMode.slotIndex === 0;
+        out.hotbarCyclesBackward = st.buildMode.slotIndex === 0;
         r.selectHotbarSlot((0 - 1 + 9) % 9);
-        out.hotbarWrapsAtZero = r.state.buildMode.slotIndex === 8;
+        out.hotbarWrapsAtZero = st.buildMode.slotIndex === 8;
         r._clearBuildMode();
 
         return out;
@@ -1382,24 +1379,24 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
             // dieselbe wie Kamera und Phantom).
             // at_player_forward(8) liefert (10, 50, 28).
             // BÜHNE: die Vorwärts-Richtung (at_player_forward rechnet relativ zum Spieler)
-            r.state.playerMesh.position.set(10, 50, 20);
-            r.state.yaw = 0;
-            const ctx = { state: r.state, rng: () => 0.5 };
+            st.playerMesh.position.set(10, 50, 20);
+            st.yaw = 0;
+            const ctx = { state: st, rng: () => 0.5 };
             const pos = r.dslPositions.at_player_forward([8], ctx);
             out.atPlayerForwardOffset =
                 Math.abs(pos.x - 10) < 0.01 && Math.abs(pos.y - 50) < 0.01 && Math.abs(pos.z - 28) < 0.01;
             // Mit yaw=π/2 → der Blick geht nach +X. at_player_forward(5) → (15, 50, 20)
-            r.state.yaw = Math.PI / 2;
+            st.yaw = Math.PI / 2;
             const pos2 = r.dslPositions.at_player_forward([5], ctx);
             out.atPlayerForwardYawAware = Math.abs(pos2.x - 15) < 0.01 && Math.abs(pos2.z - 20) < 0.01;
             // Reset
-            r.state.yaw = 0;
+            st.yaw = 0;
         }
 
         // --- C1: Chat „baue dorf hier" embedded forward-Position
         // BÜHNE: die Vorwärts-Richtung („baue dorf hier“ relativ zum Spieler)
-        r.state.playerMesh.position.set(0, 50, 0);
-        r.state.yaw = 0;
+        st.playerMesh.position.set(0, 50, 0);
+        st.yaw = 0;
         const dslOut = r.parseChatToDsl("baue dorf hier");
         out.chatBuildDorfParses = !!(dslOut && dslOut.program);
         if (dslOut && dslOut.program) {
@@ -1413,9 +1410,9 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
             // sein Bildwinkel (> 0) — „vor dem Blick" legt `_siedlungsAnker` das Dorf aus dem Plan (gate:ankunft D9
             // misst die Häuser vor dem Spieler).
             const z = dslOut.program[1][3];
-            r.state.yaw = Math.PI / 2;
+            st.yaw = Math.PI / 2;
             const dslOut2 = r.parseChatToDsl("baue dorf hier");
-            r.state.yaw = 0;
+            st.yaw = 0;
             out.chatBuildDorfForwardOffset =
                 Math.abs(z) < 0.5 &&
                 dslOut.program[3] === 0 &&
@@ -1426,11 +1423,11 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
         // --- C3: _canSoulJumpFromSlope existiert
 
         // --- C3: kein Slope → springen erlaubt
-        r.state.onSteepSlope = false;
+        st.onSteepSlope = false;
         out.flatGroundJumpAllowed = r._canSoulJumpFromSlope() === true;
 
         // --- C3: Slope + frieden → springen erlaubt (Modus-Override)
-        r.state.onSteepSlope = true;
+        st.onSteepSlope = true;
         r.setGameMode("frieden");
         out.peaceModeOverridesSlope = r._canSoulJumpFromSlope() === true;
 
@@ -1445,12 +1442,12 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
         // aktiven Boosts addiert (Emotion/Welt-Resonanz — transienter Konfounder) → Boosts leeren. Dann
         // gilt für jede Wund-Intensität w∈[0,1]: Drache-score = 0.4−0.05w (< 0.4), Phönix-score =
         // 0.475−0.05w (≥ 0.4) — der Wund-Term verschiebt beide gleich. Linse: diag-soul-jump (git-Archiv).
-        if (r.state.player) r.state.player.boosts = [];
+        if (st.player) st.player.boosts = [];
         // ALTLASTEN-NULL: eine LEICHTE lebendige Seele (federn-Fixture,
         // lebendig≈0.98/dichte≈0.29 → score 0.60) klettert; der WOLF-Körper
         // (stein-dicht) rutscht — dieselbe Substanz-Physik, lebende Träger.
-        r.state.customSouls = r.state.customSouls || {};
-        r.state.customSouls.leichtprobe = {
+        st.customSouls = st.customSouls || {};
+        st.customSouls.leichtprobe = {
             label: "Leicht-Probe",
             bodyParts: [
                 {
@@ -1476,23 +1473,23 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
         r.applyPlayerSoul("leichtprobe");
         r.recomputePlayerStats();
         out.phoenixCanJumpFromSlope = r._canSoulJumpFromSlope() === true;
-        out._phoenixTags = r.state.player.statTags
-            ? `lebendig=${r.state.player.statTags.lebendig?.toFixed(2)} dichte=${r.state.player.statTags.dichte?.toFixed(2)}`
+        out._phoenixTags = st.player.statTags
+            ? `lebendig=${st.player.statTags.lebendig?.toFixed(2)} dichte=${st.player.statTags.dichte?.toFixed(2)}`
             : "no tags";
 
         // --- C3: Slope + pfad + Wolf-Körper → kann NICHT springen (dichte hoch)
         r.applyPlayerSoul("wolf");
         r.recomputePlayerStats();
         out.dragonCannotJumpFromSlope = r._canSoulJumpFromSlope() === false;
-        out._dragonTags = r.state.player.statTags
-            ? `lebendig=${r.state.player.statTags.lebendig?.toFixed(2)} dichte=${r.state.player.statTags.dichte?.toFixed(2)}`
+        out._dragonTags = st.player.statTags
+            ? `lebendig=${st.player.statTags.lebendig?.toFixed(2)} dichte=${st.player.statTags.dichte?.toFixed(2)}`
             : "no tags";
 
         // Cleanup
-        delete r.state.customSouls.leichtprobe;
+        delete st.customSouls.leichtprobe;
         r.applyPlayerSoul("human");
         r.recomputePlayerStats();
-        r.state.onSteepSlope = false;
+        st.onSteepSlope = false;
         r.setGameMode("frieden");
 
         return out;
@@ -1537,15 +1534,15 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
         const out = {};
 
         // --- F1: state-Felder existieren mit Defaults
-        out.companionNameDefault = r.state.grok.companionName === "Grok";
-        out.playerNameDefault = r.state.player.name === "Schöpfer";
+        out.companionNameDefault = st.grok.companionName === "Grok";
+        out.playerNameDefault = st.player.name === "Schöpfer";
 
         // --- F1: Input-Change setzt state + localStorage
         const ci = document.getElementById("companion-name-input");
         if (ci) {
             ci.value = "Lyra";
             ci.dispatchEvent(new Event("input"));
-            out.companionNameUpdated = r.state.grok.companionName === "Lyra";
+            out.companionNameUpdated = st.grok.companionName === "Lyra";
             out.companionNamePersisted =
                 typeof localStorage !== "undefined" && localStorage.getItem("anazh.companion.name") === "Lyra";
             // Reset auf Default
@@ -1556,7 +1553,7 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
         if (pi) {
             pi.value = "Aelyn";
             pi.dispatchEvent(new Event("input"));
-            out.playerNameUpdated = r.state.player.name === "Aelyn";
+            out.playerNameUpdated = st.player.name === "Aelyn";
             out.playerNamePersisted =
                 typeof localStorage !== "undefined" && localStorage.getItem("anazh.player.name") === "Aelyn";
             pi.value = "Schöpfer";
@@ -1564,14 +1561,14 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
         }
 
         // --- F1: System-Prompt enthält die zwei Namen
-        r.state.grok.companionName = "TestCompanion";
-        r.state.player.name = "TestPlayer";
+        st.grok.companionName = "TestCompanion";
+        st.player.name = "TestPlayer";
         const prompt = r.llmBuildSystemPrompt();
         out.promptContainsCompanionName = /TestCompanion/.test(prompt);
         out.promptContainsPlayerName = /TestPlayer/.test(prompt);
         // Reset auf Defaults
-        r.state.grok.companionName = "Grok";
-        r.state.player.name = "Schöpfer";
+        st.grok.companionName = "Grok";
+        st.player.name = "Schöpfer";
 
         return out;
     });
@@ -1594,7 +1591,7 @@ async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
 async function checkBandM1VerbindungsWerkstatt({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
-        const blu = r.state.blueprints;
+        const blu = st.blueprints;
         const mk = (mat) => ({
             name: "__m1band",
             builtIn: false,
@@ -1713,7 +1710,7 @@ async function checkBandM1VerbindungsWerkstatt({ page, check }) {
 async function checkBandNutzerBlickNachbau({ page, check }) {
     const res = await safeEvaluate(page, () => {
         const out = {};
-        const blu = r.state.blueprints;
+        const blu = st.blueprints;
         const ws = r._ensureWorkshopState();
         const savedSel = ws.selectedBlueprint;
         const savedMode = ws.manipulatorMode;
@@ -1846,7 +1843,7 @@ async function checkBandWGGelenke({ page, check }) {
         out.teachNull = r._jointTeachLine("nonsense", "x") === null;
         // (d) PROGRESSIVE DISCLOSURE: die Typen NACH Substanz-Stärke geordnet.
         // der Wagen lebt als Substanz-Zeile (KIND_SUBSTANCE).
-        const KSwg = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        const KSwg = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
         const wagen = KSwg.fahrzeug_wagen
             ? {
                   name: "_wg_wagen",

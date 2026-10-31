@@ -629,7 +629,7 @@ class AnazhRealm_dienst {
         L[o + 24] = lg.x;
         L[o + 25] = lg.y;
         L[o + 26] = lg.z;
-        L[o + 27] = 0; // lokale Box Größe
+        L[o + 27] = 0; // die eigene Farbe des Eintrags (`_weltFeldFarbe`): keine
         const handle = { feld, brick, _anT: performance.now() };
         const fpE = this.state.feldPass;
         if (einblenden === true && fpE && fpE.mesh && fpE.mesh.visible) {
@@ -1186,6 +1186,17 @@ class AnazhRealm_dienst {
         wm.liste.needsUpdate = true;
     }
 
+    // DIE FARBE DES EINTRAGS (mensch.K4): ein Eintrag eines Kapsel-Satzes trägt seine eigene Farbe (linear, `farbe` {r, g, b};
+    // null = die Farbe seines Satzes) — die Kapsel ist die geteilte der Gestalt, die Farbe die des Bewohners (`_tonFeldFarbe`).
+    // Texel 6.w der Liste, gepackt wie die Kapsel-Farbe, um 1 versetzt (0 = keine); `_weltFeldEintrag` setzt sie zurück.
+    _weltFeldFarbe(handle, farbe) {
+        const wm = this.state.weltMarch;
+        if (!wm || !handle) return;
+        const p = (x) => Math.min(255, Math.max(0, Math.round(x * 255)));
+        wm.listeDaten[handle.feld * 32 + 27] = farbe ? (p(farbe.r) << 16) + (p(farbe.g) << 8) + p(farbe.b) + 1 : 0;
+        wm.liste.needsUpdate = true;
+    }
+
     // Das Feld folgt seinem GLIED: die Liste bekommt die inverse Welt-Matrix des Knochens (der March
     // zieht den Strahl in den Glied-Raum) + die Welt-AABB der bewegten lokalen Box (Vortest). Ein
     // Aufruf je Glied je Frame.
@@ -1293,12 +1304,9 @@ class AnazhRealm_dienst {
     // verweigert — laut, nie still (der Rufer „speichere zustand" sagt es dem Spieler). `takt`: die Sicherung des Takts (Autosave,
     // Edit-Timer) — die Glieder der Listen hat der Besen im Leerlauf geprüft (`_standAenderung`); jeder andere Ruf fragt alles.
     saveState(takt = false) {
-        // DIE SPERRE DES WELT-WECHSELS (`_weltWechselNeuLaden`): die Seite stirbt gleich, ihr Speicher gehört der Ziel-Welt.
+        // DIE SPERRE DES WELT-WECHSELS (`_weltWechsel`): die alte Welt geht, der Speicher gehört der Ziel-Welt.
         if (this._weltWechselSperre) {
-            this.log(
-                "Speichern verweigert: die Seite wechselt die Welt (der Reload läuft) — dieser Stand bleibt ungesichert.",
-                "WARN"
-            );
+            this.log("Speichern verweigert: die Seite wechselt die Welt — dieser Stand bleibt ungesichert.", "WARN");
             return false;
         }
         // DIE SPERRE DES LADENS (speicher.K1): solange loadState die Welt zusammensetzt, ist sie halb — neun Setter riefen
@@ -1518,6 +1526,13 @@ class AnazhRealm_dienst {
             return true;
         }
         return false;
+    }
+
+    // EIN BEWEGTER WECKT DEN TAKT, DESSEN URTEIL ER ÄNDERT (das EINE Stufen-Gesetz: Bewegte prüfen, `_archBewegteUrteilen`): die
+    // Wache kennt Stempel und Anker, nie die Lage eines Eintrags, der nach dem Eintritt wandert — sein nächster Gang geht.
+    _standWecken(name) {
+        const t = this._standWache && this._standWache.takte.get(name);
+        if (t) [t.leer, t.offen] = [0, false];
     }
 
     // Der Gang ist gegangen: `besucht` Einheiten, `gewirkt` = er änderte die Welt (er geht noch einmal; ein Bau-Takt weckt

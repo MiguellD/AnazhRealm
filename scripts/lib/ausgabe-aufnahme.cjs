@@ -31,7 +31,7 @@ function seitenfehlerZaehlen() {
 }
 
 function saisonFest() {
-    if (r && r.state) r.state.autoSeason = false;
+    if (r?.state) st.autoSeason = false;
     else setTimeout(saisonFest, 50);
 }
 
@@ -105,7 +105,7 @@ function wetterSpion() {
             wert = v;
         },
     });
-    if (!Object.prototype.hasOwnProperty.call(r, "_setWeather"))
+    if (!Object.hasOwn(r, "_setWeather"))
         r._setWeather = function (name, quelle) {
             const vor = this.state.weather;
             const q0 = S.quelle,
@@ -207,7 +207,7 @@ function uhrSpion() {
             wert = v;
         },
     });
-    if (!Object.prototype.hasOwnProperty.call(r, "_uhrSetzen"))
+    if (!Object.hasOwn(r, "_uhrSetzen"))
         r._uhrSetzen = function (t, quelle) {
             const vor = this.state.timeOfDay;
             const q0 = S.quelle,
@@ -238,10 +238,10 @@ function weltaktSpion(ersatz) {
     const S =
         window.__weltaktSpionBuch ||
         (window.__weltaktSpionBuch = { seq: 0, buch: [], blind: false, huellen: new WeakMap() });
-    const liste = r.constructor.DSL_WELTAKTE;
+    const liste = AnazhRealm.DSL_WELTAKTE;
     S.blind = !Array.isArray(liste);
     const halt = () => {
-        const u = r.state.weatherEffectTime;
+        const u = st.weatherEffectTime;
         return Number.isFinite(u) && u < 0;
     };
     const buche = (e) => {
@@ -262,7 +262,7 @@ function weltaktSpion(ersatz) {
             return fn.call(this, args, ctx);
         };
     }
-    if (!S.blind && !Object.prototype.hasOwnProperty.call(r, "_weltaktGehalten"))
+    if (!S.blind && !Object.hasOwn(r, "_weltaktGehalten"))
         r._weltaktGehalten = function (op, ctx) {
             buche({ art: "verweigert", op, quelle: (ctx && ctx.source) || "?" });
             return Object.getPrototypeOf(this)._weltaktGehalten.call(this, op, ctx);
@@ -273,7 +273,7 @@ function weltaktSpion(ersatz) {
 // Das Buch des Welt-Akt-Spions seit `seit` (seq) und der Halt jetzt.
 function weltaktBuch(seit) {
     const S = window.__weltaktSpion();
-    const u = r.state.weatherEffectTime;
+    const u = st.weatherEffectTime;
     return {
         seq: S.seq,
         gehalten: Number.isFinite(u) && u < 0,
@@ -306,7 +306,7 @@ function bildUhren() {
 function uhrHalten() {
     const S = window.__buehneUhr || (window.__buehneUhr = { T: 12.5, verweigert: 0 });
     const d = Object.getOwnPropertyDescriptor(r, "_bildZeit");
-    if (d && d.get && d.get.__buehne) return;
+    if (d?.get?.__buehne) return;
     const get = Object.assign(() => S.T, { __buehne: true });
     Object.defineProperty(r, "_bildZeit", { configurable: true, enumerable: true, get, set: () => void S.verweigert++ });
     r._tickPortalMembranes(performance.now() / 1000);
@@ -343,10 +343,10 @@ function buehne(o) {
     // die Bühne bindet die Welt selbst: ihr Selbsttest ruft sie in Node mit einem gestellten `window` (`buehneSelbsttest`)
     const r = window.anazhRealm;
     const st = r.state;
-    const w = (o && o.wetter) || "sunny";
+    const w = o?.wetter || "sunny";
     window.__weltaktSpion();
     st.autoSeason = false;
-    const s = r.setSeason((o && o.saison) || "sommer");
+    const s = r.setSeason(o?.saison || "sommer");
     if (st.world) st.world.timeOfDay = 0.5;
     st.timeOfDay = 0.5;
     // Wetter und Saison: das Wort des Spielers (`o`, werkbank `bild --wetter --saison`), sonst Sonne und Sommer — über den
@@ -354,7 +354,7 @@ function buehne(o) {
     if (!s || window.__wetterSetzen(w) !== w) throw new Error(`DIE BÜHNE: das Wort gilt nicht ${JSON.stringify(o)}`);
     window.__uhrHalten();
     // die Nässe der Bühne: `o.naesse` Sekunden des Worts (die Linse `werkbank licht --naesse`), sonst sein Ruhezustand
-    r._naesseTakt(o && o.naesse != null ? o.naesse : 1e6);
+    r._naesseTakt(o?.naesse ?? 1e6);
     r._tickRain();
     // Das Gemüt des Spielers färbt das Licht (`_emotionModulate`): die Bühne hält es ruhig (A9-n2, Licht-Bilanz 5,156 ↔ 5,169)
     for (const k in (st.player && st.player.emotions) || {}) st.player.emotions[k] = 0;
@@ -370,7 +370,7 @@ function buehne(o) {
     // Spieler, aus EINEM Samen, mit der Seele des Spiels (`spawnCreatureAt`, die Kappe hebt sich um sie); ein zweiter Ruf füllt
     // nur auf, was fehlt. Stehen nicht alle, bricht die Bühne laut.
     const buehnenTiere = () => st.creatures.filter((c) => c.userData.buehne).length;
-    if (o && o.tiere > 0) {
+    if (o?.tiere > 0) {
         const p = st.playerMesh.position;
         st.maxCreatures = Math.max(st.maxCreatures, st.creatures.length + o.tiere - buehnenTiere());
         let saat = 11;
@@ -440,11 +440,11 @@ function membranOhneFilm(an) {
         n++;
         const G =
             rec.tor && rec.tor.gesetz ? r._membranGraph(rec.tor.gesetz) : null;
-        if (G && G.ohneFilm) {
+        if (G?.ohneFilm) {
             if (an) {
                 rec.__farbeVorFilm = mat.colorNode;
                 mat.colorNode = G.ohneFilm;
-            } else if (Object.prototype.hasOwnProperty.call(rec, "__farbeVorFilm")) {
+            } else if (Object.hasOwn(rec, "__farbeVorFilm")) {
                 mat.colorNode = rec.__farbeVorFilm;
                 delete rec.__farbeVorFilm;
             }
@@ -455,7 +455,7 @@ function membranOhneFilm(an) {
         if (an) {
             const stoffe = [];
             for (const v of Object.values(rec))
-                if (v && v.isObject3D)
+                if (v?.isObject3D)
                     v.traverse((o) => {
                         for (const m of [].concat(o.material || [])) if (m && !stoffe.includes(m)) stoffe.push(m);
                     });
@@ -471,21 +471,25 @@ function membranOhneFilm(an) {
 
 // DIE TIERE HALTEN STILL: zwischen Blick-Wahl und Schuss liegen hunderte Takte, in denen Tiere wandern
 // (ein Tier liefe in die Kamera). Nach jedem Kreatur-Tick fallen x/z auf den Stand davor zurück; Animation, Haut, Boden-Höhe
-// und LOD laufen weiter.
+// und LOD laufen weiter; die Vögel fliegen (sie folgen der Welt-Uhr, die Klang-Linse hört ihren Flug). Die Marke trägt die Hülle,
+// nie der Prototyp: er trägt nie Stand (`_weltAbschied` bricht beim Namen) — bis 30.10. lag `__tiereGehalten` auf ihm, und jeder
+// Tausch am Ort nach einem gehaltenen Lauf (`werkbank` vom Messort wiese zum Messort buehne) brach an dieser Marke.
 function tiereHalten() {
     const P = Object.getPrototypeOf(r);
-    if (P.__tiereGehalten) return;
+    if (P.updateCreatures.__gehalten) return;
     const org = P.updateCreatures;
-    P.__tiereGehalten = true;
-    P.updateCreatures = function (delta) {
-        const fest = (this.state.creatures || []).map((c) => [c, c.position.x, c.position.z]);
-        const o = org.call(this, delta);
-        for (const [c, x, z] of fest) {
-            c.position.x = x;
-            c.position.z = z;
-        }
-        return o;
-    };
+    P.updateCreatures = Object.assign(
+        function (delta) {
+            const fest = (this.state.creatures || []).map((c) => [c, c.position.x, c.position.z]);
+            const o = org.call(this, delta);
+            for (const [c, x, z] of fest) {
+                c.position.x = x;
+                c.position.z = z;
+            }
+            return o;
+        },
+        { __gehalten: true }
+    );
 }
 
 // DIE RUHE DER ERST-ZEICHNUNG (`_configureRenderer`) — die EINE Regel jeder Linse, die ein angekommenes Bild
@@ -532,9 +536,9 @@ function erstRuhe(frame, opt, wer) {
             // asynchronen Pipeline-Baus wartete hinter dem Rückstau (Erst-Zeichnungs-Wand: Rückstau bis 63 s, ein unbeleuchteter
             // Würfel 46 s; mit Gegendruck Rückstau ≤ 3,8 s, die Probe 68 → 4 s)
             const dev =
-                r.state.renderer &&
-                r.state.renderer.backend &&
-                r.state.renderer.backend.device;
+                st.renderer &&
+                st.renderer.backend &&
+                st.renderer.backend.device;
             if (dev && dev.queue && typeof dev.queue.onSubmittedWorkDone === "function")
                 await dev.queue.onSubmittedWorkDone();
             await sleep(0);
@@ -584,7 +588,7 @@ function abnahmeMessen(opt) {
         if (Array.isArray(z.ohne)) ohne.push(...z.ohne);
         const rz = z.r != null ? z.r : 1.5;
         for (const e of st.architectures || [])
-            if (e && e.position && Math.hypot(e.position.x - z.x, e.position.z - z.z) <= rz) ohne.push(e.id);
+            if (e?.position && Math.hypot(e.position.x - z.x, e.position.z - z.z) <= rz) ohne.push(e.id);
     }
     const E = cam.position;
     // ein Ziel in Armlänge (material.K2, `bild --arm`) ist selbst die nahe Fläche: verdeckt ist, was näher als die halbe Armlänge liegt
@@ -634,13 +638,13 @@ function abnahmeMessen(opt) {
     const dir = cam.getWorldDirection(new T.Vector3());
     return {
         satz: o.satz || "beweis",
-        stand: { version: r.constructor.VERSION || null, sha: o.sha || null },
+        stand: { version: AnazhRealm.VERSION || null, sha: o.sha || null },
         buehne: {
             saison: st.season || null,
             wetter: st.weather || null,
             uhr: Number.isFinite(st.timeOfDay) ? +st.timeOfDay.toFixed(3) : null,
             bildUhr: window.__buehneUhr ? window.__buehneUhr.T : null, // die Bild-Uhr (A9), ohne Bühne frei
-            tiereGehalten: !!Object.getPrototypeOf(r).__tiereGehalten,
+            tiereGehalten: !!Object.getPrototypeOf(r).updateCreatures.__gehalten,
         },
         geraet: {
             backend: !be ? null : be.isWebGPUBackend ? "WebGPU" : be.isWebGLBackend ? "WebGL" : null,
@@ -678,7 +682,7 @@ function abnahmeMessen(opt) {
 // Pixel gibt es erst nach dem Schuss). Die erste freie Pose steht; findet keine, bleibt die Kamera, wo sie war, und die
 // Abnahme nach dem Schuss wirft beim Namen.
 function blickWahl(opt) {
-    const cam = r.state.camera;
+    const cam = st.camera;
     const z = opt.ziel;
     const n = Math.max(1, Math.floor(opt.wahl));
     const P0 = cam.position.clone();
@@ -721,7 +725,7 @@ function blickWahl(opt) {
 function ausgabeAufnahme(W, H, warm, opt) {
     return (async () => {
         const T = window.THREE;
-        const rend = r.state.renderer;
+        const rend = st.renderer;
         const db = rend.getDrawingBufferSize(new T.Vector2());
         const BW = Math.max(1, Math.round(db.x));
         const BH = Math.max(1, Math.round(db.y));
@@ -790,33 +794,37 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // hält je Frame 95 % (TRAANode), die Frames vor dem Schuss tragen nichts hinein — zwei Schüsse derselben Szene
             // sind dasselbe Bild.
             {
-                const tn = r.state.traaNode;
+                const tn = st.traaNode;
                 if (tn) {
                     tn._jitterIndex = 0;
                     // die Geschichte neu: ein Größen-Wechsel lässt den Vendor sie aus dem ersten Bild kopieren (TRAANode
                     // `needsRestart`)
                     if (tn._historyRenderTarget) tn._historyRenderTarget.setSize(1, 1);
                 }
-                if (r.state._traaR) r.state._traaR.neu = true;
-                const lu = r.state.lodUniforms;
+                if (st._traaR) st._traaR.neu = true;
+                const lu = st.lodUniforms;
                 if (lu && lu.uDitherT) lu.uDitherT.value = 0;
                 // der Versatz des Laubs beginnt mit der Geschichte (A3b, `_zeitAufloesung`); die Schatten-Karten: der Takt rendert
                 // eine Kaskade nur, wenn sie fällig ist — die Karte des ersten Frames sah die Szene vor der Erst-Zeichnung (A8-n1)
                 r._schattenAlleNeu();
             }
-            const nWarm = Math.max(warm == null ? 1 : warm, r.state.traaNode ? 32 : 0);
+            // DIE TIEFE ALLEIN (`opt.tiefe`: der Arm von `werkbank bild --arm` sucht in ihr die Klasse): die Tiefe trägt keine
+            // Geschichte — EIN Bild nach dem Neubeginn der Folge, mit dem Versatz jedes Neubeginns (zwei Tiefen unterscheiden
+            // sich nur, wo die Szene sich unterscheidet; `__spiegelDaten` liest den Szenen-Pass dieses Bilds), ohne die 32 Bilder
+            // der Geschichte, ohne Rücklese der Farbe. Bis dahin las der Arm sie hinter zwei ganzen Aufnahmen (material.K2: je
+            // Armlänge 2 × 33 Bilder, sechs Armlängen)
+            if (opt && opt.tiefe) return frame();
+            const nWarm = Math.max(warm == null ? 1 : warm, st.traaNode ? 32 : 0);
             for (let k = 0; k < nWarm; k++) frame();
             const t0 = performance.now();
             frame();
             // Die Frame-Last liest die EINE Quelle des Spiels (HUD/Flugschreiber): `_loopRender` setzt
             // renderer.info je Frame zurück und legt die Summe ALLER Pässe in state._perfFrame ab.
-            const pf = r.state._perfFrame || {};
+            const pf = st._perfFrame || {};
             const ri = (rend.info && rend.info.render) || {};
             const info = {
                 drawCalls: pf.renderCalls != null ? pf.renderCalls : ri.drawCalls,
                 triangles: pf.renderTris != null ? pf.renderTris : ri.triangles,
-                infoDrawCalls: ri.drawCalls,
-                infoTriangles: ri.triangles,
                 // die Erst-Zeichnung vor dem Schuss: offen 0 (sonst brach die Aufnahme oben ab) und die Wartezeit
                 erst,
             };

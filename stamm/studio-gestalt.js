@@ -27,6 +27,15 @@ class AnazhRealm_studio_gestalt {
         if (!this._baumGestaltMerk) this._baumGestaltMerk = new Map();
         let teile = this._baumGestaltMerk.get(k);
         if (teile === undefined) {
+            // DIE HÜLLE WÄCHST NACH DEM BILD (w4-ankunft-2): vor dem ersten Weltbild berührt kein Leib einen Baum — der Spieler
+            // steht auf dem Platz, die Tiere kommen nach der Kontrolle — und das Bild liest die Hülle nicht (der Spiegel liest die
+            // Gestalt `_huelleG`, die steht). Ihr Skelett (je Gestalt 15–30 ms im Haupt-Faden) wächst darum erst nach dem Bild,
+            // nah zuerst (`_tickHuellenNach`); bis dahin trägt der Eintrag keine Hülle und steht offen in der Welt
+            // (`_weltOffen().huellen`). swiftshader kalt bis zu den Termen des Bilds: `_baumGestaltTeile` 0,6–1,0 s.
+            if (!this.state._weltbildDa) {
+                (this._huellenNach || (this._huellenNach = new Set())).add(entry);
+                return null;
+            }
             // der Welt-Name, unter dem die Art ihre Rezept-Zeile trägt (wie `_foundryPresetForEntry` sie fand)
             const art = [entry._lodSpecies, entry.type, (entry.type.match(/^grown_(baum_[a-z]+)/) || [])[1]].find(
                 (s) => typeof s === "string" && this._foundryPresetFor(s) === preset
@@ -38,6 +47,38 @@ class AnazhRealm_studio_gestalt {
             this._baumGestaltMerk.set(k, teile);
         }
         return teile;
+    }
+    // DIE HÜLLEN DER ANKUNFT (w4-ankunft-2): nach dem ersten Bild fühlt jeder Baum, dessen Hülle vor ihm wartete
+    // (`_baumGestaltTeile`), seine Hülle — in der Reihe seines Abstands zum Spieler im Moment des Bilds, je Takt höchstens EIN
+    // neues Skelett und HUELLE_NACH_MS (die übrigen lesen das Gedächtnis ihrer Gestalt). Jeder Eintrag kommt dran; was den Bestand
+    // verließ, braucht keine. → die Zahl der gefühlten Einträge.
+    _tickHuellenNach() {
+        const S = this._huellenNach;
+        if (!S || !this.state._weltbildDa) return 0;
+        let Q = this._huellenNachReihe;
+        if (!Q) {
+            if (!S.size) return 0;
+            const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, z: 0 };
+            const d2 = (e) => (e.position ? (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2 : Infinity);
+            Q = this._huellenNachReihe = [...S].sort((a, b) => d2(a) - d2(b));
+            this._huellenNachI = 0;
+        }
+        const neu0 = this._baumGestaltMerk ? this._baumGestaltMerk.size : 0;
+        const t0 = performance.now();
+        let n = 0;
+        while (this._huellenNachI < Q.length) {
+            const e = Q[this._huellenNachI++];
+            S.delete(e);
+            if (e._blockerGen) this._populateBlockerAABBs(e);
+            n++;
+            const neu = (this._baumGestaltMerk ? this._baumGestaltMerk.size : 0) > neu0;
+            if (neu || performance.now() - t0 > AnazhRealm.HUELLE_NACH_MS) break;
+        }
+        if (this._huellenNachI >= Q.length) {
+            this._huellenNachReihe = null;
+            this.log(`Die Hüllen der Ankunft stehen: ${Q.length} Bäume und Sträucher fühlen ihre Gestalt.`, "INFO");
+        }
+        return n;
     }
 
     // Ein Wartender der Streu-Scheibe meldet seine Zusage (der Zug eines Körpers, das Buch, die Karte, der Wald-Plan) — nur,
@@ -55,7 +96,7 @@ class AnazhRealm_studio_gestalt {
     }
     // DIE EINE PIPE: die EINE Reply-Mesh → THREE-Konversion (Pflanzen-Gruppen-Bau UND Kreatur-Ofen rufen
     // sie); null bei kaputtem Eintrag. `stage` (optional) = { lod, preset } trägt die Stufen-/SSE-Stempel
-    // für die Dither-Blende, NUR unter dem foundryCrossfade-Gate; ohne `stage` Stempel 0 = ungemaskt.
+    // für die Dither-Blende (der Gruppen-Bau); ohne `stage` Stempel 0 = ungemaskt.
     // Liest GENAU die Attribute aus FOUNDRY_LESEN (die Konsum-Wand der Transport-Schale) — sonst nichts.
     _foundryBuildMesh(m, baum) {
         if (!m || !m.position || !m.position.array) return null;
@@ -86,21 +127,32 @@ class AnazhRealm_studio_gestalt {
             }
             geo.setAttribute("color", new T.BufferAttribute(carr, 3));
         }
-        if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
+        // DIE JAHRES-ECKEN (vegetation.K5): die Mitte jedes Blatts und sein Typ — das Laub fällt im Winter auf seine Mitte
+        // (`_jahrLage`); die Schale liefert sie nur an Teilen mit Laub oder Blüte, immer als Paar. Sie liegen mit uv in EINEM
+        // verschränkten Puffer (`_jahrEcken`): die Blatt-Karte belegt ohne sie schon 8 Vertex-Puffer (WebGPU `maxVertexBuffers`).
+        const jahr = !!(m.aCenter && m.aCenter.array) + !!(m.aType && m.aType.array);
+        if (jahr === 1) throw new Error("_foundryBuildMesh: die Jahres-Ecken reisen nur als Paar (aCenter · aType)");
+        if (jahr) AnazhRealm._jahrEcken(geo, m.uv && m.uv.array, m.aCenter.array, m.aType.array);
+        else if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
         // Das Schalen-Fell (V18.497) trägt seine Wurzel (Bind-Punkt der Haar-Maske) und die Schalen-Daten.
         for (const nm of ["aWurzel", "aSchale"])
             if (m[nm] && m[nm].array) geo.setAttribute(nm, new T.BufferAttribute(m[nm].array, m[nm].itemSize || 3));
         // Der Schatten-Teil (S3) trägt je Vertex, ob er deckt (Rinde 1) oder die Atlas-Alpha schneidet (Karte 0).
         if (m.aDeckt && m.aDeckt.array) geo.setAttribute("aDeckt", new T.BufferAttribute(m.aDeckt.array, 1));
+        // DER TON JE ECKE (mensch.K4, koerper `menschTon`): der Mensch trägt ihn — sein Stoff färbt jede Ecke nach der Palette
+        // des Leibs, der ihn zeichnet (`_tonFaktor`)
+        const ton = !!(m.aTon && m.aTon.array);
+        if (ton) geo.setAttribute("aTon", new T.BufferAttribute(m.aTon.array, 1));
+        // DIE ECKEN DER GESTALT, wie sie geliefert sind: ihr Stoff liest Ton und Jahr an ihrem Namen (`_foundryTreeMaterial`)
+        const ecken = { ton, jahr: jahr === 2 };
         if (m.index) geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(m.index, vcount), 1));
         if (!m.normal || !m.normal.array) geo.computeVertexNormals();
-        // Attribut-Wand: unter foundryCrossfade lesen die geteilten foundry-Materialien aH0/aH0L/aLodLevel —
-        // jeder Direkt-Konsument dieser Konversion (Kreatur-Ofen …) braucht sie, sonst warnt three je
+        // Attribut-Wand: die geteilten foundry-Materialien lesen aH0/aH0L/aLodLevel (die Maske ist Gesetz des Stoffs,
+        // `_foundryTreeMaterial`) — jeder Direkt-Konsument dieser Konversion (Kreatur-Ofen …) braucht sie, sonst warnt three je
         // RenderObject. Der Null-Stempel macht „0 = ungemaskt" physisch wahr (Bild gleich); der Gruppen-Bau
-        // überschreibt mit echten Stufen-Werten.
-        if (this.state && this.state.foundryCrossfade === true) {
-            const _z = new Float32Array(vcount);
-            geo.setAttribute("aLodLevel", new T.BufferAttribute(_z, 1));
+        // überschreibt mit echten Stufen-Werten. Der Mensch (`ton`) trägt keinen: sein Stoff blendet nie (`_foundryTreeMaterial`).
+        if (!ton) {
+            geo.setAttribute("aLodLevel", new T.BufferAttribute(new Float32Array(vcount), 1));
             geo.setAttribute("aH0", new T.BufferAttribute(new Float32Array(vcount), 1));
             geo.setAttribute("aH0L", new T.BufferAttribute(new Float32Array(vcount), 1));
         }
@@ -112,9 +164,15 @@ class AnazhRealm_studio_gestalt {
             for (let v = 0; v < si.length; v++) si[v] = m.skinIndex.array[v];
             geo.setAttribute("skinIndex", new T.Uint16BufferAttribute(si, m.skinIndex.itemSize || 4));
             geo.setAttribute("skinWeight", AnazhRealm._hautGewicht(m.skinWeight.array, m.skinWeight.itemSize || 4));
-            mesh = new T.SkinnedMesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null));
+            mesh = new T.SkinnedMesh(
+                geo,
+                this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, null, false, ecken)
+            );
         } else {
-            mesh = new T.Mesh(geo, this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, baum || null));
+            mesh = new T.Mesh(
+                geo,
+                this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, baum || null, false, ecken)
+            );
         }
         mesh.castShadow = AnazhRealm._teilWirft(m);
         mesh.receiveShadow = true;
@@ -134,6 +192,33 @@ class AnazhRealm_studio_gestalt {
         // (`teil: "schatten"`, Attribut aDeckt) — der Flatten legt es als Schatten-Zwilling in die Kaskaden.
         if (typeof m.teil === "string") mesh.userData.__teil = m.teil;
         return mesh;
+    }
+    // DIE JAHRES-ECKEN einer Gestalt (vegetation.K5, `_foundryBuildMesh`): je Ecke [u, v,] Mitte und Typ in EINEM verschränkten
+    // Puffer, uv · aCenter · aType sind seine Sichten — die Blatt-Karte zeichnet so mit 8 Vertex-Puffern wie zuvor (WebGPU
+    // `maxVertexBuffers`). Der GPU-Kehraus nimmt den Puffer nur ganz (`_gpuAbschiedVerschraenkt`). Fail-closed: Jahres-Ecken,
+    // die nicht jede Ecke der Lage tragen, sind ein Bruch der Konsum-Wand.
+    static _jahrEcken(geo, uv, mitte, typ) {
+        const n = geo.attributes.position.count;
+        if (mitte.length < n * 3 || typ.length < n || (uv && uv.length < n * 2))
+            throw new Error(`_jahrEcken: ${typ.length} Typen und ${mitte.length / 3} Mitten für ${n} Ecken`);
+        const o = uv ? 2 : 0;
+        const s = o + 4;
+        const a = new Float32Array(n * s);
+        for (let i = 0, j = 0; i < n; i++, j += s) {
+            if (uv) {
+                a[j] = uv[i * 2];
+                a[j + 1] = uv[i * 2 + 1];
+            }
+            a[j + o] = mitte[i * 3];
+            a[j + o + 1] = mitte[i * 3 + 1];
+            a[j + o + 2] = mitte[i * 3 + 2];
+            a[j + o + 3] = typ[i];
+        }
+        const ib = new THREE.InterleavedBuffer(a, s);
+        if (uv) geo.setAttribute("uv", new THREE.InterleavedBufferAttribute(ib, 2, 0));
+        geo.setAttribute("aCenter", new THREE.InterleavedBufferAttribute(ib, 3, o));
+        geo.setAttribute("aType", new THREE.InterleavedBufferAttribute(ib, 1, o + 3));
+        return ib;
     }
     // Die Welt-Höhe einer Foundry-Gruppe: y-Ausdehnung ihrer Vorlage × Preset-Welt-Skala (mindestens 0,1 m) — der
     // aH0-Stempel und das Höhen-Buch lesen DIESE Zahl. DIE SICHTHÖHE EINES BAUMS (K20): ohne den Hub seines Schafts (Beipack
@@ -196,8 +281,9 @@ class AnazhRealm_studio_gestalt {
         // Masken-Stempel: das Höhen-Buch (_foundryCacheSet) hält sie über jede Cache-Räumung.
         if (group && group.children.length && stage && stage.preset && this._foundryPresetIsTree(stage.preset))
             group._hoehe = this._foundryGruppenHoehe(group, stage.preset);
-        if (group && group.children.length && this.state && this.state.foundryCrossfade === true) {
-            // Stufen-/SSE-Stempel (das Attribut-Vokabular der Studio-Blende): aLodLevel = 1 (L0) · 2 (L1) · 3 (die
+        if (group && group.children.length) {
+            // Stufen-/SSE-Stempel (das Attribut-Vokabular der Studio-Blende, Gesetz des Körpers wie die Maske seines Stoffs —
+            // nie des Schalters `foundryCrossfade`, lod.K5): aLodLevel = 1 (L0) · 2 (L1) · 3 (die
             // einzige Nah-Stufe einer Art ohne L0) · 0 (ungemaskt: Nicht-Baum-Kinds, wie das Studio-`vLod>0.5`-Gate);
             // aH0 = Welt-Sichthöhe der Gruppe (_foundryGruppenHoehe); aH0L = Blatt-Sichthöhe (Laub gekappt auf
             // LOD_DISTANCES.leafVisCap, Rinde aH0L == aH0). VOR der ersten Zeichnung stempeln (der Knoten-Bau liest
@@ -227,6 +313,7 @@ class AnazhRealm_studio_gestalt {
                 const _D = AnazhRealm.LOD_DISTANCES;
                 const _capL = _D.leafVisCap;
                 for (const ch of group.children) {
+                    if (ch.geometry.attributes.aTon) continue; // der Mensch blendet nie (`_foundryTreeMaterial`)
                     const _n = ch.geometry.attributes.position.count;
                     const _fk = ch.material && ch.material.userData ? ch.material.userData.foundryKind : null;
                     const _isFol = _fk === "foliage" || _fk === "foliageTex" || _fk === "grass";
@@ -457,6 +544,32 @@ class AnazhRealm_studio_gestalt {
             this._foundryStufeBereit(entry, preset, 2)
         );
     }
+    // DIE BEREITSCHAFT WARTET AUF IHR EREIGNIS (Lehre 25, w4-ankunft): ein kalter Eintrag, dessen Peek „nicht gedockt" sagte
+    // und dessen Bestellung draußen ist, ändert sein Urteil erst mit einer Eingabe des Peeks — einer Antwort des Studios
+    // (`f.ankunft`), dem Buch, der Wahrnehmung und der Ankunft aus der Ferne (alle im Stand-Stempel), einer gebackenen Karte
+    // oder einer Stufen-Wahl des Vorlaufs (`_bauRegung`), der Gestalt seines Orts (der Stand des Walds, ein Grundriss am Ort:
+    // `_ortSameGen`) oder dem Auge, das seine Wunsch-Stufe verschiebt (STAND_RAND_FERN_M). Dieser Stand ist EINE Zahl je Takt;
+    // der Cull-Gang (`_platzNein`) und der Rewarm (`_dockNein`) merken sie am Eintrag und fragen bis zu ihrem Wechsel nicht
+    // neu. Bis hierher ging jeder Takt jeden Wartenden ganz durch (Wunsch-Stufe, Sichthöhe, Gestalt des Orts, Stufen-Klammer,
+    // Dock): headless kalt am Kopf 24a0f3ef hielt das 35–65 s lang 19,8 s Haupt-Faden, während die Karten auf ihre Programme
+    // warteten — die Karte selbst ist die Arbeit der GPU, das Fragen war Leerlauf.
+    _bereitStand(auge) {
+        const B = this._bereitWert || (this._bereitWert = { v: [], id: 0, ax: NaN, az: NaN });
+        const v = [
+            this._standStempel(),
+            this._bauRegung | 0,
+            this._ortSameGen | 0,
+            this._forestDartStand(this._forestSeedInt()),
+        ];
+        let neu = v.some((x, i) => x !== B.v[i]);
+        const R = AnazhRealm.STAND_RAND_FERN_M;
+        if (auge && !((auge.x - B.ax) ** 2 + (auge.z - B.az) ** 2 <= R * R)) {
+            [B.ax, B.az] = [auge.x, auge.z];
+            neu = true;
+        }
+        if (neu) [B.v, B.id] = [v, B.id + 1];
+        return B.id;
+    }
     // Der Dock-Peek EINER Stufe (rein lesend, kein Bake): liegt Stufe `lod` dieses Eintrags gedockt bereit? Der
     // Eintrags-Peek oben fragt seine Wunsch-Stufe, die Brücke (`_rebuildArchitectureMesh`) die Karte.
     _foundryStufeBereit(entry, preset, lod) {
@@ -497,6 +610,11 @@ class AnazhRealm_studio_gestalt {
         // Rückgabe: die Zahl der Kandidaten (kalt oder vor dem Studio platziert) — die Stand-Wache des Culling-Takts hält
         // sich wach, solange einer wartet; ein Platzieren regt die Welt.
         if (!this._foundryEnabled()) return 0;
+        // DIE ANKUNFT BAUT IM TAKT (lod.K5, `_loopRuht`): ruht der Loop, platziert der Ruf der Ankunft (ohne `menge`) nichts — die
+        // ruhende Welt ändert sich nur, wo einer fragt; der Takt des Culls platziert, sobald einer geht (er ruft mit `menge`). Mit
+        // dem Wächter, der bei ruhendem Loop nichts mehr hält, setzte sonst jede Ankunft einen kalten Eintrag ins Bild einer
+        // ruhenden Linse — den eben geräumten Bau der Stufen-Linse in ihren Schuss ohne Exemplar.
+        if (!menge && this._loopRuht()) return 0;
         // Die Foundry wartet aufs Terrain: baute in DIESEM Frame ein Terrain-Chunk, konvergiert sie nicht
         // (terrain-first wie der scatterDeco-Job) — der Boot-/Streaming-Fill bleibt leicht.
         // Ohne Urteil (der Bau wartet) bleibt der Cull-Gang wach: 1 Wartender, bis die Terrain-zuerst-Regel den Scan trägt.
@@ -543,8 +661,12 @@ class AnazhRealm_studio_gestalt {
             kand.push(entry);
         }
         kand.sort((a, b) => a._rewarmD2 - b._rewarmD2);
+        // der Stand der Bereitschaft (`_bereitStand`): wer zu ihm nicht gedockt war (oder nicht platz-bereit, `_platzNein`) und
+        // bestellt hat, schläft bis zum nächsten Stand — er zählt weiter als Kandidat (die Stand-Wache des Culls hält ihn wach)
+        const stand = this._bereitStand(this._lodAuge());
         for (const entry of kand) {
             if (placeBudget <= 0 && bakeBudget <= 0) break;
+            if (entry._dockNein === stand || entry._platzNein === stand) continue;
             const preset = this._foundryPresetForEntry(entry);
             const cold = !entry.instanced && !entry.mesh;
             const classic = !cold && !entry.instFoundry;
@@ -565,8 +687,8 @@ class AnazhRealm_studio_gestalt {
                 if (bakeBudget <= 0) continue;
                 this._rebuildArchitectureMesh(entry); // löst _foundryFlattenFor → _foundryRequest aus
                 bakeBudget--;
-            }
-            // classic + nicht ready: der klassische Look bleibt sichtbar, bis das Asset andockt (kein Pop).
+                if (!entry.instanced && !entry.mesh) entry._dockNein = stand; // bestellt: er schläft bis zum Stand
+            } else entry._dockNein = stand; // classic + nicht ready: der klassische Look bleibt sichtbar, bis das Asset andockt (kein Pop)
         }
         return kand.length;
     }
@@ -625,7 +747,30 @@ class AnazhRealm_studio_gestalt {
         const p = entry && entry.position;
         if (!p) return this._foundryVariantFor(entry ? entry.seed : 0, preset, Vk);
         const krone = AnazhRealm.FOREST.crown[entry._lodSpecies || entry.type];
-        const same = this._ortGestaltSame(p.x, p.z, krone > 0 ? krone * (entry.scale || 1) : 0, entry.seed, preset);
+        const T = krone > 0 ? krone * (entry.scale || 1) : 0;
+        // DER ORT DER ANTWORT AM EINTRAG (Lehre 25, w4-ankunft): der Eintrag trägt, wo seine Antwort im EINEN Gedächtnis liegt
+        // (Eimer und Schlüssel, `_ortGestaltSame` mit `merk`), nie die Antwort selbst — solange der Eimer in der Karte des
+        // Stands liegt (`_ortSameKarte`; ein Grundriss am Ort räumt ihn, ein neuer Stand die Karte) und Lage, Krone, Same und
+        // Art stehen, liest er sie dort, ohne den Schlüssel aus fünf Zahlen je Ruf neu zu bauen (Cull, Rewarm, Stufen-Wahl und
+        // Sichthöhe fragen je Takt); fehlt sie, fragt er den Ort neu
+        const M = entry._ortMerk;
+        const karte = this._ortSameKarte();
+        let same =
+            M &&
+            M.karte === karte &&
+            karte.get(M.ek) === M.eimer &&
+            M.x === p.x &&
+            M.z === p.z &&
+            M.T === T &&
+            M.seed === entry.seed &&
+            M.preset === preset
+                ? M.eimer.get(M.k)
+                : undefined;
+        if (same === undefined) {
+            const m = {};
+            same = this._ortGestaltSame(p.x, p.z, T, entry.seed, preset, m);
+            entry._ortMerk = same === null ? null : Object.assign(m, { x: p.x, z: p.z, T, seed: entry.seed, preset });
+        }
         const g = same === null ? null : this._foundryVariantFor(same, preset, Vk);
         if (Number.isInteger(g) && (entry._huelleWartet || (entry._huelleG != null && entry._huelleG !== g)))
             this._populateBlockerAABBs(entry);
@@ -633,13 +778,20 @@ class AnazhRealm_studio_gestalt {
     }
     // Die Gestalten-Zahl einer Art, wie der Wirt sie bedient: die Bestand-Gestalten der Budget-Zeile (sonst '*'), dazu der
     // Solitär einer Baum-Art (`_solitaerVon`: Gestalt V+1); 0 = Buch kalt. Der Vorrat wärmt 1..T, je Gestalt EINE Karte.
+    // Gemerkt je Art am Stand der Wahrnehmung (`_studioRenderConfig`: ein Buch, eine Tafel — die Gestalten der Zweit-Kerne
+    // vereint der Ingest, bevor die Wahrnehmung gilt): jede Gestalt des Orts, jede Sichthöhe und jeder Peek fragt sie (w4-ankunft-2:
+    // swiftshader kalt bis zum Bild 0,6 s).
     _foundryGestalten(preset) {
         const cfg = AnazhRealm._studioRenderConfig;
+        let M = this._gestaltenMerk;
+        if (!M || M.cfg !== cfg) M = this._gestaltenMerk = { cfg, je: new Map() };
+        let T = M.je.get(preset);
+        if (T !== undefined) return T;
         const G = cfg && cfg.lod && cfg.lod.budget ? cfg.lod.budget.gestalten : null;
-        if (!G) return 0;
-        const V = Number.isInteger(G[preset]) && G[preset] >= 1 ? G[preset] : G["*"];
-        if (!(Number.isInteger(V) && V >= 1)) return 0;
-        return AnazhRealm._solitaerVon(preset, V) || V;
+        const V = !G ? 0 : Number.isInteger(G[preset]) && G[preset] >= 1 ? G[preset] : G["*"];
+        T = !(Number.isInteger(V) && V >= 1) ? 0 : AnazhRealm._solitaerVon(preset, V) || V;
+        M.je.set(preset, T);
+        return T;
     }
     // Foundry-Cache = LRU: ein Treffer wandert nach hinten, beim Überlauf fällt die älteste Gestalt. Eine
     // Räumung zerstört nie einen sichtbaren Baum (Dispose nur ohne lebende Instanz-Gruppe, s.
@@ -657,13 +809,16 @@ class AnazhRealm_studio_gestalt {
     _foundryGroupBytes(g) {
         if (!g || !Array.isArray(g.children)) return 0;
         let bytes = 0;
+        const gezaehlt = new Set(); // ein verschränkter Puffer (die Jahres-Ecken, `_jahrEcken`) zählt einmal, nie je Sicht
         for (const ch of g.children) {
             const geo = ch && ch.geometry;
             if (!geo) continue;
             const attrs = geo.attributes || {};
             for (const k in attrs) {
-                const a = attrs[k];
-                if (a && a.array && Number.isFinite(a.array.byteLength)) bytes += a.array.byteLength;
+                const a = attrs[k] && attrs[k].isInterleavedBufferAttribute ? attrs[k].data : attrs[k];
+                if (!a || !a.array || !Number.isFinite(a.array.byteLength) || gezaehlt.has(a)) continue;
+                gezaehlt.add(a);
+                bytes += a.array.byteLength;
             }
             const idx = geo.index;
             if (idx && idx.array && Number.isFinite(idx.array.byteLength)) bytes += idx.array.byteLength;
@@ -1178,6 +1333,9 @@ AnazhRealm._solitaerVon = function (preset, V) {
 // DER SOLITÄR (K20): die Prägung der Gestalt V einer Baum-Art (`_foundryGestaltOv`) — phyto-core growSkeleton liest
 // `P.freistand`. Und das Inverse des Knuth-Faktors 2654435761 mod 2^32 (`_foundryGestaltSame`: der Same zum Eimer).
 AnazhRealm.FREISTAND_OV = Object.freeze({ freistand: 1 });
+// DIE HÜLLEN DER ANKUNFT (`_tickHuellenNach`): so viele ms fühlen die Bäume je Takt ihre Hülle aus dem Gedächtnis ihrer Gestalt —
+// ein neues Skelett beendet den Takt sofort.
+AnazhRealm.HUELLE_NACH_MS = 2;
 // DIE EINE BEIPACK-KARTE der Foundry-Antwort (`_foundryBuildGroup`): Beipack-Name → das Feld der Gruppe (der Flat reicht es
 // als `huelle` · `fern` weiter). `__huelle` (Welle L) die Kollision der gezeigten Stufe, `__fern` (S3) die Fernform der Stufe 3
 // — beide in der EINEN Hüllen-Form (docs/studio-vertrag.md N5, der Leser `_huelleVon`); `__mass` (K20) der Hub des Schafts,

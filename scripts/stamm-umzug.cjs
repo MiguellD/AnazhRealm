@@ -1,5 +1,5 @@
 "use strict";
-const { ausDatei, path, fs } = require("./lib/welt-boot.cjs");
+const { ausDatei, path, fs, argOpt } = require("./lib/welt-boot.cjs");
 /* global process, console, __dirname */
 // scripts/stamm-umzug.cjs — der Umzug des Stamms NACH DOMÄNE. Die Karte spec/stamm/modul-karte.json ordnet jedes Glied der
 // Klasse und jede Außen-Anweisung einem Modul[/teil] zu; `ordne` (scripts/lib/stamm.cjs) stellt den virtuellen Stamm danach,
@@ -17,17 +17,14 @@ const { ausDatei, path, fs } = require("./lib/welt-boot.cjs");
 //        prettier --write bzw. eslint NUR auf den Stamm-Dateien, die gegen die Merge-Basis geändert sind (samt Arbeitsbaum
 //        und neuen Dateien) — npm run stamm:fmt / stamm:lint
 //   --selftest
-const { execFileSync } = require("child_process");
 const stamm = require("./lib/stamm.cjs");
 
 const ROOT = path.resolve(__dirname, "..");
 const argv = process.argv.slice(2);
-const opt = (n, d) => (argv.includes(n) ? argv[argv.indexOf(n) + 1] : d);
 const TAFELN = ["spec/abnahme/soll-tafel.json", "spec/farbe/albedo-tafel.json"];
 const VERALTET = "c:0000000000000000"; // ein Abdruck, den kein Code trägt: die Messung bleibt „veraltet seit …"
 
 // ── den Baum schreiben ────────────────────────────────────────────────────────────────────────────────────────────────
-const heile = stamm.heileKarte;
 function schreibeZonen(ziel, T) {
     const S = stamm.schneide(T);
     const soll = new Set(S.map((x) => x.pfad));
@@ -57,7 +54,9 @@ function namenJeDatei(teile) {
     }
     return out;
 }
-function tafelnMitziehen(root, alt, neu) {
+// `tafelZug(alt, neu)` ist rein: Text der Tafel vor dem Umzug → Text danach (dieselbe Ableitung misst gate:betriebsgesetz
+// gegen den Kopf — die frische Ausgabe zählt nicht als Prüf-Wachstum, eine Hand-Zeile darin voll und beim Namen).
+function tafelZug(alt, neu) {
     const { codeAbdruck } = require("./lib/abnahme-urteil.cjs");
     const wo = new Map();
     for (const [p, ns] of namenJeDatei(neu)) for (const n of ns) wo.set(n, p);
@@ -75,13 +74,9 @@ function tafelnMitziehen(root, alt, neu) {
     };
     const MAP = /^(\s*)"(stamm\/[^"]+)": "([^"]*)"(,?)$/;
     const ARR = /^(\s*)"(stamm\/[^"]+)"(,?)$/;
-    const bericht = [];
-    for (const t of TAFELN) {
-        const datei = path.join(root, t);
-        if (!fs.existsSync(datei)) continue;
-        const L = ausDatei(datei).split("\n");
+    return (tafel) => {
+        const L = tafel.split("\n");
         const out = [];
-        let laeufe = 0;
         for (let i = 0; i < L.length; ) {
             const rx = MAP.test(L[i]) ? MAP : ARR.test(L[i]) ? ARR : null;
             if (!rx) {
@@ -90,7 +85,6 @@ function tafelnMitziehen(root, alt, neu) {
                     L[i].replace(/\[("[^\]]*")\]/g, (m, innen) => {
                         const a = JSON.parse(`[${innen}]`);
                         if (!a.some((p) => /^stamm\//.test(p))) return m;
-                        laeufe++;
                         const k = a.findIndex((p) => /^stamm\//.test(p));
                         const b = a.filter((p) => !/^stamm\//.test(p));
                         b.splice(k, 0, ...nach(a.filter((p) => /^stamm\//.test(p))));
@@ -102,7 +96,6 @@ function tafelnMitziehen(root, alt, neu) {
             }
             const lauf = [];
             while (i < L.length && rx.test(L[i])) lauf.push(rx.exec(L[i++]));
-            laeufe++;
             const einzug = lauf[0][1];
             const komma = lauf[lauf.length - 1][rx === MAP ? 4 : 3];
             const neuL = nach(lauf.map((m) => m[2]));
@@ -114,10 +107,20 @@ function tafelnMitziehen(root, alt, neu) {
         }
         const text = out.join("\n");
         JSON.parse(text);
-        fs.writeFileSync(datei, text);
-        bericht.push(`${t}: ${laeufe} Quellen-Listen`);
-    }
-    return bericht;
+        return text;
+    };
+}
+// DIE FRISCHE AUSGABE des Werkzeugs je Datei, `teile(0)` / `teile(1)` die Stamm-Dateien am Grund / am Kopf (gate:betriebsgesetz misst
+// eine geänderte Werkzeug-Tafel gegen sie): eine Tafel aus ihrem Text am Grund (`tafelZug`), die Karte als karteText ihrer Heilung —
+// nur wenn der Stamm am Kopf ihr Fixpunkt ist, sonst der Grund (dann zählt sie voll)
+function werkzeugVon(teile) {
+    let zug, S, T;
+    return (p, grund, kopf) => {
+        S ||= teile(1);
+        if (p !== stamm.KARTE) return (zug ||= tafelZug(teile(0), S))(grund);
+        const h = stamm.heileKarte((T ||= stamm.fuege(S)), stamm.karteAus(kopf));
+        return h.text === T ? stamm.karteText(h.karte).trimEnd() : grund;
+    };
 }
 
 // ── --beweis ──────────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -150,14 +153,13 @@ const beweisZeile = (r) =>
     `Fingerabdruck: ${r.n} Glieder, Abweichungen ${r.summe} (Art ${r.ab.art}, Rumpf ${r.ab.quelle}, name/length ${r.ab.namelen}, ` +
     `Daten ${r.ab.daten}, nur alt ${r.ab.nurAlt}, nur neu ${r.ab.nurNeu}) · ${r.ordnung} Schlüssel umgeordnet · ` +
     `${r.dateien} Dateien · vm-Laden ${r.msAlt.toFixed(0)} ↔ ${r.msNeu.toFixed(0)} ms`;
-const teileVon = (root) => stamm.dateien(root).map((p) => ({ pfad: p, text: ausDatei(path.join(root, p)) }));
 
 // ── --nach-karte ──────────────────────────────────────────────────────────────────────────────────────────────────────
 function nachKarte(root, trocken) {
     const t0 = Date.now();
     const T = stamm.text(root);
-    const alt = teileVon(root);
-    const h = heile(T, stamm.karteVon(root));
+    const alt = stamm.teileVon(root);
+    const h = stamm.heileKarte(T, stamm.karteVon(root));
     const T1 = stamm.ordne(T, h.karte).text;
     const S = stamm.schneide(T1);
     const zeilen = S.map((x) => x.text.split("\n").length - 1);
@@ -173,13 +175,17 @@ function nachKarte(root, trocken) {
     if (b.summe || trocken) return b.summe ? 1 : 0;
     fs.writeFileSync(path.join(root, stamm.KARTE), stamm.karteText(h.karte));
     schreibeZonen(root, T1);
-    for (const z of tafelnMitziehen(root, alt, S)) console.log("Tafel " + z);
+    const zug = tafelZug(alt, S);
+    for (const t of TAFELN.filter((t) => fs.existsSync(path.join(root, t)))) {
+        fs.writeFileSync(path.join(root, t), zug(ausDatei(path.join(root, t))));
+        console.log("Tafel " + t);
+    }
     return 0;
 }
 
 // ── --fmt / --lint: nur die geänderten Stamm-Dateien ──────────────────────────────────────────────────────────────────
 function werkzeugLauf(root, art, basis) {
-    const git = (args) => execFileSync("git", ["-C", root, ...args], { encoding: "utf8" });
+    const git = (args) => stamm.gitIn(root, args);
     const mb = git(["merge-base", "HEAD", basis]).trim();
     const geaendert = new Set(
         git(["diff", "--name-only", mb])
@@ -357,7 +363,6 @@ function richter(root, trocken) {
 
 // ── Selbsttest ────────────────────────────────────────────────────────────────────────────────────────────────────────
 function selbsttest() {
-    const os = require("os");
     const pruef = stamm.pruefZaehler();
     const T = stamm.text(ROOT);
     const K = stamm.karteVon(ROOT);
@@ -402,13 +407,14 @@ function selbsttest() {
         "",
     ].join("\n");
     const Kf = {
+        quelle: "q",
         ordnung: [
             ["Dirigent/kern", "k"],
             ["Wasser", "w"],
         ],
         mod: { constructor: "Dirigent/kern", a: "Wasser", b: "Dirigent/kern", "AnazhRealm.X": "Wasser", weg: "Wasser" },
     };
-    const hf = heile(fx, Kf);
+    const hf = stamm.heileKarte(fx, Kf);
     const of = stamm.ordne(fx, hf.karte).text;
     pruef(
         "Karte heilen: neu beim Vorgänger, tot fällt, Außen-Ziel zieht mit",
@@ -419,46 +425,47 @@ function selbsttest() {
             stamm.schneide(of).map((x) => x.pfad).join() === "stamm/dirigent-kern.js,stamm/wasser.js",
         stamm.schneide(of).map((x) => x.pfad).join(" ")
     );
-    // 5) die Tafeln: eine frische Quelle zieht frisch um, eine veraltete bleibt veraltet, die Zeilen-Reihe folgt
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "stamm-umzug-"));
-    try {
-        const { codeAbdruck } = require("./lib/abnahme-urteil.cjs");
-        const altT = [
-            { pfad: "stamm/01.js", text: "class AnazhRealm {\n    constructor() {}\n    a() {}\n}\n" },
-            { pfad: "stamm/02.js", text: "class AnazhRealm_Z02 {\n    b() {}\n}\n" },
-        ];
-        const neuT = stamm.schneide(of);
-        const tafel = [
-            "{",
-            '    "f": {"quellen": {',
-            '        "x-core.js": "c:1",',
-            `        "stamm/01.js": "${codeAbdruck(altT[0].text, "stamm/01.js")}",`,
-            `        "stamm/02.js": "${codeAbdruck(altT[1].text, "stamm/02.js")}"`,
-            "    }},",
-            '    "v": {"quellen": {',
-            '        "stamm/02.js": "c:00000000000000ff"',
-            "    }},",
-            '    "r": {"quellen": ["x-core.js", "stamm/02.js"]}',
-            "}",
-            "",
-        ].join("\n");
-        fs.mkdirSync(path.join(tmp, "spec", "abnahme"), { recursive: true });
-        fs.writeFileSync(path.join(tmp, TAFELN[0]), tafel);
-        tafelnMitziehen(tmp, altT, neuT);
-        const j = ausDatei(path.join(tmp, TAFELN[0]), true);
-        const kern = neuT[0].pfad;
-        pruef(
-            "Tafeln: frisch bleibt frisch, veraltet bleibt veraltet, die Reihe folgt den Gliedern",
-            j.f.quellen[kern] === codeAbdruck(neuT[0].text, kern) &&
-                j.f.quellen["stamm/wasser.js"] === codeAbdruck(neuT[1].text, "stamm/wasser.js") &&
-                j.f.quellen["x-core.js"] === "c:1" &&
-                j.v.quellen[kern] === VERALTET &&
-                j.r.quellen.join() === `x-core.js,${kern}`,
-            JSON.stringify(j)
-        );
-    } finally {
-        fs.rmSync(tmp, { recursive: true, force: true });
-    }
+    // 5) die Tafeln (die frische Ausgabe `werkzeugVon` über `tafelZug`): eine frische Quelle zieht frisch um, eine veraltete
+    //    bleibt veraltet, die Zeilen-Reihe folgt
+    const { codeAbdruck } = require("./lib/abnahme-urteil.cjs");
+    const altT = [
+        { pfad: "stamm/01.js", text: "class AnazhRealm {\n    constructor() {}\n    a() {}\n}\n" },
+        { pfad: "stamm/02.js", text: "class AnazhRealm_Z02 {\n    b() {}\n}\n" },
+    ];
+    const neuT = stamm.schneide(of);
+    const tafel = [
+        "{",
+        '    "f": {"quellen": {',
+        '        "x-core.js": "c:1",',
+        `        "stamm/01.js": "${codeAbdruck(altT[0].text, "stamm/01.js")}",`,
+        `        "stamm/02.js": "${codeAbdruck(altT[1].text, "stamm/02.js")}"`,
+        "    }},",
+        '    "v": {"quellen": {',
+        '        "stamm/02.js": "c:00000000000000ff"',
+        "    }},",
+        '    "r": {"quellen": ["x-core.js", "stamm/02.js"]}',
+        "}",
+        "",
+    ].join("\n");
+    const werk = werkzeugVon((k) => (k ? neuT : altT));
+    const j = JSON.parse(werk(TAFELN[0], tafel));
+    const kern = neuT[0].pfad;
+    pruef(
+        "Tafeln: frisch bleibt frisch, veraltet bleibt veraltet, die Reihe folgt den Gliedern",
+        j.f.quellen[kern] === codeAbdruck(neuT[0].text, kern) &&
+            j.f.quellen["stamm/wasser.js"] === codeAbdruck(neuT[1].text, "stamm/wasser.js") &&
+            j.f.quellen["x-core.js"] === "c:1" &&
+            j.v.quellen[kern] === VERALTET &&
+            j.r.quellen.join() === `x-core.js,${kern}`,
+        JSON.stringify(j)
+    );
+    // 6) die Karte als frische Ausgabe: am Fixpunkt des Stamms ihr karteText; fehlt ihr ein Glied (es rückte zum Vorgänger),
+    //    ist der Stamm nicht ihr Fixpunkt und sie zählt voll (der Grund)
+    const kt = stamm.karteText(hf.karte);
+    pruef(
+        "Karte: am Fixpunkt die frische Ausgabe, mit einem fremden Glied der Grund",
+        werk(stamm.KARTE, "g", kt) === kt.trimEnd() && werk(stamm.KARTE, "g", kt.replace('"a", ', "")) === "g"
+    );
     return pruef.ende("stamm-umzug");
 }
 
@@ -468,16 +475,16 @@ function main() {
     if (argv.includes("--nach-karte")) return nachKarte(ROOT, argv.includes("--trocken"));
     if (argv.includes("--richter")) return richter(ROOT, argv.includes("--trocken"));
     if (argv.includes("--beweis")) {
-        const r = beweise(ROOT, stamm.textAusRev(ROOT, opt("--rev", "HEAD~1")), teileVon(ROOT));
+        const r = beweise(ROOT, stamm.textAusRev(ROOT, argOpt("--rev", "HEAD~1")), stamm.teileVon(ROOT));
         console.log(beweisZeile(r));
         for (const n of r.namen.slice(0, 20)) console.log("  ✗ " + n);
         return r.summe ? 1 : 0;
     }
     if (argv.includes("--fmt") || argv.includes("--lint"))
-        return werkzeugLauf(ROOT, argv.includes("--fmt") ? "fmt" : "lint", opt("--basis", "origin/main"));
+        return werkzeugLauf(ROOT, argv.includes("--fmt") ? "fmt" : "lint", argOpt("--basis", "origin/main"));
     console.log("stamm-umzug: --nach-karte [--trocken] | --beweis [--rev] | --fmt | --lint | --selftest");
     return 2;
 }
 
 if (require.main === module) process.exit(main());
-module.exports = { heile, beweise, tafelnMitziehen };
+module.exports = { werkzeugVon, TAFELN };

@@ -1182,8 +1182,11 @@ class AnazhRealm_koerper_fahrt {
         }
         entry.position.x = fz.x;
         entry.position.z = fz.z;
-        this._blockerBewegt(entry); // sein Platz wandert (die Nachbarschaft fragt ihn direkt)
         entry.rotationY = this._rittGier(entry, entry._rideYaw);
+        // sein Platz wandert, und er zieht ihn selbst nach — je Schritt (`genau`) oder ab `schwelleM` m / 0,1 rad: bis dahin
+        // trägt ihn jede Platz-Zelle samt diesem Weg (`_blockerBewegt` mit Drift, kein Beweger); ohne Boxen fragt man ihn direkt
+        const drift = entry.blockerAABBs ? (genau ? 0 : schwelleM + 0.1 * (entry._blockerReach || 0)) : undefined;
+        this._blockerBewegt(entry, drift);
         const st = entry._blockerStampAt;
         if (
             entry.blockerAABBs &&

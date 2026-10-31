@@ -775,7 +775,7 @@ function sukzessionUrteil(s) {
 
 async function brandSeite(MESS) {
     await window.__weltDa((x) => x.state.playerMesh && x._foundry && x._foundry.ready);
-    const [C, P, pm, L] = [r.constructor, Object.getPrototypeOf(r), st.playerMesh.position, (st.worldMeta.taten ||= [])];
+    const [C, P, pm, L] = [AnazhRealm, Object.getPrototypeOf(r), st.playerMesh.position, (st.worldMeta.taten ||= [])];
     const [B, cs, n0] = [C.BRAND, C.LIFE_FIELD.cell, L.length];
     let t = performance.now();
     const takt = () => r._gameLoopTick((t += 1000 / 60));
@@ -1229,7 +1229,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                 takt();
                 aus.fixWach = aus.fixWach || (r._weltSteht() && "Weckruf");
                 st.architectureCullingRadius -= 1e-3;
-                const LD = r.constructor.LOD_DISTANCES;
+                const LD = AnazhRealm.LOD_DISTANCES;
                 const d12 = LD.thresh12;
                 const fixpunkt = async (d) => {
                     const wach = [];
@@ -1321,7 +1321,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                             if (!treeLike && e.instFoundry !== true) continue;
                             if (r._lodTreeVisHeight(e) === null) continue;
                             const dist = Math.hypot(e.position.x - pp.x, e.position.z - pp.z);
-                            if (occlOn && dist > r.constructor.OCCLUSION.occDist) continue;
+                            if (occlOn && dist > AnazhRealm.OCCLUSION.occDist) continue;
                             e._occluded = true; // still verstellt: kein Weckruf
                             je.archLod = { stelle: o, runde: n };
                             break;
@@ -1345,7 +1345,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                             const bis = h === keys.length ? Math.min(cur.c, cells.length) : cells.length;
                             for (let c = von; c < bis; c++) ordnung.push(cells[c]);
                         }
-                        const SC = r.constructor.SCATTER;
+                        const SC = AnazhRealm.SCATTER;
                         for (let i = ordnung.length - 1; i >= 0; i--) {
                             const cell = ordnung[i];
                             if (!cell || !cell.bpName || !cell.slots || !cell.slots.length) continue;
@@ -1420,7 +1420,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                     await bisRuhe(600);
                     // ein Wahrnehmungs-Schritt (die LOD-Distanz L1→L2, `LOD_DISTANCES.thresh12`, ohne Weckruf geschrieben): der
                     // Stempel liest ihn selbst — Stufen-Wahl und Streu gehen
-                    const D = r.constructor.LOD_DISTANCES;
+                    const D = AnazhRealm.LOD_DISTANCES;
                     const d12 = D.thresh12;
                     D.thresh12 = d12 + 0.5;
                     W.wahrnehmung = await phase(4);
@@ -1436,7 +1436,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                     // ~6 m: er beginnt in der Ecke des breitesten Fachs seines Chunks und geht diagonal hindurch (~9 m frei).
                     const zelle = (p) => r._stufenZelle(p.x, p.z);
                     const span = r._voxelChunkConfig(0).span;
-                    const B = r.constructor.BODEN_STUFEN;
+                    const B = AnazhRealm.BODEN_STUFEN;
                     const grenzen = [0, span];
                     for (const s of B.stufen) {
                         if (!(s.bis < Infinity)) continue;
@@ -1576,7 +1576,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                     const ox = Math.round(pm.x + 96);
                     const oz = Math.round(pm.z);
                     const FERN = 240;
-                    const C = r.constructor.FOREST.cell;
+                    const C = AnazhRealm.FOREST.cell;
                     const span = r._voxelChunkConfig(0).span;
                     const weit = (k, kante) => {
                         const [a, b] = k.split(",").map(Number);
@@ -1657,26 +1657,26 @@ const BRANDLAUF = process.argv.includes("--brand");
                                     Math.hypot(b.position.x - ox, b.position.z - oz)
                             )
                             .slice(0, 5);
-                        const saveEigen = Object.prototype.hasOwnProperty.call(r, "saveState");
                         const saveRoh = r.saveState;
                         let saves = 0;
                         let saveMs = 0;
-                        r.saveState = function () {
-                            const t2 = performance.now();
-                            saves++;
-                            try {
-                                return saveRoh.apply(this, arguments);
-                            } finally {
-                                saveMs += performance.now() - t2;
-                            }
-                        };
+                        const zurueck = leihe(r, {
+                            saveState() {
+                                const t2 = performance.now();
+                                saves++;
+                                try {
+                                    return saveRoh.apply(this, arguments);
+                                } finally {
+                                    saveMs += performance.now() - t2;
+                                }
+                            },
+                        });
                         try {
                             let ab = 0;
                             for (const e of natur) if (r.removeArchitecture(e)) ab++;
                             O.raeumung = { abbau: ab, saves, saveMs: +saveMs.toFixed(1) };
                         } finally {
-                            if (saveEigen) r.saveState = saveRoh;
-                            else delete r.saveState;
+                            zurueck();
                         }
                     } finally {
                         core.planForestCell = pfcRoh;
@@ -1687,7 +1687,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                         const fc = globalThis.__fachwerkCore;
                         const recs = r._foundry?.recipes || {};
                         const kultur = Object.keys(recs).find((k) => {
-                            const pol = r.constructor.KIND_POLICY[recs[k] && recs[k].kind];
+                            const pol = AnazhRealm.KIND_POLICY[recs[k] && recs[k].kind];
                             return pol && pol.prefix === "haus_" && st.blueprints["haus_" + k];
                         });
                         const [kx, kz] = [ox - 40, oz + 40];
@@ -1737,7 +1737,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                         };
                         const Wd = { gesetzt: false };
                         try {
-                            const C = r.constructor.FOREST.cell;
+                            const C = AnazhRealm.FOREST.cell;
                             for (const [dx, dz] of [
                                 [0, 420],
                                 [420, 0],
@@ -1796,7 +1796,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                     {
                         const recs = r._foundry?.recipes || {};
                         const kultur = Object.keys(recs).find((k) => {
-                            const pol = r.constructor.KIND_POLICY[recs[k] && recs[k].kind];
+                            const pol = AnazhRealm.KIND_POLICY[recs[k] && recs[k].kind];
                             return pol && pol.prefix === "haus_" && st.blueprints["haus_" + k];
                         });
                         const hx = ox + 40;
@@ -1886,7 +1886,6 @@ const BRANDLAUF = process.argv.includes("--brand");
                         const sz = Math.round(pm.z);
                         const sy = r._voxelSurfaceY(sx, sz);
                         const A = { ort: [sx, sz], gelegt: false, dirty: 0, takte: 0, heil: false, sync: [] };
-                        const bauEigen = Object.prototype.hasOwnProperty.call(r, "_buildVoxelChunkData");
                         const bauRoh = r._buildVoxelChunkData;
                         let imTakt = false;
                         const kette = () =>
@@ -1897,15 +1896,17 @@ const BRANDLAUF = process.argv.includes("--brand");
                                 .slice(1, 5)
                                 .reverse()
                                 .join(" › ");
-                        r._buildVoxelChunkData = function () {
-                            const t4 = performance.now();
-                            try {
-                                return bauRoh.apply(this, arguments);
-                            } finally {
-                                const ms = performance.now() - t4;
-                                if (imTakt) A.sync.push({ ms: +ms.toFixed(1), kette: kette() });
-                            }
-                        };
+                        const zurueck = leihe(r, {
+                            _buildVoxelChunkData() {
+                                const t4 = performance.now();
+                                try {
+                                    return bauRoh.apply(this, arguments);
+                                } finally {
+                                    const ms = performance.now() - t4;
+                                    if (imTakt) A.sync.push({ ms: +ms.toFixed(1), kette: kette() });
+                                }
+                            },
+                        });
                         try {
                             A.gelegt = r._erdbauSetzen("gate-stand-takt-am-spieler", [
                                 {
@@ -1928,8 +1929,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                                 }
                             });
                         } finally {
-                            if (bauEigen) r._buildVoxelChunkData = bauRoh;
-                            else delete r._buildVoxelChunkData;
+                            zurueck();
                         }
                         O.amSpieler = A;
                     }
@@ -1947,27 +1947,26 @@ const BRANDLAUF = process.argv.includes("--brand");
                     // (`_tickWaldPlan`) — gezählt, was ein anderer Aufrufer am Stück plant, mit dem Namen des ersten
                     const core = globalThis.__phytoCore;
                     const roh = core.planForestCell;
-                    const jobEigen = Object.prototype.hasOwnProperty.call(r, "_tickWaldPlan");
-                    const jobRoh = r._tickWaldPlan;
+                    const [jobRoh, anRoh] = [r._tickWaldPlan, r._waldDartsAn];
                     const W = { imJob: 0, aussen: 0, ms: 0, taeter: null, maxTakt: 0 };
                     let tiefe = 0;
                     let jetztTakt = 0;
-                    r._tickWaldPlan = function () {
-                        tiefe++;
-                        try {
-                            return jobRoh.apply(this, arguments);
-                        } finally {
-                            tiefe--;
-                        }
-                    };
                     // der Rechner der Schlange ist der Wald-Faden: seine Lieferungen (`_waldDartsAn`) plante die
                     // Schlange — sie zählen wie ihre Zellen im Job
-                    const anEigen = Object.prototype.hasOwnProperty.call(r, "_waldDartsAn");
-                    const anRoh = r._waldDartsAn;
-                    r._waldDartsAn = function (memo, zellen, res) {
-                        if (res && zellen) W.imJob += zellen.length / 2;
-                        return anRoh.apply(this, arguments);
-                    };
+                    const zurueck = leihe(r, {
+                        _tickWaldPlan() {
+                            tiefe++;
+                            try {
+                                return jobRoh.apply(this, arguments);
+                            } finally {
+                                tiefe--;
+                            }
+                        },
+                        _waldDartsAn(memo, zellen, res) {
+                            if (res && zellen) W.imJob += zellen.length / 2;
+                            return anRoh.apply(this, arguments);
+                        },
+                    });
                     core.planForestCell = function () {
                         const t5 = performance.now();
                         try {
@@ -2001,10 +2000,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                         nach = await bisDa("der Wald am fremden Ort", () => false, 240, gang);
                     } finally {
                         core.planForestCell = roh;
-                        if (jobEigen) r._tickWaldPlan = jobRoh;
-                        else delete r._tickWaldPlan;
-                        if (anEigen) r._waldDartsAn = anRoh;
-                        else delete r._waldDartsAn;
+                        zurueck();
                     }
                     W.ms = +W.ms.toFixed(1);
                     aus.strom = {
@@ -2109,7 +2105,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                         W.regen.nachher = await simPhase(60);
                         const fr = st.foliageRadius;
                         W.wuchs = { offen: st.pendingFoliageChunks ? st.pendingFoliageChunks.size : 0 };
-                        await weck("wuchs", () => (st.foliageRadius = (fr != null ? fr : r.constructor.PERF_FOLIAGE_RADIUS_MAX) + 1e-3));
+                        await weck("wuchs", () => (st.foliageRadius = (fr != null ? fr : AnazhRealm.PERF_FOLIAGE_RADIUS_MAX) + 1e-3));
                         st.foliageRadius = fr;
                         // die Ernte ist fällig: ihr Takt zur Zeit ihres Nachwachsens
                         S.frame();
@@ -2121,7 +2117,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                             nachher: await simPhase(60),
                         };
                         // das Feld (feld.K3#2): vier Wellen zu 60 Taten fern, vor jeder vergehen 3 000 s Spielzeit (die vorige ist tot)
-                        const C = r.constructor.LIFE_FIELD;
+                        const C = AnazhRealm.LIFE_FIELD;
                         const lebt = (e) => Math.abs(e.a * Math.exp(-C.decayPerSec * (st.spielZeit - e.t))) >= C.epsilon;
                         const F = (W.feld = { wellen: [], geschrieben: 0 });
                         S.frame();
@@ -2141,7 +2137,7 @@ const BRANDLAUF = process.argv.includes("--brand");
                         // Mutante, an ihrem noch brennenden Herd glut und Licht. Danach das Wort Regen bis zum Erlöschen; gezählt je Schritt
                         // die Einheiten und die Zellen des Feuers (vor oder nach dem Schritt, die mehr sind: eine Zündung trägt ihre
                         // Ankünfte) und am Herd die Asche
-                        const [B, am, n0] = [r.constructor.BRAND, () => r.auraAt(MESS.x, MESS.z), (st.worldMeta.taten ||= []).length];
+                        const [B, am, n0] = [AnazhRealm.BRAND, () => r.auraAt(MESS.x, MESS.z), (st.worldMeta.taten ||= []).length];
                         wort("cloudy");
                         r._naesseTakt = () => (st.naesse = 0);
                         const glut0 = am().glut;

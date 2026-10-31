@@ -41,8 +41,8 @@ const server = statikServer();
 // meisten vom Objekt geänderten Pixeln trägt Fern-UND Armlängen-Schuss.
 const SICHT_FN = async (a) => {
     const THREE_ = window.THREE;
-    const rend = r.state.renderer;
-    const cam = r.state.camera;
+    const rend = st.renderer;
+    const cam = st.camera;
     rend.setAnimationLoop(null);
     window.__buehne(); // Mittag · Sonne · Sommer fest (scripts/lib/ausgabe-aufnahme.cjs)
     // Die AKTIVE Gestalt schalten: nah das Studio-Mesh (Tier / Mesh / Instanzen), fern das Feld.
@@ -68,14 +68,14 @@ const SICHT_FN = async (a) => {
     }
     const bild = async () => {
         try {
-            if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
+            if (st.fernRing) r._tickFeldPass(st.fernRing);
         } catch {}
         r._schattenAlleNeu();
         const rt = new THREE_.RenderTarget(160, 90, { depthBuffer: true, samples: 0 });
         const prev = rend.getRenderTarget ? rend.getRenderTarget() : null;
         rend.setRenderTarget(rt);
-        if (typeof rend.renderAsync === "function") await rend.renderAsync(r.state.scene, cam);
-        else rend.render(r.state.scene, cam);
+        if (typeof rend.renderAsync === "function") await rend.renderAsync(st.scene, cam);
+        else rend.render(st.scene, cam);
         const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, 160, 90);
         rend.setRenderTarget(prev);
         if (rt.dispose) rt.dispose();
@@ -90,7 +90,7 @@ const SICHT_FN = async (a) => {
         cam.position.set(px, Math.max(g + 0.35, a.augeY != null ? a.augeY : g + a.augeH), pz);
         cam.lookAt(a.ox, a.zielY, a.oz);
         cam.updateMatrixWorld(true);
-        if (r.state.playerMesh) r.state.playerMesh.visible = false;
+        if (st.playerMesh) st.playerMesh.visible = false;
         setze(true);
         await bild(); // wärmt (Seiten/Listen-Upload)
         const an = await bild();
@@ -109,9 +109,9 @@ const SICHT_FN = async (a) => {
 
 // Im Seiten-Kontext: EIN Schuss mit der gegebenen Kamera + die Zahlen dieses Renders.
 const SCHUSS_FN = async (kam) => {
-    const rend = r.state.renderer;
-    const cam = r.state.camera;
-    const scene = r.state.scene;
+    const rend = st.renderer;
+    const cam = st.camera;
+    const scene = st.scene;
     // Der Spiel-Loop RUHT während des Schusses (sonst zieht er Kamera, Tageszeit und Cull-Zustand
     // zwischen Setzen und Render weiter); Mittag fest, Lichter einmal nachgeführt.
     rend.setAnimationLoop(null);
@@ -125,9 +125,9 @@ const SCHUSS_FN = async (kam) => {
     // Die March-Uniforms folgen der Kamera über den EINEN Produktions-Pfad (sonst
     // marcht der Pass aus der Kamera des letzten Loop-Takts — falsche Gestalt).
     try {
-        if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
+        if (st.fernRing) r._tickFeldPass(st.fernRing);
     } catch {}
-    if (r.state.playerMesh) r.state.playerMesh.visible = false; // der eigene Körper steht nicht im Beweis
+    if (st.playerMesh) st.playerMesh.visible = false; // der eigene Körper steht nicht im Beweis
     // Die Schatten-Map markiert sonst nur der Loop (_loopShadowUpdate) — bei ruhendem Loop bliebe sie für
     // die neue Kamera veraltet.
     r._schattenAlleNeu();
@@ -177,8 +177,8 @@ const SCHUSS_FN = async (kam) => {
         set.add(((u8[i] >> 4) << 8) | ((u8[i + 1] >> 4) << 4) | (u8[i + 2] >> 4));
         if (u8[i] + u8[i + 1] + u8[i + 2] > 12) nonzero++;
     }
-    const wm = r.state.weltMarch;
-    const fp = r.state.feldPass;
+    const wm = st.weltMarch;
+    const fp = st.feldPass;
     zahlen.weltMarch = wm
         ? {
               belegt: wm.belegt,
@@ -206,11 +206,11 @@ hauptLauf(async () => {
 
     // ── 1: Boot + Settle + Mittag + Buch warm ──
     const boot = await page.evaluate(async () => {
-        await window.__weltDa(() => !(!r || !r.state));
+        await window.__weltDa(() => !(!r || !st));
         let stable = 0,
             last = -1;
         for (const weiter = window.__deckel("der Ring der Ankunft", 600); weiter(); ) {
-            const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
+            const sz = st.voxelChunks ? st.voxelChunks.size : 0;
             if (sz === last) stable++;
             else {
                 stable = 0;
@@ -219,7 +219,7 @@ hauptLauf(async () => {
             if (sz > 20 && stable > 10) break;
             await sleep(500);
         }
-        const rend = r.state.renderer;
+        const rend = st.renderer;
         if (!rend || rend._isHeadlessNull) return { fatal: "kein echter Renderer (WebGPU fiel aus)" };
         // Das Studio-Buch (Häuser/Bäume der Foundry) warm abwarten — begrenzt.
         await window.__weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
@@ -242,7 +242,7 @@ hauptLauf(async () => {
                         (ba.array.byteLength > d.buffer.size || bis > ba.array.byteLength)
                     ) {
                         let wer = "?";
-                        r.state.scene.traverse((o) => {
+                        st.scene.traverse((o) => {
                             const g = o.geometry;
                             if (!g || wer !== "?") return;
                             if (o.instanceMatrix === attr || o.instanceColor === attr)
@@ -262,10 +262,10 @@ hauptLauf(async () => {
             }
         } catch {}
         return {
-            version: r.constructor && r.constructor.VERSION,
+            version: AnazhRealm && AnazhRealm.VERSION,
             renderer: rend.isWebGPURenderer ? "webgpu" : rend.isWebGLRenderer ? "webgl" : "?",
             backendWebGPU: !!(rend.backend && rend.backend.isWebGPUBackend),
-            chunks: r.state.voxelChunks ? r.state.voxelChunks.size : 0,
+            chunks: st.voxelChunks ? st.voxelChunks.size : 0,
             foundryBereit: !!(r._foundry && r._foundry.ready),
         };
     });
@@ -283,17 +283,17 @@ hauptLauf(async () => {
     // wirklich eben.
     const wieseStart = await page.evaluate(async () => {
         const [X, Z] = window.__messWiese;
-        r.state.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
+        st.playerMesh.position.set(X, r._voxelSurfaceY(X, Z) + 1.8, Z);
         let stable = 0,
             last = -1,
             takte = 0;
         for (const weiter = window.__deckel("die Mess-Wiese", 4000); weiter(); ) {
             try {
-                if (r.state.world) r.state.world.timeOfDay = 0.5;
+                if (st.world) st.world.timeOfDay = 0.5;
                 r._gameLoopTick(performance.now());
             } catch {}
             takte++;
-            const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
+            const sz = st.voxelChunks ? st.voxelChunks.size : 0;
             if (sz === last) stable++;
             else {
                 stable = 0;
@@ -308,11 +308,11 @@ hauptLauf(async () => {
 
     // ── 2: Spawn (Wolf · Eiche · Haus) auf flachen Bühnen der Wiese ──
     const spawn = await page.evaluate(async () => {
-        const pm = r.state.playerMesh.position;
+        const pm = st.playerMesh.position;
         const setzeMittag = () => {
             try {
-                if (r.state.world) r.state.world.timeOfDay = 0.5;
-                r.state.timeOfDay = 0.5;
+                if (st.world) st.world.timeOfDay = 0.5;
+                st.timeOfDay = 0.5;
             } catch {}
         };
         setzeMittag();
@@ -363,7 +363,7 @@ hauptLauf(async () => {
             if (best) vergeben.push(best);
             return best || { x: pm.x + minD, z: pm.z, y: boden(pm.x + minD, pm.z), spanne: NaN, rad };
         };
-        const bps = r.state.blueprints || {};
+        const bps = st.blueprints || {};
         const hausName = Object.keys(bps)
             .filter((n) => n.startsWith("haus_"))
             .sort()[0];
@@ -371,10 +371,10 @@ hauptLauf(async () => {
         // Wolf
         const pw = buehne(8, 50, 6, 1.2, 0.3);
         // Am Kreatur-Limit weicht das FERNSTE Tier dem Beweis-Wolf.
-        if (r.state.creatures.length >= r.state.maxCreatures) {
+        if (st.creatures.length >= st.maxCreatures) {
             let fern = null,
                 fd = -1;
-            for (const c of r.state.creatures) {
+            for (const c of st.creatures) {
                 const d = (c.position.x - pw.x) ** 2 + (c.position.z - pw.z) ** 2;
                 if (d > fd) ((fd = d), (fern = c));
             }
@@ -427,7 +427,7 @@ hauptLauf(async () => {
                 r._gameLoopTick(performance.now());
             } catch {}
             takte++;
-            const fp = r.state.feldPass;
+            const fp = st.feldPass;
             const fpVis = !!(fp && fp.mesh && fp.mesh.visible);
             const u = wolf && wolf.userData;
             const feldBesitzt = !!(u && (u._kzGlieder || u._kzVersuch));
@@ -521,10 +521,10 @@ hauptLauf(async () => {
         page.evaluate(
             async (kam, voll) => {
                 const g = r._voxelSurfaceY(kam.px, kam.pz);
-                r.state.playerMesh.position.set(kam.px, g + 1.8, kam.pz);
+                st.playerMesh.position.set(kam.px, g + 1.8, kam.pz);
                 // Beim Einschwingen rendert der Takt NICHT (unter swiftshader kostet ein Voll-Render mit
                 // Studio-Meshes Sekunden — die Mesh-Zone würde nie fertig); gerendert wird nur der Schuss.
-                const rend = r.state.renderer;
+                const rend = st.renderer;
                 const origR = rend.render,
                     origRA = rend.renderAsync;
                 rend.render = function () {};
@@ -538,11 +538,11 @@ hauptLauf(async () => {
                 // gröberen Stufe — der feinere Guss ist unterwegs. Vor dem Schuss wird gewartet (≤ 600 Takte).
                 let ziel = null,
                     zielD = Infinity;
-                for (const e of r.state.architectures) {
+                for (const e of st.architectures) {
                     const d = Math.hypot(e.position.x - kam.ox, e.position.z - kam.oz);
                     if (d < 1.5 && d < zielD) ((ziel = e), (zielD = d));
                 }
-                const LD = r.constructor && r.constructor.LOD_DISTANCES;
+                const LD = AnazhRealm && AnazhRealm.LOD_DISTANCES;
                 // Die Schwelle liest die Welt (Studio-d0 nach dem Ingest) — ohne sie misst die Linse nichts (kein Literal).
                 if (!LD || !Number.isFinite(LD.thresh01)) throw new Error("LOD_DISTANCES.thresh01 fehlt — die Stufen-Linse misst nichts");
                 const L01 = LD.thresh01;
@@ -553,11 +553,11 @@ hauptLauf(async () => {
                     Math.hypot(ziel.position.x - kam.px, ziel.position.z - kam.pz) < 0.85 * L01;
                 for (const weiter = window.__deckel("die Stufen am Ziel", voll ? 18000 : 4800); weiter(); ) {
                     try {
-                        if (r.state.world) r.state.world.timeOfDay = 0.5;
+                        if (st.world) st.world.timeOfDay = 0.5;
                         r._gameLoopTick(performance.now());
                     } catch {}
                     takte++;
-                    const sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
+                    const sz = st.voxelChunks ? st.voxelChunks.size : 0;
                     if (sz === last) stable++;
                     else {
                         stable = 0;
@@ -565,9 +565,9 @@ hauptLauf(async () => {
                     }
                     // Eingeschwungen = Chunks ruhig UND die Mesh-Zone steht (kein ungebauter Bau im Cull-Radius
                     // mehr — oder 60 Takte ohne Fortschritt: der Rest lädt noch in der Foundry).
-                    const rad2 = r.state.architectureCullingRadius * r.state.architectureCullingRadius;
+                    const rad2 = st.architectureCullingRadius * st.architectureCullingRadius;
                     let offen = 0;
-                    for (const e of r.state.architectures) {
+                    for (const e of st.architectures) {
                         const ex = e.position.x - kam.px,
                             ez = e.position.z - kam.pz;
                         if (ex * ex + ez * ez <= rad2 && !r._archIsRendered(e)) offen++;
@@ -589,8 +589,8 @@ hauptLauf(async () => {
                 // MESH-ZONEN-LINSE: WARUM steht ein Bau im Cull-Radius noch nicht? Je Typ der Grund —
                 // Foundry-Preset · Flat (null = lädt, false = Bake-Lücke, nicht instanzierbar) · LOD-Stufe.
                 const warum = {};
-                const rad2 = r.state.architectureCullingRadius * r.state.architectureCullingRadius;
-                for (const e of r.state.architectures) {
+                const rad2 = st.architectureCullingRadius * st.architectureCullingRadius;
+                for (const e of st.architectures) {
                     const ex = e.position.x - kam.px,
                         ez = e.position.z - kam.pz;
                     if (ex * ex + ez * ez > rad2 || r._archIsRendered(e)) continue;
@@ -619,7 +619,7 @@ hauptLauf(async () => {
                 // IMPOSTOR-ZENSUS: die L2-Stufe der Bäume IST die gebackene Studio-Karte — backt der Bäcker?
                 const z = r._impostorCensus() || {};
                 const zensus =
-                    `Bühne ${r.state._buehneStand ? "steht" : "OFFEN"} · Karten ${z.zellen || 0}: gebacken ${z.gebacken || 0}` +
+                    `Bühne ${st._buehneStand ? "steht" : "OFFEN"} · Karten ${z.zellen || 0}: gebacken ${z.gebacken || 0}` +
                     ` · gescheitert ${z.gescheitert || 0} · wartend ${z.wartend || 0}` +
                     ` · Queue ${(r._impostorBakeQueue || []).length}` +
                     (z.gescheitertArten && z.gescheitertArten.length
@@ -711,10 +711,10 @@ hauptLauf(async () => {
                 const zst = await page.evaluate((klasse) => {
                     const e = klasse === "baum" ? window.__beweisBaum : window.__beweisHaus;
                     if (!e) return "kein Eintrag";
-                    const wm = r.state.weltMarch;
+                    const wm = st.weltMarch;
                     const slot = e._ziegelSlot;
                     const feldAn = !!(wm && slot && wm.listeDaten[slot.feld * 32 + 3] > 0);
-                    const pp = r.state.playerMesh.position;
+                    const pp = st.playerMesh.position;
                     const d = Math.hypot(e.position.x - pp.x, e.position.z - pp.z);
                     return (
                         `${e.type} · ${d.toFixed(1)} m · ${e.mesh ? "Mesh" : e.instanced ? "Instanzen" : "KALT"}` +
@@ -733,7 +733,7 @@ hauptLauf(async () => {
     const ko = spawn.objekte.kreatur;
     if (MIT_WIESE && ko && !ko.fehlt) {
         const kam = await page.evaluate((o) => {
-            const pm = r.state.playerMesh.position;
+            const pm = st.playerMesh.position;
             let dx = pm.x - o.x,
                 dz = pm.z - o.z;
             const l = Math.hypot(dx, dz) || 1;

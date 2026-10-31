@@ -11,11 +11,11 @@ const { safeEvaluate, ohneWurf } = require("../playtest.cjs");
 async function checkBandV1757HeldSlot({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const p = r.state.player;
+        const p = st.player;
         const savedHeld = p.equipped ? p.equipped.held : null;
 
         // (1) ein hartes Gerät konstruieren (härteste Form × Material)
-        const FTA = r.constructor.FORM_TAG_ACTIVATION;
+        const FTA = AnazhRealm.FORM_TAG_ACTIVATION;
         let hardShape = "box";
         let maxAct = 0;
         for (const s of Object.keys(FTA)) {
@@ -27,15 +27,15 @@ async function checkBandV1757HeldSlot({ page, check }) {
         }
         let hardMat = "stein";
         let maxH = 0;
-        for (const m of Object.keys(r.state.materials)) {
-            const h = (r.state.materials[m].tags && r.state.materials[m].tags.härte) || 0;
+        for (const m of Object.keys(st.materials)) {
+            const h = (st.materials[m].tags && st.materials[m].tags.härte) || 0;
             if (h > maxH) {
                 maxH = h;
                 hardMat = m;
             }
         }
         const wName = "_t1757_impl";
-        r.state.blueprints[wName] = r._deserializeBlueprint({
+        st.blueprints[wName] = r._deserializeBlueprint({
             name: wName,
             label: "Testgerät",
             parts: [
@@ -43,7 +43,7 @@ async function checkBandV1757HeldSlot({ page, check }) {
             ],
             connections: [],
         });
-        out.implHasHardness = (r.computeCompoundTags(r.state.blueprints[wName]).härte || 0) > 0;
+        out.implHasHardness = (r.computeCompoundTags(st.blueprints[wName]).härte || 0) > 0;
 
         // (2) equipHeld nimmt JEDEN Bauplan — KEINE Markierung nötig (das Rollen-Schloss ist weg)
         const eqR = r.equipHeld(wName);
@@ -70,7 +70,7 @@ async function checkBandV1757HeldSlot({ page, check }) {
 
         // (6) DASSELBE Gerät treibt das Abbauen (W1/W2) — _heldImplementBlueprint löst den held-Slot auf
         r.equipHeld(wName);
-        out.heldDrivesHarvest = r._heldImplementBlueprint() === r.state.blueprints[wName];
+        out.heldDrivesHarvest = r._heldImplementBlueprint() === st.blueprints[wName];
 
         // (7) Persistenz: der held-Slot reist im Snapshot
         const snap = r.buildStateSnapshot();
@@ -78,7 +78,7 @@ async function checkBandV1757HeldSlot({ page, check }) {
 
         // cleanup
         r.equipHeld(null);
-        delete r.state.blueprints[wName];
+        delete st.blueprints[wName];
         if (savedHeld) r.equipHeld(savedHeld);
         r.recomputePlayerStats();
         return out;
@@ -112,8 +112,8 @@ async function checkBandV1757HeldSlot({ page, check }) {
 async function checkBandV1761ForgeImplement({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const blu = r.state.blueprints;
-        const p = r.state.player;
+        const blu = st.blueprints;
+        const p = st.player;
         const savedMode = r.getGameMode();
         if (!p.equipped) p.equipped = {};
         const savedHeld = p.equipped.held;
@@ -213,8 +213,8 @@ async function checkBandV1761ForgeImplement({ page, check }) {
 async function checkBandV1762ForgeMeaningful({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const blu = r.state.blueprints;
-        const p = r.state.player;
+        const blu = st.blueprints;
+        const p = st.player;
         const savedMode = r.getGameMode();
         if (!p.equipped) p.equipped = {};
         const savedHeld = p.equipped.held;
@@ -310,8 +310,8 @@ async function checkBandV1762ForgeMeaningful({ page, check }) {
 async function checkBandV1763ForgeArmor({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const blu = r.state.blueprints;
-        const p = r.state.player;
+        const blu = st.blueprints;
+        const p = st.player;
         const savedMode = r.getGameMode();
         if (!p.equipped) p.equipped = {};
         const savedHeld = p.equipped.held;
@@ -428,8 +428,8 @@ async function checkBandV1763ForgeArmor({ page, check }) {
 async function checkBandV1765BrewConsumable({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const blu = r.state.blueprints;
-        const p = r.state.player;
+        const blu = st.blueprints;
+        const p = st.player;
         const savedMode = r.getGameMode();
 
         blu.__trank = {
@@ -521,11 +521,11 @@ async function checkBandV1765BrewConsumable({ page, check }) {
 async function checkBandV1766FertigenFlow({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const blu = r.state.blueprints;
-        const p = r.state.player;
+        const blu = st.blueprints;
+        const p = st.player;
         const savedMode = r.getGameMode();
-        const pm = r.state.playerMesh && r.state.playerMesh.position;
-        const savedArch = r.state.architectures.slice();
+        const pm = st.playerMesh && st.playerMesh.position;
+        const savedArch = st.architectures.slice();
         // FERTIGEN rüstet das geschmiedete Werk aus (equipped.held/armor) — sauber zurücksetzen, sonst
         // zeigt eine spätere Band einen baumelnden Held (gelöschter Bauplan).
         const savedEquipped = p.equipped ? JSON.parse(JSON.stringify(p.equipped)) : null;
@@ -544,13 +544,13 @@ async function checkBandV1766FertigenFlow({ page, check }) {
         };
         // die Domain-Werkzeuge sind nicht mehr Starter (die Werkstatt ist der Prozess); für den
         // direkten applyOpToPart-Test (Domain-Logik) leihen wir das Werkzeug aus der Op-Bibliothek.
-        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
+        if (!st.player.tools.includes("schmiede-hammer")) st.player.tools.push("schmiede-hammer");
         r.applyOpToPart("__s7_forge", 0, "schmiede-hammer");
         out.forgeHasDomain = r.computeBlueprintDomain(blu.__s7_forge) === "forging";
 
         // === (b) DAS MASCHINE-GATE — pfad + forging-domain + KEINE Esse → no_workshop_station ===
         r.setGameMode("pfad");
-        r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");
+        st.architectures = st.architectures.filter((e) => e.type !== "esse");
         p.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("eisen", 400);
         const eisenStart = p.inventory[0].count;
@@ -561,7 +561,7 @@ async function checkBandV1766FertigenFlow({ page, check }) {
         out.noStationKeepsMaterial = p.inventory[0] && p.inventory[0].count === eisenStart;
 
         // === KONSUM: Esse beim Spieler → FERTIGEN gelingt + zieht Material ===
-        r.state.architectures.push({ type: "esse", position: { x: pm.x, y: pm.y, z: pm.z }, id: "__s7_esse" });
+        st.architectures.push({ type: "esse", position: { x: pm.x, y: pm.y, z: pm.z }, id: "__s7_esse" });
         const eisenBefore = p.inventory[0].count;
         const withStation = r.fertigeBlueprint("__s7_forge");
         const eisenAfter = p.inventory[0] ? p.inventory[0].count : 0;
@@ -575,7 +575,7 @@ async function checkBandV1766FertigenFlow({ page, check }) {
                 { shape: "box", material: "stein", size: { x: 0.2, y: 1.8, z: 0.2 }, position: { x: 0, y: 0, z: 0 } },
             ],
         };
-        r.state.architectures = r.state.architectures.filter((e) => e.type !== "esse");
+        st.architectures = st.architectures.filter((e) => e.type !== "esse");
         p.inventory = new Array(27).fill(null);
         r.addMaterialToInventory("stein", 400);
         const plainOk = r.fertigeBlueprint("__s7_plain");
@@ -597,7 +597,7 @@ async function checkBandV1766FertigenFlow({ page, check }) {
         // cleanup
         delete blu.__s7_forge;
         delete blu.__s7_plain;
-        r.state.architectures = savedArch;
+        st.architectures = savedArch;
         p.inventory = new Array(27).fill(null);
         p.equipped = savedEquipped;
         r.recomputePlayerStats();
@@ -630,9 +630,9 @@ async function checkBandV1766FertigenFlow({ page, check }) {
 async function checkBandV1770WorkshopStationMark({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const blu = r.state.blueprints;
-        const pm = r.state.playerMesh && r.state.playerMesh.position;
-        const savedArch = r.state.architectures.slice();
+        const blu = st.blueprints;
+        const pm = st.playerMesh && st.playerMesh.position;
+        const savedArch = st.architectures.slice();
         const savedMode = r.getGameMode();
 
         // ein eigener Apparat: ein Quarz-Gefäß (durchsichtig → alchemy-Domäne, R1)
@@ -672,12 +672,12 @@ async function checkBandV1770WorkshopStationMark({ page, check }) {
             ],
         };
         r.setGameMode("schöpfer");
-        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer"); // V17.88 op-Bibliothek leihen
+        if (!st.player.tools.includes("schmiede-hammer")) st.player.tools.push("schmiede-hammer"); // V17.88 op-Bibliothek leihen
         r.applyOpToPart("__ws_work", 0, "schmiede-hammer"); // forging-Domäne (opChain)
         out.workIsForging = r.computeBlueprintDomain(blu.__ws_work) === "forging";
         r.setGameMode("pfad");
-        r.state.architectures = r.state.architectures.filter((e) => e.type !== "__ws_forge");
-        r.state.architectures.push({ type: "__ws_forge", position: { x: pm.x, y: pm.y, z: pm.z }, id: "__ws_st" });
+        st.architectures = st.architectures.filter((e) => e.type !== "__ws_forge");
+        st.architectures.push({ type: "__ws_forge", position: { x: pm.x, y: pm.y, z: pm.z }, id: "__ws_st" });
         const gate = r._workshopStationGate("__ws_work", { x: pm.x, y: pm.y, z: pm.z });
         out.playerStationServes = gate.ok === true && gate.found === "__ws_forge"; // ein SPIELER-Apparat bedient das Gate
 
@@ -695,7 +695,7 @@ async function checkBandV1770WorkshopStationMark({ page, check }) {
         delete blu.__ws_forge;
         delete blu.__ws_work;
         delete blu.__ws_dsl;
-        r.state.architectures = savedArch;
+        st.architectures = savedArch;
         r.setGameMode(savedMode);
         return out;
     });
@@ -721,13 +721,13 @@ async function checkBandV1770WorkshopStationMark({ page, check }) {
 async function checkBandV1772Library({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const blu = r.state.blueprints;
-        const p = r.state.player;
+        const blu = st.blueprints;
+        const p = st.player;
 
         // AUSLÖSCHUNGS-WELLE — geraet_spitzhacke fiel als Blueprint; die Werkzeug-Substanz lebt
         // eingefroren in KIND_SUBSTANCE. Der Test registriert ein deterministisches Test-Blueprint
         // aus der Substanz-Zeile (foundry-unabhängig) und räumt es am Ende wieder auf.
-        const KS72 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        const KS72 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
         if (blu._t_v1772) delete blu._t_v1772;
         blu._t_v1772 = { name: "_t_v1772", parts: JSON.parse(JSON.stringify(KS72.geraet_spitzhacke.parts)) };
         const G = blu._t_v1772;
@@ -774,9 +774,9 @@ async function checkBandV1772Library({ page, check }) {
 
         // restore — kein dangling Held/Soul/Boost für die nächsten Bands
         r.setGameMode(savedMode);
-        if (r.state.customSouls) delete r.state.customSouls["bp_koerper_human"]; // V17.74 — kein Soul-Leck für spätere Bands
+        if (st.customSouls) delete st.customSouls["bp_koerper_human"]; // V17.74 — kein Soul-Leck für spätere Bands
         for (const bn of ["_t_v1772", "ruestung_brustpanzer", "trank_lebenssaft", "koerper_human"]) {
-            if (r.state.blueprints[bn]) delete r.state.blueprints[bn].forgedPrecision; // V17.75 — kein forge-Leck (un-forged Default)
+            if (st.blueprints[bn]) delete st.blueprints[bn].forgedPrecision; // V17.75 — kein forge-Leck (un-forged Default)
         }
         r.applyPlayerSoul(savedSoul);
         if (p) {
@@ -823,8 +823,8 @@ async function checkBandV1772Library({ page, check }) {
 async function checkBandV1773HeldMesh({ page, check }) {
     const res = await page.evaluate(() => {
         const out = {};
-        const p = r.state.player;
-        const pm = r.state.playerMesh;
+        const p = st.player;
+        const pm = st.playerMesh;
         out.hasPlayerMesh = !!pm;
         if (!pm) return out;
 
@@ -834,9 +834,9 @@ async function checkBandV1773HeldMesh({ page, check }) {
 
         // AUSLÖSCHUNGS-WELLE — geraet_spitzhacke fiel als Blueprint; Test-Blueprint aus der
         // eingefrorenen Werkzeug-Substanz (KIND_SUBSTANCE, foundry-unabhängig, am Ende geräumt).
-        const KS73 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
-        if (r.state.blueprints._t_v1773) delete r.state.blueprints._t_v1773;
-        r.state.blueprints._t_v1773 = {
+        const KS73 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
+        if (st.blueprints._t_v1773) delete st.blueprints._t_v1773;
+        st.blueprints._t_v1773 = {
             name: "_t_v1773",
             parts: JSON.parse(JSON.stringify(KS73.geraet_spitzhacke.parts)),
         };
@@ -863,7 +863,7 @@ async function checkBandV1773HeldMesh({ page, check }) {
             m1.updateMatrixWorld(true);
             m1Welt = m1.getWorldScale(new THREE.Vector3()).x;
         }
-        out.scaled = !!m1 && m1Welt > 0 && m1Welt <= r.constructor.HELD_MESH.maxScale;
+        out.scaled = !!m1 && m1Welt > 0 && m1Welt <= AnazhRealm.HELD_MESH.maxScale;
 
         // (3) Equip-Wechsel: anderer Bauplan → das Mesh wechselt (neues Objekt) + das alte ist
         //     aus dem Graph (kein Leak). `waterfall` (große Struktur) testet zugleich die Skalierung.
@@ -887,7 +887,7 @@ async function checkBandV1773HeldMesh({ page, check }) {
         //     Körper (Restore-/Seelen-sicher; deckt auch den loadState-Pfad).
         r.equipHeld("_t_v1773");
         r.applyPlayerSoul(savedSoul === "bp_koerper_wolf" ? "human" : "wolf");
-        const pm2 = r.state.playerMesh;
+        const pm2 = st.playerMesh;
         const m3 = pm2.userData && pm2.userData.heldMesh;
         out.reattached = !!m3 && m3.parent !== null;
         out.reattachedNewBody = !!m3 && pm2 !== pm;
@@ -896,7 +896,7 @@ async function checkBandV1773HeldMesh({ page, check }) {
         r.applyPlayerSoul(savedSoul);
         if (p) p.equipped = savedEquip;
         r.equipHeld(savedEquip && savedEquip.held ? savedEquip.held : null);
-        delete r.state.blueprints._t_v1773; // Test-Blueprint aufräumen
+        delete st.blueprints._t_v1773; // Test-Blueprint aufräumen
         r.recomputePlayerStats();
         return out;
     });
@@ -930,7 +930,7 @@ async function checkBandV1773HeldMesh({ page, check }) {
 async function checkBandV1784AvatarFormFit({ page, check }) {
     const res = await page.evaluate(() => {
         const round = (x) => Math.round((x || 0) * 1000) / 1000;
-        const p = r.state.player;
+        const p = st.player;
         const out = {};
         const bodyParts = [
             __teil("box", "fleisch", 0, 1.2, 0, 0.9, 1.6, 0.5),
@@ -952,10 +952,10 @@ async function checkBandV1784AvatarFormFit({ page, check }) {
         out.soulVals = `Körper=${round(fitBody)} Klumpen=${round(fitBlob)}`;
         // (3) KONSUM: ein körper-förmiger Custom-Avatar hat höhere Basis-Stats als ein Klumpen (gleiches Material)
         const savedSoul = p.soul;
-        const savedCustom = r.state.customSouls ? JSON.parse(JSON.stringify(r.state.customSouls)) : {};
-        r.state.customSouls = r.state.customSouls || {};
-        r.state.customSouls["_av_body"] = { label: "body", bodyParts: bodyParts };
-        r.state.customSouls["_av_blob"] = { label: "blob", bodyParts: blobParts };
+        const savedCustom = st.customSouls ? JSON.parse(JSON.stringify(st.customSouls)) : {};
+        st.customSouls = st.customSouls || {};
+        st.customSouls["_av_body"] = { label: "body", bodyParts: bodyParts };
+        st.customSouls["_av_blob"] = { label: "blob", bodyParts: blobParts };
         p.soul = "_av_body";
         const sBody = r.computePlayerStats().stats;
         p.soul = "_av_blob";
@@ -964,7 +964,7 @@ async function checkBandV1784AvatarFormFit({ page, check }) {
         out.konsumVals = `Körper.hp=${Math.round(sBody.hpMax)} Klumpen.hp=${Math.round(sBlob.hpMax)}`;
         // restore
         p.soul = savedSoul;
-        r.state.customSouls = savedCustom;
+        st.customSouls = savedCustom;
         r.recomputePlayerStats();
         return out;
     });
@@ -994,7 +994,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
     const wave6dResults = await safeEvaluate(page, () => {
         // AnazhRealm-Klasse ist global im Script-Scope; page.evaluate
         // sieht sie direkt (kein window-Prefix nötig).
-        const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+        const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : AnazhRealm;
         if (!C || !C.STAT_FROM_TAGS) return null;
         const out = {};
         out.statKeys = Object.keys(C.STAT_FROM_TAGS).sort().join(",");
@@ -1005,7 +1005,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         // ALTLASTEN-NULL: die Built-in-Def-Menge ist der Mensch; die Tier-Körper
         // leben als koerper_-Baupläne (derselbe bodyParts-Vertrag).
         const koerperBps = ["koerper_wesen", "koerper_wolf", "koerper_fuchs", "koerper_baer"].map(
-            (n) => r.state.blueprints[n]
+            (n) => st.blueprints[n]
         );
         out.allSoulsHaveBodyParts =
             defs.human &&
@@ -1023,16 +1023,16 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         out.compoundUsesMaterialKeys = Object.keys(humanCompoundTags).every((k) => C.MATERIAL_TAG_KEYS.includes(k));
         // Body-Materialien müssen in state.materials existieren
         out.bodyMaterialsExist =
-            !!r.state.materials.knochen &&
-            !!r.state.materials.fleisch &&
-            !!r.state.materials.federn &&
-            !!r.state.materials.schuppen &&
-            !!r.state.materials.glut;
+            !!st.materials.knochen &&
+            !!st.materials.fleisch &&
+            !!st.materials.federn &&
+            !!st.materials.schuppen &&
+            !!st.materials.glut;
         out.bodyMaterialsAreLebendig =
-            (r.state.materials.knochen.tags.lebendig || 0) > 0.9 &&
-            (r.state.materials.fleisch.tags.lebendig || 0) > 0.9 &&
-            (r.state.materials.federn.tags.lebendig || 0) > 0.9 &&
-            (r.state.materials.schuppen.tags.lebendig || 0) > 0.9;
+            (st.materials.knochen.tags.lebendig || 0) > 0.9 &&
+            (st.materials.fleisch.tags.lebendig || 0) > 0.9 &&
+            (st.materials.federn.tags.lebendig || 0) > 0.9 &&
+            (st.materials.schuppen.tags.lebendig || 0) > 0.9;
 
         // computePlayerStats — gibt {tags, stats} zurück
         const computed = r.computePlayerStats();
@@ -1054,12 +1054,12 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
                 "knockback",
                 "attackSpeed",
                 "defense",
-            ].every((k) => typeof computed.stats[k] === "number" && Number.isFinite(computed.stats[k]));
+            ].every((k) => Number.isFinite(computed.stats[k]));
 
         // ALTLASTEN-NULL Diskriminations-Test: drei TIER-KÖRPER → drei Profile
         // aus der GRÖSSEN-Achse (die eine Fold-Quelle): Fuchs flink, Bär tank,
         // Wolf dazwischen — Eigenschaften AUS dem Körper, gemessen.
-        const savedSoul = r.state.player.soul;
+        const savedSoul = st.player.soul;
         const embodyStats = (k) => {
             r.applyPlayerSoulFromBlueprint(k);
             return r.computePlayerStats().stats;
@@ -1089,17 +1089,17 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         // recomputePlayerStats — applies to state (am Menschen geprobt)
         r.applyPlayerSoul("human");
         r.recomputePlayerStats();
-        out.stateSpeedMatches = Math.abs(r.state.speed - humanStats.speed) < 0.001;
-        out.stateJumpPowerMatches = Math.abs(r.state.jumpPower - humanStats.jumpPower) < 0.001;
+        out.stateSpeedMatches = Math.abs(st.speed - humanStats.speed) < 0.001;
+        out.stateJumpPowerMatches = Math.abs(st.jumpPower - humanStats.jumpPower) < 0.001;
         // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: der Sprint-Faktor wohnt im koerper-Gesetz
         // (fx.bewegung.sprintMul); ein kalter Kern wirft laut — kein Literal fährt als Zwilling (das Spiel liest ihn
         // fail-closed, `_sprintMulGesetz`).
         const sprintMul6d = globalThis.__koerperCore.PRESETS.mensch.fx.bewegung.sprintMul;
-        out.stateSprintIsDoubleSpeed = Math.abs(r.state.sprintSpeed - humanStats.speed * sprintMul6d) < 1e-9;
-        out.statePlayerStatsCached = r.state.player.stats && r.state.player.stats.hpMax === humanStats.hpMax;
+        out.stateSprintIsDoubleSpeed = Math.abs(st.sprintSpeed - humanStats.speed * sprintMul6d) < 1e-9;
+        out.statePlayerStatsCached = st.player.stats && st.player.stats.hpMax === humanStats.hpMax;
         // K27 — die Lebenswerte sind ZUSTAND: die Wandlung (applyPlayerSoul) füllt sie; dass eine Neuberechnung nur klemmt
         // (verwundet bleibt verwundet), urteilt gate:kampf-gefuehl T27 an jedem Rufer im Modus pfad (S11 die heilende Hülle).
-        const pl6d = r.state.player;
+        const pl6d = st.player;
         out.statePlayerHasHpAndStamina =
             typeof pl6d.hp === "number" &&
             typeof pl6d.hpMax === "number" &&
@@ -1157,13 +1157,13 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
                 return false;
             }
         })();
-        out.boundsRingRemoved = !r.state.playerAura || !r.state.scene.children.includes(r.state.playerAura);
-        out.glowSpriteGone = !r.state.playerAuraGlow;
+        out.boundsRingRemoved = !st.playerAura || !st.scene.children.includes(st.playerAura);
+        out.glowSpriteGone = !st.playerAuraGlow;
 
         // Drache: Kopf in +Z (Forward), Kopf-Box bei +0.85 Z — kein Inner-π-Flip (der spiegelte ihn in
         // 3rd-Person zum Spieler hin).
         r.applyPlayerSoul("wolf");
-        const dragonGroup = r.state.playerMesh;
+        const dragonGroup = st.playerMesh;
         let dragonHasInnerFlip = false;
         if (dragonGroup && dragonGroup.children.length > 0) {
             // Prüfen: KEIN Child mit rotation.y ≈ π existiert.
@@ -1179,19 +1179,19 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
 
         // player_speed-DSL-Op setzt sprintSpeed mit (= 2× speed) — sonst machte Shift den Spieler LANGSAMER.
         r.dslRun(["player_speed", r._koerperGesetzBand("speed").max], { source: "test" });
-        out.speedAfterDsl = r.state.speed;
-        out.sprintAfterDsl = r.state.sprintSpeed;
+        out.speedAfterDsl = st.speed;
+        out.sprintAfterDsl = st.sprintSpeed;
         // REALITÄTS-EICHUNG 17.07. — gesetz-relativ statt Arcade-Literal: der Sprint-Faktor kommt aus dem koerper-Gesetz
         // (fx.bewegung.sprintMul); ein kalter Kern wirft laut, kein Literal fährt als Zwilling.
         const bewGesetzReflex = globalThis.__koerperCore.PRESETS.mensch.fx.bewegung;
-        out.sprintFollowsSpeed = Math.abs(r.state.sprintSpeed - r.state.speed * bewGesetzReflex.sprintMul) < 1e-9;
-        out.sprintActuallyFaster = r.state.sprintSpeed > r.state.speed;
+        out.sprintFollowsSpeed = Math.abs(st.sprintSpeed - st.speed * bewGesetzReflex.sprintMul) < 1e-9;
+        out.sprintActuallyFaster = st.sprintSpeed > st.speed;
         // Restore baseline mit explizitem Soul-Reset (frühere Tests
         // haben womöglich Boosts/Wunde/Custom-Soul-Reste hinterlassen)
-        r.state.player.soul = "human";
-        r.state.player.boosts = [];
-        r.state.player.deathWoundIntensity = 0;
-        r.state.player.equipped = { held: null, armor: null };
+        st.player.soul = "human";
+        st.player.boosts = [];
+        st.player.deathWoundIntensity = 0;
+        st.player.equipped = { held: null, armor: null };
         r.recomputePlayerStats();
         const humanResult = r.computePlayerStats();
         out.humanSpeed = humanResult.stats.speed;
@@ -1205,65 +1205,60 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         // der Vitals-Takt heilt sie)
 
         // (5) Werkzeug-Kosten: applyOpToPart braucht Stamina
-        r.state.player.deathWoundIntensity = 0;
+        st.player.deathWoundIntensity = 0;
         r.applyPlayerSoul("human"); // reset Stats inkl. Stamina-max
         // Setup: einen eigenen Bauplan mit einem Part + Spieler besitzt hammer
         // Stamina-Tests laufen im pfad-Modus
         // (Default frieden überspringt Stamina-Kosten).
         r.setGameMode("pfad");
-        r.state.blueprints.wound_test_bp = {
+        st.blueprints.wound_test_bp = {
             name: "wound_test_bp",
             label: "Test",
             builtIn: false,
             // eisen akzeptiert plastic-Op (hammer-Klasse); stein nur subtractive.
-            parts: [
-                __teil("box", "eisen", 0, 0, 0, 1, 1, 1),
-            ],
+            parts: [__teil("box", "eisen", 0, 0, 0, 1, 1, 1)],
         };
-        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
-        const staBefore = r.state.player.stamina;
+        if (!st.player.tools.includes("schmiede-hammer")) st.player.tools.push("schmiede-hammer");
+        const staBefore = st.player.stamina;
         const applyOk = r.applyOpToPart("wound_test_bp", 0, "schmiede-hammer");
         out.applyOpResult = applyOk;
         out.staBefore = staBefore;
-        out.staAfter = r.state.player.stamina;
+        out.staAfter = st.player.stamina;
         out.applyOpOkWithStamina = applyOk && applyOk.ok;
-        out.staminaWasDeducted = r.state.player.stamina < staBefore;
+        out.staminaWasDeducted = st.player.stamina < staBefore;
         // Stamina auf 0 → applyOpToPart lehnt ab
-        r.state.player.stamina = 1; // weniger als cost 10
+        st.player.stamina = 1; // weniger als cost 10
         const applyFail = r.applyOpToPart("wound_test_bp", 0, "schmiede-hammer");
         out.applyOpRejectedNoStamina = !applyFail.ok && applyFail.reason === "not_enough_stamina";
         // Cleanup
-        delete r.state.blueprints.wound_test_bp;
-        r.state.player.stamina = r.state.player.staminaMax;
+        delete st.blueprints.wound_test_bp;
+        st.player.stamina = st.player.staminaMax;
 
         // (6) Konsumables aus Compound-Tags
         // Setup: Bauplan aus quarz-Helix + glut-Sphere (sollte magieleitung + brennbar hoch)
-        r.state.blueprints.wave6d_potion = {
+        st.blueprints.wave6d_potion = {
             name: "wave6d_potion",
             label: "Magie-Trank",
             builtIn: false,
-            parts: [
-                __teil("helix", "quarz", 0, 0, 0, 0.3, 0.5, 2),
-                __teil("sphere", "glut", 0, 0.5, 0, 0.2, 0.2, 0.2),
-            ],
+            parts: [__teil("helix", "quarz", 0, 0, 0, 0.3, 0.5, 2), __teil("sphere", "glut", 0, 0.5, 0, 0.2, 0.2, 0.2)],
         };
         const markRes = r.setBlueprintAsConsumable("wave6d_potion", 45, "Magie-Trank", 0.2);
         out.markConsumableOk = markRes && markRes.ok;
-        out.blueprintGotRoleConsumable = r.state.blueprints.wave6d_potion.role === "consumable";
+        out.blueprintGotRoleConsumable = st.blueprints.wave6d_potion.role === "consumable";
         out.blueprintHasConsumableMeta =
-            r.state.blueprints.wave6d_potion.consumableMeta &&
-            r.state.blueprints.wave6d_potion.consumableMeta.durationSeconds === 45;
+            st.blueprints.wave6d_potion.consumableMeta &&
+            st.blueprints.wave6d_potion.consumableMeta.durationSeconds === 45;
         // Aktivieren → tagBonus aus Compound-Tags emergiert
-        r.state.player.boosts = [];
+        st.player.boosts = [];
         const drinkRes = r.activateConsumable("wave6d_potion");
         out.drinkOk = drinkRes && drinkRes.ok;
-        const boost = r.state.player.boosts.find((b) => b.source === "consume:wave6d_potion");
+        const boost = st.player.boosts.find((b) => b.source === "consume:wave6d_potion");
         out.boostExists = !!boost;
         out.boostTagBonusFromCompound = boost && boost.tagDelta && (boost.tagDelta.magieleitung || 0) > 0.05;
         out.boostUsesBlueprintDuration = boost && Math.abs(boost.expiresAt - performance.now() / 1000 - 45) < 2;
         // Cleanup
-        delete r.state.blueprints.wave6d_potion;
-        r.state.player.boosts = [];
+        delete st.blueprints.wave6d_potion;
+        st.player.boosts = [];
 
         return out;
     });
@@ -1327,13 +1322,12 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
 
     // ### Welle 6.D Etappe 3b — Equipment + Aura ###
     const wave6d3bResults = await safeEvaluate(page, () => {
-        const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+        const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : AnazhRealm;
         const out = {};
         // Konstanten + Methoden
         out.armorWeight03 = Math.abs(C.ARMOR_STAT_WEIGHT - 0.3) < 0.001;
         out.toolWeight015 = Math.abs(C.TOOL_STAT_WEIGHT - 0.15) < 0.001;
-        out.hasEquippedState =
-            r.state.player.equipped && "held" in r.state.player.equipped && "armor" in r.state.player.equipped;
+        out.hasEquippedState = st.player.equipped && "held" in st.player.equipped && "armor" in st.player.equipped;
         // SYNERGIE-WELLE — die Hue-Map ist mit der Avatar-Aura gefallen (Abwesenheit).
         out.hasAuraHueMap = !C.AURA_TAG_HUE;
         out.auraHueMapHasAllTags = !C.AURA_TAG_HUE;
@@ -1344,24 +1338,21 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             C.NON_BROADCASTABLE_OPS.has("unequip");
 
         // Setup: Custom-Bauplan für Armor + Werkzeug
-        const savedSoul = r.state.player.soul;
+        const savedSoul = st.player.soul;
         r.applyPlayerSoul("human");
-        const baselineStats = JSON.parse(JSON.stringify(r.state.player.stats));
+        const baselineStats = JSON.parse(JSON.stringify(st.player.stats));
 
         // Eisen-Rüstung-Bauplan
-        r.state.blueprints.test_armor_eisen = {
+        st.blueprints.test_armor_eisen = {
             name: "test_armor_eisen",
             label: "Eisen-Plate",
             builtIn: false,
-            parts: [
-                __teil("box", "eisen", 0, 0, 0, 1, 1, 1),
-                __teil("box", "eisen", 0, 1, 0, 1, 1, 1),
-            ],
+            parts: [__teil("box", "eisen", 0, 0, 0, 1, 1, 1), __teil("box", "eisen", 0, 1, 0, 1, 1, 1)],
         };
         // Markieren als Rüstung
         const markResult = r.setBlueprintAsArmor("test_armor_eisen");
         out.markArmorOk = markResult.ok;
-        out.markArmorSetsRole = r.state.blueprints.test_armor_eisen.role === "armor";
+        out.markArmorSetsRole = st.blueprints.test_armor_eisen.role === "armor";
 
         // Built-in schützen (stein_block — lebendes builtIn)
         const markBuiltinResult = r.setBlueprintAsArmor("stein_block");
@@ -1370,41 +1361,39 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         // Equip Rüstung
         const equipResult = r.equipArmor("test_armor_eisen");
         out.equipArmorOk = equipResult.ok;
-        out.equippedArmorIs = r.state.player.equipped.armor === "test_armor_eisen";
+        out.equippedArmorIs = st.player.equipped.armor === "test_armor_eisen";
         // Stat-Diskrimination: eisen hat hohe dichte + härte → hpMax steigt
-        const armoredStats = r.state.player.stats;
+        const armoredStats = st.player.stats;
         out.armorIncreasesHp = armoredStats.hpMax > baselineStats.hpMax + 5;
         out.armorIncreasesDamage = armoredStats.damage > baselineStats.damage + 0.5;
 
         // Equip auf Rüstung ohne Marker → abgelehnt
-        r.state.blueprints.test_plain = {
+        st.blueprints.test_plain = {
             name: "test_plain",
             label: "Unmarked",
             builtIn: false,
-            parts: [
-                __teil("box", "stein", 0, 0, 0, 1, 1, 1),
-            ],
+            parts: [__teil("box", "stein", 0, 0, 0, 1, 1, 1)],
         };
         const equipUnmarkedResult = r.equipArmor("test_plain");
         out.unmarkedRejected = !equipUnmarkedResult.ok && equipUnmarkedResult.reason === "not_marked_as_armor";
 
         // Unequip
         r.equipArmor(null);
-        out.unequippedRestoresStats = Math.abs(r.state.player.stats.hpMax - baselineStats.hpMax) < 0.01;
-        out.equippedArmorNull = r.state.player.equipped.armor === null;
+        out.unequippedRestoresStats = Math.abs(st.player.stats.hpMax - baselineStats.hpMax) < 0.01;
+        out.equippedArmorNull = st.player.equipped.armor === null;
 
         // Equipped via DSL
         r.equipArmor("test_armor_eisen");
         r.dslRun(["unequip", "armor"], { source: "test" });
-        out.dslUnequipWorks = r.state.player.equipped.armor === null;
+        out.dslUnequipWorks = st.player.equipped.armor === null;
 
         // ein builtIn-Crafting-Tool (schmiede-hammer) ist KEIN Welt-Gerät → equipHeld lehnt es
         // ab (kein Bauplan); ein eigener Bauplan IST haltbar (kein Rollen-Schloss) + faltet in die Stats.
-        r.state.player.tools = r.state.player.tools || [];
-        if (!r.state.player.tools.includes("schmiede-hammer")) r.state.player.tools.push("schmiede-hammer");
+        st.player.tools = st.player.tools || [];
+        if (!st.player.tools.includes("schmiede-hammer")) st.player.tools.push("schmiede-hammer");
         out.equipBuiltinToolOk = !r.equipHeld("schmiede-hammer").ok; // builtIn-Tool → abgelehnt (kein Bauplan)
-        out.equippedToolIs = !r.state.player.equipped.held; // nichts gehalten nach der Ablehnung
-        const toolStats = r.state.player.stats;
+        out.equippedToolIs = !st.player.equipped.held; // nichts gehalten nach der Ablehnung
+        const toolStats = st.player.stats;
         out.builtinToolNoStatChange = Math.abs(toolStats.hpMax - baselineStats.hpMax) < 0.01;
 
         // Save-Round-Trip — ein eigener Bauplan als gehaltenes Gerät (kein Rollen-Schloss) reist mit.
@@ -1420,8 +1409,8 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         // Cleanup
         r.equipArmor(null);
         r.equipTool(null);
-        delete r.state.blueprints.test_armor_eisen;
-        delete r.state.blueprints.test_plain;
+        delete st.blueprints.test_armor_eisen;
+        delete st.blueprints.test_plain;
         r.applyPlayerSoul(savedSoul);
 
         return out;
@@ -1479,7 +1468,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
 
     // ### Welle 6.D Etappe 3a — Tod, Min-Regel-Hybrid, Konsumables ###
     const wave6d3aResults = await safeEvaluate(page, () => {
-        const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+        const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : AnazhRealm;
         const out = {};
         // Tests für Tod/Stamina/Phönix laufen im pfad-
         // Modus (Default frieden blockiert sonst Schaden + Stamina).
@@ -1490,21 +1479,21 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         out.damageOpInNonBroadcast = C.NON_BROADCASTABLE_OPS.has("damage");
 
         // Setup
-        const savedSoul = r.state.player.soul;
+        const savedSoul = st.player.soul;
         if (savedSoul !== "human") r.applyPlayerSoul("human");
-        r.state.player.respawnGraceUntil = -Infinity;
+        st.player.respawnGraceUntil = -Infinity;
 
         // Heat-Quelle: heatResist (Mensch hat ~0.22) dämpft
-        const hpAfterHeat = r.state.player.hp;
+        const hpAfterHeat = st.player.hp;
         r.damagePlayer(20, "fire-test");
-        const hpDelta = hpAfterHeat - r.state.player.hp;
+        const hpDelta = hpAfterHeat - st.player.hp;
         out.heatResistReducesDamage = hpDelta < 20 - 1;
 
         // die Ausdauer im Vitals-Takt misst gate:kampf-gefuehl Q13 nach der Rückkehr
 
         // Reset
-        r.state.player.respawnGraceUntil = -Infinity;
-        r.state.player.hp = r.state.player.hpMax;
+        st.player.respawnGraceUntil = -Infinity;
+        st.player.hp = st.player.hpMax;
 
         // --- Min-Regel-Hybrid ---
         // Beispiel aus wave-6-design §10.5
@@ -1543,28 +1532,28 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             ["define_consumable", "trank_des_lichts", { magieleitung: 0.3, resoniert: 0.2 }, 60, "Trank des Lichts"],
             { source: "test" }
         );
-        const cn = r.state.consumables.trank_des_lichts;
+        const cn = st.consumables.trank_des_lichts;
         out.consumableDefined = !!cn;
         out.consumableTagBonus = cn && cn.tagBonus && Math.abs(cn.tagBonus.magieleitung - 0.3) < 0.001;
         out.consumableDuration = cn && cn.durationSeconds === 60;
         out.consumableLabel = cn && cn.label === "Trank des Lichts";
 
         // apply_boost via DSL → Boost im Array
-        r.state.player.boosts = [];
+        st.player.boosts = [];
         r.dslRun(["apply_boost", "trank_des_lichts"], { source: "test" });
-        const b = r.state.player.boosts.find((x) => x.source === "consume:trank_des_lichts");
+        const b = st.player.boosts.find((x) => x.source === "consume:trank_des_lichts");
         out.applyBoostAddsBoost = !!b;
         out.boostTagBonus = b && Math.abs((b.tagDelta.magieleitung || 0) - 0.3) < 0.001;
 
         // Dedupe: zweimal apply_boost verlängert statt zu duplizieren
         r.dslRun(["apply_boost", "trank_des_lichts"], { source: "test" });
-        const matching = r.state.player.boosts.filter((x) => x.source === "consume:trank_des_lichts");
+        const matching = st.player.boosts.filter((x) => x.source === "consume:trank_des_lichts");
         out.consumableDedupes = matching.length === 1;
 
         // Unknown name → kein Boost
-        const beforeBoostCount = r.state.player.boosts.length;
+        const beforeBoostCount = st.player.boosts.length;
         r.dslRun(["apply_boost", "nicht_da"], { source: "test" });
-        out.unknownRejected = r.state.player.boosts.length === beforeBoostCount;
+        out.unknownRejected = st.player.boosts.length === beforeBoostCount;
 
         // Non-broadcast: apply_boost ist in NON_BROADCASTABLE_OPS
         out.applyBoostNonBroadcast = C.NON_BROADCASTABLE_OPS.has("apply_boost");
@@ -1574,10 +1563,10 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         out.snapHasConsumables = !!(snap.consumables && snap.consumables.trank_des_lichts);
 
         // Cleanup
-        r.state.consumables = {};
-        r.state.player.boosts = [];
+        st.consumables = {};
+        st.player.boosts = [];
         r.applyPlayerSoul(savedSoul);
-        r.state.player.respawnGraceUntil = -Infinity;
+        st.player.respawnGraceUntil = -Infinity;
 
         return out;
     });
@@ -1624,16 +1613,16 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
     // state.player.boosts ist ein Array; tickPlayerBoosts filtert Abgelaufene + triggert Emotion +
     // Resonance 1×/s; computePlayerStats addiert aktive Deltas vor der Stat-Berechnung.
     const wave6d2Results = await safeEvaluate(page, () => {
-        const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : r.constructor;
+        const C = typeof AnazhRealm !== "undefined" ? AnazhRealm : AnazhRealm;
         const out = {};
-        out.hasBoostsField = Array.isArray(r.state.player.boosts);
+        out.hasBoostsField = Array.isArray(st.player.boosts);
         out.hasEmotionMap = C.BOOST_EMOTION_TAG && typeof C.BOOST_EMOTION_TAG === "object";
         out.emotionAxisCount = C.BOOST_EMOTION_TAG ? Object.keys(C.BOOST_EMOTION_TAG).length : 0;
 
         // Setup: Save initial state für Vergleich
-        r.state.player.boosts = [];
+        st.player.boosts = [];
         r.recomputePlayerStats();
-        const baselineStats = JSON.parse(JSON.stringify(r.state.player.stats));
+        const baselineStats = JSON.parse(JSON.stringify(st.player.stats));
 
         // Test 1: addPlayerBoost fügt einen Boost hinzu + Stats ändern sich
         const added = r.addPlayerBoost({
@@ -1643,13 +1632,12 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             label: "Test-Flamme",
         });
         out.addReturnsTrue = added === true;
-        out.boostsArrayHasOne = r.state.player.boosts.length === 1;
-        out.boostHasTagDelta =
-            r.state.player.boosts[0] && Math.abs(r.state.player.boosts[0].tagDelta.wärmeleitung - 0.3) < 0.001;
+        out.boostsArrayHasOne = st.player.boosts.length === 1;
+        out.boostHasTagDelta = st.player.boosts[0] && Math.abs(st.player.boosts[0].tagDelta.wärmeleitung - 0.3) < 0.001;
 
         // Stats reagieren auf das Boost — staminaMax steigt da
         // wärmeleitung in der Formel steht (× 40).
-        const boostedStats = r.state.player.stats;
+        const boostedStats = st.player.stats;
         out.staminaIncreased = boostedStats.staminaMax > baselineStats.staminaMax + 5;
         out.heatResistIncreased = boostedStats.heatResist > baselineStats.heatResist;
 
@@ -1660,40 +1648,40 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             durationSeconds: 120,
             label: "Test-Flamme stärker",
         });
-        out.dedupesBySource = r.state.player.boosts.length === 1;
-        out.dedupeReplacesDelta = Math.abs(r.state.player.boosts[0].tagDelta.wärmeleitung - 0.5) < 0.001;
+        out.dedupesBySource = st.player.boosts.length === 1;
+        out.dedupeReplacesDelta = Math.abs(st.player.boosts[0].tagDelta.wärmeleitung - 0.5) < 0.001;
 
         // tickPlayerBoosts entfernt abgelaufene Boosts: gezielt den test:flame-Boost prüfen, nicht
         // boosts.length===0 — tickPlayerBoosts darf zugleich einen world:resonance-Boost setzen (Spieler
         // nah an hochresonanter Architektur wie kristall_geode/quarz).
-        r.state.player.boosts[0].expiresAt = -100; // bereits abgelaufen
-        r.state.player.boostLastTick = -Infinity; // Throttle umgehen
+        st.player.boosts[0].expiresAt = -100; // bereits abgelaufen
+        st.player.boostLastTick = -Infinity; // Throttle umgehen
         r.tickPlayerBoosts(performance.now() / 1000);
-        out.expiredRemoved = !r.state.player.boosts.some((b) => b.source === "test:flame");
+        out.expiredRemoved = !st.player.boosts.some((b) => b.source === "test:flame");
 
         // Emotion-Trigger: awe hoch → magieleitung-Boost
-        r.state.player.emotions.awe = 0.9;
-        r.state.player.boostLastTriggered["emotion:awe"] = -Infinity; // Refract umgehen
-        r.state.player.boostLastTick = -Infinity;
+        st.player.emotions.awe = 0.9;
+        st.player.boostLastTriggered["emotion:awe"] = -Infinity; // Refract umgehen
+        st.player.boostLastTick = -Infinity;
         r.tickPlayerBoosts(performance.now() / 1000);
-        const aweBoost = r.state.player.boosts.find((b) => b.source === "emotion:awe");
+        const aweBoost = st.player.boosts.find((b) => b.source === "emotion:awe");
         out.emotionAweTriggered = !!aweBoost;
         out.aweBoostHasMagieleitung = aweBoost && aweBoost.tagDelta.magieleitung && aweBoost.tagDelta.magieleitung > 0;
-        out.magicResistIncreased = aweBoost ? r.state.player.stats.magicResist > baselineStats.magicResist : false;
+        out.magicResistIncreased = aweBoost ? st.player.stats.magicResist > baselineStats.magicResist : false;
 
         // Welt-Resonanz-Trigger: spawne Bauplan mit hoher Resonanz nahe Spieler
-        const vorArch = new Set(r.state.architectures);
+        const vorArch = new Set(st.architectures);
         const savedPos = {
-            x: r.state.playerMesh.position.x,
-            y: r.state.playerMesh.position.y,
-            z: r.state.playerMesh.position.z,
+            x: st.playerMesh.position.x,
+            y: st.playerMesh.position.y,
+            z: st.playerMesh.position.z,
         };
         // BÜHNE: Boost-Reichweite relativ zum Spieler (die Bauten folgen ihm)
-        r.state.playerMesh.position.set(80, 5, 80);
+        st.playerMesh.position.set(80, 5, 80);
         // Custom-Bauplan mit Quarz-Helix-Array: vier helix-Parts EQUIDISTANT vom Schwerpunkt (0,0,0) — der
         // Resonance-Array-Detector verlangt gleiche Shape auf gleichem Radius ±12 %. Quarz (resoniert 0.9,
         // magieleitung 0.85) + helix + Array-Bonus heben das Compound über die signature-Schwelle (2.5).
-        r.state.blueprints.wave6d2_resonator = {
+        st.blueprints.wave6d2_resonator = {
             name: "wave6d2_resonator",
             label: "Resonator",
             builtIn: false,
@@ -1706,32 +1694,32 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         };
         r.spawnArchitecture("wave6d2_resonator", { x: 82, y: 0, z: 82 }, { seed: 1 });
         // Debug: tatsächlichen Spatial-Tag-Wert + Distanz ausgeben
-        const sigTags = r.computeSpatialTags(r.state.blueprints.wave6d2_resonator);
+        const sigTags = r.computeSpatialTags(st.blueprints.wave6d2_resonator);
         out.signatureResonierValue = sigTags.resoniert || 0;
         out.signatureThreshold = C.WORLD_EFFECT_THRESHOLDS.resonance_signature;
         out.distanceToSig = Math.hypot(82 - 80, 82 - 80);
-        r.state.player.boosts = []; // Reset
-        r.state.player.boostLastTick = -Infinity;
+        st.player.boosts = []; // Reset
+        st.player.boostLastTick = -Infinity;
         r.tickPlayerBoosts(performance.now() / 1000);
-        const resBoost = r.state.player.boosts.find((b) => b.source === "world:resonance");
+        const resBoost = st.player.boosts.find((b) => b.source === "world:resonance");
         out.resonanceBoostTriggered = !!resBoost;
         out.resonanceHasResonierDelta = resBoost && resBoost.tagDelta.resoniert && resBoost.tagDelta.resoniert > 0;
 
         // Boost außerhalb Reichweite → kein Trigger
         // BÜHNE: außerhalb der Boost-Reichweite (nur der Abstand zählt)
-        r.state.playerMesh.position.set(-200, 5, -200);
-        r.state.player.boosts = [];
-        r.state.player.boostLastTick = -Infinity;
+        st.playerMesh.position.set(-200, 5, -200);
+        st.player.boosts = [];
+        st.player.boostLastTick = -Infinity;
         r.tickPlayerBoosts(performance.now() / 1000);
-        const resBoost2 = r.state.player.boosts.find((b) => b.source === "world:resonance");
+        const resBoost2 = st.player.boosts.find((b) => b.source === "world:resonance");
         out.resonanceNotTriggeredFar = !resBoost2;
 
         // Cleanup
-        for (const e of r.state.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
-        delete r.state.blueprints.wave6d2_resonator;
-        r.state.playerMesh.position.set(savedPos.x, savedPos.y, savedPos.z);
-        r.state.player.boosts = [];
-        r.state.player.emotions.awe = 0;
+        for (const e of st.architectures.filter((x) => !vorArch.has(x))) r.removeArchitecture(e);
+        delete st.blueprints.wave6d2_resonator;
+        st.playerMesh.position.set(savedPos.x, savedPos.y, savedPos.z);
+        st.player.boosts = [];
+        st.player.emotions.awe = 0;
         r.recomputePlayerStats();
 
         return out;
@@ -1786,19 +1774,19 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
     // Hylomorphismus-Pipe wie Bauwerke.
     const wave6d16Results = await safeEvaluate(page, () => {
         const out = {};
-        out.customSoulsContainerExists = r.state.customSouls && typeof r.state.customSouls === "object";
+        out.customSoulsContainerExists = st.customSouls && typeof st.customSouls === "object";
 
         // define_soul über dslRun
-        const beforeCount = Object.keys(r.state.customSouls || {}).length;
+        const beforeCount = Object.keys(st.customSouls || {}).length;
         const testParts = [
             __teil("box", "knochen", 0, 0, 0, 0.5, 1.0, 0.4),
             __teil("helix", "quarz", 0, 0.6, 0, 0.3, 0.6, 2),
             __teil("sphere", "glut", 0, 0.3, 0, 0.25, 0.25, 0.25),
         ];
         r.dslRun(["define_soul", "kristall_geist", testParts], { source: "test" });
-        const afterCount = Object.keys(r.state.customSouls || {}).length;
+        const afterCount = Object.keys(st.customSouls || {}).length;
         out.customSoulAdded = afterCount === beforeCount + 1;
-        const created = r.state.customSouls.kristall_geist;
+        const created = st.customSouls.kristall_geist;
         out.customHasBodyParts = !!(created && Array.isArray(created.bodyParts) && created.bodyParts.length === 3);
         out.customHasLabel = !!(created && typeof created.label === "string");
 
@@ -1818,16 +1806,16 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         out.customMagicHigh = (customTags.magieleitung || 0) > (humanTags.magieleitung || 0);
 
         // applyPlayerSoul auf Custom funktioniert
-        const savedSoul = r.state.player.soul;
+        const savedSoul = st.player.soul;
         const applied = r.applyPlayerSoul("kristall_geist");
         out.applyCustomReturnsTrue = applied === true;
-        out.stateSoulIsCustom = r.state.player.soul === "kristall_geist";
+        out.stateSoulIsCustom = st.player.soul === "kristall_geist";
         // Stats wurden für die Custom-Seele neu berechnet
-        out.customStatsComputed = !!(r.state.player.stats && r.state.player.stats.hpMax > 0);
+        out.customStatsComputed = !!(st.player.stats && st.player.stats.hpMax > 0);
         out.customStatsDifferFromHuman = (() => {
-            r.state.player.soul = "human";
+            st.player.soul = "human";
             const humanStats = r.computePlayerStats().stats;
-            r.state.player.soul = "kristall_geist";
+            st.player.soul = "kristall_geist";
             const customStats = r.computePlayerStats().stats;
             return Math.abs(customStats.magicResist - humanStats.magicResist) > 0.05;
         })();
@@ -1849,7 +1837,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         out.capHit = overflowResult === "cap_hit";
 
         // Save-Round-Trip vor dem finalen Cleanup
-        r.state.customSouls = {
+        st.customSouls = {
             save_test: {
                 name: "save_test",
                 label: "Save Test",
@@ -1863,8 +1851,8 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         // Cleanup — Custom-Seelen entfernen + Dropdown auffrischen,
         // damit nachfolgende Tests (Ring 5: Dropdown hat 3 Optionen)
         // wieder den Built-in-Standardzustand sehen.
-        r.state.customSouls = {};
-        r.state.player.soul = savedSoul;
+        st.customSouls = {};
+        st.player.soul = savedSoul;
         r.applyPlayerSoul(savedSoul);
         r._refreshSoulSelect();
 
@@ -1881,10 +1869,10 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         out.ichSoulEditorGone = !document.getElementById("soul-editor");
 
         // Die BRÜCKE: eine Built-in-Seele als role:soul-Bauplan in die Werkstatt holen (Avatare-in-Werkstatt)
-        r.state.customSouls = {};
+        st.customSouls = {};
         const s2b = r.soulToBlueprint("human");
         out.s2bOk = !!(s2b && s2b.ok);
-        const s2bBp = s2b && s2b.ok ? r.state.blueprints[s2b.name] : null;
+        const s2bBp = s2b && s2b.ok ? st.blueprints[s2b.name] : null;
         // Der Mensch trägt POSITIONIERTE bodyParts: ALLE def-Teile reisen positioniert (nicht am Ursprung
         // gestapelt) — dynamisch gegen die def-Länge geprüft.
         const humanDefParts = r.playerSoulDefs.human.bodyParts.length;
@@ -1898,38 +1886,38 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         if (s2b && s2b.ok) r.deleteBlueprint(s2b.name);
 
         // Klonen aus aktiver Seele (die customSoul-Datenschicht bleibt)
-        const savedSoul = r.state.player.soul;
-        r.state.player.soul = "human";
+        const savedSoul = st.player.soul;
+        st.player.soul = "human";
         const cloneResult = r.cloneSoulToCustom("human", "test_clone_a");
         out.cloneReturnsOk = cloneResult && cloneResult.ok;
         // dynamisch gegen die def-Länge —
         // der Mensch trägt jetzt 6 positionierte Teile statt 4 Stat-Schatten.
         out.cloneHasBodyParts =
-            r.state.customSouls.test_clone_a &&
-            Array.isArray(r.state.customSouls.test_clone_a.bodyParts) &&
-            r.state.customSouls.test_clone_a.bodyParts.length === r.playerSoulDefs.human.bodyParts.length;
+            st.customSouls.test_clone_a &&
+            Array.isArray(st.customSouls.test_clone_a.bodyParts) &&
+            st.customSouls.test_clone_a.bodyParts.length === r.playerSoulDefs.human.bodyParts.length;
 
         // Add part
-        const beforeParts = r.state.customSouls.test_clone_a.bodyParts.length;
+        const beforeParts = st.customSouls.test_clone_a.bodyParts.length;
         const addResult = r.addPartToCustomSoul("test_clone_a", __teil("torus", "quarz", 0, 1, 0, 0.5, 0.2, 0.5));
         out.addReturnsOk = addResult && addResult.ok;
-        out.addedPart = r.state.customSouls.test_clone_a.bodyParts.length === beforeParts + 1;
+        out.addedPart = st.customSouls.test_clone_a.bodyParts.length === beforeParts + 1;
 
         // Update part
         const updateResult = r.updatePartInCustomSoul("test_clone_a", 0, {
             material: "schuppen",
         });
         out.updateReturnsOk = updateResult && updateResult.ok;
-        out.updateApplied = r.state.customSouls.test_clone_a.bodyParts[0].material === "schuppen";
+        out.updateApplied = st.customSouls.test_clone_a.bodyParts[0].material === "schuppen";
 
         // Remove part
-        const beforeRm = r.state.customSouls.test_clone_a.bodyParts.length;
+        const beforeRm = st.customSouls.test_clone_a.bodyParts.length;
         const rmResult = r.removePartFromCustomSoul("test_clone_a", 0);
         out.removeReturnsOk = rmResult && rmResult.ok;
-        out.removedPart = r.state.customSouls.test_clone_a.bodyParts.length === beforeRm - 1;
+        out.removedPart = st.customSouls.test_clone_a.bodyParts.length === beforeRm - 1;
 
         // Mindestens-1-Schutz: alle bis auf eins entfernen → letztes lehnt ab
-        while (r.state.customSouls.test_clone_a.bodyParts.length > 1) {
+        while (st.customSouls.test_clone_a.bodyParts.length > 1) {
             r.removePartFromCustomSoul("test_clone_a", 0);
         }
         const lastRmResult = r.removePartFromCustomSoul("test_clone_a", 0);
@@ -1937,17 +1925,16 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
 
         // applyPlayerSoul auf Custom-Seele rendert tatsächlich ein Mesh
         r.applyPlayerSoul("test_clone_a");
-        out.customSoulRendered =
-            !!r.state.playerMesh && r.state.playerMesh.children && r.state.playerMesh.children.length > 0;
+        out.customSoulRendered = !!st.playerMesh && st.playerMesh.children && st.playerMesh.children.length > 0;
 
         // Delete: wenn aktive Seele gelöscht → fallback auf "human"
         const delResult = r.deleteCustomSoul("test_clone_a");
         out.deleteReturnsOk = delResult && delResult.ok;
-        out.deletedFromMap = !r.state.customSouls.test_clone_a;
-        out.fallbackToHuman = r.state.player.soul === "human";
+        out.deletedFromMap = !st.customSouls.test_clone_a;
+        out.fallbackToHuman = st.player.soul === "human";
 
         // Cleanup
-        r.state.player.soul = savedSoul;
+        st.player.soul = savedSoul;
         r.applyPlayerSoul(savedSoul);
 
         return out;
@@ -2128,10 +2115,10 @@ async function checkBandPhasenBF({ page, check }) {
         // ist sanft). Die Substanz-Signaturen fielen. Gefragt wird ein gegossener Leib (die Masse ist das Volumen
         // seiner Gestalt), fern des Spielers, danach entfernt. Die Bühne hält Platz für je ein Probe-Wesen: die
         // Obergrenze, die die Bänder davor füllten, urteilt nie mit.
-        const cap4 = r.state.maxCreatures;
-        r.state.maxCreatures = r.state.creatures.length + 1;
+        const cap4 = st.maxCreatures;
+        st.maxCreatures = st.creatures.length + 1;
         out.d4Temperament = (() => {
-            const pp = r.state.playerMesh.position;
+            const pp = st.playerMesh.position;
             const t = (soul, bodySize) => {
                 const c = r.spawnCreatureAt(pp.x + 200, pp.y, pp.z + 200, "happy", soul, { precise: true, bodySize });
                 if (!c) return null;
@@ -2152,9 +2139,9 @@ async function checkBandPhasenBF({ page, check }) {
         })();
         // KONSUM: der Treffer liest das Temperament (die Flucht-Dauer je fleeMul beweist gate:kreatur-leben am Verhalten);
         // sanft/scheu haben strike 0.
-        const pp4 = r.state.playerMesh.position;
+        const pp4 = st.playerMesh.position;
         const c4 = r.spawnCreatureAt(pp4.x + 200, pp4.y, pp4.z + 200, "happy", "baer", { precise: true, bodySize: 1 });
-        r.state.maxCreatures = cap4;
+        st.maxCreatures = cap4;
         const liestTemperament = !!c4 && window.__consumes(r, "damageCreature", r, "_creatureTemperament", [c4, 0.01, {}]);
         if (c4) r.removeCreature(c4);
         out.d4Konsum =
@@ -2167,7 +2154,7 @@ async function checkBandPhasenBF({ page, check }) {
         // E2 — der REGELKREIS: ruhige Emotion → Faktor 1, stark gekippt (chaos dominant) → < 0.5. KONSUM:
         // Outcome-Regen, Idle-Tropf, Kosten-Tor + proaktive Stimmen lesen DENSELBEN _emotionBalanceFactor.
         out.e2Balance = (() => {
-            const p = r.state.player;
+            const p = st.player;
             const save = { ...p.emotions };
             try {
                 for (const k in p.emotions) p.emotions[k] = 0;
@@ -2179,12 +2166,12 @@ async function checkBandPhasenBF({ page, check }) {
                 Object.assign(p.emotions, save);
             }
         })();
-        out.f2Turn = Array.isArray(r.state.p2p && r.state.p2p.iceServers) && r.state.p2p.iceServers.length >= 1;
+        out.f2Turn = Array.isArray(st.p2p && st.p2p.iceServers) && st.p2p.iceServers.length >= 1;
         // E8 ZWEI-HAND: swapHands tauscht über den EINEN equipHeld-
         // Pfad (KONSUM: Roundtrip Hand→Off-Hand→Hand) + der Off-Hand-Slot
         // steht neben der Hotbar + der Tausch-Key ist gebunden.
         out.e8Swap = (() => {
-            const eq = (r.state.player.equipped = r.state.player.equipped || {
+            const eq = (st.player.equipped = st.player.equipped || {
                 held: null,
                 offhand: null,
                 armor: null,
@@ -2193,7 +2180,7 @@ async function checkBandPhasenBF({ page, check }) {
             try {
                 // AUSLÖSCHUNGS-WELLE — geraet_spitzhacke fiel; das foundry-Werkzeug klinge_spitzhacke
                 // (wenn ingested) oder stein_block trägt die Swap-Probe (der Name ist mechanik-egal).
-                const name = r.state.blueprints.klinge_spitzhacke ? "klinge_spitzhacke" : "stein_block";
+                const name = st.blueprints.klinge_spitzhacke ? "klinge_spitzhacke" : "stein_block";
                 r.equipHeld(name); // equipHeld ist das freie Low-Level-Primitiv (GEBRAUCH)
                 const s1 = r.swapHands();
                 const okA = !!(s1.ok && s1.offhand === name && !s1.held);
@@ -2208,7 +2195,7 @@ async function checkBandPhasenBF({ page, check }) {
             }
         })();
         out.e8Dom = !!document.querySelector('#hotbar .hotbar-slot[data-slot="offhand"]');
-        out.e8Key = (r.state.keybindings || AnazhRealm.DEFAULT_KEYBINDINGS).swapHands === "KeyG";
+        out.e8Key = (st.keybindings || AnazhRealm.DEFAULT_KEYBINDINGS).swapHands === "KeyG";
         // C7 ATTACHMENT-PUNKTE: (1) sitz validiert ohne partB; (2) die getragene Rüstung sitzt am TORSO
         // (Masse-Zentrum 0.18, am echten _wornArmorMesh); (3) Fahrzeug-/Reittier-Saat ist per Substanz
         // moveable + trägt sitz-Punkte; (4) die Built-in-Körper liegen automatisch als Blueprints.
@@ -2217,19 +2204,19 @@ async function checkBandPhasenBF({ page, check }) {
             return v.length === 1 && v[0].partB === -1;
         })();
         out.c7ArmorSitz = (() => {
-            const p = r.state.player;
+            const p = st.player;
             const savedArmor = (p.equipped && p.equipped.armor) || null;
             try {
                 r.equipArmor("ruestung_brustpanzer");
                 r._tickWornArmorVisual();
-                const g = r.state.playerMesh && r.state.playerMesh.userData._wornArmorMesh;
+                const g = st.playerMesh && st.playerMesh.userData._wornArmorMesh;
                 if (!g) return false;
                 // matrixWorld ist außerhalb des Render-Loops STALE (Physik setzt
                 // nur .position) → erst aktualisieren, sonst misst die Box lokal
                 // gegen Welt (GEMESSEN: −18.9 statt 0.14 — die Probe lag, nicht der Code).
-                r.state.playerMesh.updateMatrixWorld(true);
+                st.playerMesh.updateMatrixWorld(true);
                 const box = new THREE.Box3().setFromObject(g);
-                const pmY = r.state.playerMesh.position.y;
+                const pmY = st.playerMesh.position.y;
                 const centerLocalY = (box.min.y + box.max.y) / 2 - pmY;
                 // Masse-Zentrum nahe dem Torso-Anker 0.18 (±0.45) — NICHT ~0.9 (Kopf).
                 return Math.abs(centerLocalY - 0.18) < 0.45;
@@ -2241,14 +2228,14 @@ async function checkBandPhasenBF({ page, check }) {
         out.c7Seeds = (() => {
             // AUSLÖSCHUNGS-WELLE — der fahrzeug_wagen-Blueprint fiel; seine Substanz (inkl.
             // sitz-connection auf Part 0) lebt eingefroren in KIND_SUBSTANCE.fahrzeug_wagen.
-            const KSc7 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+            const KSc7 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
             const w = KSc7.fahrzeug_wagen
                 ? {
                       parts: JSON.parse(JSON.stringify(KSc7.fahrzeug_wagen.parts)),
                       connections: JSON.parse(JSON.stringify(KSc7.fahrzeug_wagen.connections || [])),
                   }
                 : null;
-            const h = r.state.blueprints.reittier_holzross;
+            const h = st.blueprints.reittier_holzross;
             if (!w || !h) return false;
             const wMv = r._isMoveable(w);
             const hMv = r._isMoveable(h);
@@ -2256,11 +2243,11 @@ async function checkBandPhasenBF({ page, check }) {
             return wMv && hMv && Math.abs(wSitz.y - 1.025) < 0.01 && w.connections.some((c) => c.type === "sitz");
         })();
         out.c7Bodies =
-            !!(r.state.blueprints.koerper_human && r.state.blueprints.koerper_human.role === "soul") &&
-            !!r.state.blueprints.koerper_wolf &&
-            !!r.state.blueprints.koerper_baer &&
-            !r.state.blueprints.koerper_phoenix &&
-            !r.state.blueprints.koerper_dragon &&
+            !!(st.blueprints.koerper_human && st.blueprints.koerper_human.role === "soul") &&
+            !!st.blueprints.koerper_wolf &&
+            !!st.blueprints.koerper_baer &&
+            !st.blueprints.koerper_phoenix &&
+            !st.blueprints.koerper_dragon &&
             !document.getElementById("workshop-import-soul-btn");
         // A4 — aWave (Ozean-Wellen-Anteil) ist ART-gedämpft: die Fluss-Abdeckung (riverness, dieselbe
         // smoothstep-Rampe wie die Shader-Strähnen) nimmt die Wogen aus dem Fluss, ein See ist still.
@@ -2269,7 +2256,7 @@ async function checkBandPhasenBF({ page, check }) {
             const key = await window.__wasserChunk("meer");
             if (!key) return false;
             const [cx, cz] = key.split(",").map(Number);
-            const wctx = r._mainWaterSheetCtx(cx, cz, r.state.voxelChunks.get(key));
+            const wctx = r._mainWaterSheetCtx(cx, cz, st.voxelChunks.get(key));
             const bau = (fluss, see) => {
                 r._hydroRiverAt = () => ({ flowX: fluss, flowZ: 0 });
                 r._hydrosphereLakeAt = () => see;
@@ -2288,7 +2275,7 @@ async function checkBandPhasenBF({ page, check }) {
         // Einträge nie drankommen (Löcher im fernen Wasser) → der Tick trägt einen FIFO-Slot (ältester).
         // Behavioral: ein ferner Key wird trotz frischer naher Keys binnen weniger Ticks gezogen.
         out.waterIsoNoStarve = (() => {
-            const s = r.state;
+            const s = st;
             const savedQ = s.pendingWaterIso;
             try {
                 const lpc = s.lastPlayerVoxelChunk || { cx: 0, cz: 0 };
@@ -2328,21 +2315,21 @@ async function checkBandPhasenBF({ page, check }) {
             const row = document.getElementById("stats-hud-mana-row");
             if (!row) return false;
             const savedMode = r.getGameMode();
-            const savedMana = r.state.player.mana;
+            const savedMana = st.player.mana;
             try {
                 r.setGameMode("pfad");
-                r.state.player.mana = 7;
-                r.state._statsHudLastTick = 0;
+                st.player.mana = 7;
+                st._statsHudLastTick = 0;
                 r.tickStatsHud(1e9);
                 const visOk = !row.hidden;
                 const txt = document.getElementById("stats-hud-mana-text").textContent;
                 r.setGameMode("frieden");
-                r.state._statsHudLastTick = 0;
+                st._statsHudLastTick = 0;
                 r.tickStatsHud(2e9);
                 return visOk && /^7\//.test(txt) && row.hidden === true;
             } finally {
                 r.setGameMode(savedMode);
-                r.state.player.mana = savedMana;
+                st.player.mana = savedMana;
             }
         })();
         // C1-GELENK-READOUT (eine Wahrheit für Animation UND Panel): der Readout ruft computeMotionRoles
@@ -2350,7 +2337,7 @@ async function checkBandPhasenBF({ page, check }) {
         // (Eisen-Räder) klassifiziert als rad; die Panel-Quelle trägt connections-Call + Gelenk-Labels.
         out.c1JointReadout = (() => {
             // AUSLÖSCHUNGS-WELLE — die Wagen-Substanz (KIND_SUBSTANCE) trägt die rad-Klassifikation.
-            const KSc1 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+            const KSc1 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
             const bp = KSc1.fahrzeug_wagen;
             if (!bp) return false;
             const roles = r.computeMotionRoles(bp.parts, bp.connections) || [];
@@ -2387,9 +2374,9 @@ async function checkBandPhasenBF({ page, check }) {
         // unverändert false · sichtbare Änderung true · danach false; + KONSUM (Welt-Tick ruft es).
         out.b6RoofGate = await (async () => {
             const key = "__fp_test__";
-            const saved = r.state.voxelChunks.get(key);
+            const saved = st.voxelChunks.get(key);
             try {
-                r.state.voxelChunks.set(key, {});
+                st.voxelChunks.set(key, {});
                 const dim = 4;
                 const dimY = 8;
                 const dimSq = dim * dim;
@@ -2399,7 +2386,7 @@ async function checkBandPhasenBF({ page, check }) {
                 // gezeichnet wird es erst mit dem eigenen Bau (`_buildVoxelChunkWaterCellSheet`).
                 const cells = new Uint8Array(dimSq * dimY);
                 const a = { key, level, cells, band: { jMin: 0, jMax: dimY - 1 } };
-                const e = r.state.voxelChunks.get(key);
+                const e = st.voxelChunks.get(key);
                 const first = r._caRoofChanged(a, dim, dimY);
                 const dachNachErst = e._caDachNeu ? e._caDachNeu[0] : null;
                 const offenNachErst = e._caDachOffen === true && !e._caDach;
@@ -2411,18 +2398,18 @@ async function checkBandPhasenBF({ page, check }) {
                 const dachNachDritt = e._caDachNeu[0];
                 // KONSUM: der Welt-Tick eines bewegten See-Chunks fragt das Dach-Gate (der Stub macht moved > 0,5)
                 const wk = await window.__wasserChunk("see");
-                const we = wk && r.state.voxelChunks.get(wk);
+                const we = wk && st.voxelChunks.get(wk);
                 let tickRuft = false;
                 if (we) {
-                    const sv = { act: r.state.waterCAActive, tick: we._caRemeshTick };
-                    r.state.waterCAActive = new Set([wk]);
+                    const sv = { act: st.waterCAActive, tick: we._caRemeshTick };
+                    st.waterCAActive = new Set([wk]);
                     delete we._caRemeshTick;
                     r._tickWaterCA = () => 1;
                     try {
                         tickRuft = window.__consumes(r, "_tickWorldWaterCA", r, "_caRoofChanged", []);
                     } finally {
                         delete r._tickWaterCA;
-                        r.state.waterCAActive = sv.act;
+                        st.waterCAActive = sv.act;
                         if (sv.tick !== undefined) we._caRemeshTick = sv.tick;
                         else delete we._caRemeshTick;
                     }
@@ -2434,18 +2421,18 @@ async function checkBandPhasenBF({ page, check }) {
                     Math.abs(dachNachDritt - 4.9) < 1e-6;
                 return first && !second && third && !fourth && dachOk && tickRuft;
             } finally {
-                if (saved === undefined) r.state.voxelChunks.delete(key);
-                else r.state.voxelChunks.set(key, saved);
+                if (saved === undefined) st.voxelChunks.delete(key);
+                else st.voxelChunks.set(key, saved);
             }
         })();
         // E4-KRISTALL + E5: eine wiederholt bewährte Geste (3 finalisierte Läufe, deposit_life, sorrow)
         // kristallisiert zur Regel — Bedingung aus der Emotions-Signatur (field_above sorrow), Effekt =
         // bester Lauf, Registrierung über die Nexus-Queue (zahlt am Wirk-Tor). Behavioral + KONSUM.
         out.e45Crystal = (() => {
-            const dsl = r.state.dsl;
+            const dsl = st.dsl;
             const saved = {
                 hist: dsl.history,
-                q: r.state.nexusEvolutionQueue,
+                q: st.nexusEvolutionQueue,
                 last: dsl.lastCrystallizeAt,
                 sig: dsl.lastCrystalSig,
             };
@@ -2462,9 +2449,9 @@ async function checkBandPhasenBF({ page, check }) {
                 dsl.history = [mk(0.8, 0.7), mk(0.75, 0.6), mk(0.9, 0.8)];
                 dsl.lastCrystallizeAt = -Infinity;
                 dsl.lastCrystalSig = null;
-                r.state.nexusEvolutionQueue = [];
+                st.nexusEvolutionQueue = [];
                 const prog = r._crystallizeGestureRule(performance.now() / 1000);
-                const q = r.state.nexusEvolutionQueue[0];
+                const q = st.nexusEvolutionQueue[0];
                 return (
                     !!prog &&
                     prog[0] === "rule" &&
@@ -2478,15 +2465,15 @@ async function checkBandPhasenBF({ page, check }) {
                 );
             } finally {
                 dsl.history = saved.hist;
-                r.state.nexusEvolutionQueue = saved.q;
+                st.nexusEvolutionQueue = saved.q;
                 dsl.lastCrystallizeAt = saved.last;
                 dsl.lastCrystalSig = saved.sig;
             }
         })();
         // Wächter: eine UNSICHERE Geste (spawn_village = frozen-Welt-Op) kristallisiert NIE.
         out.e45Guard = (() => {
-            const dsl = r.state.dsl;
-            const saved = { hist: dsl.history, q: r.state.nexusEvolutionQueue, last: dsl.lastCrystallizeAt };
+            const dsl = st.dsl;
+            const saved = { hist: dsl.history, q: st.nexusEvolutionQueue, last: dsl.lastCrystallizeAt };
             try {
                 const bad = {
                     id: "t_bad",
@@ -2499,12 +2486,12 @@ async function checkBandPhasenBF({ page, check }) {
                 };
                 dsl.history = [bad, { ...bad }, { ...bad }];
                 dsl.lastCrystallizeAt = -Infinity;
-                r.state.nexusEvolutionQueue = [];
+                st.nexusEvolutionQueue = [];
                 const prog = r._crystallizeGestureRule(performance.now() / 1000);
-                return prog === null && r.state.nexusEvolutionQueue.length === 0;
+                return prog === null && st.nexusEvolutionQueue.length === 0;
             } finally {
                 dsl.history = saved.hist;
-                r.state.nexusEvolutionQueue = saved.q;
+                st.nexusEvolutionQueue = saved.q;
                 dsl.lastCrystallizeAt = saved.last;
             }
         })();
@@ -2534,49 +2521,49 @@ async function checkBandPhasenBF({ page, check }) {
         // fühlt chaos+awe, nicht sorrow).
         out.d5aWeather = (() => {
             const saved = {
-                w: r.state.weather,
-                wt: r.state.weatherTransition,
-                creatures: r.state.creatures,
-                ce: r.state.creatureEmotions,
+                w: st.weather,
+                wt: st.weatherTransition,
+                creatures: st.creatures,
+                ce: st.creatureEmotions,
             };
             // Wer fühlt, zieht der Fauna-Strom des Gefühls (Γ5) — die Probe setzt den Strom, nie Math.random.
             const hatteStrom = Object.prototype.hasOwnProperty.call(r, "_faunaRng");
             try {
-                r.state.weatherTransition = null;
-                r.state.weather = "rainy";
+                st.weatherTransition = null;
+                st.weather = "rainy";
                 const vRainy = r._weatherBlendedValue(0, 1);
-                r.state.weather = "stormy";
+                st.weather = "stormy";
                 const vStormy = r._weatherBlendedValue(0, 1);
-                r.state.weatherTransition = { from: "sunny", to: "rainy", progress: 0.5 };
+                st.weatherTransition = { from: "sunny", to: "rainy", progress: 0.5 };
                 const vMitte = r._weatherBlendedValue(0, 1);
-                r.state.weatherTransition = null;
-                r.state.weather = "sunny";
+                st.weatherTransition = null;
+                st.weather = "sunny";
                 const vSunny = r._weatherBlendedValue(0, 1);
                 if (!(vSunny === 0 && Math.abs(vMitte - 0.5) < 1e-3 && Math.abs(vRainy - 1) < 1e-9 && vStormy > 1))
                     return `Achse: sunny=${vSunny} mitte=${vMitte} rainy=${vRainy} stormy=${vStormy}`;
                 if (!r.requestWeatherTransition("sunny")) return "Gate: sunny abgelehnt";
-                r.state.weatherTransition = null;
+                st.weatherTransition = null;
                 if (r.requestWeatherTransition("xyz")) return "Gate: xyz angenommen";
                 const fake = {
                     userData: { emotions: { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 } },
                 };
-                r.state.creatures = [fake];
-                r.state.creatureEmotions = ["happy"];
+                st.creatures = [fake];
+                st.creatureEmotions = ["happy"];
                 r._faunaRng = (zweck) => (zweck === "gefuehl" ? () => 0.05 : () => 0.99);
-                r.state.weather = "stormy";
+                st.weather = "stormy";
                 r.updateCreatureEmotions();
                 const em = fake.userData.emotions;
                 if (!(em.chaos > 0.1 && em.awe > 0.05 && em.sorrow === 0))
                     return `Innenleben: chaos=${em.chaos} awe=${em.awe} sorrow=${em.sorrow}`;
-                r.state.creatures = saved.creatures;
-                r.state.creatureEmotions = saved.ce;
+                st.creatures = saved.creatures;
+                st.creatureEmotions = saved.ce;
                 return true;
             } finally {
                 if (!hatteStrom) delete r._faunaRng;
-                r.state.weather = saved.w;
-                r.state.weatherTransition = saved.wt;
-                r.state.creatures = saved.creatures;
-                r.state.creatureEmotions = saved.ce;
+                st.weather = saved.w;
+                st.weatherTransition = saved.wt;
+                st.creatures = saved.creatures;
+                st.creatureEmotions = saved.ce;
             }
         })();
         // N7.4 — der Horizont-Mantel ist GESCHNITTEN (Vor-Studio-Kulisse): die V18.113-
@@ -2587,8 +2574,8 @@ async function checkBandPhasenBF({ page, check }) {
         out.a4ShelfAquifer = (() => {
             const cfg = r._voxelChunkConfig(0);
             const { dim, dimY, step, span, floorDrop } = cfg;
-            const base = r.state.terrainBaseHeight || 0;
-            const wl = typeof r.state.waterLevel === "number" ? r.state.waterLevel : 0;
+            const base = st.terrainBaseHeight || 0;
+            const wl = typeof st.waterLevel === "number" ? st.waterLevel : 0;
             // atlas-freien In-Region-Chunk finden (deterministisch: erster Treffer)
             let ox = null,
                 oz = null;
@@ -2606,7 +2593,7 @@ async function checkBandPhasenBF({ page, check }) {
                         }
                     }
                     if (!clean) continue;
-                    const arch = (r.state.architectures || []).some(
+                    const arch = (st.architectures || []).some(
                         (a) =>
                             a &&
                             a.position &&
@@ -2771,16 +2758,16 @@ async function checkBandW5Werkzeugabnutzung({ page, check }) {
 
         // (W6) FORGE setzt wear=1 (frisches Werkzeug startet voll). Test-Blueprint deterministisch aus der
         // Substanz-Zeile KIND_SUBSTANCE.geraet_spitzhacke, am Ende geräumt.
-        const KSw5 = (window.AnazhRealm || r.constructor).KIND_SUBSTANCE || {};
+        const KSw5 = (window.AnazhRealm || AnazhRealm).KIND_SUBSTANCE || {};
         const heldName = "_t_wear_spitz";
-        if (r.state.blueprints._t_wear_spitz) delete r.state.blueprints._t_wear_spitz;
+        if (st.blueprints._t_wear_spitz) delete st.blueprints._t_wear_spitz;
         if (KSw5.geraet_spitzhacke) {
-            r.state.blueprints._t_wear_spitz = {
+            st.blueprints._t_wear_spitz = {
                 name: "_t_wear_spitz",
                 parts: JSON.parse(JSON.stringify(KSw5.geraet_spitzhacke.parts)),
             };
         }
-        let heldBp = r.state.blueprints && r.state.blueprints[heldName];
+        let heldBp = st.blueprints && st.blueprints[heldName];
         out.libraryHasSpitzhacke = !!heldBp;
         if (heldBp) {
             // wear bewusst niedrig setzen; im schöpfer-Modus ist forge gratis (_forgeMaterialAndFreeze ruft
@@ -2812,11 +2799,11 @@ async function checkBandW5Werkzeugabnutzung({ page, check }) {
         }
 
         // (W11) REPAIR ohne gehaltenes Gerät lehnt ab.
-        const oldHeld = r.state.player.equipped.held;
-        r.state.player.equipped.held = null;
+        const oldHeld = st.player.equipped.held;
+        st.player.equipped.held = null;
         const repNoHeld = r.repairHeldDevice();
         out.repairRejectsNoHeld = !repNoHeld.ok && repNoHeld.reason === "no_held_device";
-        r.state.player.equipped.held = oldHeld;
+        st.player.equipped.held = oldHeld;
 
         // (W12) MIGRATION über Snapshot: wear < 1 reist, wear === 1 NICHT (Größen-
         // Disziplin — die meisten Bauplane sind voll, ein Save trägt nur die echt
@@ -2825,7 +2812,7 @@ async function checkBandW5Werkzeugabnutzung({ page, check }) {
             // RE-FETCH (Lehre): zwischen W6-W11 wurde forge/strike/
             // repair gerufen — jeder Pfad MAG state.blueprints[heldName] durch
             // Restore/Snapshot-Tanz neu referenzieren. Frische Referenz holen.
-            heldBp = r.state.blueprints[heldName];
+            heldBp = st.blueprints[heldName];
             r._setBlueprintWear(heldBp, 0.42);
             const ser = r._serializeBlueprint(heldBp);
             const w12Partial = typeof ser.wear === "number" && Math.abs(ser.wear - 0.42) < 0.001;
@@ -2856,7 +2843,7 @@ async function checkBandW5Werkzeugabnutzung({ page, check }) {
         // Aufräumen — Modus zurück, Hand leer + Test-Blueprint geräumt (kein dangling Held).
         if (heldBp) r._setBlueprintWear(heldBp, 1);
         r.equipHeld(null);
-        delete r.state.blueprints._t_wear_spitz;
+        delete st.blueprints._t_wear_spitz;
         r.setGameMode("frieden");
 
         return out;
@@ -2918,7 +2905,7 @@ async function checkBandV18202GeruchFeld({ page, check }) {
         // (N5) Wind-Modulation: downwind > upwind — eine Quelle an fester Position, gesampelt EXAKT downwind und upwind
         const sx = 100,
             sz = 100;
-        const wind = r._windAt(sx, sz, r.state._simZeit);
+        const wind = r._windAt(sx, sz, st._simZeit);
         // Downwind = in Wind-Richtung von Source aus
         const dRecv = { x: sx + wind.x * 50, z: sz + wind.z * 50 };
         const uRecv = { x: sx - wind.x * 50, z: sz - wind.z * 50 };

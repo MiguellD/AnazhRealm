@@ -152,6 +152,48 @@ function ortAn(rumpf) {
     return (i) => (art[i] === "block" || art[i] === undefined ? "unbedingt" : art[i]);
 }
 
+// DAS TSL-LECK (B7 in gate:wasser-leben:bild; w4-licht-baustein e09ca48e): r184 schreibt einen Knoten dorthin, wo er
+// ZUERST gebaut wird — konsumiert ein Baustein einen Knoten des Aufrufers nur in seinem `If`, steht dessen Zuweisung im
+// if-Block, und jeder spätere Leser außerhalb liest dort, wo der Zweig nicht lief, die ungerechnete private Variable (0).
+// Je Funktion jede Variable, deren erste Zuweisung in Zweig oder Schleife steht; ein else, das ihr unmittelbar zuweist
+// (r184 `select`), deckt das Paar, und es zählt am Ort seines `if`. Leck: danach liest sie eine unbedingte Stelle —
+// [{ name, gesetzt, gelesen }] als Anweisungstext (gesetzt mit dem Kopf des Zweigs).
+function tslLecks(wgsl) {
+    const aus = [];
+    for (const rumpf of funktionen(ohneKommentare(wgsl)).aus.values()) {
+        const ort = ortAn(rumpf);
+        const zeile = (i) =>
+            rumpf
+                .slice(rumpf.lastIndexOf("\n", i) + 1)
+                .split("\n")[0]
+                .trim()
+                .slice(0, 160);
+        // je Stelle die innerste offene Klammer, je Klammer ihre schließende; je Variable die Orte ihrer Zuweisungen
+        const [offen, schluss, zuw] = [[], [], new Map()];
+        for (let i = 0, s = [-1]; i < rumpf.length; i++) {
+            if (rumpf[i] === "}") schluss[s.pop()] = i;
+            offen[i] = s[s.length - 1];
+            if (rumpf[i] === "{") s.push(i);
+        }
+        for (const m of rumpf.matchAll(/^\s*(\w+)\s*=(?!=)/gm))
+            zuw.set(m[1], [...(zuw.get(m[1]) || []), m.index + m[0].length]);
+        for (const [name, [i, ...weitere]] of zuw) {
+            let [p, a] = [i, -1];
+            while (ort(p) !== "unbedingt") {
+                a = offen[p];
+                if (!weitere.some((k) => /^\s*else\s*$/.test(rumpf.slice(schluss[a] + 1, offen[k])))) break;
+                p = a - 1;
+            }
+            const leser = new RegExp(`(?<![.\\w])${name}\\b`, "g");
+            leser.lastIndex = i;
+            let n;
+            while (ort(p) !== "unbedingt" && (n = leser.exec(rumpf)) && ort(n.index) !== "unbedingt");
+            if (n) aus.push({ name, gesetzt: `${zeile(a)} ${zeile(i)} }`, gelesen: zeile(n.index) });
+        }
+    }
+    return aus;
+}
+
 // Die Ops-Schätzung eines Rumpfs (ohne Aufrufe): Typ-Annotationen und Deklarationen fallen vor der Operator-Zählung
 // (`vec3<f32>` ist kein Vergleich, `var x : f32;` keine Arbeit, `-> f32` kein Minus).
 function opsSchaetzung(rumpf) {
@@ -378,7 +420,8 @@ function kostenTabelle(nach, vor) {
 // cameraPosition, normalView …), zählt er als `bibliothek`, sonst als `verborgen` (ein Rumpf des Spiels, den der Graph
 // nicht sieht — dort könnte ein Rauschen wohnen). Ausgenommen sind die ZWEIGE des Stamms (`zweige`: die Rümpfe von
 // `AnazhRealm._zweigTSL`, K17-2) — ihr Rumpf liest nur seine Argumente, und die sind Kinder des Aufrufs: der Graph sieht den
-// Inhalt, gezählt als `zweig`. Rein — läuft in der Seite und im Selbsttest.
+// Inhalt, gezählt als `zweig`. Dazu je benanntem Uniform seine Knoten (`uniformen`: der Schirm-Pixel des Mikro-Details,
+// material.K2). Rein — läuft in der Seite und im Selbsttest.
 function stoffGraph(stoff, rauschQuelle, tsl, zweige) {
     const ist = new RegExp(rauschQuelle, "i");
     const aus = {
@@ -390,6 +433,7 @@ function stoffGraph(stoff, rauschQuelle, tsl, zweige) {
         verborgen: 0,
         bibliothek: 0,
         zweig: 0,
+        uniformen: {},
     };
     if (!stoff) return Object.assign(aus, { fehler: "kein Stoff" });
     const bib = new Set();
@@ -433,6 +477,7 @@ function stoffGraph(stoff, rauschQuelle, tsl, zweige) {
             aus.rauschen++;
             aus.rauschNamen[name] = (aus.rauschNamen[name] || 0) + 1;
         }
+        if (n.isUniformNode === true && n.name) aus.uniformen[n.name] = (aus.uniformen[n.name] || 0) + 1;
         if (n.isTextureNode === true && n.value) {
             const t = n.value.name || "namenlos";
             aus.texturen[t] = (aus.texturen[t] || 0) + 1;
@@ -595,6 +640,49 @@ fn main( @location( 0 ) uv : vec2<f32> ) -> OutputStruct {
     const b4 = wgslKosten(W.replace("v = ( v + dpdx( v ) );", "v = ( v + dpdx( v ) + noise3( v ) );"));
     pruef("fremdes Rauschen", [b4.rauschen, b4.rauschNamen], [1, { noise3: 1 }]);
     if (kostenUrteil(b, STOFFE.boden.budget, "boden").length) fehler.push("das Boden-Budget fiel ohne Grund");
+    // Das TSL-Leck (je Funktion ein Fall): die erste Zuweisung im Zweig, danach ein unbedingter Leser — rot beim Namen und
+    // mit dem Kopf des Zweigs; das select-Paar (if und else weisen zu) und die Variable vor dem Zweig (`toVar`) bleiben
+    // still, ein select-Paar in einem Zweig nicht.
+    const lecks = tslLecks(`
+fn leck() -> f32 {
+    if ( a ) {
+        x = 1.0;
+    }
+    return x;
+}
+fn auswahl() -> f32 {
+    if ( a ) {
+        x = 1.0;
+    } else {
+        x = 2.0;
+    }
+    return x;
+}
+fn vorher() -> f32 {
+    x = 0.0;
+    if ( a ) {
+        x = 1.0;
+    }
+    return x;
+}
+fn auswahlImZweig() -> f32 {
+    if ( b ) {
+        if ( a ) {
+            x = 1.0;
+        } else {
+            x = 2.0;
+        }
+    }
+    return x;
+}`);
+    pruef(
+        "TSL-Leck",
+        lecks.map((l) => [l.name, l.gesetzt, l.gelesen]),
+        [
+            ["x", "if ( a ) { x = 1.0; }", "return x;"],
+            ["x", "if ( b ) { x = 1.0; }", "return x;"],
+        ]
+    );
 
     // (3) der Stoff-Graph: ein Knoten-Graph wie r184 ihn baut — Slots, geteilte Knoten einmal, Überladung und Aufruf mit
     // Layout sind Rauschen, ein Aufruf ohne Layout ist verborgen (oder Bibliothek, wenn die TSL ihn exportiert), Texturen
@@ -883,6 +971,7 @@ function probeUrteil(probe) {
 module.exports = {
     STOFFE,
     wgslKosten,
+    tslLecks,
     kostenUrteil,
     kostenTabelle,
     probeUrteil,

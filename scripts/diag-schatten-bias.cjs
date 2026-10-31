@@ -45,12 +45,11 @@ const MASKE_MIN = 2000;
 // DIE QUELL-WAND (AST): jede Zuweisung an `….normalBias` steht im Gesetz (`_schattenNormalBias` oder einer Methode, die es
 // ruft und nur dessen Ergebnis schreibt) — kein fester Meter-Wert neben dem Gesetz.
 function quellWand(quelle) {
-    const lauf = (n, f) => (f(n), stammLib.kinder(n, (c) => lauf(c, f)));
     const befunde = [];
     // je Methode einer Klasse aus der EINEN Glieder-Tafel (`stammLib.glieder`, je Text einmal geparst)
     stammLib.glieder(quelle).forEach(({ name, knoten: m }) => {
         if (m.type !== "MethodDefinition") return;
-        lauf(m.value.body, (n) => {
+        stammLib.wandere(m.value.body, (n) => {
             if (n.type !== "AssignmentExpression" || n.left.type !== "MemberExpression" || n.left.computed) return;
             // der Tiefen-Bias einer Schatten-Karte (`….shadow.bias`, `sh.bias`) steht nur im Gesetz (`_schattenBias`)
             if (

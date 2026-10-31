@@ -76,15 +76,14 @@ const FROZEN = {
 };
 const MG = PC.MEMBRAN_GESETZ;
 check("MEMBRAN_GESETZ existiert im Gesetzbuch", !!MG);
-let drift = [];
-(function walk(a, b, pfad) {
-    for (const k of Object.keys(a)) {
-        const va = a[k];
-        const vb = b ? b[k] : undefined;
-        if (va && typeof va === "object" && !Array.isArray(va)) walk(va, vb, pfad + k + ".");
-        else if (!eq(vb, va, 0)) drift.push(`${pfad}${k}: Gesetz=${JSON.stringify(vb)} ≠ eingefroren=${JSON.stringify(va)}`);
-    }
-})(FROZEN, MG, "");
+// die Drift je Blatt der Tabelle `a` gegen das Gesetz `b`: [Pfad, Gesetz, eingefroren] — EIN Gang für die Wand und ihren Selbst-Test
+const driftVon = (a, b, pfad = "") =>
+    Object.keys(a).flatMap((k) => {
+        const [va, vb] = [a[k], b ? b[k] : undefined];
+        if (va && typeof va === "object" && !Array.isArray(va)) return driftVon(va, vb, pfad + k + ".");
+        return eq(vb, va, 0) ? [] : [[pfad + k, vb, va]];
+    });
+const drift = driftVon(FROZEN, MG).map(([p, vb, va]) => `${p}: Gesetz=${JSON.stringify(vb)} ≠ eingefroren=${JSON.stringify(va)}`);
 check("Zwillings-Wand: alle Gesetz-Zahlen == Alt-Literale", drift.length === 0, drift.slice(0, 4).join(" · "));
 const fremd = Object.keys(MG || {}).filter((k) => !(k in FROZEN));
 check("Zwillings-Wand: das Gesetz trägt kein Feld außerhalb der Tabelle (march/look fielen mit D8)", fremd.length === 0, fremd.join(", "));
@@ -170,15 +169,7 @@ check("Shell: buildFog ist fort", ...shell(/buildFog|fogMat/));
 // ── Selbst-Test: eine injizierte Drift MUSS rot erkannt werden ──
 const kaputt = JSON.parse(JSON.stringify(FROZEN));
 kaputt.kk = 14.0;
-let selbst = [];
-(function walk(a, b, pfad) {
-    for (const k of Object.keys(a)) {
-        const va = a[k];
-        const vb = b ? b[k] : undefined;
-        if (va && typeof va === "object" && !Array.isArray(va)) walk(va, vb, pfad + k + ".");
-        else if (!eq(vb, va, 0)) selbst.push(pfad + k);
-    }
-})(kaputt, MG, "");
+const selbst = driftVon(kaputt, MG).map(([p]) => p);
 check("SELBST-TEST: injizierte kk-Drift wird erkannt", selbst.length === 1 && selbst[0] === "kk");
 
 wandEnde(errs, "die Membran hat EINE Zahlen-Quelle: das Gesetzbuch trägt die eingefrorenen Zahlen (Welle + Film), die Ableitung ist formel-identisch, die Alt-Literale der Shell und der Nebel sind fort.");

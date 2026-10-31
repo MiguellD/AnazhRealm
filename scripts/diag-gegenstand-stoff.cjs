@@ -59,8 +59,9 @@ const BAND = {
     schnur: [0.02, 0.4],
 };
 const LABOR = new Set(["ton", "lehre"]);
-const lum = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-const lin = (v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
+// Luma und sRGB → linear: die EINE Quelle der Linsen (abnahme-urteil)
+const { luma709: lum, srgbLin } = require("./lib/abnahme-urteil.cjs");
+const lin = (v) => srgbLin(v * 255);
 const linHex = (h) => [lin(((h >> 16) & 255) / 255), lin(((h >> 8) & 255) / 255), lin((h & 255) / 255)];
 
 // Was ein Mesh der Welt an Albedo liefert: Vertex-Farben (Mittel) oder die Material-Farbe.

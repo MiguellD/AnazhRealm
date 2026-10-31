@@ -856,7 +856,7 @@ class AnazhRealm_gelaende_chunks {
     // Generation seiner Chunks steigt (`_voxelStand`), ihre Antworten im Flug fallen beim Eintreffen; aus den Caches
     // fallen nur die Chunks, deren Stand er ändert (sein Karten-Fußabdruck samt 3×3), je LOD. Der Rest der Welt streamt
     // weiter (bis K23 leerte jeder Edit beide Caches der ganzen Welt und verwarf jede Antwort im Flug).
-    _voxelWorkerNotifyEdit(ed) {
+    _voxelWorkerNotifyEdit(ed, anhang = true) {
         if (!this.state.voxelWorker) return;
         const k = this._voxelEditKarte();
         const span = k.span;
@@ -871,6 +871,7 @@ class AnazhRealm_gelaende_chunks {
                 for (let cz = cz0; cz <= cz1; cz++)
                     for (let lod = 0; lod <= 3; lod++) cache.delete(`${cx},${cz},${lod}`);
         }
+        if (!anhang) return; // die ganze Liste reist danach (`_standRueckspielen`)
         try {
             this._voxelZustandPost({
                 type: "state-update",
@@ -2272,6 +2273,16 @@ class AnazhRealm_gelaende_chunks {
         if (this.state.pendingFoliageChunks) this.state.pendingFoliageChunks.delete(key);
         const entry = this.state.voxelChunks.get(key);
         this._chunkSatzAus("boden", key); // DER SATZ: der Bereich wird frei, der Index legt sich neu
+        // die vorläufige Säule über ihm (`_saeuleVorlaeufig`): sein Neubau zeichnet sie (der Stand trägt den Edit) — mit dem
+        // letzten Chunk unter ihrem Grundriss geht sie aus dem Satz, im selben Takt, in dem sein Netz eintritt
+        const S = this.state.saeulenVorlaeufig;
+        if (S && S.size)
+            for (const [k, s] of S)
+                if (s.offen.delete(key) && !s.offen.size) {
+                    this._chunkSatzAus("boden", k);
+                    this._queueGeometryDispose(s.geom);
+                    S.delete(k);
+                }
         // der Faden gibt die Zellen frei, die nur dieser Chunk trug (Karte hydro-faden)
         if (entry && entry.zellenId && this.state.voxelWorker)
             this.state.voxelWorker.postMessage({ type: "zellen-frei", keys: [key], zids: [entry.zellenId] });
@@ -2973,11 +2984,21 @@ class AnazhRealm_gelaende_chunks {
         // der Ladeschirm auch steht. Bis dahin teilten beide Zähler und Uhr (jeder Neu-Ruf eines Stücks im Flug zählt), und nach
         // dem Umstellen verhungerte der Ring hinter dem Spieler (integ-CI 39514723735: wiese Ring 0 von 2 nach 2224 Takten). Bis
         // B-Blick baute er rundum in Ring-Reihe (GTX kalt: 40 von 122 Ring-Rufen außer Blick, p3/n2010/blick/f5.txt).
+        // DIE HÄLFTE AUSSER BILD GEHÖRT DEM LEERLAUF (w4-ankunft-2): unter dem Ladeschirm baut der Takt ein Stück außer Bild nur,
+        // wenn der Haupt-Faden seit dem letzten Takt Leerlauf hatte (`_ringLeerlauf`, gesetzt von einem Leerlauf-Ruf ohne Frist,
+        // `_imLeerlauf`: er kommt nur, wenn der Faden ruht). Trägt der Faden das Bild ganz (GTX kalt bis zum Bild 97 % belegt),
+        // wartet der Ring hinter dem Spieler auf den Nachlauf des Bilds (`_nachlaufTakt`, rundum); wartet das Bild auf die Fäden
+        // oder die GPU, baut er in ihrem Leerlauf — der Ring steht rundum, wie lange der Ladeschirm auch steht. Ein wartendes
+        // Stück hält den Strom wach. Bis hierher nahm die Hälfte außer Bild jedem Lade-Takt seine Kappe (GTX kalt, B-Blick:
+        // 40 Ring-Rufe, 10 Einbauten und 10 Saaten außer Blick, 0,94 s Haupt-Faden vor dem Bild).
         let [haelfte, n, t0, satt] = [null, 0, 0, false];
         const weiter = (frist) =>
             this._kappeOffen(++n, MAX_PER_FRAME, frist) &&
             this._kappeOffen(performance.now() - t0, FRAME_BUDGET_MS, frist);
         const [lade, halb, zellen] = [this._ladeTakt(), span * Math.SQRT1_2, []];
+        const leerlauf = lade && this._ringLeerlauf === true;
+        this._ringLeerlauf = false;
+        let draussen = 0;
         for (let r = 0; r <= ringRadius; r++)
             for (let dz = -r; dz <= r; dz++)
                 for (let dx = -r; dx <= r; dx++) {
@@ -3002,10 +3023,18 @@ class AnazhRealm_gelaende_chunks {
             if (existing) {
                 const currentLod = existingLod !== null ? existingLod : 0;
                 if (currentLod !== desiredLod && !existing.empty) {
+                    if (lade && !bild && !leerlauf) {
+                        draussen++;
+                        continue;
+                    }
                     this._rebuildVoxelChunk(cx, cz, desiredLod);
                     built++;
                     satt = !weiter(bild);
                 }
+                continue;
+            }
+            if (lade && !bild && !leerlauf) {
+                draussen++;
                 continue;
             }
             this._ensureVoxelChunkAt(cx, cz, desiredLod);
@@ -3014,9 +3043,18 @@ class AnazhRealm_gelaende_chunks {
             // Frame und Hälfte auch über Budget — sonst friert das Streaming ein.
             satt = !weiter(bild);
         }
+        // die Hälfte außer Bild wartet: der Leerlauf-Ruf (EINER zugleich) gibt dem nächsten Lade-Takt ihre Kappe
+        if (draussen && !this._ringLeerlaufBestellt) {
+            this._ringLeerlaufBestellt = true;
+            this._imLeerlauf(() => {
+                this._ringLeerlaufBestellt = false;
+                this._ringLeerlauf = true;
+            });
+        }
         this._pruneDistantVoxelChunks(playerPos);
-        // Ein Bau-Ruf (fertig, wartend oder verworfen) hält den Ring wach; die Chunk-Menge regt die Welt selbst.
-        this._standMeldet("strom", 1, false, built > 0);
+        // Ein Bau-Ruf (fertig, wartend oder verworfen) hält den Ring wach — auch ein Stück, das auf den Leerlauf wartet; die
+        // Chunk-Menge regt die Welt selbst.
+        this._standMeldet("strom", 1, false, built > 0 || draussen > 0);
         // DETERMINISMUS-BOGEN P3 — kein BVH-Pump/Watchdog mehr: die Spieler-Kollision
         // liest das Dichtefeld (`_stepCharacter`), das überall definiert ist (auch unter
         // ungebauten Chunks) → der Spieler kann nicht durchfallen, kein Sync-BVH-Anker nötig.
@@ -3053,12 +3091,27 @@ class AnazhRealm_gelaende_chunks {
         // Kein Deckel (K23): jeder Edit bleibt, Main und Worker tragen dieselbe Liste; die Leser fragen je Chunk (die
         // Karte, `_voxelEditKarte`). Bis K23 verdrängte ein FIFO-Deckel (256) still den ersten — nur im Main.
         edits.push(newEdit);
+        this._editWirkt(newEdit, true);
+        // Fill unter sich darf den Spieler nicht begraben (sonst steckt er Meter unter der neuen
+        // Oberfläche im Fels) → Rettung. Nur fill schließt ein; carve öffnet.
+        if (mode === "fill") this._rescuePlayerFromEditSolid(x, yClamped, z, radius);
+        // Persistenz debounced (~1.2 s nach dem letzten Hit): der nächste Stand reicht dem Speicher-Faden die neuen Edits als
+        // Anhang. Der Edit liegt schon in `worldMeta.voxelEdits`; jeder andere Save nimmt ihn sofort mit.
+        this._scheduleEditSave();
+        return true;
+    }
+
+    // DIE WIRKUNG EINES EDITS (der EINE Reaktiv-Pfad): Faden, Stau, Gras, Neubau, Wasser — für den neuen Edit (`neu`: der Faden
+    // bekommt ihn als Anhang, das stehende Netz trägt seine Säule vorläufig) und für jeden, der mit einem zurückgespielten Stand
+    // kam oder fiel (`_standRueckspielen`: der Faden bekommt danach die ganze Liste, der Neubau trägt den Boden ohne ihn).
+    _editWirkt(ed, neu) {
         // DIE REICHWEITE DES EDITS (gelaende-core `editReich`): so weit ändert seine Form die Dichte — jeder Neubau, jede
         // Wasser-Kappe, jede Weckung unten deckt sie (der Radius allein ließ die Kehle der Vereinigung im Nachbar-Chunk alt).
-        const reich = globalThis.__gelaendeCore.editReich(newEdit);
+        const { x, z } = ed;
+        const reich = globalThis.__gelaendeCore.editReich(ed);
         // Edit-Delta an den Worker: die Generation der berührten Chunks steigt, ihre Antworten im Flug und im Cache
         // fallen; der Pump fordert frisch nach. No-op ohne gespawnten Worker (vor Worldgen).
-        this._voxelWorkerNotifyEdit(newEdit);
+        this._voxelWorkerNotifyEdit(ed, neu);
         // der Stau der Werke folgt dem Edit, ehe ein Faden die Chunks neu baut (ein Damm hält, ein Schnitt öffnet ihn)
         this._stauFelder();
         // `_remeshVoxelChunksAround` ist der EINZIGE Reaktiv-Pfad: die Chunks bauen neu, das Cell-Feld
@@ -3079,16 +3132,13 @@ class AnazhRealm_gelaende_chunks {
         // nah zuerst), bis dahin trägt das stehende Netz die Säule (`_editGestaltVorlaeufig`) — dasselbe Bild, in dem der
         // Klick fiel. Bis bau-faden baute der Edit seinen Fußabdruck synchron (`_syncRebuildEditFootprint`, 4 Chunks:
         // 215 ms je Bau-Klick im Haupt-Faden, höchstens 374 ms).
-        this._editGestaltVorlaeufig(newEdit);
+        if (neu) this._editGestaltVorlaeufig(ed);
         // Kappen/Quell-Markierungen/Stau-Felder der Region verwerfen — der Spill-Scan muss die FRISCHEN Zellen sehen (ein
         // Fill kann Damm sein, ein Carve ihn öffnen; die Zellen des Neubaus verwirft `_finalizeVoxelChunkBuild` ebenso), und
         // der Lazy-Neubau legt das Level auf das Gesetz der neuen Zellen (`_ensureWaterCALevel`, F3). Bis F3 säte der Edit das Level
         // vorher aus den alten Zellen (`_preSeedWaterCAForEdit`), damit der Automat den Graben sichtbar fülle — sein Dach
         // stand dabei je Spalte auf einer eigenen Höhe neben dem Spiegel (die zweite Fläche).
         this._invalidateWaterCapsAround(x, z, reich);
-        // Fill unter sich darf den Spieler nicht begraben (sonst steckt er Meter unter der neuen
-        // Oberfläche im Fels) → Rettung. Nur fill schließt ein; carve öffnet.
-        if (mode === "fill") this._rescuePlayerFromEditSolid(x, yClamped, z, radius);
         // T4a-2 — den Wasser-Automaten in der Carve-Region + 1-Ring WECKEN: die Zellen änderten sich
         // (neuer Raum geöffnet/verfüllt) → das Wasser strömt nach (active-cell, settled danach inaktiv).
         {
@@ -3099,10 +3149,6 @@ class AnazhRealm_gelaende_chunks {
             const maxCZ = Math.floor((z + reich) / span) + 1;
             for (let cx = minCX; cx <= maxCX; cx++) for (let cz = minCZ; cz <= maxCZ; cz++) this._wakeWaterCA(cx, cz);
         }
-        // Persistenz debounced (~1.2 s nach dem letzten Hit): der nächste Stand reicht dem Speicher-Faden die neuen Edits als
-        // Anhang. Der Edit liegt schon in `worldMeta.voxelEdits`; jeder andere Save nimmt ihn sofort mit.
-        this._scheduleEditSave();
-        return true;
     }
 
     carveVoxel(x, y, z, r) {
@@ -3191,8 +3237,9 @@ class AnazhRealm_gelaende_chunks {
     // der sie zugewandt ist: beim Aufschütten die nach oben gewandte auf die Krone, die nach unten gewandte auf den Fuß, beim
     // Graben umgekehrt. Lage und Morph-Ziel gehen in den Satz (`_chunkSatzMarke`), die Boden-Karte rastert die bewegten
     // Dreiecke der gezeichneten Lage neu (`_bodenKarteNaht` ganz): Fuß, Wiese und Streu lesen die Säule ab dem Bild des
-    // Klicks, der Körper steht auf dem Gesetz (Lehre 22). Kein Chunk-Stoff entsteht hier; der Neubau ersetzt das Netz.
-    // Liefert die Zahl der Chunks, deren Netz die Säule trägt.
+    // Klicks, der Körper steht auf dem Gesetz (Lehre 22). Kein Chunk-Stoff entsteht hier; der Neubau ersetzt das Netz. Trägt
+    // kein Netz die Krone eines Aufschüttens (keine Ecke in der Säule: der Block auf einem Bau), zeichnet die Säule sich selbst
+    // (`_saeuleVorlaeufig`). Liefert die Zahl der Chunks, deren Netz die Säule trägt.
     _editGestaltVorlaeufig(ed) {
         const vc = this.state.voxelChunks;
         if (!vc || !vc.size || !(ed.r > 0)) return 0;
@@ -3231,7 +3278,79 @@ class AnazhRealm_gelaende_chunks {
                 this._streuFussNeu(cx, cz);
                 n++;
             }
+        if (fill) this._saeuleVorlaeufig(ed);
         return n;
+    }
+
+    // DIE SÄULE, DIE KEIN NETZ TRÄGT (w4-fall-wackler): ein Aufschütten, in dessen Säule kein Netz eine Ecke hat — der Block
+    // auf einem Bau (dem Dachboden, einem Deck), über einem Grund, dessen Platte den Boden darunter schnitt (gelaende-core
+    // `erdbauSchnitt`) —, rückt keine Ecke auf die Krone (`_editGestaltVorlaeufig`): bis zum Neubau aus dem Faden zeichnete
+    // NICHTS den Block, auf dem der Leib ab dem Takt des Klicks stand (er steht auf dem Gesetz), der Sicht-Boden unter seinem
+    // Fuß war blind (`_bodenSichtAt` null, 9–10 Takte bis zur ersten Antwort des Fadens). gate:fall-waechter B2 Dach sah es,
+    // wenn die Landung vor dem Neubau kam: „SOHLE 198 m“ in der CI auf 2 Kernen (3 von 4 Läufen), lokal auf einem Kern. Dann
+    // zeichnet die Säule sich selbst — die Form des Kerns (`editForm`: Radius r, eben bei y ± r) als Bereich `saeule:<n>` im
+    // Boden-Satz, gefärbt wie jeder Boden (`_attachVoxelFieldColors`); ihre Krone ist der gezeichnete Boden des EINEN Lesers
+    // (`_bodenSichtAt`), bis jeder Chunk unter ihrem Grundriss neu gebaut ist (der Stand verwirft jede ältere Antwort des
+    // Fadens; `_disposeVoxelChunk` nimmt die Säule mit dem letzten). Liefert ihren Schlüssel oder null (das Netz trägt die
+    // Krone über der Mitte, kein Chunk liegt unter ihr).
+    _saeuleVorlaeufig(ed) {
+        const vc = this.state.voxelChunks;
+        if (!this.state.scene || !vc) return null;
+        const { span, step } = this._voxelChunkConfig();
+        const [r, y0, y1] = [ed.r, ed.y - ed.r, ed.y + ed.r];
+        if (this._bodenSichtAt(ed.x, ed.z) >= y1 - step / 2) return null;
+        const offen = new Set();
+        for (let cx = Math.floor((ed.x - r) / span); cx <= Math.floor((ed.x + r) / span); cx++)
+            for (let cz = Math.floor((ed.z - r) / span); cz <= Math.floor((ed.z + r) / span); cz++)
+                if (vc.has(`${cx},${cz}`)) offen.add(`${cx},${cz}`);
+        if (!offen.size) return null;
+        const mitte = `${Math.floor(ed.x / span)},${Math.floor(ed.z / span)}`;
+        const ck = offen.has(mitte) ? mitte : offen.values().next().value;
+        // die Ecken: 0 die Mitte der Krone, je Rand-Schritt k die Krone (1 + k), der Mantel oben (1 + K + k) und unten
+        // (1 + 2K + k), der Fuß (1 + 3K + k), 4K + 1 die Mitte des Fußes — die Normale der Krone zeigt nach oben, die des
+        // Mantels nach außen, die des Fußes nach unten
+        const K = AnazhRealm.SAEULE_ECKEN;
+        const nV = 4 * K + 2;
+        const [P, N] = [new Float32Array(nV * 3), new Float32Array(nV * 3)];
+        const ecke = (i, x, y, z, nx, ny, nz) => {
+            [P[i * 3], P[i * 3 + 1], P[i * 3 + 2], N[i * 3], N[i * 3 + 1], N[i * 3 + 2]] = [x, y, z, nx, ny, nz];
+        };
+        ecke(0, ed.x, y1, ed.z, 0, 1, 0);
+        ecke(4 * K + 1, ed.x, y0, ed.z, 0, -1, 0);
+        for (let k = 0; k < K; k++) {
+            const [c, s] = [Math.cos((2 * Math.PI * k) / K), Math.sin((2 * Math.PI * k) / K)];
+            const [x, z] = [ed.x + r * c, ed.z + r * s];
+            ecke(1 + k, x, y1, z, 0, 1, 0);
+            ecke(1 + K + k, x, y1, z, c, 0, s);
+            ecke(1 + 2 * K + k, x, y0, z, c, 0, s);
+            ecke(1 + 3 * K + k, x, y0, z, 0, -1, 0);
+        }
+        // je Rand-Schritt das Dreieck der Krone (von oben gegen den Uhrzeiger), das Viereck des Mantels, das Dreieck des Fußes
+        const I = new Uint16Array(12 * K);
+        for (let k = 0; k < K; k++) {
+            const [j, m, f] = [(k + 1) % K, 1 + K, 1 + 2 * K];
+            I.set(
+                [0, 1 + j, 1 + k, m + k, m + j, f + j, m + k, f + j, f + k, 4 * K + 1, 1 + 3 * K + k, 1 + 3 * K + j],
+                12 * k
+            );
+        }
+        const g = new THREE.BufferGeometry();
+        const attr = (a, n) => new THREE.Float32BufferAttribute(a, n);
+        g.setAttribute("position", attr(P, 3));
+        g.setAttribute("normal", attr(N, 3));
+        g.setAttribute("aHimmel", attr(new Float32Array(nV).fill(1), 1)); // unter dem Himmel: die Säule trägt keinen Höhlen-Graph
+        g.setIndex(new THREE.BufferAttribute(I, 1));
+        this._attachVoxelFieldColors(g); // die Farbe des Bodens am Punkt und der Fels-Stoff, wie jeder Bau im Haupt-Faden
+        const E = vc.get(ck);
+        g.setAttribute("aMorphTarget", attr(new Float32Array(P), 3)); // kein Geomorph: das Ziel ist die Lage
+        g.setAttribute("aMorphWeight", attr(new Float32Array(nV).fill(this._morphCode((E && E.lod) || 0, 0)), 1));
+        g.setAttribute("aNormalZiel", attr(new Float32Array(N), 3));
+        g.setAttribute("aFarbeZiel", attr(new Float32Array(g.attributes.color.array), 3));
+        const S = this.state.saeulenVorlaeufig || (this.state.saeulenVorlaeufig = Object.assign(new Map(), { n: 0 }));
+        const key = `saeule:${++S.n}`;
+        this._chunkSatzEin("boden", key, g, ck);
+        S.set(key, { x: ed.x, z: ed.z, rr: r * r, krone: y1, offen, geom: g });
+        return key;
     }
 
     // Game-Loop-Hook: der Neubau der dirty Chunks über den Worker, NAH ZUERST (Lehre 25). Je Takt gehen die Aufträge der
@@ -3359,6 +3478,9 @@ AnazhRealm.FERN_FARBE = Object.freeze({
 // Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den
 // Worker voraus (er baut sie nacheinander, ~150 ms je Chunk) — eingebaut wird je Takt höchstens EINER, der nächste fertige.
 AnazhRealm.DIRTY_IM_FLUG = 3;
+// DIE VORLÄUFIGE SÄULE (`_saeuleVorlaeufig`): so viele Ecken trägt ihr Rand — die Kante des Vielecks liegt bei r = 3,5 m höchstens
+// r · (1 − cos(π / 16)) = 7 cm innerhalb des Kreises, dessen Krone der Boden-Leser liest. Wirts-Auflösung.
+AnazhRealm.SAEULE_ECKEN = 16;
 // DIE FOLGE-SCHLANGE der Nachbar-Morphs (`_tickMorphFolge`, fahrt-takt): je Takt ohne Chunk-Einbau so viele ms (mindestens
 // ein Morph), eine Bitte älter als die Frist (Takte) morpht in jedem Takt.
 AnazhRealm.MORPH_FOLGE_MS = 0.5;

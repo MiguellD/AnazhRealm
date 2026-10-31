@@ -580,42 +580,36 @@ class AnazhRealm_bild_himmel {
     // HIMMEL DER EINEN ATMOSPHÄRE (D3): der Wandel-Pass legt die Himmels-Sicht (Azimut absolut, mit Boden) als Equirekt
     // 128×64 ab, PMREM filtert sie — azimut-abhängig (zur Sonne heller als von ihr weg), in derselben E0 wie das Richtlicht.
     // Bis D3 malte die CPU einen azimut-konstanten Verlauf aus Tint-Farben (128×64 sRGB): Licht-Verhältnis 4,2 statt 5,1.
-    // Grober Takt: neu nur, wenn die Sonne sich um mehr als ein halbes Grad drehte, Tönung oder E0 sich änderten, höchstens
-    // je `SKY_ENV_REGEN_MIN_MS` (der Sprung der Uhr geht an der Drossel vorbei); die Bestrahlung liest die CPU zurück
-    // (`_himmelUmgebungLesen` → `_himmelsIrradianz`).
+    // Sie trägt den Himmel JE EINHEIT DES LICHTS (`passUmgebung`): E0 und Tönung nehmen ihre Leser je Bild (`_umgebungLicht`),
+    // sie zeichnen sie nie neu. Grober Takt: neu nur, wenn die Sonne sich um mehr als ein halbes Grad drehte, Mond, Medium oder
+    // Höhe des Auges sich änderten, höchstens je `SKY_ENV_REGEN_MIN_MS` der WELT-UHR (`spielZeit`; der Sprung der Uhr geht an
+    // der Drossel vorbei); die Bestrahlung liest die CPU zurück (`_himmelUmgebungLesen` → `_himmelsIrradianz`).
     _ensureSkyEnvironment(force, sprung) {
         const st = this.state;
         if (typeof THREE === "undefined" || !st.scene || !st.renderer) return false;
         if (!st.rendererReady) return false; // das Env-Sampling braucht den initialisierten Renderer
         const A = this._atmoLutBau();
         const U = A.U;
-        const t = U.toenung.value;
         const neu = {
             sx: U.sonne.value.x,
             sy: U.sonne.value.y,
             sz: U.sonne.value.z,
             my: U.mond.value.y,
-            t: t.x + t.y + t.z,
-            e: U.licht.value,
             m: A.mediumBeta,
             h: U.hKm.value,
         };
         const last = st._skyEnvLast;
-        const nowMs = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+        // die Welt-Uhr, nie die Wanduhr: das Medium des Wetters zieht in Welt-Sekunden, die Umgebung folgt ihm auf jedem Gerät
+        // gleich (eine Uhr, die zurückläuft — ein geladener Stand —, drosselt nicht)
+        const nowMs = (st.spielZeit || 0) * 1000;
+        const seit = nowMs - (st._skyEnvLastRegenMs == null ? -Infinity : st._skyEnvLastRegenMs);
         const gleich =
             !!last &&
             last.sx * neu.sx + last.sy * neu.sy + last.sz * neu.sz > Math.cos((0.5 * Math.PI) / 180) &&
             Math.abs(last.my - neu.my) < 0.01 &&
-            Math.abs(last.t - neu.t) < 0.02 * Math.max(1, neu.t) &&
-            Math.abs(last.e - neu.e) < 0.02 * Math.max(1e-3, neu.e) &&
             last.m === neu.m &&
             Math.abs(last.h - neu.h) < 0.05;
-        if (
-            !force &&
-            last &&
-            (gleich || (!sprung && nowMs - (st._skyEnvLastRegenMs || -Infinity) < AnazhRealm.SKY_ENV_REGEN_MIN_MS))
-        )
-            return true;
+        if (!force && last && (gleich || (!sprung && seit >= 0 && seit < AnazhRealm.SKY_ENV_REGEN_MIN_MS))) return true;
         try {
             // Null-Renderer (headless): kein Pass, kein PMREM — die Equirekt-Tafel ist die Umgebung (ungezeichnet).
             if (st.renderer._isHeadlessNull) {
@@ -719,6 +713,16 @@ class AnazhRealm_bild_himmel {
         return this._atmoLutBau().rtEq.texture;
     }
 
+    // DAS LICHT DER UMGEBUNG JETZT (TSL, rgb): die Umgebung trägt den Himmel je Einheit des Lichts (`passUmgebung`), wie die
+    // Tafeln; E0 (`U.licht`) und die Tönung (`U.toenung`) nimmt jeder Leser je Bild aus denselben geteilten Uniforms wie die
+    // Kuppel und die Bestrahlung der Belichtung — die Stoffe (`_spiegelUmgebung`), das Licht der Welt (`_weltLicht`), der Film
+    // des Tors; die CPU (`_himmelsIrradianz`) ihre Werte. Bis licht.K5 backte die Neuzeichnung beide ein, höchstens je 6 s
+    // Wanduhr: im Wetter-Zug sprang das Bild, sobald die Umgebung nachzog (GTX 0,230 EV/s, takt24c).
+    _umgebungLicht() {
+        const U = this._atmoLutBau().U;
+        return U.toenung.mul(U.licht);
+    }
+
     // DIE KRONE EINES BAUM-KÖRPERS (D10) aus dem Kronen-Buch (`_foundryCacheSet`, Beipack `__krone` der Höhen-Stufe): die
     // Laub-Teile [cx, cy, cz, rXZ, rY] der GEZEICHNETEN Krone im Vorlagen-Maß und ihre Farbe (linear) — derselbe Körper-
     // Schlüssel (Art · Gestalt · Höhen-Stufe · Prägung) wie die Höhe (`_foundryBaumHoehe`). Ein reiner Leser ohne Bestellung
@@ -737,14 +741,18 @@ class AnazhRealm_bild_himmel {
         if (p < 0.75) return "autumn";
         return "winter";
     }
-    // Die EINE Saison-Tönungs-Uniform, lazy (TSL muss geladen sein): die Nah-Wiese (`_grassInstanceMat`), das
-    // Foundry-Laub/-Gras (`_foundryTreeMaterial`) und die Karte (Impostor-Stoff) lesen `uSeasonMul` als Albedo-
+    // Die EINE Saison-Tönungs-Uniform, lazy (TSL muss geladen sein): das
+    // Foundry-Laub/-Gras (`_foundryTreeMaterial`, die Nah-Wiese) und die Karte (Impostor-Stoff) lesen `uSeasonMul` als Albedo-
     // Multiplikator, `_tickSeason` fährt sie aus `state.seasonPhase` (kein Rebuild). Abgeleitet, nicht im Snapshot
-    // (audit-strict-Whitelist).
+    // (audit-strict-Whitelist). Dazu DIE PRÄSENZ DES JAHRS `uLaubPraesenz` (x Laub, y Blüte; `_saisonPraesenz`): das Laub
+    // (`_jahrLage`) und die Karte lesen sie — die Krone fällt im Winter, treibt im Frühling aus.
     _ensureSeasonUniforms() {
         if (this.state.seasonUniforms) return this.state.seasonUniforms;
         const TSL = THREE.TSL;
-        this.state.seasonUniforms = { uSeasonMul: TSL.uniform(new THREE.Color(1, 1, 1)) };
+        this.state.seasonUniforms = {
+            uSeasonMul: TSL.uniform(new THREE.Color(1, 1, 1)),
+            uLaubPraesenz: TSL.uniform(new THREE.Vector2(1, 1)),
+        };
         // UNIFORM-HEIMAT (Review-Riss F1, 19.07.): _tickSeason mutiert je Frame,
         // das Gras-Material ist diät-behandelt — ohne renderGroup fröre jeder
         // per-Objekt-Klon auf dem Stand seines letzten Refresh ein (Patchwork).
@@ -758,14 +766,9 @@ class AnazhRealm_bild_himmel {
     // rechnet. Die Welt-Phase zählt die Saison-MITTEN (Sommer 0,375) → t = phase − 0,125; Sommer ist ×1. Rein (ohne
     // TSL), schreibt in `out` (r/g/b); das Gate ruft es GPU-frei.
     _saisonMul(phase, out) {
-        const SG = AnazhRealm._saisonGesetz();
-        const t = (((phase - 0.125) % 1) + 1) % 1;
-        const f = t * 4;
-        const i = Math.floor(f) % 4;
-        const j = (i + 1) % 4;
-        const k = f - Math.floor(f);
-        const a = SG.stuetzen[i].ti;
-        const b = SG.stuetzen[j].ti;
+        const { SG, a: sa, b: sb, k } = AnazhRealm._saisonLage(phase);
+        const a = sa.ti;
+        const b = sb.ti;
         const kanal = (hex, s) => ((hex >> s) & 255) / 255;
         const mul = (s) => {
             const v = (kanal(a, s) + (kanal(b, s) - kanal(a, s)) * k) / Math.max(kanal(SG.bau, s), 1e-3);
@@ -777,11 +780,24 @@ class AnazhRealm_bild_himmel {
         return out;
     }
 
-    // Die langsame Jahres-Uhr: treibt seasonPhase und leitet den Saison-Namen ab. DIE SAISON IST EINE FARBE (V18.527):
-    // jeder Foundry-Körper und jede Karte ist Golden-Sommer gebacken (die Transport-Schale nagelt season "summer"),
-    // das Jahr trägt die EINE Uniform `uSeasonMul` — Laub, Gras und Karte multiplizieren ihre Albedo damit (die Karte
-    // zu SAISON_GESETZ.kartenGewicht). Kein Neubau, kein Schlüssel-Wechsel: die 36 Sommer↔Winter-Golden-Paare
-    // unterscheiden sich nur in der Laubfarbe (foliage.color), das Studio färbt sein Jahr genauso.
+    // DIE PRÄSENZ DES JAHRS (vegetation.K5, SAISON_GESETZ `pr` · `bl`, wie das Studio `seasonColors`): wie viel vom Laub und von
+    // der Blüte steht, linear zwischen denselben Stützen wie die Tönung — Sommer 1, Herbst 0,55, Winter 0,06 (die kahle Krone),
+    // der Austrieb 0,72; die Blüte 0,85 im Frühling, 0,12 im Sommer. Das Studio-Gesetz zieht jedes Blatt (aType `typ.laub`) und
+    // jede Blüte (`typ.bluete`) um diesen Faktor auf seine Mitte (foundry-core `injectWind`), die Welt ebenso (`_jahrLage`). Rein
+    // (ohne TSL), schreibt in `out` (x Laub, y Blüte); das Gate ruft es GPU-frei.
+    _saisonPraesenz(phase, out) {
+        const { a, b, k } = AnazhRealm._saisonLage(phase);
+        out.x = a.pr + (b.pr - a.pr) * k;
+        out.y = a.bl + (b.bl - a.bl) * k;
+        return out;
+    }
+
+    // Die langsame Jahres-Uhr: treibt seasonPhase und leitet den Saison-Namen ab. Jeder Foundry-Körper und jede Karte ist
+    // Golden-Sommer gebacken (die Transport-Schale nagelt season "summer"); das Jahr trägt die Uniformen des EINEN
+    // SAISON_GESETZ — `uSeasonMul` färbt Laub, Gras und Karte (die Karte zu SAISON_GESETZ.kartenGewicht), `uLaubPraesenz`
+    // lässt das Laub fallen und austreiben (`_saisonPraesenz`). Kein Neubau, kein Schlüssel-Wechsel: das Studio trägt sein
+    // Jahr genauso (uSeasonMul · uLeafPresence · uBloom). Bis vegetation.K5 war die Saison NUR eine Farbe: die Krone deckte im
+    // Winter, was sie im Sommer deckte (GTX, main 24a0f3ef: Laub-Maske Winter 1,003 × Sommer).
     _tickSeason(currentTime) {
         const st = this.state;
         if (typeof st.seasonPhase !== "number") st.seasonPhase = 0.375;
@@ -802,6 +818,8 @@ class AnazhRealm_bild_himmel {
         if (g && g.phase === st.seasonPhase && g.su === st.seasonUniforms) return;
         const su = this._ensureSeasonUniforms();
         if (su && su.uSeasonMul && su.uSeasonMul.value) this._saisonMul(st.seasonPhase, su.uSeasonMul.value);
+        if (su && su.uLaubPraesenz && su.uLaubPraesenz.value)
+            this._saisonPraesenz(st.seasonPhase, su.uLaubPraesenz.value);
         st.season = this._seasonName(st.seasonPhase);
         this._saisonGemalt = { phase: st.seasonPhase, su };
         this._schneeTakt(); // die Schneegrenze folgt dem Pegel (stoffe.K3-2)
@@ -1355,8 +1373,8 @@ class AnazhRealm_bild_himmel {
             betaR: T.uniform(new THREE.Vector3().fromArray(M.betaR)),
             HR: T.uniform(M.HR),
             HM: T.uniform(M.HM),
-            mieExt: T.uniform(M.mieExt),
-            mieSca: T.uniform(M.mieSca),
+            mieExt: T.uniform(new THREE.Vector3().fromArray(M.mieExt)),
+            mieSca: T.uniform(new THREE.Vector3().fromArray(M.mieSca)),
             g: T.uniform(M.g),
             ozon: T.uniform(new THREE.Vector3().fromArray(M.ozon)),
             albedo: T.uniform(new THREE.Vector3().fromArray(M.albedo)),
@@ -1464,6 +1482,10 @@ class AnazhRealm_bild_himmel {
             ).rgb;
             return select(amBoden(r, mu), vec3(0), t);
         };
+        // Ψ_ms in Zeilen LINEAR in der Höhe (Hillaire): die zweite Zeile liegt bei 3,2 km. Quadratisch (w = √(h/H), Zeilen bei 0,
+        // 0,10, 0,42, 0,94 km — w4-ferne-blau, Duv −0,001 am Horizont) löste die Grenzschicht des Dunsts auf und hob im dichten
+        // Dunst des Regens das Licht des Himmels: das Regenbild stieg über das der Sonne (werkbank licht --naesse, Radeon: Wiese
+        // 0,966 → 1,012, Dorf 0,951 → 1,050; gate:naesse:echt ROT) — heil-w4-ferne-blau.
         const mehrfach = (h, mus) =>
             texture(
                 rtMS.texture,
@@ -1682,11 +1704,12 @@ class AnazhRealm_bild_himmel {
             return vec4(marsch(v, [{ dir: U.sonne }, { dir: U.mond, gewicht: U.mondE }], U.nachtE), 1);
         });
         // DIE FARBE DES HIMMELS in Richtung `dir` (Welt): die Himmels-Sicht (je Einheit E0) × das Licht jetzt (E0) × die Tönung
-        // (Wetter, Feld, Gefühl, DSL — relativ zum Himmel des Studios, `_dayNightApplySkybox`). Leser: die Kuppel, die Umgebung, die Luft.
-        const himmelFarbe = (dir) =>
-            texture(rtSV.texture, himmelUv(dir)).level(float(0)).rgb.mul(U.licht).mul(U.toenung);
-        // ── die Umgebung: Equirekt (three `equirectUV`: u = atan(z, x)/2π + ½, v = asin(y)/π + ½) aus der Himmels-Sicht ──
-        const passUmgebung = Fn(() => vec4(himmelFarbe(this._umgebungRichtung(uv()).toVar()), 1));
+        // (Wetter, Feld, Gefühl, DSL — relativ zum Himmel des Studios, `_dayNightApplySkybox`). Leser: die Kuppel, die Luft.
+        const himmelJeLicht = (dir) => texture(rtSV.texture, himmelUv(dir)).level(float(0)).rgb;
+        const himmelFarbe = (dir) => himmelJeLicht(dir).mul(U.licht).mul(U.toenung);
+        // ── die Umgebung: Equirekt (three `equirectUV`: u = atan(z, x)/2π + ½, v = asin(y)/π + ½) aus der Himmels-Sicht, JE
+        // EINHEIT DES LICHTS wie die Tafeln: das Licht jetzt (E0 · Tönung) trägt jeder ihrer Leser je Bild (`_umgebungLicht`) ──
+        const passUmgebung = Fn(() => vec4(himmelJeLicht(this._umgebungRichtung(uv()).toVar()), 1));
         // ── DIE BESTRAHLUNGS-TAFEL (S7): je Texel eine Sonnenhöhe e (quadratisch dicht um den Horizont, e = c·|c|) und die
         // Bestrahlung einer waagrechten Fläche durch den Himmel dieser Sonne, je Einheit E0 — derselbe Marsch wie die Himmels-
         // Sicht über die obere Halbkugel (kosinus-gewichtet, `ATMO_LUT.richtungen`); der letzte Texel trägt das Sternen-Licht je
@@ -1719,26 +1742,8 @@ class AnazhRealm_bild_himmel {
             });
             return vec4(E.mul(PI / (NT * NP)), 1);
         });
-        // DER PASS: ein Dreieck über den ganzen Schirm in der Form von r184 `QuadMesh` (Lage [-1,3 · -1,-1 · 3,-1], uv [0,-1 ·
-        // 0,1 · 2,1], Ortho-Kamera ±1) — dieselbe uv-Lage, in der jeder Leser die Tafel abtastet, in beiden Backends.
-        const dreieck = new THREE.BufferGeometry();
-        dreieck.setAttribute("position", new THREE.Float32BufferAttribute([-1, 3, 0, -1, -1, 0, 3, -1, 0], 3));
-        dreieck.setAttribute("uv", new THREE.Float32BufferAttribute([0, -1, 0, 1, 2, 1], 2));
-        const kamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-        const quad = (fn, name) => {
-            const m = new THREE.MeshBasicNodeMaterial();
-            m.name = name;
-            m.fragmentNode = fn();
-            m.depthTest = false;
-            m.depthWrite = false;
-            m.toneMapped = false;
-            m.fog = false;
-            const q = new THREE.Mesh(dreieck, m);
-            q.name = name;
-            q.frustumCulled = false;
-            q.userData.kamera = kamera;
-            return q;
-        };
+        // DER PASS: das Schirm-Dreieck (`_schirmDreieck`) — dieselbe uv-Lage, in der jeder Leser die Tafel abtastet.
+        const quad = AnazhRealm._schirmDreieck;
         st.atmoLut = {
             U,
             rtT,
@@ -1752,6 +1757,14 @@ class AnazhRealm_bild_himmel {
             rtBS,
             qBS: quad(passBestrahlung, "atmo-bestrahlung"),
             tafelSchluessel: null,
+            // DIE LESUNG LEBT MIT DER TAFEL (`_himmelsTafelLesen`): die Bestrahlung auf der CPU, ihre Lese-Nummer, der Anker des Himmels
+            // und der Belichtung — sie teilen die Lebenszeit der Tafel, die sie lasen. Als Felder am Wirt fielen sie beim Tausch am
+            // Ort (`_weltAbschied`), die Tafel blieb mit ihrem Schlüssel und las nie neu: die Belichtung stand nie mehr, das erste
+            // Weltbild jeder Ziel-Welt erst am Deckel (60 s, Radeon 30.10.)
+            tafel: null,
+            tafelNr: 0,
+            anker: null,
+            belichtung: null,
             himmelFarbe,
             durchlass,
             RG,
@@ -1807,10 +1820,10 @@ class AnazhRealm_bild_himmel {
         const st = this.state;
         const A = this._atmoLutBau();
         const U = A.U;
-        // DER ANKER ZUERST (S7): bis die Tafel der klaren Luft am Boden einmal zurückkam (`_himmelsAnker`, der Himmel der Karte
+        // DER ANKER ZUERST (S7): bis die Tafel der klaren Luft am Boden einmal zurückkam (`anker`, der Himmel der Karte
         // unter der Zenit-Sonne), zeichnet der Takt sie — in jedem Wetter und jeder Höhe des Auges; danach das Medium jetzt.
         // Der Null-Renderer malt keinen Himmel (Lehre 16): dort trägt die Karte keinen.
-        const anker = this._himmelsAnker == null && !(st.renderer && st.renderer._isHeadlessNull);
+        const anker = A.anker == null && !(st.renderer && st.renderer._isHeadlessNull);
         const klar = anker ? this._atmoRechnung().betaKlar(this._atmoGesetz()) : 0;
         const M = anker ? this._atmoMedium(klar) : this._atmoMediumJetzt();
         const mB = anker ? klar : this._atmoMBeta;
@@ -1818,8 +1831,8 @@ class AnazhRealm_bild_himmel {
             U.betaR.value.fromArray(M.betaR);
             U.HR.value = M.HR;
             U.HM.value = M.HM;
-            U.mieExt.value = M.mieExt;
-            U.mieSca.value = M.mieSca;
+            U.mieExt.value.fromArray(M.mieExt);
+            U.mieSca.value.fromArray(M.mieSca);
             U.g.value = M.g;
             U.ozon.value.fromArray(M.ozon);
             U.albedo.value.fromArray(M.albedo);
@@ -1859,7 +1872,7 @@ class AnazhRealm_bild_himmel {
             this._atmoZeichne(A.qBS, A.rtBS);
             A.tafelSchluessel = tafel;
             // bis die neue Tafel zurückkommt, liest kein Leser die Luft von vorher (die Belichtung schreibt dann nicht, sie hält)
-            this._himmelsTafel = null;
+            A.tafel = null;
             this._himmelsTafelLesen();
         }
         this._horizontKarteTakt();
@@ -1869,8 +1882,9 @@ class AnazhRealm_bild_himmel {
     // DIE BESTRAHLUNGS-TAFEL AUF DIE CPU (je Neuzeichnung, EINMAL je Medium und Höhe): je Sonnenhöhe die Bestrahlung einer
     // waagrechten Fläche durch den Himmel je Einheit E0 (rgb), der letzte Texel das Sternen-Licht je Einheit `nachtE`. Eine
     // spätere Lesung überholt eine frühere. Die erste Tafel der klaren Luft am Boden (`_atmoTakt` zeichnet sie zuerst) trägt den
-    // ANKER der Belichtung: den Himmel unter der Zenit-Sonne (`_himmelsAnker`, je Einheit E0, `_belichtungAnker`). Bis S7 stand er
-    // als Konstante neben der Tafel (0,24 gegen gerechnet 0,232, eine Wand bei ±0,02 nur am klaren Boden).
+    // ANKER der Belichtung: den Himmel unter der Zenit-Sonne (`anker`, je Einheit E0, `_belichtungAnker`). Bis S7 stand er
+    // als Konstante neben der Tafel (0,24 gegen gerechnet 0,232, eine Wand bei ±0,02 nur am klaren Boden). Lesung, Nummer und
+    // Anker leben an der Tafel (`state.atmoLut`): wer sie trägt, trägt ihre Lesung.
     _himmelsTafelLesen() {
         const st = this.state;
         const A = st.atmoLut;
@@ -1881,19 +1895,18 @@ class AnazhRealm_bild_himmel {
             );
         const W = A.rtBS.width;
         const klar = A.mediumBeta === this._atmoRechnung().betaKlar(this._atmoGesetz()) && A.U.hKm.value < 0.05;
-        const nr = (this._himmelsTafelNr = (this._himmelsTafelNr || 0) + 1);
+        const nr = ++A.tafelNr;
         return r.readRenderTargetPixelsAsync(A.rtBS, 0, 0, W, 1).then(
             (px) => {
-                if (nr !== this._himmelsTafelNr) return false;
+                if (nr !== A.tafelNr) return false;
                 const halb = px instanceof Uint16Array;
                 const w = new Float32Array(W * 3);
                 for (let i = 0; i < W; i++)
                     for (let c = 0; c < 3; c++)
                         w[i * 3 + c] = halb ? AnazhRealm._halbZuFloat(px[i * 4 + c]) : px[i * 4 + c];
-                this._himmelsTafel = { W, werte: w };
-                if (klar && this._himmelsAnker == null)
-                    this._himmelsAnker =
-                        0.2126 * w[(W - 2) * 3] + 0.7152 * w[(W - 2) * 3 + 1] + 0.0722 * w[(W - 2) * 3 + 2];
+                A.tafel = { W, werte: w };
+                if (klar && A.anker == null)
+                    A.anker = 0.2126 * w[(W - 2) * 3] + 0.7152 * w[(W - 2) * 3 + 1] + 0.0722 * w[(W - 2) * 3 + 2];
                 return true;
             },
             (e) => {
@@ -1916,8 +1929,8 @@ class AnazhRealm_bild_himmel {
         out[0] = out[1] = out[2] = 0;
         if (st.renderer && st.renderer._isHeadlessNull) return out;
         const A = st.atmoLut;
-        const T = this._himmelsTafel;
-        if (!A || !T) return null;
+        const T = A && A.tafel;
+        if (!T) return null;
         const U = A.U;
         const W = T.W,
             w = T.werte;
@@ -2176,20 +2189,23 @@ class AnazhRealm_bild_himmel {
     }
 
     // DER ANKER DER KAMERA (S7, H1): E der waagrechten Karte unter der Zenit-Sonne der klaren Luft — E0 (`KEY_BASE` · `LEGACY_LICHT`) × (ihr
-    // Durchlass, `ATMO_RECHNUNG.sonne`, e = 1, Bezug der Luft, + der Himmel der Bestrahlungs-Tafel derselben Luft, `_himmelsAnker`).
+    // Durchlass, `ATMO_RECHNUNG.sonne`, e = 1, Bezug der Luft, + der Himmel der Bestrahlungs-Tafel derselben Luft, ihr `anker`).
     // Eine Größe des Gesetzes, EINMAL gerechnet, sobald die Tafel liegt (vorher null: die Belichtung schreibt nicht, das erste
-    // Weltbild wartet, `_weltbildLuecken` licht); der Null-Renderer malt keinen Himmel (Lehre 16), dort trägt die Karte keinen.
+    // Weltbild wartet, `_weltbildLuecken` licht), gemerkt an der Tafel (`belichtung`, `_atmoLutBau`); der Null-Renderer malt keinen
+    // Himmel (Lehre 16), dort trägt die Karte keinen.
     _belichtungAnker() {
-        if (this._belichtungA) return this._belichtungA;
+        const A = this.state.atmoLut;
+        if (!A) return null;
+        if (A.belichtung) return A.belichtung;
         const rend = this.state.renderer;
-        const himmel = rend && rend._isHeadlessNull ? 0 : this._himmelsAnker;
+        const himmel = rend && rend._isHeadlessNull ? 0 : A.anker;
         if (himmel == null) return null;
         const G = this._atmoGesetz();
         const R = this._atmoRechnung();
         const M = this._atmoMedium(R.betaKlar(G));
         const s = R.sonne(G, M, 0.001, 1, AnazhRealm.ATMO_LUT.schritte.durchlass, [0, 0, 0]);
         const l = 0.2126 * s.col.r + 0.7152 * s.col.g + 0.0722 * s.col.b;
-        return (this._belichtungA = AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * (s.lum * l + himmel));
+        return (A.belichtung = AnazhRealm.KEY_BASE * AnazhRealm.LEGACY_LICHT * (s.lum * l + himmel));
     }
 
     // DAS LICHT DES AUGES (K02a, Auge 11 bei 762/−138): wo der Himmel das Auge nicht erreicht, trägt der Leib sein Licht. Die
@@ -2294,6 +2310,12 @@ class AnazhRealm_bild_himmel {
     // DIE BESTRAHLUNG EINER WAAGRECHTEN FLÄCHE (rgb, E): Sonne/Mond auf der Waagrechten + der Himmel über dem Ort
     // (`_himmelsBestrahlung`, synchron aus der Bestrahlungs-Tafel der EINEN Atmosphäre) + Hemi + Ambient — dieselben Lichter,
     // die jedes Material liest. Die Rechnung der Belichtung (die 18-%-Karte); null, solange der Himmel des Orts noch nicht steht.
+    // DIE TAFEL IM FLUG (licht.K5): jede Stufe des Mediums zeichnet die Tafel neu, ihre Lesung kommt Takte später. Bis dahin trägt
+    // der Himmel der letzten Lesung je Einheit des Lichts (E0 · Tönung, jetzt) die Belichtung — nur solange das Auge in der Höhen-
+    // Stufe der Tafel blieb und das Medium höchstens `ATMO_LUT.flug` Stufen wanderte; jeder Sprung (Höhe, Ort, ein Wort ohne
+    // Übergang) liest nie die Luft von vorher: null, die Belichtung hält. Bis licht.K5 hielt sie an JEDER Stufe — im Zug klar →
+    // Regen stand sie in den Takten ohne Lesung (die Linse: 10 je Spiel-Sekunde) still, das Richtlicht sank weiter, und sie holte
+    // in einem Schlag auf (+0,109 EV in einer Sekunde, swiftshader).
     _waagrechtIrradianz(out) {
         const st = this.state;
         const dl = st.directionalLight;
@@ -2309,7 +2331,27 @@ class AnazhRealm_bild_himmel {
             out[2] += c.b * k;
         };
         add(dl.color, dl.intensity * dy);
-        const himmel = this._himmelsBestrahlung(this._himmelE || (this._himmelE = [0, 0, 0]));
+        let himmel = this._himmelsBestrahlung(this._himmelE || (this._himmelE = [0, 0, 0]));
+        const A = st.atmoLut;
+        if (A) {
+            const U = A.U;
+            const k = [U.toenung.value.x, U.toenung.value.y, U.toenung.value.z].map((x) => x * U.licht.value);
+            const stufe = Math.round(U.hKm.value * 10);
+            const f = this._himmelFlug || (this._himmelFlug = { je: [0, 0, 0], medium: 0, stufe: NaN });
+            if (himmel) {
+                for (let c = 0; c < 3; c++) f.je[c] = himmel[c] / Math.max(k[c], 1e-9);
+                f.medium = A.mediumBeta;
+                f.stufe = stufe;
+            } else if (
+                f.stufe === stufe &&
+                f.medium > 0 &&
+                Math.abs(Math.log(A.mediumBeta / f.medium)) <=
+                    AnazhRealm.ATMO_LUT.flug * AnazhRealm.ATMO_LUT.mediumStufe + 1e-9
+            ) {
+                himmel = this._himmelE;
+                for (let c = 0; c < 3; c++) himmel[c] = f.je[c] * k[c];
+            }
+        }
         if (!himmel) return null;
         out[0] += himmel[0];
         out[1] += himmel[1];
@@ -2364,10 +2406,11 @@ class AnazhRealm_bild_himmel {
     }
 
     // DAS SPEKTRUM DER LUFT (ferne-luft): die Extinktion je Kanal relativ zu β (550 nm, der Koschmieder-Anker) aus dem Medium
-    // der EINEN Atmosphäre — Rayleigh je Kanal (`ATMO_GESETZ.rayleighTiefe`, blau ~5× rot) über dem grauen Aerosol: blau
-    // verlischt zuerst, die Ferne nimmt den Farbton des Himmels an, der sie überstreut. Unter Wasser das Spektrum des
-    // Wasser-Gesetzes (`WASSER_GESETZ.wK`, rot verlischt zuerst). Bis ferne-luft löschte die Luft grau (EIN Skalar β), ihr
-    // Himmel streute je Kanal (Linse: `werkbank licht --luft`, Δβ blau−rot 0 gegen die Referenz in spec).
+    // der EINEN Atmosphäre — Rayleigh je Kanal (`ATMO_GESETZ.rayleighTiefe`, blau ~5× rot) und das Aerosol je Kanal nach
+    // Ångström (`ATMO_GESETZ.mieAngstroem`, blau 1,34 × grün, rot 0,76 ×): blau verlischt zuerst, mit der Weglänge wird die
+    // Luft vor dem Fernen blau. Unter Wasser das Spektrum des Wasser-Gesetzes (`WASSER_GESETZ.wK`, rot verlischt zuerst). Bis
+    // ferne-luft löschte die Luft grau (EIN Skalar β), bis w4-ferne-blau trug das Aerosol kein Spektrum (Spektrum
+    // 0,97/1/1,09 statt 0,74/1/1,40).
     _luftSpektrum(beta, unterWasser, out) {
         if (unterWasser) {
             const wK = (
@@ -2378,7 +2421,7 @@ class AnazhRealm_bild_himmel {
         }
         const M = this._atmoMedium(beta);
         const k = 1000 * beta;
-        return out.set((M.betaR[0] + M.mieExt) / k, (M.betaR[1] + M.mieExt) / k, (M.betaR[2] + M.mieExt) / k);
+        return out.set((M.betaR[0] + M.mieExt[0]) / k, (M.betaR[1] + M.mieExt[1]) / k, (M.betaR[2] + M.mieExt[2]) / k);
     }
 
     // Die Sichtweite (m) eines waagrechten Blicks in der Augenhöhe `y` (Kontrast fällt unter `LUFT.kontrast`):
@@ -2444,11 +2487,12 @@ class AnazhRealm_bild_himmel {
             const himmel = A.himmelFarbe(T.vec3(dir.x, T.max(dir.y, 0.0), dir.z).normalize());
             return T.select(U.unterWasser.greaterThan(0.5), U.farbe, himmel);
         });
-        st.scene.fogNode = T.vec4(
-            T.mix(T.output.rgb, farbe(T.cameraPosition, T.positionWorld), faktor(T.cameraPosition, T.positionWorld)),
-            T.output.a
-        );
-        st.luft = { U, faktor, farbe };
+        // DIE LUFT VOR DEM GEZEICHNETEN (w4-ferne-blau): EINE Mischung je Kanal für jeden Leser — die Stoffe der Szene
+        // (`scene.fogNode`, der Fern-Ring darunter), der Feld-Pass und sein Panorama (`imDunst`) und der Spiegel des Wassers;
+        // bis dahin setzte jeder Pass `mix(·, farbe, faktor)` selbst zusammen.
+        const mische = T.Fn(([rgb, auge, punkt]) => T.mix(rgb, farbe(auge, punkt), faktor(auge, punkt)));
+        st.scene.fogNode = T.vec4(mische(T.output.rgb, T.cameraPosition, T.positionWorld), T.output.a);
+        st.luft = { U, faktor, farbe, mische };
         return st.luft;
     }
 
@@ -3156,23 +3200,62 @@ AnazhRealm.AUGEN_LICHT = Object.freeze({
     neuM: 0.25,
 });
 // DAS SAISON-GESETZ (foundry-core SAISON_GESETZ, V18.527): die Jahres-Stützstellen des Studios — der EINE Leser
-// (`_saisonMul`, Karten-Stoff), fail-closed in EINER Gültigkeits-Wand.
+// (`_saisonMul`, `_saisonPraesenz`, Laub- und Karten-Stoff), fail-closed in EINER Gültigkeits-Wand: je Stütze Tönung,
+// Laub-Präsenz und Blüte, die Typen des Jahrs (vegetation.K5) und die Karten-Schwelle.
 AnazhRealm._saisonGesetz = function () {
     const SG = AnazhRealm.Gesetz("terrain:SAISON_GESETZ", null);
     if (
         SG &&
         Array.isArray(SG.stuetzen) &&
         SG.stuetzen.length === 4 &&
-        SG.stuetzen.every((s) => s && Number.isFinite(s.ti)) &&
+        SG.stuetzen.every((s) => s && Number.isFinite(s.ti) && Number.isFinite(s.pr) && Number.isFinite(s.bl)) &&
         Number.isFinite(SG.bau) &&
         Number.isFinite(SG.mulMin) &&
         Number.isFinite(SG.mulMax) &&
-        Number.isFinite(SG.kartenGewicht)
+        Number.isFinite(SG.kartenGewicht) &&
+        SG.typ &&
+        Number.isFinite(SG.typ.laub) &&
+        Number.isFinite(SG.typ.bluete) &&
+        Number.isFinite(SG.karteSchwelle)
     )
         return SG;
     return AnazhRealm._kernPflichtBruch("terrain:SAISON_GESETZ");
 };
+// Die Lage einer Welt-Phase zwischen den vier Stützen des SAISON_GESETZ (Studio-t: 0 Frühling · .25 Sommer · .5 Herbst · .75
+// Winter, linear im Ring): die Welt-Phase zählt die Saison-MITTEN (Sommer 0,375) → t = phase − 0,125. Die EINE Lage, die
+// Tönung (`_saisonMul`) und Präsenz (`_saisonPraesenz`) lesen.
+AnazhRealm._saisonLage = function (phase) {
+    const SG = AnazhRealm._saisonGesetz();
+    const f = ((((phase - 0.125) % 1) + 1) % 1) * 4;
+    const i = Math.floor(f) % 4;
+    return { SG, a: SG.stuetzen[i], b: SG.stuetzen[(i + 1) % 4], k: f - Math.floor(f) };
+};
 AnazhRealm.LUFT = Object.freeze(Object.assign({}, AnazhRealm._atmoKern().luft, { unterwasserM: 30 }));
+// DAS SCHIRM-DREIECK: EIN Dreieck über den ganzen Schirm in der Form von r184 `QuadMesh` (Lage [-1,3 · -1,-1 · 3,-1], uv
+// [0,-1 · 0,1 · 2,1], Ortho-Kamera ±1 in `userData.kamera`), sein Fragment aus `fn()` — die Pässe der Atmosphäre und das
+// Ausgabe-Dreieck jeder Bühne (`_buehneRender`) teilen Geometrie und Kamera.
+AnazhRealm._schirmDreieck = function (fn, name) {
+    const D =
+        AnazhRealm._schirmDreieckForm ||
+        (AnazhRealm._schirmDreieckForm = {
+            g: new THREE.BufferGeometry()
+                .setAttribute("position", new THREE.Float32BufferAttribute([-1, 3, 0, -1, -1, 0, 3, -1, 0], 3))
+                .setAttribute("uv", new THREE.Float32BufferAttribute([0, -1, 0, 1, 2, 1], 2)),
+            kamera: new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1),
+        });
+    const m = new THREE.MeshBasicNodeMaterial();
+    m.name = name;
+    m.fragmentNode = fn();
+    m.depthTest = false;
+    m.depthWrite = false;
+    m.toneMapped = false;
+    m.fog = false;
+    const q = new THREE.Mesh(D.g, m);
+    q.name = name;
+    q.frustumCulled = false;
+    q.userData.kamera = D.kamera;
+    return q;
+};
 // DER HIMMEL (V18.530): die Sichtbarkeit seiner Punkte ist Physik. `grenzgroesse` = Dämmerungs-Anker [Sonnenhöhe
 // in Grad, Grenzgröße des bloßen Auges]: im hellen Tag (≥ 10°) ist nichts zu sehen, nahe dem Horizont gerade die
 // Venus, bei Sonnenuntergang der Abendstern (−3), am Ende der bürgerlichen Dämmerung (−6°) die hellsten Sterne
@@ -3219,8 +3302,12 @@ AnazhRealm.MOONLIGHT = Object.freeze({
 // 256×64 und Ψ_ms 32×32 je Medium, die Himmels-Sicht 192×108 je Stufe der Sonne, die Umgebung 128×64 (Equirekt, PMREM).
 // mediumStufe: die Stufe des Mediums im Logarithmus der Extinktion (`_atmoMediumJetzt`) — 2 % halten den Zenit-Durchlass
 // der klaren Luft (Aerosol-Tiefe 0,18) unter einer 8-bit-Stufe; ein Übergang klar → Sturm (Faktor 13) sind 130 Stufen.
+// flug: so viele Stufen darf das Medium wandern, solange die Tafel im Flug ist (`_waagrechtIrradianz`) — der steilste Anstieg im
+// Zug klar → Regen (β ×1,13 je Sekunde, 6 Stufen) bleibt eine Sekunde darunter, der Himmel je E0 folgt ihm mit ≤ β^0,62:
+// 8 Stufen sind ≤ 10 % am Himmel, am Mittag ≤ 0,02 EV an der Karte.
 AnazhRealm.ATMO_LUT = Object.freeze({
     mediumStufe: 0.02,
+    flug: 8,
     durchlass: Object.freeze([256, 64]),
     mehrfach: Object.freeze([32, 32]),
     himmel: Object.freeze([192, 108]),
@@ -3230,8 +3317,10 @@ AnazhRealm.ATMO_LUT = Object.freeze({
     schritte: Object.freeze({ durchlass: AnazhRealm._atmoKern().durchlassSchritte, mehrfach: 20, himmel: 32 }),
 });
 // DER BODEN DER ATMOSPHÄRE (D3): die gemessene Welt-Albedo (linear) — das Mittel aus Laub und Wald-Boden der Albedo-Tafel
-// (spec/farbe/albedo-tafel.json, ist.welt; `werkbank albedo --tafel`), nie ein Grau 0,3. Er trägt die Mehrfachstreuung und
-// die untere Hälfte der Umgebung; `diag-atmo-hillaire` hält ihn an der Tafel (±3 %).
+// (spec/farbe/albedo-tafel.json, ist.welt; `werkbank albedo --tafel`), nie ein Grau 0,3. Er trägt die Mehrfachstreuung UND die
+// untere Hälfte der EINEN Umgebung — den Boden, den jeder nahe Stoff spiegelt. w4-ferne-blau setzte das Mittel der Fern-Farbe
+// ±100 km (0,1130/0,1344/0,0646, G/B 2,1 statt 3,1): der graue Boden der Ferne stand in jeder nahen Spiegelung, der Film der
+// Tore las als Milch (gate:portal-membran H, Radeon: milchweiß 4,7 → 5,3 % > 5 %) — heil-w4-ferne-blau.
 AnazhRealm.ATMO_BODEN = Object.freeze([0.1003, 0.1385, 0.0449]);
 // Licht-Rig: KEY_BASE skaliert die Rayleigh-Lichtmenge aufs Schlüssellicht (Mittag ≈ 2.6·0.913). Ziel key-dominant (Vorlage dir/(amb+hemi) ≈ 15:1); die Schattenseite trägt der Himmel.
 AnazhRealm.KEY_BASE = 2.6;
@@ -3261,10 +3350,13 @@ AnazhRealm.BELICHTUNG = Object.freeze({
     stufen: Object.freeze([Object.freeze([10, -0.87]), Object.freeze([-20, -2.17])]),
     nachtGrad: -32,
 });
-// Mindestabstand zwischen zwei Sky-Env-PMREM-Regenerierungen (Wall-Clock): Tag-Nacht-Uhr und
-// Emotions-Cross-Fade driften die Himmelsfarbe, jede Regeneration rendert einen PMREM-Pass (teuer
-// auf schwacher GPU). 6 s deckelt einen 45-s-Cross-Fade auf ~7; der IBL-Nachlauf ist unmerklich.
-AnazhRealm.SKY_ENV_REGEN_MIN_MS = 6000;
+// Mindestabstand zwischen zwei Neuzeichnungen der Umgebung (PMREM) in WELT-Zeit (`spielZeit`, ms). E0 und Tönung zeichnen sie
+// nicht mehr neu (`_umgebungLicht`), es bleiben Sonne, Mond, Medium und Höhe des Auges. Bis w4-licht-uhr 6 000 ms Wanduhr: der
+// Himmel je Einheit E0 wächst im Übergang klar → Regen mit dem Medium (0,163 → 0,335, etwa β^0,35), die Umgebung zog ihm in
+// Stufen nach, auf der GTX alle ~8 Spiel-Sekunden, auf swiftshader jede — das Bild sprang je Gerät anders (licht.K5 GTX
+// 0,230 EV/s, takt24c). Im steilsten Anstieg (β ×1,13 je Sekunde) wächst er 0,11 EV je Sekunde: eine halbe Welt-Sekunde hält
+// jede Stufe der Umgebung bei 0,05 EV, höchstens zwei PMREM je Sekunde und nur im Übergang, auf jedem Gerät dieselbe Folge.
+AnazhRealm.SKY_ENV_REGEN_MIN_MS = 500;
 // Die Obergrenze der Sonnen-Stufe (`_sonnenStufe`): N·L ändert sich bei einer Drehung um α höchstens um α — unter einer
 // 8-bit-Stufe ist sie unsichtbar.
 AnazhRealm.SONNEN_STUFE_SCHATTIERUNG = 1 / 255;
