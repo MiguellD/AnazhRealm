@@ -2957,12 +2957,17 @@ class AnazhRealm_kreatur_verhalten {
     // weckt jeden, den die Kamera dieses Bilds sieht. Er geht im groben Takt (`_kreaturTaktDt`), schreibt kein Feld
     // (`_tickKreaturZiegel`) und verlässt den Matrix-Gang (`AnazhRealm._ruhendeWurzel` an seiner Wurzel). Wer seine Glieder
     // liest, liest sie frisch (`_kreaturTrefferGlieder`, `_leibMatrix`: Biss, Treffer, Tod); wer erwacht, zieht den ganzen
-    // Leib nach, bevor das Feld ihn liest. Die Gefallenen ruhen nie. Linse: gate:kreatur-kosten (G).
+    // Leib nach, bevor das Feld ihn liest. DIE RUHE GILT JEDEM LEIB AUSSER BLICK (w4-takt-z80): der Fliehende, der Jäger, der
+    // Schwimmer und der liegende Gefallene ruhen im Bild (`_kreaturRuht` → "bild": kein Matrix-Gang, kein Feld), ihr Schritt
+    // geht jeden Frame — den groben Takt trägt nur der stille Lebende. Bis w4-takt-z80 ruhten Lauf und Leichnam nie: seit dem
+    // Bestand je Region (oekologie.K2#2) reißt das Gesetz alle 10 s ein fern gezeichnetes Rotwild hinter dem Blick der
+    // Mess-Wiese, sechs Leichname und die fliehende Herde gingen den Matrix-Gang je Frame (OMEN w-ego, z83-bisekt5: CPU-Takt
+    // p95 4,70 → 5,40 ms). Linse: gate:kreatur-kosten (G).
     _tickKreaturRuhe(delta, playerPos) {
         const R = AnazhRealm.KREATUR_RUHE;
         const st = this.state;
         const W = st.creatures;
-        for (const c of st.leichname) if (c && c.userData && c.userData._ruht === true) this._kreaturErwacht(c);
+        const L = st.leichname;
         const fr = this._frustumCache;
         const cam = st.camera;
         // DER RAND DES BLICKS: der Frustum ist der des Vor-Frames, die Kamera dreht bis zum Render dieses Frames weiter —
@@ -2975,10 +2980,13 @@ class AnazhRealm_kreatur_verhalten {
             const winkel = R.randGrad * (Math.PI / 180) + 2 * dreh;
             if (winkel < 1.2) rand = Math.tan(winkel);
         }
-        for (let i = 0; i < W.length; i++) {
-            const c = W[i];
+        // die Wesen und die Gefallenen (die EINE Liste `leichname` nennt sie): dieselbe Frage (`_kreaturRuht`)
+        for (let k = 0, n = W.length + L.length; k < n; k++) {
+            const c = k < W.length ? W[k] : L[k - W.length];
             if (!c || !c.userData) continue;
-            if (rand >= 0 && this._kreaturRuht(c, playerPos, fr, rand, delta)) {
+            const ruht = rand >= 0 && this._kreaturRuht(c, playerPos, fr, rand, delta, k >= W.length);
+            if (ruht) {
+                c.userData._ruheGrob = ruht === true; // der grobe Takt (`_kreaturTaktDt`) nur in der Ruhe des Takts
                 if (c.userData._ruht !== true) {
                     c.userData._ruht = true;
                     c.updateMatrixWorld = AnazhRealm._ruhendeWurzel;
@@ -2990,18 +2998,25 @@ class AnazhRealm_kreatur_verhalten {
         }
     }
 
-    // Ruht dieser Leib in diesem Takt? Billige Filter zuerst (Lehre 25): der Zustand, die Gestalt, die Ferne, das Tempo,
-    // die Jäger des Takts (`_kreaturJaeger`, die EINE Liste — in ihrer Witterung ruht kein Tier, der Biss liest die Glieder
-    // der Beute) — der Blick zuletzt (die Körper-Kugel samt Saum und Rand gegen den Frustum).
-    _kreaturRuht(c, playerPos, frustum, rand, delta) {
+    // Ruht dieser Leib in diesem Takt — und wie? false: er geht wach; "bild": er ruht im Bild (kein Matrix-Gang, kein Feld),
+    // sein Schritt geht jeden Frame; true: dazu der grobe Takt. Billige Filter zuerst (Lehre 25). Nie ruht, was in diesem Takt
+    // seine Glieder bewegt oder zeigt: der Stoß, der Hüpfer, der Biss, der Auftrag, das Mesh (`_kzBesitztFeld`), der Nah-Kreis,
+    // der Blick (die Körper-Kugel samt Saum und Rand gegen den Frustum) — und vom Gefallenen (`gefallen`: er steht in der EINEN
+    // Liste `leichname`) alles außer dem Liegen (`_liegt`: die Antwort seines Takts, `_tickLeichname` — Kippen und Versinken
+    // wecken). Im Bild ruht, wer läuft (Jagd, Hetze, Flucht, Schwimmen), wessen grober Schritt `wegMax` überschritte, wer in der
+    // Witterung eines Jägers steht (`_kreaturJaeger`, die EINE Liste — er geht in jedem Frame) und der Gefallene (seine Uhr geht
+    // im Takt der Gefallenen).
+    _kreaturRuht(c, playerPos, frustum, rand, delta, gefallen = false) {
         const R = AnazhRealm.KREATUR_RUHE;
         const u = c.userData;
-        if (u._stossV || (u._hopH || 0) > 0 || (u._hopV || 0) > 0) return false;
-        const z = u._motionZustand;
-        if (z === "jagd" || z === "hetzen" || z === "flucht" || z === "schwimmen") return false;
-        if (u._verhaltenAktion && u._verhaltenAktion.biss) return false;
-        const task = this._getCreatureTask(c);
-        if (task && task.name !== "wander") return false;
+        if (gefallen) {
+            if (u._liegt !== true) return false;
+        } else {
+            if (u._stossV || (u._hopH || 0) > 0 || (u._hopV || 0) > 0) return false;
+            if (u._verhaltenAktion && u._verhaltenAktion.biss) return false;
+            const task = this._getCreatureTask(c);
+            if (task && task.name !== "wander") return false;
+        }
         // nur wem das Feld die Gestalt trägt (fern UND gebacken): ungebacken oder nah (`_kzNah`, auch im Takt, in dem er
         // `aus` nach außen kreuzt) zeichnet sein Mesh und wirft in die Kaskaden — er ruht nie
         if (!this._kzBesitztFeld(c)) return false;
@@ -3009,9 +3024,12 @@ class AnazhRealm_kreatur_verhalten {
         const N = AnazhRealm.KREATUR_NAH_MESH;
         const dx = p.x - playerPos.x,
             dz = p.z - playerPos.z;
-        if (dx * dx + dz * dz < N.aus * N.aus) return false;
+        if (dx * dx + dz * dz < N.aus * N.aus || !this._kreaturAusserBlick(c, frustum, rand)) return false;
+        if (gefallen) return "bild";
+        const z = u._motionZustand;
+        if (z === "jagd" || z === "hetzen" || z === "flucht" || z === "schwimmen") return "bild";
         const v = u._steuer ? Math.abs(u._steuer.v) : 0;
-        if (v * R.takt * delta > R.wegMax) return false;
+        if (v * R.takt * delta > R.wegMax) return "bild";
         const w2 = R.witterungM * R.witterungM;
         const jaeger = this._kreaturJaeger;
         if (jaeger)
@@ -3019,9 +3037,9 @@ class AnazhRealm_kreatur_verhalten {
                 if (j === c) continue;
                 const jx = j.position.x - p.x,
                     jz = j.position.z - p.z;
-                if (jx * jx + jz * jz < w2) return false;
+                if (jx * jx + jz * jz < w2) return "bild";
             }
-        return this._kreaturAusserBlick(c, frustum, rand);
+        return true;
     }
 
     // DER LEIB AUSSER BLICK (die EINE Frage des Blicks an einen Leib — die Ruhe `_kreaturRuht`, das Auge des Satzes
@@ -3069,13 +3087,13 @@ class AnazhRealm_kreatur_verhalten {
         return !frustum.intersectsSphere(s);
     }
 
-    // DIE ZEIT DES SCHRITTS (der grobe Takt): ein ruhender Leib sammelt die Frame-Zeit und geht nur in seinem Fenster
-    // (`slot` % takt === 0) mit allem Gesammelten — null = kein Schritt in diesem Frame; ein erwachter trägt den Rest in
-    // seinen ersten Schritt. `_taktN` = die Frames, die dieser Schritt trägt (wach 1): die KI rechnet, wenn in ihre Spanne
-    // ein KI-Takt fiel (die Kadenz, nie die Entscheidung).
+    // DIE ZEIT DES SCHRITTS (der grobe Takt): ein Leib in der Ruhe des Takts (`_ruheGrob`) sammelt die Frame-Zeit und geht nur
+    // in seinem Fenster (`slot` % takt === 0) mit allem Gesammelten — null = kein Schritt in diesem Frame; ein erwachter (und
+    // einer, der nur im Bild ruht) trägt den Rest in seinen ersten Schritt. `_taktN` = die Frames, die dieser Schritt trägt
+    // (wach 1): die KI rechnet, wenn in ihre Spanne ein KI-Takt fiel (die Kadenz, nie die Entscheidung).
     _kreaturTaktDt(creature, slot, delta) {
         const u = creature.userData;
-        if (u._ruht === true) {
+        if (u._ruht === true && u._ruheGrob === true) {
             u._ruheDt = (u._ruheDt || 0) + delta;
             u._ruheN = (u._ruheN || 0) + 1;
             if (slot % AnazhRealm.KREATUR_RUHE.takt !== 0) return null;
@@ -3103,9 +3121,10 @@ class AnazhRealm_kreatur_verhalten {
 
     // DER BLICK DES BILDS (im Render-Pfad `_loopRender` — dem EINEN, durch den auch die Ausgabe-Aufnahme zeichnet): die Ruhe
     // entschied der Takt am Frustum des Vor-Frames; danach kann die Kamera springen (Teleport, Portal, Respawn), schneller
-    // drehen als der Rand oder ohne Takt gesetzt werden (die Aufnahme). Hier steht der Blick DIESES Bilds: jeder ruhende Leib,
-    // der unter ihm nicht mehr ruht (`_kreaturRuht` mit seinem Frustum, ohne Rand — im Bild oder dem Spieler jetzt nah),
-    // erwacht und schreibt Feld (`_kzLeib`) und Sicht (`_leibSicht`), bevor das Bild ihn zeichnet. Rückgabe: die Geweckten.
+    // drehen als der Rand oder ohne Takt gesetzt werden (die Aufnahme). Hier steht der Blick DIESES Bilds: jeder ruhende Leib
+    // (ein Wesen oder ein Gefallener), der unter ihm nicht mehr ruht (`_kreaturRuht` mit seinem Frustum, ohne Rand — im Bild
+    // oder dem Spieler jetzt nah), erwacht und schreibt Feld (`_kzLeib`) und Sicht (`_leibSicht`), bevor das Bild ihn
+    // zeichnet. Rückgabe: die Geweckten.
     _ruheImBild() {
         const st = this.state;
         const cam = st.camera;
@@ -3126,9 +3145,12 @@ class AnazhRealm_kreatur_verhalten {
         // das Auge des Tier-Satzes sieht mit demselben Blick (`_tierSatzImBild`)
         if (this._tierSaetze && this._tierSaetze.size) this._tierSatzImBild(blick());
         let n = 0;
-        for (const c of st.creatures) {
+        const W = st.creatures;
+        const L = st.leichname;
+        for (let k = 0, m = W.length + L.length; k < m; k++) {
+            const c = k < W.length ? W[k] : L[k - W.length];
             if (!c || !c.userData || c.userData._ruht !== true) continue;
-            if (this._kreaturRuht(c, pm, blick(), 0, 0)) continue;
+            if (this._kreaturRuht(c, pm, blick(), 0, 0, k >= W.length)) continue;
             this._kreaturErwacht(c);
             n++;
             if (st.renderer && st.renderer._isHeadlessNull) continue;
@@ -3939,8 +3961,8 @@ AnazhRealm.BUEHNE_SETTLE_CAP_MS = 90000;
 // Weg fegt in Teil-Schritten, `_kreaturWeg`). Der Blick-Test des Takts hinkt einen Frame (die Kamera dreht nach dem
 // Kreatur-Takt): der Rand wächst um `randGrad`° plus die doppelte Drehung des Vor-Frames, dazu `saumM` m — und der Blick
 // des Bilds (`_ruheImBild` in `_loopRender`) weckt, was die Kamera dieses Bilds dennoch sieht (Teleport, Portal, Aufnahme).
-// In der Witterung eines Jägers (`witterungM` m) ruht kein Tier (der Biss liest seine Glieder). Ein Schatten reicht höchstens
-// `wurfM` m weit (`_kreaturWurfAusserBlick`).
+// In der Witterung eines Jägers (`witterungM` m) geht jedes Tier jeden Frame (es ruht nur im Bild; der Biss liest seine
+// Glieder frisch). Ein Schatten reicht höchstens `wurfM` m weit (`_kreaturWurfAusserBlick`).
 AnazhRealm.KREATUR_RUHE = Object.freeze({ takt: 4, wegMax: 0.25, randGrad: 10, saumM: 2, witterungM: 60, wurfM: 12 });
 // Die Wurzel eines ruhenden Leibs trägt diese `updateMatrixWorld` als eigene Eigenschaft: der Szenen-Gang (three r184
 // steigt sonst in jedes Kind, auch unter `matrixWorldAutoUpdate = false`) übergeht sein Skelett. Leser ziehen über

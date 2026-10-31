@@ -1306,7 +1306,7 @@ async function probe(A) {
                     for (const e of neuA) r.removeArchitecture(e);
                 };
                 // die Gründe aus der EINEN Tafel des Stamms (fehlt sie, nennt der Satz keinen — das Urteil sagt es)
-                const T = r.constructor.SETZ_GRUND || {};
+                const T = AnazhRealm.SETZ_GRUND || {};
                 const G = new Proxy(T, { get: (t, k) => t[k] || `(kein Grund „${String(k)}" in SETZ_GRUND)` });
                 stelle(cx + 40, cz + 40);
                 // E1 die Obergrenze der Kreaturen: noch 3 Plätze, dann keiner
@@ -1394,7 +1394,7 @@ async function probe(A) {
         if (soll("rand"))
             try {
                 if (!A.rand.ufer || !A.rand.see) throw new Error("kein See mit Ufer in der Welt (Orte aus der Welt)");
-                const SG = r.constructor._siedlungGesetz();
+                const SG = AnazhRealm._siedlungGesetz();
                 const nH = SG.nHMin + ((A.rand.seed >>> 24) % SG.nHSpan);
                 const plan = await r._foundryRequestSettlement({ seed: A.rand.seed, nH });
                 let mx = 0;
@@ -1438,7 +1438,7 @@ async function probe(A) {
                         r.removeArchitecture(e);
                     }
                 const a = (A.rand.winkel * Math.PI) / 180;
-                const dSp = planR + r.constructor.STRUCTURE_PLAYER_CLEAR_MARGIN + 1.5;
+                const dSp = planR + AnazhRealm.STRUCTURE_PLAYER_CLEAR_MARGIN + 1.5;
                 const PX = X + mx + Math.cos(a) * dSp;
                 const PZ = Z + mz + Math.sin(a) * dSp;
                 await stroemen(PX, PZ, 120);
@@ -1493,7 +1493,7 @@ async function probe(A) {
                 vor = zaehlen();
                 // DIE ZELLEN SELBST: je geladenem Chunk die Zahl seiner Wasser-Zellen — ändert das Dorf sie (der Erdbau
                 // am Ufer rückt einen Grund unter Wasser in eine andere Zelle), ist das Wecken des Automaten verdient
-                const ZW = r.constructor.CELL_STATE.WATER;
+                const ZW = AnazhRealm.CELL_STATE.WATER;
                 const wasserZellen = () => {
                     const m = new Map();
                     for (const k of geladen) {
@@ -1517,7 +1517,7 @@ async function probe(A) {
                 // der Nexus-Deckel ruht, solange R misst: über dem Deckel fällt der fernste autonome Bau (`_capNexusStructures`),
                 // und das Haus am Seerand ist der fernste, weil der Spieler landein am Rand des Plans steht — R prüft das
                 // Wasser, nicht den Deckel
-                const Klasse = r.constructor;
+                const Klasse = AnazhRealm;
                 const deckel = Klasse.MAX_NEXUS_STRUCTURES;
                 const autos = () => st.architectures.filter((e) => e?.autonomous).length;
                 const autosVor = autos();
@@ -1638,7 +1638,7 @@ async function probe(A) {
                 const vorA = new Set(st.architectures);
                 const at = ["at", X, Y, Z];
                 const ctx = () => r.dslCtx({ source: "human", seed: 7 });
-                const C = r.constructor.FOREST.cell;
+                const C = AnazhRealm.FOREST.cell;
                 let wald = false;
                 for (let i = -1; i <= 1; i++)
                     for (let j = -1; j <= 1; j++) {
@@ -2216,7 +2216,7 @@ function selbsttest() {
 // Gesetz der Welt (Hydrosphäre, Wasser des Atlas über dem Boden) nächst der Mess-Wiese, nie als Literal der alten Welt (die
 // Orte von V18.540 lagen nach der neuen Landform im Trockenen: Hain, Furt, Rampe, Damm, Uferhäuser, See und Seerand).
 async function weltOrte(A) {
-    await window.__weltDa(() => !(!r || !r.state.hydrosphere || !r.state.hydrosphere.ready));
+    await window.__weltDa(() => !(!r || !st.hydrosphere || !st.hydrosphere.ready));
     const G = window.__gelaendeCore;
     const [MX, MZ] = A.mess;
     const tiefe = (x, z) => {
@@ -2272,7 +2272,7 @@ async function weltOrte(A) {
     }
     // 2) der See: die nächste benannte Senke, deren Kachel einen gerenderten See trägt (Spiegel > Meer + 2 m, ≥ 16 Zellen)
     const L = r._gelaende();
-    const wl = r.state.waterLevel;
+    const wl = st.waterLevel;
     const step = 64;
     const n = 375;
     const kand = G.benannteSeen(L, -12000, -12000, step, n)

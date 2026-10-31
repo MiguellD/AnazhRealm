@@ -2599,7 +2599,7 @@ async function checkBandKreaturKosten({ page, check }) {
                 cam.lookAt(pm.x + dx, pm.y + 2, pm.z + dz);
                 cam.updateMatrixWorld(true);
             };
-            const g = { schritte: 0, zeit: 0, gaenge: 0 };
+            const g = { schritte: 0, zeit: 0, gaenge: 0, laeufe: 0 };
             const probe = spawnAt(-120, 0);
             if (!probe) return { fehler: "Spawn fehlgeschlagen" };
             const u = probe.userData;
@@ -2618,7 +2618,7 @@ async function checkBandKreaturKosten({ page, check }) {
                 return P._kreaturHuellenKontakt.apply(this, arguments);
             };
             r._kreaturLaufTakt = function (c, dt) {
-                if (c === probe) g.zeit += dt;
+                if (c === probe) (g.zeit += dt), g.laeufe++;
                 return P._kreaturLaufTakt.apply(this, arguments);
             };
             const takt = (n, setze) => {
@@ -2632,6 +2632,7 @@ async function checkBandKreaturKosten({ page, check }) {
             const nullen = () => {
                 g.schritte = 0;
                 g.gaenge = 0;
+                g.laeufe = 0;
             };
             const kindStimmt = () => {
                 const soll = new T3.Matrix4()
@@ -2723,23 +2724,47 @@ async function checkBandKreaturKosten({ page, check }) {
                 takt(12);
                 g.g5 = { schritte: g.schritte, ruht: u._ruht === true };
                 delete u._stossV;
-                // (G6) WEG: ein Leib, dessen grober Schritt `wegMax` überschritte, geht voll
+                // (G6) WEG: ein Leib, dessen grober Schritt `wegMax` überschritte, geht voll — er ruht nur im Bild, nie im groben Takt
                 takt(3);
                 const ruhteVorher = u._ruht === true;
                 if (u._steuer) u._steuer.v = (1.5 * R.wegMax) / (R.takt * 0.02);
                 r._tickKreaturRuhe(0.02, pm);
-                g.g6 = { ruhteVorher, ruht: u._ruht === true };
-                // (G7) DER GEFALLENE ruht nie: ein ruhender Leib unter den Gefallenen erwacht
+                g.g6 = { ruhteVorher, grob: u._ruheGrob === true && u._ruht === true };
+                // (G7) DER LÄUFER UND DER LIEGENDE GEFALLENE RUHEN IM BILD (w4-takt-z80): ein Fliehender 120 m hinter dem Blick
+                // verlässt den Matrix-Gang (kein Gang ins Kind) und geht jeden Takt; ein Gefallener ruht, sobald er liegt (sein
+                // Takt sagt es, `_tickLeichname`) — kippt oder versinkt er, ist er wach. Bis w4-takt-z80 ruhten beide nie: die
+                // Leichname des Bestand-Risses und die fliehende Herde gingen hinter dem Blick der Mess-Wiese den Matrix-Gang je Frame
                 if (u._steuer) u._steuer.v = 0;
-                takt(3);
-                const ruhte7 = u._ruht === true;
-                const iW = s.creatures.indexOf(probe);
-                s.creatures.splice(iW, 1);
-                s.leichname.push(probe);
-                r._tickKreaturRuhe(0.02, pm);
-                g.g7 = { ruhteVorher: ruhte7, wach: u._ruht === false };
-                s.leichname.splice(s.leichname.indexOf(probe), 1);
-                s.creatures.splice(iW, 0, probe);
+                const K = A._arenaGesetz().gefuehl;
+                const [y0, q0, iW] = [probe.position.y, probe.quaternion.clone(), s.creatures.indexOf(probe)];
+                const flieht = () => {
+                    nullen();
+                    takt(4, () => ([probe.position.x, probe.position.z, u._motionZustand] = [pm.x - 120, pm.z, "flucht"]));
+                    u._motionZustand = null;
+                    return [u._ruht === true && !u._ruheGrob, g.gaenge, g.laeufe];
+                };
+                const liegt = (t, hebe) => {
+                    u.dying = { t, hebe, dauer: K.kippDauerSec, nachklang: K.leichnamSec, sinken: K.leichnamSinkSec, dirX: 1, dirZ: 0 }; // prettier-ignore
+                    r._tickLeichname(0, pm);
+                    r._tickKreaturRuhe(0.02, pm);
+                    return u._ruht === true;
+                };
+                const gefallen = () => {
+                    s.leichname.push(...s.creatures.splice(iW, 1));
+                    const z = [liegt(0.5), liegt(10, [0, 0]), liegt(K.kippDauerSec + K.leichnamSec - 1, [0, 0])];
+                    s.creatures.splice(iW, 0, s.leichname.pop());
+                    [u.dying, u._liegt, probe.position.y] = [undefined, undefined, y0];
+                    probe.quaternion.copy(q0);
+                    return z;
+                };
+                g.g7 = [flieht(), gefallen()];
+                // (S12) SELBST-TEST: das alte Gesetz (es ruht nur der stille Lebende) → der Läufer geht den Matrix-Gang, der Gefallene
+                // liegt wach
+                r._kreaturRuht = function (c, pp, fr, ra, de, gefallen) {
+                    return gefallen || c.userData._motionZustand ? false : P._kreaturRuht.apply(this, arguments);
+                };
+                g.s12 = [flieht(), gefallen()];
+                delete r._kreaturRuht;
                 // (G8) DIE NAH-GESTALT ruht nie: ein Leib, dessen Mesh noch die Gestalt trägt (`_kzNah` — er kreuzte eben
                 // `aus` nach außen, der Ziegel schaltet erst in seinem Takt), zeichnet und wirft in die Kaskaden (bis
                 // 306 m) — ruhte er, stünde sein Werfer, wo die Ruhe begann (Prüfung K59-1: 10 m daneben, 1 Werfer statt 0)
@@ -2836,6 +2861,7 @@ async function checkBandKreaturKosten({ page, check }) {
             } finally {
                 delete r._kreaturHuellenKontakt;
                 delete r._kreaturLaufTakt;
+                delete r._kreaturRuht;
                 delete r._leibMatrix;
                 delete r._kzBesitztFeld;
                 delete r._weltFeldAktiv;
@@ -2872,8 +2898,11 @@ async function checkBandKreaturKosten({ page, check }) {
             o.checks.s9LensFires = !!G.s9 && G.s9.ruhteVorher && G.s9.wach && G.s9.kindFehler > 1;
             o.checks.gNah = !!G.g4 && G.g4.schritte === 12 && !G.g4.ruht;
             o.checks.gZustand = !!G.g5 && G.g5.schritte === 12 && !G.g5.ruht;
-            o.checks.gWeg = !!G.g6 && G.g6.ruhteVorher && !G.g6.ruht;
-            o.checks.gGefallen = !!G.g7 && G.g7.ruhteVorher && G.g7.wach;
+            o.checks.gWeg = !!G.g6 && G.g6.ruhteVorher && !G.g6.grob;
+            const [lauf, fall] = G.g7 || [[], []];
+            o.checks.gGefallen = String(lauf) === "true,0,4" && String(fall) === "false,true,false";
+            const [lauf0, fall0] = G.s12 || [[], []];
+            o.checks.s12LensFires = lauf0[0] === false && lauf0[1] > 0 && fall0[1] === false;
             o.checks.gNahGestalt = !!G.g8 && G.g8.ruhte === 0;
             o.checks.s10LensFires = !!G.s10 && G.s10.ruhte > 0;
             o.checks.gFeldRuht = !!G.g9 && G.g9.ruht && G.g9.aus;
@@ -2906,8 +2935,8 @@ async function checkBandKreaturKosten({ page, check }) {
     check(`Kreatur-Kosten (W) je Gestalt wirft die Grobstufe ihr Soll, der Zwilling deckt den Umriss der feinen Stufe (IoU ≥ ${out.deckungMin})`, w.length > 0 && !wRot.length && !dRot.length, [...wRot, ...dRot].join(" · "));
     const G = out.g || {};
     check("Kreatur-Kosten (G) die Probe der ruhenden Leiber lief", !G.fehler, G.fehler || "");
-    gruppe("(G) Leiber ruhen fern, der Leser liest die jetzige Lage, sie erwachen nah, im Stoß, auf dem Weg, gefallen, im Feld, im Bild, für die KI", ["gRuht", "gLeser", "gErwacht", "gNahGestalt", "gNah", "gZustand", "gWeg", "gGefallen", "gFeldRuht", "gBildWeckt", "gKi"]);
-    gruppe("SELBSTTESTS S1–S11 feuern", ["s1LensFires", "s2LensFires", "s3LensFires", "s4LensFires", "s6LensFires", "s8LensFires", "s9LensFires", "s10LensFires", "s11LensFires"]);
+    gruppe("(G) Leiber ruhen fern, der Leser liest die jetzige Lage, sie erwachen nah, im Stoß, im Fall, im Feld, im Bild, für die KI; der Schnelle, der Läufer und der liegende Gefallene ruhen im Bild", ["gRuht", "gLeser", "gErwacht", "gNahGestalt", "gNah", "gZustand", "gWeg", "gGefallen", "gFeldRuht", "gBildWeckt", "gKi"]);
+    gruppe("SELBSTTESTS S1–S12 feuern", ["s1LensFires", "s2LensFires", "s3LensFires", "s4LensFires", "s6LensFires", "s8LensFires", "s9LensFires", "s10LensFires", "s11LensFires", "s12LensFires"]);
     if (w[0] && w[0].s5) gruppe("SELBSTTEST S5: der gestubbte Zwilling lässt die nahe Stufe wieder werfen", ["s5LensFires"]);
     if (out.s7) gruppe("SELBSTTEST S7: der zur Mitte gezogene Zwilling verfehlt die Deckung", ["s7LensFires"]);
 }

@@ -61,18 +61,18 @@ const { errs, check } = pruefer();
                     /* die Loop-Fehler-Grenze fängt selbst; die Linse zählt Page-Errors */
                 }
             }
-            const s = r.state.perfSense;
+            const s = st.perfSense;
             res.senseGpuMs = s && s.phase ? s.phase.gpuMs : null;
             res.senseGpuMax = s && s.phaseMax ? s.phaseMax.gpuMs : null;
             res.senseQuelle = s ? s.gpuQuelle : null;
             res.senseQuelleGueltig = s ? quelleGueltig(s.gpuQuelle) : false;
             // PERF_PHASES bleibt die CPU-Liste — gpuMs darf ihre cpuSum-Semantik nie vergiften:
-            res.gpuNichtInPerfPhases = !r.constructor.PERF_PHASES.includes("gpuMs");
+            res.gpuNichtInPerfPhases = !AnazhRealm.PERF_PHASES.includes("gpuMs");
 
             // ── (3a) ein Stocker-Frame durch den ECHTEN Chokepoint (Fold → Snapshot) ──
-            r.state._perfFrame = { streaming: 5, render: 1 };
+            st._perfFrame = { streaming: 5, render: 1 };
             r._perfSenseFoldFrame(300, 0.3);
-            const fr = r.state.flightRecorder;
+            const fr = st.flightRecorder;
             const w0 = fr && fr.worst && fr.worst[0];
             res.worst = w0
                 ? { frameMs: w0.frameMs, gpuMs: w0.gpuMs, gpuQuelle: w0.gpuQuelle, gpuGapMs: w0.gpuGapMs }
@@ -90,17 +90,17 @@ const { errs, check } = pruefer();
             res.steadyQuelle = res.steady ? res.steady.gpuQuelle : null;
 
             // ── (3c) das Panel-Grid trägt „GPU (echt|proxy)" ──
-            r.state.perfPanel = true;
+            st.perfPanel = true;
             r._perfPanelLast = 0;
             r._perfPanelRender();
             res.grid = (document.getElementById("pp-grid") || {}).textContent || "";
 
             // ── (4) DIE ECHT-LEITUNG: exakte r184-Oberfläche als Fake, fire-and-forget ──
-            const savedRenderer = r.state.renderer;
-            const savedReady = r.state.rendererReady;
+            const savedRenderer = st.renderer;
+            const savedReady = st.rendererReady;
             let resolveCalls = 0;
             const stempel = new Map([["r:0:0:f0", 1]]); // r184 hält jeden Pass-Stempel — nach dem Auflösen fällt die Karte
-            r.state.renderer = {
+            st.renderer = {
                 backend: { trackTimestamp: true, timestampQueryPool: { render: { timestamps: stempel } } },
                 resolveTimestampsAsync: (typ) => {
                     resolveCalls++;
@@ -108,15 +108,15 @@ const { errs, check } = pruefer();
                     return Promise.resolve(7.5); // r184: Rückgabe = ms des Render-Passes
                 },
             };
-            r.state.rendererReady = true;
+            st.rendererReady = true;
             // das Tor: ohne das Adapter-Feature (backend.trackTimestamp) ruft der Kick nichts und landet nichts
-            r.state.renderer.backend.trackTimestamp = false;
+            st.renderer.backend.trackTimestamp = false;
             r._gpuTsLast = undefined;
             r._gpuTsPending = false;
             r._perfGpuResolveKick();
             await Promise.resolve();
             res.torOhneFeature = resolveCalls === 0 && r._gpuTsLast === undefined;
-            r.state.renderer.backend.trackTimestamp = true;
+            st.renderer.backend.trackTimestamp = true;
             r._gpuTsLast = undefined;
             r._gpuTsAtMs = r._gpuTsKickMs = undefined;
             r._gpuTsPending = false;
@@ -130,22 +130,22 @@ const { errs, check } = pruefer();
             res.karteGefallen = stempel.size === 0;
             // der Fake verlässt die Welt VOR den Folds (der gelandete Messwert genügt —
             // genau die EINE Quelle-Wahrheit: "echt" gibt es nur aus einer echten Landung):
-            r.state.renderer = savedRenderer;
-            r.state.rendererReady = savedReady;
+            st.renderer = savedRenderer;
+            st.rendererReady = savedReady;
             // der nächste Fold liest jetzt Quelle "echt" mit dem gelieferten Wert:
-            r.state._perfFrame = { streaming: 2 };
+            st._perfFrame = { streaming: 2 };
             r._perfSenseFoldFrame(16.7, 0.0167);
-            res.echtQuelle = r.state.perfSense.gpuQuelle;
-            res.echtSample = r.state.perfSense.phase.gpuMs;
+            res.echtQuelle = st.perfSense.gpuQuelle;
+            res.echtSample = st.perfSense.phase.gpuMs;
             // Panel folgt derselben Quelle:
             r._perfPanelLast = 0;
             r._perfPanelRender();
             res.gridEcht = (document.getElementById("pp-grid") || {}).textContent || "";
             // ABGESTANDEN (> PERF_GPU_TS_STALE_MS) ⇒ ehrlich zurück auf "proxy":
-            r._gpuTsAtMs = performance.now() - (r.constructor.PERF_GPU_TS_STALE_MS + 1000);
-            r.state._perfFrame = { streaming: 2 };
+            r._gpuTsAtMs = performance.now() - (AnazhRealm.PERF_GPU_TS_STALE_MS + 1000);
+            st._perfFrame = { streaming: 2 };
             r._perfSenseFoldFrame(16.7, 0.0167);
-            res.staleQuelle = r.state.perfSense.gpuQuelle;
+            res.staleQuelle = st.perfSense.gpuQuelle;
             // aufräumen (kein Messwert-Rest für nachfolgende Proben):
             r._gpuTsLast = undefined;
             r._gpuTsAtMs = undefined;
@@ -154,10 +154,10 @@ const { errs, check } = pruefer();
             // ── SELBST-TEST: ein künstlich kaputtes Quelle-Feld MUSS rot lesen ──
             res.selbstTestKaputtFaellt = quelleGueltig("kaputt") === false;
             // und über die echte Oberfläche: kaputte Quelle in den Sense ⇒ Prüfung rot
-            const savedQ = r.state.perfSense.gpuQuelle;
-            r.state.perfSense.gpuQuelle = "kaputt";
-            res.selbstTestSenseKaputt = quelleGueltig(r.state.perfSense.gpuQuelle) === false;
-            r.state.perfSense.gpuQuelle = savedQ;
+            const savedQ = st.perfSense.gpuQuelle;
+            st.perfSense.gpuQuelle = "kaputt";
+            res.selbstTestSenseKaputt = quelleGueltig(st.perfSense.gpuQuelle) === false;
+            st.perfSense.gpuQuelle = savedQ;
             return res;
         });
     } catch (e) {
