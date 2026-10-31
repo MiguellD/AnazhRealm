@@ -1,0 +1,31 @@
+$ C:\Program Files\nodejs\node.exe -e (async function boeLauf() {
+const fs = require("fs");
+const path = require("path");
+const { werkbankRuf } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const M = require(path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+const [aus, port, mutante] = process.argv.slice(1);
+const W = Number(port) + 20000;
+const tor = { log: fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8"), bereit: werkbankRuf(W, "/umstellen", { ort: "wiese" }).then((a) => { if (!a || a.fehler) throw new Error("umstellen --ort wiese: " + JSON.stringify(a).slice(0, 200)); }), stop: () => {} };
+let erg;
+try {
+await tor.bereit;
+for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+if (mutante === "wind0") await werkbankRuf(W, "/eval", { code: "r._windWob = () => 0; return 1;" });
+const b = await werkbankRuf(W, "/bild", {
+px: M.x, py: "+1.6", pz: M.z, lx: M.blick.x, ly: "+0", lz: M.blick.z, wahl: 0, zeit: 0.25, datei: aus.replace(/\.json$/, "") + "-boe.png",
+});
+erg = b.zeit ? Object.assign({ abnahme: b.abnahme, mutante: mutante || null }, b.zeit) : { fehler: String(b.fehler || "keine Zeit-Messung").slice(0, 400) };
+} catch (e) {
+erg = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 400) };
+} finally {
+tor.stop();
+}
+console.log("BOE-ZEIT " + JSON.stringify(erg));
+fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+})() C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\94c079cb-gtx\vegetation.K2_1.json 7804
+[linse-gpu] nvidia/pascal
+BOE-ZEIT {"abnahme":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 10.1 m · Luma 57.7 σ 27.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.142 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal","mutante":null,"dt":0.25,"nahAnteil":0.5326475694444445,"tempo":10.416666666666668,"kamm":{"t":25.55,"boe":1.1499993836170879,"v":227.90852383573832,"boden":0.0002373153286289345},"tal":{"t":48.8,"boe":0.2500001854256985,"v":42.99245339975685,"boden":0.0002112548801355925},"nah":21.305902777777778,"ueber":227.90852383573832,"lauf":5.30114911784309,"rot":[]}
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal

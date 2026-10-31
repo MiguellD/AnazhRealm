@@ -58,8 +58,11 @@ console.log("VEGETATION " + JSON.stringify(erg));
 })() C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\94c079cb-gtx\vegetation.K1_1.json 7804 [["wiese","third",0.5,null,"wiese"]]
 [linse-gpu] nvidia/pascal
 SCHRITT /fenster 0.0 s
-SCHRITT /umstellen 0.8 s
+SCHRITT /umstellen 0.9 s
 SCHRITT /eval 0.0 s
+SCHRITT /bild 38.1 s
+SCHRITT /zaehlen 0.1 s
+VEGETATION {"schuesse":[{"n":"wiese-third-0.5--wiese","was":"wiese","kamera":[-274.642,30.109,-1043.811,-288.047,27.683,-1049.493],"pose":{"kamera":[-274.642,30.109,-1043.811],"blick":[-0.90819,-0.16436,-0.38495]},"leinwand":[1920,1080],"ok":true,"zeile":"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 14.76 m · Luma 55.1 σ 28.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.142 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal","pixel":1147652,"baender":[0,2,5,10,14,30,80,200],"cos":[null,0.5675,0.3576,0.2169,0.126,0.0461,0.0222],"klassen":{"bodenSatz":[0,45543,47181,8164,137822,74074,5580],"streuSatz":[0,975,5945,1943,3961,59,0],"nahWiese:L2":[0,239,236881,102226,34074,0,0],"nahWiese:L1":[0,329946,80267,0,0,0,0]},"farbton":[["-140,-523",10200,-4503.256,8761.374,10200],["-140,-524",2661,-1299.993,2278.214,2661],["-140,-522",18070,-9179.893,14930.462,18070],["-139,-524",23278,-10499.583,20080.85,23275],["-139,-525",2880,-1187.572,2552.18,2880],["-139,-523",21998,-8890.1,19523.506,21998],["-140,-521",8178,-4382.331,6649.261,8171],["-139,-522",10590,-5209.249,8894.602,10588],["-138,-525",3508,-1532.758,3095.165,3508],["-138,-524",2384,-870.44,2159.792,2384],["-139,-521",25,-15.879,17.678,25]],"budget":[4,63716]}]}
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

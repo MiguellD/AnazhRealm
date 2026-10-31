@@ -1,0 +1,9 @@
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ querhang  {"ort":"welt","hangGrad":20.8,"stand":{"wolf":{"rollGrad":19.5,"lotMaxGrad":7.9},"hirsch":{"rollGrad":20.7,"lotMaxGrad":8.1}},"schlupf":{"wolf":0.034,"hirsch":0.018},"rampe":{"ort":"s2-hang30","hangGrad":29.9,"stand":{"wolf":{"rollGrad":29.9,"lotMaxGrad":8.2},"hirsch":{"rollGrad":29.9,"lotMaxGrad":8.3}},"schlupf":{"wolf":0.047,"hirsch":0.033}}}
+
+  (34 s) — Sekunden je Probe: querhang: 14
+
+✅ GRÜN — querhang
+QUERHANG EXIT=0

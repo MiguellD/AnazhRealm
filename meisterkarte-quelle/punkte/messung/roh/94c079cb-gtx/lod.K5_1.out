@@ -70,6 +70,14 @@ $ C:\Program Files\nodejs\node.exe -e (async function folge(plan) {
 })({"name":"lod.K5#1","schritte":[{"name":"fenster","args":["fenster","1920","1080"],"muss":true},{"name":"umstellen","args":["umstellen","--ort","wiese"],"muss":true},{"name":"kanten","probe":"@KOORD@/bericht/2910-lod-k5/kanten.js","blob":"502a3c926930826c854b377e5c00452d4159741f","muss":true,"ms":1800000}]}) C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\94c079cb-gtx\lod.K5_1.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
   fenster · Exit 0
   umstellen · Exit 0
+  kanten · Exit 1
+[linse-gpu] nvidia/pascal
+FOLGE ROT: kanten: Exit 1 a\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\cdp\\IsolatedWorld.js:105:16)",
+  "at async CdpFrame.evaluate (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\api\\Frame.js:362:20)"
+ ]
+}
+
 
 --- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
 [linse-gpu] nvidia/pascal

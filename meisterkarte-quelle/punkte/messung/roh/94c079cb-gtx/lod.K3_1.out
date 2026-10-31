@@ -181,7 +181,10 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     process.exitCode = errs.length ? 1 : 0;
 })(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\94c079cb-gtx\lod.K3_1.json
 [linse-gpu] nvidia/pascal
-  RUHE VOR TEIL C: die Welt steht nach 487 Takten · mit einer wartenden Karte: false
+  RUHE VOR TEIL C: die Welt steht nach 1 Takten · mit einer wartenden Karte: false
+  RÜCKGABE: der Renderer der Welt derselbe · VRAM nach dem GC 126.8 → 127 MB (+0.2)
+  C6 HEBUNG [bc]: 0° 0.987/0.866 · 40° 0.997/0.965 · 60° 0.881/0.743 · 80° 0.969/0.962 · -20° 0.993/0.934 | waagrecht 80° 0.321/0.225 · Ringe -20,0,40,80 · Schicht 515200 B
+  C6 HEBUNG [rgba8]: 0° 0.989/0.881 · 40° 0.997/0.965 · 60° 0.881/0.743 · 80° 0.969/0.962 · -20° 0.993/0.934 | waagrecht 80° 0.321/0.225 · Ringe -20,0,40,80 · Schicht 7340032 B
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

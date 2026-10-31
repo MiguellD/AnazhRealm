@@ -225,14 +225,12 @@ leibPx: +(2 * (rs[rs.length >> 1] || 0)).toFixed(1),
 
 ===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27804) =====
 
-  ❌ herde     {"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":0.6,"mittel":0.6,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":0.98,"engst":[0.98,"Cova","Orin",0]},"flucht":{"n":5,"wurfAnteil":0.6,"mittel":0.6,"fluchtAnteil":0.87,"fluchtMittel":0.6,"fluchtMin":0.6,"enge":1.2,"engst":[0.97,"Cova","Orin",20]}},"ausrichtung":{"mittel":null,"takte":0},"alarm":{"laufen":1,"zweiteHand":0,"letzterS":null},"fluchtWegM":0,"id":{"bruch":null,"fluchtS":[489,287]}}
-       ↳ Probe vakuös: Glieder 5 / 5 / fremd 5, in Flucht 0.87 (Soll ≥ 0,1), wandernd 0 (Soll 0), aus zweiter Hand 0, neben dem fremden 489,287 s · Verband zerfällt beim Wandern: im Mittel 0.6 der 5 Glieder binnen 2.5 Paar-Räumen vom Mittel von 10 bis 60 s (Soll ≥ 0,9; Wurf 0.6) · Verband zerfällt auf der Flucht: im Mittel 0.6 der 5 Glieder binnen 2.5 Paar-Räumen vom Mittel, solange die Herde flieht (Soll ≥ 0,8; am wenigsten 0.6, Wurf 0.6) · Verband flieht ungerichtet: Φ null über 0 Takte · Alarm-Kette reißt: der letzte von 1 Flüchtern läuft null s nach dem ersten · Fluchtweg 0 m
+  ✅ herde     {"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":0.8,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":0.98,"engst":[0.92,"Cova","Skara",24]},"flucht":{"n":5,"wurfAnteil":0.8,"mittel":0.998,"fluchtAnteil":0.346,"fluchtMittel":1,"fluchtMin":1,"enge":0.82,"engst":[0.34,"Cova","Orin",57]}},"ausrichtung":{"mittel":0.988,"takte":1264},"alarm":{"laufen":5,"zweiteHand":4,"letzterS":0.32},"fluchtWegM":33.7,"id":{"bruch":null,"fluchtS":[5,5]}}
 
   (15 s)
 
---- stderr ---
-
-❌ ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt.
+✅ GRÜN — herde
+HERDE AM HANG {"szene":{"kamera":[114.47,65.42,-246.56,71.86,84.98,-240.81],"abstand":47.2,"punkte":[[71.09,85.13,-240.74],[72.69,84.65,-243.57],[72.28,86.88,-237.53],[69.32,84.55,-241.29],[73.89,85.05,-240.92]],"glieder":5,"fliehen":5,"takte":1885,"hang":{"x":71.4,"z":-239.5,"neigung":15.7},"wurf":5,"fluchtBei":16.7},"fehler":null,"serie":[[47.2,"5/5",null,"Cannot read properties of undefined (reading 'format')"],[46.9,"5/5",null,"Cannot read properties of undefined (reading 'format')"],[47.1,"5/5",null,"Cannot read properties of undefined (reading 'format')"]]}
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

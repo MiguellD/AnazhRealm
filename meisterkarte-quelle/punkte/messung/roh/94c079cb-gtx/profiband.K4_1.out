@@ -255,6 +255,7 @@ $ C:\Program Files\nodejs\node.exe -e /* richter 9aa2a1c374 */ const K = {"budge
     console.log("PROFIBAND " + JSON.stringify(zus));
 })(process.argv[1], process.argv[2]).catch((e) => { console.log("PROBE ROT: " + String((e && e.stack) || e).split("\n").slice(0, 3).join(" | ")); process.exitCode = 1; }); glaette C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\94c079cb-gtx\profiband.K4_1.json
 [linse-gpu] nvidia/pascal
+PROFIBAND {"art":"glaette","sekunden":43.1,"schritte":[["anfang",31.1],["k4-geh",5.1],["k4-fahrt",6.9]],"offen":[],"fehler":{},"strom":{"bloecke":48,"bilder":161,"seiten":1,"fehler":0,"verloren":0},"glaette":{"k4-geh":{"n":38,"frame":200,"p99":733.3,"max":733.3,"ueber33":21,"ueber100":11,"takt":196.9,"vram":132.5,"gpu":2.08,"gpuN":10,"befehle":135,"dreiecke":359456,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":4,"sattel":"0","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"v":5}},"k4-fahrt":{"n":26,"frame":241.7,"p99":758.4,"max":758.4,"ueber33":26,"ueber100":12,"takt":233.4,"vram":145,"gpu":2.54,"gpuN":10,"befehle":189,"dreiecke":551064,"voll":0,"halt":false,"last":0,"sicht":[1,2],"sichtWechsel":2,"sattel":"101","wetter":["sunny"],"buehne":0,"laeufe":1,"sek":2.5,"befunde":[],"tasten":{"wagen":"werkbank-fahrt","aus":null,"ein":"werkbank-fahrt"}}},"anfang":true}
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

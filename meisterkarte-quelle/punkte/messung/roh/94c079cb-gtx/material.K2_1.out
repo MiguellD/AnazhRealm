@@ -75,6 +75,23 @@ $ C:\Program Files\nodejs\node.exe -e (async function folge(plan) {
   boden-0.5 · Exit 0
   boden-1 · Exit 0
   boden-2 · Exit 0
+  genesis · Exit 0
+  ein-genesis · Exit 0
+  fels-weit · Exit 0
+  fels-ort · Exit 0
+  ein-fels · Exit 0
+  fels-stand-0.5 · Exit 0
+  ein-fels-0.5 · Exit 0
+  fels-0.5 · Exit 0
+  fels-stand-1 · Exit 0
+  ein-fels-1 · Exit 0
+  fels-1 · Exit 0
+  fels-stand-2 · Exit 0
+  ein-fels-2 · Exit 0
+  fels-2 · Exit 0
+[linse-gpu] nvidia/pascal
+FOLGE material.K2#1: 21 Schritte
 
 --- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
 [linse-gpu] nvidia/pascal
