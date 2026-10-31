@@ -1364,3 +1364,4 @@
 2026-10-31 23:27:29 takt-z115b-gtx mensch.K5#1,haar.K2#1,material.K1#1,lod.K5#1,bauen.K1#2,spielgang.K3#1,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,klang.K4#1 OFFEN/ROT/OFFEN/OFFEN/OFFEN/ROT/OFFEN/OFFEN/OFFEN/OFFEN 5.8 · 10/10
 2026-10-31 23:27:55 z111-abab START 2 Zellen
 2026-10-31 23:44:39 z111-abab stadt VERLÄNGERN 16.6 · 1/2 (2+2)
+2026-10-31 23:56:59 z111-abab w-ego nicht-langsamer 12.2 · 2/2 (2+2)
