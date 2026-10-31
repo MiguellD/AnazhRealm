@@ -3733,7 +3733,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // IN DER SITZUNG (29.10.): EIN Teleport an die Wiese (der zweite fiel), EIN Schuss `bild --zeit` — Ziel 15 s
         // DER DECKEL NACH SEINER MESSUNG (w4-fehlt-acht): Radeon eich3–6 10,2 · 10,2 · 10,2 · 13,2 s am selben Abdruck — 14 s
-        probe: { sek: 18, befehl: ["node", "-e", "(" + knapp(boeLauf) + ")()", "{AUS}", "{PORT}"] },
+        probe: { sek: 16, befehl: ["node", "-e", "(" + knapp(boeLauf) + ")()", "{AUS}", "{PORT}"] },
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -3896,7 +3896,7 @@ const stationen = [
     sollKlasseStation({
         kriterium: "haar.K1",
         id: "fell",
-        sek: 39,
+        sek: 35,
         klasse: "^tier:wolf$",
         mutiert: true,
         vorher: [
@@ -3992,7 +3992,7 @@ const stationen = [
     // beim Namen wie die übrigen, bis der Abstands-Marsch fällt. DER DECKEL NACH SEINER MESSUNG: Radeon 7521ca51 (`bild` mit `nurPixel`, das
     // PNG ohne Rückruf je Byte) 20,4 s GRÜN, Winter 0,111 × Sommer — unter fremder Last (eine Werkbank swiftshader auf ~10 Kernen) —, die
     // GTX geschätzt × 1,3: ⌈1,5 × 26,5⌉ = 40 s
-    jahrStation(1, JAHR_KRONEN, JAHR_KRONEN, ["sommer", "winter"], "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose", 40),
+    jahrStation(1, JAHR_KRONEN, JAHR_KRONEN, ["sommer", "winter"], "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose", 23),
     jahrStation(2, JAHR_LAUF, JAHR_LAUF, ["sommer", "winter", "fruehling"], "2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte", 10),
 ];
 

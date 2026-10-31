@@ -1327,7 +1327,7 @@ const stationen = [
         // Sitzung mit `--ort wiese`, ihr Dorf-Haken lag vor jeder Ladung — in der Prüfbühne baute `_tickGenesisOrt` (stamm/siedlung-ort.js
         // :2776) den Ring nie, die Ankunft wartete ohne Frist (swiftshader 28 min); die Ankunft hebt ihn jetzt, bis der Ring steht:
         // swiftshader Bühne 70 s (vor dem Deckel), Kontakt 41 s, Treue 0 Bytes
-        probe: { sek: 23,  befehl: befehlDer({
+        probe: { sek: 22,  befehl: befehlDer({
             name: "schatten.K1#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
@@ -1598,7 +1598,7 @@ const stationen = [
         // 2021 (github asztr/Neural-BRDF data/merl_nbrdf.zip), bei θd 25° dieselben Maße je Exemplar; das Band der Klasse von ihrem
         // kleinsten bis zum größten Exemplar, die Toleranz der Bühne Breite ± max(0,3°, 5 %), Spitze ×/÷ 1,3.
         // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 11,4 s): der Deckel steht in der Tafel der Fahrt (punkte.cjs DIE DECKEL)
-        probe: { sek: 10, befehl: befehlDer({
+        probe: { sek: 17, befehl: befehlDer({
             name: "material.K5#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
