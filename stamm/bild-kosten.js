@@ -713,6 +713,22 @@ class AnazhRealm_bild_kosten {
     // Der WebGL2-Rückfall kennt keine Bundles, und sein `_completeCompile` ersetzt das Datenobjekt der Pipeline (vendor
     // 6:513930 über Backend.set 6:457928) — ein Setter am alten Objekt feuerte nie, die Schlange wüchse die ganze Sitzung:
     // dort zählt der wartende Draw nur (`wartetN`), er versucht es im nächsten Aufruf selbst.
+    // DIE NÄCHSTE BEREITE PIPELINE (w4-ankunft-5): ein Versprechen, das sich erfüllt, sobald eine Pipeline, auf die ein Bürger
+    // wartet, steht oder absagt — wer auf ein Programm der Erst-Zeichnung wartet (der frische Himmel, `_himmelFrisch`), wartet
+    // auf dieses Ereignis, nie auf die Uhr. null, wenn keine im Bau steht.
+    _erstBereit() {
+        const E = this._erstZeichnungStand();
+        if (!E.offen.size) return null;
+        if (!E.bereitWarten) E.bereitWarten = new Promise((f) => (E.bereitFrei = f));
+        return E.bereitWarten;
+    }
+    _erstBereitMelden() {
+        const E = this._erstZeichnung;
+        const f = E.bereitFrei;
+        E.bereitWarten = E.bereitFrei = null;
+        if (f) f();
+    }
+
     _erstWartet(be, pipe, bg) {
         const E = this._erstZeichnung;
         if (!pipe) {
@@ -737,6 +753,7 @@ class AnazhRealm_bild_kosten {
                     E.abgesagt.add(pipe);
                     E.offen.delete(pipe);
                     for (const b of warten) b.needsUpdate = true;
+                    this._erstBereitMelden();
                 });
             }
             Object.defineProperty(h, "pipeline", {
@@ -755,6 +772,7 @@ class AnazhRealm_bild_kosten {
                     E.offen.delete(pipe);
                     E.bereitN++;
                     for (const b of warten) b.needsUpdate = true;
+                    this._erstBereitMelden();
                 },
             });
         }
@@ -1264,16 +1282,23 @@ class AnazhRealm_bild_kosten {
                         // der EINE Resolve-Stoff je Lage aus dem anderen Ziel liest
                         z.textures.forEach((t, j) => (r._textures.get(t).generation = `zeit:${i}:${j}`));
                     });
-                this._neustart.value = neu ? 1 : 0;
+                // EINE GESCHICHTE NUR AUS GEZEICHNETEN BILDERN (w4-ankunft-5): unter dem Ladeschirm baut der Resolve seine
+                // Pipeline asynchron — ein Bild, in dem er nicht zeichnete, schrieb sein Ziel nie: das nächste beginnt neu
+                // (`_ohneBild`), statt Ungeschriebenes als Geschichte zu mitteln
+                const neuBeginn = neu || this._ohneBild === true;
+                this._neustart.value = neuBeginn ? 1 : 0;
                 const sprung = !!(realm.state._traaR && realm.state._traaR.sprung === true);
-                this._anlauf.value = neu || sprung ? 0 : Math.min(this._anlauf.value + 1, 1e6);
+                this._anlauf.value = neuBeginn || sprung ? 0 : Math.min(this._anlauf.value + 1, 1e6);
                 // der Resolve liest das Ziel des letzten Frames (Bild mit Vortiefe, Gedächtnis) und schreibt in das andere,
                 // die Kette liest dieses; danach tauschen die zwei die Rolle — keine Kopie (G7)
                 const k = 1 - this._lage;
                 this._geschichte.value = this._ziele[1 - k].textures[0];
                 this._flackerAlt.value = this._ziele[1 - k].textures[1];
                 r.setRenderTarget(this._ziele[k]);
+                const E = realm._erstZeichnungStand();
+                const wartete = E.ausgabeWartet;
                 this._quad.render(r);
+                this._ohneBild = E.ausgabeWartet !== wartete;
                 r.setRenderTarget(null);
                 this._lage = k;
                 this._textureNode.value = this._ziele[k].texture;

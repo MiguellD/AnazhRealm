@@ -254,7 +254,7 @@ class AnazhRealm_studio_stoff {
             const atl = this._blattAtlasProbe(TSL);
             const deckt = TSL.attribute("aDeckt", "float");
             mat.colorNode = TSL.vec4(TSL.vec3(0.0), atl ? TSL.max(deckt, atl.a) : deckt);
-            mat.userData.liestUv = !!atl;
+            mat.userData.liestUv = true; // der Atlas liest die Ecken (`_foundryBuildMesh`)
             mat.alphaTest = 0.5;
             mat.transparent = false;
         } else if (klasseLook) {

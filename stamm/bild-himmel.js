@@ -701,15 +701,16 @@ class AnazhRealm_bild_himmel {
     // Lesung abgewartet — true, sobald `_himmelsIrradianz` sie trägt. Der Null-Renderer malt keinen Himmel (die Tafeln leben
     // auf der GPU, Lehre 16): dort false, und wer den Himmel messen will, misst mit dem echten Renderer.
     // Die Pässe der Atmosphäre sind Einmal-Pässe (`_einmalPass`, w4-ankunft-3): eine Tafel, deren Pipeline eben noch baut,
-    // zeichnet nicht, und die Umgebung malt erst über ihr. Der Ruf wendet darum den Tag erneut an (die Tafeln, `_atmoTakt`) und
-    // versucht es je HIMMEL_FRISCH_MS, bis die Umgebung malt — höchstens HIMMEL_FRISCH_DECKEL_MS lang (z104: ein Ruf zur
-    // Unzeit las false, und die Probe der Prüfbühne stand blind).
+    // zeichnet nicht, und die Umgebung malt erst über ihr. Der Ruf wartet darum auf die nächste bereite Pipeline (`_erstBereit`,
+    // das Ereignis, nie die Uhr), wendet den Tag erneut an (die Tafeln, `_atmoTakt`) und malt wieder; steht keine mehr im Bau,
+    // malt die Umgebung nie — false (z104: ein Ruf zur Unzeit las false, und die Probe der Prüfbühne stand blind).
     async _himmelFrisch() {
         const st = this.state;
         if (!st.renderer || st.renderer._isHeadlessNull) return false;
-        for (let t = 0; !this._ensureSkyEnvironment(true); t += AnazhRealm.HIMMEL_FRISCH_MS) {
-            if (t >= AnazhRealm.HIMMEL_FRISCH_DECKEL_MS) return false;
-            await new Promise((f) => setTimeout(f, AnazhRealm.HIMMEL_FRISCH_MS));
+        while (!this._ensureSkyEnvironment(true)) {
+            const bereit = this._erstBereit();
+            if (!bereit) return false;
+            await bereit;
             this._applyDayNightToScene();
         }
         return st._skyEnvLesung || false;
@@ -3397,10 +3398,6 @@ AnazhRealm.BELICHTUNG = Object.freeze({
 // 0,230 EV/s, takt24c). Im steilsten Anstieg (β ×1,13 je Sekunde) wächst er 0,11 EV je Sekunde: eine halbe Welt-Sekunde hält
 // jede Stufe der Umgebung bei 0,05 EV, höchstens zwei PMREM je Sekunde und nur im Übergang, auf jedem Gerät dieselbe Folge.
 AnazhRealm.SKY_ENV_REGEN_MIN_MS = 500;
-// Der frische Himmel auf Zuruf (`_himmelFrisch`): der Abstand der Versuche (ms), solange ein Pass der Atmosphäre seine Pipeline
-// baut, und ihr Deckel (ms) — danach nennt der Ruf false (ein Gerät, das die Tafeln nie zeichnet).
-AnazhRealm.HIMMEL_FRISCH_MS = 50;
-AnazhRealm.HIMMEL_FRISCH_DECKEL_MS = 30000;
 // Die Obergrenze der Sonnen-Stufe (`_sonnenStufe`): N·L ändert sich bei einer Drehung um α höchstens um α — unter einer
 // 8-bit-Stufe ist sie unsichtbar.
 AnazhRealm.SONNEN_STUFE_SCHATTIERUNG = 1 / 255;
