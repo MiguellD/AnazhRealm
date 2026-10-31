@@ -62,6 +62,24 @@ class AnazhRealm_gelaende_chunks {
                                 himmel: new Float32Array(msg.himmel),
                                 schutt: new Float32Array(msg.schutt),
                                 felsFeuchte: msg.felsFeuchte,
+                                // die Boden-Karte des Netzes (w4-b-boden, gelaende-core `bodenKarte` im Faden): undefined heißt,
+                                // der Faden lieferte keine (der Einbau bricht laut), null: das Netz trägt kein Dreieck
+                                karte:
+                                    msg.karteHoehe === undefined
+                                        ? undefined
+                                        : msg.karteHoehe && {
+                                              hoehe: new Float32Array(msg.karteHoehe),
+                                              gruen: new Uint8Array(msg.karteGruen),
+                                              zellen: new Int16Array(msg.karteZellen),
+                                          },
+                                // die Karte der Morph-Ziele (null in der gröbsten Stufe), ihre Lage das Morph-Ziel des Fadens
+                                karteZiel: msg.zielHoehe
+                                    ? {
+                                          hoehe: new Float32Array(msg.zielHoehe),
+                                          gruen: new Uint8Array(msg.zielGruen),
+                                          zellen: new Int16Array(msg.zielZellen),
+                                      }
+                                    : null,
                                 waterCells: new Uint8Array(msg.waterCells),
                                 zid: msg.zid || null, // die Zellen behält der Faden unter dieser Nummer (das Wasser-Sheet)
                                 vonPlatte: !!msg.vonPlatte, // ein Treffer der Platte des Fadens (der Warm-Start)
@@ -231,6 +249,12 @@ class AnazhRealm_gelaende_chunks {
             // DER FELS-STOFF reist mit (K17-2): der Worker baut ihn beim Chunk-Bau (gelaende-core `felsStoff`) mit DENSELBEN
             // Tönen und Schwellen wie der Sync-Bau des Stamms (`FELS_STOFF.basis` · `FELS_STOFF.netz`)
             felsStoff: { basis: AnazhRealm.FELS_STOFF.basis, netz: AnazhRealm.FELS_STOFF.netz },
+            // DIE BODEN-KARTE reist mit (w4-b-boden): der Worker rastert sie beim Chunk-Bau (gelaende-core `bodenKarte`) mit
+            // DERSELBEN Teilung und Wiesen-Wache wie der Stamm (`_bodenKarteAusMesh`)
+            bodenKarte: {
+                teilung: AnazhRealm.BODEN_KARTE_TEILUNG,
+                gruenSchwelle: AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle,
+            },
             // DIE PLATTE DES BODENS (Karte hydro-faden): der Faden führt den Warm-Start — ob er gilt, sein Stempel, sein Deckel
             platte: this._chunkPlatte(),
             // DIE KONSTANTEN DER FERNE reisen mit (B2): der Fern-Faden färbt den Horizont mit DENSELBEN Zahlen (`fernAuftrag`), der
@@ -734,8 +758,19 @@ class AnazhRealm_gelaende_chunks {
         }
         // die Karte liest die FERTIGE Farbe (nach dem Stein unter Fels), wie der synchrone Bau — vorher die rohe des
         // Workers: am Spawn-Chunk 27 Grün-Zellen anders als der Sync-Bau (playtest Perf-3.c Boden-Karte)
-        // über der Naht (`_bodenKarteNaht`): die Basis des Inneren bleibt für jeden Naht-Morph der Geometrie
-        const karte = this._bodenKarteNaht(geom, cx, cz, lod, meshData.positions, "lage");
+        // über der Naht (`_bodenKarteNaht`): die Basis des Inneren bleibt für jeden Naht-Morph der Geometrie.
+        // DIE KARTE KOMMT FERTIG (w4-b-boden): der Faden rastert sie, wo er das Netz baut (gelaende-core `bodenKarte`, dieselbe
+        // Rechnung wie `_bodenKarteAusMesh`) — der Einbau legt sie nur als Lage der Naht ab, wie `_bodenKarteNaht` es täte.
+        // Fail-closed: ein Faden ohne Karte (eine alte Platte, ein fremder Faden) bricht laut.
+        if (meshData.karte === undefined || ((lod | 0) < 3 && meshData.karte && !meshData.karteZiel))
+            throw new Error(`_buildVoxelChunkDataFromWorkerMesh(${cx},${cz}): der Worker liefert keine Boden-Karte`);
+        const karte = meshData.karte;
+        const naht = this._bodenNaht(geom, cx, cz, lod);
+        naht.lage = karte && Object.assign(karte, { ref: meshData.positions });
+        // die Karte der Ziele (`_bodenStufeMisch`): ihre Lage ist das Morph-Ziel, das der Faden lieferte (der Satz trägt danach
+        // eine eigene Kopie, dieses Feld ändert nichts mehr) — der erste Leser rastert nur, was der Naht-Morph am Saum zog
+        naht.ziel = meshData.karteZiel && Object.assign(meshData.karteZiel, { ref: meshData.morphZiel });
+        geom.userData.ausFaden = true; // ihr Netz und ihre Karte kamen aus dem Faden (`_bodenKarteNaht` wacht darüber)
         return {
             mesh,
             kind: "filled",
@@ -1456,11 +1491,24 @@ class AnazhRealm_gelaende_chunks {
     _bodenKarteNaht(geom, cx, cz, lod, lage, art, ganz = false) {
         if (!geom.index) return null;
         const naht = this._bodenNaht(geom, cx, cz, lod);
+        // DIE KARTE EINES FADEN-NETZES RASTERT DER FADEN (w4-b-boden): ihre erste Lage im Haupt-Faden ist ein Bau neben ihm —
+        // er zählt an seiner Sync-Stelle oder bricht laut beim Namen (`_fadenUmgangen`, die Faden-Linse liest das Buch)
+        if (!naht[art] && geom.userData.ausFaden && geom.index.array.length >= 3 && (art === "lage" || (lod | 0) < 3))
+            this._fadenUmgangen(`Boden-Karte (${art}) eines Faden-Netzes`);
         const col = art === "lage" && geom.attributes.color ? geom.attributes.color.array : null;
         const ref = art === "lage" ? lage : new Float32Array(lage);
-        const k = this._bodenKarteAusMesh(ref, geom.index.array, col, cx, cz, lod, naht[art], ganz ? null : naht);
-        naht[art] = k && Object.assign(k, { ref });
-        return k;
+        // DIE KARTE AN ORT UND STELLE (w4-b-boden): jede weitere Karte derselben Geometrie rastert in die Felder der vorigen —
+        // keine Kopie je Naht-Morph (die Karte kommt aus dem Faden: der Haupt-Faden kopierte ihre Bytes, Fahrt 12,7 MB/min,
+        // gate:worker-dichte K5). Der Stand der Karte zählt jede neue Lage, je Zelle der Stand ihres letzten Wechsels: der
+        // Leser einer früheren Lage (`_bodenKartenStehen`) fragt ihn statt einer alten Kopie.
+        const alt = naht[art];
+        const k = this._bodenKarteAusMesh(ref, geom.index.array, col, cx, cz, lod, alt, ganz ? null : naht, !!alt);
+        if (!k || !alt) return (naht[art] = k && Object.assign(k, { ref }));
+        // dieselbe Karte (dieselben Felder, dasselbe Objekt): ihr Stand steigt, die gewechselten Zellen tragen ihn
+        alt.stand = (alt.stand | 0) + 1;
+        alt.zelleStand = alt.zelleStand || new Uint32Array(alt.hoehe.length);
+        for (const z of k.geaendert) alt.zelleStand[z] = alt.stand;
+        return Object.assign(alt, { ref, geaendert: k.geaendert });
     }
 
     // Zieht die Boundary-Vertices dieses Chunks auf die GROBE Oberfläche jedes gröberen Achsen-
@@ -3274,7 +3322,12 @@ class AnazhRealm_gelaende_chunks {
                 const L = new Float32Array((naht.lage && naht.lage.ref) || g.attributes.position.array);
                 saeule(L, N);
                 const k = this._bodenKarteNaht(g, cx, cz, E.lod || 0, L, "lage", true);
-                [E.surfMap, E.gruenMap, E.surfMapZiel] = [k && k.hoehe, k && k.gruen, null];
+                // die Karte der Ziele trägt die Säule im Inneren (`ganz`, w4-b-boden): der Leser im Übergangs-Band rastert sonst
+                // nur, was am Saum zog — sie liegt seit dem Einbau (aus dem Faden), ein Neu-Raster der Lage allein ließe sie alt
+                const Z = g.attributes.aMorphTarget.array;
+                const kz =
+                    naht.ziel && (E.lod || 0) < 3 ? this._bodenKarteNaht(g, cx, cz, E.lod || 0, Z, "ziel", true) : null;
+                [E.surfMap, E.gruenMap, E.surfMapZiel] = [k && k.hoehe, k && k.gruen, kz && kz.hoehe];
                 this._streuFussNeu(cx, cz);
                 n++;
             }
@@ -3463,7 +3516,7 @@ AnazhRealm.CHUNK_IDB_MAX = 600;
 // Säulen-Farbe ohne Stoff; seit K17-2 NB1 wellt EIN Gradienten-Rauschen die Bänke und das Geröll streut wie die Referenz:
 // ein alter Chunk trüge die Welle aus dem Wert-Rauschen; seit der Karte hydro-faden legt der Faden seinen rohen Reply ab (die
 // Puffer, das Morph-Ziel als eigene Kopie): ein alter Eintrag trüge die Typ-Arrays des Mains ohne Morph-Ziel.
-AnazhRealm.CHUNK_IDB_FORM = "faden-reply";
+AnazhRealm.CHUNK_IDB_FORM = "faden-reply-karte";
 // FERN_FARBE (`fernFarbeTeile` im Fern-Faden, linear): das Kronendach des Waldes aus der Ferne = die Studio-Laubfarbe der Arten
 // am Ort × `kronenSchatten` (die Krone beschattet sich selbst: die Eiche, Blatt-Grün 0,195, trägt so 0,062 — die
 // Satelliten-Bänder geschlossener Laubwald-Kronen im Sommer, grün ~0,05–0,07); die Saison multipliziert der Leser
