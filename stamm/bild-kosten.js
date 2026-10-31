@@ -440,8 +440,10 @@ class AnazhRealm_bild_kosten {
         // einen Neubau (ein Licht kam dazu — r184 schlüsselt das RenderObject je Lichter-Satz und verwirft den Vorgänger im
         // selben `_objects.get` —, sein Stoff wechselte die Variante) wie der Vendor im Frame: was schon zu sehen war, blinkt
         // nicht aus — nur wenn eine Erst-Zeichnung seinen neuen Schlüssel eben asynchron anlegte, wartet er auf dieselbe
-        // Pipeline wie sie; der Neubau zählt mit (`neubauN`). Ein Render einer anderen Szene (die Umgebung, ein Post-Quad)
-        // zeichnet wie bisher — ein Einmal-Render bliebe leer. Das ist der
+        // Pipeline wie sie; der Neubau zählt mit (`neubauN`). Ein Render einer anderen Szene (ein Post-Quad je Bild) zeichnet
+        // wie bisher — ein Einmal-Render ohne Wiederholung bliebe leer. DER EINMAL-PASS (`_einmalPass` setzt `_buehneEinmal`:
+        // Atmosphäre, Horizont-Karte, Licht-Sonde, PMREM der Umgebung) baut seine Pipeline ASYNCHRON und zeichnet ab dem Aufruf,
+        // in dem sie steht; er meldet `ganz`, und sein Aufrufer zeichnet im nächsten Takt neu. Das ist der
         // EINE Ort der Klasse: kein Vorwärmen daneben (das r184-compileAsync baute die Knoten ohnehin synchron —
         // `_geometries.updateForRender` liest die Attribute vor `getForRenderAsync`).
         // Nodes und Pipelines legt erst init() an (dieser Eingriff läuft davor): die Nachbildung liest sie je Aufruf am
@@ -533,7 +535,7 @@ class AnazhRealm_bild_kosten {
                 // DIE BÜHNEN (Werkstatt-Vorschau, Ich-, Hof-, Feed-Bühne: `_buehneRender` → `_buehneJetzt`) zeichnen wie die
                 // Welt — bis 30.10. eigene Renderer, deren erster Render jede Pipeline synchron baute (Tab: 5 054 ms ohne Bild)
                 if (scene !== welt.state.scene && !buehne && scene !== welt._buehneJetzt) {
-                    zeichne(this, ro, aufnahme, false);
+                    zeichne(this, ro, aufnahme, welt._buehneEinmal === true);
                     return;
                 }
                 // DIE DIÄT IST DAS GESETZ JEDES WELT-STOFFS (E1, Lehre 25): r184s Beobachter frischt jedes Knoten-Material in
@@ -3686,7 +3688,8 @@ class AnazhRealm_bild_kosten {
         // der Bias: ein Texel deckt auf ebenem Boden seine senkrechte Kante / tan h Licht-Tiefe, am Hang quer bis die halbe waagrechte
         const texelV = (2 * randV) / H.texel;
         K.U.bias.value = H.biasTexel * (texelV / Math.max(H.hoeheMin, sinH / Math.max(1e-3, cosH)) + 0.5 * texelM);
-        this._atmoZeichne(K.szene, K.rt, true);
+        // ein Einmal-Pass (`_atmoZeichne`): zeichnete er nicht ganz (seine Pipeline entsteht eben), malt der nächste Takt neu
+        if (!this._atmoZeichne(K.szene, K.rt, true)) return K;
         K.licht.copy(L);
         K.anker = [fr.anchorX, fr.anchorZ];
         K.malZahl++;

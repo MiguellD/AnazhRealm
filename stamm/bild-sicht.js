@@ -2314,15 +2314,23 @@ class AnazhRealm_bild_sicht {
             const P = AnazhRealm.FELD_PASS;
             const PN = AnazhRealm.FELD_PANO;
             const n = PN.az * PN.elev;
-            device.pushErrorScope("validation");
+            // die Pipeline baut ASYNCHRON (wie jeder Einmal-Pass, `_einmalPass`): synchron hielt sie den Haupt-Faden des
+            // GPU-Prozesses unter dem Ladeschirm 127–160 ms (Radeon kalt, Spur 31.10.); ihr Bruch bricht laut wie zuvor die
+            // Validierung (eine Absage ist kein Fehler-Scope)
             if (!this._feldPanoPipe || this._feldPanoPipeDev !== device) {
                 const mod = device.createShaderModule({ code: this._feldPanoWgsl() });
-                this._feldPanoPipe = device.createComputePipeline({
-                    layout: "auto",
-                    compute: { module: mod, entryPoint: "main" },
-                });
+                try {
+                    this._feldPanoPipe = await device.createComputePipelineAsync({
+                        layout: "auto",
+                        compute: { module: mod, entryPoint: "main" },
+                    });
+                } catch (e) {
+                    this.log("Feld-Panorama: WGSL-Validierung scheiterte — " + ((e && e.message) || e), "ERROR");
+                    return null;
+                }
                 this._feldPanoPipeDev = device;
             }
+            device.pushErrorScope("validation");
             const pipe = this._feldPanoPipe;
             const uni = new Float32Array(16);
             uni[0] = fp.anchorX;
@@ -2518,12 +2526,12 @@ class AnazhRealm_bild_sicht {
     // DIE HIMMELS-SONDE des Lichts der Welt: je Texel die Richtung der Equirekt-Lage (`_umgebungRichtung`, wie die Umgebung
     // selbst) und dort die PMREM-Lesung der Rauheit 1 — dieselbe Abtastung, mit der r184 jedem MeshStandard das Umgebungs-Licht
     // gibt. Gezeichnet je neuer Umgebung (`_ensureSkyEnvironment`, ihr Ziel behält seine Identität), 512 Texel; vor der ersten
-    // Umgebung schwarz wie jeder Stoff.
+    // Umgebung schwarz wie jeder Stoff. Ein Einmal-Pass (`_atmoZeichne`): → true, wenn er ganz zeichnete.
     _weltLichtHimmel() {
         const st = this.state;
         const WL = this._weltLicht();
         const quelle = st._skyEnvRT && st._skyEnvRT.texture;
-        if (!quelle || !st.atmoLut) return;
+        if (!quelle || !st.atmoLut) return false;
         if (!WL.pass) {
             const TSL = THREE.TSL;
             WL.pass = AnazhRealm._schirmDreieck(
@@ -2535,8 +2543,9 @@ class AnazhRealm_bild_sicht {
             this._bruchMelden(
                 "LICHT: die Umgebung wechselte ihr Ziel — die Himmels-Sonde liest das erste (`_skyEnvRT` hält es)"
             );
-        this._atmoZeichne(WL.pass, WL.himmel);
+        if (!this._atmoZeichne(WL.pass, WL.himmel)) return false;
         WL.stand++;
+        return true;
     }
 
     // Der EINE Schreiber der Lichter: je Bild (`_loopRender`, neben der Bild-Uhr) und je Anwendung des Tags

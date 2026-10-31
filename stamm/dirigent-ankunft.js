@@ -1113,8 +1113,11 @@ class AnazhRealm_dirigent_ankunft {
         }
         // DAS LICHT DES ORTS (S7): die Belichtung steht aus dem Licht erst, wenn die Bestrahlungs-Tafel der EINEN Atmosphäre liegt
         // (`_belichtungAnker`, `_himmelsBestrahlung`) — bis dahin trüge das erste Bild die Belichtung des Ladens (1,0) und
-        // spränge mit der ersten Tafel (Prüfung S7 Runde 2: die Ankunft in Dämmerung oder Nacht).
-        if (!st._belichtungSteht) luecke("licht", "das Licht des Orts wird gemessen", true);
+        // spränge mit der ersten Tafel (Prüfung S7 Runde 2: die Ankunft in Dämmerung oder Nacht). Dazu die gemalte Umgebung
+        // (`_skyEnvLast`: Himmels-Sicht, PMREM und die Licht-Sonde, `_ensureSkyEnvironment`) — jeder Stoff spiegelt sie im ersten
+        // Bild; seit ihre Pässe asynchron bauen (`_einmalPass`), kommt sie nicht mehr im selben Takt wie die Tafeln.
+        if (!st._belichtungSteht || !(st._skyEnvLast || st._skyEnvFailed))
+            luecke("licht", "das Licht des Orts wird gemessen", true);
         // DER LEIB DES SPIELERS (K60-2): sein Guss kommt aus dem Faden (`_leibBereit`, die zwei Vorlagen nach dem Buch) — bis
         // er steht, ist der Spieler der leere Anker, und kein Bild zeigt die Welt ohne ihn.
         if (st._deferredAvatarSoul) luecke("leib", "der Spieler erhält seinen Leib", !!this._foundry);
