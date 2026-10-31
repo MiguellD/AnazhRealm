@@ -930,7 +930,7 @@ function selbsttestKopf(urteile = kopfUrteil) {
     });
     // [Name, Fall, Soll: „ja"/„nein" (voll) · „warte" · „rot" · ein Prüfer am Urteil]
     const faelle = [
-        ["derselbe Kopf grün auf integ-probe (d2e06032)", fall("push", [gruen(1)]), "nein"],
+        ["derselbe Kopf grün auf integ-probe", fall("push", [gruen(1)]), "nein"],
         ["kein anderer Lauf", fall("push", []), "ja"],
         ["nur der eigene Lauf", fall("push", [gruen(9)]), "ja"],
         ["auf Abruf läuft sie immer", fall("workflow_dispatch", [gruen(1)]), "ja"],
@@ -1027,7 +1027,7 @@ function selbsttest() {
             /\(E\) FRIST: „B auf der Karte" trägt keine timeout-minutes/,
         ],
         [
-            "echt über dem Job-Deckel (b9d99b9e: 150 min)",
+            "echt über dem Job-Deckel (150 min)",
             (d) => (echtDazu(d)["timeout-minutes"] = 150),
             /\(E\) DECKEL: „echt" timeout-minutes 150/,
         ],

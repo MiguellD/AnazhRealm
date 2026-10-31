@@ -893,6 +893,9 @@ async function probe(arg) {
                 const [zV, zH] = [0, 1].map((i) => new Promise((f) => (ok[i] = f)));
                 const [RM, da, gier] = [AnazhRealm.SCATTER.regionM, st._weltbildDa, st.yaw], [rx, rz] = [Math.floor(pm.x / RM), Math.floor(pm.z / RM) - 1], key = `${rx},${rz}`;
                 const neu = () => (r._disposeScatterRegion(key), r._scatterRegion(rx, rz, pm));
+                // DIE REGION STEHT VOR DER PROBE: jeder echte Wurf (Asset, Karte, Höhe) ist geliefert — sonst hielt ein echtes Asset im
+                // Blick den zweiten Bau, und die Linse nannte die Zusage außer Blick (main 90878cc6 headless 2 von 3: „wartet auf ihr Asset")
+                for (const weiter = (neu(), window.__deckel("die Streu-Region vor der Probe", 300)); r._streuRegionWartet(key) && weiter(); ) await tick(1, 30); // prettier-ignore
                 const stumm = "_ladeTakt _tickVoxelChunkStreaming _tickScatterStreaming _tickPendingGrass _tickScatterRegrow _tickNahWiese _tickNahStreu".split(" ");
                 r._scatterSichtHoehe = function (layer, ...a) {
                     const [v, E] = [r._imErstenBlick(a[4].x, a[4].z, 12), r._ersterBlick()];

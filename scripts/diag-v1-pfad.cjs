@@ -2510,17 +2510,17 @@ hauptLauf(async () => {
                 zugVerdict,
                 zugGesund,
                 [
-                    ["die Vorschau schläft nach der Ankunft (Zweig-CI 38453848494)", zugMit("vorschau", { ms: null }), "zug vorschau schläft"],
+                    ["die Vorschau schläft nach der Ankunft", zugMit("vorschau", { ms: null }), "zug vorschau schläft"],
                     ["der fremde Zug im Rang der Ferne", zugMit("vorschau", { ms: null, imCache: false }), "zug vorschau: eiche|2|0 nach"],
                     ["die Hand schläft nach der Ankunft", zugMit("hand", { ms: null }), "zug hand schläft"],
                     ["kein fremder Zug (vakuös)", zugMit("vorschau", { fremd: false }), "zug vorschau: kein fremder Zug"],
                     ["keine Klinge im Buch (vakuös)", { hand: null }, "zug hand: keine Probe"],
                     ["die L2-Karte schläft nach der Ankunft ihrer Höhen-Stufe (K38-N1 offen)", stufeL2({ ms: null }), "zug stufe L2 schläft"],
                     ["keine Stufen gemessen (vakuös)", { stufen: [] }, "zug stufen: 0 von 3"],
-                    ["der Leser bestellt im Flug des Vorrats neu (bis 15.10.)", zugMit("vorrat", { auftraege: 2 }), "zug vorrat: gras|1|1 2×"],
+                    ["der Leser bestellt im Flug des Vorrats neu", zugMit("vorrat", { auftraege: 2 }), "zug vorrat: gras|1|1 2×"],
                     ["der Vorrat zieht nicht (vakuös)", zugMit("vorrat", { imFlug: false }), "zug vorrat: gras|1|1 nicht im Flug"],
                     ["keine Vorrats-Probe (vakuös)", { vorrat: null }, "zug vorrat: keine Probe"],
-                    ["die Vorschau rahmt den Stamm (Box des Einheits-Quads, Bild 15.10.)", stufeL2({ ms: 900, hoch: 1.1, soll: 21 }), "zug stufe L2 rahmen"],
+                    ["die Vorschau rahmt den Stamm (Box des Einheits-Quads)", stufeL2({ ms: 900, hoch: 1.1, soll: 21 }), "zug stufe L2 rahmen"],
                 ],
             ],
             [
@@ -2599,7 +2599,7 @@ hauptLauf(async () => {
                 gesundO,
                 [
                     [
-                        "TypeError (6b988a07)",
+                        "TypeError",
                         mitOp("spawn_creature", {
                             fehler: "op_exception: Cannot read properties of null (reading 'x')",
                             grund: null,
@@ -2607,9 +2607,9 @@ hauptLauf(async () => {
                         }),
                         "spawn_creature: wirft",
                     ],
-                    ["Dorf am Spieler-Ort über die Op (6b988a07)", mitOp("spawn_village", { akte: [{ nm: "spawnSettlement", abstand: null }] }), "spawn_village: wirkt ohne Ort"],
+                    ["Dorf am Spieler-Ort über die Op", mitOp("spawn_village", { akte: [{ nm: "spawnSettlement", abstand: null }] }), "spawn_village: wirkt ohne Ort"],
                     [
-                        "still am Spieler-Ort (cf9a07ba)",
+                        "still am Spieler-Ort",
                         mitOp("spawn_studio", { ok: true, grund: null, effekt: null, akte: [{ nm: "spawnArchitecture", abstand: 4.1 }] }),
                         "spawn_studio: wirkt ohne Ort",
                     ],
@@ -2644,7 +2644,7 @@ hauptLauf(async () => {
                 sucheVerdict,
                 gesundW,
                 [
-                    ["Spalten-Scan je Probe (6b988a07)", mitZ("ki@trocken", { R: 200, proben: 1954, scans: 1954 }), "ki 200 m: 1954 Spalten-Scans"],
+                    ["Spalten-Scan je Probe", mitZ("ki@trocken", { R: 200, proben: 1954, scans: 1954 }), "ki 200 m: 1954 Spalten-Scans"],
                     ["ohne Wasser alle 8037 Proben gescannt", mitZ("ki@trocken-voll", { R: 200, proben: 8037, scans: 8037 }), "ki@trocken-voll 200 m: 8037"],
                     ["Trinken scannt je Probe", mitZ("trinken@trocken", { R: 40, proben: 351, scans: 351 }), "trinken 40 m"],
                     ["der Fels-Beweis lügt", { exakt: { n: 3600, falsch: 3, nass: 400, beispiele: ["(1, 2, 0.2)"] } }, "das Urteil weicht"],
