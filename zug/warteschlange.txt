@@ -325,3 +325,4 @@ takt-z114b-gtx 1 punkte sha=808464cab1d7998c1378ff2de415a2288db87053 geraet=gtx 
 z115-abab 3 abab A=808464cab1d7998c1378ff2de415a2288db87053 B=b895650c7dc2e303a3299ed17b04c6350d002437 zellen=w-ego,stadt
 takt-z114a-gtx 0 storno
 takt-z114b-gtx 0 storno
+takt-z115a-gtx 1 punkte sha=b895650c7dc2e303a3299ed17b04c6350d002437 geraet=gtx nur=tiere.K1#2,tiere.K3#2,mensch.K1#1,oekologie.K4#2,mensch.K4#1,vegetation.K1#1,licht.K2#2,licht.K5#1,material.K2#1,lod.K1#1,licht.K3#1,studios.K2#2,studios.K3#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,fahrzeug.K2#2,profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K3#1,profiband.K5#1,speicher.K4#2
