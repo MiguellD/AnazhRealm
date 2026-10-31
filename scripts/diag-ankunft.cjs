@@ -8,6 +8,9 @@
 //       der Mesh-Zone, Pflanzung, Streu, ferne Karten, Dorf), bleibt er und nennt die Lücke; ruht sie, weicht er laut (WARN).
 //       Jeder Fall wird hergestellt, einer, der fehlt, ist ROT bei seinem Grund (`ohneFall`). DIE ANKUNFT AUS DER FERNE (B2):
 //       bis zum Bild wünscht jedes Ding seine billigste ganze Stufe (Baum Karte, Bau Grobstufe), danach verfeinert es.
+//   LH  WAS DAS BILD NICHT LIEST (w4-ankunft-2) — vor dem ersten Weltbild wächst kein Skelett einer Baum-Hülle (die Kollision,
+//       `_baumGestaltTeile`): sie wartet beim Namen (`_huellenNach`, `_weltOffen().huellen`) und kommt nach dem Bild
+//       (`_tickHuellenNach`); unter dem Ladeschirm baut der Ring ein Stück außer Bild nur im Leerlauf (`_ringLeerlauf`).
 //   L1  DAS FADENKREUZ — `#fadenkreuz` steht in der Bildmitte (dort trifft `_blickZiel`), weicht einer offenen Schublade.
 //   L2b DIE HILFE — „hilfe" / „help" / „?" nennt jedes Beispiel der EINEN Tafeln (`chatDslPatterns`, `chatSystemPatterns`,
 //       ihre `hilfe`-Sätze) und jede Taste (`KEYBINDING_LABELS`); der Satz für Unbekanntes trägt keine zweite Liste.
@@ -364,6 +367,22 @@ function dorfVerdict(m) {
     else if (m.mpAbweichung > 1) out.push(`beim Mitspieler steht das Dorf ${m.mpAbweichung} m daneben (Häuser ${(m.mpHaeuser || []).join(" / ")})`);
     return out;
 }
+// LH (w4-ankunft-2): was das erste Bild nicht liest, hält seinen Haupt-Faden nicht — die Hülle eines Baums (Kollision) wächst nach
+// dem Bild, bis dahin offen in der Welt; der Ring außer Bild baut unter dem Ladeschirm nur im Leerlauf und kommt sicher.
+// m.h = [Skelette vor dem Bild, offen vor dem Bild, Hüllen-Boxen danach, offen danach] · m.r = [hinten ohne Leerlauf, vorn,
+// Leerlauf-Ruf, hinten mit Leerlauf]
+function huelleVerdict(m) {
+    if (!m || !m.h || !m.r) return ["start"];
+    const [[wuchs, offen, boxen, rest], [ohne, vorn, ruf, mit]] = [m.h, m.r];
+    return [
+        wuchs && "die Hülle wuchs vor dem Bild (`_baumGestaltTeile`)",
+        !offen && "die wartende Hülle steht nicht offen (`_weltOffen`)",
+        (!boxen || rest) && "nach dem Bild fehlt die Hülle (`_tickHuellenNach`)",
+        ohne && "der Ring baut außer Bild ohne Leerlauf (`_tickVoxelChunkStreaming`)",
+        !vorn && "der Ring baut das Bild nicht",
+        !(ruf && mit) && "der Ring außer Bild kommt nie (`_ringLeerlauf`)",
+    ].filter(Boolean);
+}
 
 // ── DIE STATISCHE WAND (Node, der EINE Absenz-Helfer; `quelle` wandelt den Stamm im Selbsttest). Liefert [name, ok]. ──
 function wand(quelle) {
@@ -423,7 +442,7 @@ async function probe(arg) {
     try {
         const m = { gestartet: false, faelle: {}, ohneFall: {}, ...window.__ladeHtml };
         out.lade = m;
-        m.terme = r.constructor.WELTBILD_TERME ? Array.from(r.constructor.WELTBILD_TERME) : null;
+        m.terme = AnazhRealm.WELTBILD_TERME ? Array.from(AnazhRealm.WELTBILD_TERME) : null;
         const ls = document.getElementById("ladeschirm");
         m.nachBootWeg = !ls || ls.hidden || ls.classList.contains("weg");
         // die Render-Schleife fragt das Weltbild, solange es nicht steht (Spion am Ruf)
@@ -442,7 +461,7 @@ async function probe(arg) {
             // DER SPÄT GESÄTE BAUM (CI Gruppe 1 seit 4a5f5e2c, 6 von 13 Läufen: „1 Bäume werden gepflanzt" bei 195°, rundum erst ab
             // Takt 71–80): hinter den fernen Bäumen der Pflanz-Schlange wartet einer 40 m hinter dem Spieler — die Schlange setzt nah
             // zuerst (Lehre 25, `_tickPendingVegSpawns`); als FIFO zählte der Rundblick ihn 57-mal
-            const rb = (m.rundblick = { N: r.constructor.RUNDBLICK_BILDER, loecher: 0, erstes: null, rundumAb: null });
+            const rb = (m.rundblick = { N: AnazhRealm.RUNDBLICK_BILDER, loecher: 0, erstes: null, rundumAb: null });
             const [fern, pp] = [(st.pendingVegSpawns || [])[0], st.playerMesh.position];
             const [x, z] = [pp.x - 40 * Math.sin(st.yaw), pp.z - 40 * Math.cos(st.yaw)];
             if ((rb.spaet = !!fern)) st.pendingVegSpawns.push({ ...fern, position: { x, y: r._voxelSurfaceY(x, z) + 0.5, z } });
@@ -596,7 +615,7 @@ async function probe(arg) {
             const ohneStart = Object.assign({}, wmD.settlementCells || {});
             delete ohneStart.start;
             const gMD = r._genesisMitte();
-            const nearD = (r.constructor.AUTO_SETTLEMENT || {}).nearM;
+            const nearD = (AnazhRealm.AUTO_SETTLEMENT || {}).nearM;
             const amOrt = gMD && Math.hypot(pm.x - gMD.x, pm.z - gMD.z) <= nearD;
             const kanal = r._autoSettlementChannelLive();
             if (amOrt && kanal) fallMit("dorfFaellig", dorfAn, [wmD, { settlementCells: ohneStart }], [r, { _autoSettlementStartHopeless: false }]);
@@ -618,7 +637,7 @@ async function probe(arg) {
                     const w = r._foundryLodForEntry(e);
                     const G = !e._lodSpecies && r._archStufenGrenzen(e);
                     if (!da && ++A.n && r._foundryServierStufe(pre, w) !== r._foundryServierStufe(pre, 2)) A.fein.push(`${pre} ${Math.round(d)} m L${w}`);
-                    else if (da && G && w !== r.constructor._stufeNachGrenzen(d, undefined, G, e.scale > 0 ? e.scale : 1)) A.zwilling.push(`${pre} ${Math.round(d)} m L${w}`);
+                    else if (da && G && w !== AnazhRealm._stufeNachGrenzen(d, undefined, G, e.scale > 0 ? e.scale : 1)) A.zwilling.push(`${pre} ${Math.round(d)} m L${w}`);
                 }
                 A[da ? "nahDanach" : "nahKarte"] = r._chooseLODForDistance(2, undefined, 20); // ein Baum von 20 m in 2 m
             }
@@ -626,7 +645,7 @@ async function probe(arg) {
             // (6) eine Lücke ruht (dieselbe Lücke länger als WELTBILD_STILL_MS): der Ladeschirm weicht LAUT
             const ruht = () => {
                 st._weltbildLuecke = r._weltbildFehlt().join(" · ");
-                st._weltbildLueckeSeit = performance.now() - (r.constructor.WELTBILD_STILL_MS || 0) - 1;
+                st._weltbildLueckeSeit = performance.now() - (AnazhRealm.WELTBILD_STILL_MS || 0) - 1;
             };
             if (baum) fall("lueckeRuht", baumWeg(false), baumHer, ruht);
             // (6b) eine Lücke ARBEITET: ihr Satz blieb länger als WELTBILD_STILL_MS gleich, aber für sie
@@ -639,7 +658,7 @@ async function probe(arg) {
             if (baum)
                 fall("lueckeFlackert", baumWeg(false), baumHer, () => {
                     st._weltbildLuecke = "eine andere Zahl";
-                    st._weltbildErsteFrage = performance.now() - (r.constructor.WELTBILD_DECKEL_MS || 60000) - 1;
+                    st._weltbildErsteFrage = performance.now() - (AnazhRealm.WELTBILD_DECKEL_MS || 60000) - 1;
                 });
             // (8) Tasten hinter dem Ladeschirm: solange er steht, gehört keine Taste der Welt
             {
@@ -693,7 +712,7 @@ async function probe(arg) {
                             return P[name].apply(this, a);
                         };
                     };
-                    v.PH = r.constructor.VORRAT_PHASE || null;
+                    v.PH = AnazhRealm.VORRAT_PHASE || null;
                     const phase = (wer) => v.phaseBestellung.push(`${wer}: ${JSON.stringify(f._vorrat)}`);
                     wickle("_foundryVorrat", (a) => {
                         v.ohneLeser.push(`Wagen ${a[0]}|${a[1]}|lod${a[2]}`);
@@ -719,7 +738,7 @@ async function probe(arg) {
                         v.phaseStart = f._vorrat;
                         v.fehltNeu = r._weltbildFehlt().filter((z) => !vor.includes(z));
                         // die Streu-Weiche: eine neue Region fern jeder bestehenden, Scheibe mit abgelaufener Frist
-                        const SC = r.constructor.SCATTER;
+                        const SC = AnazhRealm.SCATTER;
                         const p = st.playerMesh.position;
                         const rx = Math.floor(p.x / SC.regionM) + 40;
                         const rz = Math.floor(p.z / SC.regionM) + 40;
@@ -785,7 +804,7 @@ async function probe(arg) {
                     r._streuGesetzSpawn("blume", 7, q.x, q.y, q.z, 0, 1);
                     zurueck();
                     // der Leib: seine Vorlagen fallen aus dem Memo, der deferierte Bau wartet wie beim Boot (Ego, leere Hand)
-                    const [kc, memo, bmD] = [window.__koerperCore, r.constructor._tierOfenMemo, r._koerperStudioDials()];
+                    const [kc, memo, bmD] = [window.__koerperCore, AnazhRealm._tierOfenMemo, r._koerperStudioDials()];
                     const fM = r._menschGussFarben(bmD);
                     const key = (l) => r._ofenMenschKey(Object.assign({}, kc.START_PARAMS, bmD || {}), fM.skin, fM.hair, l);
                     [0, 1].forEach((l) => memo.delete(key(l)));
@@ -821,7 +840,7 @@ async function probe(arg) {
             // (12) DIE ZUSAGE DES WALD-PLANS (B-Wald): der Plan 30 m vor dem Spieler fällt (`_forestDartsFallen`), ein Kasten 400 m
             // hinter ihm steht mit in der Schlange, der Takt schickt beide an den Faden — gezählt, was aussteht, wenn die Zusage kommt
             {
-                const [w, C, o, f, Q] = [(m.wald = { kam: false, rest: -1 }), r.constructor.FOREST.cell, vorn(30), vorn(-400), r._waldPlanSchlange || (r._waldPlanSchlange = new Map())]; // prettier-ignore
+                const [w, C, o, f, Q] = [(m.wald = { kam: false, rest: -1 }), AnazhRealm.FOREST.cell, vorn(30), vorn(-400), r._waldPlanSchlange || (r._waldPlanSchlange = new Map())]; // prettier-ignore
                 r._forestDartsFallen(o.x, o.z, o.x, o.z);
                 r._forestDartsFallen(f.x - 6 * C, f.z - 6 * C, f.x + 6 * C, f.z + 6 * C);
                 const [gx, gz, vor] = [Math.floor(f.x / C), Math.floor(f.z / C), Q.size];
@@ -836,7 +855,7 @@ async function probe(arg) {
             {
                 const [b, P, t, ok] = [(m.blick = { n: [0, 0] }), Object.getPrototypeOf(r), (m.takt = { lief: 0 }), []];
                 const [zV, zH] = [0, 1].map((i) => new Promise((f) => (ok[i] = f)));
-                const [RM, da] = [r.constructor.SCATTER.regionM, st._weltbildDa], [rx, rz] = [Math.floor(pm.x / RM), Math.floor(pm.z / RM)], key = `${rx},${rz}`;
+                const [RM, da] = [AnazhRealm.SCATTER.regionM, st._weltbildDa], [rx, rz] = [Math.floor(pm.x / RM), Math.floor(pm.z / RM)], key = `${rx},${rz}`;
                 const neu = () => (r._disposeScatterRegion(key), r._scatterRegion(rx, rz, pm));
                 const stumm = "_ladeTakt _tickVoxelChunkStreaming _tickScatterStreaming _tickPendingGrass _tickScatterRegrow _tickNahWiese _tickNahStreu".split(" ");
                 r._scatterSichtHoehe = function (layer, ...a) {
@@ -862,6 +881,39 @@ async function probe(arg) {
         m.gestartet = true;
     } catch (e) {
         out.lade = Object.assign(out.lade || {}, { err: (e && e.stack) || String(e) });
+    }
+    // ── LH (w4-ankunft-2): die Hülle eines Studio-Baums, ihr Skelett aus dem Gedächtnis genommen, wächst vor dem Bild nicht und
+    // danach im Takt der Hüllen; der Lade-Takt gespielt, je ein Stück im Bild und dahinter fehlt: ohne Leerlauf baut er nur das im
+    // Bild, mit Leerlauf auch das dahinter ──
+    try {
+        const [m, da, merk, sp, pc, ruf] = [(out.huelle = {}), st._weltbildDa, r._baumGestaltMerk, r._voxelChunkConfig().span, st.lastPlayerVoxelChunk, new Set()];
+        const baum = st.architectures.find((e) => e && e._huelleG != null && e.blockerAABBs && e.blockerAABBs.length);
+        [r._baumGestaltMerk, st._weltbildDa] = [new Map(), 0];
+        r._populateBlockerAABBs(baum);
+        m.h = [r._baumGestaltMerk.size, r._weltOffen().huellen];
+        st._weltbildDa = da;
+        for (let n = 0; n < 400 && r._weltOffen().huellen; n++) r._tickHuellenNach();
+        m.h.push(baum.blockerAABBs.length, r._weltOffen().huellen);
+        r._baumGestaltMerk = merk;
+        const stuecke = [[], []];
+        st._weltbildDa = 0;
+        for (let dx = -2; dx <= 2; dx++) for (let dz = -2; dz <= 2; dz++) if (dx || dz) stuecke[+r._rangImBild({ x: (pc.cx + dx + 0.5) * sp, z: (pc.cz + dz + 0.5) * sp }, sp * Math.SQRT1_2)].push(`${pc.cx + dx},${pc.cz + dz}`);
+        const [hinten, vorn] = stuecke.map((l) => [l[0], st.voxelChunks.get(l[0])]);
+        [r._ladeTakt, r._ensureVoxelChunkAt] = [() => true, (cx, cz) => ruf.add(`${cx},${cz}`)]; // die Glieder des Prototyps, gespielt
+        try {
+            [hinten, vorn].forEach(([k]) => st.voxelChunks.delete(k));
+            const gang = (leer) => (ruf.clear(), (r._ringLeerlauf = leer), (r._bodenRegung = (r._bodenRegung | 0) + 1), r._tickVoxelChunkStreaming(st.playerMesh.position), [ruf.has(hinten[0]), ruf.has(vorn[0])]); // prettier-ignore
+            const [ohne, mit] = [gang(false), gang(true)];
+            m.r = [ohne[0], ohne[1] && mit[1], r._ringLeerlaufBestellt, mit[0]];
+        } finally {
+            [hinten, vorn].forEach(([k, e]) => e && st.voxelChunks.set(k, e));
+            delete r._ladeTakt;
+            delete r._ensureVoxelChunkAt;
+            st._weltbildDa = da;
+        }
+        m.gestartet = true;
+    } catch (e) {
+        out.huelle = { err: (e && e.stack) || String(e) };
     }
     // ── L1: das Fadenkreuz ──
     try {
@@ -897,7 +949,7 @@ async function probe(arg) {
         const beispiele = r.chatDslPatterns.map((p) => p.example).concat(r.chatSystemPatterns.map((p) => p.example));
         const v1 = [];
         for (const p of r.chatDslPatterns.concat(r.chatSystemPatterns)) if (Array.isArray(p.hilfe)) v1.push(...p.hilfe);
-        const tasten = Object.values(r.constructor.KEYBINDING_LABELS || {});
+        const tasten = Object.values(AnazhRealm.KEYBINDING_LABELS || {});
         for (const wort of ["hilfe", "help", "?"]) {
             const n0 = zeilen().length;
             r.processChatCommand(wort);
@@ -971,7 +1023,7 @@ async function probe(arg) {
             const rec = pr && f && f.recipes ? f.recipes[pr] : null;
             return rec && typeof rec.kind === "string" ? rec.kind : null;
         };
-        const AD = r.constructor.ALT_DOPPEL || {};
+        const AD = AnazhRealm.ALT_DOPPEL || {};
         m.eintraege = m.hotbar.filter(Boolean).map((name) => {
             const bp = st.blueprints[name];
             return {
@@ -1196,7 +1248,7 @@ async function probe(arg) {
                 const v = lu.uKamZiel.value;
                 const p = st.playerMesh.position;
                 m.zielAbstand = +Math.hypot(v.x - p.x, v.y - (p.y + 1.0), v.z - p.z).toFixed(2);
-                m.zielFolgt = m.zielAbstand <= (r.constructor.KAMERA_SCHULTER_M || 0) + 0.05;
+                m.zielFolgt = m.zielAbstand <= (AnazhRealm.KAMERA_SCHULTER_M || 0) + 0.05;
             }
             // DAS FADENKREUZ IN 3RD: der Abstand der Brust vom Strahl
             // durch die Bildmitte
@@ -1216,7 +1268,7 @@ async function probe(arg) {
             {
                 const fk = (m.fadenkreuz = { stellungen: 0, hinten: {} });
                 const zaehl = (k) => (fk.hinten[k] = (fk.hinten[k] || 0) + 1);
-                const [welt, mx, seelen] = [st.creatures, st.maxCreatures, r.constructor.CREATURE_SOUL_NAMES];
+                const [welt, mx, seelen] = [st.creatures, st.maxCreatures, AnazhRealm.CREATURE_SOUL_NAMES];
                 st.maxCreatures = Infinity;
                 const kreaturen = seelen.map((s) => r.spawnCreatureAt(P.x + 60, hh(P.x + 60, P.z) + 1, P.z, "happy", s, { precise: true, bodySize: 1 }));
                 st.maxCreatures = mx;
@@ -1256,7 +1308,7 @@ async function probe(arg) {
                         if (pick && hinter(pick.point)) zaehl("_pickArchitectureAtCrosshair");
                         const wh = r._raycastWorldHit(30);
                         if (wh && wh.hit && hinter(wh)) zaehl("_raycastWorldHit");
-                        if (hinter(r._blickZiel(r.constructor.BLICK_ZIEL_M))) zaehl("_blickZiel");
+                        if (hinter(r._blickZiel(AnazhRealm.BLICK_ZIEL_M))) zaehl("_blickZiel");
                         const ph = r._resolvePhantomTarget();
                         if (ph && ph.hit && hinter(ph)) zaehl("_resolvePhantomTarget");
                         for (const kreatur of fk.kreatur ? kreaturen : []) {
@@ -1275,7 +1327,7 @@ async function probe(arg) {
             // Stamm VOR dem Spieler, jenseits der Ebene des Ziels): keine Rinde fällt; (c) 3rd, der Spieler 2,5 m vor dem Baum mit dem Rücken zu ihm (der Stamm
             // zwischen Kamera und Brust): die Rinde am Sicht-Strahl fällt ganz — die Durchsicht wirkt.
             {
-                const K = r.constructor;
+                const K = AnazhRealm;
                 const ds = (m.durchsicht = { formel: typeof K._durchsichtGewicht === "function" && !!K.DURCHSICHT_ZAHLEN });
                 // DER KONSUM AM RUF (Spion am Ruf, kein Quelltext): die Proben durch die Bildmitte ohne eigenes Band nehmen den
                 // EINEN Strahl, der Stoff-Knoten der Durchsicht rechnet die EINE Formel (sein Zwischenspeicher leer: er baut neu)
@@ -1840,6 +1892,7 @@ hauptLauf(async () => {
                     ["keine EINE Formel", { durchsicht: { formel: false } }, "Durchsicht: keine EINE Formel"],
                 ],
             ],
+            ["LH", huelleVerdict, { h: [0, 1, 3, 0], r: [false, true, true, true] }, [["die Hülle wächst vor dem Bild", { h: [1, 0, 3, 0] }, "die Hülle wuchs vor dem Bild"], ["der Ring baut außer Bild ohne Leerlauf", { r: [true, true, false, true] }, "der Ring baut außer Bild ohne Leerlauf"]]], // prettier-ignore
             ["D8", kanalVerdict, { gestartet: true, siedlungImLog: true, zeilen: ["> dorf 7 18", "„Villaalto\" steht vor dir: 20 Häuser.", "(Welt verändert: Grok lässt 1× „Birke\" aus dem Studio wachsen bei (96, 59, 60).)"] }, [["Siedlungs-Zahlen im Chat", { zeilen: ["Siedlung „Villaalto\" (markt, Seed 7): 13 Häuser platziert, 12 Slots übersprungen."] }, "Telemetrie im Chat"], ["rohes Programm", { zeilen: ['(Welt verändert: ["spawn_studio","birke",["at",1,2,3],1])'] }, "Telemetrie im Chat"], ["interne id", { zeilen: ["3× baum_birke aus dem Studio vor dir gewachsen"] }, "interne id im Chat"], ["Ereignis-Name", { zeilen: ["Befehl lief, aber mit Auffälligkeit: op_exception"] }, "Telemetrie im Chat"]]],
             [
                 "D6",
@@ -1935,6 +1988,7 @@ hauptLauf(async () => {
             ((K) => (K && K.leib ? ` · Köpfe (B5): Bild-Rang ${K.orte.filter((o) => o.blick).length}/${K.orte.length} im Blick, Leib bestellt ${K.leib.bestellt.join(" · ")}, baut ${(K.leib.baut || []).join(" · ")}, Dorf-Export mit dem Buch ${!!K.dorf.export}` : ""))(m.koepfe) +
             (m.tastenHinter ? ` · hinter dem Ladeschirm: W ${m.tastenHinter.w ? "läuft" : "ruht"}, Enter → ${m.tastenHinter.enter}, Strg+K → Omnibox ${m.tastenHinter.omnibox ? "offen" : "zu"}` : "")
     );
+    zeige("LH", "was das Bild nicht liest, hält es nicht: die Hülle nach dem Bild, der Ring außer Bild im Leerlauf", out.huelle, huelleVerdict, (m) => `Hülle [Skelette vor dem Bild, offen, Boxen danach, offen] ${m.h} · Ring [hinten ohne Leerlauf, vorn, Ruf, hinten mit] ${m.r}`); // prettier-ignore
     zeige("L1", "das Fadenkreuz steht in der Bildmitte und weicht der Schublade", out.kreuz, kreuzVerdict, (m) => `da ${m.da} · Mitte ${m.dx}/${m.dy} px · mit Werkstatt ${m.mitSchublade} · danach ${m.nachSchublade}`);
     zeige("L2b", "„hilfe\" nennt die EINEN Tafeln und die Tasten", out.hilfe, hilfeVerdict, (m) => Object.entries(m.antworten || {}).map(([w, z]) => `„${w}": ${z.unbekannt ? "unbekannt" : `${(z.fehlt || []).length} fehlen`}`).join(" · "));
     zeige("L3", "Enter öffnet das Gespräch, Enter sendet und gibt die Welt zurück, Enter auf einem Knopf gehört dem Knopf", out.gespraech, gespraechVerdict, (m) => `Enter → ${m.enterFokus} · gesendet ${m.gesendet} · danach ${m.nachSenden} · W ${m.wNachSenden} · Esc → ${m.nachEsc} · Enter auf dem Knopf → ${m.enterAufKnopf}`);

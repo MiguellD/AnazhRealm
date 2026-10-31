@@ -31,7 +31,7 @@ function seitenfehlerZaehlen() {
 }
 
 function saisonFest() {
-    if (r?.state) r.state.autoSeason = false;
+    if (r?.state) st.autoSeason = false;
     else setTimeout(saisonFest, 50);
 }
 
@@ -238,10 +238,10 @@ function weltaktSpion(ersatz) {
     const S =
         window.__weltaktSpionBuch ||
         (window.__weltaktSpionBuch = { seq: 0, buch: [], blind: false, huellen: new WeakMap() });
-    const liste = r.constructor.DSL_WELTAKTE;
+    const liste = AnazhRealm.DSL_WELTAKTE;
     S.blind = !Array.isArray(liste);
     const halt = () => {
-        const u = r.state.weatherEffectTime;
+        const u = st.weatherEffectTime;
         return Number.isFinite(u) && u < 0;
     };
     const buche = (e) => {
@@ -273,7 +273,7 @@ function weltaktSpion(ersatz) {
 // Das Buch des Welt-Akt-Spions seit `seit` (seq) und der Halt jetzt.
 function weltaktBuch(seit) {
     const S = window.__weltaktSpion();
-    const u = r.state.weatherEffectTime;
+    const u = st.weatherEffectTime;
     return {
         seq: S.seq,
         gehalten: Number.isFinite(u) && u < 0,
@@ -536,9 +536,9 @@ function erstRuhe(frame, opt, wer) {
             // asynchronen Pipeline-Baus wartete hinter dem Rückstau (Erst-Zeichnungs-Wand: Rückstau bis 63 s, ein unbeleuchteter
             // Würfel 46 s; mit Gegendruck Rückstau ≤ 3,8 s, die Probe 68 → 4 s)
             const dev =
-                r.state.renderer &&
-                r.state.renderer.backend &&
-                r.state.renderer.backend.device;
+                st.renderer &&
+                st.renderer.backend &&
+                st.renderer.backend.device;
             if (dev && dev.queue && typeof dev.queue.onSubmittedWorkDone === "function")
                 await dev.queue.onSubmittedWorkDone();
             await sleep(0);
@@ -638,7 +638,7 @@ function abnahmeMessen(opt) {
     const dir = cam.getWorldDirection(new T.Vector3());
     return {
         satz: o.satz || "beweis",
-        stand: { version: r.constructor.VERSION || null, sha: o.sha || null },
+        stand: { version: AnazhRealm.VERSION || null, sha: o.sha || null },
         buehne: {
             saison: st.season || null,
             wetter: st.weather || null,
@@ -682,7 +682,7 @@ function abnahmeMessen(opt) {
 // Pixel gibt es erst nach dem Schuss). Die erste freie Pose steht; findet keine, bleibt die Kamera, wo sie war, und die
 // Abnahme nach dem Schuss wirft beim Namen.
 function blickWahl(opt) {
-    const cam = r.state.camera;
+    const cam = st.camera;
     const z = opt.ziel;
     const n = Math.max(1, Math.floor(opt.wahl));
     const P0 = cam.position.clone();
@@ -725,7 +725,7 @@ function blickWahl(opt) {
 function ausgabeAufnahme(W, H, warm, opt) {
     return (async () => {
         const T = window.THREE;
-        const rend = r.state.renderer;
+        const rend = st.renderer;
         const db = rend.getDrawingBufferSize(new T.Vector2());
         const BW = Math.max(1, Math.round(db.x));
         const BH = Math.max(1, Math.round(db.y));
@@ -794,15 +794,15 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // hält je Frame 95 % (TRAANode), die Frames vor dem Schuss tragen nichts hinein — zwei Schüsse derselben Szene
             // sind dasselbe Bild.
             {
-                const tn = r.state.traaNode;
+                const tn = st.traaNode;
                 if (tn) {
                     tn._jitterIndex = 0;
                     // die Geschichte neu: ein Größen-Wechsel lässt den Vendor sie aus dem ersten Bild kopieren (TRAANode
                     // `needsRestart`)
                     if (tn._historyRenderTarget) tn._historyRenderTarget.setSize(1, 1);
                 }
-                if (r.state._traaR) r.state._traaR.neu = true;
-                const lu = r.state.lodUniforms;
+                if (st._traaR) st._traaR.neu = true;
+                const lu = st.lodUniforms;
                 if (lu && lu.uDitherT) lu.uDitherT.value = 0;
                 // der Versatz des Laubs beginnt mit der Geschichte (A3b, `_zeitAufloesung`); die Schatten-Karten: der Takt rendert
                 // eine Kaskade nur, wenn sie fällig ist — die Karte des ersten Frames sah die Szene vor der Erst-Zeichnung (A8-n1)
@@ -814,13 +814,13 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // der Geschichte, ohne Rücklese der Farbe. Bis dahin las der Arm sie hinter zwei ganzen Aufnahmen (material.K2: je
             // Armlänge 2 × 33 Bilder, sechs Armlängen)
             if (opt && opt.tiefe) return frame();
-            const nWarm = Math.max(warm == null ? 1 : warm, r.state.traaNode ? 32 : 0);
+            const nWarm = Math.max(warm == null ? 1 : warm, st.traaNode ? 32 : 0);
             for (let k = 0; k < nWarm; k++) frame();
             const t0 = performance.now();
             frame();
             // Die Frame-Last liest die EINE Quelle des Spiels (HUD/Flugschreiber): `_loopRender` setzt
             // renderer.info je Frame zurück und legt die Summe ALLER Pässe in state._perfFrame ab.
-            const pf = r.state._perfFrame || {};
+            const pf = st._perfFrame || {};
             const ri = (rend.info && rend.info.render) || {};
             const info = {
                 drawCalls: pf.renderCalls != null ? pf.renderCalls : ri.drawCalls,

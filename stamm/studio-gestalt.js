@@ -27,6 +27,15 @@ class AnazhRealm_studio_gestalt {
         if (!this._baumGestaltMerk) this._baumGestaltMerk = new Map();
         let teile = this._baumGestaltMerk.get(k);
         if (teile === undefined) {
+            // DIE HÜLLE WÄCHST NACH DEM BILD (w4-ankunft-2): vor dem ersten Weltbild berührt kein Leib einen Baum — der Spieler
+            // steht auf dem Platz, die Tiere kommen nach der Kontrolle — und das Bild liest die Hülle nicht (der Spiegel liest die
+            // Gestalt `_huelleG`, die steht). Ihr Skelett (je Gestalt 15–30 ms im Haupt-Faden) wächst darum erst nach dem Bild,
+            // nah zuerst (`_tickHuellenNach`); bis dahin trägt der Eintrag keine Hülle und steht offen in der Welt
+            // (`_weltOffen().huellen`). swiftshader kalt bis zu den Termen des Bilds: `_baumGestaltTeile` 0,6–1,0 s.
+            if (!this.state._weltbildDa) {
+                (this._huellenNach || (this._huellenNach = new Set())).add(entry);
+                return null;
+            }
             // der Welt-Name, unter dem die Art ihre Rezept-Zeile trägt (wie `_foundryPresetForEntry` sie fand)
             const art = [entry._lodSpecies, entry.type, (entry.type.match(/^grown_(baum_[a-z]+)/) || [])[1]].find(
                 (s) => typeof s === "string" && this._foundryPresetFor(s) === preset
@@ -38,6 +47,38 @@ class AnazhRealm_studio_gestalt {
             this._baumGestaltMerk.set(k, teile);
         }
         return teile;
+    }
+    // DIE HÜLLEN DER ANKUNFT (w4-ankunft-2): nach dem ersten Bild fühlt jeder Baum, dessen Hülle vor ihm wartete
+    // (`_baumGestaltTeile`), seine Hülle — in der Reihe seines Abstands zum Spieler im Moment des Bilds, je Takt höchstens EIN
+    // neues Skelett und HUELLE_NACH_MS (die übrigen lesen das Gedächtnis ihrer Gestalt). Jeder Eintrag kommt dran; was den Bestand
+    // verließ, braucht keine. → die Zahl der gefühlten Einträge.
+    _tickHuellenNach() {
+        const S = this._huellenNach;
+        if (!S || !this.state._weltbildDa) return 0;
+        let Q = this._huellenNachReihe;
+        if (!Q) {
+            if (!S.size) return 0;
+            const p = this.state.playerMesh ? this.state.playerMesh.position : { x: 0, z: 0 };
+            const d2 = (e) => (e.position ? (e.position.x - p.x) ** 2 + (e.position.z - p.z) ** 2 : Infinity);
+            Q = this._huellenNachReihe = [...S].sort((a, b) => d2(a) - d2(b));
+            this._huellenNachI = 0;
+        }
+        const neu0 = this._baumGestaltMerk ? this._baumGestaltMerk.size : 0;
+        const t0 = performance.now();
+        let n = 0;
+        while (this._huellenNachI < Q.length) {
+            const e = Q[this._huellenNachI++];
+            S.delete(e);
+            if (e._blockerGen) this._populateBlockerAABBs(e);
+            n++;
+            const neu = (this._baumGestaltMerk ? this._baumGestaltMerk.size : 0) > neu0;
+            if (neu || performance.now() - t0 > AnazhRealm.HUELLE_NACH_MS) break;
+        }
+        if (this._huellenNachI >= Q.length) {
+            this._huellenNachReihe = null;
+            this.log(`Die Hüllen der Ankunft stehen: ${Q.length} Bäume und Sträucher fühlen ihre Gestalt.`, "INFO");
+        }
+        return n;
     }
 
     // Ein Wartender der Streu-Scheibe meldet seine Zusage (der Zug eines Körpers, das Buch, die Karte, der Wald-Plan) — nur,
@@ -732,13 +773,20 @@ class AnazhRealm_studio_gestalt {
     }
     // Die Gestalten-Zahl einer Art, wie der Wirt sie bedient: die Bestand-Gestalten der Budget-Zeile (sonst '*'), dazu der
     // Solitär einer Baum-Art (`_solitaerVon`: Gestalt V+1); 0 = Buch kalt. Der Vorrat wärmt 1..T, je Gestalt EINE Karte.
+    // Gemerkt je Art am Stand der Wahrnehmung (`_studioRenderConfig`: ein Buch, eine Tafel — die Gestalten der Zweit-Kerne
+    // vereint der Ingest, bevor die Wahrnehmung gilt): jede Gestalt des Orts, jede Sichthöhe und jeder Peek fragt sie (w4-ankunft-2:
+    // swiftshader kalt bis zum Bild 0,6 s).
     _foundryGestalten(preset) {
         const cfg = AnazhRealm._studioRenderConfig;
+        let M = this._gestaltenMerk;
+        if (!M || M.cfg !== cfg) M = this._gestaltenMerk = { cfg, je: new Map() };
+        let T = M.je.get(preset);
+        if (T !== undefined) return T;
         const G = cfg && cfg.lod && cfg.lod.budget ? cfg.lod.budget.gestalten : null;
-        if (!G) return 0;
-        const V = Number.isInteger(G[preset]) && G[preset] >= 1 ? G[preset] : G["*"];
-        if (!(Number.isInteger(V) && V >= 1)) return 0;
-        return AnazhRealm._solitaerVon(preset, V) || V;
+        const V = !G ? 0 : Number.isInteger(G[preset]) && G[preset] >= 1 ? G[preset] : G["*"];
+        T = !(Number.isInteger(V) && V >= 1) ? 0 : AnazhRealm._solitaerVon(preset, V) || V;
+        M.je.set(preset, T);
+        return T;
     }
     // Foundry-Cache = LRU: ein Treffer wandert nach hinten, beim Überlauf fällt die älteste Gestalt. Eine
     // Räumung zerstört nie einen sichtbaren Baum (Dispose nur ohne lebende Instanz-Gruppe, s.
@@ -1280,6 +1328,9 @@ AnazhRealm._solitaerVon = function (preset, V) {
 // DER SOLITÄR (K20): die Prägung der Gestalt V einer Baum-Art (`_foundryGestaltOv`) — phyto-core growSkeleton liest
 // `P.freistand`. Und das Inverse des Knuth-Faktors 2654435761 mod 2^32 (`_foundryGestaltSame`: der Same zum Eimer).
 AnazhRealm.FREISTAND_OV = Object.freeze({ freistand: 1 });
+// DIE HÜLLEN DER ANKUNFT (`_tickHuellenNach`): so viele ms fühlen die Bäume je Takt ihre Hülle aus dem Gedächtnis ihrer Gestalt —
+// ein neues Skelett beendet den Takt sofort.
+AnazhRealm.HUELLE_NACH_MS = 2;
 // DIE EINE BEIPACK-KARTE der Foundry-Antwort (`_foundryBuildGroup`): Beipack-Name → das Feld der Gruppe (der Flat reicht es
 // als `huelle` · `fern` weiter). `__huelle` (Welle L) die Kollision der gezeigten Stufe, `__fern` (S3) die Fernform der Stufe 3
 // — beide in der EINEN Hüllen-Form (docs/studio-vertrag.md N5, der Leser `_huelleVon`); `__mass` (K20) der Hub des Schafts,
