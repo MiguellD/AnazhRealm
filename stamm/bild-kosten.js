@@ -468,11 +468,14 @@ class AnazhRealm_bild_kosten {
                     welt._erstWartet(rend.backend, imBau, aufnahme !== null ? aufnahme.bundleGroup : null);
                     return false;
                 }
-                // baut der Auffrischer den Knoten-Graph (ein neuer Eintrag im Bau-Cache), zählt der Bau im Buch der Programme
-                const vorher = N.nodeBuilderCache.size;
+                // baut der Auffrischer DIESEM Render-Objekt seinen Knoten-Graph (ein neuer Zustand, sein einziger Nutzer ist es),
+                // zählt der Bau im Buch der Programme — die Größe des Bau-Caches allein log: sie wechselte auch im Gang eines
+                // Objekts, das einen bestehenden Zustand traf (Radeon kalt C2: 3 von 57 „Bauten“ ohne Bau, 22–57 ms)
+                const ohne = ro._nodeBuilderState === null;
                 const t = performance.now();
                 const refresh = N.needsRefresh(ro);
-                if (N.nodeBuilderCache.size !== vorher) welt._programmGebaut(rend, ro, performance.now() - t);
+                if (ohne && ro._nodeBuilderState !== null && ro._nodeBuilderState.usedTimes === 1)
+                    welt._programmGebaut(rend, ro, performance.now() - t);
                 if (refresh) {
                     N.updateBefore(ro);
                     rend._geometries.updateForRender(ro);
@@ -643,7 +646,9 @@ class AnazhRealm_bild_kosten {
     // zählt mit seinen ms (`bauN`, `bauMs`: der Haupt-Faden des Knoten-Baus); unter dem Ladeschirm hält das Buch je Programm-Text
     // seinen ersten Bau — die Ankunft weiß so, welche Programme ihr erstes Bild trug (`buch.texte`, `buch.n`, `buch.ms`), und ein
     // Text, der zweimal baute, steht beim Namen mit dem Schlüssel-Teil, der die Bauten trennte (`buch.doppelt`: die Form — welche
-    // Attribute —, die Seite, der Graph der Knoten, das Ding): EIN Programm je Text. Leser: die Programm-Zeile der Kalt-Zeile
+    // Attribute —, die Seite, der Graph der Knoten, das Ding —, sonst „verworfen" (derselbe Schlüssel: r184 warf das Programm
+    // mit seinem letzten Nutzer weg, `Nodes.delete`), ein Schalter des Stoffs (an/aus je Eigenschaft) oder das Umfeld (Licht ·
+    // Umgebung · Schatten-Empfang · Kontext), dazu seine ms): EIN Programm je Text. Leser: die Programm-Zeile der Kalt-Zeile
     // (diag-boot-stage), der Flugschreiber. Die Texte schlüsseln zwei Karten (Ecken, Pixel) — kein Zusammenfügen großer Zeichenketten.
     _programmGebaut(rend, ro, ms) {
         const E = this._erstZeichnung;
@@ -652,7 +657,7 @@ class AnazhRealm_bild_kosten {
         if (!this._ladeTakt()) return;
         const [B, s, m, z] = [E.buch, rend._nodes.get(ro).nodeBuilderState, ro.material, rend.getRenderTarget()];
         const szene = ro.scene === this.state.scene ? "welt" : ro.scene.name || ro.scene.type;
-        const b = { name: `${m.name || m.type} ${szene}:${z ? z.texture.name : "schirm"}`, form: Object.keys(ro.geometry.attributes).sort(), seite: m.side, graph: m.customProgramCacheKey(), ding: ro.object.id }; // prettier-ignore
+        const b = { name: `${m.name || m.type} ${szene}:${z ? z.texture.name : "schirm"}`, form: Object.keys(ro.geometry.attributes).sort(), seite: m.side, graph: m.customProgramCacheKey(), ding: ro.object.id, schluessel: ro.initialCacheKey, stoff: ro.getMaterialCacheKey() }; // prettier-ignore
         B.n++;
         B.ms += ms;
         if (!B.je.has(s.vertexShader)) B.je.set(s.vertexShader, new Map());
@@ -660,8 +665,10 @@ class AnazhRealm_bild_kosten {
         const a = je.get(s.fragmentShader);
         if (!a) return void (je.set(s.fragmentShader, b), B.texte++);
         const form = a.form.join() !== b.form.join();
-        const grund = form ? "Form " + a.form.concat(b.form).filter((x) => !a.form.includes(x) || !b.form.includes(x)) : ["seite", "graph", "ding"].find((k) => a[k] !== b[k]); // prettier-ignore
-        B.doppelt.push(`${b.name} (${grund || "?"})`);
+        const teil =
+            a.schluessel === b.schluessel ? "verworfen" : ["seite", "graph", "ding"].find((k) => a[k] !== b[k]);
+        const grund = form ? "Form " + a.form.concat(b.form).filter((x) => !a.form.includes(x) || !b.form.includes(x)) : teil || (a.stoff !== b.stoff ? "Schalter" : "Umfeld"); // prettier-ignore
+        B.doppelt.push(`${b.name} (${grund}, ${Math.round(ms)} ms)`);
     }
 
     // DIE ABSAGE EINER PIPELINE (Welle K): r184 verschluckt die Absage von createRenderPipelineAsync (`catch(e){}`,
