@@ -14,6 +14,18 @@ Pflicht-OFFEN: A, B, C, E und F (F gesetzt 31.10., der Prüfplatz; Plan `bericht
     (24 von 24 Paaren). Die Station dazu steht in koordination (a-spawn mit Rausch-Linse, Merge 5e0bd777).
   - w4-bewohner-wache 737704a7: die Kopf-Klasse `bewohner`, Wache-Rollen im Kern additiv. Der neuere Kopf **5ad555ed** fährt erst im
     nächsten Zug.
+- **z115 fuhr nur mit w4-bewohner-wache 5ad555ed** (Kandidat b895650c): ankunft-5 und mess-platz fielen an Konflikten mit z112/z114.
+  Beide habe ich selbst geheilt und gepusht:
+  - w4-ankunft-5 **b1e98273**: die Baum-Karten-Linse (diag-foundry-crossfade) ohne den Streck `_ankunftsFerne`. Er fiel mit
+    ankunft-3, k ≡ 1; Selbsttest, altlasten und betriebsgesetz grün, scripts −115.
+  - w4-mess-platz **78a62ae9**: die EINE Uhr der Bühne aus himmel-uhr, der Pool zu seinem Fixpunkt aus mess; 8 Stücke in 4 Dateien,
+    Bühnen-Selbsttest grün, scripts −352.
+- **z116 wartet auf die Landung von z115** (`w3/kette-z116.sh`, Liste `w3/z116.zweige`, liest sie nach der Landung). Er trägt
+  w4-ankunft-5, w4-mess-platz und w4-gras-l2 e47e5242 (A, Cloud). Das Bild von gras-l2 habe ich auf der Radeon angesehen, Wiese Ego
+  und Third main↔Zweig (`w3/gras-l2-bild-out/`): die Kante bei 15 m fällt, die Wiese reicht bis an die Bäume. Die Ferne ist etwas
+  fleckig, und die Dreiecke steigen; das ABAB nach der Landung urteilt E.
+- **koordination ad55c327:** w4-stationen-schnell-b-koord a0ff6bd4 ist gemergt (fünf Stationen ohne kalten Ring, die Linse DER ORT IM
+  DECKEL). Selbsttest 122/122 ohne (3c), die Fahrt-Wand hält an gtx und radeon. Die Stationen a (über 90 s) stehen noch aus.
 - **OMEN:** takt-z114a/-b und z114-abab sind eingereiht; nach jeder Landung reiht takt-nach.sh den Takt am neuen main ein.
 
 ## Cloud — 17 Sitzungen liefen um 22:17
@@ -43,9 +55,11 @@ Jeder WIP-Commit nennt im Rumpf, was offen ist. **Einsammeln:** `git ls-remote o
 | Stationen über 45 s schnell machen | w4-stationen-schnell-b (+ -koord) |
 
 ## Der kritische Pfad von F — zuerst
-1. **w4-studios-heim (ee845822) heimholen.** Er liegt seit 31.10. 12:15 neben main: 45 Commits zurück, Konflikte in scripts/
-   (u. a. `standLeser` in abnahme-urteil.cjs gegen a-spawn). Welle b des Plans (ort-gesetz, tore, ort-name) wartet auf ihn im main.
-   Er braucht einen eigenen Arbeiter: main mergen, wo main anders löste, gilt main; Re-Mint gates.json; Zug.
+1. **w4-studios-heim (ee845822) heimholen.** Er liegt seit 31.10. 12:15 neben main, 45 Commits zurück. Ein Probe-Merge um 22:35 zeigte
+   35 Dateien mit rund 100 Stücken, alle in scripts/: diag-profiband 8, omen-messfolge 7, werkbank 5, abnahme-urteil 3
+   (`standLeser` gegen a-spawn), ci-zeiten 3, betriebsgesetz 2 und weitere. Welle b des Plans (ort-gesetz, tore, ort-name) wartet auf
+   ihn im main. Er braucht einen eigenen Arbeiter mit vollem Budget: main mergen, wo main anders löste, gilt main; Re-Mint
+   gates.json; Zug. Der Worktree `w3/studios-heim3` (Zweig w4-studios-heim3, sauber) kann der Ort sein.
 2. **ort-name (0a)** in der Cloud, Brief `bericht/pruefplatz/briefe/ort-name.md`. Er ist klein, byte-gleich, die A-Seite des Platz-ABAB.
    Er wurde nie gestartet.
 3. **ort-wirt (0c)** lokal, Brief `ort-wirt.md`, sobald ort-gesetz im main ist. mess Teil 2 wartet auf w4-genesis-ort-wirt.
