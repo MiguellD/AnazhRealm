@@ -428,18 +428,24 @@ class AnazhRealm_daten {
     // aus dem Studio (understory.grassStep · groundCover.grass · placement.scale.gras). Die Weite eines Büschels (sein Kreis
     // vor dem Grund der Häuser, `erdbauGrund`, S4) ist keine Zahl hier: sie ist die der GEZEICHNETEN Vorlagen
     // (`nahWiese.reich`, `_tickNahWiese`; gate:haus-welt W9 misst sie an derselben Vorlage).
-    // DIE FERNE (`fern`, w4-gras-saum): bis 31.10. endete die Wiese bei `radius` (ein Ausdünnungs-Band 12–16 m, dahinter
-    // der flache Boden — im Third eine Naht, beim Gehen wanderte die Kante mit). Jetzt zeichnen dieselben Büschel (dieselbe
-    // Zelle, derselbe Wurf, die Studio-Stufe L2) weiter bis `bis`: die Dichte fällt mit dem Abstand d stetig — ein Büschel
-    // steht, solange seine Ordnung o unter (radius/d)^`dichte` liegt (die Fläche einer flachen Wiese am Schirm fällt mit d³, die
-    // Büschel je Pixel fallen mit ihr — Lehre 25, nie die Fläche der Welt; gemessen 31.10. an der Mess-Wiese Third, Radeon:
-    // Exponent 2 → 288k Dreiecke der Ferne, 3 → 103k, 4 → 45k), im Band `rand` (relativ) sinkt es in den Boden statt zu
-    // springen —, und jedes stehende Büschel trägt die Fläche seiner Nachbarn: die Mitten seiner Halme rücken um
-    // (d/radius)^(dichte/2) nach außen, höchstens `breitMax`, ihre Füße werden um die Wurzel davon breiter; Höhe und Neigung
-    // der Halme bleiben. Vor `bis` sinkt die Ferne über `saum` in den Boden, dessen Wiesen-Grund dieselbe Farbe trägt — `bis` liegt
-    // diesseits der Nah-Grenze des Wirts (`ANALOG_NAH_M`, 64 m): jenseits ist das Gras nach dem Studio der Boden (foundry-core
-    // `fernform` „boden"). `kachel` = die Kachel der Ferne (vier Kacheln der Nähe), `vorlauf` = so weit näher, als sie gebaut
-    // ist, trägt eine Kachel der Ferne ihre Büschel schon.
+    // DIE FERNE (`fern`, w4-gras-saum, w4-gras-l2): bis 31.10. endete die Wiese bei `radius` (ein Ausdünnungs-Band 12–16 m,
+    // dahinter der flache Boden — im Third eine Naht, beim Gehen wanderte die Kante mit). Jetzt zeichnen dieselben Büschel
+    // (dieselbe Zelle, derselbe Wurf, die Studio-Stufe L2) weiter bis `bis`, nach dem EINEN Gesetz `_wieseFern`: die ganze
+    // Gestalt des Büschels streckt sich waagrecht um s = (d/radius)^`streck`, höchstens `streckMax` (Mitten UND Halme, die Ähren
+    // nur verschoben; Höhe bleibt, die Füße folgen der Ebene des Hangs) — ein Büschel trägt die Fläche von s² Zellen —, und die
+    // Anzahl folgt dem Ziel der Deckung: Anzahl × s = 1 bis `voll` (die Wiese der Nähe, an der Übergabe stetig), dahinter
+    // (voll/d)^`fall`; ein Büschel steht, solange seine Ordnung o darunter liegt, im Band `rand` (relativ) sinkt es in den
+    // Boden statt zu springen, vor `bis` über `saum`. Die Kosten hängen am Schirm, nie an der Weite der Welt (Lehre 25).
+    // Bis w4-gras-l2 fiel die Anzahl mit (radius/d)^4 und nur die Mitten rückten (höchstens 2,5×, die Füße √): an der
+    // Mess-Wiese Third LAI 14–30 m 0,36 · 30–80 m 0,02 · 80–200 m 0 (Radeon), der Boden jenseits 30 m frei. Im Modell der
+    // Station (Messung w4-gras-l2: flache Wiese, Wurf 0,85, Third 2,43 m, Blick −9,4°, 1920 × 1080, die Vorlagen der Brücke,
+    // dieses Gesetz) vorher 14–30 m LAI 0,51 · 30–80 m 77 % Grund · 80–200 m 100 % Grund bei 27k Dreiecken der Ferne, jetzt
+    // 1,86 · 0,22 % · 4,5 % bei 65k (Blick-Keil + 11°; die Zeile nahWieseFern 60k), Ego 1,87 · 0,02 % · 1,3 %. `streckMax` 14
+    // hält die Gestalt (7,4 m Radius) auf dem Boden: an der Ebene des Hangs p90 0,07 m bei 30 m, 0,11–0,29 m bei 50–200 m
+    // (Gesetz, Mess-Wiese, im Blick der Station; waagrecht 0,5–1,0 m).
+    // `bis` liegt am Ring der Chunks (Radius 4 × 43,2 m: jenseits trägt keine Boden-Karte, `_bodenKommtNie`) — dahinter ist
+    // das Gras nach dem Studio der Boden (foundry-core `fernform` „boden"). `kachel` = die Kachel der Ferne (vier Kacheln der
+    // Nähe), `vorlauf` = so weit näher, als sie gebaut ist, trägt eine Kachel der Ferne ihre Büschel schon.
     static get NAH_WIESE() {
         return this._einmal(
             "NAH_WIESE",
@@ -452,10 +458,12 @@ class AnazhRealm_daten {
                 kachelnJeTakt: 1,
                 fern: Object.freeze({
                     kachel: 12,
-                    bis: 60,
-                    saum: 25,
-                    dichte: 4,
-                    breitMax: 2.5,
+                    bis: 200,
+                    saum: 20,
+                    voll: 21,
+                    fall: 1.5,
+                    streck: 3,
+                    streckMax: 14,
                     rand: 0.2,
                     vorlauf: 8,
                     kachelnJeTakt: 4,

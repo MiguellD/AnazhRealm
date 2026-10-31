@@ -39,17 +39,19 @@ class AnazhRealm_stoff_material {
         return mat;
     }
 
-    // DER HALM DER FERNE (w4-gras-saum, `NAH_WIESE.fern`): derselbe Halm-Stoff (das Studio-Gras L2 der Nah-Wiese), sein
-    // Positions-Knoten trägt das Gesetz der Ferne je Instanz — d der Abstand ihres Fußes (der Ursprung der Instanz über die
-    // Naht `_weltNaht`) zum Auge der Wiese (`_halmFerneAuge`, das der Sicht-Satz für denselben Pass legt), o ihre Ordnung
-    // (dieselbe Rechnung wie `_wieseOrdnung`: die Lage auf 1/256 m, PCG, die oberen 24 Bit), der Anteil a = (radius/d)^dichte
-    // × (1 − Saum vor `bis`) (`_wieseAnteil`). Steht o unter a, steht das Büschel ganz; darüber, im Band bis a · (1 + `rand`),
-    // sinkt es in den Boden (das Büschel × v um seinen Fuß) statt zu springen — an der Übergabe (a = 1) steht jedes. Sein Fuß
-    // trägt die Fläche der Nachbarn: die Mitte jedes Halms (`aCenter`, um den Fuß des Büschels) rückt waagrecht um
-    // f = (d/radius)^(dichte/2) bis `breitMax` nach außen, die Ecken auf dem Boden (um diese Mitte) um √f — Höhe und Neigung der
-    // Halme bleiben (mit dem vollen f am Fuß lasen die L2-Halme ab 25 m im Third als flache Fächer, Radeon 31.10.).
-    // Diesseits der Übergabe (d < radius) legt der Sicht-Satz dasselbe Büschel als Nah-Wiese — hier steht es nicht. EIN Knoten
-    // für jede Vorlage (EIN Programm); der Wind schwingt mit dem Büschel (× v).
+    // DER HALM DER FERNE (w4-gras-saum, w4-gras-l2, `NAH_WIESE.fern`): derselbe Halm-Stoff (das Studio-Gras L2 der Nah-Wiese),
+    // sein Positions-Knoten trägt das Gesetz der Ferne je Instanz — d der Abstand ihres Fußes (der Ursprung der Instanz über
+    // die Naht `_weltNaht`) zum Auge der Wiese (`_halmFerneAuge`, das der Sicht-Satz für denselben Pass legt), o ihre Ordnung
+    // (dieselbe Rechnung wie `_wieseOrdnung`: die Lage auf 1/256 m, PCG, die oberen 24 Bit), Anteil a und Streckung s aus dem
+    // EINEN Gesetz `_wieseFern` über der TSL-Algebra (Takt und Sicht-Satz rechnen es in Zahlen). Steht o unter a, steht das
+    // Büschel ganz; darüber, im Band bis a · (1 + `rand`), sinkt es in den Boden (das Büschel × v um seinen Fuß) statt zu
+    // springen — an der Übergabe (a = 1, s = 1) steht jedes, wie die Nähe es legt. DIE STRECKUNG: die ganze Gestalt des
+    // Büschels waagrecht um s — die Mitte jedes Halms (`aCenter`, um den Fuß des Büschels) und der Halm um sie (Fuß UND
+    // Spitze), die Höhe bleibt; die Ähre (ihr `aCenter` die Spitze des Stängels, über dem Fuß) wandert mit der Spitze, ihre
+    // Ährchen bleiben in ihrer Größe (gestreckt lasen sie im Modell der Station als helle Striche am Horizont). Bis
+    // w4-gras-l2 rückten nur die Mitten (höchstens 2,5×) und die Füße um √f — die Halme blieben schmal, jenseits 30 m lag der
+    // Boden frei. Diesseits der Übergabe (d < radius) legt der Sicht-Satz dasselbe Büschel als Nah-Wiese — hier steht es
+    // nicht. EIN Knoten für jede Vorlage (EIN Programm); der Wind schwingt mit dem Büschel (× v).
     _halmFerne(mat) {
         const da = this._halmFerneStoffe && this._halmFerneStoffe.get(mat);
         if (da) return da;
@@ -70,29 +72,27 @@ class AnazhRealm_stoff_material {
                 .shiftRight(8)
                 .toFloat()
                 .mul(1 / 16777216);
-            const anteil = T.min(T.float(1), T.float(NW.radius).div(d.max(1e-3)).pow(F.dichte)).mul(
-                T.float(1).sub(T.smoothstep(F.bis - F.saum, F.bis, d))
-            );
+            const A = AnazhRealm._windTsl(T);
+            const G = AnazhRealm._wieseFern(A, d);
+            const anteil = G.anteil;
             const v = anteil
                 .mul(1 + F.rand)
                 .sub(o)
                 .div(anteil.mul(F.rand).max(1e-6))
                 .clamp(0, 1)
                 .mul(T.step(NW.radius, d));
-            const f = d
-                .div(NW.radius)
-                .max(1)
-                .pow(F.dichte / 2)
-                .min(F.breitMax);
             const c = T.attribute("aCenter", "vec3");
             const rel = T.positionLocal.sub(c);
-            const fuss = T.mix(T.float(1), f.sqrt(), T.step(T.positionGeometry.y, 1e-4));
+            // die Mitte rückt um s, der Halm streckt sich um sie waagrecht um s (quer); die Ähre (aCenter über dem Fuß) wandert
+            // nur, in ihrer Größe (quer 1)
+            const s = G.streck;
+            const quer = T.mix(s, T.float(1), T.step(1e-4, c.y));
             const sk = this._foundryWorldScaleMatrix("gras").elements[0];
             const sway = this._windSwayOffset(T, { ampX: 1.5, hoehe: T.positionGeometry.y.mul(sk) });
             this._halmFerneKnoten = T.vec3(
-                c.x.mul(f).add(rel.x.mul(fuss)),
+                c.x.mul(s).add(rel.x.mul(quer)),
                 c.y.add(rel.y),
-                c.z.mul(f).add(rel.z.mul(fuss))
+                c.z.mul(s).add(rel.z.mul(quer))
             )
                 .mul(v)
                 .add(sway.mul(v));

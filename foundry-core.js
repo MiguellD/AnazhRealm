@@ -3031,10 +3031,37 @@ function groundCover(L, m, rk, td) {
         bare: 0,
     };
 }
+// DIE HALM-STUFEN (w4-gras-l2): je gelieferte Stufe der Anteil der Halme an der Labor-Zahl, die Segmente des Blatt-Halms und
+// seine Breite in Labor-Breiten. Eine Stufe mit `flaecheVon` trägt die Halm-FLÄCHE jener Stufe: ihre Breite folgt aus der
+// Gleichung Anteil · Profil(Segmente) · Breite = dasselbe Produkt der Mutter (`__halmProfil`, das Profil des Halm-Gesetzes) —
+// der KARTEN-HALM der L2: ein gerader Halm (EIN Dreieck) trägt die Fläche der L1-Halme, die er vertritt. Bis dahin stand die
+// L2-Breite als Zahl (7,4, w4-wiese-nah hielt damit die alte Fläche): L2 trug 61,6 % / 57,0 % der L1-Fläche (Gestalt 1 / 2),
+// an der Mess-Wiese LAI 5–10 m 1,47 · 10–14 m 1,22 gegen 2,40 im L1-Band (Radeon, Station vegetation.K1#1). Jetzt 12,65: L2
+// 10,31 → 17,55 / 12,86 → 21,93 Einheiten² (L2/L1 1,048 / 0,971) bei 61 / 66 Dreiecken (L1 16,74 / 22,58 bei 601 / 737).
+const HALM_STUFEN = Object.freeze({
+    0: Object.freeze({ anteil: 1, segmente: 10, breite: 1 }),
+    1: Object.freeze({ anteil: 0.92, segmente: 3, breite: 3.0 }),
+    2: Object.freeze({ anteil: 0.333, segmente: 1, flaecheVon: 1 }),
+});
+// Die Fläche des linealen Halms (Breite 1 − f^spitze, HALM_GESETZ) über K gleich langen Segmenten, in Einheiten Breite ×
+// Länge: je Segment ein Trapez, das letzte endet in der Spitze (Breite 0 — EIN Dreieck). K 1: 0,5 · K 3: 0,763.
+function __halmProfil(K, spitze) {
+    let a = 0;
+    for (let s = 0; s < K; s++) a += (2 - Math.pow(s / K, spitze) - Math.pow((s + 1) / K, spitze)) / (2 * K);
+    return a;
+}
+// Die Breite des Blatt-Halms der Stufe (Labor-Breiten): gesetzt, oder aus der Fläche ihrer Mutter-Stufe (`flaecheVon`).
+function __halmBreite(stufe, spitze) {
+    const S = HALM_STUFEN[stufe];
+    if (!S) throw new Error("[phyto] HALM_STUFEN[" + stufe + "] fehlt");
+    if (S.flaecheVon === undefined) return S.breite;
+    const M = HALM_STUFEN[S.flaecheVon];
+    return (M.anteil * __halmProfil(M.segmente, spitze) * __halmBreite(S.flaecheVon, spitze)) / (S.anteil * __halmProfil(S.segmente, spitze));
+}
 // DIE GRASNARBE (K70, Soll-Tafel boden-nah: eine Wiese zeigt aus Augenhöhe ihren Grund erst unter dem Fuß, Grasland-LAI
 // 1,71): die Deckung ist die Blatt-Fläche je Boden-Fläche, und die Stufe trägt sie, nicht die Dreiecks-Zahl. Der Halm
 // WURZELT im Boden (bis K70 begann er eine Segment-Länge darüber: L1/L2 ein Drittel des Halms Luft am Grund), und die
-// Fernstufe L2 ist ein gerader Halm (ein Segment) in 2,4-facher Zahl: L2 trägt 59 % der L1-Fläche je Büschel statt 38 %.
+// Fernstufe L2 ist ein gerader Halm (ein Segment): ihre Breite trägt die Fläche der L1 (`HALM_STUFEN`, w4-gras-l2).
 // DER HALM IST EIN GESETZ (w4-wiese-nah, phyto-core HALM_GESETZ): LINEAL und SPITZ — parallele Ränder, die Breite
 // 1 − f^spitze (bis dahin 1 − 0,86·f³: die Spitze stand 14 % breit, auf Armlänge ein schräger Messer-Schnitt; die L2 hält ihre
 // Fläche, wMul 6,5 → 7,4) —, der Querschnitt gekielt und die Adern im Stoff (uv.x zählt quer in Adern, die Mittel-Rippe bei 0),
@@ -3043,7 +3070,10 @@ function groundCover(L, m, rk, td) {
 function emitGrass(P) {
     const geos = [];
     const HG = self.__phytoCore.HALM_GESETZ;
-    const lf = __lod === 0 ? 1 : __lod === 1 ? 0.92 : 0.333;
+    const HS = HALM_STUFEN[__lod];
+    if (!HS) throw new Error("[phyto] HALM_STUFEN[" + __lod + "] fehlt — die Stufe des Grases ohne Halm-Zeile");
+    const lf = HS.anteil;
+    const wMul = __halmBreite(__lod, HG.spitze);
     const N = Math.max(3, Math.round(lerp(50, 150, P.density) * lf));
     const baseCol = vegFarbe(seasonTint).multiplyScalar(0.6),
         tipCol = vegFarbe(seasonAccent).multiplyScalar(GRAS_SPITZE_HELL);
@@ -3071,7 +3101,6 @@ function emitGrass(P) {
         const bx = Math.cos(a) * rr,
             bz = Math.sin(a) * rr;
         const isCulm = SH > 0 && rnd() < SH * 0.5; // Teil der Halme -> Aehrenstaengel
-        const wMul = __lod === 0 ? 1 : __lod === 1 ? 3.0 : 7.4;
         const L = P.bladeLen * (isCulm ? rrange(1.25, 1.6) : rrange(0.6, 1.15)),
             w = P.bladeW * wMul * (isCulm ? 0.5 : 0.74) * rrange(0.8, 1.1);
         const lean = rrange(0.1, 0.4),
@@ -3080,7 +3109,7 @@ function emitGrass(P) {
             droop = isCulm ? P.droop * 0.45 : P.droop;
         // die Adern des Halms an seinem Fuß (quer, `aderM` in der Welt-Skala) — u läuft von −nv/2 bis +nv/2
         const nv = (w * S) / HG.aderM;
-        const K = isCulm ? ZA.staengel : __lod === 0 ? 10 : __lod === 1 ? 3 : 1,
+        const K = isCulm ? ZA.staengel : HS.segmente,
             positions = [],
             idx = [],
             uvs = [],
