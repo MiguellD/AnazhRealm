@@ -139,3 +139,4 @@ a-spawn-gtx3 Exit0 station a-spawn.sh an b4bcf19c
 takt32a-gtx gemessen punkte b4bcf19c gtx: 0 grün / 4 rot
 takt32b-gtx gemessen punkte b4bcf19c gtx: 1 grün / 8 rot
 eich15-gtx Exit0 station eich-gtx.sh an b4bcf19c
+eich16-gtx Exit0 station eich-gtx.sh an b4bcf19c
