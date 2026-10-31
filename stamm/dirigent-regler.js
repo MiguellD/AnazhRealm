@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_dirigent_regler {
     // ===== ATLAS · Dirigent/regler — Perf-Sinn · der EINE Regler · Holz-Profile · Geräte-Profil · Flug-Schreiber =====
     // FPS als gleitender 1-s-Durchschnitt: ein Einzel-Frame ist vsync-gekoppelt (exakt 1/Refreshrate),

@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_dirigent_ankunft {
     // ===== ATLAS · Dirigent/ankunft — init · das erste Weltbild · Ladeschirm · der Boot =====
     async init() {
@@ -84,9 +85,9 @@ class AnazhRealm_dirigent_ankunft {
         this.initConsoleDOM();
         // V8.00 — Resize-Handles für Konsole + alle Drawer (idempotent).
         this.installResizeHandles();
-        // Schicht 2 — LLM-Persistenz aus localStorage holen + UI verkabeln.
+        // Schicht 2 — LLM-Persistenz aus localStorage holen (der Dienst); die KI-Oberfläche verkabelt ihr spätes Modul
+        // (`_spaetAngekommen`).
         this.llmLoadPersisted();
-        this.initLlmUI();
         // Ring 11 V1 — P2P-Persistenz aus localStorage + UI-Verkabelung.
         // Auto-Connect erst nach ensureWorldMeta (sonst hätten wir keine
         // worldId als default-Raum).
@@ -849,6 +850,35 @@ class AnazhRealm_dirigent_ankunft {
         if (w) w.erfuellt(st._weltbildDa);
         this._ladeschirmWeg();
     }
+    // DIE SPÄTEN MODULE (Pflicht-OFFEN B, w4-b-code): was das erste Bild nicht liest, lädt nach ihm. Die EINE Liste ist die
+    // Modul-Karte (`spät` in ihrer Ordnung, spec/stamm/modul-karte.json); index.html trägt ihre Stamm-Tags träge am Ende des
+    // Blocks (`type="spaet"`, jeder mit ?v=). Nach dem Boot und dem ersten Weltbild weckt sie DIESER Lader in Lade-Ordnung, dann
+    // verkabelt der Wirt ihre Oberflächen (`_spaetAngekommen`); `_spaetDa` ist ihre Zeit ab Navigation, erst danach ist das
+    // Erwachen ganz (`erwacht`). Ein Glied eines späten Moduls, das vorher gerufen wird, fehlt am Wirt: ROT beim Namen (die
+    // SPÄT-WAND jeder Null-Linse in scripts/lib/welt-boot.cjs, gate:ankunft LS hält 40 Takte vor dem Laden).
+    async _spaetLaden() {
+        await this._weltbildKommt();
+        const tags = [...document.querySelectorAll('script[type="spaet"]')];
+        await Promise.all(
+            tags.map(
+                (t) =>
+                    new Promise((geladen, fehlt) => {
+                        const s = document.createElement("script");
+                        s.src = t.getAttribute("src");
+                        s.async = false; // in Lade-Ordnung wie `defer`
+                        s.onload = geladen;
+                        s.onerror = () => fehlt(new Error(`das späte Modul ${t.getAttribute("src")} lädt nicht`));
+                        document.body.appendChild(s);
+                    })
+            )
+        );
+        this._spaetDa = performance.now();
+        this._spaetAngekommen();
+    }
+    // die Oberflächen der späten Module — je Modul sein Verkabeln, das init vor ihnen nicht rufen kann
+    _spaetAngekommen() {
+        this.initLlmUI(); // Feld/nexus: die KI
+    }
     // DER KOPF DER ANKUNFTS-KETTE geht mit dem Buch (`_foundryIngestBook`, B5), vor jedem Baum ins Werk: der Leib des Spielers
     // (`_ofenSpielerVorlagen`, die Stufe seines ersten Bilds — K60-2: bestellte erst der nächste Takt, stand der Guss hinter
     // zwölf Bäumen); er wartet im Werk hinter dem Blatt-Atlas. Das Start-Dorf ist ein WARTENDER am Buch (`_startDorfAmBuch`,
@@ -1490,7 +1520,7 @@ function _bootAnazhRealm() {
     }
     // DAS ERWACHEN: das Versprechen des Boots samt der Heimat aus dem Faden (true: die Welt steht, false: der Boot brach) —
     // die Welt-Warte jeder Linse (`__weltDa`) taktet erst danach; bis dahin taktet sie nur die Schleife des Boots.
-    const erwachen = Promise.resolve(anazhRealm.init());
+    const erwachen = Promise.resolve(anazhRealm.init()).then(() => anazhRealm._spaetLaden());
     anazhRealm.erwacht = erwachen.then(
         () => true,
         () => false

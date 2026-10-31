@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_netz_p2p {
     // ===== ATLAS · Netz/p2p — Einladung · WebRTC-Mesh · Lockstep · Stimme · Welt-Bündel =====
     // DIE EINE ZAHL AUS FREMDER HAND (Draht, DSL-Programm): eine endliche Zahl oder NaN, nie still die 0. Über den Draht

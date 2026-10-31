@@ -26,10 +26,16 @@ const DIR = "stamm";
 const KARTE = "spec/stamm/modul-karte.json";
 const MIN_BYTES = 5 * 1024 * 1024;
 const KLASSE_AUF = "class AnazhRealm {";
+// DER ÜBERSETZUNGS-HINWEIS (Pflicht-OFFEN B, w4-b-code): die erste Zeile jeder Stamm-Datei — V8 übersetzt jede ihrer Funktionen
+// beim Streamen im Hintergrund-Faden statt lazy im Haupt-Faden beim ersten Ruf (Kalt-Spur bis zum Weltbild: V8.CompileCode
+// 1 255 → 221 ms). S schreibt ihn, S⁻¹ nimmt ihn; eine Datei ohne ihn ist nicht kanonisch, ein Stand von vor ihm liest sich gehoben.
+const HINWEIS = "//# allFunctionsCalledOnLoad\n";
 const DOMAENE_RX = /^( {4})?\/\/ ===== ATLAS · ([A-Z][a-z]+(?:\/[a-z][a-z0-9]*)?) — (.+?) =====\s*$/;
 const ZONEN_DATEI_RX = /^stamm\/[a-z0-9]+(?:-[a-z0-9]+)?\.js$/;
+// ein Stamm-Tag lädt früh (`defer`, vor dem Boot) oder spät (`type="spaet"`: träge, bis der Lader ihn nach dem ersten Weltbild
+// weckt — die Karte nennt ihn `spät` in ihrer Ordnung, `spaeteVon`)
 const STAMM_TAG_RX =
-    /^([ \t]*)<script src="(stamm\/[a-z0-9]+(?:-[a-z0-9]+)?\.js)(\?v=[^"]*)?" defer><\/script>[ \t]*$/;
+    /^([ \t]*)<script src="(stamm\/[a-z0-9]+(?:-[a-z0-9]+)?\.js)(\?v=[^"]*)?" (defer|type="spaet")><\/script>[ \t]*$/;
 // die Domäne „Modul/teil" heißt in der Datei modul-teil, ihre Klasse AnazhRealm_modul_teil
 const stammName = (s) => s.toLowerCase().replace("/", "-");
 const pfadVon = (s) => `${DIR}/${stammName(s)}.js`;
@@ -121,9 +127,9 @@ function schneide(t) {
         const i = si.indexOf(s);
         const a = sa.indexOf(s);
         const aus = a < 0 ? "" : (i < 0 ? "" : "\n") + zone(aussen, a, t.length);
-        if (i <= 0) return { pfad: pfadVon(s), text: i < 0 ? aus : t.slice(0, ende01) + "}\n" + NAHT_FN.join("\n") + "\n" + aus };
+        if (i <= 0) return { pfad: pfadVon(s), text: HINWEIS + (i < 0 ? aus : t.slice(0, ende01) + "}\n" + NAHT_FN.join("\n") + "\n" + aus) };
         const klasse = klasseVon(s);
-        return { pfad: pfadVon(s), klasse, text: `class ${klasse} {\n${zone(innen, i, zu)}}\n${zonenRuf(klasse)}${aus}` };
+        return { pfad: pfadVon(s), klasse, text: `${HINWEIS}class ${klasse} {\n${zone(innen, i, zu)}}\n${zonenRuf(klasse)}${aus}` };
     });
 }
 
@@ -133,8 +139,11 @@ function schneide(t) {
 function fuege(teile, stuecke) {
     const out = [];
     let zeile = 1;
+    // der Übersetzungs-Hinweis steht in jeder Datei eines Stands oder in keiner (ein Stand von vor ihm); gemischt bricht S∘S⁻¹
+    const h = +!!teile[0]?.text.startsWith(HINWEIS);
+    teile = teile.map((x) => ({ pfad: x.pfad, text: x.text.slice(h * HINWEIS.length) }));
     const nimm = (pfad, s, ab) => {
-        if (stuecke) stuecke.push([pfad, ab, zeilenIn(s), zeile]);
+        if (stuecke) stuecke.push([pfad, ab + h, zeilenIn(s), zeile]);
         zeile += zeilenIn(s);
         out.push(s);
     };
@@ -197,6 +206,8 @@ function karteAus(text) {
     return { quelle: j.quelle, ordnung: j.ordnung, mod };
 }
 const karteVon = (root) => karteAus(fs.readFileSync(path.join(root, KARTE), "utf8"));
+// DIE SPÄTEN MODULE (Pflicht-OFFEN B): `spät` als drittes Feld ihres Eintrags der Ordnung — ihre Datei-Pfade
+const spaeteVon = (K) => new Set(K.ordnung.filter((o) => o[2] === "spät").map((o) => pfadVon(o[0])));
 function aussenName(s) {
     const e = s.type === "ExpressionStatement" ? s.expression : null;
     const an = (n) => n && n.type === "MemberExpression" && n.object.type === "Identifier" && n.object.name === "AnazhRealm";
@@ -293,7 +304,7 @@ function tagsVon(html) {
     const out = [];
     html.split("\n").forEach((z, i) => {
         const m = STAMM_TAG_RX.exec(z.replace(/\r$/, ""));
-        if (m) out.push({ zeile: i, einzug: m[1], pfad: m[2], v: m[3] || "" });
+        if (m) out.push({ zeile: i, einzug: m[1], pfad: m[2], v: m[3] || "", spaet: m[4] !== "defer" });
     });
     return out;
 }
@@ -336,10 +347,12 @@ function teileVon(root, rev) {
 function ausZonen(teile, stuecke) {
     const t = fuege(teile, stuecke);
     const s = schneide(t);
+    // ein Stand von vor dem Übersetzungs-Hinweis (keine Datei trägt ihn) liest sich gehoben; eine einzelne ohne ihn bricht
+    const alt = teile[0].text.startsWith(HINWEIS) ? "" : HINWEIS;
     const abweichung =
         s.length !== teile.length
             ? `${s.length} statt ${teile.length} Dateien`
-            : (s.find((x, i) => x.pfad !== teile[i].pfad || x.text !== teile[i].text) || {}).pfad;
+            : (s.find((x, i) => x.pfad !== teile[i].pfad || x.text !== alt + teile[i].text) || {}).pfad;
     if (abweichung) throw new Error(`Stamm-Baum nicht kanonisch (S∘S⁻¹ ≠ id): ${abweichung}`);
     return t;
 }
@@ -629,7 +642,8 @@ function versionsDatei(root) {
     return mit[0][0];
 }
 
-// index.html: der Stamm-Tag-Block → die Tags für `pfade` (Einzug und ?v= vom alten Block).
+// index.html: der Stamm-Tag-Block → die Tags für `pfade` (Einzug und ?v= vom alten Block); ein Eintrag ist ein Pfad (früh) oder
+// { pfad, spaet }.
 function tagsSetzen(html, pfade) {
     const tags = tagsVon(html);
     if (!tags.length) throw new Error("tagsSetzen: index.html trägt keinen Stamm-Tag");
@@ -638,7 +652,7 @@ function tagsSetzen(html, pfade) {
             throw new Error("tagsSetzen: die Stamm-Tags stehen nicht als ein Block");
     const z = html.split("\n");
     const { einzug, v } = tags[0];
-    const neu = pfade.map((p) => `${einzug}<script src="${p}${v}" defer></script>`);
+    const neu = pfade.map((p) => `${einzug}<script src="${p.pfad || p}${v}" ${p.spaet ? 'type="spaet"' : "defer"}></script>`);
     z.splice(tags[0].zeile, tags.length, ...neu);
     return z.join("\n");
 }
@@ -959,6 +973,8 @@ function pruefZaehler() {
 }
 
 module.exports = {
+    HINWEIS,
+    spaeteVon,
     pruefZaehler,
     textMerge,
     kinder,
@@ -1175,12 +1191,14 @@ if (require.main === module && process.argv.includes("--selftest")) {
         );
         fs.renameSync(path.join(tmp, "weg.js"), path.join(z, weg));
         const p7 = path.join(z, S[7].pfad);
-        fs.writeFileSync(p7, S[7].text.replace(/^(class \w+ \{\n)/, "$1    // vor dem Marker\n"));
+        fs.writeFileSync(p7, S[7].text.replace(/(class \w+ \{\n)/, "$1    // vor dem Marker\n"));
         pruef(
             "Zeile vor dem Marker einer Zone → wirft",
             wirft(() => text(z), /nicht kanonisch|Leerzeile/)
         );
-        fs.writeFileSync(p7, S[7].text.replace(/^class \w+/, "class AnazhRealm_Z99"));
+        fs.writeFileSync(p7, S[7].text.slice(HINWEIS.length));
+        pruef("eine Zone ohne den Übersetzungs-Hinweis → wirft", wirft(() => text(z), /nicht kanonisch|^S: /));
+        fs.writeFileSync(p7, S[7].text.replace(/class \w+/, "class AnazhRealm_Z99"));
         pruef(
             "Klassen-Name ≠ Naht-Ruf → wirft",
             wirft(() => text(z), /Naht-Ruf/)

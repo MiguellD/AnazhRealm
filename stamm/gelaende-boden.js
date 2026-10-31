@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_gelaende_boden {
     // ===== ATLAS · Gelaende/boden — Welt-Genese · Genesis-Platz · Boden-Sicht · Hang und Fels · Stufen-Kette · Höhe =====
     // DER GEZEICHNETE BODEN AM WELT-PUNKT (K07, der Chunk-Rand): je Punkt die OBERSTE tragende Fläche aller Meshe, die dort

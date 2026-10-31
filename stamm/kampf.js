@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_kampf {
     // ===== ATLAS · Kampf — Schwung · Sweep · Urteil · Bogen · Abbau =====
     // DER CHOKEPOINT DER GLIED-LESER (K59): wer die Welt-Matrizen eines Leibs liest (Biss, Treffer, Tod, das Backen des

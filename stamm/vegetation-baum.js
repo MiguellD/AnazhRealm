@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_vegetation_baum {
     // ===== ATLAS · Vegetation/baum — Baum-Geometrie · Laub-Atlas · Wald-Pflanzung · Fels-Varianten · Natur-Plätze =====
     // DER STOFF DES WALDS off-thread (K60-3): die Wald-Zellen (cx, cz je Zelle, Int32Array) → die gepackten Darts aus dem

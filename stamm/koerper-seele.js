@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_koerper_seele {
     // ===== ATLAS · Koerper/seele — Spieler-Seele · Stats · Boosts · Ausrüstung · Inventar =====
     // === Hylomorphismus-Inventar ===

@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_kreatur_verhalten {
     // ===== ATLAS · Kreatur/verhalten — Aufgaben · Scheu · Jagd · Rudel · Kreatur-Takt =====
     _getCreatureTask(creature) {

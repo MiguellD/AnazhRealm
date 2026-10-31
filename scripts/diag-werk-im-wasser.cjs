@@ -2131,7 +2131,7 @@ function selbsttest() {
         ["C leer", (b) => (b.ergebnis.versuche[0].gesetzt = 6), /C LEER/],
         ["D lief nicht", (b) => delete b.damm, /D: die Damm-Probe lief nicht/],
     ];
-    const fehler = taeterFaelle([["grüner Befund", () => {}], ...faelle], urteil, { klon: () => JSON.parse(JSON.stringify(gruen)) });
+    const fehler = taeterFaelle([["grüner Befund", () => {}], ...faelle], urteil, { gruen });
     // die Leser-Linse gegen eingeschmuggelte Täter im echten Stamm (der Vor-Stand über den EINEN Helfer)
     const gifte = [
         [

@@ -623,7 +623,7 @@ hauptLauf(async () => {
         out.x ? `parts=${out.x.holzrossParts} role=${out.x.holzrossRole}` : ""
     );
     check(
-        "X: HOLZROSS-Identität — Tags WERT-GLEICH zur gemünzten Alt-Konstruktion (sortiert, 10.07.)",
+        "X: HOLZROSS-Identität — Tags WERT-GLEICH zur gemünzten Alt-Konstruktion (sortiert)",
         !!out.x &&
             out.x.holzrossTags ===
                 '[["brennbar",0.8],["dichte",1.3],["härte",2.0999999999999996],["lebendig",1.4],["magieleitung",2.55],["resoniert",1.8],["transparent",2.8499999999999996],["wärmeleitung",0.44999999999999996],["zähigkeit",1.2]]',

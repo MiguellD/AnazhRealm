@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_siedlung_instanz {
     // ===== ATLAS · Siedlung/instanz — Arch-Instanzen · Gruppen · LOD-Fassade · Slots · Werfer · Berg-Cull · Bündel-Abfrage =====
     // DIE WERFER-HÜLLE eines Region-Bundles (W7): die Welt-AABB seiner WERFENDEN Kinder (castShadow), aus dem Inhalt —

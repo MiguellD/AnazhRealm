@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_stoff_instanz {
     // ===== ATLAS · Stoff/instanz — Instanz-Senken und ihr Zeichner · Laub-Licht · Baum-Wind =====
     // DIE NORMALE DES LAUB-STOFFS (K68-N1): eine Krone mit der Normale der Krone lichtet FLIP-FREI — r184 kehrt die Normale

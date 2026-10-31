@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_bild_diaet {
     // ===== ATLAS · Bild/diaet — Die Diät · das Register der Regung (Melder · Stand · Tor) · Gang · Objekt-Gang · Stoff je Render-Objekt =====
     // DER MELDER DER VERSIONEN: jede Version läuft durch EINEN Setter in three.core (`set needsUpdate(t){!0===t&&this.version++}` an

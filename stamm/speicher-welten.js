@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_speicher_welten {
     // ===== ATLAS · Speicher/welten — Snapshot · IndexedDB · Welt-Index · Manifest · Serialisierung =====
     // ### Welt-Identität (Ring 8+ Vorbereitung) ###
@@ -2854,6 +2855,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "player.name",
     ]),
     wirt: Object.freeze([
+        "_spaetDa",
         "_speicher",
         "_speicherOhnePlatte",
         "_nebenFaeden",

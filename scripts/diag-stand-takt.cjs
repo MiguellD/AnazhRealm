@@ -183,12 +183,8 @@ function selbsttest() {
         ],
         pageErrors: [],
     };
-    const klon = () => JSON.parse(JSON.stringify(gruen));
-    const fehler = [];
-    const v0 = urteil(klon());
-    if (v0.length) fehler.push("der grüne Befund fällt rot: " + v0.join(" · "));
-    console.log(`  ${v0.length ? "❌" : "✅"} Selbsttest grün → ${v0.join(" · ") || "grün"}`);
     const faelle = [
+        ["der grüne Befund", () => {}],
         [
             "der Cull-Gang in Ruhe (die Basis)",
             (b) => Object.assign(b.ruhe.takte.archCull, { summe: 105360, mittel: 3512, max: 3512, mitArbeit: 30 }),
@@ -526,8 +522,7 @@ function selbsttest() {
         ["die Ankunft gleitet, die Welt steht (die Basis)", (b) => (b.fixWach = "Gleite"), /stehend — Gleite/],
         ["die Sonde ohne Bestand", (b) => (b.sonde.vor = "Rinde baum_tanne"), /SONDE: .* trifft Rinde/],
     ];
-    taeterFaelle(faelle, urteil, { fehler, klon });
-    selbsttestEnde(fehler);
+    selbsttestEnde(taeterFaelle(faelle, urteil, { gruen }));
 }
 
 // (K4) DIE TAT BLEIBT (feld.K4, `--tat`): an der Mess-Wiese fällt der Spieler mit dem echten Verb (tryMouseBreak) zehn Bäume

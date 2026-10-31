@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_vegetation_streu {
     // ===== ATLAS · Vegetation/streu — Gebackene Regionen · Streu-Zellen · Streu-Streaming =====
     // ═══ DIE FELDER DER STREU ═══

@@ -33,7 +33,7 @@
 //   node scripts/diag-ankunft.cjs [--selftest]          Port: ANKUNFT_PORT (Standard 4601)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, ROOT } = require("./lib/welt-boot.cjs");
 const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.ANKUNFT_PORT || 4601);
@@ -402,7 +402,11 @@ function wand(quelle) {
     ];
 }
 
-const server = statikServer();
+// LS: die Dateien der späten Module hält der Server, bis die Takte vor ihrem Laden liefen (`frei`; der Zeuge ist welt-boots)
+const SPAET_DATEIEN = stammLib.spaeteVon(stammLib.karteVon(ROOT));
+let frei;
+const freigabe = new Promise((f) => (frei = f));
+const server = statikServer({ wandle: (p, roh) => (SPAET_DATEIEN.has(p.slice(1)) ? freigabe.then(() => roh) : roh) });
 
 // ── DIE PROBEN IN DER SEITE (r = die Welt). ──
 async function probe(arg) {
@@ -2012,6 +2016,14 @@ hauptLauf(async () => {
         })
     );
     await server.zeige(page, 30000);
+    // LS: Boot und 40 Takte über 8 s Spielzeit vor dem Laden der späten Module, die Probe-Frage, dann gibt der Server sie frei
+    await page.waitForFunction(() => r?._gameLoopTick, { timeout: 120000 });
+    const sieht = await page.evaluate(() => {
+        for (let i = 0; i < 40; i++) r._gameLoopTick(performance.now() + i * 200);
+        void r.__zeuge;
+        return window.__vorSpaet.has("__zeuge");
+    });
+    frei();
     // Der KI-Endpunkt der D6-Probe: ein Port, auf dem nichts lauscht.
     const out = await page.evaluate(probe, { kiPort: PORT + 3 });
     await browser.close();
@@ -2047,6 +2059,7 @@ hauptLauf(async () => {
     zeige("L2b", "„hilfe\" nennt die EINEN Tafeln und die Tasten", out.hilfe, hilfeVerdict, (m) => Object.entries(m.antworten || {}).map(([w, z]) => `„${w}": ${z.unbekannt ? "unbekannt" : `${(z.fehlt || []).length} fehlen`}`).join(" · "));
     zeige("L3", "Enter öffnet das Gespräch, Enter sendet und gibt die Welt zurück, Enter auf einem Knopf gehört dem Knopf", out.gespraech, gespraechVerdict, (m) => `Enter → ${m.enterFokus} · gesendet ${m.gesendet} · danach ${m.nachSenden} · W ${m.wNachSenden} · Esc → ${m.nachEsc} · Enter auf dem Knopf → ${m.enterAufKnopf}`);
     zeige("L7", "der Start-Gurt liest den Katalog (je Studio-Art ein Werk)", out.gurt, gurtVerdict, (m) => `${(m.hotbar || []).filter(Boolean).join(" · ")} (Arten im Katalog: ${(m.katalogArten || []).join(", ")})`);
+    check("LS der Zeuge sieht vor dem Laden der späten Module", sieht, [...SPAET_DATEIEN].join(", "));
     console.log("=== LK — DIE KAMERA UND DER BAUM ===");
     zeige(
         "LK",

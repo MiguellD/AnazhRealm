@@ -435,7 +435,6 @@ function selbsttest() {
     const fehler = [];
     const g = urteil(gruen);
     if (g.length) fehler.push("der grüne Befund fällt rot: " + g.join(" · "));
-    const klon = () => JSON.parse(JSON.stringify(gruen));
     const faelle = [
         ["Spiegel-Drift", (b) => (b.spiegel[0].felder.tri = false), /SPIEGEL: Chunk 0,0 .*tri weicht ab/],
         ["kein Spiegel", (b) => (b.spiegel = []), /SPIEGEL: kein Chunk/],
@@ -612,7 +611,7 @@ function selbsttest() {
             /RECHENWERK: .* 0\.31 an 400/,
         ],
     ];
-    taeterFaelle(faelle, urteil, { fehler, klon });
+    taeterFaelle(faelle, urteil, { fehler, gruen });
     selbsttestEnde(fehler);
 }
 

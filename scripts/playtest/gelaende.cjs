@@ -1592,7 +1592,7 @@ async function checkBandWelleC3CellularReaction({ page, check }) {
         res.t3DcConstants
     );
     // T4: der Wasser-Automat-Kern — Wasser fliesst (Option A).
-    check("T4 (Wasser-CA): keine Schöpfung + begrenzter Decay-Schwund (V18.93)", res.t4Conserves);
+    check("T4 (Wasser-CA): keine Schöpfung + begrenzter Decay-Schwund", res.t4Conserves);
     check("T4 (Wasser-CA): das Wasser FLIESST — ein Blob fällt (Schwerpunkt sinkt)", res.t4Flows);
     // T4a-2 — in die Welt verdrahtet (reaktive Schicht + Welt-Tick + cross-chunk-wake + Carve-Wake).
 }

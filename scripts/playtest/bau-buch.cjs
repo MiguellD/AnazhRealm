@@ -1176,10 +1176,10 @@ async function checkBandWave4({ page, check, errors, finalState }) {
         check("Welle 4 P2: compound_has_tag erkennt hohe Resonanz", wave4p2Results.condResonatesHigh);
         check("Welle 4 P2: compound_has_tag respektiert Schwellwert", wave4p2Results.condResonatesAboveSig);
         check("Welle 4 P2: compound_has_tag unbekanntes Tag → false", wave4p2Results.condUnknownTagFalse);
-        check("Welle 4 P2 (V17.91): die Tags-Zeile erscheint im Stats-Panel", wave4p2Results.uiTagsSection);
+        check("Welle 4 P2: die Tags-Zeile erscheint im Stats-Panel", wave4p2Results.uiTagsSection);
         check("Spec-Sheet: das Stats-Panel rendert das Material-Profil (Balken)", wave4p2Results.uiTagsHasRows);
         check(
-            "Welle 4 P2 (V17.91): die FORMEN-Palette bietet helix als ziehbare Karte",
+            "Welle 4 P2: die FORMEN-Palette bietet helix als ziehbare Karte",
             wave4p2Results.uiShapeIncludesHelix
         );
     }
@@ -1374,7 +1374,7 @@ async function checkBandWave4({ page, check, errors, finalState }) {
         check("Welle 4 P3: WORLD_EFFECT_THRESHOLDS frozen", wave4p3Results.thresholdsFrozen);
         check("Welle 4 P3: Stein erlaubt nur subtractive Ops", wave4p3Results.steinSubtractiveOnly);
         check(
-            "Welle 4 P3 (V7.72): computePartPrecision = Hybrid min+(max−min)×0.7^N (Etappe 3a)",
+            "Welle 4 P3: computePartPrecision = Hybrid min+(max−min)×0.7^N (Etappe 3a)",
             wave4p3Results.precisionIsHybrid
         );
         check("Welle 4 P3: Default-Präzision 0.4 ohne opChain", wave4p3Results.precisionDefaultsTo04);
@@ -1393,10 +1393,10 @@ async function checkBandWave4({ page, check, errors, finalState }) {
         check("Welle 4 P3: Präzision moduliert Part-Farbe sichtbar", wave4p3Results.precisionVisibleTint);
         check("Spec-Sheet: das Stats-Panel rendert den Header (Identitaet)", wave4p3Results.uiStatsPanel);
         check("Spec-Sheet: der Readout zeigt die Qualitaet (.spec-q-label)", wave4p3Results.uiQualityRow);
-        check("Welle 4 P3 (V17.91): die WERKZEUGE-Palette existiert (Drag-Quelle)", wave4p3Results.uiToolPalette);
-        check("Welle 4 P3 (V17.91): die Palette hat ziehbare Werkzeug-Karten (≥1, Hand)", wave4p3Results.uiToolCards);
+        check("Welle 4 P3: die WERKZEUGE-Palette existiert (Drag-Quelle)", wave4p3Results.uiToolPalette);
+        check("Welle 4 P3: die Palette hat ziehbare Werkzeug-Karten (≥1, Hand)", wave4p3Results.uiToolCards);
         check(
-            "Welle 4 P3 (V17.91): in schöpfer erscheinen die Werkstatt-Prozesse als ziehbare Station-Karten",
+            "Welle 4 P3: in schöpfer erscheinen die Werkstatt-Prozesse als ziehbare Station-Karten",
             wave4p3Results.uiStationCards
         );
         check("Welle 4 P3: Save persistiert playerTools", wave4p3Results.snapshotHasPlayerTools);
@@ -1566,9 +1566,9 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         check("Welle 5 B: Pyramide oben verstärkt Magieleitung räumlich", wave5bResults.tipBoostsMagic);
         check("Welle 5 B: Pyramide unten gibt KEINEN Top-Bonus", wave5bResults.bottomNoTipBoost);
         check("Welle 5 B: Helix am Rand hat at_outside", wave5bResults.helixAtOutside);
-        check("Welle 5 B (V17.91): der pointed-am-Rand-Bauplan trägt räumliche Tags", wave5bResults.uiSpatialRow);
+        check("Welle 5 B: der pointed-am-Rand-Bauplan trägt räumliche Tags", wave5bResults.uiSpatialRow);
         check(
-            "Welle 5 B (V17.91): die räumliche Emergenz diskriminiert die Form (pointed ≠ atomar)",
+            "Welle 5 B: die räumliche Emergenz diskriminiert die Form (pointed ≠ atomar)",
             wave5bResults.uiSpatialDiscriminates
         );
         check("Welle 5 B: DSL compound_has_spatial_tag erkennt verstärkte Magie", wave5bResults.dslSpatialCondHigh);
@@ -1877,12 +1877,12 @@ async function checkBandWave5({ page, check, errors, finalState }) {
         check("Welle 5 A: removeConnectionFromBlueprint entfernt", wave5aResults.removeOk);
         check("Welle 5 A: DSL-Connection persistiert in state", wave5aResults.dslConnectionPersisted);
         check("Welle 5 A: Save traegt connections im Snapshot", wave5aResults.saveCarriesConnections);
-        check("Welle 5 A (V17.91): Connect-Modus existiert in der Top-Leiste", wave5aResults.uiConnectMode);
+        check("Welle 5 A: Connect-Modus existiert in der Top-Leiste", wave5aResults.uiConnectMode);
         check(
-            "Welle 5 A (V17.91): der Connect-Typ-Popover öffnet im 3D (zwei Parts → Typ wählen)",
+            "Welle 5 A: der Connect-Typ-Popover öffnet im 3D (zwei Parts → Typ wählen)",
             wave5aResults.uiConnectPopover
         );
-        check("Welle 5 A (V17.91): das Popover bietet Verbindungs-Typen", wave5aResults.uiConnectTypeButtons);
+        check("Welle 5 A: das Popover bietet Verbindungs-Typen", wave5aResults.uiConnectTypeButtons);
         check("Welle 5 A: Schwache Verbindung traegt workshop-conn-weak class", wave5aResults.weakClassApplied);
     }
 
@@ -2600,7 +2600,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
         );
         check("Welle 9c: alle haben role='workshop-station'", wave9cResults.allHaveRole);
         check(
-            "Welle 9c→S7-B (V17.67): die bediente Domäne EMERGIERT aus der Substanz (esse→forging, brennkolben→alchemy, webstuhl→textile, altar→soulwork, drehbank→mechanism); kein hardcoded workshopDomain-Feld mehr",
+            "Welle 9c→S7-B: die bediente Domäne EMERGIERT aus der Substanz (esse→forging, brennkolben→alchemy, webstuhl→textile, altar→soulwork, drehbank→mechanism); kein hardcoded workshopDomain-Feld mehr",
             wave9cResults.esseForging &&
                 wave9cResults.brennkolbenAlchemy &&
                 wave9cResults.webstuhlTextile &&

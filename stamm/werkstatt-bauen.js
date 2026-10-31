@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_werkstatt_bauen {
     // ===== ATLAS · Werkstatt/bauen — Spec-Blatt · Paletten · Rezept-Panel · Kosten-Tore · Bau-Modus · Tastenbelegung =====
     // DER WECKER: ein Wartender (`wer`) hängt `fn(ok)` GENAU EINMAL an eine Zusage (Zug, Buch `f.buchDa` oder Karte) — kein

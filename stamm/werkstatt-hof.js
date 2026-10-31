@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_werkstatt_hof {
     // ===== ATLAS · Werkstatt/hof — Ich- und Hof-Räume · Ausrüstungs-UI · Rezeptbuch · Hof-Bühne =====
     // W-C(a) (R-005) — der PREIS lesbar: die Stat-FOLGE einer Rüstung („+8.1

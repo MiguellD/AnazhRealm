@@ -190,9 +190,6 @@ function selbsttest() {
     };
     const klon = () => JSON.parse(JSON.stringify(gruen));
     const fehler = [];
-    const v0 = urteil(klon());
-    if (v0.length) fehler.push("der grüne Befund fällt rot: " + v0.join(" · "));
-    console.log(`  ${v0.length ? "❌" : "✅"} Selbsttest grün → ${v0.join(" · ") || "grün"}`);
     // der echte Loop unter langsamem Takt: das Licht dreht in jedem Frame (die Sonne läuft schneller als eine Stufe je Frame),
     // die Kaskaden mit Box halten ihre Wahl über den Licht-Rand — grün
     const randSonne = (arbeitFrames, lichtRand) =>
@@ -553,6 +550,7 @@ function selbsttest() {
     });
     const churnPhase = () => SICHT.sichtPhase(Array.from({ length: 6 }, churnFrame), 1);
     const faelle = [
+        ["der grüne Befund", () => {}],
         [
             "Stand-Churn ohne Ursache in Ruhe (der Täter der Gegenprüfung)",
             (b) => (b.ruhe = churnPhase()),

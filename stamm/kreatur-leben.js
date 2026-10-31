@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_kreatur_leben {
     // ===== ATLAS · Kreatur/leben — Spawn · Stats · Tod · Fauna-Zyklus · Serialisierung =====
     // ### Kreaturen ### V7.42

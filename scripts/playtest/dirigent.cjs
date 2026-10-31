@@ -1678,7 +1678,7 @@ async function checkBandReglerSim({ page, check }) {
     const f2 = (v) => (typeof v === "number" ? +v.toFixed(3) : v);
     const s1 = o.s1 || { a: {}, b: {} };
     check(`Regler-Sim S1 schwache GPU: der Regler DROSSELT und KONVERGIERT, das Studio-Regime baut nie neu (loadScale ${f2(s1.a.loadScale)}, Dichte ${f2(s1.a.density)})`, o.s1Throttled && o.s1Converged && o.s1NoRebuildLoop && o.s1EffectiveDensityOne, JSON.stringify(s1).slice(0, 160));
-    check(`Regler-Sim S2/S3: Rückstau → Stream-Budget MAX (V18.282), starke GPU → alles wächst zurück (${o.s3 ? f2(o.s3.loadScale) + "/" + f2(o.s3.density) : "?"})`, o.s2StreamSacred === true && o.s3Recovered === true);
+    check(`Regler-Sim S2/S3: Rückstau → Stream-Budget MAX, starke GPU → alles wächst zurück (${o.s3 ? f2(o.s3.loadScale) + "/" + f2(o.s3.density) : "?"})`, o.s2StreamSacred === true && o.s3Recovered === true);
     check(`Regler-Sim S4 Session-Zeit-Invarianz: identischer Input früh vs +2400 Frames ⇒ identische Stellgrößen (maxΔ ${o.s4MaxDrift})`, o.s4Invariant === true);
     check(
         "Regler-Sim S5 Geräte-Seed: stark 1 · schwach 0,45 · mittel 0,7, auf 4K derselbe Seed; der frische Sense-Init startet am Seed, headless byte-alt",

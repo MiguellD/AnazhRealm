@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_bau_teile {
     // ===== ATLAS · Bau/teile — Teil-Geometrie · Varianten-Bauer · Affordanz · Validierung =====
     // ### Welle 2 B/C — Bauplan-Validierung + Schöpfungs-Pfad ###

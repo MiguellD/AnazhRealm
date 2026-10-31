@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_netz_portal {
     // ===== ATLAS · Netz/portal — Portal-Eintritt · Ko-Präsenz · Dwelling · Portal-Server =====
     // Säubert portalMeta. world muss ein same-origin relativer worlds/-Pfad

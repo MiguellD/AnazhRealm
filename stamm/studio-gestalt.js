@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_studio_gestalt {
     // ===== ATLAS · Studio/gestalt — Foundry-Gestalt · Gruppen · Bibliothek · Bereitschaft =====
     // DER GEFÜHLTE BAUM DER GESTALT (K20): zeichnet das Studio einen Baum oder Strauch (Rezept-Art tree/shrub), wächst sein

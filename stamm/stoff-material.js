@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_stoff_material {
     // ===== ATLAS · Stoff/material — Uniform-Heimat · PBR-Knoten · Substanz-Antwort · Gras-Stoff und Wind · Stoff-Regler =====
     // DER HALM-STOFF (w4-wiese-nah, phyto-core HALM_GESETZ): jedes Studio-Gras (die Nah-Wiese, ein gesetztes Gras) liest sein

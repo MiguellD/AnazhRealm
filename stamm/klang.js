@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_klang {
     // ===== ATLAS · Klang — Lofi-Symphonie · Umwelt-Klang · Resonanz-Pings =====
     // ### anazhSymphony ###

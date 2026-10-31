@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_studio_stoff {
     // ===== ATLAS · Studio/stoff — Foundry-Stoff · EIN Graph je Signatur · Stoff-Wert · Krone · Haut · Durchsicht · Leucht-Gesetz · die Stufen-Maske =====
     // Das per-Ziegel-March-Material ist GEFALLEN (DER EINE WELT-MARCH): der

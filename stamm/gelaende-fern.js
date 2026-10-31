@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_gelaende_fern {
     // ===== ATLAS · Gelaende/fern — Fern-Ring · Fern-Wasser · Ring-Pflege =====
     // Entfernt Voxel-Chunks, die zu weit vom Spieler sind (Manhattan-

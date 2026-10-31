@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_koerper_fahrt {
     // ===== ATLAS · Koerper/fahrt — Mensch-Avatar · Sitz · Fahrzeug · Ritt =====
     // (ABSCHIEDS-WELLE: der Marker sass am geschnittenen `_buildLimb` — der Zonen-Anker

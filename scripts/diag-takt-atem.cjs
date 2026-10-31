@@ -24,7 +24,7 @@
 //   node scripts/diag-takt-atem.cjs [--selftest]   (npm run gate:takt-atem)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, abwandlung } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, abwandlung, wandEnde } = require("./lib/welt-boot.cjs");
 
 const SOLL = { dichte: 0.1, stand: 0.1, lage: 0.1 };
 
@@ -326,15 +326,12 @@ function atem() {
         process.exit(1);
     }
     const v = urteil(out);
-    if (v.length) {
-        console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
-        for (const s of v) console.log("   • " + s);
-        process.exit(1);
-    }
-    const k = out.kopf;
-    console.log(
-        `\n✅ GRÜN — unter atmendem Regler (${k.takte} gezählte Takte auf stehenden Stufen 1 → 0,1 → 1) wechselt die Dichte in ${pz(k.dichteJeTakt)} ` +
+    wandEnde(v, () => {
+        const k = out.kopf;
+        return (
+            `unter atmendem Regler (${k.takte} gezählte Takte auf stehenden Stufen 1 → 0,1 → 1) wechselt die Dichte in ${pz(k.dichteJeTakt)} ` +
             `der Takte, die Stufen-Wahl geht ${k.archLodJeTakt} von ${k.bestand} Einträgen je Takt, die Lage des Hauptbilds fällt in ` +
             `${pz(k.lageJeTakt)} der Takte; die stoßende Dichte der Gegenprobe fällt als DICHTE ATMET.`
-    );
+        );
+    });
 })();

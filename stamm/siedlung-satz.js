@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_siedlung_satz {
     // ===== ATLAS · Siedlung/satz — Bau-Satz · Satz-Kern · Bau setzen · Fundament · Katalog · Arten-Substanz · Inseln =====
     // ═══ DER BAU-SATZ (Welle 6) ═══

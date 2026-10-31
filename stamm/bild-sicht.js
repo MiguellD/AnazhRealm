@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_bild_sicht {
     // ===== ATLAS · Bild/sicht — Szene-Tiefe · Spiegel · Feld-Pass · Panorama · Höhlen-Sicht =====
     // DIE EINE SZENEN-TIEFE: Wasser (bis V18.529 der Modul-Knoten der linearen Tiefe) und Feld-Pass (ein zweiter

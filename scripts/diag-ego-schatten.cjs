@@ -143,7 +143,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const { statikServer, starteBrowser, laufUhr } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, wandEnde } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -577,16 +577,13 @@ function buehne(arg) {
         process.exit(1);
     }
     const v = urteilJeStufe(out);
-    if (v.length) {
-        console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
-        for (const s of v) console.log("   • " + s);
-        process.exit(1);
-    }
-    const [g, f] = [out.grob, out.fein];
-    console.log(
-        `\n✅ GRÜN — in der Ego-Sicht wirft der Leib Schatten am Boden, grob ${g.kopf.ego.wurf} px (IoU ${g.kopf.iou}) und fein ` +
+    wandEnde(v, () => {
+        const [g, f] = [out.grob, out.fein];
+        return (
+            `in der Ego-Sicht wirft der Leib Schatten am Boden, grob ${g.kopf.ego.wurf} px (IoU ${g.kopf.iou}) und fein ` +
             `${f.kopf.ego.wurf} px (IoU ${f.kopf.iou}) gegen dieselbe Pose in der 3rd-Person; die Haupt-Kamera sieht 0 Bildpunkte Leib, ` +
             `kein Leib-Mesh liegt auf Ebene 0; das Gerät bleibt auf Ebene 0, ein Zwilling in den Kaskaden, 3rd gibt jede Maske zurück, ` +
             `visible wechselt nie; je Stufe fallen die ${f.gegenprobe.length} Gegenproben beim Namen (${f.gegenprobe.map((x) => x.soll).join(" · ")}).`
-    );
+        );
+    });
 })();

@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_wasser_hydro {
     // ===== ATLAS · Wasser/hydro — Hydrosphäre · Flüsse · Seen · Wasserfälle · Pegel · die Wasser-Wahrheit =====
     // DIE KLETTERWAND (Prüfung 2 K02a, gate:fall-waechter „Wolf läuft in die Wand"): steht ein Leib mit der Wurzel bei (x, z)

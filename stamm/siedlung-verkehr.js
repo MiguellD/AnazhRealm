@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_siedlung_verkehr {
     // ===== ATLAS · Siedlung/verkehr — Wagen · Fahrer · Spur · Kreuzung · Wende · Platz =====
     // ═══ DER VERKEHR (PFLICHT-OFFEN C, gesetzt 25.10.): Wagen mit Bewohnern am Steuer auf den Trassen der Stadt ═══

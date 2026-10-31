@@ -109,9 +109,9 @@ function karte(...T) {
 const PLATZ = "stamm/0.js"; // EIN Tag hält im Rahmen den Platz des Blocks, ?v=0.0.0 den des Stempels
 function stempelDatei(...T) {
     const v = drei(...T.map((t) => (t.match(STEMPEL) || [""])[0].slice(3)), "?v=");
-    const tags = T.map((t) => stamm.tagsVon(t).map((x) => x.pfad));
+    const tags = T.map((t) => stamm.tagsVon(t).map(({ pfad, spaet }) => ({ pfad, spaet })));
     const m = textMerge(...[1, 0, 2].map((i) => (tags[i].length ? stamm.tagsSetzen(stempeln(T[i], "0.0.0"), [PLATZ]) : stempeln(T[i], "0.0.0"))));
-    const r = liste(...tags, (p) => p);
+    const r = liste(...tags, (e) => e.pfad);
     const z = m.text.split("\n").map((x) => ((stamm.tagsVon(x)[0] || {}).pfad === PLATZ ? stamm.tagsSetzen(x, r.a) : x));
     return { a: v.a ? stempeln(z.join("\n"), v.a) : z.join("\n"), streit: [...v.streit, ...r.streit], n: m.n };
 }

@@ -1400,7 +1400,7 @@ async function checkBandV18194Gamma6Befoerderung({ page, check }) {
     check("Γ6 (G3e) Worker-Snapshot trägt hydroBand (Cell-Klassifikations-Skip)", res.hydroBandPresent === true);
     // (G4) ARCH-WATER-SOLID
     check(
-        `Γ6 (G4a) ARCH-SOLIDITY: Architekturen mit blockerAABBs (${res.archWithBlockers}/${res.archSeen} ≥ 30 %, V13.10)`,
+        `Γ6 (G4a) ARCH-SOLIDITY: Architekturen mit blockerAABBs (${res.archWithBlockers}/${res.archSeen} ≥ 30 %)`,
         res.archMostlyHaveBlockers === true || res.archMostlyHaveBlockers === "skipped-no-archs"
     );
 }

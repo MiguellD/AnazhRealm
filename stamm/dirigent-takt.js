@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_dirigent_takt {
     // ===== ATLAS · Dirigent/takt — die Spielschleife · Frame-Planer · Fixed-Step · Replay =====
     startEternalLoop() {
@@ -187,11 +188,14 @@ class AnazhRealm_dirigent_takt {
 
                     // ### Schicht 1 — IQ-Ticks ###
                     // Pfad-Bucket-Sample (alle 2 s), Activity-Sample (jeden Frame), Keyword-Window-Cleanup (60 s),
-                    // pending Outcomes finalisieren (5 s nach Programm-Lauf: Emotion/Activity-Delta).
-                    this.samplePathBuckets(currentTime);
-                    this.samplePlayerActivity(currentTime);
-                    this.pruneRecentKeywords(currentTime);
-                    this.finalizePendingOutcomes(currentTime);
+                    // pending Outcomes finalisieren (5 s nach Programm-Lauf: Emotion/Activity-Delta) — die KI ist ein spätes
+                    // Modul (Feld/nexus): sie taktet ab ihrer Ankunft (`_spaetDa`, `_spaetLaden`)
+                    if (this._spaetDa) {
+                        this.samplePathBuckets(currentTime);
+                        this.samplePlayerActivity(currentTime);
+                        this.pruneRecentKeywords(currentTime);
+                        this.finalizePendingOutcomes(currentTime);
+                    }
 
                     // ### Kreaturen, Wetter, Wachstum ### (V9.44-f → _loopWeatherAndGrowth)
                     this._loopWeatherAndGrowth(delta);
@@ -1107,7 +1111,7 @@ class AnazhRealm_dirigent_takt {
             // V18.112 — E4-KRISTALL+E5: am selben Takt prüft der Nexus, ob eine
             // wiederholt bewährte Geste zum GESETZ kristallisiert (cooldown-
             // gegated; läuft durch die Queue → zahlt am Wirk-Tor wie alles).
-            if (typeof this._crystallizeGestureRule === "function") this._crystallizeGestureRule(currentTime);
+            if (this._spaetDa) this._crystallizeGestureRule(currentTime); // der Nexus ist spät (Feld/nexus)
             // E3 (gigant-plan §5 — Mana-Symmetrie): MANA regeneriert am SELBEN
             // 5-s-Takt — schneller, wo der Spieler magie-leitend IST (statTags)
             // ODER auf magie-leitendem Feld steht (auraAt — das Feld speist).

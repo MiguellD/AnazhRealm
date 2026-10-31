@@ -17,7 +17,7 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const { linsenWebGpuArgs, linsenWebglArgs, echteWebGpuArgs, adapterZeile, zeitZeile } = require("./software-gpu.cjs");
-const { ohneKommentare, ast, wandere, zeileVon } = require("./stamm.cjs");
+const { ohneKommentare, ast, wandere, zeileVon, karteVon, spaeteVon, pfadVon } = require("./stamm.cjs");
 
 // DER EINE SCHLAF (`await sleep(ms)`): in Node der Export, in jeder Seite derselbe Text als `window.sleep` (`WARTEN_SEITE`) —
 // eine Probe schläft in beiden Welten mit demselben Ruf, ein eigenes `new Promise((r) => setTimeout(r, ms))` ist ein Zwilling
@@ -196,7 +196,35 @@ function png(u8, W, H) {
 const bundlesNeu = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
 const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
-const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
+// DIE WAND DER SPÄTEN MODULE (Pflicht-OFFEN B): in jeder Seite des Null-Renderers steht ein Zeuge am Ende der Prototyp-Kette des
+// Wirts und seiner Klasse — bis zum Erwachen (`erwacht`, samt der späten Module, `_spaetLaden`) merkt er jede Frage nach einem
+// Namen, den der Wirt nicht trägt (`__vorSpaet`); ein Name eines Moduls, das die Karte `spät` nennt, ist ROT beim Namen (der
+// EINE Sammler). Dann fällt er. Eine Zeit-Linse fährt ihn nie (ihr Boot ist die Messung); gate:ankunft hält die späten Dateien
+// der Karte für 40 Takte vor ihrem Laden.
+const KARTE = karteVon(path.resolve(__dirname, "..", ".."));
+const SPAET = Object.fromEntries(Object.entries(KARTE.mod).filter(([, s]) => spaeteVon(KARTE).has(pfadVon(s))).map(([n, s]) => [n.replace("AnazhRealm.", ""), s]));
+function spaetZeuge(spaet) {
+    const gefragt = (window.__vorSpaet = new Set());
+    let wirt;
+    Object.defineProperty(window, "anazhRealm", {
+        configurable: true,
+        get: () => wirt,
+        set(v) {
+            if (!wirt && window.__anazhHeadlessNullRenderer && v.constructor.name === "AnazhRealm") {
+                const ketten = [[Object.getPrototypeOf(v), Object.prototype], [v.constructor, Function.prototype]];
+                for (const [z, b] of ketten) Object.setPrototypeOf(z, new Proxy(b, { get: (t, k, e) => (typeof k === "string" && gefragt.add(k), Reflect.get(t, k, e)) }));
+                queueMicrotask(() =>
+                    Promise.resolve(v.erwacht).then(() => {
+                        for (const [z, b] of ketten) Object.setPrototypeOf(z, b);
+                        for (const n of gefragt) if (spaet[n]) console.error(`SPÄT-WAND: ${n} (${spaet[n]}) vor dem Laden seines Moduls gefragt`);
+                    })
+                );
+            }
+            wirt = v;
+        },
+    });
+}
+const CODE_OF_SEITE = `(${spaetZeuge})(${JSON.stringify(SPAET)}); window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");
 // DER STUDIO-KERN in Node: three-r128 (einmal je Prozess — die Kerne bauen gegen das globale THREE) und der Kern `datei` (ab
@@ -878,6 +906,7 @@ async function warteAufWelt(page, frist = 120000) {
     await page.waitForFunction(() => r && typeof r._gameLoopTick === "function", {
         timeout: frist,
     });
+    await page.evaluate(() => r.erwacht); // samt der späten Module (`_spaetLaden`, Pflicht-OFFEN B)
 }
 
 // Eine Taste HALTEN, bis `ziel` auf `seite` (Page oder Frame) wahr wird — nie nach der Wanduhr (gate:apparat Klinge 5); `taste`
@@ -992,15 +1021,16 @@ function pruefer() {
 }
 
 // DAS ENDE EINER WAND: das EINE Urteil (`urteilEnde`) über die gesammelten Verletzungen — ROT mit Exit 1 und jeder
-// Verletzung beim Namen, sonst der Grün-Satz mit Exit 0 (kein `process.exit(0)` danach).
+// Verletzung beim Namen, sonst der Grün-Satz mit Exit 0 (kein `process.exit(0)` danach); ein Satz als Funktion liest erst im Grün.
 function wandEnde(errs, satz) {
-    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`, "\n✅ GRÜN — " + satz);
+    urteilEnde(errs.length, `\n❌ ROT — ${errs.length} Verletzung(en): ${errs.join(" · ")}`, () => "\n✅ GRÜN — " + (satz.call ? satz() : satz));
 }
 
 // DIE TÄTER-FÄLLE eines Selbsttests ohne Browser: je Fall `[name, tat, muss]` (die Tat an einem frischen `klon()`) oder
 // `{ name, z, muss }` das Urteil; jedes `muss` (ein Muster oder eine Liste) trifft einen Befund, `null` verlangt keinen — sonst steht
-// der Fall beim Namen in `fehler`. `selbsttestEnde` schließt: ROT mit Exit 1, sonst der Grün-Satz.
-function taeterFaelle(faelle, urteil, { fehler = [], klon } = {}) {
+// der Fall beim Namen in `fehler`; ohne `klon` ist der Klon der Fälle eine Kopie von `gruen`. `selbsttestEnde` schließt: ROT mit Exit 1,
+// sonst der Grün-Satz.
+function taeterFaelle(faelle, urteil, { fehler = [], gruen, klon = () => JSON.parse(JSON.stringify(gruen)) } = {}) {
     for (const f of faelle) {
         const [name, tat, muss] = Array.isArray(f) ? f : [f.name, null, f.muss];
         const z = tat ? klon() : f.z;
@@ -1385,6 +1415,7 @@ async function selbsttest() {
             "<!doctype html><script>function __stallSchleife(){var e=performance.now()+9000;while(performance.now()<e){}}setTimeout(__stallSchleife,300)</script>",
         "/haenger.html": "<!doctype html><script>window.__nie=function(){return new Promise(function(){})}</script>",
         "/wirft.html": "<!doctype html><script>setTimeout(function(){throw new Error('__seitenWurf')},50)</script>",
+        "/spaet.html": `<!doctype html><script>__anazhHeadlessNullRenderer = 1; class AnazhRealm {} const a = (anazhRealm = new AnazhRealm()); a.erwacht = sleep(50); void a.${Object.keys(SPAET)[0]};</script>`,
     };
     const server = statikServer({ seiten });
     await server.lausche(0);
@@ -1460,8 +1491,11 @@ async function selbsttest() {
     const kontext = await browser.createBrowserContext();
     await server.zeige(await kontext.newPage(), undefined, "wirft.html", "load");
     await sleep(400);
+    await server.zeige(await browser.newPage(), undefined, "spaet.html", "load");
+    await sleep(400);
     const wurf = sammlung.fehler.filter((f) => f.includes("__seitenWurf"));
-    sammlung.fehler = sammlung.fehler.filter((f) => !wurf.includes(f));
+    const spaet = sammlung.fehler.filter((f) => f.includes("SPÄT-WAND"));
+    sammlung.fehler = sammlung.fehler.filter((f) => !wurf.includes(f) && !spaet.includes(f));
     const code = fs
         .readdirSync(path.join(ROOT, "scripts"), { recursive: true })
         .map((f) => f.replace(/\\/g, "/"))
@@ -1586,6 +1620,7 @@ async function selbsttest() {
             `eigene Welt-Wechsel neben weltTor (der Zeiger von Hand): ${tueren} (DATENSCHICHT ${DATENSCHICHT}) · gepflanzt ${gesetzt}/2 gefasst`,
         ],
         [ruhig.length === 0, `ruhig (0,8 s Block): keine Akte — ${ruhig.length ? ruhig[0].urteil : "keine"}`],
+        [spaet.length === 1 && spaet[0].includes(`SPÄT-WAND: ${Object.keys(SPAET)[0]} (`), `die späten Module: ${spaet[0] || "KEIN Täter"}`],
         [
             schleife.length > 0 &&
                 /^JS-SCHLEIFE/.test(schleife[0].urteil) &&

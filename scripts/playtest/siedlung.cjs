@@ -915,7 +915,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         check("Ring 6.6: Werkstatt-Tab in Topbar", ring66Results.workshopTabInDom);
         check("Ring 6.6: Werkstatt-Drawer im DOM", ring66Results.workshopDrawerInDom);
         check(
-            "Ring 6.6 (V17.91): #workshop-stats-panel im DOM (intuitiver Readout, der Editor ist entfernt)",
+            "Ring 6.6: #workshop-stats-panel im DOM (intuitiver Readout, der Editor ist entfernt)",
             ring66Results.workshopStatsPanelInDom
         );
         check("Ring 6.6: createBlueprint legt neuen eigenen Bauplan an", ring66Results.createBlueprintOk);
@@ -1430,7 +1430,7 @@ async function checkBandLambda5MischwaldSynthese({ page, check }) {
         return out;
     });
     check(
-        "Λ.5 Mischwald (V18.257): 4 neue Baumarten leben in SPECIES_TAG_REFERENCE (birke/erle/buche/tanne — Form via Grammatik, statische Baupläne geschnitten)",
+        "Λ.5 Mischwald: 4 neue Baumarten leben in SPECIES_TAG_REFERENCE (birke/erle/buche/tanne — Form via Grammatik, statische Baupläne geschnitten)",
         res.fourNewSpecies === true
     );
     check(
@@ -1489,7 +1489,7 @@ async function checkBandWHWald({ page, check }) {
         return out;
     });
     check(
-        "W-H Wald (V18.257): die statischen Gestalt-Varianten sind GESCHNITTEN — die Tag-Wahrheit lebt in SPECIES_TAG_REFERENCE (eiche/kiefer), die Form-Vielfalt voll in der Grammatik",
+        "W-H Wald: die statischen Gestalt-Varianten sind GESCHNITTEN — die Tag-Wahrheit lebt in SPECIES_TAG_REFERENCE (eiche/kiefer), die Form-Vielfalt voll in der Grammatik",
         res.refTableHat
     );
     check(

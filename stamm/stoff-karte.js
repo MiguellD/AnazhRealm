@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_stoff_karte {
     // ===== ATLAS · Stoff/karte — Der EINE Karten-Atlas · die Karte backt in der Welt, je Takt ein Hebungs-Ring · GPU-Ablage: deckungstreue Mips und der Saum der Art =====
     // DER EINE KARTEN-ATLAS (W6): jede Impostor-Karte — Foundry-Art × Gestalt [× ov], gestreut und gesetzt — ist EINE

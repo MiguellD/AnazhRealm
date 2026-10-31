@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_bild_himmel {
     // ===== ATLAS · Bild/himmel — Tag-Nacht · Atmosphäre · Himmelskörper · Sterne · Saison · Regen =====
     // ### Physik ###

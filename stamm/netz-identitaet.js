@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_netz_identitaet {
     // ===== ATLAS · Netz/identitaet — Vibe-Pass · Signaturen · Bibliothek · Regionen · Pins und Hallen · Bann =====
     // ### Vibe-Pass: die souveräne Avatar-Identität ###

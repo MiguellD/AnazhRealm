@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_koerper_leib {
     // ===== ATLAS · Koerper/leib — Rig · Gang und IK · Ofen-Guss · Tier-Animation =====
     // Genom-Roller: aus EINEM Seed ein deterministisches Körper-Genom (Geschlecht · Statur · Muskel ·

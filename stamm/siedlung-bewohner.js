@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_siedlung_bewohner {
     // ===== ATLAS · Siedlung/bewohner — Bewohner · Tag · Wege · Tür · Gang im Satz =====
     // ═══ DIE BEWOHNER (Meisterkarte mensch.K1): der Plan des Fachwerk-Studios wird Leib ═══

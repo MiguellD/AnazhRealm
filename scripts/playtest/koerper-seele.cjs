@@ -800,7 +800,7 @@ async function checkBandV1772Library({ page, check }) {
         res.trankHonest && res.avatarHonest
     );
     check(
-        "A1 / V17.83 U4: die Rüstungs-Platte (stumpf) → Bauwerk (armor-Rolle = Intent-Override, V17.70); die Spitzhacke (spitz+gestreckt) → Gerät AUS DER FORM (U4 trennt Klinge vom Bauwerk)",
+        "A1 / V17.83 U4: die Rüstungs-Platte (stumpf) → Bauwerk (armor-Rolle = Intent-Override); die Spitzhacke (spitz+gestreckt) → Gerät AUS DER FORM (U4 trennt Klinge vom Bauwerk)",
         res.armorIsTwin && res.geraetIsImplement
     );
     check(
@@ -2066,7 +2066,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
             wave6dResults.computedHasTags && wave6dResults.computedHasStats
         );
         check(
-            "Welle 6.D: computed.stats hat alle 11 Werte als finite Zahlen (8 Basis + Kampf-Trio, V17.51)",
+            "Welle 6.D: computed.stats hat alle 11 Werte als finite Zahlen (8 Basis + Kampf-Trio)",
             wave6dResults.computedStatsHasAll
         );
         // Vision-Diskrimination (ALTLASTEN-NULL: Eigenschaften AUS dem Körper)
@@ -2097,7 +2097,7 @@ async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
         check("Welle 6.D: das Spec-Sheet rendert ohne Crash (V18.61 Ich-F)", wave6dResults.renderOk);
         if (wave6dResults.renderOk) {
             check(
-                "Welle 6.D: das Spec-Sheet trägt Werte-Balken (HP + Stats + Natur, V18.44/.57)",
+                "Welle 6.D: das Spec-Sheet trägt Werte-Balken (HP + Stats + Natur)",
                 wave6dResults.statRowsCount >= 6
             );
             check("Welle 6.D: das Spec-Sheet trägt Spalten-Köpfe (Werte/Natur)", wave6dResults.hasTagLine);

@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_werkstatt_hud {
     // ===== ATLAS · Werkstatt/hud — Drawer · Omnibox · Statusleiste · Regler-Räume · Konsole =====
     // ### Ring 1 – Grok-Stimme ###

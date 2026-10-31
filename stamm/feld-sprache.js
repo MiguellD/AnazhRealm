@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_feld_sprache {
     // ===== ATLAS · Feld/sprache — Chat → DSL · Emotionen · Wertung =====
     // ### Chat → DSL ###

@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_wasser_zellen {
     // ===== ATLAS · Wasser/zellen — Wasser-Zellen · Sheet · Iso · Wasser-CA · Stau =====
     // Cell-Feld: Uint8Array (0=air, 1=water, 2=solid), Index `i + k·dim + j·dim·dim`, deterministisch.

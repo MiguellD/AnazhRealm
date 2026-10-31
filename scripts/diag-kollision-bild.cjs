@@ -176,7 +176,6 @@ function selbsttest() {
         },
     };
     const fehler = urteil(gruen).map((x) => "grün: " + x);
-    const klon = () => JSON.parse(JSON.stringify(gruen));
     const Z = (b, k) => b.tempo.zeilen.find((z) => schluessel(z) === k);
     const Zs = (k, o) => (b) => Object.assign(Z(b, k), o);
     const T = (art, o) => (b) => b.zensus.taeter.push({ wer: "felsturm#174", ort: "-913.7/-900.7", art, ...o });
@@ -205,7 +204,7 @@ function selbsttest() {
             [(b) => delete b.tempo, /LEER: \(V\)/],
         ].map(([tat, muss]) => [muss.source, tat, muss]),
         urteil,
-        { fehler, klon }
+        { fehler, gruen }
     );
     selbsttestEnde(fehler);
 }

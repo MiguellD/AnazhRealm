@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_werkstatt_vorschau {
     // ===== ATLAS · Werkstatt/vorschau — Werkstatt-Vorschau · Gizmo · Prozesse · Ofen-Vorschau =====
     // V9.44-e — der Werkstatt-DOM-Builder ist ein Orchestrator. Vor V9.44-e

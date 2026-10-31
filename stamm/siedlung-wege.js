@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_siedlung_wege {
     // ===== ATLAS · Siedlung/wege — Wege-Karte · Kronen-Streu · Fluss-Karte · Boden-Decke · Tritt-Fläche · Zaun und Mauer =====
     // ═══ DIE WEGE-KARTE (V18.530): Siedlungs-Wege sind BODEN, kein Bauwerk ═══

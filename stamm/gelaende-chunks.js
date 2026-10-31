@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_gelaende_chunks {
     // ===== ATLAS · Gelaende/chunks — Voxel-Worker · Chunk-Bau · Streaming · Edits · Dirty-Remesh =====
     // Lazy-Singleton: spawnt den Voxel-Density-Worker (off-thread CPU, integriert

@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_werkstatt_sozial {
     // ===== ATLAS · Werkstatt/sozial — Welt-Info · Bibliothek · Feed · Wertungen · Kommentare =====
     // ### Welt-Tor ###

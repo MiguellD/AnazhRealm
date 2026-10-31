@@ -37,7 +37,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, wandEnde } = require("./lib/welt-boot.cjs");
 const SK = require("./lib/shader-kosten.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 
@@ -286,167 +286,54 @@ function selbsttest() {
         rahmenEnde: { ziele: 0, n: 0, mb: 0 },
         dunkel: { k1: 1, k4: 4, luma1: 8, luma4: 8, nachtFaktor: 1, lumaNacht: 6 },
     };
-    if (urteil(gruen).length) fehler.push("der grüne Lauf fällt rot: " + urteil(gruen).join(" · "));
-    const mit = (f) => {
-        const z = JSON.parse(JSON.stringify(gruen));
-        f(z);
-        return z;
-    };
     const faelle = [
-        {
-            name: "Direktpfad stürzt",
-            z: mit((z) => (z.schritte[1].fehler = ["TypeError: Invalid value used as weak map key"])),
-            muss: /Direktpfad — TypeError/,
-        },
-        {
-            name: "Direktpfad ohne Tiefe",
-            z: mit((z) => (z.schritte[1].tiefe = false)),
-            muss: /Direktpfad zeichnet ohne Tiefe/,
-        },
-        {
-            name: "Leinwand-Tiefe in der Kette",
-            z: mit((z) => (z.schritte[2].tiefe = true)),
-            muss: /trägt eine Leinwand-Tiefe/,
-        },
-        {
-            name: "GPU-Textur bleibt",
-            z: mit((z) => (z.schritte[2].leinwandTiefeGpu = true)),
-            muss: /GPU-Textur der Leinwand-Tiefe lebt/,
-        },
-        {
-            name: "Rahmen-Ziel bleibt nach dem Ausflug (0710-9: band nach zerlegen, +23,7 MB)",
-            z: mit((z) => (z.schritte[2].rahmenZiel = { ziele: 1, n: 2, mb: 23.73 })),
-            muss: /RAHMEN-ZIEL: Post-Kette zurück — 1 r184-Rahmen-Ziel\(e\) leben .*23\.7 MB in 2 Texturen — Rahmen-Ziel des Direktpfads/,
-        },
-        {
-            name: "Rahmen-Ziel am Ende",
-            z: mit((z) => (z.rahmenEnde = { ziele: 1, n: 0, mb: 0 })),
-            muss: /RAHMEN-ZIEL: am Ende .* 1 Ziel\(e\) ohne Textur/,
-        },
-        {
-            name: "Direktpfad ohne Rahmen-Ziel (blind)",
-            z: mit((z) => (z.schritte[1].rahmenZiel = { ziele: 0, n: 0, mb: 0 })),
-            muss: /RAHMEN-ZIEL: Direktpfad — r184 legte kein Rahmen-Ziel an/,
-        },
-        { name: "Rahmen-Ziel ungemessen", z: mit((z) => delete z.schritte[0].rahmenZiel), muss: /nicht gemessen/ },
-        {
-            name: "Drift: das Ziel bleibt ohne r184s Hörer",
-            z: mit((z) => (z.schritte[4].rahmenZiel = { ziele: 1, n: 2, mb: 0.88 })),
-            muss: /RAHMEN-ZIEL: Post-Kette nach Drift — 1 r184-Rahmen-Ziel/,
-        },
-        {
-            name: "Drift: der Abschied fällt still",
-            z: mit((z) => (z.drift.fehler = [])),
-            muss: /ohne r184s Hörer fiel der Abschied STILL/,
-        },
-        {
-            name: "Drift: kein r184-Hörer zu finden (Vendor-Drift)",
-            z: mit((z) => (z.drift.hoererWeg = 0)),
-            muss: /kein r184-Abschied .* die Probe ist blind/,
-        },
-        { name: "Drift-Probe fehlt", z: mit((z) => delete z.drift), muss: /die Drift-Probe lief nicht/ },
-        {
-            name: "ERROR von _rahmenZielAbschied außerhalb der Drift",
-            z: mit((z) => z.konsolenFehler.push("[AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied … (Vendor-Drift)")),
-            muss: /1 ERROR-Zeile\(n\) von `_rahmenZielAbschied` außerhalb der Drift-Probe/,
-        },
-        {
-            name: "der erzwungene Render-Fehler bricht still",
-            z: mit((z) => (z.konsolenFehler = z.konsolenFehler.filter((x) => !/STOFF:/.test(x)))),
-            muss: /WEICHE: der erzwungene Render-Fehler der Kette meldet 0× .*er bricht STILL/,
-        },
-        {
-            name: "der erzwungene Render-Fehler bricht doppelt",
-            z: mit((z) => z.konsolenFehler.push(z.konsolenFehler[0])),
-            muss: /WEICHE: der erzwungene Render-Fehler der Kette meldet 2× .*doppelt/,
-        },
-        {
-            name: "ein fremder Stoff-Bruch der Seite",
-            z: mit((z) => z.konsolenFehler.push("[AnazhRealm V18.543] [ERROR] STOFF: die Post-Kette (Render-Lauf) — Knoten fehlt")),
-            muss: /KONSOLE: .*STOFF: die Post-Kette \(Render-Lauf\) — Knoten fehlt/,
-        },
-        {
-            name: "eine fremde ERROR-Zeile der Seite",
-            z: mit((z) => z.konsolenFehler.push("[AnazhRealm V18.536] [ERROR] Post-Processing fehlt")),
-            muss: /KONSOLE: .*Post-Processing fehlt/,
-        },
-        { name: "Abbild fehlt", z: mit((z) => (z.schritte[0].abbild = { fehlt: true })), muss: /kein Tiefen-Abbild/ },
-        {
-            name: "Abbild in voller Auflösung",
-            z: mit((z) => (z.schritte[1].abbild.groesse = [32, 24])),
-            muss: /statt r32float 16×24/,
-        },
-        {
-            name: "Abbild als 2×2-Block (die Zeile halbiert)",
-            z: mit((z) => (z.schritte[1].abbild.groesse = [16, 12])),
-            muss: /statt r32float 16×24/,
-        },
-        { name: "Abbild leer", z: mit((z) => (z.schritte[2].abbild.mitte = 1)), muss: /trägt die Szene nicht/ },
-        {
-            name: "Wasser liest eine andere Tiefe (vec4-Weg)",
-            z: mit((z) => (z.wasser.r184 = [75, 118, 105])),
-            muss: /das Wasser liest eine andere Tiefe/,
-        },
-        { name: "Wasser-Probe blind", z: mit((z) => (z.wasser.ohneGrund = z.wasser.abbild)), muss: /Probe ist blind/ },
+        ["der grüne Lauf", () => {}],
+        ["Direktpfad stürzt", (z) => (z.schritte[1].fehler = ["TypeError: Invalid value used as weak map key"]), /Direktpfad — TypeError/],
+        ["Direktpfad ohne Tiefe", (z) => (z.schritte[1].tiefe = false), /Direktpfad zeichnet ohne Tiefe/],
+        ["Leinwand-Tiefe in der Kette", (z) => (z.schritte[2].tiefe = true), /trägt eine Leinwand-Tiefe/],
+        ["GPU-Textur bleibt", (z) => (z.schritte[2].leinwandTiefeGpu = true), /GPU-Textur der Leinwand-Tiefe lebt/],
+        ["Rahmen-Ziel bleibt nach dem Ausflug (0710-9: band nach zerlegen, +23,7 MB)", (z) => (z.schritte[2].rahmenZiel = { ziele: 1, n: 2, mb: 23.73 }), /RAHMEN-ZIEL: Post-Kette zurück — 1 r184-Rahmen-Ziel\(e\) leben .*23\.7 MB in 2 Texturen — Rahmen-Ziel des Direktpfads/],
+        ["Rahmen-Ziel am Ende", (z) => (z.rahmenEnde = { ziele: 1, n: 0, mb: 0 }), /RAHMEN-ZIEL: am Ende .* 1 Ziel\(e\) ohne Textur/],
+        ["Direktpfad ohne Rahmen-Ziel (blind)", (z) => (z.schritte[1].rahmenZiel = { ziele: 0, n: 0, mb: 0 }), /RAHMEN-ZIEL: Direktpfad — r184 legte kein Rahmen-Ziel an/],
+        ["Rahmen-Ziel ungemessen", (z) => delete z.schritte[0].rahmenZiel, /nicht gemessen/],
+        ["Drift: das Ziel bleibt ohne r184s Hörer", (z) => (z.schritte[4].rahmenZiel = { ziele: 1, n: 2, mb: 0.88 }), /RAHMEN-ZIEL: Post-Kette nach Drift — 1 r184-Rahmen-Ziel/],
+        ["Drift: der Abschied fällt still", (z) => (z.drift.fehler = []), /ohne r184s Hörer fiel der Abschied STILL/],
+        ["Drift: kein r184-Hörer zu finden (Vendor-Drift)", (z) => (z.drift.hoererWeg = 0), /kein r184-Abschied .* die Probe ist blind/],
+        ["Drift-Probe fehlt", (z) => delete z.drift, /die Drift-Probe lief nicht/],
+        ["ERROR von _rahmenZielAbschied außerhalb der Drift", (z) => z.konsolenFehler.push("[AnazhRealm V18.536] [ERROR] RAHMEN-ZIEL: r184s Abschied … (Vendor-Drift)"), /1 ERROR-Zeile\(n\) von `_rahmenZielAbschied` außerhalb der Drift-Probe/],
+        ["der erzwungene Render-Fehler bricht still", (z) => (z.konsolenFehler = z.konsolenFehler.filter((x) => !/STOFF:/.test(x))), /WEICHE: der erzwungene Render-Fehler der Kette meldet 0× .*er bricht STILL/],
+        ["der erzwungene Render-Fehler bricht doppelt", (z) => z.konsolenFehler.push(z.konsolenFehler[0]), /WEICHE: der erzwungene Render-Fehler der Kette meldet 2× .*doppelt/],
+        ["ein fremder Stoff-Bruch der Seite", (z) => z.konsolenFehler.push("[AnazhRealm V18.543] [ERROR] STOFF: die Post-Kette (Render-Lauf) — Knoten fehlt"), /KONSOLE: .*STOFF: die Post-Kette \(Render-Lauf\) — Knoten fehlt/],
+        ["eine fremde ERROR-Zeile der Seite", (z) => z.konsolenFehler.push("[AnazhRealm V18.536] [ERROR] Post-Processing fehlt"), /KONSOLE: .*Post-Processing fehlt/],
+        ["Abbild fehlt", (z) => (z.schritte[0].abbild = { fehlt: true }), /kein Tiefen-Abbild/],
+        ["Abbild in voller Auflösung", (z) => (z.schritte[1].abbild.groesse = [32, 24]), /statt r32float 16×24/],
+        ["Abbild als 2×2-Block (die Zeile halbiert)", (z) => (z.schritte[1].abbild.groesse = [16, 12]), /statt r32float 16×24/],
+        ["Abbild leer", (z) => (z.schritte[2].abbild.mitte = 1), /trägt die Szene nicht/],
+        ["Wasser liest eine andere Tiefe (vec4-Weg)", (z) => (z.wasser.r184 = [75, 118, 105]), /das Wasser liest eine andere Tiefe/],
+        ["Wasser-Probe blind", (z) => (z.wasser.ohneGrund = z.wasser.abbild), /Probe ist blind/],
         // stoffe-k3-phasen a3b87db1: die Bühne 160 m über Genesis (247,3 m) über der Eis-Linie 157,1 m
-        { name: "Bühne im Eis", z: mit((z) => (z.buehne.wasserY = 247.3)), muss: /über der Eis-Linie/ },
-        { name: "Wasser nicht umgehängt", z: mit((z) => (z.wasser.umgehaengt = [0, 1])), muss: /nicht umgehängt/ },
-        { name: "Wasser-Probe fehlt", z: mit((z) => delete z.wasser), muss: /lief nicht/ },
-        {
-            name: "Saum auf ungerader Leinwand (Gegenprüfung 0710-3: 37 von 561 Kanten-Pixeln bis +25 Luma)",
-            z: mit((z) => Object.assign(z.saum, { abweichend: 14, dMax: 25 })),
-            muss: /Nachbar-Block/,
-        },
-        {
-            name: "Saum-Probe auf gerader Leinwand (blind)",
-            z: mit((z) => (z.saum.leinwand = [320, 240])),
-            muss: /nicht ungerade/,
-        },
-        {
-            name: "kein Gegenstand vor dem Wasser (blind)",
-            z: mit((z) => Object.assign(z.saum, { kanten: 0, paritaeten: 0 })),
-            muss: /kein Gegenstand vor dem Wasser/,
-        },
-        { name: "ferne Kiste vorn", z: mit((z) => (z.schritte[1].mitte = [40, 190, 40])), muss: /Tiefentest fehlt/ },
-        { name: "Tiefen-Leser blind", z: mit((z) => (z.schritte[0].tiefenKopien = 0)), muss: /kopierte nie/ },
-        { name: "Fang ohne Direktpfad", z: mit((z) => (z.schritte[3].direkt = false)), muss: /nicht den Direktpfad/ },
-        {
-            name: "GPU-Validierung",
-            z: mit((z) => (z.gpuFehler = ["Attachment state mismatch"])),
-            muss: /Validierungs-Fehler/,
-        },
-        {
-            name: "Godrays unbedingt",
-            z: mit((z) => Object.assign(z.ausgabe.abtastungen, { unbedingt: 29, zweig: 4 })),
-            muss: /29 unbedingte Abtastungen/,
-        },
-        { name: "Shader blind", z: mit((z) => (z.ausgabe = null)), muss: /kein Fragment der Ausgabe/ },
-        { name: "Bühne bricht ab", z: mit((z) => (z.abbruch = "TypeError: x")), muss: /ABBRUCH/ },
-        { name: "Godray-Zweig trägt nicht", z: mit((z) => (z.godray.aenderungPct = 0)), muss: /der Zweig trägt nicht/ },
-        { name: "Godray-Probe blind", z: mit((z) => (z.godray.staerke = 0)), muss: /die Probe ist blind/ },
-        {
-            name: "Grading schneidet dunkles Licht ab",
-            z: mit((z) => Object.assign(z.dunkel, { luma1: 0, luma4: 0 })),
-            muss: /DUNKEL: .*schneidet dunkles Licht ab/,
-        },
-        {
-            name: "Grading hängt an der Belichtung",
-            z: mit((z) => Object.assign(z.dunkel, { luma1: 12, luma4: 7 })),
-            muss: /DUNKEL: .*hängt an der Belichtung/,
-        },
-        { name: "Dunkel-Probe fehlt", z: mit((z) => delete z.dunkel), muss: /DUNKEL: die Probe lief nicht/ },
-        {
-            name: "Kontrast schwärzt die Nacht",
-            z: mit((z) => (z.dunkel.lumaNacht = 0)),
-            muss: /DUNKEL: das Licht der Nacht .*Post-Kette 25c/,
-        },
-        {
-            name: "Nacht-Probe blind",
-            z: mit((z) => (z.dunkel.nachtFaktor = 0)),
-            muss: /DUNKEL: die Nacht stand bei nightFactor 0/,
-        },
+        ["Bühne im Eis", (z) => (z.buehne.wasserY = 247.3), /über der Eis-Linie/],
+        ["Wasser nicht umgehängt", (z) => (z.wasser.umgehaengt = [0, 1]), /nicht umgehängt/],
+        ["Wasser-Probe fehlt", (z) => delete z.wasser, /lief nicht/],
+        ["Saum auf ungerader Leinwand (Gegenprüfung 0710-3: 37 von 561 Kanten-Pixeln bis +25 Luma)", (z) => Object.assign(z.saum, { abweichend: 14, dMax: 25 }), /Nachbar-Block/],
+        ["Saum-Probe auf gerader Leinwand (blind)", (z) => (z.saum.leinwand = [320, 240]), /nicht ungerade/],
+        ["kein Gegenstand vor dem Wasser (blind)", (z) => Object.assign(z.saum, { kanten: 0, paritaeten: 0 }), /kein Gegenstand vor dem Wasser/],
+        ["ferne Kiste vorn", (z) => (z.schritte[1].mitte = [40, 190, 40]), /Tiefentest fehlt/],
+        ["Tiefen-Leser blind", (z) => (z.schritte[0].tiefenKopien = 0), /kopierte nie/],
+        ["Fang ohne Direktpfad", (z) => (z.schritte[3].direkt = false), /nicht den Direktpfad/],
+        ["GPU-Validierung", (z) => (z.gpuFehler = ["Attachment state mismatch"]), /Validierungs-Fehler/],
+        ["Godrays unbedingt", (z) => Object.assign(z.ausgabe.abtastungen, { unbedingt: 29, zweig: 4 }), /29 unbedingte Abtastungen/],
+        ["Shader blind", (z) => (z.ausgabe = null), /kein Fragment der Ausgabe/],
+        ["Bühne bricht ab", (z) => (z.abbruch = "TypeError: x"), /ABBRUCH/],
+        ["Godray-Zweig trägt nicht", (z) => (z.godray.aenderungPct = 0), /der Zweig trägt nicht/],
+        ["Godray-Probe blind", (z) => (z.godray.staerke = 0), /die Probe ist blind/],
+        ["Grading schneidet dunkles Licht ab", (z) => Object.assign(z.dunkel, { luma1: 0, luma4: 0 }), /DUNKEL: .*schneidet dunkles Licht ab/],
+        ["Grading hängt an der Belichtung", (z) => Object.assign(z.dunkel, { luma1: 12, luma4: 7 }), /DUNKEL: .*hängt an der Belichtung/],
+        ["Dunkel-Probe fehlt", (z) => delete z.dunkel, /DUNKEL: die Probe lief nicht/],
+        ["Kontrast schwärzt die Nacht", (z) => (z.dunkel.lumaNacht = 0), /DUNKEL: das Licht der Nacht .*Post-Kette 25c/],
+        ["Nacht-Probe blind", (z) => (z.dunkel.nachtFaktor = 0), /DUNKEL: die Nacht stand bei nightFactor 0/],
     ];
-    taeterFaelle(faelle, urteil, { fehler });
+    taeterFaelle(faelle, urteil, { fehler, gruen });
     selbsttestEnde(fehler, "die Shader-Kosten-Linse zählt richtig, jeder injizierte Täter fällt rot und wird beim Namen genannt.");
 }
 
@@ -987,17 +874,14 @@ function buehne(nFrames, nachtLicht) {
     }
     out.konsolenFehler = konsolenFehler;
     const v = urteil(out);
-    if (v.length) {
-        console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
-        for (const s of v) console.log("   • " + s);
-        process.exit(1);
-    }
-    const a = out.ausgabe.abtastungen;
-    console.log(
-        `\n✅ GRÜN — fünf Wege durch die Weiche ohne Fehler (mit der Drift ohne r184s Abschied), der Direktpfad zeichnet mit Tiefe, die Post-Kette ohne Leinwand-Tiefe und ohne Rahmen-Ziel; ` +
+    wandEnde(v, () => {
+        const a = out.ausgabe.abtastungen;
+        return (
+            `fünf Wege durch die Weiche ohne Fehler (mit der Drift ohne r184s Abschied), der Direktpfad zeichnet mit Tiefe, die Post-Kette ohne Leinwand-Tiefe und ohne Rahmen-Ziel; ` +
             `die Ausgabe tastet unbedingt ${a.unbedingt}×, ${a.zweig}× nur hinter ihrer Stärke; die Godrays tragen mit der Sonne im Bild ` +
             `(${out.godray.aenderungPct} % der Pixel gegen ${out.godray.rauschenPct} % Rauschen); das Wasser liest das Tiefen-Abbild wie r184s Tiefe ` +
             `(${JSON.stringify(out.wasser.abbild)} gegen ${JSON.stringify(out.wasser.r184)}, ohne Grund ${JSON.stringify(out.wasser.ohneGrund)}); ` +
             `das Dunkel trägt (Luma ${out.dunkel.luma1} bei Belichtung 1, ${out.dunkel.luma4} bei 4, die Nacht ${out.dunkel.lumaNacht}).`
-    );
+        );
+    });
 })();

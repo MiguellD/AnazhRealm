@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_studio_bruecke {
     // ===== ATLAS · Studio/bruecke — Foundry-Brücke · Bücher · Aufträge · Uhren · Vorrat =====
     // ==================== ASSET-FOUNDRY: die Vorlage pflanzt ihre echten Bäume ====================

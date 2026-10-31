@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_daten {
     // ===== ATLAS · Daten — frozen Welt-Daten · Kreaturen-Tafeln · Wetter-Tafeln · Gelände-Konstanten =====
     // === Kreaturen-Aufträge ===
@@ -669,3 +670,16 @@ class AnazhRealm_daten {
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_daten]);
+
+// ===== ATLAS · Daten — Außen-Konstanten =====
+// KIND_POLICY (Studio/bruecke) — DIE EINE DOMÄNEN-POLICY des Rezept-Buchs; eine neue Domäne bringt ihre Zeile im Buch
+// (B7, `_kindPolicyVereinen`), kein Logik-Zweig. Felder: prefix (Blueprint = prefix+id; auch _foundryPresetFor) ·
+// donor (Judge-Parts-Spender, fail-closed; eine Buch-Zeile trägt `substanz`) · grown (Pflanzen-Identität via _grownSpecies, der NAME
+// ist load-bearing) · builtIn · placeExtra ("forest" = _forestExtraSpecies, null = nur Katalog) ·
+// impostor (Fernstufe = 8-Winkel-Billboard; `_foundryPresetIsTree` liest NUR diese Zeile).
+// ACHSEN_FARBE — die EINE eingefrorene Farb-Quelle der Feld-Achsen (dslComposeFieldColor, awe).
+AnazhRealm.ACHSEN_FARBE = Object.freeze({
+    magieleitung: "#d4a3ff", // magisches Lila
+    glut: "#ff7a59", // warmes Feuer
+    lebendig: "#7bd389", // frisches Gruen
+});

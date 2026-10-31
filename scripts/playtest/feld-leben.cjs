@@ -1470,7 +1470,7 @@ async function checkBandWelle6GHylomorphism({ page, check, errors, finalState })
             `V9.42-c/234: Insel nutzt das aktive lit NodeMaterial (Toon ODER PBR) — ${r42c.material}`,
             r42c.isToonMarker === true && r42c.isNodeMaterial === true
         );
-        check("Welle 6.G P1.5: Bauplan 'baum_kiefer' existiert (Multi-Part, V17.11)", wave6gResults.hasBaumKiefer);
+        check("Welle 6.G P1.5: Bauplan 'baum_kiefer' existiert (Multi-Part)", wave6gResults.hasBaumKiefer);
         check("Welle 6.G P1.5: baum_eiche ist builtIn", wave6gResults.baumEicheIsBuiltIn);
         check("Welle 6.G P1.5: baum_eiche Stamm = cylinder/holz", wave6gResults.eichenStammHolz);
         check("Welle 6.G P1.5: baum_eiche Krone = sphere/laub", wave6gResults.eichenKroneLaub);

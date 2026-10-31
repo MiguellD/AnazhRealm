@@ -435,7 +435,7 @@ async function checkBandOmegaGrammatik({ page, check }) {
         res.doricNoBuckle && res.loadCloses
     );
     check(
-        "Ω-B1 KONTRAST: über-schlank knickt; eine breite Wand knickt NICHT (V18.242)",
+        "Ω-B1 KONTRAST: über-schlank knickt; eine breite Wand knickt NICHT",
         res.overSlenderBuckles && res.wallNoBuckle
     );
     check(

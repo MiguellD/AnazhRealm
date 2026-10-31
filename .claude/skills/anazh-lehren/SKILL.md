@@ -13,7 +13,10 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
 - **Stamm** `stamm/` (~117k Zeilen in 50 Dateien ≤ 4 000 Z., EINE Klasse, EIN Prototyp), je Datei ein Modul der Karte
   `spec/stamm/modul-karte.json` (19 Module, Datei = `<modul>[-<teil>].js`): der Kern `stamm/dirigent-kern.js` (Konstruktor + Naht,
   VERSION), jede Zone trägt sich mit ihrem Naht-Ruf auf `AnazhRealm`, ihre Außen-Konstanten dahinter; die Liste = die Stamm-Tags in
-  index.html; `npm run atlas` die Karte live (+ `--find`: Glieder, Außen-Ziele, zugewiesene Methoden, Kerne, die Arten je
+  index.html, geschrieben aus der Karte: ein Modul `spät` (drittes Feld seiner Ordnung, am Ende) liegt träge (`type="spaet"`) und
+  lädt nach dem ersten Weltbild über den EINEN Lader `_spaetLaden` (`erwacht` wartet auf ihn; vorher gefragt = ROT beim Namen,
+  der Zeuge in welt-boot); jede Stamm-Datei beginnt mit `//# allFunctionsCalledOnLoad` (S schreibt ihn: V8 übersetzt beim
+  Streamen, nie lazy im Haupt-Faden); `npm run atlas` die Karte live (+ `--find`: Glieder, Außen-Ziele, zugewiesene Methoden, Kerne, die Arten je
   Gesetzbuch), `diag-atlas --check` die Ratsche (R7: jedes Glied in der Datei seines Moduls). Boden · Speicher · Spieler · Anschluss + die Verben
   (appear·place·body·drive·wield·portal·rule) + KIND_POLICY. Heute: die Karte ordnet nach Modul, nicht durchweg nach Domäne —
   Kreatur-Glieder (`_kreaturGangBis`, `_creatureGroundY`) und der Fahrzeug-Boden `_werkBoden` liegen in `stamm/wasser-hydro.js`.

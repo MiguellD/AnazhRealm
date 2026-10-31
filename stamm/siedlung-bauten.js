@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_siedlung_bauten {
     // ===== ATLAS · Siedlung/bauten — Arch-Mesh · Arch-Flatten · Chunk-Satz · Varianten-LOD · Okklusion =====
     // LOD-Baupläne je (species, variantIndex): Keys `grown_<species>_v<idx>_lod{0|1|2}`; LOD0 routet auf

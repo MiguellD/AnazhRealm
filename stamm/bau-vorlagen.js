@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_bau_vorlagen {
     // ===== ATLAS · Bau/vorlagen — Default-Bücher: Baupläne · Materialien · Werkzeuge =====
     // Default-Baupläne als Daten. Drei built-ins, die das ersetzen, was

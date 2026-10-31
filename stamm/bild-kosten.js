@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_bild_kosten {
     // ===== ATLAS · Bild/kosten — Renderer · TAAU und die EINE Skala · Ausgabe · Post · Schatten-Kaskaden · Pass-Wahl · Schirm · GPU-Kehraus · Bündel- und Zeichen-Reihe =====
     // V12.0-a — WebGPURenderer-Konfiguration. Hot-Swap-WebGL-Fallback weg

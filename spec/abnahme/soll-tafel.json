@@ -200,6 +200,7 @@
                         "foundry-core.js": "c:3b21a4161089ec4f",
                         "stamm/dirigent-kern.js": "c:0000000000000000",
                         "stamm/dienst.js": "c:0000000000000000",
+                        "stamm/daten.js": "c:0000000000000000",
                         "stamm/gelaende-boden.js": "c:0000000000000000",
                         "stamm/gelaende-chunks.js": "c:0000000000000000",
                         "stamm/gelaende-fern.js": "c:0000000000000000",
@@ -238,7 +239,6 @@
                         "stamm/netz-p2p.js": "c:0000000000000000",
                         "stamm/feld-leben.js": "c:0000000000000000",
                         "stamm/feld-dsl.js": "c:0000000000000000",
-                        "stamm/feld-nexus.js": "c:0000000000000000",
                         "stamm/feld-sprache.js": "c:0000000000000000",
                         "stamm/speicher-welten.js": "c:0000000000000000",
                         "stamm/speicher-laden.js": "c:0000000000000000",
@@ -247,7 +247,8 @@
                         "stamm/werkstatt-bauen.js": "c:0000000000000000",
                         "stamm/werkstatt-sozial.js": "c:0000000000000000",
                         "stamm/dirigent-takt.js": "c:0000000000000000",
-                        "stamm/dirigent-ankunft.js": "c:0000000000000000"
+                        "stamm/dirigent-ankunft.js": "c:0000000000000000",
+                        "stamm/feld-nexus.js": "c:0000000000000000"
                     }
                 }
             },
@@ -257,6 +258,7 @@
                 "foundry-core.js",
                 "stamm/dirigent-kern.js",
                 "stamm/dienst.js",
+                "stamm/daten.js",
                 "stamm/gelaende-boden.js",
                 "stamm/gelaende-chunks.js",
                 "stamm/gelaende-fern.js",
@@ -295,7 +297,6 @@
                 "stamm/netz-p2p.js",
                 "stamm/feld-leben.js",
                 "stamm/feld-dsl.js",
-                "stamm/feld-nexus.js",
                 "stamm/feld-sprache.js",
                 "stamm/speicher-welten.js",
                 "stamm/speicher-laden.js",
@@ -304,7 +305,8 @@
                 "stamm/werkstatt-bauen.js",
                 "stamm/werkstatt-sozial.js",
                 "stamm/dirigent-takt.js",
-                "stamm/dirigent-ankunft.js"
+                "stamm/dirigent-ankunft.js",
+                "stamm/feld-nexus.js"
             ]
         },
         {
@@ -2505,6 +2507,7 @@
                         "foundry-core.js": "c:6e8cf71a446dd765",
                         "stamm/dirigent-kern.js": "c:0000000000000000",
                         "stamm/dienst.js": "c:0000000000000000",
+                        "stamm/daten.js": "c:0000000000000000",
                         "stamm/gelaende-boden.js": "c:0000000000000000",
                         "stamm/gelaende-chunks.js": "c:0000000000000000",
                         "stamm/gelaende-fern.js": "c:0000000000000000",
@@ -2543,7 +2546,6 @@
                         "stamm/netz-p2p.js": "c:0000000000000000",
                         "stamm/feld-leben.js": "c:0000000000000000",
                         "stamm/feld-dsl.js": "c:0000000000000000",
-                        "stamm/feld-nexus.js": "c:0000000000000000",
                         "stamm/feld-sprache.js": "c:0000000000000000",
                         "stamm/speicher-welten.js": "c:0000000000000000",
                         "stamm/speicher-laden.js": "c:0000000000000000",
@@ -2552,7 +2554,8 @@
                         "stamm/werkstatt-bauen.js": "c:0000000000000000",
                         "stamm/werkstatt-sozial.js": "c:0000000000000000",
                         "stamm/dirigent-takt.js": "c:0000000000000000",
-                        "stamm/dirigent-ankunft.js": "c:0000000000000000"
+                        "stamm/dirigent-ankunft.js": "c:0000000000000000",
+                        "stamm/feld-nexus.js": "c:0000000000000000"
                     }
                 }
             },
@@ -2562,6 +2565,7 @@
                 "foundry-core.js",
                 "stamm/dirigent-kern.js",
                 "stamm/dienst.js",
+                "stamm/daten.js",
                 "stamm/gelaende-boden.js",
                 "stamm/gelaende-chunks.js",
                 "stamm/gelaende-fern.js",
@@ -2600,7 +2604,6 @@
                 "stamm/netz-p2p.js",
                 "stamm/feld-leben.js",
                 "stamm/feld-dsl.js",
-                "stamm/feld-nexus.js",
                 "stamm/feld-sprache.js",
                 "stamm/speicher-welten.js",
                 "stamm/speicher-laden.js",
@@ -2609,7 +2612,8 @@
                 "stamm/werkstatt-bauen.js",
                 "stamm/werkstatt-sozial.js",
                 "stamm/dirigent-takt.js",
-                "stamm/dirigent-ankunft.js"
+                "stamm/dirigent-ankunft.js",
+                "stamm/feld-nexus.js"
             ]
         },
         {

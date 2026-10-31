@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_gelaende_kollision {
     // ===== ATLAS · Gelaende/kollision — Blocker-Netz · Bau-Hüllen · Teil-AABB =====
     // Solid-Klassifikation der Architektur-Parts, UNIVERSELL: jede solide Substanz blockiert Wasser

@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_stoff_gang {
     // ===== ATLAS · Stoff/gang — Der Gang-Satz: je Gestalt EIN Knochen-Puffer · Pose · Ecken · Instanz-Gang · die Hülle der Wahl (Bewohner und Tiere) =====
     // DER GANG-SATZ — der EINE Baustein jeder Menge gelenkiger Gestalten (Bewohner, Tiere; Lehre 23: WebGPU zieht jeden Draw

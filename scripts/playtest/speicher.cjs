@@ -401,7 +401,7 @@ async function checkBandRing8({ page, check, errors, finalState }) {
         return out;
     });
     if (erreichbar(check, "Ring 8 UI: Snapshot erreichbar", ring8UiResults)) {
-        check("Ring 8 UI: der Welt-Picker lebt im rechten Schöpfen-Block (V18.73)", ring8UiResults.pickerSectionInDom);
+        check("Ring 8 UI: der Welt-Picker lebt im rechten Schöpfen-Block", ring8UiResults.pickerSectionInDom);
         check("Ring 8 UI: #world-new Button im DOM", ring8UiResults.newWorldBtnInDom);
         check("Ring 8 UI: Picker rendert andere Welten als Zeilen", ring8UiResults.pickerRendersOthers);
         check("Ring 8 UI: Beide Slugs sichtbar", ring8UiResults.pickerShowsBothSlugs);
@@ -879,7 +879,7 @@ async function checkBandRing9to10({ page, check, errors, finalState }) {
         );
         check("Ring 10: Drei Strategie-Radios im DOM", ring10Results.fusionStrategyRadios);
         check(
-            "Ring 10: Stammbaum-Samen blüht im 'Diese Welt'-Eiland (.feed-self, V18.71)",
+            "Ring 10: Stammbaum-Samen blüht im 'Diese Welt'-Eiland (.feed-self)",
             ring10Results.lineageSectionInDom
         );
         check("Ring 10: Sequenz-Fusion liefert ok=true", ring10Results.seqOk);
@@ -1603,7 +1603,7 @@ async function checkBandTranslatorAndUntrusted({ page, check, errors, finalState
             sandboxResults.overlayTrustedAttr
         );
         check(
-            "Untrusted-Tor: _buildPortalOverlay — trusted → iframe-sandbox enthält allow-pointer-lock (V18.384)",
+            "Untrusted-Tor: _buildPortalOverlay — trusted → iframe-sandbox enthält allow-pointer-lock",
             sandboxResults.overlayTrustedPointerLock
         );
         check("Untrusted-Tor: _portalOverlay trägt die trust-Stufe", sandboxResults.overlayTrustField);

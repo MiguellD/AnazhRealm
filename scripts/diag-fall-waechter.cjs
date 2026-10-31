@@ -340,7 +340,6 @@ function selbsttest() {
         ),
     };
     const { errs, check } = pruefer();
-    const klon = () => JSON.parse(JSON.stringify(gruen));
     // je Fall der Täter, den die Wand beim Namen nennt (`muss`); ohne `muss` bleibt der Befund grün
     const faelle = [
         ["der grüne Befund", () => {}],
@@ -451,7 +450,7 @@ function selbsttest() {
         ["Ring ohne Edit", (b) => delete b.turm2[3].ring.takte, /\(B2 Fels Third\) FERN-RING OHNE EDIT/],
         ["Ring zu spät", (b) => (b.turm2[5].ring.takte = 90), /\(B2 Brücke Third\) FERN-RING ZU SPÄT: 1\.50 s/],
     ];
-    taeterFaelle(faelle, urteil, { fehler: errs, klon });
+    taeterFaelle(faelle, urteil, { fehler: errs, gruen });
     // die Quellen-Wand am Stamm (grün), an einer Kopie mit dem alten Leser im Körper-Schritt, einem unbenannten Leser der
     // Oberkante an einem Leib und einem veralteten Namen (rot, je beim Namen)
     const stamm = stammLib.text(root);

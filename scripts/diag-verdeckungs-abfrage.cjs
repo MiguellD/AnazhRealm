@@ -201,7 +201,7 @@ function selbsttest() {
 
 if (process.argv.includes("--selftest")) selbsttest();
 
-const { statikServer, starteBrowser, selbsttest: selbstMarke, laufUhr } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, selbsttest: selbstMarke, laufUhr, wandEnde } = require("./lib/welt-boot.cjs");
 const { linsenGpu } = require("./lib/software-gpu.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
@@ -662,19 +662,16 @@ async function verdeckungPhase(opts) {
     server.close();
     const v = urteil(out);
     log(v.length ? "ROT" : "GRÜN");
-    if (v.length) {
-        console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
-        for (const s of v) console.log("   • " + s);
-        process.exit(1);
-    }
-    const A = out.phasen.ablauf;
-    const Lz = out.phasen.letzter.z;
-    console.log(
-        `\n✅ GRÜN — 0 WebGPU-Validierungsfehler und 0 Seitenfehler in Boot, Ablauf, Bruch, Gift und Letzter. Am Bach ` +
+    wandEnde(v, () => {
+        const A = out.phasen.ablauf;
+        const Lz = out.phasen.letzter.z;
+        return (
+            `0 WebGPU-Validierungsfehler und 0 Seitenfehler in Boot, Ablauf, Bruch, Gift und Letzter. Am Bach ` +
             `(${A.bach.x}/${A.bach.z}) aufgesessen, ${A.halt} m vor dem Wasser ausgestiegen (Sicht ${A.sicht.vorher} → ` +
             `${A.sicht.nachher}), der Stellvertreter ${A.z.gezaehlt}× gezählt, ${A.z.begonnen} Abfragen begonnen; Bruch bei ` +
             `offener Abfrage ${out.phasen.bruch.z.bruchOffen}×, Gift ${out.phasen.gift.z.gift}×, ${Lz.letzter} Frames endeten mit ` +
             `dem Stellvertreter, ${Lz.nullFrames} Null-Frames danach; ohne die Hüllen fallen „ended with incomplete occlusion ` +
             `query“, „No occlusion queries are active“, „weak set“ und der Letzte beim Namen.`
-    );
+        );
+    });
 })();

@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_siedlung_ort {
     // ===== ATLAS · Siedlung/ort — Siedlungs-Plan · Bau-Frei · Dorf-Erlebnis · Tore und Membranen · Fahr-Platz =====
     // DAS LAND EINES WERKS (Schau-2 wasser-wahrheit): der Boden an (x, z) liegt mehr als `marge` über dem Wasser — dem

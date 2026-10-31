@@ -162,7 +162,7 @@ async function checkBandWelle6G3Lebendigkeit({ page, check }) {
         );
         check("Welle 6.G3.a: set_time_of_day in NON_BROADCASTABLE_OPS", wave6g3Results.setTimeOfDayInBlacklist);
         check(
-            "Welle 6.G3.a: DirectionalLight folgt timeOfDay (Mittag=Sonne oben/hell, Mitternacht=Mond oben/gedämpft+kühl, V18.377)",
+            "Welle 6.G3.a: DirectionalLight folgt timeOfDay (Mittag=Sonne oben/hell, Mitternacht=Mond oben/gedämpft+kühl)",
             wave6g3Results.lightPosFollowsTimeOfDay
         );
 
@@ -896,9 +896,9 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
                 JSON.stringify(e)
             );
         }
-        check("(V9.39): state.voxelChunkGrass ist eine Map", v829Results.chunkGrassMap);
+        check(": state.voxelChunkGrass ist eine Map", v829Results.chunkGrassMap);
         check(
-            "(V18.492): Gras-Zellen verbucht, 0 Halm-InstancedMesh je Chunk (fern Boden-Funktion, nah die Nah-Wiese)",
+            ": Gras-Zellen verbucht, 0 Halm-InstancedMesh je Chunk (fern Boden-Funktion, nah die Nah-Wiese)",
             v829Results.grassCellsBookedHalmFree
         );
         check(

@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_feld_dsl {
     // ===== ATLAS · Feld/dsl — DSL-Ops · Sandbox · Welt-Regeln · Chat-Tore =====
     // Ein Journal-Eintrag wird ein Satz der Welt: mit aktiver Stimme spricht NUR das Modell — ein Ruf, der dem Spieler wich,

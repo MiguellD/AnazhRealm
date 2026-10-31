@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_speicher_laden {
     // ===== ATLAS · Speicher/laden — loadState-Kette · Welt-Tor · Fusion · Bibliothek =====
     // Lädt einen Zustand IN DIE SEITE (ohne Argument: den Platz der aktiven Welt). Er legt nichts im Speicher ab — eine

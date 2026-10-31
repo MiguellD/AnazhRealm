@@ -27,8 +27,9 @@ const TAFELN = ["spec/abnahme/soll-tafel.json", "spec/farbe/albedo-tafel.json"];
 const VERALTET = "c:0000000000000000"; // ein Abdruck, den kein Code trägt: die Messung bleibt „veraltet seit …"
 
 // ── den Baum schreiben ────────────────────────────────────────────────────────────────────────────────────────────────
-function schreibeZonen(ziel, T) {
+function schreibeZonen(ziel, T, K) {
     const S = stamm.schneide(T);
+    const spaet = stamm.spaeteVon(K);
     const soll = new Set(S.map((x) => x.pfad));
     for (const f of fs.readdirSync(path.join(ziel, stamm.DIR)))
         if (f.endsWith(".js") && !soll.has(`${stamm.DIR}/${f}`)) fs.unlinkSync(path.join(ziel, stamm.DIR, f));
@@ -38,7 +39,7 @@ function schreibeZonen(ziel, T) {
         html,
         stamm.tagsSetzen(
             fs.readFileSync(html, "utf8"),
-            S.map((x) => x.pfad)
+            S.map((x) => ({ pfad: x.pfad, spaet: spaet.has(x.pfad) }))
         )
     );
     return S;
@@ -176,7 +177,7 @@ function nachKarte(root, trocken) {
     for (const n of b.namen.slice(0, 20)) console.log("  ✗ " + n);
     if (b.summe || trocken) return b.summe ? 1 : 0;
     fs.writeFileSync(path.join(root, stamm.KARTE), stamm.karteText(h.karte));
-    schreibeZonen(root, T1);
+    schreibeZonen(root, T1, h.karte);
     const zug = tafelZug(alt, S);
     for (const t of TAFELN.filter((t) => fs.existsSync(path.join(root, t)))) {
         fs.writeFileSync(path.join(root, t), zug(fs.readFileSync(path.join(root, t), "utf8")));

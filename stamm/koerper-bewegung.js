@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_koerper_bewegung {
     // ===== ATLAS · Koerper/bewegung — Spieler-Bewegung · Sprung · Charakter-Physik · Fahr-Hülle · Ego-Sicht und Kamera =====
     // Soul-gebundener Sprung-Steilheits-Check: auf zu steilem Hang (state.onSteepSlope) springt nur ein

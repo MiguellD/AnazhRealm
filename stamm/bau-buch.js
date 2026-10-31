@@ -1,3 +1,4 @@
+//# allFunctionsCalledOnLoad
 class AnazhRealm_bau_buch {
     // ===== ATLAS · Bau/buch — Bauplan-Buch · Rollen · Präzision · Verbindungen · CRUD =====
     // Mutations-Pfad für eigene Materialien. Whitelist auf MATERIAL_TAG_KEYS,
