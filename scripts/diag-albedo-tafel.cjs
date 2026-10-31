@@ -423,8 +423,7 @@ window.__bereit = true;
             ],
         });
         const y = (id) => (res.find((x) => x.name === id || x.id === id) || {}).gesamt;
-        const lin = (v) => (v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4));
-        const weltY = 0.2126 * lin(0x8e / 255) + 0.7152 * lin(0x93 / 255) + 0.0722 * lin(0x9a / 255);
+        const weltY = AU.luma709([0x8e, 0x93, 0x9a].map(AU.srgbLin)); // die EINE Luma der Linsen (abnahme-urteil)
         const karteY = y("graukarte") && y("graukarte").Y;
         const vRoh = y("roh") ? y("roh").Y / weltY : null;
         const vGes = y("gesetz") ? y("gesetz").Y / weltY : null;

@@ -86,7 +86,13 @@ class AnazhRealm_studio_gestalt {
             }
             geo.setAttribute("color", new T.BufferAttribute(carr, 3));
         }
-        if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
+        // DIE JAHRES-ECKEN (vegetation.K5): die Mitte jedes Blatts und sein Typ — das Laub fällt im Winter auf seine Mitte
+        // (`_jahrLage`); die Schale liefert sie nur an Teilen mit Laub oder Blüte, immer als Paar. Sie liegen mit uv in EINEM
+        // verschränkten Puffer (`_jahrEcken`): die Blatt-Karte belegt ohne sie schon 8 Vertex-Puffer (WebGPU `maxVertexBuffers`).
+        const jahr = !!(m.aCenter && m.aCenter.array) + !!(m.aType && m.aType.array);
+        if (jahr === 1) throw new Error("_foundryBuildMesh: die Jahres-Ecken reisen nur als Paar (aCenter · aType)");
+        if (jahr) AnazhRealm._jahrEcken(geo, m.uv && m.uv.array, m.aCenter.array, m.aType.array);
+        else if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
         // Das Schalen-Fell (V18.497) trägt seine Wurzel (Bind-Punkt der Haar-Maske) und die Schalen-Daten.
         for (const nm of ["aWurzel", "aSchale"])
             if (m[nm] && m[nm].array) geo.setAttribute(nm, new T.BufferAttribute(m[nm].array, m[nm].itemSize || 3));
@@ -96,6 +102,8 @@ class AnazhRealm_studio_gestalt {
         // des Leibs, der ihn zeichnet (`_tonFaktor`)
         const ton = !!(m.aTon && m.aTon.array);
         if (ton) geo.setAttribute("aTon", new T.BufferAttribute(m.aTon.array, 1));
+        // DIE ECKEN DER GESTALT, wie sie geliefert sind: ihr Stoff liest Ton und Jahr an ihrem Namen (`_foundryTreeMaterial`)
+        const ecken = { ton, jahr: jahr === 2 };
         if (m.index) geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(m.index, vcount), 1));
         if (!m.normal || !m.normal.array) geo.computeVertexNormals();
         // Attribut-Wand: unter foundryCrossfade lesen die geteilten foundry-Materialien aH0/aH0L/aLodLevel —
@@ -118,12 +126,12 @@ class AnazhRealm_studio_gestalt {
             geo.setAttribute("skinWeight", AnazhRealm._hautGewicht(m.skinWeight.array, m.skinWeight.itemSize || 4));
             mesh = new T.SkinnedMesh(
                 geo,
-                this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, null, false, ton)
+                this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, null, false, ecken)
             );
         } else {
             mesh = new T.Mesh(
                 geo,
-                this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, baum || null, false, ton)
+                this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, baum || null, false, ecken)
             );
         }
         mesh.castShadow = AnazhRealm._teilWirft(m);
@@ -144,6 +152,33 @@ class AnazhRealm_studio_gestalt {
         // (`teil: "schatten"`, Attribut aDeckt) — der Flatten legt es als Schatten-Zwilling in die Kaskaden.
         if (typeof m.teil === "string") mesh.userData.__teil = m.teil;
         return mesh;
+    }
+    // DIE JAHRES-ECKEN einer Gestalt (vegetation.K5, `_foundryBuildMesh`): je Ecke [u, v,] Mitte und Typ in EINEM verschränkten
+    // Puffer, uv · aCenter · aType sind seine Sichten — die Blatt-Karte zeichnet so mit 8 Vertex-Puffern wie zuvor (WebGPU
+    // `maxVertexBuffers`). Der GPU-Kehraus nimmt den Puffer nur ganz (`_gpuAbschiedVerschraenkt`). Fail-closed: Jahres-Ecken,
+    // die nicht jede Ecke der Lage tragen, sind ein Bruch der Konsum-Wand.
+    static _jahrEcken(geo, uv, mitte, typ) {
+        const n = geo.attributes.position.count;
+        if (mitte.length < n * 3 || typ.length < n || (uv && uv.length < n * 2))
+            throw new Error(`_jahrEcken: ${typ.length} Typen und ${mitte.length / 3} Mitten für ${n} Ecken`);
+        const o = uv ? 2 : 0;
+        const s = o + 4;
+        const a = new Float32Array(n * s);
+        for (let i = 0, j = 0; i < n; i++, j += s) {
+            if (uv) {
+                a[j] = uv[i * 2];
+                a[j + 1] = uv[i * 2 + 1];
+            }
+            a[j + o] = mitte[i * 3];
+            a[j + o + 1] = mitte[i * 3 + 1];
+            a[j + o + 2] = mitte[i * 3 + 2];
+            a[j + o + 3] = typ[i];
+        }
+        const ib = new THREE.InterleavedBuffer(a, s);
+        if (uv) geo.setAttribute("uv", new THREE.InterleavedBufferAttribute(ib, 2, 0));
+        geo.setAttribute("aCenter", new THREE.InterleavedBufferAttribute(ib, 3, o));
+        geo.setAttribute("aType", new THREE.InterleavedBufferAttribute(ib, 1, o + 3));
+        return ib;
     }
     // Die Welt-Höhe einer Foundry-Gruppe: y-Ausdehnung ihrer Vorlage × Preset-Welt-Skala (mindestens 0,1 m) — der
     // aH0-Stempel und das Höhen-Buch lesen DIESE Zahl. DIE SICHTHÖHE EINES BAUMS (K20): ohne den Hub seines Schafts (Beipack
@@ -721,13 +756,16 @@ class AnazhRealm_studio_gestalt {
     _foundryGroupBytes(g) {
         if (!g || !Array.isArray(g.children)) return 0;
         let bytes = 0;
+        const gezaehlt = new Set(); // ein verschränkter Puffer (die Jahres-Ecken, `_jahrEcken`) zählt einmal, nie je Sicht
         for (const ch of g.children) {
             const geo = ch && ch.geometry;
             if (!geo) continue;
             const attrs = geo.attributes || {};
             for (const k in attrs) {
-                const a = attrs[k];
-                if (a && a.array && Number.isFinite(a.array.byteLength)) bytes += a.array.byteLength;
+                const a = attrs[k] && attrs[k].isInterleavedBufferAttribute ? attrs[k].data : attrs[k];
+                if (!a || !a.array || !Number.isFinite(a.array.byteLength) || gezaehlt.has(a)) continue;
+                gezaehlt.add(a);
+                bytes += a.array.byteLength;
             }
             const idx = geo.index;
             if (idx && idx.array && Number.isFinite(idx.array.byteLength)) bytes += idx.array.byteLength;

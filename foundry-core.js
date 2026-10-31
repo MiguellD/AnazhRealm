@@ -233,6 +233,12 @@ var SAISON_GESETZ = {
     bau: 0x4f7a30,       // die Toenung, mit der ein Koerper gebacken ist (Sommer, setSeasonColors("summer"))
     mulMin: 0.25, mulMax: 4.0,
     kartenGewicht: 0.8,  // die Karte folgt der Saison zu 80 % (Impostor-Shader mix(1, uSeasonMul, 0.8))
+    // vegetation.K5 (30.10., additiv) — DIE PRAESENZ DES JAHRS: `pr` zieht jedes Blatt (aType typ.laub), `bl` jede Bluete
+    // (typ.bluete) auf seine Mitte (injectWind: transformed = mix(aCenter, transformed, pres)), Labor UND Welt (`_jahrLage`);
+    // alles andere (Rinde 0, Nadel 2, Halm 4) steht. Die Karte hebt ihre Alpha-Schwelle um (1 - pr) * karteSchwelle (der
+    // Studio-Impostor, die Welt-Karte) — die gebackene Karte ist Sommer (volle Krone).
+    typ: { laub: 1, bluete: 3 },
+    karteSchwelle: 0.5,
 };
 
 var __terrainCore = { HIMMEL_GESETZ: HIMMEL_GESETZ, WASSER_GESETZ: WASSER_GESETZ, REGEN_GESETZ: REGEN_GESETZ, BERG_GESETZ: BERG_GESETZ, BERG_VIS: BERG_VIS, INSEL_GESETZ: INSEL_GESETZ, INSEL_VIS: INSEL_VIS, WALD_GESETZ: WALD_GESETZ, WALD_VIS: WALD_VIS, KACHEL_GESETZ: KACHEL_GESETZ, KACHEL_VIS: KACHEL_VIS, SAISON_GESETZ: SAISON_GESETZ };
@@ -736,7 +742,10 @@ const PORTAL_RENDER_CONFIG = {
     // 8-Winkel-Impostors als DATEN — Blickwinkel + Zell-Maße. Studio-Bäcker (bakeImpostorAtlas)
     // UND AnazhRealms RTT-Bäcker lesen DIESELBEN Zahlen; wer die Fern-Karten-Auflösung ändert,
     // ändert sie HIER, nirgends sonst.
-    impostor: { views: 8, cellW: 128, cellH: 256 },
+    // DIE HEBUNGS-RINGE (lod.K3, additiv): die Blick-Hebungen der Welt-Karte in Grad, aufsteigend — je Hebung ein Ring
+    // der `views` Peilungen in derselben Schicht; der Ring 0° in voller Zelle, jeder andere in 1/ringTeiler je Achse
+    // (DIE ATLAS-DIÄT: ¼ der Zellfläche, ringTeiler Ansichten je Zeile). Der Studio-Bäcker liest nur den Ring 0°.
+    impostor: { views: 8, cellW: 128, cellH: 256, hebungen: [-20, 0, 40, 80], ringTeiler: 2 },
 };
 
 // DIE HALM-BIEGUNG des Labors (Gras, Blumen-Stiel): der Halm kippt starr um seinen Fuß. Der Baum liest sie nicht mehr
@@ -822,8 +831,8 @@ function injectWind(mat, foliage, isGrass, baum, krone) {
         sh.vertexShader = sh.vertexShader.replace(
             "#include <begin_vertex>",
             "#include <begin_vertex>\nfloat wT=aType;\n" +
-                (foliage ? "vSeasW=(wT==1.0||wT==3.0)?1.0:0.0;\n" : "") +
-                "float pres=(wT==1.0)?uLeafPresence:(wT==3.0?uBloom:1.0);\ntransformed=mix(aCenter,transformed,clamp(pres,0.0,1.0));\nfloat _sw=aWind.x,_ph=aWind.y,_om=aWind.z;\n" +
+                (foliage ? "vSeasW=(wT==" + SAISON_GESETZ.typ.laub.toFixed(1) + "||wT==" + SAISON_GESETZ.typ.bluete.toFixed(1) + ")?1.0:0.0;\n" : "") +
+                "float pres=(wT==" + SAISON_GESETZ.typ.laub.toFixed(1) + ")?uLeafPresence:(wT==" + SAISON_GESETZ.typ.bluete.toFixed(1) + "?uBloom:1.0);\ntransformed=mix(aCenter,transformed,clamp(pres,0.0,1.0));\nfloat _sw=aWind.x,_ph=aWind.y,_om=aWind.z;\n" +
                 "#ifdef USE_INSTANCING\n vec2 _iw=instanceMatrix[3].xz;\n#else\n vec2 _iw=vec2(0.0);\n#endif\n" +
                 "vLod=aLodLevel;\n#ifdef USE_INSTANCING\n float _isy=length(instanceMatrix[1].xyz); float _cd=length(cameraPosition.xz-_iw); float _lk=(aH0>0.001)?min(uLodRef/(aH0*_isy),1.0):1.0; vLodD=_cd*_lk; float _lkL=(aH0L>0.001)?min(uLodRef/(aH0L*_isy),1.0):1.0; vLodDL=_cd*_lkL;\n#else\n vLodD=length(cameraPosition.xz-_iw); vLodDL=vLodD;\n#endif\n" +
                 (foliage

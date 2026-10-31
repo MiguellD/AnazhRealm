@@ -156,10 +156,17 @@ class AnazhRealm_bild_kosten {
         // RenderObjects ohne Buchung. Die Region-Bundles tragen den ganzen statischen Bestand: HUD, Regler und
         // Flugschreiber lasen an der Mess-Wiese 148 dc, wo die GPU 1 149 Befehle ausführte (02.10.). Der
         // Replay bucht jetzt jeden aufgenommenen RenderObject wie der Backend-Draw (info.update).
+        // DAS SIEGEL TRÄGT DIE MARKE DER ERST-ZEICHNUNG (`_erstWartet` (2)): versiegelte eine Aufnahme ohne einen Bürger,
+        // der auf seinen Knoten-Bau wartet oder dessen Pipeline absagte, nimmt das Bündel im NÄCHSTEN Render neu auf — die
+        // Marke fällt hier, gleich nach r184s Siegel (`u.version=s.version`, 6:413962, es schluckte eine Marke von mittendrin).
+        // Ein Mikrotask kam zu spät: jedes Bild im selben Task (die Warm-Frames einer Aufnahme, die Proben der Wand) spielte das
+        // Bündel ohne den Bürger ab und zählte keinen wartenden Draw — die Beweis-Aufnahme stand still grün (Erst-Zeichnungs-
+        // Wand, Absage einer Pipeline, 30.10.: das erste Bild der Aufnahme wartete 0, sie endete nach 1 Frame ohne Wurf).
         if (!renderer.info || typeof renderer._renderBundle !== "function")
             this.log("DRAW-WAHRHEIT: r184-Renderer._renderBundle nicht gefunden (Vendor-Drift)", "ERROR");
         else if (!renderer.__anazhReplayBuchung) {
             const replayRoh = renderer._renderBundle;
+            const welt = this;
             renderer._renderBundle = function (bundle, sceneRef, lightsNode) {
                 const rb = this._bundles.get(bundle.bundleGroup, bundle.camera, this._currentRenderContext);
                 const daten = this.backend.get(rb);
@@ -170,6 +177,8 @@ class AnazhRealm_bild_kosten {
                         const dp = ro.getDrawParameters();
                         if (dp) this.info.update(ro.object, dp.vertexCount, dp.instanceCount);
                     }
+                const E = welt._erstZeichnung;
+                if (!replay && E && E.aufnehmen.delete(bundle.bundleGroup)) bundle.bundleGroup.needsUpdate = true;
                 return aus;
             };
             renderer.__anazhReplayBuchung = true;
@@ -608,7 +617,7 @@ class AnazhRealm_bild_kosten {
                 offen: new Map(),
                 namen: new WeakMap(), // Pipeline → ihr Label `renderPipeline_<Stoff>_<id>`
                 abgesagt: new WeakSet(),
-                aufnehmen: new Set(),
+                aufnehmen: new WeakSet(), // Bundles, versiegelt ohne einen Bürger — ihr Siegel setzt die Marke (`_renderBundle`)
                 gezeichnet: new WeakMap(), // Objekt → die Pässe (Render-Kontext|Pass-Kennung), in denen es schon zeichnete
                 vorgebaut: new WeakMap(), // Arena → die Pässe, in denen der Vorbau ihr Programm ohne Draw baute
             };
@@ -655,7 +664,8 @@ class AnazhRealm_bild_kosten {
     //     ihm hängt nichts.
     // (2) Er wartet nur auf seinen KNOTEN-BAU (`pipe` null: der Aufruf hat sein Bau-Budget verbraucht): das Bundle nimmt
     //     nach der laufenden Aufnahme neu auf — r184 versiegelt an ihrem Ende (`u.version=s.version`, 6:413962) und schluckte
-    //     eine Marke von mittendrin.
+    //     eine Marke von mittendrin; die Marke setzt das Siegel selbst (`_renderBundle`, die Draw-Wahrheit), so nimmt auch
+    //     das nächste Bild im selben Task neu auf.
     // Eine Pipeline, deren Bau scheitert, meldet sich laut (`_erstAbsageWache`) und fällt aus der Warteschlange; ihr Bürger
     // zählt weiter als wartender Draw — die Beweis-Aufnahme nennt ihn beim Namen und bricht ab. Auch im Bündel: es nimmt nach
     // jeder Aufnahme neu auf wie in (2), statt ohne ihn zu versiegeln und still abzuspielen (mensch.K4, 30.10.: 8 abgesagte
@@ -666,13 +676,7 @@ class AnazhRealm_bild_kosten {
     _erstWartet(be, pipe, bg) {
         const E = this._erstZeichnung;
         if (!pipe) {
-            if (bg === null) return;
-            if (E.aufnehmen.size === 0)
-                Promise.resolve().then(() => {
-                    for (const b of E.aufnehmen) b.needsUpdate = true;
-                    E.aufnehmen.clear();
-                });
-            E.aufnehmen.add(bg);
+            if (bg !== null) E.aufnehmen.add(bg);
             return;
         }
         E.wartetN++;
@@ -986,13 +990,22 @@ class AnazhRealm_bild_kosten {
         if (this._buehnenBild) this._buehnenBild.clear();
         const gezeichnet = rend._geometries.attributeCall;
         const weg = [];
+        // ein verschränkter Puffer (die Jahres-Ecken, `_jahrEcken`) fällt nur GANZ: je Puffer [Sichten im Register, die
+        // ungezeichneten] — zeichnet eine Sicht, bleibt er (`_gpuAbschiedVerschraenkt`)
+        const verschraenkt = new Map();
         for (const [a, v] of rend.info.memoryMap) {
             if (!v || (v.type !== "attributes" && v.type !== "indexAttributes")) continue;
-            if (lebt.has(a) || gezeichnet.get(a) >= zaehlerVor) continue;
-            weg.push(a);
+            const tot = !(lebt.has(a) || gezeichnet.get(a) >= zaehlerVor);
+            if (a.isInterleavedBufferAttribute) {
+                const z = verschraenkt.get(a.data) || verschraenkt.set(a.data, [0, []]).get(a.data);
+                z[0]++;
+                if (tot) z[1].push(a);
+            } else if (tot) weg.push(a);
         }
         let n = 0;
         for (const a of weg) if (this._gpuAbschied(a)) n++;
+        for (const [d, [alle, tot]] of verschraenkt)
+            if (tot.length === alle) n += this._gpuAbschiedVerschraenkt(d, tot);
         st._gpuKehrausN = (st._gpuKehrausN || 0) + n;
         return n;
     }
