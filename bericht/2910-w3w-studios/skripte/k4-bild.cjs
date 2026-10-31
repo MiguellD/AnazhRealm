@@ -335,7 +335,9 @@ H.fahre(async function k4Bild(H) {
             break;
         }
         const ts = Date.now(), S = AT.STUDIOS[sid];
-        const z = (aus.studios[sid] = { werk: null, welt: null, buehne: null, differenz: null, albedo: null, gruen: false, grund: null, sek: null });
+        const z = (aus.studios[sid] = { werk: null, welt: null, buehne: null, differenz: null, albedo: null, gruen: false, grund: null, sek: null, teile: {} });
+        // die Sekunden je Schritt (der Beleg der Dauer auf der Karte): die Bühne steht · das Werk steht in der Welt · ihr Bild · der Schuss
+        const teil = (n, t = z.teile.t || ts) => ((z.teile[n] = sek(t)), (z.teile.t = Date.now()));
         const page = await browser.newPage();
         try {
             await page.setViewport({ width: W, height: HOEHE, deviceScaleFactor: 1 });
@@ -351,6 +353,7 @@ H.fahre(async function k4Bild(H) {
                 if (n >= 600) throw new Error("die Bühne steht nach 600 Bildern nicht (Wurzel " + S.wurzel + ", Knopf .h-werk)");
                 await page.evaluate(BILD);
             }
+            teil("buehne");
             if (!aus.geraet)
                 aus.geraet = await frame().evaluate((S) => {
                     const R = new Function(`return ${S.renderer};`)();
@@ -370,6 +373,7 @@ H.fahre(async function k4Bild(H) {
             await weltSeite.bringToFront();
             const auge = await welt(AUGE(POSE));
             const rahmen = await welt(RAHMEN(POSE));
+            teil("welt");
             const datei = path.join(DIR, sid + "-welt.png");
             const [k, l] = [rahmen.kamera, rahmen.mitte];
             const bild = await ruf("/bild", { px: k[0], py: k[1], pz: k[2], lx: l[0], ly: l[1], lz: l[2], w: W, h: HOEHE, fov: POSE.fov, wahl: "0", klasse: "^f:" + esc(z.werk.preset) + ":L\\d$", datei });
@@ -380,20 +384,24 @@ H.fahre(async function k4Bild(H) {
             const kw = klasseAusMaske(bw, mw);
             z.welt = { ...gesetzt, takte: auge.takte, fuss: auge.fuss, R: rahmen.R, dist: rahmen.dist, klassen: rahmen.klassen, pixel: kw.reduce((s, v) => s + v, 0), abnahme: bild.abnahme || null };
             await welt(WEG);
+            teil("bild");
             await page.bringToFront();
             const s = await frame().evaluate(SCHUSS, { S, W, H: HOEHE, fov: POSE.fov, blick: rahmen.blick, abstandR: rahmen.dist / rahmen.R });
             WB.pngDatei(path.join(DIR, sid + "-buehne.png"), s.png);
             const [ls, ms] = [s.luma, s.maske].map((x) => new Uint8Array(Buffer.from(x, "base64")));
             z.buehne = { R: s.rad, pixel: ms.reduce((a, v) => a + v, 0) };
             z.differenz = differenz(lw, kw, ls, ms);
+            teil("schuss");
         } catch (e) {
             z.grund = "ROT: " + String((e && e.message) || e).slice(0, 300);
             await welt(WEG).catch(() => {});
         } finally {
             z.sek = sek(ts);
+            delete z.teile.t;
             await page.close().catch(() => {});
             await weltSeite.bringToFront().catch(() => {});
-            console.log(`K4 ${sid}: Differenz ${z.differenz ? z.differenz.anteil : "—"} · ${z.grund || ""} (${z.sek} s)`);
+            const tl = Object.entries(z.teile).map(([k, v]) => k + " " + v).join(" · ");
+            console.log(`K4 ${sid}: Differenz ${z.differenz ? z.differenz.anteil : "—"} · ${z.grund || ""} (${z.sek} s${tl ? ": " + tl : ""})`);
         }
     }
     const imSoll = STUDIOS.filter((sid) => dOk(aus.studios[sid]));
