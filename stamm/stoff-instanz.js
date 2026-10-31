@@ -2313,17 +2313,9 @@ class AnazhRealm_stoff_instanz {
         // ihre Grenzen (K43: Haus, Tor), fragt er sie wie der Takt — bis B2 las er dort die Baum-Distanzen 12/26 m: das
         // Ring-Tor in 11 m bestellte kalt seine L0 (Grenze 9,5 m), der Takt wechselte danach auf die L1 (Radeon kalt an
         // Genesis: 7 Tor-L0 und 9 Tor-L1 vor dem ersten Bild). Unter dem Ladeschirm wählt er dieselbe Ziel-Stufe wie danach
-        // (ankunft.K2; bis w4-ankunft-3 die Grobstufe der Ankunft aus der Ferne, B2).
-        const treeLike = !!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex);
-        const G = treeLike ? null : this._archStufenGrenzen(entry);
-        if (G)
-            return AnazhRealm._stufeNachGrenzen(
-                d,
-                undefined,
-                G,
-                Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1
-            );
-        return this._chooseLODForDistance(d, undefined, this._lodTreeVisHeight(entry));
+        // (ankunft.K2; bis w4-ankunft-3 die Grobstufe der Ankunft aus der Ferne, B2). Er fragt die Wahl am Abstand selbst
+        // (`_stufeAmAbstand`), ohne Zustand: was er setzt, bestätigt erst das Urteil des Takts (w4-genesis-tore).
+        return this._stufeAmAbstand(entry, d, undefined);
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_stoff_instanz]);
