@@ -1249,10 +1249,7 @@ async function starte() {
                     return `spieler:${kopfGewicht(o) >= 0.3 ? "kopf" : "leib"}/${o.userData.__klasse || (auge ? "auge" : "stoff")}`;
                 };
                 const teile = new Map();
-                const nimm = (kl, o) => {
-                    if (!teile.has(kl)) teile.set(kl, []);
-                    teile.get(kl).push(o);
-                };
+                const nimm = (kl, o) => teile.set(kl, [...(teile.get(kl) || []), o]);
                 // DER BAU-SATZ IN BEREICHEN (`_bauSatzArt` · `_tickBauSatz`): ein Bau-Satz zeichnet die Instanz-Gruppen
                 // vieler Exemplare als EIN Mesh — die Teilung führt jeden Bereich beim Namen seiner Gruppe (`_taeterGruppe`:
                 // Exemplar und Stufe, f:drachentor:L1), nie den Satz. Ein Bereich verbirgt sich, indem er den Satz verlässt
@@ -1260,8 +1257,23 @@ async function starte() {
                 // zeichnet nie ins Bild und bleibt, wie er ist.
                 const bauSaetze = new Map();
                 for (const [art, s] of r.state.chunkSaetze || [])
-                    if (s.mesh && s.mesh.userData && s.mesh.userData.bauSatz && !s.spec.nurWurf)
+                    if (s.mesh?.userData?.bauSatz && !s.spec.nurWurf)
                         bauSaetze.set(s.mesh, { art, s });
+                // DIE KARTE IN ARTEN (w4-laub-karte): der EINE Karten-Atlas zeichnet jede Art aus EINER Gruppe
+                // (`IMPOSTOR_ATLAS_GRUPPE`) — die Teilung führt jede Art beim Namen ihrer Zelle (`fimp:<art>:L2`, die Schicht der
+                // Instanz in aKarte.x), nie die Gruppe: das Urteil der schlechtesten Teil-Klasse sieht die Art, ein Mittel über
+                // den Atlas verbarg sie. Eine Art verbirgt sich, indem ihre Instanzen für den Schuss unter die Welt ziehen (die
+                // Matrix, gemerkt an der Slot-Marke `slotRef` — die Wahl je Pass ordnet die Slots um), und kehrt danach an ihre
+                // Marke zurück.
+                const kg = r.state.archInstanceGroups?.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE),
+                    arten = new Map();
+                if (kg?.mesh?.geometry.attributes.aKarte) {
+                    const art = new Map([...r._kartenAtlas.zellen.values()].map((z) => [z.idx, z.preset]));
+                    for (let i = 0; i < kg.liveCount; i++) {
+                        const kl = `fimp:${art.get(Math.round(kg.mesh.geometry.attributes.aKarte.array[i * 4]))}:L2`;
+                        arten.set(kl, [...(arten.get(kl) || []), kg.slotRef[i]]);
+                    }
+                }
                 r.state.scene.traverse((o) => {
                     if (!zeichnet(o)) return;
                     const bs = bauSaetze.get(o);
@@ -1273,6 +1285,7 @@ async function starte() {
                         }
                         return;
                     }
+                    if (o === kg?.mesh && arten.size) return arten.forEach((refs, kl) => re.test(kl) && nimm(kl, { refs, mesh: o, y: [] }));
                     const kl = teilName(o);
                     if (re.test(kl)) nimm(kl, o);
                 });
@@ -1284,9 +1297,20 @@ async function starte() {
                 if (namen.length > 250) throw new Error(`Klasse /${k.klasse}/: ${namen.length} Teil-Klassen (höchstens 250)`);
                 const alle = [].concat(...teile.values());
                 // der Wurf eines Bereichs ist der seines Satzes: der Satz wirft für die Messung nicht
-                const wurf = new Map(alle.map((o) => (o.bereich ? o.mesh : o)).map((o) => [o, o.castShadow]));
-                const verbirg = (o) => (o.bereich ? r._chunkSatzAus(o.art, o.key) : (o.visible = false));
-                const zeig = (o) => (o.bereich ? r._bauSatzMarke(o.key, o.art) : (o.visible = true));
+                const wurf = new Map(alle.map((o) => (o.bereich || o.refs ? o.mesh : o)).map((o) => [o, o.castShadow]));
+                // die Instanzen einer Karten-Art: unter die Welt (y −10⁷) und zurück auf ihre Höhe, am Slot ihrer Marke
+                const zieht = (o, weg) => {
+                    const a = o.mesh.instanceMatrix.array;
+                    o.refs.forEach((f, j) => {
+                        const i = f.slot * 16 + 13;
+                        if (weg) o.y[j] = a[i];
+                        a[i] = weg ? -1e7 : o.y[j];
+                    });
+                    o.mesh.instanceMatrix.needsUpdate = true;
+                    r._archMeshBundleTouch(o.mesh);
+                };
+                const verbirg = (o) => (o.bereich ? r._chunkSatzAus(o.art, o.key) : o.refs ? zieht(o, true) : (o.visible = false));
+                const zeig = (o) => (o.bereich ? r._bauSatzMarke(o.key, o.art) : o.refs ? zieht(o, false) : (o.visible = true));
                 const ruhen = ["_tickNahWiese", "_ruheImBild"].map((m) => [m, Object.hasOwn(r, m), r[m]]);
                 for (const [m] of ruhen) r[m] = () => 0;
                 // verbirgt der Schuss die Strähnen des Spielers, ist sein Kopf kahl: die Kappe gehört zum Haar (`_kopfKahl`, haar.K2)

@@ -818,6 +818,8 @@ class AnazhRealm_stoff_material {
                                         _at.mapNode = _Ta.texture(_at.map);
                                         _at.nmapNode = _Ta.texture(_at.nmap);
                                         _at.lmapNode = _Ta.texture(_at.lmap);
+                                        // die Tiefe je Texel: mit BC eine eigene Schicht, rgba8 trägt sie in der Normale
+                                        _at.tmapNode = _at.tmap ? _Ta.texture(_at.tmap) : null;
                                     }
                                     const _V = _Ta.float(_at.V); // die Peilungen je Ring
                                     // DIE HEBUNGS-RINGE (lod.K3): die Tafel der Schicht (phyto-core `karteRinge`, aufsteigend) — je
@@ -935,19 +937,16 @@ class AnazhRealm_stoff_material {
                                     // τ Ansichten je Zeile ab der ersten Zeile des Rings (phyto-core `karteRinge`).
                                     const _vZ = _Ta.float(1.0).sub(_vIn);
                                     const _yW = _ring.z;
-                                    const _zelle = (a) => {
+                                    // die Zelle der Peilung a, gelesen an der Spalte u (0..1 in ihrer Ansicht)
+                                    const _zelle = (a, u) => {
                                         const x0 = _Ta.mod(a, _tW).mul(_bw);
                                         const y0 = _yW.add(_Ta.floor(a.div(_tW)).mul(_bh));
                                         const uv = _Ta.vec2(
-                                            x0.add(_uIn.mul(_bw)).div(_at.cw),
+                                            x0.add(u.mul(_bw)).div(_at.cw),
                                             y0.add(_vZ.mul(_bh)).div(_Hs)
                                         );
-                                        return { x0, y0, uv };
+                                        return { x0, y0, uv, u };
                                     };
-                                    const _zA = _zelle(_v0),
-                                        _zB = _zelle(_v1);
-                                    const _uvA = _zA.uv;
-                                    const _uvB = _zB.uv;
                                     // DER STAMM-STRICH (Echt-GPU 05.10., Höhen-Sonde): die Anker-Peilung ist für das ganze Quad
                                     // dieselbe; steht sie GENAU auf einer Ansichts-Grenze, kippt ihr Rundungs-Rauschen einzelne Pixel
                                     // auf die Nachbar-Ansicht (v0 springt um 1 bzw. 7). Die Hardware-Ableitung des 2×2-Blocks las den
@@ -964,6 +963,51 @@ class AnazhRealm_stoff_material {
                                             .sample(this._laubVersatz(_Ta, uv, _gX, _gY))
                                             .depth(_schicht)
                                             .grad(_gX, _gY);
+                                    // ── DIE TIEFE JE TEXEL (w4-laub-karte): jede Ansicht trägt je Texel, wie weit die Fläche der Gestalt
+                                    //    vor der Mitte ihres Rahmens liegt (phyto-core `karteTiefe`; BC: die Schicht `tmap`, ein leerer
+                                    //    Texel trägt die seiner deckenden Nachbarn; rgba8: der vierte Kanal der Normale, vormultipliziert
+                                    //    mit der Deckung in z, ohne Deckung die Mitte). Ein Punkt (u, v, w) der Ansicht a (Peilung θ_a,
+                                    //    Hebung e) liegt im Blick des Auges (Peilung θ, Hebung φ, δ = θ − θ_a) um u·cos φ·sin δ +
+                                    //    v·(cos e·sin φ − sin e·cos φ·cos δ) + w·(cos e·cos φ·cos δ + sin e·sin φ) vor der Ebene der
+                                    //    Karte (`wAuge`): die Tiefe des Pixels und der Ort seines empfangenen Schattens (unten). Die
+                                    //    Karte liest jede Ansicht an ihrer Spalte, wie bisher: eine Blick-Parallaxe aus EINER Tiefen-
+                                    //    Schicht verschob die zwei Ansichten 45° auseinander in den Schatten der jeweils anderen
+                                    //    (die Probe der Welle w4-laub-karte, eine Kugel 3,4 m neben der Achse: IoU 0,446 statt 0,582
+                                    //    ohne sie).
+                                    const _tiefeW = (z) => {
+                                        let t;
+                                        if (_at.fmt !== "rgba8") t = _probeA(_at.tmapNode, z.uv).r;
+                                        else {
+                                            const n = _probeA(_at.nmapNode, z.uv);
+                                            t = _Ta.select(
+                                                n.z.greaterThan(0.01),
+                                                _Ta.float(1.0).sub(_Ta.float(1.0).sub(n.w).div(n.z.max(1e-3))),
+                                                _Ta.float(0.5)
+                                            );
+                                        }
+                                        return globalThis.__phytoCore.karteTiefeVersatz(_alg, t, _rahmen.x, _hHv);
+                                    };
+                                    const _cEW = _Ta.cos(_eW),
+                                        _sEW = _Ta.sin(_eW);
+                                    const _cPhiF = _Ta.cos(_phiF),
+                                        _sPhiF = _Ta.sin(_phiF);
+                                    const _vBild = _vC.mul(2.0).sub(1.0).mul(_hE); // die Höhe im Bild des Rings (Meter der Vorlage)
+                                    const _uKarte = _uv.x.mul(2.0).sub(1.0).mul(_rahmen.x); // die Spalte der Karte (Meter)
+                                    const _blick = (a, delta) => {
+                                        const sD = _Ta.sin(delta),
+                                            cD = _Ta.cos(delta);
+                                        const z = _zelle(a, _uIn);
+                                        z.wAuge = _uKarte
+                                            .mul(_cPhiF.mul(sD))
+                                            .add(_vBild.mul(_cEW.mul(_sPhiF).sub(_sEW.mul(_cPhiF).mul(cD))))
+                                            .add(_tiefeW(z).mul(_cEW.mul(_cPhiF).mul(cD).add(_sEW.mul(_sPhiF))));
+                                        return z;
+                                    };
+                                    const _dreh = (2 * Math.PI) / _at.V;
+                                    const _zA = _blick(_v0, _fb.mul(_dreh)),
+                                        _zB = _blick(_v1, _fb.sub(1.0).mul(_dreh));
+                                    const _uvA = _zA.uv;
+                                    const _uvB = _zB.uv;
                                     // DIE VERGRÖSSERTE KARTE (K20, 12.10.): steht ein Texel der Stufe 0 auf mehr als einem Pixel, liest
                                     // die Karte ihre Zelle KUBISCH (B-Spline, vier bilineare Abgriffe in der eigenen Ansicht) statt
                                     // bilinear. Die Stufe 0 ist binär (Karten-Gesetz, BC1): bilinear gelesen schnitt der alphaTest
@@ -978,7 +1022,7 @@ class AnazhRealm_stoff_material {
                                         .sub(_Ta.float(1.0))
                                         .clamp(0.0, 1.0);
                                     const _kubisch = (tex, z) => {
-                                        const cx = _uIn.mul(_bw).sub(_Ta.float(0.5));
+                                        const cx = z.u.mul(_bw).sub(_Ta.float(0.5));
                                         const cy = _vZ.mul(_bh).sub(_Ta.float(0.5));
                                         const ix = _Ta.floor(cx),
                                             iy = _Ta.floor(cy);
@@ -1161,6 +1205,22 @@ class AnazhRealm_stoff_material {
                                         .clamp(0.0, 1.0);
                                     const _sicht = _Ta.mix(_s2.y, _s2.x, _hoch);
                                     mat.receivedShadowNode = (schatten) => schatten.mul(_sicht);
+                                    // ── DER PIXEL-TIEFEN-VERSATZ (w4-laub-karte): die Karte steht in der Tiefe ihrer Gestalt, nicht auf
+                                    //    ihrer Ebene durch die Stammachse — je Pixel rückt sie entlang des Sicht-Strahls um die Tiefe
+                                    //    des gezeigten Punkts (`wAuge` beider Ansichten gemischt, × Instanz-Skala). Der Fuß steht im
+                                    //    Boden, wo der Stamm steht (die Tafel schnitt ihn als Gerade), Nachbar-Karten verdecken
+                                    //    einander wie ihre Kronen, und die Blende zur Gestalt mischt zwei Flächen in derselben Tiefe
+                                    //    statt einer Tafel hinter der Krone. Den Schatten empfängt sie an demselben Punkt. ──
+                                    const _wAuge = _Ta.mix(_zA.wAuge, _zB.wAuge, _fb).mul(_sInst);
+                                    const _pV = _Ta.positionView;
+                                    mat.depthNode = _Ta.viewZToPerspectiveDepth(
+                                        _pV.z.mul(_Ta.float(1.0).sub(_wAuge.div(_pV.length().max(1e-3)))),
+                                        _Ta.cameraNear,
+                                        _Ta.cameraFar
+                                    );
+                                    mat.receivedShadowPositionNode = _Ta.positionWorld.add(
+                                        _Ta.cameraPosition.sub(_Ta.positionWorld).normalize().mul(_wAuge)
+                                    );
                                     // ── CAMERA-FACING (Vertex) im VORLAGEN-Raum: der positionNode läuft VOR der Instanz-Matrix
                                     //    (r184, WGSL gelesen), die Matrix dreht, skaliert und schiebt das Quad danach. Also blickt die
                                     //    Karte in der Vorlage auf das Auge, wie die Instanz es sieht: Auge im Objekt-Raum minus Anker
