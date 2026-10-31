@@ -1241,8 +1241,12 @@ const WEG_FAHRT = {
 // sich auf die Bank und betritt das Portal
 const geh = (page) => halteBis(page, { taste: "KeyW", ziel: () => window.__bauWeg.ziel(), frist: 120000 });
 const E = (page) => taste(page, "KeyE");
-// Enter öffnet das Gespräch, Enter sendet
-const sage = async (page, satz) => (await taste(page, "Enter"), await page.keyboard.type(satz), taste(page, "Enter"));
+// Enter öffnet das Gespräch, Enter sendet. Die Buchstaben sind echte Tasten wie bei `type` — je Buchstabe `type` (this die Tastatur;
+// der Index, den `Array.from` mitgibt, trägt keine Verzögerung) —, aber ohne auf die Antwort jeder einzelnen zu warten: jedes Drücken
+// geht sofort auf die EINE Leitung (die Reihe bleibt), dann alle Antworten. Bis 30.10. wartete jede Taste: der Werk-Code des Teilens
+// trägt bis zu 4 096 Zeichen (WERK_CODE.max), an der Radeon (379e5f56) tippte die Linse die geteilte Brücke (1 310) 11,6 s, die Bank
+// (402) 4,3 s.
+const sage = async (page, satz) => (await taste(page, "Enter"), await Promise.all(Array.from(satz, page.keyboard.type, page.keyboard)), taste(page, "Enter"));
 const VERB_TASTE = { drive: async (page) => (await E(page), await geh(page), E(page)), portal: E, sitzen: E };
 // Ein Lauf: vorbereiten (vor dem Zähler) → der Weg → im Bau-Modus F (confirmBuild) → das Werk steht oder der Kanal spricht.
 async function wegLauf(page, o) {
