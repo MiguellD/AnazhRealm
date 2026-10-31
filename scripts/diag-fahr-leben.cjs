@@ -777,7 +777,7 @@ const wegenetzVerdict = (m) =>
 // der Spuren springt (`stufen`), keiner steckt, keiner berührt einen Bewohner oder einen anderen Wagen, keiner ist ohne
 // Schlüssel in der Kreuzung, keiner stößt an einen Bau, keiner verlässt seine Spur, der Takt bleibt billig, und die Gehenden
 // teilen die Straße nach dem EINEN Gesetz: höchstens `fahrbahn` ihrer Schritte auf der Fahrbahn (die Querungen). ════
-const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.03 };
+const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.05 };
 const verkehrVerdict = (m) =>
     [
         [m.enden >= 1 && m.wenden === m.enden, `Wenden ${m.wenden} an ${m.enden} Enden`],
@@ -2356,10 +2356,11 @@ hauptLauf(async () => {
                 [{ stufe: { nah: 99, veraltet: 2 } }, /veralteter Stufe 2/],
             ].filter(([an, soll]) => !((v) => v.length === 1 && soll.test(v[0]))(verkehrVerdict({ ...g, ...an })));
             // ALT ROT, NEU GRÜN an EINEM Täter (w4-verkehr-c, 10 Uhr, 10 min): bis hier fuhr kein Wagen zu einem Ziel (der Same
-            // wählte je Kreuzung, keine Ankunft) und die Menge ging zu 7,67 % ihrer Schritte auf der Fahrbahn (Laterne und Ecke der
-            // Kreuzung warfen den Gehweg auf die Spur) — beide beim Namen; neu GRÜN
-            const alt = verkehrVerdict({ ...g, ziele: { erreicht: 0, ohne: [0, 1, 2], laengsteS: 0 }, fahrbahn: { geh: 157054, auf: 12043, anteil: 0.0767 } }); // prettier-ignore
-            const altRot = alt.length === 2 && /ohne Ziel erreicht/.test(alt[0]) && /Fahrbahn 12043/.test(alt[1]);
+            // wählte je Kreuzung, keine Ankunft) und die Menge ging zu 14,43 % ihrer Schritte auf der Fahrbahn (Laterne und Ecke der
+            // Kreuzung warfen den Gehweg auf die Spur, um die stehenden Wagen ging sie durch ihre Bahn; nachher 3,1–3,8 %) — beide
+            // beim Namen; neu GRÜN
+            const alt = verkehrVerdict({ ...g, ziele: { erreicht: 0, ohne: [0, 1, 2], laengsteS: 0 }, fahrbahn: { geh: 1213104, auf: 175091, anteil: 0.1443 } }); // prettier-ignore
+            const altRot = alt.length === 2 && /ohne Ziel erreicht/.test(alt[0]) && /Fahrbahn 175091/.test(alt[1]);
             check(
                 "Selbst-Test VK: der Verkehr nennt jeden Bruch beim Namen (alt ROT an Ziel und Fahrbahn, neu GRÜN)",
                 !verkehrVerdict(g).length && !brueche.length && altRot,

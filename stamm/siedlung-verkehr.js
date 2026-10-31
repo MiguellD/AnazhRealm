@@ -388,14 +388,16 @@ class AnazhRealm_siedlung_verkehr {
         return true;
     }
 
-    // DER VORRANG DER FAHRBAHN: beansprucht ein Wagen der Stadt (er fährt oder hält auf der Fahrt) den Punkt (x, z)? Er liegt vor
-    // seinem Bug, höchstens `vorrangM` voraus, und quer in seiner Bahn (der halbe Wagen, Kapsel, `seitM` und ein Meter für die
-    // Kurve). Leser: der Gang der Bewohner (`_bewohnerGehen`: wer neben der Fahrbahn in sie tritt, wartet am Rand).
-    _verkehrVorrang(S, x, z) {
+    // DER VORRANG DER FAHRBAHN: beansprucht ein Wagen der Stadt (er fährt oder hält auf der Fahrt) den Punkt (x, z) gegen den
+    // Bewohner b? Er liegt vor seinem Bug, höchstens `vorrangM` voraus, und quer in seiner Bahn (der halbe Wagen, Kapsel, `seitM`
+    // und ein Meter für die Kurve) — außer der Wagen hält für b selbst (`W.wer`, `_verkehrFolge`): dann geht b zuerst. Bis hier
+    // hielt der Halter einer Enge für den, der in der Kurve am Rand auf ihn wartete (die Bahn des Wagens weitet sich dort um
+    // das Ausscheren): beide standen, 15 Wagen dahinter. Leser: der Gang der Bewohner (`_bewohnerGehen`).
+    _verkehrVorrang(S, x, z, b) {
         const V = AnazhRealm.VERKEHR;
         for (const W of S.verkehr.wagen) {
             const e = W.entry;
-            if (W.zustand !== "faehrt" || !e) continue;
+            if (W.zustand !== "faehrt" || !e || W.wer === b) continue;
             const [fx, fz] = [Math.sin(e._rideYaw || 0), Math.cos(e._rideYaw || 0)];
             const [dx, dz] = [x - e.position.x, z - e.position.z];
             const vor = dx * fx + dz * fz - W.hl;

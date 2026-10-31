@@ -1829,7 +1829,7 @@ class AnazhRealm_siedlung_bewohner {
                 (vx || vz) &&
                 !this._verkehrAufSpur(S, x0, z0, 0) &&
                 this._verkehrAufSpur(S, nx, nz, 0) &&
-                this._verkehrVorrang(S, nx, nz)
+                this._verkehrVorrang(S, nx, nz, b)
             )
                 lenk = { vx: 0, vz: 0 };
         }
