@@ -122,3 +122,4 @@ takt28a-gtx gemessen punkte ec989990 gtx: 1 grün / 5 rot
 takt28b-gtx gemessen punkte ec989990 gtx: 2 grün / 9 rot
 b-kalt-94c0 Exit0 station ankunft-kalt.sh an 94c079cb
 b-kalt-ec98 Exit0 station ankunft-kalt.sh an ec989990
+z100c-abab nicht-langsamer abab ec989990 gegen 94c079cb: stadt 4+4 nicht-langsamer · w-ego 4+4 nicht-langsamer
