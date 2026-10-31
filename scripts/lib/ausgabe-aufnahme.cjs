@@ -808,6 +808,12 @@ function ausgabeAufnahme(W, H, warm, opt) {
                 // eine Kaskade nur, wenn sie fällig ist — die Karte des ersten Frames sah die Szene vor der Erst-Zeichnung (A8-n1)
                 r._schattenAlleNeu();
             }
+            // DIE TIEFE ALLEIN (`opt.tiefe`: der Arm von `werkbank bild --arm` sucht in ihr die Klasse): die Tiefe trägt keine
+            // Geschichte — EIN Bild nach dem Neubeginn der Folge, mit dem Versatz jedes Neubeginns (zwei Tiefen unterscheiden
+            // sich nur, wo die Szene sich unterscheidet; `__spiegelDaten` liest den Szenen-Pass dieses Bilds), ohne die 32 Bilder
+            // der Geschichte, ohne Rücklese der Farbe. Bis dahin las der Arm sie hinter zwei ganzen Aufnahmen (material.K2: je
+            // Armlänge 2 × 33 Bilder, sechs Armlängen)
+            if (opt && opt.tiefe) return frame();
             const nWarm = Math.max(warm == null ? 1 : warm, r.state.traaNode ? 32 : 0);
             for (let k = 0; k < nWarm; k++) frame();
             const t0 = performance.now();
@@ -819,8 +825,6 @@ function ausgabeAufnahme(W, H, warm, opt) {
             const info = {
                 drawCalls: pf.renderCalls != null ? pf.renderCalls : ri.drawCalls,
                 triangles: pf.renderTris != null ? pf.renderTris : ri.triangles,
-                infoDrawCalls: ri.drawCalls,
-                infoTriangles: ri.triangles,
                 // die Erst-Zeichnung vor dem Schuss: offen 0 (sonst brach die Aufnahme oben ab) und die Wartezeit
                 erst,
             };

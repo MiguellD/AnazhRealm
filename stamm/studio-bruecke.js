@@ -3203,6 +3203,25 @@ class AnazhRealm_studio_bruecke {
         return TSL.reference("material." + pfad, typ || "float");
     }
 
+    // EIN GRAPH JE SIGNATUR (1310-18): r184 schlüsselt ein Programm nach der IDENTITÄT seiner Knoten (der Knoten-Schlüssel endet
+    // in `customCacheKey` = Knoten-id) — frisch gebaute Knoten hießen ein Programm je Stoff. Der erste Stoff einer Signatur legt
+    // die Knoten seiner `plaetze` ab, jeder weitere zeichnet mit DENSELBEN; was nur ihn unterscheidet, liest der Graph als
+    // Stoff-Wert (`_stoffWert`). Weichen die belegten Plätze ab, fehlt der Signatur eine Eingabe des Baus: das bricht laut beim
+    // Namen, nie still mit fremdem Graphen. Leser: der Studio-Stoff (`_foundryTreeMaterial`) und der Werk-Stoff
+    // (`_buildPbrNodeMaterial`, material.K5).
+    _graphTeilen(mat, sig, plaetze) {
+        const G = this._geteilteGraphen || (this._geteilteGraphen = new Map());
+        const g = G.get(sig);
+        if (!g) return void G.set(sig, Object.fromEntries(plaetze.map((p) => [p, mat[p] || null])));
+        const ab = plaetze.filter((p) => !mat[p] !== !g[p]);
+        if (ab.length)
+            throw this._stoffBruch(
+                `der geteilte Graph „${sig}"`,
+                new Error("die Signatur verfehlt eine Eingabe des Baus — abweichende Knoten-Plätze: " + ab.join(" · "))
+            );
+        for (const p of plaetze) mat[p] = g[p];
+    }
+
     // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über
     // der Wurzel in Metern aus dem Satz-Attribut `aWiege` (`_satzBlock`), also für jede Studio-Skala derselbe Stoff.
     // `mp.satzRegler` (true): der EINE Satz-Stoff des Bau-Satzes (`_satzStoff`, K43-2) — Rauheit, Metall und Deckkraft liest er
@@ -3657,25 +3676,11 @@ class AnazhRealm_studio_bruecke {
         // DAS JAHR OHNE BAUM-WIND (die Blende aus): sonst webt `_baumWindStoff` die Lage des Jahrs in den Wind-Knoten
         const _baumWind = xfade && (isBark || kind === "foliage" || kind === "foliageTex" || kind === "schatten");
         if (jahr === true && !mat.positionNode && !_baumWind) mat.positionNode = this._jahrLage(TSL);
-        // EIN GRAPH JE SIGNATUR (1310-18): r184 schlüsselt ein Programm nach der IDENTITÄT seiner Knoten (der Knoten-Schlüssel
-        // endet in `customCacheKey` = Knoten-id) — frisch gebaute Knoten hießen ein Programm je Stoff (1310-17: 43 Foundry-Stoffe,
-        // 43 Bauten). Die Signatur nennt jede Eingabe, an der der Bau oben verzweigt (Art · Rinde · Look-Klasse · Leucht · Gewebe
-        // · Ton-Anker der Strähne · Blende · Wiegen); der erste Stoff einer Signatur legt ihre Knoten ab, jeder weitere zeichnet
-        // mit DENSELBEN Knoten — die Werte je Stoff liest der Graph als Stoff-Wert, die Regler (Rauheit, Metall, Leuchtfarbe,
-        // Deckkraft, Schwelle) liest r184 als Stoff-Referenz. Weichen die belegten Knoten-Plätze ab, fehlt der Signatur eine
-        // Eingabe: das bricht laut beim Namen, nie still mit fremdem Graphen. Der Satz-Stoff (K43-2) ist eine Eingabe: er liest
-        // Rauheit und Metall je Ecke (`aRegler`), das Emissiv aus `aGlut` und, durchsichtig, die Deckkraft in colorNode.a.
-        const _plaetze = [
-            "colorNode",
-            "emissiveNode",
-            "opacityNode",
-            "outputNode",
-            "positionNode",
-            "maskNode",
-            "maskShadowNode",
-            "roughnessNode",
-            "metalnessNode",
-        ];
+        // EIN GRAPH JE SIGNATUR (1310-18, `_graphTeilen`; 1310-17: 43 Foundry-Stoffe, 43 Bauten). Die Signatur nennt jede
+        // Eingabe, an der der Bau oben verzweigt (Art · Rinde · Look-Klasse · Leucht · Gewebe · Ton-Anker der Strähne · Blende ·
+        // Wiegen) — die Werte je Stoff liest der Graph als Stoff-Wert, die Regler (Rauheit, Metall, Leuchtfarbe, Deckkraft,
+        // Schwelle) liest r184 als Stoff-Referenz. Der Satz-Stoff (K43-2) ist eine Eingabe: er liest Rauheit und Metall je Ecke
+        // (`aRegler`), das Emissiv aus `aGlut` und, durchsichtig, die Deckkraft in colorNode.a.
         const _sig = [
             kind,
             isBark ? "rinde" : "",
@@ -3691,23 +3696,17 @@ class AnazhRealm_studio_bruecke {
             ton ? "aTon" : "", // die Farbe je Ecke nach der Palette des Leibs (`vcol`): ohne Blende teilte sie sonst einen Graphen
             jahr === true ? "jahr" : "",
         ].join("|");
-        if (!this._foundryGraphen) this._foundryGraphen = new Map();
-        const _graph = this._foundryGraphen.get(_sig);
-        if (!_graph) {
-            const g = {};
-            for (const p of _plaetze) g[p] = mat[p] || null;
-            this._foundryGraphen.set(_sig, g);
-        } else {
-            const ab = _plaetze.filter((p) => !mat[p] !== !_graph[p]);
-            if (ab.length)
-                throw this._stoffBruch(
-                    `der geteilte Graph „${_sig}"`,
-                    new Error(
-                        "die Signatur verfehlt eine Eingabe des Baus — abweichende Knoten-Plätze: " + ab.join(" · ")
-                    )
-                );
-            for (const p of _plaetze) mat[p] = _graph[p];
-        }
+        this._graphTeilen(mat, _sig, [
+            "colorNode",
+            "emissiveNode",
+            "opacityNode",
+            "outputNode",
+            "positionNode",
+            "maskNode",
+            "maskShadowNode",
+            "roughnessNode",
+            "metalnessNode",
+        ]);
         mat.userData.foundrySignatur = _sig;
         mat.userData.foundryKind = kind; // die Art vor dem Leuchten: die Nässe liest ihre Poren (`_naesseImStoff`)
         // das Leuchtquellen-Gesetz: der Licht-Pool und der Zeitplan des Gesetzbuchs (`mp.licht`) im Leuchten (K11)

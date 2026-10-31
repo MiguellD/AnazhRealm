@@ -638,8 +638,9 @@ class AnazhRealm_stoff_material {
     // Gestalt, und am streifenden Blick der Ferne am stärksten — die Karte der Fichte stand in der Dämmerung 8,3 ×, nachts
     // 4,8 × so hell wie ihre Gestalt (Radeon, Mess-Wiese; `werkbank licht --laub --karte --uhr`). Lehre 21: Fill und Rim
     // leben im Labor.
-    // Gewicht 0 = kein Knoten (der Stoff behält den Ausgang des Vendors).
-    _applySubstanceResponse(mat, profile = {}) {
+    // Gewicht 0 = kein Knoten (der Stoff behält den Ausgang des Vendors). `werte` (der Werk-Stoff, `_substanceCharacter`): das
+    // Mikro-Gewicht reist als Stoff-Wert, nie als Konstante.
+    _applySubstanceResponse(mat, profile = {}, werte) {
         if (!mat) return;
         try {
             const _T = THREE.TSL;
@@ -650,6 +651,9 @@ class AnazhRealm_stoff_material {
             // (J2) Mikro-Tiefe/Kavitäts-AO — die tiefe-Antenne (das Terrain trägt
             // seine eigene reichere triplanar-Schicht im colorNode → Gewicht 0).
             if (_p("micro") > 0) {
+                const _mikro = werte
+                    ? ((werte.mikro = _p("micro")), this._stoffWert(_T, "userData.stoffWerte.mikro"))
+                    : _p("micro");
                 const _o = _T.output; // die FERTIGE lit-Farbe (post-lighting)
                 const _wp = _T.positionWorld;
                 const _ra = this._rauschAtlas();
@@ -658,16 +662,14 @@ class AnazhRealm_stoff_material {
                 const _det = _n1.mul(0.7).add(_n2.mul(0.3));
                 // microStrength ist ein UNIFORM (der Settings-Regler lebt), profil-gewichtet. `_au.r5StructureBoost`
                 // ist in `_ensureAtmoUniforms` GARANTIERT vorhanden → kein Fallback-Branch.
-                const _micro = (_au.microStrength || _T.float(cfg.microStrength)).mul(
-                    _au.r5StructureBoost.mul(_p("micro"))
-                );
+                const _micro = (_au.microStrength || _T.float(cfg.microStrength)).mul(_au.r5StructureBoost.mul(_mikro));
                 let _shade = _T.float(1.0).add(_det.mul(_micro));
                 // Kavitäts-AO (wie Terrain V15.2): Welt-Raum-Krümmung aus den
                 // Fragment-Derivaten → Kontakt-Schatten in Kanten/Mulden.
                 const _curv = _T.fwidth(_T.normalWorld).length().div(_T.fwidth(_wp).length().add(0.0001));
                 // J4-DEBUG: aoScale (default 1) schaltet die Kavitäts-AO ab (=0).
                 const _aoStr = (_au.aoScale ? _T.float(cfg.aoStrength).mul(_au.aoScale) : _T.float(cfg.aoStrength)).mul(
-                    _p("micro")
+                    _mikro
                 );
                 const _ao = _T.float(1.0).sub(_curv.mul(_aoStr).clamp(0.0, cfg.aoCap));
                 mat.outputNode = _T.vec4(_o.xyz.mul(_shade.mul(_ao)), _o.w);
@@ -730,6 +732,7 @@ class AnazhRealm_stoff_material {
         }
         if (!opts.transparent && typeof this._applySubstanceResponse === "function") {
             let albedoNode = null;
+            let werte = null; // die Werte je Stoff des Werk-Stoffs (der flache Zweig unten)
             try {
                 const _Ta = THREE.TSL;
                 if (opts.vertexColors === true) {
@@ -1291,26 +1294,37 @@ class AnazhRealm_stoff_material {
                     if (mat.colorNode) mat.vertexColors = false;
                 } else if (isFlatStructure) {
                     // Flach-Farb-Werke (Tempel · Schwert · Rüstung · Esse · …) fließen durch den EINEN Substanz-
-                    // Charakter-Kern (Korn · Kavität · Ton · Verwitterung · Moos · Counter-Shading · Roughness · Bump),
-                    // instanz-stabil (positionLocal), tag-getrieben, LOD-gegated.
-                    const _c = new THREE.Color(opts.color);
-                    const _r = this._substanceCharacter(_Ta, _Ta.vec3(_c.r, _c.g, _c.b), {
+                    // Charakter-Kern (Korn · Kavität · Ton · Verwitterung · Moos · Counter-Shading · Roughness),
+                    // instanz-stabil (positionLocal), tag-getrieben, LOD-gegated. DIE WERTE JE STOFF (material.K5): die Farbe
+                    // liest r184 aus dem Stoff (`materialColor` — auch die Wahl-Tönung der Werkstatt-Vorschau, die bis dahin auf
+                    // keinem flachen Teil stand), die Maße seiner Zeile der Kern als Stoff-Wert (`werte`) — Werke gleicher
+                    // Gestalt teilen EIN Programm (`_graphTeilen` unten). Bis dahin trug jede Farbe und jede Zeile ihre
+                    // Konstanten im Graphen: die Glanz-Bühne (Eisen, Bronze, Quarz, Stahl) übersetzte vier Programme.
+                    werte = mat.userData.stoffWerte = {};
+                    const _r = this._substanceCharacter(_Ta, _Ta.materialColor, {
                         pos: _Ta.positionLocal,
                         worldPos: _Ta.positionWorld,
                         tags: opts.tags || {},
                         metal: params.metalness || 0,
                         roughBase: _Ta.materialRoughness,
-                        bump: true,
+                        werte,
                     });
                     albedoNode = _r.albedo;
                     mat.colorNode = _Ta.vec4(_r.albedo, _Ta.float(1.0));
                     if (_r.roughNode) mat.roughnessNode = _r.roughNode;
-                    if (_r.normalNode) mat.normalNode = _r.normalNode;
                 }
             } catch (_e) {
                 throw this._stoffBruch("der PBR-Stoff (Albedo-Quelle)", _e);
             }
-            this._applySubstanceResponse(mat, responseProfile);
+            this._applySubstanceResponse(mat, responseProfile, werte);
+            // DER WERK-STOFF zeichnet mit dem Graphen seiner Gestalt (die Folge seiner Stoff-Werte); Leuchten und Nässe
+            // (`_leuchtStoff`) hängen an diesen Knoten und teilen sich mit ihnen
+            if (werte)
+                this._graphTeilen(mat, "werk:" + Object.keys(werte).join(","), [
+                    "colorNode",
+                    "roughnessNode",
+                    "outputNode",
+                ]);
         }
         // Geflattete Shading-Normale (2.5D-Lichtung) NUR für Terrain (vertexColors ohne pflanzenStoff).
         // Vegetation (pflanzenStoff) behält ihre echte Normale — nach oben gerichtete Laub-Karten wären mittags
@@ -2019,14 +2033,27 @@ class AnazhRealm_stoff_material {
 
     // ── DER EINE SUBSTANZ-CHARAKTER-KERN ──
     // Terrain · Vegetation · Flach-Werke lesen alle diese Quelle (Korn · Kavität · Ton · Verwitterung ·
-    // Moos · Counter-Shading · Roughness · Bump, LOD-gegated); der Domänen-Unterschied reist als Parameter
-    // (`pos`-Skala · tags · metal · mossDrive · bark · bump). Render-only, tag-neutral; Fehler → der
-    // unveränderte Albedo. Gibt { albedo, roughNode|null, normalNode|null }.
+    // Moos · Counter-Shading · Roughness, LOD-gegated); der Domänen-Unterschied reist als Parameter
+    // (`pos`-Skala · tags · metal · mossDrive · bark). Render-only, tag-neutral; Fehler → der
+    // unveränderte Albedo. Gibt { albedo, roughNode|null }.
+    // KEIN BUMP AUS DEM RAUSCHEN (material.K5): r184s `bumpMap` ist ein Textur-Bump — er wertet die Höhe an der um dFdx/dFdy
+    // verschobenen Koordinate JEDER Textur in ihr neu aus. Das Rauschen liest seine Ecken ganzzahlig (`textureLoad`,
+    // `_rauschAtlas`): wo die Albedo die Probe schon trug (Stein, Quarz, Holz), las der Bump dieselben Knoten — Höhen-Differenz 0,
+    // die Kugel mit und ohne ihn byte-gleich (640 × 360, 0 Pixel); wo erst er sie baute (die Schichtung des Metalls), stand
+    // `dpdx(vec2<i32>)` im Programm — ungültiges WGSL, Eisen, Bronze und Stahl zeichneten seit ihrer Metall-Zeile (w3w-glanz)
+    // gar nicht, und die Glanz-Bühne wartete auf die abgesagte Pipeline (swiftshader 126 s, GTX über den Deckel 60 s). Das
+    // Mikro-Relief einer Fläche ist EIN Gesetz (`_mikroRelief`).
+    // DIE WERTE JE STOFF (`opts.werte`, material.K5): was nur diesen Stoff unterscheidet (die Maße aus Härte, Dichte, Lebendig
+    // und Metall), legt der Kern in `werte` ab und liest es als Stoff-Wert (`_stoffWert`), nie als eingefaltete Konstante —
+    // Stoffe gleicher Gestalt teilen so EIN Programm (`_graphTeilen`). Jede Weiche des Baus legt ihre Werte oder lässt sie: die
+    // Folge der Namen IST die Gestalt. Ohne `werte` steht jeder Wert als Zahl im Graphen (Boden, Fels, Rinde: je EIN Stoff).
     _substanceCharacter(_T, baseAlbedo, opts = {}) {
-        const out = { albedo: baseAlbedo, roughNode: null, normalNode: null };
+        const out = { albedo: baseAlbedo, roughNode: null };
         try {
             const _ra = this._rauschAtlas();
             const f = (v) => _T.float(v);
+            const W = (name, v) =>
+                opts.werte ? ((opts.werte[name] = v), this._stoffWert(_T, "userData.stoffWerte." + name)) : f(v);
             const asNode = (v, d) => (v == null ? f(d) : v && v.mul ? v : f(v));
             const pos = opts.pos || _T.positionLocal;
             const wp = opts.worldPos || _T.positionWorld;
@@ -2034,24 +2061,16 @@ class AnazhRealm_stoff_material {
             const ht = Math.max(0, Math.min(1, Number(t["härte"]) || 0.4));
             const di = Math.max(0, Math.min(1, (Number(t.dichte) || 0) / 3));
             const metal = Math.max(0, Math.min(1, Number(opts.metal) || 0));
-            // Objekt-lokal (Default): Strata-Y · Verwitterung-unten · Counter-Shading · Bump lesen object-lokales
+            // Objekt-lokal (Default): Strata-Y · Verwitterung-unten · Counter-Shading lesen object-lokales
             // y ∈ [−1..1]. Terrain hat kein object-y → `objectLocal:false` schaltet sie ab; Korn · Ton · Kavität ·
             // Moos tragen weiter.
             const objLocal = opts.objectLocal !== false;
-            // LOD-Fade: feines Korn + Bump verblassen mit der Distanz (Perf, kein Aliasing), Ton-/Moos-Zonen
-            // bleiben. Schwellen aus der EINEN Quelle `TERRAIN_BUMP` (lodNear/lodFar/fineNear/fineFar).
+            // LOD-Fade: feines Korn verblasst mit der Distanz (Perf, kein Aliasing), Ton-/Moos-Zonen bleiben. Schwellen aus der
+            // EINEN Quelle `TERRAIN_BUMP` (fineNear/fineFar).
             const _BD = AnazhRealm.TERRAIN_BUMP;
-            let fineFade = f(1.0);
-            let bumpFade = f(1.0);
-            {
-                const dist = wp.sub(_T.cameraPosition).length();
-                fineFade = f(1.0)
-                    .sub(_T.smoothstep(f(_BD.fineNear), f(_BD.fineFar), dist))
-                    .clamp(0, 1);
-                bumpFade = f(1.0)
-                    .sub(_T.smoothstep(f(_BD.lodNear), f(_BD.lodFar), dist))
-                    .clamp(0, 1);
-            }
+            const fineFade = f(1.0)
+                .sub(_T.smoothstep(f(_BD.fineNear), f(_BD.fineFar), wp.sub(_T.cameraPosition).length()))
+                .clamp(0, 1);
             let albedo = baseAlbedo;
             // (1) KORN — Mehr-Oktav-Noise. Metall: anisotrop längs y (geschmiedeter Schliff);
             //     Rinde: Längs-Faser (bark); sonst körnig. `pos` trägt die Domänen-Skala.
@@ -2061,15 +2080,16 @@ class AnazhRealm_stoff_material {
             // wird STARK längs der Wachstumsachse (y) gestreckt → lange vertikale Furchen statt
             // isotropem Rauschen; fein um den Stamm (x/z hoch). So WEISS das Holz seine Richtung.
             if (opts.bark) gPos = _T.vec3(pos.x.mul(13 + ht * 11), pos.y.mul(0.42), pos.z.mul(13 + ht * 11));
-            else if (metal > 0.5)
-                gPos = _T.vec3(pos.x.mul(grainF * 2.6), pos.y.mul(grainF * 0.4), pos.z.mul(grainF * 2.6));
-            else gPos = pos.mul(f(grainF));
+            else if (metal > 0.5) {
+                const quer = W("kornQuer", grainF * 2.6);
+                gPos = _T.vec3(pos.x.mul(quer), pos.y.mul(W("kornLaengs", grainF * 0.4)), pos.z.mul(quer));
+            } else gPos = pos.mul(W("korn", grainF));
             const mottle = _ra.raum(gPos);
             const broad = _ra.raum(pos.mul(f(0.85)));
             // RINDE — die Risse FOLGEN der Faser (vertikale Furchen/Platten), kein isotroper Krater.
             const crN = opts.bark
                 ? _ra.raum(_T.vec3(pos.x.mul(19 + ht * 12), pos.y.mul(0.7), pos.z.mul(19 + ht * 12)))
-                : _ra.raum(pos.mul(f(6.5 + ht * 9)));
+                : _ra.raum(pos.mul(W("riss", 6.5 + ht * 9)));
             const cavity = _T.pow(f(1.0).sub(crN.mul(crN)), f(2.4));
             // Härte → kantiger Bruch: harte, nicht-hölzerne, nicht-metallene Materialien (Fels · Stein · Kristall)
             // brechen per ridged noise (Grate + Bruch-Linien) + stärkere Schichtung; weich bleibt weich, Metall
@@ -2077,17 +2097,15 @@ class AnazhRealm_stoff_material {
             // `opts.hardDrive` (Terrain reicht `rockW` → steiniger Boden bricht karstig, Wiese bleibt weich).
             const hardBase = ht * ht * (1.0 - metal) * (opts.bark ? 0.0 : 1.0);
             const hardDriveOk = (1.0 - metal) * (opts.bark ? 0.0 : 1.0);
-            let hardF = f(hardBase);
+            let hardF = W("haerte", hardBase);
             if (opts.hardDrive != null)
-                hardF = f(hardBase)
-                    .add(asNode(opts.hardDrive, 0).mul(f(hardDriveOk)))
-                    .clamp(0.0, 1.0);
+                hardF = hardF.add(asNode(opts.hardDrive, 0).mul(f(hardDriveOk))).clamp(0.0, 1.0);
             // Ein Term mit dem Gewicht 0 rechnet kein Rauschen: der Bruch nur, wo Härte ihn trägt (die Rinde nie), die
-            // Schichtung nur object-lokal oder für den Bump (das Terrain las sie × 0 — 1 von 26 Boden-Rauschen).
+            // Schichtung nur, wo sie zählt (object-lokal, nie am Metall; das Terrain las sie × 0 — 1 von 26 Boden-Rauschen).
             const bruch = hardBase > 0 || (opts.hardDrive != null && hardDriveOk > 0);
             const ridge = bruch
                 ? f(1.0)
-                      .sub(_ra.raum(pos.mul(f(3.0 + ht * 6.0))).abs())
+                      .sub(_ra.raum(pos.mul(W("grat", 3.0 + ht * 6.0))).abs())
                       .sub(f(0.5))
                       .mul(f(2.0)) // [-1..1] scharfe Grate/Täler
                 : null;
@@ -2099,22 +2117,23 @@ class AnazhRealm_stoff_material {
             const cavityAmpJs = (0.08 + ht * 0.16) * (opts.bark ? 2.2 : 1.0);
             const strataAmpJs = (1.0 - metal) * (0.07 + di * 0.17) * (opts.bark ? 0.4 : 1.0) * (objLocal ? 1 : 0);
             const strata =
-                strataAmpJs > 0 || opts.bump
+                strataAmpJs > 0
                     ? _ra.raum(_T.vec3(pos.x.mul(0.5), pos.y.mul(opts.bark ? 1.2 : 3.4), pos.z.mul(0.5)))
                     : null;
             let mod = f(1.0).add(
                 mottle
                     .mul(fineFade)
-                    .mul(f(mottleAmp))
+                    .mul(W("fleck", mottleAmp))
                     .mul(f(1.0).sub(hardF.mul(f(0.5))))
             ); // weiches Korn weicht dem Bruch
             if (ridge) mod = mod.add(ridge.mul(fineFade).mul(hardF.mul(f(0.3)))); // angulärer Bruch — skaliert mit hardF
-            mod = mod.add(broad.mul(f(broadAmp)));
-            if (strataAmpJs > 0) mod = mod.add(strata.mul(f(strataAmpJs)).mul(f(1.0).add(hardF.mul(f(1.8))))); // Schichtung ∝ Härte
+            mod = mod.add(broad.mul(W("flaeche", broadAmp)));
+            if (strataAmpJs > 0)
+                mod = mod.add(strata.mul(W("schicht", strataAmpJs)).mul(f(1.0).add(hardF.mul(f(1.8))))); // Schichtung ∝ Härte
             mod = mod.sub(
                 cavity
                     .mul(fineFade)
-                    .mul(f(cavityAmpJs))
+                    .mul(W("mulde", cavityAmpJs))
                     .mul(f(1.0).add(hardF.mul(f(1.3))))
             ); // Risse ∝ Härte
             albedo = albedo.mul(mod.clamp(0.5, 1.5));
@@ -2150,7 +2169,7 @@ class AnazhRealm_stoff_material {
             // (4) MOOS/FLECHTEN — DIE EINE Quelle. Treiber als Param: Werke = lebendig-Tag,
             //     Terrain = Feucht/Grün-Knoten, Rinde = klein. Geometrie (Patch × flach × tief) geteilt.
             const lebTag = Math.max(0, Math.min(1, (Number(t.lebendig) || 0) / 3));
-            const mossDrive = asNode(opts.mossDrive, opts.bark ? 0.12 : lebTag);
+            const mossDrive = opts.mossDrive != null || opts.bark ? asNode(opts.mossDrive, 0.12) : W("moos", lebTag);
             const flatN = asNode(opts.flatness, 1.0);
             const mossPatch = _ra
                 .raum(wp.mul(f(0.55)))
@@ -2192,17 +2211,6 @@ class AnazhRealm_stoff_material {
                     .add(mossW.mul(f(0.22)));
                 if (opts.wetDrive != null) _rN = _rN.sub(asNode(opts.wetDrive, 0).mul(f(0.4)));
                 out.roughNode = _rN.clamp(0.05, 1.0);
-            }
-            // (7) MIKRO-RELIEF (Bump) — der transformative Hebel für FLACHE Low-Poly-Facetten:
-            //     die Höhe perturbiert die Normale → die Fläche fängt Licht als echte Mikro-Struktur.
-            //     LOD-gegated (fern aus). Nur wo angefragt (Werke; Terrain/Rinde haben echtes Relief).
-            if (opts.bump) {
-                const h = mottle
-                    .mul(f(0.5))
-                    .add(crN.mul(f(0.5)))
-                    .add(strata.mul(f(0.35)));
-                const scale = bumpFade.mul(f((0.6 + ht * 0.8) * (metal > 0.5 ? 0.6 : 1.0)));
-                out.normalNode = _T.bumpMap(h, scale);
             }
         } catch (_e) {
             throw this._stoffBruch("der Substanz-Charakter", _e);
