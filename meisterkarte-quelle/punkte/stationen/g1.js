@@ -712,11 +712,13 @@ module.exports = [
     // IN DER SITZUNG (29.10.): nur der Ort, den das Urteil liest — das Dorf (porös draußen, innen unter dem Dach, Regen innen);
     // die Wiese fuhr bis dahin mit (ein Teleport und fünf Schüsse, die keine Zeile trug). Der Messort dorf fährt den Dorf-Zug: das
     // Dorf wächst, bis ein Haus mit Hülle und Tür steht — die Welt danach trägt ein Dorf mehr (mutiert)
+    // DER ORT VOR DEM DECKEL, NUR WAS DAS URTEIL LIEST (proben-schnell 30.10., proben-welt.cjs `naesseDorf`): die Seiten-Funktion der
+    // Linse am SHA, das Dorf stellt die Sitzung vor der Probe; der Gang zu den Dach-Bauten (keine Zeile dieses Urteils) fällt
     {
         kriterium: "wetter.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 33, befehl: ["node", "scripts/werkbank.cjs", "licht", "--naesse", "dorf", "--datei", "{AUS}"],  mutiert: true },
+        probe: { sek: 33, befehl: PW.torBefehl(PW.naesseDorf), mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 4,

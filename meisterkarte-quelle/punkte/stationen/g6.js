@@ -697,7 +697,9 @@ const TOD_PROBE = { sek: 33, befehl: sitzungBefehl(todLauf, [todFaden, todRec, t
 // Haupt-Fadens — der Ruf (`saveState`), das Zusammensetzen (`_standNachholen`), der Besen (`_standFegen`), der Versand (`schicke`)
 // — summiert je Task das SPEICHER-BILD; je rAF-Bild die Speicher-ms darin. 20 Stände frisch, dann `edits` Gruben am Ereignis (der
 // Zustand „nach 2 h mit 10 000 Edits“, nie die Wanduhr), wieder 20 Stände. Die Uhr des Autosaves gestellt statt erwartet:
-// `saveInterval` `intervall` s (das Spiel 5 s) — derselbe Pfad, je Stand dieselbe Arbeit, 20 Stände in ~10 s statt 100 s.
+// `saveInterval` `intervall` s (das Spiel 5 s) — derselbe Pfad, je Stand dieselbe Arbeit. 0,2 s seit proben-schnell (30.10.): in EINER
+// frischen Welt der Radeon (943478a5) trugen 0,5 · 0,2 · 0,1 s dieselbe Verteilung — p50 0,1 · p95 0,2 · max 0,3 ms, 301 · 311 · 234
+// Speicher-Bilder, kein Bild über 16,7 ms durch Speichern — in 9,6 · 4,1 · 1,9 s; die 20 frischen Stände in ~4 s statt ~10 s.
 // Ein Bild über 16,7 ms (vsync-Zeitstempel, Toleranz 0,5 ms) trägt das Speichern, wenn es ohne dessen ms darunter bliebe.
 // Bis 29.10. eigener Boot und 2 × 20 Stände am 5-s-Autosave (ea07267e Radeon K2#1 5,97 + K2#2 6,56 min).
 async function speicherTaktSeite(n, edits, intervall) {
@@ -764,7 +766,7 @@ async function speicherTaktLauf(h) {
         const g = require("child_process").spawnSync(process.execPath, [process.env.PUNKTE_MASCHINE, "grundstellung"], { encoding: "utf8", timeout: 120000 });
         if (g.status !== 0) throw new Error("grundstellung: Exit " + g.status + " " + String(g.stdout + g.stderr).slice(-300));
     }
-    const j = await h.seite(speicherTaktSeite, [20, 10000, 0.5], 150000);
+    const j = await h.seite(speicherTaktSeite, [20, 10000, 0.2], 150000);
     for (const [k, v] of Object.entries({ frisch: j.frisch, edits: j.edits }))
         console.log("(Z) " + k + ": Speicher-Bild " + JSON.stringify(v) + " — Soll p95 ≤ 0,1 ms (Staffel 1: ≤ 0,3), kein Bild > 16,7 ms durch Speichern");
     console.log("Gruben " + j.grubenS + " s · Uhr der Seite " + (j.isoliert ? "isoliert (5 µs)" : "NICHT isoliert (100 µs)") + (frisch ? "" : " · Grundstellung vorher"));
@@ -2596,7 +2598,7 @@ module.exports = [
         staffel: 2,
         geraet: ["radeon", "gtx"],
         // `speicherTaktSeite` (oben) in der Welt der Sitzung: Fenster und Karte, der echte Takt mit dem Autosave des Spiels (seine Uhr
-        // gestellt: saveInterval 0,5 s statt 5 s, derselbe Pfad); eine Hülle um jeden Speicher-Schritt des Haupt-Fadens — der Ruf
+        // gestellt: saveInterval 0,2 s statt 5 s, derselbe Pfad); eine Hülle um jeden Speicher-Schritt des Haupt-Fadens — der Ruf
         // (saveState), das Zusammensetzen (_standNachholen), der Besen (_standFegen), der Versand (schicke) — summiert je Task das
         // SPEICHER-BILD. 20 Stände frisch, dann 10 000 Gruben am Ereignis (der Zustand „nach 2 h mit 10 000 Edits", nie die Wanduhr),
         // wieder 20 Stände. Ein Bild über 16,7 ms (am vsync-Zeitstempel, Toleranz 0,5 ms) trägt das Speichern, wenn es ohne dessen ms

@@ -9,6 +9,14 @@
 // + Rückkehr (der Tempo-Spion aus scripts/lib/fahr-proben.cjs um VC.chaseKamera: bei vmax zieht die Maus 10 Bilder
 // state.yaw +0,12, dann frei — orbit/rueck in der Zeit des Rigs) + Drift (Gas + D: Fahrtvektor gegen Bug = Schlupf, der
 // Kamera-Azimut (Kamera→Wagen) gegen den Fahrtvektor = drift, Soll ≤ 15°) + Schuss im Drift.
+// DIE 1 (proben-schnell 30.10., `window.__tempoNur === "vmax"`, fahrzeug.K3#1): Ruhe und Plateau sind ihr Kriterium — Orbit, Drift
+// und die drei Schüsse misst die 2 (FAHR_SITZUNG, derselbe Ritt bis zum Ende); in der 1 liefen sie doppelt. DAS WARTEN: am Ort und
+// nach dem Weg das EINE Einschwingen (`__weltStehtNach`: es hält den Regler, solange die Welt schwingt, sein Deckel wirft beim Namen)
+// statt 1,5 s Uhr und einer eigenen Schleife mit stiller 60-s-Frist, nach der der Ritt in einer Welt fuhr, die nicht stand; der GT im
+// Takt (`__gebautNach`) statt alle 200 ms. Am Ort stand die Welt der Sitzung schon, das Einschwingen braucht dort dennoch ~560 Takte
+// (`ortTakte`, Radeon 9,6–15,6 s) — auch ohne Sprung an den Ort; die Ursache steht offen, die Zahl im Ergebnis
+const nurVmax = window.__tempoNur === "vmax";
+delete window.__tempoNur;
 const st = r.state;
 const rend = st.renderer;
 const warte = (ms) => new Promise((res) => setTimeout(res, ms));
@@ -36,9 +44,9 @@ const bahn = (sx, sz, a) => {
 };
 st.playerMesh.position.set(W0[0], hh(W0[0], W0[1]) + 2, W0[1]);
 if (st.playerVel) st.playerVel.setValue(0, 0, 0);
-rend.setAnimationLoop((t) => r._gameLoopTick(t));
-{ const t0 = performance.now(); await warte(1500); while (performance.now() - t0 < 60000 && !(typeof r._weltSteht === "function" && r._weltSteht())) await warte(100); }
-rend.setAnimationLoop(null);
+const to0 = performance.now();
+const ortTakte = await window.__weltStehtNach();
+const ortStandS = +((performance.now() - to0) / 1000).toFixed(1);
 let ort = null, best = null;
 for (let ring = 0; ring <= 12 && !best; ring++)
     for (let k = 0; k < Math.max(1, ring * 6) && !best; k++) {
@@ -55,19 +63,13 @@ const loopAus = () => rend.setAnimationLoop(null);
 r._stlWegeBuild({ roads: [{ pts: [{ x: 0, z: 0 }, { x: 225 * Math.sin(best.a), z: 225 * Math.cos(best.a) }], w: 40 }] }, { x: ort.x, z: ort.z }, "probe:tempo4");
 st.playerMesh.position.set(ort.x, hh(ort.x, ort.z) + 2, ort.z);
 if (st.playerVel) st.playerVel.setValue(0, 0, 0);
-loopAn();
 const tw0 = performance.now();
-await warte(1500);
-while (performance.now() - tw0 < 60000 && !(typeof r._weltSteht === "function" && r._weltSteht())) await warte(100);
+await window.__weltStehtNach();
 const weltStandS = +((performance.now() - tw0) / 1000).toFixed(1);
 const bahnNachStand = !!bahn(ort.x, ort.z, best.a);
 const e = r.spawnArchitecture("fahrzeug_gt", { x: ort.x, y: hh(ort.x, ort.z) + 0.5, z: ort.z }, { silent: true, precise: true, rotationY: best.a - Math.PI / 2 });
-if (!e) return (loopAus(), { fehler: "GT nicht gesetzt" });
-const tb0 = performance.now();
-while (!e.instanced && !e.mesh && performance.now() - tb0 < 45000) {
-    r._rebuildArchitectureMesh(e);
-    await warte(200);
-}
+if (!e) return { fehler: "GT nicht gesetzt" };
+await window.__gebautNach(e, { fertig: () => !!(e.instanced || e.mesh) });
 r.setCameraMode("third");
 const mr = r.mountArchitecture(e);
 if (!mr || !mr.ok) return (loopAus(), { fehler: "Aufsitzen misslang", mr });
@@ -172,19 +174,21 @@ let ende = "ok";
 const phasen = {};
 try {
     loopAn();
-    if (await bisHalt(30000)) await schuss("1-stand");
+    if ((await bisHalt(30000)) && !nurVmax) await schuss("1-stand");
     [H.phase, H.n] = ["gas", 0];
     loopAn();
     phasen.gas = await bisHalt(120000);
     if (phasen.gas !== "vmax") throw new Error("Gas ohne Plateau: " + (H.stoss ? "Stoß an " + H.stoss.an.join(", ") + " bei " + H.stoss.vor + " m/s nach " + H.stoss.wegM + " m" : phasen.gas || "Frist 120 s") + " (" + H.sim.toFixed(1) + " Sim-s, " + H.n + " Bilder)");
-    await schuss("2-vmax");
-    [H.phase, H.n] = ["orbit", 0];
-    loopAn();
-    phasen.orbit = await bisHalt(20000);
-    [H.phase, H.n] = ["drift", 0];
-    loopAn();
-    phasen.drift = await bisHalt(20000);
-    if (phasen.drift) await schuss("3-drift");
+    if (!nurVmax) {
+        await schuss("2-vmax");
+        [H.phase, H.n] = ["orbit", 0];
+        loopAn();
+        phasen.orbit = await bisHalt(20000);
+        [H.phase, H.n] = ["drift", 0];
+        loopAn();
+        phasen.drift = await bisHalt(20000);
+        if (phasen.drift) await schuss("3-drift");
+    }
 } catch (x) {
     ende = String(x && x.message);
 } finally {
@@ -203,7 +207,7 @@ const dr = H.spur.filter((p) => p[0] === "drift");
 const med = (a) => { const s = a.filter((x) => x != null).sort((x, y) => x - y); return s.length ? s[s.length >> 1] : null; };
 const drEnde = dr.slice(-30);
 const res = {
-    ende, phasen, bahnNachStand, gasSimS: +H.sim.toFixed(2), stoss: H.stoss, ort: { x: +ort.x.toFixed(1), z: +ort.z.toFixed(1) }, richtungHubM: +best.hub.toFixed(2), weltStandS, mount: !!(mr && mr.ok),
+    nur: nurVmax ? "vmax" : null, ortStandS, ortTakte, ende, phasen, bahnNachStand, gasSimS: +H.sim.toFixed(2), stoss: H.stoss, ort: { x: +ort.x.toFixed(1), z: +ort.z.toFixed(1) }, richtungHubM: +best.hub.toFixed(2), weltStandS, mount: !!(mr && mr.ok),
     vmaxGesetz: fahr && fahr.vmax != null ? fahr.vmax : null, ruhe: { fov: fov0, armM: arm0 && +arm0.toFixed(2) },
     top: { v: top[2], fov: top[3], armM: top[4], fovPlus: fov0 != null ? +(top[3] - fov0).toFixed(2) : null, armPlus: arm0 ? +(top[4] / arm0 - 1).toFixed(3) : null },
     fovMaxGas: Math.max(...gas.map((p) => p[3])),

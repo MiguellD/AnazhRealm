@@ -643,8 +643,10 @@ async function wasserGraben(tor) {
                 };
                 let spieler = stellen(0);
                 if (st.cameraMode !== sicht) r.setCameraMode(sicht);
-                let takte = 0;
-                for (const dl = performance.now() + 30000; (!takte || !r._weltSteht()) && performance.now() < dl; takte++) await window.__seitenTakt();
+                // DIE WELT STEHT am Graben: das EINE Einschwingen (`__weltStehtNach` hält den Regler, solange sie schwingt — ein atmender
+                // Regler weckt die Takte ohne Ende), sein Deckel beim Namen. Bis 30.10. eine eigene Schleife ohne gehaltenen Regler und
+                // mit stiller 30-s-Frist: auch nach 2 m Weg 119–151 Takte (Radeon 379e5f56)
+                const takte = await window.__weltStehtNach();
                 window.__gp = { px, pz };
                 const ziel = () => window.__zielen({ x: px, y: r._voxelSurfaceY(px, pz), z: pz });
                 await ziel();
@@ -706,11 +708,15 @@ async function wasserGraben(tor) {
             window.__gT0 = null;
             window.__gVor = messen();
             window.addEventListener("mousedown", () => window.__gT0 == null && (window.__gT0 = performance.now()), { once: true, capture: true });
-            const f = () => {
-                if (window.__gT0 != null && performance.now() - window.__gT0 < 3000) (window.__gSpur.push([+(performance.now() - window.__gT0).toFixed(1), messen()]), requestAnimationFrame(f));
-                else if (window.__gT0 == null) requestAnimationFrame(f);
-            };
-            requestAnimationFrame(f);
+            // DAS ENDE DER SPUR ist ein Ereignis (`__gFertig`: das letzte Bild vor 3 s nach dem Klick), nie eine Uhr danach
+            window.__gFertig = new Promise((fertig) => {
+                const f = () => {
+                    if (window.__gT0 != null && performance.now() - window.__gT0 < 3000) (window.__gSpur.push([+(performance.now() - window.__gT0).toFixed(1), messen()]), requestAnimationFrame(f));
+                    else if (window.__gT0 == null) requestAnimationFrame(f);
+                    else fertig(window.__gSpur.length);
+                };
+                requestAnimationFrame(f);
+            });
         });
         await klick();
         await warte(2000);
@@ -727,7 +733,9 @@ async function wasserGraben(tor) {
             } catch (e) {
                 g.bildFehler = String((e && e.message) || e).split("\n")[0].slice(0, 200);
             }
-        await warte(1200);
+        // die Spur endet 3 s nach dem Klick: auf ihr Ende warten (bis 30.10. 1,2 s Uhr nach dem Bild, das selbst Zeit trug); die
+        // Frist 4 s fängt nur einen Klick, den kein mousedown erreichte — dann bleibt die Spur leer, ROT beim Namen (`leer`)
+        await Promise.race([page.evaluate(() => window.__gFertig), warte(4000)]);
         const sp = await page.evaluate(() => ({ spur: window.__gSpur, vor: window.__gVor, verb: window.anazhRealm.state.player._mausVerb }));
         const end = sp.spur.length ? sp.spur[sp.spur.length - 1][1].nass : 0;
         const voll = sp.spur.find((x) => x[1].nass >= 0.9 * end && end > sp.vor.nass);
@@ -777,6 +785,32 @@ async function wasserGraben(tor) {
     console.log("  (b)(d) " + ((Date.now() - t1) / 1000).toFixed(1) + " s · Damm " + JSON.stringify(erg.damm) + " · Ferne " + JSON.stringify(erg.ferne));
     await cdp.detach().catch(() => {});
     fs.writeFileSync(tor.aus, JSON.stringify(erg, null, 1));
+}
+
+// ───────── wetter.K2#1 — die Nässe im Dorf (werkbank `licht --naesse dorf`, gate:naesse:echt) ─────────
+// Die Seiten-Funktion der Linse (`naesseSicht`, scripts/lib/licht-linsen.cjs am SHA) über die Werkbank der Sitzung, nur das, was das
+// Urteil liest: das Haus am Messort dorf (das nächste mit Hülle und Tür, seine Schwelle), der Spieler an der Schwelle, dann die Pose
+// klar · Regen frisch · Regen 10 min — porös draußen, innen unter dem Dach, dicht, Regen innen. Der erste Ruf nennt den Messort, die
+// Sitzung stellt ihn darum VOR dem Deckel (punkte.cjs `probeOrt`: das Wachsen des Dorfs ist der Ring des Orts, nie die Arbeit der
+// Probe). Bis 30.10. fuhr die Probe den ganzen CLI-Lauf (Radeon 379e5f56, 44,6 s): das Dorf 19,5 s im Deckel, dazu die Dach-Bauten
+// ohne Hülle — ein Gang an den Marktstand (13,1 s) und zurück an den Ort (2,3 s) für eine Zeile, die kein Urteil der Station liest
+// (sie bleibt im CLI-Lauf der Linse). Die Welt danach trägt ein Dorf mehr (mutiert).
+async function naesseDorf(tor) {
+    const fs = require("fs");
+    const sicht = tor.quelle("scripts/lib/licht-linsen.cjs", "naesseSicht");
+    tor.karte();
+    const lauf = async (o) => (await tor.ruf("/eval", { code: "return await (" + sicht + ")(" + JSON.stringify(o) + ");" }, 120000)).ergebnis;
+    let dorf;
+    try {
+        await tor.ruf("/umstellen", { ort: "dorf", sicht: "ego" }, 300000);
+        const s = (await lauf({ ort: "dorf", haus: true })).schwelle;
+        await tor.ruf("/umstellen", { x: s[0], z: s[2] }, 300000);
+        dorf = await lauf({ ort: "dorf" });
+    } catch (e) {
+        dorf = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 300) };
+    }
+    console.log(JSON.stringify({ dorf }, null, 1));
+    fs.writeFileSync(tor.aus, JSON.stringify({ dorf }, null, 1));
 }
 
 // ───────── DIE LINSE DER WERKBANK IN DER WELT DER SITZUNG (licht.K1#1 · licht.K3#1/#2, w4-fehlt-acht) ─────────
@@ -968,4 +1002,4 @@ async function karteHebung(tor) {
     process.exitCode = errs.length ? 1 : 0;
 }
 
-module.exports = { sitzungTor, torBefehl, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrRueck, fahrWegenetz, fahrVerkehr, wasserGraben, werkbankLinse, karteHebung };
+module.exports = { sitzungTor, torBefehl, kollisionTempo, bodenRollen, tierKreis, sprungKadenz, fadenZaehler, fahrRueck, fahrWegenetz, fahrVerkehr, wasserGraben, naesseDorf, werkbankLinse, karteHebung };
