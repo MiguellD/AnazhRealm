@@ -1,0 +1,10907 @@
+{
+ "proben": [
+  {
+   "t": 442
+  },
+  {
+   "t": 1170,
+   "fehlt": [
+    "die Welt entsteht"
+   ],
+   "terme": [
+    "welt"
+   ],
+   "ring": [
+    null,
+    4
+   ],
+   "bilder": 0,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk"
+  },
+  {
+   "t": 1696,
+   "fehlt": [
+    "der Boden wächst (1 Stücke im Bild)",
+    "der Horizont wächst (0 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "das Buch der Studios öffnet sich"
+   ],
+   "terme": [
+    "boden",
+    "horizont",
+    "licht",
+    "leib",
+    "buch"
+   ],
+   "ring": [
+    null,
+    4
+   ],
+   "bilder": 0,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "t": 1938,
+   "fehlt": [
+    "der Boden wächst (1 Stücke im Bild)",
+    "der Horizont wächst (0 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "boden",
+    "horizont",
+    "licht",
+    "leib",
+    "dorf",
+    "streu"
+   ],
+   "ring": [
+    null,
+    4
+   ],
+   "bilder": 0,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 1 im Werk",
+   "erst": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "t": 3204,
+   "fehlt": [
+    "der Boden wächst (17 Stücke im Bild)",
+    "der Horizont wächst (0 %)",
+    "das Licht des Orts wird gemessen",
+    "der Spieler erhält seinen Leib",
+    "9 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "boden",
+    "horizont",
+    "licht",
+    "leib",
+    "bauten",
+    "dorf",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 1,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "2 wartend · 16 im Werk",
+   "erst": [
+    13,
+    279,
+    5
+   ]
+  },
+  {
+   "t": 4320,
+   "fehlt": [
+    "der Boden wächst (15 Stücke im Bild)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "10 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "2 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "boden",
+    "horizont",
+    "leib",
+    "bauten",
+    "dorf",
+    "pflanzung",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 3,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "2 wartend · 17 im Werk",
+   "erst": [
+    20,
+    1068,
+    6
+   ]
+  },
+  {
+   "t": 4509,
+   "fehlt": [
+    "der Boden wächst (15 Stücke im Bild)",
+    "der Horizont wächst (0 %)",
+    "der Spieler erhält seinen Leib",
+    "9 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "2 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "boden",
+    "horizont",
+    "leib",
+    "bauten",
+    "dorf",
+    "pflanzung",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 3,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "1 wartend · 8 im Werk",
+   "erst": [
+    20,
+    1068,
+    5
+   ]
+  },
+  {
+   "t": 4716,
+   "fehlt": [
+    "der Boden wächst (15 Stücke im Bild)",
+    "der Horizont wächst (0 %)",
+    "5 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "2 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "boden",
+    "horizont",
+    "bauten",
+    "dorf",
+    "pflanzung",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 3,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "1 wartend · 9 im Werk",
+   "erst": [
+    20,
+    1068,
+    4
+   ]
+  },
+  {
+   "t": 5341,
+   "fehlt": [
+    "der Boden wächst (11 Stücke im Bild)",
+    "der Horizont wächst (15 %)",
+    "6 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "6 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "boden",
+    "horizont",
+    "bauten",
+    "dorf",
+    "pflanzung",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 4,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "1 wartend · 10 im Werk",
+   "erst": [
+    25,
+    1291,
+    3
+   ]
+  },
+  {
+   "t": 6230,
+   "fehlt": [
+    "der Boden wächst (7 Stücke im Bild)",
+    "der Horizont wächst (27 %)",
+    "5 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "60 Bäume werden gepflanzt, 4 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "boden",
+    "horizont",
+    "bauten",
+    "dorf",
+    "pflanzung",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 5,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 6 im Werk",
+   "erst": [
+    26,
+    1480,
+    3
+   ]
+  },
+  {
+   "t": 7006,
+   "fehlt": [
+    "der Boden wächst (1 Stücke im Bild)",
+    "der Horizont wächst (54 %)",
+    "2 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "119 Bäume werden gepflanzt, 6 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "boden",
+    "horizont",
+    "bauten",
+    "dorf",
+    "pflanzung",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 6,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 1 im Werk",
+   "erst": [
+    28,
+    1635,
+    2
+   ]
+  },
+  {
+   "t": 7574,
+   "fehlt": [
+    "der Horizont wächst (70 %)",
+    "5 Bäume und Bauten wachsen",
+    "das Dorf wird geplant",
+    "191 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "horizont",
+    "bauten",
+    "dorf",
+    "pflanzung",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 7,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    31,
+    1883,
+    4
+   ]
+  },
+  {
+   "t": 8831,
+   "fehlt": [
+    "der Horizont wächst (94 %)",
+    "13 Bäume und Bauten wachsen",
+    "10 Häuser des Dorfs wachsen",
+    "183 Bäume werden gepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "9 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "horizont",
+    "bauten",
+    "dorf",
+    "pflanzung",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 8,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 9 im Werk",
+   "erst": [
+    35,
+    2149,
+    7
+   ]
+  },
+  {
+   "t": 9659,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "24 Bäume und Bauten wachsen",
+    "8 Häuser des Dorfs wachsen",
+    "175 Bäume werden gepflanzt",
+    "3 Wald-Stücke warten auf ihre Gestalt",
+    "9 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "horizont",
+    "bauten",
+    "dorf",
+    "pflanzung",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 9,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "2 wartend · 7 im Werk",
+   "erst": [
+    37,
+    2300,
+    2
+   ]
+  },
+  {
+   "t": 10453,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "60 Bäume und Bauten wachsen",
+    "6 Häuser des Dorfs wachsen",
+    "164 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "12 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "horizont",
+    "bauten",
+    "dorf",
+    "pflanzung",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 10,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "3 wartend · 14 im Werk",
+   "erst": [
+    38,
+    2448,
+    1
+   ]
+  },
+  {
+   "t": 10954,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "63 Bäume und Bauten wachsen",
+    "4 Häuser des Dorfs wachsen",
+    "160 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "horizont",
+    "bauten",
+    "dorf",
+    "pflanzung",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 11,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "3 wartend · 11 im Werk",
+   "erst": [
+    41,
+    2662,
+    3
+   ]
+  },
+  {
+   "t": 11404,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "69 Bäume und Bauten wachsen",
+    "4 Häuser des Dorfs wachsen",
+    "152 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "horizont",
+    "bauten",
+    "dorf",
+    "pflanzung",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 11,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "3 wartend · 15 im Werk",
+   "erst": [
+    41,
+    2662,
+    2
+   ]
+  },
+  {
+   "t": 11881,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "62 Bäume und Bauten wachsen",
+    "135 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "horizont",
+    "bauten",
+    "pflanzung",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 12,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "3 wartend · 17 im Werk",
+   "erst": [
+    42,
+    2847,
+    2
+   ]
+  },
+  {
+   "t": 12410,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "69 Bäume und Bauten wachsen",
+    "127 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "14 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "horizont",
+    "bauten",
+    "pflanzung",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 13,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "3 wartend · 34 im Werk",
+   "erst": [
+    43,
+    2980,
+    3
+   ]
+  },
+  {
+   "t": 12764,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "83 Bäume und Bauten wachsen",
+    "112 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "horizont",
+    "bauten",
+    "pflanzung",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 13,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "2 wartend · 16 im Werk",
+   "erst": [
+    45,
+    3141,
+    4
+   ]
+  },
+  {
+   "t": 13224,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "112 Bäume und Bauten wachsen",
+    "69 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "16 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "horizont",
+    "bauten",
+    "pflanzung",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 14,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "2 wartend · 14 im Werk",
+   "erst": [
+    46,
+    3370,
+    5
+   ]
+  },
+  {
+   "t": 13238,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "112 Bäume und Bauten wachsen",
+    "69 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "16 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "horizont",
+    "bauten",
+    "pflanzung",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 14,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "2 wartend · 14 im Werk",
+   "erst": [
+    46,
+    3370,
+    5
+   ]
+  },
+  {
+   "t": 13715,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "157 Bäume und Bauten wachsen",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "16 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "horizont",
+    "bauten",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 15,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "1 wartend · 11 im Werk",
+   "erst": [
+    47,
+    3607,
+    2
+   ]
+  },
+  {
+   "t": 13854,
+   "fehlt": [
+    "der Horizont wird gemalt",
+    "153 Bäume und Bauten wachsen",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "16 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "horizont",
+    "bauten",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 15,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 9 im Werk",
+   "erst": [
+    47,
+    3607,
+    2
+   ]
+  },
+  {
+   "t": 14174,
+   "fehlt": [
+    "150 Bäume und Bauten wachsen",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "16 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "bauten",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 16,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 3 im Werk",
+   "erst": [
+    50,
+    3739,
+    5
+   ]
+  },
+  {
+   "t": 14289,
+   "fehlt": [
+    "143 Bäume und Bauten wachsen",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "15 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "bauten",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 16,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 3 im Werk",
+   "erst": [
+    50,
+    3739,
+    3
+   ]
+  },
+  {
+   "t": 14714,
+   "fehlt": [
+    "100 Bäume und Bauten wachsen",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "13 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "bauten",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 17,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 1 im Werk",
+   "erst": [
+    52,
+    3917,
+    5
+   ]
+  },
+  {
+   "t": 14890,
+   "fehlt": [
+    "93 Bäume und Bauten wachsen",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "12 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "bauten",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 17,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    52,
+    3917,
+    5
+   ]
+  },
+  {
+   "t": 15224,
+   "fehlt": [
+    "91 Bäume und Bauten wachsen",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "11 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "bauten",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 18,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    55,
+    4043,
+    6
+   ]
+  },
+  {
+   "t": 15244,
+   "fehlt": [
+    "91 Bäume und Bauten wachsen",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "11 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "bauten",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 18,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    55,
+    4043,
+    6
+   ]
+  },
+  {
+   "t": 15458,
+   "fehlt": [
+    "66 Bäume und Bauten wachsen",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "9 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "bauten",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 18,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 2 im Werk",
+   "erst": [
+    55,
+    4043,
+    5
+   ]
+  },
+  {
+   "t": 15651,
+   "fehlt": [
+    "47 Bäume und Bauten wachsen",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "8 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "bauten",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 19,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    56,
+    4148,
+    6
+   ]
+  },
+  {
+   "t": 15852,
+   "fehlt": [
+    "18 Bäume und Bauten wachsen",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "6 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "bauten",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 19,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    56,
+    4148,
+    2
+   ]
+  },
+  {
+   "t": 16135,
+   "fehlt": [
+    "3 Bäume und Bauten wachsen",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "4 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "bauten",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 20,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    58,
+    4272,
+    3
+   ]
+  },
+  {
+   "t": 16257,
+   "fehlt": [
+    "3 Bäume und Bauten wachsen",
+    "2 Wald-Stücke warten auf ihre Gestalt",
+    "3 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "bauten",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 20,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    58,
+    4272,
+    3
+   ]
+  },
+  {
+   "t": 16646,
+   "fehlt": [
+    "2 Bäume und Bauten wachsen",
+    "1 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "bauten",
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    2,
+    4
+   ],
+   "bilder": 20,
+   "vorrat": "wartet auf das erste Bild",
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    58,
+    4272,
+    2
+   ]
+  },
+  {
+   "t": 16979,
+   "fehlt": [
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "2 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    3,
+    4
+   ],
+   "bilder": 23,
+   "vorrat": "bestellt",
+   "schlange": "43 wartend · 36 im Werk",
+   "erst": [
+    58,
+    4272,
+    1
+   ]
+  },
+  {
+   "t": 17176,
+   "fehlt": [
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    3,
+    4
+   ],
+   "bilder": 24,
+   "vorrat": "bestellt",
+   "schlange": "16 wartend · 36 im Werk",
+   "erst": [
+    58,
+    4272,
+    0
+   ]
+  },
+  {
+   "t": 17398,
+   "fehlt": [
+    "4 Wald-Stücke warten auf ihre Gestalt",
+    "1 ferne Bäume werden gemalt"
+   ],
+   "terme": [
+    "streu",
+    "karten"
+   ],
+   "ring": [
+    3,
+    4
+   ],
+   "bilder": 26,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 20 im Werk",
+   "erst": [
+    58,
+    4272,
+    0
+   ]
+  },
+  {
+   "t": 17601,
+   "fehlt": [
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "streu"
+   ],
+   "ring": [
+    3,
+    4
+   ],
+   "bilder": 26,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 20 im Werk",
+   "erst": [
+    58,
+    4272,
+    0
+   ]
+  },
+  {
+   "t": 18172,
+   "fehlt": [
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "streu"
+   ],
+   "ring": [
+    3,
+    4
+   ],
+   "bilder": 28,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 21 im Werk",
+   "erst": [
+    59,
+    4320,
+    1
+   ]
+  },
+  {
+   "t": 18251,
+   "fehlt": [
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "streu"
+   ],
+   "ring": [
+    3,
+    4
+   ],
+   "bilder": 28,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 19 im Werk",
+   "erst": [
+    59,
+    4320,
+    1
+   ]
+  },
+  {
+   "t": 18451,
+   "fehlt": [
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "streu"
+   ],
+   "ring": [
+    3,
+    4
+   ],
+   "bilder": 28,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 17 im Werk",
+   "erst": [
+    59,
+    4320,
+    1
+   ]
+  },
+  {
+   "t": 18652,
+   "fehlt": [
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "streu"
+   ],
+   "ring": [
+    3,
+    4
+   ],
+   "bilder": 28,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 17 im Werk",
+   "erst": [
+    59,
+    4320,
+    1
+   ]
+  },
+  {
+   "t": 18851,
+   "fehlt": [
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "streu"
+   ],
+   "ring": [
+    3,
+    4
+   ],
+   "bilder": 28,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 16 im Werk",
+   "erst": [
+    59,
+    4320,
+    1
+   ]
+  },
+  {
+   "t": 19089,
+   "fehlt": [
+    "2 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    3,
+    4
+   ],
+   "bilder": 31,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 16 im Werk",
+   "erst": [
+    59,
+    4320,
+    1
+   ]
+  },
+  {
+   "t": 19332,
+   "fehlt": [
+    "2 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    3,
+    4
+   ],
+   "bilder": 35,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 18 im Werk",
+   "erst": [
+    59,
+    4320,
+    1
+   ]
+  },
+  {
+   "t": 19493,
+   "fehlt": [
+    "2 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 38,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 16 im Werk",
+   "erst": [
+    59,
+    4320,
+    0
+   ]
+  },
+  {
+   "t": 19685,
+   "fehlt": [
+    "2 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 41,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 4 im Werk",
+   "erst": [
+    59,
+    4320,
+    0
+   ]
+  },
+  {
+   "t": 19935,
+   "fehlt": [
+    "3 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 46,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 13 im Werk",
+   "erst": [
+    59,
+    4320,
+    0
+   ]
+  },
+  {
+   "t": 20115,
+   "fehlt": [
+    "5 Bäume werden gepflanzt, 1 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 49,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 7 im Werk",
+   "erst": [
+    59,
+    4320,
+    0
+   ]
+  },
+  {
+   "t": 20308,
+   "fehlt": [
+    "5 Bäume werden gepflanzt, 1 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 52,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 4 im Werk",
+   "erst": [
+    59,
+    4320,
+    0
+   ]
+  },
+  {
+   "t": 20493,
+   "fehlt": [
+    "6 Bäume werden gepflanzt, 3 Wald-Böden werden bepflanzt",
+    "4 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 56,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 4 im Werk",
+   "erst": [
+    59,
+    4320,
+    0
+   ]
+  },
+  {
+   "t": 20685,
+   "fehlt": [
+    "19 Bäume werden gepflanzt",
+    "3 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 61,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 4 im Werk",
+   "erst": [
+    59,
+    4320,
+    0
+   ]
+  },
+  {
+   "t": 20865,
+   "fehlt": [
+    "19 Bäume werden gepflanzt",
+    "3 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 65,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 4 im Werk",
+   "erst": [
+    59,
+    4320,
+    0
+   ]
+  },
+  {
+   "t": 21134,
+   "fehlt": [
+    "18 Bäume werden gepflanzt",
+    "3 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 69,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 3 im Werk",
+   "erst": [
+    59,
+    4320,
+    0
+   ]
+  },
+  {
+   "t": 21343,
+   "fehlt": [
+    "38 Bäume werden gepflanzt",
+    "3 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 72,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 3 im Werk",
+   "erst": [
+    59,
+    4320,
+    0
+   ]
+  },
+  {
+   "t": 21587,
+   "fehlt": [
+    "45 Bäume werden gepflanzt",
+    "3 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 76,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 3 im Werk",
+   "erst": [
+    59,
+    4320,
+    0
+   ]
+  },
+  {
+   "t": 21712,
+   "fehlt": [
+    "45 Bäume werden gepflanzt",
+    "3 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 79,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 3 im Werk",
+   "erst": [
+    59,
+    4320,
+    0
+   ]
+  },
+  {
+   "t": 21937,
+   "fehlt": [
+    "43 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 83,
+   "vorrat": "bestellt",
+   "schlange": "0 wartend · 1 im Werk",
+   "erst": [
+    59,
+    4320,
+    0
+   ]
+  },
+  {
+   "t": 22178,
+   "fehlt": [
+    "44 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 88,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    59,
+    4320,
+    0
+   ]
+  },
+  {
+   "t": 22340,
+   "fehlt": [
+    "51 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 92,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    59,
+    4320,
+    0
+   ]
+  },
+  {
+   "t": 22445,
+   "fehlt": [
+    "50 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 95,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    59,
+    4320,
+    0
+   ]
+  },
+  {
+   "t": 22689,
+   "fehlt": [
+    "40 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 102,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    59,
+    4320,
+    0
+   ]
+  },
+  {
+   "t": 22995,
+   "fehlt": [
+    "37 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 106,
+   "vorrat": null,
+   "schlange": "0 wartend · 1 im Werk",
+   "erst": [
+    61,
+    4419,
+    2
+   ]
+  },
+  {
+   "t": 23311,
+   "fehlt": [
+    "34 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 108,
+   "vorrat": null,
+   "schlange": "0 wartend · 1 im Werk",
+   "erst": [
+    66,
+    4659,
+    4
+   ]
+  },
+  {
+   "t": 23463,
+   "fehlt": [
+    "30 Bäume werden gepflanzt",
+    "2 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 110,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    68,
+    4738,
+    4
+   ]
+  },
+  {
+   "t": 23824,
+   "fehlt": [
+    "26 Bäume werden gepflanzt",
+    "1 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 113,
+   "vorrat": null,
+   "schlange": "0 wartend · 6 im Werk",
+   "erst": [
+    71,
+    4905,
+    6
+   ]
+  },
+  {
+   "t": 24113,
+   "fehlt": [
+    "24 Bäume werden gepflanzt",
+    "1 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 115,
+   "vorrat": null,
+   "schlange": "0 wartend · 3 im Werk",
+   "erst": [
+    72,
+    5026,
+    5
+   ]
+  },
+  {
+   "t": 24464,
+   "fehlt": [
+    "22 Bäume werden gepflanzt",
+    "1 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 118,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    72,
+    5026,
+    1
+   ]
+  },
+  {
+   "t": 24691,
+   "fehlt": [
+    "14 Bäume werden gepflanzt",
+    "1 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 123,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    72,
+    5026,
+    1
+   ]
+  },
+  {
+   "t": 24840,
+   "fehlt": [
+    "13 Bäume werden gepflanzt",
+    "1 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 124,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    72,
+    5026,
+    1
+   ]
+  },
+  {
+   "t": 25086,
+   "fehlt": [
+    "13 Bäume werden gepflanzt",
+    "1 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 124,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    72,
+    5026,
+    0
+   ]
+  },
+  {
+   "t": 25238,
+   "fehlt": [
+    "13 Bäume werden gepflanzt",
+    "1 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 124,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    72,
+    5026,
+    0
+   ]
+  },
+  {
+   "t": 25438,
+   "fehlt": [
+    "13 Bäume werden gepflanzt",
+    "1 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 124,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    72,
+    5026,
+    0
+   ]
+  },
+  {
+   "t": 25638,
+   "fehlt": [
+    "13 Bäume werden gepflanzt",
+    "1 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 124,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    72,
+    5026,
+    0
+   ]
+  },
+  {
+   "t": 26171,
+   "fehlt": [
+    "11 Bäume werden gepflanzt",
+    "1 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 125,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    72,
+    5026,
+    0
+   ]
+  },
+  {
+   "t": 26238,
+   "fehlt": [
+    "9 Bäume werden gepflanzt",
+    "1 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "pflanzung",
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 128,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    72,
+    5026,
+    0
+   ]
+  },
+  {
+   "t": 26453,
+   "fehlt": [
+    "1 Wald-Stücke warten auf ihre Gestalt"
+   ],
+   "terme": [
+    "streu"
+   ],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 138,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    72,
+    5026,
+    0
+   ]
+  },
+  {
+   "t": 26655,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 146,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 26852,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 156,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 27042,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 167,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 27241,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 177,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 27470,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 190,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 27665,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 201,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 27872,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 212,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 28058,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 223,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 28240,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 233,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 28469,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 245,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 28644,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 256,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 28847,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 266,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 29042,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 278,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 29248,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 290,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 29440,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 303,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 29643,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 314,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 29841,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 326,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 30051,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 340,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 30246,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 354,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 30443,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 367,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 30658,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 382,
+   "vorrat": null,
+   "schlange": "0 wartend · 32 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 30838,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 395,
+   "vorrat": null,
+   "schlange": "0 wartend · 32 im Werk",
+   "erst": [
+    73,
+    5033,
+    0
+   ]
+  },
+  {
+   "t": 31046,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 406,
+   "vorrat": null,
+   "schlange": "0 wartend · 32 im Werk",
+   "erst": [
+    74,
+    5094,
+    0
+   ]
+  },
+  {
+   "t": 31239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 419,
+   "vorrat": null,
+   "schlange": "0 wartend · 32 im Werk",
+   "erst": [
+    74,
+    5094,
+    0
+   ]
+  },
+  {
+   "t": 31441,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 433,
+   "vorrat": null,
+   "schlange": "0 wartend · 32 im Werk",
+   "erst": [
+    74,
+    5094,
+    0
+   ]
+  },
+  {
+   "t": 31643,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 447,
+   "vorrat": null,
+   "schlange": "0 wartend · 32 im Werk",
+   "erst": [
+    74,
+    5094,
+    0
+   ]
+  },
+  {
+   "t": 31841,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 461,
+   "vorrat": null,
+   "schlange": "0 wartend · 30 im Werk",
+   "erst": [
+    74,
+    5094,
+    0
+   ]
+  },
+  {
+   "t": 32041,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 476,
+   "vorrat": null,
+   "schlange": "0 wartend · 30 im Werk",
+   "erst": [
+    74,
+    5094,
+    0
+   ]
+  },
+  {
+   "t": 32243,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 490,
+   "vorrat": null,
+   "schlange": "0 wartend · 30 im Werk",
+   "erst": [
+    74,
+    5094,
+    0
+   ]
+  },
+  {
+   "t": 32439,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 504,
+   "vorrat": null,
+   "schlange": "0 wartend · 30 im Werk",
+   "erst": [
+    74,
+    5094,
+    0
+   ]
+  },
+  {
+   "t": 32638,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 518,
+   "vorrat": null,
+   "schlange": "0 wartend · 29 im Werk",
+   "erst": [
+    74,
+    5094,
+    0
+   ]
+  },
+  {
+   "t": 32870,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 534,
+   "vorrat": null,
+   "schlange": "0 wartend · 28 im Werk",
+   "erst": [
+    74,
+    5094,
+    0
+   ]
+  },
+  {
+   "t": 33042,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 547,
+   "vorrat": null,
+   "schlange": "0 wartend · 28 im Werk",
+   "erst": [
+    74,
+    5094,
+    0
+   ]
+  },
+  {
+   "t": 33239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 562,
+   "vorrat": null,
+   "schlange": "0 wartend · 28 im Werk",
+   "erst": [
+    74,
+    5094,
+    0
+   ]
+  },
+  {
+   "t": 33514,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 573,
+   "vorrat": null,
+   "schlange": "0 wartend · 26 im Werk",
+   "erst": [
+    75,
+    5179,
+    1
+   ]
+  },
+  {
+   "t": 33644,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 576,
+   "vorrat": null,
+   "schlange": "0 wartend · 26 im Werk",
+   "erst": [
+    75,
+    5179,
+    1
+   ]
+  },
+  {
+   "t": 33844,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 589,
+   "vorrat": null,
+   "schlange": "0 wartend · 26 im Werk",
+   "erst": [
+    75,
+    5179,
+    1
+   ]
+  },
+  {
+   "t": 34038,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 603,
+   "vorrat": null,
+   "schlange": "0 wartend · 26 im Werk",
+   "erst": [
+    75,
+    5179,
+    1
+   ]
+  },
+  {
+   "t": 34238,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 618,
+   "vorrat": null,
+   "schlange": "0 wartend · 25 im Werk",
+   "erst": [
+    75,
+    5179,
+    1
+   ]
+  },
+  {
+   "t": 34438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 633,
+   "vorrat": null,
+   "schlange": "0 wartend · 25 im Werk",
+   "erst": [
+    75,
+    5179,
+    1
+   ]
+  },
+  {
+   "t": 34662,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 643,
+   "vorrat": null,
+   "schlange": "0 wartend · 24 im Werk",
+   "erst": [
+    76,
+    5252,
+    0
+   ]
+  },
+  {
+   "t": 34843,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 653,
+   "vorrat": null,
+   "schlange": "0 wartend · 24 im Werk",
+   "erst": [
+    78,
+    5272,
+    1
+   ]
+  },
+  {
+   "t": 35056,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 665,
+   "vorrat": null,
+   "schlange": "0 wartend · 22 im Werk",
+   "erst": [
+    78,
+    5272,
+    0
+   ]
+  },
+  {
+   "t": 35241,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 679,
+   "vorrat": null,
+   "schlange": "0 wartend · 21 im Werk",
+   "erst": [
+    78,
+    5272,
+    0
+   ]
+  },
+  {
+   "t": 35458,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 694,
+   "vorrat": null,
+   "schlange": "0 wartend · 20 im Werk",
+   "erst": [
+    79,
+    5282,
+    0
+   ]
+  },
+  {
+   "t": 35652,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 701,
+   "vorrat": null,
+   "schlange": "0 wartend · 20 im Werk",
+   "erst": [
+    80,
+    5344,
+    0
+   ]
+  },
+  {
+   "t": 35850,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 715,
+   "vorrat": null,
+   "schlange": "0 wartend · 19 im Werk",
+   "erst": [
+    80,
+    5344,
+    0
+   ]
+  },
+  {
+   "t": 36038,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 729,
+   "vorrat": null,
+   "schlange": "0 wartend · 19 im Werk",
+   "erst": [
+    80,
+    5344,
+    0
+   ]
+  },
+  {
+   "t": 36238,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 744,
+   "vorrat": null,
+   "schlange": "0 wartend · 18 im Werk",
+   "erst": [
+    80,
+    5344,
+    0
+   ]
+  },
+  {
+   "t": 36438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 759,
+   "vorrat": null,
+   "schlange": "0 wartend · 18 im Werk",
+   "erst": [
+    80,
+    5344,
+    0
+   ]
+  },
+  {
+   "t": 36638,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 773,
+   "vorrat": null,
+   "schlange": "0 wartend · 17 im Werk",
+   "erst": [
+    80,
+    5344,
+    0
+   ]
+  },
+  {
+   "t": 36841,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 787,
+   "vorrat": null,
+   "schlange": "0 wartend · 16 im Werk",
+   "erst": [
+    80,
+    5344,
+    0
+   ]
+  },
+  {
+   "t": 37038,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 802,
+   "vorrat": null,
+   "schlange": "0 wartend · 16 im Werk",
+   "erst": [
+    80,
+    5344,
+    0
+   ]
+  },
+  {
+   "t": 37251,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 810,
+   "vorrat": null,
+   "schlange": "0 wartend · 14 im Werk",
+   "erst": [
+    81,
+    5416,
+    0
+   ]
+  },
+  {
+   "t": 37441,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 822,
+   "vorrat": null,
+   "schlange": "0 wartend · 14 im Werk",
+   "erst": [
+    82,
+    5425,
+    0
+   ]
+  },
+  {
+   "t": 37641,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 837,
+   "vorrat": null,
+   "schlange": "0 wartend · 14 im Werk",
+   "erst": [
+    82,
+    5425,
+    0
+   ]
+  },
+  {
+   "t": 37841,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 852,
+   "vorrat": null,
+   "schlange": "0 wartend · 13 im Werk",
+   "erst": [
+    82,
+    5425,
+    0
+   ]
+  },
+  {
+   "t": 38051,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 860,
+   "vorrat": null,
+   "schlange": "0 wartend · 12 im Werk",
+   "erst": [
+    84,
+    5494,
+    0
+   ]
+  },
+  {
+   "t": 38243,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 873,
+   "vorrat": null,
+   "schlange": "0 wartend · 12 im Werk",
+   "erst": [
+    84,
+    5494,
+    0
+   ]
+  },
+  {
+   "t": 38446,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 885,
+   "vorrat": null,
+   "schlange": "0 wartend · 10 im Werk",
+   "erst": [
+    84,
+    5494,
+    0
+   ]
+  },
+  {
+   "t": 38639,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 900,
+   "vorrat": null,
+   "schlange": "0 wartend · 9 im Werk",
+   "erst": [
+    84,
+    5494,
+    0
+   ]
+  },
+  {
+   "t": 38840,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 915,
+   "vorrat": null,
+   "schlange": "0 wartend · 9 im Werk",
+   "erst": [
+    84,
+    5494,
+    0
+   ]
+  },
+  {
+   "t": 39060,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 926,
+   "vorrat": null,
+   "schlange": "0 wartend · 7 im Werk",
+   "erst": [
+    85,
+    5555,
+    0
+   ]
+  },
+  {
+   "t": 39253,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 938,
+   "vorrat": null,
+   "schlange": "0 wartend · 7 im Werk",
+   "erst": [
+    86,
+    5565,
+    0
+   ]
+  },
+  {
+   "t": 39439,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 951,
+   "vorrat": null,
+   "schlange": "0 wartend · 7 im Werk",
+   "erst": [
+    86,
+    5565,
+    0
+   ]
+  },
+  {
+   "t": 39643,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 966,
+   "vorrat": null,
+   "schlange": "0 wartend · 7 im Werk",
+   "erst": [
+    86,
+    5565,
+    0
+   ]
+  },
+  {
+   "t": 39838,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 979,
+   "vorrat": null,
+   "schlange": "0 wartend · 6 im Werk",
+   "erst": [
+    86,
+    5565,
+    0
+   ]
+  },
+  {
+   "t": 40039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 994,
+   "vorrat": null,
+   "schlange": "0 wartend · 5 im Werk",
+   "erst": [
+    86,
+    5565,
+    0
+   ]
+  },
+  {
+   "t": 40338,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1009,
+   "vorrat": null,
+   "schlange": "0 wartend · 3 im Werk",
+   "erst": [
+    87,
+    5640,
+    0
+   ]
+  },
+  {
+   "t": 40471,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1015,
+   "vorrat": null,
+   "schlange": "0 wartend · 2 im Werk",
+   "erst": [
+    88,
+    5648,
+    0
+   ]
+  },
+  {
+   "t": 40638,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1027,
+   "vorrat": null,
+   "schlange": "0 wartend · 2 im Werk",
+   "erst": [
+    88,
+    5648,
+    0
+   ]
+  },
+  {
+   "t": 40841,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1043,
+   "vorrat": null,
+   "schlange": "0 wartend · 2 im Werk",
+   "erst": [
+    88,
+    5648,
+    0
+   ]
+  },
+  {
+   "t": 41040,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1054,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    90,
+    5699,
+    0
+   ]
+  },
+  {
+   "t": 41239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1068,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    90,
+    5699,
+    0
+   ]
+  },
+  {
+   "t": 41438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1084,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    90,
+    5699,
+    0
+   ]
+  },
+  {
+   "t": 41638,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1099,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    90,
+    5699,
+    0
+   ]
+  },
+  {
+   "t": 41912,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1107,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    95,
+    5878,
+    5
+   ]
+  },
+  {
+   "t": 42146,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1110,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    98,
+    6081,
+    6
+   ]
+  },
+  {
+   "t": 42258,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1112,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    99,
+    6159,
+    7
+   ]
+  },
+  {
+   "t": 42438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1123,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    99,
+    6159,
+    7
+   ]
+  },
+  {
+   "t": 42655,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1137,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    99,
+    6159,
+    6
+   ]
+  },
+  {
+   "t": 42845,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1149,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    99,
+    6159,
+    5
+   ]
+  },
+  {
+   "t": 43046,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1163,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    99,
+    6159,
+    4
+   ]
+  },
+  {
+   "t": 43253,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1177,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    99,
+    6159,
+    1
+   ]
+  },
+  {
+   "t": 43522,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1184,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    104,
+    6329,
+    4
+   ]
+  },
+  {
+   "t": 43638,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1192,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    104,
+    6329,
+    1
+   ]
+  },
+  {
+   "t": 43968,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1201,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    111,
+    6544,
+    5
+   ]
+  },
+  {
+   "t": 44042,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1205,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    111,
+    6544,
+    3
+   ]
+  },
+  {
+   "t": 44240,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1220,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    111,
+    6544,
+    1
+   ]
+  },
+  {
+   "t": 44440,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1235,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    111,
+    6544,
+    1
+   ]
+  },
+  {
+   "t": 44742,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1247,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    115,
+    6701,
+    4
+   ]
+  },
+  {
+   "t": 44856,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1255,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    117,
+    6707,
+    3
+   ]
+  },
+  {
+   "t": 45039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1268,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    117,
+    6707,
+    1
+   ]
+  },
+  {
+   "t": 45327,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1275,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    121,
+    6914,
+    4
+   ]
+  },
+  {
+   "t": 45597,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1278,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    124,
+    7155,
+    7
+   ]
+  },
+  {
+   "t": 45738,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1280,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    8
+   ]
+  },
+  {
+   "t": 45856,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1287,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    8
+   ]
+  },
+  {
+   "t": 46051,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1299,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    7
+   ]
+  },
+  {
+   "t": 46247,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1312,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    7
+   ]
+  },
+  {
+   "t": 46439,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1325,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    6
+   ]
+  },
+  {
+   "t": 46654,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1340,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    5
+   ]
+  },
+  {
+   "t": 46843,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1352,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    1
+   ]
+  },
+  {
+   "t": 47040,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1367,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    1
+   ]
+  },
+  {
+   "t": 47241,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1382,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 47438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1398,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 47640,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1413,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 47839,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1428,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 48039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1443,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 48238,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1458,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 48441,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1474,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 48638,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1489,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 48839,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1505,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 49041,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1519,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 49240,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1535,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 49439,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1550,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 49640,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1565,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 49838,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1580,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 50038,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1595,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 50242,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1611,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 50439,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1626,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 50638,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1641,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 50838,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1656,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 51038,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1671,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 51239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1687,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 51438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1702,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 51641,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1718,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 51839,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1733,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 52048,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1749,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 52239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1764,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 52439,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1779,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 52639,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1794,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 52840,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1809,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 53038,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1824,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 53239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1840,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 53438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1855,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 53639,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1871,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 53839,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1886,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 54039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1901,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 54238,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1916,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 54439,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1932,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 54639,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1947,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 54838,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1962,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 55040,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1978,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 55239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 1993,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 55438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2008,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 55638,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2023,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 55840,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2039,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 56042,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2054,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 56239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2069,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 56439,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2085,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 56639,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2100,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 56840,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2115,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 57039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2130,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 57239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2146,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 57441,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2161,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 57640,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2177,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 57840,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2192,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 58039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2207,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 58239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2222,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 58440,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2237,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 58639,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2253,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 58839,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2268,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 59039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2282,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 59247,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2298,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 59439,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2313,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 59638,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2328,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 59840,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2344,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 60040,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2359,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 60239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2374,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 60438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2389,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 60639,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2405,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 60839,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2420,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 61040,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2435,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 61238,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2450,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 61452,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2466,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 61639,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2480,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 61841,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2495,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 62039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2510,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 62239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2526,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 62440,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2541,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 62638,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2556,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 62841,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2572,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 63040,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2587,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 63239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2602,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 63438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2617,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 63638,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2632,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 63839,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2648,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 64040,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2663,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 64239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2679,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 64439,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2694,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 64639,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2709,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 64839,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2725,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 65039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2740,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 65238,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2754,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 65438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2770,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 65640,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2785,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 65839,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2800,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 66039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2815,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 66238,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2830,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 66438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2845,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 66641,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2861,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 66839,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2876,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 67039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2891,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 67238,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2906,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 67440,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2922,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 67648,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2937,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 67839,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2952,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 68040,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2967,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 68239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2983,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 68439,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 2998,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 68638,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3013,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 68839,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3029,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 69039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3044,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 69238,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3059,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 69438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3074,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 69639,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3089,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 69842,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3105,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 70039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3120,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 70238,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3134,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 70438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3149,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 70638,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3164,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 70838,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3179,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 71039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3194,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 71239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3209,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 71442,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3225,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 71638,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3240,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 71840,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3255,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 72038,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3270,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 72240,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3285,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 72439,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3301,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 72639,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3316,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 72839,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3331,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 73039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3346,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 73238,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3361,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 73438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3376,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 73639,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3392,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 73841,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3407,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 74038,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3422,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 74238,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3438,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 74439,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3453,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 74640,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3469,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 74840,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3484,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 75041,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3499,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 75238,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3514,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 75439,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3530,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 75639,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3545,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 75847,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3560,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 76039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3574,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 76243,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3589,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 76448,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3605,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 76640,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3619,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 76840,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3635,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 77038,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3650,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 77239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3665,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 77438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3680,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 77638,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3696,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 77839,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3711,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 78039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3726,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 78242,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3742,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 78439,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3756,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 78640,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3772,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 78839,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3786,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 79039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3802,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 79239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3817,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 79439,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3832,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 79640,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3847,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 79841,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3862,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 80040,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3877,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 80238,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3892,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 80445,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3908,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 80640,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3923,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 80840,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3936,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 81039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3951,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 81238,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3966,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 81439,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3981,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 81638,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 3996,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 81838,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4011,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 82039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4026,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 82239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4041,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 82438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4056,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 82640,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4072,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 82838,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4087,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 83039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4102,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 83238,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4117,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 83438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4132,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 83639,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4147,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 83839,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4163,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 84040,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4178,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 84239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4193,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 84438,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4208,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 84639,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4224,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 84838,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4238,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 85039,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4254,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 85239,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4269,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 85440,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4284,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 85638,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4299,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 85839,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4314,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 86038,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4329,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 86266,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4339,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 86437,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4339,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 86645,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4339,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 86838,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4339,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 87040,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4339,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  },
+  {
+   "t": 87399,
+   "fehlt": [],
+   "terme": [],
+   "ring": [
+    4,
+    4
+   ],
+   "bilder": 4340,
+   "vorrat": null,
+   "schlange": "0 wartend · 0 im Werk",
+   "erst": [
+    125,
+    7259,
+    0
+   ]
+  }
+ ],
+ "lang": [
+  [
+   270,
+   84
+  ],
+  [
+   478,
+   647
+  ],
+  [
+   1832,
+   97
+  ],
+  [
+   2033,
+   1154
+  ],
+  [
+   3249,
+   758
+  ],
+  [
+   4016,
+   303
+  ],
+  [
+   4341,
+   164
+  ],
+  [
+   4509,
+   205
+  ],
+  [
+   4716,
+   354
+  ],
+  [
+   5078,
+   262
+  ],
+  [
+   5349,
+   820
+  ],
+  [
+   6368,
+   618
+  ],
+  [
+   7016,
+   542
+  ],
+  [
+   7575,
+   388
+  ],
+  [
+   8015,
+   815
+  ],
+  [
+   8834,
+   421
+  ],
+  [
+   9270,
+   351
+  ],
+  [
+   9669,
+   582
+  ],
+  [
+   10266,
+   180
+  ],
+  [
+   10472,
+   461
+  ],
+  [
+   10960,
+   258
+  ],
+  [
+   11219,
+   178
+  ],
+  [
+   11409,
+   461
+  ],
+  [
+   11898,
+   170
+  ],
+  [
+   12069,
+   339
+  ],
+  [
+   12416,
+   342
+  ],
+  [
+   12764,
+   451
+  ],
+  [
+   13265,
+   445
+  ],
+  [
+   13760,
+   90
+  ],
+  [
+   13918,
+   251
+  ],
+  [
+   14174,
+   71
+  ],
+  [
+   14434,
+   249
+  ],
+  [
+   14959,
+   221
+  ],
+  [
+   15459,
+   145
+  ],
+  [
+   15661,
+   56
+  ],
+  [
+   15961,
+   163
+  ],
+  [
+   16333,
+   105
+  ],
+  [
+   16439,
+   102
+  ],
+  [
+   16542,
+   103
+  ],
+  [
+   16723,
+   111
+  ],
+  [
+   16882,
+   96
+  ],
+  [
+   16982,
+   78
+  ],
+  [
+   17083,
+   93
+  ],
+  [
+   17194,
+   119
+  ],
+  [
+   17320,
+   78
+  ],
+  [
+   17450,
+   114
+  ],
+  [
+   17602,
+   196
+  ],
+  [
+   18051,
+   116
+  ],
+  [
+   18867,
+   135
+  ],
+  [
+   19124,
+   50
+  ],
+  [
+   19175,
+   98
+  ],
+  [
+   19274,
+   57
+  ],
+  [
+   19333,
+   52
+  ],
+  [
+   19386,
+   69
+  ],
+  [
+   19494,
+   52
+  ],
+  [
+   19548,
+   92
+  ],
+  [
+   19808,
+   59
+  ],
+  [
+   19868,
+   66
+  ],
+  [
+   19938,
+   95
+  ],
+  [
+   20147,
+   115
+  ],
+  [
+   20386,
+   73
+  ],
+  [
+   20565,
+   67
+  ],
+  [
+   20720,
+   79
+  ],
+  [
+   20892,
+   138
+  ],
+  [
+   21031,
+   66
+  ],
+  [
+   21171,
+   146
+  ],
+  [
+   21410,
+   141
+  ],
+  [
+   21648,
+   63
+  ],
+  [
+   21713,
+   66
+  ],
+  [
+   21862,
+   75
+  ],
+  [
+   22032,
+   116
+  ],
+  [
+   22235,
+   68
+  ],
+  [
+   22856,
+   138
+  ],
+  [
+   22995,
+   146
+  ],
+  [
+   23146,
+   164
+  ],
+  [
+   23313,
+   102
+  ],
+  [
+   23463,
+   170
+  ],
+  [
+   23635,
+   69
+  ],
+  [
+   23706,
+   118
+  ],
+  [
+   23826,
+   172
+  ],
+  [
+   24009,
+   102
+  ],
+  [
+   24164,
+   62
+  ],
+  [
+   24233,
+   181
+  ],
+  [
+   24466,
+   85
+  ],
+  [
+   24994,
+   90
+  ],
+  [
+   25443,
+   67
+  ],
+  [
+   30869,
+   68
+  ],
+  [
+   33381,
+   100
+  ],
+  [
+   33530,
+   50
+  ],
+  [
+   34555,
+   89
+  ],
+  [
+   35458,
+   73
+  ],
+  [
+   37093,
+   93
+  ],
+  [
+   37918,
+   78
+  ],
+  [
+   38982,
+   78
+  ],
+  [
+   40218,
+   98
+  ],
+  [
+   40943,
+   58
+  ],
+  [
+   41719,
+   65
+  ],
+  [
+   41785,
+   64
+  ],
+  [
+   41850,
+   62
+  ],
+  [
+   41913,
+   66
+  ],
+  [
+   41980,
+   74
+  ],
+  [
+   42054,
+   90
+  ],
+  [
+   42146,
+   91
+  ],
+  [
+   43332,
+   68
+  ],
+  [
+   43401,
+   59
+  ],
+  [
+   43461,
+   61
+  ],
+  [
+   43710,
+   68
+  ],
+  [
+   43828,
+   60
+  ],
+  [
+   43888,
+   79
+  ],
+  [
+   44543,
+   57
+  ],
+  [
+   44618,
+   62
+  ],
+  [
+   44681,
+   61
+  ],
+  [
+   45076,
+   65
+  ],
+  [
+   45142,
+   60
+  ],
+  [
+   45203,
+   64
+  ],
+  [
+   45268,
+   58
+  ],
+  [
+   45327,
+   67
+  ],
+  [
+   45395,
+   78
+  ],
+  [
+   45473,
+   123
+  ],
+  [
+   45598,
+   117
+  ],
+  [
+   86195,
+   70
+  ],
+  [
+   86662,
+   68
+  ]
+ ],
+ "buchDa": 1938,
+ "laden": {
+  "html": 14,
+  "skripte": 292,
+  "dom": 1126
+ },
+ "weltbildDa": 16874,
+ "holz": "voll",
+ "version": "18.546.142",
+ "adapter": "nvidia pascal",
+ "ohne": [],
+ "lieferung": {
+  "auftrag": 227,
+  "platte": 0,
+  "werk": 227,
+  "leer": 0,
+  "haupt": 0,
+  "je": {
+   "koerper": {
+    "platte": 0,
+    "werk": 227,
+    "haupt": 0,
+    "leer": 0,
+    "ms": 0
+   },
+   "blatt-atlas": {
+    "platte": 0,
+    "werk": 1,
+    "haupt": 0,
+    "leer": 0,
+    "ms": 0
+   },
+   "dorf-export": {
+    "platte": 0,
+    "werk": 2,
+    "haupt": 0,
+    "leer": 0,
+    "ms": 0
+   },
+   "karte": {
+    "platte": 0,
+    "werk": 0,
+    "haupt": 19,
+    "leer": 0,
+    "ms": 764.8000003695488
+   }
+  },
+  "liste": [
+   [
+    "koerper",
+    "gras|2|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "gras|2|2",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "geisttor|1|3",
+    "werk",
+    "gelaende,koerper,phyto,porta"
+   ],
+   [
+    "koerper",
+    "drachentor|1|3",
+    "werk",
+    "gelaende,koerper,phyto,porta"
+   ],
+   [
+    "koerper",
+    "verkalkt|1|3",
+    "werk",
+    "gelaende,koerper,phyto,porta"
+   ],
+   [
+    "koerper",
+    "mensch|0|1|ov:d08c5185.321",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "maschine|1|3",
+    "werk",
+    "gelaende,koerper,phyto,porta"
+   ],
+   [
+    "koerper",
+    "kathedrale|1|3",
+    "werk",
+    "gelaende,koerper,phyto,porta"
+   ],
+   [
+    "koerper",
+    "maurentor|1|3",
+    "werk",
+    "gelaende,koerper,phyto,porta"
+   ],
+   [
+    "koerper",
+    "ruine|1|3",
+    "werk",
+    "gelaende,koerper,phyto,porta"
+   ],
+   [
+    "blatt-atlas",
+    "blatt-atlas",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "zacken|1|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "gras|1|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "gras|1|2",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "geisttor|1|2",
+    "werk",
+    "gelaende,koerper,phyto,porta"
+   ],
+   [
+    "koerper",
+    "drachentor|1|2",
+    "werk",
+    "gelaende,koerper,phyto,porta"
+   ],
+   [
+    "koerper",
+    "verkalkt|1|2",
+    "werk",
+    "gelaende,koerper,phyto,porta"
+   ],
+   [
+    "koerper",
+    "maschine|1|2",
+    "werk",
+    "gelaende,koerper,phyto,porta"
+   ],
+   [
+    "koerper",
+    "kathedrale|1|2",
+    "werk",
+    "gelaende,koerper,phyto,porta"
+   ],
+   [
+    "koerper",
+    "maurentor|1|2",
+    "werk",
+    "gelaende,koerper,phyto,porta"
+   ],
+   [
+    "koerper",
+    "ruine|1|2",
+    "werk",
+    "gelaende,koerper,phyto,porta"
+   ],
+   [
+    "koerper",
+    "gt|6|1",
+    "werk",
+    "gelaende,koerper,phyto,vehicle"
+   ],
+   [
+    "koerper",
+    "zacken|4|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "dorf-export",
+    "stl|449fc11738c66319f7bdd8fff15430b4",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "alemannisch|1|2|ov:170117b9.261",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "blume|1|2",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "blume|2|2",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "zacken|3|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "alemannisch|1|3|ov:170117b9.261",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "weide|1|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "tanne|2|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "karst|1|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "tanne|1|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "strauch|1|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "tanne|3|1|ov:39ada8a4.15",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "fichte|1|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "wandlaterne|1|1",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "birke|2|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "birke|3|1|ov:39ada8a4.15",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "wandlaterne|1|3",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "eiche|2|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "schwarzwald|6|3|ov:9077280.470",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "alpenchalet|12|3|ov:e18295c.473",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "alpenchalet|9|2|ov:7323c079.472",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "alpenchalet|12|2|ov:e18295c.473",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "eiche|1|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "laterne|1|3",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "marktstand|1|1",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "brunnen|1|3",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "gotisch|12|2|ov:edcc8866.479",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "schwarzwald|6|2|ov:9077280.470",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "fichte|2|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "schwarzwald|4|2|ov:9935b486.473",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "alpenchalet|9|3|ov:7323c079.472",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "gotisch|12|3|ov:edcc8866.479",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "marktstand|1|3",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "laterne|1|1",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "zacken|2|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:gt|6",
+    "haupt",
+    "gelaende,koerper,phyto,vehicle"
+   ],
+   [
+    "koerper",
+    "fichte|3|1|ov:39ada8a4.15",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "schwarzwald|13|2|ov:8198aa54.471",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "skandinavisch|14|3|ov:519be5c6.477",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "schwarzwald|4|3|ov:9935b486.473",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "alpenchalet|12|3|ov:1093e85c.473",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "alpenchalet|16|3|ov:fd3882cb.472",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "schwarzwald|13|3|ov:8198aa54.471",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "schwarzwald|11|2|ov:3e3ed698.463",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "birke|1|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "schwarzwald|13|2|ov:63183697.473",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "schwarzwald|13|3|ov:63183697.473",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "schwarzwald|11|3|ov:cb5eca29.473",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "schwarzwald|8|3|ov:49901c4e.473",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "skandinavisch|6|3|ov:64a4c7f0.475",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "schwarzwald|15|3|ov:223f7a54.472",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "schwarzwald|15|2|ov:223f7a54.472",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "buche|1|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "zacken|10|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "schwarzwald|9|3|ov:c5e87e4.474",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mammut|1|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "zacken|9|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "zacken|15|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "blume|2|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "alpenchalet|3|3|ov:f58f68a7.471",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "geroell|1|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "zacken|7|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "zacken|13|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "blume|1|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "schwarzwald|8|2|ov:49901c4e.473",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "schwarzwald|11|3|ov:3e3ed698.463",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "schwarzwald|3|3|ov:41948277.473",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:tanne|3",
+    "haupt",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:tanne|2",
+    "haupt",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "buche|2|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "zacken|8|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:tanne|1",
+    "haupt",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "eiche|3|1|ov:39ada8a4.15",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:eiche|2",
+    "haupt",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "gestruepp|1|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:birke|3",
+    "haupt",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:fichte|1",
+    "haupt",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:eiche|1",
+    "haupt",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "farn|2|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "totstamm|1|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "farn|1|1",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:fichte|2",
+    "haupt",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:birke|2",
+    "haupt",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:strauch|1",
+    "haupt",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:fichte|3",
+    "haupt",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:birke|1",
+    "haupt",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:karst|1",
+    "haupt",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:weide|1",
+    "haupt",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:mammut|1",
+    "haupt",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:eiche|3",
+    "haupt",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "findling|2|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "findling|1|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "findling|5|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "findling|8|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "findling|4|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "findling|11|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "findling|7|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "findling|14|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "findling|10|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "findling|13|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "basalt|1|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "findling|16|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "basalt|4|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "basalt|7|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "basalt|3|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "basalt|10|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "basalt|6|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "basalt|13|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "basalt|16|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "basalt|9|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "kristalle|3|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "basalt|12|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "kristalle|4|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "basalt|15|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "kristalle|6|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "kristalle|2|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "kristalle|5|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:buche|2",
+    "haupt",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "kristalle|7|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "kristalle|8|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "kristalle|10|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "kristalle|9|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "kristalle|12|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "kristalle|11|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "kristalle|14|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "kristalle|13|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "kristalle|15|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "kristalle|16|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "zacken|6|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "zacken|5|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "zacken|12|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "zacken|11|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "sediment|1|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "zacken|14|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "sediment|3|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "zacken|16|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "sediment|2|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "sediment|5|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "sediment|7|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "sediment|4|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "sediment|8|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "sediment|6|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "sediment|9|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "sediment|10|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "sediment|12|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "sediment|11|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "sediment|13|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "sediment|14|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "sediment|16|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "sediment|15|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "karte",
+    "fimp|bc|fimp:buche|1",
+    "haupt",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "deer|0|1",
+    "werk",
+    "gelaende,koerper,phyto,tetrapoda"
+   ],
+   [
+    "koerper",
+    "wolf|0|1",
+    "werk",
+    "gelaende,koerper,phyto,tetrapoda"
+   ],
+   [
+    "koerper",
+    "fox|0|1",
+    "werk",
+    "gelaende,koerper,phyto,tetrapoda"
+   ],
+   [
+    "koerper",
+    "bear|0|1",
+    "werk",
+    "gelaende,koerper,phyto,tetrapoda"
+   ],
+   [
+    "koerper",
+    "feuerstelle|1|1",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "deer|0|0",
+    "werk",
+    "gelaende,koerper,phyto,tetrapoda"
+   ],
+   [
+    "koerper",
+    "feuerstelle|2|3",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "feuerstelle|2|1",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|0|ov:d08c5185.321",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "findling|3|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "findling|6|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "findling|9|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "findling|12|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "findling|15|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "basalt|2|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "basalt|5|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "basalt|8|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "basalt|11|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "basalt|14|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "kristalle|1|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "gt|1|0",
+    "werk",
+    "gelaende,koerper,phyto,vehicle"
+   ],
+   [
+    "koerper",
+    "gt|7|0",
+    "werk",
+    "gelaende,koerper,phyto,vehicle"
+   ],
+   [
+    "koerper",
+    "wolf|0|0",
+    "werk",
+    "gelaende,koerper,phyto,tetrapoda"
+   ],
+   [
+    "koerper",
+    "supersport|1|0",
+    "werk",
+    "gelaende,koerper,phyto,vehicle"
+   ],
+   [
+    "koerper",
+    "supersport|7|0",
+    "werk",
+    "gelaende,koerper,phyto,vehicle"
+   ],
+   [
+    "koerper",
+    "limousine|1|0",
+    "werk",
+    "gelaende,koerper,phyto,vehicle"
+   ],
+   [
+    "koerper",
+    "limousine|7|0",
+    "werk",
+    "gelaende,koerper,phyto,vehicle"
+   ],
+   [
+    "koerper",
+    "kompakt_fwd|1|0",
+    "werk",
+    "gelaende,koerper,phyto,vehicle"
+   ],
+   [
+    "koerper",
+    "kompakt_fwd|7|0",
+    "werk",
+    "gelaende,koerper,phyto,vehicle"
+   ],
+   [
+    "koerper",
+    "suv|1|0",
+    "werk",
+    "gelaende,koerper,phyto,vehicle"
+   ],
+   [
+    "koerper",
+    "fox|0|0",
+    "werk",
+    "gelaende,koerper,phyto,tetrapoda"
+   ],
+   [
+    "koerper",
+    "bear|0|0",
+    "werk",
+    "gelaende,koerper,phyto,tetrapoda"
+   ],
+   [
+    "koerper",
+    "feuerstelle|1|3",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "suv|7|0",
+    "werk",
+    "gelaende,koerper,phyto,vehicle"
+   ],
+   [
+    "dorf-export",
+    "stl|2c4d425accc7bcb1cb18e17b04f43a04",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "fichte|2|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "fichte|1|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "alemannisch|1|1|ov:170117b9.261",
+    "werk",
+    "fachwerk,gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "verkalkt|1|1",
+    "werk",
+    "gelaende,koerper,phyto,porta"
+   ],
+   [
+    "koerper",
+    "drachentor|1|1",
+    "werk",
+    "gelaende,koerper,phyto,porta"
+   ],
+   [
+    "koerper",
+    "maschine|1|1",
+    "werk",
+    "gelaende,koerper,phyto,porta"
+   ],
+   [
+    "koerper",
+    "kathedrale|1|1",
+    "werk",
+    "gelaende,koerper,phyto,porta"
+   ],
+   [
+    "koerper",
+    "tanne|2|0",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|1|ov:8ed9a39c.421",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|2|ov:8ed9a39c.421",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|1|ov:de064610.420",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|0|ov:8ed9a39c.421",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|3|ov:8ed9a39c.421",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|0|ov:de064610.420",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|3|ov:de064610.420",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|2|ov:de064610.420",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|0|ov:c1683b6c.421",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|1|ov:c1683b6c.421",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|2|ov:c1683b6c.421",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|3|ov:c1683b6c.421",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|1|ov:5b9b5b42.420",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|2|ov:5b9b5b42.420",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|0|ov:5b9b5b42.420",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|1|ov:51f44bcb.428",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|3|ov:5b9b5b42.420",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|0|ov:51f44bcb.428",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|3|ov:51f44bcb.428",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|2|ov:51f44bcb.428",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|1|ov:4207a4f9.423",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|0|ov:4207a4f9.423",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|2|ov:4207a4f9.423",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|1|ov:29a7e7c9.423",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|3|ov:4207a4f9.423",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|0|ov:29a7e7c9.423",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|2|ov:29a7e7c9.423",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|3|ov:29a7e7c9.423",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|1|ov:d26f6652.418",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|0|ov:d26f6652.418",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|3|ov:d26f6652.418",
+    "werk",
+    "gelaende,koerper,phyto"
+   ],
+   [
+    "koerper",
+    "mensch|0|2|ov:d26f6652.418",
+    "werk",
+    "gelaende,koerper,phyto"
+   ]
+  ]
+ },
+ "tK": 17402,
+ "druecke": 21,
+ "offen": [
+  "14 Bäume werden gepflanzt",
+  "1 Wald-Stücke warten auf ihre Gestalt"
+ ],
+ "bild": {
+  "dc": 35,
+  "dreiecke": 400217,
+  "luecke": 0.0032368827160493825,
+  "png": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\b-kalt-94c0\\kalt-1-ruhe.png",
+  "a": {
+   "dc": 35,
+   "dreiecke": 213005,
+   "luecke": 0,
+   "png": "C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\p3\\messplatz\\lauf\\b-kalt-94c0\\kalt-1.png"
+  }
+ },
+ "zweit": false,
+ "halter": {
+  "profil": true,
+  "marken": 39,
+  "versatz": 477534822699,
+  "bisMs": 16874,
+  "aufgaben": [
+   {
+    "t": 2033,
+    "ms": 1154,
+    "halter": [
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 126
+     },
+     {
+      "name": "_runFrameScheduler (verteilt)",
+      "ort": "stamm/dirigent-takt.js:1471",
+      "ms": 119
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 90
+     },
+     {
+      "name": "_tickFernRing",
+      "ort": "stamm/bild-sicht.js:2629",
+      "ms": 72
+     },
+     {
+      "name": "spawnArchitecture (verteilt)",
+      "ort": "stamm/siedlung-satz.js:791",
+      "ms": 67
+     },
+     {
+      "name": "_werkGesetzSetzen",
+      "ort": "stamm/bau-teile.js:2494",
+      "ms": 67
+     },
+     {
+      "name": "_fromTexture [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 62
+     },
+     {
+      "name": "_renderScene [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 53
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 52
+     },
+     {
+      "name": "_werkGesetzSetzen",
+      "ort": "stamm/bau-teile.js:2494",
+      "ms": 51
+     }
+    ]
+   },
+   {
+    "t": 5349,
+    "ms": 820,
+    "halter": [
+     {
+      "name": "grow [phyto-core.js]",
+      "ort": "phyto-core.js:104",
+      "ms": 99
+     },
+     {
+      "name": "_tickFernRing",
+      "ort": "stamm/bild-sicht.js:2629",
+      "ms": 82
+     },
+     {
+      "name": "_forestPlantChunk (verteilt)",
+      "ort": "stamm/vegetation-baum.js:1052",
+      "ms": 77
+     },
+     {
+      "name": "_forestDartSteht",
+      "ort": "stamm/vegetation-baum.js:955",
+      "ms": 63
+     },
+     {
+      "name": "(garbage collector)",
+      "ort": "",
+      "ms": 58
+     },
+     {
+      "name": "_tickSaat",
+      "ort": "stamm/vegetation-baum.js:2237",
+      "ms": 53
+     },
+     {
+      "name": "build [three.webgpu.min.js] (verteilt)",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 51
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 50
+     }
+    ]
+   },
+   {
+    "t": 8015,
+    "ms": 815,
+    "halter": [
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 72
+     },
+     {
+      "name": "grow [phyto-core.js]",
+      "ort": "phyto-core.js:104",
+      "ms": 56
+     },
+     {
+      "name": "grow [phyto-core.js]",
+      "ort": "phyto-core.js:104",
+      "ms": 55
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 55
+     },
+     {
+      "name": "grow [phyto-core.js]",
+      "ort": "phyto-core.js:104",
+      "ms": 55
+     },
+     {
+      "name": "_ortGestaltSame",
+      "ort": "stamm/vegetation-baum.js:897",
+      "ms": 52
+     }
+    ]
+   },
+   {
+    "t": 3249,
+    "ms": 758,
+    "halter": [
+     {
+      "name": "_finalizeVoxelChunkBuild",
+      "ort": "stamm/gelaende-chunks.js:1218",
+      "ms": 67
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 61
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 56
+     },
+     {
+      "name": "zeichne",
+      "ort": "stamm/bild-kosten.js:458",
+      "ms": 55
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 55
+     },
+     {
+      "name": "i [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 50
+     }
+    ]
+   },
+   {
+    "t": 478,
+    "ms": 647,
+    "halter": [
+     {
+      "name": "_holzWahl",
+      "ort": "stamm/dirigent-regler.js:454",
+      "ms": 144
+     },
+     {
+      "name": "_blueprintProductVector",
+      "ort": "stamm/bau-buch.js:1366",
+      "ms": 75
+     },
+     {
+      "name": "grow [phyto-core.js]",
+      "ort": "phyto-core.js:104",
+      "ms": 67
+     },
+     {
+      "name": "init (verteilt)",
+      "ort": "stamm/dirigent-ankunft.js:3",
+      "ms": 61
+     },
+     {
+      "name": "_workshopRenderStatsPanel",
+      "ort": "stamm/werkstatt-vorschau.js:2319",
+      "ms": 59
+     }
+    ]
+   },
+   {
+    "t": 6368,
+    "ms": 618,
+    "halter": [
+     {
+      "name": "_forestPlantChunk",
+      "ort": "stamm/vegetation-baum.js:1052",
+      "ms": 72
+     },
+     {
+      "name": "setze",
+      "ort": "stamm/gelaende-fern.js:1414",
+      "ms": 57
+     },
+     {
+      "name": "_applyCrossLodGeomorph",
+      "ort": "stamm/gelaende-chunks.js:1472",
+      "ms": 54
+     },
+     {
+      "name": "_vegetationSampleSpawn",
+      "ort": "stamm/vegetation-baum.js:1307",
+      "ms": 54
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 50
+     }
+    ]
+   },
+   {
+    "t": 9669,
+    "ms": 582,
+    "halter": [
+     {
+      "name": "_runFrameScheduler (verteilt)",
+      "ort": "stamm/dirigent-takt.js:1471",
+      "ms": 127
+     },
+     {
+      "name": "_scatterPass",
+      "ort": "stamm/vegetation-streu.js:527",
+      "ms": 99
+     },
+     {
+      "name": "_renderScene [three.webgpu.min.js] (verteilt)",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 63
+     },
+     {
+      "name": "build [three.webgpu.min.js] (verteilt)",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 59
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 50
+     }
+    ]
+   },
+   {
+    "t": 7016,
+    "ms": 542,
+    "halter": [
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 79
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 69
+     },
+     {
+      "name": "_runFrameScheduler (verteilt)",
+      "ort": "stamm/dirigent-takt.js:1471",
+      "ms": 59
+     },
+     {
+      "name": "_forestDartSteht",
+      "ort": "stamm/vegetation-baum.js:955",
+      "ms": 56
+     },
+     {
+      "name": "build [three.webgpu.min.js] (verteilt)",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 51
+     }
+    ]
+   },
+   {
+    "t": 10472,
+    "ms": 461,
+    "halter": [
+     {
+      "name": "_scatterPass",
+      "ort": "stamm/vegetation-streu.js:527",
+      "ms": 78
+     },
+     {
+      "name": "_runFrameScheduler (verteilt)",
+      "ort": "stamm/dirigent-takt.js:1471",
+      "ms": 69
+     },
+     {
+      "name": "build [three.webgpu.min.js] (verteilt)",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 66
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 51
+     }
+    ]
+   },
+   {
+    "t": 11409,
+    "ms": 461,
+    "halter": [
+     {
+      "name": "_tickScatterStreaming",
+      "ort": "stamm/vegetation-streu.js:1420",
+      "ms": 67
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 60
+     },
+     {
+      "name": "spawnArchitecture",
+      "ort": "stamm/siedlung-satz.js:791",
+      "ms": 52
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 52
+     }
+    ]
+   },
+   {
+    "t": 12764,
+    "ms": 451,
+    "halter": [
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 66
+     },
+     {
+      "name": "_populateBlockerAABBs",
+      "ort": "stamm/gelaende-kollision.js:142",
+      "ms": 56
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 50
+     }
+    ]
+   },
+   {
+    "t": 13265,
+    "ms": 445,
+    "halter": [
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 62
+     },
+     {
+      "name": "_populateBlockerAABBs",
+      "ort": "stamm/gelaende-kollision.js:142",
+      "ms": 51
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 50
+     }
+    ]
+   },
+   {
+    "t": 8834,
+    "ms": 421,
+    "halter": [
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 58
+     },
+     {
+      "name": "run (verteilt)",
+      "ort": "stamm/dirigent-takt.js:1316",
+      "ms": 54
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 51
+     },
+     {
+      "name": "_scatterPass",
+      "ort": "stamm/vegetation-streu.js:527",
+      "ms": 51
+     }
+    ]
+   },
+   {
+    "t": 7575,
+    "ms": 388,
+    "halter": [
+     {
+      "name": "_tickFernRing",
+      "ort": "stamm/bild-sicht.js:2629",
+      "ms": 70
+     },
+     {
+      "name": "_ortGestaltSame",
+      "ort": "stamm/vegetation-baum.js:897",
+      "ms": 57
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 50
+     }
+    ]
+   },
+   {
+    "t": 4716,
+    "ms": 354,
+    "halter": [
+     {
+      "name": "(ohne Probe)",
+      "ort": "",
+      "ms": 89
+     },
+     {
+      "name": "zeichne",
+      "ort": "stamm/bild-kosten.js:458",
+      "ms": 75
+     },
+     {
+      "name": "_bauSatzLege",
+      "ort": "stamm/siedlung-satz.js:135",
+      "ms": 58
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 53
+     }
+    ]
+   },
+   {
+    "t": 9270,
+    "ms": 351,
+    "halter": [
+     {
+      "name": "_runFrameScheduler (verteilt)",
+      "ort": "stamm/dirigent-takt.js:1471",
+      "ms": 67
+     },
+     {
+      "name": "_wegenetzAnschluss",
+      "ort": "stamm/siedlung-ort.js:3292",
+      "ms": 57
+     },
+     {
+      "name": "_scatterSichtHoehe",
+      "ort": "stamm/vegetation-streu.js:652",
+      "ms": 52
+     }
+    ]
+   },
+   {
+    "t": 12416,
+    "ms": 342,
+    "halter": [
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 81
+     },
+     {
+      "name": "_baumGestaltTeile",
+      "ort": "stamm/studio-gestalt.js:9",
+      "ms": 65
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 58
+     }
+    ]
+   },
+   {
+    "t": 12069,
+    "ms": 339,
+    "halter": [
+     {
+      "name": "_scatterPass",
+      "ort": "stamm/vegetation-streu.js:527",
+      "ms": 95
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 76
+     }
+    ]
+   },
+   {
+    "t": 4016,
+    "ms": 303,
+    "halter": [
+     {
+      "name": "build [three.webgpu.min.js] (verteilt)",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 87
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 53
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 50
+     }
+    ]
+   },
+   {
+    "t": 5078,
+    "ms": 262,
+    "halter": [
+     {
+      "name": "_tickSaat",
+      "ort": "stamm/vegetation-baum.js:2237",
+      "ms": 69
+     },
+     {
+      "name": "_fernRingEinhaengen",
+      "ort": "stamm/gelaende-fern.js:1410",
+      "ms": 66
+     }
+    ]
+   },
+   {
+    "t": 10960,
+    "ms": 258,
+    "halter": [
+     {
+      "name": "_runFrameScheduler (verteilt)",
+      "ort": "stamm/dirigent-takt.js:1471",
+      "ms": 55
+     },
+     {
+      "name": "tickArchitectureCulling",
+      "ort": "stamm/vegetation-baum.js:2390",
+      "ms": 51
+     },
+     {
+      "name": "_scatterSichtHoehe",
+      "ort": "stamm/vegetation-streu.js:652",
+      "ms": 50
+     }
+    ]
+   },
+   {
+    "t": 13918,
+    "ms": 251,
+    "halter": [
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 53
+     },
+     {
+      "name": "AnazhRealm._diaetGeteiltSchreiben",
+      "ort": "stamm/bild-diaet.js:516",
+      "ms": 51
+     }
+    ]
+   },
+   {
+    "t": 14434,
+    "ms": 249,
+    "halter": [
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 51
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 50
+     }
+    ]
+   },
+   {
+    "t": 14959,
+    "ms": 221,
+    "halter": [
+     {
+      "name": "_renderScene [three.webgpu.min.js] (verteilt)",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 74
+     },
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 58
+     }
+    ]
+   },
+   {
+    "t": 4509,
+    "ms": 205,
+    "halter": [
+     {
+      "name": "(ohne Probe)",
+      "ort": "",
+      "ms": 77
+     }
+    ]
+   },
+   {
+    "t": 10266,
+    "ms": 180,
+    "halter": [
+     {
+      "name": "_tickScatterStreaming",
+      "ort": "stamm/vegetation-streu.js:1420",
+      "ms": 61
+     },
+     {
+      "name": "spawnArchitecture",
+      "ort": "stamm/siedlung-satz.js:791",
+      "ms": 55
+     }
+    ]
+   },
+   {
+    "t": 11219,
+    "ms": 178,
+    "halter": [
+     {
+      "name": "_scatterPass",
+      "ort": "stamm/vegetation-streu.js:527",
+      "ms": 93
+     }
+    ]
+   },
+   {
+    "t": 11898,
+    "ms": 170,
+    "halter": [
+     {
+      "name": "_forestStehtFrei",
+      "ort": "stamm/vegetation-baum.js:1007",
+      "ms": 55
+     }
+    ]
+   },
+   {
+    "t": 4341,
+    "ms": 164,
+    "halter": [
+     {
+      "name": "_ofenAssembleAsset",
+      "ort": "stamm/koerper-leib.js:1282",
+      "ms": 61
+     }
+    ]
+   },
+   {
+    "t": 15961,
+    "ms": 163,
+    "halter": [
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 68
+     }
+    ]
+   },
+   {
+    "t": 15459,
+    "ms": 145,
+    "halter": [
+     {
+      "name": "build [three.webgpu.min.js]",
+      "ort": "vendor/three.webgpu.min.js:6",
+      "ms": 58
+     }
+    ]
+   },
+   {
+    "t": 16723,
+    "ms": 111,
+    "halter": [
+     {
+      "name": "(anonym) [stamm/vegetation-baum.js:908]",
+      "ort": "stamm/vegetation-baum.js:908",
+      "ms": 57
+     }
+    ]
+   },
+   {
+    "t": 16333,
+    "ms": 105,
+    "halter": [
+     {
+      "name": "(anonym) [stamm/vegetation-baum.js:908]",
+      "ort": "stamm/vegetation-baum.js:908",
+      "ms": 53
+     }
+    ]
+   },
+   {
+    "t": 16542,
+    "ms": 103,
+    "halter": [
+     {
+      "name": "_scatterPass",
+      "ort": "stamm/vegetation-streu.js:527",
+      "ms": 69
+     }
+    ]
+   },
+   {
+    "t": 16439,
+    "ms": 102,
+    "halter": [
+     {
+      "name": "_scatterPass",
+      "ort": "stamm/vegetation-streu.js:527",
+      "ms": 70
+     }
+    ]
+   },
+   {
+    "t": 1832,
+    "ms": 97,
+    "halter": [
+     {
+      "name": "_computeFormRole",
+      "ort": "stamm/bau-buch.js:2105",
+      "ms": 60
+     }
+    ]
+   },
+   {
+    "t": 13760,
+    "ms": 90,
+    "halter": [
+     {
+      "name": "_runFrameScheduler",
+      "ort": "stamm/dirigent-takt.js:1471",
+      "ms": 51
+     }
+    ]
+   },
+   {
+    "t": 270,
+    "ms": 84,
+    "halter": [
+     {
+      "name": "(program)",
+      "ort": "",
+      "ms": 83
+     }
+    ]
+   },
+   {
+    "t": 14174,
+    "ms": 71,
+    "halter": [
+     {
+      "name": "verteilt (_loopVoxelStreaming 45 · nach 14 · tickArchitectureCulling 9)",
+      "ort": "",
+      "ms": 71
+     }
+    ]
+   },
+   {
+    "t": 15661,
+    "ms": 56,
+    "halter": [
+     {
+      "name": "verteilt ((garbage collector) 17 · _loopVoxelStreaming 6 · tickArchitectureCulling 6)",
+      "ort": "",
+      "ms": 56
+     }
+    ]
+   }
+  ],
+  "summen": [
+   {
+    "name": "e [three.webgpu.min.js]",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "ms": 12519,
+    "selbstMs": 4
+   },
+   {
+    "name": "loop",
+    "ort": "stamm/dirigent-takt.js:6",
+    "ms": 12512,
+    "selbstMs": 44
+   },
+   {
+    "name": "_loopVoxelStreaming",
+    "ort": "stamm/dirigent-takt.js:1506",
+    "ms": 6399,
+    "selbstMs": 1
+   },
+   {
+    "name": "_runFrameScheduler",
+    "ort": "stamm/dirigent-takt.js:1471",
+    "ms": 6397,
+    "selbstMs": 58
+   },
+   {
+    "name": "render [three.webgpu.min.js]",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "ms": 5746,
+    "selbstMs": 2
+   },
+   {
+    "name": "renderer._renderScene",
+    "ort": "stamm/bild-kosten.js:215",
+    "ms": 5743,
+    "selbstMs": 14
+   },
+   {
+    "name": "_renderScene [three.webgpu.min.js]",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "ms": 5729,
+    "selbstMs": 27
+   },
+   {
+    "name": "_renderObjects [three.webgpu.min.js]",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "ms": 5469,
+    "selbstMs": 3
+   },
+   {
+    "name": "renderer.renderObject",
+    "ort": "stamm/bild-kosten.js:392",
+    "ms": 5467,
+    "selbstMs": 4
+   },
+   {
+    "name": "renderObject [three.webgpu.min.js]",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "ms": 5464,
+    "selbstMs": 14
+   },
+   {
+    "name": "renderer._renderObjectDirect",
+    "ort": "stamm/bild-kosten.js:494",
+    "ms": 5458,
+    "selbstMs": 21
+   },
+   {
+    "name": "zeichne",
+    "ort": "stamm/bild-kosten.js:458",
+    "ms": 5347,
+    "selbstMs": 11
+   },
+   {
+    "name": "needsRefresh [three.webgpu.min.js]",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "ms": 4572,
+    "selbstMs": 2
+   },
+   {
+    "name": "_loopRender",
+    "ort": "stamm/dirigent-takt.js:1545",
+    "ms": 4307,
+    "selbstMs": 4
+   },
+   {
+    "name": "getForRender [three.webgpu.min.js]",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "ms": 4159,
+    "selbstMs": 10
+   },
+   {
+    "name": "updateBefore [three.webgpu.min.js]",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "ms": 4040,
+    "selbstMs": 1
+   },
+   {
+    "name": "updateBeforeNode [three.webgpu.min.js]",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "ms": 4040,
+    "selbstMs": 1
+   },
+   {
+    "name": "updateBefore",
+    "ort": "stamm/bild-kosten.js:1194",
+    "ms": 4039,
+    "selbstMs": 1
+   },
+   {
+    "name": "getMonitor [three.webgpu.min.js]",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "ms": 4006,
+    "selbstMs": 0
+   },
+   {
+    "name": "getNodeBuilderState [three.webgpu.min.js]",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "ms": 4006,
+    "selbstMs": 1
+   },
+   {
+    "name": "build [three.webgpu.min.js]",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "ms": 3998,
+    "selbstMs": 981
+   },
+   {
+    "name": "i [three.webgpu.min.js]",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "ms": 3958,
+    "selbstMs": 64
+   },
+   {
+    "name": "_dispatchFrameJobs",
+    "ort": "stamm/dirigent-takt.js:1213",
+    "ms": 2853,
+    "selbstMs": 4
+   },
+   {
+    "name": "run",
+    "ort": "stamm/dirigent-takt.js:1316",
+    "ms": 2849,
+    "selbstMs": 12
+   },
+   {
+    "name": "_tickScatterStreaming",
+    "ort": "stamm/vegetation-streu.js:1420",
+    "ms": 1585,
+    "selbstMs": 8
+   }
+  ],
+  "befunde": [
+   "build [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden vor dem ersten Bild 126 ms (bei 2.0 s; 35× ≥ 50 ms, Σ 2124 ms)",
+   "_scatterPass (stamm/vegetation-streu.js:527) hält den Haupt-Faden vor dem ersten Bild 99 ms (bei 9.7 s; 7× ≥ 50 ms, Σ 555 ms)",
+   "_runFrameScheduler (verteilt) (stamm/dirigent-takt.js:1471) hält den Haupt-Faden vor dem ersten Bild 127 ms (bei 9.7 s; 6× ≥ 50 ms, Σ 496 ms)",
+   "grow [phyto-core.js] (phyto-core.js:104) hält den Haupt-Faden vor dem ersten Bild 99 ms (bei 5.3 s; 5× ≥ 50 ms, Σ 332 ms)",
+   "build [three.webgpu.min.js] (verteilt) (vendor/three.webgpu.min.js:6) hält den Haupt-Faden vor dem ersten Bild 87 ms (bei 4.0 s; 5× ≥ 50 ms, Σ 314 ms)",
+   "_tickFernRing (stamm/bild-sicht.js:2629) hält den Haupt-Faden vor dem ersten Bild 82 ms (bei 5.3 s; 3× ≥ 50 ms, Σ 224 ms)",
+   "(ohne Probe) hält den Haupt-Faden vor dem ersten Bild 89 ms (bei 4.7 s; 2× ≥ 50 ms, Σ 166 ms)",
+   "_holzWahl (stamm/dirigent-regler.js:454) hält den Haupt-Faden vor dem ersten Bild 144 ms (bei 0.5 s; 1× ≥ 50 ms, Σ 144 ms)",
+   "_renderScene [three.webgpu.min.js] (verteilt) (vendor/three.webgpu.min.js:6) hält den Haupt-Faden vor dem ersten Bild 74 ms (bei 15.0 s; 2× ≥ 50 ms, Σ 137 ms)",
+   "zeichne (stamm/bild-kosten.js:458) hält den Haupt-Faden vor dem ersten Bild 75 ms (bei 4.7 s; 2× ≥ 50 ms, Σ 130 ms)",
+   "_tickScatterStreaming (stamm/vegetation-streu.js:1420) hält den Haupt-Faden vor dem ersten Bild 67 ms (bei 11.4 s; 2× ≥ 50 ms, Σ 128 ms)",
+   "_tickSaat (stamm/vegetation-baum.js:2237) hält den Haupt-Faden vor dem ersten Bild 69 ms (bei 5.1 s; 2× ≥ 50 ms, Σ 122 ms)",
+   "_forestDartSteht (stamm/vegetation-baum.js:955) hält den Haupt-Faden vor dem ersten Bild 63 ms (bei 5.3 s; 2× ≥ 50 ms, Σ 119 ms)",
+   "_werkGesetzSetzen (stamm/bau-teile.js:2494) hält den Haupt-Faden vor dem ersten Bild 67 ms (bei 2.0 s; 2× ≥ 50 ms, Σ 118 ms)",
+   "(anonym) [stamm/vegetation-baum.js:908] (stamm/vegetation-baum.js:908) hält den Haupt-Faden vor dem ersten Bild 57 ms (bei 16.7 s; 2× ≥ 50 ms, Σ 110 ms)",
+   "_ortGestaltSame (stamm/vegetation-baum.js:897) hält den Haupt-Faden vor dem ersten Bild 57 ms (bei 7.6 s; 2× ≥ 50 ms, Σ 109 ms)",
+   "spawnArchitecture (stamm/siedlung-satz.js:791) hält den Haupt-Faden vor dem ersten Bild 55 ms (bei 10.3 s; 2× ≥ 50 ms, Σ 107 ms)",
+   "_populateBlockerAABBs (stamm/gelaende-kollision.js:142) hält den Haupt-Faden vor dem ersten Bild 56 ms (bei 12.8 s; 2× ≥ 50 ms, Σ 107 ms)",
+   "_scatterSichtHoehe (stamm/vegetation-streu.js:652) hält den Haupt-Faden vor dem ersten Bild 52 ms (bei 9.3 s; 2× ≥ 50 ms, Σ 102 ms)",
+   "(program) hält den Haupt-Faden vor dem ersten Bild 83 ms (bei 0.3 s; 1× ≥ 50 ms, Σ 83 ms)",
+   "_forestPlantChunk (verteilt) (stamm/vegetation-baum.js:1052) hält den Haupt-Faden vor dem ersten Bild 77 ms (bei 5.3 s; 1× ≥ 50 ms, Σ 77 ms)",
+   "_blueprintProductVector (stamm/bau-buch.js:1366) hält den Haupt-Faden vor dem ersten Bild 75 ms (bei 0.5 s; 1× ≥ 50 ms, Σ 75 ms)",
+   "_forestPlantChunk (stamm/vegetation-baum.js:1052) hält den Haupt-Faden vor dem ersten Bild 72 ms (bei 6.4 s; 1× ≥ 50 ms, Σ 72 ms)",
+   "verteilt (_loopVoxelStreaming 45 · nach 14 · tickArchitectureCulling 9) hält den Haupt-Faden vor dem ersten Bild 71 ms (bei 14.2 s; 1× ≥ 50 ms, Σ 71 ms)",
+   "spawnArchitecture (verteilt) (stamm/siedlung-satz.js:791) hält den Haupt-Faden vor dem ersten Bild 67 ms (bei 2.0 s; 1× ≥ 50 ms, Σ 67 ms)",
+   "_finalizeVoxelChunkBuild (stamm/gelaende-chunks.js:1218) hält den Haupt-Faden vor dem ersten Bild 67 ms (bei 3.2 s; 1× ≥ 50 ms, Σ 67 ms)",
+   "_fernRingEinhaengen (stamm/gelaende-fern.js:1410) hält den Haupt-Faden vor dem ersten Bild 66 ms (bei 5.1 s; 1× ≥ 50 ms, Σ 66 ms)",
+   "_baumGestaltTeile (stamm/studio-gestalt.js:9) hält den Haupt-Faden vor dem ersten Bild 65 ms (bei 12.4 s; 1× ≥ 50 ms, Σ 65 ms)",
+   "_fromTexture [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden vor dem ersten Bild 62 ms (bei 2.0 s; 1× ≥ 50 ms, Σ 62 ms)",
+   "init (verteilt) (stamm/dirigent-ankunft.js:3) hält den Haupt-Faden vor dem ersten Bild 61 ms (bei 0.5 s; 1× ≥ 50 ms, Σ 61 ms)",
+   "_ofenAssembleAsset (stamm/koerper-leib.js:1282) hält den Haupt-Faden vor dem ersten Bild 61 ms (bei 4.3 s; 1× ≥ 50 ms, Σ 61 ms)",
+   "_computeFormRole (stamm/bau-buch.js:2105) hält den Haupt-Faden vor dem ersten Bild 60 ms (bei 1.8 s; 1× ≥ 50 ms, Σ 60 ms)",
+   "_workshopRenderStatsPanel (stamm/werkstatt-vorschau.js:2319) hält den Haupt-Faden vor dem ersten Bild 59 ms (bei 0.5 s; 1× ≥ 50 ms, Σ 59 ms)",
+   "(garbage collector) hält den Haupt-Faden vor dem ersten Bild 58 ms (bei 5.3 s; 1× ≥ 50 ms, Σ 58 ms)",
+   "_bauSatzLege (stamm/siedlung-satz.js:135) hält den Haupt-Faden vor dem ersten Bild 58 ms (bei 4.7 s; 1× ≥ 50 ms, Σ 58 ms)",
+   "setze (stamm/gelaende-fern.js:1414) hält den Haupt-Faden vor dem ersten Bild 57 ms (bei 6.4 s; 1× ≥ 50 ms, Σ 57 ms)",
+   "_wegenetzAnschluss (stamm/siedlung-ort.js:3292) hält den Haupt-Faden vor dem ersten Bild 57 ms (bei 9.3 s; 1× ≥ 50 ms, Σ 57 ms)",
+   "verteilt ((garbage collector) 17 · _loopVoxelStreaming 6 · tickArchitectureCulling 6) hält den Haupt-Faden vor dem ersten Bild 56 ms (bei 15.7 s; 1× ≥ 50 ms, Σ 56 ms)",
+   "_forestStehtFrei (stamm/vegetation-baum.js:1007) hält den Haupt-Faden vor dem ersten Bild 55 ms (bei 11.9 s; 1× ≥ 50 ms, Σ 55 ms)",
+   "_applyCrossLodGeomorph (stamm/gelaende-chunks.js:1472) hält den Haupt-Faden vor dem ersten Bild 54 ms (bei 6.4 s; 1× ≥ 50 ms, Σ 54 ms)",
+   "_vegetationSampleSpawn (stamm/vegetation-baum.js:1307) hält den Haupt-Faden vor dem ersten Bild 54 ms (bei 6.4 s; 1× ≥ 50 ms, Σ 54 ms)",
+   "run (verteilt) (stamm/dirigent-takt.js:1316) hält den Haupt-Faden vor dem ersten Bild 54 ms (bei 8.8 s; 1× ≥ 50 ms, Σ 54 ms)",
+   "_renderScene [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden vor dem ersten Bild 53 ms (bei 2.0 s; 1× ≥ 50 ms, Σ 53 ms)",
+   "tickArchitectureCulling (stamm/vegetation-baum.js:2390) hält den Haupt-Faden vor dem ersten Bild 51 ms (bei 11.0 s; 1× ≥ 50 ms, Σ 51 ms)",
+   "AnazhRealm._diaetGeteiltSchreiben (stamm/bild-diaet.js:516) hält den Haupt-Faden vor dem ersten Bild 51 ms (bei 13.9 s; 1× ≥ 50 ms, Σ 51 ms)",
+   "_runFrameScheduler (stamm/dirigent-takt.js:1471) hält den Haupt-Faden vor dem ersten Bild 51 ms (bei 13.8 s; 1× ≥ 50 ms, Σ 51 ms)",
+   "i [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden vor dem ersten Bild 50 ms (bei 3.2 s; 1× ≥ 50 ms, Σ 50 ms)"
+  ],
+  "belegtMs": 15792,
+  "kosten": {
+   "Buch": {
+    "1": 87.28
+   },
+   "Bauten": {
+    "2": 66.96300000000002,
+    "3": 0.141,
+    "4": 64.58200000000001,
+    "5": 2.8689999999999998,
+    "6": 18.183000000000003,
+    "7": 10.120999999999999,
+    "8": 226.53000000000006,
+    "9": 32.68,
+    "10": 49.259,
+    "11": 45.41799999999999,
+    "12": 25.297000000000004,
+    "13": 21.260000000000005,
+    "14": 19.86,
+    "15": 9.730999999999998,
+    "16": 2.398,
+    "17": 4.453
+   },
+   "Streu": {
+    "2": 1.616,
+    "6": 6.576,
+    "7": 93.39899999999999,
+    "8": 153.86200000000005,
+    "9": 196.615,
+    "10": 117.52700000000003,
+    "11": 282.415,
+    "12": 102.639,
+    "16": 316.6329999999994
+   },
+   "Gestalt": {
+    "2": 0.559,
+    "7": 0.895,
+    "8": 4.923,
+    "9": 19.784000000000002,
+    "10": 20.220000000000002,
+    "11": 42.093,
+    "12": 60.075,
+    "13": 50.827,
+    "14": 17.213,
+    "16": 6.131,
+    "17": 19.382
+   },
+   "Boden": {
+    "3": 31.924,
+    "5": 24.014999999999993,
+    "6": 51.137999999999984,
+    "7": 18.372999999999998,
+    "8": 10.59,
+    "9": 3.885,
+    "10": 2.208,
+    "11": 2.75,
+    "12": 7.148,
+    "13": 1.617,
+    "17": 7.470000000000001
+   },
+   "Saat": {
+    "3": 36.197,
+    "5": 122.506,
+    "6": 71.46799999999999,
+    "16": 5.252,
+    "17": 14.338
+   },
+   "Wald-Plan": {
+    "3": 4.193,
+    "4": 0.631,
+    "5": 314.031,
+    "6": 72.59199999999998,
+    "7": 100.57400000000003,
+    "8": 0.221,
+    "11": 1.819
+   },
+   "Gruppen-Bau": {
+    "3": 6.032000000000002,
+    "4": 43.94499999999999,
+    "5": 13.779,
+    "6": 32.501,
+    "7": 14.965999999999994,
+    "9": 35.64499999999999,
+    "10": 8.326,
+    "11": 10.083,
+    "12": 4.745,
+    "13": 9.13,
+    "14": 8.692,
+    "15": 0.559,
+    "17": 8.326000000000002
+   },
+   "Dorf": {
+    "8": 22.385000000000005,
+    "9": 17.796,
+    "10": 11.578000000000001,
+    "11": 59.75499999999999
+   }
+  },
+  "vorBild": {
+   "Streu": 1271.282,
+   "Gestalt": 218.21799999999982,
+   "Saat": 230.171,
+   "Wald-Plan": 494.0609999999998
+  },
+  "halter": [
+   {
+    "name": "build [three.webgpu.min.js]",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "n": 35,
+    "maxMs": 126,
+    "summeMs": 2124,
+    "t": 2033
+   },
+   {
+    "name": "_scatterPass",
+    "ort": "stamm/vegetation-streu.js:527",
+    "n": 7,
+    "maxMs": 99,
+    "summeMs": 555,
+    "t": 9669
+   },
+   {
+    "name": "_runFrameScheduler (verteilt)",
+    "ort": "stamm/dirigent-takt.js:1471",
+    "n": 6,
+    "maxMs": 127,
+    "summeMs": 496,
+    "t": 9669
+   },
+   {
+    "name": "grow [phyto-core.js]",
+    "ort": "phyto-core.js:104",
+    "n": 5,
+    "maxMs": 99,
+    "summeMs": 332,
+    "t": 5349
+   },
+   {
+    "name": "build [three.webgpu.min.js] (verteilt)",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "n": 5,
+    "maxMs": 87,
+    "summeMs": 314,
+    "t": 4016
+   },
+   {
+    "name": "_tickFernRing",
+    "ort": "stamm/bild-sicht.js:2629",
+    "n": 3,
+    "maxMs": 82,
+    "summeMs": 224,
+    "t": 5349
+   },
+   {
+    "name": "(ohne Probe)",
+    "ort": "",
+    "n": 2,
+    "maxMs": 89,
+    "summeMs": 166,
+    "t": 4716
+   },
+   {
+    "name": "_holzWahl",
+    "ort": "stamm/dirigent-regler.js:454",
+    "n": 1,
+    "maxMs": 144,
+    "summeMs": 144,
+    "t": 478
+   },
+   {
+    "name": "_renderScene [three.webgpu.min.js] (verteilt)",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "n": 2,
+    "maxMs": 74,
+    "summeMs": 137,
+    "t": 14959
+   },
+   {
+    "name": "zeichne",
+    "ort": "stamm/bild-kosten.js:458",
+    "n": 2,
+    "maxMs": 75,
+    "summeMs": 130,
+    "t": 4716
+   },
+   {
+    "name": "_tickScatterStreaming",
+    "ort": "stamm/vegetation-streu.js:1420",
+    "n": 2,
+    "maxMs": 67,
+    "summeMs": 128,
+    "t": 11409
+   },
+   {
+    "name": "_tickSaat",
+    "ort": "stamm/vegetation-baum.js:2237",
+    "n": 2,
+    "maxMs": 69,
+    "summeMs": 122,
+    "t": 5078
+   },
+   {
+    "name": "_forestDartSteht",
+    "ort": "stamm/vegetation-baum.js:955",
+    "n": 2,
+    "maxMs": 63,
+    "summeMs": 119,
+    "t": 5349
+   },
+   {
+    "name": "_werkGesetzSetzen",
+    "ort": "stamm/bau-teile.js:2494",
+    "n": 2,
+    "maxMs": 67,
+    "summeMs": 118,
+    "t": 2033
+   },
+   {
+    "name": "(anonym) [stamm/vegetation-baum.js:908]",
+    "ort": "stamm/vegetation-baum.js:908",
+    "n": 2,
+    "maxMs": 57,
+    "summeMs": 110,
+    "t": 16723
+   },
+   {
+    "name": "_ortGestaltSame",
+    "ort": "stamm/vegetation-baum.js:897",
+    "n": 2,
+    "maxMs": 57,
+    "summeMs": 109,
+    "t": 7575
+   },
+   {
+    "name": "spawnArchitecture",
+    "ort": "stamm/siedlung-satz.js:791",
+    "n": 2,
+    "maxMs": 55,
+    "summeMs": 107,
+    "t": 10266
+   },
+   {
+    "name": "_populateBlockerAABBs",
+    "ort": "stamm/gelaende-kollision.js:142",
+    "n": 2,
+    "maxMs": 56,
+    "summeMs": 107,
+    "t": 12764
+   },
+   {
+    "name": "_scatterSichtHoehe",
+    "ort": "stamm/vegetation-streu.js:652",
+    "n": 2,
+    "maxMs": 52,
+    "summeMs": 102,
+    "t": 9270
+   },
+   {
+    "name": "(program)",
+    "ort": "",
+    "n": 1,
+    "maxMs": 83,
+    "summeMs": 83,
+    "t": 270
+   },
+   {
+    "name": "_forestPlantChunk (verteilt)",
+    "ort": "stamm/vegetation-baum.js:1052",
+    "n": 1,
+    "maxMs": 77,
+    "summeMs": 77,
+    "t": 5349
+   },
+   {
+    "name": "_blueprintProductVector",
+    "ort": "stamm/bau-buch.js:1366",
+    "n": 1,
+    "maxMs": 75,
+    "summeMs": 75,
+    "t": 478
+   },
+   {
+    "name": "_forestPlantChunk",
+    "ort": "stamm/vegetation-baum.js:1052",
+    "n": 1,
+    "maxMs": 72,
+    "summeMs": 72,
+    "t": 6368
+   },
+   {
+    "name": "verteilt (_loopVoxelStreaming 45 · nach 14 · tickArchitectureCulling 9)",
+    "ort": "",
+    "n": 1,
+    "maxMs": 71,
+    "summeMs": 71,
+    "t": 14174
+   },
+   {
+    "name": "spawnArchitecture (verteilt)",
+    "ort": "stamm/siedlung-satz.js:791",
+    "n": 1,
+    "maxMs": 67,
+    "summeMs": 67,
+    "t": 2033
+   },
+   {
+    "name": "_finalizeVoxelChunkBuild",
+    "ort": "stamm/gelaende-chunks.js:1218",
+    "n": 1,
+    "maxMs": 67,
+    "summeMs": 67,
+    "t": 3249
+   },
+   {
+    "name": "_fernRingEinhaengen",
+    "ort": "stamm/gelaende-fern.js:1410",
+    "n": 1,
+    "maxMs": 66,
+    "summeMs": 66,
+    "t": 5078
+   },
+   {
+    "name": "_baumGestaltTeile",
+    "ort": "stamm/studio-gestalt.js:9",
+    "n": 1,
+    "maxMs": 65,
+    "summeMs": 65,
+    "t": 12416
+   },
+   {
+    "name": "_fromTexture [three.webgpu.min.js]",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "n": 1,
+    "maxMs": 62,
+    "summeMs": 62,
+    "t": 2033
+   },
+   {
+    "name": "init (verteilt)",
+    "ort": "stamm/dirigent-ankunft.js:3",
+    "n": 1,
+    "maxMs": 61,
+    "summeMs": 61,
+    "t": 478
+   },
+   {
+    "name": "_ofenAssembleAsset",
+    "ort": "stamm/koerper-leib.js:1282",
+    "n": 1,
+    "maxMs": 61,
+    "summeMs": 61,
+    "t": 4341
+   },
+   {
+    "name": "_computeFormRole",
+    "ort": "stamm/bau-buch.js:2105",
+    "n": 1,
+    "maxMs": 60,
+    "summeMs": 60,
+    "t": 1832
+   },
+   {
+    "name": "_workshopRenderStatsPanel",
+    "ort": "stamm/werkstatt-vorschau.js:2319",
+    "n": 1,
+    "maxMs": 59,
+    "summeMs": 59,
+    "t": 478
+   },
+   {
+    "name": "(garbage collector)",
+    "ort": "",
+    "n": 1,
+    "maxMs": 58,
+    "summeMs": 58,
+    "t": 5349
+   },
+   {
+    "name": "_bauSatzLege",
+    "ort": "stamm/siedlung-satz.js:135",
+    "n": 1,
+    "maxMs": 58,
+    "summeMs": 58,
+    "t": 4716
+   },
+   {
+    "name": "setze",
+    "ort": "stamm/gelaende-fern.js:1414",
+    "n": 1,
+    "maxMs": 57,
+    "summeMs": 57,
+    "t": 6368
+   },
+   {
+    "name": "_wegenetzAnschluss",
+    "ort": "stamm/siedlung-ort.js:3292",
+    "n": 1,
+    "maxMs": 57,
+    "summeMs": 57,
+    "t": 9270
+   },
+   {
+    "name": "verteilt ((garbage collector) 17 · _loopVoxelStreaming 6 · tickArchitectureCulling 6)",
+    "ort": "",
+    "n": 1,
+    "maxMs": 56,
+    "summeMs": 56,
+    "t": 15661
+   },
+   {
+    "name": "_forestStehtFrei",
+    "ort": "stamm/vegetation-baum.js:1007",
+    "n": 1,
+    "maxMs": 55,
+    "summeMs": 55,
+    "t": 11898
+   },
+   {
+    "name": "_applyCrossLodGeomorph",
+    "ort": "stamm/gelaende-chunks.js:1472",
+    "n": 1,
+    "maxMs": 54,
+    "summeMs": 54,
+    "t": 6368
+   },
+   {
+    "name": "_vegetationSampleSpawn",
+    "ort": "stamm/vegetation-baum.js:1307",
+    "n": 1,
+    "maxMs": 54,
+    "summeMs": 54,
+    "t": 6368
+   },
+   {
+    "name": "run (verteilt)",
+    "ort": "stamm/dirigent-takt.js:1316",
+    "n": 1,
+    "maxMs": 54,
+    "summeMs": 54,
+    "t": 8834
+   },
+   {
+    "name": "_renderScene [three.webgpu.min.js]",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "n": 1,
+    "maxMs": 53,
+    "summeMs": 53,
+    "t": 2033
+   },
+   {
+    "name": "tickArchitectureCulling",
+    "ort": "stamm/vegetation-baum.js:2390",
+    "n": 1,
+    "maxMs": 51,
+    "summeMs": 51,
+    "t": 10960
+   },
+   {
+    "name": "AnazhRealm._diaetGeteiltSchreiben",
+    "ort": "stamm/bild-diaet.js:516",
+    "n": 1,
+    "maxMs": 51,
+    "summeMs": 51,
+    "t": 13918
+   },
+   {
+    "name": "_runFrameScheduler",
+    "ort": "stamm/dirigent-takt.js:1471",
+    "n": 1,
+    "maxMs": 51,
+    "summeMs": 51,
+    "t": 13760
+   },
+   {
+    "name": "i [three.webgpu.min.js]",
+    "ort": "vendor/three.webgpu.min.js:6",
+    "n": 1,
+    "maxMs": 50,
+    "summeMs": 50,
+    "t": 3249
+   }
+  ],
+  "klasse": {
+   "(idle)": 688,
+   "(program)": 812,
+   "(garbage collector)": 399
+  },
+  "meilensteine": [
+   {
+    "name": "HTML da",
+    "t": 14,
+    "belegtMs": 0
+   },
+   {
+    "name": "Skripte da",
+    "t": 292,
+    "belegtMs": 130
+   },
+   {
+    "name": "DOM bereit",
+    "t": 1126,
+    "belegtMs": 945
+   },
+   {
+    "name": "welt steht",
+    "t": 1696,
+    "belegtMs": 1514
+   },
+   {
+    "name": "Buch da",
+    "t": 1938,
+    "belegtMs": 1637
+   },
+   {
+    "name": "buch steht",
+    "t": 1938,
+    "belegtMs": 1637
+   },
+   {
+    "name": "erstes Lade-Bild",
+    "t": 3204,
+    "belegtMs": 2862
+   },
+   {
+    "name": "licht steht",
+    "t": 4320,
+    "belegtMs": 3974
+   },
+   {
+    "name": "leib steht",
+    "t": 4716,
+    "belegtMs": 4275
+   },
+   {
+    "name": "boden steht",
+    "t": 7574,
+    "belegtMs": 6851
+   },
+   {
+    "name": "dorf steht",
+    "t": 11881,
+    "belegtMs": 11060
+   },
+   {
+    "name": "pflanzung steht",
+    "t": 13715,
+    "belegtMs": 12839
+   },
+   {
+    "name": "horizont steht",
+    "t": 14174,
+    "belegtMs": 13191
+   },
+   {
+    "name": "streu steht",
+    "t": 16874,
+    "belegtMs": 15792
+   },
+   {
+    "name": "bauten steht",
+    "t": 16874,
+    "belegtMs": 15792
+   },
+   {
+    "name": "karten steht",
+    "t": 16874,
+    "belegtMs": 15792
+   },
+   {
+    "name": "Weltbild",
+    "t": 16874,
+    "belegtMs": 15792
+   },
+   {
+    "name": "Kontrolle",
+    "t": 17402,
+    "belegtMs": 16318
+   },
+   {
+    "name": "Ring am Ziel",
+    "t": 19493,
+    "belegtMs": 16368
+   }
+  ]
+ },
+ "kosten": {
+  "Buch": {
+   "1": 87.28
+  },
+  "Bauten": {
+   "2": 66.96300000000002,
+   "3": 0.141,
+   "4": 64.58200000000001,
+   "5": 2.8689999999999998,
+   "6": 18.183000000000003,
+   "7": 10.120999999999999,
+   "8": 226.53000000000006,
+   "9": 32.68,
+   "10": 49.259,
+   "11": 45.41799999999999,
+   "12": 25.297000000000004,
+   "13": 21.260000000000005,
+   "14": 19.86,
+   "15": 9.730999999999998,
+   "16": 2.398,
+   "17": 4.453
+  },
+  "Streu": {
+   "2": 1.616,
+   "6": 6.576,
+   "7": 93.39899999999999,
+   "8": 153.86200000000005,
+   "9": 196.615,
+   "10": 117.52700000000003,
+   "11": 282.415,
+   "12": 102.639,
+   "16": 316.6329999999994
+  },
+  "Gestalt": {
+   "2": 0.559,
+   "7": 0.895,
+   "8": 4.923,
+   "9": 19.784000000000002,
+   "10": 20.220000000000002,
+   "11": 42.093,
+   "12": 60.075,
+   "13": 50.827,
+   "14": 17.213,
+   "16": 6.131,
+   "17": 19.382
+  },
+  "Boden": {
+   "3": 31.924,
+   "5": 24.014999999999993,
+   "6": 51.137999999999984,
+   "7": 18.372999999999998,
+   "8": 10.59,
+   "9": 3.885,
+   "10": 2.208,
+   "11": 2.75,
+   "12": 7.148,
+   "13": 1.617,
+   "17": 7.470000000000001
+  },
+  "Saat": {
+   "3": 36.197,
+   "5": 122.506,
+   "6": 71.46799999999999,
+   "16": 5.252,
+   "17": 14.338
+  },
+  "Wald-Plan": {
+   "3": 4.193,
+   "4": 0.631,
+   "5": 314.031,
+   "6": 72.59199999999998,
+   "7": 100.57400000000003,
+   "8": 0.221,
+   "11": 1.819
+  },
+  "Gruppen-Bau": {
+   "3": 6.032000000000002,
+   "4": 43.94499999999999,
+   "5": 13.779,
+   "6": 32.501,
+   "7": 14.965999999999994,
+   "9": 35.64499999999999,
+   "10": 8.326,
+   "11": 10.083,
+   "12": 4.745,
+   "13": 9.13,
+   "14": 8.692,
+   "15": 0.559,
+   "17": 8.326000000000002
+  },
+  "Dorf": {
+   "8": 22.385000000000005,
+   "9": 17.796,
+   "10": 11.578000000000001,
+   "11": 59.75499999999999
+  }
+ },
+ "vorBild": {
+  "Streu": 1271.282,
+  "Gestalt": 218.21799999999982,
+  "Saat": 230.171,
+  "Wald-Plan": 494.0609999999998
+ }
+}
