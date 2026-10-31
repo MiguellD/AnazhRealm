@@ -1103,3 +1103,4 @@
 2026-10-31 11:26:47 z102-abab stadt(4+4) nicht-langsamer 15.9 · verlängert (4+4)
 2026-10-31 11:39:05 z102-abab w-ego(4+4) LANGSAMER 12.2 · verlängert (4+4)
 2026-10-31 11:39:23 takt31-gtx START 4 Stationen in 1 Läufen
+2026-10-31 11:44:34 takt31-gtx lod.K1#1,lod.K2#1,lod.K5#1,vegetation.K1#1 OFFEN/ROT/OFFEN/ROT 5.1 · 4/4
