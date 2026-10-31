@@ -839,6 +839,10 @@ class AnazhRealm_dirigent_ankunft {
     _weltbildSteht() {
         const st = this.state;
         st._weltbildDa = performance.now();
+        // die Zeichnungen, die in diesem Bild ohne ihr Programm blieben (`bildWartet`, w4-ankunft-5) — das Buch der Programme
+        // trägt sie, die Kalt-Zeile nennt sie
+        const E = this._erstZeichnung;
+        if (E) E.buch.imBild = E.bildWartet;
         st._nachlauf = 0;
         st._rundumDa = null;
         this._ersterBlickAus();
@@ -1104,6 +1108,11 @@ class AnazhRealm_dirigent_ankunft {
         // DER LEIB DES SPIELERS (K60-2): sein Guss kommt aus dem Faden (`_leibBereit`, die zwei Vorlagen nach dem Buch) — bis
         // er steht, ist der Spieler der leere Anker, und kein Bild zeigt die Welt ohne ihn.
         if (st._deferredAvatarSoul) luecke("leib", "der Spieler erhält seinen Leib", !!this._foundry);
+        // DIE AUSGABE (w4-ankunft-5): unter dem Ladeschirm bauen die Post-Kette und das Tiefen-Abbild ihre Pipelines asynchron —
+        // ein Bild, in dem eine davon noch nicht zeichnete (`ausgabeWartet`, gezählt im letzten Bild, `_loopRender`), ist nicht das
+        // Weltbild: der Ladeschirm wiche über einer leeren Leinwand
+        if (this._erstZeichnung && this._erstZeichnung.ausgabeWartet > 0)
+            luecke("ausgabe", "die Ausgabe baut ihr Programm", true);
         if (!this._foundryEnabled()) return out;
         const f = this._foundry;
         if (!f || !f.ready || !f.recipes) {
@@ -1339,6 +1348,9 @@ class AnazhRealm_dirigent_ankunft {
         stoff.depthTest = false;
         stoff.depthWrite = false;
         stoff.side = THREE.DoubleSide;
+        // EIN PASS (w4-ankunft-5): durchsichtig und beidseitig zeichnete r184 erst die Rück-, dann die Vorderseite — zwei
+        // Render-Objekte je Seite, zwei Knoten-Bauten desselben Texts vor dem Bild; das Maximum kennt keine Reihenfolge
+        stoff.forceSinglePass = true;
         stoff.fog = false;
         stoff.toneMapped = false;
         const szene = new THREE.Scene();

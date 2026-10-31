@@ -132,19 +132,25 @@ class AnazhRealm_studio_gestalt {
         // verschränkten Puffer (`_jahrEcken`): die Blatt-Karte belegt ohne sie schon 8 Vertex-Puffer (WebGPU `maxVertexBuffers`).
         const jahr = !!(m.aCenter && m.aCenter.array) + !!(m.aType && m.aType.array);
         if (jahr === 1) throw new Error("_foundryBuildMesh: die Jahres-Ecken reisen nur als Paar (aCenter · aType)");
-        if (jahr) AnazhRealm._jahrEcken(geo, m.uv && m.uv.array, m.aCenter.array, m.aType.array);
-        else if (m.uv && m.uv.array) geo.setAttribute("uv", new T.BufferAttribute(m.uv.array, 2));
+        // DER TON JE ECKE (mensch.K4, koerper `menschTon`): der Mensch trägt ihn — sein Stoff färbt jede Ecke nach der Palette
+        // des Leibs, der ihn zeichnet (`_tonFaktor`). DIE ECKEN DER GESTALT, wie sie geliefert sind: ihr Stoff liest Ton und Jahr
+        // an ihrem Namen (`_foundryTreeMaterial`) — er entsteht vor der Form, denn sie trägt nur, was er liest
+        const ton = !!(m.aTon && m.aTon.array);
+        const ecken = { ton, jahr: jahr === 2 };
+        const geskinnt = !!(m.skinIndex && m.skinIndex.array && m.skinWeight && m.skinWeight.array);
+        const stoff = this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, geskinnt ? null : baum || null, false, ecken); // prettier-ignore
+        // DIE FORM FOLGT IHREM LESER (w4-ankunft-5): uv trägt die Gestalt nur, wenn ihr Stoff es liest (`userData.liestUv`) —
+        // eine Ecke ohne Leser schlüsselte ein eigenes Programm desselben Texts (Radeon kalt vor dem Bild: die Teile des Wagens
+        // mit und ohne uv, je Pass zwei Bauten, 80–90 ms im Hauptbild) und lag umsonst auf der GPU
+        const uv = stoff.userData.liestUv === true && m.uv && m.uv.array ? m.uv.array : null;
+        if (jahr) AnazhRealm._jahrEcken(geo, uv, m.aCenter.array, m.aType.array);
+        else if (uv) geo.setAttribute("uv", new T.BufferAttribute(uv, 2));
         // Das Schalen-Fell (V18.497) trägt seine Wurzel (Bind-Punkt der Haar-Maske) und die Schalen-Daten.
         for (const nm of ["aWurzel", "aSchale"])
             if (m[nm] && m[nm].array) geo.setAttribute(nm, new T.BufferAttribute(m[nm].array, m[nm].itemSize || 3));
         // Der Schatten-Teil (S3) trägt je Vertex, ob er deckt (Rinde 1) oder die Atlas-Alpha schneidet (Karte 0).
         if (m.aDeckt && m.aDeckt.array) geo.setAttribute("aDeckt", new T.BufferAttribute(m.aDeckt.array, 1));
-        // DER TON JE ECKE (mensch.K4, koerper `menschTon`): der Mensch trägt ihn — sein Stoff färbt jede Ecke nach der Palette
-        // des Leibs, der ihn zeichnet (`_tonFaktor`)
-        const ton = !!(m.aTon && m.aTon.array);
         if (ton) geo.setAttribute("aTon", new T.BufferAttribute(m.aTon.array, 1));
-        // DIE ECKEN DER GESTALT, wie sie geliefert sind: ihr Stoff liest Ton und Jahr an ihrem Namen (`_foundryTreeMaterial`)
-        const ecken = { ton, jahr: jahr === 2 };
         if (m.index) geo.setIndex(new T.BufferAttribute(AnazhRealm._indexSchmal(m.index, vcount), 1));
         if (!m.normal || !m.normal.array) geo.computeVertexNormals();
         // Attribut-Wand: die geteilten foundry-Materialien lesen aH0/aH0L/aLodLevel (die Maske ist Gesetz des Stoffs,
@@ -159,21 +165,13 @@ class AnazhRealm_studio_gestalt {
         // Die Haut-Hülle reist geskinnt: trägt der Eintrag skinIndex/skinWeight, wird er ein SkinnedMesh
         // (Bindung in _ofenAssembleAsset, wenn die Bones stehen). skinIndex Float32 → Uint16 (WebGPU-strikt).
         let mesh;
-        if (m.skinIndex && m.skinIndex.array && m.skinWeight && m.skinWeight.array) {
+        if (geskinnt) {
             const si = new Uint16Array(m.skinIndex.array.length);
             for (let v = 0; v < si.length; v++) si[v] = m.skinIndex.array[v];
             geo.setAttribute("skinIndex", new T.Uint16BufferAttribute(si, m.skinIndex.itemSize || 4));
             geo.setAttribute("skinWeight", AnazhRealm._hautGewicht(m.skinWeight.array, m.skinWeight.itemSize || 4));
-            mesh = new T.SkinnedMesh(
-                geo,
-                this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, null, false, ecken)
-            );
-        } else {
-            mesh = new T.Mesh(
-                geo,
-                this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, baum || null, false, ecken)
-            );
-        }
+            mesh = new T.SkinnedMesh(geo, stoff);
+        } else mesh = new T.Mesh(geo, stoff);
         mesh.castShadow = AnazhRealm._teilWirft(m);
         mesh.receiveShadow = true;
         // Die Look-Klasse steht am Mesh (das Fell-Bildschirm-Gesetz liest sie: Strähnen schweigen unter ½ px).

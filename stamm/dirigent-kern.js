@@ -1834,6 +1834,7 @@ AnazhRealm.WELTBILD_TERME = Object.freeze([
     "horizont",
     "licht",
     "leib",
+    "ausgabe",
     "buch",
     "bauten",
     "pflanzung",

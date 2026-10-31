@@ -578,11 +578,17 @@ class AnazhRealm_dirigent_takt {
     // bevor das Bild steht — und sobald am Anfang des Takts keine Lücke mehr fehlt: der Takt trägt dann das ganze Spiel vor
     // dem Bild, nach dem `_ankunftsBild` urteilt (eine Lücke, die erst im Takt schließt, zeichnet der nächste). Radeon kalt
     // zeichnete jeder Lade-Takt (3,3 s Render bis zum Bild, K602/p2.cpuprofile), die Erst-Zeichnung trug davon ~1,6 s.
+    // DIE AUSGABE ALLEIN (w4-ankunft-5): fehlt dem Bild nur, was im letzten Bild auf das Programm der Ausgabe wartete (Term
+    // „ausgabe"), und ist seitdem eine erwartete Pipeline bereit (`bereitN` der Erst-Zeichnung), ist das Bild fällig — es wartet
+    // nie den Abstand der Lade-Bilder ab.
     _ladeBildFaellig(L) {
         if (!this._ladeTakt()) return true;
         const jetzt = performance.now();
-        if (jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS || this._weltbildLuecken().length === 0) {
+        const E = this._erstZeichnung;
+        const lu = jetzt - (L.ladeBild || -Infinity) >= AnazhRealm.LADE_BILD_MS ? null : this._weltbildLuecken();
+        if (!lu || !lu.length || (lu.length === 1 && lu[0].term === "ausgabe" && E && E.bereitN !== L.bereitN)) {
             L.ladeBild = jetzt;
+            L.bereitN = E ? E.bereitN : 0;
             return true;
         }
         L.ladeAus = (L.ladeAus || 0) + 1;
@@ -1708,6 +1714,14 @@ class AnazhRealm_dirigent_takt {
         // das Mikro-Detail der Stoffe gilt dem Pixel des Schirms (`schirmJeSzene`, w4-wiese-nah): die Skala des Szenen-Passes,
         // der Direktpfad zeichnet in der Ausgabe
         this._ensureAtmoUniforms().schirmJeSzene.value = direkt || !sp ? 1 : sp.getResolutionScale();
+        // DIE PROGRAMME DES BILDS (w4-ankunft-5): jede Zeichnung, die in diesem Bild ohne ihr Programm blieb (Knoten-Bau
+        // verschoben, Pipeline im Bau), zählt `bildWartet` — das erste Weltbild merkt die Zahl (`buch.imBild`, `_weltbildSteht`); davon die
+        // AUSGABE (`ausgabeWartet`): die Pipelines der Post-Kette und des Tiefen-Abbilds entstehen unter dem Ladeschirm asynchron
+        // (`_renderObjectDirect`, `_tiefenAbbildBau`), und der Ladeschirm steht, bis sie in einem Bild zeichneten (Term „ausgabe").
+        // Bis w4-ankunft-5 baute der GPU-Prozess beide Quads synchron (Radeon kalt: TRAA.resolve 210–415 ms, die Ausgabe 193–441
+        // ms vor dem Bild ohne ein Bild).
+        const ez = this._erstZeichnungStand();
+        ez.bildWartet = ez.ausgabeWartet = 0;
         if (!direkt) {
             this._leinwandWeg(false);
             try {
@@ -1718,6 +1732,7 @@ class AnazhRealm_dirigent_takt {
                 // liest in DIESEM Bild den Himmel allein, der Pass danach rechnet den neuen (D10)
                 const L = this.state.spiegelLeser;
                 if (L && this.state._traaR && this.state._traaR.sprung) L.an.value = 0;
+                this._ausgabeLauf = true;
                 pp.render();
             } catch (err) {
                 // r184 baut Post-Kette und Szenen-Pass erst im ersten render() (PostProcessing.render → _update): ein
@@ -1728,6 +1743,8 @@ class AnazhRealm_dirigent_takt {
                     "die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt",
                     err
                 );
+            } finally {
+                this._ausgabeLauf = false;
             }
         }
         if (direkt) {

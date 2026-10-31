@@ -608,6 +608,8 @@ async function probe(arg) {
             fallMit("horizont", [window, { __anazhFernRing: true }], [st, { fernRing: { ready: false, cursor: 0, totalVerts: 1 } }]);
             // (4e') die Belichtung schrieb noch nicht aus dem Licht (S7)
             fallMit("licht", [st, { _belichtungSteht: false }]);
+            // (4e'') eine Pipeline der Ausgabe (Post-Kette, Tiefen-Abbild) zeichnete im letzten Bild noch nicht (w4-ankunft-5)
+            fallMit("ausgabe", [r._erstZeichnungStand(), { ausgabeWartet: 1 }]);
             // (4f) DAS DORF: fällig, im Export oder mit Häusern in der Schlange hält es das Bild (headless trägt der Hook)
             const dorfAn = [window, { __anazhAutoSettlement: true }];
             fallMit("dorfExport", dorfAn, [r, { _autoSettlementPendingKey: "start" }]);

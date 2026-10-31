@@ -440,8 +440,9 @@ class AnazhRealm_bild_kosten {
         // einen Neubau (ein Licht kam dazu — r184 schlüsselt das RenderObject je Lichter-Satz und verwirft den Vorgänger im
         // selben `_objects.get` —, sein Stoff wechselte die Variante) wie der Vendor im Frame: was schon zu sehen war, blinkt
         // nicht aus — nur wenn eine Erst-Zeichnung seinen neuen Schlüssel eben asynchron anlegte, wartet er auf dieselbe
-        // Pipeline wie sie; der Neubau zählt mit (`neubauN`). Ein Render einer anderen Szene (ein Post-Quad je Bild) zeichnet
-        // wie bisher — ein Einmal-Render ohne Wiederholung bliebe leer. DER EINMAL-PASS (`_einmalPass` setzt `_buehneEinmal`:
+        // Pipeline wie sie; der Neubau zählt mit (`neubauN`). Ein Render einer anderen Szene zeichnet wie bisher — ein
+        // Einmal-Render ohne Wiederholung bliebe leer —, außer der Post-Kette unter dem Ladeschirm (`_ausgabeLauf`: sie wiederholt
+        // je Bild und baut asynchron, Term „ausgabe"). DER EINMAL-PASS (`_einmalPass` setzt `_buehneEinmal`:
         // Atmosphäre, Horizont-Karte, Licht-Sonde, PMREM der Umgebung) baut seine Pipeline ASYNCHRON und zeichnet ab dem Aufruf,
         // in dem sie steht; er meldet `ganz`, und sein Aufrufer zeichnet im nächsten Takt neu. Das ist der
         // EINE Ort der Klasse: kein Vorwärmen daneben (das r184-compileAsync baute die Knoten ohnehin synchron —
@@ -467,7 +468,11 @@ class AnazhRealm_bild_kosten {
                     welt._erstWartet(rend.backend, imBau, aufnahme !== null ? aufnahme.bundleGroup : null);
                     return false;
                 }
+                // baut der Auffrischer den Knoten-Graph (ein neuer Eintrag im Bau-Cache), zählt der Bau im Buch der Programme
+                const vorher = N.nodeBuilderCache.size;
+                const t = performance.now();
                 const refresh = N.needsRefresh(ro);
+                if (N.nodeBuilderCache.size !== vorher) welt._programmGebaut(rend, ro, performance.now() - t);
                 if (refresh) {
                     N.updateBefore(ro);
                     rend._geometries.updateForRender(ro);
@@ -534,8 +539,17 @@ class AnazhRealm_bild_kosten {
                 const buehne = !!B && scene === B.szene;
                 // DIE BÜHNEN (Werkstatt-Vorschau, Ich-, Hof-, Feed-Bühne: `_buehneRender` → `_buehneJetzt`) zeichnen wie die
                 // Welt — bis 30.10. eigene Renderer, deren erster Render jede Pipeline synchron baute (Tab: 5 054 ms ohne Bild)
+                // DIE AUSGABE UNTER DEM LADESCHIRM (w4-ankunft-5, `_ausgabeLauf` um die Post-Kette): ihre Quads (TRAA, die
+                // Ausgabe) wiederholen jedes Bild — sie bauen asynchron wie der Einmal-Pass, und wer noch nicht zeichnete, hält das
+                // erste Weltbild (`ausgabeWartet`, Term „ausgabe"). Jede Zeichnung, die in einem Bild ohne ihr Programm blieb (in
+                // jeder Szene, außer dem Vorbau und der Karten-Bühne mit eigenem Versuch), zählt `bildWartet`: das erste Weltbild
+                // merkt sie (`buch.imBild`, `_weltbildSteht`; die Kalt-Zeile nennt sie)
                 if (scene !== welt.state.scene && !buehne && scene !== welt._buehneJetzt) {
-                    zeichne(this, ro, aufnahme, welt._buehneEinmal === true);
+                    const aus = welt._ausgabeLauf === true && welt._ladeTakt();
+                    if (!zeichne(this, ro, aufnahme, aus || welt._buehneEinmal === true)) {
+                        E.bildWartet++;
+                        if (aus) E.ausgabeWartet++;
+                    }
                     return;
                 }
                 // DIE DIÄT IST DAS GESETZ JEDES WELT-STOFFS (E1, Lehre 25): r184s Beobachter frischt jedes Knoten-Material in
@@ -559,7 +573,7 @@ class AnazhRealm_bild_kosten {
                 if (pass !== undefined && pass.has(k)) {
                     // der Neubau eines Objekts, das in diesem Pass schon zeichnete: wie der Vendor, im Frame
                     if (ungebaut) E.neubauN++;
-                    zeichne(this, ro, aufnahme, false);
+                    if (!zeichne(this, ro, aufnahme, false) && !buehne) E.bildWartet++;
                     return;
                 }
                 let bau = -1;
@@ -573,25 +587,21 @@ class AnazhRealm_bild_kosten {
                         E.deckel = welt._ladeTakt() ? AnazhRealm.LADE_TAKT_MS : AnazhRealm.ERST_BAU_MS;
                     } else if (E.aufrufMs >= E.deckel) {
                         E.verschoben++;
+                        if (!buehne) E.bildWartet++;
                         if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
                         return;
                     }
                     bau = performance.now();
                 }
                 const gezeichnet = zeichne(this, ro, aufnahme, true, vorbau);
-                if (bau >= 0) {
-                    const ms = performance.now() - bau;
-                    E.aufrufMs += ms;
-                    E.bauN++;
-                    E.bauMs += ms;
-                }
+                if (bau >= 0) E.aufrufMs += performance.now() - bau;
                 if (vorbau) {
                     if (vor === undefined) E.vorgebaut.set(object, new Set([k]));
                     else vor.add(k);
                 } else if (gezeichnet && !buehne) {
                     if (pass === undefined) E.gezeichnet.set(object, (pass = new Set()));
                     pass.add(k);
-                }
+                } else if (!buehne) E.bildWartet++;
             };
             renderer.__anazhErstZeichnung = true;
         }
@@ -612,6 +622,9 @@ class AnazhRealm_bild_kosten {
                 bereitN: 0,
                 absagenN: 0,
                 wartetN: 0, // Draws, die nicht zeichnen konnten (ihre Pipeline stand nicht) — der Zähler jedes Backends
+                bildWartet: 0, // Zeichnungen DIESES Bilds ohne Programm (`_loopRender` stellt null; das Weltbild merkt sie: `buch.imBild`)
+                ausgabeWartet: 0, // davon die Ausgabe: Post-Kette und Tiefen-Abbild (Term „ausgabe")
+                buch: { n: 0, ms: 0, texte: 0, doppelt: [], je: new Map(), imBild: null }, // das Buch der Programme (`_programmGebaut`)
                 wartetAuf: null, // die Pipeline des letzten wartenden Draws (die Beweis-Aufnahme nennt sie)
                 neubauN: 0,
                 neu: [],
@@ -624,6 +637,31 @@ class AnazhRealm_bild_kosten {
                 vorgebaut: new WeakMap(), // Arena → die Pässe, in denen der Vorbau ihr Programm ohne Draw baute
             };
         return this._erstZeichnung;
+    }
+
+    // DAS BUCH DER PROGRAMME (B, w4-ankunft-5): jeder Knoten-Bau (r184 `getNodeBuilderState` ohne Cache-Treffer) in JEDER Szene
+    // zählt mit seinen ms (`bauN`, `bauMs`: der Haupt-Faden des Knoten-Baus); unter dem Ladeschirm hält das Buch je Programm-Text
+    // seinen ersten Bau — die Ankunft weiß so, welche Programme ihr erstes Bild trug (`buch.texte`, `buch.n`, `buch.ms`), und ein
+    // Text, der zweimal baute, steht beim Namen mit dem Schlüssel-Teil, der die Bauten trennte (`buch.doppelt`: die Form — welche
+    // Attribute —, die Seite, der Graph der Knoten, das Ding): EIN Programm je Text. Leser: die Programm-Zeile der Kalt-Zeile
+    // (diag-boot-stage), der Flugschreiber. Die Texte schlüsseln zwei Karten (Ecken, Pixel) — kein Zusammenfügen großer Zeichenketten.
+    _programmGebaut(rend, ro, ms) {
+        const E = this._erstZeichnung;
+        E.bauN++;
+        E.bauMs += ms;
+        if (!this._ladeTakt()) return;
+        const [B, s, m, z] = [E.buch, rend._nodes.get(ro).nodeBuilderState, ro.material, rend.getRenderTarget()];
+        const szene = ro.scene === this.state.scene ? "welt" : ro.scene.name || ro.scene.type;
+        const b = { name: `${m.name || m.type} ${szene}:${z ? z.texture.name : "schirm"}`, form: Object.keys(ro.geometry.attributes).sort(), seite: m.side, graph: m.customProgramCacheKey(), ding: ro.object.id }; // prettier-ignore
+        B.n++;
+        B.ms += ms;
+        if (!B.je.has(s.vertexShader)) B.je.set(s.vertexShader, new Map());
+        const je = B.je.get(s.vertexShader);
+        const a = je.get(s.fragmentShader);
+        if (!a) return void (je.set(s.fragmentShader, b), B.texte++);
+        const form = a.form.join() !== b.form.join();
+        const grund = form ? "Form " + a.form.concat(b.form).filter((x) => !a.form.includes(x) || !b.form.includes(x)) : ["seite", "graph", "ding"].find((k) => a[k] !== b[k]); // prettier-ignore
+        B.doppelt.push(`${b.name} (${grund || "?"})`);
     }
 
     // DIE ABSAGE EINER PIPELINE (Welle K): r184 verschluckt die Absage von createRenderPipelineAsync (`catch(e){}`,
@@ -1139,9 +1177,12 @@ class AnazhRealm_bild_kosten {
                 this._historyRenderTarget = this._ziele[0];
                 this._resolveRenderTarget = this._ziele[1];
                 this._textureNode = T.passTexture(this, this._ziele[0].texture);
-                const zweiter = new this._resolveMaterial.constructor(); // r184 NodeMaterial (der Stoff des Vendors)
-                zweiter.name = this._resolveMaterial.name;
-                this._resolveStoffe = [this._resolveMaterial, zweiter]; // Stoff k schreibt in Ziel k
+                // EIN RESOLVE-PROGRAMM (w4-ankunft-5): EIN Stoff schreibt in das Ziel der Lage und liest das andere über
+                // zwei Textur-Knoten, deren Wert die Lage stellt (`updateBefore`) — wie die Kette. Bis w4-ankunft-5 las je
+                // Ziel ein eigener Stoff fest das andere: zwei Knoten-Bauten desselben Texts vor dem ersten Bild (Radeon kalt
+                // 22–31 ms je Bau); die Bindungen beider Lagen hält r184 je Textur-Paar (die Generation, `zielBau`).
+                this._geschichte = texture(this._ziele[1].textures[0]);
+                this._flackerAlt = texture(this._ziele[1].textures[1]);
                 const F = AnazhRealm.FLACKER;
                 this._flacker = {
                     kante: uniform(F.kante),
@@ -1150,12 +1191,8 @@ class AnazhRealm_bild_kosten {
                     ruhePx: uniform(F.ruhePx),
                 };
                 this._versatzIndex = 0;
-                this._quads = this._resolveStoffe.map((m) => Object.assign(new Quad(m), { name: "TRAA" }));
+                this._quad = Object.assign(new Quad(this._resolveMaterial), { name: "TRAA" });
                 this._gr = new THREE.Vector2();
-            }
-            dispose() {
-                super.dispose();
-                this._resolveStoffe[1].dispose();
             }
             // die Eingangs-Größe, wie r184s Szenen-Pass sie anlegt (PassNode.setSize: CSS-Größe × Pixel-Verhältnis × Skala)
             eingang(aus) {
@@ -1223,8 +1260,9 @@ class AnazhRealm_bild_kosten {
                         // DIE LAGE IST DIE GENERATION: r184 bindet eine getauschte Textur nur neu, wenn die Generation ihrer
                         // Renderer-Daten (beim Anlegen ihre `version`) nicht die gebundene ist (`Bindings._update`,
                         // gate:vendor-anker) — gleiche Versionen hielten die Kette auf dem alten Ziel; je Ziel eine eigene,
-                        // gesetzt nach jedem Anlegen (Größen-Wechsel und Neubeginn laufen hier durch)
-                        r._textures.get(z.texture).generation = "zeit:" + i;
+                        // gesetzt nach jedem Anlegen (Größen-Wechsel und Neubeginn laufen hier durch) — auch dem Gedächtnis, das
+                        // der EINE Resolve-Stoff je Lage aus dem anderen Ziel liest
+                        z.textures.forEach((t, j) => (r._textures.get(t).generation = `zeit:${i}:${j}`));
                     });
                 this._neustart.value = neu ? 1 : 0;
                 const sprung = !!(realm.state._traaR && realm.state._traaR.sprung === true);
@@ -1232,8 +1270,10 @@ class AnazhRealm_bild_kosten {
                 // der Resolve liest das Ziel des letzten Frames (Bild mit Vortiefe, Gedächtnis) und schreibt in das andere,
                 // die Kette liest dieses; danach tauschen die zwei die Rolle — keine Kopie (G7)
                 const k = 1 - this._lage;
+                this._geschichte.value = this._ziele[1 - k].textures[0];
+                this._flackerAlt.value = this._ziele[1 - k].textures[1];
                 r.setRenderTarget(this._ziele[k]);
-                this._quads[k].render(r);
+                this._quad.render(r);
                 r.setRenderTarget(null);
                 this._lage = k;
                 this._textureNode.value = this._ziele[k].texture;
@@ -1260,11 +1300,10 @@ class AnazhRealm_bild_kosten {
                 const ein = this.beautyNode;
                 const tief = this.depthNode;
                 const { x: nah, y: fern } = this._cameraNearFar;
-                // Stoff k schreibt in Ziel k und liest fest das andere: die Geschichte und ihr Gedächtnis (G7)
-                const stoff = (k) => {
-                    const vor = this._ziele[1 - k];
-                    const geschichte = texture(vor.textures[0]);
-                    const flackerAlt = texture(vor.textures[1]);
+                // der EINE Resolve-Stoff schreibt in das Ziel der Lage und liest das andere: die Geschichte und ihr
+                // Gedächtnis (G7, die Werte stellt `updateBefore`)
+                {
+                    const [geschichte, flackerAlt] = [this._geschichte, this._flackerAlt];
                     const flackerNeu = T.property("float", "flackerNeu");
                     const resolve = Fn(() => {
                         const uvA = uv();
@@ -1377,13 +1416,11 @@ class AnazhRealm_bild_kosten {
                     // Bild mit Vortiefe und Gedächtnis als die zwei Ziele des Quads (MRT, Schlüssel = Namen der Texturen). Bis A3b
                     // lief der Resolve als `colorNode`: r184 setzt a eines undurchsichtigen Stoffs auf 1 — die Vortiefe lag nie in der
                     // Geschichte, die Disokklusion war blind (Radeon, gelesen: a = 1 an jedem Pixel; jetzt die Sicht-Tiefe, −22,5 m).
-                    this._resolveStoffe[k].mrtNode = T.mrt({
+                    this._resolveMaterial.mrtNode = T.mrt({
                         "TRAANode.resolve": resolve(),
                         "TRAANode.flacker": flackerNeu,
                     });
-                };
-                stoff(0);
-                stoff(1);
+                }
                 return this._textureNode;
             }
         }
@@ -1480,30 +1517,36 @@ class AnazhRealm_bild_kosten {
                 "}\n" +
                 "@fragment fn fs() -> @location(0) vec4f { return vec4f(1.01171875, 1.01171875, 1.0234375, 1.0); }\n",
         });
-        const pipe = dev.createRenderPipeline({
+        const buf = dev.createBuffer({
+            label: "ausgabe-sonde",
+            size: 256,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
+        });
+        // die Pipeline asynchron (w4-ankunft-5): synchron hielt sie den GPU-Prozess vor dem Bild 25–44 ms (Radeon kalt)
+        const bau = dev.createRenderPipelineAsync({
             label: "ausgabe-sonde",
             layout: "auto",
             vertex: { module: modul, entryPoint: "vs" },
             fragment: { module: modul, entryPoint: "fs", targets: [{ format: "rg11b10ufloat" }] },
             primitive: { topology: "triangle-list" },
         });
-        const buf = dev.createBuffer({
-            label: "ausgabe-sonde",
-            size: 256,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
-        });
-        const enc = dev.createCommandEncoder({ label: "ausgabe-sonde" });
-        const pass = enc.beginRenderPass({
-            label: "ausgabe-sonde",
-            colorAttachments: [{ view: tex.createView(), loadOp: "clear", clearValue: [0, 0, 0, 0], storeOp: "store" }],
-        });
-        pass.setPipeline(pipe);
-        pass.draw(3);
-        pass.end();
-        enc.copyTextureToBuffer({ texture: tex }, { buffer: buf, bytesPerRow: 256 }, [1, 1]);
-        dev.queue.submit([enc.finish()]);
-        return buf
-            .mapAsync(GPUMapMode.READ)
+        if (this._erstZeichnung) this._erstZeichnung.bau = null; // das Versprechen gehört keinem Zug der Erst-Zeichnung
+        return bau
+            .then((pipe) => {
+                const enc = dev.createCommandEncoder({ label: "ausgabe-sonde" });
+                const pass = enc.beginRenderPass({
+                    label: "ausgabe-sonde",
+                    colorAttachments: [
+                        { view: tex.createView(), loadOp: "clear", clearValue: [0, 0, 0, 0], storeOp: "store" },
+                    ],
+                });
+                pass.setPipeline(pipe);
+                pass.draw(3);
+                pass.end();
+                enc.copyTextureToBuffer({ texture: tex }, { buffer: buf, bytesPerRow: 256 }, [1, 1]);
+                dev.queue.submit([enc.finish()]);
+                return buf.mapAsync(GPUMapMode.READ);
+            })
             .then(() => {
                 const w = new Uint32Array(buf.getMappedRange())[0];
                 buf.unmap();

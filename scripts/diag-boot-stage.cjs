@@ -188,7 +188,7 @@ function KALT_PROBE() {
             }
             // der Erst-Bau der Zeichnung (der Stamm zählt ihn selbst, `_erstZeichnung`): Bauten · ms Haupt-Thread · offene Pipelines
             const E = r._erstZeichnung;
-            if (E) o.erst = [E.bauN, Math.round(E.bauMs), E.offen ? E.offen.size : 0];
+            if (E) o.erst = [E.bauN, Math.round(E.bauMs), E.offen.size];
         }
         A.proben.push(o);
     }, 200);
@@ -284,6 +284,7 @@ async function kaltLauf() {
             version: AnazhRealm.VERSION,
             adapter,
             ohne: (st.logBuffer || []).filter((z) => /Das erste Weltbild steht ohne/.test(z)),
+            buch: r._erstZeichnung.buch,
             lieferung: r._foundry.lieferung,
         });
     });
@@ -377,6 +378,14 @@ async function kaltLauf() {
     console.log(
         `  ${halter.length ? "❌" : "✅"} DIE HALTER vor dem ersten Bild: ${halter.slice(0, 6).join(" · ") || "keiner"}`
     );
+    // DIE PROGRAMM-ZEILE (B, w4-ankunft-5): das Buch der Programme der Erst-Zeichnung (`_programmGebaut`) — die Knoten-Bauten
+    // vor dem Bild mit ihren ms auf dem Haupt-Faden und ihre Texte, ROT je Text, der mehr als einmal baute (EIN Programm je
+    // Text, beim Namen mit dem Schlüssel-Teil, der die Bauten trennte); den synchronen Bau des GPU-Prozesses nennt die Halter-Zeile
+    const B = out.buch;
+    console.log(
+        `  ${B.doppelt.length ? "❌" : "✅"} PROGRAMME vor dem Bild: ${B.n} Knoten-Bauten Σ ${Math.round(B.ms)} ms · ${B.texte} Texte · ` +
+            `doppelt ${B.doppelt.join(" · ") || "keiner"} · im ersten Bild ohne Programm ${B.imBild} Zeichnungen`
+    );
     const halb = out.ohne[0];
     const gut = tK > 0 && tK <= ANKUNFT_SOLL_MS && !halb;
     if (halb) console.log(`  ❌ das halbe Weltbild: ${halb}`);
@@ -395,7 +404,7 @@ async function kaltLauf() {
     console.log(`  ${zweit ? (k4.gruen ? "✅ " : "❌ ") : ""}${k4.zeile}`);
     console.log(`  ${zweit ? (k4.artGruen ? "✅ " : "❌ ") : ""}${k4.artZeile}`);
     if (wechsel) console.log(`  ${wechsel.gruen ? "✅" : "❌"} ${wechsel.zeile}`);
-    process.exit(gut && ganz && !halter.length ? 0 : 1);
+    process.exit(gut && ganz && !halter.length && !B.doppelt.length ? 0 : 1);
 }
 
 hauptLauf(async () => {

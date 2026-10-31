@@ -36,6 +36,7 @@ class AnazhRealm_stoff_material {
         mat.colorNode = T.vec4(mat.colorNode.rgb.mul(PC.halmAder(A, uv.x, fw)), mat.colorNode.a);
         mat.aoNode = PC.halmNarbe(A, uv.y, T.float(1.0)).himmel;
         mat.userData.halm = true;
+        mat.userData.liestUv = true; // der Halm liest seine Ecken (`_foundryBuildMesh`: nur dann trägt die Gestalt uv)
         return mat;
     }
 
@@ -466,15 +467,31 @@ class AnazhRealm_stoff_material {
             MASKEN.some((k) => knoten(m[k]) !== null);
         const OHNE = {};
         const paare = new WeakMap();
+        // EIN WURF-PROGRAMM ÜBER ALLE KASKADEN (w4-ankunft-5): r184 gibt jedem Licht seinen eigenen Schatten-Stoff mit eigenem
+        // Farb-Knoten (`vec4(0, 0, 0, 1)` je Kaskade, `getShadowMaterial`) — der Knoten-Bau desselben Werfers schlüsselte so je
+        // Kaskade ein Programm desselben Texts (Radeon kalt vor dem Bild: drei Kaskaden × vier Formen, 12 Bauten eines Texts).
+        // Der Werfer ohne Ausschnitt trägt in jeder Kaskade DENSELBEN Farb-Knoten; r184 stellt danach den des Lichts zurück.
+        const farbe = THREE.TSL.vec4(0, 0, 0, 1);
+        // EIN WURF-PROGRAMM JE GRAPH (w4-ankunft-5): für den Werfer MIT Ausschnitt baut r184 die Wurf-Knoten je Stoff neu
+        // (vec4(0, colorNode.a), die Maske als Fn) — Stoffe, die ihren Graphen teilen (`_graphTeilen`), bauten so je Stoff ein
+        // Programm desselben Texts (Radeon kalt vor dem Bild: die Teile des Wagens 5 Bauten, die Sätze 3). Ohne Karte (`map`
+        // liest r184 am Stoff) gelten die Wurf-Knoten des ersten Stoffs mit denselben Knoten für jeden.
+        const schnitte = new Map();
         renderer._getShadowNodes = function (m) {
-            if (schneidet(m)) return knotenRoh.call(this, m);
+            if (schneidet(m)) {
+                if (m.map) return knotenRoh.call(this, m);
+                const quellen = [m.castShadowNode, m.colorNode, m.maskShadowNode || m.maskNode, m.depthNode];
+                const s = quellen.concat(m.castShadowPositionNode || m.positionNode).map((n) => (knoten(n) ? n.id : "-")).join(); // prettier-ignore
+                if (!schnitte.has(s)) schnitte.set(s, knotenRoh.call(this, m));
+                return schnitte.get(s);
+            }
             const lage = knoten(m.castShadowPositionNode) || knoten(m.positionNode);
             const tiefe = knoten(m.depthNode);
             let je = paare.get(lage || OHNE);
             if (je === undefined) paare.set(lage || OHNE, (je = new WeakMap()));
             let k = je.get(tiefe || OHNE);
             if (k === undefined)
-                je.set(tiefe || OHNE, (k = { version: 0, colorNode: null, depthNode: tiefe, positionNode: lage }));
+                je.set(tiefe || OHNE, (k = { version: 0, colorNode: farbe, depthNode: tiefe, positionNode: lage }));
             return k;
         };
         renderer.__anazhWurfOhneFarbe = true;
@@ -1512,8 +1529,11 @@ class AnazhRealm_stoff_material {
             return mat;
         }
         this._naesseImStoff(mat, himmel);
-        // EIN KNOTEN JE GRAPH UND DATUM: das Leuchten haengt an der Basis, der Himmels-Sicht und dem Licht-Datum des Stoffs
-        // (`mp.licht`, fachwerk LICHT_GESETZ) — ohne Datum glueht der Stoff nur im Pool
+        // EIN KNOTEN JE GRAPH: das Leuchten haengt an der Basis, der Himmels-Sicht und daran, ob der Stoff ein Licht-Datum traegt
+        // (`mp.licht`, fachwerk LICHT_GESETZ) — ohne Datum glueht der Stoff nur im Pool. WELCHES Datum, ist sein Stoff-Wert
+        // (`stoffWerte.licht`, die Stelle im Gesetz): der Knoten traegt die Glut jedes Datums und waehlt die seine (w4-ankunft-5 —
+        // bis dahin je Datum ein Knoten: Laterne und Fenster bauten vor dem Bild zwei Programme desselben Texts, Radeon kalt
+        // 70–75 ms je Bau)
         const ohne = this._leuchtOhne || (this._leuchtOhne = {});
         const jeBasis = this._leuchtKnoten || (this._leuchtKnoten = new WeakMap());
         const basis = mat.emissiveNode || ohne;
@@ -1522,16 +1542,23 @@ class AnazhRealm_stoff_material {
         if (!jeHimmel.has(himmel || ohne)) jeHimmel.set(himmel || ohne, {});
         const knoten = jeHimmel.get(himmel || ohne);
         const licht = mp && mp.licht ? String(mp.licht) : "";
-        if (!knoten[licht]) {
+        const daten = Object.keys(atmo.lichtGlut);
+        if (licht) {
+            if (!daten.includes(licht))
+                throw new Error(`_leuchtStoff: das Licht-Datum „${licht}“ fehlt im Leuchtquellen-Gesetz`);
+            (mat.userData.stoffWerte || (mat.userData.stoffWerte = {})).licht = daten.indexOf(licht);
+        }
+        const art = licht ? "datum" : "";
+        if (!knoten[art]) {
             let em = mat.emissiveNode ? Te.vec3(mat.emissiveNode) : Te.materialEmissive;
             if (licht) {
-                const glut = atmo.lichtGlut[licht];
-                if (!glut) throw new Error(`_leuchtStoff: das Licht-Datum „${licht}“ fehlt im Leuchtquellen-Gesetz`);
-                em = em.add(glut);
+                const wahl = this._stoffWert(Te, "userData.stoffWerte.licht");
+                for (let i = 0; i < daten.length; i++)
+                    em = em.add(wahl.equal(i).select(atmo.lichtGlut[daten[i]], Te.vec3(0)));
             }
-            knoten[licht] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
+            knoten[art] = em.add(this._lichtPoolTerm(Te, atmo, himmel || null));
         }
-        mat.emissiveNode = knoten[licht];
+        mat.emissiveNode = knoten[art];
         mat.userData.lichtPool = true;
         return mat;
     }
