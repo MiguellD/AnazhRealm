@@ -10,7 +10,11 @@
 set -u
 # die Namen tragen den Vorsatz A_SPAWN_: gpu-lauf.sh setzt sein eigenes S (das Schloss) — ein exportiertes S erbte das Kind als Schloss-Ordner
 A_SPAWN_CJS=$(cd "$(dirname "${BASH_SOURCE[0]}")" 2>/dev/null && pwd)/a-spawn.cjs
-[ -f "$A_SPAWN_CJS" ] || { A_SPAWN_CJS=$OUT/a-spawn.cjs; git -C "$(dirname "$(dirname "$OUT")")" show origin/koordination:zug/a-spawn.cjs > "$A_SPAWN_CJS"; }
+# Der Dienst kopiert nur lauf.sh nach $OUT: a-spawn.cjs kommt aus dem Dienst-Baum der Koordination ($H/koord, $H = $OUT/../..).
+# 31.10. a-spawn-gtx: der Griff in $H (kein git-Baum) schrieb eine LEERE a-spawn.cjs, node lief leer, jede Stufe meldete Exit 0 und die
+# Tafel blieb leer — eine leere Datei bricht jetzt laut ab, nie still.
+[ -f "$A_SPAWN_CJS" ] || { A_SPAWN_CJS=$OUT/a-spawn.cjs; git -C "$(dirname "$(dirname "$OUT")")/koord" show origin/koordination:zug/a-spawn.cjs > "$A_SPAWN_CJS"; }
+[ -s "$A_SPAWN_CJS" ] || { echo "ROT: a-spawn.cjs fehlt oder ist leer ($A_SPAWN_CJS) — nichts gemessen" | tee -a "$OUT/urteil.txt"; exit 5; }
 cd "$BAUM" || exit 2
 GL=${GL:-/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-lauf.sh}
 A_SPAWN_BAUM=$(cygpath -w "$BAUM")
