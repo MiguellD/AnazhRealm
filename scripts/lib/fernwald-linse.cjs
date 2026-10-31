@@ -57,12 +57,12 @@ function fernwaldLinse(opts) {
         const gesetzt = new Set();
         for (const e of st.architectures)
             if (e && e.instanced && e.instSlots) for (const s of e.instSlots) gesetzt.add(s.key + "#" + s.slot);
-        const atlas = st.archInstanceGroups.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE);
+        const atlas = st.archInstanceGroups.get(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE);
         const streuSlots = [];
         if (atlas && atlas.mesh)
             for (let i = 0; i < atlas.mesh.count; i++)
-                if (!gesetzt.has(r.constructor.IMPOSTOR_ATLAS_GRUPPE + "#" + i))
-                    streuSlots.push({ key: r.constructor.IMPOSTOR_ATLAS_GRUPPE, slot: i });
+                if (!gesetzt.has(AnazhRealm.IMPOSTOR_ATLAS_GRUPPE + "#" + i))
+                    streuSlots.push({ key: AnazhRealm.IMPOSTOR_ATLAS_GRUPPE, slot: i });
         const null3 = new T.Matrix4().makeScale(0, 0, 0);
         const verstecke = (aus, liste) => {
             const nurSlots = liste !== undefined;

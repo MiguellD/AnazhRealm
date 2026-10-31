@@ -374,7 +374,7 @@ const WELT_MESSEN = async () => {
             try {
                 r._gameLoopTick(performance.now());
             } catch {}
-            if (r.state.voxelChunks && r.state.voxelChunks.size >= 25) break;
+            if (st.voxelChunks && st.voxelChunks.size >= 25) break;
         }
         await sleep(6);
     }
@@ -382,10 +382,10 @@ const WELT_MESSEN = async () => {
     await window.__weltDa(() => !!(!(f && !f.ready)));
     const pump = async (n) => {
         for (let i = 0; i < n; i++) {
-            r.state._frameOverBudget = false;
+            st._frameOverBudget = false;
             try {
                 r._gameLoopTick(performance.now());
-                const pp = r.state.playerMesh && r.state.playerMesh.position;
+                const pp = st.playerMesh && st.playerMesh.position;
                 if (pp) r._tickScatterStreaming(pp);
             } catch {}
             await sleep(8);
@@ -401,7 +401,7 @@ const WELT_MESSEN = async () => {
     for (const weiter = window.__deckel("der Ofen-Vorrat", 600); !r._ofenVorratSteht && weiter(); ) await pump(20);
     await pump(60);
     const fl = window.__fl;
-    const cfg = r.constructor._studioRenderConfig;
+    const cfg = AnazhRealm._studioRenderConfig;
     const G = cfg && cfg.lod && cfg.lod.budget ? cfg.lod.budget.gestalten : null;
     const T = {};
     for (const sp of ["eiche", "fichte", "birke", "tanne", "weide", "mammut", "strauch"])
@@ -447,7 +447,7 @@ const WELT_MESSEN = async () => {
     if (window.__flussNurBoot) return { boot };
     // W7 DIE WAND IST DER LESER: ein Mesh mit jedem Wand-Namen und dem toten aWind zählt, was
     // `_foundryBuildMesh` liest — die Menge muss FOUNDRY_LESEN sein, und was im Boot reist, steht in der Wand
-    const lesen = r.constructor.FOUNDRY_LESEN,
+    const lesen = AnazhRealm.FOUNDRY_LESEN,
         gelesen = new Set(),
         pm = { kind: "bark" };
     for (const k of lesen.concat(["aWind"])) {
@@ -461,7 +461,7 @@ const WELT_MESSEN = async () => {
         arten: krit.length,
         kalt: krit.filter((sp) => !fl.antworten.some((x) => x.p === sp && x.vorrat && x.leer)),
     };
-    const instanziert = () => (r.state.architectures || []).filter((e) => e && e.instFoundry && e.instanced).length;
+    const instanziert = () => (st.architectures || []).filter((e) => e && e.instFoundry && e.instanced).length;
     // W2 — der Saison-Wechsel. Erst ein KONTROLL-Fenster gleicher Länge ohne Wechsel (die ruhende Welt bestellt nichts —
     // sonst misst W2 nichts), dann der Wechsel: Aufträge an den Worker und NEUE Foundry-Cache-Schlüssel danach. Instanz-
     // Entfernungen zählen nur zur Auskunft (LOD-/Streu-Churn läuft auch ohne Saison).
@@ -508,7 +508,7 @@ const WELT_MESSEN = async () => {
             inst1: instanziert(),
             mul0,
             mul1,
-            name: r.state.season,
+            name: st.season,
             praesenz,
             laub,
         },

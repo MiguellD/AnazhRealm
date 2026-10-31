@@ -254,7 +254,7 @@ function weltOrte(art, opts) {
         r._fieldSolid(x, y, z, sp.x === x && sp.z === z ? sp.k : (sp = { x, z, k: r._terrainColumnContext(x, z) }).k);
     // die Fahrt-Linie ab (sx, sz) längs (ux, uz): kein Blocker eines Baus von l0 bis l1 m, quer binnen q m (+ halbe Box)
     const bahnFrei = (sx, sz, ux, uz, l0, l1, q) => {
-        for (const e of r.state.architectures || []) {
+        for (const e of st.architectures || []) {
             if (!e || !e.position || !e.blockerAABBs) continue;
             if (Math.hypot(e.position.x - sx, e.position.z - sz) > l1 + 20) continue;
             for (const b of e.blockerAABBs) {
@@ -420,7 +420,7 @@ function weltOrte(art, opts) {
             // die Wand der Höhle: je Richtung (16) der erste Abstand, an dem der Fels vom Fuß + einer Stufe bis über zwei weitere
             // Meter reicht — die nächste binnen 2,5 m, sonst null (`wand` verlangt sie)
             let wand = null;
-            const stufe = r.constructor.PLAYER_STEP_UP;
+            const stufe = AnazhRealm.PLAYER_STEP_UP;
             for (let k = 0; k < 16; k++) {
                 const w = (k / 16) * Math.PI * 2;
                 const dx = Math.cos(w),
@@ -449,7 +449,7 @@ function weltOrte(art, opts) {
             const S = o.wiese || window.__wieseGesetz;
             const b = window.__wieseMessen(r, x, z, null, S, true);
             if (b.fehler || window.__wieseUrteil(b, S).length) return null;
-            const gs = r.constructor.TERRAIN_GEOLOGY.gruenSchwelle;
+            const gs = AnazhRealm.TERRAIN_GEOLOGY.gruenSchwelle;
             const f = [0, 0, 0];
             let g = 0;
             for (let i = 0; i <= 4; i++)

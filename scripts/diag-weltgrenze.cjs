@@ -42,8 +42,7 @@
 //                                      „ersetzen" MUSS rot werden: die Seite erwacht in A) — beide beim Namen
 // Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt, weltTor, waitFor } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt, weltTor, waitFor, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
 
@@ -69,7 +68,7 @@ const ALLE_WEGE = [
 const WEGE = opt("--wege", ALLE_WEGE.join(","))
     .split(",")
     .filter((w) => ALLE_WEGE.includes(w));
-const BUEHNE = JSON.parse(fs.readFileSync(path.resolve(__dirname, "..", "spec", "pruefbuehne", "welt.json"), "utf8"));
+const BUEHNE = jsonLesen(path.resolve(__dirname, "..", "spec", "pruefbuehne", "welt.json"));
 
 const server = statikServer({ root, keinCache: true });
 
@@ -521,7 +520,7 @@ async function fahreWeg(browser, weg, schein) {
             await weltTor(page, lauf.ziel).catch(async (e) => {
                 if (schein !== "stand") throw e;
                 rep.befunde.push(e.message);
-                await waitFor(page, () => !window.__alteSeite && window.anazhRealm?._gameLoopTick, "der Rückfall");
+                await waitFor(page, () => !window.__alteSeite && r?._gameLoopTick, "der Rückfall");
             });
         if (schein === "stand") return rep;
         if ((basis === "portal" || basis === "einladung") && gemeldet) Object.assign(lauf, gemeldet);
@@ -658,7 +657,7 @@ hauptLauf(async () => {
         );
         console.log(`  SELBSTTEST 3 (der Prototyp trägt Stand zum Schein): ${proto[0] || "BLIND"}`);
     }
-    if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ root, absenz: abs, berichte, selbst }, null, 1));
+    if (JSON_AUS) jsonSchreiben(JSON_AUS, { root, absenz: abs, berichte, selbst });
     let pass;
     if (SELBSTTEST) {
         pass = !rot && selbst && selbst.spread.length > 0 && selbst.sperre.length > 0 && selbst.stand.length > 0;

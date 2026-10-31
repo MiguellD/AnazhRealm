@@ -450,7 +450,7 @@ hauptLauf(async () => {
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.geisttor);
 
         // ── Bühne: ein Welt-Portal (geisttor-Gestalt) direkt vor dem Spieler ──
-        const p = r.state.playerMesh.position;
+        const p = st.playerMesh.position;
         const entry = r.spawnArchitecture("welt_portal", { x: p.x + 10, y: p.y, z: p.z }, { precise: true });
         res.spawned = !!entry;
         if (!entry) return res;
@@ -494,7 +494,7 @@ hauptLauf(async () => {
         res.z = { welt: zw ? zw.world : null, zeile: zr ? await zr.kommt : null };
         if (zr) {
             const Z = r._torZielAtlas;
-            const G = r.constructor.TOR_ZIEL;
+            const G = AnazhRealm.TOR_ZIEL;
             Object.assign(res.z, {
                 quelle: zr.quelle,
                 fehler: zr.fehler,
@@ -523,7 +523,7 @@ hauptLauf(async () => {
         r._tickPortalMembranes(2.5);
         const reg = r._portalMembranes;
         const rec = reg ? reg.get(entry.id) : null;
-        res.m = { built: !!(rec && rec.mesh), inScene: !!(rec && rec.mesh && rec.mesh.parent === r.state.scene) };
+        res.m = { built: !!(rec && rec.mesh), inScene: !!(rec && rec.mesh && rec.mesh.parent === st.scene) };
         if (rec) {
             const t0 = rec.u.time.value; // der Film atmet auf der Bild-Uhr (A9): der Loop schreibt sie, der Tick liest sie
             r._bildZeit = t0 + 1.2;
@@ -539,7 +539,7 @@ hauptLauf(async () => {
             res.m.zielZeile = rec.mesh.material.userData.tor ? rec.mesh.material.userData.tor.ziel : null;
             res.n.keinKasten = rec.nebel === undefined;
             let fremd = 0;
-            r.state.scene.traverse((o) => {
+            st.scene.traverse((o) => {
                 if (o.userData && /nebel/.test(String(o.userData.inventar || ""))) fremd++;
             });
             res.n.keinNebelInSzene = fremd === 0;

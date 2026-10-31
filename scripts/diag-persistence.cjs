@@ -19,7 +19,7 @@
 // `--selftest` setzt in der Kopie das direkte Schreiben wieder ein (`schreibeGanz` → fs.writeFile) und MUSS rot werden.
 // Ports: PERSISTENCE_PORT (Seite, Standard 4326), PERSISTENCE_SERVER_PORT (Sandbox-Server, Standard 4327).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root, nullSeite, urteilEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, startProc, sleep, ROOT: root, nullSeite, urteilEnde, jsonLesen } = require("./lib/welt-boot.cjs");
 const http = require("http");
 const { spawnSync } = require("child_process");
 const zlib = require("zlib");
@@ -152,7 +152,7 @@ async function serverLauf(quelle, tod) {
     ]);
     const lies = (f) => {
         try {
-            const j = JSON.parse(fs.readFileSync(f, "utf8"));
+            const j = jsonLesen(f);
             return j && (j.marker === "alt" || j.marker === "neu") ? j.marker : "fremd";
         } catch {
             return fs.existsSync(f) ? `zerrissen (${fs.statSync(f).size} B)` : "fehlt";
@@ -287,7 +287,7 @@ function ttTreiber(e0) {
     let t = 0;
     window.dispatchEvent(new KeyboardEvent("keydown", { code: "KeyW", key: "w", bubbles: true }));
     setInterval(() => {
-        const { x, z } = r.state.playerMesh.position;
+        const { x, z } = st.playerMesh.position;
         const [lx, lz] = [200 + ((e0 + n[0]) % 20) * 10, 200 + Math.floor((e0 + n[0]) / 20) * 10];
         if (++t % 2 === 0) (n[0]++, r.carveVoxel(lx, r._terrainMacroSurfaceY(lx, lz) - 2, lz, 3));
         const ort = { x: x - 40, y: r._terrainMacroSurfaceY(x - 40, z), z };
@@ -333,12 +333,12 @@ async function tabTodProbe({ von, bis, selbst = false }) {
             await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId);
             const loch = (o) => r._terrainDensityAt(o.x, o.y, o.z) + o.r; // das Zentrum liegt r m in der Luft (die Säule)
             const g0 = window.__ttRec({
-                ...r.state,
-                playerPosition: r.state.playerMesh.position,
+                ...st,
+                playerPosition: st.playerMesh.position,
             });
             return {
                 ...g0,
-                l: (r.state.worldMeta.voxelEdits || []).filter((o) => loch(o) < 0.01).length,
+                l: (st.worldMeta.voxelEdits || []).filter((o) => loch(o) < 0.01).length,
             };
         }));
         if (g.l !== g.e) zeile.befund.push(`Löcher: ${g.l}/${g.e}`);
@@ -455,7 +455,7 @@ async function wegSeite(km, min, edits) {
     await takt(n, (i) => {
         const x = p.x + (i * km * 1000) / n;
         const z = p.z + 0.15 * (x - p.x);
-        st.playerMesh.position.set(x, r._terrainMacroSurfaceY(x, z) + r.constructor.PLAYER_FOOT_OFFSET + 0.05, z);
+        st.playerMesh.position.set(x, r._terrainMacroSurfaceY(x, z) + AnazhRealm.PLAYER_FOOT_OFFSET + 0.05, z);
         spur.push({ x, z, t });
     });
     await stand();
@@ -534,16 +534,16 @@ function korpusSoll(k) {
 // Am Kopf: liegt die Grube je Edit am Boden (die Oberfläche unter dem Gesetz)? Dann der Save des Kopfs (Material dazu, fehlt es).
 async function korpusIst(s) {
     await window.__weltDa((x) => x.state.worldMeta.worldId === s.welt);
-    if (!r.state.player.inventory.some((x) => x && x.kind === "material")) r.addMaterialToInventory("stein", 5);
+    if (!st.player.inventory.some((x) => x && x.kind === "material")) r.addMaterialToInventory("stein", 5);
     r.saveState();
     const ls = { ...localStorage, [r.worldStorageKey(s.welt)]: await window.__stand() };
     return {
         alt: s.boden !== globalThis.__gelaendeCore.BODEN_GENERATION,
-        umzug: !!r.state.bodenUmzug,
+        umzug: !!st.bodenUmzug,
         kalt: window.__korpusKalt,
-        fuss: r.constructor.PLAYER_FOOT_OFFSET,
+        fuss: AnazhRealm.PLAYER_FOOT_OFFSET,
         gruben: s.edits.map(([x, z]) => r._voxelSurfaceY(x, z) < r._terrainMacroSurfaceY(x, z) - 1),
-        neu: { version: r.constructor.VERSION, ls },
+        neu: { version: AnazhRealm.VERSION, ls },
     };
 }
 // Der Haken am Laden aus dem Speicher, gleich vor dem Bau-Restore: blockiert das kalte Buch? Im Selbsttest die Pflanze.

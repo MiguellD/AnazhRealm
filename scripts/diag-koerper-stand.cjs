@@ -39,8 +39,7 @@
 //   die Probe dieses Defekts muss rot werden; keine Probe liest Quelltext.
 //   node scripts/diag-koerper-stand.cjs [--selftest]
 "use strict";
-const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT, hauptLauf } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
+const { statikServer, starteBrowser, warteAufWelt, nullRenderer, ROOT, hauptLauf, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const { WELT_ORTE_INSTALL, messort } = require("./lib/welt-orte.cjs");
 
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
@@ -1247,7 +1246,7 @@ hauptLauf(async () => {
         for (const x of f) console.log("  ❌ " + x);
         rot += f.length;
         if (process.env.KOERPER_STAND_JSON)
-            fs.writeFileSync(process.env.KOERPER_STAND_JSON, JSON.stringify({ ...o, k8: k8.o }, null, 1));
+            jsonSchreiben(process.env.KOERPER_STAND_JSON, { ...o, k8: k8.o });
     } finally {
         await browser.close();
         server.close();

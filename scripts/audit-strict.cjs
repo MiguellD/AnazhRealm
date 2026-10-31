@@ -169,7 +169,7 @@ async function auditStateAndMethods() {
                     }
                 }
             };
-            walk(r.state, "");
+            walk(st, "");
             return paths;
         });
 

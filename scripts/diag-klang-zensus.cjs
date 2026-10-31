@@ -118,12 +118,12 @@ function quellenAbgriff() {
 // DER SEITEN-WERKZEUGKASTEN (in die Spiel-Seite): Orte finden, umstellen, messen.
 function werkzeug() {
     const W = {};
-    // Ein Frame des echten Loops (Bühne fest, Tiere halten); die Szene (klang.K1 Staffel 2): Wetter und Uhr als Wort des
-    // Spielers (R9), je Takt über die Bühne.
+    // Ein Frame des echten Loops (Bühne fest, Tiere halten); die Szene (klang.K1 Staffel 2): Wetter und Uhr als Wort der Bühne
+    // (R9), je Takt (die Uhr der Szene ist ihr Wort, `__buehne` liest `uhr` — bis w4-himmel-uhr stand die Welt je Takt erst auf
+    // Mittag, dann sprang der Regler zurück in die Nacht und die Umgebung malte sich zweimal).
     W.takt = () => {
         try {
             __buehne(W.szene);
-            if (W.szene?.uhr != null) r.setTimeOfDay(W.szene.uhr, "regler");
             r._gameLoopTick(performance.now());
         } catch {}
     };
@@ -1152,7 +1152,7 @@ async function takt(page, erg) {
         r.mountArchitecture((window.__klangGT = await __klangW.wagen(p.x + 3, p.z)));
     });
     ph.fahrt = await taktPhase(page, "fahrt", 20, true, MINUTEN * 18);
-    ph.fahrt.sattel = await page.evaluate(() => !!(anazhRealm.state.symphony.fahrt || new Map()).size);
+    ph.fahrt.sattel = await page.evaluate(() => !!(st.symphony.fahrt || new Map()).size);
     await page.evaluate(() => {
         r.dismountArchitecture();
         r.setTimeOfDay(0, "regler");
@@ -1435,7 +1435,6 @@ async function raumSeite(dorf, mut) {
 // Ufer und Regen am Ohr eingefroren, das Bild geht weiter) ist ROT beim Namen.
 const GESEHEN_SOLL = 0.6;
 async function gesehenSeite(m) {
-    const r = anazhRealm;
     const st = r.state;
     const adv = AnazhRealm.Gesetz("terrain:WASSER_GESETZ").wellen.adv;
     requestAnimationFrame(__klangW.spiel);
@@ -1563,13 +1562,13 @@ function gesehenUrteil(proben, ohr, bild) {
 async function gesehenGang(page, worte) {
     const G = (f, ...a) => page.evaluate(f, ...a);
     let i = 0;
-    await G((w) => anazhRealm._setWeather(w, "human"), worte[0]);
+    await G((w) => r._setWeather(w, "human"), worte[0]);
     for (let g = 0; g < 16 && (i < worte.length || g % 2); g++) {
         const ziel = g % 2 ? () => __gesehen.abstand() >= 45 : () => __gesehen.amWasser();
         if (!(await halteBis(page, { taste: "ws"[g % 2], ziel, frist: g ? 60000 : 180000 })).erreicht)
             throw new Error(`der Gang ${g} am Bach kam nicht an`);
         if (!(await G(() => __gesehen.wandelt())) && ++i < worte.length)
-            await G((w) => anazhRealm._setWeather(w, "human"), worte[i]);
+            await G((w) => r._setWeather(w, "human"), worte[i]);
     }
     const proben = await G(() => __gesehen.proben);
     const je = { ufer: gesehenUrteil(proben, 0, 1), regen: gesehenUrteil(proben, 2, 3) };
@@ -1601,8 +1600,8 @@ async function zensus(page, browser, ergebnis) {
     // Symphonie an, die Musik ruht (die Linse misst die WELT), die Tiere halten still.
     await page.evaluate(() => {
         __tiereHalten();
-        Object.getPrototypeOf(anazhRealm)._lofiTick = function () {};
-        anazhRealm.initSymphony();
+        Object.getPrototypeOf(r)._lofiTick = function () {};
+        r.initSymphony();
         document.getElementById("untertitel-toggle").click(); // die Untertitel über das Spieler-Wort (Ü)
     });
     // der Werkzeugkasten der Seite beim Namen; die Lage bei mittlerer Böe; der Synthese-Zähler je Welt-Phase (die
@@ -1684,7 +1683,7 @@ async function zensus(page, browser, ergebnis) {
         const nennt = (rot, re, txt) => rot.some((t) => re.test(t)) || fehl.push(`${txt} bleibt unbemerkt`);
         // S1 + S2: der Drohn-Zwilling und die stumme Schleife.
         await page.evaluate(() => {
-            const s = anazhRealm.state.symphony;
+            const s = st.symphony;
             // die Quelle q über einen Gain v am Master, gestartet
             const an = (q, v) => {
                 const g = s.ctx.createGain();
@@ -1728,7 +1727,7 @@ async function zensus(page, browser, ergebnis) {
         const mitZwilling = (glied, zwilling) =>
             page.evaluate(
                 async (glied, zwilling) => {
-                    const P = Object.getPrototypeOf(anazhRealm);
+                    const P = Object.getPrototypeOf(r);
                     const alt = P[glied];
                     P[glied] = {
                         zwillingGlocke() {

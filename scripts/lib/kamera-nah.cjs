@@ -25,7 +25,7 @@
 // einer Klasse mit Radius, näher am Auge als ihr Radius.
 function nahDeckungInSeite(o) {
     const T = window.THREE;
-    const K = r.constructor;
+    const K = AnazhRealm;
     const cam = st.camera;
     cam.updateMatrixWorld(true);
     cam.updateProjectionMatrix();

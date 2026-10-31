@@ -43,7 +43,7 @@
 //   node scripts/diag-studio-huelle.cjs --engine     DER GANG je Seite der Hülle: ihre Anfragen (H6), ihre Sitzung (H3),
 //                                                    die L0 eines Ofen-Labors (H4); Port STUDIO_HUELLE_PORT (8742)
 "use strict";
-const { statikServer, starteBrowser, ROOT, hauptLauf, sleep, waitFor, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT, hauptLauf, sleep, waitFor, wandEnde, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -475,7 +475,7 @@ async function panoramaBacken(nur) {
     const s = statikServer({ seiten: { "/__panorama.html": '<!DOCTYPE html><meta charset="utf-8"><title>Panorama</title><body style="margin:0"></body>' } });
     await s.lausche(PORT);
     const kp = path.join(ROOT, TOR_ZIELE);
-    const K = fs.existsSync(kp) ? JSON.parse(fs.readFileSync(kp, "utf8")) : {};
+    const K = fs.existsSync(kp) ? jsonLesen(kp) : {};
     const neu = { format: PANO.format, w: PANO.w, h: PANO.h, welten: K.welten || {}, ohne: {} };
     for (const [id, grund] of Object.entries(OHNE_PANORAMA)) neu.ohne[seite(id)] = grund;
     for (const k of Object.keys(neu.welten)) if (!k.startsWith("worlds/") || OHNE_PANORAMA[k.split("/")[1]]) delete neu.welten[k];
@@ -549,7 +549,7 @@ async function panoramaBacken(nur) {
         s.close();
     }
     neu.welten = Object.fromEntries(Object.entries(neu.welten).sort());
-    fs.writeFileSync(kp, JSON.stringify(neu, null, 4) + "\n");
+    jsonSchreiben(kp, neu, 4, "\n");
     if (rot) process.exitCode = 1;
 }
 

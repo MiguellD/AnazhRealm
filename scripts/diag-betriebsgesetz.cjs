@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 "use strict";
-const { wandEnde, argOpt } = require("./lib/welt-boot.cjs");
+const { wandEnde, argOpt, jsonLesen } = require("./lib/welt-boot.cjs");
 // gate:betriebsgesetz — die Maschine zum BETRIEBSGESETZ (CLAUDE.md).
 // Der Agenten-Betriebsmodus (früh „fertig" melden · Scope still verkleinern · OFFEN
 // umbenennen · nächste Welle erfinden) fällt nicht durch Vorsatz, sondern durch WÄNDE:
@@ -356,7 +356,7 @@ function main() {
     let dokuZeile = "nicht gelesen";
     try {
         const gates = new Set(
-            Object.keys(JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts)
+            Object.keys(jsonLesen(path.join(root, "package.json")).scripts)
         );
         // die Welt ist der Index (wie in der CI), nie der lokale Rest unverfolgter Dateien
         const dateien = [...new Set(git(["ls-files", "--cached"]).split("\n"))].filter(

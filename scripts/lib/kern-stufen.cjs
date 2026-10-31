@@ -51,7 +51,7 @@ function geklemmteStufe(listeJson, wahl) {
 // ready-Handshake, D der Auto-Blueprint am EINEN Chokepoint, P die Place-Auflösung, E das Asset je Stufe, F der Schlüssel der Wahl.
 async function epsilonSeite(w) {
     await window.__weltDa();
-    const A = r.constructor;
+    const A = AnazhRealm;
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => f && f.ready && f.recipes && f.recipes[w.preset] && A._studioRenderConfig && A._studioRenderConfig.lod && A._studioRenderConfig.lod.kindStages);
     const fehler = (x) => x?.message || String(x);
@@ -59,7 +59,7 @@ async function epsilonSeite(w) {
     const out = { b: { kind: rez.kind, s: rez.s, anzahl: Object.values(f.recipes).filter((x) => x && x.kind === rez.kind).length, ks: JSON.parse(JSON.stringify(A._studioRenderConfig.lod.kindStages)) }, d: {}, p: {}, e: { meshCount: {} }, f: {} };
     const { d, p, e } = out;
     try {
-        const B = r.state.blueprints || {};
+        const B = st.blueprints || {};
         const bp = B[w.bp];
         const sub = A.KIND_SUBSTANCE?.[w.donor];
         const gleich = (k) => !!bp && !!sub && JSON.stringify(bp[k] || null) === JSON.stringify(sub[k] || null);

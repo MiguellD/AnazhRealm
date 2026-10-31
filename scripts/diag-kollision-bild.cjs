@@ -318,7 +318,7 @@ async function probe(K) {
         const B = e.blockerAABBs || [];
         const funde = [];
         // (G) die Gestalt des Fels-Blockers gegen die gezeichnete
-        const gB = kind === "rock" ? r._foundryVariantFor(e.seed, pr, r.constructor._studioGestaltenKern(pr)) : g;
+        const gB = kind === "rock" ? r._foundryVariantFor(e.seed, pr, AnazhRealm._studioGestaltenKern(pr)) : g;
         if (gB !== g) funde.push({ art: "gestalt", wer, ort, bildG: g, blockG: gB });
         if (kind === "tree" && !B.length) funde.push({ art: "stamm", wer, ort });
         // (B) jede Box gegen das Bild in ihrem Rahmen
@@ -412,7 +412,7 @@ async function probe(K) {
     aus.quelle = {
         felsOhneTypListe: __fehlt(r._felsBlockerParts, /_var/),
         partsSkala: !!baum && ruft(() => r._populateBlockerAABBs(baum), r, "_studioWeltSkala"),
-        torTafel: !!drache && ruft(() => r._torBlockerAABBs(drache), r.constructor, "Gesetz", (pfad) => /^porta:TOR_HUELLE\./.test(pfad)),
+        torTafel: !!drache && ruft(() => r._torBlockerAABBs(drache), AnazhRealm, "Gesetz", (pfad) => /^porta:TOR_HUELLE\./.test(pfad)),
         // die Erzeuger und ihre Hilfs-Methoden (der Nachbau lag in einer Hilfs-Methode des Tors) — die Liste beim Namen
         ohneBau: __fehlt(
             [
@@ -434,7 +434,7 @@ async function probe(K) {
 
 // (V) DER KONTAKT BEIM TEMPO im Seiten-Kontext: die Hindernisse stehen auf der ebenen Achse der Mess-Wiese, die Bahn längs +x.
 async function tempo(K) {
-    const [st, A, { mess: MW, HINDERNISSE, TAKTE }] = [r.state, r.constructor, K];
+    const [st, A, { mess: MW, HINDERNISSE, TAKTE }] = [r.state, AnazhRealm, K];
     const pm = st.playerMesh;
     const hh = (x, z) => r._voxelSurfaceY(x, z); // der Boden, auf dem die Körper gehen (die Oberkante des Felds)
     const STUFE = A.PLAYER_STEP_UP;
