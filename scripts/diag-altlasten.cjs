@@ -863,21 +863,10 @@ const FORBIDDEN = [
         fiel: "Integration L D3 — die Lichtung ist ein Grundriss der Natur-Wand (_grundrissVon)",
     },
     { token: "_forestKroneWelt", fiel: "Integration L D3 — die Krone eines Wurfs ist _naturKrone (jede Quelle)" },
-    { token: "compileAsync", fiel: "Welle K — die Erst-Zeichnung (kein Kompilat neben dem Render)" },
-    { token: "_warmCompilePipeline", fiel: "Welle K — die Erst-Zeichnung" },
-    { token: "_bootWarmCompileScene", fiel: "Welle K — die Erst-Zeichnung" },
-    { token: "_kompiliere", fiel: "Welle K — die Erst-Zeichnung" },
-    { token: "_imKompilat", fiel: "Welle K — kein Kompilat, keine Wache" },
-    { token: "_pipeOfenMerke", fiel: "Welle K — die Erst-Zeichnung (der Warm-Ofen)" },
-    { token: "_pipeOfenTick", fiel: "Welle K — die Erst-Zeichnung (der Warm-Ofen)" },
-    { token: "_pipeOfenDone", fiel: "Welle K — die Erst-Zeichnung (der Warm-Ofen)" },
-    {
-        token: "_bundleReifeWache",
-        fiel: "Welle K — die Erst-Zeichnung nimmt das Bundle neu auf, wenn die Pipeline steht",
-    },
-    { token: "_foundryWarmedMats", fiel: "Welle K — die Erst-Zeichnung" },
-    { token: "_erstPipeline", fiel: "Welle K — die Bereitschaft liest den Zustand (_erstWartet), nie das Versprechen" },
-    { token: "_erstNeuAufnehmen", fiel: "Welle K — EINE Warteschlange (_erstWartet ohne Pipeline)" },
+    // Welle K — DIE ERST-ZEICHNUNG: kein Kompilat neben dem Render (compileAsync, der Warm-Ofen `_pipeOfen*`, keine Wache des
+    // Kompilats `_imKompilat`); sie nimmt das Bundle neu auf, wenn die Pipeline steht (`_bundleReifeWache`); die Bereitschaft
+    // liest den Zustand (`_erstWartet`), nie das Versprechen (`_erstPipeline`), in EINER Warteschlange (`_erstNeuAufnehmen`)
+    ...["compileAsync", "_warmCompilePipeline", "_bootWarmCompileScene", "_kompiliere", "_imKompilat", "_pipeOfenMerke", "_pipeOfenTick", "_pipeOfenDone", "_bundleReifeWache", "_foundryWarmedMats", "_erstPipeline", "_erstNeuAufnehmen"].map((token) => ({ token, fiel: "Welle K — die Erst-Zeichnung" })), // prettier-ignore
     { token: "_menschFern", fiel: "S3 kreatur — die Gelenk-Gestalt (_gelenk) und der EINE Schalter _gelenkStufe" },
     { token: "wrap3", fiel: "S3 kreatur — beide Stufen unter EINEM Wrap (_gelenkGestalt)" },
     { token: "TIER_FERN_DIST_SQ", fiel: "S3 kreatur — die Grenze ist lod.budget.kreatur[1].ab (_gelenk.abM)" },
@@ -1033,6 +1022,10 @@ const FORBIDDEN = [
     // sich selbst, am streifenden Blick der Ferne am stärksten (Karte der Fichte in der Dämmerung 8,3 ×, nachts 4,8 × ihre
     // Gestalt); das Licht ist die EINE Licht-Kette (Lehre 21)
     ...["rimStrength", "NightFloor", "nightFloor", "MoonRim", "moonRim", "responseProfile.detail"].map((token) => ({ token, fiel: "F6 — kein Stoff leuchtet ohne Licht", auch: ["scripts/playtest.cjs"] })),
+    // w4-ankunft-3 — DIE ANKUNFT AUS DER FERNE (B2) fiel: das erste Weltbild trug jedes Ding in der Grobstufe (×128 bis zum
+    // Bild, 90 Bilder Gleiten), Tor und Krone verfeinerten nach dem Ladeschirm (ankunft.K2: 6,3–16,3 % Lücke nach 60 s); das
+    // Bild trägt jede Ziel-Stufe (`_stufeWartet` im Term „bauten"), kein Streck der Masken
+    ...["_ankunftsFerne", "ANKUNFT_FERNE", "ANKUNFT_GLEIT_BILDER", "_ankunftGleit", "uLodPerf"].map((token) => ({ token, fiel: "w4-ankunft-3" })),
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

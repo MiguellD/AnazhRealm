@@ -1527,7 +1527,7 @@ async function probe(arg) {
         };
         try {
             for (const [pfad, R] of [
-                ["trinken", r.constructor.CREATURE_DRINK_SEARCH_RADIUS],
+                ["trinken", AnazhRealm.CREATURE_DRINK_SEARCH_RADIUS],
                 ["chat", 80],
                 ["ki", 200],
             ])
@@ -1596,7 +1596,6 @@ async function probe(arg) {
             rec.push({
                 an: lu.uLodMaskOn.value,
                 auge: lu.uLodAuge.value.clone(),
-                perf: lu.uLodPerf.value,
                 ref: lu.uLodRef.value,
                 cfg: { d0: lu.uLodD0.value, d1: lu.uLodD1.value, fade: lu.uLodFade.value, fade0: lu.uLodFade0.value },
             });
@@ -1656,8 +1655,8 @@ async function probe(arg) {
                 for (let j = 0; j < pos.count; j += schritt) {
                     v.fromBufferAttribute(pos, j).applyMatrix4(o.matrixWorld);
                     const stufe = aL ? aL.getX(j) : 0;
-                    const cd = Math.hypot(R.auge.x - v.x, R.auge.z - v.z) * R.perf;
-                    dSum += cd / R.perf;
+                    const cd = Math.hypot(R.auge.x - v.x, R.auge.z - v.z);
+                    dSum += cd;
                     const lk = Math.min(R.ref / Math.max(aH ? aH.getX(j) : 1, 1e-3), 1);
                     const lkL = Math.min(R.ref / Math.max(aHL ? aHL.getX(j) : 1, 1e-3), 1);
                     let k = 0;
@@ -2023,14 +2022,14 @@ async function korpusSatz(a) {
     if (K.vor) K.zurueck(K.vor);
     // die Bühne: Mittag · Sonne · Sommer, dann löst sich ihr Halt — die KI darf handeln (`_messHalt`)
     window.__buehne();
-    r.state.weatherEffectTime = 0;
+    st.weatherEffectTime = 0;
     await window.__weltStehtNach();
     Object.assign(K, { vor: K.stand(), werke: [], wesen: [], lauf: null, antwort: null });
     const [vor, f0, e] = [K.abdruck(), window.__seitenfehler || 0, { satz: a.satz }];
     // DIE SEELE (KI K3): ein Wesen des Satzes und seine Taten über die Wege des Spiels — der Schlag des Spielers (`damageCreature`),
     // die Gabe (`activateCreatureConsumable`), die Geste „folge mir" (`assignCreatureTask`, erinnert, wenn es ankommt: Takte der
     // Welt) —, dann die Frage im Chat an seinen Namen (`maybeAnswerCreature` → Persona-Prompt); gedaechtnis-leer vergisst vorher
-    const p = r.state.playerMesh.position;
+    const p = st.playerMesh.position;
     const w =
         a.soll.taten && r.spawnCreatureAt(p.x + 4, r._voxelSurfaceY(p.x + 4, p.z) + 1, p.z, "happy", a.soll.wesen);
     if (w) {

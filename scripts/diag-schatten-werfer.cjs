@@ -954,7 +954,6 @@ function probe(selbsttest) {
             };
             const uniformen = (auge) => {
                 lu.uLodAuge.value.copy(auge);
-                lu.uLodPerf.value = 1;
                 lu.uLodMaskOn.value = 1;
                 lu.uLodRef.value = D.lodRef;
                 lu.uLodD0.value = D.thresh01;

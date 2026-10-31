@@ -167,19 +167,19 @@ function evaluate(core, cfg, raster) {
 // ===== (3) DAS FENSTER DER INSTANZ-WAHL — die Kanten aus dem Gesetz, kein Loch je Stufe =====
 // Die zwei reinen Methoden der Klasse (`static _blendeKanten`, `static _blendeBehaelt`); `verschiebe` fälscht die Kanten
 // (Selbsttest).
+// die Wahrheit an EINER Distanz: behält die Stufe dort ein Fragment (ein Dither-Wert des Rasters)?
+function zeigt(gesetz, stufe, dS, dL, cfg, laub) {
+    for (let k = 0; k < 256; k++) {
+        const dh = (k + 0.5) / 256;
+        if (stufe === 3) {
+            if (gesetz(dS, dh, cfg, 1, laub, dL).f1o < dh) return true;
+        } else if (gesetz(dS, dh, cfg, stufe === "karte" ? 2 : stufe - 1, laub, dL).keep) return true;
+    }
+    return false;
+}
 function fensterLinse(core, cfgs, verschiebe) {
     const gesetz = core.lodCrossfadeMask;
     const out = { proben: 0, loecher: 0, ueberschuss: 0, jeStufe: {}, beispiel: null };
-    // die Wahrheit an EINER Distanz: behält die Stufe dort ein Fragment (ein Dither-Wert des Rasters)?
-    const zeigt = (stufe, dS, dL, cfg, laub) => {
-        for (let k = 0; k < 256; k++) {
-            const dh = (k + 0.5) / 256;
-            if (stufe === 3) {
-                if (gesetz(dS, dh, cfg, 1, laub, dL).f1o < dh) return true;
-            } else if (gesetz(dS, dh, cfg, stufe === "karte" ? 2 : stufe - 1, laub, dL).keep) return true;
-        }
-        return false;
-    };
     for (const cfg of cfgs) {
         const K = A._blendeKanten(gesetz, cfg.d0, cfg.d1, cfg.fade, cfg.fade0);
         if (verschiebe) verschiebe(K);
@@ -194,7 +194,7 @@ function fensterLinse(core, cfgs, verschiebe) {
                             let wahr = false;
                             for (let j = 0; j <= 16 && !wahr; j++) {
                                 const d = dSmin + ((dSmax - dSmin) * j) / 16;
-                                wahr = zeigt(stufe, d, q * d, cfg, laub);
+                                wahr = zeigt(gesetz, stufe, d, q * d, cfg, laub);
                             }
                             const fenster = A._blendeBehaelt(K, stufe, dSmin, dSmax, q * dSmin, q * dSmax, false);
                             out.proben++;
@@ -218,24 +218,17 @@ function fensterLinse(core, cfgs, verschiebe) {
 
 // ===== (4) DIE STUFE OHNE BILD — das Fenster der Instanz-Wahl gegen das Gesetz an der Instanz-Distanz =====
 // `fenster(g, i, L)` ist das echte `_instanzFenster` (im Selbsttest gewickelt); `this` trägt nur, was eine alte Fassung las
-// (die Weite der Gestalt, die Krone der Birke 10 m).
+// (die Weite der Gestalt, die Krone der Birke 10 m). Die Lage trägt, was die Wahl je Pass liest (`_passWahlLage`): das Auge, die
+// Sichthöhe der Referenz, die Kanten und den Halt — die Distanz misst die Maske ungestreckt (bis w4-ankunft-3 × `uLodPerf`,
+// die Ankunft aus der Ferne; seit ihr Fall liest weder Maske noch Fenster einen Streck, `gate:altlasten`).
 const stumpf = { _instanzWeite: () => ({ r: 10.06, y: 0 }) };
 function stufeOhneBildLinse(core, cfg, fenster = (g, i, L) => A.prototype._instanzFenster.call(stumpf, g, i, L)) {
     const gesetz = core.lodCrossfadeMask;
     const K = A._blendeKanten(gesetz, cfg.d0, cfg.d1, cfg.fade, cfg.fade0);
-    const perf = 1.21,
-        ref = 12;
-    const L = { ex: 0, ez: 0, perf, ref, kanten: K, halt: 0 };
-    // die Wahrheit an der Instanz-Distanz: behält die Stufe dort ein Fragment (ein Dither-Wert des Rasters)?
-    const zeigt = (stufe, dS, dL) => {
-        for (let k = 0; k < 256; k++) {
-            const dh = (k + 0.5) / 256;
-            if (stufe === 3) {
-                if (gesetz(dS, dh, cfg, 1, true, dL).f1o < dh) return true;
-            } else if (gesetz(dS, dh, cfg, stufe === "karte" ? 2 : stufe - 1, true, dL).keep) return true;
-        }
-        return false;
-    };
+    const ref = 12;
+    const L = { ex: 0, ez: 0, ref, kanten: K, halt: 0 };
+    // die Wahrheit an der Instanz-Distanz (`zeigt`, das Laub)
+    const zeigtL = (stufe, dS, dL) => zeigt(gesetz, stufe, dS, dL, cfg, true);
     const out = { proben: 0, ohneBild: 0, loecher: 0, beispiel: null, loch: null, jeStufe: {} };
     for (const art of [
         { name: "birke", h: 15.19, s: 0.928 },
@@ -255,13 +248,13 @@ function stufeOhneBildLinse(core, cfg, fenster = (g, i, L) => A.prototype._insta
                         },
                     },
                 };
-                const dS = d * perf * Math.min(ref / art.h, 1),
-                    dL = d * perf * Math.min(ref / hL, 1);
+                const dS = d * Math.min(ref / art.h, 1),
+                    dL = d * Math.min(ref / hL, 1);
                 const zeichnet = fenster(g, 0, L);
-                const wahr = zeigt(stufe, dS, dL);
+                const wahr = zeigtL(stufe, dS, dL);
                 // die Kanten stehen per Bisektion auf 1 mm an der äußeren Grenze (`_blendeKanten`): 1 cm Wahrnehmungs-Distanz
                 // um die Instanz ist die Toleranz des Gesetzes, kein Bild ohne Stufe
-                const wahrNah = wahr || zeigt(stufe, dS - 0.01, dL - 0.01) || zeigt(stufe, dS + 0.01, dL + 0.01);
+                const wahrNah = wahr || zeigtL(stufe, dS - 0.01, dL - 0.01) || zeigtL(stufe, dS + 0.01, dL + 0.01);
                 out.proben++;
                 if (zeichnet && !wahrNah) {
                     out.ohneBild++;
@@ -585,9 +578,34 @@ async function runPartB() {
                 return { h: a.aH0.array[ref.slot], hL: a.aH0L.array[ref.slot], modus };
             };
             const MODUS_LOD = { l0: 0, l1: 1, l1e: 1, fin: 2 };
+            // Die Löcher einer Probe: je Rinde/Laub × 64 Dither-Werte einer, den KEINE gezeichnete Stufe behält (der Halt —
+            // |aH0L| mit Vorzeichen — zeichnet voll, „frei" ist ungemaskt); ohne gezeichnete Stufe alle 128.
+            const lochZahl = (stufen, raw) => {
+                if (!stufen.size) return 128;
+                let n = 0;
+                for (const fol of [false, true])
+                    for (let i = 0; i < 64; i++) {
+                        const dh = (i + 0.5) / 64;
+                        let behalten = false;
+                        for (const [m, e] of stufen) {
+                            if (m === "frei" || e.halt) {
+                                behalten = true;
+                                break;
+                            }
+                            const dS = raw * Math.min(lodRefLive / Math.max(e.h, 1e-3), 1);
+                            const dL = raw * Math.min(lodRefLive / Math.max(fol ? e.hL : e.h, 1e-3), 1);
+                            const z = core.lodCrossfadeMask(dS, dh, cfgM, MODUS_LOD[m], fol, dL);
+                            if (m === "l1e" ? z.f1o < dh : z.keep) {
+                                behalten = true;
+                                break;
+                            }
+                        }
+                        if (!behalten) n++;
+                    }
+                return n;
+            };
             const lochSweep = (E) => {
                 const e0 = E || { entry, px, py, pz };
-                const k = r._ankunftsFerne(); // der Streck der Wahrnehmung (kein Regler, lod.K5)
                 const o = { proben: 0, loecher: 0, stempelUngleich: 0, modi: {}, beispiel: null };
                 for (const raw of [4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 42, 48, 55, 48, 42, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7, 4]) {
                     st.playerMesh.position.set(e0.px - raw, e0.py, e0.pz);
@@ -610,26 +628,9 @@ async function runPartB() {
                     const visH = r._lodTreeVisHeight(e0.entry);
                     for (const [m, e] of stufen)
                         if (m !== "frei" && !(Math.abs(e.h - visH) <= 1e-3 * Math.max(1, visH))) o.stempelUngleich++;
-                    for (const fol of [false, true])
-                        for (let i = 0; i < 64; i++) {
-                            const dh = (i + 0.5) / 64;
-                            let behalten = false;
-                            for (const [m, e] of stufen) {
-                                if (m === "frei") {
-                                    behalten = true;
-                                    continue;
-                                }
-                                const dS = raw * k * Math.min(lodRefLive / Math.max(e.h, 1e-3), 1);
-                                const dL = raw * k * Math.min(lodRefLive / Math.max(fol ? e.hL : e.h, 1e-3), 1);
-                                const z = core.lodCrossfadeMask(dS, dh, cfgM, MODUS_LOD[m], fol, dL);
-                                if (m === "l1e" ? z.f1o < dh : z.keep) behalten = true;
-                            }
-                            if (!behalten) {
-                                o.loecher++;
-                                if (!o.beispiel)
-                                    o.beispiel = { raw, modi: [...stufen.keys()], visH: +visH.toFixed(2), stempel: [...stufen.values()].map((e) => +e.h.toFixed(2)), laub: fol };
-                            }
-                        }
+                    const n = lochZahl(stufen, raw);
+                    o.loecher += n;
+                    if (n && !o.beispiel) o.beispiel = { raw, modi: [...stufen.keys()], visH: +visH.toFixed(2), stempel: [...stufen.values()].map((e) => +e.h.toFixed(2)) };
                 }
                 return o;
             };
@@ -698,34 +699,7 @@ async function runPartB() {
                     }
                     return { h, hL, modus: al > 2.5 ? "l1e" : al > 1.5 ? "l1" : al > 0.5 ? "l0" : "frei" };
                 };
-                // Die Löcher einer Probe: je Rinde/Laub × 64 Dither-Werte einer, den KEINE gezeichnete Stufe behält (der Halt —
-                // |aH0L| mit Vorzeichen — zeichnet voll, „frei" ist ungemaskt); ohne gezeichnete Stufe alle 128.
-                const lochZahl = (stufen, raw, k) => {
-                    if (!stufen.size) return 128;
-                    let n = 0;
-                    for (const fol of [false, true])
-                        for (let i = 0; i < 64; i++) {
-                            const dh = (i + 0.5) / 64;
-                            let behalten = false;
-                            for (const [m, e] of stufen) {
-                                if (m === "frei" || e.halt) {
-                                    behalten = true;
-                                    break;
-                                }
-                                const dS = raw * k * Math.min(lodRefLive / Math.max(e.h, 1e-3), 1);
-                                const dL = raw * k * Math.min(lodRefLive / Math.max(fol ? e.hL : e.h, 1e-3), 1);
-                                const z = core.lodCrossfadeMask(dS, dh, cfgM, MODUS_LOD[m], fol, dL);
-                                if (m === "l1e" ? z.f1o < dh : z.keep) {
-                                    behalten = true;
-                                    break;
-                                }
-                            }
-                            if (!behalten) n++;
-                        }
-                    return n;
-                };
                 const kettenSweep = (E) => {
-                    const k = r._ankunftsFerne();
                     const o = {
                         proben: 0,
                         loecher: 0,
@@ -772,10 +746,10 @@ async function runPartB() {
                         const visH = r._lodTreeVisHeight(E.entry);
                         for (const [m, e] of neu)
                             if (m !== "frei" && !(Math.abs(e.h - visH) <= 1e-3 * Math.max(1, visH))) o.stempelUngleich++;
-                        const n = lochZahl(neu, raw, k);
+                        const n = lochZahl(neu, raw);
                         if (!neu.size) o.leer++;
                         o.loecher += n;
-                        o.altLoecher += lochZahl(alt, raw, k);
+                        o.altLoecher += lochZahl(alt, raw);
                         if (n > 0 && !o.beispiel)
                             o.beispiel = { raw, modi: [...neu.keys()], primaer: E.entry._lodLevel, band: Number.isFinite(E.entry._lodBandLevel) ? E.entry._lodBandLevel : null, loecher: n };
                     }
@@ -784,16 +758,18 @@ async function runPartB() {
                 // Ein Lauf der Kette; `gegen` = der Täter des Selbsttests im selben Lauf: "partner" — die L1 lädt nie und die Stufe
                 // hält nicht (der Stand vor K36: die L0 dithert zu einer Stufe, die es nicht gibt); "satz" — der Bau-Satz folgt der
                 // Stufe nicht (die Marke `_bauSatzMarke` stumm: die Gruppe wechselt, ihr Bereich im Satz nie).
+                // der Stand vor K36 (die Täter beider Selbsttests): keine Stufe hält, nur die verdeckte Karte blendet voll
+                const ohneHaltVoll = function (e, band, bl = e._lodBandLevel) {
+                    const karte = e._occluded === true || e._bruecke === true;
+                    return band ? karte && bl === 2 : karte;
+                };
                 const kettenLauf = (op, gegen) => {
                     if (gegen === "satz") r._bauSatzMarke = function () {};
                     if (gegen === "partner") {
                         r._foundryFlattenFor = function (e, p, lod) {
                             return p === op.preset && lod === 1 ? null : A.prototype._foundryFlattenFor.call(this, e, p, lod);
                         };
-                        r._lodSlotVoll = function (e, band, bl = e._lodBandLevel) {
-                            const karte = e._occluded === true || e._bruecke === true;
-                            return band ? karte && bl === 2 : karte;
-                        };
+                        r._lodSlotVoll = ohneHaltVoll;
                     }
                     let o2 = null;
                     try {
@@ -846,7 +822,6 @@ async function runPartB() {
                 const deckungAm = (e0, auge) => {
                     const lu = st.lodUniforms;
                     const ref = lu && lu.uLodRef ? lu.uLodRef.value : lodRefLive;
-                    const k = r._ankunftsFerne();
                     const teile = [];
                     for (const list of [e0.instSlots, e0.instSlotsBand]) {
                         if (!Array.isArray(list)) continue;
@@ -866,7 +841,7 @@ async function runPartB() {
                                 const kk = Math.min(ref / Math.max(Math.abs(sicht), 1e-3), 1);
                                 teile.push({
                                     karte: true,
-                                    keep: (dh) => sicht < 0 || core.lodCrossfadeMask(d * k * kk, dh, cfgM, 2, false).keep,
+                                    keep: (dh) => sicht < 0 || core.lodCrossfadeMask(d * kk, dh, cfgM, 2, false).keep,
                                 });
                             } else if (a.aH0 && a.aH0L && a.aLodLevel && a.aLodLevel.array[0] >= 0.5) {
                                 const al = a.aLodLevel.array[0];
@@ -880,7 +855,7 @@ async function runPartB() {
                                     laub,
                                     keep: (dh) => {
                                         if (hL < 0) return true; // der Halt: die Stufe ohne Partner zeichnet voll
-                                        const z = core.lodCrossfadeMask(d * k * kS, dh, cfgM, al > 1.5 ? 1 : 0, laub, d * k * kL);
+                                        const z = core.lodCrossfadeMask(d * kS, dh, cfgM, al > 1.5 ? 1 : 0, laub, d * kL);
                                         return al > 2.5 ? z.f1o < dh : z.keep;
                                     },
                                 });
@@ -923,10 +898,7 @@ async function runPartB() {
                         };
                     // ohne Halt: VOLL kennt nur die Karte des Verdeckten und der Brücke (der Stand vor K36) — kein Stempel hält
                     if (art.ohneHalt)
-                        r._lodSlotVoll = function (e, band, bl = e._lodBandLevel) {
-                            const karte = e._occluded === true || e._bruecke === true;
-                            return band ? karte && bl === 2 : karte;
-                        };
+                        r._lodSlotVoll = ohneHaltVoll;
                     // der Zwilling ohne Halt: sein Stempel trägt das VOLL nie (die gezeichnete Stufe hält, ihr Wurf blendet)
                     if (art.zwillingOhneHalt)
                         r._lodSlotStamp = function (g, slot, scale, voll, leaf) {
@@ -1156,7 +1128,7 @@ async function runPartB() {
     const attrWand = await page.evaluate(() => {
         let geprueft = 0,
             verstoesse = 0;
-        r.state.scene.traverse((o) => {
+        st.scene.traverse((o) => {
             if (!o.geometry || !o.material) return;
             const mats = Array.isArray(o.material) ? o.material : [o.material];
             for (const m of mats) {
@@ -1199,11 +1171,11 @@ async function runPartB() {
         slots = mkSlots();
         o.reMintInFrist = r._archGruppenMints - mintsVor;
         r._archLeerReapT = 0;
-        r._tickArchGruppenReaper(performance.now() + 2 * (r.constructor.ARCH_LEER_GNADE_MS || 10000));
+        r._tickArchGruppenReaper(performance.now() + 2 * (AnazhRealm.ARCH_LEER_GNADE_MS || 10000));
         o.lebtNachReaper = st.archInstanceGroups.has(keyB);
         r._scatterFreeSlots(slots);
         const g2 = st.archInstanceGroups.get(keyB);
-        if (g2) g2._leerSeit = performance.now() - 2 * (r.constructor.ARCH_LEER_GNADE_MS || 10000);
+        if (g2) g2._leerSeit = performance.now() - 2 * (AnazhRealm.ARCH_LEER_GNADE_MS || 10000);
         r._archLeerReapT = 0;
         r._tickArchGruppenReaper(performance.now());
         o.reaperRaeumt = !st.archInstanceGroups.has(keyB);
@@ -1283,7 +1255,7 @@ async function runPartB() {
         r._foundryMats = mats;
         // DER SPIEGEL DER BLENDE (W5.4): die Masken-Uniformen tragen je Bild das EINE CPU-Band (LOD_DISTANCES) — eine Änderung
         // des Bands steht nach dem nächsten Bild (`_loopRender`) in der Maske, vorher nicht (die Gegenprobe im selben Lauf).
-        const D = r.constructor.LOD_DISTANCES;
+        const D = AnazhRealm.LOD_DISTANCES;
         const u = st.lodUniforms;
         const band = () => [u.uLodD0, u.uLodD1, u.uLodFade, u.uLodFade0].map((x) => x.value).join() === [D.thresh01, D.thresh12, D.fade, D.fade0].join();
         const d0 = D.thresh01;

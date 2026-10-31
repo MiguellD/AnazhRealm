@@ -275,29 +275,47 @@ function leibInstall(cfg) {
     L.ruhig = (n) => {
         for (let i = 0; i < (n || 10); i++) r._loopCamera((T += 0.1));
     };
-    L.tick = async (n, ms) => {
-        for (let i = 0; i < n; i++) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
-            await sleep(ms || 30);
-        }
+    // DER TAKT DER LINSE (Lehre 26): sie zeichnet nur die Bilder, die ihr Urteil braucht — keines; Kugel, Boxen, Boden-Karte und
+    // Nah-Deckung rechnet sie gegen die Gestalt der Welt. Ihre Welt (eine je Installation, die Tür lädt neu) taktet darum in jedem
+    // Teil an gespannter GPU-Leine (`_gpuLeineFrei` sagt nein: Simulation, Strom, Stufen und Fäden laufen, nichts geht an die GPU —
+    // das Gesetz, mit dem die Welt einer langsamen GPU folgt); das erste Weltbild urteilt der Richter des Bild-Takts (`_ankunftsBild`)
+    // nach jedem ihrer Takte — den Nachlauf zählt die Welt in Bildern, ohne Bild baut er ohne Frame-Budget weiter. Bis hier zeichnete
+    // jeder Takt, den die Leine ließ: seit K2 (die nahen Dinge kalt in ihrer Ziel-Stufe) wartete die Linse an der Wiese 12 725 Takte
+    // · 590 s auf ihr Weltbild, für 31 Bilder, die kein Urteil las (Kopf f907dd8, swiftshader, 4 Kerne; die CI riss nach 900 s in
+    // evaluate(leibWiese)).
+    r._gpuLeineFrei = () => false;
+    L.takt = (t) => (r._gameLoopTick(t), st._weltbildDa || r._ankunftsBild());
+    L.tick = async (n) => {
+        for (let i = 0; i < n; i++, await sleep(40)) L.takt(performance.now());
     };
-    // reißt der Deckel, nennt sein Wurf die Lücken des Weltbilds (`__deckel`)
+    // DAS WARTEN auf das, was sie misst — in Bau-Ereignissen, nie nach der Wanduhr: der Leib an seinem Ort (Welt, Boden, Guss, Buch),
+    // jedes Ding ihrer Reichweite gebaut in seiner Ziel-Stufe (`_stufeWartet`, „bauten") samt Pflanzung und Streu (die Terme des
+    // Weltbilds rundum), die Hüllen der Bäume (`_weltOffen`), jeder Fege-Takt in ganzer Runde am jetzigen Auge (`_standGeht`: die
+    // Stufen, der Bestand, der Boden) und das erste Weltbild (erst der Nachlauf pflanzt rundum) — nie Horizont, Saum, Licht oder
+    // Karten der Ferne, die kein Urteil der Linse liest (der Saum `deckWache` hielt den Hang 13 s). Reißt der Deckel, nennt sein Wurf,
+    // was dem Weltbild fehlt.
+    L.fehlt = () =>
+        r._weltbildLuecken(true)
+            .filter((l) => !/horizont|licht|karten/.test(l.term))
+            .map((l) => l.satz)
+            .concat(
+                r._weltOffen().huellen && "Hüllen",
+                r._standGeht()?.replace(/deckWache[^,]*/, ""),
+                !st._weltbildDa && "das erste Weltbild"
+            )
+            .filter(Boolean);
     L.steht = async (ms) => {
-        let n = 0;
-        for (const weiter = window.__deckel("das Weltbild", ms / 45); weiter(); ) {
-            await L.tick(5, 40);
-            n++;
-            if (n >= 4 && !r._weltbildFehlt(true).length) break;
+        for (let n = 0, weiter = window.__deckel("das Weltbild", ms / 45); (n++ < 4 || L.fehlt().length) && weiter(); ) {
+            // DAS LICHT DES ORTS malt die Welt in Takten, die zeichnen (`tickDayNight`, nie im Lade-Takt ohne Bild): vor dem ersten
+            // Weltbild fragt die Linse es wie die Bühne jedes Schusses (`_himmelFrisch`, die Wende seiner Pipelines) — ohne das
+            // Licht hielt der Richter die Wiese bis zum Deckel des Weltbilds (60 s Wanduhr, laut)
+            if (!st._belichtungSteht) await r._himmelFrisch(), r._applyDayNightToScene();
+            await L.tick(5);
         }
-        return r._weltbildFehlt(true);
+        return L.fehlt();
     };
     // der Spieler an (x, z), bis das Weltbild dort steht; zurück, was noch fehlt
-    L.hin = (x, z, ms) => {
-        st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
-        return L.steht(ms);
-    };
+    L.hin = (x, z, ms) => (st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z), L.steht(ms));
     // der sichtbare Boden: die Boden-Karte des gezeichneten Mesh, null ohne Karte
     L.sichtbar = (x, z) => {
         const k = r._bodenSichtAt(x, z);
@@ -458,12 +476,6 @@ async function leibWiese(arg) {
     try {
         await r._foundryAwaitBook(45000);
         out.fehlt = await L.hin(arg.x, arg.z, 60000);
-        // DIE ANKUNFT HERGESTELLT (B2): die Linse taktet als Gerät mit 8–33 ms je Bild (MUSTER) — dort sind die 90 Bilder der
-        // Ankunft in < 3 s gezeichnet; unter swiftshader kostet jedes 1,8–3,3 s, die Linse zeichnet ohne Animations-Schleife
-        // unter der GPU-Leine (29.10.: 4 Bilder in 4 400 Takten, Ferne 43,5, seit lod.K5 das Haus des Gangs auf L2 ohne Flügel,
-        // der Schmuggel blind; das Abwarten riss an der Frist der Seite, 900 s). Ab hier wählt der Stamm jede Stufe am Abstand
-        // (`_ankunftsFerne` 1): die Häuser der Wiese und der Gang (K4) messen die angekommene Welt.
-        if (r._weltOffen().ankunft) st._ankunftGleit = r.constructor.ANKUNFT_GLEIT_BILDER;
         out.haeuser = [];
         for (const [typ, dx, dz] of [
             ["haus_alemannisch", 16, 6],
@@ -619,7 +631,7 @@ async function leibHang(arg) {
 }
 
 // K4 DER GANG (Meisterkarte leib.K4 Staffel 1, Grok R11 WE-05): in der Welt von K2 geht der Spieler in Third im echten Takt
-// (`_gameLoopTick`, Bilder 8–33 ms) an die Anker (dickster Stamm, Fels, Haus): rückwärts heran, die Maus 360°, vorwärts, der
+// (`L.takt`: `_gameLoopTick` ohne Bild, Takte 8–33 ms) an die Anker (dickster Stamm, Fels, Haus): rückwärts heran, die Maus 360°, vorwärts, der
 // Orbit eine Armlänge fern. Je Bild die Kugel gegen Feld, sichtbaren Boden und Boxen, die Nah-Pixel (kamera-nah), der Ruck; der
 // Gang am Haus mit einem Wurf, der nie trifft — die Linse muss ihn nennen. Staffel 2: durch die Tür ins Haus und am Steilhang,
 // je zu Fuß und im Sprint, zuletzt die Kamera, die in den Hang sinkt (`senk`, 10 Bilder).
@@ -659,7 +671,7 @@ async function leibGang(G) {
                 const dt = MUSTER[nr++ % MUSTER.length];
                 tMs += dt;
                 if (phase.startsWith("orbit")) st.yaw += (2 * Math.PI * dt) / G.orbitMs; // die Maus dreht je Zeit
-                r._gameLoopTick(tMs);
+                L.takt(tMs); // der Takt der Welt ohne Bild: Kugel, Nah-Pixel und Ruck lesen die Gestalt
                 const c = st.camera.position;
                 const p = st.playerMesh.position;
                 const kb = L.sichtbar(c.x, c.z);
@@ -842,7 +854,7 @@ async function probe(arg) {
     const t0 = performance.now();
     await r._foundryAwaitBook(45000);
     const hh = (x, z) => r.getTerrainHeightAt(x, z);
-    await steht(90000); // die Welt wächst, bis ihr Bild steht (`_weltbildFehlt` leer)
+    await steht(90000); // die Welt wächst, bis steht, was die Linse misst (`L.fehlt` leer)
     out.zeiten.boot = Math.round(performance.now() - t0);
     // DIE ANKER: die Stämme der Mesh-Zone (Rinde-Instanzen jeder Quelle: gesetzte und gestreute Bäume, Büsche) und die
     // belaubten Pflanzen der Nah-Streu (Gestrüpp, Farn — der Strauch vor dem Ich-Auge, C 12)
@@ -988,7 +1000,7 @@ async function probe(arg) {
                 let vorN = -1;
                 let ruhe = 0;
                 for (const weiter = window.__deckel("die Stämme am Ort", 750); ruhe < 4 && weiter(); ) {
-                    await tick(5, 40);
+                    await tick(5);
                     const n = staemme().filter((s2) => Math.hypot(s2.x - P.x, s2.z - P.z) < 25).length;
                     ruhe = n === vorN ? ruhe + 1 : 0;
                     vorN = n;

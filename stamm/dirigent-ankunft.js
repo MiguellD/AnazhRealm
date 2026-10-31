@@ -820,6 +820,7 @@ class AnazhRealm_dirigent_ankunft {
         const p = this.state.playerMesh ? this.state.playerMesh.position : e.position;
         const wer = `${this._foundryPresetForEntry(e) || e.type} L${e._lodLevel} in ${Math.round(Math.hypot(e.position.x - p.x, e.position.z - p.z))} m`;
         if (!this._archIsRendered(e)) return `${wer} ungebaut`;
+        if (e._stufeWartet === true) return `${wer} wartet auf seine Ziel-Stufe`;
         const E = this._erstZeichnung;
         const G = this.state.archInstanceGroups;
         const offen = (e.instSlots || [])
@@ -838,11 +839,12 @@ class AnazhRealm_dirigent_ankunft {
     _weltbildSteht() {
         const st = this.state;
         st._weltbildDa = performance.now();
+        // die Zeichnungen, die in diesem Bild ohne ihr Programm blieben (`bildWartet`, w4-ankunft-5) — das Buch der Programme
+        // trägt sie, die Kalt-Zeile nennt sie
+        const E = this._erstZeichnung;
+        if (E) E.buch.imBild = E.bildWartet;
         st._nachlauf = 0;
         st._rundumDa = null;
-        // die Ankunft aus der Ferne gleitet ab jetzt über die gezeichneten Bilder (`_ankunftsFerne`); der Null-Renderer
-        // zeichnet keins — dort gilt die Distanz-Stufe ab dem Bild
-        if (st.renderer && !st.renderer._isHeadlessNull) st._ankunftGleit = 0;
         this._ersterBlickAus();
         const w = st._weltbildWarten;
         st._weltbildWarten = null;
@@ -858,37 +860,20 @@ class AnazhRealm_dirigent_ankunft {
         if (this.state._deferredAvatarSoul) this._ofenSpielerVorlagen();
     }
 
-    // DIE ANKUNFT AUS DER FERNE (B2, die EINE Zahl der Ankunfts-Stufe): bis das erste Weltbild steht, misst jede Stufen-Wahl
-    // jedes Ding, als stünde der Spieler ANKUNFT_FERNE-mal weiter weg — der Baum trägt seine Karte (die Höhen-Stufe L1 und
-    // der Bake, nie die L0), der Bau seine Grobstufe (die L2 und ihr Wurf): das erste Bild wartet auf keine feinere Stufe
-    // als die billigste ganze. Danach gleitet der Faktor über ANKUNFT_GLEIT_BILDER gezeichnete Bilder auf 1
-    // (`_ankunftGleit`, gezählt im Zeichen-Takt neben `uLodPerf`): jede Baum-Gestalt verfeinert durch ihr bestehendes Band
-    // (Lehre 26), der Bau nach seinen Grenzen. Die Ferne ist kein Zustand der Hysterese (`_archStufeUrteil`, w4-genesis-tore):
-    // was sie setzte, wählt danach am Abstand — das Ring-Tor in 11 m trägt seine L1, nie die L2 der Ankunft. Zwei Leser, EINE
-    // Zahl: die Wahrnehmungs-Distanz der Karten-Arten (`_lodPerceptionDistance`, CPU-Wahl UND Shader-Maske `uLodPerf`) und die
-    // Grenzen der Bauten
-    // (`_tickArchitectureLOD`, `_foundryLodForEntry`). Ohne Studio-Welt trägt keine Karte: 1.
-    _ankunftsFerne() {
-        const st = this.state;
-        if (!this._foundryEnabled()) return 1;
-        if (!st._weltbildDa) return AnazhRealm.ANKUNFT_FERNE;
-        const g = st._ankunftGleit;
-        const N = AnazhRealm.ANKUNFT_GLEIT_BILDER;
-        return g >= 0 && g < N ? Math.pow(AnazhRealm.ANKUNFT_FERNE, 1 - g / N) : 1;
-    }
-
-    // DER STUFEN-VORLAUF (profiband K4 „keine Hänger", Hänger-Linse 25.10.) — das Gegenstück der Ferne: unter dem Ladeschirm
-    // trägt je Karten-Art der nächste Baum im ersten Blick seine L1 (die Höhen-Stufe, die seine Karte schon dockte), voll
-    // gehalten und ohne Band-Partner, damit das Programm jeder Stufen-Arena in jedem Pass entsteht, bevor der Spieler die
-    // Kontrolle hat. Befund headless (Mess-Wiese, `haenger 60 --wandern bahn`, 4 von 4 Sitzungen): der EINE einmalige Auftrag
+    // DER STUFEN-VORLAUF (profiband K4 „keine Hänger", Hänger-Linse 25.10.): unter dem Ladeschirm hält je Karten-Art der
+    // nächste Baum im ersten Blick, der seine L1 als SEINE Stufe trägt (die Höhen-Stufe, die seine Karte schon dockte), sie
+    // (mit dem Band-Partner, den seine Distanz will), damit das Programm jeder Stufen-Arena in jedem Pass entsteht, bevor der
+    // Spieler die Kontrolle hat.
+    // Befund headless (Mess-Wiese, `haenger 60 --wandern bahn`, 4 von 4 Sitzungen): der EINE einmalige Auftrag
     // im Gang war der kalte Programm-Schlüssel der Tannen-Arena (1–2 Knoten-Bauten Σ 52–158 ms, 2–4 Shader-Module, 1–2
     // Pipelines); die Radeon (loadScale 0,01–0,06) trifft die L1-Grenze erst im Gang — je Sitzung EIN GPU-Hänger 200–243 ms —,
     // die GTX (0,29–0,57) vor der Messung. Einmal gebaut, bleibt das Programm der Sitzung (`_renderObjekteLoesen`: der
     // Knoten-Bau gehört seinem Schlüssel, die Pipeline dem Cache). Die Wahl läuft je Lade-Bild mit den Lücken
     // (`_weltbildLuecken`), der Baum hält das Bild als wachsender („bauten"), bis seine Arenen zeichneten (`_vorlaufOffen`);
-    // die Kaskaden, deren Box er nicht trifft, baut der Vorbau der Erst-Zeichnung (`_renderObjectDirect`). Er trägt seine L1
-    // bis zum Bild — ihr Wechsel zur Karte fällt unter die Blende des Ladeschirms. Der Null-Renderer baut keine Programme:
-    // dort wählt sie nie.
+    // die Kaskaden, deren Box er nicht trifft, baut der Vorbau der Erst-Zeichnung (`_renderObjectDirect`). Gewählt wird nur,
+    // wer die L1 als seine Ziel-Stufe trägt — das erste Bild zeigt jedes Ding in der Stufe, die es nach dem Bild behält
+    // (ankunft.K2). Bis w4-ankunft-3 trug ein naher Baum unter der Ankunft aus der Ferne (B2, ×128 bis zum Bild) die L1 statt
+    // seiner L0, und das erste Bild verfeinerte nach dem Ladeschirm. Der Null-Renderer baut keine Programme: dort wählt sie nie.
     _stufenVorlaufWahl(p, R, imBlick) {
         const st = this.state;
         if (st._weltbildDa || !st.renderer || st.renderer._isHeadlessNull) return;
@@ -915,7 +900,8 @@ class AnazhRealm_dirigent_ankunft {
             }
             const preset = V.artVon.get(e._lodSpecies);
             if (!preset || V.arten.has(preset) || (best.has(preset) && best.get(preset).d2 <= d2)) continue;
-            if (this._foundryStufeBereit(e, preset, 1)) best.set(preset, { e, d2 });
+            // nur wer die L1 als seine Stufe trägt (seine Distanz wählt sie): der Vorlauf hält, er zwingt nie
+            if (e._lodLevel === 1 && this._foundryStufeBereit(e, preset, 1)) best.set(preset, { e, d2 });
         }
         for (const [preset, { e }] of best) {
             V.arten.set(preset, e);
@@ -1115,11 +1101,19 @@ class AnazhRealm_dirigent_ankunft {
         }
         // DAS LICHT DES ORTS (S7): die Belichtung steht aus dem Licht erst, wenn die Bestrahlungs-Tafel der EINEN Atmosphäre liegt
         // (`_belichtungAnker`, `_himmelsBestrahlung`) — bis dahin trüge das erste Bild die Belichtung des Ladens (1,0) und
-        // spränge mit der ersten Tafel (Prüfung S7 Runde 2: die Ankunft in Dämmerung oder Nacht).
-        if (!st._belichtungSteht) luecke("licht", "das Licht des Orts wird gemessen", true);
+        // spränge mit der ersten Tafel (Prüfung S7 Runde 2: die Ankunft in Dämmerung oder Nacht). Dazu die gemalte Umgebung
+        // (`_skyEnvLast`: Himmels-Sicht, PMREM und die Licht-Sonde, `_ensureSkyEnvironment`) — jeder Stoff spiegelt sie im ersten
+        // Bild; seit ihre Pässe asynchron bauen (`_einmalPass`), kommt sie nicht mehr im selben Takt wie die Tafeln.
+        if (!st._belichtungSteht || !(st._skyEnvLast || st._skyEnvFailed))
+            luecke("licht", "das Licht des Orts wird gemessen", true);
         // DER LEIB DES SPIELERS (K60-2): sein Guss kommt aus dem Faden (`_leibBereit`, die zwei Vorlagen nach dem Buch) — bis
         // er steht, ist der Spieler der leere Anker, und kein Bild zeigt die Welt ohne ihn.
         if (st._deferredAvatarSoul) luecke("leib", "der Spieler erhält seinen Leib", !!this._foundry);
+        // DIE AUSGABE (w4-ankunft-5): unter dem Ladeschirm bauen die Post-Kette und das Tiefen-Abbild ihre Pipelines asynchron —
+        // ein Bild, in dem eine davon noch nicht zeichnete (`ausgabeWartet`, gezählt im letzten Bild, `_loopRender`), ist nicht das
+        // Weltbild: der Ladeschirm wiche über einer leeren Leinwand
+        if (this._erstZeichnung && this._erstZeichnung.ausgabeWartet > 0)
+            luecke("ausgabe", "die Ausgabe baut ihr Programm", true);
         if (!this._foundryEnabled()) return out;
         const f = this._foundry;
         if (!f || !f.ready || !f.recipes) {
@@ -1129,6 +1123,9 @@ class AnazhRealm_dirigent_ankunft {
         const p = pm.position;
         const R = Number.isFinite(st.architectureCullingRadius) ? st.architectureCullingRadius : 150;
         this._stufenVorlaufWahl(p, R, imBlick);
+        // jedes Ding im Blick steht in SEINER Ziel-Stufe (ankunft.K2): gezeichnet, ohne Stufe oder Band-Partner, auf die es
+        // wartet (`_stufeWartet` aus der EINEN Wahl `_archStufeUrteil`) — bis w4-ankunft-3 stand das Bild in der Grobstufe
+        // (die Ankunft aus der Ferne, B2), und Tor und Krone verfeinerten danach: 6,3–16,3 % Lücke nach 60 s
         let ungebaut = 0;
         let zeuge = null;
         for (const e of st.architectures || []) {
@@ -1137,7 +1134,7 @@ class AnazhRealm_dirigent_ankunft {
             const dz = e.position.z - p.z;
             if (
                 dx * dx + dz * dz <= R * R &&
-                (!this._archIsRendered(e) || this._vorlaufOffen(e)) &&
+                (!this._archIsRendered(e) || e._stufeWartet === true || this._vorlaufOffen(e)) &&
                 imBlick(e.position.x, e.position.z)
             )
                 zeuge = ungebaut++ ? zeuge : e;
@@ -1352,6 +1349,9 @@ class AnazhRealm_dirigent_ankunft {
         stoff.depthTest = false;
         stoff.depthWrite = false;
         stoff.side = THREE.DoubleSide;
+        // EIN PASS (w4-ankunft-5): durchsichtig und beidseitig zeichnete r184 erst die Rück-, dann die Vorderseite — zwei
+        // Render-Objekte je Seite, zwei Knoten-Bauten desselben Texts vor dem Bild; das Maximum kennt keine Reihenfolge
+        stoff.forceSinglePass = true;
         stoff.fog = false;
         stoff.toneMapped = false;
         const szene = new THREE.Scene();
@@ -1444,19 +1444,14 @@ AnazhRealm.WELTBILD_STILL_MS = 15000;
 // Der Deckel des ersten Weltbilds (ms ab der ersten Frage): danach weicht der Ladeschirm laut, auch wenn die Lücke nie ruht
 // (ihre Zahl flackert). Auf der Radeon stand das ganze Weltbild nach 31,8 s.
 AnazhRealm.WELTBILD_DECKEL_MS = 60000;
-// DIE ANKUNFT AUS DER FERNE (B2, `_ankunftsFerne`): bis das erste Weltbild steht, misst jede Stufen-Wahl so, als stünde der
-// Spieler ANKUNFT_FERNE-mal weiter weg — jedes Ding trägt seine billigste GANZE Stufe (der Baum seine Karte, der Bau seine
-// Grobstufe); danach gleitet der Faktor über ANKUNFT_GLEIT_BILDER gezeichnete Bilder auf 1.
-AnazhRealm.ANKUNFT_FERNE = 128;
-AnazhRealm.ANKUNFT_GLEIT_BILDER = 90;
 // DER BLICK DES ERSTEN BILDS (B3d, `_ersterBlick`): der Rand je Seite über den halben Bildwinkel (Grad), die Kugel um das
 // Auge über den Abstand zum Spieler hinaus (m), der Radius eines Dings (m) und der Schlüssel, den ein Auftrag außer Blick vor
 // dem Bild auf seinem Rang trägt (d², über jeder Welt-Distanz). Der RUNDBLICK (gate:ankunft L2a): gleich nach der Kontrolle
 // dreht die Kamera in RUNDBLICK_BILDER Takten einmal ganz herum, und kein Takt zeigt ein Loch in seinem Blick.
 AnazhRealm.ERSTER_BLICK = Object.freeze({ randGrad: 15, nahM: 6, dingM: 12, ausserD2: 1e12 });
 AnazhRealm.RUNDBLICK_BILDER = 120;
-// Der Takt der Stufen-Wahl in der Ankunft (`_tickArchitectureLOD`, `_tickScatterLod`): Wechsel der Bauten, Wechsel und
-// Scan der Streu je Bild — die Wahl hält mit der gleitenden Maske Schritt (sonst 5 · 4 · 160).
+// Der Takt der Stufen-Wahl unter dem Ladeschirm (`_tickArchitectureLOD`, `_tickScatterLod`, `_ladeTakt`): Wechsel der Bauten,
+// Wechsel und Scan der Streu je Bild — das erste Bild trägt jede Ziel-Stufe so schnell, wie sie steht (sonst 5 · 4 · 160).
 AnazhRealm.ANKUNFT_TAKT = Object.freeze({ bau: 32, streu: 16, streuScan: 640 });
 // DIE HORIZONT-KARTE (D3, `_horizontKarte`): der Schatten JENSEITS der Kaskaden. Das Licht sieht die drei Schalen des Fern-Rings
 // (dieselben Geometrien, ein eigener Stoff) orthografisch auf `texel`² Texel über ±`randM` um den Anker; je Texel bleibt die

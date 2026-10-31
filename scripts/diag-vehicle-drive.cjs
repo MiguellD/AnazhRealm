@@ -215,6 +215,7 @@ hauptLauf(async () => {
     const out = await page.evaluate(async (expected) => {
         const res = { book: {}, prof: {}, emerg: {} };
         await window.__weltDa();
+        const st = r.state;
         const f = r._ensureAssetFoundry();
         // Buch + Auto-Blueprint abwarten (das fahrprofil reist im selben get-recipes-Reply).
         await window.__weltDa(() => f &&
@@ -223,8 +224,8 @@ hauptLauf(async () => {
                 f.recipes.gt &&
                 f.recipes.gt.fx &&
                 f.recipes.gt.fx.fahrprofil &&
-                r.state.blueprints &&
-                r.state.blueprints.fahrzeug_gt);
+                st.blueprints &&
+                st.blueprints.fahrzeug_gt);
         // ===== B-a: das LIVE-Buch je Fahrzeug-Preset =====
         try {
             for (const id in f.recipes) {
@@ -244,12 +245,12 @@ hauptLauf(async () => {
             // AUSLÖSCHUNGS-WELLE: der Alt-Blueprint fahrzeug_wagen ist gefallen — die
             // EMERGENZ wird an einem Test-Blueprint aus der Substanz-Tabelle bewiesen
             // (parts+connections JSON-geklont, registriert, danach aufgeraeumt).
-            const KS = r.constructor.KIND_SUBSTANCE || {};
+            const KS = AnazhRealm.KIND_SUBSTANCE || {};
             const sub = KS.fahrzeug_wagen;
-            res.prof.wagenAbsent = !(r.state.blueprints && r.state.blueprints.fahrzeug_wagen);
+            res.prof.wagenAbsent = !(st.blueprints && st.blueprints.fahrzeug_wagen);
             res.prof.substanzParts = sub && Array.isArray(sub.parts) ? sub.parts.length : 0;
-            delete r.state.blueprints._drive_probe_wagen;
-            r.state.blueprints._drive_probe_wagen = {
+            delete st.blueprints._drive_probe_wagen;
+            st.blueprints._drive_probe_wagen = {
                 name: "_drive_probe_wagen",
                 parts: JSON.parse(JSON.stringify(sub.parts)),
                 connections: JSON.parse(JSON.stringify(sub.connections || [])),
@@ -263,7 +264,7 @@ hauptLauf(async () => {
             res.prof.wagenPreset = r._foundryPresetFor("fahrzeug_wagen");
             res.prof.wagenHasRecipe = !!(f.recipes && res.prof.wagenPreset && f.recipes[res.prof.wagenPreset]);
             // Die EMERGENTE Formel NACHGERECHNET (byte-gleich zur _vehicleProfile-Emergenz):
-            const bp = r.state.blueprints._drive_probe_wagen;
+            const bp = st.blueprints._drive_probe_wagen;
             const roles =
                 bp && Array.isArray(bp.parts) && bp.parts.length >= 2
                     ? r.computeMotionRoles(bp.parts, bp.connections)
@@ -282,13 +283,13 @@ hauptLauf(async () => {
                 kBrake: rad > 0 ? Math.max(1.5, Math.min(6, 3.5 / mass)) : Math.max(4, Math.min(10, 8 / mass)),
             };
             res.emerg.radCount = rad;
-            delete r.state.blueprints._drive_probe_wagen; // Aufraeumen (die Probe hinterlaesst nichts)
+            delete st.blueprints._drive_probe_wagen; // Aufraeumen (die Probe hinterlaesst nichts)
         } catch (e) {
             res.profErr = (e && e.message) || String(e);
         }
         // ===== B-d: DIE FAHR-PROBE — nach N Fahr-Ticks bewegt sich der EINTRAG =====
         try {
-            const pm = r.state.playerMesh.position;
+            const pm = st.playerMesh.position;
             const spawnAt = { x: pm.x + 5, y: pm.y, z: pm.z };
             const entry = r.spawnArchitecture("fahrzeug_gt", spawnAt, { silent: true, precise: true });
             res.drive = { spawned: !!entry };
@@ -316,7 +317,7 @@ hauptLauf(async () => {
                 r._archInstanceUpdate(entry);
                 const m0 = { x: entry.position.x, z: entry.position.z };
                 const mres = r.mountArchitecture(entry);
-                res.drive.mounted = !!(mres && mres.ok) && r.state.player.mountedArch === entry.id;
+                res.drive.mounted = !!(mres && mres.ok) && st.player.mountedArch === entry.id;
                 // DONOR-ABSCHIED — der lebende KONSUM/ABSENZ-Beweis am
                 // frisch gespawnten Eintrag (Gier 0 — die Welt-AABB-Spanne ist die
                 // Laengs-Achse): Sitz == Kern-Formel UND != Donor-Anker; Blocker-
@@ -324,13 +325,13 @@ hauptLauf(async () => {
                 try {
                     const fzg = r._fahrzeugGesetzFor(entry);
                     const drv = fzg && fzg.drive;
-                    const hip = r.constructor.SITZ_HIP_OFFSET;
+                    const hip = AnazhRealm.SITZ_HIP_OFFSET;
                     const sc = Number.isFinite(entry.scale) ? entry.scale : 1;
                     const kernSitz =
                         drv && drv.sitz && Number.isFinite(drv.sitz.y)
                             ? Math.max(0.45, drv.sitz.y * sc + hip)
                             : null;
-                    const donorSp = r._attachPointFor(r.state.blueprints.fahrzeug_gt, "sitz").point;
+                    const donorSp = r._attachPointFor(st.blueprints.fahrzeug_gt, "sitz").point;
                     const donorSitz = Number.isFinite(donorSp.y) ? Math.max(0.45, donorSp.y * sc + hip) : null;
                     res.drive.sitzKern =
                         kernSitz !== null &&
@@ -358,7 +359,7 @@ hauptLauf(async () => {
                 }
                 // N Fahr-Ticks: der REITER ist die horizontale Autoritaet — pm faehrt,
                 // playerVel traegt die Fahrt-Richtung (Gier-/Phasen-Quelle des Chokepoints).
-                if (r.state.playerVel) r.state.playerVel.setValue(2.4, 0, 0);
+                if (st.playerVel) st.playerVel.setValue(2.4, 0, 0);
                 for (let i = 0; i < 120; i++) {
                     pm.x += 0.12;
                     r._tickMountedMovement(0.05);
@@ -366,7 +367,7 @@ hauptLauf(async () => {
                 res.drive.dist = Math.hypot(entry.position.x - m0.x, entry.position.z - m0.z);
                 // Der Sitz misst von der BASIS (position.y − 0.5 — die Platzierungs-Konvention der Instanz-Matrix).
                 res.drive.seated =
-                    r.state.player.mountedArch === entry.id &&
+                    st.player.mountedArch === entry.id &&
                     Number.isFinite(entry._sitzHeight) &&
                     Math.abs(pm.y - (entry.position.y - 0.5 + entry._sitzHeight)) < 0.06;
                 // Blocker folgen (max. Zentrums-Abstand aller Boxen zur neuen Position) +
@@ -391,9 +392,9 @@ hauptLauf(async () => {
                 entry.blockerAABBs = null;
                 const ohne = kapsel();
                 entry.blockerAABBs = bx;
-                r.state.player.mountedArch = null;
+                st.player.mountedArch = null;
                 const fremd = kapsel();
-                r.state.player.mountedArch = entry.id;
+                st.player.mountedArch = entry.id;
                 res.drive.riderSkip = mit === ohne && fremd !== mit;
                 // Persistenz: der Snapshot traegt die GEFAHRENE Position (wie jede Architektur-Bewegung).
                 const snap = r.buildStateSnapshot();
@@ -405,8 +406,8 @@ hauptLauf(async () => {
                 // Aufraeumen (die Probe hinterlaesst nichts).
                 r.dismountArchitecture();
                 r.removeArchitecture(entry);
-                if (r.state.playerVel) r.state.playerVel.setValue(0, 0, 0);
-                r.state._fieldVy = 0;
+                if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+                st._fieldVy = 0;
             }
         } catch (e) {
             res.driveErr = (e && e.message) || String(e);
@@ -419,8 +420,8 @@ hauptLauf(async () => {
         //   kontakt — die vier Aufstandspunkte (fAx/rAx × ±Spur/2, y = 0) gegen den Boden (m, |max| über alle Ticks)
         //   lenk   — Spitze der Quer-Kinematik v·ω (in g) und der Tempo-Rest nach 2 s Einschlag (Anteil)
         try {
-            const pm = r.state.playerMesh.position;
-            const keys = r.state.keys;
+            const pm = st.playerMesh.position;
+            const keys = st.keys;
             // Die Strecke (ein Fels im Weg wäre kein Boden-Befund, und der GT
             // schwimmt: über Wasser trägt die Lauf-Fläche): je Kandidat um die Mess-Wiese Proben alle 2 m auf 72 m in
             // Fahrt-Richtung (+x: Template-Gier 0 = Bug +x) und ±3 m daneben — trocken; unter den trockenen die mit
@@ -457,7 +458,7 @@ hauptLauf(async () => {
                     // der ECHTE Sim-Schritt (Kapsel + Bewegung + Ritt-Sitz), dann der Frame-Tick (Sicht)
                     // — vorher integrierte die Probe pm += v·dt an Akkumulator, Kollision und Sitz vorbei.
                     r._stepFixedSim(t, dt);
-                    const v = r.state.playerVel;
+                    const v = st.playerVel;
                     r._tickMountedMovement(dt);
                     r._archEntryWorldMatrix(e2, M);
                     const sp = Math.hypot(v.x(), v.z());
@@ -519,8 +520,8 @@ hauptLauf(async () => {
                 res.gefuehl.vStart = vStart;
                 r.dismountArchitecture();
                 r.removeArchitecture(e2);
-                if (r.state.playerVel) r.state.playerVel.setValue(0, 0, 0);
-                r.state._fieldVy = 0;
+                if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+                st._fieldVy = 0;
             }
         } catch (e) {
             res.gefuehlErr = (e && e.message) || String(e);
