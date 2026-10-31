@@ -322,10 +322,11 @@ jobs:
         # die Klasse der Gruppe reist an jeden Schritt: die Weiche (scripts/lib/welt-boot.cjs) urteilt mit ihr
         env:
             CI_KLASSE: ${{ matrix.klasse }}
-        # 20 je Gruppe, und (T) FRIST hält ihn über 1,2 × dem p90-Plan jeder Gruppe: die echten Renderer laufen auf SwiftShader je
-        # Läufer bis 2,8× langsamer (Kamera-Leib-Linse am selben Kopf 319 s und 841 s); neben 287 s anderer Schritte brach G18 am
-        # Deckel (7 Läufe zu 20,3 min, 25.10.), allein trägt die Linse höchstens 15,2 min.
-        timeout-minutes: 20
+        # 25 je Gruppe: (T) FRIST hält ihn über 1,2 × dem p90-Plan jeder Gruppe, und der Plan darf bis zum Deckel der Klasse wachsen
+        # (voll cpu 19,8 min → 1,2 × 19,8 = 23,8). Mit 20 riss die Statik am 31.10. (z108), sobald die Waage die cpu-Gruppen auf 19,3 min
+        # füllte — jeder Zug fiel, auch main selbst. Die echten Renderer laufen auf SwiftShader je Läufer bis 2,8× langsamer (Kamera-Leib-Linse
+        # am selben Kopf 319 s und 841 s); G18 brach am 25.10. am alten Deckel (7 Läufe zu 20,3 min).
+        timeout-minutes: 25
         steps:
             - uses: actions/checkout@v4
 
