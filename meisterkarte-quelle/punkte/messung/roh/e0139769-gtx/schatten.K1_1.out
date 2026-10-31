@@ -69,6 +69,11 @@ $ C:\Program Files\nodejs\node.exe -e (async function folge(plan) {
     process.exit(code);
 })({"name":"schatten.K1#1","schritte":[{"name":"fenster","args":["fenster","1920","1080"],"muss":true},{"name":"buehne","args":["umstellen","--ort","buehne","--sicht","ego"],"muss":true},{"name":"kontakt","args":["licht","--kontakt"],"ms":900000}]}) C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\e0139769-gtx\schatten.K1_1.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
   fenster · Exit 0
+  buehne · Exit 0
+  kontakt · Exit 0
+[linse-gpu] nvidia/pascal
+FOLGE schatten.K1#1: 3 Schritte
 
 --- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
 [linse-gpu] nvidia/pascal

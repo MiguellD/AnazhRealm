@@ -1,0 +1,22 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u; K=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte'); A=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\e0139769-gtx\studios.K4_1.json'); export WERKBANK_PORT=$((7804+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" 7804
+[linse-gpu] nvidia/pascal
+K4 garage: Differenz 0.8926 ·  (17.3 s)
+K4 portale: Differenz — · ROT: bild: {"ms":6896,"fehler":"ABNAHME ROT [Sicht verdeckt 55.5 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_kiefer 55.5 % · Vordergrund 71.5 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_kiefer 71.5 % · Ziel Blickziel verdeckt von Laub baum_kiefer in 1.73 m] · beweis · (10.2 s)
+K4 schmiede: Differenz — · ROT: bild: {"ms":3642,"fehler":"ABNAHME ROT [Ziel Blickziel nicht im Bild (ndc [0,0])] · beweis · Sicht 0.0 % · Ziel Blickziel NICHT im Bild frei 1.14 m · Luma 42.1 σ 27.4 schwarz 0.3 % weiß 0.0 % · Stand 18.546.138 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal — die Aufnahme speichert nichts"," (6.4 s)
+K4 fachwerk: Differenz — · ROT: bild: {"ms":8027,"fehler":"ABNAHME ROT [Vordergrund 87.7 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_tanne 84.4 %, Laub baum_kiefer 3.3 % · Ziel Blickziel verdeckt von Laub baum_tanne in 4.16 m] · beweis · Sicht 0.3 % (Laub baum_tanne 0.3 %) · Ziel Blickziel im Bild VERDECKT 29.54 m · Luma 5 (13.4 s)
+K4 terrain: Differenz — · ROT: die Bühne nennt kein Werk (der Knopf postet keine Übergabe) (4.3 s)
+K4 koerperstudio: Differenz — · ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau (10.6 s)
+K4 tetrapoda: Differenz — · ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau (4.3 s)
+K4 garage: ROT · Differenz 0.8926 · Albedo null · Differenz 0.8926 > 0.021 Albedo ohne Zeile (17.3 s)
+K4 portale: ROT · Differenz — · Albedo — · ROT: bild: {"ms":6896,"fehler":"ABNAHME ROT [Sicht verdeckt 55.5 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_kiefer 55.5 % · Vordergrund 71.5 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_kiefer 71.5 % · Ziel Blickziel verdeckt von Laub baum_kiefer in 1.73 m] · beweis · (10.2 s)
+K4 schmiede: ROT · Differenz — · Albedo — · ROT: bild: {"ms":3642,"fehler":"ABNAHME ROT [Ziel Blickziel nicht im Bild (ndc [0,0])] · beweis · Sicht 0.0 % · Ziel Blickziel NICHT im Bild frei 1.14 m · Luma 42.1 σ 27.4 schwarz 0.3 % weiß 0.0 % · Stand 18.546.138 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal — die Aufnahme speichert nichts"," (6.4 s)
+K4 fachwerk: ROT · Differenz — · Albedo — · ROT: bild: {"ms":8027,"fehler":"ABNAHME ROT [Vordergrund 87.7 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_tanne 84.4 %, Laub baum_kiefer 3.3 % · Ziel Blickziel verdeckt von Laub baum_tanne in 4.16 m] · beweis · Sicht 0.3 % (Laub baum_tanne 0.3 %) · Ziel Blickziel im Bild VERDECKT 29.54 m · Luma 5 (13.4 s)
+K4 terrain: ROT · Differenz — · Albedo — · ROT: die Bühne nennt kein Werk (der Knopf postet keine Übergabe) (4.3 s)
+K4 koerperstudio: ROT · Differenz — · Albedo — · ungemessen: das Werk ist eine Prägung (der Leib des Spielers), kein gesetzter Bau (10.6 s)
+K4 tetrapoda: ROT · Differenz — · Albedo — · ungemessen: das Werk ist ein Wesen (eine lebende Kreatur), kein gesetzter Bau (4.3 s)
+K4 Gerät der Bühne: WebGPU pascal
+K4 0/7 Mesh-Studios mit Bild-Differenz ≤ 0.021 und Albedo im Rand 0.1 (74.6 s)
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
