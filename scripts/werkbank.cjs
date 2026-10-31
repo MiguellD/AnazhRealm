@@ -1260,17 +1260,17 @@ async function starte() {
                     if (s.mesh?.userData?.bauSatz && !s.spec.nurWurf)
                         bauSaetze.set(s.mesh, { art, s });
                 // DIE KARTE IN ARTEN (w4-laub-karte): der EINE Karten-Atlas zeichnet jede Art aus EINER Gruppe
-                // (`IMPOSTOR_ATLAS_GRUPPE`) — die Teilung führt jede Art beim Namen ihrer Zelle (`fimp:<art>:L2`, die Schicht der
-                // Instanz in aKarte.x), nie die Gruppe: das Urteil der schlechtesten Teil-Klasse sieht die Art, ein Mittel über
+                // (`IMPOSTOR_ATLAS_GRUPPE`) — die Teilung führt jede Art beim Namen ihrer Zelle (`_instanzKlasse`: `fimp:<art>:L2`,
+                // die Schicht der Instanz in aKarte.x), nie die Gruppe: das Urteil der schlechtesten Teil-Klasse sieht die Art, ein Mittel über
                 // den Atlas verbarg sie. Eine Art verbirgt sich, indem ihre Instanzen für den Schuss unter die Welt ziehen (die
                 // Matrix, gemerkt an der Slot-Marke `slotRef` — die Wahl je Pass ordnet die Slots um), und kehrt danach an ihre
                 // Marke zurück.
                 const kg = r.state.archInstanceGroups?.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE),
                     arten = new Map();
                 if (kg?.mesh?.geometry.attributes.aKarte) {
-                    const art = new Map([...r._kartenAtlas.zellen.values()].map((z) => [z.idx, z.preset]));
+                    const art = new Map([...r._kartenAtlas.zellen.values()].map((z) => [z.idx, r.constructor._instanzKlasse(z.key)]));
                     for (let i = 0; i < kg.liveCount; i++) {
-                        const kl = `fimp:${art.get(Math.round(kg.mesh.geometry.attributes.aKarte.array[i * 4]))}:L2`;
+                        const kl = art.get(Math.round(kg.mesh.geometry.attributes.aKarte.array[i * 4]));
                         arten.set(kl, [...(arten.get(kl) || []), kg.slotRef[i]]);
                     }
                 }
