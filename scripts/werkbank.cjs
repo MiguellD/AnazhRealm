@@ -53,7 +53,7 @@
 //   node scripts/werkbank.cjs gpu-bank [n] [--runden r]      DIE GPU-BANK: GPU-Zeit je Frame, n Frames ohne rAF
 //   node scripts/werkbank.cjs zerlegen [--runden r] [--n frames] [--nur a,b] [--json datei] [--bilder [ordner]]
 //                                                           [--selbsttest [--last iter]] DIE GPU-ZERLEGUNG je Verbraucher, ABBA (scripts/lib/zerlege-linse.cjs)
-//   node scripts/werkbank.cjs ziele [--n frames] [--json datei] [--selbsttest]
+//   node scripts/werkbank.cjs ziele [--n frames] [--json datei]
 //                                                           DER ZIEL-ZENSUS: jede GPU-Textur mit Erzeuger, Schreibern, Lesern (scripts/lib/ziel-zensus.cjs)
 //   node scripts/werkbank.cjs shader [--nur <regex>] [--top n] [--ordner d]
 //                                                           [--stoff boden [--gegen alt.wgsl] [--datei neu.wgsl] [--rauschprobe]] | shader --selbsttest
@@ -2680,75 +2680,16 @@ async function starte() {
                         datei,
                     });
                 }
-                // DER ZIEL-ZENSUS (scripts/lib/ziel-zensus.cjs): n Frames der Bank-Runde, jede Textur mit Erzeuger, Schreibern
-                // und Lesern je Pass, der Inhalt der Farb-Texturen zurück → das Urteil über die Täter-Klassen. `selbsttest`
-                // schmuggelt je Klasse einen Täter ein (jeder muss beim Namen rot fallen) und baut ihn danach restlos ab (kein
-                // Name des Selbsttests bleibt im Zensus).
+                // DER ZIEL-ZENSUS (scripts/lib/ziel-zensus.cjs `zensusDer`, EIN Leser mit gate:ziel-zensus): n Frames der Bank-Runde,
+                // jede Textur mit Erzeuger, Schreibern und Lesern je Pass, der Inhalt der Farb-Texturen zurück → das Urteil über die
+                // Täter-Klassen. Den Schmuggel (je Klasse ein Täter, beim Namen rot, danach restlos fort) trägt die EINE Wand
+                // gate:ziel-zensus — bis 31.10. stand hier sein Zwilling mit 5 der 6 Täter, den kein Befehl rief.
                 if (req.url === "/ziele") {
-                    const n = Number(b.n) || 12;
-                    const zensus = async () => {
-                        const z = await seite("__zielZensus", { n });
-                        if (!z || z.fehler) return { z, u: ZZ.zielUrteil(z, []) };
-                        const ids = z.ziele
-                            .filter(
-                                (x) =>
-                                    !x.leinwand &&
-                                    !x.tiefe &&
-                                    x.kopierbar &&
-                                    /^(r|rg|rgba|bgra)(8|16|32)/.test(x.format)
-                            )
-                            .map((x) => x.id);
-                        const lesen = await seite("__zielLesen", { ids });
-                        return { z, lesen, u: ZZ.zielUrteil(z, lesen) };
-                    };
-                    let selbst = null;
-                    if (b.selbsttest) {
-                        const s = await seite("__zielSchmuggel", true);
-                        if (!s || s.fehler)
-                            return send({ fehler: "Schmuggel: " + ((s && s.fehler) || "keine Antwort") });
-                        let mit;
-                        try {
-                            mit = await zensus();
-                        } finally {
-                            await seite("__zielSchmuggel", false);
-                        }
-                        const soll = [
-                            /OHNE LESER: zensus-selbsttest:ohne-leser/,
-                            /VOLLE AUFLÖSUNG: zensus-selbsttest:bloom/,
-                            /TEILBAR: zensus-selbsttest:paar-a und zensus-selbsttest:paar-b/,
-                            /DOPPELTE TIEFE: zensus-selbsttest:tiefe-kopie .* ist eine Kopie von depth,/,
-                            /FORMAT: zensus-selbsttest:f32 /,
-                        ];
-                        selbst = soll.map((m) => ({ muss: m.source, ok: mit.u.rot.some((x) => m.test(x)) }));
-                    }
-                    const { z, lesen, u } = await zensus();
+                    const { z, lesen, u } = await ZZ.zensusDer(page, Number(b.n) || 12);
                     if (!z || z.fehler) return send({ fehler: (z && z.fehler) || "keine Antwort", rot: u.rot });
-                    const rest = selbst
-                        ? u.zeilen.filter((x) => /zensus-selbsttest/.test(x.name)).map((x) => x.name)
-                        : [];
-                    const selbstOk = selbst ? selbst.every((x) => x.ok) && !rest.length : null;
                     const datei = zeitAblage(b.json, "ziele", "json");
-                    jsonAb(datei, { zensus: z, lesen, urteil: u, selbst, rest });
-                    return send({
-                        ok: selbst ? selbstOk : u.rot.length === 0,
-                        tabelle: ZZ.zielTabelle(u, z),
-                        rot: u.rot,
-                        selbst: selbst
-                            ? (selbstOk ? "SELBSTTEST GRÜN" : "SELBSTTEST ROT") +
-                              ` — ${selbst.filter((x) => x.ok).length} von ${selbst.length} Tätern beim Namen` +
-                              (selbst.some((x) => !x.ok)
-                                  ? "; blind für: " +
-                                    selbst
-                                        .filter((x) => !x.ok)
-                                        .map((x) => x.muss)
-                                        .join(" · ")
-                                  : "") +
-                              (rest.length
-                                  ? "; nach dem Abbau noch im Zensus: " + rest.join(", ")
-                                  : "; danach restlos fort")
-                            : null,
-                        datei,
-                    });
+                    jsonAb(datei, { zensus: z, lesen, urteil: u });
+                    return send({ ok: u.rot.length === 0, tabelle: ZZ.zielTabelle(u, z), rot: u.rot, datei });
                 }
                 // DIE GPU-ZERLEGUNG (scripts/lib/zerlege-linse.cjs): Inventur (ein Zähl-Frame + Pass-Baum + Frame-Anatomie) →
                 // Schalter aus dem echten Weg → ABBA je Schalter mit der Bank-Runde → Beleg je Schalter → Tabelle.
@@ -3738,8 +3679,8 @@ hauptLauf(async () => {
         process.exit(gut ? 0 : 1);
     }
     else if (cmd === "ziele") {
-        o = await rufe("/ziele", { n: opt("--n"), json: opt("--json"), selbsttest: SELBST });
-        if (o && o.tabelle) endeMit(o.tabelle + (o.selbst ? "\n\n" + o.selbst : "") + "\n" + o.datei, o.ok);
+        o = await rufe("/ziele", { n: opt("--n"), json: opt("--json") });
+        if (o && o.tabelle) endeMit(o.tabelle + "\n" + o.datei, o.ok);
         endeMit(o);
     } else if (cmd === "zerlegen") {
         const bi = argv.indexOf("--bilder");
