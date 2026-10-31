@@ -1,0 +1,135 @@
+$ C:\Program Files\nodejs\node.exe -e const speicherTaktSeite = async function speicherTaktSeite(n, edits, intervall) {
+    const r = await window.__weltDa((x) => x.state.worldMeta && x.state.worldMeta.worldId && x.state.playerMesh);
+    const P = { tiefe: 0, bild: 0 };
+    const roh = new Map();
+    const huelle = (o, name, zaehlt) => {
+        const f = o[name];
+        roh.set([o, name], Object.prototype.hasOwnProperty.call(o, name) ? f : null);
+        o[name] = function (...a) {
+            if (zaehlt && !zaehlt(this)) return f.apply(this, a);
+            const t0 = performance.now();
+            P.tiefe++;
+            try {
+                return f.apply(this, a);
+            } finally {
+                const d = performance.now() - t0;
+                if (!--P.tiefe && !P.task) queueMicrotask(() => (P.B.push(P.task[0]), (P.task = null)));
+                if (!P.tiefe) (P.task = P.task || [0]), (P.task[0] += d), (P.bild += d);
+            }
+        };
+    };
+    const takt = r.state.saveInterval;
+    r.state.saveInterval = intervall;
+    try {
+        for (const x of ["saveState", "_standNachholen", "_standFegen"]) huelle(r, x);
+        huelle(r._speicherZustand(), "schicke", (s) => s.unterwegs && ++P.n);
+        const phase = async () => {
+            Object.assign(P, { B: [], n: 0, wegen: 0 });
+            const bild = async () => {
+                const vor = r._weltStand ? r._weltStand.takte : -1;
+                const t = await new Promise(requestAnimationFrame);
+                if ((r._weltStand ? r._weltStand.takte : -1) === vor) r._gameLoopTick(t);
+                return t;
+            };
+            P.ueber = 0;
+            for (let i = 0, t = await bild(); P.n < n && i < n * 1200; i++, P.bild = 0) {
+                const dt = -t + (t = await bild());
+                if (dt > 17.2) P.ueber++;
+                if (P.bild && dt > 17.2 && dt - P.bild <= 16.7) P.wegen++;
+            }
+            const B = P.B.sort((x, y) => x - y), q = (p) => +(B[Math.floor(p * (B.length - 1))] || 0).toFixed(3);
+            return { staende: P.n, bilder: B.length, p50: q(0.5), p95: q(0.95), max: q(1), ueber: P.ueber, wegen: P.wegen };
+        };
+        const [frisch, p] = [await phase(), r.state.playerMesh.position.clone()];
+        const t0 = performance.now();
+        for (let i = 0; i < edits; i++) {
+            const [x, z] = [p.x + (i % 100) * 2 - 100, p.z + Math.floor(i / 100) * 2 - 100];
+            r.carveVoxel(x, r._terrainMacroSurfaceY(x, z) - 1, z, 1.5);
+            if (i % 100 === 99) await window.__seitenTakt();
+        }
+        const grubenS = +((performance.now() - t0) / 1000).toFixed(1);
+        return { frisch, edits: { ...(await phase()), n: r.state.worldMeta.voxelEdits.length }, grubenS, isoliert: self.crossOriginIsolated };
+    } finally {
+        r.state.saveInterval = takt;
+        for (const [[o, name], f] of roh) if (f) o[name] = f;
+            else delete o[name];
+    }
+};
+(async function sitzungLauf(lauf) {
+    const fs = require("fs");
+    const path = require("path");
+    const http = require("http");
+    const [aus, koord] = process.argv.slice(1);
+    const port = Number(process.env.WERKBANK_PORT);
+    const ruf = (weg, nutz, ms = 60000) =>
+        new Promise((ja, nein) => {
+            const q = http.request({ host: "127.0.0.1", port, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
+                let d = "";
+                a.on("data", (c) => (d += c));
+                a.on("end", () => {
+                    try {
+                        ja(JSON.parse(d));
+                    } catch (_e) {
+                        ja({ fehler: weg + " ohne JSON: " + d.slice(0, 200) });
+                    }
+                });
+            });
+            q.setTimeout(ms, () => q.destroy(new Error(weg + " ohne Antwort binnen " + Math.round(ms / 1000) + " s")));
+            q.on("error", nein);
+            q.end(JSON.stringify(nutz || {}));
+        });
+    const seite = async (fn, args = [], ms = 60000) => {
+        const a = await ruf("/eval", { code: "return await (" + fn + ")(..." + JSON.stringify(args) + ");" }, ms);
+        if (!a || a.fehler)
+            throw new Error(String(fn).slice(0, 48).replace(/\s+/g, " ") + " … — " + ((a && a.fehler) || "keine Antwort") + (a && a.stapel ? " @ " + a.stapel.join(" ← ") : ""));
+        return a.ergebnis;
+    };
+    const reload = async () => {
+        const a = await ruf("/reload", {}, 120000);
+        if (!a || a.neu !== true) throw new Error("/reload: " + JSON.stringify(a).slice(0, 200));
+        return a.ms;
+    };
+    const skript = (datei, name) => {
+        const t = fs.readFileSync(datei, "utf8").replace(/\r\n/g, "\n");
+        const i = t.search(new RegExp("^(async )?function " + name + "\\(", "m"));
+        const e = i < 0 ? -1 : t.indexOf("\n}\n", i);
+        if (e < 0) throw new Error(datei + " trägt keine Funktion " + name + " (die Linse am SHA)");
+        return t.slice(i, e + 2);
+    };
+    const warte = (ms) => new Promise((f) => setTimeout(f, ms));
+    const t0 = Date.now();
+    let j = {}, code = 0;
+    try {
+        const z = (/\[linse-gpu\][^\r\n]*/.exec(fs.readFileSync(String(process.env.PUNKTE_SITZUNG_LOG), "utf8")) || [null])[0];
+        if (z) console.log(z);
+        j = (await lauf({ seite, reload, ruf, skript, aus, koord, warte, path, linse: z })) || {};
+    } catch (e) {
+        j = { fehler: String((e && e.message) || e) };
+        console.log("PROBE ROT: " + j.fehler);
+        code = 1;
+    }
+    j.sek = +((Date.now() - t0) / 1000).toFixed(1);
+    fs.writeFileSync(aus, JSON.stringify(j, null, 1));
+    console.log("PROBE " + j.sek + " s");
+    process.exit(code);
+})(async function speicherTaktLauf(h) {
+    const frisch = await h.seite(() => (window.anazhRealm.state.worldMeta.voxelEdits || []).length === 0);
+    if (!frisch) {
+        const g = require("child_process").spawnSync(process.execPath, [process.env.PUNKTE_MASCHINE, "grundstellung"], { encoding: "utf8", timeout: 120000 });
+        if (g.status !== 0) throw new Error("grundstellung: Exit " + g.status + " " + String(g.stdout + g.stderr).slice(-300));
+    }
+    const j = await h.seite(speicherTaktSeite, [20, 10000, 0.5], 150000);
+    for (const [k, v] of Object.entries({ frisch: j.frisch, edits: j.edits }))
+        console.log("(Z) " + k + ": Speicher-Bild " + JSON.stringify(v) + " — Soll p95 ≤ 0,1 ms (Staffel 1: ≤ 0,3), kein Bild > 16,7 ms durch Speichern");
+    console.log("Gruben " + j.grubenS + " s · Uhr der Seite " + (j.isoliert ? "isoliert (5 µs)" : "NICHT isoliert (100 µs)") + (frisch ? "" : " · Grundstellung vorher"));
+    return { ...j, grundstellung: !frisch };
+}); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\3ed95dcf-gtx\speicher.K2_1.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
+[linse-gpu] nvidia/pascal
+(Z) frisch: Speicher-Bild {"staende":20,"bilder":245,"p50":0.1,"p95":0.2,"max":0.3,"ueber":75,"wegen":0} — Soll p95 ≤ 0,1 ms (Staffel 1: ≤ 0,3), kein Bild > 16,7 ms durch Speichern
+(Z) edits: Speicher-Bild {"staende":20,"bilder":540,"p50":0,"p95":0.1,"max":0.4,"ueber":23,"wegen":0,"n":10000} — Soll p95 ≤ 0,1 ms (Staffel 1: ≤ 0,3), kein Bild > 16,7 ms durch Speichern
+Gruben 20.8 s · Uhr der Seite NICHT isoliert (100 µs)
+PROBE 50.2 s
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal

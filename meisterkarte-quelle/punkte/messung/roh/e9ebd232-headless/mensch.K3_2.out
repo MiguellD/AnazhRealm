@@ -1,0 +1,68 @@
+$ /opt/hostedtoolcache/node/22.23.4/x64/bin/node scripts/diag-kreatur-takt.cjs --proben bewohner
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7704/index.html · der Puls steht seit 21.0 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 34.3 s
+[stall-akte] Puls 20×, zuletzt vor 21.0 s — complete · renderer bereit · weltbild da · frames 848 · welt 848 Takte · Ruhe 0 · zuletzt Foundry offen 5 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 2904 101 % · GPU 2801 0 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 41:00 gpu 1 [VizCompositorTh 1 %]/r 266 · 41:02 gpu 0/r 331 · 41:04 gpu 0 [chrome 1 %]/r 160 · 41:06 gpu 1 [VizCompositorTh 2 %]/r 314 · 41:08 gpu 1 [VizCompositorTh 1 %]/r 205 · 41:10 gpu 2 [VizCompositorTh 2 %]/r 174 · 41:12 gpu 0/r 161 · 41:14 gpu 0/r 140 · 41:16 gpu 0/r 132 · 41:18 gpu 0/r 118 · 41:20 gpu 1/r 102 · 41:22 gpu 0/r 110 · 41:24 gpu 0/r 109 · 41:26 gpu 0/r 106 · 41:28 gpu 0/r 100 · 41:30 gpu 0/r 107 · 41:32 gpu 0/r 108 · 41:34 gpu 0/r 107 · 41:36 gpu 0/r 107 · 41:38 gpu 0/r 101
+[stall-akte] Stapel gangSchritt :1411 < _gaitGesetz :429 < _gaitTick :517 < _tickBewohner :1115 < takt :2553 < (anonym) :2809
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [WARN] AUSGABE: rg11b10ufloat ist auf diesem Gerät nicht renderbar (Feature rg11b10ufloat-renderable fehlt) — das Szenen-Ziel bleibt rgba16float, +7,9 MB bei 1080p
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [INFO] Post-Processing-Pipeline gebaut (Bloom + Grading) — V17.0.
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [ERROR] STOFF: die Post-Kette (Render-Lauf: TRAA · Bloom · Grading) — der Schirm zeichnet direkt — Cannot read properties of undefined (reading 'enabled')
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [INFO] Grok: Hallo. Die Welt steht. Magst du dich umsehen?
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [WARN] FPS-Einbruch: 24 (zuvor ~44)
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [WARN] Der Rundblick steht nach 120 Takten ohne: 139 Bäume und Bauten wachsen · 354 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [INFO] FOUNDRY WARM: Settlement-Kanal bereit (6 Probe-Slots)
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [INFO] Siedlung „Steintal" gewachsen (Zelle start, 18 Slots).
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [INFO] KAMIN-RAUCH: 18 Quelle(n) live (chimney→rauchQuelle)
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [WARN] FPS-Einbruch: 21 (zuvor ~58)
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [WARN] FPS-Einbruch: 29 (zuvor ~54)
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [INFO] WERK IM WASSER: glutbrunnen bei -127/235 — sein Fundament stünde im Wasser, kein Bau.
+[stall-akte] Stderr [2763:2778:1030/214111.109269:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [2763:2778:1030/214111.197384:ERROR:google_apis/gcm/engine/mcs_client.cc:702]   Error code: 401  Error message: Authentication Failed: wrong_secret
+[stall-akte] Stderr [2763:2778:1030/214111.197402:ERROR:google_apis/gcm/engine/mcs_client.cc:704] Failed to log in to GCM, resetting connection.
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in gangSchritt :1411
+[stall-akte] Seite #2: der Puls kehrt zurück nach 25.2 s — complete · renderer bereit · weltbild da · frames 921 · welt 921 Takte · Ruhe 30 · zuletzt Foundry offen 1 · programme 0 · gl-sync 0
+[stall-akte] ═══ diag-kreatur-takt.cjs · Seite #2 http://127.0.0.1:7704/index.html · der Puls steht seit 20.0 s
+[stall-akte] offen evaluate((src, o) => { const fn = (0, eval)("(" + src + ")"); return fn(window.anazhRealm, window.T) seit 195.3 s
+[stall-akte] Puls 157×, zuletzt vor 20.0 s — complete · renderer bereit · weltbild da · frames 5079 · welt 5079 Takte · Ruhe 0 · zuletzt Fege-Takt archLod 2560/3118, streuLod 1600/2665 · programme 0 · gl-sync 0
+[stall-akte] CPU (2 s) renderer 2904 100 % · GPU 2801 1 %
+[stall-akte] Fäden des GPU-Prozesses (2 s) VizCompositorTh 1 %
+[stall-akte] Last je 2 s (GPU-Prozess/Renderer %, älteste zuerst) 43:20 gpu 0/r 114 · 43:22 gpu 0/r 110 · 43:24 gpu 0/r 108 · 43:26 gpu 0/r 115 · 43:28 gpu 0/r 112 · 43:30 gpu 2 [VizCompositorTh 2 %]/r 222 · 43:32 gpu 0/r 280 · 43:34 gpu 2 [VizCompositorTh 2 %]/r 248 · 43:36 gpu 2 [VizCompositorTh 2 %]/r 196 · 43:38 gpu 1 [VizCompositorTh 1 %]/r 168 · 43:40 gpu 0/r 143 · 43:42 gpu 1 [VizCompositorTh 1 %]/r 130 · 43:44 gpu 0/r 173 · 43:46 gpu 1/r 175 · 43:48 gpu 0/r 169 · 43:50 gpu 0/r 217 · 43:52 gpu 1/r 152 · 43:54 gpu 0/r 159 · 43:56 gpu 0/r 165 · 43:58 gpu 0/r 162 · 44:00 gpu 0/r 109 · 44:02 gpu 0/r 102 · 44:04 gpu 0 [Chrome_ChildIOT 1 %]/r 102 · 44:06 gpu 1/r 101 · 44:08 gpu 0 [Chrome_ChildIOT 1 %]/r 101 · 44:10 gpu 0/r 101 · 44:12 gpu 1 [VizCompositorTh 1 %]/r 102 · 44:14 gpu 1 [VizCompositorTh 1 %]/r 101 · 44:16 gpu 0 [Chrome_ChildIOT 1 %]/r 101 · 44:18 gpu 1/r 100
+[stall-akte] Stapel ab :2339 < messen :2507 < takt :2554 < stadtTag :2633
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [INFO] Siedlung „Alpstein" (markt, Seed 992387765): 17 Häuser platziert, 0 Slots übersprungen; Mitte 46 m Radius.
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [INFO] Bauten n=2241 haus=17 ziegel=0 nah=haus_holzhuette @788/39/740 d=329m
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [INFO] Siedlung „Steinheim" gewachsen (Zelle 2,0, 9 Slots).
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [ERROR] BEWOHNER: das Wege-Netz von „Steinheim" zerfällt in 3 Teile (kein freier Schritt bis 25 m)
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [INFO] Siedlung „Westerhausen" gewachsen (Zelle 3,1, 16 Slots).
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [ERROR] BEWOHNER: das Wege-Netz von „Westerhausen" zerfällt in 5 Teile (kein freier Schritt bis 25 m)
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 688.1/380.6 zu 875.0/427.9
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 685.3/404.5 zu 828.0/432.8
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 829.8/430.4 zu 685.3/404.5
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 852.7/423.4 zu 688.1/380.6
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 828.0/432.8 zu 685.3/404.5
+[stall-akte] Konsole log: [AnazhRealm V18.546.137] [ERROR] BEWOHNER: kein Weg im Dorf-Plan „Westerhausen" von 875.0/427.9 zu 688.1/380.6
+[stall-akte] Stderr [2763:2778:1030/214111.109269:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [2763:2778:1030/214111.197384:ERROR:google_apis/gcm/engine/mcs_client.cc:702]   Error code: 401  Error message: Authentication Failed: wrong_secret
+[stall-akte] Stderr [2763:2778:1030/214111.197402:ERROR:google_apis/gcm/engine/mcs_client.cc:704] Failed to log in to GCM, resetting connection.
+[stall-akte] Stderr [2763:2778:1030/214138.254632:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr [2763:2778:1030/214234.288213:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] Stderr Warning: vkCreateInstance: Found no drivers!
+[stall-akte] Stderr Warning: vkCreateInstance failed with VK_ERROR_INCOMPATIBLE_DRIVER
+[stall-akte] Stderr     at CheckVkSuccessImpl (../../third_party/dawn/src/dawn/native/vulkan/VulkanError.cpp:106)
+[stall-akte] Stderr Warning: Couldn't get proc eglChooseConfig
+[stall-akte] Stderr  - While trying to discover a BackendType::OpenGLES adapter.
+[stall-akte] Stderr     at LoadClientProcs (../../third_party/dawn/src/dawn/native/opengl/EGLFunctions.cpp:119)
+[stall-akte] Stderr Warning: vkCreateInstance: Found no drivers!
+[stall-akte] Stderr Warning: vkCreateInstance failed with VK_ERROR_INCOMPATIBLE_DRIVER
+[stall-akte] Stderr     at CheckVkSuccessImpl (../../third_party/dawn/src/dawn/native/vulkan/VulkanError.cpp:106)
+[stall-akte] Stderr [2763:2778:1030/214406.284299:ERROR:google_apis/gcm/engine/registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[stall-akte] URTEIL JS-SCHLEIFE — der Haupt-Thread rechnet in ab :2339
+[stall-akte] Seite #2: der Puls kehrt zurück nach 41.5 s — complete · renderer bereit · weltbild da · frames 5176 · welt 5176 Takte · Ruhe 0 · zuletzt Welt-Regung · programme 0 · gl-sync 0
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — headless, Null-Renderer =====
+
+  ✅ bewohner  {"alsLeib":4,"schmiede10":2,"schmiede2":0,"tagTakt":0,"haeuser":18,"sollSumme":81,"leiber":81,"quote":1,"leer":[],"leerN":0,"imBlick":{"ego":28,"third":33},"nahLeiber":4,"planGleich":true,"trefferMin":0.983,"unter":[],"unterN":0,"stationen":2,"satzGang":{"schlupf":0.028,"wegLeib":1999.9},"blick":{"n":155,"quote":0.961,"sektorMax":0.132},"ohnePlatz":0,"ohnePlatzWer":[],"huellen":18,"wege":{"wandN":0,"wand":[],"durch":274,"tuer":274,"falsch":[],"aufWeg":0.873,"sprungN":0,"wegeMin":5,"wegeMax":8,"streckeMin":262,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]},"wiederkehr":{"n":1296,"maxM":1.235,"ueberN":0,"ueber":[]},"stadt":{"haeuser":33,"wege":{"wandN":0,"wand":[],"durch":390,"tuer":390,"falsch":[],"aufWeg":0.966,"sprungN":0,"wegeMin":4,"wegeMax":8,"streckeMin":166,"ausserN":0,"ausser":[],"kurzN":0,"kurz":[],"steckenN":0,"stecken":[],"beruehrN":0,"beruehr":[]}}}
+
+  (231 s) — Sekunden je Probe: bewohner: 222
+
+✅ GRÜN — bewohner

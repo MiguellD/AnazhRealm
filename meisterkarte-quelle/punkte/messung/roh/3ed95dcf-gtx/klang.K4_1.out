@@ -1,0 +1,219 @@
+$ C:\Program Files\nodejs\node.exe -e const schrittSeite = async function schrittSeite(o) {
+    const r = window.anazhRealm, st = r.state, rend = st.renderer, A = window.BaseAudioContext.prototype, gn = A.createGain;
+    const warte = (ms) => new Promise((f) => setTimeout(f, ms));
+    const taste = (typ) => window.dispatchEvent(new KeyboardEvent(typ, { key: "w", code: "KeyW", bubbles: true }));
+    let abgriff = null, takt = null;
+    A.createGain = function () {
+        const g = gn.apply(this, arguments);
+        if (abgriff && String(new Error().stack).includes("_playSchrittOneShot"))
+            try {
+                g.connect(abgriff);
+            } catch (_e) {}
+        return g;
+    };
+    const sicht = st.cameraMode;
+    try {
+        if (st.symphony.enabled) r.disposeSymphony();
+        r.initSymphony();
+        const s = st.symphony;
+        if (s.ctx.state !== "running") await s.ctx.resume();
+        if (st.cameraMode !== "first") r.setCameraMode("first");
+        rend.setAnimationLoop((t) => r._gameLoopTick(t));
+        const mat = (x, z, karte) => (karte && r._bodenSichtAt(x, z) === null ? null : r._schrittMaterialAt(x, z, r._voxelSurfaceY(x, z)));
+        const strecke = (x, z, karte, schritt) => {
+            const m = mat(x, z, karte);
+            if (!m || m === "wasser") return null;
+            const n = 3 * (Math.floor(12 / schritt) + 1);
+            let fehl = 0;
+            for (let d = 0; d <= 12; d += schritt) for (const q of [-0.5, 0, 0.5]) if (mat(x - d, z + q, karte) !== m && ++fehl > 0.2 * n) return null;
+            return m;
+        };
+        const suche = (x0, z0, rad, schon) => {
+            const fund = {};
+            for (let rr = 0; rr <= rad && schon.length + Object.keys(fund).length < 3; rr += 3)
+                for (let i = 0, n = Math.max(1, Math.round(rr * 1.2)); i < n; i++) {
+                    const x = x0 + Math.cos((i / n) * 6.283) * rr, z = z0 + Math.sin((i / n) * 6.283) * rr;
+                    const m = strecke(x, z, true, 1);
+                    if (m && !fund[m] && !schon.includes(m) && schon.length + Object.keys(fund).length < 3) fund[m] = [Math.round(x * 10) / 10, Math.round(z * 10) / 10];
+                }
+            return fund;
+        };
+        const kandidaten = (x0, z0, schon) => {
+            const je = {}, aus = [];
+            for (let rr = 40; rr <= 2500; rr += 25)
+                for (let i = 0; i < 64; i++) {
+                    const x = x0 + Math.cos((i / 64) * 6.283) * rr, z = z0 + Math.sin((i / 64) * 6.283) * rr;
+                    const m = strecke(x, z, false, 3);
+                    if (!m || schon.includes(m) || (je[m] = je[m] || []).length >= 3 || je[m].some((p) => Math.hypot(p[0] - x, p[1] - z) < 150)) continue;
+                    je[m].push([x, z]);
+                    aus.push({ m, x: Math.round(x * 10) / 10, z: Math.round(z * 10) / 10 });
+                }
+            return aus;
+        };
+        const hin = (x, z) => {
+            st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
+            if (st.playerVel) st.playerVel.setValue(0, 0, 0);
+        };
+        const karteDa = async (x, z) => {
+            for (let i = 0; i < 200; i++) {
+                if (r._bodenSichtAt(x, z) !== null && r._bodenSichtAt(x - 12, z) !== null) return true;
+                await warte(50);
+            }
+            return false;
+        };
+        hin(o.x, o.z);
+        await karteDa(o.x, o.z);
+        const orte = suche(o.x, o.z, 120, []), fahrten = [];
+        if (Object.keys(orte).length < 3)
+            for (const k of kandidaten(o.x, o.z, Object.keys(orte))) {
+                if (Object.keys(orte).length >= 3 || fahrten.length >= 5) break;
+                if (orte[k.m]) continue;
+                hin(k.x, k.z);
+                const karte = await karteDa(k.x, k.z);
+                const neu = karte ? suche(k.x, k.z, 30, Object.keys(orte)) : {};
+                fahrten.push({ hinweis: k.m, ort: [k.x, k.z], karte, neu: Object.keys(neu) });
+                Object.assign(orte, neu);
+            }
+        const an = s.ctx.createAnalyser();
+        an.fftSize = 1024;
+        an.smoothingTimeConstant = 0;
+        abgriff = an;
+        const fd = new Float32Array(an.frequencyBinCount), td = new Float32Array(an.fftSize), proben = [];
+        takt = setInterval(() => {
+            an.getFloatTimeDomainData(td);
+            let q = 0;
+            for (let i = 0; i < td.length; i++) q += td[i] * td[i];
+            const rms = Math.sqrt(q / td.length);
+            if (rms < 1e-4) return;
+            an.getFloatFrequencyData(fd);
+            const hz = s.ctx.sampleRate / an.fftSize;
+            let num = 0, den = 0;
+            for (let k = 1; k < fd.length; k++) {
+                const p = Math.pow(10, fd[k] / 10);
+                (num += p * k * hz), (den += p);
+            }
+            proben.push({ t: performance.now(), rms, schwer: num / den, mat: st._schrittKlang && st._schrittKlang.letzter && st._schrittKlang.letzter.material });
+        }, 8);
+        const stoffe = {};
+        for (const [m, [x, z]] of Object.entries(orte)) {
+            st.yaw = -Math.PI / 2;
+            hin(x, z);
+            await karteDa(x, z);
+            await warte(o.ruhMs);
+            const p0 = [st.playerMesh.position.x, st.playerMesh.position.z];
+            proben.length = 0;
+            taste("keydown");
+            await warte(o.gehMs);
+            taste("keyup");
+            await warte(500);
+            const bursts = [];
+            let cur = null;
+            for (const p of proben.slice()) {
+                if (!cur || p.t - cur.t1 > 30) bursts.push((cur = { t0: p.t, t1: p.t, w: 0, sw: 0, mats: {} }));
+                cur.t1 = p.t;
+                cur.w += p.rms * p.rms;
+                cur.sw += p.rms * p.rms * p.schwer;
+                cur.mats[p.mat] = (cur.mats[p.mat] || 0) + 1;
+            }
+            const alle = bursts.map((b) => ({ ms: Math.round(b.t1 - b.t0), schwerHz: Math.round(b.sw / b.w), mat: Object.keys(b.mats).sort((a, c) => b.mats[c] - b.mats[a])[0] }));
+            const sw = alle.map((b) => b.schwerHz).sort((a, b) => a - b);
+            const p1 = st.playerMesh.position;
+            stoffe[m] = { ort: [x, z], wegM: +Math.hypot(p1.x - p0[0], p1.z - p0[1]).toFixed(1), bursts: alle.length, medianHz: sw.length ? sw[sw.length >> 1] : null, alle };
+        }
+        return { klang: { an: s.enabled, ctx: s.ctx.state }, orte, fahrten, stoffe };
+    } finally {
+        clearInterval(takt);
+        taste("keyup");
+        rend.setAnimationLoop(null);
+        abgriff = null;
+        A.createGain = gn;
+        if (st.symphony.enabled) r.disposeSymphony();
+        if (st.cameraMode !== sicht) r.setCameraMode(sicht);
+    }
+};
+(async function sitzungLauf(lauf) {
+    const fs = require("fs");
+    const path = require("path");
+    const http = require("http");
+    const [aus, koord] = process.argv.slice(1);
+    const port = Number(process.env.WERKBANK_PORT);
+    const ruf = (weg, nutz, ms = 60000) =>
+        new Promise((ja, nein) => {
+            const q = http.request({ host: "127.0.0.1", port, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
+                let d = "";
+                a.on("data", (c) => (d += c));
+                a.on("end", () => {
+                    try {
+                        ja(JSON.parse(d));
+                    } catch (_e) {
+                        ja({ fehler: weg + " ohne JSON: " + d.slice(0, 200) });
+                    }
+                });
+            });
+            q.setTimeout(ms, () => q.destroy(new Error(weg + " ohne Antwort binnen " + Math.round(ms / 1000) + " s")));
+            q.on("error", nein);
+            q.end(JSON.stringify(nutz || {}));
+        });
+    const seite = async (fn, args = [], ms = 60000) => {
+        const a = await ruf("/eval", { code: "return await (" + fn + ")(..." + JSON.stringify(args) + ");" }, ms);
+        if (!a || a.fehler)
+            throw new Error(String(fn).slice(0, 48).replace(/\s+/g, " ") + " … — " + ((a && a.fehler) || "keine Antwort") + (a && a.stapel ? " @ " + a.stapel.join(" ← ") : ""));
+        return a.ergebnis;
+    };
+    const reload = async () => {
+        const a = await ruf("/reload", {}, 120000);
+        if (!a || a.neu !== true) throw new Error("/reload: " + JSON.stringify(a).slice(0, 200));
+        return a.ms;
+    };
+    const skript = (datei, name) => {
+        const t = fs.readFileSync(datei, "utf8").replace(/\r\n/g, "\n");
+        const i = t.search(new RegExp("^(async )?function " + name + "\\(", "m"));
+        const e = i < 0 ? -1 : t.indexOf("\n}\n", i);
+        if (e < 0) throw new Error(datei + " trägt keine Funktion " + name + " (die Linse am SHA)");
+        return t.slice(i, e + 2);
+    };
+    const warte = (ms) => new Promise((f) => setTimeout(f, ms));
+    const t0 = Date.now();
+    let j = {}, code = 0;
+    try {
+        const z = (/\[linse-gpu\][^\r\n]*/.exec(fs.readFileSync(String(process.env.PUNKTE_SITZUNG_LOG), "utf8")) || [null])[0];
+        if (z) console.log(z);
+        j = (await lauf({ seite, reload, ruf, skript, aus, koord, warte, path, linse: z })) || {};
+    } catch (e) {
+        j = { fehler: String((e && e.message) || e) };
+        console.log("PROBE ROT: " + j.fehler);
+        code = 1;
+    }
+    j.sek = +((Date.now() - t0) / 1000).toFixed(1);
+    fs.writeFileSync(aus, JSON.stringify(j, null, 1));
+    console.log("PROBE " + j.sek + " s");
+    process.exit(code);
+})(async function schrittLauf(h) {
+    const M = require(h.path.resolve("scripts/lib/welt-orte.cjs")).messort("wiese");
+    const S = await h.seite(schrittSeite, [{ x: M.x, z: M.z, gehMs: 3500, ruhMs: 600 }], 120000);
+    console.log(JSON.stringify({ klang: S.klang, orte: S.orte, fahrten: S.fahrten }));
+    const je = {};
+    for (const v of Object.values(S.stoffe)) for (const b of v.alle) (je[b.mat] = je[b.mat] || []).push(b.schwerHz);
+    for (const [m, a] of Object.entries(je)) {
+        a.sort((x, y) => x - y);
+        console.log(m, "n", a.length, "median", a[a.length >> 1], "p10", a[Math.floor(a.length * 0.1)], "p90", a[Math.floor(a.length * 0.9)]);
+    }
+    const D = "scripts/diag-klang-zensus.cjs";
+    const [W, K, U] = ["werkzeug", "koerperSeite", "koerperUrteil"].map((n) => h.skript(D, n));
+    const F = await h.seite("async (m) => { window.__klangW = (" + W + ")(); return await (" + K + ")(m, null); }", [M], 120000);
+    const u = new Function("return (" + U + ")")()(F);
+    console.log("── (F) DER KÖRPER KLINGT: " + u.zahl);
+    for (const t of u.rot) console.log("   " + t);
+    return { schritt: S, koerper: F, rot: u.rot };
+}); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\3ed95dcf-gtx\klang.K4_1.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
+[linse-gpu] nvidia/pascal
+{"klang":{"an":true,"ctx":"running"},"orte":{"gras":[-280.4,-1045.6],"quarz":[-225.4,-1071.6],"glut":[-272.6,-1003.4]},"fahrten":[{"hinweis":"stein","ort":[-240.4,-1045.6],"karte":true,"neu":["quarz"]},{"hinweis":"erde","ort":[-242.1,-1034],"karte":true,"neu":[]},{"hinweis":"glut","ort":[-272.6,-1006.4],"karte":true,"neu":["glut"]}]}
+gras n 14 median 5551 p10 5164 p90 5918
+quarz n 10 median 3285 p10 3018 p90 3595
+glut n 12 median 1825 p10 1537 p90 2021
+── (F) DER KÖRPER KLINGT: Motor 66.67902972740096 Hz je 1000 Upm · Landung 0.5092636152815709 dB je m/s (1 m 4.4145 m/s -52.768383219449134 dB · 2 m 6.213 m/s -51.550059609952996 dB · 4 m 8.829000000000004 m/s -50.05050826976971 dB · 8 m 12.589500000000024 m/s -48.286026407209576 dB · 12 m 15.369000000000039 m/s -47.189654945847145 dB) · Doppler -9 m 1.0403797386045908/1.0403707414523604 · -4.5 m 1.0289058229638919/1.0288906053098825 · -2 m 1.0146811681516947/1.0146950761581053 · 2 m 0.9850093883707329/0.9849981378532553 · 4.5 m 0.9791921664626683/0.9791791583316587 · 9 m 0.9814144635956572/0.9814156998338969
+PROBE 37.4 s
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal

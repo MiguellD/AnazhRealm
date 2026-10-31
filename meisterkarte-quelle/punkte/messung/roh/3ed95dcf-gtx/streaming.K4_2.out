@@ -1,0 +1,205 @@
+$ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
+    const fs = require("fs");
+    const path = require("path");
+    const http = require("http");
+    const W = Number(process.env.WERKBANK_PORT);
+    const tor = { W, aus: process.argv[1], arg: process.argv.slice(2), browser: null, page: null };
+    // EIN Ruf (POST JSON, mit Frist); eine Antwort { fehler: "…" } der Werkbank wirft beim Namen
+    tor.ruf = (weg, nutzlast, ms = 120000) =>
+        new Promise((ok, nein) => {
+            const q = http.request({ host: "127.0.0.1", port: W, path: weg, method: "POST", agent: false, headers: { "Content-Type": "application/json" } }, (a) => {
+                let d = "";
+                a.on("data", (c) => (d += c));
+                a.on("end", () => {
+                    let j = null;
+                    try {
+                        j = JSON.parse(d);
+                    } catch (_e) {
+                        return nein(new Error(weg + ": keine JSON-Antwort: " + d.slice(0, 200)));
+                    }
+                    if (j && typeof j.fehler === "string") return nein(new Error(weg + ": " + j.fehler.slice(0, 300)));
+                    ok(j);
+                });
+            });
+            q.on("error", nein);
+            q.setTimeout(ms, () => q.destroy(new Error(weg + ": Frist " + ms + " ms")));
+            q.end(JSON.stringify(nutzlast || {}));
+        });
+    // die Karte der Welt: die Adapter-Zeile im Log ihrer Werkbank (der Zeuge der Wand GPU steht schon in der Sitzung)
+    tor.karte = () => {
+        const f = process.env.PUNKTE_SITZUNG_LOG;
+        const t = f && fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "";
+        const z = (/^\[linse-gpu\] .*$/m.exec(t) || [null])[0];
+        console.log(z || "KEINE KARTE: das Log der Sitzung nennt keinen [linse-gpu]");
+        return z;
+    };
+    tor.seite = async () => {
+        if (tor.page) return tor.page;
+        const s = await tor.ruf("/status", {}, 30000);
+        const profil = s && s.boot && s.boot.profil;
+        if (!profil) throw new Error("/status nennt kein Profil der Werkbank");
+        const [port, weg] = fs.readFileSync(path.join(profil, "DevToolsActivePort"), "utf8").split(/\r?\n/);
+        const puppeteer = require(path.resolve("node_modules/puppeteer"));
+        tor.browser = await puppeteer.connect({
+            browserWSEndpoint: "ws://127.0.0.1:" + port + weg,
+            defaultViewport: null,
+            protocolTimeout: 900000,
+        });
+        for (const p of await tor.browser.pages())
+            if (await p.evaluate(() => !!(window.anazhRealm && window.anazhRealm.state)).catch(() => false)) return (tor.page = p);
+        throw new Error("im Browser der Werkbank steht keine Seite mit der Welt");
+    };
+    const baum = (datei) => {
+        const text = fs.readFileSync(datei, "utf8");
+        const acorn = require(path.resolve("node_modules/acorn"));
+        const o = { ecmaVersion: "latest", sourceType: "script", allowHashBang: true, allowReturnOutsideFunction: true };
+        return { text, ast: acorn.parse(text, o) };
+    };
+    const ankern = (src, wo, anker) => {
+        for (const [a, b] of anker) {
+            const n = src.split(a).length - 1;
+            if (n !== 1) throw new Error("ANKER " + (n ? n + "-mal" : "fehlt") + " in " + wo + ": " + a.slice(0, 90));
+            src = src.replace(a, () => b);
+        }
+        return src;
+    };
+    // die Deklaration `name` auf oberster Ebene (eine Funktion: ihr Text; const: ihr Wert), jeder Anker [alt, neu] genau einmal ersetzt
+    tor.quelle = (datei, name, anker = []) => {
+        const { text, ast } = baum(datei);
+        for (const n of ast.body) {
+            if (n.type === "FunctionDeclaration" && n.id && n.id.name === name) return ankern(text.slice(n.start, n.end), datei + " " + name, anker);
+            if (n.type === "VariableDeclaration")
+                for (const d of n.declarations)
+                    if (d.id.type === "Identifier" && d.id.name === name && d.init) return ankern(text.slice(d.init.start, d.init.end), datei + " " + name, anker);
+        }
+        throw new Error(datei + ": keine Deklaration " + name + " auf oberster Ebene");
+    };
+    // die Deklarationen `namen` (Anweisungen der obersten Ebene) in der Reihe der Quelle — eine rechnet mit der vorigen
+    tor.dekl = (datei, namen) => {
+        const { text, ast } = baum(datei);
+        const da = new Set();
+        const teile = [];
+        for (const n of ast.body) {
+            const wer = n.type === "FunctionDeclaration" && n.id ? [n.id.name] : n.type === "VariableDeclaration" ? n.declarations.map((d) => d.id.name) : [];
+            if (wer.some((w) => namen.includes(w))) (teile.push(text.slice(n.start, n.end)), wer.forEach((w) => da.add(w)));
+        }
+        const fehlt = namen.filter((x) => !da.has(x));
+        if (fehlt.length) throw new Error(datei + ": keine Deklaration " + fehlt.join(", "));
+        return teile.join("\n");
+    };
+    tor.ende = async () => {
+        if (tor.browser) await tor.browser.disconnect().catch(() => {});
+    };
+    return tor;
+})();
+(async function fadenZaehler(tor) {
+    const path = require("path");
+    const L = "scripts/diag-worker-dichte.cjs";
+    const seiteQ = tor.quelle(L, "fadenSeite");
+    const bytesQ = tor.quelle(L, "klonBytes");
+    const huelleQ = tor.quelle(L, "fadenHuelle");
+    const soll = new Function(tor.dekl(L, ["FADEN_SOLL"]) + "\nreturn FADEN_SOLL;")();
+    const { WASSER_INSTALL } = require(path.resolve("scripts/lib/wasser-linse.cjs"));
+    const page = await tor.seite();
+    tor.karte();
+    const haken = await page.evaluateOnNewDocument("(" + seiteQ + ")(" + JSON.stringify(bytesQ) + ", " + JSON.stringify(huelleQ) + ");");
+    const ursprung = await page.evaluate(() => location.origin);
+    await page.goto(ursprung + "/cores.manifest.json", { timeout: 60000 });
+    await page.evaluate(() =>
+        Promise.all(
+            ["anazhChunkMesh", "anazhFoundryAssets"].map((n) => new Promise((ok) => Object.assign(indexedDB.deleteDatabase(n), { onsuccess: ok, onerror: ok })))
+        ).then(() => localStorage.clear())
+    );
+    await tor.ruf("/reload", {}, 300000);
+    await page.removeScriptToEvaluateOnNewDocument(haken.identifier); // die Haken gelten DIESER Welt, keiner späteren
+    const takt = (n, dx, dz, klicks) =>
+        page.evaluate(
+            async (n, dx, dz, klicks) => {
+                await window.__weltDa(() => r && typeof r._gameLoopTick === "function");
+                const p = r.state.playerMesh.position;
+                if (!n)
+                    for (const weiter = window.__deckel("die Welt steht", 4000); weiter(); ) {
+                        if (r.state.voxelChunks && r.state.voxelChunks.size > 20 && r.state.voxelWorkerReady) break;
+                        await window.__seitenTakt();
+                    }
+                r.state.pitch = -Math.PI / 2; // der Blick senkrecht nach unten: ein Bau-Klick setzt den Block unter den Spieler
+                const je = klicks ? Math.floor(n / klicks) : 0;
+                for (let k = 0, t; k < n; k++) {
+                    await window.__seitenTakt();
+                    p.x += dx / n;
+                    p.z -= dz / n;
+                    const y = r._voxelSurfaceY(p.x, p.z);
+                    if (Number.isFinite(y)) p.y = y + 1.8;
+                    if (je && k % je === je >> 1 && ((t = performance.now()), r.tryMousePlace())) window.__faden.klick.push(performance.now() - t);
+                }
+                return n ? (n / 30) * 1000 : performance.now();
+            },
+            n,
+            dx,
+            dz,
+            klicks
+        );
+    const fenster = (name) => page.evaluate((n) => (window.__faden.fenster = n), name);
+    const dauer = { boot: await takt(0, 0, 0, 0) };
+    await fenster("gang");
+    await page.evaluate(() => {
+        const p = r.state.playerMesh.position;
+        p.z -= 240;
+        const y = r._voxelSurfaceY(p.x, p.z);
+        if (Number.isFinite(y)) p.y = y + 1.8;
+    });
+    dauer.gang = await takt(90, 0, 6, 0);
+    await fenster("fahrt");
+    dauer.fahrt = await takt(300, 160, 0, 6);
+    await page.evaluate(WASSER_INSTALL);
+    await fenster("damm");
+    await page.evaluate(async () => window.__wasserDamm({ fluss: (await window.__wasserOrte({})).fluss }));
+    const F = await page.evaluate(() => JSON.parse(JSON.stringify({ ...window.__faden, bau: r._syncBauten() })));
+    const mb = (b) => (b / 1e6).toFixed(2);
+    const summe = (o) => Object.values(o || {}).reduce((a, b) => a + b, 0);
+    const proMin = {};
+    console.log("\n=== DER FADEN TRÄGT DIE BYTES (K4 · K5), in der Welt der Sitzung ===");
+    for (const w of Object.keys(dauer)) {
+        const T = F.t[w] || {};
+        const teile = [["Faden → Main", T.empfang], ["Main → Faden", T.gesendet], ["Kopie", T.kopie], ["Platte", T.platte]];
+        proMin[w] = (teile.reduce((a, [, o]) => a + summe(o), 0) / dauer[w]) * 60000;
+        console.log(`  ${w.padEnd(6)} ${(dauer[w] / 1000).toFixed(1)} s · ${mb(proMin[w])} MB/min am Empfang: ${teile.map(([nm, o]) => `${nm} ${mb(summe(o))} MB`).join(" · ")}`);
+    }
+    console.log(`  Fäden: ${F.faeden.join(" · ")}`);
+    const stauTakt = `Takt ${F.stau.ms.toFixed(1)} ms`;
+    if (F.stau.ms > 8) F.stau.rot.push(stauTakt);
+    for (const [name, Zh] of [["Hydrosphären", F.hydro], [`Stau-Felder (Damm, ${stauTakt})`, F.stau]])
+        console.log(`  ${name}: ${Zh.faden} aus dem Faden · ${Zh.rot.length} im Haupt-Faden${Zh.rot.length ? " — " + Zh.rot.join(" | ") : ""}`);
+    console.log(
+        `  Bauten im Haupt-Faden (Chunk-Stoff, Guss): ${summe(F.bau.stellen)} an Sync-Stellen und Test-Nähten · ${F.bau.sonst} sonst ${JSON.stringify(F.bau.stellen)}${F.bau.rot.length ? " — " + F.bau.rot.slice(0, 6).join(" | ") : ""}`
+    );
+    const k4 = F.hydro.rot.concat(F.stau.rot, F.bau.rot).reduce((a, x) => a + (parseInt(x) || 1), 0);
+    console.log(`  Bau-Klicks in der Fahrt: ${F.klick.length}, die Hand ${F.klick.map((m) => m.toFixed(1)).join(" · ")} ms`);
+    const blind =
+        F.blind ||
+        (!F.haken && "die Haken sitzen nicht") ||
+        (F.bau.voll && "das Buch ist voll") ||
+        (!F.hydro.faden && !F.hydro.rot.length && "keine Hydrosphäre gesehen") ||
+        (!summe((F.t.fahrt || {}).empfang) && "kein Empfang in der Fahrt") ||
+        (F.klick.length < 6 && "die Bau-Klicks der Fahrt bauten nicht") ||
+        (!F.stau.faden && "kein Feld des Staus aus dem Faden");
+    if (blind) console.log(`  ⛔ BLIND: ${blind}`);
+    if (k4) console.log(`  ⛔ K4: ${k4} synchrone Bauten im Haupt-Faden, obwohl ein Faden zuständig ist`);
+    if (proMin.fahrt > soll) console.log(`  ⛔ K5: ${mb(proMin.fahrt)} MB/min am Empfang in der Fahrt > ${mb(soll)}`);
+    if (blind || k4) process.exitCode = 1;
+})(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\3ed95dcf-gtx\streaming.K4_2.json
+[linse-gpu] nvidia/pascal
+
+=== DER FADEN TRÄGT DIE BYTES (K4 · K5), in der Welt der Sitzung ===
+  boot   3.7 s · 2.98 MB/min am Empfang: Faden → Main 0.15 MB · Main → Faden 0.04 MB · Kopie 0.00 MB · Platte 0.00 MB
+  gang   3.0 s · 9.06 MB/min am Empfang: Faden → Main 0.24 MB · Main → Faden 0.17 MB · Kopie 0.04 MB · Platte 0.00 MB
+  fahrt  10.0 s · 2.48 MB/min am Empfang: Faden → Main 0.15 MB · Main → Faden 0.09 MB · Kopie 0.18 MB · Platte 0.00 MB
+  Fäden: buch · werk · werk · voxel · streu · fern · feld · wald · speicher · voxel
+  Hydrosphären: 14 aus dem Faden · 0 im Haupt-Faden
+  Stau-Felder (Damm, Takt 2.1 ms): 2 aus dem Faden · 0 im Haupt-Faden
+  Bauten im Haupt-Faden (Chunk-Stoff, Guss): 1 an Sync-Stellen und Test-Nähten · 0 sonst {"naht":1}
+  Bau-Klicks in der Fahrt: 6, die Hand 16.4 · 3.8 · 5.0 · 4.8 · 4.4 · 2.9 ms
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal

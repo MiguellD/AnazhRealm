@@ -1,0 +1,24 @@
+$ C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\379e5f56-gtx\mensch.K5_1.json' | tr '\\' /); B="${A%.json}"
+S=$(( 7804 )); W=$(( 7804 + 20000 )); export WERKBANK_PORT=$W
+node scripts/diag-kreatur-takt.cjs --werkbank $W --proben begegnung
+
+===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27804) =====
+
+  ❌ begegnung {"fehler":"Error: DER BAU STEHT NICHT: begegnung: die Leiber nach 307 Takten — die Welt hat nichts mehr offen\n    at eval (eval at <anonymous> (:2:29), <anonymous>:178:19)\n    at bisDa (eval at <anonymous> (:2:29), <anonymous>:2563:57)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:3164:9)\n    at async buehne (eval at <anonymous> (:2:29), <anonymous>:278:25)\n    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:3156:5)\n    at async eval (eval at <anonymous> (:2:29), <anonymous>:213:13)"}
+       ↳ Error: DER BAU STEHT NICHT: begegnung: die Leiber nach 307 Takten — die Welt hat nichts mehr offen
+    at eval (eval at <anonymous> (:2:29), <anonymous>:178:19)
+    at bisDa (eval at <anonymous> (:2:29), <anonymous>:2563:57)
+    at async eval (eval at <anonymous> (:2:29), <anonymous>:3164:9)
+    at async buehne (eval at <anonymous> (:2:29), <anonymous>:278:25)
+    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:3156:5)
+    at async eval (eval at <anonymous> (:2:29), <anonymous>:213:13)
+
+  (37 s)
+
+--- stderr ---
+tr: warning: an unescaped backslash at end of string is not portable
+
+❌ ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt.
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

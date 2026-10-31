@@ -290,11 +290,14 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     fs.writeFileSync(tor.aus, JSON.stringify(erg, null, 1));
 })(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\3ed95dcf-gtx\gelaende.K2_1.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
 [linse-gpu] nvidia/pascal
-  GRABEN {"sicht":"third","saat":11,"abstand":1,"verb":"abbau","bild":"2s","nassVor":139,"nassEnde":139,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"bilder":235}
-  GRABEN {"sicht":"third","saat":11,"abstand":3,"verb":"graben","bild":"2s","nassVor":55,"nassEnde":281,"gefuelltMs":388.9,"doppeltMax":0,"ueberMax":0,"bilder":172}
-  GRABEN {"sicht":"third","saat":37,"abstand":1,"verb":"graben","bild":"2s","nassVor":105,"nassEnde":306,"gefuelltMs":310,"doppeltMax":0,"ueberMax":0,"bilder":184}
-  GRABEN {"sicht":"third","saat":37,"abstand":3,"verb":"graben","bild":"2s","nassVor":243,"nassEnde":279,"gefuelltMs":81.8,"doppeltMax":0,"ueberMax":0,"bilder":160}
-  GRABEN {"sicht":"first","saat":23,"abstand":1,"verb":"pfluecken","bild":"2s","nassVor":112,"nassEnde":112,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"bilder":254}
+  GRABEN {"sicht":"third","saat":11,"abstand":1,"verb":"abbau","bild":"2s","nassVor":139,"nassEnde":139,"gefuelltMs":null,"doppeltMax":0,"ueberMax":0,"bilder":222}
+  GRABEN {"sicht":"third","saat":11,"abstand":3,"verb":"graben","bild":"2s","nassVor":55,"nassEnde":281,"gefuelltMs":364.1,"doppeltMax":0,"ueberMax":0,"bilder":182}
+  GRABEN {"sicht":"third","saat":37,"abstand":1,"verb":"graben","bild":"2s","nassVor":105,"nassEnde":306,"gefuelltMs":304.2,"doppeltMax":0,"ueberMax":0,"bilder":190}
+  GRABEN {"sicht":"third","saat":37,"abstand":3,"verb":"graben","bild":"2s","nassVor":243,"nassEnde":279,"gefuelltMs":62.6,"doppeltMax":0,"ueberMax":0,"bilder":156}
+  GRABEN {"sicht":"first","saat":23,"abstand":1,"verb":"graben","bild":"2s","nassVor":112,"nassEnde":299,"gefuelltMs":241.7,"doppeltMax":0,"ueberMax":0,"bilder":173}
+  GRABEN {"sicht":"first","saat":23,"abstand":3,"verb":"graben","bild":"2s","nassVor":218,"nassEnde":260,"gefuelltMs":78.1,"doppeltMax":0,"ueberMax":0,"bilder":236}
+  (a) 56.2 s
+  (b)(d) 17.5 s · Damm {"krone":27.79,"saeulen":0,"stromauf":[{"d":6,"wasser":25.25,"ueberlauf":25.24,"fluss":24.88},{"d":12,"wasser":25.25,"ueberlauf":25.23,"fluss":24.97}],"stromab":[{"d":6,"wasser":24.63,"fluss":24.63},{"d":12,"wasser":24.48,"fluss":24.48}]} · Ferne {"krone":27.79,"saeulen":21,"ring":{"punkte":5,"anders":5,"hubM":3.26,"faden":5}}
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
