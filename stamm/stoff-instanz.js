@@ -714,11 +714,14 @@ class AnazhRealm_stoff_instanz {
         return form;
     }
     // Der Stoff als Wert: jede Eigenschaft (Knoten als id, Texturen als uuid, Funktionen über den Programm-Schlüssel des
-    // Stoffs), die Stoff-Werte bis auf die Art-Größen des Winds — gemerkt je Stoff-Version.
+    // Stoffs), die Stoff-Werte bis auf die Art-Größen des Winds — gemerkt je Stoff-Version. Die Zahlen, die kein Programm
+    // schlüsseln (`STOFF_REFERENZ_ZAHLEN`, nicht aufzählbar), trägt die Arena beim Namen: EIN Render-Objekt zeichnet nur
+    // Stoffe gleicher Werte.
     static _arenaStoff(s) {
         if (s.__arenaStoff && s.__arenaStoffV === s.version) return s.__arenaStoff;
         const J = AnazhRealm._arenaWert;
         let t = s.type + ";a" + s.alphaTest + ";p" + s.customProgramCacheKey();
+        for (const k of AnazhRealm.STOFF_REFERENZ_ZAHLEN) t += ";" + k + "=" + J(s[k], 0);
         for (const k of Object.keys(s).sort()) {
             if (k.startsWith("__") || k === "_listeners" || k.startsWith("_anazh") || k === "uuid" || k === "id")
                 continue;
