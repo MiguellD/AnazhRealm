@@ -114,3 +114,4 @@ eich10-gtx Exit0 station eich-gtx.sh an e0139769
 eich11-gtx Exit0 station eich-gtx.sh an e0139769
 z94-abab LANGSAMER abab 8075fc03 gegen ab040980: stadt 4+4 LANGSAMER · w-ego 4+4 nicht-langsamer
 takt27b-gtx gemessen punkte 94c079cb gtx: 3 grün / 10 rot
+eich14-gtx Exit0 station eich-gtx.sh an 94c079cb
