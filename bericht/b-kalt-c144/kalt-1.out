@@ -1,0 +1,63 @@
+gpu-lauf: Schloss omen-ankunft-kalt nach 1 s
+[linse-gpu] nvidia/pascal
+
+=== DIE KALT-ZEILE (leeres Profil) — echte GPU · nvidia pascal · Holz voll · V18.546.143 ===
+    0 s  blockiert  649 ms | die Seite lädt
+    1 s  blockiert  189 ms (Buch 106 · Bauten 5) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 1 im Werk | der Boden wächst (1 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · der Spieler erhält seinen Leib · das Dorf wird geplant · 4 Wald-Stücke warten auf ihre Gestalt
+    2 s  blockiert 1000 ms (Bauten 56) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 1 im Werk | der Boden wächst (1 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · der Spieler erhält seinen Leib · das Dorf wird geplant · 4 Wald-Stücke warten auf ihre Gestalt
+    3 s  blockiert  947 ms (Boden 23 · Saat 18 · Gruppen-Bau 8 · Erst-Bau 296) · 5 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 2 wartend · 16 im Werk | der Boden wächst (17 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · der Spieler erhält seinen Leib · 9 Bäume und Bauten wachsen · das Dorf wird geplant · 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    4 s  blockiert  974 ms (Bauten 11 · Boden 10 · Saat 35 · Gruppen-Bau 9 · Erst-Bau 829) · 5 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 1 wartend · 12 im Werk | der Boden wächst (16 Stücke im Bild) · der Horizont wächst (0 %) · das Licht des Orts wird gemessen · 9 Bäume und Bauten wachsen · das Dorf wird geplant · 1 Wald-Böden werden bepflanzt · 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    5 s  blockiert  969 ms (Bauten 31 · Streu 59 · Boden 36 · Saat 96 · Gruppen-Bau 14 · Erst-Bau 392) · 7 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 1 wartend · 11 im Werk | der Boden wächst (15 Stücke im Bild) · der Horizont wächst (27 %) · 9 Bäume und Bauten wachsen · das Dorf wird geplant · 2 Wald-Böden werden bepflanzt · 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    6 s  blockiert  833 ms (Bauten 23 · Boden 10 · Saat 65 · Wald-Plan 207 · Gruppen-Bau 28 · Erst-Bau 155) · 5 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 5 wartend · 10 im Werk | der Boden wächst (7 Stücke im Bild) · der Horizont wächst (58 %) · 9 Bäume und Bauten wachsen · das Dorf wird geplant · 4 Bäume werden gepflanzt, 10 Wald-Böden werden bepflanzt · 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    7 s  blockiert  942 ms (Bauten 27 · Streu 110 · Wald-Plan 100 · Gruppen-Bau 51 · Erst-Bau 382) · 2 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 2 wartend · 3 im Werk | der Horizont wächst (98 %) · 1 Bäume und Bauten wachsen · 10 Häuser des Dorfs wachsen · 176 Bäume werden gepflanzt, 1 Wald-Böden werden bepflanzt · 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    8 s  blockiert  897 ms (Streu 99 · Gruppen-Bau 25 · Erst-Bau 526) · 6 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 7 wartend · 3 im Werk | der Horizont wird gemalt · 9 Bäume und Bauten wachsen · 10 Häuser des Dorfs wachsen · 184 Bäume werden gepflanzt · 4 Wald-Stücke warten auf ihre Gestalt · 1 ferne Bäume werden gemalt
+    9 s  blockiert  942 ms (Bauten 6 · Streu 185 · Dorf 38 · Erst-Bau 406) · 3 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 7 wartend · 11 im Werk | der Horizont wird gemalt · 25 Bäume und Bauten wachsen · 5 Häuser des Dorfs wachsen · 176 Bäume werden gepflanzt · 3 Wald-Stücke warten auf ihre Gestalt · 2 ferne Bäume werden gemalt
+   10 s  blockiert  961 ms (Bauten 11 · Streu 109 · Boden 60 · Gruppen-Bau 16 · Gestalt 12 · Erst-Bau 417) · 5 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 4 wartend · 18 im Werk | der Horizont wird gemalt · 63 Bäume und Bauten wachsen · 4 Häuser des Dorfs wachsen · 157 Bäume werden gepflanzt · 2 Wald-Stücke warten auf ihre Gestalt · 10 ferne Bäume werden gemalt
+   11 s  blockiert  984 ms (Bauten 12 · Streu 256 · Boden 18 · Gruppen-Bau 6 · Gestalt 17 · Dorf 76 · Erst-Bau 243) · 5 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 4 wartend · 21 im Werk | der Horizont wird gemalt · 70 Bäume und Bauten wachsen · 4 Häuser des Dorfs wachsen · 149 Bäume werden gepflanzt · 2 Wald-Stücke warten auf ihre Gestalt · 13 ferne Bäume werden gemalt
+   12 s  blockiert  916 ms (Bauten 37 · Streu 192 · Gruppen-Bau 7 · Gestalt 12 · Erst-Bau 178) · 3 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 3 wartend · 24 im Werk | der Horizont wird gemalt · 62 Bäume und Bauten wachsen · 137 Bäume werden gepflanzt · 2 Wald-Stücke warten auf ihre Gestalt · 15 ferne Bäume werden gemalt
+   13 s  blockiert  960 ms (Bauten 20 · Streu 82 · Gruppen-Bau 13 · Gestalt 42 · Erst-Bau 614) · 4 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 2 wartend · 18 im Werk | der Horizont wird gemalt · 126 Bäume und Bauten wachsen · 52 Bäume werden gepflanzt · 2 Wald-Stücke warten auf ihre Gestalt · 17 ferne Bäume werden gemalt
+   14 s  blockiert  921 ms (Bauten 47 · Gruppen-Bau 20 · Gestalt 23 · Erst-Bau 319) · 2 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 10 im Werk | 151 Bäume und Bauten wachsen · 2 Wald-Stücke warten auf ihre Gestalt · 17 ferne Bäume werden gemalt
+   15 s  blockiert  548 ms (Bauten 42 · Gruppen-Bau 7 · Gestalt 25) · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 1 im Werk | 91 Bäume und Bauten wachsen · 2 Wald-Stücke warten auf ihre Gestalt · 12 ferne Bäume werden gemalt
+   16 s  blockiert  404 ms (Bauten 9 · Streu 89 · Erst-Bau 234) · 2 Pipelines offen · Vorrat wartet auf das erste Bild · Foundry 0 wartend · 0 im Werk | 2 Bäume und Bauten wachsen · 4 Wald-Stücke warten auf ihre Gestalt · 3 ferne Bäume werden gemalt
+   17 s  blockiert  798 ms (Streu 41 · Boden 7 · Gestalt 7) · Vorrat bestellt · Foundry 0 wartend · 31 im Werk | 4 Wald-Stücke warten auf ihre Gestalt
+   18 s  blockiert  318 ms · Vorrat bestellt · Foundry 0 wartend · 20 im Werk | — die Kontrolle
+  1.9 s  das Buch der Studios ist da
+  die Klasse Pflanzen bis zum Weltbild: 1891 ms Haupt-Faden (Streu 1225 · Saat 213 · Wald-Plan 313 · Gestalt 140)
+  DER HAUPT-FADEN bis zum Bild (17.20 s): belegt 16388 ms · Collector 625 · Programm 857 · leer 462 ms
+  die Phasen (t · Haupt-Faden belegt bis dahin): HTML da 0.01 s · 0 ms | Skripte da 0.44 s · 346 ms | DOM bereit 1.03 s · 931 ms | welt steht 1.61 s · 1516 ms | Buch da 1.90 s · 1672 ms | buch steht 1.90 s · 1672 ms | erstes Lade-Bild 3.07 s · 2829 ms | leib steht 4.44 s · 4131 ms | licht steht 5.28 s · 4913 ms | boden steht 7.73 s · 7221 ms | dorf steht 12.21 s · 11508 ms | pflanzung steht 14.36 s · 13585 ms | horizont steht 14.62 s · 13849 ms | streu steht 17.20 s · 16388 ms | bauten steht 17.20 s · 16388 ms | karten steht 17.20 s · 16388 ms | Weltbild 17.20 s · 16388 ms | Kontrolle 18.37 s · 17553 ms | Ring am Ziel 21.36 s · 17825 ms
+  die 10 längsten Aufgaben vor dem Bild (von 51 ≥ 50 ms):
+      1.95 s  1106 ms  _runFrameScheduler (verteilt) stamm/dirigent-takt.js:1487 109 · spawnArchitecture stamm/siedlung-satz.js:791 95 · build [three.webgpu.min.js] (verteilt) vendor/three.webgpu.min.js:6 77
+      6.42 s   863 ms  build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 99 · grow [phyto-core.js] phyto-core.js:104 89 · build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 69
+      3.10 s   758 ms  _ensureVoxelChunkAt stamm/gelaende-chunks.js:2237 66 · zeichne stamm/bild-kosten.js:460 62 · build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 61
+      8.15 s   675 ms  _scatterPass stamm/vegetation-streu.js:527 99 · build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 69 · build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 51
+      8.90 s   613 ms  build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 77 · build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 75 · _runFrameScheduler (verteilt) stamm/dirigent-takt.js:1487 67
+      9.87 s   572 ms  _rebuildVoxelChunk stamm/gelaende-chunks.js:2182 93 · _scatterPass stamm/vegetation-streu.js:527 86 · build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 73
+      0.47 s   551 ms  grow [phyto-core.js] phyto-core.js:104 82 · _blueprintProductVector stamm/bau-buch.js:1366 55 · _renderWorkshopDOM stamm/werkstatt-vorschau.js:15 52
+      5.30 s   543 ms  (garbage collector) 242 · _ensureVoxelChunkAt stamm/gelaende-chunks.js:2237 72 · _fernRingTeilung stamm/gelaende-fern.js:709 56
+     12.48 s   477 ms  build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 54 · _scatterSichtHoehe stamm/vegetation-streu.js:652 51 · generate [three.webgpu.min.js] vendor/three.webgpu.min.js:6 50
+     11.12 s   445 ms  _runFrameScheduler (verteilt) stamm/dirigent-takt.js:1487 61 · build [three.webgpu.min.js] vendor/three.webgpu.min.js:6 56 · _scatterFoundrySeed stamm/vegetation-streu.js:641 50
+  die Funktionen vor dem Bild (inklusiv · selbst ms):
+     12834 ·     5  e [three.webgpu.min.js] vendor/three.webgpu.min.js:6
+     12826 ·    39  loop stamm/dirigent-takt.js:6
+      6728 ·     3  render [three.webgpu.min.js] vendor/three.webgpu.min.js:6
+      6725 ·    21  renderer._renderScene stamm/bild-kosten.js:215
+      6704 ·    38  _renderScene [three.webgpu.min.js] vendor/three.webgpu.min.js:6
+      6408 ·    14  renderer.renderObject stamm/bild-kosten.js:392
+      6407 ·     1  _renderObjects [three.webgpu.min.js] vendor/three.webgpu.min.js:6
+      6402 ·    14  renderObject [three.webgpu.min.js] vendor/three.webgpu.min.js:6
+      6390 ·    21  renderer._renderObjectDirect stamm/bild-kosten.js:496
+      6361 ·     1  _loopVoxelStreaming stamm/dirigent-takt.js:1523
+      6361 ·    45  _runFrameScheduler stamm/dirigent-takt.js:1487
+      6269 ·    14  zeichne stamm/bild-kosten.js:460
+      5444 ·     4  needsRefresh [three.webgpu.min.js] vendor/three.webgpu.min.js:6
+      5073 ·     7  _loopRender stamm/dirigent-takt.js:1562
+      4987 ·    22  getForRender [three.webgpu.min.js] vendor/three.webgpu.min.js:6
+  ❌ DIE HALTER vor dem ersten Bild: GPU-Prozess: renderPipeline_TRAA.resolve_52 synchron 298 ms · GPU-Prozess: renderPipeline_RenderPipeline_50 synchron 285 ms · build [three.webgpu.min.js] (vendor/three.webgpu.min.js:6) hält den Haupt-Faden vor dem ersten Bild 99 ms (bei 6.4 s; 44× ≥ 50 ms, Σ 2663 ms) · _runFrameScheduler (verteilt) (stamm/dirigent-takt.js:1487) hält den Haupt-Faden vor dem ersten Bild 109 ms (bei 2.0 s; 9× ≥ 50 ms, Σ 639 ms) · _scatterPass (stamm/vegetation-streu.js:527) hält den Haupt-Faden vor dem ersten Bild 103 ms (bei 10.9 s; 5× ≥ 50 ms, Σ 464 ms) · _runFrameScheduler (stamm/dirigent-takt.js:1487) hält den Haupt-Faden vor dem ersten Bild 89 ms (bei 13.8 s; 6× ≥ 50 ms, Σ 369 ms)
+
+  ❌ t(Kontrolle) kalt 18.37 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 18) · Eigenmeldung 17.20 s
+  ✅ das Bild der Kontrolle: 0.14 % Lücke nach 60 s (Soll ≤ 2 %, C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\messplatz\lauf\b-kalt-c144\kalt-1.png) · offen im Bild: nichts
+  LIEFERUNG kalt: 0 von 228 von der Platte (0.0 %) · Werk 228 · Haupt-Faden 0 · leer 0 · verschluckt 0
+  LIEFERUNG je Art: blatt-atlas 0/1 0 ms · dorf-export 0/2 0 ms · karte 0/19 738 ms
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 29531 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
