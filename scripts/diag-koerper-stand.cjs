@@ -45,8 +45,6 @@ const { WELT_ORTE_INSTALL, messort } = require("./lib/welt-orte.cjs");
 const PORT = Number(process.env.KOERPER_STAND_PORT || 4479);
 const SELBST = process.argv.includes("--selftest");
 const NUR_K8 = process.argv.includes("--k8"); // nur K8 (die Welt mit Foundry)
-// `--bild`: die Welt zeichnet über die Weiche (Rezept `linse`), ohne den Null-Renderer — die Station eines Geräts (gelaende.K5)
-const BILD = process.argv.includes("--bild");
 const DORF_ZUG = messort("wiese").dorfZug;
 const K8_UMFANG = 200; // Kontakte je Ort × Rolle
 
@@ -67,12 +65,15 @@ function eignerKarte(r, x, z) {
 // Schnitt heilt; null ohne Mesh. `steil`: die oberste Fläche des Strahls ist steil (ein Überhang: die Karte trägt dort die
 // Oberkante ihrer Raster-Punkte, der Strahl die Fläche darunter); `meshe` zählt die getroffenen Chunks.
 // DAS LOT (w4-ssa-E): der Strahl steht lotrecht, er trifft nur ein Dreieck, dessen Grundriss (x, z) trägt. Bis dahin baute die Linse
-// je Auge eine gemorphte Kopie jedes gefragten Netzes und ließ three.js je Strahl JEDES Dreieck der vier Netze schneiden (lokal
-// 21 352 je Strahl, 1,5 ms; K8 fragt je Ort und Sicht ~4 500 Strahlen) — in Fahrt (das Rad: das Auge fährt mit) je Takt jede Kopie
-// neu. Jetzt ordnet je Netz (und Stand seiner Attribute) EIN Gitter von 1 m die Dreiecke nach dem Grundriss über Lage UND Ziel (der
-// gemorphte Vertex liegt dazwischen, ± 1 mm); je Strahl morpht die Linse nur die Ecken der Dreiecke im Lot, je Auge einmal, mit dem
-// Wert der Kopie (Lage + (Ziel − Lage) · `_morphFaktor` als Float32) und schneidet sie wie `Mesh.raycast`: `Ray.intersectTriangle`
-// mit der Seite des Stoffs, Abstand und Normale, die Reihe der Dreiecke, nach Abstand sortiert — dieselben Treffer.
+// je Auge eine gemorphte Kopie jedes gefragten Netzes, und three.js schnitt je Strahl JEDES Dreieck der vier Netze (lokal 21 352 je
+// Strahl, 1,1–1,5 ms; K8 fragt je Ort und Sicht ~5 000 Strahlen) — in Fahrt (das Rad: das Auge fährt mit) je Takt jede Kopie neu.
+// Jetzt ordnet je Netz EIN Gitter von 1 m die Dreiecke nach dem Grundriss zwischen Lage und Lage + (Ziel − Lage) · Geomorph
+// (`_morphFaktor` ist Geomorph · c mit c in 0…1: der gemorphte Vertex liegt dazwischen, ± 1 mm) — gebaut je Gestalt (Geometrie,
+// Attribute), Geomorph und Stand des Boden-Satzes: jeder CPU-Schreiber des Netzes (der Naht-Morph rückt die Ziele der Rand-Ecken
+// auch in x und z, die Säule eines Edits hebt Lage und Ziel) schreibt in den Satz und meldet es dort (`_chunkSatzMarke` → `stand`),
+// nie in der Version des Chunk-Attributs. Je Strahl trägt die Kopie nur die Dreiecke der Zelle im Lot, in ihrer Reihe, gemorpht wie
+// bisher (Float32, das Auge JETZT), und three.js schneidet sie wie bisher (`Mesh.raycast`), ohne die Hüll-Kugel der kleinen Kopie
+// (sie kappte nur): dieselben Treffer in derselben Reihe.
 function gezeichnet(r, x, z) {
     const T = window.THREE;
     const G = window.__gezeichnet;
@@ -80,9 +81,6 @@ function gezeichnet(r, x, z) {
     const span = r._voxelChunkConfig(0).span;
     const U = r.state.atmoUniforms;
     const gm = U && U.geomorph ? U.geomorph.value : 1;
-    const auge = (r.state.stufeAuge ? r.state.stufeAuge.x + "," + r.state.stufeAuge.z : "") + "|" + gm;
-    const [vA, vB, vC, p] = G.v || (G.v = [new T.Vector3(), new T.Vector3(), new T.Vector3(), new T.Vector3()]);
-    strahl.set(new T.Vector3(x, 900, z), new T.Vector3(0, -1, 0));
     let best = null;
     let oben = -Infinity;
     G.steil = false;
@@ -98,132 +96,46 @@ function gezeichnet(r, x, z) {
         if (!e || !e.mesh || !e.mesh.geometry) continue;
         G.meshe = (G.meshe | 0) + 1;
         const geo = e.mesh.geometry;
-        const [P, Z0, W0, ix] = [
-            geo.attributes.position,
-            geo.attributes.aMorphTarget,
-            geo.attributes.aMorphWeight,
-            geo.index,
-        ];
-        const [Z, W] = Z0 && W0 ? [Z0, W0] : [null, null];
-        const stand = [P.version, Z ? Z.version : -1, W ? W.version : -1, ix ? ix.version : -1].join(",");
-        let M = e.__gez;
-        if (
-            !M ||
-            M.geo !== geo ||
-            M.P !== P ||
-            M.Z !== Z ||
-            M.W !== W ||
-            M.ix !== ix ||
-            M.stand !== stand ||
-            !(gm >= M.f0 && gm <= M.f1)
-        ) {
-            // DAS GITTER des Netzes: je Dreieck die Zellen seines Grundrisses über Lage und Ziel (Faktor f0 … f1), ± 1 mm, eine Zelle Rand
-            // um das Netz; die Liste je Zelle in der Reihe der Dreiecke (so trifft sie in der Reihe von three.js)
-            const [pa, za, wn] = [P.array, Z ? Z.array : null, W ? W.count : 0];
-            const [f0, f1] = [Math.min(0, gm), Math.max(1, gm)];
-            const lo = (j, k) =>
-                za && j < wn
-                    ? Math.min(
-                          pa[3 * j + k] + (za[3 * j + k] - pa[3 * j + k]) * f0,
-                          pa[3 * j + k] + (za[3 * j + k] - pa[3 * j + k]) * f1
-                      )
-                    : pa[3 * j + k];
-            const hi = (j, k) =>
-                za && j < wn
-                    ? Math.max(
-                          pa[3 * j + k] + (za[3 * j + k] - pa[3 * j + k]) * f0,
-                          pa[3 * j + k] + (za[3 * j + k] - pa[3 * j + k]) * f1
-                      )
-                    : pa[3 * j + k];
-            let [x0, z0, x1, z1] = [Infinity, Infinity, -Infinity, -Infinity];
-            for (let j = 0; j < P.count; j++)
-                [x0, x1, z0, z1] = [
-                    Math.min(x0, lo(j, 0)),
-                    Math.max(x1, hi(j, 0)),
-                    Math.min(z0, lo(j, 2)),
-                    Math.max(z1, hi(j, 2)),
-                ];
-            [x0, z0] = [x0 - 1, z0 - 1];
-            const [nx, nz] = [Math.floor(x1 - x0) + 2, Math.floor(z1 - z0) + 2];
-            const n = ix ? ix.count : P.count;
-            const ecken = (i) => (ix ? [ix.getX(i), ix.getX(i + 1), ix.getX(i + 2)] : [i, i + 1, i + 2]);
-            const zellen = (i, f) => {
-                const q = ecken(i);
-                const u0 = Math.max(0, Math.floor(Math.min(...q.map((j) => lo(j, 0))) - 1e-3 - x0));
-                const u1 = Math.min(nx - 1, Math.floor(Math.max(...q.map((j) => hi(j, 0))) + 1e-3 - x0));
-                const v0 = Math.max(0, Math.floor(Math.min(...q.map((j) => lo(j, 2))) - 1e-3 - z0));
-                const v1 = Math.min(nz - 1, Math.floor(Math.max(...q.map((j) => hi(j, 2))) + 1e-3 - z0));
-                for (let v = v0; v <= v1; v++) for (let u = u0; u <= u1; u++) f(v * nx + u);
-            };
-            const kopf = new Int32Array(nx * nz + 1);
-            for (let i = 0; i < n; i += 3) zellen(i, (k) => kopf[k + 1]++);
-            for (let k = 0; k < nx * nz; k++) kopf[k + 1] += kopf[k];
-            const tri = new Int32Array(kopf[nx * nz]);
-            const frei = kopf.slice(0, nx * nz);
-            for (let i = 0; i < n; i += 3) zellen(i, (k) => (tri[frei[k]++] = i));
-            M = e.__gez = {
-                geo,
-                P,
-                Z,
-                W,
-                ix,
-                stand,
-                f0,
-                f1,
-                x0,
-                z0,
-                nx,
-                nz,
-                kopf,
-                tri,
-                ecken,
-                L: new Float32Array(pa.length),
-                marke: new Int32Array(P.count),
-                gen: 0,
-                auge: null,
-            };
-        }
-        // die Ecke j, wie die Kopie des Auges sie trüge (je Auge einmal gemorpht)
-        if (M.auge !== auge) [M.auge, M.gen] = [auge, M.gen + 1];
-        const ecke = (j, v) => {
-            if (M.marke[j] !== M.gen) {
-                M.marke[j] = M.gen;
-                const f = Z && j < W.count ? r._morphFaktor(W.array[j], P.array[3 * j], P.array[3 * j + 2]) : null;
-                for (let k = 0; k < 3; k++)
-                    M.L[3 * j + k] =
-                        f === null
-                            ? P.array[3 * j + k]
-                            : P.array[3 * j + k] + (Z.array[3 * j + k] - P.array[3 * j + k]) * f;
-            }
-            return v.set(M.L[3 * j], M.L[3 * j + 1], M.L[3 * j + 2]);
+        const { position: P, aMorphTarget: Z0, aMorphWeight: W } = geo.attributes;
+        const [Z, ix] = [W && Z0, geo.index];
+        const ecken = (i) => [i, i + 1, i + 2].map((k) => (ix ? ix.getX(k) : k));
+        // die Ecke j um den Faktor f zum Ziel — ohne f, wie die Kopie sie trägt (`_morphFaktor`)
+        const ecke = (j, f = Z && j < W.count && r._morphFaktor(W.getX(j), P.getX(j), P.getZ(j))) => {
+            const p = new T.Vector3().fromBufferAttribute(P, j);
+            return Z && j < W.count ? p.lerp(new T.Vector3().fromBufferAttribute(Z, j), f) : p;
         };
-        const [u, v] = [Math.floor(x - M.x0), Math.floor(z - M.z0)];
-        const alle = [];
-        if (u >= 0 && u < M.nx && v >= 0 && v < M.nz && !Array.isArray(e.mesh.material)) {
-            const seite = e.mesh.material.side;
-            for (let k = M.kopf[v * M.nx + u]; k < M.kopf[v * M.nx + u + 1]; k++) {
-                const i = M.tri[k];
-                const [ia, ib, ic] = M.ecken(i);
-                ecke(ia, vA);
-                ecke(ib, vB);
-                ecke(ic, vC);
-                const t =
-                    seite === T.BackSide
-                        ? strahl.ray.intersectTriangle(vC, vB, vA, true, p)
-                        : strahl.ray.intersectTriangle(vA, vB, vC, seite === T.FrontSide, p);
-                if (t === null) continue;
-                const distance = strahl.ray.origin.distanceTo(p);
-                if (distance < strahl.near || distance > strahl.far) continue;
-                const normal = T.Triangle.getNormal(vA, vB, vC, new T.Vector3());
-                alle.push({
-                    distance,
-                    point: p.clone(),
-                    face: { a: ia, b: ib, c: ic, normal, materialIndex: 0 },
-                    faceIndex: Math.floor(i / 3),
-                });
+        // das Gitter des Netzes: je Zelle die Dreiecke, deren Grundriss zwischen Lage und Ziel · Geomorph sie berührt, in ihrer Reihe
+        const stand = [geo, P, Z, W, ix, gm, r.state.chunkSaetze.get("boden").stand];
+        if (!e.__gez || e.__gez.stand.some((q, k) => q !== stand[k])) {
+            const zellen = {};
+            for (let i = 0; i < (ix ? ix.count : P.count); i += 3) {
+                const q = new T.Box3()
+                    .setFromPoints(ecken(i).flatMap((j) => [ecke(j, 0), ecke(j, gm)]))
+                    .expandByScalar(1e-3);
+                for (let u = Math.floor(q.min.x); u <= q.max.x; u++)
+                    for (let w = Math.floor(q.min.z); w <= q.max.z; w++) (zellen[u + "," + w] ??= []).push(i);
             }
-            alle.sort((m, q) => m.distance - q.distance);
+            e.__gez = { stand, zellen };
         }
+        // die Zelle im Lot ohne Dreieck: das Netz trägt keinen Treffer
+        const zelle = e.__gez.zellen[Math.floor(x) + "," + Math.floor(z)];
+        if (!zelle) continue;
+        // die Kopie im Lot (EIN Mesh je Seite: ein neues kostet ~20 µs, mehr als sein Strahl)
+        const kopie =
+            G.kopie ||
+            (G.kopie = new T.Mesh(
+                Object.assign(new T.BufferGeometry(), { boundingSphere: new T.Sphere(undefined, Infinity) })
+            ));
+        kopie.material = e.mesh.material;
+        kopie.geometry.setAttribute(
+            "position",
+            new T.Float32BufferAttribute(
+                zelle.flatMap((i) => ecken(i).flatMap((j) => ecke(j).toArray())),
+                3
+            )
+        );
+        strahl.set(new T.Vector3(x, 900, z), new T.Vector3(0, -1, 0));
+        const alle = strahl.intersectObject(kopie);
         const h = alle.find((t) => t.face && Math.abs(t.face.normal.y) >= 0.3);
         if (h && (best === null || h.point.y > best)) best = h.point.y;
         if (alle.length && alle[0].point.y > oben) {
@@ -1302,7 +1214,7 @@ const zeile = (o) =>
 
 hauptLauf(async () => {
     await server.lausche(PORT);
-    const browser = await starteBrowser({ art: BILD ? "linse" : "null", frist: 900000 });
+    const browser = await starteBrowser({ art: "null", frist: 900000 });
     let rot = 0;
     try {
         // `k8`: sie misst nur K8 (Streu, Reh und GT tragen Studio-Gestalten der Foundry)
@@ -1312,7 +1224,7 @@ hauptLauf(async () => {
             const kontext = await browser.createBrowserContext();
             const page = await kontext.newPage();
             page.setDefaultTimeout(880000);
-            if (!BILD) await nullRenderer(page);
+            await nullRenderer(page);
             // die Mess-Wiese in IHREM Zustand (spec/profiband/haushalt.json `dorfZug`): ruht dort der Zug, wächst kein Auto-Dorf an
             // Wiese und Hang — headless ruht er ohnehin (`_dorfTaktLebt`), auf der Karte lief er, und der 25°-Hang stand unter den
             // Terrassen des Dorfs (Radeon: Feinform p95 21,1 statt 4,3 cm); dasselbe Urteil hält den Takt des Nexus an (sein Dorf)
