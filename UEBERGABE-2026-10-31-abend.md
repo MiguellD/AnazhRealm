@@ -45,7 +45,21 @@ Pflicht-OFFEN: A, B, C, E und F (F gesetzt 31.10., der Prüfplatz; Plan `bericht
   - voll 18/18 WebGL2-Rückfall (ohne WebGPU-Adapter bootet die Welt auf GL).
 - `zug.sh teile 831e885c… halbiert` ist der Weg der Probe-Bisektion. Jedes ROT zuerst mit dem GPU-Auge triagieren (rot-triage.cjs):
   Täter oder wackelnde Linse? main bleibt b895650c.
-- z117 fährt w4-b-code-heim allein am main b895650c (`w3/kette-z117.out`).
+- Die Reds von z116 kamen in beiden Versuchen gleich, auf GitHub-Läufern: ein echter Täter, kein Wackler.
+- **z117 ist ebenfalls ROT** (Lauf 41249924316, Kandidat 13a7b993 mit w4-b-code-heim allein, Basis b895650c). In beiden Versuchen
+  brachen dieselben Linsen: echt auf der Radeon (Prüfbühne S0 Feuerkreis-Luma, Wasser-Bild, Ego-Schatten) und auf GitHub voll 13–16
+  (Schatten am Terminator, Portal-Membran, Ego-Schatten, Prüfbühne S0). Täter ist b-code: „der Stamm übersetzt beim Streamen“, 93
+  Stamm-Dateien je +1 Zeile. Er gehört zurück an seine Cloud-Sitzung bzw. in eine neue, mit diesen Linsen als Beweis.
+- **Beide Laptops wurden am 01.11. ~00:40 neu gestartet** (Kontowechsel). Nach der Anmeldung starten die Runner radeon-890m und OMEN
+  sowie „OMEN messplatz“ über ihre geplanten Aufgaben. Prüfen: beide Runner online, messplatz.sh läuft. Die OMEN stand mitten in
+  z112-abab, die Warteschlange liegt in koordination.
+- **Cloud-Zweige seit 22:00** (die Sitzungen haben alle gesichert):
+  - Abgaben: w4-verkehr-c2 3c7e5ec0 (C), w4-stationen-schnell-a f7c6b3df + -koord 3371d25b, w4-laub-karte 05ddc85a (Folge),
+    w4-b-boden2 c389e0f1 (auf b895650c), w4-genesis-ort-gesetz d393de29 (F), w4-b-code 54d6090f (ROT, siehe z117).
+  - Zwischenstände (WIP): w4-stadt-takt3 auf claude/relaxed-euler-7t7fyk 8faabbf9, w4-e-buendel dc21e73b (Decke offen),
+    w4-arena-welt a1a0e60f (offen: Faltung in gate:asset-contract), w4-koerper-park 4b1e4eee (Zwischenstand).
+  - Dazu w4-b-pflanzen ceb948be (Merge main), w4-gehege 8bda6d1b und w4-bewohner-wache (in main). w4-tore-teile ohne Push gesehen:
+    die claude/-Zweige der Sitzung prüfen.
 
 ## Cloud — 17 Sitzungen liefen um 22:17
 Alle bekamen um 22:18 die Anweisung: Stand sofort als „WIP <zweig>: … [skip ci]“ pushen, danach je Schritt, abgabereif als „Abgabe …“.
