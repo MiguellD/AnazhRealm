@@ -1,0 +1,80 @@
+$ C:\Program Files\nodejs\node.exe -e (async function folge(plan) {
+    const fs = require("fs");
+    const path = require("path");
+    const cp = require("child_process");
+    const crypto = require("crypto");
+    const [AUS, KOORD] = process.argv.slice(1);
+    const DIR = AUS + ".d";
+    fs.mkdirSync(DIR, { recursive: true });
+    const WB = path.join("scripts", "werkbank.cjs");
+    const P = String(process.env.WERKBANK_PORT);
+    const aus = { plan: plan.name, adapter: null, schritte: {}, dateien: {} };
+    // @DIR@ · @KOORD@ · @T:<name>@ (ein Text aus plan.texte) · @<schritt>.<i>@ (das i-te Feld des Ergebnisses eines früheren Schritts)
+    const ers = (s) =>
+        String(s)
+            .replace(/@T:([A-Z_]+)@/g, (_m, n) => plan.texte[n])
+            .split("@DIR@").join(DIR)
+            .split("@KOORD@").join(KOORD)
+            .replace(/@([a-z0-9-]+)\.(\d+)@/g, (_m, n, i) => {
+                const e = aus.schritte[n] && aus.schritte[n].json && aus.schritte[n].json.ergebnis;
+                if (!Array.isArray(e) || e[+i] == null) throw new Error("Schritt " + n + " trägt kein Feld " + i + ": " + JSON.stringify(e));
+                return String(e[+i]);
+            });
+    const duenn = (o) => (o == null ? null : JSON.parse(JSON.stringify(o, (_k, v) => (typeof v === "string" && v.length > 4096 ? undefined : v))));
+    const json = (t) => {
+        const s = String(t || "");
+        const e = s.lastIndexOf("}");
+        for (const i of [s.startsWith("{") ? 0 : -1, s.indexOf("\n{")])
+            if (i >= 0 && e > i)
+                try {
+                    return JSON.parse(s.slice(i, e + 1));
+                } catch (_e) {
+                    /* der nächste Anfang */
+                }
+        return null;
+    };
+    const wb = (args, ms) =>
+        cp.spawnSync(process.execPath, [WB, ...args, "--port", P], { encoding: "utf8", timeout: ms || 900000, maxBuffer: 1 << 28 });
+    let code = 0;
+    try {
+        aus.adapter = (/\[linse-gpu\][^\r\n]*/.exec(fs.readFileSync(String(process.env.PUNKTE_SITZUNG_LOG), "utf8")) || [null])[0];
+        for (const s of plan.schritte) {
+            let args = (s.args || []).map(ers);
+            if (s.probe) {
+                // eine Seiten-Probe aus einer Datei; ihr git-Blob ist fest, damit eine geänderte Probe nie still mitmisst
+                const roh = fs.readFileSync(ers(s.probe));
+                const blob = crypto.createHash("sha1").update("blob " + roh.length + "\0").update(roh).digest("hex");
+                if (blob !== s.blob) throw new Error("Probe " + s.probe + " ist Blob " + blob + ", die Station kennt " + s.blob);
+                args = ["eval", roh.toString("utf8")];
+            }
+            const r = wb(args, s.ms);
+            // der Rest der Ausgabe steht IMMER (29.10.: die Urteils-Zeile eines Werkzeugs, das daneben JSON druckt, fiel sonst weg)
+            const e = { exit: r.status, json: duenn(json(r.stdout)), rest: String((r.stdout || "") + (r.stderr || "")).slice(-1500) };
+            aus.schritte[s.name] = e;
+            if (s.datei) {
+                const f = ers(s.datei);
+                aus.dateien[s.name] = fs.existsSync(f) ? duenn(JSON.parse(fs.readFileSync(f, "utf8"))) : null;
+            }
+            console.log("  " + s.name + " · Exit " + r.status + (e.json ? "" : " · " + String(e.rest).trim().split("\n").slice(-1)[0]));
+            if (s.muss && r.status !== 0) throw new Error(s.name + ": Exit " + r.status + " " + String(e.rest || "").slice(-300));
+        }
+    } catch (e) {
+        aus.fehler = String((e && e.message) || e);
+        code = 1;
+    } finally {
+        fs.writeFileSync(AUS, JSON.stringify(aus, null, 1));
+    }
+    console.log(aus.adapter || "[linse-gpu] ungenannt");
+    console.log(aus.fehler ? "FOLGE ROT: " + aus.fehler : "FOLGE " + plan.name + ": " + plan.schritte.length + " Schritte");
+    process.exit(code);
+})({"name":"material.K2#1","texte":{"FELS_ZIEL":"const st = r.state, pm = st.playerMesh.position, D = globalThis.__felsD || 6;\nlet best = null;\nst.scene.traverse((o) => {\n    if (!o.isMesh || o.name !== \"formationenSatz\") return;\n    o.updateMatrixWorld(true);\n    const M = o.matrixWorld, v = new T.Vector3(), q = new T.Vector3(), p = o.geometry.attributes.position, nn = o.geometry.attributes.normal;\n    for (let i = 0; i < p.count; i++) {\n        v.fromBufferAttribute(p, i).applyMatrix4(M);\n        if (Math.hypot(v.x - pm.x, v.z - pm.z) > (globalThis.__felsR || 8)) continue;\n        q.fromBufferAttribute(nn, i).transformDirection(M);\n        if (globalThis.__felsOben ? q.y < 0.7 : Math.abs(q.y) > 0.5) continue;\n        const g = r._voxelSurfaceY(v.x, v.z), h = v.y - g;\n        if (!(h > 0.4 && h < 4)) continue;\n        if (!best || h > best.h) best = { h, x: v.x, y: v.y, z: v.z, nx: q.x, nz: q.z };\n    }\n});\nif (!best) return \"kein Fels\";\nlet dx = best.nx, dz = best.nz, l = Math.hypot(dx, dz);\nif (l < 0.3) (dx = pm.x - best.x), (dz = pm.z - best.z), (l = Math.hypot(dx, dz) || 1);\nconst sx = best.x + (dx / l) * D, sz = best.z + (dz / l) * D, gy = r._voxelSurfaceY(sx, sz);\nst.playerMesh.position.set(sx, gy + 1, sz);\nst.yaw = Math.atan2(best.x - sx, best.z - sz);\nst.pitch = Math.atan2(best.y - (gy + 1.6), D);\nreturn [+best.h.toFixed(2), +best.x.toFixed(2), +best.y.toFixed(2), +best.z.toFixed(2), +sx.toFixed(2), +sz.toFixed(2)];","EIN":"const takt = async () => { try { window.__buehne(); r._gameLoopTick(performance.now()); } catch (_e) {} await new Promise((x) => setTimeout(x, 16)); }; for (let i = 0; i < 30; i++) await takt(); await window.__weltStehtNach(takt); return 1;"},"schritte":[{"name":"fenster","args":["fenster","1920","1080"],"muss":true},{"name":"wiese","args":["umstellen","--ort","wiese","--sicht","ego"],"muss":true},{"name":"ein-wiese","args":["eval","@T:EIN@"]},{"name":"blick","args":["eval","r.state.pitch = -0.75; return [r.state.cameraMode, r.state.yaw, r.state.pitch]"]},{"name":"boden-0.5","args":["bild","0","0","0","0","0","0","--arm","0.5","--wahl","0","--klasse","^bodenSatz$","--datei","@DIR@/boden-0.5.png"]},{"name":"boden-1","args":["bild","0","0","0","0","0","0","--arm","1","--wahl","0","--klasse","^bodenSatz$","--datei","@DIR@/boden-1.png"]},{"name":"boden-2","args":["bild","0","0","0","0","0","0","--arm","2","--wahl","0","--klasse","^bodenSatz$","--datei","@DIR@/boden-2.png"]},{"name":"genesis","args":["umstellen","--ort","genesis","--sicht","ego"],"muss":true},{"name":"ein-genesis","args":["eval","@T:EIN@"]},{"name":"fels-weit","args":["eval","globalThis.__felsR = 400; globalThis.__felsOben = 1; globalThis.__felsD = 1.5; @T:FELS_ZIEL@"],"muss":true},{"name":"fels-ort","args":["umstellen","@fels-weit.4@","@fels-weit.5@","--sicht","ego"],"muss":true},{"name":"ein-fels","args":["eval","@T:EIN@"]},{"name":"fels-stand-0.5","args":["eval","globalThis.__felsR = 8; @T:FELS_ZIEL@"]},{"name":"ein-fels-0.5","args":["eval","@T:EIN@"]},{"name":"fels-0.5","args":["bild","0","0","0","0","0","0","--arm","0.5","--wahl","0","--klasse","^formationenSatz$","--datei","@DIR@/fels-0.5.png"]},{"name":"fels-stand-1","args":["eval","globalThis.__felsR = 8; @T:FELS_ZIEL@"]},{"name":"ein-fels-1","args":["eval","@T:EIN@"]},{"name":"fels-1","args":["bild","0","0","0","0","0","0","--arm","1","--wahl","0","--klasse","^formationenSatz$","--datei","@DIR@/fels-1.png"]},{"name":"fels-stand-2","args":["eval","globalThis.__felsR = 8; @T:FELS_ZIEL@"]},{"name":"ein-fels-2","args":["eval","@T:EIN@"]},{"name":"fels-2","args":["bild","0","0","0","0","0","0","--arm","2","--wahl","0","--klasse","^formationenSatz$","--datei","@DIR@/fels-2.png"]}]}) C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\94c079cb-gtx\material.K2_1.json C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte
+  fenster · Exit 0
+  wiese · Exit 0
+  ein-wiese · Exit 0
+  blick · Exit 0
+  boden-0.5 · Exit 0
+  boden-1 · Exit 0
+  boden-2 · Exit 0
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

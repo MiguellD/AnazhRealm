@@ -1,0 +1,8 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u; K=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte'); A=$(cygpath -m 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\94c079cb-gtx\studios.K4_1.json'); export WERKBANK_PORT=$((7804+20000)); node "$K/bericht/2910-w3w-studios/skripte/k4-bild.cjs" "$A" 7804
+[linse-gpu] nvidia/pascal
+K4 garage: Differenz 0.8905 ·  (17.7 s)
+K4 portale: Differenz — · ROT: bild: {"ms":7947,"fehler":"ABNAHME ROT [Sicht verdeckt 55.5 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub baum_kiefer 55.5 % · Vordergrund 71.5 % näher als 8 m (der halbe Ziel-Abstand): Laub baum_kiefer 71.5 % · Ziel Blickziel verdeckt von Laub baum_kiefer in 1.73 m] · beweis · (11.2 s)
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
