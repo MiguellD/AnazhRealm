@@ -1268,16 +1268,19 @@ async function starte() {
                 const wurf = new Map(alle.map((o) => (o.bereich ? o.mesh : o)).map((o) => [o, o.castShadow]));
                 const verbirg = (o) => (o.bereich ? r._chunkSatzAus(o.art, o.key) : (o.visible = false));
                 const zeig = (o) => (o.bereich ? r._bauSatzMarke(o.key, o.art) : (o.visible = true));
-                const ruhen = ["_tickNahWiese", "_ruheImBild"].map((m) => [m, Object.prototype.hasOwnProperty.call(r, m), r[m]]);
+                const ruhen = ["_tickNahWiese", "_ruheImBild"].map((m) => [m, Object.hasOwn(r, m), r[m]]);
                 for (const [m] of ruhen) r[m] = () => 0;
+                // verbirgt der Schuss die Strähnen des Spielers, ist sein Kopf kahl: die Kappe gehört zum Haar (`_kopfKahl`, haar.K2)
                 const schuss = async (aus) => {
                     for (const o of aus) verbirg(o);
+                    r._kopfKahl(aus);
                     bundlesNeu();
                     try {
                         r._schattenAlleNeu();
                         return (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
                     } finally {
                         for (const o of aus) zeig(o);
+                        r._kopfKahl([]);
                         r._tickBauSatz(Infinity);
                         bundlesNeu();
                     }
@@ -2185,7 +2188,7 @@ async function starte() {
                         // DIE BILDER: ein Takt zeichnet nur, wenn die GPU-Leine frei ist (`_gpuLeineFrei`) — im Software-Holz
                         // zeichneten drei Takte hintereinander kein Bild (die Probe war blind). Gezählt wird `_loopRender`.
                         let gezeichnet = 0;
-                        const eigen = Object.prototype.hasOwnProperty.call(r, "_loopRender");
+                        const eigen = Object.hasOwn(r, "_loopRender");
                         const altRender = r._loopRender;
                         r._loopRender = function (...a) {
                             gezeichnet++;
