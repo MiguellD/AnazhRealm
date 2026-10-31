@@ -2474,28 +2474,26 @@ class AnazhRealm_kreatur_leben {
         this._bestandVerkoerpern();
     }
 
-    // DER NAH-KREIS (KREATUR_NAH_MESH): steht der Leib dort, wo das Bild ihn als Körper zeichnet? Mit Bild sagt es der Ziegel
-    // (`_kzNah`, mit seiner Hysterese), ohne Bild und für die Sicht-Kopie (kein Ziegel) der Abstand zum Spieler, mit der
-    // Hysterese des Satzes — die EINE Frage des Tier-Satzes (`_tickTierSatz`) und des Risses (`_kreaturRiss`).
+    // DER NAH-KREIS (das Feld des Stufen-Gesetzes, `_feldGrenzen`): steht der Leib dort, wo das Bild ihn als Körper zeichnet? Mit
+    // Bild sagt es der Ziegel (`_kzNah`, mit seiner Hysterese), ohne Bild und für die Sicht-Kopie (kein Ziegel) dasselbe Gesetz
+    // am Auge der Stufen, mit der Hysterese des Satzes — die EINE Frage des Tier-Satzes (`_tickTierSatz`) und des Risses.
     _kreaturNah(cr) {
         const u = cr.userData;
         if (!(this.state.renderer && this.state.renderer._isHeadlessNull) && !u._kopie) return u._kzNah === true;
-        const N = AnazhRealm.KREATUR_NAH_MESH;
-        const r = u._satz ? N.aus : N.ein;
-        const p = this.state.playerMesh.position;
-        return (cr.position.x - p.x) ** 2 + (cr.position.z - p.z) ** 2 < r * r;
+        const a = this._lodAuge() || this.state.playerMesh.position;
+        return !this._feldTraegt(cr, Math.hypot(cr.position.x - a.x, cr.position.z - a.z), !!u._satz);
     }
 
     // ═══ DER TIER-SATZ (profiband.K1 „Sturm mit 50 Tieren“: jedes Tier im Nah-Kreis war ein Leib — L0 8, L1 5 Draws je Tier
     // in Bild und Kaskade; an der GTX bei 50 Tieren +42 / +25 Befehle, Render 6,0 → 11,4–13,0 ms) ═══
-    // Im Nah-Kreis (`_kreaturNah`) leben die `KREATUR_SATZ.nahLeiber` Nächsten als Leib (ihre Stufe
-    // wählt der Stufen-Schalter `_gelenkStufe`; die Wahl hält mit dessen Hysterese) — jedes andere
+    // Im Nah-Kreis (`_kreaturNah`) leben die `KREATUR_SATZ.nahLeiber` Bedeutendsten als Leib (`_bedeutung` am Auge der Stufen:
+    // Größe am Schirm mal Bewegung; ihre Stufe wählt der Stufen-Schalter `_gelenkStufe`; die Wahl hält mit dessen Hysterese) — jedes andere
     // Tier steht und geht im Satz seiner Gestalt (`_gangSatz`, derselbe Baustein wie der Bewohner): die gelenkige Grobstufe
     // (L1, das Studio-Mesh) als Senken Fell · Glimmen (das Auge, das leuchtet) · Rest und der Wurf (`wurf.seh` der Kern-Zeile).
     // Sein Leib zeichnet nicht und geht nicht (`_animateTierBaum` fällt für ihn, `_tierSatzGang`); der Satz geht das EINE
     // Gang-Gesetz in den Bändern der Gangarten (GANG_FOLGE, `_tierSatzBacken`), die Phase rückt mit dem WEG des Leibs — kein
     // Gleiten. Wer beißt, lebt als Leib (der Biss liest den Kopf, `_kreaturBissTakt`). Die Befehle hängen nie an der Kopfzahl.
-    _tickTierSatz(playerPos) {
+    _tickTierSatz(auge) {
         const st = this.state;
         const K = AnazhRealm.KREATUR_SATZ;
         const M = this._tierSaetze || (this._tierSaetze = new Map());
@@ -2514,17 +2512,21 @@ class AnazhRealm_kreatur_leben {
         for (const cr of menge) {
             const u = cr && cr.userData;
             if (!u || !u._gelenk) continue;
-            const d2 = (cr.position.x - playerPos.x) ** 2 + (cr.position.z - playerPos.z) ** 2;
             if (!this._kreaturNah(cr) || u._ruht === true) {
                 if (u._satz) this._tierSatzAus(cr);
                 continue;
             }
             const h = u._gelenk.hyst;
-            // die Hysterese der Nah-Wahl: wer lebt, zählt um (1 − h) näher — ein Paar an gleichem Abstand tauscht nicht je Takt
-            u._satzD2 = u._satz ? d2 : d2 * (1 - h) * (1 - h);
+            // die Hysterese der Nah-Wahl: wer lebt, zählt um 1 / (1 − h)² bedeutender — ein Paar an gleichem Abstand tauscht nicht je Takt
+            const b = this._bedeutung(
+                cr.scale.x || 1,
+                Math.hypot(cr.position.x - auge.x, cr.position.z - auge.z),
+                u._laufV
+            );
+            u._satzB = u._satz ? b : b / ((1 - h) * (1 - h));
             kand.push(cr);
         }
-        kand.sort((a, b) => a.userData._satzD2 - b.userData._satzD2);
+        kand.sort((a, b) => b.userData._satzB - a.userData._satzB);
         let leiber = 0;
         for (const cr of kand) {
             const u = cr.userData;
@@ -2872,7 +2874,7 @@ class AnazhRealm_kreatur_leben {
     // Ein Gefallener (state.leichname, _kreaturFaellt) ohne KI, Gang und Stimme: TOD_LAGE.vorlaufSec nach dem Tod (Kreatur-Uhr;
     // die Tafel rechnete der Leerlauf oder `_todLageFrist`, halten.K5) kippt er (~83° smoothstep über kippDauerSec) auf ihre Flanke,
     // liegt bis zur Frist, sinkt, DANN removeCreature; je Takt seine Sicht (_leibSicht). Rein optisch, der Strom trägt die Lage (q).
-    _tickLeichname(delta, playerPos) {
+    _tickLeichname(delta) {
         const L = this.state.leichname;
         for (let i = L.length - 1; i >= 0; i--) {
             const creature = L[i];
@@ -2911,9 +2913,7 @@ class AnazhRealm_kreatur_leben {
                 this.removeCreature(creature); // rückwärts: der Splice überspringt keinen
                 continue;
             }
-            const dx = creature.position.x - playerPos.x,
-                dz = creature.position.z - playerPos.z;
-            this._leibSicht(creature, dx * dx + dz * dz, this.isInFrustum(creature));
+            this._leibSicht(creature, this.isInFrustum(creature));
         }
     }
     // DIE VÖGEL (Klang K1, tetrapoda VOGEL_GESETZ): jeder Vogel-Ruf hat einen Leib — gesehen = gehört. Je Takt die Reviere im
@@ -3565,12 +3565,10 @@ AnazhRealm.CREATURE_SPAWN_FAR_MIN = 130; // V18.315 — Boot-Kreaturen spawnen �
 // Kamera→Kugel-Oberkante gegen das EINE Höhen-Gesetz — je bergiger die Welt, desto billiger.
 // DIE EINE NAH-GRENZE DES ANALOG-FELDS (Schöpfer-Wort 30.09.: „am Ende AAA-Niveau, nicht Kapseln"): bis hierher ist
 // das Studio-Mesh die Gestalt jeder Klasse (Baum · Bau · Tier · Streu), jenseits darf der Analog-Satz tragen. Ein
-// Analog-Satz diesseits ist ein Befund mit Namen (`_analogZensus`, gate:analog-nah).
+// Analog-Satz diesseits ist ein Befund mit Namen (`_analogZensus`, gate:analog-nah). Bis zu ihr ist das Studio-Tier die Gestalt,
+// dahinter die Glieder-Kapseln im Welt-March — die Grenze des Felds im Stufen-Gesetz (`_feldGrenzen`, Hysterese
+// LOD_SCHIRM.leib.feldHystM); bis 04.10. stand der Eintritt bei 55 m: ein nahendes Tier lief zwischen 55 und 64 m als Kapsel-Satz.
 AnazhRealm.ANALOG_NAH_M = 64;
-// Bis zur Nah-Grenze ist das Studio-Tier die Gestalt (m, Hysterese ein/aus gegen Flackern); dahinter die Glieder-
-// Kapseln im Welt-March (dort sind sie klein im Bild und sparen die Mesh-Kosten). Bis 04.10. stand `ein` bei 55 m:
-// ein nahendes Tier lief zwischen 55 und 64 m als Kapsel-Satz.
-AnazhRealm.KREATUR_NAH_MESH = Object.freeze({ ein: AnazhRealm.ANALOG_NAH_M, aus: AnazhRealm.ANALOG_NAH_M + 10 });
 // DIE REGION DES BESTANDS (oekologie.K2#2, `_bestandRegion`): die Kachel hat die Fläche des Reviers (Seite revierM·√π) in
 // zellen × zellen Zellen; eine Region, die das Gesetz nie las, beginnt aufholS vor dem Lesen leer, und der Takt des Spielers
 // holt in seinen nahen Regionen höchstens aufholJeTakt versäumte Takte nach (~0,25 ms je Takt — die Kosten hängen an der

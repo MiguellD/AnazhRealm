@@ -2707,7 +2707,7 @@ async function checkBandKreaturKosten({ page, check }) {
                 probe.position.z -= 5;
                 // (G4) NAH: 40 m hinter dem Blick (diesseits der Nah-Gestalt) — jeder Takt ein Schritt
                 blick(1, 0);
-                const nahX = -Math.min(40, A.KREATUR_NAH_MESH.aus - 10);
+                const nahX = -Math.min(40, A.ANALOG_NAH_M);
                 const pinNah = () => {
                     probe.position.x = pm.x + nahX;
                     probe.position.z = pm.z;

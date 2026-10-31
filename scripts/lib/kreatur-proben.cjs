@@ -762,7 +762,7 @@ async function kreaturProben(r, T, opts) {
 
     // ── jagd: an drei Orten ein Rudel und sechs Kitze im Nah-Kreis des Spielers, je 180 s am ECHTEN Takt samt dem
     // Lebenszyklus in der Spiel-Zeit (`tickFaunaLifecycle`, wie im Spiel; der Prüfer von Zug 29 sah dort 14 Risse ohne Jäger):
-    // der Lauf der Wölfe folgt der Peilung, nie den Achsen; jeder Tod durch Jagd im Nah-Kreis (KREATUR_NAH_MESH.ein) hat
+    // der Lauf der Wölfe folgt der Peilung, nie den Achsen; jeder Tod durch Jagd im Nah-Kreis (ANALOG_NAH_M, das Feld) hat
     // einen Jäger, dessen Maul den Leib erreicht (`_kreaturBissSpalt` ≤ `_kreaturBissReich`: nah als Körper, oekologie.K2);
     // dann geht der Spieler fort, und jedes Opfer, das ein Riss im Nah-Kreis nannte (`_kreaturRiss`), ist gefallen — je Riss
     // EINES (der Übergang ändert nie den Bestand) ──
@@ -780,7 +780,7 @@ async function kreaturProben(r, T, opts) {
                 for (const c of s.creatures.slice())
                     if (c.userData._faelltNach) r._creatureNaturalDeath(c, c.userData._faelltNach, false);
             });
-        const nah = (c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < A.KREATUR_NAH_MESH.ein;
+        const nah = (c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < A.ANALOG_NAH_M;
         const R = { nah: 0, mitJaeger: 0, risse: 0, gefallen: 0 };
         // ein Riss: der Lebenszyklus nennt ein Opfer, das noch kein Riss nannte (die offenen Risse fragt er mit ihrem Opfer)
         const genannt = new Set();
@@ -2563,7 +2563,7 @@ async function kreaturProben(r, T, opts) {
             M.messen(dt, performance.now() - t0);
         };
         // DER NAH-RING (mensch.K1 Staffel 2), ein Messer wie `wegeMesser`: Bewohner gesamt, im Nah-Ring (draußen, näher
-        // als die Feld-Grenze `_bewohnerFeldGrenze().ein`: dort trägt ihn der Satz) und davon mit laufendem Gang (die Phase
+        // als die Feld-Grenze der Menge `_feldGrenzen(true).ein`: dort trägt ihn der Satz) und davon mit laufendem Gang (die Phase
         // lief in den letzten 10 Takten über 0,2 rad) — gezählt unter der Decke des Täters
         // DIE MENGE (mensch.K4 Staffel 2) im selben Messer, roh — das Urteil fällt in der Station: die 50 Nächsten draußen, je
         // Bewohner [Same, Typ, Höhe, Breite, Tiefe, nah, Farben] (die Matrix seines Satzes und seine eigenen Farben — Haut, Haar,
@@ -2572,7 +2572,7 @@ async function kreaturProben(r, T, opts) {
         // (Bildpunkte je m am Rand der Nah-Wahl), der Takt `_tickBewohner` (Mittel, p95 in ms)
         const ringMesser = (liste, ph = new Map(), k = 0, ms = []) => ({
             messen: (dt, t) => (ms.push(t), ++k === 591 && liste.forEach((b) => ph.set(b, b.walkPhase))),
-            zahl: (N = r._bewohnerFeldGrenze().ein) => {
+            zahl: (N = r._feldGrenzen(true).ein) => {
                 const nah = liste.filter((b) => !b.drinnen && ab(b.leib.position, pm) < N);
                 const gang = nah.filter((b) => Math.abs(wrap(b.walkPhase - ph.get(b))) > 0.2).length;
                 return { gesamt: liste.filter((b) => b.leib).length, ring: q3(N), nah: nah.length, nahGang: gang };
@@ -2629,7 +2629,7 @@ async function kreaturProben(r, T, opts) {
             const T = voll
                 ? [
                       ["bewohner-voll-starr", "_gaitTick", (alt) => (g, h, v, d, q) => alt.call(r, g, h, 0, 0, q)],
-                      ["bewohner-voll-leer", "_bewohnerFeldGrenze", () => () => ({ ein: 0, aus: 0 })],
+                      ["bewohner-voll-leer", "_feldGrenzen", () => () => ({ erste: 3, grenzen: [] })],
                   ]
                 : [
                       ["bewohner-stadt-rempeln", "_bewohnerAusweichen"],
