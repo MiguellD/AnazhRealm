@@ -137,7 +137,7 @@ function taeter(inj) {
     if (inj === "fuge") {
         // die Auflage liest die Fuge nicht (vor K24-N1): keine Box ist gedeckt
         r._blockerFugen = (boxes) => (boxes || []).forEach((x) => (x.gedeckt = false));
-        for (const e of r.state.architectures || []) r._blockerFugen(e.blockerAABBs);
+        for (const e of st.architectures || []) r._blockerFugen(e.blockerAABBs);
     }
     // rand: der Stand-Leser liest nur die Karte des Eigners (vor K07); wiese: Nah-Wiese und Nah-Streu lesen im Rand-Streifen
     // nichts (vor K21)
@@ -189,9 +189,9 @@ function taeter(inj) {
         };
     // nexus (K8): der Takt des Nexus wirft nach der Wanduhr in die Mess-Welt (vor k8-hang fragte er die Gate-Treue nicht)
     // sprung (K9): der Abdruck ist das feste Tempo der Seele (vor leib-k2-sprung) — Masse und Kraft ziehen nichts
-    if (inj === "sprung") r._sprungAbdruck = () => r.state.jumpPower;
+    if (inj === "sprung") r._sprungAbdruck = () => st.jumpPower;
     if (inj === "nexus") {
-        r.state.nexusEvolutionInterval = 5;
+        st.nexusEvolutionInterval = 5;
         r.evolveNexus = function (t) {
             this._dorfTaktLebt = () => true;
             P.evolveNexus.call(this, t);
@@ -210,9 +210,9 @@ const server = statikServer({ root: ROOT });
 const K7_UMFANG = Object.freeze({ bueschel: 1000, pflanzen: 500 });
 
 async function proben(mitWiese, umfang) {
-    const s = r.state;
+    const s = st;
     const T = window.THREE;
-    const A = r.constructor;
+    const A = AnazhRealm;
     const o = {};
     const pm = s.playerMesh;
     const p = s.player;
@@ -777,7 +777,7 @@ async function proben(mitWiese, umfang) {
 
 // ── K8 (Kopf der Datei) ──
 async function rollen(n) {
-    const s = r.state;
+    const s = st;
     const T = window.THREE;
     const pm = s.playerMesh;
     const gez = (x, z) => window.__gezeichnet(r, x, z);
@@ -923,7 +923,7 @@ async function rollen(n) {
         // der Huf: je Größen-Band ein Reh an seiner Obergrenze 4 m neben dem Spieler, frei im Gang (die Beine im Stand:
         // Hub 0 ihres Ziels); netId und Kreatur-Uhr fest — Größe und Weg hängen nie an der Fauna vor ihm
         const [max, seq] = [s.maxCreatures, s._creatureNetSeq];
-        for (const [k, band] of r.constructor._verhaltenGesetz().groessen.entries()) {
+        for (const [k, band] of AnazhRealm._verhaltenGesetz().groessen.entries()) {
             [s.maxCreatures, s._creatureNetSeq, s.creatureAnimationTime] = [s.creatures.length + 3, 9e5 + k, 1000];
             const reh = r.spawnCreatureAt(
                 P.x + 4,

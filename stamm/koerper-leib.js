@@ -367,22 +367,31 @@ class AnazhRealm_koerper_leib {
             // die Haltung steht fest (der Fall setzt sie, `_kreaturFaellt`): der Wechsel nach fern stellt nie in die Ruhe
             haltungFest: false,
             ruhe,
+            wahl: AnazhRealm._wahlGedaechtnis(), // das Gedächtnis der Wahl am Auge (`_gelenkStufe`)
         };
     }
 
     // DER EINE STUFEN-SCHALTER der Gelenk-Gestalt (Tier, Mensch, Peer, Werkstatt): jenseits ihrer Grenze aus dem Stufen-Gesetz
     // (`_gelenkGrenzen`: der Haushalt `ab` ihrer Kern-Zeile × Größe) trägt die Grobstufe das Bild, diesseits die feine — und die
     // Grobstufe wirft als ihr Zwilling auf SHADOW_TWIN_LAYER (die Haupt-Kamera sieht sie nie, die Kaskaden immer). Die EINE Wahl
-    // (`_stufeNachGrenzen`, Hysterese ±`hyst`) am Abstand `distSq` vom Auge der Stufen (`_lodAuge`, der Rufer misst ihn);
+    // mit Gedächtnis (`_stufeGemerkt`, Hysterese ±`hyst`) am Abstand des Leibs (`wo`, sonst seine Lage) vom Auge der Stufen
+    // `auge` (`_lodAuge`, EINMAL je Takt beim Rufer, wie der Schirm `zeilen`; eine Zahl ist ein erzwungener Abstand², der Bau 0,
+    // die Werkstatt ∞ — er wählt ohne Gedächtnis) — steht das Auge und rührt sich der Leib nicht, rechnet sie nichts;
     // geschaltet werden nur `visible` und die Ebenen, nur beim Wechsel. Jenseits ruht jeder Gang
     // (updateCreatures, der Peer-Tick, die Sicht-Kopie) außer dem eines laufenden Tiers (`_kreaturLaeuft`, Welle LF) —
     // der Wechsel nach fern stellt die Gestalt in ihre Ruhe (`_gelenkRuhe`), denn beide Stufen tragen dieselben Knochen;
     // eine Gestalt mit fester Haltung (`haltungFest`: der Gefallene, Welle LF kampf) bleibt in ihr. Rückgabe: fern?
-    _gelenkStufe(gruppe, distSq) {
+    _gelenkStufe(gruppe, auge, wo = gruppe.position, zeilen) {
         const g = gruppe.userData._gelenk;
         const s = gruppe.scale.x || 1;
-        const fern =
-            AnazhRealm._stufeNachGrenzen(Math.sqrt(distSq), g.istFern ? 1 : 0, this._gelenkGrenzen(g), s) === 1;
+        const G = this._gelenkGrenzen(g, zeilen);
+        const cur = g.istFern ? 1 : 0;
+        const m = g.wahl || (g.wahl = AnazhRealm._wahlGedaechtnis());
+        const st =
+            typeof auge === "number"
+                ? AnazhRealm._stufeNachGrenzen(Math.sqrt(auge), cur, G, s)
+                : AnazhRealm._stufeGemerkt(m, cur, G, s, wo, auge);
+        const fern = st === 1;
         if (fern !== g.istFern) {
             g.istFern = fern;
             g.nah.visible = !fern;

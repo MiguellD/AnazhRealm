@@ -2677,6 +2677,57 @@ class AnazhRealm_siedlung_bauten {
         }
         return st;
     }
+    // DIE GEMERKTE WAHL (Lehre 25: der Takt kostet, was ihn betrifft) — die EINE Wahl (`_stufeNachGrenzen`) mit dem Gedächtnis
+    // `m` ihres Eintrags (`_wahlGedaechtnis`): sie rechnet nur neu, wenn die Grenzen eine neue Epoche tragen (ein anderes `G`:
+    // der Schirm, das Buch, ein Täter), die Größe `s` oder die getragene Stufe `cur` eine andere ist, oder wenn Eintrag und Auge
+    // zusammen weiter wanderten als ihr SPIELRAUM — der Abstand der letzten Wahl zur nächsten Schwelle, die die gewählte Stufe
+    // liest: jeder Abstand darin wählt dieselbe Stufe (die Hysterese hält sie als Fixpunkt), der Weg zählt je Achse
+    // (|Δx| + |Δy| + |Δz| ≥ seine Länge) — die Wahl hält nie, wo das Gesetz anders wählte. Steht das Auge und rührt sich kein
+    // Eintrag, rechnet sie nichts. `wo` der Eintrag, `auge` das Auge (je x, z; `raum`: der Abstand im Raum, mit y).
+    static _stufeGemerkt(m, cur, G, s, wo, auge, raum = false) {
+        const x = wo.x,
+            z = wo.z,
+            ax = auge.x,
+            az = auge.z,
+            y = raum ? wo.y : 0,
+            ay = raum ? auge.y : 0;
+        if (
+            m.G === G &&
+            m.s === s &&
+            m.st === cur &&
+            Math.abs(x - m.x) +
+                Math.abs(y - m.y) +
+                Math.abs(z - m.z) +
+                Math.abs(ax - m.ax) +
+                Math.abs(ay - m.ay) +
+                Math.abs(az - m.az) <
+                m.spiel
+        )
+            return cur;
+        const d = Math.sqrt((x - ax) * (x - ax) + (y - ay) * (y - ay) + (z - az) * (z - az));
+        const st = AnazhRealm._stufeNachGrenzen(d, cur, G, s);
+        let spiel = Infinity;
+        for (const g of G.grenzen) {
+            const ab = g.ab * s;
+            const h = g.h > 0 ? g.h : G.h;
+            spiel = Math.min(spiel, Math.abs(d - (st >= g.stufe ? ab * (1 - h) : ab * (1 + h))));
+        }
+        m.G = G;
+        m.s = s;
+        m.st = st;
+        m.x = x;
+        m.y = y;
+        m.z = z;
+        m.ax = ax;
+        m.ay = ay;
+        m.az = az;
+        m.spiel = spiel;
+        return st;
+    }
+    // Das Gedächtnis EINER gemerkten Wahl (`_stufeGemerkt`) — leer: die erste Frage wählt.
+    static _wahlGedaechtnis() {
+        return { G: null, s: 0, st: NaN, x: 0, y: 0, z: 0, ax: 0, ay: 0, az: 0, spiel: -1 };
+    }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bauten]);
 
