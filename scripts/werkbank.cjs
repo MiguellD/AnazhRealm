@@ -1424,19 +1424,14 @@ async function starte() {
                     // DIE MASSE, DIE DAS URTEIL LIEST (w4-proben-tempo2, 31.10.): `nurPixel` zählt je Klasse nur ihre Pixel — ein
                     // Aufrufer, der nur sie liest (das Jahr der Vegetation, die Wiese, die Herde am Hang), trug je Schuss die ganzen Maße
                     // (Zweiton, Milch, Kante, Spiegel, Mikro; Radeon 2134b209 1,1–3,6 s je Schuss, an den Kronen 4,7 von 20,5 s). Die Pixel
-                    // je Klasse zählt EIN Gang über die Teilung (w4-stationen-schnell-a: je Klasse eine Maske samt `filter(Boolean)` trug
-                    // 0,16 s auf 1920 × 1080, vier Klassen der Wiese 0,65 s je Schuss); die Maske baut nur, wer sie misst
-                    const jeKlasse = new Float64Array(namen.length + 1);
-                    for (let p = 0; p < W * H; p++) jeKlasse[teil[p]]++;
+                    // zählt der Gang, der die Maske legt (w4-stationen-schnell-a: ein `filter(Boolean)` je Klasse dahinter trug vier Klassen
+                    // der Wiese 145 ms je Schuss auf 1920 × 1080)
                     namen.forEach((n, j) => {
+                        const m = new Uint8Array(W * H);
+                        let px = 0;
+                        for (let p = 0; p < W * H; p++) px += m[p] = teil[p] === j + 1 ? 1 : 0;
                         const mb = /^portal-membran$/.test(n);
-                        const maske = () => {
-                            const m = new Uint8Array(W * H);
-                            for (let p = 0; p < W * H; p++) m[p] = teil[p] === j + 1 ? 1 : 0;
-                            return m;
-                        };
-                        const m = k.nurPixel && !(mb && jeKlasse[j + 1]) ? null : maske();
-                        const ms = k.nurPixel ? { pixel: jeKlasse[j + 1] } : __klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null, spiegel);
+                        const ms = k.nurPixel ? { pixel: px } : __klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null, spiegel);
                         if (mb && ms.pixel) ms.ziel = zielTreue(m);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
@@ -1570,29 +1565,16 @@ async function starte() {
                         // Lage; das Auge der Stufen, der Geomorph, die vorläufigen Säulen — alles, was `_bodenSichtAt` liest) fallen
                         // den Speicher bei jeder Änderung. Bis dahin rief jeder Wiesen-Schuss `_bodenSichtAt` ~20,8 Mio.-mal (≈ 1 µs je
                         // Ruf, die Mess-Wiese in der Null-Welt 20,5 s; GTX b4bcf19c je Wiesen-Schuss 30 s, die Krone 6–8 s)
-                        const abdruckBoden = () => {
-                            const a = [];
-                            for (const [key, e] of r.state.voxelChunks || []) {
-                                const g = e && e.mesh ? e.mesh.geometry : null;
-                                const lage = g && g.userData && g.userData.naht ? g.userData.naht.lage : null;
-                                a.push(key, e, e && e.surfMap, e && e.surfMapZiel, e && e.lod, g, lage ? lage.stand : -1);
-                            }
-                            const au = r.state.stufeAuge,
-                                U = r.state.atmoUniforms;
-                            a.push(au ? au.x : null, au ? au.z : null, U && U.geomorph ? U.geomorph.value : null);
-                            for (const s of (r.state.saeulenVorlaeufig || new Map()).values()) a.push(s.x, s.z, s.rr, s.krone);
-                            return a;
+                        const abdruck = () => {
+                            const a = [...cam.matrixWorld.elements, ...cam.projectionMatrix.elements, W, H, st.stufeAuge?.x, st.stufeAuge?.z];
+                            for (const e of st.voxelChunks.values()) a.push(e, e.surfMap, e.surfMapZiel, e.lod, e.mesh, e.mesh?.geometry.userData.naht?.lage?.stand);
+                            for (const s of st.saeulenVorlaeufig?.values() || []) a.push(s.x, s.z, s.rr, s.krone);
+                            return a.concat(st.atmoUniforms?.geomorph?.value);
                         };
-                        const gleich = (a, b2) => !!a && !!b2 && a.length === b2.length && a.every((x, i) => x === b2[i]);
-                        const kamera = [...cam.matrixWorld.elements, ...cam.projectionMatrix.elements, W, H, baender.join(",")];
-                        const BW = Math.ceil(W / 2);
                         let speicher = window.__abstandSpeicher;
-                        if (!speicher || !gleich(speicher.kamera, kamera) || !gleich(speicher.boden, abdruckBoden()))
-                            speicher = window.__abstandSpeicher = {
-                                kamera,
-                                boden: null,
-                                treffer: new Float64Array(BW * Math.ceil(H / 2)).fill(NaN),
-                            };
+                        const vor = abdruck();
+                        if (!(speicher?.abdruck?.length === vor.length && vor.every((x, i) => x === speicher.abdruck[i])))
+                            speicher = window.__abstandSpeicher = { treffer: new Float64Array(W * H).fill(NaN) };
                         for (let y0 = 0; y0 < H; y0 += 2)
                             for (let x0 = 0; x0 < W; x0 += 2) {
                                 let jemand = false;
@@ -1608,7 +1590,7 @@ async function starte() {
                                     .normalize();
                                 if (v.y >= -1e-4) continue;
                                 // der Strahl bis zum gezeichneten Boden: Schritte wachsen mit dem Abstand, dann halbiert
-                                const blk = (y0 >> 1) * BW + (x0 >> 1);
+                                const blk = y0 * W + x0;
                                 let hit = speicher.treffer[blk];
                                 if (Number.isNaN(hit)) {
                                     let t0 = 0,
@@ -1652,7 +1634,7 @@ async function starte() {
                             }
                         // der Abdruck NACH dem Marsch: was der Leser unterwegs anlegt (die Ziel-Karte eines Chunks im Geomorph), trägt der
                         // nächste Schuss schon — derselbe Boden
-                        speicher.boden = abdruckBoden();
+                        speicher.abdruck = abdruck();
                         abstand = {
                             baender,
                             ring,
