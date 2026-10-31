@@ -1,0 +1,133 @@
+$ /opt/node22/bin/node -e (async function trachtLauf() {
+const fs = require("fs");
+const path = require("path");
+const { werkbankTor, werkbankRuf, pngDatei } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const [aus, port, szene] = process.argv.slice(1);
+const W = Number(port) + 20000;
+const B = aus.replace(/\.json$/, "");
+let erg;
+const tor = werkbankTor(W, ["--ort", "buehne"]);
+try {
+await tor.bereit;
+for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+const f = await werkbankRuf(W, "/fenster", { w: 960, h: 540 });
+if (!f || f.fehler) throw new Error("fenster 960 540: " + JSON.stringify(f).slice(0, 200));
+const u = await werkbankRuf(W, "/umstellen", { ort: "buehne", sicht: "ego" });
+if (!u || u.fehler) throw new Error("umstellen --ort buehne: " + JSON.stringify(u).slice(0, 200));
+const a = await werkbankRuf(W, "/eval", { code: "return await (" + szene + ")(r, T, " + JSON.stringify({ saat: 7, jahre: [1320, 1935], abstand: 3.2 }) + ");" });
+if (!a || !a.ergebnis) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
+erg = a.ergebnis;
+for (const [k, png] of Object.entries(erg.png || {})) pngDatei(B + "-" + k + ".png", png);
+delete erg.png;
+} catch (e) {
+erg = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 400) };
+} finally {
+tor.stop();
+}
+console.log("TRACHT " + JSON.stringify(erg));
+fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+})() /home/user/AnazhRealm/meisterkarte-quelle/punkte/messung/roh/94c079cb-headless/haar.K4_1.json 7704 async function trachtSzene(r, T, o) {
+const st = r.state, rend = st.renderer, cam = st.camera, A = r.constructor, kc = window.__koerperCore;
+rend.setAnimationLoop(null);
+window.__buehne({});
+const { x: W, y: H } = rend.getDrawingBufferSize(new T.Vector2());
+const P0 = st.playerMesh.position.clone();
+const kam0 = [cam.position.clone(), cam.quaternion.clone(), cam.fov];
+const fwd = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion).setY(0).normalize();
+const boden = (x, z) => r._voxelSurfaceY(x, z);
+const ep = (j) => A.Gesetz("fachwerk:epocheImJahr")(j);
+const schuss = async () => (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+const t0 = performance.now();
+const plaene = {};
+for (const j of o.jahre) plaene[j] = await r._foundryRequestSettlement({ seed: o.saat, epoche: ep(j) });
+const [alt, neu] = o.jahre.map((j) => plaene[j]);
+if (!alt || !neu || !alt.kleidung || !neu.kleidung) return { fehler: "der Export trägt keine Tracht: " + o.jahre.map((j) => j + " " + JSON.stringify(plaene[j] && plaene[j].kleidung)).join(" · ") };
+const zeilen = [];
+const baue = (plan) => {
+const G = r._bewohnerGestalten({ plan, key: "haar-k4" })[0];
+const tz = r._tonZeile(kc.menschPalette(G.dK, G.f.skin, G.f.hair));
+zeilen.push(tz);
+const vorher = r._activePeerUebergabe;
+r._activePeerUebergabe = {};
+let g;
+try {
+g = r._buildHumanGroup(G.ov);
+} finally {
+r._activePeerUebergabe = vorher;
+}
+g.userData.__tonZeilen = [tz, tz];
+g.traverse((n) => {
+if (n.isMesh) (n.userData.__ton = [tz, tz]), (n.castShadow = false), (n.frustumCulled = false);
+});
+return { g, ov: { top: G.ov.top, bottom: G.ov.bottom, shoes: G.ov.shoes, farben: [G.ov.topColor, G.ov.bottomColor, G.ov.shoeColor] } };
+};
+const M = P0.clone().addScaledVector(fwd, o.abstand);
+M.y = boden(M.x, M.z);
+const maske = (a, b) => {
+const m = new Uint8Array(W * H);
+for (let p = 0, i = 0; p < W * H; p++, i += 4)
+m[p] = Math.abs(a[i] - b[i]) > 18 || Math.abs(a[i + 1] - b[i + 1]) > 18 || Math.abs(a[i + 2] - b[i + 2]) > 18 ? 1 : 0;
+return m;
+};
+const vergleich = (a, b, ma, mb) => {
+let u = 0, s = 0, anders = 0;
+for (let p = 0, i = 0; p < W * H; p++, i += 4) {
+if (!(ma[p] || mb[p])) continue;
+u++;
+if (ma[p] && mb[p]) s++;
+if (Math.abs(a[i] - b[i]) > 18 || Math.abs(a[i + 1] - b[i + 1]) > 18 || Math.abs(a[i + 2] - b[i + 2]) > 18) anders++;
+}
+return { vereint: u, iou: u ? +(s / u).toFixed(4) : null, anders: u ? +(anders / u).toFixed(4) : null };
+};
+const aus = { schirm: [W, H], plaene: {}, figuren: {}, treue: null, png: {} };
+const leiber = [];
+try {
+cam.fov = A.KAM_FOV_GRAD;
+cam.updateProjectionMatrix();
+cam.position.set(P0.x, boden(P0.x, P0.z) + 1.6, P0.z);
+cam.lookAt(M.x, M.y + 0.9, M.z);
+cam.updateMatrixWorld(true);
+st.playerMesh.visible = false;
+for (const j of o.jahre) aus.plaene[j] = { epoche: ep(j), kleidung: plaene[j].kleidung };
+const fig = {
+alt: baue(alt),
+neu: baue(neu),
+mutante: baue(Object.assign({}, neu, { kleidung: alt.kleidung })),
+schnitt: baue(Object.assign({}, alt, { kleidung: Object.assign({}, alt.kleidung, { top: neu.kleidung.top, bottom: neu.kleidung.bottom, shoes: neu.kleidung.shoes }) })),
+};
+for (const f of Object.values(fig)) leiber.push(f.g), (f.g.visible = false), st.scene.add(f.g);
+const leer = await schuss();
+const bild = {};
+for (const [k, f] of Object.entries(fig)) {
+f.g.position.set(M.x, M.y + A.PLAYER_FOOT_OFFSET, M.z);
+f.g.rotation.y = Math.atan2(fwd.x, fwd.z);
+f.g.visible = true;
+f.g.updateMatrixWorld(true);
+bild[k] = await schuss();
+if (!aus.treue) {
+const b2 = await schuss();
+let n = 0;
+for (let i = 0; i < b2.length; i++) if (b2[i] !== bild[k][i]) n++;
+aus.treue = { fall: k, bytes: n };
+}
+f.g.visible = false;
+f.m = maske(bild[k], leer);
+aus.figuren[k] = { ...f.ov, pixel: f.m.reduce((s, x) => s + x, 0) };
+}
+aus.epochen = vergleich(bild.alt, bild.neu, fig.alt.m, fig.neu.m);
+aus.mutante = vergleich(bild.alt, bild.mutante, fig.alt.m, fig.mutante.m);
+aus.schnitt = vergleich(bild.alt, bild.schnitt, fig.alt.m, fig.schnitt.m);
+if (window.__png) for (const [k, n] of [["alt", o.jahre[0]], ["neu", o.jahre[1]], ["schnitt", "schnitt"]]) aus.png[n] = window.__png(bild[k], W, H);
+} finally {
+for (const g of leiber) (st.scene.remove(g), r._disposeSoulGroup(g));
+for (const z of zeilen) r._tonZeileFrei(z);
+cam.fov = kam0[2];
+cam.updateProjectionMatrix();
+cam.position.copy(kam0[0]), cam.quaternion.copy(kam0[1]), cam.updateMatrixWorld(true);
+st.playerMesh.visible = true;
+}
+aus.ms = Math.round(performance.now() - t0);
+return aus;
+}
+[linse-gpu] google/swiftshader
+TRACHT {"schirm":[960,540],"plaene":{"1320":{"epoche":"mittelalter","kleidung":{"top":"poncho","bottom":"pants","shoes":"boot","farben":["sand","olive","grey","mustard","burgundy"]}},"1935":{"epoche":"moderne","kleidung":{"top":"tshirt","bottom":"pants","shoes":"sneaker","farben":["navy","blue","grey","white","charcoal","teal","red","black"]}}},"figuren":{"alt":{"top":"poncho","bottom":"pants","shoes":"boot","farben":["olive","grey","grey"],"pixel":7689},"neu":{"top":"tshirt","bottom":"pants","shoes":"sneaker","farben":["red","teal","grey"],"pixel":7413},"mutante":{"top":"poncho","bottom":"pants","shoes":"boot","farben":["olive","grey","grey"],"pixel":7689},"schnitt":{"top":"tshirt","bottom":"pants","shoes":"sneaker","farben":["olive","grey","grey"],"pixel":7404}},"treue":{"fall":"alt","bytes":0},"epochen":{"vereint":7706,"iou":0.9598,"anders":0.6308},"mutante":{"vereint":7689,"iou":1,"anders":0},"schnitt":{"vereint":7690,"iou":0.9627,"anders":0.162},"ms":48245}

@@ -1,0 +1,107 @@
+{
+ "schirm": [
+  960,
+  540
+ ],
+ "plaene": {
+  "1320": {
+   "epoche": "mittelalter",
+   "kleidung": {
+    "top": "poncho",
+    "bottom": "pants",
+    "shoes": "boot",
+    "farben": [
+     "sand",
+     "olive",
+     "grey",
+     "mustard",
+     "burgundy"
+    ]
+   }
+  },
+  "1935": {
+   "epoche": "moderne",
+   "kleidung": {
+    "top": "tshirt",
+    "bottom": "pants",
+    "shoes": "sneaker",
+    "farben": [
+     "navy",
+     "blue",
+     "grey",
+     "white",
+     "charcoal",
+     "teal",
+     "red",
+     "black"
+    ]
+   }
+  }
+ },
+ "figuren": {
+  "alt": {
+   "top": "poncho",
+   "bottom": "pants",
+   "shoes": "boot",
+   "farben": [
+    "olive",
+    "grey",
+    "grey"
+   ],
+   "pixel": 7689
+  },
+  "neu": {
+   "top": "tshirt",
+   "bottom": "pants",
+   "shoes": "sneaker",
+   "farben": [
+    "red",
+    "teal",
+    "grey"
+   ],
+   "pixel": 7413
+  },
+  "mutante": {
+   "top": "poncho",
+   "bottom": "pants",
+   "shoes": "boot",
+   "farben": [
+    "olive",
+    "grey",
+    "grey"
+   ],
+   "pixel": 7689
+  },
+  "schnitt": {
+   "top": "tshirt",
+   "bottom": "pants",
+   "shoes": "sneaker",
+   "farben": [
+    "olive",
+    "grey",
+    "grey"
+   ],
+   "pixel": 7404
+  }
+ },
+ "treue": {
+  "fall": "alt",
+  "bytes": 0
+ },
+ "epochen": {
+  "vereint": 7706,
+  "iou": 0.9598,
+  "anders": 0.6308
+ },
+ "mutante": {
+  "vereint": 7689,
+  "iou": 1,
+  "anders": 0
+ },
+ "schnitt": {
+  "vereint": 7690,
+  "iou": 0.9627,
+  "anders": 0.162
+ },
+ "ms": 48245
+}
