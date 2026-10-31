@@ -83,6 +83,8 @@ p95 ≤ 33 ms auf JEDEM Standardgerät (Richter: das Profi-Band). Feature-Stopp 
 - **C** Verkehr (gesetzt 25.10.): Wagen mit Bewohnern am Steuer auf den Trassen der Stadt, nach der Messbühne Stadt-Gipfel; noch keine Station.
 - **E** Profi-Band (Radeon 890M + GTX 1060, Wiese + Genesis, Ego + Third): GTX stehend Frame p95 16,8 ms · VRAM 99,6–111,2 MB · CPU-Takt
   p95 4,7–6,3 ms, reißt an Genesis Third (6,3 > 5,8); das Radeon-ABAB am Kopf steht aus.
+- **F** Prüfplatz (gesetzt 31.10., die Ausnahme vom Feature-Stopp: der Ort jeder Ankunft): EIN Plan im Ort-Gesetz; alle Zonen bauen parallel,
+  Spielplatz, Arena, Strecke und Stadt zuerst im Kern, in den Platz gehängt nach seiner Grau-Fassung in main.
 
 Belege im Zweig `koordination`: `bericht/1810-b5-befund.md` (B, GTX), `bericht/1710-n-b4.md` (B, Radeon), `bericht/1810-f6-gtx.md` (E).
 
