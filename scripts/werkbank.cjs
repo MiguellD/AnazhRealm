@@ -712,7 +712,7 @@ function bandEinschwingen(k) {
     return (async () => {
         const st = r.state;
         const RUHIG = k.ruhig || 30;
-        // DIE VOLLE WELT: der Regler misst hier Takte mit 50 ms Pause (65 ms je Frame) und drosselte auf loadScale 0 —
+        // DIE VOLLE WELT: der Regler maß hier Takte mit 50 ms Pause (65 ms je Frame) und drosselte auf loadScale 0 —
         // je nach Vorgeschichte stand die Messung auf einer anderen Welt (Streu-Stufen, Laub-Radius). Die Decke geht hoch
         // (`perfTargetMs` 1000, wie `lauf --regler voll`), der PID wächst auf 1: das Band misst die volle Welt. Die
         // Werkbank setzt die Decke nach den Proben zurück.
@@ -732,7 +732,10 @@ function bandEinschwingen(k) {
             return { chunks: st.voxelChunks ? st.voxelChunks.size : 0, instanzen, ungebaut: __ungebaut(), loadScale: ls };
         };
         while (performance.now() < dl) {
-            __werkTakt();
+            // DER TAKT UND SEIN BILD (`__werkTakt`, wie der Takt des Orts in `/umstellen` seit 4f098fa6): bis 31.10. schlief das
+            // Band je Takt 50 ms — am Messort genesis (ferne.K2#2) trugen die 40 Takte des Einschwingens und 5 × 20 Takte zwischen
+            // den Proben 7 s Schlaf, nie das Werk
+            const bild = __werkTakt();
             takte++;
             // was die Welt noch baut — die EINE Liste (band-urteil `einschwingOffen`, mit der Dorf-Wache des Messorts dorf)
             o = __einschwingOffen(r);
@@ -742,7 +745,7 @@ function bandEinschwingen(k) {
             vor = s;
             ruhig = Object.keys(o).length ? 0 : ruhig + 1;
             if (takte >= 40 && ruhig >= RUHIG) break;
-            await sleep(50);
+            await bild;
         }
         return {
             eingeschwungen: ruhig >= RUHIG,
@@ -760,11 +763,7 @@ function bandProben(k) {
     return (async () => {
         const proben = [];
         for (let i = 0; i < (k.n || 6); i++) {
-            if (i)
-                for (let t = 0; t < (k.zwischen || 20); t++) {
-                    __werkTakt();
-                    await sleep(50);
-                }
+            if (i) for (let t = 0; t < (k.zwischen || 20); t++) await __werkTakt(); // ein Bild je Takt, wie das Einschwingen
             __buehne();
             try {
                 if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
@@ -1013,17 +1012,12 @@ async function starte() {
                 const ziel = stell && stell.ring ? stell.ring : Math.min(12, st.chunkRingRadius || 4);
                 const decke = st.perfTargetMs;
                 st.perfTargetMs = 1000;
-                // DER TAKT DES ORTS geht im Schritt der Seite (`__seitenTakt`: ein Bild, dann der Takt) — bis 30.10. schlief er 50 ms je Takt:
-                // an der Radeon (Mess-Sitzung, Ort wiese) waren 27–30 s von 40–48 s Ring-Zeit dieser Schlaf (537–607 Takte × 50 ms), nicht
-                // das Streaming; die Ankunft des Spielers geht im Bild-Takt
-                const takt = async () => {
+                // DER TAKT DES ORTS geht im Schritt der Seite (der Takt der Werkbank und sein Bild, `__werkTakt`; bis 31.10. sein eigener
+                // Zwilling) — bis 30.10. schlief er 50 ms je Takt: an der Radeon (Mess-Sitzung, Ort wiese) waren 27–30 s von 40–48 s
+                // Ring-Zeit dieser Schlaf (537–607 Takte × 50 ms), nicht das Streaming; die Ankunft des Spielers geht im Bild-Takt
+                const takt = () => {
                     if (st._activeRingRadius < ziel) st._activeRingRadius = ziel;
-                    try {
-                        __buehne();
-                        __ortSchritt();
-                        r._gameLoopTick(performance.now());
-                    } catch {}
-                    await new Promise((ok) => requestAnimationFrame(ok));
+                    return __werkTakt();
                 };
                 let takte;
                 try {
