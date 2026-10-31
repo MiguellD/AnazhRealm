@@ -1,0 +1,91 @@
+{
+ "sha": "94c079cb714239d8f146ac3185295b0b220d8602",
+ "geraet": "radeon",
+ "zeit": "2026-10-31T03:36:54.236Z",
+ "host": "MiguellD",
+ "je": {
+  "lod.K2#1": {
+   "gruen": false,
+   "zahl": "Gehen 4 m/s: 7.8693 % Pop-Pixel je Sekunde (163177 px, Soll ≤ 0,05 %), je Schritt 38174*/15566*/16450*/17719*/17240*/19675*/20891/17462 (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "exit": 0,
+   "minuten": 0.22,
+   "grund": "ROT: Gehen 4 m/s: 7.8693 % Pop-Pixel je Sekunde (163177 px, Soll ≤ 0,05 %), je Schritt 38174*/15566*/16450*/17719*/17240*/19675*/20891/17462 (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] amd/rdna-3",
+   "gpu": "amd/rdna-3",
+   "s": 13.4,
+   "zeit": "2026-10-31T03:36:54.236Z",
+   "abdruck": "c3a2f8881cc8",
+   "port": 8004,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "lod.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "exit": 1,
+   "minuten": 0.17,
+   "grund": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "s": 10.3,
+   "zeit": "2026-10-31T03:36:30.846Z",
+   "abdruck": "7c019d058ae7",
+   "port": 8004,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-10-31T03:34:38.885Z",
+  "port": 8004,
+  "warten": 0.69,
+  "bootS": 12.7,
+  "grundstellungS": [
+   2.2
+  ],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "lod.K5#1",
+    "s": 19.2,
+    "takte": 537,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "lod.K2#1",
+    "s": 10.9,
+    "takte": 551,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "unerklaert": [
+   {
+    "probe": "lod.K5#1",
+    "wie": "werke +1 (−0)"
+   }
+  ],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "zapfen": 99,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 107.5,
+  "minuten": 2.63
+ }
+}

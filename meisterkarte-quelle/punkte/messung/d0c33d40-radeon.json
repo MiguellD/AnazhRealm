@@ -1,0 +1,84 @@
+{
+ "sha": "d0c33d40d8543751f559382e7a353fa11a5388c4",
+ "geraet": "radeon",
+ "zeit": "2026-10-31T06:44:00.080Z",
+ "host": "MiguellD",
+ "je": {},
+ "ungemessen": {
+  "lod.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: fenster · Exit 0)",
+   "exit": 1,
+   "minuten": 0.23,
+   "grund": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: fenster · Exit 0)",
+   "s": 13.9,
+   "zeit": "2026-10-31T06:41:40.508Z",
+   "abdruck": "7c019d058ae7",
+   "port": 8004,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 21 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "exit": 1,
+   "minuten": 0.43,
+   "grund": "Deckel 21 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "s": 25.6,
+   "zeit": "2026-10-31T06:44:00.080Z",
+   "abdruck": "c3a2f8881cc8",
+   "port": 8004,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-10-31T06:35:07.463Z",
+  "port": 8004,
+  "warten": 3.3,
+  "bootS": 27.7,
+  "grundstellungS": [
+   20.7
+  ],
+  "proben": 2,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "lod.K5#1",
+    "s": 103.9,
+    "takte": 580,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "lod.K2#1",
+    "s": 99.4,
+    "takte": 541,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 3,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 2,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "zapfen": 242,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 360.4,
+  "minuten": 9.48
+ }
+}
