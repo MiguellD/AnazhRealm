@@ -31,24 +31,6 @@ WACHSTUM {"je":["1/- 12→37 37/37 1993","2/- 12→36 36/36 2011","3/- 12→37 3
   ✅ W2 AUS BEWOHNERN (wohl 0, ohne Leute halten; Gewalt bremst): 1,1,1 1,1,1 1,1,1 1,1,1 1,1,1 1,1,1
 
 ✅ GRÜN — DER ORT WÄCHST AUS SEINEN BEWOHNERN (Teil W).
-@@PUNKTE@@ EXIT 0
-@@PUNKTE@@ ORT
-{
- "ms": 11,
- "ergebnis": {
-  "S": {
-   "x": 400.0000000000001,
-   "z": 692.8203230275509,
-   "hang": 3.9731080640971044
-  },
-  "hill": {
-   "x": 446.8216772838709,
-   "y": 48.04837041391,
-   "z": 457.4318557307756
-  }
- }
-}
-
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

@@ -225,11 +225,15 @@ leibPx: +(2 * (rs[rs.length >> 1] || 0)).toFixed(1),
 
 ===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27804) =====
 
-  ✅ herde     {"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":0.6,"mittel":0.991,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":1.05,"engst":[0.92,"Nox","Mira",59]},"flucht":{"n":5,"wurfAnteil":0.6,"mittel":0.999,"fluchtAnteil":0.361,"fluchtMittel":0.998,"fluchtMin":0.8,"enge":0.83,"engst":[0.35,"Mira","Rae",39]}},"ausrichtung":{"mittel":0.974,"takte":1323},"alarm":{"laufen":5,"zweiteHand":4,"letzterS":0.4},"fluchtWegM":34.9,"id":{"bruch":null,"fluchtS":[6,5]}}
+  ❌ herde     {"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":0.6,"mittel":0.6,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":1.18,"engst":[1.18,"Bran","Orin",0]},"flucht":{"n":5,"wurfAnteil":0.6,"mittel":0.6,"fluchtAnteil":0.87,"fluchtMittel":0.6,"fluchtMin":0.6,"enge":1.26,"engst":[1.17,"Bran","Orin",20]}},"ausrichtung":{"mittel":null,"takte":0},"alarm":{"laufen":1,"zweiteHand":0,"letzterS":null},"fluchtWegM":0,"id":{"bruch":null,"fluchtS":[489,287]}}
+       ↳ Probe vakuös: Glieder 5 / 5 / fremd 5, in Flucht 0.87 (Soll ≥ 0,1), wandernd 0 (Soll 0), aus zweiter Hand 0, neben dem fremden 489,287 s · Verband zerfällt beim Wandern: im Mittel 0.6 der 5 Glieder binnen 2.5 Paar-Räumen vom Mittel von 10 bis 60 s (Soll ≥ 0,9; Wurf 0.6) · Verband zerfällt auf der Flucht: im Mittel 0.6 der 5 Glieder binnen 2.5 Paar-Räumen vom Mittel, solange die Herde flieht (Soll ≥ 0,8; am wenigsten 0.6, Wurf 0.6) · Verband flieht ungerichtet: Φ null über 0 Takte · Alarm-Kette reißt: der letzte von 1 Flüchtern läuft null s nach dem ersten · Fluchtweg 0 m
 
-  (16 s)
+  (18 s)
+HERDE AM HANG {"szene":{"kamera":[309.71,93.06,77.06,328.61,104.94,38.44],"abstand":44.6,"punkte":[[327.78,105.48,39.1],[328.93,105.86,35.89],[329.65,103.82,43.54],[322.41,106.24,36.64],[334.27,104.81,37.01]],"glieder":5,"fliehen":5,"takte":1754,"hang":{"x":327.8,"z":39.1,"neigung":16.1},"wurf":5,"fluchtBei":19.8},"fehler":null,"serie":[[43.3,"5/5",{"glieder":5,"sichtbar":5,"je":[139,169,40,116,262],"flecken":3,"kruemel":0,"pixel":582,"leibPx":42.7},null],[43.3,"5/5",{"glieder":5,"sichtbar":5,"je":[142,170,45,114,247],"flecken":3,"kruemel":0,"pixel":567,"leibPx":42.7},null],[43.3,"5/5",{"glieder":5,"sichtbar":5,"je":[165,185,50,125,252],"flecken":3,"kruemel":0,"pixel":611,"leibPx":42.7},null]]}
 
-✅ GRÜN — herde
+--- stderr ---
+
+❌ ROT — 1 Probe(n) verletzt: die Kreaturen tragen ihren Defekt.
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

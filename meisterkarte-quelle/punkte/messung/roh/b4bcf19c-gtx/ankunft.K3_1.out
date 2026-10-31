@@ -307,9 +307,14 @@ H.fahre(async function probeAnkunft(H) {
         } else console.log("  ❌ KERN-WECHSEL fachwerk: die Foundry ruht nach dem Wechsel nicht binnen der Frist" + (w && !w.tK ? " (die Taste trug den Leib nie)" : ""));
     }
     return j;
-}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\ankunft.K2_1.json 10
-@@PUNKTE@@ FRIST 4 s der Probe gerissen — die Kontrolle des Kalt-Boots an der Frist
-@@ 2.2 s · kalt: t(Kontrolle) —
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\pipeline.K4_1.json 90
+@@ 13.2 s · kalt: t(Kontrolle) 12.14 s
+@@ 18.6 s · kalt: Lücke 17.60 % nach 3.1 s bis zur Ruhe der Foundry
+  ❌ t(Kontrolle) warm 9.12 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 18)
+  ✅ LIEFERUNG zweit: 133 von 133 von der Platte (100.0 %) · Werk 0 · Haupt-Faden 0 · leer 0 · verschluckt 0
+  ✅ LIEFERUNG je Art: blatt-atlas 1/1 0 ms · dorf-export 1/1 0 ms · karte 18/18 7 ms
+  ❌ t(Kontrolle) warm 8.60 s von außen (Soll ≤ 5 s; W trug den Leib im Atem 16)
+  ✅ KERN-WECHSEL fachwerk: 3 Leser neu · fremd 0  · alt 0 
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

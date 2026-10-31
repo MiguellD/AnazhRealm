@@ -124,9 +124,7 @@ $ C:\Program Files\nodejs\node.exe -e const tor = (function sitzungTor() {
     }
 })(tor).then(() => process.exitCode || 0, (e) => (console.log('PROBE-FEHLER ' + String((e && e.stack) || e).split('\n').slice(0, 4).join(' | ')), 1)).then(async (c) => { await tor.ende(); process.exit(c); }); C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\streaming.K3_1.json
 [linse-gpu] nvidia/pascal
-SPRUNG 1 EXIT=0 {"m":1000,"stehtS":17.7,"bau":0,"frames":825,"frameMs":{"p50":16.7,"p95":50,"p99":66.7,"max":141.6},"taktMs":{"p50":16.8,"p95":44.8,"p99":64.4,"max":135.7},"profil":true,"ursachen":["TAKT: _runFrameScheduler x14","TAKT: _dispatchFrameJobs › run x9","TAKT: verteilt x4"]}
-SPRUNG 2 EXIT=0 {"m":1000,"stehtS":16.8,"bau":0,"frames":711,"frameMs":{"p50":24.9,"p95":41.8,"p99":58.4,"max":475},"taktMs":{"p50":18.7,"p95":41.8,"p99":58.2,"max":467.7},"profil":true,"ursachen":["TAKT: _runFrameScheduler x7","TAKT: _dispatchFrameJobs › run x4","TAKT: zeichne › build [three.webgpu.min.js] x3"]}
-SPRUNG 3 EXIT=0 {"m":1000,"stehtS":18.1,"bau":0,"frames":773,"frameMs":{"p50":25,"p95":41.8,"p99":58.4,"max":108.3},"taktMs":{"p50":19.7,"p95":41.9,"p99":55.8,"max":106.9},"profil":true,"ursachen":["TAKT: _runFrameScheduler x6","TAKT: verteilt x3","TAKT: _dispatchFrameJobs › run x3"]}
+PROBE-FEHLER Error: /umstellen: DIE WELT STEHT NICHT nach 3601 Takten: Ruhe 0, zuletzt brach sie: Bau-Regung (DIE WELT HÄNGT: die Welt nach 3601 Takten — offen {"foundry":0,"chunks":0,"wald":1,"karten":0,"felder":0,"leiber":0,"dorf":0,"leib":0,"ankunft":0,"stau":0,"horizont":0,"huellen":0,"bau":0,"leute":0} ohne Bau-Ereignis) |     at IncomingMessage.<anonymous> ([eval]:20:72) |     at IncomingMessage.emit (node:events:520:35) |     at endReadableNT (node:internal/streams/readable:1729:12)
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

@@ -235,8 +235,9 @@ H.fahre(async function probeBildWeg(H) {
     offen = false;
     Object.assign(j, await L.bauWeg(page, "ende"));
     return j;
-}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\bauen.K1_2.json 10
-@@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\bauen.K1_2.json 90
+@@PUNKTE@@ FRIST 84 s der Probe gerissen — Fall werkstatt · schöpfer · Eiche · Ego an der Frist
+  [bild] werkstatt · schöpfer · Eiche · Ego warm undefined ms, Bau-Hash = L0 · eingabe NaN · steht NaN · l0 NaN · bild NaN · gpu NaN Frist der Probe
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

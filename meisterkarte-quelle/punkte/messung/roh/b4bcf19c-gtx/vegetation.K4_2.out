@@ -1,0 +1,114 @@
+$ C:\Program Files\nodejs\node.exe -e (async function seiteLauf() {
+const fs = require("fs");
+const path = require("path");
+const [aus, port, sek, artText] = process.argv.slice(1);
+const W = Number(port) + 20000;
+const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+const t0 = Date.now();
+const uhr = () => ((Date.now() - t0) / 1000).toFixed(1);
+const H = { aus, port: Number(port), W, sek: Number(process.env.PUNKTE_PROBE_DECKEL_S) || Number(sek), WB, ende: [] };
+H.ruf = async (weg, o) => {
+const a = await WB.werkbankRuf(W, weg, o || {});
+if (!a || a.fehler || a.roh !== undefined) throw new Error(weg + ": " + JSON.stringify(a).slice(0, 400));
+return a;
+};
+H.seite = async (code) => (await H.ruf("/eval", { code })).ergebnis;
+H.schritt = (n) => console.log("@@PUNKTE@@ ZEIT " + n + " " + uhr() + " s");
+H.quelle = (datei, namen, mit = {}, extra = "") => {
+const acorn = require(path.resolve("node_modules/acorn"));
+const t = fs.readFileSync(path.resolve(datei), "utf8");
+const teile = [];
+const da = new Set();
+for (const n of acorn.parse(t, { ecmaVersion: "latest", sourceType: "script", allowHashBang: true }).body) {
+const je = n.type === "FunctionDeclaration" ? [n.id.name] : n.type === "VariableDeclaration" ? n.declarations.map((d) => d.id.name) : [];
+if (!je.some((x) => namen.includes(x))) continue;
+teile.push(t.slice(n.start, n.end));
+je.forEach((x) => da.add(x));
+}
+const fehlt = namen.filter((x) => !da.has(x));
+if (fehlt.length) throw new Error(datei + " trägt " + fehlt.join(", ") + " nicht (mehr) auf der obersten Ebene");
+const k = Object.keys(mit);
+return new Function(...k, "require", teile.join("\n") + "\nreturn { " + namen.join(", ") + (extra ? ", " + extra : "") + " };")(...k.map((x) => mit[x]), require);
+};
+H.cdp = async () => {
+if (H.page) return H.page;
+const os = require("os");
+const pp = require(path.resolve("node_modules/puppeteer"));
+const marke = (d) => path.join(d, "DevToolsActivePort");
+const dirs = fs.readdirSync(os.tmpdir()).filter((d) => d.startsWith("werkbank-profil-" + W + "-")).map((d) => path.join(os.tmpdir(), d))
+.filter((d) => fs.existsSync(marke(d))).sort((a, b) => fs.statSync(marke(b)).mtimeMs - fs.statSync(marke(a)).mtimeMs);
+for (const d of dirs) {
+const [p, weg] = fs.readFileSync(marke(d), "utf8").split(/\r?\n/);
+let b = null;
+try {
+b = await pp.connect({ browserWSEndpoint: "ws://127.0.0.1:" + p + weg, defaultViewport: null, protocolTimeout: H.sek * 1000 });
+} catch (_e) {
+continue;
+}
+const alle = (await b.pages()).filter((x) => /\/index\.html/.test(x.url()));
+const seite = alle.find((x) => x.url().includes(":" + port + "/")) || (alle.length === 1 ? alle[0] : null);
+if (!seite) {
+await b.disconnect();
+continue;
+}
+Object.assign(H, { browser: b, profil: d, page: seite });
+return seite;
+}
+throw new Error("kein Browser der Sitzung (DevToolsActivePort in " + os.tmpdir() + "/werkbank-profil-" + W + "-*)");
+};
+H.frist = (s = H.sek - 6) => {
+H.fristS = Math.max(5, s);
+return H.seite("window.__probeFrist = false; const f = performance.now() + " + H.fristS * 1000 + "; window.__probeFristAlt = window.__probeFristAlt || {}; " +
+"for (const m of [\"_gameLoopTick\", \"_loopFixedStep\"]) { const alt = r[m]; if (!(m in window.__probeFristAlt)) window.__probeFristAlt[m] = Object.prototype.hasOwnProperty.call(r, m) ? alt : null; " +
+"r[m] = function () { if (performance.now() > f) { window.__probeFrist = true; throw new Error(\"die Frist der Probe\"); } return alt.apply(this, arguments); }; } return 1;");
+};
+const log = process.env.PUNKTE_SITZUNG_LOG && fs.existsSync(process.env.PUNKTE_SITZUNG_LOG) ? fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8") : "";
+for (const z of log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+let code = 0;
+try {
+if (!(H.sek > 6)) throw new Error("der Deckel des Laufs fehlt (argv „" + sek + "“: der Läufer ersetzt den Platzhalter SEK)");
+code = (await eval("(" + artText + ")")(H)) || 0;
+} catch (e) {
+console.log("@@PUNKTE@@ FEHLER " + String((e && e.stack) || e).split("\n").slice(0, 4).join(" | ").slice(0, 600));
+code = 2;
+}
+for (const f of H.ende) await Promise.resolve().then(f).catch(() => {});
+if (H.browser) await H.browser.disconnect().catch(() => {});
+const riss = await H.seite("const alt = window.__probeFristAlt || {}; for (const m of Object.keys(alt)) { if (alt[m]) r[m] = alt[m]; else delete r[m]; } " +
+"delete window.__probeFristAlt; const riss = window.__probeFrist === true; window.__probeFrist = false; return riss;").catch(() => false);
+if (riss === true) {
+console.log("@@PUNKTE@@ FRIST " + H.fristS + " s der Probe gerissen (Deckel " + H.sek + " s): jeder Takt danach warf");
+code = code || 3;
+}
+console.log("@@PUNKTE@@ PROBE " + uhr() + " s · Exit " + code);
+process.exit(code);
+})() C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\vegetation.K4_1.json 7804 90 async function vegetationK4Seite(H) {
+const D = H.quelle("scripts/diag-haus-welt.cjs", ["proben"]);
+const WA = require(path.resolve("scripts/lib/wasser-linse.cjs")).WASSER_INSTALL;
+await H.ruf("/fenster", { w: 640, h: 360 });
+await H.frist();
+await H.seite("await window.__weltStehtNach(() => { try { r._gameLoopTick(performance.now()); } catch (e) {} });\n" + WA + "\nreturn 1;");
+H.schritt("welt");
+const o = await H.seite("return await (" + D.proben + ")([\"grund\", \"bild\", \"start\"]);");
+H.schritt("grund");
+const bild = (x, name) => {
+for (const [v, png] of [].concat(x.png || []).entries()) H.WB.pngDatei(H.aus + "-" + name + "-" + v + ".png", png);
+if (x.png) x.png = name;
+};
+const w = (o && o.w9) || {};
+(w.haeuser || []).forEach((h, i) => {
+if (h.png) bild(h, "grund-" + i + "-aussen");
+(h.koerper || []).forEach((b, j) => bild(b, "grund-" + i + "-" + j + "-" + b.art));
+if (h.third) bild(h.third, "grund-" + i + "-third");
+});
+for (const x of w.wasser || []) for (const z of x.blicke || []) bild(z, "wasser-" + x.ort + "-" + z.sicht);
+fs.writeFileSync(H.aus, JSON.stringify(o, null, 1));
+console.log("W9 " + (w.haeuser || []).length + " Häuser · Bild " + w.bild + " · Wasser " + (w.wasser || []).length + " · Werkstatt " + (o && o.werkstatt) + (o && o.fehler ? " · " + o.fehler : ""));
+return 0;
+}
+[linse-gpu] nvidia/pascal
+@@PUNKTE@@ ZEIT welt 0.2 s
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
