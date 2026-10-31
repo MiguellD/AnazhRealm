@@ -130,3 +130,4 @@ b-kalt-c144 Exit0 station ankunft-kalt.sh an c144b1a3
 z103-abab nicht-langsamer abab cd88897e gegen 5e9a3bcc: stadt 4+4 nicht-langsamer · w-ego 4+4 nicht-langsamer
 b-kalt-cd88 Exit0 station ankunft-kalt.sh an cd88897e
 b-kalt-c4c9 Exit0 station ankunft-kalt.sh an c4c9baa2
+b-kalt-1a71 Exit0 station ankunft-kalt.sh an 1a71c07b
