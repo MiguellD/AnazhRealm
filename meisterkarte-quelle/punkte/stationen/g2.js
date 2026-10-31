@@ -1595,6 +1595,197 @@ const VEGETATION_PFAD = [
     "scripts/lib/welt-boot.cjs",
 ];
 
+// ───────── haar.K4 Staffel 1 — DIE TRACHT DER EPOCHE IM BILD (w4-stationen-a) ─────────
+// DIE SZENE (in der Seite, r = Welt, T = THREE): zwei Pläne derselben Saat 7 aus dem Export des Fachwerk-Kerns
+// (`_foundryRequestSettlement`, die Epoche aus dem Jahr: `fachwerk:epocheImJahr`, 1320 und 1935), je Plan die erste Gestalt seiner
+// Bewohner (`_bewohnerGestalten`: das Genom aus „Same:0“, Schnitt und Farben aus der Tracht des Plans, `_bewohnerTracht`) und ihr Leib
+// aus dem EINEN Mensch-Bau (`_buildHumanGroup`, die Ton-Zeile der Gestalt wie bei der Geburt) — dasselbe Genom, nur die Tracht der Epoche
+// des Hauses wechselt. Je Leib EIN Schuss aus dem Ausgabe-Pfad an derselben Pose (3,2 m vor dem Ego-Auge der Prüfbühne, Mittag der
+// Bühne), die Maske gegen den Schuss ohne Leib (> 18 je Kanal); verglichen über die vereinte Maske: der Anteil der Pixel, die sich um
+// > 18 heben, und die Deckung der Umrisse. DIE MUTANTEN: der Ort von 1935 mit der Tracht von 1320 (er gleicht 1320, wenn die Tracht
+// des Plans allein den Leib kleidet) und der Schnitt von 1935 in den Farben von 1320 (was der Schnitt der Epoche allein im Bild ändert).
+async function trachtSzene(r, T, o) {
+    const st = r.state, rend = st.renderer, cam = st.camera, A = r.constructor, kc = window.__koerperCore;
+    rend.setAnimationLoop(null);
+    window.__buehne({});
+    const { x: W, y: H } = rend.getDrawingBufferSize(new T.Vector2());
+    const P0 = st.playerMesh.position.clone();
+    const kam0 = [cam.position.clone(), cam.quaternion.clone(), cam.fov];
+    const fwd = new T.Vector3(0, 0, -1).applyQuaternion(cam.quaternion).setY(0).normalize();
+    const boden = (x, z) => r._voxelSurfaceY(x, z);
+    const ep = (j) => A.Gesetz("fachwerk:epocheImJahr")(j);
+    const schuss = async () => (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+    const t0 = performance.now();
+    const plaene = {};
+    for (const j of o.jahre) plaene[j] = await r._foundryRequestSettlement({ seed: o.saat, epoche: ep(j) });
+    const [alt, neu] = o.jahre.map((j) => plaene[j]);
+    if (!alt || !neu || !alt.kleidung || !neu.kleidung) return { fehler: "der Export trägt keine Tracht: " + o.jahre.map((j) => j + " " + JSON.stringify(plaene[j] && plaene[j].kleidung)).join(" · ") };
+    const zeilen = [];
+    const baue = (plan) => {
+        const G = r._bewohnerGestalten({ plan, key: "haar-k4" })[0];
+        const tz = r._tonZeile(kc.menschPalette(G.dK, G.f.skin, G.f.hair));
+        zeilen.push(tz);
+        const vorher = r._activePeerUebergabe;
+        r._activePeerUebergabe = {};
+        let g;
+        try {
+            g = r._buildHumanGroup(G.ov);
+        } finally {
+            r._activePeerUebergabe = vorher;
+        }
+        g.userData.__tonZeilen = [tz, tz];
+        g.traverse((n) => {
+            if (n.isMesh) (n.userData.__ton = [tz, tz]), (n.castShadow = false), (n.frustumCulled = false);
+        });
+        return { g, ov: { top: G.ov.top, bottom: G.ov.bottom, shoes: G.ov.shoes, farben: [G.ov.topColor, G.ov.bottomColor, G.ov.shoeColor] } };
+    };
+    const M = P0.clone().addScaledVector(fwd, o.abstand);
+    M.y = boden(M.x, M.z);
+    const maske = (a, b) => {
+        const m = new Uint8Array(W * H);
+        for (let p = 0, i = 0; p < W * H; p++, i += 4)
+            m[p] = Math.abs(a[i] - b[i]) > 18 || Math.abs(a[i + 1] - b[i + 1]) > 18 || Math.abs(a[i + 2] - b[i + 2]) > 18 ? 1 : 0;
+        return m;
+    };
+    const vergleich = (a, b, ma, mb) => {
+        let u = 0, s = 0, anders = 0;
+        for (let p = 0, i = 0; p < W * H; p++, i += 4) {
+            if (!(ma[p] || mb[p])) continue;
+            u++;
+            if (ma[p] && mb[p]) s++;
+            if (Math.abs(a[i] - b[i]) > 18 || Math.abs(a[i + 1] - b[i + 1]) > 18 || Math.abs(a[i + 2] - b[i + 2]) > 18) anders++;
+        }
+        return { vereint: u, iou: u ? +(s / u).toFixed(4) : null, anders: u ? +(anders / u).toFixed(4) : null };
+    };
+    const aus = { schirm: [W, H], plaene: {}, figuren: {}, treue: null, png: {} };
+    const leiber = [];
+    try {
+        cam.fov = A.KAM_FOV_GRAD;
+        cam.updateProjectionMatrix();
+        cam.position.set(P0.x, boden(P0.x, P0.z) + 1.6, P0.z);
+        cam.lookAt(M.x, M.y + 0.9, M.z);
+        cam.updateMatrixWorld(true);
+        st.playerMesh.visible = false;
+        for (const j of o.jahre) aus.plaene[j] = { epoche: ep(j), kleidung: plaene[j].kleidung };
+        const fig = {
+            alt: baue(alt),
+            neu: baue(neu),
+            mutante: baue(Object.assign({}, neu, { kleidung: alt.kleidung })),
+            schnitt: baue(Object.assign({}, alt, { kleidung: Object.assign({}, alt.kleidung, { top: neu.kleidung.top, bottom: neu.kleidung.bottom, shoes: neu.kleidung.shoes }) })),
+        };
+        for (const f of Object.values(fig)) leiber.push(f.g), (f.g.visible = false), st.scene.add(f.g);
+        const leer = await schuss();
+        const bild = {};
+        for (const [k, f] of Object.entries(fig)) {
+            f.g.position.set(M.x, M.y + A.PLAYER_FOOT_OFFSET, M.z);
+            f.g.rotation.y = Math.atan2(fwd.x, fwd.z);
+            f.g.visible = true;
+            f.g.updateMatrixWorld(true);
+            bild[k] = await schuss();
+            if (!aus.treue) {
+                // DIE TREUE (einmal je Lauf): dieselbe Szene ein zweites Mal — der Vergleich trägt nur, wenn sie Byte für Byte gleich ist
+                const b2 = await schuss();
+                let n = 0;
+                for (let i = 0; i < b2.length; i++) if (b2[i] !== bild[k][i]) n++;
+                aus.treue = { fall: k, bytes: n };
+            }
+            f.g.visible = false;
+            f.m = maske(bild[k], leer);
+            aus.figuren[k] = { ...f.ov, pixel: f.m.reduce((s, x) => s + x, 0) };
+        }
+        aus.epochen = vergleich(bild.alt, bild.neu, fig.alt.m, fig.neu.m);
+        aus.mutante = vergleich(bild.alt, bild.mutante, fig.alt.m, fig.mutante.m);
+        aus.schnitt = vergleich(bild.alt, bild.schnitt, fig.alt.m, fig.schnitt.m);
+        if (window.__png) for (const [k, n] of [["alt", o.jahre[0]], ["neu", o.jahre[1]], ["schnitt", "schnitt"]]) aus.png[n] = window.__png(bild[k], W, H);
+    } finally {
+        for (const g of leiber) (st.scene.remove(g), r._disposeSoulGroup(g));
+        for (const z of zeilen) r._tonZeileFrei(z);
+        cam.fov = kam0[2];
+        cam.updateProjectionMatrix();
+        cam.position.copy(kam0[0]), cam.quaternion.copy(kam0[1]), cam.updateMatrixWorld(true);
+        st.playerMesh.visible = true;
+    }
+    aus.ms = Math.round(performance.now() - t0);
+    return aus;
+}
+// DER LAUF (im Spiel-Baum, cwd; headless): EINE Werkbank an der Weiche (swiftshader, die Welt fährt kienspan) auf {PORT}+20000,
+// das Fenster 960 × 540, die Prüfbühne (`umstellen --ort buehne`, Ego: die Bühne ohne Wald und Streu), dann die Szene; die Bilder
+// neben {AUS} (`-1320.png`, `-1935.png`, `-schnitt.png`), die Zeile „TRACHT {…}“ und {AUS} tragen das Maß.
+async function trachtLauf() {
+    const fs = require("fs");
+    const path = require("path");
+    const { werkbankTor, werkbankRuf, pngDatei } = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    const [aus, port, szene] = process.argv.slice(1);
+    const W = Number(port) + 20000;
+    const B = aus.replace(/\.json$/, "");
+    let erg;
+    const tor = werkbankTor(W, ["--ort", "buehne"]);
+    try {
+        await tor.bereit;
+        for (const z of tor.log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
+        const f = await werkbankRuf(W, "/fenster", { w: 960, h: 540 });
+        if (!f || f.fehler) throw new Error("fenster 960 540: " + JSON.stringify(f).slice(0, 200));
+        const u = await werkbankRuf(W, "/umstellen", { ort: "buehne", sicht: "ego" });
+        if (!u || u.fehler) throw new Error("umstellen --ort buehne: " + JSON.stringify(u).slice(0, 200));
+        const a = await werkbankRuf(W, "/eval", { code: "return await (" + szene + ")(r, T, " + JSON.stringify({ saat: 7, jahre: [1320, 1935], abstand: 3.2 }) + ");" });
+        if (!a || !a.ergebnis) throw new Error("eval: " + JSON.stringify(a).slice(0, 300));
+        erg = a.ergebnis;
+        for (const [k, png] of Object.entries(erg.png || {})) pngDatei(B + "-" + k + ".png", png);
+        delete erg.png;
+    } catch (e) {
+        erg = { fehler: String((e && e.message) || e).split("\n")[0].slice(0, 400) };
+    } finally {
+        tor.stop();
+    }
+    console.log("TRACHT " + JSON.stringify(erg));
+    fs.writeFileSync(aus, JSON.stringify(erg, null, 1));
+}
+// DAS URTEIL: zwei Epochen, ihre Tracht im Export verschieden und am Leib, jeder Leib ≥ 2 000 px, die Treue 0 Bytes; im Bild
+// unterscheidbar — ≥ 25 % der Leib-Pixel heben sich zwischen den Epochen um > 18, der SCHNITT der Epoche allein (gleiche Farben)
+// ≥ 5 % (ein Farbwechsel ohne Schnitt ist ROT: die Epoche des Hauses zieht den Schnitt, Schlupfloch der Staffel); die Mutante (der Ort
+// von 1935 mit der Tracht von 1320) gleicht 1320 bis auf ≤ 0,2 % (die Tracht des Plans allein kleidet den Leib)
+function trachtUrteil(e) {
+    if (!e) return { gruen: false, zahl: "keine Zeile TRACHT" };
+    if (e.fehler) return { gruen: false, zahl: "Lauf: " + e.fehler };
+    const [ja, jn] = Object.keys(e.plaene || {});
+    const [a, n] = [(e.plaene || {})[ja] || {}, (e.plaene || {})[jn] || {}];
+    const [ka, kn, F] = [a.kleidung || {}, n.kleidung || {}, e.figuren || {}];
+    const px = ["alt", "neu", "mutante", "schnitt"].map((k) => (F[k] && F[k].pixel) || 0);
+    const [ep, mu, sc] = [e.epochen || {}, e.mutante || {}, e.schnitt || {}];
+    const zwei = !!a.epoche && !!n.epoche && a.epoche !== n.epoche && !!ka.top && ka.top !== kn.top;
+    const am = !!F.alt && F.alt.top === ka.top && !!F.neu && F.neu.top === kn.top;
+    const gruen = zwei && am && px.every((x) => x >= 2000) && !!e.treue && e.treue.bytes === 0 &&
+        ep.anders >= 0.25 && sc.anders >= 0.05 && mu.anders != null && mu.anders <= 0.002;
+    const pr = (x) => (x == null ? "—" : (100 * x).toFixed(1) + " %");
+    return {
+        gruen,
+        zahl:
+            ja + " " + a.epoche + " " + [ka.top, ka.bottom, ka.shoes].join("/") + " · " + jn + " " + n.epoche + " " + [kn.top, kn.bottom, kn.shoes].join("/") +
+            (am ? "" : " (am Leib " + (F.alt && F.alt.top) + "/" + (F.neu && F.neu.top) + ")") + ": im Bild " + pr(ep.anders) + " der Leib-Pixel anders (Soll ≥ 25 %), " +
+            "der Schnitt allein " + pr(sc.anders) + " (≥ 5 %), Umriss-Deckung " + ep.iou + ", die Mutante " + pr(mu.anders) + " (≤ 0,2 %) · Leib " +
+            px.join("/") + " px (≥ 2 000), Treue " + (e.treue ? e.treue.bytes : "—") + " Bytes",
+    };
+}
+const TRACHT_ROH = {
+    schirm: [960, 540],
+    plaene: {
+        1320: { epoche: "mittelalter", kleidung: { top: "poncho", bottom: "pants", shoes: "boot", farben: ["sand", "olive", "grey", "mustard", "burgundy"] } },
+        1935: { epoche: "moderne", kleidung: { top: "tshirt", bottom: "pants", shoes: "sneaker", farben: ["navy", "blue", "grey", "white", "charcoal", "teal", "red", "black"] } },
+    },
+    figuren: {
+        alt: { top: "poncho", bottom: "pants", shoes: "boot", farben: ["olive", "grey", "grey"], pixel: 7689 },
+        neu: { top: "tshirt", bottom: "pants", shoes: "sneaker", farben: ["red", "teal", "grey"], pixel: 7413 },
+        mutante: { top: "poncho", bottom: "pants", shoes: "boot", farben: ["olive", "grey", "grey"], pixel: 7689 },
+        schnitt: { top: "tshirt", bottom: "pants", shoes: "sneaker", farben: ["olive", "grey", "grey"], pixel: 7404 },
+    },
+    treue: { fall: "alt", bytes: 0 },
+    epochen: { vereint: 7706, iou: 0.9598, anders: 0.6308 },
+    mutante: { vereint: 7689, iou: 1, anders: 0 },
+    schnitt: { vereint: 7690, iou: 0.9627, anders: 0.162 },
+    ms: 25065,
+};
+const trachtRoh = (aendern) => "[linse-gpu] google/swiftshader\nTRACHT " + JSON.stringify(aendern(JSON.parse(JSON.stringify(TRACHT_ROH))));
+
 const stationen = [
     {
         kriterium: "mensch.K3",
@@ -3597,6 +3788,47 @@ const stationen = [
         pfad: ["koerper-core.js", "stamm/koerper-*.js", "stamm/studio-bruecke.js", "spec/farbe/albedo-tafel.json"],
         quelle: "1 = Klasse haar (Strähnen-Kohärenz gegen REF, Albedo-Band) an einem Gerät",
     }),
+    // haar.K4 Staffel 1 (w4-stationen-a): die Tracht der Epoche des Hauses am Leib im Bild (trachtSzene, trachtLauf, trachtUrteil oben).
+    // Die Staffel nennt kein Gerät: headless (swiftshader). Am main 94c079cb in der Cloud (swiftshader, 960 × 540, Prüfbühne): 1320
+    // mittelalter poncho/pants/boot gegen 1935 moderne tshirt/pants/sneaker — 63,1 % der Leib-Pixel anders, der Schnitt allein 16,2 %,
+    // Umriss-Deckung 0,96, die Mutante 0 %, Treue 0 Bytes, die Szene 25 s (Umstellen auf die Bühne 74 s) — GRÜN.
+    {
+        kriterium: "haar.K4",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + knapp(trachtLauf) + ")()", "{AUS}", "{PORT}", knapp(trachtSzene)],
+        gpu: false,
+        zeit: false,
+        minuten: 6,
+        urteil: (j, lauf) => trachtUrteil(j || jsonZeile(lauf.stdout, /^TRACHT /)),
+        proben: [
+            { name: "die Messung am main 94c079cb (swiftshader)", stdout: trachtRoh((x) => x), gruen: true },
+            { name: "nur die Farbe wechselt, der Schnitt nicht (die Epoche zieht ihn nie)", stdout: trachtRoh((x) => ((x.schnitt.anders = 0.004), (x.schnitt.iou = 1), x)), gruen: false },
+            { name: "die Mutante weicht ab (nicht die Tracht des Plans kleidet den Leib)", stdout: trachtRoh((x) => ((x.mutante.anders = 0.41), x)), gruen: false },
+            { name: "eine Epoche, eine Tracht", stdout: trachtRoh((x) => ((x.plaene[1935] = x.plaene[1320]), (x.figuren.neu = x.figuren.alt), x)), gruen: false },
+            { name: "der Leib zu klein im Bild", stdout: trachtRoh((x) => ((x.figuren.neu.pixel = 640), x)), gruen: false },
+            { name: "zwei Aufnahmen derselben Szene weichen ab", stdout: trachtRoh((x) => ((x.treue.bytes = 1312), x)), gruen: false },
+            { name: "der Lauf bricht", stdout: "TRACHT " + JSON.stringify({ fehler: "umstellen --ort buehne: {\"fehler\":\"die Welt der Prüfbühne ließ sich nicht importieren\"}" }), gruen: false },
+        ],
+        pfad: [
+            "fachwerk-core.js",
+            "foundry-core.js",
+            "foundry-bruecke.js",
+            "koerper-core.js",
+            "stamm/siedlung-bewohner.js",
+            "stamm/siedlung-ort.js",
+            "stamm/koerper-*.js",
+            "stamm/studio-bruecke.js",
+            "stamm/stoff-*.js",
+            "stamm/bild-*.js",
+            "spec/pruefbuehne/**",
+            "scripts/werkbank.cjs",
+            "scripts/lib/welt-boot.cjs",
+            "scripts/lib/ausgabe-aufnahme.cjs",
+            "scripts/lib/software-gpu.cjs",
+        ],
+        quelle: "1 = Bewohner tragen Kleidung aus der Epoche ihres Hauses (zwei Epochen im Bild unterscheidbar)",
+    },
     // ───────── vegetation.K1 — die Wiese bis zum Saum (Zweig w3w-wald): Staffel 1 EINE Pose (Mess-Wiese, Third, Mittag),
     // Staffel 2 Mess-Wiese UND Genesis × Ego UND Third × Uhr 0,5 und 0,3 (vegetationLauf, wieseUrteil) ─────────
     // (Staffel 2 — Mess-Wiese UND Genesis × Ego UND Third × Uhr 0,5 und 0,3 — steht in `fehlt`: acht Schüsse an zwei Orten sind
@@ -3632,6 +3864,37 @@ const fehlt = [
         staffel: 2,
         befehl: null,
         grund: "dieselbe fehlende REF real-mischwald wie Staffel 1, dazu fehlt das Gesetz der Strahlen: Volumen-Licht über die EINE Luft gibt es nicht (Strahl-Kontrast im Gegenlicht ungemessen)",
+    },
+    // DER SPIKE w4-stationen-a (31.10., am main 94c079cb): Kriterien ohne jede Station — was dem Spiel fehlt, beim Namen
+    {
+        kriterium: "haar.K3",
+        staffel: 1,
+        befehl: null,
+        grund: "unmessbar ohne neues Spiel (Spike w4-stationen-a am main 94c079cb): Haar und Fell sind starr — die Schalen und Strähnen (der Fell-Stoff in stamm/studio-bruecke.js) tragen keinen Wind-Term und keine Trägheit; der EINE Wind (`_windAt`) bewegt am Leib nur die Rolle `segel` (stamm/koerper-leib.js). Ohne Wind-Leser im Haar gibt es keine Korrelation zu messen",
+    },
+    {
+        kriterium: "haar.K4",
+        staffel: 2,
+        befehl: null,
+        grund: "nicht gebaut (w4-stationen-a baute Staffel 1): ein Tuch des EINEN XPBD-Lösers gibt es nicht — die Kleidung wird aus der Haut extrudiert (foundry-core `_garmentFromSkin`, K45-2) und folgt der Haut, ein Tuch-Löser fehlt der Welt (physik.K4); ohne Tuch keine Durchdringung beim Gang zu zählen",
+    },
+    {
+        kriterium: "haar.K5",
+        staffel: 1,
+        befehl: null,
+        grund: "nicht gebaut, der Spike ist ROT (w4-stationen-a am main 94c079cb, Prüfbühne swiftshader, `__drawZensus` an einer festen Herde von 8 Wölfen 4–60 m vor dem Ego-Auge): tier:wolf 29 + tier-satz 3 = 32 Befehle im Hauptbild über dem Haushalt tier 30 — ohne den Wurf (kienspan zeichnet keine Kaskaden; an der Karte kommt er dazu). Die Strähnen schalten nach dem Fell-Bildschirm-Gesetz (`FELL_BILDSCHIRM`, stamm/kreatur-verhalten.js); die Probe gehört an die Karte, die Fahrt (Radeon 1 775 / GTX 1 770 von 1 800 s) trägt sie erst, wenn das Soll hält",
+    },
+    {
+        kriterium: "luftwasser.K3",
+        staffel: 1,
+        befehl: null,
+        grund: "unmessbar ohne neues Spiel (Spike w4-stationen-a am main 94c079cb): es gibt keine Fische (0 Treffer in Stamm und tetrapoda-core); die Strömung des Kerns advektiert nur am Bewegungs-Chokepoint (gate:kopplung F1) — nichts steht gegen sie, dessen Ausrichtung eine Station messen könnte",
+    },
+    {
+        kriterium: "luftwasser.K4",
+        staffel: 1,
+        befehl: null,
+        grund: "unmessbar ohne neues Spiel (Spike w4-stationen-a am main 94c079cb): es gibt keine Insekten und keine Bestäuber (0 Treffer Insekt/Bestäuber in Stamm und Kernen) — die Korrelation mit dem Blüten-Anteil hätte nichts zu zählen",
     },
     // vegetation.K1#2 (w4-sitzung-reif, 30.10.): die Staffel verlangt acht Schüsse an zwei Orten — die Arbeit ihres Plans (vegetationDeckel:
     // Mess-Wiese Ego und Third warm 2 × 5 s, Genesis kalt 15 s und Third 5 s, je Wiesen-Schuss 15 s) ist 150 s, über dem Gesetz der Fahrt

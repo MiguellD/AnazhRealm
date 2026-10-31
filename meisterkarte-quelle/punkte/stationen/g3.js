@@ -1866,6 +1866,89 @@ stationen.fehlt = [
             "β misst klassenMasse zwar, aber eine Linse gegen Kachel-Muster gibt es nicht.",
         quelle: "2 = Boden, Fels, Rinde, Putz, Holz, Haut, kein Kachel-Muster (1/f^β, β 0–2,4), beide Geräte",
     },
+    // ───────── DER SPIKE w4-stationen-a (31.10., am main 94c079cb): Kriterien ohne jede Station — was dem Spiel fehlt, beim Namen ─────────
+    {
+        kriterium: "licht.K4",
+        staffel: 1,
+        befehl: null,
+        grund:
+            "unmessbar ohne neues Spiel (Spike w4-stationen-a am main 94c079cb): die Wolke wirft nichts — der Himmel ist EINE 2D-FBM-Projektion " +
+            "mit Deckungs-Schwelle (stamm/bild-himmel.js), keine Größe des Wolkenfelds hat einen Leser am Boden (0 Treffer Wolken-Schatten), die " +
+            "Kaskaden kennen nur das Richtlicht. Ohne Wurf gibt es keine Verschiebung am Boden, die mit dem Wolkenfeld korrelieren könnte.",
+    },
+    {
+        kriterium: "ferne.K3",
+        staffel: 1,
+        befehl: null,
+        grund:
+            "unmessbar ohne neues Spiel (Spike w4-stationen-a am main 94c079cb): jenseits der Baum-Karte (`FERN_KRONE_NAH` sichtM 384 m, " +
+            "stamm/gelaende-fern.js) ist der Wald Farbe — das Kronendach reist als Attribut `aKrone` (Kronendach, Deckung) im Fern-Ring, der Ring " +
+            "trägt kein Relief; die Hebungs-Ringe (stamm/stoff-karte.js) sind Blickwinkel der Karte, kein Saum. Der Kamm in 0,4–4 km ist die " +
+            "Gelände-Linie: ohne Kronen-Relief kein Saum, dessen Kohärenz und Umriss-Schwankung eine Station messen könnte.",
+    },
+    {
+        kriterium: "ferne.K4",
+        staffel: 1,
+        befehl: null,
+        grund:
+            "unmessbar ohne neues Spiel (Spike w4-stationen-a am main 94c079cb): jenseits der zwei Kaskaden (maxFar 180–306 m) trägt kein Pfad " +
+            "einen Schatten — Fern-Ring und Panorama rechnen N·L ohne Schatten-Term, ein Horizont-Winkel des Gelände-Kerns hat keinen Leser " +
+            "(0 Treffer). Hinter einem Grat in ≥ 2 km liegt bei Sonne 5° kein Abendschatten, nur die Neigung des Hangs.",
+    },
+    {
+        kriterium: "schatten.K2",
+        staffel: 1,
+        befehl: null,
+        grund:
+            "ungemessen, die Linse fehlt (Spike w4-stationen-a am main 94c079cb): `werkbank sicht` zählt die Arbeit der Sicht-Kette, " +
+            "bericht/2910-lod-k5/pop.js (lod.K2#1) jeden Pop bei stehender Kamera ohne Schatten-Maske — keine Linse trennt den Schattenrand. " +
+            "Anhalt GTX e0139769 lod.K2#1: je 0,5-m-Schritt ändern sich bei stehender Kamera 15 817–33 715 px = 0,8–1,6 % des Bilds (alle " +
+            "Ursachen, Stufen-Wechsel eingeschlossen; Soll ≤ 0,5 % unerklärte Randpixel). swiftshader (kienspan) zeichnet keine Schatten: die " +
+            "Probe gehört an die Karte, die Fahrt (Radeon 1 775 / GTX 1 770 von 1 800 s) trägt sie heute nicht.",
+    },
+    {
+        kriterium: "schatten.K3",
+        staffel: 1,
+        befehl: null,
+        grund:
+            "nicht gebaut, der Spike ist ROT (w4-stationen-a am main 94c079cb): keine Verdeckung zwischen den Dingen — `aoNode` trägt die " +
+            "Himmels-Sicht des Geländes (nur der Boden, aus dem Faden) und die Kavität je Stoff (stamm/stoff-material.js), ssao/gtao 0 Treffer; " +
+            "Fuß, Sockel, Stamm- und Tor-Fuß verdecken dem Boden keinen Himmel. Gemessen an der Prüfbühne (swiftshader, kienspan ohne Kaskaden: " +
+            "das Licht ohne Wurf), ein Pfosten 0,5 × 0,5 × 3 m wie licht --kontakt, das Band 2–18 cm auf der Kamera-Seite (110 Punkte): mit " +
+            "Pfosten 0,1099, ohne 0,1099 (1,000), gegen den freien Boden 1–2 m daneben 0,978 — Soll 30–60 %. Am Fuß trägt nur der " +
+            "Schlagschatten der Sonne (ein Wurf, kein Kontakt).",
+    },
+    {
+        kriterium: "schatten.K4",
+        staffel: 1,
+        befehl: null,
+        grund:
+            "nicht gebaut, der Spike ist ROT (w4-stationen-a am main 94c079cb): die Rückstrahlung ist die untere Hälfte der EINEN Umgebung mit " +
+            "der festen Welt-Albedo `ATMO_BODEN` (0,1003/0,1385/0,0449, stamm/bild-himmel.js) — die besonnte Wiese neben der Wand strahlt " +
+            "nichts zurück. Gemessen an der Prüfbühne (swiftshader): eine weiße Wand 4 × 3 m, ihre Fläche im Eigenschatten (N·L −0,27), Luma " +
+            "0,0634 neben dem besonnten Boden und 0,0634 mit einer schwarzen Platte 30 × 30 m davor (Boden-Albedo 0) — Gewinn 0 %, Soll ≥ 10 %. " +
+            "Das Hemi-Licht trägt nur die Nacht (`hl.intensity = 0,1 · nacht`).",
+    },
+    {
+        kriterium: "schatten.K5",
+        staffel: 1,
+        befehl: null,
+        grund:
+            "unmessbar ohne neues Spiel (Spike w4-stationen-a am main 94c079cb): das Feuer wirft nichts — das Leuchtquellen-Gesetz (fachwerk-core " +
+            "LICHT_GESETZ → `_leuchtTakt`) wirkt als Uniform-Pool im Stoff, ohne Licht-Objekt (bis K11 ein PointLight, stamm/siedlung-ort.js); die " +
+            "Kaskaden zeichnen nur für das Richtlicht (`_wurfEbene`). Ohne Wurf des Feuers kein Schatten-Kontrast am Pfosten.",
+    },
+    {
+        kriterium: "lod.K4",
+        staffel: 1,
+        befehl: null,
+        grund:
+            "nicht gebaut, der Spike ist ROT (w4-stationen-a am main 94c079cb, Prüfbühne swiftshader, Mittag der Bühne): bericht/2910-lod-k5/kanten.js " +
+            "mit dem Mittel der Luma (linear, Rec. 709) über der Maske je Schuss — L0 gegen die gezeigte Stufe am Wechsel-Abstand des Gesetzes, " +
+            "Treue 0 Bytes: Baum (Weide) L1 bei 12 m −6,0 % (0,0738 → 0,0694), L2 bei 26 m −7,2 %, Haus (modern) L1 bei 8,4 m −2,4 % — Soll " +
+            "< 2 % je Klasse; Haus L2, Tor und Wagen standen an der Bühne ohne gültige Maske (68 / 0 px). zweiton misst kanten.js nicht (es " +
+            "schießt ohne Blende und Band); die Station lohnt erst, wenn die Stufe den Ton von L0 trägt (die Stoff-Albedo je Stufe hält: material.K3).",
+    },
 ];
 
 module.exports = stationen;
