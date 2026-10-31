@@ -628,13 +628,14 @@ async function probe(arg) {
             // (5) alles steht
             fall("allesSteht", nichts, nichts);
             // (5b) DIE ANKUNFT AUS DER FERNE (B2): vor dem Bild die billigste ganze Stufe, danach Distanz und Grenzen wie der Takt
-            // (5c) DIE FERNE IST KEIN ZUSTAND (w4-genesis-tore): nach dem Bild gibt die Probe jedem Bau mit Grenzen und feinerer Wahl
-            // die Grobstufe der Ankunft (L2, `_lodAmAbstand` false) und fragt die EINE Wahl des Takts (`_archStufeUrteil`; Wechsel, Band
-            // und Verdeckung schweigen) — wünscht sie nicht die Wahl am Abstand, hält die Ferne (bis hier jedes Ring-Tor in 11 m auf L2)
+            // (5c) DIE FERNE IST KEIN ZUSTAND (w4-genesis-tore): nach dem Bild gibt die Probe jedem Bau mit Grenzen die Grobstufe der
+            // Ankunft (L2, `_lodAmAbstand` false), stellt das Auge in das Band ihrer Hysterese (dort hält ein Zustand die L2) und fragt die
+            // EINE Wahl des Takts (`_archStufeUrteil`; Wechsel, Band und Verdeckung schweigen) — wünscht sie nicht die Wahl am Abstand,
+            // hält die Ferne (bis hier jedes Ring-Tor in 11 m auf L2; am Auge der Linse stand keiner im Band, die Probe sah es nicht)
             const A = (m.ankunft = { n: 0, fein: [], zwilling: [], haelt: [], haeltN: 0 });
             const [merkDa, R, auge] = [st._weltbildDa, st.architectureCullingRadius || 150, r._lodAuge()];
             const still = [r._switchArchitectureLOD, r._updateFoundryLodBand, r._lodSlotOcclusionRefresh];
-            let wahl;
+            let wahl, g2;
             Object.assign(r, { _switchArchitectureLOD: (e, l) => ((wahl = l), false), _updateFoundryLodBand() {}, _lodSlotOcclusionRefresh() {} });
             for (const da of [0, merkDa]) {
                 st._weltbildDa = da;
@@ -646,13 +647,16 @@ async function probe(arg) {
                     const G = !e._lodSpecies && r._archStufenGrenzen(e);
                     if (!da && ++A.n && r._foundryServierStufe(pre, w) !== r._foundryServierStufe(pre, 2)) A.fein.push(`${pre} ${Math.round(d)} m L${w}`);
                     else if (da && G && w !== AnazhRealm._stufeNachGrenzen(d, undefined, G, e.scale > 0 ? e.scale : 1)) A.zwilling.push(`${pre} ${Math.round(d)} m L${w}`);
-                    else if (da && G && w < 2) {
+                    else if (da && G && (g2 = G.grenzen.find((g) => g.stufe === 2))) {
+                        const s = e.scale > 0 ? e.scale : 1;
+                        const dB = g2.ab * s * (1 - (g2.h > 0 ? g2.h : G.h) / 2); // das Auge im Band der Grobstufe
+                        const soll = AnazhRealm._stufeNachGrenzen(dB, undefined, G, s);
                         const merk = [e._lodLevel, e._lodAmAbstand, e.instanced, e.instFoundry];
                         Object.assign(e, { _lodLevel: 2, _lodAmAbstand: false, instanced: true, instFoundry: true });
                         wahl = 2;
                         A.haeltN++;
-                        r._archStufeUrteil(e, auge, false, r._archStufeZaehler());
-                        if (wahl !== w) A.haelt.push(`${pre} ${Math.round(d)} m L${wahl}`);
+                        r._archStufeUrteil(e, { x: e.position.x + dB, z: e.position.z }, false, r._archStufeZaehler());
+                        if (wahl !== soll) A.haelt.push(`${pre} ${Math.round(dB)} m L${wahl}`);
                         [e._lodLevel, e._lodAmAbstand, e.instanced, e.instFoundry] = merk;
                     }
                 }
@@ -1728,6 +1732,7 @@ hauptLauf(async () => {
         // ein Fall, der das Bild hält (Stand und Term), und einer, vor dem der Ladeschirm weicht
         const halt = (stand, t) => ({ weg: false, stand, warn: 0, terme: [t] });
         const weicht = { weg: true, stand: "", warn: 0, terme: [] };
+        const hilfeGut = { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true }; // die Antwort auf „hilfe“, die alles nennt
         const l2aFaelle = {
             ohneBoden: halt("der Boden wächst (Ring 0 von 3)", "boden"),
             baumUngebaut: halt("1 Bäume und Bauten wachsen", "bauten"),
@@ -1835,9 +1840,9 @@ hauptLauf(async () => {
                 {
                     gestartet: true,
                     unbekanntListe: false,
-                    antworten: { hilfe: { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true }, help: { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true }, "?": { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true } },
+                    antworten: { hilfe: hilfeGut, help: hilfeGut, "?": hilfeGut },
                 },
-                [["hilfe unbekannt", { antworten: { hilfe: { unbekannt: true, erste: "Unbekannter Befehl. Meintest du: 'warte'?", fehlt: [], tastenFehlen: [], v1: false }, help: { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true }, "?": { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true } } }, "„hilfe\" ist unbekannt"], ["Liste von Hand", { unbekanntListe: true }, "der Satz für Unbekanntes trägt eine Liste von Hand"], ["Tafel halb", { antworten: { hilfe: { unbekannt: false, fehlt: ["folge mir"], tastenFehlen: [], v1: true }, help: { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true }, "?": { unbekannt: false, fehlt: [], tastenFehlen: [], v1: true } } }, "„hilfe\" nennt 1 Beispiel"]],
+                [["hilfe unbekannt", { antworten: { hilfe: { unbekannt: true, erste: "Unbekannter Befehl. Meintest du: 'warte'?", fehlt: [], tastenFehlen: [], v1: false }, help: hilfeGut, "?": hilfeGut } }, "„hilfe\" ist unbekannt"], ["Liste von Hand", { unbekanntListe: true }, "der Satz für Unbekanntes trägt eine Liste von Hand"], ["Tafel halb", { antworten: { hilfe: { ...hilfeGut, fehlt: ["folge mir"] }, help: hilfeGut, "?": hilfeGut } }, "„hilfe\" nennt 1 Beispiel"]],
             ],
             ["L3", gespraechVerdict, { gestartet: true, enterFokus: "chat-input", wImFeld: false, gesendet: true, nachSenden: "BODY", wNachSenden: true, nachEsc: "BODY", enterAufKnopf: "knopf" }, [["Enter öffnet nichts", { enterFokus: "BODY" }, "Enter öffnet das Gespräch nicht"], ["Fokus bleibt im Feld", { nachSenden: "chat-input", wNachSenden: false }, "nach dem Senden bleibt der Fokus im Feld"], ["Esc hält das Feld", { nachEsc: "chat-input" }, "Esc gibt die Welt nicht zurück"], ["Enter stiehlt dem Knopf den Fokus", { enterAufKnopf: "chat-input" }, "Enter auf einem fokussierten Knopf öffnet das Gespräch"]]],
             [
