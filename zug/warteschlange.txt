@@ -261,3 +261,4 @@ eich10-gtx 1 station sha=e0139769f464e8137f417ad0fc6f0af23cdddcc0 lauf=eich-gtx.
 eich11-gtx 1 station sha=e0139769f464e8137f417ad0fc6f0af23cdddcc0 lauf=eich-gtx.sh
 z96-abab 3 abab A=8075fc036a9534b7ef772fc42dd4a19502c38aeb B=f1a654f175f05fd66c1b3e08715101bdce10e21f zellen=stadt,w-ego
 eich12-gtx 1 station sha=3ef20f9f880252fbff6ea5263b573d19f5e20b19 lauf=eich-gtx.sh
+eich13-gtx 1 station sha=3ef20f9f880252fbff6ea5263b573d19f5e20b19 lauf=eich-gtx.sh
