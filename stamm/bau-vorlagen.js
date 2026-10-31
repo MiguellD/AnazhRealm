@@ -127,13 +127,16 @@ class AnazhRealm_bau_vorlagen {
             },
         ];
         // Genesis-Plattform: beim Erschaffen einer Welt am Zentrum gespawnt, der Spieler startet darauf
-        // (erhöhte Warte statt Fall ins Tal). Stein-Scheibe + quarz-Kern.
+        // (erhöhte Warte statt Fall ins Tal). Stein-Scheibe + quarz-Kern — beide TRITTFLÄCHE (`tritt`, material.K4): Rad, Pfote und
+        // Fuß stehen auf ihnen wie die Kapsel des Spielers (`_trittUeber`). Bis dahin trug die Scheibe nur ihn: der Wagen am Grund
+        // der Mess-Sitzung (4,4 m neben dem Spieler) stand auf dem Gelände, 0,85 m in der Scheibe — im Bild nur Dach und Scheiben-Saum.
         const startPlattformParts = [
             {
                 shape: "cylinder",
                 material: "stein",
                 position: { x: 0, y: 0.5, z: 0 },
                 size: { x: 13, y: 1, z: 13 },
+                tritt: true,
             },
             {
                 shape: "cylinder",
@@ -141,6 +144,7 @@ class AnazhRealm_bau_vorlagen {
                 position: { x: 0, y: 1.15, z: 0 },
                 size: { x: 2.2, y: 0.35, z: 2.2 },
                 opacity: 0.9,
+                tritt: true,
             },
         ];
         // kristall_geode: kleiner quarz-Matrix-Nub (Tags + Fuß) + facettierte Prisma-Spitzen (`crystalPoint` →

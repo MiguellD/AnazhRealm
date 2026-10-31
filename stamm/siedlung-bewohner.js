@@ -347,6 +347,8 @@ class AnazhRealm_siedlung_bewohner {
             tueren.push({ si, sl, haus, tx, tz, ux: (tx - mx) / ul, uz: (tz - mz) / ul });
         }
         for (const T of tueren) legen(T.tx + T.ux * BW.vorM, T.tz + T.uz * BW.vorM);
+        // DER REST DES WERKS (`_weltOffen` leute): je Person ihr Stand und ihr Besuch — er fällt mit jedem gestellten
+        S.listeRest = 2 * tueren.reduce((a, T) => a + Math.max(0, FC.leuteVon(T.sl.ov) | 0), 0);
         // DER BESUCH (koerper-core `tagesPlan`, mensch.K3 Staffel 2): ein Stand vor der Tür eines anderen Hauses, aus dem Samen
         // unter denen, die `besuchM` fern von seiner Tür und der Mitte des Platzes liegen und höchstens `besuchWeitM` fern von
         // ihnen und seinem Werk (der Plan hält ihn `besuchH` dort: der Gang hin trägt nur einen Teil davon, er kommt an und
@@ -391,6 +393,7 @@ class AnazhRealm_siedlung_bewohner {
             const vor = { x: tx + ux * BW.vorM, z: tz + uz * BW.vorM };
             for (let k = 0; k < n; k++) {
                 yield;
+                S.listeRest--;
                 const g = this._rollGenome(`${plan.seed >>> 0}:${si}:${k}`, "bewohner");
                 const same = Math.floor(g.axis("tag") * 4294967296) >>> 0;
                 const beruf = KC.berufVon(same, rolle);
@@ -428,8 +431,10 @@ class AnazhRealm_siedlung_bewohner {
         }
         for (const [i, b] of liste.entries()) {
             yield;
+            S.listeRest--;
             b.orte.besuch = yield* besuchStand(...besuche[i]);
         }
+        S.listeRest = 0;
         return liste;
     }
 
@@ -2388,7 +2393,9 @@ class AnazhRealm_siedlung_bewohner {
         const staende = new Set();
         for (const b of S.liste)
             for (const k of ["heim", "platz", "werk", "besuch"]) if (b.orte[k]) staende.add(b.orte[k]);
+        S.listeRest = staende.size; // der Rest des Werks (`_weltOffen` leute): je Stand einer
         for (const o of staende) {
+            S.listeRest--;
             const ur = o.ur || (o.ur = { x: o.x, z: o.z });
             if (trifft && !trifft(o, o) && !trifft(ur, ur)) continue;
             const raum = [...staende].filter((p) => p !== o).map((p) => p.ur || p);
@@ -2426,6 +2433,7 @@ class AnazhRealm_siedlung_bewohner {
             }
             yield;
         }
+        S.listeRest = 0;
     }
 
     // DER BAUM der kürzesten Wege ab einem Knoten (Dijkstra, binärer Haufen) — je Start-Knoten einmal gerechnet, gemerkt.

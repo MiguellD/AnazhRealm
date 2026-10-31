@@ -14,7 +14,8 @@ class AnazhRealm_siedlung_verkehr {
     // Wartenden, nur mit Platz dahinter — keiner hält in der Kreuzung). Die Bewohner sehen den fahrenden Wagen als Leib mit
     // Vorrang im Raster ihres Gedränges (`_verkehrImRaster`), den stehenden als Wand.
     // DIE KOSTEN (Gebot 7): ein Wagen fern vom Spieler fährt seltener (die Leiter `VERKEHR.leiter`: derselbe Schritt mit der
-    // gesammelten Zeit), seine Boxen ziehen erst ab 0,5 m nach; der Leib am Steuer lebt nur nah (`leibM`).
+    // gesammelten Zeit), seine Boxen ziehen erst ab 0,5 m nach; der Leib am Steuer lebt nur, wo sein Wagen ihn trägt (das
+    // Komposit erbt die Stufe, `_archTraegt`), und nur bei den Nächsten (`BEWOHNER.nahLeiber`).
 
     // DER VERKEHR EINER SIEDLUNG entsteht mit ihrer Liste (`_tickBewohner`, nach dem Stand der Stände): das Netz und die Wenden
     // ihres Plans v2 (`plan.verkehr`, fachwerk `verkehrsBoden` — ein Ende ohne Wende trägt keinen Wagen, und was nur noch zu
@@ -421,7 +422,7 @@ class AnazhRealm_siedlung_verkehr {
 
     // DER VERKEHR IM BILD-TAKT (nach den Bewohnern, `_loopWeatherAndGrowth`): wer an seinem Werk steht und dessen Wagen parkt,
     // steigt ein; wessen Soll vom Werk geht, fährt heim; wessen Wagen heimkam, steigt aus. Der Leib am Steuer sitzt, wo der Sitz
-    // des Wagens ihn trägt (`_applySeatPose` am Wagen, `_sitzLage`), gezeichnet nur nah (`leibM`).
+    // des Wagens ihn trägt (`_applySeatPose` am Wagen, `_sitzLage`), gezeichnet nur in der 3D-Stufe seines Wagens (`_archTraegt`).
     _tickVerkehr() {
         const alle = this._bewohnerSiedlungen;
         const pm = this.state.playerMesh;
@@ -432,16 +433,16 @@ class AnazhRealm_siedlung_verkehr {
             const VK = S.verkehr;
             if (!VK || !VK.wagen.length || !S.liste) continue;
             if (VK.boden && VK.boden.offen && VK.boden.offen.length) this._verkehrBodenPumpe(VK.boden);
-            // DIE NAH-WAHL DER FAHRER (das Maß der Bewohner, `BEWOHNER.nahLeiber`): nur die Nächsten am Steuer im Kreis `leibM`
-            // tragen ihren Leib — je Bild zieht ein sichtbarer Leib alle Knochen nach (`_leibMatrix`); bis hier trugen ihn alle im
-            // Kreis, am Markt der Metropole ~1,9 ms je Bild außerhalb des Sim-Takts
+            // DIE NAH-WAHL DER FAHRER (das Maß der Bewohner, `BEWOHNER.nahLeiber`): nur die Nächsten am Steuer tragen ihren Leib —
+            // je Bild zieht ein sichtbarer Leib alle Knochen nach (`_leibMatrix`); bis hier trugen ihn alle im Kreis, am Markt der
+            // Metropole ~1,9 ms je Bild außerhalb des Sim-Takts. DAS KOMPOSIT ERBT (das EINE Stufen-Gesetz): wählbar ist nur, wen
+            // sein Wagen trägt — gezeichnet in einer 3D-Stufe (`_archTraegt`); der eigene Kreis `leibM` (30 m) fiel, er zeigte den
+            // Fahrer über der Karte (26–30 m) und neben dem Wagen, der noch lud.
             const nah = this._verkehrNah || (this._verkehrNah = []);
             nah.length = 0;
             for (const W of VK.wagen)
-                if (W.b.amSteuer && W.entry) {
-                    const d2 = (W.entry.position.x - p.x) ** 2 + (W.entry.position.z - p.z) ** 2;
-                    if (d2 < V.leibM * V.leibM) nah.push(((W.d2 = d2), W));
-                }
+                if (W.b.amSteuer && W.entry && this._archTraegt(W.entry))
+                    nah.push(((W.d2 = (W.entry.position.x - p.x) ** 2 + (W.entry.position.z - p.z) ** 2), W));
             nah.sort((a, c) => a.d2 - c.d2);
             if (nah.length > AnazhRealm.BEWOHNER.nahLeiber) nah.length = AnazhRealm.BEWOHNER.nahLeiber;
             for (const W of VK.wagen) {
@@ -512,6 +513,7 @@ class AnazhRealm_siedlung_verkehr {
         g.userData._drinnen = true; // kein Feld trägt ihn (`_kzBesitztFeld`)
         if (g.userData._kzGlieder) for (const gl of g.userData._kzGlieder) this._weltFeldAktiv(gl.handle, false);
         g.visible = false;
+        (e._passagiere || (e._passagiere = new Set())).add(g); // das Komposit: er zeigt sich nur mit der Stufe des Wagens
         W.sitzt = false;
         this._bewohnerSatzSchreiben(S);
         this._blockerWacheMelden(e._blockerHuelle);
@@ -608,6 +610,7 @@ class AnazhRealm_siedlung_verkehr {
         }
         const g = b.leib;
         b.amSteuer = false;
+        if (W.entry && W.entry._passagiere) W.entry._passagiere.delete(g);
         if (!g) return;
         const rig = g.userData.rig;
         if (rig && rig._sitzLage) this._sitzLageLoesen(rig);
@@ -1367,6 +1370,7 @@ class AnazhRealm_siedlung_verkehr {
                 f.amSteuer = false;
                 f.wagen = null;
             }
+            if (W.entry) W.entry._passagiere = null;
             if (W.entry) this.removeArchitecture(W.entry, { still: true });
             W.entry = null;
         }
@@ -1407,8 +1411,8 @@ AnazhRealm._verkehrEcken = Object.freeze([
 // steht er ohne Grund, dann steckt er (gezählt, `zahl.fest`) · ankunftAbstandM /
 // ankunftSchrittM = die Ankunft auf der Route: Abstand zum nächsten Wagen, Schritt der Suche · leiter = [Abstand m,
 // Schritt-Teiler]: so selten fährt ein ferner Wagen · genauM = so nah zieht er seine Boxen je Schritt nach (sonst ab 0,5 m) ·
-// huelleM = so nah fährt er mit der Probe seiner Hülle (Bau, Leib, Spieler; fern trägt die freie Spur des Gesetzes) · leibM = so nah
-// sitzt der Leib sichtbar am Steuer.
+// huelleM = so nah fährt er mit der Probe seiner Hülle (Bau, Leib, Spieler; fern trägt die freie Spur des Gesetzes). Wie nah der Leib
+// sichtbar am Steuer sitzt, sagt die Stufe seines Wagens (`_archTraegt`), kein eigener Kreis.
 AnazhRealm.VERKEHR = Object.freeze({
     wagen: Object.freeze(["kompakt_fwd", "limousine", "suv"]),
     stufeM: 0.2,
@@ -1452,7 +1456,6 @@ AnazhRealm.VERKEHR = Object.freeze({
     ]),
     genauM: 12,
     huelleM: 12,
-    leibM: 30,
 });
 
 // DER SCHLÜSSEL GEHT ZURÜCK: W hält den Ort Z nicht mehr (hält ihn keiner, hat er keine Richtung).
