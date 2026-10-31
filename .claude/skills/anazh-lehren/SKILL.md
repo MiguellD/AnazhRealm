@@ -155,7 +155,9 @@ den gemessenen Bruch gegen das Gesetz, den Beleg trägt die Systemkarte (`git sh
     `InstancedMesh.dispose()` gibt nichts frei, `geometry.dispose()` nur das erste Render-Objekt, dessen Geometrie-Hörer fällt
     (`_renderObjektRegister`), jede Textur hält die Bindegruppen ihrer Leser; Senken fallen über `_instanzAbschied`, Ungezeichnetes nimmt
     `_gpuKehraus`, ein Attribut unter der Observer-Diät nie (ohne Versions-Sprung lädt sie nichts neu); `werkbank puffer` nennt jeden
-    Halter, `buf:ruhend` / `buf:verwaist` sind Lecks (`gate:profiband`).
+    Halter, `buf:ruhend` / `buf:verwaist` sind Lecks (`gate:profiband`). Ein Pool trägt seinen Inhalt, nie eine gemessene
+    Start-Kapazität: der Satz wird am Boden seines Inhalts-Gesetzes geboren (`_chunkSatz`, vMin/iMin) und wächst mit ihm — die
+    Konstante vom 05.10. hielt an der Mess-Wiese 11 MB ohne Bild, bis die Ruhe-Frist schrumpfte (`gate:chunk-satz` (k)).
 
 ## Workflows
 

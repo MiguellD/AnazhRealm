@@ -1544,12 +1544,19 @@ class AnazhRealm_siedlung_bauten {
                 renderOrder: 0,
                 richtung: bau.mat.transparent === true ? -1 : 1, // ein durchscheinender Stoff fern → nah
                 userData: bau.userData || { bauSatz: bau.name },
-                kapazitaet: bau.kapazitaet || "bau",
             };
         throw new Error(`_chunkSatzArt: unbekannte Satz-Art „${art}"`);
     }
 
     // Der Satz einer Art (lazy): EIN Szenen-Kind, frustumCulled=false (die Wahl je Pass trifft der Abschnitt).
+    // DER SATZ WIRD AN SEINEM INHALT GEBOREN (w4-e-vram): er beginnt beim Boden des Inhalts-Gesetzes (vMin/iMin,
+    // `CHUNK_SATZ_VERDICHTEN`) und wächst mit seinen Bereichen (Vertices ×1,5, Indizes ×1,25 oder auf die Summe der
+    // Abschnitte) — seine Kapazität liegt so zwischen seinem Hochwasser und dessen Anderthalbfachem (Löcher räumt die Frist,
+    // `_chunkSatzVerdichten`). Bis hier begann jede Art bei
+    // einer am 05.10. gemessenen Start-Kapazität (Boden 229 376 Vertices · 1 310 720 Indizes = 15,5 MB, `CHUNK_SATZ`), „damit
+    // eine typische Sitzung nie wächst": der Boden der Stufen-Kette (K51) trug am 31.10. an der Mess-Wiese 61 836 Vertices und
+    // Abschnitte bis 135 168 Indizes (Halter-Tafel, swiftshader 1920×1080) — 11 MB ohne Bild, bis die Ruhe-Frist (600 Render-
+    // Takte, `_chunkSatzVerdichten`) ihn schrumpfte; jede Messung davor trug sie mit.
     _chunkSatz(art) {
         const st = this.state;
         if (!st.chunkSaetze) st.chunkSaetze = new Map();
@@ -1557,8 +1564,7 @@ class AnazhRealm_siedlung_bauten {
         if (s) return s;
         if (!st.scene) throw new Error(`_chunkSatz(${art}): keine Szene`);
         const spec = this._chunkSatzArt(art);
-        const C = AnazhRealm.CHUNK_SATZ[spec.kapazitaet || art];
-        if (!C) throw new Error(`_chunkSatz: keine Start-Kapazität für „${art}" (CHUNK_SATZ)`);
+        const V = AnazhRealm.CHUNK_SATZ_VERDICHTEN;
         s = {
             art,
             spec,
@@ -1598,7 +1604,7 @@ class AnazhRealm_siedlung_bauten {
             // schreibt, steht beim Namen) — kumulativ, die Linsen lesen die Differenz je Frame
             schreiben: {},
         };
-        this._chunkSatzGeometrie(s, C.v, C.i);
+        this._chunkSatzGeometrie(s, V.vMin, V.iMin);
         const mesh = this._chunkSatzMesh(s); // unsichtbar, bis der erste Bereich liegt
         st.chunkSaetze.set(art, s);
         st.scene.add(mesh);
@@ -1610,11 +1616,21 @@ class AnazhRealm_siedlung_bauten {
     // Wachsen mitten im Frame (ein Schatten-Pass, dessen Abschnitt keinen Platz findet) ist richtig: der Mesh trägt ab
     // sofort die neue Geometrie, die den Abschnitt des Hauptbilds an seiner Stelle trägt (`_chunkSatzUmlegen` lässt ihn
     // liegen); was der Haupt-Pass schon aufzeichnete, liest die alte, die bis zur Abgabe lebt.
+    // WAS NICHT WÄCHST, ZIEHT MIT (w4-e-vram): wächst nur der Index, trägt die neue Geometrie die Vertex-Attribute der alten
+    // (dieselben Objekte, dieselben GPU-Puffer — kein Kopieren, kein Hochladen); wachsen nur die Vertices, trägt sie den
+    // Index. Der Satz wird klein geboren (`_chunkSatz`) und wächst in der Ankunft in Schritten: ein Index-Schritt kostet so
+    // den Index, nie die Ecken. Das Entsorgen der alten Geometrie gibt kein Attribut frei (`_renderObjektRegister` nimmt r184s
+    // Hörer heraus), und der Kehraus hält, was die neue trägt.
     _chunkSatzGeometrie(s, vKap, iKap) {
         const alt = s.geom;
         const waechst = vKap > s.vKap || iKap > s.iKap; // `wachse` zählt das Wachsen, nie das Schrumpfen (`_chunkSatzVerdichten`)
         const g = new THREE.BufferGeometry();
+        const vMit = !!alt && vKap === s.vKap;
         for (const { name, form, gis } of s.attr) {
+            if (vMit) {
+                g.setAttribute(name, alt.attributes[name]);
+                continue;
+            }
             const arr =
                 form === "snorm8"
                     ? new Int8Array(vKap * 4)
@@ -1624,10 +1640,13 @@ class AnazhRealm_siedlung_bauten {
             if (alt) arr.set(alt.attributes[name].array.subarray(0, s.vEnde * gis));
             g.setAttribute(name, new THREE.BufferAttribute(arr, gis, form === "snorm8"));
         }
-        const idx = new Uint32Array(iKap);
-        const iN = alt ? Math.min(s.iEnde, alt.index.array.length, iKap) : 0;
-        if (iN > 0) idx.set(alt.index.array.subarray(0, iN));
-        g.setIndex(new THREE.BufferAttribute(idx, 1));
+        if (alt && iKap === s.iKap) g.setIndex(alt.index);
+        else {
+            const idx = new Uint32Array(iKap);
+            const iN = alt ? Math.min(s.iEnde, alt.index.array.length, iKap) : 0;
+            if (iN > 0) idx.set(alt.index.array.subarray(0, iN));
+            g.setIndex(new THREE.BufferAttribute(idx, 1));
+        }
         if (alt) g.setDrawRange(alt.drawRange.start, alt.drawRange.count);
         else g.setDrawRange(0, 0);
         // frustumCulled=false: eine ehrliche „überall"-Kugel statt eines Laufs über die ganze Kapazität. Ihre Mitte liest
@@ -1716,8 +1735,10 @@ class AnazhRealm_siedlung_bauten {
         this._chunkSatzGeometrie(s, vNeu, iNeu);
         s.geom.setDrawRange(0, 0); // der Index ist leer, bis jeder Pass seinen Abschnitt legt
         s.verdichtet = (s.verdichtet || 0) + 1;
-        for (const k in alt.attributes) this._gpuAbschied(alt.attributes[k]);
-        if (alt.index) this._gpuAbschied(alt.index);
+        // was die neue Geometrie mitträgt (`_chunkSatzGeometrie`: nur der Index oder nur die Ecken schrumpften), bleibt
+        for (const k in alt.attributes)
+            if (s.geom.attributes[k] !== alt.attributes[k]) this._gpuAbschied(alt.attributes[k]);
+        if (alt.index && alt.index !== s.geom.index) this._gpuAbschied(alt.index);
         return true;
     }
 
@@ -2681,27 +2702,6 @@ class AnazhRealm_siedlung_bauten {
 _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bauten]);
 
 // ===== ATLAS · Siedlung/bauten — Außen-Konstanten =====
-// DER SATZ (Welle B, `_chunkSatz`) — die Start-Kapazität je Satz-Art (Vertices · Indizes): die Vertices gemessen am
-// vollen Ring 4 am Spawn (81 Chunks + 16 Stitch-Bänder = 179 046 Vertices) plus Luft für Fragmentierung und Gebirge,
-// damit eine typische Sitzung nie wächst; die Indizes tragen die Abschnitte der Pässe (Hauptbild · k0 · k1, gemessen
-// 05.10. an der Mess-Wiese mittags 333 774 + 439 746 + 272 535 = 1 046 055 bei 737 088 im ganzen Ring, mit Luft 1 259 520)
-// — 1,25 · 2^20 statt 2^20 (+1 MB). Wo die Pässe mehr tragen (die Gate-Welt mittags ~1,57 M, nach dem Wandern ~1,6 M, am
-// Abend mit der Sonne im Rücken bis ~2,2 M), wächst der Index auf ihre Summe — kein Abschnitt verdrängt einen anderen.
-// Ein Wachsen (Vertices ×1,5, Indizes ×1,25 oder auf die Summe) kostet eine frische Geometrie mit vollem Upload.
-AnazhRealm.CHUNK_SATZ = Object.freeze({
-    boden: Object.freeze({ v: 229376, i: 1310720 }),
-    // Der Wasser-Satz (0910-1 B) beginnt bei seinem Inhalt an der Mess-Wiese: 9 849 Vertices und ein Index-Hochwasser von
-    // 30 720 (werkbank, OMEN, Satz-Takt 579) — bis dahin begann er bei 2^16 / 2^18 und hielt so 3,0 MiB für ~0,4 MiB Inhalt, bis
-    // ihn die Ruhe-Frist verdichtete (`_chunkSatzVerdichten`, 600 Takte; das Band nach der Ankunft misst davor). Ein Seen-Land
-    // wächst ihn wie jeden Satz (×1,5): 8 Floats je Vertex, ein Wachsen lädt höchstens wenige MB neu.
-    wasser: Object.freeze({ v: 1 << 14, i: 1 << 16 }),
-    // Der Bau-Satz (Welle 6) beginnt klein: je Stoff ein Satz, das Dorf der Mess-Wiese trägt in seinem größten Stoff
-    // ~40k Vertices — er wächst in wenigen Schritten, eine Formation bleibt darunter.
-    bau: Object.freeze({ v: 1 << 13, i: 1 << 14 }),
-    // Der Streu-Satz (W7) je Stoff der Nah-Streu: der größte Stoff (das wiegende Laub) trägt an der Mess-Wiese ~38k
-    // Vertices im Ring, ein seltener (Totholz) eine Pflanze mit 101 — er beginnt klein und wächst.
-    streu: Object.freeze({ v: 1 << 10, i: 1 << 11 }),
-});
 // DIE ABSCHNITTE des Satzes (`_chunkSatzAbschnitt`): je Pass ein Lauf im Index mit `luft` über seiner Länge (er wächst,
 // ohne umzuziehen); einer, den `ruheTakte` Render-Takte kein Pass fragte, fällt beim Umlegen; das Hauptbild legt dicht
 // neu, sobald der Verschnitt (verlassene Läufe hinter umgezogenen Abschnitten) `verschnitt` × Index-Kapazität übersteigt;
@@ -2712,7 +2712,8 @@ AnazhRealm.CHUNK_SATZ_ABSCHNITT = Object.freeze({ luft: 1.2, ruheTakte: 600, ver
 // `schwelle` × Ziel trägt, auf das Ziel = Inhalt × `luft` (Vertices: die Bereiche; Indizes: das Hochwasser der lebenden
 // Abschnitte), mindestens vMin/iMin. Die Schwelle 1,5 liegt auf dem Wachs-Schritt der Vertices: nach einem Schrumpfen wächst
 // der Satz erst, wenn sein Inhalt um ein Viertel zunimmt, und schrumpft erst wieder, wenn er ein Drittel verliert. Wächst der
-// Inhalt während der Frist um mehr als `stetig` (10 %), beginnt sie neu — ein Satz, der füllt, schrumpft nie.
+// Inhalt während der Frist um mehr als `stetig` (10 %), beginnt sie neu — ein Satz, der füllt, schrumpft nie. vMin/iMin sind
+// zugleich die Geburt jedes Satzes (`_chunkSatz`): er beginnt am Boden des Gesetzes und wächst mit seinem Inhalt.
 AnazhRealm.CHUNK_SATZ_VERDICHTEN = Object.freeze({ luft: 1.25, schwelle: 1.5, stetig: 1.1, vMin: 1024, iMin: 3072 });
 
 // DER ANKER DER REIHE IM BÜNDEL (1310-9): ab diesem Weg des Auges stellen die Bündel ihre Kinder neu nach Abstand (je
