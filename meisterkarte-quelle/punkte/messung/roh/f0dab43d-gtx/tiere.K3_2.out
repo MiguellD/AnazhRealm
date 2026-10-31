@@ -1,0 +1,21 @@
+$ C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\f0dab43d-gtx\tiere.K3_2.json' | tr '\\' /); B="${A%.json}"
+S=$(( 7804 )); W=$(( 7804 + 20000 )); export WERKBANK_PORT=$W
+( TIER_GANG_PORT=$(( 7804 + 10000 )) node scripts/diag-tier-gang.cjs; echo "TIER-GANG EXIT=$?" ) > "$B-tiergang.out" 2>&1 &
+( KREATUR_TAKT_PORT=$(( 7804 + 30000 )) node scripts/diag-kreatur-takt.cjs --proben querhang; echo "QUERHANG EXIT=$?" ) > "$B-querhang.out" 2>&1 &
+node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1
+erg() { node -e 'const t = require("fs").readFileSync(0, "utf8"); console.log(JSON.stringify(JSON.parse(t.slice(t.indexOf("{"))).ergebnis))'; }
+G=$(node scripts/werkbank.cjs eval 'const s = r.state, pm = s.playerMesh.position, h = (x, z) => r.getTerrainHeightAt(x, z), V = () => new window.THREE.Vector3(); r.setGameMode("pfad"); for (const c of [...s.creatures, ...s.leichname]) r.removeCreature(c); s.renderer.setAnimationLoop(null); s.faunaLifecycle.lastTick = 1e12; const z0 = pm.z + 24; const tiere = ["wolf", "fuchs", "baer", "wesen"].map((seele, n) => { const x0 = pm.x - 5 + n * 3.4; s.maxCreatures = Math.max(s.maxCreatures || 0, s.creatures.length + 4); const c = r.spawnCreatureAt(x0, h(x0, z0) + 0.3, z0, "happy", seele, { precise: true, bodySize: 1 }); c.userData.task = { name: "wait", args: {}, since: 0 }; c.userData.emotions = null; c.rotation.set(0, Math.PI / 2, 0); c.userData._animFade = 1; const tb = c.userData._tierBaum, T = tb.teile, P = [T.flP, T.frP, T.hlP, T.hrP]; r._tierBaumNeutralStance(c); c.updateMatrixWorld(true); const lokal = P.map((p) => { const w = V().setFromMatrixPosition(p.matrixWorld); w.y = c.position.y; return p.worldToLocal(w); }); const hl = V().setFromMatrixPosition(T.legHL.matrixWorld).y - c.position.y; const v = 0.5 * Math.sqrt(-s.gravity * tb.beinL * (c.scale.x || 1)); c.position.x = x0 - v * 4.3; for (let i = 0, t = 0; i < 258 + n * 7; i++) { c.position.x += v / 60; const y = h(c.position.x, c.position.z); c.position.y = y; c.userData._traegerY = y; c.userData._traegerStruktur = false; r._animateCompoundMotion(c, r._motionRolesForSoul(c.userData.soul), (t += 1 / 60), 0, true, null); } c.updateMatrixWorld(true); const amBoden = P.filter((p, j) => { const w = p.localToWorld(lokal[j].clone()); return w.y - h(w.x, w.z) <= 0.05 * hl; }).length; return { seele, x: +c.position.x.toFixed(1), art: tb._gang.art, amBoden }; }); const xc = tiere.reduce((a, t) => a + t.x, 0) / 4; return { tiere, kamera: [xc, h(xc, z0 - 10) + 2, z0 - 10, xc, h(xc, z0) + 0.5, z0].map((v) => +v.toFixed(2)) };' | erg); echo "BUEHNE $G"
+node scripts/werkbank.cjs bild $(node -e 'console.log(JSON.parse(process.argv[1]).kamera.join(" "))' "$G") --w 1920 --h 1080 --klasse '^tier:' --ziel gang --datei "$B-gang.png" > "$B-bild.txt" 2>&1
+echo "BILD $(grep -o '"abnahme": "[^"]*"' "$B-bild.txt")"
+cp "$B-gang.abnahme.json" "$A"
+wait
+cat "$B-tiergang.out" "$B-querhang.out"
+BUEHNE {"tiere":[{"seele":"wolf","x":-5,"art":"schritt","amBoden":3},{"seele":"fuchs","x":-1.5,"art":"schritt","amBoden":2},{"seele":"baer","x":2.1,"art":"schritt","amBoden":3},{"seele":"wesen","x":5.7,"art":"schritt","amBoden":2}],"kamera":[0.32,91.62,14,0.32,89.59,24]}
+BILD "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 52 σ 24.7 schwarz 0.0 % weiß 0.0 % · Stand 18.546.149 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Blick-Wahl 1 Posen"
+
+--- stderr ---
+tr: warning: an unescaped backslash at end of string is not portable
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
+[linse-gpu] nvidia/pascal
