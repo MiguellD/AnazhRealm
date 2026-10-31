@@ -143,3 +143,4 @@ eich16-gtx Exit0 station eich-gtx.sh an b4bcf19c
 takt-z111a-gtx gemessen punkte cdb2703d gtx: 0 grün / 3 rot
 takt-z111b-gtx gemessen punkte cdb2703d gtx: 0 grün / 9 rot
 takt-z112a-gtx gemessen punkte 8809ec6d gtx: 0 grün / 6 rot
+takt-z112b-gtx gemessen punkte 8809ec6d gtx: 0 grün / 8 rot
