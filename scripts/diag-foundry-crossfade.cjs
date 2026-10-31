@@ -223,9 +223,9 @@ const stumpf = { _instanzWeite: () => ({ r: 10.06, y: 0 }) };
 function stufeOhneBildLinse(core, cfg, fenster = (g, i, L) => A.prototype._instanzFenster.call(stumpf, g, i, L)) {
     const gesetz = core.lodCrossfadeMask;
     const K = A._blendeKanten(gesetz, cfg.d0, cfg.d1, cfg.fade, cfg.fade0);
-    const perf = 1.21,
-        ref = 12;
-    const L = { ex: 0, ez: 0, perf, ref, kanten: K, halt: 0 };
+    // die Wahrnehmungs-Distanz ist die Auge-Distanz × min(ref/Sichthöhe, 1) — ohne Streck (w4-ankunft-3: uLodPerf fiel)
+    const ref = 12;
+    const L = { ex: 0, ez: 0, ref, kanten: K, halt: 0 };
     // die Wahrheit an der Instanz-Distanz: behält die Stufe dort ein Fragment (ein Dither-Wert des Rasters)?
     const zeigt = (stufe, dS, dL) => {
         for (let k = 0; k < 256; k++) {
@@ -255,8 +255,8 @@ function stufeOhneBildLinse(core, cfg, fenster = (g, i, L) => A.prototype._insta
                         },
                     },
                 };
-                const dS = d * perf * Math.min(ref / art.h, 1),
-                    dL = d * perf * Math.min(ref / hL, 1);
+                const dS = d * Math.min(ref / art.h, 1),
+                    dL = d * Math.min(ref / hL, 1);
                 const zeichnet = fenster(g, 0, L);
                 const wahr = zeigt(stufe, dS, dL);
                 // die Kanten stehen per Bisektion auf 1 mm an der äußeren Grenze (`_blendeKanten`): 1 cm Wahrnehmungs-Distanz
@@ -1153,7 +1153,7 @@ async function runPartB() {
     const attrWand = await page.evaluate(() => {
         let geprueft = 0,
             verstoesse = 0;
-        r.state.scene.traverse((o) => {
+        st.scene.traverse((o) => {
             if (!o.geometry || !o.material) return;
             const mats = Array.isArray(o.material) ? o.material : [o.material];
             for (const m of mats) {
@@ -1196,11 +1196,11 @@ async function runPartB() {
         slots = mkSlots();
         o.reMintInFrist = r._archGruppenMints - mintsVor;
         r._archLeerReapT = 0;
-        r._tickArchGruppenReaper(performance.now() + 2 * (r.constructor.ARCH_LEER_GNADE_MS || 10000));
+        r._tickArchGruppenReaper(performance.now() + 2 * (AnazhRealm.ARCH_LEER_GNADE_MS || 10000));
         o.lebtNachReaper = st.archInstanceGroups.has(keyB);
         r._scatterFreeSlots(slots);
         const g2 = st.archInstanceGroups.get(keyB);
-        if (g2) g2._leerSeit = performance.now() - 2 * (r.constructor.ARCH_LEER_GNADE_MS || 10000);
+        if (g2) g2._leerSeit = performance.now() - 2 * (AnazhRealm.ARCH_LEER_GNADE_MS || 10000);
         r._archLeerReapT = 0;
         r._tickArchGruppenReaper(performance.now());
         o.reaperRaeumt = !st.archInstanceGroups.has(keyB);
@@ -1280,7 +1280,7 @@ async function runPartB() {
         r._foundryMats = mats;
         // DER SPIEGEL DER BLENDE (W5.4): die Masken-Uniformen tragen je Bild das EINE CPU-Band (LOD_DISTANCES) — eine Änderung
         // des Bands steht nach dem nächsten Bild (`_loopRender`) in der Maske, vorher nicht (die Gegenprobe im selben Lauf).
-        const D = r.constructor.LOD_DISTANCES;
+        const D = AnazhRealm.LOD_DISTANCES;
         const u = st.lodUniforms;
         const band = () => [u.uLodD0, u.uLodD1, u.uLodFade, u.uLodFade0].map((x) => x.value).join() === [D.thresh01, D.thresh12, D.fade, D.fade0].join();
         const d0 = D.thresh01;
