@@ -294,3 +294,4 @@ z106-abab 3 abab A=48cc0efcacdf2eff12431f57793c881bcdb8d69b B=b4bcf19c21d456de25
 a-spawn-gtx3 2 station sha=b4bcf19c21d456de2547313768915d6a821e4087 lauf=a-spawn.sh
 takt32a-gtx 1 punkte sha=b4bcf19c21d456de2547313768915d6a821e4087 geraet=gtx nur=tiere.K1#2,tiere.K3#2,mensch.K1#1,oekologie.K4#2,vegetation.K1#1,licht.K2#2,licht.K5#1,material.K2#1,lod.K1#1,licht.K3#1,studios.K2#2,studios.K3#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,leib.K1#2,fahrzeug.K2#2,profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K3#1,klang.K2#1,speicher.K4#2
 takt32b-gtx 1 punkte sha=b4bcf19c21d456de2547313768915d6a821e4087 geraet=gtx nur=mensch.K5#1,mensch.K4#1,haar.K2#1,vegetation.K5#2,material.K1#1,lod.K5#1,material.K4#1,bauen.K1#2,bauen.K5#2,spielgang.K3#1,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,profiband.K5#1,klang.K4#1
+eich15-gtx 1 station sha=b4bcf19c21d456de2547313768915d6a821e4087 lauf=eich-gtx.sh
