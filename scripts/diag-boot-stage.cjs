@@ -151,7 +151,7 @@ const KALT_KLASSEN = {
     _spawnSettlementSlot: "Dorf",
     // DIE KLASSE PFLANZEN (B): die Saat der Chunks, der Plan des Walds, die Gestalt des Orts — in der Familie zählt der
     // Äußere (die Gestalt in der Streu ist Streu), ihre Summe bis zum Bild steht in der Klassen-Zeile
-    _populateVoxelChunkVegetation: "Saat",
+    _tickSaat: "Saat",
     _forestPlantChunk: "Saat",
     _tickWaldPlan: "Wald-Plan",
     _ortGestaltSame: "Gestalt",

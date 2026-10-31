@@ -1852,6 +1852,7 @@ AnazhRealm.SYNC_STELLEN = ["fussabdruck", "naht", "drain"];
 AnazhRealm.SYNC_KETTE = [
     "_fadenUmgangen",
     "_syncBauen",
+    "_bodenKarteNaht",
     "_buildVoxelChunkData",
     "_acquireVoxelChunkBuild",
     "_rebuildVoxelChunk",

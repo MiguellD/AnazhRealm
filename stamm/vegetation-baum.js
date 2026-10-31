@@ -2266,10 +2266,14 @@ class AnazhRealm_vegetation_baum {
     // Raster über die Chunk-Bounds (`span`, origin-basiert) durch `_vegetationSampleSpawn`, Höhe aus
     // `_voxelSurfaceY`; die Bäume pflanzt `_forestPlantChunk`. Idempotent über
     // `state.voxelPopulatedChunks`, am Voxel-Chunk-Lifecycle aufgehängt.
-    // DIE SAAT IM TAKT (pbk4-fahrt, Lehre 14): der Chunk tritt in die Saat (`_saatOffen`), und `_tickSaat` sät ihn Probe für
-    // Probe im Budget des Frames — der Rest im Job des Walds (Welt-Substanz, nie verhungert); headless (Budget ∞) und
-    // `opts.immediate` (Test-/Worldgen-Pfade) säen ihn ganz. Bis pbk4-fahrt säte der Chunk-Einbau 100 Proben und den Wald am
-    // Stück (Mess-Wiese, GT 20 m/s: 22,9 ms je Takt ab p95, `werkbank takt`). Rückgabe: die Zahl der gesäten Stücke.
+    // DIE SAAT IM TAKT (pbk4-fahrt, Lehre 14): der Chunk tritt in die Saat (`_saatOffen`), `_tickSaat` sät ihn Probe für
+    // Probe. Bis pbk4-fahrt säte der Chunk-Einbau 100 Proben und den Wald am Stück (Mess-Wiese, GT 20 m/s: 22,9 ms je Takt ab
+    // p95, `werkbank takt`). DIE EINE UHR DER SAAT (w4-b-boden): im Takt sät nur der Job des Walds (`waldPlan`, hinter dem
+    // Strom, Welt-Substanz, nie verhungert) — der Einbau des Bodens trägt den Chunk nur ein. Bis dahin säte jeder Einbau bis
+    // zur Frist des Lade-Frames, die er mit dem Strom teilt (headless kalt 13–25 ms je Chunk, die Hälfte des Einbaus): der
+    // Strom setzte je Lade-Takt 1–5 Chunks ein, und der Boden der Ankunft wartete Takt um Takt auf sich selbst (GTX kalt
+    // licht/leib → boden +2,5–3,7 s). Ohne Takt (die Weltgen vor dem ersten Frame) und mit `opts.immediate` (Test-Pfade)
+    // sät er ganz. Rückgabe: die Zahl der gesäten Stücke.
     _populateVoxelChunkVegetation(cx, cz, opts = {}) {
         if (!this.state.scene || !this.state.blueprints) return 0;
         if (!this.state.voxelPopulatedChunks) this.state.voxelPopulatedChunks = new Set();
@@ -2279,17 +2283,22 @@ class AnazhRealm_vegetation_baum {
         const S = this._saatOffen || (this._saatOffen = new Map());
         S.set(key, { cx, cz, i: 0 });
         if (opts.immediate) return this._tickSaat(Infinity, key, true);
-        const B = this.state._frameBudget;
-        return this._tickSaat(B ? performance.now() + B.remainingMs() : Infinity, null, false);
+        return this.state._frameBudget ? 0 : this._tickSaat(Infinity, null, false);
     }
 
     // Sät bis zur Frist (`frist`, performance.now()): je Schritt eine Probe des 10×10-Rasters, nach der letzten der Wald
     // des Chunks; nah zuerst (`_foundryAuftragD2`), im Lade-Takt bis zur Frist des Lade-Frames. `nur`: nur dieser Chunk,
-    // `sofort`: die Stücke umgehen die Spawn-Schlange (`_vegSpawnImmediate`). Leser: die Bepflanzung des Chunks und der
-    // Job des Walds (`waldPlan`, der mindestens einen Schritt geht). → die Zahl der gesäten Stücke.
+    // `sofort`: die Stücke umgehen die Spawn-Schlange (`_vegSpawnImmediate`). Leser: der Job des Walds (`waldPlan`, der
+    // mindestens einen Schritt geht) und die Bepflanzung ohne Takt. → die Zahl der gesäten Stücke.
     _tickSaat(frist, nur, sofort, mindestens = 0) {
         const S = this._saatOffen;
         if (!S || !S.size) return 0;
+        // DIE EINE UHR DER SAAT (w4-b-boden): im Takt sät nur der Job des Walds (er geht mindestens einen Schritt) — jeder andere
+        // Ruf im Takt ist eine zweite Uhr (bis w4-b-boden der Einbau des Bodens, `_populateVoxelChunkVegetation`) und bricht laut
+        if (!mindestens && !sofort && this.state._frameBudget)
+            this._bruchMelden(
+                `SAAT-UHR: im Takt sät eine zweite Uhr neben dem Job des Walds — ${(new Error().stack.split("\n")[2] || "?").trim()} (Lehre 14)`
+            );
         frist = Math.max(frist, this._ladeFrist());
         const { span } = this._voxelChunkConfig();
         const SAMPLES = 10;

@@ -1022,7 +1022,8 @@ des Felsens `FELS` mit seiner Saat `FELS_SAAT` — `felsStoff` (der Welt-Boden j
 `felsBasis`, `felsFarbe`, `felsKruemmung`, `felsLage`, `felsMittel`/`felsMittelWerte` (die Ferne), `felsFein` (der
 Detail-Term des Shaders) mit seiner Welle `felsWelle` (K17-3: der Shader liest sie EINMAL im Rausch-Atlas und reicht sie
 in die Fels-Funktion), `felsZahl` (das Rechenwerk des Gesetzes, mit `falte` und `fest`), `felsBankung` (die Messung der Bänke), der Schutt
-`schuttKorn`/`schuttMittel`, die Himmels-Sicht der Höhle `HIMMELS_SICHT`/`himmelsSicht`, das Ziel der gröberen Stufe
+`schuttKorn`/`schuttMittel`, die Himmels-Sicht der Höhle `HIMMELS_SICHT`/`himmelsSicht`, die Boden-Karte des gerenderten
+Bodens `bodenKarte` (w4-b-boden: der voxel-worker rastert sie je Chunk, Sync-Bau und Naht-Morph rufen dieselbe Funktion), das Ziel der gröberen Stufe
 `STUFE_ZIEL`/`stufeZiel` (K51-2, der Geomorph der Boden-Stufen: je Vertex Lage, Normale und Stoff-Farbe auf dem Netz der nächst
 gröberen Stufe — Worker und Sync-Bau rufen dieselbe Funktion) und DAS RAUSCH-GESETZ `RAUSCH` mit
 `rauschGitter`/`rauschRaum` (das EINE Gradienten-Rauschen des Boden-Shaders).

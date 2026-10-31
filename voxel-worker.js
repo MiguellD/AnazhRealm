@@ -331,6 +331,14 @@ function chunkAntwort(mesh, lod) {
         himmel: mesh.himmel.buffer,
         schutt: mesh.schutt.buffer,
         felsFeuchte: mesh.felsFeuchte,
+        // die Boden-Karte des Netzes (w4-b-boden): Höhe, Grün und je Dreieck sein Zellen-Rechteck — null ohne Dreieck
+        karteHoehe: mesh.karte ? mesh.karte.hoehe.buffer : null,
+        karteGruen: mesh.karte ? mesh.karte.gruen.buffer : null,
+        karteZellen: mesh.karte ? mesh.karte.zellen.buffer : null,
+        // die Karte der Morph-Ziele (die gröbste Stufe trägt keine: ihr Ziel ist die Lage)
+        zielHoehe: mesh.karteZiel ? mesh.karteZiel.hoehe.buffer : null,
+        zielGruen: mesh.karteZiel ? mesh.karteZiel.gruen.buffer : null,
+        zielZellen: mesh.karteZiel ? mesh.karteZiel.zellen.buffer : null,
         waterCells: mesh.waterCells.buffer,
         // der Höhlen-Graph (Welle 7): je Dreieck die Zelle seiner Luft + Zellen · Seiten · Portale
         hTri: mesh.hTri.buffer,
@@ -422,8 +430,8 @@ function plattePost(msg) {
                 })
         )
         .then((p) => {
-            // ein Reply ohne Morph-Ziel ist eine alte Form: der Faden baut frisch
-            if (p && !p.empty && !p.morphZiel) p = null;
+            // ein Reply ohne Morph-Ziel oder Boden-Karte ist eine alte Form: der Faden baut frisch
+            if (p && !p.empty && (!p.morphZiel || p.karteHoehe === undefined || p.zielHoehe === undefined)) p = null;
             if (p) p.vonPlatte = true;
             chunkPost(msg, p || null);
         })
@@ -816,6 +824,8 @@ function applyStateSnapshot(snap) {
     // DER ERDBAU DER ORTE (K10): die Splat-Liste des Mains (`_erdbauRoh`), hier in die Normalform des Gesetzbuchs gelegt
     if (snap.erdbau !== undefined) state.erdbau = G.erdbauNormal((state.erdbauRoh = snap.erdbau));
     if (snap.felsStoff) state.felsStoff = snap.felsStoff;
+    // DIE BODEN-KARTE (w4-b-boden): Teilung und Wiesen-Wache des Stamms (`BODEN_KARTE_TEILUNG`, `TERRAIN_GEOLOGY`) — dieselben Zahlen
+    if (snap.bodenKarte) state.bodenKarte = snap.bodenKarte;
     // DIE KONSTANTEN DER FERNE (B2): FOREST, die Selbstbeschattung der Krone, Schutt-Gewicht, Fels-Mittel, Gedächtnis
     if (snap.fern) state.fern = snap.fern;
     // DIE PLATTE DES BODENS (Karte hydro-faden): ob sie gilt, ihr Stempel und ihr Deckel
@@ -3152,12 +3162,24 @@ function buildChunkMesh(cx, cz, lod, saat = null) {
         nV,
         feuchteAt
     );
+    // DIE BODEN-KARTE ENTSTEHT, WO DAS NETZ ENTSTEHT (w4-b-boden): gelaende-core `bodenKarte` über der FERTIGEN Lage und Farbe
+    // (nach dem Stein unter Fels), dieselbe Rechnung wie der Sync-Bau des Stamms (`_bodenKarteAusMesh`) — der Main setzt sie nur
+    // ein (`_buildVoxelChunkDataFromWorkerMesh`). Bis hierher rasterte der Haupt-Faden jede Karte beim Einbau (headless kalt
+    // ~4,5 ms je Chunk, GTX `_bodenKarteAusMesh` 176 ms Selbstzeit bis zum Bild).
+    const BK = state.bodenKarte;
+    if (!BK) throw new Error("buildChunkMesh: die Boden-Karte fehlt im Worker-Zustand (bodenKarte)");
+    const karte = G.bodenKarte(positionsF32, indicesU32, colors, cx, cz, cfg, BK.teilung, BK.gruenSchwelle, null, null);
     // DAS ZIEL DER GRÖBEREN STUFE (K51-2, Geomorph nach CDLOD): das Netz der Stufe lod+1 desselben Orts, eine grobe Zelle
     // weiter nach unten gepolstert (das Gitter beginnt zwei grobe Schritte vor dem Chunk, der Crop behält die Zelle vor der
     // Kante — sie ist die Saum-Zelle des unteren Nachbarn, so trifft jeder geteilte Vertex in beiden Chunks dieselbe Fläche),
     // sonst derselbe Bau wie der Chunk der Stufe lod+1; je Vertex sein Ziel samt Normale und Stoff-Farbe (gelaende-core
     // `stufeZiel`). Stufe 3 ist die gröbste.
     const stufe = lod < 3 ? stufeZielNetz(positionsF32, normals, colors, ox, oy, oz, lod + 1) : null;
+    // DIE KARTE DES ZIELS (K51-2, w4-b-boden): die Boden-Karte der Morph-Ziele (ohne Grün, wie `_bodenStufeMisch` sie liest) —
+    // der Main rastert danach nur, was ein Naht-Morph oder ein Edit an den Zielen bewegt
+    const karteZiel = stufe
+        ? G.bodenKarte(stufe.ziel, indicesU32, null, cx, cz, cfg, BK.teilung, BK.gruenSchwelle, null, null)
+        : null;
     // V9.93 (Wasser-LOD-Naht-Heilung): Wasser-Cells IMMER LOD 0 für naht-
     // freie Wasseroberflächen über LOD-Boundaries hinweg. Für LOD-0-Chunks
     // teilen wir die schon gesampelte `density` (V9.81-Sharing wirkt). Für
@@ -3202,6 +3224,8 @@ function buildChunkMesh(cx, cz, lod, saat = null) {
         himmel,
         schutt: fels.schutt,
         felsFeuchte: fels.feuchte,
+        karte,
+        karteZiel,
         waterCells,
         hTri,
         hN: hoehle.n,
