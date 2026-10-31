@@ -1,13 +1,13 @@
 {
   "stand": "2026-10-31",
-  "kopf": "ec989990",
+  "kopf": "5443e695",
   "version": "V18.546.143",
   "skala": "2.0",
   "summe": 159,
   "max": 330,
   "maschine": {
-    "kopf": "ec989990",
-    "zeit": "2026-10-31T08:00:57.137Z",
+    "kopf": "5443e695",
+    "zeit": "2026-10-31T09:10:14.059Z",
     "kriterien": [
       "affekt.K1",
       "affekt.K2",
@@ -950,7 +950,7 @@
           "punkte": 1,
           "staffel": "1 = (a) Kohäsion an einem Gerät · 2 = (a)–(d) auf beiden Geräten mit der Bild-Serie „Herde am Hang“",
           "messung": "Band herde in `scripts/lib/kreatur-proben.cjs` mit dem echten Wurf `_kreaturWurf` (scheue Hirsche, Wurf 3–7), wandernd UND fliehend: (a) Kohäsion beim Wandern ≥ 0,9, auf der Flucht ≥ 0,8; (b) Ausrichtung Φ = |Σv̂|/N ≥ 0,8 über laufende Glieder (|v| > 1 m/s); (c) der letzte Flüchter läuft ≤ 1,0 s nach dem ersten; (d) die Verbands-ID hält 600 s, fremde Verbände verschmelzen nie. Spielgang-Station Herde am Hang: Ego auf 40 m, die Herde flieht als EIN Pulk im Bild.",
-          "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.257) an 715754fc headless — offen: tiere.K1#2 radeon: Station seit der Messung geändert · tiere.K1#2 gtx: Station seit der Messung geändert",
+          "beleg": "Maschine: gehalten: Kohäsion wandernd 1 (5 Glieder), fliehend 1 (min 1, in Flucht 0.257) an 715754fc headless — offen: tiere.K1#2 radeon: Station seit der Messung geändert · tiere.K1#2 gtx: Station seit der Messung geändert — zuletzt an 5443e695: Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: (14 s))",
           "schlupfloch": "Glieder, die an einem Punkt kleben, ergeben Kohäsion 1 und ein triviales Φ: das Band ist ROT bei vakuöser Probe (Glieder ≥ 3, Fluchtanteil ≥ 0,1), dazu Mindestabstand, Fluchtweg ≥ 30 m und Φ nur über laufende Tiere.",
           "maschine": true
         },
@@ -969,7 +969,7 @@
           "punkte": 1,
           "staffel": "1 = der Fuß steht (Schlupf ≤ 0,05) · 2 = Fußfolge aus Fr für alle 4 Gattungen, Tastgrad im Band, Querhang 20°, Labor = Welt über die Phasen, Third-Bild aus 10 m",
           "messung": "gate:tier-gang (Schlupf des Stand-Fußes ≤ 0,05; Gangart und Tastgrad je Gattung bei v̂ 0,3 · 0,74 · 1,2 · 3,5 in Welt UND Labor, REF Schritt 0,6–0,7, Trab 0,4–0,6, Galopp 0,25–0,35; Welt − Labor ≤ 0,05 Zyklus) + gate:kreatur-takt Teil querhang (Hang 20,8° und Rampe 29,9°: Bein-Lot ≤ 10°, Schlupf ≤ 0,05); Schritt → Trab bei Fr ≈ 0,5, Trab → Galopp bei 2–3; Kreuz-Probe Stimmung × Tempo; das Gang-Bild aus 10 m (`werkbank bild … --ziel gang` mit der Bühne `gang-buehne.js`, je Tier drei Füße am Boden).",
-          "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an 715754fc headless · gehalten: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2790/1193/5941/3990 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 83.8 σ 36.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 715754fc radeon — offen: tiere.K3#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +4) — zuletzt an ab040980: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 51.4 σ 24.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.139",
+          "beleg": "Maschine: gehalten: Schlupf des Stand-Fußes max 0.017 in 25 Läufen als Leib (4 Gattungen), max 0.048 in 16 im Satz (4 Gattungen) an 715754fc headless · gehalten: Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {\"wolf\":0.034,\"hirsch\":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 3 Füße, baer schritt 3 Füße, wesen schritt 3 Füße · tier-Pixel 2790/1193/5941/3990 in 1920×1080, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 83.8 σ 36.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.129 · Bühne summer sunny 0.50 · Gerät WebGPU amd rdna-3 · Blick-Wahl 1 Posen an 715754fc radeon — offen: tiere.K3#2 gtx: Linse seit der Messung geändert (R6: scripts/lib/albedo-tafel.cjs, scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/licht-linsen.cjs +4) — zuletzt an 5443e695: Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 51.4 σ 24.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.143",
           "schlupfloch": "Den Galopp an die Stimmung flee zu hängen bestünde beim Flucht-Tempo zufällig: die Kreuz-Probe Stimmung × Tempo zeigt, dass nur Fr entscheidet; Labor = Welt wird über die Phasen gemessen, nie über den Code-Text; der Tastgrad ist ein Band nach oben UND unten je Gangart, nie eine Zeile im Gesetz.",
           "aenderung": "Die 1 stand auf dem Schlupf; geschnitten 1 → 2 (tier-gang-k3, e5003509): der Tastgrad kommt aus dem Gesetz, beide Geräte im Bild.; nach R6 (tier-satz, `_tierSatzGang`) 23.10. 2 → 1.",
           "maschine": true
@@ -1184,7 +1184,7 @@
           "punkte": 0,
           "staffel": "1 = mensch-kopf GRÜN im Third an der Kamera des Spiels an einem Gerät, frisch am Kopf · 2 = 50 Bewohner aus 50 Seeds ohne zwei gleiche, Körperhöhe ±8 %, Gesichtsmaße in MENSCH_SOLL, ≤ 150k Dreiecke und ≤ 1 ms CPU, beide Geräte",
           "messung": "Soll-Tafel mensch-kopf (Third, Kamera aus `_loopCamera`), Gestalt-Distanz je Seed-Paar; Kosten über werkbank zaehlen und takt. Kleidung und Haar zählt der Bereich Haar, Fell, Kleidung.",
-          "beleg": "Maschine: 0 — offen: mensch.K4#1 radeon: Station seit der Messung geändert · mensch.K4#1 gtx: ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.1 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.174 [0.9, 1] · lippeL -3.07 [-14, -4] · lippeA -0.15 [4, 14] · hoehleL 0.48 [-12, 0] · hoehleA -1.78 [-2, 6] · haarDeckung 1 [0.9, 1] an ec989990 · mensch.K4#2 headless: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
+          "beleg": "Maschine: 0 — offen: mensch.K4#1 radeon: Station seit der Messung geändert · mensch.K4#1 gtx: ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.648 [0.9, 1] · lippeL -3.5 [-14, -4] · lippeA 0.31 [4, 14] · hoehleL 0.42 [-12, 0] · hoehleA -0.99 [-2, 6] · haarDeckung 1 [0.9, 1] an 5443e695 · mensch.K4#2 headless: Linse seit der Messung geändert (R6: scripts/lib/ausgabe-aufnahme.cjs, scripts/lib/welt-boot.cjs)",
           "schlupfloch": "Ein einziger schöner Spieler-Kopf erfüllte die alte Messung: Vielfalt und Kosten an 50 Bewohnern machen sie zur Menge.",
           "aenderung": "Die 1 stand auf einer Tafel-Zeile ohne Ist → 0 (B03, B29).",
           "maschine": true
@@ -1404,7 +1404,7 @@
           "punkte": 1,
           "staffel": "1 = Klasse fell in der Soll-Tafel (Soll aus externer REF), GRÜN auf Armlänge (0,7 m) und im Third (4 m) an einem Gerät · 2 = jede Gattung, L0 bis Karte ohne Ton-Sprung, beide Geräte",
           "messung": "werkbank bild --klasse fell: Strich-Kohärenz gegen REF, Albedo im realen Band, Ton je Stufe; Mutation einer Fell-Zeile ändert das Bild.",
-          "beleg": "Maschine: gehalten: arm GRÜN strich 0.5135 Soll [0.4358,0.6538] · third GRÜN strich 0.5293 Soll [0.4358,0.6538] an 715754fc radeon · gehalten: arm GRÜN strich 0.4466 Soll [0.4358,0.6538] · third GRÜN strich 0.5366 Soll [0.4358,0.6538] an 94c079cb gtx",
+          "beleg": "Maschine: gehalten: arm GRÜN strich 0.5135 Soll [0.4358,0.6538] · third GRÜN strich 0.5293 Soll [0.4358,0.6538] an 715754fc radeon · arm GRÜN strich 0.4456 Soll [0.4358,0.6538] · third GRÜN strich 0.6194 Soll [0.4358,0.6538] an 5443e695 gtx",
           "schlupfloch": "Eine Fell-Textur ohne Gesetz bestünde das Bild an einer Gattung: die Messung je Gattung mit Mutation verlangt das Gesetz.",
           "aenderung": "Neu (V09, B72).",
           "maschine": true
@@ -1414,7 +1414,7 @@
           "punkte": 0,
           "staffel": "1 = Klasse haar (Strähnen-Kohärenz gegen REF, Albedo-Band) an einem Gerät · 2 = 50 Seeds ohne zwei gleiche Frisuren, beide Geräte",
           "messung": "werkbank bild --klasse haar auf Armlänge und im Third; Gestalt-Distanz je Seed-Paar.",
-          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Station seit der Messung geändert · haar.K2#1 gtx: ROT: arm ROT strich 0.3397 Soll [0.3554,0.533] — strich 0.3397 < 0.3554 · albedo: Rohdatei spec/farbe/albedo-tafel.json: Zeile „haar\" ohne Ist · albedo — [0.01; 0.3] · third ROT strich 0.237 Soll [0.3554,0.533] — strich 0.237 < 0.3554 · albedo: Rohdatei spec/farbe/albedo-tafel.json: Zeile „haar\" ohne Ist · albedo — [0.01; 0.3] an ec989990",
+          "beleg": "Maschine: 0 — offen: haar.K2#1 radeon: Station seit der Messung geändert · haar.K2#1 gtx: ROT: arm ROT strich 0.3324 Soll [0.3554,0.533] — strich 0.3324 < 0.3554 · albedo: Rohdatei spec/farbe/albedo-tafel.json: Zeile „haar\" ohne Ist · albedo — [0.01; 0.3] · third ROT strich 0.3914 Soll [0.3554,0.533] — strich 0.3914 — albedo: Rohdatei spec/farbe/albedo-tafel.json: Zeile „haar\" ohne Ist · albedo — [0.01; 0.3] an 5443e695",
           "schlupfloch": "Ein Haar-Helm je Rolle bestünde die Klasse: 50 Seeds ohne zwei gleiche verlangen das Genom.",
           "maschine": true
         },
@@ -1918,7 +1918,7 @@
           "punkte": 0,
           "staffel": "1 = spiegelTreue ≥ 0,5 an Fenster-Glas ODER Lack aus Ego an einem Gerät · 2 = jede glänzende Klasse aus Ego und Third, kein Spiegel-Flimmern unter Bewegung, ≤ 1 ms an der GTX, beide Geräte",
           "messung": "werkbank bild an Haus-Fenster, GT-Lack und Klinge; derselbe Baustein, den `_wasserBlick` liest; fehlt die Spur, meldet der Rückfall auf die Himmels-Umgebung laut.",
-          "beleg": "Maschine: 0 — offen: material.K4#1 radeon: Station seit der Messung geändert · material.K4#1 gtx: ROT: lack spiegelTreue -0.0848 (59047 px in der Ebene, 33 Blöcke, Einfall 50.1°, Normale [0.098,0.99,-0.105]) · glas spiegelTreue 0.2481 (7355 px in der Ebene, 38 Blöcke, Einfall 69.7°, Normale [-0.003,0.999,0.032]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5004351111111144 sunny · [linse-gpu] nvidia/pascal an ec989990",
+          "beleg": "Maschine: 0 — offen: material.K4#1 radeon: Station seit der Messung geändert · material.K4#1 gtx: ROT: lack spiegelTreue -0.0598 (74866 px in der Ebene, 39 Blöcke, Einfall 54.2°, Normale [0.075,0.989,0.126]) · glas spiegelTreue -0.8061 (5079 px in der Ebene, 13 Blöcke, Einfall 70.8°, Normale [0.038,0.999,0.016]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5005486111111112 sunny · [linse-gpu] nvidia/pascal an 5443e695",
           "schlupfloch": "Eine gebackene Umgebung je Ort bestünde ein Standbild: Bewegung und eine zweite Pose verlangen die Spur; ein zweiter Spiegel-Weg neben dem Wasser wäre ein Zwilling.",
           "aenderung": "Neu (V08, B73). Das Nässe-Bild der Synthese-K5 zählt Wetter K2 (V23); die Ton-Kette Studio = Welt (Synthese-K2) zählt Studios K4 (B39, V16).",
           "maschine": true
@@ -1928,7 +1928,7 @@
           "punkte": 1,
           "staffel": "1 = Glanz-Breite und -Spitze an der Kugel-Bühne für ≥ 3 Klassen im realen Band einer gemessenen BRDF-Referenz, an einem Gerät · 2 = jede Klasse, beide Geräte, die Rauheit liest die EINE Stoff-Zeile (Mutation)",
           "messung": "Prüfbühne mit Kugeln aus den Stoff-Zeilen (wie Licht K2, Welt-Stoff), Highlight-Profil im Ausgabe-Bild gegen eine Referenz-Tafel in spec.",
-          "beleg": "Maschine: gehalten: 3 von 4 Klassen im Band (Soll ≥ 3): eisen θ50 9.65° NEBEN dem Band, ρ 8.49 im Band — black-oxidized-steel · bronze θ50 3.238° im Band, ρ 84.38 im Band — alum-bronze 7,79°/51,4, brass 1,31°/471,3 · quarz θ50 1.583° im Band, ρ 382.88 im Band — black-obsidian 0,63°/698,5, aventurnine 1,45°/437,3 · stahl θ50 0.478° im Band, ρ 853.62 im Band — steel, ss440, chrome-steel · Sonne 74.2°, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 94c079cb gtx",
+          "beleg": "Maschine: 3 von 4 Klassen im Band (Soll ≥ 3): eisen θ50 10.271° NEBEN dem Band, ρ 7.14 im Band — black-oxidized-steel · bronze θ50 3.423° im Band, ρ 79.25 im Band — alum-bronze 7,79°/51,4, brass 1,31°/471,3 · quarz θ50 1.335° im Band, ρ 425.68 im Band — black-obsidian 0,63°/698,5, aventurnine 1,45°/437,3 · stahl θ50 0.482° im Band, ρ 848.09 im Band — steel, ss440, chrome-steel · Sonne 74.2°, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal an 5443e695 gtx",
           "schlupfloch": "Eine Rauheit von Hand je Asset bestünde ein Band: die Mutation der Stoff-Zeile verlangt die EINE Quelle.",
           "aenderung": "Neu.",
           "maschine": true
@@ -2302,7 +2302,7 @@
           "punkte": 1,
           "staffel": "1 = Undo/Redo wirkt in 8/8 Studios · 2 = p95 Griff → erstes Bild mit neuem Bau-Hash ≤ 200 ms (Zeilen mit `uniform: true` im Vertrag) bzw. ≤ 1 s (Neubau) auf beiden Geräten, dazu A/B und Persistenz über das Neuladen in 8/8",
           "messung": "Gang-Probe in diag-studio-huelle --engine: je Studio 20 zufällige Griffe, nie zweimal derselbe Wert; Zeit vom Eingabe-Ereignis bis zum ersten Ausgabe-Bild mit neuem Bau-Hash. Ob eine Zeile die 200-ms-Schranke trägt, steht je Zeile im Vertrag (`uniform: true`, Byte-Beweis), nie in der Messung.",
-          "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 98ef98bb headless — offen: studios.K2#2 radeon: Station seit der Messung geändert — zuletzt an 3ef20f9f: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 17 ms portale, Neubau höchstens 220 ms portale, je Studio null · studios.K2#2 gtx: Station seit der Messung geändert — zuletzt an ec989990: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 0 ms –, Neubau höchstens 230 ms garage, je Studio null Griffe)",
+          "beleg": "Maschine: gehalten: Undo wirkt in 8/8 Studios, Redo ungeprobt (der Gang fährt nur Strg+Z) an 98ef98bb headless — offen: studios.K2#2 radeon: Station seit der Messung geändert — zuletzt an 3ef20f9f: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 17 ms portale, Neubau höchstens 220 ms portale, je Studio null · studios.K2#2 gtx: Station seit der Messung geändert — zuletzt an 5443e695: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 0 ms –, Neubau höchstens 176 ms garage, je Studio null Griffe)",
           "schlupfloch": "Den JS-Rückruf stoppen statt des Bilds, einen gecachten Wert wiederholen, oder jeden Regler „Neubau“ nennen, um die weiche Schranke zu bekommen: das erste Bild mit NEUEM Bau-Hash, nie wiederholte Werte, die Klasse je Zeile im Vertrag (B43).",
           "aenderung": "Die Schranken-Klasse je Zeile steht im Vertrag (B43).",
           "maschine": true
@@ -2312,7 +2312,7 @@
           "punkte": 1,
           "staffel": "1 = Dreiecke ±5 % gegen renderer.info in ≥ 4/7 Mesh-Studios · 2 = Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 7/7, beim Klang die Audio-Graph-ms",
           "messung": "Kosten-Leiste je LOD-Stufe gegen unabhängige Zähler: renderer.info in einem eigenen Render-Abschnitt (Stempel nach Lehre 23), info.memoryMap je Werk-Attribut, gpu-bank.",
-          "beleg": "Maschine: gehalten: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 715754fc headless — offen: studios.K3#2 radeon: Station seit der Messung geändert — zuletzt an 3ef20f9f: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 GPU 0.061 ms↔B · studios.K3#2 gtx: Station seit der Messung geändert — zuletzt an ec989990: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 GPU 0.0522 ms↔",
+          "beleg": "Maschine: gehalten: Dreiecke ±5 % gegen renderer.info in 7/7 Mesh-Studios (20 Stufen, größte Abweichung 0.0 %) an 715754fc headless — offen: studios.K3#2 radeon: Station seit der Messung geändert — zuletzt an 3ef20f9f: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 GPU 0.061 ms↔B · studios.K3#2 gtx: Station seit der Messung geändert — zuletzt an 5443e695: Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 GPU 0.0502 ms↔",
           "schlupfloch": "Budget-Zahlen als Messung ausgeben (heute b.draws): eine Leisten-Zahl ohne Gegenzahl zählt 0.",
           "aenderung": "Die 1 der Synthese war die Existenz von zaehle() ohne Gegenzahl (B44) → 0.",
           "maschine": true
@@ -4500,7 +4500,7 @@
     },
     {
       "stand": "2026-10-31",
-      "kopf": "ec989990",
+      "kopf": "5443e695",
       "summe": 159,
       "max": 330,
       "skala": "2.0",
@@ -4508,7 +4508,7 @@
     }
   ],
   "text": {
-    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 31.10.2026, Kopf main ec989990 (V18.546.143)",
+    "titel": "MEISTERKARTE 2.0 des Ultiversums — Stand 31.10.2026, Kopf main 5443e695 (V18.546.143)",
     "einleitung": [
       "Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend.",
       "",
