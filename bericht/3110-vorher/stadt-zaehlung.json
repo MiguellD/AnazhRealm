@@ -1,0 +1,630 @@
+{
+ "ms": 47,
+ "ergebnis": {
+  "spieler": [
+   836.2,
+   56.9,
+   438.5
+  ],
+  "kamera": [
+   830.2,
+   58.9,
+   439.2
+  ],
+  "blick": [
+   0.986,
+   -0.164,
+   -0.011
+  ],
+  "bewohner": 1131,
+  "riesen": 4,
+  "hoechste": [
+   {
+    "h": 3.27,
+    "d": 12.2,
+    "gs": [
+     1.05,
+     1.05,
+     1.05
+    ],
+    "br": 1.0239218727792614,
+    "ti": 1.0117315139542333,
+    "gestalt": 1,
+    "nah": false,
+    "steuer": true,
+    "sicht": true,
+    "satz": false
+   },
+   {
+    "h": 3.14,
+    "d": 5.4,
+    "gs": [
+     1.02,
+     1.02,
+     1.02
+    ],
+    "br": 0.9942850807812065,
+    "ti": 0.9947651865649968,
+    "gestalt": 2,
+    "nah": false,
+    "steuer": true,
+    "sicht": true,
+    "satz": false
+   },
+   {
+    "h": 3.08,
+    "d": 5.4,
+    "gs": [
+     1.03,
+     1.03,
+     1.03
+    ],
+    "br": 1.03,
+    "ti": 1.03,
+    "gestalt": 3,
+    "nah": false,
+    "steuer": true,
+    "sicht": true,
+    "satz": false
+   },
+   {
+    "h": 2.97,
+    "d": 12.6,
+    "gs": [
+     0.96,
+     0.96,
+     0.96
+    ],
+    "br": 1.0114200033973904,
+    "ti": 0.9878648917544633,
+    "gestalt": 1,
+    "nah": false,
+    "steuer": true,
+    "sicht": true,
+    "satz": false
+   },
+   {
+    "h": 1.99,
+    "d": 181.2,
+    "gs": [
+     1.07,
+     1.07,
+     1.07
+    ],
+    "br": 1.0064272065665574,
+    "ti": 0.9988083652378992,
+    "gestalt": 2,
+    "nah": false,
+    "steuer": false,
+    "sicht": false,
+    "satz": false
+   },
+   {
+    "h": 1.99,
+    "d": 286.8,
+    "gs": [
+     1.06,
+     1.06,
+     1.06
+    ],
+    "br": 1.01392022629641,
+    "ti": 1.0183216715967283,
+    "gestalt": 2,
+    "nah": false,
+    "steuer": false,
+    "sicht": false,
+    "satz": false
+   }
+  ],
+  "satz": [
+   {
+    "gi": 0,
+    "art": "wurf",
+    "n": 4,
+    "maxSy": 1.14,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 0,
+    "art": "leib",
+    "n": 3,
+    "maxSy": 1.11,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 1,
+    "art": "wurf",
+    "n": 0,
+    "maxSy": 0,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 1,
+    "art": "leib",
+    "n": 0,
+    "maxSy": 0,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 2,
+    "art": "wurf",
+    "n": 5,
+    "maxSy": 1.05,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 2,
+    "art": "leib",
+    "n": 4,
+    "maxSy": 1.05,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 3,
+    "art": "wurf",
+    "n": 5,
+    "maxSy": 1.04,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 3,
+    "art": "leib",
+    "n": 4,
+    "maxSy": 1.04,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 4,
+    "art": "wurf",
+    "n": 0,
+    "maxSy": 0,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 4,
+    "art": "leib",
+    "n": 0,
+    "maxSy": 0,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 5,
+    "art": "wurf",
+    "n": 2,
+    "maxSy": 0.97,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 5,
+    "art": "leib",
+    "n": 1,
+    "maxSy": 0.97,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 6,
+    "art": "wurf",
+    "n": 2,
+    "maxSy": 1.02,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 6,
+    "art": "leib",
+    "n": 2,
+    "maxSy": 1.02,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 7,
+    "art": "wurf",
+    "n": 1,
+    "maxSy": 0.99,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 7,
+    "art": "leib",
+    "n": 1,
+    "maxSy": 0.99,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 0,
+    "art": "wurf",
+    "n": 0,
+    "maxSy": 0,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 0,
+    "art": "leib",
+    "n": 0,
+    "maxSy": 0,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 1,
+    "art": "wurf",
+    "n": 0,
+    "maxSy": 0,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 1,
+    "art": "leib",
+    "n": 0,
+    "maxSy": 0,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 2,
+    "art": "wurf",
+    "n": 0,
+    "maxSy": 0,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 2,
+    "art": "leib",
+    "n": 0,
+    "maxSy": 0,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 4,
+    "art": "wurf",
+    "n": 0,
+    "maxSy": 0,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 4,
+    "art": "leib",
+    "n": 0,
+    "maxSy": 0,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 5,
+    "art": "wurf",
+    "n": 0,
+    "maxSy": 0,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 5,
+    "art": "leib",
+    "n": 0,
+    "maxSy": 0,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 6,
+    "art": "wurf",
+    "n": 0,
+    "maxSy": 0,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 6,
+    "art": "leib",
+    "n": 0,
+    "maxSy": 0,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 7,
+    "art": "wurf",
+    "n": 0,
+    "maxSy": 0,
+    "ueber13": 0,
+    "fertig": true
+   },
+   {
+    "gi": 7,
+    "art": "leib",
+    "n": 0,
+    "maxSy": 0,
+    "ueber13": 0,
+    "fertig": true
+   }
+  ],
+  "wagen": [
+   {
+    "d": 5.4,
+    "faehrt": true,
+    "lod": 0,
+    "inst": true,
+    "band": null,
+    "mesh": false,
+    "felder": [
+     "mesh",
+     "_verkehrBodenKarte",
+     "_kartenPreset",
+     "_kartenBuch",
+     "_kartenTyp",
+     "_stufenGrenzenZeilen",
+     "_stufenGrenzen",
+     "_lodLevel",
+     "_lodHalt",
+     "_lodHaltWartet",
+     "instanced",
+     "instSlots"
+    ],
+    "fahrer": [
+     "fahrer",
+     "leiber",
+     "leibLage",
+     "platzLeib"
+    ]
+   },
+   {
+    "d": 5.4,
+    "faehrt": true,
+    "lod": 1,
+    "inst": true,
+    "band": 0,
+    "mesh": false,
+    "felder": [
+     "mesh",
+     "_stufenGrenzenZeilen",
+     "_stufenGrenzen",
+     "_lodLevel",
+     "_kartenPreset",
+     "_kartenBuch",
+     "_kartenTyp",
+     "_lodHalt",
+     "_lodHaltWartet",
+     "instanced",
+     "instSlots",
+     "instFoundry"
+    ],
+    "fahrer": [
+     "fahrer",
+     "leiber",
+     "leibLage",
+     "platzLeib"
+    ]
+   },
+   {
+    "d": 12.2,
+    "faehrt": true,
+    "lod": 1,
+    "inst": true,
+    "band": 2,
+    "mesh": false,
+    "felder": [
+     "mesh",
+     "_stufenGrenzenZeilen",
+     "_stufenGrenzen",
+     "_lodLevel",
+     "_kartenPreset",
+     "_kartenBuch",
+     "_kartenTyp",
+     "_lodHalt",
+     "_lodHaltWartet",
+     "instanced",
+     "instSlots",
+     "instFoundry"
+    ],
+    "fahrer": [
+     "fahrer",
+     "leiber",
+     "leibLage"
+    ]
+   },
+   {
+    "d": 12.6,
+    "faehrt": true,
+    "lod": 0,
+    "inst": true,
+    "band": 1,
+    "mesh": false,
+    "felder": [
+     "mesh",
+     "_kartenPreset",
+     "_kartenBuch",
+     "_kartenTyp",
+     "_verkehrBodenKarte",
+     "_stufenGrenzenZeilen",
+     "_stufenGrenzen",
+     "_lodLevel",
+     "_lodHalt",
+     "_lodHaltWartet",
+     "instanced",
+     "instSlots"
+    ],
+    "fahrer": [
+     "fahrer",
+     "leiber",
+     "leibLage"
+    ]
+   },
+   {
+    "d": 18.5,
+    "faehrt": true,
+    "lod": 2,
+    "inst": true,
+    "band": 1,
+    "mesh": false,
+    "felder": [
+     "mesh",
+     "_stufenGrenzenZeilen",
+     "_stufenGrenzen",
+     "_lodLevel",
+     "_kartenPreset",
+     "_kartenBuch",
+     "_kartenTyp",
+     "_lodHalt",
+     "_lodHaltWartet",
+     "instanced",
+     "instSlots",
+     "instFoundry"
+    ],
+    "fahrer": [
+     "fahrer",
+     "leiber"
+    ]
+   },
+   {
+    "d": 19.2,
+    "faehrt": true,
+    "lod": 1,
+    "inst": true,
+    "band": 0,
+    "mesh": false,
+    "felder": [
+     "mesh",
+     "_kartenPreset",
+     "_kartenBuch",
+     "_kartenTyp",
+     "_verkehrBodenKarte",
+     "_stufenGrenzenZeilen",
+     "_stufenGrenzen",
+     "_lodLevel",
+     "_lodHalt",
+     "_lodHaltWartet",
+     "instanced",
+     "instSlots"
+    ],
+    "fahrer": [
+     "fahrer",
+     "leiber"
+    ]
+   },
+   {
+    "d": 25.3,
+    "faehrt": true,
+    "lod": 2,
+    "inst": true,
+    "band": null,
+    "mesh": false,
+    "felder": [
+     "mesh",
+     "_stufenGrenzenZeilen",
+     "_stufenGrenzen",
+     "_lodLevel",
+     "_kartenPreset",
+     "_kartenBuch",
+     "_kartenTyp",
+     "_lodHalt",
+     "_lodHaltWartet",
+     "instanced",
+     "instSlots",
+     "instFoundry"
+    ],
+    "fahrer": [
+     "fahrer",
+     "leiber"
+    ]
+   },
+   {
+    "d": 26,
+    "faehrt": true,
+    "lod": 1,
+    "inst": true,
+    "band": 2,
+    "mesh": false,
+    "felder": [
+     "mesh",
+     "_kartenPreset",
+     "_kartenBuch",
+     "_kartenTyp",
+     "_verkehrBodenKarte",
+     "_stufenGrenzenZeilen",
+     "_stufenGrenzen",
+     "_lodLevel",
+     "_lodHalt",
+     "_lodHaltWartet",
+     "instanced",
+     "instSlots"
+    ],
+    "fahrer": [
+     "fahrer",
+     "leiber"
+    ]
+   },
+   {
+    "d": 32.5,
+    "faehrt": true,
+    "lod": 2,
+    "inst": true,
+    "band": null,
+    "mesh": false,
+    "felder": [
+     "mesh",
+     "_stufenGrenzenZeilen",
+     "_stufenGrenzen",
+     "_lodLevel",
+     "_kartenPreset",
+     "_kartenBuch",
+     "_kartenTyp",
+     "_lodHalt",
+     "_lodHaltWartet",
+     "instanced",
+     "instSlots",
+     "instFoundry"
+    ],
+    "fahrer": [
+     "fahrer",
+     "leiber"
+    ]
+   },
+   {
+    "d": 33.3,
+    "faehrt": true,
+    "lod": 2,
+    "inst": true,
+    "band": 1,
+    "mesh": false,
+    "felder": [
+     "mesh",
+     "_kartenPreset",
+     "_kartenBuch",
+     "_kartenTyp",
+     "_verkehrBodenKarte",
+     "_stufenGrenzenZeilen",
+     "_stufenGrenzen",
+     "_lodLevel",
+     "_lodHalt",
+     "_lodHaltWartet",
+     "instanced",
+     "instSlots"
+    ],
+    "fahrer": [
+     "fahrer",
+     "leiber"
+    ]
+   }
+  ]
+ }
+}
