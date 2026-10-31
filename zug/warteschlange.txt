@@ -286,3 +286,4 @@ z103-abab 3 abab A=5e9a3bccf80eebcbb57c78c3ba4f7411e1dfcdbf B=cd88897ec24349d848
 takt31-gtx 1 punkte sha=cd88897ec24349d848564108127d7bd81475b7ef geraet=gtx nur=lod.K1#1,lod.K2#1,lod.K5#1,vegetation.K1#1
 b-kalt-cd88 2 station sha=cd88897ec24349d848564108127d7bd81475b7ef lauf=ankunft-kalt.sh
 b-kalt-c4c9 2 station sha=c4c9baa2ca70fbc0bb5ffab30deaeb6a76636f6e lauf=ankunft-kalt.sh
+b-kalt-1a71 2 station sha=1a71c07b0cde48a0d983e549353f1eea66871ff3 lauf=ankunft-kalt.sh
