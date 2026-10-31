@@ -1351,3 +1351,4 @@
 2026-10-31 21:30:24 takt-z112a-gtx tiere.K1#2,tiere.K3#2,mensch.K1#1,oekologie.K4#2,mensch.K4#1,haar.K2#1,vegetation.K1#1,licht.K2#2,licht.K5#1,material.K2#1,lod.K1#1,licht.K3#1,studios.K2#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,fahrzeug.K2#2,profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K3#1,speicher.K4#2 OFFEN/OFFEN/OFFEN/OFFEN/ROT/ROT/ROT/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/ROT/ROT/ROT/OFFEN 20.1 · 22/22
 2026-10-31 21:30:48 takt-z112b-gtx START 12 Stationen in 1 Läufen
 2026-10-31 21:40:59 takt-z112b-gtx mensch.K5#1,material.K1#1,lod.K5#1,studios.K3#2,bauen.K1#2,bauen.K5#2,spielgang.K3#1,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,profiband.K5#1,klang.K4#1 OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/ROT/OFFEN/OFFEN/OFFEN/ROT/OFFEN 10.1 · 12/12
+2026-10-31 21:41:23 takt-z113a-gtx START 23 Stationen in 1 Läufen
