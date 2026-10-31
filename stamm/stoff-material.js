@@ -2116,6 +2116,9 @@ class AnazhRealm_stoff_material {
         const kipp = m.neigung.mul(k).sub(gD.div(gl.max(1e-6)).mul(kante));
         mat.normalNode = T.cameraViewMatrix.transformDirection(T.normalize(n.add(kipp)));
         this._mikroStoff(T, mat, m.hoehe.mul(k));
+        // der Stein liest seine Ecken (`_foundryBuildMesh`: nur dann trägt die Gestalt uv, und ihr Bau-Satz packt es,
+        // `BAU_STEIN_ATTR`) — ohne die Marke fiel das uv jedes Stein-Rahmens, und der Satz brach („Attribut uv fehlt")
+        mat.userData.liestUv = true;
     }
 
     // ── DER EINE SUBSTANZ-CHARAKTER-KERN ──
