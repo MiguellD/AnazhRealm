@@ -1,0 +1,54 @@
+{
+ "sha": "1d9164e9144d15f70c40e8e5876cf98a2f0cacc8",
+ "geraet": "gtx",
+ "zeit": "2026-10-24T18:16:41.467Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "gelaende.K2#1": {
+   "gruen": true,
+   "zahl": "9 von 10 Gräben über das Verb, in 2509 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 148.9–704.1 ms (1 m 4, 3 m 5)",
+   "exit": 0,
+   "minuten": 5.02,
+   "zeit": "2026-10-24T17:12:49.842Z",
+   "abdruck": "1ee7bd28bb9c",
+   "port": 7701
+  },
+  "gelaende.K3#1": {
+   "gruen": true,
+   "zahl": "spiegelTreue 0.793 (wasserSatz 36502 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 124 σ 51.6 schwarz 0.0 % weiß 0.1 % · Stand 18.546.84 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal",
+   "exit": 0,
+   "minuten": 5.02,
+   "zeit": "2026-10-24T17:17:53.536Z",
+   "abdruck": "68e70463a0db",
+   "port": 7702
+  },
+  "gelaende.K5#2": {
+   "gruen": false,
+   "zahl": "über dem Soll: huf@hang 3.3 — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 3.3 · rad 2.4 cm (p95, schlechtere Sicht)",
+   "exit": 0,
+   "minuten": 5.01,
+   "grund": "ROT: über dem Soll: huf@hang 3.3 — wiese fein 1.1 · streu 0.5 · huf 2.1 · rad 0.2 | hang fein 4.3 · streu 0.9 · huf 3.3 · rad 2.4 cm (p95, schlechtere Sicht)",
+   "zeit": "2026-10-24T17:22:56.884Z",
+   "abdruck": "1c2538e83974",
+   "port": 7705
+  },
+  "wetter.K2#1": {
+   "gruen": true,
+   "zahl": "Dorf porös draußen 0.763 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 80 (n 336/865), Wiese draußen 0.772",
+   "exit": 0,
+   "minuten": 48.61,
+   "zeit": "2026-10-24T17:28:01.239Z",
+   "abdruck": "e03a045fab93",
+   "port": 7708
+  },
+  "mensch.K1#1": {
+   "gruen": true,
+   "zahl": "Quote 81/81 = 1, Häuser ohne Bewohner 0, gegangene im Blick 41 Ego / 37 Third; Third-Bild 8 Uhr am Dorfplatz 30 Menschen im Bild, 9 gehend, 102.7 fps",
+   "exit": 0,
+   "minuten": 5.02,
+   "zeit": "2026-10-24T18:16:41.467Z",
+   "abdruck": "5b2b0b3745f2",
+   "port": 7722
+  }
+ }
+}
