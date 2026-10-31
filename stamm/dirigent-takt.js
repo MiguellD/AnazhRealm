@@ -399,9 +399,7 @@ class AnazhRealm_dirigent_takt {
                                           ? `Leute offen ${o.leute}`
                                           : o.huellen
                                             ? `Hüllen offen ${o.huellen}`
-                                            : o.ankunft
-                                              ? `Ankunft gleitet ${o.ankunft}`
-                                              : null;
+                                            : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -491,11 +489,6 @@ class AnazhRealm_dirigent_takt {
         // DIE HÜLLEN DER ANKUNFT (w4-ankunft-2, `_tickHuellenNach`): die Bäume, deren Hülle vor dem ersten Bild wartete, bis jeder
         // sie fühlt — bis dahin stößt kein Leib an ihnen
         o.huellen = this._huellenNach ? this._huellenNach.size : 0;
-        // DIE ANKUNFT GLEITET (`_ankunftsFerne`, B2): bis ihr letztes Bild gezeichnet ist, misst jede Stufen-Wahl weiter, als das
-        // Auge steht — die Bilder, die ihr fehlen (tiere.K1: im Schuss der Werkbank stand sie bei 62 von 90, der Mammut 13,9 m
-        // vor dem Auge trug die Karte)
-        const gleit = st._ankunftGleit;
-        o.ankunft = gleit >= 0 && gleit < AnazhRealm.ANKUNFT_GLEIT_BILDER ? AnazhRealm.ANKUNFT_GLEIT_BILDER - gleit : 0;
         o.bau = st.bauSatzRaten ? st.bauSatzRaten.size : 0; // ein Bau-Bereich, der in Raten eintritt, steht noch nicht
         // (der Fahrer am Steuer ist nicht offen: sein Leib gehört dem Wagen, kein Feld trägt ihn (`_verkehrEinsteigen`) — bis hier
         // zählte er für immer, die Welt einer Stadt mit Verkehr stand nie: z78, GTX, Messort stadt „offen leiber 4–6")
@@ -1427,7 +1420,7 @@ class AnazhRealm_dirigent_takt {
         setze(this._weltRegung | 0);
         setze(this._waldPlanRegung | 0); // die Schlange des Walds (K69): ihre Zellen tragen die Gestalt jedes wartenden Baums
         setze(st._foliageDensityScale); // der EINE Regler: Wahrnehmungs-Faktor der Stufen-Wahl und Verdeckungs-Schwelle
-        setze(this._ankunftsFerne()); // die Ankunft aus der Ferne (B2): das erste Bild und jedes Bild ihres Gleitens
+        setze(!!st._weltbildDa); // das erste Bild: der Stufen-Vorlauf und der Blick der Ankunft enden mit ihm
         setze(st.lodRef);
         setze(st.chunkRingRadius);
         setze(st._activeRingRadius); // der Boot-Ring wächst bis zum Ziel (`_voxelChunkConfig`)
@@ -1628,8 +1621,6 @@ class AnazhRealm_dirigent_takt {
         // zeitliche Auflösung in der Kette steht (state.traaNode, _ensurePostProcessing): das zeitliche Mittel ist die
         // glatte Blende (statisch wäre das Mittel das Muster). Ohne TRAA (Holz kienspan) bleibt es statisch —
         // rotierendes Dither ohne zeitliche Auflösung wäre kriechendes Rauschen (Studio-Gesetz phytogenesis FIX v32).
-        // die Ankunft aus der Ferne gleitet je gezeichnetem Bild (`_ankunftsFerne`, B2) — vor dem Spiegel nach `uLodPerf`
-        if (this.state._ankunftGleit < AnazhRealm.ANKUNFT_GLEIT_BILDER) this.state._ankunftGleit++;
         if (this.state.lodUniforms) {
             const _lu = this.state.lodUniforms;
             if (_lu.uDitherT && this.state.traaNode) _lu.uDitherT.value = (_lu.uDitherT.value + 0.61803398875) % 1;
@@ -1641,7 +1632,6 @@ class AnazhRealm_dirigent_takt {
                     Number.isFinite(this.state.lodRef) && this.state.lodRef > 0 ? +this.state.lodRef : 14;
             if (_lu.uLodMaskOn) _lu.uLodMaskOn.value = this.state.lodMaskOn === false ? 0 : 1;
             if (_lu.uLodAuge && this.state.camera) _lu.uLodAuge.value.copy(this._lodAuge());
-            if (_lu.uLodPerf) _lu.uLodPerf.value = this._ankunftsFerne();
             // W5.4 (Schritt 3) — die Band-Zahlen spiegeln LIVE die EINE Quelle LOD_DISTANCES
             // (der Studio-Ingest mutiert sie → die Foundry-Maske folgt ohne Material-Rebuild).
             const _D = AnazhRealm.LOD_DISTANCES;

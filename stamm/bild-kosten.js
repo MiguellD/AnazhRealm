@@ -2678,7 +2678,6 @@ class AnazhRealm_bild_kosten {
                 an: false,
                 ex: 0,
                 ez: 0,
-                perf: 1,
                 ref: 1,
                 kanten: null,
                 halt: 0,
@@ -2708,14 +2707,13 @@ class AnazhRealm_bild_kosten {
         // hält über die Stufen der Sonne, solange die Drehung des Lichts seit der Wahl jeden Schatten um weniger als die
         // Hälfte davon verschiebt (`_passLageHaelt`); die gehaltene Lage wählt mit dem Rand ihres Ankers weiter
         L.licht = L.fit ? PW.lichtRandTexel * L.fit.texelMin : 0;
-        // DIE BLENDE: die LIVE-Uniforms, die jede Maske liest (dasselbe Auge, derselbe Perf-Streck), und die Kanten des
-        // Fensters aus dem EINEN Blend-Gesetz (`_blendeKanten`, je Band-Satz einmal).
+        // DIE BLENDE: die LIVE-Uniforms, die jede Maske liest (dasselbe Auge), und die Kanten des Fensters aus dem EINEN
+        // Blend-Gesetz (`_blendeKanten`, je Band-Satz einmal).
         const lu = this.state.lodUniforms;
-        L.an = !!(lu && lu.uLodMaskOn && lu.uLodMaskOn.value > 0.5 && lu.uLodAuge && lu.uLodPerf);
+        L.an = !!(lu && lu.uLodMaskOn && lu.uLodMaskOn.value > 0.5 && lu.uLodAuge);
         if (L.an) {
             L.ex = lu.uLodAuge.value.x;
             L.ez = lu.uLodAuge.value.z;
-            L.perf = lu.uLodPerf.value;
             L.ref = lu.uLodRef.value;
             const d0 = lu.uLodD0.value,
                 d1 = lu.uLodD1.value,
@@ -2834,7 +2832,6 @@ class AnazhRealm_bild_kosten {
         s[66] = L.an ? 1 : 0;
         s[67] = L.an ? L.ex : 0;
         s[68] = L.an ? L.ez : 0;
-        s[69] = L.an ? L.perf : 0;
         s[70] = L.an ? L.ref : 0;
         s[71] = K ? K.d0 : 0;
         s[72] = K ? K.d1 : 0;
@@ -3251,7 +3248,7 @@ class AnazhRealm_bild_kosten {
     }
 
     // DAS FENSTER DER STUFE: behält ihre Maske vom Auge auf der Instanz etwas? Die Maske misst je INSTANZ die Distanz vom
-    // Auge zu ihrem Ursprung in XZ × uLodPerf × min(uLodRef/Sichthöhe, 1) (`_instanzMitteNode`, Studio `_iw`; Stufen:
+    // Auge zu ihrem Ursprung in XZ × min(uLodRef/Sichthöhe, 1) (`_instanzMitteNode`, Studio `_iw`; Stufen:
     // Skelett-Metrik aH0, Blatt-Metrik aH0L; die Karte: zu ihrem Anker, Sichthöhe |aKarte.w|, ein negativer Stempel =
     // verdeckt, sie blendet voll) — das Intervall ist der Punkt der Instanz, nur der Halt macht es breit; das Urteil fällt
     // `_blendeBehaelt` an den Kanten des Blend-Gesetzes. Bis 1110-11 maß die Maske je Fragment und das Fenster über die
@@ -3272,12 +3269,12 @@ class AnazhRealm_bild_kosten {
             const ak = geo.attributes.aKarte.array;
             const sicht = ak[i * 4 + 3];
             const k = Math.min(L.ref / Math.max(Math.abs(sicht), 1e-3), 1);
-            const dSmin = Math.max(0, d - halt) * L.perf * k,
-                dSmax = (d + halt) * L.perf * k;
+            const dSmin = Math.max(0, d - halt) * k,
+                dSmax = (d + halt) * k;
             return AnazhRealm._blendeBehaelt(L.kanten, "karte", dSmin, dSmax, dSmin, dSmax, sicht < 0);
         }
-        const dMin = Math.max(0, d - halt) * L.perf,
-            dMax = (d + halt) * L.perf;
+        const dMin = Math.max(0, d - halt),
+            dMax = d + halt;
         const kS = Math.min(L.ref / Math.max(geo.attributes.aH0.array[i], 1e-3), 1);
         const hL = geo.attributes.aH0L.array[i]; // das Vorzeichen: der Halt der Stufe ohne Partner (sie zeichnet voll)
         const kL = Math.min(L.ref / Math.max(Math.abs(hL), 1e-3), 1);

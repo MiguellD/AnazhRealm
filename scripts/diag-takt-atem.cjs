@@ -3,10 +3,10 @@
 // diag-takt-atem.cjs — DIE ATEM-WAND DES TAKTS (gate:takt-atem, 0910-7)
 //
 // Keine Stellgröße des Reglers pendelt je Takt um ihr Ziel: jeder Wechsel weckt über den Stand-Stempel jeden Fege-Takt zu
-// einer vollen Runde über den Bestand und über `uLodPerf` die Lage jedes Passes.
+// einer vollen Runde über den Bestand.
 //
 // Die Linse fährt die echte Welt (swiftshader, kienspan) ohne Spiel-Loop und ohne Wanduhr — sie ZÄHLT. Je Takt: der Aktuator
-// (`_nexusPerfActuate`) mit einem festen Sinn (Frame 14 ms, ehrliche Last), `uLodPerf` wie in `_loopRender`, der Takt-Planer
+// (`_nexusPerfActuate`) mit einem festen Sinn (Frame 14 ms, ehrliche Last), der Takt-Planer
 // (`_runFrameScheduler`), die Sicht des Hauptbilds (`_passSicht` vor und nach). Der Regler steht in festen Stufen (loadScale
 // 1 → 0,7 → 0,4 → 0,1 → 0,4 → 0,7 → 1, je 80 Takte) und atmet darüber (±0,02 im Wechsel, der PID im Totband); gezählt wird die
 // zweite Hälfte jeder Stufe (das Folgen ist Arbeit, das Pendeln der Täter). Gezählt je Takt:
@@ -16,8 +16,7 @@
 //   DICHTE ATMET — die Dichte wechselt in mehr als 10 % der Takte (der Regler ohne Wand).
 //   STAND WACH — die Dichte weckt über den Stand-Stempel die Fege-Takte in mehr als 10 % der Takte (volle Runden über den Bestand).
 //   LAGE FÄLLT — die Lage des Hauptbilds fällt in mehr als 10 % der Takte (die Satz-Wahl und die Höhlen-Sicht rechnen neu).
-//   BLIND — die Welt trägt keinen Baum, keinen Satz oder keine Blende (`uLodMaskOn`), oder der Spiegel `uLodPerf` in
-//   `_loopRender` fehlt (die Linse ahmte einen Weg nach, den das Spiel nicht mehr geht).
+//   BLIND — die Welt trägt keinen Baum, keinen Satz oder keine Blende (`uLodMaskOn`).
 // GEGENPROBE im selben Lauf: ein Aktuator, der die Dichte nach jedem Takt um einen Schritt auf und ab stößt (die fehlende
 // Wand), fällt als DICHTE ATMET — sonst ist die Linse blind.
 // SELBSTTEST (--selftest, ohne Browser, in `npm run check`).
@@ -130,16 +129,9 @@ function atem() {
         const aus = { blind: null };
         const baeume = st.architectures.filter((a) => a && a.instanced && a._lodSpecies !== undefined).length;
         const lu = st.lodUniforms;
-        const spiegel = /uLodPerf\.value\s*=\s*this\._ankunftsFerne\(\)/.test(
-            Function.prototype.toString.call(P._loopRender)
-        );
         if (!baeume) aus.blind = "kein Baum der Stufen-Wahl in der Welt";
         else if (!st.chunkSaetze || !st.chunkSaetze.size) aus.blind = "kein Satz in der Welt";
-        else if (!lu || !lu.uLodMaskOn || !(lu.uLodMaskOn.value > 0.5) || !lu.uLodPerf)
-            aus.blind = "keine Blende (uLodMaskOn)";
-        else if (!spiegel)
-            aus.blind =
-                "`_loopRender` spiegelt `uLodPerf` nicht mehr aus `_ankunftsFerne()` — die Linse ahmte einen toten Weg nach";
+        else if (!lu || !lu.uLodMaskOn || !(lu.uLodMaskOn.value > 0.5)) aus.blind = "keine Blende (uLodMaskOn)";
         if (aus.blind) return aus;
         // die Zähler (Hüllen auf dem Prototyp, nach dem Lauf zurück)
         const Z = { f: {} };
@@ -207,7 +199,6 @@ function atem() {
                     if (stoss)
                         st._foliageDensityScale = Math.max(0.22, Math.min(1, st._foliageDensityScale + 0.012 * schub));
                     const wechsel = !Object.is(st._foliageDensityScale, fd0);
-                    lu.uLodPerf.value = r._ankunftsFerne(); // wie `_loopRender` (der Spiegel ist oben geprüft)
                     r._runFrameScheduler(pm);
                     kam.updateMatrixWorld(true);
                     const g0 = lageGen();

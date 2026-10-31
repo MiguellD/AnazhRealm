@@ -65,9 +65,9 @@ async function LEIB_WEG(m) {
 // (Seite) DER SCHUSS DER KONTROLLE: der Loop ruht, dieselbe Pose (der erste Schuss merkt die Kamera, der zweite stellt sie
 // zurück), die Bühne hält Mittag · Sonne · Sommer, der Mess-Frame wartet auf keine stehende Welt. Der zweite Schuss zählt die
 // Pixel, die gegen den ersten in einem Kanal um mehr als 32 abweichen — die Lücke. `mut`: der Schuss endet nach 20 m.
-async function SCHUSS(W, H, mut, r = window.anazhRealm, cam = r.state.camera) {
+async function SCHUSS(W, H, mut, cam = st.camera) {
     const P = window.__pose || (window.__pose = [cam.position.clone(), cam.quaternion.clone()]);
-    r.state.renderer.setAnimationLoop(null);
+    st.renderer.setAnimationLoop(null);
     const far = cam.far;
     cam.position.copy(P[0]);
     cam.quaternion.copy(P[1]);
@@ -82,7 +82,7 @@ async function SCHUSS(W, H, mut, r = window.anazhRealm, cam = r.state.camera) {
     } finally {
         cam.far = far;
         cam.updateProjectionMatrix();
-        r.state.renderer.setAnimationLoop(r._gameLoopTick);
+        st.renderer.setAnimationLoop(r._gameLoopTick);
     }
     const u = auf.u8.slice(0, W * H * 4);
     const A = (window.__schussA = window.__schussA || u);
@@ -92,7 +92,7 @@ async function SCHUSS(W, H, mut, r = window.anazhRealm, cam = r.state.camera) {
 }
 // die Seite wartet Takt um Takt (`__gebautNach`), bis die Foundry nichts mehr offen hat (`_weltOffen`) und der Vorrat durch ist —
 // dann gilt ihre Liefer-Marke
-const RUHE = (r = window.anazhRealm) =>
+const RUHE = () =>
     window
         .__gebautNach("die Ruhe der Foundry", { fertig: () => !r._weltOffen().foundry && !r._foundry._vorrat && !(r._impostorBakeQueue || []).length, max: 600 })
         .then(() => r._foundry.lieferung);
@@ -169,7 +169,7 @@ function KALT_PROBE() {
     setInterval(() => {
         const o = { t: Math.round(performance.now()) };
         A.marken.push(performance.mark("anazh-kalt").startTime);
-        if (r && r.state) {
+        if (st) {
             if (!A.buchDa && r._foundry && r._foundry.ready && r._foundry.recipes) A.buchDa = o.t;
             try {
                 const L = r._weltbildLuecken();
@@ -179,7 +179,6 @@ function KALT_PROBE() {
                 o.fehlt = ["Probe warf: " + e.message];
             }
             // der Ring (der Boden um den Spieler bis zu seinem Ziel) und das erste gezeichnete Lade-Bild
-            const st = r.state;
             o.ring = [st._activeRingRadius, st.chunkRingRadius];
             o.bilder = r._gpuLeine ? r._gpuLeine.gerendert : 0;
             const f = r._foundry;
@@ -222,7 +221,7 @@ async function kaltLauf() {
     const MUT = OPT("--mutante");
     if (MUT === "eigenmeldung")
         await page.evaluateOnNewDocument(() =>
-            window.__weltDa().then((r) => (r.state._weltbildDa = performance.now()))
+            window.__weltDa().then(() => (st._weltbildDa = performance.now()))
         );
     // DIE SPUR DER ANKUNFT (B): die CPU-Stichproben jedes Fadens ab der Navigation (die EINE Spur der Hänger-Linse,
     // `spurProfil`), die Marken der Probe legen sie auf die Seiten-Uhr — sie endet mit der Kontrolle
@@ -264,7 +263,7 @@ async function kaltLauf() {
         bild = Object.assign(await schuss(false, path.resolve(bildDatei).replace(/(\.png)?$/, "-ruhe.png")), { a });
     }
     if (tK && profilBenannt) await page.evaluate(RUHE);
-    const out = await page.evaluate((r = window.anazhRealm, st = r.state) => {
+    const out = await page.evaluate(() => {
         // der Adapter vom Gerät, das zeichnet: r184 hält den Adapter nicht (WebGPUBackend.init, lokal)
         let adapter = null;
         try {
@@ -282,7 +281,7 @@ async function kaltLauf() {
             },
             weltbildDa: Math.round(st._weltbildDa),
             holz: st._holzProfil || null,
-            version: r.constructor.VERSION,
+            version: AnazhRealm.VERSION,
             adapter,
             ohne: (st.logBuffer || []).filter((z) => /Das erste Weltbild steht ohne/.test(z)),
             lieferung: r._foundry.lieferung,
@@ -411,8 +410,8 @@ hauptLauf(async () => {
     if (SELFTEST) await page.evaluateOnNewDocument(SCHLUCK);
     await server.zeige(page, 120000, "index.html", "networkidle0");
     // das erste Weltbild (der Null-Renderer setzt es beim Renderer-Bau; eine Zeit trägt nur die Kalt-Zeile, von außen)
-    await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa));
-    const out = await page.evaluate(async (selftest, r = window.anazhRealm, st = r.state) => {
+    await page.evaluate(() => window.__weltDa(() => st._weltbildDa));
+    const out = await page.evaluate(async (selftest) => {
         const o = { stage: 0 };
         const headless = !!(st.renderer && st.renderer._isHeadlessNull);
         // ── DAS PRÄDIKAT (jeder Term aus der kanonischen Quelle) ──

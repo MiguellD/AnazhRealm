@@ -2472,9 +2472,6 @@ class AnazhRealm_stoff_material {
             // dem höchsten Werfer): dort lagen nahe Bäume 145 m „weit", jenseits jeder Stufe, und die Maske
             // verwarf ihre Schatten-Fragmente alle.
             uLodAuge: _T.uniform(new THREE.Vector3()),
-            // DER STRECK der Wahrnehmungs-Distanz (die Ankunft aus der Ferne `_ankunftsFerne`, je Frame gespiegelt; kein Regler,
-            // lod.K5): jede Maske misst die Auge-Distanz × uLodPerf — dieselbe Distanz, nach der die CPU die Stufen legt.
-            uLodPerf: _T.uniform(1),
             // DAS ZIEL DER DURCHSICHT (xyz) und ihr Radius (w), dazu das Auge, für das es gilt (`uKamAuge`: die
             // Stellung der Spieler-Kamera, nie die Kamera einer Sonde): `_kamZielSetzen` aus `_loopCamera`,
             // gelesen von `_kameraDurchsichtNode` (der Sicht-Strahl vom Auge zum Ziel).
@@ -2666,16 +2663,7 @@ class AnazhRealm_stoff_material {
             const _lu = this._ensureLodUniforms();
             if (!T || !_lu)
                 throw this._blendeBruch(!T ? "TSL fehlt" : "der LOD-Uniform-Satz fehlt (_ensureLodUniforms)");
-            const _fehlt = [
-                "uLodRef",
-                "uLodMaskOn",
-                "uDitherT",
-                "uLodD0",
-                "uLodD1",
-                "uLodFade",
-                "uLodFade0",
-                "uLodPerf",
-            ]
+            const _fehlt = ["uLodRef", "uLodMaskOn", "uDitherT", "uLodD0", "uLodD1", "uLodFade", "uLodFade0"]
                 .filter((k) => !_lu[k])
                 .concat(
                     ["float", "fract", "screenCoordinate", "step", "mix"].filter((k) => !T[k]).map((k) => "TSL." + k)
@@ -2700,7 +2688,7 @@ class AnazhRealm_stoff_material {
                 // Instanz-Attribut (verdeckt-demotierte Bäume blenden VOLL; Default 0 = altes Verhalten).
                 const _dist = opts.distNode;
                 if (!_dist) throw this._blendeBruch("die Karte reicht keine Distanz (opts.distNode)");
-                let _vCD = _dist.mul(_lu.uLodPerf); // derselbe Streck wie die CPU (`_lodPerceptionDistance`)
+                let _vCD = _dist; // dieselbe Distanz wie die CPU (`_lodPerceptionDistance`)
                 if (opts.visHeightNode) {
                     // × min(uLodRef/Sichthöhe, 1) AUF die gestreckte Distanz — bis 04.10. ersetzte dieser Zweig sie
                     // durch die rohe: unter Last (Perf ×1,3) blendete die L1 nach der gestreckten Distanz aus, das
@@ -2723,10 +2711,10 @@ class AnazhRealm_stoff_material {
             const _aLod = T.attribute("aLodLevel", "float");
             const _aH0 = T.attribute("aH0", "float");
             const _aH0L = T.attribute("aH0L", "float");
-            // × uLodPerf: dieselbe Wahrnehmungs-Distanz, nach der die CPU die Stufen legt (`_lodPerceptionDistance`) — vom Auge zum
+            // dieselbe Wahrnehmungs-Distanz, nach der die CPU die Stufen legt (`_lodPerceptionDistance`) — vom Auge zum
             // URSPRUNG der Instanz (`_instanzMitteNode`), wie das Studio und die CPU, nie zum Fragment.
             const _mitte = this._instanzMitteNode(T);
-            const _cd = T.length(T.vec2(_auge.x.sub(_mitte.x), _auge.z.sub(_mitte.y))).mul(_lu.uLodPerf);
+            const _cd = T.length(T.vec2(_auge.x.sub(_mitte.x), _auge.z.sub(_mitte.y)));
             const _lk = _lu.uLodRef.div(_aH0.max(T.float(1e-3))).min(T.float(1.0));
             // |aH0L|: das Vorzeichen trägt den HALT (`_lodSlotStamp`), der Betrag die Blatt-Sichthöhe
             const _lkL = _lu.uLodRef.div(_aH0L.abs().max(T.float(1e-3))).min(T.float(1.0));
@@ -2900,7 +2888,7 @@ class AnazhRealm_stoff_material {
                     const _cam = _lu.uLodAuge; // das AUGE, nie die Pass-Kamera (Schattenpass = Kaskaden-Kamera)
                     // xz-Distanz Auge → URSPRUNG der Instanz (`_instanzMitteNode`, Studio `_iw`), nie zum Vertex
                     const _mitte = this._instanzMitteNode(_Tl);
-                    const _cd = _Tl.length(_Tl.vec2(_cam.x.sub(_mitte.x), _cam.z.sub(_mitte.y))).mul(_lu.uLodPerf);
+                    const _cd = _Tl.length(_Tl.vec2(_cam.x.sub(_mitte.x), _cam.z.sub(_mitte.y)));
                     const _ref = _lu.uLodRef;
                     const _lk = _ref.div(_aH0.max(_Tl.float(1e-3))).min(_Tl.float(1.0));
                     const _lkL = _ref.div(_aH0L.abs().max(_Tl.float(1e-3))).min(_Tl.float(1.0)); // |aH0L|: Vorzeichen = Halt

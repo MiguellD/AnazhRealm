@@ -546,7 +546,7 @@ class AnazhRealm_studio_gestalt {
     }
     // DIE BEREITSCHAFT WARTET AUF IHR EREIGNIS (Lehre 25, w4-ankunft): ein kalter Eintrag, dessen Peek „nicht gedockt" sagte
     // und dessen Bestellung draußen ist, ändert sein Urteil erst mit einer Eingabe des Peeks — einer Antwort des Studios
-    // (`f.ankunft`), dem Buch, der Wahrnehmung und der Ankunft aus der Ferne (alle im Stand-Stempel), einer gebackenen Karte
+    // (`f.ankunft`), dem Buch, der Wahrnehmung und dem ersten Bild (alle im Stand-Stempel), einer gebackenen Karte
     // oder einer Stufen-Wahl des Vorlaufs (`_bauRegung`), der Gestalt seines Orts (der Stand des Walds, ein Grundriss am Ort:
     // `_ortSameGen`) oder dem Auge, das seine Wunsch-Stufe verschiebt (STAND_RAND_FERN_M). Dieser Stand ist EINE Zahl je Takt;
     // der Cull-Gang (`_platzNein`) und der Rewarm (`_dockNein`) merken sie am Eintrag und fragen bis zu ihrem Wechsel nicht

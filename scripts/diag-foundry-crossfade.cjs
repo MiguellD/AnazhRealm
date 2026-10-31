@@ -587,7 +587,6 @@ async function runPartB() {
             const MODUS_LOD = { l0: 0, l1: 1, l1e: 1, fin: 2 };
             const lochSweep = (E) => {
                 const e0 = E || { entry, px, py, pz };
-                const k = r._ankunftsFerne(); // der Streck der Wahrnehmung (kein Regler, lod.K5)
                 const o = { proben: 0, loecher: 0, stempelUngleich: 0, modi: {}, beispiel: null };
                 for (const raw of [4, 7, 10, 13, 16, 19, 22, 25, 28, 32, 36, 42, 48, 55, 48, 42, 36, 32, 28, 25, 22, 19, 16, 13, 10, 7, 4]) {
                     st.playerMesh.position.set(e0.px - raw, e0.py, e0.pz);
@@ -619,8 +618,8 @@ async function runPartB() {
                                     behalten = true;
                                     continue;
                                 }
-                                const dS = raw * k * Math.min(lodRefLive / Math.max(e.h, 1e-3), 1);
-                                const dL = raw * k * Math.min(lodRefLive / Math.max(fol ? e.hL : e.h, 1e-3), 1);
+                                const dS = raw * Math.min(lodRefLive / Math.max(e.h, 1e-3), 1);
+                                const dL = raw * Math.min(lodRefLive / Math.max(fol ? e.hL : e.h, 1e-3), 1);
                                 const z = core.lodCrossfadeMask(dS, dh, cfgM, MODUS_LOD[m], fol, dL);
                                 if (m === "l1e" ? z.f1o < dh : z.keep) behalten = true;
                             }
@@ -700,7 +699,7 @@ async function runPartB() {
                 };
                 // Die Löcher einer Probe: je Rinde/Laub × 64 Dither-Werte einer, den KEINE gezeichnete Stufe behält (der Halt —
                 // |aH0L| mit Vorzeichen — zeichnet voll, „frei" ist ungemaskt); ohne gezeichnete Stufe alle 128.
-                const lochZahl = (stufen, raw, k) => {
+                const lochZahl = (stufen, raw) => {
                     if (!stufen.size) return 128;
                     let n = 0;
                     for (const fol of [false, true])
@@ -712,8 +711,8 @@ async function runPartB() {
                                     behalten = true;
                                     break;
                                 }
-                                const dS = raw * k * Math.min(lodRefLive / Math.max(e.h, 1e-3), 1);
-                                const dL = raw * k * Math.min(lodRefLive / Math.max(fol ? e.hL : e.h, 1e-3), 1);
+                                const dS = raw * Math.min(lodRefLive / Math.max(e.h, 1e-3), 1);
+                                const dL = raw * Math.min(lodRefLive / Math.max(fol ? e.hL : e.h, 1e-3), 1);
                                 const z = core.lodCrossfadeMask(dS, dh, cfgM, MODUS_LOD[m], fol, dL);
                                 if (m === "l1e" ? z.f1o < dh : z.keep) {
                                     behalten = true;
@@ -725,7 +724,6 @@ async function runPartB() {
                     return n;
                 };
                 const kettenSweep = (E) => {
-                    const k = r._ankunftsFerne();
                     const o = {
                         proben: 0,
                         loecher: 0,
@@ -772,10 +770,10 @@ async function runPartB() {
                         const visH = r._lodTreeVisHeight(E.entry);
                         for (const [m, e] of neu)
                             if (m !== "frei" && !(Math.abs(e.h - visH) <= 1e-3 * Math.max(1, visH))) o.stempelUngleich++;
-                        const n = lochZahl(neu, raw, k);
+                        const n = lochZahl(neu, raw);
                         if (!neu.size) o.leer++;
                         o.loecher += n;
-                        o.altLoecher += lochZahl(alt, raw, k);
+                        o.altLoecher += lochZahl(alt, raw);
                         if (n > 0 && !o.beispiel)
                             o.beispiel = { raw, modi: [...neu.keys()], primaer: E.entry._lodLevel, band: Number.isFinite(E.entry._lodBandLevel) ? E.entry._lodBandLevel : null, loecher: n };
                     }
@@ -846,7 +844,6 @@ async function runPartB() {
                 const deckungAm = (e0, auge) => {
                     const lu = st.lodUniforms;
                     const ref = lu && lu.uLodRef ? lu.uLodRef.value : lodRefLive;
-                    const k = r._ankunftsFerne();
                     const teile = [];
                     for (const list of [e0.instSlots, e0.instSlotsBand]) {
                         if (!Array.isArray(list)) continue;
@@ -866,7 +863,7 @@ async function runPartB() {
                                 const kk = Math.min(ref / Math.max(Math.abs(sicht), 1e-3), 1);
                                 teile.push({
                                     karte: true,
-                                    keep: (dh) => sicht < 0 || core.lodCrossfadeMask(d * k * kk, dh, cfgM, 2, false).keep,
+                                    keep: (dh) => sicht < 0 || core.lodCrossfadeMask(d * kk, dh, cfgM, 2, false).keep,
                                 });
                             } else if (a.aH0 && a.aH0L && a.aLodLevel && a.aLodLevel.array[0] >= 0.5) {
                                 const al = a.aLodLevel.array[0];
@@ -880,7 +877,7 @@ async function runPartB() {
                                     laub,
                                     keep: (dh) => {
                                         if (hL < 0) return true; // der Halt: die Stufe ohne Partner zeichnet voll
-                                        const z = core.lodCrossfadeMask(d * k * kS, dh, cfgM, al > 1.5 ? 1 : 0, laub, d * k * kL);
+                                        const z = core.lodCrossfadeMask(d * kS, dh, cfgM, al > 1.5 ? 1 : 0, laub, d * kL);
                                         return al > 2.5 ? z.f1o < dh : z.keep;
                                     },
                                 });

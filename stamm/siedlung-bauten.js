@@ -137,8 +137,8 @@ class AnazhRealm_siedlung_bauten {
         if (atmo && atmo.treeLOD === false) return 0;
         const pm = auge;
         if (!pm) return 0;
-        // in der Ankunft aus der Ferne (B2: vor dem Bild und im Gleiten) wechselt die Wahl mit der Maske Schritt (`uLodPerf`)
-        if (this._ankunftsFerne() > 1) maxSwitchesPerFrame = Math.max(maxSwitchesPerFrame, AnazhRealm.ANKUNFT_TAKT.bau);
+        // unter dem Ladeschirm wechselt die Wahl im Takt der Ankunft: das erste Bild trägt jede Ziel-Stufe, sobald sie steht
+        if (this._ladeTakt()) maxSwitchesPerFrame = Math.max(maxSwitchesPerFrame, AnazhRealm.ANKUNFT_TAKT.bau);
         this._buendelAnkerPruefen(pm); // DIE REIHE NACH ABSTAND (1310-9): neu nur beim Anker-Wechsel
         const archs = this.state.architectures;
         // V18.389 (SUBSYSTEM 3) — Occlusion-Demotion aktiv? Headless (Null-Renderer) → AUS
@@ -203,17 +203,18 @@ class AnazhRealm_siedlung_bauten {
         const visH = this._lodTreeVisHeight(entry);
         if (visH === null) {
             z.offen++;
+            entry._stufeWartet = true; // seine Ziel-Stufe kennt erst die Höhe (das erste Bild wartet, `_weltbildLuecken`)
             return; // die Höhen-Stufe lädt: der Baum hält Stufe und Band
         }
         // Die BRÜCKE trägt keinen Hysterese-Zustand: ihre Stufe 2 ist die gedockte Karte, nicht die Wahl. Mit ihr als
         // Zustand blieb die Wahl im Band [thresh12 − hyst, thresh12] (22,6–26 m) auf 2, die Brücke löste sich als
         // „Karte" auf und blendete nach Distanz aus — ohne L1-Partner, der Baum stand halb ausgedithert.
-        // DIE GRENZEN DES GESETZBUCHS (K43): nennt die Art ihre Stufen-Grenzen (B2c `ab`), wählt der Takt nach ihnen — in
-        // der Ankunft aus der Ferne (`_ankunftsFerne`, B2) die Grobstufe
+        // DIE GRENZEN DES GESETZBUCHS (K43): nennt die Art ihre Stufen-Grenzen (B2c `ab`), wählt der Takt nach ihnen — auch
+        // unter dem Ladeschirm (das erste Bild trägt die Stufe, die der Bau nach ihm behält, ankunft.K2)
         const grenzen = treeLike ? null : this._archStufenGrenzen(entry);
         let newLOD = grenzen
             ? AnazhRealm._stufeNachGrenzen(
-                  dist * this._ankunftsFerne(),
+                  dist,
                   entry._lodLevel,
                   grenzen,
                   Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1
@@ -248,6 +249,10 @@ class AnazhRealm_siedlung_bauten {
         }
         // DER STUFEN-VORLAUF (`_stufenVorlaufWahl`): unter dem Ladeschirm trägt der Baum seiner Art die L1
         if (this._imStufenVorlauf(entry)) newLOD = 1;
+        // DIE ZIEL-STUFE (ankunft.K2): `_stufeWartet` sagt, dass der Eintrag eine andere Stufe trägt, als seine Wahl will (sie
+        // lädt oder bäckt), oder dass sein Band-Partner lädt — das erste Weltbild steht erst, wenn kein Ding im Blick so wartet
+        // (`_weltbildLuecken`, „bauten")
+        entry._stufeWartet = false;
         if (newLOD === entry._lodLevel) {
             // Die Distanz-Wahl ist selbst die Karte: die Brücke ist keine mehr, die Karte blendet wie jede Fernstufe.
             if (entry._bruecke) {
@@ -259,7 +264,11 @@ class AnazhRealm_siedlung_bauten {
             // Doppel-Mitgliedschaft folgt der Partner-Wahl. Band-Add/-Remove zählt aufs selbe Spike-Budget.
             // Flag-Wand zuerst (foundryCrossfade aus → billiger Tick).
             if (st.foundryCrossfade === true && this._updateFoundryLodBand(entry, dist)) z.switches++;
-            if (entry._lodHaltWartet === true) z.offen++; // der Partner lädt: die Stufe hält, die Wahl bleibt wach
+            // der Partner lädt: die Stufe hält, die Wahl bleibt wach, das erste Bild wartet
+            if (entry._lodHaltWartet === true) {
+                z.offen++;
+                entry._stufeWartet = true;
+            }
             return;
         }
         // LOD-Switch — re-allocate
@@ -272,6 +281,7 @@ class AnazhRealm_siedlung_bauten {
             // die Stufe lädt (oder bäckt): der Eintrag wartet — und seine stehende Stufe hält VOLL, wo ihr Partner
             // fehlt (die L1 jenseits des Bands vor der ungebackenen Karte war sonst ganz verworfen: ein Loch)
             z.offen++;
+            entry._stufeWartet = true;
             if (st.foundryCrossfade === true && this._updateFoundryLodBand(entry, dist)) z.regung++;
         }
     }
@@ -453,7 +463,6 @@ class AnazhRealm_siedlung_bauten {
                 desired = this._foundryLodBandPartner(entry, dist);
                 if (desired === undefined) return false; // die Höhen-Stufe lädt: das Band bleibt, wie es ist
                 if (desired === entry._lodLevel) desired = null; // defensiv: Partner nie == Primär
-                if (this._imStufenVorlauf(entry)) desired = null; // der Vorlauf hält seine L1 voll, ohne Partner
             }
         }
         const cur = Number.isFinite(entry && entry._lodBandLevel) ? entry._lodBandLevel : null;

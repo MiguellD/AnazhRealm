@@ -1018,8 +1018,8 @@ class AnazhRealm_vegetation_streu {
     _tickScatterLod(playerPos, maxRealloc = 4, maxScan = 160) {
         const map = this.state.scatterRegions;
         if (!map || !playerPos) return 0; // eine leere Karte geht durch die Wache (Runde 0), nie an ihr vorbei
-        // in der Ankunft aus der Ferne (B2) folgt der Fernwald der gleitenden Maske im selben Schritt wie die Bauten
-        if (this._ankunftsFerne() > 1) {
+        // unter dem Ladeschirm wählt der Fernwald im Takt der Ankunft wie die Bauten (`ANKUNFT_TAKT`)
+        if (this._ladeTakt()) {
             maxRealloc = Math.max(maxRealloc, AnazhRealm.ANKUNFT_TAKT.streu);
             maxScan = Math.max(maxScan, AnazhRealm.ANKUNFT_TAKT.streuScan);
         }
@@ -1579,7 +1579,8 @@ class AnazhRealm_vegetation_streu {
     // `vLodD = camDist·min(uLodRef/(aH0·instScale),1)`): min(lodRef/visHeight, 1) — ein größerer Baum schaltet später, ein
     // kleiner nie früher als nominal; die Schwellen, gegen die sie misst, legt das Gesetz des Schirms (`_stufenSchirm`). Kein
     // Regler-Term (lod.K5): bis w3v-lod dehnte die Laub-Dichte des Reglers sie bis ×1,3 — unter Last schalteten alle früher,
-    // die Stufe folgte der Bildrate. Allein die Ankunft aus der Ferne (`_ankunftsFerne`, B2) streckt sie bis zum ersten Bild.
+    // die Stufe folgte der Bildrate. Auch die Ankunft streckt sie nicht (bis w4-ankunft-3 ×128 bis zum ersten Bild, B2: das
+    // erste Bild trug die Karte, wo es danach den Baum zeigte — ankunft.K2).
     _lodPerceptionDistance(rawDist, visHeight) {
         const cfg = AnazhRealm.LOD_DISTANCES;
         if (!cfg) return rawDist;
@@ -1596,7 +1597,7 @@ class AnazhRealm_vegetation_streu {
         const stretchMax = cfg.visStretchMax;
         const h = Math.min(hRaw, lodRef * stretchMax);
         const heightFactor = Math.min(lodRef / Math.max(h, 1e-4), 1);
-        return rawDist * heightFactor * this._ankunftsFerne();
+        return rawDist * heightFactor;
     }
 
     // DAS GESETZ DES WECHSELS (lod.K5, `AnazhRealm._wechselGesetz`): eine Stufe gilt ab dem Abstand, an dem ihr Kanten-Versatz

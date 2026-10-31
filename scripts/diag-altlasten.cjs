@@ -1033,6 +1033,10 @@ const FORBIDDEN = [
     // sich selbst, am streifenden Blick der Ferne am stärksten (Karte der Fichte in der Dämmerung 8,3 ×, nachts 4,8 × ihre
     // Gestalt); das Licht ist die EINE Licht-Kette (Lehre 21)
     ...["rimStrength", "NightFloor", "nightFloor", "MoonRim", "moonRim", "responseProfile.detail"].map((token) => ({ token, fiel: "F6 — kein Stoff leuchtet ohne Licht", auch: ["scripts/playtest.cjs"] })),
+    // w4-ankunft-3 — DIE ANKUNFT AUS DER FERNE (B2) fiel: das erste Weltbild trug jedes Ding in der Grobstufe (×128 bis zum
+    // Bild, 90 Bilder Gleiten), Tor und Krone verfeinerten nach dem Ladeschirm (ankunft.K2: 6,3–16,3 % Lücke nach 60 s); das
+    // Bild trägt jede Ziel-Stufe (`_stufeWartet` im Term „bauten"), kein Streck der Masken
+    ...["_ankunftsFerne", "ANKUNFT_FERNE", "ANKUNFT_GLEIT_BILDER", "_ankunftGleit", "uLodPerf"].map((token) => ({ token, fiel: "w4-ankunft-3 — das erste Bild trägt die Ziel-Stufe (ankunft.K2)" })),
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

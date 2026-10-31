@@ -57,6 +57,7 @@ function ladeschirmVerdict(m) {
     for (const [k, name, wort] of [
         ["ohneBoden", "ohne Boden unter dem Spieler", /Boden/],
         ["baumUngebaut", "mit einem Baum im Blick ohne Gestalt", /Bäume und Bauten/],
+        ["baumZiel", "mit einem Baum vor seiner Ziel-Stufe", /Bäume und Bauten/],
         ["streuNie", "ohne eine gestreamte Streu-Region (der Streamer lief noch nie)", /Wald-Stück/],
         ["karteOffen", "mit der offenen Karte eines Baums im Blick", /ferne Bäume/],
         ["weltFehlt", "ohne die Welt (kein Spieler)", /Welt entsteht/],
@@ -139,12 +140,11 @@ function ladeschirmVerdict(m) {
     }
     if (!m.nachBootWeg) out.push("nach dem Boot (Null-Renderer) steht der Ladeschirm über der UI");
     if (m.schleifeFragt === false) out.push("die Render-Schleife fragt das Weltbild nicht (`_loopRender` → `_ankunftsBild`)");
-    const A = m.ankunft; // DIE ANKUNFT AUS DER FERNE (B2): das erste Weltbild verlangt je Ding die billigste ganze Stufe
-    if (!A || !A.n) out.push("die Ankunft aus der Ferne: keine Probe oder kein Ding der Mesh-Zone (Vorbedingung)");
+    const A = m.ankunft; // DIE ZIEL-STUFE (ankunft.K2): das erste Weltbild verlangt je Ding die Stufe, die es danach behält
+    if (!A || !A.n) out.push("die Ziel-Stufe: keine Probe (Vorbedingung)");
     else {
-        if (A.fein.length) out.push(`das erste Weltbild wartet auf eine feinere Stufe als die billigste ganze: ${A.fein.slice(0, 4).join(", ")}`);
-        if (A.nahKarte !== 2) out.push(`ein naher Baum wünscht vor dem ersten Weltbild L${A.nahKarte} statt seiner Karte`);
-        if (A.nahDanach === 2) out.push("nach dem ersten Weltbild verfeinert die Gestalt nie (der nahe Baum bleibt Karte)");
+        if (A.wechsel.length) out.push(`vor dem Bild eine andere Stufe als danach: ${A.wechsel.slice(0, 4)}`);
+        if (A.nah) out.push(`ein naher Baum wünscht L${A.nah} statt L0`);
         if (A.zwilling.length) out.push(`der Kalt-Schätzer wählt anders als der Stufen-Takt: ${A.zwilling.slice(0, 3).join(", ")}`);
     }
     // DER VORRAT HAT KEINEN LESER IM ERSTEN BILD: während er läuft, wartet das Bild auf nichts, was er bestellt, und
@@ -558,9 +558,12 @@ async function probe(arg) {
                 m.baumD = +dP(baum).toFixed(1);
                 fall("baumUngebaut", baumWeg(false), baumHer);
                 fall("baumHinten", baumWeg(true), baumHer);
+                // (2a) DIE ZIEL-STUFE (ankunft.K2): ein gezeichneter Baum im Blick, der auf seine Stufe oder den Partner seines
+                // Bands wartet (die EINE Wahl `_archStufeUrteil` setzt die Marke), hält das Bild
+                fall("baumZiel", () => (blicke(baum.position.x, baum.position.z, false), (baum._stufeWartet = true)), () => ((baum._stufeWartet = false), blicke()));
             } else {
                 const n = st.architectures.filter((a) => a && /^baum_/.test(a.type || "")).length;
-                m.ohneFall.baumUngebaut = m.ohneFall.baumHinten = m.ohneFall.lueckeRuht = m.ohneFall.lueckeFlackert = `kein gezeichneter Baum ab 30 m (${n} Baum-Einträge)`;
+                m.ohneFall.baumUngebaut = m.ohneFall.baumHinten = m.ohneFall.baumZiel = m.ohneFall.lueckeRuht = m.ohneFall.lueckeFlackert = `kein gezeichneter Baum ab 30 m (${n} Baum-Einträge)`;
             }
             // (3b) der Streamer lief noch nie (keine Regionen-Karte) — der Fall des Befunds, in jedem Boot hergestellt
             const merkKarte = st.scatterRegions;
@@ -625,21 +628,23 @@ async function probe(arg) {
                     : `der Spieler steht ${gMD ? Math.round(Math.hypot(pm.x - gMD.x, pm.z - gMD.z)) : "?"} m vom Genesis-Ort (nearM ${nearD})`;
             // (5) alles steht
             fall("allesSteht", nichts, nichts);
-            // (5b) DIE ANKUNFT AUS DER FERNE (B2): vor dem Bild die billigste ganze Stufe, danach Distanz und Grenzen wie der Takt
-            const A = (m.ankunft = { n: 0, fein: [], zwilling: [] });
-            const [merkDa, R, auge] = [st._weltbildDa, st.architectureCullingRadius || 150, r._lodAuge()];
+            // (5b) DIE ZIEL-STUFE (ankunft.K2): vor dem Bild wünscht jedes Ding der Mesh-Zone dieselbe Stufe wie danach (Distanz und
+            // Grenzen wie der Takt) — bis w4-ankunft-3 die billigste ganze (die Ankunft aus der Ferne, B2): Tor und Krone
+            // verfeinerten nach dem Ladeschirm, 6,3–16,3 % Lücke des Ankunftsbilds nach 60 s (Radeon kalt, 3 von 4 Läufen)
+            const A = (m.ankunft = { n: 0, wechsel: [], zwilling: [], nah: 0 });
+            const [merkDa, R, auge, vor] = [st._weltbildDa, st.architectureCullingRadius || 150, r._lodAuge(), new Map()];
             for (const da of [0, merkDa]) {
                 st._weltbildDa = da;
                 for (const e of st.architectures || []) {
                     const pre = e && e.position && r._foundryPresetForEntry(e);
                     const d = pre ? Math.hypot(e.position.x - auge.x, e.position.z - auge.z) : Infinity;
-                    if (d > R) continue;
-                    const w = r._foundryLodForEntry(e);
-                    const G = !e._lodSpecies && r._archStufenGrenzen(e);
-                    if (!da && ++A.n && r._foundryServierStufe(pre, w) !== r._foundryServierStufe(pre, 2)) A.fein.push(`${pre} ${Math.round(d)} m L${w}`);
-                    else if (da && G && w !== AnazhRealm._stufeNachGrenzen(d, undefined, G, e.scale > 0 ? e.scale : 1)) A.zwilling.push(`${pre} ${Math.round(d)} m L${w}`);
+                    if (d > R || r._imStufenVorlauf(e)) continue;
+                    const [w, G] = [r._foundryLodForEntry(e), !e._lodSpecies && r._archStufenGrenzen(e)];
+                    if (!da && ++A.n) vor.set(e, w);
+                    else if (vor.has(e) && vor.get(e) !== w) A.wechsel.push(`${pre} ${Math.round(d)} m L${vor.get(e)} → L${w}`);
+                    if (G && w !== AnazhRealm._stufeNachGrenzen(d, undefined, G, e.scale > 0 ? e.scale : 1)) A.zwilling.push(`${pre} ${Math.round(d)} m L${w}`);
                 }
-                A[da ? "nahDanach" : "nahKarte"] = r._chooseLODForDistance(2, undefined, 20); // ein Baum von 20 m in 2 m
+                A.nah |= r._chooseLODForDistance(2, undefined, 20); // ein Baum von 20 m in 2 m: vor und nach dem Bild L0
             }
             st._weltbildDa = merkDa;
             // (6) eine Lücke ruht (dieselbe Lücke länger als WELTBILD_STILL_MS): der Ladeschirm weicht LAUT
@@ -863,15 +868,23 @@ async function probe(arg) {
                     if (layer.kind === "rock" || (v && b.geweckt != null)) return P._scatterSichtHoehe.call(this, layer, ...a);
                     return b.geweckt == null && b.n[+!v]++, r._streuWartetAuf(v ? zV : zH), null;
                 };
+                // die Zusagen der zweiten Scheibe im Bild beim Namen: zV, zH oder die Stufe einer Zelle im Blick (ihre Ziel-Stufe
+                // lädt — darauf wartet das Bild zu Recht, ankunft.K2); das Bild hält nie auf zH: weder steht zH unter den Zusagen
+                // im Bild, noch hält die Region das Bild ohne eine Zusage oder Lücke im Blick
+                r._streuWeckerSpannen = function (g) {
+                    const bild = [...(g._zusagen || [])].filter(([, rang]) => this._rangImBild(rang)).map(([z]) => z);
+                    P._streuWeckerSpannen.call(this, g);
+                    if (b.geweckt != null) b.zH2 = bild.includes(zH) || (g._bildWartet && !bild.length && !g._bildLuecke);
+                };
                 try {
                     const g = ((st._weltbildDa = 0), neu());
                     [b.vor1] = [r._streuRegionWartet(key), ok[0](), await sleep(0)];
                     b.geweckt = !!g._geweckt; // vor der zweiten Scheibe
-                    b.vor2 = (neu(), r._streuRegionWartet(key));
+                    b.vor2 = (neu(), b.zH2 ? r._streuRegionWartet(key) : null);
                     [b.nach2] = [((st._weltbildDa = 1), r._streuRegionWartet(key)), (st._weltbildDa = 0), (st.scatterRegions.get(key)._bildWartet = null)];
                     for (let i = (stumm.forEach((k, j) => (r[k] = () => !j)), 0); i < 4; i++) t.lief += r._dispatchFrameJobs(r._buildDeferrableJobs(pm), { remainingMs: () => 0 }).includes("scatterDeco");
                 } finally {
-                    [stumm.forEach((k) => delete r[k]), delete r._scatterSichtHoehe, (st._weltbildDa = da), ok[1](), neu()];
+                    [stumm.forEach((k) => delete r[k]), delete r._scatterSichtHoehe, delete r._streuWeckerSpannen, (st._weltbildDa = da), ok[1](), neu()];
                 }
             }
             await sleep(800);
@@ -1706,6 +1719,7 @@ hauptLauf(async () => {
         const l2aFaelle = {
             ohneBoden: { weg: false, stand: "der Boden wächst (Ring 0 von 3)", warn: 0, terme: ["boden"] },
             baumUngebaut: { weg: false, stand: "1 Bäume und Bauten wachsen", warn: 0, terme: ["bauten"] },
+            baumZiel: { weg: false, stand: "1 Bäume und Bauten wachsen", warn: 0, terme: ["bauten"] },
             streuNie: { weg: false, stand: "6 Wald-Stücke warten auf ihre Gestalt", warn: 0, terme: ["streu"] },
             karteOffen: { weg: false, stand: "1 ferne Bäume werden gemalt", warn: 0, terme: ["karten"] },
             ...Object.fromEntries(["bodenHinten", "baumHinten", "karteHinten", "pflanzungHinten"].map((k) => [k, { weg: true, stand: "", warn: 0, terme: [] }])),
@@ -1740,7 +1754,7 @@ hauptLauf(async () => {
                     terme: l2aTerme,
                     rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w1", "export-settlement": "w2", tor0: "w0", tor1: "w0", tor2: "w0", tor3: "w0" } },
                     rundblick: { N: 240, loecher: 0, erstes: null, spaet: true },
-                    ankunft: { n: 40, fein: [], zwilling: [], nahKarte: 2, nahDanach: 0 },
+                    ankunft: { n: 40, wechsel: [], zwilling: [], nah: 0 },
                     koepfe,
                     wald: { ferne: 169, steht: false, zusage: true, kam: true, rest: 128 },
                     blick: { n: [4, 6], vor1: 1, geweckt: true, nach2: 1 }, takt: { lief: 4 },
@@ -1770,11 +1784,10 @@ hauptLauf(async () => {
                     ["ein Term ohne Fall (K60: die Pflanz-Schlange kam ohne Fall)", { terme: l2aTerme.concat(["zauber"]) }, "der Term „zauber“ des ersten Weltbilds hat keinen Fall"],
                     ["ein Fall nennt einen Term außerhalb der Liste", { faelle: Object.assign({}, l2aFaelle, { pflanzung: { weg: false, stand: "1 Bäume werden gepflanzt", warn: 0, terme: ["saat"] } }) }, "der Fall pflanzung nennt den Term „saat“"],
                     ["ohne die Terme", { terme: undefined }, "die Terme des ersten Weltbilds fehlen"],
-                    ["das Tor wartet auf seine L0", { ankunft: { n: 40, fein: ["geisttor 9 m L0"], zwilling: [], nahKarte: 0, nahDanach: 0 } }, "das erste Weltbild wartet auf eine feinere Stufe als die billigste ganze: geisttor 9 m L0"],
-                    ["der nahe Baum vor dem Bild ohne Karte", { ankunft: { n: 40, fein: [], zwilling: [], nahKarte: 0, nahDanach: 0 } }, "ein naher Baum wünscht vor dem ersten Weltbild L0"],
-                    ["die Gestalt verfeinert nie", { ankunft: { n: 40, fein: [], zwilling: [], nahKarte: 2, nahDanach: 2 } }, "nach dem ersten Weltbild verfeinert die Gestalt nie"],
-                    ["der Kalt-Schätzer als Zwilling", { ankunft: { n: 40, fein: [], zwilling: ["geisttor 11 m L0"], nahKarte: 2, nahDanach: 0 } }, "der Kalt-Schätzer wählt anders als der Stufen-Takt: geisttor 11 m L0"],
-                    ["ohne Ankunfts-Probe", { ankunft: undefined }, "die Ankunft aus der Ferne: keine Probe"],
+                    ["das erste Bild in der Grobstufe (B2)", { ankunft: { n: 40, wechsel: ["tor 9 m L2 → L0"], zwilling: [], nah: 0 } }, "vor dem Bild eine andere Stufe als danach: tor 9 m L2 → L0"],
+                    ["der nahe Baum als Karte", { ankunft: { n: 40, wechsel: [], zwilling: [], nah: 2 } }, "ein naher Baum wünscht L2"],
+                    ["der Kalt-Schätzer als Zwilling", { ankunft: { n: 40, wechsel: [], zwilling: ["tor 11 m L0"], nah: 0 } }, "der Kalt-Schätzer wählt anders als der Stufen-Takt: tor 11 m L0"],
+                    ["ohne Ankunfts-Probe", { ankunft: undefined }, "die Ziel-Stufe: keine Probe"],
                     ["die Köpfe ohne Bild-Rang der Bahn", { rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w0", "export-settlement": "w1", tor0: "w2", tor1: "w0", tor2: "w1", tor3: "w2" } } }, "der Kopf der Ankunft geht nicht in eine Bahn ohne Arbeit"],
                     ["ein Tor hinter dem Dorf-Export", { rang: { vorBild: "blick", nachBild: "hinten,blick,vorrat", bahnen: { leib: "w1", "export-settlement": "w2", tor0: "w2", tor1: "w0", tor2: "w0", tor3: "w0" } } }, "tor0 stellen sich hinter einen Kopf der Ankunft"],
                     ["der Leib ohne Kopf-Rang", { koepfe: Object.assign({}, koepfe, { leib: { bestellt: ["vor L1", "nach L0"], ohneFein: true, baut: ["vor 1", "nach 0"] } }) }, "vor dem ersten Bild geht die Grobstufe des Leibs ohne Kopf-Rang"],
@@ -1783,6 +1796,7 @@ hauptLauf(async () => {
                     ["der Leib wartet auf die feine Stufe", { koepfe: Object.assign({}, koepfe, { leib: { bestellt: ["vor L0", "vor L1"], ohneFein: false, baut: ["vor 0"] } }) }, "vor dem ersten Bild bestellt der Leib in der Ego-Sicht seine feine Stufe"],
                     ["die feine Stufe tauscht nie ein", { koepfe: Object.assign({}, koepfe, { leib: { bestellt: ["vor L1 Kopf", "nach L0"], ohneFein: true, baut: ["vor 1"] } }) }, "die feine Stufe kam nach dem Bild, der Leib tauscht sie nie ein"],
                     ["der Dorf-Export wartet auf den Takt", { koepfe: Object.assign({}, koepfe, { dorf: { kopf: false, export: false } }) }, "mit dem Buch geht der Export des fälligen Start-Dorfs nicht hinaus"],
+                    ["vor der Ziel-Stufe (K2)", { faelle: Object.assign({}, l2aFaelle, { baumZiel: { weg: true, stand: "", warn: 0, terme: [] } }) }, "mit einem Baum vor seiner Ziel-Stufe weicht"],
                     ["das erste Weltbild ohne Dorf", { faelle: Object.assign({}, l2aFaelle, { dorfSchlange: { weg: true, stand: "", warn: 0, terme: [] } }) }, "mit den Häusern eines Dorfs der Mesh-Zone in der Schlange weicht der Ladeschirm"],
                     ["das fällige Start-Dorf ohne Fall", { faelle: Object.assign({}, l2aFaelle, { dorfFaellig: undefined }), ohneFall: { dorfFaellig: "der Spieler steht 400 m vom Genesis-Ort (nearM 260)" } }, "mit einem fälligen, noch nicht bestellten Start-Dorf am Genesis-Ort: der Spieler steht 400 m vom Genesis-Ort"],
                     ["eine arbeitende Lücke weicht", { faelle: Object.assign({}, l2aFaelle, { lueckeArbeitet: { weg: true, stand: "", warn: 1, terme: ["buch"] } }) }, "eine arbeitende Lücke weicht wie eine ruhende"],

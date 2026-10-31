@@ -1596,7 +1596,6 @@ async function probe(arg) {
             rec.push({
                 an: lu.uLodMaskOn.value,
                 auge: lu.uLodAuge.value.clone(),
-                perf: lu.uLodPerf.value,
                 ref: lu.uLodRef.value,
                 cfg: { d0: lu.uLodD0.value, d1: lu.uLodD1.value, fade: lu.uLodFade.value, fade0: lu.uLodFade0.value },
             });
@@ -1656,8 +1655,8 @@ async function probe(arg) {
                 for (let j = 0; j < pos.count; j += schritt) {
                     v.fromBufferAttribute(pos, j).applyMatrix4(o.matrixWorld);
                     const stufe = aL ? aL.getX(j) : 0;
-                    const cd = Math.hypot(R.auge.x - v.x, R.auge.z - v.z) * R.perf;
-                    dSum += cd / R.perf;
+                    const cd = Math.hypot(R.auge.x - v.x, R.auge.z - v.z);
+                    dSum += cd;
                     const lk = Math.min(R.ref / Math.max(aH ? aH.getX(j) : 1, 1e-3), 1);
                     const lkL = Math.min(R.ref / Math.max(aHL ? aHL.getX(j) : 1, 1e-3), 1);
                     let k = 0;
