@@ -210,22 +210,19 @@ function albedoSicht(opts) {
                 }
                 else if (ex.typ === "boden" && ex.wald) {
                     // DER WALD-BODEN AN SEINER STELLE (A5, Radeon): der Boden ist ein Feld, die Ratsche misst ihn an
-                    // EINER festen Stelle (`stelle`, Welt-x/z), nie an einer Suche um den Spieler. Dort steht das Wald-Gesetz (`_forestCellDarts` →
-                    // `_forestDartSteht` → `_wildnisTraegt`): ≥ `baeume` stehende Bäume binnen `r` m, keiner näher als `frei` m.
+                    // EINER festen Stelle (`stelle`, Welt-x/z), nie an einer Suche um den Spieler. Dort steht das Wald-Gesetz (der Bestand
+                    // `_forestCellDarts` → `_wildnisTraegt`): ≥ `baeume` stehende Bäume binnen `r` m, keiner näher als `frei` m.
                     const W0 = ex.wald,
                         C = AnazhRealm.FOREST.cell,
                         seedInt = r._forestSeedInt(),
-                        [x, zz] = ex.stelle,
-                        memo = new Map();
-                    const zelle = (gx, gz, k = gx + "," + gz) =>
-                        memo.get(k) || memo.set(k, r._forestCellDarts(gx, gz, seedInt)).get(k);
+                        [x, zz] = ex.stelle;
                     let b = 0,
                         nah = Infinity;
                     for (let gz = Math.floor((zz - W0.r) / C); gz <= Math.floor((zz + W0.r) / C); gz++)
                         for (let gx = Math.floor((x - W0.r) / C); gx <= Math.floor((x + W0.r) / C); gx++)
-                            for (const d of zelle(gx, gz)) {
+                            for (const d of r._forestCellDarts(gx, gz, seedInt)) {
                                 const dd = Math.hypot(d.x - x, d.z - zz);
-                                if (dd < W0.r && r._forestDartSteht(d, gx, gz, zelle) && r._wildnisTraegt(d.x, d.z)) {
+                                if (dd < W0.r && r._wildnisTraegt(d.x, d.z)) {
                                     b++;
                                     nah = Math.min(nah, dd);
                                 }

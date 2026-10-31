@@ -1,21 +1,23 @@
 class AnazhRealm_vegetation_baum {
     // ===== ATLAS · Vegetation/baum — Baum-Geometrie · Laub-Atlas · Wald-Pflanzung · Fels-Varianten · Natur-Plätze =====
-    // DER STOFF DES WALDS off-thread (K60-3): die Wald-Zellen (cx, cz je Zelle, Int32Array) → die gepackten Darts aus dem
-    // EINEN Wald-Plan (phyto-core `planForestCell`) mit den Lesern des Fadens. Er rechnet im WALD-FADEN: einem eigenen Faden
-    // desselben Gesetzes (`voxel-worker.js`, dieselbe Quelle wie der Voxel-Faden) — im Voxel-Faden stand der Auftrag hinter
-    // jedem Chunk und jeder Höhe der Ferne (Radeon kalt: die Darts kamen 3,5 s nach der Bestellung, das Bild 2 s später als
-    // ohne, K603/s2-6C). Den Zustand bringt der EINE Sender (`_voxelZustandPost`): bei der Geburt ein voller Stand, danach
-    // dieselben Nachrichten wie der Voxel-Faden (Worldgen, Hydro-Kachel, Erdbau, Edits) — Nachrichten laufen in Reihe, der
-    // Auftrag rechnet mindestens am Zustand, der vor ihm reiste. Der Faden rechnet nah zuerst nach `rang` (Abstand² der nächsten
-    // Zelle beim Senden, ohne Rang zuerst). Leser: die Schlange des Walds (`_waldFadenSchicken`).
-    _voxelWorkerWaldDarts(zellen, seedInt, extras, rang) {
-        return this._nebenAuftrag("wald", { type: "wald-darts", zellen, seedInt, extras, rang }, [zellen.buffer]).then(
-            (msg) => ({
-                anzahl: new Int32Array(msg.anzahl),
-                werte: new Float64Array(msg.werte),
-                arten: msg.arten,
-            })
-        );
+    // DER BESTAND DES WALDS off-thread (K60-3, w4-b-pflanzen): die Wald-Zellen (cx, cz je Zelle, Int32Array) → je Zelle ihre
+    // STEHENDEN Darts, gepackt: der EINE Wald-Plan (phyto-core `planForestCell`) mit den Lesern des Fadens und das EINE Urteil
+    // der Kronen-Schüchternheit (phyto-core `forestStehende`). Er rechnet im WALD-FADEN: einem eigenen Faden desselben Gesetzes
+    // (`voxel-worker.js`, dieselbe Quelle wie der Voxel-Faden) — im Voxel-Faden stand der Auftrag hinter jedem Chunk und jeder
+    // Höhe der Ferne (Radeon kalt: die Darts kamen 3,5 s nach der Bestellung, das Bild 2 s später als ohne, K603/s2-6C). Den
+    // Zustand bringt der EINE Sender (`_voxelZustandPost`): bei der Geburt ein voller Stand, danach dieselben Nachrichten wie der
+    // Voxel-Faden (Worldgen, Hydro-Kachel, Erdbau, Edits) — Nachrichten laufen in Reihe, der Auftrag rechnet mindestens am
+    // Zustand, der vor ihm reiste. Der Faden rechnet nah zuerst nach `rang` (Abstand² der nächsten Zelle beim Senden, ohne Rang
+    // zuerst) und merkt seine geborenen Darts am `stand` (`_waldStandSchluessel`; ohne ihn rechnet er jede Zelle neu). Leser:
+    // die Schlange des Walds (`_waldFadenSchicken`).
+    _voxelWorkerWaldDarts(zellen, seedInt, extras, rang, stand = null) {
+        return this._nebenAuftrag("wald", { type: "wald-darts", zellen, seedInt, extras, rang, stand }, [
+            zellen.buffer,
+        ]).then((msg) => ({
+            anzahl: new Int32Array(msg.anzahl),
+            werte: new Float64Array(msg.werte),
+            arten: msg.arten,
+        }));
     }
 
     // Trägt die Wildnis den Ort? Das EINE Prädikat an den WÜRFEN des Feldes (Wald, Streu, Nah-Streu, Geburts-Ort, Dorf-
@@ -31,7 +33,8 @@ class AnazhRealm_vegetation_baum {
     // lazy deterministisch aus dem Welt-Seed; danach Cache.
     // Der Wuchs (_growTreeBlueprint) liest die Art aus dem Gesetzbuch (_phytoArt); tag-neutral über
     // materialKonsistenz (Stamm holz, Krone laub); Stream `-veg-grammatik` (re-rollt keinen anderen).
-    _variantSeedsFor(species) {
+    // `nurLesen` (die Bestellung des Wuchses, `_wuchsFehlt`): dieselbe Zeile, ohne eine neue in den Pool zu legen.
+    _variantSeedsFor(species, nurLesen) {
         const wm = this.state.worldMeta;
         if (!wm) return null;
         if (!wm.variantSeed || typeof wm.variantSeed !== "object") wm.variantSeed = {};
@@ -41,6 +44,7 @@ class AnazhRealm_vegetation_baum {
         if (Array.isArray(pool[species]) && pool[species].length === AnazhRealm.VARIANTS_PER_SPECIES)
             return pool[species];
         if (!this._phytoArt(species)) return null;
+        if (nurLesen) return AnazhRealm._variantenSaat(wm, species);
         return (pool[species] = AnazhRealm._variantenSaat(wm, species));
     }
 
@@ -944,60 +948,8 @@ class AnazhRealm_vegetation_baum {
         return this._ortSame;
     }
 
-    // Steht der geborene Dart `d` der Zelle (gx, gz)? Kronen-Schüchternheit: er steht, wenn KEIN besserer Dart (prio,
-    // Positions-Tiebreak) in ±2 Nachbarzellen konkurriert. Rein → reihenfolge-unabhängig; strikte Total-Ordnung → kein
-    // Paar akzeptierter Zentren < pack·(Ti+Tj). Shared shy-Distanz (phyto-core forestTooClose) + named prio-max
-    // (forestPrioWins); FOREST_TOPOLOGY.host = "cell" (Feel-Entscheid .116). Einziger Leser ist der Pflanz-Gang
-    // (`_forestPlantChunk`) — die Spawn-Wahl liest den Wald nicht, die Genesis-Lichtung hält ihn von der Plattform fern.
-    // DAS URTEIL GEHÖRT DEM DART (K60): es ist eine reine Funktion des Darts und seiner Nachbar-Zellen am Stand des Walds
-    // (`_forestDartStand`) — gemerkt je Dart-Objekt (die Objekte leben im Dart-Gedächtnis dieses Stands, ein neuer Stand legt
-    // neue an), nur über der Wahrheit des Gesetzes (`_forestGesetzWahr`; vorläufige Darts merken nichts). Bis K60 fragte jede
-    // Gestalt des Orts (`_forestStehtFrei`) jeden Nachbarn neu, und jede neue Fläche eines Grundrisses warf das Gedächtnis der
-    // Gestalt (`_ortGestaltSame`): Radeon kalt bis zum ersten Bild 3 220 Freistand-Fragen an 251 Orten, das Urteil 1,5 s.
-    // DIE NAHEN ZUERST (w4-ankunft-2): die Nachbar-Zellen gehen in der Reihe ihres Abstands (`FOREST_URTEIL_REIHE`: die eigene,
-    // dann Ring 1, dann Ring 2) — ein Verlierer fällt fast immer an einem Nachbarn in der eigenen Zelle oder im Ring 1, in der
-    // Raster-Reihe las er bis dahin im Mittel 12 Zellen. Das Urteil ist eine Existenz-Frage, seine Antwort hängt an keiner Reihe
-    // (swiftshader kalt bis zum Bild: `_forestDartSteht` 1,3–1,9 s, der Halter der Gestalt des Orts).
-    _forestDartSteht(d, gx, gz, cellDarts) {
-        const memo = this._forestGesetzWahr() ? this._forestStehtMemo || (this._forestStehtMemo = new WeakMap()) : null;
-        const hat = memo ? memo.get(d) : undefined;
-        if (hat !== undefined) return hat;
-        const F = AnazhRealm.FOREST;
-        const core = typeof globalThis !== "undefined" && globalThis.__phytoCore;
-        const tooClose = core && typeof core.forestTooClose === "function" ? core.forestTooClose : null;
-        const prioWins = core && core.forestPrioWins;
-        const R = AnazhRealm.FOREST_URTEIL_REIHE;
-        let steht = true;
-        nachbarn: for (let q = 0; q < R.length; q += 2) {
-            const nb = cellDarts(gx + R[q], gz + R[q + 1]);
-            for (let k = 0; k < nb.length; k++) {
-                const o = nb[k];
-                if (o === d) continue; // sich selbst (eigene Zelle) überspringen
-                const dx = d.x - o.x;
-                const dz = d.z - o.z;
-                // Distance: shared forestTooClose; Host residual = prio-max (nicht Lab sequential reject).
-                const conflict = tooClose
-                    ? tooClose(dx, dz, d.T, o.T, F.pack)
-                    : (() => {
-                          const md = F.pack * (d.T + o.T);
-                          return dx * dx + dz * dz < md * md;
-                      })();
-                if (!conflict) continue; // kein Konflikt
-                // Konflikt: „besser" = forestPrioWins (prio, Tiebreak x dann z).
-                const better = prioWins
-                    ? prioWins(o, d)
-                    : o.prio > d.prio || (o.prio === d.prio && (o.x > d.x || (o.x === d.x && o.z > d.z)));
-                if (better) {
-                    steht = false;
-                    break nachbarn;
-                }
-            }
-        }
-        if (memo) memo.set(d, steht);
-        return steht;
-    }
-
-    // DER SOLITÄR STEHT FREI (K20): kein stehender Baum des Wald-Gesetzes (`_forestDartSteht`) näher als phyto-core
+    // DER SOLITÄR STEHT FREI (K20): kein stehender Baum des Wald-Gesetzes (der Bestand seiner Zellen, `_forestCellDarts`: das
+    // Urteil der Kronen-Schüchternheit trägt jeder Dart dort, phyto-core `forestStehende`) näher als phyto-core
     // FREISTAND.abstand × die Summe der Kronen (T eigene Krone in m; der Baum an derselben Stelle ist er selbst). Die Nachbarn reichen
     // ±4 Zellen (48 m trägt 2 × (6 + 18) m: Eiche neben dem größten Mammut). Mess-Wiese 12.10.: der Bestand steht bei
     // 1,2–1,5 × der Kronen-Summe, frei steht jeder sechste bis siebte Baum. Ein Nachbar steht nur, wo ihn auch der Pflanz-Gang
@@ -1009,11 +961,12 @@ class AnazhRealm_vegetation_baum {
     // Walds — gemerkt am Dart-Gedächtnis dieses Stands (`_forestDartMemo`, nur über der Wahrheit des Gesetzes); Wildnis und
     // Wand fragt jede Antwort neu (wenige Nachbarn, je eine Gitter-Frage). Eine neue Fläche eines Grundrisses (je Haus des
     // Dorfs) fragt so nur die Wand, nie wieder 81 Zellen.
-    // DIE FRAGE LIEST IHREN KASTEN EINMAL (w4-ankunft-2): die Zellen der Antwort und die ihrer Urteile (±6 um den Ort) holt sie
-    // je Zelle einmal (`_forestKastenLeser`), und eine Zelle, deren Kasten weiter liegt als der Freistand-Abstand mit ihrer
-    // größten Krone (`_forestKroneMax`), liest sie nicht — kein Dart von ihr trägt die Antwort (jeder Dart liegt in seiner Zelle,
-    // phyto-core `planForestCell`). Dieselbe Antwort; bis hierher las jede Frage 81 Zellen und jedes Urteil seine 25 neu
-    // (swiftshader kalt bis zum Bild `_forestStehtFrei` 2,4–3,1 s, `_forestCellDarts` 0,7–0,9 s).
+    // DIE FRAGE LIEST IHREN KASTEN EINMAL (w4-ankunft-2): die Zellen der Antwort (±4 um den Ort) holt sie je Zelle einmal
+    // (`_forestKastenLeser`), und eine Zelle, deren Kasten weiter liegt als der Freistand-Abstand mit ihrer größten Krone
+    // (`_forestKroneMax`), liest sie nicht — kein Dart von ihr trägt die Antwort (jeder Dart liegt in seiner Zelle, phyto-core
+    // `planForestCell`). Dieselbe Antwort; bis hierher las jede Frage 81 Zellen und jedes Urteil seine 25 neu (swiftshader kalt
+    // bis zum Bild `_forestStehtFrei` 2,4–3,1 s, `_forestCellDarts` 0,7–0,9 s). Jeder Dart der Zelle STEHT (w4-b-pflanzen): bis
+    // dahin urteilte die Frage jeden geborenen Nachbarn im Freistand-Kreis selbst (`_forestDartSteht`, ±6 Zellen um den Ort).
     _forestStehtFrei(x, z, T, cellDarts) {
         const core = typeof globalThis !== "undefined" ? globalThis.__phytoCore : null;
         const FS = core && core.FREISTAND;
@@ -1051,7 +1004,7 @@ class AnazhRealm_vegetation_baum {
                         const dz = o.z - z;
                         const d2 = dx * dx + dz * dz;
                         if (d2 < 1e-6 || d2 >= r * r) continue;
-                        if (this._forestDartSteht(o, gx + ax, gz + az, zelle)) nah.push(o);
+                        nah.push(o);
                     }
                 }
             }
@@ -1066,7 +1019,7 @@ class AnazhRealm_vegetation_baum {
         }
         return true;
     }
-    // Der Leser der Zellen für die Fragen des Freistands (der Freistand ±4, das Urteil jedes Nachbarn ±2): jedes Feld, das das
+    // Der Leser der Zellen für die Fragen des Freistands (±4): jedes Feld, das das
     // Dart-Gedächtnis trägt, merkt er unter der Zahl seiner Zelle (`_grundrissSchluessel`), solange dasselbe Gedächtnis ohne
     // Fall steht (`_forestDartFall`) — die nächste Frage nebenan liest ihre Zellen ohne Namen aus Text; ein vorläufiges Feld
     // oder eines, das das Gedächtnis nicht trägt, holt er jedes Mal neu bei `cellDarts`.
@@ -1119,10 +1072,10 @@ class AnazhRealm_vegetation_baum {
         const c1x = Math.floor((ox + span) / CELL);
         const c0z = Math.floor(oz / CELL);
         const c1z = Math.floor((oz + span) / CELL);
-        // DER WALD PLANT IM TAKT (K69): der Gang liest die Zellen des Chunks samt ±2 (`_waldPflanzKasten`); fehlt eine, bestellt
-        // er sie in der Schlange des Walds und wartet (`_waldPflanzWarten`) — sie pflanzt den Chunk, sobald sein Plan steht
-        // (`_tickWaldPlan`). Bis K69 plante der Gang frische Zellen am Stück im Chunk-Bau (gehend ins Dorf 41 Zellen in EINEM
-        // Takt, Null-Renderer). Vor der Wahrheit des Gesetzes (vorläufige Darts) und im synchronen Test-/Worldgen-Pfad
+        // DER WALD PLANT IM TAKT (K69): der Gang liest den Bestand der Zellen des Chunks (`_waldPflanzKasten`); fehlt einer,
+        // bestellt er ihn in der Schlange des Walds und wartet (`_waldPflanzWarten`) — sie pflanzt den Chunk, sobald sein Plan
+        // steht (`_tickWaldPlan`). Bis K69 plante der Gang frische Zellen am Stück im Chunk-Bau (gehend ins Dorf 41 Zellen in
+        // EINEM Takt, Null-Renderer). Vor der Wahrheit des Gesetzes (vorläufige Darts) und im synchronen Test-/Worldgen-Pfad
         // (`_vegSpawnImmediate`) plant er selbst.
         const ck = cx + "," + cz;
         if (this._forestGesetzWahr() && !this._vegSpawnImmediate) {
@@ -1133,26 +1086,16 @@ class AnazhRealm_vegetation_baum {
             }
         }
         if (this._waldPflanzWarten) this._waldPflanzWarten.delete(ck);
-        // Born-Dart-Memo (lokal je Aufruf → KEIN chunk-übergreifender mutabler Zustand →
-        // Reihenfolge-Unabhängigkeit). `_forestCellDarts` ist rein → jede Zelle einmal.
-        const memo = new Map();
-        const cellDarts = (gx, gz) => {
-            const k = gx + "," + gz;
-            let d = memo.get(k);
-            if (!d) {
-                d = this._forestCellDarts(gx, gz, seedInt);
-                memo.set(k, d);
-            }
-            return d;
-        };
+        // Jeder Dart des Bestands STEHT (das Urteil trägt `_forestCellDarts`, w4-b-pflanzen); die geborenen Darts eines
+        // vorläufigen Bestands merkt der Gang je Aufruf (`geborenMerk` — KEIN chunk-übergreifender mutabler Zustand).
+        const geborenMerk = new Map();
         let planted = 0;
         for (let gz = c0z; gz <= c1z; gz++) {
             for (let gx = c0x; gx <= c1x; gx++) {
-                const own = cellDarts(gx, gz);
+                const own = this._forestCellDarts(gx, gz, seedInt, geborenMerk);
                 for (const d of own) {
                     // Nur Darts, deren POSITION in DIESEN Chunk fällt (disjunkt → einmal).
                     if (d.x < ox || d.x >= ox + span || d.z < oz || d.z >= oz + span) continue;
-                    if (!this._forestDartSteht(d, gx, gz, cellDarts)) continue;
                     if (this._tatAm("faellen", d.x, d.z)) continue; // die Tat bleibt (feld.K4): hier fiel der Baum, er heilt erst
                     // die Genesis-Lichtung hält die EINE Natur-Wand frei (`_naturSetzen`, die Plattform ist ein Grundriss)
                     // Dichte = die Vorlage: das Studio dünnt den Wald NIE (volle Dichte, Last über LOD + Sicht-Kappung).
@@ -1264,20 +1207,18 @@ class AnazhRealm_vegetation_baum {
                     // — der Bauplan entsteht über den Richter (`_growTreeBlueprintForSpawn`, region-gecacht), der Render
                     // kommt aus der Foundry (busch_hazel→strauch). Ohne gewachsenen Key fällt der Punkt (kein Phantom).
                     let bushKey = null;
+                    const artB = AnazhRealm.SAAT_BUSCH.sonst; // der Strauch des Teppichs (die EINE Tafel der Saat-Büsche)
                     if (this._genVersion && this._genVersion() >= 4 && this._growTreeBlueprintForSpawn) {
                         const bRegX = Math.floor(bxp / 256);
                         const bRegZ = Math.floor(bzp / 256);
                         const bSeedW = (this.state.worldMeta && this.state.worldMeta.seed) || "anazh-realm-seed";
                         try {
-                            bushKey = this._growTreeBlueprintForSpawn(
-                                "busch_hazel",
-                                `${bSeedW}|busch_hazel|${bRegX},${bRegZ}`
-                            );
+                            bushKey = this._growTreeBlueprintForSpawn(artB, `${bSeedW}|${artB}|${bRegX},${bRegZ}`);
                         } catch (_gbe) {
                             bushKey = null;
                         }
                     }
-                    if (!bushKey && this.state.blueprints && this.state.blueprints.busch_hazel) bushKey = "busch_hazel";
+                    if (!bushKey && this.state.blueprints && this.state.blueprints[artB]) bushKey = artB;
                     if (!bushKey) continue;
                     this._enqueueVegetationSpawn(
                         bushKey,
@@ -1526,10 +1467,11 @@ class AnazhRealm_vegetation_baum {
                 if (bushProbe < bushChance) {
                     // Spezies-Wahl: Feuchte > 0.55 → Farn; sonst lebendig >
                     // 0.5 → Blume; sonst Hazel. Deterministisch über noise2D.
+                    const SB = AnazhRealm.SAAT_BUSCH;
                     let bushName;
-                    if (feuchte > 0.55) bushName = "farn_busch";
-                    else if (lebendig2 > 0.5) bushName = "blume_gross";
-                    else bushName = "busch_hazel";
+                    if (feuchte > 0.55) bushName = SB.nass;
+                    else if (lebendig2 > 0.5) bushName = SB.lebendig;
+                    else bushName = SB.sonst;
                     // Slope/Höhen-Gate für die GEWÄHLTE Busch-Spezies (eigene
                     // SPECIES_TREE_PARAMS-Toleranz, Hazel klettert weiter als
                     // die Blume).
@@ -2323,7 +2265,11 @@ class AnazhRealm_vegetation_baum {
         // die Bauplan-Tags je Ruf EINMAL (Pläne und Stoffe ändern sich in diesem synchronen Lauf nicht)
         const tagsJe = new Map();
         try {
-            for (const c of reihe)
+            for (const c of reihe) {
+                // DIE SAAT WARTET AUF IHREN WUCHS (w4-b-pflanzen): die Büsche ihrer Region wachsen im Wald-Faden
+                // (`_wuchsFehlt`) — ihr erster Schritt geht erst, wenn jeder Bauplan steht oder im Vorrat liegt; der synchrone
+                // Pfad (`sofort`) wächst selbst
+                if (!sofort && c.i === 0 && this._wuchsFehlt(c.cx, c.cz)) continue;
                 while (n < mindestens || performance.now() < frist) {
                     n++;
                     if (c.i === SAMPLES * SAMPLES) {
@@ -2344,6 +2290,7 @@ class AnazhRealm_vegetation_baum {
                     const seedForSpawn = ((c.cx * 73856093) ^ (c.cz * 19349663) ^ (xi * 83492791) ^ (zi * 11)) >>> 0;
                     spawned += this._vegetationSampleSpawn(sampleX, sampleZ, surfaceY, seedForSpawn, tagsJe);
                 }
+            }
         } finally {
             this._vegSpawnImmediate = prevImmediate;
         }
@@ -2981,14 +2928,10 @@ AnazhRealm.ARCH_PLATZ_MS = 4;
 // Rand (`_archKartenHorizont`) und räumt sie erst so weit dahinter — ein Spieler, der am Horizont-Rand pendelt, lässt
 // keine Karte flattern.
 AnazhRealm.KARTEN_HORIZONT_TOTBAND_M = 16;
-// DIE REIHE DES URTEILS (`_forestDartSteht`, w4-ankunft-2): die Versätze der ±2 Nachbar-Zellen als Paare (dx, dz), nach
-// Abstand — die eigene Zelle, Ring 1, Ring 2; 25 Zellen wie die Raster-Reihe, nur nah zuerst.
-AnazhRealm.FOREST_URTEIL_REIHE = Object.freeze(
-    [-2, -1, 0, 1, 2]
-        .flatMap((a) => [-2, -1, 0, 1, 2].map((b) => [a, b]))
-        .sort((p, q) => Math.max(Math.abs(p[0]), Math.abs(p[1])) - Math.max(Math.abs(q[0]), Math.abs(q[1])))
-        .flat()
-);
+// DIE BÜSCHE DER SAAT (w4-b-pflanzen): die gewachsenen Baupläne, die die Saat eines Chunks setzen kann — der Probe nass,
+// lebendig, sonst (`_vegetationSampleSpawn`) und der Strauch-Teppich des Walds (`_forestPlantChunk`, der sonst-Busch). Ihr
+// Wuchs kommt aus dem Wald-Faden; die Saat wartet auf die Variante ihrer Region (`_wuchsFehlt`).
+AnazhRealm.SAAT_BUSCH = Object.freeze({ nass: "farn_busch", lebendig: "blume_gross", sonst: "busch_hazel" });
 AnazhRealm.ORT_SAME_REICH = 5 * AnazhRealm.FOREST.cell + AnazhRealm.KRONE_MAX_M;
 AnazhRealm.STAND_RAND_FERN_M = 1;
 // Der Eimer der Cull-Wache (m Spieler-Weg): ein Eintrag schläft nur, wenn sein Urteil mindestens einen Eimer weit steht.

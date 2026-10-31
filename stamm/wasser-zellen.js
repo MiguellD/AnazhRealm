@@ -1804,16 +1804,32 @@ class AnazhRealm_wasser_zellen {
     // (`_stauFelder` bestellt sie), der Spiegel des Kerns trägt sie (gelaende-core `stauSpiegel` in `atlasSpiegel`).
 
     // Die Stau-Werke der Welt, zu Clustern verschmolzen (ein Damm aus vielen Blöcken/Fill-Kugeln ist EIN
-    // Werk). Identitäts- + Längen-gecacht: Edit-Push / Architektur-Spawn/-Remove invalidiert exakt.
-    // Deterministisch (stabile Listen-Ordnung).
+    // Werk). Deterministisch (stabile Listen-Ordnung).
+    // DER STAU KOSTET SEINE ÄNDERUNG (w4-b-pflanzen, Lehre 25): gemerkt am Stand dessen, was ein Werk trägt — die Edits (Liste,
+    // Länge), die Bauten (die Liste: eine neue Welt; die Hülle jedes Baus, der staut oder staute: `_blockerStampReach` und
+    // `removeArchitecture` werfen das Gedächtnis) und die Wahrheit des Wassers unter den Werken (`traegt`: Kacheln, Pegel,
+    // Erdbau, Hydrosphäre). Bis hierhin warf jeder neue Eintrag (die Länge der Liste) das Gedächtnis — jeder gepflanzte Baum
+    // las alle Bauten neu (gate:worker-dichte --faden am Damm: 29 von 141 Rufen über 1,5 ms über ~3 000 Einträgen, der
+    // längste 10,7–29,4 ms über dem Deckel 8 ms).
     _stauWorkClusters() {
         const meta = this.state.worldMeta;
         const edits = meta && Array.isArray(meta.voxelEdits) ? meta.voxelEdits : null;
         const archs = Array.isArray(this.state.architectures) ? this.state.architectures : null;
         const eLen = edits ? edits.length : 0;
-        const aLen = archs ? archs.length : 0;
+        const kacheln = this.state.hydroTiles ? this.state.hydroTiles.size : 0;
+        const [pegel, erdbau, hydro] = [this._pegelTafelGilt, this._erdbauStand | 0, this.state.hydrosphere];
         const c = this._stauClusterCache;
-        if (c && c.edits === edits && c.eLen === eLen && c.archs === archs && c.aLen === aLen) return c.clusters;
+        if (
+            c &&
+            c.edits === edits &&
+            c.eLen === eLen &&
+            c.archs === archs &&
+            c.kacheln === kacheln &&
+            c.pegel === pegel &&
+            c.erdbau === erdbau &&
+            c.hydro === hydro
+        )
+            return c.clusters;
         const CFG = AnazhRealm.CA_STAU;
         // Die Krone muss über dem lokalen Ruhe-Spiegel liegen (eine Atlas-Probe je Werk); Werke fern jedes
         // Wassers (rim=−Inf) bleiben drin. Die Rim-Frage reist mit der Werk-Basis (botY): Basis unter dem
@@ -1913,12 +1929,13 @@ class AnazhRealm_wasser_zellen {
             cl.key =
                 `${Math.round(cl.minX)},${Math.round(cl.minZ)},${Math.round(cl.maxX)},` +
                 `${Math.round(cl.maxZ)},${Math.round(cl.topY)}`;
-        this._stauClusterCache = { edits, eLen, archs, aLen, clusters };
+        this._stauClusterCache = { edits, eLen, archs, kacheln, pegel, erdbau, hydro, clusters };
         return clusters;
     }
 
     // DER STAU IM FADEN (gelaende.K2 (b), Lehre 14): je Takt und Edit fragt der Stamm nur, ob sich ein Werk änderte (die Cluster
-    // sind nach Liste, Länge und Hülle gemerkt, `_stauWorkClusters`) oder eine Hydro-Kachel kam, und wählt die Werke über Wasser
+    // sind nach Edits, den Hüllen der stauenden Bauten und der Wahrheit des Wassers gemerkt, `_stauWorkClusters`) oder eine
+    // Hydro-Kachel kam, und wählt die Werke über Wasser
     // (gelaende-core `stauWerkY`; Werke und Wahl lesen das Gesetz ohne Stau). Kam ein Werk über Wasser, fiel eines oder ein Edit,
     // reist der Auftrag (diese Werke, die Regel `CA_STAU`) über den EINEN Sender des Zustands an jeden Faden, und jeder rechnet
     // die Felder an derselben Stelle seiner Reihe (gelaende-core `stauFelder`, voxel-worker `stauRechnen`). Nur der Voxel-Faden

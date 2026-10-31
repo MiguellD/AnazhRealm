@@ -317,7 +317,7 @@ function leserUrteil(w) {
     const nicht = (glied, re, satz) => stammLib.fehlt(glied, re, w) || v.push(`${satz} (${stammLib.fehlt.wo})`);
     // `_waterLevelAt` nur als Bezug der Ufer-Bänder: jeder Aufruf trägt sein `aus` (drei Argumente)
     nicht(null, /\b_waterLevelAt\((?![^(),]*,[^(),]*,[^(),]*\))[^()]*\)/, "`_waterLevelAt` liest den Bezug der Ufer-Bänder als Wasser-Probe");
-    nicht("_forestCellDarts", /waterYAt:(?:(?!slopeAt:)[\s\S])*_waterLevelAt\(/, "der Wald (`_forestCellDarts` waterYAt) liest den Bezug `_waterLevelAt` als Wasser");
+    nicht("_forestGeborene", /waterYAt:(?:(?!slopeAt:)[\s\S])*_waterLevelAt\(/, "der Wald (`_forestGeborene` waterYAt) liest den Bezug `_waterLevelAt` als Wasser");
     // DER DAMM: der Automat wacht am Zell-Stempel, nie am Setz-Punkt; der Stempel läuft nur die Werke am Ort durch
     nicht("spawnArchitecture", /_invalidateWaterCapsAround\(/, "ein Bau weckt den Wasser-Automaten am Setz-Punkt (`spawnArchitecture`) statt am Zell-Stempel");
     nicht(
@@ -1644,8 +1644,9 @@ async function probe(A) {
                     for (let j = -1; j <= 1; j++) {
                         const cx = Math.floor(X / C) + i,
                             cz = Math.floor(Z / C) + j;
-                        if (r._forestDartMemo) r._forestDartMemo.delete(cx + "," + cz);
-                        wald = ruft(r, "_forestCellDarts", "_atlasWaterLevelAt", [cx, cz, r._forestSeedInt()]) || wald;
+                        // die geborenen Darts der Zelle (w4-b-pflanzen: der Bestand urteilt über sie, sein Gedächtnis
+                        // merkt sie) — gefragt ohne Gedächtnis, wie der Plan des Walds sie wirft
+                        wald = ruft(r, "_forestGeborene", "_atlasWaterLevelAt", [cx, cz, r._forestSeedInt(), true]) || wald;
                     }
                 const cfg = r._voxelChunkConfig(0);
                 const zellen = new Uint8Array(cfg.dim * cfg.dim * cfg.dimY);
@@ -1654,7 +1655,7 @@ async function probe(A) {
                 const oy = (st.terrainBaseHeight || 0) - cfg.floorDrop;
                 const K = {
                     "_feuchteAt → _waterLevelAt": ruft(r, "_feuchteAt", "_waterLevelAt", [X, Z, Y]),
-                    "_forestCellDarts → _atlasWaterLevelAt": wald,
+                    "_forestGeborene → _atlasWaterLevelAt": wald,
                     "_stampArchitectureSolidCellsInto → _blockerNahe": ruft(
                         r,
                         "_stampArchitectureSolidCellsInto",

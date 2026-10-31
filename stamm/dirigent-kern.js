@@ -1859,6 +1859,11 @@ AnazhRealm.SYNC_KETTE = [
     "_ofenVorlage",
     "_ofenKreaturTemplate",
     "_ofenMenschTemplate",
+    // der Wuchs eines Spawn-Bauplans (w4-b-pflanzen, `_wuchsSkelett`): der Täter ist, wer den Spawn wachsen ließ
+    "_wuchsSkelett",
+    "_growTreeBlueprintRich",
+    "_growTreeBlueprint",
+    "_growTreeBlueprintForSpawn",
 ];
 // Das Ego-Auge über dem Leib-Zentrum (m): das Rig setzt die Ego-Kamera hier, das Auge der Stufen steht hier, bevor eine
 // Kamera gesetzt ist (`_lodAuge`).

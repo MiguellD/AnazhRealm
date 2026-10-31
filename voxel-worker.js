@@ -233,9 +233,10 @@ self.onmessage = function (e) {
                 },
                 [daten.hoehen.buffer, daten.stoff.buffer, daten.hoechste.buffer]
             );
-        } else if (msg.type === "wald-darts") {
+        } else if (msg.type === "wald-darts" || msg.type === "wuchs") {
             // DIE SCHLANGE IM FADEN (B-Wald): der Auftrag wartet in `waldAuftraege`, der Faden rechnet je Takt den nächsten
-            // (`waldTakt`) — ein später bestellter naher überholt die fernen, die vor ihm reisten
+            // (`waldTakt`) — ein später bestellter naher überholt die fernen, die vor ihm reisten; der Wuchs eines Bauplans
+            // (w4-b-pflanzen, `wuchsRechnen`) steht in derselben Schlange
             waldAuftraege.push(msg);
             waldWecken();
         } else if (msg.type === "streu-region") {
@@ -591,7 +592,8 @@ waldTakt.port1.onmessage = () => {
         if ((waldAuftraege[k].rang || 0) < (waldAuftraege[i].rang || 0)) i = k;
     const msg = waldAuftraege.splice(i, 1)[0];
     try {
-        waldDarts(msg);
+        if (msg.type === "wuchs") wuchsRechnen(msg);
+        else waldDarts(msg);
     } catch (err) {
         self.postMessage({
             type: "error",
@@ -604,21 +606,36 @@ waldTakt.port1.onmessage = () => {
     waldWecken();
 };
 
-// DER STOFF DES WALDS (K60-3): die geborenen Darts der Wald-Zellen (phyto-core `planForestCell`) mit den Lesern DIESES Fadens
-// — derselbe Plan wie `_forestCellDarts` im Main, Wort für Wort (gate:worker-dichte Teil W), am Zustand, wenn er rechnet:
-// mindestens dem, der vor dem Auftrag reiste (Hydro-Kacheln, Erdbau, Edits; einen Erdbau seit dem Auftrag verwirft der Main).
-// Gepackt per Transfer: je Dart WALD_FELDER Zahlen, die Art als Index in `arten`; der Main legt sie ins Dart-Gedächtnis
-// seines Stands (`_waldDartsAn`).
+// DER BESTAND DES WALDS (K60-3, w4-b-pflanzen): je Wald-Zelle ihre STEHENDEN Darts — die geborenen (phyto-core
+// `planForestCell` mit den Lesern DIESES Fadens), die das Urteil der Kronen-Schüchternheit trägt (phyto-core `forestStehende`,
+// die geborenen Darts der Zellen ±2) — derselbe Bestand wie `_forestCellDarts` im Main, Wort für Wort (gate:worker-dichte
+// Teil W), am Zustand, wenn er rechnet: mindestens dem, der vor dem Auftrag reiste (Hydro-Kacheln, Erdbau, Edits; einen
+// Erdbau seit dem Auftrag verwirft der Main). DIE GEBORENEN DARTS merkt der Faden je Stand des Main-Gedächtnisses (`stand`:
+// Same, Buch, Hydrosphäre, Fall, Erdbau — `_waldStandSchluessel`): die Nachbar-Zellen eines Auftrags sind die Zellen des
+// nächsten. Gepackt per Transfer: je Dart WALD_FELDER Zahlen, die Art als Index in `arten`; der Main legt sie ins
+// Dart-Gedächtnis seines Stands (`_waldDartsAn`) und urteilt keinen Dart mehr (bis w4-b-pflanzen reisten alle geborenen,
+// headless kalt bis zum Bild 58 562, von denen der Haupt-Faden jeden selbst urteilte).
+let waldGeboren = { stand: null, karte: new Map() };
 function waldDarts(msg) {
     const z = msg.zellen;
     const n = (z.length / 2) | 0;
     const ctx = waldCtx(msg);
+    if (msg.stand == null || waldGeboren.stand !== msg.stand || waldGeboren.karte.size > 16384)
+        waldGeboren = { stand: msg.stand == null ? null : msg.stand, karte: new Map() };
+    const K = waldGeboren.karte;
+    const geboren = (cx, cz) => {
+        const k = cx + "," + cz;
+        let a = K.get(k);
+        if (!a) K.set(k, (a = self.__phytoCore.planForestCell(cx, cz, msg.seedInt, ctx)));
+        return a;
+    };
+    const pack = ctx.F.pack;
     const arten = [];
     const artIdx = new Map();
     const zahl = [];
     const anzahl = new Int32Array(n);
     for (let k = 0; k < n; k++) {
-        const out = self.__phytoCore.planForestCell(z[k * 2], z[k * 2 + 1], msg.seedInt, ctx);
+        const out = self.__phytoCore.forestStehende(z[k * 2], z[k * 2 + 1], geboren, pack);
         anzahl[k] = out.length;
         for (const d of out) {
             let ai = artIdx.get(d.sp);
@@ -642,6 +659,16 @@ function waldDarts(msg) {
         },
         [anzahl.buffer, werte.buffer]
     );
+}
+
+// DER WUCHS IM FADEN (w4-b-pflanzen, Lehre 14 + 24): das Skelett eines gewachsenen Bauplans — phyto-core `growSkeleton` mit dem
+// Phänotyp `P` des Wirts (`_wuchsPlan`) am Strom seines Genoms (`genomStrom` aus dem Zustand `h`, `_rollGenome(...).zustand`),
+// gepackt per Transfer (`wuchsPacken`); der Wirt legt es in seinen Vorrat (`_wuchsBestellen`) und baut daraus den Bauplan
+// (`_wuchsSkelett`). Bis w4-b-pflanzen wuchs jeder Busch des Strauch-Teppichs im Haupt-Faden.
+function wuchsRechnen(msg) {
+    const pc = self.__phytoCore;
+    const f = pc.wuchsPacken(pc.growSkeleton(msg.P, pc.genomStrom(msg.h)));
+    self.postMessage({ type: "wuchs-result", requestId: msg.requestId, zahlen: f.buffer }, [f.buffer]);
 }
 
 // =============================================================================

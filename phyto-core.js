@@ -381,6 +381,86 @@
         return { segs, leaves, trunkR, trunkForm, height: P.height, runMeta, schaftHub: schaft };
     }
 
+    // DER STROM EINES GENOMS (w4-b-pflanzen): xorshift32 über dem FNV-1a-Zustand `h` seines Namens (`<Raum>|<Same>#<Strom>`,
+    // 0 → 1) — die EINE Quelle des Sub-Stroms für den Wirt (`_rollGenome(...).seq`) und den Wald-Faden (der Wuchs eines
+    // Bauplans, voxel-worker `wuchs`: der Wirt schickt nur den Zustand).
+    function genomStrom(h) {
+        h = h || 1;
+        return () => {
+            h ^= h << 13;
+            h >>>= 0;
+            h ^= h >> 17;
+            h ^= h << 5;
+            h >>>= 0;
+            return h / 4294967296;
+        };
+    }
+    // DER WUCHS ALS ZAHLEN (w4-b-pflanzen, Lehre 24): das Skelett von `growSkeleton` in EINEM Float64Array — der Kopf
+    // (Segmente · Blätter · Läufe · trunkR · trunkForm · height · schaftHub), je Segment 14, je Blatt 15, je Lauf 2 Zahlen
+    // (ein Lauf ohne Eintrag NaN). Per Transfer vom Wald-Faden zum Wirt; `wuchsEntpacken` gibt dasselbe Skelett zurück, Feld für
+    // Feld in derselben Reihe (gate:worker-dichte Teil B vergleicht Faden und Haupt-Faden Wort für Wort).
+    const WUCHS_ZAHLEN = Object.freeze({ kopf: 7, seg: 14, blatt: 15, lauf: 2 });
+    function wuchsPacken(w) {
+        const Z = WUCHS_ZAHLEN;
+        let nL = 0;
+        for (const k in w.runMeta) nL = Math.max(nL, Number(k) + 1);
+        const f = new Float64Array(Z.kopf + w.segs.length * Z.seg + w.leaves.length * Z.blatt + nL * Z.lauf);
+        f.set([w.segs.length, w.leaves.length, nL, w.trunkR, w.trunkForm, w.height, w.schaftHub]);
+        let o = Z.kopf;
+        for (const s of w.segs) {
+            f.set([s.p0[0], s.p0[1], s.p0[2], s.p1[0], s.p1[1], s.p1[2], s.r0, s.r1, s.depth], o);
+            f.set([s.sway0, s.sway1, s.phase, s.omega, s.runId], o + 9);
+            o += Z.seg;
+        }
+        for (const l of w.leaves) {
+            f.set([l.pos[0], l.pos[1], l.pos[2], l.dir[0], l.dir[1], l.dir[2], l.up[0], l.up[1], l.up[2]], o);
+            f.set([l.scale, l.sway, l.phase, l.omega, l.needle ? 1 : 0, l.run], o + 9);
+            o += Z.blatt;
+        }
+        for (let i = 0; i < nL; i++, o += Z.lauf) {
+            const m = w.runMeta[i];
+            f[o] = m ? m.parentRun : NaN;
+            f[o + 1] = m && m.isLead ? 1 : 0;
+        }
+        return f;
+    }
+    function wuchsEntpacken(f) {
+        const Z = WUCHS_ZAHLEN;
+        const [nS, nB, nL] = [f[0], f[1], f[2]];
+        const segs = new Array(nS);
+        const leaves = new Array(nB);
+        const runMeta = {};
+        let o = Z.kopf;
+        for (let i = 0; i < nS; i++, o += Z.seg)
+            segs[i] = {
+                p0: [f[o], f[o + 1], f[o + 2]],
+                p1: [f[o + 3], f[o + 4], f[o + 5]],
+                r0: f[o + 6],
+                r1: f[o + 7],
+                depth: f[o + 8],
+                sway0: f[o + 9],
+                sway1: f[o + 10],
+                phase: f[o + 11],
+                omega: f[o + 12],
+                runId: f[o + 13],
+            };
+        for (let i = 0; i < nB; i++, o += Z.blatt)
+            leaves[i] = {
+                pos: [f[o], f[o + 1], f[o + 2]],
+                dir: [f[o + 3], f[o + 4], f[o + 5]],
+                up: [f[o + 6], f[o + 7], f[o + 8]],
+                scale: f[o + 9],
+                sway: f[o + 10],
+                phase: f[o + 11],
+                omega: f[o + 12],
+                needle: f[o + 13] === 1,
+                run: f[o + 14],
+            };
+        for (let i = 0; i < nL; i++, o += Z.lauf)
+            if (!Number.isNaN(f[o])) runMeta[i] = { parentRun: f[o], isLead: f[o + 1] === 1 };
+        return { segs, leaves, trunkR: f[3], trunkForm: f[4], height: f[5], runMeta, schaftHub: f[6] };
+    }
+
     // ── MODUL-HELFER (für die Asset-Montage, geteilt von den Bau-Funktionen unten) ──
     function _vnorm(a) {
         const l = Math.hypot(a[0], a[1], a[2]) || 1e-9;
@@ -2637,6 +2717,39 @@
             if (forestTooClose(x - t.x, z - t.z, T, t.T, pk)) return false;
         }
         return true;
+    }
+
+    // DAS URTEIL DER KRONEN-SCHÜCHTERNHEIT (Host-Topologie "cell", w4-b-pflanzen): ein geborener Dart `d` der Zelle (gx, gz)
+    // steht, wenn KEIN besserer geborener Dart (`forestPrioWins`) der Zellen ±2 ihm zu nah ist (`forestTooClose`, Packung `pk`).
+    // Rein: eine Funktion des Darts und der geborenen Darts seiner Nachbarn (`geboren(cx, cz)` → die Darts von `planForestCell`),
+    // reihenfolge-frei (die Antwort ist eine Existenz-Frage). DIE REIHE (`FOREST_URTEIL_REIHE`): die eigene Zelle, dann Ring 1,
+    // dann Ring 2 — ein Verlierer fällt fast immer am ersten Nachbarn. Die EINE Quelle des Urteils für den Wald-Faden (der
+    // Bestand je Zelle, voxel-worker `waldDarts`) und den Wirt ohne Faden; bis w4-b-pflanzen urteilte der Haupt-Faden jeden
+    // geborenen Dart selbst (`_forestDartSteht`): headless kalt bis zum Bild 58 398 Urteile über 58 562 entpackte Darts.
+    const FOREST_URTEIL_REIHE = Object.freeze(
+        [-2, -1, 0, 1, 2]
+            .flatMap((a) => [-2, -1, 0, 1, 2].map((b) => [a, b]))
+            .sort((p, q) => Math.max(Math.abs(p[0]), Math.abs(p[1])) - Math.max(Math.abs(q[0]), Math.abs(q[1])))
+            .flat()
+    );
+    function forestSteht(d, gx, gz, geboren, pk) {
+        const R = FOREST_URTEIL_REIHE;
+        for (let q = 0; q < R.length; q += 2) {
+            const nb = geboren(gx + R[q], gz + R[q + 1]);
+            for (let k = 0; k < nb.length; k++) {
+                const o = nb[k];
+                if (o === d) continue;
+                if (forestTooClose(d.x - o.x, d.z - o.z, d.T, o.T, pk) && forestPrioWins(o, d)) return false;
+            }
+        }
+        return true;
+    }
+    // DER BESTAND EINER ZELLE: ihre geborenen Darts, die stehen (`forestSteht`) — in der Reihe ihrer Geburt.
+    function forestStehende(gx, gz, geboren, pk) {
+        const own = geboren(gx, gz);
+        const out = [];
+        for (let k = 0; k < own.length; k++) if (forestSteht(own[k], gx, gz, geboren, pk)) out.push(own[k]);
+        return out;
     }
 
     // SCATTER_STRATUM — ecology axes only (floor / scaleBase / scaleVar / slopeMax).
@@ -5353,8 +5466,15 @@
         forestTooClose: forestTooClose,
         forestPrioWins: forestPrioWins,
         forestCrownClear: forestCrownClear,
+        FOREST_URTEIL_REIHE: FOREST_URTEIL_REIHE, // w4-b-pflanzen — die Reihe des Urteils: die eigene Zelle, Ring 1, Ring 2
+        forestSteht: forestSteht, // w4-b-pflanzen — DAS EINE Urteil der Kronen-Schüchternheit (Wald-Faden und Wirt)
+        forestStehende: forestStehende, // w4-b-pflanzen — der Bestand einer Zelle: ihre geborenen Darts, die stehen
         planForestCell: planForestCell,
         growSkeleton: growSkeleton,
+        genomStrom: genomStrom, // w4-b-pflanzen — der Sub-Strom eines Genoms (xorshift32 über dem FNV-Zustand seines Namens)
+        WUCHS_ZAHLEN: WUCHS_ZAHLEN, // w4-b-pflanzen — das Maß des gepackten Wuchses (Kopf · Segment · Blatt · Lauf)
+        wuchsPacken: wuchsPacken, // w4-b-pflanzen — das Skelett als EIN Float64Array (der Transfer des Wald-Fadens)
+        wuchsEntpacken: wuchsEntpacken, // w4-b-pflanzen — dasselbe Skelett zurück, Feld für Feld
         PHYLO_GESETZ: PHYLO_GESETZ,
         PHYLO_VIS: PHYLO_VIS,
         WX_GESETZ: WX_GESETZ,

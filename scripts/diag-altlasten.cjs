@@ -1027,6 +1027,8 @@ const FORBIDDEN = [
         ],
     },
     { token: "_impostorBakePending", fiel: "K60-2 — je Bäcker-Bahn eine Karte im Flug (`_impostorBakeFlug`)" },
+    // w4-b-pflanzen: das Urteil der Kronen-Schüchternheit ist Kern-Gesetz (phyto-core `forestSteht`), der Bestand trägt es
+    { token: "_forestDartSteht", fiel: "w4-b-pflanzen" },
     { token: "gpuScatter", fiel: "G1 — der Schalter hieß GPU und schaltete die CPU-Streu ab; die Streu hat keinen Schalter" },
     { token: "uSeite", fiel: "18.10. — das Panorama faltet EINE CPU-Faltung je Engine, die GLSL-Faltung fiel", auch: ["worlds/huelle/huelle.js"] },
     // F6 — das additive Licht-Band der Host-Stoffe (Rim, Nacht-Boden, Mond-Rim, der sonnen-blinde Gegenlicht-Glow) leuchtete aus

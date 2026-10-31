@@ -96,7 +96,7 @@ hauptLauf(async () => {
                 const seedInt = r._forestSeedInt();
                 outer: for (let cx = -20; cx <= 20; cx += 1) {
                     for (let cz = -20; cz <= 20; cz += 1) {
-                        const darts = r._forestCellDarts(cx, cz, seedInt) || [];
+                        const darts = r._forestGeborene(cx, cz, seedInt);
                         for (const d of darts) {
                             if (d.sp === "baum_testnone") forbidden = d.sp;
                             if (d.sp === "baum_testahorn") ahorn = true;
