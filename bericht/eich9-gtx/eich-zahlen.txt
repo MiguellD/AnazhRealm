@@ -1,0 +1,78 @@
+  SITZUNG gtx · die Welt steht nach 6.9 s (Schloss nach 0.02 min) · 70 Proben · Welt :27804
+  SITZUNG EICH-FAHRT: jede Probe bis 90 s — das Gesetz: je Probe ≤ 45 s, mit ausnahme ≤ 90 s, die Fahrt ≤ 1800 s; ein Urteil zählt nur im Gesetz, je Probe ihre Sekunden (eich)
+  EICH 42.8 s · profiband.K4#1 · Deckel 29 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  EICH 42.8 s · profiband.K4#2 · Deckel 29 s · Gesetz 45 s · im Gesetz, das Urteil zählt (Zwilling von profiband.K4#1)
+  SITZUNG der Grund der Welt: 83 Größen in 0 s
+  SITZUNG Ort wiese vor vegetation.K2#1: 10.7 s (631 Takte, 81 Chunks)
+  EICH 11.7 s · vegetation.K2#1 · Deckel 14 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  EICH 18.2 s · mensch.K4#1 · Deckel 15 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  EICH 20.7 s · haar.K2#1 · Deckel 15 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  EICH 38.1 s · vegetation.K1#1 · Deckel 15 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  EICH ≥ 90 s · vegetation.K5#1 · Deckel 65 s · Gesetz 90 s · am Eich-Deckel
+  EICH ≥ 90 s · vegetation.K5#2 · Deckel 65 s · Gesetz 90 s · am Eich-Deckel (Zwilling von vegetation.K5#1)
+  SITZUNG Grundstellung vor licht.K2#1: 9.2 s (im Spiel 1588.7 ms, durch die Tür)
+  SITZUNG Ort wiese vor licht.K2#1: 17.5 s (548 Takte, 81 Chunks, nach der Tür)
+  EICH 8.8 s · licht.K2#1 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  EICH 36.3 s · licht.K2#2 · Deckel 33 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  EICH 76.1 s · material.K2#1 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie
+  EICH 46.9 s · lod.K1#1 · Deckel 30 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie
+  EICH 3.4 s · lod.K5#1 · Deckel 26 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  EICH 13.4 s · lod.K2#1 · Deckel 22 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  EICH 21.6 s · leib.K1#1 · Deckel 15 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  EICH 16 s · spielgang.K3#1 · Deckel 13 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  EICH 73.6 s · streaming.K3#1 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (GRÜN) zählt nie
+  EICH 31 s · klang.K2#1 · Deckel 22 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Ort genesis vor ferne.K1#1: 8.7 s (714 Takte, 81 Chunks)
+  EICH ≥ 90 s · ferne.K1#1 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel
+  EICH ≥ 90 s · ferne.K2#1 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel (Zwilling von ferne.K1#1)
+  EICH ≥ 90 s · ferne.K1#2 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel (Zwilling von ferne.K1#1)
+  EICH ≥ 90 s · ferne.K2#2 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel (Zwilling von ferne.K1#1)
+  SITZUNG Grundstellung vor licht.K1#1: 21.7 s (im Spiel 2066.1 ms, durch die Tür)
+  SITZUNG Ort genesis vor licht.K1#1: 18.1 s (534 Takte, 81 Chunks, nach der Tür)
+  EICH 44 s · licht.K1#1 · Deckel 40 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Ort dorf vor licht.K3#1: 23.3 s (1253 Takte, 81 Chunks)
+  SITZUNG licht.K3#1 ließ die Welt verändert und trägt kein mutiert: orte +-1,-5 +-2,-4 +-3,-3 · wege +9 [-294.9,-1146.1,33.7,-1122.6/5] [-326.2,-1161.7,66.1,-1099.7/89] [-525.3,-891.8,-317.1,-807.2/2] … (-1,-5, -2,-4, -3,-3, netz:-1,-5) — die Grundstellung folgt
+  EICH 86.5 s · licht.K3#1 · Deckel 60 s · Gesetz 90 s · im Gesetz, das Urteil zählt
+  EICH 86.5 s · licht.K3#2 · Deckel 60 s · Gesetz 90 s · im Gesetz, das Urteil zählt (Zwilling von licht.K3#1)
+  SITZUNG Grundstellung vor gelaende.K3#1: 11.1 s (im Spiel 1803.4 ms, durch die Tür — wege +11 [-294.9,-1146.1,33.7,-1122.6/5] [-326.2,-1161.7,66.1,-1099.7/89] [-525.3,-891.8,-317.1,-807.2/2] …)
+  SITZUNG die Welt vor gelaende.K3#1: 16.9 s (584 Takte, 81 Chunks, nach der Tür)
+  EICH 18.7 s · gelaende.K3#1 · Deckel 15 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG gelaende.K5#2 ließ die Welt verändert und trägt kein mutiert: werke +1 (−0) — die Grundstellung folgt
+  EICH ≥ 90 s · gelaende.K5#2 · Deckel 15 s · Gesetz 45 s · am Eich-Deckel
+  SITZUNG Grundstellung vor ferne.K5#1: 7.3 s (im Spiel 1494 ms, durch die Tür)
+  SITZUNG die Welt vor ferne.K5#1: 15.1 s (584 Takte, 81 Chunks, nach der Tür)
+  EICH 20.4 s · ferne.K5#1 · Deckel 15 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  EICH 75.8 s · licht.K5#1 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie
+  SITZUNG material.K3#1 ließ die Welt verändert und trägt kein mutiert: werke +5 (−0) — die Grundstellung folgt
+  EICH ≥ 90 s · material.K3#1 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel
+  EICH ≥ 90 s · material.K3#2 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel (Zwilling von material.K3#1)
+  SITZUNG Grundstellung vor material.K1#1: 7.6 s (im Spiel 1802.5 ms, durch die Tür)
+  SITZUNG die Welt vor material.K1#1: 19.9 s (584 Takte, 81 Chunks, nach der Tür)
+  SITZUNG material.K1#1 ließ die Welt verändert und trägt kein mutiert: werke +5 (−0) — die Grundstellung folgt
+  EICH ≥ 90 s · material.K1#1 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel
+  EICH ≥ 90 s · material.K1#2 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel (Zwilling von material.K1#1)
+  SITZUNG Grundstellung vor material.K4#1: 7.1 s (im Spiel 1632.3 ms, durch die Tür)
+  SITZUNG die Welt vor material.K4#1: 15.7 s (584 Takte, 81 Chunks, nach der Tür)
+  EICH 4.7 s · material.K4#1 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  EICH ≥ 90 s · material.K5#1 · Deckel 11 s · Gesetz 45 s · am Eich-Deckel
+  SITZUNG Grundstellung vor lod.K3#1: 6.6 s (im Spiel 1727.2 ms, durch die Tür)
+  SITZUNG die Welt vor lod.K3#1: 16.1 s (584 Takte, 81 Chunks, nach der Tür)
+  EICH 4.1 s · lod.K3#1 · Deckel 15 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  EICH 15.2 s · profiband.K5#1 · Deckel 37 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  EICH 15.2 s · profiband.K5#2 · Deckel 37 s · Gesetz 45 s · im Gesetz, das Urteil zählt (Zwilling von profiband.K5#1)
+  SITZUNG Ort wiese vor affekt.K1#2: 11.2 s (591 Takte, 81 Chunks)
+  EICH 3.4 s · affekt.K1#2 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor oekologie.K4#2: 0.1 s (im Spiel 49.2 ms)
+  SITZUNG Ort wiese vor oekologie.K4#2: 2.4 s (115 Takte, 81 Chunks, nach der Grundstellung)
+  EICH 66 s · oekologie.K4#2 · Deckel 31 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie
+  SITZUNG Grundstellung vor haar.K1#1: 0.1 s (im Spiel 36.8 ms)
+  SITZUNG Ort wiese vor haar.K1#1: 2.3 s (226 Takte, 81 Chunks, nach der Grundstellung)
+  EICH 25.5 s · haar.K1#1 · Deckel 15 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor leib.K1#2: 0.1 s (im Spiel 29.6 ms)
+  SITZUNG Ort wiese vor leib.K1#2: 1.3 s (125 Takte, 81 Chunks, nach der Grundstellung)
+  EICH 75.9 s · leib.K1#2 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie
+  EICH 75.9 s · halten.K2#1 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie (Zwilling von leib.K1#2)
+  SITZUNG Grundstellung vor schatten.K1#1: 0.1 s (im Spiel 37 ms)
+  SITZUNG Ort buehne vor schatten.K1#1 steht nicht nach 300 s: {"fehler":"/umstellen ohne Antwort binnen 300 s"}
+  SITZUNG die Fahrt riss 1800 s in schatten.K1#1 — offen: schatten.K1#1, gelaende.K2#1, gelaende.K2#2, wetter.K2#1, physik.K2#2, tiere.K1#2, tiere.K3#2, mensch.K1#1, mensch.K2#2, vegetation.K4#1, vegetation.K4#2, tiere.K2#2, luftwasser.K5#1, luftwasser.K5#2, mensch.K5#1, studios.K2#2, studios.K3#2, pipeline.K4#1, pipeline.K4#2, ankunft.K2#1, ankunft.K3#1, bauen.K1#2, bauen.K5#2, studios.K4#1, studios.K4#2, fahrzeug.K3#1, fahrzeug.K3#2, fahrzeug.K4#1, fahrzeug.K4#2, siedlung.K2#1, siedlung.K2#2, siedlung.K1#2, siedlung.K5#1, siedlung.K5#2, siedlung.K4#2, leib.K2#1, leib.K2#2, leib.K4#1, leib.K4#2, halten.K5#1, halten.K5#2, halten.K1#2, fahrzeug.K5#1, tore.K3#1, tore.K3#2, fahrzeug.K2#1, fahrzeug.K2#2, streaming.K4#2, profiband.K1#1, profiband.K1#2, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, klang.K4#1, klang.K4#2, klang.K5#2, speicher.K1#1, speicher.K1#2, speicher.K2#1, speicher.K2#2, speicher.K4#2
+  SITZUNG Fahrt 2016.7 s (Soll ≤ 1800 s) · 34 Proben · Grundstellung 11×
