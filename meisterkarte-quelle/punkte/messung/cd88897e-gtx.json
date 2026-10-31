@@ -1,0 +1,139 @@
+{
+ "sha": "cd88897ec24349d848564108127d7bd81475b7ef",
+ "geraet": "gtx",
+ "zeit": "2026-10-31T10:41:58.584Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "vegetation.K1#1": {
+   "gruen": false,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.40 · 5–10 1.47 · 10–14 1.14 · 14–30 0.06 · 30–80 0.00 · 80–200 0.00 (Saum springt > 15 %), Farbton 2–5 m 13.25°, nahWiese 4 Befehle / 63716 Dreiecke",
+   "exit": 0,
+   "minuten": 0.56,
+   "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.40 · 5–10 1.47 · 10–14 1.14 · 14–30 0.06 · 30–80 0.00 · 80–200 0.00 (Saum springt > 15 %), Farbton 2–5 m 13.25°, nahWiese 4 Befehle / 63716 Dreiecke",
+   "gpu": "nvidia/pascal",
+   "s": 33.7,
+   "zeit": "2026-10-31T10:40:00.969Z",
+   "abdruck": "ea94aafb4000",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K2#1": {
+   "gruen": false,
+   "zahl": "Gehen 4 m/s: 7.2649 % Pop-Pixel je Sekunde (150644 px, Soll ≤ 0,05 %), je Schritt 35484*/13027*/17179*/17714/18215*/14909*/15974/18142 (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.22,
+   "grund": "ROT: Gehen 4 m/s: 7.2649 % Pop-Pixel je Sekunde (150644 px, Soll ≤ 0,05 %), je Schritt 35484*/13027*/17179*/17714/18215*/14909*/15974/18142 (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 13.1,
+   "zeit": "2026-10-31T10:41:58.584Z",
+   "abdruck": "c3a2f8881cc8",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "lod.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 30 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0) · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderScene getauscht: function (scene, camera, ...rest) { const name = window.__pa)",
+   "exit": 1,
+   "minuten": 0.5,
+   "grund": "Deckel 30 s gerissen — beendet, UNGEMESSEN (zuletzt: wiese · Exit 0) · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderScene getauscht: function (scene, camera, ...rest) { const name = window.__pa)",
+   "s": 30.2,
+   "zeit": "2026-10-31T10:40:34.720Z",
+   "abdruck": "0fb6ce986d72",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "exit": 1,
+   "minuten": 0.17,
+   "grund": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "s": 10.1,
+   "zeit": "2026-10-31T10:41:28.692Z",
+   "abdruck": "7c019d058ae7",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-10-31T10:39:32.714Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 5.8,
+  "grundstellungS": [
+   4.7,
+   3.5
+  ],
+  "proben": 4,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K1#1",
+    "s": 21.2,
+    "takte": 539,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": "wiese",
+    "vor": "lod.K5#1",
+    "s": 19,
+    "takte": 627,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "lod.K2#1",
+    "s": 16.2,
+    "takte": 566,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "zeichner": [
+   {
+    "probe": "lod.K1#1",
+    "anders": [
+     "zeichner.renderer._renderScene"
+    ],
+    "wie": {
+     "zeichner.renderer._renderScene": "getauscht: function (scene, camera, ...rest) { const name = window.__pa"
+    }
+   }
+  ],
+  "unerklaert": [
+   {
+    "probe": "lod.K5#1",
+    "wie": "werke +1 (−0)"
+   }
+  ],
+  "ciBlicke": 5,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 538,
+   "frameP95": 33.2,
+   "taktP95": 20.2,
+   "vramMax": 125.6,
+   "seiten": 3,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "zapfen": 120,
+   "luecken": 2,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 158.1,
+  "minuten": 2.71
+ }
+}
