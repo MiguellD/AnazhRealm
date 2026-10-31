@@ -610,21 +610,21 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         );
         check("Feed: das #library-list ist der Feed-Strom in der Mitte", w14Results.feedCenterHoldsStream);
         check(
-            "Feed: die Tabs (Für dich | Aus dem Mesh) im Hauptthread, der Katalog im Mesh-Panel (V18.73)",
+            "Feed: die Tabs (Für dich | Aus dem Mesh) im Hauptthread, der Katalog im Mesh-Panel",
             w14Results.feedTabs
         );
-        check("Feed: das Tab-Schalten WIRKT — Für dich ↔ Aus dem Mesh (V18.73)", w14Results.feedTabsWork);
+        check("Feed: das Tab-Schalten WIRKT — Für dich ↔ Aus dem Mesh", w14Results.feedTabsWork);
         check(
             "Feed: Schöpfen & Andocken liegt RECHTS (Übersetzen+Andocken + 3er-Block Neue/Verschmelzen/Empfangen)",
             w14Results.schoepfenRight
         );
         check(
-            "Feed: das 'Diese Welt'-Eiland blüht links (Identität + Stammbaum + Tagebuch, V18.71)",
+            "Feed: das 'Diese Welt'-Eiland blüht links (Identität + Stammbaum + Tagebuch)",
             w14Results.feedSelfIsland
         );
-        check("Feed: das Tagebuch ist eingeklappt (Chronik im Hof, V18.73)", w14Results.tagebuchCollapsed);
+        check("Feed: das Tagebuch ist eingeklappt (Chronik im Hof)", w14Results.tagebuchCollapsed);
         check(
-            "Feed: die fremde-Welt-Werkzeuge sind ein klares Akkordeon (Glyph+Name, V18.72/.73)",
+            "Feed: die fremde-Welt-Werkzeuge sind ein klares Akkordeon (Glyph+Name)",
             w14Results.feedToolsAccordion
         );
         check("Feed: die Suche sitzt im Feed-Kopf", w14Results.searchInHead);
@@ -635,27 +635,27 @@ async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState 
         check("Feed: das WERTEN wirkt — setzen + lesen + Toggle (das dritte Verb, lokal)", w14Results.feedRatingWorks);
         check("Feed: der Kind-Filter TREIBT den Strom (nur Rezepte sichtbar)", w14Results.feedKindFilter);
         check(
-            "Feed: die Kind-Chips tragen die Anzahl (Alle/Welten/Rezepte/Wesen/Gemerkt/Gefolgt, V18.142)",
+            "Feed: die Kind-Chips tragen die Anzahl (Alle/Welten/Rezepte/Wesen/Gemerkt/Gefolgt)",
             w14Results.feedKindChips
         );
-        check("Feed: jede Karte trägt eine Vorschau (Cover-Bild + Art-Glyph, V18.74)", w14Results.feedCovers);
+        check("Feed: jede Karte trägt eine Vorschau (Cover-Bild + Art-Glyph)", w14Results.feedCovers);
         check(
-            "Feed: die Sortier-Chips (Neueste | Für dich | Bewertung) sind da (V18.74/.147)",
+            "Feed: die Sortier-Chips (Neueste | Für dich | Bewertung) sind da",
             w14Results.feedSortChips
         );
-        check("Feed: sort-by-rating WIRKT — ein 5★-Item steigt nach oben (V18.74)", w14Results.feedSortWorks);
+        check("Feed: sort-by-rating WIRKT — ein 5★-Item steigt nach oben", w14Results.feedSortWorks);
         check(
-            "Feed: der geteilte 3D-Vorschau-Bereich (Canvas + Methoden) ist da (V18.75)",
+            "Feed: der geteilte 3D-Vorschau-Bereich (Canvas + Methoden) ist da",
             w14Results.feedPreviewPanel
         );
-        check("Feed: Klick auf eine Karte fokussiert sie für die Vorschau (V18.75)", w14Results.feedPreviewFocus);
+        check("Feed: Klick auf eine Karte fokussiert sie für die Vorschau", w14Results.feedPreviewFocus);
         check(
-            "Drawer: box-sizing:border-box — der Drawer passt in den Viewport (kein Überlauf, V18.76)",
+            "Drawer: box-sizing:border-box — der Drawer passt in den Viewport (kein Überlauf)",
             w14Results.drawerBoxSizing
         );
         check("Omnibox: `welt:` surfaced die einzelnen Welten (wie `b:` die Baupläne, V18.76)", w14Results.omniboxWelt);
         check("Feed: Bestbewertet spiegelt eine Wertung zurück", w14Results.feedTrends);
-        check("Bib-D: die Suche TREIBT den Feed (kein toter Knopf, V18.65)", w14Results.searchDrivesGrid);
+        check("Bib-D: die Suche TREIBT den Feed (kein toter Knopf)", w14Results.searchDrivesGrid);
         check("Bib-D: die Suche leeren zeigt alle Karten wieder", w14Results.searchClearsClean);
         check("W14 P1: obtainPortalForWorld liefert ok + portal_fluid", w14Results.obtainOk);
         check("W14 P1: der geholte Bauplan trägt role:portal + ist eigen (nicht built-in)", w14Results.bpIsPortal);

@@ -2019,6 +2019,129 @@
         return { geburt: 0, tod: B.tod * (u < 1 ? u : 1) };
     }
 
+    // DAS GEHEGE (Prüfplatz, der Zoo mit fester Zahl; w4-gehege, 31.10., additiv — GEHEGE_GESETZ wohnt nicht in VERHALTEN, der
+    // v7-Fingerabdruck bleibt): ein Term DES Bestands-Gesetzes, nie ein zweites Register — die Tiere eines Geheges stehen im
+    // Verzeichnis ihrer Region wie jedes Tier, mit dem Term. DIE ZEILE (gehegeZeile) bringt der Plan: Gattung und Kopfzahl,
+    // das Lager und der Rand (ein konvexes Vieleck, x/z in m); der Graben ist Erdbau des Plans, der Term liest ihn nie. Die Art
+    // wählt der Plan, nie ein Tag (Lehre 8); eine Zeile ohne Gattung des Buchs, ohne ganze Kopfzahl, ohne Lager im Rand oder
+    // ohne konvexen Rand wirft laut (fail-closed, kein Ersatz). DER BESTAND (gehegeTiere) ist fest: n Tiere, das k-te an
+    // seinem Platz am Lager — die Sonnenblumen-Spirale um das Lager (lagerM × √(k − 1) im Goldwinkel), in den Rand gerückt;
+    // ihre Nummern trägt die Zeile, dieselben Tiere in jedem Boot (die deterministische Setzung, Horizon). DIE RATEN des
+    // Gehege-Tiers sind 0: geboren wird nie (kein Wurf führt in den festen Bestand, die Zeile IST er), und je Takt der Tod am
+    // Hunger, der Durst und das Altern mit raten (hunger, durst, alter — der Pfleger füttert und tränkt); gerissen wird nur
+    // unter Tieren DESSELBEN Geheges (die eine Antwort bestandRiss über seine Jäger und seine Beute — die Wölfe haben dort
+    // keine). DER RAND (gehegeRand) ist ein Glied der EINEN Hülle des Wirts: der Leib (der Kreis r um x, z) steht nie jenseits
+    // einer Kante. Hagenbeck: kein Gitter im Blick, den Gast trennt der Graben, das Tier hält der Rand.
+    var GEHEGE_GESETZ = Object.freeze({
+        raten: Object.freeze({ hunger: 0, durst: 0, alter: 0 }),
+        lagerM: 1.6,
+    });
+    // Liegt (x, z) im Rand (konvex, gegen den Uhrzeigersinn: das Innere links jeder Kante)?
+    function gehegeDrin(rand, x, z) {
+        for (var i = 0; i < rand.length; i++) {
+            var p = rand[i],
+                q = rand[(i + 1) % rand.length];
+            if ((q.x - p.x) * (z - p.z) - (q.z - p.z) * (x - p.x) < 0) return false;
+        }
+        return true;
+    }
+    // Der Abstand von (x, z) zum Rand (m; 0 im Rand) — der Weg des Gasts bis an das Gehege.
+    function gehegeAbstand(rand, x, z) {
+        if (gehegeDrin(rand, x, z)) return 0;
+        var d = Infinity;
+        for (var i = 0; i < rand.length; i++) {
+            var p = rand[i],
+                q = rand[(i + 1) % rand.length];
+            var ex = q.x - p.x,
+                ez = q.z - p.z;
+            var u = ((x - p.x) * ex + (z - p.z) * ez) / (ex * ex + ez * ez);
+            u = u < 0 ? 0 : u > 1 ? 1 : u;
+            var dx = x - p.x - u * ex,
+                dz = z - p.z - u * ez;
+            var e = Math.sqrt(dx * dx + dz * dz);
+            if (e < d) d = e;
+        }
+        return d;
+    }
+    // DER RAND IN DER HÜLLE: der Kreis (x, z, r) gegen jede Kante — wer jenseits ihrer um r eingerückten Linie steht, rückt längs
+    // ihrer Innen-Normalen zurück; zwei Gänge, Kante für Kante (in einer spitzen Ecke rückt die zweite Kante, was die erste
+    // schob). In aus.x / aus.z die Summe der Rückungen. Liefert, ob er rückte.
+    function gehegeRand(rand, x, z, r, aus) {
+        var dx = 0,
+            dz = 0;
+        for (var gang = 0; gang < 2; gang++)
+            for (var i = 0; i < rand.length; i++) {
+                var p = rand[i],
+                    q = rand[(i + 1) % rand.length];
+                var ex = q.x - p.x,
+                    ez = q.z - p.z,
+                    L = Math.sqrt(ex * ex + ez * ez);
+                var nx = -ez / L,
+                    nz = ex / L;
+                var s = (x + dx - p.x) * nx + (z + dz - p.z) * nz - r;
+                if (s < 0) {
+                    dx -= s * nx;
+                    dz -= s * nz;
+                }
+            }
+        aus.x = dx;
+        aus.z = dz;
+        return dx !== 0 || dz !== 0;
+    }
+    // Die Zeile des Plans {gattung, n, lager, rand, id?} (Punkte als {x, z} oder [x, z]), geprüft und eingefroren:
+    // { id, gattung, n, lager: {x, z}, rand: [{x, z} …] gegen den Uhrzeigersinn }; die Nummer ohne id ist das gerundete Lager.
+    function gehegeZeile(z) {
+        var nein = function (w) {
+            throw new Error("tetrapoda gehegeZeile: " + w);
+        };
+        var punkt = function (p) {
+            var x = Array.isArray(p) ? p[0] : p && p.x,
+                y = Array.isArray(p) ? p[1] : p && p.z;
+            return typeof x === "number" && typeof y === "number" && isFinite(x) && isFinite(y)
+                ? Object.freeze({ x: x, z: y })
+                : null;
+        };
+        if (!z || typeof z !== "object") nein("keine Zeile");
+        if (!Object.prototype.hasOwnProperty.call(GATTUNGEN, z.gattung))
+            nein("die Gattung " + z.gattung + " trägt das Buch nicht");
+        if (!(typeof z.n === "number" && z.n >= 1 && z.n % 1 === 0)) nein("die Kopfzahl " + z.n + " ist keine ganze Zahl ≥ 1");
+        var lager = punkt(z.lager);
+        if (!lager) nein("ohne Lager");
+        var rand = (Array.isArray(z.rand) ? z.rand : []).map(punkt);
+        if (rand.length < 3 || rand.indexOf(null) >= 0) nein("der Rand trägt keine drei Ecken");
+        var flaeche = 0,
+            i;
+        for (i = 0; i < rand.length; i++) flaeche += rand[i].x * rand[(i + 1) % rand.length].z - rand[(i + 1) % rand.length].x * rand[i].z;
+        if (flaeche < 0) rand.reverse();
+        for (i = 0; i < rand.length; i++) {
+            var a = rand[i],
+                b = rand[(i + 1) % rand.length],
+                c = rand[(i + 2) % rand.length];
+            if ((b.x - a.x) * (c.z - b.z) - (b.z - a.z) * (c.x - b.x) <= 0) nein("der Rand ist nicht konvex");
+        }
+        if (!gehegeDrin(rand, lager.x, lager.z)) nein("das Lager liegt nicht im Rand");
+        var id = typeof z.id === "string" && z.id ? z.id : Math.round(lager.x) + "/" + Math.round(lager.z);
+        return Object.freeze({ id: id, gattung: z.gattung, n: z.n, lager: lager, rand: Object.freeze(rand) });
+    }
+    // DER FESTE BESTAND der Zeile Z (aus gehegeZeile): je Platz k = 1 … n das Tier { id, k, g, x, z } — am Lager auf der
+    // Sonnenblumen-Spirale, ein Platz am Rand um lagerM / 2 in ihn gerückt.
+    function gehegeTiere(Z, G) {
+        var aus = { x: 0, z: 0 },
+            tiere = [];
+        for (var k = 1; k <= Z.n; k++) {
+            var r = G.lagerM * Math.sqrt(k - 1),
+                w = (k - 1) * 2.39996;
+            var x = Z.lager.x + Math.cos(w) * r,
+                z = Z.lager.z + Math.sin(w) * r;
+            if (gehegeRand(Z.rand, x, z, G.lagerM / 2, aus)) {
+                x += aus.x;
+                z += aus.z;
+            }
+            tiere.push({ id: Z.id + "." + k, k: k, g: Z.gattung, x: x, z: z });
+        }
+        return tiere;
+    }
+
     // DER VOGEL (Klang K1, 25.10., additiv — VOGEL_GESETZ wohnt nicht in VERHALTEN, der v7-Fingerabdruck bleibt): jeder Vogel-Ruf
     // der Welt hat einen Leib (die Vögel sind Tetrapoda). Die Welt ist eine Funktion, kein Sack: kein Vogel wird geboren oder
     // gespeichert, jeder ist der Wurf seines Reviers und eine Bahn über der Zeit — für jeden Peer gleich (Saat × Zelle × Uhr).
@@ -3910,6 +4033,12 @@
         bestandBilanz: bestandBilanz,
         bestandFrass: bestandFrass,
         bestandRiss: bestandRiss,
+        GEHEGE_GESETZ: GEHEGE_GESETZ,
+        gehegeZeile: gehegeZeile,
+        gehegeTiere: gehegeTiere,
+        gehegeRand: gehegeRand,
+        gehegeDrin: gehegeDrin,
+        gehegeAbstand: gehegeAbstand,
         VOGEL_GESETZ: VOGEL_GESETZ,
         vogelWurf: vogelWurf,
         vogelRevier: vogelRevier,

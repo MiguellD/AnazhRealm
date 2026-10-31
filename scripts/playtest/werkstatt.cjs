@@ -1645,7 +1645,7 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         );
         check("UI V2: #chat-feed (Fading-Feed) in der Konsole", consoleResults.chatFeedInside);
         check("UI V2: der Fading-Feed-Observer ist verdrahtet (_chatFeedWired)", consoleResults.feedWired);
-        check("UI V2: Konsole startet EINGEKLAPPT (der freie Bildschirm, V18.82)", consoleResults.initiallyCollapsed);
+        check("UI V2: Konsole startet EINGEKLAPPT (der freie Bildschirm)", consoleResults.initiallyCollapsed);
         check("UI V2: Erster Klick entfaltet", consoleResults.afterFirstClickOpen);
         check("UI V2: Toggle-Label wechselt zu '−'", consoleResults.toggleLabelChanged);
         check("UI V2: Zweiter Klick klappt wieder ein", consoleResults.afterSecondClickCollapsed);

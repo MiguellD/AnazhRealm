@@ -1785,7 +1785,7 @@ async function checkBandV18224ScatterPromotion({ page, check }) {
     check("(C6) Cell trägt variantIndex", res.cellHasVariant === true);
     check("(C7) Cell trägt HISM-Slots (echte Instanz-Referenzen)", res.cellHasSlots === true);
     check(
-        "(C8) Lookup-Buffer ist LEBENDIG (V18.220-Passagier geheilt — Konsument liest ihn)",
+        "(C8) Lookup-Buffer ist LEBENDIG (der Passagier geheilt — Konsument liest ihn)",
         res.lookupAlive === true || res.lookupAlive === "no-tree-cell"
     );
     check("(C9) _scatterRegion idempotent (cached)", res.regionIdempotent === true);

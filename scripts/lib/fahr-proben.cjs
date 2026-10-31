@@ -175,7 +175,7 @@ async function probeLeben(expected) {
     // fiel ihr Takt in einen der zwei Läufe von L8, ihr Hungertod nahm den ältesten Bären der Welt: den der Probe. Der Leichnam
     // kippt, der Wagen fährt durch (Wagen 3,205 m · Bär 7,891 m, CI 40844494928, „zuerst Schritt 97: Bär y“), im Stoß hält
     // der Bär (Wagen 0,22 m · Bär 3,21 m) — 6 von 38 Läufen unter 6–8 parallelen Linsen rot, mit der Ruhe 0 von 32 (der Takt
-    // fiele 19-mal in den gemischten Lauf). Gemessen wird der Stoß; den Bestand misst sein eigenes Gesetz (gate:kreatur-leben).
+    // fiele 19-mal in den gemischten Lauf). Gemessen wird der Stoß; den Bestand misst sein eigenes Gesetz (gate:kreatur-takt kaskade).
     r.tickFaunaLifecycle = () => {};
     const aufraeumen = () => {
         delete r._loopFixedStep;

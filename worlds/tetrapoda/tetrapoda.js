@@ -221,7 +221,36 @@ function buildAnimal(){
   scene.add(gestalt.root);stufeSchalten();
   if(contactShadow){contactShadow.scale.setScalar(H*0.55);contactShadow.position.y=0.002;}
   controls.target.set(0,sY*0.38,0);controls.update();phys.init();emo.set(emoMode);document.getElementById('loading').style.display='none';
+  gehegeZeigen();
 }
+/* DAS GEHEGE (w4-gehege, Labor = Welt): der Knopf „Gehege" zeigt den festen Bestand einer Zeile nach DEMSELBEN Gesetz wie die
+   Welt — tetrapoda gehegeZeile (geprüft, fail-closed) und gehegeTiere (je Platz k das Tier am Lager auf der Sonnenblumen-Spirale,
+   in den Rand gerückt), die Raten aus GEHEGE_GESETZ. Der Rand ist hier der Boden des Labors (das Quadrat in seinem Kreis), die Art
+   die gezeigte; Lager und Rand eines echten Geheges trägt der Ort-Plan. Das erste Tier am Lager lebt (es geht und atmet wie jedes),
+   die übrigen ruhen als Zahl in der Stand-Pose — wie in der Welt jenseits des Blicks; jeder Leib ist DERSELBE Ofen-Guss. */
+var gehegeAn=false,gehegeTeile=[];
+function gehegeZeigen(){
+  gehegeTeile.forEach(function(o){scene.remove(o);o.traverse(function(m){if(m.geometry)m.geometry.dispose();if(m.material)m.material.dispose();});});gehegeTeile=[];
+  var el=document.getElementById('gehegeIst');if(el)el.textContent='';
+  if(!gehegeAn||!gestalt)return;
+  var K=__tetrapodaCore,mE=K.MASSSTAB.meterJeEinheit,h=20*mE/Math.SQRT2,G=K.GEHEGE_GESETZ;
+  var Z=K.gehegeZeile({gattung:gattungAktiv,n:3,lager:[0,0],rand:[[-h,-h],[h,-h],[h,h],[-h,h]]}),tiere=K.gehegeTiere(Z,G);
+  var dials={size:T.size,neck:T.neck,leg:T.leg,diet:T.diet,build:T.build},cache={};
+  gestalt.root.position.set(tiere[0].x/mE,0,tiere[0].z/mE);
+  for(var k=1;k<tiere.length;k++){
+    var s=stufeAnlegen(STUFEN[0],dials,null,cache),tt=s.baum.teile,minFY=Infinity;
+    legNames.forEach(function(n,li){for(var j=0;j<4;j++)if(tt[n[j]])tt[n[j]].rotation.x=standPose[li][j];});
+    s.baum.root.position.set(tiere[k].x/mE,0,tiere[k].z/mE);s.baum.root.rotation.y=k*2.39996;s.baum.root.updateMatrixWorld(true);
+    [tt.flP,tt.frP,tt.hlP,tt.hrP].forEach(function(q,i){if(!q)return;q.getWorldPosition(_fp);minFY=Math.min(minFY,_fp.y-pawOffsets[i]);});
+    if(isFinite(minFY))s.baum.root.position.y-=minFY;
+    s.liste.forEach(function(m){m.castShadow=true;});
+    scene.add(s.baum.root);gehegeTeile.push(s.baum.root);
+  }
+  var rand=new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(Z.rand.map(function(q){return new THREE.Vector3(q.x/mE,0.01,q.z/mE);})),new THREE.LineBasicMaterial({color:0x886633}));
+  scene.add(rand);gehegeTeile.push(rand);
+  if(el)el.textContent=tiere.length+' am Lager, Raten: Hunger '+G.raten.hunger+' · Durst '+G.raten.durst+' · Alter '+G.raten.alter;
+}
+
 function init(){
   // DIE HÜLLE (K41): Sitzung (Undo/Redo über T samt Gattung) + der EINE Generator + die Kosten-Leiste der Labor-Gestalt.
   sitz=AnazhHuelle.sitzung({werte:T,zustand:function(){return {gattung:gattungAktiv,markiert:!!document.querySelector("#presets button.active")};},zustandSetzen:function(z){gattungAktiv=z.gattung;gattungMarke(z.markiert?z.gattung:null);},anwenden:function(){buildAnimal();}});
@@ -243,6 +272,7 @@ function init(){
   controls=new THREE.OrbitControls(camera,renderer.domElement);controls.enableDamping=true;controls.minDistance=3;controls.maxDistance=80;controls.autoRotateSpeed=0.8;clock=new THREE.Clock();buildAnimal();
   document.querySelectorAll('#presets button').forEach(function(b){b.addEventListener('click',function(){sitz.schritt(function(){gattungMarke(b.dataset.p);var p=presets[b.dataset.p];regler.setzen({size:p.size,neck:p.neck,leg:p.leg,diet:p.diet,build:p.build},true);buildAnimal();});});});
   document.querySelectorAll('#stufen button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#stufen button').forEach(function(b2){b2.classList.toggle('active',b2===b);});stufeWahl=b.dataset.s;stufeSchalten();});});
+  document.getElementById('gehegeKnopf').addEventListener('click',function(){gehegeAn=!gehegeAn;this.classList.toggle('active',gehegeAn);gehegeZeigen();});
   document.querySelectorAll('#emotions button').forEach(function(b){b.addEventListener('click',function(){document.querySelectorAll('#emotions button').forEach(function(b2){b2.classList.remove('active');});b.classList.add('active');emoMode=b.dataset.e;emo.set(emoMode);});});
   gangRegler=AnazhHuelle.regler(document.getElementById("gang"),[{id:"tempo",lab:"Tempo v̂ (Froude-Wurzel)",min:0,max:4,step:0.05,def:0}],{werte:gangWerte,gruppen:false,ruheMs:0});
   animate();

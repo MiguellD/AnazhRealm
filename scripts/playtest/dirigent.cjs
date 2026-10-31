@@ -953,7 +953,7 @@ async function checkBandV18210Verdrahtung({ page, check }) {
     check("V18.210-A1e 6 seeds → ≥5 unique cache keys", res.a1ManyVariants === true);
     check("V18.210-A1f V17.16-Schutz: tag-Achsen ≈ baum_eiche (4×Δ<0.05)", res.a1TagNeutral === true);
     check(
-        "V18.210-A1g Memory-Cap: Ring ≤ 256 nach 300 seeds (V18.210-Audit #2 CAP-Erweiterung)",
+        "V18.210-A1g Memory-Cap: Ring ≤ 256 nach 300 seeds",
         res.a1RingCap === true
     );
 
@@ -980,7 +980,7 @@ async function checkBandV18210Verdrahtung({ page, check }) {
         res.a1EvictionRespectsActive === true
     );
     check(
-        "V18.210-A1-Heil3 SPEZIES-Diversität: 6 Arten erzeugen UNTERSCHIEDLICHE Geometrie (Audit #3, V18.181-Mischwald ehrt)",
+        "V18.210-A1-Heil3 SPEZIES-Diversität: 6 Arten erzeugen UNTERSCHIEDLICHE Geometrie",
         res.a1SpeciesDistinct === true
     );
 
@@ -1678,7 +1678,7 @@ async function checkBandReglerSim({ page, check }) {
     const f2 = (v) => (typeof v === "number" ? +v.toFixed(3) : v);
     const s1 = o.s1 || { a: {}, b: {} };
     check(`Regler-Sim S1 schwache GPU: der Regler DROSSELT und KONVERGIERT, das Studio-Regime baut nie neu (loadScale ${f2(s1.a.loadScale)}, Dichte ${f2(s1.a.density)})`, o.s1Throttled && o.s1Converged && o.s1NoRebuildLoop && o.s1EffectiveDensityOne, JSON.stringify(s1).slice(0, 160));
-    check(`Regler-Sim S2/S3: Rückstau → Stream-Budget MAX (V18.282), starke GPU → alles wächst zurück (${o.s3 ? f2(o.s3.loadScale) + "/" + f2(o.s3.density) : "?"})`, o.s2StreamSacred === true && o.s3Recovered === true);
+    check(`Regler-Sim S2/S3: Rückstau → Stream-Budget MAX, starke GPU → alles wächst zurück (${o.s3 ? f2(o.s3.loadScale) + "/" + f2(o.s3.density) : "?"})`, o.s2StreamSacred === true && o.s3Recovered === true);
     check(`Regler-Sim S4 Session-Zeit-Invarianz: identischer Input früh vs +2400 Frames ⇒ identische Stellgrößen (maxΔ ${o.s4MaxDrift})`, o.s4Invariant === true);
     check(
         "Regler-Sim S5 Geräte-Seed: stark 1 · schwach 0,45 · mittel 0,7, auf 4K derselbe Seed; der frische Sense-Init startet am Seed, headless byte-alt",
