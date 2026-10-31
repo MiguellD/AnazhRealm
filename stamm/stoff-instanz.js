@@ -879,12 +879,16 @@ class AnazhRealm_stoff_instanz {
         };
         // DAS LAGER einer Vertex-Form in einer Szene: die Gestalten aller Arenen dieser Form in EINEM Vertex- und Index-Puffer.
         // Eine Gestalt liegt, solange ein Glied sie mit Instanzen trägt (`halten`, gestempelt im Takt und in jedem Zug), in der
-        // ersten freien Strecke, die passt; GPU_KEHRAUS_MS nach dem letzten Stempel räumt sie ihre Strecken. Reicht keine
-        // Strecke oder liegt mehr als ein Achtel frei, baut der Takt das Lager neu — so groß wie seine liegenden Gestalten und
-        // ein Sechzehntel —, und jede Arena zeigt ihre Geometrie im selben Takt darauf (`_geoNeu`, ihr Bündel nimmt neu auf),
-        // bevor die alten Puffer fallen; nie in einem Pass (r184 zeichnet ihn mit der Geometrie, die er projizierte). Der Index
-        // ist schmal (16 bit), solange keine Gestalt mehr als 65 536 Vertices trägt: jede zieht mit ihrem Basis-Vertex, ihre
-        // Indizes bleiben ihre eigenen (die Foundry liefert sie so, `_schmalerIndex`; r184 bindet das Format nach dem Typ).
+        // ersten freien Strecke, die passt; GPU_KEHRAUS_MS nach dem letzten Stempel räumt sie ihre Strecken. Das Lager folgt dem
+        // EINEN Pool-Gesetz des Satzes (`_chunkSatzVerdichten`): reicht keine Strecke, baut der Takt es neu mit der Luft des
+        // Gesetzes (`CHUNK_SATZ_VERDICHTEN.luft` über seinen liegenden Gestalten); liegt mehr als ein Achtel frei, baut er es
+        // erst eng (ein Sechzehntel), wenn seit der Ruhe-Frist (`CHUNK_SATZ_ABSCHNITT.ruheTakte`) keine Gestalt eintrat. Bis
+        // stadt-takt2 baute jeder Mangel und jede Brache sofort eng: im Gang durch stadt-voll (headless, 30 s) 109 Neubauten —
+        // 53 ohne Platz, 56 aus Brache, 253 ms Bau und 232 MiB neue Puffer, das Lager pendelte viermal je Sekunde zwischen
+        // „voll" und „brach". Jede Arena zeigt ihre Geometrie im selben Takt auf das neue Lager (`_geoNeu`, ihr Bündel nimmt neu
+        // auf), bevor die alten Puffer fallen; nie in einem Pass (r184 zeichnet ihn mit der Geometrie, die er projizierte). Der
+        // Index ist schmal (16 bit), solange keine Gestalt mehr als 65 536 Vertices trägt: jede zieht mit ihrem Basis-Vertex,
+        // ihre Indizes bleiben ihre eigenen (die Foundry liefert sie so, `_schmalerIndex`; r184 bindet das Format nach dem Typ).
         class Lager {
             constructor(key) {
                 this.key = key;
@@ -897,6 +901,8 @@ class AnazhRealm_stoff_instanz {
                 this.spaet = []; // geräumte Strecken [Vertex-Anfang, Länge, Index-Anfang, Länge, …] bis zum nächsten Takt
                 this.neu = true;
                 this.taktT = -1;
+                this.taktN = 0; // die Takte des Lagers — die Uhr der Ruhe-Frist
+                this.ruheAb = 0; // der Takt, in dem zuletzt eine Gestalt eintrat oder das Lager neu stand
                 this.arenen = new Set();
                 this.rend = null;
             }
@@ -947,6 +953,7 @@ class AnazhRealm_stoff_instanz {
                         this.liegt += b.nv;
                         this.iLiegt += b.ni;
                         this.kopie(b);
+                        this.ruheAb = this.taktN; // eine Gestalt trat ein: die Brache wartet die Ruhe-Frist neu ab
                         return true;
                     }
                     if (bv >= 0) raumGib(this.vFrei, bv, b.nv);
@@ -960,6 +967,7 @@ class AnazhRealm_stoff_instanz {
                 this.rend = rend;
                 if (this.taktT === jetzt) return;
                 this.taktT = jetzt;
+                this.taktN++;
                 const grenze = jetzt - AnazhRealm.GPU_KEHRAUS_MS;
                 for (const b of this.gestalten.values()) if (b.bv >= 0 && b.zuletzt < grenze) this.raeumen(b);
                 for (let k = 0; k < this.spaet.length; k += 4) {
@@ -968,12 +976,16 @@ class AnazhRealm_stoff_instanz {
                 }
                 this.spaet.length = 0;
             }
-            // im Takt, nachdem die Glieder ihre Gestalten hielten: neu bauen, wenn der Platz nicht reichte oder mehr als ein
-            // Achtel frei liegt
+            // im Takt, nachdem die Glieder ihre Gestalten hielten: neu bauen, wenn der Platz nicht reichte (mit der Luft des
+            // Pool-Gesetzes) oder wenn mehr als ein Achtel frei liegt und das Lager die Ruhe-Frist über ruhte (eng)
             ordnen(jetzt) {
+                if (this.gestalten.size === 0) return;
+                const grenze = jetzt - AnazhRealm.GPU_KEHRAUS_MS;
+                if (this.neu) return void this.bauen(grenze, AnazhRealm.CHUNK_SATZ_VERDICHTEN.luft);
                 const brach =
                     this.vCap - this.liegt > (this.vCap >> 3) + 256 || this.iCap - this.iLiegt > (this.iCap >> 3) + 768;
-                if ((this.neu || brach) && this.gestalten.size > 0) this.bauen(jetzt - AnazhRealm.GPU_KEHRAUS_MS);
+                if (brach && this.taktN - this.ruheAb > AnazhRealm.CHUNK_SATZ_ABSCHNITT.ruheTakte)
+                    this.bauen(grenze, 1);
             }
             kopie(b) {
                 const q = b.geo,
@@ -992,7 +1004,8 @@ class AnazhRealm_stoff_instanz {
                 else for (let i = 0; i < b.ni; i++) ix[b.fi + i] = i;
                 schreib(this.rend, this.index, b.fi, b.ni);
             }
-            bauen(grenze) {
+            // `luft` > 1: der Mangel — das Lager wächst mit der Luft des Pool-Gesetzes; sonst eng (ein Sechzehntel, die Brache)
+            bauen(grenze, luft) {
                 const altA = this.attr || {},
                     altI = this.index;
                 let nv = 0,
@@ -1007,8 +1020,9 @@ class AnazhRealm_stoff_instanz {
                     ni += b.ni;
                     if (b.nv > 65536) breit = true;
                 }
-                this.vCap = vier(nv + (nv >> 4) + 64);
-                this.iCap = vier(ni + (ni >> 4) + 192);
+                const mehr = (n) => (luft > 1 ? Math.ceil(n * (luft - 1)) : n >> 4);
+                this.vCap = vier(nv + mehr(nv) + 64);
+                this.iCap = vier(ni + mehr(ni) + 192);
                 this.attr = {};
                 const daten = new Map(); // je verschränkter Puffer der Vorlage seiner im Lager
                 for (const k in v0.attributes) {
@@ -1039,6 +1053,7 @@ class AnazhRealm_stoff_instanz {
                 this.liegt = this.iLiegt = 0;
                 this.neu = false;
                 for (const b of this.gestalten.values()) if (b.zuletzt >= grenze) this.halten(b, b.zuletzt);
+                this.ruheAb = this.taktN;
                 AnazhRealm.__lagerBau = (AnazhRealm.__lagerBau | 0) + 1;
                 // eine Arena ohne Instanz-Seite legt sie in ihrem eigenen Ordnen an, nach den Blöcken ihrer Glieder
                 for (const a of this.arenen) if (a.__instanzQuelle.instanceMatrix) a._geoNeu();
