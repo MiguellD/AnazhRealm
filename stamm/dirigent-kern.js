@@ -400,6 +400,8 @@ class AnazhRealm {
             // Streaming-Pumps; der Density-Cache darüber bleibt nur für den Determinismus-Test.
             voxelMeshCache: null, // Map<"cx,cz,lod", {empty, positions, normals, indices, colors, waterCells, lod}>
             voxelMeshPending: null, // Set<"cx,cz,lod">
+            // die vorläufigen Säulen (`_saeuleVorlaeufig`): Map<"saeule:<n>", { x, z, rr, krone, offen, geom }>, n zählt
+            saeulenVorlaeufig: null,
             voxelMeshGenAtRequest: null, // Map<"cx,cz,lod", Stand (`_voxelStand`)> für Stale-Filter
             tmpVec1: null,
             tmpVec2: null,
