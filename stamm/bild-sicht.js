@@ -1542,7 +1542,7 @@ class AnazhRealm_bild_sicht {
     //     Hardware wählt den nächsten Treffer über alle Stellvertreter.
     //   DAS PANORAMA: Vollbild-Dreieck auf der festen Tiefe 0,999999 OHNE Fragment-Tiefe — der frühe Tiefentest verwirft
     //     jedes Pixel, vor dem Szene oder Satz stehen; nur Himmels-Pixel schlagen das Panorama nach.
-    // Höhen und Farben aus dem Fern-Faden (`_feldPassMal`) als polares Höhen+Farb-Feld (RGBA-Textur); das Fragment liest nur Texturen (kein
+    // Höhen und Farben aus den Bahnen des Panoramas (`_feldPassMal`) als polares Höhen+Farb-Feld (RGBA-Textur); das Fragment liest nur Texturen (kein
     // Gesetz im Fragment → keine Drift). Ohne Device/TSL kein Pass, die Schalen tragen den Blick.
     _feldPassEnsure(_fr) {
         const st = this.state;
@@ -2145,26 +2145,23 @@ class AnazhRealm_bild_sicht {
         return st.feldPass;
     }
 
-    // Das Feld malt das polare Höhen+Farb-Feld: az×rad Polar-Punkte um den Ring-Anker, der Fern-Faden rechnet je Texel Höhe
-    // (Wasser flach auf dem Spiegel) und die EINE Fern-Farbe × Saison (`_fernAuftrag` „feld“, B2), der Haupt-Faden legt die
-    // Antwort in die RGBA-Textur und backt das Panorama. Re-Anker oder Saison-Drift → neu; das alte Feld bleibt sichtbar, bis
-    // das neue steht.
+    // Das Feld malt das polare Höhen+Farb-Feld: az×rad Polar-Punkte um den Ring-Anker, die Bahnen des Panoramas rechnen je
+    // Texel Höhe (Wasser flach auf dem Spiegel) und die EINE Fern-Farbe × Saison (`_fernAuftrag` „feld“, B2), der Haupt-Faden
+    // legt die Antworten in die RGBA-Textur und backt das Panorama. Re-Anker oder Saison-Drift → neu; das alte Feld bleibt
+    // sichtbar, bis das neue ganz steht.
+    // DIE BAHNEN DES PANORAMAS (Pflicht B): das Feld rechnet in `FELD_PASS.bahnen` Keilen zugleich — je Keil (ein Azimut-Sektor
+    // über alle Radien) EIN Neben-Faden des Gesetzes („feld1“ … „feldK“), derselbe Keil bei jedem Re-Anker auf derselben Bahn
+    // (ihr Flussnetz bleibt warm). Je Punkt fragt der Keil dasselbe Gesetz am selben Zustand (der EINE Sender): jede Teilung
+    // gibt dieselben Bytes. Das neue Feld steht erst, wenn jeder Keil kam (ein Puffer je Lauf: das Panorama liest nie ein
+    // halbes). Bis hier rechnete EIN Faden alle 9 216 Punkte, und sein erster Lauf baute das Flussnetz des Kerns über 8–40 km
+    // kalt (`zelleNeu`: in Node 2,4 von 2,9 s, im Kalt-Boot unter Last 7,0 s, Radeon 3–6 s — manchmal der letzte Term des ersten
+    // Weltbilds).
     _feldPassMal(fp, fr) {
-        if (fp.flug || !this._nebenFaden("feld")) return; // die Bahn des Panoramas (`_fernAuftrag`)
         const P = AnazhRealm.FELD_PASS;
+        const bahnen = Array.from({ length: P.bahnen }, (_, b) => "feld" + (b + 1));
+        if (fp.flug || !bahnen.every((name) => this._nebenFaden(name))) return; // die Bahnen stehen (`_nebenFaden`)
         const F = AnazhRealm.FERN_RING;
         const rMin = F.schalen[F.schalen.length - 1].aussen;
-        const n = P.az * P.rad;
-        const punkte = new Float32Array(n * 2);
-        for (let iy = 0; iy < P.rad; iy++) {
-            const r = rMin + ((iy + 0.5) / P.rad) * (P.rMaxM - rMin);
-            for (let ix = 0; ix < P.az; ix++) {
-                const a = ((ix + 0.5) / P.az - 0.5) * 2 * Math.PI;
-                const k = iy * P.az + ix;
-                punkte[k * 2] = fr.anchorX + Math.cos(a) * r;
-                punkte[k * 2 + 1] = fr.anchorZ + Math.sin(a) * r;
-            }
-        }
         fp.flug = true;
         const gen = ++fp.gen;
         const ankerX = fr.anchorX;
@@ -2173,27 +2170,49 @@ class AnazhRealm_bild_sicht {
         const schnee = this._schneeGilt(); // der Faden färbt mit dem Versatz der Schneegrenze, den er trägt
         // die Masche des Texels: Azimut-Breite am Radius (im Faden je Texel), die radiale Zeile des Felds
         const hr = (P.rMaxM - rMin) / (2 * P.rad);
-        this._fernAuftrag("feld", { punkte, ax: ankerX, az: ankerZ, azN: P.az, hr, saison }, [punkte.buffer])
-            .then((antwort) => {
-                if (this.state.feldPass !== fp || fp.gen !== gen) return;
-                fp.flug = false;
-                fp.daten.set(antwort.daten);
-                fp.tex.needsUpdate = true;
-                fp.U.rMin.value = rMin;
-                fp.U.hMax.value = antwort.hMax + 5;
-                fp.anchorX = ankerX;
-                fp.anchorZ = ankerZ;
-                fp.saison = saison;
-                fp.schnee = schnee;
-                fp.laeufe++;
-                // SCHATTIERUNGS-PERSISTENZ: sichtbar wird der Pass erst mit gebackenem Panorama (_feldPanoramaMal setzt
-                // visible) — das Fragment liest NUR noch das Panorama, nie das rohe Feld.
-                this._feldPanoramaMal(fp);
-            })
-            .catch((e) => {
-                if (this.state.feldPass === fp && fp.gen === gen) fp.flug = false;
-                this._stoffBruch("der Feld-Pass (der Fern-Faden)", e);
-            });
+        const neu = new Float32Array(P.az * P.rad * 4);
+        let offen = bahnen.length;
+        let hMax = -Infinity;
+        bahnen.forEach((faden, b) => {
+            // der Keil b: die Spalten a0 … a0 + w − 1, je Radius-Zeile in der Reihe des Felds
+            const a0 = Math.round((b * P.az) / bahnen.length);
+            const w = Math.round(((b + 1) * P.az) / bahnen.length) - a0;
+            const punkte = new Float32Array(w * P.rad * 2);
+            for (let iy = 0; iy < P.rad; iy++) {
+                const r = rMin + ((iy + 0.5) / P.rad) * (P.rMaxM - rMin);
+                for (let ix = a0; ix < a0 + w; ix++) {
+                    const a = ((ix + 0.5) / P.az - 0.5) * 2 * Math.PI;
+                    const k = iy * w + ix - a0;
+                    punkte[k * 2] = ankerX + Math.cos(a) * r;
+                    punkte[k * 2 + 1] = ankerZ + Math.sin(a) * r;
+                }
+            }
+            this._fernAuftrag("feld", { punkte, ax: ankerX, az: ankerZ, azN: P.az, hr, saison }, [punkte.buffer], faden)
+                .then((antwort) => {
+                    if (this.state.feldPass !== fp || fp.gen !== gen) return;
+                    for (let iy = 0; iy < P.rad; iy++)
+                        neu.set(antwort.daten.subarray(iy * w * 4, (iy + 1) * w * 4), (iy * P.az + a0) * 4);
+                    if (antwort.hMax > hMax) hMax = antwort.hMax;
+                    if (--offen) return;
+                    fp.flug = false;
+                    fp.daten.set(neu);
+                    fp.tex.needsUpdate = true;
+                    fp.U.rMin.value = rMin;
+                    fp.U.hMax.value = hMax + 5;
+                    fp.anchorX = ankerX;
+                    fp.anchorZ = ankerZ;
+                    fp.saison = saison;
+                    fp.schnee = schnee;
+                    fp.laeufe++;
+                    // SCHATTIERUNGS-PERSISTENZ: sichtbar wird der Pass erst mit gebackenem Panorama (_feldPanoramaMal setzt
+                    // visible) — das Fragment liest NUR noch das Panorama, nie das rohe Feld.
+                    this._feldPanoramaMal(fp);
+                })
+                .catch((e) => {
+                    if (this.state.feldPass === fp && fp.gen === gen) fp.flug = false;
+                    this._stoffBruch(`der Feld-Pass (die Bahn ${faden})`, e);
+                });
+        });
     }
 
     // Ist die Saison seit dem Bild des Feldes gewandert (je Kanal > `FERN_FARBE.saisonDrift`, oder die Schneegrenze um eine
@@ -3605,8 +3624,10 @@ AnazhRealm.HOEHLEN_LICHT_KACHEL_M = 4;
 // `reanchorDist`/`anchorQuant` = Anker-Hysterese/
 // -Quantisierung; `scheibe` = Punkte je Auftrag an den Fern-Faden (B2), `scheibenImFlug` = Aufträge zugleich.
 // FELD_PASS — polares Höhen+Farb-Feld jenseits der letzten Schale: az×rad Texel bis rMaxM, gemalt
-// vom Fern-Faden (Höhe und Fern-Farbe je Texel, B2), gemarcht vom Fullscreen-Fragment (nur Himmel-Pixel).
-AnazhRealm.FELD_PASS = Object.freeze({ az: 192, rad: 48, rMaxM: 40000 });
+// von den Bahnen des Panoramas (Höhe und Fern-Farbe je Texel, B2; `bahnen` Keile zugleich, je Keil ein Neben-Faden,
+// `_feldPassMal`), gemarcht vom Fullscreen-Fragment (nur Himmel-Pixel). Vier Bahnen: das kalte Feld in Node 4 973 → 2 323 ms
+// Wanduhr auf vier Kernen (zwei 2 558), die OMEN trägt zwölf logische Kerne, die Radeon vierundzwanzig.
+AnazhRealm.FELD_PASS = Object.freeze({ az: 192, rad: 48, rMaxM: 40000, bahnen: 4 });
 // FELD_PANO — Schattierungs-Persistenz: statt 96 Raymarch-Schritten je Himmel-Pixel je Frame marcht
 // EIN Compute ins Polar-Panorama (Farbe + Treffer-DISTANZ; der Nebel bleibt live im Fragment →
 // Tag/Nacht braucht keinen Re-Bake), das Fragment schlägt nur nach. Re-Bake nur bei Kamera-Drift;

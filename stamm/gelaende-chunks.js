@@ -402,16 +402,18 @@ class AnazhRealm_gelaende_chunks {
         return promise;
     }
 
-    // DER AUFTRAG DER FERNE (B2): Fern-Ring, Feld-Pass, Fern-Krone und die Linsen fragen den Fern-Faden (`fernAuftrag` im
-    // Faden) — mit dem, was die Farbe aus diesem Faden liest: die Studio-Laubfarbe der Arten, der Wasser-Körper, der
+    // DER AUFTRAG DER FERNE (B2): Fern-Ring, Feld-Pass, Fern-Krone und die Linsen fragen einen Faden der Ferne (`fernAuftrag`
+    // im Faden) — mit dem, was die Farbe aus diesem Faden liest: die Studio-Laubfarbe der Arten, der Wasser-Körper, der
     // Meeresspiegel. Die Antwort trägt die Zahlen per Transfer; ohne Faden gibt es keine Ferne (laut, kein Haupt-Faden-Weg).
-    // DIE BAHN DES PANORAMAS (B4): das Feld („feld“: 9 216 Punkte von 8 bis 40 km, je Punkt das Gesetz mit dem Flussnetz der
-    // fernen Kacheln) rechnet in seinem eigenen Faden neben dem Ring — im EINEN Fern-Faden stand jede Ring-Scheibe hinter ihm
-    // (Radeon kalt am Kopf 130ba565: der Fern-Faden 6,6 s belegt, das Feld allein ~4,9 s, der Horizont hing bei 11 %).
-    _fernAuftrag(art, msg, transfer) {
+    // `faden`: der Fern-Faden, sonst die Bahn, die der Rufer nennt. DIE BAHNEN DES PANORAMAS (B4, Pflicht B): das Feld
+    // („feld“: 9 216 Punkte von 8 bis 40 km, je Punkt das Gesetz mit dem Flussnetz der fernen Kacheln) rechnet neben dem Ring —
+    // im EINEN Fern-Faden stand jede Ring-Scheibe hinter ihm (Radeon kalt am Kopf 130ba565: der Fern-Faden 6,6 s belegt, das
+    // Feld allein ~4,9 s, der Horizont hing bei 11 %) —, und seit Pflicht B in Keilen auf mehreren Bahnen zugleich
+    // (`_feldPassMal`, „feld1“ … „feldK“).
+    _fernAuftrag(art, msg, transfer, faden = "fern") {
         const wl = Number.isFinite(this.state.waterLevel) ? this.state.waterLevel : 0;
         return this._nebenAuftrag(
-            art === "feld" ? "feld" : "fern",
+            faden,
             Object.assign(
                 { type: "fern", art, wl, laub: this._fernLaubLinear(), wasser: this._fernWasserKoerper() },
                 msg

@@ -372,7 +372,8 @@ async function probe(page, welt, mitAbdruck, zwilling = false) {
             const E = r._erbgut();
             out.erbgut = { terme: E.terme.map((t) => t.art), wildnis: E.wildnis, hash: E.hash };
             out.hoehen = orte.map((o) => ({ id: o.id, y: +r._terrainMacroSurfaceY(o.x, o.z).toFixed(3) }));
-            // DIE HÖHEN DER FERNE (K60, B2): der Fern-Faden rechnet die Punkte von Fern-Ring, Feld-Pass und Fern-Krone
+            // DIE HÖHEN DER FERNE (K60, B2): die Fäden der Ferne (der Fern-Faden, die Bahnen des Feld-Passes — derselbe
+            // `fernAuftrag`) rechnen die Punkte von Fern-Ring, Feld-Pass und Fern-Krone
             // (`_fernAuftrag`) — dieselben Punkte (48 × 48 über ±4 km um den Spieler), Makro und Detail, Höhe und Schutt, gegen
             // das Gesetzbuch im Main (`_terrainMacroSurfaceY`): Wort für Wort gleich (Float32-Bitmuster).
             if (r._getVoxelWorker()) {

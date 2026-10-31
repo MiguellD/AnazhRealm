@@ -1672,7 +1672,7 @@ hauptLauf(async () => {
     );
 
     wandEnde(errs, "DER FERN-RING STEHT UND DAS FELD ZEICHNET: 3 Schalen aus dem EINEN Höhen-Gesetz " +
-            "(Fern-Wahrheit includeDetail=false, XZ welt-gesnappt), der Fern-Faden rechnet Ring, Feld und Krone in " +
+            "(Fern-Wahrheit includeDetail=false, XZ welt-gesnappt), die Fäden der Ferne rechnen Ring, Feld und Krone in " +
             "Scheiben aus dem Gelände-Gesetzbuch, der Haupt-Faden hängt nur ein, " +
             "quantisiertes Re-Zentrieren, headless-default ruhig.");
 });
