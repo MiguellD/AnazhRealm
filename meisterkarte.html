@@ -140,10 +140,10 @@
     <h2 id="h-top">Die nächsten Hebel (Punkte je Tag, nur v1-Pfad oder Pflicht)</h2>
     <ol class="liste top" style="margin-top:12px">
       <li class="flaeche"><div class="kopf"><strong>EIN Licht-Baustein für Feld-Pass, Panorama und Wasser</strong><span class="rate">1,60 P/d</span></div><p class="meta">Licht, Himmel, Wolken und die Tag-Achse · +2 · 1–1½ d · A</p></li>
-      <li class="flaeche"><div class="kopf"><strong>Die Ferne wird blau: Himmels-Ton am Horizont und Sonnenseite (Karte himmel-ton); die Kante als Struktur an beiden Geräten (Luft je Kanal steht seit d3a626ee, die Fern-Schale ist der Feld-Pass)</strong><span class="rate">1,60 P/d</span></div><p class="meta">Ferne bis zum Horizont — Luft, Kante, Kamm-Saum, Fernschatten, Wetter-Sicht · +2 · 1–1½ d · A (Ferne); Last: E (Boden-Haushalt 12/120k)</p></li>
       <li class="flaeche"><div class="kopf"><strong>Mikro-Detail an den Schirm gebunden</strong><span class="rate">1,33 P/d</span></div><p class="meta">Material-Tiefe — PBR aus dem Gesetz, Mikro-Detail, Stufen, Spiegelung · +2 · 1½ d · A (boden-nah)</p></li>
       <li class="flaeche"><div class="kopf"><strong>Der Saum aus dem Gesetz: Karten-Umriss mit Nadel-/Blatt-Saum und Alpha-Mips, die die Deckung erhalten</strong><span class="rate">1,33 P/d</span></div><p class="meta">Die LOD-Kette ohne Pop — Studio-Mesh → Karte → Impostor · +2 · 1½ d · A (laub-kante)</p></li>
-      <li class="flaeche"><div class="kopf"><strong>F2b mit Atlas-Diät mergen: Hebungs-Ringe −20/40/80° in ¼ der Zellfläche</strong><span class="rate">1,33 P/d</span></div><p class="meta">Die LOD-Kette ohne Pop — Studio-Mesh → Karte → Impostor · +2 · 1½ d · A; Last: E (VRAM)</p></li>
+      <li class="flaeche"><div class="kopf"><strong>Die Wiese bis zum Saum: das Tsushima-Kachel-Gesetz in festen Ringen, Wind im Relief</strong><span class="rate">1,14 P/d</span></div><p class="meta">Vegetation — Wiese, Böe, Wald von innen, Natur-Wand, Jahreszeit · +2 · 1½–2 d · A (boden-nah) · E (nahWiese ≤ 4/80k; GTX Third 83 716)</p></li>
+      <li class="flaeche"><div class="kopf"><strong>Das Urteil über die GANZE Bahn: Mittag-Anker, REF-Kurve, der Buckel bei Uhr 0,33 fällt</strong><span class="rate">1,14 P/d</span></div><p class="meta">Licht, Himmel, Wolken und die Tag-Achse · +2 · 1½–2 d · A (himmel-licht)</p></li>
     </ol>
   </section>
 
@@ -218,7 +218,7 @@
             <li><strong>Wind: EIN Feld, vom Gelände geformt</strong> — Konsum-Probe <code>_windAt(x,z,t)</code> mit Mutation je Leser; hinter einem Kamm fällt die Böen-Amplitude um 40 %, in der Tal-Düse steigt sie um 20 %. Die sichtbare Böe zählt Vegetation K2, gesehen = gehört Klang K2.<br><span class="beleg">Heute: Maschine: gehalten: F3 quer-invariant + richtungs-getrieben · Drift seeded/langsam an 715754fc headless · gehalten: Lee -40 % · Tal-Düse +20 % · Welt 0.6–1.2 · 6/6 Leser folgen ×0, 5/5 benannt (gras 0.573 → 0.000 · wasser 1.000 → 0.000 · regen 7.297 → 0.700 · tuch 0.107 → 0.000 · rauch 8.757 → 0.000 · wagen 0.681 → 0.000) an 715754fc headless</span></li>
           </ul>
         </details>
-        <p class="hebel"><span class="marke">Nächster Hebel:</span> Der Pegel ist eine Funktion des Regens · +2 · 3 d · 0,67 P/d</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> temperaturAt im Kern, Schnee-Decke mit Tiefe · +2 · 3 d · 0,67 P/d</p>
       </article>
       <article class="flaeche karte">
         <div class="kopf"><h3>Physik der Körper — Kontakt, Impuls, Trümmer, Seile, der aktive Leib</h3><span class="punkte">4/10</span></div>
@@ -409,7 +409,7 @@
             <li><strong>Die Musik liest das Feld</strong> — Klang-Abgriff am Master über 10 Spielminuten mit Mutation der Emotion-Achse; Wiederholungs-Suche über Chroma-Fenster.<br><span class="beleg">Heute: Maschine: 0 — offen: affekt.K5#1 headless: ungemessen (R10)</span></li>
           </ul>
         </details>
-        <p class="hebel"><span class="marke">Nächster Hebel:</span> Die Wertung antwortet am Ort · +1 · 1 d · 1,00 P/d</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> Der Nexus sichtbar am Spieler (nach Feld H1) · +1 · 1 d · 1,00 P/d</p>
       </article>
       <article class="flaeche karte">
         <div class="kopf"><h3>Haar, Fell und Kleidung</h3><span class="punkte">2/10</span></div>
@@ -455,7 +455,7 @@
             <li><strong>Ein Schwarm ist fern EIN Agent</strong> — werkbank zerlegen/takt an einer Prüfbühne mit festem Schwarm.<br><span class="beleg">Heute: Maschine: gehalten: Schwarm-Takt 0.205 ms je Takt (Median, p95 0.42) bei 100 Gliedern im Blick in jeder Reihe, 673 Paare der Separation, Auge 51.1 m (Soll ≤ 0,3 ms, 100 im Bild) an b3f9ae95 gtx · gehalten: Klasse vogel 2 Befehle {&quot;haupt&quot;:2}, 565 Instanzen (500 des Schwarms, 5 Teile je Glied), 100 Glieder im Blick je Reihe (Soll ≤ 10 Befehle) an b3f9ae95 radeon · gehalten: Klasse vogel 2 Befehle {&quot;haupt&quot;:2}, 565 Instanzen (500 des Schwarms, 5 Teile je Glied), 100 Glieder im Blick je Reihe (Soll ≤ 10 Befehle) an b3f9ae95 gtx</span></li>
           </ul>
         </details>
-        <p class="hebel"><span class="marke">Nächster Hebel:</span> Schwarm als EIN Agent · +2 · 1–1½ d · 1,60 P/d</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> Fische in der Strömung · +2 · 2 d · 1,00 P/d</p>
       </article>
     </div>
   </section>
@@ -508,7 +508,7 @@
             <li><strong>Die Ferne im Wetter: Sicht, Vorhang, Dunst</strong> — Station Hügel mit Wetter als Spieler-Wort (steht seit wetter-saat, 428fb6fe): Kontrast-Abfall gegen Distanz im Sturm; Vorhang als Luma-Kante am Ort der Front.<br><span class="beleg">Heute: Maschine: gehalten: Sicht im Sturm 1493 m (Azimute 1457/1459/1493/1614, Soll 1 500 m ±15 %), [linse-gpu] amd/rdna-3 an 715754fc radeon · Sicht im Sturm 1507 m (Azimute 1442/1500/1507/1509, Soll 1 500 m ±15 %), [linse-gpu] nvidia/pascal an 94c079cb gtx</span></li>
           </ul>
         </details>
-        <p class="hebel"><span class="marke">Nächster Hebel:</span> Die Ferne wird blau: Himmels-Ton am Horizont und Sonnenseite (Karte himmel-ton); die Kante als Struktur an beiden Geräten (Luft je Kanal steht seit d3a626ee, die Fern-Schale ist der Feld-Pass) · +2 · 1–1½ d · 1,60 P/d</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> Horizont-Karte aus dem Gelände-Kern · +2 · 2 d · 1,00 P/d</p>
       </article>
       <article class="flaeche karte">
         <div class="kopf"><h3>Material-Tiefe — PBR aus dem Gesetz, Mikro-Detail, Stufen, Spiegelung</h3><span class="punkte">2/10</span></div>
@@ -657,7 +657,7 @@
             <li><strong>Antwort und Kosten: die KI hält den Takt</strong> — Über den Korpus aus K1 in derselben Sitzung.<br><span class="beleg">Heute: Gemessen am Kopf 57a9f2ab (derselbe Korpus-Lauf wie K1, Radeon-Laptop, qwen3:4b-instruct lokal auf der CPU, Anbieter-Host 127.0.0.1:11434 im Netz-Log): p95 Satz → Welt 11,68 s (ki-korpus am Zweig 10,0 s; der erste Satz 28,5 s mit Modell-Laden) — ROT gegen lokal ≤ 6 s, das Vorher von KI H5. Der Prompt trägt 70 Ops, 9 Orte, 14 Bedingungen und die Live-Wörter (32412cb6, <code>feld-nexus.js:983-1053</code>), seine Größe ist nie gezählt; das Selbst-Wissen (Journal, Tendenz) wechselt je Tat → ~200 Token je Satz neu (befund ki-korpus). Roh: koordination <code>bericht/2110-mk-kopf/ki-korpus-echt.log</code>.</span></li>
           </ul>
         </details>
-        <p class="hebel"><span class="marke">Nächster Hebel:</span> Der Korpus hält das Soll (der Rest von KI H1): die Täter-Sätze beim Namen, ein sehendes Bild-Prädikat, ein Modell, das 95/85 trägt · +2 · 1½–2 d · 1,14 P/d</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> Das Gedächtnis im Gespräch (nach H1) · +1 · 1 d · 1,00 P/d</p>
       </article>
       <article class="flaeche karte">
         <div class="kopf"><h3>Spieler-Bauen — Teil, Haus, Ort, Höhe, Gebrauch</h3><span class="punkte">8/10</span></div>
@@ -680,7 +680,7 @@
             <li><strong>Das Werk wird benutzt: jedes gesetzte Werk trägt seine Verben</strong> — Spielgang-Station benutzen: gesetzt über die Werkstatt, benutzt über die Taste.<br><span class="beleg">Heute: Maschine: gehalten: 6/6 Werke tragen ihr Verb über die Taste an 715754fc headless — offen: bauen.K5#2 radeon: Station seit der Messung geändert — zuletzt an 3ef20f9f: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal) — offen: werkstatt · · bauen.K5#2 gtx: Station seit der Messung geändert — zuletzt an 94c079cb: Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal) — offen: werkstatt ·</span></li>
           </ul>
         </details>
-        <p class="hebel"><span class="marke">Nächster Hebel:</span> Das gesetzte Haus als Slot: Vorplatz und Gasse aus dem ortPlan, am Hang über die echte UI (Grund und Keller stehen seit S4) · +2 · 1½–2 d · 1,14 P/d</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> Das Werk in ≤ 1 s im ersten Bild in L0, kalt und warm, beide Geräte (die Eingaben stehen seit bauen-k1) · +1 · 1–1½ d · 0,80 P/d</p>
       </article>
     </div>
   </section>
@@ -710,7 +710,7 @@
             <li><strong>Teilen in EINER Geste: Bauplan oder Welt reist per Code</strong> — Spielgang-Station teilen.<br><span class="beleg">Heute: Maschine: gehalten: Zeit 126 ms (A 428) · A=9c183437/12 B=9c183437/12 ohne=515787a7/12 · Profil A, B, Kontext-Probe: profile-CkpRSw · profile-N6KxcR · profile-CkpRSw an 24a0f3ef headless — offen: tore.K5#2: kein Werkzeug (fehlt)</span></li>
           </ul>
         </details>
-        <p class="hebel"><span class="marke">Nächster Hebel:</span> Teilen in EINER Geste: Signatur → Code → spawn_blueprint mit studioOv beim Empfänger · +2 · 1½ d · 1,33 P/d</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> Ziel = Ankunft: das Panorama an der Ankunfts-Pose auf der Welt-Engine gebacken, mit SHA-Stempel, H5 sperrt · +1 · 1 d · 1,00 P/d</p>
       </article>
       <article class="flaeche karte">
         <div class="kopf"><h3>Fahrzeuge und Fahrgefühl — Reifen, Weg, Kamera, Übergänge, Rückmeldung</h3><span class="punkte">5/10</span></div>
@@ -733,7 +733,7 @@
             <li><strong>Rückmeldung: der Körper fühlt die Fahrt</strong> — Je Kanal ein Bild- bzw. Klang-Paar (Drift auf Schotter gegen Weg); die Spur muss nach einem Drift im Ausgabe-Bild stehen, Staub nur auf Schotter.<br><span class="beleg">Heute: Maschine: gehalten: Federung im Bild: Drift-Wank 8.609 gegen Glatt 0.542 mm, Stoß-Antwort Glatt/Hang 7.174/9.852 mm (Mutante 2.744/0.967) · Rumble Drift 1 gegen Glatt 0.004, Summen 0.603/0.512 (Mutante 0, 0.126) · Motor 66.7 Hz je 1000 Upm (klang-zensus F) · RM1–3 ✅✅✅ an b3f9ae95 radeon · Federung im Bild: Drift-Wank 8.613 gegen Glatt 0.541 mm, Stoß-Antwort Glatt/Hang 7.239/9.209 mm (Mutante 2.744/0.499) · Rumble Drift 1 gegen Glatt 0.004, Summen 0.594/0.58 (Mutante 0, 0.126) · Motor 66.7 Hz je 1000 Upm (klang-zensus F) · RM1–3 ✅✅✅ an 94c079cb gtx</span></li>
           </ul>
         </details>
-        <p class="hebel"><span class="marke">Nächster Hebel:</span> Spur, Staub, Spritzwasser und Rumble aus dem EINEN Fahr-Zustand · +2 · 2 d · 1,00 P/d</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> Die Station fahrt auf dem Wegenetz ROT, dann der Täter · +1 · 1½ d · 0,67 P/d</p>
       </article>
       <article class="flaeche karte">
         <div class="kopf"><h3>Siedlung — das Haus von innen, die Stadt, das Gelände, die Jahrhunderte</h3><span class="punkte">8/10</span></div>
@@ -756,7 +756,7 @@
             <li><strong>Das erste Haus steht sofort</strong> — Station dorf: Zelle wecken bei nH 12 und 300, Zeit bis zum ersten Haus mit seinem Bau-Hash im Ausgabe-Bild. Die Stadt im Profi-Band ist eine Zelle von Profiband K1.<br><span class="beleg">Heute: Maschine: gehalten: nH 12 erstes Haus nach 69.6 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 133.8 ms (haus_fraenkisch, mesh in 23.6 m, Bau-Hash 88b58bbf) an b3f9ae95 radeon · gehalten: nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf) an 715754fc gtx · gehalten: nH 12 erstes Haus nach 69.6 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 133.8 ms (haus_fraenkisch, mesh in 23.6 m, Bau-Hash 88b58bbf) an b3f9ae95 radeon · gehalten: nH 12 erstes Haus nach 62.3 ms (haus_alemannisch, huelle in 234.3 m, Bau-Hash 175269cc) · nH 300 erstes Haus nach 172.2 ms (haus_fraenkisch, mesh in 23.4 m, Bau-Hash 88b58bbf) an 715754fc gtx</span></li>
           </ul>
         </details>
-        <p class="hebel"><span class="marke">Nächster Hebel:</span> Export ohne Vorlauf und die Raten nah zuerst: das erste Haus ≤ 0,5 s auch bei nH 300, Teleport und KI-Akt (Rang, Vorlauf-Ring, Ort-Faden und das Erwachen in Raten stehen) · +1 · ½–1 d · 1,33 P/d</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> Das Haus von innen für jedes Haus des Start-Dorfs: Innen-Luma lesbar, beide Geräte (der Gang steht seit haus-innen) · +1 · 1–1½ d · 0,80 P/d</p>
       </article>
       <article class="flaeche karte">
         <div class="kopf"><h3>Der Spieler-Leib — Eingabe, Fuß, Wasser, Kamera zu Fuß, Gamepad</h3><span class="punkte">6/10</span></div>
@@ -802,7 +802,7 @@
             <li><strong>Lebenswerte, Sturz, Tod und Wiederkehr als Zustand</strong> — Station halten: Sturz aus 3 Höhen, Tod durch Wolf, Wiederkehr; Zustands-Abdruck vor und nach.<br><span class="beleg">Heute: Maschine: gehalten: Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 4.5 cm / 29.2° 4.5 cm · Tod jagd, Anker 0.0 m · Abdruck 1566c4d6e4ba → 1566c4d6e4ba an b3f9ae95 radeon · gehalten: Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 4.5 cm / 29.2° 4.5 cm · Tod jagd, Anker 0.0 m · Abdruck 1566c4d6e4ba → 1566c4d6e4ba an b3f9ae95 gtx · gehalten: hpMax/staminaMax/manaMax/defense leer 116.0/158.0/84.5/10.4 · Werk eisen 154.9/129.8/84.5/15.9 · bronze 152.7/131.0/84.5/15.5 · holz 131.9/144.5/84.5/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184.0/104.5/92.9/19.8 · Nahrung im Stand [[&quot;consume:_k5&quot;],[&quot;consume:_k5&quot;]] an b3f9ae95 radeon · gehalten: hpMax/staminaMax/manaMax/defense leer 116.0/158.0/84.5/10.4 · Werk eisen 154.9/129.8/84.5/15.9 · bronze 152.7/131.0/84.5/15.5 · holz 131.9/144.5/84.5/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184.0/104.5/92.9/19.8 · Nahrung im Stand [[&quot;consume:_k5&quot;],[&quot;consume:_k5&quot;]] an 715754fc gtx</span></li>
           </ul>
         </details>
-        <p class="hebel"><span class="marke">Nächster Hebel:</span> Der Treffer aus Masse × Schneide × Tempo (Mutation schmiede-core) · +1 · 1 d · 1,00 P/d</p>
+        
       </article>
       <article class="flaeche karte">
         <div class="kopf"><h3>Der gespielte Pfad — EINE Sitzung, erster Eindruck, Bedienung, Zugänglichkeit, Sprache</h3><span class="punkte">1/10</span></div>
@@ -970,7 +970,7 @@
             <li><strong>Über Versionen hinweg</strong> — Korpus-Lauf über alle Stände; Bauten, Edits und Inventar gezählt. Der Bauplan zwischen Geräten zählt Tore K5.<br><span class="beleg">Heute: Maschine: gehalten: ✅ (U) Boden-Umzug: Stände eines alten Bodens stehen auf dem neuen 7/7 | ✅ (U) Gegenprobe: Stände desselben Bodens ziehen nicht um 59/59 an 715754fc headless · gehalten: ✅ (V) Korpus: 65 Stände 18.530.0 … 18.546.129 und 1 Kopf laden am Kopf — Bauten 330/330 · Gruben 198/198 · Inventar 183/183 · ganz 66/66 | ✅ (V) Versions-Stufe 18.546.129: ihr Stand steht im Korpus (bump-version.cjs) an 715754fc headless</span></li>
           </ul>
         </details>
-        <p class="hebel"><span class="marke">Nächster Hebel:</span> Änderung statt Abbild, gespeichert im Worker · +2 · 3–4 d · 0,57 P/d</p>
+        <p class="hebel"><span class="marke">Nächster Hebel:</span> Änderung statt Abbild, gespeichert im Worker · +1 · 3–4 d · 0,29 P/d</p>
       </article>
     </div>
   </section>

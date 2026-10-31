@@ -133,7 +133,7 @@ module.exports = {
       ],
       hebel: [
         { name: "Die Nässe ganz: Pfützen in den Mulden, Glanz im Bild, Trocken-Kurve, beide Geräte (Zustand, Dach und Stoff stehen seit naesse)", k: ["wetter.K2+1"], t: [1.5, 2], wurzel: "Der Zustand `_naesseTakt` (`stamm/bild-himmel.js:2775`) und das Gesetz `_naesseImStoff` (`stamm/stoff-material.js:1462`) stehen; der Rest: Pfützen in den Senken des Kerns im `_wasserBlick` (`stamm/wasser-hydro.js:1538`), der Glanz nass/trocken im Ausgabe-Bild statt am Gesetz, die Trocknung 1 500 s auf 5–15 min Spielzeit, Regen-Fall 42 → ≤ 9 m/s (`foundry-core.js:171`), Third und die GTX; die +1,2 ms GPU im Regen an der GTX (Werkpaket naesse-kosten) zahlt der Term je Pixel.", pflicht: "—", v1: false },
-        { name: "Der Pegel ist eine Funktion des Regens", k: ["wetter.K3+2"], t: [3, 3], wurzel: "`gelaende-core.js:1177` flussLaeufe (A, Lauflänge) + `stamm/wasser-hydro.js:54`: pegel(x,z,t) = Basis + Abfluss(∫ Regen-Feld über A, Lag ∝ Lauflänge) in geschlossener Form — die Welt bleibt eine Funktion.", pflicht: "—", v1: false },
+        { name: "Der Pegel ist eine Funktion des Regens", k: ["wetter.K3+1"], t: [3, 3], wurzel: "`gelaende-core.js:1177` flussLaeufe (A, Lauflänge) + `stamm/wasser-hydro.js:54`: pegel(x,z,t) = Basis + Abfluss(∫ Regen-Feld über A, Lag ∝ Lauflänge) in geschlossener Form — die Welt bleibt eine Funktion.", pflicht: "—", v1: false },
         { name: "temperaturAt im Kern, Schnee-Decke mit Tiefe", k: ["wetter.K4+2"], t: [3, 3], wurzel: "`gelaende-core.js:1098` schnee(L,y,x,z) → temperaturAt(L,y,saison,uhr) × Niederschlag; die Tiefe als Boden-Schicht unter `_bodenSichtAt`.", pflicht: "—", v1: false },
       ],
       feststeck: {
@@ -200,7 +200,7 @@ module.exports = {
       ],
       hebel: [
         { name: "EIN XPBD-Löser im Körper-Kern: Seil, Tuch, Brücke", k: ["physik.K4+2"], t: [5, 7], wurzel: "`koerper-core.js` (Small-Steps-XPBD, Unter-Schritte im FIXED_DT); erster Leser das Schmiede-Seil (`worlds/schmiede/schmiede.js:1161` stepRope fällt — Labor = Welt), dann Fahne und Plane des Fachwerks.", pflicht: "—", v1: false },
-        { name: "Der Lastpfad wird Bewegung (nach H1)", k: ["physik.K3+2"], t: [2, 3], wurzel: "`stamm/bau-buch.js:1791` `_loadPath` übergibt die Teile ohne Pfad an den Löser; Trümmer werden Welt-Zustand im Speicher wie die `_voxelEditKarte`.", pflicht: "—", v1: false },
+        { name: "Der Lastpfad wird Bewegung (nach H1)", k: ["physik.K3+1"], t: [2, 3], wurzel: "`stamm/bau-buch.js:1791` `_loadPath` übergibt die Teile ohne Pfad an den Löser; Trümmer werden Welt-Zustand im Speicher wie die `_voxelEditKarte`.", pflicht: "—", v1: false },
         { name: "Kontakt beim Tempo des Spiels", k: ["physik.K2+1"], t: [1, 1], wurzel: "`stamm/koerper-bewegung.js:238-325` (Hülle gegen Box) rechnet in Teil-Schritten wie `_kreaturStossSchritt`; Station: Wagen bei vmax × 1,2 gegen die Mauer bei 30/60/144 fps, Bild-Probe Spalt.", pflicht: "—", v1: true },
         { name: "Der aktive Leib (nach H1)", k: ["physik.K5+2"], t: [3, 4], wurzel: "Gleichgewichts-Regler im Leib-Löser (`koerper-core.js`: Stützpolygon, Ausfallschritt); `_kreaturFaellt` (`stamm/kreatur-leben.js:830`) wird der Ragdoll-Übergang.", pflicht: "—", v1: false }
       ],
@@ -269,10 +269,9 @@ module.exports = {
       ],
       hebel: [
         { name: "EINE Stoff-Tafel in SI im Kern", k: ["stoffe.K1+1"], t: [2, 2], wurzel: "`foundry-core.js` neben dem FARB-GESETZ: die Zeilen der Albedo-Tafel bekommen ρ, μ, c, T_zünd, T_schmelz, Wasser-Aufnahme; `schmiede-core.js:2519` und die [0,1]-Achsen aus `stamm/bau-buch.js:2507-2596` werden Leser, ihre eigenen Zahlen fallen im selben Commit.", pflicht: "—", v1: false },
-        { name: "Die drei Regeln auf dem Feld: Hitze und Brand als Overlay-Achsen", k: ["stoffe.K2+2"], t: [4, 4], wurzel: "`stamm/feld-leben.js` (auraAt + Deposit-Familie: sparse 2-m-Zellen, lazy-decay; die Brand-Front tickt nur in brennenden Zellen); Leser Licht (kelvin-Pool `stamm/dirigent-kern.js:1637`), Klang, Nah-Wiese, Asche im Boden-Stoff; Regen löscht über die EINE Nässe (Wetter H1).", pflicht: "—", v1: false },
-        { name: "Phasen am Temperatur-Feld (nach Wetter H3)", k: ["stoffe.K3+1"], t: [2, 2], wurzel: "Eis als Kontakt am Spiegel (`stamm/wasser-hydro.js` `_waterLevelAt`), Lava → Basalt als Phasen-Regel an der glut-Achse, die Schmiede-Esse liest dieselbe Temperatur.", pflicht: "—", v1: false },
+        { name: "Die drei Regeln auf dem Feld: Hitze und Brand als Overlay-Achsen", k: ["stoffe.K2+1"], t: [4, 4], wurzel: "`stamm/feld-leben.js` (auraAt + Deposit-Familie: sparse 2-m-Zellen, lazy-decay; die Brand-Front tickt nur in brennenden Zellen); Leser Licht (kelvin-Pool `stamm/dirigent-kern.js:1637`), Klang, Nah-Wiese, Asche im Boden-Stoff; Regen löscht über die EINE Nässe (Wetter H1).", pflicht: "—", v1: false },
         { name: "Alter = Zeit × Nässe (nach Wetter H1)", k: ["stoffe.K4+2"], t: [2, 2], wurzel: "`fachwerk-core.js:3864` verwitterung und `gelaende-core.js:2132-2142` (Moos) lesen das Alter seit dem Bau × Nässe-Achse statt eines Reglers; der Trampelpfad aus einer Lauf-Achse, die die Nah-Wiese liest.", pflicht: "—", v1: false },
-        { name: "Nährstoff, Nachwuchs, Sukzession", k: ["stoffe.K5+2"], t: [3, 3], wurzel: "Nährstoff-Achse neben `_feuchteAt` (`stamm/gelaende-boden.js:1333`); `_tickScatterRegrow` (`stamm/vegetation-wiese.js:1083`) und die Pflanz-Schlange lesen sie, `treeParams(alter)` (phyto-core) liefert den Jungwuchs.", pflicht: "—", v1: false }
+        { name: "Nährstoff, Nachwuchs, Sukzession", k: ["stoffe.K5+1"], t: [3, 3], wurzel: "Nährstoff-Achse neben `_feuchteAt` (`stamm/gelaende-boden.js:1333`); `_tickScatterRegrow` (`stamm/vegetation-wiese.js:1083`) und die Pflanz-Schlange lesen sie, `treeParams(alter)` (phyto-core) liefert den Jungwuchs.", pflicht: "—", v1: false }
       ],
       feststeck: {
         versucht: "Das Vokabular wuchs, die Reaktion nie: 14 Achsen (AXIS_LABELS, `stamm/bau-buch.js:2626-2655`, darunter brennbar, wärmeleitung, stromleitung) und eine Stoff-Kennung je Gegenstand stehen bereit, aber `stamm/bau-buch.js:2423` schließt die Tür: „Feuer-Ausbreitung wäre ein eigener Pfad“.",
@@ -338,7 +337,6 @@ module.exports = {
       ],
       hebel: [
         { name: "Das Feld wird gesehen: die Vegetation liest auraAt", k: ["feld.K5+1"], t: [1, 1.5], wurzel: "`stamm/feld-leben.js:auraAt` wird die EINE Lese-API der 7 frozen Leser (`vegetation-wiese.js:510/1111/1139`, `vegetation-streu.js:102/705`, `vegetation-baum.js:1310`); eine Overlay-Änderung weckt nur die berührte 16-m-Zelle (`_weltRegt`, Kachel.zustand = null).", pflicht: "—", v1: false },
-        { name: "Die Wetter-Kette schließen (nach Wetter H1/H2; Fahrzeug K1 steht)", k: ["feld.K1+1"], t: [1, 1.5], wurzel: "Trinkziel und Unterstand der Tiere (`stamm/kreatur-verhalten.js`) lesen Nässe-Achse und Pegel statt `_weatherIsWet` (`:2199`); der Grip liest die Nässe; dazu die Festhalte-Probe der Station Sturm.", pflicht: "—", v1: false },
         { name: "Alle Teil-Simulationen aus Saat + Akten (Wetter K1 steht)", k: ["feld.K2+1"], t: [1, 1], wurzel: "gate:mp-sync-Erweiterung mit Auto-Wetter, Pegel und Overlays; Verbot von Zustands-Nachrichten im Netz-Log.", pflicht: "—", v1: false }
       ],
       feststeck: {

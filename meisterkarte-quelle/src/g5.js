@@ -68,9 +68,9 @@ module.exports = {
       hebel: [
         { name: "Die Tor-Station ROT, dann der Durchgang als Lade-Hülle: das nächste Tor im Blick wärmt vor (Rift-Apart-Prinzip)", k: ["tore.K1+1"], t: [1.5, 2], wurzel: "`stamm/siedlung-ort.js` Tor-Takt (`:725-757`, rec._act und Apertur-Kreuzung → enterPortal) + `stamm/netz-portal.js:_buildPortalOverlay` (`:133`): die Ziel-Seite bootet verdeckt ab Wachheit; die Linse in `scripts/diag-v1-pfad.cjs` STATIONEN zuerst.", pflicht: "— (E liest den zweiten Kontext im selben ABAB)", v1: true },
         { name: "Ziel = Ankunft: das Panorama an der Ankunfts-Pose auf der Welt-Engine gebacken, mit SHA-Stempel, H5 sperrt", k: ["tore.K2+1"], t: [1, 1], wurzel: "`worlds/huelle/huelle.js:panorama()` + `worlds/tor-ziele.json` (Stempel; `scripts/diag-studio-huelle.cjs:159` von Warnung auf ROT) + der Membran-Graph `stamm/siedlung-ort.js` (Membran ×2 mit `worlds/portale/porta.js`, SYSTEMKARTE W3).", pflicht: "A (tor-ziel)", v1: true },
-        { name: "Das Welt-Tor ohne Neuladen", k: ["tore.K1+1", "tore.K3+1"], t: [4, 6], wurzel: "`stamm/speicher-laden.js:_weltWechselNeuLaden` (`:907`): die Welt wird in der lebenden Seite getauscht; Renderer, Programme, Buch und Worker bleiben, der Welt-Zustand fällt über `_instanzAbschied`/`_gpuKehraus`, die Ziel-Welt kommt über `_weltbildSteht` an.", pflicht: "—", v1: false },
+        { name: "Das Welt-Tor ohne Neuladen", k: ["tore.K1+1"], t: [4, 6], wurzel: "`stamm/speicher-laden.js:_weltWechselNeuLaden` (`:907`): die Welt wird in der lebenden Seite getauscht; Renderer, Programme, Buch und Worker bleiben, der Welt-Zustand fällt über `_instanzAbschied`/`_gpuKehraus`, die Ziel-Welt kommt über `_weltbildSteht` an.", pflicht: "—", v1: false },
         { name: "Mitspieler echt: zwei Geräte, Pose-Latenz und Peer im Bild als Linse ROT, dann der Täter", k: ["tore.K4+1"], t: [1, 1.5], wurzel: "`scripts/diag-mp-sync.cjs` (neuer Teil echt) + `stamm/netz-portal.js:_portalPoseDeliver` (`:932`) / Snapshot-Interpolation in `stamm/netz-p2p.js`.", pflicht: "—", v1: true },
-        { name: "Teilen in EINER Geste: Signatur → Code → spawn_blueprint mit studioOv beim Empfänger", k: ["tore.K5+2"], t: [1.5, 1.5], wurzel: "`stamm/werkstatt-bauen.js:1799` (signBlueprint → Code) + `stamm/feld-dsl.js:spawn_blueprint` (`:1196`) + `stamm/netz-p2p.js:joinWorldFromCode` (`:102`); dazu der Teilen-Schritt im Drehbuch.", pflicht: "— (v1-Schritt 5)", v1: true }
+        { name: "Teilen in EINER Geste: Signatur → Code → spawn_blueprint mit studioOv beim Empfänger", k: ["tore.K5+1"], t: [1.5, 1.5], wurzel: "`stamm/werkstatt-bauen.js:1799` (signBlueprint → Code) + `stamm/feld-dsl.js:spawn_blueprint` (`:1196`) + `stamm/netz-p2p.js:joinWorldFromCode` (`:102`); dazu der Teilen-Schritt im Drehbuch.", pflicht: "— (v1-Schritt 5)", v1: true }
       ],
       feststeck: {
         versucht: "Am BILD der Membran liefen mindestens fünf Wellen (tor-stufen 14.10., tor-membran und tore-fern 15.10., welle-m-e-torwurf, K11 Glut, K43 Flügel, D8 Tor als Fenster), die drei Tor-Klassen standen mittags grün — durch ein Tor ist nie ein Spieler gemessen gegangen, und die Ziel-Referenz ist eine Postkarte aus fremder Engine. Wir haben das Tor als Objekt gerichtet, nicht als Weg.",
@@ -138,7 +138,7 @@ module.exports = {
       ],
       hebel: [
         { name: "Die Station fahrt auf dem Wegenetz ROT, dann der Täter", k: ["fahrzeug.K2+1"], t: [1.5, 1.5], wurzel: "Fahrer-Skript nach dem Wegenetz des Gesetzes (`fachwerk-core.js` roads/feldwege); Täter am Weg-Rand, an der Furt oder am Hang-Grip beim Namen.", pflicht: "—", v1: true },
-        { name: "Spur, Staub, Spritzwasser und Rumble aus dem EINEN Fahr-Zustand", k: ["fahrzeug.K5+2"], t: [2, 2], wurzel: "`stamm/koerper-fahrt.js:_rittSchritt` (`:1090`) als einziger Ausgang des Fahr-Zustands; die Garage-Spur (worlds/garage) fällt in den Kern.", pflicht: "—", v1: false }
+        { name: "Spur, Staub, Spritzwasser und Rumble aus dem EINEN Fahr-Zustand", k: ["fahrzeug.K5+1"], t: [2, 2], wurzel: "`stamm/koerper-fahrt.js:_rittSchritt` (`:1090`) als einziger Ausgang des Fahr-Zustands; die Garage-Spur (worlds/garage) fällt in den Kern.", pflicht: "—", v1: false }
       ],
       feststeck: {
         versucht: "Die Kamera ist gelöst (F1 brauchte ≈ 15 Commits). Fest sitzt F5 „Tempo mit Welt“: der Zweig fahrt-vorausschau (5 Commits, 18.10.) liegt ungemergt, 125 hinter main; vmax steht seit Wochen bei 58 km/h, und das ABAB vom 20.10. zeigt, dass die GTX schon bei 36 km/h reißt (CPU-Takt p95 31 ms, Frame p95 35,4 ms) — die Schlangen-Reihenfolge ist nicht die einzige Wand.",
@@ -205,9 +205,6 @@ module.exports = {
         }
       ],
       hebel: [
-        { name: "Export ohne Vorlauf und die Raten nah zuerst: das erste Haus ≤ 0,5 s auch bei nH 300, Teleport und KI-Akt (Rang, Vorlauf-Ring, Ort-Faden und das Erwachen in Raten stehen)", k: ["siedlung.K5+1"], t: [0.5, 1], wurzel: "Gemergt sind der Rang, der Vorlauf-Ring und die Ort-Wahl im Faden (siedlung-k5 07751d22, vorrat-pingpong da6203ef) und seit 3528f2d0 stadt-erwachen be20b0153: der Ort der Welt-Zelle ist eine Funktion von Saat und Gesetz (Bau-Hash gleich 2/2 je nH, 68df1b3c), das Erwachen geht in Raten je Takt (`_dorfErwachen`; GTX-Hänger 461–469 → 108/125 ms, Zug 2 an 40d00ade); „ext aus FOOTPRINT statt massBau“ ist verworfen (Zwilling, befund siedlung-k5). Der Rest: die Raten bauen spielernah zuletzt — nH 300 erstes Haus nach 4,67/4,82 s (GTX); die Reihe der Raten nach dem Abstand zum Spieler, und `fachwerk-core.js:exportSettlement` rechnet massBau je Haus vor dorfLayout (∝ nH, 2,2–3,9 s an der Radeon), ohne Vorlauf reißt nH 300 die 0,5 s; dazu der Bau-Hash im Ausgabe-Bild an einem echten Gerät. Der L2-Bake stieg mit material-albedo 45 → 66 ms.", pflicht: "B (das Start-Dorf liegt im Kalt-Pfad)", v1: true },
-        { name: "Das Stadt-Tor: EPOCHEN.groesse wird nZiel, SIEDLUNG mit Rang-Größe-Verteilung, mauer und graph reisen im Export, vier Klemmen werden EINE", k: ["siedlung.K2+1"], t: [1, 1.5], wurzel: "`fachwerk-core.js` EPOCHEN (`:2806-2814`) · SIEDLUNG (`:2844`) · exportSettlement (`:5452ff`) · ortPlan (`:5551`) + `stamm/siedlung-ort.js` Klemmen (`:1786`, `:1814`, `:1935`, `:2232`); Golden-Re-Mint siedlung.json als Vertrags-Akt.", pflicht: "—", v1: false },
-        { name: "Die Trasse liest das Gelände: dorfLayout bekommt hoeheAt", k: ["siedlung.K3+1"], t: [1.5, 2], wurzel: "`fachwerk-core.js:dorfLayout` (`:3043`) mit ctx.hoeheAt aus gelaende-core; EIN Grundriss-Leser.", pflicht: "—", v1: false },
         { name: "Das Haus von innen für jedes Haus des Start-Dorfs: Innen-Luma lesbar, beide Geräte (der Gang steht seit haus-innen)", k: ["siedlung.K1+1"], t: [1, 1.5], wurzel: "Der Spielgang W10 (`scripts/diag-haus-welt.cjs`) geht heute die ersten 8 Häuser des Drehbuch-Dorfs; der Rest: jedes Haus des Start-Dorfs (befund siedlung-k5: die LOFT-Brüstung `fachwerk-core.js:776` macht W10 „attic 0,87 m neben“ für haus_gotisch@-123 und haus_provenzalisch@-172 ROT) und das Innen-Bild aus dem Ausgabe-Pfad (Luma ≥ 15 % des Außen-Schattens, Schatten K4) an Radeon und GTX; die Labor-Begehung (`worlds/fachwerk` walkUpdate) liest den Stab unter Byte-Beweis.", pflicht: "—", v1: true },
         { name: "Die Jahresringe", k: ["siedlung.K4+1"], t: [1.5, 1.5], wurzel: "`fachwerk-core.js` ortPlan mit Epoche als Parameter: die Slots des älteren Jahres sind Teilmenge des jüngeren.", pflicht: "—", v1: false }
       ],
@@ -276,7 +273,6 @@ module.exports = {
         }
       ],
       hebel: [
-        { name: "Das Zehen-Gelenk: der Fuß rollt über den Ballen statt durch den Boden (der Rest von Gelände H5), dann Stufen und Spielgang im K8", k: ["leib.K2+1"], t: [1.5, 2], wurzel: "`koerper-core.js` Bein-Baum (Zehen-Glied) → Ofen skinJoints, Rig und `_gaitIKPrep` (soleH aus der Ruhe-Pose statt aus dem ersten Takt), tetrapoda gangRolle 0,46 E; Studio-Kern unter Byte-Beweis (Lehre 11). Linse: gate:koerper-stand K8 fuss (Ratsche 4,5/4,2) mit einer Treppe am Hang.", pflicht: "—", v1: true },
         { name: "Schwimmen und Tauchen aus der EINEN Wasser-Wahrheit", k: ["leib.K3+1"], t: [2, 2], wurzel: "Übergang am Spiegel (`_waterLevelAt`), Unterwasser-Sicht über die Luft-Formel mit Wasser-β (`stamm/bild-himmel.js` Luft-Knoten).", pflicht: "—", v1: false },
         { name: "Die Kamera zu Fuß: EIN Rig wie in Fahrt", k: ["leib.K4+1"], t: [1, 1], wurzel: "`stamm/koerper-bewegung.js:_loopCamera` (`:1579`): Kugel mit Kollision gegen Fels und Blocker, Glättung wie chaseKamera.", pflicht: "—", v1: true },
       ],
@@ -342,9 +338,6 @@ module.exports = {
         }
       ],
       hebel: [
-        { name: "Der Treffer aus Masse × Schneide × Tempo (Mutation schmiede-core)", k: ["halten.K1+1"], t: [1, 1], wurzel: "`stamm/kampf.js:_kampfKraft` (`:622`) liest Masse aus der EINEN Stoff-Zeile und Schneide aus schmiede-core; Bild-Station halten.", pflicht: "—", v1: true },
-        { name: "Klang und Funken aus dem Stoff-Paar, das Ego-Bild des Hit-Stops, beide Geräte (die Latenz steht seit halten-latenz)", k: ["halten.K2+1"], t: [1, 1], wurzel: "Die Latenz hält seit 11774d4d (p95 30,5/36,0 ms, im Hörer 2,0/1,3 ms, Radeon; die Linse `werkbank latenz --verb hieb`); der Rest: `_kampfKlingenKontakt` (`stamm/kampf.js:464`) → `_substanzKlang` (`stamm/klang.js:454`) je Stoff-Paar mit Spektral-Abgriff (Stahl/Holz, Stahl/Stein, Holz/Fell), Funken aus dem Paar, das Hit-Stop-Bild in Ego, dieselbe Station an der GTX.", pflicht: "—", v1: true },
-        { name: "Sturz, Tod und Wiederkehr", k: ["halten.K5+1"], t: [1, 1], wurzel: "Fall-Schaden aus dem Aufprall-Tempo im Kontakt-Löser; Wiederkehr über den Speicher-Zustand.", pflicht: "—", v1: false }
       ],
       feststeck: {
         versucht: "Nie als Bereich gerichtet: `stamm/kampf.js` trägt 2 051 Zeilen und ein Gate, das die Schwung-Physik am Chokepoint hält — die SYSTEMKARTE §6 nennt „Schmiede (Verb wield)“ als Domäne ohne Karte, und das Werk der Schmiede zählte nur als Masse und als Regler.",
@@ -482,7 +475,6 @@ module.exports = {
       hebel: [
         { name: "Welt-Konstanten mit Leser", k: ["ultiversum.K1+1"], t: [2, 2], wurzel: "worldMeta trägt g, Himmel, Wetter-Tafel; Leib-Löser und Himmel lesen sie.", pflicht: "—", v1: false },
         { name: "Die Fusion auf zwei Geräten", k: ["ultiversum.K2+1"], t: [1.5, 1.5], wurzel: "`stamm/speicher-laden.js:1239` fuseWorlds deterministisch (Saat-Mischung, Regel-Merge ohne Wanduhr).", pflicht: "—", v1: false },
-        { name: "Die Bibliothek", k: ["ultiversum.K3+1"], t: [3, 3], wurzel: "Signierte Einträge aus signBlueprint und world-bundle, Index über Codes.", pflicht: "—", v1: false },
         { name: "Regeln im Spiel schreiben und teilen", k: ["ultiversum.K4+1"], t: [2, 3], wurzel: "DSL-Editor als Werkstatt-Modus über `stamm/feld-dsl.js`.", pflicht: "—", v1: false },
       ],
       feststeck: {

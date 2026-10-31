@@ -204,7 +204,6 @@ module.exports = {
       hebel: [
         { name: "EIN Bestands-Gesetz: Geburt und Tod aus Nahrung × Lebensraum", k: ["oekologie.K2+1"], t: [2, 2], wurzel: "`tetrapoda-core.js` VERHALTEN bekommt fress und Bestands-Bilanz; `stamm/kreatur-leben.js` Geburt und Tod aus der Nahrung statt aus FAUNA_MAX; die Kappe am Schirm wählt nur, wer Körper ist.", pflicht: "— (Last: E, Kosten-Kappe am Schirm)", v1: false },
         { name: "Der Spieler als Beute, der Affekt antwortet", k: ["oekologie.K4+1"], t: [1, 1], wurzel: "Pirsch auf den Spieler über `_scentAt` (steht) → Emotion-Achsen über `_playerSituationWohl` (`stamm/feld-sprache.js`).", pflicht: "—", v1: false },
-        { name: "Die Ansteckung gegen bond = 0, die Bindung über den Reload", k: ["oekologie.K5+1"], t: [1, 1], wurzel: "Das Folgen steht (M19, 21.10.: 10 min, p95 3,6 m); der Rest: `_tickEmotionContagion` (`stamm/feld-sprache.js:1031`) verschiebt die Stimmung des Spielers gegen den Gegenlauf bond = 0, bond reist im Speicher, beide Geräte.", pflicht: "—", v1: false }
       ],
       feststeck: {
         versucht: "Nie begonnen: die Teile stehen einzeln (Jagd auf den Spieler, `_creatureRemember`, `_depositEmotion`, bond), aber kein Leser verbindet sie, und der Deckel FAUNA_MAX 20 macht jede Bestands-Frage zu Rauschen.",
@@ -339,7 +338,6 @@ module.exports = {
         }
       ],
       hebel: [
-        { name: "Die Wertung antwortet am Ort", k: ["affekt.K1+1"], t: [1, 1], wurzel: "`stamm/feld-sprache.js` WERTUNG → Antwort am Ort (Licht und Klang der Zelle) statt globalem Tint (`stamm/bild-himmel.js:1060`).", pflicht: "—", v1: false },
         { name: "Die Emotion als DSL-Regel mit Quelle", k: ["affekt.K2+1"], t: [1.5, 1.5], wurzel: "`wetterWunsch` (`stamm/dirigent-takt.js:956`) und die Kreatur-Laune werden Regeln des Felds mit Quelle (`stamm/feld-dsl.js`), keine festen Trigger.", pflicht: "—", v1: false },
         { name: "Der Nexus sichtbar am Spieler (nach Feld H1)", k: ["affekt.K3+1"], t: [1, 1], wurzel: "`stamm/feld-dsl.js:_tickWorldRules` (`:621`), `_measureRuleReward` (`:752`); `stamm/feld-nexus.js` dslComposeRule bevorzugt Zellen mit δ < 0 im Blick.", pflicht: "—", v1: false },
         { name: "Die Erklärungs-Zeile", k: ["affekt.K4+1"], t: [1, 1], wurzel: "`_himmelSchreiber` und `_tickWorldRules` schreiben je Tat eine Zeile (Ort, Ursache, Gesetz) in die Dialog-Box.", pflicht: "—", v1: false },
@@ -473,10 +471,8 @@ module.exports = {
         }
       ],
       hebel: [
-        { name: "Das Vogel-Gesetzbuch dockt ohne Wirt-Zeile an (Studios K5 steht)", k: ["luftwasser.K1+2", "luftwasser.K2+1", "klang.K1+1"], t: [4, 5], wurzel: "Neues Gesetzbuch nach Vertrag v1.2 (PARAMS_BY_KIND, KIND_POLICY); Schwarm über `verbandZug`; der Klang-Vogel liest den Leib.", pflicht: "—", v1: false },
         { name: "Fische in der Strömung", k: ["luftwasser.K3+2"], t: [2, 2], wurzel: "Strömung aus `_waterLevelAt`/F1-Chokepoint als Leser der Fisch-Ausrichtung.", pflicht: "—", v1: false },
         { name: "Bestäuber als Leser von auraAt", k: ["luftwasser.K4+1"], t: [2, 2], wurzel: "`stamm/feld-leben.js:auraAt` lebendig/Blüte am Ort.", pflicht: "—", v1: false },
-        { name: "Schwarm als EIN Agent", k: ["luftwasser.K5+2"], t: [1, 1.5], wurzel: "Leittier rechnet, Glieder folgen in Formation (aiDiv-Band wie Tiere H2).", pflicht: "—", v1: false }
       ],
       feststeck: {
         versucht: "Nie begonnen; benannt nach den acht Studios (Gedächtnis studio-vollendung: als Nächstes Motorrad, Vögel, Aufzug). Die Wiese klingt heute nach Vögeln, die es nicht gibt.",
