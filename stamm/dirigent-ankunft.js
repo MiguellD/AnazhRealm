@@ -920,6 +920,7 @@ class AnazhRealm_dirigent_ankunft {
         for (const [preset, { e }] of best) {
             V.arten.set(preset, e);
             V.eintraege.add(e);
+            this._cullWecken(e); // seine Wunsch-Stufe wechselt: schlief er auf einer Zusage (`_schlafen`), fragt er neu
         }
         if (best.size) this._bauRegt(); // die Stufen-Wahl geht
     }

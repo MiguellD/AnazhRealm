@@ -871,27 +871,35 @@ async function probe(arg) {
                 // bis die Zusage kam, dann bis der ferne Kasten wieder steht
                 for (const weiter = window.__deckel("die Zusage des fernen Kastens", 2000); ((z && !w.kam) || Q.size) && weiter(); ) await tick(1, 30);
             }
-            // (13) B-Blick: jede Baum-Zelle der Region wartet, im Blick auf zV, dahinter auf zH; (14) der Lade-Takt
+            // (13) B-Blick: jede Baum-Zelle der Region wartet, im Blick auf zV, dahinter auf zH; (14) der Lade-Takt. Ein wartender
+            // Wurf hält seinen Platz (`_scatterPass`, w4-b-streu): die Plätze bis zum Cap liegen in den ersten Zeilen der Region — die
+            // Probe nimmt die Region südlich des Spielers (ihre ersten Zeilen liegen fern, über einen weiten Winkel; die eigene beginnt
+            // an seinem Platz), und liegen die Plätze auf einer Seite des Blicks, legt sie seinen Rand auf den mittleren ihrer Winkel
+            // (`w`, die Gier vom Auge) und baut neu (die Gier steht danach wieder)
             {
-                const [b, P, t, ok] = [(m.blick = { n: [0, 0] }), Object.getPrototypeOf(r), (m.takt = { lief: 0 }), []];
+                const [b, P, t, ok, w] = [(m.blick = { n: [0, 0] }), Object.getPrototypeOf(r), (m.takt = { lief: 0 }), [], []];
                 const [zV, zH] = [0, 1].map((i) => new Promise((f) => (ok[i] = f)));
-                const [RM, da] = [AnazhRealm.SCATTER.regionM, st._weltbildDa], [rx, rz] = [Math.floor(pm.x / RM), Math.floor(pm.z / RM)], key = `${rx},${rz}`;
+                const [RM, da, gier] = [AnazhRealm.SCATTER.regionM, st._weltbildDa, st.yaw], [rx, rz] = [Math.floor(pm.x / RM), Math.floor(pm.z / RM) - 1], key = `${rx},${rz}`;
                 const neu = () => (r._disposeScatterRegion(key), r._scatterRegion(rx, rz, pm));
                 const stumm = "_ladeTakt _tickVoxelChunkStreaming _tickScatterStreaming _tickPendingGrass _tickScatterRegrow _tickNahWiese _tickNahStreu".split(" ");
                 r._scatterSichtHoehe = function (layer, ...a) {
-                    const v = r._imErstenBlick(a[4].x, a[4].z, 12);
+                    const [v, E] = [r._imErstenBlick(a[4].x, a[4].z, 12), r._ersterBlick()];
                     if (layer.kind === "rock" || (v && b.geweckt != null)) return P._scatterSichtHoehe.call(this, layer, ...a);
-                    return b.geweckt == null && b.n[+!v]++, r._streuWartetAuf(v ? zV : zH), null;
+                    return b.geweckt == null && (b.n[+!v]++, w.push(Math.atan2(a[4].x - E.ex, a[4].z - E.ez))), r._wartetAuf(v ? zV : zH), null;
                 };
                 try {
-                    const g = ((st._weltbildDa = 0), neu());
+                    let g = ((st._weltbildDa = 0), neu());
+                    if (!(b.n[0] && b.n[1])) {
+                        [st.yaw, b.n] = [w.sort((p, q) => p - q)[w.length >> 1] + r._ersterBlick().halb, [0, 0]];
+                        g = neu();
+                    }
                     [b.vor1] = [r._streuRegionWartet(key), ok[0](), await sleep(0)];
                     b.geweckt = !!g._geweckt; // vor der zweiten Scheibe
                     b.vor2 = (neu(), r._streuRegionWartet(key));
                     [b.nach2] = [((st._weltbildDa = 1), r._streuRegionWartet(key)), (st._weltbildDa = 0), (st.scatterRegions.get(key)._bildWartet = null)];
                     for (let i = (stumm.forEach((k, j) => (r[k] = () => !j)), 0); i < 4; i++) t.lief += r._dispatchFrameJobs(r._buildDeferrableJobs(pm), { remainingMs: () => 0 }).includes("scatterDeco");
                 } finally {
-                    [stumm.forEach((k) => delete r[k]), delete r._scatterSichtHoehe, (st._weltbildDa = da), ok[1](), neu()];
+                    [stumm.forEach((k) => delete r[k]), delete r._scatterSichtHoehe, (st._weltbildDa = da), (st.yaw = gier), ok[1](), neu()];
                 }
             }
             await sleep(800);
