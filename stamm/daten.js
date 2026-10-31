@@ -419,15 +419,26 @@ class AnazhRealm_daten {
     }
 
     // DIE NAH-WIESE (V18.508): nah am Auge wächst die Wiese aus dem Studio-Gras (Foundry „gras", Stufen
-    // aus `kindStages.grass`), jenseits trägt die Boden-Funktion. Kosten an den SCHIRM gebunden (Gebot 7):
-    // ein Kachel-Ring um die Kamera, nie je Chunk; gezeichnet wird je Büschel, was das Auge sieht (der Sicht-Satz
-    // `_nahWieseSicht`, EINE Senke je Vorlage × Stufe × Teil). `stufe1` = Radius der feinen Stufe (L1) um das Auge, je
-    // Büschel, `stufe1Rand` = ihr Austritt dahinter (Hysterese), `radius` = Ende der Büschel, `rand` = Ausdünnungs-Band
-    // davor (ein Büschel zeigt sich, solange seine Würfel-Ordnung unter dem Anteil seiner Distanz liegt), `kachel` =
-    // Kachel-Kante (Bau- und Grob-Cull-Einheit). Raster, Dichte-Gesetz und Skala kommen aus dem Studio
-    // (understory.grassStep · groundCover.grass · placement.scale.gras). Die Weite eines Büschels (sein Kreis vor dem Grund
-    // der Häuser, `erdbauGrund`, S4) ist keine Zahl hier: sie ist die der GEZEICHNETEN Vorlagen (`nahWiese.reich`,
-    // `_tickNahWiese`; gate:haus-welt W9 misst sie an derselben Vorlage).
+    // aus `kindStages.grass`). Kosten an den SCHIRM gebunden (Gebot 7): ein Kachel-Ring um das Auge, nie je Chunk;
+    // gezeichnet wird je Büschel, was das Auge sieht (der Sicht-Satz `_nahWieseSicht`, EINE Senke je Vorlage × Stufe ×
+    // Teil). `stufe1` = Radius der feinen Stufe (L1) um das Auge, je Büschel, `stufe1Rand` = ihr Austritt dahinter
+    // (Hysterese), `radius` = die Übergabe: bis hier legt der Sicht-Satz jedes Büschel, dahinter zeichnet DIE FERNE
+    // dieselben Büschel weiter, `vorlauf` = so weit vor der Übergabe steht jede Kachel schon (kein Büschel tritt in den Kreis,
+    // bevor seine Kachel steht), `kachel` = Kachel-Kante (Bau- und Grob-Cull-Einheit). Raster, Dichte-Gesetz und Skala kommen
+    // aus dem Studio (understory.grassStep · groundCover.grass · placement.scale.gras). Die Weite eines Büschels (sein Kreis
+    // vor dem Grund der Häuser, `erdbauGrund`, S4) ist keine Zahl hier: sie ist die der GEZEICHNETEN Vorlagen
+    // (`nahWiese.reich`, `_tickNahWiese`; gate:haus-welt W9 misst sie an derselben Vorlage).
+    // DIE FERNE (`fern`, w4-gras-saum): bis 31.10. endete die Wiese bei `radius` (ein Ausdünnungs-Band 12–16 m, dahinter
+    // der flache Boden — im Third eine Naht, beim Gehen wanderte die Kante mit). Jetzt zeichnen dieselben Büschel (dieselbe
+    // Zelle, derselbe Wurf, die Studio-Stufe L2) weiter bis `bis`: die Dichte fällt mit dem Abstand d stetig — ein Büschel
+    // steht, solange seine Ordnung o unter (radius/d)^`dichte` liegt (die Fläche einer flachen Wiese am Schirm fällt mit d³, die
+    // Büschel je Pixel fallen mit ihr — Lehre 25, nie die Fläche der Welt; gemessen 31.10. an der Mess-Wiese Third, Radeon:
+    // Exponent 2 → 288k Dreiecke der Ferne, 3 → 103k, 4 das Soll des Haushalts), im Band `rand` (relativ)
+    // sinkt es in den Boden statt zu springen —, und jedes stehende Büschel trägt die Fläche seiner Nachbarn: sein Fuß (die
+    // Mitten seiner Halme und ihre Breite) wächst um (d/radius)^(dichte/2), höchstens `breitMax`; Höhe und Neigung der Halme
+    // bleiben. Vor `bis` sinkt die Ferne über `saum` in den Boden, dessen Wiesen-Grund dieselbe Farbe trägt. `kachel` =
+    // die Kachel der Ferne (vier Kacheln der Nähe), `vorlauf` = so weit näher, als sie gebaut ist, trägt eine Kachel der
+    // Ferne ihre Büschel schon.
     static get NAH_WIESE() {
         return this._einmal(
             "NAH_WIESE",
@@ -436,8 +447,18 @@ class AnazhRealm_daten {
                 stufe1: 5,
                 stufe1Rand: 0.5,
                 radius: 14,
-                rand: 4,
+                vorlauf: 2.5,
                 kachelnJeTakt: 1,
+                fern: Object.freeze({
+                    kachel: 12,
+                    bis: 60,
+                    saum: 25,
+                    dichte: 4,
+                    breitMax: 2.5,
+                    rand: 0.2,
+                    vorlauf: 8,
+                    kachelnJeTakt: 4,
+                }),
             })
         );
     }
