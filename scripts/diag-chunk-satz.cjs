@@ -23,9 +23,10 @@
 //       Satz-Art (`AnazhRealm.BAU_SATZ` je Rezept-kind: Haus, Fels, Kristall, Säulen; ohne Tür-Flügel) hängt an keinem
 //       Eltern-Knoten (weder Bundle noch Szene) und lebt als Bereich im Satz ihres Stoffs — n × liveCount Vertices, die
 //       erste Instanz in Welt-Lage (Geometrie × Instanz-Matrix), je Instanz eine Zelle;
-//   (i) WACHSEN — ein wachsender Satz tauscht die Geometrie am SELBEN Mesh (derselbe Inhalt); der Tausch ist
-//       sicher, weil `_renderObjektRegister` r184s Geometrie-Hörer herausnimmt (er zerstörte beim verzögerten Entsorgen
-//       der alten Geometrie die GPU-Puffer der neuen) — EINE Antwort an der Wurzel, kein frischer Mesh je Wachsen;
+//   (i) WACHSEN — ein wachsender Satz tauscht an seiner EINEN Geometrie nur den Puffer, der wächst (stadt-takt2: die
+//       Vertex-Spalten ODER der Index, derselbe Inhalt, derselbe Mesh); `_renderObjektRegister` nimmt r184s Geometrie-
+//       Hörer heraus (er zerstörte beim verzögerten Entsorgen einer getauschten Geometrie die GPU-Puffer der neuen) — EINE
+//       Antwort an der Wurzel, kein frischer Mesh je Wachsen;
 //   (j) NEUSCHREIBEN — kein Pass schreibt den Abschnitt eines anderen: die Neuschreib-Linse des Satzes
 //       (`s.schreiben`, Index-Bytes je „Verursacher>Abschnitt") zählt über Frames in Ruhe 0 Bytes je Pass, und ein Index,
 //       der für Hauptbild + Kaskaden zu klein ist (Kapazität erzwungen klein, Abend mit der Sonne im Rücken), wächst
@@ -862,7 +863,7 @@ const { errs, check } = pruefer();
             res.saetze = [];
             if (s.chunkSaetze)
                 for (const [art, satz] of s.chunkSaetze) {
-                    let treu = satz.geom === satz.mesh.geometry,
+                    let treu = true,
                         geprueft = 0;
                     for (const b of satz.ordnung) {
                         treu = treu && bereichTreu(satz, b);
@@ -914,13 +915,14 @@ const { errs, check } = pruefer();
                     res.konsum = { opfer: opfer.key, vor, ab, auf };
                 }
             }
-            // (i) WACHSEN: ein Satz, der wächst, tauscht die Geometrie am SELBEN Mesh — r184 hängt den
-            // Entsorgungs-Hörer einer Geometrie an ihr erstes Render-Objekt und liest dessen Attribute erst beim Entsorgen;
-            // eine getauschte Geometrie verlor so ihre GPU-Puffer (echte GPU: „Vertex buffer slot 5 … was not set"). Die
-            // Wurzel: `_renderObjektRegister` nimmt den Hörer je Geometrie heraus (der Kehraus trägt die Residenz). Probe
-            // am kleinsten Satz des Rings (der Tausch ist EIN Weg für jeden Satz; am Mess-Ort der K16-Landform steht kein
-            // Wasser im Ring — die Probe hing an einem 12-Vertex-Wasserfleck der alten Welt): doppelte Kapazität, derselbe
-            // Inhalt, derselbe Mesh.
+            // (i) WACHSEN (stadt-takt2): ein Satz, der wächst, tauscht an SEINER Geometrie nur den Puffer, dessen Kapazität
+            // wächst — wachsen die Vertices, bleibt der Index derselbe Puffer, wächst der Index, bleibt jede Vertex-Spalte.
+            // Bis stadt-takt2 legte jedes Wachsen eine frische Geometrie mit ALLEN Puffern an (headless, stadt-voll gehend:
+            // 17,5 ms je Spitzen-Takt in `_chunkSatzGeometrie`, 15,7 ms im Hochladen; der Bau-Satz trug je Index-Wachsen
+            // ~42 MiB Vertex-Spalten mit). Probe am kleinsten Satz des Rings (der Tausch ist EIN Weg für jeden Satz): doppelte
+            // Index-Kapazität — der Index neu, jede Vertex-Spalte dieselbe, dieselbe Geometrie am selben Mesh, derselbe Inhalt
+            // (das Vertex-Wachsen samt Views fährt (k)). Am Kopf vor stadt-takt2 fällt sie rot (die frische Geometrie je
+            // Wachsen): ihr Täter-Beleg. Die EINE Geometrie je Satz trägt sie — (f) und (k) prüfen die Bindung nicht mehr.
             res.wachsen = null;
             let ws = null;
             let wsName = null;
@@ -931,14 +933,16 @@ const { errs, check } = pruefer();
                 const altMesh = ws.mesh,
                     altGeom = ws.geom,
                     altIdx = ws.iSumme,
-                    altBereiche = ws.bloecke.size;
-                r._chunkSatzGeometrie(ws, ws.vKap * 2, ws.iKap);
+                    altBereiche = ws.bloecke.size,
+                    altSpalte = ws.geom.attributes.position,
+                    altIndex = ws.geom.index;
+                r._chunkSatzGeometrie(ws, ws.vKap, ws.iKap * 2);
                 r._tickChunkSatz();
                 const ab = abschnitteVon(ws);
                 res.wachsen = {
                     satz: wsName,
-                    derselbe: ws.mesh === altMesh && ws.mesh.parent === s.scene,
-                    getauscht: ws.geom !== altGeom && ws.mesh.geometry === ws.geom,
+                    derselbe: ws.mesh === altMesh && ws.mesh.parent === s.scene && ws.mesh.geometry === altGeom,
+                    getauscht: ws.geom.index !== altIndex && ws.geom.attributes.position === altSpalte,
                     inhalt: ws.iSumme === altIdx && ws.bloecke.size === altBereiche && ab.treu && !ab.ueberlapp,
                 };
             }
@@ -1164,7 +1168,7 @@ const { errs, check } = pruefer();
                     vorFrist,
                     nach: [ls.vKap, ls.iKap],
                     ziel: [VD.vMin, VD.iMin],
-                    derselbe: ls.mesh === mesh0 && ls.mesh.geometry === ls.geom,
+                    derselbe: ls.mesh === mesh0,
                 };
                 s.scene.remove(ls.mesh);
                 s.chunkSaetze.delete(art);
@@ -1201,7 +1205,7 @@ const { errs, check } = pruefer();
                 r._passSicht(s.camera, false);
                 r._passSicht(s.camera, true);
                 const ab = abschnitteVon(bs);
-                let treu = bs.geom === bs.mesh.geometry;
+                let treu = true;
                 for (const b of bs.bloecke.values()) treu = treu && bereichTreu(bs, b);
                 const o = {
                     gross,
@@ -1210,7 +1214,7 @@ const { errs, check } = pruefer();
                     inhalt,
                     ziel: Math.max(VD.vMin, Math.ceil(inhalt * VD.luft)),
                     frei: bs.vFrei.length,
-                    derselbe: bs.mesh === mesh0 && bs.mesh.geometry === bs.geom,
+                    derselbe: bs.mesh === mesh0,
                     treu,
                     abschnittTreu: ab.treu && ab.hauptBei0 && !ab.ueberlapp,
                     haupt: ab.hauptN,
@@ -1533,7 +1537,7 @@ const { errs, check } = pruefer();
     );
     const wa = out.wachsen;
     check(
-        "(i) WACHSEN — ein wachsender Satz tauscht die Geometrie am selben Mesh (der r184-Hörer fällt im Register), derselbe Inhalt",
+        "(i) WACHSEN — ein wachsender Satz tauscht an seiner Geometrie nur den wachsenden Puffer (der r184-Hörer fällt im Register), derselbe Inhalt",
         !!wa && wa.derselbe && wa.getauscht && wa.inhalt && out.tauschSicher === true,
         JSON.stringify(Object.assign({ tauschSicher: out.tauschSicher }, wa || {}))
     );
