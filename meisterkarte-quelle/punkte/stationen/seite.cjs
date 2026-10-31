@@ -12,16 +12,19 @@
 //                 bekommt String(fn)); `mit` die freien Namen (halteBis …), `extra` weitere Rückgaben (ein Getter auf ein `let`)
 //   cdp()         die Seite der Sitzung als puppeteer-Page (Rahmen, Tastatur, Bild): der Browser der Werkbank über seinen
 //                 DevToolsActivePort im Profil werkbank-profil-<WERKBANK_PORT>-*; die Probe trennt sich am Ende, schließt nie
-//   frist(s)      DIE FRIST IN DER SEITE: nach s Sekunden wirft jeder Takt (`_gameLoopTick`, `_loopFixedStep`) — eine Probe über
-//                 ihrem Deckel hält die Welt der Sitzung nie fest (die Grundstellung danach findet eine freie Seite); ROT beim Namen
+//   frist(s)      DIE FRIST IN DER SEITE: nach s Sekunden (Vorgabe der Deckel des Laufs − 6) wirft jeder Takt (`_gameLoopTick`,
+//                 `_loopFixedStep`) — eine Probe über ihrem Deckel hält die Welt der Sitzung nie fest (die Grundstellung danach findet
+//                 eine freie Seite); gerissen schreibt der Läufer die Marke „@@PUNKTE@@ FRIST <s> s der Probe gerissen“ (punkte.cjs
+//                 FRIST_MARKE: kein Urteil, UNGEMESSEN). Am Ende der Probe fällt die Hülle (w4-sitzung-urteil: sie blieb auf der Instanz,
+//                 jede Probe danach in derselben Seite warf an jedem Takt „die Frist der Probe“ — die Grundstellung setzt keine Methode zurück)
 //   schritt(n)    die Zeit bis hier („@@PUNKTE@@ ZEIT n s"): wohin die Sekunden der Probe gehen
 "use strict";
 
 // der Text einer Funktion für argv: ohne Zeilen-Kommentare, ohne Einzug (wie g2 `knapp`)
 const knapp = (fn) => String(fn).replace(/\n\s*\/\/[^\n]*/g, "").replace(/\n\s+/g, "\n");
 
-// DER LÄUFER (node, cwd = der Spiel-Baum der Sitzung; argv: {AUS} {PORT} sek art). Exit: der der Art (0 grün nach ihrem Urteil),
-// 2 eine Ausnahme beim Namen, 3 die Frist der Seite riss
+// DER LÄUFER (node, cwd = der Spiel-Baum der Sitzung; argv: {AUS} {PORT} {SEK} art — {SEK} der Deckel DIESES Laufs, punkte.cjs ersetze).
+// Exit: der der Art (0 grün nach ihrem Urteil), 2 eine Ausnahme beim Namen, 3 die Frist der Seite riss
 async function seiteLauf() {
     const fs = require("fs");
     const path = require("path");
@@ -81,15 +84,18 @@ async function seiteLauf() {
         }
         throw new Error("kein Browser der Sitzung (DevToolsActivePort in " + os.tmpdir() + "/werkbank-profil-" + W + "-*)");
     };
-    H.frist = (s = H.sek - 6) =>
-        H.seite("window.__probeFrist = false; const f = performance.now() + " + Math.max(5, s) * 1000 + "; " +
-            "for (const m of [\"_gameLoopTick\", \"_loopFixedStep\"]) { const alt = r[m]; r[m] = function () { if (performance.now() > f) { " +
-            "window.__probeFrist = true; throw new Error(\"die Frist der Probe\"); } return alt.apply(this, arguments); }; } return 1;");
+    H.frist = (s = H.sek - 6) => {
+        H.fristS = Math.max(5, s);
+        return H.seite("window.__probeFrist = false; const f = performance.now() + " + H.fristS * 1000 + "; window.__probeFristAlt = window.__probeFristAlt || {}; " +
+            "for (const m of [\"_gameLoopTick\", \"_loopFixedStep\"]) { const alt = r[m]; if (!(m in window.__probeFristAlt)) window.__probeFristAlt[m] = Object.prototype.hasOwnProperty.call(r, m) ? alt : null; " +
+            "r[m] = function () { if (performance.now() > f) { window.__probeFrist = true; throw new Error(\"die Frist der Probe\"); } return alt.apply(this, arguments); }; } return 1;");
+    };
     // die Karte der Welt (ihr Zeuge im Log der Werkbank)
     const log = process.env.PUNKTE_SITZUNG_LOG && fs.existsSync(process.env.PUNKTE_SITZUNG_LOG) ? fs.readFileSync(process.env.PUNKTE_SITZUNG_LOG, "utf8") : "";
     for (const z of log.split(/\r?\n/)) if (/^\[linse-gpu\] /.test(z)) console.log(z);
     let code = 0;
     try {
+        if (!(H.sek > 6)) throw new Error("der Deckel des Laufs fehlt (argv „" + sek + "“: der Läufer ersetzt den Platzhalter SEK)");
         code = (await eval("(" + artText + ")")(H)) || 0;
     } catch (e) {
         console.log("@@PUNKTE@@ FEHLER " + String((e && e.stack) || e).split("\n").slice(0, 4).join(" | ").slice(0, 600));
@@ -97,8 +103,11 @@ async function seiteLauf() {
     }
     for (const f of H.ende) await Promise.resolve().then(f).catch(() => {});
     if (H.browser) await H.browser.disconnect().catch(() => {});
-    if ((await H.seite("return window.__probeFrist === true;").catch(() => false)) === true) {
-        console.log("@@PUNKTE@@ FRIST die Probe riss ihren Deckel (" + H.sek + " s): jeder Takt danach warf");
+    // die Hülle der Frist fällt (das Eigene der Instanz kehrt zurück, sonst wieder der Prototyp); gerissen die EINE Marke (FRIST_MARKE)
+    const riss = await H.seite("const alt = window.__probeFristAlt || {}; for (const m of Object.keys(alt)) { if (alt[m]) r[m] = alt[m]; else delete r[m]; } " +
+        "delete window.__probeFristAlt; const riss = window.__probeFrist === true; window.__probeFrist = false; return riss;").catch(() => false);
+    if (riss === true) {
+        console.log("@@PUNKTE@@ FRIST " + H.fristS + " s der Probe gerissen (Deckel " + H.sek + " s): jeder Takt danach warf");
         code = code || 3;
     }
     console.log("@@PUNKTE@@ PROBE " + uhr() + " s · Exit " + code);
@@ -106,10 +115,11 @@ async function seiteLauf() {
 }
 
 // DIE PROBE einer Station: der Läufer und die Art (`async (H) => exit`, ohne freie Namen außer H, fs, path, require), der Deckel
-// `sek`; `zusatz` trägt mutiert (die Probe ändert die Welt) und ausnahme (der Grund für einen Deckel über 45 s)
+// `sek` (die Frist liest der Läufer aus {SEK}, dem Deckel des Laufs — nie eine zweite Zahl); `zusatz` trägt mutiert (die Probe ändert
+// die Welt) und ausnahme (der Grund für einen Deckel über 45 s)
 const seiteProbe = (sek, art, zusatz = {}) => ({
     sek,
-    befehl: ["node", "-e", "(" + knapp(seiteLauf) + ")()", "{AUS}", "{PORT}", String(sek), knapp(art)],
+    befehl: ["node", "-e", "(" + knapp(seiteLauf) + ")()", "{AUS}", "{PORT}", "{SEK}", knapp(art)],
     ...zusatz,
 });
 
