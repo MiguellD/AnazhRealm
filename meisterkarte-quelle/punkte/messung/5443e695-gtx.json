@@ -1,0 +1,202 @@
+{
+ "sha": "5443e695a11fe753c3f8160920fbe6423e8fef5a",
+ "geraet": "gtx",
+ "zeit": "2026-10-31T09:05:28.415Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "mensch.K4#1": {
+   "gruen": false,
+   "zahl": "Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.648 [0.9, 1] · lippeL -3.5 [-14, -4] · lippeA 0.31 [4, 14] · hoehleL 0.42 [-12, 0] · hoehleA -0.99 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "exit": 0,
+   "minuten": 0.33,
+   "grund": "ROT: Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.12 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck\" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.648 [0.9, 1] · lippeL -3.5 [-14, -4] · lippeA 0.31 [4, 14] · hoehleL 0.42 [-12, 0] · hoehleA -0.99 [-2, 6] · haarDeckung 1 [0.9, 1]",
+   "gpu": "nvidia/pascal",
+   "s": 19.9,
+   "zeit": "2026-10-31T09:02:12.238Z",
+   "abdruck": "f0942f69852d",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K2#1": {
+   "gruen": false,
+   "zahl": "arm ROT strich 0.3324 Soll [0.3554,0.533] — strich 0.3324 < 0.3554 · albedo: Rohdatei spec/farbe/albedo-tafel.json: Zeile „haar\" ohne Ist · albedo — [0.01; 0.3] · third ROT strich 0.3914 Soll [0.3554,0.533] — strich 0.3914 — albedo: Rohdatei spec/farbe/albedo-tafel.json: Zeile „haar\" ohne Ist · albedo — [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.29,
+   "grund": "ROT: arm ROT strich 0.3324 Soll [0.3554,0.533] — strich 0.3324 < 0.3554 · albedo: Rohdatei spec/farbe/albedo-tafel.json: Zeile „haar\" ohne Ist · albedo — [0.01; 0.3] · third ROT strich 0.3914 Soll [0.3554,0.533] — strich 0.3914 — albedo: Rohdatei spec/farbe/albedo-tafel.json: Zeile „haar\" ohne Ist · albedo — [0.01; 0.3]",
+   "gpu": "nvidia/pascal",
+   "s": 17.6,
+   "zeit": "2026-10-31T09:02:32.220Z",
+   "abdruck": "b612c52e703b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K4#1": {
+   "gruen": false,
+   "zahl": "lack spiegelTreue -0.0598 (74866 px in der Ebene, 39 Blöcke, Einfall 54.2°, Normale [0.075,0.989,0.126]) · glas spiegelTreue -0.8061 (5079 px in der Ebene, 13 Blöcke, Einfall 70.8°, Normale [0.038,0.999,0.016]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5005486111111112 sunny · [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.1,
+   "grund": "ROT: lack spiegelTreue -0.0598 (74866 px in der Ebene, 39 Blöcke, Einfall 54.2°, Normale [0.075,0.989,0.126]) · glas spiegelTreue -0.8061 (5079 px in der Ebene, 13 Blöcke, Einfall 70.8°, Normale [0.038,0.999,0.016]) · Soll ≥ 0,5 an Lack oder Scheibe · first Uhr 0.5005486111111112 sunny · [linse-gpu] nvidia/pascal",
+   "gpu": "nvidia/pascal",
+   "s": 6,
+   "zeit": "2026-10-31T09:02:49.803Z",
+   "abdruck": "bcf6bf200130",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K5#1": {
+   "gruen": true,
+   "zahl": "3 von 4 Klassen im Band (Soll ≥ 3): eisen θ50 10.271° NEBEN dem Band, ρ 7.14 im Band — black-oxidized-steel · bronze θ50 3.423° im Band, ρ 79.25 im Band — alum-bronze 7,79°/51,4, brass 1,31°/471,3 · quarz θ50 1.335° im Band, ρ 425.68 im Band — black-obsidian 0,63°/698,5, aventurnine 1,45°/437,3 · stahl θ50 0.482° im Band, ρ 848.09 im Band — steel, ss440, chrome-steel · Sonne 74.2°, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal",
+   "exit": 0,
+   "minuten": 0.16,
+   "gpu": "nvidia/pascal",
+   "s": 9.8,
+   "zeit": "2026-10-31T09:02:55.801Z",
+   "abdruck": "d1a0fb8d8950",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "haar.K1#1": {
+   "gruen": true,
+   "zahl": "arm GRÜN strich 0.4456 Soll [0.4358,0.6538] · third GRÜN strich 0.6194 Soll [0.4358,0.6538]",
+   "exit": 0,
+   "minuten": 0.36,
+   "gpu": "nvidia/pascal",
+   "s": 21.8,
+   "zeit": "2026-10-31T09:03:05.626Z",
+   "abdruck": "4b368592b4e0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "tiere.K1#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: (14 s))",
+   "exit": 1,
+   "minuten": 0.69,
+   "grund": "Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: (14 s))",
+   "s": 41.2,
+   "zeit": "2026-10-31T09:03:36.230Z",
+   "abdruck": "f8f6f4f07ec3",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "tiere.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 51.4 σ 24.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.143 · Bühne summ)",
+   "exit": 1,
+   "minuten": 0.56,
+   "grund": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD \"abnahme\": \"ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 51.4 σ 24.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.143 · Bühne summ)",
+   "s": 33.8,
+   "zeit": "2026-10-31T09:04:38.456Z",
+   "abdruck": "a07153ebc929",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K2#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 0 ms –, Neubau höchstens 176 ms garage, je Studio null Griffe) · Neuladen 2/8 · A/B 2/8) · Täter: @@ PROBE-FEHLER Error: Waiting failed |     at <instance_members_initializer> (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\WaitTask.js:24:21) |     at new WaitTask (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\pup",
+   "exit": 3,
+   "minuten": 0.32,
+   "grund": "Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 0 ms –, Neubau höchstens 176 ms garage, je Studio null Griffe) · Neuladen 2/8 · A/B 2/8) · Täter: @@ PROBE-FEHLER Error: Waiting failed |     at <instance_members_initializer> (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\WaitTask.js:24:21) |     at new WaitTask (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\pup",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 19.3,
+   "zeit": "2026-10-31T09:05:28.415Z",
+   "abdruck": "0e5b3798eb3f",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K3#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 GPU 0.0502 ms↔Bank 5.8333 (+1), schmiede L0 GPU 0.0215 ms↔Bank 0.45, portale (keine Zeile), fachwerk (keine Zeile), koerperstu) · Täter: @@ PROBE-FEHLER Error: Waiting failed |     at <instance_members_initializer> (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\WaitTask.js:24:21) |     at new WaitTask (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\pup",
+   "exit": 3,
+   "minuten": 0.32,
+   "grund": "Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 GPU 0.0502 ms↔Bank 5.8333 (+1), schmiede L0 GPU 0.0215 ms↔Bank 0.45, portale (keine Zeile), fachwerk (keine Zeile), koerperstu) · Täter: @@ PROBE-FEHLER Error: Waiting failed |     at <instance_members_initializer> (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\puppeteer-core\\lib\\cjs\\puppeteer\\common\\WaitTask.js:24:21) |     at new WaitTask (C:\\Users\\micha\\Desktop\\AnazhRealm-OMEN\\AnazhRealm-mess\\node_modules\\pup",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 19.3,
+   "zeit": "2026-10-31T09:05:28.415Z",
+   "abdruck": "32baf77180fa",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "studios.K2#2",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-10-31T09:01:41.952Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 8,
+  "grundstellungS": [
+   0.1,
+   7.3,
+   3
+  ],
+  "proben": 8,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "mensch.K4#1",
+    "s": 20.9,
+    "takte": 545,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "tiere.K1#2",
+    "s": 8.7,
+    "takte": 621,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": null,
+    "vor": "tiere.K3#2",
+    "s": 13.7,
+    "takte": 640,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "studios.K2#2",
+    "s": 13.1,
+    "takte": 587,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 9,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 22,
+   "frameP95": 91.8,
+   "taktP95": 92.7,
+   "vramMax": 116.7,
+   "seiten": 3,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "zapfen": 211,
+   "luecken": 1,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 244.9,
+  "minuten": 4.15
+ }
+}
