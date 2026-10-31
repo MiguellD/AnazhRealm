@@ -1360,3 +1360,4 @@
 2026-10-31 23:00:43 z110-abab stadt(4+4) nicht-langsamer 16.7 · verlängert (4+4)
 2026-10-31 23:01:00 takt-z115a-gtx START 23 Stationen in 1 Läufen
 2026-10-31 23:21:13 takt-z115a-gtx tiere.K1#2,tiere.K3#2,mensch.K1#1,oekologie.K4#2,mensch.K4#1,vegetation.K1#1,licht.K2#2,licht.K5#1,material.K2#1,lod.K1#1,licht.K3#1,studios.K2#2,studios.K3#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,fahrzeug.K2#2,profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K3#1,profiband.K5#1,speicher.K4#2 OFFEN/OFFEN/OFFEN/ROT/ROT/ROT/OFFEN/GRÜN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/ROT/ROT/ROT/ROT/OFFEN 20.1 · 23/23
+2026-10-31 23:21:36 takt-z115b-gtx START 10 Stationen in 1 Läufen
