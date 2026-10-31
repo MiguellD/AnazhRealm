@@ -122,9 +122,11 @@ function nahDeckungInSeite(o) {
         !unter(obj, player);
     const TAETER = {};
     for (const [k, v] of Object.entries(R)) if (v > 0) TAETER[k] = v;
-    // die Stoffe der wiegenden Nah-Streu (Schlüssel „…|wiegt" im Stoff-Speicher des Stamms)
+    // die Stoffe der wiegenden Nah-Streu: ihr Schlüssel im Stoff-Speicher des Stamms trägt das Glied „|wiegt", wo auch immer —
+    // Krone und Jahr folgen ihm (`_foundryTreeMaterial`: „…|wiegt|krone|jahr"); die Linse las bis vegetation.K5 nur das Ende,
+    // und die wiegende Streu des Jahrs hieß ihr Streu-Laub im ganzen Freiraum (Ufer 3rd 8,0 %, Ritt 8,1 %, Hang 2,1 %)
     const wiegend = new Set();
-    for (const [k, m] of Object.entries(r._foundryMats || {})) if (k.endsWith("|wiegt")) wiegend.add(m);
+    for (const [k, m] of Object.entries(r._foundryMats || {})) if (k.includes("|wiegt")) wiegend.add(m);
     // die Blatt-Karte schneidet ihr Alpha aus dem EINEN Atlas (RGBA; ein komprimierter Atlas zählt die ganze Karte)
     const atlas = r._foliageAtlasTex && r._foliageAtlasTex.image ? r._foliageAtlasTex.image : null;
     const atlasA =

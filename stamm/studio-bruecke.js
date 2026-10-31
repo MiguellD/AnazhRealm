@@ -67,6 +67,8 @@ class AnazhRealm_studio_bruecke {
                 v: "?v=" + AnazhRealm.VERSION,
                 base: typeof window !== "undefined" && window.location ? window.location.href : "",
                 lesen: AnazhRealm.FOUNDRY_LESEN,
+                // die Typen, deren Ecken das Jahr trägt (SAISON_GESETZ `typ`): nur deren Teile behalten aCenter · aType
+                jahr: Object.values(AnazhRealm._saisonGesetz().typ),
                 format: AnazhRealm.FOUNDRY_PLATTE_FORMAT,
                 platte: f.platte,
                 wirt: karte
@@ -579,7 +581,7 @@ class AnazhRealm_studio_bruecke {
             basis: !!c.bruecke,
             urls: ["scripts", "lib", "bruecke"].flatMap((feld) => liste(feld, [c])),
         }));
-        schale({ lesen: b.lesen, format: b.format, platte: b.platte, kerne, wirt: b.wirt || [] });
+        schale({ lesen: b.lesen, jahr: b.jahr, format: b.format, platte: b.platte, kerne, wirt: b.wirt || [] });
         W.__PHYTO_FOUNDRY_WORKER = true;
         W.__anazhCores = manifest; // die Brücke liest die ns-Kerne generisch (vor den importScripts)
         W.importScripts(...liste("lib").concat(liste("scripts"), liste("bruecke"))); // die Brücke startet sich selbst
@@ -597,7 +599,9 @@ class AnazhRealm_studio_bruecke {
     //                 geänderter Kern baut nur seine Leser neu (bis 28.10. leerte jeder Kern-Edit die ganze Platte). Weicht
     //                 `__stamp` (alle Kern-SHA) ab, fegt das Öffnen die Schlüssel, deren SHA kein Kern mehr trägt. Der
     //                 Haupt-Thread fasst die Platte nie an (Store `anazhFoundryAssets/assets`).
-    //   KONSUM-WAND   nur die Attribute, die `_foundryBuildMesh` liest (FOUNDRY_LESEN), reisen und liegen auf Platte.
+    //   KONSUM-WAND   nur die Attribute, die `_foundryBuildMesh` liest (FOUNDRY_LESEN), reisen und liegen auf Platte; die
+    //                 Jahres-Ecken aCenter · aType nur an einem Teil, dessen aType einen Typ des Jahrs trägt (`cfg.jahr`,
+    //                 SAISON_GESETZ `typ`: Laub, Blüte) — Rinde, Nadel und Halm stehen im Jahr, sie tragen nichts davon.
     //   VERENGUNG     Index Uint32 → Uint16, wo das Teil ≤ 65 536 Vertices trägt.
     //   TRANSFER      jede Asset-/Karten-/Pixel-Antwort reist zero-copy (die Puffer sind frisch je Antwort).
     //   SAISON-NAGEL  jeder Körper und jede Karte erreicht das Studio als Sommer (das Jahr färbt der Host).
@@ -613,6 +617,11 @@ class AnazhRealm_studio_bruecke {
     static _foundrySchale(cfg) {
         const W = globalThis; // der Worker-Scope (self)
         const LESEN = new Set(cfg.lesen);
+        if (!Array.isArray(cfg.jahr) || !cfg.jahr.length)
+            throw new Error(
+                "STOFF: die Transport-Schale kennt die Typen des Jahrs nicht (cfg.jahr, SAISON_GESETZ typ)"
+            );
+        const JAHR = new Set(cfg.jahr);
         const roh = W.postMessage.bind(W);
         const schreibAuftrag = new Map(); // reqId (der Atlas: "blatt-atlas") → die Lieferung des Studio-Baus, der gerade läuft
         // DIE PLATTE HÄLT KEINEN FADEN. Die Studio-Fäden (Werk und Helfer, `_foundryHelfer`) teilen EINE IndexedDB. Ein
@@ -777,6 +786,14 @@ class AnazhRealm_studio_bruecke {
                 for (const k of Object.keys(m)) {
                     const a = m[k];
                     if (a && a.array && ArrayBuffer.isView(a.array) && !LESEN.has(k)) delete m[k];
+                }
+                // die Jahres-Ecken: nur, wo eine Ecke einen Typ des Jahrs trägt — sonst reisen sie nie (die Nadel-Krone)
+                const typ = m.aType && m.aCenter && m.aCenter.array ? m.aType.array : null;
+                let jahr = false;
+                for (let i = 0; typ && i < typ.length && !jahr; i++) jahr = JAHR.has(typ[i]);
+                if (!jahr) {
+                    delete m.aCenter;
+                    delete m.aType;
                 }
                 if (m.index instanceof Uint32Array && m.position && m.position.array.length / 3 <= 65536)
                     m.index = Uint16Array.from(m.index);
@@ -2363,16 +2380,19 @@ class AnazhRealm_studio_bruecke {
 
     // Die WELT-PLATZIERUNGS-MATRIX eines Eintrags aus seiner Transform allein
     // (position mit −0.5-baseY wie _rebuildArchitectureMesh · rotationY · scale)
-    // — so kann eine DEDUP-Instanz platziert werden, OHNE ihr Mesh zu bauen.
-    _archWeltMatrix(entry) {
+    // — so kann eine DEDUP-Instanz platziert werden, OHNE ihr Mesh zu bauen. `out`: die Matrix, in die sie schreibt (der Satz
+    // des Bewegten folgt je Takt, `_archBewegteUrteilen` — ohne `out` eine neue).
+    _archWeltMatrix(entry, out) {
         const p = entry.position || { x: 0, y: 0, z: 0 };
         const baseY = Number.isFinite(p.y) ? p.y - 0.5 : 0;
         const s = Number.isFinite(entry.scale) ? entry.scale : 1;
-        const q = new THREE.Quaternion().setFromAxisAngle(
+        const q = (this._archWeltQ || (this._archWeltQ = new THREE.Quaternion())).setFromAxisAngle(
             this._archUp || (this._archUp = new THREE.Vector3(0, 1, 0)),
             entry.rotationY || 0
         );
-        return new THREE.Matrix4().compose(new THREE.Vector3(p.x || 0, baseY, p.z || 0), q, new THREE.Vector3(s, s, s));
+        const t = (this._archWeltT || (this._archWeltT = new THREE.Vector3())).set(p.x || 0, baseY, p.z || 0);
+        const k = (this._archWeltS || (this._archWeltS = new THREE.Vector3())).set(s, s, s);
+        return (out || new THREE.Matrix4()).compose(t, q, k);
     }
 
     // ═══ DIE ARCH-BAHN: Bau = BOX-SATZ ═══
@@ -3200,6 +3220,25 @@ class AnazhRealm_studio_bruecke {
         return TSL.reference("material." + pfad, typ || "float");
     }
 
+    // EIN GRAPH JE SIGNATUR (1310-18): r184 schlüsselt ein Programm nach der IDENTITÄT seiner Knoten (der Knoten-Schlüssel endet
+    // in `customCacheKey` = Knoten-id) — frisch gebaute Knoten hießen ein Programm je Stoff. Der erste Stoff einer Signatur legt
+    // die Knoten seiner `plaetze` ab, jeder weitere zeichnet mit DENSELBEN; was nur ihn unterscheidet, liest der Graph als
+    // Stoff-Wert (`_stoffWert`). Weichen die belegten Plätze ab, fehlt der Signatur eine Eingabe des Baus: das bricht laut beim
+    // Namen, nie still mit fremdem Graphen. Leser: der Studio-Stoff (`_foundryTreeMaterial`) und der Werk-Stoff
+    // (`_buildPbrNodeMaterial`, material.K5).
+    _graphTeilen(mat, sig, plaetze) {
+        const G = this._geteilteGraphen || (this._geteilteGraphen = new Map());
+        const g = G.get(sig);
+        if (!g) return void G.set(sig, Object.fromEntries(plaetze.map((p) => [p, mat[p] || null])));
+        const ab = plaetze.filter((p) => !mat[p] !== !g[p]);
+        if (ab.length)
+            throw this._stoffBruch(
+                `der geteilte Graph „${sig}"`,
+                new Error("die Signatur verfehlt eine Eingabe des Baus — abweichende Knoten-Plätze: " + ab.join(" · "))
+            );
+        for (const p of plaetze) mat[p] = g[p];
+    }
+
     // `wiegen` (true, optional): der Stoff einer weichen Boden-Art der Nah-Streu — er wiegt im EINEN Wind mit der Höhe über
     // der Wurzel in Metern aus dem Satz-Attribut `aWiege` (`_satzBlock`), also für jede Studio-Skala derselbe Stoff.
     // `mp.satzRegler` (true): der EINE Satz-Stoff des Bau-Satzes (`_satzStoff`, K43-2) — Rauheit, Metall und Deckkraft liest er
@@ -3207,9 +3246,30 @@ class AnazhRealm_studio_bruecke {
     // `krone` (true, optional; K68-N1): das Klingen-Laub gehört zu einer Krone (Baum, Strauch: foundry-core `emitTreeRezept`
     // legt die Normale der Krone darüber), auch ohne `baum` — der wiegende Stoff der Nah-Streu erbt sie vom Stoff der Art
     // (`userData.krone`); die Karte (foliageTex) ist immer Krone.
-    // `ton` (true, optional; mensch.K4): die Gestalt trägt den Ton je Ecke (`aTon`) — der Stoff färbt nach der Palette des
-    // zeichnenden Leibs (`_tonFaktor`).
-    _foundryTreeMaterial(kind, mp, wiegen, baum, krone, ton) {
+    // `ecken` (optional): WAS DIE GESTALT JE ECKE TRÄGT und ihr Stoff liest — EIN benanntes Feld, nie ein Wahrheitswert an
+    // einer Stelle (zwei Zweige hängten je einen sechsten an, der Mensch den Ton, das Laub das Jahr: der Aufrufer des einen
+    // gäbe dem anderen still seine Bedeutung). `ecken.ton` (mensch.K4): der Ton je Ecke (`aTon`) — der Stoff färbt nach der
+    // Palette des zeichnenden Leibs (`_tonFaktor`). `ecken.jahr` (vegetation.K5): die Jahres-Ecken (`_jahrEcken`) — ihr Laub
+    // fällt im Winter auf seine Mitte (`_jahrLage`); der wiegende Stoff der Nah-Streu erbt es vom Stoff der Art
+    // (`userData.jahr`). Fail-closed: ein anderes Wort an dieser Stelle bricht laut beim Namen.
+    _foundryTreeMaterial(kind, mp, wiegen, baum, krone, ecken) {
+        if (
+            ecken != null &&
+            (typeof ecken !== "object" ||
+                Object.entries(ecken).some(([k, v]) => (k !== "ton" && k !== "jahr") || typeof v !== "boolean"))
+        )
+            throw this._stoffBruch(
+                `die Ecken der Gestalt (${kind}): ein Feld { ton, jahr } aus Wahrheitswerten, nie ` +
+                    (typeof ecken === "object"
+                        ? "{ " +
+                          Object.entries(ecken)
+                              .map(([k, v]) => k + ": " + (v && typeof v === "object" ? "Objekt" : String(v)))
+                              .join(", ") +
+                          " }"
+                        : String(ecken))
+            );
+        const ton = !!ecken && ecken.ton === true;
+        const jahr = !!ecken && ecken.jahr === true;
         const satz = !!(mp && mp.satzRegler === true);
         if (!this._foundryMats) this._foundryMats = {};
         const T = THREE;
@@ -3252,7 +3312,8 @@ class AnazhRealm_studio_bruecke {
             (baum ? "|wind:" + baum.ht.toFixed(2) + "/" + baum.delta.toFixed(4) + "/" + baum.an : "") +
             (satz === true ? "|satz" : "") +
             (_krone ? "|krone" : "") +
-            (ton === true ? "|ton" : "");
+            (ton ? "|ton" : "") +
+            (jahr ? "|jahr" : "");
         if (this._foundryMats[key]) return this._foundryMats[key];
         let mat;
         // HAUT-VOLLENDUNG (19.07.): die Lab-Haut trägt CLEARCOAT (matSkin
@@ -3317,6 +3378,7 @@ class AnazhRealm_studio_bruecke {
         // das Flag, NIE attribute("instanceColor") — der native InstanceNode-Auto-Multiply trägt ihn.
         if (kind === "foliage" || kind === "foliageTex") mat.userData.useInstanceTint = true;
         if (_krone) mat.userData.krone = true;
+        if (jahr === true) mat.userData.jahr = true; // das Laub fällt (`_jahrLage`; der Baum-Wind webt es in seinen Knoten)
         // DIE WERTE JE STOFF (1310-18): was nur diesen Stoff unterscheidet (das Leucht-Maß, der Ton-Anker der Strähnen-Achse),
         // liest der Graph als Stoff-Wert (`_stoffWert`), nie als eingefaltete Konstante — sonst trüge jeder Stoff seinen
         // eigenen Graphen und r184 baute je Stoff ein Programm.
@@ -3339,9 +3401,9 @@ class AnazhRealm_studio_bruecke {
         // gelbe Flammen-Wurzel, rote Spitze — statt einer Farbe für jede Fläche (das Labor webt dasselbe in r128).
         if (mp && typeof mp.leucht === "number" && mp.leucht > 0)
             mat.emissiveNode = vcol.mul(this._stoffWert(TSL, "userData.stoffWerte.leucht"));
-        // DIE SAISON IST EINE FARBE (V18.527): Laub und Gras sind Golden-Sommer gebacken — ihre Albedo × uSeasonMul
+        // DIE FARBE DES JAHRS (V18.527): Laub und Gras sind Golden-Sommer gebacken — ihre Albedo × uSeasonMul
         // (das Studio-Gesetz: der Laub-Shader multipliziert mix(1, uSeasonMul, vSeasW), vSeasW = 1 auf Laub und
-        // Blüte). Rinde, Fels, Kristall bleiben ungetönt.
+        // Blüte). Rinde, Fels, Kristall bleiben ungetönt. Die Gestalt des Jahrs trägt die Lage (`jahr`, `_jahrLage`).
         const _suF =
             kind === "foliage" || kind === "foliageTex" || kind === "grass" ? this._ensureSeasonUniforms() : null;
         const laubFarbe0 = _suF && _suF.uSeasonMul ? vcol.mul(_suF.uSeasonMul) : vcol;
@@ -3628,27 +3690,16 @@ class AnazhRealm_studio_bruecke {
             // Klein-Vegetations-Zwillings.
             this._windUniformsEnsure();
             const _sway = this._windSwayOffset(TSL, { ampX: 1.2, hoehe: TSL.attribute("aWiege", "float") });
-            mat.positionNode = TSL.positionLocal.add(_sway);
+            mat.positionNode = (jahr === true ? this._jahrLage(TSL) : TSL.positionLocal).add(_sway);
         }
-        // EIN GRAPH JE SIGNATUR (1310-18): r184 schlüsselt ein Programm nach der IDENTITÄT seiner Knoten (der Knoten-Schlüssel
-        // endet in `customCacheKey` = Knoten-id) — frisch gebaute Knoten hießen ein Programm je Stoff (1310-17: 43 Foundry-Stoffe,
-        // 43 Bauten). Die Signatur nennt jede Eingabe, an der der Bau oben verzweigt (Art · Rinde · Look-Klasse · Leucht · Gewebe
-        // · Ton-Anker der Strähne · Blende · Wiegen); der erste Stoff einer Signatur legt ihre Knoten ab, jeder weitere zeichnet
-        // mit DENSELBEN Knoten — die Werte je Stoff liest der Graph als Stoff-Wert, die Regler (Rauheit, Metall, Leuchtfarbe,
-        // Deckkraft, Schwelle) liest r184 als Stoff-Referenz. Weichen die belegten Knoten-Plätze ab, fehlt der Signatur eine
-        // Eingabe: das bricht laut beim Namen, nie still mit fremdem Graphen. Der Satz-Stoff (K43-2) ist eine Eingabe: er liest
-        // Rauheit und Metall je Ecke (`aRegler`), das Emissiv aus `aGlut` und, durchsichtig, die Deckkraft in colorNode.a.
-        const _plaetze = [
-            "colorNode",
-            "emissiveNode",
-            "opacityNode",
-            "outputNode",
-            "positionNode",
-            "maskNode",
-            "maskShadowNode",
-            "roughnessNode",
-            "metalnessNode",
-        ];
+        // DAS JAHR OHNE BAUM-WIND (die Blende aus): sonst webt `_baumWindStoff` die Lage des Jahrs in den Wind-Knoten
+        const _baumWind = xfade && (isBark || kind === "foliage" || kind === "foliageTex" || kind === "schatten");
+        if (jahr === true && !mat.positionNode && !_baumWind) mat.positionNode = this._jahrLage(TSL);
+        // EIN GRAPH JE SIGNATUR (1310-18, `_graphTeilen`; 1310-17: 43 Foundry-Stoffe, 43 Bauten). Die Signatur nennt jede
+        // Eingabe, an der der Bau oben verzweigt (Art · Rinde · Look-Klasse · Leucht · Gewebe · Ton-Anker der Strähne · Blende ·
+        // Wiegen) — die Werte je Stoff liest der Graph als Stoff-Wert, die Regler (Rauheit, Metall, Leuchtfarbe, Deckkraft,
+        // Schwelle) liest r184 als Stoff-Referenz. Der Satz-Stoff (K43-2) ist eine Eingabe: er liest Rauheit und Metall je Ecke
+        // (`aRegler`), das Emissiv aus `aGlut` und, durchsichtig, die Deckkraft in colorNode.a.
         const _sig = [
             kind,
             isBark ? "rinde" : "",
@@ -3661,24 +3712,20 @@ class AnazhRealm_studio_bruecke {
             xfade ? "xf" : "",
             wiegen === true ? "wiegt" : "",
             satz === true ? (R.op < 1 ? "satz:durch" : "satz") : "",
+            ton ? "aTon" : "", // die Farbe je Ecke nach der Palette des Leibs (`vcol`): ohne Blende teilte sie sonst einen Graphen
+            jahr === true ? "jahr" : "",
         ].join("|");
-        if (!this._foundryGraphen) this._foundryGraphen = new Map();
-        const _graph = this._foundryGraphen.get(_sig);
-        if (!_graph) {
-            const g = {};
-            for (const p of _plaetze) g[p] = mat[p] || null;
-            this._foundryGraphen.set(_sig, g);
-        } else {
-            const ab = _plaetze.filter((p) => !mat[p] !== !_graph[p]);
-            if (ab.length)
-                throw this._stoffBruch(
-                    `der geteilte Graph „${_sig}"`,
-                    new Error(
-                        "die Signatur verfehlt eine Eingabe des Baus — abweichende Knoten-Plätze: " + ab.join(" · ")
-                    )
-                );
-            for (const p of _plaetze) mat[p] = _graph[p];
-        }
+        this._graphTeilen(mat, _sig, [
+            "colorNode",
+            "emissiveNode",
+            "opacityNode",
+            "outputNode",
+            "positionNode",
+            "maskNode",
+            "maskShadowNode",
+            "roughnessNode",
+            "metalnessNode",
+        ]);
         mat.userData.foundrySignatur = _sig;
         mat.userData.foundryKind = kind; // die Art vor dem Leuchten: die Nässe liest ihre Poren (`_naesseImStoff`)
         // das Leuchtquellen-Gesetz: der Licht-Pool und der Zeitplan des Gesetzbuchs (`mp.licht`) im Leuchten (K11)
@@ -3914,7 +3961,9 @@ AnazhRealm._wortFalten = function (wort) {
 // DIE KONSUM-WAND des Foundry-Kanals (V18.511): GENAU die Vertex-Attribute, die `_foundryBuildMesh` liest — die
 // Transport-Schale (`_foundrySchale`) streicht im Worker jedes andere VOR Kopie, Platte und Transfer (aWind · aCenter ·
 // aType reisten 32 % der Bytes ohne Leser). Ein neuer Leser in `_foundryBuildMesh` = ein Name hier (gate:fluss prüft
-// beide Seiten gegeneinander).
+// beide Seiten gegeneinander). DIE JAHRES-ECKEN aCenter · aType (vegetation.K5): die Mitte jedes Blatts und sein Typ — das
+// Laub fällt im Winter auf seine Mitte (`_jahrLage`); sie reisen nur an Teilen mit Laub oder Blüte (die Schale streicht sie
+// an jedem anderen, `cfg.jahr`), aWind bleibt ohne Leser.
 AnazhRealm.FOUNDRY_LESEN = [
     "position",
     "normal",
@@ -3926,11 +3975,14 @@ AnazhRealm.FOUNDRY_LESEN = [
     "aTon",
     "skinIndex",
     "skinWeight",
+    "aCenter",
+    "aType",
 ];
 // Das Transport-Format der Platte (reist als `|f<n>` im Stempel): 2 = Konsum-Wand + Uint16-Index (V18.511); 3 =
-// saisonfreie Körper-Schlüssel `<preset>|<gestalt>|<lod>[|ov:…]`, Karten `karte|…` mit `{ payload }` (V18.527). Ein
-// geändertes Format leert den Asset-Cache von selbst (wie ein Studio-Edit) — die alte Saison-Platte fällt einmal.
-AnazhRealm.FOUNDRY_PLATTE_FORMAT = 3;
+// saisonfreie Körper-Schlüssel `<preset>|<gestalt>|<lod>[|ov:…]`, Karten `karte|…` mit `{ payload }` (V18.527); 4 = die
+// Jahres-Ecken aCenter · aType reisen an Laub und Blüte (vegetation.K5 — ein Körper der Platte 3 trüge sie nie, sein Laub
+// stünde still im Winter). Ein geändertes Format leert den Asset-Cache von selbst (wie ein Studio-Edit).
+AnazhRealm.FOUNDRY_PLATTE_FORMAT = 4;
 AnazhRealm.INGEST_RATE_PER_S = 180; // Ziel-Freigaben je echter Sekunde (= 60 fps × 3 → healthy-fps byte-alt)
 AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-Deckel; bei 8 fps = 64/s statt 8/s)
 // Der Horizont-Saum (m): über so viele Meter vor `SCATTER.outerM` liegen die Ränder der Karten-Dinge, je Eintrag aus

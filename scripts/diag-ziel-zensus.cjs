@@ -292,15 +292,7 @@ function rundungProbe() {
                 window.__gpuFehlerZ.push(String(e.error?.message || e.message || e).slice(0, 240))
             );
         });
-        const zensus = async () => {
-            const z = await page.evaluate((k) => window.__zielZensus(k), { n: N_FRAMES });
-            if (!z || z.fehler) return { z, u: ZZ.zielUrteil(z, []) };
-            const ids = z.ziele
-                .filter((x) => !x.leinwand && !x.tiefe && x.kopierbar && /^(r|rg|rgba|bgra)(8|16|32)/.test(x.format))
-                .map((x) => x.id);
-            const lesen = await page.evaluate((k) => window.__zielLesen(k), { ids });
-            return { z, u: ZZ.zielUrteil(z, lesen) };
-        };
+        const zensus = () => ZZ.zensusDer(page, N_FRAMES); // der EINE Zensus der Seite (die Werkbank `ziele` liest ihn ebenso)
         // (c) der Schmuggel zuerst: jeder Täter beim Namen, danach restlos fort
         const s = await page.evaluate(() => window.__zielSchmuggel(true));
         if (!s || s.fehler) throw new Error("Schmuggel: " + (s?.fehler || "keine Antwort"));

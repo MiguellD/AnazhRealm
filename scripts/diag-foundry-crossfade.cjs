@@ -290,7 +290,7 @@ const ABSENZEN = [
     ["MASS: keine Blattmaske misst zum Vertex (_cam.x.sub(_pw.x))", null, /_cam\.x\.sub\(_pw\.x\)/, "_cam.x.sub(_pw.x)"],
     [
         "AUGE: keine Stufen-Wahl misst vom Spieler statt vom Auge der Maske",
-        ["_tickArchitectureLOD", "_switchArchitectureLOD", "_foundryLodForEntry", "_updateFoundryLodBand"],
+        ["_tickArchitectureLOD", "_archStufeUrteil", "_switchArchitectureLOD", "_foundryLodForEntry", "_updateFoundryLodBand"],
         /playerMesh/,
         "this.state.playerMesh",
     ],
