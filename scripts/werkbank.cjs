@@ -1214,31 +1214,13 @@ async function starte() {
                 const re = new RegExp(k.klasse);
                 const zeichnet = (o) =>
                     o.visible === true && !!o.geometry && (o.isMesh || o.isLine || o.isPoints || o.isSprite);
-                // DER KOPF IN STOFFEN (`--gesicht`): ein Teil des Spielers, dessen Gewichte am Kopf hängen (head, Augen,
-                // Lider) oder der am Kopf-Gelenk sitzt, heißt `spieler:kopf/<Stoff>` (Stoff = `__klasse`, sonst `auge`), der Rest
-                // `spieler:leib/…` — die Teilung zeigt dann jeden Stoff des Kopfs für sich
-                const KOPF_GELENK = /^(head|eye[LR]|iris[LR]|lid[TB][LR])$/;
-                const kopfGewicht = (o) => {
-                    for (let p = o; p; p = p.parent) if (p.name === "head") return 1;
-                    const a = o.geometry.attributes.skinIndex,
-                        w = o.geometry.attributes.skinWeight;
-                    if (!a || !o.skeleton) return 0;
-                    let kz = 0,
-                        n = 0;
-                    for (let i = 0; i < a.count; i++)
-                        for (let c = 0; c < 4; c++) {
-                            const wt = w.getComponent(i, c);
-                            n += wt;
-                            if (KOPF_GELENK.test(o.skeleton.bones[a.getComponent(i, c)].name)) kz += wt;
-                        }
-                    return n ? kz / n : 0;
-                };
+                // DER KOPF IN STOFFEN (die Kopf-Klasse des Stamms, `_kopfKlasse`): jeder Leib eines Menschen — der Spieler, jeder
+                // Bewohner — teilt sich in `<leib>:kopf/<Stoff>` und `<leib>:leib/<Stoff>`; wählt der Ausdruck den Leib selbst
+                // (`^spieler$`), ist er EINE Klasse, sonst zeigt die Teilung jeden Stoff des Kopfs für sich (`^bewohner:kopf/`).
+                // Bis w4-bewohner-wache teilte die Werkbank selbst, nur den Spieler und nur unter `--gesicht`
                 const teilName = (o) => {
-                    const kl = r._taeterKlasse(o);
-                    if (k.gesicht == null || kl !== "spieler") return kl;
-                    const auge =
-                        o.isSkinnedMesh && o.skeleton && o.skeleton.bones.some((b) => /^iris[LR]$/.test(b.name));
-                    return `spieler:${kopfGewicht(o) >= 0.3 ? "kopf" : "leib"}/${o.userData.__klasse || (auge ? "auge" : "stoff")}`;
+                    const [grob, fein] = r._kopfKlasse(o);
+                    return re.test(grob) ? grob : fein;
                 };
                 const teile = new Map();
                 const nimm = (kl, o) => {
@@ -1432,19 +1414,31 @@ async function starte() {
                         if (mb && ms.pixel) ms.ziel = zielTreue(m);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
-                    // DIE PROBEN DES GESICHTS (`--gesicht`): je Vertex des Kopfs sein Zug (Iris am Gelenk, auf der
+                    // DIE PROBEN DES GESICHTS: je Vertex des Kopfs sein Zug (Iris am Gelenk, auf der
                     // Kopf-Haut der Ton seiner Ecke, `aTon` — koerper `menschTon`: Haut, Lippe, Höhle, Haar-Kappe), projiziert auf den
                     // Schirm; `__gesichtMasse` liest das BILD dort, wo die Teilung den Teil des Vertex zeigt (abnahme-urteil). Die Töne
                     // kommen aus dem Leib selbst, nie von Hand — bis mensch.K4 aus der Farbe der Ecke, die die Verdeckung der Haut dunkelt.
-                    // Die Maße gehören der Klasse, die die Kopf-Haut wählt (mensch-kopf `^spieler:kopf/`); wählt sie sie nicht (haar
-                    // `^spieler:kopf/hair$`), ist `--gesicht` nur die Pose — bis dahin warf jeder Haar-Schuss „keine Kopf-Haut am Gelenk
-                    // head“ (haar.K2#1 third, beide Geräte).
+                    // Die Maße gehören der Klasse, die die Kopf-Haut eines Leibs wählt (mensch-kopf `^spieler:kopf/`, `^bewohner:kopf/`);
+                    // wählt sie sie nicht (haar `^spieler:kopf/hair$`), misst sie kein Gesicht — bis dahin warf jeder Haar-Schuss „keine
+                    // Kopf-Haut am Gelenk head“ (haar.K2#1 third, beide Geräte). DAS GESICHT IST EINES: das des sichtbaren gewählten
+                    // Leibs, der der Kamera am nächsten steht (`_leibWurzel`, `_menschLeib`: der Spieler oder ein Bewohner — vor
+                    // der Wache steht um 7,2 Uhr die zweite daneben; ein Bewohner außerhalb der Nah-Wahl trägt sichtbare Teile unter
+                    // seiner verborgenen Wurzel, am Start-Dorf 77 von 81 Leibern); die Pose (`--gesicht` vor dem Spieler oder die
+                    // Kamera vor einem Bewohner) ist nur die Pose. Bis w4-bewohner-wache kannte das Gesicht nur den Spieler unter
+                    // `--gesicht`.
                     let gesicht = null;
-                    if (k.gesicht != null && ["spieler:kopf/haut", "spieler:kopf/skin"].some((n) => re.test(n))) {
+                    const kopfHaut = /:kopf\/(haut|skin)$/;
+                    if (namen.some((n) => kopfHaut.test(n))) {
                         const T = THREE;
                         const K = window.__koerperCore;
                         if (!K || typeof K.menschTon !== "function" || !K.KOPF_SOLL)
                             throw new Error("--gesicht: koerper-core ohne menschTon/KOPF_SOLL in der Seite");
+                        const ab = (L) => L.position.distanceTo(cam.position);
+                        const [wahlLeib] = namen
+                            .filter((n) => kopfHaut.test(n))
+                            .flatMap((n) => teile.get(n).map(r._leibWurzel, r))
+                            .filter((L) => L.visible)
+                            .sort((a, b) => ab(a) - ab(b));
                         const knochen = (o, i) => {
                             const si = o.geometry.attributes.skinIndex,
                                 sw = o.geometry.attributes.skinWeight;
@@ -1473,9 +1467,10 @@ async function starte() {
                             nm = 0;
                         const mitte = new T.Vector3();
                         for (const [n, os] of teile) {
-                            if (!/^spieler:kopf\/(auge|haut|skin)$/.test(n)) continue;
+                            if (!/:kopf\/(auge|haut|skin)$/.test(n)) continue;
                             const kix = namen.indexOf(n) + 1;
                             for (const o of os) {
+                                if (r._leibWurzel(o) !== wahlLeib) continue;
                                 const pa = o.geometry.attributes.position;
                                 for (let i = 0; i < pa.count; i++) {
                                     const kn = knochen(o, i);
@@ -1532,7 +1527,7 @@ async function starte() {
                                 vorn: p.z === "iris" ? p.d < median[p.seite] : p.w.clone().sub(mitte).dot(zurCam) > 0,
                                 kalotte: p.z !== "iris" && p.w.y > yHaar,
                             }));
-                        const haarK = namen.map((n, j) => (/^spieler:kopf\/hair$/.test(n) ? j + 1 : 0)).filter(Boolean);
+                        const haarK = namen.map((n, j) => (n === `${r._menschLeib(wahlLeib)}:kopf/hair` ? j + 1 : 0)).filter(Boolean);
                         if (!nm) throw new Error("--gesicht: keine Kopf-Haut am Gelenk head");
                         gesicht = __gesichtMasse(u8, teil, W, H, proben, haarK);
                     }
