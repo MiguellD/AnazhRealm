@@ -334,14 +334,6 @@ async function probe(argW) {
     const out = {};
     await window.__weltDa();
     const zeilen = () => [...document.querySelectorAll("#chat-output > div")].map((d) => d.textContent);
-    const tick = async (n, ms) => {
-        for (let i = 0; i < n; i++) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
-            await sleep(ms || 30);
-        }
-    };
     for (
         const weiter = window.__deckel("Buch, Leib und Eiche", 900);
         weiter() &&
@@ -353,8 +345,8 @@ async function probe(argW) {
         );
 
     )
-        await tick(1, 100);
-    await tick(10, 30);
+        await __takte(1, 100);
+    await __takte(10, 30);
     // Ein trockener, freier Ort abseits der Genesis-Lichtung (die Natur-Wand hält die Scheibe frei): der Spieler steht dort.
     const plat = r._genesisPlattform();
     const P0 = plat ? plat.position : st.playerMesh.position;
@@ -549,7 +541,7 @@ async function probe(argW) {
         const vorher = new Set(st.architectures);
         const n0 = zeilen().length;
         r.processChatCommand("bau mir ein fachwerkhaus");
-        await tick(3, 30);
+        await __takte(3, 30);
         const neu = st.architectures.filter((a) => a && !vorher.has(a));
         m.hausGebaut = neu.filter((a) => artVon(a.type) === "haus").length;
         m.hausZeile = zeilen().slice(n0).join(" | ").slice(0, 160);
@@ -559,7 +551,7 @@ async function probe(argW) {
         if (st.llm) st.llm.enabled = false;
         const n1 = zeilen().length;
         r.processChatCommand("bau mir eine scheune");
-        await tick(1, 30);
+        await __takte(1, 30);
         m.absageZeile = zeilen().slice(n1).join(" | ");
         // Ein Verb mit einem Wort, das kein Ding ist: der Studio-Satz stiehlt dem Vorschlag die Zeile nicht.
         m.vorschlag = {};
@@ -567,7 +559,7 @@ async function probe(argW) {
             const n2 = zeilen().length;
             const vorher2 = new Set(st.architectures);
             r.processChatCommand(satz);
-            await tick(1, 30);
+            await __takte(1, 30);
             for (const a of st.architectures.filter((a) => a && !vorher2.has(a))) r.removeArchitecture(a);
             m.vorschlag[satz] = { zeile: zeilen().slice(n2).join(" | "), sug: r.chatSuggest(satz) || null };
         }
@@ -608,7 +600,7 @@ async function probe(argW) {
             stelle();
             st.yaw = Math.atan2(frei.x - plat.position.x, frei.z - plat.position.z) + 0.7;
             st.pitch = -0.45;
-            await tick(4, 30);
+            await __takte(4, 30);
             r.setHotbarSlot(4, NAME);
             if (!(st.buildMode.active && st.buildMode.blueprintName === NAME)) r.selectHotbarSlot(4);
             const bm = st.buildMode;
@@ -659,14 +651,14 @@ async function probe(argW) {
                 let naechst = Infinity;
                 for (const pitch of [-0.45, -0.7, -0.95, -1.2, -1.4]) {
                     st.pitch = pitch;
-                    await tick(2, 30);
+                    await __takte(2, 30);
                     r.tickBuildMode();
                     const pp = st.playerMesh.position;
                     const q = bm.phantomMesh.position;
                     naechst = Math.min(naechst, Math.hypot(q.x - pp.x, q.z - pp.z));
                 }
                 st.pitch = -0.45;
-                await tick(2, 30);
+                await __takte(2, 30);
                 r.tickBuildMode();
                 m.abstand = +naechst.toFixed(2);
                 // Wie weit das Werk reicht: die Studio-Gestalt des Phantoms in Weltgröße, jeder Vertex jedes Teils durch

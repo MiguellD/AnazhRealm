@@ -643,7 +643,7 @@ async function leibGang(G) {
             return t && anlauf(e.type, P(0), [P(1).cx - P(0).cx, P(1).cz - P(0).cz], P(t.z));
         };
         const anker = { stamm: baum && { typ: baum.typ, b: stamm(baum) }, fels: L.je.fels[0], haus: L.je.haus[0], innen: tuer(L.je.haus.find(tuer)) };
-        const MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7];
+        const MUSTER = __MUSTER;
         let tMs = performance.now();
         let nr = 0;
         const gang = async (art, a, sprint, senk) => {

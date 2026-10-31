@@ -411,12 +411,8 @@ async function probe(A) {
     const faden = st.voxelWorker;
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
-    if (st.renderer) {
-        st.renderer.render = function () {};
-        if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
-    }
-    st.postProcessingFailed = true;
-    const MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7];
+    __bildAus();
+    const MUSTER = __MUSTER;
     let tMs = performance.now();
     let nFrame = 0;
     const frame = () => {
@@ -1708,12 +1704,8 @@ async function probe(A) {
 // ±A.R m um den Damm) ohne Damm, mit Damm, nach dem Reload; die Invalidierungen des Automaten beim Abbau. ──
 async function dammProbe(A) {
     await window.__weltDa((w) => w.state.hydrosphere && w.state.hydrosphere.ready);
-    if (st.renderer) {
-        st.renderer.render = function () {};
-        if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
-    }
-    st.postProcessingFailed = true;
-    const MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7];
+    __bildAus();
+    const MUSTER = __MUSTER;
     let tMs = performance.now();
     let nFrame = 0;
     const frame = () => {

@@ -34,7 +34,7 @@ async function probeLeben(expected) {
         return n > 0;
     };
     // Frame-Zeiten (ms): Frames ohne (8,3), mit einem (16,7 · 20 · 11,1) und mit zwei Sim-Schritten (25 · 33,3).
-    const MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7];
+    const MUSTER = __MUSTER;
     let tMs = performance.now();
     // DIE BAHN-WACHE (Fixture der Fahr-Stationen S2 · S3 · S4): solange eine Station fährt, fällt nach jedem Bild, was in
     // ihrer Bahn mit einer Hülle steht oder hineinwächst (Promotion um den Spieler) — gemessen wird die Fahr-Physik, nie der Wald.
@@ -730,13 +730,14 @@ async function probeLeben(expected) {
                 querOrt: null,
                 takte: 0,
                 ms: 0,
+                ...{ steuerlos: 0, fahrt: 0, fahrtWer: null, geh: 0, fahrbahn: 0 },
             };
             r._verkehrSchritt = function (dt) {
                 const t0 = performance.now();
                 P._verkehrSchritt.call(this, dt);
                 [m.ms, m.takte] = [m.ms + performance.now() - t0, m.takte + 1];
             };
-            const weg0 = new Map(VK.wagen.map((W) => [W, W.weg]));
+            const ziele0 = new Map(VK.wagen.map((W) => [W, W.ziele]));
             const stoss0 = { ...VK.zahl.stoss };
             const ort2 = (L) => [Math.round(L.x), Math.round(L.z)];
             // DAS EINE STUFEN-GESETZ (Komposit erbt, Bewegte prüfen) je fahrendem Wagen am Auge der Stufen (`_lodAuge`): zeigt sich
@@ -752,6 +753,16 @@ async function probeLeben(expected) {
                 if (k % 4) continue;
                 const fahrend = VK.wagen.filter((W) => W.zustand === "faehrt" && W.entry);
                 const L = fahrend.map(lage);
+                // DER BEWOHNER AM STEUER je fahrendem Wagen; die längste Fahrt zu einem Ziel (die Uhr des Wagens seit dem Anfang der
+                // Fahrt, `_verkehrAngekommen`); DIE FAHRBAHN: je Gehenden, ob seine Mitte in der Bahn eines Wagens liegt (das EINE
+                // Gesetz der Straße, `_verkehrAufSpur` mit dem halben Wagen)
+                for (const W of fahrend) {
+                    m.steuerlos += !W.b.amSteuer;
+                    if (W.uhr - W.fahrtAb > m.fahrt) [m.fahrt, m.fahrtWer] = [W.uhr - W.fahrtAb, W];
+                }
+                for (const b of S.liste)
+                    if (b.leib && b.weg && !b.drinnen && !b.amSteuer)
+                        [m.geh, m.fahrbahn] = [m.geh + 1, m.fahrbahn + r._verkehrAufSpur(S, b.leib.position.x, b.leib.position.z, -R)]; // prettier-ignore
                 const [a, sp] = [r._lodAuge(), st.playerMesh.position];
                 for (const [n, W] of fahrend.entries()) {
                     const [e, d] = [W.entry, Math.hypot(L[n].x - a.x, L[n].z - a.z)];
@@ -798,25 +809,9 @@ async function probeLeben(expected) {
                 }
             }
             delete r._verkehrSchritt;
-            const steher = VK.wagen
-                .filter((W) => W.weg - weg0.get(W) < 30 || W.entry._fahr.speed < 0.1)
-                .map((W) => {
-                    const z0 = W.zonen.find((q) => !q.weg);
-                    const v = W.vorne;
-                    return [
-                        W.nr,
-                        Math.round(W.weg - weg0.get(W)),
-                        W.grund,
-                        ...ort2(lage(W)),
-                        z0 ? z0.Z.art + ":" + (z0.Z.halter.map((q) => q.nr).join("/") || "-") : "",
-                        v
-                            ? "vorne " + v.gap.toFixed(1) + "@" + v.O.nr
-                            : W.grund === "leib" && W.wer
-                              ? "leib " + W.wer.nr
-                              : "",
-                    ];
-                });
-            const wege = VK.wagen.map((W) => W.weg - weg0.get(W)).sort((a, b) => a - b);
+            // der Täter der längsten Fahrt beim Namen: sein Grund, sein Ort, wer vor ihm steht (Wagen oder Leib)
+            const W = m.fahrtWer;
+            const wer = W && [W.nr, W.grund, ...ort2(lage(W)), W.vorne ? W.vorne.O.nr : W.wer && W.wer.seed];
             aus[stunde] = {
                 soll: VK.zahl.soll,
                 wagen: VK.wagen.length,
@@ -828,21 +823,23 @@ async function probeLeben(expected) {
                 wenden: VK.wenden.size,
                 enden: VK.kp.filter((K) => K.ende).length,
                 stufen: VK.zahl.stufen.slice(0, 6),
-                weg: {
-                    min: Math.round(wege[0] || 0),
-                    median: Math.round(wege[wege.length >> 1] || 0),
-                    summe: Math.round(wege.reduce((a, b) => a + b, 0)),
-                },
                 fest: VK.wagen.filter((W) => W.festOrt).map((W) => ({ ...W.festOrt, nr: W.nr })),
                 stoss: Object.fromEntries(Object.entries(VK.zahl.stoss).map(([k, v]) => [k, v - stoss0[k]])),
                 beruehrt: { leib: m.leib, wagen: m.wagen, orte: m.leibOrte, wagenOrte: m.wagenOrte },
                 ohneSchluessel: m.ohne,
-                steher,
                 querMax: +m.quer.toFixed(2),
                 querOrt: m.querOrt,
                 msJeSchritt: +(m.ms / Math.max(1, m.takte)).toFixed(3),
                 stufe: SK,
                 sek: o.sek,
+                steuerlos: m.steuerlos,
+                ziele: {
+                    erreicht: VK.wagen.reduce((s, W) => s + W.ziele - ziele0.get(W), 0),
+                    ohne: VK.wagen.filter((W) => W.ziele === ziele0.get(W)).map((W) => W.nr),
+                    laengsteS: Math.round(m.fahrt),
+                    wer,
+                },
+                fahrbahn: { geh: m.geh, auf: m.fahrbahn, anteil: +(m.fahrbahn / Math.max(1, m.geh)).toFixed(4) },
             };
         }
         return aus;

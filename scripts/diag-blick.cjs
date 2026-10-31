@@ -28,17 +28,6 @@ hauptLauf(async () => {
     await server.zeige(page, 60000);
     await page.evaluate(AUSGABE_INSTALL); // die EINE Aufnahme: der echte Frame, getont wie beim Spieler
 
-    const gpu = await page.evaluate(async () => {
-        if (!navigator.gpu) return "kein navigator.gpu";
-        try {
-            const a = await navigator.gpu.requestAdapter();
-            return a ? "adapter ok" : "kein adapter";
-        } catch (e) {
-            return "adapter-wurf: " + (e && e.message);
-        }
-    });
-    console.log("WebGPU-Probe:", gpu);
-
     const out = await page.evaluate(
         async (zeitArg, blickArg) => {
             const res = { schuesse: {} };

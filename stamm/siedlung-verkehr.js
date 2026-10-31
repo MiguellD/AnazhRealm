@@ -6,8 +6,9 @@ class AnazhRealm_siedlung_verkehr {
     // Wenden und Plätze), mit dem EINEN Fahrer (`_fahrerSchritt`, `_fahrerLinie`) und dem EINEN Fahr-Schritt des Kerns
     // (`_wagenSchritt` · vehicle-core fahrStand · `_wagenLage`). Der Fahrer hat die Rolle `fahrer` (koerper-core TAGES_GESETZ):
     // sein Werk ist der Platz seines Wagens an der Wende nahe seiner Tür — dorthin geht er am Morgen, steigt ein, fährt bis
-    // zum Feierabend durch die Stadt, kehrt zum Platz zurück, steigt aus und geht heim. Die Wagen leben mit der Liste ihrer
-    // Siedlung (`_bewohnerFort` nimmt sie mit) und sind Gesetz, nie Save-Byte (`ausGesetz`).
+    // zum Feierabend von Ziel zu Ziel (die Wenden der Stadt, `_verkehrZielNeu`), kehrt zum Platz zurück, steigt aus und geht
+    // heim. Die Wagen leben mit der Liste ihrer Siedlung (`_bewohnerFort` nimmt sie mit) und sind Gesetz, nie Save-Byte
+    // (`ausGesetz`).
     // DIE ORDNUNG AUF DER STRASSE: jede Strecke trägt zwei Spuren (rechts der Fahrt), wer vor einem fährt, deckelt sein Tempo
     // (`_verkehrFolge`: Weg bis zu ihm samt Abstand und Bremsweg), wer in der Spur steht oder geht (Bewohner, Spieler), hält
     // ihn an; Kreuzung, Enge und Wende befährt einer zur Zeit (`_verkehrZonen`: der Schlüssel des Orts, in der Reihe der
@@ -44,6 +45,7 @@ class AnazhRealm_siedlung_verkehr {
                 km: 0,
                 fest: 0,
                 stoss: { wagen: 0, bau: 0, leib: 0 },
+                ziele: { gesetzt: 0, erreicht: 0, laengsteS: 0 },
             },
         });
         if (!von.n) return VK;
@@ -317,6 +319,14 @@ class AnazhRealm_siedlung_verkehr {
                 weg: 0,
                 ankunft: true,
                 sitzt: false,
+                // das Ziel der Fahrt (`_verkehrZielNeu`): die Wende, der Weg dorthin, der Zähler des Samens; die Ankünfte, die Uhr
+                // des Wagens (seine Sim-Schritte) und der Anfang der Fahrt (`_verkehrAngekommen`)
+                ziel: null,
+                zielWeg: null,
+                zielN: 0,
+                ziele: 0,
+                uhr: 0,
+                fahrtAb: 0,
             };
             // DER FAHRER: seine Rolle und sein Werk — der Stand neben seinem Wagen, auf der Seite fort vom Ring der Wende (nie in
             // seiner Spur), zum Wagen gewandt
@@ -341,22 +351,62 @@ class AnazhRealm_siedlung_verkehr {
         return VK;
     }
 
-    // LIEGT (x, z) IN DER SPUR EINES WAGENS? Näher als ein halber Wagen samt Kapsel und `spurRandM` an einer Spur, der Bahn oder
-    // dem Ring einer Wende (das Raster der Spuren, `VK.spurRaster`). Leser: der Stand der Bewohner (`_bewohnerStandPruefen`).
-    _verkehrAufSpur(S, x, z) {
+    // LIEGT (x, z) IN DER SPUR EINES WAGENS? Näher als ein halber Wagen samt Kapsel und `rand` an einer Spur, einem Abbieger, der
+    // Bahn oder dem Ring einer Wende (das Raster der Spuren, `VK.spurRaster`) — DIE FAHRBAHN, das EINE Gesetz, nach dem Fuß und
+    // Wagen die Straße teilen. Leser: der Stand der Bewohner (`_bewohnerStandPruefen`, `spurRandM` Raum), und mit `rand` 0 jeder
+    // Ort, den ein Gehender wählt — der Punkt seines Wegs (`_bewohnerStrecke`), der Punkt um einen Stehenden (`_bewohnerUm`), der
+    // Platz, auf den er tritt (`_bewohnerPlatz`), der Schritt, mit dem er ausweicht (`_bewohnerAusweichen`).
+    _verkehrAufSpur(S, x, z, rand = AnazhRealm.VERKEHR.spurRandM) {
         const VK = S.verkehr;
         const M = AnazhRealm.BEWOHNER.rasterM;
         const l = VK && VK.spurRaster && VK.spurRaster.get(Math.floor(x / M) * 2097152 + Math.floor(z / M));
         if (!l) return false;
-        const r =
-            globalThis.__fachwerkCore.VERKEHR_GESETZ.halbM +
-            AnazhRealm.PLAYER_WALL_RADIUS +
-            AnazhRealm.VERKEHR.spurRandM;
+        const r = globalThis.__fachwerkCore.VERKEHR_GESETZ.halbM + AnazhRealm.PLAYER_WALL_RADIUS + rand;
         for (let i = 0; i < l.length; i += 4) {
             const [ax, az, bx, bz] = [l[i], l[i + 1], l[i + 2], l[i + 3]];
             const [dx, dz] = [bx - ax, bz - az];
             const t = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / (dx * dx + dz * dz || 1)));
             if ((x - ax - dx * t) ** 2 + (z - az - dz * t) ** 2 < r * r) return true;
+        }
+        return false;
+    }
+
+    // QUERT DAS BEIN a → b DIE FAHRBAHN, STATT LÄNGS IHR ZU GEHEN? Die Kapsel liegt auf ihm höchstens `querBreiten` Breiten der
+    // Fahrbahn (zwei Spuren samt halbem Wagen und Kapsel) in der Bahn eines Wagens (`_verkehrAufSpur` ohne Rand, je halben Meter):
+    // gerade hinüber oder schräg bis 30°. Leser: der Weg der Bewohner (`_bewohnerStrecke`).
+    _verkehrQuert(S, a, b) {
+        const VG = globalThis.__fachwerkCore.VERKEHR_GESETZ;
+        const L = Math.hypot(b.x - a.x, b.z - a.z);
+        const n = Math.max(1, Math.ceil(L / 0.5));
+        const max = AnazhRealm.VERKEHR.querBreiten * 2 * (VG.spurM + VG.halbM + AnazhRealm.PLAYER_WALL_RADIUS);
+        let drin = 0;
+        for (let k = 0; k <= n; k++) {
+            const t = k / n;
+            if (this._verkehrAufSpur(S, a.x + (b.x - a.x) * t, a.z + (b.z - a.z) * t, 0) && (drin += L / n) > max)
+                return false;
+        }
+        return true;
+    }
+
+    // DER VORRANG DER FAHRBAHN: beansprucht ein Wagen der Stadt (er fährt oder hält auf der Fahrt) den Punkt (x, z) gegen den
+    // Bewohner b? Er liegt vor seinem Bug, höchstens `vorrangM` voraus, und quer in seiner Bahn (der halbe Wagen, Kapsel, `seitM`
+    // und ein Meter für die Kurve) — außer der Wagen hält für b selbst (`W.wer`, `_verkehrFolge`): dann geht b zuerst. Bis hier
+    // hielt der Halter einer Enge für den, der in der Kurve am Rand auf ihn wartete (die Bahn des Wagens weitet sich dort um
+    // das Ausscheren): beide standen, 15 Wagen dahinter. Leser: der Gang der Bewohner (`_bewohnerGehen`).
+    _verkehrVorrang(S, x, z, b) {
+        const V = AnazhRealm.VERKEHR;
+        for (const W of S.verkehr.wagen) {
+            const e = W.entry;
+            if (W.zustand !== "faehrt" || !e || W.wer === b) continue;
+            const [fx, fz] = [Math.sin(e._rideYaw || 0), Math.cos(e._rideYaw || 0)];
+            const [dx, dz] = [x - e.position.x, z - e.position.z];
+            const vor = dx * fx + dz * fz - W.hl;
+            if (
+                vor > 0 &&
+                vor < V.vorrangM &&
+                Math.abs(dx * fz - dz * fx) < W.hw + AnazhRealm.PLAYER_WALL_RADIUS + V.seitM + 1
+            )
+                return true;
         }
         return false;
     }
@@ -529,6 +579,8 @@ class AnazhRealm_siedlung_verkehr {
         W.zustand = "faehrt";
         W.heim = false;
         W.letzter = null;
+        this._verkehrZielNeu(S, W, W.ki); // die erste Fahrt: von der Wende seines Platzes zu einer anderen
+        W.fahrtAb = W.uhr;
         this._verkehrLinie(S, W, this._verkehrZuege(S, W), true);
         if (W.ankunft) this._verkehrAnkunft(S, W);
         W.ankunft = false;
@@ -593,7 +645,29 @@ class AnazhRealm_siedlung_verkehr {
     // ist der kürzeste Weg über die fahrbaren Strecken zur Wende seines Platzes und dort in den Platz (`_verkehrZuege`).
     _verkehrHeim(S, W) {
         W.heim = true;
-        W.heimWeg = this._verkehrHeimWeg(S, W);
+        W.heimWeg = this._verkehrWegZu(S, W.ki);
+    }
+
+    // DAS ZIEL DER FAHRT (PFLICHT-OFFEN C: jeder Wagen erreicht sein Ziel): eine Wende der Stadt außer der, an der er ist (`von`),
+    // gewählt vom Samen seines Wagens — dorthin fährt er den kürzesten Weg (`_verkehrWegZu`), durch ihren Kreis, dann zur nächsten.
+    // Bis hier wählte der Same an jeder Kreuzung eine Strecke: der Wagen fuhr, kam aber nirgends an.
+    _verkehrZielNeu(S, W, von) {
+        const wahl = [...S.verkehr.wenden.keys()].filter((ki) => ki !== von);
+        if (!wahl.length) return;
+        W.ziel = wahl[Math.floor(W.gen.axis("ziel" + W.zielN++) * wahl.length) % wahl.length];
+        W.zielWeg = this._verkehrWegZu(S, W.ziel);
+        S.verkehr.zahl.ziele.gesetzt++;
+    }
+
+    // ANGEKOMMEN (die Wende seines Ziels liegt hinter ihm, `_verkehrZonen`; heim: er parkt): die Fahrt ist gezählt — ihre Dauer in
+    // der Uhr seines Wagens (`W.uhr`, die Zeit seiner Sim-Schritte), die längste je Stadt; die nächste beginnt hier.
+    _verkehrAngekommen(S, W) {
+        const Z = S.verkehr.zahl.ziele;
+        const d = W.uhr - W.fahrtAb;
+        W.ziele++;
+        Z.erreicht++;
+        if (d > Z.laengsteS) Z.laengsteS = d;
+        W.fahrtAb = W.uhr;
     }
 
     // DER FAHRER STEIGT AUS (der Wagen steht auf seinem Platz — oder sofort: die Uhr sprang, `_tickBewohner` stellt ihn neu): der
@@ -660,9 +734,10 @@ class AnazhRealm_siedlung_verkehr {
     }
 
     // DIE ROUTE IM VORAUS: die nächsten Züge (Strecke in einer Richtung, Wende, aus dem Platz, in den Platz) nach dem letzten
-    // (`W.letzter`; keiner: aus dem Platz), bis `vorausM` Meter neu sind. Nach einer Strecke an einer Kreuzung wählt der Same eine
-    // der anderen fahrbaren Strecken (nie zurück), am Ende die Wende; heim (`W.heimWeg`) der kürzeste Weg zur Wende seines
-    // Platzes, dort hinein — dann endet die Route.
+    // (`W.letzter`; keiner: aus dem Platz), bis `vorausM` Meter neu sind. Nach einer Strecke an einer Kreuzung die Strecke des
+    // kürzesten Wegs zu seinem Ziel (`W.zielWeg`; trägt der Abbieger sie nicht, wählt der Same eine der anderen fahrbaren, nie
+    // zurück), am Ende die Wende — ist sie sein Ziel, trägt ihr Zug es (`ziel`) und das nächste gilt; heim (`W.heimWeg`) der
+    // kürzeste Weg zur Wende seines Platzes, dort hinein — dann endet die Route.
     _verkehrZuege(S, W) {
         const V = AnazhRealm.VERKEHR;
         const VK = S.verkehr;
@@ -686,14 +761,17 @@ class AnazhRealm_siedlung_verkehr {
             const s = VK.strecken[m.si];
             const ki = m.dir === 0 ? s.b : s.a;
             if (VK.kp[ki].ende) {
-                legen(W.heim && ki === W.ki ? { art: "ein", ki } : { art: "wende", ki });
+                const ziel = !W.heim && ki === W.ziel;
+                legen(W.heim && ki === W.ki ? { art: "ein", ki } : { art: "wende", ki, ziel });
+                if (ziel) this._verkehrZielNeu(S, W, ki);
                 continue;
             }
             const verboten = VK.kp[ki].verboten || [];
             const an = VK.kp[ki].strecken.filter(
                 (x) => x !== m.si && VK.strecken[x].fahrbar && !verboten.includes(m.si + ">" + x)
             );
-            let si = W.heim && W.heimWeg ? W.heimWeg.get(ki) : undefined;
+            const zu = W.heim ? W.heimWeg : W.zielWeg;
+            let si = zu ? zu.get(ki) : undefined;
             if (si === undefined || !an.includes(si))
                 si = an[Math.floor(W.gen.axis("zug" + W.zugN++) * an.length) % an.length];
             if (si === undefined) break;
@@ -704,14 +782,18 @@ class AnazhRealm_siedlung_verkehr {
         return neu;
     }
 
-    // DER WEG HEIM: je Knotenpunkt die Strecke, über die der kürzeste Weg zur Wende seines Platzes geht (Dijkstra von ihr aus).
-    _verkehrHeimWeg(S, W) {
+    // DER WEG ZUR WENDE `ki` (heim zur Wende seines Platzes, `_verkehrHeim`; zum Ziel der Fahrt, `_verkehrZielNeu`): je
+    // Knotenpunkt die Strecke, über die der kürzeste Weg zu ihr geht (Dijkstra von ihr aus) — je Wende einmal, das Netz steht.
+    _verkehrWegZu(S, ki) {
         const VK = S.verkehr;
+        const memo = VK.wegZu || (VK.wegZu = new Map());
+        if (memo.has(ki)) return memo.get(ki);
         const n = VK.kp.length;
         const dist = new Float64Array(n).fill(Infinity);
         const ueber = new Map();
-        const offen = [W.ki];
-        dist[W.ki] = 0;
+        memo.set(ki, ueber);
+        const offen = [ki];
+        dist[ki] = 0;
         while (offen.length) {
             offen.sort((a, b) => dist[b] - dist[a]);
             const k = offen.pop();
@@ -794,7 +876,7 @@ class AnazhRealm_siedlung_verkehr {
     // Richtung (dir: wer in derselben Richtung fährt, folgt dem, der schon darin ist); die Wende samt Platz.
     _verkehrZugZonen(S, m) {
         const VK = S.verkehr;
-        if (m.art !== "strecke") return [{ Z: VK.wenden.get(m.ki).zone, dir: null }];
+        if (m.art !== "strecke") return [{ Z: VK.wenden.get(m.ki).zone, dir: null, ziel: !!m.ziel }];
         const s = VK.strecken[m.si];
         const ki = m.dir === 0 ? s.a : s.b;
         // (durch die Kreuzung sein Weg `wort`, von>nach: wer einen verträglichen fährt, fährt zugleich — `_verkehrZonen`)
@@ -832,6 +914,7 @@ class AnazhRealm_siedlung_verkehr {
                         Z: z.Z,
                         dir: z.dir,
                         wort: z.wort,
+                        ziel: z.ziel,
                         von: Math.max(0, z.ein - alt.s) - 3,
                         bis: z.aus - alt.s + 3,
                     });
@@ -841,7 +924,7 @@ class AnazhRealm_siedlung_verkehr {
             for (const q of m.pts) dazu(q);
             for (const z of m.zonen)
                 if (!Z.length || Z[Z.length - 1].Z !== z.Z)
-                    Z.push({ Z: z.Z, dir: z.dir, wort: z.wort, von, bis: L + 2 * z.Z.r + 5 });
+                    Z.push({ Z: z.Z, dir: z.dir, wort: z.wort, ziel: z.ziel, von, bis: L + 2 * z.Z.r + 5 });
         }
         const F = this._fahrerLinie(pts, AnazhRealm.VERKEHR.kurveM);
         if (!F) return;
@@ -857,7 +940,7 @@ class AnazhRealm_siedlung_verkehr {
         });
         const vorher = W.zonen;
         W.zonen = [];
-        for (const { Z: z, dir, wort, von, bis } of Z) {
+        for (const { Z: z, dir, wort, ziel, von, bis } of Z) {
             let i = 0;
             while (i < F.pts.length && F.bogen[i] < von) i++;
             while (i < F.pts.length && F.bogen[i] <= bis && Math.hypot(F.pts[i].x - z.x, F.pts[i].z - z.z) >= z.r) i++;
@@ -868,7 +951,15 @@ class AnazhRealm_siedlung_verkehr {
             // Strecke hinter sich, bevor er den Wartenden passiert — bis hier wartete der im Bogen (10 Uhr: beide 40 s, der
             // Wartende 1,21 m neben der Bahn bei 1,31 m Breite samt Bogen)
             const vorlauf = z.art === "wende" ? globalThis.__fachwerkCore.VERKEHR_GESETZ.parkL : 0;
-            W.zonen.push({ Z: z, dir, wort, ein: Math.max(0, F.bogen[i] - vorlauf), aus: F.bogen[j], weg: false });
+            W.zonen.push({
+                Z: z,
+                dir,
+                wort,
+                ziel,
+                ein: Math.max(0, F.bogen[i] - vorlauf),
+                aus: F.bogen[j],
+                weg: false,
+            });
         }
         W.zonen.sort((a, b) => a.ein - b.ein);
         for (const a of vorher) if (!W.zonen.some((z) => z.Z === a.Z)) AnazhRealm._verkehrLos(a.Z, W);
@@ -900,6 +991,7 @@ class AnazhRealm_siedlung_verkehr {
                 if ((W.takt = (W.takt + 1) % k) !== 0) continue;
                 const h = W.dtAcc;
                 W.dtAcc = 0;
+                W.uhr += h; // die Uhr des Wagens: die Dauer jeder Fahrt (`_verkehrAngekommen`)
                 const F = W.F;
                 // DER FAHRER SIEHT (Folge, Orte) je `folgeTakt` Sim-Schritte seiner Zeit (nah und fern: wer fern seltener schreitet,
                 // sieht in seinem Schritt, sobald die Zeit voll ist — bis hier sah der Wagen zwischen 40 und 100 m öfter als der nahe)
@@ -966,7 +1058,10 @@ class AnazhRealm_siedlung_verkehr {
                 // die Route voraus: trägt die Linie keine `vorausM` / 2 mehr, hängen die nächsten Züge an
                 if (W.letzter && W.letzter.art !== "ein" && F.lang - F.s < V.vorausM / 2)
                     this._verkehrLinie(S, W, this._verkehrZuege(S, W), false);
-                if (W.heim && F.ende && fz.speed < V.parkMs) this._verkehrParken(S, W);
+                if (W.heim && F.ende && fz.speed < V.parkMs) {
+                    this._verkehrAngekommen(S, W); // heim: sein Platz ist das Ziel der letzten Fahrt
+                    this._verkehrParken(S, W);
+                }
             }
         }
     }
@@ -1180,6 +1275,7 @@ class AnazhRealm_siedlung_verkehr {
             if (!z.weg && F.s - W.hl > z.aus) {
                 z.weg = true;
                 AnazhRealm._verkehrLos(z.Z, W);
+                if (z.ziel) this._verkehrAngekommen(S, W); // die Wende seines Ziels liegt hinter ihm
             }
         const i0 = W.zonen.findIndex((z) => !z.weg);
         if (i0 < 0) return Infinity;
@@ -1348,6 +1444,7 @@ class AnazhRealm_siedlung_verkehr {
                     drinnen: false,
                     wagen: W,
                     kR: W.hw * Math.SQRT2 + AnazhRealm.PLAYER_WALL_RADIUS + 0.05,
+                    rk: undefined, // seine Zelle (`_bewohnerRasterLage`): die Gestalt steht ab der Geburt (Lehre 25)
                 })));
             const mitte = W.bug - W.hl;
             const ab = Math.max(0, W.hl - W.hw);
@@ -1402,7 +1499,9 @@ AnazhRealm._verkehrEcken = Object.freeze([
 // Wand: die Kante einer Erdbau-Platte) · ruheMs = darunter (ohne Gas) ruht ein Wagen: keine Hülle, keine Boxen, kein neues
 // Bild · spurRandM = so viel Raum hält ein Stand über
 // den halben Wagen und die Kapsel hinaus von jeder Spur (der Seitenraum `seitM` und das Ausscheren in der engsten Kurve,
-// (parkL/2)²/(2·kurveR) = 0,66 m: kein Stand liegt in der Bahn, vor der ein Wagen hält) · bodenM = das Raster des gemerkten Bodens der Spur (`_verkehrBoden`), bodenRandM = so weit neben jedem Stück der Spur backt er ihn vorab (`_verkehrBodenBacken`), backMs = so lange backt er ihn je Bild (`_verkehrBodenPumpe`) · kurveM = so weit mittelt die Linie seines Fahrers (`_fahrerLinie`; seine Spuren, Bögen und Kreise sind Gesetz — über die ±8 m des Wegenetzes schrumpfte der Kreis der Wende von 6,5 auf 5 m, der Knick am Ende der Strecke schnitt 2 m in die Gegenspur)
+// (parkL/2)²/(2·kurveR) = 0,66 m: kein Stand liegt in der Bahn, vor der ein Wagen hält) · querBreiten = so viele Breiten der
+// Fahrbahn trägt ein Bein des Fußes in ihr, das sie quert (`_verkehrQuert`; mehr geht längs) · vorrangM = so weit vor seinem
+// Bug beansprucht ein Wagen die Fahrbahn: wer dort in sie treten will, wartet am Rand (`_verkehrVorrang`) · bodenM = das Raster des gemerkten Bodens der Spur (`_verkehrBoden`), bodenRandM = so weit neben jedem Stück der Spur backt er ihn vorab (`_verkehrBodenBacken`), backMs = so lange backt er ihn je Bild (`_verkehrBodenPumpe`) · kurveM = so weit mittelt die Linie seines Fahrers (`_fahrerLinie`; seine Spuren, Bögen und Kreise sind Gesetz — über die ±8 m des Wegenetzes schrumpfte der Kreis der Wende von 6,5 auf 5 m, der Knick am Ende der Strecke schnitt 2 m in die Gegenspur)
 // · radFeinM = so nah federt jedes Rad einzeln auf seinem Boden ·
 // standM = der Stand des Fahrers neben der Tür seines Wagens · einsteigM = so nah an ihm steigt er ein · tempoMs = das
 // Tempo der Stadt (30 km/h) · folgeM = so weit sieht der Fahrer voraus (Wagen, Leiber) · abstandM = so weit hält er hinter
@@ -1433,6 +1532,8 @@ AnazhRealm.VERKEHR = Object.freeze({
     boxFernM: 2,
     engeRandM: 5,
     spurRandM: 1,
+    querBreiten: 2,
+    vorrangM: 8,
     bodenM: 0.5,
     bodenRandM: 1.5,
     kurveM: 4,
