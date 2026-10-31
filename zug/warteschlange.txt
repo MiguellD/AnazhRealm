@@ -312,3 +312,4 @@ takt-z111a-gtx 1 punkte sha=cdb2703d106a5e26e8f7f95aa4d982824d39ff2e geraet=gtx 
 takt-z111b-gtx 1 punkte sha=cdb2703d106a5e26e8f7f95aa4d982824d39ff2e geraet=gtx nur=tiere.K1#2,tiere.K3#2,oekologie.K4#2,mensch.K5#1,mensch.K4#1,haar.K2#1,vegetation.K1#1,licht.K2#2,licht.K5#1,material.K2#1,lod.K1#1,licht.K3#1,bauen.K5#2,siedlung.K4#2,spielgang.K3#1,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,profiband.K4#1,profiband.K5#1,klang.K4#1,speicher.K4#2
 takt-z110a-gtx 0 storno
 takt-z110b-gtx 0 storno
+z112-abab 3 abab A=cdb2703d106a5e26e8f7f95aa4d982824d39ff2e B=8809ec6de94eb07c370e1a465a76ca085fb5c129 zellen=w-ego,stadt
