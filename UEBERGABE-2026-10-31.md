@@ -24,7 +24,7 @@ Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md. Dieser Zettel ist der Stand der
 |---|---|---|
 | w4-proben-tempo 777130cc | schatten.K1#1-Heilung (Dorf-Haken der Sitzung) + Klassen-Maße schneller | reißt die DECKE (scripts/ +692 Atome; sie sinkt nur) |
 | w4-schatten-haken be9f5428 | GELIEFERT: die Heilung aus 777130cc (werkbank.cjs:925) + Licht-Pool-Fixpunkt, bezahlt mit dem Zensus-Zwilling (`zensusDer` in scripts/lib/ziel-zensus.cjs) — Decke −466 Atome; Radeon: Bühne vorher 55 s ohne Antwort → 14,6 s, Kontakt GRÜN 16,5 s | fährt in z97 (`w3/kette-z97.sh`), danach eich12/eich13 am neuen main |
-| w4-wagen-stufe ab67f286 | GELIEFERT: Bewegte melden sich an `_blockerBewegt`, `_archBewegteUrteilen`/`_archStufeUrteil` (siedlung-bauten.js:290/190), der Fahrer erbt Stufe + Lade-Tor (`_kompositErbt` :1336), Linse VK mit Selbsttest; Radeon: Fahrer ohne 3D-Stufe 1177 → 0, Karte unter 22,6 m 778 → 0, Satz neben seinem Wagen 1208 → 0 (der weiße Block = Satz eines weggefahrenen Wagens am Backort), 0,13 ms je Takt | Linse kostet scripts +508 Atome → champion bezahlt die Decke; fährt in z98 (`w3/kette-z98.sh`), sobald der Puls grün ist |
+| w4-wagen-stufe ab67f286 | GELIEFERT: Bewegte melden sich an `_blockerBewegt`, `_archBewegteUrteilen`/`_archStufeUrteil` (siedlung-bauten.js:290/190), der Fahrer erbt Stufe + Lade-Tor (`_kompositErbt` :1336), Linse VK mit Selbsttest; Radeon: Fahrer ohne 3D-Stufe 1177 → 0, Karte unter 22,6 m 778 → 0, Satz neben seinem Wagen 1208 → 0 (der weiße Block = Satz eines weggefahrenen Wagens am Backort), 0,13 ms je Takt | Decke BEZAHLT (c721ddc1: 6 Zwillings-Gruppen + 7 tote Exporte, scripts +508 → −115 Atome; VK headless GRÜN, Playtest OK) — fährt in z98 (`w3/kette-z98.sh`) |
 | w4-fall-wackler d14f7f5b | GELIEFERT: Wurzel in main — der erste Dachboden-Block ohne Netz-Ecke in seiner Säule (`erdbauSchnitt`), `_bodenSichtAt` null bis zum Neubau; `_saeuleVorlaeufig` (gelaende-chunks.js:3269) zeichnet die Säule ab dem Klick; CI-Lage ROT 5/5 → GRÜN 5/5, Linse BLIND je Takt | fährt in z96 |
 | w4-menue-inp 7075e04c | Menü-Pipelines 13 → 3 | FREI (`_vektorMemo` ist nicht der Täter) — fährt in z96; Konflikt mit material-fahrt möglich (studio-bruecke.js) |
 | w4-abab-warm fa34938a | ABAB w-ego 15,7 → 13,1 min | Wackler offen (Chrome taut auf) |
@@ -83,4 +83,5 @@ Ein Zug, der mitten in der CI stirbt, lässt main unberührt (der Kandidat liegt
    Tiere Gang-Satz, Wagen): Bedeutung aus Schirm-Größe + Bewegung, Komposit erbt Stufe und Lade-Tor. lod.K1/K2/K3/K5 stehen bei 0.
 4. Werkzeug statt Wachsamkeit: `gpu-lauf.sh` Halte-Deckel 900 → 420 s (nur ändern, wenn kein gpu-lauf läuft — nie ein laufendes
    Bash-Skript editieren); Bilder je ABAB-Zelle auf der OMEN.
-5. Jeder Arbeiter-Brief trägt den Baustein `%TEMP%/claude/w3/brief-regeln.md`.
+5. Der Selbsttest von `scripts/stamm-rehome.cjs` ist am main ROT („`class AnazhRealm {` steht mehr als einmal“ in `gitMerge`), nicht in check:statik — offen.
+6. Jeder Arbeiter-Brief trägt den Baustein `%TEMP%/claude/w3/brief-regeln.md`.
