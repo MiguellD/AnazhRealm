@@ -541,7 +541,12 @@ async function probeTempoGarage(H) {
     if (!L.laborVerdict || !lauf) throw new Error("die Labor-Linse trägt keinen Lauf (hauptLauf)");
     const tempo = fs.readFileSync(path.join(process.env.K, "bericht", "3010-heil-fahrzeug", "tempo4.js"), "utf8");
     const tw = Date.now();
-    const ritt = H.wb("/eval", { code: 'window.__tempoNur = "vmax";\n' + tempo }, Math.max(5, H.rest() - 4) * 1000).catch((e) => ({ fehler: String((e && e.message) || e) }));
+    // DER ORT DER PROBE (w4-proben-tempo2): die Mess-Wiese stellt und beruhigt die Sitzung VOR dem Deckel (ihr Ort steht hier im Befehl,
+    // punkte.cjs `probeOrt`), der Ritt sucht seine Bahn, wo der Spieler steht (`__messWiese`) — bis dahin stand die Welt dort, wo die
+    // Probe davor sie ließ, tempo4.js sprang an die Mess-Wiese (W0) und schwang dort im Deckel ein (GTX e0139769: ortStandS 17,9 s
+    // von 38,9 s, 617 Takte)
+    await H.wb("/umstellen", { ort: "wiese", sicht: "ego" }, Math.max(5, H.rest() - 4) * 1000);
+    const ritt = H.wb("/eval", { code: 'window.__tempoNur = "vmax"; window.__messWiese = [r.state.playerMesh.position.x, r.state.playerMesh.position.z];\n' + tempo }, Math.max(5, H.rest() - 4) * 1000).catch((e) => ({ fehler: String((e && e.message) || e) }));
     // die Zeilen der Garage gesammelt, solange beide laufen (der Ritt schreibt erst am Ende)
     const log = console.log, puffer = [];
     console.log = (...a) => puffer.push(a.map(String).join(" "));
@@ -556,6 +561,11 @@ async function probeTempoGarage(H) {
     const g = await H.binnen(garage, Math.max(1, H.rest() - 2) * 1000, { exit: 124, s: (Date.now() - tg) / 1000 });
     console.log = log;
     console.error = log;
+    // KEIN URTEIL IST KEIN ROT (w4-sitzung-urteil, hier w4-proben-tempo2): riss der Ritt oder die Garage die Frist der Probe, misst die
+    // Probe nichts — UNGEMESSEN beim Namen (FRIST_MARKE), nie ROT (GTX takt27b 94c079cb: „Welt: kein Ergebnis von tempo4.js — /eval ohne
+    // Antwort binnen 22 s“ stand als frisches ROT)
+    if (welt && /ohne Antwort binnen/.test(String(welt.fehler))) H.fristRiss("der Ritt (tempo4.js): " + welt.fehler);
+    if (g.exit === 124) H.fristRiss("die Garage nach " + g.s.toFixed(1) + " s");
     log("@@PUNKTE@@ WELT");
     log(JSON.stringify(Object.assign({ ms }, welt), null, 1));
     log("@@PUNKTE@@ EXIT " + (welt && welt.ergebnis && !welt.fehler ? 0 : 1));
