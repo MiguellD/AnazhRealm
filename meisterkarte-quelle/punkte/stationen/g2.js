@@ -1469,11 +1469,12 @@ const vegetationProbe = (plan, zaehlen = "") => {
     return { sek, ...(sek > 45 ? { ausnahme: n("krone") + " Schüsse der Krone und " + n("wiese") + " der Wiese je 10 s an einem Stand — die Arbeit des Plans, nie das Einschwingen" } : {}),
         befehl: ["node", "-e", "(" + knapp(vegetationLauf) + ")()", "{AUS}", "{PORT}", JSON.stringify(plan), ...(zaehlen ? [zaehlen] : [])] };
 };
-const wieseStation = (staffel, posen, quelle) => ({
+// `sek` der Deckel nach seiner Messung (sonst der des Plans; die Ausnahme nur über 45 s)
+const wieseStation = (staffel, posen, quelle, sek) => ({
     kriterium: "vegetation.K1",
     staffel,
     geraet: ["radeon", "gtx"],
-    probe: vegetationProbe(posen.map((p) => [...p, null, "wiese"])),
+    probe: ((p) => (sek == null ? p : { befehl: p.befehl, sek, ...(sek > 45 ? { ausnahme: p.ausnahme } : {}) }))(vegetationProbe(posen.map((p) => [...p, null, "wiese"]))),
     gpu: true,
     zeit: false,
     minuten: staffel === 1 ? 2 : 6,
@@ -1793,7 +1794,10 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // DAS BUDGET DER SITZUNG (29.10.): die Probe herde läuft ihre Spiel-Sekunden am Kreatur-Takt (headless 37 s, DAUER_S der
         // Linse), dazu drei Schüsse — die Herde bleibt in der Welt (mutiert)
-        probe: { sek: 33, befehl: [
+        // DER DECKEL (w4-proben-tempo2): GTX takt27b 94c079cb riss 33 s nach der Probe herde (15 s), Radeon 3ef20f9f 34,2 s; die drei
+        // Schüsse jetzt mit `nurPixel` und dem PNG ohne Rückruf je Byte — Radeon 7521ca51 unter fremder Last riss 43 s nach der herde
+        // (16 s). 41 s, über dem Gesetz der Zahl, bis die Schüsse der Herde fallen
+        probe: { sek: 41, befehl: [
             "node",
             "-e",
             "(" + knapp(herdeHang) + ")()",
@@ -3605,7 +3609,12 @@ const stationen = [
     // Staffel 2 Mess-Wiese UND Genesis × Ego UND Third × Uhr 0,5 und 0,3 (vegetationLauf, wieseUrteil) ─────────
     // (Staffel 2 — Mess-Wiese UND Genesis × Ego UND Third × Uhr 0,5 und 0,3 — steht in `fehlt`: acht Schüsse an zwei Orten sind
     // 150 s Arbeit, über dem Gesetz der Fahrt)
-    wieseStation(1, [["wiese", "third", 0.5]], "1 = eine Pose (Ort × Sicht × Uhr) grün in allen festen Ringen, im Budget"),
+    // DER DECKEL NACH SEINER MESSUNG (w4-proben-tempo2): der Plan schätzte 15 s, der Wiesen-Schuss trägt mehr — Radeon 7521ca51 unter fremder
+    // Last (eine Werkbank swiftshader auf ~10 Kernen) `/bild` 39,5 s, die Zeile VEGETATION stand am 45-s-Deckel; an der ruhigen Radeon
+    // (2134b209) der Wiesen-Schuss 21 s, davon der Abstands-Marsch 9,3 s, die Klassen-Maße 2,9 s (fallen mit `nurPixel`) und das PNG
+    // 0,6 s (fällt); GTX e0139769 38,1 s mit Maßen und PNG. Der Deckel 45 s, das Gesetz der Zahl (⌈1,5 × s⌉ ≤ 45 s) hält er erst, wenn
+    // der Abstands-Marsch fällt
+    wieseStation(1, [["wiese", "third", 0.5]], "1 = eine Pose (Ort × Sicht × Uhr) grün in allen festen Ringen, im Budget", 45),
     // ───────── vegetation.K5 — das Jahr als Gestalt (Zweig w3w-wald): Staffel 1 die Laub-Maske an EINER Pose im Sommer und Winter,
     // Staffel 2 dazu der Frühling und die Wiese an der Kamera des Spiels (Ego, Mittag) in allen drei (vegetationLauf, jahrUrteil) ─────────
     // DIE ARBEIT GETEILT (w4-sitzung-reif, bis w4-proben-tempo2): beide Staffeln waren EIN Lauf (Zwillinge) — seine ersten Schüsse sind die Kronen von Sommer und
@@ -3620,8 +3629,10 @@ const stationen = [
     // trug sechs Schüsse — Kronen 12,6 · 7,9 · 11,1 s, Wiesen 21,0 · 19,5 s (davon der Abstands-Marsch 9,3 · 8,7 s), Σ ≈ 93 s —, und riss
     // jeden Deckel (Radeon 65 s, GTX 90 s): die Staffel 1, deren zwei Kronen nach 20 s standen, war nie gemessen. Jetzt fährt sie ihre
     // zwei Kronen allein; die Staffel 2 bleibt der ganze Plan, über dem Gesetz der Fahrt (≥ 90 s an beiden Geräten) — 10 s, UNGEMESSEN
-    // beim Namen wie die übrigen, bis der Abstands-Marsch fällt
-    jahrStation(1, JAHR_KRONEN, JAHR_KRONEN, ["sommer", "winter"], "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose", 45),
+    // beim Namen wie die übrigen, bis der Abstands-Marsch fällt. DER DECKEL NACH SEINER MESSUNG: Radeon 7521ca51 (`bild` mit `nurPixel`, das
+    // PNG ohne Rückruf je Byte) 20,4 s GRÜN, Winter 0,111 × Sommer — unter fremder Last (eine Werkbank swiftshader auf ~10 Kernen) —, die
+    // GTX geschätzt × 1,3: ⌈1,5 × 26,5⌉ = 40 s
+    jahrStation(1, JAHR_KRONEN, JAHR_KRONEN, ["sommer", "winter"], "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose", 40),
     jahrStation(2, JAHR_LAUF, JAHR_LAUF, ["sommer", "winter", "fruehling"], "2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte", 10),
 ];
 

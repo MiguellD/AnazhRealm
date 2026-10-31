@@ -698,7 +698,10 @@ const LAUB_LINSE = {
 const LAUB_PROBE = { sek: 10, befehl: PW.torBefehl(PW.werkbankLinse, JSON.stringify(LAUB_LINSE)) };
 // DIE STAFFEL 1 FÄHRT ALLEIN (w4-proben-tempo2): ihr Urteil liest neun Zeilen (fichte, tanne, ring je Uhr) — die Linse misst nur sie,
 // nicht die 24 Wege der Staffel 2 (bis dahin EIN Lauf der Zwillinge, der jeden Deckel riss)
-// Sie ändert die Welt (der Gang ans Dorf und zur Fichte legt Orte und Wege an, Sitzung 00d3f283): mutiert
+// Sie ändert die Welt (der Gang ans Dorf und zur Fichte legt Orte und Wege an, Sitzung 00d3f283): mutiert. DIE ZAHL (Radeon 7521ca51, der
+// Plan je Art im Spiel-Zweig, unter fremder Last): der Ring am Dorf mit drei Uhren bis 28 s — davon der Gang ans Auge des Rings 17,3 s
+// (57 m im lebenden Dorf) —, dann der Gang zur Mess-Wiese (600 m, kalt) für Fichte und Tanne, am 45-s-Deckel gerissen. Offen beim Namen:
+// zwei Orte in EINER Probe; der Deckel bleibt 45 s (das Gesetz ohne Ausnahme)
 const LAUB_PROBE_1 = {
     sek: 45,
     mutiert: true,

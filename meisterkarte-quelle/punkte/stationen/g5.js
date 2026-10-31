@@ -1090,7 +1090,10 @@ const stationen = [
         // Sitzung, darunter der Gang des Profi-Bands an der Wiese) stehen sonst neben dem 40-m-Weg (offen am Merge w4-koord-sitzung)
         // DIE GARAGE IM BROWSER DER SITZUNG, DIE WELT BIS ZUM PLATEAU (proben-schnell 30.10., `probeTempoGarage` oben): kein eigener
         // Chrome mehr neben der Welt, kein Doppel von Orbit, Drift und Schüssen (die misst die 2)
-        probe: { ...TEMPO_GARAGE_PROBE, mutiert: true, sek: 33 },
+        // DER DECKEL (w4-proben-tempo2): GTX e0139769 38,9 s, davon das Einschwingen nach dem Sprung an W0 17,9 s — es liegt jetzt VOR dem
+        // Deckel (die Sitzung stellt die Mess-Wiese); die GTX geschätzt ≈ 23 s (der Ritt, die Garage 15 s daneben): ⌈1,5 × 25⌉ ≈ 40 s. Die
+        // Radeon 7521ca51 riss unter fremder Last (eine Werkbank swiftshader auf ~10 Kernen) die Frist des Ritts (19 s) — UNGEMESSEN, nie ROT
+        probe: { ...TEMPO_GARAGE_PROBE, mutiert: true, sek: 40 },
         env: K,
         gpu: true,
         zeit: false,
