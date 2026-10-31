@@ -110,7 +110,7 @@ const wege = (x, m = { lod: [{}], ki: {}, foundry: { lod: [] }, p2p: {}, werk: {
 // je Teil — die gezeigte Stufe eines Werks und eine Foundry-Antwort lesen dieselben Bytes
 function seitenHelfer() {
     window.__buch = () =>
-        window.__weltDa((x) => x._foundry && x._foundry.ready && x._foundry.recipes && x._foundry.recipes.meilenstein);
+        __weltDa((x) => x._foundry && x._foundry.ready && x._foundry.recipes && x._foundry.recipes.meilenstein);
     window.__stele = (o) =>
         st.architectures.find(
             (a) => a.type === "stele_meilenstein" && (!o || Math.hypot(a.position.x - o.x, a.position.z - o.z) < o.r)
@@ -206,13 +206,13 @@ hauptLauf(async () => {
         sk.eiche /= 2;
         const pl = r._placePolicyFor(f.recipes.meilenstein);
         const bp = (i) => (st.blueprints["stele_" + i] || {}).studioGestalt === i;
-        const P = (r._genesisPlattform() || st.playerMesh).position;
+        const P = (r._genesisPlattform() || pm).position;
         for (let x = P.x + 40; !st.frei; x++)
             if (r._landAt(x, P.z, 1) && !r._imGrundriss(x, P.z, 0.8, 12))
                 st.frei = { x, y: r._voxelSurfaceY(x, P.z), z: P.z, r: 12 };
         r.setGameMode("schöpfer");
         r.setCameraMode("first");
-        st.playerMesh.position.set(st.frei.x, st.frei.y + 1.2, st.frei.z);
+        pm.position.set(st.frei.x, st.frei.y + 1.2, st.frei.z);
         [st.yaw, st.pitch] = [0, -0.45];
         window.__takt = setInterval(() => r._gameLoopTick(performance.now()), 40); // der Loop läuft unter den Eingaben
         const e = {
@@ -284,7 +284,7 @@ hauptLauf(async () => {
             e,
             await page.evaluate(async () => {
                 const da = () => window.__stele(st.frei);
-                const steht = await window.__gebautNach("der Meilenstein", { fertig: da }).then(
+                const steht = await __gebautNach("der Meilenstein", { fertig: da }).then(
                     () => true,
                     (x) => x.message
                 );
@@ -292,9 +292,9 @@ hauptLauf(async () => {
                 const w = window.__stele();
                 const lod = [];
                 for (const d of [4, 25, 50]) {
-                    st.playerMesh.position.set(w.position.x + d, w.position.y + 1.2, w.position.z);
+                    pm.position.set(w.position.x + d, w.position.y + 1.2, w.position.z);
                     const s = lod.length;
-                    await window.__gebautNach("die Stufe " + s, {
+                    await __gebautNach("die Stufe " + s, {
                         fertig: () => w._servedLod === s && w.instSlots.length,
                     });
                     const geo = new Set(w.instSlots.map((x) => st.archInstanceGroups.get(x.key).mesh.geometry));
@@ -323,7 +323,7 @@ hauptLauf(async () => {
         e.geladen = await page.evaluate(async (o) => {
             await window.__buch();
             const fertig = () => (window.__stele(o) || {}).instFoundry && window.__stele(o).instSlots.length;
-            return window.__gebautNach("der Meilenstein nach dem Laden", { fertig }).then(
+            return __gebautNach("der Meilenstein nach dem Laden", { fertig }).then(
                 () => true,
                 (x) => x.message
             );
@@ -351,9 +351,9 @@ hauptLauf(async () => {
                 );
             };
             r.processChatCommand("Ich wünsche mir am Weg einen hohen Obelisken");
-            st.playerMesh.position.x = x + 4;
+            pm.position.x = x + 4;
             const w = () => st.architectures.find((a) => a.type === "stele_obelisk");
-            await window.__gebautNach("der Obelisk des Satzes", {
+            await __gebautNach("der Obelisk des Satzes", {
                 fertig: () => w() && w()._servedLod === 0 && w().instSlots.length,
             });
             window.fetch = netz;

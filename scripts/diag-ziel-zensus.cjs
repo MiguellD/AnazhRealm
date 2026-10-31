@@ -269,7 +269,7 @@ function rundungProbe() {
         await server.zeige(page, 60000, "index.html?holz=kienspan");
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();
-            await window.__weltDa((r) => {
+            await __weltDa((r) => {
                 const st = r.state;
                 return !!(st?.rendererReady && st.renderer?.backend && st.postProcessing && st.camera);
             });

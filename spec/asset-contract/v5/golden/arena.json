@@ -1,0 +1,31 @@
+{
+  "cv": 5,
+  "minted": "buildInstance(rezeptId, seed, lod, ov?) — sha256 je Fall",
+  "cases": {
+    "saat": {
+      "objects": 22,
+      "vertices": 6294,
+      "sha256": "c3f066cb9443e42701b6f7f3e1af89e921d95c2f189e13dc0b11f61df5dc8eec"
+    },
+    "hof": {
+      "objects": 9,
+      "vertices": 3232,
+      "sha256": "7ca910e51a4fa09e3d9a06365c71feec35dc1891f626c5878ed02412a5e3db63"
+    },
+    "waffenhof": {
+      "objects": 55,
+      "vertices": 10581,
+      "sha256": "75c992d494770e0b98ac5c2865589a4181ac9a2d7f7fdd2d348c999de46e25b9"
+    },
+    "schnitthof": {
+      "objects": 40,
+      "vertices": 8320,
+      "sha256": "484f9eaec2c46ded57c0385e515ce23afca72ad78ea1180bfc6778b4558859bb"
+    },
+    "schiessbahn": {
+      "objects": 42,
+      "vertices": 6839,
+      "sha256": "65eb5af565e85b56663ed9dbac08ad050e1ed8efd837c4c9214474643068681d"
+    }
+  }
+}

@@ -533,7 +533,7 @@ function lauf(k) {
             await sleep(50);
             const jePassFrame = (await uhr.lesen()) || {};
             const quant = (arr, q) => {
-                const a = arr.filter(Number.isFinite).sort((x, y) => x - y);
+                const a = arr.filter(Number.isFinite).sort(aufsteigend);
                 return a.length ? +a[Math.min(a.length - 1, Math.floor(q * a.length))].toFixed(2) : null;
             };
             const spalte = (f) => proben.map((p) => p[f]).filter(Number.isFinite);
@@ -552,7 +552,7 @@ function lauf(k) {
                     const w = jeFrame.filter((p) => p.jePass[ps]).map((p) => p.jePass[ps][feld]);
                     jePass[ps] = { anteil: n ? +(w.length / n).toFixed(2) : null, p50: quant(w, 0.5), max: quant(w, 1) };
                 }
-                const mittel = n ? Math.round(summe.reduce((a, b) => a + b, 0) / n) : null;
+                const mittel = n ? Math.round(summe.reduce(addiere, 0) / n) : null;
                 return { frames: n, mittel, p95: quant(summe, 0.95), max: quant(summe, 1), jePass };
             };
             const s = st.perfSense, v = window.__vram;
@@ -563,7 +563,7 @@ function lauf(k) {
                 regler: k.regler,
                 sekunden: k.sek,
                 frames: dt.length,
-                fps: dt.length ? +((1000 * dt.length) / dt.reduce((a, b) => a + b, 0)).toFixed(1) : null,
+                fps: dt.length ? +((1000 * dt.length) / dt.reduce(addiere, 0)).toFixed(1) : null,
                 frameMs: zahl(dt),
                 cpuTaktMs: zahl(cpu),
                 leine: { ausgesetztPct: +((100 * proben.filter((p) => !p.gerendert).length) / Math.max(1, proben.length)).toFixed(1), imFlug: r._gpuLeine.imFlug },
@@ -649,7 +649,7 @@ function gpuBank(k) {
         const rr = [];
         for (let i = 0; i < (k.runden || 3); i++) rr.push(await runde(n));
         const med = (key) => {
-            const v = rr.map((x) => x[key]).sort((a, b) => a - b);
+            const v = rr.map((x) => x[key]).sort(aufsteigend);
             return +v[Math.floor(v.length / 2)].toFixed(2);
         };
         const jeFrame = med("jeFrame"),
@@ -1543,7 +1543,7 @@ async function starte() {
                             const ds = roh
                                 .filter((p) => p.seite === sd)
                                 .map((p) => p.d)
-                                .sort((a, b) => a - b);
+                                .sort(aufsteigend);
                             median[sd] = ds.length ? ds[Math.floor(ds.length / 2)] : null;
                         }
                         const proben = roh
@@ -1730,7 +1730,7 @@ async function starte() {
                     return o;
                 };
                 try {
-                    zeit = { dt: k.zeit, nahAnteil: nah.reduce((s, x) => s + x, 0) / (W * H), tempo: B.omega / B.k, kamm: await paar(boe.at(-1)), tal: await paar(boe[0]) };
+                    zeit = { dt: k.zeit, nahAnteil: nah.reduce(addiere, 0) / (W * H), tempo: B.omega / B.k, kamm: await paar(boe.at(-1)), tal: await paar(boe[0]) };
                 } finally {
                     U.T = T0;
                 }

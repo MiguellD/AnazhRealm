@@ -618,7 +618,7 @@ async function kernLesen(page, plan) {
     const seite = await page.evaluate(async (plan) => {
         const [r, K, G] = [window.anazhRealm, window.__kernProbe.__gelaendeCore, globalThis.__gelaendeCore];
         r._gameLoopTick = () => {};
-        for (const [x, z, R] of [[...plan.orte[1], 700], [...plan.orte[2], 64]]) await window.__weltDa(() => !r._ensureHydroTilesAround(x, z, R));
+        for (const [x, z, R] of [[...plan.orte[1], 700], [...plan.orte[2], 64]]) await __weltDa(() => !r._ensureHydroTilesAround(x, z, R));
         for (const e of plan.edits) r._addVoxelEdit(e.x, e.y, e.z, e.r, e.mode);
         const [L, alle] = [r._gelaende(), r.state.worldMeta.voxelEdits];
         const fehlt = ["dichte", "editKarte", "editsAm", "wasserSpiegel", "atlasSpiegel", "flussAm"].filter((f) => !K[f]);
@@ -788,7 +788,7 @@ function spaltenKosten(G, L, H, n, S, A, usKalt, last = 0) {
         }
     // Spalten und Eichung WECHSELN sich ab (16 Scheiben, je Scheibe 4 000 noise2D): die Last des Holzes driftet während der
     // Messung, das Verhältnis je Scheibe nicht — gezählt wird sein Median.
-    const median = (a) => a.slice().sort((p, q) => p - q)[a.length >> 1];
+    const median = (a) => a.slice().sort(aufsteigend)[a.length >> 1];
     const takt = (ks) => {
         const B = Math.max(1, Math.floor(ks.length / 16));
         const rat = [];
@@ -1515,7 +1515,7 @@ async function gebaut(page) {
                         bogen = 0;
                     }
                 }
-                sin.sort((a, b) => a - b);
+                sin.sort(aufsteigend);
                 return { fenster: sin.length, sinuositaet: sin.length ? +sin[sin.length >> 1].toFixed(3) : null };
             };
             // der Selbsttest je Saat — die Gerade: jeder Fluss auf seine Sehne gelegt (der Bogen bleibt, der Versatz quer
@@ -1896,16 +1896,16 @@ async function faden(page, url) {
     // eine Minute bei vmax des GT (≈ 16 m/s) = 960 m nach Osten in 1 800 Takten mit den Bau-Klicks
     const takt = (n, dx = 960, dz = 0) =>
         page.evaluate(async (n, dx, dz) => {
-            await window.__weltDa(() => r && typeof r._gameLoopTick === "function");
+            await __weltDa(() => r && typeof r._gameLoopTick === "function");
             const p = st.playerMesh.position;
             if (!n)
-                for (const weiter = window.__deckel("die Welt steht", 4000); weiter(); ) {
+                for (const weiter = __deckel("die Welt steht", 4000); weiter(); ) {
                     if (st.voxelChunks && st.voxelChunks.size > 20 && st.voxelWorkerReady) break;
-                    await window.__seitenTakt();
+                    await __seitenTakt();
                 }
             st.pitch = -Math.PI / 2; // der Blick senkrecht nach unten: ein Bau-Klick setzt den Block unter den Spieler
             for (let k = 0, t; k < n; k++) {
-                await window.__seitenTakt();
+                await __seitenTakt();
                 p.x += dx / n;
                 p.z -= dz / n;
                 const y = r._voxelSurfaceY(p.x, p.z);
@@ -1970,7 +1970,7 @@ async function faden(page, url) {
     // K4 BAU: der Zähler des Spiels (`_fadenUmgangen`) — je Sync-Stelle `_syncBau`, sonst das Buch „FADEN-UMGANGEN"
     const F = await page.evaluate(() => JSON.parse(JSON.stringify({ ...window.__faden, bau: r._syncBauten() })));
     const mb = (b) => (b / 1e6).toFixed(2);
-    const summe = (o) => Object.values(o || {}).reduce((a, b) => a + b, 0);
+    const summe = (o) => Object.values(o || {}).reduce(addiere, 0);
     const proMin = {};
     console.log("\n=== DER FADEN TRÄGT DIE BYTES (K4 · K5) ===");
     for (const w of Object.keys(dauer)) {

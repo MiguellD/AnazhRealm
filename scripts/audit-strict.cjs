@@ -148,7 +148,7 @@ async function auditStateAndMethods() {
         await page.goto(`http://127.0.0.1:${port}/`, { waitUntil: "load" });
         // die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`) — bis K-WANDUHR 12 s Wanduhr
         await warteAufWelt(page);
-        await page.evaluate(() => window.__weltStehtNach());
+        await page.evaluate(() => __weltStehtNach());
 
         // (a) State-Pfade live sammeln
         const liveState = await page.evaluate(() => {

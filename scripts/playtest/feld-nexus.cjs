@@ -107,7 +107,7 @@ async function checkBandRing2Extended({ page, check, logs, errors, finalState })
 
         // 9. Phase 4: Save-Roundtrip — dslAbilities überleben localStorage
         r.saveState();
-        const raw = await window.__stand();
+        const raw = await __stand();
         let parsed = null;
         try {
             parsed = JSON.parse(raw);
@@ -415,9 +415,7 @@ async function checkBandV1722NexusEyes({ page, check }) {
     check("Nexus-Augen: komponiert weiter valide DSL", res.composesValid);
 }
 
-async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWelle6HCreatureLlm({ page, check }) {
     // ### Welle 6.H Phase 2E V1 — Kreatur-LLM-Persona ###
     // Der Spieler spricht mit EINER Kreatur; der Persona-Prompt versammelt ihre volle Identität
     // (Body+Specs+Equipped+Boosts+Memory+bornAt+Welt). Kein echter LLM-Call: geprüft: Builder + Routing.
@@ -427,7 +425,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
 
 
         // 2. _findCreatureByName findet die Kreatur (case-insensitive)
-        const player = st.playerMesh.position;
+        const player = pm.position;
         // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
@@ -602,7 +600,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         out.atWithoutNameRejected = p6 === null;
 
         // 7. Liste rendert Soul-Klassen auf creature-name
-        const player = st.playerMesh.position;
+        const player = pm.position;
         // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
@@ -718,7 +716,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         // 3. Test-Setup: drei Soul-Kreaturen, frische Throttle, Toggle ON
         st.creatureProactiveSpeechEnabled = true;
         st.lastCreatureProactiveSpeech = -Infinity;
-        const player = st.playerMesh.position;
+        const player = pm.position;
         // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
@@ -931,7 +929,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
         out.rejectsNestedForbidden = nestedBad.ok === false && nestedBad.forbiddenOp === "player_speed";
 
         // 4. Persona-Prompt erlaubt program (V3-Update)
-        const player = st.playerMesh.position;
+        const player = pm.position;
         // die Kreatur-Liste ISOLIEREN — am vollen
         // maxCreatures-Cap gibt spawnCreatureAt null → .userData wirft → der
         // ganze Block starb STILL (die stummen Nulls). __restore() am Ende.
@@ -1111,9 +1109,7 @@ async function checkBandWelle6HCreatureLlm({ page, check, errors, finalState }) 
     }
 }
 
-async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWorkshopPolishAndLlm({ page, check }) {
     // ### Werkstatt-UX-Polish (Mode-Bar oben + Stats unten + Tool-Palette + Editor-Toggle + Del-Btn) ###
     const v805Results = await safeEvaluate(page, () => {
         const out = {};
@@ -1187,7 +1183,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
             r.closeAllDrawers();
             st.yaw = 0;
-            if (st.playerMesh) st.playerMesh.rotation.y = 0;
+            if (pm) pm.rotation.y = 0;
         } catch (err) {
             out.error = err && err.message;
         }
@@ -1273,7 +1269,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
             r.closeAllDrawers();
             st.yaw = 0;
-            if (st.playerMesh) st.playerMesh.rotation.y = 0;
+            if (pm) pm.rotation.y = 0;
         } catch (err) {
             out.error = err && err.message;
         }
@@ -1361,7 +1357,7 @@ async function checkBandWorkshopPolishAndLlm({ page, check, errors, finalState }
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
             r.closeAllDrawers();
             st.yaw = 0;
-            if (st.playerMesh) st.playerMesh.rotation.y = 0;
+            if (pm) pm.rotation.y = 0;
         } catch (err) {
             out.error = err && err.message;
         }

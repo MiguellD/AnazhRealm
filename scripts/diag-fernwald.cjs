@@ -53,7 +53,7 @@ hauptLauf(async () => {
         const AR = r.constructor;
         const st = r.state;
         const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => f && f.ready && f.recipes && AR._studioRenderConfig && AR._studioRenderConfig.lod);
+        await __weltDa(() => f && f.ready && f.recipes && AR._studioRenderConfig && AR._studioRenderConfig.lod);
         res.buch = !!(f && f.ready);
         if (!res.buch) return res;
         // E DER STAND DES WALD-GESETZES: die Gestalt des Orts (Solitär oder Bestand) ist eine Antwort des Walds, und der
@@ -149,7 +149,7 @@ hauptLauf(async () => {
                     });
                 }
                 for (const e of proben) await frag(e);
-                await window.__weltDa(() => !r._ensureHydroTilesAround(KX, KZ, 400)); // der Spieler kommt: die Kachel steht
+                await __weltDa(() => !r._ensureHydroTilesAround(KX, KZ, 400)); // der Spieler kommt: die Kachel steht
                 const alt = [];
                 for (const e of proben) alt.push(await frag(e));
                 const frisch = await frischAlle(proben);
@@ -324,7 +324,7 @@ hauptLauf(async () => {
             let vor = -1,
                 ruhig = 0,
                 z = formZensus();
-            for (const weiter = window.__deckel("die Form der Bäume", msMax / 50); weiter(); ) {
+            for (const weiter = __deckel("die Form der Bäume", msMax / 50); weiter(); ) {
                 await tick(10);
                 z = formZensus();
                 const s = st.architectures.length * 1000 + z.ok;

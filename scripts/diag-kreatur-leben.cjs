@@ -118,7 +118,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                 ort[gegen ? "gegenlauf" : "riss"].push(+(drin / 5400 / herde.length).toFixed(3));
                 for (const k of [...s.creatures, ...s.leichname]) r.removeCreature(k);
             }
-        const mittel = (a) => +(a.reduce((p, q) => p + q, 0) / a.length).toFixed(3);
+        const mittel = (a) => +(a.reduce(addiere, 0) / a.length).toFixed(3);
         return { erinnert, ort: { aufenthalt: mittel(ort.riss), gegenlauf: mittel(ort.gegenlauf) } };
     });
     // ── DER ZEITRAFFER (Ökologie K1/K2): `tickFaunaLifecycle` je 10 s Spiel-Zeit, der Spieler an P0 — der Ecke von vier nahen
@@ -210,7 +210,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
     // Ordnungs-Statistik [kleinste, größte Differenz] (über 8 Saaten deckt sie den Median mit 1 − 2 · 0,5⁸ = 99,2 %), mit `t`
     // das 95-%-Intervall des Mittels (t × Standardfehler; bei ~8 Tieren je Region streut eine Saat um einen Wurf)
     const effekt = (G, H, wert, t) => {
-        const m = (v) => v.reduce((p, q) => p + q, 0) / v.length;
+        const m = (v) => v.reduce(addiere, 0) / v.length;
         const g0 = m(G.map(wert));
         const d = G.map((g, i) => +((wert(H[i]) - wert(g)) / Math.max(1e-9, g0)).toFixed(3));
         const se = t * Math.sqrt((m(d.map((q) => (q - m(d)) ** 2)) * (d.length / (d.length - 1))) / d.length);
@@ -293,7 +293,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
             ["mutante", "mutante", "jung", -0.2],
         ])
             if (L[b]) richtungen[k] = richtung(b, g, soll);
-        const [G, H, ms] = [L.grund, L.kappeHalb, L.grund.flatMap((l) => l.ms).sort((a, b) => a - b)];
+        const [G, H, ms] = [L.grund, L.kappeHalb, L.grund.flatMap((l) => l.ms).sort(aufsteigend)];
         return {
             saaten: G.map((l) => Object.fromEntries(Object.keys(A._lebensraumGesetz().L.gattung).map((g) => [g, [l.mittel(360, 720, g), l.mittel(2520, 2880, g)]]))), // prettier-ignore
             kappe: Object.values(L)
@@ -309,7 +309,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                 ),
                 takte: (H || []).reduce((p, h) => p + h.spur.length, 0),
                 leiber: [G, H || []].map((X) => Math.max(...X.map((l) => l.leiber))),
-                zahl: +(G.reduce((p, l) => p + l.orte.slice(0, 4).reduce((a, b) => a + b, 0), 0) / G.length).toFixed(1),
+                zahl: +(G.reduce((p, l) => p + l.orte.slice(0, 4).reduce(addiere, 0), 0) / G.length).toFixed(1),
                 fremd: [...G, ...(H || [])].reduce((p, l) => p + l.fremd, 0),
                 nahrung: G[0].orte.map((x, j) => effekt(G, L.halb || G, (l) => l.orte[j], 2.365)),
                 ms: +ms[Math.floor(ms.length * 0.95)].toFixed(2),
@@ -832,7 +832,7 @@ function lebenUrteil(name, z, soll) {
         soll(
             z.truenke.length >= 12 &&
                 z.truenke.every((n) => n >= 1) &&
-                z.amWasser === z.truenke.reduce((a, b) => a + b, 0),
+                z.amWasser === z.truenke.reduce(addiere, 0),
             `kein Tier trinkt aus Durst: Trünke ${z.truenke}, ${z.amWasser} am Wasser`
         );
         soll(z.durstAus === 0, `das Trinken folgt dem Durst nicht: ohne Durst ${z.durstAus} Trünke`);

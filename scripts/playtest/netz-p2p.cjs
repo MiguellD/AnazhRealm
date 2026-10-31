@@ -5,9 +5,7 @@
 
 const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
-async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandRing11AndW7Mesh({ page, check }) {
     // ### modify_terrain stirbt, voxel_carve/_fill leben ###
     // Die Absenz der modify_terrain-Schicht trägt gate:altlasten (KI2);
     // die Welt-Mod läuft über die broadcastbaren voxel_carve/voxel_fill (Chat `grabe loch`/`hebe hügel`
@@ -611,9 +609,7 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
     }
 }
 
-async function checkBandW16Distribution({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandW16Distribution({ page, check }) {
     // ### Mesh-Welt-Verteilung ###
     // Eine vendorte Welt reist P2P (Transport spiegelt den W7-P2-world-pull). Geprüft: Sender,
     // Empfänger, Annahme-Wand, Rate-Limit, kanal-exklusiv; Zwei-Browser-Transfer: smoke-webrtc.cjs.
@@ -1134,9 +1130,7 @@ async function checkBandW16Distribution({ page, check, errors, finalState }) {
     }
 }
 
-async function checkBandLateMultiUser({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandLateMultiUser({ page, check }) {
     // ### Multi-User-Bau-Sync — Strukturen synchron platzieren + abbauen ###
     // confirmBuild + tryMouseBreak broadcasten; eine geteilte string-archId macht Spieler-Bauten
     // peer-übergreifend identifizierbar. Geprüft: opts.id, spawn_blueprint mit archId + Idempotenz,
@@ -1965,9 +1959,7 @@ async function checkBandLateMultiUser({ page, check, errors, finalState }) {
     }
 }
 
-async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandV8SoulRoleAndWorkshop({ page, check }) {
     // ### Soul-Sync (Peer-Avatar = echte Seele) ###
     const v834Results = await safeEvaluate(page, () => {
         const out = {};
@@ -2452,7 +2444,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
             st.fps = 0;
             for (let i = 0; i < 90; i++) r.updateFps(1 / 60);
             out.fpsRollingAvg = st.fps === 60;
-            out.fpsNotSingleFrame = window.__fehlt(r.updateFps, /Math\.round\(1 \/ delta\)/);
+            out.fpsNotSingleFrame = __fehlt(r.updateFps, /Math\.round\(1 \/ delta\)/);
             st._fpsFrames = 5;
             st._fpsElapsed = 0.3;
             r.updateFps(2.0); // abnormaler Delta → Fenster verwerfen

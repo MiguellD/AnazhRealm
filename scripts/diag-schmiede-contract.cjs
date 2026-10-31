@@ -50,6 +50,56 @@ function buildCase(c) {
     return SC.buildInstance(c.rezeptId, c.seed, c.lod, c.ov || undefined);
 }
 
+// ── DIE ARENA (w4-arena-welt): Befund → Wände (Name, Täter) → Selbst-Test ──
+// DIE ARENA (w4-arena-welt): die Klasse der Geräte als Gestalten des Kerns (EINE Art `arena`) — (A3) die Saat: kein
+// Math.random in Kern und Hülle, die Wappen folgen dem Samen; (A4) die Hülle baut kein Gerät (jedes `new THREE.Mesh(` in einer
+// Lehr-Ebene, der Bühne oder dem Arm — der Name der Funktion davor); (A6) der EINE Stoß: die Impuls-Formel lebt nur im Kern.
+// Das Gesetz (jede bewegte Gestalt antwortet jedem vollen Hieb jeder Gattung und ruht ≤ 6 s), den Hieb am Pendel und den Ruf
+// des Kerns misst gate:kampf-gefuehl Q16 in der Welt (der EINE Stoß des Wirts, der Spion an __schmiedeCore.stossImpuls).
+// Eingefroren: je Hof seine Gestalten samt Gliedern in L0 · L1 · Wurf, dazu Saat und Regler (golden/arena.json). Stufen,
+// Budget-Zeile, Reduktion, Stoffe und Fernform jeder Gestalt urteilt die Familie (gate:regler-wirkt über alle Rezepte der Art,
+// gate:gegenstand-stoff, gate:studio-vertrag B2c, die Fern-Wand von gate:asset-contract). Der Selbst-Test verdirbt je Wand
+// ihre Eingabe und sieht sie rot.
+const fs = require("fs");
+const stammLib = require("./lib/stamm.cjs");
+const HUELLE = "worlds/schmiede/schmiede.js";
+// wo die Hülle Meshes bauen darf: ihre Lehr-Ebenen, die Bühne und der Arm des Prüfstands — nie ein Gerät
+const ERLAUBT = ["(Kopf)", "dot", "ringMesh", "buildLehrenOverlay", "buildSectionCard", "buildMassStrip", "buildGround", "buildViewModel", "addDummyScar", "ensureTrailMesh"];
+// Der Befund: die Würfe in Kern und Hülle, die Saat der Wappen, der Ort (die Funktion davor) jedes Meshes der Hülle, die Formel
+// des Stoßes in Stamm und Hülle.
+function arenaBefund(K) {
+    const fp = (id, s) => fingerprint(K.buildInstance(id, s, 0)).sha256;
+    const code = stammLib.ohneKommentare(fs.readFileSync(path.join(root, "worlds/schmiede/schmiede.js"), "utf8"));
+    const orte = [...code.matchAll(/new THREE\.Mesh\(/g)].map((m) => ([...code.slice(0, m.index).matchAll(/^function ([\w$]+)\(/gm)].pop() || [0, "(Kopf)"])[1]);
+    const B = {
+        zufall: ["schmiede-core.js", HUELLE].filter((datei) => !stammLib.fehlt(null, /Math\.random/, { datei })),
+        saat: fp("ritter", 1) !== fp("ritter", 2) && fp("kampfbanner", 1) !== fp("kampfbanner", 5),
+        meshe: orte.length,
+        fremd: orte.filter((f) => !ERLAUBT.includes(f)),
+        formel: [{}, { datei: HUELLE }].filter((o) => !stammLib.fehlt(null, /\(1 \+ e\) \* vRel/, o)).length,
+    };
+    return B;
+}
+function arenaWaende(B) {
+    return [
+        ["A3: kein Math.random in Kern und Hülle, die Wappen folgen dem Samen", B.saat ? B.zufall : B.zufall.concat("Saat")],
+        [`A4: die Hülle baut kein Gerät (${B.meshe} Meshes in Lehr-Ebene, Bühne und Arm)`, B.fremd],
+        ["A6: die Impuls-Formel lebt nur im Kern, nie in Stamm und Hülle", B.formel ? ["Formel " + B.formel + "×"] : []],
+    ];
+}
+// die eingefrorenen Fälle: je Hof seine Gestalten (ein Glied bei seiner Art) in L0 · L1 · Wurf mit Same 1, dazu die Saat der
+// Wappen und die Regler der Maße
+function arenaFaelle(A) {
+    const F = { saat: [["ritter", 2], ["ritter", 3], ["kampfbanner", 5], ["zielscheibe", 1, { radiusM: 0.2, hoeheM: 1.2 }], ["bambusrohr", 1, { hoeheM: 1.8 }], ["tatamirolle", 1, { rolleM: 0.5, seilM: 0 }]] };
+    for (const id in A) (F[A[id].hof || A[A[id].glied].hof] ||= []).push([id, 1]);
+    return Object.entries(F).map(([name, teile]) => ({ name, teile }));
+}
+function arenaFall(c) {
+    const g = new THREE.Group();
+    for (const [id, s, ov] of c.teile) for (const L of SC.ARENA_STUFEN) g.add(SC.buildInstance(id, s, L, ov));
+    return g;
+}
+
 (async function main() {
     console.log("=== ASSET-VERTRAG v5 — Klingen & Werkzeuge (schmiede-core.js buildInstance) ===");
     check("schmiede-core geladen (__schmiedeCore + buildInstance)", !!SC && typeof SC.buildInstance === "function");
@@ -140,6 +190,22 @@ function buildCase(c) {
     // 7) SELBST-TEST — die Linse ist nicht vakuös: korrumpierte Goldens werden rot.
     // gegen das Ist selbst (S1 Wände): der Selbst-Test misst auch auf einem roten Stand, was er misst
     goldenSelbsttest(actual, check);
+
+    // ═══ DIE ARENA (w4-arena-welt) — die Klasse der Geräte als Gestalten des Kerns ═══
+    console.log(`\n=== DIE ARENA — ${Object.keys(SC.ARENA_ARTEN).length} Gestalten der Art arena ===`);
+    const B = arenaBefund(SC);
+    const W = arenaWaende(B);
+    for (const [name, taeter] of W) check(name, !taeter.length, taeter.slice(0, 6).join(" · "));
+    const FAELLE = arenaFaelle(SC.ARENA_ARTEN);
+    goldenWand(path.join(root, "spec/asset-contract/v5/golden/arena.json"), 5, vertragIst(FAELLE, arenaFall, check, (c) => c.name), check, FAELLE.length);
+    // der Selbst-Test: je Wand ihre Eingabe verdorben — die Wand sieht den neuen Täter
+    const verdirb = [(b) => b.zufall.push(0), (b) => b.fremd.push(0), (b) => b.formel++];
+    const rot = verdirb.filter((f) => {
+        const b = structuredClone(B);
+        f(b);
+        return arenaWaende(b).some(([, t], i) => t.length > W[i][1].length);
+    }).length;
+    check(`SELBST-TEST A: jede Arena-Wand sieht ihre verdorbene Eingabe (${rot}/${verdirb.length})`, rot === verdirb.length);
 
     wandEnde(errs, "der Klingen-Asset-Vertrag steht: buildInstance ist deterministisch + seed-invariant (cv:5), der ov-Kanal wirkt, die lod-Klemme hält, die Split-Parität buildInstance==buildWeaponModel steht je Gattung, die Goldens sind byte-exakt, der Selbst-Test beweist die Linse feuert.");
 })();

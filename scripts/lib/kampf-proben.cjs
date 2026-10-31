@@ -784,7 +784,7 @@ async function WELLE_L(ort) {
             c.userData._stossV = null;
             c.position.copy(c0);
             c.updateMatrixWorld(true);
-            w.z.sweepFormel = window.__fehlt(A.prototype._kampfSweepTick, /Math\.(sin|cos)\(/) ? 0 : 1;
+            w.z.sweepFormel = __fehlt(A.prototype._kampfSweepTick, /Math\.(sin|cos)\(/) ? 0 : 1;
             w.c.sweepBlickVorn = konsum.sweepBlick && w.z.sweepFormel === 0;
         }
         // (G2) keine typeof-Probe auf eine EIGENE Methode in den Methoden, die die Welle L (Kampf und Maus) schrieb —
@@ -823,7 +823,7 @@ async function WELLE_L(ort) {
             const eigenTypeof = new RegExp(
                 "typeof this\\.(?:" + eigene.join("|").replace(/\$/g, "\\$") + ') === "function"'
             );
-            const selbst = welleL.filter((m) => !window.__fehlt(A.prototype[m], eigenTypeof));
+            const selbst = welleL.filter((m) => !__fehlt(A.prototype[m], eigenTypeof));
             w.z.typeofSelbst = selbst.join(",") || "–";
             w.c.keinTypeofSelbst = selbst.length === 0;
         }
@@ -834,7 +834,7 @@ async function WELLE_L(ort) {
             const grobPfade = [A.prototype._kampfSweepTick, A.prototype._tickPfeile, A.prototype._pfeilSehne].filter(
                 Boolean
             );
-            w.z.grobFremd = window.__fehlt(grobPfade, /\.scale\.x\b/) ? 0 : 1;
+            w.z.grobFremd = __fehlt(grobPfade, /\.scale\.x\b/) ? 0 : 1;
             w.c.grobLiestLeib = konsum.sweepTor && konsum.pfeilTor && konsum.torLeib && w.z.grobFremd === 0;
         }
         // (T12) das Grob-Tor deckt die Gestalt: jede Gattung in jeder Größen-Grenze, 90 Takte, je Kapsel-Ende (+ Radius) —
@@ -892,9 +892,7 @@ async function WELLE_L(ort) {
         {
             const summe = { proben: 0, ausserhalb: 0, jeL: {}, taeter: [] };
             for (let k = 0; k < 90; k++) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {}
+                __handTakt();
                 if (k % 6) continue;
                 const o = gestaltDeckung();
                 summe.proben += o.proben;
@@ -1219,7 +1217,7 @@ async function WELLE_L(ort) {
                     weit: serieR(1.8, -0.77),
                     nah: serieR(1.3, -0.6),
                     // der Code des Dispatchers ohne Kommentare (die Kommentare zitieren die alte Zahl)
-                    toreZahl: window.__fehlt(A.prototype.tryMouseBreak, /reachMaxM/) ? 0 : 1,
+                    toreZahl: __fehlt(A.prototype.tryMouseBreak, /reachMaxM/) ? 0 : 1,
                 };
             } finally {
                 delete r._pickArchitectureAtCrosshair;
@@ -2006,7 +2004,7 @@ async function WELLE_L(ort) {
                     s._pfeile.splice(s._pfeile.indexOf(pf), 1);
                 }
             }
-            pfeilAus.wirtZylinder = !window.__fehlt(A.prototype._pfeilMeshAttach, /CylinderGeometry\(0\.015/);
+            pfeilAus.wirtZylinder = !__fehlt(A.prototype._pfeilMeshAttach, /CylinderGeometry\(0\.015/);
             // ein leerer Guss bricht laut (Nachbesserung 2 + 3): der Ofen liefert nichts — null ODER eine Gruppe ohne ein einziges
             // Mesh (jedes _foundryBuildMesh gab null), die Vorlage frisch — der Pfeil darf nicht still unsichtbar fliegen
             if (fn("_pfeilVorlage")) {
@@ -2114,7 +2112,7 @@ async function WELLE_L(ort) {
                     !FRAGT_ERLAUBT.has(n) &&
                     d &&
                     typeof d.value === "function" &&
-                    !window.__fehlt(d.value, /\.dying\b/)
+                    !__fehlt(d.value, /\.dying\b/)
                 );
             });
             if (tod.liegt10s) {
@@ -2816,7 +2814,7 @@ async function WELLE_L(ort) {
                 r.getTerrainHeightAt(...ort.spieler) + A.PLAYER_FOOT_OFFSET,
                 ort.spieler[1]
             );
-            await window.__weltStehtNach();
+            await __weltStehtNach();
             zielen(V3().set(ort.blick[0], pm.position.y, ort.blick[1]));
             const [d, P, wild] = [camDir(), pm.position, setze("wesen")];
             const alle = () => [...s.nahWiese.kacheln.values()].flatMap((k) => k.bueschel);
@@ -2863,16 +2861,16 @@ async function WELLE_L(ort) {
                     if (t) Object.assign(x, { verb: "hieb", wirk: t.amount / t.kraft, kraft: t.kraft });
                     parke(wild);
                 } else if (ziel === "wiese") {
-                    await window.__weltStehtNach();
+                    await __weltStehtNach();
                     zielen(halm);
                     const v = [um(), kraut()];
                     r.tryMouseBreak();
                     Object.assign(x, { verb: p._mausVerb, kraut: kraut() - v[1] });
                     if (x.verb === "pfluecken") {
-                        await window.__weltStehtNach();
+                        await __weltStehtNach();
                         x.wirk = v[0] - um();
                         r._tickScatterRegrow(Infinity);
-                        await window.__weltStehtNach();
+                        await __weltStehtNach();
                         x.wieder = um() === v[0];
                     }
                 } else {
@@ -3061,6 +3059,94 @@ async function WELLE_L(ort) {
         w.c.kaltTrifft = w.z.kalt.traf && !w.z.kalt.zerlegt && !w.z.kalt.bruch;
         w.z.s8 = await kalterHieb("wolf", "wolf", true);
         w.c.s8 = !w.z.s8.traf && w.z.s8.nennt;
+        // (Q16) DIE ARENA DER WELT (w4-arena-welt): das Werk arena_pendelball (der Ball am Seil der Pendel-Kugel) 1,8 m vor dem
+        // Spieler, sein Gelenk 2,65 m über dem Boden; das Fadenkreuz auf den Ball (zielen), der Klick über den EINEN Dispatcher,
+        // der Takt des Schwungs, der Takt der Werk-Gesetze bis zur Ruhe, der Spion am Stoß des Kerns, der Pfeil quer durch den
+        // Ball (2,5 m vor bis 2,5 m hinter ihm, 60 m/s), die Blocker des Werks gegen die Hülle seiner Gestalt, dann die Klasse aller
+        // bewegten Gestalten — w.z.arena
+        await teil("Q16", async () => {
+            const a = (w.z.arena = {});
+            const V = V3()
+                .set(Math.sin(pm.rotation.y), 0, Math.cos(pm.rotation.y))
+                .multiplyScalar(1.8)
+                .add(pm.position);
+            const e = r.spawnArchitecture(
+                "arena_pendelball",
+                { x: V.x, y: r.getTerrainHeightAt(V.x, V.z) + 3.15, z: V.z },
+                { precise: true }
+            );
+            try {
+                // das Werk steht in Bau-Ereignissen (Lehre 26): das EINE Warten auf einen Bau, bis die Instanz zeichnet
+                await __gebautNach(e, { fertig: () => e.instSlots?.length, bau: () => {} });
+                const [s0, M] = [e.instSlots[0], new THREE.Matrix4()];
+                const matrix = () => (s.archInstanceGroups.get(s0.key).mesh.getMatrixAt(s0.slot, M), M.elements.join());
+                const vorher = matrix();
+                Object.assign(a, { blocker: e.blockerAABBs?.length, huelle: e._hausHuelle?.teile.length });
+                ausruesten("klinge_langschwert");
+                const ball = V3().set(e.position.x, e.position.y - 1.76, e.position.z);
+                zielen(ball);
+                Object.assign(p, {
+                    _swing: null,
+                    _hitStopUntil: 0,
+                    _mausVerb: null,
+                    stamina: Math.max(p.stamina || 0, 100),
+                });
+                r.tryMouseBreak();
+                a.verb = p._mausVerb;
+                if (p._swing) p._swing.lastT = T;
+                for (let k = 0; k < 1200 && p._swing; k++) schwungTakt((T += 0.005));
+                const g = e._gesetz?.geraet;
+                Object.assign(a, { traf: !!g && !g.ruht, steht: s.architectures.includes(e), ausRad: 0, ruheS: 0 });
+                for (; g && r._werkGesetzImTakt.has(e) && a.ruheS < 20; a.ruheS += 1 / 60) {
+                    r._tickWerkGesetz(1 / 60);
+                    a.ausRad = Math.max(a.ausRad, ...g.a.map(Math.abs));
+                    a.matrixFolgt ||= a.ausRad > 0.01 && matrix() !== vorher;
+                }
+                a.ausDemTakt = !r._werkGesetzImTakt.has(e);
+                // der EINE Stoß der Welt rechnet im Kern: der Zähl-Spion an __schmiedeCore.stossImpuls, A._stossImpuls einmal
+                const [sk, f0] = [__schmiedeCore, __schmiedeCore.stossImpuls];
+                let n = 0;
+                sk.stossImpuls = (...x) => (n++, f0(...x));
+                a.stossKern = A._stossImpuls(2, Infinity, 3, 0.5) === 9 && n === 1; // (1 + ½) · 3 / ½, binär exakt
+                sk.stossImpuls = f0;
+                const b = { x: ball.x + 2.5, y: ball.y, z: ball.z, vx: 60, vy: 0, vz: 0 };
+                r._pfeilSehne({ ...b, x: ball.x - 2.5, mesh: null }, b, [], A._arenaGesetz().bogen, T);
+                a.pfeilRad = g && Math.hypot(...g.w);
+                // DIE KLASSE in der Welt: jede bewegte Gestalt als Werk, der volle Hieb (16 m/s) jeder Nahkampf-Gattung über den
+                // EINEN Stoß des Wirts an ihrer ersten Kapsel, das Gesetz im Takt der Welt bis zur Ruhe — die späteste Ruhe je Gestalt
+                Object.assign(a, { ruhe: {}, stumm: [] });
+                for (const id of Object.keys(sk.ARENA_ARTEN).filter((i) => sk.ARENA_ARTEN[i].gelenk)) {
+                    const x = r.spawnArchitecture(
+                        "arena_" + id,
+                        { x: V.x + 6, y: r.getTerrainHeightAt(V.x + 6, V.z), z: V.z },
+                        { precise: true }
+                    );
+                    const k = sk.geraetTreffer(id)[0];
+                    for (const wn of Object.keys(sk.REZEPT_ZU_GATTUNG).filter((w) => sk.kampfMasze(w))) {
+                        const u = sk.trefferUrteil(sk.kampfMasze(wn).mess, { vLat: 16, vAx: 0 });
+                        delete x._gesetz;
+                        const W = r._archEntryWorldMatrix(x, M);
+                        if (
+                            !(
+                                r._geraetStoss(
+                                    x,
+                                    V3().fromArray(k.b).applyMatrix4(W),
+                                    V3().set(0, 0, 1).transformDirection(W),
+                                    { m: u.mEff, p: u.p }
+                                ) > 0
+                            )
+                        )
+                            a.stumm.push(id + " " + wn);
+                        let t = 0;
+                        for (; r._werkGesetzImTakt.has(x) && t < 30; t += 1 / 60) r._tickWerkGesetz(1 / 60);
+                        a.ruhe[id] = Math.max(a.ruhe[id] || 0, t);
+                    }
+                    r.removeArchitecture(x);
+                }
+            } finally {
+                r.removeArchitecture(e);
+            }
+        });
     } catch (e) {
         w.fehler.push("ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 3).join(" | "));
     } finally {

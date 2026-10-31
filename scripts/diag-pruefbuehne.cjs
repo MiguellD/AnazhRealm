@@ -238,9 +238,9 @@ async function s0Probe(page, station, schein) {
                 // Speicher `_dslPositionsCache` auf den Prototyp), und nach dem Tausch am Ort las die neue Welt ihn
                 const f = Object.getOwnPropertyDescriptor(P, n).value;
                 if (n === "constructor" || typeof f !== "function") continue;
-                if (!window.__fehlt(f, /new THREE\.PointLight\(/)) out.bauer.push(n);
-                if (!window.__fehlt(f, LIT)) out.ohnePool.push(n);
-                if (!window.__fehlt(f, /this\._punktLichtBrdf\(/)) out.brdf.push(n);
+                if (!__fehlt(f, /new THREE\.PointLight\(/)) out.bauer.push(n);
+                if (!__fehlt(f, LIT)) out.ohnePool.push(n);
+                if (!__fehlt(f, /this\._punktLichtBrdf\(/)) out.brdf.push(n);
             }
             if (schein) delete P._scheinRueckfall;
             // das EINE Punktlicht-Gesetz am Ruf: der Pool-Term rechnet jeden Platz über _punktLichtBrdf (Spion am Ruf)
@@ -1088,7 +1088,7 @@ async function lichtLauf() {
                             const vor = new Set(s.architectures);
                             const pm = s.playerMesh.position;
                             let feuer = null;
-                            for (const weiter = window.__deckel("die Feuerstelle", 3000); !feuer && weiter(); ) {
+                            for (const weiter = __deckel("die Feuerstelle", 3000); !feuer && weiter(); ) {
                                 const halt = s.weatherEffectTime;
                                 s.weatherEffectTime = 0; // der Satz geht durch den Mess-Halt (der Akt ist die Probe)
                                 try {
@@ -1115,7 +1115,7 @@ async function lichtLauf() {
                         // Das Urteil (`__s0Gestalt`) nennt den Täter: fiel sie aus der Welt, bricht die Linse sofort ab.
                         const feuer = window.__s0Feuer;
                         let fehlt = [];
-                        for (const weiter = window.__deckel("die Feuerstelle und ihr Boden", 3000); weiter(); ) {
+                        for (const weiter = __deckel("die Feuerstelle und ihr Boden", 3000); weiter(); ) {
                             const u = window.__s0Gestalt(feuer);
                             if (u.fiel) return `die Feuerstelle fiel aus der Welt (${u.fiel}) — sie wächst nie mehr`;
                             fehlt = u.fehlt;
@@ -1362,7 +1362,7 @@ async function lichtLauf() {
                         nah: nahZahl,
                         zaehl,
                         boden: [...bodenWgsl.keys()],
-                        png: window.__png(u8, w, h),
+                        png: __png(u8, w, h),
                     };
                 }, schein, ECHT ? 0 : S0_NAH_M, S0_TON.palette)
             );
@@ -1405,7 +1405,7 @@ async function lichtLauf() {
             } finally {
                 if (nahLos) nahLos();
             }
-            const bild = (a) => window.__png(a.u8, 960, 540);
+            const bild = (a) => __png(a.u8, 960, 540);
             const figur = bild(auf);
             if (wolf) r.removeCreature(wolf);
             cam.position.set(f.x - 6, g(f.x - 6, f.z) + 1.7, f.z);

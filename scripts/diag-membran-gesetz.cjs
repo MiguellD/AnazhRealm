@@ -161,7 +161,7 @@ check("porta-core: membranUniforms trägt kein fog", !("fog" in PC.membranUnifor
 check("Shell: buildFog ist fort", ...shell(/buildFog|fogMat/));
 
 // ── Selbst-Test: eine injizierte Drift MUSS rot erkannt werden ──
-const kaputt = JSON.parse(JSON.stringify(FROZEN));
+const kaputt = structuredClone(FROZEN);
 kaputt.kk = 14.0;
 const selbst = driftVon(kaputt, MG).map(([p]) => p);
 check("SELBST-TEST: injizierte kk-Drift wird erkannt", selbst.length === 1 && selbst[0] === "kk");

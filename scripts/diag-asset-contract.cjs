@@ -222,7 +222,7 @@ function steckbriefUrteil(atlas, breit, wedel, gross, weide) {
     for (let c = 0; c < breit.zellen; c++)
         if (atlas.ext[c] > breit.kern)
             v.push(`Zelle ${c}: Alpha reicht bis ${atlas.ext[c].toFixed(4)} > kern ${breit.kern}`);
-    const f = atlas.fill.slice(0, breit.zellen).reduce((s, x) => s + x, 0) / breit.zellen;
+    const f = atlas.fill.slice(0, breit.zellen).reduce(addiere, 0) / breit.zellen;
     if (Math.abs(f - breit.fuellung) > 0.01)
         v.push(`Breitblatt-Füllung ${f.toFixed(4)} ≠ Steckbrief ${breit.fuellung}`);
     if (atlas.ext[wedel.zelle] > wedel.kern)
@@ -456,7 +456,7 @@ hauptLauf(async () => {
         const buch = bookReply.book || {};
         // DER UMSCHLAG WIE DER WIRT IHN LIEST (W8): die Zweit-Kern-Blöcke (Stufen · Budget · Gestalten) fallen über
         // DIESELBE Funktion in die EINEN Karten wie in `_foundryIngestRenderConfig` (phyto-core kerneVereinen).
-        const vereint = (rc) => PC.kerneVereinen(JSON.parse(JSON.stringify(rc || {})));
+        const vereint = (rc) => PC.kerneVereinen(structuredClone(rc || {}));
         const rcV = vereint(bookReply.renderConfig);
         const lodB = rcV.lod;
         const budget = lodB && lodB.budget;
@@ -708,7 +708,7 @@ hauptLauf(async () => {
         // Die Tafel schreiben (`--tafel`, auf dem Stand TAFEL_STAND): nur die Bild-Messung, kein Urteil.
         if (tafelSchreiben) return;
         // SELBST-TEST S3 (W8) vorbereitet: der Umschlag OHNE zusatzBudget — welche Kerne verlieren ihre Zeilen?
-        const ohneZB = JSON.parse(JSON.stringify(bookReply.renderConfig || {}));
+        const ohneZB = structuredClone(bookReply.renderConfig || {});
         if (ohneZB.lod) delete ohneZB.lod.zusatzBudget;
         const budgetOhneZB = (vereint(ohneZB).lod || {}).budget || {};
         wand = { budgetOhneZB, kernVonArt };
@@ -811,7 +811,7 @@ hauptLauf(async () => {
         const at = wand.at;
         console.log(
             `Atlas: Breitblatt-Kern bis ${Math.max(...at.ext.slice(0, at.steckbrief.zellen)).toFixed(4)} (Steckbrief ${at.steckbrief.kern}) · ` +
-                `Füllung ${(at.fill.slice(0, at.steckbrief.zellen).reduce((s, x) => s + x, 0) / at.steckbrief.zellen).toFixed(4)} (${at.steckbrief.fuellung}) · ` +
+                `Füllung ${(at.fill.slice(0, at.steckbrief.zellen).reduce(addiere, 0) / at.steckbrief.zellen).toFixed(4)} (${at.steckbrief.fuellung}) · ` +
                 `Wedel-Zelle bis ${at.ext[at.wedel.zelle].toFixed(4)} · Füllung ${at.fill[at.wedel.zelle].toFixed(4)} (${at.wedel.fuellung}) · ` +
                 `Großblatt-Zelle bis ${at.ext[at.gross.zelle].toFixed(4)} · Füllung ${at.fill[at.gross.zelle].toFixed(4)} (${at.gross.fuellung}) · ` +
                 `Weiden-Zelle bis ${at.ext[at.weide.zelle].toFixed(4)} · Füllung ${at.fill[at.weide.zelle].toFixed(4)} (${at.weide.fuellung})`
@@ -852,7 +852,7 @@ hauptLauf(async () => {
                     ["tris", Math.floor(z.tris / 2)],
                     ["draws", z.draws - 1],
                 ]) {
-                    const B2 = JSON.parse(JSON.stringify(B));
+                    const B2 = structuredClone(B);
                     B2[k][st][feld] = wert;
                     if (!kostenUrteil(messungen, B2).some((x) => x.startsWith(`${k}[${st}] `)))
                         halb.push(`${k}[${st}].${feld}`);

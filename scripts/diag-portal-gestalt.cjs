@@ -40,9 +40,9 @@ hauptLauf(async () => {
     // ===== EVAL 1: Boot + Buch warm + (A) Daten-Zeilen + (B) Resolver =====
     const outAB = await page.evaluate(async () => {
         const res = { a: {}, b: {} };
-        await window.__weltDa();
+        await __weltDa();
         const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.geisttor && f.recipes.kathedrale);
+        await __weltDa(() => f && f.ready && f.recipes && f.recipes.geisttor && f.recipes.kathedrale);
         // DIE DYNAMISCHE WAHRHEIT aus dem lebenden Zustand: jeder handgeschriebene Portal-Bauplan mit studioGestalt (die
         // Auto-Klone des Register-Chokepoints tragen sie auch — ihre Wahrheit prüft gate:rezept-katalog).
         res.liveSet = Object.keys(st.blueprints || {})
@@ -69,7 +69,7 @@ hauptLauf(async () => {
         delete f.recipes.verkalkt;
         res.b.ohneRezept = r._foundryPresetForEntry({ type: "welt_terrain" });
         f.recipes.verkalkt = altV;
-        res.b.ohneWeltLiteral = window.__fehlt(r._foundryPresetForEntry, /welt_/); // Absenz: der Resolver ist generisch
+        res.b.ohneWeltLiteral = __fehlt(r._foundryPresetForEntry, /welt_/); // Absenz: der Resolver ist generisch
         res.b.eiche = r._foundryPresetForEntry({ type: "baum_eiche" });
         res.b.esse = r._foundryPresetForEntry({ type: "esse" });
         res.b.wagen = r._foundryPresetForEntry({ type: "fahrzeug_wagen" });
@@ -125,7 +125,7 @@ hauptLauf(async () => {
         res.c.coldAfterSpawn = !entry.instanced && !entry.mesh;
         // Materialisieren: der erste Rebuild stiess die Studio-Anfrage an (kalt); pollen,
         // bis das Asset andockt (der Rewarm-Weg, hier deterministisch von Hand gefahren).
-        res.c.materializeTakte = await window.__gebautNach(entry, { fertig: () => entry.instanced === true });
+        res.c.materializeTakte = await __gebautNach(entry, { fertig: () => entry.instanced === true });
         res.c.instanced = entry.instanced === true;
         res.c.instFoundry = entry.instFoundry === true;
         // die gezeigten Slots: der Wurf-Zwilling der NUR-WURF-Stufe 3 (1110-9, Gruppe `…#S` auf der Schatten-Ebene) zeichnet

@@ -33,7 +33,7 @@ hauptLauf(async () => {
     page.on("console", (m) => consoleLines.push(m.text()));
     await server.zeige(page, 60000, "index.html?holz=voll");
     await page.evaluate(async () => {
-        await window.__weltDa(() => r && r.state && r.state.rendererReady === true); // prettier-ignore
+        await __weltDa(() => r && r.state && r.state.rendererReady === true); // prettier-ignore
         // W5: ein Programm, das nicht linkt, steht beim Stoff-Namen im Fehler-Sammler — ab dem ersten Frame, den das Spiel zeichnet
         const st = r && r.state, rend = st && st.renderer, be = rend && rend.backend; // prettier-ignore
         if (!be || !be.gl) return;
@@ -85,7 +85,7 @@ hauptLauf(async () => {
             // erste Scheibe hängt — das Ereignis, nie die Wanduhr (Lehre 26; bis ci-wackler-zensus 60 Takte ohne Pause nach 6 s
             // Schlaf: unter Last war noch keine Antwort da, cursor 0). Ein Faden, der nie antwortet, steht in der Stall-Akte.
             const pm = st.playerMesh;
-            await window.__weltDa(() => (r._tickFernRing(pm.position), (st.fernRing || {}).cursor > 0));
+            await __weltDa(() => (r._tickFernRing(pm.position), (st.fernRing || {}).cursor > 0));
             o.fernRingDa = !!st.fernRing;
             o.fernRingCursor = st.fernRing.cursor; // der Ring steht: auf ihn wartete W4
             // W5 — die Welt lebt: den Loop DETERMINISTISCH pumpen (swiftshader-GL schafft natürliche rAF-Frames nur im

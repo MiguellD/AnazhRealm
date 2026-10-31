@@ -5,9 +5,7 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-async function checkBandVoxelP3AndInventory({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandVoxelP3AndInventory({ page, check }) {
     // ### Voxel-Terrain-Bogen Phase 3 — 3D-Graben ###
     // `carveVoxel` nimmt eine Säule aus dem Dichte-Feld (gelaende-core `editForm`: Radius r, halbe Höhe r).
     const voxelP3Results = await safeEvaluate(page, () => {

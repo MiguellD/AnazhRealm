@@ -109,9 +109,7 @@ async function checkBandV1764ForgeAvatar({ page, check }) {
     );
 }
 
-async function checkBandRing5Soul({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandRing5Soul({ page, check }) {
     // ### Ring 5 — createPlayerSoul V1 ###
     // Mensch + verkörperbare Tier-Körper: Default human, Wechsel ändert geometry+color, Chat-Pattern
     // routet, Save/Load-Roundtrip, unbekannte Namen abgelehnt, Position überlebt, Drawer + Status-Bar-UI.
@@ -265,7 +263,7 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
         // Save-Roundtrip: die getragene Wolf-Verkörperung reist als Custom-Seele
         r.applyPlayerSoul("wolf");
         r.saveState();
-        const raw = await window.__stand();
+        const raw = await __stand();
         let parsed = null;
         try {
             parsed = JSON.parse(raw);
@@ -1910,7 +1908,7 @@ async function checkBandGamepadVerben({ page, check }) {
             Object.getOwnPropertyNames(proto).filter((n) => {
                 const f = Object.getOwnPropertyDescriptor(proto, n).value;
                 const frei = ["constructor", "init", "_verbTafelSammeln", "_alleTastenLos"].includes(n);
-                return !frei && typeof f === "function" && !window.__fehlt(f, /\b(?:state|st|s)\.keys\b/);
+                return !frei && typeof f === "function" && !__fehlt(f, /\b(?:state|st|s)\.keys\b/);
             });
         o.leser = leser();
         proto.__zwillingLeser = function () {

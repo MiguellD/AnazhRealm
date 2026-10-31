@@ -1091,7 +1091,7 @@ async function probe(arg) {
     try {
         const m = { gestartet: false };
         out.ankunft = m;
-        await window.__gebautNach("die Genesis-Plattform", {
+        await __gebautNach("die Genesis-Plattform", {
             fertig: () => st.architectures.some((a) => a && a.type === "start_plattform"),
             takt: () => tick(1, 100),
             max: 600,
@@ -1583,7 +1583,7 @@ async function probe(arg) {
         const m = { gestartet: false };
         out.vorschau = m;
         const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.eiche && st.blueprints.baum_eiche);
+        await __weltDa(() => f && f.ready && f.recipes && f.recipes.eiche && st.blueprints.baum_eiche);
         // Das Welt-Auge steht beim Spieler, wo er die Werkstatt öffnet.
         await tick(20);
         if (st.uiActiveDrawer !== "werkstatt") r.toggleDrawer("werkstatt");
@@ -1602,7 +1602,7 @@ async function probe(arg) {
             });
         };
         r.selectBlueprintForEdit("baum_eiche");
-        await window.__gebautNach("die Werkstatt-Vorschau der Eiche", {
+        await __gebautNach("die Werkstatt-Vorschau der Eiche", {
             fertig: () =>
                 !!(
                     ws.preview &&
@@ -1714,7 +1714,7 @@ async function probe(arg) {
         const t0 = performance.now();
         r.selectBlueprintForEdit("baum_eiche");
         const steht = () => !!(p.currentMesh && !r._wsStudioPending && p.currentMesh.children.length);
-        await window.__gebautNach(`die Vorschau nach dem fremden Zug ${a.key}`, {
+        await __gebautNach(`die Vorschau nach dem fremden Zug ${a.key}`, {
             fertig: steht,
             takt: () => tick(1, 80),
             max: 275,
@@ -1740,7 +1740,7 @@ async function probe(arg) {
                 const t1 = performance.now();
                 const erst = r._heldFoundryGroup(klinge);
                 m.hand.erst = erst === "pending" ? "pending" : erst ? "gruppe" : String(erst);
-                await window.__gebautNach(`die Hand nach dem fremden Zug ${b.key}`, {
+                await __gebautNach(`die Hand nach dem fremden Zug ${b.key}`, {
                     fertig: () => m.hand.geweckt > 0,
                     takt: () => tick(1, 80),
                     max: 275,
@@ -1771,7 +1771,7 @@ async function probe(arg) {
                 }
                 const t2 = performance.now();
                 r.selectBlueprintForEdit("baum_eiche");
-                await window.__gebautNach(`die Vorschau-Stufe L${s}`, {
+                await __gebautNach(`die Vorschau-Stufe L${s}`, {
                     fertig: steht,
                     takt: () => tick(1, 80),
                     max: 275,
@@ -1883,7 +1883,7 @@ async function probe(arg) {
             const ti = performance.now();
             if (art === "rezept") r.selectStudioRecipeForView(id);
             else r.selectBlueprintForEdit(id);
-            await window.__weltDa(() => !r._wsStudioPending);
+            await __weltDa(() => !r._wsStudioPending);
             e.ms = Math.round(performance.now() - ti);
             if (r._wsStudioPending) {
                 e.frist = true;
@@ -1910,7 +1910,7 @@ async function probe(arg) {
 async function korpusAufbau(a) {
     // die Welt steht und das Studio-Buch kennt jedes Wort des Korpus
     for (let i = 0; i < 200 && !(i && a.worte.every((w) => r._studioBlueprintForWord(w))); i++)
-        await window.__weltStehtNach();
+        await __weltStehtNach();
     // DER SPIELER STELLT DIE STIMME EIN, im Fenster der KI
     for (const [id, w] of [
         ["llm-provider", "ollama"],
@@ -2042,7 +2042,7 @@ async function korpusSatz(a) {
         };
         for (const t of a.soll.taten) tat[t]();
         const hat = () => a.soll.taten.every((t) => (w.userData.memory || []).some((m) => m.type === t));
-        for (let i = 0; i < 300 && !hat(); i++) await window.__seitenTakt();
+        for (let i = 0; i < 300 && !hat(); i++) await __seitenTakt();
         if (a.mutante === "gedaechtnis-leer") w.userData.memory = [];
     }
     const t0 = performance.now();
@@ -2198,7 +2198,7 @@ async function korpusHaupt() {
         await browser.close();
         srv.close();
         const welt = m.saetze.map((e) => e.weltMs).filter((x) => x != null);
-        m.p95 = welt.sort((x, y) => x - y)[Math.ceil(0.95 * welt.length) - 1];
+        m.p95 = welt.sort(aufsteigend)[Math.ceil(0.95 * welt.length) - 1];
         // DIE RATSCHE SINKT NIE: ein schwächerer Lauf wird nie der Maßstab der CI
         if (echt && !mutante && teil !== "seele" && process.argv.includes("--aufnahme")) {
             const quote = { gueltig: q("gueltig"), absicht: q("absicht"), p95: m.p95 };
@@ -3167,7 +3167,7 @@ hauptLauf(async () => {
             ? `${wer} ${z.key} fremd ${z.fremd} · ${z.ms == null ? "nie" : z.ms + " ms"}${z.vorAnkunft ? ` (${z.vorAnkunft}× vor der Ankunft geweckt)` : ""}`
             : `${wer} —`;
     const stat = (xs) => {
-        const s = xs.map((q) => q.fuell).sort((a, b) => a - b);
+        const s = xs.map((q) => q.fuell).sort(aufsteigend);
         return s.length ? `min ${s[0]} · median ${s[Math.floor(s.length / 2)]} · max ${s[s.length - 1]}` : "—";
     };
     const rm = out.rahmen || {};

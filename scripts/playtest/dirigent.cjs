@@ -194,9 +194,9 @@ async function checkBandWellePerfENexusGovernor({ page, check }) {
     const res = await page.evaluate(() => {
         const A = AnazhRealm; // window.AnazhRealm headless undefined (V18.259-Gotcha)
         const out = {};
-        out.noGravityPflaster = window.__fehlt(r.selfAwarenessAnalyze, /gravity\s*\*=/);
+        out.noGravityPflaster = __fehlt(r.selfAwarenessAnalyze, /gravity\s*\*=/);
         // KEIN Parallel-Governor mehr: selfAwarenessAnalyze ruft _nexusAdaptiveQuality NICHT.
-        out.noParallelGovernor = window.__fehlt(r.selfAwarenessAnalyze, /_nexusAdaptiveQuality/);
+        out.noParallelGovernor = __fehlt(r.selfAwarenessAnalyze, /_nexusAdaptiveQuality/);
 
         const snap = {
             sense: st.perfSense,
@@ -825,7 +825,7 @@ async function checkBandV18210Verdrahtung({ page, check }) {
             // Masse aus der Gestalt — ein körperloser Stub hat keine, der Biss bräche fail-closed): ein Wolf, ein Fuchs
             // in 1,2 m → der Ansprung trifft UND stößt die Beute vom Jäger weg.
             st.creatures = savedCreatures;
-            const pmS = st.playerMesh.position;
+            const pmS = pm.position;
             const capS = st.maxCreatures;
             st.maxCreatures = Math.max(capS || 0, savedCreatures.length + 2);
             const opt = { precise: true, bodySize: 1 };
@@ -1024,13 +1024,13 @@ async function checkBandRauschGesetz({ page, check }) {
                 "_applySubstanceResponse",
                 "_buildPbrNodeMaterial",
             ];
-            out.absenz = stoffe.filter((n) => !window.__fehlt(r[n], /mx_noise_float/));
+            out.absenz = stoffe.filter((n) => !__fehlt(r[n], /mx_noise_float/));
             // das Rechenwerk des Fels-Gesetzes (gelaende-core): Fein-Term und Schutt-Korn laufen im Fragment — ein Rauschen
             // lesen sie nur über `o.rausch` (EINE Probe im Rausch-Atlas), nie ein Gitter-Rauschen aus Ziehungen (`wert3`)
             // (die Welle rechnet `felsWelle`, K17-3: der Shader liest sie außerhalb der Fels-Funktion und reicht sie hinein)
             const GK = window.__gelaendeCore || {};
             for (const n of ["felsFein", "felsWelle", "schuttKorn"])
-                if (!window.__fehlt(GK[n], /wert3|mx_noise/)) out.absenz.push(n + " (Gitter-Rauschen aus Ziehungen)");
+                if (!__fehlt(GK[n], /wert3|mx_noise/)) out.absenz.push(n + " (Gitter-Rauschen aus Ziehungen)");
             // KONSUM: der Knoten-Graph des Stoffs, den der Boden zeichnet (vor dem Bau — was der Compiler liest)
             out.graph = window.__stoffGraph(st.voxelChunkMaterial);
             out.halm = window.__stoffGraph(r._foundryTreeMaterial("grass", null));
@@ -1412,7 +1412,7 @@ async function checkBandReglerSim({ page, check }) {
     const out = await safeEvaluate(page, async () => {
         const A = window.AnazhRealm || AnazhRealm;
         const o = {};
-        const pos = st.playerMesh ? st.playerMesh.position : { x: 0, y: 0, z: 0 };
+        const pos = pm ? pm.position : { x: 0, y: 0, z: 0 };
         // ── SIM-RAHMEN: den headless-Zweig lüften (die ECHTEN Regel-Pfade laufen),
         // die zwei GPU-Anwender stubben (die Stellgrößen-FELDER bleiben die Wahrheit),
         // alles SICHERN+WIEDERHERSTELLEN (die Gate-Hook-Lehre).

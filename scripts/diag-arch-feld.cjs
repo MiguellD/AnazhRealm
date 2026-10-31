@@ -77,9 +77,9 @@ hauptLauf(async () => {
     await page.evaluateOnNewDocument(WELT_ORTE_INSTALL); // der Messort aus spec/profiband/haushalt.json (`__messWiese`)
     await server.zeige(page, 60000);
     const res = await page.evaluate(async () => {
-        await window.__weltDa((r) => r.state);
+        await __weltDa((r) => r.state);
         if (!r || !st.renderer || st.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
-        await window.__weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
+        await __weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
         // Eine Ausnahme im Spiel-Takt wird gezählt und beim Namen genannt, nie geschluckt: sie bricht den Takt dort
         // ab, wo sie fliegt — jeder Bau dahinter in der Liste bleibt ungebaut (das sah die Linse sonst als „AM null").
         let taktFehlerN = 0,

@@ -757,7 +757,7 @@ function buehne() {
         // Das erste Weltbild muss stehen: (i) liest die Render-Objekte der Welt, die übrige Bühne ist eine eigene Szene.
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();
-            await window.__weltDa((r) => {
+            await __weltDa((r) => {
                 return !!(r?.state?.rendererReady && r.state._weltbildDa && r.state.renderer?.backend);
             });
             st.renderer.setAnimationLoop(null);

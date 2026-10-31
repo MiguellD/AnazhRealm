@@ -187,7 +187,7 @@ if (require.main === module) hauptLauf(async () => {
         // (`_hydroFor`) sie findet. Rückgabe { x, z, hydro, lake }.
         window.__wasserOrt = async (art) => {
             const G = window.__gelaendeCore;
-            const kachel = (x, z) => window.__weltDa(() => !r._ensureHydroTilesAround(x, z, 0));
+            const kachel = (x, z) => __weltDa(() => !r._ensureHydroTilesAround(x, z, 0));
             window.__wasserOrtCache = window.__wasserOrtCache || {};
             const c = window.__wasserOrtCache[art];
             if (c) {
@@ -312,7 +312,7 @@ if (require.main === module) hauptLauf(async () => {
             const key = `${cx},${cz}`;
             const da = st.voxelChunks.get(key);
             if (da && da.mesh && da.waterCells) return key;
-            await window.__weltDa(() => r._hydroSteht(cx, cz)); // die Kacheln um den Chunk kommen aus dem Faden
+            await __weltDa(() => r._hydroSteht(cx, cz)); // die Kacheln um den Chunk kommen aus dem Faden
             r._disposeVoxelChunk(key);
             st.voxelChunks.delete(key);
             const fresh = r._acquireVoxelChunkBuild(cx, cz, 0, { forceSync: true });
@@ -484,7 +484,7 @@ if (require.main === module) hauptLauf(async () => {
             // `startEternalLoop` am Boot-Ende), NICHT `rendererReady` (feuert beim Null-Renderer sofort).
             // Geduldig, unabhängig von durationMs/CPU — ein zu kurzes Fenster ließ den
             // Pump nie laufen (voxelChunks=0). Bleibt der Tick aus (echter Hänger), nennt ihn die Stall-Akte (`__weltDa`).
-            await window.__weltDa();
+            await __weltDa();
             // Nur den teuren GPU-Aufruf (`renderer.render`/`renderAsync`, swiftshader ~2.5 s/Frame) stubben,
             // NICHT `_loopRender`: die Bänder sind pixel-blind, lesen aber seine billigen Uniform-Updates
             // (skybox/starField, hydroSurfaceUniforms.time/.emotion); der Screenshot-Pfad stellt ihn wieder her.
@@ -564,9 +564,7 @@ if (require.main === module) hauptLauf(async () => {
                 // frame-budgetiert) baut kalt gebliebene Baum-Einträge in Reichweite —
                 // ein paar Ticks geben ihm deterministisch Raum, bevor die Bänder lesen.
                 for (let s = 0; s < 40; s++) {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch {}
+                    __handTakt();
                     await sleep(0);
                 }
             }
@@ -611,7 +609,7 @@ if (require.main === module) hauptLauf(async () => {
         if (fpsValues.length) {
             const min = Math.min(...fpsValues);
             const max = Math.max(...fpsValues);
-            const avg = fpsValues.reduce((a, b) => a + b, 0) / fpsValues.length;
+            const avg = fpsValues.reduce(addiere, 0) / fpsValues.length;
             console.log(`FPS samples: min=${min}, max=${max}, avg=${avg.toFixed(1)}, n=${fpsValues.length}`);
         }
         console.log(`Top-Log-Muster:`);
@@ -943,9 +941,7 @@ if (require.main === module) hauptLauf(async () => {
                     if (r && st.renderer && window.__origRendererRender) {
                         st.renderer.render = window.__origRendererRender;
                         st.postProcessingFailed = false;
-                        try {
-                            r._gameLoopTick(performance.now());
-                        } catch {}
+                        __handTakt();
                     }
                 });
                 fs.mkdirSync(ARTIFACT_DIR, { recursive: true });

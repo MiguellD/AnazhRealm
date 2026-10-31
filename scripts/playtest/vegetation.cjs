@@ -2111,7 +2111,7 @@ async function checkBandScatterScheibe({ page, check }) {
         try {
             clean();
             const bereit = () => !!(r._foundry && r._foundry.ready && r._foundry.recipes && r._forestGesetzWahr());
-            await window.__weltDa(bereit);
+            await __weltDa(bereit);
             stoff.buch = !!(r._foundry && r._foundry.recipes);
             stoff.wahr = r._forestGesetzWahr();
             stoff.faden = !!st.voxelWorker;
@@ -2128,7 +2128,7 @@ async function checkBandScatterScheibe({ page, check }) {
                 const reg6 = r._scatterRegion(rx, rz, pos);
                 stoff.haupt = zaehler;
                 // der Takt schickt die Schlange an den Faden (`_tickWaldPlan`, Job `waldPlan`) — die Linse ist sein Takt
-                await window.__gebautNach("die Lieferung an die wartende Region", {
+                await __gebautNach("die Lieferung an die wartende Region", {
                     fertig: () => !(reg6._deferredFoundry && !reg6._geweckt),
                     takt: async () => (r._tickWaldPlan(Infinity), await sleep(50)),
                     max: 1200,

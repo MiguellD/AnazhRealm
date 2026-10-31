@@ -26,7 +26,7 @@ async function bootPage(browser, nullRenderer) {
         if (nr) window.__anazhHeadlessNullRenderer = true;
     }, nullRenderer);
     await server.zeige(page, 30000);
-    await page.evaluate(() => window.__weltDa((r) => r.state));
+    await page.evaluate(() => __weltDa((r) => r.state));
     return { page };
 }
 
@@ -119,7 +119,7 @@ async function installiereBacke(page) {
                 const q = r._impostorBakeQueue || [];
                 if (q.includes(z.key)) q.splice(q.indexOf(z.key), 1);
                 z._weltNeu = true;
-                for (const weiter = window.__deckel(`der Bake von ${z.key}`, 4800); weiter(); ) {
+                for (const weiter = __deckel(`der Bake von ${z.key}`, 4800); weiter(); ) {
                     if (at.fmt !== "bc" || r._karteRechner()) {
                         const e = r._karteWeltBacken(at, z);
                         if (e === true) return z;
@@ -141,7 +141,7 @@ async function driveImpostor(page) {
         const out = { ready: false, rec: null, err: null };
         try {
             const f = r._ensureAssetFoundry();
-            await window.__weltDa(() => !(f && !f.ready));
+            await __weltDa(() => !(f && !f.ready));
             out.ready = !!f?.ready;
             if (!out.ready) {
                 out.err = "Worker nicht ready";
@@ -152,10 +152,8 @@ async function driveImpostor(page) {
                 rec2 = null,
                 flat1 = null,
                 flat2 = null;
-            for (const weiter = window.__deckel("die Impostor-Rekorde", 1500); weiter(); ) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {}
+            for (const weiter = __deckel("die Impostor-Rekorde", 1500); weiter(); ) {
+                __handTakt();
                 rec = r._foundryEnsureImpostorRecord("eiche", 1) || rec;
                 rec2 = r._foundryEnsureImpostorRecord("fichte", 1) || rec2;
                 flat1 = r._foundryBuildImpostorFlat({ seed: 7 }, "eiche") || flat1;
@@ -257,7 +255,7 @@ async function driveImpostor(page) {
 // beginnt, wenn die Welt steht (A9) — Selbsttest: eine wartende Karte hält die Ruhe.
 async function weltRuht(page) {
     return await page.evaluate(async () => {
-        const takte = await window.__weltStehtNach(null, 1800);
+        const takte = await __weltStehtNach(null, 1800);
         const q = r._impostorBakeQueue || (r._impostorBakeQueue = []);
         const karte = q.push("fimp:gateRuhe|1") && r._weltSteht();
         q.pop();
@@ -442,7 +440,7 @@ async function kleberProbe(page, fmtWunsch) {
             // SELBSTTEST: ihr Stoff ohne die Tiefe (`karteTiefeVersatz` = 0) steht auf ihrer Ebene, hinter der Tafel.
             const wand = new T.Mesh(new T.PlaneGeometry(40, 40), new T.MeshBasicMaterial({ color: 0xff0000 }));
             wand.position.set(30, 6, -8.5);
-            const davor = async (o) => (await deckt(0, o, wand)).reduce((s, b) => s + b, 0);
+            const davor = async (o) => (await deckt(0, o, wand)).reduce(addiere, 0);
             const pc = globalThis.__phytoCore,
                 versatz = pc.karteTiefeVersatz;
             out.tiefe = { gestalt: await davor(mG), karte: await davor(mO) };

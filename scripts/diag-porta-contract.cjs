@@ -113,7 +113,7 @@ function buildCase(c) {
     for (let i = 1; i < treue.length; i++) console.log(`      ↳ ${treue[i]}`);
     {
         // der eingeschmuggelte Täter: eine Pfosten-Kante 20 cm innerhalb des Bilds, eine fehlende Zeile
-        const schmal = JSON.parse(JSON.stringify(PC.TOR_HUELLE));
+        const schmal = structuredClone(PC.TOR_HUELLE);
         schmal.ruine.seiten[1][0] -= 0.2;
         delete schmal.geisttor;
         const t = torHuelleTreue(schmal, gemessen);

@@ -12,7 +12,7 @@ hauptLauf(async () => {
     const { browser, page } = await nullSeite({ frist: 180000 }); // die Foundry baut auch ohne Bild (die echte Pipeline)
     await server.zeige(page, 30000);
     await page.evaluate(async () => {
-        await window.__weltDa((r) => r.state && r.state.blueprints);
+        await __weltDa((r) => r.state && r.state.blueprints);
     });
 
     const S = await page.evaluate(async () => {
@@ -22,7 +22,7 @@ hauptLauf(async () => {
         try {
             // Foundry-Worker hochfahren + warten.
             const f = r._ensureAssetFoundry();
-            await window.__weltDa(() => !(f && !f.ready));
+            await __weltDa(() => !(f && !f.ready));
             out.ready = !!(f && f.ready);
             if (!out.ready) {
                 out.err = "Worker nicht ready";
@@ -31,9 +31,7 @@ hauptLauf(async () => {
 
             // Die Welt streamen lassen, damit Baum-Architekturen entstehen (als KALTE Foundry-Einträge).
             for (let i = 0; i < 120; i++) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {}
+                __handTakt();
                 await sleep(0);
             }
 

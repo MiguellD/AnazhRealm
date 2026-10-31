@@ -53,7 +53,7 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async () => {
         const res = {};
-        await window.__weltDa(() => !(!r ||
+        await __weltDa(() => !(!r ||
                 !st ||
                 !st.scene ||
                 !st.playerMesh ||
@@ -64,7 +64,7 @@ hauptLauf(async () => {
         const geosVon = (f) => f.geos || f.meshes.map((m) => m.geometry);
         // DAS EINE QUANTIL der Linse: p der sortierten Werte (am Rand geklemmt), leer NaN
         const quantil = (a, p) => (
-            a.sort((x, y) => x - y),
+            a.sort(aufsteigend),
             a.length ? a[Math.min(a.length - 1, Math.floor(p * a.length))] : NaN
         );
         // DER FLUSS IN DER MASCHE als Erwartung der Linse (die Formel des Fern-Fadens `fernFlussDeckung`, B2): der Anteil einer
@@ -100,7 +100,7 @@ hauptLauf(async () => {
             let takte = 0;
             let maxD = 0;
             let vor = st.fernRing ? st.fernRing.cursor : 0;
-            for (const weiter = window.__deckel("der Fern-Ring", ms / 16); weiter(); await sleep(16)) {
+            for (const weiter = __deckel("der Fern-Ring", ms / 16); weiter(); await sleep(16)) {
                 takt();
                 takte++;
                 const f = st.fernRing;
@@ -448,7 +448,7 @@ hauptLauf(async () => {
         // SCHATTIERUNGS-PERSISTENZ: sichtbar erst mit gebackenem
         // PANORAMA (der Fragment-March ist tot, der Blick liest das Panorama) —
         // die Probe wartet auf Feld-Anstrich UND Panorama-Bake.
-        for (const weiter = window.__deckel("Feld-Anstrich und Panorama", 900); (!fp8 || fp8.laeufe < 1 || !(fp8.panoLaeufe >= 1)) && weiter(); ) {
+        for (const weiter = __deckel("Feld-Anstrich und Panorama", 900); (!fp8 || fp8.laeufe < 1 || !(fp8.panoLaeufe >= 1)) && weiter(); ) {
             r._tickFernRing(st.playerMesh.position);
             fp8 = st.feldPass;
             await sleep(100);
@@ -579,7 +579,7 @@ hauptLauf(async () => {
             st._activeRingRadius = ziel9;
             let n9 = -1;
             let still9 = 0;
-            for (let t = 0, weiter = window.__deckel("die Naht-Stufen im Ring 3", 20000); weiter(); t++) {
+            for (let t = 0, weiter = __deckel("die Naht-Stufen im Ring 3", 20000); weiter(); t++) {
                 st._activeRingRadius = ziel9;
                 try {
                     r._gameLoopTick();
@@ -1049,7 +1049,7 @@ hauptLauf(async () => {
                 res.weicheKosten = zaehle(false);
                 res.weicheRing = ring.dreiecke;
                 res.weicheSelbst = ring.ohne;
-                res.weicheRandZellen = rand.reduce((s, v) => s + v, 0);
+                res.weicheRandZellen = rand.reduce(addiere, 0);
             }
             // ===== (13) DIE TEILUNG IST TREU (K16, die Kosten an der Naht) =====
             // Die CPU teilt die Dreiecke der Schale 0 (`fr.teilung.klasse`): frei (0, ohne Maske und Weiche), Naht (1, die Regel des

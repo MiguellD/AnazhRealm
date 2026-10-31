@@ -27,10 +27,10 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async () => {
         const res = { items: [], fehler: [], selbst: {}, kinds: [] };
-        await window.__weltDa();
+        await __weltDa();
         const A = AnazhRealm;
         const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => { const rc = A._studioRenderConfig; return f && f.ready && f.recipes && f.recipeCount > 0 && rc && rc.lod && rc.lod.kindStages && rc.lod.budget; });
+        await __weltDa(() => { const rc = A._studioRenderConfig; return f && f.ready && f.recipes && f.recipeCount > 0 && rc && rc.lod && rc.lod.kindStages && rc.lod.budget; });
         const PC = globalThis.__phytoCore;
         const L = A._studioRenderConfig.lod;
         res.kinds = Object.keys(L.budget).filter((k) => k !== "gestalten");
@@ -41,7 +41,7 @@ hauptLauf(async () => {
         const flatMessen = async (preset, lod) => {
             const entry = { seed: 1, position: { x: 0, y: 0, z: 0 } };
             let flat = null;
-            for (const weiter = window.__deckel("das Flat der Sippe", 1500); weiter(); ) {
+            for (const weiter = __deckel("das Flat der Sippe", 1500); weiter(); ) {
                 flat = r._foundryFlattenFor(entry, preset, lod);
                 if (flat !== null) break;
                 await sleep(60);

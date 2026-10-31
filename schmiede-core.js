@@ -16,8 +16,8 @@
 // zu §3; der Validator (gate:studio-vertrag) mappt per Manifest-ns — die porta-core-Form.
 //
 // DETERMINISMUS (G2.3): der Bau ist eine reine Funktion der Parameter — das Schmiede-Lab
-// trägt KEINEN stochastischen Term im Waffen-Bau (Math.random lebt nur in der Shell-Deko:
-// Übungshof-Steine/Grasbüschel). Das seed-Argument reist mit (Vertrags-Signatur) und ist
+// trägt KEINEN stochastischen Term im Waffen-Bau (die Shell würfelt nie: ihre Würfe ziehen aus dem Strom der Arena,
+// `arenaStrom`, w4-arena-welt). Das seed-Argument reist mit (Vertrags-Signatur) und ist
 // RESERVIERT wie beim Fahrzeug-/Tor-Kern: buildInstance(id, 7, …) == buildInstance(id,
 // 12345, …) byte-gleich — eingefroren in spec/asset-contract/v5 (cv:5). Eine künftige
 // Seed-Variation ist ein bewusster Golden-Re-Mint, kein Drift. Die TRADITION ist im
@@ -26,9 +26,10 @@
 //
 // SCHNITT-GRENZE (bewusst): der Kern trägt die WAFFEN-Substanz + die Gesetze. Die
 // Overlay-/Didaktik-Ebenen (Rückgrat-Zeichnung · Schnitt-Karte · Maßlinien/Labels [DOM-
-// Canvas!] · Masse-Streifen · Harmonik · Prüfstand/Arena) bleiben in der Lab-Shell —
+// Canvas!] · Masse-Streifen · Harmonik · die Spiele des Prüfstands) bleiben in der Lab-Shell —
 // sie sind Lehr-Visualisierung, keine Mesh-Substanz; sie LESEN dieselben Kern-Gesetze
-// (measure/stations/sectionAt) über __schmiedeCore.
+// (measure/stations/sectionAt) über __schmiedeCore. DIE ARENA (w4-arena-welt) ist Substanz dieses Buchs: jede Art der
+// Prüfstand-Szene eine Gestalt (ARENA_ARTEN, L0 · L1 · Wurf, aus Samen), ihr Gesetz die Antwort auf den EINEN Stoß (`geraet*`).
 //
 // B5-STAND: das Lab urteilt seine Lehren GEGEN DIE ABSICHT (BANDS je hieb/stich/schlag/
 // spalten/nutz) — der Vertrags-Block LEHREN friert je Lehre das hieb-Band als pass ein
@@ -134,6 +135,14 @@
                 metalness: 0.05,
                 envMapIntensity: 0.6,
             }),
+            // die Lacke der Arena (w4-arena-welt, additiv): bemaltes Holz, Papier und Ton der Ziele — ein Dielektrikum, die Farbe
+            // trägt der Vertex (der Haut-Stoff ist weiß)
+            lack: new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                roughness: 0.6,
+                metalness: 0,
+                envMapIntensity: 0.6,
+            }),
             // Overlays (basisfarbig → tragen auch ungelitt, glühen im Bloom)
             bone: new THREE.MeshBasicMaterial({ color: 0xcdb38a }),
             hand: new THREE.MeshBasicMaterial({ color: 0x66a8ff }),
@@ -164,6 +173,7 @@
             leather: "stoff",
             cord: "stoff",
             wood: "stoff",
+            lack: "stoff",
             bone: "glut",
             hand: "glut",
             bal: "glut",
@@ -186,6 +196,7 @@
             leather: "leder",
             cord: "schnur",
             wood: "holz",
+            lack: "lack",
             bone: "lehre",
             hand: "lehre",
             bal: "lehre",
@@ -3001,6 +3012,8 @@
     // Ausgang: EINE THREE.Group, Welt-Matrizen aktualisiert — die Naht sind die
     // Float32-Attribute ihrer Meshes (G2.2).
     function buildInstance(rezeptId, seed, lod, ov) {
+        // die Gestalten der Arena (w4-arena-welt) bauen nach ihrem Gesetz (`bauGeraet`, unten); jede Klinge bleibt byte-gleich
+        if (ARENA_ARTEN[rezeptId]) return bauGeraet(rezeptId, seed, lod, ov);
         var name = REZEPT_ZU_GATTUNG[rezeptId];
         if (!name || !GATTUNGEN[name]) return null;
         materials();
@@ -3621,6 +3634,1038 @@
         return G;
     }
 
+    // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+    // DIE ARENA IN DER WELT (w4-arena-welt 31.10., rein additiv — die Klingen und ihre Goldens bleiben byte-gleich). Jede Art
+    // der Prüfstand-Szene des Labors ist eine Gestalt dieses Gesetzbuchs: 22 Geräte und 3 Bauten des Hofs (ARENA_ARTEN), dazu
+    // die 17 Glieder, die sich bewegen oder wiederholen. Die Klasse ist EINE Art im Buch, `arena` (das Muster der Ausstattung
+    // des Fachwerks: Feuerstelle, Brunnen und Marktstand unter EINER Art; der Bauplan heißt arena_<Gestalt>), mit EINER Zeile je
+    // Stufe: L0 · L1 · Wurf (Stufe 3, NUR-WURF, ihre Fernform `__fern`) auf der Zeile der Ausstattung (L0 3 400 / 2 · L1 620 / 2
+    // · Wurf 48 / 1). Die Kollision trägt jede Gestalt selbst (`__huelle`, Kollision == Optik je Saat und Regler), die
+    // Substanz der Art ist die der Pell. Die Farbe als Vertex-Albedo (FARB-GESETZ: das Hex ist sRGB-Absicht,
+    // der Vertex trägt seinen linearen Wert, der Stoff ist weiß), je Stufe höchstens zwei Stoffe (stoff · metall), die
+    // Streuung aus einem Strom je (Same, Salz) — nie Math.random. Der Ursprung jedes Glieds ist sein Gelenk.
+    // DAS GESETZ DES GERÄTS (`geraet*`): Pendel, Drehung, Feder und Leib antworten dem EINEN Stoß — der Impuls des Schlags
+    // (trefferUrteil p, verstärkt um ARENA.gefuehl.wucht) gegen die wirksame Masse des Geräts am Kontakt, das EINE
+    // Impuls-Gesetz `stossImpuls` (der Wirt rechnet mit DIESER Funktion) —, Masse und Trägheit aus der Gestalt mal ρ ihres
+    // Stoffs; Labor und Welt lesen dieselben Zeilen. Es ruht, wenn Ausschlag und Tempo unter der Ruhe-Zeile liegen.
+    // ════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+    var ARENA_STUFEN = [0, 1, 3];
+    var ARENA_BUDGET = {
+        0: { tris: 3400, draws: 2, schatten: 0 },
+        1: { tris: 620, draws: 2, schatten: 3 },
+        3: { tris: 48, draws: 1, schatten: 3, nurWurf: true },
+        fernform: "huelle",
+    };
+    // Die Palette der Arena (sRGB-Absicht; das Holz auf dem Boden des Bands der Natur — die Linse gate:gegenstand-stoff
+    // urteilt das Mittel je Stoff): die Hölzer der Gestelle, Stroh und Seil, das Leder der Polster, die Lacke der Ziele.
+    // prettier-ignore
+    var ARENA_FARBE = {
+        holz: 0x6b4f2f, holzDunkel: 0x5a4430, holzHell: 0x8e7860, weide: 0x9a8a4a, bambus: 0x86a544, bambusKnoten: 0x5f7e2c,
+        stroh: 0xb89a52, tatami: 0xb8a27c, seil: 0x8a7240, seilDunkel: 0x6e5a3a, leder: 0x6e4a2c, polster: 0x6e4a32,
+        ball: 0x5a4a40, sack: 0x6e5a38, sackKappe: 0x5a4a2e, leinen: 0xb6a06a, papier: 0xd6c596, gambeson: 0x6a5840,
+        haut: 0x8a6a4a, kapuze: 0x4a3e30, lackRot: 0x8a3a28, lackSchwarz: 0x2e2626, rot: 0xc23b2b, weiss: 0xe8e2d4,
+        kreide: 0xe8dcc0, schiefer: 0x556070, kirmesWand: 0x2c2438, kirmesLeiste: 0x4a4458, kirmesDach: 0x8a3050,
+        ente: 0xd8553a, schnabel: 0xe0a020, gold: 0xd8c050, scheibeWeiss: 0xf4f0e8, ringGold: 0xfff15a, ringRot: 0xf24b4b,
+        ringBlau: 0x3aa0e0, ringSchwarz: 0x222222, cloutGelb: 0xe0d088, cloutRot: 0xc85a3a, cloutSand: 0xcab876,
+        ton: 0xc85a3a, pendelHell: 0xd8cab0, pendelBlau: 0x2f4858, gruen: 0x2f7a45, gruenDunkel: 0x245a35, gruenHell: 0x3f8a55,
+        kopfRot: 0xc83828, schnabelGelb: 0xe0a830, fahneGruen: 0x6fcf73,
+        eisen: 0x8a8e94, eisenDunkel: 0x75777a, messing: 0xc8a44a, harnisch: 0x9298a0, harnischDunkel: 0x5c5c64, klinge: 0xb8c0c8,
+    };
+    // Die Wappen der Kampf-Felder (Wappenrock, Helmzier, Banner): die Wahl ist die Saat (Same mod Zahl), die Tönung ihr Strom.
+    var ARENA_WAPPEN = {
+        rock: [0x7a3030, 0x3a4e78, 0x4a6a34, 0x7a4030, 0x40607a],
+        zier: [0xc0b020, 0xc8c8d0, 0xb05030],
+        banner: [0x7a3030, 0x3a4e78, 0x4a6a34, 0x7a6a2a, 0x4a6a54, 0x6a6440, 0x506a50, 0x6a5a40],
+    };
+    // Die Dichte der Stoffe einer Gestalt (kg/m³): Holz und Metalle aus den Zeilen dieses Buchs (RHO, MAT), die Polster als
+    // das, was sie sind — Stroh in Leinen, Leder mit Werg gestopft, das Seil, das Tuch, der gebrannte Ton.
+    var ARENA_RHO = { stroh: 120, polster: 300, schnur: 500, tuch: 400, ton: 1800, lack: 0, holz: 0, eisen: 0, stahl: 0, messing: 0 };
+    // Der volle Anteil des Volumens je Stoff (die Masse): der Stahl der Arena ist Blech über dem Leib (Harnisch, Helm, Klinge —
+    // 2 bis 3 mm über der Hülle, 3 %); ein Teil kann seinen Anteil selbst nennen (`fuell`: Rohr, Rahmen, Hohlkörper).
+    var ARENA_FUELL = { stahl: 0.03 };
+    function arenaRho(st) {
+        if (st === "holz" || st === "lack") return RHO.holz;
+        if (st === "eisen") return MAT.eisen.rho;
+        if (st === "stahl") return MAT.stahl.rho;
+        if (st === "messing") return MAT.bronze.rho;
+        return ARENA_RHO[st] || RHO.holz;
+    }
+    // Die Seh-Klasse und der Welt-Stoff jedes Arena-Stoffs (die Substanz des Wirts kennt holz · leder · eisen · stahl · bronze ·
+    // erde): Stroh, Polster, Seil und Tuch tragen als Leder (sie halten den Leib, Pfeil und Klinge), der Ton als Erde.
+    var ARENA_METALL = { eisen: 1, stahl: 1, messing: 1 };
+    var ARENA_WELTSTOFF = { holz: "holz", lack: "holz", stroh: "leder", polster: "leder", schnur: "leder", tuch: "leder", ton: "erde", eisen: "eisen", stahl: "stahl", messing: "bronze" };
+
+    // Ein Strom je (Same, Salz): nur Ganzzahl-Arithmetik (plattformgleich), eigene Ströme halten die Gestalt über die Stufen
+    // deckungsgleich (L1 zieht dieselben Zahlen, baut nur gröber). Der Labor-Prüfstand zieht seine Würfe aus demselben Strom.
+    function arenaStrom(seed, salz) {
+        var h = (Math.imul((seed >>> 0) ^ 0x9e3779b9, 0x85ebca6b) ^ Math.imul(salz | 0, 0xc2b2ae35)) >>> 0;
+        h = (h ^ (h >>> 16)) >>> 0 || 0x6d2b79f5;
+        return function () {
+            h = (h + 0x6d2b79f5) >>> 0;
+            var t = h;
+            t = Math.imul(t ^ (t >>> 15), t | 1);
+            t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+    }
+
+    // DER TEILE-SAMMLER: eine Gestalt ist eine Liste reiner Zahlen (Form, Maße, Teilung, Stoff, Farbe, Lage, Drehung Euler XYZ,
+    // Skala) — der Bau, die Substanz, die Treffer-Kapseln und die Masse lesen DIESELBE Liste (ohne THREE: der Manifest-Teil
+    // bleibt THREE-frei). k ist der Maßstab der Gestalt (Lage und Maße). `fein` fällt in der L1.
+    function arenaSammler(k) {
+        k = k || 1;
+        var L = [];
+        function teil(f, a, n, st, c, p, r, s, o) {
+            var t = {
+                f: f,
+                a: a.map(function (v) {
+                    return v * k;
+                }),
+                n: n,
+                st: st,
+                c: c,
+                p: (p || [0, 0, 0]).map(function (v) {
+                    return v * k;
+                }),
+                r: r || [0, 0, 0],
+                s: s || [1, 1, 1],
+            };
+            if (o && o.fein) t.fein = true;
+            if (o && o.hs) t.hs = o.hs;
+            if (o && o.fuell) t.fuell = o.fuell; // der volle Anteil des Volumens (Blech, Rohr, Rahmen) — die Masse
+            L.push(t);
+            return t;
+        }
+        return {
+            teile: L,
+            zyl: function (rt, rb, h, n, st, c, p, r, o) {
+                return teil("zyl", [rt, rb, h], [n], st, c, p, r, o && o.s, o);
+            },
+            box: function (w, h, d, st, c, p, r, o) {
+                return teil("box", [w, h, d], [1], st, c, p, r, null, o);
+            },
+            kugel: function (rad, n, m, st, c, p, s, r, o) {
+                return teil("kugel", [rad], [n, m], st, c, p, r, s, o);
+            },
+            ring: function (R, rr, n, m, st, c, p, r, o) {
+                return teil("ring", [R, rr], [n, m], st, c, p, r, null, o);
+            },
+            kegel: function (rad, h, n, st, c, p, r, o) {
+                return teil("kegel", [rad, h], [n], st, c, p, r, null, o);
+            },
+            // die Scheibe: Ringe gleicher Ebene (Radien aufsteigend, je Band seine Farbe) in der lokalen XY-Ebene, Normale +Z —
+            // ein Ziel aus EINER Fläche (gestapelte Scheiben flimmern in der Ferne)
+            scheibe: function (radien, farben, n, st, p, r, o) {
+                var t = teil("scheibe", radien, [n], st, farben[0], p, r, null, o);
+                t.farben = farben;
+                return t;
+            },
+        };
+    }
+    var _AQ = Math.PI / 2;
+    // prettier-ignore
+    var ARENA_BAU = {
+        // ── DER HOF ──
+        dojo: function (t) {
+            var F = ARENA_FARBE, cs = [[-3.35, -3.45], [3.35, -3.45], [-3.35, 3.45], [3.35, 3.45]], i;
+            for (i = 0; i < 4; i++) {
+                t.zyl(0.085, 0.11, 3.3, 10, "holz", F.holz, [cs[i][0], 1.65, cs[i][1]]);
+                t.box(0.5, 0.5, 0.08, "holz", F.holzDunkel, [cs[i][0] + (cs[i][0] < 0 ? 0.32 : -0.32), 2.95, cs[i][1]], null, { fein: 1 });
+            }
+            for (i = -1; i <= 1; i += 2) {
+                t.box(7.1, 0.15, 0.16, "holz", F.holzDunkel, [0, 3.25, i * 3.45]);
+                t.box(0.16, 0.15, 7.3, "holz", F.holzDunkel, [i * 3.35, 3.25, 0]);
+            }
+            for (i = 0; i <= 9; i++) t.box(7.1, 0.05, 0.06, "holz", F.holz, [0, 3.36, -3.45 + (i * 6.9) / 9], null, i % 2 ? { fein: 1 } : null);
+            var ln = [[-2.45, -2.95], [2.45, -2.95], [-2.45, 2.95], [2.45, 2.95]];
+            for (i = 0; i < 4; i++) {
+                t.zyl(0.12, 0.12, 0.26, 12, "holz", F.papier, [ln[i][0], 2.78, ln[i][1]]);
+                t.zyl(0.04, 0.13, 0.05, 12, "holz", F.holzDunkel, [ln[i][0], 2.93, ln[i][1]], null, { fein: 1 });
+                t.zyl(0.005, 0.005, 0.34, 4, "holz", F.holzDunkel, [ln[i][0], 3.12, ln[i][1]], null, { fein: 1 });
+            }
+        },
+        waffentisch: function (t) {
+            var F = ARENA_FARBE, W = Object.keys(REZEPT_ZU_GATTUNG).length * 0.55 + 0.6, i;
+            t.box(0.55, 0.82, W, "holz", F.holz, [0, 0.41, 0]);
+            t.box(0.62, 0.06, W, "holz", F.holzHell, [0, 0.85, 0]);
+            t.box(0.06, 0.55, W, "holz", F.holzDunkel, [-0.27, 1.13, 0]);
+            // die Rückwand hinter dem Tisch: Bretter, Ständer je 1,8 m, die Kappe
+            t.box(0.18, 2.7, W + 0.2, "holz", F.holzDunkel, [-0.4, 1.35, 0]);
+            var nb = Math.max(2, Math.round((W + 0.2) / 1.8) + 1);
+            for (i = 0; i < nb; i++) t.box(0.22, 2.7, 0.1, "holz", F.holz, [-0.32, 1.35, -(W + 0.2) / 2 + 0.05 + (i * (W + 0.1)) / (nb - 1)], null, { fein: 1 });
+            t.box(0.4, 0.12, W + 0.2, "holz", F.holzDunkel, [-0.35, 2.78, 0]);
+        },
+        torii: function (t) {
+            var F = ARENA_FARBE, H = 3.6, W = 3.0, i;
+            for (i = -1; i <= 1; i += 2) {
+                t.zyl(0.13, 0.17, H, 12, "lack", F.lackRot, [0, H / 2, (i * W) / 2]);
+                t.zyl(0.22, 0.26, 0.18, 12, "lack", F.lackSchwarz, [0, 0.09, (i * W) / 2]);
+            }
+            t.box(0.4, 0.2, W + 1.3, "lack", F.lackSchwarz, [0, H + 0.16, 0], [0.03, 0, 0]);
+            t.box(0.32, 0.14, W + 0.9, "lack", F.lackRot, [0, H - 0.02, 0]);
+            t.box(0.24, 0.18, W + 0.2, "lack", F.lackRot, [0, H - 0.7, 0]);
+            t.box(0.06, 0.5, 0.34, "lack", F.lackSchwarz, [0, H - 0.38, 0], null, { fein: 1 });
+        },
+        // ── DER WAFFENHOF ──
+        pell: function (t) {
+            var F = ARENA_FARBE, i, a;
+            t.zyl(0.035, 0.05, 1.65, 12, "holz", F.holz, [0, 0.825, 0]);
+            for (i = 0; i < 4; i++) {
+                a = (i / 4) * Math.PI * 2;
+                t.zyl(0.02, 0.025, 0.5, 8, "holz", F.holz, [Math.cos(a) * 0.16, 0.04, Math.sin(a) * 0.16], [-Math.sin(a) * 0.5, 0, Math.cos(a) * 0.5]);
+            }
+            t.zyl(0.1564, 0.17, 0.62, 16, "stroh", F.stroh, [0, 1.12, 0]);
+            for (i = 0; i < 3; i++) t.ring(0.1717, 0.012, 7, 18, "schnur", F.seil, [0, [1.34, 1.14, 0.92][i], 0], [_AQ, 0, 0], { fein: 1 });
+            for (i = -1; i <= 1; i += 2) {
+                t.zyl(0.05, 0.06, 0.34, 10, "stroh", F.stroh, [0, 1.33, i * 0.22], [i * 0.5, 0, 0]);
+                t.ring(0.052, 0.01, 6, 12, "schnur", F.seil, [0, 1.26, i * 0.3], [0, _AQ, 0], { fein: 1 });
+            }
+            t.zyl(0.05, 0.07, 0.1, 10, "polster", F.leder, [0, 1.48, 0]);
+            t.kugel(0.135, 16, 14, "polster", F.leder, [0, 1.63, 0], [1, 1.12, 1]);
+            t.ring(0.118, 0.005, 6, 18, "schnur", F.seilDunkel, [0, 1.63, 0], null, { fein: 1 });
+        },
+        stechringe: function (t) {
+            var F = ARENA_FARBE;
+            for (var i = -1; i <= 1; i += 2) t.zyl(0.07, 0.09, 2.5, 10, "holz", F.holz, [i * 1.35, 1.25, 0]);
+            t.box(3.0, 0.1, 0.1, "holz", F.holzDunkel, [0, 2.5, 0]);
+        },
+        stechring: function (t) {
+            var F = ARENA_FARBE, L = 0.78;
+            t.zyl(0.006, 0.006, L, 4, "schnur", F.seilDunkel, [0, -L / 2, 0]);
+            t.ring(0.16, 0.026, 8, 22, "messing", F.messing, [0, -L - 0.16, 0], null, { fuell: 0.12 });
+        },
+        quintane: function (t) {
+            var F = ARENA_FARBE;
+            t.zyl(0.3, 0.38, 0.2, 12, "holz", F.holzDunkel, [0, 0.1, 0]);
+            t.zyl(0.09, 0.13, 1.32, 12, "holz", F.holz, [0, 0.66, 0]);
+            t.zyl(0.08, 0.08, 0.14, 10, "holz", F.holzDunkel, [0, 1.32, 0]);
+        },
+        quintanenarm: function (t) {
+            var F = ARENA_FARBE;
+            t.box(2.0, 0.08, 0.08, "holz", F.holz, [0, 0, 0]);
+            t.zyl(0.33, 0.33, 0.04, 16, "lack", F.lackRot, [1.0, 0, 0], [0, 0, _AQ]);
+            t.kugel(0.07, 10, 8, "messing", F.messing, [1.04, 0, 0], null, null, { fuell: 0.2 });
+            t.box(0.02, 0.52, 0.05, "lack", F.kreide, [1.028, 0, 0]);
+            t.zyl(0.14, 0.17, 0.52, 10, "schnur", F.sack, [-1.0, -0.12, 0], [0, 0, 0.12], { fuell: 0.5 });
+            t.kugel(0.15, 10, 8, "schnur", F.sackKappe, [-0.94, -0.35, 0], null, null, { fuell: 0.5 });
+        },
+        pendelkugel: function (t) {
+            var F = ARENA_FARBE, H = 2.7;
+            for (var i = -1; i <= 1; i += 2) {
+                t.zyl(0.08, 0.1, H, 10, "holz", F.holz, [i * 0.85, H / 2, 0]);
+                t.box(0.42, 0.12, 0.55, "holz", F.holzDunkel, [i * 0.85, 0.06, 0]);
+                t.box(0.5, 0.5, 0.08, "holz", F.holzDunkel, [i * 0.85 - i * 0.3, H - 0.45, 0], null, { fein: 1 });
+            }
+            t.box(2.1, 0.17, 0.18, "holz", F.holzDunkel, [0, H, 0]);
+            t.ring(0.05, 0.014, 6, 14, "eisen", F.eisen, [0, H - 0.05, 0], [_AQ, 0, 0]);
+        },
+        pendelball: function (t) {
+            var F = ARENA_FARBE, L = 1.26;
+            t.zyl(0.016, 0.016, L, 6, "schnur", F.seilDunkel, [0, -L / 2, 0]);
+            t.kugel(0.22, 18, 14, "polster", F.ball, [0, -L, 0]);
+            t.ring(0.22 * 0.86, 0.02, 6, 18, "polster", F.leder, [0, -L, 0], null, { fein: 1 });
+        },
+        drehbaum: function (t) {
+            var F = ARENA_FARBE;
+            t.zyl(0.09, 0.13, 1.5, 12, "holz", F.holz, [0, 0.75, 0]);
+            t.zyl(0.34, 0.44, 0.18, 12, "holz", F.holzDunkel, [0, 0.09, 0]);
+            t.zyl(0.13, 0.11, 0.1, 12, "holz", F.holzDunkel, [0, 1.55, 0]);
+        },
+        drehkreuz: function (t) {
+            var F = ARENA_FARBE, A = 0.92;
+            for (var i = 0; i < 4; i++) {
+                var a = (i / 4) * Math.PI * 2;
+                t.box(A, 0.075, 0.075, "holz", F.holz, [Math.cos(a) * A / 2, 0, Math.sin(a) * A / 2], [0, -a, 0]);
+                t.zyl(0.13, 0.13, 0.18, 12, "polster", F.polster, [Math.cos(a) * A, 0, Math.sin(a) * A], [_AQ, 0, 0]);
+                t.ring(0.13, 0.016, 6, 16, "schnur", F.leinen, [Math.cos(a) * A, 0, Math.sin(a) * A], null, { fein: 1 });
+            }
+        },
+        federpfahl: function (t) {
+            var F = ARENA_FARBE;
+            t.zyl(0.3, 0.4, 0.22, 14, "holz", F.holzDunkel, [0, 0.11, 0]);
+            for (var i = 0; i < 3; i++) t.ring(0.18 - i * 0.01, 0.03, 6, 16, "eisen", F.eisen, [0, 0.22 + i * 0.07, 0], [_AQ, 0, 0]);
+        },
+        federstange: function (t) {
+            var F = ARENA_FARBE;
+            t.zyl(0.06, 0.08, 1.15, 10, "holz", F.holz, [0, 0.575, 0]);
+            for (var i = 0; i < 3; i++) t.ring(0.075, 0.016, 6, 14, "holz", F.holzDunkel, [0, [0.45, 0.75, 1.05][i], 0], [_AQ, 0, 0], { fein: 1 });
+            t.kugel(0.16, 14, 11, "polster", F.polster, [0, 1.15, 0]);
+        },
+        trefferfolge: function (t) {
+            var F = ARENA_FARBE;
+            t.zyl(0.05, 0.07, 1.45, 8, "holz", F.holz, [0, 0.725, 0]);
+            t.box(0.42, 0.42, 0.07, "lack", F.schiefer, [0, 1.5, 0]);
+            t.ring(0.24, 0.025, 6, 18, "holz", F.holzDunkel, [0, 1.5, 0], null, { fein: 1 });
+        },
+        streitpuppe: function (t) {
+            var F = ARENA_FARBE, i, j;
+            t.box(0.8, 0.16, 1.15, "holz", F.holzDunkel, [0, 0.18, 0], null, { fuell: 0.4 });
+            for (i = -1; i <= 1; i += 2) for (j = -1; j <= 1; j += 2) t.zyl(0.14, 0.14, 0.08, 12, "eisen", F.eisenDunkel, [i * 0.33, 0.14, j * 0.42], [0, 0, _AQ], { fuell: 0.15 });
+            t.zyl(0.13, 0.16, 1.6, 10, "stroh", F.gambeson, [0, 1.08, 0]);
+            t.box(1.15, 0.13, 0.13, "holz", F.holz, [0, 1.52, 0]);
+            t.kugel(0.18, 12, 10, "tuch", F.leinen, [0, 1.99, 0]);
+            t.zyl(0.28, 0.28, 0.05, 18, "lack", F.lackRot, [0, 1.32, 0.24], [_AQ, 0, 0]);
+            t.zyl(0.025, 0.025, 0.5, 6, "holz", F.holz, [0.18, 2.25, 0], null, { fein: 1 });
+            t.kegel(0.12, 0.32, 4, "tuch", F.fahneGruen, [0.18, 2.5, 0], [Math.PI, 0, 0], { fein: 1 });
+        },
+        pendelgasse: function (t) {
+            var F = ARENA_FARBE, i, j;
+            for (i = -1; i <= 1; i += 2) {
+                for (j = -1; j <= 1; j += 2) t.zyl(0.08, 0.1, 3.0, 8, "holz", F.holz, [j * 0.55, 1.5, i * 3.7]);
+                t.box(0.12, 0.14, 7.6, "holz", F.holzDunkel, [i * 0.55, 2.94, 0]);
+            }
+            for (i = 0; i < 4; i++) t.box(1.22, 0.1, 0.1, "holz", F.holzDunkel, [0, 2.94, -2.7 + i * 1.8]);
+        },
+        gassenball: function (t) {
+            var F = ARENA_FARBE, L = 1.35;
+            t.zyl(0.014, 0.014, L, 5, "schnur", F.seilDunkel, [0, -L / 2, 0]);
+            t.kugel(0.2, 14, 11, "polster", F.ball, [0, -L, 0]);
+        },
+        // ── DER SCHNITTHOF ──
+        bambus: function (t) {
+            var F = ARENA_FARBE;
+            t.box(2.7, 0.16, 0.45, "holz", F.holzDunkel, [0, 0.08, 0]);
+            for (var i = 0; i < 4; i++) t.zyl(0.06, 0.07, 0.18, 8, "holz", F.holzDunkel, [(i - 1.5) * 0.65, 0.13, 0]);
+        },
+        schnittgasse: function (t) {
+            var F = ARENA_FARBE;
+            t.box(0.5, 0.16, 4.6, "holz", F.holzDunkel, [0, 0.08, 0]);
+            for (var i = 0; i < 7; i++) t.zyl(0.06, 0.07, 0.18, 8, "holz", F.holzDunkel, [0, 0.13, -2.2 + (i * 4.4) / 6]);
+        },
+        bambusrohr: function (t, p) {
+            var F = ARENA_FARBE, h = p.hoeheM, n = Math.max(2, Math.round(h / 0.32));
+            t.zyl(0.042, 0.048, h, 10, "holz", F.bambus, [0, h / 2, 0], null, { fuell: 0.35 });
+            for (var s = 1; s < n; s++) t.ring(0.047, 0.011, 6, 12, "holz", F.bambusKnoten, [0, (s * h) / n, 0], [_AQ, 0, 0], { fein: 1 });
+        },
+        tatami: function (t) {
+            var F = ARENA_FARBE;
+            for (var i = -1; i <= 1; i += 2) t.zyl(0.06, 0.07, 2.4, 8, "holz", F.holzDunkel, [i * 0.75, 1.2, 0]);
+            t.zyl(0.05, 0.05, 1.7, 8, "holz", F.holzDunkel, [0, 2.4, 0], [0, 0, _AQ]);
+        },
+        tatamirolle: function (t, p) {
+            var F = ARENA_FARBE, R = p.rolleM, S = p.seilM, y = -S - R / 2;
+            if (S > 0.01) t.zyl(0.012, 0.012, S, 5, "schnur", F.seil, [0, -S / 2, 0]);
+            t.zyl(0.085, 0.085, R, 12, "stroh", F.tatami, [0, y, 0]);
+            for (var i = -1; i <= 1; i++) if (Math.abs(i * 0.34 * R) < R / 2 - 0.02) t.ring(0.09, 0.014, 6, 14, "schnur", F.seilDunkel, [0, y + i * 0.34 * R, 0], [_AQ, 0, 0], { fein: 1 });
+        },
+        harnisch: function (_t) {
+            var F = ARENA_FARBE, t = arenaSammler(0.82), i;
+            t.zyl(0.4, 0.5, 0.18, 16, "holz", F.harnischDunkel, [0, 0.09, 0]);
+            t.zyl(0.06, 0.07, 0.85, 8, "holz", F.holz, [0, 0.52, 0]);
+            for (i = -1; i <= 1; i += 2) t.zyl(0.09, 0.07, 0.7, 10, "stahl", F.harnisch, [i * 0.13, 0.95, 0]);
+            t.zyl(0.27, 0.22, 0.78, 22, "stahl", F.harnisch, [0, 1.56, 0], null, { s: [1, 1, 0.72], hs: 9 });
+            t.box(0.03, 0.7, 0.16, "stahl", F.harnischDunkel, [0, 1.56, 0.2]);
+            t.zyl(0.28, 0.25, 0.46, 18, "tuch", ARENA_WAPPEN.rock[0], [0, 1.42, 0], null, { s: [1, 1, 0.74] });
+            for (i = -1; i <= 1; i += 2) t.kugel(0.15, 12, 10, "stahl", F.harnisch, [i * 0.29, 1.95, 0], [1, 0.82, 0.92]);
+            t.zyl(0.1, 0.12, 0.12, 10, "stahl", F.harnischDunkel, [0, 2.06, 0]);
+            t.kugel(0.17, 14, 12, "stahl", F.harnisch, [0, 2.23, 0], [1, 1.12, 1.05]);
+            t.box(0.3, 0.035, 0.06, "stahl", F.harnischDunkel, [0, 2.22, 0.16], null, { fein: 1 });
+            t.box(0.03, 0.12, 0.22, "tuch", ARENA_WAPPEN.rock[0], [0, 2.4, 0], null, { fein: 1 });
+            return t.teile;
+        },
+        ritter: function (t, p) {
+            var F = ARENA_FARBE, W = ARENA_WAPPEN, rock = W.rock[p.seed % 3], zier = W.zier[p.seed % 3], i;
+            t.zyl(0.17, 0.21, 0.1, 12, "holz", F.harnischDunkel, [0, 0.05, 0]);
+            for (i = -1; i <= 1; i += 2) t.zyl(0.085, 0.07, 0.92, 10, "stahl", F.harnisch, [i * 0.13, 0.54, 0]);
+            t.zyl(0.27, 0.22, 0.78, 22, "stahl", F.harnisch, [0, 1.28, 0], null, { s: [1, 1, 0.72], hs: 9 });
+            t.box(0.03, 0.7, 0.16, "stahl", F.harnischDunkel, [0, 1.28, 0.2]);
+            t.zyl(0.3, 0.26, 0.46, 18, "tuch", rock, [0, 1.42, 0], null, { s: [1, 1, 0.74] });
+            for (i = -1; i <= 1; i += 2) t.kugel(0.15, 12, 10, "stahl", F.harnisch, [i * 0.29, 1.67, 0], [1, 0.82, 0.92]);
+            t.zyl(0.1, 0.12, 0.12, 10, "stahl", F.harnischDunkel, [0, 1.78, 0]);
+            t.kugel(0.17, 14, 12, "stahl", F.harnisch, [0, 1.95, 0], [1, 1.12, 1.05]);
+            t.box(0.3, 0.035, 0.06, "stahl", F.harnischDunkel, [0, 1.94, 0.16], null, { fein: 1 });
+            t.box(0.03, 0.13, 0.24, "tuch", zier, [0, 2.13, 0], null, { fein: 1 });
+        },
+        kaempfer: function (t, p) {
+            var F = ARENA_FARBE, rock = ARENA_WAPPEN.rock[3 + (p.seed % 2)], i;
+            t.zyl(0.17, 0.21, 0.1, 12, "holz", F.holzDunkel, [0, 0.05, 0]);
+            for (i = -1; i <= 1; i += 2) t.zyl(0.085, 0.07, 0.92, 10, "tuch", F.gambeson, [i * 0.13, 0.54, 0]);
+            t.zyl(0.29, 0.22, 0.78, 22, "tuch", F.gambeson, [0, 1.28, 0], null, { s: [1, 1, 0.72], hs: 9 });
+            t.zyl(0.3, 0.26, 0.7, 18, "tuch", rock, [0, 1.3, 0], null, { s: [1, 1, 0.74] });
+            t.zyl(0.1, 0.12, 0.12, 10, "tuch", F.kapuze, [0, 1.78, 0]);
+            t.kugel(0.155, 14, 12, "polster", F.haut, [0, 1.93, 0]);
+            t.kugel(0.17, 12, 10, "tuch", F.kapuze, [0, 1.99, 0], [1, 0.7, 1], [-0.3, 0, 0]);
+        },
+        ritterarm: function (t) {
+            var F = ARENA_FARBE;
+            t.zyl(0.06, 0.055, 0.4, 8, "stahl", F.harnisch, [0.05, -0.17, 0], [0, 0, -0.3]);
+            t.zyl(0.02, 0.02, 0.16, 6, "holz", F.holz, [0.12, -0.34, 0.04], [_AQ, 0, 0]);
+            t.box(0.2, 0.03, 0.03, "eisen", F.eisen, [0.12, -0.34, 0.14]);
+            t.box(0.045, 0.012, 0.82, "stahl", F.klinge, [0.12, -0.34, 0.58]);
+        },
+        kaempferarm: function (t) {
+            var F = ARENA_FARBE;
+            t.zyl(0.06, 0.055, 0.4, 8, "tuch", F.gambeson, [0.05, -0.17, 0], [0, 0, -0.3]);
+            t.zyl(0.02, 0.02, 0.16, 6, "holz", F.holz, [0.12, -0.34, 0.04], [_AQ, 0, 0]);
+            t.box(0.2, 0.03, 0.03, "eisen", F.eisen, [0.12, -0.34, 0.14]);
+            t.box(0.045, 0.012, 0.82, "stahl", F.klinge, [0.12, -0.34, 0.58]);
+        },
+        kampfbanner: function (t, p) {
+            var F = ARENA_FARBE, W = ARENA_WAPPEN.banner;
+            t.zyl(0.06, 0.07, 3.0, 8, "holz", F.holzDunkel, [0, 1.5, 0]);
+            t.box(0.6, 1.2, 0.012, "tuch", W[p.seed % W.length], [0, 2.25, 0.075]);
+        },
+        // ── DIE SCHIESSBAHN ──
+        zielscheibe: function (t, p) {
+            var F = ARENA_FARBE, R = p.radiusM, H = p.hoeheM, i;
+            t.zyl(0.04, 0.05, H, 8, "holz", F.holzDunkel, [0, H / 2, 0]);
+            t.zyl(R * 1.06, R * 1.06, 0.18, 28, "stroh", F.stroh, [0.1, H, 0], [0, 0, _AQ]);
+            t.scheibe([0, 0.1 * R, 0.2 * R, 0.32 * R, 0.45 * R, 0.6 * R, 0.8 * R, R], [F.ringSchwarz, F.ringBlau, F.ringBlau, F.ringRot, F.ringRot, F.ringGold, F.ringGold], 40, "lack", [-0.004, H, 0], [0, -_AQ, 0]);
+            for (i = -1; i <= 1; i += 2) t.zyl(0.018, 0.022, 1.05, 8, "holz", F.holz, [0.12, H - 0.38, i * 0.3], [-i * 0.26, 0, 0]);
+            t.zyl(0.018, 0.022, 1.1, 8, "holz", F.holz, [0.4, H - 0.4, 0], [0, 0, -0.4]);
+        },
+        kirmes: function (t) {
+            var F = ARENA_FARBE;
+            t.box(0.3, 2.4, 7.2, "lack", F.kirmesWand, [0.25, 1.2, 0]);
+            for (var i = 0; i < 3; i++) t.box(0.08, 0.06, 7.2, "lack", F.kirmesLeiste, [0, [0.8, 1.5, 2.2][i], 0]);
+            t.box(0.5, 0.25, 7.4, "lack", F.kirmesDach, [0.1, 2.5, 0]);
+        },
+        kirmesente: function (t) {
+            var F = ARENA_FARBE;
+            t.kugel(0.18, 12, 10, "lack", F.ente, [0, 0.18, 0], [1.3, 1, 0.6], null, { fuell: 0.3 });
+            t.kugel(0.1, 10, 8, "lack", F.ente, [0.17, 0.33, 0], null, null, { fuell: 0.3 });
+            t.kegel(0.04, 0.1, 6, "lack", F.schnabel, [0.27, 0.33, 0], [0, 0, -_AQ]);
+            for (var i = 0; i < 3; i++) t.ring(0.05 + i * 0.045, 0.014, 6, 16, "lack", [F.ringGold, F.scheibeWeiss, F.ente][i], [-0.04, 0.18, 0.33], null, i ? { fein: 1 } : null);
+        },
+        papagei: function (t) {
+            var F = ARENA_FARBE;
+            t.zyl(0.06, 0.1, 4.6, 10, "holz", F.holz, [0, 2.3, 0]);
+            t.box(0.55, 0.05, 0.05, "holz", F.holz, [0, 4.6, 0]);
+        },
+        papageivogel: function (t) {
+            var F = ARENA_FARBE;
+            t.kugel(0.12, 12, 10, "lack", F.gruen, [0, 0.13, 0], [1.5, 1, 0.9], null, { fuell: 0.4 });
+            t.kugel(0.075, 10, 8, "lack", F.kopfRot, [0.18, 0.21, 0]);
+            t.kegel(0.03, 0.1, 6, "lack", F.schnabelGelb, [0.27, 0.21, 0], [0, 0, -_AQ]);
+            t.kegel(0.07, 0.34, 6, "lack", F.gruenDunkel, [-0.24, 0.13, 0], [0, 0, _AQ]);
+            for (var i = -1; i <= 1; i += 2) t.box(0.12, 0.025, 0.2, "lack", F.gruenHell, [0, 0.16, i * 0.12]);
+        },
+        weidenrute: function (t) {
+            var F = ARENA_FARBE, H = 2.35;
+            t.zyl(0.035, 0.055, H, 8, "holz", F.weide, [0, H / 2, 0]);
+            for (var i = 0; i < 5; i++) t.zyl(0.065, 0.065, 0.2, 12, "lack", i % 2 ? F.weiss : F.rot, [0, 1.0 + i * 0.2, 0]);
+            t.kegel(0.055, 0.16, 8, "holz", F.holzDunkel, [0, H + 0.06, 0]);
+            t.box(0.44, 0.28, 0.01, "lack", F.rot, [0.24, H - 0.12, 0], null, { fein: 1 });
+            t.zyl(0.16, 0.22, 0.18, 12, "holz", F.holzDunkel, [0, 0.09, 0]);
+        },
+        clout: function (t) {
+            var F = ARENA_FARBE;
+            t.zyl(1.5, 1.5, 0.04, 28, "lack", F.cloutGelb, [0, 0.02, 0]);
+            t.scheibe([0, 0.5, 1.0, 1.5], [F.cloutSand, F.cloutRot, F.cloutGelb], 28, "lack", [0, 0.041, 0], [-_AQ, 0, 0]);
+        },
+        cloutfahne: function (t) {
+            var F = ARENA_FARBE;
+            t.zyl(0.03, 0.03, 1.7, 8, "holz", F.holzDunkel, [0, 0.85, 0]);
+            t.box(0.5, 0.3, 0.01, "lack", F.gold, [0.27, 1.45, 0]);
+        },
+        wurfscheibe: function (t) {
+            var F = ARENA_FARBE;
+            t.box(0.6, 0.3, 0.6, "eisen", F.eisenDunkel, [0, 0.15, 0]);
+            t.box(0.9, 0.04, 0.9, "holz", F.holzDunkel, [0, 0.02, 0]);
+            t.zyl(0.035, 0.035, 0.22, 8, "eisen", F.eisen, [0, 0.3, 0], [0, 0, _AQ]); // die Achse des Arms
+        },
+        wurfarm: function (t) {
+            var F = ARENA_FARBE;
+            t.box(0.14, 0.8, 0.14, "holz", F.holz, [0, 0.25, 0], [-0.55, 0, 0]);
+            t.zyl(0.18, 0.14, 0.1, 12, "eisen", F.eisen, [0, 0.65, 0.22], null, { fuell: 0.15 });
+        },
+        tontaube: function (t) {
+            t.zyl(0.17, 0.17, 0.04, 16, "lack", ARENA_FARBE.ton, [0, 0, 0]);
+        },
+        pendelziel: function (t) {
+            var F = ARENA_FARBE;
+            for (var i = -1; i <= 1; i += 2) t.zyl(0.08, 0.1, 3.3, 10, "holz", F.holz, [0, 1.65, i * 1.1]);
+            t.box(0.14, 0.14, 2.6, "holz", F.holzDunkel, [0, 3.3, 0]);
+        },
+        pendelscheibe: function (t) {
+            var F = ARENA_FARBE, L = 1.55, cs = [F.pendelHell, F.pendelBlau, F.cloutRot, F.pendelHell];
+            t.zyl(0.012, 0.012, L - 0.36, 5, "schnur", F.seilDunkel, [0, -(L - 0.36) / 2, 0]);
+            for (var i = 4; i >= 1; i--) t.zyl(i * 0.09, i * 0.09, 0.045 + (4 - i) * 0.004, 20, "lack", cs[4 - i], [0, -L, 0], [0, 0, _AQ]);
+        },
+    };
+    // DIE ARTEN DER ARENA und ihre Glieder (Daten je Gestalt): lab = der Name des Labors · hof = der Hof-Teil der Art (ein Glied
+    // nennt seine Art) · salz = der Strom · stoff/metall = der Stoff jeder Seh-Klasse (die Linse urteilt sein Band) · saum = die
+    // Gestalt steht auf dem Grund (der Erdsaum dunkelt den Fuß; ein Glied hängt am Gelenk) · gelenk = das Gesetz der Antwort
+    // (pendel · dreh · feder · leib; tau die Zeit des Abklingens in s, f die Frequenz der Feder in Hz, max ihr Ausschlag in rad,
+    // e die Stoß-Zahl des Paars Klinge × Gerät, mu die Reibung der Kufen) · zonen = ein Leib mit Treffer-Zonen (ARENA.zonen) ·
+    // regler = die B4-Zeilen ihrer Maße.
+    // prettier-ignore
+    var ARENA_ARTEN = {
+        dojo: { lab: "Dojo mit Pergola", hof: "hof", salz: 0x101, stoff: "holz", saum: 1 },
+        waffentisch: { lab: "Waffentisch", hof: "hof", salz: 0x102, stoff: "holz", saum: 1 },
+        torii: { lab: "Torii", hof: "hof", salz: 0x103, stoff: "lack", saum: 1 },
+        pell: { lab: "Pell", hof: "waffenhof", salz: 0x111, stoff: "schnur", saum: 1, zonen: 1, gelenk: { art: "feder", f: 1.5, tau: 0.5, max: 0.25, e: 0.1 } },
+        stechringe: { lab: "Stechringe", hof: "waffenhof", salz: 0x112, stoff: "holz", saum: 1 },
+        quintane: { lab: "Quintane", hof: "waffenhof", salz: 0x113, stoff: "holz", saum: 1 },
+        pendelkugel: { lab: "Pendel-Kugel", hof: "waffenhof", salz: 0x114, stoff: "holz", metall: "eisen", saum: 1 },
+        drehbaum: { lab: "Drehbaum", hof: "waffenhof", salz: 0x115, stoff: "holz", saum: 1 },
+        federpfahl: { lab: "Federpfahl", hof: "waffenhof", salz: 0x116, stoff: "holz", metall: "eisen", saum: 1 },
+        trefferfolge: { lab: "Trefferfolge", hof: "waffenhof", salz: 0x117, stoff: "holz", saum: 1, gelenk: { art: "feder", f: 1.6, tau: 0.6, max: 0.3, e: 0.15 } },
+        streitpuppe: { lab: "Streitpuppe", hof: "waffenhof", salz: 0x118, stoff: "schnur", metall: "eisen", saum: 1, zonen: 1, gelenk: { art: "leib", mu: 0.35, f: 1.8, tau: 0.6, max: 0.2, e: 0.1 } },
+        pendelgasse: { lab: "Pendel-Gasse", hof: "waffenhof", salz: 0x119, stoff: "holz", saum: 1 },
+        bambus: { lab: "Bambus-Stand", hof: "schnitthof", salz: 0x121, stoff: "holz", saum: 1 },
+        schnittgasse: { lab: "Schnittgasse", hof: "schnitthof", salz: 0x122, stoff: "holz", saum: 1 },
+        tatami: { lab: "Tatami-Galgen", hof: "schnitthof", salz: 0x123, stoff: "holz", saum: 1 },
+        harnisch: { lab: "Harnisch-Puppe", hof: "schnitthof", salz: 0x124, stoff: "holz", metall: "stahl", saum: 1, zonen: 1, gelenk: { art: "feder", f: 1.4, tau: 0.5, max: 0.12, e: 0.2 } },
+        ritter: { lab: "Ritter", hof: "schnitthof", salz: 0x125, stoff: "schnur", metall: "stahl", saum: 1, zonen: 1, gelenk: { art: "feder", f: 1.6, tau: 0.5, max: 0.15, e: 0.2 } },
+        kaempfer: { lab: "Kämpfer", hof: "schnitthof", salz: 0x126, stoff: "schnur", saum: 1, zonen: 1, gelenk: { art: "feder", f: 1.6, tau: 0.5, max: 0.2, e: 0.1 } },
+        zielscheibe: { lab: "Zielscheibe", hof: "schiessbahn", salz: 0x131, stoff: "lack", saum: 1, gelenk: { art: "feder", f: 2.0, tau: 0.5, max: 0.15, e: 0.1 },
+            regler: [{ id: "radiusM", lab: "Radius", min: 0.15, max: 0.6, step: 0.01, def: 0.4 }, { id: "hoeheM", lab: "Höhe", min: 0.8, max: 1.8, step: 0.01, def: 1.42 }] },
+        kirmes: { lab: "Kirmes-Enten", hof: "schiessbahn", salz: 0x132, stoff: "lack", saum: 1 },
+        papagei: { lab: "Papagei-Stange", hof: "schiessbahn", salz: 0x133, stoff: "holz", saum: 1 },
+        weidenrute: { lab: "Weidenrute", hof: "schiessbahn", salz: 0x134, stoff: "lack", saum: 1, gelenk: { art: "feder", f: 1.4, tau: 0.6, max: 0.3, e: 0.15 } },
+        clout: { lab: "Clout", hof: "schiessbahn", salz: 0x135, stoff: "lack", saum: 1 },
+        wurfscheibe: { lab: "Wurfscheibe", hof: "schiessbahn", salz: 0x136, metall: "eisen", saum: 1 },
+        pendelziel: { lab: "Pendelziel", hof: "schiessbahn", salz: 0x137, stoff: "holz", saum: 1 },
+        // ── die Glieder (ihr Ursprung ist ihr Gelenk) ──
+        stechring: { lab: "Stechring", glied: "stechringe", salz: 0x141, stoff: "schnur", metall: "messing", gelenk: { art: "pendel", tau: 1.0, e: 0.2 } },
+        quintanenarm: { lab: "Quintanen-Arm", glied: "quintane", salz: 0x142, stoff: "schnur", metall: "messing", gelenk: { art: "dreh", tau: 1.4, e: 0.2 } },
+        pendelball: { lab: "Pendel-Ball", glied: "pendelkugel", salz: 0x143, stoff: "leder", gelenk: { art: "pendel", tau: 1.0, e: 0.1 } },
+        drehkreuz: { lab: "Drehkreuz", glied: "drehbaum", salz: 0x144, stoff: "holz", gelenk: { art: "dreh", tau: 1.4, e: 0.15 } },
+        federstange: { lab: "Feder-Stange", glied: "federpfahl", salz: 0x145, stoff: "holz", gelenk: { art: "feder", f: 0.8, tau: 0.8, max: 0.6, e: 0.15 } },
+        gassenball: { lab: "Gassen-Ball", glied: "pendelgasse", salz: 0x146, stoff: "leder", gelenk: { art: "pendel", tau: 1.0, e: 0.1 } },
+        bambusrohr: { lab: "Bambus-Rohr", glied: "bambus", salz: 0x147, stoff: "holz", saum: 1, gelenk: { art: "feder", f: 1.8, tau: 0.6, max: 0.35, e: 0.15 },
+            regler: [{ id: "hoeheM", lab: "Höhe", min: 0.05, max: 2.5, step: 0.01, def: 1.4 }] },
+        tatamirolle: { lab: "Tatami-Rolle", glied: "tatami", salz: 0x148, stoff: "schnur", gelenk: { art: "pendel", tau: 1.0, e: 0.1 },
+            regler: [{ id: "rolleM", lab: "Länge der Rolle", min: 0.04, max: 1.0, step: 0.01, def: 1.0 }, { id: "seilM", lab: "Länge des Seils", min: 0, max: 0.55, step: 0.01, def: 0.55 }] },
+        ritterarm: { lab: "Ritter-Arm", glied: "ritter", salz: 0x149, stoff: "holz", metall: "stahl" },
+        kaempferarm: { lab: "Kämpfer-Arm", glied: "kaempfer", salz: 0x14a, stoff: "schnur", metall: "stahl" },
+        kampfbanner: { lab: "Kampf-Banner", glied: "ritter", salz: 0x14b, stoff: "holz", saum: 1 },
+        kirmesente: { lab: "Kirmes-Ente", glied: "kirmes", salz: 0x14c, stoff: "lack", gelenk: { art: "feder", f: 0.9, tau: 0.6, max: 1.3, e: 0.1 } },
+        papageivogel: { lab: "Papagei", glied: "papagei", salz: 0x14d, stoff: "lack", gelenk: { art: "feder", f: 1.1, tau: 0.6, max: 0.9, e: 0.15 } },
+        cloutfahne: { lab: "Clout-Fahne", glied: "clout", salz: 0x14e, stoff: "lack", saum: 1, gelenk: { art: "feder", f: 1.2, tau: 0.6, max: 0.4, e: 0.15 } },
+        wurfarm: { lab: "Wurf-Arm", glied: "wurfscheibe", salz: 0x14f, stoff: "holz", metall: "eisen", gelenk: { art: "feder", f: 1.5, tau: 0.5, max: 0.4, e: 0.2 } },
+        tontaube: { lab: "Tontaube", glied: "wurfscheibe", salz: 0x150, stoff: "lack" },
+        pendelscheibe: { lab: "Pendel-Scheibe", glied: "pendelziel", salz: 0x151, stoff: "lack", gelenk: { art: "pendel", tau: 1.0, e: 0.1 } },
+    };
+    // DER SATZ JEDER ART: ihre Gestalten im Rahmen der Art — [Rezept, x, y, z, Gier, ov, Same]; das erste ist die Art selbst,
+    // ein Glied steht an seinem Gelenk. Der Plan der Welt setzt den Satz, das Labor setzt ihn (EIN Satz, zwei Leser).
+    // prettier-ignore
+    var ARENA_SATZ = (function () {
+        var S = {}, i, a;
+        for (var art in ARENA_ARTEN) if (ARENA_ARTEN[art].hof) S[art] = [[art, 0, 0, 0, 0]];
+        for (i = -1; i <= 1; i++) S.stechringe.push(["stechring", i * 0.85, 2.45, 0, 0]);
+        S.quintane.push(["quintanenarm", 0, 1.39, 0, _AQ]);
+        S.pendelkugel.push(["pendelball", 0, 2.65, 0, 0]);
+        S.drehbaum.push(["drehkreuz", 0, 1.55, 0, 0]);
+        S.federpfahl.push(["federstange", 0, 0.35, 0, 0]);
+        S.trefferfolge = [];
+        for (i = 0; i < 5; i++) {
+            a = -0.33 * Math.PI + (0.66 * Math.PI * i) / 4;
+            S.trefferfolge.push(["trefferfolge", Math.sin(a) * 2.5, 0, Math.cos(a) * 2.5, a + Math.PI]);
+        }
+        for (i = 0; i < 4; i++) S.pendelgasse.push(["gassenball", 0, 2.88, -2.7 + i * 1.8, 0]);
+        for (i = 0; i < 4; i++) S.bambus.push(["bambusrohr", (i - 1.5) * 0.65, 0.16, 0, 0, { hoeheM: 1.1 + (i % 2) * 0.3 }]);
+        for (i = 0; i < 7; i++) S.schnittgasse.push(["bambusrohr", 0, 0.16, -2.2 + (i * 4.4) / 6, 0, { hoeheM: 1.25 + (i % 2) * 0.55 }]);
+        S.tatami.push(["tatamirolle", 0, 2.4, 0, 0]);
+        var rit = [[-2.4, -3.0], [0, -3.6], [2.4, -3.0]], kmp = [[-1.6, -3.2], [1.6, -3.2]];
+        S.ritter = [];
+        for (i = 0; i < 3; i++) {
+            S.ritter.push(["ritter", rit[i][0], 0, rit[i][1], 0, null, i + 1]);
+            S.ritter.push(["ritterarm", rit[i][0] + 0.3, 1.6, rit[i][1] + 0.08, 0]);
+        }
+        S.kaempfer = [];
+        for (i = 0; i < 2; i++) {
+            S.kaempfer.push(["kaempfer", kmp[i][0], 0, kmp[i][1], 0, null, i + 1]);
+            S.kaempfer.push(["kaempferarm", kmp[i][0] + 0.3, 1.6, kmp[i][1] + 0.08, 0]);
+        }
+        for (i = 0; i < 4; i++) {
+            a = (i * Math.PI) / 2 + Math.PI / 4;
+            S.ritter.push(["kampfbanner", Math.cos(a) * 4.75, 0, Math.sin(a) * 4.75, 0, null, i + 1]);
+            S.kaempfer.push(["kampfbanner", Math.cos(a) * 4.75, 0, Math.sin(a) * 4.75, 0, null, i + 5]);
+        }
+        for (i = 0; i < 3; i++) S.kirmes.push(["kirmesente", -0.1, [0.85, 1.5, 2.15][i] - 0.18, 0, 0]);
+        S.papagei.push(["papageivogel", 0, 4.6, 0, 0]);
+        S.clout.push(["cloutfahne", 0, 0, 0, 0]);
+        S.wurfscheibe.push(["wurfarm", 0, 0.3, 0, 0]);
+        S.pendelziel.push(["pendelscheibe", 0, 3.3, 0, 0]);
+        return S;
+    })();
+    // DER HOF DES LABORS: jede Art an ihrem Ort (x, z, Gier) — Waffenhof (+z), Schnitthof (−z), Schießbahn (+x), der Tisch am
+    // Eingang. Die Welt hängt ihn über ihr Ort-Gesetz in den Platz; das Labor liest ihn wie sie.
+    // prettier-ignore
+    var ARENA_HOF = [
+        ["dojo", 3.55, 3.05, 0], ["waffentisch", -3.0, 0, 0], ["torii", 13.0, 0, 0],
+        ["pell", 4.0, 5.0, 0], ["stechringe", 8.5, 5.0, 0], ["quintane", 4.0, 10.5, 0], ["pendelkugel", 9.0, 10.0, 0],
+        ["drehbaum", 1.0, 8.5, 0], ["federpfahl", 2.0, 2.5, 0], ["trefferfolge", -6.0, 13.0, 0], ["streitpuppe", 5.0, 19.0, 0],
+        ["pendelgasse", 10.0, 18.0, 0],
+        ["bambus", 4.0, -5.0, 0], ["schnittgasse", 8.5, -5.0, 0], ["tatami", 4.0, -10.0, 0], ["harnisch", 10.0, -9.0, 0],
+        ["ritter", 6.0, -18.5, 0], ["kaempfer", -7.0, -18.5, 0],
+        ["zielscheibe", 17.0, -0.5, 0], ["zielscheibe", 23.0, 0.4, 0], ["zielscheibe", 31.0, 1.0, 0],
+        ["zielscheibe", 20.0, -3.2, 0, { radiusM: 0.2, hoeheM: 1.2 }],
+        ["kirmes", 36.0, 0, 0], ["papagei", 16.0, 8.0, 0], ["papagei", 22.0, -8.0, 0], ["papagei", 28.0, 7.0, 0],
+        ["papagei", 33.0, -6.0, 0], ["weidenrute", 20.0, 3.0, 0], ["clout", 38.0, 7.0, 0], ["wurfscheibe", 23.0, -8.0, 0],
+        ["pendelziel", 30.0, 4.0, 0],
+    ];
+
+    // Die Maße einer Gestalt: die B4-Zeilen ihrer Regler (def) unter dem ov (nur bekannte Zahlen; __-Schlüssel sind Steuer-
+    // Passagiere) und der Same (die Wahl der Wappen).
+    function arenaMasze(id, ov, seed) {
+        var A = ARENA_ARTEN[id],
+            p = { seed: Math.max(1, Math.round(Number(seed) || 1)) >>> 0 };
+        var R = (A && A.regler) || [];
+        for (var i = 0; i < R.length; i++) {
+            var v = ov && typeof ov[R[i].id] === "number" && isFinite(ov[R[i].id]) ? ov[R[i].id] : R[i].def;
+            p[R[i].id] = Math.max(R[i].min, Math.min(R[i].max, v));
+        }
+        return p;
+    }
+    // Die Teile einer Gestalt (reine Zahlen) — null: kein Rezept der Arena.
+    function arenaTeile(id, ov, seed) {
+        if (!ARENA_BAU[id] || !ARENA_ARTEN[id]) return null;
+        var t = arenaSammler(1);
+        var r = ARENA_BAU[id](t, arenaMasze(id, ov, seed));
+        return Array.isArray(r) ? r : t.teile;
+    }
+    // Die Drehung eines Teils (Euler XYZ, die Reihe von THREE) als Zeilen-Matrix.
+    function arenaDrehung(r) {
+        var a = Math.cos(r[0]), b = Math.sin(r[0]), c = Math.cos(r[1]), d = Math.sin(r[1]), e = Math.cos(r[2]), f = Math.sin(r[2]);
+        var ae = a * e, af = a * f, be = b * e, bf = b * f;
+        return [c * e, -c * f, d, af + be * d, ae - bf * d, -b * c, bf - ae * d, be + af * d, a * c];
+    }
+    // Die halben Maße eines Teils in seinem Rahmen (vor Drehung und Skala).
+    function arenaHalb(t) {
+        var a = t.a;
+        if (t.f === "zyl") return [Math.max(a[0], a[1]), a[2] / 2, Math.max(a[0], a[1])];
+        if (t.f === "box") return [a[0] / 2, a[1] / 2, a[2] / 2];
+        if (t.f === "kugel") return [a[0], a[0], a[0]];
+        if (t.f === "ring") return [a[0] + a[1], a[0] + a[1], a[1]];
+        if (t.f === "kegel") return [a[0], a[1] / 2, a[0]];
+        return [a[a.length - 1], a[a.length - 1], 0.004]; // die Scheibe
+    }
+    // Der Kasten eines Teils im Rahmen der Gestalt [x0, y0, z0, x1, y1, z1].
+    function arenaKasten(t) {
+        var h = arenaHalb(t), R = arenaDrehung(t.r), lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+        for (var i = 0; i < 8; i++) {
+            var v = [(i & 1 ? 1 : -1) * h[0] * t.s[0], (i & 2 ? 1 : -1) * h[1] * t.s[1], (i & 4 ? 1 : -1) * h[2] * t.s[2]];
+            for (var k = 0; k < 3; k++) {
+                var w = t.p[k] + R[k * 3] * v[0] + R[k * 3 + 1] * v[1] + R[k * 3 + 2] * v[2];
+                if (w < lo[k]) lo[k] = w;
+                if (w > hi[k]) hi[k] = w;
+            }
+        }
+        return [lo[0], lo[1], lo[2], hi[0], hi[1], hi[2]];
+    }
+    // Das Volumen eines Teils (m³) — die Masse ist Volumen × ρ seines Stoffs.
+    function arenaVolumen(t) {
+        var a = t.a, sk = t.s[0] * t.s[1] * t.s[2] * (t.fuell || ARENA_FUELL[t.st] || 1);
+        if (t.f === "zyl") return ((Math.PI * a[2] * (a[0] * a[0] + a[0] * a[1] + a[1] * a[1])) / 3) * sk;
+        if (t.f === "box") return a[0] * a[1] * a[2] * sk;
+        if (t.f === "kugel") return ((4 / 3) * Math.PI * a[0] * a[0] * a[0]) * sk;
+        if (t.f === "ring") return 2 * Math.PI * Math.PI * a[0] * a[1] * a[1] * sk;
+        if (t.f === "kegel") return ((Math.PI * a[0] * a[0] * a[1]) / 3) * sk;
+        var r = a[a.length - 1];
+        return Math.PI * r * r * 0.004;
+    }
+    // MASSE UND TRÄGHEIT einer Gestalt um ihren Ursprung (das Gelenk): je Teil sein Massenpunkt in der Mitte seines Kastens und die
+    // Eigen-Trägheit des vollen Kastens (m(b² + c²)/12) — m (kg), der Schwerpunkt, I um x · y · z (kg·m²).
+    function arenaMasse(teile) {
+        var m = 0, s = [0, 0, 0], I = [0, 0, 0];
+        for (var i = 0; i < teile.length; i++) {
+            var t = teile[i], k = arenaKasten(t), mi = arenaVolumen(t) * arenaRho(t.st);
+            if (!(mi > 0)) continue;
+            var c = [(k[0] + k[3]) / 2, (k[1] + k[4]) / 2, (k[2] + k[5]) / 2], d = [k[3] - k[0], k[4] - k[1], k[5] - k[2]];
+            m += mi;
+            for (var j = 0; j < 3; j++) s[j] += mi * c[j];
+            I[0] += mi * (c[1] * c[1] + c[2] * c[2]) + (mi * (d[1] * d[1] + d[2] * d[2])) / 12;
+            I[1] += mi * (c[0] * c[0] + c[2] * c[2]) + (mi * (d[0] * d[0] + d[2] * d[2])) / 12;
+            I[2] += mi * (c[0] * c[0] + c[1] * c[1]) + (mi * (d[0] * d[0] + d[1] * d[1])) / 12;
+        }
+        return { m: m, schwer: m > 0 ? [s[0] / m, s[1] / m, s[2] / m] : [0, 0, 0], I: I };
+    }
+    // Die Teile, die zählen (nicht fein), nach ihrem Kasten-Volumen absteigend — die Quelle von Wurf, Fernform, Substanz und
+    // Treffer-Kapseln (EINE Wahl, vier Leser).
+    function arenaGrosse(teile, n) {
+        var L = [];
+        for (var i = 0; i < teile.length; i++) {
+            if (teile[i].fein) continue;
+            var k = arenaKasten(teile[i]);
+            L.push({ t: teile[i], k: k, v: (k[3] - k[0]) * (k[4] - k[1]) * (k[5] - k[2]), i: i });
+        }
+        L.sort(function (a, b) {
+            return b.v - a.v || a.i - b.i;
+        });
+        return L.slice(0, n);
+    }
+    function _ar(v, q) {
+        return Math.round(v * (q || 4096)) / (q || 4096) + 0;
+    }
+    function arenaLin(hex) {
+        return [linKanal(((hex >> 16) & 255) / 255), linKanal(((hex >> 8) & 255) / 255), linKanal((hex & 255) / 255)];
+    }
+    // Der Kasten k als Box der EINEN Hüllen-Form N5 (Mitte, halbe Weite, die Rolle) — Fernform und Hülle lesen ihn.
+    function arenaBox(k, rolle) {
+        var c = [_ar((k[0] + k[3]) / 2), _ar((k[1] + k[4]) / 2), _ar((k[2] + k[5]) / 2)];
+        return { art: "box", c: c, h: [0, 1, 2].map(function (j) { return _ar(Math.max(0.01, (k[j + 3] - k[j]) / 2)); }), rolle: rolle };
+    }
+    // DIE HÜLLE einer Gestalt (Welle L, Kollision == Optik): ihre sechs größten Teile als feste Kästen — jede Stufe trägt sie
+    // (`__huelle`), der Wirt stellt seine Blocker aus ihr (`_hausHuelleSetzen`), mit Saat und Regler der Instanz.
+    function arenaHuelle(id, ov, seed) {
+        return { stufe: 0, teile: arenaGrosse(arenaTeile(id, ov, seed) || [], 6).map(function (G) { return arenaBox(G.k, "fest"); }) };
+    }
+    // DIE SUBSTANZ der Art (B7, die Teile-Form des Wirts): die Kästen der Pell im Welt-Stoff — Klang, Wort und Blocker, bis die
+    // Gestalt ihre Hülle liefert.
+    function arenaSubstanz(id) {
+        var G = arenaGrosse(arenaTeile(id, null, 1) || [], 6),
+            parts = [];
+        for (var i = 0; i < G.length; i++) {
+            var k = G[i].k;
+            parts.push({
+                shape: "box",
+                material: ARENA_WELTSTOFF[G[i].t.st] || "holz",
+                position: { x: _ar((k[0] + k[3]) / 2, 1000), y: _ar((k[1] + k[4]) / 2, 1000), z: _ar((k[2] + k[5]) / 2, 1000) },
+                size: { x: _ar(Math.max(0.02, k[3] - k[0]), 1000), y: _ar(Math.max(0.02, k[4] - k[1]), 1000), z: _ar(Math.max(0.02, k[5] - k[2]), 1000) },
+            });
+        }
+        return { label: "Arena", parts: parts };
+    }
+    // DIE TREFFER-KAPSELN einer Gestalt (im Rahmen der Gestalt): je großes Teil die Kapsel längs der längsten Achse seines Kastens,
+    // ihr Radius die größere der zwei anderen halben Weiten — die Klinge der Welt fegt gegen sie (`_geraetKontakt`).
+    function geraetTreffer(id, ov, seed) {
+        var G = arenaGrosse(arenaTeile(id, ov, seed) || [], 8),
+            out = [];
+        for (var i = 0; i < G.length; i++) {
+            var k = G[i].k, h = [(k[3] - k[0]) / 2, (k[4] - k[1]) / 2, (k[5] - k[2]) / 2], c = [(k[0] + k[3]) / 2, (k[1] + k[4]) / 2, (k[2] + k[5]) / 2];
+            var ax = h[0] >= h[1] && h[0] >= h[2] ? 0 : h[1] >= h[2] ? 1 : 2;
+            var r = Math.max(h[(ax + 1) % 3], h[(ax + 2) % 3]), l = Math.max(0, h[ax] - r);
+            var a = c.slice(), b = c.slice();
+            a[ax] -= l;
+            b[ax] += l;
+            out.push({ a: a, b: b, r: r });
+        }
+        return out;
+    }
+    // DIE ZONE eines Leibs der Arena (Pell, Harnisch, Ritter, Kämpfer, Streitpuppe): die Höhe des Kontakts gegen die Höhe der
+    // Gestalt — Kopf über 85 %, Brust über 65 %, Bauch über 46 %, Bein über 22 % (am Pell gemessen: 1,52 · 1,16 · 0,82 · 0,40 m
+    // von 1,78 m), darunter der Fuß. null: kein Leib.
+    function geraetZone(id, y, ov, seed) {
+        var A = ARENA_ARTEN[id];
+        if (!A || !A.zonen) return null;
+        var top = 0, T = arenaTeile(id, ov, seed);
+        for (var i = 0; i < T.length; i++) top = Math.max(top, arenaKasten(T[i])[4]);
+        var u = top > 0 ? y / top : 0;
+        return u > 0.85 ? "kopf" : u > 0.65 ? "brust" : u > 0.46 ? "bauch" : u > 0.22 ? "bein" : "fuss";
+    }
+
+    // ── DER BAU (B2): je Teil die Geometrie seiner Form in der Teilung der Stufe, gelegt, gefärbt (Vertex = lineare Albedo ×
+    //    Tönung aus dem Strom × Erdsaum), je Seh-Klasse in EIN Gitter verschmolzen, auf das Raster gelegt. ──
+    function arenaTeilung(n, stufe, detail, min) {
+        var f = (stufe === 1 ? 0.5 : 1) * detail;
+        return Math.max(min, Math.round(n * f));
+    }
+    function arenaGeo(t, stufe, detail) {
+        var a = t.a, n = t.n;
+        if (t.f === "zyl") return new THREE.CylinderGeometry(a[0], a[1], a[2], arenaTeilung(n[0], stufe, detail, 4), stufe === 0 && t.hs ? t.hs : 1);
+        if (t.f === "box") return new THREE.BoxGeometry(a[0], a[1], a[2]);
+        if (t.f === "kugel") return new THREE.SphereGeometry(a[0], arenaTeilung(n[0], stufe, detail, 6), arenaTeilung(n[1], stufe, detail, 4));
+        if (t.f === "ring") return new THREE.TorusGeometry(a[0], a[1], arenaTeilung(n[0], stufe, detail, 3), arenaTeilung(n[1], stufe, detail, 6));
+        if (t.f === "kegel") return new THREE.ConeGeometry(a[0], a[1], arenaTeilung(n[0], stufe, detail, 3));
+        // die Scheibe: je Band ein Ring aus Vierecken (die Bänder teilen keine Ecke — jedes trägt seine Farbe)
+        var seg = arenaTeilung(n[0], stufe, detail, 8), pos = [], idx = [], band = [], b, i;
+        for (b = 0; b + 1 < a.length; b++) {
+            var r0 = a[b], r1 = a[b + 1], o = pos.length / 3;
+            for (i = 0; i <= seg; i++) {
+                var w = (i / seg) * Math.PI * 2, cw = Math.cos(w), sw = Math.sin(w);
+                pos.push(cw * r0, sw * r0, 0, cw * r1, sw * r1, 0);
+                band.push(b, b);
+            }
+            for (i = 0; i < seg; i++) {
+                var q = o + i * 2;
+                if (r0 > 0) idx.push(q, q + 2, q + 1);
+                idx.push(q + 1, q + 2, q + 3);
+            }
+        }
+        var g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        var nrm = new Float32Array(pos.length);
+        for (i = 2; i < nrm.length; i += 3) nrm[i] = 1;
+        g.setAttribute("normal", new THREE.BufferAttribute(nrm, 3));
+        g.setIndex(idx);
+        g.userData.band = band;
+        return g;
+    }
+    // DIE REDUKTION der Stufe 1 (B2c, die Quote L1/L0 ≤ ½ der Familie gate:regler-wirkt): die Teile nach Größe, solange sie
+    // die Hälfte der Dreiecke der Stufe 0 tragen — das größte immer, ein feines nie.
+    function arenaL1(teile) {
+        var dreiecke = function (t, stufe) {
+            var g = arenaGeo(t, stufe, 1), n = (g.index ? g.index.count : g.attributes.position.count) / 3;
+            g.dispose();
+            return n;
+        };
+        var halb = teile.reduce(function (s, t) { return s + dreiecke(t, 0); }, 0) / 2, summe = 0, bleibt = [];
+        arenaGrosse(teile, teile.length).forEach(function (G) {
+            var n = dreiecke(G.t, 1);
+            if (bleibt.length && summe + n > halb) return;
+            bleibt.push(G.t);
+            summe += n;
+        });
+        return bleibt;
+    }
+    function arenaGestalt(id, seed, stufe, ov) {
+        var A = ARENA_ARTEN[id], teile = arenaTeile(id, ov, seed), bleibt = stufe === 1 ? arenaL1(teile) : teile;
+        var z = arenaStrom(seed, A.salz),
+            detail = 1,
+            zeile = ARENA_BUDGET[stufe].tris;
+        var stoffMat = hautStoff({ holz: M.wood, lack: M.lack, schnur: M.cord, leder: M.leather }[A.stoff || "holz"]);
+        var metallMat = hautStoff({ eisen: M.iron, stahl: M.steelRaw, messing: M.brass }[A.metall || "eisen"]);
+        for (var versuch = 0; ; versuch++) {
+            z = arenaStrom(seed, A.salz);
+            var klassen = { stoff: { pos: [], nrm: [], col: [], idx: [] }, metall: { pos: [], nrm: [], col: [], idx: [] } },
+                n = 0;
+            for (var i = 0; i < teile.length; i++) {
+                var t = teile[i],
+                    ton = t.st === "lack" ? 0.97 + 0.06 * z() : 0.94 + 0.12 * z();
+                if (bleibt.indexOf(t) < 0) continue; // die Tönung zog jedes Teil: die Farbe springt nie zwischen den Stufen
+                var g = arenaGeo(t, stufe, detail);
+                var q = new THREE.Quaternion().setFromEuler(new THREE.Euler(t.r[0], t.r[1], t.r[2]));
+                g.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(t.p[0], t.p[1], t.p[2]), q, new THREE.Vector3(t.s[0], t.s[1], t.s[2])));
+                var K = klassen[ARENA_METALL[t.st] ? "metall" : "stoff"];
+                var P = g.attributes.position, N = g.attributes.normal, o = K.pos.length / 3;
+                var basis = arenaLin(t.c), farben = t.farben ? t.farben.map(arenaLin) : null;
+                for (var v = 0; v < P.count; v++) {
+                    var y = P.getY(v), c = farben ? farben[g.userData.band[v]] : basis;
+                    var saum = A.saum && y < 0.45 ? 0.82 + (0.18 * Math.max(0, y)) / 0.45 : 1;
+                    K.pos.push(P.getX(v), y, P.getZ(v));
+                    K.nrm.push(N.getX(v), N.getY(v), N.getZ(v));
+                    K.col.push(c[0] * ton * saum, c[1] * ton * saum, c[2] * ton * saum);
+                }
+                var ix = g.index ? g.index.array : null;
+                if (ix) for (var j = 0; j < ix.length; j++) K.idx.push(o + ix[j]);
+                else for (var j2 = 0; j2 < P.count; j2++) K.idx.push(o + j2);
+                n += (ix ? ix.length : P.count) / 3;
+                g.dispose();
+            }
+            if (n <= zeile || versuch === 4) break;
+            detail *= Math.min(0.97, zeile / n);
+        }
+        var grp = new THREE.Group();
+        ["stoff", "metall"].forEach(function (k) {
+            var K = klassen[k];
+            if (!K.idx.length) return;
+            var geo = new THREE.BufferGeometry();
+            var r = function (arr, q) {
+                var f = new Float32Array(arr.length);
+                for (var u = 0; u < arr.length; u++) f[u] = _ar(arr[u], q);
+                return f;
+            };
+            geo.setAttribute("position", new THREE.BufferAttribute(r(K.pos, 4096), 3));
+            geo.setAttribute("normal", new THREE.BufferAttribute(r(K.nrm, 16384), 3));
+            geo.setAttribute("color", new THREE.BufferAttribute(r(K.col, 4096), 3));
+            geo.setIndex(K.idx);
+            var mesh = new THREE.Mesh(geo, k === "metall" ? metallMat : stoffMat);
+            mesh.castShadow = mesh.receiveShadow = true;
+            grp.add(mesh);
+        });
+        return grp;
+    }
+    // DIE STUFE 3 (NUR-WURF): die vier größten Teile als Kästen in EINEM Gitter mit dem Schatten-Stoff (unsichtbar, beidseitig,
+    // `__stoff` "schatten" — die Brücke reicht ihn als kind "schatten") und dieselben Kästen als Fernform `__fern` (die EINE
+    // Hüllen-Form N5: box, Mitte, halbe Weite, die lineare Farbe des Teils, rolle "sicht").
+    var _arenaWurfStoff = null;
+    function arenaWurf(id, seed, ov) {
+        if (!_arenaWurfStoff) {
+            _arenaWurfStoff = new THREE.MeshBasicMaterial({ visible: false, side: THREE.DoubleSide, alphaTest: 0.5 });
+            _arenaWurfStoff.userData.__stoff = "schatten";
+            _arenaWurfStoff.userData.__seh = "stoff";
+        }
+        var G = arenaGrosse(arenaTeile(id, ov, seed), 4),
+            pos = [],
+            idx = [],
+            fern = [];
+        for (var i = 0; i < G.length; i++) {
+            var k = G[i].k,
+                b = new THREE.BoxGeometry(Math.max(0.02, k[3] - k[0]), Math.max(0.02, k[4] - k[1]), Math.max(0.02, k[5] - k[2]));
+            b.translate((k[0] + k[3]) / 2, (k[1] + k[4]) / 2, (k[2] + k[5]) / 2);
+            var o = pos.length / 3, P = b.attributes.position;
+            for (var v = 0; v < P.count; v++) pos.push(_ar(P.getX(v)), _ar(P.getY(v)), _ar(P.getZ(v)));
+            for (var j = 0; j < b.index.count; j++) idx.push(o + b.index.array[j]);
+            b.dispose();
+            var sicht = arenaBox(k, "sicht");
+            sicht.farbe = arenaLin(G[i].t.c).map(function (x) { return _ar(x); });
+            fern.push(sicht);
+        }
+        var geo = new THREE.BufferGeometry(), n = pos.length / 3;
+        geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        geo.setAttribute("aDeckt", new THREE.Float32BufferAttribute(new Float32Array(n).fill(1), 1));
+        geo.setAttribute("uv", new THREE.Float32BufferAttribute(new Float32Array(n * 2), 2));
+        geo.setIndex(idx);
+        geo.computeVertexNormals();
+        var mesh = new THREE.Mesh(geo, _arenaWurfStoff);
+        mesh.castShadow = true;
+        var grp = new THREE.Group();
+        grp.add(mesh);
+        grp.userData.__fern = { stufe: 3, teile: fern };
+        return grp;
+    }
+    // B2 der Arena: buildInstance(id, seed, lod, ov) → EINE Gruppe — die Stufe ist die größte deklarierte ≤ lod. userData trägt
+    // Art, Rezept, Same, Stufe, das Gelenk (Art des Gesetzes, Ursprung), die Hülle und die Fernform.
+    function bauGeraet(id, seed, lod, ov) {
+        materials();
+        var sd = ov && typeof ov === "object" && ov.seed != null ? Number(ov.seed) : Number(seed);
+        if (!isFinite(sd)) sd = 1;
+        sd = Math.max(1, Math.round(sd)) >>> 0;
+        var L = lod | 0,
+            stufe = ARENA_STUFEN[0];
+        for (var i = 0; i < ARENA_STUFEN.length; i++) if (ARENA_STUFEN[i] <= L) stufe = ARENA_STUFEN[i];
+        var g = stufe === 3 ? arenaWurf(id, sd, ov) : arenaGestalt(id, sd, stufe, ov);
+        var fern = g.userData.__fern;
+        var A = ARENA_ARTEN[id];
+        g.userData = { kind: "arena", rezeptId: id, seed: sd, lod: stufe, arena: A.hof || A.glied, gelenk: A.gelenk ? A.gelenk.art : null, __huelle: arenaHuelle(id, ov, sd) };
+        if (fern) g.userData.__fern = fern;
+        g.updateMatrixWorld(true);
+        return g;
+    }
+
+    // ═══ DAS GESETZ DES GERÄTS — die Antwort auf den EINEN Stoß ═══
+    // DAS EINE IMPULS-GESETZ (0710-2, K-D9; hierher gehoben, der Wirt ruft es — AnazhRealm._stossImpuls): J längs der Normalen
+    // A → B bei schließender Geschwindigkeit vRel > 0, J = (1 + e) · vRel / (1/mA + 1/mB); mB = Infinity für einen starren
+    // Gegner. Labor und Welt stoßen mit DIESER Funktion.
+    function stossImpuls(mA, mB, vRel, e) {
+        if (!(vRel > 0) || !(mA > 0) || !(mB > 0)) return 0;
+        return ((1 + e) * vRel) / (1 / mA + (Number.isFinite(mB) ? 1 / mB : 0));
+    }
+    // Die Ruhe: darunter liegt das Gerät still und fällt aus dem Takt (Ausschlag rad · Winkel-Tempo rad/s · Tempo m/s). Die Drehung
+    // trägt die Reibung ihres Lagers (rad/s², ohne Rückstellung bringt sie das Kreuz in endlicher Zeit zum Stand); Pendel und
+    // Feder dämpfen nur viskos — eine trockene Reibung unter ihrer Rückstellung hielte sie zitternd in der Totzone. Das Pendel
+    // schlägt höchstens pendelMaxRad aus; der Teil-Schritt (s) hält die Feder stabil.
+    var GERAET_GESETZ = { ruheRad: 0.008, ruheRadS: 0.02, ruheMs: 0.01, drehLagerRadS2: 0.3, pendelMaxRad: 1.3, schrittS: 1 / 240, schwere: 9.81 };
+    // Der Zustand eines Geräts: Masse, Trägheit und Schwerpunkt aus der Gestalt, das Gesetz seiner Art, Lage und Tempo 0. Der Leib
+    // wankt um seinen Fuß wie eine Feder und gleitet als Ganzes (die Streitpuppe auf ihren Kufen).
+    function geraetZustand(id, ov, seed) {
+        var A = ARENA_ARTEN[id];
+        if (!A) return null;
+        var G = A.gelenk || { art: "fest", e: 0.2 },
+            ms = arenaMasse(arenaTeile(id, ov, seed));
+        var z = { id: id, art: G.art, m: ms.m, I: ms.I, schwer: ms.schwer, e: G.e, tau: G.tau || 1, a: [0, 0], w: [0, 0], phi: 0, om: 0, x: [0, 0], v: [0, 0], ruht: true };
+        if (G.art === "pendel") z.d = Math.max(0.01, -ms.schwer[1]);
+        if (G.art === "feder" || G.art === "leib") {
+            z.w0 = 2 * Math.PI * G.f;
+            z.max = G.max;
+        }
+        if (G.art === "leib") z.mu = G.mu;
+        return z;
+    }
+    function _kreuz(a, b) {
+        return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+    }
+    // DIE WIRKSAME MASSE des Geräts am Kontakt `punkt` (m, im Rahmen der Gestalt) längs der Richtung `n` (Einheit): was der Stoß
+    // dort bewegt — die Drehung um das Gelenk (r × n gegen die Trägheit), beim Leib dazu der ganze Leib; fest Infinity.
+    function geraetMasse(z, punkt, n) {
+        if (!z) return Infinity;
+        var k = _kreuz(punkt, n), inv = 0;
+        if (z.art === "pendel" || z.art === "feder" || z.art === "leib") inv = (k[0] * k[0]) / z.I[0] + (k[2] * k[2]) / z.I[2];
+        else if (z.art === "dreh") inv = (k[1] * k[1]) / z.I[1];
+        if (z.art === "leib") inv += (n[0] * n[0] + n[2] * n[2]) / z.m;
+        return inv > 1e-12 ? 1 / inv : Infinity;
+    }
+    // DER STOSS: der Impuls J (N·s) am Kontakt `punkt` längs `n` — der Drall r × J gegen die Trägheit (Pendel, Feder, Leib: um x und
+    // z; Drehung: um y), beim Leib dazu J/m in seinen Gang. Gibt den Zustand.
+    function geraetStoss(z, J, punkt, n) {
+        if (!z || !(J > 0) || z.art === "fest") return z;
+        var L = _kreuz(punkt, [n[0] * J, n[1] * J, n[2] * J]);
+        if (z.art === "dreh") z.om += L[1] / z.I[1];
+        else {
+            z.w[0] += L[0] / z.I[0];
+            z.w[1] += L[2] / z.I[2];
+        }
+        if (z.art === "leib") {
+            z.v[0] += (J * n[0]) / z.m;
+            z.v[1] += (J * n[2]) / z.m;
+        }
+        z.ruht = false;
+        return z;
+    }
+    // DER SCHRITT (dt s, g die Schwere der Welt): das Pendel I·θ'' = −m·g·d·sin θ − (2I/τ)·θ' (höchstens pendelMaxRad) ·
+    // die Feder und das Wanken des Leibs θ'' = −ω0²·θ − (2/τ)·θ' (geklemmt auf ihren Ausschlag) · die Drehung ω' = −ω/τ − Lager ·
+    // der Gang des Leibs v' = −μ·g (Kufen auf dem Grund). Rückgabe true, solange das Gerät nachschwingt; in Ruhe stehen Ausschlag
+    // und Tempo auf 0 (die Drehung behält ihren Winkel, der Leib seinen Ort).
+    function geraetSchritt(z, dt, g) {
+        if (!z || z.ruht || !(dt > 0)) return false;
+        var GG = GERAET_GESETZ,
+            G = g > 0 ? g : GG.schwere,
+            n = Math.max(1, Math.ceil(dt / GG.schrittS)),
+            h = dt / n,
+            i,
+            k;
+        for (var s = 0; s < n; s++) {
+            if (z.art === "dreh") {
+                var dw = (z.om / z.tau + (z.om > 0 ? GG.drehLagerRadS2 : -GG.drehLagerRadS2)) * h;
+                z.om = Math.abs(dw) >= Math.abs(z.om) ? 0 : z.om - dw;
+                z.phi += z.om * h;
+                if (z.phi > Math.PI) z.phi -= 2 * Math.PI;
+                else if (z.phi < -Math.PI) z.phi += 2 * Math.PI;
+                continue;
+            }
+            for (k = 0; k < 2; k++) {
+                var Ik = z.I[k === 0 ? 0 : 2];
+                var acc = z.art === "pendel" ? (-z.m * G * z.d * Math.sin(z.a[k])) / Ik : -z.w0 * z.w0 * z.a[k];
+                acc -= (2 / z.tau) * z.w[k];
+                z.w[k] += acc * h;
+                z.a[k] += z.w[k] * h;
+                var lim = z.art === "pendel" ? GG.pendelMaxRad : z.max;
+                if (Math.abs(z.a[k]) > lim) {
+                    z.a[k] = z.a[k] > 0 ? lim : -lim;
+                    z.w[k] *= -0.3;
+                }
+            }
+            if (z.art === "leib") {
+                var sp = Math.hypot(z.v[0], z.v[1]),
+                    ab = z.mu * G * h;
+                if (sp <= ab) z.v[0] = z.v[1] = 0;
+                else
+                    for (i = 0; i < 2; i++) {
+                        z.v[i] -= (z.v[i] / sp) * ab;
+                        z.x[i] += z.v[i] * h;
+                    }
+            }
+        }
+        var ruhig =
+            z.art === "dreh"
+                ? Math.abs(z.om) < GG.ruheRadS
+                : Math.abs(z.a[0]) < GG.ruheRad &&
+                  Math.abs(z.a[1]) < GG.ruheRad &&
+                  Math.abs(z.w[0]) < GG.ruheRadS &&
+                  Math.abs(z.w[1]) < GG.ruheRadS &&
+                  !(Math.hypot(z.v[0], z.v[1]) >= GG.ruheMs);
+        if (ruhig) {
+            z.a[0] = z.a[1] = z.w[0] = z.w[1] = z.om = z.v[0] = z.v[1] = 0;
+            z.ruht = true;
+        }
+        return !z.ruht;
+    }
+    // DIE POSE des Geräts im Rahmen seiner Gestalt: die Drehung um das Gelenk (der Ursprung) als Quaternion [x, y, z, w] und der
+    // Versatz des Leibs [x, 0, z] — das Labor legt sie an das Glied, die Welt an die Instanz-Matrix des Werks.
+    function geraetPose(z) {
+        var q = [0, 0, 0, 1];
+        if (z && z.art === "dreh") q = [0, Math.sin(z.phi / 2), 0, Math.cos(z.phi / 2)];
+        else if (z && z.art !== "fest") {
+            var cx = Math.cos(z.a[0] / 2),
+                sx = Math.sin(z.a[0] / 2),
+                cz = Math.cos(z.a[1] / 2),
+                sz = Math.sin(z.a[1] / 2);
+            q = [sx * cz, -sx * sz, cx * sz, cx * cz]; // Euler XYZ (θx, 0, θz)
+        }
+        return { q: q, versatz: z && z.art === "leib" ? [z.x[0], 0, z.x[1]] : [0, 0, 0] };
+    }
+
+    // ── DAS BUCH DER ARENA: EINE Art „arena" (kindStages, EINE Budget-Zeile), je Gestalt ihr Rezept (B1 — den Ort setzt der Plan
+    //    des Platzes, ein Tag ohne Leser deklariert ihn nicht), die Regler der Klasse vereint wie die der Klingen (B4 — die
+    //    Spanne deckt jede Gestalt, `arenaMasze` klemmt je Gestalt), die Wirts-Zeile (B7) und ihr Name im Stammbaum (B8). ──
+    PORTAL_RENDER_CONFIG.lod.kindStages.arena = ARENA_STUFEN.slice();
+    PORTAL_RENDER_CONFIG.lod.budget.arena = JSON.parse(JSON.stringify(ARENA_BUDGET));
+    var ARENA_PARAMS = [];
+    for (var _ag in ARENA_ARTEN) {
+        var _as = {};
+        (ARENA_ARTEN[_ag].regler || []).forEach(function (r) {
+            _as[r.id] = r.def;
+            var d = ARENA_PARAMS.filter(function (x) { return x.id === r.id; })[0];
+            if (d) (d.min = Math.min(d.min, r.min)), (d.max = Math.max(d.max, r.max));
+            else ARENA_PARAMS.push({ id: r.id, lab: r.lab, min: r.min, max: r.max, step: r.step, def: r.def, grp: "arena" });
+        });
+        PRESETS[_ag] = { kind: "arena", lab: ARENA_ARTEN[_ag].lab, s: _as };
+    }
+    var KIND_POLICY = { arena: { prefix: "arena_", substanz: arenaSubstanz("pell") } };
+
     // W8 — die Gestalten je Rezept (B2c): JEDES Stück trägt GESTALTEN_JE_REZEPT Individuen (ein neues zählt mit).
     for (var _gid in PRESETS) PORTAL_RENDER_CONFIG.lod.budget.gestalten[_gid] = GESTALTEN_JE_REZEPT;
 
@@ -3643,9 +4688,30 @@
         buildPfeil: buildPfeil,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
-        PARAMS_BY_KIND: { weapon: PARAMS },
+        // B4 — die Regler je Art: die Klingen und die Arena (die Maße von Ziel, Bambus und Tatami, vereint)
+        PARAMS_BY_KIND: { weapon: PARAMS, arena: ARENA_PARAMS },
+        // B7 — die Wirts-Zeile der Art, die ihr Buch mitbringt (die Arena: Präfix arena_ und die Substanz der Klasse)
+        KIND_POLICY: KIND_POLICY,
         // B8 — der Stammbaum (studios.K5): wie das Buch sich und seine Arten nennt (der Wirt leitet den EINEN Baum ab)
-        STAMMBAUM: { studio: "Schmiede", arten: { weapon: "Klingen" } },
+        STAMMBAUM: { studio: "Schmiede", arten: { weapon: "Klingen", arena: "Arena" } },
+        // DIE ARENA (w4-arena-welt): die Arten und ihr Satz, der Hof des Labors, das Gesetz des Geräts und der EINE Stoß
+        ARENA_ARTEN: ARENA_ARTEN,
+        ARENA_SATZ: ARENA_SATZ,
+        ARENA_HOF: ARENA_HOF,
+        ARENA_BUDGET: ARENA_BUDGET,
+        ARENA_STUFEN: ARENA_STUFEN,
+        GERAET_GESETZ: GERAET_GESETZ,
+        arenaStrom: arenaStrom,
+        arenaTeile: arenaTeile,
+        arenaMasse: arenaMasse,
+        geraetTreffer: geraetTreffer,
+        geraetZone: geraetZone,
+        geraetZustand: geraetZustand,
+        geraetMasse: geraetMasse,
+        geraetStoss: geraetStoss,
+        geraetSchritt: geraetSchritt,
+        geraetPose: geraetPose,
+        stossImpuls: stossImpuls,
         LEHREN: LEHREN_B5,
         buildInstance: buildInstance,
         // Mess- & Lehren-Fläche (Shell + Wirt lesen dieselben Gesetze).

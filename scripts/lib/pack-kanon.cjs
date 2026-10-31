@@ -161,7 +161,7 @@ async function bootRealm(port) {
     await server.zeige(page, 30000);
     // Welt bereit = `_gameLoopTick` ist eine Funktion (renderer-unabhängig korrekt, CLAUDE.md).
     await page.evaluate(async () => {
-        await window.__weltDa((r) => r.state && r.state.blueprints);
+        await __weltDa((r) => r.state && r.state.blueprints);
     });
     const close = async () => {
         try {
@@ -180,10 +180,10 @@ async function waitFoundryReady(page) {
         const f = r._ensureAssetFoundry();
         if (!f) return out;
         const t0 = performance.now();
-        await window.__weltDa(() => !(!f.ready));
+        await __weltDa(() => !(!f.ready));
         out.ready = true;
         out.readyMs = Math.round(performance.now() - t0);
-        await window.__weltDa(() => f.recipeCount > 0);
+        await __weltDa(() => f.recipeCount > 0);
         out.recipeCount = f.recipeCount || 0;
         return out;
     });
@@ -194,7 +194,7 @@ async function waitFoundryReady(page) {
 async function waitLibraryWarm(page) {
     return page.evaluate(async () => {
         const f = r._foundry;
-        await window.__weltDa(() => f && f.cache && f.cache.size > 0 && f._vorrat === false);
+        await __weltDa(() => f && f.cache && f.cache.size > 0 && f._vorrat === false);
         const keys = f && f.cache ? Array.from(f.cache.keys()) : [];
         return { warm: !!(f && f.cache && f.cache.size > 0 && f._vorrat === false), keys };
     });

@@ -555,7 +555,7 @@ function selbsttest() {
         },
     };
     gut.ueberall = [1, 2, 3, 4, 5].map((i) => ({ ort: [i * 900, i * 700], ...gut.mutation }));
-    const kopie = () => JSON.parse(JSON.stringify(gut));
+    const kopie = () => structuredClone(gut);
     const taeter = [
         ["F1 BERGAUF", (b) => Object.assign(b.fluss, { steigend: 551, anteilSteigend: 0.142, anstiegM: 133.2 })],
         ["F2 BUCKEL", (b) => Object.assign(b.fluss, { buckelP90M: 1.2, querP90M: 9.65 })],

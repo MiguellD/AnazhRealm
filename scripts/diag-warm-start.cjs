@@ -58,17 +58,17 @@ async function runJob(page, fn, arg) {
 // als Strings; bis hierher stand es als kopierte Präambel in jedem Job).
 async function vokabular() {
     /* eslint-disable no-undef */
-    const r = await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
+    const r = await __weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
     const st = r.state;
     const bereit = () => st.voxelWorkerReady && st.voxelWorkerWorldgenSynced;
-    await window.__weltDa(bereit);
+    await __weltDa(bereit);
     const chunk = (cx, cz) => (st.voxelChunks && st.voxelChunks.get(cx + "," + cz)) || null;
     const posHashOf = (cx, cz) => {
         const e = chunk(cx, cz);
-        return e && e.mesh ? window.__abdruck(e.mesh.geometry) : null;
+        return e && e.mesh ? __abdruck(e.mesh.geometry) : null;
     };
     const pumpChunk = async (cx, cz, ms) => {
-        for (const weiter = window.__deckel(`der Chunk ${cx},${cz}`, ms / 25); weiter(); ) {
+        for (const weiter = __deckel(`der Chunk ${cx},${cz}`, ms / 25); weiter(); ) {
             const e = chunk(cx, cz);
             if (e && (e.mesh || e.empty)) return e;
             r._ensureVoxelChunkAt(cx, cz, 0);
@@ -186,7 +186,7 @@ async function jobWarm(kaltIn, V) {
     if (!added) return Object.assign(out, { err: "Voxel-Edit wurde nicht angenommen (_addVoxelEdit false)" });
     const hitABefore = byKey.get(keyA) | 0;
     let rebuilt = false;
-    for (const weiter = window.__deckel("der Neubau des Chunks", 2400); !rebuilt && weiter(); ) {
+    for (const weiter = __deckel("der Neubau des Chunks", 2400); !rebuilt && weiter(); ) {
         rebuilt = r._rebuildVoxelChunk(A[0], A[1], 0);
         if (!rebuilt) await sleep(25);
     }
@@ -227,12 +227,12 @@ async function jobWarm(kaltIn, V) {
 
 async function jobSelbsttest(kaltIn) {
     /* eslint-disable no-undef */
-    const r = await window.__weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
+    const r = await __weltDa((r) => r.state && r.state.worldMeta && r.state.worldMeta.seed);
     // die Platte lebt im Faden (Karte hydro-faden): sein erster Auftrag mit Schlüssel (der unberührte Probe-Chunk B) öffnet sie,
     // rechnet den EHRLICHEN Stempel, sieht "kaputt" → clear
-    await window.__weltDa(() => r.state.voxelWorkerWorldgenSynced);
+    await __weltDa(() => r.state.voxelWorkerWorldgenSynced);
     const [bx, bz] = kaltIn.probes[1];
-    for (const weiter = window.__deckel("der Chunk B", 2400); weiter() && !r._ensureVoxelChunkAt(bx, bz, 0); )
+    for (const weiter = __deckel("der Chunk B", 2400); weiter() && !r._ensureVoxelChunkAt(bx, bz, 0); )
         await sleep(25);
     const keyA = kaltIn.seed + "|" + kaltIn.probes[0][0] + "," + kaltIn.probes[0][1] + "|0";
     return await new Promise((resolve) => {

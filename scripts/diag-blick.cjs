@@ -70,7 +70,7 @@ hauptLauf(async () => {
                 }
                 // das PNG (`__png`). GEMESSEN: der WebGPU-Readback liefert die Zeilen bereits TOP-DOWN — kein Y-Flip
                 // (der WebGL-Erfahrungswert „bottom-up" gilt hier nicht).
-                return { ok: true, farben: set.size, nonzero, png: window.__png(u8, w, h) };
+                return { ok: true, farben: set.size, nonzero, png: __png(u8, w, h) };
             };
 
             // Blick einrichten: Augenhöhe in den Wald ODER auf den Boden.
@@ -91,9 +91,7 @@ hauptLauf(async () => {
             } catch {}
             // Ein paar echte Loop-Ticks, damit Uniforms/Streaming den Blick tragen.
             for (let i = 0; i < 20; i++) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {}
+                __handTakt();
                 await sleep(30);
             }
             res.schuesse.haupt = await schuss("haupt");

@@ -289,7 +289,7 @@ function selbsttest() {
     const t = (name, ok) => tests.push({ name, ok: !!ok });
     // Die Selbsttests urteilen gegen eine UNGEMESSENE Ratsche desselben Schemas mit fester Toleranz — die gemessenen
     // Werte der echten (die Hülle der Serie) dürfen keinen Selbsttest färben.
-    const rt = JSON.parse(JSON.stringify(ratsche));
+    const rt = structuredClone(ratsche);
     rt.toleranzPct = 10;
     rt.toleranzAbs = { befehle: 2, dreiecke: 1000, vramMB: 1 };
     // gemessen (sonst nennte jedes Urteil die Ratsche „ungemessen", K26), jedes Feld ungemessen (null)
@@ -332,7 +332,7 @@ function selbsttest() {
     );
 
     // S3 — eine Klasse über der Ratsche: rot; auf ihr und in der Toleranz (max(+10 %, +2)) nicht.
-    const r3 = JSON.parse(JSON.stringify(rt));
+    const r3 = structuredClone(rt);
     r3.klassen.boden.haupt.befehle = 5;
     const boden = (c) => ({
         klasse: "bodenSatz",
@@ -349,11 +349,11 @@ function selbsttest() {
     );
 
     // S4 — eine Haushalt-Zeile über dem Band, eine Sammelzeile, ein unverankertes Muster.
-    const h4 = JSON.parse(JSON.stringify(haushalt));
+    const h4 = structuredClone(haushalt);
     h4.klassen.find((k) => k.id === "reserve").befehle += 1;
-    const h4b = JSON.parse(JSON.stringify(haushalt));
+    const h4b = structuredClone(haushalt);
     h4b.klassen.find((k) => k.id === "reserve").rest = true;
-    const h4c = JSON.parse(JSON.stringify(haushalt));
+    const h4c = structuredClone(haushalt);
     h4c.klassen.find((k) => k.id === "bau").regeln.push({ muster: "^g:(glut|tor)" });
     t(
         "Haushalt +1 Befehl über dem Band, `rest`, Muster ohne Anker → rot; der echte Haushalt nicht",
@@ -430,7 +430,7 @@ function selbsttest() {
 
     // S10 — die Ratsche zieht nur nach unten: ein ungemessenes Feld wird gesetzt, ein höheres gesenkt, ein
     // niedrigeres nie gehoben; der Nachzug besteht danach das eigene Schema (eingeschwungen).
-    const r10 = JSON.parse(JSON.stringify(rt));
+    const r10 = structuredClone(rt);
     r10.klassen.boden.haupt.befehle = 10;
     r10.klassen.bau.haupt.befehle = 3;
     const u10 = urteil(
@@ -545,7 +545,7 @@ function selbsttest() {
 
     // S14 — eine FREIE Klasse (Weltzustand: Tiere) trägt keine Ratsche: über jeder Zahl nie rot, die Summen-Ratsche
     // zählt sie nicht, der Nachzug setzt sie nicht; ein Grund ohne Gate und ein Wert an der freien Klasse sind rot.
-    const r14 = JSON.parse(JSON.stringify(rt));
+    const r14 = structuredClone(rt);
     r14.frei = { tier: "Weltzustand — Kosten je Tier hält gate:kreatur-kosten" };
     r14.gesamt.befehle = 4;
     const z14 = [
@@ -554,9 +554,9 @@ function selbsttest() {
     ];
     const u14 = urteil(z14, r14);
     const n14 = BAND.ratscheNachziehen(r14, u14, { datum: "selbsttest", eingeschwungen: true });
-    const r14b = JSON.parse(JSON.stringify(r14));
+    const r14b = structuredClone(r14);
     r14b.frei.tier = "Weltzustand";
-    const r14c = JSON.parse(JSON.stringify(r14));
+    const r14c = structuredClone(r14);
     r14c.klassen.tier.haupt.befehle = 11;
     t(
         "freie Klasse tier: 80 Befehle nicht rot, Summe gebunden 4, Nachzug lässt sie null; Grund ohne Gate und Wert rot",
@@ -655,7 +655,7 @@ function selbsttest() {
             !u17.rot.some((x) => /r184-ausgabe/.test(x.text))
     );
     // S18 — ein gefallener VRAM-Erzeuger (der Abgriff sieht ihn nicht mehr) zieht seine Ratsche auf 0, ein lebender sinkt.
-    const r18 = JSON.parse(JSON.stringify(rt));
+    const r18 = structuredClone(rt);
     r18.vramMB = { "tex:depthBuffer": 7.9, "buf:szene": 50 };
     const n18 = BAND.ratscheNachziehen(r18, u17, { datum: "selbsttest", eingeschwungen: true });
     // S-K50 — DIE RENDER-ZIEL-KLASSE gegen ihren Haushalt: der Kopf 45f1eeae (Genesis third, 1080p, die Ziele der zeitlichen
@@ -687,7 +687,7 @@ function selbsttest() {
         { k: "tex:szene:tiefenabbild r32float 720x810x1", mb: 2.2, n: 1 },
         ...rzSchatten,
     ]);
-    const rzOhne = JSON.parse(JSON.stringify(haushalt));
+    const rzOhne = structuredClone(haushalt);
     delete rzOhne.renderZiele;
     const rzRot = rzVorher.rot.find((x) => x.art === "renderziele");
     t(
@@ -702,7 +702,7 @@ function selbsttest() {
             BAND.haushaltPruefen(rzOhne).fehler.some((f) => /renderZiele braucht/.test(f))
     );
     // … und `nur: "vram"` (ein Schnitt, der nur den Speicher bewegt) lässt die Klassen-Zeilen und ihre Serie stehen.
-    const r18b = JSON.parse(JSON.stringify(r18));
+    const r18b = structuredClone(r18);
     r18b.klassen.boden.haupt.befehle = 10;
     r18b.gemessen = { datum: "klassen-serie", eingeschwungen: true };
     const u18b = urteil(
@@ -727,7 +727,7 @@ function selbsttest() {
     );
     // S19 — die Geometrie der Tiere ist der freie Erzeuger `buf:tier` (Weltzustand): keine Ratsche, nicht in der gebundenen
     // Summe, der Nachzug setzt ihn nie; die übrige Szene bleibt `buf:szene`.
-    const r19 = JSON.parse(JSON.stringify(rt));
+    const r19 = structuredClone(rt);
     r19.frei = { tier: "Weltzustand — Kosten je Tier hält gate:kreatur-kosten" };
     r19.vramMB = { "buf:tier": 1, "buf:szene": 30 };
     r19.gesamt.vramMB = 31;
@@ -754,7 +754,7 @@ function selbsttest() {
     // Zug-Wahl, mit einer Ratsche, die schon ein anderer Ort trägt, und eine Soll-Zeile ohne Quelle werden rot; der echte
     // Haushalt nicht. Ohne Wahl gilt die Mess-Wiese, ein unbekannter Ort bricht laut.
     const h20 = (f) => {
-        const h = JSON.parse(JSON.stringify(haushalt));
+        const h = structuredClone(haushalt);
         f(h.messorte);
         return BAND.messortePruefen(h);
     };
@@ -779,7 +779,7 @@ function selbsttest() {
     // S21 — die Ratsche gehört dem Ort: dieselbe Klasse über der Genesis-Ratsche ist dort rot, gegen die (ungemessene)
     // Ratsche der Wiese nicht; die Gier des Orts blickt zum Blickpunkt (ein Blick nach −z = π, Genesis −x = −π/2).
     const gen = BAND.ladeSpec("genesis", { geraet: "radeon", sicht: "ego" });
-    const r21 = JSON.parse(JSON.stringify(rt));
+    const r21 = structuredClone(rt);
     r21.klassen.bau.haupt.befehle = 20;
     const bauGenesis = [{ klasse: "f:kathedrale:L0", stufe: 0, art: "gate", je: { haupt: 30 }, jeTris: { haupt: 9000 } }];
     const u21 = BAND.bandUrteil({ zensus: { klassen: bauGenesis }, haushalt, ratsche: r21, ort: gen.ort });
@@ -812,7 +812,7 @@ function selbsttest() {
     // S20b — DIE WIESE: das Wiesen-Gesetz fehlt der Mess-Wiese, eine Schwelle fehlt, der Kranz beginnt im Ring → rot (Schema);
     // am Gesetz ist der gefallene Messort ein Hang (Hang, Horizont, Blick rot), der Ort des Haushalts eine Wiese.
     const w20 = (f) => {
-        const h = JSON.parse(JSON.stringify(haushalt));
+        const h = structuredClone(haushalt);
         f(h.messorte.find((o) => o.id === "wiese"));
         return h;
     };
@@ -833,7 +833,7 @@ function selbsttest() {
             !wieseAmGesetz(haushalt).befunde.length
     );
     // S23 — ein Anker ohne Methoden-Namen bricht das Schema; der echte Anker ist einer.
-    const h23c = JSON.parse(JSON.stringify(haushalt));
+    const h23c = structuredClone(haushalt);
     h23c.messorte[1].anker = "36 0";
     t(
         "Messorte: ein Anker ohne Methoden-Namen bricht das Schema, der echte ist _genesisMitte",
@@ -888,7 +888,7 @@ function selbsttest() {
 
     // S26 — DER SATZ-INHALT (S3 haus, 1b): ein Satz zeichnet je Pass EINEN Befehl — die Ratschen-Zeile nennt, wer darin
     // liegt („bauSatz k0: f:feuerstelle:L1 29 Zellen = 12 760"), die Tabelle druckt den Inhalt je Pass.
-    const r26 = JSON.parse(JSON.stringify(rt));
+    const r26 = structuredClone(rt);
     r26.klassen.bau.k0 = { befehle: 1, dreiecke: 4224 };
     const satz26 = {
         klasse: "bauSatz",
@@ -957,7 +957,7 @@ function selbsttest() {
     const s27 = BAND.ortSoll(dorf, { klassen: [satz27] });
     const haus27 = s27.find((x) => x.name === "Haus-Wurf" && /k0/.test(x.klasse));
     const h27 = (f) => {
-        const h = JSON.parse(JSON.stringify(haushalt));
+        const h = structuredClone(haushalt);
         f(h.messorte.find((o) => o.id === "dorf").soll[0]);
         return BAND.messortePruefen(h);
     };
@@ -1039,7 +1039,7 @@ function selbsttest() {
         zs.ort,
         nwT
     );
-    const rtLeer = JSON.parse(JSON.stringify(rtW));
+    const rtLeer = structuredClone(rtW);
     rtLeer.klassen[nwB.klasse].haupt.dreiecke = null;
     const nwOhne = gestaltWand(haushalt, rtLeer, nwB, zs.ort, nwT);
     t(
@@ -1099,11 +1099,11 @@ function selbsttest() {
         }).ratsche;
         const fr = (r, v, m) =>
             BAND.ratscheFrische({ haushalt, version: v || "18.543.0", ratschen: [slot(r)], messungen: m || [] });
-        const alt2 = JSON.parse(JSON.stringify(frisch));
+        const alt2 = structuredClone(frisch);
         alt2.gemessen.version = "18.541.0";
-        const fremd = JSON.parse(JSON.stringify(frisch));
+        const fremd = structuredClone(frisch);
         fremd.gemessen.geraet = "radeon";
-        const ungemessen = JSON.parse(JSON.stringify(frisch));
+        const ungemessen = structuredClone(frisch);
         ungemessen.gemessen = null;
         t(
             "H2b: die Ratsche der Mess-Wiese, wie sie 1110-12 richtete, ist ROT — ohne Version, fremde Messung, Gesamt-Zeile " +
@@ -1124,7 +1124,7 @@ function selbsttest() {
         );
         // Der Re-Mint hebt, der Nachzug nie; das Band-Urteil ohne gemessene Ratsche nennt sie `ungemessen`, eine zu weite
         // Ratsche `weit` — beide sperren den Nachzug nicht (die Linse bleibt sauber), der Leser der Messfolge liest sie.
-        const r31 = JSON.parse(JSON.stringify(rt));
+        const r31 = structuredClone(rt);
         r31.gemessen = { datum: "selbsttest", eingeschwungen: true };
         r31.klassen.boden.haupt = { befehle: 7, dreiecke: 70000 };
         const boden9 = [{ klasse: "bodenSatz", stufe: 0, art: null, je: { haupt: 10 }, jeTris: { haupt: 7000 } }];
@@ -1166,9 +1166,9 @@ function selbsttest() {
         );
         // Gerät und Sicht: der Adapter-Text der Radeon und der GTX, ein Software-Raster ohne Schlüssel; der Kamera-Modus des
         // Stamms; der alte Haushalt (EIN Gerät) und eine fremde Kamera brechen das Schema.
-        const hAlt = JSON.parse(JSON.stringify(haushalt));
+        const hAlt = structuredClone(haushalt);
         hAlt.geraet = "Radeon 890M";
-        const hKam = JSON.parse(JSON.stringify(haushalt));
+        const hKam = structuredClone(haushalt);
         hKam.sichten.third.kamera = "drohne";
         t(
             "Gerät × Sicht: amd rdna-3 → radeon, nvidia pascal → gtx, SwiftShader → keins; first → ego, third → third; " +

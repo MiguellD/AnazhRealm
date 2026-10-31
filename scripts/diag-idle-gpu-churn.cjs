@@ -90,14 +90,12 @@ hauptLauf(async () => {
                 if (r?.state?.rendererReady && typeof r._gameLoopTick === "function") {
                     r.state.autoSeason = false; // die Saison hält (Bühne)
                     window.__wetterHalten(); // das Wetter hält (die EINE Wetter-Wache)
-                    try { r._gameLoopTick(performance.now()); } catch {}
+                    __handTakt();
                     // die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`) — je Scheibe höchstens 120 ruhige Takte
                     S.sz = r.state.voxelChunks ? r.state.voxelChunks.size : 0;
                     try {
-                        await window.__weltStehtNach(() => {
-                            try {
-                                r._gameLoopTick(performance.now());
-                            } catch {}
+                        await __weltStehtNach(() => {
+                            __handTakt();
                         }, 120);
                         S.done = true;
                     } catch (e) {

@@ -27,7 +27,7 @@ async function checkBandV18136Audit({ page, check }) {
         if (Number.isFinite(savedRange)) r.setShadowRange(savedRange);
         if (Number.isFinite(savedApplied)) r._applyEffectiveShadowRange(savedApplied);
         // (2) die Kachel-Erosion ist gefallen: der Kachel-Eingang baut nur noch die Hydrosphäre.
-        out.tileLean = window.__fehlt(r._ensureHydroTilesAround, /eTile|_computeErosion|erosionTiles/);
+        out.tileLean = __fehlt(r._ensureHydroTilesAround, /eTile|_computeErosion|erosionTiles/);
         return out;
     });
     if (!res) {

@@ -5,9 +5,7 @@
 
 const { safeEvaluate, erreichbar, ohneWurf } = require("../playtest.cjs");
 
-async function checkBandWaves1to3({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWaves1to3({ page, check }) {
     // ### Welt-Journal ###
     const journalResults = await safeEvaluate(page, () => {
         const out = {};
@@ -446,9 +444,7 @@ async function checkBandOmegaGrammatik({ page, check }) {
     check("⟡ Ω-B2 PHYSIK: die Balance ist GERECHNET (Ω-Φ4), typ-abhängig", res.balanceTyped === true);
 }
 
-async function checkBandWave10b({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWave10b({ page, check }) {
     // ### Compound-Tag-Affordances (Erkennung + UI) ###
     const wave10bResults = await safeEvaluate(page, () => {
         const AR = AnazhRealm;

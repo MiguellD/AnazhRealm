@@ -81,7 +81,7 @@ async function bereit(page) {
     return page.evaluate(async () => {
         const t0 = performance.now();
         {
-            await window.__weltDa((w) => w.state && w.state.worldMeta);
+            await __weltDa((w) => w.state && w.state.worldMeta);
             {
                 const snap = JSON.stringify(r.buildStateSnapshot());
                 const chat = document.getElementById("chat-output");

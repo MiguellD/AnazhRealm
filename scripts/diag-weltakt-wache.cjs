@@ -273,7 +273,7 @@ async function probe(GESCHICKT) {
     // (K) jeder Op als KI an seiner Form: je Name der Form ein Wert aus der Welt; ein Id-Name probt jede Form, die die Welt
     // vergibt (der Bau: Zahl + String, die Kreatur: Platz + Id); der Ort liegt außerhalb der Genesis-Lichtung (keine Krone)
     const K = AnazhRealm;
-    await window.__weltDa(() => st.blueprints.haus_griechisch); // das Studio-Buch (spawn_temple liest es)
+    await __weltDa(() => st.blueprints.haus_griechisch); // das Studio-Buch (spawn_temple liest es)
     const rolle = (x) => Object.keys(st.blueprints).find((k) => st.blueprints[k].role === x);
     const [sag, ich, teil, opClass] = [["say", "Probe"], st.playerMesh.position, { size: [1, 1, 1], material: "stein" }, [...K.TOOL_OP_CLASSES][0]];
     // die Zahl-Id trägt jeder Bau aus Programm, Feld und Worldgen, die String-Id das Werk des Spielers (`_newArchId`)
@@ -344,7 +344,7 @@ async function tatProbe(m) {
     const stelle = (n) => {
         for (let i = 0; i < n; i++) pm.setX(m.x).setZ(m.z), r._gameLoopTick(performance.now()), pm.setX(m.x).setZ(m.z);
     };
-    await window.__weltStehtNach(() => stelle(1));
+    await __weltStehtNach(() => stelle(1));
     window.__buehne();
     st.weatherEffectTime = 0;
     r._setWeather("sunny", "regler");
@@ -483,7 +483,7 @@ hauptLauf(async () => {
     const { browser, page } = await nullSeite({ frist: 180000 });
     await server.zeige(page, 60000);
     await page.evaluate(async () => {
-        await window.__weltDa((r) => r.state && r.state.player && r.nexus);
+        await __weltDa((r) => r.state && r.state.player && r.nexus);
     });
     await page.evaluate(AUSGABE_INSTALL);
     const S = await page.evaluate(probe, GESCHICKT);
@@ -492,7 +492,7 @@ hauptLauf(async () => {
     const tatSeite = await browser.newPage();
     await nullRenderer(tatSeite);
     await server.zeige(tatSeite, 60000);
-    await tatSeite.evaluate(() => window.__weltDa((r) => r.state && r.state.rendererReady && r.state.blueprints && r.nexus));
+    await tatSeite.evaluate(() => __weltDa((r) => r.state && r.state.rendererReady && r.state.blueprints && r.nexus));
     await tatSeite.evaluate(AUSGABE_INSTALL);
     const T = await tatSeite.evaluate(tatProbe, MESS);
     await browser.close();

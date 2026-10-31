@@ -95,7 +95,7 @@ hauptLauf(async () => {
     await server.zeige(page, 60000);
     const res = await page.evaluate(
         async (k) => {
-            await window.__weltDa((r) => r.state);
+            await __weltDa((r) => r.state);
             if (!r || !st.renderer || st.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
             // der Loop ruht die ganze Probe
             st.renderer.setAnimationLoop(null);
@@ -111,9 +111,9 @@ hauptLauf(async () => {
             rend.render = function () {};
             if (typeof rend.renderAsync === "function") rend.renderAsync = () => Promise.resolve();
             st.postProcessingFailed = true;
-            await window.__weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
+            await __weltDa(() => !(r._foundry && !(r._foundry.ready && r._foundry.recipes)));
             // der Karten-Takt bäckt erst mit dem Renderer (`_tickKarteWelt`: rendererReady) — kam das Buch vor `renderer.init()`, war S vakuös
-            await window.__weltDa(() => !(!st.rendererReady));
+            await __weltDa(() => !(!st.rendererReady));
             // nach init(): fiel der r184-Renderer ohne Adapter auf WebGL2, steht das hier (kein stilles Grün)
             const backend = r._gpuComputeFaehig() ? "WebGPU" : "WebGL2-Rückfall (der Feld-Pass zeichnet nicht)";
             // S am Ruf; der Selbsttest fährt einen Takt ohne Bäcker und eine Schlange in Ankunfts-Folge

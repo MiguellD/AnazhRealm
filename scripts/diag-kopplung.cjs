@@ -323,8 +323,8 @@ hauptLauf(async () => {
                 if (window.THREE && THREE.TSL && st.windUniforms) {
                     r._ensureWindCoupling(THREE.TSL);
                     const wu = st.windUniforms;
-                    if (wu.uBend && wu.uWindDir && st.playerMesh) {
-                        const pp = st.playerMesh.position;
+                    if (wu.uBend && wu.uWindDir && pm) {
+                        const pp = pm.position;
                         const t = 1234.5;
                         wu.uBend[0].value.set(pp.x + 99, 0, 0, 0);
                         wu.uWindDir.value.set(0, 0);

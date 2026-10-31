@@ -157,9 +157,7 @@ async function checkBandWellePerfDBudget({ page, check }) {
     );
 }
 
-async function checkBandRing6Workshop({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandRing6Workshop({ page, check }) {
     // ### Ring 6 — architectureTemplates V1 ###
     // Bau-Primitive als DSL-Ops mit Save-Roundtrip + FIFO-Cap + Atomic-Pool-Eintrag (niedrige
     // Gewichtung); Wasserfälle haben einen Animations-Hook im Tick.
@@ -281,7 +279,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
 
         // (i) Save-Roundtrip
         r.saveState();
-        const raw = await window.__stand();
+        const raw = await __stand();
         let parsed = null;
         try {
             parsed = JSON.parse(raw);
@@ -608,7 +606,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
 
         // Save-Roundtrip: User-Bauplan überlebt
         r.saveState();
-        const raw = await window.__stand();
+        const raw = await __stand();
         let parsed = null;
         try {
             parsed = JSON.parse(raw);
@@ -745,7 +743,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         // Save-Roundtrip
         r.setHotbarSlot(7, "damm");
         r.saveState();
-        const raw = await window.__stand();
+        const raw = await __stand();
         let parsed = null;
         try {
             parsed = JSON.parse(raw);
@@ -894,7 +892,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
             size: { x: 3, y: 3, z: 3 },
         });
         r.saveState();
-        const raw = await window.__stand();
+        const raw = await __stand();
         const parsed = JSON.parse(raw);
         const savedBp = parsed.blueprints.find((bp) => bp.name === "ed_test");
         out.saveContainsCustom = !!savedBp && savedBp.parts.length === 1 && savedBp.parts[0].shape === "sphere";
@@ -961,7 +959,7 @@ async function checkBandRing6Workshop({ page, check, errors, finalState }) {
         if (st.blueprints._t_r6v2_haus) delete st.blueprints._t_r6v2_haus;
         st.blueprints._t_r6v2_haus = {
             name: "_t_r6v2_haus",
-            parts: JSON.parse(JSON.stringify(KSr6v2.haus_basis.parts)),
+            parts: structuredClone(KSr6v2.haus_basis.parts),
         };
         // Setze Spieler auf (0,0,0), spawne weit + nah.
         // BÜHNE: nah und fern zum gestellten Haus (Cull-Mechanik)

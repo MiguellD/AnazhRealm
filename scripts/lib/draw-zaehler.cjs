@@ -201,7 +201,7 @@ function drawZensus(opts) {
         const q = rend.backend && rend.backend.device ? rend.backend.device.queue : null;
         let frameMs = null;
         try {
-            window.__bundlesNeu();
+            __bundlesNeu();
             r._schattenAlleNeu();
             if (q) await q.onSubmittedWorkDone();
             const t0 = performance.now();
@@ -652,7 +652,7 @@ async function gangLauf(page, pufferStand, b) {
                     await new Promise((f) => requestAnimationFrame(f));
                     if (r._portalOverlay) return (r.exitPortal(), (st.yaw += Math.PI), n - i);
                     if (!dreh || i % 300 < 299) continue;
-                    const p = st.playerMesh.position;
+                    const p = pm.position;
                     if (vor && Math.hypot(p.x - vor[0], p.z - vor[1]) < 2) st.yaw += 1.7;
                     vor = [p.x, p.z];
                 }
@@ -666,7 +666,7 @@ async function gangLauf(page, pufferStand, b) {
             const raf = () => new Promise((f) => requestAnimationFrame(f));
             // eingeschwungen: 120 Bilder in Folge, in denen die Welt nichts offen hat (`_weltOffen`; die Tiere regen sich weiter)
             for (
-                let k = 0, weiter = window.__deckel("die Ruhe der Zählung", Infinity);
+                let k = 0, weiter = __deckel("die Ruhe der Zählung", Infinity);
                 k < 120 && weiter();
                 k = Object.values(r._weltOffen()).some(Boolean) ? 0 : k + 1
             )
@@ -705,7 +705,7 @@ async function gangLauf(page, pufferStand, b) {
                 { x: p.x + 2, y: r.getTerrainHeightAt(p.x + 2, p.z) + 0.5, z: p.z },
                 { silent: true, precise: true }
             ));
-            await window.__gebautNach(e, { bau: () => {}, takt: () => new Promise((f) => requestAnimationFrame(f)) });
+            await __gebautNach(e, { bau: () => {}, takt: () => new Promise((f) => requestAnimationFrame(f)) });
         });
         await tippe("e");
         await bilder(60);

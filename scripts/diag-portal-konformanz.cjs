@@ -747,7 +747,7 @@ async function lauf(welten, taeter) {
             { timeout: 120000, polling: 200 }
         );
         // Der Vibe-Pass steht (ed25519, asynchron im Boot); dann das Mitgebrachte in den Zustand der Heimat.
-        await page.evaluate(() => window.__weltDa((r) => !!r.state.vibePass?.ready));
+        await page.evaluate(() => __weltDa((r) => !!r.state.vibePass?.ready));
         await page.evaluate((M) => {
             st.materials[M.material] = { builtIn: false, color: M.farbe, label: M.material, tags: {} };
             st.tools.konformanz_feile = { builtIn: false, label: M.werkzeug, opName: "konformanz_op", opClass: "subtractive" };

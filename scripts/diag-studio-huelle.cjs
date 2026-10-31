@@ -78,7 +78,7 @@ const folgeText = (f) => `Schieber ${f[0]} → ${f[1]}` + VERLAUF.map((n, i) => 
 // die Folge ihrer Sitzung (H3) und die gezeigte L0 eines Ofen-Studios gegen seine Welt-Zeile (H4, die Kosten-Leiste „N / Deckel △").
 const GRIFFE = 20; // auf der Karte; der Software-Adapter (CI) prüft die Mechanik an 4 Griffen, seine Zeit urteilt nie
 const SCHRANKE = { true: 200, false: 1000 }; // ms je Klasse: der Gesetz-Wert (`uniform: true`) · der Neubau
-const p95 = (a) => a.sort((x, y) => x - y)[Math.ceil(0.95 * a.length) - 1];
+const p95 = (a) => a.sort(aufsteigend)[Math.ceil(0.95 * a.length) - 1];
 // H7 je Studio aus `griffe` [{ms, u}] (ms null = kein Bild mit neuem Bau-Hash) und `bleibt` [gleich, n]
 function sitzungZahl({ griffe = [], bleibt = [0, 0] }) {
     const p = (u) => p95(griffe.filter((g) => g.u === u && g.ms != null).map((g) => Math.round(g.ms)));

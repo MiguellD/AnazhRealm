@@ -895,7 +895,7 @@ async function probe(arg) {
                 const neu = () => (r._disposeScatterRegion(key), r._scatterRegion(rx, rz, pm));
                 // DIE REGION STEHT VOR DER PROBE: jeder echte Wurf (Asset, Karte, Höhe) ist geliefert — sonst hielt ein echtes Asset im
                 // Blick den zweiten Bau, und die Linse nannte die Zusage außer Blick (main 90878cc6 headless 2 von 3: „wartet auf ihr Asset")
-                for (const weiter = (neu(), window.__deckel("die Streu-Region vor der Probe", 300)); r._streuRegionWartet(key) && weiter(); ) await tick(1, 30); // prettier-ignore
+                for (const weiter = (neu(), __deckel("die Streu-Region vor der Probe", 300)); r._streuRegionWartet(key) && weiter(); ) await tick(1, 30); // prettier-ignore
                 const stumm = "_ladeTakt _tickVoxelChunkStreaming _tickScatterStreaming _tickPendingGrass _tickScatterRegrow _tickNahWiese _tickNahStreu".split(" ");
                 r._scatterSichtHoehe = function (layer, ...a) {
                     const [v, E] = [r._imErstenBlick(a[4].x, a[4].z, 12), r._ersterBlick()];
@@ -905,7 +905,7 @@ async function probe(arg) {
                 try {
                     let g = ((st._weltbildDa = 0), neu());
                     if (!(b.n[0] && b.n[1])) {
-                        [st.yaw, b.n] = [w.sort((p, q) => p - q)[w.length >> 1] + r._ersterBlick().halb, [0, 0]];
+                        [st.yaw, b.n] = [w.sort(aufsteigend)[w.length >> 1] + r._ersterBlick().halb, [0, 0]];
                         g = neu();
                     }
                     [b.vor1] = [r._streuRegionWartet(key), ok[0](), await sleep(0)];
@@ -1160,7 +1160,7 @@ async function probe(arg) {
                 for (let i = 0; i < 10; i++) r._loopCamera((T += 0.1));
                 return arm();
             };
-            const med = (a) => (a.length ? +a.slice().sort((x, y) => x - y)[Math.floor(a.length / 2)].toFixed(2) : null);
+            const med = (a) => (a.length ? +a.slice().sort(aufsteigend)[Math.floor(a.length / 2)].toFixed(2) : null);
             // EIN WEG zu Fuß (3rd, Neigung 0) oder im Ritt (die Verfolger-Kamera des GT): `stelle(x, z, gier)` setzt Spieler/Wagen.
             const weg = (name, stelle, schritt, sprungM, bildM) => {
                 const z = { proben: 0, pflanzeHaelt: 0, taeter: [], sprungM };
@@ -1244,7 +1244,7 @@ async function probe(arg) {
             // DER RITT: ein GT, aufgesessen; der Wagen fährt die Linien (die Verfolger-Kamera hinter ihm, Kern-Gesetz kamera)
             const gt = r.spawnArchitecture("fahrzeug_gt", { x: P.x + 30, y: hh(P.x + 30, P.z) + 0.5, z: P.z }, { silent: true, precise: true });
             if (gt) {
-                await window.__gebautNach(gt);
+                await __gebautNach(gt);
                 const mr = r.mountArchitecture(gt);
                 if (mr && mr.ok) {
                     weg(
@@ -1448,9 +1448,7 @@ async function probe(arg) {
                     st.keys.w = true;
                     for (let i = 0; i < 120; i++) {
                         st.yaw = gier;
-                        try {
-                            r._gameLoopTick(performance.now());
-                        } catch {}
+                        __handTakt();
                         await sleep(16);
                     }
                     st.keys.w = false;
@@ -1618,7 +1616,7 @@ async function probe(arg) {
         const vor = new Set(st.architectures);
         const z0 = zeilen().length;
         r.processChatCommand("dorf 7 18");
-        for (const weiter = window.__deckel("die Antwort auf das Dorf", 300); weiter() && !zeilen().slice(z0).some((z) => /steht vor dir|Häuser platziert|kein Haus|Werkstatt der Welt|FOUNDRY/.test(z)); ) await sleep(200);
+        for (const weiter = __deckel("die Antwort auf das Dorf", 300); weiter() && !zeilen().slice(z0).some((z) => /steht vor dir|Häuser platziert|kein Haus|Werkstatt der Welt|FOUNDRY/.test(z)); ) await sleep(200);
         const neu = st.architectures.filter((a) => !vor.has(a) && /^haus_/.test(a.type || ""));
         const fx = Math.sin(best.yaw);
         const fz = Math.cos(best.yaw);
@@ -1656,7 +1654,7 @@ async function probe(arg) {
                 r.dslRun(satz.program, { source: quelle });
                 let n = -1;
                 let ruhig = 0;
-                for (const weiter = window.__deckel("die Häuser des Dorfs", 240); ruhig < 6 && weiter(); ) {
+                for (const weiter = __deckel("die Häuser des Dorfs", 240); ruhig < 6 && weiter(); ) {
                     await sleep(250);
                     const k = st.architectures.filter((a) => !vorM.has(a) && /^haus_/.test(a.type || "")).length;
                     ruhig = k > 0 && k === n ? ruhig + 1 : 0;

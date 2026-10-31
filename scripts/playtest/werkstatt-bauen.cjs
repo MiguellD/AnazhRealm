@@ -585,9 +585,7 @@ async function checkBandV1790Recalibration({ page, check }) {
     );
 }
 
-async function checkBandWelle6Keybindings({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWelle6Keybindings({ page, check }) {
     // ### Maus-Aktionen (abbauen + platzieren) ###
     // LMB abbauen / RMB platzieren über Keybinding. Architektur-Hit → removeArchitecture; kein Hit →
     // Voxel-carve. Stamina-Gate via getGameMode wie applyOpToPart.
@@ -1165,9 +1163,7 @@ async function checkBandWellePerfCArchInstancing({ page, check }) {
     }
 }
 
-async function checkBandWelle6XAudit({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWelle6XAudit({ page, check }) {
     // ### Audit-Fixes ###
     // A1 Sprung feld-nativ (handleJump → playerVel) · A2 confirmBuild blockt instabiles Phantom im pfad ·
     // A3 Umwidmen nimmt emergente Rollen auf + Stat-Panel zeigt Equipped · A4 Avatar-Aura ist gefallen.
