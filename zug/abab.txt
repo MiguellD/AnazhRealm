@@ -55,3 +55,4 @@ abb24c37e5eccc8f6ceff03b33acde9ad28fa18e nicht-langsamer z83-bisekt6
 e9ebd232eef40f22a7f5f5136c981f2334470b33 LANGSAMER z89-abab
 ab0409804200dce203a339fdf3c02a5fb42f1784 nicht-langsamer z93-abab
 8075fc036a9534b7ef772fc42dd4a19502c38aeb LANGSAMER z94-abab
+f1a654f175f05fd66c1b3e08715101bdce10e21f nicht-langsamer z96-abab
