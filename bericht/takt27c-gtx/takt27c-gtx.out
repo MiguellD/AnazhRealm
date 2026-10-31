@@ -1,0 +1,45 @@
+Punkte-Maschine: 15 Station(en) in 13 Läufen auf gtx am 94c079cb · Sitzung 13 Proben in EINER Welt (Deckel Σ 5 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  SITZUNG gtx · die Welt steht nach 6.8 s (Schloss nach 0.02 min) · 13 Proben · Welt :27804
+  SITZUNG der Grund der Welt: 77 Größen in 0 s
+  SITZUNG die Welt vor mensch.K1#1: 19.9 s (583 Takte, 81 Chunks)
+  OFFEN mensch.K1#1 · Deckel 40 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor mensch.K5#1: 5.1 s (im Spiel 40.3 ms, durch die Tür)
+  SITZUNG die Welt vor mensch.K5#1: 13.3 s (587 Takte, 81 Chunks, nach der Tür)
+  OFFEN mensch.K5#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor studios.K2#2: 4.9 s (im Spiel 34 ms, durch die Tür)
+  SITZUNG die Welt vor studios.K2#2: 13 s (583 Takte, 81 Chunks, nach der Tür)
+  OFFEN studios.K2#2 · Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 35 ms garage, Neubau höchstens 159 ms garage, je Studio null Griffe) · Neuladen 2/8 · A/B 2/8) · Täter: @@ PROBE-FEHLER Error: Waiting failed |     at <instance_members_initializer> (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\common\WaitTask.js:24:21) |     at new WaitTask (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\pup · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN studios.K3#2 · Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 GPU 0.0236 ms↔Bank 6.1917 (+1), schmiede L0 GPU 0.0051 ms↔Bank 0.5083, portale (keine Zeile), fachwerk (keine Zeile), koerpers) · Täter: @@ PROBE-FEHLER Error: Waiting failed |     at <instance_members_initializer> (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\common\WaitTask.js:24:21) |     at new WaitTask (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\pup · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor bauen.K1#2: 2.8 s (im Spiel 36 ms, durch die Tür)
+  SITZUNG die Welt vor bauen.K1#2: 13.1 s (584 Takte, 81 Chunks, nach der Tür)
+  OFFEN bauen.K1#2 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 3)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor bauen.K5#2: 4.4 s (im Spiel 34.8 ms, durch die Tür)
+  SITZUNG die Welt vor bauen.K5#2: 13 s (582 Takte, 81 Chunks, nach der Tür)
+  OFFEN bauen.K5#2 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/6 Herkunft × Sicht × Werk tragen ihr Verb über die Taste (je Herkunft × Sicht ein Werk, jedes Werk einmal) — offen: werkstatt · Ego · Haus (nicht gelaufen) · werkstatt · Third · Tor (nicht gelaufen) · ki · Ego · Wagen (nicht gelaufen) · k) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Fall werkstatt · Ego · Haus und die folgenden ausgelassen · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor studios.K4#1: 2.9 s (im Spiel 34.4 ms, durch die Tür)
+  SITZUNG die Welt vor studios.K4#1: 12.9 s (582 Takte, 81 Chunks, nach der Tür)
+  OFFEN studios.K4#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: K4 portale: Differenz — · ROT: bild: {"ms":8752,"fehler":"ABNAHME ROT [Sicht verdeckt 55.5 % (Laub · Rinde · Fels · Böschung näher als 2 m, Bau als 1 m): Laub b) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor siedlung.K1#2: 2.8 s (im Spiel 41.8 ms, durch die Tür)
+  SITZUNG die Welt vor siedlung.K1#2: 13.4 s (583 Takte, 81 Chunks, nach der Tür)
+  OFFEN siedlung.K1#2 · Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 5 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist d) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor siedlung.K4#2: 3.8 s (im Spiel 35.7 ms, durch die Tür)
+  SITZUNG die Welt vor siedlung.K4#2: 13.4 s (582 Takte, 81 Chunks, nach der Tür)
+  OFFEN siedlung.K4#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: }) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor fahrzeug.K2#1: 3.9 s (im Spiel 39.3 ms, durch die Tür)
+  SITZUNG die Welt vor fahrzeug.K2#1: 12.7 s (583 Takte, 81 Chunks, nach der Tür)
+  OFFEN fahrzeug.K2#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor fahrzeug.K2#2: 3.8 s (im Spiel 35.6 ms, durch die Tür)
+  SITZUNG die Welt vor fahrzeug.K2#2: 13 s (582 Takte, 81 Chunks, nach der Tür)
+  OFFEN fahrzeug.K2#2 · Deckel 55 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor ankunft.K2#1: 5.9 s (im Spiel 46.6 ms, durch die Tür)
+  SITZUNG die Welt vor ankunft.K2#1: 12.8 s (582 Takte, 81 Chunks, nach der Tür)
+  OFFEN ankunft.K2#1 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild der Kontrolle (t(Kontrolle) 0 ms, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: @@ 2.5 s · kalt: t(Kontrolle) — · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN ankunft.K3#1 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] nvidia/pascal) · Täter: @@ 2.5 s · kalt: t(Kontrolle) — · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor klang.K4#1: 2.8 s (im Spiel 56.4 ms, durch die Tür)
+  SITZUNG die Welt vor klang.K4#1: 17.1 s (583 Takte, 81 Chunks, nach der Tür)
+  OFFEN klang.K4#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor speicher.K4#2: 3.4 s (im Spiel 37.9 ms, durch die Tür)
+  SITZUNG die Welt vor speicher.K4#2: 14.4 s (583 Takte, 81 Chunks, nach der Tür)
+  OFFEN speicher.K4#2 · Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Fahrt 496.7 s (Soll ≤ 1800 s) · 13 Proben · Grundstellung 12×
+→ meisterkarte-quelle\punkte\messung\94c079cb-gtx.json
