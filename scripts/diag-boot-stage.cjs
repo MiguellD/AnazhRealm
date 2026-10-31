@@ -24,7 +24,8 @@
 // Buch, der Schluss jedes Terms des ersten Weltbilds, Ring, erstes Lade-Bild, Weltbild, Kontrolle — je mit der belegten Zeit des
 // Haupt-Fadens bis dahin), die längsten Aufgaben vor dem Bild mit ihren HALTERN (Funktion · Datei:Zeile · ms) und die
 // Funktionen vor dem Bild (inklusiv · selbst). DIE HALTER-LINSE ist ROT beim Namen jeder Funktion, die vor dem ersten Bild den
-// Haupt-Faden ≥ 50 ms hält (Selbsttest: `werkbank takt --selbsttest`). `--spur datei` legt Spur und Seite ab, `--spur-lesen
+// Haupt-Faden ≥ 50 ms hält, und jeder Pipeline, die der GPU-Prozess davor ≥ 50 ms synchron baut (die Spur trägt gpu.dawn —
+// sein Haupt-Faden zeigt so lange kein Bild; Selbsttest: `werkbank takt --selbsttest`). `--spur datei` legt Spur und Seite ab, `--spur-lesen
 // datei` urteilt sie neu (ohne Welt).
 //   node scripts/diag-boot-stage.cjs --kalt [--echt] [--holz h] [--profil ordner] [--json datei] [--spur datei] [--bild kontrolle.png] [--mutante m]
 //
@@ -229,7 +230,7 @@ async function kaltLauf() {
     const ev = [];
     cdp.on("Tracing.dataCollected", (e) => e.value.forEach((x) => ev.push(x)));
     await cdp.send("Tracing.start", {
-        traceConfig: { includedCategories: ["blink.user_timing", "disabled-by-default-v8.cpu_profiler"] },
+        traceConfig: { includedCategories: ["blink.user_timing", "disabled-by-default-v8.cpu_profiler", "disabled-by-default-gpu.dawn"] },
     });
     const t0 = Date.now();
     // `--holz <profil>`: das Holz der Seite (`?holz=`), sonst wählt sie selbst (swiftshader → kienspan)
@@ -322,7 +323,7 @@ async function kaltLauf() {
         familie: KALT_PFLANZEN,
     };
     if (OPT("--spur") && spur)
-        fs.writeFileSync(OPT("--spur"), JSON.stringify({ spur: { profil: spur.profil, marken: spur.marken }, seite }));
+        fs.writeFileSync(OPT("--spur"), JSON.stringify({ spur, seite }));
     out.halter = HL.ankunftsHalter(spur, seite);
     [out.kosten, out.vorBild] = [out.halter.kosten, out.halter.vorBild];
     delete out.marken;

@@ -880,6 +880,13 @@ function ankunftsHalter(spur, seite, opts) {
         (h) =>
             `${h.name}${h.ort ? ` (${h.ort})` : ""} hält den Haupt-Faden vor dem ersten Bild ${h.maxMs} ms (bei ${(h.t / 1000).toFixed(1)} s; ${h.n}× ≥ ${S} ms, Σ ${h.summeMs} ms)`
     );
+    // DER GPU-PROZESS (die Spur trägt gpu.dawn): ein SYNCHRONER Pipeline-Bau hält seinen Haupt-Faden — so lange kommt kein Bild
+    // und kein Takt der Seite (Radeon kalt 31.10.: die Atmosphäre 2,6 s, der Haupt-Faden der Seite stand vor dem Bild 2,2–2,7 s
+    // leer, und keine Halter-Zeile sah es) — vorn, ROT beim Namen
+    let g = 0;
+    for (const e of spur.gpu || [])
+        if (/^DeviceBase::APICreate\w+Pipeline$/.test(e.name) && e.ts < bisUs && e.dur >= S * 1e3)
+            out.befunde.splice(g++, 0, `GPU-Prozess: ${e.args.label} synchron ${Math.round(e.dur / 1e3)} ms`);
     return out;
 }
 // Die Tafel der Halter: die längsten Aufgaben mit ihren Haltern, die Funktions-Summen vor dem Bild.
@@ -1137,7 +1144,14 @@ function ankunftsSelbsttest() {
     last(3700, 4000, 5);
     const profil = { nodes, startTime: V, endTime: letzte, samples, timeDeltas: deltas };
     const seiteMarken = [100, 600, 1100, 2200, 3300, 3900];
-    const spur = { profil, marken: seiteMarken.map((m) => m * 1000 + V + 30) };
+    // der GPU-Prozess: ein synchroner Bau vor dem Bild ist ROT beim Namen, ein asynchroner und einer nach dem Bild nie
+    const gpu = [1200, 1300, 3100].map((t, i) => ({
+        name: "DeviceBase::APICreateRenderPipeline" + ["", "Async", ""][i],
+        args: { label: "p" + i },
+        ts: t * 1e3 + V + 30,
+        dur: 1e6,
+    }));
+    const spur = { profil, marken: seiteMarken.map((m) => m * 1000 + V + 30), gpu };
     const seite = {
         lang: [
             [1000, 120],
@@ -1175,6 +1189,8 @@ function ankunftsSelbsttest() {
         )
     )
         f.push(`Halter: das Urteil nennt den Täter vor dem Bild nicht (oder einen nach ihm): ${a.befunde.join(" | ")}`);
+    if (a.befunde[0] !== "GPU-Prozess: p0 synchron 1000 ms" || /^GPU/.test(a.befunde[1]))
+        f.push("Halter: der GPU-Bau ohne Namen");
     if (Math.abs((a.kosten.Last || {})[1] - 120) > 3 || Math.abs((a.kosten.Last || {})[3] - 200) > 3)
         f.push(`Halter: die Klasse zählt die Last je Sekunde nicht (${JSON.stringify(a.kosten)})`);
     const bild = (a.meilensteine || [])[0];

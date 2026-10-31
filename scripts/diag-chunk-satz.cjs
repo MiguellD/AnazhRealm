@@ -529,7 +529,7 @@ const { errs, check } = pruefer();
                 // Tür-Flügel) zeichnet nie selbst und trägt ihren Bereich treu im Satz ihres Stoffs.
                 z.bauSatz = { gruppen: 0, imSatz: 0, selbst: [], ohneBereich: [] };
                 const buch = r._foundry?.recipes ? r._foundry.recipes : {};
-                const SATZ = r.constructor.BAU_SATZ || {};
+                const SATZ = AnazhRealm.BAU_SATZ || {};
                 if (s.archInstanceGroups)
                     for (const [k, g] of s.archInstanceGroups) {
                         const m = /^f:([^|]+)\|/.exec(String(k));
@@ -614,7 +614,7 @@ const { errs, check } = pruefer();
                 // (n) DIE BODEN-STUFEN: je gebautem Chunk sein Ring um den Spieler-Chunk, seine Stufe und seine
                 // Dreiecke; je Naht-Band die Brücken (rohe Kante → grobe Fläche), deren beide Enden der Morph ganz trägt
                 // (Gewicht 1) — die Wand liest die Netze, nie die Tabelle
-                const BS = r.constructor.BODEN_STUFEN;
+                const BS = AnazhRealm.BODEN_STUFEN;
                 z.stufen = {
                     tabelle: { vorlauf: BS.vorlauf, halt: BS.halt, stufen: BS.stufen.map((x) => ({ ...x })) },
                     chunks: [],
@@ -834,7 +834,7 @@ const { errs, check } = pruefer();
                         // gepackt: der Chunk trägt sein Float32-Array, der Satz genau dessen Packung (`_satzPacke`)
                         if (src.length !== b.vAnzahl * fa.is || src.buffer === dst.buffer || is !== 4) return false;
                         const soll = new dst.constructor(b.vAnzahl * 4);
-                        r.constructor._satzPacke(
+                        AnazhRealm._satzPacke(
                             fa.form,
                             src,
                             fa.is,
@@ -1138,8 +1138,8 @@ const { errs, check } = pruefer();
             // und BELEGT (der Boden-Satz: die drei vordersten Bereiche treten aus — Löcher —, der Satz wächst ×3, nach
             // der Frist dicht auf Inhalt × luft). Der Selbsttest fährt BELEGT mit der alten Regel (nur ein leerer Satz
             // kehrt zurück): er hält sein Hochwasser.
-            const VD = r.constructor.CHUNK_SATZ_VERDICHTEN;
-            const RT = r.constructor.CHUNK_SATZ_ABSCHNITT.ruheTakte;
+            const VD = AnazhRealm.CHUNK_SATZ_VERDICHTEN;
+            const RT = AnazhRealm.CHUNK_SATZ_ABSCHNITT.ruheTakte;
             const ruhe = (n) => {
                 for (let i = 0; i < n; i++) r._tickChunkSatz();
             };
@@ -1152,7 +1152,7 @@ const { errs, check } = pruefer();
                     wurf: false,
                 });
                 const ls = r._chunkSatz(art);
-                const C = r.constructor.CHUNK_SATZ.bau;
+                const C = AnazhRealm.CHUNK_SATZ.bau;
                 r._chunkSatzGeometrie(ls, C.v * 4, C.i * 4);
                 const mesh0 = ls.mesh,
                     gross = [ls.vKap, ls.iKap];
