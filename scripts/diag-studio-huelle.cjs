@@ -43,7 +43,7 @@
 //   node scripts/diag-studio-huelle.cjs --engine     DER GANG je Seite der Hülle: ihre Anfragen (H6), ihre Sitzung (H3),
 //                                                    die L0 eines Ofen-Labors (H4); Port STUDIO_HUELLE_PORT (8742)
 "use strict";
-const { statikServer, starteBrowser, ROOT, hauptLauf, waitFor, wandEnde, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT, hauptLauf, sleep, waitFor, wandEnde, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -374,24 +374,12 @@ async function gang() {
     let sauber = 0;
     try {
         for (const id of [...STUDIOS, ...NEBENWELTEN]) {
-            const uhr = [Date.now()]; // die Sekunden des Studios je Schritt (der Beleg der Dauer auf der Karte, ⏱-Zeile)
-            const page = await browser.newPage();
+            let page = await browser.newPage();
             const pfade = (netz[id] = []); // jeden Seitenfehler nennt der EINE Sammler der Weiche (welt-boot), der Lauf wird rot
             let netzZaehlt = true; // H6 zählt den ersten Besuch, nie das Neuladen der Sitzung
             page.on("request", (q) => netzZaehlt && pfade.push(new URL(q.url()).pathname));
             await s.zeige(page, 90000, seite(id) + (zeit ? "?bank=12" : ""), "load"); // auf der Karte die Bank der Leiste (H8)
-            uhr.push(Date.now());
-            // H4 + H8: die Kosten-Leiste je Stufe (gezählt, gezeichnet, Deckel) bzw. je Ort (Audio-Graph-ms) — gelesen, sobald jede
-            // Zeile ihre Gegenzahlen, ihre Zeit und ihre Deckel trägt (das Ofen-Labor erst nach dem Backen); das EINE Warten (welt-boot
-            // `waitFor`): ein Hänger endet an der Frist des Browsers, die Stall-Akte nennt die Seite. Das Werk der Öffnung, VOR dem Zug
-            // von H3 — bis w4-stationen-schnell las der Gang die Leiste nach H3 hinter 1,5 s Wanduhr: je nach Lauf die Öffnung, den Zug
-            // oder beide gemischt (H3 baut neu, die Leiste misst entprellt nach). Eine Nebenwelt (keine Leiste, keine Sitzung) wartet
-            // auf nichts, ihr Netz zählt bis zum Schließen.
-            const zeilen = () => [...document.querySelectorAll(".h-kosten-zeile")].map((e) => ({ ...e.dataset }));
-            const kosten = STUDIOS.includes(id)
-                ? (await waitFor(page, `(${zeilen})().every((k) => k.fertig)`, `${id}: jede Zeile der Kosten-Leiste mit Gegenzahl, Zeit und Deckel`), await page.evaluate(zeilen))
-                : null;
-            uhr.push(Date.now());
+            await sleep(1500);
             // H3: der Spieler zieht und greift im selben Atemzug die Tasten des VERLAUFs (kein Bild, keine Ruhe dazwischen), je
             // Taste am LEBENDEN Schieber seiner Zeile (die schmiede baut ihre Leiste im Rückweg neu — ein abgehängter trüge nie ans Fenster)
             const z = (seiten[id] = await page.evaluate((verlauf) => {
@@ -410,21 +398,20 @@ async function gang() {
                 );
                 return { folge: [vor, erst.value, ...verlauf.map(nachTaste)] };
             }, VERLAUF));
-            uhr.push(Date.now());
-            if (kosten) z.kosten = kosten;
+            // H4 + H8: die Kosten-Leiste je Stufe (gezählt, gezeichnet, Deckel) bzw. je Ort (Audio-Graph-ms) — gelesen, sobald jede
+            // Zeile ihre Gegenzahlen, ihre Zeit und ihre Deckel trägt (das Ofen-Labor erst nach dem Backen); das EINE Warten (welt-boot
+            // `waitFor`): ein Hänger endet an der Frist des Browsers, die Stall-Akte nennt die Seite
+            const zeilen = () => [...document.querySelectorAll(".h-kosten-zeile")].map((e) => ({ ...e.dataset }));
+            if (STUDIOS.includes(id)) {
+                await waitFor(page, `(${zeilen})().every((k) => k.fertig)`, `${id}: jede Zeile der Kosten-Leiste mit Gegenzahl, Zeit und Deckel`);
+                z.kosten = await page.evaluate(zeilen);
+            }
             if (STUDIOS.includes(id)) {
                 netzZaehlt = false;
-                // das Neuladen: die Seite geht, dieselbe Seite öffnet neu (derselbe Speicher der Herkunft) — im selben Tab; ihr Ziel ist
-                // die geladene Sitzung (`gang().geladen`, ihr Skript lief), nie das letzte Bild der Seite (bis w4-stationen-schnell ein
-                // neuer Tab und das load-Ereignis)
-                const neu = async () => (await s.zeige(page, 90000, seite(id), "domcontentloaded"), page);
+                // das Neuladen: die Seite geht, dieselbe Seite öffnet neu (derselbe Speicher der Herkunft)
+                const neu = async () => (await page.close(), (page = await browser.newPage()), await s.zeige(page, 90000, seite(id), "load"), page);
                 Object.assign(z, await sitzungsGang(page, saat + STUDIOS.indexOf(id), neu, zeit ? GRIFFE : 4));
-                const s1 = (a, b) => ((b - a) / 1000).toFixed(1);
-                const [t0, tl, tk, th] = uhr;
-                console.log(
-                    `  ⏱ ${id.padEnd(14)} ${sitzungText(sitzungZahl(z))} · Sekunden Laden ${s1(t0, tl)} · Leiste ${s1(tl, tk)} · H3 ${s1(tk, th)} · ` +
-                        `Griffe ${s1(th, z.uhr[0])} · Neuladen ${s1(z.uhr[0], z.uhr[1])}`
-                );
+                console.log(`  ⏱ ${id.padEnd(14)} ${sitzungText(sitzungZahl(z))}`);
             }
             await page.close();
             const fremd = [...new Set(pfade.filter((p) => ENGINE_FREMD.test(p)))];
@@ -447,11 +434,9 @@ async function gang() {
 // des Rasters, den diese Zeile in der Probe noch nie trug, die Zeit aus dem Gang der Hülle (Ereignis → erstes Bild mit neuem
 // Bau-Hash); dann das Neuladen (die Werte jedes Reglers der Sitzung vorher = nachher) und A/B am ersten Schieber.
 async function sitzungsGang(page, saat, neuladen, n) {
-    const griffe = [],
-        uhr = [];
-    for (let k = 0; k < n; k++)
-        griffe.push(
-            await page.evaluate(async (saat) => {
+    const griffe = [];
+    for (let k = 0; k < n; k++) {
+        const g = await page.evaluate((saat) => {
                 const r = AnazhHuelle.zufall(saat),
                     alt = (window.__alt = window.__alt || new Set());
                 const alle = [...document.querySelectorAll("[data-sitzung] .h-regler input[type=range]:not(:disabled)")];
@@ -463,20 +448,13 @@ async function sitzungsGang(page, saat, neuladen, n) {
                     alt.add(n);
                     e.value = v;
                     e.dispatchEvent(new Event("input", { bubbles: true }));
-                    const g = (window.__griff = AnazhHuelle.gang().griffe.at(-1));
-                    if (!g) return {};
-                    // DAS BILD DES GRIFFS ist sein Ereignis: der rAF der Hülle stempelt `t1` im ersten Bild mit neuem Bau-Hash — die
-                    // Probe wartet Bild um Bild in der Seite, ohne Frist (ein Bild, das nie kommt, endet an der Frist des Browsers, die
-                    // Stall-Akte nennt es). Bis w4-stationen-schnell fragte Node je 150 ms (`waitFor`) und las danach in einem dritten Ruf.
-                    window.__weltDaWartet = "Griff → Bild mit neuem Bau-Hash";
-                    while (g.t1 == null) await new Promise((ok) => requestAnimationFrame(ok));
-                    window.__weltDaWartet = null;
-                    return { ms: g.t1 - g.t0, u: g.uniform };
+                    return !!(window.__griff = AnazhHuelle.gang().griffe.at(-1));
                 }
-                return {};
-            }, saat * 977 + k)
-        );
-    uhr.push(Date.now());
+            }, saat * 977 + k);
+        // das EINE Warten (ohne Frist): ein Griff, dessen Bild nie kommt, endet an der Frist des Browsers beim Namen
+        if (g) await waitFor(page, () => window.__griff.t1 != null, "Griff → Bild mit neuem Bau-Hash");
+        griffe.push(g ? await page.evaluate(() => ({ ms: window.__griff.t1 - window.__griff.t0, u: window.__griff.uniform })) : {});
+    }
     // DAS NEULADEN: der letzte Schritt steht im Speicher, die Seite öffnet neu, jeder Regler der Sitzung steht wieder
     const stand = () => page.evaluate(() => [...document.querySelectorAll("[data-sitzung] [data-regler] input")].map((e) => e.value + e.checked));
     await waitFor(page, () => AnazhHuelle.gang().gespeichert > window.__griff.t0, "der letzte Griff im Speicher");
@@ -485,8 +463,7 @@ async function sitzungsGang(page, saat, neuladen, n) {
     await waitFor(page, () => window.AnazhHuelle && AnazhHuelle.gang().geladen, "die Sitzung von zuletzt geladen");
     const nachher = await stand();
     await page.evaluate(() => localStorage.clear());
-    uhr.push(Date.now());
-    return { griffe, bleibt: [vorher.filter((x, i) => x === nachher[i]).length, vorher.length], uhr };
+    return { griffe, bleibt: [vorher.filter((x, i) => x === nachher[i]).length, vorher.length] };
 }
 
 // ── DAS ZIEL-BILD BACKEN (H5, `--panorama [welt,…]`): je Welt der Hülle ihre Seite in einem Rahmen (die Heimat ist eine leere
