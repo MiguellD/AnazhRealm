@@ -661,28 +661,31 @@ function selbsttest() {
     // S-K50 — DIE RENDER-ZIEL-KLASSE gegen ihren Haushalt: der Kopf 45f1eeae (Genesis third, 1080p, die Ziele der zeitlichen
     // Auflösung in voller Größe, das Szenen-Ziel in der Ausgabe) ist ROT mit jedem Erzeuger beim Namen; die Hochskalierung
     // (Szene 0,75, die Vortiefe im Kanal a der Geschichte) hält den Haushalt; ein Haushalt ohne die Klasse fällt im Schema.
-    const rzVorher = v17([
+    const rzKopf = [
         { k: "buf:szene:bodenSatz", mb: 37.1, n: 1078 },
         { k: "tex:TRAANode.history rgba16float 1920x1080x1", mb: 15.8, n: 1 },
+    ];
+    const rzSchatten = [
+        { k: "tex:kaskade0:tiefe depth16unorm 2048x2048x1", mb: 8.0, n: 1 },
+        { k: "tex:kaskade1:tiefe depth16unorm 2048x2048x1", mb: 8.0, n: 1 },
+        { k: "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x20", mb: 4.0, n: 1 },
+    ];
+    const rzVorher = v17([
+        ...rzKopf,
         { k: "tex:TRAANode.history:tiefe depth16unorm 1920x1080x1", mb: 4.0, n: 1 },
         { k: "tex:TRAANode.resolve rgba16float 1920x1080x1", mb: 15.8, n: 1 },
         { k: "tex:output rg11b10ufloat 1920x1080x1", mb: 7.9, n: 1 },
         { k: "tex:depth depth24plus 1920x1080x1", mb: 7.9, n: 1 },
         { k: "tex:szene:tiefenabbild r32float 960x1080x1", mb: 4.0, n: 1 },
-        { k: "tex:kaskade0:tiefe depth16unorm 2048x2048x1", mb: 8.0, n: 1 },
-        { k: "tex:kaskade1:tiefe depth16unorm 2048x2048x1", mb: 8.0, n: 1 },
-        { k: "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x20", mb: 4.0, n: 1 },
+        ...rzSchatten,
     ]);
     const rzNachher = v17([
-        { k: "buf:szene:bodenSatz", mb: 37.1, n: 1078 },
-        { k: "tex:TRAANode.history rgba16float 1920x1080x1", mb: 15.8, n: 1 },
+        ...rzKopf,
         { k: "tex:TRAANode.resolve rgba16float 1920x1080x1", mb: 15.8, n: 1 },
         { k: "tex:output rg11b10ufloat 1440x810x1", mb: 4.4, n: 1 },
         { k: "tex:depth depth24plus 1440x810x1", mb: 4.4, n: 1 },
         { k: "tex:szene:tiefenabbild r32float 720x810x1", mb: 2.2, n: 1 },
-        { k: "tex:kaskade0:tiefe depth16unorm 2048x2048x1", mb: 8.0, n: 1 },
-        { k: "tex:kaskade1:tiefe depth16unorm 2048x2048x1", mb: 8.0, n: 1 },
-        { k: "tex:karte-albedo:atlas bc1-rgba-unorm-srgb 128x20", mb: 4.0, n: 1 },
+        ...rzSchatten,
     ]);
     const rzOhne = JSON.parse(JSON.stringify(haushalt));
     delete rzOhne.renderZiele;
