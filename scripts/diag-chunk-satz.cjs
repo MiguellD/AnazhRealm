@@ -1155,9 +1155,14 @@ const { errs, check } = pruefer();
                     mat: new T.MeshBasicMaterial(),
                     wurf: false,
                 });
-                const ls = r._chunkSatz(art);
-                const C = AnazhRealm.CHUNK_SATZ.bau;
-                r._chunkSatzGeometrie(ls, C.v * 4, C.i * 4);
+                // DIE GEBURT AM INHALT (w4-e-vram): der Satz beginnt am Boden des Gesetzes (vMin/iMin), die Probe wächst ihn
+                // auf das 32- bzw. 16-Fache seiner Geburt — bis w4-e-vram begann er bei der Start-Kapazität `CHUNK_SATZ`.
+                // Mit stadt-takt2 vereint (die EINE Geometrie je Satz, (i)): am Stamm von main 8809ec6 fällt diese Probe rot
+                // (geboren 8 192 · 16 384 statt 1 024 · 3 072), am Stamm der Abgabe 39438bb (eine frische Geometrie je Wachsen,
+                // die Ecken oder den Index mitgetragen) fällt (i) rot mit `derselbe` false — die Wand nennt beide Fälle.
+                const ls = r._chunkSatz(art),
+                    geburt = [ls.vKap, ls.iKap];
+                r._chunkSatzGeometrie(ls, ls.vKap * 32, ls.iKap * 16);
                 const mesh0 = ls.mesh,
                     gross = [ls.vKap, ls.iKap];
                 ruhe(RT);
@@ -1168,6 +1173,7 @@ const { errs, check } = pruefer();
                     vorFrist,
                     nach: [ls.vKap, ls.iKap],
                     ziel: [VD.vMin, VD.iMin],
+                    geburt,
                     derselbe: ls.mesh === mesh0,
                 };
                 s.scene.remove(ls.mesh);
@@ -1579,13 +1585,11 @@ const { errs, check } = pruefer();
     } else check("(j) NEUSCHREIBEN gemessen", false, "keine Messung");
     const le = out.leer;
     check(
-        "(k) DER SATZ FOLGT SEINEM INHALT — leer: bis zur Ruhe-Frist hält er, danach schrumpft er auf vMin/iMin (derselbe Mesh)",
+        "(k) DER SATZ FOLGT SEINEM INHALT — leer: geboren auf vMin/iMin, gewachsen hält er bis zur Frist, dann zurück (derselbe Mesh)",
         !!le &&
-            le.vorFrist[0] === le.gross[0] &&
-            le.vorFrist[1] === le.gross[1] &&
-            le.nach[0] === le.ziel[0] &&
-            le.nach[1] === le.ziel[1] &&
-            le.gross[0] > le.ziel[0] &&
+            le.vorFrist + "" === le.gross + "" &&
+            le.nach + "" === le.ziel + "" &&
+            le.geburt + "" === le.ziel + "" &&
             le.derselbe === true,
         JSON.stringify(le)
     );

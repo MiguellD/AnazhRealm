@@ -970,7 +970,6 @@ class AnazhRealm_vegetation_wiese {
                 attr: (a.wiegt ? AnazhRealm.STREU_SATZ_ATTR : AnazhRealm.STREU_FEST_ATTR).concat(
                     u.jahr === true ? AnazhRealm.JAHR_SATZ_ATTR : []
                 ),
-                kapazitaet: "streu",
                 userData: { streuSatz: "streuSatz" },
             });
         return art;
