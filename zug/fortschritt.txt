@@ -1133,3 +1133,5 @@
 2026-10-31 18:01:53 takt32b-gtx START 15 Stationen in 1 Läufen
 2026-10-31 18:12:04 takt32b-gtx mensch.K5#1,mensch.K4#1,haar.K2#1,vegetation.K5#2,material.K1#1,lod.K5#1,material.K4#1,bauen.K1#2,bauen.K5#2,spielgang.K3#1,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,profiband.K5#1,klang.K4#1 OFFEN/ROT/ROT/OFFEN/OFFEN/OFFEN/GRÜN/OFFEN/OFFEN/ROT/OFFEN/OFFEN/OFFEN/ROT/OFFEN 10.1 · 15/15
 2026-10-31 18:26:07 eich15-gtx START 1 Stationen
+2026-10-31 19:01:54 eich15-gtx eich-gtx.sh Exit0 35.8 · 1/1
+2026-10-31 19:02:10 eich16-gtx START 1 Stationen

@@ -1,0 +1,176 @@
+Punkte-Maschine: 96 Station(en) in 67 Läufen auf gtx am b4bcf19c · Sitzung 67 Proben in EINER Welt (Deckel Σ 27 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  SITZUNG gtx · die Welt steht nach 7.3 s (Schloss nach 0.02 min) · 67 Proben · Welt :27804
+  SITZUNG EICH-FAHRT: jede Probe bis 90 s — das Gesetz: je Probe ≤ 45 s, mit ausnahme ≤ 90 s, die Fahrt ≤ 1800 s; ein Urteil zählt nur im Gesetz, je Probe ihre Sekunden (eich)
+  SITZUNG profiband.K4#1 ließ die Zeichenkette verändert: zeichner.renderer._renderObjectDirect — kein Urteil (Werkzeug-Bruch), die Grundstellung folgt
+  OFFEN profiband.K4#1 · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera) { const vor = H.c) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 32 Bilder · max 1491.8 ms · 46.88 % > 33 ms · Fahrt 18 Bilder · max 1075 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 10 Bild(er) > 100 ms (max 1491.8), 46.88 % > 33 ms | Fahr) · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K4#2 · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera) { const vor = H.c) — kein Urteil, UNGEMESSEN (die Probe sah: Gehen 32 Bilder · max 1491.8 ms · 46.88 % > 33 ms · Fahrt 18 Bilder · max 1075 ms · 100.00 % > 33 ms (Regler des Spielers, 2.5 s je Fenster) · [linse-gpu] nvidia/pascal — ROT: Gehen: 10 Bild(er) > 100 ms (max 1491.8), 46.88 % > 33 ms | Fahr) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG der Grund der Welt: 83 Größen in 0 s
+  SITZUNG Grundstellung vor vegetation.K2#1: 0.1 s (im Spiel 45.4 ms) · die Zeichenkette zurück: zeichner.renderer._renderObjectDirect
+  SITZUNG Ort wiese vor vegetation.K2#1: 12 s (628 Takte, 81 Chunks, nach der Grundstellung)
+  GRÜN vegetation.K2#1 · Kamm 227.9 über Rausch-Boden 0.000 (×227.9), Tal 43.0 — Kamm/Tal 5.30 bei Böe 1.15/0.25 (t 25.6/48.8 s), Nah-Feld 53.3 % in 0–15 m, Δt 0.25 s · Sitzung · Exit 0 · 0.18 min
+  EICH 10.6 s · vegetation.K2#1 · Deckel 18 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  GRÜN vegetation.K5#1 · Krone sommer 193187 px · winter 21705 px → Winter 0.112 × Sommer · Sitzung · Exit 0 · 0.25 min
+  EICH 15.1 s · vegetation.K5#1 · Deckel 40 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  OFFEN vegetation.K5#2 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · vegetation.K5#2 · Deckel 10 s · Gesetz 45 s · am Eich-Deckel
+  SITZUNG Grundstellung vor licht.K2#1: 13.9 s (im Spiel 2583.4 ms, durch die Tür)
+  SITZUNG Ort wiese vor licht.K2#1: 20.5 s (564 Takte, 81 Chunks, nach der Tür)
+  GRÜN licht.K2#1 · Verhältnis 5.333 (5–12,5), Schatten-Anteil 0.1875 (0,08–0,20), A/B 1.000, A/C 1.000, Kappe 1463 px, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal · Sitzung · Exit 0 · 0.15 min
+  EICH 8.8 s · licht.K2#1 · Deckel 14 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  ROT  licht.K2#2 · Uhr 0.5 klar (Sonne 74.2°) 5.333, Schatten-Anteil 0.1875 · Uhr 0.27 klar (Sonne 7.2°) 0.925 UNGÜLTIG (A/B 0.767, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.019 UNGÜLTIG (A/B 0.788, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.764 UNGÜLTIG (A/B 1.000, A/C 1.029, 1463 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.938 · Uhr 0.73 Regen (Sonne 6.7°) 1.063 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal · Sitzung · Exit 0 · 0.59 min
+  EICH 35.2 s · licht.K2#2 · Deckel 33 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  OFFEN material.K2#1 · EICH: 63.7 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: boden 0.5 m glatt 0.1253 nyquist 0.1624 (Arm 0.498), 1 m glatt 0.1153 nyquist 0.1733 (Arm 0.998), 2 m glatt 0.1354 nyquist 0.1649 (Arm 1.996) · fels 0.5 m glatt 0.9302 nyquist 0.1868 (Arm 0.493), 1 m ) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 63.7 s · material.K2#1 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie
+  OFFEN lod.K1#1 · EICH: 49.4 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: Tafel-Pose schlechteste fimp:atlas:L2 0.2455 · Karte fimp:atlas:L2 0.2455 (359645 px) | Spielgang: ma 50.7 σ 26.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.146 · Bühne summer sunny 0.50 Tiere gehalten ·) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 49.4 s · lod.K1#1 · Deckel 30 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie
+  SITZUNG lod.K5#1 ließ die Welt verändert und trägt kein mutiert: werke +4 (−0) — die Grundstellung folgt
+  OFFEN lod.K5#1 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · lod.K5#1 · Deckel 10 s · Gesetz 45 s · am Eich-Deckel
+  SITZUNG Grundstellung vor lod.K2#1: 11 s (im Spiel 1840.7 ms, durch die Tür)
+  SITZUNG Ort wiese vor lod.K2#1: 20 s (589 Takte, 81 Chunks, nach der Tür)
+  ROT  lod.K2#1 · Gehen 4 m/s: 7.6665 % Pop-Pixel je Sekunde (158973 px, Soll ≤ 0,05 %), je Schritt 32894*/13812*/17430*/25349/16280*/17680*/17921/17607 (* = Stufen-Wechsel), Laub 216–216 m, perfTarget 17 ms, [linse-gpu] nvidia/pascal · Sitzung · Exit 0 · 0.23 min
+  EICH 13.6 s · lod.K2#1 · Deckel 21 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  GRÜN leib.K1#1 · schlechtester von 1 Läufen p95 ms ego/gehen 43.8 · third/gehen 45.4 · ego/wechsel 32 · third/wechsel 29.7 · Bild 16.5 ms · Sitzung · Exit 0 · 0.41 min
+  EICH 24.4 s · leib.K1#1 · Deckel 33 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG streaming.K3#1 ließ die Zeichenkette verändert: zeichner.renderer._renderObjectDirect — kein Urteil (Werkzeug-Bruch), die Grundstellung folgt
+  OFFEN streaming.K3#1 · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera) { const vor = H.c) — kein Urteil, UNGEMESSEN (die Probe sah: Frame p95 Median 41.8 ms (50 · 41.8 · 41.8) · CPU-Takt p95 44.8 · 41.8 · 41.9 ms · die Welt steht nach 17.7 · 16.8 · 18.1 s · Bauten sonst 0/0/0 · 3 von 3 gültig · TAKT: _runFrameScheduler x14 | TAKT: _dispatchFrameJobs › run x9 | TAKT: ver) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor klang.K2#1: 0.1 s (im Spiel 53.4 ms) · die Zeichenkette zurück: zeichner.renderer._renderObjectDirect
+  SITZUNG Ort wiese vor klang.K2#1: 8.7 s (701 Takte, 81 Chunks, nach der Grundstellung)
+  GRÜN klang.K2#1 · r 0.83 bei Lag 0 (n 104), Spitze 0.85 bei -0.4 s, CV Bild 0.20 / Ohr 0.61, 77.2 fps, Klang an · Sitzung · Exit 0 · 0.39 min
+  EICH 23.5 s · klang.K2#1 · Deckel 22 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Ort genesis vor ferne.K1#1: 14.8 s (618 Takte, 81 Chunks)
+  OFFEN ferne.K1#1 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · ferne.K1#1 · Deckel 10 s · Gesetz 45 s · am Eich-Deckel
+  OFFEN ferne.K2#1 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · ferne.K2#1 · Deckel 10 s · Gesetz 45 s · am Eich-Deckel (Zwilling von ferne.K1#1)
+  OFFEN ferne.K1#2 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · ferne.K1#2 · Deckel 10 s · Gesetz 45 s · am Eich-Deckel (Zwilling von ferne.K1#1)
+  OFFEN ferne.K2#2 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · ferne.K2#2 · Deckel 10 s · Gesetz 45 s · am Eich-Deckel (Zwilling von ferne.K1#1)
+  SITZUNG Grundstellung vor licht.K1#1: 27.4 s (im Spiel 2101 ms, durch die Tür)
+  SITZUNG Ort genesis vor licht.K1#1: 17.7 s (486 Takte, 81 Chunks, nach der Tür)
+  OFFEN licht.K1#1 · EICH: 48.6 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: genesis: Karte Luma 124.1, Sprung 0.142 EV, Buckel 1.36 EV, Sonne 10° 1.22 EV R/B ×1.15 | 1.17 EV R/B ×1.01, Nacht 0.52 EV Luma 80.4 · wiese: Karte Luma 124.1, Sprung 0.581 EV, Buckel 1.22 EV, Sonne 1) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 48.6 s · licht.K1#1 · Deckel 40 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie
+  SITZUNG Ort dorf vor licht.K3#2: 27.2 s (1358 Takte, 81 Chunks)
+  SITZUNG licht.K3#2 ließ die Welt verändert und trägt kein mutiert: orte +-1,-5 +-2,-4 +-3,-3 · wege +9 [-294.9,-1146.1,33.7,-1122.6/5] [-326.2,-1161.7,66.1,-1099.7/89] [-525.3,-891.8,-317.1,-807.2/2] … (-1,-5, -2,-4, -3,-3, netz:-1,-5) — die Grundstellung folgt
+  OFFEN licht.K3#2 · EICH: 80.1 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: fichte@0.5 1.241 · fichte@0.27 1.055 · fichte@0.05 0.953 · tanne@0.5 1.005 · tanne@0.27 0.928 · tanne@0.05 1.08 · ring@0.5 1 · ring@0.27 0.997 · ring@0.05 1 · feld@0.5 0.947 · feld@0.27 0.939 · feld@0) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 80.1 s · licht.K3#2 · Deckel 10 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie
+  SITZUNG Grundstellung vor gelaende.K3#1: 11.8 s (im Spiel 1795.4 ms, durch die Tür — wege +11 [-294.9,-1146.1,33.7,-1122.6/5] [-326.2,-1161.7,66.1,-1099.7/89] [-525.3,-891.8,-317.1,-807.2/2] …)
+  SITZUNG die Welt vor gelaende.K3#1: 16.5 s (586 Takte, 81 Chunks, nach der Tür)
+  GRÜN gelaende.K3#1 · spiegelTreue 0.8799 (wasserSatz 36004 px, spiegelEbene 0.89) in 1920×1080, Pose = Kamera des Spiels, ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Blickziel im Bild frei 100 m · Luma 101.4 σ 41.2 schwarz 0.0 % weiß 0.0 % · Stand 18.546.146 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal · Sitzung · Exit 0 · 0.28 min
+  EICH 16.7 s · gelaende.K3#1 · Deckel 29 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  OFFEN gelaende.K5#2 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: == SICHT first (44.4 s): wiese fein 1.1/200 · streu 0.5/344 · huf 0.2/202 · rad 0.1/200 | hang fein 4.3/200 · streu 0.9/714 · huf 0.5/200 · rad 1.2/200 (p95 cm ) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · gelaende.K5#2 · Deckel 10 s · Gesetz 45 s · am Eich-Deckel
+  SITZUNG Grundstellung vor ferne.K5#1: 9.1 s (im Spiel 1630.7 ms, durch die Tür)
+  SITZUNG die Welt vor ferne.K5#1: 15.4 s (586 Takte, 81 Chunks, nach der Tür)
+  GRÜN ferne.K5#1 · Sicht im Sturm 1508 m (Azimute 1443/1499/1508/1509, Soll 1 500 m ±15 %), [linse-gpu] nvidia/pascal · Sitzung · Exit 0 · 0.34 min
+  EICH 20.3 s · ferne.K5#1 · Deckel 31 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  OFFEN licht.K5#1 · EICH: 69 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (GRÜN: größter Sprung 0.053 EV/s (Soll ≤ 0,1) · Hub klar ↔ Regen 0.81 EV · 125 s, Wörter standen · [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 69 s · licht.K5#1 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (GRÜN) zählt nie
+  SITZUNG material.K3#1 ließ die Welt verändert und trägt kein mutiert: werke +5 (−0) — die Grundstellung folgt
+  OFFEN material.K3#1 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ort · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · material.K3#1 · Deckel 10 s · Gesetz 45 s · am Eich-Deckel
+  OFFEN material.K3#2 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: ort · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · material.K3#2 · Deckel 10 s · Gesetz 45 s · am Eich-Deckel (Zwilling von material.K3#1)
+  SITZUNG Grundstellung vor material.K1#1: 7.5 s (im Spiel 1998.8 ms, durch die Tür)
+  SITZUNG die Welt vor material.K1#1: 19.6 s (637 Takte, 81 Chunks, nach der Tür)
+  SITZUNG material.K1#1 ließ die Welt verändert und trägt kein mutiert: werke +5 (−0) — die Grundstellung folgt
+  OFFEN material.K1#1 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · material.K1#1 · Deckel 10 s · Gesetz 45 s · am Eich-Deckel
+  OFFEN material.K1#2 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · material.K1#2 · Deckel 10 s · Gesetz 45 s · am Eich-Deckel (Zwilling von material.K1#1)
+  SITZUNG Grundstellung vor material.K5#1: 8 s (im Spiel 1870 ms, durch die Tür)
+  SITZUNG die Welt vor material.K5#1: 15.6 s (585 Takte, 81 Chunks, nach der Tür)
+  GRÜN material.K5#1 · 3 von 4 Klassen im Band (Soll ≥ 3): eisen θ50 10.262° NEBEN dem Band, ρ 7.16 im Band — black-oxidized-steel · bronze θ50 3.367° im Band, ρ 80.26 im Band — alum-bronze 7,79°/51,4, brass 1,31°/471,3 · quarz θ50 1.387° im Band, ρ 414.29 im Band — black-obsidian 0,63°/698,5, aventurnine 1,45°/437,3 · stahl θ50 0.481° im Band, ρ 847.84 im Band — steel, ss440, chrome-steel · Sonne 74.2°, Uhr 0.5 sunny, [linse-gpu] nvidia/pascal · Sitzung · Exit 0 · 0.18 min
+  EICH 11.1 s · material.K5#1 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  GRÜN lod.K3#1 · Deckung/IoU bc -20° 0.994/0.942 · 0° 0.984/0.871 · 40° 1.001/0.966 · 80° 0.97/0.963 (waagrecht 80° 0.323/0.224) · rgba8 -20° 0.994/0.942 · 0° 0.986/0.886 · 40° 1.001/0.966 · 80° 0.97/0.963 (waagrecht 80° 0.323/0.224) (Soll ≥ 0,75/0,65) · [linse-gpu] nvidia/pascal · Sitzung · Exit 0 · 0.09 min
+  EICH 5.3 s · lod.K3#1 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  ROT  profiband.K5#2 · Dauer 23.89 min in 4 Seite(n), 6 Proben: Dauerlast 5730 Bilder · Bild-p95 41.7 (p99 100, max 1491.8) ms · Takt-p95 39.6 ms · VRAM-p95 128.8 MB · Anker Bild-p95 200 → 41.7 ms · Heap 236.4 → 267.6 MB · VRAM nach GC 129.6 → 132.5 MB · Weg 6.2 km (gegangen/gefahren 0.2) · [linse-gpu] nvidia/pascal — ROT 2: 4 Seiten zwischen Anfang und Ende (neu geladen — nie am Stück) | Gang: vram: +2.9 MB zurück am Start — buf:? +3.0 MB · Sitzung · Exit 0 · 0.24 min
+  EICH 14.6 s · profiband.K5#2 · Deckel 23 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Ort dorf vor wetter.K2#1: 13.7 s (600 Takte, 81 Chunks)
+  GRÜN wetter.K2#1 · Dorf porös draußen 0.571 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 4 (n 5949/13809) · Sitzung · Exit 0 · 0.27 min
+  EICH 16.1 s · wetter.K2#1 · Deckel 22 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor licht.K3#1: 9.6 s (im Spiel 1966.7 ms, durch die Tür — wege +2 [-784.3,-952.2,-631.7,-806.5/4] [-810.2,-986.5,-604,-776.9/95])
+  SITZUNG Ort dorf vor licht.K3#1: 20.3 s (560 Takte, 81 Chunks, nach der Tür)
+  ROT  licht.K3#1 · fichte@0.5 1.234 · fichte@0.27 1.051 · fichte@0.05 0.952 · tanne@0.5 0.998 · tanne@0.27 0.922 · tanne@0.05 1.063 · ring@0.5 1 · ring@0.27 0.997 · ring@0.05 1 · Soll 0,9–1,1 · [linse-gpu] nvidia/pascal · Sitzung · Exit 1 · 0.73 min
+  EICH 43.5 s · licht.K3#1 · Deckel 45 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor affekt.K1#2: 11 s (im Spiel 2108.2 ms, durch die Tür — wege +11 [-294.9,-1146.1,33.7,-1122.6/5] [-326.2,-1161.7,66.1,-1099.7/89] [-525.3,-891.8,-317.1,-807.2/2] …)
+  SITZUNG Ort wiese vor affekt.K1#2: 17.2 s (563 Takte, 81 Chunks, nach der Tür)
+  GRÜN affekt.K1#2 · Tag first GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) | Nacht third GRÜN: fällen -0.12 -4.79 dB · töten -0.03 -1.2 dB · pflegen 0.25 9 dB · nach 30 min 0.2463 9 dB (Ertrag 0.25) · Sitzung · Exit 0 · 0.06 min
+  EICH 3.7 s · affekt.K1#2 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor oekologie.K4#2: 0.1 s (im Spiel 45.4 ms)
+  SITZUNG Ort wiese vor oekologie.K4#2: 2.3 s (170 Takte, 81 Chunks, nach der Grundstellung)
+  OFFEN oekologie.K4#2 · EICH: 64.2 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: first ROT: umstellt null s, Furcht chaos 0 (Gegenlauf 0), 0 Jäger fallen, Triumph joy+hope 0 (Gegenlauf 0)) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 64.2 s · oekologie.K4#2 · Deckel 31 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie
+  SITZUNG Grundstellung vor haar.K1#1: 0.1 s (im Spiel 36.9 ms)
+  SITZUNG Ort wiese vor haar.K1#1: 1.3 s (123 Takte, 81 Chunks, nach der Grundstellung)
+  GRÜN haar.K1#1 · arm GRÜN strich 0.5667 Soll [0.4358,0.6538] · third GRÜN strich 0.5198 Soll [0.4358,0.6538] · Sitzung · Exit 0 · 0.38 min
+  EICH 22.7 s · haar.K1#1 · Deckel 39 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor fahrzeug.K3#1: 0.1 s (im Spiel 35.5 ms)
+  SITZUNG Ort wiese vor fahrzeug.K3#1: 2.3 s (221 Takte, 81 Chunks, nach der Grundstellung)
+  GRÜN fahrzeug.K3#1 · Garage FOV +9.06° Arm +18.1 % bei 15.21/16.00 m/s · Welt FOV +9.47° Arm +18.4 % bei 15.18 m/s (Ende ok) · Sitzung · Exit 0 · 0.46 min
+  EICH 27.8 s · fahrzeug.K3#1 · Deckel 40 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor leib.K1#2: 10.4 s (im Spiel 1903.7 ms, durch die Tür — wege +1 [-100.4,-1273.5,25.7,-1025.6/1])
+  SITZUNG Ort wiese vor leib.K1#2: 17.3 s (570 Takte, 81 Chunks, nach der Tür)
+  OFFEN leib.K1#2 · Deckel der Fahrt 1800 s gerissen nach 45 s der Probe — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1) · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN halten.K2#1 · Deckel der Fahrt 1800 s gerissen nach 45 s der Probe — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ LATENZ1) · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN schatten.K1#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN gelaende.K2#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN gelaende.K2#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN physik.K2#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN tiere.K1#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN tiere.K3#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN mensch.K1#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN mensch.K2#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN vegetation.K4#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN vegetation.K4#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN tiere.K2#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN luftwasser.K5#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN luftwasser.K5#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN mensch.K5#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN studios.K2#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN studios.K3#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN pipeline.K4#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN pipeline.K4#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN ankunft.K2#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN ankunft.K3#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN bauen.K1#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN bauen.K5#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN studios.K4#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN studios.K4#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K3#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K4#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K4#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN siedlung.K2#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN siedlung.K2#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN siedlung.K1#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN siedlung.K5#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN siedlung.K5#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN siedlung.K4#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN leib.K2#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN leib.K2#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN leib.K4#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN leib.K4#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN halten.K5#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN halten.K5#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN halten.K1#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K5#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN tore.K3#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN tore.K3#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K2#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K2#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN streaming.K4#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K1#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K2#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K3#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN klang.K4#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN klang.K4#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN klang.K5#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN speicher.K1#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN speicher.K1#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN speicher.K2#1 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN speicher.K2#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN speicher.K4#2 · die Fahrt riss 1800 s (in leib.K1#2) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG die Fahrt riss 1800 s in leib.K1#2 — offen: leib.K1#2, halten.K2#1, schatten.K1#1, gelaende.K2#1, gelaende.K2#2, physik.K2#2, tiere.K1#2, tiere.K3#2, mensch.K1#1, mensch.K2#2, vegetation.K4#1, vegetation.K4#2, tiere.K2#2, luftwasser.K5#1, luftwasser.K5#2, mensch.K5#1, studios.K2#2, studios.K3#2, pipeline.K4#1, pipeline.K4#2, ankunft.K2#1, ankunft.K3#1, bauen.K1#2, bauen.K5#2, studios.K4#1, studios.K4#2, fahrzeug.K3#2, fahrzeug.K4#1, fahrzeug.K4#2, siedlung.K2#1, siedlung.K2#2, siedlung.K1#2, siedlung.K5#1, siedlung.K5#2, siedlung.K4#2, leib.K2#1, leib.K2#2, leib.K4#1, leib.K4#2, halten.K5#1, halten.K5#2, halten.K1#2, fahrzeug.K5#1, tore.K3#1, tore.K3#2, fahrzeug.K2#1, fahrzeug.K2#2, streaming.K4#2, profiband.K1#2, profiband.K2#2, profiband.K3#2, klang.K4#1, klang.K4#2, klang.K5#2, speicher.K1#1, speicher.K1#2, speicher.K2#1, speicher.K2#2, speicher.K4#2
+  SITZUNG Fahrt 1802.3 s (Soll ≤ 1800 s) · 32 Proben · Grundstellung 15×
+→ meisterkarte-quelle\punkte\messung\b4bcf19c-gtx.json
