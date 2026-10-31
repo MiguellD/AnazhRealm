@@ -184,6 +184,25 @@ class AnazhRealm_siedlung_bauten {
         return z;
     }
 
+    // DIE WAHL AM ABSTAND `d` (die EINE Stufen-Wahl eines Eintrags: das Urteil des Takts `_archStufeUrteil` fragt sie mit der
+    // Stufe, die es bestätigt hat, der Kalt-Schätzer `_foundryLodForEntry` ohne Zustand): nennt die Art ihre Stufen-Grenzen
+    // (K43, B2c `ab`: Haus, Tor), wählt sie nach ihnen in der Größe des Eintrags, sonst nach den Schwellen der Karten-Arten auf
+    // der Wahrnehmungs-Distanz der Sichthöhe `visH` (ohne: die des Eintrags). `zustand`: die Stufe, die die Hysterese hält
+    // (undefined: die Grenze selbst). Bis zum Merge von w4-genesis-tore rechneten Takt und Kalt-Schätzer je ihre Kopie dieser
+    // Zeilen (gate:ankunft 5b fing den Zwilling, wenn sie auseinanderliefen).
+    _stufeAmAbstand(entry, d, zustand, visH) {
+        const treeLike = !!entry._lodSpecies && Number.isFinite(entry._lodVariantIndex);
+        const G = treeLike ? null : this._archStufenGrenzen(entry);
+        if (G)
+            return AnazhRealm._stufeNachGrenzen(
+                d,
+                zustand,
+                G,
+                Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1
+            );
+        return this._chooseLODForDistance(d, zustand, visH === undefined ? this._lodTreeVisHeight(entry) : visH);
+    }
+
     // DAS URTEIL DER STUFE EINES EINTRAGS am Auge `pm` (die EINE Wahl, die der rollende Gang und die Bewegten fragen): Distanz,
     // Sichthöhe, Grenzen des Gesetzbuchs oder Hysterese der Bäume, Verdeckung, Vorlauf, Band-Pflege, Wechsel. `z` zählt
     // Wechsel, Regung und Offene (die Stufe lädt, der Partner lädt, die Höhe lädt).
@@ -209,17 +228,14 @@ class AnazhRealm_siedlung_bauten {
         // Die BRÜCKE trägt keinen Hysterese-Zustand: ihre Stufe 2 ist die gedockte Karte, nicht die Wahl. Mit ihr als
         // Zustand blieb die Wahl im Band [thresh12 − hyst, thresh12] (22,6–26 m) auf 2, die Brücke löste sich als
         // „Karte" auf und blendete nach Distanz aus — ohne L1-Partner, der Baum stand halb ausgedithert.
-        // DIE GRENZEN DES GESETZBUCHS (K43): nennt die Art ihre Stufen-Grenzen (B2c `ab`), wählt der Takt nach ihnen — auch
-        // unter dem Ladeschirm (das erste Bild trägt die Stufe, die der Bau nach ihm behält, ankunft.K2)
-        const grenzen = treeLike ? null : this._archStufenGrenzen(entry);
-        let newLOD = grenzen
-            ? AnazhRealm._stufeNachGrenzen(
-                  dist,
-                  entry._lodLevel,
-                  grenzen,
-                  Number.isFinite(entry.scale) && entry.scale > 0 ? entry.scale : 1
-              )
-            : this._chooseLODForDistance(dist, entry._bruecke ? undefined : entry._lodLevel, visH);
+        // DIE BESTÄTIGTE STUFE (w4-genesis-tore): die Hysterese hält eine Stufe gegen das Zittern eines BEWEGTEN Auges — sie
+        // gilt nur der Stufe, die DIESE Wahl am echten Abstand gestellt oder bestätigt hat (`_lodAmAbstand` trägt sie selbst:
+        // schreibt ein anderer die Stufe — der Kalt-Schätzer `_foundryLodForEntry` an seinem Auge, die Brücke —, gilt sie
+        // nicht mehr). Was sie nicht wählte, wählt am Abstand ohne Zustand, bis die Stufe steht. Bis dahin hielt das Band der
+        // Grobstufe (12 m ± 10 %) jedes Ring-Tor in 11 m auf der L2, die die Ankunft aus der Ferne setzte — für immer (Genesis
+        // Ego: 7 von 7 Studio-Toren L2, 20 px Umriss-Fehler); dieselbe Klasse am Baum (die Karte im Band ihrer Schwelle).
+        const zustand = entry._lodAmAbstand === entry._lodLevel && !entry._bruecke ? entry._lodLevel : undefined;
+        let newLOD = this._stufeAmAbstand(entry, dist, zustand, visH);
         // Occlusion-Demotion: ein ferner 3D-Baum (LOD0/1) hinter dichter Kronen-Masse fällt auf LOD2.
         // `entry._occluded` trägt die Hysterese — transient, NICHT im Snapshot.
         if (occlOn && newLOD < 2 && dist > AnazhRealm.OCCLUSION.occDist) {
@@ -249,11 +265,13 @@ class AnazhRealm_siedlung_bauten {
         }
         // DER STUFEN-VORLAUF (`_stufenVorlaufWahl`): unter dem Ladeschirm trägt der Baum seiner Art die L1
         if (this._imStufenVorlauf(entry)) newLOD = 1;
-        // DIE ZIEL-STUFE (ankunft.K2): `_stufeWartet` sagt, dass der Eintrag eine andere Stufe trägt, als seine Wahl will (sie
-        // lädt oder bäckt), oder dass sein Band-Partner lädt — das erste Weltbild steht erst, wenn kein Ding im Blick so wartet
-        // (`_weltbildLuecken`, „bauten")
+        // DIE EINE WAHL TRÄGT BEIDES: steht der Eintrag auf ihr (oder stellt ihn der Wechsel darauf), ist seine Stufe bestätigt —
+        // ab jetzt der Zustand der Hysterese (w4-genesis-tore); trägt er eine andere, weil sie lädt oder bäckt, oder lädt sein
+        // Band-Partner, wartet er auf seine ZIEL-STUFE (`_stufeWartet`, ankunft.K2) — das erste Weltbild steht erst, wenn kein
+        // Ding im Blick so wartet (`_weltbildLuecken`, „bauten"). Keine zweite Wahl: Ziel und Zustand sind dieselbe Zahl.
         entry._stufeWartet = false;
         if (newLOD === entry._lodLevel) {
+            entry._lodAmAbstand = newLOD;
             // Die Distanz-Wahl ist selbst die Karte: die Brücke ist keine mehr, die Karte blendet wie jede Fernstufe.
             if (entry._bruecke) {
                 entry._bruecke = false;
@@ -274,6 +292,7 @@ class AnazhRealm_siedlung_bauten {
         // LOD-Switch — re-allocate
         const vorher = entry._lodLevel;
         const success = this._switchArchitectureLOD(entry, newLOD, dist);
+        if (entry._lodLevel === newLOD) entry._lodAmAbstand = newLOD; // gewechselt oder geklammert: die Wahl steht
         if (success) z.switches++;
         else if (entry._lodLevel !== vorher)
             z.regung++; // nur die Distanz-Autorität gestempelt (Stufen-Klammer)

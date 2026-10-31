@@ -2058,6 +2058,66 @@ class AnazhRealm_stoff_material {
         this._mikroStoff(T, mat, m.hoehe.mul(k));
     }
 
+    // DAS STEIN-GESETZ (porta STEIN_GESETZ, w4-genesis-tore): ein Stein-Stoff eines Studio-Rahmens trägt seine Lage im Verband im uv
+    // (u = die Nummer des Steins + der Weg durch ihn, eine ganze Zahl ist eine Fuge; v = seine Länge in Metern). Je Pixel daraus: der
+    // BRUCHTON je Stein (floor(u), ± `ton`), die FUGE als Box-Abdeckung des Pixels (die halbe Fuge in Metern, die Spanne des Pixels
+    // aus der Ableitung von u — fern mittelt die Fuge zu ihrem Anteil, nie zu einer Linie), die KANTE als Normale (die Fase zwischen
+    // Fuge und Stirn fällt 45° zur Fuge; der Gradient von u in der Fläche aus den Ableitungen am Schirm, Mikkelsen 2010 — kein
+    // Tangenten-Raum; unter einem Pixel blendet sie aus) und das MIKRO-RELIEF des Felsens (`_mikroRelief`, `_mikroStoff`: Neigung,
+    // Kavität und Korn, mal `staerke`). Dieselbe Rechnung zeigt das Labor (worlds/portale/porta.js `steinLabor`). Setzt colorNode
+    // (aus `farbe`, der Farbe der Ecke), normalNode und aoNode.
+    _steinStoff(T, mat, farbe, G, staerke) {
+        const B = AnazhRealm.TERRAIN_BUMP;
+        const uv = T.attribute("uv", "vec2");
+        const u = uv.x;
+        const L = uv.y.max(1e-3);
+        const t = T.fract(u);
+        const d = T.min(t, T.float(1.0).sub(t)).mul(L); // Meter zur nächsten Fuge
+        const aa = T.fwidth(u).mul(L).max(1e-5); // die Spanne des Pixels in Metern
+        const halb = aa.mul(0.5);
+        const fuge = T.min(d.add(halb), T.float(G.fuge))
+            .sub(T.max(d.sub(halb), T.float(-G.fuge)))
+            .div(aa)
+            .clamp(0.0, 1.0);
+        const zufall = T.fract(T.sin(T.floor(u).mul(12.9898)).mul(43758.5453));
+        const ton = T.float(1.0).add(zufall.mul(2.0).sub(1.0).mul(G.ton));
+        mat.colorNode = T.vec4(
+            T.vec3(farbe)
+                .mul(ton)
+                .mul(T.mix(T.float(1.0), T.float(G.fugeTon), fuge)),
+            1.0
+        );
+        const wp = T.positionWorld;
+        const n = T.normalize(T.normalWorldGeometry.mul(T.faceDirection));
+        const dpx = T.dFdx(wp);
+        const dpy = T.dFdy(wp);
+        const r1 = T.cross(dpy, n);
+        const det = T.dot(dpx, r1);
+        const gU = r1
+            .mul(T.dFdx(u))
+            .add(T.cross(n, dpx).mul(T.dFdy(u)))
+            .div(T.select(det.abs().greaterThan(1e-12), det, T.float(1e-12)));
+        // zur Fuge hin fällt die Fase: die Normale kippt gegen den Gradienten des Abstands (er zeigt zur Mitte des Steins)
+        const gD = gU.mul(T.select(t.lessThan(0.5), T.float(1.0), T.float(-1.0)));
+        const gl = gD.length();
+        const kante = T.smoothstep(T.float(G.fuge).sub(halb), T.float(G.fuge).add(halb), d)
+            .mul(
+                T.float(1.0).sub(
+                    T.smoothstep(T.float(G.fuge + G.fase).sub(halb), T.float(G.fuge + G.fase).add(halb), d)
+                )
+            )
+            .mul(T.float(G.fase).div(aa).clamp(0.0, 1.0))
+            .mul(T.step(1e-6, gl));
+        const nah = T.float(1.0).sub(
+            T.smoothstep(T.float(B.lodNear), T.float(B.lodFar), T.cameraPosition.sub(wp).length())
+        );
+        const k = nah.mul(staerke == null ? 1.0 : staerke);
+        const m = this._mikroRelief(T, wp, n);
+        const kipp = m.neigung.mul(k).sub(gD.div(gl.max(1e-6)).mul(kante));
+        mat.normalNode = T.cameraViewMatrix.transformDirection(T.normalize(n.add(kipp)));
+        this._mikroStoff(T, mat, m.hoehe.mul(k));
+    }
+
     // ── DER EINE SUBSTANZ-CHARAKTER-KERN ──
     // Terrain · Vegetation · Flach-Werke lesen alle diese Quelle (Korn · Kavität · Ton · Verwitterung ·
     // Moos · Counter-Shading · Roughness, LOD-gegated); der Domänen-Unterschied reist als Parameter

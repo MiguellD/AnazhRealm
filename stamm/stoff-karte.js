@@ -63,11 +63,12 @@ class AnazhRealm_stoff_karte {
             typeof core.karteMasse !== "function" ||
             typeof core.karteRinge !== "function" ||
             typeof core.karteGlaetteGaenge !== "function" ||
+            typeof core.karteSaumRinge !== "function" ||
             !core.KARTEN_GESETZ ||
             !core.KARTEN_GESETZ.lichtTeiler
         )
             return AnazhRealm._kernPflichtBruch(
-                "phyto:karteMasse/karteRinge/karteGlaetteGaenge/KARTEN_GESETZ.lichtTeiler"
+                "phyto:karteMasse/karteRinge/karteGlaetteGaenge/karteSaumRinge/KARTEN_GESETZ.lichtTeiler"
             );
         const soll = Math.max(bedarf || 0, at.n, 1);
         if (at.map && at.cap >= soll) return at;
@@ -857,21 +858,36 @@ class AnazhRealm_stoff_karte {
         return true;
     }
 
-    // DER SAUM DER KARTE (w4-laub-saum, phyto-core `karteSaum`): die Blattgröße der Art aus ihrem Gesetz (`treeParams` der
-    // Nah-Stufe, mit dem Samen der Gestalt — dieselbe Ableitung, aus der ihr Körper wächst) im Rahmen der Karte, Laub oder
-    // Nadel, und der Kronen-Fuß (das tiefste Laub der L1) als Stufe-0-Zeile der Ansicht: [e, nadel, Stärke, Fuß] für die
-    // GPU-Ablage (`saumK`). Ohne Krone (keine Pflanzen-Art, kein Laub) Fuß −1: jede Zeile wählt mit dem geglätteten Schlüssel.
+    // DER SAUM DER KARTE JE HEBUNGS-RING (w4-laub-saum, phyto-core `karteSaumRinge`): die Blattgröße der Art aus ihrem Gesetz
+    // (`treeParams` der Nah-Stufe, mit dem Samen der Gestalt — dieselbe Ableitung, aus der ihr Körper wächst), Laub oder Nadel,
+    // im Bild JEDES Rings, und sein Kronen-Fuß aus der Laub-Hülle der L1 (ihr tiefster Punkt, ihr Radius um die Stammachse).
+    // Bis hierher trug nur der waagrechte Ring den Saum, die gehobenen wählten die geglättete Hülle — und der Blick von unten
+    // liest den Ring −20°. [e je Ring, Fuß je Ring, nadel, Stärke] für die GPU-Ablage (`saumK`); ohne Krone (keine Pflanzen-Art,
+    // kein Laub) Fuß −1: jede Zeile wählt mit dem geglätteten Schlüssel.
     _karteSaumVon(at, z, fr, laub) {
         const pc = globalThis.__phytoCore;
         const tab = globalThis.__terrainCore && globalThis.__terrainCore.PHYTO_PRESETS;
         const rec = tab && tab[z.preset];
         const s =
             rec && rec.s && (rec.kind === "tree" || rec.kind === "shrub") && !laub.isEmpty()
-                ? pc.karteSaum(pc.treeParams(rec.s, z.variant, 0, rec, 0), fr.halfH, at.ch)
+                ? pc.karteSaumRinge(
+                      pc.treeParams(rec.s, z.variant, 0, rec, 0),
+                      fr.halfH,
+                      fr.halfW,
+                      {
+                          minY: laub.min.y,
+                          R: Math.hypot(Math.max(-laub.min.x, laub.max.x), Math.max(-laub.min.z, laub.max.z)),
+                      },
+                      at.ringe.ringe,
+                      at.ch
+                  )
                 : null;
-        return s
-            ? Float32Array.of(s.e, s.nadel ? 1 : 0, pc.KARTEN_GESETZ.saum, (1 - laub.min.y / (2 * fr.halfH)) * at.ch)
-            : Float32Array.of(0, 0, 0, -1);
+        const aus = new Float32Array(12).fill(-1, 4, 8);
+        if (!s) return aus;
+        s.ringe.forEach((r, i) => ((aus[i] = r.e), (aus[4 + i] = r.fuss)));
+        aus[8] = s.nadel ? 1 : 0;
+        aus[9] = pc.KARTEN_GESETZ.saum;
+        return aus;
     }
 
     // DER RECHNER DER ABLAGE: die Compute-Programme (WGSL `KARTE_RECHNER_WGSL`) entstehen asynchron
@@ -958,7 +974,6 @@ class AnazhRealm_stoff_karte {
                 "hA0",
                 "gi",
                 "t",
-                "r0",
             ];
             ord.forEach((n, i) => {
                 const v = p[n] == null ? 0 : p[n];
@@ -978,8 +993,7 @@ class AnazhRealm_stoff_karte {
             kopien.push({ tex, mip, off, zeileB, zeilen, w, h });
             return { aus: off / 4, zeile: zeileB / 4, vonW };
         };
-        // r0: der waagrechte Ring — in ihm gilt der Saum (`saumK`, sein Rahmen ist der des Gesetzes)
-        const base = { V, thr: G.schwelle, w0: W, hA0: at.ch, r0: rg.findIndex((r) => r.hebung === 0) };
+        const base = { V, thr: G.schwelle, w0: W, hA0: at.ch };
         zug("stufe0", Object.assign({}, base, { w: W, h: H }), Math.ceil(W / 16), Math.ceil(H / 16));
         // Albedo: Stufe 0 binär, k ≥ 1 deckungstreu
         let so = 0;
@@ -1082,7 +1096,7 @@ class AnazhRealm_stoff_karte {
             zahl: mk("zahl", (V + 3) * 4, U.STORAGE | U.COPY_DST),
             grenze: mk("grenze", M.a.length * V * 8, U.STORAGE), // je Stufe und Ansicht (Grenzwert-Bits, Lage)
             aus: mk("aus", ausB, U.STORAGE | U.COPY_SRC),
-            saum: mk("saum", 16, U.UNIFORM | U.COPY_DST), // [e, nadel, Stärke, Kronen-Fuß] je Bake (`_karteSaumVon`)
+            saum: mk("saum", 48, U.UNIFORM | U.COPY_DST), // [e je Ring, Kronen-Fuß je Ring, nadel, Stärke] je Bake (`_karteSaumVon`)
         };
         const roh = new Uint8Array(slots.length * 256);
         slots.forEach((u, i) => roh.set(new Uint8Array(u.buffer), i * 256));
@@ -1093,7 +1107,7 @@ class AnazhRealm_stoff_karte {
     // DIE ABLAGE: die GPU zieht aus der Bühne die Stufen der Schicht und kodiert sie, die Kopien legen sie in die Schicht
     // `idx` der Atlas-Texturen. Mit `platte` ({preset, rest, frame}, die Platte trägt die Karte nicht) reisen dieselben Bytes
     // zurück und per Transfer in den Faden der Schale (`karte-ablage`) — der Haupt-Faden schreibt keine Platte. `saum`
-    // ([e, nadel, Stärke, Kronen-Fuß], `_karteSaumVon`) liest die Wahl der Stufen (`saumK`).
+    // ([e je Ring, Kronen-Fuß je Ring, nadel, Stärke], `_karteSaumVon`) liest die Wahl der Stufen (`saumK`).
     _karteAblage(at, idx, B, platte, saum) {
         const rend = this.state.renderer;
         const dev = rend.backend.device;
@@ -1266,7 +1280,7 @@ struct P {
     w: u32, h: u32, k: u32, quelle: u32,
     ziel: u32, V: u32, fuss: f32, aus: u32,
     zeile: u32, thr: f32, flag: u32, w0: u32,
-    hA0: u32, gi: u32, t: u32, r0: u32,
+    hA0: u32, gi: u32, t: u32,
     ringY: vec4<u32>, ringT: vec4<u32>,
 };
 @group(0) @binding(0) var<uniform> p: P;
@@ -1370,9 +1384,11 @@ fn glaette(@builtin(global_invocation_id) g: vec3<u32>) {
     if (p.flag == 1u) { dA[o] = nb / 16.0; } else { dB[o] = nb / 16.0; }
 }
 
-// DER SAUM DER KARTE (phyto-core karteSaum, karteSaumMuster — dieselben Zahlen): x die Blattgröße der Art in Stufe-0-Texeln,
-// y Nadel (1) oder Laub (0), z die Stärke, w der Kronen-Fuß (Stufe-0-Zeile der Ansicht; −1: keine Krone)
-@group(0) @binding(11) var<uniform> saum: vec4<f32>;
+// DER SAUM DER KARTE JE HEBUNGS-RING (phyto-core karteSaum, karteSaumMuster — dieselben Zahlen, _karteSaumVon): e die
+// Blattgröße der Art in Stufe-0-Texeln der Ansicht des Rings, fuss sein Kronen-Fuß (Stufe-0-Zeile der Ansicht; −1: keine Krone),
+// art.x Nadel (1) oder Laub (0), art.y die Stärke
+struct Saum { e: vec4<f32>, fuss: vec4<f32>, art: vec4<f32> };
+@group(0) @binding(11) var<uniform> saum: Saum;
 fn saumHash(ix: i32, iy: i32, s: u32) -> f32 {
     var h = (bitcast<u32>(ix) * 0x27d4eb2du) ^ (bitcast<u32>(iy) * 0x165667b1u) ^ (s * 0x9e3779b9u);
     h = (h ^ (h >> 15u)) * 0x85ebca6bu;
@@ -1404,15 +1420,15 @@ fn saumK(@builtin(global_invocation_id) g: vec3<u32>) {
     let s = summe[p.ziel + i].a;
     var kk = 0.0;
     if (s > 0.0) {
-        // die Lage in der Ansicht (ihr Feld, lod.K3); der Saum gilt im waagrechten Ring r0 — dort ist der Rahmen der des
-        // Gesetzes (halfH, der Kronen-Fuß eine Zeile), die gehobenen Ringe wählen geglättet
+        // die Lage in der Ansicht (ihr Feld, lod.K3) und ihr Ring: über seinem Kronen-Fuß der Saum seiner Zelle
         let v = ansicht(g.x, g.y);
+        let ri = v / jeRing();
         let fe = feld(v);
         let f = f32(1u << p.k);
         let X = (f32(g.x - fe.x) + 0.5) * f;
         let Y = (f32(g.y - fe.y) + 0.5) * f;
-        if (v / jeRing() == p.r0 && Y <= saum.w) {
-            kk = max(1e-9, s / p.fuss + saum.z * (saumMuster(X, Y, max(saum.x, 2.0 * f), saum.y > 0.5) - 0.5));
+        if (Y <= saum.fuss[ri]) {
+            kk = max(1e-9, s / p.fuss + saum.art.y * (saumMuster(X, Y, max(saum.e[ri], 2.0 * f), saum.art.x > 0.5) - 0.5));
         } else {
             kk = dLies(i, p.flag == 1u);
         }

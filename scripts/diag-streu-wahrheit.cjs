@@ -55,38 +55,33 @@ function kartenFarbe(core) {
     // Stufe 0: 256 opake Texel (16 × 16, V = 1), Texel i trägt den linearen Wert i in r, g, b.
     const w = 16,
         h = 16;
-    const lin = new Uint8Array(w * h * 4);
-    for (let i = 0; i < 256; i++) {
-        lin[i * 4] = lin[i * 4 + 1] = lin[i * 4 + 2] = i;
-        lin[i * 4 + 3] = 255;
-    }
-    const mips = core.impostorMips(lin, w, h, 1, null, 2);
-    const d0 = mips && mips.stufen && mips.stufen[0] ? mips.stufen[0].data : null;
+    const lin = Uint8Array.from({ length: w * h * 4 }, (_, j) => (j % 4 === 3 ? 255 : j >> 2));
+    const [d0, d1] = ((core.impostorMips(lin, w, h, 1, null, 2) || {}).stufen || []).map((s) => s.data);
     let ab0 = 0;
     for (let i = 0; i < 256; i++) if (!d0 || d0[i * 4] !== srgbSoll(i / 255) || d0[i * 4 + 3] !== 255) ab0++;
     if (ab0) fehler.push(`die Karten-Kodierung weicht in ${ab0} von 256 Stufen von linear → sRGB ab (Stufe 0)`);
     // Stufe 1: das LINEARE Mittel der vier Kinder, dann kodiert (nie das Mittel der sRGB-Bytes).
-    const d1 = mips && mips.stufen && mips.stufen[1] ? mips.stufen[1].data : null;
     let ab1 = 0;
+    // das Mittel der vier Kinder (2y + dy)·w + 2x + dx ist (2y + ½)·w + 2x + ½
     for (let y = 0; y < h / 2; y++)
-        for (let x = 0; x < w / 2; x++) {
-            let m = 0;
-            for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) m += (y * 2 + dy) * w + x * 2 + dx;
-            const o = y * (w / 2) + x;
-            if (!d1 || Math.abs(d1[o * 4] - srgbSoll(m / 4 / 255)) > 1) ab1++;
-        }
+        for (let x = 0; x < w / 2; x++)
+            if (!d1 || Math.abs(d1[(y * (w / 2) + x) * 4] - srgbSoll(((2 * y + 0.5) * w + 2 * x + 0.5) / 255)) > 1) ab1++;
     if (ab1) fehler.push(`die gemittelte Mip-Stufe ist nicht linear gemittelt und sRGB-kodiert (${ab1} von ${(w * h) / 4} Texeln)`);
     return fehler;
 }
 
 // (6) DER SAUM DER KARTE — ein Rausch-Feld (30 % deckend, 8 Ansichten 128 × 256 wie der Atlas), je Baum- und Strauch-Art des
-// Kerns seine Stufen mit dem Saum ihres Gesetzes; Rückgabe { fehler, n: die Saum-Gesetze }
-function kartenSaum(core, presets) {
+// Kerns seine Stufen mit dem Saum ihres Gesetzes; Rückgabe { fehler, n: die Saum-Gesetze }. Dazu JE HEBUNGS-RING des Rezepts
+// (w4-laub-saum, 31.10.; phyto-core `karteSaumRinge`, eine Krone vom Boden an im Einheits-Rahmen): jeder Ring trägt eine Zelle und
+// seinen Kronen-Fuß in seiner Ansicht — bis dahin wählten die gehobenen Ringe die geglättete Hülle.
+function kartenSaum(core, presets, ic) {
     const [rnd, rgba, fehler, umriss] = [core.mulberry32(1), new Uint8Array(1 << 20), [], new Map()];
+    const ringe = core.karteRinge(ic.views, ic.cellW, ic.cellH, ic.hebungen, ic.ringTeiler).ringe;
     rgba.forEach((x, i) => i % 4 === 3 && rnd() < 0.3 && (rgba[i] = 255));
     for (const [art, pre] of Object.entries(presets)) {
         if (!pre.s || !/^(tree|shrub)$/.test(pre.kind)) continue;
         const P = core.treeParams(pre.s, 1, 0, pre, 0), sa = core.karteSaum(P, 0.51 * P.height, 256);
+        core.karteSaumRinge(P, 1, 1, { minY: 0, R: 0 }, ringe, 256).ringe.forEach((r, i) => r.e * r.fuss > 0 || fehler.push(`Saum ${art}: Ring ${ringe[i].hebung}° ohne Saum`));
         const st = core.impostorMips(rgba, 128, 2048, 8, null, 6, { saum: Object.assign({ fuss: 256 }, sa) }).stufen.map((s) => s.data.filter((x, i) => i % 4 === 3));
         const d = st.map((m) => m.filter((x) => x).length / m.length);
         d.forEach((x, k) => Math.abs(x - d[0]) > 0.5 / (32768 >> (2 * k)) && fehler.push(`Saum ${art}: Stufe ${k} deckt ${x} statt ${d[0]} — die Karte dünnt aus`));
@@ -192,7 +187,7 @@ function pruefe(o = {}) {
     // (5) DIE KARTEN-FARBE — am echten Codec (phyto-core); die Welt-Schicht ist sRGB markiert
     for (const f of kartenFarbe(o.core || codecAus(PHYTO))) fehler.push(f);
     // (6) DER SAUM DER KARTE — am echten Codec, je Art des Kerns
-    const saum = kartenSaum(o.core || codecAus(PHYTO), d.presets);
+    const saum = kartenSaum(o.core || codecAus(PHYTO), d.presets, d.cfg.impostor);
     fehler.push(...saum.fehler);
     return { fehler, arten, weich, saum: saum.n };
 }
@@ -216,6 +211,7 @@ function main() {
             ["Saum stumm", /der Umriss folgt nicht der Art/, { core: ((c) => ((c.KARTEN_GESETZ.saum = 0), c))(codecAus(PHYTO)) }],
             ["Ausdünnen in der Ferne", /die Karte dünnt aus/, { core: codec((m) => (m.stufen.slice(3).forEach((s) => s.data.fill(0)), m)) }],
             ["Nadel als Laub", /Laub und Nadel vertauscht/, { core: ((c, f = c.karteSaum) => Object.assign(c, { karteSaum: (...a) => ({ ...f(...a), nadel: false }) }))(codecAus(PHYTO)) }],
+            ["Ring −20° ohne Saum", /Ring -20° ohne Saum/, { core: ((c, f = c.karteSaumRinge) => Object.assign(c, { karteSaumRinge: (...a) => ((a = f(...a)), (a.ringe[0].e = 0), a) }))(codecAus(PHYTO)) }],
             ["Mip-Stufe roh gemittelt", /linear gemittelt/, { core: codec((m) => { const [a, b] = m.stufen; for (let o = 0; o < b.data.length / 4; o++) { const x = o % b.width, y = (o / b.width) | 0, w = a.width; b.data[o * 4] = Math.round((a.data[(2 * y * w + 2 * x) * 4] + a.data[(2 * y * w + 2 * x + 1) * 4] + a.data[((2 * y + 1) * w + 2 * x) * 4] + a.data[((2 * y + 1) * w + 2 * x + 1) * 4]) / 4); } return m; }) }],
         ];
         let ok = Array.isArray(echt.fehler) && echt.fehler.length === 0;
