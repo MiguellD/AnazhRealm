@@ -350,7 +350,7 @@ function buehne(o) {
     // Mittag, der Schuss setzte seine Stunde erst danach. Die fehlende Uhr prüft `== null` zuerst (`Number(null) === 0`, Lehre
     // 17), ein Wort außerhalb [0, 1] bricht laut, ehe die Bühne etwas setzt
     const uhr = o?.uhr == null ? 0.5 : o.uhr;
-    if (!(typeof uhr === "number" && uhr >= 0 && uhr <= 1)) throw new Error(`DIE BÜHNE: die Uhr gilt nicht ${JSON.stringify(o)}`);
+    if (!(typeof uhr === "number" && uhr >= 0 && uhr <= 1)) throw new Error(`DIE BÜHNE: die Uhr ${uhr} gilt nicht`);
     window.__weltaktSpion();
     st.autoSeason = false;
     const s = r.setSeason(o?.saison || "sommer");
@@ -389,7 +389,7 @@ function buehne(o) {
         }
         if (buehnenTiere() < o.tiere) throw new Error(`DIE BÜHNE: ${buehnenTiere()} von ${o.tiere} Tieren stehen`);
     }
-    return { saison: st.season, phase: st.seasonPhase, wetter: st.weather, uhr: st.timeOfDay, tiere: buehnenTiere() };
+    return { saison: st.season, phase: st.seasonPhase, wetter: st.weather, tiere: buehnenTiere() };
 }
 
 // DIE TIERE DER BÜHNE im Selbsttest (ohne Welt, Attrappen; Land nur östlich des Spielers): 50 Tiere stehen im Ring 15–60 m auf
@@ -429,7 +429,7 @@ function buehneSelbsttest() {
         r.state.world = {};
         const uhr = (o) => {
             try {
-                return `${buehne(o).uhr}/${r.state.world.timeOfDay}`;
+                return buehne(o) && `${r.state.timeOfDay}/${r.state.world.timeOfDay}`;
             } catch {
                 return `laut/${r.state.timeOfDay}`;
             }

@@ -77,12 +77,12 @@ hauptLauf(async () => {
     const W = { bp: "fahrzeug_gt", donor: "fahrzeug_wagen", preset: "gt", praefix: "fahrzeug_", wahl: 2, name: "ein Fahrzeug", art: "vehicle", anzahl: 5, teile: 17 };
     const [eps, out] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
         const res = { c: {}, d: {}, f: {} };
-        const A = r.constructor;
+        const A = AnazhRealm;
         const f = r._ensureAssetFoundry();
         // ===== C: die MERGE-SEMANTIK direkt (first-wins + disjunkt), mit Restore =====
         try {
             const orig = A._studioRenderConfig;
-            const origState = r.state.studioRenderConfig;
+            const origState = st.studioRenderConfig;
             // KONSUM: der Chokepoint mergt über das Gesetz (phyto-core kerneVereinen), nie über einen Inline-Zwilling.
             const PC = window.__phytoCore, kv = PC.kerneVereinen;
             res.c.gesetz = 0;
@@ -98,7 +98,7 @@ hauptLauf(async () => {
             res.c.treeKept = JSON.stringify(pks.tree); // erwartet [7,8] — der Erst-Kern fuehrt
             res.c.torMerged = JSON.stringify(pks.tor); // erwartet [1] — disjunkt kommt an
             A._studioRenderConfig = orig;
-            r.state.studioRenderConfig = origState;
+            st.studioRenderConfig = origState;
         } catch (e) {
             res.c.err = (e && e.message) || String(e);
         }
@@ -109,15 +109,15 @@ hauptLauf(async () => {
                 f.recipes.probemobil = { kind: "vehicle", lab: "Probemobil", s: {}, fx: {} };
                 const n1 = r._foundryAutoRegisterSpecies(f.recipes);
                 const n2 = r._foundryAutoRegisterSpecies(f.recipes);
-                res.d.probeRegistered = !!(r.state.blueprints && r.state.blueprints.fahrzeug_probemobil);
+                res.d.probeRegistered = !!(st.blueprints && st.blueprints.fahrzeug_probemobil);
                 res.d.probeLabel =
-                    r.state.blueprints && r.state.blueprints.fahrzeug_probemobil
-                        ? r.state.blueprints.fahrzeug_probemobil.label
+                    st.blueprints && st.blueprints.fahrzeug_probemobil
+                        ? st.blueprints.fahrzeug_probemobil.label
                         : null;
                 res.d.idempotent = n1 >= 1 && n2 === 0;
                 // Aufraeumen (Gate-Hook-Lehre: sichern + wiederherstellen, nie Muell hinterlassen):
                 delete f.recipes.probemobil;
-                delete r.state.blueprints.fahrzeug_probemobil;
+                delete st.blueprints.fahrzeug_probemobil;
             }
         } catch (e) {
             res.d.err = (e && e.message) || String(e);

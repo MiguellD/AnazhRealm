@@ -25,7 +25,7 @@
 //                                                      „byte-gleich"
 // Port: WORKER_DICHTE_PORT (Default 4392). Exit 1 bei Drift, Längen-Mismatch, Page-Error oder rotem Selbsttest.
 "use strict";
-const { statikServer, nullRenderer, starteBrowser, hauptLauf, argOpt: opt, booteWelt } = require("./lib/welt-boot.cjs");
+const { statikServer, nullRenderer, starteBrowser, hauptLauf, argOpt: opt, booteWelt, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const liesText = (datei) => fs.readFileSync(datei, "utf8");
 const path = require("path");
@@ -729,7 +729,7 @@ async function kernProbe(page, url) {
         sekunden: Math.round((Date.now() - t0) / 1000) };
     for (const b of befunde) console.log("  ⛔", b);
     console.log(`\n${befunde.length ? "⛔ KERN-PROBE ROT" : "✅ KERN-PROBE GRÜN"}: ${N} Punkte, ${mutationen.filter((z) => z.gut).length}/4 Mutationen ziehen beide Leser · ${kern.sekunden} s\n`);
-    if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ kern }, null, 1));
+    if (JSON_AUS) jsonSchreiben(JSON_AUS, { kern });
     return befunde.length ? 1 : 0;
 }
 
@@ -994,19 +994,12 @@ function realismus() {
         }
     }
     if (JSON_AUS)
-        fs.writeFileSync(
-            JSON_AUS,
-            JSON.stringify(
-                {
+        jsonSchreiben(JSON_AUS, {
                     zweck: "K16 Gelände-Linse (Makro am Gesetzbuch)",
                     wurzel: root,
                     welten,
                     presets: presets && presets.je,
-                },
-                null,
-                1
-            )
-        );
+                });
     if (SELBSTTEST) {
         const blind = welten.some(
             (w) =>
@@ -1447,7 +1440,7 @@ async function studioProbe(page) {
         if (!befunde.length) befunde.push(String((e && e.message) || e));
     }
     out.sekunden = Math.round((Date.now() - t0) / 1000);
-    if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify(out, null, 1));
+    if (JSON_AUS) jsonSchreiben(JSON_AUS, out);
     for (const f of befunde) console.log(`  ⛔ ${f}`);
     const tot = out.regler.filter((r) => !r.wirkt).length;
     console.log(
@@ -2208,12 +2201,12 @@ hauptLauf(async () => {
         // Die Leser der Kern-Formeln (Boden-Farbe Main und Worker, Fels-Exposition, Erbgut-Normalform).
         abdruck.leser = b0.shaLeser || null;
         abdruck.leserSaaten = b0.shaLeserSaaten || null;
-        fs.writeFileSync(ABDRUCK, JSON.stringify(abdruck, null, 1));
+        jsonSchreiben(ABDRUCK, abdruck);
         console.log(
             `\n  Abdruck: ${ABDRUCK} (${abdruck.gitter.length} Gitter + Makro ${Object.keys(abdruck.saaten || {}).length} Saaten${abdruck.buehne ? " + Bühne" : ""})`
         );
     }
-    if (JSON_AUS) fs.writeFileSync(JSON_AUS, JSON.stringify({ berichte, selbst }, null, 1));
+    if (JSON_AUS) jsonSchreiben(JSON_AUS, { berichte, selbst });
     let pass;
     if (SELBSTTEST) {
         // die Höhen der Ferne (K60) fallen mit demselben verfälschten Worker-Term rot, der Zwilling der Form beim Namen

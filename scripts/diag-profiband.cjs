@@ -46,7 +46,7 @@
 //
 //   node scripts/diag-profiband.cjs [--selftest] [--messung <boot.json …>]          (npm run gate:profiband)
 "use strict";
-const { selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { selbsttestEnde, jsonLesen } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const DZ = require("./lib/draw-zaehler.cjs");
@@ -181,7 +181,7 @@ function goldenDreiecke(arten) {
     for (const f of fs.readdirSync(GOLDEN)) {
         const m = /^(.+)-s(-?\d+)-L([01])-summer\.json$/.exec(f);
         if (!m || !arten.has(m[1])) continue;
-        const g = JSON.parse(fs.readFileSync(path.join(GOLDEN, f), "utf8"));
+        const g = jsonLesen(path.join(GOLDEN, f));
         let t = 0,
             w = 0;
         for (const x of g.meshes || []) {
@@ -225,7 +225,7 @@ function projektionsWand(haushalt, zensus, tris) {
     return { p, errs, soll: k ? k.dreiecke : null };
 }
 function projektionPflicht() {
-    const rc = JSON.parse(fs.readFileSync(path.join(GOLDEN, "render-config.json"), "utf8"));
+    const rc = jsonLesen(path.join(GOLDEN, "render-config.json"));
     const t0 = rc && rc.lod && rc.lod.budget && rc.lod.budget.tree && rc.lod.budget.tree[0];
     return !!(t0 && t0.lagen != null);
 }
@@ -240,7 +240,7 @@ function gestaltDreiecke(art, zeilen) {
     for (const z of zeilen) {
         const f = path.join(GOLDEN, `${art}-s${z.gestalt}-L${z.stufe}-summer.json`);
         if (!fs.existsSync(f)) continue;
-        const g = JSON.parse(fs.readFileSync(f, "utf8"));
+        const g = jsonLesen(f);
         let t = 0;
         for (const x of g.meshes || []) {
             if (!x.attrs || !x.attrs.position || x.teil === "schatten") continue;
@@ -867,7 +867,7 @@ function selbsttest() {
     // S25 — die Projektion (P): die Ist-Projektion von V18.536 (Golden-Dreiecke des Zensus `vorher`) liegt über dem
     // Haushalt baum und wird rot; dieselbe Wiese mit dem Soll je Instanz (L0 7 000 · L1 2 300 · Wurf 1 000) bleibt
     // grün; eine Zensus-Zeile ohne Golden-Dreiecke wird beim Namen genannt.
-    const zs = JSON.parse(fs.readFileSync(ZENSUS, "utf8"));
+    const zs = jsonLesen(ZENSUS);
     const ist = projektionsWand(haushalt, zs, zs.vorher);
     const sollT = { haupt: {}, wurf: {} };
     for (const z of zs.zeilen) {
@@ -1079,7 +1079,7 @@ function selbsttest() {
     // wie sie w2B auf der GTX richtete (ohne Version), ist ROT — ohne Version, mit fremder
     // Messung, mit einer Gesamt-Zeile über der Summe der Klassen und gegen w2B zu weit (baum haupt 385 630 gegen 60 976).
     {
-        const probe = JSON.parse(fs.readFileSync(path.join(root, "spec", "profiband", "probe-1110-12.json"), "utf8"));
+        const probe = jsonLesen(path.join(root, "spec", "profiband", "probe-1110-12.json"));
         const w2B = probe.boots.w2B.schritte.find((x) => x.name === "band").ergebnis.messung;
         const slot = (r, z) => Object.assign({ ort: "wiese", geraet: "gtx", sicht: "ego", datei: "probe", ratsche: r }, z);
         const alt31 = BAND.ratscheFrische({
@@ -1205,11 +1205,11 @@ function main() {
         for (const f of BAND.ratschePruefen(e.ratsche, haushalt)) errs.push(`H2 [${e.datei}] ${f}`);
     // H2b DIE FRISCHE: gemessen, höchstens eine Version alt, am eigenen Ort × Gerät × Sicht, die Gesamt-Zeile feuert, und
     // gegen jede gegebene Messung (`--messung`) keine Zeile zu weit.
-    const version = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).version;
+    const version = jsonLesen(path.join(root, "package.json")).version;
     const messungen = [];
     const mi = process.argv.indexOf("--messung");
     for (const d of mi >= 0 ? process.argv.slice(mi + 1).filter((x) => /\.json$/i.test(x)) : []) {
-        const j = JSON.parse(fs.readFileSync(path.resolve(d), "utf8"));
+        const j = jsonLesen(path.resolve(d));
         const e = Array.isArray(j.schritte) ? j.schritte.find((x) => x.name === "band") : null;
         const u = e ? (e.ergebnis && e.ergebnis.messung) || null : j;
         const geraet = u && u.geraet ? u.geraet.schluessel : null;
@@ -1224,7 +1224,7 @@ function main() {
     const br = buendelReiheWand(A);
     for (const f of br.errs) errs.push("H7 " + f);
     // P — die Projektion der Studio-Ausgänge an der Mess-Wiese (Pflicht ab dem Vertrags-Akt).
-    const zs = JSON.parse(fs.readFileSync(ZENSUS, "utf8"));
+    const zs = jsonLesen(ZENSUS);
     const pw = projektionsWand(haushalt, zs, goldenDreiecke(new Set(zs.zeilen.map((z) => z.art))));
     const pflicht = projektionPflicht();
     if (pflicht) for (const f of pw.errs) errs.push(f);

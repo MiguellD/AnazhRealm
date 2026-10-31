@@ -332,8 +332,9 @@
                         "uhr": 0.5,
                         "sonne": 74.21,
                         "rechnung": {
-                            "art": "einsDurch",
-                            "von": [0.08, 0.2]
+                            "art": "klarerTag",
+                            "mittag": 74.21,
+                            "diffus": [0.08, 0.2]
                         },
                         "einheit": "E(Sonne + Himmel) / E(Himmel) an der waagrechten 18-%-Karte, Mittag klar",
                         "quelle": "Diffus-Anteil des klaren Himmels 0,08–0,2 (Liu & Jordan 1960, Solar Energy 4(3):1), das Verhältnis ist sein Kehrwert [gerechnet]; Frostbite PBR (Sonne 100 klx, Himmel 10–20 klx) liegt darin"
@@ -368,7 +369,7 @@
                             "himmelLx": [0.0006, 0.002],
                             "mondLx": [0.1, 0.32]
                         },
-                        "einheit": "E(Mond + Himmel) / E(Himmel), mondhelle Nacht klar",
+                        "einheit": "dasselbe, Vollmond-Nacht klar",
                         "quelle": "Liu & Jordan 1960; Nachthimmel US NPS Night Skies; Vollmond Kyba, Mohar & Posch 2017 (Astron. Geophys. 58(1):1.31) [gerechnet]"
                     },
                     {
@@ -381,7 +382,7 @@
                             "datei": "fachwerk-core.js",
                             "symbol": "lichtFarbe"
                         },
-                        "einheit": "B/R (linear) des Richtlichts an der waagrechten Karte, mondhelle Nacht",
+                        "einheit": "B/R (linear) des Richtlichts, Vollmond-Nacht",
                         "quelle": "Purkinje (ATMO_GESETZ.nacht.mond): Mondlicht 4 100 K, gesehen blau (Khan & Pattanaik 2004, J. Vis. 4(8):316), höchstens das Tageslicht der CIE 25 000 K (CIE 15:2004) [gerechnet]"
                     }
                 ]

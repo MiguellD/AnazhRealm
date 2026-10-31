@@ -42,17 +42,17 @@ hauptLauf(async () => {
     const out = await page.evaluate(
         async (zeitArg, blickArg) => {
             const res = { schuesse: {} };
-            await window.__weltDa(() => !(!r || !r.state));
+            await window.__weltDa(() => !(!r || !st));
             // Settle: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`, der Takt der Seite)
             await window.__weltStehtNach();
-            const rend = r.state.renderer;
+            const rend = st.renderer;
             if (!rend) return { fatal: "kein Renderer" };
             res.rendererArt = rend.isWebGPURenderer ? "webgpu" : rend.isWebGLRenderer ? "webgl" : "?";
             res.headlessNull = !!rend._isHeadlessNull;
             if (rend._isHeadlessNull) return res; // ehrlich: ohne echten Renderer kein Schuss
 
-            const cam = r.state.camera;
-            const scene = r.state.scene;
+            const cam = st.camera;
+            const scene = st.scene;
             if (!cam || !scene) return { fatal: "kein cam/scene" };
             const schuss = async () => {
                 const w = 640,
@@ -74,7 +74,7 @@ hauptLauf(async () => {
             };
 
             // Blick einrichten: Augenhöhe in den Wald ODER auf den Boden.
-            const pm = r.state.playerMesh && r.state.playerMesh.position;
+            const pm = st.playerMesh && st.playerMesh.position;
             if (pm && cam) {
                 if (blickArg === "boden") {
                     cam.position.set(pm.x, pm.y + 1.7, pm.z);
@@ -87,7 +87,7 @@ hauptLauf(async () => {
             }
             // Zeit setzen (Tag/Nacht) über die eine Zeit-Quelle, falls vorhanden.
             try {
-                if (zeitArg && r.state.world) r.state.world.timeOfDay = Number(zeitArg) / 24;
+                if (zeitArg && st.world) st.world.timeOfDay = Number(zeitArg) / 24;
             } catch {}
             // Ein paar echte Loop-Ticks, damit Uniforms/Streaming den Blick tragen.
             for (let i = 0; i < 20; i++) {

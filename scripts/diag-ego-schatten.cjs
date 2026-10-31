@@ -160,7 +160,7 @@ function buehne(arg) {
         const { W, H, SCHWELLE, bilder } = arg;
         const T = window.THREE;
         const rend = st.renderer;
-        const E = r.constructor.SHADOW_TWIN_LAYER;
+        const E = AnazhRealm.SHADOW_TWIN_LAYER;
         const P = Object.getPrototypeOf(r);
         // JE BILD DER BÜHNE EIN FRAME: r184 zeichnet eine Schatten-Karte höchstens einmal je Frame (`ShadowNode.updateBefore`,
         // frameId), den Frame zählt nur der rAF (`Animation.start`) — tickte zwischen zwei Schüssen keiner, las der zweite die

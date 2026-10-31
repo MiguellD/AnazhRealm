@@ -587,10 +587,10 @@ async function probe() {
             seq = e._blockerSeq;
             if (e.position && !(N.beweger && N.beweger.has(e))) {
                 const pk = e._blockerPlatz;
-                const Zp = r.constructor.BLOCKER_ZELLE;
+                const Zp = AnazhRealm.BLOCKER_ZELLE;
                 const k = Math.floor(e.position.x / Zp) * 2097152 + Math.floor(e.position.z / Zp);
                 if (!pk || !pk.length) f.push(`${e.type}#${e.id}: steht auf keinem Platz`);
-                else if (pk[0] !== r.constructor.BLOCKER_RIESE && !pk.includes(k))
+                else if (pk[0] !== AnazhRealm.BLOCKER_RIESE && !pk.includes(k))
                     f.push(`${e.type}#${e.id}: seine Position liegt in Zelle ${k} außerhalb seines Platzes`);
                 else
                     for (const kk of pk)
@@ -602,8 +602,8 @@ async function probe() {
                 else
                     for (const k of keys)
                         if (!(N.zellen.get(k) || []).includes(e)) f.push(`${e.type}#${e.id}: fehlt in Zelle ${k}`);
-                const Z = r.constructor.BLOCKER_ZELLE;
-                if (keys && keys[0] !== r.constructor.BLOCKER_RIESE)
+                const Z = AnazhRealm.BLOCKER_ZELLE;
+                if (keys && keys[0] !== AnazhRealm.BLOCKER_RIESE)
                     for (const b of e.blockerAABBs)
                         for (const [x, z] of [
                             [b.minX, b.minZ],

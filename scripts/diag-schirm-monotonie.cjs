@@ -148,7 +148,7 @@ async function welt() {
     // Boot · Mess-Wiese · Einschwingen · Bühne · stille Tiere · der Wolf der Fell-Probe
     const boot = await page.evaluate(async (groessen) => {
         await window.__weltDa();
-        if (!r.state.renderer || !r.state.renderer._isHeadlessNull) return { fatal: "kein Null-Renderer" };
+        if (!st.renderer || !st.renderer._isHeadlessNull) return { fatal: "kein Null-Renderer" };
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
         await window.__weltDa(() => f?.ready && f.recipeCount > 0);
         if (!f?.ready) return { fatal: "Foundry nicht bereit" };
@@ -266,7 +266,7 @@ async function welt() {
             still = waechst() ? 0 : still + 1;
         }
         // erst nach der Stille: der Wolf steht im Abstand d* seines jetzigen Maßes
-        const F = r.constructor.FELL_BILDSCHIRM;
+        const F = AnazhRealm.FELL_BILDSCHIRM;
         const breite = F.breiteM * (tB.f || 1) * (w.scale.x || 1);
         const pxJeM = (h) => h / (2 * Math.tan((cam.fov * Math.PI) / 360));
         const gross = groessen[0][1],
@@ -335,7 +335,7 @@ async function welt() {
     const messung = await reihe();
     // die EINE Quelle liest den Zeichenpuffer am Ruf
     const quelleLiest = await page.evaluate(() => {
-        const ren = r.state.renderer,
+        const ren = st.renderer,
             alt = ren.getDrawingBufferSize,
             eigen = Object.prototype.hasOwnProperty.call(ren, "getDrawingBufferSize");
         let n = 0;
@@ -352,11 +352,11 @@ async function welt() {
             const probe = new T.InstancedMesh(new T.BoxGeometry(1, 1, 1), new T.MeshBasicMaterial(), 64);
             probe.name = "schirmProbe";
             probe.frustumCulled = false;
-            r.state.scene.add(probe);
+            st.scene.add(probe);
             const roh = Object.getPrototypeOf(r)._schirmMessen;
             r._schirmMessen = function () {
                 const s = roh.call(this);
-                r.constructor._instanzZahl(probe, Math.min(64, Math.round((8 * 720) / Math.max(1, s.hoehe))));
+                AnazhRealm._instanzZahl(probe, Math.min(64, Math.round((8 * 720) / Math.max(1, s.hoehe))));
                 return s;
             };
             window.__schirmProbe = probe;
@@ -364,7 +364,7 @@ async function welt() {
         selbst.verkehrt = await reihe();
         await page.evaluate(() => {
             delete r._schirmMessen;
-            r.state.scene.remove(window.__schirmProbe);
+            st.scene.remove(window.__schirmProbe);
         });
         // (c) die Quelle EINGEFROREN: ein fester Schirm (der alte Rückfall 1080) — das Fell folgt dem Fenster nicht mehr
         await page.evaluate(() => {

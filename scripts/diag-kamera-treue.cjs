@@ -459,7 +459,7 @@ function buehne() {
             const bSchatten = await replay(fremderStoff);
             rend._renderScene = zaehlUm(spielSzene);
             // (d)(e)(f)(g) DIE STAND-WAND: Prüfungen, Voll-Refreshs, Gänge und Uploads je Render-Abschnitt — der Zähler der Diät-Linse.
-            const A = r.constructor;
+            const A = AnazhRealm;
             const schreibRoh = A._diaetGeteiltSchreiben;
             const Z = window.__diaetZaehler();
             const gezaehlt = async (fn) => {
@@ -760,12 +760,12 @@ function buehne() {
             await window.__weltDa((r) => {
                 return !!(r?.state?.rendererReady && r.state._weltbildDa && r.state.renderer?.backend);
             });
-            r.state.renderer.setAnimationLoop(null);
-            const be = r.state.renderer.backend;
+            st.renderer.setAnimationLoop(null);
+            const be = st.renderer.backend;
             return {
                 ok: true,
                 ms: Math.round(performance.now() - t0),
-                wahrheit: !!r.state.renderer.__anazhBundleWahrheit,
+                wahrheit: !!st.renderer.__anazhBundleWahrheit,
                 webgpu: be.isWebGPUBackend === true,
             };
         });

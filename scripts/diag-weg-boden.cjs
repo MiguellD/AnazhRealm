@@ -23,7 +23,7 @@ const server = statikServer();
 
 function probe(stoerung) {
     const T = window.THREE;
-    const A = r.constructor;
+    const A = AnazhRealm;
     // Ein trockener Probe-Ort nahe dem Spieler (die Wasser-Wand würde Formen verwerfen), auf dem der Kern der Straße
     // (x −24 … −2, |dz| < 1,2) ohne Weg Wiese trägt: die Büschel der Nah-Wiese im Streifen (−1 = eine Kachel ohne Boden).
     const pm = st.playerMesh.position;
@@ -180,7 +180,7 @@ function probe(stoerung) {
 // 8 TRITT — eine Feuerstelle (Bauplan `glutbrunnen`, Gestalt fachwerk `feuerstelle`) nahe dem Spieler; die Karte trägt
 // sonst nichts (kein Weg, keine Krone: der Fall, in dem der Takt früh zurückkehrt).
 function trittProbe(stoerung) {
-    const A = r.constructor;
+    const A = AnazhRealm;
     const pm = st.playerMesh.position;
     let o = null;
     for (let k = 0; k < 64 && !o; k++) {
@@ -318,9 +318,9 @@ hauptLauf(async () => {
     await page.evaluate(async () => {
         await window.__weltDa((r) => r.state && r.state.scene);
         const warm = () =>
-            r._foundry?.recipes?.feuerstelle && r.state.voxelChunks?.size > 20 && r.state.nahWiese?.reich > 0;
+            r._foundry?.recipes?.feuerstelle && st.voxelChunks?.size > 20 && st.nahWiese?.reich > 0;
         for (const weiter = window.__deckel("Buch, Ring und Wiesen-Weite", 4500); !warm() && weiter(); ) {
-            r._tickVoxelChunkStreaming(r.state.playerMesh.position);
+            r._tickVoxelChunkStreaming(st.playerMesh.position);
             r._tickNahWiese(performance.now() - 1);
             await sleep(20);
         }

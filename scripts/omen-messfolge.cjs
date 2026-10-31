@@ -42,7 +42,7 @@
 // Der save-server läuft vorher (`npm start`, :4312 — am OMEN der Mess-Klon); die Werkbank startet und stoppt die Folge selbst
 // (ein Boot je Aufruf; `--serie` hält das Profil für den Zweit-Boot).
 "use strict";
-const { werkbankRuf, hauptLauf, sleep, selbsttestEnde, argOpt: opt } = require("./lib/welt-boot.cjs");
+const { werkbankRuf, hauptLauf, sleep, selbsttestEnde, argOpt: opt, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -623,7 +623,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
     const basisDatei = opt("--basis", null);
     let basis = null;
     if (basisDatei) {
-        const bj = JSON.parse(fs.readFileSync(path.resolve(basisDatei), "utf8"));
+        const bj = jsonLesen(path.resolve(basisDatei));
         basis = bandMessungAus(bj);
         const bp = bj.parameter || {};
         if (!basis || bp.ort !== ORT || bp.sicht !== SICHT)
@@ -667,7 +667,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
         versuche: neu.versuche,
         einschwung: null,
     };
-    const schreibe = () => fs.writeFileSync(datei, JSON.stringify(aus, null, 1));
+    const schreibe = () => jsonSchreiben(datei, aus);
     const log = [];
     const profilSerie = serieProfil(SERIE);
     const serieNeu = !!profilSerie && !fs.existsSync(profilSerie);
@@ -846,7 +846,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
             let messung = null;
             if (band && fs.existsSync(bandDatei)) {
                 const e = aus.schritte[aus.schritte.length - 1];
-                messung = JSON.parse(fs.readFileSync(bandDatei, "utf8"));
+                messung = jsonLesen(bandDatei);
                 e.ergebnis = Object.assign({}, band, { messung });
                 delete e.ergebnis.datei;
                 fs.rmSync(bandDatei, { force: true });
@@ -1258,7 +1258,7 @@ async function selbsttest() {
         pruefe("die Band-Linse schrieb kein Urteil", bandBefunde(M(undefined)), /^BAND band: die Band-Linse schrieb kein Urteil/);
         pruefe("die Band schrieb keine Messung", bandBefunde(null), /keine Messung/);
         // DIE GEGENPROBE 1110-12 (spec/profiband/probe-1110-12.json): beide Boots ROT beim Namen
-        const probe = JSON.parse(fs.readFileSync(path.join(root, "spec", "profiband", "probe-1110-12.json"), "utf8"));
+        const probe = jsonLesen(path.join(root, "spec", "profiband", "probe-1110-12.json"));
         const bandVon = (j) => j.schritte.find((s) => s.name === "band").ergebnis.messung;
         pruefe("1110-12 w2B (Wiese)", bandBefunde(bandVon(probe.boots.w2B)), /^BAND-LINSE ratsche: einzelstuecke k0: 37964 dreiecke über der Ratsche 0/);
         pruefe("1110-12 g2B (Genesis)", bandBefunde(bandVon(probe.boots.g2B)), /^BAND-LINSE ratsche: boden haupt: 101954 dreiecke über der Ratsche 95817/);
@@ -1486,7 +1486,7 @@ async function selbsttest() {
 // Mittel, Spanne und σ; ROT, wenn eine Spanne über dem Soll liegt (Toggle-Ort: `bank.soll`, sonst `--soll`).
 function streuungCli() {
     const dateien = argv.slice(argv.indexOf("--streuung") + 1).filter((a) => !a.startsWith("--") && /\.json$/.test(a));
-    const laeufe = dateien.map((d) => ({ name: path.basename(d), lauf: JSON.parse(fs.readFileSync(d, "utf8")) }));
+    const laeufe = dateien.map((d) => ({ name: path.basename(d), lauf: jsonLesen(d) }));
     const orte = [...new Set(laeufe.map((l) => l.lauf.parameter && l.lauf.parameter.ort))];
     if (orte.length !== 1) {
         console.log(
@@ -1522,7 +1522,7 @@ function streuungCli() {
 // ROT, wenn der Null-Schalter außerhalb des Rauschbands liegt (die Methode misst den Eingriff mit), Takt oder Bänder fehlen.
 function schalterCli() {
     const datei = argv[argv.indexOf("--schalter") + 1];
-    const { bloecke } = JSON.parse(fs.readFileSync(datei, "utf8"));
+    const { bloecke } = jsonLesen(datei);
     const u = schalterUrteil(bloecke.filter(Boolean));
     console.log(`\n=== DAS SCHALTER-URTEIL: ${bloecke.length} Blöcke, Grund σ ${u.sigma} ms, Erst-Zeichnung der Grund-Blöcke ${u.erstGrund} ms ===`);
     for (const z of u.zeilen)
@@ -1544,7 +1544,7 @@ function schalterCli() {
 // DER LESER OHNE GPU (K26, `--urteil <boot.json> [--basis <A.json>]`): ein gespeicherter Boot der Folge, neu gelesen — die
 // Befunde seiner Wachen und die Band-Linse (jede Rot-Zeile, die die Basis-Seite A nicht trägt). Exit 1, sobald einer steht.
 function urteilCli() {
-    const lies = (d) => JSON.parse(fs.readFileSync(path.resolve(d), "utf8"));
+    const lies = (d) => jsonLesen(path.resolve(d));
     const j = lies(argv[argv.indexOf("--urteil") + 1]);
     const bd = opt("--basis", null);
     const basis = bd ? bandMessungAus(lies(bd)) : null;

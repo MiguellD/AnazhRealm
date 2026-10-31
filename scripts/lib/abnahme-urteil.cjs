@@ -855,7 +855,8 @@ const farbtonSigma = (k) =>
 // DIE RECHNUNGEN der Soll-Bänder (rein): ein Band, das die Tafel „[gerechnet]" nennt, rechnet DIESE Funktion — die Tafel trägt
 // dann nur die Rechnung, nie ihr Ergebnis (Prüfer K63 R1: das Laub-Band [0,11; 0,16] stand ohne Skript im Baum, nachgerechnet
 // 0,16–0,22).
-//   einsDurch  { von: [a, b] }     das Band [1/b, 1/a] (Licht: E gesamt / E Himmel aus dem Diffus-Anteil des klaren Himmels)
+//   klarerTag  { mittag, diffus }  das Licht des klaren Himmels je Sonne der Eigenschaft (am Mittag [1/b, 1/a]: E gesamt / E Himmel
+//                                  aus dem Diffus-Anteil); mondNacht, kelvinTon und zweiton1f, ref stehen je an ihrer Rechnung
 // Ein Bild mit Leistungsspektrum 1/f^β (β = 0: weißes Rauschen), n² Pixel (n Zweierpotenz), RGBA grau.
 function rauschBild(n, beta, saat) {
     let z = saat >>> 0 || 1;
@@ -937,18 +938,14 @@ function sollRechnung(r, e, q) {
     if (!r || typeof r !== "object") return { fehler: "keine Rechnung" };
     const paar = (x) => Array.isArray(x) && x.length === 2 && x.every((v) => typeof v === "number" && v > 0) && x[0] <= x[1];
     const band = (v) => ({ band: [+Math.min(...v).toFixed(4), +Math.max(...v).toFixed(4)] });
-    if (r.art === "einsDurch") {
-        if (!paar(r.von)) return { fehler: "einsDurch ohne von [a, b] > 0" };
-        return { band: [+(1 / r.von[1]).toFixed(4), +(1 / r.von[0]).toFixed(4)] };
-    }
     // klarerTag { mittag, diffus } (w4-himmel-uhr): E(Sonne + Himmel) / E(Himmel) an der Waagrechten bei der Sonne der Eigenschaft
     // unter dem klaren Himmel des Mittags — je Rand seines Diffus-Anteils kd (bei der Sonne `mittag`) die Linke-Trübung aus dem
     // Himmel des klaren Tags (Liu & Jordan 1960, Solar Energy 4(3):1: τ_d = 0,271 − 0,294 · τ_b, nach τ_b aufgelöst), mit ihr der
-    // Durchlass bei `e.sonne` und sein Himmel: 1 + τ_b / τ_d. Am Mittag selbst ist es einsDurch(diffus).
+    // Durchlass bei `e.sonne` und sein Himmel: 1 + τ_b / τ_d. Am Mittag selbst ist es der Kehrwert des Diffus-Anteils [1/b, 1/a] (bis
+    // w4-himmel-uhr die eigene Rechnung einsDurch, der Mittag allein).
     if (r.art === "klarerTag") {
         const h = e && e.sonne;
-        if (!(paar(r.diffus) && r.diffus[1] < 1 && h >= 3 && h <= 90 && r.mittag >= 3 && r.mittag <= 90))
-            return { fehler: "klarerTag: diffus < 1, mittag und Sonne in [3°, 90°]" };
+        if (!(paar(r.diffus) && r.diffus[1] < 1 && h >= 3 && r.mittag >= 3)) return { fehler: "klarerTag ohne diffus, mittag, Sonne ab 3°" };
         return band(
             r.diffus.map((kd) => {
                 const tb = klarDurchlass(Math.log((0.271 * (1 - kd)) / (0.294 + 0.706 * kd)) / Math.log(klarDurchlass(1, r.mittag)), h);
@@ -999,7 +996,7 @@ function sollRechnung(r, e, q) {
         if (!(x > 0 && r.rand > 0 && r.rand < 1)) return { fehler: `ref: ${r.bild} liest ${r.mass} ${x} (rand ${r.rand})` };
         return { band: [1 - r.rand, 1 + r.rand].map((v) => +(x * v).toFixed(4)) };
     }
-    return { fehler: `Rechnung „${r.art}" unbekannt (einsDurch, klarerTag, mondNacht, kelvinTon, zweiton1f, ref)` };
+    return { fehler: `Rechnung „${r.art}" unbekannt (klarerTag, mondNacht, kelvinTon, zweiton1f, ref)` };
 }
 const ZWEITON_NATUR = new Map();
 function zweitonNatur(beta) {
@@ -1388,8 +1385,9 @@ const MASS_RECHNER = {
     // Umgebung, ihr Unterschied zur Umgebung allein ist das Richtlicht selbst.
     mondTon(ma) {
         const me = ma.messung || {},
-            d = me.L_richt && me.L_umgebung ? me.L_richt.map((x, i) => +(x - me.L_umgebung[i]).toFixed(5)) : null;
-        return d && d[0] > 0 ? { ist: +(d[2] / d[0]).toFixed(3), taeter: `Richtlicht ${d.join("/")}` } : { fehler: `die Messung ohne Rot im Richtlicht (${d})` };
+            [a, u] = [me.L_richt, me.L_umgebung].map((s) => String(s).split("/")),
+            d = a.map((x, i) => +(x - u[i]).toFixed(5));
+        return d[0] > 0 ? { ist: +(d[2] / d[0]).toFixed(3), taeter: `Richtlicht ${d.join("/")}` } : { fehler: `die Messung ohne Rot im Richtlicht (${d})` };
     },
     // DIE UMGEBUNG HAT EINE RICHTUNG (D3): die senkrechte Karte zur Sonne gegen die von ihr weg, im Himmel allein — der klare
     // Himmel ist zur Sonne heller (Mie-Hof, Rayleigh-Phase; Hillaire mit dem Welt-Gesetz 1,33–1,67). Bis D3 malte die CPU eine
@@ -1999,9 +1997,7 @@ function sollTafelSelbsttest(tafel, q) {
     for (let p = 0; p < W * H; p++) mA[p] = teil[p] === 1 ? 1 : 0;
     // die Klasse A zeigt 200, das Misch-Pixel 170: Mittel (24·200 + 170)/25
     if (!(Math.abs(klassenMasse(G, mA, W, H).luma - (24 * 200 + 170) / 25) < 1e-6)) v.push("Maß luma: die Klasse liest falsch");
-    // die Rechnung einsDurch kehrt das Band um
-    const ed = sollRechnung({ art: "einsDurch", von: [0.08, 0.2] }).band;
-    if (!(ed && ed[0] === 5 && ed[1] === 12.5)) v.push(`Rechnung einsDurch: [0,08; 0,2] → ${ed} statt [5; 12,5]`);
+    // die Rechnung klarerTag kehrt am Mittag das Band um (der Eichpunkt im Licht je Uhr, unten)
     // der Blatt-Flächen-Index: eine Wiese mit LAI 2, Lücke je Band exp(−G·LAI/cos θ), liest LAI 2
     const cos = [0.6, 0.3, 0.15, 0.1, 0.05];
     const baender = [0, 2, 5, 10, 14, 30];
@@ -2259,7 +2255,7 @@ function sollTafelSelbsttest(tafel, q) {
         ],
         [
             "Band und Rechnung zugleich",
-            (t) => t.klassen[0].soll.eigenschaften.push({ groesse: "y", band: [5, 12], rechnung: { art: "einsDurch", von: [0.08, 0.2] }, quelle: "x" }),
+            (t) => t.klassen[0].soll.eigenschaften.push({ groesse: "y", band: [5, 12], rechnung: {}, quelle: "x" }),
             "statt EINER Quelle",
         ],
         [
@@ -2445,7 +2441,7 @@ function sollTafelSelbsttest(tafel, q) {
     // beim Namen der Sonne; ein Mond im Ton der Laterne (1 900 K) ROT beim Namen mondTon; eine Uhr ohne Soll ROT beim Namen der Uhr,
     // nie ein Bruch der Tafel. Ein Block der Bilanz ohne Uhr gilt dem Mittag (D3): eine azimut-konstante Umgebung (zur Sonne = von ihr
     // weg, die CPU-gemalte vor D3) ROT beim Namen umgebungAzimut, auch im Band des Verhältnisses. klarerTag ist am Mittag
-    // einsDurch und trägt bei der tiefen Sonne das Modell des klaren Himmels IES RP-21 (J. IES 1984).
+    // der Kehrwert des Diffus-Anteils [5; 12,5] und trägt bei der tiefen Sonne das Modell des klaren Himmels IES RP-21 (J. IES 1984).
     const t8 = klon(),
         k8 = finde(t8, (k) => k.mass && k.mass.name === "lichtVerhaeltnis" && k.mass.messung),
         sonne = Object.fromEntries(((k8 && k8.soll.eigenschaften) || []).map((e) => [e.uhr, e.sonne])),
@@ -2456,23 +2452,22 @@ function sollTafelSelbsttest(tafel, q) {
             me = k8.mass.messung;
         frisch(k8, me);
         for (const [name, uhr, s, E_alle, E_umgebung, re, zur = 1.4, von = 1, L = [0.624, 0.722, 0.863]] of [
-            ["Mittag im Band", 0.5, m, 8, 1.2, /^GRÜN/],
-            ["Mittag zu heller Himmel", 0.5, m, 4, 1.2, /3\.333 < 5$/],
-            ["Mittag zu dunkler Himmel", 0.5, m, 20, 1.2, /16\.667 > 12\.5$/],
-            ["tiefe Sonne im Band", 0.3, s3, 3, 1, /^GRÜN/],
-            ["tiefe Sonne zu heller Himmel", 0.3, s3, 1.5, 1, /1\.5 < 1\.95/],
-            ["tiefe Sonne zu dunkler Himmel", 0.3, s3, 6, 1, /6 > 4\.35/],
-            ["die Zelle 0,3 unter der Mittags-Sonne", 0.3, m, 7.9, 1.4, /Sonne 74\.21° statt 17\.96° der Uhr 0\.3/],
-            ["Nacht im Band", 0, n, 8, 1, /^GRÜN/],
-            ["Nacht zu heller Himmel", 0, n, 2.2, 1, /2\.2 < 4\.63/],
-            ["Nacht zu dunkler Himmel", 0, n, 20, 1, /20 > 12\.2/],
-            ["Nacht im Ton der Laterne", 0, n, 8, 1, /mondTon 0 außerhalb/, 1.4, 1, lf(1900)],
-            ["eine Uhr ohne Soll", 0.27, 10.79, 3, 1, /kein Soll zur Uhr 0\.27 \(nur 0\.5, 0\.3, 0\)/],
-            ["die Umgebung ohne Richtung", undefined, m, 7.8, 1.5, /^ROT.*umgebungAzimut 1 außerhalb/, 1, 1],
+            ["Mittag", 0.5, m, 8, 1.2, /^GRÜN/],
+            ["Mittag hell", 0.5, m, 4, 1.2, /3\.333 < 5$/],
+            ["Mittag dunkel", 0.5, m, 20, 1.2, /16\.667 > 12\.5$/],
+            ["tief", 0.3, s3, 3, 1, /^GRÜN/],
+            ["tief hell", 0.3, s3, 1.5, 1, /1\.5 < 1\.95/],
+            ["tief dunkel", 0.3, s3, 6, 1, /6 > 4\.35/],
+            ["0,3 mittags", 0.3, m, 7.9, 1.4, /Sonne 74\.21° statt 17\.96° der Uhr 0\.3/],
+            ["Nacht", 0, n, 8, 1, /^GRÜN/],
+            ["Nacht hell", 0, n, 2.2, 1, /2\.2 < 4\.63/],
+            ["Nacht dunkel", 0, n, 20, 1, /20 > 12\.2/],
+            ["Laternen-Mond", 0, n, 8, 1, /mondTon 0 außerhalb/, 1.4, 1, lf(1900)],
+            ["Uhr ohne Soll", 0.27, 10.79, 3, 1, /kein Soll zur Uhr 0\.27 \(nur 0\.5, 0\.3, 0\)/],
+            ["Umgebung flach", undefined, m, 7.8, 1.5, /^ROT.*umgebungAzimut 1 außerhalb/, 1, 1],
         ]) {
             const h = (s * Math.PI) / 180;
-            Object.assign(me, { uhr, sonnenRichtung: [Math.cos(h), Math.sin(h), 0], E_alle, E_umgebung, E_umgebung_zurSonne: zur, E_umgebung_vonSonne: von });
-            Object.assign(me, { L_umgebung: um, L_richt: L.map((x, i) => x + um[i]) });
+            Object.assign(me, { uhr, sonnenRichtung: [Math.cos(h), Math.sin(h), 0], E_alle, E_umgebung, E_umgebung_zurSonne: zur, E_umgebung_vonSonne: von, L_umgebung: um.join("/"), L_richt: L.map((x, i) => x + um[i]).join("/") });
             const u = sollTafelUrteil(t8, q),
                 z = u.zeilen.find((x) => x.id === k8.id);
             if (!re.test(`${z.urteil} ${z.grund}`) || u.fehler.length > echt.fehler.length) v.push(`${k8.id} ${name}: ${z.urteil} ${z.grund} statt ${re}`);
@@ -2480,9 +2475,8 @@ function sollTafelSelbsttest(tafel, q) {
         const tag = (h) => sollRechnung({ art: "klarerTag", mittag: m, diffus: [0.08, 0.2] }, { sonne: h }).band,
             sn = Math.sin((s3 * Math.PI) / 180),
             ies = 1 + (127.5 * Math.exp(-0.21 / sn) * sn) / (0.8 + 15.5 * Math.sqrt(sn));
-        if (`${tag(m)}` !== "5,12.5" || !(ies > tag(s3)[0] && ies < tag(s3)[1]))
-            v.push(`Rechnung klarerTag: am Mittag [${tag(m)}] statt [5; 12,5], bei ${s3}° [${tag(s3)}] ohne IES RP-21 ${ies.toFixed(3)}`);
-    } else v.push("die Tafel trägt das Licht-Verhältnis nicht zu jeder Uhr 0,5 · 0,3 · 0 mit ihrer Sonne, oder die Lichtfarbe der Kette fehlt");
+        if (`${tag(m)}` !== "5,12.5" || !(ies > tag(s3)[0] && ies < tag(s3)[1])) v.push(`klarerTag: Mittag [${tag(m)}], ${s3}° [${tag(s3)}] ohne IES ${ies}`);
+    } else v.push("himmel-licht ohne Soll je Uhr 0,5 · 0,3 · 0 oder ohne lichtFarbe");
     // DER SCHREIBER PRÜFT (K63-n7, `sollIstAbweisung`): eine Messung, die nur Membran und Nebel zeigt — dieselbe Messung ohne die Tore der Stufe wird abgewiesen beim Namen; dieselbe Messung unverändert nicht
     const t6 = klon();
     const k6 = finde(t6, (k) => k.mass && k.mass.name === "milchweiss" && k.mass.messung);

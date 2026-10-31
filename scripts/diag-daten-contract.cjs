@@ -31,7 +31,7 @@ const CORES = [
     { file: "tetrapoda-core.js", ns: "__tetrapodaCore", kind: "kreatur", feld: "motion", minRezepte: 4 },
 ];
 
-const { pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { pruefer, wandEnde, selbsttestEnde, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const { errs, check } = pruefer();
 const { sha } = require("./lib/stamm.cjs");
 
@@ -190,10 +190,10 @@ function validateDaten(N, spec) {
 
     if (!fs.existsSync(goldenFile)) {
         fs.mkdirSync(goldenDir, { recursive: true });
-        fs.writeFileSync(goldenFile, JSON.stringify(prints, null, 4) + "\n");
+        jsonSchreiben(goldenFile, prints, 4, "\n");
         console.log(`\n  🧊 Golden GEMINTET (${goldenFile}) — ab jetzt EINGEFROREN.`);
     }
-    const golden = JSON.parse(fs.readFileSync(goldenFile, "utf8"));
+    const golden = jsonLesen(goldenFile);
     for (const spec of CORES) {
         check(
             `GOLDEN byte-treu: ${spec.file}`,

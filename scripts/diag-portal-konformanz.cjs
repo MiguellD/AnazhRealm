@@ -40,7 +40,7 @@
 //   node scripts/diag-portal-konformanz.cjs              alle Welten gegen K1–K6 und die Ratschen
 // Port über PORTAL_KONFORMANZ_PORT (parallele Worktrees fahren je eigenen Bereich), Standard 4563.
 "use strict";
-const { statikServer, starteBrowser, halteBis, ROOT, hauptLauf, sleep, waitFor, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, halteBis, ROOT, hauptLauf, sleep, waitFor, wandEnde, jsonLesen } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -170,7 +170,7 @@ function abdruck(heim) {
     const w = st?.architectures.find((e) => e.id === p.mountedArch);
     const g = st
         ? {
-              leib: { seele: p.soul || "human", teile: st.customSouls[p.soul || "human"]?.bodyParts || null, praegung: st.workshop.studioOv[anazhRealm.constructor.KOERPER_HOST_RECIPE] || null },
+              leib: { seele: p.soul || "human", teile: st.customSouls[p.soul || "human"]?.bodyParts || null, praegung: st.workshop.studioOv[r.constructor.KOERPER_HOST_RECIPE] || null },
               inventar: { slots: p.inventory, hotbar: st.hotbar },
               wield: p.equipped,
               reittier: w && {
@@ -338,12 +338,12 @@ async function betreten(page, welt) {
                 id = acc.id;
             }
             // K8: eine Welt des Genesis-Rings betritt der Spieler über ihr Tor, jede andere über die Bibliothek
-            const tor = (window.__tor = r.state.architectures.find(
-                (e) => /^welt_/.test(e.type) && r.state.blueprints[e.type].portalMeta.world === `worlds/${id}/index.html`
+            const tor = (window.__tor = st.architectures.find(
+                (e) => /^welt_/.test(e.type) && st.blueprints[e.type].portalMeta.world === `worlds/${id}/index.html`
             ));
             const ob = tor ? { ok: true, blueprint: tor.type } : r.obtainPortalForWorld(id);
             if (!ob.ok) return { fehler: "obtainPortalForWorld: " + ob.reason };
-            const meta = r.state.blueprints[ob.blueprint].portalMeta;
+            const meta = st.blueprints[ob.blueprint].portalMeta;
             // Zähler: was die Welt der Heimat schickt (Quelle = das Portal-iframe) und wie oft die Heimat enter sendet
             // (eine delegierende Zähl-Hülle, nach der Messung entfernt).
             const k = (window.__k = { readys: 0, enters: 0, geladen: 0 });
@@ -373,8 +373,8 @@ async function betreten(page, welt) {
             // vor dem Tor: 4 m entlang seiner Normalen, der Blick hindurch
             const ry = tor.rotationY || 0;
             const [x, z] = [tor.position.x + 4 * Math.sin(ry), tor.position.z + 4 * Math.cos(ry)];
-            r.state.playerMesh.position.set(x, r.getTerrainHeightAt(x, z) + 1, z);
-            r.state.yaw = ry + Math.PI;
+            st.playerMesh.position.set(x, r.getTerrainHeightAt(x, z) + 1, z);
+            st.yaw = ry + Math.PI;
             return { ok: true, weg: r._torGesetzFor(tor) ? "Apertur" : "E" };
         },
         welt,
@@ -386,11 +386,11 @@ async function betreten(page, welt) {
     await halteBis(page, {
         druck: () => page.evaluate('dispatchEvent(new KeyboardEvent("keydown", { key: "w" })); window.__takt = setInterval(() => anazhRealm._gameLoopTick(performance.now()), 20)'),
         los: () => page.evaluate('clearInterval(__takt); dispatchEvent(new KeyboardEvent("keyup", { key: "w" }))'),
-        ziel: (e) => !!anazhRealm._portalOverlay || (e && anazhRealm._findNearestAffordanceEntry("isPortal", AnazhRealm.PORTAL_REACH_M) === __tor),
+        ziel: (e) => !!r._portalOverlay || (e && r._findNearestAffordanceEntry("isPortal", AnazhRealm.PORTAL_REACH_M) === __tor),
         args: [b.weg === "E"],
     });
     if (b.weg === "E") await page.evaluate('dispatchEvent(new KeyboardEvent("keydown", { code: "KeyE" }))');
-    return (await page.evaluate(() => !!anazhRealm._portalOverlay)) ? b : { fehler: `das Tor geht nicht auf (${b.weg})` };
+    return (await page.evaluate(() => !!r._portalOverlay)) ? b : { fehler: `das Tor geht nicht auf (${b.weg})` };
 }
 
 // K1 das Bau-Ereignis der Welt: ihre ready (mit ihr baut die Hülle ihre Knöpfe) und ihr load, gezählt vom Spion aus `betreten` —
@@ -409,7 +409,7 @@ async function werkHolen(page) {
     await bereitBis(page, "garage");
     await zaehlerAus(page);
     const s = await schleuse(page, "werk", null);
-    const werk = await page.evaluate(() => Object.keys(anazhRealm.state.workshop.studioOv)[1]);
+    const werk = await page.evaluate(() => Object.keys(st.workshop.studioOv)[1]);
     if (s.offen || !werk) throw new Error(`K8 werk: die Garage reicht kein Werk in die Welt (${s.knopf ? "Knopf gedrückt" : "kein Knopf „In der Welt ansehen“"}, Overlay ${s.offen ? "offen" : "zu"})`);
 }
 
@@ -439,7 +439,7 @@ function seitenHelfer() {
     window.__konformanz = {
         // Die Wirkung in der Heimat: die Journal-Ereignisse der Welt.
         journal() {
-            const e = r.state.worldJournal?.entries || [];
+            const e = st.worldJournal?.entries || [];
             return e.filter((x) => x.type === "portal").length;
         },
         zaehler() {
@@ -743,7 +743,7 @@ async function lauf(welten, taeter) {
         });
         await s.zeige(page, 60000);
         await page.waitForFunction(
-            () => r?.state?.blueprints && anazhRealm._gameLoopTick,
+            () => st?.blueprints && r._gameLoopTick,
             { timeout: 120000, polling: 200 }
         );
         // Der Vibe-Pass steht (ed25519, asynchron im Boot); dann das Mitgebrachte in den Zustand der Heimat.
@@ -761,7 +761,7 @@ async function lauf(welten, taeter) {
             st.player.equipped.offhand = "laterne_dorf";
             for (const n of ["stein_block", "stein_block", "trank_lebenssaft"]) r.addToInventory(n);
             st.hotbar[2] = "stein_block";
-            r._ensureWorkshopState().studioOv[r.constructor.KOERPER_HOST_RECIPE] = { height: 1.12, hairColor: "kupfer" };
+            r._ensureWorkshopState().studioOv[AnazhRealm.KOERPER_HOST_RECIPE] = { height: 1.12, hairColor: "kupfer" };
         }, MITGEBRACHT);
         await page.evaluate(seitenHelfer);
         if (!taeter && welten.some((w) => w.id === "garage")) await werkHolen(page);
@@ -780,7 +780,7 @@ async function lauf(welten, taeter) {
 }
 
 function ratscheLesen() {
-    const r = JSON.parse(fs.readFileSync(RATSCHE_PFAD, "utf8"));
+    const r = jsonLesen(RATSCHE_PFAD);
     for (const b of ["dslEinzelwort", "readyEcho"]) if (!r[b] || !Array.isArray(r[b].welten)) throw new Error(`ratsche.json ohne Block ${b}.welten`);
     return r;
 }
