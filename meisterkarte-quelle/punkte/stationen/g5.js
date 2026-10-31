@@ -490,6 +490,83 @@ const FAHR_SITZUNG = sitzung(33,
 // Das Gesetz des Schöpfers: eine Fahrt durch jedes System ≤ 30 min samt Dauerlast — keine dieser Stationen bootet mehr eine Welt.
 const { probeBefehl } = require("./sitzung-seite.js");
 
+// ───────── fahrzeug.K3#1 IN DER SITZUNG: Garage UND Welt in der warmen Welt (proben-schnell, 30.10.) ─────────
+// DIE GARAGE ist die Labor-Linse des Spiels (scripts/diag-garage-labor.cjs als Bibliothek, `H.linse`) mit dem Mess-Patch MK2110
+// (Ruhe und Spitze aus v/vmax, koordination bericht/2110-mk-kopf/garage-mk.diff) als ANKER an der Linse — nie mehr ein Patch im
+// Spiel-Baum. Ihr Browser ist der der Sitzung (ein Fenster neben der Welt, die Seite vom save-server der Sitzung). Bis 30.10. startete
+// sie ihren eigenen Chrome samt Server (`LINSE_GPU=hardware`, Port {PORT}+20001) nach `git apply` im Spiel-Baum: an der Radeon
+// (379e5f56, die Probe allein in ihrer Sitzung) 55,5 s — die Garage 27,6 s, der Ritt 33,4 s, dazu git und die Kommandozeile der
+// Werkbank. DIE WELT fährt tempo4.js über die Werkbank bis zum Plateau (`__tempoNur = "vmax"`); Orbit, Drift und die Schüsse misst
+// fahrzeug.K3#2 (FAHR_SITZUNG). Beide nebeneinander, ihre Zeilen danach in der Reihe, die das Urteil liest (WELT, dann GARAGE).
+const MK_ANKER = [
+    [
+        '    m.schilderNamen = sf.slice(0, 4).join(", ");\n',
+        '    m.schilderNamen = sf.slice(0, 4).join(", ");\n    m.mkRuhe = await page.evaluate(() => ({ fov: cam.fov, arm: cam.position.distanceTo(vehicle.position), v: Math.abs(car.speed) }));\n',
+    ],
+    [
+        '    await page.keyboard.up("KeyW");\n    m.tempo = await page.evaluate(',
+        "    m.mkTop = await page.evaluate(() => new Promise((res) => { const vm = fahrGesetzLab().vmax; let best = null, t0 = performance.now(), last = []; const tick = () => { const v = Math.abs(car.speed); const p = { fov: cam.fov, arm: cam.position.distanceTo(vehicle.position), v, vmax: vm }; if (!best || v > best.v) best = p; last.push(v); if (last.length > 60) last.shift(); const stabil = last.length === 60 && Math.max(...last) - Math.min(...last) < 0.05; if (v >= 0.95 * vm || stabil || performance.now() - t0 > 60000) res(Object.assign(best, { nach: +((performance.now() - t0) / 1000).toFixed(1), stabil })); else requestAnimationFrame(tick); }; tick(); }));\n" +
+            '    console.log("MK2110 " + JSON.stringify({ ruhe: m.mkRuhe, top: m.mkTop }));\n    await page.keyboard.up("KeyW");\n    m.tempo = await page.evaluate(',
+    ],
+];
+async function probeTempoGarage(H) {
+    const { fs, path } = H;
+    const { browser } = await H.verbinde();
+    const fenster = [];
+    let lauf = null;
+    const L = H.linse("scripts/diag-garage-labor.cjs", ["laborVerdict"], {
+        ersetze: H.seite.MK,
+        stumm: {
+            hauptLauf: (f) => (lauf = f),
+            statikServer: () => ({
+                lausche: async () => {},
+                zeige: (seite, frist, rest, warte) => seite.goto("http://localhost:" + H.S + "/" + rest, { waitUntil: warte, timeout: frist }),
+                close: () => {},
+            }),
+            // DAS FENSTER DER GARAGE kleiner als das der Welt (1940 × 1200, werkbank --echt): ein Fenster, das sie ganz deckt, lässt
+            // Windows die Welt verdeckt nennen — sie zeichnet dann kein Bild (rAF ruht), und der Ritt stand, solange die Garage lief
+            starteBrowser: async () => ({
+                newPage: async () => {
+                    const p = await browser.newPage({ type: "window", windowBounds: { left: 0, top: 0, width: 1300, height: 820 } });
+                    fenster.push(p);
+                    return p;
+                },
+                close: async () => {
+                    for (const p of fenster.splice(0)) await p.close().catch(() => {});
+                },
+            }),
+            urteilEnde: (rot, roteZeile, grueneZeile) => console.log(rot ? roteZeile : grueneZeile),
+        },
+    });
+    if (!L.laborVerdict || !lauf) throw new Error("die Labor-Linse trägt keinen Lauf (hauptLauf)");
+    const tempo = fs.readFileSync(path.join(process.env.K, "bericht", "3010-heil-fahrzeug", "tempo4.js"), "utf8");
+    const tw = Date.now();
+    const ritt = H.wb("/eval", { code: 'window.__tempoNur = "vmax";\n' + tempo }, Math.max(5, H.rest() - 4) * 1000).catch((e) => ({ fehler: String((e && e.message) || e) }));
+    // die Zeilen der Garage gesammelt, solange beide laufen (der Ritt schreibt erst am Ende)
+    const log = console.log, puffer = [];
+    console.log = (...a) => puffer.push(a.map(String).join(" "));
+    console.error = console.log;
+    const tg = Date.now();
+    const garage = lauf().then(
+        () => ({ exit: 0, s: (Date.now() - tg) / 1000 }),
+        (e) => (puffer.push("GARAGE ABSTURZ " + String((e && e.stack) || e).split("\n").slice(0, 3).join(" | ")), { exit: 2, s: (Date.now() - tg) / 1000 })
+    );
+    const welt = await ritt;
+    const ms = Date.now() - tw;
+    const g = await H.binnen(garage, Math.max(1, H.rest() - 2) * 1000, { exit: 124, s: (Date.now() - tg) / 1000 });
+    console.log = log;
+    console.error = log;
+    log("@@PUNKTE@@ WELT");
+    log(JSON.stringify(Object.assign({ ms }, welt), null, 1));
+    log("@@PUNKTE@@ EXIT " + (welt && welt.ergebnis && !welt.fehler ? 0 : 1));
+    log("@@PUNKTE@@ GARAGE");
+    for (const z of puffer) log(z);
+    log("@@PUNKTE@@ EXIT " + g.exit);
+    log("  (Welt " + (ms / 1000).toFixed(1) + " s · Garage " + g.s.toFixed(1) + " s im Fenster neben ihr)");
+    return { welt: !!(welt && welt.ergebnis), garage: g };
+}
+const TEMPO_GARAGE_PROBE = probeBefehl(probeTempoGarage, 60, { MK: JSON.stringify(MK_ANKER) });
+
 // DAS ERWACHEN DER ZELLE (siedlung.K5, Seite: r = Welt, T = THREE — ein Rumpf an `werkbank eval`): die Messung M36 (Zweig
 // koordination bericht/2410-siedlung-k5/m36-stufe.js) ohne ihren Anmarsch. Die Zell-Info der Zelle M.zelle trägt nH = M.nH; der
 // Spieler steht M.vor m vor ihrem Rand (`nearM` + `mehrM`), also im Vorlauf-Ring, und der Loop läuft, bis der Vorrat der Zelle da
@@ -941,15 +1018,9 @@ const stationen = [
         // Grundstellung zurück (das Werk im Stand), den Weg nicht: `_stlWegeBuild` schreibt die Wege-Karte, das Speicher-Gesetz trägt sie
         // nicht (`_standRueckspielen`) — nur die Tür nach einem Abbruch lädt sie neu. Die mutierenden Proben danach (die Reihe der
         // Sitzung, darunter der Gang des Profi-Bands an der Wiese) stehen sonst neben dem 40-m-Weg (offen am Merge w4-koord-sitzung)
-        probe: { ...sitzung(90,
-            "git checkout -q -- scripts/diag-garage-labor.cjs; rm -f scripts/diag-garage-mk.cjs",
-            '( git apply "$K/bericht/2110-mk-kopf/garage-mk.diff" && GARAGE_LABOR_PORT=$LP LINSE_GPU=hardware timeout 85 node scripts/diag-garage-mk.cjs; ' +
-                'echo "@@PUNKTE@@ EXIT $?"; git checkout -q -- scripts/diag-garage-labor.cjs; rm -f scripts/diag-garage-mk.cjs ) > "$L/garage.out" 2>&1 &',
-            "boot",
-            'teil WELT $W eval "$(cat "$K/bericht/3010-heil-fahrzeug/tempo4.js")"',
-            "wait",
-            'echo "@@PUNKTE@@ GARAGE"; cat "$L/garage.out"'
-        ),  mutiert: true, sek: 33 },
+        // DIE GARAGE IM BROWSER DER SITZUNG, DIE WELT BIS ZUM PLATEAU (proben-schnell 30.10., `probeTempoGarage` oben): kein eigener
+        // Chrome mehr neben der Welt, kein Doppel von Orbit, Drift und Schüssen (die misst die 2)
+        probe: { ...TEMPO_GARAGE_PROBE, mutiert: true, sek: 33 },
         env: K,
         gpu: true,
         zeit: false,
