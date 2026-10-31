@@ -1648,9 +1648,10 @@ async function gebaut(page) {
 // K5: `fadenHuelle` vor dem Quelltext jedes Fadens heftet jeder Nachricht ihre Klon-Bytes an (Transfer zählt nicht);
 //     der Main summiert sie am Empfang je Faden und Art in beiden Richtungen, dazu jede Kopie empfangener Bytes (jeder
 //     Tiefe, `da`: auch ihr Klon) und die Platte — je Minute im Kalt-Boot und in einer Minute Fahrt, Soll ≤ 5 MB/min.
-//   --faden [--echt] [--selftest]   ein injizierter Hydro-Bau, ein Fußabdruck an einer unbenannten Sync-Stelle, ein Guss, ein
-//                          Stau-Feld im Haupt-Faden und Klon (3 MB tief in einer Nachricht, 3 MB in 300 Krumen, zwei Kopien) fallen
-//                          ROT beim Namen; `--echt` im Fenster an der echten GPU (`[linse-gpu]`), sonst am Null-Renderer.
+//   --faden [--echt] [--selftest]   ein injizierter Hydro-Bau, ein Fußabdruck an einer unbenannten Sync-Stelle, ein Guss, die Naht
+//                          und der Satz eines Faden-Netzes im Haupt-Faden (w4-b-boden2), ein Stau-Feld und Klon (3 MB tief in einer
+//                          Nachricht, 3 MB in 300 Krumen, zwei Kopien) fallen ROT beim Namen; `--echt` im Fenster an der echten GPU
+//                          (`[linse-gpu]`), sonst am Null-Renderer.
 const FADEN_SOLL = 5e6; // Bytes je Minute
 function klonBytes(v, frei, seen, da) {
     if (v === null || typeof v !== "object") return da ? 0 : typeof v === "string" ? v.length : 8;
@@ -1944,8 +1945,14 @@ async function faden(page, url) {
                 const p = st.lastPlayerVoxelChunk;
                 r._rebuildVoxelChunk(p.cx, p.cz, null, { forceSync: "injiziert" });
             })();
-            (function injizierterGuss() {
+            // der Guss ohne Vorlage — und DER BODEN IM FADEN (w4-b-boden2): die Naht eines Faden-Netzes ohne ihr Gedächtnis, sein
+            // Satz ohne Vorlage
+            (function injizierterGussUndBoden() {
                 r._ofenMenschTemplate({ t: t0 }, 0, 0, 3, true);
+                const [k, { mesh }] = [...st.voxelChunks].find(([, x]) => x.mesh?.geometry.userData.ausFaden);
+                mesh.geometry.userData.naht = null;
+                r._bodenNaht(mesh.geometry);
+                r._chunkSatzEin("boden", k, mesh.geometry, k);
             })();
             const w = new Worker(
                 URL.createObjectURL(
@@ -2020,19 +2027,18 @@ async function faden(page, url) {
         console.log(`  ⛔ K5: ${mb(proMin.fahrt)} MB/min am Empfang in der Fahrt > ${mb(FADEN_SOLL)}`);
     if (SELBSTTEST) {
         const S = F.t.selbst || { empfang: {}, kopie: {} };
-        const nennt = (liste, n) => liste.some((x) => x.includes(n));
-        const klon = (S.empfang["selbsttest:klon"] || 0) + (S.empfang["selbsttest:krume"] || 0);
+        const nennt = (n) => F.hydro.rot.concat(F.bau.rot, F.stau.rot).some((x) => x.includes(n));
+        const krume = S.empfang["selbsttest:krume"] || 0;
+        const klon = (S.empfang["selbsttest:klon"] || 0) + krume;
         const sieht =
-            nennt(F.hydro.rot, "injizierteHydro") &&
-            nennt(F.bau.rot, "injizierterFussabdruck") &&
-            nennt(F.bau.rot, "injizierterGuss") &&
-            nennt(F.stau.rot, "injiziertesStauFeld") &&
+            ["injizierteHydro", "injizierterFussabdruck", "injizierterGuss", "Boden-Naht", "Satz-Vorlage"].every(nennt) &&
+            nennt("injiziertesStauFeld") &&
             klon >= 5.9e6 &&
-            (S.empfang["selbsttest:krume"] || 0) >= 2.9e6 &&
+            krume >= 2.9e6 &&
             summe(S.kopie) >= 5.9e6 &&
             proMin.selbst > FADEN_SOLL;
         console.log(
-            `  SELBSTTEST: injizierter Hydro-Bau, synchroner Fußabdruck, Guss, Stau-Feld und Klon (${mb(klon)} MB, Kopie ${mb(summe(S.kopie))} MB) ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR"}`
+            `  SELBSTTEST: injizierter Hydro-Bau, synchroner Fußabdruck, Guss, Boden, Stau-Feld und Klon (${mb(klon)} MB, Kopie ${mb(summe(S.kopie))} MB) ${sieht ? "fallen ROT beim Namen" : "BLIEBEN UNSICHTBAR"}`
         );
         rot = rot || !sieht;
     }
