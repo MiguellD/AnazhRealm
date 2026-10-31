@@ -2154,7 +2154,7 @@ module.exports = [
         // M33 in der Sitzung (`windSeite`, oben): 21 s an der Mess-Wiese, Ego, Böen frei, Tiere gehalten, der Klang in einem eigenen
         // Kontext; Bild = das präsentierte Fenster (|ΔLuma| im Boden-Ausschnitt), Ohr = Analyser am Gain der Wind-Stimme, je 0,2 s ein
         // Fenster (≥ 100 wie vorher, Lag ±3 s). Bis 29.10. m15-wind 60 s in 0,5-s-Fenstern mit eigenem Boot (ea07267e Radeon 3,68 min)
-        probe: { sek: 22, befehl: sitzungBefehl(windLauf, [windSeite]), mutiert: false },
+        probe: { sek: 36, befehl: sitzungBefehl(windLauf, [windSeite]), mutiert: false },
         gpu: true,
         // zeit: der Screencast liefert seine Bilder nur ungestört (27.10., Takt 8 erstmals in Bahnen: neben zwei Bild-Läufen CV Bild
         // 2,16 statt 0,26–0,29 und r 0,00 statt 0,80–0,85 an 607d0c73 · b2c6c627 · 83df2052) — das Urteil hängt an der Wanduhr

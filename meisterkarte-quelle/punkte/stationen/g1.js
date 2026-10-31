@@ -378,7 +378,7 @@ module.exports = [
         kriterium: "gelaende.K3",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 29, befehl: [
+        probe: { sek: 26, befehl: [
             "bash",
             "-c",
             `set -u; A=$(cygpath -m '{AUS}'); D="\${A%.json}-werk"; rm -rf "$D"; mkdir -p "$D"; SP={PORT}; WP=$((SP+20000)); export WERKBANK_PORT=$WP; W() { node scripts/werkbank.cjs "$@"; }; W fenster 1920 1080 > "$D/fenster.txt" 2>&1; W umstellen 1866.6 -6193.9 > "$D/umstellen.txt" 2>&1; W eval 'const s = r.state; if (s.cameraMode !== "first") r.setCameraMode("first"); s.yaw = -1.309; s.pitch = 0; for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100); const c = s.camera, d = new T.Vector3(); c.getWorldDirection(d); return [c.position.x, c.position.y, c.position.z, c.position.x + d.x * 100, c.position.y + d.y * 100, c.position.z + d.z * 100].map((v) => +v.toFixed(3));' > "$D/kamera.txt" 2>&1; KAM=$(node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); const o = JSON.parse(t.slice(t.indexOf("{"))); console.log(o.ergebnis.join(" "))' "$D/kamera.txt"); echo "KAMERA $KAM"; W bild $KAM --w 1920 --h 1080 --wahl 0 --klasse '^(wasserSatz|farWater|chunk-water-[a-z]+)$' --datei "$D/wasser.png" > "$D/bild.txt" 2>&1; E=$?; echo "BILD $(tr -d '\\n' < "$D/bild.txt" | cut -c1-600)"; cp "$D/wasser.abnahme.json" "$A" 2>/dev/null; exit $E`,
@@ -718,7 +718,7 @@ module.exports = [
         kriterium: "wetter.K2",
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 22, befehl: PW.torBefehl(PW.naesseDorf), mutiert: true },
+        probe: { sek: 25, befehl: PW.torBefehl(PW.naesseDorf), mutiert: true },
         gpu: true,
         zeit: false,
         minuten: 4,
