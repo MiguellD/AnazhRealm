@@ -5,7 +5,8 @@ Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md. Dieser Zettel ist der Stand der
 ## Stand
 - **Meisterkarte:** gebucht **154/330**. Die Buchung ist BLOCKIERT, bis die Cloud-Sitzung **sitzung-urteil** liefert (`w4-sitzung-urteil`,
   letzter Push 296fcfb6 30.10. 21:16). Ohne ihr Urteil fielen Proben ohne Urteil als Fall: Σ 154 → 149. NIE `BUCHE_FALL=1`.
-- **main = 8075fc03** (z94: w4-material-fahrt, w4-linsen-b, w4-proben-schnell; gelandet 02:33). Davor z93 ab040980 (w4-riesen) und
+- **main = f1a654f1** (z96 03:28: w4-fall-wackler + w4-menue-inp; z96-abab eingereiht). z93-abab: die Riesen-Heilung nicht-langsamer (stadt, w-ego). Um 03:30 fuhr z97 (w4-schatten-haken) an, danach z98 (w4-wagen-stufe).
+- Davor **8075fc03** (z94: w4-material-fahrt, w4-linsen-b, w4-proben-schnell; gelandet 02:33). Davor z93 ab040980 (w4-riesen) und
   z92 e0139769 (w4-grund-hand: der Stand setzt jeden Slot, auch den leeren).
 - **Deckel zu knapp für die GTX:** offen10-gtx (gewöhnliche Punkte-Fahrt an ab040980) maß nur 10 Stationen (3 GRÜN / 7 ROT), die übrigen
   rissen ihre geschätzten Deckel (33 s, 15 s, 11 s) UNGEMESSEN. Darum stehen eich10-gtx und eich11-gtx (Rest der Eich-Fahrt an e0139769,
@@ -64,7 +65,7 @@ Die Ketten `w3/kette-z95…z98.sh`, der CI-Wächter und die Wache liefen als Hin
 Ein Zug, der mitten in der CI stirbt, lässt main unberührt (der Kandidat liegt nur auf integ-probe). Darum:
 1. Was gelandet ist: `git ls-remote origin refs/heads/main` und `tail -n 3 /tmp/claude/fahre-z9*.log` (GELANDET / FAHRT ROT / abgebrochen).
 2. Die noch nicht gelandeten Zweige EINEN Zug nach dem anderen fahren:
-   `bash /tmp/claude/w3/zug-sammler4.sh z<N> 25 <zweige…>`. Reihenfolge: w4-fall-wackler + w4-menue-inp (z96 lief 03:10 an) →
+   `bash /tmp/claude/w3/zug-sammler4.sh z<N> 25 <zweige…>`. Reihenfolge (z96 GELANDET):
    w4-schatten-haken → w4-wagen-stufe (nur mit grünem Puls, die Decke!) → w4-stadt-takt erst nach der Heilung des z95-ROT.
 3. Nach jeder Landung die Nachwache: `bash /tmp/claude/w3/zeile.sh "z<N>-abab 3 abab A=<main vorher> B=<main nachher> zellen=stadt,w-ego"`.
    Nach der Landung von schatten-haken zwei Eich-Fahrten am neuen main: `… "eich<N>-gtx 1 station sha=<main> lauf=eich-gtx.sh"`.
