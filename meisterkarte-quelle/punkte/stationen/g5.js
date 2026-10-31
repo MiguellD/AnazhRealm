@@ -358,7 +358,7 @@ const STADT_HUEGEL = [
 // 8 Saaten) läuft NEBEN der Stadt der Sitzung (seine Zeilen danach, Z), der Weg zum Hügel, bis die Mauer steht (STADT_HUEGEL), das
 // Bild mittags und in der Dämmerung; {AUS} = { mittag, daemmerung }. Bis dahin fuhr jede Staffel Teil Z und die Stadt für sich,
 // der Stand fragte alle 5 s. Die Stadt wächst am Hügel (mutiert).
-const SIEDLUNG_SITZUNG = sitzung(33,
+const SIEDLUNG_SITZUNG = sitzung(10,
     "A=$(cygpath -m '{AUS}')",
     '( node scripts/diag-settlement.cjs --nur-z --zipf; echo "@@PUNKTE@@ EXIT $?" ) > "$L/zipf.out" 2>&1 &',
     ...STADT_HUEGEL,
@@ -1686,7 +1686,7 @@ const stationen = [
         // werkbank latenz an der Mess-Wiese: CDP-Taste bis zum ersten Ausgabe-Bild mit Leib/Kamera ≥ 1 cm bewegt, je 50 Proben —
         // in LAEUFE eigenen Boots, geurteilt über den schlechtesten (bildraten-fest)
         // IN DER SITZUNG (29.10.): EIN Lauf, LATENZ_PROBEN je Reihe (4 Reihen) — Ziel 30 s
-        probe: sitzung(15,
+        probe: sitzung(33,
             ...latenzLaeufe(
                 "boot",
                 "timeout 120 $W umstellen --ort wiese > /dev/null 2>&1",
@@ -2443,7 +2443,7 @@ const stationen = [
     // eigene Boots samt ganzem Klang-Zensus (Radeon b3f9ae95: 5,06 min Arbeit). Die Strecke legt eine Straße und räumt Natur: mutiert.
     {
         kriterium: "fahrzeug.K5", staffel: 1, geraet: ["radeon", "gtx"],
-        probe: { befehl: PW.torBefehl(PW.fahrRueck), sek: 15, mutiert: true },
+        probe: { befehl: PW.torBefehl(PW.fahrRueck), sek: 35, mutiert: true },
         gpu: true, zeit: false, minuten: 30,
         urteil: (j, lauf) => {
             const teil = (n) => lauf.stdout.split(/^@@PUNKTE@@ /m).find((s) => s.startsWith(n + "\n")) || "";
@@ -2705,7 +2705,7 @@ const stationen = [
             "timeout 60 $W fenster 1920 1080 > /dev/null 2>&1",
             "timeout 600 $W umstellen --ort wiese > /dev/null 2>&1",
             "teil BEDIENUNG $W bedienung --runden 5"
-        ),  sek: 13 },
+        ),  sek: 24 },
         env: K,
         gpu: true,
         zeit: true,

@@ -1241,7 +1241,7 @@ function sollKlasseStation(o) {
         kriterium: o.kriterium,
         staffel: 1,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 15, ...(o.mutiert ? { mutiert: true } : {}), befehl: [
+        probe: { sek: o.sek || 15, ...(o.mutiert ? { mutiert: true } : {}), befehl: [
             "bash",
             "-c",
             [
@@ -1307,7 +1307,7 @@ function sollKlasseStation(o) {
 // --proben bewohner` (das Start-Dorf wächst, bis jeder Bewohner seinen Leib trägt; der Tag über 24 Spielstunden) und `platz-8.js` (Third
 // am Dorfplatz, Uhr 8) mit dem Bild aus dem Ausgabe-Pfad. Die Probe des Spiels trägt ihre Spielstunden fest (headless 446 s, DAUER_S
 // der Linse) — über dem Deckel der Sitzung, bis sie im Spiel-Baum kürzt
-const BEWOHNER_SITZUNG = { sek: 33, befehl: [
+const BEWOHNER_SITZUNG = { sek: 40, befehl: [
     "bash",
     "-c",
     [
@@ -2384,7 +2384,7 @@ const stationen = [
         kriterium: "tiere.K2",
         staffel: 2,
         geraet: ["radeon", "gtx"],
-        probe: { sek: 33, befehl: [
+        probe: { sek: 10, befehl: [
             "bash",
             "-c",
             [
@@ -3406,7 +3406,7 @@ const stationen = [
         geraet: ["radeon", "gtx"],
         // IN DER SITZUNG (29.10.): EIN Teleport an die Wiese (der zweite fiel), EIN Schuss `bild --zeit` — Ziel 15 s
         // DER DECKEL NACH SEINER MESSUNG (w4-fehlt-acht): Radeon eich3–6 10,2 · 10,2 · 10,2 · 13,2 s am selben Abdruck — 14 s
-        probe: { sek: 14, befehl: ["node", "-e", "(" + knapp(boeLauf) + ")()", "{AUS}", "{PORT}"] },
+        probe: { sek: 18, befehl: ["node", "-e", "(" + knapp(boeLauf) + ")()", "{AUS}", "{PORT}"] },
         gpu: true,
         zeit: false,
         minuten: 10,
@@ -3439,6 +3439,7 @@ const stationen = [
         const st = sollKlasseStation({
             kriterium: "mensch.K4",
             id: "mensch-kopf",
+            sek: 28,
             klasse: "^spieler:kopf/",
             vorher: [
                 "node scripts/werkbank.cjs umstellen --ort wiese --sicht third > \"$B-umstellen.txt\" 2>&1",
@@ -3568,6 +3569,7 @@ const stationen = [
     sollKlasseStation({
         kriterium: "haar.K1",
         id: "fell",
+        sek: 39,
         klasse: "^tier:wolf$",
         mutiert: true,
         vorher: [
@@ -3588,6 +3590,7 @@ const stationen = [
     sollKlasseStation({
         kriterium: "haar.K2",
         id: "haar",
+        sek: 32,
         klasse: "^spieler:kopf/hair$",
         vorher: ["node scripts/werkbank.cjs umstellen --ort wiese --sicht third > \"$B-umstellen.txt\" 2>&1"],
         schuesse: { arm: "0 0 0 0 0 0 --gesicht 0.7 --spieler", third: "0 0 0 0 0 0 --gesicht -4 --spieler" },

@@ -1588,7 +1588,7 @@ const PB_PROBEN_DAUER = [
 // 45 s); gang ungemessen (die Fahrt kam nie zu ihm) — 64 s
 const PB_PROBE_GLAETTE = { sek: 29, stellung: "anfang", befehl: pbBefehl("glaette") };
 const PB_PROBE_GANG = { sek: 64, mutiert: true, ausnahme: PB_AUSNAHME_GANG, befehl: pbBefehl("gang") };
-const PB_PROBE_DAUER = { sek: 37, stellung: "ende", befehl: pbBefehl("dauer") };
+const PB_PROBE_DAUER = { sek: 23, stellung: "ende", befehl: pbBefehl("dauer") };
 
 module.exports = [
     // ─────────────────────────────── Ankunft K2 · K3 (ankunft-aussen) ───────────────────────────────

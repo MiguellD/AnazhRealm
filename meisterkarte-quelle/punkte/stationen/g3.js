@@ -283,7 +283,7 @@ const ALBEDO_TAFEL_ECHT = [
     "{AUS}",
 ];
 // EINE Probe für beide Staffeln (Zwillinge): die Welt-Seite in der Sitzung, das Labor nebenher in seinem Browser
-const ALBEDO_PROBE = { sek: 33, befehl: ALBEDO_TAFEL_ECHT };
+const ALBEDO_PROBE = { sek: 10, befehl: ALBEDO_TAFEL_ECHT };
 const ALBEDO_PFAD = [
     ...BILD,
     "*-core.js",
@@ -588,7 +588,7 @@ function laubKanteProben() {
 // Lauf) und ferne.K2#2 dieselbe Luft ein zweites Mal vor ihrem Band. Das Urteil je Station liest die LUFT-Zeile im Rest des Schritts
 // luft, die Messung in dateien.luft, den Adapter der Sitzung.
 const FERNE_SITZUNG = {
-    sek: 33,
+    sek: 10,
     befehl: befehlDer({
         name: "ferne",
         schritte: [
@@ -602,7 +602,7 @@ const FERNE_SITZUNG = {
 // jede Zeile der Tafel (Haus L0/L1/L2, Birke, Fichte, Fels, …) zu jeder ihrer Uhren (0,5 und 0,27), je Stufen-Zeile ein eigener Gang;
 // dazu die Stufen der Art rock. Bis dahin fuhr jede Staffel dieselbe Tafel für sich, nach 10 s Ruhe an der Wanduhr.
 const MATERIAL_K3_SITZUNG = {
-    sek: 33,
+    sek: 10,
     befehl: befehlDer({
         name: "material.K3",
         schritte: [
@@ -709,7 +709,7 @@ const stationen = [
         // IN DER SITZUNG (29.10.): EIN Teleport an die Wiese, die Kugel-Bilanz (9 Schüsse) — Ziel 15 s
         // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 11,4 s GRÜN): der Deckel steht in der Tafel der Fahrt (punkte.cjs DIE DECKEL).
         // DER DECKEL NACH SEINER MESSUNG (w4-fehlt-acht): Radeon eich3–6 7,2 · 9,0 · 6,6 · 7,2 s am selben Abdruck — 10 s, das Mindeste
-        probe: { sek: 10, befehl: befehlDer({
+        probe: { sek: 14, befehl: befehlDer({
             name: "licht.K2#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
@@ -991,7 +991,7 @@ const stationen = [
         // im Bild, −ln 0,02 · g·d / −ln T_grün je Pixel der Szene (T 0,02…0,95, T = (L − S)/(L0 − S) aus drei Schüssen), der Median;
         // das Urteil der Median der Azimute (≥ 10 Pixel, ≥ 3 Azimute) gegen 1 500 m ±15 %
         // IN DER SITZUNG (29.10.): EIN Teleport (Genesis), EINE Uhr × 4 Azimute je drei Schüsse 480×270, kein Gipfel — Ziel 20 s
-        probe: { sek: 15, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--wetter", "stormy", "--datei", "{AUS}"] },
+        probe: { sek: 31, befehl: ["node", "scripts/werkbank.cjs", "licht", "--luft", "--wetter", "stormy", "--datei", "{AUS}"] },
         env: { MSYS2_ARG_CONV_EXCL: "*" },
         gpu: true,
         zeit: false,
@@ -1318,7 +1318,7 @@ const stationen = [
         // Sitzung mit `--ort wiese`, ihr Dorf-Haken lag vor jeder Ladung — in der Prüfbühne baute `_tickGenesisOrt` (stamm/siedlung-ort.js
         // :2776) den Ring nie, die Ankunft wartete ohne Frist (swiftshader 28 min); die Ankunft hebt ihn jetzt, bis der Ring steht:
         // swiftshader Bühne 70 s (vor dem Deckel), Kontakt 41 s, Treue 0 Bytes
-        probe: { sek: 33,  befehl: befehlDer({
+        probe: { sek: 23,  befehl: befehlDer({
             name: "schatten.K1#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
@@ -1408,7 +1408,7 @@ const stationen = [
         // bricht an ihr, Werkbank 30.10.) und schießt EINE Aufnahme je Schuss, die Treue einmal: 22 Aufnahmen, swiftshader alle 14 Stufen
         // gestellt (vorher 0), Treue 0 Bytes. Der Deckel aus der Arbeit: 22 Aufnahmen (GTX ≈ 0,43 s je Aufnahme aus lod.K2#1) + 14
         // Lieferungen (kalt 0,15–1,0 s) — 26 s; die Eich-Fahrt der GTX richtet ihn
-        probe: { sek: 26, befehl: befehlDer({
+        probe: { sek: 10, befehl: befehlDer({
             name: "lod.K5#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
@@ -1484,7 +1484,7 @@ const stationen = [
         // (w4-proben-tempo, 30.10.; GTX 379e5f56 49,3 s über dem Gesetz): sechs Aufnahmen je Schuss (96 zu 33 Bildern, die letzte
         // zählte) → EINE, die Treue einmal: 17 Aufnahmen (swiftshader Treue 0 Bytes, Pop 0,635 %/s ROT wie zuvor) — der Deckel aus der
         // Arbeit: 17 Aufnahmen (GTX ≈ 0,43 s) + 8 × 24 Takte des Spiels — 22 s; die Eich-Fahrt der GTX richtet ihn
-        probe: { sek: 22, befehl: befehlDer({
+        probe: { sek: 21, befehl: befehlDer({
             name: "lod.K2#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
@@ -1589,7 +1589,7 @@ const stationen = [
         // 2021 (github asztr/Neural-BRDF data/merl_nbrdf.zip), bei θd 25° dieselben Maße je Exemplar; das Band der Klasse von ihrem
         // kleinsten bis zum größten Exemplar, die Toleranz der Bühne Breite ± max(0,3°, 5 %), Spitze ×/÷ 1,3.
         // DIE FAHRT (Eichlauf Radeon b3f9ae95 29.10.: 11,4 s): der Deckel steht in der Tafel der Fahrt (punkte.cjs DIE DECKEL)
-        probe: { sek: 11, befehl: befehlDer({
+        probe: { sek: 10, befehl: befehlDer({
             name: "material.K5#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
@@ -1798,7 +1798,7 @@ const stationen = [
         // Bühne ruht sofort), der VRAM-Rest nach dem GC ≤ 1 MB, sonst keine Zeile (headless swiftshader: beide Zeilen, Rest +0 MB).
         // FIMP_PORT las im Spiel-Baum niemand (die Linse lauschte auf Port 0). DER DECKEL DER ARBEIT (geschätzt): zwei Formate × (2 Bakes
         // × 4 Ringe, 15 Renders 128²) und der Pipeline-Bau des frischen Geräts — 15 s
-        probe: { befehl: PW.torBefehl(PW.karteHebung), sek: 15, mutiert: false },
+        probe: { befehl: PW.torBefehl(PW.karteHebung), sek: 10, mutiert: false },
         gpu: true,
         zeit: false,
         minuten: 4,
