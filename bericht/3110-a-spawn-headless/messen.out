@@ -1,0 +1,21 @@
+ego: am Genesis-Ort nach 0 s (Gier -1.571, Arm 6 m)
+  fels Blick 0°: nichts im Band
+  fels Blick 45°: nichts im Band
+ego-nah-0.5: himmel-licht Licht · fels nicht im Bild · mensch-kopf nicht im Bild
+ego-nah-0.3: himmel-licht FEHLT · fels nicht im Bild · mensch-kopf nicht im Bild
+ego-nah-0: himmel-licht FEHLT · fels nicht im Bild · mensch-kopf nicht im Bild
+ego-fern-0.5: himmel-licht Licht · fels nicht im Bild · mensch-kopf nicht im Bild
+ego-fern-0.3: himmel-licht FEHLT · fels nicht im Bild · mensch-kopf nicht im Bild
+ego-fern-0: himmel-licht FEHLT · fels nicht im Bild · mensch-kopf nicht im Bild
+ego: 330 s
+third: am Genesis-Ort nach 455 s (Gier -1.571, Arm 6 m)
+  fels Blick 0°: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung braucht ihr Exemplar
+  fels Blick 45°: Klasse /^formationenSatz$/: kein gezeichnetes Objekt in der Szene — die Soll-Messung braucht ihr Exemplar
+third-nah-0.5: himmel-licht Licht · fels nicht im Bild · mensch-kopf 0°
+third-nah-0.3: himmel-licht FEHLT · fels nicht im Bild · mensch-kopf 0°
+third-nah-0: himmel-licht FEHLT · fels nicht im Bild · mensch-kopf 0°
+third-fern-0.5: himmel-licht Licht · fels nicht im Bild · mensch-kopf nicht im Bild
+third-fern-0.3: himmel-licht FEHLT · fels nicht im Bild · mensch-kopf nicht im Bild
+third-fern-0: himmel-licht FEHLT · fels nicht im Bild · mensch-kopf nicht im Bild
+third: 2691 s
+messen EXIT=0

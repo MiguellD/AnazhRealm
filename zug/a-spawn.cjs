@@ -37,7 +37,10 @@ const LESER = AU.standLeser(BAUM);
 const Q = LESER.sollQuelle();
 const NAH_M = 30;
 // im Bild ist eine Klasse für die Wahl ab einem Tausendstel des Bilds (1920 × 1080: 2 074 Pixel) — die 186 Pixel Fern-Wasser
-// hinter dem Tor-Ring der Radeon am 31.10. (Blick 270°) waren kein Wasser, das sich messen ließe
+// hinter dem Tor-Ring der Radeon am 31.10. (Blick 270°) waren kein Wasser, das sich messen ließe. OFFEN (der Täter der Bühne): auf
+// dem Rahmen eines Tors wechseln Splitter-Pixel, sobald irgendeine Klasse fällt — 10 375 px „farWater“ (Blick 90°) und 10 754 px
+// „formationenSatz“ (Blick 45°) je in EINEM Schuss, im nächsten derselben Pose 0; die Schwelle hält kleine Splitter fern, der
+// Schuss der Zelle entscheidet, nie die Wahl
 const IM_BILD = 1e-3;
 
 // DER AUSDRUCK EINER ZEILE: die Pixel, die ihr Maß liest — Apertur und Tor ihrer Rechnung (die drei Tor-Zeilen teilen EINEN Schuss),
@@ -70,8 +73,10 @@ function zellenUrteil(tafel, zellen) {
         const eigen = (o) => Object.fromEntries(Object.entries(o || {}).filter(([n]) => re.test(n)));
         const sieht = (c) => {
             const r = c.klassen[k.id] || {};
-            // im Bild wie in der Wahl: ab einem Tausendstel des Bilds (verstreute Splitter einer Teilung zählen nicht)
-            return !!r.messung && (r.messung.werkzeug !== "bild" || px(r.messung, re) >= IM_BILD * r.messung.leinwand[0] * r.messung.leinwand[1]);
+            // im Bild wie in der Wahl: ab einem Tausendstel des Bilds (verstreute Splitter einer Teilung zählen nicht) — der Kopf ohne
+            // Wahl, seine Pose kommt aus dem Leib: am Arm des Spiels (6 m) trägt er headless 585 Pixel (0,03 %), und er steht im Bild
+            if (!r.messung || r.messung.werkzeug !== "bild") return !!r.messung;
+            return px(r.messung, re) >= (/spieler:kopf\//.test(a || "") ? 1 : IM_BILD * r.messung.leinwand[0] * r.messung.leinwand[1]);
         };
         const zelle = (c) => {
             const r = c.klassen[k.id] || { fehlt: "ungemessen" };
@@ -184,8 +189,8 @@ function selbsttest() {
 
 // DIE PIXEL JE BAND je Teil-Klasse des letzten Schusses (in der Seite): die Teilung des Schusses (`__letzteTeilung`, je Pixel 1 +
 // Index des Namens) über der Tiefe seines Szenen-Passes (`__letzteSpiegel`, dieselbe Pose), jedes fünfte Pixel gezählt × 5 — [nah, fern]
-// je Name, die Grenze NAH_M bis zum Auge; ohne Tiefe (Himmel) fern. Je Pixel, nie je Klasse: der Fels-Turm in 16,5 m und der in
-// 38 m sind EINE Klasse (`formationenSatz`), ihr Median lag jenseits 30 m und der nahe Turm fiel aus dem Band
+// je Name, die Grenze NAH_M bis zum Auge; ohne Tiefe (Himmel) fern. Je Pixel, nie je Klasse: eine Klasse mit nahen und fernen
+// Exemplaren (die Fels-Türme in 16,5 und 38 m sind EINE Klasse `formationenSatz`) hätte im Median nur eines der Bänder
 const BAENDER_JE_KLASSE = `const { teil, namen, W, H } = window.__letzteTeilung, S = window.__letzteSpiegel;
     const iv = new T.Matrix4().fromArray(S.ivp), auge = new T.Vector3().fromArray(S.auge), d = namen.map(() => [0, 0]);
     for (let p = 0; p < W * H; p += 5) {
@@ -261,7 +266,7 @@ async function messen() {
             return geschossen.get(s);
         };
         // DIE WAHL zur ersten Uhr, JE AUSDRUCK in seiner eigenen Teilung (ein Schuss aller Ausdrücke teilte anders: der Ausdruck des
-        // Hauses ruft den Bau-Satz beim Namen, `bauSatz` nahm dem Fels 10 754 seiner Pixel — Radeon 31.10., 63 statt 10 817): der Schuss
+        // Hauses ruft den Bau-Satz beim Namen, jeder Bereich des Satzes — Tore, Vorschauen — wurde EINE Klasse `bauSatz`): der Schuss
         // der Zelle im Blick der Ankunft zählt als erster Blick, jeder weitere (nur Pixel) nur für ein Band, das noch fehlt
         const wahl = new Map();
         for (const [a, ks] of gruppen) {
