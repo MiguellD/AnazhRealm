@@ -1,0 +1,22 @@
+{
+ "ms": 25950,
+ "ort": "genesis",
+ "sicht": "third",
+ "pose": null,
+ "welt": null,
+ "spieler": [
+  0,
+  0
+ ],
+ "wiese": null,
+ "takte": 584,
+ "steht": true,
+ "chunks": 81,
+ "gier": -1.5708,
+ "dorfZug": false,
+ "ortTakt": [
+  "_genesisPortalRing",
+  "_portalApproachPrefetch"
+ ],
+ "dorfSchwebt": null
+}

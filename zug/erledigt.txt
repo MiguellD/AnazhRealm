@@ -134,3 +134,4 @@ b-kalt-1a71 Exit0 station ankunft-kalt.sh an 1a71c07b
 a-spawn-gtx Exit0 station a-spawn.sh an 96133362
 b-kalt-d848 Exit0 station ankunft-kalt.sh an d84842b1
 a-spawn-gtx2 Exit0 station a-spawn.sh an 96133362
+z106-abab nicht-langsamer abab b4bcf19c gegen 48cc0efc: g-third 2+2 nicht-langsamer · w-ego 2+2 nicht-langsamer

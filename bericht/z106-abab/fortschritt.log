@@ -1,0 +1,20 @@
+15:28:08 SERIE START A=48cc0efca[0] B=b4bcf19c2[0] Instrument=48cc0efca ZELLEN=g-third
+15:28:18 g-third-A1 start FP=75096dbcb0c54316 72 58 gpu[62, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:30:10 g-third-A1 ende gpu[75, 1746 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 76.8 F95 16.8 C95 7.3 k0 0.19 | 
+15:30:44 g-third-B1 start FP=71100d40bcb5f517 72 58 gpu[73, 1746 MHz, 4006 MHz, P0, 0x0000000000000001]
+15:32:33 g-third-B1 ende gpu[77, 1733 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 77.7 F95 16.8 C95 6.7 k0 0.17 | 
+15:33:06 g-third-A2 start FP=75096dbcb0c54316 72 58 gpu[74, 1733 MHz, 4006 MHz, P0, 0x0000000000000001]
+15:34:51 g-third-A2 ende gpu[77, 1733 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 76.5 F95 16.8 C95 7.2 k0 0.16 | 
+15:35:25 g-third-B2 start FP=71100d40bcb5f517 72 58 gpu[74, 1733 MHz, 4006 MHz, P0, 0x0000000000000001]
+15:37:10 g-third-B2 ende gpu[77, 1708 MHz, 4006 MHz, P0, 0x0000000000000001] steht: fps 79.3 F95 16.8 C95 6.3 k0 0.17 | 
+15:37:36 SERIE ENDE A-status[0] B-status[0]
+15:37:43 SERIE START A=48cc0efca[0] B=b4bcf19c2[0] Instrument=48cc0efca ZELLEN=w-ego
+15:37:51 w-ego-A1 start FP=75096dbcb0c54316 72 58 gpu[74, 1708 MHz, 4006 MHz, P0, 0x0000000000000001]
+15:40:19 w-ego-A1 ende gpu[76, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 66.8 F95 16.8 C95 4.9 k0 0.24 | 1: fps 57.2 F95 25.1 C95 16.6 k0 0.3 | 
+15:40:52 w-ego-B1 start FP=71100d40bcb5f517 72 58 gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:43:18 w-ego-B1 ende gpu[77, 822 MHz, 2999 MHz, P3, 0x0000000000000001] steht: fps 66.2 F95 16.8 C95 5.8 k0 0.24 | 1: fps 56 F95 25.1 C95 17.4 k0 0.3 | 
+15:43:52 w-ego-A2 start FP=75096dbcb0c54316 72 58 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:46:20 w-ego-A2 ende gpu[76, 417 MHz, 405 MHz, P8, 0x0000000000000001] steht: fps 67.3 F95 16.8 C95 5.5 k0 0.24 | 1: fps 56.1 F95 25.1 C95 17.3 k0 0.31 | 
+15:46:54 w-ego-B2 start FP=71100d40bcb5f517 72 58 gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+15:49:21 w-ego-B2 ende gpu[77, 480 MHz, 405 MHz, P8, 0x0000000000000001] steht: fps 66.8 F95 16.8 C95 5 k0 0.23 | 1: fps 56 F95 25.1 C95 17.2 k0 0.3 | 
+15:49:47 SERIE ENDE A-status[0] B-status[0]
