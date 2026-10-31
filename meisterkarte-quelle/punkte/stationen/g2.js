@@ -300,7 +300,8 @@ async function herdeHang() {
             const [, , , lx, ly, lz] = q.kamera;
             const [px, py, pz] = auge || q.kamera;
             const datei = B + "-herde-" + (i + 1) + ".png";
-            const b = await werkbankRuf(W, "/bild", { px, py, pz, lx, ly, lz, klasse: "^tier", ziel: "Herde", punkte: q.punkte, wahl: 14, datei });
+            // `nurPixel` (w4-proben-tempo2): das Urteil liest je Klasse die Pixel und die Teilung (Pulk), nie die Klassen-Maße
+            const b = await werkbankRuf(W, "/bild", { px, py, pz, lx, ly, lz, klasse: "^tier", ziel: "Herde", punkte: q.punkte, wahl: 14, datei, nurPixel: true });
             const kl = b && b.klasse ? Object.fromEntries(Object.entries(b.klasse.klassen || {}).map(([k, v]) => [k, v.pixel])) : null;
             const kam = b && Array.isArray(b.kamera) ? [...b.kamera, lx, ly, lz] : q.kamera;
             auge = kam;
@@ -1375,7 +1376,7 @@ async function vegetationLauf() {
             const wiese = was === "wiese";
             const datei = B + "-" + n + ".png";
             const b = await ruf("/bild", {
-                px, py, pz, lx, ly, lz, w: 1920, h: 1080, wahl: 0, uhr, saison: saison || undefined, datei, abstand: wiese, ringe: wiese ? "2,5,10,20,40" : undefined,
+                px, py, pz, lx, ly, lz, w: 1920, h: 1080, wahl: 0, uhr, saison: saison || undefined, datei, abstand: wiese, nurPixel: true,
                 klasse: wiese ? "^(nahWiese:.*|streuSatz|bodenSatz)$" : "^f:(eiche|birke|buche):L[01]$",
             });
             const ab = JSON.parse(fs.readFileSync(datei.replace(/\.png$/, ".abnahme.json"), "utf8"));
@@ -1553,12 +1554,15 @@ function jahrProben(lauf, eigen) {
 }
 // der Lauf des Jahrs: die Kronen in Sommer, Winter, Frühling, dann die Wiese — am EINEN Stand (Mess-Wiese, Ego, Mittag)
 const JAHR_LAUF = ["krone", "wiese"].flatMap((was) => ["sommer", "winter", "fruehling"].map((z) => ["wiese", "ego", 0.5, z, was]));
-// `lauf` der Plan der Probe (die Zwillinge fahren ihn EINMAL), `eigen` die Schüsse, die diese Station urteilt
-const jahrStation =(staffel, lauf, eigen, zeiten, quelle) => ({
+// die Kronen der Staffel 1 (Sommer, Winter): ihr eigener Lauf (w4-proben-tempo2)
+const JAHR_KRONEN = ["sommer", "winter"].map((z) => JAHR_LAUF.find((p) => p[3] === z && p[4] === "krone"));
+// `lauf` der Plan der Probe, `eigen` die Schüsse, die diese Station urteilt, `sek` der Deckel nach seiner Messung (sonst der des
+// Plans; die Ausnahme nur über 45 s)
+const jahrStation = (staffel, lauf, eigen, zeiten, quelle, sek) => ({
     kriterium: "vegetation.K5",
     staffel,
     geraet: ["radeon", "gtx"],
-    probe: vegetationProbe(lauf, "ohne-budget"),
+    probe: ((p) => (sek == null ? p : { befehl: p.befehl, sek, ...(sek > 45 ? { ausnahme: p.ausnahme } : {}) }))(vegetationProbe(lauf, "ohne-budget")),
     gpu: true,
     zeit: false,
     minuten: staffel === 1 ? 2 : 6,
@@ -3604,7 +3608,7 @@ const stationen = [
     wieseStation(1, [["wiese", "third", 0.5]], "1 = eine Pose (Ort × Sicht × Uhr) grün in allen festen Ringen, im Budget"),
     // ───────── vegetation.K5 — das Jahr als Gestalt (Zweig w3w-wald): Staffel 1 die Laub-Maske an EINER Pose im Sommer und Winter,
     // Staffel 2 dazu der Frühling und die Wiese an der Kamera des Spiels (Ego, Mittag) in allen drei (vegetationLauf, jahrUrteil) ─────────
-    // DIE ARBEIT GETEILT (w4-sitzung-reif): beide Staffeln sind EIN Lauf (Zwillinge) — seine ersten Schüsse sind die Kronen von Sommer und
+    // DIE ARBEIT GETEILT (w4-sitzung-reif, bis w4-proben-tempo2): beide Staffeln waren EIN Lauf (Zwillinge) — seine ersten Schüsse sind die Kronen von Sommer und
     // Winter am Stand der Staffel 1; sie urteilt nur sie (der Rest des Laufs, auch sein Fehler, ist Sache der Staffel 2). Getrennt kosteten
     // sie 25 s + 65 s der Fahrt, so 65 s
     // DAS TEMPO (w4-proben-tempo, 30.10.; GTX 379e5f56 ≥ 90 s am Eich-Deckel, „zuletzt: SCHRITT /eval“): DIE TÄTER je Schuss — die
@@ -3612,8 +3616,13 @@ const stationen = [
     // 567 → 242 ms je Klasse), der Licht-Pool fest 20 × 50 ms (`bild --uhr`, jetzt bis zu seinem Fixpunkt), der Zähler je Wiesen-Schuss
     // (`/zaehlen`, sein Budget liest nur vegetation.K1 — das Jahr läuft „ohne-budget“). Offen beim Namen: der Abstands-Marsch der Wiese
     // (je 2×2-Block ein Strahl bis 200 m, ~20 Mio. Rufe `_bodenSichtAt`, 6–11 s je Wiesen-Schuss) — der EINE Boden-Leser im Spiel
-    jahrStation(1, JAHR_LAUF, ["sommer", "winter"].map((z) => JAHR_LAUF.find((p) => p[3] === z && p[4] === "krone")), ["sommer", "winter"], "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose"),
-    jahrStation(2, JAHR_LAUF, JAHR_LAUF, ["sommer", "winter", "fruehling"], "2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte"),
+    // DIE STAFFEL 1 FÄHRT ALLEIN (w4-proben-tempo2, 31.10.; Radeon 2134b209, je Schuss die Phasen der Werkbank): der Lauf der Zwillinge
+    // trug sechs Schüsse — Kronen 12,6 · 7,9 · 11,1 s, Wiesen 21,0 · 19,5 s (davon der Abstands-Marsch 9,3 · 8,7 s), Σ ≈ 93 s —, und riss
+    // jeden Deckel (Radeon 65 s, GTX 90 s): die Staffel 1, deren zwei Kronen nach 20 s standen, war nie gemessen. Jetzt fährt sie ihre
+    // zwei Kronen allein; die Staffel 2 bleibt der ganze Plan, über dem Gesetz der Fahrt (≥ 90 s an beiden Geräten) — 10 s, UNGEMESSEN
+    // beim Namen wie die übrigen, bis der Abstands-Marsch fällt
+    jahrStation(1, JAHR_KRONEN, JAHR_KRONEN, ["sommer", "winter"], "1 = Kronen-Deckung der Laubbäume (Maske f:eiche|birke|buche) im Winter ≤ 0,3 × Sommer, an einer Pose", 45),
+    jahrStation(2, JAHR_LAUF, JAHR_LAUF, ["sommer", "winter", "fruehling"], "2 = dazu Wiesen-LAI im Winter ≤ 0,5 × Sommer und der Austrieb im Frühling, beide Geräte", 10),
 ];
 
 // Nicht als Station fassbar (heute): je Kriterium und Staffel der Grund beim Namen. Sie tragen keine Punkte der Maschine;
