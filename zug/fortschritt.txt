@@ -1097,3 +1097,4 @@
 2026-10-31 10:01:14 z100c-abab w-ego(4+4) nicht-langsamer 12.6 · verlängert (4+4)
 2026-10-31 10:01:33 takt29-gtx START 9 Stationen in 1 Läufen
 2026-10-31 10:07:19 takt29-gtx tiere.K1#2,tiere.K3#2,mensch.K4#1,material.K4#1,haar.K2#1,studios.K2#2,studios.K3#2,haar.K1#1,material.K5#1 OFFEN/OFFEN/ROT/ROT/ROT/OFFEN/OFFEN/GRÜN/GRÜN 5.7 · 9/9
+2026-10-31 10:41:59 z102-abab START 2 Zellen
