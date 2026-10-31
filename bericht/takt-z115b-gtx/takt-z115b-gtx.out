@@ -1,0 +1,32 @@
+Punkte-Maschine: 10 Station(en) in 9 Läufen auf gtx am b895650c · Sitzung 9 Proben in EINER Welt (Deckel Σ 2 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  SITZUNG gtx · die Welt steht nach 5.9 s (Schloss nach 0.01 min) · 9 Proben · Welt :27804
+  SITZUNG der Grund der Welt: 77 Größen in 0 s
+  SITZUNG Ort wiese vor haar.K2#1: 21.7 s (540 Takte, 81 Chunks)
+  ROT  haar.K2#1 · arm ROT strich 0.2716 Soll [0.3554,0.533] — strich 0.2716 < 0.3554 · albedo: Rohdatei spec/farbe/albedo-tafel.json: Zeile „haar" ohne Ist · albedo — [0.01; 0.3] · third ROT strich 0.329 Soll [0.3554,0.533] — strich 0.329 < 0.3554 · albedo: Rohdatei spec/farbe/albedo-tafel.json: Zeile „haar" ohne Ist · albedo — [0.01; 0.3] · Sitzung · Exit 0 · 0.39 min
+  SITZUNG lod.K5#1 ließ die Welt verändert und trägt kein mutiert: werke +1 (−0) — die Grundstellung folgt
+  OFFEN lod.K5#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor spielgang.K3#1: 3.7 s (im Spiel 54 ms, durch die Tür)
+  SITZUNG Ort wiese vor spielgang.K3#1: 18.1 s (647 Takte, 81 Chunks, nach der Tür)
+  ROT  spielgang.K3#1 · HUD deckt 3.94 % (1920×1080, im Spiel) · INP HUD 120 ms (50) · Menü 248 ms (20) · Sitzung · Exit 0 · 0.31 min
+  SITZUNG material.K1#1 ließ die Welt verändert und trägt kein mutiert: werke +14 (−0) — die Grundstellung folgt
+  OFFEN material.K1#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor mensch.K5#1: 6.2 s (im Spiel 36.9 ms, durch die Tür)
+  SITZUNG Ort genesis vor mensch.K5#1: 20.6 s (578 Takte, 81 Chunks, nach der Tür)
+  OFFEN mensch.K5#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor bauen.K1#2: 4.5 s (im Spiel 42.7 ms, durch die Tür)
+  SITZUNG die Welt vor bauen.K1#2: 13.7 s (637 Takte, 81 Chunks, nach der Tür)
+  OFFEN bauen.K1#2 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 3)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor fahrzeug.K2#1: 4.7 s (im Spiel 46 ms, durch die Tür)
+  SITZUNG die Welt vor fahrzeug.K2#1: 13.5 s (637 Takte, 81 Chunks, nach der Tür)
+  OFFEN fahrzeug.K2#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor ankunft.K2#1: 3.8 s (im Spiel 43.9 ms, durch die Tür)
+  SITZUNG die Welt vor ankunft.K2#1: 13.6 s (637 Takte, 81 Chunks, nach der Tür)
+  SITZUNG ankunft.K2#1 ließ die Zeichenkette verändert: zeichner.postKette — kein Urteil (Werkzeug-Bruch), die Grundstellung folgt
+  OFFEN ankunft.K2#1 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild der Kontrolle (t(Kontrolle) 0 ms, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: @@ 2.3 s · kalt: t(Kontrolle) — · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.postKette fort) · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN ankunft.K3#1 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] nvidia/pascal) · Täter: @@ 2.3 s · kalt: t(Kontrolle) — · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.postKette fort) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor klang.K4#1: 2.9 s (im Spiel 58 ms, durch die Tür)
+  SITZUNG die Welt vor klang.K4#1: 17.1 s (584 Takte, 81 Chunks, nach der Tür)
+  OFFEN klang.K4#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG DER ORT IM DECKEL (die Probe zog weiter als 250 m von dem Ort, an dem die Sitzung sie begann — ihr Deckel trug den Ring): fahrzeug.K2#1 1142 m (Ring 4 → -1), klang.K4#1 1084 m (Ring 4 → -1), material.K1#1 1083 m (Ring 4 → 0)
+  SITZUNG Fahrt 253.6 s (Soll ≤ 1800 s) · 9 Proben · Grundstellung 6×
+→ meisterkarte-quelle\punkte\messung\b895650c-gtx.json
