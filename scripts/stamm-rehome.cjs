@@ -135,16 +135,19 @@ function plane(root, auf, zweig, namen) {
 // Schreibt den Stamm-Text `T` in der Form des Ziels in den Arbeitsbaum und stellt ihn in den Index.
 function setzeStamm(root, T, form) {
     const alt = path.join(root, stamm.ALT);
+    // die Tags in index.html folgen der Form (EIN Tag oder die Zonen, sonst lüde die Seite fehlende Zonen)
+    const tags = (pfade) => {
+        const html = path.join(root, "index.html");
+        const h = fs.readFileSync(html, "utf8");
+        if (/^<<<<<<< /m.test(h)) throw new Error("Re-Home: index.html trägt git-Konflikte — erst lösen, dann --weiter");
+        fs.writeFileSync(html, stamm.tagsSetzen(h, pfade));
+    };
     const dir = path.join(root, stamm.DIR);
     if (form === "datei") {
         if (fs.existsSync(dir)) gitOk(root, ["rm", "-r", "-q", "-f", "--ignore-unmatch", stamm.DIR]);
         fs.rmSync(dir, { recursive: true, force: true });
         fs.writeFileSync(alt, T);
-        // ein Zonen-Zweig auf ein Datei-Ziel: die Tags folgen der Form (EIN Tag, sonst lüde die Seite fehlende Zonen)
-        const html = path.join(root, "index.html");
-        const h = fs.readFileSync(html, "utf8");
-        if (/^<<<<<<< /m.test(h)) throw new Error("Re-Home: index.html trägt git-Konflikte — erst lösen, dann --weiter");
-        fs.writeFileSync(html, stamm.tagsSetzen(h, [stamm.ALT]));
+        tags([stamm.ALT]); // ein Zonen-Zweig auf ein Datei-Ziel: EIN Tag
         git(root, ["add", "--", stamm.ALT, "index.html"]);
         return [stamm.ALT];
     }
@@ -160,16 +163,7 @@ function setzeStamm(root, T, form) {
         }
     fs.mkdirSync(dir, { recursive: true }); // git rm nahm mit der letzten alten Datei das Verzeichnis
     for (const x of S) fs.writeFileSync(path.join(root, x.pfad), x.text);
-    const html = path.join(root, "index.html");
-    const h = fs.readFileSync(html, "utf8");
-    if (/^<<<<<<< /m.test(h)) throw new Error("Re-Home: index.html trägt git-Konflikte — erst lösen, dann --weiter");
-    fs.writeFileSync(
-        html,
-        stamm.tagsSetzen(
-            h,
-            S.map((x) => x.pfad)
-        )
-    );
+    tags(S.map((x) => x.pfad));
     git(root, ["add", "-A", "--", stamm.DIR, "index.html"]);
     return S.map((x) => x.pfad);
 }

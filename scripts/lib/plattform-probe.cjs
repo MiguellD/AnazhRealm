@@ -454,7 +454,6 @@ module.exports = {
     probeWand,
     fingerabdruck,
     objektAbdruck,
-    goldenVergleich,
     goldenSelbsttest,
     fallSchluessel,
 };

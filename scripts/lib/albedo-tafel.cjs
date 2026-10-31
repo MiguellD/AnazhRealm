@@ -881,7 +881,6 @@ const LABOR_INSTALL =
     `window.__laborKarte = ${laborKarte.toString()};`;
 
 module.exports = {
-    TAFEL_PFAD,
     PFLICHT_GRUPPEN,
     STUDIOS,
     ladeTafel,

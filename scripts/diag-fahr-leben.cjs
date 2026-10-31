@@ -802,6 +802,10 @@ const verkehrVerdict = (m) =>
             `neben der Spur (außer im Ort, den er allein hält) ${m.querMax} m ${JSON.stringify(m.querOrt)}`,
         ],
         [m.msJeSchritt <= 1, `Sim-Takt ${m.msJeSchritt} ms`],
+        // DAS EINE STUFEN-GESETZ (Komposit erbt, Bewegte prüfen; die Probe `stufe` in fahr-proben)
+        [m.stufe.nah >= 20, `kein Wagen im 3D-Raum (${m.stufe.nah})`],
+        [!m.stufe.ohneBild, `Wagen ohne Bild mit gezeichnetem Fahrer ${m.stufe.ohneBild}× ${JSON.stringify(m.stufe.ohneBildOrte)}`],
+        [!m.stufe.veraltet, `bewegter Eintrag mit veralteter Stufe ${m.stufe.veraltet}× ${JSON.stringify(m.stufe.veraltetOrte)}`],
     ].flatMap(([ok, t]) => (ok ? [] : [t]));
 
 // ════ F — DIE FAHR-BAHN, eigenes Boot: der Wagen, den die Welt hinstellt, steht auf fahrbarem Grund, kommt rückwärts
@@ -2337,6 +2341,7 @@ hauptLauf(async () => {
                 },
                 ...{ weg: { min: 26, median: 123 }, fest: [], beruehrt: { leib: 0, wagen: 0 }, ohneSchluessel: 0 },
                 ...{ stoss: { wagen: 0, bau: 0 }, querMax: 0.35, msJeSchritt: 0.82, sek: 40 },
+                stufe: { nah: 99 },
             };
             const brueche = [
                 [{ wenden: 3 }, /Wenden 3/],
@@ -2353,6 +2358,9 @@ hauptLauf(async () => {
                 [{ stoss: { wagen: 0, bau: 5 } }, /Stoß/],
                 [{ querMax: 2.3 }, /Spur/],
                 [{ msJeSchritt: 2.4 }, /Takt 2.4/],
+                [{ stufe: { nah: 3 } }, /kein Wagen im 3D-Raum \(3/],
+                [{ stufe: { nah: 99, ohneBild: 7 } }, /ohne Bild mit gezeichnetem Fahrer 7/],
+                [{ stufe: { nah: 99, veraltet: 2 } }, /veralteter Stufe 2/],
             ].filter(([an, soll]) => !((v) => v.length === 1 && soll.test(v[0]))(verkehrVerdict({ ...g, ...an })));
             check(
                 "Selbst-Test VK: der Verkehr nennt jeden Bruch beim Namen",
