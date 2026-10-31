@@ -218,14 +218,15 @@ function fensterLinse(core, cfgs, verschiebe) {
 
 // ===== (4) DIE STUFE OHNE BILD — das Fenster der Instanz-Wahl gegen das Gesetz an der Instanz-Distanz =====
 // `fenster(g, i, L)` ist das echte `_instanzFenster` (im Selbsttest gewickelt); `this` trägt nur, was eine alte Fassung las
-// (die Weite der Gestalt, die Krone der Birke 10 m).
+// (die Weite der Gestalt, die Krone der Birke 10 m). Die Lage trägt, was die Wahl je Pass liest (`_passWahlLage`): das Auge, die
+// Sichthöhe der Referenz, die Kanten und den Halt — die Distanz misst die Maske ungestreckt (bis w4-ankunft-3 × `uLodPerf`,
+// die Ankunft aus der Ferne; seit ihr Fall liest weder Maske noch Fenster einen Streck, `gate:altlasten`).
 const stumpf = { _instanzWeite: () => ({ r: 10.06, y: 0 }) };
 function stufeOhneBildLinse(core, cfg, fenster = (g, i, L) => A.prototype._instanzFenster.call(stumpf, g, i, L)) {
     const gesetz = core.lodCrossfadeMask;
     const K = A._blendeKanten(gesetz, cfg.d0, cfg.d1, cfg.fade, cfg.fade0);
-    const perf = 1.21,
-        ref = 12;
-    const L = { ex: 0, ez: 0, perf, ref, kanten: K, halt: 0 };
+    const ref = 12;
+    const L = { ex: 0, ez: 0, ref, kanten: K, halt: 0 };
     // die Wahrheit an der Instanz-Distanz: behält die Stufe dort ein Fragment (ein Dither-Wert des Rasters)?
     const zeigt = (stufe, dS, dL) => {
         for (let k = 0; k < 256; k++) {
@@ -255,8 +256,8 @@ function stufeOhneBildLinse(core, cfg, fenster = (g, i, L) => A.prototype._insta
                         },
                     },
                 };
-                const dS = d * perf * Math.min(ref / art.h, 1),
-                    dL = d * perf * Math.min(ref / hL, 1);
+                const dS = d * Math.min(ref / art.h, 1),
+                    dL = d * Math.min(ref / hL, 1);
                 const zeichnet = fenster(g, 0, L);
                 const wahr = zeigt(stufe, dS, dL);
                 // die Kanten stehen per Bisektion auf 1 mm an der äußeren Grenze (`_blendeKanten`): 1 cm Wahrnehmungs-Distanz
