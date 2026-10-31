@@ -117,3 +117,4 @@ takt27b-gtx gemessen punkte 94c079cb gtx: 3 grün / 10 rot
 eich14-gtx Exit0 station eich-gtx.sh an 94c079cb
 z96-abab nicht-langsamer abab f1a654f1 gegen 8075fc03: stadt 2+2 nicht-langsamer · w-ego 4+4 nicht-langsamer
 z98-abab nicht-langsamer abab 94c079cb gegen 3ef20f9f: stadt 4+4 nicht-langsamer
+takt27c-gtx gemessen punkte 94c079cb gtx: 12 grün / 21 rot
