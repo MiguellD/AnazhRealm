@@ -29,6 +29,9 @@ Pflicht-OFFEN: A, B, C, E und F (F gesetzt 31.10., der Prüfplatz; Plan `bericht
     Wirt in Welle d ein.
   - **w4-e-vram-heim 6c0a7878** (E): w4-e-vram 57134448 auf ankunft-5. Die Cloud maß Wiese Ego 120,5 → 108,1 MB, das Band ist 118.
     Ich habe ihn auf ankunft-5 gestapelt, weil sich beide an diag-chunk-satz stießen; es gilt e-vram, der Selbsttest ist grün.
+- **z117 wartet auf die Landung von z116** (`w3/kette-z117.sh`): w4-b-code-heim 2cc4cc17 (B, Cloud w4-b-code auf main b895650c):
+  der Stamm übersetzt beim Streamen, die KI lädt nach dem ersten Bild — V8 im Haupt-Faden vor dem Bild 1259 → 223 ms. Atlas und
+  stamm:lint am Merge grün. z115 ist um 22:58 gelandet (main b895650c, bewohner-wache); z110-abab nicht-langsamer.
 - **koordination ad55c327:** w4-stationen-schnell-b-koord a0ff6bd4 ist gemergt (fünf Stationen ohne kalten Ring, die Linse DER ORT IM
   DECKEL). Selbsttest 122/122 ohne (3c), die Fahrt-Wand hält an gtx und radeon. Die Stationen a (über 90 s) stehen noch aus.
 - **OMEN:** takt-z114a/-b und z114-abab sind eingereiht; nach jeder Landung reiht takt-nach.sh den Takt am neuen main ein.
