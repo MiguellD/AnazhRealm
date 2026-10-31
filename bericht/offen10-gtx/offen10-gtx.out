@@ -1,0 +1,123 @@
+Punkte-Maschine: 73 Station(en) in 42 Läufen auf gtx am ab040980 · Sitzung 42 Proben in EINER Welt (Deckel Σ 18 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  SITZUNG gtx · die Welt steht nach 6.3 s (Schloss nach 0.01 min) · 42 Proben · Welt :27804
+  SITZUNG der Grund der Welt: 77 Größen in 0.1 s
+  SITZUNG Ort wiese vor vegetation.K5#1: 20.3 s (552 Takte, 81 Chunks)
+  OFFEN vegetation.K5#1 · Deckel 65 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s) · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN vegetation.K5#2 · Deckel 65 s gerissen — beendet, UNGEMESSEN (zuletzt: SCHRITT /eval 0.0 s) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor ferne.K1#1: 4 s (im Spiel 39.7 ms, durch die Tür)
+  SITZUNG Ort genesis vor ferne.K1#1: 18.6 s (578 Takte, 81 Chunks, nach der Tür)
+  OFFEN ferne.K1#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN ferne.K2#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN ferne.K1#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN ferne.K2#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor gelaende.K5#2: 3 s (im Spiel 37.4 ms, durch die Tür)
+  SITZUNG die Welt vor gelaende.K5#2: 12.9 s (582 Takte, 81 Chunks, nach der Tür)
+  SITZUNG gelaende.K5#2 ließ die Welt verändert und trägt kein mutiert: werke +1 (−0) — die Grundstellung folgt
+  OFFEN gelaende.K5#2 · Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor material.K3#1: 3.4 s (im Spiel 33.1 ms, durch die Tür)
+  SITZUNG die Welt vor material.K3#1: 12.4 s (582 Takte, 81 Chunks, nach der Tür)
+  SITZUNG material.K3#1 ließ die Welt verändert und trägt kein mutiert: werke +3 (−0) — die Grundstellung folgt
+  OFFEN material.K3#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: ort · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN material.K3#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: ort · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor material.K1#1: 3.8 s (im Spiel 32.9 ms, durch die Tür)
+  SITZUNG die Welt vor material.K1#1: 12.7 s (583 Takte, 81 Chunks, nach der Tür)
+  SITZUNG material.K1#1 ließ die Welt verändert und trägt kein mutiert: werke +16 (−0) — die Grundstellung folgt
+  OFFEN material.K1#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN material.K1#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor material.K5#1: 3 s (im Spiel 38.8 ms, durch die Tür)
+  SITZUNG die Welt vor material.K5#1: 12.8 s (582 Takte, 81 Chunks, nach der Tür)
+  OFFEN material.K5#1 · Deckel 11 s gerissen — beendet, UNGEMESSEN (zuletzt: fenster · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor wetter.K2#1: 2.5 s (im Spiel 36.4 ms, durch die Tür)
+  SITZUNG Ort dorf vor wetter.K2#1: 28.4 s (1033 Takte, 81 Chunks, nach der Tür)
+  GRÜN wetter.K2#1 · Dorf porös draußen 0.572 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 5 (n 5949/13809) · Sitzung · Exit 0 · 0.26 min
+  SITZUNG Grundstellung vor gelaende.K2#1: 3.6 s (im Spiel 35.1 ms, durch die Tür — wege +2 [-784.3,-952.2,-631.7,-806.5/4] [-810.2,-986.5,-604,-776.9/95])
+  SITZUNG die Welt vor gelaende.K2#1: 13 s (583 Takte, 81 Chunks, nach der Tür)
+  OFFEN gelaende.K2#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN gelaende.K2#2 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor physik.K2#2: 3.7 s (im Spiel 37.5 ms, durch die Tür)
+  SITZUNG die Welt vor physik.K2#2: 13.6 s (583 Takte, 81 Chunks, nach der Tür)
+  ROT  physik.K2#2 · (V) Wagen oder gestoßener Bär fehlt in der Ausgabe (Exit 0) — ❌ LAUF-FEHLER: DER BAU STEHT NICHT: haus_alemannisch#552 nach 299 Takten — die Welt hat nichts mehr offen · Sitzung · Exit 0 · 0.1 min
+  SITZUNG Grundstellung vor tiere.K1#2: 0.1 s (im Spiel 33.7 ms)
+  SITZUNG die Welt vor tiere.K1#2: 0.5 s (49 Takte, 81 Chunks, nach der Grundstellung)
+  OFFEN tiere.K1#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor tiere.K3#2: 4 s (im Spiel 33.3 ms, durch die Tür)
+  SITZUNG die Welt vor tiere.K3#2: 13.1 s (583 Takte, 81 Chunks, nach der Tür)
+  OFFEN tiere.K3#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 51.4 σ 24.9 schwarz 0.0 % weiß 0.0 % · Stand 18.546.139 · Bühne summ) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor mensch.K1#1: 2.8 s (im Spiel 31.7 ms, durch die Tür)
+  SITZUNG die Welt vor mensch.K1#1: 13 s (583 Takte, 81 Chunks, nach der Tür)
+  OFFEN mensch.K1#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: (21 s)) · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN mensch.K2#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: (21 s)) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor vegetation.K4#1: 4.4 s (im Spiel 47.9 ms, durch die Tür)
+  SITZUNG die Welt vor vegetation.K4#1: 13.4 s (583 Takte, 81 Chunks, nach der Tür)
+  OFFEN vegetation.K4#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 0.2 s) · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN vegetation.K4#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 0.2 s) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor tiere.K2#2: 3.2 s (im Spiel 36.9 ms, durch die Tür)
+  SITZUNG die Welt vor tiere.K2#2: 13.1 s (582 Takte, 81 Chunks, nach der Tür)
+  OFFEN tiere.K2#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.29 m · Luma 51.3 σ 30.3 schwarz 0.0 % weiß 0.0 % · Stand 18.546.139 · Bühne summ) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor luftwasser.K5#1: 3 s (im Spiel 33 ms, durch die Tür)
+  SITZUNG die Welt vor luftwasser.K5#1: 13 s (582 Takte, 81 Chunks, nach der Tür)
+  GRÜN luftwasser.K5#1 · Schwarm-Takt 0.175 ms je Takt (Median, p95 0.39) bei 100 Gliedern im Blick in jeder Reihe, 13267 Paare der Separation, Auge 51.7 m (Soll ≤ 0,3 ms, 100 im Bild) · Sitzung · Exit 0 · 0.01 min
+  GRÜN luftwasser.K5#2 · Klasse vogel 2 Befehle {"haupt":2}, 580 Instanzen (500 des Schwarms, 5 Teile je Glied), 100 Glieder im Blick je Reihe (Soll ≤ 10 Befehle) · Sitzung · Exit 0 · 0.01 min (Zwilling von luftwasser.K5#1)
+  SITZUNG Grundstellung vor mensch.K5#1: 0.1 s (im Spiel 25.4 ms)
+  SITZUNG die Welt vor mensch.K5#1: 1.3 s (82 Takte, 81 Chunks, nach der Grundstellung)
+  OFFEN mensch.K5#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor studios.K2#2: 2.9 s (im Spiel 40.5 ms, durch die Tür)
+  SITZUNG die Welt vor studios.K2#2: 13 s (584 Takte, 81 Chunks, nach der Tür)
+  OFFEN studios.K2#2 · Deckel 25 s gerissen — beendet, UNGEMESSEN (zuletzt: portale         16 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain) · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN studios.K3#2 · Deckel 25 s gerissen — beendet, UNGEMESSEN (zuletzt: portale         16 Anfragen · fremd /worlds/terrain/lib/three-r128.min.js /worlds/terrain/lib/OrbitControls.js /worlds/terrain/lib/CopyShader.js /worlds/terrain) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor pipeline.K4#1: 2.9 s (im Spiel 145.2 ms, durch die Tür)
+  SITZUNG die Welt vor pipeline.K4#1 steht nicht nach 300 s: {"fehler":"/eval ohne Antwort binnen 300 s"}
+  ROT  pipeline.K4#1 · keine Liefer-Zeile am Zweit-Boot (Exit 2) · Sitzung · Exit 2 · 0.04 min
+  ROT  pipeline.K4#2 · keine Art-Zeile oder kein Kern-Wechsel (Exit 2) · Sitzung · Exit 2 · 0.04 min (Zwilling von pipeline.K4#1)
+  ROT  ankunft.K2#1 · kein Bild der Kontrolle (t(Kontrolle) undefined ms, Exit 2) · [linse-gpu] nvidia/pascal · Sitzung · Exit 2 · 0.04 min (Zwilling von pipeline.K4#1)
+  ROT  ankunft.K3#1 · 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 2) · [linse-gpu] nvidia/pascal · Sitzung · Exit 2 · 0.04 min (Zwilling von pipeline.K4#1)
+  SITZUNG Grundstellung vor bauen.K1#2: 0.2 s (im Spiel 90.2 ms)
+  SITZUNG die Welt vor bauen.K1#2 steht nicht nach 300 s: {"fehler":"/eval ohne Antwort binnen 300 s"}
+  ROT  bauen.K1#2 · keine Ausgabe des Bild-Wegs auf der Karte (Exit 2) · Sitzung · Exit 2 · 0.03 min
+  SITZUNG Grundstellung vor bauen.K5#2: 0.2 s (im Spiel 124.8 ms)
+  SITZUNG die Welt vor bauen.K5#2 steht nicht nach 300 s: {"fehler":"/eval ohne Antwort binnen 300 s"}
+  ROT  bauen.K5#2 · keine verbenJe in der Ausgabe der Probe (Exit 2) · Sitzung · Exit 2 · 0.01 min
+  SITZUNG Grundstellung vor studios.K4#1: 0.1 s (im Spiel 32.2 ms)
+  SITZUNG die Welt vor studios.K4#1 steht nicht nach 300 s: {"fehler":"/eval ohne Antwort binnen 300 s"}
+  OFFEN studios.K4#1 · Deckel der Fahrt 1800 s gerissen nach 1 s der Probe — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN studios.K4#2 · Deckel der Fahrt 1800 s gerissen nach 1 s der Probe — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K3#1 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K3#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K4#1 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K4#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN siedlung.K2#1 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN siedlung.K2#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN siedlung.K1#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN siedlung.K5#1 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN siedlung.K5#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN siedlung.K4#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN leib.K2#1 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN leib.K2#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN leib.K4#1 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN leib.K4#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN halten.K5#1 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN halten.K5#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN halten.K1#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K5#1 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN tore.K3#1 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN tore.K3#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K2#1 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K2#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN streaming.K4#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K1#1 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K1#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K2#1 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K2#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K3#1 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K3#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN klang.K4#1 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN klang.K4#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN klang.K5#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN speicher.K1#1 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN speicher.K1#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN speicher.K2#1 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN speicher.K2#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN speicher.K4#2 · die Fahrt riss 1800 s (in studios.K4#1) — offen, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG die Fahrt riss 1800 s in studios.K4#1 — offen: studios.K4#1, studios.K4#2, fahrzeug.K3#1, fahrzeug.K3#2, fahrzeug.K4#1, fahrzeug.K4#2, siedlung.K2#1, siedlung.K2#2, siedlung.K1#2, siedlung.K5#1, siedlung.K5#2, siedlung.K4#2, leib.K2#1, leib.K2#2, leib.K4#1, leib.K4#2, halten.K5#1, halten.K5#2, halten.K1#2, fahrzeug.K5#1, tore.K3#1, tore.K3#2, fahrzeug.K2#1, fahrzeug.K2#2, streaming.K4#2, profiband.K1#1, profiband.K1#2, profiband.K2#1, profiband.K2#2, profiband.K3#1, profiband.K3#2, klang.K4#1, klang.K4#2, klang.K5#2, speicher.K1#1, speicher.K1#2, speicher.K2#1, speicher.K2#2, speicher.K4#2
+  SITZUNG Fahrt 1930 s (Soll ≤ 1800 s) · 21 Proben · Grundstellung 20×
+→ meisterkarte-quelle\punkte\messung\ab040980-gtx.json
