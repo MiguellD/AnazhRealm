@@ -280,3 +280,4 @@ b-kalt-ec98 2 station sha=ec989990fe86c70b1ac00f06fa657f1a5a33afd7 lauf=ankunft-
 z101-abab 3 abab A=ec989990fe86c70b1ac00f06fa657f1a5a33afd7 B=5443e695a11fe753c3f8160920fbe6423e8fef5a zellen=stadt,w-ego
 takt29-gtx 1 punkte sha=5443e695a11fe753c3f8160920fbe6423e8fef5a geraet=gtx nur=tiere.K1#2,tiere.K3#2,mensch.K4#1,material.K4#1,haar.K2#1,studios.K2#2,studios.K3#2,haar.K1#1,material.K5#1
 z101-abab 0 storno
+z102-abab 3 abab A=5443e695a11fe753c3f8160920fbe6423e8fef5a B=5e9a3bccf80eebcbb57c78c3ba4f7411e1dfcdbf zellen=stadt,w-ego
