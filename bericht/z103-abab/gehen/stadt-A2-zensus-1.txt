@@ -1,0 +1,50 @@
+{
+ "ms": 2,
+ "ergebnis": {
+  "gesamt": 4,
+  "arten": {
+   "wolf": 4
+  },
+  "zustand": {
+   "-": 4
+  },
+  "jaeger": 0,
+  "wuerfeAb2": 1,
+  "tiereInWuerfen": 4,
+  "gruppen": [
+   {
+    "wurf": "wolf@373.6,14.2",
+    "n": 4,
+    "mitte": [
+     374.1,
+     13.1
+    ],
+    "spanneM": 1.9,
+    "spielerM": 469
+   }
+  ],
+  "verbandFeld": true,
+  "verbaendeAb2": 1,
+  "verbaende": [
+   {
+    "vb": "c7",
+    "n": 4,
+    "art": {
+     "wolf": 4
+    },
+    "leitLebt": false,
+    "mitte": [
+     374.1,
+     13.1
+    ],
+    "spanneM": 1.9,
+    "spielerM": 469
+   }
+  ],
+  "verbaendeMap": 1,
+  "spieler": [
+   609.1,
+   419
+  ]
+ }
+}
