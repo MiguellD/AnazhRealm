@@ -401,8 +401,8 @@ class AnazhRealm_gelaende_chunks {
     // Heimat aus dem Voxel-Faden kommt und BEVOR der Strom ihn fragt (`_worldgenComputeAndBuildHydrosphere`) — sein `hydro-an`
     // steht im Voxel-Faden hinter keinem Chunk, und sein Start (unter Last 1–2 s bis zum ersten Skript) liegt vor seiner ersten
     // Frage. Bis hier gebar ihn sein erster Auftrag, als der Strom schon lief (headless kalt: Streu, Ferne, Feld 1,0–1,2 s, der
-    // Wald 2,0 s nach der Heimat geboren, ihr erstes Skript 0,9–2,4 s danach; die erste Antwort von Streu, Ferne und Wald kam
-    // so 1,4–1,7 s später). Der Null-Renderer zeichnet keine Ankunft: dort gebiert ihn sein erster Auftrag.
+    // Wald 2,0–2,8 s nach der Heimat geboren, ihr erstes Skript 0,9–2,4 s danach; die erste Antwort von Streu, Ferne und Wald
+    // kam so 1,4–1,7 s später). Der Null-Renderer zeichnet keine Ankunft: dort gebiert ihn sein erster Auftrag.
     _nebenFaedenDerAnkunft() {
         if (this._nullRendererGewaehlt()) return;
         for (const name of AnazhRealm.NEBEN_FAEDEN) this._nebenFaden(name);
