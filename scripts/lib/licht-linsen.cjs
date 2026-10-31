@@ -2179,25 +2179,34 @@ function luftTiefe(o) {
         const s = new T.Vector3();
         const q = new T.Vector3();
         const unter = (t) => gy + s.y * t < gesetz(gx + s.x * t, gz + s.z * t);
+        // JE STRAHL EIN MARSCH (w4-stationen-schnell-a, 31.10.): der Weg zum Gelände-Gesetz hängt nur an der Richtung des Strahls
+        // (`maersche`, bitgenau), nie am Schuss — bis dahin marschierte die Nachsicht mit Blende 1/4 denselben Blick ein zweites Mal
+        // (bis 2,6 Mio. Rufe des Gesetzes je Sicht, lokal 1,50 Mio. davon für die Strahlen in den Himmel); Schritte und Halbierung dieselben
+        const maersche = new Map();
         const treffer = (xx, yy, D) => {
             const nx = ((xx + 0.5) / W) * 2 - 1;
             const ny = 1 - ((yy + 0.5) / H) * 2;
             s.set(nx, ny, 1).applyMatrix4(cam.projectionMatrixInverse).applyMatrix4(cam.matrixWorld).sub(cam.position).normalize();
-            let a = 0;
-            let t = 30;
-            while (t < 6e4 && !unter(t)) {
-                a = t;
-                t += Math.max(8, t * 0.01);
+            const schl = s.toArray().join();
+            if (!maersche.has(schl)) {
+                let a = 0;
+                let t = 30;
+                while (t < 6e4 && !unter(t)) {
+                    a = t;
+                    t += Math.max(8, t * 0.01);
+                }
+                for (let k = 0; k < 12 && t < 6e4; k++) {
+                    if (unter((a + t) / 2)) t = (a + t) / 2;
+                    else a = (a + t) / 2;
+                }
+                maersche.set(schl, t);
             }
-            if (t >= 6e4) return null;
-            for (let k = 0; k < 12; k++) {
-                if (unter((a + t) / 2)) t = (a + t) / 2;
-                else a = (a + t) / 2;
-            }
-            const k = (s.y * t) / Hs;
+            const d = maersche.get(schl);
+            if (d >= 6e4) return null;
+            const k = (s.y * d) / Hs;
             const z = D.tiefe[Math.floor(((yy + 0.5) / H) * D.th) * D.tw + Math.floor(((xx + 0.5) / W) * D.tw)];
-            const szene = z < 1 && Math.abs(q.set(nx, ny, z).applyMatrix4(D.iv).distanceTo(cam.position) / t - 1) <= 0.15;
-            return { d: t, szene, g: Math.exp(-(gy - (st.waterLevel || 0)) / Hs) * (Math.abs(k) < 1e-3 ? 1 - k / 2 : (1 - Math.exp(-k)) / k) };
+            const szene = z < 1 && Math.abs(q.set(nx, ny, z).applyMatrix4(D.iv).distanceTo(cam.position) / d - 1) <= 0.15;
+            return { d, szene, g: Math.exp(-(gy - (st.waterLevel || 0)) / Hs) * (Math.abs(k) < 1e-3 ? 1 - k / 2 : (1 - Math.exp(-k)) / k) };
         };
         const bRef = luftBetaRef(R);
         const uhr = (u) => {
