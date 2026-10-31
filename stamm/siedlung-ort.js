@@ -1259,40 +1259,48 @@ class AnazhRealm_siedlung_ort {
     // Lehre 14) als `dp.hoehe` — die Gassen des Exports folgen dem Grund dort (fachwerk `dorfLayout`). Ohne Ort (der Akt, dessen
     // Anker erst der Plan nennt; der Wege-Bau eines Alt-Saves) liegt der Plan auf ebenem Grund. Steht der Ort-Faden noch nicht, ist der
     // Export null wie bei kalter Foundry (der nächste Takt fragt neu; ein Wurf im Faden meldet sein `_bruchMelden`).
+    // DAS RASTER REIST AM HAUPT-FADEN VORBEI (w4-b-dorf, Lehre 24): der Export geht mit der Bestellung in die EINE Schlange und
+    // wartet im Foundry-Faden auf sein Raster — der Ort-Faden schickt es über einen eigenen Kanal per Transfer direkt dorthin
+    // (`hoeheVon`, die Transport-Schale hängt es als `dp.hoehe` an, Frage und Platten-Schlüssel byte-gleich), der Haupt-Faden
+    // bekommt nur die Quittung. Bis hier lag das fertige Raster im vollen Haupt-Faden, bis er es las und den Export bestellte
+    // (headless kalt 1,6–2,9 s zwischen Raster und Bestellung, der Ort-Faden rechnete es in 0,1 s).
     _foundryRequestSettlement(dp, kopf) {
         const f = this._ensureAssetFoundry();
         if (!f || !f.ready || !f.worker) return Promise.resolve(null);
         const d = Object.assign({}, dp || {});
         const ort = d.ort;
         delete d.ort;
-        const raster = ort
-            ? this._nebenAuftrag("ort", {
-                  type: "ort-raster",
-                  x: ort.x,
-                  z: ort.z,
-                  rahmen: globalThis.__fachwerkCore.trasseRahmen(d.nH),
-              }).then(
-                  (r) => r.raster,
-                  (e) => (
-                      this.log(`SIEDLUNG: der Export wartet auf das Höhen-Raster — ${(e && e.message) || e}`, "INFO"),
-                      false
-                  )
-              )
-            : Promise.resolve(null);
         // Durch DIE EINE WORKER-SCHLANGE, sofort dran (ein deliberater Akt, reine Daten). Dieselbe EINE Frist (45 s
         // Arbeit): ohne Uhr hielte ein verlorener Export die FIFO-Uhr aller späteren Aufträge an.
-        return raster.then((hoehe) => {
-            if (hoehe === false) return null;
-            if (hoehe) d.hoehe = hoehe;
-            return this._foundryAuftrag(
+        const auftrag = (msg, transfer) =>
+            this._foundryAuftrag(
                 f,
                 "stl-",
-                { type: "export-settlement", dp: d },
+                msg,
                 this._foundryRang(0, kopf), // das Start-Dorf ist ein Kopf der Ankunft (`_startDorfAmBuch`, die Bahn ohne Arbeit)
                 45000,
-                "FOUNDRY TIMEOUT: export-settlement nach 45 s Arbeit ohne Reply → null"
+                "FOUNDRY TIMEOUT: export-settlement nach 45 s Arbeit ohne Reply → null",
+                transfer
             );
+        if (!ort) return auftrag({ type: "export-settlement", dp: d });
+        const kanal = new MessageChannel();
+        this._nebenAuftrag(
+            "ort",
+            {
+                type: "ort-raster",
+                x: ort.x,
+                z: ort.z,
+                rahmen: globalThis.__fachwerkCore.trasseRahmen(d.nH),
+                an: kanal.port1,
+            },
+            [kanal.port1]
+        ).then(null, (e) => {
+            this.log(`SIEDLUNG: der Export wartet auf das Höhen-Raster — ${(e && e.message) || e}`, "INFO");
+            // kam der Kanal nie in den Ort-Faden (kein Faden), sagt der Haupt-Faden dem Export ab; warf der Faden, sagte er
+            // es ihm selbst, und der Kanal ist hier leer (die Nachricht fällt)
+            kanal.port1.postMessage({ fehlt: String((e && e.message) || e) });
         });
+        return auftrag({ type: "export-settlement", dp: d, hoeheVon: kanal.port2 }, [kanal.port2]);
     }
     // DIE EINE SLOT-QUELLE: `_spawnSettlementFromExport` (der Akt) und `_tickAutoSettlement`
     // (über Ticks) heben jeden Slot hier. Blueprint-Name aus KIND_POLICY über den kind des LIVE-Rezepts
@@ -2491,12 +2499,7 @@ class AnazhRealm_siedlung_ort {
                 ort,
                 wachs: this._ortWachsAnfang(v2),
             };
-            this._autoSettlementQueue = this._dorfZug(
-                v2,
-                anchor,
-                key,
-                this._dorfErwachen(v2, anchor, ort, key, b.wasser)
-            );
+            this._dorfZugSetzen(this._dorfZug(v2, anchor, key, this._dorfErwachen(v2, anchor, ort, key, b.wasser)));
             return v2;
         }, this._ortWahlWartet(key));
     }
@@ -2773,6 +2776,54 @@ class AnazhRealm_siedlung_ort {
         const reihe = plan.slots.map((_s, i) => i).sort((a, b) => rang[a] - rang[b] || a - b);
         return { plan, origin: { x: origin.x, z: origin.z }, idx: 0, reihe, cellKey, gang: gang || null };
     }
+    // EIN TAKT DES ZUGS `q` (`_dorfZugSchritt`) — ist er durch, fällt er aus der EINEN Schlange (`_autoSettlementQueue`, laut im
+    // Log), und die Bewohner eines gewachsenen Orts stellen sich aus dem neuen Plan auf (ihre Liste ist seine Funktion). Ihn fahren
+    // der Siedlungs-Takt (`_tickAutoSettlement`) und die Scheiben der Ankunft (`_dorfZugAnkunft`). true = der Zug ist durch.
+    _dorfZugTakt(q, ueber) {
+        this._dorfZugSchritt(q, ueber);
+        if (q.gang || q.idx < q.plan.slots.length) return false;
+        if (this._autoSettlementQueue === q) this._autoSettlementQueue = null;
+        this.log(
+            `Siedlung „${q.plan.name || "?"}" gewachsen (Zelle ${q.cellKey}, ${q.plan.slots.length} Slots).`,
+            "INFO"
+        );
+        const S = q.waechst && this._bewohnerSiedlungen && this._bewohnerSiedlungen.get(q.cellKey);
+        if (S) this._bewohnerFort(S);
+        return true;
+    }
+    // DER ZUG WIRD WELT (die EINE Stelle, an der ein Zug in die Schlange tritt: das Erwachen einer Zelle, die Wiederkehr, das
+    // Wachstum) — unter dem Ladeschirm fährt ihn die Ankunft (`_dorfZugAnkunft`). Rückgabe: der Zug.
+    _dorfZugSetzen(q) {
+        this._autoSettlementQueue = q;
+        this._dorfZugAnkunft(q);
+        return q;
+    }
+    // DER ZUG DER ANKUNFT (w4-b-dorf, Lehre 14 + 25): unter dem Ladeschirm (`_ladeTakt`) wartet das Dorf des ersten Weltbilds
+    // auf keinen Takt — sein Zug geht, sobald sein Plan da ist, in eigenen Scheiben (je Aufgabe des Event-Loops die EINE Frist
+    // des Lade-Frames, `_ladeFrist`; die nächste Scheibe im nächsten Task), bis sein Gang (Grund, Wege, Laternen, Ausstattung)
+    // gegangen ist und das Bild auf kein Haus des Zugs mehr wartet (`_dorfDerAnkunftOffen`); was außer Blick liegt, hebt danach
+    // der Siedlungs-Takt, nah zuerst. Bis hier ging der Zug je Takt EINEN Schritt (Gang-Rate oder zwei Häuser im Wechsel) am
+    // Ende des Deko-Jobs, wenn die Frist des Lade-Frames verbraucht war: headless kalt kam der erste Schritt 2,3–3,5 s nach dem
+    // Plan, das Bild wartete 4–5 Takte auf das Dorf (GTX kalt die Häuser 1,3–6,9 s nach dem Plan, je Takt 0,4–0,9 s).
+    _dorfZugAnkunft(q) {
+        if (!this._dorfDerAnkunftOffen(q)) return;
+        const ende = this._ladeFrist();
+        for (;;) {
+            const [idx, gang] = [q.idx, q.gang];
+            if (this._dorfZugTakt(q, false)) return;
+            // ohne Fortschritt (der Gang ist gegangen, die offenen Häuser warten, bis der Spieler ihren Grund verlässt) hebt
+            // sie der Siedlungs-Takt
+            if (q.idx === idx && !gang) return;
+            if (!(performance.now() < ende) || !this._dorfDerAnkunftOffen(q)) break;
+        }
+        if (this._dorfDerAnkunftOffen(q)) setTimeout(() => this._dorfZugAnkunft(q), 0);
+    }
+    // Wartet das erste Weltbild noch auf den Zug `q`? Er ist der Zug der Schlange, der Ladeschirm steht, und sein Gang läuft
+    // oder der Term „dorf" (`_weltbildLuecken`, die EINE Antwort des Bilds) wartet ohne Faden auf seine Häuser im Blick.
+    _dorfDerAnkunftOffen(q) {
+        if (!q || !q.plan || this._autoSettlementQueue !== q || !this._ladeTakt()) return false;
+        return !!q.gang || this._weltbildLuecken().some((l) => l.term === "dorf" && !l.arbeitet);
+    }
     // Der Worldgen-Konsument des "settlement"-Kanals — gerufen aus dem Idle-Pass
     // `_tickScatterStreaming` (feuert nur, wenn das Chunk-Streaming nichts baut).
     // DER GENESIS-ORT VOR JEDEM BUDGET (Existenz vor Framerate, Lehre 13): der Ring der Kern-Portale (einmalig je Welt,
@@ -2860,20 +2911,7 @@ class AnazhRealm_siedlung_ort {
             this._dorfDrossel = (this._dorfDrossel || 0) + 1;
             if (this._dorfDrossel % A.drosselTakte !== 0) return;
         }
-        if (q && q.plan) {
-            this._dorfZugSchritt(q, ueber);
-            if (!q.gang && q.idx >= q.plan.slots.length) {
-                this._autoSettlementQueue = null;
-                this.log(
-                    `Siedlung „${q.plan.name || "?"}" gewachsen (Zelle ${q.cellKey}, ${q.plan.slots.length} Slots).`,
-                    "INFO"
-                );
-                // nach dem Wachstum (`_ortWaechst`) stellen sich die Bewohner aus dem neuen Plan auf: ihre Liste ist seine Funktion
-                const S = q.waechst && this._bewohnerSiedlungen && this._bewohnerSiedlungen.get(q.cellKey);
-                if (S) this._bewohnerFort(S);
-            }
-            return;
-        }
+        if (q && q.plan) return void this._dorfZugTakt(q, ueber);
         if (this._autoSettlementPendingKey) return; // ein Export-Roundtrip zur Zeit
         if (!this._autoSettlementChannelLive()) return; // der Dispatch-Kanal entscheidet (M8)
         const wm = st.worldMeta || {};
@@ -2900,12 +2938,11 @@ class AnazhRealm_siedlung_ort {
                     if (this._autoSettlementQueue || this._autoSettlementPendingKey) return;
                     const w = this._dorfWasserUrteil(v2.erdbau);
                     const gang = this._dorfErwachen(v2, anker, ort, k, w, so);
-                    this._autoSettlementQueue = Object.assign(
-                        this._dorfZug(this._dorfZugOffen(v2, anker), anker, k, gang),
-                        {
+                    this._dorfZugSetzen(
+                        Object.assign(this._dorfZug(this._dorfZugOffen(v2, anker), anker, k, gang), {
                             so,
                             wieder: true,
-                        }
+                        })
                     );
                 });
             this._foundryRequestSettlement(this._ortDp(k, c), k === "start")
@@ -2986,7 +3023,7 @@ class AnazhRealm_siedlung_ort {
         if (H && H.size) {
             const [k, q] = H.entries().next().value;
             H.delete(k);
-            this._autoSettlementQueue = q;
+            this._dorfZugSetzen(q);
             return true;
         }
         const [st, tS] = [this.state, AnazhRealm.SIEDLUNG_WACHS.taktS];

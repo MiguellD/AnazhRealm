@@ -927,27 +927,46 @@ class AnazhRealm_studio_bruecke {
                 los();
             };
             if (m.type === "export-settlement") {
-                // DER DORF-EXPORT: sein Rest ist der SHA seiner Frage (Plan-Daten und Höhen-Raster), seine Eigner die Kerne
-                // mit exportSettlement
-                if (dbTot) return studio();
-                const frage = JSON.stringify(m.dp, (k, v) => (ArrayBuffer.isView(v) ? Array.from(v) : v));
-                return hex(String(frage)).then((h) => {
-                    const l = {
-                        eigner: eigner((n) => typeof n.exportSettlement === "function"),
-                        rest: "stl|" + h.slice(0, 32),
-                    };
-                    return lies(l).then((wert) => {
-                        if (wert && wert.plan)
-                            return roh({
-                                type: "settlement",
-                                world: "terrain",
-                                reqId: m.reqId,
-                                plan: wert.plan,
-                                platte: true,
-                                liefer: liest(l),
-                            });
-                        schreibAuftrag.set(m.reqId, l);
-                        studio();
+                // DAS RASTER KOMMT VOM ORT-FADEN (`hoeheVon`, w4-b-dorf): der Export wartet hier auf sein Höhen-Raster, das der
+                // Ort-Faden über den Kanal per Transfer schickt (der Haupt-Faden liest es nie) — es hängt als `dp.hoehe` an der
+                // Frage wie zuvor, die Frage und ihr Platten-Schlüssel bleiben byte-gleich. Meldet der Kanal, dass es fehlt (kein
+                // Ort-Faden, ein Wurf im Faden), ist der Export null wie bei kalter Foundry.
+                const kanal = m.hoeheVon;
+                delete m.hoeheVon;
+                delete weiter.hoeheVon;
+                const raster = kanal
+                    ? new Promise((ok) => {
+                          kanal.onmessage = (e) => {
+                              kanal.close();
+                              ok(e.data || {});
+                          };
+                      })
+                    : Promise.resolve({});
+                return raster.then((r) => {
+                    if (r.fehlt) return roh({ type: "settlement", world: "terrain", reqId: m.reqId, plan: null });
+                    if (r.raster) m.dp.hoehe = r.raster;
+                    // DER DORF-EXPORT: sein Rest ist der SHA seiner Frage (Plan-Daten und Höhen-Raster), seine Eigner die
+                    // Kerne mit exportSettlement
+                    if (dbTot) return studio();
+                    const frage = JSON.stringify(m.dp, (k, v) => (ArrayBuffer.isView(v) ? Array.from(v) : v));
+                    return hex(String(frage)).then((h) => {
+                        const l = {
+                            eigner: eigner((n) => typeof n.exportSettlement === "function"),
+                            rest: "stl|" + h.slice(0, 32),
+                        };
+                        return lies(l).then((wert) => {
+                            if (wert && wert.plan)
+                                return roh({
+                                    type: "settlement",
+                                    world: "terrain",
+                                    reqId: m.reqId,
+                                    plan: wert.plan,
+                                    platte: true,
+                                    liefer: liest(l),
+                                });
+                            schreibAuftrag.set(m.reqId, l);
+                            studio();
+                        });
                     });
                 });
             }
@@ -1274,11 +1293,22 @@ class AnazhRealm_studio_bruecke {
     // beim Senden frisch gemessen; Vorrat = ∞, unter Gleichen FIFO) — und nie verhungert: ist der älteste Wartende
     // älter als FOUNDRY_ALTER_MS, wechselt die Wahl ab (der Älteste, dann der Nächste). Die Request-Nummer entsteht
     // beim SENDEN: die EINE Frist (`_foundryFrist`) bleibt eine Arbeits-Uhr in Worker-Reihenfolge.
-    _foundryAuftrag(f, praefix, msg, wo, fristMs, ablaufWort) {
+    // `transfer`: die Puffer des Auftrags, die per Transfer reisen (Lehre 24: das Höhen-Raster des Dorf-Exports — bis
+    // w4-b-dorf klonte die Pumpe es beim Senden im Haupt-Faden).
+    _foundryAuftrag(f, praefix, msg, wo, fristMs, ablaufWort, transfer) {
         if (msg.type === "build-asset") this._foundryLiefer(f, "auftrag");
         return new Promise((resolve) => {
             const q = f.warte || (f.warte = []);
-            q.push({ praefix, msg, rang: this._foundryRang(wo), fristMs, ablaufWort, resolve, t: performance.now() });
+            q.push({
+                praefix,
+                msg,
+                rang: this._foundryRang(wo),
+                fristMs,
+                ablaufWort,
+                resolve,
+                t: performance.now(),
+                transfer: transfer || [],
+            });
             this._foundryPumpe(f);
         });
     }
@@ -1355,7 +1385,7 @@ class AnazhRealm_studio_bruecke {
             f.pending.set(reqId, a.resolve);
             if (a.rang.kopf) koepfe.add(reqId);
             try {
-                ziel.ziel.postMessage(Object.assign({ reqId }, a.msg));
+                ziel.ziel.postMessage(Object.assign({ reqId }, a.msg), a.transfer);
             } catch (_e) {
                 f.pending.delete(reqId);
                 a.resolve(null);

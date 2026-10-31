@@ -360,10 +360,14 @@ class AnazhRealm_gelaende_chunks {
     // Im Voxel-Faden stünde jeder Auftrag hinter jedem Chunk (K60-3: die Darts kamen 3,5 s nach der Bestellung). Den Zustand
     // bringt der EINE Sender (`_voxelZustandPost`): bei der Geburt ein voller Stand, danach dieselben Nachrichten wie der
     // Voxel-Faden — ein Auftrag rechnet am Zustand, der vor ihm reiste. Ein Wurf des Fadens bricht laut beim Namen.
+    // DIE LISTE IST DAS GESETZ DER FÄDEN (w4-b-dorf, Lehre 2): ein Name, den `NEBEN_FAEDEN` nicht trägt, bricht laut — er käme
+    // hinter dem Strom zur Welt (`_nebenFaedenDerAnkunft` gebiert nur, was die Liste trägt).
     _nebenFaden(name) {
         const alle = this._nebenFaeden || (this._nebenFaeden = new Map());
         let f = alle.get(name);
         if (f) return f;
+        if (!AnazhRealm.NEBEN_FAEDEN.includes(name))
+            throw new Error(`NEBEN-FADEN: „${name}" steht nicht in NEBEN_FAEDEN — er käme hinter dem Strom zur Welt`);
         // der Voxel-Faden zuerst (er trägt die Quelle; lazy wie jeder Chunk-Auftrag) — steht er noch nicht (Blob-Weg), wartet der Rufer
         if (!this._getVoxelWorker() || !this._voxelFadenQuelle) return null;
         const worker = new Worker(this._voxelFadenQuelle, { name });
@@ -392,6 +396,16 @@ class AnazhRealm_gelaende_chunks {
         ]);
         alle.set(name, f);
         return f;
+    }
+    // DIE FÄDEN DER ANKUNFT STEHEN MIT DER HEIMAT (w4-b-dorf, Lehre 14): jeder Neben-Faden (`NEBEN_FAEDEN`) wird geboren, wenn die
+    // Heimat aus dem Voxel-Faden kommt und BEVOR der Strom ihn fragt (`_worldgenComputeAndBuildHydrosphere`) — sein `hydro-an`
+    // steht im Voxel-Faden hinter keinem Chunk, und sein Start (unter Last 1–2 s bis zum ersten Skript) liegt vor seiner ersten
+    // Frage. Bis hier gebar ihn sein erster Auftrag, als der Strom schon lief (headless kalt: Streu, Ferne, Feld 1,0–1,2 s, der
+    // Wald 2,0 s nach der Heimat geboren, ihr erstes Skript 0,9–2,4 s danach; die erste Antwort von Streu, Ferne und Wald kam
+    // so 1,4–1,7 s später). Der Null-Renderer zeichnet keine Ankunft: dort gebiert ihn sein erster Auftrag.
+    _nebenFaedenDerAnkunft() {
+        if (this._nullRendererGewaehlt()) return;
+        for (const name of AnazhRealm.NEBEN_FAEDEN) this._nebenFaden(name);
     }
     _nebenAuftrag(name, msg, transfer) {
         const f = this._nebenFaden(name);
@@ -3475,6 +3489,9 @@ AnazhRealm.FERN_FARBE = Object.freeze({
     saisonDrift: 0.05,
     memo: 12288,
 });
+// DIE NEBEN-FÄDEN (`_nebenFaden`, `_nebenFaedenDerAnkunft`): die Fäden des Gesetzes, die das erste Weltbild fragt — der Ort (Raster
+// und Wahl des Start-Dorfs), die Streu, die Ferne (Ring), das Feld (Panorama), der Wald. Ein Name, der hier fehlt, bricht laut.
+AnazhRealm.NEBEN_FAEDEN = Object.freeze(["ort", "streu", "fern", "feld", "wald"]);
 // Der Neubau der dirty Chunks (`_tickDirtyVoxelChunks`, K69-2): so viele der nächsten gehen je Takt als Auftrag an den
 // Worker voraus (er baut sie nacheinander, ~150 ms je Chunk) — eingebaut wird je Takt höchstens EINER, der nächste fertige.
 AnazhRealm.DIRTY_IM_FLUG = 3;

@@ -252,9 +252,19 @@ self.onmessage = function (e) {
             self.postMessage(Object.assign({ type: "ort-wahl-result", requestId: msg.requestId }, ortWahl(msg)));
         } else if (msg.type === "ort-raster") {
             // DAS HÖHEN-RASTER DER TRASSE (siedlung.K3): der Grund im Rahmen `rahmen` (fachwerk `trasseRahmen`) um den Ort x/z am
-            // Zustand des Gesetzes (gelaende-core `hoehenRaster`) — der Wirt reicht es dem Export, dessen Gassen ihm folgen
-            const raster = G.hoehenRaster(state, msg.x, msg.z, msg.rahmen);
-            self.postMessage({ type: "ort-raster-result", requestId: msg.requestId, raster }, [raster.h.buffer]);
+            // Zustand des Gesetzes (gelaende-core `hoehenRaster`) — es reist per Transfer über den Kanal des Exports (`an`, sein
+            // Gegenstück wartet im Foundry-Faden: `_foundryRequestSettlement`, w4-b-dorf) direkt zu ihm, dessen Gassen ihm folgen;
+            // der Wirt bekommt nur die Quittung. Wirft der Faden, erfährt es der Export, bevor der Wurf zum Wirt reist.
+            let raster;
+            try {
+                raster = G.hoehenRaster(state, msg.x, msg.z, msg.rahmen);
+            } catch (err) {
+                msg.an.postMessage({ fehlt: String((err && err.message) || err) });
+                throw err;
+            }
+            msg.an.postMessage({ raster }, [raster.h.buffer]);
+            msg.an.close();
+            self.postMessage({ type: "ort-raster-result", requestId: msg.requestId });
         } else if (msg.type === "ort-weg") {
             // DER FELDWEG ZWISCHEN ZWEI ORTEN (fahrzeug.K2): das Raster seines Rahmens am Zustand des Gesetzes und sein Lauf
             // über dem Grund von den Wegen des einen Orts (a) zu denen des anderen (b, fachwerk `wegZwischen`) — beides im

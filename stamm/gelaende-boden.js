@@ -311,6 +311,9 @@ class AnazhRealm_gelaende_boden {
             } catch (e) {
                 this.log(`Hydrosphäre-Rendering fehlgeschlagen: ${e.message}`, "ERROR");
             }
+            // die Fäden der Ankunft kommen VOR dem ersten Chunk-Auftrag (`_nebenFaedenDerAnkunft`): ihre Heimat steht im
+            // Voxel-Faden hinter keinem Chunk
+            this._nebenFaedenDerAnkunft();
             // ab hier fragt der Strom den Faden (`_voxelFadenTraegt`): die Heimat steht in Main und Faden
             this.state.voxelWorkerWorldgenSynced = true;
             return hydro;
