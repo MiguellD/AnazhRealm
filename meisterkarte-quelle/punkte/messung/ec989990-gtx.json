@@ -1,0 +1,397 @@
+{
+ "sha": "ec989990fe86c70b1ac00f06fa657f1a5a33afd7",
+ "geraet": "gtx",
+ "zeit": "2026-10-31T07:34:17.169Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "vegetation.K1#1": {
+   "gruen": false,
+   "zahl": "wiese-third-0.5--wiese: LAI 2–5 2.40 · 5–10 1.47 · 10–14 1.14 · 14–30 0.06 · 30–80 0.00 · 80–200 0.00 (Saum springt > 15 %), Farbton 2–5 m 13.24°, nahWiese 4 Befehle / 63716 Dreiecke",
+   "exit": 0,
+   "minuten": 0.54,
+   "grund": "ROT: wiese-third-0.5--wiese: LAI 2–5 2.40 · 5–10 1.47 · 10–14 1.14 · 14–30 0.06 · 30–80 0.00 · 80–200 0.00 (Saum springt > 15 %), Farbton 2–5 m 13.24°, nahWiese 4 Befehle / 63716 Dreiecke",
+   "gpu": "nvidia/pascal",
+   "s": 32.4,
+   "zeit": "2026-10-31T07:23:25.543Z",
+   "abdruck": "ea94aafb4000",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "vegetation.K5#1": {
+   "gruen": true,
+   "zahl": "Krone sommer 193189 px · winter 21708 px → Winter 0.112 × Sommer",
+   "exit": 0,
+   "minuten": 0.23,
+   "gpu": "nvidia/pascal",
+   "s": 13.9,
+   "zeit": "2026-10-31T07:23:57.998Z",
+   "abdruck": "dab8b114ec26",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "spielgang.K3#1": {
+   "gruen": false,
+   "zahl": "HUD deckt 3.93 % (1920×1080, im Spiel) · INP HUD 104 ms (50) · Menü 240 ms (20)",
+   "exit": 0,
+   "minuten": 0.3,
+   "grund": "ROT: HUD deckt 3.93 % (1920×1080, im Spiel) · INP HUD 104 ms (50) · Menü 240 ms (20)",
+   "gpu": "nvidia/pascal",
+   "s": 17.8,
+   "zeit": "2026-10-31T07:26:07.000Z",
+   "abdruck": "61911f2e1283",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K1#1": {
+   "gruen": false,
+   "zahl": "Bild-p95 ≤ 33: wiese-ego-geht 25.1 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 25.1 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 56.2 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 58 s trug den Schritt nicht) | stadt-ego-geht: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 58 s trug den Schritt nicht)",
+   "exit": 0,
+   "minuten": 0.94,
+   "grund": "ROT: Bild-p95 ≤ 33: wiese-ego-geht 25.1 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 25.1 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 56.2 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 58 s trug den Schritt nicht) | stadt-ego-geht: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 58 s trug den Schritt nicht)",
+   "gpu": "nvidia/pascal",
+   "s": 56.4,
+   "zeit": "2026-10-31T07:34:17.169Z",
+   "abdruck": "7cd1056c1cc0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "profiband.K2#1": {
+   "gruen": false,
+   "zahl": "Belegung p95 ≤ 5.8: wiese-ego-steht 8.81 · wiese-third-steht ? · genesis-ego-steht 74.89 · genesis-third-steht 14.75 · Gang 56.2 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 8.81 > 5.8 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 74.89 > 5.8 | genesis-third-steht Belegung p95 14.75 > 5.8",
+   "exit": 0,
+   "minuten": 0.94,
+   "grund": "ROT: Belegung p95 ≤ 5.8: wiese-ego-steht 8.81 · wiese-third-steht ? · genesis-ego-steht 74.89 · genesis-third-steht 14.75 · Gang 56.2 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 8.81 > 5.8 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 74.89 > 5.8 | genesis-third-steht Belegung p95 14.75 > 5.8",
+   "gpu": "nvidia/pascal",
+   "s": 56.4,
+   "zeit": "2026-10-31T07:34:17.169Z",
+   "abdruck": "9c1df53eb562",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "profiband.K3#1": {
+   "gruen": false,
+   "zahl": "Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 99 · 286k · 125 MB · 15.75 ms | wiese-third ? | genesis-ego 120 · 311k · 116.8 MB · 12.03 ms | genesis-third 146 · 389k · 122.2 MB · 11.98 ms | dorf-ego ? | dorf-third ? · Gang 56.2 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: Band ROT streu haupt: 7 befehle über der Ratsche 4 (Täter: streuSatz, f:blume:L2) · baum k1: 12 befehle über der Ratsche 5 (Täter: f:tanne:L1, f:eiche:L1, f:tanne:L0) · , gpu-bank 15.75 ms > 12, nicht eingeschwungen | Band wiese-third: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band genesis-ego: Band ROT streu haupt: 6 befehle über der Ratsche 2 (Täter: streuSatz, fscatter:geroell:L0, fscatter:blume:L2) · streu haupt: 13502 dreiecke über der Ratsche 1670 (Täter:, gpu-bank 12.03 ms > 12, nicht eingeschwungen | Band genesis-third: Band ROT fscatter:geroell:L0: L0 bis 70 m im Hauptbild (Wand 64 m) — Der stille L0-Rückfall (b13): jenseits 64 m wohnt die Streu als Platz im Welt-March (V18.526, Streu- | Band dorf-ego: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 58 s trug den Schritt nicht)",
+   "exit": 0,
+   "minuten": 0.94,
+   "grund": "ROT: Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 99 · 286k · 125 MB · 15.75 ms | wiese-third ? | genesis-ego 120 · 311k · 116.8 MB · 12.03 ms | genesis-third 146 · 389k · 122.2 MB · 11.98 ms | dorf-ego ? | dorf-third ? · Gang 56.2 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: Band ROT streu haupt: 7 befehle über der Ratsche 4 (Täter: streuSatz, f:blume:L2) · baum k1: 12 befehle über der Ratsche 5 (Täter: f:tanne:L1, f:eiche:L1, f:tanne:L0) · , gpu-bank 15.75 ms > 12, nicht eingeschwungen | Band wiese-third: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band genesis-ego: Band ROT streu haupt: 6 befehle über der Ratsche 2 (Täter: streuSatz, fscatter:geroell:L0, fscatter:blume:L2) · streu haupt: 13502 dreiecke über der Ratsche 1670 (Täter:, gpu-bank 12.03 ms > 12, nicht eingeschwungen | Band genesis-third: Band ROT fscatter:geroell:L0: L0 bis 70 m im Hauptbild (Wand 64 m) — Der stille L0-Rückfall (b13): jenseits 64 m wohnt die Streu als Platz im Welt-March (V18.526, Streu- | Band dorf-ego: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 58 s trug den Schritt nicht)",
+   "gpu": "nvidia/pascal",
+   "s": 56.4,
+   "zeit": "2026-10-31T07:34:17.169Z",
+   "abdruck": "e6ed9f20bb54",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "profiband.K1#1",
+   "modus": "session"
+  }
+ },
+ "ungemessen": {
+  "profiband.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.49,
+   "grund": "Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 29.2,
+   "zeit": "2026-10-31T07:22:32.644Z",
+   "abdruck": "5c1471ee9349",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: kugel-5 · Exit 0)",
+   "exit": 1,
+   "minuten": 0.55,
+   "grund": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: kugel-5 · Exit 0)",
+   "s": 33.2,
+   "zeit": "2026-10-31T07:24:11.892Z",
+   "abdruck": "d6391e3052d5",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: fels-weit · Exit 0)",
+   "exit": 1,
+   "minuten": 0.55,
+   "grund": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: fels-weit · Exit 0)",
+   "s": 33.2,
+   "zeit": "2026-10-31T07:25:08.085Z",
+   "abdruck": "d2de503dca28",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K3#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 1 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 1 Takten, 0.0 s · 3.0 s)",
+   "exit": 1,
+   "minuten": 0.17,
+   "grund": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 1 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 1 Takten, 0.0 s · 3.0 s)",
+   "s": 10.2,
+   "zeit": "2026-10-31T07:26:48.359Z",
+   "abdruck": "ce4daaba9a57",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT)",
+   "exit": 1,
+   "minuten": 0.55,
+   "grund": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT)",
+   "s": 33.2,
+   "zeit": "2026-10-31T07:27:25.993Z",
+   "abdruck": "c3ff4e021659",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "material.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 10 s gerissen — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 0.17,
+   "grund": "Deckel 10 s gerissen — beendet, UNGEMESSEN",
+   "s": 10.2,
+   "zeit": "2026-10-31T07:28:21.304Z",
+   "abdruck": "82d9eafd4a39",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "licht.K3#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 13 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 66 Takten, 0.7 s · 44.6 s)",
+   "exit": 1,
+   "minuten": 0.75,
+   "grund": "Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 13 statt /lauf {\"sek\":5,\"ein\":8,\"ruhe\":120,\"regler\":\"voll\"}: die Welt steht nach 66 Takten, 0.7 s · 44.6 s)",
+   "s": 45.2,
+   "zeit": "2026-10-31T07:28:59.436Z",
+   "abdruck": "07a374c24448",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "mensch.K1#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 40 s gerissen — beendet, UNGEMESSEN",
+   "exit": 1,
+   "minuten": 0.67,
+   "grund": "Deckel 40 s gerissen — beendet, UNGEMESSEN",
+   "s": 40.2,
+   "zeit": "2026-10-31T07:30:11.424Z",
+   "abdruck": "8d14a0411e32",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "studios.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.55,
+   "grund": "Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 33.2,
+   "zeit": "2026-10-31T07:31:18.379Z",
+   "abdruck": "80406a2466c0",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "siedlung.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 7 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist d) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe",
+   "exit": 0,
+   "minuten": 0.35,
+   "grund": "Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 7 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist d) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 21.3,
+   "zeit": "2026-10-31T07:32:14.130Z",
+   "abdruck": "89536f630f5e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K2#2": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 55 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.92,
+   "grund": "Deckel 55 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 55.3,
+   "zeit": "2026-10-31T07:32:56.849Z",
+   "abdruck": "1c7084fdd290",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-10-31T07:22:25.122Z",
+  "port": 7804,
+  "warten": 0.02,
+  "bootS": 6.3,
+  "grundstellungS": [
+   0.1,
+   7.5,
+   8.1,
+   10.9,
+   7.2,
+   6.9,
+   10.1,
+   8.9,
+   6.5,
+   7.3,
+   10.1
+  ],
+  "proben": 15,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "vegetation.K1#1",
+    "s": 18.6,
+    "takte": 581,
+    "chunks": 81,
+    "nach": "der Grundstellung"
+   },
+   {
+    "ort": "wiese",
+    "vor": "material.K2#1",
+    "s": 15.3,
+    "takte": 580,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "wiese",
+    "vor": "spielgang.K3#1",
+    "s": 17.5,
+    "takte": 549,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "dorf",
+    "vor": "licht.K3#2",
+    "s": 23.6,
+    "takte": 1367,
+    "chunks": 81,
+    "nach": null
+   },
+   {
+    "ort": null,
+    "vor": "licht.K5#1",
+    "s": 16.4,
+    "takte": 583,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "material.K1#1",
+    "s": 14.8,
+    "takte": 635,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": "dorf",
+    "vor": "licht.K3#1",
+    "s": 20.9,
+    "takte": 615,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "mensch.K1#1",
+    "s": 16.6,
+    "takte": 584,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "studios.K4#1",
+    "s": 17.7,
+    "takte": 636,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "siedlung.K1#2",
+    "s": 16,
+    "takte": 635,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "fahrzeug.K2#2",
+    "s": 14.1,
+    "takte": 583,
+    "chunks": 81,
+    "nach": "der Tür"
+   },
+   {
+    "ort": null,
+    "vor": "profiband.K1#1",
+    "s": 14.2,
+    "takte": 585,
+    "chunks": 81,
+    "nach": "der Tür"
+   }
+  ],
+  "wegeTueren": [],
+  "unerklaert": [
+   {
+    "probe": "licht.K3#2",
+    "wie": "orte +-3,-3 · wege +3 [-748.3,-821.3,-615.9,-784.1/28] [-805.3,-801.4,-689.5,-574/6] [-833.8,-834.7,-648.1,-574.2/76] (-3,-3, netz:-3,-3, netz:-3,-3|-4,-4)"
+   },
+   {
+    "probe": "material.K1#1",
+    "wie": "werke +1 (−0)"
+   }
+  ],
+  "ciBlicke": 16,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 1201,
+   "frameP95": 66.8,
+   "taktP95": 59.9,
+   "vramMax": 140.1,
+   "seiten": 12,
+   "marken": 1,
+   "fehler": 0,
+   "verloren": 0,
+   "zapfen": 688,
+   "luecken": 4,
+   "letzteLuecke": "/eval ohne Antwort binnen 10 s"
+  },
+  "fahrtS": 767.5,
+  "minuten": 12.87
+ }
+}
