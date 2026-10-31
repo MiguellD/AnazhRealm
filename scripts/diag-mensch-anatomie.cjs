@@ -377,7 +377,6 @@ const zeige = (m) =>
                 .join(" · ")
     );
 
-module.exports = { ladeWelt, messe };
 if (require.main !== module) return;
 if (process.argv.includes("--selftest")) {
     console.log("=== SELBST-TEST: die Mensch-Anatomie-Linse feuert ===");
