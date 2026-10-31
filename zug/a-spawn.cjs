@@ -12,7 +12,7 @@
 //   Abstand DIE WAHL zur ersten Uhr, je Ausdruck in seiner eigenen Teilung: acht Blicke je 45° ab der Ankunft (0, +45, −45, +90 …),
 //           der Schuss der Zelle im Blick der Ankunft zuerst, dann je Blick ein Schuss nur der Pixel, und je Pixel der Klasse seine
 //           Tiefe (`__letzteTeilung` × `__letzteSpiegel` des Schusses) — nah ist der erste Blick, der die Klasse näher als 30 m
-//           zeigt, fern der erste, der sie dahinter zeigt, je auf ≥ 0,1 % des Bilds; die Tiere stehen (`__tiereHalten`).
+//           zeigt, fern der erste, der sie dahinter zeigt, je auf ≥ 0,1 % des Bilds; der Halter hält jeden Akteur (`__halten`, ausgabe-aufnahme.cjs).
 //           Der Blick hält für jede Uhr.
 //   Uhr     die Bühne hält sie (`bild --uhr`): Mittag 0,5, tiefe Sonne 0,3, Nacht 0.
 // Je Zelle und Ausdruck der Tafel EIN Bild aus dem Ausgabe-Pfad (`/bild` mit der Teilung der Klasse, `messung`: der Block, den
@@ -140,6 +140,40 @@ function tafelText(u) {
         .join("\n");
 }
 
+// DIE RAUSCH-LINSE (Gebot 10: die Linse nennt den Täter beim Namen) — an S2 (die Ankunft, Blick 0) je Sicht und Uhr zwei Schüsse
+// wie die Teilung (`satz` messung): zuerst alles gehalten, dann läuft zwischen ihnen je EINE Quelle des Halters (`__halteQuellen`,
+// ausgabe-aufnahme.cjs) `RAUSCH_DT` Sekunden wie im Spiel — Tiere, Bewohner, Wagen und Leib im Takt, die Bild-Uhr um dt, Zitter und
+// Spiegel offen im zweiten Schuss. Je Quelle der Anteil der Pixel über der Schwelle 18. Das Urteil (rein): ROT, wenn die gehaltenen
+// Schüsse die Wand brechen; Täter ist jede Quelle, deren Lauf sie bricht (der Halter muss sie halten).
+const RAUSCHEN_MAX = 0.002,
+    RAUSCH_DT = 2;
+const RAUSCH_LINSE = `const db = r.state.renderer.getDrawingBufferSize(new T.Vector2()), U = window.__buehneUhr, T0 = U.T, m = {};
+    const schuss = async () => (__bundlesNeu(), r._schattenAlleNeu(), (await __ausgabeAufnahme(db.x, db.y, 1, { satz: "messung" })).u8);
+    const lauf = { uhr: () => (U.T += ${RAUSCH_DT}), tiere: () => r.updateCreatures(${RAUSCH_DT}), bewohner: () => r._tickBewohner(${RAUSCH_DT}),
+        wagen: () => r._tickVerkehr(), leib: () => r.animatePlayerSoul(window.__gehalten.t + ${RAUSCH_DT}) };
+    __halten(__halteQuellen);
+    try {
+        for (const q of ["gehalten", ...__halteQuellen]) {
+            const G = await schuss();
+            window.__offen = new Set([q]);
+            lauf[q]?.();
+            m[q] = __bildRauschen(G, await schuss(), db.x, db.y, 18).anteil;
+            window.__offen = null;
+        }
+    } finally {
+        window.__offen = null;
+        U.T = T0;
+    }
+    return m;`;
+const rauschUrteil = (m) => ({
+    urteil: !(m.gehalten <= RAUSCHEN_MAX) ? "ROT" : "GRÜN",
+    taeter: Object.keys(m).filter((q) => q !== "gehalten" && m[q] > RAUSCHEN_MAX),
+});
+const rauschText = (z, m) => {
+    const u = rauschUrteil(m);
+    return `RAUSCHEN ${z}: ${u.urteil} — gehalten ${m.gehalten} · läuft sie, bricht die Wand ${RAUSCHEN_MAX}: ${u.taeter.map((q) => `${q} ${m[q]}`).join(", ") || "keine"}`;
+};
+
 // DER SELBSTTEST (ohne Welt, an den echten Zeilen laub-kante und tor-fern des Baums): jede Zeile außer dem Licht trägt einen
 // Ausdruck; die gute Zelle ist GRÜN; ein Täter, der das Laub um 0 Uhr aus dem Bild nimmt, ist ROT beim Namen „fehlt um 0"; ein Ist
 // über dem Band ROT mit Maß und Täter; ein veralteter Stand ROT; eine Klasse, die keine Uhr ihrer Pose zeigt, „nicht im Bild"; ein
@@ -184,6 +218,13 @@ function selbsttest() {
     soll("tor-fern", "ego-nah-0.5", "GRÜN", /^null/);
     if (!/^laub-kante \(kante\): grün in 1 von 5 Zellen im Bild · nicht im Bild 1\n {2}ROT ego-nah-0\.3: kante 0\.31/.test(tafelText(u)))
         v.push(`der Text zählt falsch: ${tafelText(u).split("\n").slice(0, 2).join(" | ")}`);
+    // DIE RAUSCH-LINSE: jede Quelle des EINEN Halters (die Liste aus dem Baum, nie eine zweite) läuft offen und steht als Täter
+    // beim Namen; gehalten über der Wand oder ungemessen ist ROT
+    const hq = (/__halteQuellen = "([^"]+)"/.exec(require(path.join(BAUM, "scripts", "lib", "ausgabe-aufnahme.cjs")).AUSGABE_INSTALL) || [])[1];
+    // ein Baum von vor dem Halter (die Vorher-Tafel): das Urteil prüft sich an zwei Quellen, die Linse fehlt dort benannt (`messen`)
+    for (const q of (hq || "spiegel zitter").split(" "))
+        if (rauschUrteil({ gehalten: 0, [q]: 0.004 }).taeter.join() !== q) v.push(`die Quelle ${q} läuft offen und steht nicht als Täter`);
+    if (rauschUrteil({ gehalten: 0.003 }).urteil !== "ROT" || rauschUrteil({}).urteil !== "ROT") v.push("gehalten über der Wand oder ungemessen ist nicht ROT");
     return v;
 }
 
@@ -229,9 +270,11 @@ async function messen() {
         // (swiftshader: über 80 statt 6 min am Genesis-Ort)
         const f = await rufe("/fenster", { w: 1920, h: 1080 });
         if (f.fehler) throw new Error(`fenster: ${f.fehler}`);
-        // DIE TIERE STEHEN, wo sie sind (`__tiereHalten`, die Bühne nennt es): die Wahl sah den Wolf bei 90°, der Schuss danach nicht mehr
+        // DER HALTER hält jede Quelle (`__halten`: Tiere, Bewohner, Wagen, Leib; im Schuss Spiegel, Zitter, Uhr): die Wahl sah den
+        // Wolf bei 90°, der Schuss danach nicht mehr
         // (Radeon 31.10.: jeder Schuss tickt die Welt, bis sie steht)
-        const [g0, arm] = await evalRuf("window.__tiereHalten(); return [r.state.yaw, r.state.cameraThirdDistance]");
+        // ein Baum von vor dem Halter (die Vorher-Tafel am alten Platz) hält nur die Tiere (`__tiereHalten`); die Rausch-Linse fehlt dort benannt
+        const [g0, arm, halter] = await evalRuf("const h = !!window.__halten; (window.__halten || window.__tiereHalten)(window.__halteQuellen); return [r.state.yaw, r.state.cameraThirdDistance, h]");
         console.log(`${sicht}: am Genesis-Ort nach ${Math.round((Date.now() - t0) / 1000)} s (Gier ${g0.toFixed(3)}, Arm ${arm} m)`);
         // der Blick k: die Gier der Ankunft + k · 45°, das Rig des Spiels setzt die Kamera; das Ziel der Abnahme ist der Anker des Blicks
         // (Ego 9 m voraus im Ring, Third die Brust des Spielers), ohne Fuß — er ist kein Werk, sein Fuß kein Beweis
@@ -285,7 +328,15 @@ async function messen() {
                 console.log(`  ${ks[0].id} Blick ${k * 45}°: ${o.messung ? neu.join(" · ") || "nichts im Band" : o.fehlt.slice(0, 160)}`);
             }
         }
-        let licht = null;
+        // DIE RAUSCH-LINSE an S2 je Uhr: der Schuss der Pose (Bühne + Uhr), dann die Paare je Quelle
+        const rausch = {};
+        for (const uhr of uhren) {
+            const [px, py, pz, lx, ly, lz] = await pose(0);
+            const b = await rufe("/bild", { px, py, pz, lx, ly, lz, uhr, wahl: 0, fuss: false, spieler: true, datei: path.join(ordner, `${sicht}-${uhr}-rauschen.png`) });
+            rausch[uhr] = b.fehler ? { fehlt: String(b.fehler).slice(0, 300) } : !halter ? { fehlt: "der Baum trägt keinen Halter (`__halten`) — vorher" } : await evalRuf(RAUSCH_LINSE);
+            console.log(rausch[uhr].fehlt ? `RAUSCHEN ${sicht}-${uhr}: FEHLT ${rausch[uhr].fehlt}` : rauschText(`${sicht}-${uhr}`, rausch[uhr]));
+        }
+        fs.writeFileSync(path.join(ordner, `${sicht}-rauschen.json`), JSON.stringify(rausch, null, 1));
         for (const abstand of abstaende)
             for (const uhr of uhren) {
                 const zelle = `${sicht}-${abstand}-${uhr}`,
@@ -294,11 +345,12 @@ async function messen() {
                 for (const [a, ks] of gruppen) {
                     let r;
                     if (!a) {
-                        if (uhr !== 0.5) r = { fehlt: "kein Soll zu dieser Uhr: die Zeile gilt Mittag klar, die Licht-Bilanz misst unter der Bühne nur Mittag (`__lichtBilanz` ruft `__buehne()`)" };
-                        else {
-                            licht = licht || (await rufe("/licht", { messung: true }));
-                            r = licht.messung ? { messung: frisch(licht.messung) } : { fehlt: String(licht.fehler) };
-                        }
+                        // das Licht zur Uhr der Bühne (`licht --uhr`, der Mittag-Zwang fiel): gemessen je Uhr; ohne Soll zu 0,3 und 0
+                        // bleibt die Zelle ROT beim Grund, mit dem Gemessenen
+                        const l = await rufe("/licht", { messung: true, uhr });
+                        if (!l.messung) r = { fehlt: String(l.fehler) };
+                        else if (uhr !== 0.5) r = { fehlt: `kein Soll zu dieser Uhr: die Zeile gilt Mittag klar (gemessen zur Uhr ${uhr}: E alle ${l.messung.E_alle}, E Himmel ${l.messung.E_umgebung})` };
+                        else r = { messung: frisch(l.messung) };
                     } else if (kopf(a) && (sicht === "ego" || abstand === "fern"))
                         r = { weg: sicht === "ego" ? "Ego zeigt den eigenen Kopf nie (`_applyEgoSicht` nimmt ihn dem Auge)" : `der Kopf steht in Third am Arm des Spiels (${arm} m), nie jenseits ${NAH_M} m` };
                     else {
@@ -328,7 +380,13 @@ function urteil() {
     const u = zellenUrteil(TAFEL, zellen);
     fs.writeFileSync(path.join(ordner, "tafel.json"), JSON.stringify(u, null, 1));
     console.log(tafelText(u));
-    return u.zeilen.every((z) => z.zellen.every((x) => x.urteil !== "ROT"));
+    // DIE RAUSCH-LINSE je Sicht und Uhr (`<sicht>-rauschen.json`): ihr ROT bricht die Station wie eine Zelle
+    const rausch = fs
+        .readdirSync(ordner)
+        .filter((f) => /^(ego|third)-rauschen\.json$/.test(f))
+        .flatMap((f) => Object.entries(JSON.parse(fs.readFileSync(path.join(ordner, f), "utf8"))).map(([uhr, m]) => [`${f.split("-")[0]}-${uhr}`, m]));
+    for (const [z, m] of rausch) console.log(m.fehlt ? `RAUSCHEN ${z}: FEHLT ${m.fehlt}` : rauschText(z, m));
+    return u.zeilen.every((z) => z.zellen.every((x) => x.urteil !== "ROT")) && rausch.every(([, m]) => rauschUrteil(m).urteil !== "ROT");
 }
 
 const befehl = process.argv[2];
