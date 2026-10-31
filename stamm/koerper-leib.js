@@ -1653,7 +1653,10 @@ class AnazhRealm_koerper_leib {
             c.needsUpdate = true;
         }
         this._kahlStand = [];
-        const haar = (o) => !!o && ((o.userData && o.userData.__klasse) || (o.material && o.material.userData && o.material.userData.__klasse)) === "hair";
+        const haar = (o) =>
+            !!o &&
+            ((o.userData && o.userData.__klasse) ||
+                (o.material && o.material.userData && o.material.userData.__klasse)) === "hair";
         const vomSpieler = (o) => {
             for (let p = o; p; p = p.parent) if (p === pm) return true;
             return false;
@@ -1668,11 +1671,14 @@ class AnazhRealm_koerper_leib {
             if (!t || !c) return;
             const m = [0, 0, 0, 0];
             for (let i = 0; i < t.count; i++)
-                if (Math.round(t.getX(i)) === tS) (m[0] += c.getX(i)), (m[1] += c.getY(i)), (m[2] += c.getZ(i)), m[3]++;
+                if (Math.round(t.getX(i)) === tS)
+                    ((m[0] += c.getX(i)), (m[1] += c.getY(i)), (m[2] += c.getZ(i)), m[3]++);
             if (!m[3]) return;
             const alt = [];
             for (let i = 0; i < t.count; i++)
-                if (Math.round(t.getX(i)) === tH) alt.push([i, c.getX(i), c.getY(i), c.getZ(i)]), c.setXYZ(i, m[0] / m[3], m[1] / m[3], m[2] / m[3]);
+                if (Math.round(t.getX(i)) === tH)
+                    (alt.push([i, c.getX(i), c.getY(i), c.getZ(i)]),
+                        c.setXYZ(i, m[0] / m[3], m[1] / m[3], m[2] / m[3]));
             if (!alt.length) return;
             this._kahlStand.push([c, alt]);
             c.needsUpdate = true;

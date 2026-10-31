@@ -384,9 +384,9 @@ class AnazhRealm_dirigent_takt {
                                         ? "Leib offen"
                                         : o.leute
                                           ? `Leute offen ${o.leute}`
-                                        : o.ankunft
-                                          ? `Ankunft gleitet ${o.ankunft}`
-                                          : null;
+                                          : o.ankunft
+                                            ? `Ankunft gleitet ${o.ankunft}`
+                                            : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -497,7 +497,8 @@ class AnazhRealm_dirigent_takt {
             const p = st.playerMesh.position;
             const nah = AnazhRealm.AUTO_SETTLEMENT.nearM;
             for (const S of this._bewohnerSiedlungen.values()) {
-                if (S.listeWerk && (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2 <= nah * nah) o.leute += 1 + Math.max(0, S.listeRest | 0);
+                if (S.listeWerk && (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2 <= nah * nah)
+                    o.leute += 1 + Math.max(0, S.listeRest | 0);
                 for (const b of S.liste || []) if (b.leib == null || b.ankunft) o.leute++;
             }
         }
