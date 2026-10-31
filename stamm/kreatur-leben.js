@@ -2481,7 +2481,7 @@ class AnazhRealm_kreatur_leben {
         const u = cr.userData;
         if (!(this.state.renderer && this.state.renderer._isHeadlessNull) && !u._kopie) return u._kzNah === true;
         const a = this._lodAuge() || this.state.playerMesh.position;
-        return !this._feldTraegt(cr, Math.hypot(cr.position.x - a.x, cr.position.z - a.z), !!u._satz);
+        return !this._feldTraegt(!!u._menge, Math.hypot(cr.position.x - a.x, cr.position.z - a.z), !!u._satz);
     }
 
     // ═══ DER TIER-SATZ (profiband.K1 „Sturm mit 50 Tieren“: jedes Tier im Nah-Kreis war ein Leib — L0 8, L1 5 Draws je Tier

@@ -2832,7 +2832,7 @@ class AnazhRealm_kreatur_verhalten {
         const dz = cr.position.z - auge.z;
         const d2 = dx * dx + dz * dz;
         const u = cr.userData || (cr.userData = {});
-        u._kzNah = !this._feldTraegt(cr, Math.sqrt(d2), u._kzNah === true);
+        u._kzNah = !this._feldTraegt(!!u._menge, Math.sqrt(d2), u._kzNah === true);
         if (u._kzNah) {
             u._kzNahGewesen = true; // das Studio-Tier stand schon im Bild — sein Satz übernimmt später, ohne Einblenden
             if (vorab && !u._kzGlieder && !u._kzVersuch && this._gattungGlieder(cr) && this._weltBakeErlaubt(d2)) {

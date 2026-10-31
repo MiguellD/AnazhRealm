@@ -2123,9 +2123,10 @@ class AnazhRealm_studio_bruecke {
     // (gesetz · boden) gilt mit Fern-Wunsch erst ab `ANALOG_NAH_M` — diesseits trägt ihr Studio-Mesh (die Stufen-Klammer
     // serviert die Art, Fels sein L0, die Blume ihre L2, Gras seine Stufe). null = die Mesh-Bahn, auch für "karte" (Baum, Strauch).
     // Leser: der Zellen-Chokepoint (`_scatterMaterializeCell`), der Bahnwechsel des LOD-Ticks und die Gestalt-Gleichheit
-    // — EINE Grenze für Tier, Bau und Streu, kein zweites Maß (W1 las bis 05.10. Welt-d1 + Hysterese, 29,4 m).
-    _streuFernBahn(preset, lod, dist) {
-        if (!(lod >= 2) || !(dist >= AnazhRealm.ANALOG_NAH_M)) return null;
+    // — EINE Grenze für Tier, Bau und Streu, kein zweites Maß: das Feld des Stufen-Gesetzes (`_feldTraegt`, `nah` = die Zelle
+    // trägt ihr Mesh, die Hysterese hält sie bis zum Austritt; W1 las bis 05.10. Welt-d1 + Hysterese, 29,4 m).
+    _streuFernBahn(preset, lod, dist, nah) {
+        if (!(lod >= 2) || !this._feldTraegt(false, dist, !!nah)) return null;
         const fern = this._foundryFernForm(preset);
         return fern === "karte" ? null : fern;
     }

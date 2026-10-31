@@ -1093,15 +1093,14 @@ class AnazhRealm_vegetation_streu {
             const newLod = this._chooseLODForDistance(dist, cell.lod, visH);
             // DIE NAH-GRENZE wechselt die Bahn auch ohne Stufen-Wechsel — dieselbe Grenze wie der Zellen-Chokepoint
             // (`_streuFernBahn`, ANALOG_NAH_M): eine Fernform-Zelle (Gesetz-Platz oder Boden), die näher kommt, tauscht
-            // auf ihr Studio-Mesh; eine Mesh-Zelle, die sich entfernt, zieht erst 8 m hinter der Grenze in ihre Fernform
-            // (Totband gegen Flattern). Sonst blieb der Kapsel-Satz einer Fern-Zelle stehen, wenn der Spieler auf sie zuging.
+            // auf ihr Studio-Mesh; eine Mesh-Zelle, die sich entfernt, zieht erst jenseits des Felds der Tiere in ihre Fernform
+            // (die Hysterese des Stufen-Gesetzes, `_feldTraegt` — dieselbe Grenze wie jedes Tier). Sonst blieb der Kapsel-Satz einer Fern-Zelle stehen, wenn der Spieler auf sie zuging.
             const istFern = cell.form === "gesetz" || cell.form === "boden";
             const fernArt =
                 layer.kind !== "tree" && newLod >= 2 && newLod === cell.lod && this._foundryEnabled()
                     ? this._foundryPresetFor(cell.species)
                     : null;
-            const bahnWechsel =
-                !!fernArt && istFern !== !!this._streuFernBahn(fernArt, newLod, istFern ? dist : dist - 8);
+            const bahnWechsel = !!fernArt && istFern !== !!this._streuFernBahn(fernArt, newLod, dist, !istFern);
             // Eine WARTENDE Gesetz-Zelle (ihr Satz stand beim Bau nicht: Fit-Takt, Kapsel-Liste) wiederholt den Spawn,
             // solange ihr Fern-Wunsch jenseits der Grenze gilt — slot-frei, nur wo ein echter Renderer den Welt-March zeichnet.
             const warten = !bahnWechsel && cell.wartet === true && newLod === cell.lod && this._weltMarchGezeichnet();
@@ -1644,16 +1643,23 @@ class AnazhRealm_vegetation_streu {
         memo.set(k, G);
         return G;
     }
-    // Trägt das Feld den Leib am Auge (Stufe 3)? `nah` = er steht diesseits (die Hysterese hält ihn bis `aus`).
-    _feldTraegt(cr, d, nah) {
-        return (
-            AnazhRealm._stufeNachGrenzen(
-                d,
-                nah ? 0 : 3,
-                this._feldGrenzen(!!(cr.userData && cr.userData._menge)),
-                1
-            ) === 3
-        );
+    // Trägt das Feld am Auge (Stufe 3)? `menge` = die Art des Felds (`_feldGrenzen`), `nah` = er steht diesseits (die Hysterese hält
+    // ihn bis `aus`) — die EINE Nah-Grenze für Tier, Mensch und die Fernform der Streu (`_streuFernBahn`).
+    _feldTraegt(menge, d, nah) {
+        return AnazhRealm._stufeNachGrenzen(d, nah ? 0 : 3, this._feldGrenzen(menge), 1) === 3;
+    }
+    // DIE GRENZE EINER NAH-ART (die Armlänge der Nah-Streu, die feine Stufe der Nah-Wiese): ihr Haushalt `ab` m um das Auge, ihr
+    // Austritt `rand` m dahinter — als Grenze der EINEN Wahl (`_stufeNachGrenzen`: hinein ab `ab`, hinaus jenseits `ab + rand`).
+    // Rückgabe: liegt `d` diesseits (die feine Stufe), `war` = sie lag diesseits.
+    _nahStufe(ab, rand, d, war) {
+        const M = this._nahStufeG || (this._nahStufeG = new Map());
+        let G = M.get(ab * 1e3 + rand);
+        if (!G)
+            M.set(
+                ab * 1e3 + rand,
+                (G = { erste: 0, grenzen: [{ stufe: 1, ab: ab + rand / 2, h: rand / (2 * ab + rand) }] })
+            );
+        return AnazhRealm._stufeNachGrenzen(d, war ? 0 : 1, G, 1) === 0;
     }
     // DIE BEDEUTUNG EINES LEIBS (das Stufen-Gesetz: wer den knappen Haushalt der Leiber trägt — die Nah-Wahl der Bewohner, der
     // Tier-Satz, die Fahrer, je `nahLeiber`): seine Größe am Schirm (Größe × Brennweite / Abstand vom Auge, Bildpunkte) mal seine
