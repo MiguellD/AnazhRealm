@@ -46,12 +46,12 @@
 //      DIE GRASNARBE (K70, Soll-Tafel boden-nah laiWirk ≥ 1,7): die Schwellen tragen die geschlossene Narbe, und der Halm
 //      WURZELT — die tiefste Ecke der Vorlage liegt am Boden (≤ FUSS_MAX der Büschel-Höhe).
 //  (Q) DER HALM (w4-wiese-nah, HALM_GESETZ): je gelieferte Gras-Stufe die Quer-Koordinate in Adern, die Spitze als EINE Ecke,
-//      die Narbe als Blatt-Fläche des Büschels im Band der Grasländer, die Ährchen der Ähre (schlank); dazu der Pixel als
+//      die Narbe als Blatt-Fläche des Büschels je Stufe im Soll der Tafel (≥ 1,7), die Ährchen der Ähre (schlank); dazu der Pixel als
 //      Filter (Rippe und Ader auf Armlänge ≥ 90 %, fern < 1 %). Vorher (main 715754fc): 0 Fußzeilen in Adern, Narbe 1 (die
 //      Längs-Koordinate), Ähre Breite ÷ Länge 0,29–0,35 (das Papier-Fähnchen); nachher 101/121 · 1,86/2,51 · 0,042.
 // SELBSTTEST: jede Probe MUSS an einer kranken Kopie der gemessenen Puffer feuern (gipsweiße Birke, Ringel-Stamm,
 // Klingen-Strauch, einfarbige Blüte, Blatt ×3, Strauch-Blatt ×½, Nadel ×3, Klingen-L1, Leser entfernt, BC1 gerade gelesen,
-// Atlas-Leser ohne ÷ alpha, Narbe × 2, Quer 0…1, Spitze gestutzt, Fähnchen-Ähre, Filter aus) — die Linse
+// Atlas-Leser ohne ÷ alpha, Narbe × 2, schmale Stufe, Quer 0…1, Spitze gestutzt, Fähnchen-Ähre, Filter aus) — die Linse
 // ist nie vakuös.
 //
 //   npm run gate:pflanzen-nah            (PFLANZEN_PORT, Vorgabe 4548)
@@ -409,7 +409,7 @@ function teppichUrteil(fall, T, lod, step, skala) {
         min = TEPPICH_MIN[lod],
         fuss = teppichFuss(T);
     const v =
-        min != null && d >= min
+        d >= min
             ? []
             : [`${fall}: Halm-Deckung des Bodens unter ${TEPPICH_NEIGUNG}° ${d.toFixed(3)} < ${min} (Büschel auf glattem Grün)`];
     if (!(fuss <= FUSS_MAX))
@@ -418,8 +418,10 @@ function teppichUrteil(fall, T, lod, step, skala) {
 }
 // (Q) DER HALM (w4-wiese-nah, phyto-core HALM_GESETZ) an den gelieferten Puffern je Gras-Stufe und Gestalt: am Fuß zählt
 // uv.x die Adern der Breite (Breite × Welt-Skala ÷ aderM = 2|u| ± 1 %), jeder Halm endet in EINER Ecke (u 0), uv.y (die
-// Narbe) ist am Fuß die Blatt-Fläche des Büschels je Raster-Zelle (± 1 %) im Band der Grasländer (LAI 0,5–4: 1,71 ± 1,19,
-// Asner, Scurlock & Hicke 2003, Global Ecol. Biogeogr. 12:191), jede Ähre trägt die Ährchen ihrer Budget-Zeile, schlank
+// Narbe) ist am Fuß die Blatt-Fläche des Büschels je Raster-Zelle (± 1 %) und trägt JE STUFE das Soll der Tafel (boden-nah
+// laiWirk ≥ 1,7; Grasland-LAI 1,71 ± 1,19, Asner, Scurlock & Hicke 2003, Global Ecol. Biogeogr. 12:191; bis 4) — die Stufe
+// trägt die Fläche, nie die Dreiecks-Zahl (w4-gras-l2: die L2 trug 1,145 / 1,429 je Zelle, 62 % / 57 % der L1, an der
+// Mess-Wiese LAI 10–14 m 1,22; jetzt 1,95 / 2,44 gegen L1 1,86 / 2,51), jede Ähre trägt die Ährchen ihrer Budget-Zeile, schlank
 // (Breite ÷ Länge ≤ 0,08; das Papier-Fähnchen der Rispe 0,25). Konsum-Leser: der Halm-Stoff der Welt (`_halmStoff`,
 // Laub-Licht mit Narbe) und der Labor-Shader (foundry-core injectWind).
 function halmUrteil(fall, t, rc, lod, S) {
@@ -445,7 +447,7 @@ function halmUrteil(fall, t, rc, lod, S) {
     const lam = A * (S / rc.understory.grassStep) ** 2, fuss = Math.max(...uv.filter((_, i) => i % 2)), aeh = [...ae.values()]; // prettier-ignore
     return [
         (!fuesse || quer || spitzen !== fuesse) && `${quer} von ${fuesse} Halmen zählen am Fuß nicht ihre Adern, ${spitzen} Spitzen-Ecken`,
-        !(Math.abs(fuss / lam - 1) <= 0.01 && fuss >= 0.5 && fuss <= 4) && `Narbe am Fuß ${fuss.toFixed(3)} ≠ Blatt-Fläche ${lam.toFixed(3)} je Zelle`,
+        !(Math.abs(fuss / lam - 1) <= 0.01 && fuss >= 1.7 && fuss <= 4) && `Narbe am Fuß ${fuss.toFixed(3)}, Blatt-Fläche ${lam.toFixed(3)} je Zelle (1,7–4)`,
         (!aeh.length || aeh.some(([m, w, l]) => m !== n || w / l > 0.08)) && `${aeh.length} Ähren nicht je ${n} schlanke Ährchen`,
     ].filter(Boolean).map((x) => `${fall}: ${x}`); // prettier-ignore
 }
@@ -1396,11 +1398,9 @@ hauptLauf(async () => {
     // (T) der Büschel auf 30 % seiner Weite gestaucht (das Bild vor K56: 0,15 m auf dem 0,72-m-Raster)
     const gras1 = roh["gras-s1-L1"];
     if (gras1) {
-        const T = gras1.T.map((t) => {
-            const p = Float32Array.from(t.pos);
-            for (let i = 0; i < p.length; i += 3) (p[i] *= 0.3), (p[i + 2] *= 0.3);
-            return Object.assign({}, t, { pos: p });
-        });
+        // die kranke Kopie: jede Ecke (Wert x, Index i im Puffer, Teil t) neu
+        const mit = (fn) => gras1.T.map((t) => ({ ...t, pos: t.pos.map((x, i) => fn(x, i, t)) }));
+        const T = mit((x, i) => (i % 3 === 1 ? x : 0.3 * x));
         st.push([
             "Büschel gestaucht (0,3)",
             teppichUrteil("gestaucht", T, 1, rc.understory.grassStep, skala("gras")).v.length > 0,
@@ -1409,25 +1409,20 @@ hauptLauf(async () => {
         // Segment-Länge über dem Grund, je Halm nach seiner Länge — der Ofen setzt nur den tiefsten auf 0)
         const hiG = hoehe(gras1.T);
         let n = 0;
-        const hoch = gras1.T.map((t) => {
-            const p = Float32Array.from(t.pos);
-            for (let k = 0; k < p.length / 3; k++) if (halmFuss(t, k) && Math.floor(n++ / 2) % 2) p[k * 3 + 1] += hiG * 0.1;
-            return Object.assign({}, t, { pos: p });
-        });
+        const hoch = mit((x, i, t) => (i % 3 === 1 && halmFuss(t, (i - 1) / 3) && n++ & 2 ? x + hiG * 0.1 : x));
         st.push([
             "Halm schwebt (+0,1)",
             teppichUrteil("schwebt", hoch, 1, rc.understory.grassStep, skala("gras")).v.some((x) => /schwebt/.test(x)),
         ]);
         // (Q) der Halm an kranken Kopien — die Narbe × 2, die alte Quer-Koordinate 0…1, die gestutzte Spitze, die Ährchen × 8
-        // breit (das Fähnchen) — und die Rippe ohne Filter
+        // breit (das Fähnchen), die schmale Stufe (das Büschel ganz halb: Fläche und Narbe × ¼ — 0,47 je Zelle, die L2 vor
+        // w4-gras-l2 trug 1,145) — und die Rippe ohne Filter
         const g = gras1.T.find((x) => x.kind === "grass");
-        const q = (fn) => {
-            const k = { ...g, uv: g.uv.slice(), pos: g.pos.slice() };
-            fn(k.uv, k.pos);
-            return halmUrteil("krank", k, rc, 1, skala("gras")).length > 0;
-        };
+        const q = (fn, k = { ...g, uv: g.uv.slice(), pos: g.pos.slice() }) =>
+            (fn(k.uv, k.pos), halmUrteil("krank", k, rc, 1, skala("gras")).length > 0);
         st.push(
             ["Narbe × 2", q((uv) => uv.forEach((x, i) => i % 2 && (uv[i] = 2 * x)))],
+            ["schmale Stufe", q((uv, P) => P.forEach((x, i) => ((P[i] /= 2), (uv[i] /= i % 2 ? 4 : 2))))],
             ["Quer 0…1", q((uv) => uv.forEach((x, i) => i % 2 || (uv[i] = x < 0 ? 0 : 1)))],
             ["Spitze gestutzt", q((uv) => uv.forEach((x, i) => i % 2 || x || (uv[i] = 1e-3)))],
             ["Fähnchen-Ähre", q((uv, P) => g.idx.forEach((j, i) => g.cen[j * 3 + 1] && uv[j * 2] > 0 && [0, 1, 2].forEach((x) => (P[j * 3 + x] += 7 * (P[j * 3 + x] - P[g.idx[i - (i % 3)] * 3 + x])))))], // prettier-ignore
