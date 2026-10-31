@@ -1,0 +1,7 @@
+lauf 1 exit 1
+  die Klasse Pflanzen bis zum Weltbild: 935 ms Haupt-Faden (Streu 297 · Gestalt 126 · Saat 214 · Wald-Plan 297)
+  die Phasen (t · Haupt-Faden belegt bis dahin): HTML da 0.02 s · 0 ms | Skripte da 0.66 s · 456 ms | DOM bereit 1.63 s · 1407 ms | welt steht 2.37 s · 2141 ms | Buch da 2.66 s · 2308 ms | buch steht 2.66 s · 2308 ms | erstes Lade-Bild 4.35 s · 3937 ms | licht steht 5.95 s · 5508 ms | leib steht 5.95 s · 5508 ms | boden steht 8.82 s · 7863 ms | dorf steht 10.96 s · 9866 ms | pflanzung steht 11.79 s · 10670 ms | horizont steht 17.07 s · 15572 ms | streu steht 17.07 s · 15572 ms | bauten steht 17.77 s · 16246 ms | karten steht 17.77 s · 16246 ms | Weltbild 17.77 s · 16246 ms | Kontrolle 18.87 s · 17273 ms | Ring am Ziel 21.34 s · 17273 ms
+lauf 2 exit 1
+  die Klasse Pflanzen bis zum Weltbild: 940 ms Haupt-Faden (Streu 227 · Gestalt 196 · Saat 271 · Wald-Plan 247)
+  die Phasen (t · Haupt-Faden belegt bis dahin): HTML da 0.02 s · 0 ms | Skripte da 0.52 s · 387 ms | DOM bereit 1.30 s · 1155 ms | welt steht 1.97 s · 1824 ms | Buch da 2.27 s · 1987 ms | buch steht 2.27 s · 1987 ms | erstes Lade-Bild 3.63 s · 3335 ms | licht steht 4.94 s · 4630 ms | leib steht 5.55 s · 5062 ms | boden steht 10.85 s · 10037 ms | dorf steht 11.65 s · 10800 ms | streu steht 11.96 s · 11113 ms | pflanzung steht 11.96 s · 11113 ms | karten steht 16.46 s · 15446 ms | horizont steht 17.24 s · 16062 ms | bauten steht 17.24 s · 16062 ms | Weltbild 17.24 s · 16062 ms | Kontrolle 17.82 s · 16603 ms | Ring am Ziel 21.94 s · 16725 ms
+lauf 3 exit 2

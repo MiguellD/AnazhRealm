@@ -1,0 +1,10 @@
+gpu-lauf: Schloss omen-ankunft-kalt nach 2 s
+[linse-gpu] nvidia/pascal
+diag-boot-stage.cjs ABSTURZ: TypeError: Cannot read properties of undefined (reading 'n')
+    at Object.fnName (C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\mp-baum\d84842b1\scripts\lib\haenger-linse.cjs:203:42)
+    at Object.ankunftsHalter (C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\mp-baum\d84842b1\scripts\lib\haenger-linse.cjs:783:20)
+    at kaltLauf (C:\Users\micha\Desktop\AnazhRealm-OMEN\p3\mp-baum\d84842b1\scripts\diag-boot-stage.cjs:326:21)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+/c/Users/micha/Desktop/AnazhRealm-OMEN/p3/gpu-schloss.sh: line 37: 36050 Terminated              ( while sleep 300; do
+    [ "$(schloss_erster)" = "$NAME" ] && touch "$GPU_SCHLOSS/besitzer.txt";
+done )
