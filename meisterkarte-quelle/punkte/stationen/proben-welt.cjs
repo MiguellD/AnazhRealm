@@ -173,18 +173,29 @@ async function kollisionTempo(tor) {
 // Dreiecke (`__gezeichnet`). Die Anker nehmen heraus, was die Station nicht urteilt: den Fuß des Spielers auf drei Bahnen (leib.K2)
 // und den Sprung K9 (leib.K2 Staffel 2); die Sicht setzt der Anker wie die Mess-Kopie `k8Sichten` (`__sicht`). Danach steht die
 // Welt wie vorher: Sicht, Lage, Dorf-Zug, Kreatur-Uhr, ohne die Mess-Treppe — Reh, Wagen und Treppe räumt die Linse selbst.
+// JE ORT BEIDE SICHTEN (w4-ssa-E, GTX b4bcf19c: „== SICHT first (44.4 s)“, third riss die 90 s): je Sicht ein Ruf über Wiese UND Hang
+// sprang Wiese → Hang → Wiese → Hang (312 m), und jede Rückkehr schwang einen Ring neu ein, den die Welt eben verlassen hatte. Jetzt
+// misst je Ruf EIN Ort (`nur`, zwei Anker: die Suche des Hangs nur am Hang, die Wiese nur an der Wiese) in einer Sicht, die Reihe ist
+// Wiese Ego · Wiese Third · Hang Ego · Hang Third — vor jeder Messung steht die Welt am Ort in der Sicht (das Einschwingen der Linse),
+// ein Wechsel der Sicht bewegt nur das Auge. Dasselbe K8, dieselben Rollen, Kontakte und Sollwerte je Ort und Sicht.
 async function bodenRollen(tor) {
     const fs = require("fs");
     const L = "scripts/diag-koerper-stand.cjs";
     const n = new Function(tor.dekl(L, ["K8_UMFANG"]) + "\nreturn K8_UMFANG;")();
     const rollen = tor.quelle(L, "rollen", [
-        ["async function rollen(n) {", "async function rollen(n, sicht) {"],
+        ["async function rollen(n) {", "async function rollen(n, sicht, nur) {"],
         ["const W = window.__messWiese;", "r.setCameraMode(sicht); o.__sicht = s.cameraMode; const W = window.__messWiese;"],
+        ['const hang = window.__weltOrt("hang", { mitte: W, min: 24, max: 26, basis: 4 });', 'const hang = nur === "wiese" ? null : window.__weltOrt("hang", { mitte: W, min: 24, max: 26, basis: 4 });'],
+        ['["wiese", W[0], W[1]],', '["wiese", nur === "hang" ? NaN : W[0], W[1]],'],
         ["R.fuss = bahn(", "R.fuss = 0 && bahn("],
         ["R.falllinie = bahn(", "R.falllinie = 0 && bahn("],
         ["R.stufe =", "R.stufe = 0 &&"],
         ['if (ort !== "wiese") continue;', "continue;"],
     ]);
+    // DER ORT DER PROBE (wie fahrzeug.K3#1): die Mess-Wiese — die Sitzung stellt und beruhigt sie VOR dem Deckel (punkte.cjs `probeOrt`
+    // liest den Ort aus diesem Befehl), hier findet die Probe sie stehend; bis w4-ssa-E schwang `rollen` die Wiese im Deckel ein, wo
+    // immer die Probe davor die Welt ließ
+    await tor.ruf("/umstellen", { ort: "wiese", sicht: "ego" }, 1000 * Math.max(30, Number(process.env.PUNKTE_PROBE_DECKEL_S) || 90));
     const page = await tor.seite();
     tor.karte();
     await page.evaluate("window.__gezeichnet = " + tor.quelle(L, "gezeichnet") + "; window.__eignerKarte = " + tor.quelle(L, "eignerKarte") + ";");
@@ -193,22 +204,24 @@ async function bodenRollen(tor) {
         const p = s.playerMesh.position;
         return { sicht: s.cameraMode, dorf: window.__anazhAutoSettlement, treppe: !!(s.blueprints && s.blueprints.messtreppe), uhr: s.creatureAnimationTime, p: [p.x, p.y, p.z] };
     });
-    const erg = {};
+    const erg = { first: { exit: 0, k8: {} }, third: { exit: 0, k8: {} } };
+    const z = (o) => (o ? ["fein", "streu", "huf", "rad"].map((k) => k + " " + (o[k] ? o[k].p95 + "/" + o[k].n : "?")).join(" · ") : "fehlt");
     try {
         // die Mess-Wiese in IHREM Zustand wie die Linse (haushalt.json `dorfZug`): kein Auto-Dorf wächst an Wiese und Hang
         await page.evaluate(() => (window.__anazhAutoSettlement = false));
-        for (const sicht of ["first", "third"]) {
-            const t = Date.now();
-            try {
-                const k8 = await page.evaluate("(" + rollen + ")(" + n + ", " + JSON.stringify(sicht) + ")");
-                erg[sicht] = { exit: 0, k8 };
-                const z = (o) => (o ? ["fein", "streu", "huf", "rad"].map((k) => k + " " + (o[k] ? o[k].p95 + "/" + o[k].n : "?")).join(" · ") : "fehlt");
-                console.log("== SICHT " + sicht + " (" + ((Date.now() - t) / 1000).toFixed(1) + " s): wiese " + z(k8.wiese) + " | hang " + z(k8.hang) + " (p95 cm / Kontakte)");
-            } catch (e) {
-                erg[sicht] = { exit: 1, k8: null, fehler: String((e && e.message) || e).split("\n")[0] };
-                console.log("== SICHT " + sicht + " FEHLER " + erg[sicht].fehler);
+        for (const ort of ["wiese", "hang"])
+            for (const sicht of ["first", "third"]) {
+                const t = Date.now();
+                const E = erg[sicht];
+                try {
+                    const k8 = await page.evaluate("(" + rollen + ")(" + n + ", " + JSON.stringify(sicht) + ", " + JSON.stringify(ort) + ")");
+                    Object.assign(E.k8, { [ort]: k8[ort], __sicht: k8.__sicht, nexus: E.k8.nexus || k8.nexus });
+                    console.log("== " + ort + " · SICHT " + sicht + " (" + ((Date.now() - t) / 1000).toFixed(1) + " s): " + z(k8[ort]) + " (p95 cm / Kontakte)");
+                } catch (e) {
+                    [E.exit, E.fehler] = [1, String((e && e.message) || e).split("\n")[0]];
+                    console.log("== " + ort + " · SICHT " + sicht + " FEHLER " + E.fehler);
+                }
             }
-        }
     } finally {
         await page.evaluate((v) => {
             const r = window.anazhRealm;
