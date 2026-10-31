@@ -1521,6 +1521,12 @@
             // und bei Nacht, am Platz wechselt die Schicht)
             fahrer: Object.freeze({ werk: Object.freeze([7, 19]), mittagAmWerk: true }),
             nachtfahrer: Object.freeze({ werk: Object.freeze([7, 19]), mittagAmWerk: true, versatzH: 12 }),
+            // DIE WACHE (PFLICHT-OFFEN A, der Prüfplatz): wer am Platz Wache steht (der Wirt gibt die Rolle zwei Bewohnern, wie
+            // dem Fahrer), steht von 6 bis 20 Uhr an seinem Punkt — sein Werk und sein Platz sind der Wache-Punkt, das Mittag hält
+            // er durch; DER NACHTWÄCHTER lebt denselben Tag um `versatzH` Stunden versetzt (18 bis 8 Uhr) — zu jeder Stunde steht
+            // einer draußen, auch um Mitternacht, wenn jeder andere drinnen schläft (`ruhe`)
+            waechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true }),
+            nachtwaechter: Object.freeze({ werk: Object.freeze([6, 20]), mittagAmWerk: true, versatzH: 12 }),
         }),
         berufe: Object.freeze({ markt: 0.35, feld: 0.3, hof: 0.35 }),
     });

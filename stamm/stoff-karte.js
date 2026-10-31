@@ -28,9 +28,11 @@ class AnazhRealm_stoff_karte {
             map: null,
             nmap: null,
             lmap: null, // die Sonnen-Sicht der Krone (A7-Term): der Anteil des Richtlichts, den die eigene Krone durchlässt
+            tmap: null, // die Tiefe je Texel (BC4, w4-laub-karte, phyto-core `karteTiefe`); rgba8: sie reist in nmap.w
             mapNode: null, // die Basis-Texturknoten: ein Wachsen tauscht nur ihren Wert
             nmapNode: null,
             lmapNode: null,
+            tmapNode: null,
             zellen: new Map(), // "fimp:<art>|<gestalt>[|ov:…]" → Zelle
             quad: null,
             mat: null,
@@ -64,11 +66,13 @@ class AnazhRealm_stoff_karte {
             typeof core.karteRinge !== "function" ||
             typeof core.karteGlaetteGaenge !== "function" ||
             typeof core.karteSaumRinge !== "function" ||
+            typeof core.karteTiefe !== "function" ||
+            typeof core.karteTiefeVersatz !== "function" ||
             !core.KARTEN_GESETZ ||
             !core.KARTEN_GESETZ.lichtTeiler
         )
             return AnazhRealm._kernPflichtBruch(
-                "phyto:karteMasse/karteRinge/karteGlaetteGaenge/karteSaumRinge/KARTEN_GESETZ.lichtTeiler"
+                "phyto:karteMasse/karteRinge/karteGlaetteGaenge/karteSaumRinge/karteTiefe/KARTEN_GESETZ.lichtTeiler"
             );
         const soll = Math.max(bedarf || 0, at.n, 1);
         if (at.map && at.cap >= soll) return at;
@@ -86,17 +90,21 @@ class AnazhRealm_stoff_karte {
             if (!at.ringe || at.ringe.ringe.length > 4)
                 return AnazhRealm._kernPflichtBruch("terrain:PORTAL_RENDER_CONFIG.impostor.hebungen/ringTeiler");
             at.nt = core.KARTEN_GESETZ.normalTeiler;
-            if (!at.fmt) {
-                at.fmt = this._impostorAtlasFormat();
-                const r = this.state.renderer;
-                if (at.fmt !== "bc" && r && !r._isHeadlessNull)
-                    this.log(
-                        `KARTE OHNE BC (${r.backend && r.backend.isWebGPUBackend ? "WebGPU ohne texture-compression-bc" : "WebGL2"}): ` +
-                            "die Karte zeichnet unkomprimiert in ihr rgba8-Ziel (2,8 MiB je Schicht statt 0,27)",
-                        "WARN"
-                    );
-            }
+            const gewaehlt = !at.fmt;
+            if (gewaehlt) at.fmt = this._impostorAtlasFormat();
             at.masse = core.karteMasse(at.cw, at.ch, at.V, at.nt, at.fmt, at.ringe);
+            const r = this.state.renderer;
+            // die Schicht in beiden Formaten aus dem Maß (der Zensus `_impostorCensus` rechnet dasselbe)
+            if (gewaehlt && at.fmt !== "bc" && r && !r._isHeadlessNull) {
+                const B = core.karteMasse(at.cw, at.ch, at.V, at.nt, "bc", at.ringe);
+                const mib = (b) => (b / 1048576).toFixed(2).replace(".", ",");
+                this.log(
+                    `KARTE OHNE BC (${r.backend && r.backend.isWebGPUBackend ? "WebGPU ohne texture-compression-bc" : "WebGL2"}): ` +
+                        `die Karte zeichnet unkomprimiert in ihr rgba8-Ziel (${mib(at.masse.w * at.masse.h * 16)} MiB je Schicht statt ` +
+                        `${mib(B.aBytes + B.nBytes + B.lBytes + B.tBytes)})`,
+                    "WARN"
+                );
+            }
         }
         const S = AnazhRealm.KARTEN_ATLAS_SCHRITT;
         let cap = Math.max(8, at.cap || 0);
@@ -117,6 +125,8 @@ class AnazhRealm_stoff_karte {
                 at.nmap.mipmaps = mips(M.n);
                 at.nmap.image = { width: M.nw, height: M.nh, depth: cap };
                 at.lmap.image = { data: null, width: M.lw, height: M.lh, depth: cap };
+                at.tmap.mipmaps = mips(M.t);
+                at.tmap.image = { width: M.nw, height: M.nh, depth: cap };
             } else {
                 // Die Namen tragen den Erzeuger (die Band-Linse zählt je Name).
                 at.map = new T.CompressedArrayTexture(mips(M.a), M.w, M.h, cap, T.RGBA_S3TC_DXT1_Format);
@@ -127,8 +137,11 @@ class AnazhRealm_stoff_karte {
                 at.lmap = new T.DataArrayTexture(null, M.lw, M.lh, cap);
                 at.lmap.name = "karte-licht:atlas";
                 at.lmap.format = T.RGFormat; // die Sonnen-Sicht: r der Zenit, g der 45°-Kranz (F6)
+                // die Tiefe je Texel (w4-laub-karte, phyto-core `karteTiefe`): BC4 im Maß und mit der Kette der Normale
+                at.tmap = new T.CompressedArrayTexture(mips(M.t), M.nw, M.nh, cap, T.RED_RGTC1_Format);
+                at.tmap.name = "karte-tiefe:atlas";
             }
-            for (const t of [at.map, at.nmap, at.lmap]) {
+            for (const t of [at.map, at.nmap, at.lmap, at.tmap]) {
                 t.generateMipmaps = false;
                 t.minFilter = t === at.lmap ? T.LinearFilter : T.LinearMipmapLinearFilter;
                 t.magFilter = T.LinearFilter;
@@ -178,11 +191,27 @@ class AnazhRealm_stoff_karte {
         return at;
     }
 
-    // Die GPU-Texturen der Schichten (Albedo, Normale, Sonnen-Sicht) — null, solange r184 sie nicht angelegt hat.
+    // DIE QUELLE DER KARTE (w4-laub-karte): die Stufe, aus der eine Art ihre Karte backt und ihren Rahmen misst — die
+    // servierte L1, die Höhen-Stufe (`_foundryHoehenStufe`): die Karte backt aus der Gestalt, deren Höhe sie trägt, und die
+    // jede Karten-Art ohnehin baut. Der EINE Leser für den Bake (`_karteWeltBacken`), den Rahmen des Null-Renderers
+    // (`_foundryEnsureImpostorRecord`; bis w4-laub-karte las er die deklarierte Stufe, der Bake die servierte) und die Probe
+    // der Karten-Wand. Die L0 als Quelle senkte den Kanten-Versatz (lod.K5, 16 Peilungen, 1920 × 1080: Eiche 4,67 → 3,54 px,
+    // Birke 5,08 → 3,74, Weide 12,06 → 9,97, Fichte 3,23 → 2,82), stellte aber je Zelle einen L0-Bau auf den Pfad der
+    // Ankunft (gate:arch-feld headless: der erste Bake Takt 74 → 206, die nahe Eiche 156 → über 200, ROT).
+    _karteStufe(preset) {
+        return this._foundryServierStufe(preset, 1);
+    }
+
+    // Die Texturen der Schichten in der Reihe der Ablage (`_karteRechenPlan` kopien.tex): Albedo, Normale, Sonnen-Sicht und —
+    // mit BC — die Tiefe (rgba8 trägt sie in der Normale).
+    _karteTexturen(at) {
+        return at.tmap ? [at.map, at.nmap, at.lmap, at.tmap] : [at.map, at.nmap, at.lmap];
+    }
+    // Die GPU-Texturen der Schichten — null, solange r184 sie nicht angelegt hat.
     _karteGpuTexturen(at) {
         const be = this.state.renderer && this.state.renderer.backend;
         const g = (t) => (t && be && be.get(t) ? be.get(t).texture || null : null);
-        const out = [g(at.map), g(at.nmap), g(at.lmap)];
+        const out = this._karteTexturen(at).map(g);
         return out.every(Boolean) ? out : null;
     }
 
@@ -191,13 +220,13 @@ class AnazhRealm_stoff_karte {
     // fehlt ihr zwischen zwei Takten.
     _karteWachsen(at, alt) {
         const rend = this.state.renderer;
-        const tex = [at.map, at.nmap, at.lmap];
+        const tex = this._karteTexturen(at);
         for (const t of tex) rend._textures.updateTexture(t);
         const neu = this._karteGpuTexturen(at);
         if (!neu) throw this._stoffBruch("die Karte: der gewachsene Atlas hat keine GPU-Form");
         const dev = rend.backend.device;
         const enc = dev.createCommandEncoder({ label: "karte-wachsen" });
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < tex.length; i++) {
             const schichten = Math.min(alt[i].depthOrArrayLayers, neu[i].depthOrArrayLayers);
             for (let k = 0; k < Math.min(alt[i].mipLevelCount, neu[i].mipLevelCount); k++)
                 enc.copyTextureToTexture(
@@ -364,12 +393,13 @@ class AnazhRealm_stoff_karte {
             fmt: at.fmt,
             schichten: at.cap,
             hebungen: at.ringe ? at.ringe.ringe.map((r) => r.hebung) : null, // lod.K3 — die Ringe der Schicht
-            schichtB: M ? (at.fmt === "bc" ? M.aBytes + M.nBytes + M.lBytes : M.w * M.h * 16) : 0,
-            // bc: die Stufen der drei Schichten · rgba8: drei rgba8-Ziele voller Größe mit Mips (4/3)
+            schichtB: M ? (at.fmt === "bc" ? M.aBytes + M.nBytes + M.lBytes + M.tBytes : M.w * M.h * 16) : 0,
+            // bc: die Stufen der vier Schichten (Albedo, Normale, Sonnen-Sicht, Tiefe) · rgba8: drei rgba8-Ziele voller Größe
+            // mit Mips (4/3), die Tiefe im vierten Kanal der Normale
             mb: !M
                 ? 0
                 : at.fmt === "bc"
-                  ? +(((M.aBytes + M.nBytes + M.lBytes) * at.cap) / 1048576).toFixed(2)
+                  ? +(((M.aBytes + M.nBytes + M.lBytes + M.tBytes) * at.cap) / 1048576).toFixed(2)
                   : +((M.w * M.h * 4 * 3 * (4 / 3) * at.cap) / 1048576).toFixed(2),
             weltMs: at.weltMs ? at.weltMs.slice() : null,
             schrittMs: at.schrittMs ? at.schrittMs.slice() : null, // je Ring-Schritt: die Last EINES Takts
@@ -602,10 +632,18 @@ class AnazhRealm_stoff_karte {
             S.select(nO.y.greaterThanEqual(0.0), 1.0, -1.0)
         );
         const nOkt = S.select(nV.z.lessThan(0.0), S.vec2(1.0).sub(nO.yx.abs()).mul(nS), nO);
+        // DIE TIEFE JE TEXEL (w4-laub-karte, phyto-core `karteTiefe`): wie weit die Fläche vor der Mitte des Rahmens liegt, im
+        // Blick der Ansicht — die Kamera blickt aus `abst` auf die Mitte, ihre Sicht-Tiefe dort ist −abst (`uTiefe`: abst, hW,
+        // hH je Karte, `_karteWeltBacken`). Sie reist im vierten Kanal der Normale: r184 leert ihn auf 1 — ein leerer Texel
+        // trägt 1, ein deckender t (die rgba8-Mips mitteln 1 − Deckung · (1 − t), der Stoff teilt durch die Deckung in z).
+        B.uTiefe = S.uniform(new T.Vector3(1, 1, 1));
+        const tiefe = globalThis.__phytoCore
+            .karteTiefe(AnazhRealm._windTsl(S), S.positionView.z.add(B.uTiefe.x), B.uTiefe.y, B.uTiefe.z)
+            .clamp(0.0, 1.0);
         // r184 leert jedes Ziel außer dem ersten auf (0, 0, 0, 1): die Deckung reist in z (Normale) bzw. g (Sonnen-Sicht)
         B.mrt = S.mrt({
             [namen[0]]: S.vec4(S.diffuseColor.rgb, 1.0),
-            [namen[1]]: S.vec4(nOkt.mul(0.5).add(0.5), 1.0, 1.0),
+            [namen[1]]: S.vec4(nOkt.mul(0.5).add(0.5), 1.0, tiefe),
             [namen[2]]: S.vec4(sicht.x, 1.0, sicht.y, 1.0),
         });
         this._karteBuehneSatz = B;
@@ -637,7 +675,7 @@ class AnazhRealm_stoff_karte {
             if (z._platte === false) return null;
             const k = z._platte;
             const lage = at.lage || (at.lage = this._karteRechenPlan(at, true));
-            if (!this._karteGpuTexturen(at)) for (const t of [at.map, at.nmap, at.lmap]) rend.initTexture(t);
+            if (!this._karteGpuTexturen(at)) for (const t of this._karteTexturen(at)) rend.initTexture(t);
             const ziele = this._karteGpuTexturen(at);
             z._platte = null;
             const t0 = performance.now();
@@ -656,7 +694,8 @@ class AnazhRealm_stoff_karte {
             }
         }
         if (bc && !this._karteRechner()) return null; // die Programme der GPU-Ablage kompilieren noch
-        const lod = this._foundryServierStufe(z.preset, 1);
+        // die Quelle der Karte: die Höhen-Stufe ihrer Art (`_karteStufe`)
+        const lod = this._karteStufe(z.preset);
         const key = this._foundryKoerperKey(z.preset, z.variant, lod, z.ov);
         const g = this._foundryCacheGet(key);
         if (g === undefined) {
@@ -666,7 +705,7 @@ class AnazhRealm_stoff_karte {
         }
         if (!g || !g.children || !g.children.length) {
             this._karteEndet(z, false);
-            this._stoffBruch(`die Karte ${z.key}: keine L1-Gestalt ${key} — die Fernstufe bleibt leer`);
+            this._stoffBruch(`die Karte ${z.key}: keine Gestalt ${key} — die Fernstufe bleibt leer`);
             return false;
         }
         const T = THREE;
@@ -721,6 +760,7 @@ class AnazhRealm_stoff_karte {
         // ist der waagrechte Blick
         const e = (ring.hebung * Math.PI) / 180;
         const abst = Math.max(fr.halfW * 2.5, box.max.y) + 40;
+        B.uTiefe.value.set(abst, fr.halfW, fr.halfH); // die Tiefe je Texel misst von der Mitte des Rahmens (`karteTiefe`)
         const hh = core.karteRingHalbe(core.WIND_ZAHLEN, fr.halfH, fr.halfW, e);
         const cam = B.kamera;
         cam.left = -fr.halfW;
@@ -908,6 +948,7 @@ class AnazhRealm_stoff_karte {
                 tex(3),
                 ...[4, 5, 6, 7, 8, 9, 10].map(puffer),
                 S(11, { buffer: { type: "uniform" } }), // der Saum der Karte (`_karteSaumVon`), je Bake
+                puffer(12), // die Tiefe je Texel (w4-laub-karte): Summe und Zahl der deckenden je Stufe der Normale
             ],
         });
         const modul = dev.createShaderModule({ label: "karte-rechner", code: AnazhRealm.KARTE_RECHNER_WGSL });
@@ -1053,7 +1094,9 @@ class AnazhRealm_stoff_karte {
             }
         }
         const summeN = Math.max(1, so);
-        // Normale: Stufe j der Welt = Stufe j+1 der vollen Bühne
+        // Normale: Stufe j der Welt = Stufe j+1 der vollen Bühne — mit ihr die Tiefe je Texel (w4-laub-karte) im selben Maß,
+        // dieselbe Kette (phyto-core `karteMasse` t), gemittelt über die deckenden Texel ihres Fußabdrucks: normalK summiert
+        // beide, bc5 legt beide ab (die Tiefe als BC4 in ihre Schicht, ihre Ablage in gi und t)
         let no = 0;
         let nq = 0;
         for (let j = 0; j < M.n.length; j++) {
@@ -1066,9 +1109,19 @@ class AnazhRealm_stoff_karte {
                 Math.ceil(hj / 16)
             );
             const a = ablage(1, j, wj, hj, 16);
+            const t = ablage(3, j, wj, hj, 8);
             zug(
                 "bc5",
-                Object.assign({}, base, { w: wj, h: hj, k: j + 1, ziel: no, aus: a.aus, zeile: a.zeile }),
+                Object.assign({}, base, {
+                    w: wj,
+                    h: hj,
+                    k: j + 1,
+                    ziel: no,
+                    aus: a.aus,
+                    zeile: a.zeile,
+                    gi: t.aus,
+                    t: t.zeile,
+                }),
                 Math.ceil(wj / 32),
                 Math.ceil(hj / 32)
             );
@@ -1097,6 +1150,7 @@ class AnazhRealm_stoff_karte {
             grenze: mk("grenze", M.a.length * V * 8, U.STORAGE), // je Stufe und Ansicht (Grenzwert-Bits, Lage)
             aus: mk("aus", ausB, U.STORAGE | U.COPY_SRC),
             saum: mk("saum", 48, U.UNIFORM | U.COPY_DST), // [e je Ring, Kronen-Fuß je Ring, nadel, Stärke] je Bake (`_karteSaumVon`)
+            tsum: mk("tsum", no * 8, U.STORAGE), // die Tiefe je Stufe der Normale: (Σ t, Zahl der deckenden Texel)
         };
         const roh = new Uint8Array(slots.length * 256);
         slots.forEach((u, i) => roh.set(new Uint8Array(u.buffer), i * 256));
@@ -1124,7 +1178,7 @@ class AnazhRealm_stoff_karte {
                 entries: [
                     { binding: 0, resource: { buffer: P.param, size: 96 } },
                     ...quellen.map((q, i) => ({ binding: 1 + i, resource: q.createView() })),
-                    ...["summe", "nsum", "dA", "dB", "zahl", "grenze", "aus", "saum"].map((n, i) => ({
+                    ...["summe", "nsum", "dA", "dB", "zahl", "grenze", "aus", "saum", "tsum"].map((n, i) => ({
                         binding: 4 + i,
                         resource: { buffer: P[n] },
                     })),
@@ -1133,7 +1187,7 @@ class AnazhRealm_stoff_karte {
         }
         dev.queue.writeBuffer(plan.P.saum, 0, saum);
         // die Schichten bekommen ihre GPU-Form vor der ersten Ablage (gezeichnet wird eine Karte erst gebacken)
-        if (!this._karteGpuTexturen(at)) for (const t of [at.map, at.nmap, at.lmap]) rend.initTexture(t);
+        if (!this._karteGpuTexturen(at)) for (const t of this._karteTexturen(at)) rend.initTexture(t);
         const ziele = this._karteGpuTexturen(at);
         if (!ziele) throw this._stoffBruch("die Karte: der Atlas hat keine GPU-Form für die Ablage");
         const enc = dev.createCommandEncoder({ label: "karte-ablage" });
@@ -1667,30 +1721,42 @@ fn oktZu(n: vec3<f32>) -> vec2<f32> {
     let s = select(vec2<f32>(-1.0), vec2<f32>(1.0), o >= vec2<f32>(0.0));
     return select(o, (1.0 - abs(o.yx)) * s, n.z < 0.0);
 }
-fn nDek(x: u32, y: u32) -> vec3<f32> {
-    if (!deckt(x, y)) { return vec3<f32>(0.0); }
-    return oktAuf(textureLoad(tNrm, vec2<i32>(i32(x), i32(y)), 0).xy * 2.0 - 1.0);
+// Ein Bühnen-Texel: (Normale, Tiefe je Texel t) wo er deckt, sonst 0 — die Bühne schreibt t in den vierten Kanal der
+// Normale (w4-laub-karte, phyto-core karteTiefe)
+fn nDek(x: u32, y: u32) -> vec4<f32> {
+    if (!deckt(x, y)) { return vec4<f32>(0.0); }
+    let v = textureLoad(tNrm, vec2<i32>(i32(x), i32(y)), 0);
+    return vec4<f32>(oktAuf(v.xy * 2.0 - 1.0), v.w);
 }
+// je Stufe der Normale mit ihr die Tiefe: die Summe über die deckenden Texel des Fußabdrucks und ihre Zahl
+@group(0) @binding(12) var<storage, read_write> tsum: array<vec2<f32>>;
 @compute @workgroup_size(16, 16)
 fn normalK(@builtin(global_invocation_id) g: vec3<u32>) {
     if (g.x >= p.w || g.y >= p.h) { return; }
     var s = vec3<f32>(0.0);
+    var d = vec2<f32>(0.0);
     if (p.k == 1u) {
-        s = nDek(g.x * 2u, g.y * 2u) + nDek(g.x * 2u + 1u, g.y * 2u) + nDek(g.x * 2u, g.y * 2u + 1u) +
-            nDek(g.x * 2u + 1u, g.y * 2u + 1u);
+        for (var i = 0u; i < 4u; i++) {
+            let e = nDek(g.x * 2u + (i & 1u), g.y * 2u + (i >> 1u));
+            s += e.xyz;
+            d += vec2<f32>(e.w, select(0.0, 1.0, dot(e.xyz, e.xyz) > 0.5));
+        }
     } else {
         let wq = p.w * 2u;
         let q = p.quelle + (g.y * 2u) * wq + g.x * 2u;
         s = nsum[q].xyz + nsum[q + 1u].xyz + nsum[q + wq].xyz + nsum[q + wq + 1u].xyz;
+        d = tsum[q] + tsum[q + 1u] + tsum[q + wq] + tsum[q + wq + 1u];
     }
     nsum[p.ziel + g.y * p.w + g.x] = vec4<f32>(s, 0.0);
+    tsum[p.ziel + g.y * p.w + g.x] = d;
 }
 
-// Die Normale eines Texels der Stufe für die Ablage: die Richtung seiner Summe; ein leerer trägt die seiner deckenden
-// Nachbarn in der eigenen Ansicht (3×3) — der Filter der Welt mischt an der Silhouette keine fremde Normale hinein —, erst
-// ohne sie (0, 0, 1)
-fn nAblage(x: u32, y: u32) -> vec2<f32> {
+// Normale und Tiefe eines Texels der Stufe für die Ablage: die Richtung seiner Summe und das Mittel seiner deckenden; ein
+// leerer trägt die seiner deckenden Nachbarn in der eigenen Ansicht (3×3) — der Filter der Welt mischt an der Silhouette
+// keine fremde Normale und keine fremde Tiefe hinein —, erst ohne sie (0, 0, 1) und die Mitte des Rahmens (½)
+fn ablageNT(x: u32, y: u32) -> vec3<f32> {
     var s = nsum[p.ziel + y * p.w + x].xyz;
+    var d = tsum[p.ziel + y * p.w + x];
     if (dot(s, s) < 1e-12) {
         let f = feld(ansicht(x, y));
         for (var dy = -1; dy <= 1; dy++) {
@@ -1698,11 +1764,12 @@ fn nAblage(x: u32, y: u32) -> vec2<f32> {
                 let xx = u32(clamp(i32(x) + dx, i32(f.x), i32(f.x + f.z) - 1));
                 let yy = u32(clamp(i32(y) + dy, i32(f.y), i32(f.y + f.w) - 1));
                 s += nsum[p.ziel + yy * p.w + xx].xyz;
+                d += tsum[p.ziel + yy * p.w + xx];
             }
         }
     }
     let l = length(s);
-    return oktZu(select(vec3<f32>(0.0, 0.0, 1.0), s / l, l > 1e-6));
+    return vec3<f32>(oktZu(select(vec3<f32>(0.0, 0.0, 1.0), s / l, l > 1e-6)), select(0.5, d.x / d.y, d.y > 0.0));
 }
 
 // BC4 eines Kanals (0..1): Endpunkte min/max im 8-Werte-Modus, der nächste Schritt je Texel
@@ -1737,10 +1804,12 @@ fn bc5(@builtin(global_invocation_id) g: vec3<u32>) {
     if (g.x >= p.w / 4u || g.y >= p.h / 4u) { return; }
     var rx: array<f32, 16>;
     var ry: array<f32, 16>;
+    var rt: array<f32, 16>;
     for (var t = 0u; t < 16u; t++) {
-        let n = nAblage(g.x * 4u + (t & 3u), g.y * 4u + (t >> 2u)) * 0.5 + 0.5;
-        rx[t] = n.x;
-        ry[t] = n.y;
+        let n = ablageNT(g.x * 4u + (t & 3u), g.y * 4u + (t >> 2u));
+        rx[t] = n.x * 0.5 + 0.5;
+        ry[t] = n.y * 0.5 + 0.5;
+        rt[t] = n.z;
     }
     let a = bc4(rx);
     let b = bc4(ry);
@@ -1749,6 +1818,11 @@ fn bc5(@builtin(global_invocation_id) g: vec3<u32>) {
     aus[o + 1u] = a.y;
     aus[o + 2u] = b.x;
     aus[o + 3u] = b.y;
+    // die Tiefe je Texel als BC4 in ihre Schicht (w4-laub-karte): gi und t tragen hier ihre Ablage (Wort-Versatz, Zeile)
+    let c = bc4(rt);
+    let ot = p.gi + g.y * p.t + g.x * 2u;
+    aus[ot] = c.x;
+    aus[ot + 1u] = c.y;
 }
 
 // Die Sonnen-Sicht auf 1/lichtTeiler (p.t): das Mittel über die deckenden Texel des Fußabdrucks, ein Fußabdruck ohne

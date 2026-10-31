@@ -163,14 +163,18 @@ hauptLauf(async () => {
             slotH = null,
             karteBF = null,
             slotHF = null;
+        // die Ferne je Takt: die Karte der fernen Buche, ihr Satz, der Slot des fernen Hauses
+        const fern = (t) => {
+            if (karteBF == null && karte(ebF)) karteBF = t;
+            if (ebF?._ziegelSlot) satzBF = true;
+            if (slotHF == null && ehF?._ziegelSlot) slotHF = t;
+        };
         for (let t = 1; t <= 200; t++) {
             await tick(1);
             buche(t);
             if (slotB == null && sichtbar(eb)) slotB = t;
             if (slotH == null && sichtbar(eh)) slotH = t;
-            if (karteBF == null && karte(ebF)) karteBF = t;
-            if (ebF?._ziegelSlot) satzBF = true;
-            if (slotHF == null && ehF?._ziegelSlot) slotHF = t;
+            fern(t);
             if (slotB != null && slotH != null && karteBF != null && slotHF != null && t >= 40) break;
         }
         // NAH IST DAS MESH: die Feld-Brücke trägt nur, bis das Studio-Mesh steht — weiter takten, bis beide nahen
@@ -186,9 +190,7 @@ hauptLauf(async () => {
             buche(t);
             if (meshB == null && gestalt(eb)) meshB = t - 200;
             if (meshH == null && gestalt(eh)) meshH = t - 200;
-            if (karteBF == null && karte(ebF)) karteBF = t;
-            if (ebF?._ziegelSlot) satzBF = true;
-            if (slotHF == null && ehF?._ziegelSlot) slotHF = t;
+            fern(t);
         }
         // DIE FERNE KARTE kommt an, sobald der Bäcker ihre Zelle erreicht: nah zuerst (der Rang einer Zelle ist ihr
         // nächster Gestalt-Bedarf), nie verhungert. Wie lange das dauert, ist der DURCHSATZ des Bäckers, nicht sein
