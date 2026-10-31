@@ -3399,9 +3399,13 @@ class AnazhRealm_bild_sicht {
     // Mündungs-Boxen ihres Bereichs — je Bereich EINE Prüfung, nie je Empfänger; OHNE Empfänger
     // wirft keine Höhlen-Zelle (Frühausstieg), und ein Bereich, dessen Licht-Rechteck keine Kachel eines Empfängers schneidet
     // oder der dem Licht nicht so nah kommt wie der tiefste, prüft keine seiner Zellen. Die Lage einer Box im Licht-Raum
-    // hängt nur an der DREHUNG des Lichts: jede Box (Mündung, Zelle, Bereich) trägt ihr Licht-Rechteck, bis das Licht sich
-    // dreht (`H.lichtGen`) oder der Satz einen neuen Stand hat (Hülle, Ordnung, Rand) — dreht die Kamera, wandert die Kaskade
-    // nur quer zum Licht, und keine Ecke wird neu gerechnet (OMEN-Urteil 06.10., Drehen: ~1 800 Boxen je Frame).
+    // hängt nur an der DREHUNG des Lichts und an der Box selbst: jede Box (Mündung, Zelle, Bereich) trägt ihr Licht-Rechteck
+    // mit den sechs Zahlen, aus denen es fiel, bis das Licht sich über den Halt hinaus dreht (`H.lichtGen`, die Stufen der Sonne
+    // unten) oder SIE sich ändert — dreht die Kamera, wandert die Kaskade nur quer zum Licht, und keine Ecke wird neu gerechnet
+    // (OMEN-Urteil 06.10., Drehen: ~1 800 Boxen je Frame). Bis w4-e-takt fiel jedes Rechteck mit jeder Stufe der Sonne und mit
+    // jedem Stand des Satzes (`s.stand`: eine neue Ordnung, ein Chunk, der seine Stufe tauscht) — im Gang rechnete die Kaskade so
+    // jede Box des Rings neu (Radeon 31.10., Mess-Wiese Ego gehend, `werkbank takt`: `_hoehlenSichtLicht` 2,1 ms je Bild-Takt im
+    // Mittel, ab p95 4,7 ms, davon `lage` 2,75 gegen 0,33 ms in der Mitte — der größte Spitzen-Täter des Gangs).
     _hoehlenSichtLicht(s, S, kamera) {
         const H = s.hoehle;
         const st = ++H.stempel;
@@ -3410,25 +3414,61 @@ class AnazhRealm_bild_sicht {
             throw new Error("_hoehlenSichtLicht: eine Kaskade ohne Kamera — die Licht-Kacheln brauchen ihre Drehung");
         // die Lage einer Box im Licht-Raum: nur die DREHUNG der Licht-Kamera (u, v quer zum Licht, d entlang) — die Kacheln
         // stehen ortsfest, während die Kaskaden-Box mit dem atmenden Auge wandert (sonst kippte die Wahl am Rand je Frame)
-        // die Drehung des Lichts, gegen die gemerkte bis auf die Rundung (eine neu gelegte Kaskaden-Box legt ihre Kamera aus
-        // Ort + Richtung neu an — dieselbe Richtung trägt dann Rundungs-Reste); gerechnet wird mit der gemerkten
+        // die Drehung des Lichts gegen die gemerkte; gerechnet wird mit der gemerkten. DIE STUFEN DER SONNE (w4-e-takt): eine
+        // Kaskade mit Box (`P.fit`), die an einem NEUEN Anker wählt (`P.neu`, `_passWahlLage`), hält ihre Rechtecke nach dem EINEN
+        // Gesetz des Halts, wie ihre Lage (`_passLageHaelt`): die Drehung seit der gemerkten, mal dem längsten Licht-Weg seit ihr,
+        // unter dem halben Licht-Rand (`P.licht`, der Rand, mit dem jedes Rechteck gegen die Kacheln prüft) — Werfer und Empfänger
+        // liegen im selben gemerkten Licht-Raum; die Wahl am Anker hält danach höchstens den anderen halben Rand, zusammen
+        // höchstens den ganzen. Wählt sie mitten in einer gehaltenen Lage (ein neuer Stand des Satzes), gilt die Rundung: die Hälfte
+        // des Rands trägt dort schon der Abstand zum Anker. Bis hierher fiel jedes Rechteck mit jeder Stufe der Sonne (die Drehung
+        // „bis auf die Rundung", 1e-7): im Gang rechnete die Kaskade bei jeder Stufe jede Box des Rings neu (Radeon 31.10.,
+        // Mess-Wiese Ego gehend, 3,5 s: 19 Licht-Generationen, 13 649 von 14 448 Rechtecken aus unveränderten Boxen). Ohne Box
+        // (eine andere Ortho-Kamera) gilt die Rundung (eine neu gelegte Kaskaden-Box legt ihre Kamera aus Ort + Richtung neu an).
         const ek = kamera.matrixWorldInverse.elements;
         const e = H.lichtE || (H.lichtE = new Float64Array(16));
+        const P0 = S.lage,
+            fit = P0 && P0.neu === true && P0.licht > 0 ? P0.fit : null;
         let gedreht = !H.lichtGen;
-        for (let i = 0; i < 11; i++) if (i % 4 !== 3 && !(Math.abs(e[i] - ek[i]) <= 1e-7)) gedreht = true;
+        if (!gedreht && fit) {
+            H.lichtWeg = Math.max(H.lichtWeg || 0, fit.weg || 0);
+            let spur = 0;
+            for (let i = 0; i < 11; i++) if (i % 4 !== 3) spur += e[i] * ek[i];
+            const dreh = Math.acos(Math.max(-1, Math.min(1, (spur - 1) / 2)));
+            gedreht = !this._wahlHaelt(dreh, H.lichtWeg, P0.licht);
+        } else if (!gedreht)
+            for (let i = 0; i < 11; i++) if (i % 4 !== 3 && !(Math.abs(e[i] - ek[i]) <= 1e-7)) gedreht = true;
         if (gedreht) {
             e.set(ek);
             H.lichtGen = (H.lichtGen || 0) + 1;
+            H.lichtWeg = fit ? fit.weg || 0 : 0;
         }
-        const lg = H.lichtGen,
-            stand = s.stand;
-        // das Licht-Rechteck einer Box, gemerkt an ihrem Halter (Mündung, Zelle, Bereich)
+        const lg = H.lichtGen;
+        // das Licht-Rechteck einer Box, gemerkt an ihrem Halter (Mündung, Zelle, Bereich) mit der Box, aus der es fiel
         const lage = (h, box) => {
-            if (h.lrGen === lg && h.lrStand === stand) return h.lr;
+            const mn = box.min,
+                mx = box.max,
+                B = h.lrBox;
+            if (
+                h.lrGen === lg &&
+                B !== undefined &&
+                B[0] === mn.x &&
+                B[1] === mn.y &&
+                B[2] === mn.z &&
+                B[3] === mx.x &&
+                B[4] === mx.y &&
+                B[5] === mx.z
+            )
+                return h.lr;
             const L = h.lr || (h.lr = new Float64Array(6));
             this._hoehlenLichtLage(box, e, L);
+            const N = B || (h.lrBox = new Float64Array(6));
+            N[0] = mn.x;
+            N[1] = mn.y;
+            N[2] = mn.z;
+            N[3] = mx.x;
+            N[4] = mx.y;
+            N[5] = mx.z;
             h.lrGen = lg;
-            h.lrStand = stand;
             return L;
         };
         const T = AnazhRealm.HOEHLEN_LICHT_KACHEL_M;

@@ -211,7 +211,7 @@ if (process.argv.includes("--selftest")) {
 const server = statikServer();
 
 async function probe() {
-    const AR = r.constructor;
+    const AR = AnazhRealm;
     const P = Object.getPrototypeOf(r);
     const aus = { linse: null, sitzung: [], welt: null, zaehne: null };
     const hatGedaechtnis = typeof P._raumTagsRechnen === "function" && typeof P._raumTagSchluessel === "function";

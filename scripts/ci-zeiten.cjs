@@ -11,7 +11,7 @@ const { execSync } = require("child_process");
 const yaml = require("js-yaml");
 const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
 const { alleLaeufe, apiMit } = require("./ci-kopf.cjs");
-const { hauptLauf } = require("./lib/welt-boot.cjs");
+const { hauptLauf, jsonLesen } = require("./lib/welt-boot.cjs");
 
 const root = path.resolve(__dirname, "..");
 const API = "https://api.github.com/repos/MiguellD/AnazhRealm";
@@ -122,7 +122,7 @@ async function messe(api, jetzt, alt = {}, pause = 2000) {
 
 // die Lage in check.yml: im Job voll je Schritt seine Gruppe, die Matrix und ihre Klassen; im Job echt je Schritt seine Frist
 function verteile(jetzt, out) {
-    const skripte = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).scripts || {};
+    const skripte = jsonLesen(path.join(root, "package.json")).scripts || {};
     const { schritte } = out;
     const alle = jetzt.jobs.voll.steps.filter((s) => s.name && s.run && schritte[s.name] && !VORBEREITUNG.test(s.name));
     const z = (s) => schritte[s.name].s;
@@ -276,7 +276,7 @@ if (require.main === module) {
         if (args.includes("--tafel")) return tafel(apiMit(API, token));
         const jetzt = yaml.load(fs.readFileSync(path.join(root, WORKFLOW), "utf8"));
         const alt = fs.existsSync(path.join(root, AUS))
-            ? JSON.parse(fs.readFileSync(path.join(root, AUS), "utf8"))
+            ? jsonLesen(path.join(root, AUS))
             : {};
         const { out, gelesen, ohne } = await messe(apiMit(API, token), jetzt, alt);
         const text = JSON.stringify(out, null, 2).replace(

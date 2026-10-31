@@ -120,7 +120,7 @@ function simLinseAn(sims, akte) {
         };
     };
     const legen = () => {
-        for (const n of namen) for (const z of sims[n][1]) huelle(z.split(".").reduce((o, k) => o && o[k], r.state), "·" + z);
+        for (const n of namen) for (const z of sims[n][1]) huelle(z.split(".").reduce((o, k) => o && o[k], st), "·" + z);
     };
     legen();
     return {

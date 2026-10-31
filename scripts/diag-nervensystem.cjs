@@ -112,14 +112,14 @@ function seitenHelfer() {
     window.__buch = () =>
         window.__weltDa((x) => x._foundry && x._foundry.ready && x._foundry.recipes && x._foundry.recipes.meilenstein);
     window.__stele = (o) =>
-        r.state.architectures.find(
+        st.architectures.find(
             (a) => a.type === "stele_meilenstein" && (!o || Math.hypot(a.position.x - o.x, a.position.z - o.z) < o.r)
         );
     const geo = (t) => ({
         geometry: { attributes: { position: t.position, normal: t.normal }, index: { array: t.index } },
     });
     const bau = (teile) => window.__abdruck({ traverse: (f) => teile.map(geo).forEach(f) }, true);
-    const gezeigt = (w) => w.instSlots.map((x) => r.state.archInstanceGroups.get(x.key).mesh.geometry);
+    const gezeigt = (w) => w.instSlots.map((x) => st.archInstanceGroups.get(x.key).mesh.geometry);
     window.__bauWerk = (w) => bau([...new Set(gezeigt(w))].map((g) => ({ ...g.attributes, index: g.index.array })));
     window.__bauFoundry = async (...a) =>
         bau(((await r._foundryWorkerRequest(...a, null, false, 0)) || []).filter((m) => m.position));
@@ -193,7 +193,7 @@ hauptLauf(async () => {
     const url = `ws://127.0.0.1:${SIGNAL}`;
     for (const p of [page, peer])
         await p.evaluate(async (u) => (await window.__buch()).initP2PSync("k5", { url: u }), url);
-    for (const p of [page, peer]) await waitFor(p, () => r.state.p2p.peers.size > 0, "der Mitspieler");
+    for (const p of [page, peer]) await waitFor(p, () => st.p2p.peers.size > 0, "der Mitspieler");
 
     // ===== C · E: ein Ort vor der Lichtung (schöpfer, Ego) =====
     const [c, e] = await page.evaluate(async () => {
@@ -309,9 +309,9 @@ hauptLauf(async () => {
         // P2P: das Werk reiste beim Setzen (`confirmBuild` → `_werkProgramm`), der Mitspieler baut es und zeigt es nah
         e.p2p = await peer.evaluate(async (id) => {
             const takt = async () => r._gameLoopTick(performance.now());
-            const w = () => r.state.architectures.find((a) => a.id === id);
+            const w = () => st.architectures.find((a) => a.id === id);
             await window.__gebautNach("das Werk beim Mitspieler", { fertig: w, takt });
-            r.state.playerMesh.position.copy(w().position).x += 4;
+            st.playerMesh.position.copy(w().position).x += 4;
             await window.__gebautNach("seine Stufe 0", {
                 fertig: () => w()._servedLod === 0 && w().instSlots.length,
                 takt,

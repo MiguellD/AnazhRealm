@@ -123,7 +123,7 @@ hauptLauf(async () => {
                     delete r._foundryWahl;
                 }
             };
-            const K = r.constructor.FOUNDRY_IM_FLUG;
+            const K = AnazhRealm.FOUNDRY_IM_FLUG;
             const t5 = schlange(selbst ? fifo : null, (f, gesendet, antworte, bestelle) => {
                 for (let i = 0; i < K; i++) bestelle("block" + i); // der Worker ist voll
                 const zug = (wo) => r._foundryZug("linse:t5:eiche", "eiche", 0, 0, undefined, wo); // der Zug des Vorrats-Schlüssels
@@ -140,7 +140,7 @@ hauptLauf(async () => {
                 const [qE, frei, rE] = [r._foundryIngestQueue, [], st.renderer];
                 [st.renderer, r._foundryIngestQueue] = [{}, []]; // headless hält der Wächter nichts — ein Renderer, synchron bis zum Zählen
                 posten.forEach(([x, wo]) => r._foundryIngestTakt(x, wo).then((y) => frei.push(y)));
-                if (alt) r._foundryIngestQueue[0].t -= r.constructor.FOUNDRY_ALTER_MS + 1000; // der Älteste wartet über der Alters-Wache
+                if (alt) r._foundryIngestQueue[0].t -= AnazhRealm.FOUNDRY_ALTER_MS + 1000; // der Älteste wartet über der Alters-Wache
                 const n = r._foundryIngestQueue.length;
                 st.renderer = rE;
                 if (wahl) r._foundryWahl = wahl;
@@ -153,7 +153,7 @@ hauptLauf(async () => {
             const t6 = schlange(selbst ? nurNaechster : null, (f, gesendet, antworte, bestelle) => {
                 for (let i = 0; i < K; i++) bestelle("block" + i);
                 bestelle("alt");
-                f.warte[0].t -= r.constructor.FOUNDRY_ALTER_MS + 1000; // der Älteste wartet über der Alters-Wache
+                f.warte[0].t -= AnazhRealm.FOUNDRY_ALTER_MS + 1000; // der Älteste wartet über der Alters-Wache
                 for (let i = 0; i < 6; i++) bestelle("nah" + i, { x: pm.x + 5 + i, z: pm.z });
                 antworte();
                 antworte();
@@ -272,8 +272,8 @@ hauptLauf(async () => {
                         const zst = Object.assign(Object.create(st), { renderer: {}, chunkRingRadius: 4, _activeRingRadius: null, voxelMeshPending: new Set([1]) }); // prettier-ignore
                         r._ringWaechst.call(Object.assign(Object.create(r), { state: zst, _ladeTakt: () => !selbst }));
                         r._ladeTakt = () => !selbst;
-                        st.fernRing = { flug: 0, auftrag: 0, cursor: 0, totalVerts: r.constructor.FERN_RING.scheibe * 40, einhaengen: [], gen: 0, anchorX: 0, anchorZ: 0 }; // prettier-ignore
-                        Object.assign(aus9, { ring: zst._activeRingRadius, ringSoll: r.constructor.RING_EXIST_FLOOR, fern: (r._fernRingRefresh(), st.fernRing.flug), fernKappe: r.constructor.FERN_RING.scheibenImFlug }); // prettier-ignore
+                        st.fernRing = { flug: 0, auftrag: 0, cursor: 0, totalVerts: AnazhRealm.FERN_RING.scheibe * 40, einhaengen: [], gen: 0, anchorX: 0, anchorZ: 0 }; // prettier-ignore
+                        Object.assign(aus9, { ring: zst._activeRingRadius, ringSoll: AnazhRealm.RING_EXIST_FLOOR, fern: (r._fernRingRefresh(), st.fernRing.flug), fernKappe: AnazhRealm.FERN_RING.scheibenImFlug }); // prettier-ignore
                         await null; // DER BODEN-STROM an der ms-Kappe (4 ms, Stück frei): bis zur Frist darüber, danach im selben Frame nur sie
                         [aus9.stromMs, aus9.stromMsGleich] = [strom(4, 1e9), strom(4, 1e9)];
                         // DER NAH-GANG außerhalb des Lade-Takts: 30 Ladende, die auf die Ankunfts-Generation warten, verbrauchen keinen Versuch,
@@ -332,7 +332,7 @@ hauptLauf(async () => {
             // Leser der Stau-Werke je Bild (`_stauFelder` fragt `_stauWorkClusters` nach Identität). Der Selbsttest fährt die alten
             // Klassen: der Wagen als Beweger (der Ruf ohne Drift), jede geschlossene Box als Damm, die Leiter ohne Sprosse.
             const t11 = await (async () => {
-                const [C, P, o] = [r.constructor, Object.getPrototypeOf(r), { schritt: 0, beweger: 0, stau: 0 }];
+                const [C, P, o] = [AnazhRealm, Object.getPrototypeOf(r), { schritt: 0, beweger: 0, stau: 0 }];
                 const S = { raster: new Map(), verkehr: { wagen: [], spurRaster: new Map(), zahl: {} } };
                 const park = { x: pm.x + 300, z: pm.z, fahrt: Math.PI / 2 };
                 const W = { S, park, gen: r._rollGenome("t11", "verkehr"), typ: "suv", fahrer: [], zonen: [], T: {}, dtAcc: 0, takt: 0 }; // prettier-ignore

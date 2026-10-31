@@ -25,7 +25,7 @@
 "use strict";
 const fs = require("fs");
 const path = require("path");
-const { statikServer, starteBrowser, hauptLauf, sleep, argOpt: opt, pngDatei, selbsttestEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, hauptLauf, sleep, argOpt: opt, pngDatei, selbsttestEnde, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const AT = require("./lib/albedo-tafel.cjs");
 const { kartenEichung } = require("./lib/licht-linsen.cjs");
 // der Code-Abdruck einer Datei des Baums und der Stand einer Messung (abnahme-urteil `standLeser`, derselbe wie Werkzeug und
@@ -159,7 +159,7 @@ async function laborLaub() {
     await server.lausche(PORT);
     const b = await browser(argv.includes("--echt"));
     const labor = {};
-    const welt = opt("--welt") ? JSON.parse(fs.readFileSync(path.resolve(opt("--welt")), "utf8")).welt : null;
+    const welt = opt("--welt") ? jsonLesen(path.resolve(opt("--welt"))).welt : null;
     try {
         const page = await b.newPage();
         await server.zeige(page, 120000, S.pfad, "load");
@@ -543,11 +543,11 @@ async function neuMessen(t, ids) {
         wb(["stop"]);
         if (w.exitCode == null) w.kill();
     }
-    const welt = JSON.parse(fs.readFileSync(wd, "utf8"));
+    const welt = jsonLesen(wd);
     const labor = await messeLabor({ echt: false, nur: null, tafel: t });
     Object.assign(labor, { datum: new Date().toISOString(), echt: false, stand: SL.kernStand() });
     const ld = path.join(ordner, "labor.json");
-    fs.writeFileSync(ld, JSON.stringify(labor, null, 1));
+    jsonSchreiben(ld, labor);
     const u = AT.tafelUrteil(t, {
         labor: labor.labor,
         karten: labor.karten,
@@ -584,7 +584,7 @@ async function main() {
         m.echt = argv.includes("--echt");
         // DER STAND der Labor-Seite (K63-n3, abnahme-urteil `kernStand`): Version, Commit und Code-Abdruck jeder Quelle beim Messen
         m.stand = SL.kernStand();
-        if (opt("--datei")) fs.writeFileSync(path.resolve(opt("--datei")), JSON.stringify(m, null, 1));
+        if (opt("--datei")) jsonSchreiben(path.resolve(opt("--datei")), m);
         // Gegen das gespeicherte Welt-Ist: die Labor-Seite lebt, die Welt-Seite steht in der Tafel.
         const g = gespeichert(t);
         const mm = Object.assign({}, g, {
@@ -605,8 +605,8 @@ async function main() {
     }
     if (argv.includes("--nachziehen")) {
         const i = argv.indexOf("--nachziehen");
-        const welt = JSON.parse(fs.readFileSync(path.resolve(argv[i + 1]), "utf8"));
-        const labor = JSON.parse(fs.readFileSync(path.resolve(argv[i + 2]), "utf8"));
+        const welt = jsonLesen(path.resolve(argv[i + 1]));
+        const labor = jsonLesen(path.resolve(argv[i + 2]));
         const m = {
             labor: labor.labor,
             karten: labor.karten,

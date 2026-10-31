@@ -7,7 +7,7 @@
 //
 // mint-asset-goldens.cjs (schreibt die eingefrorenen Goldens) UND diag-asset-contract.cjs (das
 // Dauer-Gate) LESEN diese eine Datei — kein zweiter Boot-Pfad, der driften kann.
-const { statikServer, starteBrowser } = require("./welt-boot.cjs");
+const { statikServer, starteBrowser, jsonLesen } = require("./welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
@@ -22,7 +22,7 @@ const ROOT = path.resolve(__dirname, "..", "..");
 // aus dem Manifest. So trägt das Harness-Buch ALLE Gattungen (tor/klinge/haus/
 // kreatur …), nicht nur die Pflanzen — EINE Quelle, kein hartkodierter Zweitpfad.
 // (Die Pflanzen-Goldens bleiben byte-identisch — gate:asset-contract ist der stehende Beweis.)
-const CORES_MANIFEST = JSON.parse(fs.readFileSync(path.join(ROOT, "cores.manifest.json"), "utf8"));
+const CORES_MANIFEST = jsonLesen(path.join(ROOT, "cores.manifest.json"));
 const WORKER_SCRIPTS = (() => {
     const rel = [];
     for (const core of CORES_MANIFEST) if (core && Array.isArray(core.lib)) for (const s of core.lib) rel.push("/" + s);

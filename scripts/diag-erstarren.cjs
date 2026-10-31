@@ -41,7 +41,7 @@ const { errs, check } = pruefer();
         await warteAufWelt(page, 120000);
 
         out = await page.evaluate(async () => {
-            const s = r.state;
+            const s = st;
             const res = {};
             if (!s.playerMesh) return { error: "kein Spieler" };
 

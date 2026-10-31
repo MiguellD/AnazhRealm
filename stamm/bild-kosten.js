@@ -2759,6 +2759,7 @@ class AnazhRealm_bild_kosten {
                 licht: 0,
                 gen: 0,
                 key: "",
+                neu: false,
             });
         const we = kamera.matrixWorld.elements;
         const PW = AnazhRealm.PASS_WAHL;
@@ -2804,7 +2805,9 @@ class AnazhRealm_bild_kosten {
             }
             L.kanten = K;
         }
-        this._passLageGen(L, kamera, k);
+        // `neu`: dieser Pass legte einen neuen Anker (die Lage hielt nicht) — wer jetzt wählt, wählt am Anker (die Höhlen-Sicht der
+        // Kaskade hält darum nur dann ihre Licht-Rechtecke über die Stufen der Sonne, `_hoehlenSichtLicht`)
+        L.neu = this._passLageGen(L, kamera, k);
         return L;
     }
 

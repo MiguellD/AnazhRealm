@@ -14,7 +14,7 @@
 // verlustfrei, nicht nur „gleicher String rein/raus".
 "use strict";
 
-const { statikServer, nullSeite } = require("./welt-boot.cjs");
+const { statikServer, nullSeite, jsonLesen } = require("./welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
@@ -47,7 +47,7 @@ function computeStamp(root) {
 }
 
 function readManifest(root) {
-    return JSON.parse(fs.readFileSync(path.join(root || ROOT, "cores.manifest.json"), "utf8"));
+    return jsonLesen(path.join(root || ROOT, "cores.manifest.json"));
 }
 
 // `meta.coreId` — DATEN-getrieben (M8, kein kind-if): Zweit-Kern-Rezepte reisen im gemergten
@@ -146,7 +146,7 @@ function writePack(dir, pack) {
 }
 
 function readPack(file) {
-    return JSON.parse(fs.readFileSync(file, "utf8"));
+    return jsonLesen(file);
 }
 
 // ---------------------------------------------------------------------------

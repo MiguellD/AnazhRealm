@@ -49,7 +49,7 @@
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt, weltTor } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt, weltTor, jsonLesen } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
@@ -2421,10 +2421,8 @@ async function lauf() {
                 await p2.evaluateOnNewDocument(() => (window.__anazhChunkIdb = true));
                 await server.zeige(p2, 120000);
                 // die Bühne, geboren wie im Spiel durch die Tür (`weltTor`): ihre Klamm S6 trägt den Stau (s. Kopf D)
-                const buehne = JSON.parse(fs.readFileSync(path.join(root, "spec", "pruefbuehne", "welt.json"), "utf8"));
-                const S6 = JSON.parse(
-                    fs.readFileSync(path.join(root, "spec", "pruefbuehne", "stationen.json"), "utf8")
-                ).stationen.find((s) => s.id === "s6-klamm");
+                const buehne = jsonLesen(path.join(root, "spec", "pruefbuehne", "welt.json"));
+                const S6 = jsonLesen(path.join(root, "spec", "pruefbuehne", "stationen.json")).stationen.find((s) => s.id === "s6-klamm");
                 if (!S6) throw new Error("D: keine Station s6-klamm in spec/pruefbuehne/stationen.json");
                 await weltTor(p2, buehne);
                 const D = { takte: 1200, R: 40, fassen: 4 };

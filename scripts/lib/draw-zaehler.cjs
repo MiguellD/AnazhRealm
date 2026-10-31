@@ -100,7 +100,7 @@ function drawZensus(opts) {
             for (const s of st.chunkSaetze.values())
                 if (s && s.mesh && s.spec && s.spec.userData && s.spec.userData.bauSatz) satzOf.set(s.mesh, s);
         const inhalt = {};
-        const instanzKlasse = (key) => r.constructor._instanzKlasse(key);
+        const instanzKlasse = (key) => AnazhRealm._instanzKlasse(key);
         // DIE WAHL DER GPU (`_instanzWahlGpu`): die Zahl eines Zugs zählt der Compute — nach dem Frame liest der Zähler sie
         // aus dem Auftrags-Puffer der Arena, die gezeichneten Instanzen aus ihrer Liste (`spaet`), nie die Zahl der Senke
         const spaet = [];
