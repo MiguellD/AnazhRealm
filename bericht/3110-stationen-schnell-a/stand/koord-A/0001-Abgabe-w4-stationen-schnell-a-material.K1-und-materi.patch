@@ -1,3 +1,23 @@
+From be599ad45e87630f0853449c5a9fea48e8beba18 Mon Sep 17 00:00:00 2001
+From: MiguellD <87209049+MiguellD@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 22:10:09 +0000
+Subject: [PATCH] Abgabe w4-stationen-schnell-a: material.K1 und material.K3
+ lesen EINE Albedo-Probe der Sitzung, das Labor im Browser der Sitzung
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+g3.js: K3 maß die Tafel in seiner Folge (`umstellen 0 0`, drei Werkbank-Prozesse), K1 sie ein zweites Mal samt eigenem Browser
+und Statik-Server für das Labor (GTX b4bcf19c: beide Läufe ≥ 90 s). Jetzt EIN Lauf für vier Stationen (Zwillinge): die Tafel am
+Ort ihrer Messung (Genesis, die Sitzung stellt ihn vor dem Deckel), daneben `messeLabor` als Bibliothek in einem eigenen Fenster
+der Sitzung. Urteile unberührt, über die gemeinsame Ausgabe gleich (Radeon b3f9ae95/557d4aad); Läufe GTX 72 → 71, Σ Deckel 1735 → 1725 s.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018GqBDYgvKFxx7BBDKhxUFp
+---
+ meisterkarte-quelle/punkte/stationen/g3.js | 214 +++++++++++----------
+ 1 file changed, 117 insertions(+), 97 deletions(-)
+
 diff --git a/meisterkarte-quelle/punkte/stationen/g3.js b/meisterkarte-quelle/punkte/stationen/g3.js
 index aa306e6a..d250818b 100644
 --- a/meisterkarte-quelle/punkte/stationen/g3.js
@@ -308,3 +328,6 @@ index aa306e6a..d250818b 100644
          env: envDer,
          gpu: true,
          zeit: false,
+-- 
+2.43.0
+

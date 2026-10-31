@@ -1,3 +1,39 @@
+From 4c08981e91080a56e64e4f7a637ac362908b7f14 Mon Sep 17 00:00:00 2001
+From: MiguellD <87209049+MiguellD@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 23:14:10 +0000
+Subject: [PATCH] Abgabe w4-stationen-schnell-a: Probe mahl, Werk der Leute
+ ohne Zeit, Wege-Messer an der Kapsel-Nachbarschaft (Zwischenstand)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+mahl: die Szene rudel bis zum ersten Riss, dann die Kette (7 200 Takte) — in der Welt der Sitzung lokal 3 s statt
+jagdkreis in eigener Null-Welt (100 Jagden); jagdkreis ohne Kette, Selbsttest 8 Täter beim Namen. leuteTakt: das Werk
+der Liste ohne Zeit statt je Bild 4 ms und 16 ms Schlaf (Wiederkehr 16 Runden 20,3 s CPU). Wege-Messer über
+_blockerNahe: 25,3 → 5,5 s je Tag, bit-gleich, auch mit blinder Wand. _bewohnerWand: Rahmen der Strecke zuerst, Liste
+1,52 → 1,04 s, Stände bit-gleich. DECKE +171 offen.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018GqBDYgvKFxx7BBDKhxUFp
+---
+ scripts/diag-kreatur-takt.cjs  |   2 +
+ scripts/lib/kreatur-proben.cjs | 123 ++++++++++++++++++++-------------
+ stamm/siedlung-bewohner.js     |  17 ++++-
+ 3 files changed, 92 insertions(+), 50 deletions(-)
+
+diff --git a/scripts/diag-kreatur-takt.cjs b/scripts/diag-kreatur-takt.cjs
+index abf0e2e8..7e218981 100644
+--- a/scripts/diag-kreatur-takt.cjs
++++ b/scripts/diag-kreatur-takt.cjs
+@@ -40,6 +40,8 @@ const DAUER_S = {
+     temperament: 1,
+     abstand: 1,
+     jagdkreis: 281,
++    // (w4-stationen-schnell-a: an derselben Maschine jagdkreis 50 + 79 s, mahl 11 + 30 s — mahl im Maß von jagdkreis)
++    mahl: 89,
+     rudel: 7,
+     querhang: 13,
+     ferngang: 1,
 diff --git a/scripts/lib/kreatur-proben.cjs b/scripts/lib/kreatur-proben.cjs
 index a61f7489..da2e578e 100644
 --- a/scripts/lib/kreatur-proben.cjs
@@ -308,3 +344,6 @@ index 19cf135b..9c6c706d 100644
                  if (st === null) {
                      this._voxelEditKarte(); // trägt jeden neuen Edit nach: sein Zähler ist der Stand des Bodens
                      st = this._editGenZaehler | 0;
+-- 
+2.43.0
+

@@ -1,0 +1,220 @@
+From e0c77304fc2265d65a8d0079491e71519bf6606a Mon Sep 17 00:00:00 2001
+From: MiguellD <87209049+MiguellD@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 22:06:56 +0000
+Subject: [PATCH 1/2] Abgabe w4-stationen-schnell-a: das Lot des gezeichneten
+ Bodens und der GT im Takt (gate:koerper-stand K8)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+`gezeichnet` baute je Auge gemorphte Kopien und ließ three.js je Strahl jedes Dreieck der vier Netze schneiden (21 352 je Strahl,
+in Fahrt je Takt neu). Jetzt EIN Gitter je Netz über Lage und Ziel, je Strahl nur die Dreiecke im Lot, gleicher Schnitt. Byte-Beweis
+alt gegen neu in derselben Seite: 11 040 Strahlen (Wiese, 25°-Hang, fahrendes Auge, ganze Fläche mit 16 634 gemorphten Ecken),
+0 Abweichungen; 1,135–1,456 → 0,012–0,015 ms je Strahl. Der Bau des GT wartet im Takt der Linse statt je 100 ms Uhr. Lokal je
+Probe: Rad 25,3 → 11,4 s, GT 5,6 → 1,3 s.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018GqBDYgvKFxx7BBDKhxUFp
+---
+ scripts/diag-koerper-stand.cjs | 157 +++++++++++++++++++++++++++++----
+ 1 file changed, 141 insertions(+), 16 deletions(-)
+
+diff --git a/scripts/diag-koerper-stand.cjs b/scripts/diag-koerper-stand.cjs
+index 6c275f9c..76c66414 100644
+--- a/scripts/diag-koerper-stand.cjs
++++ b/scripts/diag-koerper-stand.cjs
+@@ -63,14 +63,26 @@ function eignerKarte(r, x, z) {
+ 
+ // DER GEZEICHNETE BODEN (Seite: `window.__gezeichnet`, K6 und K8): ein Strahl lotrecht auf das Mesh des Eigners und seiner unteren
+ // Nachbarn, so gemorpht, wie der Stoff es zeichnet (je Vertex zum Ziel der gröberen Stufe um `_morphFaktor`, Naht und Stufe am
+-// Auge; je Auge und Geometrie einmal gebaut) — die oberste TRAGENDE Fläche (|n_y| ≥ 0,3, wie die Karte: eine Wand trägt nichts), nie durch einen Leser, den ein
++// Auge) — die oberste TRAGENDE Fläche (|n_y| ≥ 0,3, wie die Karte: eine Wand trägt nichts), nie durch einen Leser, den ein
+ // Schnitt heilt; null ohne Mesh. `steil`: die oberste Fläche des Strahls ist steil (ein Überhang: die Karte trägt dort die
+ // Oberkante ihrer Raster-Punkte, der Strahl die Fläche darunter); `meshe` zählt die getroffenen Chunks.
++// DAS LOT (w4-ssa-E): der Strahl steht lotrecht, er trifft nur ein Dreieck, dessen Grundriss (x, z) trägt. Bis dahin baute die Linse
++// je Auge eine gemorphte Kopie jedes gefragten Netzes und ließ three.js je Strahl JEDES Dreieck der vier Netze schneiden (lokal
++// 21 352 je Strahl, 1,5 ms; K8 fragt je Ort und Sicht ~4 500 Strahlen) — in Fahrt (das Rad: das Auge fährt mit) je Takt jede Kopie
++// neu. Jetzt ordnet je Netz (und Stand seiner Attribute) EIN Gitter von 1 m die Dreiecke nach dem Grundriss über Lage UND Ziel (der
++// gemorphte Vertex liegt dazwischen, ± 1 mm); je Strahl morpht die Linse nur die Ecken der Dreiecke im Lot, je Auge einmal, mit dem
++// Wert der Kopie (Lage + (Ziel − Lage) · `_morphFaktor` als Float32) und schneidet sie wie `Mesh.raycast`: `Ray.intersectTriangle`
++// mit der Seite des Stoffs, Abstand und Normale, die Reihe der Dreiecke, nach Abstand sortiert — dieselben Treffer.
+ function gezeichnet(r, x, z) {
+     const T = window.THREE;
+     const G = window.__gezeichnet;
+     const strahl = G.strahl || (G.strahl = new T.Raycaster());
+     const span = r._voxelChunkConfig(0).span;
++    const U = r.state.atmoUniforms;
++    const gm = U && U.geomorph ? U.geomorph.value : 1;
++    const auge = (r.state.stufeAuge ? r.state.stufeAuge.x + "," + r.state.stufeAuge.z : "") + "|" + gm;
++    const [vA, vB, vC, p] = G.v || (G.v = [new T.Vector3(), new T.Vector3(), new T.Vector3(), new T.Vector3()]);
++    strahl.set(new T.Vector3(x, 900, z), new T.Vector3(0, -1, 0));
+     let best = null;
+     let oben = -Infinity;
+     G.steil = false;
+@@ -86,21 +98,132 @@ function gezeichnet(r, x, z) {
+         if (!e || !e.mesh || !e.mesh.geometry) continue;
+         G.meshe = (G.meshe | 0) + 1;
+         const geo = e.mesh.geometry;
+-        const auge = r.state.stufeAuge ? r.state.stufeAuge.x + "," + r.state.stufeAuge.z : "";
+-        if (!e.__gez || e.__gez.geo !== geo || e.__gez.auge !== auge) {
+-            const P = geo.attributes.position.array;
+-            const Z = geo.attributes.aMorphTarget;
+-            const W = geo.attributes.aMorphWeight;
+-            const L = Float32Array.from(P);
+-            for (let i = 0; Z && W && i < W.count; i++) {
+-                const f = r._morphFaktor(W.array[i], P[3 * i], P[3 * i + 2]);
+-                for (let k = 0; k < 3; k++) L[3 * i + k] += (Z.array[3 * i + k] - P[3 * i + k]) * f;
++        const [P, Z0, W0, ix] = [
++            geo.attributes.position,
++            geo.attributes.aMorphTarget,
++            geo.attributes.aMorphWeight,
++            geo.index,
++        ];
++        const [Z, W] = Z0 && W0 ? [Z0, W0] : [null, null];
++        const stand = [P.version, Z ? Z.version : -1, W ? W.version : -1, ix ? ix.version : -1].join(",");
++        let M = e.__gez;
++        if (
++            !M ||
++            M.geo !== geo ||
++            M.P !== P ||
++            M.Z !== Z ||
++            M.W !== W ||
++            M.ix !== ix ||
++            M.stand !== stand ||
++            !(gm >= M.f0 && gm <= M.f1)
++        ) {
++            // DAS GITTER des Netzes: je Dreieck die Zellen seines Grundrisses über Lage und Ziel (Faktor f0 … f1), ± 1 mm, eine Zelle Rand
++            // um das Netz; die Liste je Zelle in der Reihe der Dreiecke (so trifft sie in der Reihe von three.js)
++            const [pa, za, wn] = [P.array, Z ? Z.array : null, W ? W.count : 0];
++            const [f0, f1] = [Math.min(0, gm), Math.max(1, gm)];
++            const lo = (j, k) =>
++                za && j < wn
++                    ? Math.min(
++                          pa[3 * j + k] + (za[3 * j + k] - pa[3 * j + k]) * f0,
++                          pa[3 * j + k] + (za[3 * j + k] - pa[3 * j + k]) * f1
++                      )
++                    : pa[3 * j + k];
++            const hi = (j, k) =>
++                za && j < wn
++                    ? Math.max(
++                          pa[3 * j + k] + (za[3 * j + k] - pa[3 * j + k]) * f0,
++                          pa[3 * j + k] + (za[3 * j + k] - pa[3 * j + k]) * f1
++                      )
++                    : pa[3 * j + k];
++            let [x0, z0, x1, z1] = [Infinity, Infinity, -Infinity, -Infinity];
++            for (let j = 0; j < P.count; j++)
++                [x0, x1, z0, z1] = [
++                    Math.min(x0, lo(j, 0)),
++                    Math.max(x1, hi(j, 0)),
++                    Math.min(z0, lo(j, 2)),
++                    Math.max(z1, hi(j, 2)),
++                ];
++            [x0, z0] = [x0 - 1, z0 - 1];
++            const [nx, nz] = [Math.floor(x1 - x0) + 2, Math.floor(z1 - z0) + 2];
++            const n = ix ? ix.count : P.count;
++            const ecken = (i) => (ix ? [ix.getX(i), ix.getX(i + 1), ix.getX(i + 2)] : [i, i + 1, i + 2]);
++            const zellen = (i, f) => {
++                const q = ecken(i);
++                const u0 = Math.max(0, Math.floor(Math.min(...q.map((j) => lo(j, 0))) - 1e-3 - x0));
++                const u1 = Math.min(nx - 1, Math.floor(Math.max(...q.map((j) => hi(j, 0))) + 1e-3 - x0));
++                const v0 = Math.max(0, Math.floor(Math.min(...q.map((j) => lo(j, 2))) - 1e-3 - z0));
++                const v1 = Math.min(nz - 1, Math.floor(Math.max(...q.map((j) => hi(j, 2))) + 1e-3 - z0));
++                for (let v = v0; v <= v1; v++) for (let u = u0; u <= u1; u++) f(v * nx + u);
++            };
++            const kopf = new Int32Array(nx * nz + 1);
++            for (let i = 0; i < n; i += 3) zellen(i, (k) => kopf[k + 1]++);
++            for (let k = 0; k < nx * nz; k++) kopf[k + 1] += kopf[k];
++            const tri = new Int32Array(kopf[nx * nz]);
++            const frei = kopf.slice(0, nx * nz);
++            for (let i = 0; i < n; i += 3) zellen(i, (k) => (tri[frei[k]++] = i));
++            M = e.__gez = {
++                geo,
++                P,
++                Z,
++                W,
++                ix,
++                stand,
++                f0,
++                f1,
++                x0,
++                z0,
++                nx,
++                nz,
++                kopf,
++                tri,
++                ecken,
++                L: new Float32Array(pa.length),
++                marke: new Int32Array(P.count),
++                gen: 0,
++                auge: null,
++            };
++        }
++        // die Ecke j, wie die Kopie des Auges sie trüge (je Auge einmal gemorpht)
++        if (M.auge !== auge) [M.auge, M.gen] = [auge, M.gen + 1];
++        const ecke = (j, v) => {
++            if (M.marke[j] !== M.gen) {
++                M.marke[j] = M.gen;
++                const f = Z && j < W.count ? r._morphFaktor(W.array[j], P.array[3 * j], P.array[3 * j + 2]) : null;
++                for (let k = 0; k < 3; k++)
++                    M.L[3 * j + k] =
++                        f === null
++                            ? P.array[3 * j + k]
++                            : P.array[3 * j + k] + (Z.array[3 * j + k] - P.array[3 * j + k]) * f;
++            }
++            return v.set(M.L[3 * j], M.L[3 * j + 1], M.L[3 * j + 2]);
++        };
++        const [u, v] = [Math.floor(x - M.x0), Math.floor(z - M.z0)];
++        const alle = [];
++        if (u >= 0 && u < M.nx && v >= 0 && v < M.nz && !Array.isArray(e.mesh.material)) {
++            const seite = e.mesh.material.side;
++            for (let k = M.kopf[v * M.nx + u]; k < M.kopf[v * M.nx + u + 1]; k++) {
++                const i = M.tri[k];
++                const [ia, ib, ic] = M.ecken(i);
++                ecke(ia, vA);
++                ecke(ib, vB);
++                ecke(ic, vC);
++                const t =
++                    seite === T.BackSide
++                        ? strahl.ray.intersectTriangle(vC, vB, vA, true, p)
++                        : strahl.ray.intersectTriangle(vA, vB, vC, seite === T.FrontSide, p);
++                if (t === null) continue;
++                const distance = strahl.ray.origin.distanceTo(p);
++                if (distance < strahl.near || distance > strahl.far) continue;
++                const normal = T.Triangle.getNormal(vA, vB, vC, new T.Vector3());
++                alle.push({
++                    distance,
++                    point: p.clone(),
++                    face: { a: ia, b: ib, c: ic, normal, materialIndex: 0 },
++                    faceIndex: Math.floor(i / 3),
++                });
+             }
+-            const g = new T.BufferGeometry().setAttribute("position", new T.BufferAttribute(L, 3)).setIndex(geo.index);
+-            e.__gez = { geo, auge, mesh: new T.Mesh(g, e.mesh.material) };
++            alle.sort((m, q) => m.distance - q.distance);
+         }
+-        strahl.set(new T.Vector3(x, 900, z), new T.Vector3(0, -1, 0));
+-        const alle = strahl.intersectObject(e.__gez.mesh, false);
+         const h = alle.find((t) => t.face && Math.abs(t.face.normal.y) >= 0.3);
+         if (h && (best === null || h.point.y > best)) best = h.point.y;
+         if (alle.length && alle[0].point.y > oben) {
+@@ -948,13 +1071,15 @@ async function rollen(n) {
+             if (!R.huf || m.p95 > R.huf.p95) R.huf = { ...m, median: band.name + " " + m.median };
+             r.removeCreature(reh);
+         }
+-        // das Rad: der GT 6 m neben dem Spieler, aufgesessen, in Fahrt längs der Höhenlinie (ein Studio-Fahrzeug liegt längs x)
++        // das Rad: der GT 6 m neben dem Spieler, aufgesessen, in Fahrt längs der Höhenlinie (ein Studio-Fahrzeug liegt längs x); sein Bau
++        // im Takt der Linse (das EINE Warten, je Takt ein Bild der Welt — bis w4-ssa-E je Gang 100 ms Uhr, in der ruhenden Welt der
++        // Sitzung ohne einen Takt: 2–14 Gänge, lokal 0,2–3,0 s je Ort und Sicht)
+         const e = r.spawnArchitecture(
+             "fahrzeug_gt",
+             { x: P.x + 6, y: r._voxelSurfaceY(P.x + 6, P.z) + 0.5, z: P.z },
+             { silent: true, precise: true, rotationY: auf - Math.PI }
+         );
+-        if (e) await window.__gebautNach(e, { takt: () => sleep(100), max: 200 });
++        if (e) await window.__gebautNach(e, { takt, max: 200 });
+         if (e && e.instSlots && (r.mountArchitecture(e) || {}).ok) {
+             for (let k = 0; k < 15; k++) takt();
+             // je Takt die Blätter des Rads (`lf.rad` des Flats seiner Stufe, Slot i ↔ Blatt i): je Nabe der tiefste Vertex;
+-- 
+2.43.0
+

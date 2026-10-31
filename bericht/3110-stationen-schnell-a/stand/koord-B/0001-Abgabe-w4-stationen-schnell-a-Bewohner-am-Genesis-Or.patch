@@ -1,3 +1,24 @@
+From 707984dc661e57f1a3806be021afd198bd603b08 Mon Sep 17 00:00:00 2001
+From: MiguellD <87209049+MiguellD@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 23:14:16 +0000
+Subject: [PATCH] Abgabe w4-stationen-schnell-a: Bewohner am Genesis-Ort,
+ Dorfplatz im Takt, Mahl in der Sitzung (Zwischenstand)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+mensch.K1#1/K2#2: die Sitzung stellt vor dem Deckel an den Genesis-Ort um (an der Mess-Wiese ist das Start-Dorf nie
+fällig, GTX b4bcf19c ≥ 90 s ohne Zeile), die Linse misst nur das Start-Dorf (--ort genesis, die Stadt liest kein
+Urteil), der Dorfplatz um 8 Uhr wartet im Bau-Ereignis und geht 80 Spiel-Takte statt 32 s Wanduhr. tiere.K2#2: die
+Probe mahl in der Welt der Sitzung statt der Null-Welt jagdkreis. GTX hergeleitet: Bewohner ≥ 90 → ~50–60 s,
+tiere.K2#2 ≥ 90 → ~20 s.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018GqBDYgvKFxx7BBDKhxUFp
+---
+ meisterkarte-quelle/punkte/stationen/g2.js | 139 +++++++++++++++++----
+ 1 file changed, 112 insertions(+), 27 deletions(-)
+
 diff --git a/meisterkarte-quelle/punkte/stationen/g2.js b/meisterkarte-quelle/punkte/stationen/g2.js
 index 83340921..dc93c648 100644
 --- a/meisterkarte-quelle/punkte/stationen/g2.js
@@ -196,3 +217,6 @@ index 83340921..dc93c648 100644
              const rv = jsonZeile(lauf.stdout, /^REVIER /);
              const w = j && j.klasse && (j.klasse.klassen || {})["tier:wolf"];
              const b = (j && j.bild) || {};
+-- 
+2.43.0
+

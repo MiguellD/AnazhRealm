@@ -1,3 +1,20 @@
+From 20bf56ae16c5660ccbac09921f1f11da31f1d6bf Mon Sep 17 00:00:00 2001
+From: MiguellD <87209049+MiguellD@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 23:04:23 +0000
+Subject: [PATCH] =?UTF-8?q?Abgabe=20w4-stationen-schnell-a:=20gate:haus-we?=
+ =?UTF-8?q?lt=20W9=20schie=C3=9Ft=20nur,=20was=20eine=20Zahl=20liest?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+vegetation.K4: ein Blick, der nichts fortnimmt, schießt nur die Boden-Maske (G und O wären dasselbe Bild, der Halm 0), Third und Gegenprobe ohne Maske (ihr Boden ist 0) — 404 → 112 Aufnahmen an 43 Häusern, lokal 293 → 84 an 29. Das W10-Innen-Bild fällt aus der Linse: siedlung.K1#2 misst es in der Sitzung, die Kopie lief in keiner Wand. spieler je Haus zurück (K4#2 liest es, fehlt seit 41f18376). Warten im Takt statt 100/10 ms Schlaf, das Gesetzbuch je Haus einmal. scripts −733 Atome.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018GqBDYgvKFxx7BBDKhxUFp
+---
+ scripts/diag-haus-welt.cjs | 164 ++++++++++++++++---------------------
+ 1 file changed, 72 insertions(+), 92 deletions(-)
+
 diff --git a/scripts/diag-haus-welt.cjs b/scripts/diag-haus-welt.cjs
 index 7d015bb0..11f9301d 100644
 --- a/scripts/diag-haus-welt.cjs
@@ -307,3 +324,6 @@ index 7d015bb0..11f9301d 100644
      abbau: w.abbau,
      slot: w.slot,
      waise: w.waise && { ...w.waise, ohne: w.waise.ohne.length },
+-- 
+2.43.0
+

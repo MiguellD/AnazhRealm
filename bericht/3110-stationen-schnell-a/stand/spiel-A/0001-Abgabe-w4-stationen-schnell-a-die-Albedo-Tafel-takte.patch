@@ -1,57 +1,25 @@
-diff --git a/scripts/diag-profiband.cjs b/scripts/diag-profiband.cjs
-index 6b02b75d..298a544c 100644
---- a/scripts/diag-profiband.cjs
-+++ b/scripts/diag-profiband.cjs
-@@ -976,8 +976,9 @@ function selbsttest() {
-             !BAND.messortePruefen(haushalt).length
-     );
-     // S28 — DAS EINSCHWINGEN WARTET AUF DEN DORF-ZUG (Messort dorf: der Zug läuft): ein Export unterwegs und eine wachsende
--    // Siedlung halten die Welt offen, eine ruhige Welt meldet nichts. Und auf den SATZ, DER NOCH SCHRUMPFT (1310-1): ein Satz
--    // über seinem Ziel (`ueberSeit` ≥ 0) hält offen, ein ruhender (-1) nicht.
-+    // Siedlung halten die Welt offen, eine ruhige Welt meldet nichts; ein Plan, dessen Takt ruht (`_dorfTaktLebt` false: der
-+    // Messort ohne Dorf-Zug), wächst nie und hält nicht offen — derselbe Plan mit lebendem und mit ruhendem Takt. Und auf den
-+    // SATZ, DER NOCH SCHRUMPFT (1310-1): ein Satz über seinem Ziel (`ueberSeit` ≥ 0) hält offen, ein ruhender (-1) nicht.
-     const welt28 = (z) =>
-         Object.assign(
-             {
-@@ -990,10 +991,15 @@ function selbsttest() {
-             },
-             z
-         );
--    const o28 = BAND.einschwingOffen(welt28({ _autoSettlementQueue: { plan: { slots: [1, 2, 3] }, idx: 1 } }));
-+    const dorf28 = [true, false].map(
-+        (lebt) =>
-+            BAND.einschwingOffen(
-+                welt28({ _autoSettlementQueue: { plan: { slots: [1, 2, 3] }, idx: 1 }, _dorfTaktLebt: () => lebt })
-+            ).dorfWaechst
-+    );
-     t(
--        "Einschwingen: eine wachsende Siedlung (1/3), ein Export unterwegs und zwei Lieferungen vor dem Ingest-Takt halten offen, die ruhige Welt nicht",
--        o28.dorfWaechst === "1/3" &&
-+        "Einschwingen: eine wachsende Siedlung (1/3), ein Export unterwegs und zwei Lieferungen vor dem Ingest-Takt halten offen, derselbe Plan ohne Takt und die ruhige Welt nicht",
-+        dorf28.join() === "1/3," &&
-             BAND.einschwingOffen(welt28({ _autoSettlementPendingKey: "-4,-4" })).dorfExport === "-4,-4" &&
-             BAND.einschwingOffen(welt28({ _foundryIngestQueue: [1, 2] })).foundryIngest === 2 &&
-             Object.keys(BAND.einschwingOffen(welt28({}))).length === 0 &&
-diff --git a/scripts/lib/band-urteil.cjs b/scripts/lib/band-urteil.cjs
-index 09bf1c4d..329763cc 100644
---- a/scripts/lib/band-urteil.cjs
-+++ b/scripts/lib/band-urteil.cjs
-@@ -268,8 +268,11 @@ function einschwingOffen(r) {
-     // Die EINE Antwort der Welt (`_streuWartet`).
-     const streuListe = [];
-     if (r._streuWartet(st.playerMesh ? st.playerMesh.position : null, streuListe)) o.streuWartet = streuListe.join(" · ");
-+    // DAS DORF WÄCHST NUR, WO SEIN TAKT LEBT (`_dorfTaktLebt`, das EINE Urteil des Stamms, das auch `_dorfOffen` in `_weltOffen`
-+    // liest): am Messort ohne Dorf-Zug (genesis, wiese) ruht ein Plan, der vorher losging — er wächst nie. Bis 31.10. hielt er hier
-+    // offen, und das Band wartete bis zum Deckel (ferne.K2#2, Radeon a03b7b06: „dorfWaechst 0/18“, 4 007 Takte, 240 s)
-     const q = r._autoSettlementQueue;
--    if (q != null) o.dorfWaechst = q.plan && q.plan.slots ? `${q.idx}/${q.plan.slots.length}` : 1;
-+    if (q != null && r._dorfTaktLebt()) o.dorfWaechst = q.plan && q.plan.slots ? `${q.idx}/${q.plan.slots.length}` : 1;
-     if (r._autoSettlementPendingKey) o.dorfExport = r._autoSettlementPendingKey;
-     let schrumpft = 0;
-     for (const [, s] of st.chunkSaetze || []) if (s && s.ueberSeit >= 0) schrumpft++;
+From c1d0d6c576276358453c2a1002871a74a1547195 Mon Sep 17 00:00:00 2001
+From: MiguellD <87209049+MiguellD@users.noreply.github.com>
+Date: Sat, 31 Oct 2026 23:10:08 +0000
+Subject: [PATCH 1/3] =?UTF-8?q?Abgabe=20w4-stationen-schnell-a:=20die=20Al?=
+ =?UTF-8?q?bedo-Tafel=20taktet=20im=20Bild=20der=20Werkbank,=20liest=20und?=
+ =?UTF-8?q?=20wertet=20ohne=20R=C3=BCckruf=20je=20Element=20aus=20und=20ei?=
+ =?UTF-8?q?cht=20nur=20im=20Gang=20der=20Karte?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+`__werkTakt` gibt sein nächstes Bild als Versprechen; die Tafel taktet darin statt 50 ms Schlaf je Takt (rund 680 Takte: 34 s Schlaf → 0). `lies` füllt in einer Schleife (Node 640 × 400: 46 → 6 ms je Pass, rund 385 Pässe), `albedoAuswerten` rechnet über eine flache Liste (491 → 214 ms je Zeile, jede Zahl bit-gleich bei Deckung 0–100 %), die Karte der Eichung schießt nur der Gang, der sie liest (20 von 21 Schüssen fallen). Takt-Zahlen, Bedingungen und Urteile unberührt; Atome licht-linsen −53, werkbank −4.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+Claude-Session: https://claude.ai/code/session_018GqBDYgvKFxx7BBDKhxUFp
+---
+ scripts/lib/licht-linsen.cjs | 92 +++++++++++++++++++-----------------
+ scripts/werkbank.cjs         | 11 +++--
+ 2 files changed, 55 insertions(+), 48 deletions(-)
+
 diff --git a/scripts/lib/licht-linsen.cjs b/scripts/lib/licht-linsen.cjs
-index ba2acaac..8c2de6e6 100644
+index ba2acaac..cbcd7153 100644
 --- a/scripts/lib/licht-linsen.cjs
 +++ b/scripts/lib/licht-linsen.cjs
 @@ -12,41 +12,40 @@ const { luma709, cielab, linSrgb } = require("./abnahme-urteil.cjs");
@@ -206,102 +174,11 @@ index ba2acaac..8c2de6e6 100644
          },
          bundles: window.__bundlesNeu, // das EINE Bündel-Neu der Seite (welt-boot)
          // DIE RUHE DER LINSE: ihre Karten, Kugeln und Licht-Varianten sind neue Stoffe und Programme — der erste Render baut die
-@@ -2175,25 +2179,34 @@ function luftTiefe(o) {
-         const s = new T.Vector3();
-         const q = new T.Vector3();
-         const unter = (t) => gy + s.y * t < gesetz(gx + s.x * t, gz + s.z * t);
-+        // JE STRAHL EIN MARSCH (w4-stationen-schnell-a, 31.10.): der Weg zum Gelände-Gesetz hängt nur an der Richtung des Strahls
-+        // (`maersche`, bitgenau), nie am Schuss — bis dahin marschierte die Nachsicht mit Blende 1/4 denselben Blick ein zweites Mal
-+        // (bis 2,6 Mio. Rufe des Gesetzes je Sicht, lokal 1,50 Mio. davon für die Strahlen in den Himmel); Schritte und Halbierung dieselben
-+        const maersche = new Map();
-         const treffer = (xx, yy, D) => {
-             const nx = ((xx + 0.5) / W) * 2 - 1;
-             const ny = 1 - ((yy + 0.5) / H) * 2;
-             s.set(nx, ny, 1).applyMatrix4(cam.projectionMatrixInverse).applyMatrix4(cam.matrixWorld).sub(cam.position).normalize();
--            let a = 0;
--            let t = 30;
--            while (t < 6e4 && !unter(t)) {
--                a = t;
--                t += Math.max(8, t * 0.01);
--            }
--            if (t >= 6e4) return null;
--            for (let k = 0; k < 12; k++) {
--                if (unter((a + t) / 2)) t = (a + t) / 2;
--                else a = (a + t) / 2;
-+            const schl = s.toArray().join();
-+            if (!maersche.has(schl)) {
-+                let a = 0;
-+                let t = 30;
-+                while (t < 6e4 && !unter(t)) {
-+                    a = t;
-+                    t += Math.max(8, t * 0.01);
-+                }
-+                for (let k = 0; k < 12 && t < 6e4; k++) {
-+                    if (unter((a + t) / 2)) t = (a + t) / 2;
-+                    else a = (a + t) / 2;
-+                }
-+                maersche.set(schl, t);
-             }
--            const k = (s.y * t) / Hs;
-+            const d = maersche.get(schl);
-+            if (d >= 6e4) return null;
-+            const k = (s.y * d) / Hs;
-             const z = D.tiefe[Math.floor(((yy + 0.5) / H) * D.th) * D.tw + Math.floor(((xx + 0.5) / W) * D.tw)];
--            const szene = z < 1 && Math.abs(q.set(nx, ny, z).applyMatrix4(D.iv).distanceTo(cam.position) / t - 1) <= 0.15;
--            return { d: t, szene, g: Math.exp(-(gy - (st.waterLevel || 0)) / Hs) * (Math.abs(k) < 1e-3 ? 1 - k / 2 : (1 - Math.exp(-k)) / k) };
-+            const szene = z < 1 && Math.abs(q.set(nx, ny, z).applyMatrix4(D.iv).distanceTo(cam.position) / d - 1) <= 0.15;
-+            return { d, szene, g: Math.exp(-(gy - (st.waterLevel || 0)) / Hs) * (Math.abs(k) < 1e-3 ? 1 - k / 2 : (1 - Math.exp(-k)) / k) };
-         };
-         const bRef = luftBetaRef(R);
-         const uhr = (u) => {
 diff --git a/scripts/werkbank.cjs b/scripts/werkbank.cjs
-index 05063696..cd3964ec 100644
+index 05063696..e7451999 100644
 --- a/scripts/werkbank.cjs
 +++ b/scripts/werkbank.cjs
-@@ -712,7 +712,7 @@ function bandEinschwingen(k) {
-     return (async () => {
-         const st = r.state;
-         const RUHIG = k.ruhig || 30;
--        // DIE VOLLE WELT: der Regler misst hier Takte mit 50 ms Pause (65 ms je Frame) und drosselte auf loadScale 0 —
-+        // DIE VOLLE WELT: der Regler maß hier Takte mit 50 ms Pause (65 ms je Frame) und drosselte auf loadScale 0 —
-         // je nach Vorgeschichte stand die Messung auf einer anderen Welt (Streu-Stufen, Laub-Radius). Die Decke geht hoch
-         // (`perfTargetMs` 1000, wie `lauf --regler voll`), der PID wächst auf 1: das Band misst die volle Welt. Die
-         // Werkbank setzt die Decke nach den Proben zurück.
-@@ -732,7 +732,10 @@ function bandEinschwingen(k) {
-             return { chunks: st.voxelChunks ? st.voxelChunks.size : 0, instanzen, ungebaut: __ungebaut(), loadScale: ls };
-         };
-         while (performance.now() < dl) {
--            __werkTakt();
-+            // DER TAKT UND SEIN BILD (`__werkTakt`, wie der Takt des Orts in `/umstellen` seit 4f098fa6): bis 31.10. schlief das
-+            // Band je Takt 50 ms — am Messort genesis (ferne.K2#2) trugen die 40 Takte des Einschwingens und 5 × 20 Takte zwischen
-+            // den Proben 7 s Schlaf, nie das Werk
-+            const bild = __werkTakt();
-             takte++;
-             // was die Welt noch baut — die EINE Liste (band-urteil `einschwingOffen`, mit der Dorf-Wache des Messorts dorf)
-             o = __einschwingOffen(r);
-@@ -742,7 +745,7 @@ function bandEinschwingen(k) {
-             vor = s;
-             ruhig = Object.keys(o).length ? 0 : ruhig + 1;
-             if (takte >= 40 && ruhig >= RUHIG) break;
--            await sleep(50);
-+            await bild;
-         }
-         return {
-             eingeschwungen: ruhig >= RUHIG,
-@@ -760,11 +763,7 @@ function bandProben(k) {
-     return (async () => {
-         const proben = [];
-         for (let i = 0; i < (k.n || 6); i++) {
--            if (i)
--                for (let t = 0; t < (k.zwischen || 20); t++) {
--                    __werkTakt();
--                    await sleep(50);
--                }
-+            if (i) for (let t = 0; t < (k.zwischen || 20); t++) await __werkTakt(); // ein Bild je Takt, wie das Einschwingen
-             __buehne();
-             try {
-                 if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
-@@ -856,7 +855,9 @@ async function starte() {
+@@ -856,7 +856,9 @@ async function starte() {
              }));
          for (const i of [AUSGABE_INSTALL, LL.LINSEN_INSTALL, ZAEHLER_INSTALL, BAND.EINSCHWING_INSTALL, FLUSS_INSTALL, DIAET.DIAET_INSTALL, SICHT.SICHT_INSTALL])
              await page.evaluate(i);
@@ -312,7 +189,7 @@ index 05063696..cd3964ec 100644
          // ungebauten Werke in der Mesh-Zone (`architectureCullingRadius` um den Spieler)
          await page.evaluate(() => {
              // DER LOOP der Werkbank: an (der Spiel-Loop über rAF) oder aus (die Welt steht zwischen den Befehlen)
-@@ -867,6 +868,7 @@ async function starte() {
+@@ -867,6 +869,7 @@ async function starte() {
                      if (window.__ortSchritt) __ortSchritt();
                      r._gameLoopTick(performance.now());
                  } catch {}
@@ -320,30 +197,7 @@ index 05063696..cd3964ec 100644
              };
              window.__ungebaut = (r = anazhRealm, st = r.state, pm = st.playerMesh.position) =>
                  (st.architectures || []).filter(
-@@ -1010,17 +1012,12 @@ async function starte() {
-                 const ziel = stell && stell.ring ? stell.ring : Math.min(12, st.chunkRingRadius || 4);
-                 const decke = st.perfTargetMs;
-                 st.perfTargetMs = 1000;
--                // DER TAKT DES ORTS geht im Schritt der Seite (`__seitenTakt`: ein Bild, dann der Takt) — bis 30.10. schlief er 50 ms je Takt:
--                // an der Radeon (Mess-Sitzung, Ort wiese) waren 27–30 s von 40–48 s Ring-Zeit dieser Schlaf (537–607 Takte × 50 ms), nicht
--                // das Streaming; die Ankunft des Spielers geht im Bild-Takt
--                const takt = async () => {
-+                // DER TAKT DES ORTS geht im Schritt der Seite (der Takt der Werkbank und sein Bild, `__werkTakt`; bis 31.10. sein eigener
-+                // Zwilling) — bis 30.10. schlief er 50 ms je Takt: an der Radeon (Mess-Sitzung, Ort wiese) waren 27–30 s von 40–48 s
-+                // Ring-Zeit dieser Schlaf (537–607 Takte × 50 ms), nicht das Streaming; die Ankunft des Spielers geht im Bild-Takt
-+                const takt = () => {
-                     if (st._activeRingRadius < ziel) st._activeRingRadius = ziel;
--                    try {
--                        __buehne();
--                        __ortSchritt();
--                        r._gameLoopTick(performance.now());
--                    } catch {}
--                    await new Promise((ok) => requestAnimationFrame(ok));
-+                    return __werkTakt();
-                 };
-                 let takte;
-                 try {
-@@ -2263,15 +2260,15 @@ async function starte() {
+@@ -2263,15 +2266,15 @@ async function starte() {
                      // DIE WELT-SEITE DER ALBEDO-TAFEL: dieselbe Linse, je Tafel-Zeile Exemplar · Klasse · Stoff.
                      const t = AT.ladeTafel();
                      // DAS AUGE DER STUFE (`exemplar.stufe`, K63-n7, S8) wählt die Stufe JEDES Exemplars neu — jede solche Zeile misst in ihrem eigenen Gang NACH
@@ -362,3 +216,6 @@ index 05063696..cd3964ec 100644
                      const ordner = path.resolve(b.ordner || ablage("albedo-tafel"));
                      fs.mkdirSync(ordner, { recursive: true });
                      const welt = {};
+-- 
+2.43.0
+
