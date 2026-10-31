@@ -290,3 +290,4 @@ b-kalt-1a71 2 station sha=1a71c07b0cde48a0d983e549353f1eea66871ff3 lauf=ankunft-
 a-spawn-gtx 2 station sha=96133362a53f2b98aa92d02c3ad9cf88117918d9 lauf=a-spawn.sh
 b-kalt-d848 2 station sha=d84842b1a8ca723c634a86fb073160a815ffe565 lauf=ankunft-kalt.sh
 a-spawn-gtx2 2 station sha=96133362a53f2b98aa92d02c3ad9cf88117918d9 lauf=a-spawn.sh
+z106-abab 3 abab A=48cc0efcacdf2eff12431f57793c881bcdb8d69b B=b4bcf19c21d456de2547313768915d6a821e4087 zellen=g-third,w-ego
