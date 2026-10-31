@@ -637,8 +637,9 @@ class AnazhRealm_bild_sicht {
         if (this._spiegelUmgebungK) return this._spiegelUmgebungK;
         const T = THREE.TSL;
         const L = this._spiegelLeser();
-        // EIN Knoten des Himmels für jeden Stoff (wie r184s Umgebung): er frischt seine PMREM-Stufen einmal je Render
-        const himmel = T.pmremTexture(quelle);
+        // EIN Knoten des Himmels für jeden Stoff (wie r184s Umgebung): er frischt seine PMREM-Stufen einmal je Render; die
+        // Umgebung trägt den Himmel je Einheit des Lichts, das Licht jetzt reist in der geteilten Gruppe (`_umgebungLicht`)
+        const himmel = T.pmremTexture(quelle).mul(this._umgebungLicht());
         const [a, b] = AnazhRealm.SPIEGEL.glanzRauheit;
         const N = Object.getPrototypeOf(THREE.InstanceNode);
         class SpiegelUmgebung extends N {
@@ -2497,10 +2498,12 @@ class AnazhRealm_bild_sicht {
         });
         himmel.texture.name = "welt-licht-himmel";
         const sonde = TSL.texture(himmel.texture);
+        // die Sonde liest die Umgebung je Einheit des Lichts — das Licht jetzt wie jeder Stoff (`_umgebungLicht`)
+        const licht = this._umgebungLicht();
         const fn = TSL.Fn(([n]) => {
             const direkt = U.l0c.mul(TSL.max(TSL.dot(n, U.l0d), 0.0));
             const hemi = TSL.mix(U.hemiUnten, U.hemiOben, n.y.mul(0.5).add(0.5));
-            const umgebung = sonde.sample(TSL.equirectUV(n)).level(0).rgb.mul(U.ei);
+            const umgebung = sonde.sample(TSL.equirectUV(n)).level(0).rgb.mul(U.ei).mul(licht);
             return direkt
                 .add(U.ambientFarbe)
                 .add(hemi)
@@ -2568,9 +2571,10 @@ class AnazhRealm_bild_sicht {
     }
 
     // DIE HIMMELS-IRRADIANZ auf der CPU (E/π) für zwei Normalen (oben · waagrecht) aus der Umgebung der EINEN Atmosphäre, wie die
-    // CPU sie zurückgelesen hat (`_skyEnvData`, linear, Zeile 0 = Nadir): je Texel L · max(n·ω, 0) dω, die waagrechte Normale
-    // gemittelt über vier Azimute. Neu gerechnet nur, wenn eine neue Lesung kam. Leser: die Luft unter Wasser und die Linsen der
-    // Umgebung; die Belichtung liest den Himmel des Orts synchron (`_himmelsBestrahlung`), die Flächen das Licht der Welt.
+    // CPU sie zurückgelesen hat (`_skyEnvData`, linear je Einheit des Lichts, Zeile 0 = Nadir): je Texel L · max(n·ω, 0) dω, die
+    // waagrechte Normale gemittelt über vier Azimute, × das Licht jetzt (E0 · Tönung, wie `_umgebungLicht`). Das Integral neu
+    // nur, wenn eine neue Lesung kam. Leser: die Luft unter Wasser und die Linsen der Umgebung; die Belichtung liest den Himmel
+    // des Orts synchron (`_himmelsBestrahlung`), die Flächen das Licht der Welt.
     _himmelsIrradianz() {
         const st = this.state;
         const d = st._skyEnvData;
@@ -2579,9 +2583,17 @@ class AnazhRealm_bild_sicht {
         const env = scene && scene.environment;
         const ei = scene && Number.isFinite(scene.environmentIntensity) ? scene.environmentIntensity : 1;
         if (!d || !A || !env) return null;
-        const stempel = (st._skyEnvVersion || 0) + ":" + ei;
+        const t = A.U.toenung.value;
+        const L = A.U.licht.value;
+        const stempel = (st._skyEnvVersion || 0) + ":" + ei + ":" + L + ":" + t.x + ":" + t.y + ":" + t.z;
         if (this._himmelsIrrStempel === stempel && this._himmelsIrr) return this._himmelsIrr;
         this._himmelsIrrStempel = stempel;
+        const J = this._himmelsIrrJe;
+        const k = [t.x, t.y, t.z].map((x) => (ei * L * x) / Math.PI);
+        if (J && J.version === st._skyEnvVersion) {
+            this._himmelsIrr = { mitte: J.mitte.map((x, c) => x * k[c]), oben: J.oben.map((x, c) => x * k[c]) };
+            return this._himmelsIrr;
+        }
         const W = A.rtEq.width;
         const H = A.rtEq.height;
         const oben = [0, 0, 0],
@@ -2605,8 +2617,8 @@ class AnazhRealm_bild_sicht {
                 }
             }
         }
-        const k = ei / Math.PI;
-        this._himmelsIrr = { mitte: mitte.map((x) => x * k), oben: oben.map((x) => x * k) };
+        this._himmelsIrrJe = { version: st._skyEnvVersion, mitte, oben };
+        this._himmelsIrr = { mitte: mitte.map((x, c) => x * k[c]), oben: oben.map((x, c) => x * k[c]) };
         return this._himmelsIrr;
     }
 
