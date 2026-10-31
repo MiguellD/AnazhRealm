@@ -1,109 +1,107 @@
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend. Du läufst als champion (.claude/agents/champion.md). Lade
-den Skill anazh-lehren; tragend sind Lehre 11 (Byte-Beweis, Re-Mint als Vertrags-Akt), 18, 19, 21 und 23. Der Plan steht in
-koordination `bericht/pruefplatz/plan.md` (§1, §2 Slot-Tafel, §4). Du arbeitest in der CLOUD, also gibt es keine Welt-Bilder; die macht
-der Koordinator.
+den Skill anazh-lehren; tragend sind Lehre 11 (Byte-Beweis, Re-Mint als Vertrags-Akt), 18, 19, 21 und 23. Der Plan steht in koordination
+`bericht/pruefplatz/plan.md` (§2, §3 Slot-Tafel, §4, §5). Du arbeitest in der CLOUD, also gibt es keine Welt-Bilder; die macht der
+Koordinator.
 
-# TORE — alle zehn Tore auf Studio-Niveau, jede Membran bunt in jeder Stufe und zu jeder Uhr, die Tore im Kern in ihrer Klasse (Phase 1)
+# TORE — zehn Tore auf Studio-Niveau, jede Membran bunt in L1 und L2 zu jeder Uhr, die drei Teile-Tore werden porta-Gestalten (Welle b)
 
 **Pflicht-OFFEN:**
-- A: tor-fern, tor-bunt und tor-ziel an S1–S4.
-- E: die Klasse bau am Kern.
+- A: tor-fern, tor-bunt und tor-ziel nah an S1L/S1M (L1, 10,6 m vor T10/T1) und fern an S3 (L2, 37,4 m).
+- Heute ROT: Membran-Buntheit C*ab in L1 18,64 Mittag und 10,61 Nacht (a-spawn-gtx3), in L2 12,6 und nachts 2,6 (a-spawn-gtx2); Soll ≥ 20.
 
-**Chokepoint:** porta-core, das Gesetzbuch der Tore (`PORTAL_RENDER_CONFIG`, kindStages.gate [0, 1, 2, 3], porta-core.js:64; `membranPalette`).
+**Chokepoint:** porta-core, das Gesetzbuch der Tore. Die Stufen stehen in porta-core.js:86-89 (L1 ab 9,5 m, L2 ab 12 m, hyst 0,1;
+L3 NUR-WURF), die Palette in `membranPalette`.
 
 **Was stirbt:**
-- Die drei Teile-Tore als offene Primitive: Lyra (bau-vorlagen.js:677), Vitruv (:726), Tier-Tor (:761). Sie bleiben nur als unsichtbare
-  Substanz, wie bei `welt_portal`.
-- Die drei Tore ohne Membran (siedlung-ort.js:643).
+- die drei Teile-Tore als offene Primitive (bau-vorlagen.js: Lyra :677, Vitruv :726, Tier-Tor :761); ihre Teile bleiben nur als
+  unsichtbare Substanz, wie bei `welt_portal`;
+- die drei Tore ohne Membran (siedlung-ort.js:643).
 
 ## Vorher → Ziel
 
 **Sieh zuerst diese Bilder an** (koordination `bericht/pruefplatz/vorher/`):
-- `teile-tore-third.png`:
-  - Vitruv ist ein grauer Quarz-Torus zwischen zwei Holzpfosten.
-  - Lyra ist ein Holzrahmen mit 3 Saiten.
-  - Daneben steht das Kathedralen-Filigran in Gold und Blau; der Abstand ist sichtbar.
-- `spawn-third-alt.png`: Das Tier-Tor besteht aus Holzbeinen mit Balken und einer Kopf-Kugel.
-- `genesis-ego-tore.png`: das Niveau der sieben porta-Tore. Quader mit Fuge, goldenes Gitter-Filigran, eine Membran mit dem Panorama des Ziels.
+- `teile-tore-third.png`: Vitruv ist ein grauer Quarz-Torus zwischen zwei Holzpfosten, Lyra ein Holzrahmen mit 3 Saiten.
+- `spawn-third-alt.png`: das Tier-Tor aus Holzbeinen mit Balken und Kopf-Kugel.
+- `genesis-ego-tore.png`: das Niveau der sieben — Quader mit Fuge, Gitter-Filigran, eine Membran mit dem Panorama des Ziels.
 
-**Ziel-Bild:** Die drei werden porta-Gestalten mit dem Motiv ihres Studios und auf dem Niveau der sieben:
-- Lyra-Tor (klang): Joch und Arme einer Leier bilden den Bogen, die Saiten sind Licht-Fäden.
+**Ziel-Bild:** Die drei werden porta-Gestalten auf dem Niveau der sieben, mit dem Motiv ihres Studios:
+- Lyra-Tor (klang): Joch und Arme der Leier bilden den Bogen, die Saiten sind Licht-Fäden.
 - Vitruv-Tor (koerperstudio): Kreis und Quadrat in Bronze, der Mensch als Relief im Scheitel.
 - Tier-Tor (tetrapoda): ein Bogen aus Geweih und Knochen.
 
 Jedes trägt eine Membran mit seinem Ziel-Panorama (`worlds/tor-ziele.json`).
 
-**Vorbild:** die Bilder in Peach's Castle (Mario 64): das Tor zeigt, wohin es führt.
+**Wo sie stehen:** Die Slot-Tafel des Plans setzt sie auf k 5–7 (Süden), außerhalb der Bildwinkel von S1 (Ankunft) und S2 (Messort E).
 
-**Membran heute:**
-- a-spawn-gtx3, Ego: C*ab ist ROT in L1, 18,64 am Mittag und 10,61 in der Nacht (Soll ≥ 20).
-- a-spawn-gtx2, Third: in L2 12,6, nachts 2,6.
-- tor-fern und tor-ziel sind in Ego GRÜN.
+**Vorbild:** die Bilder in Peach's Castle (Mario 64): das Tor zeigt, wohin es führt.
 
 ## Bauen (porta-core additiv; die sieben bleiben byte-gleich)
 
-1. Die drei Gestalten in PRESETS und den Stufen L0–L3 wie die sieben. Saat statt Zufall. Labor = Welt: `worlds/portale/porta.js` zeigt
-   sie aus demselben Kern.
-2. bau-vorlagen.js: `welt_klang`, `welt_koerperstudio` und `welt_tetrapoda` tragen `studioGestalt` (wie `welt_portal` :1279ff). Ihre
+1. Die drei Gestalten in PRESETS und den Stufen L0–L3 wie die sieben, Saat statt Zufall. Labor = Welt: worlds/portale/porta.js zeigt sie
+   aus demselben Kern.
+2. bau-vorlagen.js: `welt_klang`, `welt_koerperstudio` und `welt_tetrapoda` tragen `studioGestalt` (wie `welt_portal`, ab :1279); ihre
    Teile bleiben unsichtbare Substanz (Tags, Blocker, Auslöser).
-3. Die Membran ist bunt in jeder Stufe, die die Station zeigt (L1, L2), und zu jeder Uhr.
-   - In der Nacht leuchtet sie nach dem EINEN Licht-Gesetz (`kelvin`, EIN Pool), ohne Sonderweg.
-   - Soll C*ab ≥ 20 und milchweiss ≤ 0,05.
-4. Die Tore am Kern stehen bei r 22 m und damit in der doppelten Distanz von heute. Wähle die Stufen-Grenzen der Tore aus dem
-   Bildschirm-Anteil (`_lodAuge`), damit sie an S1/S2 die Kern-Hülle halten.
+3. Die Membran ist bunt in L1 und L2 und zu jeder Uhr:
+   - nachts nach dem EINEN Licht-Gesetz (`kelvin`, EIN Pool), ohne Sonderweg;
+   - Soll C*ab ≥ 20, milchweiß ≤ 0,05 — für alle zehn Tore.
+4. **Übergabe an mess:** die drei Gestalt-Namen für den Tor-Ausdruck der Soll-Tafel (heute 7 Gestalten).
 
-## Budget
+## Budget (porta's eigene Bänder, porta-core.js:86-89 — kein zweites Buch)
 
-- **Je Tor:** L1 ≤ 8 000 Dreiecke / 3 Befehle, L2 ≤ 1 500 / 2, Tor-Hülle L0 ≤ 60 000 (haushalt.json genesis `soll`).
-- **Alle Tore im Bild an S1/S2, beide Sichten, mit Membranen und Kaskaden:** ≤ 30 Befehle / 80k Dreiecke. Heute zeigt die Ratsche für bau
-  Ego 45 / 94k und Third 60 / 143k, bei Ring 11 m.
+| Stufe | Dreiecke | Befehle |
+|---|---|---|
+| L0 | ≤ 76 000 (Band 60 000) | 9 |
+| L1 | ≤ 34 000 | 6 |
+| L2 | ≤ 12 500 (Band 6 000) | 6 |
+| L3 NUR-WURF | ≤ 12 000 | 1 |
+
 - VRAM ≤ +0,5 MB für die drei neuen Gestalten.
+- Die Tore am Kern misst der Spike S0 des Koordinators (L2 im Bild plus L3-Wurf je Tor in den Kaskaden); seine Zahl steht danach als
+  `soll` im Messort genesis.
 
 ## Dateien (Besitz)
 
 - porta-core.js
 - worlds/portale/porta.js
-- stamm/bau-vorlagen.js, nur die Einträge welt_klang, welt_koerperstudio, welt_tetrapoda und ihre Teile-Listen (:677–:800). start_plattform
-  gehört ort-plan.
-- **NICHT anfassen:** siedlung-ort.js (ort-plan) und das Ring-Gesetz. Die Slots setzt der Plan.
+- stamm/bau-vorlagen.js: nur `welt_klang`, `welt_koerperstudio`, `welt_tetrapoda` und ihre Teile-Listen (:677–:800). Nach deiner Landung
+  gehört die Datei ort-wirt (`start_plattform`).
+- **NICHT anfassen:** siedlung-ort.js (ort-wirt), fachwerk-core.js (ort-gesetz), soll-tafel.json (mess).
 
 ## Wartet auf
 
-- w4-studios-heim2 im main (porta-core.js, porta.js).
-- Starte vom Kopf von integ-probe, sobald er gelandet ist.
+- w4-studios-heim im main (porta-core.js, porta.js).
+- Starte vom Kopf von integ-probe; merge main, bevor du meldest.
 
 ## Beweis (headless, Zahlen vorher → nachher)
 
-- porta-contract: Dreiecke und Befehle je Stufe der drei, im Budget.
-- Golden der sieben byte-gleich. Ein Re-Mint nur für die neuen Gestalten ist ein Vertrags-Akt mit Grund.
-- C*ab der Membran-Palette je Stufe und Uhr, gerechnet aus `membranPalette` und `membranUniforms`, im Labor-Rechner ohne Welt-Bild.
+- porta-contract: Dreiecke und Befehle je Stufe der drei, in den Bändern oben.
+- Golden der sieben byte-gleich. Ein Re-Mint nur der drei neuen Gestalten ist ein Vertrags-Akt mit Grund.
+- C*ab und milchweiß der Membran je Stufe (L1, L2) und Uhr (0,5 / 0,3 / 0), gerechnet aus `membranPalette` und `membranUniforms` im
+  Labor-Rechner, ohne Welt-Bild.
 - gate:portal-konformanz: jede der zehn Welten ist durch ihr Tor erreichbar.
 - `npm run playtest:fast` am Merge-Kandidaten.
 
-**GPU-Proben für den Koordinator** (Radeon, Standard-Welt, M = 0/0):
-- `werkbank umstellen --ort genesis --sicht ego` bzw. `--sicht third`.
-- `werkbank bild 0 +1.7 0 0 +2 50 --uhr <0.5|0.3|0> --ist tor-bunt` (S1).
-- Dasselbe mit `--ist tor-fern` und `--ist tor-ziel`.
-- S3: `bild 0 +1.7 -17 0 +2 22`.
-- S4: `bild 0 +1.7 80 0 +2 0`.
+**GPU-Proben für den Koordinator** (Radeon, Standard-Welt, nach dem Plan; vorher am alten Ring):
+- S1L: Kamera 6,16/9,59 → T10 in 10,6 m (das sichere L1-Band 10,45–10,8 m aus porta-core.js:87-88).
+- S1M: Kamera −6,16/9,59 → T1.
+- S3: 0/−17 → 0/22 (L2, 37,4 m).
+- Je Pose `--uhr 0.5|0.3|0` und `--ist tor-bunt|tor-fern|tor-ziel`, in Ego und Third.
 
 **Tor:**
-- tor-bunt, tor-fern und tor-ziel sind GRÜN in Ego und Third, nah und fern, zu 0,5 / 0,3 / 0.
-- Die Tore-Hülle hält an S1/S2.
-- ABAB g-third nicht-langsamer (OMEN).
+- tor-bunt, tor-fern und tor-ziel GRÜN in Ego und Third, nah (L1) und fern (L2), zu 0,5 / 0,3 / 0.
+- ABAB g-third nicht langsamer (OMEN).
 
 ## Abgabe
 
 - Zweig: w4-tore-teile. Commit-Betreff: „Abgabe w4-tore-teile: …“.
-- Bericht in drei Sätzen.
-- Liste der GPU-Proben mit Pose und Erwartung.
+- Bericht in drei Sätzen, die Liste der GPU-Proben mit Pose und Erwartung und die vier Zeilen des BETRIEBSGESETZES.
 
 ## Lehren der letzten Abgaben
 
-- **genesis-tore** (4ec9f71d) ist dein Vorbild: Ring-Tore L2 → L1 7/7, Stein mit Gesetz, ABAB nicht-langsamer.
-- **mensch-kopf** riss z107: ein Ofen, der eine Gestalt fail-closed nicht liefert, hält die ganze Welt an. Darum: jede Stufe liefert, die
-  Vorzug-Probe `playtest:fast` läuft am Kandidaten.
-- Das Bild urteilt; die grüne Zahl allein ist kein AAAA. Der Koordinator legt vorher/nachher nebeneinander.
+- **genesis-tore** (4ec9f71d) ist dein Vorbild: Ring-Tore L2 → L1 7/7, Stein mit Gesetz, ABAB nicht langsamer.
+- **mensch-kopf** riss z107: ein Ofen, der eine Gestalt fail-closed nicht liefert, hält die Welt an. Jede Stufe liefert; `playtest:fast`
+  am Kandidaten.
+- **Plan Fassung 1** setzte L2 ≤ 1 500 Dreiecke, ein Viertel des porta-eigenen Bands. Es gilt das Band des Gesetzbuchs.
 
 ## REGELN (Baustein des Koordinators)
 

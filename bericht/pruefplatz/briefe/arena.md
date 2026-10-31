@@ -1,96 +1,73 @@
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend. Du läufst als champion (.claude/agents/champion.md). Lade
-den Skill anazh-lehren; tragend sind Lehre 7 (Saat statt Math.random), 11, 18 und 19 (Labor = Welt). Der Plan steht in koordination
-`bericht/pruefplatz/plan.md` (§2 Arena, §3 Sektor Arena, §4 S10). Du arbeitest in der CLOUD, also gibt es keine Welt-Bilder; die macht
-der Koordinator.
+den Skill anazh-lehren; tragend sind Lehre 3, 7 (Saat statt Math.random), 11, 18 und 19 (Labor = Welt). Du arbeitest in der CLOUD, also
+gibt es keine Welt-Bilder; die macht der Koordinator.
 
-# ARENA — der Arena-Hof des Schmiede-Labors steht in der Welt: Hof Ø 32 m mit Sand bei 85/5, die Geräte als schmiede-Gestalten mit Stufen (Phase 1, zuletzt)
+**STARTET ERST, wenn der Schöpfer F in `docs/PFLICHT-OFFEN.md` gesetzt hat** (Vorlage: koordination `bericht/pruefplatz/plan.md` §1).
+Setzt er F nicht, fällt dieser Brief FINAL.
 
-**Pflicht-OFFEN, ehrlich:**
-- Die Arena trägt keinen Eintrag direkt. A: keine Klasse der Tafel steht hier. E: nur als zusätzliche Last-Pose S10.
-- Sie gehört zum Auftrag des Schöpfers vom 31.10. („ein kleiner Arenabereich wie im Studio, aber in der Welt selbst“).
-- Sie startet ZULETZT, nach den Zonen für A, B, C und E, und nimmt keinem davon Budget oder einen GPU-Platz.
+# ARENA (F) — der Arena-Hof der Schmiede steht in der Welt; JEDE Art der Shell-Szene wird eine schmiede-Gestalt in EINER Welle
+
+**Eintrag:** F, die Zone Arena. Das Kriterium: die Arena antwortet dem Treffer mit allen Geräten der Schmiede über den EINEN Stoß; an der
+Station hält das Band.
 
 **Chokepoint:**
-- Das Arena-Gesetz in schmiede-core (`ARENA`: schwung, gefuehl, bogen, guete, werk, zonen; schmiede-core.js:3111-3200). Die Welt liest es
-  schon (`AnazhRealm._arenaGesetz`, stamm/kampf.js:2479).
-- Die Geräte leben nur in der Shell: worlds/schmiede/schmiede.js:467-1450 mit 177 `new THREE.Mesh(` und 28× `Math.random`.
-  schmiede-core liefert nur die Art `weapon` mit Stufe [0] (:59-66).
+- das Arena-Gesetz in schmiede-core (`ARENA`: schwung, gefuehl, bogen, guete, werk, zonen; schmiede-core.js:3111-3200), das die Welt
+  schon liest (`_arenaGesetz`, stamm/kampf.js:2479);
+- die Geräte leben heute nur in der Shell (worlds/schmiede/schmiede.js:467-1450: 177× `new THREE.Mesh(`, 28× `Math.random`);
+  schmiede-core liefert nur `weapon` mit Stufe [0] (:59-66).
 
-**Was stirbt:** die Shell-Szene der Geräte. Das Labor zeigt künftig, was der Ofen der Welt baut. Für diese Zone ist das der Schnitt von
-Phase 3; in Phase 1 stehen die Gestalten zuerst im Kern.
+**Was stirbt (in EINER Welle, das Gras-Muster):** die ganze Shell-Szene der Geräte — Dojo und Pergola, Waffenhof (Pell, Stechringe,
+Quintane, Pendel-Kugel, Drehbaum, Federpfahl, Streitpuppe), Schnitthof, Schießbahn mit Torii, Scheiben und Wurfscheibe. Die Gegenprüfung
+zählt 22 Arten; zähle sie zuerst selbst und nenne die Zahl. Nicht 6 schneiden und den Rest parken.
 
 ## Vorher → Ziel
 
-**Vorher:**
-- In der Welt gibt es keine Arena. Erreichbar ist sie nur durch das Tor `welt_schmiede`, als eigener r128-Renderer in einer iframe-Sandbox.
-- Ihr Inhalt dort:
-  - Dojo mit Pergola.
-  - Waffenhof: Pell, Stechringe, Quintane, Pendel-Kugel, Drehbaum, Federpfahl, Streitpuppe.
-  - Schnitthof.
-  - Schießbahn mit Torii, Scheiben und Wurfscheibe.
+**Vorher:** Die Arena ist nur durch das Tor `welt_schmiede` erreichbar, als eigener r128-Renderer in einer iframe-Sandbox. In der Welt
+gibt es keine.
 
-**Ziel-Bild (S10, 66/5 → 85/5):**
-- Ein Hof Ø 32 m mit Sand (Belag aus grund) und das Torii am Westeingang (werke).
-- Die Pergola mit dem Dojo an der Ostseite (werke).
-- Sechs Geräte in zwei Reihen: Pell, Quintane, Pendel-Kugel, Streitpuppe, Stechringe, Zielscheibe. Sie reagieren auf den Treffer über das
-  EINE Arena-Gesetz.
+**Ziel-Bild:** ein Hof Ø 32 m mit Sand (`belagO` sand, F-Zone spielplatz), Torii am Eingang, Dojo mit Pergola, alle Geräte in Reihen.
+Jedes antwortet dem Treffer über das EINE Arena-Gesetz.
 
 **Vorbild:** der Neben-Wienie (Matterhorn); das Arena-Labor der Schmiede als Maß der Gestalt.
 
 ## Bauen
 
-1. **schmiede-core, additiv:** die 6 Geräte als Gestalten mit Stufen L0, L1 und Wurf, Budget je Stufe nach dem Muster der Ausstattung
-   (L0 3 400 / 2, L1 620 / 2, Wurf 48 / 1, fachwerk-core.js:111-116). Saat statt Zufall.
+1. **schmiede-core, additiv:** jede Art als Gestalt mit L0, L1 und Wurf, Budget je Stufe nach dem Muster der Ausstattung (L0 3 400 / 2,
+   L1 620 / 2, Wurf 48 / 1; fachwerk-core.js:111-116). Saat statt Zufall: 0 `Math.random`.
 2. **Verben** (stamm/kampf.js): Pendel, Drehung und Feder über den EINEN Stoß und den EINEN Leib-Löser. Die Streitpuppe ist ein Leib.
    Treffer-Zonen wie bei Puppe und Welt-Tier (schmiede-core.js:3190-3200).
-3. **Labor:** worlds/schmiede/schmiede.js zeigt die 6 Geräte aus dem Kern (Labor = Welt). Die übrigen Shell-Geräte bleiben bis Phase 3
-   stehen; benenne ihre Zahl ehrlich.
-4. **Der Hof** ist eine Zonen-Fläche des Plans (ort-plan). Pergola und Torii baut werke. Du setzt nur die Geräte-Zeilen der Zone, im Haken
-   nach ort-plan.
+3. **Labor = Welt:** worlds/schmiede/schmiede.js zeigt jede Art aus dem Kern. Die Shell-Szene fällt ganz: 0 `new THREE.Mesh(` für
+   Geräte.
+4. **Haken:** Hof-Fläche (Wunsch r 260 auf 24,5°, hinter dem maurentor) und Geräte-Zeilen setzt ort-wirt (§GENESIS_ORT,
+   siedlung-ort.js, haushalt.json).
 
-## Budget
+## Budget (an der Station Arena; die Summe hält das Band)
 
-- **S10:** Geräte (Klasse bau) ≤ 30 Befehle / 45k Dreiecke, Pergola und Torii ≤ 6 / 10k (werke).
-- **CPU:** ≤ 0,5 ms; die Verben rechnen nur, solange ein Treffer nachschwingt.
-- **VRAM:** ≤ 2 MB.
-- **Last-Pose:** eine Serie von 20 Treffern; Frame p95 ≤ 33 ms (GTX).
+- Alle Geräte ≤ 30 Befehle / 45k Dreiecke.
+- CPU Δ ≤ 0,5 ms; Verben rechnen nur, solange ein Treffer nachschwingt.
+- VRAM ≤ +2 MB.
+- Last-Pose: 20 Treffer, Frame p95 ≤ 33 ms (GTX).
+- Die Fläche liegt ≥ 210 m von M; die Posen-Linse prüft die Station.
 
 ## Dateien (Besitz)
 
-- schmiede-core.js
-- stamm/kampf.js
-- worlds/schmiede/schmiede.js
-- **NICHT anfassen:** fachwerk-core.js (werke, ort-plan); siedlung-ort.js (ort-plan).
-
-## Wartet auf
-
-- Nichts, um das Gesetz zu bauen. Der Start bleibt aber ZULETZT (Welle d), nach den Pflicht-Zonen.
-- Der Haken in die Welt nach w4-ort-plan und werke (Pergola, Torii).
+- schmiede-core.js, stamm/kampf.js, worlds/schmiede/schmiede.js
+- **NICHT anfassen:** fachwerk-core.js, siedlung-ort.js, haushalt.json (ort-wirt), gelaende-core.js (grund bzw. spielplatz).
 
 ## Beweis (headless, Zahlen)
 
 - Golden schmiede byte-gleich für die Waffe.
-- Dreiecke und Befehle je Stufe der 6 Geräte im Budget.
-- 0 `Math.random` in den neuen Gestalten.
-- Ein Treffer am Pendel: die Auslenkung nach dem EINEN Stoß-Gesetz, Abklingen in ≤ 6 s.
+- Dreiecke und Befehle je Stufe jeder Art im Budget; 0 `Math.random`; 0 Shell-Meshes für Geräte; die Zahl der Arten vorher = die Zahl
+  der Gestalten nachher.
+- Ein Treffer am Pendel: Auslenkung nach dem EINEN Stoß, Abklingen ≤ 6 s.
 - `npm run playtest:fast` am Merge-Kandidaten.
 
-**GPU-Proben für den Koordinator** (Radeon):
-- S10 `bild 66 +1.7 5 85 +1.2 5 --uhr 0.5` in Ego und Third.
-- Die Treffer-Serie mit `werkbank takt`.
-
-**Tor:** Die Sektor-Hülle hält auch unter Treffern.
+**Für den Koordinator:** Bilder der Station in Ego und Third; die Treffer-Serie mit `werkbank takt`.
 
 ## Abgabe
 
 - Zweig: w4-arena-welt. Commit-Betreff: „Abgabe w4-arena-welt: …“.
-- Bericht in drei Sätzen und die GPU-Proben.
-
-## Lehren der letzten Abgaben
-
-- **Labor = Welt** (Lehre 19, K45): das Labor zeigt den Körper, den der Ofen der Welt baut.
-- **mensch-kopf** riss z107. Darum vor der Abgabe `playtest:fast` am Kandidaten.
-- Schneide in kleinen Commits, ein Gerät nach dem anderen, mit Byte-Beweis.
+- Bericht in drei Sätzen und die vier Zeilen des BETRIEBSGESETZES.
 
 ## REGELN (Baustein des Koordinators)
 

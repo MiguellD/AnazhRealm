@@ -1,57 +1,65 @@
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend. Du läufst als champion (.claude/agents/champion.md). Lade
-den Skill anazh-lehren; tragend sind Lehre 7, 8 (Spawn-Affinität tag-neutral), 11, 25 und das LEBEN-Gesetz. Der Plan steht in
-koordination `bericht/pruefplatz/plan.md` (§2 Zoo, §3 Sektor Zoo, §4 S8/S8f). Du arbeitest in der CLOUD, also gibt es keine Welt-Bilder;
-die macht der Koordinator.
+den Skill anazh-lehren; tragend sind Lehre 7, 8 (Spawn-Affinität tag-neutral), 11, 19, 25 und das LEBEN-Gesetz (EIN Leib-Löser, die EINE
+Hülle). Der Plan steht in koordination `bericht/pruefplatz/plan.md` (§2, §3 Zoo, §4, §5 S8/S8f). Du arbeitest in der CLOUD, also gibt es
+keine Welt-Bilder; die macht der Koordinator.
 
-# GEHEGE — der Zoo mit fester Zahl: Wolf 3, Hirsch 3, Bär 1, Fuchs 2, dieselben Tiere in jedem Boot (Phase 1)
+# GEHEGE — drei Wölfe in einem Hagenbeck-Gehege mit Graben, als Term des EINEN Bestands: dieselben Tiere in jedem Boot (Welle a)
 
 **Pflicht-OFFEN:**
-- A: fell. Heute sind 12 von 12 Zellen „nicht im Bild“; am Spawn steht kein Tier.
-- E: die Klasse tier (30 Befehle / 60k Dreiecke) und der Haupt-Faden.
+- A: fell. Heute sind 12 von 12 Zellen ohne Bild, weil am Spawn kein Tier steht.
+- E: an S2 Δ 0. Der nächste Punkt des Zoos liegt 220 m von M; dort ist er weder resident noch in der Kappe; die Zahl der wilden Tiere im g-third-Blick
+  bleibt gleich.
 
-**Chokepoint:** der Bestand der Region in tetrapoda und im Wirt:
-- `_bestandAdoptieren` (kreatur-leben.js:2296-2322): jeder gesetzte Leib wird Bestand, danach gelten Geburt, Hunger, Alter und Riss je Takt
-  von 10 s (:2220-2241). Bei K = 0 stirbt je Takt mit 0,2 ein Tier (tetrapoda-core.js:1988-2020).
-- `_bestandLeibOrt`: ein Leib entsteht nur ≥ 130 m weit und außer Blick (kreatur-leben.js:2410-2423). Schaut der Spieler weg, steht im
-  Gehege nachher kein Tier mehr.
+**Chokepoint:** der Bestand der Region in tetrapoda und im Wirt.
+- `_bestandAdoptieren` (kreatur-leben.js:2299): jeder gesetzte Leib wird Bestand, danach Geburt, Hunger, Alter und Riss je Takt.
+- `_bestandLeibOrt` (:2410): ein Leib entsteht nur ≥ 130 m weit und außer Blick.
+- Die Kappe `maxCreatures` wählt, WER gezeichnet wird, nie wer lebt (:2097).
 
-**Was stirbt:** nichts Bestehendes. Der wilde Bestand bleibt byte-gleich; das Gehege ist ein Term desselben Gesetzes.
+**Was stirbt:** nichts Bestehendes. Der wilde Bestand bleibt byte-gleich; das Gehege ist ein Term DESSELBEN Verzeichnisses — kein zweites
+Register.
 
 ## Vorher → Ziel
 
-**Vorher:**
-- Am Spawn steht kein Tier (a-spawn-gtx3: fell 0 von 0 Zellen im Bild).
-- Der Wolf aus dem Fell-Gesetz erscheint nur an der Station haar.K1#1. Der Koordinator sah ihn dort fleckig (30.10.).
+**Vorher:** Am Spawn steht kein Tier. Der Wolf des Fell-Gesetzes erscheint nur an der Station haar.K1#1 (0,7 m und 4 m); der Koordinator
+sah ihn dort fleckig (30.10.).
 
-**Ziel-Bild S8** (−14/−90 → −28/−90, Ego und Third):
-- Central Park Zoo und die Freisicht nach Hagenbeck: das Wolfs-Rudel am Felsen seines Geheges, 6–20 m entfernt.
-- Der Zaun (werke) steht unten im Bild und schneidet kein Fell.
-- **Fern (S8f, −5/−55):** dasselbe Rudel in 42 m.
-- **Nachts:** unter den 4 Laternen des Zoo-Wegs.
+**Ziel-Bild S8** (Schau-Terrasse 2 m südlich der Zoo-Mitte 200,3/−173,5, Blick ins Gehege):
+- Hagenbeck: kein Gitter im Blick; zwischen Terrasse und Gehege liegt ein Graben (3 m breit, 2 m tief, Erdbau des Plans).
+- Das Rudel liegt am Lager, 8–15 m vom Auge, am Fels des Geheges.
+- Nachts unter den 4 Laternen der Terrasse.
+- **Fern (S8f, 24 m südlich der Mitte):** dasselbe Rudel in 32–37 m.
+
+**Vorbild:** Hagenbeck (der Graben statt des Gitters), Central Park Zoo (kleine Gehege), Horizon (deterministische Setzung).
 
 ## Bauen
 
-1. **tetrapoda-core `BESTAND_GESETZ.gehege`**, additiv:
-   - Der Bestand je Gehege ist fest `{gattung, n}`.
-   - Keine Geburt, kein Hunger- und kein Alters-Tod.
-   - Kein Riss: Gehege-Tiere stehen nicht im Verzeichnis der Region (354-m-Kachel, kreatur-leben.js:2102), also reißt kein Wolf einen
-     Hirsch über den Zaun.
+1. **tetrapoda-core, Term `gehege` des Bestands-Gesetzes** (additiv):
+   - Der Bestand je Gehege ist fest `{gattung: 'wolf', n: 3}`.
+   - Raten 0 für Geburt, Hunger und Alter; Riss nur unter Tieren desselben Geheges (die Wölfe haben dort keine Beute).
    - Die Art wählt der Plan, nie ein Tag (Lehre 8).
 2. **Wirt (stamm/kreatur-leben.js):**
-   - Gehege-Tiere entstehen und bleiben AM Ort. Außer Blick ruhen sie als Zahl ohne Leib und kehren an ihren Ort zurück.
-   - Ein eigener Teil der Kappe `maxCreatures` 20 (dirigent-kern.js:277): 9 für das Gehege, solange der Spieler ≤ 150 m entfernt ist.
-   - Leiber nur für die nächsten (`KREATUR_SATZ.nahLeiber`). Im Gehege höchstens 1 Leib in L0, der Rest im Tier-Satz L1/L2.
-3. **Wand (stamm/kreatur-verhalten.js):** Der Zaun aus werke ist die Hülle. Teil-Schritte gegen die Hülle gibt es schon
-   (:1206-1241). Kein Tier verlässt sein Gehege.
+   - Die Gehege-Tiere stehen im Verzeichnis ihrer Region wie jedes Tier, mit dem Term.
+   - Ihr Leib entsteht am Lager, sobald der Zoo fällig ist (Spieler ≤ 210 m), und nie im Blick ≤ 64 m (`ANALOG_NAH_M`).
+   - Jenseits 60 m oder außer Blick ruhen sie als Zahl (Takt 0) und kehren an ihr Lager zurück.
+   - Die Kappe zählt sie nur, wenn ihr Leib gezeichnet wird: an S2 belegen sie 0 der 20 Plätze. dirigent-kern.js bleibt unberührt.
+3. **Der Rand (stamm/kreatur-verhalten.js):** Das Gehege-Polygon des Plans ist Teil der EINEN Hülle (`_kreaturHuellenKontakt`,
+   kreatur-verhalten.js:1206-1210). Kein Zaun, kein zweiter Weg. Kein Tier verlässt sein Gehege.
 4. **Labor = Welt:** worlds/tetrapoda zeigt das Gehege-Tier aus demselben Gesetz.
+5. **Der Haken in den Plan** (Gehege-Fläche, Lager, Graben, Laternen) steht als Zeile von ort-gesetz in §GENESIS_ORT; ab Welle d setzt
+   ihn ort-wirt. Melde ihm die Form, falls dein Term ein Feld mehr braucht.
 
-## Budget
+## Budget (an S8, die Summe hält das Band)
 
-- **S8:** Klasse tier ≤ 30 Befehle / 60k Dreiecke. L0 kostet 62 000 / 8 je Leib und L1 7 000 / 5 (tetrapoda-core.js:44-46), daher
-  höchstens 1 Leib in L0.
-- **CPU:** ≤ 0,8 ms, also 1 Leib (~0,6 ms, kreatur-leben.js:3576) plus der Satz.
-- **VRAM:** ≤ 4 MB für 4 Gattungen und ihre Stufen.
-- **Der Zaun** gehört zur Klasse bau ≤ 10 Befehle / 15k (werke).
+- Drei Wolf-Leiber in L0: ≤ 3 × 62 000 Dreiecke / 8 Befehle (tetrapoda-core.js:45).
+- Ansatz der Summe an S8: Wald und Boden wie an der Wiese (105 / 386k) plus Wölfe ≈ 135 / 572k < 208 / 680k. Miss sie mit
+  `werkbank zaehlen` (Koordinator).
+- Die Klasse tier (30/60k) ist ein Messort-Soll von Wiese und Genesis. Reißt die Summe an S8, ist der Täter der L0-Wolf über seinem Band
+  (62 000 gegen 20 000, tetrapoda-core.js:45). Dann schneidest du ihn zum Band, mit Byte-Beweis der übrigen Gattungen und der Station
+  haar.K1#1 vorher↔nachher.
+- **CPU:** Δ ≤ 0,8 ms an S8 für drei ruhende Leiber. Einen Leib zu gießen kostet ~0,6 ms (kreatur-leben.js:3574-3575); höchstens 3 Leiber
+  je Takt (`leiberJeTakt`).
+- **VRAM:** ≤ +4 MB.
+- **An S2:** Δ 0 in allem.
 
 ## Dateien (Besitz)
 
@@ -59,43 +67,43 @@ die macht der Koordinator.
 - stamm/kreatur-leben.js
 - stamm/kreatur-verhalten.js
 - worlds/tetrapoda/*
-- **NICHT anfassen:** fachwerk-core.js (werke baut den Zaun); siedlung-ort.js (ort-plan setzt die Gehege-Flächen).
+- **NICHT anfassen:** fachwerk-core.js und siedlung-ort.js (ort-gesetz, ort-wirt); dirigent-kern.js (w4-ankunft-5 ändert ihn).
 
 ## Wartet auf
 
-- Den Kern-Teil (1) startest du sofort.
-- Den Wirt (2, 3) erst nach z108 (e-stufen-takt: kreatur-leben.js, kreatur-verhalten.js), w4-ort-plan (Gehege-Flächen, Zoo-Weg,
-  Laternen) und werke (Zaun).
+- Kern und Wirt: sofort. Kein laufender Zweig fasst kreatur-* oder tetrapoda-core.js an (Dateilisten 31.10.).
+- Der Haken in den Plan: nach w4-genesis-ort-wirt.
 
 ## Beweis (headless, Zahlen)
 
-- Wilder Bestand byte-gleich: gate:kreatur-* und Golden tetrapoda.
-- Nach 600 s Spielzeit stehen 9 Tiere in ihrem Gehege, mit 0 Ausbrüchen, 0 Rissen, 0 Geburten und 0 Toden. Es sind dieselben Tiere (Same)
-  nach einem Neuladen und nach dem Wegsehen.
-- Die Kappe: Wilde Tiere bekommen weiter ihre 11 Plätze.
+- Der wilde Bestand bleibt byte-gleich: gate:kreatur-* und Golden tetrapoda.
+- Nach 600 s Spielzeit stehen 3 Wölfe im Gehege: 0 Ausbrüche, 0 Risse, 0 Geburten, 0 Tode. Es sind dieselben Tiere (Same) nach Neuladen
+  und nach Wegsehen.
+- An S2 (0/0) ist die Zahl der Leiber und der Kappen-Plätze vorher = nachher (E3).
+- Ruhe als Zahl: jenseits 60 m Takt-ms des Geheges = 0.
 - `npm run playtest:fast` am Merge-Kandidaten.
 
-**GPU-Proben für den Koordinator** (Radeon):
-- S8 `bild -14 +1.7 -90 -28 +0.8 -90 --uhr <0.5|0.3|0> --ist fell` in Ego und Third.
-- S8f `bild -5 +1.7 -55 -28 +0.8 -90`.
-- Dazu `werkbank zaehlen` und `takt` an S8.
+**GPU-Proben für den Koordinator** (Radeon, nach dem Plan):
+- S8: Ego auf der Terrasse → Gehege, `--uhr 0.5|0.3|0 --ist fell`; Third mit dem Spieler 1 m nördlich der Mitte. Die Probe des Plans
+  sagt 0,29 % bzw. 0,19 %.
+- S8f: Ego 24 m südlich der Mitte, Third mit dem Spieler 18 m südlich (fern-Zeile, 253 px je Wolf).
+- `werkbank zaehlen` und `werkbank takt` an S8.
 
 **Tor:**
-- fell ist an S8 und S8f zu jeder Uhr im Bild (≥ 0,1 %).
-- Die Sektor-Hülle hält.
-- Der CPU-Anteil liegt bei ≤ 0,8 ms.
+- fell an S8 und S8f zu jeder Uhr im Bild (nah ≥ 0,1 %, fern ≥ 200 px je Wolf).
+- Summe an S8 im Band; CPU Δ ≤ 0,8 ms; an S2 Δ 0.
 
 ## Abgabe
 
 - Zweig: w4-gehege. Commit-Betreff: „Abgabe w4-gehege: …“.
-- Bericht in drei Sätzen und die GPU-Proben.
+- Bericht in drei Sätzen, die GPU-Proben und die vier Zeilen des BETRIEBSGESETZES.
 
 ## Lehren der letzten Abgaben
 
-- **stufen-heil** (z102): Die Kreatur-Linse setzt das Auge der Stufen mit `_lodAugeGesetzt()`. Der Tier-Satz fiel von 50 Tieren mit
-  227 + 43 auf 44 + 8 Befehle, die Leiber von 43 auf 4. Darum: Leiber nur die nächsten.
-- **Das ABAB** hielt die Tiere bisher als `frei.tier` („die Tiere wandern“). Am Platz gilt das nicht mehr: feste Tiere zählen voll.
-- **mensch-kopf** riss z107. Darum vor der Abgabe `playtest:fast` am Kandidaten.
+- **stufen-heil** (z102): Die Kreatur-Linse setzt das Auge mit `_lodAugeGesetzt()`; der Tier-Satz fiel von 227 + 43 auf 44 + 8 Befehle.
+  Darum gibt es Leiber nur für die Nächsten.
+- **Das ABAB** hielt die Tiere bisher als `frei.tier`. Der Zoo liegt außerhalb von S2, daran ändert sich nichts.
+- **mensch-kopf** riss z107. Darum `playtest:fast` am Kandidaten.
 
 ## REGELN (Baustein des Koordinators)
 

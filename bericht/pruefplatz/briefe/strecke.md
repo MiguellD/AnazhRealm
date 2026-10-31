@@ -1,120 +1,94 @@
 Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md — sie ist bindend. Du läufst als champion (.claude/agents/champion.md). Lade
-den Skill anazh-lehren; tragend sind Lehre 7, 11, 13 (Bewegung nie am Render-Signal), 19 und 25. Der Plan steht in koordination
-`bericht/pruefplatz/plan.md` (§2 Strecke und Fahrweg, §3 Sektor Strecke, §4 S11). Du arbeitest in der CLOUD, also gibt es keine
-Welt-Bilder; die macht der Koordinator.
+den Skill anazh-lehren; tragend sind Lehre 7, 11, 13 (Bewegung nie am Render-Signal), 19 und 25. Du arbeitest in der CLOUD, also gibt es
+keine Welt-Bilder; die macht der Koordinator.
 
-# STRECKE — ein Rundkurs von ~1,1 km mit Steilkurve, Kuppe und Kicker samt Landezone; KI-Wagen mit Bewohnern am Steuer; die Mess-Fahrt (Phase 1)
+**STARTET ERST, wenn der Schöpfer F in `docs/PFLICHT-OFFEN.md` gesetzt hat** (Vorlage: koordination `bericht/pruefplatz/plan.md` §1).
+Setzt er F nicht, fällt dieser Brief FINAL. C (Verkehr in der Stadt nH 300) gehört w4-verkehr-c, nicht dir.
 
-**Pflicht-OFFEN:**
-- C: Wagen mit Bewohnern am Steuer, 0 Berührungen, jeder Wagen erreicht sein Ziel. Die Strecke ist die Probe der Fahr-Seite; die Bühne von
-  C bleibt die Stadt nH 300.
-- E: Frame p95 und CPU-Takt in Fahrt (neue ABAB-Zelle pp-fahrt) und die Übergänge F1–F6 unter Bewegung. E misst heute nur im Stehen.
+# STRECKE (F) — ein Rundkurs mit Steilkurve, Kuppe und Kicker als Gesetz des Fahr-Studios; Wagen mit Bewohnern am Steuer aus dem EINEN Verkehr
+
+**Eintrag:** F, die Zone Strecke. Das Kriterium:
+- ein Wagen fährt die Runde in 55–65 s mit 18–22 m Kicker-Flug;
+- vier Wagen mit Bewohnern am Steuer fahren 10 Runden ohne Berührung;
+- an der Station hält das Band in Fahrt.
 
 **Chokepoint:**
-- Der EINE Fahr-Schritt in vehicle-core (vehicle-core.js:2634-2654). An einer Kuppe mit v²/R > g hebt der Wagen ab (:2885-2904); in der
-  Luft behält der Aufbau seine Lage (:2918).
-- Der EINE Fahrer (stamm/koerper-fahrt.js:1416-1545). Er folgt einer Linie und hält an ihrem Ende (`F.ende`, :1528).
+- der EINE Fahr-Schritt in vehicle-core (vehicle-core.js:2634-2654; Abheben bei v²/R > g :2885-2904; im Flug starre Lage :2918);
+- der EINE Fahrer (stamm/koerper-fahrt.js:1416-1545; er hält am Linien-Ende `F.ende`, :1528).
 
 **Was stirbt:**
-- Die starre Lage im Flug.
-- Der Fahrer, der nur zu einem Ende fährt; die Runde gehört künftig zu seinem Gesetz.
-- Die Pylonen und der cos²-Hügel nur im Labor (worlds/garage/garage.js:274-335). Das Labor zeigt künftig die Bauteile des Gesetzes.
+- die starre Lage im Flug;
+- der Fahrer, der nur zu einem Ende fährt;
+- Pylonen und cos²-Hügel nur im Labor (worlds/garage/garage.js:274-335).
 
 ## Vorher → Ziel
 
-**Vorher:**
-- Es gibt keinen Rundkurs.
-- Die Stadt fährt Kompakt, Limousine und SUV mit 30 km/h (siedlung-verkehr.js:1400-1444).
-- 4 der 10 nächsten Wagen fuhren am Kopf ohne Bild (koordination UEBERGABE-2026-10-31.md:60).
-- `stadt-wagen.png` (koordination `bericht/pruefplatz/vorher/`): Wagen auf Erde zwischen Fußgängern.
+**Vorher:** kein Rundkurs. Die Stadt fährt Kompakt, Limousine und SUV mit 30 km/h (siedlung-verkehr.js:1400-1444).
 
-**Ziel-Bild:**
-- Ein Kurs im Sinne von SuperTuxKart: Runde 40–70 s, nach jedem Sprung eine Landezone, die Straße voraus immer sichtbar.
-- Breite nach McMillan: 2 Spuren zu 1,6 Wagenbreiten plus Bankett, also 9 m.
-- Der Start wie das Festival in Forza Horizon: Start und Ziel liegen an der West-Seite, am Weg von T10 (Garage, 57,3°), mit dem GT als
-  Vorschau.
-- Die Elemente:
-  - Start/Ziel-Gerade von 180 m mit Tribüne.
-  - Steilkurve mit 18° Überhöhung.
-  - Kuppe mit R 60 m.
-  - Kicker: Rampe 12°, Lippe, ~20 m Flug, Landung 8° abwärts auf 40 m.
-  - S-Kurve und zwei Haarnadeln.
-- Belag: Asphalt (grund). Rahmen x 70…390, z 150…370; der nächste Punkt liegt ≥ 160 m von M, also außerhalb der Mesh-Zone der Ankunft.
+**Ziel-Bild:** ein Kurs wie in SuperTuxKart (Runde 40–70 s, nach jedem Sprung eine Landezone, die Straße voraus immer sichtbar), Breite
+nach McMillan (2 Spuren zu 1,6 Wagenbreiten plus Bankett, 9 m). Er umfasst:
+- die Start/Ziel-Gerade 180 m mit Tribüne;
+- eine Steilkurve 18°;
+- eine Kuppe R 60 m;
+- einen Kicker (Rampe 12°, ~20 m Flug, Landung 8° abwärts auf 40 m);
+- eine S-Kurve und zwei Haarnadeln.
+
+**Lage:** der Rahmen x 355…675, z −184…36: ≥ 355 m von M und ≥ 364 m vom Anlauf 400/400 der Messorte stadt/stadt-voll
+(haushalt.json:278, :321), deren Einschwingen er nie mitmisst. Der Zugang führt über das garage-Tor (T8, 351,8°).
 
 ## Bauen
 
 1. **vehicle-core `STRECKE_GESETZ`**, additiv:
-   - Bauteile: gerade, kurve (R, Winkel, quer), kuppe (R), kicker (rampe°, lippe, flug, landung°).
-   - Die Grenzen aus dem Reibkreis und aus v²/R > g (wo der Wagen abhebt, wo er landet).
-   - `streckeLegen(rahmen, seed)` liefert die geschlossene Mittellinie, die Trassen für ERDBAU mit `quer`, die Checkpunkte und die
-     Rennlinie. Rein und deterministisch.
+   - Bauteile gerade, kurve (R, Winkel, quer), kuppe (R), kicker (rampe°, lippe, flug, landung°); Grenzen aus Reibkreis und v²/R > g.
+   - `streckeLegen(rahmen, seed)` liefert Mittellinie, Trassen mit `quer`, Checkpunkte und Rennlinie, rein und deterministisch.
 2. **Flug:** Die Lage dreht aus dem Drehimpuls beim Absprung und landet in der Hub-Feder. Der Fahr-Schritt bleibt EINER.
-3. **Fahrer** (stamm/koerper-fahrt.js):
-   - Die Runde als Schleife statt `F.ende`.
-   - Das Tempo vor der Kurve aus dem Reibkreis (das Bremsen in 120 m Sicht gibt es schon, :2522-2542).
-   - Folgen und Überholen nur über das EINE Fahr-Gesetz.
-4. **KI-Wagen mit Bewohnern am Steuer:** derselbe Leib am Steuer wie im Verkehr der Stadt (siedlung-verkehr.js gehört Verkehr-C). Melde
-   den Haken dort, baue keinen zweiten Fahrer.
-5. **Mess-Fahrt:** eine feste Eingabe-Spur für den Spieler-GT über eine Runde, für S11 und die Zelle pp-fahrt.
-6. **Labor = Welt:** worlds/garage zeigt die Bauteile aus demselben Gesetz.
+3. **Fahrer:** die Runde als Schleife statt `F.ende`; Tempo vor der Kurve aus dem Reibkreis; Folgen und Überholen nur über das EINE
+   Fahr-Gesetz.
+4. **`trasse.quer`** im ERDBAU (gelaende-core, `TRASSE_ZAHL` :1644, optional) und **`belagO` asphalt**. Ohne `quer` bleibt alles
+   byte-gleich. Die Datei gehört dir erst nach der Landung von grund und spielplatz.
+5. **Wagen mit Bewohnern am Steuer:** derselbe Leib am Steuer und dieselbe Setzung wie im Verkehr der Stadt (`_verkehrAnlegen`,
+   siedlung-verkehr.js:24). Nach der Landung von w4-verkehr-c gehört dir dort NUR die Setzung auf den Strecken-Trassen. Kein zweiter
+   Fahrer.
+6. **Ruhe:** jeder Wagen jenseits 60 m oder außer Blick ruht als Zahl (nicht „jeden 2./4./8. Schritt“).
+7. **Mess-Fahrt:** eine feste Eingabe-Spur des Spieler-GT über eine Runde, deterministisch.
+8. **Labor = Welt:** worlds/garage zeigt die Bauteile aus dem Gesetz.
+9. **Haken (benannter Besitzer ort-wirt):** Die Zeile `strecke {rahmen, seed}` in §GENESIS_ORT. Der Wirt ruft `streckeLegen` und legt die
+   Trassen über `_erdbauSetzen` (gelaende-boden.js:671) unter dem Schlüssel des Plans.
 
-## Budget
+## Budget (an der Station Strecke, in Fahrt; die Summe hält das Band)
 
-- **S11, Verfolger in Third:**
-  - Wagen (Klasse bau) ≤ 16 Befehle / 45k Dreiecke bei 4 Wagen im Bild. Heute kostet L1 je Wagen 10 Befehle / 10,6k (vehicle-core.js:48-50),
-    darum müssen die Wagen in den Bau-Satz je Stoff.
-  - Strecken-Bauten (Tribüne, Banden) ≤ 10 / 20k.
-  - Fahrer ≤ 4 / 8k.
-- **CPU:** ≤ 1,0 ms für 4 Wagen. Ferne Wagen rechnen nur jeden 2./4./8. Schritt (siedlung-verkehr.js:1460-1465).
-- **Frame:** p95 ≤ 33 ms in Fahrt (E).
-- **Kosten-Anker:** Die volle Fahrt über die Mess-Wiese lag bei CPU-Takt p95 31,3 ms (z9c, alt). Dieser Wert ist die Bremse.
+- 4 Wagen im Bild: ≤ 16 Befehle / 45k Dreiecke (die Wagen im Bau-Satz; heute L1 je Wagen 10 / 10,6k, vehicle-core.js:48-50).
+- Tribüne und Banden ≤ 10 / 20k.
+- CPU Δ ≤ 1,0 ms; Frame p95 ≤ 33 ms (GTX).
+- Kosten-Anker: die volle Fahrt über die Mess-Wiese lag bei CPU-Takt p95 31,3 ms (z9c). Das ist die Bremse.
 
 ## Dateien (Besitz)
 
-- vehicle-core.js
-- stamm/koerper-fahrt.js
-- worlds/garage/garage.js
-- **NICHT anfassen:**
-  - gelaende-core.js: grund liefert `trasse.quer` und asphalt.
-  - siedlung-verkehr.js und siedlung-bewohner.js: Verkehr-C, familien.
-  - siedlung-ort.js: ort-plan setzt den Rahmen und den Fahrweg.
+- vehicle-core.js, stamm/koerper-fahrt.js, worlds/garage/garage.js
+- gelaende-core.js nur `trasse.quer` und `belagO` asphalt (nach grund und spielplatz)
+- siedlung-verkehr.js nur die Setzung auf der Strecke (nach w4-verkehr-c)
+- **NICHT anfassen:** siedlung-ort.js, §GENESIS_ORT, haushalt.json (ort-wirt); siedlung-bewohner.js; die Messorte stadt/stadt-voll.
 
 ## Wartet auf
 
-- w4-studios-heim2 im main (vehicle-core.js, koerper-fahrt.js).
-- grund (`trasse.quer`, asphalt), w4-ort-plan (Rahmen), w4-verkehr-c (Wagen mit Bewohnern).
-- Das Gesetz 1–3 kannst du nach studios-heim2 sofort bauen.
+- w4-studios-heim im main (vehicle-core.js, koerper-fahrt.js), w4-verkehr-c, grund.
 
 ## Beweis (headless, Zahlen)
 
-- Golden vehicle: Der Fahr-Schritt ohne Strecke bleibt byte-gleich.
-- Runde des KI-GT: 55–65 s.
-- Flug am Kicker: 18–22 m, Landung ohne Überschlag in 10/10 Läufen.
-- 4 KI-Wagen fahren 10 Runden mit 0 Berührungen; jeder erreicht jeden Checkpunkt.
-- Die Mess-Fahrt ist deterministisch: zwei Läufe, dieselbe Spur ± 0,1 m.
+- Golden vehicle: der Fahr-Schritt ohne Strecke bleibt byte-gleich.
+- Runde des KI-GT 55–65 s; Flug am Kicker 18–22 m, Landung ohne Überschlag 10/10.
+- 4 KI-Wagen fahren 10 Runden: 0 Berührungen, jeder erreicht jeden Checkpunkt.
+- Mess-Fahrt deterministisch: zwei Läufe, dieselbe Spur ± 0,1 m.
+- Ruhe: jenseits 60 m Takt-ms je Wagen = 0.
 - `npm run playtest:fast` am Merge-Kandidaten.
 
-**GPU-Proben für den Koordinator:**
-- Radeon: die Mess-Fahrt S11 in Third, ≤ 2 min je Lauf; Bilder an Steilkurve, Kicker-Flug und Landung.
-- OMEN: ABAB-Zelle pp-fahrt.
-
-**Tor:**
-- Die Sektor-Hülle hält in Fahrt.
-- Frame p95 ≤ 33 ms (GTX).
-- 0 Berührungen.
+**Für den Koordinator:** Radeon die Mess-Fahrt in Third (≤ 2 min je Lauf), Bilder an Steilkurve, Kicker-Flug und Landung; OMEN die
+Fahrt-Zelle.
 
 ## Abgabe
 
 - Zweig: w4-strecke. Commit-Betreff: „Abgabe w4-strecke: …“.
-- Bericht in drei Sätzen und die GPU-Proben.
-
-## Lehren der letzten Abgaben
-
-- **Verkehr-C** (e7cc34c9): Fuß und Wagen teilen die Straße nach EINEM Gesetz; jeder Wagen fährt zu einem Ziel. Halte dich an dieses
-  Gesetz, nicht an eine zweite Regel.
-- **Der Schöpfer fand am 17.10. sechs Brüche unter Bewegung** (F1–F6: Sicht-Wechsel in Fahrt, Tempo …). Prüfe die Übergänge in Fahrt,
-  nicht nur im Stehen.
-- **mensch-kopf** riss z107. Darum vor der Abgabe `playtest:fast` am Kandidaten.
+- Bericht in drei Sätzen und die vier Zeilen des BETRIEBSGESETZES.
 
 ## REGELN (Baustein des Koordinators)
 
