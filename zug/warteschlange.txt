@@ -283,3 +283,4 @@ z101-abab 0 storno
 z102-abab 3 abab A=5443e695a11fe753c3f8160920fbe6423e8fef5a B=5e9a3bccf80eebcbb57c78c3ba4f7411e1dfcdbf zellen=stadt,w-ego
 b-kalt-c144 2 station sha=c144b1a3851ad66565d65c89eeb4de4c0f52dc32 lauf=ankunft-kalt.sh
 z103-abab 3 abab A=5e9a3bccf80eebcbb57c78c3ba4f7411e1dfcdbf B=cd88897ec24349d848564108127d7bd81475b7ef zellen=stadt,w-ego
+takt31-gtx 1 punkte sha=cd88897ec24349d848564108127d7bd81475b7ef geraet=gtx nur=lod.K1#1,lod.K2#1,lod.K5#1,vegetation.K1#1
