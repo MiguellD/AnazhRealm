@@ -125,3 +125,4 @@ b-kalt-ec98 Exit0 station ankunft-kalt.sh an ec989990
 z100c-abab nicht-langsamer abab ec989990 gegen 94c079cb: stadt 4+4 nicht-langsamer · w-ego 4+4 nicht-langsamer
 takt29-gtx gemessen punkte 5443e695 gtx: 2 grün / 3 rot
 z102-abab LANGSAMER abab 5e9a3bcc gegen 5443e695: stadt 4+4 nicht-langsamer · w-ego 4+4 LANGSAMER
+takt31-gtx gemessen punkte cd88897e gtx: 0 grün / 2 rot
