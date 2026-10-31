@@ -14,8 +14,15 @@
 // Szene). Der Schuss ist EINE Aufnahme (bis dahin drei, die letzte zählte): `__ausgabeAufnahme` beginnt Folge, Geschichte, Dither und
 // Schatten je Aufnahme neu (A8-n1), zwei Aufnahmen derselben Szene sind dasselbe Bild (G ↔ G2 der Klassen-Teilung: GTX 18 von 18
 // Läufen, Radeon 11 von 11 Tafel-Messungen mit 0 Pixeln); die TREUE nimmt die erste L0 ein zweites Mal und bricht laut an jedem Byte.
+// DAS WARTEN IM BAU-EREIGNIS (w4-stationen-schnell-a, 31.10.; GTX b4bcf19c ≥ 90 s am Eich-Deckel, „zuletzt: umstellen“ — die Folge
+// kam nie bis zur Antwort von kanten): DER TÄTER die Höhe des Baums — `for (i < 400 && (F.kind !== "tree" || Höhe == null))` wartete
+// für jedes Werk, das KEIN Baum ist, volle 400 × 50 ms (Null-Welt an der Mess-Wiese: Haus, Haus, Tor, Tor, Wagen je 20,2–20,9 s, 104 von
+// 108,5 s ohne Aufnahmen); dazu warteten Lieferung und `stelle` je bis 400 × 50 ms an der Wanduhr. Jetzt wartet jede Stelle auf ihr
+// Ereignis über das EINE Warten (`__gebautNach`, welt-boot): Takt um Takt (die Freigabe der Foundry, die Karte bäckt, ein Bild Pause für
+// den Faden), bis die Stufe steht und — nur am Baum — seine Höhe; solange die Welt baut, ohne Frist, hat sie nichts mehr offen, wirft
+// der Deckel nach 120 Takten beim Namen. Der Fall steht dann mit seinem Grund (`fehler`, das Urteil liest ihn als Bruch), die übrigen
+// messen weiter. Dieselbe Null-Welt: 4,2 s ohne Aufnahmen, alle 7 Fälle gestellt, Treue 0 Bytes.
 const st = r.state, rend = st.renderer, cam = st.camera, A = r.constructor;
-const warte = (ms) => new Promise((ok) => setTimeout(ok, ms));
 const W = 1920, H = 1080;
 rend.setAnimationLoop(null);
 window.__buehne({});
@@ -42,17 +49,21 @@ const schuss = async () => {
     r._schattenAlleNeu();
     return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
 };
-// die Lieferung der Stufen: je Stufe der Flatten der Foundry (null: lädt; false: kann nicht; sonst steht sie), die Freigabe des
-// Takts im ruhenden Loop (höchstens INGEST_BURST_CAP je Ruf), die Karte bäckt — bis jede Stufe antwortet
-const liefere = async (e, stufen) => {
+// DER TAKT DES WARTENS: die Freigabe der Foundry (höchstens INGEST_BURST_CAP je Ruf; im ruhenden Loop gibt der Wächter ohnehin frei),
+// die Karte bäckt, ein Bild Pause — die Antwort des Fadens landet dazwischen. Nie ein Takt der Welt: der LOD-Takt stellte die Stufe um.
+const takt = async () => {
+    r._tickFoundryIngest(0.25);
+    r._tickImpostorBake();
+    await sleep(16);
+};
+const warteBau = (name, fertig) => window.__gebautNach(name, { fertig, bau: () => {}, takt });
+// die Lieferung der Stufen: je Stufe der Flatten der Foundry (null: lädt; false: kann nicht; sonst steht sie), am Baum dazu seine Höhe
+// (die Schwellen der Maske lesen sie) — bis jede Stufe antwortet
+const liefere = (e, stufen, F) => {
     const p = r._foundryPresetForEntry(e);
-    for (let i = 0; i < 400; i++) {
-        if (stufen.every((s) => r._foundryFlattenFor(e, p, s) !== null)) return true;
-        r._tickFoundryIngest(0.25);
-        r._tickImpostorBake();
-        await warte(50);
-    }
-    return false;
+    return warteBau("lod.K5 Lieferung " + F.kind + " " + p + " L" + stufen.join("/"), () =>
+        stufen.every((s) => r._foundryFlattenFor(e, p, s) !== null) && (F.kind !== "tree" || r._lodTreeVisHeight(e) != null)
+    );
 };
 const maske = (a, b) => {
     const m = new Uint8Array(W * H);
@@ -113,15 +124,12 @@ const chamfer = (a, b) => {
     return { px: (mittel(ka, abstand(kb)) + mittel(kb, abstand(ka))) / 2, pixel: a.reduce((s, x) => s + x, 0) };
 };
 // die Stufe erzwingen: der EINE Wechsel (`_switchArchitectureLOD`), bis die Stufe dient (die Karte bäckt die Welt)
-const stelle = async (e, s, d) => {
-    for (let i = 0; i < 400; i++) {
+const stelle = (e, s, d) =>
+    warteBau("lod.K5 Stufe " + e.type + " L" + s, () => {
         [e._lodLevel, e._servedLod] = [s === 0 ? 1 : 0, undefined]; // kein Klammer-Kurzschluss: die Stufe kommt neu
-        if (r._switchArchitectureLOD(e, s, d) && e._lodLevel === s) return true;
-        r._tickImpostorBake();
-        await warte(50);
-    }
-    return false;
-};
+        return r._switchArchitectureLOD(e, s, d) && e._lodLevel === s;
+    });
+const grund = (x) => String((x && x.message) || x).split("\n")[0].slice(0, 300);
 const aus = { schirm: [W, H], fov: A.KAM_FOV_GRAD, faelle: [], treue: null };
 const neu = [];
 try {
@@ -140,8 +148,13 @@ try {
         neu.push(e);
         if (!e.instanced) r._rebuildArchitectureMesh(e);
         const preset = r._foundryPresetForEntry(e);
-        const geliefert = await liefere(e, [0, ...F.stufen]);
-        for (let i = 0; i < 400 && (F.kind !== "tree" || r._lodTreeVisHeight(e) == null); i++) (r._tickFoundryIngest(0.25), await warte(50));
+        try {
+            await liefere(e, [0, ...F.stufen], F);
+        } catch (x) {
+            for (const s of F.stufen) aus.faelle.push({ kind: F.kind, preset, stufe: s, fehler: "Lieferung: " + grund(x) });
+            r._archInstanceRemove(e);
+            continue;
+        }
         schuesse();
         const hoehe = F.kind === "tree" ? r._lodTreeVisHeight(e) : null;
         const D = A.LOD_DISTANCES, ref = st.lodRef > 0 ? st.lodRef : D.lodRef;
@@ -157,7 +170,12 @@ try {
             cam.updateMatrixWorld(true);
             r._archInstanceRemove(e);
             const leer = await schuss();
-            const ok0 = await stelle(e, 0, d);
+            try {
+                await stelle(e, 0, d);
+            } catch (x) {
+                aus.faelle.push({ kind: F.kind, preset, stufe: s, d: +d.toFixed(2), hoehe, fehler: "L0: " + grund(x) });
+                continue;
+            }
             const b0 = await schuss();
             if (!aus.treue) {
                 // DIE TREUE (einmal je Lauf): dieselbe Szene ein zweites Mal — EINE Aufnahme je Schuss trägt nur, wenn sie Byte für Byte gleich ist
@@ -167,10 +185,15 @@ try {
                 aus.treue = { fall: F.kind + " L0", bytes: n };
                 if (n) throw new Error("die Treue: zwei Aufnahmen derselben Szene (" + F.kind + " L0) weichen in " + n + " Bytes ab — EINE Aufnahme je Schuss trägt hier nicht");
             }
-            const oks = await stelle(e, s, d);
+            try {
+                await stelle(e, s, d);
+            } catch (x) {
+                aus.faelle.push({ kind: F.kind, preset, stufe: s, d: +d.toFixed(2), hoehe, fehler: "L" + s + ": " + grund(x) });
+                continue;
+            }
             const bs = await schuss();
             const k = chamfer(maske(b0, leer), maske(bs, leer));
-            aus.faelle.push({ kind: F.kind, preset, stufe: s, d: +d.toFixed(2), hoehe, px: k.px == null ? null : +k.px.toFixed(3), pixel: k.pixel, ok: ok0 && oks, geliefert });
+            aus.faelle.push({ kind: F.kind, preset, stufe: s, d: +d.toFixed(2), hoehe, px: k.px == null ? null : +k.px.toFixed(3), pixel: k.pixel, ok: true, geliefert: true });
         }
         r._archInstanceRemove(e);
     }

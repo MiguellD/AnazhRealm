@@ -1416,13 +1416,18 @@ const stationen = [
         // Lieferung unter den Schaltern der Welt frei (eine Lieferung ohne `foundryCrossfade` trägt keine Stufen-Stempel — die Nah-Streu
         // bricht an ihr, Werkbank 30.10.) und schießt EINE Aufnahme je Schuss, die Treue einmal: 22 Aufnahmen, swiftshader alle 14 Stufen
         // gestellt (vorher 0), Treue 0 Bytes. Der Deckel aus der Arbeit: 22 Aufnahmen (GTX ≈ 0,43 s je Aufnahme aus lod.K2#1) + 14
-        // Lieferungen (kalt 0,15–1,0 s) — 26 s; die Eich-Fahrt der GTX richtet ihn
+        // Lieferungen (kalt 0,15–1,0 s) — 26 s; die Eich-Fahrt der GTX richtet ihn. DAS WARTEN IM BAU-EREIGNIS (w4-stationen-schnell-a,
+        // 31.10.; GTX b4bcf19c wieder ≥ 90 s nach „umstellen“): DER TÄTER die Höhen-Schleife des Baums mit verkehrter Bedingung — sie
+        // wartete für Haus, Haus, Tor, Tor und Wagen je volle 400 × 50 ms (Null-Welt ohne Aufnahmen 108,5 s, davon 104 s); dazu warteten
+        // Lieferung und `stelle` an der Wanduhr. Jetzt `__gebautNach` je Wartestelle (der Deckel zählt nur Takte ohne Offenes), die Höhe
+        // nur am Baum: dieselbe Null-Welt 4,2 s, alle 7 Fälle gestellt; ein Fall ohne Stufe steht nach 120 leeren Takten beim Namen
+        // (`fehler`, ein Bruch im Urteil). GTX hergeleitet: 22 Aufnahmen × 0,43 s + Lieferungen ≈ 13–17 s statt ≥ 90 s
         probe: { sek: 10, befehl: befehlDer({
             name: "lod.K5#1",
             schritte: [
                 { name: "fenster", args: ["fenster", "1920", "1080"], muss: true },
                 { name: "umstellen", args: ["umstellen", "--ort", "wiese"], muss: true },
-                { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "502a3c926930826c854b377e5c00452d4159741f", muss: true, ms: 1800000 },
+                { name: "kanten", probe: "@KOORD@/bericht/2910-lod-k5/kanten.js", blob: "f2ee19c9ed6d32e3b51436e4fb4b89d7a25126cb", muss: true, ms: 1800000 },
             ],
         }), },
         env: envDer,
