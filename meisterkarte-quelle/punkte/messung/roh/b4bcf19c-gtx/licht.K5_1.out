@@ -1,6 +1,7 @@
 $ C:\Program Files\nodejs\node.exe scripts/werkbank.cjs licht --luft --wetter rainy --zug --datei C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\licht.K5_1.json
 
 ✅ SELBSTTEST GRÜN — grauer β, Kante 21 %, Linie, leere Messung, Sicht 1800 m und Sprung 0,5 EV/s beim Namen ROT
+ZUG GRUEN · Sprung {"t":50.51430000020284,"wetter":"rainy","zug":0.08557605964348254,"Y":1619.934686016009,"d":0.05338713471069597} EV/s (Soll ≤ 0.1) · klar → rainy → klar gezogen true, 125 s
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

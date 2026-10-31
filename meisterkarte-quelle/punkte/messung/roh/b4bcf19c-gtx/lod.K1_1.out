@@ -71,6 +71,12 @@ $ C:\Program Files\nodejs\node.exe -e (async function folge(plan) {
   fenster · Exit 0
   tafel · Exit 0
   wiese · Exit 0
+  gang · Exit 1
+  auge · Exit 0
+  spielgang · Exit 1
+[linse-gpu] nvidia/pascal
+FOLGE lod.K1#1: 6 Schritte
 
 --- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
 [linse-gpu] nvidia/pascal

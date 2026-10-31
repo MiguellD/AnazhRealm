@@ -58,9 +58,17 @@ console.log("VEGETATION " + JSON.stringify(erg));
 })() C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\vegetation.K5_2.json 7804 [["wiese","ego",0.5,"sommer","krone"],["wiese","ego",0.5,"winter","krone"],["wiese","ego",0.5,"fruehling","krone"],["wiese","ego",0.5,"sommer","wiese"],["wiese","ego",0.5,"winter","wiese"],["wiese","ego",0.5,"fruehling","wiese"]] ohne-budget
 [linse-gpu] nvidia/pascal
 SCHRITT /fenster 0.0 s
-SCHRITT /umstellen 0.8 s
+SCHRITT /umstellen 3.0 s
 SCHRITT /eval 0.0 s
-SCHRITT /bild 6.3 s
+SCHRITT /bild 5.9 s
+SCHRITT /eval 0.0 s
+SCHRITT /bild 6.4 s
+SCHRITT /eval 0.0 s
+SCHRITT /bild 8.1 s
+SCHRITT /eval 0.0 s
+SCHRITT /bild 30.8 s
+SCHRITT /eval 0.0 s
+SCHRITT /bild 30.3 s
 SCHRITT /eval 0.0 s
 
 --- gpu-zeuge ---

@@ -1,0 +1,24 @@
+$ C:/Program Files/Git/bin/bash.exe -c A=$(printf %s 'C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\b4bcf19c-gtx\haar.K1_1.json' | tr '\\' /); B="${A%.json}"
+S=$(( 7804 )); W=$(( 7804 + 20000 )); export WERKBANK_PORT=$W
+trap 'git checkout spec/abnahme/soll-tafel.json' EXIT
+node scripts/werkbank.cjs fenster 1920 1080 > /dev/null 2>&1
+erg() { node -e 'const t = require("fs").readFileSync(0, "utf8"); console.log(JSON.stringify(JSON.parse(t.slice(t.indexOf("{"))).ergebnis))'; }
+fehl() { node -e 'const t = require("fs").readFileSync(process.argv[1], "utf8"); let f = null; try { f = JSON.parse(t.slice(t.indexOf("{"))).fehler; } catch (e) {} console.log("BILD " + process.argv[2] + " FEHLER " + String(f || t.trim().split("\n").pop() || "ohne Antwort").replace(/\s+/g, " ").slice(0, 300))' "$1" "$2"; }
+node scripts/werkbank.cjs umstellen --ort wiese --sicht ego > "$B-umstellen.txt" 2>&1
+K=$(node scripts/werkbank.cjs eval 'const s = r.state, p = s.playerMesh.position; for (const c of [...s.creatures]) r.removeCreature(c); const x = p.x - Math.sin(s.yaw) * 3, z = p.z - Math.cos(s.yaw) * 3; const c = r.spawnCreatureAt(x, r._voxelSurfaceY(x, z) + 0.5, z, "happy", "wolf", { precise: true }); for (let i = 0; i < 60; i++) { window.__buehne(); r._gameLoopTick(performance.now()); await sleep(50); } window.__tiereHalten(); const b = new T.Box3().setFromObject(c), m = b.getCenter(new T.Vector3()), g = b.getSize(new T.Vector3()), q = g.x > g.z; const kam = (d, h) => [m.x + (q ? 0 : d), m.y + h, m.z + (q ? d : 0), m.x, m.y, m.z].map((v) => +v.toFixed(2)); return { arm: kam(0.7 + Math.min(g.x, g.z) / 2, 0.5), third: kam(4 + Math.min(g.x, g.z) / 2, 1) };' | erg); echo "WOLF $K"
+node scripts/werkbank.cjs bild $(node -e 'console.log(JSON.parse(process.argv[1]).arm.join(" "))' "$K") --wahl 0 --klasse '^tier:wolf$' --ist fell --datei "$B-arm.png" > "$B-arm.txt" 2>&1; e=$?; echo "BILD arm $e"; [ $e = 0 ] || fehl "$B-arm.txt" arm
+node -e 'const AU = require("./scripts/lib/abnahme-urteil.cjs"); const u = AU.sollTafelUrteil(require("./spec/abnahme/soll-tafel.json"), AU.standLeser(process.cwd()).sollQuelle()); const z = u.zeilen.find((x) => x.id === "fell"); console.log("ARM " + JSON.stringify({ urteil: z.urteil, ist: z.ist, band: z.band, grund: z.grund, taeter: z.taeter, teile: z.teile, stand: z.stand }))'
+node scripts/werkbank.cjs bild $(node -e 'console.log(JSON.parse(process.argv[1]).third.join(" "))' "$K") --wahl 0 --klasse '^tier:wolf$' --ist fell --datei "$B-third.png" > "$B-third.txt" 2>&1; e=$?; echo "BILD third $e"; [ $e = 0 ] || fehl "$B-third.txt" third
+node -e 'const AU = require("./scripts/lib/abnahme-urteil.cjs"); const u = AU.sollTafelUrteil(require("./spec/abnahme/soll-tafel.json"), AU.standLeser(process.cwd()).sollQuelle()); const z = u.zeilen.find((x) => x.id === "fell"); console.log("THIRD " + JSON.stringify({ urteil: z.urteil, ist: z.ist, band: z.band, grund: z.grund, taeter: z.taeter, teile: z.teile, stand: z.stand }))'
+WOLF {"arm":[-278.33,29.1,-1042.37,-278.33,28.6,-1044.35],"third":[-278.33,29.6,-1039.07,-278.33,28.6,-1044.35]}
+BILD arm 0
+ARM {"urteil":"GRÜN","ist":0.5667,"band":[0.4358,0.6538],"grund":null,"taeter":null,"teile":null,"stand":"2026-10-31 b4bcf19c nvidia pascal"}
+BILD third 0
+THIRD {"urteil":"GRÜN","ist":0.5198,"band":[0.4358,0.6538],"grund":null,"taeter":null,"teile":null,"stand":"2026-10-31 b4bcf19c nvidia pascal"}
+
+--- stderr ---
+tr: warning: an unescaped backslash at end of string is not portable
+Updated 1 path from the index
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal
