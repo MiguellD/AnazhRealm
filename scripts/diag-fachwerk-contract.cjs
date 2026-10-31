@@ -511,9 +511,11 @@ function posenLinse() {
     const mit = (n, wert) => abwandlung(plan.stationen.find((q) => q.name === n))("", wert);
     const fehler = taeterFaelle(
         [
+            // die fern-Station steht 25 m vor dem Fels des Plans; die beiden Stände davor sind gepflanzte Proben des Urteils:
+            // BÜHNE: ein Stand im Gürtel abseits jedes Wegs, ein fernes Haus hinter der Wiese, dessen Sichtlinie den Feld-Wurf quert
             { name: "eine Kamera im Gürtel", z: mit("S1", { ego: { x: -32.6, z: 28.1 } }), muss: /^KAMERA im Gürtel/ },
             { name: "eine Sichtlinie über Feld-Wurf", z: mit("S1", { blick: { x: -81, z: 70 }, ziele: [{ art: "haus", x: -81, z: 70, band: "fern" }] }), muss: /^SICHTLINIE über Feld-Wurf/ },
-            { name: "eine fern-Station in 25 m", z: mit("S7f", { ego: { x: -70, z: 70 } }), muss: /^ABSTAND fels fern in 25\.0 m/ },
+            { name: "eine fern-Station in 25 m", z: mit("S7f", { ego: { x: plan.formationen[0].x + 25, z: plan.formationen[0].z } }), muss: /^ABSTAND fels fern in 25\.0 m/ },
         ],
         (s) => FC.genesisPose(plan, s, false, boden).befunde
     );
