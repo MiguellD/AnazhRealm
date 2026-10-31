@@ -514,7 +514,10 @@ function selbsttest() {
 
     // S13 — die Täter-Klasse an Szenen-Knoten: ein Tier heißt nach seiner Seele, ein Kind einer Region nach seinem
     // Schlüssel (nie nach der Region), ein unbenanntes Kind einer Region nach seinem Namen, der Spieler `spieler`, ein
-    // Schlüssel-Schwanz fällt, Ziffern im Namen bleiben.
+    // Schlüssel-Schwanz fällt, Ziffern im Namen bleiben. DER LEIB EINES MENSCHEN (die Kopf-Klasse, w4-bewohner-wache): ein
+    // Bewohner (der Mensch der Menge, sein Baum der Glieder) heißt `bewohner`, nie `tier:?` (bis hier 14 von 14 Teilen am
+    // Start-Dorf), und die Teilung (`_kopfKlasse`, Leser: `werkbank bild --klasse`) nennt seine Strähnen unter dem Kopf-Knoten
+    // `bewohner:kopf/hair`, sein Kleid `bewohner:leib/stoff`, die des Spielers `spieler:kopf/hair`; das Tier bleibt ungeteilt.
     const sc = { type: "Scene" };
     const s13 = { scene: sc, playerMesh: null };
     const tierG = { type: "Group", name: "", userData: { _tierBaum: {}, soul: "wolf" }, parent: sc };
@@ -524,23 +527,22 @@ function selbsttest() {
     const ohne = { type: "Mesh", name: "", userData: {}, parent: region };
     const spieler = { type: "Group", name: "", userData: {}, parent: sc };
     s13.playerMesh = spieler;
-    const kind = { type: "Mesh", name: "", userData: {}, parent: spieler };
     const chunk = { type: "Mesh", name: "voxelChunk:3,-4:lod0", userData: {}, parent: sc };
     const p2p = { type: "Group", name: "p2p-spieler", userData: {}, parent: sc };
     const leerKey = "fscatter:blume:3:0#2@4,5";
     const s13leer = { scene: sc, playerMesh: null, archInstanceGroups: new Map([[leerKey, { liveCount: 0 }]]) };
     const leer = { type: "Mesh", name: "", userData: { archInstanceKey: leerKey }, parent: region };
+    const bew = { name: "bewohner", userData: { _tierBaum: {}, _menge: true }, parent: sc };
+    // ein Teil des Leibs L: mit Stoff-Klasse unter dem Kopf-Knoten, ohne sie am Rumpf
+    const KK = (L, k) => A.prototype._kopfKlasse.call(weltVon(A, s13), { userData: { __klasse: k }, parent: k ? { name: "head", parent: L } : L, geometry: { attributes: {} } }).join(" "); // prettier-ignore
     t(
         "Täter-Klasse: tier:wolf · fscatter:eiche:L1 · UNBENANNT unter der Region · spieler · voxelChunk · p2p-spieler · " +
-            "leer:fscatter:blume:L0 (Gruppe ohne lebende Instanz)",
-        S.klasse(tierM, s13) === "tier:wolf" &&
-            S.klasse(inst, s13) === "fscatter:eiche:L1" &&
-            S.klasse(ohne, s13) === "UNBENANNT:Mesh" &&
-            S.klasse(kind, s13) === "spieler" &&
-            S.klasse(chunk, s13) === "voxelChunk" &&
-            S.klasse(p2p, s13) === "p2p-spieler" &&
+            "leer:fscatter:blume:L0 (Gruppe ohne lebende Instanz) · bewohner (Kopf-Klasse)",
+        KK(bew, "hair") === "bewohner bewohner:kopf/hair" &&
+            KK(bew) === "bewohner bewohner:leib/stoff" &&
+            KK(spieler, "hair") === "spieler spieler:kopf/hair" &&
             S.klasse(leer, s13leer) === "leer:fscatter:blume:L0" &&
-            S.klasse(leer, s13) === "fscatter:blume:L0"
+            [[tierM, "tier:wolf"], [inst, "fscatter:eiche:L1"], [ohne, "UNBENANNT:Mesh"], [chunk, "voxelChunk"], [p2p, "p2p-spieler"], [leer, "fscatter:blume:L0"]].every(([o, k]) => S.klasse(o, s13) === k) // prettier-ignore
     );
 
     // S14 — eine FREIE Klasse (Weltzustand: Tiere) trägt keine Ratsche: über jeder Zahl nie rot, die Summen-Ratsche
