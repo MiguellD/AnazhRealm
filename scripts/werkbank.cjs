@@ -856,7 +856,9 @@ async function starte() {
             }));
         for (const i of [AUSGABE_INSTALL, LL.LINSEN_INSTALL, ZAEHLER_INSTALL, BAND.EINSCHWING_INSTALL, FLUSS_INSTALL, DIAET.DIAET_INSTALL, SICHT.SICHT_INSTALL])
             await page.evaluate(i);
-        // DER TAKT DER WERKBANK: die Bühne, der Ort und ein Takt des Loops (ein Wurf des Loops bricht die Probe nicht); dazu die
+        // DER TAKT DER WERKBANK: die Bühne, der Ort und ein Takt des Loops (ein Wurf des Loops bricht die Probe nicht), sein
+        // Versprechen ist das nächste Bild — wer im Schritt der Seite taktet (Ort, Band, Albedo-Tafel), wartet darauf, nie an der
+        // Wanduhr (Lehre 26; bis 31.10. schliefen Band und Tafel je Takt 50 ms, der Ort trug denselben Takt als Zwilling); dazu die
         // ungebauten Werke in der Mesh-Zone (`architectureCullingRadius` um den Spieler)
         await page.evaluate(() => {
             // DER LOOP der Werkbank: an (der Spiel-Loop über rAF) oder aus (die Welt steht zwischen den Befehlen)
@@ -867,6 +869,7 @@ async function starte() {
                     if (window.__ortSchritt) __ortSchritt();
                     r._gameLoopTick(performance.now());
                 } catch {}
+                return new Promise(requestAnimationFrame);
             };
             window.__ungebaut = (r = anazhRealm, st = r.state, pm = st.playerMesh.position) =>
                 (st.architectures || []).filter(
@@ -2292,15 +2295,15 @@ async function starte() {
                     // DIE WELT-SEITE DER ALBEDO-TAFEL: dieselbe Linse, je Tafel-Zeile Exemplar · Klasse · Stoff.
                     const t = AT.ladeTafel();
                     // DAS AUGE DER STUFE (`exemplar.stufe`, K63-n7, S8) wählt die Stufe JEDES Exemplars neu — jede solche Zeile misst in ihrem eigenen Gang NACH
-                    // den übrigen, die Karte der Eichung liest der erste Gang
+                    // den übrigen, die Karte der Eichung liest der erste Gang — nur er schießt sie (`eichen`)
                     // DIE UHR-SPALTEN (`uhren`, material.K3 Staffel 2): jede Stufen-Zeile misst zu jeder Uhr der Tafel — die erste ist
                     // die Bühne (Mittag), jede weitere steht als `<id>@<uhr>`
                     const nahZ = t.zeilen.filter((z) => Number.isInteger(z.welt.exemplar.stufe)),
                         liste = [];
                     for (const uhr of t.uhren)
                         for (const zeilen of [...(uhr === 0.5 ? [t.zeilen.filter((z) => !nahZ.includes(z))] : []), ...nahZ.map((z) => [z])])
-                            for (const e of await seite("__albedoSicht", { zeilen, w: 640, h: 400, uhr }))
-                                if (e.name !== "graukarte" || zeilen.length > 1) liste.push(uhr === 0.5 ? e : Object.assign(e, { id: e.id + "@" + uhr }));
+                            for (const e of await seite("__albedoSicht", { zeilen, w: 640, h: 400, uhr, eichen: zeilen.length > 1 }))
+                                liste.push(uhr === 0.5 ? e : Object.assign(e, { id: e.id + "@" + uhr }));
                     const ordner = path.resolve(b.ordner || ablage("albedo-tafel"));
                     fs.mkdirSync(ordner, { recursive: true });
                     const welt = {};

@@ -12,41 +12,40 @@ const { luma709, cielab, linSrgb } = require("./abnahme-urteil.cjs");
 // DIE AUSWERTUNG beider Albedo-Linsen (Welt r184 und Labor r128 lesen DIESE Funktion): `hell`/`dunkel` sind lineare
 // RGBA-Werte (Float32, je Pixel 4), `deckung` die Alpha-Schwelle eines gezählten Pixels. Albedo = hell − dunkel (die
 // Emission und jedes Licht außer dem Umgebungslicht fallen heraus), dazu das Bild (sRGB-kodiert, Rest magenta).
+// DIE PIXEL IN EINER LISTE (w4-stationen-schnell-a, 31.10.): je Pixel der Deckung a0 a1 a2 Emission flach hintereinander, die
+// Luma je Pixel einmal (`luma709` am Versatz), jede Gruppe eine Wahl über den Index — bis dahin je Pixel ein eigenes Feld, je
+// Gruppe ein Filter und zwei Sortierungen mit Vergleicher (Node, 4 Blicke 640 × 400, 265 k Pixel: 491 → 214 ms); Summen in
+// derselben Reihe, dieselben Quantile, jede Zahl bit-gleich (Deckung 0 bis 100 % geprüft)
 function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
     const pix = [];
     for (let i = 0; i < W * H; i++) {
         if (!(hell[i * 4 + 3] > deckung)) continue;
-        const a = [0, 1, 2].map((c) => Math.max(0, hell[i * 4 + c] - dunkel[i * 4 + c]));
-        const em = (dunkel[i * 4] + dunkel[i * 4 + 1] + dunkel[i * 4 + 2]) / 3;
-        pix.push([a[0], a[1], a[2], em]);
+        for (let c = 0; c < 3; c++) pix.push(Math.max(0, hell[i * 4 + c] - dunkel[i * 4 + c]));
+        pix.push((dunkel[i * 4] + dunkel[i * 4 + 1] + dunkel[i * 4 + 2]) / 3);
     }
-    const Y = (p) => luma709(p);
-    const mittel = (arr) => {
-        if (!arr.length) return null;
-        const m = [0, 0, 0, 0];
-        for (const p of arr) for (let c = 0; c < 4; c++) m[c] += p[c];
-        return m.map((v) => v / arr.length);
-    };
-    const fmt = (m, n) =>
-        m
+    const n = pix.length / 4;
+    const ya = Float64Array.from({ length: n }, (_x, k) => luma709(pix, k * 4));
+    // das Mittel der Pixel k, für die `wahl(k)` gilt
+    const mittel = (wahl) => {
+        let [m, z] = [[0, 0, 0, 0], 0];
+        for (let k = 0; k < n; k++) if (wahl(k) && ++z) for (let c = 0; c < 4; c++) m[c] += pix[k * 4 + c];
+        m = m.map((v) => v / z);
+        return z
             ? {
-                  anteil: +(n / Math.max(1, pix.length)).toFixed(2),
+                  anteil: +(z / Math.max(1, n)).toFixed(2),
                   rgb: m
                       .slice(0, 3)
                       .map((v) => +v.toFixed(4))
                       .join("/"),
-                  Y: +Y(m).toFixed(4),
+                  Y: +luma709(m).toFixed(4),
                   emission: +m[3].toFixed(3),
               }
             : null;
-    const istGruen = (p) => p[1] > p[0] * 1.08 && p[1] > p[2] * 1.08;
-    const gruen = pix.filter(istGruen);
-    const rest = pix.filter((p) => !istGruen(p));
-    const ys = rest.map(Y).sort((a, b) => a - b);
+    };
+    const istGruen = (k) => pix[k * 4 + 1] > pix[k * 4] * 1.08 && pix[k * 4 + 1] > pix[k * 4 + 2] * 1.08;
+    const ys = ya.filter((_y, k) => !istGruen(k)).sort();
     const med = ys.length ? ys[Math.floor(ys.length / 2)] : 0;
-    const hellR = rest.filter((p) => Y(p) >= med),
-        dunkR = rest.filter((p) => Y(p) < med);
-    const yAll = pix.map(Y).sort((a, b) => a - b);
+    const yAll = ya.slice().sort();
     const q = (f) => (yAll.length ? +yAll[Math.min(yAll.length - 1, Math.floor(f * yAll.length))].toFixed(3) : null);
     const img = { data: new Uint8ClampedArray(W * H * 4) };
     for (let i = 0; i < W * H; i++) {
@@ -55,7 +54,7 @@ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
         // Augenschein, die Zahlen hängen nicht an der Zeilen-Ordnung.
         // das Alpha setzt `__png` deckend (welt-boot)
         if (!(hell[o + 3] > deckung)) {
-            img.data.set([255, 0, 255], o);
+            img.data[o] = img.data[o + 2] = 255; // Magenta (Grün bleibt 0)
             continue;
         }
         for (let c = 0; c < 3; c++)
@@ -63,11 +62,11 @@ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
     }
     return {
         name,
-        pixel: pix.length,
-        gesamt: fmt(mittel(pix), pix.length),
-        gruen: fmt(mittel(gruen), gruen.length),
-        hell: fmt(mittel(hellR), hellR.length),
-        dunkel: fmt(mittel(dunkR), dunkR.length),
+        pixel: n,
+        gesamt: mittel(() => true),
+        gruen: mittel(istGruen),
+        hell: mittel((k) => !istGruen(k) && ya[k] >= med),
+        dunkel: mittel((k) => !istGruen(k) && ya[k] < med),
         Yq: [q(0.05), q(0.25), q(0.5), q(0.75), q(0.95)].join("/"),
         png: window.__png(img.data, W, H),
     };
@@ -118,15 +117,11 @@ function albedoSicht(opts) {
         // in der Welt — nach einer Tafel misst kein Band mehr in derselben Welt.
         const exemplare = [];
         if (opts.zeilen) {
+            // DER TAKT DER TAFEL ist der Takt der Werkbank und sein Bild (`__werkTakt`; die Tafel misst nur in ihr): bis 31.10. schlief
+            // ein eigener Zwilling je Takt 50 ms — an Genesis trugen die rund 680 Takte einer Tafel (die gesetzten Exemplare, das Auge
+            // der Stufen je Zeile und Uhr) 34 s Schlaf, nie das Werk; Bedingung und Zahl der Takte bleiben
             const ticke = async (n, fertig) => {
-                for (let i = 0; i < n && !fertig(); i++) {
-                    try {
-                        window.__buehne();
-                        if (window.__ortSchritt) window.__ortSchritt();
-                        r._gameLoopTick(performance.now());
-                    } catch {}
-                    await sleep(50);
-                }
+                for (let i = 0; i < n && !fertig(); i++) await window.__werkTakt();
             };
             for (const z of opts.zeilen) {
                 const ex = (z.welt && z.welt.exemplar) || {};
@@ -623,14 +618,18 @@ function albedoSicht(opts) {
                     );
                 }
                 ausschnitteFort();
-                // Die Selbst-Eichung der Tafel: die 18-%-Karte liest 0,180 (sonst ist kein Wert der Tafel eine Albedo).
-                cam.position.copy(karte.position).add(new T.Vector3(0, 0, 2.2));
-                cam.lookAt(karte.position);
-                [cam.near, cam.far] = kamAlt.nf;
-                cam.updateProjectionMatrix();
-                cam.updateMatrixWorld(true);
-                const sk = await schuss((m) => m === karte);
-                ergebnisse.push(window.__albedoAuswerten(sk.hell, sk.dunkel, W, H, 0, "graukarte"));
+                // Die Selbst-Eichung der Tafel: die 18-%-Karte liest 0,180 (sonst ist kein Wert der Tafel eine Albedo) — im Gang, der
+                // sie liest (`opts.eichen`, die Werkbank: der Gang der übrigen Zeilen); bis 31.10. schoss jeder Gang der Tafel sie, 20
+                // von 21 Karten las keiner
+                if (opts.eichen) {
+                    cam.position.copy(karte.position).add(new T.Vector3(0, 0, 2.2));
+                    cam.lookAt(karte.position);
+                    [cam.near, cam.far] = kamAlt.nf;
+                    cam.updateProjectionMatrix();
+                    cam.updateMatrixWorld(true);
+                    const sk = await schuss((m) => m === karte);
+                    ergebnisse.push(window.__albedoAuswerten(sk.hell, sk.dunkel, W, H, 0, "graukarte"));
+                }
             }
         } finally {
             ausschnitteFort();
@@ -679,10 +678,15 @@ function linsenZiel(W, H) {
     return {
         rt,
         zeichne,
+        // DIE LESUNG in einer Schleife (w4-stationen-schnell-a, 31.10.; dieselbe Wandlung je Element, dieselben Zahlen): bis dahin
+        // füllte `Float32Array.from` mit Rückruf je Element (Node, 640 × 400: 46 → 6 ms je Pass, die Albedo-Tafel ~385 Pässe)
         lies: async () => {
             const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, W, H),
                 s = px.length > W * 4 * H ? Math.ceil(W / 32) * 128 : W * 4;
-            return Float32Array.from({ length: W * 4 * H }, (_x, i) => T.DataUtils.fromHalfFloat(px[((i / (W * 4)) | 0) * s + (i % (W * 4))]));
+            const aus = new Float32Array(W * 4 * H);
+            for (let i = 0; i < aus.length; i++)
+                aus[i] = T.DataUtils.fromHalfFloat(px[((i / (W * 4)) | 0) * s + (i % (W * 4))]);
+            return aus;
         },
         bundles: window.__bundlesNeu, // das EINE Bündel-Neu der Seite (welt-boot)
         // DIE RUHE DER LINSE: ihre Karten, Kugeln und Licht-Varianten sind neue Stoffe und Programme — der erste Render baut die
