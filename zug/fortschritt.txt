@@ -1355,3 +1355,4 @@
 2026-10-31 22:01:41 takt-z113a-gtx tiere.K1#2,tiere.K3#2,mensch.K1#1,oekologie.K4#2,mensch.K4#1,vegetation.K1#1,licht.K2#2,licht.K5#1,material.K2#1,lod.K1#1,licht.K3#1,studios.K2#2,studios.K3#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,fahrzeug.K2#2,profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K3#1,profiband.K5#1,speicher.K4#2 OFFEN/OFFEN/OFFEN/OFFEN/ROT/ROT/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/ROT/ROT/ROT/ROT/OFFEN 20.2 · 23/23
 2026-10-31 22:02:10 z110-abab START 2 Zellen
 2026-10-31 22:14:50 z110-abab w-ego VERLÄNGERN 12.6 · 1/2 (2+2)
+2026-10-31 22:31:29 z110-abab stadt VERLÄNGERN 16.6 · 2/2 (2+2)
