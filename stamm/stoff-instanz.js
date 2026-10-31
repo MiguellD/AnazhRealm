@@ -477,7 +477,23 @@ class AnazhRealm_stoff_instanz {
                 () => T.instanceIndex
             )
         );
+        // DER GANG IN DER WAHL trägt die Breite seines Attributs: vec2 (Band + Phase, Gewicht) oder vec4 (dazu die Zeilen der Palette,
+        // mensch.K4) — r184 nimmt den Typ des Speicher-Puffers, wie er genannt ist; ein vec2-Puffer über den vec4-Daten der Bewohner
+        // las je zweite Instanz die Zeilen ihrer Nachbarin als Gang (stadt-takt), und die Zeilen kamen aus dem Vertex-Puffer am
+        // Index des Zugs statt am Eintrag der Liste
         const gang = new SenkenPuffer("gang", "vec2", 2, "arenaGang").toReadOnly().element(index);
+        const gang4 = new SenkenPuffer("gang", "vec4", 4, "arenaGang4").toReadOnly().element(index);
+        const breit = (b) =>
+            !!(b.geometry && b.geometry.attributes.aGang && b.geometry.attributes.aGang.itemSize === 4);
+        class GangWert extends N {
+            constructor(typ, wert) {
+                super(typ);
+                this.wert = wert;
+            }
+            setup(builder) {
+                return this.wert(builder);
+            }
+        }
         const matrix = new SenkenPuffer("instanceMatrix", "mat4", 16, "instanzMatrix").toReadOnly().element(index);
         // DIE ART-GRÖSSEN DES WINDS IN DER ARENA (G1): je Instanz ein vec4 im Speicher-Puffer, nie ein Vertex-Puffer — die
         // Arena belegt genau die Vertex-Puffer ihres Zeichners (r184 bindet je gelesenes Attribut einen; WebGPU trägt höchstens
@@ -503,12 +519,10 @@ class AnazhRealm_stoff_instanz {
             windArt,
             // der Gang je Instanz (`_gangSatzKnoten`): in der Wahl am Index aus dem Speicher-Puffer der Arena, sonst das Attribut
             gang: T.nodeObject(
-                new WahlWert(
-                    "vec2",
-                    () => gang,
-                    () => T.attribute("aGang", "vec2")
-                )
+                new GangWert("vec2", (b) => (wahl(b) ? (breit(b) ? gang4.xy : gang) : T.attribute("aGang", "vec2")))
             ),
+            // die Zeilen der Palette je Instanz (mensch.K4, `_tonFaktor`: [Leib, Gestalt]) — derselbe Index wie der Gang
+            gangTon: T.nodeObject(new GangWert("vec2", (b) => (wahl(b) ? gang4.zw : T.attribute("aGang", "vec4").zw))),
             instanz: new SenkenInstanz(),
         };
         return AnazhRealm.__senkenKnoten;

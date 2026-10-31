@@ -571,11 +571,14 @@ class AnazhRealm_siedlung_bewohner {
     // DER SATZ EINER GESTALT (der EINE Gang-Satz, `_gangSatz` — Lehre 23: die Kosten der Menge hängen nie an der Kopfzahl): der
     // Leib der Menge im Auge (`leib`, die Mengen-Stufe 2 — mensch.K4: EINE Hülle, die Farben in ihren Ecken) und sein Wurf aus der
     // NUR-WURF-Stufe 3 (`wurf`, Studio-Vertrag B2: nie gezeigt, nur auf der Wurf-Ebene, jeder im Nah-Kreis, auch die Nah-Wahl;
-    // Lehre 26: der Schatten ist derselbe Leib), EINE Senke je Stufe. Befehle je Gestalt: einer im Auge, der Wurf je Kaskade (bis
-    // mensch.K4 Haut, Rest im Stoff des größten Kleids und Wurf). DER GANG IM SATZ: das EINE Gang-Gesetz des nahen Leibs in
-    // EINEM Band — `gangPhasen` Phasen des Doppelschritts und der Stand (`_bewohnerGangPose`, am Leib `b` seiner Gestalt), je
-    // Instanz Phase und Gewicht seines Gangs (`_bewohnerSatzSchreiben`). Ein Bewohner im Satz ist eine Matrix; der Satz geht
-    // mit seiner Siedlung.
+    // Lehre 26: der Schatten ist derselbe Leib), EINE Senke je Stufe. DER SATZ STEHT IM ATLAS DER BEWOHNER (`_gangAtlas`,
+    // stadt-takt): jede Gestalt jeder Siedlung ist ein Band seines Knochen-Puffers, alle teilen EINEN Knoten und EINEN Stoff je
+    // Stufe — EIN Programm je Pass und Welt, EIN Render-Objekt je Pass für alle Gestalten. Bis stadt-takt war der Knoten EINER je
+    // Gestalt: ein Programm je Gestalt und Pass, gebaut bei ihrer ersten Zeichnung im Gehen, und je Gestalt eine Arena; mensch.K4
+    // hob die Gestalten 4 → 8, und am Messort stadt stieg der CPU-Takt gehend p95 43,5 → 49,25 ms, p99 78,8 → 102,5 (GTX).
+    // DER GANG IM SATZ: das EINE Gang-Gesetz des nahen Leibs in EINEM Band — `gangPhasen` Phasen des Doppelschritts und der Stand
+    // (`_bewohnerGangPose`, am Leib `b` seiner Gestalt), je Instanz ihr Band, Phase und Gewicht ihres Gangs
+    // (`_bewohnerSatzSchreiben`). Ein Bewohner im Satz ist eine Matrix; der Satz geht mit seiner Siedlung (sein Band wird frei).
     _bewohnerSatz(S, b) {
         const G = S.gestalten[b.gestalt];
         const senken = [];
@@ -597,7 +600,7 @@ class AnazhRealm_siedlung_bewohner {
         }
         const cap = S.liste.filter((x) => x.gestalt === b.gestalt).length;
         return this._gangSatz(
-            { name: "bewohner-satz", inventar: "bewohner", n: AnazhRealm.BEWOHNER.gangPhasen, quellen, cap, senken },
+            { name: "bewohner-satz", inventar: "bewohner", n: AnazhRealm.BEWOHNER.gangPhasen, quellen, cap, senken, atlas: "bewohner" }, // prettier-ignore
             // der Stand zuerst (der Satz steht, bis sein Gang gebacken ist — `_bewohnerGangBacken` im Takt)
             (Z) => this._bewohnerGangPose(b.leib, Object.assign(Z, { gebacken: 0, tempo: b.tempo }), Z.n)
         );
@@ -734,7 +737,7 @@ class AnazhRealm_siedlung_bewohner {
                 Z[k],
                 i,
                 m4,
-                0,
+                Z.band, // sein Band im Atlas der Bewohner (`_gangAtlasNimm`)
                 Z.fertig ? (b.walkPhase || 0) / (2 * Math.PI) : 0,
                 Z.fertig ? b._gaitW || 0 : 0,
                 b.tonZeilen

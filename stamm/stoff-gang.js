@@ -12,6 +12,12 @@ class AnazhRealm_stoff_gang {
     // liest VOR der Instanz-Matrix (Lehre 22), die Normale mit, und der Wurf liest denselben Puffer (Lehre 26: der Schatten
     // geht, wie das Auge sieht). Ein Stoff wird EINMAL geklont (der Gang-Knoten ist EINER je Gestalt). `stand(satz)` schreibt
     // die Stand-Zeile, bevor die Senken ihre Ecken aus ihr nehmen. Eine Gestalt im Satz ist eine Matrix.
+    // DER ATLAS (`spec.atlas`, eine Art — die Bewohner): die Sätze einer Art teilen EINEN Knochen-Puffer (je Satz ein Band: seine
+    // Phasen und sein Stand, `_gangAtlasNimm`), EINEN Knoten und je Quell-Stoff EINEN Stoff — r184 schlüsselt jedes Programm an
+    // den Ids seiner Knoten (`customCacheKey` = id): je Gestalt ein eigener Knoten war je Gestalt ein eigenes Programm im Auge und
+    // im Wurf, gebaut im Pass bei ihrer ersten Zeichnung (die Erst-Zeichnung: ein Knoten-Bau je Render-Aufruf, 50–270 ms je
+    // Stoff an der Radeon), und je Gestalt eine eigene Arena (`_arenaSchluessel` liest den Stoff als Wert). Im Atlas zahlt die
+    // Art ihr Programm einmal je Welt und jeder Pass EIN Render-Objekt für alle Gestalten aller Siedlungen.
     _gangSatz(spec, stand) {
         const T = THREE;
         // DIE PLÄTZE DER KNOCHEN: ein Knochen, den mehrere Quellen mit derselben Bindung tragen (Name und Inverse × Bindung
@@ -34,16 +40,23 @@ class AnazhRealm_stoff_gang {
         const J = knochen.length;
         const N = spec.n;
         const B = spec.baender || 1;
-        const tex = new T.DataTexture(
-            new Float32Array(3 * J * (B * N + 1) * 4),
-            3 * J,
-            B * N + 1,
-            T.RGBAFormat,
-            T.FloatType
-        );
-        tex.name = spec.name + "-gang";
-        tex.minFilter = tex.magFilter = T.NearestFilter;
-        tex.generateMipmaps = false;
+        const A = spec.atlas ? this._gangAtlas(spec.atlas, N, spec.name) : null;
+        if (A && B !== 1)
+            throw new Error(`GANG-ATLAS ${spec.atlas}: ein Satz im Atlas trägt EIN Band (die Bänder sind die Sätze)`);
+        let tex = null;
+        if (!A) {
+            tex = new T.DataTexture(
+                new Float32Array(3 * J * (B * N + 1) * 4),
+                3 * J,
+                B * N + 1,
+                T.RGBAFormat,
+                T.FloatType
+            );
+            tex.name = spec.name + "-gang";
+            tex.minFilter = tex.magFilter = T.NearestFilter;
+            tex.generateMipmaps = false;
+        }
+        // `z0` die erste Zeile des Satzes, `stride` die Knochen je Zeile des Puffers, `band` sein Band (im Atlas sein Platz)
         const satz = {
             quellen: spec.quellen,
             n: N,
@@ -55,37 +68,44 @@ class AnazhRealm_stoff_gang {
             stoffe: [],
             senken: [],
             cap: spec.cap,
+            atlas: A,
+            band: 0,
+            z0: 0,
+            stride: J,
         };
+        if (A) this._gangAtlasNimm(A, satz);
         stand(satz);
-        tex.needsUpdate = true;
-        const knoten = AnazhRealm._gangSatzKnoten(tex, N, B);
+        satz.tex.needsUpdate = true;
         // DER TON JE ECKE (mensch.K4): tragen die Quellen ihn (der Mensch, koerper `menschTon`), färbt jede Instanz ihre Ecken nach
         // ihrer Palette — die Zeilen der Ton-Tafel [Leib, Gestalt] reisen je Instanz in `aGang.zw` (`_gangSatzInstanz`)
         const ton = spec.quellen.every((q) => !!q.m.geometry.attributes.aTon);
         satz.ton = ton;
         const TSL = T.TSL;
-        const tonFarbe = ton
-            ? TSL.vec4(
-                  TSL.varying(
-                      TSL.attribute("color", "vec3").mul(this._tonFaktor(TSL, TSL.attribute("aGang", "vec4").zw)),
-                      "vTonFarbe"
-                  ),
-                  1
-              )
-            : null;
+        // (die Zeilen am Eintrag der Instanz — in der Wahl der GPU aus dem Speicher-Puffer der Arena, `_senkenKnoten().gangTon`)
+        const tonKnoten = () =>
+            TSL.vec4(
+                TSL.varying(
+                    TSL.attribute("color", "vec3").mul(this._tonFaktor(TSL, AnazhRealm._senkenKnoten().gangTon)),
+                    "vTonFarbe"
+                ),
+                1
+            );
+        // die Knoten und Stoffe des Satzes — im Atlas die der Art (EINMAL gebaut), sonst seine eigenen
+        const K = A || { knoten: AnazhRealm._gangSatzKnoten(tex, N, B), klone: new Map(), tonFarbe: null };
+        if (ton && !K.tonFarbe) K.tonFarbe = tonKnoten();
         const S = ton ? 15 : 14; // die Ecke im EINEN Puffer: Vorlage, Normale, Knochen, Gewichte (und ihr Ton)
-        const klone = new Map();
-        const D = tex.image.data;
+        const D = satz.tex.image.data;
         const e = new Float32Array(6);
         for (const sk of spec.senken) {
-            let stoff = klone.get(sk.stoff);
+            const kk = A ? sk.stoff.uuid + (ton ? "|ton" : "") : sk.stoff;
+            let stoff = K.klone.get(kk);
             if (!stoff) {
                 stoff = sk.stoff.clone();
                 stoff.name = spec.name;
-                stoff.positionNode = knoten;
-                if (tonFarbe) stoff.colorNode = tonFarbe;
-                klone.set(sk.stoff, stoff);
-                satz.stoffe.push(stoff);
+                stoff.positionNode = K.knoten;
+                if (ton) stoff.colorNode = K.tonFarbe;
+                K.klone.set(kk, stoff);
+                if (!A) satz.stoffe.push(stoff);
             }
             const P = [];
             const Nn = [];
@@ -101,7 +121,7 @@ class AnazhRealm_stoff_gang {
                 const ix = q.m.geometry.index.array;
                 const basis = P.length / 3;
                 for (let i = 0; i < a.position.count; i++) {
-                    AnazhRealm._gangSatzEcke(D, J, B * N, q, i, e);
+                    AnazhRealm._gangSatzEcke(D, satz.stride, satz.z0 + B * N, q, i, e);
                     P.push(e[0], e[1], e[2]);
                     Nn.push(e[3], e[4], e[5]);
                     C.push(a.color.getX(i), a.color.getY(i), a.color.getZ(i));
@@ -168,7 +188,12 @@ class AnazhRealm_stoff_gang {
             m.name = spec.name;
             m.userData.inventar = spec.inventar;
             m.userData.teil = sk.teil;
-            m.userData.gang = { n: N, baender: B, J, puffer: D };
+            // der Puffer für die Leser auf der CPU (die Linse des Gangs im Satz): im Atlas sieht der Leser seinen Satz als letztes
+            // von `band + 1` Bändern — seine Sicht beginnt `band` Zeilen tiefer, dort liegen die Phasen des Bands bei band·n + k
+            // und sein Stand bei (band + 1)·n (`baender`·n), wie in einem Puffer je Gestalt
+            m.userData.gang = A
+                ? { n: N, baender: satz.band + 1, J: satz.stride, puffer: D.subarray(satz.band * satz.stride * 12) }
+                : { n: N, baender: B, J, puffer: D };
             m.receiveShadow = !sk.wurf;
             m.layers.mask = sk.wurf ? 0 : 1; // der Wurf nur auf der Wurf-Ebene (`_wurfEbene`), das Auge nur auf Ebene 0
             m.castShadow = !!sk.wurf;
@@ -194,7 +219,7 @@ class AnazhRealm_stoff_gang {
                 .multiplyMatrices(inv, teile[nm].matrixWorld)
                 .multiply(q.m.skeleton.boneInverses[j])
                 .multiply(q.m.bindMatrix).elements;
-            const o = (zeile * satz.J + p) * 12;
+            const o = ((satz.z0 + zeile) * satz.stride + p) * 12;
             for (let r = 0; r < 3; r++) {
                 D[o + r * 4] = e[r];
                 D[o + r * 4 + 1] = e[4 + r];
@@ -245,22 +270,89 @@ class AnazhRealm_stoff_gang {
         m.geometry.attributes.aGang.needsUpdate = true;
         m.boundingSphere = null;
     }
-    // DER ABSCHIED EINES SATZES: jede Senke über `_instanzAbschied`, ihre Geometrien, die geklonten Stoffe, der Gang-Puffer
+    // DER ABSCHIED EINES SATZES: jede Senke über `_instanzAbschied`, ihre Geometrien, die geklonten Stoffe, der Gang-Puffer —
+    // im Atlas gibt er nur sein Band frei (Puffer, Knoten und Stoffe gehören der Art)
     _gangSatzAbschied(satz) {
         for (const m of satz.senken) {
             if (m.parent) m.parent.remove(m);
             this._instanzAbschied(m);
         }
         for (const geo of satz.geos) geo.dispose();
+        const A = satz.atlas;
+        if (A) {
+            if (A.saetze.delete(satz)) A.frei.push(satz.band);
+            return;
+        }
         for (const st of satz.stoffe) st.dispose();
         satz.tex.dispose();
+    }
+
+    // DER ATLAS EINER ART (`_gangSatz` mit `spec.atlas`): je Satz ein Band aus `n` Phasen und seinem Stand (`zeilen` = n + 1), je
+    // Zeile 3 Texel je Knochen-Platz (`J`, die Breite des weitesten Satzes); der Knoten und die Stoffe der Art (`klone`, je
+    // Quell-Stoff). Er lebt mit der Welt (ein Feld am Wirt: der Abschied der Welt nimmt seine Karte) und wächst mit seinen Sätzen
+    // (`_gangAtlasWachsen`, GANG_ATLAS).
+    _gangAtlas(art, n, name) {
+        const reg = this._gangAtlanten || (this._gangAtlanten = new Map());
+        let A = reg.get(art);
+        if (!A) {
+            A = { art, name, n, zeilen: n + 1, J: 0, kap: 0, tex: null, frei: [], naechst: 0, saetze: new Set() };
+            Object.assign(A, { klone: new Map(), texKnoten: [], tonFarbe: null });
+            A.knoten = AnazhRealm._gangSatzKnoten(null, n, 1, A);
+            reg.set(art, A);
+        }
+        if (A.n !== n) throw new Error(`GANG-ATLAS ${art}: ${n} Phasen gegen die ${A.n} des Atlas`);
+        return A;
+    }
+    // EIN BAND IM ATLAS für den Satz: ein freies (ein gegangener Satz gab es zurück) oder das nächste; reicht der Puffer nicht
+    // (Bänder oder Knochen-Plätze), wächst er erst
+    _gangAtlasNimm(A, satz) {
+        const band = A.frei.length ? A.frei.pop() : A.naechst++;
+        if (band >= A.kap || satz.J > A.J) this._gangAtlasWachsen(A, band + 1, Math.max(A.J, satz.J));
+        Object.assign(satz, { band, z0: band * A.zeilen, stride: A.J, tex: A.tex });
+        A.saetze.add(satz);
+    }
+    // DER ATLAS WÄCHST (die Bänder verdoppeln sich, ab GANG_ATLAS.baender): ein neuer Puffer, jede Zeile jedes Satzes zieht mit
+    // (die Breite kann wachsen), jeder Textur-Knoten des Knotens liest ihn (`texKnoten`), jeder Satz und jede Senke kennt ihn;
+    // der alte geht nach dem Frame (ein offener Pass las ihn noch).
+    _gangAtlasWachsen(A, baender, J) {
+        const T = THREE;
+        let kap = Math.max(A.kap, AnazhRealm.GANG_ATLAS.baender);
+        while (kap < baender) kap *= 2;
+        const tex = new T.DataTexture(
+            new Float32Array(3 * J * kap * A.zeilen * 4),
+            3 * J,
+            kap * A.zeilen,
+            T.RGBAFormat,
+            T.FloatType
+        );
+        tex.name = A.name + "-gang"; // der Erzeuger heißt wie der Puffer je Gestalt vor dem Atlas (der VRAM-Abgriff, die Ratschen)
+        tex.minFilter = tex.magFilter = T.NearestFilter;
+        tex.generateMipmaps = false;
+        const alt = A.tex;
+        if (alt) {
+            const [D0, D1] = [alt.image.data, tex.image.data];
+            for (const s of A.saetze)
+                for (let z = s.z0; z < s.z0 + A.zeilen; z++)
+                    D1.set(D0.subarray(z * A.J * 12, (z * A.J + s.J) * 12), z * J * 12);
+        }
+        Object.assign(A, { tex, J, kap });
+        for (const s of A.saetze) {
+            Object.assign(s, { tex, stride: J });
+            for (const m of s.senken)
+                Object.assign(m.userData.gang, { J, puffer: tex.image.data.subarray(s.band * J * 12) });
+        }
+        for (const k of A.texKnoten) k.value = tex;
+        tex.needsUpdate = true;
+        if (alt) setTimeout(() => alt.dispose(), 0);
     }
 
     // DER KNOTEN DES GANGS (Lehre 22: r184 rechnet den positionNode VOR der Instanz-Matrix — die Vorlage ist der Raum des
     // Leibs): je Ecke ihre vier Knochen, je Knochen die Matrix zwischen den zwei Phasen um die Phase der Instanz in ihrem Band,
     // gemischt mit dem Stand nach dem Gewicht des Gangs, an die Vorlage der Ecke; die Normale ebenso — sie geht als
     // normalLocal in die Instanz-Normale. Die Mischung ist linear in der Matrix, also dieselbe wie zwischen den Lagen.
-    static _gangSatzKnoten(tex, n, baender) {
+    // Im ATLAS (`atlas`, `_gangAtlas`) trägt jedes Band seinen Stand (Zeile n des Bands) und die Textur ist die des Atlas: jeder
+    // Textur-Knoten merkt sich bei ihm (`texKnoten`), damit ein gewachsener Puffer jeden erreicht.
+    static _gangSatzKnoten(tex, n, baender, atlas = null) {
         const T = THREE.TSL;
         return T.Fn(() => {
             const a = AnazhRealm._senkenKnoten().gang; // der Gang der Instanz (in der Wahl der GPU am Index ihrer Liste)
@@ -268,18 +360,22 @@ class AnazhRealm_stoff_gang {
             const kw = T.attribute("aGewicht", "vec4");
             const roh = T.vec4(T.attribute("aRoh", "vec3"), 1);
             const rohN = T.attribute("aRohN", "vec3");
-            const band = T.floor(a.x).mul(n);
+            const band = T.floor(a.x).mul(atlas ? atlas.zeilen : n);
             const f = T.fract(a.x).mul(n);
             const k0 = T.floor(f);
             const t = f.sub(k0).toVar();
-            const zs = T.int(baender * n);
+            const zs = atlas ? T.int(band.add(n)).toVar() : T.int(baender * n);
             const z0 = T.int(band.add(k0)).toVar();
             const z1 = T.int(band.add(T.mod(k0.add(1), n))).toVar();
             const lage = T.vec3(0).toVar();
             const nrm = T.vec3(0).toVar();
             for (const c of ["x", "y", "z", "w"]) {
                 const j = T.int(ki[c]).mul(3).toVar();
-                const lies = (r, z) => T.textureLoad(tex, T.ivec2(j.add(r), z), T.int(0));
+                const lies = (r, z) => {
+                    const k = T.textureLoad(atlas ? atlas.tex : tex, T.ivec2(j.add(r), z), T.int(0));
+                    if (atlas) atlas.texKnoten.push(k);
+                    return k;
+                };
                 const R = [0, 1, 2].map((r) => T.mix(lies(r, zs), T.mix(lies(r, z0), lies(r, z1), t), a.y).toVar());
                 lage.addAssign(T.vec3(T.dot(R[0], roh), T.dot(R[1], roh), T.dot(R[2], roh)).mul(kw[c]));
                 nrm.addAssign(T.vec3(T.dot(R[0].xyz, rohN), T.dot(R[1].xyz, rohN), T.dot(R[2].xyz, rohN)).mul(kw[c]));
@@ -328,7 +424,7 @@ class AnazhRealm_stoff_gang {
             const s = geo.boundingSphere,
                 c = [s.center.x, s.center.y, s.center.z];
             for (let p = 0; p < satz.J; p++) {
-                const o = (zeile * satz.J + p) * 12;
+                const o = ((satz.z0 + zeile) * satz.stride + p) * 12;
                 let d2 = 0,
                     st = 0;
                 for (let r = 0; r < 3; r++) {
@@ -343,3 +439,8 @@ class AnazhRealm_stoff_gang {
     }
 }
 _stammZonen(AnazhRealm, [AnazhRealm_stoff_gang]);
+
+// ===== ATLAS · Stoff/gang — Außen-Konstanten =====
+// DER ATLAS DES GANGS (`_gangAtlas`, stadt-takt): so viele Bänder trägt sein erster Puffer — eine Stadt mit ihren Dörfern am Messort
+// stadt trug 32 Gestalten (vier Siedlungen zu BEWOHNER.gestalten); jedes Wachsen verdoppelt
+AnazhRealm.GANG_ATLAS = Object.freeze({ baender: 32 });
