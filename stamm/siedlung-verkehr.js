@@ -428,12 +428,13 @@ class AnazhRealm_siedlung_verkehr {
         const pm = this.state.playerMesh;
         if (!alle || !pm) return;
         const V = AnazhRealm.VERKEHR;
-        const p = pm.position;
+        const p = this._lodAuge() || pm.position; // das Auge der Stufen: die Nah-Wahl und die Stufe der Fahrer messen von ihm
         for (const S of alle.values()) {
             const VK = S.verkehr;
             if (!VK || !VK.wagen.length || !S.liste) continue;
             if (VK.boden && VK.boden.offen && VK.boden.offen.length) this._verkehrBodenPumpe(VK.boden);
-            // DIE NAH-WAHL DER FAHRER (das Maß der Bewohner, `BEWOHNER.nahLeiber`): nur die Nächsten am Steuer tragen ihren Leib —
+            // DIE NAH-WAHL DER FAHRER (das Maß der Bewohner, `BEWOHNER.nahLeiber`): nur die Bedeutendsten am Steuer tragen ihren Leib
+            // (`_bedeutung` am Auge: Größe am Schirm mal das Tempo des Wagens) —
             // je Bild zieht ein sichtbarer Leib alle Knochen nach (`_leibMatrix`); bis hier trugen ihn alle im Kreis, am Markt der
             // Metropole ~1,9 ms je Bild außerhalb des Sim-Takts. DAS KOMPOSIT ERBT (das EINE Stufen-Gesetz): wählbar ist nur, wen
             // sein Wagen trägt — gezeichnet in einer 3D-Stufe (`_archTraegt`); der eigene Kreis `leibM` (30 m) fiel, er zeigte den
@@ -441,9 +442,17 @@ class AnazhRealm_siedlung_verkehr {
             const nah = this._verkehrNah || (this._verkehrNah = []);
             nah.length = 0;
             for (const W of VK.wagen)
-                if (W.b.amSteuer && W.entry && this._archTraegt(W.entry))
-                    nah.push(((W.d2 = (W.entry.position.x - p.x) ** 2 + (W.entry.position.z - p.z) ** 2), W));
-            nah.sort((a, c) => a.d2 - c.d2);
+                if (W.b.amSteuer && W.entry && this._archTraegt(W.entry)) {
+                    const e = W.entry;
+                    const bd = this._bedeutung(
+                        1,
+                        Math.hypot(e.position.x - p.x, e.position.z - p.z),
+                        e._fahr && e._fahr.vlong
+                    );
+                    W.bedeutung = W.b.leib && W.b.leib.visible ? bd / (1 - AnazhRealm.LOD_SCHIRM.hyst) ** 2 : bd;
+                    nah.push(W);
+                }
+            nah.sort((a, c) => c.bedeutung - a.bedeutung);
             if (nah.length > AnazhRealm.BEWOHNER.nahLeiber) nah.length = AnazhRealm.BEWOHNER.nahLeiber;
             for (const W of VK.wagen) {
                 // DER SCHICHTWECHSEL: steht der Wagen und will sein Fahrer nicht ans Werk, fährt, wer jetzt dorthin soll

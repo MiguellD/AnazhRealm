@@ -461,7 +461,7 @@ class AnazhRealm_vegetation_wiese {
                 const b = k.bueschel[i];
                 const d = Math.hypot(b.x - ax, b.z - az);
                 if (b.ordnung >= Math.max(0, Math.min(1, (NW.radius - d) / NW.rand + 0.5))) continue;
-                const l1 = k.l1[i] ? d <= NW.stufe1 + NW.stufe1Rand : d <= NW.stufe1;
+                const l1 = this._nahStufe(NW.stufe1, NW.stufe1Rand, d, k.l1[i]);
                 k.l1[i] = l1 ? 1 : 0;
                 const vl = ziel[l1 ? 1 : 2][b.vorlage];
                 if (!vl || !this._passTrifft(L, b.x, b.y + vl.cy * b.s, b.z, 0, 0, 0, vl.r * b.s)) continue;
@@ -1014,7 +1014,7 @@ class AnazhRealm_vegetation_wiese {
         for (let i = 0; i < k.items.length; i++) {
             const it = k.items[i];
             const d = imKreis ? Math.hypot(it.x - cam.x, it.z - cam.z) : Infinity;
-            it.nah = it.nah ? d <= NS.stufe0 + 0.75 : d <= NS.stufe0;
+            it.nah = this._nahStufe(NS.stufe0, 0.75, d, it.nah);
             if (it.nah) {
                 sig += i + ",";
                 n++;

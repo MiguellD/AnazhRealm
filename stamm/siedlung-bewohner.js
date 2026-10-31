@@ -543,25 +543,10 @@ class AnazhRealm_siedlung_bewohner {
             if (n.isMesh) n.castShadow = false;
         });
         g.visible = false;
-        g.userData._kzN = this._bewohnerFeldGrenze(); // die Feld-Grenze seiner Art (`_kzLeib` liest sie)
+        g.userData._menge = true; // der Mensch der Menge: sein Feld wählt das Stufen-Gesetz am Schirm (`_feldGrenzen`)
         this.state.scene.add(g);
         b.leib = g;
         if (G.satz === null) G.satz = this._bewohnerSatz(S, b);
-    }
-
-    // DIE FELD-GRENZE DER BEWOHNER (Gebot 7: die Kosten der Menge an Schirm und Nähe, nie an die Kopfzahl): der Satz trägt einen
-    // Bewohner, solange sein Leib (`feldKoerperM` hoch) am Schirm mindestens `feldPx` Bildpunkte deckt (`_schirm().pxJeM`:
-    // Zeichenpuffer und Sichtfeld) — jenseits tragen die Glieder-Kapseln im Feld die Gestalt (`_kzLeib`; die Decke ist die
-    // Nah-Grenze jedes Leibs, KREATUR_NAH_MESH). Ein kleinerer Schirm schaltet früher. EIN Objekt je Welt, je Takt neu gemessen;
-    // jeder Leib liest es (`_kzN`).
-    _bewohnerFeldGrenze() {
-        const N = this._bewohnerFeldN || (this._bewohnerFeldN = { ein: 0, aus: 0 });
-        const K = AnazhRealm.KREATUR_NAH_MESH;
-        const BW = AnazhRealm.BEWOHNER;
-        const px = this._schirm().pxJeM;
-        N.ein = px ? Math.min(K.ein, (BW.feldKoerperM * px) / BW.feldPx) : K.ein;
-        N.aus = Math.min(K.aus, N.ein + BW.feldHystM);
-        return N;
     }
 
     // DER STAND DES LEIBS an (x, z): auf dem Boden jedes Körpers (Q4: die Fels-Grenze, nie das Dach), an der Tür auf ihrer
@@ -808,7 +793,8 @@ class AnazhRealm_siedlung_bewohner {
         let wege = 0;
         let ankuenfte = 0;
         let frist = null; // die Frist der Listen dieses Takts (`listeMs`), gestellt mit dem ersten Schritt einer Liste
-        const NF = this._bewohnerFeldGrenze();
+        const auge = this._lodAuge() || p; // das Auge der Stufen: Feld, Nah-Wahl, Stufe und Takt der Leiber messen von ihm
+        const arm = Math.hypot(auge.x - p.x, auge.z - p.z);
         // DER SPIELER IST EIN LEIB (mensch.K5, „Ausweichen ohne Berührung"): sein Lauf dieses Takts (`_spielerLageAlt`, der
         // Kreatur-Takt rechnet ihn vor diesem) und sein Weg `ausweichS` voraus (`voraus`) — jeder Bewohner weicht ihm wie einem
         // Gehenden mit Vorrang (`_bewohnerAusweichen`), wer steht, macht ihm Platz (`_bewohnerPlatz`); steht er (unter 0,2 m/s,
@@ -964,6 +950,7 @@ class AnazhRealm_siedlung_bewohner {
                     this._bewohnerRasterLage(S, b); // die nächste Ankunft sieht ihn, wo er ankam
                 }
                 const bd2 = (b.d2 = (g.position.x - p.x) ** 2 + (g.position.z - p.z) ** 2);
+                const ad2 = (b.dA2 = (g.position.x - auge.x) ** 2 + (g.position.z - auge.z) ** 2);
                 // DIE TÜR (mensch.K3 Staffel 2): wer hinaus soll (`_bewohnerZiel`), tritt aus ihr, wenn keiner in ihr und vor
                 // ihr steht — bis dahin wartet er drinnen
                 if (
@@ -1028,10 +1015,7 @@ class AnazhRealm_siedlung_bewohner {
                 }
                 if (b.weg) {
                     b.gehDt = (b.gehDt || 0) + delta;
-                    const div = Math.max(
-                        1,
-                        this._creatureAnimDiv(Math.sqrt(bd2), u._gelenk.abM * g.scale.x, 0, delta, true)
-                    );
+                    const div = Math.max(1, this._creatureAnimDiv(Math.sqrt(ad2), this._gelenkAb(g), 0, delta, true));
                     if ((b.gehTakt = ((b.gehTakt || 0) + 1) % div) === 0) {
                         const dt = b.gehDt;
                         b.gehDt = 0;
@@ -1047,13 +1031,13 @@ class AnazhRealm_siedlung_bewohner {
                 }
                 // der Glieder-Satz fragt nur, wer seine Seite wechseln kann oder noch keinen Satz trägt — die Knochen eines
                 // stehenden Leibs ruhen, seine Glieder stehen nach dem ersten Schreiben (Lehre 25: der Takt kostet, was ihn betrifft)
-                const N = NF;
+                const N = this._feldGrenzen(true);
                 if (
                     echt &&
                     !b.drinnen &&
                     (u._kzNah === undefined ||
                         !u._kzVersuch ||
-                        (u._kzNah === true ? bd2 >= N.aus * N.aus : bd2 < N.ein * N.ein))
+                        (u._kzNah === true ? ad2 >= N.aus * N.aus : ad2 < N.ein * N.ein))
                 ) {
                     // wer aus dem Feld in den Nah-Kreis tritt, nimmt seine Pose mit: im Feld ging sein Rig nicht
                     // (`_bewohnerFeldLage`), die schwindenden Glieder folgen ab hier seinen Knochen
@@ -1061,22 +1045,27 @@ class AnazhRealm_siedlung_bewohner {
                         this._animateHuman(g, b.uhr + b.atem, b.walkPhase || 0, !!b.weg, false, null, b._gait);
                         this._leibMatrix(g);
                     }
-                    this._kzLeib(g, p, true); // die Glieder backen vorab: wer hinausgeht, trägt sein Feld ab dem ersten Schritt
+                    this._kzLeib(g, auge, true); // die Glieder backen vorab: wer hinausgeht, trägt sein Feld ab dem ersten Schritt
                     if (this._kzBesitztFeld(g)) this._bewohnerFeldLage(b, S); // wer ins Feld tritt, geht dort seinen Gang
                 }
                 // DER NAH-KREIS: wer draußen keinem Feld gehört (`_kzBesitztFeld` — diesseits der Nah-Grenze, ohne Bild und
                 // fern, bis der Bake-Takt seine Glieder backt: bis dahin trägt der Körper), steht darin: der Satz, die Nächsten
-                // leben (`nahM`); wer drinnen ist, steht in keinem Kreis
+                // leben (`nahM` vom Auge); wer drinnen ist, steht in keinem Kreis
                 const kreis = !b.drinnen && !(echt && this._kzBesitztFeld(g));
                 if (kreis !== b.kreis) anders = true;
                 b.kreis = kreis;
                 const rN = b.nah ? BW.nahM + BW.nahHystM : BW.nahM;
-                if (kreis && bd2 < rN * rN) nah.push(b);
+                if (kreis && ad2 < rN * rN) {
+                    // die Bedeutung (`_bedeutung`: Größe am Schirm mal Gang), wer lebt, mit der Hysterese der Gestalt bedeutender
+                    const bd = this._bedeutung(g.scale.y || 1, Math.sqrt(ad2), b.weg ? b.tempoJetzt : 0);
+                    b.bedeutung = b.nah ? bd / (1 - u._gelenk.hyst) ** 2 : bd;
+                    nah.push(b);
+                }
             }
             S.ankunftOffen = ankuenfte >= BW.ankunftJeTakt; // es warten noch Ankünfte (der Verkehr hält, `_verkehrFolge`)
-            // DIE NAH-WAHL: höchstens `nahLeiber` der Nächsten leben (Gang, Atem, Stufen, Blick des Leibs) — jeder andere im
+            // DIE NAH-WAHL: höchstens `nahLeiber` der Bedeutendsten leben (Gang, Atem, Stufen, Blick des Leibs) — jeder andere im
             // Nah-Kreis steht im Satz seiner Gestalt; der Wechsel schaltet nur `visible` und schreibt die Sätze neu
-            nah.sort((a, b) => a.d2 - b.d2);
+            nah.sort((a, b) => b.bedeutung - a.bedeutung);
             if (nah.length > BW.nahLeiber) nah.length = BW.nahLeiber;
             for (const b of koepfe) {
                 const g = b.leib;
@@ -1109,11 +1098,10 @@ class AnazhRealm_siedlung_bewohner {
                 let neu = b.lageNeu === true;
                 let gepost = false;
                 b.lageNeu = false;
-                if (!this._gelenkStufe(g, b.d2)) {
-                    const u = g.userData;
+                if (!this._gelenkStufe(g, b.dA2)) {
                     const geht = !!b.weg;
                     const om = b._gait ? b._gait.omega : 0;
-                    const div = this._creatureAnimDiv(Math.sqrt(b.d2), u._gelenk.abM * g.scale.x, om, delta, geht);
+                    const div = this._creatureAnimDiv(Math.sqrt(b.dA2), this._gelenkAb(g), om, delta, geht);
                     if (div !== 0 && (b.takt = (b.takt + 1) % div) === 0) {
                         const dtA = Math.min(0.25, b.animDt);
                         b.animDt = 0;
@@ -1131,7 +1119,9 @@ class AnazhRealm_siedlung_bewohner {
             // wer ruht, wartet auf seinen Takt (`fernS`: so weit kommt der Spieler bis dahin, `m`); wer nie geboren wird, auf keinen
             const m = Math.max(spV, st.sprintSpeed || 0, st.speed || 0) * BW.fernS;
             const innen = Math.max(BW.nahM + BW.nahHystM, kDeckel + spV * BW.ausweichS) + m;
-            S.aktiv = koepfe.filter((b) => b.leib !== false && !(b.ruht = this._bewohnerRuhig(b, innen, m, NF, echt)));
+            S.aktiv = koepfe.filter(
+                (b) => b.leib !== false && !(b.ruht = this._bewohnerRuhig(b, innen, m + arm, echt))
+            );
             for (const b of koepfe) if (b.ruht) S.ruhend.push(b);
             [S.koepfe, S.taktUhr] = [null, S.taktUhr + delta];
         }
@@ -1140,8 +1130,9 @@ class AnazhRealm_siedlung_bewohner {
     // DER RUHENDE (bewohner-takt, `_tickBewohner`): er trägt einen Leib, steht an seinem Ziel ohne Weg, ohne Vorhaben (Tür, Platz,
     // Ankunft), ohne Wende und Gang, lebt nicht als Leib — und ist drinnen oder steht jenseits von `innen` (der Kreis des Lebens
     // und der Raum des Spielers, dazu sein Weg `m` bis zum nächsten Takt des Ruhenden), mit Bild diesseits der Grenze seiner Seite
-    // (`_bewohnerFeldGrenze`: im Satz unter `aus`, im Feld über `ein`, je um `m`) — keine Grenze, die er bis dahin kreuzt.
-    _bewohnerRuhig(b, innen, m, N, echt) {
+    // am Auge der Stufen (`_feldGrenzen`: im Satz unter `aus`, im Feld über `ein`, je um `m` — darin der Arm der Kamera, das Auge
+    // kreist um den Spieler) — keine Grenze, die er bis dahin kreuzt.
+    _bewohnerRuhig(b, innen, m, echt) {
         if (!b.leib || !b.da || b.weg || b.platz || b.hinaus || b.ankunft || b.nah || b.drehen != null || b._gaitW > 0)
             return false;
         if (b.drinnen) return true;
@@ -1149,7 +1140,8 @@ class AnazhRealm_siedlung_bewohner {
         const u = b.leib.userData;
         if (!echt) return true;
         if (!u._kzVersuch) return false;
-        const d = Math.sqrt(b.d2);
+        const N = this._feldGrenzen(true);
+        const d = Math.sqrt(b.dA2);
         return u._kzNah === true ? d < N.aus - m : u._kzNah === false && d > N.ein + m;
     }
 
@@ -1406,7 +1398,7 @@ class AnazhRealm_siedlung_bewohner {
         g.userData._drinnen = b.drinnen;
         this._leibMatrix(g);
         if (g.userData._kzGlieder) for (const gl of g.userData._kzGlieder) this._weltFeldAktiv(gl.handle, false);
-        if (echt && !b.drinnen) this._kzLeib(g, p, true);
+        if (echt && !b.drinnen) this._kzLeib(g, this._lodAuge() || p, true);
         if (echt && !b.drinnen && this._kzBesitztFeld(g)) this._bewohnerFeldLage(b, S);
     }
 
@@ -2543,8 +2535,8 @@ _stammZonen(AnazhRealm, [AnazhRealm_siedlung_bewohner]);
 // (`_bewohnerListe` in Raten je Frage an das Netz, `_bewohnerStandPruefen` je Stand; ohne Bild trägt ein Takt das ganze) ·
 // fernFaktor = jenseits nearM × fernFaktor gehen die Leiber ·
 // nahM (+ nahHystM zurück) / nahLeiber = so nah und so viele leben als Leib (Atem, Stufen), jeder andere im Nah-Kreis steht
-// im Satz seiner Gestalt (`_bewohnerSatz`: die Befehle hängen nie an der Kopfzahl) · feldKoerperM / feldPx (+ feldHystM zurück) = der Satz trägt, solange
-// ein Leib so hoch am Schirm so viele Bildpunkte deckt, jenseits das Feld (`_bewohnerFeldGrenze`) · gangPhasen = die Phasen des Doppelschritts im Gang-Puffer, gangJeTakt = so viele backt ein
+// im Satz seiner Gestalt (`_bewohnerSatz`: die Befehle hängen nie an der Kopfzahl; wo der Satz dem Feld weicht, sagt das Stufen-
+// Gesetz, `_feldGrenzen` mit LOD_SCHIRM.leib) · gangPhasen = die Phasen des Doppelschritts im Gang-Puffer, gangJeTakt = so viele backt ein
 // Takt · platzRandM = so weit vom Rand des Platzes steht, wer auf ihm keinen Stand fand. DER TAG (mensch.K2): planH = so viele
 // Stunden der Uhr, bis jeder seinen Plan neu liest (0,002 h = 0,3 s am Tag von 60 min: so spät geht er nach seiner Wende los,
 // ≤ 0,5 m hinter der Ankunft) · DIE ANKUNFT (`_bewohnerAnkunft`): ankunftH = so viele Stunden spielt der Leib seinen Tag nach,
@@ -2583,9 +2575,6 @@ AnazhRealm.BEWOHNER = Object.freeze({
     nahM: 8,
     nahHystM: 1,
     nahLeiber: 4,
-    feldKoerperM: 1.8,
-    feldPx: 64,
-    feldHystM: 4,
     gangPhasen: 16,
     gangJeTakt: 2,
     platzRandM: 10,

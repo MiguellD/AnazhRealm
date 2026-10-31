@@ -2652,13 +2652,16 @@ class AnazhRealm_siedlung_bauten {
         const k = wer + ">" + wen;
         s.schreiben[k] = (s.schreiben[k] || 0) + 4 * n;
     }
-    // Die Stufe nach den Grenzen des Gesetzbuchs: wer eine Stufe trägt, hält sie bis (1 − h)·ab, wer davor steht, kommt ab
-    // (1 + h)·ab hinein; ohne Zustand (Spawn) die Grenze selbst. `s` = die Welt-Skala des Eintrags.
+    // DIE EINE WAHL DER STUFE (das Stufen-Gesetz, lod.K5 — jede Familie wählt hier: Bau, Tor, Baum, Streu, Wagen, Mensch, Tier):
+    // wer eine Stufe trägt, hält sie bis (1 − h)·ab, wer davor steht, kommt ab (1 + h)·ab hinein; ohne Zustand (Spawn) die Grenze
+    // selbst. `G` = die Grenzen des Gesetzes (`_wechselGesetz`: der Fehler der Stufe am Schirm, höchstens ihr Haushalt), je Grenze
+    // ihre Hysterese `h` (sonst die der Art, G.h); `s` = die Größe des Eintrags (die Grenzen stehen bei Größe 1).
     static _stufeNachGrenzen(d, cur, G, s) {
         let st = G.erste;
         for (const g of G.grenzen) {
             const ab = g.ab * s;
-            const schwelle = !Number.isFinite(cur) ? ab : cur >= g.stufe ? ab * (1 - G.h) : ab * (1 + G.h);
+            const h = g.h > 0 ? g.h : G.h;
+            const schwelle = !Number.isFinite(cur) ? ab : cur >= g.stufe ? ab * (1 - h) : ab * (1 + h);
             if (d > schwelle) st = g.stufe;
         }
         return st;

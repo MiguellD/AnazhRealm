@@ -198,12 +198,17 @@ async function kreaturProben(r, T, opts) {
         if (s.player.emotions)
             Object.assign(s.player.emotions, { joy: 0, awe: 0, sorrow: 0, hope: 0, peace: 0, chaos: 0 }, e);
     };
+    // DIE KAMERA DER BÜHNE ist ihr Rig: der Blick aus dem Kopf des Spielers SETZT das Auge der Stufen (`_lodAugeGesetzt`, K36 —
+    // wie das Rig je Bild), es reist mit dem Spieler bis zur nächsten Kamera. Ohne Setzung band erst die nächste Lesung den
+    // Spieler, nach seinem Sprung: am Querhang stand das Auge 81 m von ihm am alten Ort, und jede Probe danach erbte es
+    // (tiersatz: 43 von 50 Tieren jenseits der Feld-Grenze als Leib, der Satz leer). Ihr Inverses trägt die Kamera selbst
+    // (three `Camera.updateMatrixWorld`).
     const kamera = (blickX, blickZ, blickY = 0) => {
         const cam = s.camera;
         cam.position.set(pm.x, pm.y + 1.6, pm.z);
         cam.lookAt(pm.x + blickX, pm.y + 1.6 + blickY, pm.z + blickZ);
         cam.updateMatrixWorld(true);
-        if (cam.matrixWorldInverse) cam.matrixWorldInverse.copy(cam.matrixWorld).invert();
+        r._lodAugeGesetzt();
         r._loopFrustumCulling();
     };
     const imBlick = (x, y, z) => {
@@ -762,7 +767,7 @@ async function kreaturProben(r, T, opts) {
 
     // ── jagd: an drei Orten ein Rudel und sechs Kitze im Nah-Kreis des Spielers, je 180 s am ECHTEN Takt samt dem
     // Lebenszyklus in der Spiel-Zeit (`tickFaunaLifecycle`, wie im Spiel; der Prüfer von Zug 29 sah dort 14 Risse ohne Jäger):
-    // der Lauf der Wölfe folgt der Peilung, nie den Achsen; jeder Tod durch Jagd im Nah-Kreis (KREATUR_NAH_MESH.ein) hat
+    // der Lauf der Wölfe folgt der Peilung, nie den Achsen; jeder Tod durch Jagd im Nah-Kreis (ANALOG_NAH_M, das Feld) hat
     // einen Jäger, dessen Maul den Leib erreicht (`_kreaturBissSpalt` ≤ `_kreaturBissReich`: nah als Körper, oekologie.K2);
     // dann geht der Spieler fort, und jedes Opfer, das ein Riss im Nah-Kreis nannte (`_kreaturRiss`), ist gefallen — je Riss
     // EINES (der Übergang ändert nie den Bestand) ──
@@ -780,7 +785,7 @@ async function kreaturProben(r, T, opts) {
                 for (const c of s.creatures.slice())
                     if (c.userData._faelltNach) r._creatureNaturalDeath(c, c.userData._faelltNach, false);
             });
-        const nah = (c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < A.KREATUR_NAH_MESH.ein;
+        const nah = (c) => Math.hypot(c.position.x - pm.x, c.position.z - pm.z) < A.ANALOG_NAH_M;
         const R = { nah: 0, mitJaeger: 0, risse: 0, gefallen: 0 };
         // ein Riss: der Lebenszyklus nennt ein Opfer, das noch kein Riss nannte (die offenen Risse fragt er mit ihrem Opfer)
         const genannt = new Set();
@@ -2563,7 +2568,7 @@ async function kreaturProben(r, T, opts) {
             M.messen(dt, performance.now() - t0);
         };
         // DER NAH-RING (mensch.K1 Staffel 2), ein Messer wie `wegeMesser`: Bewohner gesamt, im Nah-Ring (draußen, näher
-        // als die Feld-Grenze `_bewohnerFeldGrenze().ein`: dort trägt ihn der Satz) und davon mit laufendem Gang (die Phase
+        // als die Feld-Grenze der Menge `_feldGrenzen(true).ein`: dort trägt ihn der Satz) und davon mit laufendem Gang (die Phase
         // lief in den letzten 10 Takten über 0,2 rad) — gezählt unter der Decke des Täters
         // DIE MENGE (mensch.K4 Staffel 2) im selben Messer, roh — das Urteil fällt in der Station: die 50 Nächsten draußen, je
         // Bewohner [Same, Typ, Höhe, Breite, Tiefe, nah, Farben] (die Matrix seines Satzes und seine eigenen Farben — Haut, Haar,
@@ -2572,7 +2577,7 @@ async function kreaturProben(r, T, opts) {
         // (Bildpunkte je m am Rand der Nah-Wahl), der Takt `_tickBewohner` (Mittel, p95 in ms)
         const ringMesser = (liste, ph = new Map(), k = 0, ms = []) => ({
             messen: (dt, t) => (ms.push(t), ++k === 591 && liste.forEach((b) => ph.set(b, b.walkPhase))),
-            zahl: (N = r._bewohnerFeldGrenze().ein) => {
+            zahl: (N = r._feldGrenzen(true).ein) => {
                 const nah = liste.filter((b) => !b.drinnen && ab(b.leib.position, pm) < N);
                 const gang = nah.filter((b) => Math.abs(wrap(b.walkPhase - ph.get(b))) > 0.2).length;
                 return { gesamt: liste.filter((b) => b.leib).length, ring: q3(N), nah: nah.length, nahGang: gang };
@@ -2629,7 +2634,7 @@ async function kreaturProben(r, T, opts) {
             const T = voll
                 ? [
                       ["bewohner-voll-starr", "_gaitTick", (alt) => (g, h, v, d, q) => alt.call(r, g, h, 0, 0, q)],
-                      ["bewohner-voll-leer", "_bewohnerFeldGrenze", () => () => ({ ein: 0, aus: 0 })],
+                      ["bewohner-voll-leer", "_feldGrenzen", () => () => ({ erste: 3, grenzen: [] })],
                   ]
                 : [
                       ["bewohner-stadt-rempeln", "_bewohnerAusweichen"],
@@ -2706,7 +2711,7 @@ async function kreaturProben(r, T, opts) {
             cam.position.copy(auge);
             cam.lookAt(pc.x, pm.y + 0.6, pc.z);
             cam.updateMatrixWorld(true);
-            if (cam.matrixWorldInverse) cam.matrixWorldInverse.copy(cam.matrixWorld).invert();
+            r._lodAugeGesetzt(); // der Schuss setzt das Auge der Stufen wie die Kamera der Bühne (`kamera`)
             return zaehlt.filter((b) => {
                 const [x, y, z] = [b.position.x, b.position.y + 0.4, b.position.z];
                 const d = auge.distanceTo({ x, y, z });
