@@ -1008,6 +1008,13 @@ function taeterFaelle(faelle, urteil, { fehler = [], klon } = {}) {
     }
     return fehler;
 }
+// DIE ABWANDLUNG eines grünen Befunds (der Täter eines Falls `{ name, z: mit(pfad, wert), muss }`): ein frischer Klon, `wert`
+// gemischt in den Knoten unter `pfad` („a.b", leer = die Wurzel) — EINMAL hier statt eines Klon-Helfers je Linse
+const abwandlung = (gruen) => (pfad, wert) => {
+    const z = JSON.parse(JSON.stringify(gruen));
+    Object.assign(pfad ? pfad.split(".").reduce((o, k) => o[k], z) : z, wert);
+    return z;
+};
 function selbsttestEnde(fehler, satz = "jeder injizierte Täter fällt rot und wird beim Namen genannt.") {
     if (fehler.length) {
         console.log("\n❌ SELBSTTEST ROT — die Wand ist vakuös: " + fehler.join(" · "));
@@ -1339,6 +1346,7 @@ module.exports = {
     uferStellen,
     pruefer,
     taeterFaelle,
+    abwandlung,
     selbsttestEnde,
     wandEnde,
     startProc,
