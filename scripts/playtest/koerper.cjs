@@ -1764,12 +1764,15 @@ async function checkBandKoerperBewegung({ page, check }) {
         o.checks.cBlendNaNWand = Number.isFinite(r._gaitBlendStep(NaN, NaN, NaN));
     
         // ── (S1) SELBST-TEST: hartes Blend gestubbt → die Messung sieht den Sprung ──
-        const savedBlend = r._gaitBlendStep;
-        r._gaitBlendStep = function (_w, speed) {
+        // der Blend wohnt im EINEN Gang-Takt des Kerns (koerper-core `leibGangBlend`, w4-koerper-park): der Stub sitzt dort, wo Welt
+        // und Körper-Studio ihn lesen
+        const KCb = window.__koerperCore;
+        const savedBlend = KCb.leibGangBlend;
+        KCb.leibGangBlend = function (_w, speed) {
             return Number.isFinite(speed) && speed > 0.4 ? 1 : 0;
         };
         const blStub = blendLauf();
-        r._gaitBlendStep = savedBlend; // restaurieren (Gate-Hook-Lehre)
+        KCb.leibGangBlend = savedBlend; // restaurieren (Gate-Hook-Lehre)
         o.s1MaxJump = blStub.maxJump;
         o.checks.s1LensFires = blStub.maxJump > 0.2;
     

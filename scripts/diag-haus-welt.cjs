@@ -488,7 +488,7 @@ async function proben(phasen) {
                 let [dx, dz] = [w.x - pm.position.x, w.z - pm.position.z];
                 const dn = dx * s._wandKontaktNx + dz * s._wandKontaktNz;
                 if (
-                    s._simZeit - s._wandKontaktAt < A._parkourGesetz().kontaktFrischeSec &&
+                    s._simZeit - s._wandKontaktAt < window.__koerperCore.leibGesetz().parkour.kontaktFrischeSec &&
                     dn < -Math.SQRT1_2 * Math.hypot(dx, dz)
                 )
                     [dx, dz] = [dx - dn * s._wandKontaktNx, dz - dn * s._wandKontaktNz];

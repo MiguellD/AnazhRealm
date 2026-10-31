@@ -6186,7 +6186,52 @@
         { id: "bohle", lab: "Bohle", min: 0.2, max: 0.32, step: 0.02, def: 0.26, law: "die Breite einer Bohle — schmale Bohlen tragen mehr Fugen über das Feld", grp: "FORM" },
         { id: "verwitterung", lab: "Verwitterung", min: 0, max: 1, step: 0.05, def: 0.5, law: "das Alter des Holzes — Sonnenbleiche auf den Bohlen, das Nasse an Joch und Pfahl", grp: "MATERIAL" },
     ];
+    // ═══ DIE GERÄTE DES SPIELPLATZES (w4-koerper-park, rein additiv): Schaukel · Rutsche · Klettergerüst · Wippe · Reck · Balken ·
+    //     Kletterwand · Hangel-Leiter — Werke des Zimmermanns auf derselben Maschine (Bake · Stufen [0, 1, 3] · Wurf · Hülle · Raster ·
+    //     Substanz der Wirts-Zeile B7), jedes mit seinem ANGEBOT als Daten (`geraetAngebot`: das Verb, die Griff- und Tritt-Anker,
+    //     die Pendel- bzw. Dreh-Achse, die Bahn; ihr Ort ist der `spielplatz`, nie der Dorfplatz `platz` von Bank, Brunnen und
+    //     Marktstand) — der Ninja-Park des Körperstudios IST der Spielplatz der Welt: das Labor stellt
+    //     dieselben Werke auf, der EINE Bewegungs-Takt des Leibs (koerper-core `leibPlan`, `leibVerbPose`) liest dasselbe Angebot.
+    //     Die Maße sind Norm (DIN EN 1176: Sitz der Schaukel ≥ 0,35 m, Rutsche ≤ 40° mit Auslauf, Sprossen 0,25–0,40 m, Fallraum),
+    //     kein Regler rückt sie: Kollision == Optik == Angebot. Was schwingt (der Sitz an der Kette, der Hebel der Wippe), bäckt als
+    //     eigenes Teil um seine Achse (`userData.__schwenk`: Teil, Achse, Punkt) — der Wirt dreht es mit dem Zustand des Geräts. ═══
+    var GERAETE = {
+        doppelschaukel: { kind: "schaukel", art: "Schaukel", lab: "Doppelschaukel · A-Böcke, Balken, Ketten, Sitze", gestalten: 1, siteTag: "spielplatz", salz: 0x91a3 },
+        turmrutsche: { kind: "rutsche", art: "Rutsche", lab: "Turmrutsche · Podest, Sprossenleiter, Blechbahn mit Auslauf", gestalten: 1, siteTag: "spielplatz", salz: 0x92b5 },
+        sprossengeruest: { kind: "klettergeruest", art: "Klettergerüst", lab: "Sprossengerüst · Pfosten, Sprossen, Podest", gestalten: 1, siteTag: "spielplatz", salz: 0x93c7 },
+        balkenwippe: { kind: "wippe", art: "Wippe", lab: "Balkenwippe · Bock, Hebel, Sitze, Griffe, Puffer", gestalten: 1, siteTag: "spielplatz", salz: 0x94d9 },
+        turnreck: { kind: "reck", art: "Reck", lab: "Turnreck · Pfosten, Streben, Stange", gestalten: 1, siteTag: "spielplatz", salz: 0x95eb },
+        schwebebalken: { kind: "balken", art: "Balken", lab: "Schwebebalken · Balken auf drei Böcken", gestalten: 1, siteTag: "spielplatz", salz: 0x96fd },
+        kletterwand: { kind: "wand", art: "Kletterwand", lab: "Kletterwand · Wand, Griffe, Podest, Geländer", gestalten: 1, siteTag: "spielplatz", salz: 0x9811 },
+        hangelbahn: { kind: "hangelleiter", art: "Hangel-Leiter", lab: "Hangel-Leiter · Leiter-Böcke, Holme, Sprossen", gestalten: 1, siteTag: "spielplatz", salz: 0x9923 },
+    };
+    // B4 — die Regler der Geräte: die Fase der Hölzer und ihr Alter (die Maße sind Norm, kein Regler rückt sie)
+    var GERAET_PARAMS = [
+        { id: "fase", lab: "Fase", min: 0.002, max: 0.012, step: 0.001, def: 0.008, law: "das Zimmermanns-Gesetz: keine Kante bleibt scharf (2 mm die gebrochene Kante), die Fase fängt das Licht", grp: "FORM" },
+        { id: "verwitterung", lab: "Verwitterung", min: 0, max: 1, step: 0.05, def: 0.5, law: "das Alter des Holzes — Sonnenbleiche oben, Erdsaum an den Füßen", grp: "MATERIAL" },
+    ];
+    // B2/B2c — Stufen und Budget je Art (gemessen am Rand jedes Reglers; die Zeile ist die Ratsche, sie darf nur fallen): nah die
+    // gefasten Hölzer mit Holznägeln und das Eisen (Kette, Blech, Stange, Sprosse) als zweiter Stoff, fern die L1 ohne Fase mit
+    // einfacher Kette, die Stufe 3 wirft für die L1 (nurWurf); jede Zeile unter dem Spielplatz-Deckel (L0 ≤ 1 800, L1 ≤ 240,
+    // Wurf ≤ 30 Dreiecke). Die Befehle zählen je Seh-Klasse und Teil: was schwingt, ist ein eigenes Teil mit seinen Stoffen
+    // (die Schaukel: das Gestell und zwei Sitze mit Kette, die Wippe: der Bock und der Hebel).
+    var GERAET_BUDGET = {
+        schaukel: { 0: { tris: 1284, draws: 5, schatten: 0 }, 1: { tris: 156, draws: 5, schatten: 3 }, 3: { tris: 22, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
+        rutsche: { 0: { tris: 924, draws: 2, schatten: 0 }, 1: { tris: 228, draws: 2, schatten: 3 }, 3: { tris: 24, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
+        klettergeruest: { 0: { tris: 856, draws: 2, schatten: 0 }, 1: { tris: 240, draws: 2, schatten: 3 }, 3: { tris: 20, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
+        wippe: { 0: { tris: 448, draws: 4, schatten: 0 }, 1: { tris: 132, draws: 4, schatten: 3 }, 3: { tris: 14, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
+        reck: { 0: { tris: 320, draws: 2, schatten: 0 }, 1: { tris: 84, draws: 2, schatten: 3 }, 3: { tris: 26, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
+        balken: { 0: { tris: 344, draws: 1, schatten: 0 }, 1: { tris: 84, draws: 1, schatten: 3 }, 3: { tris: 14, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
+        wand: { 0: { tris: 992, draws: 1, schatten: 0 }, 1: { tris: 164, draws: 1, schatten: 3 }, 3: { tris: 20, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
+        hangelleiter: { 0: { tris: 840, draws: 2, schatten: 0 }, 1: { tris: 240, draws: 2, schatten: 3 }, 3: { tris: 18, draws: 1, schatten: 3, nurWurf: true }, fernform: "huelle" },
+    };
+    for (var _gw in GERAETE) {
+        WERKE[_gw] = GERAETE[_gw];
+        PORTAL_RENDER_CONFIG.lod.kindStages[GERAETE[_gw].kind] = [0, 1, 3];
+        PORTAL_RENDER_CONFIG.lod.budget[GERAETE[_gw].kind] = GERAET_BUDGET[GERAETE[_gw].kind];
+    }
     var AUS_ARTEN = { ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS, bruecke: BRUECKE_PARAMS };
+    for (var _ga in GERAETE) AUS_ARTEN[GERAETE[_ga].kind] = GERAET_PARAMS;
     for (var _wk in WERKE)
         PRESETS[_wk] = { kind: WERKE[_wk].kind, lab: WERKE[_wk].lab, s: ausParams({ kind: WERKE[_wk].kind }, null), fx: { place: { mode: "site", siteTag: WERKE[_wk].siteTag } } };
     // ── DIE SITZBANK (Front +z: der Sitzende blickt längs +z): zwei Wangen — Vorderbein, Hinterbein, der Lehnen-Pfosten um
@@ -6460,6 +6505,570 @@
             };
         },
     };
+    // ── DIE GERÄTE (w4-koerper-park): die Maße (Norm, Meter, Ursprung am Boden in der Mitte, +z die Front), der Bau je Stufe, die
+    //    Substanz, der Wurf, die Hülle und das Angebot — alle aus DERSELBEN Maß-Funktion (`AUS_MASS[id]`). ──
+    // ein Holz von a nach b (Querschnitt dx × dz, gefast nah), ein Rundstahl von a nach b (Ø d, nah acht Seiten), ein Brett/Kasten
+    function _gHolz(g, a, b, dx, dz, fa, ton, W) {
+        var l = Math.sqrt((b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1]) + (b[2] - a[2]) * (b[2] - a[2]));
+        var geo = ausStrecke(ausSetze(ausKiste(dx, l, dz, fa), 0, l / 2, 0), a, b);
+        ausFaerbe(geo, "holz", W, function () {
+            return { ton: ton };
+        });
+        ausTeil(g, geo, "holz");
+    }
+    function _gStahl(g, a, b, d, fein, ton) {
+        var l = Math.sqrt((b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1]) + (b[2] - a[2]) * (b[2] - a[2]));
+        var geo = fein ? ausStrecke(ausDreh([[d / 2, 0], [d / 2, l]], 8, true, true), a, b) : ausStrecke(ausSetze(ausKiste(d, l, d, 0), 0, l / 2, 0), a, b);
+        ausFaerbe(geo, "metall", 0, function () {
+            return { ton: ton };
+        });
+        ausTeil(g, geo, "metall");
+    }
+    function _gKasten(g, rolle, sx, sy, sz, x, y, z, fa, ton, W, rx) {
+        var geo = ausSetze(ausKiste(sx, sy, sz, fa), x, y, z, rx || 0, 0, 0);
+        ausFaerbe(geo, rolle, rolle === "metall" ? 0 : W, function () {
+            return { ton: ton };
+        });
+        ausTeil(g, geo, rolle);
+    }
+    // die schwingende Gruppe eines Geräts: ihr Ursprung ist der Drehpunkt, die Geometrie relativ zu ihm (der Wirt dreht sie um
+    // `achse` mit dem Zustand des Geräts: die Schaukel um θ, die Wippe um φ)
+    function _gSchwenk(g, teil, punkt, achse) {
+        var s = new THREE.Group();
+        s.userData.__schwenk = { teil: teil, punkt: punkt.slice(), achse: achse.slice() };
+        g.add(s);
+        return s;
+    }
+    var GERAET_MASS = {
+        // DIE DOPPELSCHAUKEL: zwei A-Böcke (Pfosten 0,12 m, je 0,85 m vor und hinter dem Balken am Boden), der Balken auf 2,4 m (0,14 m),
+        // je Sitz zwei Ketten (Gelenk 2,33 m — Unterkante des Balkens) zum Sitzbrett (Oberkante 0,45 m, 0,46 × 0,17 m), die Sitze bei
+        // x = ±0,6 (die Kette 1,88 m, der Abstand der Ketten 0,42 m), der Griff an der Kette 0,35 m über dem Sitz (die Hand unter der
+        // Schulter, der Ellbogen gebeugt); der Querriegel jedes Bocks auf 1,0 m
+        doppelschaukel: function () {
+            return { xB: 1.55, zF: 0.85, yB: 2.4, bB: 0.14, bP: 0.12, yG: 2.33, xS: [0.6, -0.6], kx: 0.21, yS: 0.45, sx: 0.46, sz: 0.17, sd: 0.04, yR: 1.0, griffH: 0.35, glied: 0.12 };
+        },
+        // DIE TURMRUTSCHE: das Podest 1,0 × 1,0 m auf 1,5 m (vier Pfosten bis 2,4 m, Geländer links und rechts auf 2,1 und 2,4 m), die
+        // Sprossenleiter hinten (z = −0,5, Sprossen 0,3 · 0,6 · 0,9 · 1,2 m und die Haltesprossen 1,8 · 2,1 m), die Blechbahn vorn
+        // 0,5 m breit mit 0,18-m-Wangen: 33° auf 0,32 m (Lauf 1,85 m), der Auslauf 0,6 m auf 0,27 m (μ 0,35: unten 2,8 m/s)
+        turmrutsche: function () {
+            return { h: 1.5, b: 0.5, bP: 0.1, yP: 2.4, zL: -0.5, sprossen: [0.3, 0.6, 0.9, 1.2, 1.8, 2.1], bahn: [[0, 1.52, 0.5], [0, 0.32, 2.35], [0, 0.27, 2.95]], wB: 0.25, wH: 0.18, geY: [2.1, 2.4] };
+        },
+        // DAS SPROSSENGERÜST (die Podest-Grammatik der Leiter): vier Pfosten 1,6 × 1,0 m bis 2,5 m, das Podest auf 2,1 m, vorn (z = +0,5)
+        // Sprossen aus Rundstahl alle 0,3 m von 0,3 bis 1,8 m und die Haltesprosse auf 2,4 m, seitlich je drei Sprossen
+        sprossengeruest: function () {
+            return { bx: 0.8, bz: 0.5, h: 2.1, yP: 2.5, bP: 0.1, sprossen: [0.3, 0.6, 0.9, 1.2, 1.5, 1.8, 2.4], seite: [0.6, 1.2, 1.8], d: 0.035 };
+        },
+        // DIE BALKENWIPPE: der Bock 0,4 × 0,5 m bis 0,55 m, die Achse auf 0,6 m (längs z), der Hebel 3,6 × 0,08 × 0,24 m, die Sitze bei
+        // x = ±1,55 (Oberkante 0,7 m), die Griffe bei ±1,25 (0,94 m), die Puffer unter den Enden (0,15 m)
+        balkenwippe: function () {
+            return { yA: 0.6, L: 3.6, d: 0.08, bz: 0.24, xS: 1.55, sH: 0.06, sx: 0.32, xG: 1.25, yG: 0.94, yPuffer: 0.15, bock: [0.4, 0.55, 0.5] };
+        },
+        // DAS TURNRECK: zwei Pfosten 0,12 m bei x = ±0,95 bis 2,55 m, die Stange Ø 3,5 cm auf 2,4 m, je Pfosten zwei Streben in z
+        turnreck: function () {
+            return { x: 0.95, yP: 2.55, y: 2.4, bP: 0.12, d: 0.035, zS: 0.7, yS: 1.3 };
+        },
+        // DER SCHWEBEBALKEN: 3,0 m lang (längs z), 0,1 × 0,1 m, Oberkante 0,4 m, auf drei Böcken (z = −1,2 · 0 · 1,2)
+        schwebebalken: function () {
+            return { L: 3.0, b: 0.1, y: 0.4, boecke: [-1.2, 0, 1.2], fuss: 0.5 };
+        },
+        // DIE KLETTERWAND: die Wand 2,0 × 2,4 m (6 cm, Front z = +0,03) zwischen zwei Pfosten (bis 2,6 m), dahinter das Podest auf
+        // 2,4 m (1,0 m tief) mit Geländer; die Griffe in sieben Reihen alle 0,3 m (0,25 … 2,05 m), je Reihe vier, versetzt
+        kletterwand: function () {
+            var griffe = [];
+            for (var r = 0; r < 7; r++)
+                for (var c = 0; c < 4; c++) griffe.push([-0.75 + c * 0.5 + (r % 2 ? 0.12 : -0.08), 0.25 + r * 0.3, 0.03]);
+            return { bx: 1.0, h: 2.4, d: 0.06, bP: 0.12, yP: 2.6, tP: 1.0, griffe: griffe, gG: 0.07 };
+        },
+        // DIE HANGEL-LEITER: zwei Leiter-Böcke (Pfosten bei x = ±0,3, z = ±1,8, bis 2,5 m, Sprossen 0,45 · 0,9 · 1,35 · 1,8 m),
+        // die Holme auf 2,35 m, zehn Sprossen aus Rundstahl alle 0,36 m (z = −1,62 … 1,62)
+        hangelbahn: function () {
+            var s = [];
+            for (var k = 0; k < 10; k++) s.push(-1.62 + k * 0.36);
+            return { x: 0.3, z: 1.8, yP: 2.5, y: 2.35, bP: 0.1, hB: [0.08, 0.1], sprossen: s, tritte: [0.45, 0.9, 1.35, 1.8], d: 0.035 };
+        },
+    };
+    for (var _gm in GERAET_MASS) AUS_MASS[_gm] = GERAET_MASS[_gm];
+    // die Ton-Ströme eines Geräts (Holz, Eisen) aus dem Samen
+    function _gToene(seed) {
+        return { z: ausZufall(seed, 0xc1), zE: ausZufall(seed, 0xc2), zN: ausZufall(seed, 0xc3) };
+    }
+    function ausDoppelschaukel(g, p, seed, stufe) {
+        var m = AUS_MASS.doppelschaukel(),
+            W = p.verwitterung,
+            fein = stufe === 0,
+            fa = fein ? p.fase : 0,
+            Z = _gToene(seed);
+        var holz = function (a, b, dx, dz) {
+            _gHolz(g, a, b, dx, dz, fa, ausTon(Z.z, 0.05, 0.02), W);
+        };
+        var s, i, k;
+        for (s = -1; s <= 1; s += 2) {
+            var x = s * m.xB;
+            for (k = -1; k <= 1; k += 2) holz([x, 0, k * m.zF], [x, m.yB - m.bB / 2, 0], m.bP, m.bP);
+            var zr = m.zF * (1 - m.yR / (m.yB - m.bB / 2));
+            holz([x, m.yR, -zr], [x, m.yR, zr], m.bP * 0.7, m.bP * 0.7);
+            if (fein) ausNagel(g, [x - m.bP / 2 - 0.003, m.yB - m.bB, 0], [x + m.bP / 2 + 0.003, m.yB - m.bB, 0], W, Z.zN);
+        }
+        holz([-m.xB - 0.15, m.yB, 0], [m.xB + 0.15, m.yB, 0], m.bB, m.bB);
+        // je Sitz die schwingende Gruppe um das Gelenk (Achse −x: θ > 0 schwingt nach +z), gebaut am Ort der Ruhe
+        for (i = 0; i < m.xS.length; i++) {
+            var x0 = m.xS[i],
+                sw = _gSchwenk(g, "sitz" + i, [x0, m.yG, 0], [-1, 0, 0]);
+            for (k = -1; k <= 1; k += 2) {
+                var kx = x0 + k * m.kx;
+                if (fein) {
+                    var n = Math.round((m.yG - m.yS) / m.glied),
+                        lg = (m.yG - m.yS) / n;
+                    for (var j = 0; j < n; j++) {
+                        var geo = ausSetze(ausKiste(0.026, lg + 0.012, 0.009, 0), kx, m.yG - (j + 0.5) * lg, 0, 0, j % 2 ? Math.PI / 2 : 0, 0);
+                        ausFaerbe(geo, "metall", 0, null);
+                        ausTeil(sw, geo, "metall");
+                    }
+                    _gKasten(sw, "metall", 0.05, 0.03, 0.05, kx, m.yG - 0.015, 0, 0, null, 0);
+                    _gKasten(sw, "metall", 0.03, 0.05, m.sz + 0.01, kx, m.yS - m.sd / 2, 0, 0, null, 0);
+                } else _gStahl(sw, [kx, m.yG, 0], [kx, m.yS, 0], 0.016, false, null);
+            }
+            _gKasten(sw, "holz", m.sx, m.sd, m.sz, x0, m.yS - m.sd / 2, 0, fa, ausTon(Z.z, 0.08, 0.03), W);
+        }
+    }
+    function ausTurmrutsche(g, p, seed, stufe) {
+        var m = AUS_MASS.turmrutsche(),
+            W = p.verwitterung,
+            fein = stufe === 0,
+            fa = fein ? p.fase : 0,
+            Z = _gToene(seed);
+        var holz = function (a, b, dx, dz) {
+            _gHolz(g, a, b, dx, dz, fa, ausTon(Z.z, 0.05, 0.02), W);
+        };
+        var b = m.b,
+            i,
+            s;
+        for (s = -1; s <= 1; s += 2) for (var t = -1; t <= 1; t += 2) holz([s * b, 0, t * b], [s * b, m.yP, t * b], m.bP, m.bP);
+        // das Podest (nah drei Bretter auf zwei Querhölzern, fern eine Platte)
+        if (fein) {
+            for (i = 0; i < 3; i++) _gKasten(g, "holz", 2 * b, 0.04, (2 * b - 0.02) / 3, 0, m.h - 0.02, -b + 0.003 + ((2 * b - 0.02) / 3) * (i + 0.5) + i * 0.007, fa * 0.6, ausTon(Z.z, 0.08, 0.03), W);
+            for (s = -1; s <= 1; s += 2) holz([-b, m.h - 0.07, s * (b - 0.05)], [b, m.h - 0.07, s * (b - 0.05)], 0.06, 0.05);
+        } else _gKasten(g, "holz", 2 * b, 0.04, 2 * b, 0, m.h - 0.02, 0, 0, ausTon(Z.z, 0.08, 0.03), W);
+        // das Geländer links und rechts
+        for (s = -1; s <= 1; s += 2) for (i = fein ? 0 : 1; i < m.geY.length; i++) holz([s * b, m.geY[i], -b], [s * b, m.geY[i], b], 0.05, 0.06);
+        // die Sprossen hinten (Rundstahl; fern ohne die Haltesprossen über dem Podest)
+        for (i = 0; i < m.sprossen.length; i++) if (fein || m.sprossen[i] < m.h) _gStahl(g, [-b, m.sprossen[i], m.zL], [b, m.sprossen[i], m.zL], 0.035, fein, ausTon(Z.zE, 0.04, 0.01));
+        // die Bahn: je Abschnitt das Blech und die Wangen, die Stütze unter dem Ende des Gefälles
+        for (i = 0; i + 1 < m.bahn.length; i++) {
+            var A = m.bahn[i],
+                B = m.bahn[i + 1];
+            var a0 = [0, A[1] - 0.04, A[2]],
+                b0 = [0, B[1] - 0.04, B[2]];
+            var lz = Math.hypot(B[1] - A[1], B[2] - A[2]),
+                ang = Math.atan2(-(B[1] - A[1]), B[2] - A[2]);
+            var mz = (a0[2] + b0[2]) / 2,
+                my = (a0[1] + b0[1]) / 2;
+            _gKasten(g, "metall", 2 * m.wB, 0.02, lz, 0, my, mz, 0, ausTon(Z.zE, 0.04, 0.01), 0, ang);
+            for (s = -1; s <= 1; s += 2) _gKasten(g, "metall", 0.02, m.wH, lz, s * (m.wB + 0.01), my + m.wH / 2, mz, 0, ausTon(Z.zE, 0.04, 0.01), 0, ang);
+        }
+        var E = m.bahn[1];
+        for (s = -1; s <= 1; s += 2) holz([s * (m.wB - 0.04), 0, E[2] - 0.1], [s * (m.wB - 0.04), E[1] - 0.06, E[2] - 0.1], 0.07, 0.07);
+    }
+    function ausSprossengeruest(g, p, seed, stufe) {
+        var m = AUS_MASS.sprossengeruest(),
+            W = p.verwitterung,
+            fein = stufe === 0,
+            fa = fein ? p.fase : 0,
+            Z = _gToene(seed);
+        var holz = function (a, b, dx, dz) {
+            _gHolz(g, a, b, dx, dz, fa, ausTon(Z.z, 0.05, 0.02), W);
+        };
+        var i, s, t;
+        for (s = -1; s <= 1; s += 2) for (t = -1; t <= 1; t += 2) holz([s * m.bx, 0, t * m.bz], [s * m.bx, m.yP, t * m.bz], m.bP, m.bP);
+        if (fein) for (i = 0; i < 4; i++) _gKasten(g, "holz", 2 * m.bx, 0.04, (2 * m.bz - 0.03) / 4, 0, m.h - 0.02, -m.bz + ((2 * m.bz - 0.03) / 4) * (i + 0.5) + i * 0.01, fa * 0.6, ausTon(Z.z, 0.08, 0.03), W);
+        else _gKasten(g, "holz", 2 * m.bx, 0.04, 2 * m.bz, 0, m.h - 0.02, 0, 0, ausTon(Z.z, 0.08, 0.03), W);
+        for (i = 0; i < m.sprossen.length; i++) _gStahl(g, [-m.bx, m.sprossen[i], m.bz], [m.bx, m.sprossen[i], m.bz], m.d, fein, ausTon(Z.zE, 0.04, 0.01));
+        for (s = -1; s <= 1; s += 2) for (i = 0; i < m.seite.length; i++) _gStahl(g, [s * m.bx, m.seite[i], -m.bz], [s * m.bx, m.seite[i], m.bz], m.d, fein, ausTon(Z.zE, 0.04, 0.01));
+        // die Rückwand des Podests als Geländer (zwei Riegel)
+        for (i = 0; i < 2; i++) holz([-m.bx, m.h + 0.2 + i * 0.2, -m.bz], [m.bx, m.h + 0.2 + i * 0.2, -m.bz], 0.05, 0.05);
+    }
+    function ausBalkenwippe(g, p, seed, stufe) {
+        var m = AUS_MASS.balkenwippe(),
+            W = p.verwitterung,
+            fein = stufe === 0,
+            fa = fein ? p.fase : 0,
+            Z = _gToene(seed);
+        var s;
+        _gKasten(g, "holz", m.bock[0], m.bock[1], m.bock[2], 0, m.bock[1] / 2, 0, fa, ausTon(Z.z, 0.05, 0.02), W);
+        _gStahl(g, [0, m.yA, -m.bock[2] / 2 - 0.03], [0, m.yA, m.bock[2] / 2 + 0.03], 0.05, fein, ausTon(Z.zE, 0.04, 0.01));
+        for (s = -1; s <= 1; s += 2) _gKasten(g, "holz", 0.3, m.yPuffer, 0.3, s * (m.L / 2 - 0.12), m.yPuffer / 2, 0, fa, ausTon(Z.z, 0.05, 0.02), W);
+        // der Hebel als schwingende Gruppe um die Achse (Achse −z: φ > 0 senkt Sitz 0 bei +x), gebaut am Ort der Ruhe
+        var hb = _gSchwenk(g, "hebel", [0, m.yA, 0], [0, 0, -1]);
+        _gKasten(hb, "holz", m.L, m.d, m.bz, 0, m.yA, 0, fa, ausTon(Z.z, 0.08, 0.03), W);
+        for (s = -1; s <= 1; s += 2) {
+            _gKasten(hb, "holz", m.sx, m.sH, m.bz + 0.06, s * m.xS, m.yA + m.d / 2 + m.sH / 2, 0, fa, ausTon(Z.z, 0.08, 0.03), W);
+            _gKasten(hb, "holz", 0.05, m.yG - m.yA - m.d / 2, 0.05, s * m.xG, (m.yG + m.yA + m.d / 2) / 2, 0, fa, ausTon(Z.z, 0.05, 0.02), W);
+            _gStahl(hb, [s * m.xG, m.yG, -0.16], [s * m.xG, m.yG, 0.16], 0.03, fein, ausTon(Z.zE, 0.04, 0.01));
+        }
+    }
+    function ausTurnreck(g, p, seed, stufe) {
+        var m = AUS_MASS.turnreck(),
+            W = p.verwitterung,
+            fein = stufe === 0,
+            fa = fein ? p.fase : 0,
+            Z = _gToene(seed);
+        var s, t;
+        for (s = -1; s <= 1; s += 2) {
+            _gHolz(g, [s * m.x, 0, 0], [s * m.x, m.yP, 0], m.bP, m.bP, fa, ausTon(Z.z, 0.05, 0.02), W);
+            for (t = -1; t <= 1; t += 2) _gHolz(g, [s * m.x, 0, t * m.zS], [s * m.x, m.yS, 0], 0.08, 0.08, fa, ausTon(Z.z, 0.05, 0.02), W);
+            if (fein) ausNagel(g, [s * m.x - m.bP / 2 - 0.003, m.yS - 0.05, 0], [s * m.x + m.bP / 2 + 0.003, m.yS - 0.05, 0], W, Z.zN);
+        }
+        _gStahl(g, [-m.x - 0.06, m.y, 0], [m.x + 0.06, m.y, 0], m.d, fein, ausTon(Z.zE, 0.04, 0.01));
+    }
+    function ausSchwebebalken(g, p, seed, stufe) {
+        var m = AUS_MASS.schwebebalken(),
+            W = p.verwitterung,
+            fein = stufe === 0,
+            fa = fein ? p.fase : 0,
+            Z = _gToene(seed);
+        _gKasten(g, "holz", m.b, m.b, m.L, 0, m.y - m.b / 2, 0, fa, ausTon(Z.z, 0.08, 0.03), W);
+        for (var i = 0; i < m.boecke.length; i++) {
+            var z = m.boecke[i];
+            _gKasten(g, "holz", 0.12, m.y - m.b, 0.12, 0, (m.y - m.b) / 2, z, fa, ausTon(Z.z, 0.05, 0.02), W);
+            _gKasten(g, "holz", m.fuss, 0.06, 0.12, 0, 0.03, z, fa, ausTon(Z.z, 0.05, 0.02), W);
+            if (fein) ausNagel(g, [-0.063, m.y - m.b - 0.04, z], [0.063, m.y - m.b - 0.04, z], W, Z.zN);
+        }
+    }
+    function ausKletterwand(g, p, seed, stufe) {
+        var m = AUS_MASS.kletterwand(),
+            W = p.verwitterung,
+            fein = stufe === 0,
+            fa = fein ? p.fase : 0,
+            Z = _gToene(seed);
+        var holz = function (a, b, dx, dz) {
+            _gHolz(g, a, b, dx, dz, fa, ausTon(Z.z, 0.05, 0.02), W);
+        };
+        var s, i;
+        // die Wand: nah fünf Bohlen, fern eine Platte
+        var nB = fein ? 5 : 1;
+        for (i = 0; i < nB; i++) _gKasten(g, "holz", 2 * m.bx, m.h / nB - (fein ? 0.008 : 0), m.d, 0, (m.h / nB) * (i + 0.5), 0, fa * 0.5, ausTon(Z.z, 0.08, 0.03), W);
+        for (s = -1; s <= 1; s += 2) {
+            holz([s * (m.bx + m.bP / 2), 0, 0], [s * (m.bx + m.bP / 2), m.yP, 0], m.bP, m.bP);
+            holz([s * (m.bx + m.bP / 2), 0, -m.tP], [s * (m.bx + m.bP / 2), m.h + 1.0, -m.tP], m.bP, m.bP);
+            holz([s * (m.bx + m.bP / 2), m.h + 0.9, 0], [s * (m.bx + m.bP / 2), m.h + 0.9, -m.tP], 0.06, 0.06);
+        }
+        _gKasten(g, "holz", 2 * m.bx + 2 * m.bP, 0.05, m.tP, 0, m.h - 0.025, -m.tP / 2, fa * 0.6, ausTon(Z.z, 0.08, 0.03), W);
+        holz([-m.bx - m.bP / 2, m.h + 0.9, -m.tP], [m.bx + m.bP / 2, m.h + 0.9, -m.tP], 0.06, 0.06);
+        // die Griffe (Stein, nah als gefaste Klötze, fern als Kisten)
+        for (i = 0; i < m.griffe.length; i++) {
+            var q = m.griffe[i],
+                dreh = ((i * 7) % 5) * 0.3,
+                rG = m.gG * 0.7;
+            // nah die Kuppel des Griffs (aus der Wand gedreht, fünf Teilungen), fern ein Viereck auf der Wand
+            var geo = fein
+                ? ausSetze(ausDreh([[rG, 0], [rG * 0.85, m.gG * 0.55], [0, m.gG]], 5, false, false), q[0], q[1], q[2], Math.PI / 2, dreh, 0)
+                : ausVielecke([[[q[0] - rG, q[1] - rG, q[2] + 0.01], [q[0] + rG, q[1] - rG, q[2] + 0.01], [q[0] + rG, q[1] + rG, q[2] + 0.01], [q[0] - rG, q[1] + rG, q[2] + 0.01]]], [q[0], q[1], q[2] - 1]);
+            ausFaerbe(geo, "stein", W * 0.3, function () {
+                return { ton: ausTon(Z.zE, 0.1, 0.05) };
+            });
+            ausTeil(g, geo, "stein");
+        }
+    }
+    function ausHangelbahn(g, p, seed, stufe) {
+        var m = AUS_MASS.hangelbahn(),
+            W = p.verwitterung,
+            fein = stufe === 0,
+            fa = fein ? p.fase : 0,
+            Z = _gToene(seed);
+        var holz = function (a, b, dx, dz) {
+            _gHolz(g, a, b, dx, dz, fa, ausTon(Z.z, 0.05, 0.02), W);
+        };
+        var s, t, i;
+        for (s = -1; s <= 1; s += 2) {
+            for (t = -1; t <= 1; t += 2) holz([s * m.x, 0, t * m.z], [s * m.x, m.yP, t * m.z], m.bP, m.bP);
+            holz([s * m.x, m.y, -m.z - 0.08], [s * m.x, m.y, m.z + 0.08], m.hB[0], m.hB[1]);
+        }
+        for (t = -1; t <= 1; t += 2) for (i = 0; i < m.tritte.length; i++) if (fein || i % 2) _gStahl(g, [-m.x, m.tritte[i], t * m.z], [m.x, m.tritte[i], t * m.z], m.d, fein, ausTon(Z.zE, 0.04, 0.01));
+        for (i = 0; i < m.sprossen.length; i++) _gStahl(g, [-m.x + 0.04, m.y, m.sprossen[i]], [m.x - 0.04, m.y, m.sprossen[i]], m.d, fein, ausTon(Z.zE, 0.04, 0.01));
+    }
+    AUS_BAU.doppelschaukel = ausDoppelschaukel;
+    AUS_BAU.turmrutsche = ausTurmrutsche;
+    AUS_BAU.sprossengeruest = ausSprossengeruest;
+    AUS_BAU.balkenwippe = ausBalkenwippe;
+    AUS_BAU.turnreck = ausTurnreck;
+    AUS_BAU.schwebebalken = ausSchwebebalken;
+    AUS_BAU.kletterwand = ausKletterwand;
+    AUS_BAU.hangelbahn = ausHangelbahn;
+    // DIE SCHWINGENDEN TEILE beim Bake: was `__schwenk` trägt, verlässt den Bau des Gestells und bäckt als eigene Gruppe um ihren
+    // Drehpunkt (dieselben Rollen, dieselbe Farbe); jeder Bau ohne schwingendes Teil bleibt byte-gleich (die Liste ist leer)
+    function geraetSchwenkAus(roh) {
+        var aus = [];
+        for (var i = roh.children.length - 1; i >= 0; i--) {
+            var c = roh.children[i];
+            if (c.userData && c.userData.__schwenk) {
+                roh.remove(c);
+                aus.unshift(c);
+            }
+        }
+        return aus;
+    }
+    function geraetSchwenkEin(g, aus, kol) {
+        for (var i = 0; i < aus.length; i++) {
+            var c = aus[i],
+                info = c.userData.__schwenk;
+            c.updateMatrixWorld(true);
+            var geoms = {};
+            bakeLOD(c, kol, geoms, 0, true);
+            var s = geomsZuGruppe(geoms);
+            // die Geometrie relativ zum Drehpunkt, die Gruppe an ihm: die Ruhe-Lage bleibt deckungsgleich mit dem Bau
+            s.traverse(function (o) {
+                if (o.geometry) o.geometry.translate(-info.punkt[0], -info.punkt[1], -info.punkt[2]);
+            });
+            s.position.set(info.punkt[0], info.punkt[1], info.punkt[2]);
+            s.userData.__schwenk = info;
+            g.add(s);
+        }
+    }
+    // DIE SUBSTANZ DER GERÄTE (Wirts-Zeile B7): was trägt und was stößt, aus derselben Maß-Funktion — die Pfosten, Balken,
+    // Holme, das Podest (Trittfläche), die Bahn der Rutsche, der Balken des Balancierens (Trittfläche), die Wand, die Sprossen;
+    // was schwingt (Sitz und Kette, der Hebel der Wippe), trägt keine Substanz (es weicht dem Leib, das Verb führt ihn)
+    function geraetSubstanz(id, m, teil) {
+        var parts = [],
+            s,
+            t,
+            i;
+        var holm = function (a, b, d) {
+            // ein Holz von a nach b in der y-z-Ebene (die Neigung um x)
+            var dy = b[1] - a[1],
+                dz = b[2] - a[2],
+                l = Math.hypot(dy, dz);
+            parts.push(teil((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2, d, l, d, Math.atan2(dz, dy)));
+        };
+        if (id === "doppelschaukel") {
+            for (s = -1; s <= 1; s += 2) for (t = -1; t <= 1; t += 2) holm([s * m.xB, 0, t * m.zF], [s * m.xB, m.yB - m.bB / 2, 0], m.bP);
+            parts.push(teil(0, m.yB, 0, 2 * m.xB + 0.3, m.bB, m.bB));
+        } else if (id === "turmrutsche") {
+            var tr = teil(0, m.h - 0.02, 0, 2 * m.b, 0.04, 2 * m.b);
+            tr.tritt = true;
+            parts.push(tr);
+            for (s = -1; s <= 1; s += 2) {
+                for (t = -1; t <= 1; t += 2) parts.push(teil(s * m.b, m.yP / 2, t * m.b, m.bP, m.yP, m.bP));
+                parts.push(teil(s * m.b, (m.geY[0] + m.geY[1]) / 2, 0, 0.05, m.geY[1] - m.geY[0] + 0.06, 2 * m.b));
+            }
+            for (i = 0; i < m.sprossen.length; i++) parts.push(teil(0, m.sprossen[i], m.zL, 2 * m.b, 0.035, 0.035));
+            for (i = 0; i + 1 < m.bahn.length; i++) {
+                var A = m.bahn[i],
+                    B = m.bahn[i + 1],
+                    lz = Math.hypot(B[1] - A[1], B[2] - A[2]);
+                var bp = teil(0, (A[1] + B[1]) / 2 - 0.04, (A[2] + B[2]) / 2, 2 * m.wB + 0.04, 0.04, lz, Math.atan2(-(B[1] - A[1]), B[2] - A[2]));
+                bp.tritt = true;
+                parts.push(bp);
+            }
+        } else if (id === "sprossengeruest") {
+            var dk = teil(0, m.h - 0.02, 0, 2 * m.bx, 0.04, 2 * m.bz);
+            dk.tritt = true;
+            parts.push(dk);
+            for (s = -1; s <= 1; s += 2) for (t = -1; t <= 1; t += 2) parts.push(teil(s * m.bx, m.yP / 2, t * m.bz, m.bP, m.yP, m.bP));
+            for (i = 0; i < m.sprossen.length; i++) parts.push(teil(0, m.sprossen[i], m.bz, 2 * m.bx, m.d, m.d));
+            for (s = -1; s <= 1; s += 2) for (i = 0; i < m.seite.length; i++) parts.push(teil(s * m.bx, m.seite[i], 0, m.d, m.d, 2 * m.bz));
+        } else if (id === "balkenwippe") {
+            parts.push(teil(0, m.bock[1] / 2, 0, m.bock[0], m.bock[1], m.bock[2]));
+            for (s = -1; s <= 1; s += 2) parts.push(teil(s * (m.L / 2 - 0.12), m.yPuffer / 2, 0, 0.3, m.yPuffer, 0.3));
+        } else if (id === "turnreck") {
+            for (s = -1; s <= 1; s += 2) {
+                parts.push(teil(s * m.x, m.yP / 2, 0, m.bP, m.yP, m.bP));
+                for (t = -1; t <= 1; t += 2) holm([s * m.x, 0, t * m.zS], [s * m.x, m.yS, 0], 0.08);
+            }
+            parts.push(teil(0, m.y, 0, 2 * m.x + 0.12, m.d, m.d));
+        } else if (id === "schwebebalken") {
+            var bk = teil(0, m.y - m.b / 2, 0, m.b, m.b, m.L);
+            bk.tritt = true;
+            parts.push(bk);
+            for (i = 0; i < m.boecke.length; i++) parts.push(teil(0, (m.y - m.b) / 2, m.boecke[i], 0.12, m.y - m.b, 0.12));
+        } else if (id === "kletterwand") {
+            parts.push(teil(0, m.h / 2, 0, 2 * m.bx, m.h, m.d));
+            var pd = teil(0, m.h - 0.025, -m.tP / 2, 2 * m.bx + 2 * m.bP, 0.05, m.tP);
+            pd.tritt = true;
+            parts.push(pd);
+            for (s = -1; s <= 1; s += 2) {
+                parts.push(teil(s * (m.bx + m.bP / 2), m.yP / 2, 0, m.bP, m.yP, m.bP));
+                parts.push(teil(s * (m.bx + m.bP / 2), (m.h + 1.0) / 2, -m.tP, m.bP, m.h + 1.0, m.bP));
+            }
+            parts.push(teil(0, m.h + 0.9, -m.tP, 2 * m.bx + m.bP, 0.06, 0.06));
+        } else if (id === "hangelbahn") {
+            for (s = -1; s <= 1; s += 2) {
+                for (t = -1; t <= 1; t += 2) parts.push(teil(s * m.x, m.yP / 2, t * m.z, m.bP, m.yP, m.bP));
+                parts.push(teil(s * m.x, m.y, 0, m.hB[0], m.hB[1], 2 * m.z + 0.16));
+            }
+            for (t = -1; t <= 1; t += 2) for (i = 0; i < m.tritte.length; i++) parts.push(teil(0, m.tritte[i], t * m.z, 2 * m.x, m.d, m.d));
+        }
+        return parts;
+    }
+    // DER WURF DER GERÄTE (Stufe 3, nurWurf ≤ 30 Dreiecke): je Holz ein Kreuz zweier Flächen längs seiner Achse, je Platte ein Viereck
+    function geraetWurf(id, m, flaeche, pfosten, platte) {
+        var s, t;
+        var strebe = function (a, b, d) {
+            flaeche([[[a[0] - d, a[1], a[2]], [a[0] + d, a[1], a[2]], [b[0] + d, b[1], b[2]], [b[0] - d, b[1], b[2]]], [[a[0], a[1], a[2] - d], [a[0], a[1], a[2] + d], [b[0], b[1], b[2] + d], [b[0], b[1], b[2] - d]]]);
+        };
+        if (id === "doppelschaukel") {
+            for (s = -1; s <= 1; s += 2) for (t = -1; t <= 1; t += 2) strebe([s * m.xB, 0, t * m.zF], [s * m.xB, m.yB, 0], m.bP / 2);
+            strebe([-m.xB, m.yB, 0], [m.xB, m.yB, 0], m.bB / 2);
+            for (s = 0; s < m.xS.length; s++) platte(m.xS[s] - m.sx / 2, m.xS[s] + m.sx / 2, m.yS, -m.sz / 2, m.sz / 2);
+        } else if (id === "turmrutsche") {
+            for (s = -1; s <= 1; s += 2) for (t = -1; t <= 1; t += 2) pfosten(s * m.b, t * m.b, 0, m.yP, m.bP / 2);
+            platte(-m.b, m.b, m.h, -m.b, m.b);
+            for (s = 0; s + 1 < m.bahn.length; s++) flaeche([[[-m.wB, m.bahn[s][1], m.bahn[s][2]], [m.wB, m.bahn[s][1], m.bahn[s][2]], [m.wB, m.bahn[s + 1][1], m.bahn[s + 1][2]], [-m.wB, m.bahn[s + 1][1], m.bahn[s + 1][2]]]]);
+            flaeche([[[-m.b, 0.2, m.zL], [m.b, 0.2, m.zL], [m.b, m.h, m.zL], [-m.b, m.h, m.zL]]]);
+        } else if (id === "sprossengeruest") {
+            for (s = -1; s <= 1; s += 2) for (t = -1; t <= 1; t += 2) pfosten(s * m.bx, t * m.bz, 0, m.yP, m.bP / 2);
+            platte(-m.bx, m.bx, m.h, -m.bz, m.bz);
+            flaeche([[[-m.bx, 0.3, m.bz], [m.bx, 0.3, m.bz], [m.bx, 1.8, m.bz], [-m.bx, 1.8, m.bz]]]);
+        } else if (id === "balkenwippe") {
+            pfosten(0, 0, 0, m.bock[1], m.bock[2] / 2);
+            flaeche([[[-m.L / 2, m.yA, -m.bz / 2], [m.L / 2, m.yA, -m.bz / 2], [m.L / 2, m.yA, m.bz / 2], [-m.L / 2, m.yA, m.bz / 2]]]);
+            for (s = -1; s <= 1; s += 2) pfosten(s * m.xG, 0, m.yA, m.yG, 0.03);
+        } else if (id === "turnreck") {
+            for (s = -1; s <= 1; s += 2) {
+                pfosten(s * m.x, 0, 0, m.yP, m.bP / 2);
+                for (t = -1; t <= 1; t += 2) strebe([s * m.x, 0, t * m.zS], [s * m.x, m.yS, 0], 0.04);
+            }
+            strebe([-m.x, m.y, 0], [m.x, m.y, 0], m.d / 2);
+        } else if (id === "schwebebalken") {
+            strebe([0, m.y - m.b / 2, -m.L / 2], [0, m.y - m.b / 2, m.L / 2], m.b / 2);
+            for (s = 0; s < m.boecke.length; s++) pfosten(0, m.boecke[s], 0, m.y - m.b, 0.06);
+        } else if (id === "kletterwand") {
+            flaeche([[[-m.bx, 0, 0], [m.bx, 0, 0], [m.bx, m.h, 0], [-m.bx, m.h, 0]]]);
+            platte(-m.bx, m.bx, m.h, -m.tP, 0);
+            for (s = -1; s <= 1; s += 2) {
+                pfosten(s * (m.bx + m.bP / 2), 0, 0, m.yP, m.bP / 2);
+                pfosten(s * (m.bx + m.bP / 2), -m.tP, 0, m.h + 1.0, m.bP / 2);
+            }
+        } else if (id === "hangelbahn") {
+            for (s = -1; s <= 1; s += 2) for (t = -1; t <= 1; t += 2) pfosten(s * m.x, t * m.z, 0, m.yP, m.bP / 2);
+            platte(-m.x, m.x, m.y, -m.z, m.z);
+        }
+    }
+    // DIE HÜLLE DER GERÄTE (die Fernform, N5): dieselben Maße als Kästen
+    function geraetHuelle(id, m, dazu, F) {
+        var s, t;
+        if (id === "doppelschaukel") {
+            dazu(huelleTeil("box", -m.xB - 0.15, m.xB + 0.15, m.yB - m.bB / 2, m.yB + m.bB / 2, -m.bB / 2, m.bB / 2, F("holz")));
+            for (s = -1; s <= 1; s += 2) dazu(huelleTeil("box", s * m.xB - m.bP / 2, s * m.xB + m.bP / 2, 0, m.yB - m.bB / 2, -m.zF, m.zF, F("holz")));
+            for (s = 0; s < m.xS.length; s++) dazu(huelleTeil("box", m.xS[s] - m.sx / 2, m.xS[s] + m.sx / 2, m.yS - m.sd, m.yS, -m.sz / 2, m.sz / 2, F("holz")));
+        } else if (id === "turmrutsche") {
+            dazu(huelleTeil("box", -m.b, m.b, 0, m.yP, -m.b, m.b, F("holz")));
+            dazu(huelleTeil("box", -m.wB, m.wB, m.bahn[1][1] - 0.05, m.bahn[0][1], m.b, m.bahn[1][2], F("metall")));
+            dazu(huelleTeil("box", -m.wB, m.wB, m.bahn[2][1] - 0.05, m.bahn[1][1], m.bahn[1][2], m.bahn[2][2], F("metall")));
+        } else if (id === "sprossengeruest") {
+            dazu(huelleTeil("box", -m.bx, m.bx, 0, m.yP, -m.bz, m.bz, F("holz")));
+        } else if (id === "balkenwippe") {
+            dazu(huelleTeil("box", -m.bock[0] / 2, m.bock[0] / 2, 0, m.bock[1], -m.bock[2] / 2, m.bock[2] / 2, F("holz")));
+            dazu(huelleTeil("box", -m.L / 2, m.L / 2, m.yA - m.d / 2, m.yA + m.d / 2, -m.bz / 2, m.bz / 2, F("holz")));
+        } else if (id === "turnreck") {
+            for (s = -1; s <= 1; s += 2) dazu(huelleTeil("box", s * m.x - m.bP / 2, s * m.x + m.bP / 2, 0, m.yP, -m.zS, m.zS, F("holz")));
+            dazu(huelleTeil("box", -m.x, m.x, m.y - m.d / 2, m.y + m.d / 2, -m.d / 2, m.d / 2, F("metall")));
+        } else if (id === "schwebebalken") {
+            dazu(huelleTeil("box", -m.fuss / 2, m.fuss / 2, 0, m.y, -m.L / 2, m.L / 2, F("holz")));
+        } else if (id === "kletterwand") {
+            dazu(huelleTeil("box", -m.bx - m.bP, m.bx + m.bP, 0, m.h, -m.tP, m.d / 2, F("holz")));
+            dazu(huelleTeil("box", -m.bx - m.bP, m.bx + m.bP, m.h, m.h + 1.0, -m.tP - m.bP / 2, -m.tP + m.bP / 2, F("holz")));
+        } else if (id === "hangelbahn") {
+            for (t = -1; t <= 1; t += 2) dazu(huelleTeil("box", -m.x - m.bP / 2, m.x + m.bP / 2, 0, m.yP, t * m.z - m.bP / 2, t * m.z + m.bP / 2, F("holz")));
+            dazu(huelleTeil("box", -m.x, m.x, m.y - m.hB[1] / 2, m.y + m.hB[1] / 2, -m.z, m.z, F("holz")));
+        }
+    }
+    // DAS ANGEBOT DES GERÄTS (Rahmen des Werks, Meter; der Wirt dreht es mit der Lage des Werks): je Verb seine Anker — die Liste
+    // liest der EINE Bewegungs-Takt des Leibs (koerper-core `leibPlan` · `leibVerbPose`), in der Welt wie im Labor
+    var _geraetAngebotMemo = {};
+    function geraetAngebot(id) {
+        if (_geraetAngebotMemo[id]) return _geraetAngebotMemo[id];
+        if (!GERAETE[id]) throw new Error("fachwerk geraetAngebot: kein Gerät " + id);
+        var m = AUS_MASS[id](),
+            A = [],
+            i,
+            s;
+        var holm = function (x0, x1, y, z) {
+            return [[x0, y, z], [x1, y, z]];
+        };
+        if (id === "doppelschaukel") {
+            for (i = 0; i < m.xS.length; i++)
+                A.push({ verb: "schaukeln", teil: "sitz" + i, achse: { a: [m.xS[i] - m.kx, m.yG, 0], b: [m.xS[i] + m.kx, m.yG, 0] }, sitz: [m.xS[i], m.yS, 0], griff: [[m.xS[i] - m.kx, m.yS + m.griffH, 0], [m.xS[i] + m.kx, m.yS + m.griffH, 0]], boden: 0 });
+        } else if (id === "turmrutsche") {
+            var lh = [],
+                lt = [];
+            for (i = 0; i < m.sprossen.length; i++) {
+                lh.push(holm(-m.b + 0.06, m.b - 0.06, m.sprossen[i], m.zL));
+                if (m.sprossen[i] < m.h) lt.push(holm(-m.b + 0.06, m.b - 0.06, m.sprossen[i] + 0.0175, m.zL));
+            }
+            A.push({ verb: "klettern", holme: lh, sprossen: lt, flaeche: [0, 0, m.zL], normale: [0, -1], quer: m.b - 0.06, boden: 0, oben: [0, m.h, -m.b + 0.25] });
+            A.push({ verb: "rutschen", bahn: m.bahn.map(function (q) { return q.slice(); }), podest: m.h, schiene: m.wB + 0.01, schieneH: m.wH, boden: 0 });
+        } else if (id === "sprossengeruest") {
+            var gh = [],
+                gt = [];
+            for (i = 0; i < m.sprossen.length; i++) {
+                gh.push(holm(-m.bx + 0.06, m.bx - 0.06, m.sprossen[i], m.bz));
+                if (m.sprossen[i] < m.h) gt.push(holm(-m.bx + 0.06, m.bx - 0.06, m.sprossen[i] + m.d / 2, m.bz));
+            }
+            A.push({ verb: "klettern", holme: gh, sprossen: gt, flaeche: [0, 0, m.bz], normale: [0, 1], quer: m.bx - 0.06, boden: 0, oben: [0, m.h, m.bz - 0.3] });
+        } else if (id === "balkenwippe") {
+            // der Anschlag: das Ende des Hebels (Unterkante) auf dem Puffer
+            var r = m.L / 2,
+                h = -m.d / 2,
+                phi = 0;
+            for (var it = 0; it < 40; it++) phi = Math.asin(Math.max(-1, Math.min(1, (m.yA + h * Math.cos(phi) - m.yPuffer) / r)));
+            A.push({ verb: "wippen", teil: "hebel", achse: { a: [0, m.yA, -0.2], b: [0, m.yA, 0.2] }, sitz: [[m.xS, m.yA + m.d / 2 + m.sH, 0], [-m.xS, m.yA + m.d / 2 + m.sH, 0]], griff: [[m.xG, m.yG, 0], [-m.xG, m.yG, 0]], phiMax: phi, boden: 0 });
+        } else if (id === "turnreck") {
+            A.push({ verb: "hangeln", achse: { a: [-m.x, m.y, 0], b: [m.x, m.y, 0] }, holme: [holm(-m.x + 0.08, m.x - 0.08, m.y, 0)], boden: 0 });
+        } else if (id === "schwebebalken") {
+            A.push({ verb: "balancieren", bahn: [[0, m.y, -m.L / 2], [0, m.y, m.L / 2]], breite: m.b, boden: 0 });
+        } else if (id === "kletterwand") {
+            var gr = [];
+            for (i = 0; i < m.griffe.length; i++) gr.push([m.griffe[i][0], m.griffe[i][1] + m.gG / 2, m.griffe[i][2] + m.gG / 2]);
+            A.push({ verb: "klettern", griff: gr, tritt: gr, flaeche: [0, 0, m.d / 2], normale: [0, 1], quer: m.bx, boden: 0, oben: [0, m.h, -m.tP / 2] });
+        } else if (id === "hangelbahn") {
+            var hs = [];
+            for (i = 0; i < m.sprossen.length; i++) hs.push([[-m.x + 0.05, m.y, m.sprossen[i]], [m.x - 0.05, m.y, m.sprossen[i]]]);
+            A.push({ verb: "hangeln", holme: hs, richtung: [0, 0, 1], boden: 0 });
+        }
+        for (s = 0; s < A.length; s++) A[s].id = id + ":" + s;
+        _geraetAngebotMemo[id] = A;
+        return A;
+    }
+    // DAS ANGEBOT AM ORT (die EINE Platzierung, Welt und Labor rufen sie): lage {x, y, z, gier, skala} — der Ursprung des Werks
+    // (am Boden), seine Gier (wie THREE rotation.y: x' = x·cos + z·sin, z' = −x·sin + z·cos) und seine Skala; je Aufruf frische
+    // Kopien mit eigenem Zustand (`zustand`: der Winkel der Schaukel, der Wippe — er gehört dem gesetzten Gerät)
+    function geraetAngebotIn(id, lage) {
+        var c = Math.cos(lage.gier || 0),
+            s = Math.sin(lage.gier || 0),
+            k = lage.skala || 1;
+        var P = function (q) {
+            return [lage.x + (q[0] * c + q[2] * s) * k, lage.y + q[1] * k, lage.z + (-q[0] * s + q[2] * c) * k];
+        };
+        var R = function (n) {
+            return [n[0] * c + n[1] * s, -n[0] * s + n[1] * c];
+        };
+        return geraetAngebot(id).map(function (a) {
+            var b = JSON.parse(JSON.stringify(a)),
+                i;
+            if (b.griff) b.griff = b.griff.map(P);
+            if (b.tritt) b.tritt = b.tritt.map(P);
+            if (b.holme) for (i = 0; i < b.holme.length; i++) b.holme[i] = b.holme[i].map(P);
+            if (b.sprossen) for (i = 0; i < b.sprossen.length; i++) b.sprossen[i] = b.sprossen[i].map(P);
+            if (b.flaeche) b.flaeche = P(b.flaeche);
+            if (b.oben) b.oben = P(b.oben);
+            if (b.bahn) b.bahn = b.bahn.map(P);
+            if (b.achse) b.achse = { a: P(b.achse.a), b: P(b.achse.b) };
+            if (b.sitz) b.sitz = Array.isArray(b.sitz[0]) ? b.sitz.map(P) : P(b.sitz);
+            if (b.normale) b.normale = R(b.normale);
+            if (b.richtung) {
+                var r2 = R([b.richtung[0], b.richtung[2]]);
+                b.richtung = [r2[0], 0, r2[1]];
+            }
+            if (isFinite(b.boden)) b.boden = lage.y + b.boden * k;
+            if (isFinite(b.podest)) b.podest = lage.y + b.podest * k;
+            if (isFinite(b.quer)) b.quer *= k;
+            if (isFinite(b.breite)) b.breite *= k;
+            if (isFinite(b.schiene)) b.schiene *= k;
+            if (isFinite(b.schieneH)) b.schieneH *= k;
+            b.zustand = {};
+            return b;
+        });
+    }
     // ── B7: DIE WIRTS-ZEILEN DER WERKE (docs/studio-vertrag.md B7) — je Art der Bauplan-Namensraum (`bank_`, `leiter_`) und die
     //    unsichtbare Substanz in der Teile-Form des Wirts, aus DERSELBEN Maß-Funktion wie die Gestalt (die Regler auf ihrem Grund):
     //    an ihr urteilt der Wirt Kollision, Kosten und Verb. Die Bank: das Sitzbrett (die oberste flache Fläche — dort sitzt der
@@ -6478,6 +7087,7 @@
             if (rx) t.rotation = { x: r(rx), y: 0, z: 0 };
             return t;
         };
+        if (GERAETE[id]) return { label: WERKE[id].art, parts: geraetSubstanz(id, m, teil) };
         if (id === "sitzbank") {
             var tm = (m.lehneT[0] + m.lehneT[1]) / 2,
                 c = Math.cos(m.phi),
@@ -6542,6 +7152,7 @@
         var platte = function (x0, x1, y, z0, z1) {
             flaeche([[[x0, y, z0], [x1, y, z0], [x1, y, z1], [x0, y, z1]]]);
         };
+        if (GERAETE[rezeptId]) return geraetWurf(rezeptId, m, flaeche, pfosten, platte);
         if (rezeptId === "feuerstelle") {
             teil(ausDreh([[m.ra, -0.05], [m.rt, m.hR], [0, m.hS]], 8, false, false));
         } else if (rezeptId === "marktstand") {
@@ -6672,6 +7283,10 @@
         var dazu = function (t) {
             if (t) teile.push(t);
         };
+        if (GERAETE[rezeptId]) {
+            geraetHuelle(rezeptId, m, dazu, F);
+            return { stufe: 3, teile: teile };
+        }
         if (rezeptId === "feuerstelle") {
             dazu(huelleTeil("box", -m.rt, m.rt, -0.05, m.hR, -m.rt, m.rt, F("stein")));
             var rs = m.rt * 0.6;
@@ -6742,6 +7357,8 @@
         if (rezeptId === "feuerstelle") return { stein: pick([0x9a958a, 0x928d83, 0xa19a8f]), holz: pick([0x8a745c, 0x84705a]), lehm: 0xb4afa6 };
         if (rezeptId === "marktstand") return { holz: pick([0x8e7860, 0x977f66, 0x84705c]), tuch: pick(AUS_PLANE), lattung: 0x9a8358, stroh: 0xb39b68 };
         if (rezeptId === "laterne" || rezeptId === "wandlaterne") return { metall: pick([0x6b706a, 0x6e6b66]) }; // gestrichenes Guss-Eisen, das Glas des Fensters
+        // die Geräte: das vergraute Holz der Werke, das Eisen (verzinkt, gestrichen) und die Griffe der Kletterwand
+        if (GERAETE[rezeptId]) return { holz: pick([0x8e7860, 0x977f66, 0x86705a]), metall: pick([0x7d8288, 0x737a80, 0x858a8e]), stein: pick([0x9a5a48, 0x56708c, 0x9a8a50]) };
         if (WERKE[rezeptId]) return { holz: pick([0x8e7860, 0x977f66, 0x86705a]) }; // die Werke: ungestrichenes Holz, vergraut
         return { stein: pick([0xa29b8e, 0x9a9488, 0xaaa397]), holz: pick([0x7c6650, 0x86705a]), lattung: 0x8f7a56, stamm: pick([0x847866, 0x7a6e5e]) };
     }
@@ -6784,10 +7401,12 @@
                 var roh = new THREE.Group();
                 if (stufe === 3) ausWurf(rezeptId, roh, p, wahl);
                 else AUS_BAU[rezeptId](roh, p, sd, stufe, kol);
+                var schwenk = geraetSchwenkAus(roh);
                 roh.updateMatrixWorld(true);
                 var geoms = {};
                 bakeLOD(roh, kol, geoms, 0, true);
                 var g = geomsZuGruppe(geoms);
+                geraetSchwenkEin(g, schwenk, kol);
                 var n = 0;
                 g.traverse(function (o) {
                     if (o.isMesh) n += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
@@ -8478,13 +9097,18 @@
         STUDIO_VERTRAG: STUDIO_VERTRAG,
         PORTAL_RENDER_CONFIG: PORTAL_RENDER_CONFIG,
         PRESETS: PRESETS,
-        PARAMS_BY_KIND: { haus: PARAMS, ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS, bruecke: BRUECKE_PARAMS },
+        // die Arten des Buchs als Literal (die Karte liest sie statisch, diag-atlas --find): die Geräte des Spielplatzes je ihre Art
+        PARAMS_BY_KIND: { haus: PARAMS, ausstattung: AUS_PARAMS, bank: BANK_PARAMS, leiter: LEITER_PARAMS, bruecke: BRUECKE_PARAMS, schaukel: GERAET_PARAMS, rutsche: GERAET_PARAMS, klettergeruest: GERAET_PARAMS, wippe: GERAET_PARAMS, reck: GERAET_PARAMS, balken: GERAET_PARAMS, wand: GERAET_PARAMS, hangelleiter: GERAET_PARAMS },
         buildInstance: buildInstance,
         // B7 — die Wirts-Zeilen der Werke (Bank, Leiter): Bauplan-Namensraum und Substanz in den Maßen der Gestalt
         KIND_POLICY: KIND_POLICY,
         // B8 — der Stammbaum (studios.K5): wie das Buch sich und seine Arten nennt (der Wirt leitet den EINEN Baum ab)
         STAMMBAUM: STAMMBAUM,
         WERKE: WERKE,
+        // w4-koerper-park — die Geräte des Spielplatzes und ihr Angebot (Verb, Griff- und Tritt-Anker, Achse, Bahn)
+        GERAETE: GERAETE,
+        geraetAngebot: geraetAngebot,
+        geraetAngebotIn: geraetAngebotIn,
         // DIE AUSSTATTUNG (Feuerstelle · Marktstand · Brunnen) — das Labor-Dorf baut seine Brunnen und Stände hierüber
         AUSSTATTUNG: AUSSTATTUNG,
         // N5.7 — der Settlement-Export + die Dorf-Quelle (Shell-Aliasse lesen sie)

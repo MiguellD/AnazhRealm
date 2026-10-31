@@ -1033,6 +1033,10 @@ const FORBIDDEN = [
     // sich selbst, am streifenden Blick der Ferne am stärksten (Karte der Fichte in der Dämmerung 8,3 ×, nachts 4,8 × ihre
     // Gestalt); das Licht ist die EINE Licht-Kette (Lehre 21)
     ...["rimStrength", "NightFloor", "nightFloor", "MoonRim", "moonRim", "responseProfile.detail"].map((token) => ({ token, fiel: "F6 — kein Stoff leuchtet ohne Licht", auch: ["scripts/playtest.cjs"] })),
+    // w4-koerper-park — der Ninja-Park IST der Spielplatz der Welt: das Labor geht den EINEN Bewegungs-Takt (koerper `leibPlan`),
+    // die Arcade-Zeile und der Zwilling der Sicht fielen mit ihren Lesern, die Welt-Glieder des Takts zogen in den Kern
+    ...["NINJA_FEEL", "NINJA_VIS", "playPhysics", "playInput"].map((token) => ({ token, fiel: "w4-koerper-park", auch: ["koerper-core.js", "worlds/koerperstudio/koerperstudio.js"] })),
+    ...["_parkourGesetz", "_parkourLuftsprung", "_sprungDeckenKlemme", "_gaitSohle("].map((token) => ({ token, fiel: "w4-koerper-park" })),
 ];
 
 // Die Wald-Nischen-Tafel des Gesetzbuchs (phyto-core FOREST_SPECIES): der Mammut des Labors ist in der Welt

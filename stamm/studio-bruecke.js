@@ -276,9 +276,10 @@ class AnazhRealm_studio_bruecke {
     }
 
     // DER START-GURT (Leben-Schau 07.10., L7): je Studio-Art EIN platzierbares Werk, in der Reihenfolge des Katalogs
-    // (`_katalogSichtbar` — dieselbe Sicht wie Werkstatt und Rezeptbuch; die Art ist der kind des Studio-Rezepts). Heute:
-    // Eiche · GT · Drachentor · ein Fachwerkhaus. Vorher Felsblock · Wasserfall · Damm (Alt-Baupläne, der Felsblock ein
-    // Alt-Doppel, im Katalog versteckt). Null bei kaltem Buch.
+    // (`_katalogSichtbar` — dieselbe Sicht wie Werkstatt und Rezeptbuch). Die Art ist der kind des Studio-Rezepts, am Ort sein Ort
+    // (`fx.place.siteTag`: die Werke eines Orts sind einander Wahl — der Spielplatz zählt EINMAL, w4-koerper-park: seine acht
+    // Geräte füllten sonst die Hotbar). Heute: Eiche · GT · Drachentor · ein Fachwerkhaus · Bank · Leiter · Brücke · ein Gerät des
+    // Spielplatzes. Vorher Felsblock · Wasserfall · Damm (Alt-Baupläne, im Katalog versteckt). Null bei kaltem Buch.
     _startGurt() {
         const f = this._foundry;
         if (!f || !f.recipes) return null;
@@ -289,8 +290,10 @@ class AnazhRealm_studio_bruecke {
             if (!this._katalogSichtbar(name, bps[name]) || !this._isPlaceableBlueprint(bps[name])) continue;
             const preset = this._foundryPresetFor(name);
             const rec = preset ? f.recipes[preset] : null;
-            if (!rec || typeof rec.kind !== "string" || arten.has(rec.kind)) continue;
-            arten.add(rec.kind);
+            const ort = rec && rec.fx && rec.fx.place && rec.fx.place.mode === "site" && rec.fx.place.siteTag;
+            const art = rec && typeof rec.kind === "string" ? (ort ? "ort:" + ort : rec.kind) : null;
+            if (!art || arten.has(art)) continue;
+            arten.add(art);
             gurt.push(name);
         }
         return gurt;

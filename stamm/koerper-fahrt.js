@@ -114,27 +114,59 @@ class AnazhRealm_koerper_fahrt {
             group.rotation.x = 0;
         }
         this._animateHumanoidRig(group.userData.rig, t, walkPhase, isMoving, underwater, emotions, gait);
-        // Parkour-Rutsch-Pose: NUR der lokale Spieler (group === playerMesh) während state._parkourSlide;
-        // Winkel aus dem koerperstudio-Gesetzbuch (parkour.slidePose; Kern kalt → keine Pose). ABSOLUT NACH
-        // dem Rig-Grundlauf gesetzt (Überschreib-Muster wie der Schwimm-Zweig — kein Drift).
-        if (group === this.state.playerMesh && this.state._parkourSlide) {
-            const pg = AnazhRealm._parkourGesetz();
-            const SP = pg && pg.slidePose;
+        // DIE POSE DES VERBS (w4-koerper-park, NUR der lokale Spieler — der EINE Takt trägt seinen Zustand): über der Gang-Pose die
+        // Luft (Sprung, Doppelsprung-Hocke, Wand-Kick), der Rutsch (parkour.slidePose: die Gruppe lehnt) und das Balancieren
+        // (koerper-core `leibLuftPose`, absolut nach dem Rig gesetzt — kein Drift); an einem Gerät setzt der EINE Löser Wurzel
+        // und Glieder (`leibVerbPose`: Hand am Griff-Anker, Fuß am Tritt-Anker) — dieselben Funktionen wie im Körper-Studio.
+        if (group === this.state.playerMesh && !underwater) {
+            const KC = AnazhRealm._leibTakt();
             const rg = group.userData.rig;
-            if (SP && rg) {
-                group.rotation.x = SP.lehne;
-                const sx = (b, v) => {
-                    if (b) b.rotation.x = v;
-                };
-                sx(rg.head, SP.kopf);
-                sx(rg.legL && rg.legL.hip, -SP.beinVor);
-                sx(rg.legR && rg.legR.hip, -SP.beinVor * 0.85);
-                sx(rg.legL && rg.legL.knee, SP.knieKnick);
-                sx(rg.legR && rg.legR.knee, SP.knieKnick * 1.3);
-                sx(rg.armL && rg.armL.shoulder, SP.armStuetz);
-                sx(rg.armR && rg.armR.shoulder, SP.armFrei);
+            const lehne = KC.leibLuftPose(rg, this.state, this.state._simZeit);
+            if (lehne !== null) group.rotation.x = lehne;
+            const V = this.state.leibVerb;
+            const P = V ? KC.leibVerbPose(this._leibKette(), this.state, this.state._simZeit) : null;
+            if (P) this._leibPoseAnlegen(group, rg, P);
+            else if (rg._leibPoseAktiv) {
+                // das Verb endete: die Wurzel kehrt in die Ruhe-Lage über der Sohle zurück (die Senke des Gangs trägt y)
+                rg.hips.position.x = 0;
+                rg.hips.position.z = 0;
+                rg._leibPoseAktiv = false;
             }
         }
+    }
+
+    // DIE POSE DES LÖSERS AN DAS RIG: die Wurzel (Welt-Lage, Meter) in den Rahmen ihres Eltern-Gelenks, die Glieder lokal — die
+    // Gruppe des Leibs steht dabei aufrecht (die Lage trägt der Löser)
+    _leibPoseAnlegen(group, rg, P) {
+        group.rotation.x = 0;
+        group.rotation.z = 0;
+        group.updateMatrixWorld(true);
+        const hips = rg.hips;
+        const v = this._leibPoseV || (this._leibPoseV = new THREE.Vector3());
+        const q = this._leibPoseQ || (this._leibPoseQ = new THREE.Quaternion());
+        const qw = this._leibPoseQW || (this._leibPoseQW = new THREE.Quaternion());
+        hips.parent.worldToLocal(v.fromArray(P.wurzel.p));
+        hips.position.copy(v);
+        hips.parent.getWorldQuaternion(q);
+        hips.quaternion.copy(q.invert().multiply(qw.fromArray(P.wurzel.q)));
+        const name = {
+            torso: rg.chest,
+            head: rg.head,
+            arm1: rg.armL.shoulder,
+            "arm-1": rg.armR.shoulder,
+            elbow1: rg.armL.elbow,
+            "elbow-1": rg.armR.elbow,
+            hand1: rg.armL.wrist,
+            "hand-1": rg.armR.wrist,
+            hip1: rg.legL.hip,
+            "hip-1": rg.legR.hip,
+            knee1: rg.legL.knee,
+            "knee-1": rg.legR.knee,
+            ankle1: rg.legL.ankle,
+            "ankle-1": rg.legR.ankle,
+        };
+        for (const n in P.q) if (name[n]) name[n].quaternion.fromArray(P.q[n]);
+        rg._leibPoseAktiv = true;
     }
 
     // Sitz-Pose des Avatars: die Oberschenkel liegen waagerecht auf dem Sitz, die Unterschenkel hängen, die Arme vorgehalten

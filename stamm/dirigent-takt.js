@@ -890,6 +890,9 @@ class AnazhRealm_dirigent_takt {
         if (this._mountedEntry) this._mountedEntry._gierVor = this._mountedEntry._rideYaw;
         this._loopPlayerMovement(simTime, dt);
         this._loopPhysicsSync(dt, simTime);
+        // DIE GERÄTE SCHWINGEN AUS (w4-koerper-park): ein Gerät, das kein Leib führt, schwingt nach dem Gesetz des Verbs aus, bis
+        // es ruht (die Schaukel, die Wippe) — nur die wachen in Reichweite (`_leibAngebote`), jedes andere ruht als Zahl
+        this._geraeteSchwingen(dt);
         // Welle L (Q1): der Ritt schreibt Sitz, Ebene, Gier und Federn IM Sim-Schritt (vor der Interpolation).
         this._rittSchritt(dt);
         // ein im Flug verlassener Gesetz-Wagen fällt auf der Vertikale des Kerns, bis er steht (Gegenprüfung 07.10.)
@@ -997,6 +1000,7 @@ class AnazhRealm_dirigent_takt {
             quer: T.quer,
             sprint: T.sprint,
             sprung: T.sprung,
+            rutsch: T.rutsch,
         });
     }
 
@@ -1035,10 +1039,11 @@ class AnazhRealm_dirigent_takt {
         };
     }
 
-    // Spielt eine Aufnahme DETERMINISTISCH ab: setzt den Start zurück und füttert jede
-    // Input-Frame durch DENSELBEN Pfad wie der Loop (`_stepCharacter` dann
-    // `_loopPlayerMovement`, in der Loop-Reihenfolge). Gibt den End-Zustand zurück.
-    // Reiner Replay (keine Welt-Mutation außer dem Spieler) → mehrfach aufrufbar.
+    // Spielt eine Aufnahme DETERMINISTISCH ab: setzt den Start zurück und füttert jede Input-Frame durch DENSELBEN Spieler-Schritt
+    // wie der Sim-Schritt (`_stepFixedSim`: die ganze Verb-Tafel, die Bewegung im festen dt der Frame, der Feld-Schritt, die
+    // Geräte, der Ritt — w4-koerper-park: vorher fehlten der Rutsch, das feste dt und die Geräte, ein aufgenommener Rutsch spielte
+    // nie zurück). `rec.spur` (ein Array) nimmt je Frame die Zeile des Takts (koerper `leibTaktZeile` über `rec.boden`, das Gerät
+    // mit der Kennung `rec.geraet`). Gibt den End-Zustand zurück; der Spieler bleibt dort, seine Hilfszustände kehren zurück.
     replayRun(rec) {
         if (!rec || !Array.isArray(rec.frames)) return null;
         const s = this.state,
@@ -1066,6 +1071,8 @@ class AnazhRealm_dirigent_takt {
             _cWasDown: false,
             _parkourSlide: null,
             _parkourKletter: 0,
+            leibVerb: null,
+            _verbLage: null,
             _wandKontaktAt: null,
             playerUnderwater: false,
             playerEyesUnderwater: false,
@@ -1077,14 +1084,32 @@ class AnazhRealm_dirigent_takt {
         let t = 0;
         for (let i = 0; i < rec.frames.length; i++) {
             const f = rec.frames[i];
-            Object.assign(s.verbTafel, { vor: f.vor, quer: f.quer, sprint: !!f.sprint, sprung: !!f.sprung });
+            Object.assign(s.verbTafel, {
+                vor: f.vor,
+                quer: f.quer,
+                sprint: !!f.sprint,
+                sprung: !!f.sprung,
+                rutsch: !!f.rutsch,
+            });
             s.yaw = f.yaw;
             t += f.dt;
             // die Ordnung des Sim-Schritts (`_stepFixedSim`): erst die Bewegung (setzt die Intent-Velocity dieses
-            // Schritts), dann der Feld-Schritt (integriert sie + Kollision).
-            this._loopPlayerMovement(t);
+            // Schritts), dann der Feld-Schritt (integriert sie + Kollision), die Geräte, der Ritt.
+            this._loopPlayerMovement(t, f.dt);
             this._stepCharacter(f.dt, t);
+            this._geraeteSchwingen(f.dt);
             this._rittSchritt(f.dt);
+            if (rec.spur) {
+                const a = rec.geraet && (this._leibAngeboteListe || []).find((g) => g.id === rec.geraet);
+                rec.spur.push(
+                    AnazhRealm._leibTakt().leibTaktZeile(
+                        s,
+                        [pm.position.x, pm.position.y - AnazhRealm.PLAYER_FOOT_OFFSET, pm.position.z],
+                        rec.boden || 0,
+                        a
+                    )
+                );
+            }
         }
         const end = this._replaySnapshotState();
         Object.assign(s, gerettet);

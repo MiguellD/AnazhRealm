@@ -472,39 +472,13 @@ class AnazhRealm_koerper_leib {
         if (rig && M.L > 0.1) rig._beinMass = M;
         return M;
     }
-    // POSEN-BLEND: w(speed) exp-geglättet statt hartem isMoving-Schnitt — Rampe 0.25→0.55 m/s, k=10,
-    // plus harte ±0.2-Steilheits-Wand je Tick. NaN-Wände VOR dem Gedächtnis.
+    // POSEN-BLEND und ZWEI-KNOCHEN-IK: das Gesetz des EINEN Gang-Takts im Kern (koerper-core `leibGangBlend` · `leibZweiKnochen`,
+    // w4-koerper-park — dieselben Funktionen trägt das Körper-Studio); die Wirts-Namen bleiben die Leser der Tiere und der Fuß-IK.
     _gaitBlendStep(wPrev, speed, dt) {
-        const w0 = Number.isFinite(wPrev) ? Math.min(1, Math.max(0, wPrev)) : 0;
-        const v = Number.isFinite(speed) && speed > 0 ? speed : 0;
-        const ziel = Math.min(1, Math.max(0, (v - 0.25) / 0.3));
-        const d = Number.isFinite(dt) && dt > 0 ? Math.min(0.1, dt) : 0.016;
-        let dw = (ziel - w0) * (1 - Math.exp(-10 * d));
-        if (dw > 0.2) dw = 0.2;
-        else if (dw < -0.2) dw = -0.2;
-        return w0 + dw;
+        return AnazhRealm._leibTakt().leibGangBlend(wPrev, speed, dt);
     }
-    // ZWEI-KNOCHEN-IK (Kosinussatz) in der Sagittal-Ebene; vor/unten = Ziel-Offset in l1/l2-Einheiten.
-    // hip = rotation.x (negativ = Bein vor), knee ≥ 0 beugt NACH HINTEN. Ziel im Hüftpunkt oder außer
-    // Reichweite → gestreckt Richtung Ziel, reached=false — nie NaN.
     _twoBoneIK(l1, l2, vor, unten) {
-        const L1 = Number(l1);
-        const L2 = Number(l2);
-        if (!(L1 > 1e-6) || !(L2 > 1e-6)) return { hip: 0, knee: 0, reached: false };
-        const dF = Number.isFinite(vor) ? vor : 0;
-        const dU = Number.isFinite(unten) ? unten : 0;
-        let d = Math.hypot(dF, dU);
-        if (!(d > 1e-6)) return { hip: 0, knee: 0, reached: false }; // Ziel = Hüftpunkt
-        const at = Math.atan2(dF, dU); // Ziel-Winkel von der Senkrechten (vorwärts positiv)
-        if (d >= L1 + L2 - 1e-6) return { hip: -at, knee: 0, reached: false }; // außer Reichweite: gestreckt
-        const minD = Math.abs(L1 - L2) + 1e-6;
-        if (d < minD) d = minD;
-        const cosK = Math.max(-1, Math.min(1, (L1 * L1 + L2 * L2 - d * d) / (2 * L1 * L2)));
-        const knie = Math.PI - Math.acos(cosK);
-        const cosG = Math.max(-1, Math.min(1, (L1 * L1 + d * d - L2 * L2) / (2 * L1 * d)));
-        const hip = -(at + Math.acos(cosG));
-        if (!Number.isFinite(hip) || !Number.isFinite(knie)) return { hip: 0, knee: 0, reached: false };
-        return { hip, knee: knie, reached: true };
+        return AnazhRealm._leibTakt().leibZweiKnochen(l1, l2, vor, unten);
     }
     // (4) HANG-PITCH aus zwei Bodenproben (vorn/hinten). rotation.x-Konvention:
     // +x kippt die Nase ABWÄRTS ⇒ vorn höher → negativ (die Nase hebt sich).
@@ -525,45 +499,26 @@ class AnazhRealm_koerper_leib {
         const d = Number.isFinite(dt) && dt > 0 ? dt : 0;
         const emoF = opts && Number.isFinite(opts.emoFaktor) && opts.emoFaktor > 0 ? opts.emoFaktor : 1;
         const gs = this._gaitGesetz(rig, v);
-        const g =
-            halter._gait || (halter._gait = { w: 0, amp: 1, ik: null, S: 0, tast: 0.5, auf: Math.PI, omega: 0, L: 0 });
-        // DER STEHENDE FUSS HÄLT (K07, tetrapoda `gangPhaseHaelt`): ändert sich die Zeile (Tempo, Gangart, Emotion), setzt
-        // sich die Phase so, dass das stehende Bein sein Fuß-Ziel behält; aus dem Stand (S0 = 0) setzt das nähere Bein in
-        // der Mitte seines Stands ein (der Anlauf). Vorher lief die Phase weiter: der gelockte Fuß lag nach dem Tempo-Sprung
-        // hinter dem Ziel des Laufs, das Becken reichte ihn nicht, der Lock löste (je 1 Löser bei 5,16 und 6,75 m/s).
-        const S1 = gs.S / emoF;
-        if (gs.omega > 0) {
-            const steht = !(halter._gaitW > 0.05) || !(g.S > 0);
-            const S0 = steht ? 0 : g.S;
-            if (steht || Math.abs(S0 - S1) > 1e-9 || g.tast !== gs.tast)
-                halter.walkPhase = window.__tetrapodaCore.gangPhaseHaelt(
-                    Number.isFinite(halter.walkPhase) ? halter.walkPhase : 0,
-                    S0,
-                    g.tast,
-                    S1,
-                    gs.tast
-                );
-        }
-        halter.walkPhase = (halter.walkPhase || 0) + d * gs.omega * emoF;
-        halter._gaitW = this._gaitBlendStep(halter._gaitW, v, d);
-        g.w = halter._gaitW;
-        // das Fuß-Ziel des Gesetzes: der Fußweg im Stand (die Emotion reist als Kadenz — bei gleichem Weg kürzt sie den
-        // Schritt, der Fuß im Stand bleibt stehen), der Tastgrad, die Phase des Aufsetzens (2π·(1 − Tastgrad)), die Beinlänge
-        g.S = S1;
-        g.tast = gs.tast;
-        g.hub = gs.hub;
-        g.auf = 2 * Math.PI * (1 - gs.tast);
-        g.omega = gs.omega * emoF;
-        g.L = this._gaitBeinMass(rig).L;
-        // ZWILLINGS-ABSCHIED (19.07.): der „|| 6"-Nebenzwilling fiel — der
-        // Falsy-Arm (nur vor der Boot-Eichung erreichbar) liest die Eichungs-
-        // Wahrheit selbst (fail-closed via _bewegungsKoeff, kurzgeschlossen).
+        // DER EINE GANG-TAKT (koerper-core `leibGangTakt`, w4-koerper-park — dasselbe Gesetz im Körper-Studio): DER STEHENDE FUSS
+        // HÄLT (K07, tetrapoda `gangPhaseHaelt`: ändert sich die Zeile, behält das stehende Bein sein Fuß-Ziel; aus dem Stand
+        // setzt das nähere Bein in der Mitte seines Stands ein), die Phase wächst mit dem Takt, das Blend-Gewicht glättet, die
+        // Amplitude folgt dem Tempo gegen das Geh-Tempo der Seele. ZWILLINGS-ABSCHIED (19.07.): der „|| 6"-Nebenzwilling fiel —
+        // der Falsy-Arm (nur vor der Boot-Eichung erreichbar) liest die Eichungs-Wahrheit selbst (fail-closed via _bewegungsKoeff).
         const vRef = Math.max(
             1,
             Number(this.state.speed) ||
                 AnazhRealm._bewegungsKoeff("speed").base + AnazhRealm._bewegungsKoeff("speed").leicht
         );
-        g.amp = Math.max(0.7, Math.min(1.3, 0.55 + 0.45 * (v / vRef)));
+        const g = AnazhRealm._leibTakt().leibGangTakt(
+            window.__tetrapodaCore,
+            halter,
+            gs,
+            v,
+            d,
+            emoF,
+            vRef,
+            this._gaitBeinMass(rig).L
+        );
         g.ik = opts && opts.ik ? this._gaitIKPrep(mesh, opts.soleY, opts.yaw) : null;
         // ohne Boden-IK (Luft, Peer) löst jeder Fuß-Lock — die Landung friert die Stand-Füße frisch ein
         const ikC = !g.ik && mesh.userData && mesh.userData._gaitIK;
@@ -685,7 +640,7 @@ class AnazhRealm_koerper_leib {
             if (!(l1 > 0.02) || !(l2 > 0.02)) return null;
             L.ankle.getWorldPosition(tv);
             const soleH = Math.max(0, tv.y - soleY);
-            r._sohle = this._gaitSohle(mesh, L.ankle);
+            r._sohle = AnazhRealm._leibTakt().leibSohle(mesh, L.ankle);
             L.ankle.getWorldScale(tv);
             const sohle = r._sohle
                 ? [-1, -0.5, 0, 1 / 3, 2 / 3, 1].map((f) => tv.z * (f < 0 ? -f * r._sohle[2] : f * r._sohle[0]))
@@ -733,30 +688,6 @@ class AnazhRealm_koerper_leib {
         if (!Number.isFinite(ik.hang)) ik.hang = 0;
         return ik;
     }
-    // DIE SOHLE DES GEBAUTEN FUSSES (leib.K2): ein Fuß ohne Zehen-Gelenk rollt über den Punkt seiner Sohle, der den Boden trägt
-    // — eine ebene Sohle über ihre Spitze. [Spitze vor, Sohle unter, Ferse vor] dem Knöchel im Knöchel-Raum der Bind-Pose (die
-    // Haut, die er trägt; nie die Pose des ersten Takts): die vorderste Stelle der Unterkante (≤ 0,02 Maß über der tiefsten),
-    // die hinterste der Haut (die Ferse, < 0). Vorher hielt
-    // die IK den Ballen der Zeile (0,46 E vor dem Knöchel), die starre Spitze 0,31 E weiter tauchte im späten Abrollen
-    // 3–6,5 cm in den Boden (gate:koerper-stand K8 falllinie).
-    _gaitSohle(mesh, knoechel) {
-        const v = new THREE.Vector3();
-        const M = new THREE.Matrix4();
-        const p = [];
-        mesh.traverse((o) => {
-            const b = o.isSkinnedMesh ? o.skeleton.bones.indexOf(knoechel) : -1;
-            if (b < 0) return;
-            const { skinIndex: si, skinWeight: sw, position: pa } = o.geometry.attributes;
-            M.multiplyMatrices(o.skeleton.boneInverses[b], o.bindMatrix);
-            for (let i = 0; i < pa.count; i++)
-                for (let k = 0; k < 4; k++)
-                    if (si.getComponent(i, k) === b && sw.getComponent(i, k) > 0.5)
-                        p.push(v.fromBufferAttribute(pa, i).applyMatrix4(M).toArray());
-        });
-        if (!p.length) return null;
-        const y0 = Math.min(...p.map((q) => q[1]));
-        return [Math.max(...p.filter((q) => q[1] <= y0 + 0.02).map((q) => q[2])), -y0, Math.min(...p.map((q) => q[2]))];
-    }
     // FUSS-IK + FOOT-LOCK, NACH der Posen-Blende: Becken senkt sich aufs tiefere Bein, der Stance-Fuß
     // lockt an seiner gecachten Boden-Position (Two-Bone-IK), der Rumpf lehnt in den Hang; das
     // Schwung-Bein bleibt Pose. Der Lock löst, sobald das Ziel die Reichweite verlässt (kein Spagat/Pop).
@@ -803,7 +734,7 @@ class AnazhRealm_koerper_leib {
         this._gaitLegIK(r.legR, ik, ik.probeR, ik.lockR, ik.footR, standR, w, rolle[1]);
     }
     // DIE ROLLE IN DER EBENE DER SOHLE (leib.K2): der Knöchel des rollenden Fußes steigt und rückt vor — um die vorderste Stelle
-    // der Sohle, die trägt (`probe.vorn`; die Rolle des Gesetzes dreht um die Spitze, `_gaitSohle`, ihr Überstand darüber hinaus
+    // der Sohle, die trägt (`probe.vorn`; die Rolle des Gesetzes dreht um die Spitze, koerper `leibSohle`, ihr Überstand darüber hinaus
     // zieht ab: dx − Ü·(1 − cos φ), dy − Ü·sin φ), längs der Geraden, auf der die Sohle ruht (`probe.kipp`), nie längs der
     // Waagrechten; [vor, hinauf] in Metern. Vorher fehlte am Hang die Steigung × dx (die Falllinie hinauf tauchte der rollende
     // Fuß 3–6 cm ein), und treppab drehte er um die Spitze über der tieferen Stufe (er hob 3–12 cm von der Kante ab).
@@ -928,152 +859,29 @@ class AnazhRealm_koerper_leib {
             x(r.legR.hip, Math.sin(walkPhase * SP.beinTakt + Math.PI) * kA);
             return;
         }
-        // POSEN-BLEND: BEIDE Posen gerechnet und ADDITIV über das Null-Reset gelerpt (Ruhe ×(1−w) +
-        // Gehen ×w) — kein Plopp an der Schwelle. Aufrufer ohne gait: w = isMoving ? 1 : 0.
-        // Die Walk-Amplitude skaliert mit dem Tempo (gait.amp).
-        const w = gait && Number.isFinite(gait.w) ? Math.max(0, Math.min(1, gait.w)) : isMoving ? 1 : 0;
-        const amp = gait && Number.isFinite(gait.amp) ? Math.max(0.5, Math.min(1.6, gait.amp)) : 1;
-        const add = (b, ax, v) => {
-            if (b && v) b.rotation[ax] += v;
-        };
-        if (w < 0.999) {
-            // ── RUHE ×(1−w) — Kontrapost (Standbein R): Hüfte kippt, Wirbelsäule lehnt gegen, Kopf zurück.
-            // Das koerper-fx.motion-Profil (über die EINE Emotions-Brücke) führt Atem (breath/freq, auf das
-            // Lab-idle normalisiert) und Emotions-POSE (MOTION_RIG_MAP-Deltas relativ zum Lab-idle, inkl.
-            // headY·spineY·hipLZ/hipRZ). Kaltes Buch → mp null → Host-Konstanten. Der Rig LIEST nur Studio-Zahlen.
-            const wi = 1 - w;
-            const mp = this._koerperMotionProfile(false, emotions);
-            const mref = mp ? this._koerperMotionProfile(false, null) : null;
-            const bAmp =
-                mp && mref && Number.isFinite(mp.breath) && mref.breath > 0 ? 0.02 * (mp.breath / mref.breath) : 0.02;
-            const bRate = mp && mref && Number.isFinite(mp.freq) && mref.freq > 0 ? 1.6 * (mp.freq / mref.freq) : 1.6;
-            const breath = Math.sin(t * bRate) * bAmp;
-            add(r.spine, "z", 0.1 * wi); // Oberkörper lehnt zur Standbein-Seite
-            add(r.chest, "z", -0.06 * wi); // Brust-Gegenkipp
-            add(r.neck, "z", 0.05 * wi); // Kopf wieder aufrecht (krönt die S-Kurve)
-            add(r.spine, "x", (-0.02 + breath) * wi); // sanfter Atem
-            // Spielbein (L) leicht gebeugt + vorgestellt, Standbein (R) gestreckt
-            add(r.legL.hip, "x", 0.08 * wi);
-            add(r.legL.knee, "x", 0.16 * wi); // Knie beugt nach hinten (menschlich, + wie Walk/Sitz)
-            add(r.legR.knee, "x", 0.04 * wi);
-            // Arme ADDUZIERT aus der A-Pose-Spreizung an den Körper, mit LUFT zum Rumpf
-            // (sonst presst der Arm eine Kontakt-FALTE in den Torso = ein „Riss").
-            add(r.armL.shoulder, "z", -0.19 * wi);
-            add(r.armR.shoulder, "z", 0.17 * wi);
-            add(r.armL.elbow, "x", -0.18 * wi); // sanfte Ellbogen-Beuge
-            add(r.armR.elbow, "x", -0.1 * wi);
-            // Die Emotions-Pose als DATEN-Deltas (mp === mref am Neutralpunkt → Schleife
-            // trägt Nullen → byte-alt; mp/mref sind dieselbe Preset-Referenz bei "idle").
-            // V18.491.142 KPMUL_VIS α-path; kpMul>=1 byte-alt instant; tetrapoda .81 sibling.
-            const kpMul = mp && Number.isFinite(Number(mp.kpMul)) ? Number(mp.kpMul) : 1;
-            const dtK = r._kpmulT != null ? Math.max(0, Math.min(0.08, t - r._kpmulT)) : 0;
-            r._kpmulT = t;
-            if (mp && mref && mp === mref) r._kpmulAcc = null;
-            if (mp && mref && mp !== mref) {
-                if (!r._kpmulAcc) r._kpmulAcc = Object.create(null);
-                const a = kpMul >= 0.999 || dtK <= 0 ? 1 : 1 - Math.exp(-Math.max(18, 55 * kpMul) * dtK);
-                for (const row of AnazhRealm.MOTION_RIG_MAP) {
-                    const dv = ((Number(mp[row.key]) || 0) - (Number(mref[row.key]) || 0)) * wi;
-                    const accKey = row.key + "." + row.axis;
-                    const prev = r._kpmulAcc[accKey] || 0;
-                    const out = prev + (dv - prev) * a;
-                    r._kpmulAcc[accKey] = out;
-                    if (!out) continue;
-                    const seg = row.bone.split(".");
-                    const bone = seg.length === 2 ? r[seg[0]] && r[seg[0]][seg[1]] : r[seg[0]];
-                    if (bone && bone.rotation) bone.rotation[row.axis] += out * row.mul;
-                }
-            }
-            // BODY-WELLE (18.491.86) — Lab Root-Pitch/Roll + Mikro-Sway → Host hips.
-            // Nicht MOTION_RIG_MAP (kein Knochen-Gap; Überlapp Kontrapost bewusst klein halten).
-            if (r.hips && mp) {
-                const m0 = mref || mp;
-                const dX = ((Number(mp.bodyX) || 0) - (Number(m0.bodyX) || 0)) * wi;
-                const dZ = ((Number(mp.bodyZ) || 0) - (Number(m0.bodyZ) || 0)) * wi;
-                add(r.hips, "x", dX);
-                add(r.hips, "z", dZ);
-                // Mikro-Sway: absolute Amp wie Lab e.sway (idle bleibt fühlbar; mp===mref → nur sway)
-                const swayA = Number.isFinite(mp.sway) ? mp.sway : 0.022;
-                add(r.hips, "z", Math.sin(t * 1.1) * swayA * wi);
-                add(r.hips, "x", Math.sin(t * 0.7) * swayA * 0.35 * wi);
-            }
-            // V18.491.142 KPMUL_VIS.host=map-alpha — map-α reads kpMul; still no MOTION_RIG_MAP kpMul row (Vertrag .87 Map-Verbot).
-        }
-        // DIE BEINE AUF DAS ZIEL DES GESETZES (K07): jeder Fuß folgt tetrapoda `gangFuss` — im Stand wandert er am Boden
-        // mit genau dem Tempo des Leibs zurück (er steht in der Welt), im Schwung kehrt er gehoben nach vorn —, Hüfte, Knie
-        // und Knöchel stellt die Zwei-Knochen-IK auf dieses Ziel (die Sohle bleibt eben). Das Becken trägt tetrapoda
-        // `gangBecken` (dasselbe im Körper-Studio): nur die STEHENDEN Füße senken es, an der Reichweite R, an der die Fuß-IK
-        // den stehenden Fuß hält (`_gaitReich`, EINE Schwelle); der Schwung-Fuß faltet sich unter R (vorher zog er das
-        // Becken über beide Füße hinab: im Lauf 46 cm, an der Spitze 77 cm). Derselbe Pfad trägt den lokalen Avatar, den
-        // Peer und jeden Bewohner mit Rig; vorher schwangen die Beine ±0,5 rad als Sinus um einen 3,4-m-Schritt.
-        const S = w > 0.001 && gait && gait.S > 0 ? gait.S : 0;
-        const M = S > 0 ? this._gaitBeinMass(r) : null;
-        let sw = Math.sin(walkPhase);
-        r._gangSenke = 0;
-        if (r._gangStand) r._gangStand[0] = r._gangStand[1] = true; // ohne Gesetzes-Pose stehen beide Füße
-        if (r._gangRoll) r._gangRoll[0] = r._gangRoll[1] = null; // ohne Gesetzes-Pose steht die Sohle flach
-        if (M && M.l1 > 0 && M.l2 > 0) {
-            const core = window.__tetrapodaCore;
-            const Z = this._gangZeile(true);
-            const tast = gait.tast;
-            const Sl = S / M.wz; // der Fußweg längs, im Gelenk-Raum
-            const hubL = (gait.hub * M.L) / M.wpl;
-            const L12 = M.l1 + M.l2;
-            const R = AnazhRealm._gaitReich(L12);
-            // der Fuß rollt im späten Stand über den Ballen (tetrapoda gangRolle): sein Knöchel steigt um heb, die Sohle
-            // kippt um roll — die Fuß-IK hält die Stelle der Sohle, die trägt, nie die Ferse (`_gaitLegIK`, `r._gangRoll`)
-            const FL = core.gangFuss(walkPhase, Sl, tast, Z, R);
-            const FR = core.gangFuss(walkPhase + Math.PI, Sl, tast, Z, R);
-            const roll = r._gangRoll || (r._gangRoll = [null, null]);
-            // die Fuß-IK hält den Punkt der Sohle, der trägt: dieselbe Rolle mit der Zeile des GEBAUTEN Fußes (`_gaitSohle`)
-            const Zs =
-                r._sohle && (r._sohleZ || (r._sohleZ = { ...Z, ballen: r._sohle[0] / R, knoechel: r._sohle[1] / R }));
-            roll[0] = Zs ? core.gangFuss(walkPhase, Sl, tast, Zs, R) : FL;
-            roll[1] = Zs ? core.gangFuss(walkPhase + Math.PI, Sl, tast, Zs, R) : FR;
-            // die Senke im Gelenk-Raum über der gestreckten Kette (die Schwere der Zeile im lotrechten Gelenk-Maß)
-            const tief = L12 - R + core.gangBecken(walkPhase, Sl, tast, R, gait.omega, Z, M.wpl);
-            r._gangSenke = tief;
-            const auf = 2 * Math.PI * (1 - tast);
-            const u = (p) => ((p % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
-            r._gangStand = r._gangStand || [false, false];
-            r._gangStand[0] = u(walkPhase) >= auf;
-            r._gangStand[1] = u(walkPhase + Math.PI) >= auf;
-            // der Fuß unter der Hüfte: gehoben um seinen Hub, nie jenseits von R (der Schwung-Fuß faltet sich)
-            const unten = (F, h) => Math.min(L12 - tief - h, Math.sqrt(Math.max(0, R * R - F.dz * F.dz)));
-            const ikL = this._twoBoneIK(M.l1, M.l2, FL.dz, unten(FL, FL.hub * hubL + FL.heb));
-            const ikR = this._twoBoneIK(M.l1, M.l2, FR.dz, unten(FR, FR.hub * hubL + FR.heb));
-            add(r.legL.hip, "x", ikL.hip * w);
-            add(r.legL.knee, "x", ikL.knee * w);
-            add(r.legL.ankle, "x", (FL.roll - ikL.hip - ikL.knee) * w);
-            add(r.legR.hip, "x", ikR.hip * w);
-            add(r.legR.knee, "x", ikR.knee * w);
-            add(r.legR.ankle, "x", (FR.roll - ikR.hip - ikR.knee) * w);
-            // das Bein-Signal für Arme und Becken: −1, wenn das linke Bein vorn steht (Arm L schwingt gegen Bein L)
-            sw = Math.max(-1, Math.min(1, (FR.dz - FL.dz) / Sl));
-        }
-        if (w > 0.001) {
-            // ── GEHEN ×w — Arme gegen die Beine, Becken-Roll/Yaw + Brust-Gegendreh im Takt des Bein-Signals.
-            const wa = w * amp;
-            // Arme gegen die Beine (Arm L mit Bein R)
-            add(r.armL.shoulder, "x", -0.4 * sw * wa);
-            add(r.armR.shoulder, "x", 0.4 * sw * wa);
-            add(r.armL.elbow, "x", (-0.3 - 0.2 * Math.max(0, -sw) * amp) * w);
-            add(r.armR.elbow, "x", (-0.3 - 0.2 * Math.max(0, sw) * amp) * w);
-            // Rumpf-Roll/Yaw über dem Becken + Brust-Gegendreh: das Becken trägt die Beine und dreht nicht mit (eine
-            // Becken-Drehung schwenkte die Bein-Kette um die Hüfte, der Stand-Fuß glitt 8 cm je Schritt seitlich)
-            add(r.spine, "z", 0.05 * sw * wa);
-            add(r.spine, "y", 0.07 * sw * wa);
-            add(r.chest, "y", -0.06 * sw * wa);
-        }
-        // Die Becken-Senke des Gangs — absolut über der EINMAL gecachten Basis;
-        // ×w: sie klingt beim Stopp aus, statt eingefroren stehenzubleiben.
-        if (r.hips) {
-            if (r._baseHipY == null) r._baseHipY = r.hips.position.y;
-            r.hips.position.y = r._baseHipY - r._gangSenke * w;
-        }
+        // DIE POSE AN LAND (koerper-core `leibRigPose`, w4-koerper-park — dieselbe Funktion setzt das Körper-Studio): Ruhe ×(1−w) —
+        // das Kontrapost mit Atem und der Emotion als Daten-Delta (die Profile über die EINE Emotions-Brücke, das Labor-idle ist
+        // der Neutralpunkt; MOTION_RIG_MAP) — und Gehen ×w: die Beine auf dem Ziel des Gang-Gesetzes (tetrapoda gangFuss, das Becken
+        // gangBecken, die Zwei-Knochen-IK auf die gebauten Beine `_gaitBeinMass`), die Arme gegen die Beine, die Becken-Senke.
+        const wB = gait && Number.isFinite(gait.w) ? Math.max(0, Math.min(1, gait.w)) : isMoving ? 1 : 0;
+        const mp = wB < 0.999 ? this._koerperMotionProfile(false, emotions) : null;
+        const mref = mp ? this._koerperMotionProfile(false, null) : null;
+        const SB = wB > 0.001 && gait && gait.S > 0 ? gait.S : 0;
+        AnazhRealm._leibTakt().leibRigPose(
+            r,
+            t,
+            walkPhase,
+            isMoving,
+            gait,
+            mp,
+            mref,
+            SB > 0 ? this._gaitBeinMass(r) : null,
+            SB > 0 ? this._gangZeile(true) : null,
+            window.__tetrapodaCore
+        );
         // ═══ KÖRPER-BEWEGUNG (3) — Fuß-IK/Foot-Lock/Becken/Hang-Lehne (nur mit
         // gerüstetem Kontext = der lokale Avatar; s. _gaitTick Budget-Disziplin).
-        if (gait && gait.ik) this._gaitApplyFussIK(r, walkPhase, w, gait.ik);
+        if (gait && gait.ik) this._gaitApplyFussIK(r, walkPhase, wB, gait.ik);
         // V18.491.85 — Augen-Welle außerhalb MOTION_RIG_MAP (irisSpeed/blinkRate).
         this._animateHumanoidAugen(r, t, emotions);
     }
@@ -3194,13 +3002,11 @@ class AnazhRealm_koerper_leib {
     // _applySizeMultipliersToStats. Default-Dials (height 1.0 · mass 0.35 · tone 0.5) → EXAKT 1.0;
     // Spanne ≈ 0.63…1.61 (wie Custom-Avatare 0.7…1.7). Höhe quadratisch, Masse/Tonus linear-mild;
     // der Aufrufer dämpft per sqrt.
+    // DIE GRÖSSE DES MENSCHEN aus seinen Dials (koerper-core `leibGroesse`, w4-koerper-park — dieselbe Zahl im Körper-Studio)
     _humanDialSizeFactor() {
         const s = this._koerperStudioDials();
         if (!s) return 1;
-        const height = Number.isFinite(s.height) ? s.height : 1.0;
-        const mass = Number.isFinite(s.mass) ? s.mass : 0.35;
-        const tone = Number.isFinite(s.tone) ? s.tone : 0.5;
-        return height * height * (1 + 0.25 * (mass - 0.35)) * (1 + 0.1 * (tone - 0.5));
+        return AnazhRealm._leibTakt().leibGroesse(s);
     }
 
     // Der EINE generische Animator: Rollen auf die Compound-Children (`children[i] ↔ parts[i]`, der
@@ -3617,26 +3423,9 @@ AnazhRealm.MOTION_EMOTION_PROFILES = Object.freeze([
 // Adduktions-Achse, R gespiegelt). Angewandt als DELTA zum Lab-idle (`p[key] − ref[key]`) → Idle ist
 // per Konstruktion neutral; breath/freq normalisieren auf das Lab-idle (0.042/1.25), der Host-Atem
 // (0.02 · 1.6 rad/s) bleibt am Neutralpunkt.
-AnazhRealm.MOTION_RIG_MAP = Object.freeze([
-    Object.freeze({ key: "headX", bone: "head", axis: "x", mul: 1 }),
-    Object.freeze({ key: "headY", bone: "head", axis: "y", mul: 1 }),
-    Object.freeze({ key: "headZ", bone: "head", axis: "z", mul: 1 }),
-    Object.freeze({ key: "spineX", bone: "spine", axis: "x", mul: 1 }),
-    Object.freeze({ key: "spineY", bone: "spine", axis: "y", mul: 1 }),
-    Object.freeze({ key: "spineZ", bone: "spine", axis: "z", mul: 1 }),
-    Object.freeze({ key: "armL", bone: "armL.shoulder", axis: "z", mul: 1 }),
-    Object.freeze({ key: "armR", bone: "armR.shoulder", axis: "z", mul: -1 }),
-    Object.freeze({ key: "armLX", bone: "armL.shoulder", axis: "x", mul: 1 }),
-    Object.freeze({ key: "armRX", bone: "armR.shoulder", axis: "x", mul: 1 }),
-    Object.freeze({ key: "elbowL", bone: "armL.elbow", axis: "x", mul: -1 }),
-    Object.freeze({ key: "elbowR", bone: "armR.elbow", axis: "x", mul: -1 }),
-    Object.freeze({ key: "hipLX", bone: "legL.hip", axis: "x", mul: 1 }),
-    Object.freeze({ key: "hipRX", bone: "legR.hip", axis: "x", mul: 1 }),
-    Object.freeze({ key: "hipLZ", bone: "legL.hip", axis: "z", mul: 1 }),
-    Object.freeze({ key: "hipRZ", bone: "legR.hip", axis: "z", mul: 1 }),
-    Object.freeze({ key: "kneeL", bone: "legL.knee", axis: "x", mul: 1 }),
-    Object.freeze({ key: "kneeR", bone: "legR.knee", axis: "x", mul: 1 }),
-]);
+// Die Zuordnung Profil → Rig wohnt im Gesetzbuch (koerper-core MOTION_RIG_MAP, w4-koerper-park): die Pose an Land
+// (`leibRigPose`) liest sie in Welt und Körper-Studio.
+AnazhRealm.MOTION_RIG_MAP = globalThis.__koerperCore.MOTION_RIG_MAP;
 // Dial↔Genom-Zuordnung (axis = base + mul·dial): height→kh · mass→build · tone→muscle · gender→sex.
 // Der Körper baut direkt aus koerper-core.bauMensch(dials); die Tabelle dient nur der
 // Genom→Dial-Brücke (`_dialsAusGenom`, Peers/NPCs, invertiert je Zeile) und den Stat-Konsumenten
@@ -3677,4 +3466,4 @@ AnazhRealm.GANG_DECKEL_RAD = 0.6;
 AnazhRealm.STAND_SICHT_BAND = 2.0;
 AnazhRealm.SOHLE_PUNKT = Object.freeze([0]); // die Sohle ohne gebauten Fuß: die Stelle unter dem Knöchel (`_gaitProbe`)
 // Die Kopf-Einheit des Avatars (m): 8 Einheiten = die Welt-Körperhöhe ~1,7 m (bauMensch, Wasserlinie, Studio-Maßstab).
-AnazhRealm.PLAYER_KH = 0.2125;
+AnazhRealm.PLAYER_KH = globalThis.__koerperCore.LEIB.kopfM; // die Kopf-Einheit des Gesetzbuchs (koerper-core LEIB.kopfM)

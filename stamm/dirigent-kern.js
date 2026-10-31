@@ -95,6 +95,8 @@ class AnazhRealm {
             _mountVorKamera: null,
             _parkourSlide: null,
             _parkourKletter: 0,
+            leibVerb: null, // das Verb an einem Gerät (koerper-core leibVerbTakt, w4-koerper-park)
+            _verbLage: null,
             _wandKontaktNx: 0,
             _wandKontaktNz: 0,
             _wandKontaktAt: null,
