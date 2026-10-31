@@ -1,0 +1,167 @@
+Punkte-Maschine: 58 Station(en) in 36 Läufen auf gtx am e0139769 · Sitzung 36 Proben in EINER Welt (Deckel Σ 15 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  SITZUNG gtx · die Welt steht nach 6.3 s (Schloss nach 0.01 min) · 36 Proben · Welt :27804
+  SITZUNG EICH-FAHRT: jede Probe bis 90 s — das Gesetz: je Probe ≤ 45 s, mit ausnahme ≤ 90 s, die Fahrt ≤ 1800 s; ein Urteil zählt nur im Gesetz, je Probe ihre Sekunden (eich)
+  SITZUNG der Grund der Welt: 77 Größen in 0.1 s
+  SITZUNG Ort dorf vor wetter.K2#1: 31.5 s (1132 Takte, 81 Chunks)
+  GRÜN wetter.K2#1 · Dorf porös draußen 0.573 · innen unter dem Dach 1 · dicht 1 · Regen innen 0 / draußen 5 (n 5949/13809) · Sitzung · Exit 0 · 0.24 min
+  EICH 14.5 s · wetter.K2#1 · Deckel 33 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor schatten.K1#1: 3.5 s (im Spiel 37 ms, durch die Tür — wege +2 [-784.3,-952.2,-631.7,-806.5/4] [-810.2,-986.5,-604,-776.9/95])
+  SITZUNG Ort buehne vor schatten.K1#1 steht nicht nach 300 s: {"fehler":"/umstellen ohne Antwort binnen 300 s"}
+  GRÜN schatten.K1#1 · Uhr 0.5 ego 1.8 cm (10 Kanten) · Uhr 0.5 third 2.1 cm (10 Kanten), [linse-gpu] nvidia/pascal · Sitzung · Exit 0 · 0.25 min
+  EICH 15 s · schatten.K1#1 · Deckel 33 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor gelaende.K2#1: 2.2 s (im Spiel 42.9 ms, durch die Tür)
+  SITZUNG die Welt vor gelaende.K2#1: 13.9 s (584 Takte, 81 Chunks, nach der Tür)
+  OFFEN gelaende.K2#1 · EICH: 68.3 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (GRÜN: 3 von 4 Gräben über das Verb, in 551 Bildern doppelt 0 und über dem Spiegel 0, gefüllt nach 63.7–316.4 ms (1 m 1, 3 m 2)) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 68.3 s · gelaende.K2#1 · Deckel 10 s · Gesetz 45 s · über dem Gesetz, das Urteil (GRÜN) zählt nie
+  OFFEN gelaende.K2#2 · EICH: 68.3 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: (a) Third 3/4 Gräben (1 m 1, 3 m 2) · Ego 1/2 Gräben (1 m 0, 3 m 1, Bild s23/3 m) · (b) stromauf 25.25/25.24, 25.25/25.23 m Wasser/Überlauf über Fluss 24.88, 24.97, stromab 24.63/24.63, 24.48/24.48 · ) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 68.3 s · gelaende.K2#2 · Deckel 10 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie (Zwilling von gelaende.K2#1)
+  SITZUNG Grundstellung vor physik.K2#2: 0.1 s (im Spiel 37.8 ms)
+  SITZUNG die Welt vor physik.K2#2: 8.9 s (703 Takte, 81 Chunks, nach der Grundstellung)
+  ROT  physik.K2#2 · (V) Wagen oder gestoßener Bär fehlt in der Ausgabe (Exit 0) — ❌ LAUF-FEHLER: DER BAU STEHT NICHT: haus_alemannisch#7067 nach 152 Takten — die Welt hat nichts mehr offen · Sitzung · Exit 0 · 0.04 min
+  EICH 2.1 s · physik.K2#2 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor tiere.K1#2: 0.1 s (im Spiel 23.2 ms)
+  SITZUNG die Welt vor tiere.K1#2: 0.7 s (72 Takte, 81 Chunks, nach der Grundstellung)
+  ROT  tiere.K1#2 · (a)–(d) auf der Karte GRÜN: Kohäsion 0.998 / 0.987, Φ 0.993 über 1250 Takte, letzter Flüchter 0.25 s (4 aus zweiter Hand), Fluchtweg 34.8 m, ID 600 s hält (Flucht 5 / 5 s) · Bild-Serie „Herde am Hang“ ROT am Hang 15.5° -240.8/74.3, Flucht bei 15.4 m: 43 m 5/5 fliehen Cannot read properties of undefined (reading 'format') · 43.2 m 5/5 fliehen Cannot read properties of undefined (reading 'format') · 43.9 m 5/5 fliehen Cannot read properties of undefined (reading 'format') · Sitzung · Exit 0 · 0.54 min
+  EICH 32.2 s · tiere.K1#2 · Deckel 33 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor tiere.K3#2: 0.1 s (im Spiel 22.1 ms)
+  SITZUNG die Welt vor tiere.K3#2: 7.7 s (750 Takte, 92 Chunks, nach der Grundstellung)
+  ROT  tiere.K3#2 · Gangart 49/49 grün (Welt 17, Satz 16, Labor 16, Kreuz 16), Welt − Labor ≤ 0.03, Satz − Labor ≤ 0.02 Zyklus · Querhang 20.8°, Schlupf {"wolf":0.034,"hirsch":0.018} · Bühne wolf schritt 3 Füße, fuchs schritt 2 Füße, baer schritt 3 Füße, wesen schritt 2 Füße · tier-Pixel 0/0/0/0 in undefined×undefined, ohne Abnahme-Zeile · Sitzung · Exit 0 · 0.65 min
+  EICH 39.1 s · tiere.K3#2 · Deckel 33 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor mensch.K1#1: 0.1 s (im Spiel 31.6 ms)
+  SITZUNG die Welt vor mensch.K1#1: 1 s (95 Takte, 92 Chunks, nach der Grundstellung)
+  ROT  mensch.K1#1 · Probe-Fehler: Error: DER BAU STEHT NICHT: bewohner: die Leiber nach 224 Takten — die Welt hat nichts mehr offen
+    at eval (eval at <anonymous> (:2:29), <anonymous>:178:19)
+    at bisDa (eval at <anonymous> (:2:29), <anonymous>:2563:57)
+    at async eval (eval at <anonymous> (:2:29), <anonymous>:2883:9)
+    at async buehne (eval at <anonymous> (:2:29), <anonymous>:278:25)
+    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2614:5)
+    at async eval (eval at <anonymous> (:2:29), <anonymous>:213:13) · Sitzung · Exit 1 · 0.44 min
+  EICH 26.4 s · mensch.K1#1 · Deckel 33 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  ROT  mensch.K2#2 · Probe-Fehler: Error: DER BAU STEHT NICHT: bewohner: die Leiber nach 224 Takten — die Welt hat nichts mehr offen
+    at eval (eval at <anonymous> (:2:29), <anonymous>:178:19)
+    at bisDa (eval at <anonymous> (:2:29), <anonymous>:2563:57)
+    at async eval (eval at <anonymous> (:2:29), <anonymous>:2883:9)
+    at async buehne (eval at <anonymous> (:2:29), <anonymous>:278:25)
+    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:2614:5)
+    at async eval (eval at <anonymous> (:2:29), <anonymous>:213:13) · Sitzung · Exit 1 · 0.44 min (Zwilling von mensch.K1#1)
+  EICH 26.4 s · mensch.K2#2 · Deckel 33 s · Gesetz 45 s · im Gesetz, das Urteil zählt (Zwilling von mensch.K1#1)
+  SITZUNG Grundstellung vor vegetation.K4#1: 9.5 s (im Spiel 33.5 ms, durch die Tür — wege +3 [105.5,85.4,144.9,129.8/2] [18.2,10,145.6,135/28] [27.2,4.3,216.3,163.1/216])
+  SITZUNG die Welt vor vegetation.K4#1: 12.8 s (582 Takte, 81 Chunks, nach der Tür)
+  OFFEN vegetation.K4#1 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 0.2 s) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · vegetation.K4#1 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel
+  OFFEN vegetation.K4#2 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ ZEIT welt 0.2 s) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · vegetation.K4#2 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel (Zwilling von vegetation.K4#1)
+  SITZUNG Grundstellung vor tiere.K2#2: 3.8 s (im Spiel 33 ms, durch die Tür)
+  SITZUNG die Welt vor tiere.K2#2: 12.6 s (582 Takte, 81 Chunks, nach der Tür)
+  OFFEN tiere.K2#2 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel Riss im Bild frei 8.21 m · Luma 61 σ 34.1 schwarz 0.0 % weiß 0.0 % · Stand 18.546.138 · Bühne summer) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · tiere.K2#2 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel
+  SITZUNG Grundstellung vor luftwasser.K5#1: 2.5 s (im Spiel 38 ms, durch die Tür)
+  SITZUNG die Welt vor luftwasser.K5#1: 12.2 s (582 Takte, 81 Chunks, nach der Tür)
+  GRÜN luftwasser.K5#1 · Schwarm-Takt 0.16 ms je Takt (Median, p95 0.31) bei 100 Gliedern im Blick in jeder Reihe, 13371 Paare der Separation, Auge 51.7 m (Soll ≤ 0,3 ms, 100 im Bild) · Sitzung · Exit 0 · 0.01 min
+  EICH 0.5 s · luftwasser.K5#1 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  GRÜN luftwasser.K5#2 · Klasse vogel 2 Befehle {"haupt":2}, 580 Instanzen (500 des Schwarms, 5 Teile je Glied), 100 Glieder im Blick je Reihe (Soll ≤ 10 Befehle) · Sitzung · Exit 0 · 0.01 min (Zwilling von luftwasser.K5#1)
+  EICH 0.5 s · luftwasser.K5#2 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt (Zwilling von luftwasser.K5#1)
+  SITZUNG Grundstellung vor mensch.K5#1: 0.1 s (im Spiel 24 ms)
+  SITZUNG die Welt vor mensch.K5#1: 1.2 s (81 Takte, 81 Chunks, nach der Grundstellung)
+  ROT  mensch.K5#1 · Probe-Fehler: Error: DER BAU STEHT NICHT: begegnung: die Leiber nach 304 Takten — die Welt hat nichts mehr offen
+    at eval (eval at <anonymous> (:2:29), <anonymous>:178:19)
+    at bisDa (eval at <anonymous> (:2:29), <anonymous>:2563:57)
+    at async eval (eval at <anonymous> (:2:29), <anonymous>:3164:9)
+    at async buehne (eval at <anonymous> (:2:29), <anonymous>:278:25)
+    at async kreaturProben (eval at <anonymous> (:2:29), <anonymous>:3156:5)
+    at async eval (eval at <anonymous> (:2:29), <anonymous>:213:13) · Sitzung · Exit 1 · 0.6 min
+  EICH 36.1 s · mensch.K5#1 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor studios.K2#2: 3.7 s (im Spiel 33.9 ms, durch die Tür — wege +3 [105.5,85.4,144.9,129.8/2] [18.2,10,145.6,135/28] [27.2,4.3,216.3,163.1/216])
+  SITZUNG die Welt vor studios.K2#2: 12.6 s (582 Takte, 81 Chunks, nach der Tür)
+  OFFEN studios.K2#2 · EICH: 69.7 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 14 ms portale, Neubau höchstens 1464 ms fachwerk, je Studio null Griffe) · Neuladen 5/8 · A/B 5/8) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 69.7 s · studios.K2#2 · Deckel 25 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie
+  OFFEN studios.K3#2 · EICH: 69.7 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 8/8 Orte im Quantum (Audio-Graph höchstens 0.132 ms), ohne garage L0 GPU 0.0246 ms↔Bank 5.65 (+1), schmiede L0 GPU 0.0041 ) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 69.7 s · studios.K3#2 · Deckel 25 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie (Zwilling von studios.K2#2)
+  SITZUNG Grundstellung vor pipeline.K4#2: 0.1 s (im Spiel 28.6 ms)
+  SITZUNG die Welt vor pipeline.K4#2: 1 s (37 Takte, 81 Chunks, nach der Grundstellung)
+  ROT  pipeline.K4#2 · keine Art-Zeile oder kein Kern-Wechsel (Exit 0) · Sitzung · Exit 0 · 0.62 min
+  EICH 37 s · pipeline.K4#2 · Deckel 10 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor bauen.K1#2: 1.9 s (im Spiel 41.3 ms, durch die Tür)
+  SITZUNG die Welt vor bauen.K1#2: 14.1 s (583 Takte, 81 Chunks, nach der Tür)
+  OFFEN bauen.K1#2 · EICH: 50.2 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: 0/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt null · warm null ms (0+0) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt null · warm null ms (0+0) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 50.2 s · bauen.K1#2 · Deckel 10 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie
+  SITZUNG Grundstellung vor studios.K4#1: 0.2 s (im Spiel 41 ms)
+  SITZUNG die Welt vor studios.K4#1: 1 s (65 Takte, 81 Chunks, nach der Grundstellung)
+  OFFEN studios.K4#1 · EICH: 75.2 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 89.3 %/– [Differenz 0.8926 > 0.021 Albedo ohne Zeile] · portale –/– [ROT: bild: {"ms":6896,"fehl) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 75.2 s · studios.K4#1 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie
+  OFFEN studios.K4#2 · EICH: 75.2 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: 0/7 Mesh-Studios mit Bild-Differenz ≤ 2,1 % und Albedo Labor/Welt im Rand 0,10 (WebGPU pascal) · garage 89.3 %/– [Differenz 0.8926 > 0.021 Albedo ohne Zeile] · portale –/– [ROT: bild: {"ms":6896,"fehl) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 75.2 s · studios.K4#2 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie (Zwilling von studios.K4#1)
+  SITZUNG Grundstellung vor fahrzeug.K3#1: 0.1 s (im Spiel 35.9 ms)
+  SITZUNG die Welt vor fahrzeug.K3#1: 1.1 s (85 Takte, 98 Chunks, nach der Grundstellung)
+  GRÜN fahrzeug.K3#1 · Garage FOV +9.07° Arm +18.1 % bei 15.23/16.00 m/s · Welt FOV +39.46° Arm +18.4 % bei 15.17 m/s (Ende ok) · Sitzung · Exit 0 · 0.66 min
+  EICH 39.5 s · fahrzeug.K3#1 · Deckel 33 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  SITZUNG Grundstellung vor fahrzeug.K3#2: 10.9 s (im Spiel 42 ms, durch die Tür — wege +1 [-98,-1265.9,28.1,-1018/1])
+  SITZUNG die Welt vor fahrzeug.K3#2: 16.7 s (578 Takte, 81 Chunks, nach der Tür)
+  OFFEN fahrzeug.K3#2 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ EXIT 0) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · fahrzeug.K3#2 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel
+  OFFEN fahrzeug.K4#1 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ EXIT 0) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · fahrzeug.K4#1 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel (Zwilling von fahrzeug.K3#2)
+  OFFEN fahrzeug.K4#2 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: @@PUNKTE@@ EXIT 0) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · fahrzeug.K4#2 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel (Zwilling von fahrzeug.K3#2)
+  SITZUNG Grundstellung vor siedlung.K2#1: 4 s (im Spiel 38.6 ms, durch die Tür)
+  SITZUNG die Welt vor siedlung.K2#1: 15.2 s (583 Takte, 81 Chunks, nach der Tür)
+  OFFEN siedlung.K2#1 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: }) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · siedlung.K2#1 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel
+  OFFEN siedlung.K2#2 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: }) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · siedlung.K2#2 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel (Zwilling von siedlung.K2#1)
+  SITZUNG Grundstellung vor siedlung.K1#2: 4.1 s (im Spiel 38.4 ms, durch die Tür)
+  SITZUNG die Welt vor siedlung.K1#2: 16.3 s (580 Takte, 81 Chunks, nach der Tür)
+  OFFEN siedlung.K1#2 · EICH: 48.9 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: 17 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: ) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 48.9 s · siedlung.K1#2 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie
+  SITZUNG Grundstellung vor siedlung.K5#1: 4.1 s (im Spiel 34.3 ms, durch die Tür — wege +3 [105.5,85.4,144.9,129.8/2] [18.2,10,145.6,135/28] [27.2,4.3,216.3,163.1/216])
+  SITZUNG die Welt vor siedlung.K5#1: 13.6 s (583 Takte, 81 Chunks, nach der Tür)
+  GRÜN siedlung.K5#1 · nH 12 erstes Haus nach 24 ms (haus_japanisch, mesh in 17.7 m, Bau-Hash 66104af8) · nH 300 erstes Haus nach 32.2 ms (haus_chinesisch, mesh in 14.8 m, Bau-Hash 882a889c) · Sitzung · Exit 0 · 0.51 min
+  EICH 30.9 s · siedlung.K5#1 · Deckel 27 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  GRÜN siedlung.K5#2 · nH 12 erstes Haus nach 24 ms (haus_japanisch, mesh in 17.7 m, Bau-Hash 66104af8) · nH 300 erstes Haus nach 32.2 ms (haus_chinesisch, mesh in 14.8 m, Bau-Hash 882a889c) · Sitzung · Exit 0 · 0.51 min (Zwilling von siedlung.K5#1)
+  EICH 30.9 s · siedlung.K5#2 · Deckel 27 s · Gesetz 45 s · im Gesetz, das Urteil zählt (Zwilling von siedlung.K5#1)
+  SITZUNG Grundstellung vor siedlung.K4#2: 2.8 s (im Spiel 35.7 ms, durch die Tür — wege +2 [-761.7,-1187,-539,-1136.7/3] [-791.9,-1205.8,-504.6,-1113.2/101])
+  SITZUNG die Welt vor siedlung.K4#2: 13.9 s (583 Takte, 81 Chunks, nach der Tür)
+  OFFEN siedlung.K4#2 · EICH: 58.1 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (ROT: W1 ✅ 1/- 12→37 37/37 1993 · 2/- 12→36 36/36 2011 · 3/- 12→37 37/37 1981 · 5 · W2 ✅ · Ort dorf 1412 12/12, Haus gesetzt, Kern ja · 1500 s: 1412 → 1412, Häuser 12 → 12/12, die alten 1 · Ring 0 neu, Medi) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 58.1 s · siedlung.K4#2 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (ROT) zählt nie
+  SITZUNG Grundstellung vor leib.K2#1: 4 s (im Spiel 36.2 ms, durch die Tür — wege +2 [152.6,531,647.4,926.8/211] [239.3,559.1,507,832.5/12])
+  SITZUNG die Welt vor leib.K2#1: 14 s (581 Takte, 81 Chunks, nach der Tür)
+  OFFEN leib.K2#1 · EICH: 79.3 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (GRÜN: hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.1 (n 201) · treppe wiese 0.4 (n 200) cm p95 · Steckenbleiber 0) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 79.3 s · leib.K2#1 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (GRÜN) zählt nie
+  OFFEN leib.K2#2 · EICH: 79.3 s über dem Gesetz 45 s (ohne ausnahme) — das Urteil zählt nie (GRÜN: Ego 0.323/2.846 → 0.179/2.156 → 0.504/3.45 · Third 0.323/2.846 → 0.179/2.156 → 0.504/3.45 m (Leib → Masse ×1,25 → Kraft ×1,25) · Fuß hang 1.4 (n 201) · falllinie 1.2 (n 200) · treppe hang 1.1 (n 201) ) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH 79.3 s · leib.K2#2 · Deckel 33 s · Gesetz 45 s · über dem Gesetz, das Urteil (GRÜN) zählt nie (Zwilling von leib.K2#1)
+  SITZUNG Grundstellung vor leib.K4#1: 0.1 s (im Spiel 33.4 ms)
+  SITZUNG die Welt vor leib.K4#1 steht nicht nach 4.8 s: {"fehler":"DIE WELT STEHT NICHT nach 402 Takten: Ruhe 0, zuletzt brach sie: Fege-Takt deckWache 512/6528 (die Frist der Probe)"}
+  OFFEN leib.K4#1 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · leib.K4#1 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel
+  OFFEN leib.K4#2 · EICH: ≥ 90 s — Deckel 90 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  EICH ≥ 90 s · leib.K4#2 · Deckel 33 s · Gesetz 45 s · am Eich-Deckel (Zwilling von leib.K4#1)
+  SITZUNG Grundstellung vor halten.K5#1: 4.8 s (im Spiel 35.2 ms, durch die Tür)
+  SITZUNG die Welt vor halten.K5#1: 13.3 s (581 Takte, 81 Chunks, nach der Tür)
+  GRÜN halten.K5#1 · Sturz 2 · 4 · 8 · 12 m · Wurf: 0.0 · 10.7 · 57.0 · 101.7 · 47.7 hp (Aufprall 6.2 · 8.8 · 12.6 · 15.4 · 11.9 m/s) · Tod-Lage 60 / 15 Hz 29.2° 5.8 cm / 29.2° 5.8 cm · Tod jagd, Anker 0.0 m · Abdruck 1566c4d6e4ba → 1566c4d6e4ba · Sitzung · Exit 0 · 0.1 min
+  EICH 5.9 s · halten.K5#1 · Deckel 19 s · Gesetz 45 s · im Gesetz, das Urteil zählt
+  GRÜN halten.K5#2 · hpMax/staminaMax/manaMax/defense leer 116.0/158.0/80.0/10.4 · Werk eisen 154.9/129.8/80.0/15.9 · bronze 152.7/131.0/80.0/15.5 · holz 131.9/144.5/80.0/12.6 · Nahrung kraut 125.9/151.5/93.1/11.8 · fleisch 127.2/150.2/92.9/11.9 · Stand 184.0/104.5/92.9/19.8 → 184.0/104.5/92.9/19.8 · Nahrung im Stand [["consume:_k5"],["consume:_k5"]] · Sitzung · Exit 0 · 0.1 min (Zwilling von halten.K5#1)
+  EICH 5.9 s · halten.K5#2 · Deckel 19 s · Gesetz 45 s · im Gesetz, das Urteil zählt (Zwilling von halten.K5#1)
+  SITZUNG die Welt trägt nicht mehr vor halten.K1#2: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}
+  OFFEN halten.K1#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K5#1 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN tore.K3#1 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN tore.K3#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K2#1 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN fahrzeug.K2#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN streaming.K4#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K1#1 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K1#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K2#1 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K2#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K3#1 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN profiband.K3#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN klang.K4#1 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN klang.K4#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN klang.K5#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN speicher.K1#1 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN speicher.K1#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN speicher.K2#1 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN speicher.K2#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN speicher.K4#2 · die Welt der Sitzung trägt nicht mehr (Grundstellung: abweichend vom Grund: playerLeben · wie {"playerLeben":"{\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[]} → {\"hp\":1,\"ausdauer\":1,\"mana\":1,\"wunde\":0,\"nahrung\":[{\"quelle\":\"consume:_k5\",\"tags"}) — ungemessen · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Fahrt 1792.1 s (Soll ≤ 1800 s) · 24 Proben · Grundstellung 23×
+→ meisterkarte-quelle\punkte\messung\e0139769-gtx.json
