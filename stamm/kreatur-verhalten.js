@@ -828,8 +828,10 @@ class AnazhRealm_kreatur_verhalten {
     }
 
     // Die Hüft-Höhe L eines Tiers (m) — dieselbe L, an der das Gang-Gesetz die Schritt-Länge misst (tb.beinL × Körper-
-    // größe); ein Leib ohne Studio-Baum (Seele ohne Rezept) misst sie an seiner Körperlänge (Hüfte ≈ 0,45 × Länge).
+    // größe); ein Leib ohne Studio-Baum (Seele ohne Rezept) misst sie an seiner Körperlänge (Hüfte ≈ 0,45 × Länge). Der Leib
+    // ohne Gestalt (der Bewohner als Zahl, `_bewohnerGeburt`) trägt sie selbst (`_hueftL`: die Beinlänge seines Gang-Gesetzes).
     _kreaturHueftL(creature) {
+        if (creature.userData && creature.userData._hueftL > 0) return creature.userData._hueftL;
         const tb = creature.userData && creature.userData._tierBaum;
         const s = (creature.scale && creature.scale.x) || 1;
         if (tb && tb.beinL > 0) return tb.beinL * s;
@@ -2842,10 +2844,12 @@ class AnazhRealm_kreatur_verhalten {
                 this._leibMatrix(cr);
                 u._kzGlieder = this._kreaturGliederBacken(cr, false);
             }
-            // Der schwindende Satz folgt den Knochen weiter (sonst geisterte er 0,5 s an der alten Pose).
+            // Der schwindende Satz folgt den Knochen weiter (sonst geisterte er 0,5 s an der alten Pose) — der Leib ohne Gestalt
+            // nennt die Lage seiner Glieder selbst (`_gliedLage`, `_kreaturGliederBacken`).
             if (u._kzGlieder)
                 for (const gl of u._kzGlieder) {
-                    if (gl.handle._schwundT0 !== undefined) this._weltFeldMatrix(gl.handle, gl.teil.matrixWorld);
+                    if (gl.handle._schwundT0 !== undefined)
+                        this._weltFeldMatrix(gl.handle, gl.teil ? gl.teil.matrixWorld : u._gliedLage(gl.name));
                     this._weltFeldAktiv(gl.handle, false);
                 }
             return; // das Studio-Tier trägt (gecullt je Pass an seiner Körper-Kugel)
@@ -2871,7 +2875,7 @@ class AnazhRealm_kreatur_verhalten {
         // Welt-Matrix je Glied):
         const an = this.state.creaturesHidden !== true;
         for (const gl of u._kzGlieder) {
-            this._weltFeldMatrix(gl.handle, gl.teil.matrixWorld);
+            this._weltFeldMatrix(gl.handle, gl.teil ? gl.teil.matrixWorld : u._gliedLage(gl.name));
             this._weltFeldAktiv(gl.handle, an);
         }
         cr.visible = false; // fern IST das Feld die Gestalt
@@ -2983,6 +2987,7 @@ class AnazhRealm_kreatur_verhalten {
             const winkel = R.randGrad * (Math.PI / 180) + 2 * dreh;
             if (winkel < 1.2) rand = Math.tan(winkel);
         }
+        this._blickRand = rand; // der Rand des Blicks dieses Takts (EINMAL gerechnet; die Zahl der Bewohner liest ihn, `_tickBewohner`)
         for (let i = 0; i < W.length; i++) {
             const c = W[i];
             if (!c || !c.userData) continue;

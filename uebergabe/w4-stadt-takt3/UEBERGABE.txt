@@ -1,0 +1,116 @@
+ÜBERGABE w4-stadt-takt3 — Zwischenstand vom 31.10., 23:15 UTC
+====================================================================
+Dieser Ordner ist Werkzeug der Übergabe, nie für main: im Abgabe-Commit fällt er (`git rm -r uebergabe`).
+
+Zweig: claude/relaxed-euler-7t7fyk (Kopf = der Commit, der diesen Ordner trägt), Basis origin/main 8809ec6d (V18.546.149).
+Ziel der Abgabe: Push auf w4-stadt-takt3 (dort noch NICHTS gepusht; nur Zweige außerhalb claude/** lösen die CI aus).
+
+DER AUFTRAG (Kurzform, bindend: DIE GOLDENE DEFINITION in CLAUDE.md, Skill anazh-lehren, Lehre 13 und 27)
+- Simulations-Stufen: ein Bewohner jenseits 60 m oder außer Blick ruht als Zahl (Ort, Ziel, Zeit) ohne Leib-Knoten im
+  Szenen-Graph; sein Leib entsteht erst nah und im Blick aus dem EINEN Leib-Guss.
+- Ziel: stadt-voll gehend headless CPU-Takt p95 77,8 → unter 20 ms; Knoten im Graph 73k → unter 10k (gemessen wie
+  w4-stadt-takt2). Beweis headless (Takt-ms, Knoten, Byte-Diff, Selbsttest), KEINE swiftshader-Welt-Bilder.
+- Commit-Autor `MiguellD <87209049+MiguellD@users.noreply.github.com>`, Betreff „Abgabe w4-stadt-takt3: …"; nie die
+  Siegel-Wörter (gate:betriebsgesetz SIEGEL_CI/SIEGEL_CS); nie `git stash`; scripts/ wächst nicht (DECKE).
+- Abgabe = Push mit grünem Puls; Bericht in drei Sätzen (geschnitten · gemessen · ehrlich offen).
+
+GESCHNITTEN (im Commit, alle Wände unten grün)
+- stamm/siedlung-bewohner.js
+  `_bewohnerGeburt`: der Leib ist eine Wurzel (THREE.Group, `_ruhendeWurzel`) ohne Kinder, NICHT in der Szene.
+  `_bewohnerMuster`: EINE Gestalt je Typ (nie im Graphen) — an ihr stehen Satz, Gang-Backen (`_bewohnerGangBacken`),
+  das Bein (`_bewohnerBein`, gemessen in Größe/Breite/Tiefe/Blick des Leibs + `_gelenkRuhe`), die Grobstufen-Grenze
+  (`_bewohnerGelenkAb`), der Glied-Vorrat (`_gliederBestellen`). `_bewohnerGuss` = der EINE Mensch-Bau (`_buildHumanGroup`).
+  `_bewohnerGestalt(S, b, an)`: gießt Rig+Haut in die Wurzel (Felder `AnazhRealm.BEWOHNER_GESTALT`) und hängt sie in die
+  Szene / gibt sie über `_disposeSoulGroup` ab. Gegossen wird nur für die Nah-Wahl (≤ `gestaltenJeTakt` 2 je Takt), sie
+  bleibt in der Zone `gestaltM` 15 m im Blick. `_bewohnerZahl`: jenseits `zahlM` 60 m (+ Weg bis zum nächsten Takt) oder
+  außer Blick (`_kreaturAusserBlick` + Wurf) ruht er als Zahl im Takt `fernS`; die stehende Zahl (`_bewohnerZahlSteht`)
+  wartet in `S.zahlSteht` auf ihren Weckruf (Plan, Wache, Blick). `_bewohnerUhrNach` trägt die Zeit in Schritt/Wende.
+  `_bewohnerGliedLage`/`_bewohnerGangLage`: die Lage jedes Glieds ohne Gestalt aus dem Gang-Satz (Feld, Glieder).
+  Die Wache weckt nur die Getroffenen (`betroffen`); Stände (`_bewohnerStaende`, `_bewohnerStaendeRaster`), Naht
+  (`_bewohnerNetz`) und Anschluss (`_bewohnerKnotenRaster`, `_bewohnerKnotenNaechste`) über Raster statt alle gegen alle.
+- stamm/koerper-leib.js: `_gaitTick` liest `halter.beinMass` (der Leib ohne Rig geht dasselbe Gesetz), `_gaitGesetz(M, v)`,
+  `_gaitBeinMessen` (frisch, ohne Rig-Gedächtnis).
+- stamm/kreatur-verhalten.js: `_kreaturHueftL` liest `userData._hueftL`; `_kzLeib` liest `_gliedLage` ohne Teil;
+  `_tickKreaturRuhe` legt `this._blickRand` ab (der Blick-Rand des Takts, die Zahl liest ihn).
+- stamm/studio-bruecke.js `_kreaturGliederBacken`: ohne Teil die Lage aus `_gliedLage`.
+- stamm/siedlung-verkehr.js `_tickVerkehr`: der Fahrer gießt seine Gestalt nur, wenn sein Wagen nah gewählt ist.
+- spec/stamm/modul-karte.json: neu gestellt (`node scripts/stamm-umzug.cjs --nach-karte`, Atlas OK).
+- scripts/lib/kreatur-proben.cjs (Probe `bewohner`): DIE LINSE „die Stufen" — 0 Leiber fern im Graphen (jenseits
+  gestaltM + 0,5), 0 fern ohne Zahl (jenseits zahlM + Weg + Arm + 1), Zahlen > 0; der Täter `bewohner-menge` gießt jedem
+  seine Gestalt und zeichnet sie (der Stand bis stadt-takt3) → ROT an „als Leib gezeichnet" UND „die Stufen: N".
+  Die Decke zahlen der EINE Abstand `ab` am Kopf der Proben (12 Zwillinge `Math.hypot(a.x - b.x, a.z - b.z)`, bit-gleich),
+  `warte` (×4) und `leeren` (×3): scripts −11 Atome.
+
+GEMESSEN (bis hier)
+- vorher, main 8809ec6d, 3 frische Boots (VOR dem Neustart des Containers um ~22:55 — die Maschine lief danach langsamer,
+  darum braucht die Abgabe eine NEUE Reihe A/B verschränkt, s. u.):
+  gehend p95 83,6 · 87,9 · 92,1 (Median 87,9), p50 38,9, p99 137,1; stehend p95 42,5 · 44,0 · 49,9 (44,0).
+  Knoten 73 772 (72 384 in 1 131 Leibern), nach dem Gang 73 394; ein Ruf des Kehraus 18,6–29 ms.
+  Täter-Tafel (EINZELN=1): Bewohner Spitze 20,1 ms (p95 ohne −15,5), Kodierung 12,9 (−11,4), Pass-Wahl 11,3 (−10,2),
+  Kehraus 13,8 (−3,3); Gruppen: Szenen-Pflege 28,5 (−20,4), Bewohner+Leib-Löser 22,7 (−16,9), Streaming 36,9 (−14,0).
+- Zweig, EIN Lauf (probe4, 21:36 — VOR den letzten Stamm-Änderungen 21:54, nur die Richtung): Knoten 3 436, nach dem
+  Gang 1 117; Kehraus-Ruf 2,3 / 1,9 ms, Kehraus am p95 0,0; gehend p95 87,0, stehend 38,6; Bewohner Spitze 16,7 (−10,2).
+- Byte-Beweise (werkbank eval, stadt-voll): Bein + Tempo je Same FNV 7da0f8a9 = main (bytes.js); die Raster nennen
+  dieselben Nächsten und Naht-Paare wie alle gegen alle (gleich.js: 800 Proben ungleich 0, 13 013 / 681 Paare gleich);
+  Gang-Satz 7 von 8 Gestalten ≤ 2,3e-13 (Gestalt 1 backte in main an einem Leib mit Geschichte).
+- Kreatur-Linse headless, voller Lauf 22:31: bewohner ✅ (stufen: imGraph 4, fern 0, ohneZahl 0, zahl 30), begegnung ✅,
+  21 Tier-Proben ✅; ROT jagdkreis „2 von 36 enden nie" und tagesbudget „deer ziehen 0.079" — beide auf main bit-gleich
+  rot (schon vor diesem Zweig; als eigener Auftrag vorgeschlagen); kaskade ist ein Zeit-Urteil (p95 ≤ 5,8 ms) über
+  `tickFaunaLifecycle` allein (kein Zweig-Code darin): main 4,8 (vor dem Neustart) → 7,1 (danach), Zweig 6,1 · 6,6 · 8,1
+  — die Last der Maschine.
+- Wände am Kopf grün: gate:betriebsgesetz (Prüf −11 / Spiel +3 318, scripts −11), diag-atlas --check, npm run stamm:lint,
+  npm run format:check, npm run lint (0 Fehler; die Warnung in stamm/gelaende-boden.js:2197 steht schon in main).
+
+OFFEN — der Rest bis zur Abgabe, in dieser Reihe
+1. Der Selbsttest der verdichteten Linse (seit der Verdichtung NICHT gelaufen, EIN_LAUF ~7 min):
+     node scripts/diag-kreatur-takt.cjs --selftest --proben bewohner
+   Soll: jeder Täter ROT beim Namen, `bewohner-menge` an /als Leib gezeichnet.*die Stufen: [1-9]/.
+   Danach einmal ohne Täter: node scripts/diag-kreatur-takt.cjs --proben bewohner,begegnung (GRÜN, ~7 min).
+2. Die Messreihe A/B verschränkt (Gebot 6, gleiche Bedingungen; je Lauf ~6 min, nie parallel zu anderen Läufen):
+     git worktree add /tmp/wt-main origin/main && ln -s "$PWD/node_modules" /tmp/wt-main/node_modules
+     for i in 1 2 3; do uebergabe/w4-stadt-takt3/messreihe.sh /tmp/wt-main vorher $i $i; uebergabe/w4-stadt-takt3/messreihe.sh "$PWD" nachher $i $i; done
+     node uebergabe/w4-stadt-takt3/p95-gruppen.cjs /tmp/stadt-takt3-mess/vorher-{1,2,3}-geht.roh.json
+     node uebergabe/w4-stadt-takt3/p95-gruppen.cjs /tmp/stadt-takt3-mess/nachher-{1,2,3}-geht.roh.json
+     (dazu EINZELN=1 für die Systeme, *-steht.roh.json für stehend; die Knoten in *-zensus-{0,1}.json)
+   In diesem Container lebt der main-Baum schon unter
+     /tmp/claude-0/-home-user-AnazhRealm/145c7836-367f-5242-8973-4a1c76d9890f/scratchpad/wt-main
+   (am Ende `git worktree remove --force <pfad>`).
+3. Der Verkehr: node scripts/diag-fahr-leben.cjs --verkehr (die Fahrer gießen ihre Gestalt erst, wenn ihr Wagen nah
+   gewählt ist; fahr-proben.cjs:760 liest `W.b.leib.visible`).
+4. npm run check (Statik + gate:haus-fern) und npm run playtest:fast.
+5. Der Abgabe-Commit: `git rm -r uebergabe`, die Zahlen der Reihe in die Nachricht (Entwurf unten), dann
+     git -c user.name=MiguellD -c user.email=87209049+MiguellD@users.noreply.github.com commit --author="MiguellD <87209049+MiguellD@users.noreply.github.com>"
+     git push -u origin claude/relaxed-euler-7t7fyk && git push -u origin HEAD:w4-stadt-takt3
+   Die Nachricht endet mit den Zeilen „Co-Authored-By: …" und „Claude-Session: …" der laufenden Sitzung.
+   Dann den Puls lesen (Workflow Code-Check, Job puls 1/2 und 2/2 auf w4-stadt-takt3).
+6. Der Bericht in drei Sätzen.
+
+EHRLICH OFFEN, schon jetzt sichtbar: p95 < 20 ms trägt dieser Schnitt allein nicht. Nach probe4 tragen den p95
+Streaming/Ingest (`_stauWorkClusters` 2,9 ms je Spitzen-Takt), die Kodierung (`_diaetRefresh` → `_regungHalter` 1,8 ms),
+die Pass-Wahl (`_chunkSatzAbschnitt` 1,2 + 0,8, `_hoehlenSichtLicht` 0,8) und der Rest-Takt der wachen Bewohner (die Wache
+`_bewohnerStandPruefen` 2,1 ms, `_bewohnerAusweichen` 1,2 ms, die Eigenzeit von `_tickBewohner` 2,9 ms). Die Knoten
+(< 10k) und der Kehraus (am p95 0) sind erreicht.
+
+DIE WERKZEUGE IN DIESEM ORDNER (nie nach scripts/ — die Decke)
+- messreihe.sh <baum> <etikett> <von> <bis>: frischer Boot je Lauf, GPU-frei, stadt-voll umstellen, Zensus, takt 30 s
+  stehend + gehend (Bahn), Zensus, Ende-Zahlen; Ablage $MESS (Vorgabe /tmp/stadt-takt3-mess).
+- gpu-frei.js: die Zeichen- und Rechen-Befehle gehen nicht an swiftshader, die JS-Arbeit des Haupt-Fadens bleibt ganz.
+- kehraus-zensus.js: die Knoten des Graphen je Art, die Leiber der Bewohner (n, knoten, imGraph), ein Kehraus-Ruf in ms.
+- p95-gruppen.cjs + system-tafel.cjs: die Täter-Tafel je System (Spitze ab p95, Mitte, Senkung des p95 ohne die Gruppe).
+- rest-fn.cjs <roh.json> [System] [spitze|mitte]: die Selbst-Zeit je Funktion eines Systems mit der Kette der Rahmen.
+- atome.cjs <datei>: je Hunk des Diffs gegen die Merge-Basis die Atome alt → neu (dasselbe Maß wie die DECKE).
+- bytes.js / gleich.js: die Byte-Proben (Bein + Tempo + Gang-Satz als FNV; Raster gegen alle) für `werkbank eval`.
+
+ENTWURF DER ABGABE-NACHRICHT (die @-Stellen füllt die Reihe)
+Abgabe w4-stadt-takt3: der Bewohner ruht fern als Zahl ohne Leib-Knoten — der Graph der Stadt 73 772 → @KN Knoten, der Kehraus am p95 13,8 → 0,0 ms
+
+Wurzel (stadt-voll headless, 1920 × 1080, je 3 frische Boots A/B verschränkt wie w4-stadt-takt2): jede Geburt goss den
+ganzen Leib in die Szene — 72 384 von 73 772 Knoten in 1 131 Leibern, die `_gpuKehraus` je 2 s ganz ging (18,6–29 ms je
+Ruf); jeder Wechsel der Wache weckte jeden Kopf, Stand-, Naht- und Anschluss-Frage gingen alle gegen alle.
+Schnitt: der Leib ist die Zahl (`_bewohnerGeburt`), EIN Muster je Gestalt (`_bewohnerMuster`), die Gestalt nur nah und im
+Blick (`_bewohnerGestalt`, gestaltM 15 m), jenseits zahlM 60 m oder außer Blick die Zahl (`_bewohnerZahl`, `zahlSteht`);
+Glieder aus dem Gang-Satz, das Gang-Gesetz am Bein des Halters; die Wache weckt die Getroffenen, Raster statt alle.
+Gemessen (vorher → nachher, Median von 3): gehend p95 @ → @ ms, stehend @ → @; Knoten @ → @; Kehraus am p95 @ → @;
+Bewohner Spitze @ → @. Bein und Tempo byte-gleich (FNV 7da0f8a9), Raster bit-gleich. Linse bewohner „die Stufen"
+(0 fern im Graphen, 0 fern ohne Zahl), Täter bewohner-menge ROT beim Namen; Decke scripts −11 Atome.
+Offen: p95 < 20 ms — @ (Streaming `_stauWorkClusters`, Kodierung, Pass-Wahl, Rest-Takt der Bewohner, mit Zahlen).
