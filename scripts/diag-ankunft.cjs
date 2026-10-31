@@ -386,14 +386,6 @@ const server = statikServer();
 async function probe(arg) {
     const out = {};
     await window.__weltDa();
-    const tick = async (n, ms) => {
-        for (let i = 0; i < n; i++) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
-            await sleep(ms || 30);
-        }
-    };
     // eine Taste an `ziel` (keydown · keyup · keypress) und der Fokus beim Namen
     const taste = (ziel, typ, key, code = key, mehr) => ziel.dispatchEvent(new KeyboardEvent(typ, { key, code, bubbles: true, ...mehr }));
     const fokus = (a = document.activeElement) => (a ? a.id || a.tagName : null);
@@ -418,7 +410,7 @@ async function probe(arg) {
     };
     const zeilen = () => Array.from(document.querySelectorAll("#chat-output > div")).map((d) => d.textContent);
     const buch = await r._foundryAwaitBook(45000);
-    await tick(30, 30);
+    await __takte(30, 30);
     // ── L2a: das erste Weltbild ──
     try {
         const m = { gestartet: false, faelle: {}, ohneFall: {}, ...window.__ladeHtml };
@@ -435,7 +427,7 @@ async function probe(arg) {
             // Die Welt wächst, bis sie steht (`_weltbildFehlt` leer, höchstens 90 s) — vor dem Rundblick im Blick, vor den Fällen
             // RUNDUM: die Mesh-Zone des Null-Renderers atmet je Takt mit dem Regler, und die Fälle hinter dem Spieler drehen die
             // Kamera — ein Baum im Werden dort hielte jeden Fall (CI f25740f8: bodenHinten und baumHinten „1 Bäume und Bauten wachsen")
-            const steht = async (rundum) => { for (const weiter = window.__deckel("das Weltbild", 1500); r._weltbildFehlt(rundum).length && weiter(); ) await tick(5, 60); return r._weltbildFehlt(rundum); }; // prettier-ignore
+            const steht = async (rundum) => { for (const weiter = window.__deckel("das Weltbild", 1500); r._weltbildFehlt(rundum).length && weiter(); ) await __takte(5, 60); return r._weltbildFehlt(rundum); }; // prettier-ignore
             m.fehltNachBoot = await steht();
             // DER RUNDBLICK (B3d): nach der Kontrolle (der EINE Schreiber, der Nachlauf beginnt) dreht die Kamera in RUNDBLICK_BILDER
             // Takten ganz herum; je Takt zählt das Tor die Löcher in seinem Blick, in der kleinsten Mesh-Zone seit der Kontrolle.
@@ -449,7 +441,7 @@ async function probe(arg) {
             r._weltbildSteht();
             for (let i = 1, yaw0 = st.yaw, Rmin = st.architectureCullingRadius; i <= rb.N && r._imErstenBlick; i++) {
                 st.yaw = yaw0 + (2 * Math.PI * i) / rb.N;
-                await tick(1, 10);
+                await __takte(1, 10);
                 const [Rj, L] = [st.architectureCullingRadius, ((st.architectureCullingRadius = Rmin = Math.min(Rmin, st.architectureCullingRadius)), r._weltbildLuecken())];
                 const n = L.reduce((s, l) => s + (l.n || 1), (st.architectureCullingRadius = Rj) && 0);
                 if (n && !rb.erstes) rb.erstes = `Takt ${i} (${Math.round((360 * i) / rb.N)}°): ${L.map((l) => l.satz).join(" · ")}`;
@@ -774,7 +766,7 @@ async function probe(arg) {
                 const merk = { da: st._weltbildDa, soul: st._deferredAvatarSoul, mode: st.cameraMode, held: st.player.equipped && st.player.equipped.held };
                 const zurueck = () => ["_foundryZug", "_foundryCacheGet", "_standRuht", "_weltKapselHolen", "_weltBakeErlaubt", "_foundryRequest", "_foundryRequestSettlement", "applyPlayerSoul"].forEach((n) => delete r[n]);
                 const P = Object.getPrototypeOf(r);
-                const bis = async (fn, ms, takt) => { for (const weiter = window.__deckel(String(fn), ms / 50); !fn() && weiter(); ) await (takt ? tick(1, 50) : sleep(50)); return !!fn(); }; // prettier-ignore
+                const bis = async (fn, ms, takt) => { for (const weiter = window.__deckel(String(fn), ms / 50); !fn() && weiter(); ) await (takt ? __takte(1, 50) : sleep(50)); return !!fn(); }; // prettier-ignore
                 try {
                     Object.assign(st, { _weltbildDa: 0, _weltbildErsteFrage: null, _weltbildLuecke: null }); // eine neue Ankunft (die Fälle davor ließen den Deckel stehen)
                     let wer = "die Nah-Wiese";
@@ -830,7 +822,7 @@ async function probe(arg) {
                 const z = r._waldPlanZusage(o.x, o.z);
                 if ((w.zusage = !!z)) z.then(() => Object.assign(w, { kam: true, rest: Q.size }));
                 // bis die Zusage kam, dann bis der ferne Kasten wieder steht
-                for (const weiter = window.__deckel("die Zusage des fernen Kastens", 2000); ((z && !w.kam) || Q.size) && weiter(); ) await tick(1, 30);
+                for (const weiter = window.__deckel("die Zusage des fernen Kastens", 2000); ((z && !w.kam) || Q.size) && weiter(); ) await __takte(1, 30);
             }
             // (13) B-Blick: jede Baum-Zelle der Region wartet, im Blick auf zV, dahinter auf zH; (14) der Lade-Takt
             {
@@ -1006,7 +998,7 @@ async function probe(arg) {
                 .sort((a, b) => Math.hypot(a.position.x - P.x, a.position.z - P.z) - Math.hypot(b.position.x - P.x, b.position.z - P.z));
         let baeume = naheBaeume();
         for (const weiter = window.__deckel("ein naher Baum", 1500); !baeume.length && weiter(); ) {
-            await tick(5, 40);
+            await __takte(5, 40);
             baeume = naheBaeume();
         }
         const baum = baeume[0] || null;

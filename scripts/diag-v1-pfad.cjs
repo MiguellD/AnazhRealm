@@ -1079,21 +1079,13 @@ async function probe(arg) {
     const kiPort = arg && arg.kiPort;
     const out = {};
     await window.__weltDa();
-    const tick = async (n, ms) => {
-        for (let i = 0; i < n; i++) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
-            await sleep(ms || 30);
-        }
-    };
     // ── V-D1: die Ankunft ──
     try {
         const m = { gestartet: false };
         out.ankunft = m;
         await window.__gebautNach("die Genesis-Plattform", {
             fertig: () => st.architectures.some((a) => a && a.type === "start_plattform"),
-            takt: () => tick(1, 100),
+            takt: () => __takte(1, 100),
             max: 600,
         });
         const plat = st.architectures.find((a) => a && a.type === "start_plattform");
@@ -1109,7 +1101,7 @@ async function probe(arg) {
             st.architectures.filter(
                 (a) => a && /^baum_/.test(a.type) && Math.hypot(a.position.x - P.x, a.position.z - P.z) < 40
             );
-        await window.__weltStehtNach(() => tick(1, 20));
+        await window.__weltStehtNach(() => __takte(1, 20));
         let kronen = 0,
             naechster = Infinity,
             art = null;
@@ -1132,7 +1124,7 @@ async function probe(arg) {
         window.__anazhAutoSettlement = true;
         Object.defineProperty(st, "_frameOverBudget", { configurable: true, get: () => true, set: () => {} });
         try {
-            for (let i = 0; i < 40 && !(st.worldMeta && st.worldMeta.genesisPortalRing); i++) await tick(1, 60);
+            for (let i = 0; i < 40 && !(st.worldMeta && st.worldMeta.genesisPortalRing); i++) await __takte(1, 60);
         } finally {
             delete st._frameOverBudget;
             st._frameOverBudget = false;
@@ -1585,7 +1577,7 @@ async function probe(arg) {
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.eiche && st.blueprints.baum_eiche);
         // Das Welt-Auge steht beim Spieler, wo er die Werkstatt öffnet.
-        await tick(20);
+        await __takte(20);
         if (st.uiActiveDrawer !== "werkstatt") r.toggleDrawer("werkstatt");
         const ws = r._ensureWorkshopState();
         const lu = r._ensureLodUniforms();
@@ -1610,7 +1602,7 @@ async function probe(arg) {
                     !r._wsStudioPending &&
                     ws.preview.currentMesh.children.length
                 ),
-            takt: () => tick(1, 80),
+            takt: () => __takte(1, 80),
             max: 1125,
         });
         const p = ws.preview;
@@ -1716,7 +1708,7 @@ async function probe(arg) {
         const steht = () => !!(p.currentMesh && !r._wsStudioPending && p.currentMesh.children.length);
         await window.__gebautNach(`die Vorschau nach dem fremden Zug ${a.key}`, {
             fertig: steht,
-            takt: () => tick(1, 80),
+            takt: () => __takte(1, 80),
             max: 275,
         });
         m.vorschau.ms = steht() ? Math.round(performance.now() - t0) : null;
@@ -1742,7 +1734,7 @@ async function probe(arg) {
                 m.hand.erst = erst === "pending" ? "pending" : erst ? "gruppe" : String(erst);
                 await window.__gebautNach(`die Hand nach dem fremden Zug ${b.key}`, {
                     fertig: () => m.hand.geweckt > 0,
-                    takt: () => tick(1, 80),
+                    takt: () => __takte(1, 80),
                     max: 275,
                 });
                 m.hand.ms = m.hand.geweckt ? Math.round(performance.now() - t1) : null;
@@ -1773,7 +1765,7 @@ async function probe(arg) {
                 r.selectBlueprintForEdit("baum_eiche");
                 await window.__gebautNach(`die Vorschau-Stufe L${s}`, {
                     fertig: steht,
-                    takt: () => tick(1, 80),
+                    takt: () => __takte(1, 80),
                     max: 275,
                 });
                 const z = at ? at.zellen.get(zKey) : null;
@@ -1796,7 +1788,7 @@ async function probe(arg) {
         const bodenArt = (r._foundryLibrarySpec().species || []).find(
             (sp) => !r._foundryPresetIsTree(sp) && r._foundryGestalten(sp) > 0
         );
-        await window.__gebautNach("der Boot-Vorrat", { fertig: () => !f._vorrat, takt: () => tick(1, 80), max: 275 }); // der Boot-Vorrat läuft aus
+        await window.__gebautNach("der Boot-Vorrat", { fertig: () => !f._vorrat, takt: () => __takte(1, 80), max: 275 }); // der Boot-Vorrat läuft aus
         if (bodenArt && !f._vorrat) {
             const lodV = (r._foundryKindStages(bodenArt) || [2, 0])[0];
             const vKey = r._foundryKoerperKey(bodenArt, 1, lodV);

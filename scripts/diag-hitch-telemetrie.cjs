@@ -683,17 +683,6 @@ hauptLauf(async () => {
     // Software-Holz (Lehre 26): auf „voll" kostet auf swiftshader ein Compile 50–70 s; die Linse prüft Zähler und Gesetz.
     await server.zeige(page, 60000, "index.html?holz=kienspan");
 
-    const gpu = await page.evaluate(async () => {
-        if (!navigator.gpu) return "kein navigator.gpu";
-        try {
-            const a = await navigator.gpu.requestAdapter();
-            return a ? "adapter ok" : "kein adapter";
-        } catch (e) {
-            return "adapter-wurf: " + (e && e.message);
-        }
-    });
-    console.log("WebGPU-Probe:", gpu);
-
     const out = await page.evaluate(async (laufzeitMs) => {
         const res = {};
         await window.__weltDa(() => !(!r || !r.state));

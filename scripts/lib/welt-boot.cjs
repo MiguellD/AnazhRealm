@@ -53,6 +53,27 @@ async function seitenTakt() {
     await new Promise((ok) => requestAnimationFrame(ok));
     if ((r._weltStand ? r._weltStand.takte : -1) === vor) r._gameLoopTick(performance.now());
 }
+// DIE TAKTE VON HAND (`await window.__takte(n, ms)`): n Takte des Loops, je `ms` (30) Schlaf dazwischen, ein werfender Takt
+// bricht die Reihe nicht — bis w4-verkehr-c dreimal derselbe Zwilling (diag-ankunft, diag-v1-pfad, diag-werkstatt-weg)
+async function takte(n, ms) {
+    for (let i = 0; i < n; i++) {
+        try {
+            r._gameLoopTick(performance.now());
+        } catch {}
+        await sleep(ms || 30);
+    }
+}
+// DAS BILD-MUSTER DER LINSEN (`window.__MUSTER`, ms je Bild): Bilder ohne (8,3), mit einem (16,7 · 20 · 11,1) und mit zwei
+// Sim-Schritten (25 · 33,3) — bis w4-verkehr-c viermal dasselbe Literal (fahr-proben, diag-kamera-laub, diag-werk-im-wasser zweimal)
+// DER BILD-RENDERER RUHT (`window.__bildAus()`): render und renderAsync leer, die Nachbearbeitung aus — die Probe misst die Welt,
+// nie das Bild (bis w4-verkehr-c dreimal derselbe Zwilling: diag-werk-im-wasser zweimal, wasser-linse `wasserStrom`)
+function bildAus() {
+    if (st.renderer) {
+        st.renderer.render = function () {};
+        if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
+    }
+    st.postProcessingFailed = true;
+}
 // DAS EINE EINSCHWINGEN (`await window.__weltStehtNach(takt, max)`): Takt um Takt (`takt(n)` oder der Takt der Seite, mindestens
 // einer), bis die Welt steht (`_weltSteht`) und das Buch da ist; der Regler hält, solange sie schwingt. Der Deckel `max` zählt
 // nur Takte ohne Offenes (`_weltOffen`); dann wirft er.
@@ -187,7 +208,7 @@ function png(u8, W, H) {
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => r.state.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__seitenTakt = ${seitenTakt}; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
+const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");

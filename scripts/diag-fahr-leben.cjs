@@ -771,26 +771,28 @@ const wegenetzVerdict = (m) =>
         [m.boden.wiese > 0 && m.boden.wald >= 0.1 && m.boden.dorf >= 0.05, `Boden ${JSON.stringify(m.boden)}`],
     ].flatMap(([ok, t]) => (ok ? [] : [t]));
 
-// ════ VK — DER VERKEHR DER STADT (PFLICHT-OFFEN C, `verkehr` in probeLeben): die Metropole am Messort stadt-voll um 10 Uhr, `sek`
-// Sekunden — jedes Ende des Netzes trägt seine Wende, kein Boden der Spuren springt (`stufen`), jeder Wagen des Gesetzes steht
-// oder fährt, jeder fährt, keiner steckt, keiner berührt einen Bewohner oder einen anderen Wagen, keiner ist ohne Schlüssel in
-// der Kreuzung, keiner stößt an einen Bau, keiner verlässt seine Spur, der Takt bleibt billig. ════
-const VERKEHR = { stunden: [10, 23], sek: 40 };
+// ════ VK — DER VERKEHR DER STADT (PFLICHT-OFFEN C, `verkehr` in probeLeben): das ganze Kriterium — die Metropole am Messort
+// stadt-voll um 10 und 23 Uhr je `sek` Bilder-Sekunden (10 min Spielzeit), ≥ `wagen` Wagen, jeder mit einem Bewohner am Steuer,
+// jeder erreicht sein Ziel (gezählte Ankünfte, keine Fahrt über `fristS`) — jedes Ende des Netzes trägt seine Wende, kein Boden
+// der Spuren springt (`stufen`), keiner steckt, keiner berührt einen Bewohner oder einen anderen Wagen, keiner ist ohne
+// Schlüssel in der Kreuzung, keiner stößt an einen Bau, keiner verlässt seine Spur, der Takt bleibt billig, und die Gehenden
+// teilen die Straße nach dem EINEN Gesetz: höchstens `fahrbahn` ihrer Schritte auf der Fahrbahn (die Querungen). ════
+const VERKEHR = { stunden: [10, 23], sek: 600, wagen: 20, fristS: 300, fahrbahn: 0.03 };
 const verkehrVerdict = (m) =>
     [
         [m.enden >= 1 && m.wenden === m.enden, `Wenden ${m.wenden} an ${m.enden} Enden`],
         [!m.stufen.length, `Stufen der Spuren ${JSON.stringify(m.stufen)}`],
         [
-            m.soll >= 1 && m.wagen === m.soll && !m.ohneNacht,
-            `Wagen ${m.wagen} von ${m.soll} (ohne Platz ${m.ohnePlatz}, ohne Fahrer ${m.ohneFahrer}, ohne Nachtfahrer ${m.ohneNacht})`,
+            m.soll >= VERKEHR.wagen && m.wagen === m.soll && !m.ohneNacht,
+            `Wagen ${m.wagen} von ${m.soll} (Soll ≥ ${VERKEHR.wagen}; ohne Platz ${m.ohnePlatz}, ohne Fahrer ${m.ohneFahrer}, ohne Nachtfahrer ${m.ohneNacht})`,
         ],
         [m.fahrend === m.wagen, `fahrend ${m.fahrend} von ${m.wagen}`],
-        // keiner steht die ganze Zeit (min ≥ sek/4 m), der Verkehr fließt (Median ≥ 2·sek m): ein Stau-Knoten hielt Wagen bei 0 m
-        // und den Median unter 50 m, gesund 20–63 m und 97–151 m in 40 s (10 Läufe, 29.10.) — wer hinter einem Gänger in der Enge
-        // wartet, wartet zu Recht
+        [!m.steuerlos, `ohne Bewohner am Steuer ${m.steuerlos}×`],
+        [!m.ziele.ohne.length, `ohne Ziel erreicht: Wagen ${m.ziele.ohne.join(", ")} (${m.ziele.erreicht} Ankünfte)`],
+        [m.ziele.laengsteS <= VERKEHR.fristS, `Fahrt ${m.ziele.laengsteS} s > ${VERKEHR.fristS} s (Wagen ${m.ziele.wer})`],
         [
-            m.weg.min >= m.sek / 4 && m.weg.median >= 2 * m.sek,
-            `Weg je Wagen min ${m.weg.min} m (Soll ≥ ${m.sek / 4}), Median ${m.weg.median} m (Soll ≥ ${2 * m.sek}) — ${JSON.stringify(m.steher.slice(0, 4))}`,
+            m.fahrbahn.anteil <= VERKEHR.fahrbahn,
+            `Bewohner auf der Fahrbahn ${m.fahrbahn.auf}/${m.fahrbahn.geh} Schritte (Soll ≤ ${VERKEHR.fahrbahn})`,
         ],
         [!m.fest.length, `steckt: ${JSON.stringify(m.fest)}`],
         [!m.beruehrt.leib, `berührt Bewohner ${m.beruehrt.leib}× ${JSON.stringify(m.beruehrt.orte)}`],
@@ -2327,30 +2329,21 @@ hauptLauf(async () => {
         {
             // VK: ein gesunder Lauf ohne Täter, jeder Bruch beim Namen
             const g = {
-                ...{
-                    soll: 20,
-                    wagen: 20,
-                    ohnePlatz: 0,
-                    ohneFahrer: 0,
-                    ohneNacht: 0,
-                    fahrend: 20,
-                    wenden: 4,
-                    enden: 4,
-                    stufen: [],
-                    steher: [],
-                },
-                ...{ weg: { min: 26, median: 123 }, fest: [], beruehrt: { leib: 0, wagen: 0 }, ohneSchluessel: 0 },
-                ...{ stoss: { wagen: 0, bau: 0 }, querMax: 0.35, msJeSchritt: 0.82, sek: 40 },
+                ...{ soll: 20, wagen: 20, ohnePlatz: 0, ohneFahrer: 0, ohneNacht: 0, fahrend: 20, wenden: 4, enden: 4 },
+                ...{ stufen: [], fest: [], beruehrt: { leib: 0, wagen: 0 }, ohneSchluessel: 0 },
+                ...{ stoss: { wagen: 0, bau: 0 }, querMax: 0.35, msJeSchritt: 0.82, sek: 600, steuerlos: 0 },
+                ...{ ziele: { erreicht: 160, ohne: [], laengsteS: 120 }, fahrbahn: { geh: 9e4, auf: 1500, anteil: 0.017 } },
                 stufe: { nah: 99 },
             };
             const brueche = [
                 [{ wenden: 3 }, /Wenden 3/],
                 [{ stufen: [{ x: 1 }] }, /Stufen/],
                 [{ wagen: 19, fahrend: 19 }, /Wagen 19 von 20/],
+                [{ soll: 18, wagen: 18, fahrend: 18 }, /Wagen 18 von 18 \(Soll ≥ 20/],
                 [{ ohneNacht: 2 }, /ohne Nachtfahrer 2/],
                 [{ fahrend: 12 }, /fahrend 12/],
-                [{ weg: { min: 0, median: 123 } }, /min 0 m/],
-                [{ weg: { min: 26, median: 45 } }, /Median 45/],
+                [{ steuerlos: 3 }, /ohne Bewohner am Steuer 3/],
+                [{ ziele: { erreicht: 150, ohne: [], laengsteS: 410, wer: 4 } }, /Fahrt 410 s > 300 s \(Wagen 4/],
                 [{ fest: [{ nr: 4 }] }, /steckt/],
                 [{ beruehrt: { leib: 3, wagen: 0 } }, /Bewohner 3/],
                 [{ beruehrt: { leib: 0, wagen: 2 } }, /Wagen in Wagen 2/],
@@ -2362,10 +2355,15 @@ hauptLauf(async () => {
                 [{ stufe: { nah: 99, ohneBild: 7 } }, /ohne Bild mit gezeichnetem Fahrer 7/],
                 [{ stufe: { nah: 99, veraltet: 2 } }, /veralteter Stufe 2/],
             ].filter(([an, soll]) => !((v) => v.length === 1 && soll.test(v[0]))(verkehrVerdict({ ...g, ...an })));
+            // ALT ROT, NEU GRÜN an EINEM Täter (w4-verkehr-c, 10 Uhr, 10 min): bis hier fuhr kein Wagen zu einem Ziel (der Same
+            // wählte je Kreuzung, keine Ankunft) und die Menge ging zu 7,67 % ihrer Schritte auf der Fahrbahn (Laterne und Ecke der
+            // Kreuzung warfen den Gehweg auf die Spur) — beide beim Namen; neu GRÜN
+            const alt = verkehrVerdict({ ...g, ziele: { erreicht: 0, ohne: [0, 1, 2], laengsteS: 0 }, fahrbahn: { geh: 157054, auf: 12043, anteil: 0.0767 } }); // prettier-ignore
+            const altRot = alt.length === 2 && /ohne Ziel erreicht/.test(alt[0]) && /Fahrbahn 12043/.test(alt[1]);
             check(
-                "Selbst-Test VK: der Verkehr nennt jeden Bruch beim Namen",
-                !verkehrVerdict(g).length && !brueche.length,
-                JSON.stringify(brueche)
+                "Selbst-Test VK: der Verkehr nennt jeden Bruch beim Namen (alt ROT an Ziel und Fahrbahn, neu GRÜN)",
+                !verkehrVerdict(g).length && !brueche.length && altRot,
+                JSON.stringify(brueche) + (altRot ? "" : " alt: " + alt.join(" · "))
             );
         }
         {

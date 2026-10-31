@@ -779,11 +779,7 @@ function __wasserFlussNah(r, x, z) {
 // DER STROM AN EINEN ORT (Seite, EIN Weg für jede Probe der Wand): der Spieler `hoehe` über dem Boden an `ort`, die Welt
 // streamt synchron um ihn (Worker ausgehängt — wie der Playtest), bis die Chunk-Zahl steht. Der Bild-Renderer ruht dabei.
 async function wasserStrom(ort, hoehe) {
-    if (st.renderer) {
-        st.renderer.render = function () {};
-        if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
-    }
-    st.postProcessingFailed = true;
+    __bildAus();
     st.playerMesh.position.set(ort[0], r._voxelSurfaceY(ort[0], ort[1]) + hoehe, ort[1]);
     if (st._fixedSimPos) st._fixedSimPos.copy(st.playerMesh.position);
     // die Kacheln des Rings kommen aus dem Faden, ehe er aushängt (der Haupt-Faden rechnet sie nie)
