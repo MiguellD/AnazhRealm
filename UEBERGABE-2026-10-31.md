@@ -29,6 +29,13 @@ Lies zuerst DIE GOLDENE DEFINITION in CLAUDE.md. Dieser Zettel ist der Stand der
 | w4-menue-inp 7075e04c | Menü-Pipelines 13 → 3 | FREI (`_vektorMemo` ist nicht der Täter) — fährt in z96; Konflikt mit material-fahrt möglich (studio-bruecke.js) |
 | w4-abab-warm fa34938a | ABAB w-ego 15,7 → 13,1 min | Wackler offen (Chrome taut auf) |
 
+**z95 (w4-stadt-takt Heim 6eac419a) FAHRT ROT 03:08:** Die Kamera-Leib-Linse selbst ist GRÜN, aber welt-boot meldet im Job
+„voll 14/18 gpu“ (Lauf 41156109280) in beiden Versuchen `console.error: THREE.Destroyed texture [Texture (unlabeled 1280x720 px,
+RGBA8Unorm)] used in a submit`. main 8075fc03 war in z94 GRÜN, der Auslöser ist also stadt-takt. Verdacht, zu prüfen statt zu
+glauben: der Gang-Atlas (`_gangAtlasWachsen`, stoff-gang.js ~317) tauscht beim Wachsen Textur oder Stoff, während ein Befehl noch
+auf die alte zeigt. Die 1280×720 sprechen eher für ein Render-Ziel. Versuch 1 trug dazu den Fall-Wächter-Wackler (1/18 cpu), der mit
+w4-fall-wackler geheilt ist. stadt-takt fährt erst nach dieser Heilung wieder.
+
 ## Cloud-Sitzungen (von hier weder erreichbar noch stoppbar — der Schöpfer sieht sie in der App)
 sitzung-urteil (Buchung!), licht-uhr (w4-licht-uhr 0a36bd5f), lod-heim (w4-lod-stufen ba019357), z80-takt (oeko-k2-bestand-neu d36e2043
 = CPU +0,7 ms w-ego), ankunft-2 (Pflicht B), mensch-gesicht (mensch.K4 Rückfall gesicht 0,333 — rendert die ganze Welt auf
@@ -57,8 +64,8 @@ Die Ketten `w3/kette-z95…z98.sh`, der CI-Wächter und die Wache liefen als Hin
 Ein Zug, der mitten in der CI stirbt, lässt main unberührt (der Kandidat liegt nur auf integ-probe). Darum:
 1. Was gelandet ist: `git ls-remote origin refs/heads/main` und `tail -n 3 /tmp/claude/fahre-z9*.log` (GELANDET / FAHRT ROT / abgebrochen).
 2. Die noch nicht gelandeten Zweige EINEN Zug nach dem anderen fahren:
-   `bash /tmp/claude/w3/zug-sammler4.sh z<N> 25 <zweige…>`. Reihenfolge: w4-stadt-takt → w4-fall-wackler + w4-menue-inp →
-   w4-schatten-haken → w4-wagen-stufe (nur mit grünem Puls, die Decke!).
+   `bash /tmp/claude/w3/zug-sammler4.sh z<N> 25 <zweige…>`. Reihenfolge: w4-fall-wackler + w4-menue-inp (z96 lief 03:10 an) →
+   w4-schatten-haken → w4-wagen-stufe (nur mit grünem Puls, die Decke!) → w4-stadt-takt erst nach der Heilung des z95-ROT.
 3. Nach jeder Landung die Nachwache: `bash /tmp/claude/w3/zeile.sh "z<N>-abab 3 abab A=<main vorher> B=<main nachher> zellen=stadt,w-ego"`.
    Nach der Landung von schatten-haken zwei Eich-Fahrten am neuen main: `… "eich<N>-gtx 1 station sha=<main> lauf=eich-gtx.sh"`.
 4. Wache und CI-Wächter neu: `WACHE_STILL="*" node /tmp/claude/w3/wache-w4.cjs <main8>` und `node /tmp/claude/w3/ci-waechter.cjs`
