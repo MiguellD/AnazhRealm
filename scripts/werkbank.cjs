@@ -53,7 +53,7 @@
 //   node scripts/werkbank.cjs gpu-bank [n] [--runden r]      DIE GPU-BANK: GPU-Zeit je Frame, n Frames ohne rAF
 //   node scripts/werkbank.cjs zerlegen [--runden r] [--n frames] [--nur a,b] [--json datei] [--bilder [ordner]]
 //                                                           [--selbsttest [--last iter]] DIE GPU-ZERLEGUNG je Verbraucher, ABBA (scripts/lib/zerlege-linse.cjs)
-//   node scripts/werkbank.cjs ziele [--n frames] [--json datei] [--selbsttest]
+//   node scripts/werkbank.cjs ziele [--n frames] [--json datei]
 //                                                           DER ZIEL-ZENSUS: jede GPU-Textur mit Erzeuger, Schreibern, Lesern (scripts/lib/ziel-zensus.cjs)
 //   node scripts/werkbank.cjs shader [--nur <regex>] [--top n] [--ordner d]
 //                                                           [--stoff boden [--gegen alt.wgsl] [--datei neu.wgsl] [--rauschprobe]] | shader --selbsttest
@@ -915,7 +915,17 @@ async function starte() {
         }, json);
         if (res.fehler)
             throw new Error(`Messort ${ort.id}: die Welt ${ort.welt} ließ sich nicht importieren (${res.fehler})`);
-        await lade(page.evaluate(() => __weltDa(() => st.worldMeta.genesisPortalRing)));
+        // DER HAKEN DES START-ORTS (w4-proben-tempo, 30.10.): `start --ort <ohne Dorf-Zug>` legt `__anazhAutoSettlement = false` vor JEDE
+        // Ladung — in der Ziel-Welt lebte der Dorf-Takt darum nie, und mit ihm nie ihr Genesis-Ort (`_dorfTaktLebt` in `_tickGenesisOrt`,
+        // stamm/siedlung-ort.js:2776): die Ankunft wartete ohne Frist (die Sitzung bootet seit 30.10. mit `--ort wiese`; schatten.K1#1 GTX
+        // 379e5f56 ≥ 90 s „zuletzt: fenster“, swiftshader 28 min ohne Ring). Die Ankunft hebt ihn wie im Spiel, bis der Ring steht; den
+        // Zug des Orts stellt danach `umstellen` (die Bühne: dorfZug false)
+        await lade(
+            page.evaluate(() => {
+                delete window.__anazhAutoSettlement;
+                return __weltDa(() => st.worldMeta.genesisPortalRing);
+            })
+        );
         await loopAus();
         if (!(await steht())) throw new Error(`Messort ${ort.id}: nach dem Wechsel steht die Seite nicht in ${slug}`);
         return { slug, neu: true, id: res.id };
@@ -1105,7 +1115,7 @@ async function starte() {
                 if (r.state.cameraMode !== "first" || !k.klasse) throw new Error("--arm: Ego (--sicht ego) und --klasse");
                 for (let i = 0; i < 30; i++) r._loopCamera(performance.now() + i * 100);
                 const a = r.state.camera.position.clone();
-                const tiefe = async () => (await __ausgabeAufnahme(64, 36, 1, { satz: "messung" }), await __spiegelDaten());
+                const tiefe = async () => (await __ausgabeAufnahme(64, 36, 1, { satz: "messung", tiefe: true }), await __spiegelDaten());
                 const re = new RegExp(k.klasse),
                     aus = [],
                     S = await tiefe();
@@ -1153,8 +1163,16 @@ async function starte() {
                 if (st.world) st.world.timeOfDay = k.uhr;
                 // der Pfad des Spielers (sein Satz „nacht"): der Uhr-Schreiber springt, der Himmel folgt im selben Anwenden
                 r.setTimeOfDay(k.uhr, "human");
+                // DER POOL ZU SEINEM FIXPUNKT (w4-proben-tempo, 30.10.; bis dahin fest 20 × 50 ms je Schuss): jeder Platz hält eine
+                // gewählte Quelle mit Blende 1 oder ist frei mit Blende 0, jede Gewählte hat ihren Platz — danach ändert kein Takt
+                // mehr etwas (die Bild-Uhr steht unter der Bühne, die Wahl am stehenden Auge); höchstens dieselbe Sekunde wie zuvor
+                const fest = (P) =>
+                    !!P &&
+                    P.halter.every((h, j) => (h ? P.blende[j] === 1 && P.wahl.some((w) => w.id === h.id) : P.blende[j] === 0)) &&
+                    (!P.halter.includes(null) || P.wahl.every((w) => P.halter.some((h) => h && h.id === w.id)));
                 for (let i = 0; i < 20; i++) {
                     r._leuchtTakt();
+                    if (fest(r._leuchtPool)) break;
                     await sleep(50);
                 }
             }
@@ -1168,14 +1186,16 @@ async function starte() {
             const wahl = k.wahl != null ? Number(k.wahl) : 42;
             let auf = null;
             let gewaehlt = null;
-            for (let i = 0; i < 2; i++) {
+            // die Blick-Wahl im ersten Schuss, der zweite steht an ihrer Pose; das Bild trägt die Wahl des ersten. Ohne Wahl
+            // (`--wahl 0`) ist der erste Schuss schon das Bild: er wartet, bis die Welt an der Pose steht (`__weltStehtWarten`),
+            // und jeder Schuss beginnt seine Geschichte neu — ein zweiter wäre dasselbe Bild (material.K2: sechs Armlängen)
+            for (const w of wahl > 0 ? [wahl, 0] : [0]) {
                 try {
                     if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
                 } catch {}
                 r._schattenAlleNeu();
-                // die Blick-Wahl im ersten Schuss, der zweite steht an ihrer Pose; das Bild trägt die Wahl des ersten
-                auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: i === 0 ? wahl : 0 });
-                if (i === 0) gewaehlt = auf.abnahme.wahl || null;
+                auf = await __ausgabeAufnahme(k.w, k.h, 1, { ziel, wahl: w });
+                if (w) gewaehlt = auf.abnahme.wahl || null;
             }
             if (gewaehlt) {
                 auf.abnahme.wahl = gewaehlt;
@@ -1266,16 +1286,19 @@ async function starte() {
                 const wurf = new Map(alle.map((o) => (o.bereich ? o.mesh : o)).map((o) => [o, o.castShadow]));
                 const verbirg = (o) => (o.bereich ? r._chunkSatzAus(o.art, o.key) : (o.visible = false));
                 const zeig = (o) => (o.bereich ? r._bauSatzMarke(o.key, o.art) : (o.visible = true));
-                const ruhen = ["_tickNahWiese", "_ruheImBild"].map((m) => [m, Object.prototype.hasOwnProperty.call(r, m), r[m]]);
+                const ruhen = ["_tickNahWiese", "_ruheImBild"].map((m) => [m, Object.hasOwn(r, m), r[m]]);
                 for (const [m] of ruhen) r[m] = () => 0;
+                // verbirgt der Schuss die Strähnen des Spielers, ist sein Kopf kahl: die Kappe gehört zum Haar (`_kopfKahl`, haar.K2)
                 const schuss = async (aus) => {
                     for (const o of aus) verbirg(o);
+                    r._kopfKahl(aus);
                     bundlesNeu();
                     try {
                         r._schattenAlleNeu();
                         return (await __ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
                     } finally {
                         for (const o of aus) zeig(o);
+                        r._kopfKahl([]);
                         r._tickBauSatz(Infinity);
                         bundlesNeu();
                     }
@@ -2183,7 +2206,7 @@ async function starte() {
                         // DIE BILDER: ein Takt zeichnet nur, wenn die GPU-Leine frei ist (`_gpuLeineFrei`) — im Software-Holz
                         // zeichneten drei Takte hintereinander kein Bild (die Probe war blind). Gezählt wird `_loopRender`.
                         let gezeichnet = 0;
-                        const eigen = Object.prototype.hasOwnProperty.call(r, "_loopRender");
+                        const eigen = Object.hasOwn(r, "_loopRender");
                         const altRender = r._loopRender;
                         r._loopRender = function (...a) {
                             gezeichnet++;
@@ -2680,75 +2703,16 @@ async function starte() {
                         datei,
                     });
                 }
-                // DER ZIEL-ZENSUS (scripts/lib/ziel-zensus.cjs): n Frames der Bank-Runde, jede Textur mit Erzeuger, Schreibern
-                // und Lesern je Pass, der Inhalt der Farb-Texturen zurück → das Urteil über die Täter-Klassen. `selbsttest`
-                // schmuggelt je Klasse einen Täter ein (jeder muss beim Namen rot fallen) und baut ihn danach restlos ab (kein
-                // Name des Selbsttests bleibt im Zensus).
+                // DER ZIEL-ZENSUS (scripts/lib/ziel-zensus.cjs `zensusDer`, EIN Leser mit gate:ziel-zensus): n Frames der Bank-Runde,
+                // jede Textur mit Erzeuger, Schreibern und Lesern je Pass, der Inhalt der Farb-Texturen zurück → das Urteil über die
+                // Täter-Klassen. Den Schmuggel (je Klasse ein Täter, beim Namen rot, danach restlos fort) trägt die EINE Wand
+                // gate:ziel-zensus — bis 31.10. stand hier sein Zwilling mit 5 der 6 Täter, den kein Befehl rief.
                 if (req.url === "/ziele") {
-                    const n = Number(b.n) || 12;
-                    const zensus = async () => {
-                        const z = await seite("__zielZensus", { n });
-                        if (!z || z.fehler) return { z, u: ZZ.zielUrteil(z, []) };
-                        const ids = z.ziele
-                            .filter(
-                                (x) =>
-                                    !x.leinwand &&
-                                    !x.tiefe &&
-                                    x.kopierbar &&
-                                    /^(r|rg|rgba|bgra)(8|16|32)/.test(x.format)
-                            )
-                            .map((x) => x.id);
-                        const lesen = await seite("__zielLesen", { ids });
-                        return { z, lesen, u: ZZ.zielUrteil(z, lesen) };
-                    };
-                    let selbst = null;
-                    if (b.selbsttest) {
-                        const s = await seite("__zielSchmuggel", true);
-                        if (!s || s.fehler)
-                            return send({ fehler: "Schmuggel: " + ((s && s.fehler) || "keine Antwort") });
-                        let mit;
-                        try {
-                            mit = await zensus();
-                        } finally {
-                            await seite("__zielSchmuggel", false);
-                        }
-                        const soll = [
-                            /OHNE LESER: zensus-selbsttest:ohne-leser/,
-                            /VOLLE AUFLÖSUNG: zensus-selbsttest:bloom/,
-                            /TEILBAR: zensus-selbsttest:paar-a und zensus-selbsttest:paar-b/,
-                            /DOPPELTE TIEFE: zensus-selbsttest:tiefe-kopie .* ist eine Kopie von depth,/,
-                            /FORMAT: zensus-selbsttest:f32 /,
-                        ];
-                        selbst = soll.map((m) => ({ muss: m.source, ok: mit.u.rot.some((x) => m.test(x)) }));
-                    }
-                    const { z, lesen, u } = await zensus();
+                    const { z, lesen, u } = await ZZ.zensusDer(page, Number(b.n) || 12);
                     if (!z || z.fehler) return send({ fehler: (z && z.fehler) || "keine Antwort", rot: u.rot });
-                    const rest = selbst
-                        ? u.zeilen.filter((x) => /zensus-selbsttest/.test(x.name)).map((x) => x.name)
-                        : [];
-                    const selbstOk = selbst ? selbst.every((x) => x.ok) && !rest.length : null;
                     const datei = zeitAblage(b.json, "ziele", "json");
-                    jsonAb(datei, { zensus: z, lesen, urteil: u, selbst, rest });
-                    return send({
-                        ok: selbst ? selbstOk : u.rot.length === 0,
-                        tabelle: ZZ.zielTabelle(u, z),
-                        rot: u.rot,
-                        selbst: selbst
-                            ? (selbstOk ? "SELBSTTEST GRÜN" : "SELBSTTEST ROT") +
-                              ` — ${selbst.filter((x) => x.ok).length} von ${selbst.length} Tätern beim Namen` +
-                              (selbst.some((x) => !x.ok)
-                                  ? "; blind für: " +
-                                    selbst
-                                        .filter((x) => !x.ok)
-                                        .map((x) => x.muss)
-                                        .join(" · ")
-                                  : "") +
-                              (rest.length
-                                  ? "; nach dem Abbau noch im Zensus: " + rest.join(", ")
-                                  : "; danach restlos fort")
-                            : null,
-                        datei,
-                    });
+                    jsonAb(datei, { zensus: z, lesen, urteil: u });
+                    return send({ ok: u.rot.length === 0, tabelle: ZZ.zielTabelle(u, z), rot: u.rot, datei });
                 }
                 // DIE GPU-ZERLEGUNG (scripts/lib/zerlege-linse.cjs): Inventur (ein Zähl-Frame + Pass-Baum + Frame-Anatomie) →
                 // Schalter aus dem echten Weg → ABBA je Schalter mit der Bank-Runde → Beleg je Schalter → Tabelle.
@@ -3292,12 +3256,14 @@ hauptLauf(async () => {
                 await umstellen({ ort, sicht: "ego" });
                 const lauf = (o) => evalRuf(`return await (${LL.naesseSicht.toString()})(${JSON.stringify(o)});`);
                 let dach;
+                // DIE STÄNDE DES DORFS: am Ort wählt der Spieler das Haus (das nächste mit Hülle und Tür, seine Schwelle) und den
+                // nächsten Dach-Bau, dann tritt er an den Dach-Bau (der Dach-Pool trägt die Dächer um ihn) und an die Schwelle. Bis
+                // 30.10. kehrte er dazwischen an den Ort zurück, nur um das Haus zu wählen — ein Umstellen mehr, dasselbe Haus
                 if (ort === "dorf") {
+                    const s = (await lauf({ ort, haus: true })).ergebnis.schwelle;
                     const z = (await lauf({ ort, dach: "ziel" })).ergebnis.ziel;
                     if (z) await umstellen({ x: z[0] + 3, z: z[1] + 3 });
                     dach = z ? (await lauf({ ort, dach: "pruefen" })).ergebnis : { n: 0, trocken: 0 };
-                    await umstellen({ ort, sicht: "ego" });
-                    const s = (await lauf({ ort, haus: true })).ergebnis.schwelle;
                     await umstellen({ x: s[0], z: s[2] });
                 }
                 const a = await lauf({ ort, png: !!opt("--bilder") });
@@ -3738,8 +3704,8 @@ hauptLauf(async () => {
         process.exit(gut ? 0 : 1);
     }
     else if (cmd === "ziele") {
-        o = await rufe("/ziele", { n: opt("--n"), json: opt("--json"), selbsttest: SELBST });
-        if (o && o.tabelle) endeMit(o.tabelle + (o.selbst ? "\n\n" + o.selbst : "") + "\n" + o.datei, o.ok);
+        o = await rufe("/ziele", { n: opt("--n"), json: opt("--json") });
+        if (o && o.tabelle) endeMit(o.tabelle + "\n" + o.datei, o.ok);
         endeMit(o);
     } else if (cmd === "zerlegen") {
         const bi = argv.indexOf("--bilder");

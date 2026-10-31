@@ -385,11 +385,13 @@ class AnazhRealm_dirigent_takt {
                                       ? `Dorf offen ${o.dorf}`
                                       : o.leib
                                         ? "Leib offen"
-                                        : o.huellen
-                                          ? `Hüllen offen ${o.huellen}`
-                                          : o.ankunft
-                                            ? `Ankunft gleitet ${o.ankunft}`
-                                            : null;
+                                        : o.leute
+                                          ? `Leute offen ${o.leute}`
+                                          : o.huellen
+                                            ? `Hüllen offen ${o.huellen}`
+                                            : o.ankunft
+                                              ? `Ankunft gleitet ${o.ankunft}`
+                                              : null;
         if (grund) {
             W.welt = welt;
             W.bau = bau;
@@ -492,6 +494,23 @@ class AnazhRealm_dirigent_takt {
             for (const S of this._bewohnerSiedlungen.values())
                 for (const b of S.liste || [])
                     if (b.leib && !b.drinnen && !b.amSteuer && !b.leib.userData._kzVersuch) o.leiber++;
+        // DIE LEUTE IM WERK (w4-linsen-b; mensch.K5#1, mensch.K1#1/K2#2 an 3ed95dcf GTX: „DER BAU STEHT NICHT: begegnung: die Leiber nach
+        // 306 Takten — die Welt hat nichts mehr offen"): seit bewohner-takt rechnet das Werk der Liste (`listeWerk`: `_bewohnerListe`,
+        // dann `_bewohnerStandPruefen`) mit Bild je Takt `BEWOHNER.listeMs` — an der Karte geht die Liste des Start-Dorfs über Hunderte
+        // Takte, und die Welt nannte sich ruhig, während ihre Leute noch entstanden: jeder Deckel zählte die Takte als still und brach,
+        // `_weltSteht` gab ein Bild ohne die Leute frei. Offen ist je Siedlung im Nah-Ring (dort geht ihr Werk, `_tickBewohner`) ihr
+        // Werk samt seinem Rest (`listeRest`: Personen, Besuche, Stände, die es noch stellt) und je Kopf, wer noch geboren wird
+        // (`leib` null; `false` heißt: ohne Leib) oder noch ankommt (`ankunft`)
+        o.leute = 0;
+        if (this._bewohnerSiedlungen && st.renderer && !st.renderer._isHeadlessNull && st.playerMesh) {
+            const p = st.playerMesh.position;
+            const nah = AnazhRealm.AUTO_SETTLEMENT.nearM;
+            for (const S of this._bewohnerSiedlungen.values()) {
+                if (S.listeWerk && (S.ox - p.x) ** 2 + (S.oz - p.z) ** 2 <= nah * nah)
+                    o.leute += 1 + Math.max(0, S.listeRest | 0);
+                for (const b of S.liste || []) if (b.leib == null || b.ankunft) o.leute++;
+            }
+        }
         return o;
     }
     _weltSteht() {

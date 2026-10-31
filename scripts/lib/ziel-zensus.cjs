@@ -21,7 +21,7 @@
 // (`__zielSchmuggel`: je Klasse ein eingeschmuggelter Täter nach jedem `_loopRender` — er muss beim Namen rot fallen und nach
 // dem Abbau verschwinden).
 //   Seite:     window.__zielZensus({ n }) · __zielLesen({ ids }) · __zielSchmuggel(an)
-//   Werkbank:  node scripts/werkbank.cjs ziele [--n frames] [--json datei] [--selbsttest]
+//   Werkbank:  node scripts/werkbank.cjs ziele [--n frames] [--json datei]  (den Schmuggel trägt nur die Wand)
 //   Wand:      npm run gate:ziel-zensus (scripts/diag-ziel-zensus.cjs)
 "use strict";
 
@@ -960,8 +960,21 @@ function selbsttest() {
     return fehler;
 }
 
+// DER ZENSUS EINER SEITE — EIN Leser für die Werkbank (`ziele`) und die Wand (gate:ziel-zensus): n Frames, die Farb-Ziele
+// zurückgelesen, das Urteil (bis 31.10. trug jeder der beiden seine Kopie)
+async function zensusDer(page, n) {
+    const z = await page.evaluate((k) => window.__zielZensus(k), { n });
+    if (!z || z.fehler) return { z, u: zielUrteil(z, []) };
+    const ids = z.ziele
+        .filter((x) => !x.leinwand && !x.tiefe && x.kopierbar && /^(r|rg|rgba|bgra)(8|16|32)/.test(x.format))
+        .map((x) => x.id);
+    const lesen = await page.evaluate((k) => window.__zielLesen(k), { ids });
+    return { z, lesen, u: zielUrteil(z, lesen) };
+}
+
 module.exports = {
     VENDOR,
+    zensusDer,
     zielUrteil,
     zielTabelle,
     selbsttest,

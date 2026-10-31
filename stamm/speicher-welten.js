@@ -2879,7 +2879,7 @@ AnazhRealm.WELT_GRENZE = Object.freeze({
         "_uiDirtyRooms",
         "_uiPulseQueued",
         "_foundryMats",
-        "_foundryGraphen",
+        "_geteilteGraphen",
         "_naesseHimmelK",
         "_leuchtOhne",
         "_leuchtKnoten",

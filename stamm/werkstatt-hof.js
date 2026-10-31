@@ -232,6 +232,7 @@ class AnazhRealm_werkstatt_hof {
         if (host.childElementCount > 0 && sig === this._recipeBookSig) return;
         this._recipeBookSig = sig;
         this._rollenMemo = new Map(); // je Bauplan EINE Rolle in diesem Bau (`_displayRole`)
+        this._vektorMemo = new Map(); // je Bauplan EIN Produkt-Vektor in diesem Bau (`_blueprintProductVector`)
         try {
             host.innerHTML = "";
             const bps = this.state.blueprints || {};
@@ -281,7 +282,7 @@ class AnazhRealm_werkstatt_hof {
             // bei jedem Render neu erzeugt; das Such-Feld #ich-search lebt im Header + bleibt).
             this._applyIchFilter();
         } finally {
-            this._rollenMemo = null;
+            this._rollenMemo = this._vektorMemo = null;
         }
     }
 

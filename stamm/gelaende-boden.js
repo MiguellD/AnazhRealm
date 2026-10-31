@@ -90,13 +90,23 @@ class AnazhRealm_gelaende_boden {
         const eigen = a > -Infinity && b > -Infinity && c > -Infinity && d > -Infinity;
         const fu = x / h - gx;
         const fv = z / h - gz;
-        const y = eigen ? (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv : -Infinity;
+        let y = eigen ? (a * (1 - fu) + b * fu) * (1 - fv) + (c * (1 - fu) + d * fu) * fv : -Infinity;
+        let gruen = 0;
         if (fremd > y) {
-            if (aus) aus.gruen = fremdG;
-            return fremd;
-        }
-        if (!eigen) return null;
-        if (aus) aus.gruen = ((ga * (1 - fu) + gb * fu) * (1 - fv) + (gc * (1 - fu) + gd * fu) * fv) / 255;
+            y = fremd;
+            gruen = fremdG;
+        } else if (eigen && aus) gruen = ((ga * (1 - fu) + gb * fu) * (1 - fv) + (gc * (1 - fu) + gd * fu) * fv) / 255;
+        // DIE SÄULE, DIE KEIN NETZ TRÄGT (`_saeuleVorlaeufig`): bis zum Neubau ihrer Chunks ist ihre Krone der gezeichnete Boden
+        // über ihrem Grundriss (ohne Grün) — der Fuß auf dem Block, der Block auf dem Dachboden
+        const S = this.state.saeulenVorlaeufig;
+        if (S && S.size)
+            for (const s of S.values())
+                if ((x - s.x) ** 2 + (z - s.z) ** 2 < s.rr && !(y >= s.krone)) {
+                    y = s.krone;
+                    gruen = 0;
+                }
+        if (!(y > -Infinity)) return null;
+        if (aus) aus.gruen = gruen;
         return y;
     }
     // Die Karte EINES Chunks (ax, az) bilinear am Punkt in ihrem eigenen Raster (Schritt ihrer Stufe / Teilung): { y, gruen }
