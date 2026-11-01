@@ -1,18 +1,18 @@
 {
  "sha": "baf9d8280b0aa08441b436e9f93f6e17b221a7cc",
  "geraet": "gtx",
- "zeit": "2026-11-01T20:45:21.727Z",
+ "zeit": "2026-11-01T20:55:51.726Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "haar.K2#1": {
    "gruen": false,
-   "zahl": "arm ROT strich 0.4935 Soll [0.3554,0.533] — strich 0.4935 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3] · third ROT strich 0.444 Soll [0.3554,0.533] — strich 0.444 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3]",
+   "zahl": "arm ROT strich 0.4783 Soll [0.3554,0.533] — strich 0.4783 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3] · third ROT strich 0.5015 Soll [0.3554,0.533] — strich 0.5015 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3]",
    "exit": 0,
-   "minuten": 0.34,
-   "grund": "ROT: arm ROT strich 0.4935 Soll [0.3554,0.533] — strich 0.4935 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3] · third ROT strich 0.444 Soll [0.3554,0.533] — strich 0.444 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3]",
+   "minuten": 0.36,
+   "grund": "ROT: arm ROT strich 0.4783 Soll [0.3554,0.533] — strich 0.4783 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3] · third ROT strich 0.5015 Soll [0.3554,0.533] — strich 0.5015 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8) · albedo — [0.01; 0.3]",
    "gpu": "nvidia/pascal",
-   "s": 20.6,
-   "zeit": "2026-11-01T20:25:08.667Z",
+   "s": 21.5,
+   "zeit": "2026-11-01T20:55:51.726Z",
    "abdruck": "b612c52e703b",
    "port": 7804,
    "bahn": "sitzung",
@@ -414,69 +414,41 @@
   }
  },
  "sitzung": {
-  "start": "2026-11-01T20:44:33.965Z",
+  "start": "2026-11-01T20:55:22.933Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.2,
-  "grundstellungS": [
-   2.3
-  ],
-  "proben": 2,
+  "bootS": 5.3,
+  "grundstellungS": [],
+  "proben": 1,
   "freigaben": [],
   "orte": [
    {
-    "ort": null,
-    "vor": "ankunft.K1#1",
-    "s": 18.5,
-    "takte": 805,
+    "ort": "wiese",
+    "vor": "haar.K2#1",
+    "s": 22.5,
+    "takte": 718,
     "chunks": 81,
     "nach": null
-   },
-   {
-    "ort": null,
-    "vor": "klang.K4#1",
-    "s": 16.9,
-    "takte": 768,
-    "chunks": 81,
-    "nach": "der Tür"
    }
   ],
   "wegeTueren": [],
-  "zeichner": [
-   {
-    "probe": "ankunft.K1#1",
-    "anders": [
-     "zeichner.postKette"
-    ],
-    "wie": {
-     "zeichner.postKette": "fort"
-    }
-   }
-  ],
-  "ciBlicke": 3,
+  "ciBlicke": 2,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 188,
-   "frameP95": 74.4,
-   "taktP95": 56.3,
-   "vramMax": 139.8,
-   "seiten": 3,
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
    "marken": 0,
    "fehler": 0,
    "verloren": 0,
-   "ortImDeckel": [
-    {
-     "probe": "klang.K4#1",
-     "m": 1087,
-     "ringVor": 4,
-     "ringMin": 0
-    }
-   ],
-   "zapfen": 52,
-   "luecken": 1,
-   "letzteLuecke": "THREE is not defined"
+   "ortImDeckel": [],
+   "zapfen": 42,
+   "luecken": 0,
+   "letzteLuecke": null
   },
-  "fahrtS": 57.5,
-  "minuten": 1.04
+  "fahrtS": 49.6,
+  "minuten": 0.89
  }
 }

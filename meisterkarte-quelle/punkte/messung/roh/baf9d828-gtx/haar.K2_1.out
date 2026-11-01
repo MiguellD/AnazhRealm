@@ -10,9 +10,9 @@ node -e 'const AU = require("./scripts/lib/abnahme-urteil.cjs"); const u = AU.so
 node scripts/werkbank.cjs bild 0 0 0 0 0 0 --gesicht -4 --spieler --wahl 0 --klasse '^spieler:kopf/hair$' --ist haar --datei "$B-third.png" > "$B-third.txt" 2>&1; e=$?; echo "BILD third $e"; [ $e = 0 ] || fehl "$B-third.txt" third
 node -e 'const AU = require("./scripts/lib/abnahme-urteil.cjs"); const u = AU.sollTafelUrteil(require("./spec/abnahme/soll-tafel.json"), AU.standLeser(process.cwd()).sollQuelle()); const z = u.zeilen.find((x) => x.id === "haar"); console.log("THIRD " + JSON.stringify({ urteil: z.urteil, ist: z.ist, band: z.band, grund: z.grund, taeter: z.taeter, teile: z.teile, stand: z.stand }))'
 BILD arm 0
-ARM {"urteil":"ROT","ist":0.4935,"band":[0.3554,0.533],"grund":"strich 0.4935 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8)","taeter":"spieler:kopf/hair (strich 0.4935 über 3573 inneren Pixel)","teile":"albedo — [0.01; 0.3]","stand":"2026-11-01 baf9d828 nvidia pascal"}
+ARM {"urteil":"ROT","ist":0.4783,"band":[0.3554,0.533],"grund":"strich 0.4783 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8)","taeter":"spieler:kopf/hair (strich 0.4783 über 3264 inneren Pixel)","teile":"albedo — [0.01; 0.3]","stand":"2026-11-01 baf9d828 nvidia pascal"}
 BILD third 0
-THIRD {"urteil":"ROT","ist":0.444,"band":[0.3554,0.533],"grund":"strich 0.444 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8)","taeter":"spieler:kopf/hair (strich 0.444 über 108 inneren Pixel)","teile":"albedo — [0.01; 0.3]","stand":"2026-11-01 baf9d828 nvidia pascal"}
+THIRD {"urteil":"ROT","ist":0.5015,"band":[0.3554,0.533],"grund":"strich 0.5015 — albedo: veraltet seit 1f754112: stamm/koerper-leib.js geändert (c:2e31cf902538b279 → c:ada89d21c1b7c8a8)","taeter":"spieler:kopf/hair (strich 0.5015 über 105 inneren Pixel)","teile":"albedo — [0.01; 0.3]","stand":"2026-11-01 baf9d828 nvidia pascal"}
 
 --- stderr ---
 tr: warning: an unescaped backslash at end of string is not portable
