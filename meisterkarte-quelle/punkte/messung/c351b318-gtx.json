@@ -1,7 +1,7 @@
 {
  "sha": "c351b31853a3c5439a73e62238f7d90e421c4050",
  "geraet": "gtx",
- "zeit": "2026-11-01T02:41:22.510Z",
+ "zeit": "2026-11-01T02:48:51.953Z",
  "host": "LAPTOP-4BN3RL0L",
  "je": {
   "mensch.K4#1": {
@@ -130,6 +130,20 @@
    "port": 7804,
    "bahn": "sitzung",
    "zwilling": "profiband.K1#1",
+   "modus": "session"
+  },
+  "oekologie.K4#2": {
+   "gruen": false,
+   "zahl": "first ROT: umstellt null s, Furcht chaos 0 (Gegenlauf 0), 0 Jäger fallen, Triumph joy+hope 0.012 (Gegenlauf 0.015)",
+   "exit": 0,
+   "minuten": 0.03,
+   "grund": "ROT: first ROT: umstellt null s, Furcht chaos 0 (Gegenlauf 0), 0 Jäger fallen, Triumph joy+hope 0.012 (Gegenlauf 0.015)",
+   "gpu": "nvidia/pascal",
+   "s": 2,
+   "zeit": "2026-11-01T02:47:34.026Z",
+   "abdruck": "67926535e200",
+   "port": 7804,
+   "bahn": "sitzung",
    "modus": "session"
   }
  },
@@ -378,240 +392,212 @@
    "port": 7804,
    "bahn": "sitzung",
    "modus": "session"
+  },
+  "lod.K5#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "exit": 1,
+   "minuten": 0.17,
+   "grund": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0)",
+   "s": 10.3,
+   "zeit": "2026-11-01T02:47:05.098Z",
+   "abdruck": "afb48029ed9e",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "bauen.K1#2": {
+   "gruen": false,
+   "zahl": "Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt null · warm null ms (0+0) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt null · warm null ms (0+0) · ROT: werkstatt · schöpfer · Eiche · ) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Fall werkstatt · schöpfer · Eiche · Ego und die folgenden ausgelassen",
+   "exit": 0,
+   "minuten": 0.02,
+   "grund": "Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0/8 Werke in L0 im Bild (Bau-Hash = L0-Bau, ≤ 3 Eingaben) · p95 bis zum Bild werkstatt kalt null · warm null ms (0+0) · rezeptbuch kalt null · warm null ms (0+0) · hotbar kalt null · warm null ms (0+0) · ROT: werkstatt · schöpfer · Eiche · ) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Fall werkstatt · schöpfer · Eiche · Ego und die folgenden ausgelassen",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 1.2,
+   "zeit": "2026-11-01T02:47:45.633Z",
+   "abdruck": "e924360f339b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "fahrzeug.K2#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.17,
+   "grund": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 10.2,
+   "zeit": "2026-11-01T02:48:03.993Z",
+   "abdruck": "cd6615e5a9f1",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K2#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild der Kontrolle (t(Kontrolle) 0 ms, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: @@ 2 s · kalt: t(Kontrolle) — · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer $C → keiner · zeichner.postKette fort · zeichner.faden da → keiner)",
+   "exit": 0,
+   "minuten": 0.04,
+   "grund": "Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: kein Bild der Kontrolle (t(Kontrolle) 0 ms, Exit 0) · [linse-gpu] nvidia/pascal) · Täter: @@ 2 s · kalt: t(Kontrolle) — · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer $C → keiner · zeichner.postKette fort · zeichner.faden da → keiner)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 2.2,
+   "zeit": "2026-11-01T02:48:30.314Z",
+   "abdruck": "b8a0bd3a7101",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  },
+  "ankunft.K3#1": {
+   "gruen": false,
+   "zahl": "Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] nvidia/pascal) · Täter: @@ 2 s · kalt: t(Kontrolle) — · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer $C → keiner · zeichner.postKette fort · zeichner.faden da → keiner)",
+   "exit": 0,
+   "minuten": 0.04,
+   "grund": "Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 0 von 2 Zweit-Boots mit Kontrolle von außen (Exit 0) · [linse-gpu] nvidia/pascal) · Täter: @@ 2 s · kalt: t(Kontrolle) — · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer $C → keiner · zeichner.postKette fort · zeichner.faden da → keiner)",
+   "gpu": "nvidia/pascal",
+   "ungemessen": true,
+   "s": 2.2,
+   "zeit": "2026-11-01T02:48:30.314Z",
+   "abdruck": "4bb6732a670c",
+   "port": 7804,
+   "bahn": "sitzung",
+   "zwilling": "ankunft.K2#1",
+   "modus": "session"
+  },
+  "klang.K4#1": {
+   "gruen": false,
+   "ungemessen": true,
+   "zahl": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "exit": 1,
+   "minuten": 0.17,
+   "grund": "Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal)",
+   "s": 10.2,
+   "zeit": "2026-11-01T02:48:51.953Z",
+   "abdruck": "cac836c98bb9",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
   }
  },
  "sitzung": {
-  "start": "2026-11-01T02:26:05.229Z",
+  "start": "2026-11-01T02:46:35.647Z",
   "port": 7804,
   "warten": 0.01,
-  "bootS": 6.8,
+  "bootS": 6.9,
   "grundstellungS": [
+   3.5,
    0.1,
-   7.8,
-   7.4,
-   7.8,
-   9.2,
-   0.1,
-   7.9,
-   6,
-   8.8,
-   6.9,
-   6.8,
-   6.4,
-   0.1,
-   7.5,
-   9,
-   0.1
+   4.2,
+   3,
+   2.7
   ],
-  "proben": 22,
+  "proben": 6,
   "freigaben": [],
   "orte": [
    {
     "ort": "wiese",
-    "vor": "mensch.K4#1",
-    "s": 19.1,
-    "takte": 583,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": "wiese",
-    "vor": "material.K2#1",
-    "s": 16.7,
-    "takte": 595,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "lod.K1#1",
-    "s": 18.9,
-    "takte": 601,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "wiese",
-    "vor": "spielgang.K3#1",
-    "s": 18.6,
-    "takte": 586,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "genesis",
-    "vor": "material.K1#1",
-    "s": 11.9,
-    "takte": 602,
+    "vor": "lod.K5#1",
+    "s": 21.3,
+    "takte": 550,
     "chunks": 81,
     "nach": null
    },
    {
-    "ort": null,
-    "vor": "profiband.K5#1",
-    "s": 17.6,
-    "takte": 642,
+    "ort": "wiese",
+    "vor": "oekologie.K4#2",
+    "s": 15.1,
+    "takte": 590,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
-    "ort": "genesis",
-    "vor": "mensch.K1#1",
-    "s": 1,
-    "takte": 80,
-    "chunks": 90,
-    "nach": null
-   },
-   {
-    "ort": "genesis",
-    "vor": "mensch.K5#1",
-    "s": 0.1,
-    "takte": 1,
-    "chunks": 90,
+    "ort": null,
+    "vor": "bauen.K1#2",
+    "s": 9.5,
+    "takte": 629,
+    "chunks": 81,
     "nach": "der Grundstellung"
    },
    {
-    "ort": "genesis",
-    "vor": "siedlung.K1#2",
-    "s": 15.2,
-    "takte": 582,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": "dorf",
-    "vor": "licht.K3#1",
-    "s": 32.9,
-    "takte": 1422,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
     "ort": null,
-    "vor": "tiere.K1#2",
-    "s": 18.4,
-    "takte": 639,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "tiere.K3#2",
-    "s": 15.4,
-    "takte": 642,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "studios.K2#2",
-    "s": 15.2,
-    "takte": 639,
-    "chunks": 81,
-    "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "studios.K4#1",
-    "s": 15.7,
+    "vor": "fahrzeug.K2#1",
+    "s": 13,
     "takte": 643,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": null,
-    "vor": "siedlung.K4#2",
-    "s": 0.1,
-    "takte": 1,
-    "chunks": 81,
-    "nach": "der Grundstellung"
-   },
-   {
-    "ort": null,
-    "vor": "fahrzeug.K2#2",
-    "s": 15.1,
-    "takte": 642,
+    "vor": "ankunft.K2#1",
+    "s": 13,
+    "takte": 647,
     "chunks": 81,
     "nach": "der Tür"
    },
    {
     "ort": null,
-    "vor": "profiband.K1#1",
-    "s": 14.7,
-    "takte": 637,
+    "vor": "klang.K4#1",
+    "s": 16.7,
+    "takte": 646,
     "chunks": 81,
     "nach": "der Tür"
-   },
-   {
-    "ort": null,
-    "vor": "speicher.K4#2",
-    "s": 7.2,
-    "takte": 594,
-    "chunks": 81,
-    "nach": "der Grundstellung"
    }
   ],
   "wegeTueren": [],
   "unerklaert": [
    {
-    "probe": "material.K1#1",
+    "probe": "lod.K5#1",
     "wie": "werke +1 (−0)"
    }
   ],
-  "ciBlicke": 23,
+  "zeichner": [
+   {
+    "probe": "ankunft.K2#1",
+    "anders": [
+     "zeichner.renderer",
+     "zeichner.postKette",
+     "zeichner.faden"
+    ],
+    "wie": {
+     "zeichner.renderer": "$C → keiner",
+     "zeichner.postKette": "fort",
+     "zeichner.faden": "da → keiner"
+    }
+   }
+  ],
+  "ciBlicke": 7,
   "strom": {
    "datei": "strom.ndjson",
-   "bilder": 1160,
-   "frameP95": 91.7,
-   "taktP95": 81,
-   "vramMax": 142.5,
-   "seiten": 15,
-   "marken": 2,
+   "bilder": 159,
+   "frameP95": 141.8,
+   "taktP95": 126,
+   "vramMax": 145.5,
+   "seiten": 5,
+   "marken": 0,
    "fehler": 0,
    "verloren": 0,
    "ortImDeckel": [
     {
-     "probe": "speicher.K4#2",
-     "m": 1136,
+     "probe": "fahrzeug.K2#1",
+     "m": 1142,
      "ringVor": 4,
      "ringMin": -1
     },
     {
-     "probe": "material.K2#1",
-     "m": 1083,
-     "ringVor": 4,
-     "ringMin": 1
-    },
-    {
-     "probe": "profiband.K1#1",
-     "m": 1081,
-     "ringVor": 4,
-     "ringMin": 1
-    },
-    {
-     "probe": "fahrzeug.K2#2",
-     "m": 950,
+     "probe": "klang.K4#1",
+     "m": 1084,
      "ringVor": 4,
      "ringMin": -1
-    },
-    {
-     "probe": "siedlung.K4#2",
-     "m": 648,
-     "ringVor": 4,
-     "ringMin": 0
-    },
-    {
-     "probe": "licht.K3#1",
-     "m": 602,
-     "ringVor": 4,
-     "ringMin": 1
     }
    ],
-   "zapfen": 806,
-   "luecken": 7,
+   "zapfen": 139,
+   "luecken": 3,
    "letzteLuecke": "kein Renderer"
   },
-  "fahrtS": 932.6,
-  "minuten": 15.6
+  "fahrtS": 145.9,
+  "minuten": 2.48
  }
 }
