@@ -1390,3 +1390,4 @@
 2026-11-01 03:25:55 takt-z118ca-gtx START 25 Stationen in 1 Läufen
 2026-11-01 03:46:08 takt-z118ca-gtx tiere.K1#2,tiere.K3#2,mensch.K1#1,mensch.K5#1,mensch.K4#1,haar.K2#1,vegetation.K1#1,licht.K2#2,material.K2#1,material.K1#1,lod.K1#1,licht.K3#1,studios.K2#2,studios.K3#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,spielgang.K3#1,fahrzeug.K2#2,profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K3#1,profiband.K5#1,speicher.K4#2 OFFEN/OFFEN/ROT/OFFEN/ROT/ROT/ROT/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/ROT/OFFEN/OFFEN/ROT/ROT/ROT/ROT/OFFEN 20.1 · 25/25
 2026-11-01 03:46:29 takt-z118cb-gtx START 7 Stationen in 1 Läufen
+2026-11-01 03:51:37 takt-z118cb-gtx oekologie.K4#2,lod.K5#1,bauen.K1#2,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,klang.K4#1 ROT/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN/OFFEN 5.0 · 7/7
