@@ -714,6 +714,15 @@ function rudelGefuehl(r, T, o) {
     p.hp = p.stats.hpMax;
     const heim = { x: o.x - 45, z: o.z };
     pm.set(heim.x + 140, y(heim.x + 140, heim.z) + 1.8, heim.z);
+    // DER WURF WIRFT NUR FERN UND AUSSER BLICK (das Gesetz des Geburts-Orts: `_kreaturWurf` verwirft jeden Platz der Spirale
+    // im Frustum des Vor-Takts, `_kreaturImBlick`): der Spieler 140 m fort wendet den Blick vom Wurf-Ort, wie Staffel 1
+    // (`kamera(1, 0)`) und die Herde am Hang. Bis heil-oekologie-k4 blickte er mit dem Blick der Mess-Wiese nach WSW genau auf
+    // ihn — jeder Platz lag im Blick, nur der erste stand: der Wurf gab EINEN Wolf an jedem gemessenen SHA (GTX c351b318,
+    // Radeon 3ef20f9f), das Umstellen konnte nie eintreten. Der erste Takt danach stellt die Kamera auf die Gier des Orts zurück.
+    s.camera.position.set(pm.x, pm.y + 1.6, pm.z);
+    s.camera.lookAt(pm.x + 1, pm.y + 1.6, pm.z);
+    s.camera.updateMatrixWorld(true);
+    r._loopFrustumCulling();
     s.maxCreatures = Math.max(s.maxCreatures || 0, 12);
     const woelfe = r._kreaturWurf({ x: heim.x, z: heim.z }, "wolf", "happy", r._faunaRng("rudel"), 7);
     for (const c of woelfe) {
@@ -3410,6 +3419,11 @@ const stationen = [
     // Triumph-Stempel fiel mit affekt-wert. Headless (Null-Renderer, frische Seite wie hier, zwei Läufe): Ego umstellt 15,6 /
     // 16,4 s, chaos 0,99 / 1,0, Triumph joy + hope +0,308 / +0,240; Third 14,7 / 15,2 s, chaos 0,93 / 1,0, +0,559 / +0,610; die
     // Gegenläufe 0. Vorher (main 19606f2e, dieselbe Szene headless) ROT: umstellt 16,2–19,9 s, chaos 0.
+    // DER WURF AUSSER BLICK (heil-oekologie-k4): an jedem gemessenen GPU-SHA gab der Wurf EINEN Wolf — der Blick der Mess-Wiese (WSW)
+    // lag auf dem Wurf-Ort, jeder Platz der Spirale im Blick (Radeon 4b13478b: umstellt null, chaos 0, 0 Jäger). Mit dem Blick fort
+    // vom Wurf wie Staffel 1, am selben SHA und Gerät GRÜN: 6 Wölfe, umstellt 16,73 s, chaos 0,886 (Gegenlauf 0), 4 Jäger fallen,
+    // Triumph joy + hope +0,409 (Gegenlauf 0), die Probe 4,7 s. Die Jagd des Spiels blieb unberührt: sie jagt Tier und Spieler längst
+    // nach EINEM Gesetz, die Szene hatte ihr nur kein Rudel gegeben.
     // IN DER SITZUNG (29.10.): Ego und sein Gegenlauf (RUDEL_SICHTEN) — die Szene schaltet Nexus und Weltgesetze ab (mutiert)
     {
         kriterium: "oekologie.K4",
@@ -3428,12 +3442,35 @@ const stationen = [
             const tr = (x) => +(x.triumph.joy + x.triumph.hope).toFixed(3);
             const gut = ([a, g]) =>
                 a.umstelltS !== null && a.umstelltS <= 600 && a.opfer >= 1 && a.furcht.chaos >= 0.3 && g.furcht.chaos <= 0.05 && tr(a) >= 0.1 && tr(g) <= 0.02;
+            // DER WURF BEIM NAMEN (heil-oekologie-k4): das Umstellen verlangt ≥ 3 Jäger aus dem Wurf — gab er weniger, nennt die
+            // Zahl ihn zuerst (bis dahin las sie nur „umstellt null s", der Täter blieb ungenannt)
+            const wurf = (a) => (a.woelfe < 3 ? "der Wurf gab " + a.woelfe + (a.woelfe === 1 ? " Wolf" : " Wölfe") + " (Umstellen ab 3), " : "Wurf " + a.woelfe + " Wölfe, ");
             return {
                 gruen: paare.every(gut),
-                zahl: paare.map(([a, g]) => a.sicht + " " + (gut([a, g]) ? "GRÜN" : "ROT") + ": umstellt " + a.umstelltS + " s, Furcht chaos " + a.furcht.chaos +
+                zahl: paare.map(([a, g]) => a.sicht + " " + (gut([a, g]) ? "GRÜN" : "ROT") + ": " + wurf(a) + "umstellt " + a.umstelltS + " s, Furcht chaos " + a.furcht.chaos +
                     " (Gegenlauf " + g.furcht.chaos + "), " + a.opfer + " Jäger fallen, Triumph joy+hope " + tr(a) + " (Gegenlauf " + tr(g) + ")").join(" | "),
             };
         },
+        // die Roh-Zeilen beim Namen: die GTX-Messung c351b318 (der Wurf im Blick, EIN Wolf) ROT, die Szene mit abgewandtem Blick
+        // am main 4b13478b (Null-Renderer an der Mess-Wiese, Blick des Orts) GRÜN
+        proben: [
+            {
+                name: "GTX c351b318: der Wurf im Blick gibt EINEN Wolf",
+                stdout: [
+                    'RUDEL-GEFUEHL {"woelfe":1,"gegen":false,"sicht":"first","dauer":0,"umstelltS":null,"umstellt":0,"furcht":{"chaos":0,"sorrow":0,"joy":0,"hope":0},"opfer":0,"situation":[0.904,0,0.904],"triumph":{"joy":0,"hope":0.012},"chaosNach":0.079}',
+                    'RUDEL-GEFUEHL {"woelfe":1,"gegen":true,"sicht":"first","dauer":0,"umstelltS":null,"umstellt":0,"furcht":{"chaos":0,"sorrow":0,"joy":0,"hope":0},"opfer":0,"situation":[0.839,0,0.839],"triumph":{"joy":0,"hope":0.015},"chaosNach":0}',
+                ].join("\n"),
+                gruen: false,
+            },
+            {
+                name: "Null-Renderer 4b13478b: der Blick fort vom Wurf, sechs Wölfe umstellen",
+                stdout: [
+                    'RUDEL-GEFUEHL {"woelfe":6,"gegen":false,"sicht":"first","dauer":37.47,"umstelltS":17.47,"umstellt":0.615,"furcht":{"chaos":1,"sorrow":0,"joy":0.046,"hope":0},"opfer":3,"situation":[0.289,0.524,0.85],"triumph":{"joy":0.38,"hope":0.209},"chaosNach":0.449}',
+                    'RUDEL-GEFUEHL {"woelfe":5,"gegen":true,"sicht":"first","dauer":37.47,"umstelltS":null,"umstellt":0,"furcht":{"chaos":0,"sorrow":0,"joy":0,"hope":0.069},"opfer":3,"situation":[0.839,0.839,0.839],"triumph":{"joy":0,"hope":0},"chaosNach":0}',
+                ].join("\n"),
+                gruen: true,
+            },
+        ],
         pfad: [...KREATUR, "stamm/feld-sprache.js", "scripts/werkbank.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "scripts/lib/welt-orte.cjs"],
         quelle: "2 = seine Emotion-Achsen antworten (Furcht beim Umstellen, Triumph nach dem Fall des Jägers) gegen einen Gegenlauf, beide Geräte",
     },
