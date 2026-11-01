@@ -1487,6 +1487,7 @@ class AnazhRealm_bau_teile {
             return h >>> 0; // UNSIGNED — die EINE Vorzeichen-Wand
         };
         const axis = (name) => hashStr(base + "|" + String(name)) / 4294967296; // [0,1)
+        const zustand = (name) => hashStr(base + "#" + String(name)) || 1;
         return {
             seed: seed,
             namespace: namespace,
@@ -1500,18 +1501,10 @@ class AnazhRealm_bau_teile {
                 list && list.length ? list[Math.floor(axis(name) * list.length) % list.length] : undefined,
             chance: (name, p) => axis(name) < p,
             // sequentieller Sub-Strom für Wuchs-Schleifen: deterministisch, eigener
-            // Strom je name (unabhängig von den Achsen UND voneinander). xorshift32.
-            seq: (name) => {
-                let h = hashStr(base + "#" + String(name)) || 1;
-                return () => {
-                    h ^= h << 13;
-                    h >>>= 0;
-                    h ^= h >> 17;
-                    h ^= h << 5;
-                    h >>>= 0;
-                    return h / 4294967296;
-                };
-            },
+            // Strom je name (unabhängig von den Achsen UND voneinander) — xorshift32 der EINEN Quelle (phyto-core `genomStrom`,
+            // w4-b-pflanzen: der Wald-Faden wächst denselben Strom aus dem Zustand, `zustand`).
+            zustand,
+            seq: (name) => globalThis.__phytoCore.genomStrom(zustand(name)),
         };
     }
 
