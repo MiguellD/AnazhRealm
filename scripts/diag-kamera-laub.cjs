@@ -275,14 +275,7 @@ function leibInstall(cfg) {
     L.ruhig = (n) => {
         for (let i = 0; i < (n || 10); i++) r._loopCamera((T += 0.1));
     };
-    L.tick = async (n, ms) => {
-        for (let i = 0; i < n; i++) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
-            await sleep(ms || 30);
-        }
-    };
+    L.tick = (n, ms) => __takte(n, ms);
     // reißt der Deckel, nennt sein Wurf die Lücken des Weltbilds (`__deckel`)
     L.steht = async (ms) => {
         let n = 0;

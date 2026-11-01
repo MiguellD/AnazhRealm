@@ -380,17 +380,7 @@ const WELT_MESSEN = async () => {
     }
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => !!(!(f && !f.ready)));
-    const pump = async (n) => {
-        for (let i = 0; i < n; i++) {
-            st._frameOverBudget = false;
-            try {
-                r._gameLoopTick(performance.now());
-                const pp = st.playerMesh && st.playerMesh.position;
-                if (pp) r._tickScatterStreaming(pp);
-            } catch {}
-            await sleep(8);
-        }
-    };
+    const pump = (n) => __streuTakte(n, 8);
     await pump(300);
     for (const weiter = window.__deckel("die Foundry-Schlange", 600); weiter(); ) {
         await pump(20);

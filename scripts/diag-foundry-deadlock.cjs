@@ -30,12 +30,7 @@ hauptLauf(async () => {
             }
 
             // Die Welt streamen lassen, damit Baum-Architekturen entstehen (als KALTE Foundry-Einträge).
-            for (let i = 0; i < 120; i++) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {}
-                await sleep(0);
-            }
+            await __takte(120, 0);
 
             const archs = () => (Array.isArray(st.architectures) ? st.architectures : []);
             // Die Nähe ist der Cull-Radius, den `_foundryRewarmColdTrees` liest; jenseits trägt die Fernform, dort

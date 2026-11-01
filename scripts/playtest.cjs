@@ -563,12 +563,7 @@ if (require.main === module) hauptLauf(async () => {
                 // Kurzer Settle-Pump: `_foundryRewarmColdTrees` (feuert am Prefetch-Ende,
                 // frame-budgetiert) baut kalt gebliebene Baum-Einträge in Reichweite —
                 // ein paar Ticks geben ihm deterministisch Raum, bevor die Bänder lesen.
-                for (let s = 0; s < 40; s++) {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch {}
-                    await sleep(0);
-                }
+                await __takte(40, 0);
             }
             // Worker wieder einhängen — die Folge-Bänder nutzen den echten async-Pfad
             // (er re-synct seine Worldgen-Kachel lazy beim ersten Request).

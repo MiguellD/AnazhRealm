@@ -143,7 +143,7 @@ if (process.argv.includes("--selftest")) {
     process.exit(0);
 }
 
-const { statikServer, starteBrowser, laufUhr, fehlerText } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, fehlerText, seiteZu, rotListe } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -570,18 +570,9 @@ function buehne(arg) {
     } catch (e) {
         out = { error: fehlerText(e) };
     }
-    await browser.close();
-    server.close();
-    if (!out || out.error) {
-        console.log("FEHLER:", out ? out.error : "?");
-        process.exit(1);
-    }
+    await seiteZu(browser, server, out);
     const v = urteilJeStufe(out);
-    if (v.length) {
-        console.log(`\n❌ ROT — ${v.length} Verletzung(en):`);
-        for (const s of v) console.log("   • " + s);
-        process.exit(1);
-    }
+    rotListe(v);
     const [g, f] = [out.grob, out.fein];
     console.log(
         `\n✅ GRÜN — in der Ego-Sicht wirft der Leib Schatten am Boden, grob ${g.kopf.ego.wurf} px (IoU ${g.kopf.iou}) und fein ` +

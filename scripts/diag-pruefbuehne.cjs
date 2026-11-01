@@ -202,16 +202,7 @@ async function s0Probe(page, station, schein) {
                 stoffe: null,
                 code: {},
             };
-            const takt = async (n) => {
-                for (let i = 0; i < n; i++) {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch {
-                        /* ein Takt-Fehler zählt der Page-Error */
-                    }
-                    await sleep(16);
-                }
-            };
+            const takt = (n) => __takte(n, 16); // ein Takt-Fehler zählt der Page-Error
             const P = Object.getPrototypeOf(r);
             if (schein) {
                 r._lichtDatum = () => null;

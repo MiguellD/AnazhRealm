@@ -71,15 +71,7 @@ hauptLauf(async () => {
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
         await window.__weltDa(() => !!!(f && !f.ready));
         o.foundryReady = !!f?.ready;
-        for (let it = 0; it < 350; it++) {
-            st._frameOverBudget = false;
-            try {
-                r._gameLoopTick && r._gameLoopTick(performance.now());
-                const pp = st.playerMesh && st.playerMesh.position;
-                if (pp && r._tickScatterStreaming) r._tickScatterStreaming(pp);
-            } catch {}
-            await sleep(8);
-        }
+        await __streuTakte(350, 8);
         try {
             r._drainPendingWaterIso && r._drainPendingWaterIso();
             r._drainPendingGrass && r._drainPendingGrass();
