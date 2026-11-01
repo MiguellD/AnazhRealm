@@ -1297,7 +1297,7 @@
             #inventory-overlay[hidden].steht {
                 visibility: visible;
                 content-visibility: visible;
-                opacity: 0;
+                opacity: 0.004;
             }
             /* DER GEFRORENE BAUM BEWEGT SICH NICHT (spielgang.K3): in content-visibility: hidden tickt Chrome keine Animation —
                eine Transition, die dort entsteht (ein Layout-Leser erzwingt den Stil des Baums, und die Breite eines
@@ -2452,12 +2452,6 @@
             .drawer[hidden].steht {
                 visibility: visible;
                 content-visibility: visible;
-                opacity: 0;
-            }
-            /* DIE TAFEL MALT SICH VOR (`vormalen`, der Vorbau): ihre ersten Bilder mit Deckkraft 0,004 — höchstens eine Stufe je
-               Kanal —, damit der GPU-Prozess Raster und Zeichnung der Tafel übersetzt, bevor eine Taste sie öffnet. */
-            #inventory-overlay[hidden].steht.vormalen,
-            .drawer[hidden].steht.vormalen {
                 opacity: 0.004;
             }
             .drawer[hidden] *,

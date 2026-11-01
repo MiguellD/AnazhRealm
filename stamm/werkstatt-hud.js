@@ -2665,16 +2665,8 @@ class AnazhRealm_werkstatt_hud {
     // Tafel neu, GpuChannel · CommandBuffer::Flush 181–303 ms im GPU-Prozess). Je Takt EINE. true: alles vorgebaut.
     _uiVorbau() {
         if (typeof document === "undefined") return true;
-        const V = this._uiVorbauStand || (this._uiVorbauStand = { ich: false, alle: false, malt: null });
+        const V = this._uiVorbauStand || (this._uiVorbauStand = { ich: false, alle: false });
         if (V.alle) return true;
-        // DIE TAFEL MALT SICH VOR (`vormalen`, index.html): ihre ersten Bilder steht sie mit Deckkraft 0,004 im Bild — der
-        // Compositor rastert und zeichnet sie, der GPU-Prozess übersetzt ihre Pipelines jetzt, im Leerlauf, nie im Bild nach
-        // Tab (Radeon kalt, Station am 1bb9cf4f: das erste Tab wartete 234 ms auf sein Bild, ohne Sperre im Faden)
-        if (V.malt) {
-            if (--V.malt.takte > 0) return false;
-            V.malt.el.classList.remove("vormalen");
-            V.malt = null;
-        }
         if (!V.ich) {
             V.ich = true;
             this.renderInventoryUI();
@@ -2690,9 +2682,8 @@ class AnazhRealm_werkstatt_hud {
             ...document.querySelectorAll(".drawer[data-drawer]"),
         ]) {
             if (!el || el.classList.contains("steht")) continue;
-            el.classList.add("steht", "vormalen");
+            el.classList.add("steht");
             void el.offsetHeight; // Stil und Layout jetzt — die Eingabe ruht; Malen und Raster im nächsten Bild
-            V.malt = { el, takte: AnazhRealm.UI_VORMALEN_TAKTE };
             return false;
         }
         return (V.alle = true);
@@ -2878,9 +2869,6 @@ AnazhRealm.EMOTION_WIRKT = Object.freeze({
 // (klang:UMWELT.stimmen), der Ruf je Stimmung (klang:UMWELT.tier.rufProMin), der Substanz-Klang je Art (klang SUBSTANZ), der
 // Schritt je Stoff-Klasse (Schritt · Landung), die Fahrt (Motor · Rollen) und die Musik; {wer} setzt der Chokepoint ein.
 // Die Klang-Linse hält die Tafel vollständig gegen das Gesetz (gate:klang-zensus Ü).
-// So viele Takte malt eine Tafel im Vorbau mit Deckkraft 0,004 vor (spielgang.K3, `_uiVorbau`): Raster und Zeichnung brauchen
-// nach dem Commit ein, zwei Bilder des Compositors.
-AnazhRealm.UI_VORMALEN_TAKTE = 4;
 AnazhRealm.UNTERTITEL = Object.freeze({
     stimme: {
         wind: "Wind weht",
