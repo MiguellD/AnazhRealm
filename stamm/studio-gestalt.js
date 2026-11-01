@@ -176,15 +176,14 @@ class AnazhRealm_studio_gestalt {
         if (jahr === 1) throw new Error("_foundryBuildMesh: die Jahres-Ecken reisen nur als Paar (aCenter · aType)");
         // DER TON JE ECKE (mensch.K4, koerper `menschTon`): der Mensch trägt ihn — sein Stoff färbt jede Ecke nach der Palette
         // des Leibs, der ihn zeichnet (`_tonFaktor`). DIE ECKEN DER GESTALT, wie sie geliefert sind: ihr Stoff liest Ton und Jahr
-        // an ihrem Namen (`_foundryTreeMaterial`) — er entsteht vor der Form, denn sie trägt nur, was er liest
+        // an ihrem Namen (`_foundryTreeMaterial`)
         const ton = !!(m.aTon && m.aTon.array);
         const ecken = { ton, jahr: jahr === 2 };
         const geskinnt = !!(m.skinIndex && m.skinIndex.array && m.skinWeight && m.skinWeight.array);
         const stoff = this._foundryTreeMaterial(m.kind || "bark", m.mat || null, false, geskinnt ? null : baum || null, false, ecken); // prettier-ignore
-        // DIE FORM FOLGT IHREM LESER (w4-ankunft-5): uv trägt die Gestalt nur, wenn ihr Stoff es liest (`userData.liestUv`) —
-        // eine Ecke ohne Leser schlüsselte ein eigenes Programm desselben Texts (Radeon kalt vor dem Bild: die Teile des Wagens
-        // mit und ohne uv, je Pass zwei Bauten, 80–90 ms im Hauptbild) und lag umsonst auf der GPU
-        const uv = stoff.userData.liestUv === true && m.uv && m.uv.array ? m.uv.array : null;
+        // DIE ECKEN DES STOFFS (FOUNDRY_UV): uv kommt nur an einem Teil an, dessen Stoff es liest — die Wand wählt (die Schale
+        // im Faden `cfg.uv`, der Ofen-Eintrag des Haupt-Fadens `_foundryTraegtUv`), dieser Leser liest, was sie durchlässt
+        const uv = m.uv && m.uv.array ? m.uv.array : null;
         if (jahr) AnazhRealm._jahrEcken(geo, uv, m.aCenter.array, m.aType.array);
         else if (uv) geo.setAttribute("uv", new T.BufferAttribute(uv, 2));
         // Das Schalen-Fell (V18.497) trägt seine Wurzel (Bind-Punkt der Haar-Maske) und die Schalen-Daten.

@@ -59,7 +59,8 @@ Studio läuft — der Haupt-Thread fasst den Store nie an (`gate:fluss`).
 `meshes` ist der Worker-Reply von `build-asset` → `asset` (`spec/asset-contract/v1/CONTRACT.md` §1)
 **nach der Transport-Schale** (Format 2, V18.511): die KONSUM-WAND streicht jedes Vertex-Attribut außerhalb
 `AnazhRealm.FOUNDRY_LESEN` (genau die Leser von `_foundryBuildMesh` — aWind/aCenter/aType reisten 32 % der Bytes
-ohne Leser), die VERENGUNG macht den Index eines Teils mit ≤ 65 536 Vertices zum `Uint16Array`. Die übrigen
+ohne Leser) und uv an jedem Teil, dessen Stoff es nicht liest (`AnazhRealm.FOUNDRY_UV`, Format 5), die VERENGUNG macht
+den Index eines Teils mit ≤ 65 536 Vertices zum `Uint16Array`. Die übrigen
 Puffer sind byte-gleich zum Studio-Reply; der Treffer IST die verschlankte Antwort eines früheren Boots und
 reist wie jede Antwort per Transfer (zero-copy) zum Haupt-Thread. Der Studio-Draht selbst (die Asset-Goldens)
 bleibt unberührt — die Schale sitzt hinter ihm.
@@ -69,7 +70,7 @@ Mesh {
   kind:  string,          // bark | barkBirch | stem | foliage | foliageTex | grass | … | unknown
   mat:   { roughness, metalness, flatShading, envMapIntensity, side, alphaTest, hasNormalMap,
            color? },      // color: [r,g,b] r128-LINEAR, nur Zweit-Kern-Meshes (must-ignore für Alt-Leser)
-  <attr>:{ array:Float32Array, itemSize:int },  // position PFLICHT; nur Namen aus FOUNDRY_LESEN
+  <attr>:{ array:Float32Array, itemSize:int },  // position PFLICHT; nur Namen aus FOUNDRY_LESEN, uv nach FOUNDRY_UV
   index?: Uint16Array | Uint32Array             // Uint16 bei ≤ 65 536 Vertices
 }
 ```

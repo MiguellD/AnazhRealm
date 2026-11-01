@@ -149,7 +149,7 @@ function ladeschirmVerdict(m) {
         if (A.zwilling.length) out.push(`der Kalt-Schätzer wählt anders als der Stufen-Takt: ${A.zwilling.slice(0, 3).join(", ")}`);
         if (A.soll == null) out.push("die Ferne: keine Probe");
         else if (A.wahl !== A.soll) out.push(`die Ferne hält die Stufe: das Tor in ${A.dB} m wählt L${A.wahl} statt L${A.soll}`);
-        if (!A.stein) out.push("der Stein-Rahmen der Tore verliert sein uv (`_steinStoff` ohne `liestUv`) — sein Bau-Satz bricht");
+        if (!A.stein) out.push("der Stein-Rahmen der Tore verliert sein uv (`FOUNDRY_UV` ohne `stein`) — sein Bau-Satz bricht");
     }
     // DER VORRAT HAT KEINEN LESER IM ERSTEN BILD: während er läuft, wartet das Bild auf nichts, was er bestellt, und
     // er bestellt keine Karte (die Karte bestellt ihr Leser, nah zuerst)
@@ -683,10 +683,11 @@ async function probe(arg) {
                     [r._switchArchitectureLOD, r._updateFoundryLodBand, r._lodSlotOcclusionRefresh] = still;
                 }
             }
-            // (5d) DER STEIN DER TORE TRÄGT SEIN UV: die Gestalt trägt uv nur, wenn ihr Stoff es liest (`liestUv`,
-            // `_foundryBuildMesh`, w4-ankunft-5) — der Stein-Rahmen (porta `__stein`) webt Fuge und Kante aus ihm, sein Bau-Satz packt
-            // es (`BAU_STEIN_ATTR`). Im Merge mit w4-genesis-tore trug `_steinStoff` die Marke nicht: das uv fiel, der Satz brach
-            A.stein = !!r._foundryBuildMesh({ position: { array: new Float32Array(9) }, uv: { array: new Float32Array(6) }, kind: "unknown", mat: { seh: "stoff", stein: "quader" } }).geometry.attributes.uv; // prettier-ignore
+            // (5d) DER STEIN DER TORE TRÄGT SEIN UV: uv reist nur an einem Teil, dessen Stoff es liest (die Wand der Ecken
+            // FOUNDRY_UV — die Schale im Faden `cfg.uv`, der Ofen-Eintrag `_foundryTraegtUv`; `_foundryBuildMesh` liest, was sie
+            // durchlässt, gate:fluss W7) — der Stein-Rahmen (porta `__stein`) webt Fuge und Kante aus ihm, sein Bau-Satz packt es
+            // (`BAU_STEIN_ATTR`). Im Merge von w4-ankunft-5 mit w4-genesis-tore fiel das uv jedes Stein-Rahmens, der Satz brach
+            A.stein = AnazhRealm._foundryTraegtUv({ kind: "unknown", mat: { seh: "stoff", stein: "quader" } });
             // (6) eine Lücke ruht (dieselbe Lücke länger als WELTBILD_STILL_MS): der Ladeschirm weicht LAUT
             const ruht = () => {
                 st._weltbildLuecke = r._weltbildFehlt().join(" · ");

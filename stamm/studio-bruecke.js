@@ -69,6 +69,8 @@ class AnazhRealm_studio_bruecke {
                 lesen: AnazhRealm.FOUNDRY_LESEN,
                 // die Typen, deren Ecken das Jahr trägt (SAISON_GESETZ `typ`): nur deren Teile behalten aCenter · aType
                 jahr: Object.values(AnazhRealm._saisonGesetz().typ),
+                // die Stoffe, die ihre Ecken lesen (FOUNDRY_UV): nur deren Teile behalten uv
+                uv: AnazhRealm.FOUNDRY_UV,
                 format: AnazhRealm.FOUNDRY_PLATTE_FORMAT,
                 platte: f.platte,
                 wirt: karte
@@ -581,7 +583,15 @@ class AnazhRealm_studio_bruecke {
             basis: !!c.bruecke,
             urls: ["scripts", "lib", "bruecke"].flatMap((feld) => liste(feld, [c])),
         }));
-        schale({ lesen: b.lesen, jahr: b.jahr, format: b.format, platte: b.platte, kerne, wirt: b.wirt || [] });
+        schale({
+            lesen: b.lesen,
+            jahr: b.jahr,
+            uv: b.uv,
+            format: b.format,
+            platte: b.platte,
+            kerne,
+            wirt: b.wirt || [],
+        });
         W.__PHYTO_FOUNDRY_WORKER = true;
         W.__anazhCores = manifest; // die Brücke liest die ns-Kerne generisch (vor den importScripts)
         W.importScripts(...liste("lib").concat(liste("scripts"), liste("bruecke"))); // die Brücke startet sich selbst
@@ -601,7 +611,9 @@ class AnazhRealm_studio_bruecke {
     //                 Haupt-Thread fasst die Platte nie an (Store `anazhFoundryAssets/assets`).
     //   KONSUM-WAND   nur die Attribute, die `_foundryBuildMesh` liest (FOUNDRY_LESEN), reisen und liegen auf Platte; die
     //                 Jahres-Ecken aCenter · aType nur an einem Teil, dessen aType einen Typ des Jahrs trägt (`cfg.jahr`,
-    //                 SAISON_GESETZ `typ`: Laub, Blüte) — Rinde, Nadel und Halm stehen im Jahr, sie tragen nichts davon.
+    //                 SAISON_GESETZ `typ`: Laub, Blüte) — Rinde, Nadel und Halm stehen im Jahr, sie tragen nichts davon;
+    //                 uv nur an einem Teil, dessen Stoff seine Ecken liest (`cfg.uv`, FOUNDRY_UV: Blatt-Karte, Schatten-Teil,
+    //                 Halm, Stein eines Rahmens) — die Rinde, der Wagen, das Fell tragen es nicht.
     //   VERENGUNG     Index Uint32 → Uint16, wo das Teil ≤ 65 536 Vertices trägt.
     //   TRANSFER      jede Asset-/Karten-/Pixel-Antwort reist zero-copy (die Puffer sind frisch je Antwort).
     //   SAISON-NAGEL  jeder Körper und jede Karte erreicht das Studio als Sommer (das Jahr färbt der Host).
@@ -622,6 +634,12 @@ class AnazhRealm_studio_bruecke {
                 "STOFF: die Transport-Schale kennt die Typen des Jahrs nicht (cfg.jahr, SAISON_GESETZ typ)"
             );
         const JAHR = new Set(cfg.jahr);
+        const UV = cfg.uv;
+        if (!UV || !Array.isArray(UV.kind) || !Array.isArray(UV.stoff))
+            throw new Error(
+                "STOFF: die Transport-Schale kennt die Stoffe nicht, die ihre Ecken lesen (cfg.uv, FOUNDRY_UV)"
+            );
+        const UV_KIND = new Set(UV.kind);
         const roh = W.postMessage.bind(W);
         const schreibAuftrag = new Map(); // reqId (der Atlas: "blatt-atlas") → die Lieferung des Studio-Baus, der gerade läuft
         // DIE PLATTE HÄLT KEINEN FADEN. Die Studio-Fäden (Werk und Helfer, `_foundryHelfer`) teilen EINE IndexedDB. Ein
@@ -795,6 +813,9 @@ class AnazhRealm_studio_bruecke {
                     delete m.aCenter;
                     delete m.aType;
                 }
+                // die Ecken des Stoffs: uv nur, wo der Stoff des Teils es liest (dieselbe Regel `_foundryTraegtUv` im Haupt-Faden)
+                if (m.uv && !(UV_KIND.has(m.kind) || (m.mat && UV.stoff.some((k) => typeof m.mat[k] === "string"))))
+                    delete m.uv;
                 if (m.index instanceof Uint32Array && m.position && m.position.array.length / 3 <= 65536)
                     m.index = Uint16Array.from(m.index);
             }
@@ -3221,6 +3242,13 @@ class AnazhRealm_studio_bruecke {
             !(m.mat && typeof m.mat.opacity === "number" && m.mat.opacity < 1)
         );
     }
+    // DIE ECKEN DES STOFFS EINES GELIEFERTEN TEILS (FOUNDRY_UV): trägt er uv? Genau dann, wenn sein Stoff es liest — dieselbe
+    // Regel wie die Schale im Faden (`cfg.uv`); der Haupt-Faden hat keine Schale, sein Ofen-Eintrag fragt hier
+    // (`_ofenMeshEintragAusThree`).
+    static _foundryTraegtUv(m) {
+        const U = AnazhRealm.FOUNDRY_UV;
+        return U.kind.includes(m.kind) || (!!m.mat && U.stoff.some((k) => typeof m.mat[k] === "string"));
+    }
     // DIE KOSTEN-REGEL DES WURFS (1110-9, docs/studio-vertrag.md N5): geworfen wird von der billigeren Stufe — wirft eine
     // gezeigte Stufe über ihre NUR-WURF-Stufe, nimmt der Wirt deren Zwilling nur, wo er WENIGER Dreiecke in die Kaskaden
     // trägt als die werfenden Teile der Stufe selbst; sonst wirft die Stufe selbst. `eigen` und `zwilling` = Dreiecke der
@@ -3429,7 +3457,7 @@ AnazhRealm._wortFalten = function (wort) {
 // aType reisten 32 % der Bytes ohne Leser). Ein neuer Leser in `_foundryBuildMesh` = ein Name hier (gate:fluss prüft
 // beide Seiten gegeneinander). DIE JAHRES-ECKEN aCenter · aType (vegetation.K5): die Mitte jedes Blatts und sein Typ — das
 // Laub fällt im Winter auf seine Mitte (`_jahrLage`); sie reisen nur an Teilen mit Laub oder Blüte (die Schale streicht sie
-// an jedem anderen, `cfg.jahr`), aWind bleibt ohne Leser.
+// an jedem anderen, `cfg.jahr`), aWind bleibt ohne Leser. uv reist nur an Teilen, deren Stoff es liest (FOUNDRY_UV).
 AnazhRealm.FOUNDRY_LESEN = [
     "position",
     "normal",
@@ -3444,11 +3472,23 @@ AnazhRealm.FOUNDRY_LESEN = [
     "aCenter",
     "aType",
 ];
+// DIE ECKEN DES STOFFS (w4-ankunft-5): uv reist NUR an einem Teil, dessen Stoff es liest — die Arten `kind` (die Blatt-Karte
+// und der Schatten-Teil lesen den EINEN Atlas, `_blattAtlasProbe`; der Halm seinen Querschnitt, `_halmStoff`) und die
+// Stoff-Zeilen `stoff` (ein Teil mit `mat.stein` webt Fuge und Kante, `_steinStoff`). Eine Ecke ohne Leser schlüsselte ein
+// eigenes Programm desselben Texts (Radeon kalt vor dem Bild: die Teile des Wagens mit und ohne uv, je Pass zwei Bauten,
+// 80–90 ms im Hauptbild) und lag umsonst auf Kanal, Platte und GPU. DIE WAND IST DER LESER: die Schale streicht uv an jedem
+// anderen Teil (`cfg.uv`), der Ofen-Eintrag des Haupt-Fadens ebenso (`_foundryTraegtUv`), und `_foundryBuildMesh` liest,
+// was die Wand durchlässt (gate:fluss W7 · V1). Ein Stoff, der neu seine Ecken liest = ein Eintrag hier.
+AnazhRealm.FOUNDRY_UV = Object.freeze({
+    kind: Object.freeze(["foliageTex", "schatten", "grass"]),
+    stoff: Object.freeze(["stein"]),
+});
 // Das Transport-Format der Platte (reist als `|f<n>` im Stempel): 2 = Konsum-Wand + Uint16-Index (V18.511); 3 =
 // saisonfreie Körper-Schlüssel `<preset>|<gestalt>|<lod>[|ov:…]`, Karten `karte|…` mit `{ payload }` (V18.527); 4 = die
 // Jahres-Ecken aCenter · aType reisen an Laub und Blüte (vegetation.K5 — ein Körper der Platte 3 trüge sie nie, sein Laub
-// stünde still im Winter). Ein geändertes Format leert den Asset-Cache von selbst (wie ein Studio-Edit).
-AnazhRealm.FOUNDRY_PLATTE_FORMAT = 4;
+// stünde still im Winter); 5 = uv reist nur an Teilen, deren Stoff es liest (FOUNDRY_UV — ein Körper der Platte 4 trüge
+// es an Rinde und Wagen). Ein geändertes Format leert den Asset-Cache von selbst (wie ein Studio-Edit).
+AnazhRealm.FOUNDRY_PLATTE_FORMAT = 5;
 AnazhRealm.INGEST_RATE_PER_S = 180; // Ziel-Freigaben je echter Sekunde (= 60 fps × 3 → healthy-fps byte-alt)
 AnazhRealm.INGEST_BURST_CAP = 8; // max Freigaben je EINZELFRAME (Anti-LongTask-Deckel; bei 8 fps = 64/s statt 8/s)
 // Der Horizont-Saum (m): über so viele Meter vor `SCATTER.outerM` liegen die Ränder der Karten-Dinge, je Eintrag aus
