@@ -369,7 +369,7 @@ function _poseGuard(){
 // Hocke-Tunnel, der kurze Sprung beim Loslassen und die Feel-Schichten (Anlauf-Neigung, Kurven-Lage) fielen: die Welt kennt sie nicht.
 var FC = window.__fachwerkCore;
 if (!FC || !FC.GERAETE || typeof FC.geraetAngebotIn !== 'function' || typeof FC.buildInstance !== 'function') throw new Error('Kern-Pflicht: fachwerk GERAETE/geraetAngebotIn/buildInstance (das Labor stellt die Werke der Welt auf)');
-['leibPlan','leibSitz','leibSchwenk','leibSchwenkPunkt','leibImpuls','leibFall','leibLandung','leibRichtung','leibZustand','leibKette','leibMasse','leibWerte','leibAbdruck','leibSprungKraft','leibGangTakt','leibRigPose','leibLuftPose','leibVerbPose','leibGeraetAusschwingen','leibMassstab','leibSohle','leibPoseWinkel','leibSollUrteil'].forEach(function(f){if(typeof KC[f]!=='function')throw new Error('Kern-Pflicht: koerper '+f);});
+['leibPlan','leibSitz','leibGlieder','leibSchwenk','leibSchwenkPunkt','leibImpuls','leibFall','leibLandung','leibRichtung','leibZustand','leibKette','leibMasse','leibWerte','leibAbdruck','leibSprungKraft','leibGangTakt','leibRigPose','leibLuftPose','leibVerbPose','leibGeraetAusschwingen','leibMassstab','leibSohle','leibPoseWinkel','leibSollUrteil'].forEach(function(f){if(typeof KC[f]!=='function')throw new Error('Kern-Pflicht: koerper '+f);});
 var M_E = KC.leibMassstab();                 // Meter je Gelenk-Einheit: die Bühne in Metern, der Leib im Maß des Gusses
 var G_WELT = KC.LEIB.sprung.refG;            // die Erd-Schwere (m/s²), dieselbe wie die Welt bei Spiel-Beginn
 var KAPSEL = KC.LEIB.kapsel;                 // die Kapsel des Leibs (Sohle, Stufe, Haftung, Wand-Radius) — die der Welt
@@ -443,8 +443,8 @@ function playLeib() {
     armL: { shoulder: t.arm1, elbow: t.elbow1, wrist: t.hand1 }, armR: { shoulder: t['arm-1'], elbow: t['elbow-1'], wrist: t['hand-1'] },
     legL: { hip: t.hip1, knee: t.knee1, ankle: t.ankle1 }, legR: { hip: t['hip-1'], knee: t['knee-1'], ankle: t['ankle-1'] } };
   var sk = gestalt.sk, s = t.mensch.scale;
-  // die Höhe des Sitzes aus der gegossenen Haut (koerper `leibSitz`, dieselbe Messung wie die Welt)
-  play.kette = KC.leibKette(Object.assign({}, sk, { sitz: KC.leibSitz(gestalt.root, sk, { mensch: t.mensch, hip1: t.hip1, 'hip-1': t['hip-1'] }) })); play.masse = KC.leibMasse(sk); play.werte = KC.leibWerte(params);
+  // die Höhe des Sitzes und die Dicke der Glieder aus der gegossenen Haut (koerper `leibSitz` · `leibGlieder`, dieselbe Messung wie die Welt)
+  play.kette = KC.leibKette(Object.assign({}, sk, { sitz: KC.leibSitz(gestalt.root, sk, t), glieder: KC.leibGlieder(gestalt.root, sk, t) })); play.masse = KC.leibMasse(sk); play.werte = KC.leibWerte(params);
   var l1 = t.knee1.position.length(), l2 = t.ankle1.position.length();
   play.M = { l1: l1, l2: l2, wpl: Math.abs(s.y) * M_E, wz: Math.abs(s.z) * M_E, L: (l1 + l2) * Math.abs(s.y) * M_E };
   play.Z = Object.assign({}, KC.bewegung.gang, { g: G_WELT });

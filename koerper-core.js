@@ -1625,7 +1625,7 @@
     var VERB_GESETZ = Object.freeze({
         schaukeln: Object.freeze({ daempf: 0.06, pumpe: 0.55, maxRad: 1.05, sitzSchwerpunktM: 0.3, eintrittM: 0.55 }),
         rutschen: Object.freeze({ reibung: 0.35, eintrittM: 0.5 }),
-        klettern: Object.freeze({ reichM: 0.75, schwungSec: 0.32, abstandM: 0.32, griffUeberM: 0.5, reichAnteil: 0.95, seiteM: 0.25, hoeherM: 0.05, ausstiegM: 0.1, ueberHandM: 0.1 }),
+        klettern: Object.freeze({ reichM: 0.75, schwungSec: 0.26, abstandM: 0.32, griffUeberM: 0.5, reichAnteil: 0.95, seiteM: 0.25, hoeherM: 0.05, ausstiegM: 0.25, ueberHandM: 0.1, griffBeuge: 75 }),
         hangeln: Object.freeze({ reichM: 0.3, querM: 0.18, spreizM: 0.2 }),
         balancieren: Object.freeze({ tempo: 0.5, querMs: 0.15, fussM: 0.05 }),
         wippen: Object.freeze({ daempf: 0.8, stoss: 0.15, abstossMs: 1.6, balkenKg: 45, eintrittM: 0.6 }),
@@ -2414,6 +2414,63 @@
     function _kletterAnker(a, glied, soll) {
         return glied.charAt(0) === "h" ? _naechster(a.griff, a.holme, soll) : _naechster(a.tritt, a.sprossen, soll);
     }
+    // der kleinste Abstand zweier Strecken (P0P1, Q0Q1)
+    function _streckenAbstand(P0, P1, Q0, Q1) {
+        var d1 = _sub(P1, P0),
+            d2 = _sub(Q1, Q0),
+            r = _sub(P0, Q0),
+            a = _dot(d1, d1),
+            e = _dot(d2, d2),
+            f = _dot(d2, r),
+            sc,
+            tc;
+        if (a < 1e-12 && e < 1e-12) return _len(r);
+        if (a < 1e-12) {
+            sc = 0;
+            tc = Math.max(0, Math.min(1, f / e));
+        } else {
+            var c = _dot(d1, r);
+            if (e < 1e-12) {
+                tc = 0;
+                sc = Math.max(0, Math.min(1, -c / a));
+            } else {
+                var b = _dot(d1, d2),
+                    den = a * e - b * b;
+                sc = den > 1e-12 ? Math.max(0, Math.min(1, (b * f - c * e) / den)) : 0;
+                tc = (b * sc + f) / e;
+                if (tc < 0) {
+                    tc = 0;
+                    sc = Math.max(0, Math.min(1, -c / a));
+                } else if (tc > 1) {
+                    tc = 1;
+                    sc = Math.max(0, Math.min(1, (b - c) / a));
+                }
+            }
+        }
+        return _len(_sub(_add(P0, _mul(d1, sc)), _add(Q0, _mul(d2, tc))));
+    }
+    // DIE FREIHEIT EINES GLIEDS AM KLETTER-GERÄT (die Kapsel P0P1 mit Halbmesser r gegen das Angebot): vor der festen Fläche einer Wand
+    // (Griffe ohne Sprossen), weg von jeder Sprosse und Kante (Stangen, Halbmesser stangeM), innerhalb der Breite (quer); m: > 0 frei
+    function _kletterFrei(a, P0, P1, r) {
+        var n = [a.normale[0], 0, a.normale[1]],
+            sq = [n[2], 0, -n[0]],
+            fl = a.flaeche,
+            g = Infinity,
+            i;
+        var pr = [P0, P1, _mix(P0, P1, 0.5)];
+        for (i = 0; i < 3; i++) {
+            var d = _sub(pr[i], fl);
+            g = Math.min(g, a.quer - Math.abs(_dot(d, sq)) - r);
+            if (a.griff && !a.sprossen) g = Math.min(g, _dot(d, n) - r);
+        }
+        var st = (a.holme || []).concat(a.sprossen || []);
+        for (i = 0; i < st.length; i++) g = Math.min(g, _streckenAbstand(P0, P1, st[i][0], st[i][1]) - r - VERB_POSE.stangeM);
+        return g;
+    }
+    // die Mitte der Hand an einem Anker (die Stange liegt in den Fingern, VERB_POSE.griffVersatz über ihr)
+    function _griffMitte(q) {
+        return [q[0], q[1] - VERB_POSE.griffVersatz, q[2]];
+    }
     // die Schulter der Seite des Glieds über der Hüfte (die Lage, aus der die Hand greift)
     function _kletterSchulter(K, huefte, s1, glied, n) {
         var lean = VERB_POSE.kletterNick + VERB_POSE.kletterRumpf;
@@ -2434,7 +2491,7 @@
             best = null,
             i;
         var probe = function (q) {
-            if (Math.abs(_dot(_sub(q, soll), s1)) > VG.seiteM || _len(_sub(q, schulter)) > reich) return;
+            if (Math.abs(_dot(_sub(q, soll), s1)) > VG.seiteM || _len(_sub(_griffMitte(q), schulter)) > reich) return;
             if (!best || q[1] > best[1] + 1e-9) best = q;
         };
         for (i = 0; a.griff && i < a.griff.length; i++) probe(a.griff[i]);
@@ -2480,20 +2537,20 @@
         }
         var plK = K.leben,
             kann = !plK || plK.stamina > 0;
-        // DIE DREI-PUNKT-REGEL: solange eine Hand umgreift, steigt der Leib nicht (er hängt an drei Gliedern) — sonst stieg er an kurzen
-        // Geräten schneller, als die Hände greifen, und die zweite Hand nahm die oberste Reihe gebeugt (Ellbogen 112°)
-        var handLuft = V.paar >= 0 && _len(_sub(V.ziel[_PAARE[V.paar][0]], V.von[_PAARE[V.paar][0]])) > 1e-6;
-        // … und solange eine Hand höher greifen WILL (ein höherer Anker liegt in ihrer Reichweite), wartet der Leib auf sie: sie greift
-        // an der Grenze ihrer Reichweite, nie nachdem der Leib an ihr vorbei stieg (Ellbogen 99° am Gerüst, w4-koerper-park)
-        var gewollt = [];
-        if (!handLuft && (T.vor || 0) > 0)
+        // DER LEIB WARTET AUF SEINE HÄNDE: greift eine Hand um oder will sie höher greifen (ein höherer Anker liegt in ihrer
+        // Reichweite), steigt der Leib nur so weit, dass ihr Anker den Griff-Abstand des Solls behält (unten, greifM) — sonst stieg
+        // er an kurzen Geräten an ihr vorbei, und sie nahm die oberste Reihe gebeugt (Ellbogen 99–112°, w4-koerper-park)
+        var gewollt = [],
+            hP = V.paar >= 0 ? _PAARE[V.paar][0] : null;
+        if (hP && _len(_sub(V.ziel[hP], V.von[hP])) > 1e-6) gewollt.push([hP, V.ziel[hP]]);
+        else if ((T.vor || 0) > 0)
             for (i = 0; i < 2; i++) {
                 var qW = _kletterGriff(K, a, V.huefte, n, s1, _GLIEDER[i]);
                 if (qW[1] > V.halt[_GLIEDER[i]][1] + VG.hoeherM) gewollt.push([_GLIEDER[i], qW]);
             }
         var wille = kann && ((T.vor || 0) !== 0 || (T.quer || 0) !== 0);
-        var vv = kann && !handLuft ? (T.vor || 0) * P.kletterV : 0,
-            vq = kann && !handLuft ? (T.quer || 0) * P.kletterV : 0;
+        var vv = kann ? (T.vor || 0) * P.kletterV : 0,
+            vq = kann ? (T.quer || 0) * P.kletterV : 0;
         if (plK && (vv || vq)) plK.stamina = Math.max(0, plK.stamina - P.kletterAusdauerProS * dt);
         var hu2 = _add(V.huefte, [s1[0] * vq * dt, vv * dt, s1[2] * vq * dt]);
         // seitlich nie über die Fläche hinaus
@@ -2513,8 +2570,8 @@
             L.isInAir = false;
             return true;
         }
-        // oben: steht die Schulter an der obersten Reihe, steigt der Leib aus (darüber griffe die Hand unter der Schulter, der Arm
-        // gefaltet über seine Reichweite hinaus — die Kletterwand hielt die Hand 10 cm vom Griff)
+        // oben: liegt die oberste Reihe nur noch ausstiegM über der Schulter, steigt der Leib aus (darüber falteten sich die Arme vor der
+        // schmalen Leiter — der Ellbogen fand keinen freien Platz, die Kletterwand hielt die Hand 10 cm vom Griff)
         if (a.oben && hu2[1] + M.schulterM > oberst - VG.ausstiegM) {
             V.lage = _v3(a.oben);
             _verbEnde(L, 0, 0, 0, t);
@@ -2527,7 +2584,7 @@
         if (vv > 0 && hu2[1] + M.schulterM > hTief + VG.ueberHandM) hu2[1] = Math.max(V.huefte[1], hTief + VG.ueberHandM - M.schulterM);
         // der Leib steigt einer Hand, die höher greifen will, nie zu nah an ihren Anker: der Griff-Abstand des Solls (der Ellbogen ≤
         // VERB_SOLL.griff aus Ober- und Unterarm der Kette) — sonst griff sie gebeugt, nachdem der Leib an ihr vorbei stieg
-        for (i = 0; i < gewollt.length; i++) if (_len(_sub(gewollt[i][1], _kletterSchulter(K, hu2, s1, gewollt[i][0], n))) < M.greifM) hu2 = _v3(V.huefte);
+        for (i = 0; i < gewollt.length; i++) if (_len(_sub(_griffMitte(gewollt[i][1]), _kletterSchulter(K, hu2, s1, gewollt[i][0], n))) < M.greifM) hu2 = _v3(V.huefte);
         hu2[1] = Math.max(unten, hu2[1]);
         var bewegt = _len(_sub(hu2, V.huefte));
         V.huefte = hu2;
@@ -2557,7 +2614,7 @@
                         // DIE HAND GREIFT UM, sobald ein höherer Anker in ihrer Reichweite liegt (dann an deren Grenze) oder ihr Griff seitlich
                         // aus ihrer Seite fällt — sonst hält sie (bis w4-koerper-park: erst 0,16 m hinter dem Soll, dann lag der nächste
                         // Anker oft unter der Schulter)
-                        // (die Hand greift aus der Lage von jetzt: während sie umgreift, steht der Leib)
+                        // (die Hand greift aus der Lage von jetzt: während sie umgreift, hält der Leib ihren Griff-Abstand)
                         ziel = _kletterGriff(K, a, hu2, n, s1, gn);
                         if (ziel[1] > V.halt[gn][1] + VG.hoeherM || Math.abs(_dot(_sub(V.halt[gn], soll), s1)) > VG.seiteM) noetig = handZiel = true;
                         else ziel = V.halt[gn];
@@ -3116,6 +3173,68 @@
     // Skala der Wurzel × Maßstab), Leser `_sitzTiefe`. knochen {mensch, hip1, "hip-1"}: die Gelenke der Haut (Welt: das Rig, Labor: der
     // Baum des Gusses). null: keine Haut an Becken oder Hüfte.
     var SITZ_KIPP = Object.freeze({ von: -1.2, schritt: 0.1, n: 19 });
+    // DIE DICKE DER GLIEDER (w4-koerper-park — der Löser führt sie an den Teilen der Geräte vorbei): je Glied der Halbmesser der
+    // gegossenen Haut um seinen Knochen — die Ecken mit Gewicht > 0,5 am Gelenk (Oberarm arm, Unterarm elbow, Oberschenkel hip,
+    // Unterschenkel knee) im mittleren Teil des Glieds (25–75 % der Strecke Gelenk → Kind-Gelenk: die Säume an Schulter, Hüfte und
+    // Gelenk zählen nicht), ihr Abstand zur Strecke im Knochen-Raum der Bind-Pose (dieselbe Rechnung wie leibSohle), das 75. Perzentil,
+    // beide Seiten zusammen, in Metern. null: ein Glied ohne Haut.
+    var GLIED_KNOCHEN = Object.freeze({ oberarm: ["arm", "elbow"], unterarm: ["elbow", "hand"], oberschenkel: ["hip", "knee"], unterschenkel: ["knee", "ankle"] });
+    function leibGlieder(mesh, sk, knochen) {
+        var J = {},
+            i,
+            out = {};
+        for (i = 0; i < sk.joints.length; i++) J[sk.joints[i].name] = sk.joints[i];
+        var m = J[sk.root].scale[1] * leibMassstab(),
+            ab = {};
+        mesh.traverse(function (o) {
+            if (!o.isSkinnedMesh) return;
+            var A = o.geometry.attributes,
+                si = A.skinIndex,
+                sw = A.skinWeight,
+                pa = A.position,
+                be = o.bindMatrix.elements,
+                E = {};
+            var komp = function (a, n, k) {
+                return k === 0 ? a.getX(n) : k === 1 ? a.getY(n) : k === 2 ? a.getZ(n) : a.getW(n);
+            };
+            for (var g in GLIED_KNOCHEN)
+                for (var sd = 0; sd < 2; sd++) {
+                    var nm = GLIED_KNOCHEN[g][0] + (sd ? "-1" : "1"),
+                        b = o.skeleton.bones.indexOf(knochen[nm]);
+                    if (b < 0) continue;
+                    var ae = o.skeleton.boneInverses[b].elements,
+                        e = new Array(16),
+                        r,
+                        c;
+                    for (c = 0; c < 4; c++) for (r = 0; r < 4; r++) e[c * 4 + r] = ae[r] * be[c * 4] + ae[4 + r] * be[c * 4 + 1] + ae[8 + r] * be[c * 4 + 2] + ae[12 + r] * be[c * 4 + 3];
+                    E[b] = { e: e, g: g, kind: J[GLIED_KNOCHEN[g][1] + (sd ? "-1" : "1")].pos };
+                }
+            for (var n = 0; n < pa.count; n++)
+                for (var k = 0; k < 4; k++) {
+                    var B = E[komp(si, n, k)];
+                    if (!B || !(komp(sw, n, k) > 0.5)) continue;
+                    var e2 = B.e,
+                        x = pa.getX(n),
+                        y = pa.getY(n),
+                        z = pa.getZ(n),
+                        w = 1 / (e2[3] * x + e2[7] * y + e2[11] * z + e2[15]);
+                    var q = [(e2[0] * x + e2[4] * y + e2[8] * z + e2[12]) * w, (e2[1] * x + e2[5] * y + e2[9] * z + e2[13]) * w, (e2[2] * x + e2[6] * y + e2[10] * z + e2[14]) * w];
+                    var l2 = _dot(B.kind, B.kind),
+                        u = l2 > 0 ? _dot(q, B.kind) / l2 : 0;
+                    if (u < 0.25 || u > 0.75) continue;
+                    (ab[B.g] = ab[B.g] || []).push(_len(_sub(q, _mul(B.kind, u))));
+                }
+        });
+        for (var g2 in GLIED_KNOCHEN) {
+            var L = ab[g2];
+            if (!L || !L.length) return null;
+            L.sort(function (a, b) {
+                return a - b;
+            });
+            out[g2] = L[Math.floor(0.75 * (L.length - 1))] * m;
+        }
+        return out;
+    }
     function leibSitz(mesh, sk, knochen) {
         var J = {},
             i;
@@ -3195,6 +3314,7 @@
         for (var k = 0; k < KETTE_GELENKE.length; k++) if (!J[KETTE_GELENKE[k]]) throw new Error("KERN-PFLICHT verletzt: dem Skelett fehlt das Gelenk " + KETTE_GELENKE[k] + " (leibKette)");
         if (!sk.handMitte || !sk.handMitte.hand1 || !sk.handMitte["hand-1"]) throw new Error("KERN-PFLICHT verletzt: der Guss trägt keine Hand-Mitte (leibKette, Ofen L0)");
         if (!sk.sitz || !Array.isArray(sk.sitz.tiefe) || !(sk.sitz.tiefe.length > 1)) throw new Error("KERN-PFLICHT verletzt: der Leib trägt keine Höhe des Sitzes (leibKette, die gegossene Haut: leibSitz)");
+        if (!sk.glieder || !(sk.glieder.unterarm > 0)) throw new Error("KERN-PFLICHT verletzt: der Leib trägt keine Dicke der Glieder (leibKette, die gegossene Haut: leibGlieder)");
         var LP = labProportionen(),
             f = leibMassstab(),
             s = J[sk.root].scale,
@@ -3211,15 +3331,19 @@
             schulterBreiteM: Math.abs(J.torso.pos[0] + J.arm1.pos[0]) * s[0] * f,
             reichM: (oberarm + unterarm) * s[1] * f,
             sitzKipp: sk.sitz,
-            wandM: 0.3,
+            glied: sk.glieder,
+            // die Hüfte vor der Kletter-Fläche: das gebeugte Bein findet Raum — der Oberschenkel zweimal (er faltet sich), der
+            // Unterschenkel und die Sprosse (bis w4-koerper-park geraten 0,3 m: Oberschenkel und Knie lagen 11-14 cm hinter der Fläche)
+            wandM: 2 * sk.glieder.oberschenkel + sk.glieder.unterschenkel + 2 * VERB_POSE.stangeM,
             fussM: (G.ballen * bein + 0.2) * s[2] * f,
         };
         K.mass.sitzHuefteM = _sitzTiefe(K, 0);
         K.mass.griffHoeheM = K.mass.huefteM + K.mass.schulterM + K.mass.reichM;
-        // der Griff-Abstand (Schulter → Hand-Mitte), an dem der Ellbogen VERB_SOLL.griff gebeugt ist (Kosinussatz über Ober- und Unterarm)
+        // der Griff-Abstand (Schulter → Hand-Mitte), an dem der Ellbogen griffBeuge gebeugt ist (Kosinussatz über Ober- und Unterarm;
+        // das Gesetz greift gestreckter als das Soll VERB_SOLL.griff erlaubt — die Schulter des Lösers ist geschätzt)
         var oa = oberarm * s[1] * f,
             ua = unterarm * s[1] * f,
-            gb = Math.PI - (VERB_SOLL.griff * Math.PI) / 180;
+            gb = Math.PI - (VERB_GESETZ.klettern.griffBeuge * Math.PI) / 180;
         K.mass.greifM = Math.sqrt(oa * oa + ua * ua - 2 * oa * ua * Math.cos(gb));
         return K;
     }
@@ -3310,6 +3434,25 @@
                 }
                 var pol = (P.pol && P.pol[hand]) || [sv * 0.8, -1, -0.4];
                 var gl = _glied(S, Qt, J[ell].pos, c, zW, pol, -1, 2.5);
+                // DIE WAHL DES ELLBOGENS (ellbogenWahl {pole: {hand: [Pol, …]}, guete(pWelt)}): je Pol der Lauf des Arms, der erste, dessen
+                // Ellbogen frei steht (guete ≥ 0), sonst der beste — der Pol allein wird senkrecht zur Linie Schulter → Hand und trug den
+                // Ellbogen beim Klettern in die Wand bzw. in den Pfosten
+                var EW = P.ellbogenWahl;
+                if (EW && EW.pole[hand]) {
+                    var beste = null;
+                    for (var pk = 0; pk < EW.pole[hand].length; pk++) {
+                        var gk = _glied(S, Qt, J[ell].pos, c, zW, EW.pole[hand][pk], -1, 2.5);
+                        var welt = function (p) {
+                            return _add(R.p, _qRot(R.q, [p[0] * f * s[0], p[1] * f * s[1], p[2] * f * s[2]]));
+                        };
+                        var eW = _add(S, _qRot(Qt, _qRot(gk.q, J[ell].pos))),
+                            wW = _add(eW, _qRot(Qt, _qRot(gk.q, _qRot(_qAchse([1, 0, 0], -gk.phi), J[hand].pos))));
+                        var g = EW.guete(welt(S), welt(eW), welt(wW), ziel);
+                        if (!beste || g > beste.g) beste = { gl: gk, g: g };
+                        if (g >= 0) break;
+                    }
+                    gl = beste.gl;
+                }
                 out.q[arm] = gl.q;
                 out.q[ell] = _qAchse([1, 0, 0], -gl.phi);
                 out.fehler[hand] = gl.fehler * f * s[1];
@@ -3329,6 +3472,23 @@
                 var ball = [0, -K.fussUnter, K.ballenZ];
                 var A = _sub(_inWurzel(R, fz.p), _qRot(Rf, ball));
                 var glb = _glied(J[hip].pos, [0, 0, 0, 1], J[knie].pos, J[fuss].pos, A, fz.pol || [0, 0, 1], 1, 2.4);
+                // DIE WAHL DES KNIES (knieWahl, wie die des Ellbogens): der erste Pol, dessen Knie frei steht, sonst der beste
+                var KW = P.knieWahl;
+                if (KW && KW.pole["fuss" + sd]) {
+                    var bK = null;
+                    for (var kp = 0; kp < KW.pole["fuss" + sd].length; kp++) {
+                        var gk2 = _glied(J[hip].pos, [0, 0, 0, 1], J[knie].pos, J[fuss].pos, A, KW.pole["fuss" + sd][kp], 1, 2.4);
+                        var weltK = function (p) {
+                            return _add(R.p, _qRot(R.q, [p[0] * f * s[0], p[1] * f * s[1], p[2] * f * s[2]]));
+                        };
+                        var kW = _add(J[hip].pos, _qRot(gk2.q, J[knie].pos)),
+                            aW = _add(kW, _qRot(gk2.q, _qRot(_qAchse([1, 0, 0], gk2.phi), J[fuss].pos)));
+                        var g2 = KW.guete(weltK(J[hip].pos), weltK(kW), weltK(aW));
+                        if (!bK || g2 > bK.g) bK = { gl: gk2, g: g2 };
+                        if (g2 >= 0) break;
+                    }
+                    glb = bK.gl;
+                }
                 out.q[hip] = glb.q;
                 out.q[knie] = _qAchse([1, 0, 0], glb.phi);
                 out.q[fuss] = _qMul(_qInv(_qMul(glb.q, out.q[knie])), Rf);
@@ -3367,6 +3527,25 @@
         // Wand und durch die Sprossen)
         kletterKnie: 1.2,
         kletterEllbogen: 0.3,
+        // die Pole des Ellbogens beim Klettern der Reihe nach (Wurzel-Rahmen der Seite 1: seitlich-hinten, hinten, hinten-oben), der
+        // Rand, um den der Ellbogen vor der Fläche und innerhalb ihrer Breite steht
+        kletterPole: Object.freeze([Object.freeze([0.7, -0.6, -0.6]), Object.freeze([0.2, -1, -0.2]), Object.freeze([0.7, -0.3, -0.7]), Object.freeze([0.25, -0.2, -1]), Object.freeze([1, 0, -0.2]), Object.freeze([0.3, 0.5, -1])]),
+        // der Halbmesser einer Sprosse bzw. Kante für die Freiheit der Glieder (m)
+        stangeM: 0.02,
+        // die Pole des Knies beim Klettern: ein Kranz von seitlich (90°) über vorn (0°) bis seitlich-hinten (120°), je etwas auf und ab —
+        // nach vorn allein trug der Pol das Knie in die Wand
+        kniePole: Object.freeze(
+            [90, 60, 30, 0, 120, 75, 45, 15].reduce(function (L, w) {
+                var r = (w * Math.PI) / 180;
+                return L.concat([Object.freeze([Math.sin(r), 0.3, Math.cos(r)]), Object.freeze([Math.sin(r), -0.3, Math.cos(r)])]);
+            }, [])
+        ),
+        // die Stange in den Fingern: über der Mitte der Hand (m); der Bogen des Umsetzens steigt bis zu diesem Anteil des Schwungs
+        griffVersatz: 0.02,
+        bogenHoch: 0.85,
+        // wie weit der Bogen von der Fläche abhebt (m): die Hand, der Fuß
+        bogenHand: 0.1,
+        bogenFuss: 0.1,
         // der Kletternde neigt Becken und Rumpf zur Fläche (die Schulter, aus der die Hand greift, liegt um ihren Sinus näher)
         kletterNick: 0.12,
         kletterRumpf: 0.05,
@@ -3634,17 +3813,40 @@
                     pz = V.halt[gl];
                 // nur das Glied, das an einen neuen Anker umsetzt, schwingt (das andere des Paars hält seinen Griff bzw. Tritt)
                 if (V.paar >= 0 && (_PAARE[V.paar][0] === gl || _PAARE[V.paar][1] === gl) && _len(_sub(V.ziel[gl], V.von[gl])) > 1e-6) {
+                    // der Bogen hebt das Glied von seinem Anker ab; die Hand steigt auf die Höhe ihres Ziels (bis VP.bogenHoch des Schwungs) und
+                    // fährt dann an die Stange, der Fuß steigt gleichmäßig (früh gehoben faltete er das Knie über 130°)
                     var e = Math.min(1, (t - V.seitGlied) / VERB_GESETZ.klettern.schwungSec),
-                        ee = 0.5 - 0.5 * Math.cos(Math.PI * e);
-                    pz = _add(_mix(V.von[gl], V.ziel[gl], ee), _mul(n, 0.1 * Math.sin(Math.PI * e)));
+                        ee = 0.5 - 0.5 * Math.cos(Math.PI * e),
+                        eh = gl.charAt(0) === "h" ? 0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, e / VP.bogenHoch)) : ee,
+                        dv = _sub(V.ziel[gl], V.von[gl]);
+                    pz = _add(V.von[gl], [dv[0] * ee, dv[1] * eh, dv[2] * ee]);
+                    pz = _add(pz, _mul(n, (gl.charAt(0) === "h" ? VP.bogenHand : VP.bogenFuss) * Math.sin(Math.PI * e)));
                 }
-                if (gl.charAt(0) === "h") haende[gl] = pz;
+                // die Stange liegt in den Fingern, griffVersatz über der Mitte der Hand (an der Mitte lag sie 4 cm vor dem Handgelenk, der
+                // Unterarm berührte sie)
+                if (gl.charAt(0) === "h") haende[gl] = _griffMitte(pz);
                 else fu[gl] = { p: _add(pz, _add([0, VP.trittH, 0], _mul(n, VP.trittVor))), nick: VP.trittNick, pol: [gl === "fuss1" ? VP.kletterKnie : -VP.kletterKnie, 0.3, 1] };
             }
             // die Hand am Griff: ihre Länge hinauf, die Fläche zur Wand bzw. zu den Sprossen (sie folgte dem Unterarm und stak 3 cm in
             // der Wand); die Ellbogen hängen nach unten und hinten (nach außen trugen sie den Unterarm in den Pfosten des Turms, nach vorn
             // in das Podest unter der Haltesprosse)
-            var hRi = { auf: [0, 1, 0], zu: [-n[0], 0, -n[2]] };
+            var hRi = { auf: [0, 1, 0], zu: [-n[0], 0, -n[2]] },
+                EP = VP.kletterPole;
+            // die Glieder stehen frei (_kletterFrei: Ober- und Unterarm bzw. -schenkel als Kapseln aus der Dicke der gegossenen Haut gegen
+            // Wand, Sprossen, Kanten und Breite; das Ende am eigenen Anker — Hand an der Stange, Fuß auf dem Tritt — zählt ab seinem
+            // Viertel) — und der Ellbogen nie über seinem Griff (der Unterarm kommt von unten an die Stange)
+            var GD = K.mass.glied,
+                A = V.ang;
+            var armGuete = function (sch, ell, hg, ziel) {
+                var g = Math.min(_kletterFrei(A, sch, ell, GD.oberarm), _kletterFrei(A, ell, _mix(hg, ell, 0.25), GD.unterarm));
+                return Math.min(g, ziel[1] - ell[1]);
+            };
+            var beinGuete = function (hu, kn, kn2) {
+                return Math.min(_kletterFrei(A, hu, kn, GD.oberschenkel), _kletterFrei(A, kn, _mix(kn, kn2, 0.75), GD.unterschenkel));
+            };
+            var spiegel = function (q) {
+                return [-q[0], q[1], q[2]];
+            };
             return leibPose(K, {
                 wurzel: { huefte: V.huefte, gier: V.gier, nick: VP.kletterNick },
                 rumpf: { x: VP.kletterRumpf },
@@ -3653,6 +3855,8 @@
                 handRichtung: { hand1: hRi, "hand-1": hRi },
                 fuesse: fu,
                 pol: { hand1: [VP.kletterEllbogen, -1, -0.5], "hand-1": [-VP.kletterEllbogen, -1, -0.5] },
+                ellbogenWahl: { pole: { hand1: EP, "hand-1": EP.map(spiegel) }, guete: armGuete },
+                knieWahl: { pole: { fuss1: VP.kniePole, "fuss-1": VP.kniePole.map(spiegel) }, guete: beinGuete },
             });
         }
         if (V.verb === "hangeln") {
@@ -3835,6 +4039,7 @@
         leibKette: leibKette,
         leibSohle: leibSohle,
         leibSitz: leibSitz,
+        leibGlieder: leibGlieder,
         leibPose: leibPose,
         leibVerbPose: leibVerbPose,
         leibLuftPose: leibLuftPose,

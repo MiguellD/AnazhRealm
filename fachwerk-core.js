@@ -7042,7 +7042,8 @@
             A.push({ verb: "balancieren", bahn: [[0, m.y, -m.L / 2], [0, m.y, m.L / 2]], breite: m.b, boden: 0 });
         } else if (id === "kletterwand") {
             var gr = [];
-            for (i = 0; i < m.griffe.length; i++) gr.push([m.griffe[i][0], m.griffe[i][1] + m.gG / 2, m.griffe[i][2] + m.gG / 2]);
+            // die Hand liegt am Scheitel des Griffs (die Kuppel ragt gG aus der Wand: an ihrer Mitte lag die Hand-Fläche 1,8 cm in der Wand)
+            for (i = 0; i < m.griffe.length; i++) gr.push([m.griffe[i][0], m.griffe[i][1] + m.gG / 2, m.griffe[i][2] + m.gG]);
             // die Oberkante der Wand ist ein Griff (über der obersten Reihe)
             A.push({ verb: "klettern", griff: gr, tritt: gr, holme: [holm(-m.bx + 0.1, m.bx - 0.1, m.h + GRIFF_KANTE[0], m.d / 2 + GRIFF_KANTE[1])], flaeche: [0, 0, m.d / 2], normale: [0, 1], quer: m.bx, boden: 0, oben: [0, m.h, -m.tP / 2] });
         } else if (id === "hangelbahn") {

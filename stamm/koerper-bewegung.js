@@ -205,11 +205,13 @@ class AnazhRealm_koerper_bewegung {
                 scale: o.scale.toArray(),
             };
         });
-        // die Höhe des Sitzes misst der Kern an der gegossenen Haut des Spielers (koerper `leibSitz`, dieselbe Messung wie das Labor)
+        // die Höhe des Sitzes und die Dicke der Glieder misst der Kern an der gegossenen Haut des Spielers (koerper `leibSitz` ·
+        // `leibGlieder`, dieselbe Messung wie das Labor)
         const KC = AnazhRealm._leibTakt();
         const sk = { joints, root: "mensch", handMitte: rig.handMitte };
-        sk.sitz = KC.leibSitz(pm, sk, { mensch: teile.mensch, hip1: teile.hip1, "hip-1": teile["hip-1"] });
-        if (!sk.sitz) return AnazhRealm._kernPflichtBruch("leib:die Haut des Spielers trägt keine Höhe des Sitzes (leibSitz)");
+        sk.sitz = KC.leibSitz(pm, sk, teile);
+        sk.glieder = KC.leibGlieder(pm, sk, teile);
+        if (!sk.sitz || !sk.glieder) return AnazhRealm._kernPflichtBruch("leib:die Haut des Spielers trägt keine Höhe des Sitzes bzw. Dicke der Glieder (leibSitz · leibGlieder)");
         rig._leibKette = KC.leibKette(sk);
         return rig._leibKette;
     }
