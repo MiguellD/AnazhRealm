@@ -20,7 +20,7 @@
 //       wächst), jede Absage nennt die Lichtung. DER GENESIS-PLATZ: die Sohle liegt ≤ 0,3 m über dem Boden, die Lichtung ist
 //       der Platz des Rings (Tore + 4 m), ein Damm räumt den Hain aus seinen Boxen.
 //   W10 SPIELGANG: Tür, Keller, jeder Lauf bis zum Dachboden, auch am Spur-Rand — kein Hub > 0,3 m je Schritt, kein Tier im Haus;
-//       mit der Phase start JEDES Haus des Start-Dorfs (aus seinem Plan), mit `--bild` sein Innen-Bild gegen den Außen-Schatten
+//       mit der Phase start JEDES Haus des Start-Dorfs (aus seinem Plan); sein Innen-Bild misst siedlung.K1 Staffel 2 in der Sitzung
 //   W9  DAS GRUND-DATUM (S4): je Box des Körper-Satzes (fachwerk `grundVon`) kein Büschel der Nah-Wiese, dessen Halme
 //       hineinreichen, keine Erde über der Diele; `--bild`: Halm- und Boden-Pixel je Box 0, Third vor jedem Haus 0, das Haus
 //       des Spielers setzt die Werkstatt; am See und am Fluss der Mess-Wiese je Ego und Third kein Halm unter dem Spiegel.
@@ -41,7 +41,8 @@ const {
     teilAus,
     ROOT,
     hauptLauf,
-    pngDatei, jsonSchreiben,
+    pngDatei,
+    jsonSchreiben,
 } = require("./lib/welt-boot.cjs");
 const fs = require("fs");
 const path = require("path");
@@ -138,7 +139,7 @@ async function proben(phasen) {
     const s = r.state;
     const A = r.constructor;
     const FC = window.__fachwerkCore;
-    // DIE PHASEN: haus (W1 W2 W4c W5 W10 je Haus), start (dazu jedes Haus des Start-Dorfs), innen (sein Innen-Bild), sohle,
+    // DIE PHASEN: haus (W1 W2 W4c W5 W10 je Haus), start (dazu jedes Haus des Start-Dorfs), sohle,
     // lichtung, bau (W8), w4, w4b, w6, grund (W9) — der Hauptlauf fährt alle in zwei Welten, ein Selbsttest nur die seines Täters
     const P = new Set(phasen);
     const o = { haeuser: [], phasen: [...P] };
@@ -246,8 +247,9 @@ async function proben(phasen) {
     ).then(() => (steht = true));
     const dorfHaeuser = () =>
         s.architectures.filter((e) => e.type && e.type.startsWith("haus_") && e.tuer && e.fundament);
-    // der Export reist durch den Foundry-Worker, der Akt hebt über den Zug: warten, bis er steht
-    await warteBis(() => steht, 4, 120, 100);
+    // der Export reist durch den Foundry-Worker, der Akt hebt über den Zug: warten, bis er steht (im Takt, nie an der Uhr —
+    // bis w4-ssa-C schlief jeder Gang 100 ms dazu)
+    await warteBis(() => steht, 4, 120);
     const H = dorfHaeuser();
     o.gesamt = H.length;
     const dorfMitte = { x: start.x, z: start.z };
@@ -256,8 +258,11 @@ async function proben(phasen) {
         dorfMitte.z = H.reduce((a, e) => a + e.position.z, 0) / H.length;
     }
     // die Probe des Gesetzbuchs je Haus (Rezept + Stempel + Same → HAUS, die Merge-Ordnung von `buildInstance`: der Same des
-    // Stempels vor dem des Eintrags): Diele und Flights
+    // Stempels vor dem des Eintrags): Diele und Flights — je Haus EINMAL gebaut (w4-ssa-C: die Wahl der Vorlage, W9 und der Abbau
+    // bauten dasselbe Haus bis zu dreimal; `HAUS(…).build` ist das Teuerste der Seite neben dem Sim-Schritt)
+    const gebaut = new Map();
     const gesetz = (e) => {
+        if (gebaut.has(e)) return gebaut.get(e);
         const kultur = e.type.slice(5);
         const pre = FC.PRESETS && FC.PRESETS[kultur];
         if (!pre) return null;
@@ -265,6 +270,7 @@ async function proben(phasen) {
         if (!(e.studioOv && e.studioOv.seed != null)) P.seed = e.seed;
         const Hh = FC.HAUS(window.THREE, FC.mat, P);
         Hh.build({ gelaende: false });
+        gebaut.set(e, Hh);
         return Hh;
     };
     // ein trockener Ort 150 m um M, 60 m von jedem Haus (`wild`: die Wildnis trägt ihn), null ohne
@@ -405,6 +411,8 @@ async function proben(phasen) {
     // W10 DAS START-DORF (siedlung.K1 Staffel 2): der Takt der Welt hebt es am Genesis-Ort (der Hook führt), gegangen wird JEDES
     // Haus seines Plans — der Plan v2 im Gedächtnis des Orts (`_ortPlaene` unter `settlementCells.start.ort`), je Haus-Slot
     // (`_slotBauplan`) das Haus an seinem Ort; ein Slot ohne Haus ist ROT. Dazu die ersten 8 des Drehbuch-Dorfs am Hang.
+    // Das Start-Dorf ist nur am Genesis-Ort fällig (`_startDorfFaellig`, nearM): wer die Phase fährt, steht dort (vegetation.K4: die
+    // Probe am Ort genesis — an der Mess-Wiese, 1,1 km davon, wartete die Phase ihren Deckel ab und maß kein Haus).
     const SD = [];
     if (P.has("start")) {
         const takt = window.__anazhAutoSettlement;
@@ -665,7 +673,14 @@ async function proben(phasen) {
         const [WB, HB, cam] = [480, 270, s.camera];
         let tick = null;
         if (BILD) {
-            await window.__weltStehtNach(() => pumpe(1));
+            // Takt um Takt wie der Hauptlauf — `pumpe(1)` schlief je Takt 10 ms dazu (das Einschwingen schläft selbst je 5 Takte)
+            await window.__weltStehtNach(() => {
+                try {
+                    r._gameLoopTick(performance.now());
+                } catch {
+                    // ein Wurf des Takts bricht das Einschwingen nie (wie `pumpe`)
+                }
+            });
             window.__buehne();
             s.renderer.setAnimationLoop(null); // der Loop ruht (Lehre 17)
             tick = r._tickNahWiese;
@@ -690,17 +705,6 @@ async function proben(phasen) {
             }
         };
         const anders = (X, Y, i) => Math.max(...[0, 1, 2].map((c) => Math.abs(X[i + c] - Y[i + c]))) > 18;
-        // die Luminanz (sRGB linear) im Median der Pixel um (px, py) ± rad
-        const lin = Array.from({ length: 256 }, (_, i) => (i <= 10 ? i / 3294.6 : ((i / 255 + 0.055) / 1.055) ** 2.4));
-        const luma = (u8, px = WB >> 1, py = HB >> 1, rad = WB) => {
-            const l = [];
-            for (let y = Math.max(0, py - rad); y < Math.min(HB, py + rad + 1); y++)
-                for (let x = Math.max(0, px - rad), k; x < Math.min(WB, px + rad + 1); x++)
-                    l.push(
-                        0.2126 * lin[u8[(k = 4 * (y * WB + x))]] + 0.7152 * lin[u8[k + 1]] + 0.0722 * lin[u8[k + 2]]
-                    );
-            return l.sort((a, b) => a - b)[l.length >> 1];
-        };
         const [TSL, gruen] = [THREE.TSL, (M, k) => M[k + 1] > M[k] + 60 && M[k + 1] > M[k + 2] + 60];
         // DIE MASKE: der Stoff zeichnet `farbe(Albedo)` unbeleuchtet, `aus` unsichtbar
         const maske = async (stoff, farbe, aus) => {
@@ -737,41 +741,60 @@ async function proben(phasen) {
         // EIN BLICK aus dem Ausgabe-Pfad (die Kamera steht; die Natur — Nah-Wiese und Nah-Streu — wirft keinen Schatten, wie
         // `werkbank bild --klasse`): das Bild ohne `aus`, dasselbe ohne die Büschel `weg(bu)` und die Meshes `ohne` (Halm: was
         // sich ändert), die Maske des Boden-Satzes ohne Natur und `aus` (grüne Albedo — die Halm-Schicht des Boden-Stoffs —
-        // grün, sonst Magenta); je Pixel `je(k, G, O, Mk)`, das Bild als PNG
-        const blick = async (weg, je, aus = [], ohne = []) => {
+        // grün, sonst Magenta); je Pixel `je(k, G, O, Mk)` (G und O null: nichts fiel fort), das Bild als PNG.
+        // NUR WAS EINE ZAHL LIEST (w4-ssa-C): nimmt der Blick nichts fort (kein Büschel `weg`, kein Mesh `ohne`), sind G und O
+        // dasselbe Bild — der Halm ist 0, ohne Schuss; die Maske (sie zählt den Boden) ist dann das Bild des Blicks. `boden`
+        // false: ein Blick, der keinen Boden-Pixel zählt (Third und Gegenprobe), schießt keine Maske. Bis dahin fielen je Box-Blick
+        // und Third G und Maske ungelesen (vegetation.K4: 293 → 84 Aufnahmen an 29 Häusern, 404 → 112 an den 43 des eigenen Boots).
+        const blick = async (weg, je, aus = [], ohne = [], boden = true) => {
             cam.updateMatrixWorld(true);
-            const wurf = natur().map((m) => [m, m.castShadow, (m.castShadow = false)]);
             const innen = [];
             for (const k of s.nahWiese.kacheln.values())
                 for (const [j, bu] of (k.bueschel || []).entries()) if (weg(bu)) innen.push([k, j]);
+            const leer = !innen.length && !ohne.length;
+            if (leer && !boden) return { innen: 0, png: null };
+            // die Nah-Sätze dieses Auges, wie sie der Schuss G baute (der Ausgabe-Pfad schwingt sie ein) — die Maske verbirgt jeden
+            if (leer) for (const t of ["_tickNahWiese", "_tickNahStreu"]) for (let i = 0; i < 200 && r[t]() > 0; i++);
+            const wurf = natur().map((m) => [m, m.castShadow, (m.castShadow = false)]);
             try {
-                const G = await schuss(aus, []);
-                const O = innen.length || ohne.length ? await schuss([...aus, ...ohne], innen) : G;
+                const G = leer ? null : await schuss(aus, []);
+                const O = leer ? null : await schuss([...aus, ...ohne], innen);
                 const stoff = s.chunkSaetze.get("boden").mesh.material;
-                const Mk = await maske(
-                    stoff,
-                    (alb) =>
-                        TSL.select(
-                            alb.y.sub(alb.x.add(alb.z).mul(0.5)).greaterThan(0.02),
-                            TSL.vec3(0, 1, 0),
-                            TSL.vec3(1, 0, 1)
-                        ),
-                    [...natur(), ...aus]
-                );
-                for (let k = 0; k < G.length; k += 4) je(k, G, O, Mk);
-                return { innen: innen.length, png: window.__png(G, WB, HB) };
+                const Mk = !boden
+                    ? null
+                    : await maske(
+                          stoff,
+                          (alb) =>
+                              TSL.select(
+                                  alb.y.sub(alb.x.add(alb.z).mul(0.5)).greaterThan(0.02),
+                                  TSL.vec3(0, 1, 0),
+                                  TSL.vec3(1, 0, 1)
+                              ),
+                          [...natur(), ...aus]
+                      );
+                const B = G || Mk;
+                for (let k = 0; k < B.length; k += 4) je(k, G, O, Mk);
+                return { innen: innen.length, png: window.__png(B, WB, HB) };
             } finally {
                 for (const [m, c] of wurf) m.castShadow = c;
             }
         };
-        // Halm-Pixel gegen das Bild ohne `weg`, Boden-Pixel (grün; `jeder`: jeder Grund) mit dem Strahl im Boden, solange `bleibt`
+        // Halm-Pixel gegen das Bild ohne `weg`, Boden-Pixel (grün; `jeder`: jeder Grund) mit dem Strahl im Boden, solange `bleibt`;
+        // ohne `bleibt` trifft kein Strahl den Boden der Box (Third, Gegenprobe): Boden 0, ohne Maske
         const halmBoden = async (weg, bleibt, jeder) => {
             const z = { halm: 0, boden: 0 };
-            const b = await blick(weg, (k, G, O, Mk) => {
-                z.halm += anders(G, O, k);
-                const grund = gruen(Mk, k) || (jeder && Mk[k] > Mk[k + 1] + 60 && Mk[k + 2] > Mk[k + 1] + 60);
-                z.boden += grund && trifft((k / 4) % WB, Math.floor(k / 4 / WB), bleibt);
-            });
+            const b = await blick(
+                weg,
+                (k, G, O, Mk) => {
+                    if (G) z.halm += anders(G, O, k);
+                    if (!bleibt) return;
+                    const grund = gruen(Mk, k) || (jeder && Mk[k] > Mk[k + 1] + 60 && Mk[k + 2] > Mk[k + 1] + 60);
+                    z.boden += grund && trifft((k / 4) % WB, Math.floor(k / 4 / WB), bleibt);
+                },
+                [],
+                [],
+                !!bleibt
+            );
             return Object.assign(z, b);
         };
         // DAS HAUS DES SPIELERS AUF DER WIESE (`--bild`): am Nadelwald-Hang des Dorfs wächst kaum ein Büschel — ein Haus mit
@@ -815,6 +838,7 @@ async function proben(phasen) {
                 typ: e.type,
                 id: e.id,
                 start: SD.includes(e),
+                spieler: e === sbE, // das Haus des Spielers (vegetation.K4: Staffel 1 richtet ohne es, Staffel 2 verlangt es)
                 sc: rund(sc, 1000),
                 koerper: [],
             };
@@ -915,9 +939,6 @@ async function proben(phasen) {
                     const [p, q] = [welt(e, ax * sc, az * sc), welt(e, zx * sc, zz * sc)];
                     cam.position.set(p.x, base + ay * sc, p.z);
                     cam.lookAt(q.x, base + dz * sc, q.z);
-                    // W10: der Innen-Blick ohne Wegnahme — dieselbe Bedingung wie der Außen-Schatten (`schuss([], [])`)
-                    cam.updateMatrixWorld(true);
-                    h.innen = Math.min(h.innen ?? 1, luma(await schuss([], [])));
                     // ist der Grund der Boden der Box (der Turm), zählt nur der Halm
                     const z9 = await halmBoden(
                         (bu) => inBox(m, bu.x, bu.z, (-W * bu.s) / sc),
@@ -932,35 +953,9 @@ async function proben(phasen) {
                     b.png.push(z9.png);
                 }
             }
-            // W10 DAS INNEN-BILD (siedlung.K1 Staffel 2, Schatten K4; `--bild`): der dunkelste Innen-Blick (`innen`) gegen den
-            // Boden im Schatten zur selben Stunde (`aussen`, 13 × 13 px): von DIESEM Haus gegen die Sonne der erste Boden 1 m
-            // vor jedem Bau (Wege zählen), dessen Strahl zur Sonne einen Werfer trifft, das Auge 1,6 m hoch 3 m davor; ohne
-            // Fleck bleibt `quote` leer
-            if (BILD && h.start) {
-                const S = s.directionalLight.position.clone().sub(s.directionalLight.target.position).normalize();
-                const d = new THREE.Vector3(-S.x, 0, -S.z).normalize();
-                const rc = new THREE.Raycaster();
-                rc.layers.set(A.SHADOW_TWIN_LAYER);
-                let f = null;
-                for (let t = 1; t < 40 && !f; t += 0.25) {
-                    const q = new THREE.Vector3(e.position.x + d.x * t, 0, e.position.z + d.z * t);
-                    if (/haus|bau/.test(r._imGrundriss(q.x, q.z, 1))) continue;
-                    q.y = r._bodenSichtAt(q.x, q.z) ?? hh(q.x, q.z);
-                    rc.set(q.clone().setY(q.y + 0.05), S);
-                    if (rc.intersectObject(s.scene, true).length) f = q;
-                }
-                if (f) {
-                    const p = f.clone().addScaledVector(d, 3);
-                    cam.position.set(p.x, hh(p.x, p.z) + 1.6, p.z);
-                    cam.lookAt(f);
-                    cam.updateMatrixWorld(true);
-                    const G = await schuss([], []);
-                    const v = f.clone().project(cam);
-                    h.aussen = luma(G, Math.round(((v.x + 1) / 2) * WB), Math.round(((1 - v.y) / 2) * HB), 6);
-                    h.png = window.__png(G, WB, HB);
-                }
-                h.quote = rund(h.innen / h.aussen, 1000);
-            }
+            // (W10 DAS INNEN-BILD — der dunkelste Innen-Blick gegen den Boden im Schatten — misst siedlung.K1 Staffel 2 in der Welt
+            // der Sitzung, `startDorfInnen`; die Kopie hier lief seit 29.10. in keiner Wand und keiner Station mehr, nur ungelesen
+            // in vegetation.K4: je Box-Blick ein Schuss mehr, je Haus des Start-Dorfs einer — w4-ssa-C)
             if (!BILD) continue;
             // THIRD VOR DEM HAUS: die Kamera 5 m vor der Front, 2,6 m über dem Grund, auf die Mitte des Hauses — die Büschel jeder
             // Box gegen das Bild ohne sie; DIE GEGENPROBE: vor der Tür des Hauses des Spielers ändern die Büschel das Bild (alle
@@ -972,18 +967,10 @@ async function proben(phasen) {
                 cam.lookAt(q.x, yz(q), q.z);
             };
             vor(zv - 5, 2.6, (zv + zh) / 2, () => base + sc);
-            h.third = await halmBoden(
-                (bu) => boxen.some((m) => inBox(m, bu.x, bu.z, (-W * bu.s) / sc)),
-                () => false
-            );
+            h.third = await halmBoden((bu) => boxen.some((m) => inBox(m, bu.x, bu.z, (-W * bu.s) / sc)), null);
             if (e !== sbE) continue;
             vor(zv - 3, 1.6, zv - 9, (q) => hh(q.x, q.z));
-            h.gegenprobe = (
-                await halmBoden(
-                    () => true,
-                    () => false
-                )
-            ).halm;
+            h.gegenprobe = (await halmBoden(() => true, null)).halm;
         }
         // DAS WASSER (`--bild`): 10 m vor dem Ufer des Sees und im Fluss der Mess-Wiese (`__wasserOrte`) je Ego (1,6 m über dem
         // Ufer, 1,5 m landein) und Third (4,5 m dahinter, 2,6 m hoch) auf den EINEN Spiegel (`_koerperWasser`): wo das Wasser
@@ -1029,7 +1016,7 @@ async function proben(phasen) {
                 const Wm = await maske(s.hydroSurfaceMaterial, () => TSL.vec3(0, 0, 1), []);
                 s.scene.traverse((m) => m.isMesh && m.material === s.hydroSurfaceMaterial && wasser.push(m));
                 const je = (k, G, O, Mk) => {
-                    const [unter, a] = [Wm[k + 2] > 200 && Wm[k] < 60 && Wm[k + 1] < 60, anders(G, O, k)];
+                    const [unter, a] = [Wm[k + 2] > 200 && Wm[k] < 60 && Wm[k + 1] < 60, !!G && anders(G, O, k)];
                     [z.spiegel, z.halm, z.gegen] = [z.spiegel + unter, z.halm + (unter && a), z.gegen + (!unter && a)];
                     z.boden += unter && gruen(Mk, k);
                 };
@@ -2143,7 +2130,7 @@ function urteil(o) {
         }
     }
     // W9 DAS GRUND-DATUM
-    // jedes Haus des Plans steht, mit der Phase haus ist jedes gegangen, mit `--bild` jedes Innen-Bild lesbar
+    // jedes Haus des Plans steht, mit der Phase haus ist jedes gegangen (das Innen-Bild urteilt siedlung.K1 Staffel 2)
     if (P.has("fremd")) {
         const [w, g] = [o.w11 || {}, (o.haeuser.find((h) => h.fremd) || {}).gang];
         if (!(w.vorher > 0 && w.nachher === 0 && w.byte && w.fest)) f.push(`W11 Fremd-Slot: ${JSON.stringify(w)}`);
@@ -2155,12 +2142,6 @@ function urteil(o) {
         const gang = o.haeuser.filter((h) => h.start && h.gang).length;
         if (!(sd.slots >= 1) || sd.fehlt.length || (P.has("haus") && gang !== sd.slots))
             f.push(`W10 Start-Dorf: ${gang} von ${sd.slots} Häusern des Plans gegangen ${sd.fehlt.join(" ")}`);
-        const innen = ((o.w9 && o.w9.haeuser) || []).filter((h) => h.start);
-        const dunkel = innen.filter((h) => !(h.quote >= 0.15));
-        if (P.has("bild") && (innen.length !== sd.slots || dunkel.length))
-            f.push(
-                `W10 Innen-Bild: ${dunkel.length} von ${innen.length} Häusern unter 15 % des Außen-Schattens (${dunkel.map((h) => `${h.typ} ${h.innen}/${h.aussen}`).join(" · ")})`
-            );
     }
     if (P.has("grund")) {
         const w9 = o.w9 || {};
@@ -2239,7 +2220,6 @@ const w9Zeile = (w) => ({
         x.streu,
         x.blicke.map((z) => [z.spiegel, z.halm, z.boden, z.gegen]),
     ]),
-    innen: w.haeuser.filter((h) => h.start).map((h) => h.quote),
     abbau: w.abbau,
     slot: w.slot,
     waise: w.waise && { ...w.waise, ohne: w.waise.ohne.length },

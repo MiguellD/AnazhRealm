@@ -15,7 +15,7 @@
 const fs = require("fs");
 const path = require("path");
 const stammLib = require("./lib/stamm.cjs");
-const { scanWarteWand } = require("./lib/welt-boot.cjs");
+const { scanWarteWand, jsonLesen } = require("./lib/welt-boot.cjs");
 
 // Die gefallenen Namen: je Eintrag ein PRÄZISER Token (nie ein generisches Wort — "sprite" träfe THREE.Sprite) und was
 // ihn trägt (`fiel`); die Geschichte jedes Schnitts steht in git (Lehre 15).
@@ -1388,7 +1388,7 @@ function scanLabBuster() {
     // die Shell-Buster standen bei 18.446 während tetrapoda.js/koerperstudio.js
     // sich bewegten (Cache-Lüge-Klasse). EIN Gesetz: alle ?v= == package.json.
     const root = path.join(__dirname, "..");
-    const version = JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")).version;
+    const version = jsonLesen(path.join(root, "package.json")).version;
     const errs = [];
     const seiten = [path.join(root, "index.html")];
     for (const w of fs.readdirSync(path.join(root, "worlds"))) {
@@ -3029,7 +3029,7 @@ function ortsName(code, i) {
 // `const X = x, Z = z`, die Blick-Tabelle einer Linse.
 const MESSORT_GEFALLEN = [[-900, -850]]; // die Mess-Wiese bis K55
 function messortPaare() {
-    const h = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "spec", "profiband", "haushalt.json"), "utf8"));
+    const h = jsonLesen(path.join(__dirname, "..", "spec", "profiband", "haushalt.json"));
     return h.messorte
         .filter((o) => !o.anker && !o.bank && Array.isArray(o.spieler))
         .map((o) => o.spieler)
