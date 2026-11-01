@@ -399,26 +399,17 @@ hauptLauf(async () => {
                     if (!r._archIsRendered(e)) luecke++;
                 }
             };
-            stelle(start.x + ux * weg, start.z + uz * weg);
-            await folge(40);
-            const draussen = {
+            // der Baum vom Ort (x, z) aus, nach 40 Takten
+            const lage = async (x, z) => (stelle(x, z), await folge(40), {
                 d: +dist(e).toFixed(1),
                 gleich: JSON.stringify(e.instSlots) === slots,
                 voll: stempel(e) < 0,
                 partner: partner(e),
                 stufe: e._lodLevel,
                 radius: Math.round(st.architectureCullingRadius),
-            };
-            stelle(start.x, start.z);
-            await folge(40);
-            const drinnen = {
-                d: +dist(e).toFixed(1),
-                gleich: JSON.stringify(e.instSlots) === slots,
-                voll: stempel(e) < 0,
-                partner: partner(e),
-                stufe: e._lodLevel,
-                radius: Math.round(st.architectureCullingRadius),
-            };
+            });
+            const draussen = await lage(start.x + ux * weg, start.z + uz * weg);
+            const drinnen = await lage(start.x, start.z);
             return { typ: e.type, d0: +d0.toFixed(1), radius: RMIN + "–" + RMAX, draussen, drinnen, luecke, takte };
         };
         res.D = await uebergang();

@@ -1214,37 +1214,16 @@ async function starte() {
                 const re = new RegExp(k.klasse);
                 const zeichnet = (o) =>
                     o.visible === true && !!o.geometry && (o.isMesh || o.isLine || o.isPoints || o.isSprite);
-                // DER KOPF IN STOFFEN (`--gesicht`): ein Teil des Spielers, dessen Gewichte am Kopf hängen (head, Augen,
-                // Lider) oder der am Kopf-Gelenk sitzt, heißt `spieler:kopf/<Stoff>` (Stoff = `__klasse`, sonst `auge`), der Rest
-                // `spieler:leib/…` — die Teilung zeigt dann jeden Stoff des Kopfs für sich
-                const KOPF_GELENK = /^(head|eye[LR]|iris[LR]|lid[TB][LR])$/;
-                const kopfGewicht = (o) => {
-                    for (let p = o; p; p = p.parent) if (p.name === "head") return 1;
-                    const a = o.geometry.attributes.skinIndex,
-                        w = o.geometry.attributes.skinWeight;
-                    if (!a || !o.skeleton) return 0;
-                    let kz = 0,
-                        n = 0;
-                    for (let i = 0; i < a.count; i++)
-                        for (let c = 0; c < 4; c++) {
-                            const wt = w.getComponent(i, c);
-                            n += wt;
-                            if (KOPF_GELENK.test(o.skeleton.bones[a.getComponent(i, c)].name)) kz += wt;
-                        }
-                    return n ? kz / n : 0;
-                };
+                // DER KOPF IN STOFFEN (die Kopf-Klasse des Stamms, `_kopfKlasse`): jeder Leib eines Menschen — der Spieler, jeder
+                // Bewohner — teilt sich in `<leib>:kopf/<Stoff>` und `<leib>:leib/<Stoff>`; wählt der Ausdruck den Leib selbst
+                // (`^spieler$`), ist er EINE Klasse, sonst zeigt die Teilung jeden Stoff des Kopfs für sich (`^bewohner:kopf/`).
+                // Bis w4-bewohner-wache teilte die Werkbank selbst, nur den Spieler und nur unter `--gesicht`
                 const teilName = (o) => {
-                    const kl = r._taeterKlasse(o);
-                    if (k.gesicht == null || kl !== "spieler") return kl;
-                    const auge =
-                        o.isSkinnedMesh && o.skeleton && o.skeleton.bones.some((b) => /^iris[LR]$/.test(b.name));
-                    return `spieler:${kopfGewicht(o) >= 0.3 ? "kopf" : "leib"}/${o.userData.__klasse || (auge ? "auge" : "stoff")}`;
+                    const [grob, fein] = r._kopfKlasse(o);
+                    return re.test(grob) ? grob : fein;
                 };
                 const teile = new Map();
-                const nimm = (kl, o) => {
-                    if (!teile.has(kl)) teile.set(kl, []);
-                    teile.get(kl).push(o);
-                };
+                const nimm = (kl, o) => teile.set(kl, [...(teile.get(kl) || []), o]);
                 // DER BAU-SATZ IN BEREICHEN (`_bauSatzArt` · `_tickBauSatz`): ein Bau-Satz zeichnet die Instanz-Gruppen
                 // vieler Exemplare als EIN Mesh — die Teilung führt jeden Bereich beim Namen seiner Gruppe (`_taeterGruppe`:
                 // Exemplar und Stufe, f:drachentor:L1), nie den Satz. Ein Bereich verbirgt sich, indem er den Satz verlässt
@@ -1252,8 +1231,23 @@ async function starte() {
                 // zeichnet nie ins Bild und bleibt, wie er ist.
                 const bauSaetze = new Map();
                 for (const [art, s] of r.state.chunkSaetze || [])
-                    if (s.mesh && s.mesh.userData && s.mesh.userData.bauSatz && !s.spec.nurWurf)
+                    if (s.mesh?.userData?.bauSatz && !s.spec.nurWurf)
                         bauSaetze.set(s.mesh, { art, s });
+                // DIE KARTE IN ARTEN (w4-laub-karte): der EINE Karten-Atlas zeichnet jede Art aus EINER Gruppe
+                // (`IMPOSTOR_ATLAS_GRUPPE`) — die Teilung führt jede Art beim Namen ihrer Zelle (`fimp:<art>:L2`, die Schicht der
+                // Instanz in aKarte.x), nie die Gruppe: das Urteil der schlechtesten Teil-Klasse sieht die Art, ein Mittel über
+                // den Atlas verbarg sie. Eine Art verbirgt sich, indem ihre Instanzen für den Schuss unter die Welt ziehen (die
+                // Matrix, gemerkt an der Slot-Marke `slotRef` — die Wahl je Pass ordnet die Slots um), und kehrt danach an ihre
+                // Marke zurück.
+                const kg = r.state.archInstanceGroups?.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE),
+                    arten = new Map();
+                if (kg?.mesh?.geometry.attributes.aKarte) {
+                    const art = new Map([...r._kartenAtlas.zellen.values()].map((z) => [z.idx, z.preset]));
+                    for (let i = 0; i < kg.liveCount; i++) {
+                        const kl = `fimp:${art.get(Math.round(kg.mesh.geometry.attributes.aKarte.array[i * 4]))}:L2`;
+                        arten.set(kl, [...(arten.get(kl) || []), kg.slotRef[i]]);
+                    }
+                }
                 r.state.scene.traverse((o) => {
                     if (!zeichnet(o)) return;
                     const bs = bauSaetze.get(o);
@@ -1265,6 +1259,7 @@ async function starte() {
                         }
                         return;
                     }
+                    if (o === kg?.mesh && arten.size) return arten.forEach((refs, kl) => re.test(kl) && nimm(kl, { refs, mesh: o, y: [] }));
                     const kl = teilName(o);
                     if (re.test(kl)) nimm(kl, o);
                 });
@@ -1276,9 +1271,20 @@ async function starte() {
                 if (namen.length > 250) throw new Error(`Klasse /${k.klasse}/: ${namen.length} Teil-Klassen (höchstens 250)`);
                 const alle = [].concat(...teile.values());
                 // der Wurf eines Bereichs ist der seines Satzes: der Satz wirft für die Messung nicht
-                const wurf = new Map(alle.map((o) => (o.bereich ? o.mesh : o)).map((o) => [o, o.castShadow]));
-                const verbirg = (o) => (o.bereich ? r._chunkSatzAus(o.art, o.key) : (o.visible = false));
-                const zeig = (o) => (o.bereich ? r._bauSatzMarke(o.key, o.art) : (o.visible = true));
+                const wurf = new Map(alle.map((o) => (o.bereich || o.refs ? o.mesh : o)).map((o) => [o, o.castShadow]));
+                // die Instanzen einer Karten-Art: unter die Welt (y −10⁷) und zurück auf ihre Höhe, am Slot ihrer Marke
+                const zieht = (o, weg) => {
+                    const a = o.mesh.instanceMatrix.array;
+                    o.refs.forEach((f, j) => {
+                        const i = f.slot * 16 + 13;
+                        if (weg) o.y[j] = a[i];
+                        a[i] = weg ? -1e7 : o.y[j];
+                    });
+                    o.mesh.instanceMatrix.needsUpdate = true;
+                    r._archMeshBundleTouch(o.mesh);
+                };
+                const verbirg = (o) => (o.bereich ? r._chunkSatzAus(o.art, o.key) : o.refs ? zieht(o, true) : (o.visible = false));
+                const zeig = (o) => (o.bereich ? r._bauSatzMarke(o.key, o.art) : o.refs ? zieht(o, false) : (o.visible = true));
                 const ruhen = ["_tickNahWiese", "_ruheImBild"].map((m) => [m, Object.hasOwn(r, m), r[m]]);
                 for (const [m] of ruhen) r[m] = () => 0;
                 // verbirgt der Schuss die Strähnen des Spielers, ist sein Kopf kahl: die Kappe gehört zum Haar (`_kopfKahl`, haar.K2)
@@ -1432,19 +1438,31 @@ async function starte() {
                         if (mb && ms.pixel) ms.ziel = zielTreue(m);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
-                    // DIE PROBEN DES GESICHTS (`--gesicht`): je Vertex des Kopfs sein Zug (Iris am Gelenk, auf der
+                    // DIE PROBEN DES GESICHTS: je Vertex des Kopfs sein Zug (Iris am Gelenk, auf der
                     // Kopf-Haut der Ton seiner Ecke, `aTon` — koerper `menschTon`: Haut, Lippe, Höhle, Haar-Kappe), projiziert auf den
                     // Schirm; `__gesichtMasse` liest das BILD dort, wo die Teilung den Teil des Vertex zeigt (abnahme-urteil). Die Töne
                     // kommen aus dem Leib selbst, nie von Hand — bis mensch.K4 aus der Farbe der Ecke, die die Verdeckung der Haut dunkelt.
-                    // Die Maße gehören der Klasse, die die Kopf-Haut wählt (mensch-kopf `^spieler:kopf/`); wählt sie sie nicht (haar
-                    // `^spieler:kopf/hair$`), ist `--gesicht` nur die Pose — bis dahin warf jeder Haar-Schuss „keine Kopf-Haut am Gelenk
-                    // head“ (haar.K2#1 third, beide Geräte).
+                    // Die Maße gehören der Klasse, die die Kopf-Haut eines Leibs wählt (mensch-kopf `^spieler:kopf/`, `^bewohner:kopf/`);
+                    // wählt sie sie nicht (haar `^spieler:kopf/hair$`), misst sie kein Gesicht — bis dahin warf jeder Haar-Schuss „keine
+                    // Kopf-Haut am Gelenk head“ (haar.K2#1 third, beide Geräte). DAS GESICHT IST EINES: das des sichtbaren gewählten
+                    // Leibs, der der Kamera am nächsten steht (`_leibWurzel`, `_menschLeib`: der Spieler oder ein Bewohner — vor
+                    // der Wache steht um 7,2 Uhr die zweite daneben; ein Bewohner außerhalb der Nah-Wahl trägt sichtbare Teile unter
+                    // seiner verborgenen Wurzel, am Start-Dorf 77 von 81 Leibern); die Pose (`--gesicht` vor dem Spieler oder die
+                    // Kamera vor einem Bewohner) ist nur die Pose. Bis w4-bewohner-wache kannte das Gesicht nur den Spieler unter
+                    // `--gesicht`.
                     let gesicht = null;
-                    if (k.gesicht != null && ["spieler:kopf/haut", "spieler:kopf/skin"].some((n) => re.test(n))) {
+                    const kopfHaut = /:kopf\/(haut|skin)$/;
+                    if (namen.some((n) => kopfHaut.test(n))) {
                         const T = THREE;
                         const K = window.__koerperCore;
                         if (!K || typeof K.menschTon !== "function" || !K.KOPF_SOLL)
                             throw new Error("--gesicht: koerper-core ohne menschTon/KOPF_SOLL in der Seite");
+                        const ab = (L) => L.position.distanceTo(cam.position);
+                        const [wahlLeib] = namen
+                            .filter((n) => kopfHaut.test(n))
+                            .flatMap((n) => teile.get(n).map(r._leibWurzel, r))
+                            .filter((L) => L.visible)
+                            .sort((a, b) => ab(a) - ab(b));
                         const knochen = (o, i) => {
                             const si = o.geometry.attributes.skinIndex,
                                 sw = o.geometry.attributes.skinWeight;
@@ -1473,9 +1491,10 @@ async function starte() {
                             nm = 0;
                         const mitte = new T.Vector3();
                         for (const [n, os] of teile) {
-                            if (!/^spieler:kopf\/(auge|haut|skin)$/.test(n)) continue;
+                            if (!/:kopf\/(auge|haut|skin)$/.test(n)) continue;
                             const kix = namen.indexOf(n) + 1;
                             for (const o of os) {
+                                if (r._leibWurzel(o) !== wahlLeib) continue;
                                 const pa = o.geometry.attributes.position;
                                 for (let i = 0; i < pa.count; i++) {
                                     const kn = knochen(o, i);
@@ -1532,7 +1551,7 @@ async function starte() {
                                 vorn: p.z === "iris" ? p.d < median[p.seite] : p.w.clone().sub(mitte).dot(zurCam) > 0,
                                 kalotte: p.z !== "iris" && p.w.y > yHaar,
                             }));
-                        const haarK = namen.map((n, j) => (/^spieler:kopf\/hair$/.test(n) ? j + 1 : 0)).filter(Boolean);
+                        const haarK = namen.map((n, j) => (n === `${r._menschLeib(wahlLeib)}:kopf/hair` ? j + 1 : 0)).filter(Boolean);
                         if (!nm) throw new Error("--gesicht: keine Kopf-Haut am Gelenk head");
                         gesicht = __gesichtMasse(u8, teil, W, H, proben, haarK);
                     }
