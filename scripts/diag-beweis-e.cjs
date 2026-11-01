@@ -78,10 +78,10 @@ const SICHT_FN = async (a) => {
         rend.setRenderTarget(rt);
         if (typeof rend.renderAsync === "function") await rend.renderAsync(st.scene, cam);
         else rend.render(st.scene, cam);
-        const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, 160, 90);
+        const u8 = await window.__zielLesen(rt, 160, 90);
         rend.setRenderTarget(prev);
         if (rt.dispose) rt.dispose();
-        return px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
+        return u8;
     };
     let best = null;
     for (let k = 0; k < 12; k++) {
