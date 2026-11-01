@@ -96,21 +96,27 @@ const state = {
 // Naht der Nachbarn p95 20 Takte (die Folge-Schlange des Haupt-Fadens hielt 6). Die Nachrichten des Bodens nimmt der Faden
 // sofort; jeder andere Auftrag geht in seiner Reihe (`reihe`), je einer in einem eigenen Takt — dazwischen kommt jeder Eintritt,
 // der während eines Baus ankam, zum Zug. Die Reihe der übrigen bleibt, wie der Main sie schickte.
+// DIE EINE REIHE (w4-b-boden3): fehlen einem Neben-Faden noch die Regionen des Voxel-Fadens (`hydroVom`), HÄLT sie — jede
+// Nachricht wartet in ihr, auch eine des Bodens, und nach der letzten Region geht sie weiter, wie der Main sie schickte. Bis
+// w4-b-boden3 nahm eine zweite Liste (`warten`) die Nachricht auf, die der Takt gerade zog, und legte sie nach den Regionen HINTER
+// die übrigen der Reihe: der Fern-Faden rechnete die Ring-Scheiben 1 und 2 vor der 0 (warten [1], Reihe [2, 3, 4]), und der Ring
+// hängte vier Scheiben in einem Takt ein (gate:fern-ring auf dem Linux-Läufer 2048 > 3 × 512, CI 41256591761).
 const BODEN_SOFORT = new Set(["boden-ein", "boden-aus", "boden-frei"]);
 const reihe = [];
+let reiheHaelt = false;
 const reiheTakt = new MessageChannel();
 reiheTakt.port1.onmessage = () => {
+    if (reiheHaelt || !reihe.length) return; // die letzte Region stößt sie wieder an (`hydroVom`)
     nachricht(reihe.shift());
     if (reihe.length) reiheTakt.port2.postMessage(0);
 };
 self.onmessage = function (e) {
-    if (e.data && BODEN_SOFORT.has(e.data.type)) return void nachricht(e);
+    if (!reiheHaelt && e.data && BODEN_SOFORT.has(e.data.type)) return void nachricht(e);
     if (reihe.push(e) === 1) reiheTakt.port2.postMessage(0);
 };
 function nachricht(e) {
     const msg = e.data;
     if (!msg || !msg.type) return;
-    if (warten) return void warten.push(e); // die Regionen des Voxel-Fadens kommen zuerst (`hydroVom`)
     try {
         if (msg.type === "init" || msg.type === "state-set") {
             applyStateSnapshot(msg.snapshot);
@@ -1295,17 +1301,15 @@ function hydroAntwort(h, daten) {
     return { region, transfer };
 }
 
-// DIE REGIONEN VOM VOXEL-FADEN (ein Neben-Faden, geboren nach ihrer Bestellung): jede Nachricht hinter seinem Stand wartet, bis
-// der Port sie gebracht hat (`hydro-an`) — derselbe Zustand wie in jedem Faden, der sie selbst rechnete.
-let warten = null;
+// DIE REGIONEN VOM VOXEL-FADEN (ein Neben-Faden, geboren nach ihrer Bestellung): die Reihe hält, bis der Port sie gebracht hat
+// (`hydro-an`) — jede Nachricht hinter seinem Stand wartet in ihr, derselbe Zustand wie in jedem Faden, der sie selbst rechnete.
 function hydroVom(port) {
-    warten = [];
+    reiheHaelt = true;
     port.onmessage = (e) => {
         if (!e.data.fertig) return void hydroSetzen(e.data.key, e.data.region);
         port.close();
-        const liste = warten;
-        warten = null;
-        for (const m of liste) self.onmessage(m);
+        reiheHaelt = false;
+        if (reihe.length) reiheTakt.port2.postMessage(0);
     };
 }
 
