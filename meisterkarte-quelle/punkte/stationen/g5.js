@@ -26,6 +26,96 @@ const sitzung = (sek, ...zeilen) => ({ sek, befehl: ["bash", "-c", [...KOPF, ...
 // (DER EIGENE BOOT von siedlung.K5 fiel am 29.10.: auch dort misst die Kälte der EINE Start der Sitzung — `dorfErwachen` unten.)
 const K = { K: "{KOORD}" }; // die Mess-Skripte der Berichte liegen im Koordinations-Baum (bericht/…)
 
+// ───────── DIE ZÄHLUNG HARTER STRINGS (spielgang.K5, p3-stationen-g456) — läuft als `node -e` im Spiel-Baum, Null-Renderer ─────────
+async function textZaehlung(port, aus) {
+    const path = require("path");
+    const fs = require("fs");
+    const WB = require(path.resolve("scripts/lib/welt-boot.cjs"));
+    let out = { glieder: 0 };
+    const server = WB.statikServer();
+    await server.lausche(Number(port));
+    const { browser, page } = await WB.nullSeite({ frist: 300000 });
+    try {
+        await server.zeige(page, 120000);
+        await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa > 0));
+        out = await page.evaluate(() => {
+            const r = window.anazhRealm, C = r.constructor;
+            if (typeof window.__codeOf !== "function") return { glieder: 0, fehler: "die Seite trägt kein window.__codeOf" };
+            const SENKE = /\.(textContent|innerText|innerHTML|title|placeholder)\s*=(?!=)\s*|\b(_hudSchreib|_chatEcho|alert|confirm|prompt)\s*\(/g;
+            const LIT = /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\]|\\.)*`/g;
+            // Wort-Text: nach Abzug von `${…}`, Markup und Entitäten ein Wort aus ≥ 2 Buchstaben UND ein Zeichen der Sprache (Großbuchstabe,
+            // Umlaut, Satzzeichen) — Bezeichner, CSS-Klassen, Attribut-Namen und Vergleichs-Wörter („width“, „stats-hud-hp-glow“, „third“) nie
+            const wort = (l) => {
+                const t = l.slice(1, -1).replace(/\$\{[^}]*\}/g, " ").replace(/<[^>]*>/g, " ").replace(/&\w+;/g, " ");
+                return /[A-Za-zÄÖÜäöüß]{2,}/.test(t) && /[A-ZÄÖÜäöüß…!?:]/.test(t);
+            };
+            // der Ausdruck hinter der Senke: bis zum Ende der Anweisung (Zuweisung) bzw. bis zur schließenden Klammer (Ruf)
+            const ausdruck = (code, i, ruf) => {
+                let tiefe = 0, q = null;
+                for (let k = i; k < code.length; k++) {
+                    const c = code[k];
+                    if (q) { if (c === "\\") k++; else if (c === q) q = null; continue; }
+                    if (c === '"' || c === "'" || c === "`") q = c;
+                    else if ("([{".includes(c)) tiefe++;
+                    else if (")]}".includes(c)) { if (tiefe === 0) return code.slice(i, k); tiefe--; }
+                    else if (!ruf && tiefe === 0 && (c === ";" || c === "\n")) return code.slice(i, k);
+                }
+                return code.slice(i);
+            };
+            const glieder = [];
+            for (const o of [C.prototype, C])
+                for (const k of Object.getOwnPropertyNames(o)) {
+                    const d = Object.getOwnPropertyDescriptor(o, k);
+                    if (k !== "constructor" && d && typeof d.value === "function") glieder.push([k, d.value]);
+                }
+            const senken = {}, beispiele = [], mit = new Set(), gesehen = new Set();
+            for (const [name, fn] of glieder) {
+                const code = window.__codeOf(fn);
+                for (const m of code.matchAll(SENKE)) {
+                    const s = m[1] || m[2];
+                    for (const l of (ausdruck(code, m.index + m[0].length, !!m[2]).match(LIT) || []).filter(wort)) {
+                        const key = name + "|" + l;
+                        if (gesehen.has(key)) continue;
+                        gesehen.add(key);
+                        mit.add(name);
+                        senken[s] = (senken[s] || 0) + 1;
+                        if (beispiele.length < 8) beispiele.push(name + " " + s + ": " + l.slice(0, 60));
+                    }
+                }
+            }
+            // das DOM aus index.html: jeder Text-Knoten mit Wort-Text (auch verborgene Tafeln — sie zeigen sich später)
+            const dom = new Set();
+            const tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+            for (let n = tw.nextNode(); n; n = tw.nextNode()) {
+                const p = n.parentElement;
+                if (!p || /^(SCRIPT|STYLE|NOSCRIPT|TEMPLATE)$/.test(p.tagName)) continue;
+                const t = n.textContent.trim();
+                if (/[A-Za-zÄÖÜäöüß]{2,}/.test(t)) dom.add(t.slice(0, 80));
+            }
+            // die EINE Text-Quelle: eine Tafel mit de und en (je ≥ 10 Zeilen, dieselben Schlüssel) am Stamm oder am Fenster
+            let quelle = null;
+            const tafel = (v) => v && typeof v === "object" && v.de && v.en && typeof v.de === "object" && typeof v.en === "object" &&
+                Object.keys(v.de).length >= 10 && Object.keys(v.de).every((x) => x in v.en);
+            for (const [wo, o] of [["AnazhRealm", C], ["window", window], ["state", r.state]])
+                for (const k of Object.getOwnPropertyNames(o)) {
+                    let v;
+                    try { v = o[k]; } catch (_e) { continue; }
+                    if (tafel(v)) { quelle = wo + "." + k + " (de " + Object.keys(v.de).length + ", en " + Object.keys(v.en).length + ")"; break; }
+                }
+            if (dom.size) beispiele.push(...[...dom].slice(0, 3).map((t) => "DOM: " + t));
+            return { glieder: glieder.length, gliederMit: mit.size, code: gesehen.size, dom: dom.size, senken, quelle, beispiele };
+        });
+    } catch (e) {
+        out.fehler = String(e.message).split("\n")[0].slice(0, 300);
+    } finally {
+        fs.writeFileSync(aus, JSON.stringify(out));
+        console.log("TEXTE " + JSON.stringify(out));
+        await browser.close().catch(() => {});
+        server.close();
+        process.exit(0);
+    }
+}
+
 // ───────── DIE PROBEN AN DER SEITE (Zweig proben-leib, stationen/seite.cjs): leib.K2 · leib.K4 · halten.K1#2 · halten.K5 · tore.K3 ─────────
 // Bis 29.10. bootete jede dieser Stationen ihre Linse mit eigener Welt (Takt 19 an b3f9ae95: 4–10 Soll-Minuten je Lauf); jetzt
 // ruft die Probe in der Welt der Sitzung die Seiten-Funktionen der Linse selbst (aus ihrer Datei am SHA, `H.quelle`) und nur
@@ -2967,6 +3057,42 @@ const stationen = [
         quelle: "1 = HUD und Menü antworten INP ≤ 200 ms und das HUD deckt ≤ 5 % des Bilds, an einem Gerät",
     },
 
+    // ───────── spielgang.K5 — die Sprache des Spielers (p3-stationen-g456): die Zählung harter Strings ─────────
+    // `textZaehlung` (oben) bootet die Welt am Null-Renderer und zählt über `window.__codeOf` (der EINE Stripper: Code ohne Kommentare)
+    // jedes Glied des Stamms (Prototyp und Statik) — je UI-Senke (`.textContent`/`.innerText`/`.innerHTML`/`.title`/`.placeholder` =,
+    // `_hudSchreib(`, `_chatEcho(`, `alert(`/`confirm(`/`prompt(`) jedes String-Literal mit Wort-Text (nach Abzug von `${…}` und
+    // Markup) als harte Zeile; dazu jeder Text-Knoten des DOM aus index.html (HUD, Werkstatt, Menüs — auch die verborgenen). Die
+    // EINE Text-Quelle erkennt sie an ihrer Lage: eine Tafel mit `de` und `en` (je ≥ 10 Zeilen, dieselben Schlüssel) am Stamm oder
+    // am Fenster. Staffel 1: 0 harte Zeilen UND die Tafel. Das Schlupfloch (nur das Menü übersetzt) bleibt zu: HUD, Werkstatt und
+    // Chat-Antworten sind Senken der Zählung.
+    {
+        kriterium: "spielgang.K5",
+        staffel: 1,
+        geraet: "headless",
+        befehl: ["node", "-e", "(" + textZaehlung + ")(process.argv[1], process.argv[2]);", "{PORT}", "{AUS}"],
+        gpu: false,
+        zeit: false,
+        minuten: 4,
+        urteil: (j, lauf) => {
+            j = j || jsonZeile(lauf.stdout, /^TEXTE \{/);
+            if (!j || !Number.isFinite(j.glieder) || !(j.glieder > 0)) return { gruen: false, zahl: "keine TEXTE-Zeile (Exit " + lauf.exit + ")" + (j && j.fehler ? ": " + j.fehler : "") };
+            const hart = j.code + j.dom;
+            return {
+                gruen: hart === 0 && !!j.quelle,
+                zahl:
+                    hart + " harte UI-Zeilen (Code " + j.code + " in " + j.gliederMit + " von " + j.glieder + " Gliedern · DOM " + j.dom + ") · je Senke " +
+                    Object.entries(j.senken || {}).map(([k, n]) => k + " " + n).join(" · ") + " · Text-Quelle DE/EN: " + (j.quelle || "keine") +
+                    (j.beispiele && j.beispiele.length ? " · z. B. " + j.beispiele.slice(0, 3).join(" | ") : ""),
+            };
+        },
+        proben: [
+            { name: "jede Zeile aus der Tafel", stdout: 'TEXTE {"glieder":4100,"gliederMit":0,"code":0,"dom":0,"senken":{},"quelle":"AnazhRealm.TEXTE (de 412, en 412)","beispiele":[]}', gruen: true },
+            { name: "nur das Menü übersetzt, HUD und Chat hart", stdout: 'TEXTE {"glieder":4100,"gliederMit":31,"code":57,"dom":0,"senken":{"_hudSchreib":20,"_chatEcho":37},"quelle":"AnazhRealm.TEXTE (de 40, en 40)","beispiele":["_hudSchreib: Werkstatt"]}', gruen: false },
+            { name: "keine Tafel, aber 0 Treffer (die Zählung blind)", stdout: 'TEXTE {"glieder":4100,"gliederMit":0,"code":0,"dom":0,"senken":{},"quelle":null,"beispiele":[]}', gruen: false },
+        ],
+        pfad: ["stamm/", "index.html", "scripts/lib/welt-boot.cjs", "scripts/lib/stamm.cjs"],
+        quelle: "1 = jede UI-Zeile aus EINER Text-Quelle in DE und EN (0 harte Strings, Zählung), an einem Gerät umgeschaltet",
+    },
     // ───────── spielgang.K4 — Zugänglichkeit aus dem Gesetz: die Untertitel (Zweig hud-zugang) ─────────
     {
         kriterium: "spielgang.K4",
@@ -3150,6 +3276,16 @@ module.exports.fehlt = [
     // 1,69 min, ROT Kontrolle 7 699 ms; GTX 98ef98bb ROT 3,0 min)
     { kriterium: "tore.K5", staffel: 2, befehl: null, grund: "nicht als Probe der Sitzung gebaut: das Kriterium verlangt B als eigenen Browser-Prozess mit frischem Profil (das andere Gerät) neben A, und der Teil (T) samt WELT lebt inline im hauptLauf von scripts/diag-praegung-welt.cjs (686 Z., L S N G R B K T F U in EINEM Lauf mit eigener Welt A) — ohne Seiten-Funktion des Teils (T) im Spiel-Baum misst keine Probe A in der Welt der Sitzung; der eigene Boot je Station ist auf radeon|gtx gefallen (die Fahrt ≤ 30 min). Letzte Messung: Radeon b3f9ae95 ROT (Kontrolle 7 699 ms > 5 s), GTX 98ef98bb ROT" },
     { kriterium: "ultiversum.K4", staffel: 2, befehl: null, grund: "nicht gebaut (w3t-spielergesetz baute Staffel 1): ein Spieler-Gesetzbuch dockt über den Weg von studios.K5 an (ein neuntes Gesetzbuch mit PARAMS_BY_KIND und Bauer, `git diff stamm/` = 0), und der Weg ist selbst ungebaut — die Übergabe kennt eine Positivliste (`stamm/netz-portal.js`, koerper und kreatur), der Wirt kennt Arten beim Namen. Ein Gesetz aus dem Satz („wann immer …“) ist eine Welt-Regel (`_registerWorldRule`), kein Gesetzbuch" },
+    // p3-stationen-g456 (01.11.): DIE FAHRT trägt keine neue Probe — die Summe der Deckel steht Radeon 1 790 / GTX 1 785 von 1 800 s
+    // (FAHRT_MAX_S samt Boot); was hier steht, braucht einen eigenen Lauf mit Sekunden, die erst die Eich-Fahrt freigibt, oder ein
+    // Werkzeug oder Spiel, das es nicht gibt — je Eintrag beim Namen
+    { kriterium: "tore.K1", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): t vom Kreuzen der Apertur (`enterPortal`) bis zur ersten angenommenen Eingabe mit Wirkung im Ausgabe-Bild der Ziel-Welt, jedes Zwischenbild in Luma 0,05–0,95, kein Frame > 100 ms, ≥ 4 Läufe — die Probe TORE_K3 (gate:portal-konformanz K8) geht durch jedes Studio-Tor, nimmt aber weder Zeit noch Bild; ein Lauf mit Uhr und Luma je Bild hinter der Apertur hat in der Fahrt keinen Platz (10 s frei). Heute bootet jedes Studio-Tor ein Vollbild-iframe kalt mit eigenem Renderer, der Welt-Wechsel lädt die Seite neu (`_weltWechselNeuLaden`)" },
+    { kriterium: "tore.K2", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): zwei Bilder aus dem Ausgabe-Pfad je Tor — die Membran 3 m vor der Apertur und das Welt-Bild nach der ersten Eingabe, die die Kamera ≥ 1° drehte — und Spearman r ≥ 0,5, milchweiss ≤ 0,05, oeffnungBunt ≥ 20, Stempel frisch; derselbe Gang wie tore.K1 (die Fahrt hat 10 s frei); die Klassen tor-fern, tor-bunt, tor-ziel der Soll-Tafel tragen am Kopf kein Ist" },
+    { kriterium: "tore.K4", staffel: 1, befehl: null, grund: "unmessbar in EINEM Lauf auf EINEM Gerät: zwei physische Geräte im LAN (Radeon-Maschine und OMEN) über den signaling-server, der Peer im Ausgabe-Bild von B — die Punkte-Maschine fährt je Gerät eine eigene Sitzung, und kein Läufer verbindet zwei Sitzungen zweier Rechner; gate:mp-sync fährt zwei Seiten in EINEM Browser (das Schlupfloch der Staffel)" },
+    { kriterium: "ultiversum.K1", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): zwei per Tor erreichbare Welten mit verschiedenen Konstanten und je Konstante ein Leser (Sprung-Höhe, Himmels-Bild) — g ist `state.gravity` (Vorgabe −9,81 in stamm/dirigent-kern.js, ein Wort des Spielers über die DSL `gravity`), ein Gesetz je Welt mit g, Himmel, Wetter-Tafel und Gelände-Parametern hinter einem Welt-Tor ist im Spiel nicht nachgewiesen; die Probe braucht dazu den Welt-Wechsel (ein Neuladen, Ring 8)" },
+    { kriterium: "spielgang.K1", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): EIN Lauf ohne Neuladen und ohne Konsole aus aufgenommenen Spieler-Eingaben über ≥ 3 der fünf Schritte (ankommen · laufen und sehen · bauen · mit der KI erschaffen · benutzen · teilen), je Schritt die Zahl seines Bereichs — es gibt keine Aufnahme der Eingaben und keinen Abspieler im Spiel-Baum; die Proben der Sitzung stellen die Welt über die Werkbank (eval, umstellen), das ist die Konsole; ein Lauf über fünf Schritte hat in der Fahrt keinen Platz" },
+    { kriterium: "spielgang.K2", staffel: 1, befehl: null, grund: "unmessbar ohne Blind-Spieler: ein frischer Agent ohne Doku, der nur Bild und Eingabe kennt und in ≤ 3 min gehen, umsehen, Sicht-Wechsel, Werkstatt, Satz und Tor findet — kein solcher Agent läuft an der Punkte-Maschine (ein Läufer mit Bild-Modell und Eingabe-Schleife fehlt); die Zählung am Eingabe- und Ereignis-Strom gäbe es (`H.ereignisStrom`, stationen/sitzung-seite.js)" },
+    { kriterium: "spielgang.K5", staffel: 2, befehl: null, grund: "nicht gebaut (p3-stationen-g456): die KI antwortet in der Sprache des Spielers — der Korpus aus ki.K1 trägt keinen Teil EN (spec/abnahme/ki-korpus.json), und die Staffel 1 (EINE Text-Quelle DE/EN) steht ROT: es gibt keine Sprache des Spielers" },
     // fahrzeug.K2#2 ist seit w4-sitzung-reif eine Station (der Verkehr der Stadt, PFLICHT-OFFEN C); ihre übrigen Teile nennt sie selbst:
     // die feste Route der 1 quert drei Bäche (Furten: zwei Feldwege und eine Gasse von 4,−7), aber keinen 25°-Hang — das Wegenetz legt
     // keinen Weg so steil (die Trassen fallen höchstens um `gefaelle`), ein Hang-Teil braucht eine eigene Strecke am Messort hang
