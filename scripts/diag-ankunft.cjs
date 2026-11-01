@@ -411,25 +411,6 @@ async function probe(arg) {
     // eine Taste an `ziel` (keydown · keyup · keypress) und der Fokus beim Namen
     const taste = (ziel, typ, key, code = key, mehr) => ziel.dispatchEvent(new KeyboardEvent(typ, { key, code, bubbles: true, ...mehr }));
     const fokus = (a = document.activeElement) => (a ? a.id || a.tagName : null);
-    // der Spion am Ruf: lieferer[name] zählt (und delegiert), solange wer.methode(...args) läuft — true = gerufen
-    const ruft = (wer, methode, lieferer, name, args) => {
-        const eigen = Object.prototype.hasOwnProperty.call(lieferer, name);
-        const echt = lieferer[name];
-        let n = 0;
-        lieferer[name] = function (...x) {
-            n++;
-            return echt.apply(this, x);
-        };
-        try {
-            wer[methode](...args);
-        } catch {
-            /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
-        } finally {
-            if (eigen) lieferer[name] = echt;
-            else delete lieferer[name];
-        }
-        return n > 0;
-    };
     const zeilen = () => Array.from(document.querySelectorAll("#chat-output > div")).map((d) => d.textContent);
     const buch = await r._foundryAwaitBook(45000);
     await __takte(30, 30);
@@ -443,7 +424,7 @@ async function probe(arg) {
         // die Render-Schleife fragt das Weltbild, solange es nicht steht (Spion am Ruf)
         const daVor = st._weltbildDa;
         st._weltbildDa = 0;
-        m.schleifeFragt = ruft(r, "_loopRender", r, "_ankunftsBild", [performance.now()]);
+        m.schleifeFragt = __rufe(r, "_loopRender", r, "_ankunftsBild", [performance.now()]) > 0;
         st._weltbildDa = daVor;
         if (ls) {
             // Die Welt wächst, bis sie steht (`_weltbildFehlt` leer, höchstens 90 s) — vor dem Rundblick im Blick, vor den Fällen
@@ -1371,10 +1352,10 @@ async function probe(arg) {
                 const knoten = r._kamDurchKnoten;
                 r._kamDurchKnoten = {};
                 m.konsum = {
-                    _hasMagnifyingInSight: ruft(r, "_hasMagnifyingInSight", r, "_fadenkreuzStrahl", []),
-                    _pickScatterAtCrosshair: nahStreu ? ruft(r, "_pickScatterAtCrosshair", r, "_fadenkreuzStrahl", []) : null,
-                    _kampfKlingenAchse: ruft(r, "_kampfKlingenAchse", r, "_fadenkreuzStrahl", [{ rahmen, reach: rahmen.reach, ziel: null }, {}]),
-                    _kameraDurchsichtNode: ruft(r, "_kameraDurchsichtNode", K, "_durchsichtGewicht", [THREE.TSL, "rinde"]),
+                    _hasMagnifyingInSight: __rufe(r, "_hasMagnifyingInSight", r, "_fadenkreuzStrahl", []) > 0,
+                    _pickScatterAtCrosshair: nahStreu ? __rufe(r, "_pickScatterAtCrosshair", r, "_fadenkreuzStrahl", []) > 0 : null,
+                    _kampfKlingenAchse: __rufe(r, "_kampfKlingenAchse", r, "_fadenkreuzStrahl", [{ rahmen, reach: rahmen.reach, ziel: null }, {}]) > 0,
+                    _kameraDurchsichtNode: __rufe(r, "_kameraDurchsichtNode", K, "_durchsichtGewicht", [THREE.TSL, "rinde"]) > 0,
                 };
                 r._kamDurchKnoten = knoten;
                 // das Ziel und sein Auge, wie `_kamZielSetzen` sie schreibt (dieselben Werte wie uKamZiel · uKamAuge)

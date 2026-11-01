@@ -556,9 +556,7 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
             }
             // CRITICAL Cleanup: zurück zum Default-Blick (alle Drawer zu) + Yaw auf 0,
             // sonst stören die nachgelagerten Drawer- und Ring-5-V2-Prep-Tests.
-            r.closeAllDrawers();
-            st.yaw = 0;
-            if (st.playerMesh) st.playerMesh.rotation.y = 0;
+            window.__werkPutz();
         } catch (err) {
             out.error = err && err.message;
         }
@@ -818,9 +816,7 @@ async function checkBandCadWorkshop({ page, check, errors, finalState }) {
             r.deleteBlueprint("test_v803");
             r.selectBlueprintForEdit("stein_block");
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            r.closeAllDrawers();
-            st.yaw = 0;
-            if (st.playerMesh) st.playerMesh.rotation.y = 0;
+            window.__werkPutz();
         } catch (err) {
             out.error = err && err.message;
         }
@@ -928,13 +924,7 @@ async function checkBandEarlyRingsAndUi({ page, check, errors, finalState }) {
         st.player.emotions.joy = 0.42;
         st.player.emotions.chaos = 0.13;
         r.saveState();
-        const raw = await window.__stand();
-        let parsed = null;
-        try {
-            parsed = JSON.parse(raw);
-        } catch (e) {
-            void e;
-        }
+        const parsed = await window.__standJson();
         out.savedEmotions =
             !!parsed &&
             parsed.playerEmotions &&

@@ -265,13 +265,7 @@ async function checkBandRing5Soul({ page, check, errors, finalState }) {
         // Save-Roundtrip: die getragene Wolf-Verkörperung reist als Custom-Seele
         r.applyPlayerSoul("wolf");
         r.saveState();
-        const raw = await window.__stand();
-        let parsed = null;
-        try {
-            parsed = JSON.parse(raw);
-        } catch (e) {
-            void e;
-        }
+        const parsed = await window.__standJson();
         out.savedPlayerSoul = !!parsed && parsed.playerSoul === "bp_koerper_wolf";
 
         // loadState wendet die gespeicherte Seele an (zurück auf den Menschen)

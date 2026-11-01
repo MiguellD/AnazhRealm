@@ -2476,9 +2476,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             if (st.blueprints["test_9b"]) r.deleteBlueprint("test_9b");
             r.selectBlueprintForEdit("stein_block");
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            r.closeAllDrawers();
-            st.yaw = 0;
-            if (st.playerMesh) st.playerMesh.rotation.y = 0;
+            window.__werkPutz();
         } catch (err) {
             out.error = err && err.message;
         }
@@ -2691,9 +2689,7 @@ async function checkBandWaves9And10a({ page, check, errors, finalState }) {
             if (st.customSouls) delete st.customSouls["bp_test_9d_soul"];
             r.selectBlueprintForEdit("stein_block");
             // UI-Putz: Welt-Tab aufgelöst — neutraler Reset via closeAllDrawers (Welt = Default-Blick).
-            r.closeAllDrawers();
-            st.yaw = 0;
-            if (st.playerMesh) st.playerMesh.rotation.y = 0;
+            window.__werkPutz();
         } catch (err) {
             out.error = err && err.message;
         }

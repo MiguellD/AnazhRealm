@@ -1793,25 +1793,6 @@ hauptLauf(async () => {
         const eB = e1.find((e) => e.studioOv && ovA && e.studioOv.rolle !== ovA.rolle);
         const ovB = eB ? r._artifactStudioOv(eB) : null;
         res.ovKeysSplit = !!(ovA && ovB && r._studioOvHash(ovA) !== r._studioOvHash(ovB));
-        // der Spion am Ruf: lieferer[name] zählt (und delegiert), solange wer.methode(...args) läuft — die Zahl der Rufe
-        const ruft = (wer, methode, lieferer, name, args) => {
-            const eigen = Object.prototype.hasOwnProperty.call(lieferer, name);
-            const echt = lieferer[name];
-            let n = 0;
-            lieferer[name] = function (...x) {
-                n++;
-                return echt.apply(this, x);
-            };
-            try {
-                wer[methode](...args);
-            } catch {
-                /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
-            } finally {
-                if (eigen) lieferer[name] = echt;
-                else delete lieferer[name];
-            }
-            return n;
-        };
         // DER ERLEBNIS-HEBEL (Schicht-Vollendung): die Hof-Bäume und Marktstände des Plans stehen, die Zäune laufen über den
         // Zaun-Pool, die Äcker in die Wege-Karte; ohne die Schichten hebt er keins davon (die Zähne). Die Probe räumt ihre Bauten.
         const erlebnis = (p, key) => {
@@ -1819,7 +1800,7 @@ hauptLauf(async () => {
             const wk = r._wegeKarteEnsure();
             const b0 = wk.siedlungen.length;
             const m0 = (st.stlMauer || {}).top | 0;
-            const zaeune = ruft(r, "_spawnSettlementErlebnis", r, "_stlZaunAddStrip", [p, o1, { key }]);
+            const zaeune = __rufe(r, "_spawnSettlementErlebnis", r, "_stlZaunAddStrip", [p, o1, { key }]);
             const neu = st.architectures.slice(n0);
             neu.forEach((e) => r.removeArchitecture(e));
             const aecker = wk.siedlungen.slice(b0).some((b) => b.formen.some((fo) => fo.kanal === 1));
@@ -1867,9 +1848,9 @@ hauptLauf(async () => {
         // den Chat-Satz „baue dorf hier" (die Probe wandert mit dem Code).
         // derselbe Strom für den Chat-Satz „baue dorf hier" (kein Math.random im Satz hält gate:werkstatt-weg W1)
         const baueHier = (r.chatDslPatterns || []).find((p) => p.example === "baue dorf hier");
-        res.gammaHier = !!baueHier && ruft(baueHier, "build", r, "_bauSame", [["baue dorf hier", "dorf"]]) > 0;
+        res.gammaHier = !!baueHier && __rufe(baueHier, "build", r, "_bauSame", [["baue dorf hier", "dorf"]]) > 0;
         res.gammaStream =
-            ruft(r, "spawnSettlement", r, "_bauSame", [{ position: null }]) > 0 &&
+            __rufe(r, "spawnSettlement", r, "_bauSame", [{ position: null }]) > 0 &&
             window.__fehlt([r.spawnSettlement, r._bauSame], /Math\.random/);
         // DER DSL-AKT spawn_village liest die Größe aus dem Siedlungs-Gesetz NACH der Buch-Ankunft: das Dorf
         // des Akts trägt nH = SIEDLUNG.nHMin + (Same >>> 24) % SIEDLUNG.nHSpan, gemessen am Rebuild-Gedächtnis (settlementCells).

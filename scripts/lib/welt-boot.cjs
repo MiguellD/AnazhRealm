@@ -225,6 +225,55 @@ async function stand() {
     await r._speicherStill();
     return (await r._idbGetWorld(st.worldMeta.worldId)).json;
 }
+// … und ALS OBJEKT (`await window.__standJson()`): der Stand geparst, unlesbar `null` — bis w4-verkehr-c2 sechsmal derselbe
+// Zwilling (playtest/feld-nexus, koerper, siedlung dreimal, werkstatt)
+async function standJson() {
+    const roh = await window.__stand();
+    try {
+        return JSON.parse(roh);
+    } catch {
+        return null;
+    }
+}
+// DER PUTZ DER WERKSTATT-PROBEN (`window.__werkPutz()`): alle Schubladen zu (der Welt-Blick), Gier und Leib auf 0 — bis
+// w4-verkehr-c2 achtmal derselbe Zwilling (playtest/bau-buch zweimal, bau, feld-nexus dreimal, werkstatt zweimal)
+function werkPutz() {
+    r.closeAllDrawers();
+    st.yaw = 0;
+    if (st.playerMesh) st.playerMesh.rotation.y = 0;
+}
+// DIE BAUTEN LEER (`window.__bautenLeer()`): jedes Mesh der Architekturen aus der Szene und entsorgt, die Liste leer — bis
+// w4-verkehr-c2 sechsmal derselbe Zwilling in playtest/siedlung
+function bautenLeer() {
+    for (const a of st.architectures) {
+        if (a.mesh) {
+            st.scene.remove(a.mesh);
+            r._disposeSoulGroup(a.mesh);
+        }
+    }
+    st.architectures = [];
+}
+// DER SPION AM RUF (`window.__rufe(wer, methode, lieferer, name, args)`): `lieferer[name]` zählt (und delegiert) über die EINE
+// Leihe, solange `wer[methode](...args)` läuft — die Zahl der Rufe; ein Wurf nach dem Ruf entwertet den Konsum nicht. Bis
+// w4-verkehr-c2 dreimal derselbe Zwilling (diag-ankunft, diag-settlement, diag-werkstatt-weg)
+function rufe(wer, methode, lieferer, name, args) {
+    const echt = lieferer[name];
+    let n = 0;
+    const zurueck = leihe(lieferer, {
+        [name]: function (...x) {
+            n++;
+            return echt.apply(this, x);
+        },
+    });
+    try {
+        wer[methode](...args);
+    } catch {
+        // der Konsum zählt bis zum Wurf
+    } finally {
+        zurueck();
+    }
+    return n;
+}
 // DAS BILD ALS PNG: in jeder Seite `window.__png(u8, W, H)` — RGBA-Bytes W×H (ein Schuss, eine Maske) deckend als Daten-URL,
 // in Node `pngDatei(datei, url)` schreibt sie; bis dahin baute jede Bild-Linse ihre Leinwand und ihren Puffer selbst
 // (w4-proben-tempo2: die Bytes kopiert, das Alpha deckend gesetzt — dieselben Bytes wie die Abbildung je Byte, ohne 8 Mio. Rückrufe
@@ -240,7 +289,7 @@ function png(u8, W, H) {
 // Bild neu (eine Linse blendet Klassen aus und ein, die Bühne wechselt)
 const bundlesNeu = () => st.scene.traverse((o) => o.isBundleGroup && (o.needsUpdate = true));
 const pngDatei = (datei, url) => fs.writeFileSync(datei, Buffer.from(url.split(",")[1], "base64"));
-const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand};`;
+const WARTEN_SEITE = `${weltR} window.__png = ${png}; window.__bundlesNeu = ${bundlesNeu}; window.sleep = ${sleep}; window.leihe = ${leihe}; window.jsonKlon = ${jsonKlon}; window.fehlerText = ${fehlerText}; window.fehlerStapel = ${fehlerStapel}; window.__seitenTakt = ${seitenTakt}; window.__takte = ${takte}; window.__streuTakte = ${streuTakte}; window.__bildAus = ${bildAus}; window.__MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7]; window.__weltStehtNach = ${weltStehtNach}; window.__gebautNach = ${gebautNach}; window.__deckel = ${deckel}; window.__weltDa = ${weltDa}; window.__abdruck = ${abdruck}; window.__stand = ${stand}; window.__standJson = ${standJson}; window.__werkPutz = ${werkPutz}; window.__bautenLeer = ${bautenLeer}; window.__rufe = ${rufe};`;
 const CODE_OF_SEITE = `window.__codeOf = ((oK) => (f) => oK(String(f)))(${ohneKommentare}); window.__dokuOf = (f) => String(f); window.__fehlt = (f, re) => [].concat(f).every((g, i) => { if (typeof g !== "function") throw new Error("__fehlt: Glied " + i + " ist keine Funktion (" + typeof g + ") — die Absenz misst nichts"); re.lastIndex = 0; return !re.test(window.__codeOf(g)); }); ${WARTEN_SEITE}`;
 
 const ROOT = path.resolve(__dirname, "..", "..");

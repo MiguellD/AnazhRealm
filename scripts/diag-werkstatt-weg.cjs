@@ -430,25 +430,6 @@ async function probe(argW) {
             Math.random = orig;
         }
     };
-    // der Spion am Ruf: lieferer[name] zählt (und delegiert), solange wer.methode(...args) läuft — true = gerufen
-    const ruft = (wer, methode, lieferer, name, args) => {
-        const eigen = Object.prototype.hasOwnProperty.call(lieferer, name);
-        const echt = lieferer[name];
-        let k = 0;
-        lieferer[name] = function (...x) {
-            k++;
-            return echt.apply(this, x);
-        };
-        try {
-            wer[methode](...args);
-        } catch {
-            /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
-        } finally {
-            if (eigen) lieferer[name] = echt;
-            else delete lieferer[name];
-        }
-        return k > 0;
-    };
     // je Abschnitt EIN Befund: gestartet erst am Ende, ein Wurf trägt seinen Stapel
     const abschnitt = async (k, m, fn) => {
         out[k] = m = { gestartet: false, ...m };
@@ -511,7 +492,7 @@ async function probe(argW) {
         // Der Programm-Strom ohne Seed ist der Welt-Strom, das Strom-Gesetz der Strom seines Samens; die Streuung eines
         // Samens ist sein eigener Strom, nie der des Programms (zwei Programm-Ströme, dieselben Orte — jeder Peer dieselbe).
         const z0 = jsonKlon(st.worldMeta.bauSame || {});
-        m.konsum = { "dslCtx → _bauSame": ruft(r, "dslCtx", r, "_bauSame", [{ source: "human" }]), "_streamRng → _samenStrom": ruft(r, "_streamRng", r, "_samenStrom", ["zensur"]) };
+        m.konsum = { "dslCtx → _bauSame": __rufe(r, "dslCtx", r, "_bauSame", [{ source: "human" }]) > 0, "_streamRng → _samenStrom": __rufe(r, "_streamRng", r, "_samenStrom", ["zensur"]) > 0 };
         st.worldMeta.bauSame = z0;
         const streu = (k) => {
             const vorher = new Set(st.architectures);
@@ -624,8 +605,8 @@ async function probe(argW) {
                 delete r._phantomWerk;
             }
             m.konsum = {
-                "_workshopFoundryPreviewGroup → _werkSame": ruft(r, "_workshopFoundryPreviewGroup", r, "_werkSame", [NAME]),
-                "_heldFoundryGroup → _werkSame": ruft(r, "_heldFoundryGroup", r, "_werkSame", [NAME]),
+                "_workshopFoundryPreviewGroup → _werkSame": __rufe(r, "_workshopFoundryPreviewGroup", r, "_werkSame", [NAME]) > 0,
+                "_heldFoundryGroup → _werkSame": __rufe(r, "_heldFoundryGroup", r, "_werkSame", [NAME]) > 0,
                 "_buildStudioPlacementGhost → _phantomWerk am Ort": !!woG && woG.x === Q.x && woG.z === Q.z,
             };
             // Jede Absage des Setzens spricht im Spieler-Kanal (Material und Lichtung fährt L-Werkstatt): je ein Instanz-Feld.
