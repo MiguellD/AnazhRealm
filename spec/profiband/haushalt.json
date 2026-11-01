@@ -88,8 +88,7 @@
             "anker": "_genesisMitte",
             "dorfZug": false,
             "ortTakt": [
-                "_genesisPortalRing",
-                "_portalApproachPrefetch"
+                "_genesisOrt"
             ],
             "soll": [
                 {
