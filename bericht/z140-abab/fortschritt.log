@@ -1,0 +1,30 @@
+16:47:27 SERIE START A=25ac4c0c4[0] B=1e90e7cd8[0] Instrument=25ac4c0c4 ZELLEN=w-ego
+16:47:35 w-ego-A1 start FP=877de79fcba4679b 73 59 gpu[60, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:50:00 w-ego-A1 ende gpu[74, 822 MHz, 2999 MHz, P3, 0x0000000000000001] steht: fps 59.5 F95 17 C95 5.3 k0 0.24 | 1: fps 45.6 F95 33.3 C95 26.6 k0 0.33 | 
+16:50:34 w-ego-B1 start FP=a8e77ef3d6a29000 73 59 gpu[66, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:53:01 w-ego-B1 ende gpu[76, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 57.3 F95 25 C95 6.8 k0 0.23 | 1: fps 49.7 F95 33.3 C95 20.8 k0 0.61 | 
+16:53:33 w-ego-A2 start FP=877de79fcba4679b 73 59 gpu[68, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:55:59 w-ego-A2 ende gpu[77, 822 MHz, 2999 MHz, P3, 0x0000000000000001] steht: fps 59.1 F95 17 C95 5.1 k0 0.24 | 1: fps 44.5 F95 33.3 C95 27.7 k0 0.32 | 
+16:56:31 w-ego-B2 start FP=a8e77ef3d6a29000 73 59 gpu[69, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+16:59:03 w-ego-B2 ende gpu[76, 430 MHz, 405 MHz, P8, 0x0000000000000001] steht: fps 57.7 F95 25 C95 9.5 k0 0.24 | 1: fps 48.4 F95 33.3 C95 24.1 k0 0.35 | 
+16:59:28 SERIE ENDE A-status[0] B-status[0]
+16:59:35 SERIE START A=25ac4c0c4[0] B=1e90e7cd8[0] Instrument=25ac4c0c4 ZELLEN=stadt
+16:59:43 stadt-A1 start FP=877de79fcba4679b 73 59 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:03:17 stadt-A1 ende gpu[78, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 65.2 F95 25.1 C95 11.5 k0 0.25 | 1: fps 30.2 F95 58.4 C95 51.1 k0 0.11 | 
+17:03:50 stadt-B1 start FP=a8e77ef3d6a29000 73 59 gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:07:15 stadt-B1 ende gpu[77, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 67.9 F95 24.9 C95 10.6 k0 0.25 | 1: fps 32.9 F95 58.3 C95 50.4 k0 0.11 | 
+17:07:47 stadt-A2 start FP=877de79fcba4679b 73 59 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:11:12 stadt-A2 ende gpu[77, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 67 F95 25 C95 10.7 k0 0.25 | 1: fps 29.8 F95 58.3 C95 51 k0 0.11 | 
+17:11:46 stadt-B2 start FP=a8e77ef3d6a29000 73 59 gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:15:11 stadt-B2 ende gpu[78, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 68.1 F95 24.9 C95 10.6 k0 0.25 | 1: fps 32.5 F95 58.4 C95 52.4 k0 0.11 | 
+17:15:36 SERIE ENDE A-status[0] B-status[0]
+17:15:43 SERIE START A=25ac4c0c4[0] B=1e90e7cd8[0] Instrument=25ac4c0c4 ZELLEN=w-ego
+17:15:50 w-ego-A3 start FP=877de79fcba4679b 73 59 gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:18:08 w-ego-A3 ende gpu[79, 923 MHz, 3802 MHz, P2, 0x0000000000000001] steht: fps 59 F95 17 C95 5.3 k0 0.24 | 1: fps 48.9 F95 33.3 C95 23.1 k0 0.37 | 
+17:18:39 w-ego-B3 start FP=a8e77ef3d6a29000 73 59 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:21:08 w-ego-B3 ende gpu[76, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 58.2 F95 25 C95 6.8 k0 0.24 | 1: fps 49.6 F95 33.3 C95 21.7 k0 0.64 | 
+17:21:40 w-ego-A4 start FP=877de79fcba4679b 73 59 gpu[70, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:24:06 w-ego-A4 ende gpu[77, 822 MHz, 2999 MHz, P3, 0x0000000000000001] steht: fps 58.8 F95 17.3 C95 5.6 k0 0.24 | 1: fps 44.2 F95 33.3 C95 28 k0 0.32 | 
+17:24:38 w-ego-B4 start FP=a8e77ef3d6a29000 73 59 gpu[71, 139 MHz, 405 MHz, P8, 0x0000000000000001]
+17:27:06 w-ego-B4 ende gpu[77, 822 MHz, 810 MHz, P5, 0x0000000000000001] steht: fps 58.4 F95 24.9 C95 6.7 k0 0.24 | 1: fps 50.6 F95 33.3 C95 21.4 k0 0.63 | 
+17:27:31 SERIE ENDE A-status[0] B-status[0]

@@ -182,3 +182,4 @@ b-himmel-kalt Exit0 station ankunft-kalt.sh an 1d9c4dbb
 p2-haar.K21-gtx gemessen punkte 75614bb6 gtx: 1 grün / 0 rot
 p2-spielgang.K31-gtx gemessen punkte e78e0d28 gtx: 1 grün / 0 rot
 general-25ac-gtx ABSTURZ Baum oder Lauf fehlt
+z140-abab LANGSAMER abab 1e90e7cd gegen 25ac4c0c: w-ego 4+4 LANGSAMER · stadt 2+2 nicht-langsamer
