@@ -26,7 +26,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, uferStellen, taeterFaelle, selbsttestEnde, wandEnde, laufUhr, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, uferStellen, taeterFaelle, selbsttestEnde, wandEnde, laufUhr, SELBSTTEST, fehlerText } = require("./lib/welt-boot.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 const ZZ = require("./lib/ziel-zensus.cjs");
 
@@ -343,7 +343,7 @@ function rundungProbe() {
         log(`Rundung: ${JSON.stringify(out.rundung)}`);
         out.gpuFehler = await page.evaluate(() => window.__gpuFehlerZ.slice(0, 5));
     } catch (e) {
-        out.abbruch = e?.message || String(e);
+        out.abbruch = fehlerText(e);
     }
     await browser.close();
     server.close();

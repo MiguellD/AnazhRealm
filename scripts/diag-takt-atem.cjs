@@ -24,7 +24,7 @@
 //   node scripts/diag-takt-atem.cjs [--selftest]   (npm run gate:takt-atem)
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, abwandlung, wandEnde, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, abwandlung, SELBSTTEST, fehlerText, seiteZu, wandEnde } = require("./lib/welt-boot.cjs");
 
 const SOLL = { dichte: 0.1, stand: 0.1, lage: 0.1 };
 
@@ -317,14 +317,9 @@ function atem() {
             log(`Gegenprobe (stoßende Dichte): ${JSON.stringify(out.gegenprobe)}`);
         }
     } catch (e) {
-        out = { error: (e && e.message) || String(e) };
+        out = { error: fehlerText(e) };
     }
-    await browser.close();
-    server.close();
-    if (!out || out.error) {
-        console.log("FEHLER:", out ? out.error : "?");
-        process.exit(1);
-    }
+    await seiteZu(browser, server, out);
     const v = urteil(out);
     wandEnde(v, () => {
         const k = out.kopf;

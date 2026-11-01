@@ -20,7 +20,7 @@
 //       42–292 s) fängt keine Meldung, die Schritte warten auf keinen Bau der ganzen Welt. K hält den Rest.
 //
 //   node scripts/diag-fenster-wechsel.cjs
-const { statikServer, starteBrowser, uferStellen, laufUhr, pruefer, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, uferStellen, laufUhr, pruefer, fehlerText, stammLib } = require("./lib/welt-boot.cjs");
 const { ladeSpec } = require("./lib/band-urteil.cjs");
 
 const GROESSEN_ZIELE = /Destroyed texture \[Texture "(szene:tiefenabbild|spiegel:strahl)"\]/;
@@ -179,7 +179,7 @@ async function fensterSchritt(o) {
             [...es.fremd, ...es.wacheKoepfe].join(" | ") || "0"
         );
     } catch (e) {
-        check("E Lauf", false, (e && e.message) || String(e));
+        check("E Lauf", false, fehlerText(e));
     }
     await browser.close();
     server.close();

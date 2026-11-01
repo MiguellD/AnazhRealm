@@ -52,7 +52,7 @@ async function lebenBuehnen(buehne, taeter, decke, r, s, A, pm, frei, land, tier
                     throw new Error("keine Gabe");
                 pm.set(ort.x + 150, boden(ort.x + 150, ort.z), ort.z);
                 lauf(600);
-                const snap = JSON.parse(JSON.stringify(r._serializeCreature(c0)));
+                const snap = jsonKlon(r._serializeCreature(c0));
                 r.removeCreature(c0);
                 const c = r._restoreCreatureFromSnapshot(snap);
                 ruhig(c);
@@ -942,7 +942,7 @@ module.exports = {
     urteil: lebenUrteil,
 };
 if (require.main !== module) return;
-const { pruefer, urteilEnde, path, ROOT: root } = require("./lib/welt-boot.cjs");
+const { pruefer, urteilEnde, jsonKlon, path, ROOT: root } = require("./lib/welt-boot.cjs");
 const { errs, check } = pruefer();
 
 // ── Kern laden (Namensraum-Muster: self/globalThis) ──

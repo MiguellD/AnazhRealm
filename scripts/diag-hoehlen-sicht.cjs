@@ -615,7 +615,7 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-const { statikServer, warteAufWelt, nullSeite, wandEnde, path, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, nullSeite, wandEnde, path, SELBSTTEST, fehlerText } = require("./lib/welt-boot.cjs");
 
 if (SELBSTTEST) {
     console.log("=== HÖHLEN-SICHT — Selbsttest (ohne Browser) ===");
@@ -1636,7 +1636,7 @@ const server = statikServer();
             return aus;
         }, ORTE);
     } catch (e) {
-        befund = { fehler: e?.message || String(e) };
+        befund = { fehler: fehlerText(e) };
     }
     await browser.close();
     server.close();

@@ -1181,8 +1181,8 @@ async function checkBandV18150Ride({ page, check }) {
             if (st.blueprints._t_ride_wagen) delete st.blueprints._t_ride_wagen;
             st.blueprints._t_ride_wagen = {
                 name: "_t_ride_wagen",
-                parts: JSON.parse(JSON.stringify(KSr.fahrzeug_wagen.parts)),
-                connections: JSON.parse(JSON.stringify(KSr.fahrzeug_wagen.connections || [])),
+                parts: jsonKlon(KSr.fahrzeug_wagen.parts),
+                connections: jsonKlon(KSr.fahrzeug_wagen.connections || []),
             };
             // die Hülle ist der Körper des gerittenen Werks — die Probe fährt auf BEFAHRBAREM Boden: die
             // erste Stelle um Spieler + 60 m, deren Gelände auf 12 m Fahrt × ±2 m Breite eine Ebene ist (Rest ≤ 0,2 m,

@@ -37,7 +37,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 "use strict";
 
-const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, wandEnde, fs, SELBSTTEST } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, taeterFaelle, selbsttestEnde, fs, SELBSTTEST, fehlerText, seiteZu, wandEnde } = require("./lib/welt-boot.cjs");
 const SK = require("./lib/shader-kosten.cjs");
 const BAND = require("./lib/band-urteil.cjs");
 
@@ -857,14 +857,9 @@ function buehne(nFrames, nachtLicht) {
                 `Godrays mit der Sonne im Bild: Stärke ${out.godray.staerke} · ${out.godray.aenderungPct} % der Pixel geändert (Rausch-Boden ${out.godray.rauschenPct} %)`
             );
     } catch (e) {
-        out = { error: e?.message || String(e) };
+        out = { error: fehlerText(e) };
     }
-    await browser.close();
-    server.close();
-    if (!out || out.error) {
-        console.log("FEHLER:", out ? out.error : "?");
-        process.exit(1);
-    }
+    await seiteZu(browser, server, out);
     out.konsolenFehler = konsolenFehler;
     const v = urteil(out);
     wandEnde(v, () => {

@@ -15,7 +15,7 @@
 //   node scripts/diag-membran-gesetz.cjs
 "use strict";
 
-const { studioKern, pruefer, stammLib } = require("./lib/welt-boot.cjs");
+const { studioKern, pruefer, jsonKlon, stammLib } = require("./lib/welt-boot.cjs");
 const PC = studioKern("porta-core.js", "__portaCore");
 
 const { errs, check, wandEnde } = pruefer();
@@ -167,7 +167,7 @@ check("porta-core: membranUniforms trägt kein fog", !("fog" in PC.membranUnifor
 check("Shell: buildFog ist fort", ...shell(/buildFog|fogMat/));
 
 // ── Selbst-Test: eine injizierte Drift MUSS rot erkannt werden ──
-const kaputt = JSON.parse(JSON.stringify(FROZEN));
+const kaputt = jsonKlon(FROZEN);
 kaputt.kk = 14.0;
 const selbst = driftVon(kaputt, MG).map(([p]) => p);
 check("SELBST-TEST: injizierte kk-Drift wird erkannt", selbst.length === 1 && selbst[0] === "kk");

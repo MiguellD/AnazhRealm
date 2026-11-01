@@ -137,7 +137,7 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-const { statikServer, starteBrowser, laufUhr, path, fs, SELBSTTEST, argOpt, wandEnde } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, laufUhr, path, fs, SELBSTTEST, argOpt, fehlerText, seiteZu, wandEnde } = require("./lib/welt-boot.cjs");
 
 if (SELBSTTEST) {
     console.log("=== EGO-SCHATTEN — Selbsttest (ohne Browser) ===");
@@ -563,14 +563,9 @@ function buehne(arg) {
             }
         }
     } catch (e) {
-        out = { error: e?.message || String(e) };
+        out = { error: fehlerText(e) };
     }
-    await browser.close();
-    server.close();
-    if (!out || out.error) {
-        console.log("FEHLER:", out ? out.error : "?");
-        process.exit(1);
-    }
+    await seiteZu(browser, server, out);
     const v = urteilJeStufe(out);
     wandEnde(v, () => {
         const [g, f] = [out.grob, out.fein];
