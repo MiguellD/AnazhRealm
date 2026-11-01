@@ -342,8 +342,8 @@ function erstWandInstall(BUNDLE_FRAMES) {
     // DER ZÜNDER (z137): Bs Neubau fällt in das Bild, in dem As Pipeline offen steht — nie fest in das Bild des Wechsels. Baut A
     // seinen Knoten-Graphen in Raten (`_knotenRate`, im laufenden Spiel), legt er die Pipeline erst Bilder später an; ein
     // Neubau im Wechsel-Bild baute dann synchron vor ihr und träfe nie eine offene (die Vorbedingung hing am Bau-Weg). Bis
-    // zur Zündung spielt b2 seine alte Aufnahme, eine Marke an ihm ist fremd; die stumme Anmeldung des Gegen-Laufs gilt
-    // erst ab der Zündung (sonst nähme b1 nie neu auf, und As Raten gingen nie weiter).
+    // zur Zündung spielt b2 seine alte Aufnahme, eine Marke an ihm ist fremd; die stumme Anmeldung des Gegen-Laufs schweigt
+    // die Anmeldung an der offenen Pipeline, nie das Warten eines Bürgers ohne Bau (`stumm`).
     // (B) DER HÄNGENDE FEHLER-SCOPE — popErrorScope löst nie auf (auf der Spielseite > 5 s, auf Windows-swiftshader nie): ein
     // neuer Stoff in einem Bundle, das Vendor-Versprechen seiner Pipeline erfüllt sich nie. Gemessen: wie viele Frames nach
     // der fertigen Pipeline (r184-Zustand) trägt die Aufnahme des Bundles den Bürger wieder. Der Gegen-Lauf mit stummer
@@ -359,7 +359,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
     };
     // je Probe-Objekt die Pipeline, an der sein letzter Draw nicht zeichnen konnte
     const wartete = new Map();
-    // der Zünder des Neubaus (A): { bg, erst, stumm } — gezündet in der Aufnahme von bg, sobald `erst` an einer offenen
+    // der Zünder des Neubaus (A): { bg, erst } — gezündet in der Aufnahme von bg, sobald `erst` an einer offenen
     // Pipeline wartet; bis dahin ist jede Marke an bg fremd
     let zuender = null;
     const mitAufnahme = async (fn) => {
@@ -369,7 +369,6 @@ function erstWandInstall(BUNDLE_FRAMES) {
             const Z = zuender;
             if (Z && bundle.bundleGroup === Z.bg && wartete.has(Z.erst)) {
                 zuender = null;
-                if (Z.stumm) stumm();
                 Z.bg.needsUpdate = true;
             }
             const aus = rbRoh.apply(this, arguments);
@@ -423,8 +422,8 @@ function erstWandInstall(BUNDLE_FRAMES) {
     // ganze Szene (`traverse` — `_texturAbschied`, wenn ein Atlas wächst) gilt jedem Bündel, nie seinem Bürger; das Bündel
     // schluckt sie und nennt ihren Schreiber (`fremd`), das Urteil gilt allein der Anmeldung
     let szeneGang = 0;
-    const buendel = () => {
-        const bg = new T3.BundleGroup();
+    const buendel = (kind) => {
+        const bg = new T3.BundleGroup().add(kind);
         const P = (bg.userData.probe = { n: 0, fremd: [] });
         Object.defineProperty(bg, "needsUpdate", {
             set(v) {
@@ -492,8 +491,14 @@ function erstWandInstall(BUNDLE_FRAMES) {
             fremd: P.fremd.slice(f0),
         };
     };
+    // DIE STUMME ANMELDUNG des Gegen-Laufs schweigt nur an einer offenen Pipeline: ein Bürger ohne Bau (verschoben, der
+    // Knoten-Bau in Raten) wartet weiter wie im Spiel — sonst baute er nie, und der Gegen-Lauf träfe seine Vorbedingung nie
+    // (z137: der hängende Fehler-Scope ohne Anmeldung, 0× hängend, am Bau-Weg)
     const stumm = () => {
-        r._erstWartet = () => {};
+        const roh = r._erstWartet;
+        r._erstWartet = function (be, pipe) {
+            if (!pipe) return roh.apply(this, arguments);
+        };
     };
     const laut = () => {
         delete r._erstWartet;
@@ -505,12 +510,10 @@ function erstWandInstall(BUNDLE_FRAMES) {
         serie++;
         const M = new T3.MeshBasicNodeMaterial();
         M.colorNode = TSL.vec3(0.31, 0.47, 0.12 + 0.0011 * serie);
-        const b2 = buendel();
         const B = probeMesh(M, 0.45, 4);
-        b2.add(B);
-        const b1 = buendel();
+        const b2 = buendel(B);
         const A = probeMesh(M, -0.45, 4);
-        b1.add(A);
+        const b1 = buendel(A);
         welt.add(b2);
         try {
             // (1) B steht im Bundle (seine erste Zeichnung, die Anmeldung trägt sie)
@@ -523,7 +526,8 @@ function erstWandInstall(BUNDLE_FRAMES) {
             M.alphaTest = 0.5;
             M.needsUpdate = true;
             wartete.clear();
-            zuender = { bg: b2, erst: A, stumm: ohneAnmeldung };
+            if (ohneAnmeldung) stumm();
+            zuender = { bg: b2, erst: A };
             const zuendBilder = await bisEreignis(() => !zuender, 20);
             const pipeA = wartete.get(A),
                 pipeB = wartete.get(B);
@@ -562,9 +566,8 @@ function erstWandInstall(BUNDLE_FRAMES) {
         };
         const M = new T3.MeshBasicNodeMaterial();
         M.colorNode = TSL.vec3(0.52, 0.18 + 0.0013 * serie, 0.61);
-        const bg = buendel();
         const C = probeMesh(M, 0, 3.5);
-        bg.add(C);
+        const bg = buendel(C);
         welt.add(bg);
         if (ohneAnmeldung) stumm();
         try {
@@ -630,8 +633,7 @@ function erstWandInstall(BUNDLE_FRAMES) {
         M.name = "wand-absage-stoff";
         M.colorNode = TSL.vec3(0.71, 0.33, 0.09 + 0.0013 * serie);
         const D = probeMesh(M, 0, 3.5);
-        const bg = buendel();
-        bg.add(D);
+        const bg = buendel(D);
         welt.add(bg);
         const a0 = ESt.absagenN || 0;
         // DER EINE MELDER: die Absage geht über die GPU-Wache des Spiels (`_gpuWacheMeldung`) — sie
