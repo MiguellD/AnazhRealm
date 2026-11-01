@@ -1877,9 +1877,20 @@ async function fahreSitzung(gruppen0, ctx, melde) {
         const ort = probeOrt(g[0]);
         if (ort ? ort !== aktOrt : aktOrt === null && stellungVon(g) !== "anfang") {
             const tu = Date.now();
-            const u = await (ort ? rufFrist(W, "/umstellen", { ort, sicht: "ego" }, 300000)
+            const stelle = () => (ort ? rufFrist(W, "/umstellen", { ort, sicht: "ego" }, 300000)
                 : rufFrist(W, "/eval", { code: WELT_STEHT }, 300000).then((a) => (a && a.ergebnis && typeof a.ergebnis === "object" ? a.ergebnis : { fehler: (a && a.fehler) || JSON.stringify(a) })))
                 .catch((e) => ({ fehler: String((e && e.message) || e) }));
+            let u = await stelle();
+            // DIE WELT HÄNGT (Radeon-Eich 25ac4c0c 01.11.: nach profiband.K4 stand die Wiese nicht mehr — „wald 11“ offen über 3 601 Takte —,
+            // und jede Probe am Ort danach zahlte 36 s und fiel): steht der Ort nicht, geht die Sitzung EINMAL durch die Tür (die Seite neu,
+            // der Grund) und stellt neu um — steht er dann, misst die Probe in der heilen Welt; sonst stellt die Probe selbst um wie bisher
+            if (u && u.fehler && grundDa === true) {
+                const gs = await grundstellung(W, grund, { abbruch: true });
+                await zapf(aktuell);
+                console.log("  SITZUNG " + (ort ? "Ort " + ort : "die Welt") + " vor " + schluessel(g[0]) + " steht nicht — " +
+                    (gs.ok ? "durch die Tür in " + gs.s + " s, neu umgestellt" : "die Tür trägt nicht: " + gs.grund));
+                if (gs.ok) (kopf.grundstellungS.push(gs.s), (u = await stelle()), (ortNach = "der Tür (die Welt hing)"));
+            }
             const us = +((Date.now() - tu) / 1000).toFixed(1);
             const wo = ort ? "Ort " + ort : "die Welt";
             await zapf(aktuell); // die Bilder des Einschwingens unter „(sitzung)“, nie unter der Probe; der Zapfen nennt die Seite danach
@@ -3526,7 +3537,8 @@ async function selbsttest(o = {}) {
             '    if (b.code === "tod") { n("tod"); return r.end(JSON.stringify({ ergebnis: "tod" }), () => process.exit(3)); }',
             '    if (b.code === "mord") { n("mord"); process.exit(3); } return s({ ergebnis: "warm" }); }',
             '  if (q.url === "/reload") { n("reload"); neu(); geladen = true; return s({ neu: true, ms: 1 }); } if (q.url === "/fenster") return s({ fenster: [1920, 1080] });',
-            '  if (q.url === "/umstellen") { n("umstellen:" + b.ort); return s({ takte: 3, steht: true, chunks: 9 }); }',
+            // DIE WELT HÄNGT (art „haengt“): der Ort steht nicht, bis die Seite neu lud
+            '  if (q.url === "/umstellen") { n("umstellen:" + b.ort); if (art === "haengt" && !geladen) return s({ fehler: "DIE WELT STEHT NICHT nach 3601 Takten: wald 11" }); return s({ takte: 3, steht: true, chunks: 9 }); }',
             '  if (q.url === "/stop") { n("stop"); s({ stop: true }); return setTimeout(() => process.exit(0), 50); } s({ fehler: "unbekannt" }); }); })',
             '  .listen(Number(W), "127.0.0.1", () => { console.log("[linse-gpu] amd/stub-sitzung"); console.log("WERKBANK bereit: Steuer 127.0.0.1:" + W); });',
         ].join("\n"));
@@ -3665,6 +3677,12 @@ async function selbsttest(o = {}) {
         pruef("SITZUNG DIE NEUE SEITE: lädt eine Probe die Seite neu, stellt die nächste ihres Orts neu um (der Ring der alten Seite ist fort) — im Kopf nach „einer neuen Seite“; ohne Ort danach kein zweites Einschwingen",
             r15.z.join(",") === "start,nimm,umstellen:wiese,reload,umstellen:wiese,stop" && r15.kopf.orte.length === 2 && r15.kopf.orte[1].nach === "einer neuen Seite" &&
             Object.values(r15.es).every((e) => e.gruen), JSON.stringify([r15.z, r15.kopf.orte, r15.es]));
+        // DIE WELT HÄNGT (Radeon-Eich 25ac4c0c: „wald 11“ offen, jede Probe am Ort danach zahlte 36 s und fiel): steht der Ort nicht, geht die
+        // Sitzung EINMAL durch die Tür und stellt neu um — die Probe misst in der heilen Welt, im Kopf nach „der Tür (die Welt hing)“
+        const rH = await lauf([[S("a.K1", 1, { befehl: mitOrt("wiese"), sek: 30 }, warm)]], "haengt", null);
+        pruef("SITZUNG DIE WELT HÄNGT: der Ort steht nicht — EINMAL durch die Tür, neu umgestellt, die Probe misst in der heilen Welt",
+            rH.z.join(",") === "start,nimm,umstellen:wiese,tuer,reload,grund,umstellen:wiese,stop" && rH.kopf.orte.length === 1 && rH.kopf.orte[0].nach === "der Tür (die Welt hing)" &&
+            !rH.kopf.orte[0].fehler && rH.es["a.K1#1"].gruen, JSON.stringify([rH.z, rH.kopf.orte, rH.es]));
         // DIE EICH-FAHRT (eichEintrag): ein Urteil zählt nur im Gesetz — 30 s an einem Deckel von 10 s zählt (≤ 45 s), 50 s ohne ausnahme
         // ist UNGEMESSEN beim Namen samt Urteil, 50 s mit ausnahme zählt (≤ 90 s), am Eich-Deckel „≥ 90 s“; die Welt, die endete, und
         // die Fahrt, die riss, tragen keine Zahl der Probe
