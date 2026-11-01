@@ -1489,7 +1489,7 @@ const ENTSORGUNG_BESITZER = {
     },
     _spawnVoxelTestChunk: { arten: ["geometry", "material"], grund: "der Test-Chunk" },
     _disposeVoxelChunkWaterIso: { arten: ["geometry"], grund: "das Wasser-Iso-Mesh des Chunks" },
-    _rebuildLodStitchBand: { arten: ["geometry"], grund: "das LOD-Naht-Band des Chunks" },
+    _bodenNahtBandLegen: { arten: ["geometry"], grund: "das LOD-Naht-Band des Chunks" },
     _disposeVoxelChunk: {
         arten: ["geometry"],
         grund: "Chunk-Mesh und Naht-Band (der Stoff ist das geteilte Singleton und bleibt)",

@@ -148,8 +148,12 @@ const halterZeilen = (a) =>
 // Methoden am Prototyp (zwei Uhr-Rufe je Ruf): die Gestalt des Orts läuft je Takt tausendfach, die Hülle allein trug headless
 // kalt 2,7–4,0 s Selbstzeit vor dem Bild (`P.<computed>`) — das Instrument maß sich selbst mit.
 const KALT_KLASSEN = {
+    // DIE KLASSE BODEN (B, w4-b-boden2): was der Boden im Haupt-Faden trägt — der Bau, der Einbau samt Anlegen im Satz und
+    // Eintritt in den Faden, die Nähte aus dem Faden (`_tickMorphFolge`)
     _buildVoxelChunkDataFromWorkerMesh: "Boden",
     _buildVoxelChunkData: "Boden",
+    _finalizeVoxelChunkBuild: "Boden",
+    _tickMorphFolge: "Boden",
     _scatterRegion: "Streu",
     _rebuildArchitectureMesh: "Bauten",
     _foundryBuildGroup: "Gruppen-Bau",

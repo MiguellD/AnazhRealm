@@ -1923,16 +1923,12 @@ async function checkBandV17118WorkerEngaged({ page, check }) {
 // A2 Edit-Lokalität (der „Reset" ist GEMESSEN unsichtbar) · A5 Luft↔Ring-Kante ·
 // A6 Körper-Kollision (Decken-Sprung-Klemme + Kamera-Clip; die Rettung aus dem Fill hebt den Turm, gate:fall-waechter B).
 async function checkBandPhaseAFundament({ page, check }) {
-    const res = await page.evaluate(() => {
+    const res = await page.evaluate(async () => {
         if (!r || !st || !st.voxelChunks) return { error: "no realm" };
         const out = {};
-        // ── A1 · Stitch-Band: deterministisch frisch morphen (Band-Reihenfolge egal),
-        // dann zählen + die WebGPU-Attribut-Vollständigkeit prüfen (V10.0-g.1-Wand).
-        for (const [key, entry] of st.voxelChunks) {
-            if (!entry || entry.empty || !entry.mesh) continue;
-            const [cx, cz] = key.split(",").map(Number);
-            r._applyCrossLodGeomorph(cx, cz);
-        }
+        // ── A1 · Stitch-Band: der Faden morpht jedes Netz bei jedem Wechsel seiner Nachbarn (w4-b-boden2) — sobald jede Naht
+        // angelegt ist, zählen + die WebGPU-Attribut-Vollständigkeit prüfen (V10.0-g.1-Wand).
+        await window.__gebautNach("die Nähte des Rings", { fertig: () => !r._weltOffen().chunks, max: 600 });
         let bands = 0,
             bandAttrsOk = true,
             cappedTotal = 0;
