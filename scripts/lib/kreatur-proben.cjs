@@ -3334,7 +3334,7 @@ function urteil(name, z) {
             `${wo}Wege ${v.wegeMin}–${v.wegeMax} (${v.ausser}), ${v.steckenN} Steckenbleiber (${v.stecken}), auf Wegen ${v.aufWeg} (Soll ≥ 0,85), Strecke min ${v.streckeMin} m (Soll ≥ 100 je Tag: ${v.kurz}), Berührung: ${v.beruehrN} (${v.beruehr})`
         );
     }
-    // das Start-Dorf (ohne `--ort`: seine Wege)
+    // das Start-Dorf (ohne `--ort` und am Genesis-Ort: seine Wege)
     if (name === "bewohner" && z.wege) {
         const [sg, b, wk] = [z.satzGang || {}, z.blick, z.wiederkehr || { ueberN: "ungemessen" }];
         soll(

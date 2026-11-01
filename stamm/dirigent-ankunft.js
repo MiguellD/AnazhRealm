@@ -503,6 +503,10 @@ class AnazhRealm_dirigent_ankunft {
                 },
                 true
             );
+        // DIE EINGABE HAT VORRANG (spielgang.K3): jede Taste und jeder Zeiger-Druck stempelt ihre Zeit, vor jedem anderen Hörer —
+        // der Vorbau der Bedienung baut nur, wenn sie ruht (`_eingabeRuht`).
+        for (const art of ["keydown", "pointerdown"])
+            window.addEventListener(art, () => (this._eingabeT = performance.now()), true);
         window.addEventListener("keydown", (event) => {
             // Ist ein Portal offen, ist die Heimat-Welt eingefroren: nur Esc verlässt das Portal, alle anderen
             // Tasten sind gesperrt. Mit Fokus im iframe meldet die Sub-Welt Esc selbst (skeleton.js →
@@ -1310,6 +1314,13 @@ class AnazhRealm_dirigent_ankunft {
         return !!el && !el.hidden && !el.classList.contains("weg");
     }
 
+    // RUHT DIE EINGABE? (spielgang.K3) — seit VORBAU_RUHE_MS keine Taste, kein Zeiger-Druck (der Stempel der Capture-Hörer):
+    // dann darf der Vorbau der Bedienung bauen; ein Bau mitten in der Eingabe hielte ihr nächstes Bild.
+    _eingabeRuht() {
+        const t = this._eingabeT;
+        return t === undefined || performance.now() - t >= AnazhRealm.VORBAU_RUHE_MS;
+    }
+
     // Maus-Listener (Pointer-Lock-Click + Mousedown-Action) als Methode.
     // Wird in createScene am initial-Canvas gerufen.
     _attachWorldCanvasInputListeners(canvas) {
@@ -1479,6 +1490,9 @@ AnazhRealm.WELTBILD_STILL_MS = 15000;
 // Der Deckel des ersten Weltbilds (ms ab der ersten Frage): danach weicht der Ladeschirm laut, auch wenn die Lücke nie ruht
 // (ihre Zahl flackert). Auf der Radeon stand das ganze Weltbild nach 31,8 s.
 AnazhRealm.WELTBILD_DECKEL_MS = 60000;
+// Die Ruhe der Eingabe (ms, spielgang.K3): so lange nach der letzten Taste und dem letzten Zeiger-Druck baut kein Vorbau der
+// Bedienung (`_eingabeRuht`).
+AnazhRealm.VORBAU_RUHE_MS = 300;
 // DIE ANKUNFT AUS DER FERNE (B2, `_ankunftsFerne`): bis das erste Weltbild steht, misst jede Stufen-Wahl so, als stünde der
 // Spieler ANKUNFT_FERNE-mal weiter weg — jedes Ding trägt seine billigste GANZE Stufe (der Baum seine Karte, der Bau seine
 // Grobstufe); danach gleitet der Faktor über ANKUNFT_GLEIT_BILDER gezeichnete Bilder auf 1.

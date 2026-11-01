@@ -1084,6 +1084,7 @@ class AnazhRealm_kampf {
             return;
         }
         if (h.row.hidden) h.row.hidden = false;
+        this._statsHudRuht(false); // der gespannte Bogen holt die Leiste im selben Bild (die Fläche nach Gesetz)
         if (h.fill) h.fill.setAttribute("width", String(Math.round(166 * frac)));
         if (h.text) h.text.textContent = Math.round(frac * 100) + " %";
     }

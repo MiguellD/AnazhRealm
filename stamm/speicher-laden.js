@@ -707,6 +707,8 @@ class AnazhRealm_speicher_laden {
     // EIGENEN Grund (S4, die Mitte auf dem Eintrag) misst den Boden unter dem Erdbau (`hoehe` ohne seinen Term), auf dem der
     // Boden-Umzug es wieder setzt, nie den Keller, den sein Grund gräbt — bis 24.10. schrieb ein Save nach dem Grund die Tiefe
     // des Kellers (2,26 m, ein Save davor 0; der Korpus, speicher.K5), und der Umzug stellte das Haus um sie über den Boden.
+    // Die Lage ohne Erdbau KOPIERT die Leser der Lage (lebend wie sie), sie erbt nie von ihr: V8 gäbe dem Erblasser eine
+    // eigene Form (w4-knoten-takt, gate:altlasten).
     _ueberGrund(p) {
         const G = globalThis.__gelaendeCore;
         const E = p ? this._erdbauLage() : null;
@@ -716,7 +718,12 @@ class AnazhRealm_speicher_laden {
             (i) => Math.abs(E.gruende[i].cx - p.x) < 0.05 && Math.abs(E.gruende[i].cz - p.z) < 0.05
         );
         const roh =
-            eigen && (this._gelaendeRoh || (this._gelaendeRoh = Object.create(this._gelaende(), { erdbau: {} })));
+            eigen &&
+            (this._gelaendeRoh ||
+                (this._gelaendeRoh = Object.defineProperties(
+                    {},
+                    { ...Object.getOwnPropertyDescriptors(this._gelaende()), erdbau: { value: undefined } }
+                )));
         const g = !p ? NaN : roh ? G.hoehe(roh, p.x, p.z, true) : this._voxelSurfaceY(p.x, p.z);
         return Number.isFinite(g) && Number.isFinite(p.y) ? Math.round((p.y - g) * 100) / 100 : undefined;
     }

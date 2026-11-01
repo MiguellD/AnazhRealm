@@ -2647,6 +2647,60 @@ class AnazhRealm_werkstatt_hud {
         } else if (el.textContent !== s) el.textContent = s;
     }
 
+    // DIE RUHE DER LEBENS-LEISTE (spielgang.K3, die Fläche nach Gesetz): `ruht` lässt sie weichen (`#stats-hud.ruht`); nur
+    // ein Wechsel berührt das DOM. Es rufen der Lebens-Takt (`tickStatsHud`, 10 Hz) und der Bogen je Bild (`_bogenHudZeige`).
+    _statsHudRuht(ruht) {
+        const hud = typeof document !== "undefined" ? document.getElementById("stats-hud") : null;
+        if (hud && hud.classList.contains("ruht") !== ruht) hud.classList.toggle("ruht", ruht);
+    }
+
+    // DER VORBAU DER SCHUBLADEN (spielgang.K3, aus `_vorbauBedienung`): die erste Öffnung des Ich und jeder Schublade trug die
+    // kalten Wege ihres Baums im Tasten-Hörer und im ersten Bild — das erste Rezeptbuch mit seinen Bauplan-Analysen, den ersten
+    // Stil, das erste Layout (Radeon echt, werkbank bedienung: Tab 82 ms im Hörer, die Einstellungen 81 ms Layout; warm 20 und
+    // 4 ms). Der Vorbau zeichnet das Ich einmal vor und legt jede verborgene Schublade einmal aus — unsichtbar und im selben
+    // Takt wieder verborgen, kein Bild sieht sie —, je Takt EINE. true: alles vorgebaut.
+    _uiVorbau() {
+        if (typeof document === "undefined") return true;
+        const V = this._uiVorbauStand || (this._uiVorbauStand = { ich: false, aus: new WeakSet(), alle: false });
+        if (V.alle) return true;
+        if (!V.ich) {
+            V.ich = true;
+            this.renderInventoryUI();
+            this.recomputePlayerStats();
+            this._ichRenderSpecSheet();
+            return false;
+        }
+        for (const el of [
+            document.getElementById("inventory-overlay"),
+            ...document.querySelectorAll(".drawer[data-drawer]"),
+        ]) {
+            if (!el || V.aus.has(el)) continue;
+            V.aus.add(el);
+            if (!el.hidden) continue; // offen ist sie ausgelegt
+            const sicht = el.style.visibility;
+            el.style.visibility = "hidden";
+            el.hidden = false;
+            void el.offsetHeight; // Stil und Layout jetzt — die Eingabe ruht
+            this._uiVerbergen(el);
+            el.style.visibility = sicht;
+            return false;
+        }
+        return (V.alle = true);
+    }
+
+    // DAS VERBERGEN EINER TAFEL (spielgang.K3) — die EINE Naht, an der das Ich [hidden] trägt (`toggleInventoryOverlay`, und im
+    // Vorbau jede Tafel). Verborgen ruht das Ich in content-visibility: hidden, und dort tickt Chrome keine Animation: eine
+    // laufende endliche wird nie zu Ende gespielt, ihr `finished` erfüllt sich nie (headless: nach 6 s weder erfüllt noch
+    // verworfen), und wer auf die Ruhe der Seite wartet, wartet ohne Ende (gate:werkstatt-weg, Zug z129: `ruht` 600 s bis zur
+    // Frist des Protokolls). display: none brach jede ab; darum bricht das Verbergen hier jede endliche Animation des Baums ab
+    // (die Breite eines Emotions-Balkens, der Rand eines Slots), bevor [hidden] ihn einfriert. Was verborgen neu entstünde,
+    // verbietet index.html (`#inventory-overlay[hidden] *`). Eine unendliche bleibt: auf sie wartet niemand, sie ruht mit.
+    _uiVerbergen(el) {
+        for (const a of el.getAnimations({ subtree: true }))
+            if (a.effect && a.effect.getComputedTiming().endTime !== Infinity) a.cancel();
+        el.hidden = true;
+    }
+
     // Eine Schublade öffnet: der Zeiger wird frei (die Klicks gehören der Schublade) und ein gehaltenes Mahlen endet.
     _uiZeigerFrei() {
         this.state.verbTafel.gehalten.break = false;

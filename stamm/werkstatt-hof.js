@@ -509,7 +509,7 @@ class AnazhRealm_werkstatt_hof {
             // Spieler bewegt sich auch mit offenem Inventar weiter. Nur
             // die Maus-Look-Steuerung ist über exitPointerLock gesperrt.
         } else {
-            el.setAttribute("hidden", "");
+            this._uiVerbergen(el); // [hidden] ohne laufende Animation im gefrorenen Baum (spielgang.K3)
             this.state.inventoryOpen = false;
             document.body.classList.remove("inventory-open");
             this.state.inventorySelected = null;
@@ -1391,6 +1391,28 @@ class AnazhRealm_werkstatt_hof {
             this.state.ichStage.active = false;
             this._ichStopRAF();
         }
+    }
+
+    // DER VORBAU DER ICH-BÜHNE (spielgang.K3, aus `_vorbauBedienung`): Tab öffnet die Bühne, und ihr erster Render baute die
+    // Programme des Leibs unter dem Licht der Bühne — jedes Öffnen trug ein bis drei davon (Radeon echt, werkbank bedienung:
+    // Tab 195 → 133 → 98 → 77 → 61 ms über fünf Runden, je Bild 15–37 ms Knoten-Bau). Der Vorbau zeichnet die Bühne bei
+    // geschlossenem Ich je Takt EINMAL — die Erst-Zeichnung baut darin wie beim Öffnen —, bis sie ganz zeichnet. true: steht.
+    _ichVorbau() {
+        const st = this.state;
+        if (st.inventoryOpen) return true; // offen zeichnet ihr eigener Takt
+        const stage = this._ichEnsureStage();
+        if (!stage || stage.vorgebaut) return true;
+        if (!stage.rendererReady) return false;
+        this._ichStageShow((st.player && st.player.soul) || "human");
+        this._buehneRender(stage.renderer, stage.scene, stage.camera, "Ich-Bühne");
+        const B = stage.renderer.buehne;
+        if (B && !B.ganz) return false;
+        stage.vorgebaut = true;
+        // das Ziel der Bühne schrumpft, bis Tab sie zeigt (`_buehneRender` stellt es auf ihren Schirm zurück): der Vorbau
+        // behält Programme und Pipelines (der Render-Kontext folgt Format und Proben, nie der Größe), nie ihre 360² × MSAA 4 im
+        // VRAM des Profi-Bands
+        if (B && B.rt) B.rt.setSize(1, 1);
+        return true;
     }
 
     // Ich-G — die Bühne + das Spec-Sheet auf den AKTUELLEN Körper aktualisieren (nach einem Seelen-Wechsel).
