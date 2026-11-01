@@ -1767,7 +1767,7 @@ class AnazhRealm_studio_bruecke {
         eindeutig(2, artPaare);
         // (2) Ein Art-Wort benennt seine Art, nie das Werk, dessen Label es als Grundwort trägt: „Lyra-Tor" ist ein Tor —
         // „lyra" führt zu ihm, „tor" bleibt das erste Werk der Art (w4-tore-teile2: das Label nahm „tor" dem Drachentor,
-        // der Satz „stell ein drachentor auf" verlor seine Absicht; gate:nervensystem S „Art-Wort an seiner Art vorbei").
+        // der Satz „stell ein drachentor auf" verlor seine Absicht; gate:nervensystem S „Wort am Knoten vorbei").
         for (const id of ids) {
             const t = traeger[id];
             if (t) for (const w of [...kopf(recipes[id].lab), ...kopf(label(t))]) if (!stufen[2].has(w)) setze(1, w, t);
