@@ -1,0 +1,59 @@
+{
+ "sha": "6e8f4c634bdd1dca7d510cdee1fcc648abe36b4d",
+ "geraet": "radeon",
+ "zeit": "2026-11-01T15:49:53.173Z",
+ "host": "MiguellD",
+ "je": {
+  "haar.K2#1": {
+   "gruen": true,
+   "zahl": "arm GRÜN strich 0.4575 Soll [0.3554,0.533] · albedo 0.0117 [0.01; 0.3] · third GRÜN strich 0.4719 Soll [0.3554,0.533] · albedo 0.0117 [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.3,
+   "gpu": "amd/rdna-3",
+   "s": 18.2,
+   "zeit": "2026-11-01T15:49:53.173Z",
+   "abdruck": "b612c52e703b",
+   "port": 5410,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-01T15:49:29.136Z",
+  "port": 5410,
+  "warten": 0.04,
+  "bootS": 5.2,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "haar.K2#1",
+    "s": 15.5,
+    "takte": 528,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 36,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 40,
+  "minuten": 0.75
+ }
+}
