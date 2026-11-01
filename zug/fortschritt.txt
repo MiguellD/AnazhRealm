@@ -1378,3 +1378,4 @@
 2026-11-01 01:30:53 z114-abab w-ego LANGSAMER 13.5 · 1/2 (2+2)
 2026-11-01 01:47:28 z114-abab stadt VERLÄNGERN 16.5 · 2/2 (2+2)
 2026-11-01 02:04:43 z114-abab stadt(4+4) LANGSAMER 17.2 · verlängert (4+4)
+2026-11-01 02:05:03 b-kalt-b895 START 1 Stationen
