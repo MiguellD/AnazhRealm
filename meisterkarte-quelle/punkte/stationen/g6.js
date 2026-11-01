@@ -1145,10 +1145,11 @@ async function pbProbe(art, aus) {
             laufend = null;
         }
     };
-    // DIE WACHE DES DECKELS: 4 s vor dem Deckel des Laufs (PUNKTE_PROBE_DECKEL_S) druckt die Probe ihre Zeile aus dem Strom, auch
-    // mitten in einem Schritt — seine Zellen stehen beim Namen (`fehler`), sein Ruf an die Werkbank läuft in der Seite zu Ende
+    // DIE WACHE DES DECKELS (nur der Gang — er allein steht unter der Uhr seiner Schritte; Glätte und Dauer laufen nach ihrem Deckel
+    // aus der Eich-Fahrt bis knapp an ihn): 4 s vor dem Deckel des Laufs (PUNKTE_PROBE_DECKEL_S) druckt die Probe ihre Zeile aus dem
+    // Strom, auch mitten in einem Schritt — seine Zellen stehen beim Namen (`fehler`), sein Ruf an die Werkbank läuft in der Seite zu Ende
     const deckelS = Number(process.env.PUNKTE_PROBE_DECKEL_S) || 0;
-    const wache = deckelS > 8 ? setTimeout(() => {
+    const wache = art === "gang" && deckelS > 8 ? setTimeout(() => {
         if (laufend) {
             for (const z of laufend.zellen) fehler[z] = "die Frist der Probe kam im Schritt " + laufend.name + " (nach " + (uhr() - laufend.a).toFixed(1) + " s)";
             schritte.push([laufend.name, "Frist"]);
