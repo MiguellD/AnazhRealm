@@ -1318,8 +1318,11 @@ function sollKlasseStation(o) {
 }
 
 // DER DORFPLATZ UM 8 UHR (mensch.K1#1; bis w4-stationen-schnell-a `platz-8.js` aus bericht/2210-messschuld-6cfce, M32): der Spieler am
-// Rand des Dorfplatzes des Start-Dorfs (derselbe Stand wie die Linse `bewohner`), Third, die Uhr als Spieler-Wort
-// (`processChatCommand` „setze uhrzeit 0.3333“). DIE WELT IM TAKT, nie an der Wanduhr: der Loop ruht, Takt um Takt der Seite, bis
+// Rand des Dorfplatzes des Start-Dorfs (derselbe Stand wie die Linse `bewohner`), Third, die Uhr am Regler des Spielers
+// (`setTimeOfDay(0.3333, "regler")`, ein Schreiber des Spielers wie in der Probe bewohner — bis w4-p-mensch-k1 sein Satz „setze
+// uhrzeit 0.3333“: unter dem Halt der Mess-Bühne (`_messHalt`) hält `dslEval` den Welt-Akt set_time_of_day, der Chat sagte
+// „Uhrzeit gesetzt“, die Uhr blieb auf 0,5, das Bild „8 Uhr“ stand um 12:30 — aff7d187 Radeon tod 0,5205). DIE WELT IM TAKT, nie
+// an der Wanduhr: der Loop ruht, Takt um Takt der Seite, bis
 // jeder Bewohner angekommen ist und jeder Leib draußen sein Feld trägt (`__gebautNach`, das EINE Warten: `_weltOffen` leute · leiber),
 // dann 8 Spiel-Sekunden zu je TAKT_DECKEL_S im Takt des Spiels — bis dahin der Loop an der Wanduhr: bis 20 s Warten auf `_weltSteht`,
 // 4 s Schlaf, 8 s Bilder (GTX 3ed95dcf: 31 s, die Welt stand mit gehenden Bewohnern nie). Gezählt: Leiber (rig, heim) im Frustum der
@@ -1344,7 +1347,7 @@ async function platzAcht(r, T) {
     }
     if (!staende.length) return { fehler: "kein Stand" };
     s.renderer.setAnimationLoop(null);
-    r.processChatCommand("setze uhrzeit " + UHR_T);
+    r.setTimeOfDay(UHR_T, "regler");
     if (s.cameraMode !== "third") r.setCameraMode("third");
     const cam = s.camera;
     const wrap = (a) => Math.atan2(Math.sin(a), Math.cos(a));
@@ -2439,6 +2442,9 @@ const stationen = [
             if (!p) return { gruen: false, zahl: "kein Platz-Bild um 8 Uhr (platzAcht / b64png, Exit " + lauf.exit + ")" };
             if (p.fehler) return { gruen: false, zahl: "Platz-Bild: " + p.fehler };
             const ib = z.imBlick || {};
+            // die Stunde des Bilds (`tod`) gegen ihr Soll (`uhr`, 8 Uhr) auf ±0,02 (29 min): die gemessenen Bilder trugen
+            // 0,3377–0,3425 — ein Bild, dessen Uhr nicht griff, heißt beim Namen ROT (aff7d187: 12:30 unter „8 Uhr“)
+            const hm = (t) => { const m = Math.round((((t % 1) + 1) % 1) * 1440); return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); };
             const gruen =
                 z.leiber > 0 &&
                 typeof z.quote === "number" &&
@@ -2447,13 +2453,14 @@ const stationen = [
                 ib.ego >= 10 &&
                 ib.third >= 10 &&
                 p.imBild >= 10 &&
-                p.sicht === "third";
+                p.sicht === "third" &&
+                Math.abs(p.tod - p.uhr) <= 0.02;
             return {
                 gruen,
                 zahl:
                     "Quote " + z.leiber + "/" + z.sollSumme + " = " + z.quote + ", Häuser ohne Bewohner " + z.leerN +
-                    ", gegangene im Blick " + ib.ego + " Ego / " + ib.third + " Third; Third-Bild 8 Uhr am Dorfplatz " +
-                    p.imBild + " Menschen im Bild, " + p.gehendImBild + " gehend, " + p.fps + " fps",
+                    ", gegangene im Blick " + ib.ego + " Ego / " + ib.third + " Third; Third-Bild am Dorfplatz um " + hm(p.tod) +
+                    " (Soll " + hm(p.uhr) + ") " + p.imBild + " Menschen im Bild, " + p.gehendImBild + " gehend, " + p.fps + " fps",
             };
         },
         pfad: [
