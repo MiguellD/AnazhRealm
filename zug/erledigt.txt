@@ -185,3 +185,4 @@ general-25ac-gtx ABSTURZ Baum oder Lauf fehlt
 z140-abab LANGSAMER abab 1e90e7cd gegen 25ac4c0c: w-ego 4+4 LANGSAMER · stadt 2+2 nicht-langsamer
 takt-z140a-gtx gemessen punkte 1e90e7cd gtx: 1 grün / 1 rot
 general-1e90-gtx gemessen punkte 1e90e7cd gtx: 12 grün / 12 rot
+z140-takt-abab LANGSAMER abab 5a341855 gegen 25ac4c0c: w-ego 4+4 LANGSAMER · stadt 4+4 LANGSAMER
