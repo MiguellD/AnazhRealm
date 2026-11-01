@@ -754,7 +754,7 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
     }
 
     // ### Die lebendige Welt (Instanced-Gras, Avatar-Hide,
-    // Genesis-Plattform, adaptives Wasser, Cel-Slider-Fix) ###
+    // Genesis-Ort, adaptives Wasser, Cel-Slider-Fix) ###
     const v829Results = await safeEvaluate(page, () => {
         const out = {};
 
@@ -872,14 +872,16 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             out.nahWieseZahl = Array.isArray(b1) ? `${b1.length} Büschel in Kachel ${tx},${tz}` : "Kachel wartet";
         }
 
-        // --- Genesis-Plattform ---
-        // Nach dem ersten Spawn sollte eine start_plattform-Architektur da sein
-        out.genesisArchExists = !!(st.architectures && st.architectures.some((a) => a && a.type === "start_plattform"));
-        // Idempotenz: zweiter Aufruf erzeugt KEINE zweite Plattform
-        const before = st.architectures.filter((a) => a && a.type === "start_plattform").length;
-        r._ensureGenesisPlatform();
-        const after = st.architectures.filter((a) => a && a.type === "start_plattform").length;
-        out.genesisIdempotent = before === after;
+        // --- Der Genesis-Ort (Pflicht F) ---
+        // Nach dem ersten Spawn trägt die Welt den Plan ihres Orts (aus dem Faden), und der Spieler kam an seiner Mitte an
+        const M = r._genesisMitte();
+        out.genesisArchExists = !!(r._genesisPlan && M && Math.hypot(st.playerMesh.position.x - M.x, st.playerMesh.position.z - M.z) < 40);
+        // Idempotenz: weitere Takte setzen kein Element des Plans ein zweites Mal (die id ist der Stempel)
+        for (let i = 0; i < 2; i++) r._genesisOrt(st.playerMesh.position);
+        const before = st.architectures.length;
+        r._genesisOrt(st.playerMesh.position);
+        const ids = st.architectures.filter((a) => a && typeof a.id === "string" && a.id.startsWith("genesis:")).map((a) => a.id);
+        out.genesisIdempotent = ids.length === new Set(ids).size && st.architectures.length - before <= 12;
 
         // --- Adaptives Wasser ---
         out.waterAdaptive = Number.isFinite(st.waterLevel);
@@ -910,8 +912,8 @@ async function checkBandWelle6G4Atmosphere({ page, check }) {
             v829Results.nahWieseStabil
         );
         check("Gras-Material ist geteilt (ein Draw-Call-Material)", v829Results.grassMatShared);
-        check("Genesis-Plattform-Architektur nach Spawn vorhanden", v829Results.genesisArchExists);
-        check("_ensureGenesisPlatform ist idempotent (keine Doppel-Plattform)", v829Results.genesisIdempotent);
+        check("Der Genesis-Ort steht nach dem Spawn als Plan der Welt (Ankunft an seiner Mitte)", v829Results.genesisArchExists);
+        check("Der Genesis-Ort setzt jedes Element EINMAL (keine Doppel-id)", v829Results.genesisIdempotent);
         check("state.waterLevel ist gesetzt (adaptiv)", v829Results.waterAdaptive);
     } else {
         check("Die lebendige Welt Tests laufen", false, v829Results ? v829Results.error : "no result");

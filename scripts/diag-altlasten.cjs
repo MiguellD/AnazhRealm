@@ -32,6 +32,17 @@ const FORBIDDEN = [
     { token: "_p2pEnsurePeerAura", fiel: "V18.448 — die Avatar-Aura" },
     { token: "_p2pBroadcastAura", fiel: "V18.448" },
     ...[
+        "start_plattform",
+        "GENESIS_PLATZ",
+        "_genesisPlattform",
+        "_genesisScheibe",
+        "_genesisGrund",
+        "_findOpenSpawnSpot",
+        "_ensureGenesisPlatform",
+        "_genesisPortalRing",
+        "genesisPortalRing",
+    ].map((token) => ({ token, fiel: "ort-wirt (Pflicht F) — der Genesis-Ort ist EIN Plan des Ort-Gesetzes, der Wirt liest ihn (_genesisOrt)" })),
+    ...[
         "_nachtAnteil",
         "_celestialHorizonFade",
         "_daemmerung",

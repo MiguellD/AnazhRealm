@@ -145,7 +145,7 @@ async function checkBandRing8({ page, check, errors, finalState }) {
                 macro: { massivC: { x: 1, z: 2 } },
                 voxelEdits: [{ x: 1, y: 2, z: 3, r: 2, mode: "carve" }],
                 settlementCells: { start: { x: 0, z: 0 } },
-                genesisPortalRing: true,
+                genesisOrt: { key: "genesis:1:0,0:0", x: 0, z: 0, steht: true },
                 portalPreviewFachwerk: true,
                 erbgut: { terme: [{ art: "wildnis" }] },
                 saat: [{ dsl: "x" }],

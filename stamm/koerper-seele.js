@@ -345,28 +345,9 @@ class AnazhRealm_koerper_seele {
         if (pm && pm.position && typeof this._depositLife === "function") {
             this._depositLife(pm.position.x, pm.position.z);
         }
-        // Rückkehr am Genesis-Anker (die Start-Plattform, `_genesisPlattform` — die EINE Quelle des Genesis-Orts); ohne
-        // Anker der offene Spawn-Spot.
-        const anchor = this._genesisPlattform();
-        let ax = 0;
-        let az = 0;
-        let ay = null;
-        if (anchor) {
-            ax = anchor.position.x;
-            az = anchor.position.z;
-            ay = anchor.position.y + 2.2;
-        } else if (typeof this._findOpenSpawnSpot === "function") {
-            const spot = this._findOpenSpawnSpot();
-            ax = spot.x;
-            az = spot.z;
-        }
-        const surf = this.getTerrainHeightAt(ax, az);
-        const safeY = Math.max(Number.isFinite(surf) ? surf + 2.0 : 2.0, ay || -Infinity);
-        if (pm) {
-            pm.position.set(ax, safeY, az);
-            if (this.state.playerVel) this.state.playerVel.setValue(0, 0, 0);
-            this.state._fieldVy = 0;
-        }
+        // Rückkehr an der Mitte des Genesis-Orts (`_genesisAnkunft`: der Plan der Welt, Grund + 1,2 m — dieselbe Ankunft wie
+        // beim ersten Spawn)
+        const anker = this._genesisAnkunft();
         // Die Lebenswerte kehren voll zurück (das Maximum der verwundeten Gestalt) — die WUNDE (Stat-Penalty,
         // 10-min-Regen) trägt die Erinnerung, nicht ein HP-Malus.
         this.recomputePlayerStats({ voll: true });
@@ -378,7 +359,10 @@ class AnazhRealm_koerper_seele {
                 at: now,
             }
         );
-        this.log(`Tod (${source || "unbekannt"}) → Rückkehr am Anker (${ax.toFixed(0)}, ${az.toFixed(0)})`, "INFO");
+        this.log(
+            `Tod (${source || "unbekannt"}) → Rückkehr am Genesis-Ort (${anker.x.toFixed(0)}, ${anker.z.toFixed(0)})`,
+            "INFO"
+        );
     }
 
     // 1×/s Vitals-Tick: Wunden-Regen (10 min Erinnerung), Stamina-Regen,

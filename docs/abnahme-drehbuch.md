@@ -34,7 +34,8 @@
 **Stehende Ein-Wort-Defaults** (bestätigt, nur bei Widerspruch melden): Materialisierungs-Pop
 der Mesh-Zone = Streaming, kein eigener Fall · Feuerstelle (glutbrunnen) · Marktstand · Ziehbrunnen =
 Studio-Gestalt (fachwerk-Ausstattung; die Wirts-Teile sind unsichtbare Substanz, ein gezeichnetes Wirts-Teil ist
-eine Fremd-Silhouette) · fliegende Inseln + start_plattform = Welt-Substanz.
+eine Fremd-Silhouette) · fliegende Inseln = Welt-Substanz (die Stein-Scheibe des Genesis-Orts fiel mit dem Schöpfer-Wort vom
+31.10.: der Platz ist EIN Plan des Ort-Gesetzes).
 
 **Abschluss:** 19 ✔ = das Wort des Schöpfers über Scope/Ship (Schritt 15 zuletzt: sein Trace ist der FPS-Boden-Beweis, p95 ≤ 33 ms). Optional danach:
 `npm run look-golden -- --mint` auf dem Schöpfer-Holz — das Golden bewacht ab dann jeden Push.

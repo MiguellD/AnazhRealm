@@ -45,7 +45,6 @@ async function checkBandV1769RoleResonance({ page, check }) {
             "waterfall",
             "stein_block",
             "damm",
-            "start_plattform",
             "kristall_geode",
             "glutbrunnen",
             "felsturm",

@@ -121,13 +121,13 @@ function vorschauVerdict(m) {
 function ankunftVerdict(m) {
     if (!m || m.gestartet !== true) return ["start"];
     const out = [];
-    if (!(m.baeume > 0)) out.push("kein Wald um die Plattform gewachsen");
+    if (!(m.baeume > 0)) out.push("kein Wald um den Genesis-Ort gewachsen");
     if (m.kronen > 0)
-        out.push(`${m.kronen} Krone(n) über der Scheibe (nächster Stamm ${m.naechsterStamm} m, ${m.naechsteArt})`);
-    if (!(m.ringPortale > 0)) out.push("kein Genesis-Ring (über dem Frame-Budget)");
-    else if (!(m.ringMitteAbstand <= 1)) out.push(`ring-mitte ${m.ringMitteAbstand} m neben der Plattform`);
-    if (m.trocken !== true) out.push("plattform im wasser");
-    if (m.plattformen !== 1) out.push(`${m.plattformen} Plattformen nach dem zweiten Leger`);
+        out.push(`${m.kronen} Krone(n) über dem Freiraum (nächster Stamm ${m.naechsterStamm} m, ${m.naechsteArt})`);
+    if (!(m.ringPortale >= 10)) out.push(`${m.ringPortale} Tore am Genesis-Ort (über dem Frame-Budget; Soll 10)`);
+    else if (!(m.slotAbstand <= 0.5)) out.push(`ein Tor steht ${m.slotAbstand} m neben seinem Slot`);
+    if (m.trocken !== true) out.push("die Mitte im wasser");
+    if (m.doppelt !== 0) out.push(`${m.doppelt} Tore doppelt nach weiteren Takten`);
     return out;
 }
 
@@ -921,11 +921,12 @@ function wand(src) {
             return !fehlt.push(name);
         }
     };
-    // Die Genesis-Plattform sucht nur `_genesisPlattform` (V-D1 fährt es).
-    const plattform = rumpf("_genesisPlattform");
-    const plattSuchen =
-        (nc.match(/\.type === "start_plattform"/g) || []).length -
-        ((plattform || "").match(/\.type === "start_plattform"/g) || []).length;
+    // Den Genesis-Ort liest nur `_genesisMitte` (der Plan setzt ihn, `_genesisPlanAn`; der Takt stempelt `steht`,
+    // `_genesisOrt`) — V-D1 fährt es.
+    const mitte = rumpf("_genesisMitte");
+    const ortZahl = (t) => ((t || "").match(/\.genesisOrt\b/g) || []).length;
+    const ortLeser =
+        ortZahl(nc) - ["_genesisMitte", "_genesisPlanAn", "_genesisOrt"].reduce((q, n) => q + ortZahl(rumpf(n)), 0);
     // Die Auflöser kennen keinen Ersatz-Ort; jede Zahl liest der EINE Leser `_dslOrtZahl`.
     const ersatz = [
         fehltIn("dslPositions", /_defaultSpawnPos\(\)|dslClamp\(|\bNumber\(/),
@@ -954,9 +955,9 @@ function wand(src) {
             ohne("dslEffects", "_spawnStudioWerk").slice(3),
         ],
         [
-            "W5 die Genesis-Plattform hat EINE Quelle (`_genesisPlattform` sucht sie; Spawn-Idempotenz und Rückkehr-Anker lesen sie)",
-            da(plattform) && plattSuchen === 0,
-            `${plattSuchen} Suche(n) nach start_plattform neben _genesisPlattform${ohne("_genesisPlattform")}`,
+            "W5 der Genesis-Ort hat EINE Quelle (`_genesisMitte` liest `worldMeta.genesisOrt`; Ankunft und Rückkehr lesen sie über `_genesisAnkunft`)",
+            da(mitte) && ortLeser === 0,
+            `${ortLeser} Leser von worldMeta.genesisOrt neben _genesisMitte${ohne("_genesisMitte")}`,
         ],
         [
             "W6 die Auflöser kennen keinen Ersatz-Ort (dslPositions: 0 `_defaultSpawnPos()`, 0 `dslClamp`, 0 `Number(`; Voxel-Ops ohne eigene Koordinaten-Leser, kein Ursprung statt Spieler; `_dslRulePos` ohne Array-Ersatz)",
@@ -1088,19 +1089,20 @@ async function probe(arg) {
     try {
         const m = { gestartet: false };
         out.ankunft = m;
-        await window.__gebautNach("die Genesis-Plattform", {
-            fertig: () => st.architectures.some((a) => a && a.type === "start_plattform"),
+        await window.__gebautNach("der Genesis-Ort", {
+            fertig: () => !!(r._genesisPlan && r._genesisMitte()),
             takt: () => tick(1, 100),
             max: 600,
         });
-        const plat = st.architectures.find((a) => a && a.type === "start_plattform");
-        if (!plat) throw new Error("keine Genesis-Plattform");
-        const platR = st.blueprints.start_plattform.parts[0].size.x / 2;
-        const P = plat.position;
+        const P = r._genesisMitte();
+        if (!P) throw new Error("kein Genesis-Ort");
+        const platR = window.__fachwerkCore.GENESIS_ORT.freiraum.r; // der Freiraum der Tore
         m.plattform = [+P.x.toFixed(1), +P.z.toFixed(1)];
         m.trocken = r._landAt(P.x, P.z, 0);
-        r._ensureGenesisPlatform(); // die Spawn-Idempotenz liest `_genesisPlattform`: kein zweiter Leger legt eine zweite
-        m.plattformen = st.architectures.filter((a) => a && a.type === "start_plattform").length;
+        // die Ankunft ist idempotent: jedes Element des Plans steht EINMAL (seine id ist der Stempel), auch nach weiteren Takten
+        for (let i = 0; i < 3; i++) r._genesisOrt(st.playerMesh.position);
+        const torIds = st.architectures.filter((a) => a && typeof a.id === "string" && a.id.startsWith("genesis:tor:")).map((a) => a.id);
+        m.doppelt = torIds.length - new Set(torIds).size;
         // Der Wald wächst um den Spieler: ticken, bis die Welt steht (`__weltStehtNach`).
         const baeume = () =>
             st.architectures.filter(
@@ -1114,7 +1116,7 @@ async function probe(arg) {
         for (const a of bs) {
             const d = Math.hypot(a.position.x - P.x, a.position.z - P.z);
             const krone = r._naturKrone(a.type, a);
-            if (d < platR + krone) kronen++;
+            if (d < platR + krone && a.werk !== true) kronen++; // ein Baum des Plans (die Allee) steht nach dem Gesetz des Orts
             if (d < naechster) {
                 naechster = d;
                 art = a.type;
@@ -1129,7 +1131,7 @@ async function probe(arg) {
         window.__anazhAutoSettlement = true;
         Object.defineProperty(st, "_frameOverBudget", { configurable: true, get: () => true, set: () => {} });
         try {
-            for (let i = 0; i < 40 && !(st.worldMeta && st.worldMeta.genesisPortalRing); i++) await tick(1, 60);
+            for (let i = 0; i < 40 && !(st.worldMeta.genesisOrt && st.worldMeta.genesisOrt.steht); i++) await tick(1, 60);
         } finally {
             delete st._frameOverBudget;
             st._frameOverBudget = false;
@@ -1140,11 +1142,14 @@ async function probe(arg) {
             (a) => a && /^welt_/.test(a.type) && Math.hypot(a.position.x - P.x, a.position.z - P.z) < 80
         );
         m.ringPortale = ring.length;
-        if (ring.length) {
-            const cx = ring.reduce((s2, a) => s2 + a.position.x, 0) / ring.length;
-            const cz = ring.reduce((s2, a) => s2 + a.position.z, 0) / ring.length;
-            m.ringMitteAbstand = +Math.hypot(cx - P.x, cz - P.z).toFixed(2);
-        }
+        // jedes Tor auf seinem Slot des Plans (die größte Abweichung)
+        const plan = r._genesisPlan;
+        m.slotAbstand = +Math.max(
+            ...plan.tore.map((t) => {
+                const e = st.architectures.find((a) => a && a.id === "genesis:tor:" + t.k);
+                return e ? Math.hypot(e.position.x - plan.ort.x - t.x, e.position.z - plan.ort.z - t.z) : Infinity;
+            })
+        ).toFixed(2);
         m.gestartet = true;
     } catch (e) {
         out.ankunft = Object.assign(out.ankunft || {}, { err: (e && e.stack) || String(e) });
@@ -1208,11 +1213,8 @@ async function probe(arg) {
             return true;
         };
         let ort = null;
-        // Die Plattform ist trocken; der Ort liegt außerhalb ihrer Lichtung (`_grundrissVon` + 30 m).
-        const platz = st.architectures.find((a) => a && a.type === "start_plattform");
-        const licht = platz && r._grundrissVon(platz);
-        const frei = (x, z) =>
-            !licht || Math.hypot(x - platz.position.x, z - platz.position.z) > (licht.lichtung || 0) + 30;
+        // Die Mitte ist trocken; der Ort liegt außerhalb des Freiraums + 30 m und auf keiner Fläche des Genesis-Orts.
+        const frei = (x, z) => !r._genesisFlaeche(x, z, 30);
         for (const [x, z] of [
             [pm.x, pm.z],
             [200, 200],
@@ -1444,8 +1446,8 @@ async function probe(arg) {
         out.suche = m;
         const ort = out.satz && out.satz.trockenOrt;
         if (!ort) throw new Error("kein Ort ohne Wasser im 84-m-Kreis (Vorbedingung)");
-        const plat = st.architectures.find((a) => a && a.type === "start_plattform");
-        const P = plat ? { x: plat.position.x, z: plat.position.z } : { x: 0, z: 0 };
+        const P = r._genesisMitte();
+        if (!P) throw new Error("kein Genesis-Ort");
         const scan = r._voxelSurfaceY;
         const urteil = r._landAt;
         // (a) Das Urteil gegen den vollen Spalten-Scan: 3 Margen, je 400 Punkte.
@@ -1961,10 +1963,10 @@ async function korpusAufbau(a) {
             sprung: st.jumpPower,
         };
     };
-    // DER ORT DER SÄTZE: 45 m hinter der Lichtung im Land (auf ihr weicht jede Pflanzung benannt dem Platz)
+    // DER ORT DER SÄTZE: 45 m hinter dem Freiraum im Land und auf keiner Fläche des Genesis-Orts (auf ihr weicht jede Pflanzung
+    // benannt dem Platz)
     const pm = st.playerMesh.position;
-    const platz = st.architectures.find((x) => x && x.type === "start_plattform");
-    const [P, R] = [platz.position, ((r._grundrissVon(platz) || {}).lichtung || 0) + 45];
+    const [P, R] = [r._genesisMitte(), window.__fachwerkCore.GENESIS_ORT.freiraum.r + 45];
     const [x, z] = [
         [R, 0],
         [0, R],
@@ -1972,7 +1974,7 @@ async function korpusAufbau(a) {
         [0, -R],
     ]
         .map(([dx, dz]) => [P.x + dx, P.z + dz])
-        .find(([x, z]) => r._landAt(x, z, 1)) || [P.x + R, P.z];
+        .find(([x, z]) => r._landAt(x, z, 1) && !r._genesisFlaeche(x, z)) || [P.x + R, P.z];
     pm.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
     await window.__weltStehtNach();
     // DER RÜCKBAU je Satz: was entstand, fällt; Ort, Leib, Schwere, Gemüt der Wesen und die Prägungen stehen wie vorher
@@ -2687,11 +2689,11 @@ hauptLauf(async () => {
                 "const pos = this.dslEvalPos(positionNode, ctx);",
                 "const pos = this.dslEvalPos(positionNode, ctx);\n        if (!pos) return;",
             ],
-            // die Zwillings-Suche beim Vorher: der Rückkehr-Anker sucht die Plattform selbst
+            // der Zwillings-Leser beim Vorher: die Rückkehr liest den Genesis-Ort selbst
             [
                 "_playerDeathRespawn",
-                "const anchor = this._genesisPlattform();",
-                'const anchor = (this.state.architectures || []).find((a) => a && a.type === "start_plattform");',
+                "const anker = this._genesisAnkunft();",
+                "const anker = this._genesisAnkunft();\n        const ortSelbst = this.state.worldMeta.genesisOrt;",
             ],
             // der Warte-Poll der Hand beim Vorher: sie fragte alle 150 ms, ob das Buch steht
             [
@@ -3171,11 +3173,11 @@ hauptLauf(async () => {
     for (const [kurz, name, m, urteil, zeile] of [
         [
             "V-D1",
-            "die Plattform steht auf einer Lichtung (keine Krone über der Scheibe), der Genesis-Ring um sie",
+            "der Genesis-Ort ist EIN Plan (keine Krone über dem Freiraum), jedes Tor auf seinem Slot",
             out.ankunft,
             ankunftVerdict,
             (am) =>
-                `Plattform ${JSON.stringify(am.plattform)} · ${am.baeume} Bäume im 40-m-Kreis · nächster Stamm ${am.naechsterStamm} m (${am.naechsteArt}) · Kronen über der Scheibe ${am.kronen} · Ring ${am.ringPortale} Portale, Mitte ${am.ringMitteAbstand} m`,
+                `Mitte ${JSON.stringify(am.plattform)} · ${am.baeume} Bäume im 40-m-Kreis · nächster Stamm ${am.naechsterStamm} m (${am.naechsteArt}) · Kronen über dem Freiraum ${am.kronen} · ${am.ringPortale} Tore, Slot ±${am.slotAbstand} m`,
         ],
         [
             "V-k4",

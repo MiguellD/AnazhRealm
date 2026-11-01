@@ -284,6 +284,12 @@ function nachricht(e) {
             // DIE ORT-WAHL IM FADEN (siedlung.K5, `ortWahl`): die Antwort trägt den Plan v2 des ersten Kandidaten, der jedes Haus
             // im groben Raster trägt (`wand` true: auch im Raster der Wand) — der Wirt prüft an ihm die Bauten und den Spieler
             self.postMessage(Object.assign({ type: "ort-wahl-result", requestId: msg.requestId }, ortWahl(msg)));
+        } else if (msg.type === "genesis-plan") {
+            // DER GENESIS-ORT IM FADEN (Pflicht F · B): der erste Auftrag nach der Heimat-Hydrosphäre — der Plan v2 per Antwort,
+            // bevor ein Chunk des Spawn-Rings rechnet (`genesisPlan`)
+            self.postMessage(
+                Object.assign({ type: "genesis-plan-result", requestId: msg.requestId }, genesisPlan(msg))
+            );
         } else if (msg.type === "ort-raster") {
             // DAS HÖHEN-RASTER DER TRASSE (siedlung.K3): der Grund im Rahmen `rahmen` (fachwerk `trasseRahmen`) um den Ort x/z am
             // Zustand des Gesetzes (gelaende-core `hoehenRaster`) — der Wirt reicht es dem Export, dessen Gassen ihm folgen
@@ -894,6 +900,54 @@ function ortNass(msg, E, x, z, L = state) {
     const h = G.gewaesserForm(he, 0, hydrosphereCarveAt(x, z), hydrosphereLakeAt(x, z));
     if (Math.abs(h - he) > msg.W.bodenTolM) return true;
     return h < atlasWaterLevelAt(x, z, h) + msg.M;
+}
+
+// DER GENESIS-ORT IM FADEN (Pflicht F, der Prüfplatz · B: der Plan ist der erste Auftrag nach der Heimat-Hydrosphäre): der
+// Plan v1 des Ort-Gesetzes (fachwerk `genesisLayout`: die Saat des Orts `saat`, die Welten der Tore `welten`) auf der
+// Gelände-Funktion DIESES Fadens (`ortPlan` art genesis → Plan v2 samt Erdbau; das Welt-Wasser der Wege ist das Urteil der
+// Ort-Wahl, `ortNass` mit `W` und `M`), `fest` an 0/0. Trägt das Gesetz dort den Kern nicht — die Fläche des Felds liegt mehr
+// als 6 m unter der Makro-Höhe (ein Kavernen-Boden), Wasser des Gesetzes steht weniger als 1,5 m unter ihr, oder der Grund
+// unter dem Kern samt Saum steigt steiler als die Böschung des Erdbaus (gelaende-core `ERDBAU.boeschung`) —, rückt der Ort
+// auf den ersten tragenden Punkt der Ring-Spirale (je 12 m bis 240 m, 8 Richtungen; keiner: 0/0) — eine reine Funktion von
+// Saat und Gesetz (Lehre 7): kein Ort-Faden, keine Hydro-Kachel außer der Heimat. Rückgabe { plan, ms, gerueckt }.
+function genesisPlan(msg) {
+    if (!self.__fachwerkCore)
+        importScripts((self.__anazhBase || "") + "fachwerk-core.js" + (__phytoV ? "?v=" + __phytoV : ""));
+    const FC = self.__fachwerkCore;
+    const t0 = self.performance.now();
+    const v1 = FC.genesisLayout(msg.saat, msg.welten);
+    const r = FC.GENESIS_ORT.kern.r + FC.ORT_GESETZ.saumM;
+    const traegt = (x, z) => {
+        const surf = voxelSurfaceY(x, z);
+        if (surf === null || !Number.isFinite(surf)) return false;
+        const makro = terrainColumnContext(x, z).surf;
+        if (Number.isFinite(makro) && surf < makro - 6) return false;
+        if (surf < atlasWaterLevelAt(x, z, surf) + 1.5) return false;
+        let lo = Infinity;
+        let hi = -Infinity;
+        for (let k = 0; k <= 12; k++) {
+            const a = (k / 12) * 2 * Math.PI;
+            const h = G.hoehe(state, x + (k ? Math.cos(a) * r : 0), z + (k ? Math.sin(a) * r : 0), true);
+            lo = Math.min(lo, h);
+            hi = Math.max(hi, h);
+        }
+        return (hi - lo) / (2 * r) <= G.ERDBAU.boeschung;
+    };
+    let o = { x: 0, z: 0 };
+    let gerueckt = false;
+    if (!traegt(0, 0))
+        for (let rr = 12; rr <= 240 && !gerueckt; rr += 12)
+            for (let k = 0; k < 8 && !gerueckt; k++) {
+                const x = Math.round(Math.cos((k / 8) * 2 * Math.PI) * rr);
+                const z = Math.round(Math.sin((k / 8) * 2 * Math.PI) * rr);
+                if (traegt(x, z)) [o, gerueckt] = [{ x, z }, true];
+            }
+    const plan = FC.ortPlan(
+        v1,
+        o,
+        G.ortCtx(state, (x, z) => ortNass(msg, null, x, z))
+    );
+    return { plan, ms: self.performance.now() - t0, gerueckt };
 }
 
 // DIE SCHLANGE DES WALDS IM FADEN (B-Wald): die Schlange des Main schickt jede bestellte Zelle sofort (`_waldFadenSchicken`,

@@ -800,7 +800,7 @@ class AnazhRealm_werkstatt_bauen {
         const fp = this._grundrissVon(entry);
         if (fp) {
             const p = entry.position;
-            const r = fp.lichtung || Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
+            const r = Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
             this._grundrissFaellt(p.x - r, p.z - r, p.x + r, p.z + r);
         }
         this._erdbauGrundFaellt(entry); // und sein Grund (S4): der Boden schließt sich, der Keller füllt sich

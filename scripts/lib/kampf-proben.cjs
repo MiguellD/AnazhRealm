@@ -3106,7 +3106,7 @@ async function WELLE_L(ort) {
 // 0,6 s Kreatur-Uhr. (tod) vor dem Tod Holz, Stein und ein Fuchs, den die Geste bindet (85 m abseits, außer Witterung); der
 // Wolf jagt den Spieler am Rand seines Lebens über den Biss-Weg, die Rückkehr (Leben, Wunde, Gnade, Lebens-Spur, Seele,
 // Trauer, Journal, Wunde senkt hpMax, der Vitals-Takt heilt sie und füllt die Ausdauer) und ihr Abstand zum Genesis-Anker
-// (`_genesisPlattform`, die EINE Quelle — fehlt sie, wirft die Probe); die Landung am Ort der Rückkehr, verwundet, und ein
+// (`_genesisMitte`, die Mitte des Plans der Welt — fehlt sie, wirft die Probe); die Landung am Ort der Rückkehr, verwundet, und ein
 // Takt des Lebenszyklus lang (taktS Spiel-Zeit, auch ohne Bild-Schleife: an der Uhr des Stands zählte eine Wiederkehr ohne
 // Marke sein Intervall ein zweites Mal, `wiederkehr-alter`), dann `saveState`. `abdruck` ist K5_ABDRUCK.
 async function K5_VOR(abdruck) {
@@ -3173,7 +3173,8 @@ async function K5_VOR(abdruck) {
     const hpMax0 = ruhe(1e-4) / 1e-4;
     const [wolf, seele] = [neu("wolf", 0.4, 6, Math.PI), p.soul];
     for (let k = 0; k < 1200 && !(p.respawnGraceUntil > s.spielZeit); k++) takt(1 / 60);
-    const [e, a] = [p.emotions, r._genesisPlattform().position];
+    const [e, a] = [p.emotions, r._genesisMitte()];
+    if (!a) throw new Error("K5: kein Genesis-Ort (der Plan der Welt)");
     K.tod = {
         q: quelle,
         anker: Math.hypot(pm.position.x - a.x, pm.position.z - a.z),

@@ -346,19 +346,19 @@ async function probe(argW) {
             st.playerMesh &&
             r._foundry?.recipes &&
             st.blueprints?.baum_eiche &&
-            r._genesisPlattform()
+            r._genesisMitte()
         );
 
     )
         await tick(1, 100);
     await tick(10, 30);
-    // Ein trockener, freier Ort abseits der Genesis-Lichtung (die Natur-Wand hält die Scheibe frei): der Spieler steht dort. Die Suche
-    // geht um die Lichtung, wo der Spieler steht — steht er ferner als ihr Ring (160 m: die warme Welt der Sitzung, Mess-Wiese 1 082 m
+    // Ein trockener, freier Ort abseits der Flächen des Genesis-Orts (die Natur-Wand hält sie frei): der Spieler steht dort. Die Suche
+    // geht um den Genesis-Ort, wo der Spieler steht — steht er ferner als ihr Ring (160 m: die warme Welt der Sitzung, Mess-Wiese 1 082 m
     // von der Lichtung), um ihn: bis w4-stationen-schnell sprang der erste Lauf über 1 km in eine kalte Gegend, und sein Werk wartete
     // hinter ihrem Ring (GTX b4bcf19c: der erste Fall stand nach 80 s nicht im Bild)
-    const plat = r._genesisPlattform();
+    const M = r._genesisMitte();
     const SP = st.playerMesh.position;
-    const P0 = plat && Math.hypot(plat.position.x - SP.x, plat.position.z - SP.z) <= 160 ? plat.position : SP;
+    const P0 = M && Math.hypot(M.x - SP.x, M.z - SP.z) <= 160 ? M : SP;
     let frei = null;
     for (let ring = 40; ring <= 160 && !frei; ring += 12)
         for (let k = 0; k < 16 && !frei; k++) {
@@ -918,7 +918,7 @@ async function probe(argW) {
 // Schleife nicht von selbst: hier tickt `_gameLoopTick` (die Schleife des Spiels). ──
 function wegHelfer(arg) {
     const inv = st.player.inventory;
-    const P = r._genesisPlattform().position;
+    const P = r._genesisMitte();
     const yaw = Math.atan2(arg.frei.x - P.x, arg.frei.z - P.z);
     const zeilen = () => document.querySelectorAll("#chat-output > div");
     const habe = () => {

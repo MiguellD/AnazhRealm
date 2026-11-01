@@ -89,7 +89,10 @@ const DACH_LESER = new Set(["getTerrainHeightAt", "_voxelSurfaceY", "findSurface
 // verboten) oder hier BENANNT — mit ihren erlaubten Dach-Lesern und dem Grund. Eine unbenannte ist ROT beim Namen, eine
 // benannte, die nicht mehr liest, ist VERALTET (die Liste wandert mit dem Stamm).
 const OBERKANTE_BENANNT = {
-    _playerDeathRespawn: [["getTerrainHeightAt"], "Platzierung: der Spieler ersteht auf der Oberfläche"],
+    _genesisAnkunft: [
+        ["getTerrainHeightAt"],
+        "Platzierung: der Spieler kommt an der Mitte des Genesis-Orts auf der Oberfläche an (die erste Ankunft und jede Rückkehr nach dem Tod)",
+    ],
     _rescuePlayerFromVoid: [["getTerrainHeightAt"], "Platzierung: die Rettung aus der Leere auf die Oberfläche"],
     _stepCharacter: [
         ["findSurfaceAbove"],

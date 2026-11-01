@@ -76,7 +76,7 @@
         },
         {
             "id": "genesis",
-            "titel": "Der Genesis-Ring (S1 W1f): die Ankunft jeder Welt — zehn Kern-Portale im Kreis R 11 m um den Genesis-Ort (die Mitte der Start-Plattform, `_genesisMitte`; in der Standard-Welt 36/0), die vier Vorschauen (Haus, Wagen, Esse, Drachentor) radial dahinter; der Spieler in der Ring-Mitte auf der Plattform, der Blick nach −x (der teuerste von vier Blicken). Der Anker (`anker`) nennt die Stamm-Methode des Orts: steht der Genesis-Ort der Welt mehr als 1 m neben `spieler`, bricht `umstellen --ort genesis` laut ab. Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`: sein Inhalt hinge an der Bildrate), das deterministische Genesis-Gut baut der Ort-Takt mit den Methoden des Stamms.",
+            "titel": "Der Genesis-Ort (Pflicht F, der Prüfplatz; S2 des Plans): die Ankunft jeder Welt ist EIN Plan des Ort-Gesetzes (fachwerk `genesisLayout` → `ortPlan`, der erste Auftrag des Voxel-Fadens) — das Rondell r 10, zehn Tore auf dem Ring-Weg r 22 (Sehne 12,4 m), die vier Vorschauen (Haus, Wagen, Esse, Drachentor) auf dem Weg hinter ihrem Tor, die Allee zur Terrasse; der Spieler an der Mitte (`_genesisMitte`; in der Standard-Welt 0/0), der Blick nach −x. Der Anker (`anker`) nennt die Stamm-Methode des Orts: steht der Genesis-Ort der Welt mehr als 1 m neben `spieler`, bricht `umstellen --ort genesis` laut ab. Der Dorf-Zug ruht (`window.__anazhAutoSettlement = false`: sein Inhalt hinge an der Bildrate), den Platz setzt der Ort-Takt aus dem Plan (`_genesisOrt`).",
             "spieler": [
                 0,
                 0
@@ -600,7 +600,7 @@
                     ]
                 },
                 {
-                    "muster": "^g:(haus|tor|esse|esse_meister|brennkolben|webstuhl|drehbank|seelenstein_altar|welt_portal|welt_strom|start_plattform):L[01]$"
+                    "muster": "^g:(haus|tor|esse|esse_meister|brennkolben|webstuhl|drehbank|seelenstein_altar|welt_portal|welt_strom):L[01]$"
                 },
                 {
                     "muster": "^bau:"

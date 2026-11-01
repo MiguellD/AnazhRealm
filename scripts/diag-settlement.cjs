@@ -2017,42 +2017,34 @@ hauptLauf(async () => {
             res.c.idempotent = again === null && st.architectures.length === archAfter;
             // C5 — DER GENESIS-PORTAL-RING (Schöpfer: „beim ersten spawn
             // die kernportale um die genesis-plattform anordnen"): am Genesis-Ort
-            // (`_genesisMitte`, die Mitte der Start-Plattform — Welle L, V-D1) heben alle builtIn-Welt-Portale im
-            // Kreis R 11 m; doppelt idempotent
-            // (worldMeta-Stempel + Existenz-Probe).
+            // (`_genesisMitte`, die Mitte des Plans der Welt) setzt der Ort-Takt jedes Tor des Plans auf seinen Slot (Ring-Weg
+            // R 22, Pflicht F); idempotent über die id jedes Elements (die Existenz-Probe), der Stempel `genesisOrt.steht`.
             res.c.ring = {};
             window.__marke("C5");
             {
                 const wm5 = st.worldMeta;
                 const M5 = r._genesisMitte();
                 const d2M = (e) => (e.position.x - M5.x) ** 2 + (e.position.z - M5.z) ** 2;
-                delete wm5.genesisPortalRing;
-                r._genesisRingFertig = false;
-                const portalArten = Object.keys(st.blueprints || {}).filter((n) => {
-                    const b = st.blueprints[n];
-                    return b && b.builtIn && b.role === "portal" && b.portalMeta && b.portalMeta.world;
-                });
+                const portalArten = [...r._genesisTorTypen().values()];
                 res.c.ring.arten = portalArten.length;
                 const imRing = () =>
-                    st.architectures.filter(
-                        (e) => e && e.position && portalArten.includes(e.type) && d2M(e) <= 400
-                    ).length;
+                    st.architectures.filter((e) => e && e.position && portalArten.includes(e.type) && d2M(e) <= 30 * 30)
+                        .length;
                 const ringVorher = imRing();
-                for (let t5 = 0; t5 < 30 && !wm5.genesisPortalRing; t5++)
-                    r._genesisPortalRing({ x: M5.x, y: 1, z: M5.z });
-                res.c.ring.stempel = wm5.genesisPortalRing === true;
+                for (let t5 = 0; t5 < 30 && !(wm5.genesisOrt && wm5.genesisOrt.steht); t5++)
+                    r._genesisOrt({ x: M5.x, y: 1, z: M5.z });
+                res.c.ring.stempel = !!(wm5.genesisOrt && wm5.genesisOrt.steht);
                 res.c.ring.gebaut = imRing() - ringVorher;
-                const archRing = st.architectures.length;
-                r._genesisPortalRing({ x: M5.x, y: 1, z: M5.z }); // Idempotenz: der Stempel traegt
-                res.c.ring.idempotent = st.architectures.length === archRing;
-                // Radius-Probe: jedes neue Ring-Portal sitzt auf ~R 11 (±2 m)
-                res.c.ring.radiusOk = st.architectures
-                    .filter((e) => e && e.position && portalArten.includes(e.type))
-                    .slice(-res.c.ring.gebaut)
-                    .every((e) => {
-                        const d = Math.sqrt(d2M(e));
-                        return d > 9 && d < 13;
-                    });
+                res.c.ring.stehen = imRing();
+                const archRing = st.architectures.filter((e) => portalArten.includes(e.type)).length;
+                r._genesisOrt({ x: M5.x, y: 1, z: M5.z }); // Idempotenz: die id jedes Tors trägt
+                res.c.ring.idempotent = st.architectures.filter((e) => portalArten.includes(e.type)).length === archRing;
+                // Slot-Probe: jedes Tor des Plans sitzt auf seinem Slot (± 0,5 m), dem Ring-Weg R 22
+                const P5 = r._genesisPlan;
+                res.c.ring.radiusOk = P5.tore.every((t) => {
+                    const e = st.architectures.find((a) => a && a.id === "genesis:tor:" + t.k);
+                    return !!e && Math.hypot(e.position.x - P5.ort.x - t.x, e.position.z - P5.ort.z - t.z) <= 0.5;
+                });
             }
             // C6 — DER WEGE-SCHLÜSSEL TRÄGT DEN ORT: zwei Siedlungen mit DEMSELBEN Samen an
             // zwei Orten bauen je ihre Wege (die Wege-Formen werden am echten Bau gezählt, `_stlWegeBuild` läuft durch; die Nähte
@@ -3276,13 +3268,13 @@ hauptLauf(async () => {
     const ring = c.ring || {};
     check(
         // alle builtIn-Welt-Portale, Stempel gesetzt
-        "C5: DER GENESIS-PORTAL-RING hebt am Ursprung",
-        ring.stempel === true && ring.arten >= 1 && ring.gebaut >= 1,
-        `arten=${ring.arten} gebaut=${ring.gebaut}`
+        "C5: DER GENESIS-ORT setzt jedes Tor seines Plans",
+        ring.stempel === true && ring.arten === 10 && ring.stehen === 10,
+        `arten=${ring.arten} stehen=${ring.stehen} gebaut=${ring.gebaut}`
     );
     check(
         // der Stempel trägt, 0 Doppel
-        "C5: Ring-Radius ~11 m, doppelt idempotent",
+        "C5: jedes Tor auf seinem Slot (R 22), idempotent",
         ring.radiusOk === true && ring.idempotent === true,
         `radiusOk=${ring.radiusOk} idem=${ring.idempotent}`
     );

@@ -1621,8 +1621,8 @@ class AnazhRealm_vegetation_baum {
     // DIE EINE WAND „Natur weicht dem Bau" (Welle L, Q5/Q15, Entscheid D3): JEDE Quelle der Natur setzt durch sie — Wald,
     // Unterholz, Totholz und Fels-Streu (`_enqueueVegetationSpawn`), der Hof-Baum, die Streu-Zelle jeder Schicht (`_streuWurf`:
     // die Wand urteilt, bevor sie wartet), ihre Promotion zum echten Baum (`_promoteScatterCell`), die Nah-Streu (`_nahStreuKachel`) und der
-    // Hain der KI (`spawn_tree`, `spawn_studio`). Liegt der Ort in einem Grundriss (`_imGrundriss`: ein Haus, die Lichtung
-    // der Genesis-Plattform — dort mit der Krone des Wurfs, `_naturKrone`), fällt der Wurf (null); sonst baut `setzen` (eine
+    // Hain der KI (`spawn_tree`, `spawn_studio`). Liegt der Ort in einem Grundriss (`_imGrundriss`: ein Haus, eine Fläche
+    // des Genesis-Orts — am Freiraum der Tore mit der Krone des Wurfs, `_naturKrone`), fällt der Wurf (null); sonst baut `setzen` (eine
     // Quelle mit eigenem Bau: Instanz-Slots, Kachel-Pflanze) bzw. der Architektur-Eintrag `name`. Was vor dem Bau stand,
     // räumt `_grundrissRaeumen`. Vorher wuchsen 7 Bäume in 5 von 8 Häusern des Start-Dorfs, eine Birke im Türblatt, Wildwald
     // in den Gassen der Stadt (N-D5, S-W4), und die Streu lief an der Wand vorbei; an der Genesis-Scheibe wich nur der Wald
@@ -1735,17 +1735,17 @@ class AnazhRealm_vegetation_baum {
     // Liegt (x, z) in einem Grundriss (`_grundrissVon`) oder auf der Fläche eines Dorfs (`_aufWeg`)? Drei Arten tragen einen
     // Grundriss: die Häuser einer Siedlung (die gedrehte Box um ihre Mitte plus `rand` — der Stamm, die Traufe; eine Krone
     // darf über das Dach), jeder andere Bau (die Hülle seiner Blocker-Boxen, K52: Tor, Esse, Brunnen, der Würfel des Spielers)
-    // und die Lichtung eines Baus, dessen Bauplan sie trägt (der Genesis-Platz: Scheibe und Ring der Tore plus die Reichweite
-    // des Wurfs, `max(rand, krone)` — über ihm steht keine Krone). Das Gitter (32 m, Zahlen-Schlüssel — die Streu fragt je
-    // Zelle) hält die Bauten, die Lichtungen stehen daneben (eine je Welt); es entsteht faul aus den Einträgen und fällt bei
-    // jedem Spawn/Abriss eines Baus mit Grundriss. `ohne`: ein Eintrag, dessen eigener Grund nicht zählt (der Wurf, den die
+    // und die erklärten Flächen des Genesis-Orts (`_genesisFlaeche`: der Plan der Welt — Kern, Ring, Allee, Wiese, Ufer, Teich,
+    // die Bühnen; am Freiraum der Tore samt der Reichweite des Wurfs, `max(rand, krone)` — über ihm steht keine Krone). Das
+    // Gitter (32 m, Zahlen-Schlüssel — die Streu fragt je Zelle) hält die Bauten; es entsteht faul aus den Einträgen und fällt
+    // bei jedem Spawn/Abriss eines Baus mit Grundriss. `ohne`: ein Eintrag, dessen eigener Grund nicht zählt (der Wurf, den die
     // Räumung fragt — `_naturRaeumen`). Rückgabe: "lichtung" | "haus" | "bau" | "weg" | false.
     _imGrundriss(x, z, rand = 0.8, krone = 0, ohne = null) {
         const G = AnazhRealm.GRUNDRISS_ZELLE;
         const schluessel = AnazhRealm._grundrissSchluessel;
         const gitter = this._grundrissStand();
         const reich = Math.max(rand, krone);
-        for (const L of gitter.lichtungen) if ((x - L.x) ** 2 + (z - L.z) ** 2 < (L.r + reich) ** 2) return "lichtung";
+        if (this._genesisFlaeche(x, z, reich)) return "lichtung";
         const l = gitter.zellen.size ? gitter.zellen.get(schluessel(Math.floor(x / G), Math.floor(z / G))) : null;
         if (l)
             for (const e of l) {
@@ -1798,14 +1798,10 @@ class AnazhRealm_vegetation_baum {
     _grundrissStand() {
         if (this._grundrissGitter) return this._grundrissGitter;
         const G = AnazhRealm.GRUNDRISS_ZELLE;
-        const gitter = (this._grundrissGitter = { zellen: new Map(), lichtungen: [], wege: new Map() });
+        const gitter = (this._grundrissGitter = { zellen: new Map(), wege: new Map() });
         for (const e of this.state.architectures || []) {
             const fp = this._grundrissVon(e);
             if (!fp) continue;
-            if (fp.lichtung) {
-                gitter.lichtungen.push({ x: e.position.x, z: e.position.z, r: fp.lichtung });
-                continue;
-            }
             const r = Math.hypot(fp.ex, fp.ez) + Math.hypot(fp.ox, fp.oz) + 2;
             for (let gx = Math.floor((e.position.x - r) / G); gx <= Math.floor((e.position.x + r) / G); gx++)
                 for (let gz = Math.floor((e.position.z - r) / G); gz <= Math.floor((e.position.z + r) / G); gz++) {
@@ -1879,10 +1875,8 @@ class AnazhRealm_vegetation_baum {
     // (fachwerk `massBau(hausParams(Rezept, Stempel))` mit der Gestalt seines Samens — dieselbe Zeile, aus der der Export sein
     // obb und seine Tür nimmt, und der Bau, den der Worker für diesen Samen baut: `_foundryVariantFor`), die AUSSTATTUNG ihre
     // Trittfläche (`fx.tritt` × Größe); beides × die Welt-Skala der Gestalt × die Größe, gemerkt je Gestalt, Same, Größe und
-    // Stempel. Ohne `art` die LICHTUNG eines Baus, dessen Bauplan sie trägt (`lichtung`: die Genesis-Plattform, Befund V-D1):
-    // der GENESIS-PLATZ, die Scheibe des Bauplans (cylinder, size.x = Durchmesser × die Größe des Eintrags) und der Ring der Tore
-    // um sie (`GENESIS_PLATZ`: Kreis plus Tiefe eines Tors), `lichtung` = sein Radius (die Wand fragt dort die Krone) — oder,
-    // für jeden anderen Bau, die Hülle seiner Blocker-Boxen (`welt`: achsparallel in der Welt, K52). Null für Natur, für was
+    // Stempel. Ohne `art` die Hülle der Blocker-Boxen eines Baus (`welt`: achsparallel in der Welt, K52); die Flächen des
+    // Genesis-Orts sind kein Bau, sie trägt der Plan (`_genesisFlaeche`). Null für Natur, für was
     // fährt (der Wagen urteilt über `_imWagen`, er räumt nichts), für einen Bau ohne Boxen und ein Werk ohne Grundriss-Gesetz.
     _grundrissVon(e, art, seed) {
         if (!e) return null;
@@ -2004,14 +1998,6 @@ class AnazhRealm_vegetation_baum {
             return fp;
         }
         if (!e.position) return null;
-        const bp = this.state.blueprints ? this.state.blueprints[e.type] : null;
-        if (bp && bp.lichtung) {
-            const p0 = Array.isArray(bp.parts) && bp.parts[0] && bp.parts[0].size;
-            const g = Number.isFinite(e.scale) && e.scale > 0 ? e.scale : 1;
-            const P = AnazhRealm.GENESIS_PLATZ;
-            const r = Math.max(p0 && Number.isFinite(p0.x) ? (p0.x / 2) * g : 0, P.ringR + P.rand);
-            return { ex: r, ez: r, ox: 0, oz: 0, lichtung: r };
-        }
         // DER GRUNDRISS JEDES BAUS (K52): ein Tor, eine Esse, ein Brunnen, ein Marktstand, der Würfel des Spielers trugen
         // keinen — die Natur warf in sie (am Genesis-Ring ein Kristall 1,2 m vor dem Tor des Terrain-Studios). Die Hülle seiner
         // Blocker-Boxen (die Welt-AABB jeder Box) ist sein Grundriss, gemerkt je Box-Satz; die billigen Filter zuerst.
@@ -2045,10 +2031,8 @@ class AnazhRealm_vegetation_baum {
     }
 
     // Ein Bau mit Grundriss steht: was die Natur schon in ihn geworfen hat, fällt — der Wald und die Streu standen oft vor
-    // dem Dorf (das Auto-Dorf entsteht ab 260 m, die Streu-Region reicht 384 m), und ein älterer Stand trägt Bäume über der
-    // Genesis-Scheibe. Natur-Einträge (`_istNatur`), die lebenden Streu-Zellen jeder Schicht (`_streuZelleRaeumen`) und die
-    // Nah-Streu-Kacheln über dem Grundriss (sie bauen durch die Wand neu); an einer Lichtung mit der Krone (`_naturKrone`,
-    // die Suche reicht eine Streu-Region weiter). Der billige Orts-Filter zuerst, die Art-Frage nur für Betroffene
+    // dem Dorf (das Auto-Dorf entsteht ab 260 m, die Streu-Region reicht 384 m), . Natur-Einträge (`_istNatur`), die lebenden Streu-Zellen jeder
+    // Schicht (`_streuZelleRaeumen`) und die Nah-Streu-Kacheln über dem Grundriss (sie bauen durch die Wand neu). Der billige Orts-Filter zuerst, die Art-Frage nur für Betroffene
     // (Lehre 25). Leser: `spawnArchitecture` (die Wurzel jedes Baus mit Grundriss), `_hausHuelleSetzen` (die Hülle bringt ihn)
     // und das Laden. Gibt die Zahl der geräumten
     // Natur-Stücke.
@@ -2059,7 +2043,7 @@ class AnazhRealm_vegetation_baum {
             haus.position.x,
             haus.position.z,
             fp.ex + fp.ez + Math.abs(fp.ox) + Math.abs(fp.oz) + 3,
-            !!fp.lichtung,
+            false,
             haus
         );
     }
