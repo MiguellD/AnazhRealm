@@ -159,8 +159,8 @@ function pruefe(root, opt = {}) {
         }
     }
     // R6 Cache: jeder Stamm-Tag trägt ?v= = package.version
-    const version = jsonLesen("package.json").version;
-    for (const tag of stammLib.tagsVon(ausDatei("index.html")))
+    const version = jsonLesen(path.join(root, "package.json")).version;
+    for (const tag of stammLib.tagsVon(ausDatei(path.join(root, "index.html"))))
         if (tag.v !== `?v=${version}`)
             fehler.push(`R6 CACHE: ${tag.pfad}${tag.v || " (ohne ?v=)"} statt ?v=${version}`);
     // R2 die Decke
@@ -288,7 +288,7 @@ function finde(root, rx) {
     // die Kerne: benannte Funktionen, Methoden und Funktions-Felder — in ein sofort gerufenes Gehäuse hinein, in keinen Rumpf; dazu
     // die Gesetzbücher neben dem Spiel-Manifest (`worlds/<buch>/*-core.js`, sie docken über die Kern-Zeile an) und je Buch
     // seine Arten (PARAMS_BY_KIND): eine Art in zwei Büchern hat zwei Quellen
-    const kerne = jsonLesen("cores.manifest.json").flatMap((c) => c.scripts);
+    const kerne = jsonLesen(path.join(root, "cores.manifest.json")).flatMap((c) => c.scripts);
     const daneben = fs.readdirSync(path.join(root, "worlds"), { recursive: true }).map((f) => "worlds/" + f.replace(/\\/g, "/"))
         .filter((f) => /^worlds\/[^/]+\/[^/]+-core\.js$/.test(f));
     for (const k of [...new Set(kerne), ...daneben]) {
