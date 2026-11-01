@@ -5,11 +5,8 @@
 //
 //   node scripts/mint-asset-goldens.cjs           # mintet, wenn leer
 //   MINT_FORCE=1 node scripts/mint-asset-goldens.cjs   # bewusster Re-Mint (nur mit Absicht)
-const fs = require("fs");
-const path = require("path");
-const crypto = require("crypto");
 const { runWithWorker, fingerprintMeshes, DATEN_KANAELE } = require("./lib/asset-worker-harness.cjs");
-const { hauptLauf, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { hauptLauf, ausDatei, path, fs, stammLib, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.MINT_PORT || 4541);
 const DIR = path.resolve(__dirname, "..", "spec", "asset-contract", "v1", "golden");
@@ -60,9 +57,9 @@ async function nurDaten() {
         const bookReply = await getData("get-book");
         for (const [field, key] of DATEN_KANAELE) {
             const json = JSON.stringify(bookReply[field]);
-            const alt = fs.readFileSync(path.join(DIR, key + ".json"), "utf8").trim();
+            const alt = ausDatei(path.join(DIR, key + ".json")).trim();
             fs.writeFileSync(path.join(DIR, key + ".json"), json + "\n");
-            manifest.files[key + ".json"] = crypto.createHash("sha256").update(json).digest("hex");
+            manifest.files[key + ".json"] = stammLib.sha(json);
             console.log(`  ${alt === json ? "=" : "✔ neu"} ${key}.json`);
         }
     });
@@ -90,7 +87,7 @@ hauptLauf(async () => {
             const body = bookReply[field];
             const json = JSON.stringify(body);
             fs.writeFileSync(path.join(DIR, key + ".json"), json + "\n");
-            manifest.files[key + ".json"] = crypto.createHash("sha256").update(json).digest("hex");
+            manifest.files[key + ".json"] = stammLib.sha(json);
         }
         for (const c of CASES) {
             const a = await build(c);
@@ -100,7 +97,7 @@ hauptLauf(async () => {
             const json = JSON.stringify(rec);
             const f = fileFor(c);
             fs.writeFileSync(path.join(DIR, f), json + "\n");
-            manifest.files[f] = crypto.createHash("sha256").update(json).digest("hex");
+            manifest.files[f] = stammLib.sha(json);
             const verts = meshes.reduce((s, m) => s + (m.attrs.position ? (m.attrs.position.bytes / 12) | 0 : 0), 0);
             console.log(`  ✔ ${f}  (${meshes.length} Meshes, ~${verts} Verts)`);
         }

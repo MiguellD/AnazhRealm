@@ -301,21 +301,16 @@ function spalt(px, py, pz, tris) {
 
     // ===== MESSUNG D — der T2-GEOMORPH: schliesst die Cross-LOD-Naht? =====
     // Beweis (nicht pixel-blind — reine GEOMETRIE): an jeder LOD0↔LOD1-Grenze ziehen die
-    // aMorphTarget/aMorphWeight-Attribute (`_applyCrossLodGeomorph`) die feinen Boundary-Vertices
+    // aMorphTarget/aMorphWeight-Attribute (der Geomorph im Faden, gelaende-core `bodenMorph`) die feinen Boundary-Vertices
     // bei geomorph=1 auf die GROBEN Nachbar-Vertices. Wir rechnen die GEMORPHTE Position
     // (pos + weight·(target−pos)) und prüfen: liegt sie EXAKT auf einem groben Nachbar-Vertex?
     // Nachher (gemorpht): die Naht-Vertices sind
     // koinzident mit den groben → die T-junction ist zu.
     const morph = await page.evaluate(async () => {
-        const s = st;
         const span = r._voxelChunkConfig(0).span;
-        // STALE-TEST: den Geomorph für ALLE Chunks FRISCH gegen die JETZT gestreamten Nachbar-
-        // Meshes rechnen (falls ein Nachbar nach dem Finalize-Morph re-meshte = stale Target).
-        for (const [key, entry] of s.voxelChunks) {
-            if (!entry || entry.empty || !entry.mesh) continue;
-            const [cx, cz] = key.split(",").map(Number);
-            r._applyCrossLodGeomorph(cx, cz);
-        }
+        // STALE-TEST: der Faden morpht jedes Netz bei jedem Wechsel seiner Nachbarn (w4-b-boden2) — gemessen wird der LEBENDE
+        // Stand, sobald jede Naht angelegt ist (ein vergessener Folge-Morph stünde hier als stale Target)
+        await window.__gebautNach("die Nähte des Rings", { fertig: () => !r._weltOffen().chunks, max: 600 });
         const chunks = chunkKarte((g) => ({ tgt: g.attributes.aMorphTarget, w: g.attributes.aMorphWeight }));
         let crossPairs = 0,
             morphedVerts = 0,
@@ -631,7 +626,7 @@ function spalt(px, py, pz, tris) {
         console.log("   (keine Cross-LOD-Grenze gestreamt)\n");
     } else if (morph.morphedVerts === 0) {
         console.log(
-            `   ⚠ KEINE gemorphten Boundary-Vertices (${morph.chunksWithMorph} Chunks, ${morph.crossPairs} Cross-LOD-Faces) — _applyCrossLodGeomorph greift nicht?\n`
+            `   ⚠ KEINE gemorphten Boundary-Vertices (${morph.chunksWithMorph} Chunks, ${morph.crossPairs} Cross-LOD-Faces) — bodenMorph greift nicht?\n`
         );
     } else {
         console.log(
@@ -651,7 +646,7 @@ function spalt(px, py, pz, tris) {
         // (sollen NICHT voll morphen, sonst entstünde ein interner Sprung).
         const t2ok = morph.hiWonSurfPct >= 95 && morph.hiWmeanGap < 0.2 && morph.meanTgtGap < 0.15;
         console.log(
-            `   → ${t2ok ? "T2 WIRKT: die Grenz-Zeile liegt AUF der groben Oberfläche → die Cross-LOD-T-junction ist GESCHLOSSEN (GEOMETRIE, headless beweisbar — nicht pixel-blind)." : "T2 unvollständig: die Grenz-Zeile schmiegt sich noch nicht voll an — _applyCrossLodGeomorph prüfen."}\n`
+            `   → ${t2ok ? "T2 WIRKT: die Grenz-Zeile liegt AUF der groben Oberfläche → die Cross-LOD-T-junction ist GESCHLOSSEN (GEOMETRIE, headless beweisbar — nicht pixel-blind)." : "T2 unvollständig: die Grenz-Zeile schmiegt sich noch nicht voll an — bodenMorph prüfen."}\n`
         );
     }
 
@@ -664,7 +659,7 @@ function spalt(px, py, pz, tris) {
     );
     const a1ok = stitch.visGapUnbridged === 0;
     console.log(
-        `   → ${a1ok ? "A1 WIRKT: jeder sichtbare Grenz-Spalt ist vom Stitch-Band überbrückt (0 ungedeckt) — der Cap stoppt das Cliff-Zerren, das Band schliesst den Rest." : "A1 LÜCKE: sichtbare Spalten ohne Band-Deckung — _rebuildLodStitchBand prüfen."}\n`
+        `   → ${a1ok ? "A1 WIRKT: jeder sichtbare Grenz-Spalt ist vom Stitch-Band überbrückt (0 ungedeckt) — der Cap stoppt das Cliff-Zerren, das Band schliesst den Rest." : "A1 LÜCKE: sichtbare Spalten ohne Band-Deckung — bodenNahtBand prüfen."}\n`
     );
 
     console.log("── C · ZEITLICH (das Abbau-Fenster) — nach T1: heilt der Footprint IM Edit-Call? ──");

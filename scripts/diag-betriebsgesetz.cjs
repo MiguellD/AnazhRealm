@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 "use strict";
-const { wandEnde, argOpt, jsonLesen } = require("./lib/welt-boot.cjs");
+const { wandEnde, argOpt, ausDatei, path, fs, jsonLesen, ROOT: root } = require("./lib/welt-boot.cjs");
 // gate:betriebsgesetz — die Maschine zum BETRIEBSGESETZ (CLAUDE.md).
 // Der Agenten-Betriebsmodus (früh „fertig" melden · Scope still verkleinern · OFFEN
 // umbenennen · nächste Welle erfinden) fällt nicht durch Vorsatz, sondern durch WÄNDE:
@@ -13,10 +13,6 @@ const { wandEnde, argOpt, jsonLesen } = require("./lib/welt-boot.cjs");
 //   6) WACHSTUMS-WAND + DECKE: scripts/ sinkt nur, in Code-Atomen ohne Kommentare (PFLICHT-OFFEN D); 7) ZITAT-WAND: jede .md steht in der Karte, nennt nur Lebendes;
 //   8) STRIPPER-WAND: EIN Kommentar-Stripper (scripts/lib/stamm.cjs), EIN __codeOf (scripts/lib/welt-boot.cjs).
 // Selbsttest feuert (Lehre 1: die Linse beweist sich selbst, nie Wachsamkeit).
-const fs = require("fs");
-const path = require("path");
-
-const root = path.join(__dirname, "..");
 
 // RUND bewusst case-sensitiv („rund 60 Assets" bleibt legal); die übrigen Siegel sind als ganze Wörter verboten.
 const SIEGEL_CI = /\b(fertig|vollendet|vollzogen|schluss)\b|scope\s+zu/i;
@@ -356,13 +352,13 @@ function main() {
     let dokuZeile = "nicht gelesen";
     try {
         const gates = new Set(
-            Object.keys(jsonLesen(path.join(root, "package.json")).scripts)
+            Object.keys(jsonLesen("package.json").scripts)
         );
         // die Welt ist der Index (wie in der CI), nie der lokale Rest unverfolgter Dateien
         const dateien = [...new Set(git(["ls-files", "--cached"]).split("\n"))].filter(
             (p) => p && fs.existsSync(path.join(root, p))
         );
-        const lies = (p) => fs.readFileSync(path.join(root, p), "utf8");
+        const lies = (p) => ausDatei(path.join(root, p));
         const gemerkt = new Map();
         const ignoriert = (p) => {
             if (!gemerkt.has(p))
@@ -395,7 +391,7 @@ function main() {
         const alle = git(["ls-files", "scripts"])
             .split("\n")
             .filter(Boolean)
-            .map((p) => ({ pfad: p, text: fs.readFileSync(path.join(root, p), "utf8") }));
+            .map((p) => ({ pfad: p, text: ausDatei(path.join(root, p)) }));
         const dateien = alle.filter((d) => /\.(c|m)?js$/.test(d.pfad));
         stripperDateien = dateien.length;
         errs.push(...stripperBefund(dateien), ...dateiDeckeBefund(alle));
@@ -408,7 +404,7 @@ function main() {
     const listePfad = path.join(root, "docs", "PFLICHT-OFFEN.md");
     let liste = null;
     try {
-        liste = fs.readFileSync(listePfad, "utf8");
+        liste = ausDatei(listePfad);
     } catch {
         errs.push("docs/PFLICHT-OFFEN.md fehlt — die Frozen-Liste ist das EINZIGE Offen-Dokument");
     }
@@ -436,7 +432,7 @@ function main() {
     }
 
     // 3) STAND-WAND + 4) ABSENZ-WAND
-    const claude = fs.readFileSync(path.join(root, "CLAUDE.md"), "utf8");
+    const claude = ausDatei("CLAUDE.md");
     const sz = standZeilen(claude);
     if (sz < 0) errs.push("CLAUDE.md Stand-Kopf nicht gefunden (## Stand (V…)");
     else if (sz > 40)
@@ -444,7 +440,7 @@ function main() {
     if (!claude.includes("## DAS BETRIEBSGESETZ"))
         errs.push("CLAUDE.md trägt kein BETRIEBSGESETZ mehr — stilles Streichen der Gesetze");
     if (!claude.includes("PFLICHT-OFFEN.md")) errs.push("CLAUDE.md referenziert docs/PFLICHT-OFFEN.md nicht mehr");
-    const champ = fs.readFileSync(path.join(root, ".claude", "agents", "champion.md"), "utf8");
+    const champ = ausDatei(".claude/agents/champion.md");
     if (!champ.includes("BETRIEBSGESETZ"))
         errs.push("champion.md trägt das BETRIEBSGESETZ nicht mehr — der Arbeiter läuft ungebunden");
     if (!champ.includes("Pflicht-OFFEN Rest"))

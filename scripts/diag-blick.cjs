@@ -6,15 +6,10 @@
 //   Ergebnis: PNG(s) in DIR (Default scratch/blick-*.png) + Exit 0 wenn der Schuss
 //   SUBSTANZ trägt (nicht leer/uniform — sonst Exit 1 mit Diagnose).
 "use strict";
-const { statikServer, starteBrowser, ROOT: root, hauptLauf } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT: root, hauptLauf, path, fs, argOpt } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
-const fs = require("fs");
-const path = require("path");
 
-const argOut = (() => {
-    const i = process.argv.indexOf("--out");
-    return i > 0 ? process.argv[i + 1] : root;
-})();
+const argOut = argOpt("--out", root);
 const W = 640,
     H = 360;
 const server = statikServer();
@@ -58,9 +53,9 @@ hauptLauf(async () => {
                 const w = 640,
                     h = 360;
                 // die EINE Aufnahme (scripts/lib/ausgabe-aufnahme.cjs): der echte, getonte Frame
-                const px = (await window.__ausgabeAufnahme(w, h, 1)).u8;
-                if (!px || !px.length) return { ok: false, grund: "keine Pixel" };
-                const u8 = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
+                // die EINE Aufnahme liefert ein Uint8Array (die Ziel-Lesung, welt-boot)
+                const u8 = (await window.__ausgabeAufnahme(w, h, 1)).u8;
+                if (!u8 || !u8.length) return { ok: false, grund: "keine Pixel" };
                 // Substanz-Urteil: distinkte Farben + nicht alles eine Fläche.
                 const set = new Set();
                 let nonzero = 0;
@@ -99,8 +94,8 @@ hauptLauf(async () => {
             res.schuesse.haupt = await schuss("haupt");
             return res;
         },
-        process.env.BLICK_ZEIT || (process.argv.includes("--zeit") ? process.argv[process.argv.indexOf("--zeit") + 1] : ""),
-        process.argv.includes("--blick") ? process.argv[process.argv.indexOf("--blick") + 1] : "wald"
+        process.env.BLICK_ZEIT || argOpt("--zeit", ""),
+        argOpt("--blick", "wald")
     );
 
     await browser.close();

@@ -29,9 +29,7 @@
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 //   node scripts/diag-foundry-crossfade.cjs [--selftest]
 "use strict";
-const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde } = require("./lib/welt-boot.cjs");
-const vm = require("vm");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, SELBSTTEST, stammLib, vm } = require("./lib/welt-boot.cjs");
 
 const { errs, check } = pruefer();
 
@@ -1277,7 +1275,7 @@ async function runPartB() {
 
 
 async function main() {
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die Linse feuert auf jede Verfälschungs-Klasse ===");
         // V1: der Dither des Gesetzes verschoben (Phase + 1e-7) → die Dither-Äquivalenz MUSS feuern.
         const core1 = Object.assign({}, CORE, { lodDitherIGN: (x, y, t) => CORE.lodDitherIGN(x, y, t + 1e-7) });

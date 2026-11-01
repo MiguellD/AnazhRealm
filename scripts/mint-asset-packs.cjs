@@ -24,10 +24,8 @@
 // Exit-Codes: 0 = grün · 1 = Divergenz/stale/fehlend · 2 = Harness-Fehler.
 "use strict";
 
-const fs = require("fs");
-const path = require("path");
 const PK = require("./lib/pack-kanon.cjs");
-const { hauptLauf, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { hauptLauf, path, fs, stammLib, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.PACK_PORT || 4561);
 const OUT_DIR = path.resolve(PK.ROOT, "artifacts", "packs");
@@ -166,7 +164,7 @@ hauptLauf(async () => {
                 continue;
             }
             packs++;
-            index.files[path.basename(file)] = PK.sha256Hex(fs.readFileSync(file));
+            index.files[path.basename(file)] = stammLib.sha(fs.readFileSync(file));
             for (const m of ser.meshes) {
                 for (const k of Object.keys(m.attrs)) {
                     buffers++;

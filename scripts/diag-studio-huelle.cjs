@@ -43,11 +43,8 @@
 //   node scripts/diag-studio-huelle.cjs --engine     DER GANG je Seite der Hülle: ihre Anfragen (H6), ihre Sitzung (H3),
 //                                                    die L0 eines Ofen-Labors (H4); Port STUDIO_HUELLE_PORT (8742)
 "use strict";
-const { statikServer, starteBrowser, ROOT, hauptLauf, sleep, waitFor, wandEnde, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, ROOT, hauptLauf, sleep, waitFor, wandEnde, ausDatei, path, fs, stammLib, crypto, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 
 // Die Welten auf der Hülle (Studios mit Reglern + die Nebenwelten mit der Brücke allein) und das Gelände-Studio, das als
 // Panel über der Welt-Engine lebt (index.html?studio=gelaende: keine eigene Shell, keine Brücke — die Heimat IST die Welt).
@@ -138,7 +135,6 @@ const OHNE_PANORAMA = Object.assign(
 const PANO = { format: 1, w: 512, h: 256 };
 const panoDatei = (id) => `worlds/${id}/panorama.f16`;
 const seite = (id) => `worlds/${id}/index.html`; // der Schlüssel einer Welt (Export, Gang, Rahmen)
-const crypto = require("crypto");
 // Die Quellen einer Welt in der Reihe ihrer index.html (rel zur Wurzel); `lies(rel)` liest Text (die Karte oder die Platte).
 function quellenDerWelt(id, lies) {
     const basis = `worlds/${id}`;
@@ -162,14 +158,14 @@ function panoramaStempel(id, lies) {
     for (const rel of rels) {
         const t = lies(rel);
         if (t == null) return null;
-        h.update(`${rel}\n${crypto.createHash("sha256").update(t.replace(/\?v=[\w.-]+/g, "")).digest("hex")}\n`);
+        h.update(`${rel}\n${stammLib.sha(t.replace(/\?v=[\w.-]+/g, ""))}\n`);
     }
     return h.digest("hex");
 }
 const liesAus = (karte) => (rel) => {
     if (rel in karte) return karte[rel];
     const f = path.join(ROOT, rel);
-    return fs.existsSync(f) ? fs.readFileSync(f, "utf8") : null;
+    return fs.existsSync(f) ? ausDatei(f) : null;
 };
 
 // Die Werkstatt-Dateien des Stamms: die Dateien, die die Regler-Glieder der Werkstatt tragen (am Glied, nie am Datei-Namen).
@@ -184,10 +180,10 @@ function baum() {
         if (!fs.statSync(d).isDirectory()) continue;
         for (const f of fs.readdirSync(d)) {
             if (!/\.(html|js)$/.test(f)) continue;
-            karte[`worlds/${id}/${f}`] = fs.readFileSync(path.join(d, f), "utf8");
+            karte[`worlds/${id}/${f}`] = ausDatei(path.join(d, f));
         }
     }
-    for (const rel of WERKSTATT) karte[rel] = fs.readFileSync(path.join(ROOT, rel), "utf8");
+    for (const rel of WERKSTATT) karte[rel] = ausDatei(rel);
     karte[TOR_ZIELE] = liesAus({})(TOR_ZIELE);
     return karte;
 }

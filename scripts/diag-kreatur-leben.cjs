@@ -942,10 +942,7 @@ module.exports = {
     urteil: lebenUrteil,
 };
 if (require.main !== module) return;
-const path = require("path");
-const root = path.resolve(__dirname, "..");
-
-const { pruefer, urteilEnde } = require("./lib/welt-boot.cjs");
+const { pruefer, urteilEnde, path, ROOT: root } = require("./lib/welt-boot.cjs");
 const { errs, check } = pruefer();
 
 // ── Kern laden (Namensraum-Muster: self/globalThis) ──

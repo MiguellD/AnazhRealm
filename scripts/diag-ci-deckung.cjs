@@ -4,17 +4,14 @@
 // puls (je Push), kopf und voll (unter VOLL_WENN) und echt; ein weiterer Job ist ROT.
 //   node scripts/diag-ci-deckung.cjs [--selftest]     (npm run gate:ci-deckung; in npm run check)
 "use strict";
-const fs = require("fs");
-const path = require("path");
 const { execSync } = require("child_process");
 const yaml = require("js-yaml");
 const { klasseDesLaufs, GROSS_S, LAEUFER_PLAETZE } = require("./lib/ci-klasse.cjs");
 const { schluessel } = require("./ci-schluessel.cjs");
 const { kopfUrteil } = require("./ci-kopf.cjs");
 const { messe } = require("./ci-zeiten.cjs");
-const { taeterFaelle, selbsttestEnde, wandEnde, jsonLesen } = require("./lib/welt-boot.cjs");
+const { taeterFaelle, selbsttestEnde, wandEnde, ausDatei, SELBSTTEST, path, fs, jsonLesen, ROOT: root } = require("./lib/welt-boot.cjs");
 
-const root = path.resolve(__dirname, "..");
 const DATEI = ".github/workflows/check.yml";
 const ZEITEN = "spec/ci/ci-zeiten.json";
 const PULS_JOB = "puls";
@@ -428,7 +425,7 @@ function playtestUrteil(docs, skripte) {
 function workflowsLesen() {
     const docs = {};
     for (const f of fs.readdirSync(path.join(root, WORKFLOWS)).sort())
-        if (/\.ya?ml$/.test(f)) docs[f] = yaml.load(fs.readFileSync(path.join(root, WORKFLOWS, f), "utf8"));
+        if (/\.ya?ml$/.test(f)) docs[f] = yaml.load(ausDatei(path.join(root, WORKFLOWS, f)));
     return docs;
 }
 
@@ -647,7 +644,7 @@ function selbsttestKlasse() {
         "g.cjs": 'const { x } = require("./lib/h.cjs");',
         "lib/h.cjs": 'starteBrowser({ art: "linse", frist: 1 });',
         "b.cjs": 'const BILD = process.argv.includes("--bild");\nstarteBrowser({ art: BILD ? "linse" : "null" });',
-        "s.cjs": 'const SELBST = process.argv.includes("--selftest");\nstarteBrowser({ art: SELBST ? "null" : "linse" });',
+        "s.cjs": 'const SELBST = SELBSTTEST;\nstarteBrowser({ art: SELBST ? "null" : "linse" });',
     };
     const lies = (f) => {
         const k = Object.keys(dateien).find((d) => f.replace(/\\/g, "/").endsWith("/scripts/" + d));
@@ -1491,8 +1488,8 @@ async function selbsttestLauf() {
 }
 
 function hauptlauf() {
-    const doc = yaml.load(fs.readFileSync(path.join(root, DATEI), "utf8"));
-    const skripte = jsonLesen(path.join(root, "package.json")).scripts || {};
+    const doc = yaml.load(ausDatei(path.join(root, DATEI)));
+    const skripte = jsonLesen("package.json").scripts || {};
     const v = urteil(doc);
     v.push(...klassenUrteil(doc, skripte));
     const alleWorkflows = workflowsLesen();
@@ -1535,5 +1532,5 @@ function hauptlauf() {
         `(G) (V) (D) (W) (A) (R) (F) (S) (K) (E) (T) (P) halten: jeder Gate-Schritt läuft genau einmal, hält den Merge und liegt im Plan unter seinem Deckel`
     );
 }
-if (process.argv.includes("--selftest")) selbsttestLauf();
+if (SELBSTTEST) selbsttestLauf();
 else hauptlauf();

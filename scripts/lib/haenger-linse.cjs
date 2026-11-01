@@ -638,7 +638,7 @@ function haengerTabelle(a) {
 // Der Cull (pbk4-fahrt) ging je Takt den Bestand, der mit dem Weg wächst — er steht für `_loopAutoSave`, das seit fahrt-takt im
 // Leerlauf speichert (0 ms je Takt ab p95).
 // In Fahrt ist die Schwelle 0,5 ms: jeder Rahmen darüber steht BENANNT, ROT ist ein Posten oder ein Wagen unter 150 m (blind).
-const FAHRT_POSTEN = ["computeVertexNormals", "_applyCrossLodGeomorph", "_rebuildLodStitchBand", "tickArchitectureCulling"];
+const FAHRT_POSTEN = ["computeVertexNormals", "tickArchitectureCulling"];
 function postenSumme(k, namen, summe = namen.map(() => 0), oben = -1) {
     k.k.forEach((c, nm) => {
         const i = namen.indexOf(nm.split(" ")[0]);
@@ -1196,7 +1196,7 @@ function ankunftsSelbsttest() {
 function latenzAn(k) {
     const rend = st.renderer, raf = () => new Promise((f) => requestAnimationFrame(f));
     window.__buehne();
-    if (window.__tiereHalten) window.__tiereHalten();
+    window.__halten?.();
     const pm = st.playerMesh, hand = () => pm.userData.rig.armR.wrist.getWorldPosition(pm.position.clone()).sub(pm.position);
     const lage = () =>
         L.verb === "hieb" ? [hand().toArray()] : [st.camera.matrixWorld.elements.slice(12, 15), pm.position.toArray()];
