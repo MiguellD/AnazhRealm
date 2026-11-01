@@ -163,7 +163,7 @@ function setParams(v){if(regler)regler.setzen(v,true);else Object.assign(W,v);}
 function presetMarke(name){aktivPreset=name;[].forEach.call(document.getElementById('presets').children,function(b){b.classList.toggle('active',b.textContent===name);});}
 function rezeptId(){var ids=Object.keys(PC.PRESETS);for(var i=0;i<ids.length;i++)if(PC.PRESETS[ids[i]].lab===aktivPreset)return ids[i];return ids[0];}
 // V18.491.132 MESSEN_VIS.lab=law-ui
-function updateLaw(){var el=document.getElementById('law');if(!el)return;el.textContent='Strategien: Mauer '+D.p.wMason.toFixed(2)+' Geflecht '+D.p.wBraid.toFixed(2)+' Mono '+D.p.wMono.toFixed(2)+' Lace '+D.p.wLace.toFixed(2)+'\nOrdnungen='+Math.round(D.p.orders)+' (gestaffelt, zurückweichend)\nStich='+D.rise.toFixed(2)+'→Schub='+D.thrustNorm.toFixed(2)+'→Dicke='+D.jambW.toFixed(2);}
+function updateLaw(){var el=document.getElementById('law');if(!el)return;el.textContent='Strategien: Mauer '+D.p.wMason.toFixed(2)+' Geflecht '+D.p.wBraid.toFixed(2)+' Mono '+D.p.wMono.toFixed(2)+' Lace '+D.p.wLace.toFixed(2)+'\nMotive: Leier '+D.p.wLyra.toFixed(2)+' Vitruv '+D.p.wVitruv.toFixed(2)+' Geweih '+D.p.wGeweih.toFixed(2)+'\nOrdnungen='+Math.round(D.p.orders)+' (gestaffelt, zurückweichend)\nStich='+D.rise.toFixed(2)+'→Schub='+D.thrustNorm.toFixed(2)+'→Dicke='+D.jambW.toFixed(2);}
 
 function init(){
   scene=new THREE.Scene();scene.background=new THREE.Color(0x080808);

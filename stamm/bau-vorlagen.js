@@ -672,9 +672,8 @@ class AnazhRealm_bau_vorlagen {
             },
         ];
 
-        // Klang-Portal (Lyra): Stein-Sockel, zwei Holz-Arme, Joch, drei Quarz-Saiten. Substanz-Wahrheit wie
-        // alle welt_*-Parts (Tags · Blocker · E-Trigger); KEIN studioGestalt — die sieben porta-Tor-Ordnungen
-        // sind vergeben (jede Gestalt bleibt unverwechselbar), die Part-Gestalt trägt.
+        // Klang-Portal (Lyra): Stein-Sockel, zwei Holz-Arme, Joch, drei Quarz-Saiten — die unsichtbare SUBSTANZ (Tags · Blocker ·
+        // E-Trigger) unter der porta-Gestalt `lyra` (studioGestalt unten, w4-tore-teile: die Leier als Wort des Vokabulars).
         const weltKlangParts = [
             {
                 shape: "box",
@@ -722,8 +721,8 @@ class AnazhRealm_bau_vorlagen {
             },
         ];
 
-        // Körperstudio-Portal (Nachlese-Welle) — DER VITRUV-RAHMEN: Stein-Sockel,
-        // zwei Holz-Pfosten, Quarz-Kreis (der vitruvianische Mensch als Tor-Motiv).
+        // Körperstudio-Portal (Nachlese-Welle) — DER VITRUV-RAHMEN: Stein-Sockel, zwei Holz-Pfosten, Quarz-Kreis — die unsichtbare
+        // SUBSTANZ unter der porta-Gestalt `vitruv` (Kreis und Quadrat in Bronze, der Mensch als Relief im Scheitel).
         const weltKoerperParts = [
             {
                 shape: "box",
@@ -757,8 +756,8 @@ class AnazhRealm_bau_vorlagen {
             },
         ];
 
-        // Tetrapoda-Portal (Nachlese-Welle) — DAS TIER-TOR: vier Holz-Beine unter
-        // einem Rückgrat-Balken + Kopf-Kugel (die Vierbeiner-Silhouette als Tor).
+        // Tetrapoda-Portal (Nachlese-Welle) — DAS TIER-TOR: vier Holz-Beine unter einem Rückgrat-Balken + Kopf-Kugel — die
+        // unsichtbare SUBSTANZ unter der porta-Gestalt `tiertor` (der Bogen aus Knochen, im Scheitel der Schädel mit dem Geweih).
         const weltTetrapodaParts = [
             {
                 shape: "box",
@@ -1382,7 +1381,7 @@ class AnazhRealm_bau_vorlagen {
                 parts: this._stationVariant(weltFachwerkParts, felsWorldSeed + "-portal7"),
             },
             // Klang-Portal → Musik-Labor (worlds/klang/); klang-core.js ist die EINE Musik-Daten-Quelle (der
-            // Host-Lofi liest Tempo + Skala). KEIN studioGestalt (Tor-Ordnungen vergeben; die Lyra-Parts tragen).
+            // Host-Lofi liest Tempo + Skala). Die Render-Gestalt ist die porta-Leier (w4-tore-teile), die Parts bleiben Substanz.
             welt_klang: {
                 name: "welt_klang",
                 label: "Genesis — Generatives Musiksystem",
@@ -1390,10 +1389,11 @@ class AnazhRealm_bau_vorlagen {
                 role: "portal",
                 roleManual: true,
                 portalMeta: portalTo("klang"),
+                studioGestalt: "lyra",
                 parts: this._stationVariant(weltKlangParts, felsWorldSeed + "-portal8"),
             },
             // Körperstudio-Portal → Menschen-Labor (worlds/koerperstudio/); koerper-core.js ist die EINE
-            // Gestalt-/Motion-Quelle, der Host bleibt der OFEN. KEIN studioGestalt (s. welt_klang).
+            // Gestalt-/Motion-Quelle, der Host bleibt der OFEN. Die Render-Gestalt ist das porta-Vitruv-Tor (w4-tore-teile).
             welt_koerperstudio: {
                 name: "welt_koerperstudio",
                 label: "Da Vinci Studio — Lebendiger Mensch",
@@ -1401,10 +1401,11 @@ class AnazhRealm_bau_vorlagen {
                 role: "portal",
                 roleManual: true,
                 portalMeta: portalTo("koerperstudio"),
+                studioGestalt: "vitruv",
                 parts: this._stationVariant(weltKoerperParts, felsWorldSeed + "-portal9"),
             },
             // Tetrapoda-Portal → Kreaturen-Labor (worlds/tetrapoda/); tetrapoda-core.js ist die EINE
-            // Gestalt-/Motion-Quelle. KEIN studioGestalt (s. welt_klang).
+            // Gestalt-/Motion-Quelle. Die Render-Gestalt ist das porta-Tier-Tor (w4-tore-teile).
             welt_tetrapoda: {
                 name: "welt_tetrapoda",
                 label: "Tetrapoda — Evolution Lab",
@@ -1412,6 +1413,7 @@ class AnazhRealm_bau_vorlagen {
                 role: "portal",
                 roleManual: true,
                 portalMeta: portalTo("tetrapoda"),
+                studioGestalt: "tiertor",
                 parts: this._stationVariant(weltTetrapodaParts, felsWorldSeed + "-portal10"),
             },
             // BIBLIOTHEK: craftbare Beispiel-Baupläne der Mach-Akte. Rüstung + Trank sind die ehrliche Wand:

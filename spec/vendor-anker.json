@@ -1179,5 +1179,30 @@
                 "organ": "_wurfEbene (EIN Lichter-Knoten je Szene, auch im Schatten-Pass: jedes Licht liegt auf der Wurf-Ebene)"
             }
         ]
+    },
+    {
+        "warum": "DER BAU-SCHLÜSSEL UND DER SCHATTEN-GRUND (w4-b-knoten): der Bau-Cache liest den Schlüssel über getForRenderCacheKey, jede Zahl des Stoffs ist 0/1, der Index der letzte Geometrie-Term; je Licht ein Schatten-Stoff mit eigenem Grund.",
+        "anker": [
+            {
+                "sub": "getForRenderCacheKey(e){return e.initialCacheKey}",
+                "organ": "_gestaltSchluessel"
+            },
+            {
+                "sub": "getCacheKey(){return this.getMaterialCacheKey()+this.getDynamicCacheKey()}",
+                "organ": "_gestaltSchluessel"
+            },
+            {
+                "sub": "\"number\"===e?n=0!==i?\"1\":\"0\"",
+                "organ": "BAU_NEUTRAL"
+            },
+            {
+                "sub": "return e.index&&(t+=\"index,\"),t}",
+                "organ": "_gestaltSchluessel"
+            },
+            {
+                "sub": "t.colorNode=Cn(0,0,0,1),t.isShadowPassMaterial=!0",
+                "organ": "_schattenGrund"
+            }
+        ]
     }
 ]

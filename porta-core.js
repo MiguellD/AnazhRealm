@@ -1,6 +1,6 @@
 // AnazhRealm — porta-core.js: DER TOR-STUDIO-KERN (Studio-Vertrag Phase 2, der ε-BEWEIS).
 // Die generative Substanz des Porta-Labors (worlds/portale/porta.js — PORTA ·
-// ORDNUNGEN + FRAKTAL): die sieben Tor-Ordnungen · die Stich→Schub→Dicke-Lehre
+// ORDNUNGEN + FRAKTAL): die sieben Tor-Ordnungen und die drei Motiv-Tore der Studios (Leier · Vitruv · Geweih, MOTIV_GESETZ) · die Stich→Schub→Dicke-Lehre
 // (deriveGate) · der EINE Builder (Strategien Mauerwerk/Geflecht/Monolith/Filigran
 // × zurückweichende Ordnungen) · Türen E/R · Fundament-Vokabular. Byte-treu aus
 // dem Schöpfer-Werk extrahiert (Zeilen-Slices, Paritäts-Hash-bewiesen) — die
@@ -101,6 +101,7 @@
     var SLIDERS=[
       ['VOK','h'],
       ['wMason','Mauerwerk',0,1,0.01,0.0,'',1],['wBraid','Geflecht',0,1,0.01,1.0,'',1],['wMono','Monolith',0,1,0.01,0.0,'',1],['wLace','Filigran',0,1,0.01,0.25,'',1],
+      ['wLyra','Leier',0,1,0.01,0.0,'Joch und Arme der Leier, Saiten aus Licht',1],['wVitruv','Vitruv',0,1,0.01,0.0,'Kreis und Quadrat, der Mensch im Scheitel',1],['wGeweih','Geweih',0,1,0.01,0.0,'Bogen aus Knochen, Schädel mit Geweih',1],
       ['DEP','h'],
       ['orders','Ordnungen',1,9,1,3,'Staffel-Ebenen (Türfreiheit autom.)',2],['depth','Tiefe',0,1,0.01,0.45,'z-Staffelung Rahmen',2],['wave','Welle',0,1,0.01,0.45,'Oberflächen-Verformung (z)',2],['tunnel','Innentiefe',0,1,0.01,0.6,'Raymarch-Tiefe',2],['fractal','Fraktal',0,1,0.01,0.6,'Innen-Selbstähnlichkeit',2],['twist','Drall',0,1,0.01,0.4,'Drall',2],
       ['realm','Innenwelt',0,1,0.01,0.0,'Wurmloch↔Kristall',2],['swirl','Sog',0,1,0.01,0.3,'Gravitationslinse',2],['reflect','Spiegel',0,1,0.01,0.5,'Oberflächen-Spiegelung',2],
@@ -165,6 +166,15 @@
             s: {wMason:0.85,wBraid:0,wMono:0.1,wLace:0.2,orders:2,depth:0.6,wave:0.3,tunnel:0.45,fractal:0.3,twist:0.2,realm:0.2,swirl:0.15,reflect:0.25,k:1,rise:1,ogee:0,horse:0,aspect:1.55,mass:0.8,metal:0.1,glow:0.1,hue:0.2,weather:0.85,ruin:0.6,temp:0.5,energy:0.2} },
         maurentor: { kind: "gate", lab: "Maurentor", fx: { place: { mode: "site", siteTag: "tor" } },
             s: {wMason:0.7,wBraid:0.3,wMono:0.1,wLace:0.45,orders:3,depth:0.5,wave:0.4,tunnel:0.6,fractal:0.5,twist:0.3,realm:0.6,swirl:0.3,reflect:0.45,k:1.2,rise:1,ogee:0,horse:0.8,aspect:1.95,mass:0.7,metal:0.25,glow:0.3,hue:0.35,weather:0.3,ruin:0,temp:0.78,energy:0.35} },
+        // DIE DREI MOTIV-TORE (w4-tore-teile): die Studios ohne eigene Ordnung tragen ihr Motiv als Wort des Vokabulars (MOTIV_GESETZ)
+        // — die Leier des Klang-Labors (Bronze-Gold, sieben Licht-Saiten), Vitruv des Körperstudios (Bronze, Kreis und Quadrat um den
+        // Rundbogen, der Monolith als innerer Rahmen und Podest), das Geweih der Tetrapoda (Knochen-Bogen in zwei Rippen, Spitzbogen)
+        lyra: { kind: "gate", lab: "Lyra-Tor", fx: { place: { mode: "site", siteTag: "tor" } },
+            s: {wMason:0,wBraid:0,wMono:0,wLace:0,wLyra:1,wVitruv:0,wGeweih:0,orders:1,depth:0.4,wave:0.55,tunnel:0.7,fractal:0.55,twist:0.45,realm:0.55,swirl:0.45,reflect:0.5,k:1,rise:0.85,ogee:0,horse:0,aspect:2.1,mass:0.55,metal:0.8,glow:0.6,hue:0.85,weather:0.05,ruin:0,temp:0.8,energy:0.9} },
+        vitruv: { kind: "gate", lab: "Vitruv-Tor", fx: { place: { mode: "site", siteTag: "tor" } },
+            s: {wMason:0,wBraid:0,wMono:0.3,wLace:0,wLyra:0,wVitruv:1,wGeweih:0,orders:1,depth:0.5,wave:0.4,tunnel:0.6,fractal:0.5,twist:0.3,realm:0.35,swirl:0.3,reflect:0.5,k:1,rise:1,ogee:0,horse:0,aspect:1.5,mass:0.5,metal:0.85,glow:0.35,hue:0.8,weather:0.15,ruin:0,temp:0.62,energy:0.75} },
+        tiertor: { kind: "gate", lab: "Tier-Tor", fx: { place: { mode: "site", siteTag: "tor" } },
+            s: {wMason:0,wBraid:0,wMono:0,wLace:0,wLyra:0,wVitruv:0,wGeweih:1,orders:2,depth:0.5,wave:0.5,tunnel:0.75,fractal:0.7,twist:0.55,realm:0.9,swirl:0.5,reflect:0.4,k:2.3,rise:1.05,ogee:0.15,horse:0,aspect:2.25,mass:0.65,metal:0.1,glow:0.35,hue:0.3,weather:0.25,ruin:0,temp:0.38,energy:1} },
     };
 
     // ── Der Parameter-Merge — reproduziert das Lab (setParams(preset) → readParams():
@@ -278,7 +288,7 @@
     var _stein = STEIN_GESETZ.quader;
     // Die Nummern der Steine im Verband eines Tors: je Kette (Ordnung × Tiefe × Seite) 64, darüber die Stufen, der Schlussstein, die
     // Monolithe, das Podest und der Schutt — jede Nummer < 4096 (das Byte-Raster der Attribute, 2^-12, trägt sie ganz).
-    var STEIN_NR = { kette: 64, stufe: 2560, schluss: 3008, mono: 3072, podest: 3200, schutt: 3264 };
+    var STEIN_NR = { kette: 64, stufe: 2560, schluss: 3008, mono: 3072, podest: 3200, schutt: 3264, motiv: 3328 };
     var _detail = TOR_DETAIL; // das Gesetz des laufenden Baus (buildInstance setzt es je Stufe, synchron)
     // Das FEINE der Stufe (`feinM`): ein Teil dieser Dicke (Röhre und Ring am Durchmesser, Fase, Stab und Beschlag an ihrer kleinsten Kante,
     // Scharnier und Juwel am Durchmesser — pipeline.K3: die Klasse ganz, vorher entkamen Kästen und Zylinder dem Gesetz) fällt — an seiner Stelle eine
@@ -485,7 +495,7 @@
     // Stoffs (Mauer, Geflecht-Hülle oder Monolith — im werfenden Körper; höchstens `sichtGlieder` Kapseln) und der
     // Sockel, EINBESCHRIEBEN: die kleinste Standfläche aus Stufen und Podest über ihre größte Tiefe (die Hüllbox der Stufen
     // lag über den unteren Tritten und beschattete sie — in EINER Welt auf 2,6 m 26k → 69k px Schatten) — ≤ 24 Teile, die Kosten-Grenze des March (je Pixel 40 Schritte × alle Teile des Eintrags).
-    var HUELLE_GESETZ = { dickeM: 0.03, sehneM: 0.06, laengsM: 2.5, einzugM: 0, seiten: 6, sichtGlieder: 22, sichtMinM: 0.03, kastenM: 0.032, roehreR: 0.75 };
+    var HUELLE_GESETZ = { dickeM: 0.03, sehneM: 0.06, laengsM: 2.5, einzugM: 0, seiten: 6, sichtGlieder: 22, sichtMinM: 0.03, kastenM: 0.032, roehreR: 0.75, profilM: 0.5 };
     function hRaster(v) {
         return Math.round(v * 4096) / 4096 + 0;
     }
@@ -562,7 +572,8 @@
     // weit am Pfosten), höchstens `sichtGlieder` Glieder. Ein sicht-Teil wirft auch (das Gitter der NUR-WURF-Stufe ist die
     // ganze Liste, wie beim Haus): der Strang bleibt IM werfenden Körper — sein Radius verliert die größte Abweichung der
     // Sehnen von der Kurve; was dann dünner als `sichtMinM` bliebe, fällt (jenseits 64 m unter einem Pixel).
-    function hSichtStrang(H, pts, r, m, dz) {
+    // `bis` (die Motive, w4-tore-teile): höchstens so viele Glieder — die Teile EINES Fernbilds teilen sich die 24 des March.
+    function hSichtStrang(H, pts, r, m, dz, bis) {
         if (!H || pts.length < 2) return;
         var kurve = new THREE.CatmullRomCurve3(pts, false, "centripetal");
         var N = 64, L = kurve.getLength(), ds = L / N, eps = Math.max(0.01, r * 0.5);
@@ -574,7 +585,7 @@
             dichte.push(summe);
             t0 = t1;
         }
-        var n = Math.max(2, Math.min(HUELLE_GESETZ.sichtGlieder, Math.ceil(hRaster(summe)))), j = 0, U = [0];
+        var n = Math.max(2, Math.min(bis > 0 ? Math.min(bis, HUELLE_GESETZ.sichtGlieder) : HUELLE_GESETZ.sichtGlieder, Math.ceil(hRaster(summe)))), j = 0, U = [0];
         for (q = 1; q <= n; q++) {
             var z = (q / n) * summe;
             while (j < N - 1 && dichte[j + 1] < z) j++;
@@ -811,6 +822,437 @@
     }
     // prettier-ignore
     function quadBlock(c,depth,mat,zOff,jit,fu){var cx=(c[0].x+c[1].x+c[2].x+c[3].x)/4,cy=(c[0].y+c[1].y+c[2].y+c[3].y)/4;var sh=new THREE.Shape();sh.moveTo(c[0].x-cx,c[0].y-cy);sh.lineTo(c[1].x-cx,c[1].y-cy);sh.lineTo(c[2].x-cx,c[2].y-cy);sh.lineTo(c[3].x-cx,c[3].y-cy);sh.lineTo(c[0].x-cx,c[0].y-cy);var bv=!fein(_stein.fase),dz=bv?depth:depth+0.03;var op={depth:dz,bevelEnabled:bv,bevelThickness:_stein.fase,bevelSize:_stein.fase,bevelSegments:1};if(fu)op.UVGenerator=steinUV(c,cx,cy,fu);var g=new THREE.ExtrudeGeometry(sh,op);g.translate(0,0,-dz/2);var me=new THREE.Mesh(g,mat);me.position.set(cx,cy,zOff+jit);me.castShadow=me.receiveShadow=true;return buche(_buch?steinL0():0,me);}
+    // ═══ DIE MOTIVE DER STUDIOS (w4-tore-teile) — drei Wörter des Vokabulars neben Mauerwerk · Geflecht · Monolith · Filigran ═══
+    // Befund: drei Studios ohne eigene Tor-Ordnung (Klang, Körperstudio, Tetrapoda) führten ihr Tor als offene Primitive des Wirts
+    // (Lyra: ein Holzrahmen mit drei Quarz-Saiten · Vitruv: ein grauer Quarz-Torus zwischen zwei Holzpfosten · das Tier: vier
+    // Holzbeine unter einem Balken mit Kopf-Kugel) — ohne Membran, ohne Stufe, ohne Wurf. Ihr Motiv wird ein Gewicht des EINEN
+    // Builders (wie wMason: über 0,03 steht es, das Gewicht trägt seine Stärke): `wLyra` — Joch und Arme der Leier bilden den Bogen,
+    // die Saiten sind Licht-Fäden vor und hinter der Membran; `wVitruv` — Kreis und Quadrat in Bronze (Leonardo, Vitruv III,1), der
+    // Mensch als Relief im Scheitel; `wGeweih` — der Bogen aus Knochen, im Scheitel der Schädel mit dem Geweih. Jedes Motiv baut aus
+    // der Ableitung des Tors (deriveGate: die Öffnung, ihr Bogen, die Membran bleibt dieselbe) mit den Helfern des Detail-Gesetzes
+    // (Röhre, Ring, Kugel, Stab, Kasten: Sehnen-Fehler, das Feine und das Kosten-Buch jeder Stufe — L0 bis L2 wie die sieben) und
+    // schreibt im selben Lauf seine Hülle (der Wurf der NUR-WURF-Stufe 3 und sein Fernbild, die 24 Teile teilt es mit dem Rahmen).
+    // DIE SAAT: das Geweih zieht seine Sprossen aus EINEM eigenen Strom (mulberry32(0x50FA ^ salz)), nie aus dem Strom der Ordnungen
+    // — die sieben Tore bleiben byte-gleich (ihre Gewichte sind 0, kein Motiv läuft). Maße in Metern des Tors (M = 1,4).
+    //   lyra    arm [r am Fuß, Anteil an der Spitze] · horn [Ausladung × M, ihr Steigen] · joch [Höhe über dem Scheitel × M, Radius] ·
+    //           saite Radius (3,4 cm: über dem Feinen der Stufe 2) · saiten 5 + 2 je Ordnung, höchstens `saitenMax` · fuss [r, Höhe × r]
+    //   vitruv  quadrat die Seite des Quadrats je Radius des Kreises (Leonardo: 1,647) · stab die halbe Stärke der Stäbe · ring der
+    //           Radius des Rings · luft der Abstand des Kreises zur Öffnung · ueber die Luft über dem Scheitel · mensch der Anteil
+    //           des Scheitels, den das Relief trägt · tafel ihre Dicke
+    //   geweih  knochen [r am Fuß, Anteil im Scheitel] · rippe der Radius je Ordnung (höchstens drei Rippen) · abstand der Rippen ·
+    //           schaedel r · geweih die Größe der Stangen · knochenFarbe / geweihFarbe (sRGB-Absicht, linear gelesen — FARB-GESETZ)
+    var MOTIV_GESETZ = {
+        lyra: { arm: [0.15, 0.45], horn: [0.55, 0.45], joch: [0.2, 0.08], saite: 0.017, saitenMax: 11, fuss: [0.34, 1.1] },
+        vitruv: { quadrat: 1.647, stab: 0.075, ring: 0.065, luft: 0.08, ueber: 0.12, mensch: 0.84, tafel: 0.05 },
+        geweih: { salz: 0x6e17, knochen: [0.2, 0.58], rippe: [1, 0.72, 0.55], abstand: 2.15, schaedel: 0.34, geweih: [0.85, 0.5], knochenFarbe: 0xd8ccae, geweihFarbe: 0x6a4b32 },
+    };
+    // Die Kugel des Detail-Gesetzes (Fuß, Gelenk, Schädel, Knauf): um den Äquator die Teilung des Sehnen-Fehlers der Stufe wie jeder
+    // Ring (π / acos(1 − ε / R)), die Hälfte über die Pole; `s` streckt sie zum Ellipsoid (R = die größte Halbachse); das Feine fällt.
+    function kugelMesh(r, m, x, y, z, s) {
+        s = s || [1, 1, 1];
+        var R = r * Math.max(s[0], s[1], s[2]);
+        var teil = function (D) {
+            var n = Math.max(6, umfangMit(D, R, 18));
+            return [n, Math.max(3, Math.ceil(n / 2))];
+        };
+        var t0 = teil(TOR_DETAIL), l0 = _buch ? 2 * t0[0] * (t0[1] - 1) : 0;
+        if (fein(2 * r * Math.min(s[0], s[1], s[2]))) return buche(l0, new THREE.Group());
+        var t = teil(_detail), me = new THREE.Mesh(new THREE.SphereGeometry(r, t[0], t[1]), m);
+        me.scale.set(s[0], s[1], s[2]);
+        me.position.set(x, y, z);
+        me.castShadow = true;
+        return buche(l0, me);
+    }
+    // Der Stab (Wirbel der Leier): ein Zylinder mit den Seiten der Stufe (`zylinder`, die Breite treu wie das Scharnier).
+    function stabMesh(r, h, m) {
+        var zr = breiteTreu(r, TOR_DETAIL.zylinder, _detail.zylinder);
+        var me = buche(4 * TOR_DETAIL.zylinder, fein(2 * zr) ? new THREE.Group() : new THREE.Mesh(new THREE.CylinderGeometry(zr, zr, h, _detail.zylinder), m));
+        me.castShadow = true;
+        return me;
+    }
+    // Der Kasten (Stab des Quadrats, Arm, Steg): in jeder Stufe derselbe; das Feine fällt an seiner kleinsten Kante.
+    function kastenMesh(sx, sy, sz, m, x, y, z) {
+        var me = buche(12, fein(Math.min(sx, sy, sz)) ? new THREE.Group() : new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), m));
+        me.position.set(x, y, z);
+        me.castShadow = me.receiveShadow = true;
+        return me;
+    }
+    // Die Röhre mit PROFIL (Arm, Knochen, Stange, Sprosse): die Röhre des Detail-Gesetzes mit dem größten Radius des Profils, ihre
+    // Ringe nach dem Bogen der Kurve auf das Profil gezogen (je Ring um den Punkt, an dem die Röhre ihn trägt). `rf(s)` der Radius am
+    // Anteil s des Bogens (0 … 1); eine Zahl r1 statt der Funktion: der Konus r0 → r1. Ohne Fuge (der Stein-Stoff legt auf ihr keine).
+    function profilRadius(rf) {
+        var m = 0;
+        for (var i = 0; i <= 64; i++) m = Math.max(m, rf(i / 64));
+        return m;
+    }
+    function konusMesh(pts, r0, r1, m, seg, rad) {
+        var rf = typeof r1 === "function" ? r1 : function (s) { return r0 + (r1 - r0) * s; };
+        var rm = typeof r1 === "function" ? profilRadius(rf) : r0;
+        var me = tubeMesh(pts, rm, m, seg || 140, rad || 8);
+        var g = me.geometry;
+        if (!g) return me;
+        var P = g.parameters.path, n = g.parameters.tubularSegments, k = g.parameters.radialSegments + 1, pos = g.attributes.position;
+        var C = [], s = [0], i, j;
+        for (i = 0; i <= n; i++) C.push(P.getPointAt(i / n, new THREE.Vector3()));
+        for (i = 1; i <= n; i++) s.push(s[i - 1] + C[i].distanceTo(C[i - 1]));
+        for (i = 0; i <= n; i++) {
+            var f = rf(s[i] / Math.max(1e-9, s[n])) / rm, c = C[i];
+            for (j = 0; j < k; j++) {
+                var q = i * k + j;
+                pos.setXYZ(q, c.x + (pos.getX(q) - c.x) * f, c.y + (pos.getY(q) - c.y) * f, c.z + (pos.getZ(q) - c.z) * f);
+            }
+        }
+        ohneFuge(g, STEIN_NR.motiv);
+        me.castShadow = true;
+        return me;
+    }
+    // Der Ring um eine Röhre (Zier-Bund der Leier, Rose des Geweihs): Mitte c, die Achse a (der Ring liegt quer zu ihr).
+    function bundMesh(c, a, R, r, m) {
+        var me = torusMesh(R, r, m, c.x, c.y, c.z);
+        me.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), a.clone().normalize());
+        me.castShadow = true;
+        return me;
+    }
+    // Der große Ring (der Kreis Vitruvs): die Teilung des Ring-Gesetzes ohne die Kappe der kleinen Pässe (längs höchstens 64).
+    function ringMesh(R, r, m, x, y, z) {
+        var me = buche(_buch ? ringL0(R, r, 8, 64) : 0, fein(2 * r) ? new THREE.Group() : new THREE.Mesh(ringGeometrie(R, r, 8, 64), m));
+        me.position.set(x, y, z);
+        me.castShadow = true;
+        if (me.geometry) ohneFuge(me.geometry, STEIN_NR.motiv);
+        return me;
+    }
+    // Die Hülle einer Röhre mit Profil: die Kette auf dem Polygonzug, den die Röhre trägt (die Ring-Mitten ihrer Geometrie, Douglas-
+    // Peucker wie `hRoehrenKette`, die Toleranz am kleinsten Radius), je Glied der kleinere Radius seiner Enden (einbeschrieben).
+    function hProfil(H, me, rf, m) {
+        var g = me && me.geometry;
+        if (!H || !g || !g.parameters || !g.parameters.path) return;
+        var P = g.parameters.path, n = g.parameters.tubularSegments, C = [], s = [0], i, rmin = Infinity;
+        for (i = 0; i <= n; i++) C.push(P.getPointAt(i / n, new THREE.Vector3()));
+        for (i = 1; i <= n; i++) s.push(s[i - 1] + C[i].distanceTo(C[i - 1]));
+        var R = function (j) { return rf(s[j] / Math.max(1e-9, s[n])); };
+        for (i = 0; i <= n; i++) rmin = Math.min(rmin, R(i));
+        var Q = 1048576, tol = Math.round(Math.min(HUELLE_GESETZ.sehneM, HUELLE_GESETZ.roehreR * rmin) * Q), halte = [0, n], stapel = [[0, n]];
+        while (stapel.length) {
+            var ab = stapel.pop(), a = C[ab[0]], ba = new THREE.Vector3().subVectors(C[ab[1]], a), l2 = Math.max(1e-12, ba.lengthSq()), best = -1, wo = -1;
+            for (i = ab[0] + 1; i < ab[1]; i++) {
+                var t = Math.max(0, Math.min(1, new THREE.Vector3().subVectors(C[i], a).dot(ba) / l2));
+                var dd = Math.round(C[i].distanceTo(a.clone().addScaledVector(ba, t)) * Q);
+                if (dd > best) { best = dd; wo = i; }
+            }
+            if (wo >= 0 && best > tol) { halte.push(wo); stapel.push([ab[0], wo], [wo, ab[1]]); }
+        }
+        halte.sort(function (x, y) { return x - y; });
+        // je Glied höchstens `profilM` Bogen und ein Viertel der Röhre (das Profil wechselt längs: der Fuß, die Schulter, die Spitze einer
+        // Sprosse), sein Radius der kleinste darin
+        var glied = [halte[0]];
+        for (i = 1; i < halte.length; i++) {
+            for (var j = halte[i - 1] + 1; j < halte[i]; j++) if (s[j] - s[glied[glied.length - 1]] > Math.min(HUELLE_GESETZ.profilM, s[n] / 4)) glied.push(j);
+            glied.push(halte[i]);
+        }
+        for (i = 1; i < glied.length; i++) {
+            var rg = Infinity;
+            for (var q = glied[i - 1]; q <= glied[i]; q++) rg = Math.min(rg, R(q));
+            hKapsel(H, C[glied[i - 1]], C[glied[i]], rg, m);
+        }
+    }
+    // die Hülle einer konischen Röhre (Sprosse, Schnauze): ihr Profil linear
+    function hKonus(H, me, r0, r1, m) {
+        hProfil(H, me, function (s) { return r0 + (r1 - r0) * s; }, m);
+    }
+    // die Hülle eines Rings (Bund, Wirbel, Sonnenscheibe): das Prisma entlang seiner Achse, halbe Länge 0,35 r, Radius R + 0,85 r —
+    // seine Ecken liegen im Ring (√(1 − 0,35²) = 0,94 > 0,85), die Kappe deckt das Loch (dort läuft der Strang, den er umfasst)
+    function hBund(H, c, a, R, r, m) {
+        if (!H) return;
+        var e = a.clone().normalize().multiplyScalar(0.35 * r);
+        hKapsel(H, c.clone().sub(e), c.clone().add(e), R + 0.85 * r, m);
+    }
+    // Die Hülle einer Kugel / eines Ellipsoids: das Prisma der Hülle (`huelleGeometrie`: `seiten` Seiten, flache Kappen) entlang der
+    // längsten Halbachse A (und gekreuzt entlang der mittleren), EINBESCHRIEBEN — halbe Länge 0,45 A, Radius 0,88 der kürzesten
+    // Halbachse (0,45² + 0,88² < 1).
+    function hEllipsoid(H, c, r, s, m) {
+        if (!H) return;
+        var L = [[r * s[0], 0], [r * s[1], 1], [r * s[2], 2]].sort(function (u, v) { return v[0] - u[0]; });
+        // zwei Prismen gekreuzt: entlang der längsten und der mittleren Halbachse — ihr Wurf deckt die Scheibe des Körpers
+        for (var k = 0; k < 2; k++) {
+            var a = c.clone(), b = c.clone();
+            a.setComponent(L[k][1], a.getComponent(L[k][1]) - 0.45 * L[k][0]);
+            b.setComponent(L[k][1], b.getComponent(L[k][1]) + 0.45 * L[k][0]);
+            hKapsel(H, a, b, 0.88 * L[2][0], m);
+        }
+    }
+    function hKugel(H, c, r, m) {
+        hEllipsoid(H, c, r, [1, 1, 1], m);
+    }
+    var V3 = function (x, y, z) { return new THREE.Vector3(x, y, z || 0); };
+    // Die größte Auslenkung, die das Gesetz der Membran-Welle zulässt (MEMBRAN_GESETZ, wie der Wirt sie der Hülle der Membran gibt,
+    // am Rand des Reglers `wave` = 1: die Welle ist ein Gesetz-Wert und bewegt kein Bau-Byte): was vor der Membran steht (die Saiten
+    // der Leier), steht vor jeder ihrer Wellen.
+    function membranAmplitude(zFace) {
+        var MG = MEMBRAN_GESETZ;
+        return Math.max(MG.waveDepthMin, zFace * (MG.aktivDepth[0] + MG.aktivDepth[1])) * (MG.waveDepthK[0] + MG.waveDepthK[1]);
+    }
+
+    // DIE LEIER (klang): zwei Arme wachsen aus ihren Resonanz-Füßen den Pfosten der Öffnung hinauf (am Fuß und an der Schulter ein
+    // goldener Bund), schwellen an der Schulter wie ein Horn, schwingen über dem Kämpfer hinaus und rollen die Spitze zur Volute ein
+    // (eine Spirale, 330°, der Radius auf ein Drittel); das Joch liegt über dem Scheitel auf ihnen, in seiner Mitte die Sonnenscheibe,
+    // je Saite ein Wirbel; die Saiten (Licht-Fäden, der Stoff des Filigrans) spannen vom Steg auf der Schwelle zum Joch — vor und
+    // hinter der Membran, jenseits ihrer Welle. Fernbild: die Arme (je 7) und das Joch (3).
+    function motivLyra(gate, p, D, S, HU) {
+        var G = MOTIV_GESETZ.lyra, w = p.wLyra, M = D.M, b = D.baseY, sy = D.springY, ay = D.apexY, i, sg;
+        var dick = (0.7 + 0.3 * w) * (0.75 + 0.5 * p.mass);
+        var r0 = G.arm[0] * dick, r1 = G.arm[1] * r0, rj = G.joch[1] * dick;
+        var xa = Math.abs(D.leftSpringX) + r0, hx = G.horn[0] * M, yJ = ay + G.joch[0] * M + rj, xj = xa + 0.6 * hx;
+        var bug = G.horn[1] * 0.2 * M; // das Joch steigt zur Mitte
+        var jochY = function (x) { return yJ + bug * (1 - (x / xj) * (x / xj)); };
+        // das Profil des Arms: am Fuß ausgestellt, an der Schulter (s ≈ 0,42) geschwollen, zur Volute auf r1
+        var armR = function (s) { return (r0 + (r1 - r0) * s) * (1 + 0.15 * Math.exp(-(s / 0.05) * (s / 0.05)) + 0.2 * Math.exp(-((s - 0.42) / 0.11) * ((s - 0.42) / 0.11))); };
+        for (var si = 0; si < 2; si++) {
+            sg = si ? 1 : -1;
+            var Q = [[xa, b + 0.3], [xa, b + 0.45 * (sy - b)], [xa, sy], [xa + 0.22 * hx, sy + 0.55 * (yJ - sy)], [xj, yJ], [xa + 0.95 * hx, yJ + 0.3 * M]];
+            // die Volute: vom letzten Punkt eine Spirale nach außen und hinab, 330°, der Radius 0,14 M → ein Drittel
+            var R0 = 0.14 * M, cx = Q[5][0] + 0.94 * R0, cy = Q[5][1] - 0.34 * R0;
+            for (var v = 1; v <= 8; v++) {
+                var th = ((160 - (330 * v) / 8) * Math.PI) / 180, rv = R0 * (1 - (0.65 * v) / 8);
+                Q.push([cx + rv * Math.cos(th), cy + rv * Math.sin(th)]);
+            }
+            var arm = Q.map(function (q) { return V3(sg * q[0], q[1]); });
+            var am = konusMesh(arm, r0, armR, S.fmat, 200, 12);
+            gate.add(am);
+            hProfil(HU, am, armR, S.fmat);
+            hSichtStrang(HU, arm.slice(0, 7), (r0 + r1) / 2, S.fmat, 0, 7);
+            // der Sockel: ein Sechskant (das Prisma der Hülle IST er), ein Drittel im Grund
+            var rf = G.fuss[0] * dick, hf = G.fuss[1] * rf, sock = new THREE.Mesh(new THREE.CylinderGeometry(rf, rf, hf, 6), S.fmat);
+            ohneFuge(sock.geometry, STEIN_NR.motiv + 3);
+            sock.position.set(sg * xa, b + hf / 6, 0);
+            sock.castShadow = sock.receiveShadow = true;
+            gate.add(buche(24, sock));
+            hKapsel(HU, V3(sg * xa, b + hf / 6 - hf / 2, 0), V3(sg * xa, b + hf / 6 + hf / 2, 0), rf, S.fmat);
+            // die goldenen Bünde am Fuß und an der Schulter (der Arm steht dort senkrecht)
+            var lang = new THREE.CatmullRomCurve3(arm, false, "centripetal").getLength();
+            for (var bi = 0; bi < 2; bi++) {
+                var yb = bi ? sy : b + hf / 6 + hf / 2 + 0.06, rb = armR((yb - (b + 0.3)) / lang) + 0.012;
+                gate.add(bundMesh(V3(sg * xa, yb, 0), V3(0, 1, 0), rb, 0.028 * dick, S.amat));
+                hKapsel(HU, V3(sg * xa, yb - 0.03, 0), V3(sg * xa, yb + 0.03, 0), rb, S.amat);
+            }
+            var kx = sg * (xj + r0 + 1.2 * rj);
+            gate.add(kugelMesh(1.7 * rj, S.amat, kx, jochY(xj), 0));
+            hKugel(HU, V3(kx, jochY(xj), 0), 1.7 * rj, S.amat);
+        }
+        // die Sonnenscheibe in der Mitte des Jochs (Apollons Leier): der Reif und der Kern in Gold, nach beiden Seiten des Tors
+        var ys = jochY(0);
+        gate.add(bundMesh(V3(0, ys, 0), V3(0, 0, 1), 2.4 * rj, 0.35 * rj, S.amat));
+        gate.add(kugelMesh(1.25 * rj, S.amat, 0, ys, 0, [1, 1, 0.8]));
+        hBund(HU, V3(0, ys, 0), V3(0, 0, 1), 2.4 * rj, 0.35 * rj, S.amat);
+        var joch = [V3(-xj - r0, jochY(xj)), V3(-0.5 * xj, jochY(0.5 * xj)), V3(0, jochY(0)), V3(0.5 * xj, jochY(0.5 * xj)), V3(xj + r0, jochY(xj))];
+        var jm = tubeMesh(joch, rj, S.fmat, 90, 10);
+        if (jm.geometry) ohneFuge(jm.geometry, STEIN_NR.motiv + 1);
+        jm.castShadow = true;
+        gate.add(jm);
+        hKette(HU, joch, rj, S.fmat, 0, jm.geometry);
+        hSichtStrang(HU, joch, rj, S.fmat, 0, 3);
+        // die Saiten: 5 + 2 je Ordnung (die Leier der Preset-Ordnung trägt sieben), über 80 % der Öffnung, vor und hinter der Welle der Membran; je Saite ein Wirbel im Joch
+        var nS = Math.min(G.saitenMax, 5 + 2 * Math.max(1, Math.round(p.orders))), xe = Math.abs(D.leftSpringX);
+        var zS = membranAmplitude(D.zFace) + G.saite + 0.02;
+        for (var zi = 0; zi < 2; zi++) {
+            var z = zi ? -zS : zS;
+            var steg = kastenMesh(1.7 * xe, 0.035, 0.05, S.laceMat, 0, b + 0.018, z);
+            steg.castShadow = false; // die Glut wirft nie
+            gate.add(steg);
+            for (i = 0; i < nS; i++) {
+                var x = -0.8 * xe + (1.6 * xe * i) / (nS - 1);
+                gate.add(tubeMesh([V3(x, b + 0.03, z), V3(x, jochY(x) - 0.5 * rj, z)], G.saite, S.laceMat, 8, 6));
+            }
+        }
+        for (i = 0; i < nS; i++) {
+            var xw = -0.8 * xe + (1.6 * xe * i) / (nS - 1), hw = 2 * (zS + 0.05), wb = stabMesh(0.02, hw, S.amat);
+            wb.rotation.x = Math.PI / 2;
+            wb.position.set(xw, jochY(xw), 0);
+            gate.add(wb);
+            hKapsel(HU, V3(xw, jochY(xw), -hw / 2), V3(xw, jochY(xw), hw / 2), 0.02, S.amat);
+        }
+    }
+
+    // VITRUV (koerperstudio): das Quadrat und der Kreis des vitruvianischen Menschen in Bronze — beide auf derselben Grundlinie unter
+    // der Schwelle (der Kreis berührt sie, wie bei Leonardo die Füße des Menschen), so tief, dass der Kreis die Öffnung nie über dem
+    // Grund kreuzt; das Quadrat trägt den Scheitel unter seinem Sturz, die waagrechten Arme stehen auf dem Kämpfer zwischen Öffnung
+    // und Pfosten; der Mensch (die Doppel-Figur: Arme waagrecht und erhoben, Beine geschlossen und gespreizt) steht als Relief in Gold
+    // auf der Tafel im Scheitel, dem Segment des Kreises über dem Sturz, auf beiden Seiten. `innen` die Stärke des inneren Rahmens (der
+    // Monolith des Vokabulars), an dem die Arme ansetzen. Fernbild: Pfosten und Sturz (3) und der Kreis (10).
+    function motivVitruv(gate, p, D, S, HU, innen) {
+        var G = MOTIV_GESETZ.vitruv, w = p.wVitruv, b = D.baseY, ay = D.apexY, sy = D.springY;
+        var xe = Math.abs(D.leftSpringX), dick = (0.6 + 0.4 * w) * (0.8 + 0.4 * p.mass);
+        var t = G.stab * dick, rr = G.ring * dick, xc = xe + G.luft, a = ay + 2 * t + 0.3, rc = a / G.quadrat, sink = 0;
+        for (var it = 0; it < 5; it++) {
+            rc = a / G.quadrat;
+            sink = rc - Math.sqrt(Math.max(0, rc * rc - xc * xc)) + rr + 0.03;
+            a = ay + 2 * t + G.ueber + sink;
+        }
+        var y0 = b - sink, y1 = y0 + a, xs = a / 2, yc = y0 + rc, sg, si;
+        for (si = 0; si < 2; si++) {
+            sg = si ? 1 : -1;
+            // der Pfosten (über dem Grund wirft und zeigt er sich als EIN Kasten der Hülle)
+            gate.add(kastenMesh(2 * t, a + t, 2 * t, S.fmat, sg * xs, y0 + (a + t) / 2, 0));
+            hKasten(HU, sg * xs - t, Math.max(b, y0), -t, sg * xs + t, y1 + t, t, S.fmat, "sicht");
+            var xi = xe + innen, la = xs - t - xi;
+            if (la > 0.05) {
+                var arm = kastenMesh(la, 1.4 * t, 1.4 * t, S.fmat, (sg * (xs - t + xi)) / 2, sy, 0);
+                gate.add(arm);
+                hUm(HU, arm, S.fmat);
+            }
+        }
+        gate.add(kastenMesh(2 * xs + 2 * t, 2 * t, 2 * t, S.fmat, 0, y1, 0));
+        hKasten(HU, -xs - t, y1 - t, -t, xs + t, y1 + t, t, S.fmat, "sicht");
+        gate.add(ringMesh(rc, rr, S.fmat, 0, yc, 0));
+        // die Hülle des Kreises: die Kette über den ganzen Ring, das Fernbild über den Bogen über dem Grund (−50° … 230°)
+        var kreis = [], bogen = [], k;
+        for (k = 0; k <= 48; k++) kreis.push(V3(rc * Math.cos((2 * Math.PI * k) / 48), yc + rc * Math.sin((2 * Math.PI * k) / 48)));
+        for (k = 0; k <= 20; k++) bogen.push(V3(rc * Math.cos(((-50 + 14 * k) * Math.PI) / 180), yc + rc * Math.sin(((-50 + 14 * k) * Math.PI) / 180)));
+        hKette(HU, kreis, rr, S.fmat, 0);
+        hSichtStrang(HU, bogen, rr, S.fmat, 0, 10);
+        // Leonardos Maß: die Striche der Achtel an den Pfosten (über dem Grund) und am Sturz, in Gold nach innen; die Nieten, wo der
+        // Kreis das Quadrat kreuzt
+        for (k = 1; k < 8; k++) {
+            var yk = y0 + (a * k) / 8, xk8 = -xs + (a * k) / 8;
+            if (yk > b + 0.15) for (var sk = -1; sk <= 1; sk += 2) gate.add(kastenMesh(1.2 * t, 0.35 * t, 2.3 * t, S.amat, sk * (xs - 1.6 * t), yk, 0));
+            gate.add(kastenMesh(0.35 * t, 1.2 * t, 2.3 * t, S.amat, xk8, y1 - 1.6 * t, 0));
+        }
+        var kp = Math.sqrt(Math.max(0, rc * rc - xs * xs)), ks = Math.sqrt(Math.max(0, rc * rc - (y1 - yc) * (y1 - yc)));
+        var nieten = [[xs, yc + kp], [xs, yc - kp], [ks, y1]];
+        for (k = 0; k < nieten.length; k++)
+            for (var sn = -1; sn <= 1; sn += 2)
+                if (nieten[k][1] > b + 0.1) {
+                    gate.add(kugelMesh(1.7 * rr, S.amat, sn * nieten[k][0], nieten[k][1], 0));
+                    hKugel(HU, V3(sn * nieten[k][0], nieten[k][1], 0), 1.7 * rr, S.amat);
+                }
+        // die Tafel im Scheitel und der Mensch auf ihr
+        var yu = y1 + t, R = rc - rr, h = yu - yc, xk = Math.sqrt(Math.max(0, R * R - h * h)), a0 = Math.atan2(h, xk), a1 = Math.PI - a0;
+        var teil = function (Dd) { return Math.max(4, Math.ceil((a1 - a0) / (2 * Math.acos(Math.max(-1, 1 - Dd.sehneM / R))))); };
+        var n = teil(_detail), sh = new THREE.Shape();
+        sh.moveTo(xk, yu);
+        for (var q = 1; q <= n; q++) sh.lineTo(R * Math.cos(a0 + ((a1 - a0) * q) / n), yc + R * Math.sin(a0 + ((a1 - a0) * q) / n));
+        sh.lineTo(xk, yu);
+        var tg = new THREE.ExtrudeGeometry(sh, { depth: G.tafel, bevelEnabled: false });
+        tg.translate(0, 0, -G.tafel / 2);
+        ohneFuge(tg, STEIN_NR.motiv + 2);
+        var tafel = new THREE.Mesh(tg, S.fmat);
+        tafel.castShadow = tafel.receiveShadow = true;
+        gate.add(buche(_buch ? 4 * teil(TOR_DETAIL) + 2 : 0, tafel));
+        hKasten(HU, -0.7 * xk, yu, -G.tafel / 2, 0.7 * xk, yu + 0.5 * (yc + R - yu), G.tafel / 2, S.fmat);
+        var hm = G.mensch * (yc + R - yu), ym = (yu + yc + R) / 2;
+        for (var zi = 0; zi < 2; zi++) vitruvMensch(gate, 0, ym, hm, (zi ? -1 : 1) * (G.tafel / 2 + 0.03 * hm), S.amat, HU);
+    }
+    // Der Mensch des Reliefs: die Doppel-Figur in Einheiten seiner Höhe `h` um (x, y), die Glieder als Röhren, der Kopf als Kugel.
+    function vitruvMensch(gate, x, y, h, z, m, HU) {
+        var glieder = [
+            [0, 0.27, 0, -0.05, 0.075], // der Rumpf
+            [-0.45, 0.22, 0.45, 0.22, 0.038], // die Arme waagrecht
+            [0, 0.22, -0.42, 0.37, 0.034],
+            [0, 0.22, 0.42, 0.37, 0.034], // die Arme erhoben
+            [0, -0.05, 0, -0.5, 0.056], // die Beine geschlossen
+            [0, -0.05, -0.22, -0.47, 0.043],
+            [0, -0.05, 0.22, -0.47, 0.043], // die Beine gespreizt
+        ];
+        for (var i = 0; i < glieder.length; i++) {
+            var g = glieder[i], P = [V3(x + g[0] * h, y + g[1] * h, z), V3(x + g[2] * h, y + g[3] * h, z)];
+            var tm = tubeMesh(P, g[4] * h, m, 8, 6);
+            tm.castShadow = true;
+            gate.add(tm);
+            hKette(HU, P, g[4] * h, m, 0, tm.geometry);
+        }
+        gate.add(kugelMesh(0.12 * h, m, x, y + 0.39 * h, z));
+        hKugel(HU, V3(x, y + 0.39 * h, z), 0.12 * h, m);
+    }
+
+    // DAS GEWEIH (tetrapoda): der Bogen aus Knochen — je Ordnung eine Rippe (höchstens drei), jede auf der Kante der Öffnung den
+    // Pfosten hinauf und über den Bogen bis zum Scheitel: die innerste ein Röhrenknochen (an Fuß und Scheitel die Gelenk-Enden, der
+    // Schaft schlank), die zweite die Wirbelsäule (ein schlanker Strang, auf ihm die Wirbel als Ringe in ihrem Takt), die dritte eine
+    // dünne Rippe; am Fuß jeder Rippe ihr Gelenk-Knauf. Im Scheitel der Hirsch-Schädel (Hirnschädel, Augenbögen und die lange Schnauze
+    // nach beiden Seiten des Tors) und auf ihm das Geweih: je Stange die Rose am Rosenstock und fünf Sprossen (Aug-, Eis-, Mittel- und
+    // zwei Kronen-Sprossen), ihre Richtung aus dem eigenen Saat-Strom. Elfenbein und Horn sind eigene Stoffe (FARB-GESETZ: sRGB-Absicht,
+    // linear). Fernbild: die innerste Rippe (je 6), die Stangen (je 3) und der Schädel (1).
+    function motivGeweih(gate, p, D, S, HU, offsetFull) {
+        var G = MOTIV_GESETZ.geweih, w = p.wGeweih, M = D.M, b = D.baseY, ay = D.apexY, i, k, si, sg;
+        var rng = mulberry32(0x50fa ^ G.salz);
+        var knochen = new THREE.MeshStandardMaterial({ color: new THREE.Color(G.knochenFarbe).convertSRGBToLinear(), roughness: 0.72, metalness: 0 });
+        var horn = new THREE.MeshStandardMaterial({ color: new THREE.Color(G.geweihFarbe).convertSRGBToLinear(), roughness: 0.82, metalness: 0 });
+        knochen.userData.__seh = "stoff";
+        horn.userData.__seh = "stoff";
+        var dick = (0.6 + 0.4 * w) * (0.8 + 0.4 * p.mass), r0 = G.knochen[0] * dick, r1 = G.knochen[1] * r0;
+        var nR = Math.max(1, Math.min(3, Math.round(p.orders)));
+        var gauss = function (x, s) { return Math.exp(-(x / s) * (x / s)); };
+        for (i = 0; i < nR; i++) {
+            var sc = G.rippe[i], FB = offsetFull(r0 * (1 + G.abstand * i)), ap = 0;
+            for (k = 0; k < FB.length; k++) if (FB[k].y > FB[ap].y) ap = k;
+            var haelften = [FB.slice(0, ap + 1), FB.slice(ap).reverse()];
+            // der Röhrenknochen: die Gelenk-Enden geschwollen, der Schaft verjüngt; die Wirbelsäule und die dünne Rippe schlank
+            var rk = i === 0
+                ? function (s) { return r0 * (0.78 - 0.18 * s + 0.4 * gauss(s, 0.07) + 0.3 * gauss(1 - s, 0.08)); }
+                : (function (r) { return function (s) { return r * (1 - 0.35 * s); }; })(r0 * sc * (i === 1 ? 0.62 : 1));
+            for (si = 0; si < 2; si++) {
+                var H2 = haelften[si];
+                var rm = konusMesh(H2, r0 * sc, rk, knochen, 200, 10);
+                gate.add(rm);
+                hProfil(HU, rm, rk, knochen);
+                if (!i) hSichtStrang(HU, H2, 0.75 * r0, knochen, 0, 6);
+                if (i === 1) {
+                    // die Wirbel: Ringe quer zur Säule in ihrem Takt (9 je Hälfte), ihre Stärke mit der Säule fallend
+                    var kv1 = new THREE.CatmullRomCurve3(H2, false, "centripetal");
+                    for (var wi = 1; wi <= 9; wi++) {
+                        var tw = (wi - 0.5) / 9.4, rw = rk(tw);
+                        gate.add(bundMesh(kv1.getPointAt(tw), kv1.getTangentAt(tw), 1.15 * rw, 0.55 * rw, knochen));
+                        hBund(HU, kv1.getPointAt(tw), kv1.getTangentAt(tw), 1.15 * rw, 0.55 * rw, knochen);
+                    }
+                }
+                var kr = 1.3 * r0 * sc, ks = [1, 0.75, 1];
+                gate.add(kugelMesh(kr, knochen, H2[0].x, b + 0.75 * kr, 0, ks));
+                hEllipsoid(HU, V3(H2[0].x, b + 0.75 * kr, 0), kr, ks, knochen);
+            }
+        }
+        // der Schädel im Scheitel: der Hirnschädel, die Augenbögen und die Schnauze nach vorn und nach hinten
+        var dk = (0.8 + 0.4 * w) * (M / 1.4), rs = G.schaedel * dk, ys = ay + r0 + 0.55 * rs, ss = [1, 0.8, 1.15];
+        gate.add(kugelMesh(rs, knochen, 0, ys, 0, ss));
+        hEllipsoid(HU, V3(0, ys, 0), rs, ss, knochen);
+        hKapsel(HU, V3(0, ys, -0.5 * rs), V3(0, ys, 0.5 * rs), 0.7 * rs, knochen, "sicht");
+        for (si = 0; si < 2; si++) {
+            sg = si ? -1 : 1;
+            var sn = [V3(0, ys - 0.05 * rs, 0.5 * rs * sg), V3(0, ys - 0.35 * rs, 1.35 * rs * sg), V3(0, ys - 0.75 * rs, 2.2 * rs * sg)];
+            var snm = konusMesh(sn, 0.55 * rs, 0.26 * rs, knochen, 40, 10);
+            gate.add(snm);
+            hKonus(HU, snm, 0.55 * rs, 0.26 * rs, knochen);
+            for (var ai = 0; ai < 2; ai++) {
+                var ax = (ai ? 1 : -1) * 0.48 * rs;
+                gate.add(kugelMesh(0.28 * rs, knochen, ax, ys + 0.12 * rs, 0.62 * rs * sg, [1, 0.8, 0.9]));
+                hEllipsoid(HU, V3(ax, ys + 0.12 * rs, 0.62 * rs * sg), 0.28 * rs, [1, 0.8, 0.9], knochen);
+            }
+        }
+        // das Geweih: je Seite die Rose am Rosenstock, die Stange und fünf Sprossen
+        var sA = (G.geweih[0] + G.geweih[1] * w) * (M / 1.4);
+        var stange = [[0.3, 0.45, -0.06], [0.78, 0.98, -0.12], [1.15, 1.55, -0.06], [1.2, 2.05, 0.06], [1.05, 2.45, 0.12]];
+        var sprossen = [[0.07, -0.1, 0.25, 0.96, 0.62], [0.2, -0.2, 0.5, 0.84, 0.52], [0.48, 0.25, 0.75, 0.6, 0.5], [0.76, 0.5, 0.75, -0.4, 0.44], [0.9, -0.35, 0.85, -0.35, 0.4]];
+        var stR = function (s) { return sA * (0.085 - 0.055 * s) * (1 + 0.25 * gauss(s, 0.04)); };
+        for (si = 0; si < 2; si++) {
+            sg = si ? 1 : -1;
+            var B0 = V3(sg * 0.45 * rs, ys + 0.6 * rs, 0), B = [B0];
+            for (k = 0; k < stange.length; k++) B.push(V3(B0.x + sg * stange[k][0] * sA, B0.y + stange[k][1] * sA, stange[k][2] * sA));
+            var bm = konusMesh(B, stR(0), stR, horn, 140, 10);
+            gate.add(bm);
+            hProfil(HU, bm, stR, horn);
+            hSichtStrang(HU, B, stR(0.5), horn, 0, 3);
+            var kv = new THREE.CatmullRomCurve3(B, false, "centripetal");
+            // die Rose: der Perlen-Kranz am Grund der Stange
+            gate.add(bundMesh(kv.getPointAt(0.015), kv.getTangentAt(0.015), 1.05 * stR(0), 0.35 * stR(0), horn));
+            hBund(HU, kv.getPointAt(0.015), kv.getTangentAt(0.015), 1.05 * stR(0), 0.35 * stR(0), horn);
+            for (k = 0; k < sprossen.length; k++) {
+                var sp = sprossen[k], a = kv.getPointAt(sp[0]);
+                var d = V3(sg * (sp[1] + (rng() - 0.5) * 0.16), sp[2] + (rng() - 0.5) * 0.16, sp[3] + (rng() - 0.5) * 0.16).normalize();
+                var Ps = [a, a.clone().addScaledVector(d, 0.5 * sp[4] * sA).add(V3(0, 0.05 * sA, 0)), a.clone().addScaledVector(d, sp[4] * sA).add(V3(0, 0.12 * sA, 0))];
+                var tm = konusMesh(Ps, 0.05 * sA, 0.016 * sA, horn, 40, 8);
+                gate.add(tm);
+                hKonus(HU, tm, 0.05 * sA, 0.016 * sA, horn);
+            }
+        }
+    }
+
     // in-plane Normalen entlang Pfad (auswaerts vom Aperturzentrum)
     // prettier-ignore
     function normalsAlong(pts,refY){var N=pts.length,F=[];for(var i=0;i<N;i++){var a=pts[Math.max(0,i-1)],b=pts[Math.min(N-1,i+1)];var tx=b.x-a.x,ty=b.y-a.y,L=Math.hypot(tx,ty)||1;tx/=L;ty/=L;var nx=-ty,ny=tx;if((pts[i].x)*nx+(pts[i].y-refY)*ny<0){nx=-nx;ny=-ny;}F.push([nx,ny]);}return F;}
@@ -976,10 +1418,17 @@
         var disc=buche(40,new THREE.Mesh(new THREE.CircleGeometry(M+jambW*0.5,kreisTeilung(M+jambW*0.5)),new THREE.MeshBasicMaterial({color:new THREE.Color().setHSL(0.11,0.5,0.5).multiplyScalar(0.3+p.glow),transparent:true,opacity:0.2+0.4*p.glow,side:THREE.DoubleSide})));disc.material.userData.__seh="glut";disc.rotation.x=-Math.PI/2;disc.position.set(0,baseY+0.012,baseZ);gate.add(disc);}
       if(p.ruin>0.2){var nRub=Math.round(p.ruin*8);for(var rbk=0;rbk<nRub;rbk++){var rsz=0.15+rng()*0.38;var rk=new THREE.Mesh(ohneFuge(new THREE.BoxGeometry(rsz,rsz*0.7,rsz),STEIN_NR.schutt+rbk),fmat);rk.position.set((rng()-0.5)*fullW*1.3,baseY+rsz*0.3,baseZ+(rng()-0.5)*baseDepth*0.6);rk.rotation.set(rng()*1.5,rng()*3,rng()*1.5);rk.castShadow=true;gate.add(rk);hDrehKasten(HU,rk,rsz,rsz*0.7,rsz,fmat);}}  // 5) Schutt
 
+      // --- DIE MOTIVE DER STUDIOS (w4-tore-teile, MOTIV_GESETZ): Leier · Vitruv · Geweih aus der Ableitung des Tors ---
+      if(p.wLyra>0.03)motivLyra(gate,p,D,{fmat:fmat,amat:amat,laceMat:laceMat},HU);
+      if(p.wVitruv>0.03)motivVitruv(gate,p,D,{fmat:fmat,amat:amat},HU,p.wMono>0.03?jambW*0.5+jambW*0.5*p.wMono+0.01:0);
+      if(p.wGeweih>0.03)motivGeweih(gate,p,D,{},HU,offsetFull);
+
       // --- gluehende Apertur-Kante (Trichter) ---
       var rimPts=[];for(i=0;i<prof.pts.length;i++)rimPts.push(new THREE.Vector3(prof.pts[i][0],springY+prof.pts[i][1],0.0));gate.add(tubeMesh(rimPts,0.04,rimMat,170,8));
 
-      if(HU){var sK=[];if(p.wMason>0.03)sK.push([jambW*p.wMason*0.5,jambW*p.wMason*0.5,fmat]);if(p.wBraid>0.03)sK.push([jambW*0.5,jambW*0.5*p.wBraid*1.05+lerp(0.02,0.05,p.wBraid),bmatG]);if(p.wMono>0.03)sK.push([jambW*0.5,jambW*0.5*p.wMono+0.01,fmat]);sK.sort(function(u,v){return v[1]-u[1];});if(sK.length)hSichtStrang(HU,offsetFull(sK[0][0]),Math.min(sK[0][1],frameDepth*0.5),sK[0][2],0);var sx=Infinity,sy0=baseY,sz=Infinity;if(p.wMason*p.mass>0.05){var sN=1+Math.round(p.wMason*2),sHh=0.12+0.32*p.mass;sx=Math.min(sx,(fullW+0.4)/2);sy0=Math.min(sy0,baseY-sN*sHh);sz=Math.min(sz,baseDepth/2);}if(p.wMono*p.mass>0.05){var sPh=0.2+0.3*p.mass;sx=Math.min(sx,(fullW+0.5)/2);sy0=Math.min(sy0,baseY-sPh);sz=Math.min(sz,(baseDepth+0.3)/2);}if(sx<Infinity)hKasten(HU,-sx,sy0,baseZ-sz,sx,baseY,baseZ+sz,fmat,"sicht");}
+      // das Fernbild teilt sich die 24 Teile des March: der Rahmen-Strang trägt, was Motiv und Sockel übrig lassen (die sieben: 22)
+      var nSicht=0;if(HU)for(var hs=0;hs<HU.length;hs++)if(HU[hs].rolle==="sicht")nSicht++;
+      if(HU){var sK=[];if(p.wMason>0.03)sK.push([jambW*p.wMason*0.5,jambW*p.wMason*0.5,fmat]);if(p.wBraid>0.03)sK.push([jambW*0.5,jambW*0.5*p.wBraid*1.05+lerp(0.02,0.05,p.wBraid),bmatG]);if(p.wMono>0.03)sK.push([jambW*0.5,jambW*0.5*p.wMono+0.01,fmat]);sK.sort(function(u,v){return v[1]-u[1];});if(sK.length)hSichtStrang(HU,offsetFull(sK[0][0]),Math.min(sK[0][1],frameDepth*0.5),sK[0][2],0,23-nSicht);var sx=Infinity,sy0=baseY,sz=Infinity;if(p.wMason*p.mass>0.05){var sN=1+Math.round(p.wMason*2),sHh=0.12+0.32*p.mass;sx=Math.min(sx,(fullW+0.4)/2);sy0=Math.min(sy0,baseY-sN*sHh);sz=Math.min(sz,baseDepth/2);}if(p.wMono*p.mass>0.05){var sPh=0.2+0.3*p.mass;sx=Math.min(sx,(fullW+0.5)/2);sy0=Math.min(sy0,baseY-sPh);sz=Math.min(sz,(baseDepth+0.3)/2);}if(sx<Infinity)hKasten(HU,-sx,sy0,baseZ-sz,sx,baseY,baseZ+sz,fmat,"sicht");}
       return {gate:gate,D:D,leafL:leafL,leafR:leafR,leafLB:leafLB,leafRB:leafRB,rimMat:rimMat};
     }
 
@@ -1224,6 +1673,10 @@
         verkalkt: { seiten: [[2.61, 1.81, 2.6, 1.81], [2.61, 1.81, 2.6, 1.81]], oberkante: 7.35 },
         ruine: { seiten: [[5.78, 1.87, 4.18, 1.87], [5.29, 1.87, 4.18, 1.86]], oberkante: 6.81 },
         maurentor: { seiten: [[2.93, 1.75, 2.92, 1.75], [2.93, 1.75, 2.92, 1.75]], oberkante: 7.03 },
+        // w4-tore-teile: die drei Motiv-Tore, gemintet an ihrer L0 (die Leier mit Sockel und Horn, Vitruv mit dem Kreis, das Geweih)
+        lyra: { seiten: [[1.86, 0.35, 2.68, 0.15], [1.86, 0.35, 2.68, 0.15]], oberkante: 6.84 },
+        vitruv: { seiten: [[3.07, 0.12, 2.99, 0.13], [3.08, 0.12, 3.04, 0.14]], oberkante: 5.6 },
+        tiertor: { seiten: [[2.26, 0.28, 2.19, 0.95], [2.26, 0.28, 2.19, 0.95]], oberkante: 10.58 },
     };
 
     // GLUT_GESETZ — Lab+Host portal PointLight (·126). Same numbers as porta.js / _tickPortalLicht.

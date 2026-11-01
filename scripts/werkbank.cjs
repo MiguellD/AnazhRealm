@@ -712,7 +712,7 @@ function bandEinschwingen(k) {
     return (async () => {
         const st = r.state;
         const RUHIG = k.ruhig || 30;
-        // DIE VOLLE WELT: der Regler misst hier Takte mit 50 ms Pause (65 ms je Frame) und drosselte auf loadScale 0 —
+        // DIE VOLLE WELT: der Regler maß hier Takte mit 50 ms Pause (65 ms je Frame) und drosselte auf loadScale 0 —
         // je nach Vorgeschichte stand die Messung auf einer anderen Welt (Streu-Stufen, Laub-Radius). Die Decke geht hoch
         // (`perfTargetMs` 1000, wie `lauf --regler voll`), der PID wächst auf 1: das Band misst die volle Welt. Die
         // Werkbank setzt die Decke nach den Proben zurück.
@@ -732,7 +732,10 @@ function bandEinschwingen(k) {
             return { chunks: st.voxelChunks ? st.voxelChunks.size : 0, instanzen, ungebaut: __ungebaut(), loadScale: ls };
         };
         while (performance.now() < dl) {
-            __werkTakt();
+            // DER TAKT UND SEIN BILD (`__werkTakt`, wie der Takt des Orts in `/umstellen` seit 4f098fa6): bis 31.10. schlief das
+            // Band je Takt 50 ms — am Messort genesis (ferne.K2#2) trugen die 40 Takte des Einschwingens und 5 × 20 Takte zwischen
+            // den Proben 7 s Schlaf, nie das Werk
+            const bild = __werkTakt();
             takte++;
             // was die Welt noch baut — die EINE Liste (band-urteil `einschwingOffen`, mit der Dorf-Wache des Messorts dorf)
             o = __einschwingOffen(r);
@@ -742,7 +745,7 @@ function bandEinschwingen(k) {
             vor = s;
             ruhig = Object.keys(o).length ? 0 : ruhig + 1;
             if (takte >= 40 && ruhig >= RUHIG) break;
-            await sleep(50);
+            await bild;
         }
         return {
             eingeschwungen: ruhig >= RUHIG,
@@ -760,11 +763,7 @@ function bandProben(k) {
     return (async () => {
         const proben = [];
         for (let i = 0; i < (k.n || 6); i++) {
-            if (i)
-                for (let t = 0; t < (k.zwischen || 20); t++) {
-                    __werkTakt();
-                    await sleep(50);
-                }
+            if (i) for (let t = 0; t < (k.zwischen || 20); t++) await __werkTakt(); // ein Bild je Takt, wie das Einschwingen
             __buehne();
             try {
                 if (r.state.fernRing) r._tickFeldPass(r.state.fernRing);
@@ -856,7 +855,9 @@ async function starte() {
             }));
         for (const i of [AUSGABE_INSTALL, LL.LINSEN_INSTALL, ZAEHLER_INSTALL, BAND.EINSCHWING_INSTALL, FLUSS_INSTALL, DIAET.DIAET_INSTALL, SICHT.SICHT_INSTALL])
             await page.evaluate(i);
-        // DER TAKT DER WERKBANK: die Bühne, der Ort und ein Takt des Loops (ein Wurf des Loops bricht die Probe nicht); dazu die
+        // DER TAKT DER WERKBANK: die Bühne, der Ort und ein Takt des Loops (ein Wurf des Loops bricht die Probe nicht), sein
+        // Versprechen ist das nächste Bild — wer im Schritt der Seite taktet (Ort, Band, Albedo-Tafel), wartet darauf, nie an der
+        // Wanduhr (Lehre 26; bis 31.10. schliefen Band und Tafel je Takt 50 ms, der Ort trug denselben Takt als Zwilling); dazu die
         // ungebauten Werke in der Mesh-Zone (`architectureCullingRadius` um den Spieler)
         await page.evaluate(() => {
             // DER LOOP der Werkbank: an (der Spiel-Loop über rAF) oder aus (die Welt steht zwischen den Befehlen)
@@ -867,6 +868,7 @@ async function starte() {
                     if (window.__ortSchritt) __ortSchritt();
                     r._gameLoopTick(performance.now());
                 } catch {}
+                return new Promise(requestAnimationFrame);
             };
             window.__ungebaut = (r = anazhRealm, st = r.state, pm = st.playerMesh.position) =>
                 (st.architectures || []).filter(
@@ -1010,17 +1012,12 @@ async function starte() {
                 const ziel = stell && stell.ring ? stell.ring : Math.min(12, st.chunkRingRadius || 4);
                 const decke = st.perfTargetMs;
                 st.perfTargetMs = 1000;
-                // DER TAKT DES ORTS geht im Schritt der Seite (`__seitenTakt`: ein Bild, dann der Takt) — bis 30.10. schlief er 50 ms je Takt:
-                // an der Radeon (Mess-Sitzung, Ort wiese) waren 27–30 s von 40–48 s Ring-Zeit dieser Schlaf (537–607 Takte × 50 ms), nicht
-                // das Streaming; die Ankunft des Spielers geht im Bild-Takt
-                const takt = async () => {
+                // DER TAKT DES ORTS geht im Schritt der Seite (der Takt der Werkbank und sein Bild, `__werkTakt`; bis 31.10. sein eigener
+                // Zwilling) — bis 30.10. schlief er 50 ms je Takt: an der Radeon (Mess-Sitzung, Ort wiese) waren 27–30 s von 40–48 s
+                // Ring-Zeit dieser Schlaf (537–607 Takte × 50 ms), nicht das Streaming; die Ankunft des Spielers geht im Bild-Takt
+                const takt = () => {
                     if (st._activeRingRadius < ziel) st._activeRingRadius = ziel;
-                    try {
-                        __buehne();
-                        __ortSchritt();
-                        r._gameLoopTick(performance.now());
-                    } catch {}
-                    await new Promise((ok) => requestAnimationFrame(ok));
+                    return __werkTakt();
                 };
                 let takte;
                 try {
@@ -1234,17 +1231,17 @@ async function starte() {
                     if (s.mesh?.userData?.bauSatz && !s.spec.nurWurf)
                         bauSaetze.set(s.mesh, { art, s });
                 // DIE KARTE IN ARTEN (w4-laub-karte): der EINE Karten-Atlas zeichnet jede Art aus EINER Gruppe
-                // (`IMPOSTOR_ATLAS_GRUPPE`) — die Teilung führt jede Art beim Namen ihrer Zelle (`fimp:<art>:L2`, die Schicht der
-                // Instanz in aKarte.x), nie die Gruppe: das Urteil der schlechtesten Teil-Klasse sieht die Art, ein Mittel über
+                // (`IMPOSTOR_ATLAS_GRUPPE`) — die Teilung führt jede Art beim Namen ihrer Zelle (`_instanzKlasse`: `fimp:<art>:L2`,
+                // die Schicht der Instanz in aKarte.x), nie die Gruppe: das Urteil der schlechtesten Teil-Klasse sieht die Art, ein Mittel über
                 // den Atlas verbarg sie. Eine Art verbirgt sich, indem ihre Instanzen für den Schuss unter die Welt ziehen (die
                 // Matrix, gemerkt an der Slot-Marke `slotRef` — die Wahl je Pass ordnet die Slots um), und kehrt danach an ihre
                 // Marke zurück.
                 const kg = r.state.archInstanceGroups?.get(r.constructor.IMPOSTOR_ATLAS_GRUPPE),
                     arten = new Map();
                 if (kg?.mesh?.geometry.attributes.aKarte) {
-                    const art = new Map([...r._kartenAtlas.zellen.values()].map((z) => [z.idx, z.preset]));
+                    const art = new Map([...r._kartenAtlas.zellen.values()].map((z) => [z.idx, r.constructor._instanzKlasse(z.key)]));
                     for (let i = 0; i < kg.liveCount; i++) {
-                        const kl = `fimp:${art.get(Math.round(kg.mesh.geometry.attributes.aKarte.array[i * 4]))}:L2`;
+                        const kl = art.get(Math.round(kg.mesh.geometry.attributes.aKarte.array[i * 4]));
                         arten.set(kl, [...(arten.get(kl) || []), kg.slotRef[i]]);
                     }
                 }
@@ -1429,12 +1426,15 @@ async function starte() {
                     };
                     // DIE MASSE, DIE DAS URTEIL LIEST (w4-proben-tempo2, 31.10.): `nurPixel` zählt je Klasse nur ihre Pixel — ein
                     // Aufrufer, der nur sie liest (das Jahr der Vegetation, die Wiese, die Herde am Hang), trug je Schuss die ganzen Maße
-                    // (Zweiton, Milch, Kante, Spiegel, Mikro; Radeon 2134b209 1,1–3,6 s je Schuss, an den Kronen 4,7 von 20,5 s)
+                    // (Zweiton, Milch, Kante, Spiegel, Mikro; Radeon 2134b209 1,1–3,6 s je Schuss, an den Kronen 4,7 von 20,5 s). Die Pixel
+                    // zählt der Gang, der die Maske legt (w4-stationen-schnell-a: ein `filter(Boolean)` je Klasse dahinter trug vier Klassen
+                    // der Wiese 145 ms je Schuss auf 1920 × 1080)
                     namen.forEach((n, j) => {
                         const m = new Uint8Array(W * H);
-                        for (let p = 0; p < W * H; p++) m[p] = teil[p] === j + 1 ? 1 : 0;
+                        let px = 0;
+                        for (let p = 0; p < W * H; p++) px += m[p] = teil[p] === j + 1 ? 1 : 0;
                         const mb = /^portal-membran$/.test(n);
-                        const ms = k.nurPixel ? { pixel: m.filter(Boolean).length } : __klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null, spiegel);
+                        const ms = k.nurPixel ? { pixel: px } : __klassenMasse(u8, m, W, H, aussen, mb ? ohneFilm : null, spiegel);
                         if (mb && ms.pixel) ms.ziel = zielTreue(m);
                         if (ms.pixel) klassen[n] = Object.assign({ objekte: teile.get(n).length }, ms);
                     });
@@ -1573,6 +1573,24 @@ async function starte() {
                             for (let b = 0; b < baender.length - 1; b++) if (d < baender[b + 1]) return b;
                             return -1;
                         };
+                        // DER MARSCH JE POSE EINMAL (w4-stationen-schnell-a): der Treffer je 2×2-Block hängt nur an der Kamera und am
+                        // gezeichneten Boden, nie an Saison, Uhr oder Klasse — ein Schuss an derselben Kamera über demselben Boden (das
+                        // Jahr der Vegetation: drei Jahreszeiten an EINER Pose, vegetation.K5) liest den Treffer des vorigen
+                        // (`window.__abstandSpeicher`); ein Block, den der vorige nicht marschierte, marschiert jetzt. Die Matrizen der
+                        // Kamera und der Abdruck des Bodens (je Chunk Eintrag, Karte, Ziel-Karte, Stufe, Geometrie und der Stand ihrer
+                        // Lage; das Auge der Stufen, der Geomorph, die vorläufigen Säulen — alles, was `_bodenSichtAt` liest) fallen
+                        // den Speicher bei jeder Änderung. Bis dahin rief jeder Wiesen-Schuss `_bodenSichtAt` ~20,8 Mio.-mal (≈ 1 µs je
+                        // Ruf, die Mess-Wiese in der Null-Welt 20,5 s; GTX b4bcf19c je Wiesen-Schuss 30 s, die Krone 6–8 s)
+                        const abdruck = () => {
+                            const a = [...cam.matrixWorld.elements, ...cam.projectionMatrix.elements, W, H, st.stufeAuge?.x, st.stufeAuge?.z];
+                            for (const e of st.voxelChunks.values()) a.push(e, e.surfMap, e.surfMapZiel, e.lod, e.mesh, e.mesh?.geometry.userData.naht?.lage?.stand);
+                            for (const s of st.saeulenVorlaeufig?.values() || []) a.push(s.x, s.z, s.rr, s.krone);
+                            return a.concat(st.atmoUniforms?.geomorph?.value);
+                        };
+                        let speicher = window.__abstandSpeicher;
+                        const vor = abdruck();
+                        if (!(speicher?.abdruck?.length === vor.length && vor.every((x, i) => x === speicher.abdruck[i])))
+                            speicher = window.__abstandSpeicher = { treffer: new Float64Array(W * H).fill(NaN) };
                         for (let y0 = 0; y0 < H; y0 += 2)
                             for (let x0 = 0; x0 < W; x0 += 2) {
                                 let jemand = false;
@@ -1588,25 +1606,30 @@ async function starte() {
                                     .normalize();
                                 if (v.y >= -1e-4) continue;
                                 // der Strahl bis zum gezeichneten Boden: Schritte wachsen mit dem Abstand, dann halbiert
-                                let t0 = 0,
-                                    t = 0.2,
+                                const blk = y0 * W + x0;
+                                let hit = speicher.treffer[blk];
+                                if (Number.isNaN(hit)) {
+                                    let t0 = 0,
+                                        t = 0.2;
                                     hit = -1;
-                                while (t < baender[baender.length - 1]) {
-                                    const gy = r._bodenSichtAt(pos.x + v.x * t, pos.z + v.z * t);
-                                    if (gy != null && pos.y + v.y * t <= gy) {
-                                        let a = t0,
-                                            b = t;
-                                        for (let it = 0; it < 8; it++) {
-                                            const m2 = (a + b) / 2;
-                                            const g2 = r._bodenSichtAt(pos.x + v.x * m2, pos.z + v.z * m2);
-                                            if (g2 != null && pos.y + v.y * m2 <= g2) b = m2;
-                                            else a = m2;
+                                    while (t < baender[baender.length - 1]) {
+                                        const gy = r._bodenSichtAt(pos.x + v.x * t, pos.z + v.z * t);
+                                        if (gy != null && pos.y + v.y * t <= gy) {
+                                            let a = t0,
+                                                b = t;
+                                            for (let it = 0; it < 8; it++) {
+                                                const m2 = (a + b) / 2;
+                                                const g2 = r._bodenSichtAt(pos.x + v.x * m2, pos.z + v.z * m2);
+                                                if (g2 != null && pos.y + v.y * m2 <= g2) b = m2;
+                                                else a = m2;
+                                            }
+                                            hit = b;
+                                            break;
                                         }
-                                        hit = b;
-                                        break;
+                                        t0 = t;
+                                        t += Math.max(0.05, 0.04 * t);
                                     }
-                                    t0 = t;
-                                    t += Math.max(0.05, 0.04 * t);
+                                    speicher.treffer[blk] = hit;
                                 }
                                 if (hit < 0) continue;
                                 const d = Math.hypot(v.x * hit, v.z * hit);
@@ -1625,6 +1648,9 @@ async function starte() {
                                     cosN[bi]++;
                                 }
                             }
+                        // der Abdruck NACH dem Marsch: was der Leser unterwegs anlegt (die Ziel-Karte eines Chunks im Geomorph), trägt der
+                        // nächste Schuss schon — derselbe Boden
+                        speicher.abdruck = abdruck();
                         abstand = {
                             baender,
                             ring,
@@ -2282,15 +2308,15 @@ async function starte() {
                     // DIE WELT-SEITE DER ALBEDO-TAFEL: dieselbe Linse, je Tafel-Zeile Exemplar · Klasse · Stoff.
                     const t = AT.ladeTafel();
                     // DAS AUGE DER STUFE (`exemplar.stufe`, K63-n7, S8) wählt die Stufe JEDES Exemplars neu — jede solche Zeile misst in ihrem eigenen Gang NACH
-                    // den übrigen, die Karte der Eichung liest der erste Gang
+                    // den übrigen, die Karte der Eichung liest der erste Gang — nur er schießt sie (`eichen`)
                     // DIE UHR-SPALTEN (`uhren`, material.K3 Staffel 2): jede Stufen-Zeile misst zu jeder Uhr der Tafel — die erste ist
                     // die Bühne (Mittag), jede weitere steht als `<id>@<uhr>`
                     const nahZ = t.zeilen.filter((z) => Number.isInteger(z.welt.exemplar.stufe)),
                         liste = [];
                     for (const uhr of t.uhren)
                         for (const zeilen of [...(uhr === 0.5 ? [t.zeilen.filter((z) => !nahZ.includes(z))] : []), ...nahZ.map((z) => [z])])
-                            for (const e of await seite("__albedoSicht", { zeilen, w: 640, h: 400, uhr }))
-                                if (e.name !== "graukarte" || zeilen.length > 1) liste.push(uhr === 0.5 ? e : Object.assign(e, { id: e.id + "@" + uhr }));
+                            for (const e of await seite("__albedoSicht", { zeilen, w: 640, h: 400, uhr, eichen: zeilen.length > 1 }))
+                                liste.push(uhr === 0.5 ? e : Object.assign(e, { id: e.id + "@" + uhr }));
                     const ordner = path.resolve(b.ordner || ablage("albedo-tafel"));
                     fs.mkdirSync(ordner, { recursive: true });
                     const welt = {};

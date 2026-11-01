@@ -1281,7 +1281,9 @@ class AnazhRealm_stoff_karte {
             while (n < Math.max(at.n, 1)) n = Math.max(32, n * 2);
             const a = new Array(n).fill(0);
             for (let i = 0; i < alt.length; i++) a[i] = alt[i];
-            at.nadelU = (T || THREE.TSL).uniformArray(a, "float");
+            // DER FESTE NAME (w4-b-knoten, Lehre 23): ohne ihn schreibt r184 `NodeBuffer_<Knoten-id>` ins WGSL — die Bytes der
+            // Karten-Arena wanderten mit jeder Änderung der Bau-Reihenfolge (headless kalt 01.11.: NodeBuffer_189313 → _198261)
+            at.nadelU = (T || THREE.TSL).uniformArray(a, "float").setName("karteNadel");
             if (at.mat) at.mat.needsUpdate = true;
         }
         if (z) {

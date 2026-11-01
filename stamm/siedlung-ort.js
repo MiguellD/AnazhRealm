@@ -2788,8 +2788,15 @@ class AnazhRealm_siedlung_ort {
         if (!pm || !this._dorfTaktLebt()) return;
         if (this._genesisOrtT && currentTime - this._genesisOrtT < 1000) return;
         this._genesisOrtT = currentTime; // Instanz-Feld (die _editSaveTimer-Klasse: nicht serialisiert)
-        this._genesisPortalRing(pm.position);
-        this._portalApproachPrefetch(pm.position);
+        this._genesisOrt(pm.position);
+    }
+    // DER GENESIS-ORT, EIN Glied: was der Ort je Takt setzt — der Spiel-Takt (`_tickGenesisOrt`) und das Instrument
+    // (haushalt.json genesis `ortTakt`, werkbank `__ortSchritt`) rufen dasselbe Glied, beide Seiten eines Platz-ABAB tragen
+    // denselben Namen. Heute der Ring der Kern-Portale, dann die Vorschauen bei Tor-Nähe (die Reihenfolge trägt: die Vorschau
+    // sucht das Tor, das der Ring stellt).
+    _genesisOrt(playerPos) {
+        this._genesisPortalRing(playerPos);
+        this._portalApproachPrefetch(playerPos);
     }
 
     // DER DORF-TAKT LEBT (Gate-Treue): headless ruht der Auto-Zug, der Hook `__anazhAutoSettlement` führt — EIN Urteil für

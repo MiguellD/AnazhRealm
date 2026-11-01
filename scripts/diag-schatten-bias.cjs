@@ -628,8 +628,7 @@ async function probe(cfg) {
             kamSetzen(k);
             biasAnwenden();
             r._schattenAlleNeu();
-            if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-            r._loopRender();
+            window.__loopBild();
             await sleep(50);
             if (i >= 5 && (!E || E.offen.size === 0)) break;
         }

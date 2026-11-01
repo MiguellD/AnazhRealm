@@ -788,10 +788,7 @@ function ausgabeAufnahme(W, H, warm, opt) {
             // im Vendor die Animations-Schleife weiter. Bei ruhendem Loop schaltet die Aufnahme ihn selbst —
             // sonst überspringt der gezählte Frame die Szene (gemessen: dc=1, Dreiecke=1, nur das Quad).
             // Der Frame zeichnet zur Bild-Uhr (A9; unter der Bühne steht sie).
-            const frame = () => {
-                if (rend._nodes && rend._nodes.nodeFrame) rend._nodes.nodeFrame.update();
-                r._loopRender();
-            };
+            const frame = () => window.__loopBild();
             // Die NAH-SÄTZE folgen der Kamera (Wiese und Streu, die Kachel-Ringe im scatterDeco-Takt). Bei ruhendem
             // Loop standen die Ringe noch um die VORIGE Kamera — die Aufnahme schwingt sie für diese ein (Kachel um
             // Kachel, bis keine mehr fehlt; A9-n2: die Streu trug die Armlänge des vorigen Schusses).
@@ -847,19 +844,9 @@ function ausgabeAufnahme(W, H, warm, opt) {
                 // die Erst-Zeichnung vor dem Schuss: offen 0 (sonst brach die Aufnahme oben ab) und die Wartezeit
                 erst,
             };
-            const px = await rend.readRenderTargetPixelsAsync(rt, 0, 0, BW, BH);
+            // die EINE Ziel-Lesung (welt-boot): das Polster der 256-Byte-Zeilen fällt dort
+            const voll = await window.__zielLesen(rt, BW, BH);
             const ms = performance.now() - t0;
-            // WebGPU kopiert Zeilen auf 256 Byte ausgerichtet (bytesPerRow), r184 reicht das Polster
-            // durch: bei W·4 ∤ 256 (z. B. 480 oder 160 px) lag jede Zeile versetzt — gestreifte Bilder,
-            // Mittel über Polster-Nullen. Hier fällt es.
-            const roh = px instanceof Uint8Array ? px : new Uint8Array(px.buffer || px);
-            const zeile = BW * 4;
-            const schritt = roh.length > zeile * BH ? Math.ceil(zeile / 256) * 256 : zeile;
-            let voll = roh;
-            if (schritt !== zeile) {
-                voll = new Uint8Array(zeile * BH);
-                for (let y = 0; y < BH; y++) voll.set(roh.subarray(y * schritt, y * schritt + zeile), y * zeile);
-            }
             if (BW === W && BH === H) return { u8: voll, info, ms, abnahme: abnahme(voll, W, H) };
             // Flächen-Mittel: jedes Ziel-Pixel mittelt die Canvas-Pixel, die es überdeckt (Box-Filter).
             const u8 = new Uint8Array(W * H * 4);
