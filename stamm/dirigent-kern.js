@@ -1853,6 +1853,8 @@ AnazhRealm.SYNC_KETTE = [
     "_fadenUmgangen",
     "_syncBauen",
     "_bodenKarteNaht",
+    "_bodenNaht",
+    "_chunkSatzEin",
     "_buildVoxelChunkData",
     "_acquireVoxelChunkBuild",
     "_rebuildVoxelChunk",

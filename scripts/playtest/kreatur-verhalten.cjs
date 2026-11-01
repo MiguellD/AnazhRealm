@@ -1351,6 +1351,11 @@ async function checkBandTierSeparation({ page, check }) {
     
         const saveMax = s.maxCreatures;
         s.maxCreatures = Math.max(saveMax || 0, s.creatures.length + 4);
+        // Test-Isolation (die Bänder bild und feld-leben ebenso): die Bühne steht frei von der FURCHT DES ORTS (Ökologie K3,
+        // `_kreaturFurchtOrt`) — ein Abdruck, den die Bänder davor ins emotionField legten, schreckte das Kitz der Leine
+        // (w4-b-boden3: Flucht von der Zelle −88|8, 12 m neben der Bühne, „Anker nicht initialisiert"); gemessen wird die Größe
+        // und der Mut, nie der Ort.
+        s.emotionField?.clear();
         const spawn = (spot, soul, bodySize) =>
             r.spawnCreatureAt(spot.x, spot.y, spot.z, "happy", soul, { precise: true, bodySize });
         const cleanup = (list) => list.forEach((c) => c && r.removeCreature(c));
