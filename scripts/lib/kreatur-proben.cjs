@@ -69,6 +69,11 @@ async function kreaturProben(r, T, opts) {
         s.creatureAnimationTime = 100;
         r._creatureAiFrame = 0;
         r._faunaStroeme = null;
+        // DIE NAMEN DER BÜHNE: ihre Tiere zählen ihre netId ab derselben Marke, jenseits jedes Tiers der Welt — gleich, wie viele
+        // die Welt vor der Bühne gebar. Die Identität trägt die Phase ihres Tages (der erste Ruhe-Pegel aus dem Hash der netId,
+        // `_kreaturTaetigkeit`): bis hierher erbte sie den Zähler des Boots, die Ankunft des Plans gebar 10 Tiere statt 8, und
+        // das Rotwild des Tages-Budgets zog 0,079 statt 0,081 (an den Marken 1000 · 3000 · 5000: 0,111 · 0,102 · 0,093)
+        s._creatureNetSeq = 1e6;
         pm.copy(P0);
         kamera(0, -1);
         try {
@@ -135,11 +140,18 @@ async function kreaturProben(r, T, opts) {
             }
         return false;
     };
+    // DAS LAND DER WILDNIS im Umkreis R: Land und kein Grundriss (`_imGrundriss`: Haus, Bau, Weg eines Dorfs und die Flächen des
+    // Genesis-Orts — Kern, Ring, Mall, Allee, Wiese, Ufer, die Bühnen), an der Mitte und auf zwei Kreisen je acht Orte — dort wirft
+    // das Feld (`_kreaturGrundFrei`: kein Wurf eines Verbands auf einer Fläche des Plans). Bis Pflicht F trug die Ankunft eine
+    // Scheibe von 6,5 m, die Wildnis begann am Spieler; seit dem Plan liegt 0/70 auf der Mall (herde: 1 Glied von 5) und der
+    // Jagd-Kreis über Wiese, Allee und Ufer (rudel 28/60 Risse auf dem Rasen).
     const imUmkreisLand = (x, z, R) => {
+        if (r._imGrundriss(x, z)) return false;
         for (const f of [0.5, 1])
             for (let q = 0; q < 8; q++) {
                 const a = (q / 8) * TAU;
-                if (!r._landAt(x + Math.cos(a) * R * f, z + Math.sin(a) * R * f)) return false;
+                const [px, pz] = [x + Math.cos(a) * R * f, z + Math.sin(a) * R * f];
+                if (!r._landAt(px, pz) || r._imGrundriss(px, pz)) return false;
             }
         return true;
     };
@@ -156,8 +168,8 @@ async function kreaturProben(r, T, opts) {
         }
         return null;
     };
-    // Ein Ort auf Land ohne Hülle und ohne Wasser im Umkreis R (an einer Wand gleitet ein Leib längs der Box-Kante, im
-    // Wasser schwimmt er ans Ufer — das misst die Hindernis- bzw. Wasser-Probe, nicht die Richtung der Jagd)
+    // Ein Ort auf dem Land der Wildnis ohne Hülle und ohne Wasser im Umkreis R (an einer Wand gleitet ein Leib längs der
+    // Box-Kante, im Wasser schwimmt er ans Ufer — das misst die Hindernis- bzw. Wasser-Probe, nicht die Richtung der Jagd)
     const frei = (dx, dz, R) =>
         spirale(dx, dz, 40, 8, (x, z) => {
             const o = r._landAt(x, z) && imUmkreisLand(x, z, R) && neben(x, z);
@@ -954,7 +966,9 @@ async function kreaturProben(r, T, opts) {
             restore.push(() => (A._furchtGesetzMemo = FG));
         }
         const VH = A._verhaltenGesetz().herde;
-        const heim = frei(0, 70, 40);
+        // Täter (Selbsttest): die Herde am alten Ort ohne die Wildnis-Prüfung — 0/70 liegt auf der Mall des Genesis-Orts, der
+        // Wurf trägt dort nur seinen Erstgeborenen
+        const heim = taeter === "herde-park" ? neben(P0.x, P0.z + 70) : frei(0, 70, 40);
         if (!heim) throw new Error("kein freies Land für die Herde (frei(0, 70, 40))");
         const seq0 = s._creatureNetSeq || 0;
         const lauf = (art) => {
@@ -3138,10 +3152,13 @@ async function kreaturProben(r, T, opts) {
         const laufen = (n) => {
             for (let i = 0; i < n; i++) bildTakt(1 / 60);
         };
+        // die 40 dazu hinter den ersten 10 (30–55 m): die Leiber der 50 sind DIESELBEN wie die der 10 — mischten sie sich unter
+        // sie, trügen andere Tiere in anderem Abstand den Leib, und deren Fell (`_fellBildschirmGesetz`, die Strähnen am Schirm)
+        // zählte als Kopfzahl (an der Ankunft des Plans: 10 Tiere 31 Leib-Befehle, ein Wolf 26 m fern ohne Strähnen; 50 Tiere 32)
         ring(10, 15, 30, 1);
         laufen(240);
         const B10 = befehle();
-        ring(40, 15, 55, 101);
+        ring(40, 30, 55, 101);
         laufen(240);
         const B50 = befehle();
         // DIE KOSTEN AN SCHIRM UND ÄNDERUNG (Gebot 7): ein Takt ohne Zeit schreibt nur die Plätze der Satz-Tiere, die sich
@@ -3774,6 +3791,7 @@ const TAETER = {
         ["herde-alarm", /Alarm-Kette reißt: der letzte von 5 Flüchtern läuft [1-9]/],
         ["herde-fluchtweg", /Fluchtweg \d\.\d m/],
         ["herde-punkt", /Verband klumpt: das engste Paar 0 \/ 0 .+ und .+ auf 0 nach/],
+        ["herde-park", /Probe vakuös: Glieder 1 \/ 1 /],
     ],
     schwarm: [
         ["schwarm-verband", /Schwarm zerfällt/],
