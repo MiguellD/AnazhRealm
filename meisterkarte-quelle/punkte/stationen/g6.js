@@ -907,7 +907,7 @@ const K3_PFAD = [
 // DIE ANKUNFT VON AUSSEN (Karte ankunft-aussen): die Kalt- und die Zweit-Zeile von diag-boot-stage — t(Kontrolle) ist die Prozess-Uhr
 // ab Navigation, als die von außen gehaltene Taste W den Leib um ≥ 0,1 m trug (nie `_weltbildDa`); was sie liest. Seit 29.10. in der
 // Sitzung: die EINE Probe der Ankunft (stationen/sitzung-seite.js `probeAnkunft`, Zwilling von pipeline.K4#1/#2).
-const { ANKUNFT_PROBE, ANKUNFT_AUSNAHME } = require("./sitzung-seite.js");
+const { probeBefehl, probeAnkunft } = require("./sitzung-seite.js");
 const ANKUNFT_PFAD = [
     "index.html",
     "stamm/dirigent-*.js",
@@ -923,6 +923,128 @@ const ANKUNFT_PFAD = [
 const HW = (t) => {
     const ad = (/\[linse-gpu\][^\r\n]*/.exec(t) || [null])[0];
     return { ad: ad || "Adapter ungenannt", hw: !!ad && !/swiftshader|llvmpipe|lavapipe|software|subzero/i.test(ad) };
+};
+
+// ─────────── DER KALT-BOOT MIT SEINER SPUR (p3-stationen-g456: ankunft.K1 · ankunft.K5 in derselben Probe) ───────────
+// EIN kalter Boot, alle Leser: die Probe der Ankunft (sitzung-seite.js `probeAnkunft`, unverändert als Seiten-Funktion) fährt in
+// der Hülle `probeAnkunftKalt` — sie hängt an den ERSTEN kalten Lade-Ruf (`H.lade` mit kalt) die Kalt-Probe der Linse des Spiels
+// (diag-boot-stage `KALT_PROBE`: der LongTask-Beobachter ab dem ersten Skript, die Marken `anazh-kalt`) und DIE EINE Spur der
+// Hänger-Familie (CDP-Tracing, CPU-Stichproben, wie `--kalt`), und schließt beide, als die gehaltene Taste W losließ (die Kontrolle
+// von außen: der erste `keyboard.up` nach dem kalten Laden). Gerechnet wird mit der Linse des Spiels (`ankunftsHalter`): belegt =
+// jede Stichprobe des Haupt-Fadens bis zur Kontrolle außer Leerlauf (auch Aufgaben unter 50 ms — das Schlupfloch der 49-ms-Stücke
+// bleibt zu), die längste Aufgabe aus den LongTasks vor ihr. Die Zeile „SPUR kalt {…}“ und j.spur tragen es; die Zweit-Boots und der
+// Kern-Wechsel danach laufen ohne Probe und ohne Spur. Bis p3 fuhren ankunft.K2#1 · K3#1 · pipeline.K4#1/#2 dieselbe Ankunft ohne
+// Spur — sie tragen jetzt diese Probe (EIN Lauf, sechs Zwillinge; der Deckel der Sitzung bleibt 10 s, die Eich-Fahrt nennt ihn neu).
+async function probeAnkunftKalt(H) {
+    const K = H.linse("scripts/diag-boot-stage.cjs", ["KALT_PROBE", "KALT_KLASSEN", "KALT_PFLANZEN"]);
+    const HL = require(H.path.resolve("scripts/lib/haenger-linse.cjs"));
+    const spur = { stand: "kein Kalt-Boot" };
+    let lauf = null;
+    const lade = H.lade;
+    // die Kontrolle: die Seiten-Uhr, als die Taste losließ, die LongTasks und Marken bis dahin, das Ende der Spur (ihre Daten reisen danach)
+    const kontrolle = async () => {
+        const L = lauf;
+        if (!L || L.kontrolle != null) return;
+        try {
+            L.kontrolle = await L.page.evaluate(() => performance.now());
+            L.seite = await L.page.evaluate(() => ({ lang: (window.__kalt || {}).lang || [], marken: (window.__kalt || {}).marken || [] }));
+            await L.cdp.send("Tracing.end");
+            L.ende = true;
+        } catch (e) {
+            spur.stand = "die Kontrolle brach die Spur: " + String(e.message).slice(0, 160);
+        }
+    };
+    const schliesse = async () => {
+        const L = lauf;
+        if (!L) return;
+        lauf = null;
+        L.page.keyboard.up = L.up;
+        try {
+            if (!L.ende) await L.cdp.send("Tracing.end").catch(() => {});
+            await H.binnen(L.fertig, 20000);
+            await L.page.removeScriptToEvaluateOnNewDocument(L.skript.identifier).catch(() => {});
+            if (L.kontrolle == null || !L.seite) {
+                if (spur.stand === "läuft") spur.stand = "keine Kontrolle nach dem kalten Laden";
+                return;
+            }
+            const vor = L.seite.lang.filter(([a]) => a < L.kontrolle);
+            const a = HL.ankunftsHalter(HL.spurProfil(L.ev, "anazh-kalt"), {
+                lang: L.seite.lang,
+                marken: L.seite.marken,
+                bis: L.kontrolle,
+                meilensteine: { Kontrolle: L.kontrolle },
+                klassen: K.KALT_KLASSEN,
+                familie: K.KALT_PFLANZEN,
+            });
+            const blind = !a.profil || a.versatz == null || (a.verlust && a.verlust.rot);
+            Object.assign(spur, {
+                stand: blind ? "blind: " + (a.befunde[0] || "keine Stichproben") : "gemessen",
+                kontrolleMs: Math.round(L.kontrolle),
+                belegtMs: blind ? null : Math.round(a.belegtMs),
+                laengsteMs: vor.reduce((m, x) => Math.max(m, x[1]), 0),
+                langeN: vor.length,
+                langeMs: vor.reduce((s, x) => s + Math.min(x[1], L.kontrolle - x[0]), 0),
+                halter: a.befunde.slice(0, 3).map((x) => String(x).slice(0, 160)),
+            });
+        } catch (e) {
+            spur.stand = "die Spur brach: " + String(e.message).slice(0, 160);
+        } finally {
+            await L.cdp.detach().catch(() => {});
+            if (H.teil) H.teil.spur = spur;
+            console.log("SPUR kalt " + JSON.stringify(spur));
+        }
+    };
+    H.beimAbbau(schliesse);
+    H.lade = async (page, o = {}) => {
+        await schliesse();
+        if (!o.kalt || spur.stand !== "kein Kalt-Boot") return lade(page, o);
+        spur.stand = "läuft";
+        // nur in der Welt (nie in about:blank, das die kalte Ladung zuerst betritt): ihre Marken tragen den Faden der Spur
+        const skript = await page.evaluateOnNewDocument('if (/^https?:/.test(location.protocol)) (' + String(K.KALT_PROBE) + ")();");
+        const cdp = await page.target().createCDPSession();
+        const ev = [];
+        cdp.on("Tracing.dataCollected", (e) => e.value.forEach((x) => ev.push(x)));
+        const fertig = new Promise((f) => cdp.once("Tracing.tracingComplete", f));
+        const up = page.keyboard.up;
+        lauf = { page, cdp, ev, skript, fertig, up, kontrolle: null };
+        page.keyboard.up = async function (...a) {
+            const r = await up.apply(this, a);
+            await kontrolle();
+            return r;
+        };
+        await cdp.send("Tracing.start", { traceConfig: { includedCategories: ["blink.user_timing", "disabled-by-default-v8.cpu_profiler"] } });
+        return lade(page, o);
+    };
+    const j = await H.seite.ankunft(H);
+    await schliesse();
+    j.spur = spur;
+    return j;
+}
+const ANKUNFT_KALT = { ...probeBefehl(probeAnkunftKalt, 90, { ankunft: probeAnkunft }), mutiert: true, sek: 10 };
+// die Spur des Kalt-Boots aus der Ausgabe EINES Laufs: j.spur, sonst die Zeile „SPUR kalt {…}“
+const spurVon = (j, lauf) => (j && j.spur) || jsonZeile(lauf.stdout, /^SPUR kalt \{/);
+// die Kontrolle kalt (ankunft.K1): t(Kontrolle) von außen zählt erst, wenn das Bild in ihr ganz ist (ankunft.K2: ≤ 2 % Lücke gegen
+// dieselbe Pose nach der Ruhe der Foundry, nichts offen im Bild, kein halbes Weltbild); sonst steht die Zeit beim Namen und ist ROT
+function kaltKontrolle(j, lauf) {
+    if (!j || !(j.tK > 0)) return { t: null, grund: "keine Kontrolle von außen (t(Kontrolle) " + (j ? j.tK : "—") + ", Exit " + lauf.exit + ")" };
+    if (!j.bild) return { t: null, grund: "kein Bild der Kontrolle" };
+    const ganz = j.bild.ruhe === true && j.bild.luecke <= 0.02 && (j.offen || []).length === 0 && !(j.ohne || []).length;
+    const z = "t(Kontrolle) kalt " + (j.tK / 1000).toFixed(2) + " s von außen (Eigenmeldung " + ((j.weltbildDa || 0) / 1000).toFixed(2) + " s), Bild " +
+        (100 * j.bild.luecke).toFixed(2) + " % Lücke " + (j.bild.ruhe ? "bis zur Ruhe" : "OHNE Ruhe der Foundry") + ", offen im Bild " +
+        ((j.offen || []).join(" · ") || "nichts") + ((j.ohne || []).length ? ", halbes Weltbild" : "");
+    return ganz ? { t: j.tK, zahl: z } : { t: null, grund: z + " — das Bild der Kontrolle ist nicht ganz (ankunft.K2), t zählt nicht" };
+}
+const ANKUNFT_KALT_PFAD = [...ANKUNFT_PFAD, "scripts/lib/haenger-linse.cjs", "scripts/lib/ausgabe-aufnahme.cjs", "save-server.js"];
+// die Roh-Ausgaben der Kalt-Stationen (die Schlupflöcher als Mutanten): j = das JSON der Probe, stdout die Adapter-Zeile
+const kaltRoh = (o) => {
+    const j = { tK: 4200, druecke: 3, weltbildDa: 3900, offen: [], ohne: [], warm: [], bild: { luecke: 0.01, ruheS: 3.1, ruhe: true },
+        spur: { stand: "gemessen", kontrolleMs: 4100, belegtMs: 3100, laengsteMs: 180, langeN: 9, langeMs: 1200, halter: [] } };
+    for (const [k, v] of Object.entries(o.j || {})) j[k] = v && typeof v === "object" && !Array.isArray(v) ? { ...j[k], ...v } : v;
+    return "[linse-gpu] " + (o.ad || "amd/rdna-3") + "\nSPUR kalt " + JSON.stringify(j.spur) + "\n@@JSON " + JSON.stringify(j);
+};
+const kaltJ = (lauf) => {
+    const z = String(lauf.stdout || "").split(/\r?\n/).find((l) => l.startsWith("@@JSON "));
+    return z ? JSON.parse(z.slice(7)) : null;
 };
 
 // ─────────────────── DAS PROFI-BAND IN DER SITZUNG (profiband K1–K5, PFLICHT E, Karte w3v-profiband) ───────────────────
@@ -1602,7 +1724,7 @@ module.exports = [
         // Bedarf im Bild in dem Moment (`_weltbildFehlt`, im Blick). Soll: ≤ 2 % und nichts offen an einem Gerät, die Ruhe erreicht
         // (ohne sie verglich die Lücke gegen eine halbe Welt — ROT beim Namen der Frist). Bis 29.10. ein eigener Browser mit 60 s
         // Uhr-Ruhe (8 min Soll). swiftshader (Cloud, ankunft-aussen 202b23be): 7,80 % Lücke, 54 Bäume und Bauten offen im Bild.
-        probe: { ...ANKUNFT_PROBE, mutiert: true,  sek: 10 },
+        probe: ANKUNFT_KALT,
         gpu: true,
         zeit: true,
         minuten: 1,
@@ -1629,7 +1751,7 @@ module.exports = [
         // warmen Browser (der Stand gesichert, die Seite neu), je t(Kontrolle) von außen. Soll: Median ≤ 5 s an einem Gerät. Bis 29.10.
         // ein Kalt-Boot und vier Wiederkehren, je ein frischer Browser-Prozess (12 min Soll) — die Wiederkehr ist jetzt die Seite neu
         // im warmen Prozess (sein Shader- und HTTP-Cache bleiben; ein frischer Prozess ist die Kälte des Session-Starts).
-        probe: { ...ANKUNFT_PROBE, mutiert: true,  sek: 10 },
+        probe: ANKUNFT_KALT,
         gpu: true,
         zeit: true,
         minuten: 1,
@@ -1643,6 +1765,98 @@ module.exports = [
         },
         pfad: [...ANKUNFT_PFAD, "stamm/speicher-*.js", "save-server.js"],
         quelle: "1 = warm ≤ 5 s an einem Gerät",
+    },
+    // ─────────────────────────────── Ankunft K1 · K5 (p3-stationen-g456, der Kalt-Boot mit Spur) ───────────────────────────────
+    // ankunft.K1: t = die Kontrolle von außen nach dem kalten Laden mit leerer Herkunft (IDB, Cache, Shader-Speicher, HTTP-Cache, die
+    // Stände des save-servers: Pflicht-OFFEN B) — und nur, wenn das Bild in ihr ganz ist (ankunft.K2, `kaltKontrolle`): ein früh
+    // fallender Ladeschirm über einem halben Bild ist ROT beim Namen, `_weltbildDa` wird nur genannt. EIN Kalt-Boot je Fahrt: die Staffel
+    // verlangt den Median aus ≥ 4 Boots je Gerät — der Lauf trägt einen (ehrlich offen: der Median aus ≥ 4 braucht vier Fahrten oder vier
+    // Ladungen in der Probe, die Fahrt ≤ 30 min trägt sie nicht). Staffel 1 („≤ 5 s an einem Gerät UND ≤ 10 s am anderen“) urteilt je
+    // Gerät nur seinen Lauf: beide Karten müssen grün sein (beide), die GTX (nvidia) trägt die 10 s, jede andere Karte die 5 s — strenger
+    // als die Staffel nur, wo die GTX die schnellere wäre.
+    {
+        kriterium: "ankunft.K1",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        beide: true,
+        probe: ANKUNFT_KALT,
+        gpu: true,
+        zeit: true,
+        minuten: 1,
+        urteil: (j, lauf) => {
+            j = j || kaltJ(lauf);
+            const { ad, hw } = HW(String(lauf.stdout || ""));
+            const soll = /nvidia/i.test(ad) ? 10000 : 5000;
+            const k = kaltKontrolle(j, lauf);
+            if (k.t == null) return { gruen: false, zahl: k.grund + " · " + ad };
+            return { gruen: hw && k.t <= soll, zahl: k.zahl + " (Soll ≤ " + soll / 1000 + " s an dieser Karte, ein Kalt-Boot) · " + ad };
+        },
+        proben: [
+            { name: "Radeon 4,2 s, das Bild ganz", stdout: kaltRoh({}), gruen: true },
+            { name: "GTX 8,9 s, das Bild ganz (die 10 s der GTX)", stdout: kaltRoh({ ad: "nvidia/pascal", j: { tK: 8900 } }), gruen: true },
+            { name: "Radeon 6,1 s (über den 5 s jeder anderen Karte)", stdout: kaltRoh({ j: { tK: 6100 } }), gruen: false },
+            { name: "der Ladeschirm fällt über einem halben Bild (7,8 % Lücke)", stdout: kaltRoh({ j: { bild: { luecke: 0.078 } } }), gruen: false },
+            { name: "die Eigenmeldung früh, die Taste trug den Leib nie", stdout: kaltRoh({ j: { tK: 0, weltbildDa: 1200 } }), gruen: false },
+            { name: "swiftshader", stdout: kaltRoh({ ad: "google/swiftshader" }), gruen: false },
+        ],
+        pfad: ANKUNFT_KALT_PFAD,
+        quelle: "1 = Median ≤ 5 s an einem Gerät UND ≤ 10 s am anderen",
+    },
+    {
+        kriterium: "ankunft.K1",
+        staffel: 2,
+        geraet: ["radeon", "gtx"],
+        probe: ANKUNFT_KALT,
+        gpu: true,
+        zeit: true,
+        minuten: 1,
+        urteil: (j, lauf) => {
+            j = j || kaltJ(lauf);
+            const { ad, hw } = HW(String(lauf.stdout || ""));
+            const k = kaltKontrolle(j, lauf);
+            if (k.t == null) return { gruen: false, zahl: k.grund + " · " + ad };
+            return { gruen: hw && k.t <= 5000, zahl: k.zahl + " (Soll ≤ 5 s, ein Kalt-Boot) · " + ad };
+        },
+        proben: [
+            { name: "4,2 s, das Bild ganz", stdout: kaltRoh({ ad: "nvidia/pascal" }), gruen: true },
+            { name: "GTX 8,9 s", stdout: kaltRoh({ ad: "nvidia/pascal", j: { tK: 8900 } }), gruen: false },
+        ],
+        pfad: ANKUNFT_KALT_PFAD,
+        quelle: "2 = ≤ 5 s an beiden",
+    },
+    // ankunft.K5: die Spur des Kalt-Boots bis zur Kontrolle (`probeAnkunftKalt`): belegt = jede Stichprobe des Haupt-Fadens außer
+    // Leerlauf (die Linse `ankunftsHalter`, Aufgaben unter 50 ms zählen mit), die längste LongTask vor der Kontrolle. Eine blinde Spur
+    // (keine Stichproben auf den Marken, Verlust über dem Soll der Linse) ist ROT beim Namen, nie still grün. Staffel 2 verlangt dazu die
+    // Antwort auf eine Kamera-Drehung im Lade-Bild — die Probe drückt W, nie die Maus (fehlt unten, beim Namen).
+    {
+        kriterium: "ankunft.K5",
+        staffel: 1,
+        geraet: ["radeon", "gtx"],
+        probe: ANKUNFT_KALT,
+        gpu: true,
+        zeit: true,
+        minuten: 1,
+        urteil: (j, lauf) => {
+            const s = spurVon(j || kaltJ(lauf), lauf);
+            const { ad, hw } = HW(String(lauf.stdout || ""));
+            if (!s) return { gruen: false, zahl: "keine Spur des Kalt-Boots (Exit " + lauf.exit + ") · " + ad };
+            if (s.stand !== "gemessen" || !(s.kontrolleMs > 0) || s.belegtMs == null) return { gruen: false, zahl: "die Spur misst nicht: " + s.stand + " · " + ad };
+            return {
+                gruen: hw && s.laengsteMs <= 250 && s.belegtMs <= 4000,
+                zahl:
+                    "längste Aufgabe " + s.laengsteMs + " ms (Soll ≤ 250) · Haupt-Faden belegt " + (s.belegtMs / 1000).toFixed(2) + " s bis zur Kontrolle (Soll ≤ 4; " +
+                    s.langeN + " LongTasks " + (s.langeMs / 1000).toFixed(2) + " s) · Kontrolle " + (s.kontrolleMs / 1000).toFixed(2) + " s Seiten-Uhr" +
+                    (s.halter && s.halter.length ? " · " + s.halter[0] : "") + " · " + ad,
+            };
+        },
+        proben: [
+            { name: "längste 180 ms, belegt 3,1 s", stdout: kaltRoh({}), gruen: true },
+            { name: "die Arbeit in 49-ms-Stücken: keine LongTask, belegt 4,6 s", stdout: kaltRoh({ j: { tK: 6200, spur: { kontrolleMs: 6100, laengsteMs: 0, langeN: 0, langeMs: 0, belegtMs: 4600 } } }), gruen: false },
+            { name: "eine Aufgabe 653 ms", stdout: kaltRoh({ j: { spur: { laengsteMs: 653 } } }), gruen: false },
+            { name: "die Spur ist blind", stdout: kaltRoh({ j: { spur: { stand: "blind: keine Stichproben auf den Marken der Kalt-Probe", belegtMs: null } } }), gruen: false },
+        ],
+        pfad: ANKUNFT_KALT_PFAD,
+        quelle: "1 = längste Haupt-Faden-Aufgabe ≤ 250 ms und blockierte Summe bis zur Kontrolle ≤ 4 s an einem Gerät",
     },
     // ─────────────────────────────── Streaming K3 (streaming-sprung) ───────────────────────────────
     {
@@ -2840,5 +3054,16 @@ module.exports = [
     },
 ];
 
+// die EINE Probe der Ankunft für ihre Zwillinge in stationen/g4.js (pipeline.K4#1/#2)
+module.exports.ANKUNFT_KALT = ANKUNFT_KALT;
+
 // Nicht fassbar: das Werkzeug fehlt. Je Eintrag der Grund beim Namen; diese Staffeln zählen 0, bis eine Linse sie misst.
-module.exports.fehlt = [];
+// DIE FAHRT (p3-stationen-g456, 01.11.): die Summe der Deckel steht Radeon 1 790 / GTX 1 785 von 1 800 s (FAHRT_MAX_S, samt Boot) —
+// eine neue Probe der Karte mit eigenem Lauf trägt sie nicht; was hier steht, braucht einen eigenen Lauf mit Sekunden, die die Fahrt
+// erst freigeben muss (die Eich-Fahrt des Koordinators), oder ein Werkzeug, das es nicht gibt.
+module.exports.fehlt = [
+    { kriterium: "ankunft.K4", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): am Spawn (`_genesisMitte`) der erste Blick nach der Kontrolle plus 4 Azimute, Ego und Third, je Klasse ein Schuss aus dem Ausgabe-Pfad mit Maske (`werkbank bild --klasse … --ist`) und das Urteil der Soll-Tafel (`sollTafelUrteil`) — 10 Posen × die Klassen im Bild, je Schuss 3–8 s (haar.K1#1: zwei Schüsse 35 s): ein eigener Lauf von ≥ 60 s, die Fahrt hat 10 s frei. Die Tafel trägt am Spawn 3 von 12 Klassen mit Zeile (tor-fern, tor-bunt, tor-ziel), vier sichtbare Klassen haben keine — das externe Soll neuer Zeilen fehlt" },
+    { kriterium: "ankunft.K5", staffel: 2, befehl: null, grund: "nicht gebaut (p3-stationen-g456): die Spur des Kalt-Boots (ankunft.K5#1) misst längste Aufgabe und belegte Zeit bis zur Kontrolle; die Staffel 2 verlangt dazu die Antwort auf eine Kamera-Drehung im Lade-Bild — die Probe der Ankunft hält nur W (die Kontrolle von außen), eine Maus-Drehung mit gemessener Antwort (Event-Timing, das Bild dreht) trägt sie nicht" },
+    { kriterium: "streaming.K1", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): 60 s Sprint und GT-vmax auf fester Bahn durch Wald und Dorf, je Bild die offenen Bedarfe im Sichtkegel bis 384 m und der bild-diff gegen das eingeschwungene Bild derselben Pose — ein Lauf von ≥ 60 s Fahrt plus Einschwingen, die Fahrt hat 10 s frei; es gibt keine Linse der Lücke in Fahrt (F5 fand der Schöpfer) und keine feste Bahn im Spiel-Baum (die Proben der Welt `fahrWelt`/`fahrWegenetz` fahren das Wegenetz, nicht aus dem Ring heraus)" },
+    { kriterium: "streaming.K2", staffel: 1, befehl: null, grund: "nicht gebaut (p3-stationen-g456): die Ereignis-Zählung „fertig in der verlangten Stufe“ gegen „tritt in den Sichtkegel“ je Ding braucht einen Haken an jeder Schlange (Boden `_voxelChunkLodFor`, Wuchs `_tickPendingVegSpawns`, Streu, Bauten, Foundry `_foundryRang`) — keine Liefer-Marke nennt die Stufe je Ding beim Eintritt, und der Spieler-Weg dazu ist dieselbe Fahrt wie streaming.K1 (≥ 60 s, die Fahrt hat 10 s frei)" },
+];
