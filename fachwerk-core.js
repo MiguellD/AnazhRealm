@@ -6541,11 +6541,12 @@
     }
     var GERAET_MASS = {
         // DIE DOPPELSCHAUKEL: zwei A-Böcke (Pfosten 0,12 m, je 0,85 m vor und hinter dem Balken am Boden), der Balken auf 2,4 m (0,14 m),
-        // je Sitz zwei Ketten (Gelenk 2,33 m — Unterkante des Balkens) zum Sitzbrett (Oberkante 0,45 m, 0,46 × 0,17 m), die Sitze bei
-        // x = ±0,6 (die Kette 1,88 m, der Abstand der Ketten 0,42 m), der Griff an der Kette 0,35 m über dem Sitz (die Hand unter der
+        // je Sitz zwei Ketten (Gelenk 2,33 m — Unterkante des Balkens) zum Sitzbrett (Oberkante 0,45 m, 0,50 × 0,17 m), die Sitze bei
+        // x = ±0,6 (die Kette 1,88 m, die Ketten an den Enden des Sitzes 0,52 m auseinander — bei 0,42 m lagen Flanke und Schulter
+        // des Sitzenden 1,2 cm in der Kette, w4-koerper-park), der Griff an der Kette 0,35 m über dem Sitz (die Hand unter der
         // Schulter, der Ellbogen gebeugt); der Querriegel jedes Bocks auf 1,0 m
         doppelschaukel: function () {
-            return { xB: 1.55, zF: 0.85, yB: 2.4, bB: 0.14, bP: 0.12, yG: 2.33, xS: [0.6, -0.6], kx: 0.21, yS: 0.45, sx: 0.46, sz: 0.17, sd: 0.04, yR: 1.0, griffH: 0.35, glied: 0.12 };
+            return { xB: 1.55, zF: 0.85, yB: 2.4, bB: 0.14, bP: 0.12, yG: 2.33, xS: [0.6, -0.6], kx: 0.26, yS: 0.45, sx: 0.5, sz: 0.17, sd: 0.04, yR: 1.0, griffH: 0.35, glied: 0.12 };
         },
         // DIE TURMRUTSCHE: das Podest 1,0 × 1,0 m auf 1,5 m (vier Pfosten bis 2,4 m, Geländer links und rechts auf 2,1 und 2,4 m), die
         // Sprossenleiter hinten (z = −0,5, Sprossen 0,3 · 0,6 · 0,9 · 1,2 m und die Haltesprossen 1,8 · 2,1 m), die Blechbahn vorn
@@ -6975,6 +6976,9 @@
     // DAS ANGEBOT DES GERÄTS (Rahmen des Werks, Meter; der Wirt dreht es mit der Lage des Werks): je Verb seine Anker — die Liste
     // liest der EINE Bewegungs-Takt des Leibs (koerper-core `leibPlan` · `leibVerbPose`), in der Welt wie im Labor
     var _geraetAngebotMemo = {};
+    // DIE GRIFFKANTE (w4-koerper-park): an der Kante eines Podests bzw. der Oberkante einer Wand liegt die Mitte der Hand [über, vor]
+    // der Kante (m) — die Hand greift über die Kante, ihre Fläche vor ihr, nie in der Platte
+    var GRIFF_KANTE = [0.02, 0.035];
     function geraetAngebot(id) {
         if (_geraetAngebotMemo[id]) return _geraetAngebotMemo[id];
         if (!GERAETE[id]) throw new Error("fachwerk geraetAngebot: kein Gerät " + id);
@@ -7009,6 +7013,8 @@
                 lh.push(holm(-m.b + 0.06, m.b - 0.06, m.sprossen[i], m.zL));
                 if (m.sprossen[i] < m.h) lt.push(holm(-m.b + 0.06, m.b - 0.06, m.sprossen[i] + 0.0175, m.zL));
             }
+            // die Kante des Podests über der Leiter ist ein Griff (die Hand liegt über ihr, vor ihr: zwischen 1,2 und 1,8 m fehlte ihr die Sprosse)
+            lh.push(holm(-m.b + 0.06, m.b - 0.06, m.h + GRIFF_KANTE[0], m.zL - GRIFF_KANTE[1]));
             A.push({ verb: "klettern", holme: lh, sprossen: lt, flaeche: [0, 0, m.zL], normale: [0, -1], quer: m.b - 0.06, boden: 0, oben: [0, m.h, -m.b + 0.25] });
             A.push({ verb: "rutschen", bahn: m.bahn.map(function (q) { return q.slice(); }), podest: m.h, schiene: m.wB + 0.01, schieneH: m.wH, boden: 0 });
         } else if (id === "sprossengeruest") {
@@ -7018,6 +7024,8 @@
                 gh.push(holm(-m.bx + 0.06, m.bx - 0.06, m.sprossen[i], m.bz));
                 if (m.sprossen[i] < m.h) gt.push(holm(-m.bx + 0.06, m.bx - 0.06, m.sprossen[i] + m.d / 2, m.bz));
             }
+            // die Kante des Podests ist ein Griff (zwischen der Sprosse auf 1,8 und der Haltesprosse auf 2,4 m)
+            gh.push(holm(-m.bx + 0.06, m.bx - 0.06, m.h + GRIFF_KANTE[0], m.bz + GRIFF_KANTE[1]));
             A.push({ verb: "klettern", holme: gh, sprossen: gt, flaeche: [0, 0, m.bz], normale: [0, 1], quer: m.bx - 0.06, boden: 0, oben: [0, m.h, m.bz - 0.3] });
         } else if (id === "balkenwippe") {
             // der Anschlag: das Ende des Hebels (Unterkante) auf dem Puffer
@@ -7035,7 +7043,8 @@
         } else if (id === "kletterwand") {
             var gr = [];
             for (i = 0; i < m.griffe.length; i++) gr.push([m.griffe[i][0], m.griffe[i][1] + m.gG / 2, m.griffe[i][2] + m.gG / 2]);
-            A.push({ verb: "klettern", griff: gr, tritt: gr, flaeche: [0, 0, m.d / 2], normale: [0, 1], quer: m.bx, boden: 0, oben: [0, m.h, -m.tP / 2] });
+            // die Oberkante der Wand ist ein Griff (über der obersten Reihe)
+            A.push({ verb: "klettern", griff: gr, tritt: gr, holme: [holm(-m.bx + 0.1, m.bx - 0.1, m.h + GRIFF_KANTE[0], m.d / 2 + GRIFF_KANTE[1])], flaeche: [0, 0, m.d / 2], normale: [0, 1], quer: m.bx, boden: 0, oben: [0, m.h, -m.tP / 2] });
         } else if (id === "hangelbahn") {
             var hs = [];
             var ht = [];
