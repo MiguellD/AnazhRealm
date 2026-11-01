@@ -332,3 +332,4 @@ a-spawn-gtx4 2 station sha=b895650c7dc2e303a3299ed17b04c6350d002437 lauf=a-spawn
 z118c-abab 3 abab A=b895650c7dc2e303a3299ed17b04c6350d002437 B=c351b31853a3c5439a73e62238f7d90e421c4050 zellen=w-ego,stadt
 takt-z118ca-gtx 1 punkte sha=c351b31853a3c5439a73e62238f7d90e421c4050 geraet=gtx nur=tiere.K1#2,tiere.K3#2,mensch.K1#1,mensch.K5#1,mensch.K4#1,haar.K2#1,vegetation.K1#1,licht.K2#2,material.K2#1,material.K1#1,lod.K1#1,licht.K3#1,studios.K2#2,studios.K3#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,spielgang.K3#1,fahrzeug.K2#2,profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K3#1,profiband.K5#1,speicher.K4#2
 takt-z118cb-gtx 1 punkte sha=c351b31853a3c5439a73e62238f7d90e421c4050 geraet=gtx nur=oekologie.K4#2,lod.K5#1,bauen.K1#2,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,klang.K4#1
+z119c-abab 3 abab A=c351b31853a3c5439a73e62238f7d90e421c4050 B=4b13478b5ca245925c8a2ca4fe700b33d4e72959 zellen=w-ego,stadt
