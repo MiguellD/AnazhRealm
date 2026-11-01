@@ -329,3 +329,4 @@ takt-z115a-gtx 1 punkte sha=b895650c7dc2e303a3299ed17b04c6350d002437 geraet=gtx 
 takt-z115b-gtx 1 punkte sha=b895650c7dc2e303a3299ed17b04c6350d002437 geraet=gtx nur=mensch.K5#1,haar.K2#1,material.K1#1,lod.K5#1,bauen.K1#2,spielgang.K3#1,fahrzeug.K2#1,ankunft.K2#1,ankunft.K3#1,klang.K4#1
 b-kalt-b895 2 station sha=b895650c7dc2e303a3299ed17b04c6350d002437 lauf=ankunft-kalt.sh
 a-spawn-gtx4 2 station sha=b895650c7dc2e303a3299ed17b04c6350d002437 lauf=a-spawn.sh
+z118c-abab 3 abab A=b895650c7dc2e303a3299ed17b04c6350d002437 B=c351b31853a3c5439a73e62238f7d90e421c4050 zellen=w-ego,stadt
