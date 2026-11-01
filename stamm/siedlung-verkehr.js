@@ -517,6 +517,7 @@ class AnazhRealm_siedlung_verkehr {
         const b = W.b;
         const g = b.leib;
         const e = W.entry;
+        this._bewohnerWecken(S, b); // ruhte er (die stehende Zahl schläft nach dem Weg des Auges), nimmt ihn der Takt auf
         b.amSteuer = true;
         [b.kreis, b.nah, b.weg, b.drehen, b.vx, b.vz, b.platz] = [false, false, null, null, 0, 0, false];
         this._bewohnerRasterLage(S, b);

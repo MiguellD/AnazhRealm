@@ -925,6 +925,12 @@ class AnazhRealm_siedlung_bewohner {
         BZ.rand = this._blickRand;
         BZ.licht = BZ.fr ? this._kreaturLicht() : null;
         const imBlick = (g) => !BZ.fr || !this._kreaturAusserBlick(g, BZ.fr, BZ.rand);
+        // DER WEG DES AUGES (die Wache der Stufe, `zahlSteht`): die Summe seiner Schritte von Takt zu Takt — sie ist nie
+        // kürzer als seine Verschiebung seit irgendeinem Takt (Dreiecks-Ungleichung; auch ein Sprung der Kamera, auch über
+        // Takte ohne Siedlung), darum kommt keine stehende Zahl dem Auge näher, als dieser Weg seit ihrer Prüfung wuchs
+        const AW = this._bewohnerAugeWeg || (this._bewohnerAugeWeg = { x: auge.x, z: auge.z, weg: 0 });
+        AW.weg += Math.hypot(auge.x - AW.x, auge.z - AW.z);
+        [AW.x, AW.z] = [auge.x, auge.z];
         // DER SPIELER IST EIN LEIB (mensch.K5, „Ausweichen ohne Berührung"): sein Lauf dieses Takts (`_spielerLageAlt`, der
         // Kreatur-Takt rechnet ihn vor diesem) und sein Weg `ausweichS` voraus (`voraus`) — jeder Bewohner weicht ihm wie einem
         // Gehenden mit Vorrang (`_bewohnerAusweichen`), wer steht, macht ihm Platz (`_bewohnerPlatz`); steht er (unter 0,2 m/s,
@@ -990,7 +996,7 @@ class AnazhRealm_siedlung_bewohner {
                 [S.aktivListe, S.aktiv, S.ruhend, S.zahlSteht, S.raster, S.taktUhr] = [S.liste, S.liste.slice(), [], [], new Map(), 0]; // prettier-ignore
                 [S.planI, S.ruhSoll] = [0, 0];
                 S.liste.forEach((b, i) => Object.assign(b, { nr: i, ruht: false, rk: undefined, uhr: 0, uhrAb: 0 }));
-                S.liste.forEach((b) => Object.assign(b, { zahl: false, inZahl: false, ruheDt: 0 })); // wach, ohne Stufe
+                S.liste.forEach((b) => Object.assign(b, { zahl: false, zahlE: null, ruheDt: 0 })); // wach, ohne Stufe
                 for (const b of S.liste) this._bewohnerRasterLage(S, b);
             }
             const koepfe = (S.koepfe = this._bewohnerKoepfe || (this._bewohnerKoepfe = []));
@@ -1002,17 +1008,36 @@ class AnazhRealm_siedlung_bewohner {
             for (const b of S.ruhend.splice(0, Math.floor(S.ruhSoll))) this._bewohnerWecken(S, b);
             S.ruhSoll -= Math.floor(S.ruhSoll);
             // DIE WACHE DER STUFE (stadt-takt3): die stehende Zahl (`zahlSteht`) wartet auf keinen Takt — der Plan, die Wache der
-            // Wege und dieser Blick wecken sie: je Takt, wer die Stufe der Zahl verlässt (`_bewohnerZahl` am Auge dieses Takts:
-            // diesseits `zahlM`, in den Blick oder seinen Wurf); wer schon wach wurde, fällt aus der Liste
+            // Wege und dieser Blick wecken sie: wer die Stufe der Zahl verlässt (`_bewohnerZahl` am Auge dieses Takts: diesseits
+            // `zahlM`, in den Blick oder seinen Wurf). Geprüft wird nach dem Weg des Auges (`AW`): wer jenseits `zahlM` steht,
+            // schläft, bis das Auge den Rest bis zur Grenze gegangen sein kann (`bis` seines Eintrags) — nur wer diesseits
+            // außer Blick ist, geht in jedem Takt durch den Blick. Der Eintrag gilt, solange er sein Zeichen trägt (`zahlE`:
+            // jeder Weckruf nimmt es, `_bewohnerWecken`). Bis hier ging jede stehende Zahl jeden Takt durch beide Proben (an
+            // stadt-voll 902 Zahlen, 974 Proben je Takt, ~1,4 ms)
             const ZS = S.zahlSteht || (S.zahlSteht = []);
             let zn = 0;
-            for (const b of ZS) {
-                b.inZahl = false;
-                if (!b.ruht || !b.zahl || !this._bewohnerZahlSteht(b, echt)) continue;
+            for (let i = 0; i < ZS.length; i++) {
+                const e = ZS[i];
+                const b = e.b;
+                if (b.zahlE !== e) continue; // geweckt (Plan, Wache, Platz, Verkehr): er fällt aus der Liste
+                if (e.bis > AW.weg) {
+                    ZS[zn++] = e; // das Auge kann ihm noch nicht über die Grenze gekommen sein
+                    continue;
+                }
+                if (!b.ruht || !b.zahl || !this._bewohnerZahlSteht(b, echt)) {
+                    b.zahlE = null;
+                    if (b.ruht) S.ruhend.push(b); // er steht nicht mehr still: sein Takt ist der der Ruhenden (`fernS`)
+                    continue;
+                }
                 const q = b.leib.position;
                 b.dA2 = (q.x - auge.x) ** 2 + (q.z - auge.z) ** 2;
-                if (!this._bewohnerZahl(b, 0, BZ)) this._bewohnerWecken(S, b);
-                else [ZS[zn++], b.inZahl] = [b, true];
+                if (!this._bewohnerZahl(b, 0, BZ)) {
+                    this._bewohnerWecken(S, b);
+                    continue;
+                }
+                const rest = Math.sqrt(b.dA2) - BW.zahlM;
+                e.bis = rest > 0 ? AW.weg + rest : -Infinity;
+                ZS[zn++] = e;
             }
             ZS.length = zn;
             // DIE WACHE (mensch.K3): wechselt eine Hülle im Rechteck der Wege, prüft jeder Gehende den Rest seines Wegs, und
@@ -1311,7 +1336,7 @@ class AnazhRealm_siedlung_bewohner {
                 // DIE STEHENDE ZAHL (`_bewohnerZahlSteht`) wartet in `zahlSteht` auf ihren Weckruf (die Wache der Stufe oben),
                 // jeder andere Ruhende im Takt `fernS`
                 if (!b.zahl || !this._bewohnerZahlSteht(b, echt)) S.ruhend.push(b);
-                else if (!b.inZahl) [b.inZahl] = [true, ZS.push(b)];
+                else if (!b.zahlE) ZS.push((b.zahlE = { b, bis: -Infinity })); // geprüft im nächsten Takt
             }
             [S.koepfe, S.taktUhr] = [null, S.taktUhr + delta];
         }
@@ -1374,6 +1399,7 @@ class AnazhRealm_siedlung_bewohner {
         if (!b.ruht) return;
         this._bewohnerUhrNach(S, b);
         b.ruht = false;
+        b.zahlE = null; // sein Eintrag der stehenden Zahl gilt nicht mehr (`zahlSteht`)
         (S.koepfe || S.aktiv).push(b);
     }
 
