@@ -808,6 +808,12 @@ const verkehrVerdict = (m) =>
         ],
         [!m.fest.length, `steckt: ${JSON.stringify(m.fest)}`],
         [!m.beruehrt.leib, `berührt Bewohner ${m.beruehrt.leib}× ${JSON.stringify(m.beruehrt.orte)}`],
+        // DIE ANKUNFT SIEHT DIE HÜLLE (`ankunft` in fahr-proben, w4-verkehr-c3): ein Punkt in der Hülle eines fahrenden Wagens
+        // ist für die Frage der Ankunft und des Platz-Machens besetzt (`_bewohnerNaechster` < zwei Kapseln)
+        [
+            m.ankunft && m.ankunft.d !== null && m.ankunft.d < m.ankunft.K,
+            `die Ankunft sieht die Hülle des Wagens nicht ${JSON.stringify(m.ankunft)} (dort stellte sie einen Bewohner hin)`,
+        ],
         [!m.beruehrt.wagen, `Wagen in Wagen ${m.beruehrt.wagen}× ${JSON.stringify(m.beruehrt.wagenOrte)}`],
         [!m.beruehrt.bau, `Wagen im Bau ${m.beruehrt.bau}× ${JSON.stringify(m.beruehrt.bauOrte)}`],
         [!m.ohneSchluessel, `ohne Schlüssel im Ort ${m.ohneSchluessel}× ${JSON.stringify(m.ohneOrte)}`],
@@ -2351,6 +2357,7 @@ hauptLauf(async () => {
             const g = {
                 ...{ soll: 20, wagen: 20, ohnePlatz: 0, ohneFahrer: 0, ohneNacht: 0, fahrend: 20, wenden: 4, enden: 4 },
                 ...{ stufen: [], fest: [], beruehrt: { leib: 0, wagen: 0, bau: 0 }, ohneSchluessel: 0, ohneOrte: [] },
+                ...{ ankunft: { d: 0.14, K: 0.71, wagen: 3 } },
                 ...{ stoss: { wagen: 0, bau: 0, leib: 0 }, querMax: 0.35, msJeSchritt: 0.82, sek: 600, steuerlos: 0 },
                 ...{
                     ziele: { erreicht: 160, ohne: [], laengsteS: 120 },
@@ -2373,6 +2380,8 @@ hauptLauf(async () => {
                 [{ fest: [{ nr: 4 }] }, /steckt/],
                 [{ beruehrt: { leib: 3, wagen: 0 } }, /Bewohner 3/],
                 [{ beruehrt: { leib: 0, wagen: 2 } }, /Wagen in Wagen 2/],
+                [{ ankunft: { d: 1.1, K: 0.71, wagen: 3 } }, /Ankunft sieht die Hülle des Wagens nicht/],
+                [{ ankunft: { d: null, K: 0.71 } }, /Ankunft sieht die Hülle des Wagens nicht/],
                 [
                     { ohneSchluessel: 1, ohneOrte: [[14, 9, "enge", 735, 558]] },
                     /ohne Schlüssel im Ort 1× \[\[14,9,"enge"/,

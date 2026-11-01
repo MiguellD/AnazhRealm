@@ -2155,13 +2155,21 @@ class AnazhRealm_siedlung_bewohner {
     // DER NÄCHSTE LEIB um (x, z) im Raster seiner Siedlung (`S.raster`), außer b: sein Abstand (Infinity: keiner nah).
     _bewohnerNaechster(S, b, x, z) {
         const M = AnazhRealm.BEWOHNER.rasterM;
+        const K = 2 * AnazhRealm.PLAYER_WALL_RADIUS + 0.01;
         const [ix, iz] = [Math.floor(x / M), Math.floor(z / M)];
         let d = Infinity;
+        // der Leib des Wagens im Gedränge (`_verkehrImRaster`) reicht um seinen Radius `kR` (die halbe Breite samt Kapsel) statt
+        // um zwei Kapseln K: sein Abstand zählt um so viel kürzer, wie das Ausweichen ihn misst (`kO`). Bis w4-verkehr-c3 zählte die
+        // Mitte allein — die Ankunft nach dem Sprung der Uhr stellte einen Bewohner 0,8 m neben die Mitte des Wagens, der für sie
+        // hielt, in seine Hülle (VK stadt-voll 23 Uhr: 26 Proben „berührt Bewohner“ an EINEM Wagen, bis er abfuhr)
         for (let i = -1; i <= 1; i++)
             for (let j = -1; j <= 1; j++)
                 for (const o of S.raster.get((ix + i) * 2097152 + iz + j) || [])
                     if (o !== b && !o.drinnen && o.leib)
-                        d = Math.min(d, Math.hypot(o.leib.position.x - x, o.leib.position.z - z));
+                        d = Math.min(
+                            d,
+                            Math.hypot(o.leib.position.x - x, o.leib.position.z - z) - (o.kR ? o.kR - K : 0)
+                        );
         return d;
     }
 

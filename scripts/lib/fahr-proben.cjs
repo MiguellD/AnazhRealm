@@ -908,6 +908,21 @@ async function probeLeben(expected) {
                 }
             }
             for (const n of ["_verkehrSchritt", "_tickVerkehr", "_verkehrImRaster"]) delete r[n];
+            // DIE ANKUNFT SIEHT DIE HÜLLE DES WAGENS (`_bewohnerNaechster`: die Frage der Ankunft nach dem Sprung der Uhr und des
+            // Platz-Machens, ob ein Leib den Punkt hält): ein Punkt in der Hülle eines fahrenden Wagens, zwischen den Mitten seiner
+            // Leiber im Gedränge (`_verkehrImRaster`, Mitte und Bug) und eine Handbreit innen an seiner Flanke, liegt näher als zwei
+            // Kapseln. Bis w4-verkehr-c3 maß sie Mitte zu Mitte (dort 1,1 m): die Ankunft stellte den Bewohner in die Hülle des
+            // Wagens, der für sie hielt (23 Uhr: 26 Proben „berührt Bewohner“ an EINEM Wagen, in jedem fünften Lauf)
+            const KA = 2 * R + 0.01;
+            const WA = VK.wagen.find((W) => W.zustand === "faehrt" && W.leiber && W.leiber.every((o) => !o.drinnen));
+            let ankunft = { d: null, K: KA };
+            if (WA) {
+                const [c, b] = [WA.leiber[1].leib.position, WA.leiber[2].leib.position];
+                const f = WA.entry._rideYaw || 0;
+                const q = WA.hw - 0.05;
+                const [x, z] = [(c.x + b.x) / 2 + Math.cos(f) * q, (c.z + b.z) / 2 - Math.sin(f) * q];
+                ankunft = { d: +r._bewohnerNaechster(S, null, x, z).toFixed(2), K: KA, wagen: WA.nr };
+            }
             // der Täter der längsten Fahrt beim Namen: sein Grund, sein Ort, wer vor ihm steht (Wagen oder Leib)
             const W = m.fahrtWer;
             const wer = W && [W.nr, W.grund, ...ort2(lage(W)), W.vorne ? W.vorne.O.nr : W.wer && W.wer.seed];
@@ -925,6 +940,7 @@ async function probeLeben(expected) {
                 fest: VK.wagen.filter((W) => W.festOrt).map((W) => ({ ...W.festOrt, nr: W.nr })),
                 stoss: Object.fromEntries(Object.entries(VK.zahl.stoss).map(([k, v]) => [k, v - stoss0[k]])),
                 beruehrt: { leib: m.leib, wagen: m.wagen, bau: m.bau, orte: m.leibOrte, wagenOrte: m.wagenOrte, bauOrte: m.bauOrte }, // prettier-ignore
+                ankunft,
                 netz: { verboten, ausNetz: ausNetz.length, irrweg: VK.zahl.irrweg },
                 ohneSchluessel: m.ohne,
                 ohneOrte: m.ohneOrte,
