@@ -372,3 +372,4 @@ takt-z143a-gtx 1 punkte sha=baf9d8280b0aa08441b436e9f93f6e17b221a7cc geraet=gtx 
 takt-z143b-gtx 1 punkte sha=baf9d8280b0aa08441b436e9f93f6e17b221a7cc geraet=gtx nur=ankunft.K1#1,klang.K4#1
 z140-rueck-gtx 1 punkte sha=3242d6ad6611d0f5ecc07cbb1f540b0fd38b42e4 geraet=gtx nur=haar.K1#1,material.K4#1,leib.K1#1
 z143-punkte-gtx 1 punkte sha=baf9d8280b0aa08441b436e9f93f6e17b221a7cc geraet=gtx nur=haar.K2#1
+knoten-wurzel-kalt 2 station sha=b7ea7cdc45f9736af0247f2945518f83c4d39939 lauf=ankunft-kalt.sh
