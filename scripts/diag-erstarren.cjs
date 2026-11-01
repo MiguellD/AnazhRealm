@@ -47,10 +47,8 @@ const { errs, check } = pruefer();
 
             // ── Settle: die Welt plateau-pumpen ──
             {
-                res.settleTicks = await window.__weltStehtNach(() => {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch {}
+                res.settleTicks = await __weltStehtNach(() => {
+                    __handTakt();
                 }); // die Welt steht (welt-boot)
             }
 

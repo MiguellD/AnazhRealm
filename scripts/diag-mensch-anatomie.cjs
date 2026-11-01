@@ -239,7 +239,7 @@ function messeKopf(sb, eingriff) {
             const d = Math.hypot(p[0] - cx, p[1] - cy);
             if (d >= rb && d <= 1.8 * rb && p[2] > sz.a) ring.push(i);
         });
-        const zs = ring.map((i) => hp[i][2]).sort((a, b) => a - b);
+        const zs = ring.map((i) => hp[i][2]).sort(aufsteigend);
         const zMed = zs.length ? zs[zs.length >> 1] : NaN;
         vorstand = Math.max(vorstand, (sz.b - zMed) / bkH);
     }

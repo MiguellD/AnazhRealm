@@ -267,7 +267,7 @@ function diaetLauf(opts) {
         const decke = st.perfTargetMs;
         st.perfTargetMs = 1000;
         const gier0 = st.yaw;
-        const pos0 = st.playerMesh ? st.playerMesh.position.clone() : null;
+        const pos0 = pm ? pm.position.clone() : null;
         const frames = [];
         let ein = o.ein != null ? Number(o.ein) : 20;
         try {
@@ -278,7 +278,7 @@ function diaetLauf(opts) {
                     if (ein <= 0) {
                         if (modus === "drehen") st.yaw += ((Number(o.grad) || 1) * Math.PI) / 180;
                         if (modus === "gehen" && pos0) {
-                            const p = st.playerMesh.position;
+                            const p = pm.position;
                             p.x += Math.sin(st.yaw) * -0.08;
                             p.z += Math.cos(st.yaw) * -0.08;
                         }
@@ -305,7 +305,7 @@ function diaetLauf(opts) {
             Z.zurueck();
             st.perfTargetMs = decke;
             if (modus === "drehen") st.yaw = gier0;
-            if (modus === "gehen" && pos0) st.playerMesh.position.copy(pos0);
+            if (modus === "gehen" && pos0) pm.position.copy(pos0);
         }
         const F = Math.max(1, frames.length);
         const mittel = (feld) => {

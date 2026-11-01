@@ -8,9 +8,7 @@ const path = require("path");
 const { safeEvaluate } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
-async function checkBandW13W14VibePassLibrary({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandW13W14VibePassLibrary({ page, check }) {
     // ### Vibe-Pass: die souveräne Avatar-Identität ###
     const w13p1Results = await safeEvaluate(page, async () => {
         const out = {};

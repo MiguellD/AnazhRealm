@@ -8,9 +8,7 @@ const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 const SKRIPTE = path.join(__dirname, "..");
 
 // Band-Funktion der Hydrosphäre (Erosion, Chunk-Wasser, Ufer-Schaum).
-async function checkBandHydrosphere({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandHydrosphere({ page, check }) {
     // ### Die Kachel-Erosion ist gefallen ###
     // Die Täler kommen aus dem Flussnetz des Gelände-Gesetzbuchs (gelaende-core), nicht aus einer nachträglichen
     // Stream-Power-Inzision je Kachel: kein `_computeErosion`, kein `state.erosion`, kein `erosionDelta` im Kern.
@@ -35,7 +33,7 @@ async function checkBandHydrosphere({ page, check, errors, finalState }) {
     const voxelV943bResults = await safeEvaluate(page, async () => {
         const out = {};
         const h1 = st.hydrosphere;
-        await window.__weltDa(() => !st.voxelWorkerPending.size); // die Uhr misst die Rechnung, nie die Schlange davor
+        await __weltDa(() => !st.voxelWorkerPending.size); // die Uhr misst die Rechnung, nie die Schlange davor
         const t0 = performance.now();
         const h2 = (await r._voxelFadenAuftrag(st.voxelWorker, { type: "hydro", key: "heim", origin: null })).region;
         out.perfMs = performance.now() - t0;
@@ -1052,7 +1050,7 @@ async function checkBandWelleV11D1WaterContext({ page, check }) {
         // der Feld-Scan ab der Körper-Höhe, `_voxelSurfaceY` nur ohne Fels im Band — Welle L, Höhle); der Helper liest die
         // EINE Wasser-Wahrheit am Körper (`_koerperWasser`) — Tiefe UND Ufer-Suche —, nie mehr das 3×3-gedehnte
         // `_waterLevelAt` / `_isAboveWaterAt` (die zweite Wahrheit der Ufer-Scheu).
-        out.ohneZweiteWahrheit = window.__fehlt(r._creatureWaterContextAt, /_waterLevelAt\(|_isAboveWaterAt\(/);
+        out.ohneZweiteWahrheit = __fehlt(r._creatureWaterContextAt, /_waterLevelAt\(|_isAboveWaterAt\(/);
 
         // BODEN-CACHE: die teuren `_voxelSurfaceY`-Scans sind pro Frame per Budget gedeckelt, nicht 1–2×
         // pro Kreatur. Das Budget dekrementiert je echtem Scan → hier als Scan-Zähler gelesen.
@@ -1410,7 +1408,7 @@ async function checkBandV18194Gamma6Befoerderung({ page, check }) {
 // geleerte Spalte · F7 das Netz trägt seine Bytes; der Selbsttest an der Naht der Welt (F4 · F5 · F7), nie am Quelltext.
 async function checkBandWasserWahrheit({ page, check }) {
     await safeEvaluate(page, async () => {
-        await window.__weltDa((r) => !!(r.state.hydrosphere && r.state.hydrosphere.ready));
+        await __weltDa((r) => !!(r.state.hydrosphere && r.state.hydrosphere.ready));
     });
     const out = (await safeEvaluate(page, async () => {
         const AR = AnazhRealm;
@@ -1506,7 +1504,7 @@ async function checkBandWasserWahrheit({ page, check }) {
         const gesehen = new Set();
         for (const [rx, rz] of ringe) {
             if (shore) break;
-            await window.__weltDa(() => !r._ensureHydroTilesAround(rx * kachel, rz * kachel, 0));
+            await __weltDa(() => !r._ensureHydroTilesAround(rx * kachel, rz * kachel, 0));
             const h = r._hydroFor(rx * kachel, rz * kachel);
             if (!h || gesehen.has(h)) continue;
             gesehen.add(h);
@@ -1845,7 +1843,7 @@ async function checkBandWasserSheetSpiegel({ page, check }) {
             if (i % 6 === 0) await sleep(12);
         };
         for (let i = 0; i < 280; i++) await pumpe(i);
-        await window.__gebautNach("Chunks mit Wasser-Zellen am Ort", { fertig: steht, takt: pumpe, max: 4000 });
+        await __gebautNach("Chunks mit Wasser-Zellen am Ort", { fertig: steht, takt: pumpe, max: 4000 });
         return { x: +spot.x.toFixed(1), z: +spot.z.toFixed(1), L: +spot.L.toFixed(1), chunks: s.voxelChunks.size };
     });
     const report = (await safeEvaluate(page, async () => {

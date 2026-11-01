@@ -3936,10 +3936,12 @@ AnazhRealm._streckenNah2D = function (ax, az, bx, bz, cx, cz, dx, dz, out) {
     out.d = Math.hypot(out.qx - out.px, out.qz - out.pz);
     return out;
 };
-// J längs der Normalen (A → B) bei schließender Geschwindigkeit vRel > 0; mB = Infinity für einen starren Gegner.
+// J längs der Normalen (A → B) bei schließender Geschwindigkeit vRel > 0; mB = Infinity für einen starren Gegner. Die Formel
+// lebt im Schmiede-Kern (`stossImpuls`, w4-arena-welt): das Labor der Arena stößt mit derselben Funktion wie die Welt.
 AnazhRealm._stossImpuls = function (mA, mB, vRel, e) {
-    if (!(vRel > 0) || !(mA > 0) || !(mB > 0)) return 0;
-    return ((1 + e) * vRel) / (1 / mA + (Number.isFinite(mB) ? 1 / mB : 0));
+    const sc = globalThis.__schmiedeCore;
+    if (!sc || typeof sc.stossImpuls !== "function") return AnazhRealm._kernPflichtBruch("schmiede:stossImpuls");
+    return sc.stossImpuls(mA, mB, vRel, e);
 };
 // V18.308 — DAS BOOT-PHASEN-GERÜST: der Atem zwischen zwei deferierten P3-Kreatur-Spawns.
 // 280 ms → ~10 Wesen erscheinen sanft über ~2,8 s NACH der Kontrolle (statt aller

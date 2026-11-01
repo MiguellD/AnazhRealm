@@ -56,7 +56,7 @@ function nahDeckungInSeite(o) {
             n
         );
     };
-    const player = st.playerMesh;
+    const player = pm;
     const ritt = st.player && st.player.mountedArch != null ? r._mountedEntry : null;
     const unter = (obj, wurzel) => {
         for (let p = obj; p; p = p.parent) if (p === wurzel) return true;

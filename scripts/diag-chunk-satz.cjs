@@ -85,7 +85,7 @@ function urteil(z) {
     if (ss.doppelt.length)
         v.push(`STREU-SATZ: ${ss.doppelt.length} Stoffe in mehr als einem Satz — ${ss.doppelt.join(", ")}`);
     if (z.deck > 0) v.push(`STREU: ${z.deck} Deck-Streu-InstancedMeshes (gefallen, Soll 0)`);
-    const fernSumme = Object.values(z.fern).reduce((a, b) => a + b, 0);
+    const fernSumme = Object.values(z.fern).reduce(addiere, 0);
     if (fernSumme > 0) v.push(`STREU: ${fernSumme} Fern-Deko-InstancedMeshes (das Kreuz-Fernfeld fiel, Soll 0)`);
     if (z.pGruppen.length > 0)
         v.push(
@@ -399,10 +399,8 @@ const { errs, check } = pruefer();
             const res = {};
             // Einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`), dann Streu, Wasser und Fern-Deko
             // austreiben.
-            await window.__weltStehtNach(() => {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {}
+            await __weltStehtNach(() => {
+                __handTakt();
             });
             for (let i = 0; i < 60; i++) if (!r._tickPendingWaterIso(8)) break;
             // Die Nah-Streu: der Kachel-Ring um die Kamera, bis Studio-Teile ankommen und nichts mehr offen ist.
@@ -413,9 +411,7 @@ const { errs, check } = pruefer();
                 await sleep(100);
             }
             for (let i = 0; i < 30; i++) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {}
+                __handTakt();
                 if (i % 10 === 0) await sleep(0);
             }
             r._tickChunkSatz();
@@ -1343,7 +1339,7 @@ const { errs, check } = pruefer();
                             const soll = r._voxelChunkLodFor(cx, cz, p.x, p.z, e.lod || 0);
                             if (soll !== (e.lod || 0)) vor.set(key, { soll, K: karte(e, key) });
                         }
-                        for (const weiter = window.__deckel("die Soll-Stufen der Chunks", 1400); weiter(); ) {
+                        for (const weiter = __deckel("die Soll-Stufen der Chunks", 1400); weiter(); ) {
                             r._tickVoxelChunkStreaming(p);
                             r._tickMorphFolge(); // die Nähte des Fadens wie im Takt
                             await sleep(15);
@@ -1366,7 +1362,7 @@ const { errs, check } = pruefer();
                             const ds = [];
                             for (let q = 0; q < a.length; q++)
                                 if (a[q] === a[q] && b[q] === b[q]) ds.push(Math.abs(a[q] - b[q]));
-                            ds.sort((x, y) => x - y);
+                            ds.sort(aufsteigend);
                             if (!ds.length) continue;
                             for (const d of ds) alle.push(d);
                             sprung.push({
@@ -1387,7 +1383,7 @@ const { errs, check } = pruefer();
                 }
                 sprung.sort((a, b) => b.max - a.max);
                 const p95 = sprung.map((x) => x.p95).sort((a, b) => b - a);
-                alle.sort((a, b) => a - b);
+                alle.sort(aufsteigend);
                 const q = (p) =>
                     alle.length ? +alle[Math.min(alle.length - 1, Math.floor(p * alle.length))].toFixed(3) : 0;
                 return {
@@ -1420,9 +1416,9 @@ const { errs, check } = pruefer();
     const z = out.zensus;
     console.log(
         `\n  Zensus: ${out.chunks} Chunks · Boden ${z.boden.objekte} Objekte (${z.boden.tris} Dreiecke) · Wasser ${z.wasser.objekte}` +
-            ` · Nah-Streu ${Object.values(z.streuNah).reduce((a, b) => a + b, 0)} selbst zeichnend, ` +
+            ` · Nah-Streu ${Object.values(z.streuNah).reduce(addiere, 0)} selbst zeichnend, ` +
             `${z.streuSatz.imSatz}/${z.streuSatz.bloecke} Blöcke im Streu-Satz ihres Stoffs` +
-            ` · Fern ${Object.values(z.fern).reduce((a, b) => a + b, 0)} · Deck ${z.deck} · @p:-Gruppen ${z.pGruppen.length}` +
+            ` · Fern ${Object.values(z.fern).reduce(addiere, 0)} · Deck ${z.deck} · @p:-Gruppen ${z.pGruppen.length}` +
             ` · p:-Bundles ${z.pBundles.length} · Render-Bürger ${z.renderBuerger} · Szenen-Kinder ${z.szeneKinder}` +
             `\n  Bau: ${z.bau.gruppen} Gruppen (${z.bau.werfer} werfen) · Glut ${z.bau.glut} (${z.bau.glutWerfer} werfen)` +
             ` · Bau-Satz ${z.bauSatz.imSatz}/${z.bauSatz.gruppen} Gruppen im Satz ihres Stoffs\n`
@@ -1539,7 +1535,7 @@ const { errs, check } = pruefer();
         const bytesJeFrame = (frames) =>
             frames
                 .slice(1)
-                .map((d) => Object.values(d).reduce((a, b) => a + b, 0))
+                .map((d) => Object.values(d).reduce(addiere, 0))
                 .join("/");
         const vNeu = urteilNeu(nu.messung);
         check(

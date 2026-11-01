@@ -61,7 +61,7 @@ hauptLauf(async () => {
         await window.__weltDa(() => f && f.ready);
         const pm = r.state.playerMesh.position;
         let cells = 0;
-        for (const weiter = window.__deckel("die Streu-Zellen", 1500); weiter(); ) {
+        for (const weiter = __deckel("die Streu-Zellen", 1500); weiter(); ) {
             r._tickScatterStreaming(pm);
             const map = r.state.scatterRegions;
             cells = 0;

@@ -1431,7 +1431,7 @@ function validateManifest(m, kern) {
         const tEntry = CORES.find((c) => c.file === "tetrapoda-core.js");
         const tm = tEntry ? loadCore(tEntry) : null;
         const mitZwilling = (fn) => {
-            const V = JSON.parse(JSON.stringify(tm.verhalten));
+            const V = structuredClone(tm.verhalten);
             fn(V);
             return validateManifest(Object.assign({}, tm, { verhalten: V }));
         };

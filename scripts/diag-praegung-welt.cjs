@@ -21,18 +21,18 @@ const { errs, check } = pruefer();
 function proben() {
     window.__flatFor = async (r, entry, preset = r._foundryPresetForEntry(entry)) => {
         let flat;
-        for (const weiter = window.__deckel("das Flat der Gestalt", 300); !(flat = r._foundryFlattenFor(entry, preset, 0))?.leaves && weiter(); )
+        for (const weiter = __deckel("das Flat der Gestalt", 300); !(flat = r._foundryFlattenFor(entry, preset, 0))?.leaves && weiter(); )
             await sleep(50);
         return flat?.leaves ? flat : null;
     };
     window.__flatFp = async (r, entry) => {
         const flat = await window.__flatFor(r, entry);
-        return flat && window.__abdruck(flat);
+        return flat && __abdruck(flat);
     };
     // B kennt A erst, wenn der DataChannel offen ist und A seine Vibe-Identität bewiesen hat (ed25519 über seine peerId)
     window.__anschluss = async ({ state: { p2p } }, autor) => {
         const peer = () => [...p2p.peers.values()].find((e) => e.vibeVerified && e.vibePassId === "ed25519:" + autor && p2p.rtcPeers.get(e.peerId)?.open);
-        for (const weiter = window.__deckel("der Anschluss zu A", 600, false); !peer() && weiter(); ) await sleep(50);
+        for (const weiter = __deckel("der Anschluss zu A", 600, false); !peer() && weiter(); ) await sleep(50);
         return peer();
     };
 }
@@ -61,7 +61,7 @@ hauptLauf(async () => {
     // ===== (L) DIE BIBLIOTHEK (ultiversum.K3): je Art ein Eintrag — signiert, ≤ 8 KB, über den Code wieder; Fork mit Herkunft =====
     const L = await page.evaluate(async () => {
         const o = { skipConfirm: true };
-        for (const weiter = window.__deckel("der Vibe-Pass", 300); !st.vibePass?.ready && weiter(); ) await sleep(50);
+        for (const weiter = __deckel("der Vibe-Pass", 300); !st.vibePass?.ready && weiter(); ) await sleep(50);
         r._addVoxelEdit(8, st.terrainBaseHeight || 0, 8, 3, "carve"); // eine Akte der Welt
         r.dslRun(["rule", ["field_below", "lebendig", 0.3], ["deposit_life", ["at_field_need"]], { everySec: 30 }], { source: "human" });
         r.dslRun(["define_blueprint", "bib_bogen", [{ shape: "box", material: "stein", size: { x: 3, y: 1, z: 1 }, position: { x: 0, y: 3, z: 0 } }]], { source: "human" });
@@ -104,7 +104,7 @@ hauptLauf(async () => {
         // ===== WARM-ANKER: Boot → f.ready → Buch (langschwert + gt) → !_vorrat (__weltDa wartet, bis alles steht) =====
         const f = r._ensureAssetFoundry();
         const bps = () => st.blueprints || {};
-        await window.__weltDa(() => f.ready && f.recipes?.langschwert && f.recipes.gt && bps().klinge_langschwert && bps().fahrzeug_gt && !f._vorrat);
+        await __weltDa(() => f.ready && f.recipes?.langschwert && f.recipes.gt && bps().klinge_langschwert && bps().fahrzeug_gt && !f._vorrat);
         const KC = AnazhRealm.KIND_CHARAKTER;
         const VC = globalThis.__vehicleCore;
 
@@ -147,7 +147,7 @@ hauptLauf(async () => {
             delete bp.studioOv;
             const hand = async () => {
                 let g;
-                for (const weiter = window.__deckel("die Hand", 300); ((g = r._heldFoundryGroup("klinge_langschwert")) === "pending" || !g) && weiter(); )
+                for (const weiter = __deckel("die Hand", 300); ((g = r._heldFoundryGroup("klinge_langschwert")) === "pending" || !g) && weiter(); )
                     await sleep(200);
                 return g && g !== "pending" ? fp(g) : null;
             };
@@ -472,7 +472,7 @@ hauptLauf(async () => {
     // die Welt reist größer als ein Rahmen (Chrome teilt ab ~128 KB): die Fragmente am signaling-server (27.10.: verworfen)
     const [wCode, wId, wSame, raum, kb] = await page.evaluate(({ state: { worldMeta: m, p2p } } = r) => [document.querySelector('code[data-teilen="welt"]').textContent, m.worldId, m.seed, p2p.room, JSON.stringify(r.buildStateSnapshot()).length >> 10]);
     const b = await pageB.evaluate(async (a, url, raum) => {
-        await window.__weltDa(({ _foundry: f, state }) => f?.ready && f.recipes?.gt && !f._vorrat && state.vibePass?.ready);
+        await __weltDa(({ _foundry: f, state }) => f?.ready && f.recipes?.gt && !f._vorrat && state.vibePass?.ready);
         const res = { faelle: [] };
         const zustand = ({ state: s } = r) =>
             JSON.stringify([Object.keys(s.blueprints).sort(), s.architectures.length, s.worldRules.length, s.worldMeta.seed, s.worldMeta.voxelEdits, s.worldJournal.entries.length]);
@@ -512,7 +512,7 @@ hauptLauf(async () => {
         delete r.empfangeWerk;
         const e = res.gut.ok && st.architectures.find((x) => x?.id === res.gut.id);
         if (e) {
-            await window.__gebautNach(e, { bau: () => {} }); // die Welt zeichnet es in ihrem eigenen Takt
+            await __gebautNach(e, { bau: () => {} }); // die Welt zeichnet es in ihrem eigenen Takt
             res.steht = Date.now();
             const [p, q, cam] = [st.playerMesh.position, e.position, st.camera];
             cam.updateMatrixWorld();
@@ -541,13 +541,13 @@ hauptLauf(async () => {
     uhr = Date.now();
     await chat(wCode);
     const w = await pageB.evaluate(async (autor, wId) => {
-        await window.__weltDa((x) => x.state.worldMeta.worldId === wId && !x._weltTausch);
+        await __weltDa((x) => x.state.worldMeta.worldId === wId && !x._weltTausch);
         const da = performance.timeOrigin + (await r._weltbildKommt());
         const [p, p0] = [st.playerMesh.position, st.playerMesh.position.clone()];
         window.__weg = () => Math.hypot(p.x - p0.x, p.z - p0.z);
         return [da, st.worldMeta, !!(await window.__anschluss(r, autor))];
     }, a.autor, wId);
-    const geht = await halteBis(pageB, { taste: "w", ziel: async () => (await window.__seitenTakt(), window.__weg() >= 1) });
+    const geht = await halteBis(pageB, { taste: "w", ziel: async () => (await __seitenTakt(), window.__weg() >= 1) });
     // ===== (U) FUSION: dieselben Eltern-Bytes in beiden Geräten → A+B (random-mix: Id, Saat, Geburt, Münzwurf) · B+A · der Täter =====
     const [uA, uB] = await Promise.all(
         [page, pageB].map((seite) =>

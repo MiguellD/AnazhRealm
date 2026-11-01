@@ -2561,6 +2561,7 @@ class AnazhRealm_bau_teile {
             else {
                 if (g.roll) this._werkRollSchritt(e, g, schwere, dt);
                 if (g.gefaess) this._gefaessSchritt(e, g.gefaess, wf, dt);
+                if (g.geraet) this._geraetSchritt(e, g, schwere, dt); // das Gerät der Arena schwingt nach dem EINEN Stoß (stamm/kampf.js)
             }
         }
     }

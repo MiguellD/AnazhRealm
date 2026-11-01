@@ -332,7 +332,7 @@ const server = statikServer();
 // ── DIE PROBEN IN DER SEITE (Funktionsrumpf; r = die Welt). ──
 async function probe(argW) {
     const out = {};
-    await window.__weltDa();
+    await __weltDa();
     const zeilen = () => [...document.querySelectorAll("#chat-output > div")].map((d) => d.textContent);
     const tick = async (n, ms) => {
         for (let i = 0; i < n; i++) {
@@ -343,7 +343,7 @@ async function probe(argW) {
         }
     };
     for (
-        const weiter = window.__deckel("Buch, Leib und Eiche", 900);
+        const weiter = __deckel("Buch, Leib und Eiche", 900);
         weiter() &&
         !(
             st.playerMesh &&
@@ -616,7 +616,7 @@ async function probe(argW) {
             r.setHotbarSlot(4, NAME);
             if (!(st.buildMode.active && st.buildMode.blueprintName === NAME)) r.selectHotbarSlot(4);
             const bm = st.buildMode;
-            await window.__gebautNach("die Studio-Gestalt des Phantoms", {
+            await __gebautNach("die Studio-Gestalt des Phantoms", {
                 fertig: () => !bm.phantomMesh || bm.phantomMesh.userData.studioGhost,
                 bau: () => r.tickBuildMode(),
             });
@@ -968,7 +968,7 @@ function wegHelfer(arg) {
     // Bild abgearbeitet hat. Der Bau-Hash ist der der gezeichneten Geometrie, nie des Datums.
     const klassisch = (o, a = []) => (o.traverse((m) => m.isMesh && a.push([{ mesh: m, geom: m.geometry }, 0])), a);
     // je Gestalt einmal (Slots einer Gruppe teilen ihre Geometrie: die vier Räder des Wagens)
-    const bauVon = (teile) => [...new Set(teile.map((g) => window.__abdruck({ attributes: Object.fromEntries([["position", g.position], ["normal", g.normal]].filter(([, a]) => a)), index: g.index && { array: g.index.array || g.index } }, true)))].sort().join(" ");
+    const bauVon = (teile) => [...new Set(teile.map((g) => __abdruck({ attributes: Object.fromEntries([["position", g.position], ["normal", g.normal]].filter(([, a]) => a)), index: g.index && { array: g.index.array || g.index } }, true)))].sort().join(" ");
     // DAS SOLL eines Studio-Werks: dieselbe Anfrage frisch im Werk (mit der Prägung der Gestalt, `_foundryGestaltOv`, ohne
     // Platte), durch den Weg der Welt (`_foundryBuildGroup`, dann
     // `_foundryFlattenFor`: die Sichthöhe der Stufen, das Verschmelzen) — der Cache-Platz trägt dafür kurz den frischen Bau
@@ -1062,7 +1062,7 @@ function wegHelfer(arg) {
         // Fragment den Alpha-Test übersteht (r184: Alpha × Deckkraft < alphaTest → verworfen)
         async phantom() {
             const bm = st.buildMode;
-            await window.__gebautNach("die Studio-Gestalt des Phantoms", { fertig: () => !bm.phantomStudioPending });
+            await __gebautNach("die Studio-Gestalt des Phantoms", { fertig: () => !bm.phantomStudioPending });
             const o = { studio: !!bm.phantomMesh.userData.studioGhost, meshes: 0, verworfen: 0, farbe: toenung(bm.phantomMesh).farbe };
             bm.phantomMesh.traverse((m) => m.isMesh && m.material && (o.meshes++, (m.material.transparent ? m.material.opacity : 1) < (m.material.alphaTest || 0) && o.verworfen++));
             return o;
@@ -1150,7 +1150,7 @@ function wegHelfer(arg) {
             const oben = () => Math.max(...e.blockerAABBs.filter((b) => !b.gedeckt).map((b) => b.topY)) + AnazhRealm.PLAYER_FOOT_OFFSET;
             if ((lauf.haus = /^haus_/.test(e.type))) {
                 // die Tür-Zeile des Werks (die Hülle bringt sie): 8 m vor der Tür, wo sie zu ist, bis 1,5 m hinter die Schwelle
-                const t = (await window.__gebautNach("die Hülle des Hauses", { fertig: () => !!e._hausHuelle }), e.tuer);
+                const t = (await __gebautNach("die Hülle des Hauses", { fertig: () => !!e._hausHuelle }), e.tuer);
                 if (!t) return "das Werk trägt keine Tür-Zeile, der Tür-Takt übergeht es";
                 [von, nach, drin] = [[t.x, t.z - 8], [t.x, t.z + 1.5], () => lokal()[1] > t.z + 1.4];
                 // je Abfrage frisch: in Third steht die Kamera ferner, das Haus kommt in Stufe 1 und wechselt im Gang (neue Slots)
@@ -1269,7 +1269,7 @@ async function wegLauf(page, o) {
         Object.assign(e, { bauModus: z.bauModus, farbe: z.bauModus ? z.toenung.farbe : null, lichtung: { wand: z.wand, toenung: z.toenung } });
         if (o.phantom && z.bauModus) e.phantom = await bauWeg(page, "phantom");
         if (z.bauModus) await taste(page, "KeyF");
-        if (!e.gesperrt) await page.evaluate(() => window.__gebautNach("der Weg", { fertig: () => window.__bauWeg.fertig(), offen: () => window.__bauWeg.offen() }));
+        if (!e.gesperrt) await page.evaluate(() => __gebautNach("der Weg", { fertig: () => window.__bauWeg.fertig(), offen: () => window.__bauWeg.offen() }));
         const an = o.verb && (await bauWeg(page, "an", o.verb));
         if (an) Object.assign(e, an === true ? (await (VERB_TASTE[o.verb] || geh)(page), await bauWeg(page, "verb", o.verb)) : { warum: an });
     } catch (err) {
@@ -1293,7 +1293,7 @@ async function wegProbe(page, frei, bild) {
             // Natur nach — 18 Aufträge vor der Wurf-Stufe des nächsten Hauses, Konsum-Probe 27.10.)
             const z = e.zeiten || [];
             if (bild) console.log(`  [bild] ${wo.join(" · ")} ${e.kalt ? "kalt" : "warm"} ${z[4]} ms, Bau-Hash ${e.bau === e.soll ? "=" : "≠"} L0 · ${PHASEN.map((k, i) => k + " " + (z[i] - (z[i - 1] || 0))).join(" · ")} ${e.fehler || ""}`);
-            if (bild) await page.evaluate(() => window.__weltStehtNach());
+            if (bild) await page.evaluate(() => __weltStehtNach());
             if (phantom) m.phantom = e.phantom;
         }
         if (bild) return Object.assign(m, await bauWeg(page, "ende"), { gestartet: true });
@@ -1665,7 +1665,7 @@ hauptLauf(async () => {
             try {
                 const { frei } = await page.evaluate(probe, { nurOrt: true });
                 await buehne(page);
-                await page.evaluate(() => window.__weltStehtNach());
+                await page.evaluate(() => __weltStehtNach());
                 const m = await wegProbe(page, frei, weg);
                 for (const lage in m.wege) Object.assign((gm.wege[lage] ||= {}), m.wege[lage]);
                 Object.assign(gm.konsum, m.konsum);

@@ -121,7 +121,7 @@ const LEIB_N = LEIB_WIESE.haus + LEIB_WIESE.fels + LEIB_WIESE.baum + LEIB_HANG_N
 const PROBEN_VORSTAND = Object.freeze({ mittel: 35.4, median: 34, hoechstens: 50 });
 const PROBEN_RING = 4;
 const quantil = (a, q) => {
-    const s = [...a].sort((x, y) => x - y);
+    const s = [...a].sort(aufsteigend);
     return s[Math.min(s.length - 1, Math.floor(q * s.length))];
 };
 // Kamera-Sprünge > 2 m im Rundgang: nie häufiger als am Vor-Stand
@@ -175,7 +175,7 @@ function urteilLeib(L) {
     if (!Array.isArray(pr) || pr.length < LEIB_N)
         out.push(`Leib: ${Array.isArray(pr) ? pr.length : 0} Bilder gezählt (Vorbedingung der Feld-Proben je 3rd-Bild)`);
     else {
-        const mittel = +(pr.reduce((a, b) => a + b, 0) / pr.length).toFixed(1);
+        const mittel = +(pr.reduce(addiere, 0) / pr.length).toFixed(1);
         const med = quantil(pr, 0.5);
         const hoechstens = Math.max(...pr);
         if (mittel > PROBEN_VORSTAND.mittel || med > PROBEN_VORSTAND.median + PROBEN_RING || hoechstens > 2 * PROBEN_VORSTAND.hoechstens)
@@ -243,16 +243,14 @@ function leibInstall(cfg) {
     };
     L.tick = async (n, ms) => {
         for (let i = 0; i < n; i++) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
+            __handTakt();
             await sleep(ms || 30);
         }
     };
     // reißt der Deckel, nennt sein Wurf die Lücken des Weltbilds (`__deckel`)
     L.steht = async (ms) => {
         let n = 0;
-        for (const weiter = window.__deckel("das Weltbild", ms / 45); weiter(); ) {
+        for (const weiter = __deckel("das Weltbild", ms / 45); weiter(); ) {
             await L.tick(5, 40);
             n++;
             if (n >= 4 && !r._weltbildFehlt(true).length) break;
@@ -261,7 +259,7 @@ function leibInstall(cfg) {
     };
     // der Spieler an (x, z), bis das Weltbild dort steht; zurück, was noch fehlt
     L.hin = (x, z, ms) => {
-        st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
+        pm.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
         return L.steht(ms);
     };
     // der sichtbare Boden: die Boden-Karte des gezeichneten Mesh, null ohne Karte
@@ -359,7 +357,7 @@ function leibInstall(cfg) {
         st._kamChase = undefined; // das nächste Bild springt hinter den Wagen in seiner Gier (`chaseKamera`)
         st.yaw = gier;
         st.pitch = 0;
-        st.playerMesh.position.set(x, y + 1.0, z);
+        pm.position.set(x, y + 1.0, z);
         if (gt.instanced) r._archInstanceUpdate(gt);
         if (gt.mesh) {
             gt.mesh.position.set(x, y + 0.5, z);
@@ -618,7 +616,7 @@ async function leibGang(G) {
             const m = a.m || { cx: (a.b.minX + a.b.maxX) / 2, cz: (a.b.minZ + a.b.maxZ) / 2 };
             L.fuss(v.x, v.z, v.gier, 0.15);
             st.yaw = v.gier; // nach dem Rig-Wechsel
-            const mitte = () => Math.hypot(st.playerMesh.position.x - m.cx, st.playerMesh.position.z - m.cz);
+            const mitte = () => Math.hypot(pm.position.x - m.cx, pm.position.z - m.cz);
             g.heran = { d0: +mitte().toFixed(2) };
             const q = [];
             const bild = async (phase) => {
@@ -627,7 +625,7 @@ async function leibGang(G) {
                 if (phase.startsWith("orbit")) st.yaw += (2 * Math.PI * dt) / G.orbitMs; // die Maus dreht je Zeit
                 r._gameLoopTick(tMs);
                 const c = st.camera.position;
-                const p = st.playerMesh.position;
+                const p = pm.position;
                 const kb = L.sichtbar(c.x, c.z);
                 if (senk && kb !== null) c.y = kb - 0.1; // DER SCHMUGGEL AM HANG: nach dem Takt 10 cm unter den sichtbaren Boden
                 const n = ++g.bilder;
@@ -665,7 +663,7 @@ async function leibGang(G) {
             }
             g.heran.d1 = +mitte().toFixed(2);
             // im Haus: der Spieler steht über einen Meter hinter der Schwelle (n zeigt hinaus)
-            const p = st.playerMesh.position;
+            const p = pm.position;
             if (art.startsWith("innen")) g.drinnen = (p.x - a.d.cx) * a.n[0] + (p.z - a.d.cz) * a.n[1] < -1;
             tasten({});
             for (const t1 = tMs + G.orbitMs; tMs < t1; ) await bild("orbit");
@@ -712,7 +710,7 @@ const server = statikServer({
 
 // ── DIE PROBE IN DER SEITE (r = die Welt) ──
 async function probe(arg) {
-    await window.__weltDa();
+    await __weltDa();
     const nahDeckung = window.__nahDeckung;
     // der Takt, das Warten auf das Weltbild, die ruhige Kamera und der Ritt: die EINEN Helfer des Leibs (`leibInstall`)
     const { tick, steht, ruhig, ritt, hin, gtHolen } = window.__kamLeib;
@@ -782,7 +780,7 @@ async function probe(arg) {
             // deckt; an DERSELBEN Stellung muss die Durchsicht es wieder öffnen (≤ NAH_DECKUNG_MAX).
             let hub = 0;
             const stelle = () => {
-                st.playerMesh.position.set(sl.x, hh(sl.x, sl.z) + 1.0 + hub, sl.z);
+                pm.position.set(sl.x, hh(sl.x, sl.z) + 1.0 + hub, sl.z);
                 st.yaw = sl.gier;
                 st.pitch = sl.pitch;
                 ruhig();
@@ -857,7 +855,7 @@ async function probe(arg) {
                 z.fehlt = await hin(O.x, O.z, 45000);
             }
             z.ms = { boden: Math.round(performance.now() - tO) };
-            const P = st.playerMesh.position.clone();
+            const P = pm.position.clone();
             // der Orts-Speicher der Linse (scripts/lib/kamera-nah.cjs): die Region um den Ort, neu je Ort
             speicherOrt = { id: ort.id, x: P.x, z: P.z, r: 60 };
             window.__nahSpeicher = null;
@@ -865,7 +863,7 @@ async function probe(arg) {
             {
                 let vorN = -1;
                 let ruhe = 0;
-                for (const weiter = window.__deckel("die Stämme am Ort", 750); ruhe < 4 && weiter(); ) {
+                for (const weiter = __deckel("die Stämme am Ort", 750); ruhe < 4 && weiter(); ) {
                     await tick(5, 40);
                     const n = staemme().filter((s2) => Math.hypot(s2.x - P.x, s2.z - P.z) < 25).length;
                     ruhe = n === vorN ? ruhe + 1 : 0;
@@ -944,7 +942,7 @@ async function probe(arg) {
                 return m;
             };
             const fuss = (x, y, zz, gier) => {
-                st.playerMesh.position.set(x, y + 1.0, zz);
+                pm.position.set(x, y + 1.0, zz);
                 st.yaw = gier;
             };
             // ZU FUSS (3rd): der Spieler 1,5 m vor dem Stamm, der Blick von ihm weg (die Kamera in der Krone) und quer;
@@ -969,7 +967,7 @@ async function probe(arg) {
                 // Nah-Gestalt: an drei Orten trug er keine, am Hang die Karte aus 30 m.
                 rittStelle(P.x, hh(P.x, P.z), P.z, 0);
                 const stufe = () => r._foundryLodForEntry(gt);
-                await window.__gebautNach(gt, {
+                await __gebautNach(gt, {
                     fertig: () => r._archIsRendered(gt) && gt._lodLevel === stufe(),
                     bau: () => (r._archIsRendered(gt) ? r._switchArchitectureLOD(gt, stufe()) : r._rebuildArchitectureMesh(gt)),
                 });
@@ -1104,7 +1102,7 @@ hauptLauf(async () => {
         await page.evaluate(() => window.__erstRuhe?.(() => {}, { erstFristMs: 6e5 }, "der Abschied der Welt"));
         await (welt ? weltTor(page, welt) : server.zeige(page, 0, rest));
         if (rest !== adresse) return;
-        await page.evaluate(async () => (await window.__weltDa((r) => r.state.rendererReady)).state.renderer.setAnimationLoop(null));
+        await page.evaluate(async () => (await __weltDa((r) => r.state.rendererReady)).state.renderer.setAnimationLoop(null));
         await buehne(page);
     };
     await bereit();
@@ -1184,7 +1182,7 @@ hauptLauf(async () => {
             }
         }
         const pr = (leib && leib.proben) || [];
-        console.log(`  Feld-Proben je 3rd-Bild (${pr.length} Bilder): Mittel ${pr.length ? (pr.reduce((a, b) => a + b, 0) / pr.length).toFixed(1) : "-"} · Median ${pr.length ? quantil(pr, 0.5) : "-"} · p95 ${pr.length ? quantil(pr, 0.95) : "-"} · höchstens ${pr.length ? Math.max(...pr) : "-"} (Vor-Stand Mittel ${PROBEN_VORSTAND.mittel} · Median ${PROBEN_VORSTAND.median} · höchstens ${PROBEN_VORSTAND.hoechstens}) · Kamera-Sprünge > 2 m im Rundgang ${leib && leib.spruenge} (${leib && leib.wiese && leib.wiese.rundgang})`);
+        console.log(`  Feld-Proben je 3rd-Bild (${pr.length} Bilder): Mittel ${pr.length ? (pr.reduce(addiere, 0) / pr.length).toFixed(1) : "-"} · Median ${pr.length ? quantil(pr, 0.5) : "-"} · p95 ${pr.length ? quantil(pr, 0.95) : "-"} · höchstens ${pr.length ? Math.max(...pr) : "-"} (Vor-Stand Mittel ${PROBEN_VORSTAND.mittel} · Median ${PROBEN_VORSTAND.median} · höchstens ${PROBEN_VORSTAND.hoechstens}) · Kamera-Sprünge > 2 m im Rundgang ${leib && leib.spruenge} (${leib && leib.wiese && leib.wiese.rundgang})`);
         const v = urteilLeib(leib);
         check(`K2 die Linse steht nie im Fels, nie unter dem sichtbaren Boden, nie in einer Box, nichts zwischen Ziel und Linse — 0 von ${LEIB_N} zu Fuß und im Verfolger-Ritt, Feld-Proben je 3rd-Bild und Sprünge ≤ Vor-Stand`, v.length === 0, v.length ? "Täter: " + v.join(" · ") : "");
     }

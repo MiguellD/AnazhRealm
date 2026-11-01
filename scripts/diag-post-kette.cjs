@@ -912,7 +912,7 @@ function buehne(nFrames, nachtLicht) {
         // Die Kette steht erst nach dem ersten Frame mit bereitem Renderer (`_ensurePostProcessing` im Loop).
         const bereit = await page.evaluate(async () => {
             const t0 = performance.now();
-            await window.__weltDa((r) => {
+            await __weltDa((r) => {
                 const st = r.state;
                 return !!(st?.rendererReady && st.renderer?.backend && st.postProcessing && st.camera);
             });

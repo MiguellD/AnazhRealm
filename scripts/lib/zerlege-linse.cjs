@@ -166,7 +166,7 @@ function passUhr() {
 // 0,34 bei Breite 0,03–0,04; ein einhöckriger Pass überbrückt mit 2 % seiner Werte ~0,4 σ, gefordert wären ≥ 2 σ — er
 // bleibt ganz (rein = p50, anteilOben 0, versatz 0).
 function zweiGipfel(w) {
-    const a = w.filter(Number.isFinite).sort((x, y) => x - y);
+    const a = w.filter(Number.isFinite).sort((a, b) => a - b);
     const q = (b, f) => (b.length ? +b[Math.min(b.length - 1, Math.floor(f * b.length))].toFixed(2) : null);
     const n = a.length, m = Math.max(1, Math.ceil(n / 50)), k = Math.floor(n / 50);
     let j = 0;
@@ -267,16 +267,16 @@ function belegungAuswerten(ev, { bildMs = 1000 / 60, schwelle = 1 } = {}) {
         }
         let nt = 0;
         for (; ti < takte.length && takte[ti] < bilder[i + 1]; ti++) nt += takte[ti] >= bilder[i];
-        const ms = z.map((v) => v / 100), belegt = ms.reduce((s, v) => s + v, 0) - ms[0];
+        const ms = z.map((v) => v / 100), belegt = ms.reduce((a, b) => a + b, 0) - ms[0];
         // die Pflicht je Klasse: der Takt-Rahmen über seinem Boden × Takte des Bilds, der Zeitgeber nur über dem Bild-Fenster
         const pf = ms.map((v, k) => (k === 2 ? Math.max(0, v - nt * BROWSER_BODEN_MS) : k && k < TAKT && k !== GS && (k !== ZG || belegt > bildMs) ? v : 0));
-        jeBild.push({ ms, belegt, pf, pflicht: pf.reduce((s, v) => s + v, 0), nt });
+        jeBild.push({ ms, belegt, pf, pflicht: pf.reduce((a, b) => a + b, 0), nt });
     }
     const q = (a, f) => {
-        const s = [...a].sort((x, y) => x - y);
+        const s = [...a].sort((a, b) => a - b);
         return s.length ? +s[Math.min(s.length - 1, Math.floor(f * s.length))].toFixed(2) : null;
     };
-    const zahl = (a) => ({ p50: q(a, 0.5), p95: q(a, 0.95), mittel: q([a.reduce((s, v) => s + v, 0) / (a.length || 1)], 0) });
+    const zahl = (a) => ({ p50: q(a, 0.5), p95: q(a, 0.95), mittel: q([a.reduce((a, b) => a + b, 0) / (a.length || 1)], 0) });
     const jeKlasse = Object.fromEntries(KL.slice(1).map((k, i) => [k, zahl(jeBild.map((b) => b.ms[i + 1]))]));
     const pflicht = zahl(jeBild.map((b) => b.pflicht)), nb = Math.max(1, jeBild.length);
     const anteil = KL.map((k, i) => [k, zahl(jeBild.map((b) => b.pf[i]))]).filter(([, z]) => z.mittel >= 0.05);
@@ -1057,7 +1057,7 @@ function zerlegeMessen(k) {
             const jePass = {};
             let stempel = 0;
             for (const [p, e] of Object.entries(je)) {
-                const s = Object.values(e).reduce((a, x) => a + x, 0) / n;
+                const s = Object.values(e).reduce((a, b) => a + b, 0) / n;
                 jePass[p] = +s.toFixed(3);
                 stempel += s;
             }
@@ -1086,7 +1086,7 @@ function zerlegeMessen(k) {
                 wieseRuht();
             }
             await lese();
-            return { u8: auf.u8, png: window.__png(auf.u8, W, H) };
+            return { u8: auf.u8, png: __png(auf.u8, W, H) };
         };
         const aenderung = (a, b) => {
             let n0 = 0,
@@ -1457,7 +1457,7 @@ function zerlegeSchalter(inv, haushalt, opt) {
 // Differenzen, der Beleg (Renders im AUS-Zustand, Haken-Treffer, Befehle der Klasse, Kollateral), Gesamt und Rest.
 function zerlegeAuswerten(roh, schalter) {
     const med = (a) => {
-        const s = a.filter(Number.isFinite).sort((x, y) => x - y);
+        const s = a.filter(Number.isFinite).sort((a, b) => a - b);
         if (!s.length) return null;
         const m = s.length >> 1;
         return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;

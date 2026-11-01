@@ -1471,7 +1471,7 @@ async function checkBandV18164WarumLicht({ page, check }) {
 
         // (6) §6.5 → V18.530: KEIN LADE-NEBEL — die Luft liest keine Ring-Front (Ungebautes deckt der Fern-Ring als
         // Loch-Deckel); im warmen Test-Ring ist der Spieler-Chunk gebaut.
-        out.ladeNebelKonsum = window.__fehlt(r._dayNightApplyHemiUndLuft, /_builtRingRadius|foliageRadius/);
+        out.ladeNebelKonsum = __fehlt(r._dayNightApplyHemiUndLuft, /_builtRingRadius|foliageRadius/);
         const bk = r._builtRingRadius();
         out.builtRing = Number.isInteger(bk) && bk >= 0;
         out.fogDeckel = !st.scene.fog;
@@ -1546,7 +1546,7 @@ async function checkBandWahrerAnblickAtmoBusch({ page, check }) {
 // V6 Wetter-5-Kanal-Feld — eingefaltet aus gate:weather-vector (D3b, die Welt des Läufers statt eines eigenen Boots): V6-GATE (Look-Finale) — DAS WETTER-5-KANAL-FELD (Null-Renderer, GPU-frei): beweist, dass
 async function checkBandWetterVektor({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        await window.__weltDa();
+        await __weltDa();
         // Keine laufende Transition — die Wort-Vorgabe führt.
         st.weatherTransition = null;
         const sunny = r._weatherFieldFor("sunny");
@@ -1861,7 +1861,7 @@ async function checkBandSchattenTakt({ page, check }) {
             st.csmNode = { lights: k6 };
             r._schattenAlleNeu();
             aus.t6 = k6.every((l) => l.shadow.needsUpdate === true);
-            aus.ohneKarte = window.__fehlt(r._loopShadowUpdate, /shadowMap\.needsUpdate\s*=/);
+            aus.ohneKarte = __fehlt(r._loopShadowUpdate, /shadowMap\.needsUpdate\s*=/);
             // S1 — der alte Schreiber (nur renderer.shadowMap.needsUpdate) markiert keine Kaskade
             const k7 = [kaskade(), kaskade()];
             st.csmNode = { lights: k7 };

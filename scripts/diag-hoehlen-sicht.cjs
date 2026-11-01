@@ -647,12 +647,10 @@ const server = statikServer();
             let HINAUS = null;
             const T = window.THREE;
             const takt = () => {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {}
+                __handTakt();
             };
             // einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`)
-            const schwinge = () => window.__weltStehtNach(takt);
+            const schwinge = () => __weltStehtNach(takt);
             // ── (n) DER STOFF ENTSTEHT IM WORKER: der Kern ist eingefroren — die Wand reicht dem Haupt-Thread eine zählende
             // Kopie (jeder Leser fragt `globalThis.__gelaendeCore` je Ruf) und zählt die Rufe des Fels-Gesetzes je Worker-Bau
             const GK0 = globalThis.__gelaendeCore;
@@ -840,7 +838,7 @@ const server = statikServer();
                 anzahl: mundListe.length,
                 km2,
                 jeKm2: +(mundListe.length / km2).toFixed(2),
-                hangGrad: mundListe.map((m) => m.hangGrad).sort((a, b) => a - b),
+                hangGrad: mundListe.map((m) => m.hangGrad).sort(aufsteigend),
             };
             mundListe.sort((a, b) => Math.hypot(a.x - WX, a.z - WZ) - Math.hypot(b.x - WX, b.z - WZ));
             // die Mündung der Blicke: die nächste zur Mitte der Welt, vor deren Mund (im Blick hinaus, 30–200 m) eine zweite liegt,
@@ -1285,7 +1283,7 @@ const server = statikServer();
                         Ys.push(0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]);
                     }
                     if (Ys.length) {
-                        const m = Ys.reduce((a, q) => a + q, 0) / Ys.length;
+                        const m = Ys.reduce(addiere, 0) / Ys.length;
                         const s = Math.sqrt(Ys.reduce((a, q) => a + (q - m) * (q - m), 0) / Ys.length);
                         wf.albedo = +m.toFixed(3);
                         wf.streuung = m > 0 ? +(s / m).toFixed(3) : 0;
@@ -1460,16 +1458,16 @@ const server = statikServer();
                 // das EINE Punktlicht-Gesetz: der Pool ruft die BRDF (je Platz), kein zweiter Rufer, kein nacktes 1/d — über die
                 // Deskriptoren (nie `P[n]` zuerst: ein Getter liefe mit dem Prototyp als this und legte seinen Speicher dort ab)
                 const brdfRufer = Object.getOwnPropertyNames(P).filter(
-                    (n) => n !== "constructor" && typeof Object.getOwnPropertyDescriptor(P, n).value === "function" && !window.__fehlt(P[n], /this\._punktLichtBrdf\(/)
+                    (n) => n !== "constructor" && typeof Object.getOwnPropertyDescriptor(P, n).value === "function" && !__fehlt(P[n], /this\._punktLichtBrdf\(/)
                 );
                 aus.code.poolGesetz =
                     brdf >= atmo.lichtLage.length &&
                     brdf > 0 &&
-                    window.__fehlt(r._lichtPoolTerm, /reciprocal\(\)/) &&
+                    __fehlt(r._lichtPoolTerm, /reciprocal\(\)/) &&
                     brdfRufer.every((n) => n === "_lichtPoolTerm");
                 aus.code.augenTslFremd =
                     ["diffuseContribution", "specularColorBlended"].find(
-                        (n) => !window.__fehlt([r._lichtPoolTerm, r._punktLichtBrdf], new RegExp("\\b" + n + "\\b"))
+                        (n) => !__fehlt([r._lichtPoolTerm, r._punktLichtBrdf], new RegExp("\\b" + n + "\\b"))
                     ) || null;
                 m1.dispose();
                 m0.dispose();
@@ -1480,7 +1478,7 @@ const server = statikServer();
             // mit dem TSL-Rechenwerk und trägt keine eigene Ziehung — und das Rechenwerk rechnet, was das Gesetz rechnet: über
             // einem Zahlen-TSL (dieselben Knoten-Methoden, u32 als Math.imul/>>>) gegen das Zahlen-Rechenwerk des Kerns an
             // 400 Punkten. Bis dahin prüfte die Linse nur Namen (ein Shader mit eigenen gleich hohen Bänken blieb grün).
-            aus.code.feinEigenHash = !window.__fehlt(r._terrainGeologyAlbedo, /43758|fract\([^;]*\bsin\(/);
+            aus.code.feinEigenHash = !__fehlt(r._terrainGeologyAlbedo, /43758|fract\([^;]*\bsin\(/);
             aus.code.feinRechenwerk = (() => {
                 const GKc = globalThis.__gelaendeCore;
                 if (

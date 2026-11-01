@@ -132,7 +132,7 @@ hauptLauf(async () => {
                 };
             };
             // Welt-bereit (Spieler-Mesh baut parallel zum Foundry-Handshake).
-            await window.__weltDa(() => !(!st.playerMesh || !st.player));
+            await __weltDa(() => !(!st.playerMesh || !st.player));
             const pm = st.playerMesh;
             res.h.playerReady = !!(pm && st.player);
             if (res.h.playerReady) {
@@ -147,7 +147,7 @@ hauptLauf(async () => {
                     hm0.children.length > 0 &&
                     !(hm0.userData && hm0.userData.foundryHeld)
                 );
-                for (const weiter = window.__deckel("der Degen der Schmiede", 300); weiter(); ) {
+                for (const weiter = __deckel("der Degen der Schmiede", 300); weiter(); ) {
                     const w = pm.userData && pm.userData.heldMesh;
                     if (w && w.userData && w.userData.foundryHeld) break;
                     await sleep(150);
@@ -156,7 +156,7 @@ hauptLauf(async () => {
                 res.h.degenStudio = !!(hmD && hmD.userData && hmD.userData.foundryHeld);
                 // (2) WARM: langschwert equipen, auf die Studio-Gestalt warten, Zahlen messen.
                 r.equipHeld("klinge_langschwert");
-                for (const weiter = window.__deckel("das Langschwert der Schmiede", 300); weiter(); ) {
+                for (const weiter = __deckel("das Langschwert der Schmiede", 300); weiter(); ) {
                     const w = pm.userData && pm.userData.heldMesh;
                     if (w && w.userData && w.userData.foundryHeld) break;
                     await sleep(150);
@@ -266,7 +266,7 @@ hauptLauf(async () => {
                 }
                 // (5) SPITZHACKE-Probe (Werkzeug-Klasse, s.schaft-Griff) — direkte Quelle + Zahlen.
                 let probe = r._heldFoundryGroup("klinge_spitzhacke");
-                for (const weiter = window.__deckel("die Spitzhacke", 300); probe === "pending" && weiter(); ) {
+                for (const weiter = __deckel("die Spitzhacke", 300); probe === "pending" && weiter(); ) {
                     await sleep(150);
                     probe = r._heldFoundryGroup("klinge_spitzhacke");
                 }

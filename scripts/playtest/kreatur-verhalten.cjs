@@ -5,9 +5,7 @@
 
 const { safeEvaluate } = require("../playtest.cjs");
 
-async function checkBandWelle6HCreatures({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWelle6HCreatures({ page, check }) {
     // ### Kreaturen-Aufträge (follow_player / wait / wander) ###
     // Default-Task „wander“ hält das Emotion-Verhalten (Aura stumm); follow_player + wait tragen ein
     // Aura-Sprite (grün/bernstein). Multi-User: Tasks stehen in NON_BROADCASTABLE_OPS.
@@ -2484,7 +2482,7 @@ async function checkBandKreaturKosten({ page, check }) {
         o.checks.s7LensFires = !!o.s7 && o.s7.min.iou < DECKUNG_MIN;
         // Absenz (window.__codeOf, Kommentare gestrippt): kein castShadow-Literal am Gelenk-Guss; die Wirts-Distanzen sind keine
         // Konstante mehr (ihre Leser hält gate:altlasten über jede Stamm-Datei, die Gestalt liest `ab`/`hyst` aus ihrer Kern-Zeile).
-        o.wLiterale = ["_buildCreatureGroup", "_buildHumanoidRig"].filter((k) => !window.__fehlt(r[k], /castShadow\s*=\s*false/)).length;
+        o.wLiterale = ["_buildCreatureGroup", "_buildHumanoidRig"].filter((k) => !__fehlt(r[k], /castShadow\s*=\s*false/)).length;
         o.checks.wAbsenz = o.wLiterale === 0;
     
         // ── (F) DIE RUHE JENSEITS DER GRENZE (S3): beide Stufen tragen DIESELBEN Knochen — wo der Gang jenseits der Grenze

@@ -32,7 +32,7 @@ hauptLauf(async () => {
         const r = await window.__weltDa();
         // Worker + Rezeptbuch abwarten (get-recipes folgt dem ready-Handshake).
         const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.eiche);
+        await __weltDa(() => f && f.ready && f.recipes && f.recipes.eiche);
         if (!f || !f.recipes || !f.recipes.eiche) return { fatal: "kein Rezeptbuch (Worker nicht ready?)" };
         const freshExtras = () => {
             r._forestExtraCache = null; // Buch-Identität bleibt bei Injektionen gleich → Cache explizit leeren

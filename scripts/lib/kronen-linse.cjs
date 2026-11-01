@@ -119,7 +119,7 @@ function bildDeckung(meshes, atlas, px) {
         px,
         () => true,
         (W, H) => {
-            if (bild) je.push(bild.reduce((n, x) => n + x, 0) * px * px);
+            if (bild) je.push(bild.reduce((a, b) => a + b, 0) * px * px);
             bild = W ? new Uint8Array(W * H) : null;
             if (!bild) je.push(0);
             // DER BODEN (S3): das Bild ist, was über dem Boden der Vorlage steht (y ≥ 0) — die Wurzeln tauchen
@@ -132,14 +132,14 @@ function bildDeckung(meshes, atlas, px) {
             };
         }
     );
-    if (bild) je.push(bild.reduce((n, x) => n + x, 0) * px * px);
-    return { je, mittel: je.reduce((s, x) => s + x, 0) / je.length, hebung: jeHebung(je) };
+    if (bild) je.push(bild.reduce((a, b) => a + b, 0) * px * px);
+    return { je, mittel: je.reduce((a, b) => a + b, 0) / je.length, hebung: jeHebung(je) };
 }
 // Das Bild JE BLICK-HEBUNG (S3 R1): das Mittel über die acht Azimute je Hebung (0°, 30°, 60° von
 // unten) — das Mittel über alle 24 Ansichten wog die Seitenansicht mit einem Drittel: die flachen Wedel der Koniferen
 // deckten von unten 12–35 % mehr, als die Seitenansicht verlor (Tanne-L1 0° 0,70 des Bilds von V18.536, Mittel 0,93).
 function jeHebung(je) {
-    return HEBUNGEN.map((_, h) => je.slice(h * AZIMUTE, (h + 1) * AZIMUTE).reduce((s, x) => s + x, 0) / AZIMUTE);
+    return HEBUNGEN.map((_, h) => je.slice(h * AZIMUTE, (h + 1) * AZIMUTE).reduce((a, b) => a + b, 0) / AZIMUTE);
 }
 
 // DIE LAGEN (4): dieselben Ansichten wie bildDeckung, aber jede Karte zählt — eine Lage je Karte über der Pixel-Mitte; die

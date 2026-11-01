@@ -21,7 +21,7 @@ async function kreaturProben(r, T, opts) {
     const grad = (a) => (a * 180) / Math.PI;
     const quantil = (arr, q) => {
         if (!arr.length) return null;
-        const b = arr.slice().sort((x, y) => x - y);
+        const b = arr.slice().sort((a, b) => a - b);
         return b[Math.min(b.length - 1, Math.floor(q * (b.length - 1) + 0.5))];
     };
     const pm = s.playerMesh.position;
@@ -93,7 +93,7 @@ async function kreaturProben(r, T, opts) {
             pm.copy(P0);
             const [{ span }, pc] = [r._voxelChunkConfig(), s.lastPlayerVoxelChunk];
             if (pc && (pc.cx !== Math.floor(P0.x / span) || pc.cz !== Math.floor(P0.z / span)))
-                await window.__weltStehtNach();
+                await __weltStehtNach();
             s.creatures = altK;
             s.creatureEmotions = altE;
             s.maxCreatures = altMax;
@@ -419,8 +419,8 @@ async function kreaturProben(r, T, opts) {
         if (!KS.fahrzeug_wagen) return { fehler: "KIND_SUBSTANCE.fahrzeug_wagen fehlt" };
         s.blueprints._t_linse_wagen = {
             name: "_t_linse_wagen",
-            parts: JSON.parse(JSON.stringify(KS.fahrzeug_wagen.parts)),
-            connections: JSON.parse(JSON.stringify(KS.fahrzeug_wagen.connections || [])),
+            parts: structuredClone(KS.fahrzeug_wagen.parts),
+            connections: structuredClone(KS.fahrzeug_wagen.connections || []),
         };
         const p = land(30, 30);
         const e = r.spawnArchitecture("_t_linse_wagen", p, { silent: true });
@@ -1138,7 +1138,7 @@ async function kreaturProben(r, T, opts) {
         pm.set(c.x, H(c.x, c.z) + 0.5, c.z);
         const baum = r.spawnArchitecture("baum_eiche", { x: c.x, y: pm.y, z: c.z }, { silent: true });
         restore.push(() => r.removeArchitecture(baum, { still: true }));
-        await window.__gebautNach(baum, { fertig: () => r._archIsRendered(baum) && r._lodTreeVisHeight(baum) > 0 });
+        await __gebautNach(baum, { fertig: () => r._archIsRendered(baum) && r._lodTreeVisHeight(baum) > 0 });
         VG.schwarmZentrum(c.wurf, s.spielZeit + 8, sonne, regen, VG.V, zt);
         pm.set(c.x + zt.dx, 0, c.z + zt.dz);
         const [F, Ld, kf] = [(aus.flucht = {}), (aus.landung = {}), []];
@@ -1248,7 +1248,7 @@ async function kreaturProben(r, T, opts) {
         for (const n of namen) {
             const f = r[n];
             if (typeof f !== "function") fehlt.push(n);
-            else if (!window.__fehlt(f, /Math\.random\s*\(/)) treffer.push(n);
+            else if (!__fehlt(f, /Math\.random\s*\(/)) treffer.push(n);
         }
         return { methoden: namen.size, benannt: BENANNT.length, fehlt, treffer };
     });
@@ -2376,7 +2376,7 @@ async function kreaturProben(r, T, opts) {
     // Takt um Takt des Spiels, bis die Siedlung steht: je Takt das Bild, dann das Werk der Leute; der Schlaf gibt dem Faden das
     // Wort (das Warten zählt der Deckel in Takten ohne Offenes, nie in Sekunden)
     const bisDa = async (name, offen, max) => {
-        for (const weiter = window.__deckel(name, max); weiter() && offen(); await sleep()) (tick(), leuteTakt());
+        for (const weiter = __deckel(name, max); weiter() && offen(); await sleep()) (tick(), leuteTakt());
     };
     // DIE UHR AUF DER STUNDE h, nie an der Uhr des Boots: ihr Sprung stellt jeden dorthin, wo sein Tag ihn um h sieht
     // (`_bewohnerAnkunft`, je Takt `ankunftJeTakt`) — gewiss über die Gegen-Stunde h + 12 (stünde die Uhr näher als `sprungH` an
@@ -2389,7 +2389,7 @@ async function kreaturProben(r, T, opts) {
     const uhrAuf = async (h, wo, da, max) => {
         for (const backen of [true, false]) {
             for (const t of [h + 12, h]) r._uhrSetzen((t % 24) / 24, "regler"), r._tickBewohner(0);
-            for (const weiter = window.__deckel(wo, max, false); weiter() && !da(); ) r._tickBewohner(0);
+            for (const weiter = __deckel(wo, max, false); weiter() && !da(); ) r._tickBewohner(0);
             if (backen) await bisDa(wo, () => r._weltOffen().leiber > 0, max);
         }
     };
@@ -2397,7 +2397,7 @@ async function kreaturProben(r, T, opts) {
     // Loop — seine Welt ist, was bis zu seinem Anfang um den Ort wuchs; wüchsen Wald oder Streu noch (die Streu im Faden
     // landet Takte später), mäße jeder Lauf einen anderen Tag. Der Deckel zählt Takte ohne Offenes und wirft beim Ort.
     const stehtUm = (wo) =>
-        window.__weltStehtNach(tick, 600).catch((f) => {
+        __weltStehtNach(tick, 600).catch((f) => {
             throw new Error(`${wo}: ${f.message}`);
         });
     // die Siedlung des Start-Dorfs (`_bewohnerMelden`: sein Plan v2 und sein Ursprung) — ohne sie bricht die Probe beim Namen
@@ -2548,7 +2548,7 @@ async function kreaturProben(r, T, opts) {
                 const je = liste.map((b) => ({ wer: wer(b), ...wSpur.get(b) }));
                 const vier = (n, l) => ({ [n + "N"]: l.length, [n]: l.slice(0, 4) });
                 return {
-                    wandN: [...WG.wand.values()].reduce((a, n) => a + n, 0),
+                    wandN: [...WG.wand.values()].reduce((a, b) => a + b, 0),
                     wand: [...WG.wand]
                         .sort((a, b) => b[1] - a[1])
                         .slice(0, 4)
@@ -2615,7 +2615,7 @@ async function kreaturProben(r, T, opts) {
                     })),
                     pxM: r._schirm().pxJeM / A.BEWOHNER.nahM,
                     kaskaden: A.SCHATTEN_KASKADE.texelM.length,
-                    takt: [q3(ms.reduce((x, y) => x + y, 0) / ms.length), q3(ms[Math.floor(ms.length * 0.95)])],
+                    takt: [q3(ms.reduce((a, b) => a + b, 0) / ms.length), q3(ms[Math.floor(ms.length * 0.95)])],
                 };
             },
         });
@@ -2950,7 +2950,7 @@ async function kreaturProben(r, T, opts) {
                     Math.max(...blicke.sektor) /
                         Math.max(
                             1,
-                            blicke.sektor.reduce((a, x) => a + x, 0)
+                            blicke.sektor.reduce((a, b) => a + b, 0)
                         )
                 ),
             },

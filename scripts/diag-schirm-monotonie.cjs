@@ -150,7 +150,7 @@ async function welt() {
         await window.__weltDa();
         if (!st.renderer || !st.renderer._isHeadlessNull) return { fatal: "kein Null-Renderer" };
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
-        await window.__weltDa(() => f?.ready && f.recipeCount > 0);
+        await __weltDa(() => f?.ready && f.recipeCount > 0);
         if (!f?.ready) return { fatal: "Foundry nicht bereit" };
         // DER TAKT der Wand: der echte Loop unter gehaltener Bühne (Mittag, Wetter fest).
         window.__schirmTakt = () => {
@@ -158,9 +158,7 @@ async function welt() {
             st.timeOfDay = 0.5;
             if (st.world) st.world.timeOfDay = 0.5;
             window.__wetterHalten();
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
+            __handTakt();
             // Der Probe-Wolf behält sein Maß: zwei Schreiber lassen Tiere im Takt wachsen (`updateGrowth` ×1,01, die
             // Nexus-Geste `creatures_size_mul` bis ×3 je Ruf) — ein Lauf traf den Wolf 13,8-fach, nachdem d* stand.
             const wolf = window.__schirmWolf;
@@ -209,9 +207,9 @@ async function welt() {
             return z;
         };
         const [x, z] = window.__messWiese;
-        st.playerMesh.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
+        pm.position.set(x, r._voxelSurfaceY(x, z) + 1.8, z);
         const offen = () => r._weltOffen().foundry; // die Foundry, wie sie das Wort „die Welt steht" zählt (A9)
-        const takte = await window.__weltStehtNach(takt); // die Welt steht (das EINE Einschwingen, welt-boot)
+        const takte = await __weltStehtNach(takt); // die Welt steht (das EINE Einschwingen, welt-boot)
         window.__buehne();
         window.__tiereHalten();
         // DIE VÖGEL HALTEN STILL: Lied und Bahn je Revier folgen der Welt-Uhr (`_vogelTakt` liest `spielZeit`, der Schwarm ebenso),
@@ -257,7 +255,7 @@ async function welt() {
         waechst();
         let still = 0,
             stillTakte = 0;
-        for (const weiter = window.__deckel("der stille Schirm", 400); still < 3 && weiter(); ) {
+        for (const weiter = __deckel("der stille Schirm", 400); still < 3 && weiter(); ) {
             for (let i = 0; i < 30; i++) {
                 takt();
                 stillTakte++;

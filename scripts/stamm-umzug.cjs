@@ -148,7 +148,7 @@ function beweise(root, T, teile) {
     }
     for (const y of fb) if (!ma.has(schl(y))) (ab.nurNeu++, namen.push(`nur neu: ${y.k}`));
     const ordnung = fa.filter((x, i) => !fb[i] || schl(x) !== schl(fb[i])).length;
-    const summe = Object.values(ab).reduce((s, v) => s + v, 0);
+    const summe = Object.values(ab).reduce(addiere, 0);
     return { n: fa.length, ab, summe, namen, ordnung, msAlt: alt.ms, msNeu: neu.ms, dateien: teile.length };
 }
 const beweisZeile = (r) =>

@@ -26,9 +26,7 @@ async function runOnce(browser, noFoundry) {
     // kurzer Warm-Pump (Chunks + erster Fern-Wasser-Bau via Scheduler)
     await page.evaluate(async () => {
         for (let i = 0; i < 120; i++) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
+            __handTakt();
             await sleep(4);
         }
     });

@@ -109,7 +109,7 @@ function streuungUrteil(sitzungen, soll) {
         }
         const min = Math.min(...w);
         const max = Math.max(...w);
-        const mittel = w.reduce((a, b) => a + b, 0) / w.length;
+        const mittel = w.reduce(addiere, 0) / w.length;
         const sigma = Math.sqrt(w.reduce((a, b) => a + (b - mittel) ** 2, 0) / Math.max(1, w.length - 1));
         const t = sitzungen.map((s) => (s.takt || {})[k]);
         const ohneTakt = t.filter((x) => !(Number.isFinite(x) && x > 0)).length;
@@ -118,7 +118,7 @@ function streuungUrteil(sitzungen, soll) {
                 `TAKT ${k}: in ${ohneTakt} von ${t.length} Sitzungen kein Takt (nvidia-smi) — der gleiche Takt ist nicht belegt`
             );
         else {
-            const ts = t.slice().sort((a, b) => a - b);
+            const ts = t.slice().sort(aufsteigend);
             const med = ts.length % 2 ? ts[ts.length >> 1] : (ts[ts.length / 2 - 1] + ts[ts.length / 2]) / 2;
             sitzungen.forEach((s, i) => {
                 if (Math.abs(t[i] - med) > med * TAKT_TOLERANZ)
@@ -170,7 +170,7 @@ const SCHALTER_MIN_BAENDER = 3; // gemessen je Block, nach dem Aufwärm-Band
 function schalterUrteil(bloecke, toleranz = 0.005) {
     const befunde = [];
     const verworfen = [];
-    const mittel = (w) => w.reduce((a, b) => a + b, 0) / w.length;
+    const mittel = (w) => w.reduce(addiere, 0) / w.length;
     const B = bloecke.map((b, i) => {
         const roh = (b.baender || []).filter((x) => Number.isFinite(x));
         const dauer = roh.slice(1);
@@ -790,7 +790,7 @@ async function folge(neu = { versuch: 1, versuche: [], letzter: true }) {
                         cpu += b.cpuJeFrameMs / B.je;
                     }
                     if (je[p.id]) continue;
-                    const mittel = werte.reduce((a, c) => a + c, 0) / werte.length;
+                    const mittel = werte.reduce(addiere, 0) / werte.length;
                     je[p.id] = {
                         gpuJeFrameMs: +mittel.toFixed(3),
                         cpuJeFrameMs: +cpu.toFixed(3),

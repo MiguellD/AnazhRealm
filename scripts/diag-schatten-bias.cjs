@@ -192,7 +192,7 @@ if (process.argv.includes("--selftest")) {
         zaehne: { maske: 40000, anteil: 0.2 },
     };
     const kopie = (f) => {
-        const s = JSON.parse(JSON.stringify(gut));
+        const s = structuredClone(gut);
         f(s);
         return s;
     };
@@ -249,17 +249,15 @@ const server = statikServer();
 
 // DIE BÜHNE (in der Seite): Boot, Foundry, die ebene Bühne der Mess-Wiese, Tiere fort.
 async function buehneBauen() {
-    await window.__weltDa();
+    await __weltDa();
     if (!st.renderer || st.renderer._isHeadlessNull) return { fatal: "kein echter Renderer" };
     const f = r._ensureAssetFoundry();
-    await window.__weltDa(() => f && f.ready && f.recipeCount > 0);
+    await __weltDa(() => f && f.ready && f.recipeCount > 0);
     const bx = -893.8,
         bz = -844.9;
-    st.playerMesh.position.set(bx - 3, r._voxelSurfaceY(bx - 3, bz) + 1.8, bz);
-    await window.__weltStehtNach(() => {
-        try {
-            r._gameLoopTick(performance.now());
-        } catch {}
+    pm.position.set(bx - 3, r._voxelSurfaceY(bx - 3, bz) + 1.8, bz);
+    await __weltStehtNach(() => {
+        __handTakt();
     }); // die Welt steht (das EINE Einschwingen, welt-boot)
     for (const c of [...st.creatures]) if (Math.hypot(c.position.x - bx, c.position.z - bz) < 80) r.removeCreature(c);
     window.__sb = { bx, bz };
@@ -287,9 +285,7 @@ async function probe(cfg) {
     };
     const halten = async (n) => {
         for (let t = 0; t < n; t++) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
+            __handTakt();
             uhrHalten();
             await sleep(25);
         }
@@ -499,7 +495,7 @@ async function probe(cfg) {
                     img.data[i * 4] = 255; // gemessen, nicht erwartet: rot
                 }
             }
-        return window.__png(img.data, W, H);
+        return __png(img.data, W, H);
     };
     // castShadow eines gesetzten Baus an/aus (je Instanz-Gruppe seiner Slots, das Bundle zeichnet neu)
     const merk = new Map();
@@ -522,7 +518,7 @@ async function probe(cfg) {
         const e = r.spawnArchitecture(typ, { x, y: boden(x, z) + 0.5, z }, { silent: true, rotationY: rotY || 0 });
         if (!e) return null;
         // die nahe Stufe (die Stufen-Wahl der Bauten geht vom Spieler aus; ein Impostor-Slot trägt keinen Schatten-Leib)
-        await window.__gebautNach(e, {
+        await __gebautNach(e, {
             fertig: () => !!((e.instSlots || e.mesh) && (e._lodLevel == null || e._lodLevel === 0)),
             bau: () => {},
             takt: () => halten(1),
@@ -587,18 +583,18 @@ async function probe(cfg) {
             const modusAlt = st.cameraMode;
             st.cameraMode = "third";
             r._applyEgoSicht();
-            st.playerMesh.position.set(o.x, o.gy + 0.9, o.z);
-            st.playerMesh.visible = true;
+            pm.position.set(o.x, o.gy + 0.9, o.z);
+            pm.visible = true;
             await halten(10);
-            st.playerMesh.position.set(o.x, st.playerMesh.position.y, o.z);
-            st.playerMesh.visible = true;
+            pm.position.set(o.x, pm.position.y, o.z);
+            pm.visible = true;
             return {
                 weg: () => {
                     st.cameraMode = modusAlt;
                     r._applyEgoSicht();
-                    st.playerMesh.visible = false;
+                    pm.visible = false;
                 },
-                wurzeln: () => [st.playerMesh],
+                wurzeln: () => [pm],
                 slots: () => [],
             };
         }
@@ -606,8 +602,8 @@ async function probe(cfg) {
     };
     // der Spieler unsichtbar, aber NAH (die Stufen-Wahl der Bauten und Tiere geht von ihm aus)
     const verstecken = () => {
-        st.playerMesh.visible = false;
-        st.playerMesh.position.set(bx - 4, boden(bx - 4, bz + 4) + 0.9, bz + 4);
+        pm.visible = false;
+        pm.position.set(bx - 4, boden(bx - 4, bz + 4) + 0.9, bz + 4);
     };
     // DIE ISOLATION (die Labor-Bedingung jeder Messung): die Bühne liegt am Wald-Rand — in seitlicher Sonne (26°) lag
     // sie ganz im Schatten der Bäume. Während einer Messung sieht jede Kaskaden-Kamera nur die Ebene ISO, und auf ihr
@@ -920,7 +916,7 @@ async function probe(cfg) {
         isoAn();
         const o = { x: fleck.x, z: fleck.z, gy: boden(fleck.x, fleck.z) };
         // der unsichtbare Spieler neben dem Fleck (die Stufen-Wahl von Bau und Tier geht von ihm aus)
-        st.playerMesh.position.set(o.x - 6, boden(o.x - 6, o.z + 6) + 0.9, o.z + 6);
+        pm.position.set(o.x - 6, boden(o.x - 6, o.z + 6) + 0.9, o.z + 6);
         const k = { px: o.x + 4, py: o.gy + 130, pz: o.z, lx: o.x, ly: o.gy, lz: o.z };
         const fremd = w.art === "bau" && w.typ ? fremdWeg(w.typ) : [];
         const leer = await schuss(k);
@@ -1202,8 +1198,8 @@ async function probe(cfg) {
             const hx = fleck.x,
                 hz = fleck.z;
             // der unsichtbare Spieler neben dem Haus: die Stufen-Wahl der Bauten geht von ihm aus (an der Bühne, 60 m weit, stand Stufe 2)
-            st.playerMesh.visible = false;
-            st.playerMesh.position.set(hx - 8, boden(hx - 8, hz + 8) + 0.9, hz + 8);
+            pm.visible = false;
+            pm.position.set(hx - 8, boden(hx - 8, hz + 8) + 0.9, hz + 8);
             const e = await bauSetzen(hausArt, hx, hz, 0.3);
             const gy = boden(hx, hz);
             for (const zeit of [cfg.tief, 0.5]) {

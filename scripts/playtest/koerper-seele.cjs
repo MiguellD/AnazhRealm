@@ -984,9 +984,7 @@ async function checkBandV1784AvatarFormFit({ page, check }) {
     );
 }
 
-async function checkBandWelle6DSoul({ page, check, errors, finalState }) {
-    void errors;
-    void finalState;
+async function checkBandWelle6DSoul({ page, check }) {
     // ### Soul-Tags + STAT_FROM_TAGS + Stat-Berechnung ###
     // Der Spieler ist ein Compound im selben Hylomorphismus-System wie Architekturen: die 10
     // MATERIAL_TAG_KEYS sind die EINE Achsen-Sprache für Soul- und Material-Tags. STAT_FROM_TAGS sind

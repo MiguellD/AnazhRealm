@@ -297,7 +297,7 @@ function taeterRinde(sb) {
                 s2.length === 2,
             s2.join(" · ")
         );
-        const korrupt = JSON.parse(JSON.stringify(ist));
+        const korrupt = structuredClone(ist);
         const k0 = Object.keys(korrupt)[0];
         korrupt[k0].sha256 = (korrupt[k0].sha256[0] === "0" ? "1" : "0") + korrupt[k0].sha256.slice(1);
         const s3 = vergleiche(korrupt, ist);

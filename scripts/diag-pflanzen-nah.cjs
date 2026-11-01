@@ -246,7 +246,7 @@ function bluetenUrteil(fall, T) {
             k += 2 * KLINGE - 1;
         }
     }
-    const m = r.length ? r.reduce((a, b) => a + b, 0) / r.length : 0;
+    const m = r.length ? r.reduce(addiere, 0) / r.length : 0;
     return {
         v:
             m >= SAFTMAL_MIN
@@ -348,7 +348,7 @@ function teppichFuss(T) {
         }
     }
     if (!fuss.length || !(hi > lo)) return Infinity;
-    fuss.sort((a, b) => a - b);
+    fuss.sort(aufsteigend);
     return (fuss[Math.floor(fuss.length * 0.9)] - lo) / (hi - lo);
 }
 function teppichDeckung(T, step, skala, neigung = TEPPICH_NEIGUNG) {
@@ -864,7 +864,7 @@ function altbestandGroesse() {
     const rng = PC.mulberry32(0x2545f491);
     const s = [];
     for (let i = 0; i < 4000; i++) s.push(PC.forestTreeSize(rng, i / 4000));
-    s.sort((x, y) => x - y);
+    s.sort(aufsteigend);
     return [s[Math.floor(0.75 * s.length)], s[Math.floor(0.98 * s.length)]];
 }
 function brustDurchmesser(T, yWelt, skala) {
@@ -890,7 +890,7 @@ function brustDurchmesser(T, yWelt, skala) {
     const mx = sx / n,
         mz = sz / n;
     // der Median der Abstände zur Achse: ein tief ansetzender Ast im Fenster verschiebt ihn nicht
-    const r = pts.map(([x, z]) => Math.hypot(x - mx, z - mz)).sort((p, q) => p - q)[pts.length >> 1];
+    const r = pts.map(([x, z]) => Math.hypot(x - mx, z - mz)).sort(aufsteigend)[pts.length >> 1];
     return 2 * r * skala;
 }
 // DER SOLITÄR (K20, nordstern §4.5 „Solitär gedrungener", Soll-Bild Solitäreiche Marbach: tiefer Kronenansatz, kurzer dicker

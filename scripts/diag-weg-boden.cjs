@@ -316,10 +316,10 @@ hauptLauf(async () => {
     // Die Büschel einer Kachel stehen erst mit der Weite der gezeichneten Vorlagen (`nahWiese.reich`, ihr EINER Schreiber ist
     // `_tickNahWiese`): der Takt läuft mit verstrichener Frist — er misst die Weite und baut keine Kachel.
     await page.evaluate(async () => {
-        await window.__weltDa((r) => r.state && r.state.scene);
+        await __weltDa((r) => r.state && r.state.scene);
         const warm = () =>
             r._foundry?.recipes?.feuerstelle && st.voxelChunks?.size > 20 && st.nahWiese?.reich > 0;
-        for (const weiter = window.__deckel("Buch, Ring und Wiesen-Weite", 4500); !warm() && weiter(); ) {
+        for (const weiter = __deckel("Buch, Ring und Wiesen-Weite", 4500); !warm() && weiter(); ) {
             r._tickVoxelChunkStreaming(st.playerMesh.position);
             r._tickNahWiese(performance.now() - 1);
             await sleep(20);

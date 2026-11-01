@@ -56,7 +56,7 @@ hauptLauf(async () => {
     const out = await page.evaluate(async (doSelftest) => {
         // ── Warmup: Welt bauen (Chunk-Plateau) + Foundry ready + Scatter konvergieren lassen
         // (das bewährte diag-no-second-treebuilder-Rezept — dieselbe Bühne, breiterer Blick).
-        for (const weiter = window.__deckel("der Ring der Inventur", 9000); weiter();) {
+        for (const weiter = __deckel("der Ring der Inventur", 9000); weiter();) {
             const r0 = r;
             if (r0 && typeof r0._gameLoopTick === "function") {
                 try {
@@ -69,7 +69,7 @@ hauptLauf(async () => {
         }
         const o = { foundryEnabled: r._foundryEnabled ? r._foundryEnabled() : false };
         const f = r._ensureAssetFoundry ? r._ensureAssetFoundry() : null;
-        await window.__weltDa(() => !!!(f && !f.ready));
+        await __weltDa(() => !!!(f && !f.ready));
         o.foundryReady = !!f?.ready;
         for (let it = 0; it < 350; it++) {
             st._frameOverBudget = false;
@@ -87,7 +87,7 @@ hauptLauf(async () => {
         // ── Inventur-Settle: die in-flight-Anfragen ausklingen lassen (ein Key, der nach
         // dem Deckel noch in f.pending hängt, IST das Verhungern-Symptom → zählt unten rot).
         if (f) {
-            await window.__gebautNach("noch: f.pending && f.pending.size > 0", {
+            await __gebautNach("noch: f.pending && f.pending.size > 0", {
                 fertig: () => !!!(f.pending && f.pending.size > 0),
                 takt: async () => {
                     try {
@@ -289,7 +289,7 @@ hauptLauf(async () => {
                     return tally("substanz", "himmel/gestirn");
                 if (chain.some((p) => p.userData && p.userData.kind === "creature"))
                     return tally("substanz", "kreatur");
-                if (st.playerMesh && chain.includes(st.playerMesh)) return tally("substanz", "avatar");
+                if (pm && chain.includes(pm)) return tally("substanz", "avatar");
                 if (chain.some((p) => islandSet.has(p))) return tally("entscheid", "fliegende Insel (E-F)");
                 for (const p of chain) {
                     const nm = archMeshName.get(p);

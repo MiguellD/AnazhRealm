@@ -302,7 +302,7 @@ function seitenPruefer() {
 async function bereit(page, weltId) {
     return page.evaluate(async (weltId) => {
         const t0 = performance.now();
-        await window.__weltDa((w) => w.state?.worldMeta);
+        await __weltDa((w) => w.state?.worldMeta);
         const welt = st.worldMeta.worldId;
         return { ok: !weltId || welt === weltId, ms: Math.round(performance.now() - t0), welt };
     }, weltId || null);

@@ -94,7 +94,7 @@ function energieVerdict(E) {
             v.push(
                 `energie-ort: ${x.name}@${x.d} trifft mit ${x.eff} ohne benannten Ort — die Streuung ist nicht benannt`
             );
-    const med = (a) => a.slice().sort((x, y) => x - y)[a.length >> 1];
+    const med = (a) => a.slice().sort(aufsteigend)[a.length >> 1];
     if (!(med(g) >= med(d)))
         v.push(`energie-waffe: Großschwert ${med(g).toFixed(1)} J im Mittel unter dem Dolch ${med(d).toFixed(1)} J`);
     // zu nah: der Ort ist benannt (nicht der Schlagpunkt), die Wirkung steht auf oder über dem Boden des Kerns (0,25)
@@ -607,7 +607,7 @@ async function k5Lauf(page) {
     await sleep(1500);
     await page.reload({ waitUntil: "domcontentloaded", timeout: 120000 });
     await warteAufWelt(page, 180000);
-    k5.nachReload = await page.evaluate(`window.__seitenTakt().then(${K5_ABDRUCK})`);
+    k5.nachReload = await page.evaluate(`__seitenTakt().then(${K5_ABDRUCK})`);
     return k5;
 }
 // die Zahl: der Hash des gespeicherten und des geladenen Abdrucks, dann die ganze Probe (Zahlen auf Tausendstel)
@@ -655,6 +655,37 @@ const { WELLE_L, K5_VOR, K5_ABDRUCK, K1_BILD, K1_LABOR } = require("./lib/kampf-
 const NUR_K5 = process.argv.includes("--k5");
 // (Q15) `--k1` fährt nur den Treffer im Bild je Mutation und das Labor — mit dem echten Renderer (die Station halten.K1 am Gerät)
 const NUR_K1 = process.argv.includes("--k1");
+// das Urteil der Arena (rein, Probe und Selbst-Test): der Klick ein Hieb, das Gerät steht noch (kein Abbau), der Schwung trifft,
+// der Stoß dreht es (Ausschlag ≥ 0,02 rad, die Instanz-Matrix folgt), es ruht ≤ 6 s und verlässt den Takt, der Pfeil stößt es
+// wieder an (≥ 0,005 rad/s), AnazhRealm._stossImpuls rechnet im Kern (der Spion an __schmiedeCore.stossImpuls), die Blocker
+// des Werks sind die Kästen der Hülle seiner Gestalt (`__huelle`), jede bewegte Gestalt antwortet jedem vollen Hieb jeder
+// Nahkampf-Gattung und ruht ≤ 6 s (die Klasse in der Welt) — die Zahlen stehen in der Zeile ARENA
+function arenaVerdict(A) {
+    if (!A || A.fehler) return ["arena keine Probe " + (A && A.fehler)];
+    return Object.entries({
+        verb: A.verb === "hieb",
+        abbau: A.steht,
+        treffer: A.traf,
+        stoss: A.ausRad >= 0.02 && A.matrixFolgt,
+        ruhe: A.ruheS > 0 && A.ruheS <= 6 && A.ausDemTakt,
+        pfeil: A.pfeilRad >= 0.005,
+        kern: A.stossKern,
+        huelle: A.blocker > 0 && A.blocker === A.huelle,
+        klasse: !!A.ruhe && !A.stumm.length && Object.values(A.ruhe).every((t) => t > 0 && t <= 6),
+    })
+        .filter(([, gut]) => !gut)
+        .map(([n]) => "arena-" + n);
+}
+// das Urteil der Arena und sein Selbst-Test
+function arenaUrteil(A) {
+    console.log("  ARENA " + JSON.stringify(A));
+    check(
+        !arenaVerdict(A).length,
+        "Q16 die Arena der Welt antwortet dem Hieb und dem Pfeil über den EINEN Stoß " + arenaVerdict(A)
+    );
+    const rot = arenaVerdict({ verb: "abbau", ausRad: 0.3, ruheS: 9, blocker: 1, huelle: 2 }).length;
+    check(rot === 9, `SELBST-TEST Q16: jedes Urteil der Arena fällt an seiner Verderbnis (${rot}/9)`);
+}
 // das Bild der Linse (Rezept linse, 800 × 600: die Mitte frei von der Oberfläche — bei 640 × 360 deckte die Konsole den Treffer)
 const BILD = NUR_K5 || NUR_K1;
 
@@ -742,7 +773,7 @@ async function k1Ende(browser, K) {
         await warteAufWelt(page, 120000);
         // die Welt steht (das EINE Einschwingen, welt-boot): Takt um Takt ein Bild des Loops — der Takt von Hand in Mikro-Tasks
         // gab dem echten Renderer nie ein Bild frei (`--k1` swiftshader: „DIE WELT STEHT NICHT nach 17181 Takten", ankunft 83 offen)
-        await page.evaluate(() => window.__weltStehtNach());
+        await page.evaluate(() => __weltStehtNach());
 
         // SYNCHRON messen (keine awaits — der rAF-Loop kann nicht dazwischenfunken).
         if (NUR_K5) return k5Ende(browser, await k5Lauf(page));
@@ -776,10 +807,10 @@ async function k1Ende(browser, K) {
                 return n > 0;
             });
             o.checks.ruftSelbst = !ruft(() => r._hitStopFactor(0), "_playerSwingDauer"); // ein Leser ohne Ruf bleibt stumm
-            const absenzKlick = window.__fehlt(r._playerAttackCreature, /attackSpeed|damageCreature/);
-            const absenzDauer = window.__fehlt(r._beginPlayerSwing, /attackSpeed/);
+            const absenzKlick = __fehlt(r._playerAttackCreature, /attackSpeed|damageCreature/);
+            const absenzDauer = __fehlt(r._beginPlayerSwing, /attackSpeed/);
             // der Tod im Kampf fällt den EINEN Fall (_kreaturFaellt, (D) treibt ihn), keiner despawnt selbst
-            const absenzTod = window.__fehlt([r._creatureCombatDeath, r._kreaturFaellt], /removeCreature\(/);
+            const absenzTod = __fehlt([r._creatureCombatDeath, r._kreaturFaellt], /removeCreature\(/);
 
             // ── (A) DAUER ∝ √I — ein ECHTER Blueprint durch die ECHTE Quelle, ρ(holz) × 2 in der Stoff-Zeile ──
             const box = (m, sz, p) => ({ shape: "box", material: m, size: sz, position: p || { x: 0, y: 0, z: 0 } });
@@ -1872,6 +1903,8 @@ async function k1Ende(browser, K) {
             "SELBST-TEST (S9): der Leib ohne Glieder (Reichweite = halb + radius) → Kopf und Rute liegen außerhalb, die Deckungs-Probe nennt sie"
         );
     }
+    // (Q16) die Arena der Welt (w4-arena-welt, in WELLE_L)
+    arenaUrteil(welle && welle.z.arena);
     console.log(`\n  ${ok ? "✅ GRÜN" : "❌ ROT"} — gate:kampf-gefuehl\n`);
     process.exit(ok ? 0 : 1);
 })();

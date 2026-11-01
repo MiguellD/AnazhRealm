@@ -290,7 +290,7 @@ function sichtLinse(cfg) {
             }
         return o;
     };
-    const bytes = () => Object.values(bytesJe()).reduce((a, x) => a + x, 0);
+    const bytes = () => Object.values(bytesJe()).reduce((a, b) => a + b, 0);
     let b0 = 0,
         bj0 = {};
     // DER INHALT der Sätze je Frame — nur aus UNABHÄNGIGEN Belegen: ein Bereich kam (+), ging (−) oder
@@ -524,7 +524,7 @@ function sichtLinse(cfg) {
             ruhe += p._instanzBehalten || 0;
             for (const n of ["_hoehlenSicht", "_hoehlenSichtLicht", "_chunkSatzAbschnitt"]) ruhe += o.aufrufe[n] || 0;
             o.arbeit = ruhe;
-            o.trefferSumme = Object.values(o.treffer).reduce((a, x) => a + x, 0);
+            o.trefferSumme = Object.values(o.treffer).reduce((a, b) => a + b, 0);
             o.fehlt = fehlt;
             lichtOffen = lichtDreht() || lichtOffen;
             o.licht = lichtOffen;
@@ -1165,7 +1165,7 @@ function sichtLauf(k) {
             await sleep((k.ein || 5) * 1000);
             // DIE WELT STEHT (das EINE Einschwingen, welt-boot `__weltStehtNach`, der Takt der Seite) — sonst misst die Ruhe das
             // Einschwingen (bis D3d: 3 s Wanduhr ohne neuen Chunk und ohne neuen Stand eines Satzes)
-            await window.__weltStehtNach();
+            await __weltStehtNach();
             messen = true;
             naechste();
             if (!phase) rend.setAnimationLoop(null);

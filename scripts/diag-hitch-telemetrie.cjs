@@ -695,11 +695,11 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async (laufzeitMs) => {
         const res = {};
-        await window.__weltDa(() => !!st);
+        await __weltDa(() => !!st);
         // Settle wie diag-blick: Chunks-Plateau (großzügig — swiftshader ist zäh).
         let stable = 0,
             last = -1;
-        for (const weiter = window.__deckel("der Ring", 600); weiter(); ) {
+        for (const weiter = __deckel("der Ring", 600); weiter(); ) {
             const sz = st.voxelChunks ? st.voxelChunks.size : 0;
             if (sz === last) stable++;
             else {

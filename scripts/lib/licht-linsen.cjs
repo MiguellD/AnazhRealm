@@ -68,7 +68,7 @@ function albedoAuswerten(hell, dunkel, W, H, deckung, name) {
         hell: mittel((k) => !istGruen(k) && ya[k] >= med),
         dunkel: mittel((k) => !istGruen(k) && ya[k] < med),
         Yq: [q(0.05), q(0.25), q(0.5), q(0.75), q(0.95)].join("/"),
-        png: window.__png(img.data, W, H),
+        png: __png(img.data, W, H),
     };
 }
 
@@ -880,7 +880,7 @@ function tagKurve(o) {
                     X: +(s[4] / n).toPrecision(4),
                     warm: +(s[1] / Math.max(s[3], 1e-9)).toFixed(3),
                 };
-                if (o.png) z.png = window.__png(u8, W, H);
+                if (o.png) z.png = __png(u8, W, H);
                 zeilen.push(z);
                 if (u === 0.5) {
                     // DER ANKER: die 18-%-Karte waagrecht, 2,5 m vor dem Auge, 0,6 m unter ihm, ohne Schatten — das Licht der Welt
@@ -1168,7 +1168,7 @@ function nahFernSicht(opts) {
                 laeufe = 0;
             const spur = [];
             await ruhe(cam, "die Nah-Fern-Sicht");
-            for (let lauf = 0, weiter = window.__deckel("die Ruhe der Nah-Fern-Sicht", 400); weiter(); lauf++) {
+            for (let lauf = 0, weiter = __deckel("die Ruhe der Nah-Fern-Sicht", 400); weiter(); lauf++) {
                 zeichne(cam);
                 px = await lies();
                 laeufe = lauf + 1;
@@ -1635,7 +1635,7 @@ function laubGegenlicht(opts) {
                     }
                 }
             // das Alpha setzt `__png` deckend (welt-boot)
-            return { Yp, Cp, png: window.__png(img.data, W, H) };
+            return { Yp, Cp, png: __png(img.data, W, H) };
         };
         try {
             for (const m of alle) m.visible = laub.includes(m);
@@ -1695,7 +1695,7 @@ function laubGegenlicht(opts) {
                 const g = window.__karteGestalt;
                 const lab = window.__lab;
                 if (opts.boden) {
-                    const mittel = (x, m = x.maske.reduce((s, v) => s + v, 0)) => m ? Object.assign(lab([0, 1, 2].map((q) => x.Cp.reduce((s, v, i) => (i % 3 === q && x.maske[(i / 3) | 0] ? s + v : s), 0) / m)), { pixel: m }) : null;
+                    const mittel = (x, m = x.maske.reduce((a, b) => a + b, 0)) => m ? Object.assign(lab([0, 1, 2].map((q) => x.Cp.reduce((s, v, i) => (i % 3 === q && x.maske[(i / 3) | 0] ? s + v : s), 0) / m)), { pixel: m }) : null;
                     const [lg, lk] = [mittel(g), mittel(b)];
                     if (!lg || !lk) return { fehler: "die Stelle zeichnet kein Pixel" };
                     return Object.assign(out, { stufe: g.stufe + " → " + stufeJetzt, paar: "fern/nah", karte: { gestalt: lg, karte: lk, verhaeltnis: +(lk.Y / lg.Y).toFixed(3), dL: +(lk.L - lg.L).toFixed(2), dC: +(lk.C - lg.C).toFixed(2), png: [g.png, b.png] } });
@@ -2136,7 +2136,7 @@ function luftTiefe(o) {
             if (d < 1) return 0;
             return 60 * (hi === c[0] ? ((c[1] - c[2]) / d + 6) % 6 : hi === c[1] ? (c[2] - c[0]) / d + 2 : (c[0] - c[1]) / d + 4);
         };
-        const med = (a) => (a.length ? +a.slice().sort((x, y) => x - y)[a.length >> 1].toPrecision(4) : null);
+        const med = (a) => (a.length ? +a.slice().sort((a, b) => a - b)[a.length >> 1].toPrecision(4) : null);
         // β und Blende des Schusses über dem Anwenden des Himmels; der Feld-Pass wie in der Spiel-Schleife
         let dichte = null;
         let blende = 1;
@@ -2638,7 +2638,7 @@ function naesseSicht(o) {
             glanz: poroes ? +((0.8 / poroes.rauh) ** 4).toFixed(2) : null,
             regen,
             regenbild: +(mittel(nass) / mittel(klar)).toFixed(3),
-            png: o.png ? [klar, frisch, nass].map((u8) => window.__png(u8, W, H)) : undefined,
+            png: o.png ? [klar, frisch, nass].map((u8) => __png(u8, W, H)) : undefined,
         };
     })();
 }
@@ -2738,13 +2738,13 @@ function kontaktSicht(o) {
         // je Linie zwei Kanten beidseits des Kerns (h[0] Kern … Rand): gültig mit Kern ≤ 10 %, Rand ≥ 90 %, ohne Fleck; dunkle Flecken
         // (< 1/5 des Sonnen-Anteils) tragen kein f, Lücken bis 3 cm überbrückt die Gerade
         const kanten = (abc) => {
-            const sonne = abc.map(([, bb, c]) => bb - c).sort((x, y) => x - y)[abc.length >> 1];
+            const sonne = abc.map(([, bb, c]) => bb - c).sort((a, b) => a - b)[abc.length >> 1];
             const f = abc.map(([a, bb, c]) => (bb - c > 0.2 * sonne ? (a - c) / (bb - c) : NaN));
             for (let i = 1, j; i < f.length; i = j + 1) {
                 for (j = i; j < f.length && f[j] !== f[j]; j++);
                 for (let k = i; k < j && j < f.length && j - i <= 10; k++) f[k] = f[i - 1] + ((f[j] - f[i - 1]) * (k - i + 1)) / (j - i + 1);
             }
-            const m3 = f.map((x, i) => [f[i - 1] ?? x, x, f[i + 1] ?? x].sort((y, z) => y - z)[1]);
+            const m3 = f.map((x, i) => [f[i - 1] ?? x, x, f[i + 1] ?? x].sort((a, b) => a - b)[1]);
             const k = m3.reduce((m, x, i) => (x === x && !(m3[m] <= x) ? i : m), -1);
             return [m3.slice(0, k + 1).reverse(), m3.slice(k)].map((h) =>
                 k < 0 || h.some((x) => x !== x) ? "fleck" : !(h[0] <= 0.1) ? "kern" : !(h[h.length - 1] >= 0.9) ? "rand" : (h.filter((x) => x > 0.1 && x < 0.9).length * 3) / 10
@@ -2764,7 +2764,7 @@ function kontaktSicht(o) {
                     cam.lookAt(ziel);
                     cam.updateMatrixWorld(true);
                     const A = await schuss();
-                    if (o.png && z === "0.25") aus.posen[pose] = { png: window.__png(o.u8.slice(), W, H) };
+                    if (o.png && z === "0.25") aus.posen[pose] = { png: __png(o.u8.slice(), W, H) };
                     pf.visible = false;
                     const B = await schuss();
                     pf.visible = true;
@@ -2780,7 +2780,7 @@ function kontaktSicht(o) {
                 }
                 // der Fuß: der Median der gültigen Kanten; der Zuwachs: die Gerade w = a + k · L über alle
                 const P = linien.flatMap(([s, L, ...k]) => k.filter((w) => w >= 0).map((w) => [L, w, s]));
-                const fu = P.filter((q) => q[2] <= 0.3).map((q) => q[1]).sort((x, y) => x - y);
+                const fu = P.filter((q) => q[2] <= 0.3).map((q) => q[1]).sort((a, b) => a - b);
                 const mi = (i) => P.reduce((s, q) => s + q[i], 0) / P.length;
                 const k = P.reduce((s, [L, w]) => s + (L - mi(0)) * (w - mi(1)), 0) / P.reduce((s, [L]) => s + (L - mi(0)) ** 2, 0);
                 const Ls = P.map((q) => q[0]);

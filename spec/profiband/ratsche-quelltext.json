@@ -78,14 +78,18 @@
             "zweck": "Struktur: jede Schirm-Lesung am AST ihrem Glied zugeordnet, Alias-Fluss je Methode, Erzeuger und UI-Lage an benannter Liste",
             "stamm": 1
         },
-        "scripts/diag-studio-uebergabe.cjs": {
-            "zweck": "Messung: führt die Hülle im vm als Studio-Seite aus (sie sendet das Werk); Struktur: die EINE Route der Übergabe in der Heimat",
-            "stamm": 1,
+        "scripts/diag-schmiede-contract.cjs": {
+            "zweck": "Struktur: die Orte der Meshes der Hülle (je `new THREE.Mesh(` seine Funktion) — die Arena der Schmiede baut kein Gerät in der Hülle (w4-arena-welt A4)",
             "datei": 1
         },
         "scripts/diag-streu-wahrheit.cjs": {
             "zweck": "Messung: führt phyto-core und foundry-core im vm aus (Kern-Daten, Karten-Codec) und liest die Emitter je Art am Kern",
             "datei": 2
+        },
+        "scripts/diag-studio-uebergabe.cjs": {
+            "zweck": "Messung: führt die Hülle im vm als Studio-Seite aus (sie sendet das Werk); Struktur: die EINE Route der Übergabe in der Heimat",
+            "stamm": 1,
+            "datei": 1
         },
         "scripts/diag-tor-fern.cjs": {
             "zweck": "Messung: führt _huelleVon aus der Quelle aus (die Fernform liest, was er liest)",

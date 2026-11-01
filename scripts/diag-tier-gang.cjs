@@ -404,7 +404,7 @@ const SCHWERE = (k) => {
     }
     // die Zwillinge als Literal (kommentar-gestrippt: der EINE Absenz-Helfer des Welt-Boots)
     o.zwillinge = [];
-    if (!window.__fehlt([r._animateHumanoidRig, r._gaitGesetz], /\b9\.81\b/))
+    if (!__fehlt([r._animateHumanoidRig, r._gaitGesetz], /\b9\.81\b/))
         o.zwillinge.push("_animateHumanoidRig/_gaitGesetz: die Schwere als Zahl 9,81");
     return o;
 };
@@ -667,7 +667,7 @@ hauptLauf(async () => {
         await server.zeige(page, 120000, "index.html", "networkidle0");
         // die Welt und ihr Gang-Gesetz sind da: das EINE Warten ohne Frist (ein hängender Boot steht in der Stall-Akte)
         await page.evaluate(() =>
-            window.__weltDa(() => window.__tetrapodaCore && typeof window.__tetrapodaCore.gangSchritt === "function")
+            __weltDa(() => window.__tetrapodaCore && typeof window.__tetrapodaCore.gangSchritt === "function")
         );
         // je Gattung der Leib bei jedem v̂ (die KREUZ-PROBE im lateinischen Quadrat: jede Stimmung einmal je v̂, je Gattung eine
         // andere), unter Last und im Satz; dazu der Wolf unter der Mond-Schwere — im Selbsttest je Lauf sein Täter

@@ -121,7 +121,7 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
             // Ein sicher trockener Fleck nahe dem Spieler (der Test soll nie am Zufall des Sees hängen) — 50 m vor der
             // Genesis-Mitte: ihre Lichtung ist ein Grundriss der Natur-Wand, dort wächst keine Eiche, deren Krone über die
             // Scheibe reicht (Integration Welle L, Entscheid D3; die Eiche reicht mit Hain-Streuung bis ~36 m).
-            const p = st.playerMesh.position;
+            const p = pm.position;
             const gM = r._genesisMitte();
             let spot = null;
             for (let i = 0; i < 64 && !spot; i++) {
@@ -155,7 +155,7 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
             // near_water liefert einen trockenen Ufer-Ort am Wasser — oder, ohne Wasser im Umkreis, KEINEN
             // (die Engstelle `dslEvalPos` wirft benannt), nie still den Spieler-Ort. Ob es Wasser gibt, sagt ein EIGENES
             // 4-m-Raster über den Kreis (nicht die Such-Funktion des Spiels); der Rand-Gürtel 150–166 m gilt beides.
-            const pm0 = st.playerMesh.position;
+            const pm0 = pm.position;
             let nassNah = false,
                 nassFern = false;
             const nassPunkte = [];
@@ -256,26 +256,24 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
 // V4(B) Foundry-Geometrie-Speicher flach über 4 LRU-Churn-Zyklen (Deckel 32) — eingefaltet aus gate:foundry-memory (D3b, die Welt des Läufers statt eines eigenen Boots): V4(B)-GATE — DER FOUNDRY-GEOMETRIE-SPEICHER IST FLACH (Null-Renderer, foundry-ON, JS-Bilanz-Zähler):
 async function checkBandFoundrySpeicherFlach({ page, check }) {
     const out = await safeEvaluate(page, async () => {
-        await window.__weltDa();
+        await __weltDa();
         await window
             .__gebautNach("25 Chunks um den Spieler", {
                 fertig: () => (st.voxelChunks ? st.voxelChunks.size : 0) >= 25,
                 takt: async () => {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch {}
+                    __handTakt();
                     await sleep(6);
                 },
                 max: 2000,
             });
         const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => !f || f.ready);
+        await __weltDa(() => !f || f.ready);
         // dichten Wald streamen.
         for (let it = 0; it < 300; it++) {
             st._frameOverBudget = false;
             try {
                 r._gameLoopTick && r._gameLoopTick(performance.now());
-                const pp = st.playerMesh && st.playerMesh.position;
+                const pp = pm && pm.position;
                 if (pp) r._tickScatterStreaming(pp);
             } catch {}
             await sleep(6);
@@ -341,7 +339,7 @@ async function checkBandKristallKleid({ page, check }) {
     const out = await safeEvaluate(page, async () => {
         // die Ausstattung löst über das LIVE-Buch auf (studioGestalt): warten, bis das Gesetzbuch der Architektur da ist
         const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => !!(f && f.ready && f.recipes && f.recipes.feuerstelle));
+        await __weltDa(() => !!(f && f.ready && f.recipes && f.recipes.feuerstelle));
         const bp = st.blueprints || {};
         const res = {};
         for (const t of ["kristall_var0", "kristall_var7", "fels_var0", "fels_var5", "fels_var7", "glut_var0", "glutbrunnen", "marktstand_dorf", "brunnen_dorf", "laterne_dorf", "kristall_geode", "felsturm", "stein_block"])
@@ -366,28 +364,26 @@ async function checkBandKristallKleid({ page, check }) {
 // Studio-Asset (fscatter:*, die Karten in der EINEN Atlas-Gruppe), die Grammatik erscheint nur für wirklich ungemappte Arten.
 async function checkBandKeinZweiterBaumbaecker({ page, check }) {
     const out = (await safeEvaluate(page, async () => {
-        await window.__weltDa();
+        await __weltDa();
         await window
             .__gebautNach("25 Chunks um den Spieler", {
                 fertig: () => (st.voxelChunks ? st.voxelChunks.size : 0) >= 25,
                 takt: async () => {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch {}
+                    __handTakt();
                     await sleep(6);
                 },
                 max: 2000,
             });
         const o = { foundryEnabled: r._foundryEnabled() };
         const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => !f || f.ready);
+        await __weltDa(() => !f || f.ready);
         o.foundryReady = !!(f && f.ready);
         // Kräftig ticken → der Scatter streamt Regionen um den Spieler; Studio-Assets kommen an.
         for (let it = 0; it < 350; it++) {
             st._frameOverBudget = false;
             try {
                 r._gameLoopTick && r._gameLoopTick(performance.now());
-                const pp = st.playerMesh && st.playerMesh.position;
+                const pp = pm && pm.position;
                 if (pp) r._tickScatterStreaming(pp);
             } catch {}
             await sleep(10);
@@ -442,16 +438,14 @@ async function checkBandLeistungsVertrag({ page, check }) {
     const out = (await safeEvaluate(page, async () => {
         const o = { err: null };
         try {
-            await window.__weltDa();
+            await __weltDa();
             // Kurzes Boot-Settle, dann PRODUKTIONS-TREUES Regime: headless streamt
             // mit Radius=MAX endlos Welt (Boot-Mints ≠ Churn) — das Stand-Fenster
             // misst darum im GELÜFTETEN Regler-Regime (das regler-sim-Muster:
             // _isHeadlessNull ab, GPU-Anwender gestubbt, Über-Budget-Folds fahren
             // den Radius auf den Boden 70 m → die kleine Welt wird schnell FERTIG).
             for (let i = 0; i < 200; i++) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {}
+                __handTakt();
                 if (i % 15 === 0) await sleep(15);
             }
             // DIE WARTENDEN REGIONEN: eine Streu-Region mit einem Baum-Platz, dessen Karte fehlt, bleibt
@@ -464,15 +458,13 @@ async function checkBandLeistungsVertrag({ page, check }) {
                 // Welt (K30: keine Region wartet auf ihn), das Stand-Fenster misst den Churn ohne seine Lieferungen.
                 const vorrat = () => (r._foundry && r._foundry._vorrat) || false;
                 // die EINE Antwort der Welt (`_streuWartet`: auch die fehlende Regionen-Karte wartet)
-                const wartend = (liste) => r._streuWartet(st.playerMesh ? st.playerMesh.position : null, liste);
+                const wartend = (liste) => r._streuWartet(pm ? pm.position : null, liste);
                 await window
                     .__gebautNach("die Streu um den Spieler und der Vorrat", {
                         fertig: () => !(wartend() > 0 || vorrat()),
                         takt: async () => {
                             for (let i = 0; i < 30; i++) {
-                                try {
-                                    r._gameLoopTick(performance.now());
-                                } catch {}
+                                __handTakt();
                             }
                             await sleep(30);
                         },
@@ -541,7 +533,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
                 // (`_streuRegionWartet` — eine Scheibe jenseits der Reichweite des gedrosselten Radius baut weiter)
                 const ringWartet = () => {
                     const liste = [];
-                    r._streuWartet(st.playerMesh ? st.playerMesh.position : null, liste);
+                    r._streuWartet(pm ? pm.position : null, liste);
                     if (st.scatterRegions)
                         for (const k of st.scatterRegions.keys()) {
                             const grund = r._streuRegionWartet(k);
@@ -570,9 +562,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
                             const mv = r._archGruppenMints || 0;
                             const ring0 = ringStand();
                             for (let i = 0; i < 100; i++) {
-                                try {
-                                    r._gameLoopTick(performance.now());
-                                } catch {}
+                                __handTakt();
                                 feed(150);
                                 if (i % 20 === 0) await sleep(15);
                             }
@@ -600,9 +590,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
             const groups0 = st.archInstanceGroups ? st.archInstanceGroups.size : 0;
             let groupsMax = groups0;
             for (let i = 0; i < 400; i++) {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {}
+                __handTakt();
                 feed(150);
                 if (st.archInstanceGroups && st.archInstanceGroups.size > groupsMax)
                     groupsMax = st.archInstanceGroups.size;

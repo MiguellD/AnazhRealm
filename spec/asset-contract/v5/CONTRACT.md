@@ -33,7 +33,7 @@ beil · spitzhacke · spaten · schaufel` (Schlüssel aus
   im Host (N6.6, M3/M9).
 - `seed` (int): **RESERVIERT — cv:5 ist SEED-INVARIANT.** Der Waffen-Bau des
   Labs ist eine reine Funktion der Parameter (kein stochastischer Term;
-  Math.random lebt nur in der Shell-Deko der Arena). Derselbe Bauplan bei
+  die Shell würfelt nie — w4-arena-welt). Derselbe Bauplan bei
   seed 7 und 12345 ist byte-gleich; das Gate prüft die Invarianz AKTIV.
 - `lod`: Waffen/Werkzeuge tragen NUR Stufe 0
   (`PORTAL_RENDER_CONFIG.lod.kindStages = { weapon: [0] }`); jede andere Stufe
@@ -93,3 +93,16 @@ wie nachher — andere Proben desselben Rauschens); alle übrigen 42 Fälle byte
 Die Plattform-Probe des Gates (`scripts/lib/plattform-probe.cjs`) baut jeden Fall mit
 `Math.pow` ±1 ULP noch einmal und nennt die Aufrufstelle, deren Drift die Bytes erreicht
 — gegen den alten Kern: `saebel-s7-L0 ← schmiede-core.js:287`.
+
+## Die Arena (w4-arena-welt)
+
+Die Art `arena` (42 Gestalten, `ARENA_ARTEN`) ist **seed-variant** (`arenaStrom`); ihr Vertrag steht im Kopf des Kerns,
+eingefroren je Hof in `golden/arena.json`, geprüft von `gate:schmiede-contract` und `gate:kampf-gefuehl` Q16.
+
+**Re-Mint der Faltung (01.11.2026):** jedes Teil trägt den Stoff, der es IST (`ARENA_STOFF`: Holz · Lack · Stroh · Tuch ·
+Schnur · Polster · Eisen · Stahl · Messing, je Material EIN Gitter); auf die Zeile `draws` faltet das Budget-Gesetz der Brücke
+(phyto-core `budgetErzwingen`), nie der Kern — vorher fiel jede Art auf EINEN Stoff je Seh-Klasse (`stoff`/`metall` der Art),
+die Brücke hatte in 0 von 252 Fällen etwas zu falten, jetzt in 36 (Draws vorher bis 5, nach der Faltung bis 2). Geometrie
+unverändert: alle 5 Fälle tragen dieselben `vertices`, `objects` wächst (Saat 22 → 32, Waffenhof 55 → 81, Schnitthof 40 → 56,
+Schießbahn 42 → 50; der Hof 9 byte-gleich). Die Lieferung der Welt trägt je Dreieck byte-gleich die Ecken des Studio-Baus
+(252 Fälle, Same 1 und 2, gemessen am Kanal im vm); die Faltung ist Konsument, `gate:asset-contract` Selbsttest (11).

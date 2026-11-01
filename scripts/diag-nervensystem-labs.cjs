@@ -59,9 +59,9 @@ hauptLauf(async () => {
 
     const out = await page.evaluate(async () => {
         const res = { b: {}, k: {} };
-        await window.__weltDa();
+        await __weltDa();
         const f = r._ensureAssetFoundry();
-        await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.lofi && f.recipes.wolf && f.recipes.mensch);
+        await __weltDa(() => f && f.ready && f.recipes && f.recipes.lofi && f.recipes.wolf && f.recipes.mensch);
         // ===== B: das Buch traegt die drei Domänen als DATEN =====
         const lofi = f && f.recipes ? f.recipes.lofi : null;
         res.b.lofiKind = lofi && lofi.kind;
@@ -282,7 +282,7 @@ hauptLauf(async () => {
                     if (!core || typeof core.bauMensch !== "function" || typeof core.morphAuf !== "function")
                         return "err:kern fehlt";
                     const tisch = typeof BAKERS_BY_KIND !== "undefined" && typeof BAKERS_BY_KIND.koerper === "function";
-                    return tisch && window.__fehlt(r._buildHumanoidRig, /humanSkeleton/);
+                    return tisch && __fehlt(r._buildHumanoidRig, /humanSkeleton/);
                 } catch (_e2) {
                     return "err:" + _e2.message;
                 }

@@ -86,7 +86,7 @@ async function SCHUSS(W, H, mut, r = window.anazhRealm, cam = r.state.camera) {
     const A = (window.__schussA = window.__schussA || u);
     let n = 0;
     for (let i = 0; i < u.length; i += 4) n += [0, 1, 2].some((k) => Math.abs(u[i + k] - A[i + k]) > 32);
-    return { dc: auf.info.drawCalls, dreiecke: auf.info.triangles, luecke: n / (W * H), png: window.__png(u, W, H) };
+    return { dc: auf.info.drawCalls, dreiecke: auf.info.triangles, luecke: n / (W * H), png: __png(u, W, H) };
 }
 // die Seite wartet Takt um Takt (`__gebautNach`), bis die Foundry nichts mehr offen hat (`_weltOffen`) und der Vorrat durch ist —
 // dann gilt ihre Liefer-Marke
@@ -96,7 +96,7 @@ const RUHE = (r = window.anazhRealm) =>
         .then(() => r._foundry.lieferung);
 // DER GEPFLANZTE BRUCH (--selftest): die erste Körper-Antwort nach dem Erwachen verschluckt der Haupt-Faden, ihr Leser bekommt null
 function SCHLUCK() {
-    window.__weltDa((r) => r._foundry).then((r) => {
+    __weltDa((r) => r._foundry).then((r) => {
         r._foundryAntwort = (f, m) => {
             const p = m.type === "asset" && f.pending.get(m.reqId);
             if (!p) return Object.getPrototypeOf(r)._foundryAntwort.call(r, f, m);
@@ -231,7 +231,7 @@ async function kaltLauf() {
     const MUT = OPT("--mutante");
     if (MUT === "eigenmeldung")
         await page.evaluateOnNewDocument(() =>
-            window.__weltDa().then((r) => (r.state._weltbildDa = performance.now()))
+            __weltDa().then((r) => (r.state._weltbildDa = performance.now()))
         );
     // DIE SPUR DER ANKUNFT (B): die CPU-Stichproben jedes Fadens ab der Navigation (die EINE Spur der Hänger-Linse,
     // `spurProfil`), die Marken der Probe legen sie auf die Seiten-Uhr — sie endet mit der Kontrolle
@@ -415,7 +415,7 @@ hauptLauf(async () => {
     if (SELFTEST) await page.evaluateOnNewDocument(SCHLUCK);
     await server.zeige(page, 120000, "index.html", "networkidle0");
     // das erste Weltbild (der Null-Renderer setzt es beim Renderer-Bau; eine Zeit trägt nur die Kalt-Zeile, von außen)
-    await page.evaluate(() => window.__weltDa((r) => r.state._weltbildDa));
+    await page.evaluate(() => __weltDa((r) => r.state._weltbildDa));
     const out = await page.evaluate(async (selftest, r = window.anazhRealm, st = r.state) => {
         const o = { stage: 0 };
         const headless = !!(st.renderer && st.renderer._isHeadlessNull);

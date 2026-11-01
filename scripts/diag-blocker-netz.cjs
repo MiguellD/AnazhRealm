@@ -761,8 +761,8 @@ async function probe() {
         tierFragtPlatz:
             !!tier &&
             ruft("_kreaturHuellenKontakt", "_blockerUmPlatz", [tier, r._kreaturHueftL(tier), tier.position.x, tier.position.z]),
-        strahlSchleife: !window.__fehlt(P._fieldRaycast, /(?<!const arches = )this\.state\.architectures/),
-        tierSchleife: !window.__fehlt(P._kreaturHuellenKontakt, /for \(let a = 0; a < arches\.length; a\+\+\)/),
+        strahlSchleife: !__fehlt(P._fieldRaycast, /(?<!const arches = )this\.state\.architectures/),
+        tierSchleife: !__fehlt(P._kreaturHuellenKontakt, /for \(let a = 0; a < arches\.length; a\+\+\)/),
     };
     return aus;
 }
@@ -841,7 +841,7 @@ hauptLauf(async () => {
     const { browser, page } = await nullSeite({ frist: 300000 });
     await server.zeige(page, 60000);
     await page.evaluate(async () => {
-        await window.__weltDa((r) => r.state && r.state.player);
+        await __weltDa((r) => r.state && r.state.player);
     });
     const S = await page.evaluate(probe);
     await browser.close();

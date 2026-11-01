@@ -154,7 +154,7 @@ function spalt(px, py, pz, tris) {
     // --- Warmup: Render stubben, Loop pumpen bis der Ring voll ist, dann SETTLEN ---
     await page.evaluate(async () => {
         let stubbed = false;
-        for (const weiter = window.__deckel("der Ring 4", 15000); weiter(); ) {
+        for (const weiter = __deckel("der Ring 4", 15000); weiter(); ) {
             if (r && !stubbed && st && st.renderer) {
                 st.renderer.render = function () {};
                 if (typeof st.renderer.renderAsync === "function")
@@ -170,9 +170,7 @@ function spalt(px, py, pz, tris) {
             }
             if (r && typeof r._gameLoopTick === "function") {
                 if (st) st._activeRingRadius = 4; // gegen den Ramp halten
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {}
+                __handTakt();
                 // bis Ring 4 (81 Chunks) streamen, damit LOD1 (Band 1, ring 3-8) erscheint
                 // → die CROSS-LOD-Naht (B/D) wird messbar (bei 26 Chunks = nur Ring 2 = alle LOD0).
                 if (st && st.playerMesh && st.voxelChunks && st.voxelChunks.size >= 80) break;
@@ -183,9 +181,7 @@ function spalt(px, py, pz, tris) {
         // mit einem RUHIGEN Dirty-Set startet (sonst zählt es Streaming-Rebuilds mit).
         for (let i = 0; i < 200; i++) {
             if (r && typeof r._gameLoopTick === "function") {
-                try {
-                    r._gameLoopTick(performance.now());
-                } catch {}
+                __handTakt();
             }
             await sleep(2);
         }
@@ -540,9 +536,7 @@ function spalt(px, py, pz, tris) {
         const MAXF = 120;
         while ((s.dirtyVoxelChunks ? s.dirtyVoxelChunks.size : 0) > 0 && frames < MAXF) {
             frames++;
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
+            __handTakt();
             for (const key of region) {
                 if (healFrame[key] || inEdit.includes(key)) continue;
                 const u = uuidOf(key);
