@@ -572,7 +572,15 @@ class AnazhRealm_bild_kosten {
                     return;
                 }
                 let bau = -1;
-                if (ungebaut) {
+                // DER BAU IN RATEN (`_knotenRate`): im laufenden Spiel nach dem Weltbild baut kein Bild einen Knoten-Graphen am
+                // Stück — wer seinen noch nicht hat, wartet wie ein verschobener; ruhender Loop und Ladeschirm bauen wie bisher
+                if (ungebaut && welt.state._weltbildDa && !welt._loopRuht()) {
+                    if (!welt._knotenRate(N, ro, E)) {
+                        E.verschoben++;
+                        if (aufnahme !== null) welt._erstWartet(this.backend, null, aufnahme.bundleGroup);
+                        return;
+                    }
+                } else if (ungebaut) {
                     const aufruf = buehne ? B.versuch : this.info.calls;
                     if (E.aufruf !== aufruf) {
                         E.aufruf = aufruf;
@@ -619,6 +627,9 @@ class AnazhRealm_bild_kosten {
                 bauN: 0,
                 bauMs: 0,
                 verschoben: 0,
+                rateN: 0, // der Bau in Raten (`_knotenRate`): Schritte, ihre Zeit, die Frist der laufenden Aufgabe
+                rateMs: 0,
+                rateFrist: null,
                 pipeAsync: 0,
                 bereitN: 0,
                 absagenN: 0,
@@ -646,6 +657,55 @@ class AnazhRealm_bild_kosten {
         const merk = E.vorgemerkt.get(arena);
         if (lade) return (merk ? merk.add(pass) : E.vorgemerkt.set(arena, new Set([pass])), "merken");
         return bild && merk && merk.has(pass) && E.vorbauBild !== frame ? "bauen" : null;
+    }
+    // DER KNOTEN-BAU IN RATEN (profiband.K2): r184 baut den Knoten-Graphen eines Render-Objekts am Stück (`NodeBuilder.build`:
+    // prebuild, je Stufe setup · analyze · generate jede Shader-Stufe fragment · vertex · compute, buildCode) — 60–100 ms je
+    // Stoff (Radeon, Genesis Ego im Stand: das Vorwärmen der Leiber, 11 Bauten Σ 825 ms, je Bild einer, Belegung p95 113,6 ms).
+    // Hier geht derselbe Gang Schritt für Schritt (eine Shader-Stufe einer Stufe) im Pass des Render-Objekts — der Bau liest MRT,
+    // Ziel und contextNode des Renderers, die nur dort gelten (darum nie buildAsync daneben) —, je Aufgabe des Event-Loops bis zur
+    // Frist ERST_BAU_MS (der erste Schritt immer); der fertige Bau tritt wie im Vendor in den Bau-Cache, ein Zwilling gleichen
+    // Schlüssels übernimmt ihn, ein werfender Schritt meldet sich laut und der Vendor baut am Stück. true = der Bau steht.
+    _knotenRate(N, ro, E) {
+        const d = N.get(ro);
+        if (E.rateFrist === null) {
+            E.rateFrist = performance.now() + AnazhRealm.ERST_BAU_MS;
+            Promise.resolve().then(() => (E.rateFrist = null));
+        }
+        const t0 = performance.now();
+        if (t0 >= E.rateFrist) return false;
+        const key = N.getForRenderCacheKey(ro);
+        let s = N.nodeBuilderCache.get(key);
+        try {
+            const R = s === undefined ? d.rate || (d.rate = { b: N._createNodeBuilder(ro, ro.material), i: -1 }) : null;
+            const b = R && R.b;
+            let arbeit = !!R && R.i < 0 && (b.prebuild(), (R.i = 0), true);
+            for (const [STUFE, SHADER] = AnazhRealm.KNOTEN_GANG; R && !arbeit && R.i < 9;) {
+                const stufe = STUFE[(R.i / 3) | 0];
+                const shader = SHADER[R.i % 3];
+                b.setBuildStage(stufe);
+                if (R.i++ % 3 === 0 && b.context.position && b.context.position.isNode)
+                    b.flowNodeFromShaderStage("vertex", b.context.position);
+                b.setShaderStage(shader);
+                for (const k of b.flowNodes[shader]) stufe === "generate" ? b.flowNode(k) : k.build(b);
+                arbeit = b.flowNodes[shader].length > 0; // eine leere Shader-Stufe geht im selben Schritt mit
+            }
+            [E.rateN, E.rateMs] = [E.rateN + 1, E.rateMs + performance.now() - t0];
+            if (arbeit) return false;
+            if (R) {
+                b.setBuildStage(null);
+                b.setShaderStage(null);
+                b.buildCode();
+                b.buildUpdateNodes();
+                N.nodeBuilderCache.set(key, (s = N._createNodeBuilderState(b)));
+            }
+        } catch (e) {
+            d.rate = undefined;
+            this._bruchMelden(`KNOTEN-RATE: ein Schritt warf (${(e && e.message) || e}) — der Vendor baut am Stück`);
+            return (N.getForRender(ro), true);
+        }
+        [d.rate, d.nodeBuilderState] = [undefined, s];
+        s.usedTimes++;
+        return true;
     }
     // Der EINE Grund-Knoten jedes Schatten-Stoffs (r184 `vec4(0,0,0,1)`, je Licht neu gebaut) — `renderObject` oben
     static _schattenGrund() {
@@ -3818,8 +3878,13 @@ AnazhRealm.PERF_SHADOW_RANGE_MAX = 170; // = der Default-Ceiling (Fallback, wenn
 // Die CSM-Tiefe (maxFar) je Meter Schatten-Reichweite: EINE Zahl für Boot und Regler (100–170 → 180–306 m).
 AnazhRealm.SCHATTEN_FERN_FAKTOR = 1.8;
 // DIE ERST-ZEICHNUNG (`_configureRenderer`): je Render-Aufruf der Welt-Szene baut der erste Erst-Bau immer, jeder weitere nur,
-// solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass.
+// solange der Aufruf unter dieser Zeit (ms) baute — ein Frame trägt so höchstens einen schweren Knoten-Bau je Pass. Im laufenden
+// Spiel nach dem Weltbild ist sie die Frist der Raten je Aufgabe (`_knotenRate`, der Gang r184 `NodeBuilder.build`: KNOTEN_GANG).
 AnazhRealm.ERST_BAU_MS = 4;
+AnazhRealm.KNOTEN_GANG = Object.freeze([
+    Object.freeze(["setup", "analyze", "generate"]),
+    Object.freeze(["fragment", "vertex", "compute"]),
+]);
 // DER BAU-SCHLÜSSEL (`_gestaltSchluessel`): die Zahlen eines Stoffs, die der Knoten-Bau nur als Stoff-Referenz liest — ihr
 // Wert (0 oder nicht) teilt kein Programm
 AnazhRealm.BAU_NEUTRAL = Object.freeze(["roughness", "metalness", "envMapIntensity", "emissiveIntensity"]);
