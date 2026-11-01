@@ -2653,6 +2653,39 @@ class AnazhRealm_werkstatt_hud {
         if (hud && hud.classList.contains("ruht") !== ruht) hud.classList.toggle("ruht", ruht);
     }
 
+    // DER VORBAU DER SCHUBLADEN (spielgang.K3, aus `_vorbauBedienung`): die erste Öffnung des Ich und jeder Schublade trug die
+    // kalten Wege ihres Baums im Tasten-Hörer und im ersten Bild — das erste Rezeptbuch mit seinen Bauplan-Analysen, den ersten
+    // Stil, das erste Layout (Radeon echt, werkbank bedienung: Tab 82 ms im Hörer, die Einstellungen 81 ms Layout; warm 20 und
+    // 4 ms). Der Vorbau zeichnet das Ich einmal vor und legt jede verborgene Schublade einmal aus — unsichtbar und im selben
+    // Takt wieder verborgen, kein Bild sieht sie —, je Takt EINE. true: alles vorgebaut.
+    _uiVorbau() {
+        if (typeof document === "undefined") return true;
+        const V = this._uiVorbauStand || (this._uiVorbauStand = { ich: false, aus: new WeakSet() });
+        if (!V.ich) {
+            V.ich = true;
+            this.renderInventoryUI();
+            this.recomputePlayerStats();
+            this._ichRenderSpecSheet();
+            return false;
+        }
+        for (const el of [
+            document.getElementById("inventory-overlay"),
+            ...document.querySelectorAll(".drawer[data-drawer]"),
+        ]) {
+            if (!el || V.aus.has(el)) continue;
+            V.aus.add(el);
+            if (!el.hidden) continue; // offen ist sie ausgelegt
+            const sicht = el.style.visibility;
+            el.style.visibility = "hidden";
+            el.hidden = false;
+            void el.offsetHeight; // Stil und Layout jetzt — die Eingabe ruht
+            el.hidden = true;
+            el.style.visibility = sicht;
+            return false;
+        }
+        return true;
+    }
+
     // Eine Schublade öffnet: der Zeiger wird frei (die Klicks gehören der Schublade) und ein gehaltenes Mahlen endet.
     _uiZeigerFrei() {
         this.state.verbTafel.gehalten.break = false;

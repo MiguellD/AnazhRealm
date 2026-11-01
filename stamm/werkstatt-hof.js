@@ -1395,15 +1395,17 @@ class AnazhRealm_werkstatt_hof {
     // DER VORBAU DER ICH-BÜHNE (spielgang.K3, aus `_vorbauBedienung`): Tab öffnet die Bühne, und ihr erster Render baute die
     // Programme des Leibs unter dem Licht der Bühne — jedes Öffnen trug ein bis drei davon (Radeon echt, werkbank bedienung:
     // Tab 195 → 133 → 98 → 77 → 61 ms über fünf Runden, je Bild 15–37 ms Knoten-Bau). Der Vorbau zeichnet die Bühne bei
-    // geschlossenem Ich je Takt EINMAL — die Erst-Zeichnung baut darin wie beim Öffnen —, bis sie ganz zeichnet.
+    // geschlossenem Ich je Takt EINMAL — die Erst-Zeichnung baut darin wie beim Öffnen —, bis sie ganz zeichnet. true: steht.
     _ichVorbau() {
         const st = this.state;
-        if (st.inventoryOpen) return; // offen zeichnet ihr eigener Takt
+        if (st.inventoryOpen) return true; // offen zeichnet ihr eigener Takt
         const stage = this._ichEnsureStage();
-        if (!stage || !stage.rendererReady || stage.vorgebaut) return;
+        if (!stage || stage.vorgebaut) return true;
+        if (!stage.rendererReady) return false;
         this._ichStageShow((st.player && st.player.soul) || "human");
         this._buehneRender(stage.renderer, stage.scene, stage.camera, "Ich-Bühne");
         if (!stage.renderer.buehne || stage.renderer.buehne.ganz) stage.vorgebaut = true;
+        return false;
     }
 
     // Ich-G — die Bühne + das Spec-Sheet auf den AKTUELLEN Körper aktualisieren (nach einem Seelen-Wechsel).

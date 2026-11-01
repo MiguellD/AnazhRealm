@@ -1121,7 +1121,7 @@ class AnazhRealm_siedlung_bauten {
             Object.assign(V, { gast: geist, name, seit: performance.now() });
             return;
         }
-        if (typeof this._ichVorbau === "function") this._ichVorbau();
+        if (this._ichVorbau()) this._uiVorbau();
     }
 
     // Steht der Gast gebaut? Jedes Glied hat Render-Objekte, und jedes trägt seinen Knoten-Bau und eine fertige Pipeline.
