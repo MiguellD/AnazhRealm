@@ -949,18 +949,53 @@ class AnazhRealm_dirigent_regler {
         }
         // DAS BEDIENUNGS-OHR (spielgang.K3): die Event-Timing-API misst jede Interaktion des Spielers (Eingabe bis zum
         // nächsten gemalten Bild); je Interaktion (interactionId) zählt ihr längstes Ereignis, die INP liest
-        // `_bedienungInp`. Fehlt der Entry-Typ, bleibt die INP ungemessen (null), nie 0.
+        // `_bedienungInp`. Fehlt der Entry-Typ, bleibt die INP ungemessen (null), nie 0. Dazu hört es die langen Bilder (LoAF)
+        // und je Druck die Taste oder den Hotbar-Platz: `_bedienungInp` nennt den Täter der langsamsten (`_bedienungTaeter`).
         if (!this._inp && typeof PerfObs === "function") {
             try {
-                const je = new Map();
+                const [je, bilder, was] = [new Map(), [], new Map()];
                 const obs = new PerfObs((l) => {
-                    for (const e of l.getEntries())
-                        if (e.interactionId)
-                            je.set(e.interactionId, Math.max(je.get(e.interactionId) || 0, e.duration));
+                    for (const e of l.getEntries()) {
+                        if (!e.interactionId) continue;
+                        // je Interaktion ihr längstes Ereignis; t0 ist ihr erstes (der Druck, `was` kennt ihn)
+                        const a = je.get(e.interactionId) || { d: -1, t0: e.startTime };
+                        a.t0 = Math.min(a.t0, e.startTime);
+                        if (e.duration > a.d)
+                            Object.assign(a, {
+                                d: e.duration,
+                                t: e.startTime,
+                                ps: e.processingStart,
+                                pe: e.processingEnd,
+                            });
+                        je.set(e.interactionId, a);
+                    }
                     while (je.size > AnazhRealm.INP_FENSTER) je.delete(je.keys().next().value);
                 });
                 obs.observe({ type: "event", durationThreshold: 16, buffered: true });
-                this._inp = { je, n0: 0 };
+                const loaf = new PerfObs((l) => {
+                    for (const e of l.getEntries())
+                        bilder.push([
+                            e.startTime + e.duration,
+                            e.blockingDuration,
+                            e.scripts.map((x) => [x.invoker + " " + x.sourceFunctionName, x.duration]),
+                        ]);
+                    bilder.splice(0, bilder.length - AnazhRealm.INP_BILDER);
+                });
+                loaf.observe({ type: "long-animation-frame" });
+                for (const art of ["keydown", "pointerdown"])
+                    window.addEventListener(
+                        art,
+                        (ev) => {
+                            const slot = ev.target && ev.target.closest && ev.target.closest("[data-slot]");
+                            was.set(
+                                Math.round(ev.timeStamp),
+                                ev.code || (slot ? "Platz " + slot.dataset.slot : ev.type)
+                            );
+                            if (was.size > AnazhRealm.INP_FENSTER) was.delete(was.keys().next().value);
+                        },
+                        true
+                    );
+                this._inp = { je, n0: 0, bilder, was };
             } catch {
                 this._inp = null;
             }
@@ -1418,13 +1453,45 @@ class AnazhRealm_dirigent_regler {
     }
 
     // DIE INP (spielgang.K3) aus dem Bedienungs-Ohr: von n Interaktionen seit `n0` (performance.interactionCount; unter
-    // 16 ms meldet der Browser keine) die längste nach Abzug je einer je 50 — der p98 der Web-Vitals. null ohne Ohr.
+    // 16 ms meldet der Browser keine) die längste nach Abzug je einer je 50 — der p98 der Web-Vitals; dazu der Täter der drei
+    // langsamsten (`_bedienungTaeter`). null ohne Ohr.
     _bedienungInp() {
         const I = this._inp;
         if (!I) return null;
-        const d = [...I.je.values()].sort((a, b) => b - a);
-        const n = Math.max(d.length, (performance.interactionCount || 0) - I.n0);
-        return { n, inpMs: +(d[Math.floor(n / 50)] || 16).toFixed(1), maxMs: +(d[0] || 16).toFixed(1) };
+        const alle = [...I.je.values()].sort((a, b) => b.d - a.d);
+        const n = Math.max(alle.length, (performance.interactionCount || 0) - I.n0);
+        const d = (i) => +((alle[i] && alle[i].d) || 16).toFixed(1);
+        return {
+            n,
+            inpMs: d(Math.floor(n / 50)),
+            maxMs: d(0),
+            taeter: alle.slice(0, 3).map((e) => AnazhRealm._bedienungTaeter(e, I)),
+        };
+    }
+
+    // DER TÄTER EINER LANGSAMEN EINGABE (Gebot 10, spielgang.K3): ihre Dauer bis zum gemalten Bild, zerlegt in warten (bis
+    // zum Hörer) · hoerer · faden (nach dem Hörer bis zum Ende des letzten langen Bilds davor) · sperre (davon blockiert — ein
+    // Faden ohne Sperre wartete auf das Bild, nicht auf Arbeit) · nach (bis zum Bild: Raster und GPU) — mit der Taste oder dem
+    // Platz und den zwei teuersten Skripten. Radeon kalt am e0f979a9 nannte er die Klasse: Knoten-Bauten im Faden
+    // (FrameRequestCallback 135–143 ms nach dem Klick), das Raster der Tafeln nach dem Faden (Tab und I 141–303 ms).
+    static _bedienungTaeter(e, I) {
+        const r = Math.round;
+        const lo = I.bilder.filter(([ende]) => ende > e.pe && ende <= e.t + e.d + 8); // die Dauer ist auf 8 ms gerundet
+        const ende = Math.min(e.t + e.d, Math.max(e.pe, ...lo.map((f) => f[0])));
+        return {
+            was: I.was.get(r(e.t0)) || "?",
+            ms: e.d,
+            warten: r(e.ps - e.t),
+            hoerer: r(e.pe - e.ps),
+            faden: r(ende - e.pe),
+            sperre: r(lo.reduce((s, f) => s + f[1], 0)),
+            nach: r(e.t + e.d - ende),
+            skripte: lo
+                .flatMap((f) => f[2])
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 2)
+                .map(([w, x]) => w + " " + r(x) + " ms"),
+        };
     }
 
     // Die Spur zusammenbauen: Geräte-Profil + Sitzungs-Statistik + die schlimmsten
@@ -1931,6 +1998,7 @@ AnazhRealm.ARCH_QUALITY_RADIUS_MAX = 150;
 AnazhRealm.ARCH_QUALITY_BUDGET_MAX = 6;
 AnazhRealm.ARCH_QUALITY_BUDGET_MIN = 1;
 AnazhRealm.INP_FENSTER = 2000; // so viele Interaktionen hält das Bedienungs-Ohr (spielgang.K3), die älteste weicht
+AnazhRealm.INP_BILDER = 64; // so viele lange Bilder (LoAF) hält es für den Täter (`_bedienungTaeter`)
 // Kapazitäts-gewachsene Welt: die Vegetation eines Chunks füllt nur innerhalb `foliageRadius` — der startet klein (kein
 // Spawn-Freeze) und wächst mit dem gebauten Ring zum Rand am Schirm (`_randSchirm`), nie mit der Last. RMIN > max. Test-Spawn
 // (~65 m).
