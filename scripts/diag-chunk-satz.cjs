@@ -397,6 +397,23 @@ const { errs, check } = pruefer();
         out = await page.evaluate(async () => {
             const s = r.state;
             const res = {};
+            // DER ORT DES ZENSUS: der Gürtel des Genesis-Orts (fachwerk `GENESIS_ORT.guertel`, der Wald des Felds), der erste Punkt
+            // seines mittleren Kreises, der in keinem Grundriss und auf keinem Weg liegt — an der Ankunft (der Mitte des Plans)
+            // trägt der Freiraum der Tore keine Krone, keinen Busch, keinen Fels, der Ring der Nah-Streu (24 m) bliebe leer
+            // und (c) urteilte über nichts
+            const M = r._genesisMitte();
+            if (!M) throw new Error("kein Genesis-Ort (der Plan der Welt)");
+            const GU = window.__fachwerkCore.GENESIS_ORT.guertel;
+            const rr = (GU.r0 + GU.r1) / 2;
+            let ort = null;
+            for (let k = 0; k < 72 && !ort; k++) {
+                const x = M.x + Math.cos((k / 72) * 2 * Math.PI) * rr;
+                const z = M.z + Math.sin((k / 72) * 2 * Math.PI) * rr;
+                if (!r._imGrundriss(x, z) && !(r._wegeFeldAt(x, z) > 0)) ort = { x, z };
+            }
+            if (!ort) throw new Error("kein freier Punkt im Gürtel des Genesis-Orts");
+            s.playerMesh.position.set(ort.x, r.getTerrainHeightAt(ort.x, ort.z) + 1.2, ort.z);
+            res.ort = ort;
             // Einschwingen: die Welt steht (das EINE Einschwingen, welt-boot `__weltStehtNach`), dann Streu, Wasser und Fern-Deko
             // austreiben.
             await window.__weltStehtNach(() => {
