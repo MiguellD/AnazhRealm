@@ -568,6 +568,16 @@ class AnazhRealm_dirigent_takt {
         const r = this.state.renderer;
         return r && !r._isHeadlessNull && r.backend && r.backend.device ? r.backend.device.queue : null;
     }
+    // DER ZAUN DES WEBGL2-RÜCKFALLS (heil-webgl): ohne Device trägt die Leine je abgeschickter Arbeit einen GL-Zaun
+    // (`fenceSync` hinter ihren Befehlen), gefragt am Anfang des Takts (`_gpuLeineZaeune`). Bis heil-webgl fiel die Leine auf GL
+    // still aus (kein `device.queue`): jeder Takt schickte sein Bild, die CPU lief der GPU beliebig voraus, und die nächste
+    // synchrone Frage an den GPU-Prozess (ein Link, `getProgramParameter`) wartete auf den ganzen Rückstau — z116 in
+    // gate:webgl-probe (swiftshader-GL, 4-Kern-Läufer): Takte von 108–183 s nach dem ersten Weltbild, die Frist riss.
+    _gpuLeineGL() {
+        const r = this.state.renderer;
+        const be = r && !r._isHeadlessNull ? r.backend : null;
+        return be && be.isWebGLBackend === true && be.gl ? be.gl : null;
+    }
     _gpuLeineFrei() {
         const L =
             this._gpuLeine ||
@@ -579,6 +589,7 @@ class AnazhRealm_dirigent_takt {
                 versuch: false,
                 erledigt: 0,
                 erledigtMs: null,
+                zaeune: [], // die GL-Zäune unterwegs, der älteste zuerst (`_gpuLeineBinden` auf dem WebGL2-Rückfall)
             });
         L.versuch = false;
         if (this._gpuLeineStraff()) {
@@ -618,7 +629,27 @@ class AnazhRealm_dirigent_takt {
     // Hauptbilds sah in der CI kein Bild).
     _gpuLeineStraff() {
         const L = this._gpuLeine;
-        return !!L && L.imFlug >= AnazhRealm.GPU_FRAMES_IM_FLUG && !!this._gpuLeineQueue();
+        if (!L) return false;
+        if (L.zaeune && L.zaeune.length > 0) this._gpuLeineZaeune(L);
+        return L.imFlug >= AnazhRealm.GPU_FRAMES_IM_FLUG && !!(this._gpuLeineQueue() || this._gpuLeineGL());
+    }
+    // Die Zäune der Reihe nach (die GPU arbeitet in Reihe, der älteste zuerst): ein signalisierter gibt seine Arbeit frei. Die
+    // Frage blockiert nie — WebGL 2 lässt einen Zaun erst zwischen zwei Aufgaben des Browsers signalisieren, `getSyncParameter`
+    // liest den zuletzt gemeldeten Stand. Ein Zaun ohne Stand (der Kontext ging verloren: null) gibt ebenso frei — eine Leine am
+    // toten Kontext hielte jedes Bild für immer.
+    _gpuLeineZaeune(L) {
+        const gl = this._gpuLeineGL();
+        while (L.zaeune.length > 0) {
+            const z = L.zaeune[0];
+            if (gl && gl.getSyncParameter(z.zaun, gl.SYNC_STATUS) === gl.UNSIGNALED) return;
+            if (gl) gl.deleteSync(z.zaun);
+            L.zaeune.shift();
+            L.imFlug = Math.max(0, L.imFlug - 1);
+            if (z.bild) {
+                L.erledigt++;
+                L.erledigtMs = performance.now();
+            }
+        }
     }
     _gpuLeineAnlegen() {
         const L = this._gpuLeine;
@@ -632,6 +663,17 @@ class AnazhRealm_dirigent_takt {
     _gpuLeineBinden(bild) {
         const L = this._gpuLeine;
         const q = this._gpuLeineQueue();
+        const gl = !L || q ? null : this._gpuLeineGL();
+        if (gl) {
+            // der Zaun hinter den Befehlen dieser Arbeit (`flush`: ohne ihn läge er im Puffer des Befehlsstroms, bis der Browser
+            // ihn abschickt); ohne Zaun (der Kontext ist verloren) ist nichts unterwegs
+            const zaun = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+            if (!zaun) return;
+            gl.flush();
+            L.imFlug++;
+            L.zaeune.push({ zaun, bild: !!bild });
+            return;
+        }
         if (!L || !q) return;
         L.imFlug++;
         const los = () => {

@@ -16,6 +16,9 @@
 //   W6 (Karten W3 + S5, ?holz=voll mit Schatten): jeder Stoff trägt je Stufe ≤ min(16, Gerät) Sampler-EINHEITEN, wie
 //      GL sie zählt (aktive Sampler × Feldgröße, nie Textur-Objekte), gezählt im GLSL OHNE Link (swiftshader linkt je Programm
 //      20–48 s); Selbsttests: ein Stoff mit 17 Karten fällt beim Namen, ein linkender Zensus ist ROT (r184-Drift)
+//   W7 (heil-webgl, z116) die GPU-Leine hält auch auf GL: die gezeichneten Bilder tragen Zäune (erledigt oder unterwegs) —
+//      ohne sie lief die CPU der GPU beliebig voraus, auf swiftshader-GL warteten Links 108–183 s auf den Rückstau, die Frist
+//      riss; Selbsttest: eine Leine, die zeichnete und nichts band, fällt beim Namen
 //   node scripts/diag-webgl-probe.cjs
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -101,6 +104,8 @@ hauptLauf(async () => {
             }
             o.frames = st.flightRecorder ? st.flightRecorder.frames : 0;
             o.spielerEndlich = !!pm && [pm.position.x, pm.position.y, pm.position.z].every(Number.isFinite);
+            // W7: die Leine des Takts — gezeichnete Bilder und ihre Zäune, erledigt oder unterwegs (`_gpuLeineBinden`)
+            o.leine = ((L) => [L.gerendert, L.erledigt + L.imFlug])(r._gpuLeine || {});
             // W6 (Karten W3 + S5): die Sampler-EINHEITEN je Stoff und Stufe, wie GL sie zählt — aktive Sampler-Uniforms
             // × Feldgröße, nie die Textur-Objekte des Stoffs — aus dem GLSL der Stufe, OHNE zu linken: aktiv ist ein
             // Sampler, den die Stufe nach seiner Deklaration liest (den Rest streicht der Treiber; belegt am echten
@@ -184,6 +189,11 @@ hauptLauf(async () => {
     if (!(z.length > 4 && selbst.length === 1 && selbst[0].startsWith("W6: selbsttest:17-karten fragment trägt 17 "))) errs.push(`W6-Selbsttest: der Stoff mit 17 Karten fällt nicht beim Namen (${selbst.join(" · ") || "kein Urteil"}; ${z.length} Stoffe) — die Linse ist blind`); // prettier-ignore
     else console.log(`  W6-Selbsttest ROT am Täter: ${selbst[0]}`);
     if (!(out.ohneLink > 0)) errs.push("W6: der Zensus linkt (compileAsync fragt seine Pipeline anders als mit eigener Versprechen-Liste — r184-Drift)"); // prettier-ignore
+    // W7: jedes gezeichnete Bild trägt seinen Zaun (ohne ihn liefe die CPU der GPU beliebig voraus, z116: Takte bis 183 s); der
+    // Selbsttest: eine Leine, die zeichnete und nichts band (der Stand vor heil-webgl), fällt beim Namen
+    const w7 = ([g, b] = []) => (g >= 1 && b >= 1 ? [] : [`W7: die GPU-Leine bindet auf WebGL2 nicht (${g} Bilder, ${b} Zäune)`]);
+    errs.push(...w7(out.leine));
+    if (!w7([3, 0]).length) errs.push("W7-Selbsttest: eine Leine ohne Zaun fällt nicht");
 
     require("./lib/welt-boot.cjs").wandEnde(errs, "die Kein-WebGPU-Geschichte ist BEWIESEN: der erzwungene WebGL2-Rückfall bootet eine LEBENDE, sichtbare Welt; die WGSL-Konsumenten + Bundles ruhen hinter der EINEN Backend-Wand, der Rückfall ist LAUT benannt, der Fern-Ring trägt auf CPU.");
 });
