@@ -205,7 +205,7 @@ async function checkBandV18493CoSchoepferStudio({ page, check }) {
                 !bHaiku.fallbacks &&
                 !hHaiku["anthropic-beta"];
         } catch (e) {
-            out.err = (e && e.message) || String(e);
+            out.err = fehlerText(e);
         }
         // Aufräumen: die Test-Pflanzung verlässt die Welt wieder (die Folge-Bänder sehen den alten Stand).
         for (const e of archs.slice(vorherAll).reverse()) {
@@ -261,26 +261,13 @@ async function checkBandFoundrySpeicherFlach({ page, check }) {
         await window
             .__gebautNach("25 Chunks um den Spieler", {
                 fertig: () => (st.voxelChunks ? st.voxelChunks.size : 0) >= 25,
-                takt: async () => {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch {}
-                    await sleep(6);
-                },
+                takt: () => __takte(1, 6),
                 max: 2000,
             });
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => !f || f.ready);
         // dichten Wald streamen.
-        for (let it = 0; it < 300; it++) {
-            st._frameOverBudget = false;
-            try {
-                r._gameLoopTick && r._gameLoopTick(performance.now());
-                const pp = st.playerMesh && st.playerMesh.position;
-                if (pp) r._tickScatterStreaming(pp);
-            } catch {}
-            await sleep(6);
-        }
+        await __streuTakte(300, 6);
         // REF-GUARD-Instrument: bei JEDEM _disposeFoundryGroupGeom die _liveRefs prüfen.
         let maxRefsAtDispose = 0,
             disposeCalls = 0;
@@ -371,12 +358,7 @@ async function checkBandKeinZweiterBaumbaecker({ page, check }) {
         await window
             .__gebautNach("25 Chunks um den Spieler", {
                 fertig: () => (st.voxelChunks ? st.voxelChunks.size : 0) >= 25,
-                takt: async () => {
-                    try {
-                        r._gameLoopTick(performance.now());
-                    } catch {}
-                    await sleep(6);
-                },
+                takt: () => __takte(1, 6),
                 max: 2000,
             });
         const o = { foundryEnabled: r._foundryEnabled() };
@@ -384,15 +366,7 @@ async function checkBandKeinZweiterBaumbaecker({ page, check }) {
         await window.__weltDa(() => !f || f.ready);
         o.foundryReady = !!(f && f.ready);
         // Kräftig ticken → der Scatter streamt Regionen um den Spieler; Studio-Assets kommen an.
-        for (let it = 0; it < 350; it++) {
-            st._frameOverBudget = false;
-            try {
-                r._gameLoopTick && r._gameLoopTick(performance.now());
-                const pp = st.playerMesh && st.playerMesh.position;
-                if (pp) r._tickScatterStreaming(pp);
-            } catch {}
-            await sleep(10);
-        }
+        await __streuTakte(350, 10);
         // Instanz-Gruppen enumerieren: Schlüssel = Bauplan-Name#leaf[@region].
         const groups = [];
         const eat = (map) => { if (!map) return; for (const [k, g] of map) { let c = 0; if (g && g.mesh && Number.isFinite(g.mesh.count)) c = g.mesh.count; else if (g && Number.isFinite(g.count)) c = g.count; groups.push({ key: String(k), count: c }); } };
@@ -699,7 +673,7 @@ async function checkBandLeistungsVertrag({ page, check }) {
             );
             o.deckungPct = ss && ss.bundleDeckung ? ss.bundleDeckung.deckungPct : null;
         } catch (e) {
-            o.err = (e && e.message) || String(e);
+            o.err = fehlerText(e);
         }
         return o;
     })) || { err: "keine Antwort der Seite" };

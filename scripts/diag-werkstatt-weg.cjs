@@ -20,7 +20,7 @@
 //   --bild fährt NUR L-BILD (Bauen K1 Staffel 2) auf swiftshader, --echt dasselbe auf der Karte.
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, halteBis, pruefer, hauptLauf, nullRenderer, starteBrowser, buehne, wandEnde, selbsttestEnde, SELBSTTEST, path, fs, stammLib, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { statikServer, halteBis, pruefer, hauptLauf, nullRenderer, starteBrowser, buehne, wandEnde, selbsttestEnde, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
 
 const PORT = Number(process.env.WERKSTATT_WEG_PORT || 4623);
 const NUR_VERBEN = process.argv.includes("--verben");
@@ -331,14 +331,6 @@ async function probe(argW) {
     const out = {};
     await window.__weltDa();
     const zeilen = () => [...document.querySelectorAll("#chat-output > div")].map((d) => d.textContent);
-    const tick = async (n, ms) => {
-        for (let i = 0; i < n; i++) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
-            await sleep(ms || 30);
-        }
-    };
     for (
         const weiter = window.__deckel("Buch, Leib und Eiche", 900);
         weiter() &&
@@ -350,11 +342,11 @@ async function probe(argW) {
         );
 
     )
-        await tick(1, 100);
-    await tick(10, 30);
+        await __takte(1, 100);
+    await __takte(10, 30);
     // Ein trockener, freier Ort abseits der Flächen des Genesis-Orts (die Natur-Wand hält sie frei): der Spieler steht dort. Die Suche
     // geht um den Genesis-Ort, wo der Spieler steht — steht er ferner als ihr Ring (160 m: die warme Welt der Sitzung, Mess-Wiese 1 082 m
-    // von der Lichtung), um ihn: bis w4-stationen-schnell sprang der erste Lauf über 1 km in eine kalte Gegend, und sein Werk wartete
+    // vom Genesis-Ort), um ihn: bis w4-stationen-schnell sprang der erste Lauf über 1 km in eine kalte Gegend, und sein Werk wartete
     // hinter ihrem Ring (GTX b4bcf19c: der erste Fall stand nach 80 s nicht im Bild)
     const M = r._genesisMitte();
     const SP = st.playerMesh.position;
@@ -439,25 +431,6 @@ async function probe(argW) {
             Math.random = orig;
         }
     };
-    // der Spion am Ruf: lieferer[name] zählt (und delegiert), solange wer.methode(...args) läuft — true = gerufen
-    const ruft = (wer, methode, lieferer, name, args) => {
-        const eigen = Object.prototype.hasOwnProperty.call(lieferer, name);
-        const echt = lieferer[name];
-        let k = 0;
-        lieferer[name] = function (...x) {
-            k++;
-            return echt.apply(this, x);
-        };
-        try {
-            wer[methode](...args);
-        } catch {
-            /* ein Wurf nach dem Ruf entwertet den Konsum nicht */
-        } finally {
-            if (eigen) lieferer[name] = echt;
-            else delete lieferer[name];
-        }
-        return k > 0;
-    };
     // je Abschnitt EIN Befund: gestartet erst am Ende, ein Wurf trägt seinen Stapel
     const abschnitt = async (k, m, fn) => {
         out[k] = m = { gestartet: false, ...m };
@@ -466,7 +439,7 @@ async function probe(argW) {
             await fn(m);
             m.gestartet = true;
         } catch (e) {
-            m.err = e?.stack || String(e);
+            m.err = fehlerStapel(e);
         }
     };
     // ── D10: der Same eines Satzes ──
@@ -486,7 +459,7 @@ async function probe(argW) {
         // Der Hain: Satz + Programm, zweimal an derselben Stelle der Welt-Geschichte (der Zähler des Welt-Stroms zurück).
         // je Wurf (Satz oder Programm): die Math.random-Züge, sein Same und seine Orte, danach zurück (Werke und Welt-Strom)
         const wurf = (fn) => {
-            const [vorher, z0] = [new Set(st.architectures), JSON.parse(JSON.stringify(st.worldMeta.bauSame || {}))];
+            const [vorher, z0] = [new Set(st.architectures), jsonKlon(st.worldMeta.bauSame || {})];
             const g = zaehle(fn);
             const liste = neue(vorher);
             for (const a of liste) r.removeArchitecture(a);
@@ -519,8 +492,8 @@ async function probe(argW) {
         m.kiOrtAbweichung = abweichung(k1.orte, k2.orte);
         // Der Programm-Strom ohne Seed ist der Welt-Strom, das Strom-Gesetz der Strom seines Samens; die Streuung eines
         // Samens ist sein eigener Strom, nie der des Programms (zwei Programm-Ströme, dieselben Orte — jeder Peer dieselbe).
-        const z0 = JSON.parse(JSON.stringify(st.worldMeta.bauSame || {}));
-        m.konsum = { "dslCtx → _bauSame": ruft(r, "dslCtx", r, "_bauSame", [{ source: "human" }]), "_streamRng → _samenStrom": ruft(r, "_streamRng", r, "_samenStrom", ["zensur"]) };
+        const z0 = jsonKlon(st.worldMeta.bauSame || {});
+        m.konsum = { "dslCtx → _bauSame": __rufe(r, "dslCtx", r, "_bauSame", [{ source: "human" }]) > 0, "_streamRng → _samenStrom": __rufe(r, "_streamRng", r, "_samenStrom", ["zensur"]) > 0 };
         st.worldMeta.bauSame = z0;
         const streu = (k) => {
             const vorher = new Set(st.architectures);
@@ -550,7 +523,7 @@ async function probe(argW) {
         const vorher = new Set(st.architectures);
         const n0 = zeilen().length;
         r.processChatCommand("bau mir ein fachwerkhaus");
-        await tick(3, 30);
+        await __takte(3, 30);
         const neu = st.architectures.filter((a) => a && !vorher.has(a));
         m.hausGebaut = neu.filter((a) => artVon(a.type) === "haus").length;
         m.hausZeile = zeilen().slice(n0).join(" | ").slice(0, 160);
@@ -560,7 +533,7 @@ async function probe(argW) {
         if (st.llm) st.llm.enabled = false;
         const n1 = zeilen().length;
         r.processChatCommand("bau mir eine scheune");
-        await tick(1, 30);
+        await __takte(1, 30);
         m.absageZeile = zeilen().slice(n1).join(" | ");
         // Ein Verb mit einem Wort, das kein Ding ist: der Studio-Satz stiehlt dem Vorschlag die Zeile nicht.
         m.vorschlag = {};
@@ -568,7 +541,7 @@ async function probe(argW) {
             const n2 = zeilen().length;
             const vorher2 = new Set(st.architectures);
             r.processChatCommand(satz);
-            await tick(1, 30);
+            await __takte(1, 30);
             for (const a of st.architectures.filter((a) => a && !vorher2.has(a))) r.removeArchitecture(a);
             m.vorschlag[satz] = { zeile: zeilen().slice(n2).join(" | "), sug: r.chatSuggest(satz) || null };
         }
@@ -609,7 +582,7 @@ async function probe(argW) {
             stelle();
             st.yaw = Math.atan2(frei.x - plat.position.x, frei.z - plat.position.z) + 0.7;
             st.pitch = -0.45;
-            await tick(4, 30);
+            await __takte(4, 30);
             r.setHotbarSlot(4, NAME);
             if (!(st.buildMode.active && st.buildMode.blueprintName === NAME)) r.selectHotbarSlot(4);
             const bm = st.buildMode;
@@ -633,8 +606,8 @@ async function probe(argW) {
                 delete r._phantomWerk;
             }
             m.konsum = {
-                "_workshopFoundryPreviewGroup → _werkSame": ruft(r, "_workshopFoundryPreviewGroup", r, "_werkSame", [NAME]),
-                "_heldFoundryGroup → _werkSame": ruft(r, "_heldFoundryGroup", r, "_werkSame", [NAME]),
+                "_workshopFoundryPreviewGroup → _werkSame": __rufe(r, "_workshopFoundryPreviewGroup", r, "_werkSame", [NAME]) > 0,
+                "_heldFoundryGroup → _werkSame": __rufe(r, "_heldFoundryGroup", r, "_werkSame", [NAME]) > 0,
                 "_buildStudioPlacementGhost → _phantomWerk am Ort": !!woG && woG.x === Q.x && woG.z === Q.z,
             };
             // Jede Absage des Setzens spricht im Spieler-Kanal (Material und Lichtung fährt L-Werkstatt): je ein Instanz-Feld.
@@ -660,14 +633,14 @@ async function probe(argW) {
                 let naechst = Infinity;
                 for (const pitch of [-0.45, -0.7, -0.95, -1.2, -1.4]) {
                     st.pitch = pitch;
-                    await tick(2, 30);
+                    await __takte(2, 30);
                     r.tickBuildMode();
                     const pp = st.playerMesh.position;
                     const q = bm.phantomMesh.position;
                     naechst = Math.min(naechst, Math.hypot(q.x - pp.x, q.z - pp.z));
                 }
                 st.pitch = -0.45;
-                await tick(2, 30);
+                await __takte(2, 30);
                 r.tickBuildMode();
                 m.abstand = +naechst.toFixed(2);
                 // Wie weit das Werk reicht: die Studio-Gestalt des Phantoms in Weltgröße, jeder Vertex jedes Teils durch
@@ -690,7 +663,7 @@ async function probe(argW) {
             }
             // Die Naht zum Mitspieler: das Programm, das der Sender schickt.
             st.p2p = { ...p2pAlt || {}, enabled: true };
-            r.p2pBroadcastDsl = (prog) => gesendet.push(JSON.parse(JSON.stringify(prog)));
+            r.p2pBroadcastDsl = (prog) => gesendet.push(jsonKlon(prog));
             const vorher = new Set(st.architectures);
             zaehle(() => r.tryMousePlace());
             m.zuege = n;
@@ -738,11 +711,11 @@ async function probe(argW) {
         // Der Welt-Strom über einen Reload: der Snapshot trägt das Welt-Gedächtnis (`worldMeta`), der Restore mischt es
         // über den frischen Stand (`_loadStateRestoreWorldMeta`); die Sitzung vergisst alles, was nicht dort reist.
         const wmAlt = st.worldMeta;
-        const zAlt = wmAlt.bauSame ? JSON.parse(JSON.stringify(wmAlt.bauSame)) : undefined;
+        const zAlt = wmAlt.bauSame ? jsonKlon(wmAlt.bauSame) : undefined;
         const rl = {};
         try {
             rl.erst = r._bauSame("pruef:reload");
-            const snapMeta = JSON.parse(JSON.stringify(r.buildStateSnapshot().worldMeta));
+            const snapMeta = jsonKlon(r.buildStateSnapshot().worldMeta);
             rl.weiter = r._bauSame("pruef:reload");
             st.worldMeta = Object.assign({}, wmAlt, { bauSame: undefined }, snapMeta);
             rl.nachReload = r._bauSame("pruef:reload");
@@ -1457,8 +1430,8 @@ hauptLauf(async () => {
         };
         for (const [lage, weg, ...rest] of raster(LAGEN, WEGE))
             lege(gesundG.wege, [lage, weg, ...rest], lage === "frieden ohne Material" ? { eingaben: 2, zeile: fehlt, steht: 0, bauModus: weg === "hotbar", farbe: "rot" } : { eingaben: 3, steht: 1, kosten: KOST, verbraucht: lage === "schöpfer" ? {} : KOST });
-        const mitG = (wo, e, rest, b = JSON.parse(JSON.stringify(gesundG))) => (Object.assign(zelle(b.wege, wo.split(" · ")), e), rest ? [b, wo + ": " + rest] : b);
-        const mitL = (e) => Object.assign(JSON.parse(JSON.stringify(gesundG)), e);
+        const mitG = (wo, e, rest, b = jsonKlon(gesundG)) => (Object.assign(zelle(b.wege, wo.split(" · ")), e), rest ? [b, wo + ": " + rest] : b);
+        const mitL = (e) => Object.assign(jsonKlon(gesundG), e);
         familie("L-Werkstatt", wegVerdict, gesundG, [
             // ein Weg mit einem zusätzlichen Bestätigungs-Klick
             mitG("frieden mit Material · werkstatt · Haus · Third", { eingaben: 4 }, "4 Eingaben bis zum stehenden Werk"),
@@ -1684,7 +1657,7 @@ hauptLauf(async () => {
     try {
         out.weg = await wegProbe(page, out.frei);
     } catch (e) {
-        out.weg = { err: e?.stack || String(e) };
+        out.weg = { err: fehlerStapel(e) };
     }
     await browser.close();
     server.close();

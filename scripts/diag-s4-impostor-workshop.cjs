@@ -13,7 +13,7 @@
 //       schwere L2-Geometrie.
 //   node scripts/diag-s4-impostor-workshop.cjs
 
-const { statikServer, hauptLauf, nullSeite } = require("./lib/welt-boot.cjs");
+const { statikServer, hauptLauf, nullSeite, fehlerText } = require("./lib/welt-boot.cjs");
 const server = statikServer();
 
 hauptLauf(async () => {
@@ -88,7 +88,7 @@ hauptLauf(async () => {
                 res.probes.wsLod2 = !ruft(r, "_foundryBuildImpostorFlat", treeBp, 1);
             }
         } catch (e) {
-            res.behavior.err = (e && e.message) || String(e);
+            res.behavior.err = fehlerText(e);
         }
         return res;
     });

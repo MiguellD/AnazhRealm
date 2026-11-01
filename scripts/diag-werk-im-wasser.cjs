@@ -49,7 +49,7 @@
 //   node scripts/diag-werk-im-wasser.cjs [--selftest]
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt, ausDatei, SELBSTTEST, path, stammLib, weltTor, jsonLesen } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, taeterFaelle, selbsttestEnde, argOpt, ausDatei, SELBSTTEST, path, stammLib, weltTor, jsonLesen, jsonKlon } = require("./lib/welt-boot.cjs");
 const { messort } = require("./lib/welt-orte.cjs");
 
 const SCHWELLE = {
@@ -408,12 +408,8 @@ async function probe(A) {
     const faden = st.voxelWorker;
     const f = r._ensureAssetFoundry();
     await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.gt && st.blueprints && st.blueprints.fahrzeug_gt);
-    if (st.renderer) {
-        st.renderer.render = function () {};
-        if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
-    }
-    st.postProcessingFailed = true;
-    const MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7];
+    __bildAus();
+    const MUSTER = __MUSTER;
     let tMs = performance.now();
     let nFrame = 0;
     const frame = () => {
@@ -1706,12 +1702,8 @@ async function probe(A) {
 // ±A.R m um den Damm) ohne Damm, mit Damm, nach dem Reload; die Invalidierungen des Automaten beim Abbau. ──
 async function dammProbe(A) {
     await window.__weltDa((w) => w.state.hydrosphere && w.state.hydrosphere.ready);
-    if (st.renderer) {
-        st.renderer.render = function () {};
-        if (typeof st.renderer.renderAsync === "function") st.renderer.renderAsync = () => Promise.resolve();
-    }
-    st.postProcessingFailed = true;
-    const MUSTER = [16.7, 8.3, 25, 16.7, 33.3, 11.1, 20, 16.7];
+    __bildAus();
+    const MUSTER = __MUSTER;
     let tMs = performance.now();
     let nFrame = 0;
     const frame = () => {
@@ -2129,7 +2121,7 @@ function selbsttest() {
         ["C leer", (b) => (b.ergebnis.versuche[0].gesetzt = 6), /C LEER/],
         ["D lief nicht", (b) => delete b.damm, /D: die Damm-Probe lief nicht/],
     ];
-    const fehler = taeterFaelle([["grüner Befund", () => {}], ...faelle], urteil, { klon: () => JSON.parse(JSON.stringify(gruen)) });
+    const fehler = taeterFaelle([["grüner Befund", () => {}], ...faelle], urteil, { klon: () => jsonKlon(gruen) });
     // die Leser-Linse gegen eingeschmuggelte Täter im echten Stamm (der Vor-Stand über den EINEN Helfer)
     const gifte = [
         [

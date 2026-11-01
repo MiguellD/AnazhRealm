@@ -1948,7 +1948,7 @@ async function checkBandTailleOmega2({ page, check }) {
             JSON.stringify(ser.xZukunft) === JSON.stringify(live.xZukunft) &&
             Array.isArray(ser.provenance) &&
             ser.provenance[0].by === KA;
-        const deser = r._deserializeBlueprint(JSON.parse(JSON.stringify(ser)));
+        const deser = r._deserializeBlueprint(jsonKlon(ser));
         out.deserCarries =
             !!deser &&
             JSON.stringify(deser.xZukunft) === JSON.stringify(live.xZukunft) &&

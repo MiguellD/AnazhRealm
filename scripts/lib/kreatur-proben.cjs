@@ -419,8 +419,8 @@ async function kreaturProben(r, T, opts) {
         if (!KS.fahrzeug_wagen) return { fehler: "KIND_SUBSTANCE.fahrzeug_wagen fehlt" };
         s.blueprints._t_linse_wagen = {
             name: "_t_linse_wagen",
-            parts: JSON.parse(JSON.stringify(KS.fahrzeug_wagen.parts)),
-            connections: JSON.parse(JSON.stringify(KS.fahrzeug_wagen.connections || [])),
+            parts: jsonKlon(KS.fahrzeug_wagen.parts),
+            connections: jsonKlon(KS.fahrzeug_wagen.connections || []),
         };
         const p = land(30, 30);
         const e = r.spawnArchitecture("_t_linse_wagen", p, { silent: true });

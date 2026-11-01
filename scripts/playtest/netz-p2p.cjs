@@ -166,7 +166,7 @@ async function checkBandRing11AndW7Mesh({ page, check, errors, finalState }) {
             peerB.mesh.visible === false;
         // DIE KLASSE (Lehre 17): jeder Leser einer Zahl aus dem Draht — null (das JSON-Bild von NaN) ist kein Ort und
         // keine Zahl. Je Leser ein Fall über den echten JSON-Weg; jeder Name in der Liste las null als 0.
-        const draht = (o) => JSON.parse(JSON.stringify(o));
+        const draht = (o) => jsonKlon(o);
         const nullAlsNull = [];
         if (r._sanitizePose(draht({ x: NaN, y: 0, z: 0, yaw: 0 })) !== null) nullAlsNull.push("subworld-pose");
         r._p2pHandleCreaturePos("peerB", draht({ list: [{ id: "ortlos", x: NaN, y: 0, z: 0, soul: "wesen" }] }));
@@ -2223,7 +2223,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
             name: "_t835_body_reg",
             label: "Test-Körper",
             builtIn: false,
-            parts: JSON.parse(JSON.stringify(bodyBp.parts)),
+            parts: jsonKlon(bodyBp.parts),
         };
         r._refreshBlueprintRoleEmergent("_t835_body_reg");
         out.refreshEmergesSoul = st.blueprints["_t835_body_reg"].role === "soul";
@@ -2233,7 +2233,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
             name: "_t835_food_reg",
             label: "Test-Frucht",
             builtIn: false,
-            parts: JSON.parse(JSON.stringify(foodBp.parts)),
+            parts: jsonKlon(foodBp.parts),
         };
         r._refreshBlueprintRoleEmergent("_t835_food_reg");
         out.refreshEmergesFood = st.blueprints["_t835_food_reg"].role === "consumable";
@@ -2245,7 +2245,7 @@ async function checkBandV8SoulRoleAndWorkshop({ page, check, errors, finalState 
             builtIn: false,
             roleManual: true,
             role: "architecture",
-            parts: JSON.parse(JSON.stringify(bodyBp.parts)),
+            parts: jsonKlon(bodyBp.parts),
         };
         r._refreshBlueprintRoleEmergent("_t835_manual");
         out.roleManualStillWins = st.blueprints["_t835_manual"].role === "architecture";

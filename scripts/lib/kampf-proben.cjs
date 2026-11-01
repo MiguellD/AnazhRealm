@@ -110,7 +110,7 @@ async function WELLE_L(ort) {
         try {
             await f();
         } catch (e) {
-            w.fehler.push(name + " ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 2).join(" | "));
+            w.fehler.push(name + " ABBRUCH " + fehlerStapel(e).split("\n").slice(0, 2).join(" | "));
         }
     };
     try {
@@ -2180,7 +2180,7 @@ async function WELLE_L(ort) {
                 };
                 const roh = r._serializeCreature(c);
                 const alt = (hp) => {
-                    const o = JSON.parse(JSON.stringify(roh));
+                    const o = jsonKlon(roh);
                     delete o.hpAnteil;
                     o.hp = hp;
                     return o;
@@ -2769,7 +2769,7 @@ async function WELLE_L(ort) {
                 T4.folgt = m.getWorldPosition(V3()).sub(w0).toArray();
                 for (let o = m; o; o = o.parent) if (o === h) T4.amTier = true;
             }
-            const sn = JSON.parse(JSON.stringify(r._serializeCreature(h)));
+            const sn = jsonKlon(r._serializeCreature(h));
             T4.imSnapshot = (sn.pfeile || []).length;
             const h2 = r._restoreCreatureFromSnapshot(sn, "happy");
             const sp2 = (h2 && h2.userData._steckPfeile) || [];
@@ -2779,7 +2779,7 @@ async function WELLE_L(ort) {
                 sp2.every((y, i) => y.teil === sp[i].teil && y.p.every((v, j) => Math.abs(v - sp[i].p[j]) < 1e-3));
             T4.bildWieder = sp2.length > 0 && sp2.every((y) => y.mesh && y.mesh.parent);
             for (const c of [h, h2]) if (c) (tiere.push(c), parke(c));
-            const sw = JSON.parse(JSON.stringify(r.buildStateSnapshot()));
+            const sw = jsonKlon(r.buildStateSnapshot());
             const vor = sw.pfeileStecken || [];
             const S4 = (K4.speicher = { steckend: st(), imSnapshot: vor.length });
             for (const y of s.pfeileStecken || []) r._pfeilDespawn(y);
@@ -3062,7 +3062,7 @@ async function WELLE_L(ort) {
         w.z.s8 = await kalterHieb("wolf", "wolf", true);
         w.c.s8 = !w.z.s8.traf && w.z.s8.nennt;
     } catch (e) {
-        w.fehler.push("ABBRUCH " + ((e && e.stack) || String(e)).split("\n").slice(0, 3).join(" | "));
+        w.fehler.push("ABBRUCH " + fehlerStapel(e).split("\n").slice(0, 3).join(" | "));
     } finally {
         delete r._kampfRohSchaden;
         delete r.damageCreature;
@@ -3202,7 +3202,7 @@ async function K5_VOR(abdruck) {
     const bp = s.blueprints;
     const werte = () => (r.recomputePlayerStats(), [p.hpMax, p.staminaMax, p.manaMax, p.stats.defense]);
     const klon = (von, mat, teil) => {
-        const b = (bp._k5 = JSON.parse(JSON.stringify(bp[von])));
+        const b = (bp._k5 = jsonKlon(bp[von]));
         Object.assign(b, { name: "_k5", builtIn: false, consumableMeta: { durationSeconds: 600 } });
         b.parts.forEach((x, i) => teil(i) && (x.material = mat));
         return "_k5";

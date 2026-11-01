@@ -42,7 +42,7 @@
 //                                      „ersetzen" MUSS rot werden: die Seite erwacht in A) — beide beim Namen
 // Port: WELTGRENZE_PORT (Default 4401). Exit 1 bei einem Befund, einem Page-Error oder einem blinden Selbsttest.
 "use strict";
-const { statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt, path, stammLib, weltTor, waitFor, SELBSTTEST, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, nullRenderer, hauptLauf, argOpt: opt, weltTor, waitFor, jsonLesen, jsonSchreiben, jsonKlon, path, stammLib, SELBSTTEST } = require("./lib/welt-boot.cjs");
 
 const JSON_AUS = opt("--json", null);
 const PORT = Number(process.env.WELTGRENZE_PORT) || 4401;
@@ -129,7 +129,7 @@ function seitenPruefer() {
         // BEVOR A ihr Zeichen trägt.
         // `form`: "voll" · "ohne-id" (worldMeta ohne worldId: ein Minimal-Snapshot) · "ohne-meta" (ein Legacy-Save vor Ring 8).
         bauB(slug, form) {
-            const b = JSON.parse(JSON.stringify(r._buildEmptyWorldSnapshot(r._generateFreshWorldMeta(slug), false)));
+            const b = jsonKlon(r._buildEmptyWorldSnapshot(r._generateFreshWorldMeta(slug), false));
             b.knowledgeBase = ["MARKER-B"];
             if (form === "ohne-id") delete b.worldMeta.worldId;
             if (form === "ohne-meta") delete b.worldMeta;

@@ -19,7 +19,7 @@
 //   Port: V1_PFAD_PORT (4421) · Mutanten: V1_MUTANTE=gedaechtnis-leer (--seele) · wertung-aus (--regeln)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonLesen, jsonSchreiben, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonLesen, jsonSchreiben, jsonKlon, fehlerStapel, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
@@ -1077,21 +1077,13 @@ async function probe(arg) {
     const kiPort = arg && arg.kiPort;
     const out = {};
     await window.__weltDa();
-    const tick = async (n, ms) => {
-        for (let i = 0; i < n; i++) {
-            try {
-                r._gameLoopTick(performance.now());
-            } catch {}
-            await sleep(ms || 30);
-        }
-    };
     // ── V-D1: die Ankunft ──
     try {
         const m = { gestartet: false };
         out.ankunft = m;
         await window.__gebautNach("der Genesis-Ort", {
             fertig: () => !!(r._genesisPlan && r._genesisMitte()),
-            takt: () => tick(1, 100),
+            takt: () => __takte(1, 100),
             max: 600,
         });
         const P = r._genesisMitte();
@@ -1108,7 +1100,7 @@ async function probe(arg) {
             st.architectures.filter(
                 (a) => a && /^baum_/.test(a.type) && Math.hypot(a.position.x - P.x, a.position.z - P.z) < 40
             );
-        await window.__weltStehtNach(() => tick(1, 20));
+        await window.__weltStehtNach(() => __takte(1, 20));
         let kronen = 0,
             naechster = Infinity,
             art = null;
@@ -1131,7 +1123,7 @@ async function probe(arg) {
         window.__anazhAutoSettlement = true;
         Object.defineProperty(st, "_frameOverBudget", { configurable: true, get: () => true, set: () => {} });
         try {
-            for (let i = 0; i < 40 && !(st.worldMeta.genesisOrt && st.worldMeta.genesisOrt.steht); i++) await tick(1, 60);
+            for (let i = 0; i < 40 && !(st.worldMeta.genesisOrt && st.worldMeta.genesisOrt.steht); i++) await __takte(1, 60);
         } finally {
             delete st._frameOverBudget;
             st._frameOverBudget = false;
@@ -1152,7 +1144,7 @@ async function probe(arg) {
         ).toFixed(2);
         m.gestartet = true;
     } catch (e) {
-        out.ankunft = Object.assign(out.ankunft || {}, { err: (e && e.stack) || String(e) });
+        out.ankunft = Object.assign(out.ankunft || {}, { err: fehlerStapel(e) });
     }
     // ── V-k4: der Fensterwechsel löst die Tasten ──
     try {
@@ -1165,7 +1157,7 @@ async function probe(arg) {
         window.dispatchEvent(new KeyboardEvent("keyup", { key: "w", code: "KeyW", bubbles: true }));
         m.gestartet = true;
     } catch (e) {
-        out.taste = Object.assign(out.taste || {}, { err: (e && e.stack) || String(e) });
+        out.taste = Object.assign(out.taste || {}, { err: fehlerStapel(e) });
     }
     // ── V-D6: der KI-Fehler nennt die Ursache ──
     try {
@@ -1195,7 +1187,7 @@ async function probe(arg) {
         m.host = "127.0.0.1:" + kiPort;
         m.gestartet = true;
     } catch (e) {
-        out.ki = Object.assign(out.ki || {}, { err: (e && e.stack) || String(e) });
+        out.ki = Object.assign(out.ki || {}, { err: fehlerStapel(e) });
     }
     try {
         const m = { gestartet: false };
@@ -1296,7 +1288,7 @@ async function probe(arg) {
         m.telemetrieImChat = neuZeilen.some((t) => /Bauten n=/.test(t));
         m.gestartet = true;
     } catch (e) {
-        out.satz = Object.assign(out.satz || {}, { err: (e && e.stack) || String(e) });
+        out.satz = Object.assign(out.satz || {}, { err: fehlerStapel(e) });
     }
     // ── V-k5-KLASSE: jede Op, deren verlangter Ort fehlt, scheitert benannt — an dem trockenen Ort der Satz-Probe ──
     try {
@@ -1416,7 +1408,7 @@ async function probe(arg) {
                 k.gesund = { ok: g.ok, akte: g.akte.length, grund: g.grund };
                 k.gestartet = true;
             } catch (e) {
-                k.err = (e && e.stack) || String(e);
+                k.err = fehlerStapel(e);
             }
         } finally {
             for (const nm of Object.keys(alt)) r[nm] = alt[nm];
@@ -1438,7 +1430,7 @@ async function probe(arg) {
         m.radius = NW[1];
         m.gestartet = true;
     } catch (e) {
-        out.ort = Object.assign(out.ort || {}, { err: (e && e.stack) || String(e) });
+        out.ort = Object.assign(out.ort || {}, { err: fehlerStapel(e) });
     }
     // ── R2: DIE WASSER-SUCHE SCANNT NUR, WO WASSER SEIN KANN — gezählt werden Spalten-Scans (`_voxelSurfaceY`) ──
     try {
@@ -1575,7 +1567,7 @@ async function probe(arg) {
         }
         m.gestartet = true;
     } catch (e) {
-        out.suche = Object.assign(out.suche || {}, { err: (e && e.stack) || String(e) });
+        out.suche = Object.assign(out.suche || {}, { err: fehlerStapel(e) });
     }
     // ── V-D3: die Werkstatt-Vorschau ──
     try {
@@ -1584,7 +1576,7 @@ async function probe(arg) {
         const f = r._ensureAssetFoundry();
         await window.__weltDa(() => f && f.ready && f.recipes && f.recipes.eiche && st.blueprints.baum_eiche);
         // Das Welt-Auge steht beim Spieler, wo er die Werkstatt öffnet.
-        await tick(20);
+        await __takte(20);
         if (st.uiActiveDrawer !== "werkstatt") r.toggleDrawer("werkstatt");
         const ws = r._ensureWorkshopState();
         const lu = r._ensureLodUniforms();
@@ -1609,7 +1601,7 @@ async function probe(arg) {
                     !r._wsStudioPending &&
                     ws.preview.currentMesh.children.length
                 ),
-            takt: () => tick(1, 80),
+            takt: () => __takte(1, 80),
             max: 1125,
         });
         const p = ws.preview;
@@ -1678,7 +1670,7 @@ async function probe(arg) {
             m.augeAbstand = n ? +(dSum / n).toFixed(1) : null;
         }
     } catch (e) {
-        out.vorschau = Object.assign(out.vorschau || {}, { err: (e && e.stack) || String(e) });
+        out.vorschau = Object.assign(out.vorschau || {}, { err: fehlerStapel(e) });
     }
     // ── V-D3 FREMDER ZUG: der Wartende erwacht, wenn ein ANDERER seinen Körper zuerst zog ──
     try {
@@ -1715,7 +1707,7 @@ async function probe(arg) {
         const steht = () => !!(p.currentMesh && !r._wsStudioPending && p.currentMesh.children.length);
         await window.__gebautNach(`die Vorschau nach dem fremden Zug ${a.key}`, {
             fertig: steht,
-            takt: () => tick(1, 80),
+            takt: () => __takte(1, 80),
             max: 275,
         });
         m.vorschau.ms = steht() ? Math.round(performance.now() - t0) : null;
@@ -1741,7 +1733,7 @@ async function probe(arg) {
                 m.hand.erst = erst === "pending" ? "pending" : erst ? "gruppe" : String(erst);
                 await window.__gebautNach(`die Hand nach dem fremden Zug ${b.key}`, {
                     fertig: () => m.hand.geweckt > 0,
-                    takt: () => tick(1, 80),
+                    takt: () => __takte(1, 80),
                     max: 275,
                 });
                 m.hand.ms = m.hand.geweckt ? Math.round(performance.now() - t1) : null;
@@ -1772,7 +1764,7 @@ async function probe(arg) {
                 r.selectBlueprintForEdit("baum_eiche");
                 await window.__gebautNach(`die Vorschau-Stufe L${s}`, {
                     fertig: steht,
-                    takt: () => tick(1, 80),
+                    takt: () => __takte(1, 80),
                     max: 275,
                 });
                 const z = at ? at.zellen.get(zKey) : null;
@@ -1795,7 +1787,7 @@ async function probe(arg) {
         const bodenArt = (r._foundryLibrarySpec().species || []).find(
             (sp) => !r._foundryPresetIsTree(sp) && r._foundryGestalten(sp) > 0
         );
-        await window.__gebautNach("der Boot-Vorrat", { fertig: () => !f._vorrat, takt: () => tick(1, 80), max: 275 }); // der Boot-Vorrat läuft aus
+        await window.__gebautNach("der Boot-Vorrat", { fertig: () => !f._vorrat, takt: () => __takte(1, 80), max: 275 }); // der Boot-Vorrat läuft aus
         if (bodenArt && !f._vorrat) {
             const lodV = (r._foundryKindStages(bodenArt) || [2, 0])[0];
             const vKey = r._foundryKoerperKey(bodenArt, 1, lodV);
@@ -1824,7 +1816,7 @@ async function probe(arg) {
         }
         m.gestartet = true;
     } catch (e) {
-        out.zug = Object.assign(out.zug || {}, { err: (e && e.stack) || String(e) });
+        out.zug = Object.assign(out.zug || {}, { err: fehlerStapel(e) });
     }
     // ── V-D3 RAHMEN: jedes Rezept und jeder Bauplan füllt die Vorschau (projizierte Box3 je Bildkante) ──
     try {
@@ -1900,7 +1892,7 @@ async function probe(arg) {
         m.aspekt = +p.camera.aspect.toFixed(3);
         m.gestartet = true;
     } catch (e) {
-        out.rahmen = Object.assign(out.rahmen || {}, { err: (e && e.stack) || String(e) });
+        out.rahmen = Object.assign(out.rahmen || {}, { err: fehlerStapel(e) });
     }
     return out;
 }
@@ -2332,7 +2324,7 @@ async function feindLauf(a) {
         while (st.llm.inFlight) await sleep(20);
     }
     // DIE SIGNATUR: der echte Bauplan, seine Substanz verschoben, seine Signatur gefälscht
-    const g = [0, 1, 2].map(() => r._deserializeBlueprint(JSON.parse(JSON.stringify(a.golden))));
+    const g = [0, 1, 2].map(() => r._deserializeBlueprint(jsonKlon(a.golden)));
     g[1].parts[0].size.x += 1;
     g[2].signature = (g[2].signature[0] === "0" ? "1" : "0") + g[2].signature.slice(1);
     m.signatur = [];
