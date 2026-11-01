@@ -753,8 +753,8 @@ const ZUG_PROBE = {
 // am Ende stehen Kamera, Uhr, Wetter, Bild-Uhr, Schatten und Fenster, wie die Probe sie fand. Linear heißt: sRGB zurück, PBR Neutral
 // zurück, durch die Belichtung (wie `licht --kontakt`).
 // DIE REIHE (Teil A im Fenster der Sitzung 1920 × 1080, Teil B im Fenster der Licht-Linsen 640 × 360):
-//   ferne.K3   Kamm-Saum: das Auge 25 m über dem Boden zum Azimut mit den meisten Kamm-Spalten (Gesetz-Marsch je Spalte bis 8 km); die
-//              Himmels-Regel der Soll-Tafel (laub-kante, die REF real-mischwald ist mit ihr gemessen) trennt den Umriss; Kohärenz des
+//   ferne.K3   Kamm-Saum: Höhe über dem Spieler 25 · 60 · 120 m und Azimut mit den meisten Kamm-Spalten im Band (Gesetz-Marsch
+//              je Spalte bis 8 km; Spalten, in denen ein naher Körper den Kamm deckt, fallen unten); der Himmel ist, was ein Schuss nur mit dem Himmel gleich zeigt; Kohärenz des
 //              Struktur-Tensors am Umriss gegen den Himmel (`__klassenMasse` kante — dieselbe Funktion wie die REF 0,160) über den
 //              Spalten mit Kamm in 0,4–4 km, die Umriss-Schwankung (RMS gegen den Median über 7 Spalten, in m am Kamm) über 1,5–2,5 km.
 //              Spalten, deren Umriss > 12 px über dem Gesetz steht, trägt ein naher Körper (fallen).
@@ -824,17 +824,35 @@ async function neunSeite(r, T, C) {
         return b.length ? b[b.length >> 1] : null;
     };
     const r4 = (x) => (x == null || !Number.isFinite(x) ? null : +x.toFixed(4));
+    // jede Aufnahme prüft, dass die Kamera danach noch am Auge der Probe steht (sonst misst der Teil ein anderes Bild): Bruch beim Namen
     const schuss = async () => {
         r._schattenAlleNeu();
         leinwand();
-        return (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+        const u = (await window.__ausgabeAufnahme(W, H, 1, { satz: "messung" })).u8;
+        const weg = cam.position.distanceTo(fuehr.pos);
+        if (weg > 0.5) throw new Error("die Kamera stand nach der Aufnahme nicht am Auge (" + weg.toFixed(1) + " m daneben)");
+        return u;
     };
+    // DIE KAMERA DER PROBE führt die EINE Naht des Spiels (`kameraFuehren`, `_loopCamera` liest sie): läuft ein Takt des Spiels in einer
+    // Pause der Aufnahme, setzt er die Kamera der Probe, nie die des Spielers. Jede Aufnahme prüft danach den Ort (unten, `schuss`) —
+    // im Mechanik-Lauf (swiftshader, Dorf) holte ein zweites `/eval` derselben Seite die Kamera zum Spieler zurück, und der Teil maß ein
+    // anderes Bild, bis der Wächter es beim Namen nannte
+    const fuehrAlt = r._kameraFuehrung || null;
+    const fuehr = { pos: cam.position.clone(), quat: cam.quaternion.clone(), fov: cam.fov };
+    const setze = (c) => {
+        c.position.copy(fuehr.pos);
+        c.quaternion.copy(fuehr.quat);
+        if (c.fov !== fuehr.fov) (c.fov = fuehr.fov), c.updateProjectionMatrix();
+        c.updateMatrixWorld(true);
+    };
+    r.kameraFuehren(setze);
     const stell = (pos, ziel, fov) => {
         cam.fov = fov;
         cam.updateProjectionMatrix();
         cam.position.copy(pos);
         cam.lookAt(ziel);
         cam.updateMatrixWorld(true);
+        [fuehr.pos, fuehr.quat, fuehr.fov] = [cam.position.clone(), cam.quaternion.clone(), cam.fov];
     };
     const bp = (v) => {
         const p = v.clone().project(cam);
@@ -906,36 +924,53 @@ async function neunSeite(r, T, C) {
         if (C.teile.includes("ferne.K3"))
             await teil("ferne.K3", async () => {
                 window.__buehne({});
-                const E = new T.Vector3(P0.x, boden(P0.x, P0.z) + C.kammHoch, P0.z);
+                const E = new T.Vector3(P0.x, 0, P0.z);
+                // der Boden eines Stands abseits des Spielers: das Netz trägt ihn nur im gebauten Ring, das Gesetz überall
+                const grund = (x, z) => Math.max(...[boden(x, z), gesetz(x, z)].filter(Number.isFinite));
                 // der Kamm je Azimut: der höchste Winkel des Gesetzes bis 8 km und sein Abstand
-                const kamm = (az) => {
+                const kamm = (az, f = 1.045) => {
                     const dx = Math.sin(az), dz = Math.cos(az);
                     let best = -Infinity, bd = 0;
-                    for (let d = 40; d <= 8000; d *= 1.045) {
+                    for (let d = 40; d <= 8000; d *= f) {
                         const w = (gesetz(E.x + dx * d, E.z + dz * d) - E.y) / d;
                         if (w > best) (best = w), (bd = d);
                     }
                     return { w: Math.atan(best), d: bd };
                 };
+                // die Höhe des Auges und den Azimut wählt die Zahl der Kamm-Spalten im Band (aus 60 m lag der Kamm am Dorf 4,4–7,9 km fern)
                 let wahl = null;
+                for (const [ox, oz] of C.kammStand)
+                for (const hoch of C.kammHoch)
                 for (let k = 0; k < 8; k++) {
+                    E.set(P0.x + ox, grund(P0.x + ox, P0.z + oz) + hoch, P0.z + oz);
+                    if (!Number.isFinite(E.y)) continue;
                     const az0 = (k * Math.PI) / 4;
                     let n = 0, m = 0, ws = 0;
-                    for (let i = 0; i < 12; i++) {
-                        const q = kamm(az0 + (((i - 5.5) / 12) * C.kammFov * Math.PI) / 180);
+                    for (let i = 0; i < 8; i++) {
+                        const q = kamm(az0 + (((i - 3.5) / 8) * C.kammFov * Math.PI) / 180, 1.06);
                         if (q.d >= 400 && q.d <= 4000) (n++, (ws += q.w));
                         if (q.d >= 1500 && q.d <= 2500) m++;
                     }
-                    if (!wahl || m * 3 + n > wahl.m * 3 + wahl.n) wahl = { az: az0, n, m, w: n ? ws / n : 0 };
+                    if (!wahl || m * 3 + n > wahl.m * 3 + wahl.n) wahl = { az: az0, n, m, w: n ? ws / n : 0, hoch, stand: [ox, oz] };
                 }
+                E.set(P0.x + wahl.stand[0], grund(P0.x + wahl.stand[0], P0.z + wahl.stand[1]) + wahl.hoch, P0.z + wahl.stand[1]);
                 const fov = C.kammFov / (W / H); // C.kammFov ist die waagrechte Öffnung
                 const ziel = E.clone().add(new T.Vector3(Math.sin(wahl.az), Math.tan(wahl.w), Math.cos(wahl.az)).multiplyScalar(1000));
                 stell(E, ziel, fov);
                 const u8 = await schuss();
-                const himmel = (p) => {
-                    const [R, G, B] = [u8[p], u8[p + 1], u8[p + 2]];
-                    return (l8(u8, p) > 150 && Math.max(R, G, B) - Math.min(R, G, B) < 45) || (B > R + 40 && B > G + 15 && B > 140);
-                };
+                // DER HIMMEL ALLEIN (derselbe Blick, jedes Kind der Szene außer Himmel und Licht verborgen): ein Pixel, das ihm gleicht
+                // (±6 je Kanal), ist Himmel — die Farb-Regel der Soll-Tafel brach am Dunst (swiftshader, Dorf: Luma 149 unter 150)
+                const verborgen = sc.children.filter((o) => o !== st.skybox && !o.isLight && o.visible);
+                verborgen.forEach((o) => (o.visible = false));
+                window.__bundlesNeu();
+                let leer;
+                try {
+                    leer = await schuss();
+                } finally {
+                    verborgen.forEach((o) => (o.visible = true));
+                    window.__bundlesNeu();
+                }
+                const himmel = (p) => Math.abs(u8[p] - leer[p]) <= 6 && Math.abs(u8[p + 1] - leer[p + 1]) <= 6 && Math.abs(u8[p + 2] - leer[p + 2]) <= 6;
                 const camI = cam.projectionMatrixInverse.clone(), camM = cam.matrixWorld.clone();
                 const mpp = (d) => (d * 2 * Math.tan((fov * Math.PI) / 360)) / H;
                 const spalten = [];
@@ -965,6 +1000,8 @@ async function neunSeite(r, T, C) {
                 const rms = res.length ? Math.sqrt(res.reduce((a, b) => a + b * b, 0) / res.length) : null;
                 return {
                     azimutGrad: Math.round((wahl.az * 180) / Math.PI),
+                    hochM: wahl.hoch,
+                    standM: wahl.stand,
                     spalten: spalten.length,
                     kamm: kammS.length,
                     zweiKm: zwei.length,
@@ -972,6 +1009,8 @@ async function neunSeite(r, T, C) {
                     kantePixel: km ? km.kr : 0,
                     schwankungM: r4(rms),
                     reliefM: r4(med(kammS.map((s) => (s.gy - s.y) * mpp(s.d)))),
+                    stich: spalten.filter((_s, i) => i % 40 === 0).map((s) => [s.x, s.y, Math.round(s.d), s.gy == null ? null : Math.round(s.gy)]),
+                    leinwand: [W, H],
                 };
             });
         if (C.teil === "A") return aus;
@@ -1375,6 +1414,7 @@ async function neunSeite(r, T, C) {
         });
         return aus;
     } finally {
+        r.kameraFuehren(fuehrAlt);
         st.playerMesh.visible = merk.spieler;
         try {
             window.__buehne({ uhr: merk.uhr, wetter: merk.wetter });
@@ -1427,7 +1467,7 @@ async function neunProbe() {
     const lauf = async (teil, extra) => {
         try {
             const C2 = Object.assign({}, C, extra, { teil, rest: rest() });
-            const a = (await ruf("/eval", { code: "return await (" + seite + ")(r, T, " + JSON.stringify(C2) + ");" }, 120000)).ergebnis;
+            const a = (await ruf("/eval", { code: "return await (" + seite + ")(r, T, " + JSON.stringify(C2) + ");" }, Math.max(30, rest() + 60) * 1000)).ergebnis;
             Object.assign(j.teile, a.teile);
             j.ausgelassen.push(...a.ausgelassen);
             j.ort = a.ort;
@@ -1437,6 +1477,7 @@ async function neunProbe() {
         }
     };
     try {
+        await ruf("/fenster", { w: 1920, h: 1080 }, 30000);
         await lauf("A", { teile: ["ferne.K3"] });
         await ruf("/fenster", { w: C.fenster[0], h: C.fenster[1] }, 30000);
         await lauf("B", { teile: [] });
@@ -1453,7 +1494,8 @@ const NEUN_C = {
     ort: ["umstellen", "--ort", "dorf", "--sicht", "ego"],
     budgetS: 8.5,
     fenster: [640, 360],
-    kammHoch: 25,
+    kammHoch: [25, 60, 120],
+    kammStand: [[0, 0]],
     kammFov: 60,
     kammSchritt: 3,
     lodVersatz: [4, -4],
