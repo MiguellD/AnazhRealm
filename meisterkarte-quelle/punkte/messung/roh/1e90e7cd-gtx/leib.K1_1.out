@@ -1,0 +1,20 @@
+$ C:/Program Files/Git/bin/bash.exe -c set -u
+WP=$((7804 + 20000)); LP=$((7804 + 20001)); export WERKBANK_PORT=$WP
+L="${TEMP:-/tmp}/punkte-g5-$WP"; mkdir -p "$L"; W="node scripts/werkbank.cjs"; FRISCH=1
+boot() { if [ -z "$FRISCH" ]; then node "$PUNKTE_MASCHINE" grundstellung > "$L/grund.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; cat "$L/grund.txt"; exit 3; }; fi; FRISCH=; if [ $# -gt 0 ]; then timeout 300 $W umstellen "$@" > "$L/boot.txt" 2>&1 || { echo "@@PUNKTE@@ START ROT"; tail -5 "$L/boot.txt"; exit 3; }; fi; }
+teil() { echo "@@PUNKTE@@ $1"; shift; timeout 900 "$@"; echo "@@PUNKTE@@ EXIT $?"; }
+rm -f "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\1e90e7cd-gtx\leib.K1_1.json.lauf1.json"
+boot
+timeout 120 $W umstellen --ort wiese > /dev/null 2>&1
+teil LATENZ1 $W latenz --proben 15 --sicht ego,third --verb gehen,wechsel --json "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\1e90e7cd-gtx\leib.K1_1.json.lauf1.json"
+node -e 'const fs = require("fs"); const [aus, ...f] = process.argv.slice(1); fs.writeFileSync(aus, JSON.stringify({ laeufe: f.map((x) => { try { return JSON.parse(fs.readFileSync(x, "utf8")); } catch (_e) { return null; } }) }));' "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\1e90e7cd-gtx\leib.K1_1.json" "C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\1e90e7cd-gtx\leib.K1_1.json.lauf1.json"
+@@PUNKTE@@ LATENZ1
+ego/gehen {"n":15,"fehlt":0,"p50":28.9,"p95":51.4,"max":51.4,"eingabe":11.5,"hoerer":0.1,"kette":11.4,"kurve":0,"takte":3}
+ego/wechsel {"n":15,"fehlt":0,"p50":21.7,"p95":55.5,"max":55.5,"eingabe":3.1,"hoerer":0.3,"kette":21.3,"kurve":0,"takte":1}
+third/gehen {"n":15,"fehlt":0,"p50":29.8,"p95":48.8,"max":48.8,"eingabe":0.4,"hoerer":0,"kette":17.6,"kurve":16.3,"takte":4}
+third/wechsel {"n":15,"fehlt":0,"p50":19.5,"p95":25.6,"max":25.6,"eingabe":0.3,"hoerer":0.3,"kette":18.6,"kurve":0,"takte":2}
+LATENZ ROT (Bild 17 ms) ego/gehen p95 51.4 ms > 50 (fehlt 0) — Täter eingabe 11.5 ms, 3 Takte · ego/wechsel p95 55.5 ms > 50 (fehlt 0) — Täter kette 21.3 ms, 1 Takte
+@@PUNKTE@@ EXIT 1
+
+--- gpu-zeuge ---
+[linse-gpu] nvidia/pascal

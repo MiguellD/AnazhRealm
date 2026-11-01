@@ -224,9 +224,9 @@ leibPx: +(2 * (rs[rs.length >> 1] || 0)).toFixed(1),
 
 ===== DIE KREATUR-LINSE (gate:kreatur-takt) — sichtbares Fenster, echte GPU (Werkbank :27804) =====
 
-  ✅ herde     {"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":0.8,"mittel":1,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":0.92,"engst":[0.86,"Glim","Mira",42]},"flucht":{"n":5,"wurfAnteil":0.8,"mittel":1,"fluchtAnteil":0.336,"fluchtMittel":1,"fluchtMin":1,"enge":0.86,"engst":[0.4,"Glim","Rae",43]}},"ausrichtung":{"mittel":0.993,"takte":1251},"alarm":{"laufen":5,"zweiteHand":3,"letzterS":0.18},"fluchtWegM":33.9,"id":{"bruch":null,"fluchtS":[5,5]}}
+  ✅ herde     {"fremdN":5,"blickDiffM":0,"verband":{"fensterRaum":2.5,"wander":{"n":5,"wurfAnteil":0.6,"mittel":0.998,"fluchtAnteil":0,"fluchtMittel":null,"fluchtMin":null,"enge":1.09,"engst":[0.91,"Joro","Pyx",42]},"flucht":{"n":5,"wurfAnteil":0.6,"mittel":1,"fluchtAnteil":0.344,"fluchtMittel":0.987,"fluchtMin":0.8,"enge":0.86,"engst":[0.41,"Pyx","Tara",57]}},"ausrichtung":{"mittel":0.993,"takte":1256},"alarm":{"laufen":5,"zweiteHand":4,"letzterS":0.25},"fluchtWegM":34.7,"id":{"bruch":null,"fluchtS":[5,5]}}
 
-  (14 s)
+  (16 s)
 
 ✅ GRÜN — herde
 

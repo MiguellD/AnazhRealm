@@ -307,9 +307,9 @@ H.fahre(async function probeAnkunft(H) {
         } else console.log("  ❌ KERN-WECHSEL fachwerk: die Foundry ruht nach dem Wechsel nicht binnen der Frist" + (w && !w.tK ? " (die Taste trug den Leib nie)" : ""));
     }
     return j;
-}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\1e90e7cd-gtx\ankunft.K2_1.json 10
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\1e90e7cd-gtx\pipeline.K4_1.json 10
 @@PUNKTE@@ FRIST 4 s der Probe gerissen — die Kontrolle des Kalt-Boots an der Frist
-@@ 2 s · kalt: t(Kontrolle) —
+@@ 2.1 s · kalt: t(Kontrolle) —
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

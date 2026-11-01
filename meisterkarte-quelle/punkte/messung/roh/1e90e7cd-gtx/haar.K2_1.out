@@ -9,14 +9,16 @@ node scripts/werkbank.cjs bild 0 0 0 0 0 0 --gesicht 0.7 --spieler --wahl 0 --kl
 node -e 'const AU = require("./scripts/lib/abnahme-urteil.cjs"); const u = AU.sollTafelUrteil(require("./spec/abnahme/soll-tafel.json"), AU.standLeser(process.cwd()).sollQuelle()); const z = u.zeilen.find((x) => x.id === "haar"); console.log("ARM " + JSON.stringify({ urteil: z.urteil, ist: z.ist, band: z.band, grund: z.grund, taeter: z.taeter, teile: z.teile, stand: z.stand }))'
 node scripts/werkbank.cjs bild 0 0 0 0 0 0 --gesicht -4 --spieler --wahl 0 --klasse '^spieler:kopf/hair$' --ist haar --datei "$B-third.png" > "$B-third.txt" 2>&1; e=$?; echo "BILD third $e"; [ $e = 0 ] || fehl "$B-third.txt" third
 node -e 'const AU = require("./scripts/lib/abnahme-urteil.cjs"); const u = AU.sollTafelUrteil(require("./spec/abnahme/soll-tafel.json"), AU.standLeser(process.cwd()).sollQuelle()); const z = u.zeilen.find((x) => x.id === "haar"); console.log("THIRD " + JSON.stringify({ urteil: z.urteil, ist: z.ist, band: z.band, grund: z.grund, taeter: z.taeter, teile: z.teile, stand: z.stand }))'
-BILD arm 0
-ARM {"urteil":"ROT","ist":0.2839,"band":[0.3554,0.533],"grund":"strich 0.2839 < 0.3554 · albedo: Rohdatei spec/farbe/albedo-tafel.json: Zeile „haar\" ohne Ist","taeter":"spieler:kopf/hair (strich 0.2839 über 3089 inneren Pixel)","teile":"albedo — [0.01; 0.3]","stand":"2026-11-01 1e90e7cd nvidia pascal"}
-BILD third 0
-THIRD {"urteil":"ROT","ist":0.4,"band":[0.3554,0.533],"grund":"strich 0.4 — albedo: Rohdatei spec/farbe/albedo-tafel.json: Zeile „haar\" ohne Ist","taeter":"spieler:kopf/hair (strich 0.4 über 102 inneren Pixel)","teile":"albedo — [0.01; 0.3]","stand":"2026-11-01 1e90e7cd nvidia pascal"}
+BILD arm 1
+BILD arm FEHLER ABNAHME ROT [Vordergrund 25.2 % näher als 0.35 m (der halbe Ziel-Abstand): Mesh 25.2 %] · beweis · Sicht 0.9 % (Mesh 0.9 %) · Ziel Blickziel im Bild frei 0.7 m · Luma 47.8 σ 29.5 schwarz 0.0 % weiß 0.0 % · Stand 18.546.159 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal — die Aufnahme speiche
+ARM {"urteil":"ROT","ist":null,"band":[0.3554,0.533],"grund":"strich ungemessen","taeter":null,"teile":null,"stand":null}
+BILD third 1
+BILD third FEHLER ABNAHME ROT [Ziel Blickziel verdeckt von Mesh in 3.3 m] · beweis · Sicht 0.0 % · Ziel Blickziel im Bild VERDECKT 4 m · Luma 52.8 σ 28.4 schwarz 0.0 % weiß 0.0 % · Stand 18.546.159 · Bühne summer sunny 0.50 · Gerät WebGPU nvidia pascal — die Aufnahme speichert nichts
+THIRD {"urteil":"ROT","ist":null,"band":[0.3554,0.533],"grund":"strich ungemessen","taeter":null,"teile":null,"stand":null}
 
 --- stderr ---
 tr: warning: an unescaped backslash at end of string is not portable
-Updated 1 path from the index
+Updated 0 paths from the index
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal

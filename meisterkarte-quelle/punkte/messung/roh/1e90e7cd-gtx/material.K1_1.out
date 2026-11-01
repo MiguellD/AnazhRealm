@@ -310,8 +310,8 @@ H.fahre(async function probeAlbedo(H) {
     console.log(j.adapter || "[linse-gpu] ungenannt");
     console.log(j.fehler ? "ALBEDO-TAFEL ROT: " + j.fehler : "ALBEDO-TAFEL " + j.zeilen.length + " Zeilen beider Seiten" + (j.laborFehler ? " — " + j.laborFehler : ""));
     return j;
-}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\1e90e7cd-gtx\material.K1_1.json 10
-@@ 0.4 s · ort · 1 Takte
+}); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\1e90e7cd-gtx\material.K3_1.json 10
+@@ 0.5 s · ort · 1 Takte
 @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
 @@ 4 s · Labor: Protocol error (Runtime.evaluate): Target closed
 

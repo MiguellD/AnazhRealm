@@ -235,6 +235,8 @@ H.fahre(async function probeBildWeg(H) {
     return j;
 }); 7804 C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\messung\roh\1e90e7cd-gtx\bauen.K1_2.json 10
 @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier
+@@ Abbau: Attempted to use detached Frame '55096A56E5F8E72D07BF45E2AA491780'.
+@@ PROBE-FEHLER TargetCloseError: Protocol error (Runtime.callFunctionOn): Target closed |     at CallbackRegistry.clear (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\common\CallbackRegistry.js:82:36) |     at CdpCDPSession.onClosed (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\CdpSession.js:115:25) |     at #onClose (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\Connection.js:190:21) |     at Connection.dispose (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\cdp\Connection.js:196:22)
 
 --- gpu-zeuge ---
 [linse-gpu] nvidia/pascal
