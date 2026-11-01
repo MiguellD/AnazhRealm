@@ -10,9 +10,9 @@
 //   S (statisch, Node): Manifest traegt fachwerk (ns __fachwerkCore) · Absenzen: der Auto-Register-
 //     Chokepoint vergleicht keinen kind-String (M8), die Donor-Zeile haus_basis traegt kein
 //     portalMeta/roleManual (der Alt-Blueprint ist PHYSISCH gefallen). --selftest streicht die Manifest-Zeile.
-//   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die 32 Haus-
-//     Rezepte (Dial-Drift-Wand: s.W == der Kern-PRESETS-Wert) · kindStages.haus ==
-//     [0,1,2,3] gemerged (tree/vehicle/gate/weapon unberuehrt) · Auto-Blueprint
+//   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die Haus-
+//     Rezepte seines Kerns (das Soll aus fachwerk-core, kern-stufen; Dial-Drift-Wand: s.W == der Kern-PRESETS-Wert) · kindStages.haus ==
+//     die Deklaration von fachwerk-core gemerged (tree/vehicle/gate/weapon unberuehrt) · Auto-Blueprint
 //     haus_alemannisch entsteht am EINEN Chokepoint (Donor-Klon, KEIN
 //     _grownSpecies) · die generische haus_-Regel loest auf · die Place-
 //     Aufloesung liefert mode "settlement", der Dispatch benennt den deliberaten Kanal (kein Worldgen-Streuer) + keine
@@ -81,7 +81,7 @@ hauptLauf(async () => {
     const kernAlemannischW = FCn.PRESETS.alemannisch.s.W;
     const kernParamsRows = FCn.PARAMS_BY_KIND.haus.length;
 
-    const W = { bp: "haus_alemannisch", donor: "haus_basis", preset: "alemannisch", entry: "haus_hanseatisch", praefix: "haus_", stufen: [0, 1, 2, 3], name: "ein Haus", art: "haus", anzahl: 32, teile: 6, label: "Alemannisch · steil, hell", place: { mode: "settlement", siteTag: "haus", dispatch: "settlement" } };
+    const W = { bp: "haus_alemannisch", donor: "haus_basis", preset: "alemannisch", entry: "haus_hanseatisch", praefix: "haus_", stufen: [0, 1, 2, 3], name: "ein Haus", art: "haus", teile: 6, label: "Alemannisch · steil, hell", place: { mode: "settlement", siteTag: "haus", dispatch: "settlement" } };
     const [eps, out] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
         const res = { b: {}, f: {} };
         const f = r._ensureAssetFoundry();
@@ -117,8 +117,7 @@ hauptLauf(async () => {
     check(`B: die Dial-Drift-Wand haelt (Buch s.W == Kern-PRESETS ${kernAlemannischW})`, eps.b.s.W === kernAlemannischW, String(eps.b.s.W));
     check('B: die fx-Strings reisen (alemannisch.fx.stil == "alt")', out.b.stil === "alt", String(out.b.stil));
     check(`B: die B4-Regler-Tabelle reist (paramsByKind.haus == ${kernParamsRows} Dials, W-A1-Generik)`, out.b.paramsHaus === kernParamsRows, String(out.b.paramsHaus));
-    const ksHaus = JSON.stringify(eps.b.ks.haus);
-    check("B: kindStages.haus == [0,1,2,3] (N7.5-Merge am Ingest — die erste Mehr-Stufen-Domaene; 3 = NUR-WURF)", ksHaus === "[0,1,2,3]", ksHaus);
+    // kindStages.haus == die Deklaration von fachwerk-core urteilt der EINE Draht je Art gegen den Kern (keine Abschrift)
     check("D: builtIn == false (Policy-Zeile; User-Werk-Sicht wie Fahrzeug/Tor/Klinge)", eps.d.builtIn === false);
     check("E: die Stufe 3 trägt ihre Fernform als Beipack __fern (S3 haus, NUR-WURF)", eps.e.fern === true);
     check(

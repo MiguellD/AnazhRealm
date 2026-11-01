@@ -1025,7 +1025,11 @@ des Felsens `FELS` mit seiner Saat `FELS_SAAT` — `felsStoff` (der Welt-Boden j
 Detail-Term des Shaders) mit seiner Welle `felsWelle` (K17-3: der Shader liest sie EINMAL im Rausch-Atlas und reicht sie
 in die Fels-Funktion), `felsZahl` (das Rechenwerk des Gesetzes, mit `falte` und `fest`), `felsBankung` (die Messung der Bänke), der Schutt
 `schuttKorn`/`schuttMittel`, die Himmels-Sicht der Höhle `HIMMELS_SICHT`/`himmelsSicht`, die Boden-Karte des gerenderten
-Bodens `bodenKarte` (w4-b-boden: der voxel-worker rastert sie je Chunk, Sync-Bau und Naht-Morph rufen dieselbe Funktion), das Ziel der gröberen Stufe
+Bodens `bodenKarte` (w4-b-boden: der voxel-worker rastert sie je Chunk, Sync-Bau und Naht-Morph rufen dieselbe Funktion), DER BODEN IM
+FADEN (w4-b-boden2: der voxel-worker hält jedes Netz und rechnet, was bis dahin der Haupt-Faden trug) — die Vertex-Form des Satzes
+`satzPacke` und die Vorlage eines Boden-Bereichs `satzVorlage` (gepackte Attribute, Viertel, Hüllen, die feste Kiste des Rands),
+der Morph-Code `morphCode`/`morphNaht`, die Naht des Netzes `bodenNaht`, der Geomorph der Stufen-Grenze `bodenMorph` und sein
+Naht-Band `bodenNahtBand` —, das Ziel der gröberen Stufe
 `STUFE_ZIEL`/`stufeZiel` (K51-2, der Geomorph der Boden-Stufen: je Vertex Lage, Normale und Stoff-Farbe auf dem Netz der nächst
 gröberen Stufe — Worker und Sync-Bau rufen dieselbe Funktion) und DAS RAUSCH-GESETZ `RAUSCH` mit
 `rauschGitter`/`rauschRaum` (das EINE Gradienten-Rauschen des Boden-Shaders).

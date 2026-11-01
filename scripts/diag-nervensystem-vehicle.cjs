@@ -7,7 +7,7 @@
 //     Chokepoint kennt kein kind-if (M8). Den manifest-getriebenen Boot und Stempel beweist gate:pack-contract (`bootLauf`, B3a)
 //     am echten Faden. --selftest injiziert einen zweiten Ingest-Pfad und beweist: die Linse feuert.
 //   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die Fahrzeug-Presets (der
-//     Draht lebt end-to-end durch den echten Worker); kindStages.vehicle == [0] gemerged,
+//     Draht lebt end-to-end durch den echten Worker); kindStages.vehicle == die Deklaration des Kerns gemerged,
 //     die foundry-core-kinds UNANGETASTET (kein Overwrite).
 //   C (Merge-Semantik, direkt): ein Probe-Kern, der einen foundry-core-kind ueberschreiben
 //     WILL, verliert (first-wins); ein disjunkter kind kommt an. Restore danach.
@@ -73,7 +73,7 @@ hauptLauf(async () => {
     console.log("=== ZWEIT-KERN — TEIL A: die statischen Absenzen (Node) ===");
     for (const [name, ok, detail] of staticLaws()) check(name, ok, detail);
 
-    const W = { bp: "fahrzeug_gt", donor: "fahrzeug_wagen", preset: "gt", praefix: "fahrzeug_", wahl: 2, name: "ein Fahrzeug", art: "vehicle", anzahl: 5, teile: 17 };
+    const W = { bp: "fahrzeug_gt", donor: "fahrzeug_wagen", preset: "gt", praefix: "fahrzeug_", wahl: 2, name: "ein Fahrzeug", art: "vehicle", teile: 17 };
     const [eps, out] = await kernStufen.epsilonDraht(server, PORT, W, check, async () => {
         const res = { c: {}, d: {}, f: {} };
         const A = AnazhRealm;
@@ -144,7 +144,7 @@ hauptLauf(async () => {
         return res;
     });
     check("B: die Regler-Daten fliessen (gt.s.radstand == 2.9)", eps.b.s.radstand === 2.9, String(eps.b.s.radstand));
-    check("B: kindStages.vehicle == [0,1] (N7.5-Merge am Ingest)", JSON.stringify(eps.b.ks.vehicle) === "[0,1]", JSON.stringify(eps.b.ks.vehicle));
+    // kindStages.vehicle == die Deklaration von vehicle-core urteilt der EINE Draht je Art gegen den Kern (keine Abschrift)
     check(
         "C: first-wins — ein Zweit-Kern ueberschreibt NIE (tree bleibt [7,8])",
         out.c.treeKept === "[7,8]",

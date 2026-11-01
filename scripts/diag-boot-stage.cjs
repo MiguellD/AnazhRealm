@@ -39,7 +39,7 @@
 // die Platte trug, ist ROT beim Namen, ebenso ein Leser, der noch von der Platte kommt (`wechselUrteil`; --selftest füttert
 // es mit Bruch-Daten).
 // ─────────────────────────────────────────────────────────────────────────
-const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei, path, fs, os, SELBSTTEST, argOpt: OPT } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, sleep, hauptLauf, nullSeite, urteilEnde, pngDatei, path, fs, os, SELBSTTEST, argOpt: OPT, jsonLesen, jsonSchreiben } = require("./lib/welt-boot.cjs");
 const HL = require("./lib/haenger-linse.cjs");
 
 const PORT = Number(process.env.BOOT_STAGE_PORT || 4406);
@@ -145,8 +145,12 @@ const halterZeilen = (a) =>
 // Methoden am Prototyp (zwei Uhr-Rufe je Ruf): die Gestalt des Orts läuft je Takt tausendfach, die Hülle allein trug headless
 // kalt 2,7–4,0 s Selbstzeit vor dem Bild (`P.<computed>`) — das Instrument maß sich selbst mit.
 const KALT_KLASSEN = {
+    // DIE KLASSE BODEN (B, w4-b-boden2): was der Boden im Haupt-Faden trägt — der Bau, der Einbau samt Anlegen im Satz und
+    // Eintritt in den Faden, die Nähte aus dem Faden (`_tickMorphFolge`)
     _buildVoxelChunkDataFromWorkerMesh: "Boden",
     _buildVoxelChunkData: "Boden",
+    _finalizeVoxelChunkBuild: "Boden",
+    _tickMorphFolge: "Boden",
     _scatterRegion: "Streu",
     _rebuildArchitectureMesh: "Bauten",
     _foundryBuildGroup: "Gruppen-Bau",
@@ -291,7 +295,7 @@ async function kaltLauf() {
         });
     });
     const liste = path.join(profil, "lieferung.json");
-    const wechsel = KERN && wechselUrteil(JSON.parse(fs.readFileSync(liste)), out.lieferung.liste, KERN.id);
+    const wechsel = KERN && wechselUrteil(jsonLesen(liste), out.lieferung.liste, KERN.id);
     if (profilBenannt && !KERN) fs.writeFileSync(liste, JSON.stringify(out.lieferung.liste));
     Object.assign(out, { tK, druecke, offen, bild, zweit });
     await browser.close();
@@ -330,7 +334,7 @@ async function kaltLauf() {
     [out.kosten, out.vorBild] = [out.halter.kosten, out.halter.vorBild];
     delete out.marken;
     const json = OPT("--json");
-    if (json) fs.writeFileSync(json, JSON.stringify(out, null, 1));
+    if (json) jsonSchreiben(json, out);
     // je Sekunde: der Stand am Ende der Sekunde (die letzte Probe) und die blockierten ms des Haupt-Threads
     const S = Math.ceil((tK || out.weltbildDa) / 1000);
     const blockiert = new Array(S + 1).fill(0);
@@ -399,7 +403,7 @@ async function kaltLauf() {
 hauptLauf(async () => {
     if (ARGV.includes("--kalt")) return kaltLauf();
     if (OPT("--spur-lesen")) {
-        const { spur, seite } = JSON.parse(fs.readFileSync(OPT("--spur-lesen")));
+        const { spur, seite } = jsonLesen(OPT("--spur-lesen"));
         return console.log(halterZeilen(HL.ankunftsHalter(spur, seite)));
     }
     await server.lausche(PORT);

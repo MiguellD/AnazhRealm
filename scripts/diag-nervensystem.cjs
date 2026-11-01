@@ -252,9 +252,12 @@ hauptLauf(async () => {
                 (zeilen.length === new Set(zeilen).size && zeilen.length === sichtbar
                     ? ""
                     : `${zeilen.length} Zeilen ≠ ${sichtbar} nach dem Tausch`),
-            wort: B.teile
-                .filter((t) => t.rezept && t.ziel && r._studioBlueprintForWord(t.rezept) !== t.ziel)
-                .map((t) => t.rezept)
+            // das Wort jedes Teils führt zu seinem Ziel, und jedes Art-Wort des EINEN Wort-Katalogs (seine Stufe der Arten) zum
+            // ersten Werk seiner Art — nie zu einem Werk, dessen Label es als Grundwort trägt (w4-tore-teile2: „tor" führte aus
+            // „Lyra-Tor" zu tor_lyra statt zu tor_drachentor, der Satz „stell ein drachentor auf" verlor seine Absicht)
+            wort: [...B.teile.map((t) => t.ziel && [t.rezept, t.ziel]), ...r._studioWortKatalog().stufen[2]]
+                .filter((x) => x && x[0] && r._studioBlueprintForWord(x[0]) !== x[1])
+                .map((x) => x[0])
                 .join(" "),
             baum,
         };

@@ -19,7 +19,7 @@
 //   Port: V1_PFAD_PORT (4421) · Mutanten: V1_MUTANTE=gedaechtnis-leer (--seele) · wertung-aus (--regeln)
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonLesen, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
+const { statikServer, warteAufWelt, ROOT: root, hauptLauf, nullSeite, pruefer, wandEnde, selbsttestEnde, jsonLesen, jsonSchreiben, SELBSTTEST, path, fs, stammLib } = require("./lib/welt-boot.cjs");
 const { AUSGABE_INSTALL } = require("./lib/ausgabe-aufnahme.cjs");
 
 const PORT = Number(process.env.V1_PFAD_PORT || 4421);
@@ -2206,7 +2206,7 @@ async function korpusHaupt() {
             const mit = Object.fromEntries(m.saetze.map((e) => [e.satz, prog(e.antwort)]));
             const kopf = { modell, anbieter: new URL(endpunkt).host, datum: new Date().toISOString().slice(0, 10) };
             if (!m.sinkt)
-                fs.writeFileSync(ratschePfad, JSON.stringify({ ...kopf, quote, mitschnitt: mit }, null, 1) + "\n");
+                jsonSchreiben(ratschePfad, { ...kopf, quote, mitschnitt: mit }, 1, "\n");
         }
     }
     const v = [...korpusVerdict(m), ...(teil === "regeln" ? regelVerdict(m.regeln) : [])];
@@ -3268,6 +3268,6 @@ hauptLauf(async () => {
             `${mm.gestartet ? zeile(mm) : "nicht gestartet"}${v.length ? " — Täter: " + v.join(", ") : ""}`
         );
     }
-    if (process.env.V1_PFAD_RAHMEN_JSON) fs.writeFileSync(process.env.V1_PFAD_RAHMEN_JSON, JSON.stringify(rm, null, 1));
+    if (process.env.V1_PFAD_RAHMEN_JSON) jsonSchreiben(process.env.V1_PFAD_RAHMEN_JSON, rm);
     wandEnde(errs, "der v1-Pfad trägt seine benannten Schnitte.");
 });

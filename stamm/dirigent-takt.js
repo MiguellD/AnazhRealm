@@ -461,8 +461,12 @@ class AnazhRealm_dirigent_takt {
               (f.buch ? 1 : 0)
             : 0;
         o.foundry += this._foundryIngestQueue ? this._foundryIngestQueue.length : 0;
+        // … samt den Nähten im Faden (w4-b-boden2): Eintritte ohne Antwort (`_bodenImFlug`) und Teile, die der Takt noch anlegt
         o.chunks =
-            (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) + (st.voxelMeshPending ? st.voxelMeshPending.size : 0);
+            (st.dirtyVoxelChunks ? st.dirtyVoxelChunks.size : 0) +
+            (st.voxelMeshPending ? st.voxelMeshPending.size : 0) +
+            (this._bodenImFlug | 0) +
+            (this._bodenTeile ? this._bodenTeile.length : 0);
         // DER STAU IM FADEN (`_stauFelder`): sein Auftrag baut, bis die Felder ankamen (`_stauAn`) — bis ci-werk-wasser stand die
         // Welt, während er flog, und gate:werk-im-wasser D zählte den Stausee nach dem Reload vor seiner Antwort
         o.stau = this._stauImFlug ? 1 : 0;
@@ -1352,9 +1356,9 @@ class AnazhRealm_dirigent_takt {
             },
             {
                 name: "morphFolge",
-                prio: 1, // Welt-Substanz: die Naht eines Nachbarn, dessen Stufe wechselte (`_tickMorphFolge`), nach dem Strom
-                run: (ms) => {
-                    this._tickMorphFolge(st._frameChunksBuilt ? 0 : Math.min(ms, AnazhRealm.MORPH_FOLGE_MS));
+                prio: 1, // Welt-Substanz: die Nähte, die der Faden morphte (`_tickMorphFolge` legt sie an), nach dem Strom
+                run: () => {
+                    this._tickMorphFolge();
                 },
             },
             {
