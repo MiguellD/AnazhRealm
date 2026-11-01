@@ -1,0 +1,59 @@
+{
+ "sha": "75614bb6090df300feadc176acd595c1bba975f4",
+ "geraet": "gtx",
+ "zeit": "2026-11-01T12:58:36.961Z",
+ "host": "LAPTOP-4BN3RL0L",
+ "je": {
+  "haar.K2#1": {
+   "gruen": true,
+   "zahl": "arm GRÜN strich 0.4486 Soll [0.3554,0.533] · albedo 0.0117 [0.01; 0.3] · third GRÜN strich 0.4882 Soll [0.3554,0.533] · albedo 0.0117 [0.01; 0.3]",
+   "exit": 0,
+   "minuten": 0.4,
+   "gpu": "nvidia/pascal",
+   "s": 23.8,
+   "zeit": "2026-11-01T12:58:36.961Z",
+   "abdruck": "b612c52e703b",
+   "port": 7804,
+   "bahn": "sitzung",
+   "modus": "session"
+  }
+ },
+ "sitzung": {
+  "start": "2026-11-01T12:58:08.626Z",
+  "port": 7804,
+  "warten": 0.01,
+  "bootS": 6.3,
+  "grundstellungS": [],
+  "proben": 1,
+  "freigaben": [],
+  "orte": [
+   {
+    "ort": "wiese",
+    "vor": "haar.K2#1",
+    "s": 21,
+    "takte": 623,
+    "chunks": 81,
+    "nach": null
+   }
+  ],
+  "wegeTueren": [],
+  "ciBlicke": 2,
+  "strom": {
+   "datei": "strom.ndjson",
+   "bilder": 0,
+   "frameP95": null,
+   "taktP95": null,
+   "vramMax": null,
+   "seiten": 1,
+   "marken": 0,
+   "fehler": 0,
+   "verloren": 0,
+   "ortImDeckel": [],
+   "zapfen": 42,
+   "luecken": 0,
+   "letzteLuecke": null
+  },
+  "fahrtS": 51.5,
+  "minuten": 0.92
+ }
+}
