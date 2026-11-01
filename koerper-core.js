@@ -387,8 +387,10 @@
     function haarStreu(d) {
         d = d || {};
         var stil = d.hairStyle || "mittel";
-        // K57: trägt der Stil eine Kappe (HAAR_KAPPE, das Volumen), sind die Strähnen ihr Rand — halbe Dichte
-        var vol = Math.max(0.3, typeof d.hairVol === "number" ? d.hairVol : 1.0) * (HAAR_KAPPE[stil] ? 0.5 : 1);
+        // K57: trägt der Stil eine Kappe (HAAR_KAPPE, das Volumen), sind die stehenden Strähnen ihr Rand — halbe Dichte; die
+        // liegenden (HAAR_STRICH) SIND ihre Fläche — volle Dichte, je Strähne EIN Band (die Hälfte der Dreiecke einer Kreuz-Karte)
+        var voll = Math.max(0.3, typeof d.hairVol === "number" ? d.hairVol : 1.0);
+        var vol = voll * (HAAR_KAPPE[stil] ? 0.5 : 1);
         var len = Math.max(0.25, typeof d.hairLen === "number" ? d.hairLen : 1.0);
         // K57: die Kalotten-Schale IST die Haar-Kappe des Stils (die Strähnen wurzeln auf dem Volumen; vorher eine eigene
         // Schale, deren Vorderseite auf Stirnhöhe lag — die Strähnen stachen als Punkte aus der Stirn)
@@ -399,13 +401,18 @@
         var N = [0, 0.28, -0.16], // Nacken-Schale
             NR = 0.36,
             NS = [0.9, 0.75, 0.7];
+        // die Schalen-Zeilen liegen (HAAR_STRICH, haar.K2): ihre Strähnen folgen dem Strich `d` auf der Kappe
+        var HS = HAAR_STRICH;
+        var liegend = { liegt: HS.liegt, streu: HS.streu, rund: HS.rund, faellt: HS.faellt, t: HS.t, locke: HS.locke };
         var zi = function (n, l, extra) {
-            var z = { teil: "head", c: K, r: KR, sc: KS, d: [0, -0.12, -0.85], n: Math.round(n * vol), l: l * len, t: 0.01 };
+            var z = { teil: "head", c: K, r: KR, sc: KS, d: [0, -0.12, -0.85], n: Math.round(n * voll), l: l * len, t: 0.01 };
+            for (var k0 in liegend) z[k0] = liegend[k0];
             if (extra) for (var k in extra) z[k] = extra[k];
             return z;
         };
         var nacken = function (n, l, extra) {
-            var z = { teil: "head", c: N, r: NR, sc: NS, d: [0, -0.55, -0.6], n: Math.round(n * vol), l: l * len, t: 0.01 };
+            var z = { teil: "head", c: N, r: NR, sc: NS, d: [0, -0.55, -0.6], n: Math.round(n * voll), l: l * len, t: 0.01 };
+            for (var k0 in liegend) z[k0] = liegend[k0];
             if (extra) for (var k in extra) z[k] = extra[k];
             return z;
         };
@@ -440,7 +447,13 @@
                 { teil: "head", c: [0, 0.58, -0.02], r: 0.4, sc: [0.9, 0.55, 0.95], d: [0.55, -0.5, -0.2], n: Math.round(550 * vol), l: 0.19 * len, lj: 0.12, t: 0.02 },
             ],
         };
-        return STILE[stil] || STILE.mittel;
+        // der Ton jeder Strähne (HAAR_STRICH): die Melanin-Streuung und die Wurzel — jede Zeile jedes Stils, EIN Anker für HAAR_LOOK
+        var zeilen = STILE[stil] || STILE.mittel;
+        for (var zz = 0; zz < zeilen.length; zz++) {
+            zeilen[zz].ton = HS.ton;
+            zeilen[zz].wurzel = HS.wurzel;
+        }
+        return zeilen;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -757,13 +770,39 @@
         clearcoatRoughness: 0.6,
         atem: Object.freeze({ freq: 3.0, amp: 0.0035, t: 0.1 }),
     });
+    // DAS HAAR LIEGT (haar.K2 — die Strähnen-Kohärenz gegen die REF ref-haar; foundry-core `__streuGeo`): jede Strähne einer
+    // Schalen-Zeile (`zi`, `nacken` in haarStreu) wurzelt auf der Kappe ihres Stils und LIEGT auf ihr, EIN Band dem Strich der
+    // Zeile nach — sie SIND die Fläche des Haars (volle Dichte, je Strähne zwei Dreiecke statt vier der Kreuz-Karte):
+    //   liegt  [Höhe der Wurzel, Höhe der Spitze] über der Kappe (Kopf-Raum, 1 ≈ 0,21 m: 2,5 und 5,5 mm — die Lage der Strähnen,
+    //          die Spitze über der nächsten Wurzel; tiefer begrub die Haut die Wurzeln an der Haarlinie)
+    //   t      die Breite (Wurzel 1,8 t, Spitze 0,65 t je Seite: 9 und 3 mm)
+    //   streu  die Streuung des Strichs (Anteil der Kreuz-Karten-Streuung) · faellt  die Schwere an Seite und Hinterkopf (dort
+    //          liefe der Strich `d` sonst in die Normale: die Strähnen stünden in jede Richtung)
+    //   rund   die Normale kippt zur Kante (rad): die Strähne ist rund, das Licht läuft quer über sie
+    //   locke  [Locken je Umlauf, Ton ±]: Strähnen benachbarter Wurzel teilen den Ton ihrer Locke — auf 4 m (Third) ist die
+    //          Strähne unter einem Pixel, die Locke 3 Pixel breit · ton  die Melanin-Streuung je Strähne (±)
+    //   wurzel der Ton der Wurzel (die Lage darüber verdeckt sie; HAAR_LOOK liest ihn als Anker der Strähnen-Achse) — die Albedo
+    //          des Haars bleibt sein Ton, wo man es sieht (Keratin mit Melanin, die Zeile haar der Albedo-Tafel).
+    // Bis haar.K2 stand jede Strähne als Kreuz-Karte vom Kopf ab, die Wurzel bei 0,12 über die ganze Länge: das Bild zeigte das
+    // Raster der Kappe statt Strähnen (Strich arm 0,28 / third 0,38 gegen die REF 0,44, Radeon 20d09a04), das Haar las dunkler als
+    // Schwarz (Dunkelbraun: der Ton 0,0127, gerechnet über die Strähne im Mittel ≈ 0,006 — unter dem Band [0,01; 0,3]).
+    var HAAR_STRICH = Object.freeze({
+        liegt: Object.freeze([0.012, 0.026]),
+        t: 0.012,
+        streu: 0.5,
+        faellt: 1,
+        rund: 1.2,
+        locke: Object.freeze([48, 0.3]),
+        ton: 0.2,
+        wurzel: 0.85,
+    });
     var HAAR_LOOK = Object.freeze({
         tipRimPow: 3,
         tipRimFarbe: Object.freeze([0.35, 0.18, 0.05]),
         specPow: 8,
         specAmt: 0.3,
         specFarbe: Object.freeze([0.3, 0.15, 0.04]),
-        wurzelAnker: 0.12,
+        wurzelAnker: HAAR_STRICH.wurzel,
     });
 
     // ════════════════════════════════════════════════════════════════════
@@ -1600,6 +1639,7 @@
         MATERIAL_KLASSEN: MATERIAL_KLASSEN,
         HAUT_LOOK: HAUT_LOOK,
         HAAR_LOOK: HAAR_LOOK,
+        HAAR_STRICH: HAAR_STRICH,
         MENSCH_GESTALT: MENSCH_GESTALT,
         MENSCH_SOLL: MENSCH_SOLL,
         KOPF_SOLL: KOPF_SOLL,

@@ -934,6 +934,44 @@
             "ratsche": 0.0899
         },
         {
+            "id": "haar",
+            "gruppe": "Haut/Fell",
+            "titel": "Mensch, das Haar Dunkelbraun 0x2a1a10 — derselbe Mensch beidseits (START_PARAMS: Labor der Guss der Welt, Welt der Mensch der Zeile), die Strähnen der Frisur mittel (haarStreu, HAAR_STRICH)",
+            "labor": {
+                "studio": "koerperstudio",
+                "stoff": {
+                    "kind": "^hair$"
+                }
+            },
+            "welt": {
+                "exemplar": {
+                    "typ": "mensch",
+                    "radius": 2
+                },
+                "klasse": "^mensch$",
+                "stoff": {
+                    "kind": "^hair$"
+                }
+            },
+            "quellen": [
+                "koerper-core.js",
+                "foundry-core.js",
+                "stamm/dirigent-kern.js",
+                "stamm/dienst.js",
+                "stamm/wasser-hydro.js",
+                "stamm/stoff-material.js",
+                "stamm/studio-bruecke.js",
+                "stamm/studio-stoff.js",
+                "stamm/bau-teile.js",
+                "stamm/siedlung-ort.js",
+                "stamm/siedlung-bewohner.js",
+                "stamm/vegetation-baum.js",
+                "stamm/koerper-leib.js",
+                "stamm/koerper-seele.js",
+                "stamm/koerper-fahrt.js"
+            ]
+        },
+        {
             "id": "klinge",
             "gruppe": "Klinge",
             "titel": "Langschwert, der Stahl (Seh-Klasse metall: Klinge, Parier, Knauf)",

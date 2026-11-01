@@ -5437,11 +5437,25 @@ function __tierHautGelenke(geo, skinJoints) {
 // (Lab-Mathe verbatim: phi/theta-Streu, Richtungs-Jitter, Längen-Quantisierung),
 // Kreuz-Quads mit WURZEL→SPITZE-Farbverlauf als Vertex-Daten (der Lab-Shader
 // mischte fast-schwarz→Ton über aStrandY — hier reist es als Farbe, kein Shader).
+// DIE LIEGENDE STRÄHNE (haar.K2, koerper HAAR_STRICH — eine Schalen-Zeile mit `liegt` [Höhe der Wurzel, Höhe der Spitze]): die
+// Strähne wurzelt auf der Schale (gleich dicht je Fläche) und LIEGT auf ihr — EIN Band (zwei Dreiecke) von der Wurzel zur Spitze,
+// die Breite quer zur Sehne in der Fläche. Die Spitze sucht der Strich in zwei Schritten über die Wölbung: je Schritt ein halbes
+// l in die Richtung davor, zurück auf die Schale getragen (vom Zentrum aus). Der Strich der Wurzel ist die
+// Zeile `d` (Streuung × `streu`) in der Fläche, an Seite und Hinterkopf mit der Schwere (`faellt`). Die Normale kippt quer zur
+// Kante (`rund`, rad: die Strähne ist rund). Ihr Ton: die Locke (`locke` [Zahl je Umlauf, ±], der Sektor ihres Azimuts) × die
+// Strähne (`ton` ±, ein eigener Strom — die Lage der Strähnen bleibt die des alten Stroms), die Wurzel auf `wurzel` (Vorgabe 0,12).
+// Bis haar.K2 stand jede Strähne als Kreuz-Karte in `d` von der Schale ab: vorn tauchte sie in die Kappe, hinten stand sie dem
+// Blick entgegen — das Bild zeigte das Raster der Kappe (die Kopf-Haut) statt Strähnen.
 function __streuGeo(row, seed, tonRGB) {
     let sLcg = seed >>> 0 || 1;
     const rnd = () => {
         sLcg = (sLcg * 1103515245 + 12345) >>> 0;
         return sLcg / 4294967296;
+    };
+    let sTon = (Math.imul(seed >>> 0 || 1, 2654435761) ^ 0x9e3779b9) >>> 0;
+    const rndTon = () => {
+        sTon = (Math.imul(sTon, 1664525) + 1013904223) >>> 0;
+        return sTon / 4294967296;
     };
     const pos = [];
     const col = [];
@@ -5450,7 +5464,9 @@ function __streuGeo(row, seed, tonRGB) {
     const AB = new THREE.Vector3(0, -1, 0);
     const d = new THREE.Vector3();
     const v = new THREE.Vector3();
-    const rootC = [tonRGB[0] * 0.12, tonRGB[1] * 0.12, tonRGB[2] * 0.12];
+    const wz = row.wurzel != null ? row.wurzel : 0.12;
+    const tonJ = row.ton > 0 ? row.ton : 0;
+    const rootC = [tonRGB[0] * wz, tonRGB[1] * wz, tonRGB[2] * wz];
     // V18.462 — ZEILEN-ARTEN (Frisuren-Gesetz): "streu" = Kalotten-Schale
     // (Default, RNG-Reihenfolge UNVERÄNDERT — die Fell-Streu ist eingefroren),
     // + `radial:1` (Richtung = Schalen-Normale, afro), "quaste" = Punkt-Büschel
@@ -5458,6 +5474,26 @@ function __streuGeo(row, seed, tonRGB) {
     // `lj` = Längen-Streuung (Default 0.015 wie bisher).
     const art = row.art === "quaste" || row.art === "knoten" ? row.art : "streu";
     const lj = row.lj != null ? row.lj : 0.015;
+    const liegt = art === "streu" && !row.radial && Array.isArray(row.liegt) ? row.liegt : null;
+    const streu = row.streu != null ? row.streu : 1;
+    const rund = row.rund != null ? row.rund : 0;
+    const faellt = row.faellt != null ? row.faellt : 0;
+    const lk = Array.isArray(row.locke) && row.locke[0] >= 1 ? row.locke : null;
+    const nor = [];
+    // die Schale der liegenden Strähne: Halbachsen, ein Punkt zurück auf sie (vom Zentrum) samt Normale, das Rückgrat
+    const ax = row.r * row.sc[0],
+        ay = row.r * row.sc[1],
+        az = row.r * row.sc[2];
+    const auf = (p, nn) => {
+        const x = (p.x - row.c[0]) / ax,
+            y = (p.y - row.c[1]) / ay,
+            z = (p.z - row.c[2]) / az;
+        const k = 1 / Math.sqrt(x * x + y * y + z * z);
+        p.set(row.c[0] + x * k * ax, row.c[1] + y * k * ay, row.c[2] + z * k * az);
+        nn.set((x * k) / ax, (y * k) / ay, (z * k) / az).normalize();
+    };
+    const R = liegt ? [0, 1, 2].map(() => ({ p: new THREE.Vector3(), n: new THREE.Vector3(), f: new THREE.Vector3() })) : null;
+    const tang = (f, n) => f.addScaledVector(n, -f.dot(n));
     let sN = 0;
     for (let j = 0; j < row.n; j++) {
         const phi = rnd() * Math.PI;
@@ -5467,6 +5503,68 @@ function __streuGeo(row, seed, tonRGB) {
         const jz = (rnd() - 0.5) * 0.4;
         const qr = rnd();
         let px, py, pz;
+        if (liegt) {
+            // die Wurzeln gleich dicht auf der Fläche (cos φ gleichverteilt aus demselben Zug), nie gehäuft am Scheitel
+            const cph = 1 - (2 * phi) / Math.PI;
+            if (cph < -0.05) continue;
+            const sph = Math.sqrt(Math.max(0, 1 - cph * cph));
+            const l = Math.round((row.l + qr * lj) / 0.004) * 0.004;
+            if (l <= 0) continue;
+            // DIE LOCKE (`locke` [Zahl je Umlauf, Ton ±]): Strähnen mit benachbarter Wurzel kleben zur Locke und teilen ihren Ton —
+            // die Locke ist der Sektor ihres Azimuts (die Meridiane der Schale laufen mit dem Strich: über die Stirn zurück, am
+            // Hinterkopf hinab), ihr Ton ein Hash ihrer Nummer; die Strähne streut darin um ±`ton`
+            let f = tonJ ? 1 + tonJ * (2 * rndTon() - 1) : 1;
+            if (lk) {
+                const i = Math.floor((theta / (2 * Math.PI)) * lk[0]) % lk[0];
+                const hsh = (Math.imul((i + 1) ^ (seed >>> 0), 0x45d9f3b) ^ (Math.imul(i + 1, 0x27d4eb2d) >>> 15)) >>> 0;
+                f *= 1 + lk[1] * (2 * ((Math.imul(hsh ^ (hsh >>> 16), 0x45d9f3b) >>> 0) / 4294967296) - 1);
+            }
+            const [r0, r1, r2] = R;
+            r0.p.set(row.c[0] + ax * sph * Math.cos(theta), row.c[1] + ay * cph, row.c[2] + az * sph * Math.sin(theta));
+            auf(r0.p, r0.n);
+            // DIE SCHWERE (`faellt`): an Seite und Hinterkopf zieht sie den Strich nach unten, auf dem Scheitel und über der Stirn nie
+            const sw = faellt * Math.max(0, 1 - r0.n.y - Math.max(0, r0.n.z));
+            tang(r0.f.set(row.d[0] + jx * streu, row.d[1] + jy * streu - sw, row.d[2] + jz * streu), r0.n);
+            if (r0.f.lengthSq() < 1e-8) tang(r0.f.set(0, -1, 0), r0.n);
+            r0.f.normalize();
+            // je Schritt: der Strich davor, auf die Schale getragen — sie trägt die Strähne bis in den Kopf (dort verdeckt sie die
+            // Haut); eine Strähne, die frei fiel, wo die Schale sich unter den Kopf wendet, hing an der Schläfe als Strich vor dem Gesicht
+            for (let k = 1; k < 3; k++) {
+                const [a, b] = [R[k - 1], R[k]];
+                b.p.copy(a.p).addScaledVector(a.f, l / 2);
+                auf(b.p, b.n);
+                tang(b.f.copy(b.p).sub(a.p), b.n);
+                if (b.f.lengthSq() < 1e-8) b.f.copy(a.f);
+                b.f.normalize();
+            }
+            // das Band: EIN Glied von der Wurzel zur Spitze (die Wölbung unter ihm trägt ≤ l²/8R, unter der Höhe der Lage), quer
+            // zur Sehne in der Fläche je Ende
+            const b0 = sN * 4;
+            r1.f.copy(r2.p).sub(r0.p);
+            for (const [k, g] of [
+                [0, r0],
+                [1, r2],
+            ]) {
+                const h = liegt[k];
+                const w = k === 0 ? row.t * 1.8 : Math.max(0.001, row.t * 0.65);
+                v.crossVectors(r1.f, g.n).normalize();
+                const cc = k ? tonRGB : rootC;
+                for (const s of [-1, 1]) {
+                    pos.push(g.p.x + g.n.x * h + v.x * w * s, g.p.y + g.n.y * h + v.y * w * s, g.p.z + g.n.z * h + v.z * w * s);
+                    col.push(cc[0] * f, cc[1] * f, cc[2] * f);
+                    // DIE RUNDE STRÄHNE (`rund`, rad): die Normale kippt quer zum Strich zur Kante hin, wie die Fläche eines
+                    // Zylinders — das Licht läuft quer über jede Strähne
+                    nor.push(
+                        g.n.x * Math.cos(rund) + v.x * s * Math.sin(rund),
+                        g.n.y * Math.cos(rund) + v.y * s * Math.sin(rund),
+                        g.n.z * Math.cos(rund) + v.z * s * Math.sin(rund)
+                    );
+                }
+            }
+            idx.push(b0, b0 + 1, b0 + 3, b0, b0 + 3, b0 + 2);
+            sN++;
+            continue;
+        }
         if (art === "quaste") {
             px = row.c[0] + (phi / Math.PI - 0.5) * row.box[0];
             py = row.c[1] + (theta / (Math.PI * 2) - 0.5) * row.box[1];
@@ -5509,11 +5607,12 @@ function __streuGeo(row, seed, tonRGB) {
             [0, -l, -wt, 1],
         ];
         const b = sN * 8;
+        const f = tonJ ? 1 + tonJ * (2 * rndTon() - 1) : 1;
         for (const e of ecken) {
             v.set(e[0], e[1], e[2]).applyQuaternion(q);
             pos.push(v.x + px, v.y + py, v.z + pz);
             const cc = e[3] ? tonRGB : rootC;
-            col.push(cc[0], cc[1], cc[2]);
+            col.push(cc[0] * f, cc[1] * f, cc[2] * f);
         }
         idx.push(b, b + 1, b + 2, b, b + 2, b + 3, b + 4, b + 5, b + 6, b + 4, b + 6, b + 7);
         sN++;
@@ -5523,7 +5622,9 @@ function __streuGeo(row, seed, tonRGB) {
     geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
     geo.setAttribute("color", new THREE.Float32BufferAttribute(col, 3));
     geo.setIndex(idx);
-    geo.computeVertexNormals();
+    // die liegende Strähne trägt ihre Normale selbst (die Fläche der Schale, quer gekippt), die Kreuz-Karte die ihrer Dreiecke
+    if (liegt) geo.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+    else geo.computeVertexNormals();
     return geo;
 }
 

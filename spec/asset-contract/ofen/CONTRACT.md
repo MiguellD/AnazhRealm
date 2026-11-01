@@ -89,6 +89,15 @@ NUR die 64 Mensch-Schlüssel (L0 26 · L1 20 · L2 9 · L3 9, mit den Gelenken v
 gleich bis auf den Leib der Mengen-Stufe (L2 952 → 951); alle übrigen 446 Klassen byte-gleich (jedes Tier, beide Mensch-Beipacks),
 510 → 510 Klassen.
 
+Vertrags-Akt haar.K2 (01.11.2026, das Haar liegt — Station haar.K2#1, Strich gegen die REF ref-haar): die Strähnen der
+Schalen-Zeilen (koerper `haarStreu` `zi`/`nacken`, die Zahlen `HAAR_STRICH`) LIEGEN auf der Kappe ihres Stils — je Strähne EIN
+Band (foundry-core `__streuGeo` `liegt`: die Wurzeln gleich dicht je Fläche, der Strich der Zeile in der Fläche, an Seite und
+Hinterkopf mit der Schwere, die Normale rund zur Kante, der Ton der Locke × der Strähne, die Wurzel 0,85) in voller Dichte, zwei
+statt vier Dreiecke je Strähne. Neu geprägt NUR acht Klassen der Stufe L0: `mensch-L0|hair|head` 4 896/2 568 → 5 064/2 652
+Ecken/Dreiecke, und weil die Stufe ihre Zeile 40 000 trägt (die festen Teile +84 Dreiecke), geben die sieben Hüllen am selben
+Anteil nach (Haut von Kopf, Händen und Leib, die drei Kleid-Stoffe: je 2–20 Dreiecke, ≤ 0,3 %); alle übrigen 502 Klassen
+byte-gleich (jedes Tier, L1 bis L3 des Menschen, beide Mensch-Beipacks), 510 → 510 Klassen.
+
 ## Invarianten des Gates
 
 - **Determinismus:** ein frischer Ofen (neuer vm-Kontext) gießt jede Klasse byte-gleich.
