@@ -9,7 +9,7 @@
 //     die Donor-Zeile geraet_schwert traegt kein portalMeta/roleManual (der Alt-Blueprint ist PHYSISCH
 //     gefallen) · die Hand waermt keine Pipeline vor. --selftest: das Faust-Verdikt (H-F).
 //   B (Browser, foundry-ON, Null-Renderer): das LIVE-Buch traegt die Klingen-
-//     Rezepte seines Kerns (Waffen UND Werkzeuge, das Soll aus schmiede-core) · kindStages.weapon == [0] gemerged (tree/
+//     Rezepte seines Kerns (Waffen UND Werkzeuge, das Soll aus schmiede-core) · kindStages.weapon == die Deklaration des Kerns gemerged (tree/
 //     vehicle/gate unberuehrt) · Auto-Blueprint klinge_langschwert entsteht am
 //     EINEN Chokepoint (Donor-Klon, KEIN _grownSpecies) · die generische
 //     klinge_-Regel loest auf · die Place-Aufloesung liefert mode "hand", der
@@ -303,7 +303,7 @@ hauptLauf(async () => {
         String(out.b.toolCount)
     );
     check("B: die B4-Regler-Tabelle reist (paramsByKind.weapon == 18 Dials, W-A1-Generik)", out.b.paramsWeapon === 18, String(out.b.paramsWeapon));
-    check("B: kindStages.weapon == [0] (N7.5-Merge am Ingest)", JSON.stringify(eps.b.ks.weapon) === "[0]", JSON.stringify(eps.b.ks.weapon));
+    // kindStages.weapon == die Deklaration von schmiede-core urteilt der EINE Draht je Art gegen den Kern (keine Abschrift)
     check("D: builtIn == false (Policy-Zeile; User-Werk-Sicht wie Fahrzeug/Tor)", eps.d.builtIn === false);
     check(
         "D: auch der Werkzeug-Donor ist ABWESEND, seine Substanz trägt 2 Parts (KIND_SUBSTANCE.geraet_spitzhacke)",
