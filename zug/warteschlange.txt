@@ -369,3 +369,4 @@ general-1e90-gtx 1 punkte sha=1e90e7cd850ad32a8567bad9a5a8b241593a8e93 geraet=gt
 z140-punkte-gtx 0 storno
 z143-abab 3 abab A=1e90e7cd850ad32a8567bad9a5a8b241593a8e93 B=baf9d8280b0aa08441b436e9f93f6e17b221a7cc zellen=w-ego,stadt
 takt-z143a-gtx 1 punkte sha=baf9d8280b0aa08441b436e9f93f6e17b221a7cc geraet=gtx nur=tiere.K1#2,tiere.K3#2,mensch.K1#1,haar.K2#1,vegetation.K5#2,material.K2#1,material.K1#1,lod.K1#1,lod.K5#1,studios.K2#2,studios.K3#2,bauen.K1#2,studios.K4#1,siedlung.K1#2,siedlung.K4#2,spielgang.K3#1,fahrzeug.K2#1,fahrzeug.K2#2,ankunft.K2#1,ankunft.K3#1,profiband.K4#1,profiband.K1#1,profiband.K2#1,profiband.K2#2,profiband.K3#1,speicher.K4#2
+takt-z143b-gtx 1 punkte sha=baf9d8280b0aa08441b436e9f93f6e17b221a7cc geraet=gtx nur=ankunft.K1#1,klang.K4#1
