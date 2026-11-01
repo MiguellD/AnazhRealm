@@ -3,7 +3,7 @@
 // 8 Band/Bänder in Lauf-Reihenfolge, je Band das Modul, dessen Glieder er am meisten ruft; gestellt von
 // `node scripts/stamm-umzug.cjs --richter` — ein neuer Band steht hier und in der Reihe des Läufers scripts/playtest.cjs.
 
-const { safeEvaluate } = require("../playtest.cjs");
+const { safeEvaluate, erreichbar } = require("../playtest.cjs");
 
 async function checkBandVoxelP3AndInventory({ page, check, errors, finalState }) {
     void errors;
@@ -34,7 +34,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (voxelP3Results && !voxelP3Results.error) {
+    if (erreichbar(check, "Voxel P3: Tests laufen", voxelP3Results)) {
         check(
             "Voxel P3: der Schnitt nimmt die Säule r aus dem Fels (Kern und Rand Luft, außerhalb Fels)",
             voxelP3Results.carveSubtracts
@@ -310,7 +310,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (voxelV940eResults && !voxelV940eResults.error) {
+    if (erreichbar(check, "Voxel V9.40-e: Tests laufen", voxelV940eResults)) {
         check(
             "_addVoxelEdit verwirft Edit weit über der Chunk-Decke (Schöpfer-Hinweis)",
             voxelV940eResults.farEditRejected && voxelV940eResults.farEditNotStored
@@ -367,7 +367,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (voxelP3bResults && !voxelP3bResults.error) {
+    if (erreichbar(check, "Voxel P3b: Tests laufen", voxelP3bResults)) {
         check("Voxel P3b: ein mode-loser Alt-Edit gilt als carve (Backward-Compat)", voxelP3bResults.modelessIsCarve);
         check("Voxel P3b: der Chat-Befehl `voxel fill` schüttet auf", voxelP3bResults.chatFillAddsEdit);
     }
@@ -428,7 +428,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (voxelP3cResults && !voxelP3cResults.error) {
+    if (erreichbar(check, "Voxel P3c: Tests laufen", voxelP3cResults)) {
         check("Voxel P3c: _consumeAnyMaterial zieht bei genug Material ab", voxelP3cResults.consumeEnough);
         check(
             "Voxel P3c: _consumeAnyMaterial lehnt bei zu wenig ab + lässt das Inventar unberührt",
@@ -563,7 +563,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (wave6c2Results && !wave6c2Results.error) {
+    if (erreichbar(check, "Welle 6.C2: Tests laufen", wave6c2Results)) {
         check("Welle 6.C2: Neue Welten starten im frieden-Modus (init-time)", wave6c2Results.defaultModeFrieden);
         check(
             "Welle 6.C2: GAME_MODES[0] === 'frieden' (kanonischer Default)",
@@ -826,7 +826,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (wave6c1Results && !wave6c1Results.error) {
+    if (erreichbar(check, "Welle 6.C1: Tests laufen", wave6c1Results)) {
         check("Welle 6.C1: state.player.inventory ist Array", wave6c1Results.hasInventoryArray);
         check("Welle 6.C1: Inventar hat exakt 27 Slots", wave6c1Results.inventoryHas27Slots);
         check("Welle 6.C1: Inventar initial leer (alle 27 null)", wave6c1Results.initiallyEmpty);
@@ -1110,7 +1110,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (dragResults && !dragResults.error) {
+    if (erreichbar(check, "Welle 6.C1 Drag: Tests laufen", dragResults)) {
         check("Welle 6.C1 Drag: inv→inv tauscht Slot-Inhalte", dragResults.invToInvSwap);
         check("Welle 6.C1 Drag: inv→hot legt Bauplan in Hotbar", dragResults.invToHotPlaces);
         check(
@@ -1199,7 +1199,7 @@ async function checkBandVoxelP3AndInventory({ page, check, errors, finalState })
         return out;
     });
 
-    if (lockResults && !lockResults.error) {
+    if (erreichbar(check, "Welle 6.C1 Lock: Tests laufen", lockResults)) {
         check("Welle 6.C1 Lock: exitPointerLock wird beim Inventar-Öffnen gerufen", lockResults.exitLockCalledOnOpen);
         check("Welle 6.C1 Lock: state.inventoryOpen wird true nach toggleOpen", lockResults.overlayOpenAfterToggle);
         check(

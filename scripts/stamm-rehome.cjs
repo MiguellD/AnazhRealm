@@ -1,5 +1,6 @@
 "use strict";
-/* global process, console, __dirname */
+const { ausDatei, path, fs, os, argOpt, SELBSTTEST, jsonLesen, ROOT } = require("./lib/welt-boot.cjs");
+/* global process, console */
 // scripts/stamm-rehome.cjs — trägt einen Zweig über den Stamm-Schnitt (Stamm-Zerlegung).
 //
 // Ein Zweig, der vor dem Schnitt abzweigte (oder über dessen Basis ein `--teile` lief), trägt den Stamm in einer anderen
@@ -18,13 +19,9 @@
 //        in stamm-rehome.konflikt.js (unversioniert) — von Hand lösen, dann
 //   node scripts/stamm-rehome.cjs --weiter
 //   node scripts/stamm-rehome.cjs --selftest
-const fs = require("fs");
-const os = require("os");
-const path = require("path");
 const { execFileSync } = require("child_process");
 const stamm = require("./lib/stamm.cjs");
 
-const ROOT = path.resolve(__dirname, "..");
 const KONFLIKT = "stamm-rehome.konflikt.js";
 const ZUSTAND = "stamm-rehome.json"; // in .git
 const MB = { maxBuffer: 1 << 30 };
@@ -138,7 +135,7 @@ function setzeStamm(root, T, form) {
     // die Tags in index.html folgen der Form (EIN Tag oder die Zonen, sonst lüde die Seite fehlende Zonen)
     const tags = (pfade) => {
         const html = path.join(root, "index.html");
-        const h = fs.readFileSync(html, "utf8");
+        const h = ausDatei(html);
         if (/^<<<<<<< /m.test(h)) throw new Error("Re-Home: index.html trägt git-Konflikte — erst lösen, dann --weiter");
         fs.writeFileSync(html, stamm.tagsSetzen(h, pfade));
     };
@@ -224,10 +221,10 @@ function rehome(root, aufName, opt = {}) {
 function weiter(root) {
     const zp = path.join(gitDir(root), ZUSTAND);
     if (!fs.existsSync(zp)) throw new Error("--weiter: kein Re-Home offen");
-    const z = JSON.parse(fs.readFileSync(zp, "utf8"));
+    const z = jsonLesen(zp);
     if (git(root, ["rev-parse", "HEAD"]).trim() !== z.zweigSha)
         throw new Error("--weiter: HEAD ist nicht mehr die Spitze, an der das Re-Home begann");
-    const T = fs.readFileSync(path.join(root, KONFLIKT), "utf8");
+    const T = ausDatei(path.join(root, KONFLIKT));
     const rest = benenne(T);
     if (rest.length) throw new Error(`--weiter: ${KONFLIKT} trägt noch ${rest.length} Konflikt-Marker`);
     const meldung =
@@ -352,12 +349,12 @@ function selbsttest() {
         // (E) ein Konflikt: eine Zeile, die Umzug-Seite und Zweig verschieden ändern
         git(klon, ["checkout", "-q", "-B", "zweig2", ipSha]);
         const zon = stamm.dateiVon(klon, "_bodenSichtAt");
-        const zt = fs.readFileSync(path.join(klon, zon), "utf8");
+        const zt = ausDatei(path.join(klon, zon));
         fs.writeFileSync(path.join(klon, zon), zt.replace(/(\n {4}_bodenSichtAt\([^\n]*\n)/, "$1        // Zweig\n"));
         git(klon, ["commit", "-q", "--no-verify", "-am", "Zweig-Zeile"]);
         git(klon, ["checkout", "-q", "probe-umzug"]);
         const zk = stamm.dateiVon(klon, "_bodenSichtAt");
-        const kt = fs.readFileSync(path.join(klon, zk), "utf8");
+        const kt = ausDatei(path.join(klon, zk));
         fs.writeFileSync(path.join(klon, zk), kt.replace(/(\n {4}_bodenSichtAt\([^\n]*\n)/, "$1        // Kopf\n"));
         git(klon, ["commit", "-q", "--no-verify", "-am", "Kopf-Zeile"]);
         git(klon, ["checkout", "-q", "zweig2"]);
@@ -391,7 +388,7 @@ function selbsttest() {
 // ── CLI ───────────────────────────────────────────────────────────────────────────────────────────────────────────
 function main() {
     const argv = process.argv.slice(2);
-    if (argv.includes("--selftest")) return selbsttest() ? 1 : 0;
+    if (SELBSTTEST) return selbsttest() ? 1 : 0;
     if (argv.includes("--weiter")) {
         const r = weiter(ROOT);
         console.log(
@@ -399,7 +396,7 @@ function main() {
         );
         return r.commit ? 0 : 1;
     }
-    const auf = argv.includes("--auf") ? argv[argv.indexOf("--auf") + 1] : "origin/main";
+    const auf = argOpt("--auf", "origin/main");
     const r = rehome(ROOT, auf, { trocken: argv.includes("--trocken"), immer: argv.includes("--immer") });
     if (!r.noetig) return (console.log(`Re-Home: nicht nötig — ${r.info}`), 0);
     console.log(

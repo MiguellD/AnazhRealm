@@ -615,14 +615,14 @@ function selbsttest() {
     selbsttestEnde(fehler);
 }
 
-if (process.argv.includes("--selftest")) {
+const { statikServer, warteAufWelt, nullSeite, wandEnde, fehlerText, path, SELBSTTEST } = require("./lib/welt-boot.cjs");
+
+if (SELBSTTEST) {
     console.log("=== HÖHLEN-SICHT — Selbsttest (ohne Browser) ===");
     selbsttest();
     process.exit(0);
 }
 
-const { statikServer, warteAufWelt, nullSeite, wandEnde, fehlerText } = require("./lib/welt-boot.cjs");
-const path = require("path");
 const { installHoehlenStrahl } = require("./lib/hoehlen-strahl.cjs");
 
 // Die Mess-Wiese (die Blicke wiese und hang), die Mitte der Welt und das Quadrat der Mündungs-Suche um sie (halbe Seite, m).

@@ -46,14 +46,9 @@
 //
 //   node scripts/diag-profiband.cjs [--selftest] [--messung <boot.json …>]          (npm run gate:profiband)
 "use strict";
-const { selbsttestEnde, jsonLesen, jsonKlon } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
+const { selbsttestEnde, jsonLesen, jsonKlon, SELBSTTEST, path, fs, stammLib, ROOT: root } = require("./lib/welt-boot.cjs");
 const DZ = require("./lib/draw-zaehler.cjs");
 const BAND = require("./lib/band-urteil.cjs");
-const stammLib = require("./lib/stamm.cjs");
-
-const root = path.join(__dirname, "..");
 
 // DIE ECHTE KLASSE (scripts/lib/stamm.cjs `ladeKlasse`, im vm wie der Wirt der Wiese) — kein Rumpf-Text, kein Zwilling; der
 // Selbsttest lädt einen veränderten Stamm (`monolith`) und fährt dieselben Proben.
@@ -1087,7 +1082,7 @@ function selbsttest() {
     // wie sie w2B auf der GTX richtete (ohne Version), ist ROT — ohne Version, mit fremder
     // Messung, mit einer Gesamt-Zeile über der Summe der Klassen und gegen w2B zu weit (baum haupt 385 630 gegen 60 976).
     {
-        const probe = jsonLesen(path.join(root, "spec", "profiband", "probe-1110-12.json"));
+        const probe = jsonLesen("spec/profiband/probe-1110-12.json");
         const w2B = probe.boots.w2B.schritte.find((x) => x.name === "band").ergebnis.messung;
         const slot = (r, z) => Object.assign({ ort: "wiese", geraet: "gtx", sicht: "ego", datei: "probe", ratsche: r }, z);
         const alt31 = BAND.ratscheFrische({
@@ -1200,7 +1195,7 @@ function selbsttest() {
 }
 
 function main() {
-    if (process.argv.includes("--selftest")) return selbsttest();
+    if (SELBSTTEST) return selbsttest();
     const { haushalt } = BAND.ladeSpec();
     const errs = [];
     const h = BAND.haushaltPruefen(haushalt);
@@ -1213,7 +1208,7 @@ function main() {
         for (const f of BAND.ratschePruefen(e.ratsche, haushalt)) errs.push(`H2 [${e.datei}] ${f}`);
     // H2b DIE FRISCHE: gemessen, höchstens eine Version alt, am eigenen Ort × Gerät × Sicht, die Gesamt-Zeile feuert, und
     // gegen jede gegebene Messung (`--messung`) keine Zeile zu weit.
-    const version = jsonLesen(path.join(root, "package.json")).version;
+    const version = jsonLesen("package.json").version;
     const messungen = [];
     const mi = process.argv.indexOf("--messung");
     for (const d of mi >= 0 ? process.argv.slice(mi + 1).filter((x) => /\.json$/i.test(x)) : []) {

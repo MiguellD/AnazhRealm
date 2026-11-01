@@ -21,10 +21,7 @@
 //     Flatten-Chokepoint bedient die Distanz-Wahlen 1 und 2 mit den ECHTEN
 //     Stufen |1|/|2| (nicht [0]-Kollaps) und faltet die Wahl 5 auf Stufe 2.
 //   node scripts/diag-nervensystem-fachwerk.cjs [--selftest]
-const { statikServer, ROOT: root, hauptLauf, pruefer, wandEnde, selbsttestEnde, studioKern, fehlerText } = require("./lib/welt-boot.cjs");
-const fs = require("fs");
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
+const { statikServer, hauptLauf, pruefer, wandEnde, selbsttestEnde, studioKern, fehlerText, ausDatei, SELBSTTEST, stammLib } = require("./lib/welt-boot.cjs");
 const kernStufen = require("./lib/kern-stufen.cjs");
 
 const PORT = Number(process.env.NERV_FACHWERK_PORT || 4434);
@@ -61,9 +58,9 @@ function staticLaws(q, manifestSrc) {
 }
 
 hauptLauf(async () => {
-    const manifestSrc = fs.readFileSync(path.join(root, "cores.manifest.json"), "utf8");
+    const manifestSrc = ausDatei("cores.manifest.json");
 
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST: die Linse feuert auf injizierte Verletzungen ===");
         // V1: die fachwerk-Manifest-Zeile entfernt -> S1 muss rot werden.
         const brokenManifest = JSON.stringify(JSON.parse(manifestSrc).filter((c) => c && c.id !== "fachwerk"));

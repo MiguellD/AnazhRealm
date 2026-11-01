@@ -56,13 +56,10 @@
 //
 //   npm run gate:pflanzen-nah            (PFLANZEN_PORT, Vorgabe 4548)
 "use strict";
-const path = require("path");
-const stammLib = require("./lib/stamm.cjs");
 const { runWithWorker } = require("./lib/asset-worker-harness.cjs");
-const { hauptLauf, wandEnde } = require("./lib/welt-boot.cjs");
+const { hauptLauf, wandEnde, stammLib, ROOT } = require("./lib/welt-boot.cjs");
 require("../phyto-core.js");
 const PC = globalThis.__phytoCore;
-const ROOT = path.resolve(__dirname, "..");
 // die Oktave der Blatt-Farbe, wie die Welt sie trägt (die Klasse geladen, nie ihr Text; D3c)
 const OKTAVE = stammLib.ladeKlasse(ROOT).AnazhRealm.BLATT_FARBE_OKTAVE;
 const PORT = Number(process.env.PFLANZEN_PORT || 4548);
