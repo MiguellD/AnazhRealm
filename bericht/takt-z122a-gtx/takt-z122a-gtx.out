@@ -1,0 +1,70 @@
+Punkte-Maschine: 26 Station(en) in 23 Läufen auf gtx am eeb5d2bf · Sitzung 23 Proben in EINER Welt (Deckel Σ 12 min) · Zeit 0 Läufe ~0 min allein · Bild 0 Läufe ~0 min auf 1 Bahn(en) · erwartet ~0 min (Soll-Minuten ohne Sitzung) (Baum C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\.claude\worktrees\punkte-gtx)
+  SITZUNG gtx · die Welt steht nach 6.3 s (Schloss nach 0.01 min) · 23 Proben · Welt :27804
+  SITZUNG profiband.K4#1 ließ die Zeichenkette verändert: zeichner.renderer._renderObjectDirect zeichner.renderer._renderScene — kein Urteil (Werkzeug-Bruch), die Grundstellung folgt
+  OFFEN profiband.K4#1 · Deckel 29 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Werkzeug-Bruch: die Probe ließ die Zeichenkette verändert (zeichner.renderer._renderObjectDirect getauscht: function (object, material, scene, camera) { const vor = H.c · zeichner.renderer._renderScene getauscht: function (scene, camera, ...rest) { const name = window.__pa) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG der Grund der Welt: 83 Größen in 0.3 s
+  SITZUNG Grundstellung vor mensch.K4#1: 0.1 s (im Spiel 40.8 ms)
+  SITZUNG Ort wiese vor mensch.K4#1: 18.3 s (640 Takte, 81 Chunks, nach der Grundstellung)
+  ROT  mensch.K4#1 · Spiel-Pose: Leib 0 rad, Kamera vor dem Gesicht auf 6.09 m · third ROT strich 0.333 Soll [1,1] — gesicht 0.333 < 1 · der Mangel „Augen, Mund, Haar-Fleck" heißt geheilt, das Maß gesicht ist ROT — er ist zurück · augeFrei 0.14 [0.9, 1] · lippeL -3.24 [-14, -4] · lippeA 0.29 [4, 14] · hoehleL 0.1 [-12, 0] · hoehleA -0.96 [-2, 6] · haarDeckung 1 [0.9, 1] · Sitzung · Exit 0 · 0.32 min
+  ROT  haar.K2#1 · arm ROT strich 0.3042 Soll [0.3554,0.533] — strich 0.3042 < 0.3554 · albedo: Rohdatei spec/farbe/albedo-tafel.json: Zeile „haar" ohne Ist · albedo — [0.01; 0.3] · third ROT strich 0.2582 Soll [0.3554,0.533] — strich 0.2582 < 0.3554 · albedo: Rohdatei spec/farbe/albedo-tafel.json: Zeile „haar" ohne Ist · albedo — [0.01; 0.3] · Sitzung · Exit 0 · 0.3 min
+  ROT  vegetation.K1#1 · wiese-third-0.5--wiese: LAI 2–5 2.40 · 5–10 1.51 · 10–14 1.22 · 14–30 0.36 · 30–80 0.02 · 80–200 0.00 (Saum springt > 15 %), Farbton 2–5 m 12.70°, nahWiese 4 Befehle / 67049 Dreiecke · Sitzung · Exit 0 · 0.56 min
+  ROT  licht.K2#2 · Uhr 0.5 klar (Sonne 74.2°) 5.333, Schatten-Anteil 0.1875 · Uhr 0.27 klar (Sonne 7.2°) 0.925 UNGÜLTIG (A/B 0.767, A/C 1.000, 1463 px) · Uhr 0.73 klar (Sonne 6.7°) 1.019 UNGÜLTIG (A/B 0.788, A/C 1.000, 1501 px) · Uhr 0.5 Regen (Sonne 74.2°) 1.764 UNGÜLTIG (A/B 1.000, A/C 1.029, 1463 px) · Uhr 0.27 Regen (Sonne 7.2°) 0.938 · Uhr 0.73 Regen (Sonne 6.7°) 1.063 · Himmel zur Sonne kein freier Himmel · Soll klar 0,5: 5–12,5, 0,08–0,20, Himmel ≥ 1,2; klar 0,27/0,73 ≥ 2,5; Regen ≤ 1,5 · [linse-gpu] nvidia/pascal · Sitzung · Exit 0 · 0.55 min
+  OFFEN material.K2#1 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: fels-weit · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor lod.K1#1: 7.2 s (im Spiel 2132.9 ms, durch die Tür)
+  SITZUNG Ort wiese vor lod.K1#1: 17.3 s (600 Takte, 81 Chunks, nach der Tür)
+  OFFEN lod.K1#1 · Deckel 30 s gerissen — beendet, UNGEMESSEN (zuletzt: tafel · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor lod.K5#1: 7.5 s (im Spiel 1824.3 ms, durch die Tür)
+  SITZUNG Ort wiese vor lod.K5#1: 17 s (612 Takte, 81 Chunks, nach der Tür)
+  SITZUNG lod.K5#1 ließ die Welt verändert und trägt kein mutiert: werke +1 (−0) — die Grundstellung folgt
+  OFFEN lod.K5#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN (zuletzt: umstellen · Exit 0) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor spielgang.K3#1: 7.6 s (im Spiel 1771.8 ms, durch die Tür)
+  SITZUNG Ort wiese vor spielgang.K3#1: 16.1 s (618 Takte, 81 Chunks, nach der Tür)
+  ROT  spielgang.K3#1 · HUD deckt 3.94 % (1920×1080, im Spiel) · INP HUD 168 ms (50) · Menü 240 ms (20) · Sitzung · Exit 0 · 0.28 min
+  SITZUNG Ort genesis vor material.K1#1: 11.1 s (601 Takte, 81 Chunks)
+  SITZUNG material.K1#1 ließ die Welt verändert und trägt kein mutiert: werke +1 (−0) — die Grundstellung folgt
+  OFFEN material.K1#1 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Welt/Labor 0,9–1,1: 0/0 · im realen Band beidseits: 0/0 · echt NEIN · [linse-gpu] nvidia/pascal) · Täter: @@ 4 s · Labor: Protocol error (Runtime.evaluate): Target closed · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor oekologie.K4#2: 8.3 s (im Spiel 2010.6 ms, durch die Tür)
+  SITZUNG Ort wiese vor oekologie.K4#2: 17 s (601 Takte, 81 Chunks, nach der Tür)
+  ROT  oekologie.K4#2 · first ROT: umstellt null s, Furcht chaos 0 (Gegenlauf 0), 0 Jäger fallen, Triumph joy+hope 0.012 (Gegenlauf 0.015) · Sitzung · Exit 0 · 0.03 min
+  SITZUNG Grundstellung vor mensch.K5#1: 0.1 s (im Spiel 31.8 ms)
+  SITZUNG Ort genesis vor mensch.K5#1: 10.1 s (601 Takte, 81 Chunks, nach der Grundstellung)
+  OFFEN mensch.K5#1 · Deckel 10 s gerissen — beendet, UNGEMESSEN · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor siedlung.K1#2: 10 s (im Spiel 1636.5 ms, durch die Tür)
+  SITZUNG Ort genesis vor siedlung.K1#2: 14.9 s (588 Takte, 81 Chunks, nach der Tür)
+  OFFEN siedlung.K1#2 · Frist der Probe 27 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: 8 von 18 Häusern des Start-Dorfs Tür → Keller → Dachboden ganz, Hub max 0.20 m · Innen-Bild 0 von 18 lesbar (Plan 18), innen ÷ Außen-Schatten min undefined · Median undefined (Soll ≥ 0,15) · dunkel: haus_gotisch undefined/undefined (Frist d) · Täter: haus_skandinavisch · Gang Hub — · innen undefined ÷ außen undefined = undefined · Frist der Probe · Frist der Probe · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor licht.K3#1: 5.9 s (im Spiel 2195.3 ms, durch die Tür)
+  SITZUNG Ort dorf vor licht.K3#1: 29.4 s (1222 Takte, 81 Chunks, nach der Tür)
+  OFFEN licht.K3#1 · Deckel 45 s gerissen — beendet, UNGEMESSEN (zuletzt: BERUHIGUNG 13 statt /lauf {"sek":5,"ein":8,"ruhe":120,"regler":"voll"}: die Welt steht nach 60 Takten, 0.7 s · 44.6 s) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor tiere.K1#2: 8.5 s (im Spiel 1765.3 ms, durch die Tür)
+  SITZUNG die Welt vor tiere.K1#2: 16.5 s (707 Takte, 81 Chunks, nach der Tür)
+  OFFEN tiere.K1#2 · Deckel 41 s gerissen — beendet, UNGEMESSEN (zuletzt: ✅ GRÜN — herde) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor tiere.K3#2: 6.6 s (im Spiel 1650.5 ms, durch die Tür)
+  SITZUNG die Welt vor tiere.K3#2: 14.2 s (651 Takte, 81 Chunks, nach der Tür)
+  OFFEN tiere.K3#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: BILD "abnahme": "ABNAHME GRÜN · beweis · Sicht 0.0 % · Ziel gang im Bild frei 10.2 m · Luma 76.5 σ 51 schwarz 3.6 % weiß 0.0 % · Stand 18.546.154 · Bühne summer) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor studios.K2#2: 6.5 s (im Spiel 1721.1 ms, durch die Tür)
+  SITZUNG die Welt vor studios.K2#2: 14.5 s (646 Takte, 81 Chunks, nach der Tür)
+  OFFEN studios.K2#2 · Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: p95 Griff → Bild unter der Schranke in 0/8 (Gesetz-Wert höchstens 40 ms garage, Neubau höchstens 218 ms garage, je Studio null Griffe) · Neuladen 2/8 · A/B 2/8) · Täter: @@ PROBE-FEHLER TargetCloseError: Protocol error (Runtime.callFunctionOn): Target closed |     at CallbackRegistry.clear (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\common\CallbackRegistry.js:82:36) |     at CdpCDPSession.onClosed (C:\Users\m · Sitzung · ungemessen, `run --offen` misst neu
+  OFFEN studios.K3#2 · Frist der Probe 19 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: Dreiecke, Befehle, VRAM und GPU-ms ±5 % in 0/7 Mesh-Studios (0 Stufen), Klang 0/0 Orte im Quantum, ohne garage L0 GPU 0.0246 ms↔Bank 7.725 (+1), schmiede L0 GPU 0.0051 ms↔Bank 0.375, portale (keine Zeile), fachwerk (keine Zeile), koerperstu) · Täter: @@ PROBE-FEHLER TargetCloseError: Protocol error (Runtime.callFunctionOn): Target closed |     at CallbackRegistry.clear (C:\Users\micha\Desktop\AnazhRealm-OMEN\AnazhRealm-mess\node_modules\puppeteer-core\lib\cjs\puppeteer\common\CallbackRegistry.js:82:36) |     at CdpCDPSession.onClosed (C:\Users\m · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor bauen.K1#2: 6.2 s (im Spiel 1814.7 ms, durch die Tür)
+  SITZUNG die Welt vor bauen.K1#2: 14.1 s (645 Takte, 81 Chunks, nach der Tür)
+  OFFEN bauen.K1#2 · Frist der Probe 4 s gerissen — kein Urteil, UNGEMESSEN (die Probe sah: keine Ausgabe des Bild-Wegs auf der Karte (Exit 3)) · Täter: @@PUNKTE@@ FRIST 4 s der Probe gerissen — Abbau, die Ausgabe trägt den Stand bis hier · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor studios.K4#1: 6.4 s (im Spiel 1651.9 ms, durch die Tür)
+  SITZUNG die Welt vor studios.K4#1: 13.9 s (648 Takte, 81 Chunks, nach der Tür)
+  OFFEN studios.K4#1 · die Urteils-Zeile fehlt — kein Urteil, UNGEMESSEN (die Probe sah: kein K4-JSON (Exit 2): ) · Täter: @@ PROBE-FEHLER Error: Cannot find module 'puppeteer' | Require stack: | - C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\meisterkarte-quelle\punkte\stationen\sitzung-seite.js | - C:\Users\micha\Desktop\AnazhRealm-OMEN\koord-punkte\bericht\2910-w3w-studios\skripte\k4-bild.cjs |     at Module._r · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor siedlung.K4#2: 0.1 s (im Spiel 36.9 ms)
+  SITZUNG die Welt vor siedlung.K4#2: 1.3 s (79 Takte, 81 Chunks, nach der Grundstellung)
+  OFFEN siedlung.K4#2 · Deckel 33 s gerissen — beendet, UNGEMESSEN (zuletzt: }) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor fahrzeug.K2#2: 8.8 s (im Spiel 1582.7 ms, durch die Tür)
+  SITZUNG die Welt vor fahrzeug.K2#2: 13.7 s (647 Takte, 81 Chunks, nach der Tür)
+  OFFEN fahrzeug.K2#2 · Deckel 55 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG Grundstellung vor profiband.K1#1: 8.4 s (im Spiel 1572.2 ms, durch die Tür)
+  SITZUNG die Welt vor profiband.K1#1: 13.9 s (649 Takte, 81 Chunks, nach der Tür)
+  ROT  profiband.K1#1 · Bild-p95 ≤ 33: wiese-ego-geht 33.4 · wiese-ego-sprint ? · wiese-fahrt ? · genesis-third-geht 33.3 · stadt-ego-geht ? · wiese-ego-sturm ? · Gang 60.6 s · [linse-gpu] nvidia/pascal — ROT 6: wiese-ego-geht Bild-p95 33.4 > 33 | wiese-ego-sprint: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-fahrt: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-third-geht Bild-p95 33.3 > 33 | stadt-ego-geht: ungemessen (die Uhr 58 s trug den Schritt nicht) | wiese-ego-sturm: ungemessen (die Uhr 58 s trug den Schritt nicht) · Sitzung · Exit 0 · 1.01 min
+  ROT  profiband.K2#1 · Belegung p95 ≤ 5.8: wiese-ego-steht 10.42 · wiese-third-steht ? · genesis-ego-steht 11.68 · genesis-third-steht 13.2 · Gang 60.6 s · [linse-gpu] nvidia/pascal — ROT 4: wiese-ego-steht Belegung p95 10.42 > 5.8 | wiese-third-steht: ungemessen (die Uhr 58 s trug den Schritt nicht) | genesis-ego-steht Belegung p95 11.68 > 5.8 | genesis-third-steht Belegung p95 13.2 > 5.8 · Sitzung · Exit 0 · 1.01 min (Zwilling von profiband.K1#1)
+  ROT  profiband.K3#1 · Band im Stand (Befehle · Dreiecke · VRAM · gpu-bank): wiese-ego 101 · 326k · 126.9 MB · 19.47 ms | wiese-third ? | genesis-ego 117 · 319k · 125.3 MB · 16.53 ms | genesis-third 136 · 420k · 127 MB · 15.95 ms | dorf-ego ? | dorf-third ? · Gang 60.6 s · [linse-gpu] nvidia/pascal — ROT 6: Band wiese-ego: Band ROT streu haupt: 7 befehle über der Ratsche 4 (Täter: streuSatz, f:blume:L2) · baum k1: 12 befehle über der Ratsche 5 (Täter: f:tanne:L1, f:eiche:L1, f:tanne:L0) · , gpu-bank 19.47 ms > 12, nicht eingeschwungen | Band wiese-third: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band genesis-ego: Band ROT streu haupt: 6 befehle über der Ratsche 2 (Täter: streuSatz, fscatter:geroell:L0, fscatter:blume:L2) · streu haupt: 13502 dreiecke über der Ratsche 1670 (Täter:, gpu-bank 16.53 ms > 12, nicht eingeschwungen | Band genesis-third: Band ROT fscatter:geroell:L0: L0 bis 70 m im Hauptbild (Wand 64 m) — Der stille L0-Rückfall (b13): jenseits 64 m wohnt die Streu als Platz im Welt-March (V18.526, Streu-, gpu-bank 15.95 ms > 12, nicht eingeschwungen | Band dorf-ego: ungemessen (die Uhr 58 s trug den Schritt nicht) | Band dorf-third: ungemessen (die Uhr 58 s trug den Schritt nicht) · Sitzung · Exit 0 · 1.01 min (Zwilling von profiband.K1#1)
+  SITZUNG Grundstellung vor speicher.K4#2: 0.1 s (im Spiel 35.4 ms)
+  SITZUNG die Welt vor speicher.K4#2: 7.2 s (601 Takte, 81 Chunks, nach der Grundstellung)
+  OFFEN speicher.K4#2 · Deckel 15 s gerissen — beendet, UNGEMESSEN (zuletzt: [linse-gpu] nvidia/pascal) · Sitzung · ungemessen, `run --offen` misst neu
+  SITZUNG DER ORT IM DECKEL (die Probe zog weiter als 250 m von dem Ort, an dem die Sitzung sie begann — ihr Deckel trug den Ring): speicher.K4#2 1139 m (Ring 4 → -1), profiband.K1#1 1084 m (Ring 4 → -1), material.K2#1 1083 m (Ring 4 → 1), fahrzeug.K2#2 948 m (Ring 4 → 0), siedlung.K4#2 645 m (Ring 4 → 0), licht.K3#1 602 m (Ring 4 → 1)
+  SITZUNG Fahrt 944.8 s (Soll ≤ 1800 s) · 23 Proben · Grundstellung 17×
+→ meisterkarte-quelle\punkte\messung\eeb5d2bf-gtx.json
