@@ -512,14 +512,6 @@ class AnazhRealm_siedlung_verkehr {
             const VK = S.verkehr;
             if (!VK || !VK.wagen.length || !S.liste) continue;
             if (VK.boden && VK.boden.offen && VK.boden.offen.length) this._verkehrBodenPumpe(VK.boden);
-            // DER FAHRER IM BILD: DAS KOMPOSIT ERBT (das EINE Stufen-Gesetz) — wessen Wagen in einer 3D-Stufe gezeichnet ist
-            // (`_archTraegt`), dessen Fahrer sitzt sichtbar am Steuer; die Kosten trägt die Stufe des Wagens (der Schirm, nie die
-            // Stadt), je Bild zieht ein sichtbarer Leib seine Knochen nur nach, wenn sein Wagen sich bewegte. Bis w4-verkehr-c2
-            // wählte das Maß der Bewohner (`BEWOHNER.nahLeiber`, 4) die Bedeutendsten — stadt-voll um 10 Uhr fuhr jeder dritte
-            // Wagen im Bild leer (4266 von 12098 Wagen-Bildern)
-            const nah = this._verkehrNah || (this._verkehrNah = []);
-            nah.length = 0;
-            for (const W of VK.wagen) if (W.b.amSteuer && W.entry && this._archTraegt(W.entry)) nah.push(W);
             for (const W of VK.wagen) {
                 // DER SCHICHTWECHSEL: steht der Wagen und will sein Fahrer nicht ans Werk, fährt, wer jetzt dorthin soll
                 if (W.zustand === "steht" && !W.b.amSteuer && W.b.ziel !== W.b.orte.werk) {
@@ -540,37 +532,49 @@ class AnazhRealm_siedlung_verkehr {
                     this._verkehrEinsteigen(S, W);
                 else if (b.amSteuer && W.zustand === "faehrt" && !W.heim && b.ziel !== werk) this._verkehrHeim(S, W);
                 else if (b.amSteuer && W.zustand === "steht") this._verkehrAussteigen(S, b);
-                if (!b.amSteuer) continue;
-                const e = W.entry;
-                const sicht = nah.includes(W);
-                if (sicht !== g.visible) g.visible = sicht;
-                if (!sicht) {
-                    // ungezeichnet folgt der Leib seinem Wagen nur mit der Lage (kein Knochen): wer ihn liest (die Linse, die
-                    // Ankunft), findet ihn im Wagen — bis hier blieb er am Platz, an dem er einstieg
-                    g.position.set(e.position.x, e.position.y, e.position.z);
-                    W.sitzt = false;
-                    continue;
-                }
-                // DER SICHTBARE LEIB AM STEUER: die Sitz-Pose hängt am Sitz des Wagens, nie an seiner Lage — gesetzt beim Eintritt
-                // ins Bild und nach jedem Wechsel der Gelenk-Stufe (`_gelenkStufe` stellt die Knochen fern in Ruhe); die Knochen zieht
-                // er nur nach, wenn sein Wagen sich seit dem letzten Bild bewegte (Kosten an Änderung). Bis hier rechnete `_sitzLage`
-                // je Bild dieselbe Lage samt eigenem Knochen-Gang neu (Messort stadt, Null-Renderer: 0,12 ms je Takt im Stand)
-                const fern = this._gelenkStufe(g, p, e.position); // die Stufe des Fahrers misst vom Wagen
-                const sitzH = Number.isFinite(e._sitzHeight) ? e._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
-                const [x, y, z] = [e.position.x, e.position.y - 0.5 + sitzH + (e._rideHeave || 0), e.position.z];
-                const gier = Number.isFinite(e._rideYaw) ? e._rideYaw : g.rotation.y;
-                const L = W.leibLage || (W.leibLage = { x: NaN, y: NaN, z: NaN, gier: NaN });
-                if (W.sitzt && W.fern === fern && L.x === x && L.y === y && L.z === z && L.gier === gier) continue;
-                g.position.set(x, y, z);
-                g.rotation.set(0, gier, 0);
-                if (!W.sitzt || W.fern !== fern) {
-                    this._applySeatPose(g, 0, e);
-                    [W.sitzt, W.fern] = [true, fern];
-                }
-                this._leibMatrix(g);
-                Object.assign(L, { x, y, z, gier });
+                if (b.amSteuer) this._verkehrSitz(W, p);
             }
         }
+    }
+
+    // DER FAHRER IM BILD: DAS KOMPOSIT ERBT (das EINE Stufen-Gesetz) — wessen Wagen in einer 3D-Stufe gezeichnet ist
+    // (`_archTraegt`), dessen Fahrer sitzt sichtbar am Steuer; die Kosten trägt die Stufe des Wagens (der Schirm, nie die Stadt),
+    // je Bild zieht ein sichtbarer Leib seine Knochen nur nach, wenn sein Wagen sich bewegte. Leser: der Takt des Verkehrs
+    // (`_tickVerkehr`, je Wagen nach dem Einsteigen — wer in diesem Takt einstieg, sitzt in diesem Bild) und DIE NAHT DER STUFE
+    // (`_kompositErbt`: Culling und Stufen-Wahl laufen nach dem Takt des Verkehrs, vor dem Bild — der Wechsel setzt den Fahrer
+    // im selben Bild). Bis w4-verkehr-c2 wählte das Maß der Bewohner (`BEWOHNER.nahLeiber`, 4) die Bedeutendsten (stadt-voll um
+    // 10 Uhr fuhr jeder dritte Wagen im Bild leer, 4266 von 12098 Wagen-Bildern), danach urteilte der Takt vor dem Wechsel der
+    // Stufe: der Wagen, der ins Bild kam, fuhr ein Bild lang leer (10 Uhr 24×, 23 Uhr 11× „im Bild ohne gezeichneten Fahrer").
+    _verkehrSitz(W, p) {
+        const g = W.b.leib;
+        const e = W.entry;
+        const sicht = this._archTraegt(e);
+        if (sicht !== g.visible) g.visible = sicht;
+        if (!sicht) {
+            // ungezeichnet folgt der Leib seinem Wagen nur mit der Lage (kein Knochen): wer ihn liest (die Linse, die Ankunft),
+            // findet ihn im Wagen — bis hier blieb er am Platz, an dem er einstieg
+            g.position.set(e.position.x, e.position.y, e.position.z);
+            W.sitzt = false;
+            return;
+        }
+        // DER SICHTBARE LEIB AM STEUER: die Sitz-Pose hängt am Sitz des Wagens, nie an seiner Lage — gesetzt beim Eintritt ins
+        // Bild und nach jedem Wechsel der Gelenk-Stufe (`_gelenkStufe` stellt die Knochen fern in Ruhe); die Knochen zieht er nur
+        // nach, wenn sein Wagen sich seit dem letzten Bild bewegte (Kosten an Änderung). Bis hier rechnete `_sitzLage` je Bild
+        // dieselbe Lage samt eigenem Knochen-Gang neu (Messort stadt, Null-Renderer: 0,12 ms je Takt im Stand)
+        const fern = this._gelenkStufe(g, p, e.position); // die Stufe des Fahrers misst vom Wagen
+        const sitzH = Number.isFinite(e._sitzHeight) ? e._sitzHeight : AnazhRealm.MOUNT_FOLLOW_HEIGHT;
+        const [x, y, z] = [e.position.x, e.position.y - 0.5 + sitzH + (e._rideHeave || 0), e.position.z];
+        const gier = Number.isFinite(e._rideYaw) ? e._rideYaw : g.rotation.y;
+        const L = W.leibLage || (W.leibLage = { x: NaN, y: NaN, z: NaN, gier: NaN });
+        if (W.sitzt && W.fern === fern && L.x === x && L.y === y && L.z === z && L.gier === gier) return;
+        g.position.set(x, y, z);
+        g.rotation.set(0, gier, 0);
+        if (!W.sitzt || W.fern !== fern) {
+            this._applySeatPose(g, 0, e);
+            [W.sitzt, W.fern] = [true, fern];
+        }
+        this._leibMatrix(g);
+        Object.assign(L, { x, y, z, gier });
     }
 
     // DER FAHRER STEIGT EIN: er verlässt das Gedränge (kein Kreis, kein Satz, kein Feld, keine Ankunft im Takt — sein Leib gehört
