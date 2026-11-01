@@ -16,12 +16,9 @@
 //   KAMERA_LAUB_STAMM=<datei>                              ein anderer Stamm (Zonen-Text) — das Vorher eines A/B
 // Exit: 0 grün · 1 rot · 2 Skript-Fehler.
 "use strict";
-const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde, weltTor, jsonLesen } = require("./lib/welt-boot.cjs");
+const { statikServer, starteBrowser, buehne, nullRenderer, ROOT: root, hauptLauf, wandEnde, selbsttestEnde, jsonLesen, SELBSTTEST, path, stammLib, weltTor, argOpt } = require("./lib/welt-boot.cjs");
 const { istHardwareAdapter } = require("./lib/software-gpu.cjs");
-const fs = require("fs");
-const path = require("path");
 const { WASSER_INSTALL } = require("./lib/wasser-linse.cjs");
-const stammLib = require("./lib/stamm.cjs");
 
 const PORT = Number(process.env.KAMERA_LAUB_PORT || 4611);
 const STAMM = process.env.KAMERA_LAUB_STAMM ? path.resolve(process.env.KAMERA_LAUB_STAMM) : null;
@@ -31,7 +28,7 @@ const STAMM = process.env.KAMERA_LAUB_STAMM ? path.resolve(process.env.KAMERA_LA
 // ihn trägt (26.10.: ROT am Ruck des Haus-Sprints, s. GANG)
 // `--bild`: die Welt zeichnet über die Weiche (Rezept `linse`), ohne den Null-Renderer — die Station eines Geräts (leib.K4)
 const BILD = process.argv.includes("--bild");
-const TEILE = (process.argv.includes("--teile") ? process.argv[process.argv.indexOf("--teile") + 1] : "laub,leib,gang,gang2,ninja").split(",");
+const TEILE = argOpt("--teile", "laub,leib,gang,gang2,ninja").split(",");
 // Die Nah-Radien der Messung (m) — fest in der Linse, damit Vorher und Nachher unter derselben Bedingung stehen.
 const RADIUS = Object.freeze({ third: 2.0, ritt: 3.0, first: 0.8 });
 const SAUM = 0.6; // der Saum der Durchsicht (KAMERA_DURCHSICHT.saumM): in 3rd endet die Nah-Kugel samt Saum vor dem Ziel
@@ -153,7 +150,7 @@ const NINJA_WP = [
 ];
 const NINJA_RAND = 0.3; // Lab-Maß (der Runner R10)
 const WIESE = require("./lib/welt-orte.cjs").messort("wiese"); // der EINE Leser des Haushalts
-const HANG = jsonLesen(path.join(root, "spec", "pruefbuehne", "stationen.json")).stationen.find(
+const HANG = jsonLesen("spec/pruefbuehne/stationen.json").stationen.find(
     (o) => o.id === "s2-hang30"
 );
 
@@ -1108,7 +1105,7 @@ async function probe(arg) {
 }
 
 hauptLauf(async () => {
-    if (process.argv.includes("--selftest")) {
+    if (SELBSTTEST) {
         console.log("=== SELBST-TEST (ohne Welt) ===");
         // je Fall das Urteil über die Messung: `soll` null heißt 0 Täter, sonst nennt die Linse ihn beim Namen (Anfang der Zeile)
         const faelle = (k, urt, liste) => {
@@ -1266,7 +1263,7 @@ hauptLauf(async () => {
         }
         // die Prüfbühne, geboren wie im Spiel durch die Tür (`weltTor`)
         const tH = Date.now();
-        await bereit(adresse, jsonLesen(path.join(root, "spec", "pruefbuehne", "welt.json")));
+        await bereit(adresse, jsonLesen("spec/pruefbuehne/welt.json"));
         await page.evaluate(leibInstall, { R: LEIB_R });
         leib.hang = await page.evaluate(leibHang, { hang: HANG, n: LEIB_HANG_N });
         zeiten.hang = Date.now() - tH;

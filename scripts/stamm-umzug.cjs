@@ -1,5 +1,6 @@
 "use strict";
-/* global process, console, __dirname */
+const { ausDatei, path, fs, argOpt, SELBSTTEST, ROOT } = require("./lib/welt-boot.cjs");
+/* global process, console */
 // scripts/stamm-umzug.cjs — der Umzug des Stamms NACH DOMÄNE. Die Karte spec/stamm/modul-karte.json ordnet jedes Glied der
 // Klasse und jede Außen-Anweisung einem Modul[/teil] zu; `ordne` (scripts/lib/stamm.cjs) stellt den virtuellen Stamm danach,
 // S schreibt stamm/<modul>[-<teil>].js. DETERMINISTISCH: gleiche Karte und gleicher Stamm geben dieselben Dateien — der
@@ -16,12 +17,8 @@
 //        prettier --write bzw. eslint NUR auf den Stamm-Dateien, die gegen die Merge-Basis geändert sind (samt Arbeitsbaum
 //        und neuen Dateien) — npm run stamm:fmt / stamm:lint
 //   --selftest
-const fs = require("fs");
-const path = require("path");
 const stamm = require("./lib/stamm.cjs");
-const { argOpt } = require("./lib/welt-boot.cjs");
 
-const ROOT = path.resolve(__dirname, "..");
 const argv = process.argv.slice(2);
 const TAFELN = ["spec/abnahme/soll-tafel.json", "spec/farbe/albedo-tafel.json"];
 const VERALTET = "c:0000000000000000"; // ein Abdruck, den kein Code trägt: die Messung bleibt „veraltet seit …"
@@ -37,7 +34,7 @@ function schreibeZonen(ziel, T) {
     fs.writeFileSync(
         html,
         stamm.tagsSetzen(
-            fs.readFileSync(html, "utf8"),
+            ausDatei(html),
             S.map((x) => x.pfad)
         )
     );
@@ -179,7 +176,7 @@ function nachKarte(root, trocken) {
     schreibeZonen(root, T1);
     const zug = tafelZug(alt, S);
     for (const t of TAFELN.filter((t) => fs.existsSync(path.join(root, t)))) {
-        fs.writeFileSync(path.join(root, t), zug(fs.readFileSync(path.join(root, t), "utf8")));
+        fs.writeFileSync(path.join(root, t), zug(ausDatei(path.join(root, t))));
         console.log("Tafel " + t);
     }
     return 0;
@@ -233,7 +230,7 @@ function richterLesen(root) {
     const baender = new Map();
     let laeufer = null;
     for (const q of [RICHTER, ...neben.map((f) => `${RICHTER_DIR}/${f}`)]) {
-        const src = fs.readFileSync(path.join(root, q), "utf8").replace(/\r\n/g, "\n");
+        const src = ausDatei(path.join(root, q)).replace(/\r\n/g, "\n");
         const Z = src.split("\n");
         const weg = [];
         let vor = 0;
@@ -473,7 +470,7 @@ function selbsttest() {
 
 // ── CLI ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
 function main() {
-    if (argv.includes("--selftest")) return selbsttest() ? 1 : 0;
+    if (SELBSTTEST) return selbsttest() ? 1 : 0;
     if (argv.includes("--nach-karte")) return nachKarte(ROOT, argv.includes("--trocken"));
     if (argv.includes("--richter")) return richter(ROOT, argv.includes("--trocken"));
     if (argv.includes("--beweis")) {

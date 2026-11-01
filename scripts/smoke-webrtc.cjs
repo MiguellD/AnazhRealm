@@ -11,9 +11,7 @@
 // der ehrliche Beweis, dass die Browser eine direkte Verbindung herstellen.
 //
 // Voraussetzung: puppeteer als devDependency (`npm install`).
-const { starteBrowser, ROOT, waitFor, hauptLauf, pruefer, zweiImMesh } = require("./lib/welt-boot.cjs");
-const path = require("path");
-const fs = require("fs");
+const { starteBrowser, ROOT, waitFor, hauptLauf, pruefer, zweiImMesh, path, fs } = require("./lib/welt-boot.cjs");
 
 // Die eigenen Ports: WEBRTC_PORT und WEBRTC_SIGNAL_PORT, sonst freie des Systems (welt-boot `zweiImMesh`) — nie 4312/4313,
 // die Server des Schöpfers.

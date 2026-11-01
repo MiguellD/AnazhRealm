@@ -17,10 +17,8 @@
 //
 //   node scripts/diag-charakter-achsen.cjs
 "use strict";
-const crypto = require("crypto");
-const stammLib = require("./lib/stamm.cjs");
 
-const { studioKern, pruefer } = require("./lib/welt-boot.cjs");
+const { studioKern, pruefer, stammLib, crypto } = require("./lib/welt-boot.cjs");
 const SC = studioKern("schmiede-core.js", "__schmiedeCore");
 const VC = studioKern("vehicle-core.js", "__vehicleCore");
 const KC = studioKern("klang-core.js", "__klangCore");
