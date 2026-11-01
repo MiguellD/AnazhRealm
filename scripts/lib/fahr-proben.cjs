@@ -682,10 +682,14 @@ async function probeLeben(expected) {
                 hw: W.hw,
             };
         };
-        // die Kapsel (x, z) im Rechteck des Wagens, tiefer als 0,1 m; zwei Rechtecke über die vier Achsen beider
-        const drin = (L, x, z) =>
-            Math.abs((x - L.x) * L.fx + (z - L.z) * L.fz) < L.hl + R - 0.1 &&
-            Math.abs((x - L.x) * L.fz - (z - L.z) * L.fx) < L.hw + R - 0.1;
+        // die Kapsel (x, z) im Rechteck des Wagens, tiefer als 0,1 m — ihr Abstand zum Rechteck unter R − 0,1, an seiner Ecke rund
+        // (bis w4-verkehr-c2 eckig: der Gehende, der die Ecke des stehenden Wagens streifte, 0,343 m von ihr bei R 0,35, hieß
+        // „berührt“ 0,105 m tief); zwei Rechtecke über die vier Achsen beider
+        const drin = (L, x, z) => {
+            const a = Math.abs((x - L.x) * L.fx + (z - L.z) * L.fz) - L.hl;
+            const q = Math.abs((x - L.x) * L.fz - (z - L.z) * L.fx) - L.hw;
+            return Math.hypot(Math.max(0, a), Math.max(0, q)) < R - 0.1;
+        };
         const schnitt = (a, b) =>
             [a.fx, a.fz, b.fx, b.fz].every((_, k) => {
                 const [ux, uz] =
