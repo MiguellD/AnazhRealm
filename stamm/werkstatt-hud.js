@@ -2680,11 +2680,24 @@ class AnazhRealm_werkstatt_hud {
             el.style.visibility = "hidden";
             el.hidden = false;
             void el.offsetHeight; // Stil und Layout jetzt — die Eingabe ruht
-            el.hidden = true;
+            this._uiVerbergen(el);
             el.style.visibility = sicht;
             return false;
         }
         return (V.alle = true);
+    }
+
+    // DAS VERBERGEN EINER TAFEL (spielgang.K3) — die EINE Naht, an der das Ich [hidden] trägt (`toggleInventoryOverlay`, und im
+    // Vorbau jede Tafel). Verborgen ruht das Ich in content-visibility: hidden, und dort tickt Chrome keine Animation: eine
+    // laufende endliche wird nie zu Ende gespielt, ihr `finished` erfüllt sich nie (headless: nach 6 s weder erfüllt noch
+    // verworfen), und wer auf die Ruhe der Seite wartet, wartet ohne Ende (gate:werkstatt-weg, Zug z129: `ruht` 600 s bis zur
+    // Frist des Protokolls). display: none brach jede ab; darum bricht das Verbergen hier jede endliche Animation des Baums ab
+    // (die Breite eines Emotions-Balkens, der Rand eines Slots), bevor [hidden] ihn einfriert. Was verborgen neu entstünde,
+    // verbietet index.html (`#inventory-overlay[hidden] *`). Eine unendliche bleibt: auf sie wartet niemand, sie ruht mit.
+    _uiVerbergen(el) {
+        for (const a of el.getAnimations({ subtree: true }))
+            if (a.effect && a.effect.getComputedTiming().endTime !== Infinity) a.cancel();
+        el.hidden = true;
     }
 
     // Eine Schublade öffnet: der Zeiger wird frei (die Klicks gehören der Schublade) und ein gehaltenes Mahlen endet.

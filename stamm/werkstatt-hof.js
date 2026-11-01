@@ -508,7 +508,7 @@ class AnazhRealm_werkstatt_hof {
             // Spieler bewegt sich auch mit offenem Inventar weiter. Nur
             // die Maus-Look-Steuerung ist über exitPointerLock gesperrt.
         } else {
-            el.setAttribute("hidden", "");
+            this._uiVerbergen(el); // [hidden] ohne laufende Animation im gefrorenen Baum (spielgang.K3)
             this.state.inventoryOpen = false;
             document.body.classList.remove("inventory-open");
             this.state.inventorySelected = null;

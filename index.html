@@ -1281,6 +1281,15 @@
                 content-visibility: hidden;
                 pointer-events: none;
             }
+            /* DER GEFRORENE BAUM BEWEGT SICH NICHT (spielgang.K3): in content-visibility: hidden tickt Chrome keine Animation —
+               eine Transition, die dort entsteht (ein Layout-Leser erzwingt den Stil des Baums, und die Breite eines
+               Emotions-Balkens hat sich bewegt), wird nie zu Ende gespielt, ihr `finished` erfüllt sich nie (gate:werkstatt-weg,
+               Zug z129: `ruht` wartete 600 s). Verborgen entsteht keine; die beim Verbergen laufenden bricht `_uiVerbergen` ab. */
+            #inventory-overlay[hidden] *,
+            #inventory-overlay[hidden] *::before,
+            #inventory-overlay[hidden] *::after {
+                transition: none !important;
+            }
             #inventory-overlay .inventory-header {
                 flex: 0 0 auto;
             }
